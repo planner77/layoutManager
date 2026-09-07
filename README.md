@@ -2,7 +2,7 @@
 
 공장·설비의 DXF/DWG 도면을 등록·검색·버전 관리하고, 세 오픈소스 기술의 브라우저 렌더링 적용 가능성을 평가하는 프로젝트입니다.
 
-**현재 버전: 0.7.0 — 새로고침 없는 DXF Viewer 전환 지원.** `/cad/upload`에서 DXF/DWG를 등록하면 `/` 목록에서 즉시 확인할 수 있습니다. 위치별 상세에서 버전과 Current를 관리합니다. 실제 버전 기준은 `src/package.json`입니다. DXF Viewer 두 방식부터 구현하고, DWG Viewer는 이후 별도 MINOR 버전으로 진행합니다.
+**현재 버전: 0.8.0 — DXF Viewer 측정 및 비교 실행 지원.** `/cad/upload`에서 DXF/DWG를 등록하면 `/` 목록에서 즉시 확인할 수 있습니다. 위치별 상세에서 버전과 Current를 관리합니다. 실제 버전 기준은 `src/package.json`입니다. DXF Viewer 두 방식부터 구현하고, DWG Viewer는 이후 별도 MINOR 버전으로 진행합니다.
 
 ## 목표 기능
 
@@ -82,7 +82,7 @@ CAD 편집/Geometry 변경/저장, DWG→DXF 우회, 별도 검색 엔진·Backe
 | [Decisions](out/Decisions.md) | 주요 판단·제안·확인 대기 |
 | [ChangeLog](out/ChangeLog.md) | 변경 및 버전 이력 |
 
-다음 구현 단계는 Unit 8A DXF 성능 계측 및 비교 평가입니다. 승인된 범위에서는 Unit별 구현→테스트→문서→Commit→필요 시 Push를 반복합니다.
+다음 구현 단계는 Unit 9A DXF 통합·회귀 및 릴리스 검증입니다. 승인된 범위에서는 Unit별 구현→테스트→문서→Commit→필요 시 Push를 반복합니다.
 
 ## 2026-09-07 실행 순서 변경
 
@@ -91,3 +91,9 @@ CAD 편집/Geometry 변경/저장, DWG→DXF 우회, 별도 검색 엔진·Backe
 ## 글꼴 제공
 
 `src/public/fonts/NanumGothic-Regular.ttf`와 OFL 라이선스를 포함합니다. dxf-viewer는 TTF를 직접 읽고, three-dxf-viewer는 build/dev가 생성하는 `CadKorean.typeface.json`을 읽습니다. 생성 JSON은 Git 제외이며 배포 시 public/fonts에 포함해야 합니다. 앱 실행 중 외부 font CDN을 사용하지 않습니다. 파일 출처·hash·변환 및 교체 방법은 Operation을 참조하세요.
+
+## Viewer 측정
+
+도면 아래에서 전체 시간·도면 처리·첫 화면 관찰·원본 재사용 여부를 확인하고 **측정 JSON 저장**으로 결과를 내려받습니다. 순수 파싱 시간은 미계측이며 도면 처리에는 파싱/준비/글꼴/렌더링이 포함됩니다. 표시 완료는 모든 CAD Entity의 충실도 보증을 의미하지 않습니다.
+
+Production Build 후 `npm --prefix src run test:benchmark`로 생성 LINE 100/10,000/100,000개를 두 Viewer에서 cold/warm 각 5회 실행합니다. 기존 E2E와 같은 Chromium 설정을 사용하며 결과는 Git 제외 `src/benchmark-results/measurements.jsonl`에 저장됩니다. 측정 정의·실행 조건과 실제 값은 TestPlan/TestReport를 참조하세요. 실도면·전용 성능 장비의 시험을 대체하지 않습니다.

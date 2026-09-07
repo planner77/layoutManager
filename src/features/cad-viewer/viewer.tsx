@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ViewerManager } from '@/viewers/core/adapter';
 import { ViewerSource } from '@/viewers/core/source';
+import type {ViewerMetric} from '@/viewers/core/metrics';
 
 export function CadViewer({ versionId, renderer: initialRenderer = 'dxf-viewer' }: { versionId: string; renderer?: 'dxf-viewer'|'three-dxf-viewer' }) {
   const [renderer,setRenderer]=useState(initialRenderer);
@@ -10,10 +11,11 @@ export function CadViewer({ versionId, renderer: initialRenderer = 'dxf-viewer' 
   const container = useRef<HTMLDivElement>(null), manager = useRef<ViewerManager | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [layers,setLayers] = useState<string[]>([]);
+  const [metric,setMetric]=useState<ViewerMetric|null>(null);
   const [state, setState] = useState<{ status: string; ready: boolean; error?: string }>({status:'도면 로딩 중…',ready:false});
   useEffect(()=>()=>source.dispose(),[source,versionId]);
   function choose(value:typeof renderer) {
-    setState({status:'도면 로딩 중…',ready:false});setLayers([]);setRenderer(value);
+    setState({status:'도면 로딩 중…',ready:false});setMetric(null);setLayers([]);setRenderer(value);
     const url=new URL(window.location.href);url.searchParams.set('renderer',value);
     window.history.replaceState(null,'',url);
   }
@@ -28,7 +30,7 @@ export function CadViewer({ versionId, renderer: initialRenderer = 'dxf-viewer' 
       const { DxfViewerAdapter } = await import('@/viewers/dxf-viewer/adapter');
       if (!active || !container.current) throw new DOMException('취소됨','AbortError');
       return new DxfViewerAdapter(container.current!);
-    },source);
+    },source,{renderer,versionId,report:value=>{if(active)setMetric(value);}});
     manager.current = instance;
     instance.load(`/api/cad-files/${versionId}/content`, 'DXF').then(result => {
       if (active) {setState({status:result.empty ? '표시할 도형이 없습니다.' : '도면 표시 완료',ready:!result.empty});setLayers(instance.getLayers());}
@@ -43,12 +45,20 @@ export function CadViewer({ versionId, renderer: initialRenderer = 'dxf-viewer' 
       <Button variant="outline" disabled={!state.ready} onClick={()=>manager.current?.zoomIn()}>확대</Button>
       <Button variant="outline" disabled={!state.ready} onClick={()=>manager.current?.zoomOut()}>축소</Button>
       <Button variant="outline" disabled={!state.ready} onClick={()=>manager.current?.fitToView()}>화면 맞춤</Button>
-      <Button variant="outline" onClick={()=>{source.dispose();setLayers([]);setState({status:'도면 로딩 중…',ready:false});setAttempt(v=>v+1);}}>다시 불러오기</Button>
+      <Button variant="outline" onClick={()=>{source.dispose();setMetric(null);setLayers([]);setState({status:'도면 로딩 중…',ready:false});setAttempt(v=>v+1);}}>다시 불러오기</Button>
     </div>
     {layers.length>0 && state.ready && <div className="flex flex-wrap gap-4 text-sm" aria-label="Layer 목록">{layers.map(name=><label key={`${attempt}-${name}`}><input type="checkbox" defaultChecked onChange={event=>manager.current?.showLayer(name,event.target.checked)}/>{name}</label>)}</div>}
     <div ref={container} data-testid="cad-canvas" className="h-[65vh] min-h-96 overflow-hidden rounded-xl bg-black" aria-label="DXF 도면"/>
     <p role="status" className="text-sm text-slate-600">{state.status}</p>
     {state.error && <p role="alert" className="text-sm text-red-700">{state.error}</p>}
+    {metric && <div className="rounded border border-slate-200 bg-white p-4 text-sm">
+      <div className="flex flex-wrap items-center gap-4"><span>전체 {metric.totalMs.toFixed(1)} ms</span><span>도면 처리 {metric.adapterLoadMs?.toFixed(1)??'—'} ms</span><span>첫 화면 관찰 {metric.firstDisplayMs?.toFixed(1)??'—'} ms</span><span>원본 {metric.sourceMode==='memory'?'메모리 재사용':metric.sourceMode==='pending'?'다운로드 공유':'새로 받음'}</span>
+      <Button variant="outline" size="sm" onClick={()=>{
+        const url=URL.createObjectURL(new Blob([JSON.stringify(metric,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=`cad-metrics-${renderer}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),0);
+      }}>측정 JSON 저장</Button></div>
+      <p className="mt-2 text-xs text-slate-500">도면 처리는 파싱·글꼴·화면 준비를 포함합니다. 순수 파싱 시간과 GPU 메모리는 별도 측정하지 않습니다.</p>
+      <details className="mt-2"><summary className="cursor-pointer text-xs">측정 상세</summary><pre data-testid="viewer-metric" className="mt-2 overflow-auto text-xs">{JSON.stringify(metric,null,2)}</pre></details>
+    </div>}
     <p className="text-xs text-slate-500">마우스 드래그로 이동 · 휠로 확대/축소. 한글 기본 글꼴을 사용합니다. 원본 글꼴·문자 인코딩·일부 Entity·선종·치수에 따라 CAD 원본과 다르게 표시될 수 있습니다.</p>
   </div>;
 }

@@ -1,6 +1,6 @@
 {
   "name": "cad-layout-viewer",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -11,6 +11,7 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "test:benchmark": "playwright test --config playwright.benchmark.config.ts",
     "db:generate": "node scripts/run.mjs generate",
     "db:deploy": "node scripts/run.mjs deploy",
     "db:migrate": "node scripts/run.mjs migrate",

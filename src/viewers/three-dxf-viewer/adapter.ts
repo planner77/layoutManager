@@ -78,7 +78,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
       this.object=object;this.scene.add(object);this.bounds.setFromObject(object);
       if(!this.bounds.isEmpty() && ![...this.bounds.min.toArray(),...this.bounds.max.toArray()].every(Number.isFinite)) throw new Error('유효하지 않은 도형 좌표');
       this.fitToView();this.render();
-      return {empty:this.bounds.isEmpty()};
+      return {empty:this.bounds.isEmpty(),entityCount:viewer.lastDXF?.entities?.length};
     } catch(error) {
       if(error instanceof DOMException && error.name==='AbortError') throw error;
       throw new Error('DXF 처리에 실패했습니다. 파일과 글꼴 로드를 확인해주세요.');

@@ -19,6 +19,7 @@ build/
 coverage/
 playwright-report/
 test-results/
+benchmark-results/
 *.tsbuildinfo
 *.log
 *.dump

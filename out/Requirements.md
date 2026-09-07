@@ -32,7 +32,7 @@ P0=필수, P1=가능한 범위 구현 또는 지원 여부 평가. `PLANNED`=미
 | FR-VIEWER-004 | DXF Viewer 전환 | P0 | 페이지 전체 reload 없이 같은 Version을 양방향 전환하고 이전 자원을 해제한다 | TC-SWITCH-001, TC-SWITCH-002 | viewers/core + cad-viewer / VERIFIED (U6-20260908) |
 | FR-VIEWER-005 | DWG 전용 처리 | P0 | libredwg-web WASM으로 직접 DWG를 읽어 표시하고 DXF Viewer 선택 및 DXF 변환 경로가 없다 | TC-DWG-001, TC-DWG-002 | viewers/libredwg-web / PLANNED; ADR-004 확인 대기 |
 | FR-VIEWER-006 | 기본 탐색 기능 | P0 | 표시·Zoom ±·Pan·Fit·Resize·재초기화·Dispose 각각을 구현하거나 미지원 근거를 기록한다 | TC-VIEW-002, TC-VIEW-003 | adapters / IN_PROGRESS (dxf-viewer 기본 탐색 검증) |
-| FR-VIEWER-007 | 확장 기능 평가 | P1 | Layer 조회/On-Off·Hover·Select·Entity 정보·Snap을 Viewer별 실제 지원/부분/미지원/미검증으로 구분한다 | TC-CAP-001 | adapters, TestReport / PLANNED |
+| FR-VIEWER-007 | 확장 기능 평가 | P1 | Layer 조회/On-Off·Hover·Select·Entity 정보·Snap을 Viewer별 실제 지원/부분/미지원/미검증으로 구분한다 | TC-CAP-001 | adapters, TestReport / IN_PROGRESS (합성 LINE 비교, 실도면 미검증) |
 | FR-VIEWER-008 | WASM 생명주기 | P0 | 초기화·반복 Load·재진입·Memory 해제·Dispose·Browser 호환성과 오류를 검증한다 | TC-DWG-003, TC-DWG-004 | libredwg adapter / PLANNED |
 | FR-ERROR-001 | 사용자 오류 처리 | P0 | 미지원 파일, Upload/DB/Storage 실패, 파일 없음, Parse/초기화/WASM 실패, 손상 DXF/DWG, 미지원 Entity를 구분하고 stack trace를 노출하지 않는다 | TC-ERR-001 | app/features / IN_PROGRESS; 관리 기능 및 dxf-viewer 검증, 나머지 Viewer 후속 |
 | FR-UI-001 | 업무용 데스크톱 UI | P0 | 목록·등록·위치 상세·Viewer 제공; 검색/Current 식별, Metadata sidebar, Viewer 선택, 상태/크기/시간 표시 | TC-UI-001, TC-E2E-001 | app/features / IN_PROGRESS; 관리 기능 및 dxf-viewer 검증, 나머지 Viewer 후속 |
@@ -47,10 +47,10 @@ P0=필수, P1=가능한 범위 구현 또는 지원 여부 평가. `PLANNED`=미
 | NFR-SEC-001 | 파일 경로 보호 | P0 | traversal·경로 형태 ID·조작된 저장 키·저장 루트 밖 symlink를 차단한다 | TC-SEC-001 | storage / PLANNED |
 | NFR-SEC-002 | Secret·원본 비추적 | P0 | .env 및 Credential·업로드 CAD·Runtime DB·Build/cache가 commit/push 대상과 응답/log에서 제외된다 | TC-BOOT-002, TC-SEC-002 | ignore, tooling / IN_PROGRESS |
 | NFR-CONFIG-001 | 환경 설정 | P0 | 기존 Git 변수명을 유지하고 DB/Storage/Upload 제한은 앱 전용 설정으로 분리한다 | TC-BOOT-004 | config / PLANNED |
-| NFR-PERF-001 | Viewer 성능 측정 | P1 | 성공/실패·load/parse/최초 표시·size·entity·error·browser를 기록하고 측정 불가 값은 사유와 null로 표시한다 | TC-MET-001 | viewer metrics / PLANNED |
-| NFR-PERF-002 | 대형 파일·자원 평가 | P1 | 동일 조건 반복 측정, console 오류·memory·zoom/pan 반응성·반복 전환 자원 추세를 정량/정성으로 구분한다 | TC-MET-002, TC-SWITCH-002 | TestReport / PLANNED |
+| NFR-PERF-001 | Viewer 성능 측정 | P1 | 성공/실패·load/parse/최초 표시·size·entity·error·browser를 기록하고 측정 불가 값은 사유와 null로 표시한다 | TC-MET-001 | viewers/core/metrics + UI / VERIFIED (가능 지표, U8A-20260908) |
+| NFR-PERF-002 | 대형 파일·자원 평가 | P1 | 동일 조건 반복 측정, console 오류·memory·zoom/pan 반응성·반복 전환 자원 추세를 정량/정성으로 구분한다 | TC-MET-002, TC-SWITCH-002 | TestReport / IN_PROGRESS (합성 LINE 비교, 실도면 미검증) |
 | NFR-FIDELITY-001 | 실제 Entity 충실도 | P0 | 제공된 Sample의 대상 Entity별 비교 근거·문제·미검증 사유를 기록한다 | TC-CAD-001 | manual evaluation / PLANNED |
-| NFR-EVAL-001 | 세 기술 최종 평가 | P0 | 장단점·성능·지원/문제 Entity·대형 파일·발견 문제를 평가하고 DXF 비교와 DWG 평가를 분리한다 | TC-EVAL-001 | TestReport / PLANNED |
+| NFR-EVAL-001 | 세 기술 최종 평가 | P0 | 장단점·성능·지원/문제 Entity·대형 파일·발견 문제를 평가하고 DXF 비교와 DWG 평가를 분리한다 | TC-EVAL-001 | TestReport / IN_PROGRESS (합성 LINE 비교, 실도면 미검증) |
 | NFR-TEST-001 | 단위 개발·회귀 | P0 | DB 핵심 규칙/API/Adapter 자동화 및 최소 DXF E2E, 필요한 실도면 수동 확인; 실패 미해결 시 다음 Unit 금지 | TC-E2E-001, TC-E2E-002, TC-REL-001 | tests / PLANNED |
 | GOV-BOOT-001 | 구현 전 Bootstrap | P0 | Workspace/Git/.env 안전 조사, AGENTS/README/8종 out 문서, Unit/AC/TC 작성 후 계획 확인 전 코드 미구현 | TC-BOOT-001 | docs / IN_PROGRESS; BOOT-20260907-01 정적 검사 PASS, 계획 확인 대기 |
 | GOV-DOC-001 | 문서 최신성·추적 | P0 | Schema는 Database가 기준, 관련 변경마다 README/상세문서/Requirement→Implementation→TC→Result 갱신 | TC-DOC-001 | docs / IN_PROGRESS |

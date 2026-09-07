@@ -102,3 +102,15 @@ Added: 제한된 multipart streaming, DXF/DWG 등록·SHA-256·원본 조회·Cu
 - Version 수명의 원본 다운로드 공유, Adapter별 독립 bytes, 명시적 재다운로드.
 - 지연 다운로드/빠른 선택/10회 전환 및 Worker/Blob/WebGL cleanup 시험.
 - 실제 결과는 TestReport U6-20260908 참조. DB Schema/의존 라이브러리 변경 없음. 다음 Unit 8A.
+
+## 0.8.0 — 2026-09-08
+
+### Added
+
+- Viewer 단계별 측정/결과/Browser/파일 크기/선택적 Entity·heap 정보 및 JSON export.
+- 생성 LINE 크기별 cold/warm 반복 benchmark와 개별 JSONL 결과.
+- 누락 사이트 아이콘으로 발생하던 Console 404 수정.
+
+### Tests / Known Issues
+
+- 최종 값과 통과 수는 TestReport U8A-20260908 참조. 순수 parse·GPU memory·전체 Entity fidelity·업무 실도면 적합성 미검증. 기존 npm high 4 유지. DB Schema/외부 dependency 변경 없음.

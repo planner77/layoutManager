@@ -1,5 +1,118 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U8A-20260908 — 계측 및 합성 도면 비교 0.8.0
+
+- Source: 이 결과를 포함한 `feat(metrics)` 커밋 snapshot. Type Check/Lint/Production Build 통과. DB Schema 및 기존 library version 변경 없음.
+- 로컬 3100을 0.8.0으로 재시작하고 홈/아이콘 HTTP 200을 확인했다. 커밋 후보 87개 Secret/런타임 제외 검사 위반 0. 원본 CAD/Runtime DB/benchmark JSONL을 커밋하지 않고, 측정값 및 출처는 이 보고서에 보존했다.
+- 자동 테스트 38 passed / 0 failed. 성공/빈 도면/오류/취소, 원본 재사용과 stage/null 사유를 검증했다. E2E 11 passed / 0 failed (42.1초), JSON 다운로드 내용과 현재 renderer/source 상태 일치 포함.
+- 최종 benchmark 30 cold/warm 쌍 = 60개 측정. 3가지 LINE 개수 × 2 Viewer × cold/warm × 각 5회. 모든 Load 성공, Console error/pageerror 0. 이는 합성 fixture 기능 검증이며 성능 SLA 합격 판정이 아니다.
+- 예비 실행은 favicon.ico 404 때문에 9 failed/1 interrupted/20 not run으로 중단했다. 실제 trace에서 누락 아이콘 요청을 확인하고 app/icon.svg를 추가했다. 예비 값은 아래 최종 결과에서 제외했다. 별도 benchmark 설정의 TypeScript union 처리 오류도 수정 후 검사 통과했다.
+- 환경: Linux x64, Intel Core Ultra 7 255H, logical CPU 16, OS 보고 RAM 15 GiB. Node 22.14.0, Playwright 1.63.0, Chromium 145.0.0.0 (cache 1208), SwiftShader, 1440×1000, DPR 1, worker 1. 개발 환경의 공유 장비이며 전용 무부하 장비가 아니다.
+- cold=새 Browser context 첫 열기(프로세스/OS cache까지 초기화한 것은 아님), warm=같은 Version에서 다른 Viewer 경유 후 원래 Viewer 복귀(memory source+Browser/module/font cache). 시작 시간은 Manager.load부터이며 HTML navigation 전체 시간은 포함하지 않는다.
+- 전체=최종 결과 시점, 처리=Adapter Load(bytes 복사/파싱/준비/글꼴/렌더링 통합), 첫 화면=성공 draw 후 rAF callback 관찰(GPU present 보장 아님). 확대=버튼 click 실행→다음 rAF 관찰. 실제 입력 장치 latency를 포함하지 않는다.
+- pure parse는 두 Viewer 모두 null+사유. dxf Entity count는 null, three는 100/10,000/100,000 확인. 표 LINE 수는 fixture 생성 수이며 API 계측과 구분한다. heap은 비표준 usedJSHeapSize snapshot이며 GPU/WASM/전체 process memory가 아니다.
+- 같은 도면 크기·SHA-256은 아래 표와 생성 코드 metrics.benchmark.ts로 재현한다. 최대 도면도 약 5 MB로 10 MiB 초과 대형 파일은 NOT RUN. LINE만으로 TEXT/BLOCK/HATCH 등 실제 도면 복잡도를 대표하지 않는다.
+- 상세 원시 JSONL은 Git 제외 src/benchmark-results/measurements.jsonl. 아래 개별 시간/heap과 sample hash를 보존한다. 재현 명령: Production Build 후 PLAYWRIGHT_CHROMIUM_EXECUTABLE 지정 npm --prefix src run test:benchmark.
+
+### 합성 Sample
+
+| LINE 수 | bytes | SHA-256 |
+| --- | --- | --- |
+| 100 | 4716 | 6208373070888c0e04d919cf55129e09d839b7626c20c6152752f9c90f76a565 |
+| 10000 | 487836 | b2c022d058d1dd3612732faefe8ebcf662c289571be1305f4948d643aa0d73b4 |
+| 100000 | 5058036 | 58211f0609a2aefb9439df7c09b0c0db45417f054807b473c3882021d814b08a |
+
+### 5회 요약 (시간 ms, heap MiB)
+
+| LINE | Viewer | 조건 | 전체 median [min–max] | 처리 median | 첫 화면 median | 확대 median | heap median |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 100 | dxf-viewer | cold | 479.6 [308.1–590.1] | 178.0 | 479.6 | 1.1 | 11.9 |
+| 100 | dxf-viewer | warm | 255.9 [234.3–363.7] | 199.8 | 255.9 | 1.6 | 14.3 |
+| 100 | three-dxf-viewer | cold | 1440.3 [1101.3–1540.6] | 1232.9 | 1440.2 | 1.8 | 62.0 |
+| 100 | three-dxf-viewer | warm | 439.9 [389.5–499.3] | 393.5 | 439.9 | 19.2 | 64.9 |
+| 10000 | dxf-viewer | cold | 498.8 [406.5–583.4] | 276.7 | 498.8 | 5.4 | 13.0 |
+| 10000 | dxf-viewer | warm | 406.3 [352.3–702.1] | 362.0 | 406.3 | 0.8 | 50.0 |
+| 10000 | three-dxf-viewer | cold | 1414.2 [1390.8–1487.0] | 1233.5 | 1414.2 | 422.1 | 99.6 |
+| 10000 | three-dxf-viewer | warm | 621.0 [542.2–719.6] | 579.7 | 621.0 | 582.3 | 101.1 |
+| 100000 | dxf-viewer | cold | 918.3 [864.9–1364.9] | 672.2 | 918.3 | 191.7 | 22.0 |
+| 100000 | dxf-viewer | warm | 656.8 [633.7–820.3] | 618.5 | 656.8 | 143.3 | 295.4 |
+| 100000 | three-dxf-viewer | cold | 3338.8 [3265.8–3899.1] | 3108.0 | 3338.8 | 5299.9 | 375.9 |
+| 100000 | three-dxf-viewer | warm | 3167.0 [2764.5–4000.6] | 3123.3 | 3167.0 | 5488.1 | 386.4 |
+
+### 개별 결과 (시간 ms, heap MiB)
+
+| LINE | Viewer | 조건/회차 | source 대기 | 초기화 | 처리 | 첫 화면 | 전체 | 확대 | heap |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 100 | dxf-viewer | cold/1 | 81.4 | 330.7 | 177.9 | 590.1 | 590.1 | 0.9 | 12.4 |
+| 100 | dxf-viewer | warm/1 | 0.2 | 54.9 | 199.8 | 255.9 | 255.9 | 12.6 | 14.4 |
+| 100 | dxf-viewer | cold/2 | 26.1 | 105.1 | 178.0 | 309.4 | 309.4 | 0.8 | 13.5 |
+| 100 | dxf-viewer | warm/2 | 0.1 | 57.3 | 176.1 | 234.3 | 234.3 | 1.4 | 14.3 |
+| 100 | dxf-viewer | cold/3 | 36.1 | 100.9 | 170.9 | 308.1 | 308.1 | 17.5 | 11.8 |
+| 100 | dxf-viewer | warm/3 | 0.1 | 49.1 | 199.7 | 249.6 | 249.6 | 1.6 | 14.3 |
+| 100 | dxf-viewer | cold/4 | 27.7 | 219.7 | 231.9 | 479.6 | 479.6 | 1.1 | 11.9 |
+| 100 | dxf-viewer | warm/4 | 0.1 | 62.7 | 277.9 | 342.0 | 342.0 | 4.2 | 14.5 |
+| 100 | dxf-viewer | cold/5 | 38.4 | 257.2 | 237.6 | 533.3 | 533.3 | 8.5 | 11.8 |
+| 100 | dxf-viewer | warm/5 | 0.2 | 43.5 | 319.8 | 363.7 | 363.7 | 0.6 | 14.3 |
+| 100 | three-dxf-viewer | cold/1 | 20.7 | 174.5 | 1343.9 | 1540.6 | 1540.6 | 1.8 | 61.9 |
+| 100 | three-dxf-viewer | warm/1 | 0.2 | 44.9 | 402.1 | 448.2 | 448.2 | 18.4 | 79.6 |
+| 100 | three-dxf-viewer | cold/2 | 20.5 | 166.5 | 1252.0 | 1440.2 | 1440.3 | 3.7 | 62.0 |
+| 100 | three-dxf-viewer | warm/2 | 0.2 | 49.4 | 449.5 | 499.3 | 499.3 | 19.2 | 64.9 |
+| 100 | three-dxf-viewer | cold/3 | 15.2 | 152.2 | 1118.8 | 1287.2 | 1287.2 | 1.4 | 62.0 |
+| 100 | three-dxf-viewer | warm/3 | 0.1 | 45.6 | 393.5 | 439.9 | 439.9 | 17.8 | 64.9 |
+| 100 | three-dxf-viewer | cold/4 | 56.9 | 202.1 | 1232.9 | 1493.0 | 1493.0 | 13.1 | 60.3 |
+| 100 | three-dxf-viewer | warm/4 | 0.2 | 43.7 | 349.4 | 393.8 | 393.9 | 19.3 | 64.9 |
+| 100 | three-dxf-viewer | cold/5 | 31.1 | 122.8 | 946.4 | 1101.3 | 1101.3 | 1.4 | 62.0 |
+| 100 | three-dxf-viewer | warm/5 | 0.2 | 36.3 | 352.2 | 389.5 | 389.5 | 32.1 | 64.9 |
+| 10000 | dxf-viewer | cold/1 | 28.7 | 130.2 | 247.3 | 406.4 | 406.5 | 30.0 | 14.6 |
+| 10000 | dxf-viewer | warm/1 | 0.3 | 155.6 | 546.0 | 702.1 | 702.1 | 0.8 | 50.2 |
+| 10000 | dxf-viewer | cold/2 | 35.8 | 216.7 | 246.2 | 498.8 | 498.8 | 6.3 | 13.0 |
+| 10000 | dxf-viewer | warm/2 | 0.2 | 51.6 | 380.2 | 432.2 | 432.2 | 0.8 | 50.1 |
+| 10000 | dxf-viewer | cold/3 | 39.1 | 201.5 | 342.6 | 583.4 | 583.4 | 1.0 | 12.8 |
+| 10000 | dxf-viewer | warm/3 | 0.2 | 39.6 | 336.2 | 376.2 | 376.2 | 0.7 | 50.0 |
+| 10000 | dxf-viewer | cold/4 | 32.3 | 161.8 | 292.8 | 487.1 | 487.1 | 5.4 | 13.0 |
+| 10000 | dxf-viewer | warm/4 | 0.1 | 44.0 | 362.0 | 406.3 | 406.3 | 0.6 | 50.0 |
+| 10000 | dxf-viewer | cold/5 | 45.1 | 213.2 | 276.7 | 535.3 | 535.3 | 1.1 | 12.8 |
+| 10000 | dxf-viewer | warm/5 | 0.3 | 43.5 | 308.3 | 352.3 | 352.3 | 61.3 | 49.0 |
+| 10000 | three-dxf-viewer | cold/1 | 25.8 | 121.7 | 1241.8 | 1390.8 | 1390.8 | 639.2 | 99.6 |
+| 10000 | three-dxf-viewer | warm/1 | 0.2 | 34.4 | 507.4 | 542.2 | 542.2 | 460.1 | 101.4 |
+| 10000 | three-dxf-viewer | cold/2 | 42.3 | 149.1 | 1294.5 | 1487.0 | 1487.0 | 480.9 | 67.8 |
+| 10000 | three-dxf-viewer | warm/2 | 0.1 | 43.5 | 616.3 | 660.1 | 660.1 | 729.7 | 101.1 |
+| 10000 | three-dxf-viewer | cold/3 | 35.6 | 156.3 | 1221.1 | 1414.2 | 1414.2 | 422.1 | 100.0 |
+| 10000 | three-dxf-viewer | warm/3 | 0.0 | 41.1 | 579.7 | 621.0 | 621.0 | 450.7 | 101.1 |
+| 10000 | three-dxf-viewer | cold/4 | 32.2 | 124.2 | 1233.5 | 1391.3 | 1391.3 | 418.7 | 99.6 |
+| 10000 | three-dxf-viewer | warm/4 | 0.1 | 44.8 | 573.7 | 618.8 | 618.8 | 603.0 | 101.0 |
+| 10000 | three-dxf-viewer | cold/5 | 28.4 | 160.0 | 1228.7 | 1418.2 | 1418.2 | 394.4 | 99.9 |
+| 10000 | three-dxf-viewer | warm/5 | 0.2 | 62.8 | 656.4 | 719.6 | 719.6 | 582.3 | 101.1 |
+| 100000 | dxf-viewer | cold/1 | 88.4 | 187.7 | 692.3 | 968.5 | 968.5 | 191.7 | 21.9 |
+| 100000 | dxf-viewer | warm/1 | 0.2 | 38.3 | 765.6 | 804.2 | 804.2 | 310.9 | 360.3 |
+| 100000 | dxf-viewer | cold/2 | 87.5 | 158.4 | 672.2 | 918.3 | 918.3 | 204.5 | 22.0 |
+| 100000 | dxf-viewer | warm/2 | 0.2 | 44.5 | 775.5 | 820.3 | 820.3 | 336.6 | 24.7 |
+| 100000 | dxf-viewer | cold/3 | 115.9 | 249.0 | 999.8 | 1364.9 | 1364.9 | 325.7 | 22.0 |
+| 100000 | dxf-viewer | warm/3 | 0.3 | 38.7 | 610.0 | 649.2 | 649.2 | 143.3 | 295.3 |
+| 100000 | dxf-viewer | cold/4 | 82.3 | 160.1 | 622.4 | 864.9 | 864.9 | 70.5 | 22.0 |
+| 100000 | dxf-viewer | warm/4 | 0.2 | 38.0 | 618.5 | 656.8 | 656.8 | 74.5 | 310.4 |
+| 100000 | dxf-viewer | cold/5 | 80.0 | 159.9 | 648.5 | 888.5 | 888.5 | 52.3 | 21.8 |
+| 100000 | dxf-viewer | warm/5 | 0.2 | 30.7 | 602.7 | 633.6 | 633.7 | 0.8 | 295.4 |
+| 100000 | three-dxf-viewer | cold/1 | 85.9 | 162.4 | 3089.3 | 3338.8 | 3338.8 | 5696.8 | 382.3 |
+| 100000 | three-dxf-viewer | warm/1 | 0.2 | 59.4 | 3940.7 | 4000.6 | 4000.6 | 7435.4 | 382.5 |
+| 100000 | three-dxf-viewer | cold/2 | 158.5 | 178.9 | 3560.4 | 3899.1 | 3899.1 | 5380.8 | 371.8 |
+| 100000 | three-dxf-viewer | warm/2 | 0.1 | 41.6 | 2722.1 | 2764.5 | 2764.5 | 5192.8 | 386.4 |
+| 100000 | three-dxf-viewer | cold/3 | 100.2 | 203.6 | 2960.5 | 3265.8 | 3265.8 | 4600.7 | 380.6 |
+| 100000 | three-dxf-viewer | warm/3 | 0.1 | 43.1 | 3123.3 | 3167.0 | 3167.0 | 5488.1 | 390.2 |
+| 100000 | three-dxf-viewer | cold/4 | 61.8 | 144.4 | 3108.0 | 3315.9 | 3315.9 | 5299.9 | 373.7 |
+| 100000 | three-dxf-viewer | warm/4 | 0.2 | 14.1 | 3214.7 | 3229.8 | 3229.8 | 5866.8 | 391.2 |
+| 100000 | three-dxf-viewer | cold/5 | 69.8 | 143.2 | 3410.1 | 3624.5 | 3624.5 | 5115.7 | 375.9 |
+| 100000 | three-dxf-viewer | warm/5 | 0.1 | 45.7 | 2927.6 | 2974.3 | 2974.3 | 5398.9 | 383.3 |
+
+### 해석 및 잔여 평가
+
+- LINE 100,000 cold에서 전체 median은 dxf 918.3 ms / three 3338.8 ms, 확대→rAF는 191.7 / 5299.9 ms였다. 이 합성·SwiftShader 조건에서 three의 높은 draw-call 비용을 추가 조사할 근거가 된다. GPU present를 측정하지 않았으므로 원인 확정이나 업무 SLA 판단은 아니다.
+- warm JS heap은 같은 document에서 직전에 실행한 다른 Viewer의 bundle·객체·GC 상태도 포함한다. 이를 해당 Adapter 단독 메모리 사용량이나 증분으로 비교하면 안 된다.
+- 본 실행에서 dxf-viewer와 three-dxf-viewer의 통합 처리/heap/확대 관찰 값을 비교할 수 있다. 한글 JSON을 항상 읽는 three와 TEXT 없는 경우 font를 지연 로드하는 dxf의 초기 비용 차이도 포함되므로 이를 순수 parser 성능 차이로 해석하지 않는다.
+- 확대 값은 합성 LINE 배치의 참고치이며 Pan 사용성/장시간 상호작용·실제 GPU 입력 latency의 정량 검증은 남는다. Unit 6의 자원 계수 시험과 이 heap snapshot만으로 memory leak 부재를 선언하지 않는다.
+- POLYLINE/LWPOLYLINE/ARC/BLOCK/INSERT/MTEXT/DIMENSION/HATCH/SPLINE/Linetype와 업무 실도면 fidelity는 NOT RUN. 기존 LINE/CIRCLE/한글 TEXT 및 Layer 기본 시험은 U4/U5 참조. 업무 SLA와 실도면 미제공으로 사업장 적용성 판정은 보류한다.
+- 기존 npm high 4, three 메인 스레드 parse/전역 material cache/약 25.8 MB font JSON 제약 유지. 계측 UI·harness 완료와 전체 P.O.C. 검증 완료를 구분한다. 다음 Unit 9A DXF 통합·회귀/릴리스 검증.
+
 ## U6-20260908 — 새로고침 없는 전환 0.7.0
 
 - Source: 이 기록을 포함하는 `feat(viewer)` 커밋 snapshot. DB Schema/의존 라이브러리 변경 없음. UI renderer 버튼, ViewerSource, Manager와 관련 문서/시험 변경.

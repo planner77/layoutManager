@@ -127,3 +127,11 @@ WebGL 사용 가능한 데스크톱 Browser가 필요하다. 초기화 실패는
 전환하면 카메라/Layer 선택은 초기화된다. 같은 화면에서의 원본 다운로드는 재사용하며 **다시 불러오기**는 원본을 다시 받는다. 읽기 실패 후 재시도할 수 있다. DWG는 이 선택 UI를 제공하지 않는다.
 
 이전 Unit 5 절의 전체 페이지 링크 설명은 당시 동작이다. 현재 동작은 본 절을 기준으로 한다. 통합 검증 시 등록 데이터·메타데이터는 그대로 유지하고 generated test fixture를 사용한다.
+
+## Unit 8A — 측정 및 재현
+
+- 도면 하단 측정 상세와 JSON 저장을 이용한다. sourceWait는 실제 network fetch만이 아니라 공유 Promise 대기/메모리 반환을 포함한다. renderer 전환 시 새 기록, 명시적 다시 불러오기는 miss로 다시 측정한다.
+- Root에서 Build 후 `npm --prefix src run test:benchmark` 실행. Chromium 설치/PLAYWRIGHT_CHROMIUM_EXECUTABLE은 기존 E2E와 같다. 같은 3101 테스트 포트를 쓰므로 E2E/benchmark를 동시에 실행하지 않는다. 운영 DB는 사용하지 않는다.
+- 매 benchmark 시작 때 benchmark-results가 새 실행용으로 정리된다. 보존할 JSONL은 실행 전 별도로 복사한다. 결과는 각 도면·Viewer마다 새 Browser context(cold), 다른 Viewer 경유 후 같은 renderer로 복귀한 warm(memory source 재사용) 각 5회이다. warm에는 Browser/module/font cache도 영향을 준다.
+- 100/10,000/100,000 LINE 반복 생성은 Entity 수를 통제하기 위한 합성 부하이다. 실도면 텍스트/블록/치수/HATCH 조합과 같지 않다. actual byte 수로 크기를 분류하고 브라우저·장비·GPU·동시 부하와 함께 해석한다. 단일 종합 점수로 기술 우열을 단정하지 않는다.
+- Console/pageerror는 benchmark가 별도 수집한다. 앱의 모든 Console을 전역 가로채거나 사용자 CAD 내용을 수집하지 않는다. 앱 JSON의 error는 일반화된 오류이다.

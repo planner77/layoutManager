@@ -3,6 +3,8 @@ export class ViewerSource {
   private url?: string;
   private pending?: Promise<ArrayBuffer>;
   private abort?: AbortController;
+  private complete=false;
+  state(url:string):'miss'|'pending'|'memory' {return this.url!==url||!this.pending?'miss':this.complete?'memory':'pending';}
   read(url:string): Promise<ArrayBuffer> {
     if(this.url===url && this.pending)return this.pending;
     this.dispose();this.url=url;
@@ -11,11 +13,12 @@ export class ViewerSource {
       if(!response.ok)throw new Error(response.status===404?'CAD 원본 파일을 찾을 수 없습니다.':'CAD 원본을 불러오지 못했습니다.');
       const bytes=await response.arrayBuffer();
       if(abort.signal.aborted)throw new DOMException('취소됨','AbortError');
+      this.complete=true;
       return bytes;
     });
     this.pending=pending;
     void pending.catch(()=>{if(this.pending===pending){this.pending=undefined;this.url=undefined;}});
     return pending;
   }
-  dispose() {this.abort?.abort();this.abort=undefined;this.pending=undefined;this.url=undefined;}
+  dispose() {this.abort?.abort();this.abort=undefined;this.pending=undefined;this.url=undefined;this.complete=false;}
 }

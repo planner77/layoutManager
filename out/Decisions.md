@@ -149,3 +149,12 @@
 - Alternatives: 전환마다 fetch, 전역 무제한 CAD cache, 외부 상태관리 추가.
 - Reason / Trade-offs: 동일 bytes 비교와 한 번 다운로드를 보장하며 문서 이탈 시 해제한다. 원본+작업 복사본의 메모리 비용은 허용하고 전역 CAD cache를 만들지 않는다. 시점/Layer 상태 공유는 라이브러리별 좌표 차이 때문에 이번 범위에서 제외한다.
 - Consequences: Unit 6은 lifecycle과 자원 수를 검증하며 대형 도면 성능/heap 추세와 P.O.C. 종합 평가는 Unit 8A에 남는다.
+
+## ADR-016 — 관측 가능한 통합 처리 시간
+
+- Date / Status: 2026-09-08 / 승인된 Unit 8A에서 채택.
+- Context: 두 라이브러리의 parse/preparation/font 구조가 달라 임의 시간을 순수 parse로 비교하면 오해를 만든다.
+- Decision: source/init/adapter 통합 처리/frame 관찰을 공통 측정하고 pure parse는 null+사유. entityCount는 공개 parsed source가 있는 three만 사용, dxf는 미계측. 현재 UI JSON과 독립 benchmark harness로 검증한다.
+- Alternatives: upstream parser 수정, 추정 parse 시간, 별도 모니터링 플랫폼.
+- Reason / Trade-offs: 원본 수정/대규모 의존 추가 없이 재현성을 확보한다. 세부 parse 비교와 dxf Entity count는 남지만 잘못된 정밀도를 제공하지 않는다.
+- Consequences: browser JS heap은 참고 snapshot이며 GPU/전체 누수 보장이 아니다. 실도면/10 MiB 초과 샘플/업무 SLA는 제공된 근거가 없으면 미검증으로 남긴다.

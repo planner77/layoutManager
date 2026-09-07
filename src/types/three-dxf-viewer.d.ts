@@ -3,7 +3,7 @@ declare module 'three-dxf-viewer' {
   export class DXFViewer {
     useCache: boolean;
     layers: Record<string, unknown>;
-    lastDXF: unknown;
+    lastDXF: {entities?:unknown[]};
     getFromPath(path: string, fontPath: string): Promise<Group | null>;
   }
 }
