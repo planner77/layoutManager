@@ -2,7 +2,7 @@
 
 공장·설비의 DXF/DWG 도면을 등록·검색·버전 관리하고, 세 오픈소스 기술의 브라우저 렌더링 적용 가능성을 평가하는 프로젝트입니다.
 
-**현재 버전: 0.4.0 — 등록·목록·검색·버전 관리 지원.** `/cad/upload`에서 DXF/DWG를 등록하면 `/` 목록에서 즉시 확인할 수 있습니다. 위치별 상세에서 버전과 Current를 관리합니다. 실제 버전 기준은 `src/package.json`입니다. DXF Viewer 두 방식부터 구현하고, DWG Viewer는 이후 별도 MINOR 버전으로 진행합니다.
+**현재 버전: 0.5.0 — 등록·목록·버전 관리 및 dxf-viewer 지원.** `/cad/upload`에서 DXF/DWG를 등록하면 `/` 목록에서 즉시 확인할 수 있습니다. 위치별 상세에서 버전과 Current를 관리합니다. 실제 버전 기준은 `src/package.json`입니다. DXF Viewer 두 방식부터 구현하고, DWG Viewer는 이후 별도 MINOR 버전으로 진행합니다.
 
 ## 목표 기능
 
@@ -12,17 +12,17 @@
 - DXF Viewer 두 방식 전환, DWG 전용 경로, 오류·부분 지원·성능 계측.
 - 실도면 Entity 충실도·대형 파일·사용성 비교와 재현 가능한 테스트/문서.
 
-현재 지원: 파일 등록·메타데이터 검증·SHA-256·원본 조회·목록·검색·페이지 이동·Location 상세·Current 변경. 파일명은 대소문자를 구분하는 부분 일치, 위치 네 항목은 정확히 일치하는 조건으로 검색합니다. Viewer는 아직 미구현입니다.
+현재 지원: 파일 등록·메타데이터 검증·SHA-256·원본 조회·목록·검색·페이지 이동·Location 상세·Current 변경. 파일명은 대소문자를 구분하는 부분 일치, 위치 네 항목은 정확히 일치하는 조건으로 검색합니다. DXF 행의 **도면 보기**에서 dxf-viewer를 실행합니다. 확대·축소·드래그 이동·화면 맞춤·Resize·다시 불러오기를 지원합니다. three-dxf-viewer와 DWG Viewer는 후속 단계입니다.
 
 ## 지원 형식과 Viewer 구성 계획
 
 | 형식 | Viewer | 구성 |
 | --- | --- | --- |
-| DXF | dxf-viewer | 전용 Adapter, WebGL Viewer |
+| DXF | dxf-viewer 1.0.48 | 전용 Adapter/Worker, 기본 도형 WebGL 검증 |
 | DXF | three-dxf-viewer | 전용 Adapter, Three.js scene 및 interaction 평가 |
 | DWG | libredwg-web | WASM 파싱 후 Adapter 내부 직접 렌더링 제안, 확인 대기 |
 
-`libredwg-web`은 파서이므로 직접 렌더링 계층이 필요합니다. DWG→DXF 변환은 범위에 포함하지 않습니다. 출처·실제 조사 버전·API 검증 과제는 [Architecture](out/Architecture.md), 선택 근거는 [Decisions](out/Decisions.md)를 참조하세요. 설치 및 실행 검증은 아직 하지 않았습니다.
+`libredwg-web`은 파서이므로 직접 렌더링 계층이 필요합니다. DWG→DXF 변환은 범위에 포함하지 않습니다. 출처·실제 조사 버전·API 검증 과제는 [Architecture](out/Architecture.md), 선택 근거는 [Decisions](out/Decisions.md)를 참조하세요. dxf-viewer는 설치·기본 도형 실행을 검증했으며 나머지 두 라이브러리는 미설치입니다.
 
 ## 기술 Stack와 구조
 
@@ -66,7 +66,7 @@ GitHub remote는 `.env`의 지정 저장소만 사용합니다. 기존 `origin`�
 
 ## 미지원 범위·알려진 제약
 
-CAD 편집/Geometry 변경/저장, DWG→DXF 우회, 별도 검색 엔진·Backend 플랫폼, 사용자/권한 시스템과 공개 운영은 이번 범위에 없습니다. 현재 모든 Viewer 렌더링·성능·Browser 호환성은 미검증이며 실제 도면 Sample과 업무 성능 목표도 제공되지 않았습니다. `libredwg-web` 직접 렌더링 방식은 구현 전 확인 대상입니다. 상세 Known Issue와 시험 상태는 [TestReport](out/TestReport.md)를 기준으로 합니다.
+CAD 편집/Geometry 변경/저장, DWG→DXF 우회, 별도 검색 엔진·Backend 플랫폼, 사용자/권한 시스템과 공개 운영은 이번 범위에 없습니다. dxf-viewer의 LINE/CIRCLE은 Chromium에서 검증했습니다. 기본 글꼴 미제공으로 TEXT/한글이 누락될 수 있습니다. 실도면·대형 파일·다른 Browser·Entity 충실도와 성능은 미검증이며 업무 성능 목표도 제공되지 않았습니다. `libredwg-web` 직접 렌더링 방식은 구현 전 확인 대상입니다. 상세 Known Issue와 시험 상태는 [TestReport](out/TestReport.md)를 기준으로 합니다.
 
 ## 상세 문서
 
@@ -82,7 +82,7 @@ CAD 편집/Geometry 변경/저장, DWG→DXF 우회, 별도 검색 엔진·Backe
 | [Decisions](out/Decisions.md) | 주요 판단·제안·확인 대기 |
 | [ChangeLog](out/ChangeLog.md) | 변경 및 버전 이력 |
 
-다음 구현 단계는 Unit 4 dxf-viewer입니다. 승인된 범위에서는 Unit별 구현→테스트→문서→Commit→필요 시 Push를 반복합니다.
+다음 구현 단계는 Unit 5 three-dxf-viewer입니다. 승인된 범위에서는 Unit별 구현→테스트→문서→Commit→필요 시 Push를 반복합니다.
 
 ## 2026-09-07 실행 순서 변경
 

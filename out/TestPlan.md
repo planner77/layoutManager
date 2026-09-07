@@ -1,6 +1,13 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
-상태: Unit 0–3 검증 완료. GitHub #1 회귀 결과는 U3-20260908에 기록했다. 요구 ID는 [Requirements](Requirements.md), 실행 결과의 기준은 [TestReport](TestReport.md)이다. 여기의 기대 결과는 PASS 기록이 아니다.
+## Unit 4 실행 계획 — 2026-09-08
+
+- 등록 DXF의 원본 ID 경로에서 Browser 전용 Adapter/Manager를 통해 실제 WebGL 표시. DWG는 후속 구현 안내만 표시한다.
+- dxf-viewer 1.0.48 실제 API 기준으로 Worker, Zoom/Pan/Fit, Resize, 재시도/재진입, 취소 및 Dispose를 검증한다. 기본 font 미제공과 실도면 fidelity 미검증을 명시한다.
+- TC-DXF-001: 생성 LINE/CIRCLE fixture 등록→목록→Viewer→canvas의 실제 픽셀 확인, 확대/축소/Fit/Pan/Resize 및 재진입.
+- TC-DXF-002: 손상 DXF 오류와 재시도, 빈 도면 안내. TC-VIEW-001/003: 허용 형식, 늦게 끝난 이전 load 무시, cleanup 자동화.
+
+상태: Unit 0–3 검증 완료, Unit 4 결과는 U4-20260908을 참조한다. GitHub #1 회귀 결과는 U3-20260908에 기록했다. 요구 ID는 [Requirements](Requirements.md), 실행 결과의 기준은 [TestReport](TestReport.md)이다. 여기의 기대 결과는 PASS 기록이 아니다.
 
 ## Unit 구성과 순서
 

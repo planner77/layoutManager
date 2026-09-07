@@ -103,3 +103,11 @@ GitHub #1 원인은 DB 저장 실패가 아니라 홈의 목록 조회 미구현
 코드 갱신 후 `npm --prefix src run build`를 실행하고 기존 Node 서버를 정상 종료한 뒤 `npm --prefix src run start -- --port 3100`으로 재시작한다. DB/file 삭제나 DB reset은 필요 없다. 실행 환경의 DATABASE_URL/CAD_STORAGE_PATH가 등록 당시와 동일한지 확인한다. `/api/cad-files`의 total과 목록을 비교하되 사용자 파일명/원본을 공개 로그에 기록하지 않는다.
 
 회귀 검증: `npm --prefix src test`, Build 후 `npm --prefix src run test:e2e`. 설치된 별도 Chromium이 필요하면 PLAYWRIGHT_CHROMIUM_EXECUTABLE에 절대 실행 경로를 지정한다. 테스트는 운영 DB를 사용하지 않는다.
+
+## DXF Viewer 사용 및 장애 확인
+
+DXF 등록 후 목록 또는 Location 상세의 **도면 보기**를 선택한다. 확대/축소, 마우스 드래그 이동, 휠 zoom, 화면 맞춤과 다시 불러오기를 제공한다. DWG는 원본/버전 관리만 지원한다.
+
+WebGL 사용 가능한 데스크톱 Browser가 필요하다. 초기화 실패는 하드웨어 가속/브라우저 설정을 확인한다. 파싱 실패는 손상·미지원 DXF 또는 Worker 자산 요청 실패를 확인한다. 새 build의 `.next` 전체 자산을 함께 적용하고 서버를 재시작해야 한다. 파싱 Worker는 120초 timeout이며 대형 파일의 적합성은 미검증이다. 빈 도면과 오류를 성공 렌더링으로 혼동하지 않는다.
+
+글꼴 미제공으로 TEXT/한글이 누락될 수 있다. 비교 평가 때 실제 CAD 원본과 대조하고 TestReport에 부분 지원을 기록한다. Console의 upstream parse 오류에는 도면 일부 정보가 들어갈 수 있으므로 공개 로그로 복사하지 않는다.

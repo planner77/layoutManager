@@ -121,3 +121,12 @@
 - Alternatives: 클라이언트 전용 목록 fetch, 별도 검색 엔진.
 - Reason: 기존 Next/SQLite 계층으로 충분하며 검색 엔진 추가가 불필요하다.
 - Trade-offs / Consequences: 파일명은 대소문자를 구분하는 문자 그대로 부분 검색이다. count/rows 일관성을 위해 기존 프로세스 트랜잭션 큐를 공유한다. 단일 프로세스 P.O.C.에 적합하며 고동시성 확장은 별도 평가한다. Schema 변경은 없다.
+
+## ADR-013 — 첫 DXF Adapter와 Worker
+
+- Date / Status: 2026-09-08 / 승인된 Unit 4 범위에서 채택.
+- Context: DOM/WebGL 코드의 SSR 실행을 피하고 이후 두 번째 DXF Viewer를 분리해야 한다.
+- Decision: dxf-viewer 1.0.48 고정, Browser effect의 동적 import 및 bundled Worker, 공통 Manager/Adapter. 라이브러리 소스 수정 없이 public API로 탐색과 정리 구현.
+- Alternatives: 메인 스레드 파싱, 외부 CDN Worker.
+- Reason / Trade-offs: 파싱을 Worker로 분리하고 외부 CDN 의존을 피한다. 취소 시 라이브러리 Worker의 미완료 Promise는 Adapter cancellation과 timeout으로 차단한다. 실도면 메모리 추세는 이후 평가한다.
+- Consequences: 기본 글꼴을 아직 제공하지 않아 TEXT/한글은 제한이 있으며 명시적으로 안내한다. 향후 font/encoding·Layer 지원은 Sample 및 라이선스 검토와 함께 확장한다. 이번 검증을 전문 CAD 수준 충실도 보장으로 해석하지 않는다.

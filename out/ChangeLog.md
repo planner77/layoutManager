@@ -66,3 +66,15 @@ Added: 실제 Prisma migration, 위치 Unique, 소속 검증 복합 FK, Current 
 ## 0.3.0 — 파일 등록
 
 Added: 제한된 multipart streaming, DXF/DWG 등록·SHA-256·원본 조회·Current API, 등록 화면. Fixed: 파일 등록 메뉴 404, multipart 경계/동일 Origin 호스트 비교. Tests: 20 automated + 2 Browser E2E passed, typecheck/lint/build 통과. Known Issues: Viewer/목록은 후속 Unit, Prisma 전이 의존 audit high 4건.
+
+## 0.5.0 — 2026-09-08
+
+### Added
+
+- dxf-viewer 1.0.48 Adapter, Worker, Manager 및 DXF Viewer 경로.
+- 확대/축소/Pan/Fit/Resize, 빈 도면·손상 파일·WebGL 오류, 재시도 및 자원 정리.
+- Manager 생명주기 자동 테스트와 실제 LINE/CIRCLE WebGL E2E.
+
+### Tests / Known Issues
+
+- 실제 최종 결과는 TestReport U4-20260908 참조. TEXT/한글 기본 font 미제공, 실도면 성능/전체 Entity 미검증. three-dxf-viewer와 libredwg-web은 후속 단계. 기존 npm high 4 경고 유지.

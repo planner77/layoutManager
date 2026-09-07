@@ -1,5 +1,19 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U4-20260908 — dxf-viewer 0.5.0
+
+- Source: 이 기록을 포함하는 `feat(viewer)` 커밋 snapshot. dxf-viewer 1.0.48, Three.js 0.161.0, 기존 package/lock 고정. DB Schema 변경 없음.
+- `typecheck`, `lint`, `build`: 최종 exit 0. 최초 테스트 코드의 canvas 타입 오류 수정 후 통과. SSR에서 WebGL 초기화 없이 Worker 자산 포함 Production Build 성공.
+- `npm --prefix src test`: 30 passed / 0 failed, 5개 파일, 8.46초. 이전 26개 회귀 + Manager 형식 제한/늦은 초기화 취소/실패 cleanup/이전 Load 결과 차단 4개.
+- Chromium E2E: 최종 5 passed / 0 failed, 13.1초. 기존 관리 흐름 3개 + DXF 정상/오류 흐름 2개. 최초 실행은 Next route announcer까지 alert로 탐색해 1 failed, main 영역으로 locator를 한정한 뒤 전체 재시험 통과.
+- TC-DXF-001 PASS: 생성한 LINE/CIRCLE DXF 업로드→검색 목록→도면 보기→실제 WebGL 표시. canvas screenshot 변화로 확대/Pan 반응 확인, 축소/Fit 클릭, 1100×800 Resize 후 canvas 크기 일치, 다시 불러오기/재진입 및 canvas 한 개 유지. 정상 경로 pageerror 0. `src/test-results/dxf-render.png`에서 선과 원을 시각 확인했다(Git 제외).
+- TC-DXF-002 PASS: 손상 DXF의 일반화된 처리 실패와 재시도, 빈 DXF의 빈 도면 상태, DWG의 후속 구현 안내 및 canvas 없음. 손상 파일의 upstream console 오류는 예상된 오류이며 정상 렌더링 결과와 구분한다.
+- 환경: Linux, Node 22.14.0, Playwright 1.63.0, Chromium 1208 executable, SwiftShader software WebGL, 독립 임시 DB/Storage. 화면 1440×1000 및 1100×800. 소프트웨어 GPU 결과를 실제 장비 성능으로 일반화하지 않는다.
+- dxf-viewer 평가: 기본 LINE/CIRCLE 표시·Zoom/Pan/Fit/Resize/재진입 확인. 장점은 public API/Worker 기반 통합 및 내장 탐색. 현재 통합의 제약은 기본 font 미제공(TEXT/한글 누락 가능), Layer/Select/Hover/Snap UI 미제공. 실도면 Entity 충실도, parse/first-display 수치, memory/GPU 누수 추세 및 대형 파일은 NOT RUN. 해당 성능/평가는 Unit 8A 및 실제 Sample에서 진행한다.
+- 라이브러리 원본 수정 없음. Adapter에서 Blob URL, Worker 취소, Destroy, WebGL context/canvas 정리를 수행한다. 120초 Worker timeout 경로와 WebGL 생성 불가 환경은 코드 처리 제공, 별도 장애 주입 시험은 NOT RUN.
+- 기존 npm audit high 4 경고 유지. three-dxf-viewer/DWG는 미구현. README·AGENTS·Requirements·Architecture·TestPlan·Operation·Decisions·ChangeLog 갱신. 다음 Unit은 5 three-dxf-viewer이다.
+- 로컬 적용: 3100 서버를 0.5.0으로 정상 재시작하고 HTTP 200, 버전 표시 및 기존 DXF의 도면 보기 링크를 확인했다. 운영 DB/원본은 변경하지 않았다. 커밋 후보 70개 Secret/런타임 검사 위반 0.
+
 ## U3-20260908 — 목록·검색 0.4.0 / GitHub #1
 
 - 대상: 지정 GitHub 저장소의 「도면 목록 미표시 #1」. Source는 이 기록을 포함한 `feat(list)` 커밋 snapshot이다. 원격 반영 결과는 후속 기록을 참조한다.
@@ -99,18 +113,18 @@
 - KI-002(작성자 미설정/최초 Commit·Push 대기)는 해결했다. 실제 지정 branch 쓰기 연결도 확인했다. 다른 branch의 권한까지 확인했다는 뜻은 아니다.
 - 이 결과를 기록하는 후속 문서 Commit은 별도로 생성한다. 최신 Commit과 동기화 상태는 실제 git log/status/remote 조회로 확인한다. 앱 버전은 여전히 없으며 앱 Build/DB/Viewer 시험은 NOT RUN이다.
 
-## Viewer 평가 기준표 — 아직 전부 미검증
+## Viewer 평가 현황 — U4 반영
 
 공식 조사 사실은 Architecture에 있으며 아래 표는 **실제 실행 결과**만 채운다. 단순 라이브러리 문서의 기능 소개를 이 표의 PASS로 옮기지 않는다.
 
 | 항목 | dxf-viewer | three-dxf-viewer | libredwg-web 경로 |
 | --- | --- | --- | --- |
-| 정상 표시 / 기본 Zoom·Pan·Fit | NOT RUN | NOT RUN | NOT RUN |
-| Resize / 재진입 / Dispose | NOT RUN | NOT RUN | NOT RUN |
-| 장점 / 단점 / 발견 문제 | 미평가 | 미평가 | 미평가 |
+| 정상 표시 / 기본 Zoom·Pan·Fit | PASS: 생성 LINE/CIRCLE | NOT RUN | NOT RUN |
+| Resize / 재진입 / Dispose | PASS: U4; 장기 누수 추세 미평가 | NOT RUN | NOT RUN |
+| 장점 / 단점 / 발견 문제 | public API/Worker 통합; 기본 font 미제공 | 미평가 | 미평가 |
 | Layer 조회 / On-Off | NOT RUN | NOT RUN | NOT RUN |
 | Hover / Select / Entity 정보 / Snap | NOT RUN | NOT RUN | NOT RUN |
-| 지원 Entity / 문제 Entity / fidelity | 미평가 | 미평가 | 미평가 |
+| 지원 Entity / 문제 Entity / fidelity | LINE/CIRCLE 확인, 나머지 미평가 | 미평가 | 미평가 |
 | 대형 파일 / 사용성 / Browser | 미평가 | 미평가 | 미평가 |
 | WASM 초기화 / DWG revision / parsing / memory | 해당 없음 | 해당 없음 | NOT RUN |
 
@@ -120,7 +134,7 @@ LINE, POLYLINE, LWPOLYLINE, CIRCLE, ARC, BLOCK, INSERT, TEXT, MTEXT, 한글 TEXT
 
 | File 식별/hash | Format | Viewer/version | File size | Load ms | Parse ms | First display ms | Entity count | Result | Rendering issue | Usability |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Sample 미제공 | DXF | dxf-viewer / 미설치 | — | — | — | — | — | NOT RUN | 미평가 | 미평가 |
+| viewer.spec.ts 생성 fixture | DXF | dxf-viewer 1.0.48 | 코드 fixture 참조 | — | — | — | 미계측 | PASS: 기본 표시 | 선/원 시각 확인 | 기본 탐색 확인 |
 | Sample 미제공 | DXF | three-dxf-viewer / 미설치 | — | — | — | — | — | NOT RUN | 미평가 | 미평가 |
 | Sample 미제공 | DWG | libredwg-web / 미설치 | — | — | — | — | — | NOT RUN | 미평가 | 미평가 |
 

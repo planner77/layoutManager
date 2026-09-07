@@ -17,7 +17,7 @@ export function CadTable({ items, manageCurrent = false }: { items: CadListItem[
           <td className="px-4 py-4"><span className="rounded border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-600">{file.fileFormat}</span></td>
           <td className="px-4 py-4 text-slate-500">{file.registeredAt}</td>
           <td className="px-4 py-4">{file.isCurrent ? <span className="rounded-full bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-700">● Current</span> : <span className="text-xs text-slate-400">이전 버전</span>}</td>
-          <td className="px-4 py-4"><div className="flex items-center gap-3">{manageCurrent ? !file.isCurrent && <CurrentButton locationId={file.locationId} versionId={file.id}/> : <Link href={`/cad/locations/${file.locationId}#version-${file.id}`} className="text-xs font-medium text-teal-700 hover:underline">버전 정보</Link>}<a href={`/api/cad-files/${file.id}/content`} className="text-slate-400 hover:text-teal-700" aria-label={`${file.originalFilename} 원본 다운로드`}><Download size={17}/></a></div></td>
+          <td className="px-4 py-4"><div className="flex items-center gap-3">{file.fileFormat === 'DXF' && <Link href={`/cad/versions/${file.id}/viewer`} className="text-xs font-medium text-teal-700">도면 보기</Link>}{manageCurrent ? !file.isCurrent && <CurrentButton locationId={file.locationId} versionId={file.id}/> : <Link href={`/cad/locations/${file.locationId}#version-${file.id}`} className="text-xs font-medium text-teal-700 hover:underline">버전 정보</Link>}<a href={`/api/cad-files/${file.id}/content`} className="text-slate-400 hover:text-teal-700" aria-label={`${file.originalFilename} 원본 다운로드`}><Download size={17}/></a></div></td>
         </tr>)}
       </tbody>
     </table>

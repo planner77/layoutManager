@@ -15,6 +15,12 @@ function item(row: Row): CadListItem { return { ...row, isCurrent: Boolean(Numbe
 export class CadListRepository {
   constructor(private db: Database) {}
 
+  async version(id: string) {
+    const file = await this.db.cadFileVersion.findUnique({where:{id},select:{id:true,originalFilename:true,fileFormat:true,version:true,fileSize:true,registeredAt:true,location:{select:{id:true,businessUnit:true,site:true,building:true,floor:true}}}});
+    if (!file) throw new CadError('FILE_NOT_FOUND','CAD 파일을 찾을 수 없습니다.',404);
+    return file;
+  }
+
   async list(query: CadListQuery) {
     const conditions: Prisma.Sql[] = [Prisma.sql`1 = 1`];
     // instr treats %, _ and quotes literally; all values remain bound SQL parameters.

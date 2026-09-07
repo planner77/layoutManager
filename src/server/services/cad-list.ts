@@ -5,5 +5,6 @@ export class CadListService {
   constructor(private repository: CadListRepository) {}
   search(params: URLSearchParams) { return this.repository.list(listQuery(params)); }
   options() { return this.repository.options(); }
+  version(id: string) { return this.repository.version(validateId(id)); }
   location(id: string) { return this.repository.location(validateId(id)); }
 }
