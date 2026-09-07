@@ -2,7 +2,7 @@
 
 공장·설비의 DXF/DWG 도면을 등록·검색·버전 관리하고, 세 오픈소스 기술의 브라우저 렌더링 적용 가능성을 평가하는 프로젝트입니다.
 
-**현재 버전: 0.6.0 — 두 DXF Viewer 및 한글 기본 글꼴 지원.** `/cad/upload`에서 DXF/DWG를 등록하면 `/` 목록에서 즉시 확인할 수 있습니다. 위치별 상세에서 버전과 Current를 관리합니다. 실제 버전 기준은 `src/package.json`입니다. DXF Viewer 두 방식부터 구현하고, DWG Viewer는 이후 별도 MINOR 버전으로 진행합니다.
+**현재 버전: 0.7.0 — 새로고침 없는 DXF Viewer 전환 지원.** `/cad/upload`에서 DXF/DWG를 등록하면 `/` 목록에서 즉시 확인할 수 있습니다. 위치별 상세에서 버전과 Current를 관리합니다. 실제 버전 기준은 `src/package.json`입니다. DXF Viewer 두 방식부터 구현하고, DWG Viewer는 이후 별도 MINOR 버전으로 진행합니다.
 
 ## 목표 기능
 
@@ -12,7 +12,7 @@
 - DXF Viewer 두 방식 전환, DWG 전용 경로, 오류·부분 지원·성능 계측.
 - 실도면 Entity 충실도·대형 파일·사용성 비교와 재현 가능한 테스트/문서.
 
-현재 지원: 파일 등록·메타데이터 검증·SHA-256·원본 조회·목록·검색·페이지 이동·Location 상세·Current 변경. 파일명은 대소문자를 구분하는 부분 일치, 위치 네 항목은 정확히 일치하는 조건으로 검색합니다. DXF 행의 **도면 보기**에서 dxf-viewer를 실행합니다. 확대·축소·드래그 이동·화면 맞춤·Resize·다시 불러오기를 지원합니다. Viewer의 다른 방식으로 열기 링크에서 three-dxf-viewer도 사용할 수 있습니다. 현재 전환은 페이지를 다시 여는 방식이며 DWG Viewer는 후속 단계입니다.
+현재 지원: 파일 등록·메타데이터 검증·SHA-256·원본 조회·목록·검색·페이지 이동·Location 상세·Current 변경. 파일명은 대소문자를 구분하는 부분 일치, 위치 네 항목은 정확히 일치하는 조건으로 검색합니다. DXF 행의 **도면 보기**에서 dxf-viewer를 실행합니다. 확대·축소·드래그 이동·화면 맞춤·Resize·다시 불러오기를 지원합니다. Viewer 버튼으로 dxf-viewer와 three-dxf-viewer를 새로고침 없이 전환합니다. 같은 Version의 원본 다운로드를 재사용합니다. DWG Viewer는 후속 단계입니다.
 
 ## 지원 형식과 Viewer 구성 계획
 
@@ -82,7 +82,7 @@ CAD 편집/Geometry 변경/저장, DWG→DXF 우회, 별도 검색 엔진·Backe
 | [Decisions](out/Decisions.md) | 주요 판단·제안·확인 대기 |
 | [ChangeLog](out/ChangeLog.md) | 변경 및 버전 이력 |
 
-다음 구현 단계는 Unit 6 새로고침 없는 DXF Viewer 전환입니다. 승인된 범위에서는 Unit별 구현→테스트→문서→Commit→필요 시 Push를 반복합니다.
+다음 구현 단계는 Unit 8A DXF 성능 계측 및 비교 평가입니다. 승인된 범위에서는 Unit별 구현→테스트→문서→Commit→필요 시 Push를 반복합니다.
 
 ## 2026-09-07 실행 순서 변경
 

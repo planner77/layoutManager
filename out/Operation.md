@@ -119,3 +119,11 @@ WebGL 사용 가능한 데스크톱 Browser가 필요하다. 초기화 실패는
 - `scripts/fonts.mjs`가 고정 Three 0.171 TTFLoader로 `CadKorean.typeface.json`을 생성한다. 파생 typeface의 family/name은 CAD Korean으로 변경하고 원본 저작권/라이선스 정보는 유지한다. JSON은 약 25.8 MB로 TTF보다 크며 초기 전송·메모리 비용이 있다. gzip 및 실제 네트워크 성능 평가는 후속 Unit이다.
 - build/dev 명령이 생성한다. Production 배포에는 `.next`와 public/fonts(생성 JSON 포함)가 모두 필요하다. `.env`나 사용자 CAD를 글꼴 폴더에 넣지 않는다. 다른 font로 교체할 때는 재배포 조건·한글 glyph·두 Viewer 포맷을 확인하고 scripts/Adapter URL/테스트를 함께 갱신한다.
 - 한글 TEXT의 기본 글꼴 표시와 CAD 원본의 font/SHX/MTEXT 서식 재현은 별도이다. CP949 등 인코딩 문제는 font 제공만으로 해결되지 않는다. 현재 ASCII 구조/UTF-8 DXF를 기본 검증하며 binary DXF는 지원 평가 밖이다.
+
+## Unit 6 — DXF 전환 사용법
+
+도면 보기 상단의 dxf-viewer / three-dxf-viewer 버튼으로 같은 Version을 새로고침 없이 전환한다. 선택된 버튼은 비활성 표시이며 URL renderer query가 현재 선택을 반영한다. 재접속 시 해당 query를 초기 선택으로 사용한다. 브라우저 뒤로가기 이력을 매 전환마다 추가하지 않는다.
+
+전환하면 카메라/Layer 선택은 초기화된다. 같은 화면에서의 원본 다운로드는 재사용하며 **다시 불러오기**는 원본을 다시 받는다. 읽기 실패 후 재시도할 수 있다. DWG는 이 선택 UI를 제공하지 않는다.
+
+이전 Unit 5 절의 전체 페이지 링크 설명은 당시 동작이다. 현재 동작은 본 절을 기준으로 한다. 통합 검증 시 등록 데이터·메타데이터는 그대로 유지하고 generated test fixture를 사용한다.

@@ -5,7 +5,7 @@ for (const renderer of ['dxf-viewer','three-dxf-viewer']) test(`TC-DXF/THREE-001
   const response=await request.post('/api/cad-files',{multipart:{file:{name:`viewer-lines-${renderer}.dxf`,mimeType:'application/octet-stream',buffer:Buffer.from(drawing)},businessUnit:'Viewer',site:'render',building:'A',floor:'1',registeredAt:'2026-09-08',makeCurrent:'true'}});
   expect(response.status()).toBe(201); const file=await response.json();
   await page.goto(`/?filename=viewer-lines-${renderer}.dxf`); await page.getByRole('link',{name:'도면 보기',exact:true}).click();
-  if(renderer==='three-dxf-viewer') await page.getByRole('link',{name:'three-dxf-viewer로 열기'}).click();
+  if(renderer==='three-dxf-viewer') await page.getByRole('button',{name:'three-dxf-viewer',exact:true}).click();
   await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
   const canvas=page.locator('canvas');await expect(canvas).toHaveCount(1);
   const initial=await canvas.screenshot();

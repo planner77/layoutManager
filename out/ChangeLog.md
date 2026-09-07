@@ -93,3 +93,12 @@ Added: 제한된 multipart streaming, DXF/DWG 등록·SHA-256·원본 조회·Cu
 - 생략된 Z 좌표로 NaN이 발생하는 설치본의 문제를 Wrapper 보완 및 bounds 검증으로 처리. 서버 원본은 변경하지 않는다.
 - 원본 font/SHX·전체 Entity·복잡한 Layer·MTEXT fidelity/성능 미검증. Hover/Select/Snap UI 미제공, 전역 cache 및 메인 스레드 비용 평가 필요. 기존 npm high 4 유지.
 - 실제 최종 테스트 결과는 U5-20260908 참조. 다음 Unit 6은 새로고침 없는 전환이다.
+
+## 0.7.0 — 2026-09-08
+
+### Added / Changed
+
+- 전체 reload 없는 DXF renderer 버튼 전환, 선택 URL 유지.
+- Version 수명의 원본 다운로드 공유, Adapter별 독립 bytes, 명시적 재다운로드.
+- 지연 다운로드/빠른 선택/10회 전환 및 Worker/Blob/WebGL cleanup 시험.
+- 실제 결과는 TestReport U6-20260908 참조. DB Schema/의존 라이브러리 변경 없음. 다음 Unit 8A.

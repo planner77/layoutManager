@@ -1,5 +1,11 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Unit 6 실행 계획 — 2026-09-08
+
+- 하나의 Version 화면에서 버튼으로 양방향 전환, 문서 navigation 없음. 원본 다운로드는 화면 수명 동안 한 번 공유하고 Adapter별 독립 bytes 복사 제공.
+- TC-SWITCH-001: 실제 두 Viewer 양방향 전환, Version/metadata 유지, HTTP content 1회, URL renderer 반영, canvas 한 개 및 정상 표시.
+- TC-SWITCH-002: 빠른 전환/지연 fetch/이전 load 무시, 재시도, 10회 전환의 context/canvas/Worker/Blob URL 정리. 메모리 정량 검증과 실제 resource 정리 검증을 구분한다.
+
 ## Unit 5 실행 계획 — 2026-09-08
 
 - three-dxf-viewer 1.0.44의 getFromPath 결과를 별도 Three 0.171 Scene/Camera/OrbitControls로 표시. 기존 dxf Adapter와 자원 공유 없음.
@@ -14,7 +20,7 @@
 - TC-DXF-001: 생성 LINE/CIRCLE fixture 등록→목록→Viewer→canvas의 실제 픽셀 확인, 확대/축소/Fit/Pan/Resize 및 재진입.
 - TC-DXF-002: 손상 DXF 오류와 재시도, 빈 도면 안내. TC-VIEW-001/003: 허용 형식, 늦게 끝난 이전 load 무시, cleanup 자동화.
 
-상태: Unit 0–3 검증 완료, Unit 4/5 결과는 U4/U5-20260908을 참조한다. GitHub #1 회귀 결과는 U3-20260908에 기록했다. 요구 ID는 [Requirements](Requirements.md), 실행 결과의 기준은 [TestReport](TestReport.md)이다. 여기의 기대 결과는 PASS 기록이 아니다.
+상태: Unit 0–3 검증 완료, Unit 4/5/6 결과는 U4/U5/U6-20260908을 참조한다. GitHub #1 회귀 결과는 U3-20260908에 기록했다. 요구 ID는 [Requirements](Requirements.md), 실행 결과의 기준은 [TestReport](TestReport.md)이다. 여기의 기대 결과는 PASS 기록이 아니다.
 
 ## Unit 구성과 순서
 

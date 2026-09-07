@@ -140,3 +140,12 @@
 - Reason / Trade-offs: CDN 없이 두 Viewer에서 같은 글꼴을 검증한다. 전체 한글 typeface JSON의 크기(약 25.8 MB)와 메인 스레드 파싱 비용은 남는다. subset은 실제 도면 문자 범위가 확인된 후 평가한다.
 - Consequences: Layer는 UI 연결. Hover/Select/CADControls는 anonymous listener와 public Dispose 부재가 확인되어 현재 UI에 넣지 않는다. SnapsHelper는 clear가 있지만 정확도/복잡도는 아직 실측하지 않았다. source-level 지원 사실을 runtime PASS로 기록하지 않는다. Unit 6에서 전환과 자원 stress를 검증한다.
 - 실제 검증에서 생략된 Z 좌표→NaN bounds를 확인했다. 일부 Entity의 생략된 Z=0 보완과 finite bounds 검증을 Wrapper에 추가했다. 원본 bytes는 그대로 보관하며 변환은 브라우저 임시 표현에 한정한다.
+
+## ADR-015 — Version 범위 원본 공유와 Renderer 수명 분리
+
+- Date / Status: 2026-09-08 / 승인된 Unit 6에서 채택.
+- Context: 같은 도면 전환마다 전체 navigation/다운로드가 발생했고 빠른 전환의 지연 결과를 차단해야 한다.
+- Decision: mounted Version에 ViewerSource를 두고 renderer별 Manager/Adapter를 생성한다. 공유 원본은 독립 복사본으로만 전달한다. URL은 replaceState로 반영하고 explicit reload에서만 cache를 비운다.
+- Alternatives: 전환마다 fetch, 전역 무제한 CAD cache, 외부 상태관리 추가.
+- Reason / Trade-offs: 동일 bytes 비교와 한 번 다운로드를 보장하며 문서 이탈 시 해제한다. 원본+작업 복사본의 메모리 비용은 허용하고 전역 CAD cache를 만들지 않는다. 시점/Layer 상태 공유는 라이브러리별 좌표 차이 때문에 이번 범위에서 제외한다.
+- Consequences: Unit 6은 lifecycle과 자원 수를 검증하며 대형 도면 성능/heap 추세와 P.O.C. 종합 평가는 Unit 8A에 남는다.
