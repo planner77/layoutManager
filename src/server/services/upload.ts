@@ -1,9 +1,13 @@
 import { CadRepository } from '../repositories/cad';
-import { CadStorage } from '../storage/cad-storage';
-export async function uploadCad(request: Request, repo: CadRepository, storage: CadStorage) {
+import type { StorageBackend } from '../storage/backend';
+export async function uploadCad(request: Request, repo: CadRepository, storage: StorageBackend) {
   const received = await storage.receive(request);
   let published: string | undefined;
-  try { return await repo.register(received.input, received.file, async (location, version) => published = await storage.publish(received.tempFile, location, version, received.file.fileFormat)); }
+  try {
+    published = await storage.prepare?.(received);
+    return await repo.register(received.input, published ? {...received.file, storagePath: published} : received.file,
+      published ? undefined : async (location, version) => published = await storage.publish(received.tempFile, location, version, received.file.fileFormat));
+  }
   catch (error) {
     if (published) {
       // A failed COMMIT response may be ambiguous. Retain the file unless absence is confirmed.

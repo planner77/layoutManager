@@ -1,5 +1,13 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Unit S3 실행 계획 — 2026-09-08 사용자 요청
+
+- Local 기본값과 기존 원본을 보존하고 S3 호환 backend를 선택할 수 있게 한다. DB storage_path에 기존 상대 키 또는 s3:bucket:cad/object-id/original.ext locator를 기록해 혼합 조회한다. endpoint/credentials는 서버 env만 사용한다.
+- TC-S3-001: 실제 격리 SeaweedFS에서 DXF/DWG byte/hash·Current·중복 등록·mixed local/S3 조회.
+- TC-S3-002: PUT 실패, DB 실패 후 새 object 보상 삭제, 기존 원본/Current 보존, 404·잘못된 locator·credential 오류. PUT/COMMIT 결과 불확실 시 무조건 삭제하지 않는다.
+- TC-S3-003: remote PUT이 DB transaction 전에 끝남을 확인하고 env 검증·원본 API streaming·Secret 비노출 확인. 기존 DXF/DWG 회귀.
+- 실제 기존 SeaweedFS 서비스나 사용자 데이터는 변경하지 않는다. 자동 migration/파일 이동/버킷 생성은 앱에 추가하지 않고 테스트용 버킷만 별도 생성한다.
+
 ## Unit 7B 실행 계획 — 2026-09-08
 
 - 등록 DWG Version 원본 API→LibreDwgWebAdapter/Manager→공통 Viewer UI 통합. DWG에서는 libredwg-web만 사용하며 query 조작도 DXF를 선택하지 않는다.
@@ -179,3 +187,7 @@
 - 실제 사용자 DB/파일은 변경하지 않고 회귀 데이터는 독립 임시 DB/Storage에 생성한다. 수정 전 실패와 수정 후 성공을 TestReport에 구분한다.
 
 추가 자동화: TC-LIST-004 Current 교체/null 필터, TC-LIST-005 안정적 페이지 분할과 범위 초과 빈 결과, TC-LIST-006 잘못된/중복 query 거부, TC-LIST-007 한글 NFC·와일드카드/인용부호 문자 그대로 검색. `tests/integration/list.test.ts`와 `tests/e2e/upload.spec.ts`에서 실행한다.
+
+### Unit S3 완료 확인 기준
+
+실제 SeaweedFS 4.45에서 TC-S3-001–003을 실행하고, S3 backend의 웹 E2E 및 local/DWG 회귀를 분리 기록한다. PUT/DB/DELETE 실패·불확실 COMMIT의 처리 결과와 임시 컨테이너/credential cleanup을 확인한다. 실제 .env 활성화와 기존 사용자 storage 데이터 이동은 자동으로 수행하지 않는다. 결과 기준은 TestReport U-S3-20260908이다.

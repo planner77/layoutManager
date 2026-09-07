@@ -65,6 +65,6 @@ export class CadStorage {
     if (!file.startsWith(root + path.sep)) throw new CadError('UNSAFE_PATH', '파일 경로를 확인할 수 없습니다.', 404);
     return file;
   }
-  async content(key: string) { const file = await open(await this.resolve(key), constants.O_RDONLY | constants.O_NOFOLLOW); const stat = await file.stat(); if (!stat.isFile()) { await file.close(); throw new CadError('FILE_NOT_FOUND', '도면 파일을 찾을 수 없습니다.', 404); } return { stream: Readable.toWeb(file.createReadStream({ autoClose: true })), size: stat.size }; }
+  async content(key: string): Promise<{stream: ReadableStream<Uint8Array>; size: number}> { const file = await open(await this.resolve(key), constants.O_RDONLY | constants.O_NOFOLLOW); const stat = await file.stat(); if (!stat.isFile()) { await file.close(); throw new CadError('FILE_NOT_FOUND', '도면 파일을 찾을 수 없습니다.', 404); } return { stream: Readable.toWeb(file.createReadStream({ autoClose: true })) as unknown as ReadableStream<Uint8Array>, size: stat.size }; }
   async removeUncommitted(key: string) { await unlink(await this.resolve(key)); }
 }

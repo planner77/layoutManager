@@ -2,7 +2,7 @@
 
 공장·설비의 DXF/DWG 도면을 등록·검색·버전 관리하고, 세 오픈소스 기술의 브라우저 렌더링 적용 가능성을 평가하는 프로젝트입니다.
 
-**현재 버전: 0.10.0 — 등록 DWG Viewer 통합(평면 LINE 지원).** `/cad/upload`에서 DXF/DWG를 등록하면 `/` 목록에서 즉시 확인할 수 있습니다. 위치별 상세에서 버전과 Current를 관리합니다. 실제 버전 기준은 `src/package.json`입니다. DXF Viewer 두 방식부터 구현하고, 등록 DWG도 도면 보기로 조회할 수 있습니다. `/lab/dwg` 독립 실험도 유지합니다.
+**현재 버전: 0.11.0 — S3 호환 오브젝트 스토리지 지원.** `/cad/upload`에서 DXF/DWG를 등록하면 `/` 목록에서 즉시 확인할 수 있습니다. 위치별 상세에서 버전과 Current를 관리합니다. 실제 버전 기준은 `src/package.json`입니다. DXF Viewer 두 방식부터 구현하고, 등록 DWG도 도면 보기로 조회할 수 있습니다. `/lab/dwg` 독립 실험도 유지합니다.
 
 ## 목표 기능
 
@@ -26,7 +26,7 @@
 
 ## 기술 Stack와 구조
 
-Next.js App Router, React, TypeScript, shadcn/ui, Tailwind CSS와 Next Route Handler→Application Service→Repository/Prisma→SQLite 및 Local Filesystem을 사용합니다. Viewer는 UI→Manager→Adapter→각 라이브러리로 분리했습니다. 설치 버전은 package/lock에 고정합니다.
+Next.js App Router, React, TypeScript, shadcn/ui, Tailwind CSS와 Next Route Handler→Application Service→Repository/Prisma→SQLite 및 Local Filesystem 또는 S3 호환 오브젝트 스토리지를 사용합니다. Viewer는 UI→Manager→Adapter→각 라이브러리로 분리했습니다. 설치 버전은 package/lock에 고정합니다.
 
 ```text
 AGENTS.md          # 에이전트 개발 진입 규칙
@@ -107,3 +107,11 @@ Build/dev는 고정 npm 배포본의 ESM/WASM을 `public/libredwg`에 준비합�
 ## 등록 DWG 지원 범위
 
 DWG 등록 후 목록/Location의 **도면 보기**로 엽니다. libredwg-web만 사용하며 확대·축소·이동·화면 맞춤·재시도를 제공합니다. 현재 처리 한도는 20 MiB, 도형은 평면 LINE입니다. TEXT/BLOCK/CIRCLE 등은 제외 건수로 안내하고 측정 결과에 partial을 기록합니다. 복잡한 실도면 전체 지원을 뜻하지 않습니다.
+
+## S3 호환 저장소 (SeaweedFS 등)
+
+기본 저장소는 local입니다. `.env`에서 `CAD_STORAGE_BACKEND=s3`와 `CAD_S3_ENDPOINT`, `CAD_S3_BUCKET`, `CAD_S3_ACCESS_KEY_ID`, `CAD_S3_SECRET_ACCESS_KEY`를 설정하고 서버를 재시작하면 이후 업로드를 S3에 저장합니다. SeaweedFS용 path-style 기본값은 true, region은 us-east-1입니다.
+
+기존 로컬 원본은 계속 조회할 수 있으며 자동 이동하지 않습니다. SQLite와 업로드 임시 파일은 로컬 디스크를 사용합니다. 버킷은 미리 준비해야 하며 endpoint/credential은 서버에서만 사용합니다. 상세 설정·전환·복구 제한은 [Operation](out/Operation.md), 실제 SeaweedFS 검증 결과는 [TestReport](out/TestReport.md)를 참조하세요.
+
+Docker 기반 격리 시험은 `npm --prefix src run test:s3`, S3 저장소를 사용하는 웹 E2E는 Production Build 후 `npm --prefix src run test:s3:e2e`입니다. 실제 서비스 설정이나 기존 bucket은 변경하지 않습니다.

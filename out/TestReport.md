@@ -1,5 +1,60 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-S3-20260908 — SeaweedFS 등 S3 호환 저장소 0.11.0
+
+- 사용자 요청: SeaweedFS와 같은 S3 호환 object storage 활용. Source: b050535 이후 이 기록을 포함한 `feat(storage)` commit snapshot.
+- 신규 dependency: @aws-sdk/client-s3 3.1127.0 고정(25개 package 추가). DB schema/migration 및 기존 데이터 이동 없음. storage_path에 S3 locator 의미를 추가하고 기존 local key와 혼합 조회한다.
+- 실제 `.env`/Git credentials/기존 SeaweedFS 서비스는 변경하지 않았다. 동작 backend를 안전하게 확인한 결과 local. 로컬 3100은 0.11.0으로 재시작했다.
+
+### 실제 검사
+
+| 명령 / 검사 | 결과 |
+| --- | --- |
+| `npm --prefix src run typecheck` / `lint` | 각각 exit 0 |
+| `npm --prefix src test` | 12 files / 45 passed / 0 failed, 16.43초 |
+| `npm --prefix src run build` 최종 | exit 0, 기존 모든 route와 S3 서버 코드 build 성공 |
+| `npm --prefix src run test:s3` 최종 | 6 passed / 0 failed, 3.89초 |
+| `npm --prefix src run test:s3:e2e` | 실제 S3 backend로 12 passed / 0 failed, 1.6분 |
+| 기존 local `test:e2e` | 12 passed / 0 failed, 1.3분 |
+| 기존 local `test:dwg` | 4 passed / 0 failed, 29.2초 |
+| Local 3100 smoke | 홈/등록 HTTP 200, 0.11.0 marker 확인 |
+| Secret/런타임 제외 | 111 candidates / 0 violations |
+| 임시 컨테이너 정리 | cad-s3-test-* 실행 컨테이너 잔여 0 |
+
+환경: Linux x64, Node 22.14.0, Playwright 1.63.0/Chromium 145.0.0.0/SwiftShader, viewport 1440×1000, worker 1. Chromium executable은 기존 `/home/planner/.cache/ms-playwright/chromium-1208/chrome-linux64/chrome`. SeaweedFS **4.45**, 고정 digest `sha256:fc9f76fa993ad69966ffeb2f65d0318fcae39c6f8e20cf68ef7b3a5cb97769e5`. 기존 서비스와 분리된 임시 Docker 컨테이너, random loopback port, random credentials, 전용 임시 bucket을 사용했다. DB/임시 upload도 `/tmp` 격리 경로이다.
+
+### 요구사항 → 코드 → Test → 결과
+
+| 요구 / TC | 구현/시험 | 실제 확인 |
+| --- | --- | --- |
+| FR-STORAGE-001 / TC-S3-001 | ConfiguredCadStorage/S3ObjectStorage, storage.s3.ts | DXF·binary DWG byte 일치, 파일 크기/SHA-256 일치, 중복 hash 새 Version, Current 교체 |
+| FR-STORAGE-002 / TC-S3-001 | locator routing, storage.s3.ts | 기존 local 원본을 S3 모드에서 조회; 이전 S3 원본을 local 모드 및 신규 bucket 설정 후에도 저장된 bucket 기준 조회 |
+| FR-STORAGE-003 / TC-S3-002/003 | uploadCad prepare, storage.s3.ts | repo.register 진입 전에 remote object 존재. DB 실패 후 새 object만 삭제, 기존 object/Current 보존 |
+| FR-STORAGE-003 / TC-S3-002 | storage.s3.ts | 실제 COMMIT 후 응답 실패를 주입해 DB 행과 원본이 남는 것 확인. 보상 DELETE 실패는 orphan을 보존하고 CAD_UPLOAD_CLEANUP_PENDING 기록, local staging 제거 |
+| FR-STORAGE-003 / TC-S3-002 | S3 adapter, storage.s3.ts | 잘못된 credential은 안전한 503 및 DB 행 0, 없는 key 404, traversal locator 거부 |
+| FR-STORAGE-003 / TC-S3-002 | actual SeaweedFS PutObject | 기존 key에 If-None-Match=* PUT은 HTTP 412, 기존 bytes 유지. DeleteObject 후 NoSuchKey 404 확인 |
+| FR-STORAGE-001/003 / TC-S3-003 | storage-config.test.ts / env.mjs | local 기본값, 누락 S3 설정·잘못된 backend·credential URL·잘못된 timeout/path-style 거부 |
+| FR-STORAGE-001, NFR-TEST-001 | test:s3:e2e | 실제 S3를 사용하는 UI 등록→목록/검색→Current 교체→원본 API→두 DXF Viewer/전환20회·한글·오류·계측 전체 흐름 PASS |
+| NFR-TEST-001 | local E2E + DWG suite | 기존 local 경로 및 등록 DWG 직접 렌더링/기본 탐색·오류·취소 회귀 PASS |
+
+S3 시험의 최초 5개도 통과했다(2.91초). 보상 DELETE 자체의 실패를 추가한 최종 6개 결과를 위 표에 기록했다. S3와 local Browser 결과를 별도로 기록하며 중복 실행을 고유 Test Case 수로 합산하지 않는다. 웹 suite의 NO_COLOR/FORCE_COLOR 메시지는 환경 경고이며 실패가 없었다.
+
+### 발견 및 조치
+
+- Node WebStream과 DOM WebStream의 타입 정의 차이로 Type Check가 실패했다. 기존 Node 파일 스트림의 WebStream 변환 지점에서 공통 byte-stream 계약을 명시하여 해결했다. 실제 local/S3 HTTP body 시험 통과.
+- 기본 E2E가 실제 사용자 S3 설정을 물려받지 않도록 local backend를 명시했다. S3 E2E는 전용 launcher가 임시 endpoint/credentials와 opt-in 값을 함께 주입한다.
+- 실제 Secret/업로드 원본/SQLite/생성 CAD/임시 S3 credential 파일은 커밋하지 않는다. S3 오류는 원본 exception/Authorization/credential URL을 UI/log에 출력하지 않고 안전한 code/message로 변환한다.
+- 설정 검토에서 명시적으로 비운 S3 session token이 .env 값으로 복원될 수 있는 우선순위를 보완했다(nullish override). 해당 단위 시험을 추가하여 최종 자동 시험 45개 및 Build/Type/Lint 통과. 앞선 44개 실행도 통과했으며 Browser 경로 변경은 없다.
+- 초기 설치 npm audit는 기존 high 4개를 보고했다. 강제 dependency 교체는 하지 않았다.
+
+### 범위·제한·다음 단계
+
+- 지원 검증 제품은 SeaweedFS 4.45이며 AWS/MinIO/다른 S3 제품 전체를 실행 검증했다고 주장하지 않는다. custom TLS CA, 가상 host-style, 대형 파일 throughput/timeout, versioned/object-lock bucket의 영구 정리 정책은 별도 환경 검증 대상이다.
+- 현재 단일 S3 endpoint를 사용한다. 설정 변경만으로 endpoint 간 기존 데이터를 이전하지 않는다. bucket은 locator에 기록하며 기존 bucket 조회 권한을 유지해야 한다.
+- SQLite와 임시 upload는 local disk를 계속 사용한다. 자동 bucket 생성/파일 migration/orphan sweeping/browser presigned upload는 미제공이다. PUT 응답 유실은 실제 network fault로 재현하지 않았으며 코드에서 불확실 object를 무조건 지우지 않도록 처리했다.
+- 실제 서비스는 local 기본값 유지. 사용자는 `.env.example`의 CAD_STORAGE_BACKEND/CAD_S3_*를 설정해 활성화할 수 있다. 상세 전환/복구 계약은 Database/Operation을 참조한다.
+- 요청 Unit S3 완료 기준 충족. 기존 DWG LINE/20 MiB 제한과 원격 메모 요청 #2는 유지하며 다음 승인 단계는 Unit 8B DWG 계측/평가이다.
+
 ## U7B-20260908 — 등록 DWG Viewer 통합 0.10.0
 
 - Source: 6ef6095 이후 이 결과를 포함한 `feat(viewer)` 커밋 snapshot. 앱 버전 0.10.0, 기존 exact dependency와 DB Schema 변경 없음.

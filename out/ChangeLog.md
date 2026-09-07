@@ -2,6 +2,24 @@
 
 애플리케이션 버전의 단일 기준은 `src/package.json`이다. 아래 Bootstrap 기록은 당시 상태이다.
 
+## 0.11.0 — 2026-09-08 Unit S3
+
+### Added
+
+- SeaweedFS 등 S3 호환 storage backend 선택, 고정 AWS SDK 3.1127.0, 서버 전용 설정.
+- 기존 local/S3 혼합 조회, stream PUT/GET 및 immutable object key/조건부 PUT.
+- DB transaction 전 remote 업로드, 실패 보상과 불확실 COMMIT 원본 보존.
+- 격리 SeaweedFS 통합 시험·웹 E2E 명령과 환경 예제/운영 안내.
+
+### Tests
+
+- 실제 결과는 TestReport U-S3-20260908. schema migration 및 기존 데이터 이동 없음.
+
+### Known Issues
+
+- 한 S3 endpoint만 지원. SQLite/임시 upload는 local disk 유지. 버킷 생성/데이터 자동 이전은 미제공.
+- 실제 서비스 `.env`는 변경하지 않음. 기존 DWG Entity 제한/의존성 high 경고/메모 이슈 #2는 유지.
+
 ## 0.10.0 — 2026-09-08 Unit 7B
 
 ### Added

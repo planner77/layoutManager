@@ -1,6 +1,6 @@
 {
   "name": "cad-layout-viewer",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -17,9 +17,12 @@
     "db:migrate": "node scripts/run.mjs migrate",
     "db:check": "node scripts/run.mjs check",
     "prepare:dwg-samples": "node scripts/dwg-samples.mjs",
-    "test:dwg": "playwright test --config playwright.dwg.config.ts"
+    "test:dwg": "playwright test --config playwright.dwg.config.ts",
+    "test:s3": "node scripts/test-s3.mjs",
+    "test:s3:e2e": "node scripts/test-s3.mjs --e2e"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "3.1127.0",
     "@mlightcad/libredwg-web": "0.7.10",
     "@prisma/adapter-better-sqlite3": "7.10.0",
     "@prisma/client": "7.10.0",

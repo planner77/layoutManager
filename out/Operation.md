@@ -163,3 +163,41 @@ WebGL 사용 가능한 데스크톱 Browser가 필요하다. 초기화 실패는
 - 공통 JSON의 partial은 표시 제외 Entity가 있다는 의미이며 reasons.coverage를 함께 확인한다. LINE 표시 성공도 스타일/전체 Entity 정확성 보증은 아니다.
 
 단일 Workspace의 Production 서버를 갱신할 때는 기존 start 프로세스를 중지한 후 build하고 새 프로세스로 시작한다. 실행 중인 서버와 동일 `.next`에 build하면 이전 모듈과 새 모듈이 섞일 수 있다. U7B 재시작 시 이전 프로세스의 webpack-runtime 오류를 확인했고 새 0.10.0 프로세스에서 홈/등록/WASM 정상 응답을 확인했다. 무중단 전환이 필요하면 별도 build 디렉터리/배포 절차를 먼저 설계한다.
+
+## S3 호환 저장소 설정 — SeaweedFS 등
+
+기본값은 local이다. S3 전환은 기존 CAD 파일을 이동하지 않고 이후 업로드의 저장 위치만 바꾼다. SQLite와 업로드 임시 파일은 계속 local disk를 사용하므로 DATABASE_URL/CAD_STORAGE_PATH를 유지한다. 기존 local 원본의 조회를 위해 CAD_STORAGE_PATH를 바꾸거나 삭제하지 않는다.
+
+1. 관리자가 S3 호환 endpoint와 private bucket을 준비하고 앱 계정에 해당 bucket의 PutObject/GetObject/DeleteObject 권한을 부여한다. 앱은 버킷을 생성하거나 다른 bucket을 정리하지 않는다. rollback 보상 삭제 때문에 DeleteObject 권한이 필요하다.
+2. Root `.env`에 아래 변수들을 설정한다. 기존 Git 변수는 보존하며 Secret은 출력/커밋하지 않는다. `.env.example`은 변수명과 빈 credential만 제공한다.
+
+| 변수 | 설정 / 기본값 |
+| --- | --- |
+| CAD_STORAGE_BACKEND | local(default) 또는 s3 |
+| CAD_S3_ENDPOINT | HTTP(S) origin. SeaweedFS S3 gateway 예: `http://127.0.0.1:8333`; 경로·query·URL 내 credential 금지 |
+| CAD_S3_BUCKET | 미리 생성한 bucket 이름 |
+| CAD_S3_REGION | us-east-1(default), 서버가 요구하는 region |
+| CAD_S3_ACCESS_KEY_ID / CAD_S3_SECRET_ACCESS_KEY | 서버 전용 인증정보 |
+| CAD_S3_SESSION_TOKEN | 임시 자격증명 사용 시 선택 |
+| CAD_S3_FORCE_PATH_STYLE | true(default), SeaweedFS path-style 주소 |
+| CAD_S3_TIMEOUT_MS | 60000(default), 1000–300000ms |
+
+3. 기존 start 프로세스를 중지하고 `npm --prefix src run build` 후 start로 적용한다. 설정만 바꿀 때도 프로세스 재시작이 필요하다. 일반 등록→목록→Viewer를 그대로 사용하며 브라우저에 S3 주소/키를 입력하지 않는다.
+4. 기존 S3 행이 있으면 local 모드로 돌아가더라도 S3 조회에 필요한 endpoint/credentials를 유지한다. 새 bucket 설정은 새 업로드에만 적용되며 이전 bucket 조회 권한도 필요하다.
+5. 한 endpoint만 지원한다. endpoint 교체는 데이터 이전이 아니다. 원본 object와 DB locator를 일관되게 이전하는 별도 계획 없이 설정만 변경하지 않는다. 자동 local↔S3 이동은 제공하지 않는다.
+
+### 장애·백업
+
+- NoSuchKey: 원본 404. 인증/연결/버킷 문제: 안전한 503. 원본 API가 프록시하므로 S3 CORS 또는 브라우저 credentials는 필요 없다.
+- PUT 불확실: CAD_S3_UPLOAD_UNCERTAIN 로그의 object ID와 현재 bucket의 `cad/` key를 대조한다. 업로드 성공 여부가 불명확한데 원본을 무조건 삭제하지 않는다.
+- DB 실패 후 보상 삭제: DB에 해당 locator가 없다는 확인 후 새 object만 제거한다. CAD_UPLOAD_CLEANUP_PENDING이면 DB와 bucket listing을 운영자가 비교한다. 삭제 전 진행 중 업로드가 없는지 확인하고 보존 기간/백업을 고려한다. 자동 orphan sweeping은 없다.
+- 백업은 SQLite DB+local CAD 원본+각 S3 bucket object를 한 시점의 일관된 집합으로 보존한다. DB 파일만 백업해도 S3 원본이 복구되는 것은 아니다.
+- 확인된 호환 제품은 SeaweedFS 4.45이다. 다른 S3 제품은 아래 시험/조건부 PUT·streaming GET·DeleteObject를 먼저 검증한다. 조건부 PUT을 지원하지 않는 제품에 overwrite 허용 fallback은 하지 않는다.
+
+### 격리 자동 검증
+
+- `npm --prefix src run test:s3`: Docker 임시 SeaweedFS/랜덤 인증/전용 임시 bucket에서 저장소 통합 시험. 기존 SeaweedFS 서비스/사용자 bucket을 사용하지 않는다.
+- Production Build 후 Chromium 경로를 지정하고 `npm --prefix src run test:s3:e2e`: 별도 임시 SeaweedFS를 사용하는 전체 웹 E2E.
+- 고정 이미지: `chrislusf/seaweedfs@sha256:fc9f76fa993ad69966ffeb2f65d0318fcae39c6f8e20cf68ef7b3a5cb97769e5`(4.45). 최초 실행은 이미지 다운로드가 필요할 수 있다.
+- 테스트 런처가 random loopback port·임시 credential 파일(0600)을 사용하고 종료 시 해당 컨테이너·설정 파일을 제거한다. 기본 test:e2e/test:dwg는 local backend를 명시해 실제 S3로 시험 데이터가 쓰이지 않도록 한다.
+- 웹 시험들은 3101을 사용하므로 직렬 실행한다. 컨테이너 종료 전에 중단되었다면 cad-s3-test-* 중 해당 실행에서 생성한 컨테이너만 확인해 정리한다.

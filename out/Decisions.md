@@ -185,3 +185,12 @@
 - Alternatives: DWG에 DXF 버튼 노출, DXF 변환, 표시 불가 Entity를 empty 성공으로 숨김, 이번 Unit에 전체 CAD renderer 구현.
 - Reason / Trade-offs: 승인된 통합 범위와 파서/renderer 책임을 유지한다. 등록 DWG를 조회할 수 있지만 전체 업무 도면 충실도는 아직 충족하지 않는다.
 - Consequences: 버전 0.10.0. 공통 measurement result에 partial 추가, 원본·DB 불변. 8B에서 DWG 상세 계측/성능, 9B에서 최종 DWG 회귀/평가를 진행한다.
+
+## ADR-020 — 선택적 S3 호환 저장소와 locator 호환성
+
+- Date / Status: 2026-09-08 / 사용자의 SeaweedFS 등 S3 지원 요청에 따라 채택.
+- Context: 기존 CAD 원본은 Local Filesystem이며 S3 추가가 필요하다. 네트워크 업로드를 SQLite transaction에 넣으면 잠금/timeout 위험이 커진다.
+- Decision: 고정 AWS SDK S3 adapter, server env 설정, prepare PUT을 DB transaction 전에 수행. storage_path의 namespace로 기존 local과 S3 bucket/key를 구분하고 실패 보상과 혼합 조회를 지원한다.
+- Alternatives: 모든 파일 즉시 S3 migration, 전역 backend만 보고 기존 경로도 S3로 해석, 원격 PUT을 DB transaction 안에 배치, presigned browser 업로드.
+- Reason / Trade-offs: 기존 데이터와 API를 보존하며 큰 파일 네트워크 대기 동안 DB writer lock을 유지하지 않는다. object locator는 Version ID와 별도 UUID이며 기존 schema를 바꿀 필요가 없다. 현재 한 endpoint만 설정할 수 있고 local 임시 저장 공간은 계속 필요하다.
+- Consequences: 0.11.0 신규 기능. 기존 파일 자동 이동/외부 bucket 생성/실제 .env 활성화는 수행하지 않는다. opaque S3 locator를 이해하지 못하는 구버전으로 rollback할 때 별도 복구 검토 필요. Unit 8B DWG 계측은 이 사용자 요청 완료 후 다음 승인 단계로 유지한다.

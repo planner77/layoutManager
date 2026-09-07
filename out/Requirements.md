@@ -106,3 +106,15 @@ DXF 등록→Metadata→Current→목록→검색→선택→dxf-viewer→three-
 ## 후속 요청
 
 원격 이슈 #2: 도면 등록 시 메모 입력 요청(2026-09-08 확인). 현행 메타데이터에 없는 신규 항목이며 Unit 9A 회귀 범위에는 포함하지 않았다. 후속 구현에서 길이/선택 입력/표시 위치/DB migration 및 테스트를 먼저 정의한다. 이슈는 OPEN 상태로 유지한다.
+
+## 2026-09-08 추가 요구 — S3 호환 object storage
+
+사용자가 SeaweedFS와 같은 S3 호환 저장소 지원을 요청했다. Local Filesystem 기본값은 유지하고 선택적 S3를 허용한다.
+
+| ID | 제목 | 우선순위 | 설명 / Acceptance Criteria | 관련 Test | 구현 상태 |
+| --- | --- | --- | --- | --- | --- |
+| FR-STORAGE-001 | S3 backend 선택 | P0 | 환경변수로 endpoint/bucket/region/path-style/credentials 설정, 기존 API로 DXF/DWG 원본 저장/조회 | TC-S3-001/003 | VERIFIED / ConfiguredCadStorage/S3ObjectStorage; TestReport U-S3-20260908 |
+| FR-STORAGE-002 | 기존 데이터 호환 | P0 | 새 backend 적용 후에도 기존 local/S3 locator별 조회, 자동 데이터 이동 없음 | TC-S3-001 | VERIFIED / locator routing; TestReport U-S3-20260908 |
+| FR-STORAGE-003 | 원격 실패 정합성 | P0 | PUT은 DB transaction 전, overwrite 차단, DB 실패 보상 삭제, 불확실한 PUT/COMMIT 보존, 안전한 오류 | TC-S3-002 | VERIFIED / upload service/S3 adapter; TestReport U-S3-20260908 |
+
+자동 local/S3 migration, 여러 endpoint 동시 registry, browser 직접/presigned upload, bucket 관리 UI, SQLite 자체 S3 저장은 이번 추가 요구 범위에 포함하지 않는다.

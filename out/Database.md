@@ -61,7 +61,7 @@ Unique: `(business_unit, site, building, floor)` BINARY 비교. 저장 전 trim+
 | file_format | TEXT / String | 불가 | 검증된 확장자 | CHECK IN ('DXF','DWG'); enum 사용 여부는 ORM 검증 후 |
 | file_size | INTEGER / Int | 불가 | 실제 받은 bytes | CHECK > 0; 기본 상한은 앱 설정, Prisma Int 범위 내 설정만 허용 |
 | sha256 | TEXT / String | 불가 | server streaming hash | 소문자 hex 64자 CHECK, Unique 아님 |
-| storage_path | TEXT / String | 불가 | Storage key 생성 | Unique; 저장 루트 기준 상대 키, absolute path/client 경로 아님 |
+| storage_path | TEXT / String | 불가 | Storage key 생성 | Unique; local 상대 키 또는 S3 locator. 아래 Unit S3 정의 참조, client 경로 아님 |
 | registered_at | TEXT / String | 불가 | 사용자 날짜, 기본 서울 오늘 | YYYY-MM-DD 달력 날짜; Service에서 실제 유효 날짜 검증 |
 | created_at | DATETIME / DateTime | 불가 | UTC now | 생성 시각, migration CURRENT_TIMESTAMP 기본값 |
 | updated_at | DATETIME / DateTime | 불가 | 생성 시 UTC now | update 경로에서 명시적으로 갱신 |
@@ -134,3 +134,22 @@ Current 0개 허용, 다른 Location의 Current 독립, 잘못된 소속/존재�
 실제 연결은 adapter의 FK 활성화를 PRAGMA 시험으로 확인했다. 쓰기는 단일 프로세스 queue로 직렬화하며 SQLite busy timeout 5초, transaction timeout 10초이다. commit 결과가 불확실한 작업을 자동 재실행하지 않는다. WAL은 아직 활성화하지 않았다. 운영 범위는 단일 Node 프로세스이다.
 
 Unit 9A(2026-09-08): 실제 schema.prisma/migration의 두 Table, Column/Null/Default, 복합 FK 및 Unique/Index와 문서를 재대조했다. Schema 변경 없음. TC-DB-007 회귀 통과. 초기 계획의 retry 문구를 실제 단일 프로세스 queue/명시적 실패 정책과 일치시켰다.
+
+## Unit S3 저장 위치 계약 — 0.11.0
+
+Table/Column/migration 변경 없음. 기존 `storage_path TEXT NOT NULL UNIQUE`에 backend가 포함된 불투명 locator를 저장한다.
+
+| Backend | storage_path 형식 | 의미 |
+| --- | --- | --- |
+| local (기존) | `<location-id>/<version-id>/original.dxf` 또는 dwg | CAD_STORAGE_PATH 기준 상대 키 |
+| s3 | `s3:<bucket>:cad/<object-uuid>/original.dxf` 또는 dwg | DB transaction 전에 만든 object ID, 해당 bucket의 object key |
+
+S3 object UUID는 Version ID와 다르다. 업로드 전 location/version을 DB에 미리 생성하지 않는다. SHA-256은 수신된 원본 bytes 기준이고 locator는 중복 hash마다 별도로 생성된다. Version/Location/Current FK/Unique는 불변이다.
+
+CAD_STORAGE_BACKEND는 새 업로드 위치만 결정한다. 조회는 각 행의 locator를 따라 local/S3를 선택하고 S3 bucket은 행에 기록된 값을 사용한다. endpoint/credential은 DB에 저장하지 않는다. 현재 한 개 S3 endpoint를 사용하므로 기존 S3 데이터가 있을 때 endpoint 변경만으로 다른 저장소로 이동할 수 없다.
+
+이전 앱(0.10.0 이하)은 S3 locator를 해석하지 못한다. S3 업로드 이후 무조건 이전 바이너리로 rollback하지 말고 호환 앱 또는 일관된 DB/원본 백업 복구 절차를 사용한다. 자동 데이터 이동/locator 변경은 구현하지 않았다.
+
+| 날짜 | 단계 | 변경 | Migration / 검증 |
+| --- | --- | --- | --- |
+| 2026-09-08 | 0.11.0 / Unit S3 | storage_path에 S3 locator 의미 추가; 기존 local 키 호환 | 추가 migration 없음 / TC-S3-001–003 |
