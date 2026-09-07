@@ -5,3 +5,38 @@ generator client {
 datasource db {
   provider = "sqlite"
 }
+model CadLocation {
+  id String @id
+  businessUnit String @map("business_unit")
+  site String
+  building String
+  floor String
+  currentVersionId String? @map("current_version_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  versions CadFileVersion[] @relation("OwnedVersions")
+  currentVersion CadFileVersion? @relation("CurrentVersion", fields: [id, currentVersionId], references: [locationId, id], onDelete: NoAction, onUpdate: NoAction)
+  @@unique([businessUnit, site, building, floor], map: "uq_location_key")
+  @@unique([id, currentVersionId], map: "uq_location_current_owner")
+  @@index([currentVersionId], map: "ix_location_current")
+}
+model CadFileVersion {
+  id String @id
+  locationId String @map("location_id")
+  version Int
+  originalFilename String @map("original_filename")
+  fileFormat String @map("file_format")
+  fileSize Int @map("file_size")
+  sha256 String
+  storagePath String @unique(map: "uq_storage_path") @map("storage_path")
+  registeredAt String @map("registered_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  location CadLocation @relation("OwnedVersions", fields: [locationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  currentFor CadLocation? @relation("CurrentVersion")
+  @@unique([locationId, version], map: "uq_version_sequence")
+  @@unique([locationId, id], map: "uq_version_owner_id")
+  @@index([registeredAt(sort: Desc), createdAt(sort: Desc), id], map: "ix_version_registered")
+  @@index([fileFormat, registeredAt(sort: Desc)], map: "ix_version_format_registered")
+  @@index([sha256], map: "ix_version_sha256")
+}

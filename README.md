@@ -2,7 +2,7 @@
 
 공장·설비의 DXF/DWG 도면을 등록·검색·버전 관리하고, 세 오픈소스 기술의 브라우저 렌더링 적용 가능성을 평가하는 프로젝트입니다.
 
-**현재 버전: 0.1.0 — 실행 기반 구현 완료, DXF 우선 개발 진행 중.** Next.js 기본 화면과 SQLite 연결을 검증했습니다. 실제 버전 기준은 `src/package.json`입니다. Viewer/관리 기능은 이후 Unit에서 추가합니다.
+**현재 버전: 0.2.0 — Location·Version DB 구현 완료, DXF 우선 개발 진행 중.** 위치 Unique와 Current 트랜잭션을 실제 DB에서 검증했습니다. 실제 버전 기준은 `src/package.json`입니다. 등록 화면과 Viewer는 이후 Unit에서 추가합니다.
 
 ## 목표 기능
 

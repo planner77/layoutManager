@@ -1,6 +1,6 @@
 # Database Schema 초안 — 단일 기준 문서
 
-상태: 2026-09-07 설계만 작성. 실제 SQLite 파일·Prisma Schema·Migration은 아직 없다. Prisma 우선, SQLite 사용; exact ORM/driver version과 표현 가능성을 Unit 0B/1에서 확인한다.
+상태: 2026-09-07 Unit 1 구현·검증. Prisma/Client/SQLite adapter 7.10.0, SQLite 파일 및 실제 Migration이 존재한다. 실제 정의는 src/prisma/schema.prisma와 202609070001_locations/migration.sql에 있으며 이 문서를 함께 갱신한다.
 
 ## 관계
 
@@ -74,6 +74,7 @@ Unique: `(business_unit, site, building, floor)` BINARY 비교. 저장 전 trim+
 | --- | --- | --- |
 | PK Location / Version | 각 id | 내부 식별자 |
 | uq_location_key | Location(사업부,사업장,동,층) | 위치 중복 차단 |
+| uq_location_current_owner | Location(id,current_version_id) | Prisma의 선택적 1:1 Current relation 표현 |
 | uq_version_sequence | Version(location_id, version) | 동시 순번 중복 차단 |
 | uq_version_owner_id | Version(location_id, id) | Current 복합 FK의 parent candidate key |
 | uq_storage_path | Version(storage_path) | 파일 overwrite 방지 |
@@ -128,3 +129,6 @@ Current 0개 허용, 다른 Location의 Current 독립, 잘못된 소속/존재�
 | 날짜 | 단계 | 변경 | Migration / 검증 |
 | --- | --- | --- | --- |
 | 2026-09-07 | 설계 초안 | Location/Version, 소속 검증 복합 Current FK, 순번/파일 식별/날짜 정의 | 없음 / 구현 전 |
+| 2026-09-07 | 0.2.0 / Unit 1 | 두 모델·복합 Current FK·Unique/Index·위치/크기/형식/hash CHECK 구현 | 202609070001_locations / DB integration 6개 통과 |
+
+실제 연결은 adapter의 FK 활성화를 PRAGMA 시험으로 확인했다. 쓰기는 단일 프로세스 queue로 직렬화하며 SQLite busy timeout 5초, transaction timeout 10초이다. commit 결과가 불확실한 작업을 자동 재실행하지 않는다. WAL은 아직 활성화하지 않았다. 운영 범위는 단일 Node 프로세스이다.

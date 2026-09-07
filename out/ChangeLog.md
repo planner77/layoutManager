@@ -38,3 +38,7 @@ Unit 0B 첫 앱 버전은 0.1.0 제안이다. 이후 의미 있는 기능 추가
 ## 0.1.0 — 실행 기반
 
 Added: Next.js/TypeScript/shadcn 방식 UI 기반, 앱 전용 env launcher, Prisma/SQLite 연결, Vitest/Playwright 기반. Tests: 2 passed, typecheck/lint/build/DB/page smoke 통과. Known Issues: CAD 기능은 후속 Unit, DWG는 DXF 다음 버전.
+
+## 0.2.0 — Location 및 Version 정합성
+
+Added: 실제 Prisma migration, 위치 Unique, 소속 검증 복합 FK, Current transaction과 DB integration tests. Tests: 환경/DB 8 passed, typecheck/lint 통과. Known Issues: 등록 화면은 Unit 2에서 제공하며 아직 Viewer는 미구현.
