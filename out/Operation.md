@@ -1,6 +1,6 @@
 # 운영·환경설정 초안
 
-**현재는 문서 Bootstrap 단계이며 실행 가능한 앱/DB/migration/npm scripts는 없다.** 아래 앱 명령은 Unit 0B/1에서 제공할 계약이고 아직 실행하면 안 된다. 검증 후 실행 가능한 안내로 갱신한다.
+**0.1.0 실행 기반 구현 완료.** install/generate/dev/build/start/typecheck/lint/test/db:check가 동작한다. migration은 Unit 1, E2E는 Viewer 통합에서 제공한다.
 
 ## 현재 확인한 환경
 

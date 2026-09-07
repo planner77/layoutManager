@@ -37,3 +37,5 @@ test-results/
 *.[dD][wW][gG]
 
 # Intentionally keep /out/*.md design and test documents tracked.
+
+/src/generated/

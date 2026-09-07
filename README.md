@@ -2,7 +2,7 @@
 
 공장·설비의 DXF/DWG 도면을 등록·검색·버전 관리하고, 세 오픈소스 기술의 브라우저 렌더링 적용 가능성을 평가하는 프로젝트입니다.
 
-**현재 상태: 문서 Bootstrap(0A), 구현 계획 확인 대기. 실행 가능한 애플리케이션은 아직 없습니다.** 현재 앱 버전은 미부여이며 `src/package.json`도 생성하지 않았습니다. 환경 초기화(0B)의 첫 버전은 `0.1.0`을 제안합니다. 이후 실제 버전의 기준은 해당 package 파일입니다.
+**현재 버전: 0.1.0 — 실행 기반 구현 완료, DXF 우선 개발 진행 중.** Next.js 기본 화면과 SQLite 연결을 검증했습니다. 실제 버전 기준은 `src/package.json`입니다. Viewer/관리 기능은 이후 Unit에서 추가합니다.
 
 ## 목표 기능
 
@@ -49,7 +49,7 @@ GitHub remote는 `.env`의 지정 저장소만 사용합니다. 기존 `origin`�
 
 ## 설치·DB 초기화·실행·테스트
 
-아래는 **계획된 명령이며 현재 실행 불가**합니다. Unit 0B/1에서 scripts를 구현하고 검증 결과와 함께 갱신합니다. Root에서 호출하는 방식입니다.
+아래 명령은 Root에서 실행합니다. 먼저 `npm --prefix src ci`와 `npm --prefix src run db:generate`를 수행합니다. DB migration은 Unit 1부터, E2E는 Viewer Unit부터 제공합니다.
 
 | 작업 | 예정 명령 |
 | --- | --- |
@@ -62,7 +62,7 @@ GitHub remote는 `.env`의 지정 저장소만 사용합니다. 기존 `origin`�
 | Type Check / Lint | `npm --prefix src run typecheck` / `npm --prefix src run lint` |
 | 자동 테스트 / E2E | `npm --prefix src test` / `npm --prefix src run test:e2e` |
 
-기본 실행 주소는 로컬 `http://127.0.0.1:3000`을 계획합니다. 현재 서버를 시작하지 않았습니다. DB·업로드 파일 백업/복구 및 장애 대응은 [Operation](out/Operation.md), Unit별 검증 기준과 실제 결과는 아래 테스트 문서에서 확인할 수 있습니다.
+기본 실행 주소는 로컬 `http://127.0.0.1:3000`을 계획합니다. Production 서버의 기본 페이지 응답을 검증했습니다. DB·업로드 파일 백업/복구 및 장애 대응은 [Operation](out/Operation.md), Unit별 검증 기준과 실제 결과는 아래 테스트 문서에서 확인할 수 있습니다.
 
 ## 미지원 범위·알려진 제약
 

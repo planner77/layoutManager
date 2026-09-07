@@ -1,0 +1,49 @@
+{
+  "name": "cad-layout-viewer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/run.mjs dev",
+    "build": "node scripts/run.mjs build",
+    "start": "node scripts/run.mjs start",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "db:generate": "node scripts/run.mjs generate",
+    "db:deploy": "node scripts/run.mjs deploy",
+    "db:migrate": "node scripts/run.mjs migrate",
+    "db:check": "node scripts/run.mjs check"
+  },
+  "dependencies": {
+    "next": "16.3.4",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "@prisma/client": "7.10.0",
+    "@prisma/adapter-better-sqlite3": "7.10.0",
+    "dotenv": "17.4.2",
+    "clsx": "2.1.1",
+    "tailwind-merge": "3.6.0",
+    "class-variance-authority": "0.7.1",
+    "radix-ui": "1.6.7",
+    "lucide-react": "1.41.0"
+  },
+  "devDependencies": {
+    "prisma": "7.10.0",
+    "typescript": "5.9.3",
+    "eslint": "9.39.4",
+    "eslint-config-next": "16.3.4",
+    "tailwindcss": "4.3.3",
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/node": "26.4.1",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.7",
+    "vitest": "5.0.0",
+    "@playwright/test": "1.63.0",
+    "tsx": "4.23.13"
+  },
+  "engines": {
+    "node": ">=22.14.0 <23"
+  }
+}

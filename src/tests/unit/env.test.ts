@@ -1,0 +1,4 @@
+import { expect, test } from 'vitest';
+import { appEnvironment, root } from '../../scripts/env.mjs';
+test('TC-BOOT-004: application environment excludes Git credentials and uses absolute defaults', () => { const result = appEnvironment({ PATH: '/bin', GITHUB_TOKEN: 'test-token', remote_repo_token: 'test-token', GIT_ASKPASS: '/tmp/helper' }, '/tmp/cad-nonexistent-env'); expect(result.GITHUB_TOKEN).toBeUndefined(); expect(result.remote_repo_token).toBeUndefined(); expect(result.GIT_ASKPASS).toBeUndefined(); expect(result.DATABASE_URL).toBe(`file:${root}data/db/cad.sqlite`); });
+test('TC-BOOT-004: invalid application paths and upload limits fail early', () => { expect(() => appEnvironment({ MAX_UPLOAD_SIZE_MB: '0' })).toThrow('MAX_UPLOAD_SIZE_MB'); expect(() => appEnvironment({ CAD_STORAGE_PATH: '../public' })).toThrow('absolute'); });
