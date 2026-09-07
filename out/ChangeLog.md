@@ -42,3 +42,7 @@ Added: Next.js/TypeScript/shadcn 방식 UI 기반, 앱 전용 env launcher, Pris
 ## 0.2.0 — Location 및 Version 정합성
 
 Added: 실제 Prisma migration, 위치 Unique, 소속 검증 복합 FK, Current transaction과 DB integration tests. Tests: 환경/DB 8 passed, typecheck/lint 통과. Known Issues: 등록 화면은 Unit 2에서 제공하며 아직 Viewer는 미구현.
+
+## 0.3.0 — 파일 등록
+
+Added: 제한된 multipart streaming, DXF/DWG 등록·SHA-256·원본 조회·Current API, 등록 화면. Fixed: 파일 등록 메뉴 404, multipart 경계/동일 Origin 호스트 비교. Tests: 20 automated + 2 Browser E2E passed, typecheck/lint/build 통과. Known Issues: Viewer/목록은 후속 Unit, Prisma 전이 의존 audit high 4건.

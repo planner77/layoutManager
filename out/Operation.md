@@ -1,6 +1,8 @@
 # 운영·환경설정 초안
 
-**0.1.0 실행 기반 구현 완료.** install/generate/dev/build/start/typecheck/lint/test/db:check가 동작한다. migration은 Unit 1, E2E는 Viewer 통합에서 제공한다.
+**0.3.0 파일 등록 구현 완료.** install/generate/deploy/dev/build/start/typecheck/lint/test/db:check/test:e2e가 동작한다. 초기 설치는 npm ci → db:generate → db:deploy 순서이다. 서버는 현재 127.0.0.1:3100에서 검증했으며 기본 포트는 3000이다.
+
+Playwright 기본 설치는 `cd src` 후 `npx playwright install chromium`이다. 이미 설치된 Chromium을 사용할 때는 `PLAYWRIGHT_CHROMIUM_EXECUTABLE`에 실행 파일 경로를 설정한다. E2E는 3101 포트와 독립 `/tmp/cad-e2e-*` DB/Storage를 사용한다. 이 임시 데이터는 운영 데이터와 분리되며 Git에 포함되지 않는다.
 
 ## 현재 확인한 환경
 

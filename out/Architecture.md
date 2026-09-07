@@ -97,7 +97,7 @@ sequenceDiagram
     A->>F: 임시 파일로 제한된 bytes 쓰기 + SHA-256
     F-->>A: 검증된 size/hash/temp key
     A->>D: Location 조회/생성, Version 순번 할당
-    A->>F: 고유 final key로 atomic rename
+    A->>F: 고유 final key로 atomic link + 임시 link 해제
     A->>D: Version INSERT, 선택 시 Current pointer 변경
     D-->>A: COMMIT
     A-->>B: 201 + DTO
@@ -105,7 +105,7 @@ sequenceDiagram
 
 HTTP 본문은 제한을 적용하며 읽는다. Content-Length만 신뢰하거나 전체 파일을 무제한 formData buffer에 올린 뒤 크기를 확인하는 구조는 피한다. CAD parsing은 Browser Viewer에서 수행하므로 등록 성공과 렌더링 성공을 구분한다. 서버의 확장자·size 검증은 CAD 문법 충실도를 보증하지 않는다.
 
-DB와 filesystem은 하나의 ACID transaction이 아니다. 큰 파일 쓰기/hash는 DB transaction 밖에서 하고 짧은 transaction 안에서는 local rename과 DB write만 수행한다. rename 실패는 DB rollback, DB 실패는 새 파일 정리, process crash로 남은 파일은 운영 복구 대상으로 기록한다. 응답 전 commit이 실패하면 Current를 바꾸지 않는다. commit 여부가 불확실하면 재조회 없이 파일을 삭제하지 않는다. 원본 overwrite는 금지하고 성공 DB 행을 가리키는 파일은 정리하지 않는다. orphan 정리는 [Operation](Operation.md)의 확인 절차를 따른다.
+DB와 filesystem은 하나의 ACID transaction이 아니다. 큰 파일 쓰기/hash는 DB transaction 밖에서 하고 짧은 transaction 안에서는 동일 filesystem의 exclusive hard-link publication과 DB write만 수행한다. 기존 파일이 있으면 EEXIST로 실패하여 overwrite를 방지한다. publication 실패는 DB rollback, DB 실패는 새 파일 정리, process crash로 남은 파일은 운영 복구 대상으로 기록한다. 응답 전 commit이 실패하면 Current를 바꾸지 않는다. commit 여부가 불확실하면 재조회 없이 파일을 삭제하지 않는다. 성공 DB 행을 가리키는 파일은 정리하지 않는다. orphan 정리는 [Operation](Operation.md)의 확인 절차를 따른다.
 
 동시 등록/Current 경쟁은 DB 제약+짧은 쓰기 transaction, 제한된 SQLITE_BUSY 재시도, 실패 시 명확한 오류로 처리한다. 재시도는 전체 원자적 작업 경계에서 하며 결과 확인 없이 새 Version을 중복 생성하지 않는다.
 
