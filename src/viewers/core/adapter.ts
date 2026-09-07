@@ -1,7 +1,8 @@
+import type { ViewerFormat } from './selection';
 import { ViewerSource } from './source';
 import {heapBytes,observeFrame,type ViewerMetric} from './metrics';
 export interface CadViewerAdapter {
-  load(source: ArrayBuffer): Promise<{ empty: boolean; entityCount?:number }>;
+  load(source: ArrayBuffer): Promise<{ empty: boolean; entityCount?:number; warning?:string }>;
   fitToView(): void;
   zoomIn(): void;
   zoomOut(): void;
@@ -16,14 +17,14 @@ export class ViewerManager {
   private generation = 0;
   private source: ViewerSource;
   private ownsSource: boolean;
-  constructor(private factory: ViewerFactory, source?: ViewerSource, private measurement?:{renderer:string;versionId:string;report:(metric:ViewerMetric)=>void}) {this.source=source??new ViewerSource();this.ownsSource=!source;}
+  constructor(private factory: ViewerFactory, source?: ViewerSource, private measurement?:{renderer:string;versionId:string;report:(metric:ViewerMetric)=>void}, private format:ViewerFormat = 'DXF') {this.source=source??new ViewerSource();this.ownsSource=!source;}
   async load(url: string, format: string) {
     this.dispose();
     const generation = this.generation;
     const started=performance.now();
     const metric:ViewerMetric={schemaVersion:1,renderer:this.measurement?.renderer??'unknown',versionId:this.measurement?.versionId??'',timestamp:new Date().toISOString(),result:'error',sourceMode:this.source.state(url),fileBytes:null,entityCount:null,sourceWaitMs:null,initializeMs:null,adapterLoadMs:null,totalMs:0,firstDisplayMs:null,parseMs:null,jsHeapBytes:null,browser:typeof navigator==='undefined'?'unknown':navigator.userAgent,reasons:{parseMs:'Library load combines parsing, preparation and font work; no isolated parse measurement.',entityCount:'Adapter does not expose a retained parsed entity count.',firstDisplayMs:'No non-empty successful draw/frame observed.',jsHeapBytes:'Browser API unavailable; GPU/WASM memory is not measured.'},error:null};
     try {
-    if (format !== 'DXF') throw new Error('이 형식의 Viewer는 아직 제공하지 않습니다.');
+    if (format !== this.format) throw new Error('이 형식의 Viewer는 아직 제공하지 않습니다.');
     const bytes = await this.source.read(url);
     metric.fileBytes=bytes.byteLength;metric.sourceWaitMs=performance.now()-started;
     if (generation !== this.generation) throw new DOMException('취소됨', 'AbortError');
@@ -37,7 +38,8 @@ export class ViewerManager {
       if (generation !== this.generation) throw new DOMException('취소됨','AbortError');
       if(!result.empty && this.measurement && await observeFrame()) {metric.firstDisplayMs=performance.now()-started;delete metric.reasons.firstDisplayMs;}
       if(generation!==this.generation)throw new DOMException('취소됨','AbortError');
-      metric.result=result.empty?'empty':'success';
+      metric.result=result.warning?'partial':result.empty?'empty':'success';
+      if(result.warning)metric.reasons.coverage=result.warning;
       metric.entityCount=result.entityCount??null;if(metric.entityCount!==null)delete metric.reasons.entityCount;
       return result;
     }

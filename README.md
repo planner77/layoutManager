@@ -2,7 +2,7 @@
 
 공장·설비의 DXF/DWG 도면을 등록·검색·버전 관리하고, 세 오픈소스 기술의 브라우저 렌더링 적용 가능성을 평가하는 프로젝트입니다.
 
-**현재 버전: 0.9.0 — libredwg-web 독립 LINE 실험 추가.** `/cad/upload`에서 DXF/DWG를 등록하면 `/` 목록에서 즉시 확인할 수 있습니다. 위치별 상세에서 버전과 Current를 관리합니다. 실제 버전 기준은 `src/package.json`입니다. DXF Viewer 두 방식부터 구현하고, DWG 최소 실험은 `/lab/dwg`에 제공하며 등록 도면 연결은 다음 단계입니다.
+**현재 버전: 0.10.0 — 등록 DWG Viewer 통합(평면 LINE 지원).** `/cad/upload`에서 DXF/DWG를 등록하면 `/` 목록에서 즉시 확인할 수 있습니다. 위치별 상세에서 버전과 Current를 관리합니다. 실제 버전 기준은 `src/package.json`입니다. DXF Viewer 두 방식부터 구현하고, 등록 DWG도 도면 보기로 조회할 수 있습니다. `/lab/dwg` 독립 실험도 유지합니다.
 
 ## 목표 기능
 
@@ -12,7 +12,7 @@
 - DXF Viewer 두 방식 전환, DWG 전용 경로, 오류·부분 지원·성능 계측.
 - 실도면 Entity 충실도·대형 파일·사용성 비교와 재현 가능한 테스트/문서.
 
-현재 지원: 파일 등록·메타데이터 검증·SHA-256·원본 조회·목록·검색·페이지 이동·Location 상세·Current 변경. 파일명은 대소문자를 구분하는 부분 일치, 위치 네 항목은 정확히 일치하는 조건으로 검색합니다. DXF 행의 **도면 보기**에서 dxf-viewer를 실행합니다. 확대·축소·드래그 이동·화면 맞춤·Resize·다시 불러오기를 지원합니다. Viewer 버튼으로 dxf-viewer와 three-dxf-viewer를 새로고침 없이 전환합니다. 같은 Version의 원본 다운로드를 재사용합니다. DWG Viewer는 후속 단계입니다.
+현재 지원: 파일 등록·메타데이터 검증·SHA-256·원본 조회·목록·검색·페이지 이동·Location 상세·Current 변경. 파일명은 대소문자를 구분하는 부분 일치, 위치 네 항목은 정확히 일치하는 조건으로 검색합니다. DXF 행의 **도면 보기**에서 dxf-viewer를 실행합니다. 확대·축소·드래그 이동·화면 맞춤·Resize·다시 불러오기를 지원합니다. Viewer 버튼으로 dxf-viewer와 three-dxf-viewer를 새로고침 없이 전환합니다. 같은 Version의 원본 다운로드를 재사용합니다. DWG는 libredwg-web과 자체 LINE 렌더러로 표시합니다.
 
 ## 지원 형식과 Viewer 구성 계획
 
@@ -20,7 +20,7 @@
 | --- | --- | --- |
 | DXF | dxf-viewer 1.0.48 | 전용 Adapter/Worker, 기본 도형 WebGL 검증 |
 | DXF | three-dxf-viewer 1.0.44 | 별도 Three.js 0.171 scene, 기본 탐색 및 Layer 표시/숨김 |
-| DWG 실험 | @mlightcad/libredwg-web 0.7.10 | 전용 Worker/WASM 파싱 후 자체 LINE 렌더링; 등록 도면 연결 후속 |
+| DWG | @mlightcad/libredwg-web 0.7.10 | 전용 Worker/WASM 파싱 후 자체 평면 LINE 렌더링; 부분 지원 |
 
 `libredwg-web`은 파서이므로 직접 렌더링 계층이 필요합니다. DWG→DXF 변환은 범위에 포함하지 않습니다. 출처·실제 조사 버전·API 검증 과제는 [Architecture](out/Architecture.md), 선택 근거는 [Decisions](out/Decisions.md)를 참조하세요. 두 DXF 라이브러리와 libredwg-web을 고정 설치했습니다. 기본 도형과 한글 시험 결과는 TestReport에서 확인합니다.
 
@@ -82,7 +82,7 @@ CAD 편집/Geometry 변경/저장, DWG→DXF 우회, 별도 검색 엔진·Backe
 | [Decisions](out/Decisions.md) | 주요 판단·제안·확인 대기 |
 | [ChangeLog](out/ChangeLog.md) | 변경 및 버전 이력 |
 
-Unit 9A DXF 통합·회귀 검증을 완료했습니다. Unit 7A의 독립 LINE 실험을 검증했으며 다음 단계는 Unit 7B 등록 DWG Viewer 통합입니다. 등록 메모 요청(원격 이슈 #2)은 별도 후속 항목으로 기록했습니다. 승인된 범위에서는 Unit별 구현→테스트→문서→Commit→필요 시 Push를 반복합니다.
+Unit 9A DXF 통합·회귀 검증을 완료했습니다. Unit 7B에서 등록 DWG Viewer와 기본 탐색·오류·자원 정리를 연결했습니다. 다음 단계는 Unit 8B DWG 계측 및 평가입니다. 등록 메모 요청(원격 이슈 #2)은 별도 후속 항목으로 기록했습니다. 승인된 범위에서는 Unit별 구현→테스트→문서→Commit→필요 시 Push를 반복합니다.
 
 ## 2026-09-07 실행 순서 변경
 
@@ -103,3 +103,7 @@ Production Build 후 `npm --prefix src run test:benchmark`로 생성 LINE 100/10
 `/lab/dwg`에서 20 MiB 이하의 로컬 DWG를 선택합니다. 서버에 등록하지 않고 WASM으로 읽어 평면 LINE만 직접 표시합니다. 제외 Entity 수와 파싱·해제 결과를 확인할 수 있습니다. 라이브러리 자체가 완성형 Viewer라는 의미는 아닙니다.
 
 Build/dev는 고정 npm 배포본의 ESM/WASM을 `public/libredwg`에 준비합니다. Production에는 이 생성 자산도 필요합니다. 공식 샘플 준비는 `npm --prefix src run prepare:dwg-samples`, Browser 검증은 `npm --prefix src run test:dwg`입니다. Chromium 설정·샘플 출처·해시·GPL-3.0 표기와 메모리 제약은 Operation/Architecture/TestReport를 참조하세요.
+
+## 등록 DWG 지원 범위
+
+DWG 등록 후 목록/Location의 **도면 보기**로 엽니다. libredwg-web만 사용하며 확대·축소·이동·화면 맞춤·재시도를 제공합니다. 현재 처리 한도는 20 MiB, 도형은 평면 LINE입니다. TEXT/BLOCK/CIRCLE 등은 제외 건수로 안내하고 측정 결과에 partial을 기록합니다. 복잡한 실도면 전체 지원을 뜻하지 않습니다.

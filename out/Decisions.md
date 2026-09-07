@@ -176,3 +176,12 @@
 - Alternatives: upstream 수정/fork, Webpack의 node 모듈 전역 무시, 메인 thread에 WASM 장기 유지.
 - Reason / Trade-offs: 파서 원본 변경 없이 Browser/Server 경계와 취소를 유지한다. 요청마다 초기화 비용과 큰 WASM 메모리 비용이 발생한다. 완료/종료 후 OS RSS의 즉시 감소는 보장하지 않는다.
 - Consequences: 0.9.0은 독립 기술 실험이며 업무 DWG Viewer 전체 구현이 아니다. 등록 도면 연결·Adapter 계약·오류/재진입 확장은 Unit 7B. 라이브러리 GPL-3.0 표기와 source 링크는 Architecture/Operation에 보존한다.
+
+## ADR-019 — DWG 전용 형식 선택과 부분 표시 결과
+
+- Date / Status: 2026-09-08 / 승인된 Unit 7B에서 채택.
+- Context: 등록 DWG를 기존 Viewer 화면에 연결하되 다른 DXF renderer 선택 및 LINE 외 Entity의 거짓 성공을 막아야 한다.
+- Decision: DB 형식 기준 selectRenderer와 Manager format 경계를 적용한다. DWG는 libredwg-web Adapter만 선택하고 7A의 planar LINE/20 MiB 한도를 유지한다. 제외 건수가 있으면 UI 경고+metric partial을 기록한다.
+- Alternatives: DWG에 DXF 버튼 노출, DXF 변환, 표시 불가 Entity를 empty 성공으로 숨김, 이번 Unit에 전체 CAD renderer 구현.
+- Reason / Trade-offs: 승인된 통합 범위와 파서/renderer 책임을 유지한다. 등록 DWG를 조회할 수 있지만 전체 업무 도면 충실도는 아직 충족하지 않는다.
+- Consequences: 버전 0.10.0. 공통 measurement result에 partial 추가, 원본·DB 불변. 8B에서 DWG 상세 계측/성능, 9B에서 최종 DWG 회귀/평가를 진행한다.

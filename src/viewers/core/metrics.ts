@@ -1,6 +1,6 @@
 export type ViewerMetric = {
   schemaVersion:1; renderer:string; versionId:string; timestamp:string;
-  result:'success'|'empty'|'error'|'cancelled';
+  result:'partial'|'success'|'empty'|'error'|'cancelled';
   sourceMode:'miss'|'pending'|'memory'; fileBytes:number|null; entityCount:number|null;
   sourceWaitMs:number|null; initializeMs:number|null; adapterLoadMs:number|null; totalMs:number;
   firstDisplayMs:number|null; parseMs:null; jsHeapBytes:number|null;

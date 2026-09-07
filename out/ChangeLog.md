@@ -2,6 +2,23 @@
 
 애플리케이션 버전의 단일 기준은 `src/package.json`이다. 아래 Bootstrap 기록은 당시 상태이다.
 
+## 0.10.0 — 2026-09-08 Unit 7B
+
+### Added
+
+- 등록 DWG 목록/Version에서 libredwg-web 전용 Viewer 연결.
+- LibreDwgWebAdapter, 형식 선택 경계, 20 MiB/헤더 검증과 부분 표시 경고·JSON partial.
+- DWG 확대·축소·Pan·Fit·Resize·재시도·취소 및 등록 UI 통합 시험.
+
+### Tests
+
+- 실행 결과는 TestReport U7B-20260908. DB/의존성 버전 변경 없음.
+
+### Known Issues
+
+- DWG는 평면 LINE만 지원, 전체 Entity/업무 도면/revision/대형 성능 미검증. raw parser nonzero flags는 보수적으로 오류 처리.
+- 기존 high dependency 경고와 이슈 #2 메모 요청은 후속.
+
 ## 0.9.0 — 2026-09-08 Unit 7A
 
 ### Added

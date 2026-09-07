@@ -1,5 +1,12 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Unit 7B 실행 계획 — 2026-09-08
+
+- 등록 DWG Version 원본 API→LibreDwgWebAdapter/Manager→공통 Viewer UI 통합. DWG에서는 libredwg-web만 사용하며 query 조작도 DXF를 선택하지 않는다.
+- 최소 기하 지원은 7A의 평면 LINE을 유지한다. 미지원/표시 제외 Entity는 건수를 보이고 result partial로 기록한다. 20 MiB 한도·원본 보존·DB 불변.
+- TC-DWG-001–005/TC-E2E-002: 실제 샘플 UI 등록→검색→선택→표시, Zoom/Pan/Fit/Resize, reload/재진입/취소/Worker 및 canvas 해제. CIRCLE partial, 손상/미지원 헤더/WASM 404/content 404 및 재시도.
+- TC-VIEW-001/003: 형식 매칭과 지연 Worker 결과 취소를 자동화. 기존 DXF 전체 회귀. 상세 DWG 계측/비교는 8B이다.
+
 ## Unit 7A 실행 계획 — 2026-09-08
 
 - 독립 `/lab/dwg`에서 공식 고정 DWG 샘플을 Worker/WASM으로 파싱하고 model-space planar LINE을 직접 Three.js로 표시한다. 서버 등록/Viewer 선택 연결은 Unit 7B이다.

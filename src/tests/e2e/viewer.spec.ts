@@ -48,7 +48,7 @@ for(const renderer of ['dxf-viewer','three-dxf-viewer']) test(`TC-DXF/THREE-002:
   for (const [name,bytes,expected] of [['broken.dxf','invalid DXF','表示失敗'],['empty.dxf','0\nSECTION\n2\nENTITIES\n0\nENDSEC\n0\nEOF\n','empty'],['deferred.dwg','AC1032','DWG']]) {
     const response=await request.post('/api/cad-files',{multipart:{file:{name,mimeType:'application/octet-stream',buffer:Buffer.from(bytes)},businessUnit:'Viewer',site:'errors',building:'A',floor:'1',registeredAt:'2026-09-08',makeCurrent:'false'}});
     const file=await response.json();await page.goto(`/cad/versions/${file.id}/viewer?renderer=${renderer}`);
-    if(expected==='DWG') { await expect(page.getByRole('status')).toContainText('후속 버전');await expect(page.locator('canvas')).toHaveCount(0); }
+    if(expected==='DWG') { await expect(page.getByRole('main').getByRole('alert')).toContainText('실패');await expect(page.getByRole('button',{name:'dxf-viewer',exact:true})).toHaveCount(0);await expect(page.getByRole('button',{name:'three-dxf-viewer',exact:true})).toHaveCount(0);await expect(page.locator('canvas')).toHaveCount(0); }
     else if(expected==='empty') await expect(page.getByRole('status')).toContainText('표시할 도형이 없습니다');
     else {await expect(page.getByRole('main').getByRole('alert')).toContainText('DXF 처리에 실패');await page.getByRole('button',{name:'다시 불러오기'}).click();await expect(page.getByRole('main').getByRole('alert')).toBeVisible();}
   }

@@ -1,5 +1,48 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U7B-20260908 — 등록 DWG Viewer 통합 0.10.0
+
+- Source: 6ef6095 이후 이 결과를 포함한 `feat(viewer)` 커밋 snapshot. 앱 버전 0.10.0, 기존 exact dependency와 DB Schema 변경 없음.
+- 범위: 등록 DWG 원본 ID API→LibreDwgWebAdapter→전용 Worker/WASM→직접 평면 LINE 렌더링. 확대/축소/Pan/Fit/Resize·재시도·부분 표시·오류/취소를 공통 UI에 연결했다. DWG에 두 DXF Viewer 버튼을 제공하지 않고 조작 query도 DWG 전용 Adapter를 선택한다.
+- 환경: Node 22.14.0/Linux x64, Playwright 1.63.0/Chromium 145.0.0.0/SwiftShader, 기본 viewport 1440×1000, resize 1100×800, worker 1. 실제 DWG는 U7A에 기록한 공식 고정 AutoCAD 2000 Line.dwg/circle.dwg(동일 SHA-256). Browser 시험은 실행별 임시 DB/Storage·3101, 기존 사용자 데이터에 파일을 등록하지 않았다.
+
+| 검사 | 실제 결과 |
+| --- | --- |
+| Type Check / Lint | 각각 exit 0 |
+| Vitest `npm --prefix src test` 최종 | 11 files / 43 passed / 0 failed, 9.49초 |
+| Production Build | exit 0, 등록 Version Viewer 및 /lab/dwg 정상 build |
+| `test:dwg` | 4 passed / 0 failed / 0 skipped, 15.2초 |
+| `test:e2e` | 12 passed / 0 failed / 0 skipped, 51.2초 |
+| Local 3100 | 0.10.0 재시작, 홈/등록/WASM HTTP 200 및 버전 문구 확인 |
+| Secret/산출물 제외 | 103 commit candidates / 0 violations |
+
+명령은 Operation을 따른다. Browser executable은 `/home/planner/.cache/ms-playwright/chromium-1208/chrome-linux64/chrome`. 초기 Type Check/Build는 DB format의 String→ViewerFormat 할당 오류로 실패했다. 서버 페이지에서 실제 DXF/DWG 값 검증 후 narrowing하도록 수정하여 최종 검사 통과했다. 42개 자동 시험 실행 후 한도/헤더/해제 후 입력 거부 시험을 추가해 최종 43개를 실행했다.
+
+### 요구사항 → 구현 → Test Case → 결과
+
+| 요구 / TC | 코드 | 실제 검증 |
+| --- | --- | --- |
+| FR-LIST-003, FR-VIEWER-005, FR-UI-001 / TC-E2E-002 | cad-table, version viewer page, CadViewer, dwg-viewer.probe.ts | 실제 DWG UI 등록→목록/검색/Current 표시→도면 보기→LINE 표시. 선택 Version ID·계측 renderer/Entity 수 일치, 원본 bytes 동일 |
+| FR-VIEWER-001 / TC-VIEW-001 | core/selection.ts, Manager format, dwg-adapter.test.ts | DWG에 DXF query를 전달해도 LibreDWG만 선택, 두 DXF 버튼 없음. DWG Manager에 DXF 요청 시 factory 미호출 |
+| FR-VIEWER-006 / TC-VIEW-002 | libredwg-web/line-view.ts, dwg-viewer.probe.ts | 확대/축소/Fit·Pan의 canvas 픽셀 변화 및 Fit 복구, Resize canvas 크기 일치 |
+| FR-VIEWER-008 / TC-DWG-003 | adapter/probe/line-view, dwg-viewer.probe.ts | 3회 다시 불러오기 후 canvas 1개/Worker 0, 화면 이탈 canvas 0, 재진입 성공, 지연 WASM 처리 중 이탈 시 Worker 1→0 및 늦은 canvas 없음 |
+| FR-VIEWER-008 / TC-DWG-003 | dwg-adapter.test.ts | cancel 반복은 terminate 1회/AbortError; 60초 timeout은 terminate 후 실패. timeout은 fake timer 단위 시험이며 실제 60초 대기는 하지 않음 |
+| FR-ERROR-001 / TC-DWG-002/004 | adapter/UI, dwg-viewer.probe.ts | 미지원 헤더/손상 DWG 실패, CIRCLE 제외 건수/partial, 원본 404/WASM 404 안내 및 해제 후 retry 성공 |
+| FR-ERROR-001 / TC-DWG-002 | dwg-adapter.test.ts | 빈 입력/20 MiB 초과/잘못된 헤더/Dispose 이후 입력은 Worker 생성 전 거부 |
+| NFR-PERF-001 | core/metrics.ts + Manager | 제외 Entity는 result partial+reasons.coverage; LINE 0개이면 firstDisplayMs null, 거짓 전체 성공 없음. 상세 DWG stage 계측은 8B |
+| NFR-TEST-001 | 기존 전체 회귀 및 dwg.probe.ts | DXF 등록/Current/두 Renderer·전환20회/글꼴/계측/오류와 DWG 독립 실험 모두 PASS |
+
+`src/dwg-test-results/registered-dwg.png`(Git 제외)를 시각 확인했다. libredwg-web 단독 표시, 실제 LINE과 탐색 도구·한도 설명을 확인했다. 기준 CAD 프로그램과 정밀한 실도면 fidelity 비교는 수행하지 않았다. 별도 장기 메모리 시험 없이 Worker 수/canvas 해제만 관찰했으므로 전체 GPU/JS 메모리 누수 없음으로 해석하지 않는다.
+
+### 운영 및 제한
+
+- 이전 0.9.0 프로세스를 종료할 때 webpack-runtime의 undefined.call 오류 로그가 있었다. 동일 `.next`에 새 Build를 쓰는 동안 기존 프로세스가 남아 있었으며 모듈 혼용 가능성이 있다. 새 0.10.0 프로세스로 재시작 후 홈/등록/WASM smoke 정상. Operation에 단일 workspace의 기존 start 중지→build→start 순서를 기록했다.
+- planar LINE/20 MiB 범위 유지. Parser가 읽은 CIRCLE은 자체 renderer에서 제외하며 이를 parser 미지원으로 분류하지 않는다. TEXT/BLOCK/곡선·Layer/style/색상·선종류/전체 Entity는 미지원 또는 미검증. AutoCAD 2000 이외 revision/실도면/대형 성능·장기/저메모리 장비 시험은 NOT RUN.
+- 공통 metrics schemaVersion 1에 result partial enum 추가. JSON 소비자는 이를 허용해야 한다. DWG 순수 parse 계측은 공통 UI에서 아직 null이며 상세 init/parse/convert와 비교는 Unit 8B이다.
+- DB·업로드 원본·migration 불변, DWG→DXF 변환 없음. 20 MiB보다 큰 파일의 등록 가능 여부는 기존 Upload 설정을 따르고 Viewer는 별도 제한 안내를 한다.
+- 기존 의존성 high 경고와 원격 이슈 #2 메모 요청은 후속. 이번에 library 변경이나 audit 재실행은 하지 않았다.
+- Unit 7B의 최소 지원 범위 통합 기준 충족. 전체 업무 DWG/P.O.C. 최종 완료와 구분하며 다음 승인 Unit은 8B 계측 및 평가이다.
+
 ## U7A-20260908 — libredwg-web 실제 DWG 최소 실험 0.9.0
 
 - Source: 1277f00 이후 이 결과를 포함한 `feat(dwg)` 커밋 snapshot. 신규 고정 dependency @mlightcad/libredwg-web 0.7.10(GPL-3.0), 기존 Next/Three/DXF 버전 및 DB Schema 불변.
@@ -345,13 +388,13 @@ Chromium 실행 파일은 `/home/planner/.cache/ms-playwright/chromium-1208/chro
 - KI-002(작성자 미설정/최초 Commit·Push 대기)는 해결했다. 실제 지정 branch 쓰기 연결도 확인했다. 다른 branch의 권한까지 확인했다는 뜻은 아니다.
 - 이 결과를 기록하는 후속 문서 Commit은 별도로 생성한다. 최신 Commit과 동기화 상태는 실제 git log/status/remote 조회로 확인한다. 앱 버전은 여전히 없으며 앱 Build/DB/Viewer 시험은 NOT RUN이다.
 
-## Viewer 평가 현황 — U7A 반영
+## Viewer 평가 현황 — U7B 반영
 
 공식 조사 사실은 Architecture에 있으며 아래 표는 **실제 실행 결과**만 채운다. 단순 라이브러리 문서의 기능 소개를 이 표의 PASS로 옮기지 않는다.
 
 | 항목 | dxf-viewer | three-dxf-viewer | libredwg-web 경로 |
 | --- | --- | --- | --- |
-| 정상 표시 / 기본 Zoom·Pan·Fit | PASS: 생성 LINE/CIRCLE | PASS: 생성 LINE/CIRCLE | U7A LINE 및 확대만 확인; 나머지 후속 |
+| 정상 표시 / 기본 Zoom·Pan·Fit | PASS: 생성 LINE/CIRCLE | PASS: 생성 LINE/CIRCLE | U7B 등록 LINE/Zoom/Pan/Fit 확인; 전체 Entity 후속 |
 | Resize / 재진입 / Dispose | PASS: U9A 20회 전환 자원 정리; 장기 누수 미평가 | PASS: U9A 20회 전환 자원 정리; 장기 누수 미평가 | NOT RUN |
 | 장점 / 단점 / 발견 문제 | public API/Worker; U5 기본 font 연결 | Group/metadata 활용; 생략 Z 보완 필요 | 미평가 |
 | Layer 조회 / On-Off | NOT RUN | PASS: Layer 0 | NOT RUN |

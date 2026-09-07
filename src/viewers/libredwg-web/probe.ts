@@ -15,5 +15,5 @@ export function startDwgProbe(bytes: ArrayBuffer) {
     worker.onerror = () => { stop(); reject(new Error('DWG Worker 초기화 실패')); };
     worker.postMessage({ bytes, assets: new URL('/libredwg/wasm', location.href).href }, [bytes]);
   });
-  return { promise, cancel: () => { if (!finished) { stop(); reject(new Error('DWG 처리 취소')); } } };
+  return { promise, cancel: () => { if (!finished) { stop(); reject(new DOMException('DWG 처리 취소', 'AbortError')); } } };
 }

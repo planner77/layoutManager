@@ -153,3 +153,13 @@ WebGL 사용 가능한 데스크톱 Browser가 필요하다. 초기화 실패는
 6. npm 배포본은 GPL-3.0 표기이며 source는 Architecture 링크를 참조한다. wrapper/glue/wasm 파일을 임의 수정하지 않는다. 패키지의 README/package metadata도 생성 자산에 함께 보존한다.
 
 성능 메모리 한계: INITIAL_MEMORY=1GB 빌드 옵션의 배포본이다. Worker를 종료해 인스턴스 생명주기를 분리하지만 저메모리 장비나 업무 대형 파일의 적합성은 별도 실측 대상이다. parse/free 실험 성공과 전체 renderer fidelity를 혼동하지 않는다.
+
+## 등록 DWG Viewer — Unit 7B
+
+- 일반 파일 등록에서 DWG와 메타데이터를 저장한 뒤 목록/Location에서 **도면 보기**를 선택한다. Current 관리와 원본 다운로드는 기존 규칙을 따른다. Viewer는 libredwg-web만 사용한다. `/lab/dwg`는 독립 실험으로 유지한다.
+- 등록 상한(MAX_UPLOAD_SIZE_MB)과 Viewer 처리 한도는 구분한다. 현재 DWG Viewer는 20 MiB 이하의 평면 LINE만 지원하며 더 큰 원본은 저장 설정에 따라 등록할 수 있어도 표시 시 제한 안내가 나온다. 미지원 Entity는 제외 건수로 표시한다.
+- 확대/축소/마우스 Pan/Fit/Resize를 사용할 수 있다. 재시도는 원본을 다시 받아 Worker를 재생성한다. WASM 404는 7A의 static asset 준비·배포 절차를 확인하고, 원본 404는 DB/Storage 복구 절차를 따른다. 원본 파일을 임의로 수정하지 않는다.
+- `test:dwg`는 독립 실험과 등록 DWG UI 흐름·오류·취소를 함께 실행한다. 먼저 `prepare:dwg-samples`로 고정 공식 샘플을 준비한다. `test:e2e`는 DXF와 DWG 잘못된 입력의 공통 회귀를 실행한다. 같은 3101 테스트 서버를 사용하므로 두 suite를 직렬로 실행한다.
+- 공통 JSON의 partial은 표시 제외 Entity가 있다는 의미이며 reasons.coverage를 함께 확인한다. LINE 표시 성공도 스타일/전체 Entity 정확성 보증은 아니다.
+
+단일 Workspace의 Production 서버를 갱신할 때는 기존 start 프로세스를 중지한 후 build하고 새 프로세스로 시작한다. 실행 중인 서버와 동일 `.next`에 build하면 이전 모듈과 새 모듈이 섞일 수 있다. U7B 재시작 시 이전 프로세스의 webpack-runtime 오류를 확인했고 새 0.10.0 프로세스에서 홈/등록/WASM 정상 응답을 확인했다. 무중단 전환이 필요하면 별도 build 디렉터리/배포 절차를 먼저 설계한다.
