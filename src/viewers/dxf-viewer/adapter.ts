@@ -14,7 +14,7 @@ export class DxfViewerAdapter implements CadViewerAdapter {
     let timer: ReturnType<typeof setTimeout> | undefined;
     try {
       await Promise.race([
-        this.viewer.Load({ url, workerFactory: () => new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' }) }),
+        this.viewer.Load({ url, fonts: [new URL('/fonts/NanumGothic-Regular.ttf', location.href).href], workerFactory: () => new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' }) }),
         new Promise<never>((_, reject) => {
           this.cancel = () => reject(new DOMException('취소됨', 'AbortError'));
           timer = setTimeout(() => reject(new Error('DXF 처리 시간이 초과되었습니다.')), 120_000);

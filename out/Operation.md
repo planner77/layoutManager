@@ -111,3 +111,11 @@ DXF 등록 후 목록 또는 Location 상세의 **도면 보기**를 선택한�
 WebGL 사용 가능한 데스크톱 Browser가 필요하다. 초기화 실패는 하드웨어 가속/브라우저 설정을 확인한다. 파싱 실패는 손상·미지원 DXF 또는 Worker 자산 요청 실패를 확인한다. 새 build의 `.next` 전체 자산을 함께 적용하고 서버를 재시작해야 한다. 파싱 Worker는 120초 timeout이며 대형 파일의 적합성은 미검증이다. 빈 도면과 오류를 성공 렌더링으로 혼동하지 않는다.
 
 글꼴 미제공으로 TEXT/한글이 누락될 수 있다. 비교 평가 때 실제 CAD 원본과 대조하고 TestReport에 부분 지원을 기록한다. Console의 upstream parse 오류에는 도면 일부 정보가 들어갈 수 있으므로 공개 로그로 복사하지 않는다.
+
+## Unit 5 — 글꼴 및 Viewer 선택
+
+- DXF 도면 보기에서 `three-dxf-viewer로 열기` / `dxf-viewer로 열기`로 동일 Version을 연다. 현재는 전체 페이지 탐색이다. three Viewer에는 Layer 체크박스가 있다.
+- 글꼴 원본: [Google Fonts Nanum Gothic](https://github.com/google/fonts/tree/main/ofl/nanumgothic), 다운로드 2026-09-08. 원본 `NanumGothic-Regular.ttf` 2,054,744 bytes, SHA-256 `76f45ef4a6bcff344c837c95a7dcc26e017e38b5846d5ae0cdcb5b86be2e2d31`. 원본 변경 없이 `src/public/fonts`에 보관하고 같은 폴더의 OFL.txt를 함께 배포한다.
+- `scripts/fonts.mjs`가 고정 Three 0.171 TTFLoader로 `CadKorean.typeface.json`을 생성한다. 파생 typeface의 family/name은 CAD Korean으로 변경하고 원본 저작권/라이선스 정보는 유지한다. JSON은 약 25.8 MB로 TTF보다 크며 초기 전송·메모리 비용이 있다. gzip 및 실제 네트워크 성능 평가는 후속 Unit이다.
+- build/dev 명령이 생성한다. Production 배포에는 `.next`와 public/fonts(생성 JSON 포함)가 모두 필요하다. `.env`나 사용자 CAD를 글꼴 폴더에 넣지 않는다. 다른 font로 교체할 때는 재배포 조건·한글 glyph·두 Viewer 포맷을 확인하고 scripts/Adapter URL/테스트를 함께 갱신한다.
+- 한글 TEXT의 기본 글꼴 표시와 CAD 원본의 font/SHX/MTEXT 서식 재현은 별도이다. CP949 등 인코딩 문제는 font 제공만으로 해결되지 않는다. 현재 ASCII 구조/UTF-8 DXF를 기본 검증하며 binary DXF는 지원 평가 밖이다.

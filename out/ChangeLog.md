@@ -78,3 +78,18 @@ Added: 제한된 multipart streaming, DXF/DWG 등록·SHA-256·원본 조회·Cu
 ### Tests / Known Issues
 
 - 실제 최종 결과는 TestReport U4-20260908 참조. TEXT/한글 기본 font 미제공, 실도면 성능/전체 Entity 미검증. three-dxf-viewer와 libredwg-web은 후속 단계. 기존 npm high 4 경고 유지.
+
+## 0.6.0 — 2026-09-08
+
+### Added
+
+- three-dxf-viewer Adapter/Scene, Zoom/Pan/Fit/Resize, Layer 표시/숨김, 별도 renderer URL.
+- 두 DXF Viewer의 한글 기본 글꼴, 원본 TTF/OFL 및 build/dev typeface 생성.
+- 두 Viewer 정상/오류/탐색/한글 E2E와 font glyph 검증.
+
+### Fixed / Known Issues
+
+- 두 번째 Viewer 검정 도형 대비 및 손상 입력의 빈 도면 오판을 Wrapper에서 처리.
+- 생략된 Z 좌표로 NaN이 발생하는 설치본의 문제를 Wrapper 보완 및 bounds 검증으로 처리. 서버 원본은 변경하지 않는다.
+- 원본 font/SHX·전체 Entity·복잡한 Layer·MTEXT fidelity/성능 미검증. Hover/Select/Snap UI 미제공, 전역 cache 및 메인 스레드 비용 평가 필요. 기존 npm high 4 유지.
+- 실제 최종 테스트 결과는 U5-20260908 참조. 다음 Unit 6은 새로고침 없는 전환이다.

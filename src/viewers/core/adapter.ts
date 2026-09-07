@@ -3,6 +3,8 @@ export interface CadViewerAdapter {
   fitToView(): void;
   zoomIn(): void;
   zoomOut(): void;
+  getLayers?(): string[];
+  showLayer?(name: string, visible: boolean): void;
   dispose(): void;
 }
 export type ViewerFactory = () => Promise<CadViewerAdapter>;
@@ -34,5 +36,7 @@ export class ViewerManager {
   fitToView() { this.adapter?.fitToView(); }
   zoomIn() { this.adapter?.zoomIn(); }
   zoomOut() { this.adapter?.zoomOut(); }
+  getLayers() { return this.adapter?.getLayers?.() ?? []; }
+  showLayer(name:string,visible:boolean) { this.adapter?.showLayer?.(name,visible); }
   dispose() { this.generation++; this.abort?.abort(); this.adapter?.dispose(); this.adapter = undefined; }
 }

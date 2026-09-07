@@ -39,3 +39,4 @@ test-results/
 # Intentionally keep /out/*.md design and test documents tracked.
 
 /src/generated/
+/src/public/fonts/CadKorean.typeface.json

@@ -4,7 +4,7 @@ declare module 'dxf-viewer' {
     constructor(container: HTMLElement, options?: { autoResize?: boolean; antialias?: boolean; preserveDrawingBuffer?: boolean });
     static SetupWorker(): void;
     HasRenderer(): boolean;
-    Load(options: { url: string; workerFactory?: () => Worker }): Promise<void>;
+    Load(options: { url: string; fonts?: string[]; workerFactory?: () => Worker }): Promise<void>;
     GetBounds(): { minX: number; maxX: number; minY: number; maxY: number } | null;
     GetOrigin(): { x: number; y: number };
     GetCamera(): { left: number; right: number; zoom: number; position: { x: number; y: number } };

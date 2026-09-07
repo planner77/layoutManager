@@ -1,6 +1,6 @@
 {
   "name": "cad-layout-viewer",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -30,7 +30,9 @@
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "server-only": "0.0.1",
-    "tailwind-merge": "3.6.0"
+    "tailwind-merge": "3.6.0",
+    "three": "0.171.0",
+    "three-dxf-viewer": "1.0.44"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",
@@ -39,6 +41,7 @@
     "@types/node": "26.4.1",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.7",
+    "@types/three": "0.171.0",
     "eslint": "9.39.4",
     "eslint-config-next": "16.3.4",
     "prisma": "7.10.0",

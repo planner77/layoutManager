@@ -130,3 +130,13 @@
 - Alternatives: 메인 스레드 파싱, 외부 CDN Worker.
 - Reason / Trade-offs: 파싱을 Worker로 분리하고 외부 CDN 의존을 피한다. 취소 시 라이브러리 Worker의 미완료 Promise는 Adapter cancellation과 timeout으로 차단한다. 실도면 메모리 추세는 이후 평가한다.
 - Consequences: 기본 글꼴을 아직 제공하지 않아 TEXT/한글은 제한이 있으며 명시적으로 안내한다. 향후 font/encoding·Layer 지원은 Sample 및 라이선스 검토와 함께 확장한다. 이번 검증을 전문 CAD 수준 충실도 보장으로 해석하지 않는다.
+
+## ADR-014 — three-dxf-viewer 및 공통 한글 글꼴
+
+- Date / Status: 2026-09-08 / 승인된 Unit 5에서 채택.
+- Context: 두 번째 라이브러리는 font JSON이 필요하고 Scene/탐색을 앱에서 구성해야 한다. 사용자도 한글 글꼴 제공 방식을 문의했다.
+- Decision: 고정 three-dxf-viewer 1.0.44 / Three 0.171, 별도 Adapter와 Scene, 로컬 한글 TTF 및 build-time typeface 변환. upstream 코드 변경 대신 material clone/대비 보정과 검증을 Wrapper에 둔다.
+- Alternatives: font CDN, 라틴 전용 font, upstream fork.
+- Reason / Trade-offs: CDN 없이 두 Viewer에서 같은 글꼴을 검증한다. 전체 한글 typeface JSON의 크기(약 25.8 MB)와 메인 스레드 파싱 비용은 남는다. subset은 실제 도면 문자 범위가 확인된 후 평가한다.
+- Consequences: Layer는 UI 연결. Hover/Select/CADControls는 anonymous listener와 public Dispose 부재가 확인되어 현재 UI에 넣지 않는다. SnapsHelper는 clear가 있지만 정확도/복잡도는 아직 실측하지 않았다. source-level 지원 사실을 runtime PASS로 기록하지 않는다. Unit 6에서 전환과 자원 stress를 검증한다.
+- 실제 검증에서 생략된 Z 좌표→NaN bounds를 확인했다. 일부 Entity의 생략된 Z=0 보완과 finite bounds 검증을 Wrapper에 추가했다. 원본 bytes는 그대로 보관하며 변환은 브라우저 임시 표현에 한정한다.
