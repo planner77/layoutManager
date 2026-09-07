@@ -2,7 +2,7 @@
 
 공장·설비의 DXF/DWG 도면을 등록·검색·버전 관리하고, 세 오픈소스 기술의 브라우저 렌더링 적용 가능성을 평가하는 프로젝트입니다.
 
-**현재 버전: 0.8.0 — DXF Viewer 측정 및 비교 실행 지원.** `/cad/upload`에서 DXF/DWG를 등록하면 `/` 목록에서 즉시 확인할 수 있습니다. 위치별 상세에서 버전과 Current를 관리합니다. 실제 버전 기준은 `src/package.json`입니다. DXF Viewer 두 방식부터 구현하고, DWG Viewer는 이후 별도 MINOR 버전으로 진행합니다.
+**현재 버전: 0.8.0 — DXF 통합·회귀 검증 완료(합성 도면 기준).** `/cad/upload`에서 DXF/DWG를 등록하면 `/` 목록에서 즉시 확인할 수 있습니다. 위치별 상세에서 버전과 Current를 관리합니다. 실제 버전 기준은 `src/package.json`입니다. DXF Viewer 두 방식부터 구현하고, DWG Viewer는 이후 별도 MINOR 버전으로 진행합니다.
 
 ## 목표 기능
 
@@ -26,7 +26,7 @@
 
 ## 기술 Stack와 구조
 
-Next.js App Router, React, TypeScript, shadcn/ui, Tailwind CSS와 Next Route Handler→Application Service→Repository/Prisma→SQLite 및 Local Filesystem을 사용합니다. Viewer는 UI→Manager→Adapter→각 라이브러리로 분리할 계획입니다. 설치 버전은 package/lock에 고정합니다.
+Next.js App Router, React, TypeScript, shadcn/ui, Tailwind CSS와 Next Route Handler→Application Service→Repository/Prisma→SQLite 및 Local Filesystem을 사용합니다. Viewer는 UI→Manager→Adapter→각 라이브러리로 분리했습니다. 설치 버전은 package/lock에 고정합니다.
 
 ```text
 AGENTS.md          # 에이전트 개발 진입 규칙
@@ -66,7 +66,7 @@ GitHub remote는 `.env`의 지정 저장소만 사용합니다. 기존 `origin`�
 
 ## 미지원 범위·알려진 제약
 
-CAD 편집/Geometry 변경/저장, DWG→DXF 우회, 별도 검색 엔진·Backend 플랫폼, 사용자/권한 시스템과 공개 운영은 이번 범위에 없습니다. dxf-viewer의 LINE/CIRCLE은 Chromium에서 검증했습니다. 한글 기본 글꼴을 로컬에 포함했습니다. 원본 글꼴과 동일한 모양을 보장하지 않으며 잘못된 문자 인코딩은 별도 문제입니다. 실도면·대형 파일·다른 Browser·Entity 충실도와 성능은 미검증이며 업무 성능 목표도 제공되지 않았습니다. `libredwg-web` 직접 렌더링 방식은 구현 전 확인 대상입니다. 상세 Known Issue와 시험 상태는 [TestReport](out/TestReport.md)를 기준으로 합니다.
+CAD 편집/Geometry 변경/저장, DWG→DXF 우회, 별도 검색 엔진·Backend 플랫폼, 사용자/권한 시스템과 공개 운영은 이번 범위에 없습니다. dxf-viewer의 LINE/CIRCLE은 Chromium에서 검증했습니다. 한글 기본 글꼴을 로컬에 포함했습니다. 원본 글꼴과 동일한 모양을 보장하지 않으며 잘못된 문자 인코딩은 별도 문제입니다. 합성 LINE 성능은 U8A에서 측정했습니다. 실도면·10 MiB 초과 파일·다른 Browser·복잡한 Entity 충실도는 미검증이며 업무 성능 목표도 제공되지 않았습니다. `libredwg-web` 직접 렌더링 방식은 구현 전 확인 대상입니다. 상세 Known Issue와 시험 상태는 [TestReport](out/TestReport.md)를 기준으로 합니다.
 
 ## 상세 문서
 
@@ -82,7 +82,7 @@ CAD 편집/Geometry 변경/저장, DWG→DXF 우회, 별도 검색 엔진·Backe
 | [Decisions](out/Decisions.md) | 주요 판단·제안·확인 대기 |
 | [ChangeLog](out/ChangeLog.md) | 변경 및 버전 이력 |
 
-다음 구현 단계는 Unit 9A DXF 통합·회귀 및 릴리스 검증입니다. 승인된 범위에서는 Unit별 구현→테스트→문서→Commit→필요 시 Push를 반복합니다.
+Unit 9A DXF 통합·회귀 검증을 완료했습니다. 승인된 다음 단계는 Unit 7A libredwg-web 기술 실험입니다. 등록 메모 요청(원격 이슈 #2)은 별도 후속 항목으로 기록했습니다. 승인된 범위에서는 Unit별 구현→테스트→문서→Commit→필요 시 Push를 반복합니다.
 
 ## 2026-09-07 실행 순서 변경
 

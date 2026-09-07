@@ -158,3 +158,12 @@
 - Alternatives: upstream parser 수정, 추정 parse 시간, 별도 모니터링 플랫폼.
 - Reason / Trade-offs: 원본 수정/대규모 의존 추가 없이 재현성을 확보한다. 세부 parse 비교와 dxf Entity count는 남지만 잘못된 정밀도를 제공하지 않는다.
 - Consequences: browser JS heap은 참고 snapshot이며 GPU/전체 누수 보장이 아니다. 실도면/10 MiB 초과 샘플/업무 SLA는 제공된 근거가 없으면 미검증으로 남긴다.
+
+## ADR-017 — DXF 회귀 완료와 실도면 평가 분리
+
+- Date / Status: 2026-09-08 / Unit 9A에서 채택.
+- Context: 승인된 DXF 우선 순서에서 통합 검증 단계에 도달했으며 실제 업무 Sample과 SLA는 제공되지 않았다.
+- Decision: UI 전체 흐름·Current·양방향 Viewer·20회 전환을 자동화하고 DXF P.O.C. 기능 검증으로 기록한다. 실도면 적합성/DWG는 NOT RUN을 유지한다. 기능 변경 없는 테스트/문서이므로 버전 0.8.0을 유지한다.
+- Alternatives: 샘플 없이 전체 P.O.C. 완료 선언, 테스트 추가만으로 MINOR 증가.
+- Reason / Trade-offs: 실행 근거와 버전 의미를 보존한다. 합성 도면 통과는 복잡한 업무 CAD의 보증이 아니다.
+- Consequences: 다음 승인 Unit은 7A 기술 실험. 신규 원격 이슈 #2 메모는 후속 기능으로 별도 추적한다. Tag는 전체 실도면 적합성 승인으로 오해하지 않도록 이번에 생성하지 않는다.

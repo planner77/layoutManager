@@ -114,3 +114,19 @@ Added: 제한된 multipart streaming, DXF/DWG 등록·SHA-256·원본 조회·Cu
 ### Tests / Known Issues
 
 - 최종 값과 통과 수는 TestReport U8A-20260908 참조. 순수 parse·GPU memory·전체 Entity fidelity·업무 실도면 적합성 미검증. 기존 npm high 4 유지. DB Schema/외부 dependency 변경 없음.
+
+## 0.8.0 검증 보완 — 2026-09-08 Unit 9A
+
+### Tests
+
+- UI에서 DXF 두 버전 등록→검색→Current 교체→선택 Version의 두 Viewer 표시→원본 bytes 보존 통합 시나리오 추가.
+- 전환 스트레스 10회→20회, 전체 DXF 회귀 실행. 실제 수와 결과는 TestReport의 U9A-20260908을 참조한다.
+
+### Changed
+
+- 요구사항 상태/README/운영 및 다음 Unit 갱신. 앱 기능/DB Schema/의존성 변경 없어 0.8.0 유지.
+
+### Known Issues
+
+- 실도면·복잡한 Entity·10 MiB 초과/업무 SLA 및 DWG 렌더링 미검증. 기존 Prisma 전이 의존성 경고 미해결.
+- 원격 이슈 #2 등록 메모는 이번 범위 밖 후속 요청으로 남는다.

@@ -1,5 +1,45 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U9A-20260908 — DXF 통합·회귀 및 릴리스 검증
+
+- Version: 0.8.0 유지. Source: e9339a3 위에 이 결과를 포함한 `test(release)` 커밋 snapshot. 앱 기능·라이브러리·DB Schema 변경 없음.
+- 환경: Node 22.14.0, Linux x64, Playwright 1.63.0 / Chromium 145.0.0.0, SwiftShader, 1440×1000, worker 1. Unit 8A와 동일 설정. 실행별 임시 SQLite/Storage 및 3101 Production 서버 사용; 기존 사용자 데이터에 시험 파일을 등록하지 않았다.
+
+| 검사 / 명령 | 실제 결과 |
+| --- | --- |
+| `npm --prefix src run typecheck` | PASS, exit 0 |
+| `npm --prefix src run lint` | PASS, exit 0 |
+| `npm --prefix src test` | 9 files / 38 passed / 0 failed, 14.80초 |
+| `npm --prefix src run build` | PASS, exit 0; 등록·목록·상세·Viewer 및 API route 생성 |
+| `PLAYWRIGHT_CHROMIUM_EXECUTABLE=… npm --prefix src run test:e2e` | 12 passed / 0 failed / 0 skipped, 1.1분 |
+| Schema review | schema.prisma/migration/Database.md의 Column/Null/Default/FK/Unique/Index 대조; TC-DB-007 PASS, Schema 변경 없음 |
+| Secret/런타임 제외 검사 | 88 commit 후보, 위반 0; 실제 env 값 비출력 |
+| `git diff --check` | PASS, exit 0 |
+
+Chromium 실행 파일은 `/home/planner/.cache/ms-playwright/chromium-1208/chrome-linux64/chrome`. 환경별 경로는 Operation에 따라 지정한다. E2E의 FORCE_COLOR/NO_COLOR 경고는 실행 환경 경고이며 실패는 없었다.
+
+### 요구사항 → 구현 → 실행 근거
+
+| 요구 / TC | 실행 코드 | 실제 확인 |
+| --- | --- | --- |
+| FR-CAD-001/003, FR-VERSION-002/003, FR-LIST-003, FR-UI-001 / TC-E2E-001 | tests/e2e/workflow.spec.ts | UI에서 동일 Location V1/V2 등록→검색→V2 Current 확인→V1 지정→reload/목록 API/상세 API 단일 Current 일치→V1 DXF 두 Viewer 표시, 7.9초 |
+| FR-FILE-001, FR-VIEWER-002/003, NFR-PERF-001 | workflow.spec.ts | 선택 Version ID/파일 크기/Renderer 계측 일치, 원본 bytes 동일, 확대 전후 canvas pixels 변화, console error/pageerror 0 |
+| FR-VIEWER-004 / TC-SWITCH-001/002 | tests/e2e/switch.spec.ts | 20회 전환, 동일 document/Version·다운로드 1회, 재시도 시 2회; canvas 1개, 추적 Worker/Blob 0 및 active context 1; 화면 이탈 후 모두 0, 24.4초 |
+| FR-VERSION-001–004, NFR-DATA-001 | tests/integration/database.test.ts | 위치 Unique·Version 순번·Current 교체/rollback/경쟁·타 Location SQL/service 차단·FK 및 Index 회귀 PASS |
+| FR-CAD-001–005, FR-LIST-001/002, NFR-SEC-001 | tests/integration/upload.test.ts, list.test.ts | 업로드/실패 보상/중복 hash·검색/필터·traversal/symlink 회귀 PASS |
+| FR-VIEWER-002/003/006, FR-ERROR-001 | tests/e2e/viewer.spec.ts | 두 Viewer의 LINE/CIRCLE/한글 TEXT·탐색·resize·재진입, 손상/빈 DXF, DWG 미제공 안내 회귀 PASS |
+| NFR-PERF-001 / TC-MET-001 | metrics.spec.ts 및 unit/metrics.test.ts | JSON export·빈 도면·성공/실패/취소·null 사유 회귀 PASS |
+
+캡처는 Git 제외 `src/test-results/release-workflow.png`. 새로 수행한 시각적 수동 fidelity 평가는 없으며 canvas 변화 assertion을 전체 Entity 정확성으로 해석하지 않는다. U8A 동일 앱의 60개 성능 측정은 재실행하지 않았고 위 기존 보고서의 실제 결과를 참조한다.
+
+### 판정 및 제한
+
+- DXF 우선 릴리스의 자동화 기능 통합·회귀 기준 충족. 두 Viewer 기본 흐름을 검증했으며 실패 미해결 테스트는 없다. 테스트/문서만 변경하여 앱 버전 0.8.0 유지, 이번 Tag 생성 없음.
+- 실제 업무 Sample/기준 CAD 화면·SLA 미제공: TC-CAD-001 실도면 충실도, 복잡한 Entity, >10 MiB 도면, 다른 Browser/실 GPU 장기 사용성은 NOT RUN. 자원 수 20회 확인은 전체 JS/GPU 장기 누수 없음의 증명이 아니다.
+- DWG의 실제 libredwg-web 초기화/렌더링은 NOT RUN. 다음 승인 Unit은 7A 기술 실험이며 전체 P.O.C. 완료로 판정하지 않는다.
+- 기존 Prisma 전이 의존성 경고는 미해결이다. 이번에 의존성 변경/audit 재실행은 하지 않았다.
+- 원격 연결/인증·main HEAD=e9339a3 일치를 시작 시 확인했다. 원격 이슈 #2 등록 메모 요청은 OPEN이며 이번 회귀 범위와 별도 후속 항목으로 기록했다. Commit/Push 최종 결과는 이 기록을 포함한 Git history와 원격 HEAD 검증을 기준으로 한다.
+
 ## U8A-20260908 — 계측 및 합성 도면 비교 0.8.0
 
 - Source: 이 결과를 포함한 `feat(metrics)` 커밋 snapshot. Type Check/Lint/Production Build 통과. DB Schema 및 기존 library version 변경 없음.
@@ -252,19 +292,19 @@
 - KI-002(작성자 미설정/최초 Commit·Push 대기)는 해결했다. 실제 지정 branch 쓰기 연결도 확인했다. 다른 branch의 권한까지 확인했다는 뜻은 아니다.
 - 이 결과를 기록하는 후속 문서 Commit은 별도로 생성한다. 최신 Commit과 동기화 상태는 실제 git log/status/remote 조회로 확인한다. 앱 버전은 여전히 없으며 앱 Build/DB/Viewer 시험은 NOT RUN이다.
 
-## Viewer 평가 현황 — U5 반영
+## Viewer 평가 현황 — U9A 반영
 
 공식 조사 사실은 Architecture에 있으며 아래 표는 **실제 실행 결과**만 채운다. 단순 라이브러리 문서의 기능 소개를 이 표의 PASS로 옮기지 않는다.
 
 | 항목 | dxf-viewer | three-dxf-viewer | libredwg-web 경로 |
 | --- | --- | --- | --- |
 | 정상 표시 / 기본 Zoom·Pan·Fit | PASS: 생성 LINE/CIRCLE | PASS: 생성 LINE/CIRCLE | NOT RUN |
-| Resize / 재진입 / Dispose | PASS: U4; 장기 누수 추세 미평가 | PASS: U5; 장기 누수 미평가 | NOT RUN |
+| Resize / 재진입 / Dispose | PASS: U9A 20회 전환 자원 정리; 장기 누수 미평가 | PASS: U9A 20회 전환 자원 정리; 장기 누수 미평가 | NOT RUN |
 | 장점 / 단점 / 발견 문제 | public API/Worker; U5 기본 font 연결 | Group/metadata 활용; 생략 Z 보완 필요 | 미평가 |
 | Layer 조회 / On-Off | NOT RUN | PASS: Layer 0 | NOT RUN |
 | Hover / Select / Entity 정보 / Snap | NOT RUN | NOT RUN | NOT RUN |
 | 지원 Entity / 문제 Entity / fidelity | LINE/CIRCLE/한글 TEXT 확인 | LINE/CIRCLE/한글 TEXT 확인 | 미평가 |
-| 대형 파일 / 사용성 / Browser | 미평가 | 미평가 | 미평가 |
+| 대형 파일 / 사용성 / Browser | U8A LINE 10만 개 측정; >10 MiB/실도면 미평가 | U8A LINE 10만 개 확대 지연 관찰; >10 MiB/실도면 미평가 | 미평가 |
 | WASM 초기화 / DWG revision / parsing / memory | 해당 없음 | 해당 없음 | NOT RUN |
 
 LINE, POLYLINE, LWPOLYLINE, CIRCLE, ARC, BLOCK, INSERT, TEXT, MTEXT, 한글 TEXT, DIMENSION, HATCH, SPLINE, Layer, Linetype 각각의 sample/결과를 TC-CAD-001 실행 시 행 단위로 추가한다. DWG의 parser 지원과 직접 renderer 지원을 별도로 표기한다.

@@ -135,3 +135,10 @@ WebGL 사용 가능한 데스크톱 Browser가 필요하다. 초기화 실패는
 - 매 benchmark 시작 때 benchmark-results가 새 실행용으로 정리된다. 보존할 JSONL은 실행 전 별도로 복사한다. 결과는 각 도면·Viewer마다 새 Browser context(cold), 다른 Viewer 경유 후 같은 renderer로 복귀한 warm(memory source 재사용) 각 5회이다. warm에는 Browser/module/font cache도 영향을 준다.
 - 100/10,000/100,000 LINE 반복 생성은 Entity 수를 통제하기 위한 합성 부하이다. 실도면 텍스트/블록/치수/HATCH 조합과 같지 않다. actual byte 수로 크기를 분류하고 브라우저·장비·GPU·동시 부하와 함께 해석한다. 단일 종합 점수로 기술 우열을 단정하지 않는다.
 - Console/pageerror는 benchmark가 별도 수집한다. 앱의 모든 Console을 전역 가로채거나 사용자 CAD 내용을 수집하지 않는다. 앱 JSON의 error는 일반화된 오류이다.
+
+## DXF 릴리스 회귀 검증 — Unit 9A
+
+- 루트에서 `npm --prefix src run typecheck`, `npm --prefix src run lint`, `npm --prefix src test`, `npm --prefix src run build` 후 `npm --prefix src run test:e2e`를 실행한다. Browser 경로 설정은 기존 E2E 절차를 따른다.
+- E2E 서버는 3101과 실행별 임시 DB/Storage를 사용한다. 기존 3100 사용자 데이터에 테스트 CAD를 등록하지 않는다. `workflow.spec.ts`는 UI 등록부터 두 Viewer까지 검증하며 `switch.spec.ts`는 20회 전환 자원 수를 확인한다.
+- 0.8.0 Unit 9A는 테스트/문서만 변경하므로 앱/Schema/설치 의존성은 동일하다. U8A 성능 측정값을 참조한다. 새로운 환경의 재측정 시에는 별도 benchmark 명령을 사용한다.
+- 기능 자동화 통과와 실도면 업무 적합성 승인은 구분한다. 전체 Entity 충실도 및 DWG는 후속 시험이다.

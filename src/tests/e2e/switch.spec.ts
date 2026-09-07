@@ -1,5 +1,5 @@
 import {test,expect} from '@playwright/test';
-test('TC-SWITCH-001/002: no navigation, shared bytes, racing load and ten switches release resources',async({page,request})=>{
+test('TC-SWITCH-001/002: no navigation, shared bytes, racing load and twenty switches release resources',async({page,request})=>{
   test.setTimeout(120_000);
   await page.addInitScript(()=>{
     const stats={workers:0,blobs:0,contexts:0,lost:0};Object.defineProperty(window,'__cadResources',{value:stats});
@@ -31,7 +31,7 @@ test('TC-SWITCH-001/002: no navigation, shared bytes, racing load and ten switch
   await page.getByRole('button',{name:'dxf-viewer',exact:true}).click();
   release();await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
   const resource=()=>page.evaluate(()=>{const stats=(window as unknown as {__cadResources:{workers:number;blobs:number;contexts:number;lost:number}}).__cadResources;return {workers:stats.workers,blobs:stats.blobs,active:stats.contexts-stats.lost};});
-  for(let i=0;i<10;i++){
+  for(let i=0;i<20;i++){
     const renderer=i%2===0?'three-dxf-viewer':'dxf-viewer';
     await page.getByRole('button',{name:renderer,exact:true}).click();
     await expect(page.getByRole('status')).toHaveText('도면 표시 완료');

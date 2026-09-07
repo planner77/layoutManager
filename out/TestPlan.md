@@ -1,5 +1,13 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Unit 9A 실행 계획 — 2026-09-08
+
+- TC-E2E-001: UI에서 동일 Location DXF 두 버전 등록 → 목록/검색 → Current V2 확인 → V1로 교체 → 새로고침/API 일치 → 선택한 V1을 두 Viewer에서 표시 → 원본 bytes와 측정 Version 확인. 임시 DB/Storage만 사용한다.
+- TC-SWITCH-002: 기존 지연 응답/경쟁/원본 공유 시험을 20회 전환으로 확대하고 잔여 canvas/Worker/Blob/WebGL context를 확인한다.
+- TC-REL-001: 전체 typecheck/lint/unit·integration/E2E/build, 문서·Schema·버전·Secret/산출물 제외 및 원격 일치 확인. 기능 변경이 없는 테스트/문서 릴리스 검증이므로 앱 버전 0.8.0을 유지한다.
+- U8A의 동일 코드 성능 측정은 재실행하지 않는다. 실도면 fidelity·복잡한 Entity·업무 SLA는 미검증으로 유지하고 DXF P.O.C. 자동화 검증 결과와 분리한다.
+- 원격 이슈 #2(등록 메모)는 확인했으며 신규 기능 후속 항목이다. 이번 Unit에서 DB/API 기능을 변경하지 않는다.
+
 ## Unit 8A 실행 계획 — 2026-09-08
 
 - source 대기, Adapter 초기화, 통합 load/parse/prepare/render, 첫 animation frame 관찰, 파일 bytes·가능한 Entity 수·Browser·JS heap·결과를 기록하고 JSON으로 내려받는다. 분리 불가능한 parse와 GPU memory는 null+사유.
@@ -26,7 +34,7 @@
 - TC-DXF-001: 생성 LINE/CIRCLE fixture 등록→목록→Viewer→canvas의 실제 픽셀 확인, 확대/축소/Fit/Pan/Resize 및 재진입.
 - TC-DXF-002: 손상 DXF 오류와 재시도, 빈 도면 안내. TC-VIEW-001/003: 허용 형식, 늦게 끝난 이전 load 무시, cleanup 자동화.
 
-상태: Unit 0–3 검증 완료, Unit 4/5/6/8A 결과는 U4/U5/U6/U8A-20260908을 참조한다. GitHub #1 회귀 결과는 U3-20260908에 기록했다. 요구 ID는 [Requirements](Requirements.md), 실행 결과의 기준은 [TestReport](TestReport.md)이다. 여기의 기대 결과는 PASS 기록이 아니다.
+상태: Unit 9A DXF 회귀 결과는 U9A-20260908을 참조한다. Unit 0–3 검증 완료, Unit 4/5/6/8A 결과는 U4/U5/U6/U8A-20260908을 참조한다. GitHub #1 회귀 결과는 U3-20260908에 기록했다. 요구 ID는 [Requirements](Requirements.md), 실행 결과의 기준은 [TestReport](TestReport.md)이다. 여기의 기대 결과는 PASS 기록이 아니다.
 
 ## Unit 구성과 순서
 

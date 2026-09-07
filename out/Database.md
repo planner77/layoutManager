@@ -1,4 +1,4 @@
-# Database Schema 초안 — 단일 기준 문서
+# Database Schema — 단일 기준 문서
 
 상태: 2026-09-07 Unit 1 구현·검증. Prisma/Client/SQLite adapter 7.10.0, SQLite 파일 및 실제 Migration이 존재한다. 실제 정의는 src/prisma/schema.prisma와 202609070001_locations/migration.sql에 있으며 이 문서를 함께 갱신한다.
 
@@ -37,7 +37,7 @@ erDiagram
 
 ## CadLocation
 
-| Column | SQLite / Prisma 예정 타입 | Null | Default/생성 주체 | 제약·의미 |
+| Column | SQLite / Prisma 타입 | Null | Default/생성 주체 | 제약·의미 |
 | --- | --- | --- | --- | --- |
 | id | TEXT / String | 불가 | Service UUID | PK; 문자열 위치 결합값 아님 |
 | business_unit | TEXT / String | 불가 | 없음 | 정규화된 사업부, 1–100자 |
@@ -52,7 +52,7 @@ Unique: `(business_unit, site, building, floor)` BINARY 비교. 저장 전 trim+
 
 ## CadFileVersion
 
-| Column | SQLite / Prisma 예정 타입 | Null | Default/생성 주체 | 제약·의미 |
+| Column | SQLite / Prisma 타입 | Null | Default/생성 주체 | 제약·의미 |
 | --- | --- | --- | --- | --- |
 | id | TEXT / String | 불가 | Service UUID | PK |
 | location_id | TEXT / String | 불가 | Service | FK→CadLocation.id |
@@ -70,7 +70,7 @@ Unique: `(business_unit, site, building, floor)` BINARY 비교. 저장 전 trim+
 
 ## FK·Unique·Index
 
-| 종류 / 이름(예정) | Column / 대상 | 목적 |
+| 종류 / 이름(개념명 포함) | Column / 대상 | 목적 |
 | --- | --- | --- |
 | PK Location / Version | 각 id | 내부 식별자 |
 | uq_location_key | Location(사업부,사업장,동,층) | 위치 중복 차단 |
@@ -108,14 +108,14 @@ FOREIGN KEY (id, current_version_id)
 ## Transaction과 동시성
 
 1. 신규 Location은 Current=NULL로 생성한다.
-2. Version 생성 transaction에서 해당 Location의 MAX(version)+1을 계산하고 insert한다. Unique와 SQLite 쓰기 직렬화를 함께 사용하고 busy/충돌은 bounded retry한다. transaction 밖에서 순번을 미리 확정하지 않는다.
+2. Version 생성 transaction에서 해당 Location의 MAX(version)+1을 계산하고 insert한다. Unique와 SQLite 쓰기 직렬화를 함께 사용하고 busy/충돌은 명시적 오류로 처리하고 commit 불확실 작업은 자동 재실행하지 않는다. transaction 밖에서 순번을 미리 확정하지 않는다.
 3. `makeCurrent=true`이면 같은 transaction에서 Location.current_version_id를 새 Version ID로 바꾼다. false이면 pointer를 건드리지 않는다. 기존 Version flag를 별도로 update하지 않는다.
 4. 기존 Version Current 변경은 Location/Version 존재·소속을 확인하고 단일 transaction으로 pointer와 updated_at을 갱신한다. 동일 ID 재요청은 멱등이다. 동시 유효 요청은 마지막 commit이 Current가 된다.
 5. 예외 시 전체 rollback한다. FK는 API를 우회한 직접 SQL에서도 소속 위반을 거부해야 한다. 물리 파일과 DB의 실패 보상은 Architecture를 따른다.
 
 Current 0개 허용, 다른 Location의 Current 독립, 잘못된 소속/존재하지 않는 Version/Current가 가리키는 Version 삭제 차단, 경쟁·rollback을 자동 시험한다.
 
-## Migration 계획
+## Migration 초기 계획 (당시 기록)
 
 - Unit 0B에서 Prisma/SQLite driver 연결·정확한 버전·설정 로더를 검증하고 Unit 1에서 두 Table과 constraint를 구현한다.
 - Prisma relation에서 소유 FK와 복합 Current FK의 겹치는 scalar 및 순환 relation을 검증한다. 선언만으로 불충분한 CHECK/복합 FK는 **검토 가능한 migration SQL**로 유지한다. Schema 대조 테스트로 누락을 방지한다.
@@ -132,3 +132,5 @@ Current 0개 허용, 다른 Location의 Current 독립, 잘못된 소속/존재�
 | 2026-09-07 | 0.2.0 / Unit 1 | 두 모델·복합 Current FK·Unique/Index·위치/크기/형식/hash CHECK 구현 | 202609070001_locations / DB integration 6개 통과 |
 
 실제 연결은 adapter의 FK 활성화를 PRAGMA 시험으로 확인했다. 쓰기는 단일 프로세스 queue로 직렬화하며 SQLite busy timeout 5초, transaction timeout 10초이다. commit 결과가 불확실한 작업을 자동 재실행하지 않는다. WAL은 아직 활성화하지 않았다. 운영 범위는 단일 Node 프로세스이다.
+
+Unit 9A(2026-09-08): 실제 schema.prisma/migration의 두 Table, Column/Null/Default, 복합 FK 및 Unique/Index와 문서를 재대조했다. Schema 변경 없음. TC-DB-007 회귀 통과. 초기 계획의 retry 문구를 실제 단일 프로세스 queue/명시적 실패 정책과 일치시켰다.
