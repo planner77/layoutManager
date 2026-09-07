@@ -1,0 +1,89 @@
+# 운영·환경설정 초안
+
+**현재는 문서 Bootstrap 단계이며 실행 가능한 앱/DB/migration/npm scripts는 없다.** 아래 앱 명령은 Unit 0B/1에서 제공할 계약이고 아직 실행하면 안 된다. 검증 후 실행 가능한 안내로 갱신한다.
+
+## 현재 확인한 환경
+
+2026-09-07: Node.js v22.14.0, npm 11.10.0, Git 2.43.0이 존재한다. 이 사실이 선택할 Next.js/Prisma 버전과의 호환성 통과를 의미하지 않는다. 초기화 시 engine/peer 조건과 Build/DB smoke로 확인한다. Browser 및 native SQLite driver 빌드 도구 필요 여부도 그때 기록한다.
+
+프로젝트는 Linux/WSL 등 영속 local disk가 있는 Node 환경을 기본으로 계획한다. 네트워크는 최초 package 설치·승인된 GitHub 연결에 필요하다. 폰트/WASM/worker는 로컬 자산으로 제공하는 방향이며 CDN 필수 의존을 만들지 않는다. Viewer 실행에는 WebGL/WASM Browser가 필요하다.
+
+## 설정 파일과 변수
+
+기존 Root `.env`는 그대로 보존하고 `.env.example`은 변수명/설명만 유지한다. 기존 파일 위에 template을 복사하지 않는다. 새 checkout에 `.env`가 없을 때만 example로 만들고 로컬 편집기에서 값을 입력한다. `.env` 전체를 화면에 출력하거나 shell `source`로 무조건 실행하지 않는다.
+
+| 변수 | 용도 | 초기 상태 / 기본안 |
+| --- | --- | --- |
+| remote_repo_url | 사용자가 지정한 GitHub remote URL | 기존 값 존재, credential 없는 HTTPS URL 확인; 값 문서화 안 함 |
+| remote_repo_token | GitHub 인증 | 기존 값 존재; Git 전용, 앱 전달 금지 |
+| DATABASE_URL | SQLite file URL | 현재 미정의; Unit 0B에서 절대 file URL로 검증 |
+| CAD_STORAGE_PATH | CAD 저장소 | 현재 미정의; 절대 local directory, public 밖 |
+| MAX_UPLOAD_SIZE_MB | 파일 크기 제한 | 현재 미정의; 100 MiB 제안, 1 MiB=1,048,576 bytes |
+
+DB 기본 위치는 `<WORK_FOLDER>/data/db/cad.sqlite`, CAD는 `<WORK_FOLDER>/data/cad`로 계획한다. 빈 앱 설정은 launcher가 repo root 기준으로 이 기본값을 계산하며 cwd에 의존하지 않는다. `DATABASE_URL`을 직접 설정할 때는 절대 `file:/.../cad.sqlite` 형태를 사용한다. 앱 설정의 우선순위는 명시적 프로세스 환경값→root .env allowlist→기본값이다. 잘못된 경로/숫자는 시작 시 값 전체를 출력하지 않고 변수명과 이유만 안내한다.
+
+앱 launcher는 src/scripts에 구현하고 dev/build/start/Prisma/test가 공유한다. `.env`를 데이터로 parse한 뒤 세 앱 키만 전달하고 inherited Git 인증 키도 제거한다. Next의 기본 env discovery에 root .env 로딩을 맡기지 않는다. 어떤 Secret도 NEXT_PUBLIC_* 또는 next.config env에 넣지 않는다. [Next.js 공식 환경변수 문서](https://nextjs.org/docs/app/guides/environment-variables)
+
+## 설치·DB·실행 명령 계약 (아직 미구현)
+
+다음 명령은 Root에서 호출할 수 있게 src/package.json에 구현할 예정이다. 아직 package.json이 없으므로 현재 실행 불가하다.
+
+| 목적 | 예정 명령 | 검증 Unit |
+| --- | --- | --- |
+| Lock 기준 의존성 설치 | `npm --prefix src ci` | 0B |
+| Prisma Client 생성 | `npm --prefix src run db:generate` | 0B/1 |
+| 개발 Migration 작성/적용 | `npm --prefix src run db:migrate` | 1 |
+| 검토된 Migration 배포·최초 DB 초기화 | `npm --prefix src run db:deploy` | 1 |
+| 개발 실행 | `npm --prefix src run dev` | 0B |
+| Production Build | `npm --prefix src run build` | 0B 및 각 Unit |
+| Production 실행 | `npm --prefix src run start` | 0B 및 통합 |
+| Type Check | `npm --prefix src run typecheck` | 0B |
+| Lint | `npm --prefix src run lint` | 0B |
+| 자동 테스트 | `npm --prefix src test` | 0B 이후 관련 Unit |
+| E2E | `npm --prefix src run test:e2e` | 4/9 |
+
+dev/start 기본 주소는 `http://127.0.0.1:3000`으로 계획한다. Next App Router와 local filesystem API를 사용하는 Node 서버이므로 정적 export만으로 실행하지 않는다. 원본 파일/DB를 src/public 또는 Build 디렉터리에 두지 않는다. 앱 실행 가능 시 현재 버전은 src/package.json에서 확인하고 README/ChangeLog와 대조한다.
+
+## GitHub 연결·Commit·Push
+
+원격 이름은 기존 `origin`, local branch는 `main`이다. 초기 읽기 연결에서 remote HEAD/branch가 없었다. 당시 인증 정보 존재·HTTPS URL 정합성·git ls-remote 성공을 확인했으며 write 권한은 미검증이었다. 이후 Commit/Push 확인 결과는 [TestReport](TestReport.md)를 기준으로 한다. public repo 읽기 성공만으로 token의 모든 권한을 검증했다고 주장하지 않는다.
+
+Git 실행 전 `.env`를 비출력 parser로 읽고 remote URL을 메모리에서 비교한다. URL에 Credential이 포함됐으면 raw `git remote -v`를 출력하지 않는다. 현재 remote가 일치하므로 재설정할 필요가 없다. 새 checkout의 remote가 없을 때만 `.env` URL을 검증하여 설정하며, 다른 저장소가 연결되어 있으면 임의로 덮어쓰지 않는다.
+
+인증은 token을 URL/명령행/문서에 넣지 않고 일시적인 GIT_ASKPASS 또는 안전한 credential helper를 사용한다. 이번 연결 확인은 임시 askpass가 프로세스 환경에서 token을 읽었고 임시 helper에는 Secret을 기록하지 않았다. shell tracing/GIT_TRACE를 켜지 않는다. Git author name/email은 인증 token과 별개이다. 2026-09-07 사용자가 제공한 작성자 정보를 이 저장소의 local config에 설정했다. 전역 설정은 변경하지 않았으며 실제 값은 문서에 복사하지 않는다.
+
+Commit/Push 절차:
+
+1. 안전하게 remote/branch/status/log를 확인하고 필요 시 fetch한다. 기존 remote history가 생겼으면 비교하고 무조건 pull/force push하지 않는다.
+2. 작업 요약, 관련 테스트/문서/README/Database/Architecture/ChangeLog 검토.
+3. `git diff --check`, 전체 intended diff 및 staged diff 확인. 새 파일은 untracked 상태에서도 내용을 검토한다.
+4. `git check-ignore`와 후보 파일 scan으로 `.env`, token, credential URL, Runtime DB, CAD 원본, 임시/build 파일이 없는지 확인한다. Secret scan은 발견한 값/행을 출력하지 않고 count/category만 보고한다.
+5. 정확한 파일만 stage, Conventional Commit, 필요 시 지정 origin의 현재 branch에 push한다. 최초 push 전 원격 변경을 다시 확인한다.
+6. Commit ID와 Push 성공/실패, remote와 HEAD 일치 여부를 안전한 결과로 기록한다. 미검증 권한을 OK로 미리 쓰지 않는다.
+
+인증 실패는 변수 존재→URL 형태→helper 방식→token scope/계정 접근 권한 순으로 확인한다. 값은 출력하지 않고 network/DNS, authentication/permission, branch protection 등 범주로만 안내한다. 자동 승인 검토나 sandbox 제약으로 차단되면 해당 action과 이유를 그대로 설명한다.
+
+## 데이터 백업·복구 계획
+
+- 안전한 초기 방식은 앱 쓰기 중지 후 SQLite connection을 닫고 DB와 CAD directory를 함께 백업하는 것이다. WAL 사용 시 DB 한 파일만 임의 복사하지 않는다. 온라인 백업은 SQLite backup 방식 검증 후 제공한다.
+- 복구는 별도 임시 경로에서 DB foreign_key_check, 파일 존재/hash, Location/Current 일치를 확인한 후 전환한다. 기존 데이터를 승인 없이 덮어쓰거나 초기화하지 않는다.
+- 임시/최종 경로의 파일과 DB 참조를 대조해 orphan을 식별한다. 자동 삭제하지 않고 실행 중 upload가 아닌지·DB commit 여부·유예기간을 확인한 뒤 정리 대상으로 제시한다.
+- missing content는 404와 관리용 로그로 알리고, 기존 Current/Version을 자동 삭제하거나 다른 파일로 대체하지 않는다.
+- 데이터 reset/삭제/파괴적 migration은 기본 운영 명령에 포함하지 않는다.
+
+## 장애 대응 초안
+
+| 증상 | 먼저 확인할 사항 | 처리 원칙 |
+| --- | --- | --- |
+| 앱 시작/DB 연결 실패 | 앱 변수명, 절대 경로, directory 쓰기 권한, driver version | 값 전체를 log에 출력하지 않음 |
+| Upload 초과/저장 실패 | 설정 MiB 한도, 실제 received bytes, 디스크 여유·권한 | 서버 검증, transaction rollback/파일 정리 상태 확인 |
+| DB locked | 실행 프로세스 수, 긴 쓰기 transaction, retry/timeout | 무제한 재시도·DB 삭제 금지 |
+| Current 불일치 | pointer/소속 FK/connection foreign_keys, 캐시 | DB 사실 기준으로 진단; 임의 여러 flag 수정 금지 |
+| 파일 없음 | Version 존재, 안전한 storage key, 파일 백업 | arbitrary path 요청을 허용하지 않음 |
+| WASM 로딩 오류 | 동종 origin asset, MIME/URL, bundler 배포 파일, browser | 초기화 오류를 Parse 실패와 구분 |
+| 도면 일부 누락/한글 오류 | Entity 지원, encoding/font, hash/기준 화면 | partial 결과와 parser/renderer 원인을 분리 기록 |
+| memory 증가/느린 전환 | 반복 횟수, Worker/geometry/RAF/listener/Blob, cache 조건 | 측정 방법 명시, 오류 재현 후 Adapter 수정 |
+
+## 세션 재개
+
+AGENTS→README→안전한 Git 상태→package/version→ChangeLog→TestReport→해당 문서를 읽고 마지막 완료/미완료 Unit, 승인 상태, 실패 테스트, uncommitted 변경, remote 동기화, 다음 작업을 파악한다. 승인 계획 내이면 반복 전체 승인 없이 진행한다. 현재는 **문서 단계, 구현 계획 확인 대기**이다.
