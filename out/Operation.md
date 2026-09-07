@@ -87,3 +87,7 @@ Commit/Push 절차:
 ## 세션 재개
 
 AGENTS→README→안전한 Git 상태→package/version→ChangeLog→TestReport→해당 문서를 읽고 마지막 완료/미완료 Unit, 승인 상태, 실패 테스트, uncommitted 변경, remote 동기화, 다음 작업을 파악한다. 승인 계획 내이면 반복 전체 승인 없이 진행한다. 현재는 **문서 단계, 구현 계획 확인 대기**이다.
+
+## 2026-09-07 실행 순서 변경
+
+사용자가 계획 실행을 승인했다. DXF 두 Viewer와 공통 관리 기능·계측·회귀를 먼저 구현하고, libredwg-web은 그 다음 MINOR 버전으로 진행한다. DWG 선행 실험은 DXF 구현의 조건에서 제외한다. 최신 단계/승인 상태는 Decisions의 ADR-011과 TestPlan을 따른다. 기존 미실행 기록은 당시 상태이며 실제 완료 후 갱신한다.

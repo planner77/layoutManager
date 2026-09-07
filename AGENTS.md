@@ -4,7 +4,7 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 
 ## 현재 단계와 작업 위치
 
-- 현재는 **Unit 0A 문서 Bootstrap / 구현 계획 확인 대기**이다. 사용자의 계획 확인 전 Next.js 초기화·의존성 설치·기능 구현을 시작하지 않는다. 승인 후 이 문구와 Decisions의 승인 상태를 함께 갱신한다.
+- 2026-09-07 사용자가 계획 실행을 승인했다. **DXF 우선 릴리스: 0B→1→2→3→4→5→6→8A→9A**, 이후 별도 MINOR 버전에서 **7A→7B→8B→9B(libredwg-web)**를 진행한다. DWG 선행 실험은 DXF 구현의 선행 조건이 아니다. 승인 범위 내 반복 승인은 요구하지 않는다.
 - 프로젝트 Root 아래 `src/`가 애플리케이션 루트이다. 모든 코드·설정·테스트·migration·package/lock 파일은 `src/`에 둔다. `out/`은 Markdown 산출물, `data/`는 Git 제외 런타임 저장소이다.
 - 기본 Stack: Next.js App Router, React, TypeScript, shadcn/ui, Tailwind CSS, SQLite, Prisma 우선, Local Filesystem. 실제 설치 버전과 호환성은 Unit 0B에서 검증·고정한다.
 

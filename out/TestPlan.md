@@ -4,24 +4,22 @@
 
 ## Unit 구성과 순서
 
-Unit 0을 문서(0A)와 실제 환경 초기화(0B)로 나눈다. DWG가 파서라는 구조적 위험을 늦게 발견하지 않도록 Unit 7을 7A 최소 실험 / 7B 완전 통합으로 분할한다. 7A는 승인 후 0B 직후 수행하며 실패가 미해결이면 다음 구현을 진행하지 않는다. 근거: ADR-001, ADR-004.
-
-실행 순서: **0A → 사용자 계획 확인 → 0B → 7A → 1 → 2 → 3 → 4 → 5 → 6 → 7B → 8 → 9**. 각 Unit은 임시 DB/Storage, 생성 fixture 또는 독립 adapter harness로 시험할 수 있게 한다. 기능 의존성은 명시적으로 유지하되 하나의 거대 구현으로 합치지 않는다.
+2026-09-07 사용자 지시에 따라 DXF를 먼저 출시하고 DWG는 다음 MINOR 버전으로 분리한다. 실행 순서: **0A(완료) → 0B → 1 → 2 → 3 → 4 → 5 → 6 → 8A → 9A → DXF 릴리스 → 7A → 7B → 8B → 9B → DWG 릴리스**. 8A/9A는 DXF 계측/통합, 8B/9B는 DWG 확장/회귀이다. DWG 실험 실패나 sample 부재로 DXF 구현을 막지 않는다. 근거: ADR-011.
 
 | Unit | 범위 / 선행 조건 | Acceptance Criteria | 테스트 / 예상 산출물 |
 | --- | --- | --- | --- |
 | 0A 문서 Bootstrap | Workspace·Git 조사, 요구/설계/계획 | 진입/필수 문서·추적·중요 확인사항 작성, secret 없이 remote 비교, ignore 검증, src 기능 코드 없음 | TC-BOOT-001/002, TC-DOC-001, TC-GIT-001; 문서 변경·검사 결과 |
 | 0B 실행 기반 | 0A 계획 확인 | src 내 Next.js/TS/shadcn/Tailwind, 테스트 도구, SQLite/Prisma, 앱 전용 env 로딩, exact package/lock; 기본 page·DB 연결·build/type/lint 성공 | TC-BOOT-003/004, TC-SEC-002; 재현 가능한 scripts, 환경 version 기록 |
-| 7A DWG 기술 실험 | 0B, ADR-004 확인 | 실제 배포본 API 확인, WASM 초기화→정상 DWG parse→최소 기하 표시→free/dispose, DXF 우회 없음; parser와 자체 renderer 경계·제약 기록 | TC-DWG-001/003 최소 subset, TC-DWG-005; 독립 harness·재현 근거. mock만으로 통과 불가 |
-| 1 Location/DB | 0B·7A 완료 | Migration, 위치 Unique, 여러 Version, 소속 검증, Current 0/1·교체·rollback·경쟁 정합성 | TC-DB-001–007; Repository/Service, schema 대조 |
+| 7A DWG 기술 실험 | DXF 릴리스 이후 | 실제 배포본 API 확인, WASM 초기화→정상 DWG parse→최소 기하 표시→free/dispose, DXF 우회 없음; parser와 자체 renderer 경계·제약 기록 | TC-DWG-001/003 최소 subset, TC-DWG-005; 독립 harness·재현 근거. mock만으로 통과 불가 |
+| 1 Location/DB | 0B 완료 | Migration, 위치 Unique, 여러 Version, 소속 검증, Current 0/1·교체·rollback·경쟁 정합성 | TC-DB-001–007; Repository/Service, schema 대조 |
 | 2 Upload | 1 | 두 형식·metadata·hash·파일 저장·DB 등록, 모든 invalid/실패 상황에서 정합성 유지 | TC-UP-001–005, TC-API-001/002/003/004, TC-SEC-001; Upload와 content/current API |
 | 3 목록/검색 | 2 | 필수 columns, 7조건 단독/조합·페이지·빈 결과, 위치별 버전/Current 변경 UI | TC-LIST-001–003, TC-API-005, TC-UI-001; 관리 화면 |
 | 4 dxf-viewer | 3 | 공통 Manager/Adapter 기반, 정상 DXF 실제 표시, 기본 controls, 손상/재진입/resize/dispose 처리 | TC-VIEW-001–003, TC-DXF-001/002; 첫 DXF Adapter |
 | 5 three-dxf-viewer | 4 | 같은 DXF 표시·기본 controls, Layer/Hover/Select/정보/Snap의 지원 수준을 실측 평가 | TC-THREE-001, TC-CAP-001 해당 Viewer; 두 번째 Adapter |
 | 6 DXF 전환 | 5 | 두 방향 전환에서 Version bytes 동일·reload 없음·이전 dispose·경쟁 load 결과 무시·자원 누적 검사 | TC-SWITCH-001/002; 전환 통합 |
 | 7B DWG 통합 | 6·7A | 원본 API 기반 DWG만 표시, WASM/손상/미지원 format 오류, 반복 load/재진입/dispose, UI DXF 선택 차단 | TC-DWG-001–005 전체, TC-VIEW-001–003 DWG; 실제 등록→Viewer |
-| 8 Metrics/평가 | 7B | 정의된 load/parse/first display/size/entity/error/browser, 미계측 사유, 반복 비교·대형 파일·기능/Entity 표 | TC-MET-001/002, TC-CAD-001, TC-CAP-001 전체, TC-EVAL-001; TestReport 근거 |
-| 9 통합/회귀 | 8 | DXF E2E 자동화, DWG 흐름 가능한 자동화+실제 표시 수동 확인, Current 모든 계층 일치, 최종 DoD | TC-E2E-001/002, TC-ERR-001, TC-ARCH-001, TC-REL-001 및 전체 관련 회귀 |
+| 8 Metrics/평가 | 8A: 6 / 8B: 7B | 정의된 load/parse/first display/size/entity/error/browser, 미계측 사유, 반복 비교·대형 파일·기능/Entity 표 | TC-MET-001/002, TC-CAD-001, TC-CAP-001 전체, TC-EVAL-001; TestReport 근거 |
+| 9 통합/회귀 | 9A: 8A / 9B: 8B | DXF E2E 자동화, DWG 흐름 가능한 자동화+실제 표시 수동 확인, Current 모든 계층 일치, 최종 DoD | TC-E2E-001/002, TC-ERR-001, TC-ARCH-001, TC-REL-001 및 전체 관련 회귀 |
 
 0A는 문서 검사만 수행한다. 코드가 있는 각 Unit은 Build·Type Check·Lint·관련 자동 테스트·필요한 E2E/수동 테스트와 문서/README/diff 검토/Commit/필요 시 Push가 모두 충족되어야 완료이다. Sample 미제공이나 환경 실패는 BLOCKED/NOT RUN이지 PASS가 아니다.
 
