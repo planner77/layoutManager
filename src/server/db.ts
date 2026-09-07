@@ -7,6 +7,6 @@ export function database() {
   return globalDb.cadDb ??= createDb(process.env.DATABASE_URL);
 }
 export type Database = ReturnType<typeof createDb>;
-// Single-process P.O.C.: serialize writes to keep SQLite interactive transactions short.
+// Single-process P.O.C.: serialize writes and list snapshots on the SQLite connection.
 let tail: Promise<unknown> = Promise.resolve();
 export function writeTransaction<T>(db: Database, action: (tx: import('@/generated/prisma/client').Prisma.TransactionClient) => Promise<T>): Promise<T> { const pending = tail.then(() => db.$transaction(action, { timeout: 10000, maxWait: 10000 })); tail = pending.catch(() => {}); return pending; }

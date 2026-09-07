@@ -1,6 +1,26 @@
 # ChangeLog
 
-애플리케이션 버전의 단일 기준은 생성 후 `src/package.json`이다. 아직 앱 버전/Release Tag가 없으므로 이번 문서 작업을 기능 Release로 표기하지 않는다.
+애플리케이션 버전의 단일 기준은 `src/package.json`이다. 아래 Bootstrap 기록은 당시 상태이다.
+
+## 0.4.0 — 2026-09-08
+
+### Added
+
+- DB 기반 도면 목록, 파일명·위치·형식·Current 검색, 페이지 이동.
+- Location별 버전 상세 및 Current 변경 화면, 목록/상세 조회 API.
+
+### Fixed
+
+- GitHub #1: 등록 성공 후 첫 화면에 도면이 표시되지 않는 문제. 정적 안내 화면을 실제 목록으로 교체하고 등록/Current 변경 후 캐시를 갱신한다.
+
+### Tests
+
+- 최종 실행 결과는 TestReport의 U3-20260908을 참조한다.
+
+### Known Issues
+
+- Viewer는 미구현. dxf-viewer→three-dxf-viewer 순으로 진행하며 libredwg-web은 후속 MINOR 버전이다.
+- 기존 Prisma 전이 의존성 보안 경고는 미해결이다. DB Schema 변경은 없다.
 
 ## Unreleased — 2026-09-07 문서 Bootstrap
 

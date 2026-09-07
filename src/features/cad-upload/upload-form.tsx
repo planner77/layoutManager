@@ -2,8 +2,10 @@
 import { useState } from 'react';
 import { UploadCloud, FileCheck2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 export function UploadForm({ today, maxMb }: { today: string; maxMb: number }) {
+  const router = useRouter();
   const [busy, setBusy] = useState(false), [error, setError] = useState('');
   const [result, setResult] = useState<{ id: string; version: number; duplicateCount: number } | null>(null);
   const [filename, setFilename] = useState('');
@@ -11,7 +13,7 @@ export function UploadForm({ today, maxMb }: { today: string; maxMb: number }) {
     event.preventDefault(); setError(''); setResult(null); setBusy(true);
     const form = new FormData(event.currentTarget);
     form.set('makeCurrent', form.get('makeCurrent') === 'on' ? 'true' : 'false');
-    try { const response = await fetch('/api/cad-files', { method: 'POST', body: form }); const data = await response.json(); if (!response.ok) throw new Error(data.error?.message ?? '파일 등록에 실패했습니다.'); setResult(data); }
+    try { const response = await fetch('/api/cad-files', { method: 'POST', body: form }); const data = await response.json(); if (!response.ok) throw new Error(data.error?.message ?? '파일 등록에 실패했습니다.'); setResult(data); router.refresh(); }
     catch (error) { setError(error instanceof Error ? error.message : '파일 등록에 실패했습니다.'); }
     finally { setBusy(false); }
   }

@@ -93,3 +93,13 @@ AGENTS→README→안전한 Git 상태→package/version→ChangeLog→TestRepor
 ## 2026-09-07 실행 순서 변경
 
 사용자가 계획 실행을 승인했다. DXF 두 Viewer와 공통 관리 기능·계측·회귀를 먼저 구현하고, libredwg-web은 그 다음 MINOR 버전으로 진행한다. DWG 선행 실험은 DXF 구현의 조건에서 제외한다. 최신 단계/승인 상태는 Decisions의 ADR-011과 TestPlan을 따른다. 기존 미실행 기록은 당시 상태이며 실제 완료 후 갱신한다.
+
+## 목록 미표시 점검 및 Unit 3 사용법
+
+GitHub #1 원인은 DB 저장 실패가 아니라 홈의 목록 조회 미구현이었다. 수정 버전에서 `/`는 실제 DB 목록이며 `/cad/upload` 등록 후 목록으로 돌아오면 새 행이 보인다. 도면 파일명/버전 정보 링크로 `/cad/locations/{locationId}`에 접근하고 이전 버전을 Current로 지정할 수 있다.
+
+검색 조건은 URL query로 유지된다. 결과가 없으면 초기화로 전체 목록을 확인한다. 상세 의미와 API query는 Architecture를 참조한다. Viewer는 후속 단계로 아직 표시하지 않는다.
+
+코드 갱신 후 `npm --prefix src run build`를 실행하고 기존 Node 서버를 정상 종료한 뒤 `npm --prefix src run start -- --port 3100`으로 재시작한다. DB/file 삭제나 DB reset은 필요 없다. 실행 환경의 DATABASE_URL/CAD_STORAGE_PATH가 등록 당시와 동일한지 확인한다. `/api/cad-files`의 total과 목록을 비교하되 사용자 파일명/원본을 공개 로그에 기록하지 않는다.
+
+회귀 검증: `npm --prefix src test`, Build 후 `npm --prefix src run test:e2e`. 설치된 별도 Chromium이 필요하면 PLAYWRIGHT_CHROMIUM_EXECUTABLE에 절대 실행 경로를 지정한다. 테스트는 운영 DB를 사용하지 않는다.

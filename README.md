@@ -2,7 +2,7 @@
 
 공장·설비의 DXF/DWG 도면을 등록·검색·버전 관리하고, 세 오픈소스 기술의 브라우저 렌더링 적용 가능성을 평가하는 프로젝트입니다.
 
-**현재 버전: 0.3.0 — 파일 등록 구현 완료, DXF 우선 개발 진행 중.** `/cad/upload`에서 DXF/DWG를 등록하고 원본을 다운로드할 수 있습니다. 위치 Unique와 Current 트랜잭션을 실제 DB에서 검증했습니다. 실제 버전 기준은 `src/package.json`입니다. 목록·검색과 Viewer는 이후 Unit에서 추가합니다.
+**현재 버전: 0.4.0 — 등록·목록·검색·버전 관리 지원.** `/cad/upload`에서 DXF/DWG를 등록하면 `/` 목록에서 즉시 확인할 수 있습니다. 위치별 상세에서 버전과 Current를 관리합니다. 실제 버전 기준은 `src/package.json`입니다. DXF Viewer 두 방식부터 구현하고, DWG Viewer는 이후 별도 MINOR 버전으로 진행합니다.
 
 ## 목표 기능
 
@@ -12,7 +12,7 @@
 - DXF Viewer 두 방식 전환, DWG 전용 경로, 오류·부분 지원·성능 계측.
 - 실도면 Entity 충실도·대형 파일·사용성 비교와 재현 가능한 테스트/문서.
 
-현재 지원: 파일 등록·메타데이터 검증·SHA-256·원본 조회·Location/Version/Current DB 규칙. 목록·검색·Viewer는 순차 구현 중입니다.
+현재 지원: 파일 등록·메타데이터 검증·SHA-256·원본 조회·목록·검색·페이지 이동·Location 상세·Current 변경. 파일명은 대소문자를 구분하는 부분 일치, 위치 네 항목은 정확히 일치하는 조건으로 검색합니다. Viewer는 아직 미구현입니다.
 
 ## 지원 형식과 Viewer 구성 계획
 
@@ -26,7 +26,7 @@
 
 ## 기술 Stack와 구조
 
-Next.js App Router, React, TypeScript, shadcn/ui, Tailwind CSS를 기본으로, Next Route Handler→Application Service→Repository/Prisma→SQLite와 Local Filesystem을 계획합니다. Viewer는 UI→Manager→Adapter→각 라이브러리로 분리합니다. 버전은 초기화 때 호환성을 확인하고 package/lock에 고정합니다.
+Next.js App Router, React, TypeScript, shadcn/ui, Tailwind CSS와 Next Route Handler→Application Service→Repository/Prisma→SQLite 및 Local Filesystem을 사용합니다. Viewer는 UI→Manager→Adapter→각 라이브러리로 분리할 계획입니다. 설치 버전은 package/lock에 고정합니다.
 
 ```text
 AGENTS.md          # 에이전트 개발 진입 규칙
@@ -34,24 +34,24 @@ README.md          # 프로젝트·실행 안내
 .env               # 실제 로컬 설정, Git 제외
 .env.example       # 변수명과 설명
 .gitignore
-src/               # 앱·설정·테스트 (현재 빈 placeholder)
+src/               # 실행 가능한 앱·설정·테스트·migration
 out/               # 요구·설계·테스트·운영 Markdown
-data/              # 구현 후 DB/CAD 런타임 저장, Git 제외
+data/              # DB/CAD 런타임 저장, Git 제외
 ```
 
 ## 사전 요구사항·환경설정
 
-Node.js/npm/Git, 영속 local disk, WebGL/WASM 데스크톱 Browser를 사용합니다. 현재 조사한 환경은 Node 22.14.0/npm 11.10.0/Git 2.43.0이며 앱 호환성 검증은 Unit 0B에서 수행합니다.
+Node.js/npm/Git, 영속 local disk, 데스크톱 Browser를 사용합니다. 검증 환경은 Node 22.14.0/npm 11.10.0/Git 2.43.0입니다. 향후 Viewer에는 WebGL/WASM이 필요합니다.
 
 Root `.env`가 이미 있으면 보존합니다. 새 checkout에 없을 때만 `.env.example`을 기반으로 생성하고 실제 값은 로컬에서 입력합니다. 기존 Git 변수명 `remote_repo_url`, `remote_repo_token`을 유지합니다. 앱 설정은 `DATABASE_URL`, `CAD_STORAGE_PATH`, `MAX_UPLOAD_SIZE_MB`를 계획하며 상세/기본값/안전한 로딩은 [Operation](out/Operation.md)에 있습니다. Secret을 NEXT_PUBLIC_* 변수로 넣지 않습니다.
 
-GitHub remote는 `.env`의 지정 저장소만 사용합니다. 기존 `origin`과 설정의 일치 및 읽기 연결을 확인했습니다. 로컬 branch는 `main`, 원격에는 조회 당시 HEAD/branch가 없었습니다. 인증 정보와 저장소 로컬 Git 작성자 설정을 확인했습니다. Commit/Push의 실제 결과는 [TestReport](out/TestReport.md)에 기록합니다. 실제 Credential이나 저장소 URL을 이 문서에 적지 않습니다.
+GitHub remote는 `.env`의 지정 저장소만 사용합니다. 기존 `origin`과 설정의 일치 및 인증을 확인했습니다. 작업 branch는 `main`입니다. 새 checkout은 지정 저장소를 clone하고, 기존 workspace는 설정과 remote 일치를 먼저 확인합니다. Token을 remote URL에 포함하지 않습니다. Commit/Push 결과는 [TestReport](out/TestReport.md)에 기록합니다.
 
 ## 설치·DB 초기화·실행·테스트
 
-아래 명령은 Root에서 실행합니다. 먼저 `npm --prefix src ci`와 `npm --prefix src run db:generate`를 수행합니다. DB migration은 Unit 1부터, E2E는 Viewer Unit부터 제공합니다.
+아래 명령은 Root에서 실행합니다. 먼저 설치→DB Client 생성→Migration 적용을 수행합니다. E2E는 Production Build 후 실행하며 운영 DB와 분리된 임시 DB/Storage를 사용합니다. Chromium 설치가 필요하면 `cd src` 후 `npx playwright install chromium`을 실행합니다.
 
-| 작업 | 예정 명령 |
+| 작업 | 명령 |
 | --- | --- |
 | 설치 | `npm --prefix src ci` |
 | DB Client 생성 | `npm --prefix src run db:generate` |
@@ -62,7 +62,7 @@ GitHub remote는 `.env`의 지정 저장소만 사용합니다. 기존 `origin`�
 | Type Check / Lint | `npm --prefix src run typecheck` / `npm --prefix src run lint` |
 | 자동 테스트 / E2E | `npm --prefix src test` / `npm --prefix src run test:e2e` |
 
-기본 실행 주소는 로컬 `http://127.0.0.1:3000`을 계획합니다. Production 서버의 기본 페이지 응답을 검증했습니다. DB·업로드 파일 백업/복구 및 장애 대응은 [Operation](out/Operation.md), Unit별 검증 기준과 실제 결과는 아래 테스트 문서에서 확인할 수 있습니다.
+기본 포트는 3000이며 `npm --prefix src run start -- --port 3100`으로 변경할 수 있습니다. 목록은 `/`, 등록은 `/cad/upload`, 위치 상세는 `/cad/locations/{locationId}`입니다. 새 Build 적용 시 서버를 재시작합니다. DB·업로드 파일 백업/복구 및 장애 대응은 [Operation](out/Operation.md), 실제 검증 결과는 [TestReport](out/TestReport.md)에서 확인합니다.
 
 ## 미지원 범위·알려진 제약
 
@@ -82,7 +82,7 @@ CAD 편집/Geometry 변경/저장, DWG→DXF 우회, 별도 검색 엔진·Backe
 | [Decisions](out/Decisions.md) | 주요 판단·제안·확인 대기 |
 | [ChangeLog](out/ChangeLog.md) | 변경 및 버전 이력 |
 
-다음 단계는 계획 확인 후 Unit 0B이며, 승인된 범위에서는 Unit별 구현→테스트→문서→Commit→필요 시 Push를 반복합니다.
+다음 구현 단계는 Unit 4 dxf-viewer입니다. 승인된 범위에서는 Unit별 구현→테스트→문서→Commit→필요 시 Push를 반복합니다.
 
 ## 2026-09-07 실행 순서 변경
 

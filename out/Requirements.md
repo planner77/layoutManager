@@ -6,26 +6,26 @@
 
 공장·설비 DXF/DWG 도면의 서버 등록, 위치별 버전 정합성, 브라우저 렌더링 및 실제 도면 적용성을 검증한다. 결과는 세 Viewer의 장단점·Entity 충실도·성능·한계와 향후 시스템화 가치에 대한 근거를 제공해야 한다.
 
-P0=필수, P1=가능한 범위 구현 또는 지원 여부 평가. `PLANNED`=미구현, `IN_PROGRESS`=진행 중, `VERIFIED`=관련 시험으로 확인, `BLOCKED`=외부 조건 대기. 현재 기능 요구는 전부 PLANNED이다. 아래 구현 위치는 **예정**이며 실제 완료 시 경로와 TestReport 실행 ID를 연결한다. Test Case 상세의 기준은 [TestPlan](TestPlan.md)이다.
+P0=필수, P1=가능한 범위 구현 또는 지원 여부 평가. `PLANNED`=미구현, `IN_PROGRESS`=진행 중, `VERIFIED`=관련 시험으로 확인, `BLOCKED`=외부 조건 대기. 아래 상태는 구현 근거에 따라 갱신한다. VERIFIED 항목은 TestReport의 U1/U2/U3 실행 기록을 참조하며 Viewer 요구는 PLANNED이다. Test Case 상세의 기준은 [TestPlan](TestPlan.md)이다.
 
 ## 기능 요구사항
 
 | ID | 제목·설명 | 우선순위 | Acceptance Criteria | 관련 TC | 구현 예정 / 상태 |
 | --- | --- | --- | --- | --- | --- |
-| FR-CAD-001 | DXF/DWG 로컬 파일 업로드 | P0 | 선택한 한 파일의 bytes가 원본 그대로 저장되고 Version ID를 반환한다 | TC-UP-001 | cad-upload / PLANNED |
-| FR-CAD-002 | 파일 유효성 검증 | P0 | 파일 누락·빈 파일·미지원 확장자·최대 크기 초과를 거부하고 실패 이유를 표시한다 | TC-UP-002 | upload service / PLANNED |
-| FR-CAD-003 | 메타데이터 등록 | P0 | 사업부·사업장·동·층·등록일·Current 지정 여부를 입력하고 서버에서 검증한다 | TC-UP-003 | cad-upload / PLANNED |
-| FR-CAD-004 | 파일 식별·중복 확인 | P1 | SHA-256·크기·형식·원본명·내부 저장 위치를 기록하고 동일 hash를 식별한다 | TC-UP-004 | storage, repository / PLANNED |
-| FR-CAD-005 | 저장 실패 처리 | P0 | Upload/Storage/DB 실패 시 성공으로 표시하지 않고 기존 Current를 보존하며 잔여 파일을 정리 또는 복구 대상으로 식별한다 | TC-UP-005 | upload service / PLANNED |
-| FR-LOCATION-001 | Location 식별·중복 금지 | P0 | 정규화된 네 값 조합 Unique, 별도 내부 ID; 동시 동일 Location 생성도 중복되지 않는다 | TC-DB-001 | location repository / PLANNED |
-| FR-VERSION-001 | Location별 버전 생성 | P0 | 같은 Location에 여러 Version이 존재하고 순번 중복 및 존재하지 않는 Location 참조를 차단한다 | TC-DB-002 | version repository / PLANNED |
-| FR-VERSION-002 | Current 최대 하나 | P0 | DB·Service·API·UI 모두 Location당 Current가 0 또는 1임을 보장한다 | TC-DB-003, TC-API-004 | current-version service / PLANNED |
-| FR-VERSION-003 | Current 원자적 교체 | P0 | 새 Version 지정 시 기존 Current가 해제되고 중간 실패는 이전 상태로 돌아간다 | TC-DB-004, TC-DB-005 | current-version service / PLANNED |
+| FR-CAD-001 | DXF/DWG 로컬 파일 업로드 | P0 | 선택한 한 파일의 bytes가 원본 그대로 저장되고 Version ID를 반환한다 | TC-UP-001 | features/cad-upload, U2 / VERIFIED |
+| FR-CAD-002 | 파일 유효성 검증 | P0 | 파일 누락·빈 파일·미지원 확장자·최대 크기 초과를 거부하고 실패 이유를 표시한다 | TC-UP-002 | server/services/upload, U2 / VERIFIED |
+| FR-CAD-003 | 메타데이터 등록 | P0 | 사업부·사업장·동·층·등록일·Current 지정 여부를 입력하고 서버에서 검증한다 | TC-UP-003 | domain/cad, U2 / VERIFIED |
+| FR-CAD-004 | 파일 식별·중복 확인 | P1 | SHA-256·크기·형식·원본명·내부 저장 위치를 기록하고 동일 hash를 식별한다 | TC-UP-004 | storage/repository, U2 / VERIFIED |
+| FR-CAD-005 | 저장 실패 처리 | P0 | Upload/Storage/DB 실패 시 성공으로 표시하지 않고 기존 Current를 보존하며 잔여 파일을 정리 또는 복구 대상으로 식별한다 | TC-UP-005 | upload service, U2 / VERIFIED |
+| FR-LOCATION-001 | Location 식별·중복 금지 | P0 | 정규화된 네 값 조합 Unique, 별도 내부 ID; 동시 동일 Location 생성도 중복되지 않는다 | TC-DB-001 | server/repositories/cad.ts, U1 / VERIFIED |
+| FR-VERSION-001 | Location별 버전 생성 | P0 | 같은 Location에 여러 Version이 존재하고 순번 중복 및 존재하지 않는 Location 참조를 차단한다 | TC-DB-002 | server/repositories/cad.ts, U1 / VERIFIED |
+| FR-VERSION-002 | Current 최대 하나 | P0 | DB·Service·API·UI 모두 Location당 Current가 0 또는 1임을 보장한다 | TC-DB-003, TC-API-004 | DB/repository/Current UI, U1/U3 / VERIFIED |
+| FR-VERSION-003 | Current 원자적 교체 | P0 | 새 Version 지정 시 기존 Current가 해제되고 중간 실패는 이전 상태로 돌아간다 | TC-DB-004, TC-DB-005 | server/repositories/cad.ts, U1/U3 / VERIFIED |
 | FR-VERSION-004 | Current 소속 일치 | P0 | 다른 Location의 Version을 Current로 지정하는 직접 SQL 및 API 요청이 거부된다 | TC-DB-006, TC-API-004 | DB constraint, service / PLANNED |
-| FR-LIST-001 | CAD 목록 | P0 | 네 위치 값·Version·파일명·DXF/DWG·등록일·Current를 표시하고 빈 결과도 처리한다 | TC-LIST-001 | cad-list / PLANNED |
-| FR-LIST-002 | 검색·Filter | P0 | 파일명·사업부·사업장·동·층·형식·Current 단독/조합 필터가 SQLite query로 일치 결과를 반환한다 | TC-LIST-002 | list service / PLANNED |
-| FR-LIST-003 | 위치 상세·Version 선택 | P0 | Location 상세에서 버전 목록·Current를 확인하고 선택한 Version의 Viewer로 이동한다 | TC-LIST-003 | cad-location / PLANNED |
-| FR-FILE-001 | ID 기반 원본 조회 | P0 | Version ID로 올바른 bytes를 반환하고 없는 DB 행/파일은 404, 경로 입력은 거부한다 | TC-API-003, TC-SEC-001 | content API, storage / PLANNED |
+| FR-LIST-001 | CAD 목록 | P0 | 네 위치 값·Version·파일명·DXF/DWG·등록일·Current를 표시하고 빈 결과도 처리한다 | TC-LIST-001 | features/cad-list, U3-20260908 / VERIFIED |
+| FR-LIST-002 | 검색·Filter | P0 | 파일명·사업부·사업장·동·층·형식·Current 단독/조합 필터가 SQLite query로 일치 결과를 반환한다 | TC-LIST-002 | server/repositories/cad-list.ts, U3-20260908 / VERIFIED |
+| FR-LIST-003 | 위치 상세·Version 선택 | P0 | Location 상세에서 버전 목록·Current를 확인하고 선택한 Version의 Viewer로 이동한다 | TC-LIST-003 | app/features / IN_PROGRESS; 관리 기능 검증, Viewer 미구현 |
+| FR-FILE-001 | ID 기반 원본 조회 | P0 | Version ID로 올바른 bytes를 반환하고 없는 DB 행/파일은 404, 경로 입력은 거부한다 | TC-API-003, TC-SEC-001 | content API/storage, U2 / VERIFIED |
 | FR-VIEWER-001 | Adapter 분리·형식 라우팅 | P0 | 업무/UI가 외부 API에 직접 의존하지 않고 DXF/DWG에 허용된 Adapter만 선택한다 | TC-VIEW-001 | viewers/core / PLANNED |
 | FR-VIEWER-002 | dxf-viewer 표시 | P0 | 정상 DXF가 실제 canvas에 표시되고 손상 파일은 이해 가능한 실패 상태가 된다 | TC-DXF-001, TC-DXF-002 | viewers/dxf-viewer / PLANNED |
 | FR-VIEWER-003 | three-dxf-viewer 표시 | P0 | 동일 DXF로 실제 렌더링이 가능하고 메타데이터/상태와 연결된다 | TC-THREE-001 | viewers/three-dxf-viewer / PLANNED |
@@ -34,8 +34,8 @@ P0=필수, P1=가능한 범위 구현 또는 지원 여부 평가. `PLANNED`=미
 | FR-VIEWER-006 | 기본 탐색 기능 | P0 | 표시·Zoom ±·Pan·Fit·Resize·재초기화·Dispose 각각을 구현하거나 미지원 근거를 기록한다 | TC-VIEW-002, TC-VIEW-003 | adapters / PLANNED |
 | FR-VIEWER-007 | 확장 기능 평가 | P1 | Layer 조회/On-Off·Hover·Select·Entity 정보·Snap을 Viewer별 실제 지원/부분/미지원/미검증으로 구분한다 | TC-CAP-001 | adapters, TestReport / PLANNED |
 | FR-VIEWER-008 | WASM 생명주기 | P0 | 초기화·반복 Load·재진입·Memory 해제·Dispose·Browser 호환성과 오류를 검증한다 | TC-DWG-003, TC-DWG-004 | libredwg adapter / PLANNED |
-| FR-ERROR-001 | 사용자 오류 처리 | P0 | 미지원 파일, Upload/DB/Storage 실패, 파일 없음, Parse/초기화/WASM 실패, 손상 DXF/DWG, 미지원 Entity를 구분하고 stack trace를 노출하지 않는다 | TC-ERR-001 | API error mapper, viewer state / PLANNED |
-| FR-UI-001 | 업무용 데스크톱 UI | P0 | 목록·등록·위치 상세·Viewer 제공; 검색/Current 식별, Metadata sidebar, Viewer 선택, 상태/크기/시간 표시 | TC-UI-001, TC-E2E-001 | app, components / PLANNED |
+| FR-ERROR-001 | 사용자 오류 처리 | P0 | 미지원 파일, Upload/DB/Storage 실패, 파일 없음, Parse/초기화/WASM 실패, 손상 DXF/DWG, 미지원 Entity를 구분하고 stack trace를 노출하지 않는다 | TC-ERR-001 | app/features / IN_PROGRESS; 관리 기능 검증, Viewer 미구현 |
+| FR-UI-001 | 업무용 데스크톱 UI | P0 | 목록·등록·위치 상세·Viewer 제공; 검색/Current 식별, Metadata sidebar, Viewer 선택, 상태/크기/시간 표시 | TC-UI-001, TC-E2E-001 | app/features / IN_PROGRESS; 관리 기능 검증, Viewer 미구현 |
 
 ## 비기능·평가·운영 요구사항
 
@@ -97,7 +97,7 @@ DWG→DXF 변환 후 DXF Viewer 사용, Geometry 수정/Line 생성/Entity 삭�
 
 ## 최종 완료 판정
 
-DXF 등록→Metadata→Current→목록→검색→선택→dxf-viewer→three-dxf-viewer 전환과 DWG 등록→동일 관리 흐름→libredwg-web 표시가 실제 동작해야 한다. DB부터 UI까지 Current 규칙이 일치하고 필수 테스트·실도면 평가·문서·Commit 등 DoD를 충족해야 한다. 현재는 이 최종 판정의 어떤 기능도 완료로 보고하지 않는다.
+DXF 등록→Metadata→Current→목록→검색→선택→dxf-viewer→three-dxf-viewer 전환과 DWG 등록→동일 관리 흐름→libredwg-web 표시가 실제 동작해야 한다. DB부터 UI까지 Current 규칙이 일치하고 필수 테스트·실도면 평가·문서·Commit 등 DoD를 충족해야 한다. 등록·관리 기능은 개별 검증했지만 Viewer와 실도면 평가가 남아 있어 전체 P.O.C. 완료로 판정하지 않는다.
 
 ## 2026-09-07 실행 순서 변경
 

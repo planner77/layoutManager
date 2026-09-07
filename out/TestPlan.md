@@ -1,6 +1,6 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
-상태: 구현 전. 요구 ID는 [Requirements](Requirements.md), 실행 결과의 기준은 [TestReport](TestReport.md)이다. 여기의 기대 결과는 PASS 기록이 아니다.
+상태: Unit 0–3 검증 완료. GitHub #1 회귀 결과는 U3-20260908에 기록했다. 요구 ID는 [Requirements](Requirements.md), 실행 결과의 기준은 [TestReport](TestReport.md)이다. 여기의 기대 결과는 PASS 기록이 아니다.
 
 ## Unit 구성과 순서
 
@@ -120,3 +120,14 @@
 ## 결과 기록 및 추적
 
 실행마다 Run ID, 날짜, Unit, 앱/라이브러리 버전, Commit 또는 uncommitted snapshot, 환경, 명령·exit code, total/pass/fail/skip, TC별 결과, 실패 원인/재시험, manual 근거, Known Issue를 TestReport에 기록한다. Requirements의 구현 상태는 실제 근거로만 올린다.
+
+## GitHub #1 — 등록 후 목록 미표시 회귀
+
+확인된 원인: `/`가 DB 조회 없이 정적 안내만 렌더링했다. 승인된 Unit 3 범위에서 실제 목록으로 교체한다.
+
+- TC-ISSUE-001: 목록을 먼저 방문→등록 화면→새 파일 등록→목록으로 복귀→동일 파일/Metadata/Current 표시→새로고침 후 유지. 등록 전 prefetch된 목록도 새 데이터를 표시해야 한다.
+- TC-LIST-001/002 및 TC-API-005: DB에 기존 행이 있으면 GET 목록에 포함, 필수 columns·결정적 정렬·페이지·7조건 단독/AND·문자 그대로 filename 검색·빈 결과·잘못된 query 검증.
+- TC-LIST-003: Location 상세에서 과거 버전 확인 및 Current 변경 후 목록과 상세의 표시 일치. Viewer 화면은 다음 Unit이므로 사용할 수 있는 것처럼 노출하지 않는다.
+- 실제 사용자 DB/파일은 변경하지 않고 회귀 데이터는 독립 임시 DB/Storage에 생성한다. 수정 전 실패와 수정 후 성공을 TestReport에 구분한다.
+
+추가 자동화: TC-LIST-004 Current 교체/null 필터, TC-LIST-005 안정적 페이지 분할과 범위 초과 빈 결과, TC-LIST-006 잘못된/중복 query 거부, TC-LIST-007 한글 NFC·와일드카드/인용부호 문자 그대로 검색. `tests/integration/list.test.ts`와 `tests/e2e/upload.spec.ts`에서 실행한다.

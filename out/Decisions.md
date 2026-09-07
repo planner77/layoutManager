@@ -112,3 +112,12 @@
 - Alternatives: DWG 실험 선행(기존안).
 - Reason / Trade-offs: 우선 사용할 DXF 경로를 먼저 검증한다. DWG 불확실성은 후속 MINOR 버전에 남으며 DXF 릴리스 완료와 전체 P.O.C. 완료를 구분한다.
 - Consequences: 8/9를 DXF 단계(A)와 DWG 단계(B)로 나누고 각각 결과를 기록한다. 0B는 0.1.0, DB/Upload/목록/dxf/three/전환 및 검증의 기능 증가를 순차 MINOR로 관리한다. DWG는 DXF 릴리스보다 높은 MINOR로 별도 구현한다. 이번 지시는 구현 시작 승인으로 기록하며 반복 전체 승인을 요청하지 않는다.
+
+## ADR-012 — 실제 DB 목록과 갱신 일관성
+
+- Date / Status: 2026-09-08 / 승인된 Unit 3 범위에서 채택.
+- Context: GitHub #1에서 등록 후 목록 미표시. 기존 홈은 정적 안내였고 DB 조회가 없었다.
+- Decision: 서버 동적 목록과 안전한 DTO, 매개변수화 SQLite 검색, 등록/Current 변경 후 경로 및 클라이언트 캐시 갱신을 사용한다.
+- Alternatives: 클라이언트 전용 목록 fetch, 별도 검색 엔진.
+- Reason: 기존 Next/SQLite 계층으로 충분하며 검색 엔진 추가가 불필요하다.
+- Trade-offs / Consequences: 파일명은 대소문자를 구분하는 문자 그대로 부분 검색이다. count/rows 일관성을 위해 기존 프로세스 트랜잭션 큐를 공유한다. 단일 프로세스 P.O.C.에 적합하며 고동시성 확장은 별도 평가한다. Schema 변경은 없다.
