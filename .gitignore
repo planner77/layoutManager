@@ -19,6 +19,7 @@ build/
 coverage/
 playwright-report/
 test-results/
+dwg-test-results/
 benchmark-results/
 *.tsbuildinfo
 *.log
@@ -41,3 +42,5 @@ benchmark-results/
 
 /src/generated/
 /src/public/fonts/CadKorean.typeface.json
+
+/src/public/libredwg/

@@ -6,7 +6,7 @@
 
 공장·설비 DXF/DWG 도면의 서버 등록, 위치별 버전 정합성, 브라우저 렌더링 및 실제 도면 적용성을 검증한다. 결과는 세 Viewer의 장단점·Entity 충실도·성능·한계와 향후 시스템화 가치에 대한 근거를 제공해야 한다.
 
-P0=필수, P1=가능한 범위 구현 또는 지원 여부 평가. `PLANNED`=미구현, `IN_PROGRESS`=진행 중, `VERIFIED`=관련 시험으로 확인, `BLOCKED`=외부 조건 대기. 아래 상태는 구현 근거에 따라 갱신한다. 최신 DXF 회귀 근거는 TestReport의 U9A-20260908이며 과거 Unit별 결과도 보존한다. DWG 및 실도면 미검증 항목은 별도 상태로 유지한다. Test Case 상세의 기준은 [TestPlan](TestPlan.md)이다.
+P0=필수, P1=가능한 범위 구현 또는 지원 여부 평가. `PLANNED`=미구현, `IN_PROGRESS`=진행 중, `VERIFIED`=관련 시험으로 확인, `BLOCKED`=외부 조건 대기. 아래 상태는 구현 근거에 따라 갱신한다. 최신 DWG 최소 실험 근거는 U7A-20260908, DXF 회귀 근거는 TestReport의 U9A-20260908이며 과거 Unit별 결과도 보존한다. DWG 및 실도면 미검증 항목은 별도 상태로 유지한다. Test Case 상세의 기준은 [TestPlan](TestPlan.md)이다.
 
 ## 기능 요구사항
 
@@ -30,10 +30,10 @@ P0=필수, P1=가능한 범위 구현 또는 지원 여부 평가. `PLANNED`=미
 | FR-VIEWER-002 | dxf-viewer 표시 | P0 | 정상 DXF가 실제 canvas에 표시되고 손상 파일은 이해 가능한 실패 상태가 된다 | TC-DXF-001, TC-DXF-002 | viewers/dxf-viewer / VERIFIED (생성 LINE/CIRCLE, U4-20260908) |
 | FR-VIEWER-003 | three-dxf-viewer 표시 | P0 | 동일 DXF로 실제 렌더링이 가능하고 메타데이터/상태와 연결된다 | TC-THREE-001 | viewers/three-dxf-viewer / VERIFIED (LINE/CIRCLE/한글 TEXT, U5-20260908) |
 | FR-VIEWER-004 | DXF Viewer 전환 | P0 | 페이지 전체 reload 없이 같은 Version을 양방향 전환하고 이전 자원을 해제한다 | TC-SWITCH-001, TC-SWITCH-002 | viewers/core + cad-viewer / VERIFIED (U9A: 20회 전환, 자원 수 관찰) |
-| FR-VIEWER-005 | DWG 전용 처리 | P0 | libredwg-web WASM으로 직접 DWG를 읽어 표시하고 DXF Viewer 선택 및 DXF 변환 경로가 없다 | TC-DWG-001, TC-DWG-002 | viewers/libredwg-web / PLANNED; ADR-004 확인 대기 |
+| FR-VIEWER-005 | DWG 전용 처리 | P0 | libredwg-web WASM으로 직접 DWG를 읽어 표시하고 DXF Viewer 선택 및 DXF 변환 경로가 없다 | TC-DWG-001, TC-DWG-002 | viewers/libredwg-web / IN_PROGRESS (U7A 독립 LINE 실험; 등록 Viewer/전체 Entity는 7B) |
 | FR-VIEWER-006 | 기본 탐색 기능 | P0 | 표시·Zoom ±·Pan·Fit·Resize·재초기화·Dispose 각각을 구현하거나 미지원 근거를 기록한다 | TC-VIEW-002, TC-VIEW-003 | adapters / IN_PROGRESS (DXF 두 Viewer 기본 탐색 VERIFIED U9A; DWG 후속) |
 | FR-VIEWER-007 | 확장 기능 평가 | P1 | Layer 조회/On-Off·Hover·Select·Entity 정보·Snap을 Viewer별 실제 지원/부분/미지원/미검증으로 구분한다 | TC-CAP-001 | adapters, TestReport / IN_PROGRESS (three Layer 0 확인; Hover/Select/정보/Snap 미실행) |
-| FR-VIEWER-008 | WASM 생명주기 | P0 | 초기화·반복 Load·재진입·Memory 해제·Dispose·Browser 호환성과 오류를 검증한다 | TC-DWG-003, TC-DWG-004 | libredwg adapter / PLANNED |
+| FR-VIEWER-008 | WASM 생명주기 | P0 | 초기화·반복 Load·재진입·Memory 해제·Dispose·Browser 호환성과 오류를 검증한다 | TC-DWG-003, TC-DWG-004 | libredwg worker / IN_PROGRESS (U7A 3회 free/unlink/terminate; 업무 파일/장기 메모리 미검증) |
 | FR-ERROR-001 | 사용자 오류 처리 | P0 | 미지원 파일, Upload/DB/Storage 실패, 파일 없음, Parse/초기화/WASM 실패, 손상 DXF/DWG, 미지원 Entity를 구분하고 stack trace를 노출하지 않는다 | TC-ERR-001 | app/features / IN_PROGRESS (관리·두 DXF 오류 회귀 U9A; WASM/DWG/전체 Entity 후속) |
 | FR-UI-001 | 업무용 데스크톱 UI | P0 | 목록·등록·위치 상세·Viewer 제공; 검색/Current 식별, Metadata sidebar, Viewer 선택, 상태/크기/시간 표시 | TC-UI-001, TC-E2E-001 | app/features / IN_PROGRESS (DXF 전체 UI 흐름 VERIFIED U9A; DWG 후속) |
 

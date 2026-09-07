@@ -1,5 +1,58 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U7A-20260908 — libredwg-web 실제 DWG 최소 실험 0.9.0
+
+- Source: 1277f00 이후 이 결과를 포함한 `feat(dwg)` 커밋 snapshot. 신규 고정 dependency @mlightcad/libredwg-web 0.7.10(GPL-3.0), 기존 Next/Three/DXF 버전 및 DB Schema 불변.
+- 범위: 독립 `/lab/dwg`의 로컬 파일→전용 Worker→WASM→DWG model-space 객체→자체 planar LINE renderer. 등록 Version 화면 통합은 아직 구현하지 않았다. DXF 변환/두 DXF Viewer를 호출하지 않는 import/data 흐름을 검토했다.
+- 환경: Node 22.14.0, Linux x64, Playwright 1.63.0, Chromium 145.0.0.0/SwiftShader, viewport 1440×1000, worker 1. Production E2E는 실행별 임시 DB/Storage/3101. 사용자 DB/원본에 시험 데이터를 추가하지 않았다.
+
+### 실제 검사
+
+| 검사 | 결과 |
+| --- | --- |
+| Type Check / Lint | 각각 exit 0 |
+| Vitest `npm --prefix src test` | 10 files / 39 passed / 0 failed, 10.49초 |
+| Production Build | exit 0, `/lab/dwg` 생성 및 SSR Browser API 오류 없음 |
+| 기존 `test:e2e` | 12 passed / 0 failed / 0 skipped, 59.4초 |
+| `prepare:dwg-samples` | 공식 2개 파일 SHA-256 일치 |
+| 최종 `test:dwg` | 2 passed / 0 failed / 0 skipped, 7.9초 |
+| Local 3100 smoke | 0.9.0 서버 재시작, `/lab/dwg` 및 WASM HTTP 200 |
+| 후보 Secret/산출물 검사 | 99 candidates, 0 violations; CAD/생성 ESM/WASM/DB 미추적 |
+
+실행은 Operation 명령을 사용하며 Chromium executable은 `/home/planner/.cache/ms-playwright/chromium-1208/chrome-linux64/chrome`. DWG 최초 Browser 실행도 2 passed(8.9초)였다. DXF 실행이 DWG 캡처를 지우지 않도록 별도 `dwg-test-results` 경로로 분리 후 최종 재실행했다.
+
+### 샘플 및 재현성
+
+출처는 [공식 고정 커밋의 AutoCAD 2000 시험 데이터](https://github.com/mlightcad/libredwg-web/tree/5909bd2bb87fa1168838e1295188f3ee603618eb/test/test-data/2000). 실제 CAD bytes를 다운로드하여 시험했으며 mock DWG가 아니다. 원본은 `src/node_modules/.cache/cad-dwg-samples`에만 저장하고 Git에 넣지 않았다. `scripts/dwg-samples.mjs`에서 URL revision과 hash를 고정한다.
+
+| 파일 | bytes | SHA-256 | 결과 |
+| --- | --- | --- | --- |
+| Line.dwg | 174005 | 358fc09c7c27737ba3b500eac122caee4c83c270f5ccb8a9f7f8f3d4b763d937 | 실제 model-space LINE 1개, 직접 화면 표시 |
+| circle.dwg | 177345 | d2c2e592c4d501aa416bf41383b8067f7f72c32af558d1dea8481bb7d884b6dc | CIRCLE 파싱됨, renderer 미지원 건수 및 LINE 없음 표시 |
+
+### 요구 → 코드 → TC → 결과
+
+| 요구 / TC | 구현·시험 | 실제 결과 |
+| --- | --- | --- |
+| FR-VIEWER-005 / TC-DWG-001/005 | viewers/libredwg-web/{worker,primitives,line-view}; tests/e2e/dwg.probe.ts | Worker에서 raw DWG 직접 파싱, LINE 1개 표시 및 확대 후 canvas 픽셀 변화. 정적 asset HTTP 200/application/wasm |
+| FR-VIEWER-008 / TC-DWG-003 | worker finally, probe.cancel; dwg.probe.ts | 3회 load 각각 원본 pointer raw.dwg_free 호출 완료, FS 임시 파일 없음, active Worker 0. 반복 시 canvas 1개, 해제 버튼 후 canvas 0 |
+| FR-ERROR-001 / TC-DWG-002/004 최소 subset | worker 안전한 stage 오류, dwg.probe.ts | 손상 DWG 실패, WASM 404 초기화 실패, 결과 데이터/성공 canvas 없음 |
+| FR-VIEWER-007 최소 subset | linePrimitives; unit/dwg-primitives.test.ts | CIRCLE/숨김/비평면/PaperSpace/비유한 LINE 제외 건수 확인. 지원하지 않는 기하를 표시했다고 주장하지 않음 |
+| NFR-TEST-001 | 기존 tests 전체 | DXF 관리/Current/전환/한글/오류/계측 회귀 PASS |
+
+수동 시각 확인: Browser 캡처에서 청록색 대각선 LINE과 결과 `lineCount=1`, `freed=true`, `temporaryFileRemoved=true`를 확인했다. 생성 캡처는 Git 제외 `src/dwg-test-results/dwg-line-probe.png`. 기준 CAD 프로그램 화면과의 정밀 fidelity 대조는 NOT RUN이다. 최초 실행 캡처 3회차에서 init 167.4ms / parse 61.5ms / convert+primitives 28.4ms를 관찰했으나, 반복 성능 비교 설계에 따른 통계가 아니므로 성능 판정에 사용하지 않는다.
+
+### 발견·수정 및 한계
+
+- 초기 Type Check: 배포본의 locateFile 파라미터와 FS.analyzePath 2번째 인자에 맞춰 타입/호출 수정 후 통과.
+- 초기 Build: Emscripten의 guarded `node:module` import를 Webpack이 처리하다 UnhandledSchemeError. upstream 코드는 수정하지 않고 고정 ESM/glue/WASM을 local public asset으로 준비해 Worker에서 native dynamic import하도록 수정 후 Build/Browser 통과.
+- README 예제의 free 대상 표현보다 설치 배포본 타입/소스를 우선했다. 변환된 JS database가 아닌 원래 DWG pointer를 raw.dwg_free에 전달한다. FS.unlink/free 이후 결과를 전송하고 main에서 Worker를 terminate한다.
+- parser는 CIRCLE을 읽지만 이번 자체 renderer는 LINE만 그린다. 이 차이는 LibreDWG parser 미지원으로 분류하지 않는다. layer/style/color/선종류/두께/BLOCK/TEXT/곡선은 후속 renderer 범위이다.
+- raw parser nonzero flags는 이 실험에서 모두 실패로 처리한다. 경고 수준과 부분 로드 허용 정책은 7B에서 실제 API 및 샘플로 확장한다.
+- npm package 빌드 옵션 INITIAL_MEMORY=1GB; Worker 종료/포인터 해제가 즉시 OS 메모리 회수 또는 누수 없음의 증거는 아니다. 장기/대형/저메모리 장비 및 다른 DWG revision은 NOT RUN.
+- install의 기존 high severity 4개 경고 유지. 라이브러리 의존성 교체·강제 audit fix는 수행하지 않았다.
+- Unit 7A 최소 실험 기준 충족. 다음 Unit 7B에서 등록 Version 원본 API→LibreDwgWebAdapter→화면을 연결한다. 전체 업무 DWG 지원이나 P.O.C. 최종 완료로 판정하지 않는다. 원격 이슈 #2 메모는 별도 후속 요청이다.
+
 ## U9A-20260908 — DXF 통합·회귀 및 릴리스 검증
 
 - Version: 0.8.0 유지. Source: e9339a3 위에 이 결과를 포함한 `test(release)` 커밋 snapshot. 앱 기능·라이브러리·DB Schema 변경 없음.
@@ -292,20 +345,20 @@ Chromium 실행 파일은 `/home/planner/.cache/ms-playwright/chromium-1208/chro
 - KI-002(작성자 미설정/최초 Commit·Push 대기)는 해결했다. 실제 지정 branch 쓰기 연결도 확인했다. 다른 branch의 권한까지 확인했다는 뜻은 아니다.
 - 이 결과를 기록하는 후속 문서 Commit은 별도로 생성한다. 최신 Commit과 동기화 상태는 실제 git log/status/remote 조회로 확인한다. 앱 버전은 여전히 없으며 앱 Build/DB/Viewer 시험은 NOT RUN이다.
 
-## Viewer 평가 현황 — U9A 반영
+## Viewer 평가 현황 — U7A 반영
 
 공식 조사 사실은 Architecture에 있으며 아래 표는 **실제 실행 결과**만 채운다. 단순 라이브러리 문서의 기능 소개를 이 표의 PASS로 옮기지 않는다.
 
 | 항목 | dxf-viewer | three-dxf-viewer | libredwg-web 경로 |
 | --- | --- | --- | --- |
-| 정상 표시 / 기본 Zoom·Pan·Fit | PASS: 생성 LINE/CIRCLE | PASS: 생성 LINE/CIRCLE | NOT RUN |
+| 정상 표시 / 기본 Zoom·Pan·Fit | PASS: 생성 LINE/CIRCLE | PASS: 생성 LINE/CIRCLE | U7A LINE 및 확대만 확인; 나머지 후속 |
 | Resize / 재진입 / Dispose | PASS: U9A 20회 전환 자원 정리; 장기 누수 미평가 | PASS: U9A 20회 전환 자원 정리; 장기 누수 미평가 | NOT RUN |
 | 장점 / 단점 / 발견 문제 | public API/Worker; U5 기본 font 연결 | Group/metadata 활용; 생략 Z 보완 필요 | 미평가 |
 | Layer 조회 / On-Off | NOT RUN | PASS: Layer 0 | NOT RUN |
 | Hover / Select / Entity 정보 / Snap | NOT RUN | NOT RUN | NOT RUN |
 | 지원 Entity / 문제 Entity / fidelity | LINE/CIRCLE/한글 TEXT 확인 | LINE/CIRCLE/한글 TEXT 확인 | 미평가 |
 | 대형 파일 / 사용성 / Browser | U8A LINE 10만 개 측정; >10 MiB/실도면 미평가 | U8A LINE 10만 개 확대 지연 관찰; >10 MiB/실도면 미평가 | 미평가 |
-| WASM 초기화 / DWG revision / parsing / memory | 해당 없음 | 해당 없음 | NOT RUN |
+| WASM 초기화 / DWG revision / parsing / memory | 해당 없음 | 해당 없음 | U7A AutoCAD 2000 2개 샘플 parse/free 확인; 다른 revision/장기 메모리 미검증 |
 
 LINE, POLYLINE, LWPOLYLINE, CIRCLE, ARC, BLOCK, INSERT, TEXT, MTEXT, 한글 TEXT, DIMENSION, HATCH, SPLINE, Layer, Linetype 각각의 sample/결과를 TC-CAD-001 실행 시 행 단위로 추가한다. DWG의 parser 지원과 직접 renderer 지원을 별도로 표기한다.
 

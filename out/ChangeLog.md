@@ -2,6 +2,28 @@
 
 애플리케이션 버전의 단일 기준은 `src/package.json`이다. 아래 Bootstrap 기록은 당시 상태이다.
 
+## 0.9.0 — 2026-09-08 Unit 7A
+
+### Added
+
+- libredwg-web 0.7.10 고정 설치, `/lab/dwg`에서 실제 DWG를 읽는 독립 Worker/WASM LINE 실험.
+- 자체 평면 LINE 렌더링, 제외 Entity 집계, raw pointer free/임시 FS unlink/Worker 종료, 오류와 60초 timeout.
+- 고정 공식 샘플 hash 검증 및 별도 `test:dwg` Browser 시험.
+
+### Fixed
+
+- Next Webpack의 upstream node:module 해석 실패를 배포본 수정 없이 local ESM/WASM asset 경계로 해결.
+
+### Tests
+
+- 실제 결과는 TestReport U7A-20260908. DXF 회귀 별도 수행.
+
+### Known Issues
+
+- 등록 DWG Viewer 통합은 7B. LINE 외 Entity/실도면 fidelity/다른 DWG revision/장기 메모리 미검증.
+- GPL-3.0 배포본, INITIAL_MEMORY=1GB 빌드 옵션. 파서와 자체 renderer의 범위를 구분한다.
+- 기존 Prisma 전이 의존성 high 경고 4개 유지. 이슈 #2 메모 요청은 별도 후속.
+
 ## 0.4.0 — 2026-09-08
 
 ### Added

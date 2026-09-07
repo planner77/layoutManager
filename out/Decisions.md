@@ -31,13 +31,13 @@
 
 ## ADR-004 — LibreDWG 파서 이후 직접 렌더링
 
-- Date / Status: 2026-09-07 / **사용자 확인 대기**.
+- Date / Status: 2026-09-07 제안 → 2026-09-08 승인된 Unit 7A 최소 실험에서 채택.
 - Context: [공식 JS 문서](https://github.com/mlightcad/libredwg-web/blob/master/bindings/javascript/README.md)는 `@mlightcad/libredwg-web`을 DWG parser로 소개한다. 요구사항의 화면 표시를 위해 parse 이후 렌더링 책임을 정해야 한다.
 - Decision 제안: LibreDwgWebAdapter 안에서 WASM으로 DWG를 읽고 반환 객체를 직접 Three.js geometry로 표시한다. UI의 Viewer 명칭은 libredwg-web, 보고서는 파서와 자체 렌더러 기여/한계를 구분한다. DXF 변환 및 두 DXF Viewer 사용은 금지한다.
 - Alternatives: 파싱만 검증(최종 화면 요구 미충족), 다른 완성형 CAD Viewer 도입(제품 선택과 범위 변경 필요).
 - Reason: 지정 기술·직접 DWG 경로를 유지하면서 실제 표시 목표를 달성하기 위한 최소 구조.
 - Trade-offs: 직접 렌더링에는 Entity별 구현·font·block·hatch/curve 등의 추가 작업이 필요하다. 미지원 Entity를 숨기지 않고 부분 지원으로 기록한다. 자체 renderer 결함을 LibreDWG parser 한계로 잘못 귀속하지 않는다.
-- Consequences: Unit 7A는 ADR-011에 따라 DXF 릴리스 이후 최소 DWG parse/render/free 실험으로 수행한다. 초기 최소 기하 성공은 최종 업무 도면 호환성 증명이 아니다. 구현 전 사용자에게 이 구체적인 안을 확인한다.
+- Consequences: Unit 7A는 ADR-011에 따라 DXF 릴리스 이후 최소 DWG parse/render/free 실험으로 수행한다. 초기 최소 기하 성공은 최종 업무 도면 호환성 증명이 아니다. DXF 완료 후 다음 작업 진행 지시에 따라 기존에 명시된 최소 실험을 수행하며, 추가적인 중요 구조 변경이 생기면 확인한다.
 
 ## ADR-005 — Location의 단일 Current pointer
 
@@ -167,3 +167,12 @@
 - Alternatives: 샘플 없이 전체 P.O.C. 완료 선언, 테스트 추가만으로 MINOR 증가.
 - Reason / Trade-offs: 실행 근거와 버전 의미를 보존한다. 합성 도면 통과는 복잡한 업무 CAD의 보증이 아니다.
 - Consequences: 다음 승인 Unit은 7A 기술 실험. 신규 원격 이슈 #2 메모는 후속 기능으로 별도 추적한다. Tag는 전체 실도면 적합성 승인으로 오해하지 않도록 이번에 생성하지 않는다.
+
+## ADR-018 — LibreDWG 배포본 ESM과 WASM Worker 격리
+
+- Date / Status: 2026-09-08 / Unit 7A 채택.
+- Context: 0.7.10은 완성형 viewport가 아닌 parser이며 Emscripten glue의 Node 조건부 import 때문에 Next Webpack 직접 bundling이 실패했다.
+- Decision: 고정 npm 배포본을 local public asset으로 그대로 준비하고 Worker가 native ESM으로 읽는다. 각 요청의 포인터/임시 FS를 finally에서 해제하고 Worker를 종료한다. LINE 최소 직접 renderer로 실험한다.
+- Alternatives: upstream 수정/fork, Webpack의 node 모듈 전역 무시, 메인 thread에 WASM 장기 유지.
+- Reason / Trade-offs: 파서 원본 변경 없이 Browser/Server 경계와 취소를 유지한다. 요청마다 초기화 비용과 큰 WASM 메모리 비용이 발생한다. 완료/종료 후 OS RSS의 즉시 감소는 보장하지 않는다.
+- Consequences: 0.9.0은 독립 기술 실험이며 업무 DWG Viewer 전체 구현이 아니다. 등록 도면 연결·Adapter 계약·오류/재진입 확장은 Unit 7B. 라이브러리 GPL-3.0 표기와 source 링크는 Architecture/Operation에 보존한다.

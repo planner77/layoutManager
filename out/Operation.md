@@ -142,3 +142,14 @@ WebGL 사용 가능한 데스크톱 Browser가 필요하다. 초기화 실패는
 - E2E 서버는 3101과 실행별 임시 DB/Storage를 사용한다. 기존 3100 사용자 데이터에 테스트 CAD를 등록하지 않는다. `workflow.spec.ts`는 UI 등록부터 두 Viewer까지 검증하며 `switch.spec.ts`는 20회 전환 자원 수를 확인한다.
 - 0.8.0 Unit 9A는 테스트/문서만 변경하므로 앱/Schema/설치 의존성은 동일하다. U8A 성능 측정값을 참조한다. 새로운 환경의 재측정 시에는 별도 benchmark 명령을 사용한다.
 - 기능 자동화 통과와 실도면 업무 적합성 승인은 구분한다. 전체 Entity 충실도 및 DWG는 후속 시험이다.
+
+## DWG 최소 기술 실험 — Unit 7A
+
+1. 고정 lock으로 설치 후 build/dev를 실행하면 `public/libredwg/{dist,wasm}`가 자동 생성된다. Production 배포에는 `.next`뿐 아니라 생성된 public 자산도 포함한다. 런타임 외부 CDN은 사용하지 않는다.
+2. `/lab/dwg` 접속 후 로컬 DWG를 선택한다. 20 MiB 이하, 평면 LINE만 표시하는 실험이다. 서버 업로드/DB 등록은 수행하지 않는다. 기존 등록 DWG의 Viewer는 7B에서 연결한다.
+3. `npm --prefix src run prepare:dwg-samples`는 공식 저장소 고정 커밋의 AutoCAD 2000 Line.dwg/circle.dwg를 SHA-256 확인 후 Git 제외 node_modules/.cache/cad-dwg-samples에 저장한다. 시험 샘플 원본을 Git에 추가하지 않는다.
+4. Build 후 기존 Chromium 실행 파일 환경변수를 지정하고 `npm --prefix src run test:dwg`를 실행한다. 기존 `test:e2e`와 동일 임시 DB/3101을 사용하므로 두 browser suite를 동시에 실행하지 않는다. DXF 회귀는 별도로 `test:e2e`.
+5. WASM 초기화 실패 시 `/libredwg/dist/libredwg-web.js`, `/libredwg/wasm/libredwg-web.js`, `/libredwg/wasm/libredwg-web.wasm`의 HTTP 200/MIME 및 생성 여부를 확인한다. 패키지 변경 시 자산 재생성/Build/서버 재시작과 DWG 시험이 필요하다.
+6. npm 배포본은 GPL-3.0 표기이며 source는 Architecture 링크를 참조한다. wrapper/glue/wasm 파일을 임의 수정하지 않는다. 패키지의 README/package metadata도 생성 자산에 함께 보존한다.
+
+성능 메모리 한계: INITIAL_MEMORY=1GB 빌드 옵션의 배포본이다. Worker를 종료해 인스턴스 생명주기를 분리하지만 저메모리 장비나 업무 대형 파일의 적합성은 별도 실측 대상이다. parse/free 실험 성공과 전체 renderer fidelity를 혼동하지 않는다.

@@ -1,5 +1,12 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Unit 7A 실행 계획 — 2026-09-08
+
+- 독립 `/lab/dwg`에서 공식 고정 DWG 샘플을 Worker/WASM으로 파싱하고 model-space planar LINE을 직접 Three.js로 표시한다. 서버 등록/Viewer 선택 연결은 Unit 7B이다.
+- TC-DWG-001/003/005: 정상 LINE, 반복 3회 load/free/임시 FS unlink/Worker 종료, 표시 확대 픽셀 변화, 해제 후 canvas 0; DXF 변환/Viewer 호출 없음.
+- TC-DWG-002/004 최소 실험: 손상 파일과 WASM 404 실패를 거짓 성공 없이 안내. CIRCLE 샘플은 미지원 Entity 내역과 빈 LINE 결과를 확인한다.
+- 일반 DXF E2E/자동 테스트 회귀, typecheck/lint/build. 실제 업무 DWG/전체 Entity/장기 메모리 평가를 이번 최소 실험과 구분한다.
+
 ## Unit 9A 실행 계획 — 2026-09-08
 
 - TC-E2E-001: UI에서 동일 Location DXF 두 버전 등록 → 목록/검색 → Current V2 확인 → V1로 교체 → 새로고침/API 일치 → 선택한 V1을 두 Viewer에서 표시 → 원본 bytes와 측정 Version 확인. 임시 DB/Storage만 사용한다.
