@@ -2,6 +2,17 @@
 
 애플리케이션 버전의 단일 기준은 `src/package.json`이다. 아래 Bootstrap 기록은 당시 상태이다.
 
+## 0.12.0 — 2026-09-08 Unit LINK
+
+### Added
+
+- 목록·Location·Viewer에서 특정 Version을 여는 origin 기반 직접 링크 복사.
+- DXF renderer 보존, DWG renderer 강제, Current 교체 후 Version 고정, Clipboard fallback 수동 복사/열기.
+
+### Tests
+
+- 자동49개, LINK 재시험3개, DWG4개 통과. typecheck/lint/build 성공. 최초 E2E 시험 대상 오류와 재시험 이력은 TestReport U-LINK-20260908에 기록했다.
+
 ## 0.11.0 — 2026-09-08 Unit S3
 
 ### Added

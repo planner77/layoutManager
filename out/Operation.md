@@ -75,6 +75,8 @@ Commit/Push 절차:
 
 ## 장애 대응 초안
 
+직접 링크 복사는 `navigator.clipboard.writeText`를 우선 사용한다. HTTP 환경, 권한 거부, 브라우저 정책 등으로 Clipboard API가 없거나 실패하면 읽기 전용 URL 입력과 동일 URL의 `도면 열기` 링크를 표시한다. 링크 도달성은 서버가 실행 중이고 사용자가 접근 가능한 동일 origin일 때만 보장된다. `localhost`/`127.0.0.1`은 링크를 여는 장치 자체를 가리키며, 사설 IP는 같은 네트워크/VPN·수신 listener·방화벽 조건이 필요하다. 공개 토큰이나 저장소 locator를 URL에 넣지 않는다.
+
 | 증상 | 먼저 확인할 사항 | 처리 원칙 |
 | --- | --- | --- |
 | 앱 시작/DB 연결 실패 | 앱 변수명, 절대 경로, directory 쓰기 권한, driver version | 값 전체를 log에 출력하지 않음 |

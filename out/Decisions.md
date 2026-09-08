@@ -194,3 +194,9 @@
 - Alternatives: 모든 파일 즉시 S3 migration, 전역 backend만 보고 기존 경로도 S3로 해석, 원격 PUT을 DB transaction 안에 배치, presigned browser 업로드.
 - Reason / Trade-offs: 기존 데이터와 API를 보존하며 큰 파일 네트워크 대기 동안 DB writer lock을 유지하지 않는다. object locator는 Version ID와 별도 UUID이며 기존 schema를 바꿀 필요가 없다. 현재 한 endpoint만 설정할 수 있고 local 임시 저장 공간은 계속 필요하다.
 - Consequences: 0.11.0 신규 기능. 기존 파일 자동 이동/외부 bucket 생성/실제 .env 활성화는 수행하지 않는다. opaque S3 locator를 이해하지 못하는 구버전으로 rollback할 때 별도 복구 검토 필요. Unit 8B DWG 계측은 이 사용자 요청 완료 후 다음 승인 단계로 유지한다.
+
+## ADR-021 — Version 직접 링크와 팀 역할 기록
+
+- Date / Status: 2026-09-08 / Unit LINK 구현 채택.
+- Decision: 링크는 현재 origin의 `/cad/versions/{versionId}/viewer`와 허용 renderer query만 포함하는 불변 Version 주소로 만든다. Clipboard 실패에는 수동 복사/열기를 제공하며 DWG는 항상 libredwg-web로 강제한다. 역할은 gpt-6-astra Manager → gpt-5.6-sol Developer → gpt-5.6-luna QA → Manager 승인/재작업 → root release commit/push 순서로 기록한다.
+- Consequences: Current 교체와 무관하게 대상 Version이 유지된다. 실제 접근성은 실행 중 서버와 origin reachability에 의존하며 공개 운영/인증은 범위 밖이다.

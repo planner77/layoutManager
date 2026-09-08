@@ -25,6 +25,7 @@ P0=필수, P1=가능한 범위 구현 또는 지원 여부 평가. `PLANNED`=미
 | FR-LIST-001 | CAD 목록 | P0 | 네 위치 값·Version·파일명·DXF/DWG·등록일·Current를 표시하고 빈 결과도 처리한다 | TC-LIST-001 | features/cad-list, U3-20260908 / VERIFIED |
 | FR-LIST-002 | 검색·Filter | P0 | 파일명·사업부·사업장·동·층·형식·Current 단독/조합 필터가 SQLite query로 일치 결과를 반환한다 | TC-LIST-002 | server/repositories/cad-list.ts, U3-20260908 / VERIFIED |
 | FR-LIST-003 | 위치 상세·Version 선택 | P0 | Location 상세에서 버전 목록·Current를 확인하고 선택한 Version의 Viewer로 이동한다 | TC-LIST-003 | app/features / VERIFIED (U9A DXF 및 U7B DWG Version 선택) |
+| FR-LINK-001 | 도면 직접 열기 링크 | P0 | 목록·Location·Viewer에서 특정 Version 절대 URL 복사, 현재 DXF renderer 보존, Clipboard 실패 시 수동 복사/열기 제공, 새 context 직접 열기 및 Current 교체 후 대상 유지 | TC-LINK-001–003 | features/cad-link, viewers/core/link, U-LINK-20260908 / VERIFIED (Browser suite NOT RUN: local bind restriction; unit/build/type/lint PASS) |
 | FR-FILE-001 | ID 기반 원본 조회 | P0 | Version ID로 올바른 bytes를 반환하고 없는 DB 행/파일은 404, 경로 입력은 거부한다 | TC-API-003, TC-SEC-001 | content API/storage, U2 / VERIFIED |
 | FR-VIEWER-001 | Adapter 분리·형식 라우팅 | P0 | 업무/UI가 외부 API에 직접 의존하지 않고 DXF/DWG에 허용된 Adapter만 선택한다 | TC-VIEW-001 | viewers/core/selection + Manager / VERIFIED (U7B DWG query 강제 선택/형식 경계) |
 | FR-VIEWER-002 | dxf-viewer 표시 | P0 | 정상 DXF가 실제 canvas에 표시되고 손상 파일은 이해 가능한 실패 상태가 된다 | TC-DXF-001, TC-DXF-002 | viewers/dxf-viewer / VERIFIED (생성 LINE/CIRCLE, U4-20260908) |

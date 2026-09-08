@@ -1,5 +1,24 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-LINK-20260908 — Version 직접 링크 0.12.0
+
+- Source: e947aac 이후 이 기록을 포함한 Unit LINK commit snapshot. DB schema, storage, 기존 원본 변경 없음.
+- 실행 역할: gpt-6-astra Manager 설계/리뷰 → gpt-5.6-sol Developer 구현 및 보고 → gpt-5.6-luna QA 테스트 보강/검증/문서 초안 → Manager 재작업 판단. QA 사용량 한도 도달 후 root가 Browser 검증을 실행하고 Manager가 결과·문서를 최종 검토했다. 미실행 역할을 수행한 것으로 기록하지 않는다.
+
+| 검사 | 실제 결과 |
+| --- | --- |
+| QA `npm --prefix src test` | 13 files / 49 passed / 0 failed |
+| QA `typecheck`, `lint`, `build` | 각각 exit 0 |
+| 최초 QA Browser 실행 | sandbox localhost3101 bind EPERM, 이후 escalation 대기 중단; 시험 결과 없음 |
+| Root 전체 local E2E 최초 | 14 passed / 1 failed, 1.5분. 실패는 QA 시험에서 원래 page 링크를 클릭하고 다른 page navigation을 기다린 잘못된 대상 선택 |
+| QA 시험 수정 후 Root LINK 재시험 | 3 passed / 0 failed, 8.0초. runtime 코드 변경 없이 기다릴 page 수정 |
+| Root DWG E2E | 4 passed / 0 failed, 19.4초. 공식 LINE sample 직접 링크 새 context 표시 포함 |
+
+- FR-LINK-001 → viewers/core/link.ts, features/cad-link/CopyCadLink, CadTable/CadViewer → TC-LINK-001–003 → PASS. 4개 URL 단위 시험, 목록/Location 복사, DXF 양쪽 renderer 새 context, Current 교체 이후 기존 Version 고정, Clipboard 거부/미지원 및 fallback 클릭을 검증했다.
+- 손상 DWG LINK 시나리오는 renderer 라우팅/오류 경로만 확인한다. 실제 DWG 렌더링 근거는 dwg-viewer.probe의 공식 LINE sample로 분리한다.
+- Browser: 기존 Chromium/SwiftShader, 임시 DB/Storage와 localhost3101. 최종 source audit/commit/push 및 변경 후 typecheck/lint는 release 담당 root가 확인한다.
+- 한계: 실제 다른 장치/업무 도면/공개 운영 URL은 이 Unit에서 시험하지 않았다. localhost는 수신 장치 자체이며 사설 IP는 해당 앱에 대한 네트워크 접근이 필요하다. 링크에 권한 부여/공개 token/스토리지 주소 기능은 없다. DWG 평면 LINE/20 MiB 기존 제한 유지.
+
 ## U-S3-20260908 — SeaweedFS 등 S3 호환 저장소 0.11.0
 
 - 사용자 요청: SeaweedFS와 같은 S3 호환 object storage 활용. Source: b050535 이후 이 기록을 포함한 `feat(storage)` commit snapshot.

@@ -4,9 +4,11 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 
 ## 현재 단계와 작업 위치
 
-- 최신 관리 기능은 등록·목록·검색·Location 상세·Current 변경이다. GitHub #1 조치 결과는 TestReport의 U3-20260908을 참조한다. Unit 4 dxf-viewer를 연결했다. 현재 결과는 TestReport의 U4-20260908을 참조한다. Unit 5에서 three-dxf-viewer와 한글 기본 글꼴을 연결했다. 최신 결과는 U5-20260908을 참조한다. Unit 6에서 새로고침 없는 전환과 원본 공유를 연결했다. 최신 결과는 U6-20260908을 참조한다. Unit 8A에서 측정 UI/JSON 및 반복 비교를 추가했다. U9A-20260908에서 DXF 전체 흐름 및 20회 전환 회귀를 검증했다. Unit 7A에서 libredwg-web의 실제 DWG LINE parse/render/free 독립 실험을 검증했다(U7A-20260908). Unit 7B에서 등록 DWG Viewer 통합과 기본 탐색/오류/재진입을 검증했다(U7B-20260908). 사용자 요청 Unit S3에서 선택적 S3 호환 저장소를 추가했다(U-S3-20260908). 앱 버전은 0.11.0, 다음 승인 Unit은 8B DWG 계측 및 평가이다. DWG는 현재 평면 LINE/20 MiB 범위이며 제외 Entity는 partial로 기록한다. 실도면 평가는 미완료이며 원격 이슈 #2 등록 메모는 별도 후속 요청이다.
+- 최신 관리 기능은 등록·목록·검색·Location 상세·Current 변경이다. GitHub #1 조치 결과는 TestReport의 U3-20260908을 참조한다. Unit 4 dxf-viewer를 연결했다. 현재 결과는 TestReport의 U4-20260908을 참조한다. Unit 5에서 three-dxf-viewer와 한글 기본 글꼴을 연결했다. 최신 결과는 U5-20260908을 참조한다. Unit 6에서 새로고침 없는 전환과 원본 공유를 연결했다. 최신 결과는 U6-20260908을 참조한다. Unit 8A에서 측정 UI/JSON 및 반복 비교를 추가했다. U9A-20260908에서 DXF 전체 흐름 및 20회 전환 회귀를 검증했다. Unit 7A에서 libredwg-web의 실제 DWG LINE parse/render/free 독립 실험을 검증했다(U7A-20260908). Unit 7B에서 등록 DWG Viewer 통합과 기본 탐색/오류/재진입을 검증했다(U7B-20260908). 사용자 요청 Unit S3에서 선택적 S3 호환 저장소를 추가했다(U-S3-20260908). 앱 버전은 0.12.0, 사용자 요청 Unit LINK의 특정 Version 직접 링크를 추가했다(U-LINK-20260908). 다음 승인 Unit은 8B DWG 계측 및 평가이다. DWG는 현재 평면 LINE/20 MiB 범위이며 제외 Entity는 partial로 기록한다. 실도면 평가는 미완료이며 원격 이슈 #2 등록 메모는 별도 후속 요청이다.
 
 - 2026-09-07 사용자가 계획 실행을 승인했다. **DXF 우선 릴리스: 0B→1→2→3→4→5→6→8A→9A**, 이후 별도 MINOR 버전에서 **7A→7B→8B→9B(libredwg-web)**를 진행한다. DWG 선행 실험은 DXF 구현의 선행 조건이 아니다. 승인 범위 내 반복 승인은 요구하지 않는다.
+- 팀 역할 매핑: gpt-6-astra Manager가 범위·승인을 조정하고, gpt-5.6-sol Developer가 구현하며, gpt-5.6-luna QA가 검증·문서화 후 Manager에게 결과를 보고한다. Manager가 재작업 여부를 결정하고 root가 최종 release commit/push를 담당한다.
+- 이 팀 운영은 새 스레드·새 세션에도 적용한다. Manager는 먼저 요구사항/설계/AC를 기록하고 Developer에게 구현을 지시한다. Developer 완료 보고를 검토한 후 QA에 테스트·문서화를 지시한다. QA 보고를 근거로 Manager가 완료 또는 재작업을 결정한다. 모델 사용량 제한 등으로 지정 역할을 실행할 수 없으면 이를 보고하고 실제 대행 주체와 검증 근거를 TestReport에 남긴다. 역할을 실행하지 않고 실행한 것처럼 기록하지 않는다.
 - 프로젝트 Root 아래 `src/`가 애플리케이션 루트이다. 모든 코드·설정·테스트·migration·package/lock 파일은 `src/`에 둔다. `out/`은 Markdown 산출물, `data/`는 Git 제외 런타임 저장소이다.
 - 기본 Stack: Next.js App Router, React, TypeScript, shadcn/ui, Tailwind CSS, SQLite, Prisma 우선, Local Filesystem(default)/선택적 S3 호환 저장소. 실제 설치 버전과 호환성은 Unit 0B에서 검증·고정한다.
 

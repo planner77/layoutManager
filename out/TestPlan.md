@@ -1,5 +1,14 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Unit LINK 실행 계획 — 2026-09-08 사용자 요청
+
+- 특정 Version을 바로 여는 절대 URL을 목록·Location 버전 목록·Viewer에서 복사한다. Viewer에서는 현재 허용된 renderer를 유지하고 목록에서는 형식별 기본값을 사용한다. Current 교체 후에도 원래 Version을 연다.
+- URL은 현재 origin과 Version viewer 경로 및 허용 renderer만으로 생성한다. 임의 query/hash, storage locator, 원본 다운로드 경로, credential을 포함하지 않는다. DB 변경 및 공개 접근권한 부여는 없다.
+- TC-LINK-001: URL 생성 단위 검증 — Version 경로, DXF 선택, DWG 강제 선택, 부적합 renderer fallback, 불필요 query/hash 제외.
+- TC-LINK-002: 목록·Location·Viewer에서 링크 복사 성공과 상태 안내; Clipboard 미지원/거부 시 읽기 전용 선택 가능 URL 및 클릭 가능한 링크 제공.
+- TC-LINK-003: 새로운 Browser context에서 복사한 URL로 DXF 두 renderer 및 DWG를 직접 열어 Version/format/실제 표시 확인. Current 교체 이후에도 링크 대상 유지.
+- TC-REL-001: typecheck/lint/build/자동 테스트/관련 E2E, 문서·버전·Secret 검사. Manager 설계→Sol Developer 구현 보고→Luna QA 시험·문서 보고→Manager 승인/재작업 순서. 커밋·Push 완료는 별도 최종 확인한다.
+
 ## Unit S3 실행 계획 — 2026-09-08 사용자 요청
 
 - Local 기본값과 기존 원본을 보존하고 S3 호환 backend를 선택할 수 있게 한다. DB storage_path에 기존 상대 키 또는 s3:bucket:cad/object-id/original.ext locator를 기록해 혼합 조회한다. endpoint/credentials는 서버 env만 사용한다.

@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 const sample = (name: string) => path.join(process.cwd(), 'node_modules/.cache/cad-dwg-samples', name);
 
-test('TC-E2E-002/DWG-001/003: registered DWG uses its own adapter, controls and lifecycle', async ({ page, request }) => {
+test('TC-E2E-002/DWG-001/003: registered DWG uses its own adapter, controls and lifecycle', async ({ page, request, browser, baseURL }) => {
   test.setTimeout(120_000);
   await page.addInitScript(() => {
     let active = 0;
@@ -28,6 +28,21 @@ test('TC-E2E-002/DWG-001/003: registered DWG uses its own adapter, controls and 
   await page.getByLabel('파일명', { exact: true }).fill('Line.dwg');
   await page.getByRole('button', { name: '검색', exact: true }).click();
   const row = page.getByRole('row').filter({ hasText: 'DWG통합' }); await expect(row).toContainText('Current');
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write'], { origin: baseURL! });
+  await row.getByRole('button', {name:'Line.dwg 도면 링크 복사'}).click();
+  const locationLink = await page.evaluate(() => navigator.clipboard.readText());
+  expect(locationLink).toMatch(new RegExp(`${baseURL}/cad/versions/[^/]+/viewer\\?renderer=libredwg-web`));
+  await page.getByRole('link', {name:'Line.dwg', exact:true}).click();
+  const locationRow = page.getByRole('row').filter({hasText:'Line.dwg'});
+  await locationRow.getByRole('button', {name:'Line.dwg 도면 링크 복사'}).click();
+  const copiedFromLocation = await page.evaluate(() => navigator.clipboard.readText());
+  expect(copiedFromLocation).toBe(locationLink);
+  const directContext = await browser.newContext({baseURL});
+  const directPage = await directContext.newPage();
+  await directPage.goto(copiedFromLocation);
+  await expect(directPage.getByRole('status')).toHaveText('도면 표시 완료');
+  await expect(directPage.getByTestId('cad-canvas').locator('canvas')).toHaveCount(1);
+  await directContext.close();
   await row.getByRole('link', { name: '도면 보기', exact: true }).click();
   await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
   await expect(page.getByRole('button', { name: 'dxf-viewer', exact: true })).toHaveCount(0);

@@ -5,6 +5,7 @@ import { ViewerManager } from '@/viewers/core/adapter';
 import { selectRenderer, type ViewerFormat, type ViewerRenderer } from '@/viewers/core/selection';
 import { ViewerSource } from '@/viewers/core/source';
 import type {ViewerMetric} from '@/viewers/core/metrics';
+import { CopyCadLink } from '@/features/cad-link/copy-cad-link';
 
 export function CadViewer({ versionId, renderer: initialRenderer = 'dxf-viewer', format = 'DXF' }: { versionId: string; renderer?: ViewerRenderer; format?: ViewerFormat }) {
   const [renderer,setRenderer]=useState(selectRenderer(format, initialRenderer));
@@ -52,6 +53,7 @@ export function CadViewer({ versionId, renderer: initialRenderer = 'dxf-viewer',
       <Button variant="outline" disabled={!state.ready} onClick={()=>manager.current?.zoomOut()}>축소</Button>
       <Button variant="outline" disabled={!state.ready} onClick={()=>manager.current?.fitToView()}>화면 맞춤</Button>
       <Button variant="outline" onClick={()=>{source.dispose();setMetric(null);setLayers([]);setState({status:'도면 로딩 중…',ready:false});setAttempt(v=>v+1);}}>다시 불러오기</Button>
+      <CopyCadLink key={`${versionId}-${renderer}`} versionId={versionId} format={format} renderer={renderer}/>
     </div>
     {layers.length>0 && state.ready && <div className="flex flex-wrap gap-4 text-sm" aria-label="Layer 목록">{layers.map(name=><label key={`${attempt}-${name}`}><input type="checkbox" defaultChecked onChange={event=>manager.current?.showLayer(name,event.target.checked)}/>{name}</label>)}</div>}
     <div ref={container} data-testid="cad-canvas" className="h-[65vh] min-h-96 overflow-hidden rounded-xl bg-black" aria-label={`${format} 도면`}/>
