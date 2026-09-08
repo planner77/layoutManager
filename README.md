@@ -2,7 +2,7 @@
 
 공장·설비의 DXF/DWG 도면을 등록·검색·버전 관리하고, 세 오픈소스 기술의 브라우저 렌더링 적용 가능성을 평가하는 프로젝트입니다.
 
-**현재 버전: 0.12.0 — 특정 Version 직접 링크 지원.** `/cad/upload`에서 DXF/DWG를 등록하면 `/` 목록에서 즉시 확인할 수 있습니다. 위치별 상세에서 버전과 Current를 관리합니다. 실제 버전 기준은 `src/package.json`입니다. DXF Viewer 두 방식부터 구현하고, 등록 DWG도 도면 보기로 조회할 수 있습니다. `/lab/dwg` 독립 실험도 유지합니다.
+**현재 버전: 0.13.0 — Docker 배포 및 호스트 IP 접속 지원.** `/cad/upload`에서 DXF/DWG를 등록하면 `/` 목록에서 즉시 확인할 수 있습니다. 위치별 상세에서 버전과 Current를 관리합니다. 실제 버전 기준은 `src/package.json`입니다. DXF Viewer 두 방식부터 구현하고, 등록 DWG도 도면 보기로 조회할 수 있습니다. `/lab/dwg` 독립 실험도 유지합니다.
 
 ## 목표 기능
 
@@ -98,7 +98,7 @@ npm --prefix src run build
 npm --prefix src run start -- --port 3100
 ```
 
-접속 주소는 `http://127.0.0.1:3100`입니다. Build/dev 과정에서 글꼴 JSON과 LibreDWG ESM/WASM 자산을 준비합니다. 배포 시 생성된 `src/public` 자산도 유지해야 합니다. `.env` 변경 후에는 서버를 재시작합니다. SQLite·CAD 데이터는 Build와 별도로 영속 보관합니다.
+접속 주소는 `http://127.0.0.1:3100`이며 같은 네트워크에서 접근 가능한 서버는 `http://<서버 IP>:3100`으로도 접속합니다. 기본 수신은 `0.0.0.0`입니다. Build/dev 과정에서 글꼴 JSON과 LibreDWG ESM/WASM 자산을 준비합니다. 배포 시 생성된 `src/public` 자산도 유지해야 합니다. `.env` 변경 후에는 서버를 재시작합니다. SQLite·CAD 데이터는 Build와 별도로 영속 보관합니다.
 
 ### 설치 후 검증
 
@@ -181,3 +181,68 @@ endpoint에는 경로·query·인증정보를 넣지 않습니다. 앱이 컨테
 기존 로컬 원본은 계속 조회할 수 있으며 자동 이동하지 않습니다. SQLite와 업로드 임시 파일은 로컬 디스크를 사용합니다. 버킷은 미리 준비해야 하며 endpoint/credential은 서버에서만 사용합니다. 상세 설정·전환·복구 제한은 [Operation](out/Operation.md), 실제 SeaweedFS 검증 결과는 [TestReport](out/TestReport.md)를 참조하세요.
 
 Docker 기반 격리 시험은 `npm --prefix src run test:s3`, S3 저장소를 사용하는 웹 E2E는 Production Build 후 `npm --prefix src run test:s3:e2e`입니다. 실제 서비스 설정이나 기존 bucket은 변경하지 않습니다.
+
+## Docker로 실행하기
+
+Docker Engine과 Compose v2가 필요합니다. 아래 명령은 프로젝트 Root에서 실행하며, 처음에는 `.env.example`을 참고해 `.env`를 준비합니다. 기존 `.env`는 덮어쓰지 않습니다.
+
+```bash
+docker compose --env-file .env -f src/docker-compose.yml build
+docker compose --env-file .env -f src/docker-compose.yml up -d
+docker compose --env-file .env -f src/docker-compose.yml ps
+```
+
+컨테이너 시작 시 검토된 DB migration을 적용한 뒤 앱을 실행합니다. 기본 주소는 `http://localhost:3000`이며 다른 장치에서는 `http://<서버 IP>:3000`으로 접속합니다. `.env`의 `CAD_HOST_PORT`로 호스트 포트를 바꿀 수 있습니다. 같은 네트워크/VPN, 서버 방화벽과 수신 포트가 접근을 허용해야 합니다. `0.0.0.0`은 수신 설정이며 브라우저 접속 주소로 사용하지 않습니다.
+
+프로젝트 `cad-layout-viewer`, 컨테이너 `cad-layout-viewer-app`, 네트워크 `cad-layout-viewer-network`, 데이터 볼륨 `cad-layout-viewer-data`를 사용합니다. 기존 호스트 `data/`를 자동 복사하거나 기존 서비스와 공유하지 않습니다. SQLite와 CAD/임시 업로드는 볼륨에 남고 S3 모드도 SQLite/임시 디스크가 필요합니다. `down`은 볼륨을 보존하지만 `down -v`는 데이터를 삭제하므로 정상 종료에 사용하지 않습니다.
+
+```bash
+docker compose --env-file .env -f src/docker-compose.yml logs --tail 100 app
+docker compose --env-file .env -f src/docker-compose.yml stop
+```
+
+`/api/health`는 앱과 DB 조회 가능 여부만 반환합니다. 이미지에는 실제 `.env`, Git 자격증명, 업로드 CAD 및 런타임 DB를 포함하지 않습니다. S3 설정은 Compose의 앱 전용 환경변수로 주입합니다. 컨테이너에서 `localhost`는 컨테이너 자신이므로 S3 endpoint에는 컨테이너가 접근할 수 있는 실제 서버 주소를 사용합니다.
+
+## GitHub Container Registry 이미지 내려받기
+
+게시된 이미지 주소와 tag를 `.env`의 `GHCR_IMAGE`에 지정합니다. 저장소/계정 식별값은 환경설정으로 유지합니다. 비공개 package는 해당 package를 읽을 권한으로 먼저 `docker login ghcr.io`를 수행해야 합니다. Token을 명령행 인수·소스·로그에 기록하지 않고 password stdin 방식이나 승인된 credential 관리 방식을 사용합니다.
+
+```bash
+docker compose --env-file .env -f src/docker-compose.yml pull app
+docker compose --env-file .env -f src/docker-compose.yml up -d --no-build app
+```
+
+태그 형식은 `ghcr.io/<소유자>/<이미지>:0.13.0`입니다. 실제 게시 여부와 digest는 [TestReport](out/TestReport.md)의 배포 결과를 확인합니다. `latest` 대신 검증한 버전 tag 또는 digest를 고정할 수 있습니다. 이미지 빌드 방법·볼륨 백업·실행 제약은 [Operation](out/Operation.md)을 참조하세요.
+
+## GitHub Container Registry에 직접 빌드·게시하기
+
+아래는 Bash 기준이며 Root에서 실행합니다. `<소유자>`와 `<이미지>`는 사용자가 지정한 GitHub 저장소의 소유자와 게시할 이미지 이름으로 바꾸고 모두 소문자를 사용합니다. 저장소 주소에는 credential을 넣지 않습니다. 게시 권한이 있는 계정의 Token을 사용하며 private package pull에는 읽기 권한도 필요합니다.
+
+```bash
+# 실제 저장소/이미지 주소는 로컬 배포 환경에서 지정합니다.
+CAD_IMAGE_NAME='ghcr.io/<소유자>/<이미지>'
+CAD_IMAGE_SOURCE='https://github.com/<소유자>/<저장소>'
+CAD_IMAGE_VERSION="$(node -p "require('./src/package.json').version")"
+CAD_IMAGE_REVISION="$(git rev-parse HEAD)"
+
+# 게시 이미지는 커밋 완료한 소스에서 빌드해야 revision label과 일치합니다.
+docker build -f src/Dockerfile \
+  --label "org.opencontainers.image.source=$CAD_IMAGE_SOURCE" \
+  --label "org.opencontainers.image.revision=$CAD_IMAGE_REVISION" \
+  --label "org.opencontainers.image.version=$CAD_IMAGE_VERSION" \
+  -t "cad-layout-viewer:$CAD_IMAGE_VERSION" .
+docker tag "cad-layout-viewer:$CAD_IMAGE_VERSION" "$CAD_IMAGE_NAME:$CAD_IMAGE_VERSION"
+
+# Token을 명령행 인수나 shell history에 적지 않고 표준입력으로 전달합니다.
+read -r -p 'GitHub 사용자명: ' GHCR_USERNAME
+read -r -s -p 'GHCR 게시 Token: ' GHCR_TOKEN
+printf '\n'
+printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
+unset GHCR_TOKEN
+
+docker push "$CAD_IMAGE_NAME:$CAD_IMAGE_VERSION"
+docker pull "$CAD_IMAGE_NAME:$CAD_IMAGE_VERSION"
+docker image inspect "$CAD_IMAGE_NAME:$CAD_IMAGE_VERSION" --format '{{json .RepoDigests}}'
+```
+
+게시한 전체 이미지 주소를 `.env`의 `GHCR_IMAGE`에 넣으면 위의 Compose pull 절차로 실행할 수 있습니다. Token을 `.env.example`, Docker build argument, image label 또는 Git에 넣지 않습니다. Docker 인증 저장은 사용 환경의 credential helper 정책을 따르며 필요하면 작업 후 `docker logout ghcr.io`로 해제합니다. package 권한·visibility는 GitHub 설정을 따르고 임의 공개 전환을 하지 않습니다. GHCR 인증/권한 및 원본 연결 설명은 [GitHub 공식 문서](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)를 참조하세요.

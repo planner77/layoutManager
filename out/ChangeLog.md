@@ -2,6 +2,21 @@
 
 애플리케이션 버전의 단일 기준은 `src/package.json`이다. 아래 Bootstrap 기록은 당시 상태이다.
 
+## 0.13.0 — 2026-09-08 Unit DEPLOY
+
+### Added
+
+- 한국어 주석과 명시 이름을 갖춘 Dockerfile/Compose, named volume, 비root 실행, DB readiness endpoint.
+- localhost/host IP 접속을 위한 기본 수신 주소, GHCR image/host port 환경 예제와 README build/pull 절차.
+
+### Tests
+
+- 최종 실행 검증일2026-09-09: 자동51개·local E2E16개·typecheck/lint/build, Docker localhost/hostIP, 세 renderer, 재생성 후 Version/Current/원본 영속성 통과. Secret검사121건/위반0. GHCR 게시는 대기하며 TestReport U-DEPLOY-20260908에서 별도 확정한다.
+
+### Known Issues
+
+- 기존 host data 자동 이전 및 여러 app replica를 지원하지 않는다. DB/임시 CAD 디스크는 S3모드에서도 필요하다.
+
 ## 0.12.0 — 2026-09-08 Unit LINK
 
 ### Added

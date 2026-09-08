@@ -1,5 +1,15 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Unit DEPLOY 실행 계획 — 2026-09-08 사용자 요청
+
+- Manager 설계→Sol Developer 구현/재작업 완료→Manager 리뷰. Luna QA 사용량 제한으로 root가 실제 시험을 실행하고 Manager가 결과·문서로 수용 여부를 판단한다. 패키지 버전 0.13.0, LINK 0.12.0과 commit 분리.
+- TC-DEPLOY-001: `/api/health`가 migration 완료 DB에서 HTTP200 `{status:ok}`와 no-store, 조회 실패 시503의 안전한 상태만 반환. 기존 앱/API/CAD 회귀 및 type/lint/unit/build 통과.
+- TC-DEPLOY-002: root context에서 Docker build 성공. named project/container/volume/network/port 및 한국어 주석, nonroot UID, Prisma native SQLite/WASM/한글 자산 확인. image에 실제 `.env`, Git 인증, 호스트 DB/원본이 없는지 검사.
+- TC-DEPLOY-003: 별도 test volume/container에서 DXF 등록→원본 byte/hash/목록 확인→container 재생성→DB/원본 유지. 기존 서비스와 사용자 data/volume은 변경하지 않는다. 컨테이너가 healthy 상태가 되는지 확인.
+- TC-DEPLOY-004: published port에 localhost 및 실제 host IP로 HTTP200/목록·등록/health 접속. 다른 물리 장치가 없으면 host 자신의 host IP 시험과 구분해 기록한다. private origin 링크는 네트워크 접근 조건을 명시한다.
+- TC-DEPLOY-005: 지정 GitHub 소유자 GHCR에 검증한0.13.0 image push, digest 확인 및 pull 검증. credential은 password-stdin/임시 credential store 등 안전한 경로로 전달하고 image/buildarg/git에 넣지 않는다. 접근 실패는 권한·연결 범주만 기록.
+- 완료 조건: 각 실제 결과/제약·README pull 및 setup 방법·Architecture/Operation/Decisions/ChangeLog 갱신, root audit/commit/push. 기능이 실행 가능해도 image push/pull 근거가 없으면 게시 완료라 하지 않는다.
+
 ## Unit LINK 실행 계획 — 2026-09-08 사용자 요청
 
 - 특정 Version을 바로 여는 절대 URL을 목록·Location 버전 목록·Viewer에서 복사한다. Viewer에서는 현재 허용된 renderer를 유지하고 목록에서는 형식별 기본값을 사용한다. Current 교체 후에도 원래 Version을 연다.

@@ -1,0 +1,57 @@
+# Root 실행 예: docker compose --env-file .env -f src/docker-compose.yml up -d
+# Compose 파일은 src에 있지만 build context는 Root다. Root .dockerignore가 비밀정보와 CAD/DB를 차단한다.
+name: cad-layout-viewer
+
+services:
+  app:
+    # GHCR_IMAGE를 지정하면 게시 이미지를 pull하고, 없으면 같은 설정으로 로컬 build도 가능하다.
+    image: ${GHCR_IMAGE:-cad-layout-viewer:local}
+    build:
+      context: ..
+      dockerfile: src/Dockerfile
+    container_name: cad-layout-viewer-app
+    restart: unless-stopped
+    ports:
+      # 0.0.0.0 publish로 localhost와 같은 네트워크의 host IP에서 모두 접근한다.
+      - target: 3000
+        published: "${CAD_HOST_PORT:-3000}"
+        host_ip: 0.0.0.0
+        protocol: tcp
+        name: http
+    environment:
+      # 앱이 사용하는 값만 명시적으로 전달한다. Git/GitHub credential은 전달하지 않는다.
+      NODE_ENV: production
+      DATABASE_URL: file:/data/db/cad.sqlite
+      CAD_STORAGE_PATH: /data/cad
+      MAX_UPLOAD_SIZE_MB: "${MAX_UPLOAD_SIZE_MB:-100}"
+      CAD_STORAGE_BACKEND: "${CAD_STORAGE_BACKEND:-local}"
+      # S3 모드에서만 아래 값을 채운다. credential은 image build argument가 아닌 runtime env다.
+      CAD_S3_ENDPOINT: "${CAD_S3_ENDPOINT:-}"
+      CAD_S3_BUCKET: "${CAD_S3_BUCKET:-}"
+      CAD_S3_REGION: "${CAD_S3_REGION:-us-east-1}"
+      CAD_S3_ACCESS_KEY_ID: "${CAD_S3_ACCESS_KEY_ID:-}"
+      CAD_S3_SECRET_ACCESS_KEY: "${CAD_S3_SECRET_ACCESS_KEY:-}"
+      CAD_S3_SESSION_TOKEN: "${CAD_S3_SESSION_TOKEN:-}"
+      CAD_S3_FORCE_PATH_STYLE: "${CAD_S3_FORCE_PATH_STYLE:-true}"
+      CAD_S3_TIMEOUT_MS: "${CAD_S3_TIMEOUT_MS:-60000}"
+    volumes:
+      - type: volume
+        source: cad-layout-viewer-data
+        target: /data
+    networks:
+      - cad-layout-viewer-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+
+volumes:
+  cad-layout-viewer-data:
+    name: cad-layout-viewer-data
+
+networks:
+  cad-layout-viewer-network:
+    name: cad-layout-viewer-network
+    driver: bridge

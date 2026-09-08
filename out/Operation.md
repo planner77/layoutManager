@@ -1,6 +1,6 @@
 # 운영·환경설정 초안
 
-**현재 0.11.0, S3 호환 저장소 지원.** install/generate/deploy/dev/build/start/typecheck/lint/test/db:check/test:e2e가 동작한다. 초기 설치는 npm ci → db:generate → db:deploy 순서이다. 서버는 현재 127.0.0.1:3100에서 검증했으며 기본 포트는 3000이다.
+**현재 0.13.0, Docker 배포·host IP 접속 및 S3 호환 저장소 지원.** install/generate/deploy/dev/build/start/typecheck/lint/test/db:check/test:e2e가 동작한다. 초기 설치는 npm ci → db:generate → db:deploy 순서이다. 서버는 현재 127.0.0.1:3100에서 검증했으며 기본 포트는 3000이다.
 
 Playwright 기본 설치는 `cd src` 후 `npx playwright install chromium`이다. 이미 설치된 Chromium을 사용할 때는 `PLAYWRIGHT_CHROMIUM_EXECUTABLE`에 실행 파일 경로를 설정한다. E2E는 3101 포트와 독립 `/tmp/cad-e2e-*` DB/Storage를 사용한다. 이 임시 데이터는 운영 데이터와 분리되며 Git에 포함되지 않는다.
 
@@ -44,7 +44,7 @@ DB 기본 위치는 `<WORK_FOLDER>/data/db/cad.sqlite`, CAD는 `<WORK_FOLDER>/da
 | 자동 테스트 | `npm --prefix src test` | 0B 이후 관련 Unit |
 | E2E | `npm --prefix src run test:e2e` | 4/9 |
 
-dev/start 기본 주소는 `http://127.0.0.1:3000`으로 계획한다. Next App Router와 local filesystem API를 사용하는 Node 서버이므로 정적 export만으로 실행하지 않는다. 원본 파일/DB를 src/public 또는 Build 디렉터리에 두지 않는다. 앱 실행 가능 시 현재 버전은 src/package.json에서 확인하고 README/ChangeLog와 대조한다.
+dev/start는 기본 `0.0.0.0:3000`에서 수신하며 로컬 접속 주소는 `http://127.0.0.1:3000`, 다른 장치 접속은 접근 가능한 서버 IP를 사용한다. Next App Router와 local filesystem API를 사용하는 Node 서버이므로 정적 export만으로 실행하지 않는다. 원본 파일/DB를 src/public 또는 Build 디렉터리에 두지 않는다. 앱 실행 가능 시 현재 버전은 src/package.json에서 확인하고 README/ChangeLog와 대조한다.
 
 ## GitHub 연결·Commit·Push
 
@@ -203,3 +203,16 @@ WebGL 사용 가능한 데스크톱 Browser가 필요하다. 초기화 실패는
 - 고정 이미지: `chrislusf/seaweedfs@sha256:fc9f76fa993ad69966ffeb2f65d0318fcae39c6f8e20cf68ef7b3a5cb97769e5`(4.45). 최초 실행은 이미지 다운로드가 필요할 수 있다.
 - 테스트 런처가 random loopback port·임시 credential 파일(0600)을 사용하고 종료 시 해당 컨테이너·설정 파일을 제거한다. 기본 test:e2e/test:dwg는 local backend를 명시해 실제 S3로 시험 데이터가 쓰이지 않도록 한다.
 - 웹 시험들은 3101을 사용하므로 직렬 실행한다. 컨테이너 종료 전에 중단되었다면 cad-s3-test-* 중 해당 실행에서 생성한 컨테이너만 확인해 정리한다.
+
+## Docker 설치·게시 운영
+
+Root에서 `docker compose --env-file .env -f src/docker-compose.yml build` 후 `up -d`를 실행한다. README의 Docker/pull 절차를 사용한다. `.env` 전체를 container env_file로 주입하지 않고 Compose environment의 앱 변수만 전달한다. `GHCR_IMAGE`는 image 주소, `CAD_HOST_PORT`는 host port이며 기존 Git 변수는 Git tooling에만 남는다. `docker compose config`는 실제 credential이 치환될 수 있으므로 설정 확인에는 `config --quiet`를 사용한다.
+
+- 이름: project `cad-layout-viewer`, service `app`, container `cad-layout-viewer-app`, volume `cad-layout-viewer-data`, network `cad-layout-viewer-network`, port `http`. 같은 이름의 기존 자원을 임의 삭제하지 않는다.
+- 데이터: volume `/data/db/cad.sqlite`, `/data/cad`. host `data/`는 자동 이전하지 않는다. container 교체는 volume을 보존하며 `down -v`는 사용자가 데이터 삭제를 승인한 경우에만 사용한다. 백업 전 앱 쓰기를 중지하고 DB/원본을 일관되게 보존한다.
+- 바인딩: npm dev/start 및 Docker는 기본 `0.0.0.0`; 로컬 한정 실행은 `-- --hostname 127.0.0.1`로 override할 수 있다. 다른 장치에는 localhost 링크 대신 접근 가능한 서버 IP/호스트명으로 앱을 방문해 링크를 복사한다. 실제 방화벽/라우터 설정은 자동 변경하지 않는다.
+- health: migration 후 앱/DB 조회 성공200 또는 안전한503. 실패 시 logs의 안전한 오류 범주와 volume 쓰기 권한, port충돌, DB migration 상태를 확인한다. endpoint는 S3 연결/모든 CAD 검증을 대신하지 않는다.
+- GHCR: build 실행자가 OCI `org.opencontainers.image.source`, `revision`, `version` label을 실제 지정 저장소/commit/버전으로 전달해 image를 source와 연결한다. 저장소 URL을 Dockerfile에 하드코딩하지 않는다. 검증한 버전 tag를 publish하고 digest를 기록한다. private image pull은 package read 권한이 필요하며 visibility를 임의 공개로 바꾸지 않는다. image upload credential을 build arg나 image layer에 전달하지 않는다. Token값을 CLI에 직접 쓰지 않는다.
+- 배포 범위: Linux native SQLite와 단일 app instance를 먼저 검증한다. 여러 replica, 자동 TLS/인증/공개 인터넷 운영, 기존 데이터 migration은 별도 요구 없이는 추가하지 않는다.
+
+공식 근거: [GitHub Container Registry 인증·push/pull](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry), [Compose service/port/container 설정](https://docs.docker.com/reference/compose-file/services/), [Compose project name](https://docs.docker.com/reference/compose-file/version-and-name/). 실제 설치/실행 결과와 공식 지원 설명은 TestReport에서 구분한다.

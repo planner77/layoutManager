@@ -200,3 +200,12 @@
 - Date / Status: 2026-09-08 / Unit LINK 구현 채택.
 - Decision: 링크는 현재 origin의 `/cad/versions/{versionId}/viewer`와 허용 renderer query만 포함하는 불변 Version 주소로 만든다. Clipboard 실패에는 수동 복사/열기를 제공하며 DWG는 항상 libredwg-web로 강제한다. 역할은 gpt-6-astra Manager → gpt-5.6-sol Developer → gpt-5.6-luna QA → Manager 승인/재작업 → root release commit/push 순서로 기록한다.
 - Consequences: Current 교체와 무관하게 대상 Version이 유지된다. 실제 접근성은 실행 중 서버와 origin reachability에 의존하며 공개 운영/인증은 범위 밖이다.
+
+## ADR-022 — Docker 단일 인스턴스 배포와 GHCR
+
+- Date / Status: 2026-09-08 / 사용자 요청에 따른 설계 채택, 실제 배포 검증은 U-DEPLOY-20260908.
+- Context: 다른 host IP 접속과 재현 가능한 image 배포/pull이 필요하며 기존 SQLite/S3 설정과 Secret 경계를 보존해야 한다.
+- Decision: src의 multi-stage Dockerfile/명시 이름 Compose, root context `.dockerignore`, Node22 고정, nonroot runtime, named data volume, migration 후 모든 인터페이스 수신. 지정 GitHub 소유자 GHCR만 사용하며 실제 Token은 image 밖에서 취급한다.
+- Alternatives: 단순 host npm 배포 유지, 별도 DB server/여러 app replica, Git credential을 image에 포함하는 자동 clone. 마지막 방식은 Secret 규칙에 위배되어 배제했다.
+- Reason / Trade-offs: 기존 단일 SQLite 모델과 CAD 관리 API를 유지한다. migration CLI를 위해 runtime에 기존 dependency집합을 포함해 image가 크며 이 단계에서 과도한 slim화는 하지 않는다. hostIP 수신은 접근성을 제공하며 별도 인증/TLS를 추가한 의미가 아니다.
+- Consequences:0.13.0. Root `.dockerignore`는 build context 필터상 필수 예외. 기존 host data와 SeaweedFS를 자동 변경하지 않는다. Luna QA 사용량 제한은 숨기지 않고 root 실행/Manager 검토의 실제 대행 이력을 기록한다.

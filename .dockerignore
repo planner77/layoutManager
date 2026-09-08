@@ -1,0 +1,37 @@
+# Root를 Docker build context로 사용하므로 Git/에이전트 상태와 로컬 설정을 먼저 제외한다.
+.git
+.agents
+.codex
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# 호스트의 의존성·빌드·테스트 결과는 이미지에 재사용하지 않는다.
+**/node_modules
+**/.next
+**/coverage
+**/playwright-report
+**/test-results
+**/dwg-test-results
+**/benchmark-results
+**/*.tsbuildinfo
+**/*.log
+
+# 런타임 DB와 CAD 원본은 named volume 또는 S3에서만 읽는다.
+data
+**/*.db
+**/*.db-*
+**/*.sqlite
+**/*.sqlite-*
+**/*.sqlite3
+**/*.sqlite3-*
+**/*.[dD][xX][fF]
+**/*.[dD][wW][gG]
+
+# build 단계에서 고정 npm 패키지와 원본 TTF로 다시 만드는 자산이다.
+src/generated
+src/public/fonts/CadKorean.typeface.json
+src/public/libredwg

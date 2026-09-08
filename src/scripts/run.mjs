@@ -7,9 +7,9 @@ import { prepareFonts } from './fonts.mjs';
 const env = appEnvironment();
 mkdirSync(path.dirname(env.DATABASE_URL.slice(5)), { recursive: true });
 const commands = {
-  dev: ['next', 'dev', '--hostname', '127.0.0.1'],
+  dev: ['next', 'dev', '--hostname', '0.0.0.0'],
   build: ['next', 'build', '--webpack'],
-  start: ['next', 'start', '--hostname', '127.0.0.1'],
+  start: ['next', 'start', '--hostname', '0.0.0.0'],
   generate: ['prisma', 'generate'],
   deploy: ['prisma', 'migrate', 'deploy'],
   migrate: ['prisma', 'migrate', 'dev'],

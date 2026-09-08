@@ -1,5 +1,31 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-DEPLOY-20260908 — Docker 배포 0.13.0
+
+- Source: LINK commit 25adc5e 이후 Unit DEPLOY snapshot. Manager 설계/리뷰와 Sol Developer 구현/재작업 완료. Luna QA 사용량 제한으로 root가 실제 실행, Manager가 결과 검토·문서화를 대행한다.
+- 환경: Linux x86_64, Node22.14.0, Docker Compose5.5.1. 기존 사용자data/SeaweedFS와 분리된 시험 container/volume, container published3110 및 host앱3100을 사용했다.
+
+| 검사 | 실제 결과 |
+| --- | --- |
+| Compose config | `--env-file /dev/null config --quiet` 및 예제 env 설정 검사 PASS |
+| Root typecheck/lint/build | 각각 PASS |
+| Root 자동 테스트 | 51 passed / 0 failed, 13.07초; health200/503/no-store/status-only2개 포함 |
+| Root 전체 local E2E | 16 passed / 0 failed, 1.2분 |
+| Docker image build | PASS, native SQLite/npm/Prisma/Next build 성공; 최종 게시 image/digest는 아래 후속 결과로 확정 |
+| Container 보안/자산 | UID10001, `.env`/`.git`/Git환경변수 없음, 한글 font와 LibreDWG WASM 존재 확인 PASS |
+| Container 기본 흐름 | DXF 업로드201, 원본 조회 bytes 일치 PASS |
+| 접속 | host앱3100과 container3110 각각 localhost 및 hostIP로 `/api/health`200 PASS |
+
+- 최초 smoke의 WASM 확인은 잘못된 최상위 경로를 검사해 실패했다. 실제 복사 구조의 하위 경로를 재귀 검사해 자산 존재를 확인했으며 앱 수정은 없었다.
+- hostIP 시험은 같은 호스트에서 자신의 네트워크 IP로 접근한 결과다. 별도 물리 장치/VPN/방화벽을 통과한 시험으로 확대 해석하지 않는다.
+- FR/NFR 추적: NFR-DEPLOY-001 → Dockerfile/Compose/run.mjs/health route → TC-DEPLOY-001/002/004 → 현재 근거 PASS. 영속성 TC-DEPLOY-003 결과는 아래에 기록했으며 GHCR push/pull TC-DEPLOY-005는 게시 대기다.
+- 최종 실행 검증일: 2026-09-09 (Asia/Seoul). 작업 추적 ID U-DEPLOY-20260908은 시작일 기준으로 유지한다.
+- Container Browser: dxf-viewer 표시/확대, three-dxf-viewer 표시/확대, 실제 DWG canvas 표시 모두 PASS; pageerror 0. 기존 planar LINE/20 MiB 제약 안에서 확인했다.
+- TC-DEPLOY-003: 동일 격리 volume으로 container를 재생성한 후 DB Version/Current 및 원본 byte 일치 PASS. 기존 사용자 volume은 사용하지 않았다.
+- 최종 root Secret/산출물 검사 121 candidates / 0 violations, diffcheck PASS.
+- Manager 판정(2026-09-09): TC-DEPLOY-001–004와 기존 회귀를 근거로 소스·실행 문서 커밋 승인. 코드/컨테이너 구현 및 검증은 완료했다. GHCR push/digest/pull TC-DEPLOY-005는 **게시 대기**이며 게시 후 별도 결과 문서 commit으로 확정한다. 아직 image 게시 성공으로 기록하지 않는다.
+- 기존 `.env`/DB/CAD/SeaweedFS 서비스 변경 없음, 기존 hostdata 자동 migration 없음. 이미지 안의 단일 SQLite 구조와 S3 임시 디스크 요구는 유지한다.
+
 ## U-LINK-20260908 — Version 직접 링크 0.12.0
 
 - Source: e947aac 이후 이 기록을 포함한 Unit LINK commit snapshot. DB schema, storage, 기존 원본 변경 없음.
