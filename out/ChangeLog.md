@@ -9,6 +9,7 @@
 ### Tests
 
 - Unit 53개, DWG E2E 4개, typecheck/lint/build 통과. 실제 업무 도면·장기 메모리·GPU/WASM 메모리는 미검증이다.
+- 0.15.0 linux/amd64 이미지를 GHCR에 게시하고 인증된 pull 및 digest 일치를 확인했다.
 
 ## 0.14.0 — 2026-09-09 Unit DESC
 

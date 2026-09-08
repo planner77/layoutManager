@@ -16,6 +16,12 @@
 - 실제 업무 DWG, 대형 파일 반복 비교, GPU/WASM 메모리 및 장기 메모리 시험은 NOT RUN이다. 기존 평면 LINE/20 MiB와 제외 Entity partial 범위를 유지한다.
 - Manager/Developer 사용량 제한으로 root가 구현·검증을 대행했으며, 해당 역할을 수행한 것으로 기록하지 않는다. Unit 8B의 자동화 Acceptance Criteria는 충족했다.
 
+### 0.15.0 Docker 이미지
+
+- `7bcc872` 기준 `ghcr.io/planner77/layoutmanager:0.15.0`을 linux/amd64로 빌드했다.
+- GHCR push 및 인증된 pull 성공. registry digest: `sha256:2d9cf30ad176375e5459568d90121175133109d6ac496234c227ea11eaeff67c`.
+- OCI revision label은 `7bcc872`이며 임시 Docker 인증 설정은 검증 후 삭제했다. 익명 pull/visibility 변경은 수행하지 않았다.
+
 ## U-DESC-20260909 — 도면 설명 등록·검색 0.14.0
 
 - 구현 범위: Version별 선택 설명(최대 2,000 UTF-16 code units), trim/NFC/CRLF 정규화, plain-text 목록·Viewer 표시, literal 부분검색과 기존 조건 AND 조합, 기존 행 기본값 호환.
