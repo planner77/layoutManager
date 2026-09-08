@@ -1,5 +1,15 @@
 # ChangeLog
 
+# 0.15.0 — 2026-09-09 Unit 8B
+
+### Added
+
+- libredwg-web DWG Viewer의 WASM 초기화·DWG 파싱 단계 계측을 공통 Metrics JSON에 연결했다.
+
+### Tests
+
+- Unit 53개, DWG E2E 4개, typecheck/lint/build 통과. 실제 업무 도면·장기 메모리·GPU/WASM 메모리는 미검증이다.
+
 ## 0.14.0 — 2026-09-09 Unit DESC
 
 ### Added

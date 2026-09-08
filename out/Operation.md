@@ -1,6 +1,6 @@
 # 운영·환경설정 초안
 
-**현재 0.14.0, Docker 배포·host IP 접속 및 S3 호환 저장소 지원.** Unit 8B DWG 계측은 다음 MINOR 릴리스로 진행 중이다. install/generate/deploy/dev/build/start/typecheck/lint/test/db:check/test:e2e가 동작한다. 초기 설치는 npm ci → db:generate → db:deploy 순서이다. 서버는 `0.0.0.0`으로 수신하며 기본 검증 주소는 `127.0.0.1:3100`이다.
+**현재 0.15.0, Docker 배포·host IP 접속·S3 호환 저장소 및 DWG 계측 지원.** install/generate/deploy/dev/build/start/typecheck/lint/test/db:check/test:e2e가 동작한다. 초기 설치는 npm ci → db:generate → db:deploy 순서이다. 서버는 `0.0.0.0`으로 수신하며 기본 검증 주소는 `127.0.0.1:3100`이다.
 
 Playwright 기본 설치는 `cd src` 후 `npx playwright install chromium`이다. 이미 설치된 Chromium을 사용할 때는 `PLAYWRIGHT_CHROMIUM_EXECUTABLE`에 실행 파일 경로를 설정한다. E2E는 3101 포트와 독립 `/tmp/cad-e2e-*` DB/Storage를 사용한다. 이 임시 데이터는 운영 데이터와 분리되며 Git에 포함되지 않는다.
 

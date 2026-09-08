@@ -10,10 +10,11 @@
 | `npm test` | 14 files / 53 passed / 0 failed |
 | `npm run typecheck` / `npm run lint` | 각각 exit 0 |
 | DWG Adapter metric 단위 시험 (`TC-MET-002`) | PASS |
-| 등록 DWG Browser metric stage assertion | 기존 U7B 시험에 assertion 추가, production E2E는 Next build 오류로 NOT RUN |
-| `npm run build` | BLOCKED: Next 16.3.4가 TypeScript `--showConfig` 출력을 파싱하지 못함. 직접 `tsc --showConfig`와 typecheck는 정상이며 원인 추가 분석 필요 |
+| 등록 DWG Browser metric stage assertion | 4 passed / 0 failed (공식 Line/Circle sample, 오류·재진입 포함) |
+| `npm run build` | exit 0 (`experimental.useTypeScriptCli: false`로 Next API 검사 경로 사용) |
 
 - 실제 업무 DWG, 대형 파일 반복 비교, GPU/WASM 메모리 및 장기 메모리 시험은 NOT RUN이다. 기존 평면 LINE/20 MiB와 제외 Entity partial 범위를 유지한다.
+- Manager/Developer 사용량 제한으로 root가 구현·검증을 대행했으며, 해당 역할을 수행한 것으로 기록하지 않는다. Unit 8B의 자동화 Acceptance Criteria는 충족했다.
 
 ## U-DESC-20260909 — 도면 설명 등록·검색 0.14.0
 
