@@ -4,8 +4,9 @@
 FROM node:22.14.0-bookworm-slim AS dependencies
 WORKDIR /app/src
 ENV NEXT_TELEMETRY_DISABLED=1
+# better-sqlite3 사전 빌드가 내려오지 않을 때 node-gyp가 사용할 도구를 포함한다.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates openssl \
+    && apt-get install -y --no-install-recommends ca-certificates openssl python3 make g++ \
     && rm -rf /var/lib/apt/lists/*
 COPY src/package.json src/package-lock.json ./
 RUN npm ci

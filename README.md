@@ -211,10 +211,10 @@ docker compose --env-file .env -f src/docker-compose.yml stop
 
 ## GitHub Container Registry 이미지 내려받기
 
-검증·게시한 이미지는 `ghcr.io/planner77/layoutmanager:0.13.0`입니다. 아래 명령으로 내려받고 `.env`에 `GHCR_IMAGE=ghcr.io/planner77/layoutmanager:0.13.0`을 설정합니다. 실제 pull 검증은 인증된 계정으로 수행했으며 익명 공개 접근은 검증하지 않았습니다.
+검증·게시한 최신 이미지는 `ghcr.io/planner77/layoutmanager:0.14.0`입니다. 아래 명령으로 내려받고 `.env`에 `GHCR_IMAGE=ghcr.io/planner77/layoutmanager:0.14.0`을 설정합니다. 실제 pull 검증은 인증된 계정으로 수행했으며 익명 공개 접근은 검증하지 않았습니다.
 
 ```bash
-docker pull ghcr.io/planner77/layoutmanager:0.13.0
+docker pull ghcr.io/planner77/layoutmanager:0.14.0
 ```
 
 게시된 이미지 주소와 tag를 `.env`의 `GHCR_IMAGE`에 지정합니다. 저장소/계정 식별값은 환경설정으로 유지합니다. 비공개 package는 해당 package를 읽을 권한으로 먼저 `docker login ghcr.io`를 수행해야 합니다. Token을 명령행 인수·소스·로그에 기록하지 않고 password stdin 방식이나 승인된 credential 관리 방식을 사용합니다.
