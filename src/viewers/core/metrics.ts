@@ -3,7 +3,7 @@ export type ViewerMetric = {
   result:'partial'|'success'|'empty'|'error'|'cancelled';
   sourceMode:'miss'|'pending'|'memory'; fileBytes:number|null; entityCount:number|null;
   sourceWaitMs:number|null; initializeMs:number|null; adapterLoadMs:number|null; totalMs:number;
-  firstDisplayMs:number|null; parseMs:null; jsHeapBytes:number|null;
+  firstDisplayMs:number|null; parseMs:number|null; jsHeapBytes:number|null;
   browser:string; reasons:Record<string,string>; error:string|null;
 };
 export async function observeFrame():Promise<boolean> {

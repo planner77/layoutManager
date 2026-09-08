@@ -20,6 +20,7 @@ export class LibreDwgWebAdapter implements CadViewerAdapter {
     return {
       empty: result.positions.length === 0,
       entityCount: result.entityCount,
+      metrics: { initializeMs: result.initMs, parseMs: result.parseMs },
       warning: skipped.length ? `표시 제외: ${skipped.map(([type, count]) => `${type} ${count}개`).join(', ')}. 현재 평면 LINE만 지원합니다.` : undefined,
     };
   }

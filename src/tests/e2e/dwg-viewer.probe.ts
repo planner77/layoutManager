@@ -49,6 +49,8 @@ test('TC-E2E-002/DWG-001/003: registered DWG uses its own adapter, controls and 
   await expect(page.getByRole('button', { name: 'three-dxf-viewer', exact: true })).toHaveCount(0);
   let metric = JSON.parse((await page.getByTestId('viewer-metric').textContent())!);
   expect(metric).toMatchObject({ renderer: 'libredwg-web', versionId: file.id, entityCount: 1, result: 'success' });
+  expect(metric.initializeMs).toBeGreaterThanOrEqual(0);
+  expect(metric.parseMs).toBeGreaterThanOrEqual(0);
   const canvas = page.locator('canvas'); const initial = await canvas.screenshot();
   await page.getByRole('button', { name: '확대', exact: true }).click(); expect((await canvas.screenshot()).equals(initial)).toBe(false);
   await page.getByRole('button', { name: '축소', exact: true }).click();

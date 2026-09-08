@@ -1,5 +1,20 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U8B-20260909 — DWG 계측 확장 0.15.0
+
+- Manager/Developer 에이전트는 사용량 제한으로 실행하지 못해 root가 구현·검증을 대행했다. 이 사실과 범위 제한을 기록한다.
+- `libredwg-web` Adapter가 Worker의 WASM 초기화(`initializeMs`) 및 DWG 파싱(`parseMs`) 시간을 공통 Metrics에 전달한다. 변환 시간과 GPU/WASM 메모리는 아직 별도 수집하지 않는다.
+
+| 검사 | 실제 결과 |
+| --- | --- |
+| `npm test` | 14 files / 53 passed / 0 failed |
+| `npm run typecheck` / `npm run lint` | 각각 exit 0 |
+| DWG Adapter metric 단위 시험 (`TC-MET-002`) | PASS |
+| 등록 DWG Browser metric stage assertion | 기존 U7B 시험에 assertion 추가, production E2E는 Next build 오류로 NOT RUN |
+| `npm run build` | BLOCKED: Next 16.3.4가 TypeScript `--showConfig` 출력을 파싱하지 못함. 직접 `tsc --showConfig`와 typecheck는 정상이며 원인 추가 분석 필요 |
+
+- 실제 업무 DWG, 대형 파일 반복 비교, GPU/WASM 메모리 및 장기 메모리 시험은 NOT RUN이다. 기존 평면 LINE/20 MiB와 제외 Entity partial 범위를 유지한다.
+
 ## U-DESC-20260909 — 도면 설명 등록·검색 0.14.0
 
 - 구현 범위: Version별 선택 설명(최대 2,000 UTF-16 code units), trim/NFC/CRLF 정규화, plain-text 목록·Viewer 표시, literal 부분검색과 기존 조건 AND 조합, 기존 행 기본값 호환.

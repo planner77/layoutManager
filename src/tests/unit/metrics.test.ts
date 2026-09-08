@@ -29,3 +29,11 @@ test('TC-MET-001: cancelled generation emits cancelled rather than successful me
   const loading=manager.load('/file','DXF');const rejected=expect(loading).rejects.toThrow();manager.dispose();resolve(new Response('data'));await rejected;
   expect(records).toHaveLength(1);expect(records[0]).toMatchObject({result:'cancelled',firstDisplayMs:null});
 });
+test('TC-MET-002: adapter-provided DWG initialization and parse stages are retained',async()=>{
+  const records: ViewerMetric[]=[];
+  const dwgFactory=async():Promise<CadViewerAdapter>=>({load:async()=>({empty:false,entityCount:1,metrics:{initializeMs:12.5,parseMs:3.25}}),dispose:vi.fn(),fitToView:vi.fn(),zoomIn:vi.fn(),zoomOut:vi.fn()});
+  vi.stubGlobal('fetch',vi.fn(async()=>new Response('dwg')));
+  await new ViewerManager(dwgFactory,undefined,{renderer:'libredwg-web',versionId:'dwg',report:m=>records.push(m)},'DWG').load('/dwg','DWG');
+  expect(records[0]).toMatchObject({initializeMs:12.5,parseMs:3.25});
+  expect(records[0].reasons.parseMs).toBeUndefined();
+});

@@ -2,7 +2,7 @@ import type { ViewerFormat } from './selection';
 import { ViewerSource } from './source';
 import {heapBytes,observeFrame,type ViewerMetric} from './metrics';
 export interface CadViewerAdapter {
-  load(source: ArrayBuffer): Promise<{ empty: boolean; entityCount?:number; warning?:string }>;
+  load(source: ArrayBuffer): Promise<{ empty: boolean; entityCount?:number; warning?:string; metrics?: { initializeMs?: number; parseMs?: number } }>;
   fitToView(): void;
   zoomIn(): void;
   zoomOut(): void;
@@ -35,6 +35,8 @@ export class ViewerManager {
     try {
       const loading=performance.now();const result = await adapter.load(bytes.slice(0));
       metric.adapterLoadMs=performance.now()-loading;
+      if (result.metrics?.initializeMs !== undefined) { metric.initializeMs=result.metrics.initializeMs; delete metric.reasons.initializeMs; }
+      if (result.metrics?.parseMs !== undefined) { metric.parseMs=result.metrics.parseMs; delete metric.reasons.parseMs; }
       if (generation !== this.generation) throw new DOMException('취소됨','AbortError');
       if(!result.empty && this.measurement && await observeFrame()) {metric.firstDisplayMs=performance.now()-started;delete metric.reasons.firstDisplayMs;}
       if(generation!==this.generation)throw new DOMException('취소됨','AbortError');

@@ -65,7 +65,7 @@ export function CadViewer({ versionId, renderer: initialRenderer = 'dxf-viewer',
       <Button variant="outline" size="sm" onClick={()=>{
         const url=URL.createObjectURL(new Blob([JSON.stringify(metric,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=`cad-metrics-${renderer}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),0);
       }}>측정 JSON 저장</Button></div>
-      <p className="mt-2 text-xs text-slate-500">도면 처리는 파싱·글꼴·화면 준비를 포함합니다. 순수 파싱 시간과 GPU 메모리는 별도 측정하지 않습니다.</p>
+      <p className="mt-2 text-xs text-slate-500">DWG는 WASM 초기화·파싱 시간을 별도 표시합니다. GPU/WASM 메모리와 변환 시간은 별도 계측하지 않습니다.</p>
       <details className="mt-2"><summary className="cursor-pointer text-xs">측정 상세</summary><pre data-testid="viewer-metric" className="mt-2 overflow-auto text-xs">{JSON.stringify(metric,null,2)}</pre></details>
     </div>}
     <p className="text-xs text-slate-500">마우스 드래그로 이동 · 휠로 확대/축소. {format==='DWG'?'DWG는 현재 20 MiB 이하의 평면 LINE만 직접 표시합니다. TEXT/BLOCK/곡선 등은 지원하지 않습니다.':'한글 기본 글꼴을 사용합니다.'} 원본 글꼴·문자 인코딩·일부 Entity·선종·치수에 따라 CAD 원본과 다르게 표시될 수 있습니다.</p>

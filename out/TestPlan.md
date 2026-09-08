@@ -12,6 +12,13 @@
 - TC-DESC-005: UI에서 filename에없는설명단어 등록→설명검색만으로찾기→목록/Location/Viewer본문확인, HTML실행안됨/개행보존. typecheck/lint/build/unit/E2E 및문서schema검토.
 - Manager 설계→Sol 구현→Manager review→Luna QA검증/문서→Manager승인/재작업. 모델제한은사실대로기록하고root가release/실제DB백업·migration/게시를담당한다.
 
+## Unit 8B 실행 계획 — 2026-09-09
+
+- DWG Viewer가 Worker에서 측정한 WASM 초기화·DWG 파싱 시간을 공통 Metrics JSON에 전달한다.
+- `parseMs`와 `initializeMs`가 실제 DWG 성공·partial 결과에서 null이 아니어야 하며, DXF와 실패·취소 결과의 미계측 사유는 유지한다.
+- TC-MET-003: adapter stage metric 전달 단위 검증 및 등록 DWG Browser metric의 초기화·파싱 값/Entity 수/partial coverage 확인.
+- Manager/Developer 사용량 제한으로 root가 구현·검증을 대행하고, 미실행된 실도면·장기 메모리·GPU/WASM 메모리 시험은 NOT RUN으로 기록한다.
+
 ## Unit DEPLOY 실행 계획 — 2026-09-08 사용자 요청
 
 - Manager 설계→Sol Developer 구현/재작업 완료→Manager 리뷰. Luna QA 사용량 제한으로 root가 실제 시험을 실행하고 Manager가 결과·문서로 수용 여부를 판단한다. 패키지 버전 0.13.0, LINK 0.12.0과 commit 분리.
