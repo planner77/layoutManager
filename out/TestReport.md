@@ -22,6 +22,20 @@
 - GHCR push 및 인증된 pull 성공. registry digest: `sha256:2d9cf30ad176375e5459568d90121175133109d6ac496234c227ea11eaeff67c`.
 - OCI revision label은 `7bcc872`이며 임시 Docker 인증 설정은 검증 후 삭제했다. 익명 pull/visibility 변경은 수행하지 않았다.
 
+## U9B-20260909 — DWG 통합·회귀
+
+- 등록 DWG의 원본 API→`libredwg-web` Adapter→Worker/WASM→canvas 흐름과 DXF/DWG renderer 선택, 직접 링크, 오류·재진입·Dispose를 검증했다.
+
+| 검사 | 실제 결과 |
+| --- | --- |
+| DWG 전용 E2E (`test:dwg`) | 4 passed / 0 failed |
+| 기존 관리·DXF·링크 E2E | 16 passed / 0 failed |
+| 20회 Viewer 전환 (`switch.spec.ts`) | passed, 잔여 Worker/canvas 없음 확인 |
+| Unit/typecheck/lint/build | 각각 53 passed / exit 0 / exit 0 / exit 0 |
+
+- 검증 환경은 Chromium/SwiftShader, 임시 DB·Storage, 공식 AutoCAD 2000 Line/Circle fixture이다. 실제 업무 도면 fidelity, 대형 파일 SLA, GPU/WASM 메모리 및 장기 메모리 측정은 NOT RUN이다.
+- Manager/Developer 사용량 제한으로 root가 실행을 대행했으며, 미실행 역할을 수행한 것으로 기록하지 않는다. U8B·U9B 자동화 범위는 완료 승인 가능하다.
+
 ## U-DESC-20260909 — 도면 설명 등록·검색 0.14.0
 
 - 구현 범위: Version별 선택 설명(최대 2,000 UTF-16 code units), trim/NFC/CRLF 정규화, plain-text 목록·Viewer 표시, literal 부분검색과 기존 조건 AND 조합, 기존 행 기본값 호환.
