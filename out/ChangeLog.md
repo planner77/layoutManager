@@ -10,6 +10,7 @@
 - 기존 local/S3 혼합 조회, stream PUT/GET 및 immutable object key/조건부 PUT.
 - DB transaction 전 remote 업로드, 실패 보상과 불확실 COMMIT 원본 보존.
 - 격리 SeaweedFS 통합 시험·웹 E2E 명령과 환경 예제/운영 안내.
+- README에 최초 설치·DB 준비·개발/Production 실행·검증 및 기존 SeaweedFS 연결 순서를 추가.
 
 ### Tests
 

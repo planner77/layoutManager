@@ -41,9 +41,9 @@ data/              # DB/CAD 런타임 저장, Git 제외
 
 ## 사전 요구사항·환경설정
 
-Node.js/npm/Git, 영속 local disk, 데스크톱 Browser를 사용합니다. 검증 환경은 Node 22.14.0/npm 11.10.0/Git 2.43.0입니다. 향후 Viewer에는 WebGL/WASM이 필요합니다.
+Node.js/npm/Git, 영속 local disk, 데스크톱 Browser를 사용합니다. 검증 환경은 Node 22.14.0/npm 11.10.0/Git 2.43.0입니다. Viewer에는 WebGL/WASM이 필요합니다. Docker는 격리 S3 시험 실행 시 필요합니다.
 
-Root `.env`가 이미 있으면 보존합니다. 새 checkout에 없을 때만 `.env.example`을 기반으로 생성하고 실제 값은 로컬에서 입력합니다. 기존 Git 변수명 `remote_repo_url`, `remote_repo_token`을 유지합니다. 앱 설정은 `DATABASE_URL`, `CAD_STORAGE_PATH`, `MAX_UPLOAD_SIZE_MB`를 계획하며 상세/기본값/안전한 로딩은 [Operation](out/Operation.md)에 있습니다. Secret을 NEXT_PUBLIC_* 변수로 넣지 않습니다.
+Root `.env`가 이미 있으면 보존합니다. 새 checkout에 없을 때만 `.env.example`을 기반으로 생성하고 실제 값은 로컬에서 입력합니다. 기존 Git 변수명 `remote_repo_url`, `remote_repo_token`을 유지합니다. 앱 설정은 `DATABASE_URL`, `CAD_STORAGE_PATH`, `MAX_UPLOAD_SIZE_MB`를 사용하며 상세/기본값/안전한 로딩은 [Operation](out/Operation.md)에 있습니다. Secret을 NEXT_PUBLIC_* 변수로 넣지 않습니다.
 
 GitHub remote는 `.env`의 지정 저장소만 사용합니다. 기존 `origin`과 설정의 일치 및 인증을 확인했습니다. 작업 branch는 `main`입니다. 새 checkout은 지정 저장소를 clone하고, 기존 workspace는 설정과 remote 일치를 먼저 확인합니다. Token을 remote URL에 포함하지 않습니다. Commit/Push 결과는 [TestReport](out/TestReport.md)에 기록합니다.
 
@@ -63,6 +63,50 @@ GitHub remote는 `.env`의 지정 저장소만 사용합니다. 기존 `origin`�
 | 자동 테스트 / E2E | `npm --prefix src test` / `npm --prefix src run test:e2e` |
 
 기본 포트는 3000이며 `npm --prefix src run start -- --port 3100`으로 변경할 수 있습니다. 목록은 `/`, 등록은 `/cad/upload`, 위치 상세는 `/cad/locations/{locationId}`입니다. 새 Build 적용 시 서버를 재시작합니다. DB·업로드 파일 백업/복구 및 장애 대응은 [Operation](out/Operation.md), 실제 검증 결과는 [TestReport](out/TestReport.md)에서 확인합니다.
+
+## 처음 설치하고 실행하기
+
+모든 명령은 프로젝트 Root에서 실행합니다. Node.js 22.14 이상 23 미만을 사용합니다.
+
+1. `.env`가 **없는 경우에만** `.env.example`을 복사해 `.env`를 만듭니다. 기존 파일이 있으면 필요한 변수만 추가합니다. 실제 인증정보는 로컬 편집기로 입력하고 커밋하지 않습니다.
+2. 로컬 저장소로 시작하려면 `CAD_STORAGE_BACKEND=local`을 사용합니다. `DATABASE_URL`과 `CAD_STORAGE_PATH`가 비어 있으면 각각 Root의 `data/db/cad.sqlite`, `data/cad`를 사용합니다. 업로드 기본 한도는 100 MiB입니다. 해당 디렉터리에 서버 계정의 쓰기 권한이 필요합니다.
+3. 의존성을 설치하고 DB를 준비합니다. `db:deploy`는 저장된 Migration을 적용하며 DB 삭제/초기화 명령이 아닙니다.
+
+```bash
+npm --prefix src ci
+npm --prefix src run db:generate
+npm --prefix src run db:deploy
+npm --prefix src run db:check
+```
+
+4. 개발 서버를 실행합니다.
+
+```bash
+npm --prefix src run dev
+```
+
+브라우저에서 `http://127.0.0.1:3000`에 접속해 **파일 등록 → 메타데이터 입력 → 등록 → 목록 → 도면 보기**를 확인합니다. DXF는 두 Viewer를 전환할 수 있습니다. DWG는 아래에 명시한 부분 지원 범위를 적용합니다. 서버 종료는 실행 터미널에서 Ctrl+C입니다.
+
+### Production 실행
+
+같은 작업 폴더의 기존 dev/start 프로세스를 종료한 뒤 Build하고 시작합니다.
+
+```bash
+npm --prefix src run build
+npm --prefix src run start -- --port 3100
+```
+
+접속 주소는 `http://127.0.0.1:3100`입니다. Build/dev 과정에서 글꼴 JSON과 LibreDWG ESM/WASM 자산을 준비합니다. 배포 시 생성된 `src/public` 자산도 유지해야 합니다. `.env` 변경 후에는 서버를 재시작합니다. SQLite·CAD 데이터는 Build와 별도로 영속 보관합니다.
+
+### 설치 후 검증
+
+```bash
+npm --prefix src run typecheck
+npm --prefix src run lint
+npm --prefix src test
+```
+
+브라우저 E2E는 Chromium 설치 및 Production Build 후 실행합니다. Chromium은 `src/`에서 `npx playwright install chromium`으로 설치하고, Root로 돌아와 `npm --prefix src run test:e2e`를 실행합니다. 기존 Chromium 사용 시 `PLAYWRIGHT_CHROMIUM_EXECUTABLE`에 실행 파일 경로를 지정할 수 있습니다. 테스트 결과와 미검증 범위는 [TestReport](out/TestReport.md)를 참조하세요.
 
 ## 미지원 범위·알려진 제약
 
@@ -110,7 +154,27 @@ DWG 등록 후 목록/Location의 **도면 보기**로 엽니다. libredwg-web�
 
 ## S3 호환 저장소 (SeaweedFS 등)
 
-기본 저장소는 local입니다. `.env`에서 `CAD_STORAGE_BACKEND=s3`와 `CAD_S3_ENDPOINT`, `CAD_S3_BUCKET`, `CAD_S3_ACCESS_KEY_ID`, `CAD_S3_SECRET_ACCESS_KEY`를 설정하고 서버를 재시작하면 이후 업로드를 S3에 저장합니다. SeaweedFS용 path-style 기본값은 true, region은 us-east-1입니다.
+### SeaweedFS / 기존 S3 서비스 연결
+
+1. 접근 가능한 S3 gateway와 **미리 생성한 private bucket**을 준비합니다. 앱 계정에는 해당 bucket의 PutObject/GetObject/DeleteObject 권한이 필요합니다. 앱에서 SeaweedFS 서버나 bucket을 자동 생성하지 않습니다.
+2. Root `.env`에 아래 설정을 추가합니다. endpoint는 앱 서버에서 접근 가능한 주소로, bucket은 실제 생성한 이름으로 바꾸고 두 인증정보를 입력합니다. 아래 주소와 bucket 이름은 예시이며 인증정보는 의도적으로 비워 두었습니다.
+
+```dotenv
+CAD_STORAGE_BACKEND=s3
+CAD_S3_ENDPOINT=http://127.0.0.1:8333
+CAD_S3_BUCKET=cad-drawings
+CAD_S3_REGION=us-east-1
+CAD_S3_ACCESS_KEY_ID=
+CAD_S3_SECRET_ACCESS_KEY=
+CAD_S3_SESSION_TOKEN=
+CAD_S3_FORCE_PATH_STYLE=true
+CAD_S3_TIMEOUT_MS=60000
+```
+
+endpoint에는 경로·query·인증정보를 넣지 않습니다. 앱이 컨테이너나 다른 호스트에 있으면 `127.0.0.1` 대신 해당 앱에서 접근 가능한 gateway 주소를 사용합니다. 임시 자격증명을 사용할 때만 session token을 채웁니다.
+
+3. 최초 설치라면 위 설치/DB 준비 절차를 수행합니다. 기존 서버를 종료하고 `npm --prefix src run build` 후 `npm --prefix src run start -- --port 3100`으로 시작합니다.
+4. `/cad/upload`에서 새 도면을 등록하고 목록과 Viewer에서 조회합니다. 이후 업로드 원본은 S3에 저장되며 사용자는 기존 UI를 그대로 사용합니다. 서버에서 원본을 제공하므로 브라우저에 S3 인증정보를 설정하지 않습니다.
 
 기존 로컬 원본은 계속 조회할 수 있으며 자동 이동하지 않습니다. SQLite와 업로드 임시 파일은 로컬 디스크를 사용합니다. 버킷은 미리 준비해야 하며 endpoint/credential은 서버에서만 사용합니다. 상세 설정·전환·복구 제한은 [Operation](out/Operation.md), 실제 SeaweedFS 검증 결과는 [TestReport](out/TestReport.md)를 참조하세요.
 

@@ -1,6 +1,6 @@
 # 운영·환경설정 초안
 
-**0.3.0 파일 등록 구현 완료.** install/generate/deploy/dev/build/start/typecheck/lint/test/db:check/test:e2e가 동작한다. 초기 설치는 npm ci → db:generate → db:deploy 순서이다. 서버는 현재 127.0.0.1:3100에서 검증했으며 기본 포트는 3000이다.
+**현재 0.11.0, S3 호환 저장소 지원.** install/generate/deploy/dev/build/start/typecheck/lint/test/db:check/test:e2e가 동작한다. 초기 설치는 npm ci → db:generate → db:deploy 순서이다. 서버는 현재 127.0.0.1:3100에서 검증했으며 기본 포트는 3000이다.
 
 Playwright 기본 설치는 `cd src` 후 `npx playwright install chromium`이다. 이미 설치된 Chromium을 사용할 때는 `PLAYWRIGHT_CHROMIUM_EXECUTABLE`에 실행 파일 경로를 설정한다. E2E는 3101 포트와 독립 `/tmp/cad-e2e-*` DB/Storage를 사용한다. 이 임시 데이터는 운영 데이터와 분리되며 Git에 포함되지 않는다.
 
@@ -26,11 +26,11 @@ DB 기본 위치는 `<WORK_FOLDER>/data/db/cad.sqlite`, CAD는 `<WORK_FOLDER>/da
 
 앱 launcher는 src/scripts에 구현하고 dev/build/start/Prisma/test가 공유한다. `.env`를 데이터로 parse한 뒤 세 앱 키만 전달하고 inherited Git 인증 키도 제거한다. Next의 기본 env discovery에 root .env 로딩을 맡기지 않는다. 어떤 Secret도 NEXT_PUBLIC_* 또는 next.config env에 넣지 않는다. [Next.js 공식 환경변수 문서](https://nextjs.org/docs/app/guides/environment-variables)
 
-## 설치·DB·실행 명령 계약 (아직 미구현)
+## 설치·DB·실행 명령
 
-다음 명령은 Root에서 호출할 수 있게 src/package.json에 구현할 예정이다. 아직 package.json이 없으므로 현재 실행 불가하다.
+다음 명령은 src/package.json에 구현되어 있으며 Root에서 실행한다. 최초 셋업 및 실행 순서는 [README](../README.md)를 참조한다.
 
-| 목적 | 예정 명령 | 검증 Unit |
+| 목적 | 명령 | 검증 Unit |
 | --- | --- | --- |
 | Lock 기준 의존성 설치 | `npm --prefix src ci` | 0B |
 | Prisma Client 생성 | `npm --prefix src run db:generate` | 0B/1 |
