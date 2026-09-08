@@ -10,6 +10,7 @@
 - TC-DESC-003: 설명 단독/filename독립/기존filterAND/pagination/한글NFC/%/_/따옴표 literal/중복query거부.
 - TC-DESC-004: API 설명등록·구버전설명생략·validationfail, 목록/상세/ViewerDTO의내용일치 및현재버전정합성.
 - TC-DESC-005: UI에서 filename에없는설명단어 등록→설명검색만으로찾기→목록/Location/Viewer본문확인, HTML실행안됨/개행보존. typecheck/lint/build/unit/E2E 및문서schema검토.
+- TC-LIST-004: 홈 목록에서 `Current 지정`을 눌러 선택한 Version을 Current로 변경하고 기존 Current 해제·새로고침 후 목록/필터 일치를 확인한다.
 - Manager 설계→Sol 구현→Manager review→Luna QA검증/문서→Manager승인/재작업. 모델제한은사실대로기록하고root가release/실제DB백업·migration/게시를담당한다.
 
 ## Unit 8B 실행 계획 — 2026-09-09

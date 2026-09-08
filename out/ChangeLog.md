@@ -5,6 +5,7 @@
 ### Added
 
 - libredwg-web DWG Viewer의 WASM 초기화·DWG 파싱 단계 계측을 공통 Metrics JSON에 연결했다.
+- 등록 폼 설명 입력 영역을 넓은 강조 섹션으로 재배치하고 홈 목록에서 Current를 직접 지정할 수 있게 했다.
 
 ### Tests
 

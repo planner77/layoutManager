@@ -26,8 +26,8 @@ test('TC-API-002/003: invalid metadata, ID and unsupported upload are safe error
 });
 
 test('TC-ISSUE-001/LIST: list API, filters, detail and current change persist', async ({ page, request }) => {
-  for (const name of ['issue-one.dxf','issue-two.dxf']) {
-    const response = await request.post('/api/cad-files', { multipart: {file: {name,mimeType:'application/octet-stream',buffer:Buffer.from('0\nSECTION\n2\nENTITIES\n0\nENDSEC\n0\nEOF\n')},businessUnit:'회귀',site:'이슈검증',building:'B동',floor:'1층',registeredAt:'2026-09-07',makeCurrent:'true'} });
+  for (const [index,name] of ['issue-one.dxf','issue-two.dxf'].entries()) {
+    const response = await request.post('/api/cad-files', { multipart: {file: {name,mimeType:'application/octet-stream',buffer:Buffer.from('0\nSECTION\n2\nENTITIES\n0\nENDSEC\n0\nEOF\n')},businessUnit:'회귀',site:'이슈검증',building:'B동',floor:'1층',registeredAt:'2026-09-07',makeCurrent:index === 1 ? 'true' : 'false'} });
     expect(response.status()).toBe(201);
   }
   const response = await request.get('/api/cad-files?site=이슈검증&current=true');
@@ -39,8 +39,9 @@ test('TC-ISSUE-001/LIST: list API, filters, detail and current change persist', 
   await page.getByRole('combobox', {name:'사업장',exact:true}).selectOption('이슈검증');
   await page.getByRole('button',{name:'검색',exact:true}).click();
   await expect(page.getByRole('row').filter({hasText:'issue-one.dxf'})).toBeVisible();
-  await page.getByRole('link',{name:'issue-one.dxf',exact:true}).click();
   await page.getByRole('row').filter({hasText:'issue-one.dxf'}).getByRole('button',{name:'Current 지정'}).click();
+  await expect(page.getByRole('row').filter({hasText:'issue-one.dxf'})).toContainText('Current');
+  await page.getByRole('link',{name:'issue-one.dxf',exact:true}).click();
   await expect(page.getByRole('row').filter({hasText:'issue-one.dxf'})).toContainText('Current');
   await expect(page.getByRole('row').filter({hasText:'issue-two.dxf'}).getByRole('button',{name:'Current 지정'})).toBeVisible();
   await page.reload();
