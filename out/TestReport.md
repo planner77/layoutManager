@@ -18,12 +18,16 @@
 
 - 최초 smoke의 WASM 확인은 잘못된 최상위 경로를 검사해 실패했다. 실제 복사 구조의 하위 경로를 재귀 검사해 자산 존재를 확인했으며 앱 수정은 없었다.
 - hostIP 시험은 같은 호스트에서 자신의 네트워크 IP로 접근한 결과다. 별도 물리 장치/VPN/방화벽을 통과한 시험으로 확대 해석하지 않는다.
-- FR/NFR 추적: NFR-DEPLOY-001 → Dockerfile/Compose/run.mjs/health route → TC-DEPLOY-001/002/004 → 현재 근거 PASS. 영속성 TC-DEPLOY-003 결과는 아래에 기록했으며 GHCR push/pull TC-DEPLOY-005는 게시 대기다.
+- FR/NFR 추적: NFR-DEPLOY-001 → Dockerfile/Compose/run.mjs/health route → TC-DEPLOY-001/002/004 → 현재 근거 PASS. 영속성 TC-DEPLOY-003 결과는 아래에 기록했으며 GHCR push/pull TC-DEPLOY-005 결과도 아래에 확정했다.
 - 최종 실행 검증일: 2026-09-09 (Asia/Seoul). 작업 추적 ID U-DEPLOY-20260908은 시작일 기준으로 유지한다.
 - Container Browser: dxf-viewer 표시/확대, three-dxf-viewer 표시/확대, 실제 DWG canvas 표시 모두 PASS; pageerror 0. 기존 planar LINE/20 MiB 제약 안에서 확인했다.
 - TC-DEPLOY-003: 동일 격리 volume으로 container를 재생성한 후 DB Version/Current 및 원본 byte 일치 PASS. 기존 사용자 volume은 사용하지 않았다.
 - 최종 root Secret/산출물 검사 121 candidates / 0 violations, diffcheck PASS.
-- Manager 판정(2026-09-09): TC-DEPLOY-001–004와 기존 회귀를 근거로 소스·실행 문서 커밋 승인. 코드/컨테이너 구현 및 검증은 완료했다. GHCR push/digest/pull TC-DEPLOY-005는 **게시 대기**이며 게시 후 별도 결과 문서 commit으로 확정한다. 아직 image 게시 성공으로 기록하지 않는다.
+- 소스 승인 이후 Docker source commit `d80a9a6519168eef162b883b73deb1ad03a72aca`를 원격에 push하고 clean 상태를 확인했다. 최종 image의 OCI revision은 동일 commit이며 검증한 runtime layer를 cache로 재사용했다.
+- TC-DEPLOY-005: `ghcr.io/planner77/layoutmanager:0.13.0` GHCR push PASS, 이어서 인증된 계정의 pull PASS. 양쪽 digest는 `sha256:7cf148fc44def77fad17e1925a5875558fd8dcfef5ab5d4aba56651556cd67e4`로 일치했다. 익명 공개 pull은 시험하지 않았으며 visibility를 임의 변경하지 않았다.
+- Image 플랫폼 `linux/amd64`, 로컬 image size 1,909,062,456 bytes. Prisma migration CLI와 기존 개발 dependency를 포함한 P.O.C. 구성으로 크기 최적화는 이번 범위에서 수행하지 않았다. 이 값은 압축된 registry 전송량이 아니다.
+- 추가 실행 점검: container healthy, hostIP3110의 홈/등록 HTTP200. 시험 container와 volume을 정리했으며 실제 앱3100은0.13.0/모든 인터페이스 수신으로 유지했다. 최종 localhost/hostIP3100 health 모두200, 시험 container 목록 비어 있음 확인.
+- Manager 최종 판정(2026-09-09): TC-DEPLOY-001–005 및 기존 회귀 근거를 검토해 Unit DEPLOY 구현·컨테이너 실행·GHCR 게시를 **완료 승인**한다. 최종 게시 결과만 별도 문서 commit으로 원격 반영한다.
 - 기존 `.env`/DB/CAD/SeaweedFS 서비스 변경 없음, 기존 hostdata 자동 migration 없음. 이미지 안의 단일 SQLite 구조와 S3 임시 디스크 요구는 유지한다.
 
 ## U-LINK-20260908 — Version 직접 링크 0.12.0

@@ -53,7 +53,7 @@ P0=필수, P1=가능한 범위 구현 또는 지원 여부 평가. `PLANNED`=미
 | NFR-FIDELITY-001 | 실제 Entity 충실도 | P0 | 제공된 Sample의 대상 Entity별 비교 근거·문제·미검증 사유를 기록한다 | TC-CAD-001 | manual evaluation / PLANNED |
 | NFR-EVAL-001 | 세 기술 최종 평가 | P0 | 장단점·성능·지원/문제 Entity·대형 파일·발견 문제를 평가하고 DXF 비교와 DWG 평가를 분리한다 | TC-EVAL-001 | TestReport / IN_PROGRESS (합성 LINE 비교, 실도면 미검증) |
 | NFR-TEST-001 | 단위 개발·회귀 | P0 | DB 핵심 규칙/API/Adapter 자동화 및 최소 DXF E2E, 필요한 실도면 수동 확인; 실패 미해결 시 다음 Unit 금지 | TC-E2E-001, TC-E2E-002, TC-REL-001 | tests / IN_PROGRESS (DXF U9A/DWG 최소 지원 U7B 회귀 VERIFIED; 실도면 평가 미실행) |
-| NFR-DEPLOY-001 | Docker 배포와 host IP 접속 | P0 | localhost와 접근 가능한 host IP에서 앱 접속, 이름/한국어 주석을 갖춘 Dockerfile·Compose, 영속 DB/CAD, readiness, Secret 없는 image, 지정 GitHub 소유자의 GHCR 게시 및 pull 안내 | TC-DEPLOY-001–005 | Unit DEPLOY / 구현·TC-DEPLOY-001–004 VERIFIED (2026-09-09); TC-DEPLOY-005 게시 대기 |
+| NFR-DEPLOY-001 | Docker 배포와 host IP 접속 | P0 | localhost와 접근 가능한 host IP에서 앱 접속, 이름/한국어 주석을 갖춘 Dockerfile·Compose, 영속 DB/CAD, readiness, Secret 없는 image, 지정 GitHub 소유자의 GHCR 게시 및 pull 안내 | TC-DEPLOY-001–005 | Unit DEPLOY / VERIFIED (U-DEPLOY-20260908, 최종2026-09-09; TC-DEPLOY-001–005) |
 | GOV-BOOT-001 | 구현 전 Bootstrap | P0 | Workspace/Git/.env 안전 조사, AGENTS/README/8종 out 문서, Unit/AC/TC 작성 후 계획 확인 전 코드 미구현 | TC-BOOT-001 | docs / VERIFIED (BOOT-20260907-01; 2026-09-07 계획 실행 승인) |
 | GOV-DOC-001 | 문서 최신성·추적 | P0 | Schema는 Database가 기준, 관련 변경마다 README/상세문서/Requirement→Implementation→TC→Result 갱신 | TC-DOC-001 | docs / IN_PROGRESS |
 | GOV-GIT-001 | 지정 원격·안전한 형상관리 | P0 | .env와 remote 일치, 의미 있는 Conventional Commit, 사전 diff/보안 점검, 무단 history 변경·타 원격 전송 없음 | TC-GIT-001 | Git workflow / IN_PROGRESS |

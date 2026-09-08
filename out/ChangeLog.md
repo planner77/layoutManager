@@ -11,7 +11,7 @@
 
 ### Tests
 
-- 최종 실행 검증일2026-09-09: 자동51개·local E2E16개·typecheck/lint/build, Docker localhost/hostIP, 세 renderer, 재생성 후 Version/Current/원본 영속성 통과. Secret검사121건/위반0. GHCR 게시는 대기하며 TestReport U-DEPLOY-20260908에서 별도 확정한다.
+- 최종 실행 검증일2026-09-09: 자동51개·local E2E16개·typecheck/lint/build, Docker localhost/hostIP, 세 renderer, 재생성 후 Version/Current/원본 영속성 통과. Secret검사121건/위반0. GHCR0.13.0 push 및 인증된 pull의 digest 일치 확인. 실제 digest/소스 commit은 TestReport U-DEPLOY-20260908에 기록했다.
 
 ### Known Issues
 
