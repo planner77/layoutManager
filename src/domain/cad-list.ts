@@ -2,6 +2,7 @@ import { CadError, locationFields } from './cad';
 
 export type CadListQuery = {
   filename: string;
+  description: string;
   businessUnit: string;
   site: string;
   building: string;
@@ -21,6 +22,7 @@ export type CadListItem = {
   floor: string;
   version: number;
   originalFilename: string;
+  description: string;
   fileFormat: string;
   fileSize: number;
   registeredAt: string;
@@ -44,7 +46,7 @@ export function listQuery(params = new URLSearchParams()): CadListQuery {
   const format = value('format'), current = value('current');
   if (!['', 'DXF', 'DWG'].includes(format) || !['', 'true', 'false'].includes(current)) throw new CadError('INVALID_QUERY', '파일 형식과 Current 검색 조건을 확인해주세요.');
   const location = Object.fromEntries(locationFields.map(key => [key, value(key)])) as Pick<CadListQuery, typeof locationFields[number]>;
-  return { ...location, filename: value('filename', 255), format: format as CadListQuery['format'], current: current as CadListQuery['current'], page: integer('page', 1, 1_000_000), pageSize: integer('pageSize', 25, 100) };
+  return { ...location, filename: value('filename', 255), description: value('description', 2000), format: format as CadListQuery['format'], current: current as CadListQuery['current'], page: integer('page', 1, 1_000_000), pageSize: integer('pageSize', 25, 100) };
 }
 
 export function listUrl(query: CadListQuery, page: number) {

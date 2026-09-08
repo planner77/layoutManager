@@ -1,14 +1,16 @@
 # CAD Web Viewer P.O.C.
 
+현재 버전은 0.14.0이며 Version별 도면 설명 등록·검색을 지원합니다.
+
 공장·설비의 DXF/DWG 도면을 등록·검색·버전 관리하고, 세 오픈소스 기술의 브라우저 렌더링 적용 가능성을 평가하는 프로젝트입니다.
 
-**현재 버전: 0.13.0 — Docker 배포 및 호스트 IP 접속 지원.** `/cad/upload`에서 DXF/DWG를 등록하면 `/` 목록에서 즉시 확인할 수 있습니다. 위치별 상세에서 버전과 Current를 관리합니다. 실제 버전 기준은 `src/package.json`입니다. DXF Viewer 두 방식부터 구현하고, 등록 DWG도 도면 보기로 조회할 수 있습니다. `/lab/dwg` 독립 실험도 유지합니다.
+**현재 버전: 0.14.0 — 도면 설명 등록·검색 지원.** `/cad/upload`에서 DXF/DWG를 등록하면 `/` 목록에서 즉시 확인할 수 있습니다. 위치별 상세에서 버전과 Current를 관리합니다. 실제 버전 기준은 `src/package.json`입니다. DXF Viewer 두 방식부터 구현하고, 등록 DWG도 도면 보기로 조회할 수 있습니다. `/lab/dwg` 독립 실험도 유지합니다.
 
 ## 목표 기능
 
-- DXF/DWG 업로드, 사업부·사업장·동·층·등록일 입력, SHA-256 식별.
+- DXF/DWG 업로드, 사업부·사업장·동·층·등록일·도면 설명 입력, SHA-256 식별.
 - 동일한 네 위치 값 조합을 Location으로 관리하고 Current Version을 **최대 하나** 유지.
-- 도면 목록·파일명 검색·위치/형식/Current 필터, Location별 Version 선택.
+- 도면 목록·파일명/도면 설명 검색·위치/형식/Current 필터, Location별 Version 선택.
 - DXF Viewer 두 방식 전환, DWG 전용 경로, 오류·부분 지원·성능 계측.
 - 실도면 Entity 충실도·대형 파일·사용성 비교와 재현 가능한 테스트/문서.
 
@@ -109,6 +111,10 @@ npm --prefix src test
 ```
 
 브라우저 E2E는 Chromium 설치 및 Production Build 후 실행합니다. Chromium은 `src/`에서 `npx playwright install chromium`으로 설치하고, Root로 돌아와 `npm --prefix src run test:e2e`를 실행합니다. 기존 Chromium 사용 시 `PLAYWRIGHT_CHROMIUM_EXECUTABLE`에 실행 파일 경로를 지정할 수 있습니다. 테스트 결과와 미검증 범위는 [TestReport](out/TestReport.md)를 참조하세요.
+
+## 도면 설명
+
+등록 화면에서 Version별 설명을 입력할 수 있습니다. 설명은 최대 2,000자이며 앞뒤 공백과 개행을 정리해 저장합니다. 목록의 설명 검색은 파일명·위치·형식·Current 조건과 함께 사용할 수 있고, `%`, `_`, 따옴표는 일반 문자로 검색됩니다. 설명은 목록·Location 상세·Viewer에서 일반 텍스트로 표시됩니다.
 
 ## 미지원 범위·알려진 제약
 

@@ -209,3 +209,12 @@
 - Alternatives: 단순 host npm 배포 유지, 별도 DB server/여러 app replica, Git credential을 image에 포함하는 자동 clone. 마지막 방식은 Secret 규칙에 위배되어 배제했다.
 - Reason / Trade-offs: 기존 단일 SQLite 모델과 CAD 관리 API를 유지한다. migration CLI를 위해 runtime에 기존 dependency집합을 포함해 image가 크며 이 단계에서 과도한 slim화는 하지 않는다. hostIP 수신은 접근성을 제공하며 별도 인증/TLS를 추가한 의미가 아니다.
 - Consequences:0.13.0. Root `.dockerignore`는 build context 필터상 필수 예외. 기존 host data와 SeaweedFS를 자동 변경하지 않는다. Luna QA 사용량 제한은 숨기지 않고 root 실행/Manager 검토의 실제 대행 이력을 기록한다.
+
+## ADR-023 — Version별 선택 설명과 별도 부분 검색
+
+- Date / Status: 2026-09-09 / 사용자 도면 설명·검색 요청에 따라 채택.
+- Context: 도면 파일명만으로 업무 목적을 구분하기 어렵다. Location/Current와 별개로 등록한 도면 Version의 설명이 필요하며 기존 등록·검색 계약을 보존한다.
+- Decision: CadFileVersion.description을 TEXT NOT NULL DEFAULT ''로 추가한다. 입력 생략은 빈값, trim/NFC/CRLF→LF 후 최대2000 UTF-16 code units, LF/TAB외 제어문자거부. React plain text로 표시한다. 별도 description query의 SQL instr literal검색을 기존조건과AND 결합하며 파일명검색 의미는 바꾸지 않는다.
+- Alternatives: Location 공통 메모, filename과 설명을 하나의OR검색에 병합, richtext editor, 별도 fulltext검색엔진. 사용자 요청범위·기존검색호환·구조단순성을 기준으로 제외했다.
+- Reason / Trade-offs: 작은 additive migration으로 기존Version/Current/원본을 보존한다. 대소문자구분 substring은 기존filename과같고 대규모검색성능/텍스트색인은이번P.O.C.범위에서추가하지 않는다. 등록후설명편집은 별도요청이필요하다.
+- Consequences:0.14.0. UTF16길이는 textarea maxlength/JS문자열과일치하며 UTF8전송바이트한도는8192로 별도설정한다. 최종Migration검증/설명없는기존API회귀/검색과HTML표시는 TC-DESC-001–005로검증한다.

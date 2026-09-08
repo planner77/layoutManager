@@ -1,5 +1,17 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Unit DESC 실행 계획 — 2026-09-09 사용자 요청
+
+- 도면 설명은 CadFileVersion별 선택 입력으로 저장한다. 최대2000 UTF-16 code units, trim+NFC 및 CRLF/CR→LF 정규화, LF/TAB허용·기타제어문자거부, HTML은 plain text로 렌더링한다. 생략은 빈 문자열이며 등록 후 편집은 이번 범위에 없다.
+- DB는 description TEXT NOT NULL DEFAULT '' additive migration, 기존 version/current/storage/원본 보존. 원본무결성 및 Location current 규칙을 바꾸지 않는다.
+- 등록 textarea, 목록/Location 미리보기, Viewer 전체 설명을 표시한다. 별도 description 검색은 앞뒤공백제거/NFC 후 대소문자 구분 literal substring이며 filename/위치/형식/current와AND 조합한다. SQL instr parameter 사용, wildcard와query확장금지. 기존 paginationURL 보존.
+- TC-DESC-001: 선택/생략/정규화/2000경계/2001초과/비문자/control/개행/HTML plain text 검증.
+- TC-DESC-002: 기존schema+rows에서migration 적용 후 description빈값, Version/Current/원본locator보존, 신규등록설명영속.
+- TC-DESC-003: 설명 단독/filename독립/기존filterAND/pagination/한글NFC/%/_/따옴표 literal/중복query거부.
+- TC-DESC-004: API 설명등록·구버전설명생략·validationfail, 목록/상세/ViewerDTO의내용일치 및현재버전정합성.
+- TC-DESC-005: UI에서 filename에없는설명단어 등록→설명검색만으로찾기→목록/Location/Viewer본문확인, HTML실행안됨/개행보존. typecheck/lint/build/unit/E2E 및문서schema검토.
+- Manager 설계→Sol 구현→Manager review→Luna QA검증/문서→Manager승인/재작업. 모델제한은사실대로기록하고root가release/실제DB백업·migration/게시를담당한다.
+
 ## Unit DEPLOY 실행 계획 — 2026-09-08 사용자 요청
 
 - Manager 설계→Sol Developer 구현/재작업 완료→Manager 리뷰. Luna QA 사용량 제한으로 root가 실제 시험을 실행하고 Manager가 결과·문서로 수용 여부를 판단한다. 패키지 버전 0.13.0, LINK 0.12.0과 commit 분리.

@@ -52,3 +52,14 @@ test('TC-ISSUE-001/LIST: list API, filters, detail and current change persist', 
   const detail = await request.get(`/api/cad-locations/${result.items[0].locationId}`);
   expect(detail.status()).toBe(200); expect((await detail.json()).versions.filter((v: {isCurrent:boolean})=>v.isCurrent)).toHaveLength(1);
 });
+
+test('TC-DESC-005: description registration, literal search and viewer display', async ({ page, request }) => {
+  const response = await request.post('/api/cad-files', { multipart: { file: { name:'description-only.dxf', mimeType:'application/octet-stream', buffer:Buffer.from('0\nEOF\n') }, businessUnit:'설명', site:'검색', building:'A동', floor:'1층', registeredAt:'2026-09-09', makeCurrent:'true', description:'설비 구역 %_\n두 번째 줄' } });
+  expect(response.status()).toBe(201);
+  await response.json();
+  await page.goto('/?description='+encodeURIComponent('설비 구역 %_'));
+  const row = page.getByRole('row').filter({ hasText:'description-only.dxf' });
+  await expect(row).toContainText('설비 구역 %_');
+  await row.getByRole('link', { name:'도면 보기', exact:true }).click();
+  await expect(page.getByLabel('도면 설명')).toContainText('두 번째 줄');
+});

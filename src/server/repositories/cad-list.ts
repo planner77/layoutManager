@@ -5,7 +5,7 @@ import { type Database, writeTransaction } from '../db';
 
 const columns = Prisma.sql`
   v.id, v.location_id AS locationId, v.version,
-  v.original_filename AS originalFilename, v.file_format AS fileFormat,
+  v.original_filename AS originalFilename, v.description, v.file_format AS fileFormat,
   v.file_size AS fileSize, v.registered_at AS registeredAt,
   l.business_unit AS businessUnit, l.site, l.building, l.floor,
   CASE WHEN l.current_version_id = v.id THEN 1 ELSE 0 END AS isCurrent`;
@@ -16,7 +16,7 @@ export class CadListRepository {
   constructor(private db: Database) {}
 
   async version(id: string) {
-    const file = await this.db.cadFileVersion.findUnique({where:{id},select:{id:true,originalFilename:true,fileFormat:true,version:true,fileSize:true,registeredAt:true,location:{select:{id:true,businessUnit:true,site:true,building:true,floor:true}}}});
+    const file = await this.db.cadFileVersion.findUnique({where:{id},select:{id:true,originalFilename:true,description:true,fileFormat:true,version:true,fileSize:true,registeredAt:true,location:{select:{id:true,businessUnit:true,site:true,building:true,floor:true}}}});
     if (!file) throw new CadError('FILE_NOT_FOUND','CAD 파일을 찾을 수 없습니다.',404);
     return file;
   }
@@ -25,6 +25,7 @@ export class CadListRepository {
     const conditions: Prisma.Sql[] = [Prisma.sql`1 = 1`];
     // instr treats %, _ and quotes literally; all values remain bound SQL parameters.
     if (query.filename) conditions.push(Prisma.sql`instr(v.original_filename, ${query.filename}) > 0`);
+    if (query.description) conditions.push(Prisma.sql`instr(v.description, ${query.description}) > 0`);
     if (query.businessUnit) conditions.push(Prisma.sql`l.business_unit = ${query.businessUnit}`);
     if (query.site) conditions.push(Prisma.sql`l.site = ${query.site}`);
     if (query.building) conditions.push(Prisma.sql`l.building = ${query.building}`);

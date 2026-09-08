@@ -23,6 +23,7 @@ erDiagram
         TEXT location_id FK
         INTEGER version
         TEXT original_filename
+        TEXT description
         TEXT file_format
         INTEGER file_size
         TEXT sha256
@@ -58,6 +59,7 @@ Unique: `(business_unit, site, building, floor)` BINARY 비교. 저장 전 trim+
 | location_id | TEXT / String | 불가 | Service | FK→CadLocation.id |
 | version | INTEGER / Int | 불가 | transaction 내 다음 정수 | CHECK > 0; Location별 1부터; UI는 V 접두어 |
 | original_filename | TEXT / String | 불가 | Upload basename metadata | 1–255자; 경로로 사용 금지, 제어문자 거부 |
+| description | TEXT / String | 불가 | `''` | Version별 도면 설명. 생략 시 빈 문자열, 최대 2,000 UTF-16 code units, 저장 전 trim/NFC·개행 정규화 |
 | file_format | TEXT / String | 불가 | 검증된 확장자 | CHECK IN ('DXF','DWG'); enum 사용 여부는 ORM 검증 후 |
 | file_size | INTEGER / Int | 불가 | 실제 받은 bytes | CHECK > 0; 기본 상한은 앱 설정, Prisma Int 범위 내 설정만 허용 |
 | sha256 | TEXT / String | 불가 | server streaming hash | 소문자 hex 64자 CHECK, Unique 아님 |
@@ -130,6 +132,7 @@ Current 0개 허용, 다른 Location의 Current 독립, 잘못된 소속/존재�
 | --- | --- | --- | --- |
 | 2026-09-07 | 설계 초안 | Location/Version, 소속 검증 복합 Current FK, 순번/파일 식별/날짜 정의 | 없음 / 구현 전 |
 | 2026-09-07 | 0.2.0 / Unit 1 | 두 모델·복합 Current FK·Unique/Index·위치/크기/형식/hash CHECK 구현 | 202609070001_locations / DB integration 6개 통과 |
+| 2026-09-09 | 0.14.0 / Unit DESC | Version 설명 TEXT NOT NULL DEFAULT '', 기존 행 호환, description literal 검색 | 202609090001_description / 관련 Unit·E2E 검증 |
 
 실제 연결은 adapter의 FK 활성화를 PRAGMA 시험으로 확인했다. 쓰기는 단일 프로세스 queue로 직렬화하며 SQLite busy timeout 5초, transaction timeout 10초이다. commit 결과가 불확실한 작업을 자동 재실행하지 않는다. WAL은 아직 활성화하지 않았다. 운영 범위는 단일 Node 프로세스이다.
 

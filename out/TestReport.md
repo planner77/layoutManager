@@ -1,5 +1,21 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-DESC-20260909 — 도면 설명 등록·검색 0.14.0
+
+- 구현 범위: Version별 선택 설명(최대 2,000 UTF-16 code units), trim/NFC/CRLF 정규화, plain-text 목록·Viewer 표시, literal 부분검색과 기존 조건 AND 조합, 기존 행 기본값 호환.
+- 실행 역할: Manager/Developer가 사용량 제한으로 중단되어 root가 인계 구현·검증했으며 Luna QA가 사전 Acceptance Criteria 검토를 완료했다. 역할을 수행하지 않은 것으로 기록하지 않는다.
+
+| 검사 | 실제 결과 |
+| --- | --- |
+| `npm --prefix src test` | 14 files / 52 passed / 0 failed |
+| `npm --prefix src run typecheck` / `lint` | 각각 exit 0 |
+| `npm --prefix src run build` | exit 0 |
+| 설명 UI/API E2E (`upload.spec.ts`) | 4 passed / 0 failed, 12.0초 |
+
+- `CadFileVersion.description` additive migration(`202609090001_description`)은 NOT NULL DEFAULT `''`로 기존 Version/Current/storage/original을 보존한다.
+- HTML 문자열은 React text node로 표시되며 실행되지 않는다. SQL 검색은 `instr` bound parameter로 `%`, `_`, 따옴표를 literal 처리한다.
+- 단위·통합 검증은 완료했으며, 전체 브라우저 회귀는 기존 배포 이후 변경 범위에 맞춰 다음 회귀 실행에서 확인한다.
+
 ## U-DEPLOY-20260908 — Docker 배포 0.13.0
 
 - Source: LINK commit 25adc5e 이후 Unit DEPLOY snapshot. Manager 설계/리뷰와 Sol Developer 구현/재작업 완료. Luna QA 사용량 제한으로 root가 실제 실행, Manager가 결과 검토·문서화를 대행한다.

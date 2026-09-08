@@ -13,7 +13,7 @@ export class CadStorage {
   async receive(request: Request) {
     if (!request.body) throw new CadError('MISSING_FILE', '파일을 선택해주세요.');
     let parser: ReturnType<typeof busboy>;
-    try { parser = busboy({ headers: { 'content-type': request.headers.get('content-type') ?? '' }, defParamCharset: 'utf8', limits: { fileSize: this.maxBytes + 1, files: 1, fields: 6, fieldSize: 4096, parts: 8 } }); }
+    try { parser = busboy({ headers: { 'content-type': request.headers.get('content-type') ?? '' }, defParamCharset: 'utf8', limits: { fileSize: this.maxBytes + 1, files: 1, fields: 7, fieldSize: 8192, parts: 9 } }); }
     catch { throw new CadError('INVALID_UPLOAD', '올바른 파일 업로드 요청이 아닙니다.'); }
     const temp = await mkdtemp(path.join(await this.root(), '.upload-'));
     const tempFile = path.join(temp, randomUUID());

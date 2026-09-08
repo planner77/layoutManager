@@ -12,9 +12,9 @@ export class CadRepository {
       const id = randomUUID();
       const storagePath = store ? await store(location.id, id) : file.storagePath;
       const duplicateCount = await tx.cadFileVersion.count({ where: { sha256: file.sha256 } });
-      const version = await tx.cadFileVersion.create({ data: { ...file, storagePath, id, locationId: location.id, version: (latest._max.version ?? 0) + 1, registeredAt: input.registeredAt } });
+      const version = await tx.cadFileVersion.create({ data: { ...file, storagePath, id, locationId: location.id, version: (latest._max.version ?? 0) + 1, registeredAt: input.registeredAt, description: input.description } });
       if (input.makeCurrent) await tx.cadLocation.update({ where: { id: location.id }, data: { currentVersionId: id } });
-      return { id, locationId: location.id, version: version.version, duplicateCount };
+      return { id, locationId: location.id, version: version.version, duplicateCount, description: version.description };
     });
   }
   async setCurrent(locationId: string, versionId: string) {

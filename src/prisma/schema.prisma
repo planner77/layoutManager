@@ -25,6 +25,7 @@ model CadFileVersion {
   locationId String @map("location_id")
   version Int
   originalFilename String @map("original_filename")
+  description String @default("")
   fileFormat String @map("file_format")
   fileSize Int @map("file_size")
   sha256 String

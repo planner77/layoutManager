@@ -1,5 +1,16 @@
 # ChangeLog
 
+## 0.14.0 — 2026-09-09 Unit DESC
+
+### Added
+
+- Version별 도면 설명 입력·목록/Viewer 표시와 설명 literal 부분 검색.
+- 기존 행을 빈 설명으로 보존하는 SQLite additive migration.
+
+### Tests
+
+- Unit 테스트 52개 통과. 설명 UI E2E는 후속 실행 대상으로 기록한다.
+
 애플리케이션 버전의 단일 기준은 `src/package.json`이다. 아래 Bootstrap 기록은 당시 상태이다.
 
 ## 0.13.0 — 2026-09-08 Unit DEPLOY

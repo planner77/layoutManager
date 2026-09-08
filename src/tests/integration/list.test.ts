@@ -16,6 +16,7 @@ beforeEach(async () => {
   directory = await mkdtemp(path.join(tmpdir(),'cad-list-')); db = createDb(`file:${directory}/test.sqlite`);
   const sql = await readFile(new URL('../../prisma/migrations/202609070001_locations/migration.sql',import.meta.url),'utf8');
   for (const statement of sql.split(';').filter(s=>s.trim())) await db.$executeRawUnsafe(statement);
+  await db.$executeRawUnsafe(`ALTER TABLE "CadFileVersion" ADD COLUMN "description" TEXT NOT NULL DEFAULT ''`);
   repo = new CadRepository(db); lists = new CadListRepository(db);
 });
 afterEach(async()=>{ await db.$disconnect(); await rm(directory,{recursive:true,force:true}); });
@@ -40,6 +41,15 @@ test('TC-LIST-007: literal filename search resists wildcard and SQL injection', 
   for (const filename of ['%', '_', '도면'.normalize('NFD')]) expect((await search(new URLSearchParams({filename}).toString())).total).toBe(1);
   expect((await search(new URLSearchParams({filename:"' OR 1=1 --"}).toString())).total).toBe(0);
   expect((await search('filename=OTHER')).total).toBe(0);
+});
+test('TC-DESC-003/004: description is persisted and searched literally with existing filters', async()=>{
+  const described = await repo.register(registration({...input, description:'  설비 %_ 설명\r\n두 번째 줄  '}), file('plain.dxf'));
+  await repo.register(registration({...input, description:'다른 설명'}), file('other.dxf'));
+  const detail = await lists.location(described.locationId);
+  expect(detail.versions[1]).toMatchObject({id:described.id, description:'설비 %_ 설명\n두 번째 줄'});
+  expect((await search('description=%25_%26')).total).toBe(0);
+  expect((await search('description='+encodeURIComponent('설비 %_ 설명'))).items.map(v=>v.id)).toEqual([described.id]);
+  expect((await search('description='+encodeURIComponent('설비 %_ 설명')+'&format=DWG')).total).toBe(0);
 });
 test('TC-LIST-003/004: current filters track replacement and null pointers', async()=>{
   const a = await repo.register(input,file('one.dxf')); const b = await repo.register(input,file('two.dxf'));

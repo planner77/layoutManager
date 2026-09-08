@@ -15,6 +15,7 @@ P0=필수, P1=가능한 범위 구현 또는 지원 여부 평가. `PLANNED`=미
 | FR-CAD-001 | DXF/DWG 로컬 파일 업로드 | P0 | 선택한 한 파일의 bytes가 원본 그대로 저장되고 Version ID를 반환한다 | TC-UP-001 | features/cad-upload, U2 / VERIFIED |
 | FR-CAD-002 | 파일 유효성 검증 | P0 | 파일 누락·빈 파일·미지원 확장자·최대 크기 초과를 거부하고 실패 이유를 표시한다 | TC-UP-002 | server/services/upload, U2 / VERIFIED |
 | FR-CAD-003 | 메타데이터 등록 | P0 | 사업부·사업장·동·층·등록일·Current 지정 여부를 입력하고 서버에서 검증한다 | TC-UP-003 | domain/cad, U2 / VERIFIED |
+| FR-CAD-006 | 도면 설명 등록·검색 | P0 | Version별 선택 설명2000 UTF-16 code units, 앞뒤공백제거/NFC/개행보존, 기존등록빈설명호환; 목록미리보기/Viewer본문과 별도 설명부분검색·기존조건AND | TC-DESC-001–005 | Unit DESC / VERIFIED (52 unit, 4 upload E2E, typecheck/lint/build) |
 | FR-CAD-004 | 파일 식별·중복 확인 | P1 | SHA-256·크기·형식·원본명·내부 저장 위치를 기록하고 동일 hash를 식별한다 | TC-UP-004 | storage/repository, U2 / VERIFIED |
 | FR-CAD-005 | 저장 실패 처리 | P0 | Upload/Storage/DB 실패 시 성공으로 표시하지 않고 기존 Current를 보존하며 잔여 파일을 정리 또는 복구 대상으로 식별한다 | TC-UP-005 | upload service, U2 / VERIFIED |
 | FR-LOCATION-001 | Location 식별·중복 금지 | P0 | 정규화된 네 값 조합 Unique, 별도 내부 ID; 동시 동일 Location 생성도 중복되지 않는다 | TC-DB-001 | server/repositories/cad.ts, U1 / VERIFIED |
@@ -25,7 +26,7 @@ P0=필수, P1=가능한 범위 구현 또는 지원 여부 평가. `PLANNED`=미
 | FR-LIST-001 | CAD 목록 | P0 | 네 위치 값·Version·파일명·DXF/DWG·등록일·Current를 표시하고 빈 결과도 처리한다 | TC-LIST-001 | features/cad-list, U3-20260908 / VERIFIED |
 | FR-LIST-002 | 검색·Filter | P0 | 파일명·사업부·사업장·동·층·형식·Current 단독/조합 필터가 SQLite query로 일치 결과를 반환한다 | TC-LIST-002 | server/repositories/cad-list.ts, U3-20260908 / VERIFIED |
 | FR-LIST-003 | 위치 상세·Version 선택 | P0 | Location 상세에서 버전 목록·Current를 확인하고 선택한 Version의 Viewer로 이동한다 | TC-LIST-003 | app/features / VERIFIED (U9A DXF 및 U7B DWG Version 선택) |
-| FR-LINK-001 | 도면 직접 열기 링크 | P0 | 목록·Location·Viewer에서 특정 Version 절대 URL 복사, 현재 DXF renderer 보존, Clipboard 실패 시 수동 복사/열기 제공, 새 context 직접 열기 및 Current 교체 후 대상 유지 | TC-LINK-001–003 | features/cad-link, viewers/core/link, U-LINK-20260908 / VERIFIED (Browser suite NOT RUN: local bind restriction; unit/build/type/lint PASS) |
+| FR-LINK-001 | 도면 직접 열기 링크 | P0 | 목록·Location·Viewer에서 특정 Version 절대 URL 복사, 현재 DXF renderer 보존, Clipboard 실패 시 수동 복사/열기 제공, 새 context 직접 열기 및 Current 교체 후 대상 유지 | TC-LINK-001–003 | features/cad-link, viewers/core/link, U-LINK-20260908 / VERIFIED (U-LINK-20260908: LINK 재시험3개·DWG4개 PASS; 최초 bind/시험대상 오류와 재시험 이력은 TestReport) |
 | FR-FILE-001 | ID 기반 원본 조회 | P0 | Version ID로 올바른 bytes를 반환하고 없는 DB 행/파일은 404, 경로 입력은 거부한다 | TC-API-003, TC-SEC-001 | content API/storage, U2 / VERIFIED |
 | FR-VIEWER-001 | Adapter 분리·형식 라우팅 | P0 | 업무/UI가 외부 API에 직접 의존하지 않고 DXF/DWG에 허용된 Adapter만 선택한다 | TC-VIEW-001 | viewers/core/selection + Manager / VERIFIED (U7B DWG query 강제 선택/형식 경계) |
 | FR-VIEWER-002 | dxf-viewer 표시 | P0 | 정상 DXF가 실제 canvas에 표시되고 손상 파일은 이해 가능한 실패 상태가 된다 | TC-DXF-001, TC-DXF-002 | viewers/dxf-viewer / VERIFIED (생성 LINE/CIRCLE, U4-20260908) |
