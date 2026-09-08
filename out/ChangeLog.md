@@ -10,6 +10,7 @@
 ### Tests
 
 - Unit 테스트 52개 통과. 설명 UI E2E는 후속 실행 대상으로 기록한다.
+- 최신 Dockerfile로 GHCR `0.14.0` 이미지를 재빌드하고 push/pull digest 일치를 확인했다.
 
 애플리케이션 버전의 단일 기준은 `src/package.json`이다. 아래 Bootstrap 기록은 당시 상태이다.
 

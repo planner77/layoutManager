@@ -224,7 +224,7 @@ docker compose --env-file .env -f src/docker-compose.yml pull app
 docker compose --env-file .env -f src/docker-compose.yml up -d --no-build app
 ```
 
-검증 이미지의 플랫폼은 `linux/amd64`이며 digest는 `sha256:7cf148fc44def77fad17e1925a5875558fd8dcfef5ab5d4aba56651556cd67e4`입니다. 실제 게시·pull 결과는 [TestReport](out/TestReport.md)의 배포 기록을 확인합니다. `latest` 대신 검증한 버전 tag 또는 digest를 고정할 수 있습니다. 이미지 빌드 방법·볼륨 백업·실행 제약은 [Operation](out/Operation.md)을 참조하세요.
+검증 이미지의 플랫폼은 `linux/amd64`이며 0.14.0 digest는 `sha256:8b58e880240da55c893d3ecf692c243f5fa1c10cf312c04672359f2a048f6152`입니다. 실제 게시·pull 결과는 [TestReport](out/TestReport.md)의 배포 기록을 확인합니다. `latest` 대신 검증한 버전 tag 또는 digest를 고정할 수 있습니다. 이미지 빌드 방법·볼륨 백업·실행 제약은 [Operation](out/Operation.md)을 참조하세요.
 
 ## GitHub Container Registry에 직접 빌드·게시하기
 

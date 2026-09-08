@@ -16,6 +16,12 @@
 - HTML 문자열은 React text node로 표시되며 실행되지 않는다. SQL 검색은 `instr` bound parameter로 `%`, `_`, 따옴표를 literal 처리한다.
 - 단위·통합 검증은 완료했으며, 전체 브라우저 회귀는 기존 배포 이후 변경 범위에 맞춰 다음 회귀 실행에서 확인한다.
 
+## U-DESC-IMAGE-20260909 — GHCR 0.14.0 이미지 갱신
+
+- 최종 소스 커밋 `23a1d85` 기준으로 최신 Dockerfile을 사용해 `ghcr.io/planner77/layoutmanager:0.14.0`을 재빌드했다. `better-sqlite3` 사전 빌드가 없는 환경에서도 `python3/make/g++` 기반 node-gyp 대체 빌드가 가능하도록 빌드 단계를 보강했다.
+- GHCR push 및 인증된 pull을 모두 성공했으며 registry digest는 `sha256:8b58e880240da55c893d3ecf692c243f5fa1c10cf312c04672359f2a048f6152`로 일치했다.
+- 이미지 OCI revision label은 `23a1d85`이며, pull 검증 후 임시 Docker 인증 설정을 삭제했다. 익명 공개 pull이나 package visibility 변경은 수행하지 않았다.
+
 ## U-DEPLOY-20260908 — Docker 배포 0.13.0
 
 - Source: LINK commit 25adc5e 이후 Unit DEPLOY snapshot. Manager 설계/리뷰와 Sol Developer 구현/재작업 완료. Luna QA 사용량 제한으로 root가 실제 실행, Manager가 결과 검토·문서화를 대행한다.
