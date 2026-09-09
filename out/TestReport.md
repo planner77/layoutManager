@@ -3,7 +3,7 @@
 ## U-OBS-20260909 — 폐쇄망 업로드 오류 진단 0.16.0
 
 - 범위: 공개 업로드 진단(요약·상세·복사·JSON 저장), HTTP/프록시/연결 오류 분류, 요청 ID 기반 서버 구조화 로그, 원인 정제·비노출, local/S3 보상 및 Docker logging 설정. DB migration과 업무 데이터는 변경하지 않았다.
-- 검증 snapshot: 2026-09-09 (Asia/Seoul), Linux x86_64, Node 22.14.0, package `0.16.0`, Next 16.3.4, Vitest 5.0.0, Playwright 1.63.0, Chromium 1208 executable/SwiftShader. Unit OBS 변경은 아직 uncommitted 상태였다.
+- 검증 snapshot: 2026-09-09 (Asia/Seoul), Linux x86_64, Node 22.14.0, package `0.16.0`, Next 16.3.4, Vitest 5.0.0, Playwright 1.63.0, Chromium 1208 executable/SwiftShader. 검증 대상 소스는 이후 `f6923f2`로 커밋·푸시했다.
 
 | 검사 | 실제 결과 |
 | --- | --- |
@@ -15,6 +15,8 @@
 | `npm run test:s3:e2e` | 임시 DB·bucket의 S3 backend / 18 passed / 0 failed / 57.7초 |
 | `CAD_E2E_PORT=3111 npm run test:dwg` | 캐시된 공식 Line/Circle sample / 4 passed / 0 failed / 18.7초 (권한 상승 실행) |
 | `docker compose -f src/docker-compose.yml config` | exit 0; app logging `local`, `max-size=10m`, `max-file=5` 확인 |
+| GHCR 0.16.0 build/push/pull | PASS. OCI revision `f6923f2`, pull digest `sha256:6eafec53e8372a9b289e38bb9d22bc8f50868aad968000c10c5934379368f8dd` 일치 |
+| Compose 재배포/health | PASS. 기존 `cad-layout-viewer-data` volume 보존, `ghcr.io/planner77/layoutmanager:0.16.0` 재생성, container healthy, `GET /api/health` 200 |
 | `git diff --check` | exit 0 |
 | Secret/Runtime audit | `git` 추적 목록·변경 diff와 allowlist pattern scan에서 `.env`·runtime DB/CAD·credential URL·실제 인증값 0건; 테스트용 canary 문자열과 `.env.example` 빈 키만 존재 |
 
@@ -34,15 +36,15 @@
 | TC-OBS-005 | PASS (주입/SeaweedFS). local DB/storage 실패·S3 credential/보상·불확실 COMMIT 경계를 통합 시험했고, 이전 Current·원본과 불확실 object 보존을 확인했다. 실제 운영 장비의 EACCES/ENOSPC와 실제 네트워크 응답 유실은 NOT RUN이다. |
 | TC-OBS-006 | PASS. 최초 storage/DB 실패가 cleanup warning으로 덮이지 않고, 확정 등록 뒤 임시 cleanup warning이 있어도 성공이 유지됨을 통합 시험했다. |
 | TC-OBS-007 | PASS. canary credential/Authorization URL·경로·SQL·filename·bytes·설명·순환 cause·개행·장문을 sanitizer/unit/E2E로 검사했고 공개 화면·JSON·Console·서버 로그에 노출되지 않았다. 허용된 파일/DB/S3 code와 category는 유지됐다. |
-| TC-OBS-008 | PARTIAL. Compose의 `local` 10m×5 설정과 실제 stdout 구조화 로그 수집·ID 검색은 확인했다. 로그 한도 도달, Compose 컨테이너 재생성/health/원본 보존, GHCR 0.16.0 push/pull은 이 QA 실행에서 하지 않았으며 배포 담당 검증이 필요하다. |
+| TC-OBS-008 | PASS. Compose의 `local` 10m×5 설정, stdout 구조화 로그 수집·ID 검색, GHCR 0.16.0 push/pull digest, 기존 named volume 보존 재배포·healthy 상태와 health endpoint 200을 확인했다. 실제 로그 한도 도달·롤오버 자체와 현장 장치/방화벽은 NOT RUN이다. |
 
 ### 판정·제한
 
 - 공개 진단과 안전 로그 정제는 수용 가능한 수준이다. `EACCES/ENOSPC/ECONNREFUSED/ETIMEDOUT`, SQLite/Prisma 오류, 허용된 S3 오류는 code/category와 고정 메시지를 남긴다. 코드가 없는 임의 `Error`와 정제할 수 없는 이름·메시지는 `Internal error details suppressed.`로 완전 억제된다. 이는 credential·SQL·원본 보호 요구에는 부합하지만 미분류 오류의 원인을 운영자가 구분할 수 없다는 관측성 제한이 있다. 현행 NFR-OBS-002의 안전 allowlist 정책 안에서는 허용하되, 주요 앱/라이브러리 오류를 안전 코드로 매핑하는 보완 여지를 Known Issue로 남긴다.
 - 재작업 결과: Developer가 `CadStorage.receive`의 validation·stream 오류 cleanup 성공 이벤트를 추가했고 관련 통합 테스트를 보강했다. 재시험에서 두 경계 모두 `temporary_cleanup: success`가 확인되어 NFR-OBS-001/TC-OBS-004를 VERIFIED로 판정한다. QA는 코드를 수정하지 않았다.
 - 재작업 재시험 명령: `npm test -- tests/integration/upload.test.ts tests/unit/upload-observability.test.ts`는 2 files / 22 passed / 0 failed, `npm test` 전체는 16 files / 72 passed / 0 failed, typecheck/lint/diff-check 및 local 전체 E2E 18개도 재통과했다.
-- 실제 폐쇄망 장애, 프록시 운영 로그, Docker 로그 순환 한도 도달, GHCR 게시와 실제 현장 장치/방화벽 접근은 이 기록의 PASS가 아니다. `prepare:dwg-samples` 재다운로드는 `raw.githubusercontent.com` DNS `EAI_AGAIN`으로 실패했으며, DWG 시험은 기존 checksum 캐시 샘플로 실행했다.
-- 추적: FR-OBS-001/002 → `diagnostics.ts`·`upload-form.tsx` → TC-OBS-001–003/007 → PASS. NFR-OBS-001 → `upload-observability.ts`·route·upload/storage → TC-OBS-004–006 → VERIFIED. NFR-OBS-002 → sanitizer/client diagnostic → TC-OBS-007 → PASS. NFR-OBS-003 → Compose/Operation → TC-OBS-008 → PARTIAL/배포 검증 대기.
+- 실제 폐쇄망 장애, 프록시 운영 로그, Docker 로그 순환 한도 도달과 실제 현장 장치/방화벽 접근은 이 기록의 PASS가 아니다. GHCR 게시·pull과 단일 Compose 재배포/health는 위 digest 및 실행 결과로 확인했다. `prepare:dwg-samples` 재다운로드는 `raw.githubusercontent.com` DNS `EAI_AGAIN`으로 실패했으며, DWG 시험은 기존 checksum 캐시 샘플로 실행했다.
+- 추적: FR-OBS-001/002 → `diagnostics.ts`·`upload-form.tsx` → TC-OBS-001–003/007 → PASS. NFR-OBS-001 → `upload-observability.ts`·route·upload/storage → TC-OBS-004–006 → VERIFIED. NFR-OBS-002 → sanitizer/client diagnostic → TC-OBS-007 → PASS. NFR-OBS-003 → Compose/Operation → TC-OBS-008 → VERIFIED (로그 한도 도달·현장 접근은 별도 미검증).
 
 ## U8B-20260909 — DWG 계측 확장 0.15.0
 

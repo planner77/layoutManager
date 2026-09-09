@@ -20,7 +20,7 @@ P0=필수, P1=가능한 범위 구현 또는 지원 여부 평가. `PLANNED`=미
 | FR-OBS-002 | JSON 오류, HTML·빈 응답·잘못된 JSON, 413/502/504, fetch 연결 실패를 구분한다. 서버 ID가 없으면 이를 명시한다. 응답 유실/성공 응답 해석 실패는 결과 불확실로 안내하고 목록 확인을 권하며 자동 재업로드하지 않는다. | TC-OBS-003 | VERIFIED (U-OBS-20260909) |
 | NFR-OBS-001 | 서버가 요청 시작에 생성한 ID로 업로드 수신·검증·저장·DB 등록·정리 및 결과를 연결한다. 실패 단계·시간·backend와 안전한 원인/cause/stack을 서버에 기록한다. S3/정리 오류가 최초 원인 또는 확정된 등록 성공을 덮지 않는다. | TC-OBS-004–006 | VERIFIED (U-OBS-20260909 재작업 재시험) |
 | NFR-OBS-002 | 화면·저장·Console은 공개 가능한 고정 필드만 출력한다. 서버도 env/인증 헤더/credential URL/SQL 본문/도면 bytes·설명·파일명·원본 locator를 기록하지 않는다. 임의 객체 직렬화 대신 원인 깊이·문자열·스택을 제한/정제한다. | TC-OBS-007 | VERIFIED (U-OBS-20260909) |
-| NFR-OBS-003 | 폐쇄망 내부 stdout/stderr 및 Docker 순환 로그로 수집할 수 있다. 수집·ID 검색·컨테이너 교체 전 보관 방법과 배포 이미지/시험 결과를 문서화한다. | TC-OBS-008, TC-REL-001 | IN_PROGRESS / 배포 lifecycle·GHCR·로그 한도 시험 대기 |
+| NFR-OBS-003 | 폐쇄망 내부 stdout/stderr 및 Docker 순환 로그로 수집할 수 있다. 수집·ID 검색·컨테이너 교체 전 보관 방법과 배포 이미지/시험 결과를 문서화한다. | TC-OBS-008, TC-REL-001 | VERIFIED (U-OBS-20260909; GHCR/Compose lifecycle) |
 
 DB schema·Current 규칙·원본 보상 정책·Viewer 범위는 유지한다. 중앙 로그 서버, 외부 수집 서비스, 오류 조회 API, 자동 재시도는 추가하지 않는다.
 

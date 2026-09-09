@@ -4,7 +4,7 @@
 
 ## ADR-024 — 폐쇄망 업로드 오류 진단과 원인 보존
 
-- Date / Status: 2026-09-09 / 구현·자동 시험·S3 검증 및 validation/stream cleanup 재시험 완료; Docker/GHCR lifecycle은 배포 검증 대기.
+- Date / Status: 2026-09-09 / 구현·자동 시험·S3 검증·cleanup 재시험 및 0.16.0 Docker/GHCR lifecycle 완료. 실제 폐쇄망 현장 장애·로그 롤오버는 별도 미검증.
 - Context: 화면이 message만 사용하고 HTTP 상태/requestId를 버리며, 서버 일반 예외는 이름만 기록하고 S3 변환에서 cause를 잃는다. 실제 폐쇄망 오류는 미재현이다.
 - Decision: Unit OBS 0.16.0에서 공개 진단 상세·복사·JSON 저장·Console과 서버 요청 ID 기반 구조화 로그를 제공한다. 공개 진단과 서버의 정제된 원인/스택은 분리하고 외부 로그 서비스 없이 Docker 순환 보관을 사용한다. 오류 직렬화는 허용 필드/제한/마스킹을 적용한다.
 - Trade-offs: 임의 raw 예외/응답 전체를 공개하면 원본·credential이 섞일 수 있으므로 공개 필드는 제한한다. 서버에서도 안전하게 정제할 수 없는 메시지는 범주/코드로 대체한다. 앱에 도달하지 않은 요청에는 서버 ID가 없으며 시각과 Network/프록시 로그가 필요하다.
