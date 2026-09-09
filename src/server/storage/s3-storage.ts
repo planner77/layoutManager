@@ -22,10 +22,9 @@ export class S3ObjectStorage {
     try {
       await this.client.send(new PutObjectCommand({ Bucket: this.options.bucket, Key: key, Body: body, ContentLength: received.file.fileSize, ContentType: 'application/octet-stream', Metadata: { sha256: received.file.sha256 }, IfNoneMatch: '*' }), { abortSignal: AbortSignal.timeout(this.options.timeoutMs) });
       return locator;
-    } catch {
+    } catch (error) {
       // The response may be lost after a successful PUT. Never delete on uncertain publication.
-      console.error('CAD_S3_UPLOAD_UNCERTAIN', { objectId: key.split('/')[1] });
-      throw new CadError('STORAGE_UNAVAILABLE', '오브젝트 저장소에 파일을 저장하지 못했습니다.', 503);
+      throw new CadError('STORAGE_UNAVAILABLE', '오브젝트 저장소에 파일을 저장하지 못했습니다.', 503, { cause: error, recoveryId: key.split('/')[1] });
     } finally { body.destroy(); }
   }
   async content(locator: string) {
@@ -35,8 +34,8 @@ export class S3ObjectStorage {
       if (!response.Body || response.ContentLength === undefined) throw new Error('Missing body');
       return { stream: response.Body.transformToWebStream(), size: response.ContentLength };
     } catch (error) {
-      if ((error as {name?:string}).name === 'NoSuchKey') throw new CadError('FILE_NOT_FOUND', '저장된 도면 파일을 찾을 수 없습니다.', 404);
-      throw new CadError('STORAGE_UNAVAILABLE', '오브젝트 저장소에서 파일을 읽지 못했습니다.', 503);
+      if ((error as {name?:string}).name === 'NoSuchKey') throw new CadError('FILE_NOT_FOUND', '저장된 도면 파일을 찾을 수 없습니다.', 404, { cause: error });
+      throw new CadError('STORAGE_UNAVAILABLE', '오브젝트 저장소에서 파일을 읽지 못했습니다.', 503, { cause: error });
     }
   }
   async removeUncommitted(locator: string) {

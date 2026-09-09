@@ -11,6 +11,7 @@ import { S3ObjectStorage, s3Location } from '@/server/storage/s3-storage';
 import { createDb, type Database } from '@/server/db';
 import { CadRepository } from '@/server/repositories/cad';
 import { uploadCad } from '@/server/services/upload';
+import { UploadDiagnostics } from '@/server/upload-observability';
 let directory: string, db: Database, repo: CadRepository, storage: ConfiguredCadStorage;
 const options = storageConfiguration(process.env).s3!;
 const client = new S3Client({...options, maxAttempts:1});
@@ -59,8 +60,9 @@ test('TC-S3-002: committed record survives ambiguous DB response without deletin
 test('TC-S3-002: bad credentials fail safely before DB mutation; missing object/path are safe',async()=>{
   const bad=new ConfiguredCadStorage(storage.directory,storage.maxBytes,{...process.env,CAD_S3_SECRET_ACCESS_KEY:'deliberately-invalid-test-value'});
   const log=vi.spyOn(console,'error').mockImplementation(()=>{});
-  try { await expect(uploadCad(request(),repo,bad)).rejects.toMatchObject({status:503,code:'STORAGE_UNAVAILABLE'}); } finally {bad.close();}
-  expect(await db.cadFileVersion.count()).toBe(0);expect(log).toHaveBeenCalled();
+  const diagnostics=new UploadDiagnostics();
+  try { await expect(uploadCad(request(),repo,bad,diagnostics)).rejects.toMatchObject({status:503,code:'STORAGE_UNAVAILABLE',cause:expect.anything()}); } finally {bad.close();}
+  expect(await db.cadFileVersion.count()).toBe(0);expect(log.mock.calls.map(call=>String(call[0])).some(line=>line.includes('storage_publish')&&line.includes('failure'))).toBe(true);
   await expect(storage.content(`s3:${options.bucket}:cad/${randomUUID()}/original.dxf`)).rejects.toMatchObject({status:404});
   await expect(storage.content(`s3:${options.bucket}:../outside`)).rejects.toMatchObject({status:404});
 });
@@ -78,8 +80,9 @@ test('TC-S3-002: failed compensation preserves orphan for recovery and clears st
   vi.spyOn(repo,'register').mockRejectedValue(new Error('DB fault'));
   vi.spyOn(storage,'removeUncommitted').mockRejectedValue(new Error('Delete unavailable'));
   const log=vi.spyOn(console,'error').mockImplementation(()=>{});
-  await expect(uploadCad(request(),repo,storage)).rejects.toThrow('DB fault');
+  const diagnostics=new UploadDiagnostics();
+  await expect(uploadCad(request(),repo,storage,diagnostics)).rejects.toThrow('DB fault');
   expect((await keys()).length).toBe(baseline.length+1);expect(await db.cadFileVersion.count()).toBe(0);
-  expect(log).toHaveBeenCalledWith('CAD_UPLOAD_CLEANUP_PENDING');
+  expect(log.mock.calls.map(call=>String(call[0])).some(line=>line.includes('compensation')&&line.includes('warning'))).toBe(true);
   expect((await readdir(storage.directory)).filter(x=>x.startsWith('.upload-'))).toEqual([]);
 });

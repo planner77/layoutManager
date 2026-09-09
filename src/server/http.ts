@@ -1,10 +1,14 @@
 import { randomUUID } from 'node:crypto';
 import { CadError } from '@/domain/cad';
-export function failure(error: unknown) {
-  const requestId = randomUUID();
-  if (error instanceof CadError) return Response.json({ error: { code: error.code, message: error.message, requestId } }, { status: error.status });
-  console.error('CAD_REQUEST_FAILED', { requestId, category: error instanceof Error ? error.name : 'Unknown' });
-  return Response.json({ error: { code: 'SERVER_ERROR', message: '요청을 처리하지 못했습니다. 잠시 후 다시 시도해주세요.', requestId } }, { status: 500 });
+import type { UploadDiagnostics, UploadStage } from './upload-observability';
+export function failure(error: unknown, diagnostics?: UploadDiagnostics, stage: UploadStage = 'response') {
+  const requestId = diagnostics?.requestId ?? randomUUID();
+  const status = error instanceof CadError ? error.status : 500;
+  const code = error instanceof CadError ? error.code : 'SERVER_ERROR';
+  const message = error instanceof CadError ? error.message : '요청을 처리하지 못했습니다. 잠시 후 다시 시도해주세요.';
+  diagnostics?.finishFailure(error, stage, status);
+  if (!diagnostics && !(error instanceof CadError)) console.error('CAD_REQUEST_FAILED', { requestId, category: error instanceof Error ? error.name : 'Unknown' });
+  return Response.json({ error: { code, message, requestId } }, { status, headers: { 'X-Request-Id': requestId } });
 }
 export function requireSameOrigin(request: Request) {
   const origin = request.headers.get('origin');

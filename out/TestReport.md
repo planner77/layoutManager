@@ -1,5 +1,49 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-OBS-20260909 — 폐쇄망 업로드 오류 진단 0.16.0
+
+- 범위: 공개 업로드 진단(요약·상세·복사·JSON 저장), HTTP/프록시/연결 오류 분류, 요청 ID 기반 서버 구조화 로그, 원인 정제·비노출, local/S3 보상 및 Docker logging 설정. DB migration과 업무 데이터는 변경하지 않았다.
+- 검증 snapshot: 2026-09-09 (Asia/Seoul), Linux x86_64, Node 22.14.0, package `0.16.0`, Next 16.3.4, Vitest 5.0.0, Playwright 1.63.0, Chromium 1208 executable/SwiftShader. Unit OBS 변경은 아직 uncommitted 상태였다.
+
+| 검사 | 실제 결과 |
+| --- | --- |
+| `npm test` | 16 files / 72 passed / 0 failed / exit 0 |
+| `npm run typecheck` / `npm run lint` | 각각 exit 0 |
+| `npm run build` | exit 0, production route build 성공 |
+| local 전체 E2E | 18 passed / 0 failed / 약 1분 (cleanup 재작업 후 회귀 재실행) |
+| `npm run test:s3` | 격리 SeaweedFS 4.45 / 6 passed / 0 failed |
+| `npm run test:s3:e2e` | 임시 DB·bucket의 S3 backend / 18 passed / 0 failed / 57.7초 |
+| `CAD_E2E_PORT=3111 npm run test:dwg` | 캐시된 공식 Line/Circle sample / 4 passed / 0 failed / 18.7초 (권한 상승 실행) |
+| `docker compose -f src/docker-compose.yml config` | exit 0; app logging `local`, `max-size=10m`, `max-file=5` 확인 |
+| `git diff --check` | exit 0 |
+| Secret/Runtime audit | `git` 추적 목록·변경 diff와 allowlist pattern scan에서 `.env`·runtime DB/CAD·credential URL·실제 인증값 0건; 테스트용 canary 문자열과 `.env.example` 빈 키만 존재 |
+
+### 요청 ID·단계 수동 확인
+
+- 임시 `/tmp` DB·CAD 저장소와 별도 3131 포트에서 `db:deploy` 및 production server를 실행했다. 정상 POST의 `X-Request-Id`/JSON `requestId`/stdout JSON 로그가 모두 `0a28cce1-e610-42b5-a9d8-869f87b582a1`로 일치했다. `request_received → origin_validation → context_initialization → upload_receive → upload_validation → storage_publish → database_registration → temporary_cleanup → response`의 성공 이벤트와 `status=201`을 확인했다.
+- 초기 미지원 확장자 수동 POST의 `X-Request-Id`/JSON `error.requestId`/stdout 로그는 모두 `111f4a4c-e14c-461b-9c57-53434888bca6`로 일치했으나 `temporary_cleanup` 성공 이벤트가 없었다. Developer 재작업 후 추가 통합 시험에서 `upload_validation` 실패·`temporary_cleanup` 성공이 같은 진단 범위로 기록됨을 확인했다.
+- 동시에 전송한 두 정상 POST는 `7153ec52-94f1-4332-aaae-100dd8cbdc79`와 `3258b8fd-b047-4645-a892-0677e0dd4e82`를 각각 header/body/log에 유지했다. 단계가 일부 교차해도 ID와 backend가 섞이지 않았다.
+
+### TC-OBS 결과
+
+| TC | 결과 및 근거 |
+| --- | --- |
+| TC-OBS-001/002 | PASS. 프록시 오류 화면에 고정 필드(시각·버전·코드·상태·서버 ID·안내), 펼침 상세, 텍스트 선택, Clipboard 미지원 fallback, JSON 저장을 확인했다. Clipboard 권한 거부와 긴 내용은 코드 경로·레이아웃을 검토했으며 별도 Browser 주입 시험은 NOT RUN이다. |
+| TC-OBS-003 | PASS. 단위 시험과 브라우저 주입으로 413/502/504, HTML·빈·malformed·임의 JSON, 잘못된 2xx, 연결 실패를 분류했다. raw body와 브라우저 예외는 공개 진단에 포함되지 않고, 502/504·연결 실패는 결과 불확실 및 목록 확인으로 안내되며 자동 재업로드는 0회였다. |
+| TC-OBS-004 | PASS. 정상/실패 header·body·server ID, 동시 격리와 주요 단계·elapsed/backend를 확인했다. 외부 origin 403 회귀와 요청 시작 시 ID 생성 구조를 확인했으며 context 초기화 실패 주입은 NOT RUN이다. validation·stream 오류 및 malformed multipart 경계에서 실패 단계와 임시 정리 성공 이벤트가 연결된다. |
+| TC-OBS-005 | PASS (주입/SeaweedFS). local DB/storage 실패·S3 credential/보상·불확실 COMMIT 경계를 통합 시험했고, 이전 Current·원본과 불확실 object 보존을 확인했다. 실제 운영 장비의 EACCES/ENOSPC와 실제 네트워크 응답 유실은 NOT RUN이다. |
+| TC-OBS-006 | PASS. 최초 storage/DB 실패가 cleanup warning으로 덮이지 않고, 확정 등록 뒤 임시 cleanup warning이 있어도 성공이 유지됨을 통합 시험했다. |
+| TC-OBS-007 | PASS. canary credential/Authorization URL·경로·SQL·filename·bytes·설명·순환 cause·개행·장문을 sanitizer/unit/E2E로 검사했고 공개 화면·JSON·Console·서버 로그에 노출되지 않았다. 허용된 파일/DB/S3 code와 category는 유지됐다. |
+| TC-OBS-008 | PARTIAL. Compose의 `local` 10m×5 설정과 실제 stdout 구조화 로그 수집·ID 검색은 확인했다. 로그 한도 도달, Compose 컨테이너 재생성/health/원본 보존, GHCR 0.16.0 push/pull은 이 QA 실행에서 하지 않았으며 배포 담당 검증이 필요하다. |
+
+### 판정·제한
+
+- 공개 진단과 안전 로그 정제는 수용 가능한 수준이다. `EACCES/ENOSPC/ECONNREFUSED/ETIMEDOUT`, SQLite/Prisma 오류, 허용된 S3 오류는 code/category와 고정 메시지를 남긴다. 코드가 없는 임의 `Error`와 정제할 수 없는 이름·메시지는 `Internal error details suppressed.`로 완전 억제된다. 이는 credential·SQL·원본 보호 요구에는 부합하지만 미분류 오류의 원인을 운영자가 구분할 수 없다는 관측성 제한이 있다. 현행 NFR-OBS-002의 안전 allowlist 정책 안에서는 허용하되, 주요 앱/라이브러리 오류를 안전 코드로 매핑하는 보완 여지를 Known Issue로 남긴다.
+- 재작업 결과: Developer가 `CadStorage.receive`의 validation·stream 오류 cleanup 성공 이벤트를 추가했고 관련 통합 테스트를 보강했다. 재시험에서 두 경계 모두 `temporary_cleanup: success`가 확인되어 NFR-OBS-001/TC-OBS-004를 VERIFIED로 판정한다. QA는 코드를 수정하지 않았다.
+- 재작업 재시험 명령: `npm test -- tests/integration/upload.test.ts tests/unit/upload-observability.test.ts`는 2 files / 22 passed / 0 failed, `npm test` 전체는 16 files / 72 passed / 0 failed, typecheck/lint/diff-check 및 local 전체 E2E 18개도 재통과했다.
+- 실제 폐쇄망 장애, 프록시 운영 로그, Docker 로그 순환 한도 도달, GHCR 게시와 실제 현장 장치/방화벽 접근은 이 기록의 PASS가 아니다. `prepare:dwg-samples` 재다운로드는 `raw.githubusercontent.com` DNS `EAI_AGAIN`으로 실패했으며, DWG 시험은 기존 checksum 캐시 샘플로 실행했다.
+- 추적: FR-OBS-001/002 → `diagnostics.ts`·`upload-form.tsx` → TC-OBS-001–003/007 → PASS. NFR-OBS-001 → `upload-observability.ts`·route·upload/storage → TC-OBS-004–006 → VERIFIED. NFR-OBS-002 → sanitizer/client diagnostic → TC-OBS-007 → PASS. NFR-OBS-003 → Compose/Operation → TC-OBS-008 → PARTIAL/배포 검증 대기.
+
 ## U8B-20260909 — DWG 계측 확장 0.15.0
 
 - Manager/Developer 에이전트는 사용량 제한으로 실행하지 못해 root가 구현·검증을 대행했다. 이 사실과 범위 제한을 기록한다.

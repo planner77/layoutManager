@@ -1,6 +1,6 @@
 # 운영·환경설정 초안
 
-**현재 0.15.0, Docker 배포·host IP 접속·S3 호환 저장소 및 DWG 계측 지원.** install/generate/deploy/dev/build/start/typecheck/lint/test/db:check/test:e2e가 동작한다. 초기 설치는 npm ci → db:generate → db:deploy 순서이다. 서버는 `0.0.0.0`으로 수신하며 기본 검증 주소는 `127.0.0.1:3100`이다.
+**현재 0.16.0, 폐쇄망 업로드 진단·Docker 배포·host IP 접속·S3 호환 저장소 및 DWG 계측 지원.** install/generate/deploy/dev/build/start/typecheck/lint/test/db:check/test:e2e가 동작한다. 초기 설치는 npm ci → db:generate → db:deploy 순서이다. 서버는 `0.0.0.0`으로 수신하며 기본 검증 주소는 `127.0.0.1:3100`이다.
 
 Playwright 기본 설치는 `cd src` 후 `npx playwright install chromium`이다. 이미 설치된 Chromium을 사용할 때는 `PLAYWRIGHT_CHROMIUM_EXECUTABLE`에 실행 파일 경로를 설정한다. E2E는 기본 3101 포트와 독립 `/tmp/cad-e2e-*` DB/Storage를 사용하며, 포트 충돌 시 `CAD_E2E_PORT=3111`처럼 바꿀 수 있다. 이 임시 데이터는 운영 데이터와 분리되며 Git에 포함되지 않는다.
 
@@ -74,6 +74,17 @@ Commit/Push 절차:
 - 데이터 reset/삭제/파괴적 migration은 기본 운영 명령에 포함하지 않는다.
 
 ## 장애 대응 초안
+
+업로드 실패 화면의 **오류 상세 보기**에서 발생 시각·앱 버전·오류 코드·HTTP 상태·서버 요청 ID와 조치 안내를 확인한다. **진단 정보 복사**가 HTTP/권한 정책으로 실패하면 표시된 전체 내용을 직접 선택하거나 **진단 JSON 저장**을 사용한다. HTML·빈 응답·연결 실패와 성공 응답 해석 실패는 원문을 공개하지 않고 안전한 범주로 표시한다. 결과가 `확인 필요`이면 자동 재업로드하지 말고 목록에서 같은 도면의 등록 여부를 먼저 확인한다.
+
+서버 로그는 업로드 요청마다 한 줄 JSON이며 `requestId`, `stage`, `outcome`, `elapsedMs`, `backend`로 수신·저장·DB 등록·정리 결과를 연결한다. 화면의 서버 요청 ID가 있으면 다음처럼 검색한다. 앱에 도달하지 않은 프록시/연결 오류는 서버 요청 ID가 없으므로 발생 시각과 프록시 로그를 대조한다. 로그에는 도면 파일명·설명·원본 locator·SQL·인증정보를 기록하지 않는다.
+
+```bash
+docker compose --env-file .env -f src/docker-compose.yml logs --since 30m --timestamps --no-color app > upload-error.log 2>&1
+rg '화면에 표시된-requestId' upload-error.log
+```
+
+Compose의 app 서비스는 Docker `local` logging driver와 `max-size=10m`, `max-file=5`를 사용한다. 컨테이너 로그는 순환되고 컨테이너 제거와 함께 사라질 수 있으므로 교체·제거 전에 필요한 시간 범위를 별도 파일로 수집한다. 진단 파일과 서버 로그도 운영 정보로 취급해 접근을 제한하고 검토 후 보관 정책에 따라 폐기한다.
 
 직접 링크 복사는 `navigator.clipboard.writeText`를 우선 사용한다. HTTP 환경, 권한 거부, 브라우저 정책 등으로 Clipboard API가 없거나 실패하면 읽기 전용 URL 입력과 동일 URL의 `도면 열기` 링크를 표시한다. 링크 도달성은 서버가 실행 중이고 사용자가 접근 가능한 동일 origin일 때만 보장된다. `localhost`/`127.0.0.1`은 링크를 여는 장치 자체를 가리키며, 사설 IP는 같은 네트워크/VPN·수신 listener·방화벽 조건이 필요하다. 공개 토큰이나 저장소 locator를 URL에 넣지 않는다.
 
@@ -191,8 +202,8 @@ WebGL 사용 가능한 데스크톱 Browser가 필요하다. 초기화 실패는
 ### 장애·백업
 
 - NoSuchKey: 원본 404. 인증/연결/버킷 문제: 안전한 503. 원본 API가 프록시하므로 S3 CORS 또는 브라우저 credentials는 필요 없다.
-- PUT 불확실: CAD_S3_UPLOAD_UNCERTAIN 로그의 object ID와 현재 bucket의 `cad/` key를 대조한다. 업로드 성공 여부가 불명확한데 원본을 무조건 삭제하지 않는다.
-- DB 실패 후 보상 삭제: DB에 해당 locator가 없다는 확인 후 새 object만 제거한다. CAD_UPLOAD_CLEANUP_PENDING이면 DB와 bucket listing을 운영자가 비교한다. 삭제 전 진행 중 업로드가 없는지 확인하고 보존 기간/백업을 고려한다. 자동 orphan sweeping은 없다.
+- PUT 불확실: 같은 `requestId`의 `storage_publish` 실패와 정제된 cause/status를 확인하고 현재 bucket의 신규 `cad/` key를 운영 도구로 대조한다. 업로드 성공 여부가 불명확한데 원본을 무조건 삭제하지 않는다.
+- DB 실패 후 보상 삭제: DB에 해당 locator가 없다는 확인 후 새 object만 제거한다. 같은 `requestId`의 `compensation` warning이면 안전한 `recoveryId`를 사용해 DB와 bucket listing을 운영자가 비교한다. 삭제 전 진행 중 업로드가 없는지 확인하고 보존 기간/백업을 고려한다. 자동 orphan sweeping은 없다.
 - 백업은 SQLite DB+local CAD 원본+각 S3 bucket object를 한 시점의 일관된 집합으로 보존한다. DB 파일만 백업해도 S3 원본이 복구되는 것은 아니다.
 - 확인된 호환 제품은 SeaweedFS 4.45이다. 다른 S3 제품은 아래 시험/조건부 PUT·streaming GET·DeleteObject를 먼저 검증한다. 조건부 PUT을 지원하지 않는 제품에 overwrite 허용 fallback은 하지 않는다.
 

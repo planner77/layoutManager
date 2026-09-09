@@ -9,6 +9,7 @@ export class ConfiguredCadStorage extends CadStorage implements StorageBackend {
   constructor(directory: string, maxBytes: number, env: Record<string,string|undefined>) {
     super(directory, maxBytes); this.options = storageConfiguration(env);
   }
+  override get backend(): 'local' | 's3' { return this.options.backend as 'local' | 's3'; }
   private s3() {
     if (!this.options.s3) throw new CadError('STORAGE_UNAVAILABLE', 'S3 저장소 설정이 필요합니다.', 503);
     return this.remote ??= new S3ObjectStorage(this.options.s3);

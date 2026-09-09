@@ -6,15 +6,25 @@ import { Readable, Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import busboy from 'busboy';
 import { CadError, registration } from '@/domain/cad';
+import type { UploadDiagnostics } from '../upload-observability';
 
 export class CadStorage {
+  get backend(): 'local' | 's3' { return 'local'; }
   constructor(public directory: string, public maxBytes: number) {}
   private async root() { await mkdir(this.directory, { recursive: true }); return realpath(this.directory); }
-  async receive(request: Request) {
-    if (!request.body) throw new CadError('MISSING_FILE', '파일을 선택해주세요.');
+  async receive(request: Request, diagnostics?: UploadDiagnostics) {
+    if (!request.body) {
+      const error = new CadError('MISSING_FILE', '파일을 선택해주세요.');
+      diagnostics?.record('upload_receive', 'failure', { error });
+      throw error;
+    }
     let parser: ReturnType<typeof busboy>;
     try { parser = busboy({ headers: { 'content-type': request.headers.get('content-type') ?? '' }, defParamCharset: 'utf8', limits: { fileSize: this.maxBytes + 1, files: 1, fields: 7, fieldSize: 8192, parts: 9 } }); }
-    catch { throw new CadError('INVALID_UPLOAD', '올바른 파일 업로드 요청이 아닙니다.'); }
+    catch {
+      const error = new CadError('INVALID_UPLOAD', '올바른 파일 업로드 요청이 아닙니다.');
+      diagnostics?.record('upload_receive', 'failure', { error });
+      throw error;
+    }
     const temp = await mkdtemp(path.join(await this.root(), '.upload-'));
     const tempFile = path.join(temp, randomUUID());
     const fields: Record<string, unknown> = {};
@@ -33,17 +43,33 @@ export class CadStorage {
       void saving.catch(() => {});
     });
     let bodyBytes = 0;
+    let receiveComplete = false;
     const limit = this.maxBytes + 64 * 1024;
     try {
       await pipeline(Readable.fromWeb(request.body as never), new Transform({ transform(chunk: Buffer, _encoding, next) { bodyBytes += chunk.length; next(bodyBytes > limit ? new CadError('FILE_TOO_LARGE', '업로드 제한 크기를 초과했습니다.', 413) : null, chunk); } }), parser);
       await saving;
+      receiveComplete = true;
+      diagnostics?.record('upload_receive', 'success');
       if (truncated || size > this.maxBytes) throw new CadError('FILE_TOO_LARGE', '업로드 제한 크기를 초과했습니다.', 413);
       if (!gotFile || !size) throw new CadError('EMPTY_FILE', '내용이 있는 파일을 선택해주세요.');
       if (invalid || !filename || filename.length > 255 || /[\x00-\x1f]/.test(filename)) throw new CadError('INVALID_UPLOAD', '파일 또는 입력 항목을 확인해주세요.');
       const extension = path.extname(filename).toLowerCase();
       if (extension !== '.dxf' && extension !== '.dwg') throw new CadError('UNSUPPORTED_FILE', 'DXF 또는 DWG 파일만 등록할 수 있습니다.', 415);
-      return { input: registration(fields), file: { originalFilename: filename, fileFormat: extension === '.dxf' ? 'DXF' as const : 'DWG' as const, fileSize: size, sha256: hash.digest('hex'), storagePath: '' }, tempFile, cleanup };
-    } catch (error) { await saving.catch(() => {}); await cleanup(); throw error; }
+      const input = registration(fields);
+      const file = { originalFilename: filename, fileFormat: extension === '.dxf' ? 'DXF' as const : 'DWG' as const, fileSize: size, sha256: hash.digest('hex'), storagePath: '' };
+      diagnostics?.record('upload_validation', 'success');
+      return { input, file, tempFile, cleanup };
+    } catch (error) {
+      const validationCode = error instanceof CadError && ['FILE_TOO_LARGE', 'EMPTY_FILE', 'INVALID_UPLOAD', 'UNSUPPORTED_FILE', 'INVALID_METADATA'].includes(error.code);
+      diagnostics?.record(receiveComplete || validationCode ? 'upload_validation' : 'upload_receive', 'failure', { error });
+      await saving.catch(() => {});
+      try {
+        await cleanup();
+        diagnostics?.record('temporary_cleanup', 'success');
+      }
+      catch (cleanupError) { diagnostics?.record('temporary_cleanup', 'warning', { error: cleanupError }); }
+      throw error;
+    }
   }
   async publish(tempFile: string, locationId: string, versionId: string, format: string) {
     const key = `${locationId}/${versionId}/original.${format.toLowerCase()}`;

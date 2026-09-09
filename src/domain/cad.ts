@@ -1,4 +1,11 @@
-export class CadError extends Error { constructor(public code: string, message: string, public status = 400) { super(message); } }
+export class CadError extends Error {
+  readonly recoveryId?: string;
+  constructor(public code: string, message: string, public status = 400, options?: ErrorOptions & { recoveryId?: string }) {
+    super(message, options);
+    this.name = 'CadError';
+    this.recoveryId = options?.recoveryId;
+  }
+}
 export const locationFields = ['businessUnit', 'site', 'building', 'floor'] as const;
 export type LocationInput = Record<typeof locationFields[number], string>;
 export type Registration = LocationInput & { registeredAt: string; makeCurrent: boolean; description: string };

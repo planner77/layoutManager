@@ -1,11 +1,16 @@
 import { expect, test } from '@playwright/test';
+import { readFile } from 'node:fs/promises';
 test('TC-UI-001/UP-001: header registration link opens a working upload form', async ({ page, request }) => {
   await page.goto('/');
   await page.getByRole('navigation').getByRole('link', { name: '파일 등록', exact: true }).click();
   await expect(page.getByRole('heading', { name: '새 도면 등록' })).toBeVisible();
   await page.getByLabel('CAD 파일').setInputFiles({ name: '테스트-layout.dxf', mimeType: 'application/octet-stream', buffer: Buffer.from('0\nSECTION\n2\nENTITIES\n0\nENDSEC\n0\nEOF\n') });
   for (const [name, value] of [['사업부','자동화'],['사업장','평택'],['동','A동'],['층','2층']]) await page.getByLabel(name, { exact: true }).fill(value);
+  const uploadResponse = page.waitForResponse(response => response.url().endsWith('/api/cad-files') && response.request().method() === 'POST');
   await page.getByRole('button', { name: '도면 등록', exact: true }).click();
+  const completed = await uploadResponse;
+  const completedBody = await completed.json();
+  expect(completed.headers()['x-request-id']).toBe(completedBody.requestId);
   await expect(page.getByRole('status')).toContainText('V1 등록 완료');
   const href = await page.getByRole('link', { name: '등록한 원본 다운로드' }).getAttribute('href');
   const content = await request.get(href!);
@@ -21,8 +26,50 @@ test('TC-API-002/003: invalid metadata, ID and unsupported upload are safe error
   const response = await request.post('/api/cad-files', { multipart: {file: {name:'bad.exe',mimeType:'application/octet-stream',buffer:Buffer.from('bad')},businessUnit:'x',site:'x',building:'x',floor:'x',registeredAt:'2026-09-07',makeCurrent:'true'} });
   expect(response.status()).toBe(415);
   const data = await response.json(); expect(data.error.message).toContain('DXF'); expect(data.error.stack).toBeUndefined();
+  expect(response.headers()['x-request-id']).toBe(data.error.requestId);
+  expect(data.error.requestId).toMatch(/^[0-9a-f-]{36}$/);
   expect((await request.get('/api/cad-files/not-an-id/content')).status()).toBe(400);
   expect((await request.post('/api/cad-files', { headers: { origin: 'https://foreign.invalid' } })).status()).toBe(403);
+});
+
+test('TC-OBS-001–003/007: proxy failure has selectable, downloadable safe diagnostics without retry', async ({ page }) => {
+  let uploads = 0;
+  let connectionFailure = false;
+  const consoleMessages: string[] = [];
+  page.on('console', message => consoleMessages.push(message.text()));
+  await page.addInitScript(() => Object.defineProperty(navigator, 'clipboard', { configurable: true, value: undefined }));
+  await page.route('**/api/cad-files', async route => {
+    uploads += 1;
+    if (connectionFailure) await route.abort('connectionrefused');
+    else await route.fulfill({ status: 502, contentType: 'text/html', body: '<html>Authorization: Bearer browser-canary</html>' });
+  });
+  await page.goto('/cad/upload');
+  await page.getByLabel('CAD 파일').setInputFiles({ name: 'diagnostic.dxf', mimeType: 'application/octet-stream', buffer: Buffer.from('0\nEOF\n') });
+  for (const [name, value] of [['사업부','진단'],['사업장','폐쇄망'],['동','A동'],['층','1층']]) await page.getByLabel(name, { exact: true }).fill(value);
+  await page.getByRole('button', { name: '도면 등록', exact: true }).click();
+  await expect(page.locator('main').getByRole('alert')).toContainText('서버 또는 중간 프록시');
+  await page.getByText('오류 상세 보기').click();
+  const details = page.getByLabel('업로드 오류 진단 전체 내용');
+  await expect(details).toContainText('오류 코드: HTTP_502');
+  await expect(details).toContainText('HTTP 상태: 502');
+  await expect(details).toContainText('서버 요청 ID: 없음');
+  await expect(details).not.toContainText('browser-canary');
+  await page.getByRole('button', { name: '진단 정보 복사' }).click();
+  await expect(page.getByRole('status')).toContainText('직접 선택');
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: '진단 JSON 저장' }).click();
+  const saved = await (await downloadPromise).path();
+  const exported = JSON.parse(await readFile(saved!, 'utf8'));
+  expect(exported).toMatchObject({ code: 'HTTP_502', httpStatus: 502, requestId: null, outcome: 'uncertain' });
+  expect(JSON.stringify(exported)).not.toContain('browser-canary');
+  expect(consoleMessages.join('\n')).not.toContain('browser-canary');
+  expect(uploads).toBe(1);
+  connectionFailure = true;
+  await page.getByRole('button', { name: '도면 등록', exact: true }).click();
+  await page.getByText('오류 상세 보기').click();
+  await expect(page.getByLabel('업로드 오류 진단 전체 내용')).toContainText('오류 코드: CONNECTION_FAILED');
+  await expect(page.getByLabel('업로드 오류 진단 전체 내용')).toContainText('HTTP 상태: 응답 없음');
+  expect(uploads).toBe(2);
 });
 
 test('TC-ISSUE-001/LIST: list API, filters, detail and current change persist', async ({ page, request }) => {

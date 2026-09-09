@@ -1,5 +1,23 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Unit OBS 실행 계획 — 2026-09-09 사용자 요청
+
+- 범위: FR-OBS-001/002, NFR-OBS-001–003. Manager 설계→Sol 구현→Manager review→Luna QA 시험/문서→Manager 판정→root commit/push/배포. 목표 0.16.0, DB migration 없음. 실제 역할 대행은 TestReport에 기록한다.
+- AC: 전체 안전 진단 표시·복사·저장과 서버 ID 기반 추적, 통신/프록시/업무 오류 구분, 민감정보 비노출, 기존 원본·Current 보존 및 자동 재등록 방지. 필수 typecheck/lint/unit/build/E2E와 관련 회귀 통과.
+
+| TC | 검증 방법 및 기대 결과 |
+| --- | --- |
+| TC-OBS-001 | 실제 검증 오류의 화면 요약·상세에서 버전/시각/코드/상태/서버 ID 일치. 텍스트 선택·복사·JSON 다운로드 내용 일치 및 재시도 시 이전 오류 초기화. |
+| TC-OBS-002 | Clipboard 없음·거부, 긴 내용: 안전 진단 전체를 스크롤·선택·저장 가능. 복사 실패에 미처리 예외가 없고 Console은 공개 진단만 출력. |
+| TC-OBS-003 | Browser 주입: HTML 413/502/504, 빈 응답, malformed JSON, 임의 JSON 오류, 잘못된 2xx 성공 구조, 연결 중단. HTTP 상태 보존, 없는 서버 ID 표시, raw body/예외 비노출, 불확실 결과에 목록 확인 및 자동 재업로드 0회. |
+| TC-OBS-004 | origin/context 초기화 실패에도 ID 확보. 실제 성공/실패 응답 header/body/log ID 일치, 동시 요청 격리, 실제 단계·경과 시간·최종 결과·backend 확인. |
+| TC-OBS-005 | 격리 장애 주입: 용량 한도, 디스크 EACCES/ENOSPC, DB 실패, S3 연결/권한/timeout. 원인·실패 단계 보존, S3 공개 문구와 cause 분리, 이전 Current/원본 및 불확실 PUT 보존. 실장비 장애와 주입 시험을 구분. |
+| TC-OBS-006 | 수신/DB 오류와 cleanup 오류 동시 발생 시 최초 원인 유지·별도 정리 경고. 확정 등록 후 임시 정리 실패는 성공 유지. COMMIT/DB 확인 불확실 시 기존 보상 원칙 유지. |
+| TC-OBS-007 | 화면/Console/JSON 및 서버 로그에 canary credential, Authorization, credential URL, endpoint·경로, SQL+사용자 설명, 파일명/bytes, SDK 객체·순환 cause·개행·장문을 주입하여 허용 필드/마스킹/제한 확인. 안전한 운영 code/cause 식별은 유지. |
+| TC-OBS-008 | Compose 격리 컨테이너의 logging driver/options, 요청 ID 로그 수집·검색, healthy/업로드/원본 보존·재생성 확인. 지정 GHCR 0.16.0 push/pull digest와 실제 배포 상태 기록. 로그 한도 도달 시험 미실행은 별도 명시. |
+
+- TestReport `U-OBS-20260909`에 실제 명령/총수/결과, 재작업·미검증, 요구→구현→TC 근거 및 배포 결과를 기록한다. 실제 폐쇄망 장애 재현과 합성 장애 시험을 구분한다.
+
 ## Unit DESC 실행 계획 — 2026-09-09 사용자 요청
 
 - 도면 설명은 CadFileVersion별 선택 입력으로 저장한다. 최대2000 UTF-16 code units, trim+NFC 및 CRLF/CR→LF 정규화, LF/TAB허용·기타제어문자거부, HTML은 plain text로 렌더링한다. 생략은 빈 문자열이며 등록 후 편집은 이번 범위에 없다.

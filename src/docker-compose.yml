@@ -46,6 +46,11 @@ services:
       timeout: 5s
       start_period: 20s
       retries: 3
+    logging:
+      driver: local
+      options:
+        max-size: "10m"
+        max-file: "5"
 
 volumes:
   cad-layout-viewer-data:
