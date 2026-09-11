@@ -11,6 +11,15 @@
 - 첫 sandbox Browser 실행은 tsx IPC pipe `EPERM`으로 앱 시작 전 중단되었고, 동일 명령을 허용된 host 환경에서 재실행해 위 결과를 얻었다. 이는 제품 시험 실패가 아니다. 기존 관련 Browser 전체 회귀·S3·DWG는 literal header copy 변경 범위 밖이라 재실행하지 않았다.
 - 판정: FR-UI-002 및 TC-TITLE-001은 위 실제 범위에서 PASS/VERIFIED. 목록 화면의 exact accessible name/홈 이동 별도 smoke와 배포 health/image 검증은 root Manager의 범위다.
 
+### 게시·배포 확인
+
+- source `83b8e532b089ab69e279e31ae37106acc3594f7a`를 origin/main에 push했다. staged/diff-check 및 실제 Secret/runtime 후보149파일 검사에서 위반0건이었다.
+- 동일 source의 linux/amd64 이미지 `ghcr.io/planner77/layoutmanager:0.19.1`을 빌드·게시하고 인증된 pull을 확인했다. OCI revision 일치, digest `sha256:ca093a71ce6e78e9291cd002d253196c285eb270918710e3c6cf674dc839068a`. 빌드에서 기존 npm high4 의존성 경고는 유지됐다.
+- root가 새 이미지의 port3145/임시 볼륨에서 목록·등록 페이지 banner의 exact accessible name `Layout Manager`, CAD/P.O.C. 부재, 아이콘/홈 href 및 클릭 후 홈 이동을 검증했다. `/tmp/cad-issue7-packaged-list.png`와 `-upload.png`를 캡처했고 목록 화면을 직접 검토했다. 임시 컨테이너/볼륨을 정리했다.
+- 운영 앱 정지 후 전체 `cad-layout-viewer-data`를 Git 제외 `data/backups/issues-0.19.1-20260911/data-before-0.19.1.tar.gz`로 백업했다. archive114,813bytes, SHA-256 `972fbbbcceda5942b1a7f9ef411179edf3f9df62b565b6e8677cbfa55f878839`, archive 읽기 검사 성공이다.
+- 같은 볼륨으로0.19.1 Compose 배포 후 container healthy 및 health API200/status=ok를 확인했다. 정지 후 snapshot과 배포 후 readonly snapshot의 모든 필드가 일치했다: Version1개/Location3개/DeletionJob0개, 원본1,117,143bytes, 전체 metadata(Current/password hash/drawing_name 포함)와 원본 fingerprint 보존, integrity=ok/FK오류0건. 로컬 GHCR_IMAGE도0.19.1로 고정했다.
+- GitHub #7 결과 댓글 `5630144308` 및 `closed/completed` 확인. root Manager는 #6/#7을 완료 판정한다. 새 필수 Unit은 없으며 기존 실도면 평가와 범위 밖 UI 관찰은 후속 사항이다.
+
 ## U-ISSUE6-20260911 — 도면 이름 0.19.0
 
 - 상태: 구현·재작업 및 독립 QA 완료, root Manager 수용. FR-CAD-008 → TC-NAME-001–004. 게시·배포 및 GitHub #6 완료 종료.

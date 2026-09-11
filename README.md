@@ -211,10 +211,10 @@ docker compose --env-file .env -f src/docker-compose.yml stop
 
 ## GitHub Container Registry 이미지 내려받기
 
-검증·게시한 최신 이미지는 `ghcr.io/planner77/layoutmanager:0.19.0`입니다. 아래 명령으로 내려받고 `.env`에 `GHCR_IMAGE=ghcr.io/planner77/layoutmanager:0.19.0`을 설정합니다. 실제 pull 검증은 인증된 계정으로 수행했으며 익명 공개 접근은 검증하지 않았습니다.
+검증·게시한 최신 이미지는 `ghcr.io/planner77/layoutmanager:0.19.1`입니다. 아래 명령으로 내려받고 `.env`에 `GHCR_IMAGE=ghcr.io/planner77/layoutmanager:0.19.1`을 설정합니다. 실제 pull 검증은 인증된 계정으로 수행했으며 익명 공개 접근은 검증하지 않았습니다.
 
 ```bash
-docker pull ghcr.io/planner77/layoutmanager:0.19.0
+docker pull ghcr.io/planner77/layoutmanager:0.19.1
 ```
 
 게시된 이미지 주소와 tag를 `.env`의 `GHCR_IMAGE`에 지정합니다. 저장소/계정 식별값은 환경설정으로 유지합니다. 비공개 package는 해당 package를 읽을 권한으로 먼저 `docker login ghcr.io`를 수행해야 합니다. Token을 명령행 인수·소스·로그에 기록하지 않고 password stdin 방식이나 승인된 credential 관리 방식을 사용합니다.
@@ -224,7 +224,7 @@ docker compose --env-file .env -f src/docker-compose.yml pull app
 docker compose --env-file .env -f src/docker-compose.yml up -d --no-build app
 ```
 
-검증 이미지의 플랫폼은 `linux/amd64`이며 0.19.0 digest는 `sha256:e055f66da3e63dc755c46e891461e6cecbef2e76aa74c2f2ac7f4d7d38c6ea7b`입니다. 실제 게시·pull 결과는 [TestReport](out/TestReport.md)의 배포 기록을 확인합니다. `latest` 대신 검증한 버전 tag 또는 digest를 고정할 수 있습니다. 이미지 빌드 방법·볼륨 백업·실행 제약은 [Operation](out/Operation.md)을 참조하세요.
+검증 이미지의 플랫폼은 `linux/amd64`이며 0.19.1 digest는 `sha256:ca093a71ce6e78e9291cd002d253196c285eb270918710e3c6cf674dc839068a`입니다. 실제 게시·pull 결과는 [TestReport](out/TestReport.md)의 배포 기록을 확인합니다. `latest` 대신 검증한 버전 tag 또는 digest를 고정할 수 있습니다. 이미지 빌드 방법·볼륨 백업·실행 제약은 [Operation](out/Operation.md)을 참조하세요.
 
 ## GitHub Container Registry에 직접 빌드·게시하기
 
