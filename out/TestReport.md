@@ -1,5 +1,18 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE4-20260911 — 삭제 대화창 레이아웃 0.17.2
+
+- 상태: 구현·자동/시각 검증 완료, Manager 수용. GitHub #4 첨부 이미지를 읽어 경고 문구와 비밀번호 입력이 panel 밖으로 넘치는 현상을 확인했다. 이전 0.17.1의 기능 E2E는 이 geometry를 검사하지 않았다.
+- 수정 전 재현: root가 게시된 0.17.1 이미지를 별도 port3145/임시 볼륨에서 실행하고 합성 fixture로 확인했다. desktop1280×800에서 panel384px 대비 scrollWidth708px, 입력 오른쪽889.625px가 panel 오른쪽832px를 약57.6px 넘었다. computed white-space는 nowrap이었다. 첨부 이미지와 같은 현상을 재현한 뒤 임시 컨테이너/볼륨을 정리했다.
+- 역할: root Manager가 요구사항/AC와 UI 표시 구조를 기록하고 gpt-5.6-sol Developer가 수정·회귀 시험을 담당했다. root의 구현 검토 후 gpt-5.6-luna QA가 독립 검증했다. 게시·배포는 root가 담당한다.
+- 추적: FR-DELETE-006 → DeleteButton Dialog Portal/normal wrapping → TC-DELETE-LAYOUT-001–003. 서버/API/DB/의존성 버전 변경 없음.
+
+- QA 독립 검증: gpt-5.6-luna. Linux x86_64, Node 22.14.0, package `0.17.2`, Playwright 1.63.0, Chromium 1208 executable `/home/planner/.cache/ms-playwright/chromium-1208/chrome-linux64/chrome`, isolated local port 3101 with temporary SQLite/storage.
+- 단위·정적 검사: `npm test` exit 0 (22 files / 92 passed / 0 failed), `npm run typecheck` exit 0, `npm run lint` exit 0, `npm run build` exit 0.
+- local 전체 Browser E2E: 25 passed / 0 failed / 1.5분. TC-DELETE-LAYOUT-001–003 및 기존 DELETE cancel/wrong-password/pending/uncertain response cases가 모두 통과했다. S3/DWG 전체 재실행은 서버/API/DB/의존성 미변경인 대화창 UI 범위 밖으로 생략했다.
+- 시각·geometry capture: `/tmp/cad-issue4-after-desktop.png` 및 `-longtext.png`, `-shortheight.png`, `-error.png`, `-pending.png`와 동명 `.json`을 생성해 실제 상태를 확인했다. desktop 1280×800 panel 384px, scrollWidth 384px; 375×667 panel x16 width343 height635, long text scrollHeight754; 375×260 panel x16 width343 height228, scrollHeight754; error scrollHeight782; pending panel height204. 모든 capture에서 white-space normal, overflow-wrap anywhere 및 clientWidth=scrollWidth를 확인했다. 자동 E2E의 descendant geometry 검사에서도 가로 넘침이 없었다. 좁은 화면은 내부 세로 스크롤로 입력/버튼에 접근했고 오류·정리 대기 표시도 panel 안에 배치됐다.
+- 판정: FR-DELETE-006 및 TC-DELETE-LAYOUT-001–003 PASS/VERIFIED. sandbox 단독 capture는 Chromium IPC `SIGTRAP`으로 제한됐으나 escalated 동일 환경에서 capture를 완료했다. 이 제한은 제품 시험 실패가 아니다.
+
 ## U-ISSUES-20260911 — GitHub #2/#3 등록 메모·업로드 preflight 0.17.1
 
 - 범위: 여러 줄 도면 설명을 등록·목록·Location·Viewer·새로고침까지 확인하고, 브라우저 File 크기 preflight(100 MiB 기본 및 7 MiB 설정), 제출 우회, 서버 413 진단을 검증했다. DELETE 회귀도 같은 브라우저 회귀에서 확인했다.

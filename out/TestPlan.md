@@ -1,5 +1,12 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## GitHub #4 — 목표 0.17.2
+
+- TC-DELETE-LAYOUT-001: 현행 빌드에서 긴 파일명/위치/Current 경고가 대화창 경계를 넘는지 재현하고 수정 후 같은 조건으로 비교한다. 목록과 Location 상세, desktop 1280×800 및 좁은 viewport 375×667에서 panel 및 내부 요소의 가로 넘침 0, 텍스트 줄바꿈과 입력/버튼 영역을 확인한다.
+- TC-DELETE-LAYOUT-002: 높이가 낮은 viewport에서 dialog 내부 스크롤을 통해 내용/버튼에 접근하며, 포커스 초기화·Tab/Shift+Tab 격리·Escape/취소·호출 버튼 복귀와 비밀번호 초기화를 확인한다. 처리 중 Escape/외부 클릭은 닫지 않는다.
+- TC-DELETE-LAYOUT-003: 잘못된 비밀번호, 202 정리대기 및 결과 불확실 UI도 줄바꿈/버튼 접근을 유지한다. 기존 실제 삭제 Browser 2건을 회귀한다.
+- Manager가 AC/설계를 기록하고 Sol Developer가 구현/회귀 시험을 보강한 뒤 Luna QA가 typecheck/lint/unit/build/local Browser와 스크린샷을 검증한다. 기존 운영 데이터는 시각 재현·삭제 시험에 사용하지 않는다. 검증 뒤 root가 commit/push·GHCR 배포 및 이슈 결과 댓글/종료를 수행한다.
+
 ## GitHub #2 / #3 — 목표 0.17.1
 
 - TC-DESC-005 강화: UI에서 여러 줄 메모 입력→등록→목록/Location/Viewer 표시→새로고침 후 유지. 기존 선택 필드·literal 검색도 회귀한다.

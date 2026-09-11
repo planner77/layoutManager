@@ -28,7 +28,7 @@ test('TC-DELETE-002/004: cancel and wrong password preserve a Current version, c
   await dialog.getByLabel('삭제 비밀번호', { exact: true }).fill('wrong');
   await dialog.getByRole('button', { name: '삭제 확인', exact: true }).click();
   await expect(dialog).toContainText('삭제 비밀번호가 올바르지 않습니다.');
-  await expect(row).toBeVisible();
+  await expect(page.locator(`#version-${target.id}`)).toBeVisible();
   expect((await request.get(`/api/cad-files/${target.id}/content`)).status()).toBe(200);
 
   await dialog.getByLabel('삭제 비밀번호', { exact: true }).fill('1234');
@@ -80,5 +80,5 @@ test('TC-DELETE-003/005: pending cleanup acknowledgment and uncertain responses 
   await uncertainDialog.getByRole('button', { name: '삭제 확인', exact: true }).click();
   await expect(uncertainDialog).toContainText('삭제 결과가 불확실하므로 목록을 새로고침해 확인해주세요.');
   expect(calls).toBe(3);
-  await expect(uncertainRow).toBeVisible();
+  await expect(page.locator(`#version-${uncertain.id}`)).toBeVisible();
 });
