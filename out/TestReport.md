@@ -2,7 +2,7 @@
 
 ## U-ISSUE5-20260911 — 레이어 다중 선택 0.18.0
 
-- 상태: 구현·자동·시각 검증 완료, root Manager 수용. 게시·배포 진행 전. GitHub #5의 three-dxf-viewer 다중 선택 드롭다운, 전체 선택/해제와 선택 개수를 제공한다. 원본·DB/API와 Viewer Adapter의 기존 표시 규칙은 변경하지 않는다.
+- 상태: 구현·자동·시각 검증 완료, root Manager 수용. 게시·배포 및 GitHub #5 종료 완료. GitHub #5의 three-dxf-viewer 다중 선택 드롭다운, 전체 선택/해제와 선택 개수를 제공한다. 원본·DB/API와 Viewer Adapter의 기존 표시 규칙은 변경하지 않는다.
 - 역할: root Manager가 요구사항·AC/설계를 기록하고 gpt-5.6-sol Developer가 UI와 회귀 시험을 구현했다. 구현 검토 후 gpt-5.6-luna QA가 독립 검증했으며 root가 게시·배포·이슈 처리를 담당한다.
 - 추적: FR-VIEWER-009 → LayerDropdown/CadViewer의 controlled 선택 → 기존 ViewerManager.showLayer → TC-LAYER-001–003. 단순 레이어 합성 fixture 검증을 복잡 BLOCK/INSERT 상속이나 실도면 전체 지원으로 확대 해석하지 않는다.
 
@@ -12,6 +12,15 @@
 - 시각 검증: `src/test-results/layer-dropdown-TC-LAYER001-34dff-as-without-another-download/layer-menu-normal.png` 및 `src/test-results/layer-dropdown-TC-LAYER003-fa50d-nd-support-keyboard-actions/layer-menu-narrow.png`를 확인했다. 정상 메뉴의 3개 레이어와 360×480 좁은 화면의 viewport 내 배치·내부 스크롤을 확인했으며 root Manager도 동일 capture를 검토했다.
 - DWG 회귀: `CAD_E2E_PORT=3111 npm run test:dwg` 4 passed / 0 failed / 22.1초. 캐시된 Line/Circle sample, 등록 Viewer lifecycle, partial/unsupported/missing/retry 상태를 확인했다.
 - 판정: FR-VIEWER-009 및 TC-LAYER-001–003 PASS/VERIFIED. 단순 레이어 합성 fixture 범위이며 복잡 BLOCK/INSERT 상속과 실도면 전체 지원 평가는 포함하지 않는다. 최초 stale `.next`에서의 layer selector 문제는 최신 production build 후 재실행에서 재현되지 않았다.
+
+### 게시·배포 확인
+
+- source `543423d36c092412442eddf25383c029149451a2`를 origin/main에 push했다. root의 staged/diff-check 및 실제 Secret/runtime 후보147파일 검사에서 위반0건이었다.
+- 해당 source의 linux/amd64 이미지 `ghcr.io/planner77/layoutmanager:0.18.0`을 빌드·게시하고 인증된 pull을 확인했다. OCI revision 일치, digest `sha256:f98883f2a33ffdca71138fd4e3aed9686eaeec27cd109ecb8c08b39fdb1bc14d`이다. 이미지 빌드의 npm ci에서 기존 high4 의존성 경고가 재확인됐으며 이번 UI 변경에서 해결하지 않았다.
+- root가 새 이미지의 port3145/임시 볼륨에 건축·배관·전기 3개 레이어 합성 DXF를 등록했다. 전체 해제 시 canvas 변화와0/3, 전체 선택 시3/3 및 최초 canvas의 정확한 복원을 확인했다. `/tmp/cad-issue5-packaged.png`를 직접 검토했으며 임시 컨테이너/볼륨을 정리했다.
+- 운영 앱 정지 후 전체 `cad-layout-viewer-data`를 Git 제외 `data/backups/issues-0.18.0-20260911/data-before-0.18.0.tar.gz`로 백업했다. archive114,490bytes, SHA-256 `d75e87dd81919f94c3ebf3f52a34c641c227984cf5f010b09ad5baad42c82f42`, archive 읽기 검사 성공이다.
+- 같은 볼륨으로0.18.0 Compose 배포 후 container healthy 및 health API200/status=ok를 확인했다. 정지 후 기준 snapshot과 배포 후 readonly snapshot의 모든 필드가 일치했다: Version1개/Location2개/DeletionJob0개, 원본1,117,143bytes, DB 전체 행 metadata fingerprint(Current/password hash 포함)와 원본 fingerprint 보존, integrity=ok/FK오류0건. 이번 비교는 저장된 password hash 보존이며 별도 비밀번호 입력 검증은 재실행하지 않았다. 로컬 GHCR_IMAGE도0.18.0으로 고정했다.
+- GitHub #5에 결과 댓글 `5629680051`을 남겼고 `closed/completed` 응답을 확인했다. Manager 완료 판정. 후속 범위는 기존 실도면/복잡 Entity 평가이며 신규 필수 Unit은 없다.
 
 ## U-ISSUE4-20260911 — 삭제 대화창 레이아웃 0.17.2
 
