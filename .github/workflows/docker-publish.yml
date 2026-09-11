@@ -8,7 +8,7 @@ on:
       - 'v*.*.*'
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 concurrency:
@@ -27,6 +27,17 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read application version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          APP_VERSION="$(node -p "require('./src/package.json').version")"
+          echo "version=$APP_VERSION" >> "$GITHUB_OUTPUT"
+          echo "Application version: $APP_VERSION"
 
       # v1.2.3 형태의 릴리스 태그를 사용할 때는
       # src/package.json의 애플리케이션 버전과 태그 버전이 같아야만 게시한다.
@@ -35,7 +46,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          APP_VERSION="$(node -p "require('./src/package.json').version")"
+          APP_VERSION='${{ steps.version.outputs.version }}'
           TAG_VERSION="${GITHUB_REF_NAME#v}"
 
           if [ "$APP_VERSION" != "$TAG_VERSION" ]; then
@@ -44,6 +55,31 @@ jobs:
           fi
 
           echo "Validated release version: $TAG_VERSION"
+
+      # main에서 package.json 버전에 해당하는 태그가 아직 없으면 현재 커밋에 생성한다.
+      # GITHUB_TOKEN으로 생성한 태그 push는 별도 workflow를 재귀 실행하지 않으므로,
+      # 이 main 실행에서 정식 버전 이미지와 latest까지 함께 게시한다.
+      - name: Create release tag from package version
+        id: release_tag
+        if: github.ref == 'refs/heads/main'
+        shell: bash
+        env:
+          APP_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          TAG="v${APP_VERSION}"
+
+          if git ls-remote --exit-code --tags origin "refs/tags/${TAG}" >/dev/null 2>&1; then
+            echo "Release tag ${TAG} already exists; version image will not be overwritten by this main build."
+            echo "created=false" >> "$GITHUB_OUTPUT"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git tag -a "$TAG" -m "Release ${TAG}"
+            git push origin "$TAG"
+            echo "created=true" >> "$GITHUB_OUTPUT"
+            echo "Created release tag ${TAG} at ${GITHUB_SHA}."
+          fi
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -55,9 +91,9 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # main push  -> ghcr.io/planner77/layoutmanager:main
-      # v0.19.2    -> ghcr.io/planner77/layoutmanager:0.19.2
-      #               ghcr.io/planner77/layoutmanager:latest
+      # main push                 -> ghcr.io/planner77/layoutmanager:main
+      # 새 package 버전의 main   -> 위 태그 + :<version> + :latest
+      # v0.19.2 직접 tag push    -> :0.19.2 + :latest
       - name: Generate Docker metadata
         id: meta
         uses: docker/metadata-action@v5
@@ -65,6 +101,8 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=raw,value=main,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=${{ steps.version.outputs.version }},enable=${{ github.ref == 'refs/heads/main' && steps.release_tag.outputs.created == 'true' }}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' && steps.release_tag.outputs.created == 'true' }}
             type=semver,pattern={{version}}
             type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
           labels: |
@@ -72,6 +110,7 @@ jobs:
             org.opencontainers.image.description=CAD Layout Manager
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ steps.version.outputs.version }}
 
       - name: Build and push Docker image
         id: build
