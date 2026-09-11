@@ -1,5 +1,16 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE7-20260911 — 상단 제목 0.19.1
+
+- 상태: 독립 QA 완료, root Manager 수용(구현·정적 검사·관련 Browser 범위). FR-UI-002 → TC-TITLE-001. Header 홈 링크는 아이콘과 `/` 이동을 유지하면서 accessible name `Layout Manager`를 표시하고 `CAD` 접두어와 `P.O.C.` 배지를 제거한다. 브라우저 metadata `CAD Layout Manager`는 요구 범위 밖으로 유지한다.
+- 역할: root Manager 요구/AC 기록 후 gpt-5.6-sol Developer가 layout 문구만 수정했고 root review 뒤 gpt-5.6-luna QA가 검증했다. root도 QA 캡처를 직접 확인했으며 릴리스/배포를 담당한다.
+- QA 독립 검증: gpt-5.6-luna, 2026-09-11, Linux x86_64, Node 22.14.0, package `0.19.1`, Playwright 1.63.0, Chromium 1208 executable `/home/planner/.cache/ms-playwright/chromium-1208/chrome-linux64/chrome`, isolated local SQLite/storage on port 3101.
+- Source review: `src/app/layout.tsx`의 header 변경만 확인했다. 홈 링크 아이콘/href와 nav를 유지하고 제목 문자열을 `Layout Manager`로 변경했으며 `CAD`/`P.O.C.`를 제거했다. metadata title은 `CAD Layout Manager`로 남아 있다.
+- `npm run typecheck`, `npm run lint`, `npm run build`: 각각 exit 0.
+- Focused local production Browser: `PLAYWRIGHT_CHROMIUM_EXECUTABLE=/home/planner/.cache/ms-playwright/chromium-1208/chrome-linux64/chrome CAD_E2E_PORT=3101 npx playwright test tests/e2e/upload.spec.ts -g 'TC-UI-001/UP-001'` — 1 passed / 0 failed / 6.5초. Header의 파일 등록 링크로 이동해 새 도면 등록 화면, 업로드 성공, 원본 다운로드, 목록 복귀·새로고침을 확인했다. 생성된 `src/test-results/upload-success.png`를 직접 확인해 `Layout Manager`, 아이콘, 도면 목록/파일 등록 nav, `v0.19.1`을 확인하고 `CAD` 및 `P.O.C.` 부재를 확인했다.
+- 첫 sandbox Browser 실행은 tsx IPC pipe `EPERM`으로 앱 시작 전 중단되었고, 동일 명령을 허용된 host 환경에서 재실행해 위 결과를 얻었다. 이는 제품 시험 실패가 아니다. 기존 관련 Browser 전체 회귀·S3·DWG는 literal header copy 변경 범위 밖이라 재실행하지 않았다.
+- 판정: FR-UI-002 및 TC-TITLE-001은 위 실제 범위에서 PASS/VERIFIED. 목록 화면의 exact accessible name/홈 이동 별도 smoke와 배포 health/image 검증은 root Manager의 범위다.
+
 ## U-ISSUE6-20260911 — 도면 이름 0.19.0
 
 - 상태: 구현·재작업 및 독립 QA 완료, root Manager 수용. FR-CAD-008 → TC-NAME-001–004. 게시·배포 및 GitHub #6 완료 종료.

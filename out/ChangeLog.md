@@ -1,5 +1,9 @@
 # ChangeLog
 
+# 0.19.1 — GitHub #7
+
+- Changed: 공통 header 좌측 제목의 CAD 접두어와 P.O.C. 배지를 제거해 Layout Manager로 표시한다. 실제 검증·배포 기록은 TestReport U-ISSUE7-20260911을 따른다.
+
 # 0.19.0 — GitHub #6
 
 - Added: 위치·버전 기반 기본 도면 이름과 등록 시 사용자 이름 선택 입력. 원본 파일명과 별도로 목록·Location·Viewer에 표시한다.

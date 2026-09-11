@@ -1,5 +1,10 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## GitHub #7 — 목표 0.19.1
+
+- TC-TITLE-001: 목록·등록의 banner 홈 링크 accessible name `Layout Manager`, CAD/P.O.C. 부재, 아이콘 및 홈 이동 보존. 실제 화면 캡처와 기존 관련 Browser 회귀, typecheck/lint/build로 검증한다.
+- root 요구/AC → Sol 공통 layout 문구 수정 → root review → Luna 독립 검증 → root commit/push·GHCR 이미지 확인·백업/배포·이슈 종료. DB/API/Viewer 변경 및 신규 중복 테스트는 없다.
+
 ## GitHub #6 — 목표 0.19.0
 
 - TC-NAME-001: 이름 생략/공백 기본값, trim/NFC,255/256 경계·제어문자/타입 거부, HTML plain text. 실제 transaction 순번 V1/V2 및 삭제 후 순번 비재사용으로 기본 이름 계산을 검증한다.

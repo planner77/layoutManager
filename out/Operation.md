@@ -1,6 +1,6 @@
 # 운영·환경설정 초안
 
-**현재 소스 0.19.0, 도면 이름 선택 입력· 업로드 크기 사전 검증·삭제 비밀번호·폐쇄망 업로드 진단·Docker 배포·host IP 접속·S3 호환 저장소 및 DWG 계측 지원.** 실제 게시·배포 버전은 TestReport의 해당 실행 기록을 확인한다. install/generate/deploy/dev/build/start/typecheck/lint/test/db:check/test:e2e가 동작한다. 초기 설치는 npm ci → db:generate → db:deploy 순서이다. 서버는 `0.0.0.0`으로 수신하며 기본 검증 주소는 `127.0.0.1:3100`이다.
+**현재 소스 0.19.1, 도면 이름 선택 입력· 업로드 크기 사전 검증·삭제 비밀번호·폐쇄망 업로드 진단·Docker 배포·host IP 접속·S3 호환 저장소 및 DWG 계측 지원.** 실제 게시·배포 버전은 TestReport의 해당 실행 기록을 확인한다. install/generate/deploy/dev/build/start/typecheck/lint/test/db:check/test:e2e가 동작한다. 초기 설치는 npm ci → db:generate → db:deploy 순서이다. 서버는 `0.0.0.0`으로 수신하며 기본 검증 주소는 `127.0.0.1:3100`이다.
 
 Playwright 기본 설치는 `cd src` 후 `npx playwright install chromium`이다. 이미 설치된 Chromium을 사용할 때는 `PLAYWRIGHT_CHROMIUM_EXECUTABLE`에 실행 파일 경로를 설정한다. E2E는 기본 3101 포트와 독립 `/tmp/cad-e2e-*` DB/Storage를 사용하며, 포트 충돌 시 `CAD_E2E_PORT=3111`처럼 바꿀 수 있다. 이 임시 데이터는 운영 데이터와 분리되며 Git에 포함되지 않는다.
 
