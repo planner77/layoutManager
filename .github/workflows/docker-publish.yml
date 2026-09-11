@@ -58,7 +58,7 @@ jobs:
 
       # main에서 package.json 버전에 해당하는 태그가 아직 없으면 현재 커밋에 생성한다.
       # GITHUB_TOKEN으로 생성한 태그 push는 별도 workflow를 재귀 실행하지 않으므로,
-      # 이 main 실행에서 정식 버전 이미지와 latest까지 함께 게시한다.
+      # 같은 main 실행에서 정식 버전 이미지 게시까지 처리한다.
       - name: Create release tag from package version
         id: release_tag
         if: github.ref == 'refs/heads/main'
@@ -70,7 +70,7 @@ jobs:
           TAG="v${APP_VERSION}"
 
           if git ls-remote --exit-code --tags origin "refs/tags/${TAG}" >/dev/null 2>&1; then
-            echo "Release tag ${TAG} already exists; version image will not be overwritten by this main build."
+            echo "Release tag ${TAG} already exists."
             echo "created=false" >> "$GITHUB_OUTPUT"
           else
             git config user.name "github-actions[bot]"
@@ -91,20 +91,55 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # main push                 -> ghcr.io/planner77/layoutmanager:main
-      # 새 package 버전의 main   -> 위 태그 + :<version> + :latest
-      # v0.19.2 직접 tag push    -> :0.19.2 + :latest
+      # main에서 같은 버전 태그가 이미 존재하더라도 이미지 게시가 중간에 실패했을 수 있으므로
+      # GHCR에 실제 버전 이미지가 있는지 확인한다.
+      - name: Check version image on GHCR
+        id: release_image
+        if: github.ref == 'refs/heads/main'
+        shell: bash
+        env:
+          APP_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          IMAGE="${REGISTRY}/${IMAGE_NAME}:${APP_VERSION}"
+          if docker buildx imagetools inspect "$IMAGE" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Version image already exists: $IMAGE"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "Version image does not exist yet: $IMAGE"
+          fi
+
+      - name: Decide whether to publish
+        id: publish
+        shell: bash
+        run: |
+          set -euo pipefail
+          SHOULD_PUBLISH=false
+
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            SHOULD_PUBLISH=true
+          elif [[ "${GITHUB_REF}" == "refs/heads/main" ]]; then
+            if [[ "${{ steps.release_tag.outputs.created }}" == "true" || "${{ steps.release_image.outputs.exists }}" != "true" ]]; then
+              SHOULD_PUBLISH=true
+            fi
+          fi
+
+          echo "publish=$SHOULD_PUBLISH" >> "$GITHUB_OUTPUT"
+          echo "Publish version image: $SHOULD_PUBLISH"
+
+      # 게시되는 Docker 태그는 정식 버전과 latest뿐이다.
+      # main 브랜치용 :main 이미지는 만들지 않는다.
       - name: Generate Docker metadata
         id: meta
+        if: steps.publish.outputs.publish == 'true'
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=main,enable=${{ github.ref == 'refs/heads/main' }}
-            type=raw,value=${{ steps.version.outputs.version }},enable=${{ github.ref == 'refs/heads/main' && steps.release_tag.outputs.created == 'true' }}
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' && steps.release_tag.outputs.created == 'true' }}
-            type=semver,pattern={{version}}
-            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+            type=raw,value=${{ steps.version.outputs.version }},enable=${{ github.ref == 'refs/heads/main' }}
+            type=semver,pattern={{version}},enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+            type=raw,value=latest
           labels: |
             org.opencontainers.image.title=Layout Manager
             org.opencontainers.image.description=CAD Layout Manager
@@ -114,6 +149,7 @@ jobs:
 
       - name: Build and push Docker image
         id: build
+        if: steps.publish.outputs.publish == 'true'
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -126,8 +162,15 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Show published image digest
+        if: steps.publish.outputs.publish == 'true'
         shell: bash
         run: |
           echo "Published tags:"
           echo '${{ steps.meta.outputs.tags }}'
           echo "Digest: ${{ steps.build.outputs.digest }}"
+
+      - name: Skip duplicate version build
+        if: steps.publish.outputs.publish != 'true'
+        shell: bash
+        run: |
+          echo "The release tag and GHCR version image already exist. No Docker image was built for this main push."
