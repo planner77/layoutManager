@@ -652,3 +652,10 @@ Run ID / Date / Unit / Version / Commit 또는 uncommitted snapshot / OS·Browse
 - 실패 후 수정: Busboy의 limit 이벤트 경계 처리(정확한 한도/part 수), Next 내부 bind hostname과 Browser Origin 비교를 수정하고 재시험했다. 외부 Origin 거부도 확인했다.
 - E2E는 독립 임시 DB/Storage, Chromium 1208 executable, 1440×1000 viewport에서 실행했다. 화면 capture는 Git 제외 test-results/upload-success.png이다. 실도면 rendering은 아직 NOT RUN.
 - npm audit: high 4건(Prisma 7.10.0 전이 의존 deepmerge-ts, mysql2와 상위 패키지), omit=dev에서도 dependency graph에 포함된다. SQLite 경로는 MySQL 연결을 사용하지 않지만 패키지 보안 경고는 미해결로 기록한다. 자동 major downgrade/force fix는 수행하지 않았다.
+
+## U-DELETE-20260911 — 삭제 비밀번호 보호 0.17.0
+
+- 자동 검증: `npm test` 17 files / 74 tests PASS; `npm run typecheck`, `npm run lint`, `npm run build`, `git diff --check` PASS.
+- 삭제 대상 Version 비밀번호 검증, scrypt salted hash, Current 해제 및 순번 재사용 방지, 삭제 작업 영속화와 원본 정리 재시도를 통합 테스트로 확인했다.
+- 기존 행은 deploy backfill에서 기본 비밀번호 `1234` hash로 보강하며, 비밀번호 원문은 저장·로그·응답에 노출하지 않는다.
+- Browser/S3 운영 배포와 장기 메모리·실도면 평가는 후속 검증이다. GitHub push는 현재 실행 환경의 DNS 차단으로 보류됐다.
