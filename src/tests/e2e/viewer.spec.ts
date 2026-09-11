@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 const drawing = '0\nSECTION\n2\nENTITIES\n0\nLINE\n8\n0\n10\n0\n20\n0\n11\n100\n21\n100\n0\nCIRCLE\n8\n0\n10\n50\n20\n50\n40\n25\n0\nENDSEC\n0\nEOF\n';
 for (const renderer of ['dxf-viewer','three-dxf-viewer']) test(`TC-DXF/THREE-001: ${renderer} render, controls, resize and re-entry`,async({page,request})=>{
   const errors:string[]=[]; page.on('pageerror',e=>errors.push(e.message));
-  const response=await request.post('/api/cad-files',{multipart:{file:{name:`viewer-lines-${renderer}.dxf`,mimeType:'application/octet-stream',buffer:Buffer.from(drawing)},businessUnit:'Viewer',site:'render',building:'A',floor:'1',registeredAt:'2026-09-08',makeCurrent:'true'}});
+  const response=await request.post('/api/cad-files',{multipart:{file:{name:`viewer-lines-${renderer}.dxf`,mimeType:'application/octet-stream',buffer:Buffer.from(drawing)},businessUnit:'Viewer',site:'render',building:'A',floor:'1',registeredAt:'2026-09-08',makeCurrent:'true',deletePassword:'1234'}});
   expect(response.status()).toBe(201); const file=await response.json();
   await page.goto(`/?filename=viewer-lines-${renderer}.dxf`); await page.getByRole('link',{name:'도면 보기',exact:true}).click();
   if(renderer==='three-dxf-viewer') await page.getByRole('button',{name:'three-dxf-viewer',exact:true}).click();
@@ -33,7 +33,7 @@ for (const renderer of ['dxf-viewer','three-dxf-viewer']) test(`TC-DXF/THREE-001
 
 for(const renderer of ['dxf-viewer','three-dxf-viewer']) test(`TC-FONT-002: ${renderer} Korean TEXT rendering`,async({page,request})=>{
   const bytes='0\nSECTION\n2\nENTITIES\n0\nTEXT\n8\n0\n10\n0\n20\n0\n40\n10\n1\n한글 공장 ABC\n0\nENDSEC\n0\nEOF\n';
-  const response=await request.post('/api/cad-files',{multipart:{file:{name:'korean.dxf',mimeType:'application/octet-stream',buffer:Buffer.from(bytes)},businessUnit:'Viewer',site:'font',building:'A',floor:'1',registeredAt:'2026-09-08',makeCurrent:'false'}});
+  const response=await request.post('/api/cad-files',{multipart:{file:{name:'korean.dxf',mimeType:'application/octet-stream',buffer:Buffer.from(bytes)},businessUnit:'Viewer',site:'font',building:'A',floor:'1',registeredAt:'2026-09-08',makeCurrent:'false',deletePassword:'1234'}});
   expect(response.status()).toBe(201);const file=await response.json();
   const font=page.waitForResponse(r=>r.url().includes('/fonts/') && r.status()===200);
   await page.goto(`/cad/versions/${file.id}/viewer?renderer=${renderer}`);await font;
@@ -46,7 +46,7 @@ for(const renderer of ['dxf-viewer','three-dxf-viewer']) test(`TC-FONT-002: ${re
 });
 for(const renderer of ['dxf-viewer','three-dxf-viewer']) test(`TC-DXF/THREE-002: ${renderer} corrupted, empty and DWG states`,async({page,request})=>{
   for (const [name,bytes,expected] of [['broken.dxf','invalid DXF','表示失敗'],['empty.dxf','0\nSECTION\n2\nENTITIES\n0\nENDSEC\n0\nEOF\n','empty'],['deferred.dwg','AC1032','DWG']]) {
-    const response=await request.post('/api/cad-files',{multipart:{file:{name,mimeType:'application/octet-stream',buffer:Buffer.from(bytes)},businessUnit:'Viewer',site:'errors',building:'A',floor:'1',registeredAt:'2026-09-08',makeCurrent:'false'}});
+  const response=await request.post('/api/cad-files',{multipart:{file:{name,mimeType:'application/octet-stream',buffer:Buffer.from(bytes)},businessUnit:'Viewer',site:'errors',building:'A',floor:'1',registeredAt:'2026-09-08',makeCurrent:'false',deletePassword:'1234'}});
     const file=await response.json();await page.goto(`/cad/versions/${file.id}/viewer?renderer=${renderer}`);
     if(expected==='DWG') { await expect(page.getByRole('main').getByRole('alert')).toContainText('실패');await expect(page.getByRole('button',{name:'dxf-viewer',exact:true})).toHaveCount(0);await expect(page.getByRole('button',{name:'three-dxf-viewer',exact:true})).toHaveCount(0);await expect(page.locator('canvas')).toHaveCount(0); }
     else if(expected==='empty') await expect(page.getByRole('status')).toContainText('표시할 도형이 없습니다');

@@ -18,13 +18,13 @@ const client = new S3Client({...options, maxAttempts:1});
 afterAll(()=>client.destroy());
 function request(name='layout.dxf', bytes=Buffer.from('0\nEOF\n')) {
   const form = new FormData();form.set('file',new File([new Uint8Array(bytes)],name));
-  for(const [key,value] of Object.entries({businessUnit:'S3',site:'test',building:'A',floor:'1',registeredAt:'2026-09-08',makeCurrent:'true'}))form.set(key,value);
+  for(const [key,value] of Object.entries({businessUnit:'S3',site:'test',building:'A',floor:'1',registeredAt:'2026-09-08',makeCurrent:'true',deletePassword:'1234'}))form.set(key,value);
   return new Request('http://localhost/api/cad-files',{method:'POST',body:form});
 }
 async function keys() { return (await client.send(new ListObjectsV2Command({Bucket:options.bucket}))).Contents?.map(x=>x.Key).sort() ?? []; }
 beforeEach(async()=>{
   directory=await mkdtemp(path.join(tmpdir(),'cad-s3-db-'));db=createDb(`file:${directory}/db.sqlite`);repo=new CadRepository(db);
-  for(const sql of (await readFile(new URL('../../prisma/migrations/202609070001_locations/migration.sql',import.meta.url),'utf8')).split(';').filter(x=>x.trim()))await db.$executeRawUnsafe(sql); await db.$executeRawUnsafe('ALTER TABLE "CadFileVersion" ADD COLUMN "description" TEXT NOT NULL DEFAULT \'\'');
+  for(const migration of ['202609070001_locations','202609090001_description','202609110001_delete_password']) for(const sql of (await readFile(new URL(`../../prisma/migrations/${migration}/migration.sql`,import.meta.url),'utf8')).split(';').filter(x=>x.trim()))await db.$executeRawUnsafe(sql);
   storage=new ConfiguredCadStorage(path.join(directory,'cad'),1024*1024,process.env);
 });
 afterEach(async()=>{vi.restoreAllMocks();storage.close();await db.$disconnect();await rm(directory,{recursive:true,force:true});});

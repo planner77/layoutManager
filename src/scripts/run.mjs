@@ -11,7 +11,9 @@ const commands = {
   build: ['next', 'build', '--webpack'],
   start: ['next', 'start', '--hostname', '0.0.0.0'],
   generate: ['prisma', 'generate'],
-  deploy: ['prisma', 'migrate', 'deploy'],
+  deploy: ['tsx', 'scripts/deploy.ts'],
+  backfill: ['tsx', 'scripts/backfill-delete-passwords.ts'],
+  'storage:cleanup': ['tsx', 'scripts/storage-cleanup.ts'],
   migrate: ['prisma', 'migrate', 'dev'],
   check: ['tsx', 'scripts/db-check.ts'],
 };

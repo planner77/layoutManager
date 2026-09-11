@@ -1,5 +1,22 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Unit DELETE 실행 계획 — 2026-09-11 사용자 요청 / 목표 0.17.0
+
+Manager 설계→Sol 구현→Manager review→Luna QA 시험/문서→Manager 판정→root release/운영 적용. 승인 범위는 신규 비밀번호·선택 Version 삭제·기존 비밀번호 `1234` 초기화다. 비밀번호/삭제 설정 변경이 있는 기존 데이터는 실제 적용 전 백업하고 검증한다. 이번 설계 기록 시 모든 아래 TC는 NOT RUN이다.
+
+| TC | Acceptance Criteria / 시험 |
+| --- | --- |
+| TC-DELETE-001 | 신규 password 필수, 길이4/128 경계·누락·초과·제어문자·UTF8한도, 앞뒤공백/Unicode 그대로 검증, 랜덤salt로 같은 비밀번호 hash가 다름, 맞음/틀림·잘못된 hash 형식·KDF 제한. 평문 및 hash가 public DTO·로그·URL·HTML에 없음. |
+| TC-DELETE-002 | Browser 등록 비밀번호→목록/Location 삭제 dialog→취소/오입력 시 불변→정답 명시 삭제→목록 제거. 입력 masking/비우기, 오류·429·네트워크 불확실 상태, 사용자 선택 외 자동 삭제 0회. |
+| TC-DELETE-003 | DELETE HTTP: 누락/틀린 비밀번호/다른 Version 비밀번호/비UUID/외부 origin/잘못된 content-type·JSON/1KiB초과 거부. 60초 실패 횟수 및 KDF 동시수 제한. 성공200, 원본 정리대기202, 이미 삭제404. |
+| TC-DELETE-004 | Current/non-Current/마지막 Version 삭제, 다른 Location 보존, Current=NULL(자동승격 없음), nextVersion 비재사용. 등록·Current 변경·동일 대상 삭제 경쟁/transaction rollback, 직접 SQL Current 소속 FK 유지. 목록/search/상세/metadata/content/Viewer 직접 링크 삭제 접근 차단. |
+| TC-DELETE-005 | 실제 local/S3 삭제와 이미 없는 원본, storage 실패/응답 유실/job 삭제 실패/COMMIT 불확실을 주입. DB 승인 전 삭제 0회, DB 삭제 뒤 pending job 영속, 재시작 후 storage:cleanup의 승인 job만 처리·경로 보호·멱등, 사용자 원본 다른 파일 보존. |
+| TC-DELETE-006 | 0.16.0 schema+여러 Version+Current+local/S3 locator fixture에서 migration/backfill. 기존 모든 행이1234로검증, salt독립, ID/순번/설명/hash/locator/Current 불변. 재실행/중단 후 재개가 신규 비밀번호를 덮지 않음. foreign_key_check·trigger 및 nextVersion 초기값 확인. |
+| TC-DELETE-007 | password/hash/salt canary를 등록·삭제 실패, JSON·Console·서버 로그·진단파일·public DTO/HTML/검색 응답에 검사. 비밀번호 URL/로컬저장소 미사용, 잘못된 입력이 요청 dump로 남지 않음. |
+| TC-DELETE-008 | typecheck/lint/unit/build/local E2E/S3 관련 E2E 및 기존 DWG/업로드 진단 회귀. Docker db:deploy/backfill→healthy, 실제 대상 DB 사전 백업·기존1234 확인(삭제 없이 hash검증), 버전/문서·commit/push·배포 결과를 실제 수행 범위로 기록. |
+
+완료 시 `U-DELETE-20260911`에 요구→구현→TC→결과, 실제 역할·명령·counts/재작업·제약·DB 적용 및 배포 여부를 남긴다. 비밀번호 없는 기존 등록 클라이언트의400은 의도된 API 변경이며 release 안내에 명시한다.
+
 ## Unit OBS 실행 계획 — 2026-09-09 사용자 요청
 
 - 범위: FR-OBS-001/002, NFR-OBS-001–003. Manager 설계→Sol 구현→Manager review→Luna QA 시험/문서→Manager 판정→root commit/push/배포. 목표 0.16.0, DB migration 없음. 실제 역할 대행은 TestReport에 기록한다.

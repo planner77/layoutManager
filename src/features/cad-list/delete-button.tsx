@@ -1,0 +1,9 @@
+'use client';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+export function DeleteButton({ versionId, filename, version }: { versionId: string; filename: string; version: number }) {
+  const router = useRouter(); const [open,setOpen] = useState(false); const [password,setPassword] = useState(''); const [busy,setBusy] = useState(false); const [error,setError] = useState('');
+  async function remove() { setBusy(true); setError(''); try { const r=await fetch(`/api/cad-files/${versionId}`,{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({password})}); const d=await r.json(); if(!r.ok) throw new Error(d.error?.message ?? '삭제에 실패했습니다.'); setOpen(false); setPassword(''); router.refresh(); } catch(e) { setError(e instanceof Error ? e.message : '삭제에 실패했습니다.'); } finally { setBusy(false); } }
+  return <span className="inline-flex flex-col items-start"><Button type="button" variant="outline" size="sm" className="text-red-700" onClick={()=>{setOpen(true);setError('')}}>삭제</Button>{open && <span role="dialog" className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"><span className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl"><strong className="block">도면 삭제</strong><p className="mt-3 text-sm">{filename} · V{version}을 삭제하시겠습니까?</p><label className="mt-4 block text-sm">삭제 비밀번호<input autoFocus type="password" value={password} onChange={e=>setPassword(e.target.value)} className="mt-1 w-full" autoComplete="current-password" /></label>{error && <span role="alert" className="mt-2 block text-sm text-red-700">{error}</span>}<span className="mt-5 flex justify-end gap-2"><Button type="button" variant="outline" onClick={()=>setOpen(false)}>취소</Button><Button type="button" disabled={busy || password.length<4} onClick={remove}>{busy?'삭제 중…':'삭제 확인'}</Button></span></span></span>}</span>;
+}

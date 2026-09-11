@@ -9,14 +9,14 @@ import { listQuery } from '../../domain/cad-list';
 import { registration } from '../../domain/cad';
 
 let directory: string, db: Database, repo: CadRepository, lists: CadListRepository;
-const input = registration({ businessUnit:'자동화',site:'평택',building:'A동',floor:'2층',registeredAt:'2026-09-07',makeCurrent:true });
+const input = registration({ businessUnit:'자동화',site:'평택',building:'A동',floor:'2층',registeredAt:'2026-09-07',makeCurrent:true,deletePassword:'1234' });
 const file = (name: string, format = 'DXF') => ({ originalFilename:name,fileFormat:format as 'DXF'|'DWG',fileSize:100,sha256:'a'.repeat(64),storagePath:crypto.randomUUID() });
 const search = (query = '') => lists.list(listQuery(new URLSearchParams(query)));
 beforeEach(async () => {
   directory = await mkdtemp(path.join(tmpdir(),'cad-list-')); db = createDb(`file:${directory}/test.sqlite`);
   const sql = await readFile(new URL('../../prisma/migrations/202609070001_locations/migration.sql',import.meta.url),'utf8');
   for (const statement of sql.split(';').filter(s=>s.trim())) await db.$executeRawUnsafe(statement);
-  await db.$executeRawUnsafe(`ALTER TABLE "CadFileVersion" ADD COLUMN "description" TEXT NOT NULL DEFAULT ''`);
+  for (const migration of ['202609090001_description','202609110001_delete_password']) { const sql=await readFile(new URL(`../../prisma/migrations/${migration}/migration.sql`,import.meta.url),'utf8'); for (const statement of sql.split(';').filter(s=>s.trim())) await db.$executeRawUnsafe(statement); }
   repo = new CadRepository(db); lists = new CadListRepository(db);
 });
 afterEach(async()=>{ await db.$disconnect(); await rm(directory,{recursive:true,force:true}); });

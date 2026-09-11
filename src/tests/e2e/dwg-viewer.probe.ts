@@ -87,7 +87,7 @@ test('TC-E2E-002/DWG-001/003: registered DWG uses its own adapter, controls and 
 test('TC-DWG-002/004: partial coverage, unsupported header, missing file/WASM and retry', async ({ page, request }) => {
   test.setTimeout(120_000);
   const upload = async (name: string, buffer: Buffer) => {
-    const response = await request.post('/api/cad-files',{multipart:{file:{name,mimeType:'application/octet-stream',buffer},businessUnit:'DWG오류',site:'7B',building:'A',floor:'1',registeredAt:'2026-09-08',makeCurrent:'false'}});
+    const response = await request.post('/api/cad-files',{multipart:{file:{name,mimeType:'application/octet-stream',buffer},businessUnit:'DWG오류',site:'7B',building:'A',floor:'1',registeredAt:'2026-09-08',makeCurrent:'false',deletePassword:'1234'}});
     expect(response.status()).toBe(201); return response.json();
   };
   const circle = await upload('circle.dwg',await readFile(sample('circle.dwg')));

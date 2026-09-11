@@ -8,7 +8,7 @@ for(const count of [100,10000,100000])for(const renderer of ['dxf-viewer','three
     let text='0\nSECTION\n2\nENTITIES\n';
     for(let i=0;i<count;i++){const x=i%1000,y=Math.floor(i/1000);text+=`0\nLINE\n8\n0\n10\n${x}\n20\n${y}\n30\n0\n11\n${x+0.8}\n21\n${y+0.8}\n31\n0\n`;}
     text+='0\nENDSEC\n0\nEOF\n';const buffer=Buffer.from(text);const sha256=createHash('sha256').update(buffer).digest('hex');
-    const response=await request.post('/api/cad-files',{multipart:{file:{name:`benchmark-${count}.dxf`,mimeType:'application/octet-stream',buffer},businessUnit:'Benchmark',site:renderer,building:String(count),floor:String(iteration),registeredAt:'2026-09-08',makeCurrent:'false'}});
+    const response=await request.post('/api/cad-files',{multipart:{file:{name:`benchmark-${count}.dxf`,mimeType:'application/octet-stream',buffer},businessUnit:'Benchmark',site:renderer,building:String(count),floor:String(iteration),registeredAt:'2026-09-08',makeCurrent:'false',deletePassword:'1234'}});
     expect(response.status()).toBe(201);const file=await response.json();
     let consoleErrors=0,pageErrors=0;
     page.on('console',message=>{if(message.type()==='error')consoleErrors++;});page.on('pageerror',()=>pageErrors++);

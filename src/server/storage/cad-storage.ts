@@ -19,7 +19,7 @@ export class CadStorage {
       throw error;
     }
     let parser: ReturnType<typeof busboy>;
-    try { parser = busboy({ headers: { 'content-type': request.headers.get('content-type') ?? '' }, defParamCharset: 'utf8', limits: { fileSize: this.maxBytes + 1, files: 1, fields: 7, fieldSize: 8192, parts: 9 } }); }
+    try { parser = busboy({ headers: { 'content-type': request.headers.get('content-type') ?? '' }, defParamCharset: 'utf8', limits: { fileSize: this.maxBytes + 1, files: 1, fields: 8, fieldSize: 8192, parts: 10 } }); }
     catch {
       const error = new CadError('INVALID_UPLOAD', '올바른 파일 업로드 요청이 아닙니다.');
       diagnostics?.record('upload_receive', 'failure', { error });
@@ -87,10 +87,14 @@ export class CadStorage {
     if (!/^[0-9a-f-]{36}\/[0-9a-f-]{36}\/original\.(dxf|dwg)$/.test(key)) throw new CadError('UNSAFE_PATH', '파일 경로를 확인할 수 없습니다.', 404);
     const root = await this.root();
     let file: string;
-    try { file = await realpath(path.join(root, key)); } catch { throw new CadError('FILE_NOT_FOUND', '저장된 도면 파일을 찾을 수 없습니다.', 404); }
+    try { file = await realpath(path.join(root, key)); }
+    catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') throw new CadError('FILE_NOT_FOUND', '저장된 도면 파일을 찾을 수 없습니다.', 404);
+      throw error;
+    }
     if (!file.startsWith(root + path.sep)) throw new CadError('UNSAFE_PATH', '파일 경로를 확인할 수 없습니다.', 404);
     return file;
   }
   async content(key: string): Promise<{stream: ReadableStream<Uint8Array>; size: number}> { const file = await open(await this.resolve(key), constants.O_RDONLY | constants.O_NOFOLLOW); const stat = await file.stat(); if (!stat.isFile()) { await file.close(); throw new CadError('FILE_NOT_FOUND', '도면 파일을 찾을 수 없습니다.', 404); } return { stream: Readable.toWeb(file.createReadStream({ autoClose: true })) as unknown as ReadableStream<Uint8Array>, size: stat.size }; }
-  async removeUncommitted(key: string) { await unlink(await this.resolve(key)); }
+  async removeUncommitted(key: string) { try { await unlink(await this.resolve(key)); } catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT' && !(error instanceof CadError && error.code === 'FILE_NOT_FOUND')) throw error; } }
 }

@@ -1,6 +1,6 @@
 {
   "name": "cad-layout-viewer",
-  "version": "0.16.0",
+  "version": "0.17.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -16,6 +16,8 @@
     "db:deploy": "node scripts/run.mjs deploy",
     "db:migrate": "node scripts/run.mjs migrate",
     "db:check": "node scripts/run.mjs check",
+    "backfill": "node scripts/run.mjs backfill",
+    "storage:cleanup": "node scripts/run.mjs storage:cleanup",
     "prepare:dwg-samples": "node scripts/dwg-samples.mjs",
     "test:dwg": "playwright test --config playwright.dwg.config.ts",
     "test:s3": "node scripts/test-s3.mjs",

@@ -1,5 +1,12 @@
 # ChangeLog
 
+# 0.17.0 — 2026-09-11 Unit DELETE
+
+- Added: 신규 등록 삭제 비밀번호, 비밀번호 확인 후 선택 Version 삭제, 기존 Version 비밀번호 1234의 salt hash 초기화.
+- Added: 삭제 Current 해제, 순번 재사용 방지, DB 승인 기록 기반 local/S3 원본 정리와 실패 재시도.
+- Compatibility: 신규 업로드 API의 비밀번호는 필수이며 미입력400. DB migration/backfill 필요. 현행 앱 버전은 구현 전까지0.16.0이며 이 항목은 출시 완료 기록이 아니다.
+- Tests: TC-DELETE-001–008 NOT RUN. 실제 검증·DB 적용·release/배포 결과는 `U-DELETE-20260911`에 기록한다.
+
 # 0.16.0 — 2026-09-09 Unit OBS
 
 ### Added

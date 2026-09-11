@@ -2,6 +2,15 @@
 
 기준일: 2026-09-07. `요구사항 확정`은 사용자 원문이 결정한 사항, `제안`은 이 계획 확인 후 채택할 기본안, `확인 대기`는 별도 중요한 판단이 필요한 사항이다. 2026-09-07 사용자가 DXF 우선, DWG 다음 버전 순서로 계획 실행을 승인했다. 최신 순서는 ADR-011을 따른다.
 
+## ADR-025 — Version별 삭제 비밀번호와 승인된 원본 정리
+
+- Date / Status: 2026-09-11 / 사용자 비밀번호·삭제·기존1234 초기화 요청에 따른 Manager 설계, 구현 전.
+- Decision: 선택 Version 1개의 삭제만 비밀번호로 보호한다. 신규 비밀번호는 필수이며 기존 행만 최초 적용 시1234로 salt hash 초기화한다. Node 22 내장 scrypt를 사용하고 평문/hash를 public 정보로 보내지 않는다. 로그인·열람보호·재설정/우회 기능을 추가하지 않는다.
+- Current/순번: 삭제 대상이 Current이면 같은 transaction에서 NULL로 해제하고 자동으로 다른 Version을 Current로 정하지 않는다. 빈 Location은 보존하고 nextVersion으로 삭제 순번을 재사용하지 않는다.
+- 정합성: DB transaction에서 승인된 `CadDeletionJob`을 만들고 Version 삭제를 확정한 뒤 원본을 지운다. 원본 실패는 202 정리 대기이며 DB job으로 재시도한다. 별도 큐/서비스는 없고 승인되지 않은 원본을 스캔 삭제하지 않는다. Soft-delete로 도면 설명·파일명을 장기 보관하는 대안과 원본 선삭제의 DB 실패 위험을 고려한 선택이다.
+- Migration: 실제 DB/원본 백업 후 additive SQL+NULL 행 전용 hash backfill. 기존 1234 설정은 사용자가 요청한 호환 초기값이며 신규 기본값이나 관리자 우회가 아니다. 재실행은 사용자 비밀번호를 바꾸지 않는다. 이전 앱 단독 rollback은 신규 필수 입력/삭제 상태 정합성 검토 없이 지원하지 않는다.
+- Consequences: 신규 기능 0.17.0, 신규 등록 API에 필수 필드 추가. DB/파일 원자성은 제공할 수 없어 도면 삭제와 원본 정리 대기를 구분한다. 이미 전달된 Browser bytes·외부 백업·S3 과거 object version의 회수는 범위 밖이다. DB 세부 정의는 Database, 시험은 TC-DELETE-001–008을 따른다.
+
 ## ADR-024 — 폐쇄망 업로드 오류 진단과 원인 보존
 
 - Date / Status: 2026-09-09 / 구현·자동 시험·S3 검증·cleanup 재시험 및 0.16.0 Docker/GHCR lifecycle 완료. 실제 폐쇄망 현장 장애·로그 롤오버는 별도 미검증.

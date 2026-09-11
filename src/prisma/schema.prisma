@@ -12,6 +12,7 @@ model CadLocation {
   building String
   floor String
   currentVersionId String? @map("current_version_id")
+  nextVersion Int @default(1) @map("next_version")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
   versions CadFileVersion[] @relation("OwnedVersions")
@@ -26,6 +27,7 @@ model CadFileVersion {
   version Int
   originalFilename String @map("original_filename")
   description String @default("")
+  deletePasswordHash String? @map("delete_password_hash")
   fileFormat String @map("file_format")
   fileSize Int @map("file_size")
   sha256 String
@@ -40,4 +42,11 @@ model CadFileVersion {
   @@index([registeredAt(sort: Desc), createdAt(sort: Desc), id], map: "ix_version_registered")
   @@index([fileFormat, registeredAt(sort: Desc)], map: "ix_version_format_registered")
   @@index([sha256], map: "ix_version_sha256")
+}
+model CadDeletionJob {
+  id String @id
+  versionId String @map("version_id")
+  storagePath String @map("storage_path")
+  createdAt DateTime @default(now()) @map("created_at")
+  @@index([createdAt], map: "ix_deletion_job_created")
 }

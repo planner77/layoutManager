@@ -4,6 +4,24 @@
 
 ## 관계
 
+### Unit DELETE 추가 schema — 0.17.0 설계, 아직 미적용
+
+아래 정의가 이 Unit의 schema 기준이다. 후속 구현에서 실제 migration 이름과 introspection/회귀 결과를 변경 이력에 기록한다. 아래 기존 표/그림은 0.16.0 상태이며 새로운 Column/Table은 이 절과 함께 읽는다.
+
+| 모델 / Column | 타입·Null·초기값 | 계약 |
+| --- | --- | --- |
+| CadFileVersion.delete_password_hash (`deletePasswordHash`) | TEXT/String?, migration 기존 행은 NULL | 서버 전용 scrypt encoding. SQL default 비밀번호/hash 없음. backfill 완료 후 모든 활성 행 non-null; 신규 INSERT의 NULL/빈 hash는 DB trigger로 거부하며 기존 hash를 NULL/빈 값으로 돌리는 UPDATE도 거부. 공개 DTO에서 제외. |
+| CadLocation.next_version (`nextVersion`) | INTEGER/Int NOT NULL DEFAULT 1, CHECK > 0 | migration에서 Location별 기존 MAX(version)+1로 채움. 등록 transaction이 이 값을 순번으로 사용하고 1 증가시킴. 삭제 시 감소하지 않음. 기존 `(location_id,version)` Unique 유지. |
+| CadDeletionJob.id | TEXT/String PK | 삭제 승인된 Version UUID. 삭제된 Version을 참조하는 FK는 두지 않음. |
+| CadDeletionJob.storage_path (`storagePath`) | TEXT/String NOT NULL UNIQUE | 승인된 삭제 대상 locator. 원본 정리 성공 때까지 보존하며 새 경로를 입력받지 않음. |
+| CadDeletionJob.created_at (`createdAt`) | DATETIME/DateTime NOT NULL DEFAULT now | 삭제 승인 transaction 시각. 완료 job은 제거하고 원본 이름·설명·비밀번호/hash를 job에 복사하지 않음. |
+
+삭제 transaction은 Current가 대상을 가리킬 때 먼저 NULL로 해제하고 job INSERT→Version DELETE를 같은 transaction에서 수행한다. 기존 Current 소속 복합 FK, Location 소유 FK 및 Unique/CHECK를 그대로 유지한다. 마지막 Version이 삭제된 Location은 유지되며 nextVersion으로 과거 순번을 재사용하지 않는다.
+
+Migration/backfill은 쓰기 중지·백업 후 진행한다. additive SQL로 위 필드/Table/trigger와 nextVersion 초기화→Node backfill이 NULL hash 행 각각에 독립 랜덤 salt로 `1234` hash 계산→조건부 NULL 행 UPDATE→NULL 수 0/foreign_key_check/기존 Current·행 수·원본 식별 일치 검증 순서다. hash 계산은 짧은 DB 쓰기 transaction 밖에서 순차 처리한다. 중단 후 재실행은 남은 NULL만 처리한다. 이미 hash가 있는 신규/기존 행은 변경하지 않는다. 실행 중인 0.16.0 앱과 병행하지 않으며 migration 후 구버전만 재시작하지 않는다.
+
+backfill은 `db:deploy`의 완료 조건으로 묶고 실패 시 Docker/start readiness를 열지 않는다. SQL만 적용하는 별도 경로를 사용했다면 backfill 검증 전 서비스 재개를 금지한다. 신규 INSERT trigger는 실수로 구버전이 hash 없이 작성하는 것을 차단한다. hash encoding의 유효성은 server 검증과 시험으로 확인하며 SQL이 scrypt 계산을 검증하지는 않는다.
+
 ```mermaid
 erDiagram
     CadLocation ||--o{ CadFileVersion : owns
@@ -68,7 +86,7 @@ Unique: `(business_unit, site, building, floor)` BINARY 비교. 저장 전 trim+
 | created_at | DATETIME / DateTime | 불가 | UTC now | 생성 시각, migration CURRENT_TIMESTAMP 기본값 |
 | updated_at | DATETIME / DateTime | 불가 | 생성 시 UTC now | update 경로에서 명시적으로 갱신 |
 
-파일 bytes, location_id, version, storage_path는 등록 후 변경 불가인 서비스 계약이다. 파일 삭제/버전 이동/metadata 편집 API는 초기 범위에 없다. registered_at은 시각과 혼동하지 않도록 날짜 문자열로 유지한다.
+파일 bytes, location_id, version, storage_path는 등록 후 변경 불가인 서비스 계약이다. 파일 삭제는 초기 범위에서 제외했으나 Unit DELETE로 선택 Version 삭제를 추가한다. 버전 이동/metadata 편집 API는 범위에 없다. registered_at은 시각과 혼동하지 않도록 날짜 문자열로 유지한다.
 
 ## FK·Unique·Index
 

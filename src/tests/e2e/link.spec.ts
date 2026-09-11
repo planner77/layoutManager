@@ -5,7 +5,7 @@ const drawing = Buffer.from('0\nSECTION\n2\nENTITIES\n0\nLINE\n8\n0\n10\n0\n20\n
 async function upload(request: APIRequestContext, name: string, makeCurrent = false) {
   const response = await request.post('/api/cad-files', { multipart: {
     file: { name, mimeType: 'application/octet-stream', buffer: name.endsWith('.dxf') ? drawing : Buffer.from('AC1032broken') },
-    businessUnit: '직접링크', site: 'LINK', building: 'A', floor: '1', registeredAt: '2026-09-08', makeCurrent: String(makeCurrent),
+    businessUnit: '직접링크', site: 'LINK', building: 'A', floor: '1', registeredAt: '2026-09-08', makeCurrent: String(makeCurrent), deletePassword: '1234',
   }});
   expect(response.status()).toBe(201);
   return response.json() as Promise<{id:string;locationId:string}>;

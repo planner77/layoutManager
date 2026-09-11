@@ -19,7 +19,7 @@ test('TC-SWITCH-001/002: no navigation, shared bytes, racing load and twenty swi
       return context;
     }});
   });
-  const response=await request.post('/api/cad-files',{multipart:{file:{name:'switch.dxf',mimeType:'application/octet-stream',buffer:Buffer.from('0\nSECTION\n2\nENTITIES\n0\nLINE\n8\n0\n10\n0\n20\n0\n11\n100\n21\n100\n0\nCIRCLE\n8\n0\n10\n50\n20\n50\n40\n20\n0\nENDSEC\n0\nEOF\n')},businessUnit:'Switch',site:'race',building:'A',floor:'1',registeredAt:'2026-09-08',makeCurrent:'true'}});
+  const response=await request.post('/api/cad-files',{multipart:{file:{name:'switch.dxf',mimeType:'application/octet-stream',buffer:Buffer.from('0\nSECTION\n2\nENTITIES\n0\nLINE\n8\n0\n10\n0\n20\n0\n11\n100\n21\n100\n0\nCIRCLE\n8\n0\n10\n50\n20\n50\n40\n20\n0\nENDSEC\n0\nEOF\n')},businessUnit:'Switch',site:'race',building:'A',floor:'1',registeredAt:'2026-09-08',makeCurrent:'true',deletePassword:'1234'}});
   expect(response.status()).toBe(201);const file=await response.json();let downloads=0,release!:()=>void;
   const gate=new Promise<void>(resolve=>{release=resolve;});
   await page.route('**/api/cad-files/*/content',async route=>{downloads++;if(downloads===1)await gate;await route.continue();});

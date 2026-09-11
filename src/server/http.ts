@@ -8,7 +8,9 @@ export function failure(error: unknown, diagnostics?: UploadDiagnostics, stage: 
   const message = error instanceof CadError ? error.message : '요청을 처리하지 못했습니다. 잠시 후 다시 시도해주세요.';
   diagnostics?.finishFailure(error, stage, status);
   if (!diagnostics && !(error instanceof CadError)) console.error('CAD_REQUEST_FAILED', { requestId, category: error instanceof Error ? error.name : 'Unknown' });
-  return Response.json({ error: { code, message, requestId } }, { status, headers: { 'X-Request-Id': requestId } });
+  const headers: Record<string,string> = { 'X-Request-Id': requestId };
+  if (status === 429) headers['Retry-After'] = '60';
+  return Response.json({ error: { code, message, requestId } }, { status, headers });
 }
 export function requireSameOrigin(request: Request) {
   const origin = request.headers.get('origin');

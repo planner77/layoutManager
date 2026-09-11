@@ -6,6 +6,7 @@ test('TC-UI-001/UP-001: header registration link opens a working upload form', a
   await expect(page.getByRole('heading', { name: '새 도면 등록' })).toBeVisible();
   await page.getByLabel('CAD 파일').setInputFiles({ name: '테스트-layout.dxf', mimeType: 'application/octet-stream', buffer: Buffer.from('0\nSECTION\n2\nENTITIES\n0\nENDSEC\n0\nEOF\n') });
   for (const [name, value] of [['사업부','자동화'],['사업장','평택'],['동','A동'],['층','2층']]) await page.getByLabel(name, { exact: true }).fill(value);
+  await page.getByLabel('삭제 비밀번호', { exact: true }).fill('1234');
   const uploadResponse = page.waitForResponse(response => response.url().endsWith('/api/cad-files') && response.request().method() === 'POST');
   await page.getByRole('button', { name: '도면 등록', exact: true }).click();
   const completed = await uploadResponse;
@@ -23,7 +24,7 @@ test('TC-UI-001/UP-001: header registration link opens a working upload form', a
   await expect(page.getByRole('row').filter({ hasText: '테스트-layout.dxf' })).toContainText('Current');
 });
 test('TC-API-002/003: invalid metadata, ID and unsupported upload are safe errors', async ({ request }) => {
-  const response = await request.post('/api/cad-files', { multipart: {file: {name:'bad.exe',mimeType:'application/octet-stream',buffer:Buffer.from('bad')},businessUnit:'x',site:'x',building:'x',floor:'x',registeredAt:'2026-09-07',makeCurrent:'true'} });
+  const response = await request.post('/api/cad-files', { multipart: {file: {name:'bad.exe',mimeType:'application/octet-stream',buffer:Buffer.from('bad')},businessUnit:'x',site:'x',building:'x',floor:'x',registeredAt:'2026-09-07',makeCurrent:'true',deletePassword:'1234'} });
   expect(response.status()).toBe(415);
   const data = await response.json(); expect(data.error.message).toContain('DXF'); expect(data.error.stack).toBeUndefined();
   expect(response.headers()['x-request-id']).toBe(data.error.requestId);
@@ -46,6 +47,7 @@ test('TC-OBS-001–003/007: proxy failure has selectable, downloadable safe diag
   await page.goto('/cad/upload');
   await page.getByLabel('CAD 파일').setInputFiles({ name: 'diagnostic.dxf', mimeType: 'application/octet-stream', buffer: Buffer.from('0\nEOF\n') });
   for (const [name, value] of [['사업부','진단'],['사업장','폐쇄망'],['동','A동'],['층','1층']]) await page.getByLabel(name, { exact: true }).fill(value);
+  await page.getByLabel('삭제 비밀번호', { exact: true }).fill('1234');
   await page.getByRole('button', { name: '도면 등록', exact: true }).click();
   await expect(page.locator('main').getByRole('alert')).toContainText('서버 또는 중간 프록시');
   await page.getByText('오류 상세 보기').click();
@@ -74,7 +76,7 @@ test('TC-OBS-001–003/007: proxy failure has selectable, downloadable safe diag
 
 test('TC-ISSUE-001/LIST: list API, filters, detail and current change persist', async ({ page, request }) => {
   for (const [index,name] of ['issue-one.dxf','issue-two.dxf'].entries()) {
-    const response = await request.post('/api/cad-files', { multipart: {file: {name,mimeType:'application/octet-stream',buffer:Buffer.from('0\nSECTION\n2\nENTITIES\n0\nENDSEC\n0\nEOF\n')},businessUnit:'회귀',site:'이슈검증',building:'B동',floor:'1층',registeredAt:'2026-09-07',makeCurrent:index === 1 ? 'true' : 'false'} });
+    const response = await request.post('/api/cad-files', { multipart: {file: {name,mimeType:'application/octet-stream',buffer:Buffer.from('0\nSECTION\n2\nENTITIES\n0\nENDSEC\n0\nEOF\n')},businessUnit:'회귀',site:'이슈검증',building:'B동',floor:'1층',registeredAt:'2026-09-07',makeCurrent:index === 1 ? 'true' : 'false',deletePassword:'1234'} });
     expect(response.status()).toBe(201);
   }
   const response = await request.get('/api/cad-files?site=이슈검증&current=true');
@@ -102,7 +104,7 @@ test('TC-ISSUE-001/LIST: list API, filters, detail and current change persist', 
 });
 
 test('TC-DESC-005: description registration, literal search and viewer display', async ({ page, request }) => {
-  const response = await request.post('/api/cad-files', { multipart: { file: { name:'description-only.dxf', mimeType:'application/octet-stream', buffer:Buffer.from('0\nEOF\n') }, businessUnit:'설명', site:'검색', building:'A동', floor:'1층', registeredAt:'2026-09-09', makeCurrent:'true', description:'설비 구역 %_\n두 번째 줄' } });
+  const response = await request.post('/api/cad-files', { multipart: { file: { name:'description-only.dxf', mimeType:'application/octet-stream', buffer:Buffer.from('0\nEOF\n') }, businessUnit:'설명', site:'검색', building:'A동', floor:'1층', registeredAt:'2026-09-09', makeCurrent:'true', deletePassword:'1234', description:'설비 구역 %_\n두 번째 줄' } });
   expect(response.status()).toBe(201);
   await response.json();
   await page.goto('/?description='+encodeURIComponent('설비 구역 %_'));
