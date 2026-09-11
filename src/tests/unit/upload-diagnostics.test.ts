@@ -28,7 +28,7 @@ describe('TC-OBS-001/003: public upload response diagnostics', () => {
   test('treats an invalid 2xx body as uncertain and accepts a valid result', async () => {
     expect(await interpretUploadResponse(response('{"ok":true}', 201, { 'X-Request-Id': id }))).toMatchObject({ diagnostic: { code: 'UPLOAD_RESULT_UNCERTAIN', outcome: 'uncertain', requestId: id } });
     const locationId = '22222222-2222-4222-8222-222222222222';
-    expect(await interpretUploadResponse(response(JSON.stringify({ id, locationId, requestId: id, version: 1, duplicateCount: 0 }), 201))).toEqual({ result: { id, locationId, requestId: id, version: 1, duplicateCount: 0 } });
+    expect(await interpretUploadResponse(response(JSON.stringify({ id, locationId, requestId: id, version: 1, displayName:'[BU][SITE][B][1]_V1', originalFilename:'one.dxf', duplicateCount: 0 }), 201))).toEqual({ result: { id, locationId, requestId: id, version: 1, displayName:'[BU][SITE][B][1]_V1', originalFilename:'one.dxf', duplicateCount: 0 } });
   });
 
   test('connection and exported text contain only the public diagnostic', () => {

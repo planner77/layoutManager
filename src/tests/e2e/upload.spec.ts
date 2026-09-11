@@ -27,7 +27,7 @@ test('TC-UI-001/UP-001: header registration link opens a working upload form', a
   const completed = await uploadResponse;
   const completedBody = await completed.json();
   expect(completed.headers()['x-request-id']).toBe(completedBody.requestId);
-  await expect(page.getByRole('status')).toContainText('V1 등록 완료');
+  await expect(page.getByRole('status')).toContainText(`${completedBody.displayName} 등록 완료`);
   const href = await page.getByRole('link', { name: '등록한 원본 다운로드' }).getAttribute('href');
   const content = await request.get(href!);
   expect(content.status()).toBe(200);
@@ -103,7 +103,7 @@ test('TC-PREFLIGHT-001/002: actual browser File boundaries, submit bypass and re
       if (String(input) === '/api/cad-files' && init?.method === 'POST') {
         const file = (init.body as FormData).get('file') as File;
         state.__uploadFileSizes.push(file.size);
-        return new Response(JSON.stringify({ id: '11111111-1111-4111-8111-111111111111', locationId: '22222222-2222-4222-8222-222222222222', requestId: '33333333-3333-4333-8333-333333333333', version: 1, duplicateCount: 0 }), { status: 201, headers: { 'content-type': 'application/json' } });
+        return new Response(JSON.stringify({ id: '11111111-1111-4111-8111-111111111111', locationId: '22222222-2222-4222-8222-222222222222', requestId: '33333333-3333-4333-8333-333333333333', version: 1, displayName: '[경계][업로드]_V1', originalFilename: file.name, duplicateCount: 0 }), { status: 201, headers: { 'content-type': 'application/json' } });
       }
       return original(input, init);
     };
@@ -171,7 +171,7 @@ test('TC-ISSUE-001/LIST: list API, filters, detail and current change persist', 
   await expect(page.getByRole('row').filter({hasText:'issue-one.dxf'})).toBeVisible();
   await page.getByRole('row').filter({hasText:'issue-one.dxf'}).getByRole('button',{name:'Current 지정'}).click();
   await expect(page.getByRole('row').filter({hasText:'issue-one.dxf'})).toContainText('Current');
-  await page.getByRole('link',{name:'issue-one.dxf',exact:true}).click();
+  await page.getByRole('row').filter({hasText:'issue-one.dxf'}).locator('a[href^="/cad/locations/"]').first().click();
   await expect(page.getByRole('row').filter({hasText:'issue-one.dxf'})).toContainText('Current');
   await expect(page.getByRole('row').filter({hasText:'issue-two.dxf'}).getByRole('button',{name:'Current 지정'})).toBeVisible();
   await page.reload();
@@ -201,7 +201,7 @@ test('TC-DESC-005: description registration, literal search and viewer display',
   await expect(row).toContainText('설비 구역 %_');
   await page.reload();
   await expect(page.getByRole('row').filter({ hasText:'description-only.dxf' })).toContainText('설비 구역 %_');
-  await page.getByRole('row').filter({ hasText:'description-only.dxf' }).getByRole('link', { name:'description-only.dxf', exact:true }).click();
+  await page.getByRole('row').filter({ hasText:'description-only.dxf' }).locator('a[href^="/cad/locations/"]').first().click();
   await expect(page).toHaveURL(/\/cad\/locations\/[^/?#]+/);
   await expect(page.getByRole('row').filter({ hasText:'description-only.dxf' })).toContainText('UI 메모');
   await page.reload();

@@ -22,6 +22,7 @@ export type CadListItem = {
   floor: string;
   version: number;
   originalFilename: string;
+  displayName: string;
   description: string;
   fileFormat: string;
   fileSize: number;

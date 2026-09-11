@@ -26,6 +26,7 @@ model CadFileVersion {
   locationId String @map("location_id")
   version Int
   originalFilename String @map("original_filename")
+  drawingName String? @map("drawing_name")
   description String @default("")
   deletePasswordHash String? @map("delete_password_hash")
   fileFormat String @map("file_format")

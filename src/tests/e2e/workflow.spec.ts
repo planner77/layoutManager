@@ -30,7 +30,7 @@ test('TC-E2E-001: UI registration through current replacement and both DXF rende
   await page.getByRole('combobox', { name: '사업장', exact: true }).selectOption('DXF릴리스');
   await page.getByRole('button', { name: '검색', exact: true }).click();
   await expect(page.getByRole('row').filter({ hasText: 'release-v1.dxf' })).toContainText('이전 버전');
-  await page.getByRole('link', { name: 'release-v1.dxf', exact: true }).click();
+  await page.getByRole('row').filter({ hasText: 'release-v1.dxf' }).locator('a[href^="/cad/locations/"]').first().click();
   await page.getByRole('row').filter({ hasText: 'release-v1.dxf' }).getByRole('button', { name: 'Current 지정' }).click();
   await expect(page.getByRole('row').filter({ hasText: 'release-v1.dxf' })).toContainText('● Current');
   await page.reload();

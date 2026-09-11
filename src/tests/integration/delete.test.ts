@@ -5,6 +5,7 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 import { createDb, type Database } from '../../server/db';
 import { CadRepository } from '../../server/repositories/cad';
+import { CadListRepository } from '../../server/repositories/cad-list';
 import { registration } from '../../domain/cad';
 import { hashDeletePassword, verifyDeletePassword } from '../../server/password';
 import { backfillDeletePasswords } from '../../server/backfill-delete-passwords';
@@ -14,7 +15,7 @@ const BetterSqlite = createRequire(import.meta.url)('better-sqlite3') as new (fi
 let dir:string, db:Database, repo:CadRepository;
 const input=registration({businessUnit:'삭제',site:'시험',building:'A',floor:'1',registeredAt:'2026-09-11',makeCurrent:true,deletePassword:'abcd'});
 const file=(n:number)=>({originalFilename:`${n}.dxf`,fileFormat:'DXF' as const,fileSize:10,sha256:String(n).repeat(64),storagePath:`${n}/${n}/original.dxf`});
-const allMigrations = ['202609070001_locations','202609090001_description','202609110001_delete_password','202609110002_delete_invariants'];
+const allMigrations = ['202609070001_locations','202609090001_description','202609110001_delete_password','202609110002_delete_invariants','202609110003_drawing_name'];
 async function migrate(filename: string, migrations = allMigrations) {
   const sqlite = new BetterSqlite(filename);
   try { for(const migration of migrations) sqlite.exec(await readFile(new URL(`../../prisma/migrations/${migration}/migration.sql`,import.meta.url),'utf8')); }
@@ -51,7 +52,7 @@ test('TC-DELETE-006: real 0.16 migrations upgrade and idempotent backfill preser
     ('${secondId}','${locationId}',2,'two.dxf','second','DXF',20,'${'2'.repeat(64)}','old/two/original.dxf','2026-09-02');
     UPDATE "CadLocation" SET current_version_id='${secondId}' WHERE id='${locationId}';`);
   const before=sqlite.prepare('SELECT id,location_id,version,original_filename,description,file_size,sha256,storage_path,registered_at FROM CadFileVersion ORDER BY version').all();
-  for(const migration of ['202609110001_delete_password','202609110002_delete_invariants']) sqlite.exec(await readFile(new URL(`../../prisma/migrations/${migration}/migration.sql`,import.meta.url),'utf8'));
+  for(const migration of ['202609110001_delete_password','202609110002_delete_invariants','202609110003_drawing_name']) sqlite.exec(await readFile(new URL(`../../prisma/migrations/${migration}/migration.sql`,import.meta.url),'utf8'));
   sqlite.close();
   const legacyDb=createDb(`file:${legacy}`); await backfillDeletePasswords(legacyDb);
   const firstHash=(await legacyDb.cadFileVersion.findUniqueOrThrow({where:{id:firstId}})).deletePasswordHash;
@@ -64,5 +65,29 @@ test('TC-DELETE-006: real 0.16 migrations upgrade and idempotent backfill preser
   expect((await legacyDb.cadFileVersion.findUniqueOrThrow({where:{id:secondId}})).deletePasswordHash).toBe(secondHash);
   const location=await legacyDb.cadLocation.findUniqueOrThrow({where:{id:locationId}}); expect(location.currentVersionId).toBe(secondId); expect(location.nextVersion).toBe(3);
   await legacyDb.$disconnect();
-  const verifyDb=new BetterSqlite(legacy); try { expect(verifyDb.prepare('SELECT id,location_id,version,original_filename,description,file_size,sha256,storage_path,registered_at FROM CadFileVersion ORDER BY version').all()).toEqual(before); expect(verifyDb.prepare('PRAGMA foreign_key_check').all()).toEqual([]); } finally { verifyDb.close(); }
+  const verifyDb=new BetterSqlite(legacy); try { expect(verifyDb.prepare('SELECT id,location_id,version,original_filename,description,file_size,sha256,storage_path,registered_at FROM CadFileVersion ORDER BY version').all()).toEqual(before); expect(verifyDb.prepare('SELECT drawing_name FROM CadFileVersion').all()).toEqual([{drawing_name:null},{drawing_name:null}]); expect(verifyDb.prepare('PRAGMA foreign_key_check').all()).toEqual([]); } finally { verifyDb.close(); }
+});
+
+test('TC-NAME-004: populated 0.18 database gains only nullable names and keeps allocated sequence after deletion',async()=>{
+  const legacy=`${dir}/v018.sqlite`, locationId='dddddddd-dddd-4ddd-8ddd-dddddddddddd', firstId='eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee', secondId='ffffffff-ffff-4fff-8fff-ffffffffffff';
+  await migrate(legacy,['202609070001_locations','202609090001_description','202609110001_delete_password','202609110002_delete_invariants']);
+  const passwordHash=await hashDeletePassword('keep-hash');
+  const sqlite=new BetterSqlite(legacy);
+  sqlite.exec(`INSERT INTO "CadLocation" (id,business_unit,site,building,floor,current_version_id,next_version) VALUES ('${locationId}','기존사업부','기존사업장','기존동','기존층',NULL,3);
+    INSERT INTO "CadFileVersion" (id,location_id,version,original_filename,description,delete_password_hash,file_format,file_size,sha256,storage_path,registered_at) VALUES
+    ('${firstId}','${locationId}',1,'legacy-one.dxf','first','${passwordHash}','DXF',10,'${'3'.repeat(64)}','legacy/one/original.dxf','2026-09-10'),
+    ('${secondId}','${locationId}',2,'legacy-two.dxf','second','${passwordHash}','DXF',20,'${'4'.repeat(64)}','legacy/two/original.dxf','2026-09-11');
+    UPDATE "CadLocation" SET current_version_id='${secondId}' WHERE id='${locationId}';`);
+  const beforeVersions=sqlite.prepare('SELECT * FROM CadFileVersion ORDER BY version').all();
+  const beforeLocation=sqlite.prepare('SELECT * FROM CadLocation').all();
+  sqlite.exec(await readFile(new URL('../../prisma/migrations/202609110003_drawing_name/migration.sql',import.meta.url),'utf8'));
+  expect(sqlite.prepare('SELECT drawing_name FROM CadFileVersion ORDER BY version').all()).toEqual([{drawing_name:null},{drawing_name:null}]);
+  const afterVersions=sqlite.prepare('SELECT * FROM CadFileVersion ORDER BY version').all().map(row=>Object.fromEntries(Object.entries(row).filter(([key])=>key!=='drawing_name')));
+  expect(afterVersions).toEqual(beforeVersions); expect(sqlite.prepare('SELECT * FROM CadLocation').all()).toEqual(beforeLocation); expect(sqlite.prepare('PRAGMA foreign_key_check').all()).toEqual([]); sqlite.close();
+  const legacyDb=createDb(`file:${legacy}`), legacyRepo=new CadRepository(legacyDb), lists=new CadListRepository(legacyDb);
+  expect((await lists.version(firstId)).displayName).toBe('[기존사업부][기존사업장][기존동][기존층]_V1');
+  await legacyRepo.deleteVersion(secondId,'keep-hash');
+  const next=await legacyRepo.register(registration({businessUnit:'기존사업부',site:'기존사업장',building:'기존동',floor:'기존층',registeredAt:'2026-09-11',makeCurrent:false,deletePassword:'next'}),{originalFilename:'next.dxf',fileFormat:'DXF',fileSize:30,sha256:'5'.repeat(64),storagePath:'legacy/next/original.dxf'});
+  expect(next).toMatchObject({version:3,displayName:'[기존사업부][기존사업장][기존동][기존층]_V3'});
+  await legacyDb.$disconnect();
 });

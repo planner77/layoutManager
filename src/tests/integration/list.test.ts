@@ -16,7 +16,7 @@ beforeEach(async () => {
   directory = await mkdtemp(path.join(tmpdir(),'cad-list-')); db = createDb(`file:${directory}/test.sqlite`);
   const sql = await readFile(new URL('../../prisma/migrations/202609070001_locations/migration.sql',import.meta.url),'utf8');
   for (const statement of sql.split(';').filter(s=>s.trim())) await db.$executeRawUnsafe(statement);
-  for (const migration of ['202609090001_description','202609110001_delete_password']) { const sql=await readFile(new URL(`../../prisma/migrations/${migration}/migration.sql`,import.meta.url),'utf8'); for (const statement of sql.split(';').filter(s=>s.trim())) await db.$executeRawUnsafe(statement); }
+  for (const migration of ['202609090001_description','202609110001_delete_password','202609110003_drawing_name']) { const sql=await readFile(new URL(`../../prisma/migrations/${migration}/migration.sql`,import.meta.url),'utf8'); for (const statement of sql.split(';').filter(s=>s.trim())) await db.$executeRawUnsafe(statement); }
   repo = new CadRepository(db); lists = new CadListRepository(db);
 });
 afterEach(async()=>{ await db.$disconnect(); await rm(directory,{recursive:true,force:true}); });
@@ -28,6 +28,17 @@ test('TC-LIST-001: registered records and safe metadata appear immediately', asy
   expect(result.total).toBe(1); expect(result.items[0]).toMatchObject({id:version.id,originalFilename:'도면.dxf',isCurrent:true,version:1});
   expect(result.items[0]).not.toHaveProperty('storagePath'); expect(result.items[0]).not.toHaveProperty('sha256');
   expect(()=>JSON.stringify(result)).not.toThrow();
+});
+test('TC-NAME-002: list, location and viewer DTO resolve default and custom names without exposing override', async()=>{
+  const legacy = await repo.register(input,file('legacy.dxf'));
+  const custom = await repo.register(registration({...input,drawingName:' 사용자 도면 '}),file('custom-source.dxf'));
+  const result = await search();
+  expect(result.items.find(row=>row.id===legacy.id)).toMatchObject({displayName:'[자동화][평택][A동][2층]_V1',originalFilename:'legacy.dxf'});
+  expect(result.items.find(row=>row.id===custom.id)).toMatchObject({displayName:'사용자 도면',originalFilename:'custom-source.dxf'});
+  expect(result.items.every(row=>!('drawingName' in row))).toBe(true);
+  expect((await lists.version(custom.id))).toMatchObject({displayName:'사용자 도면',originalFilename:'custom-source.dxf'});
+  expect((await lists.location(custom.locationId)).versions.every(row=>!('drawingName' in row))).toBe(true);
+  expect((await search('filename=legacy')).items.map(row=>row.id)).toEqual([legacy.id]);
 });
 test('TC-LIST-002: each location/format filter and combined filters', async()=>{
   await repo.register(input,file('one.dxf'));

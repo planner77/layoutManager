@@ -30,12 +30,12 @@ test('TC-E2E-002/DWG-001/003: registered DWG uses its own adapter, controls and 
   await page.getByRole('button', { name: '검색', exact: true }).click();
   const row = page.getByRole('row').filter({ hasText: 'DWG통합' }); await expect(row).toContainText('Current');
   await page.context().grantPermissions(['clipboard-read', 'clipboard-write'], { origin: baseURL! });
-  await row.getByRole('button', {name:'Line.dwg 도면 링크 복사'}).click();
+  await row.getByRole('button', {name:/도면 링크 복사$/}).click();
   const locationLink = await page.evaluate(() => navigator.clipboard.readText());
   expect(locationLink).toMatch(new RegExp(`${baseURL}/cad/versions/[^/]+/viewer\\?renderer=libredwg-web`));
-  await page.getByRole('link', {name:'Line.dwg', exact:true}).click();
+  await row.locator('a[href^="/cad/locations/"]').first().click();
   const locationRow = page.getByRole('row').filter({hasText:'Line.dwg'});
-  await locationRow.getByRole('button', {name:'Line.dwg 도면 링크 복사'}).click();
+  await locationRow.getByRole('button', {name:/도면 링크 복사$/}).click();
   const copiedFromLocation = await page.evaluate(() => navigator.clipboard.readText());
   expect(copiedFromLocation).toBe(locationLink);
   const directContext = await browser.newContext({baseURL});

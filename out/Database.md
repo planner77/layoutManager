@@ -2,6 +2,12 @@
 
 상태: 2026-09-07 Unit 1 구현·검증. Prisma/Client/SQLite adapter 7.10.0, SQLite 파일 및 실제 Migration이 존재한다. 실제 정의는 src/prisma/schema.prisma와 202609070001_locations/migration.sql에 있으며 이 문서를 함께 갱신한다.
 
+## GitHub #6 — 0.19.0 추가 schema
+
+- `CadFileVersion.drawingName` → `drawing_name TEXT NULL`, 기본 NULL. 사용자 지정 이름만 저장하며 NULL은 위치 및 실제 version으로 만든 기본 표시 이름을 뜻한다. 기존 행은 NULL로 유지하고 원본 파일명 등 모든 기존 Column을 수정하지 않는다.
+- additive migration `202609110003_drawing_name`에서 nullable column을 추가한다. 이름 정규화/255 UTF-16 길이/제어문자 검증은 Domain 경로에서 강제한다. 이름은 경로·Unique key가 아니며 기존 FK·Index·Current/순번 제약을 보존한다.
+- 기존 등록 후 metadata 편집 제외 계약은 유지한다. migration 파일과 실제 검증 결과는 구현·QA 후 갱신한다.
+
 ## 관계
 
 ### Unit DELETE 추가 schema — 0.17.0 도입 / 0.17.1 제약 보완

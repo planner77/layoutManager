@@ -19,7 +19,7 @@ export class CadStorage {
       throw error;
     }
     let parser: ReturnType<typeof busboy>;
-    try { parser = busboy({ headers: { 'content-type': request.headers.get('content-type') ?? '' }, defParamCharset: 'utf8', limits: { fileSize: this.maxBytes + 1, files: 1, fields: 8, fieldSize: 8192, parts: 10 } }); }
+    try { parser = busboy({ headers: { 'content-type': request.headers.get('content-type') ?? '' }, defParamCharset: 'utf8', limits: { fileSize: this.maxBytes + 1, files: 1, fields: 9, fieldSize: 8192, parts: 11 } }); }
     catch {
       const error = new CadError('INVALID_UPLOAD', '올바른 파일 업로드 요청이 아닙니다.');
       diagnostics?.record('upload_receive', 'failure', { error });

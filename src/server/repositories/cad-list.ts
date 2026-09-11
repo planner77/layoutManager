@@ -1,24 +1,25 @@
 import { Prisma } from '@/generated/prisma/client';
 import { type CadListItem, type CadListQuery } from '@/domain/cad-list';
-import { CadError } from '@/domain/cad';
+import { CadError, resolvedDrawingName } from '@/domain/cad';
 import { type Database, writeTransaction } from '../db';
 
 const columns = Prisma.sql`
   v.id, v.location_id AS locationId, v.version,
-  v.original_filename AS originalFilename, v.description, v.file_format AS fileFormat,
+  v.original_filename AS originalFilename, v.drawing_name AS drawingName, v.description, v.file_format AS fileFormat,
   v.file_size AS fileSize, v.registered_at AS registeredAt,
   l.business_unit AS businessUnit, l.site, l.building, l.floor,
   CASE WHEN l.current_version_id = v.id THEN 1 ELSE 0 END AS isCurrent`;
-type Row = Omit<CadListItem, 'isCurrent' | 'version' | 'fileSize'> & { isCurrent: number | bigint; version: number | bigint; fileSize: number | bigint };
-function item(row: Row): CadListItem { return { ...row, isCurrent: Boolean(Number(row.isCurrent)), version: Number(row.version), fileSize: Number(row.fileSize) }; }
+type Row = Omit<CadListItem, 'displayName' | 'isCurrent' | 'version' | 'fileSize'> & { drawingName: string | null; isCurrent: number | bigint; version: number | bigint; fileSize: number | bigint };
+function item(row: Row): CadListItem { const { drawingName, ...publicRow } = row; const version = Number(row.version); return { ...publicRow, displayName: resolvedDrawingName(row, version, drawingName), isCurrent: Boolean(Number(row.isCurrent)), version, fileSize: Number(row.fileSize) }; }
 
 export class CadListRepository {
   constructor(private db: Database) {}
 
   async version(id: string) {
-    const file = await this.db.cadFileVersion.findUnique({where:{id},select:{id:true,originalFilename:true,description:true,fileFormat:true,version:true,fileSize:true,registeredAt:true,location:{select:{id:true,businessUnit:true,site:true,building:true,floor:true}}}});
+    const file = await this.db.cadFileVersion.findUnique({where:{id},select:{id:true,originalFilename:true,drawingName:true,description:true,fileFormat:true,version:true,fileSize:true,registeredAt:true,location:{select:{id:true,businessUnit:true,site:true,building:true,floor:true}}}});
     if (!file) throw new CadError('FILE_NOT_FOUND','CAD 파일을 찾을 수 없습니다.',404);
-    return file;
+    const { drawingName, ...publicFile } = file;
+    return { ...publicFile, displayName: resolvedDrawingName(file.location, file.version, drawingName) };
   }
 
   async list(query: CadListQuery) {

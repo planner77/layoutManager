@@ -40,7 +40,7 @@ test('TC-SWITCH-001/002: no navigation, shared bytes, racing load and twenty swi
     expect(await page.evaluate(()=>(window as unknown as {__documentMarker:string}).__documentMarker)).toBe(marker);
     await expect(page).toHaveURL(new RegExp(`${file.id}/viewer\\?renderer=${renderer}$`));
   }
-  expect(downloads).toBe(1);await expect(page.getByRole('heading')).toContainText('switch.dxf');
+  expect(downloads).toBe(1);await expect(page.getByRole('heading')).toHaveText(file.displayName);
   await page.getByRole('button',{name:'다시 불러오기'}).click();await expect(page.getByRole('status')).toHaveText('도면 표시 완료');expect(downloads).toBe(2);
   await page.getByRole('link',{name:'← 버전 목록'}).click();await expect(page.locator('canvas')).toHaveCount(0);await expect.poll(resource).toEqual({workers:0,blobs:0,active:0});
   expect(errors).toEqual([]);

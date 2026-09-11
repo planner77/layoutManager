@@ -19,7 +19,7 @@ test('TC-DELETE-002/004: cancel and wrong password preserve a Current version, c
   const row = page.getByRole('row').filter({ hasText: 'delete-target.dxf' });
   await row.getByRole('button', { name: '삭제', exact: true }).click();
   const dialog = page.getByRole('dialog');
-  await expect(dialog).toContainText('delete-target.dxf · V2');
+  await expect(dialog).toContainText('[삭제회귀][브라우저][A동][1층]_V2 · V2');
   const password = dialog.getByLabel('삭제 비밀번호', { exact: true });
   await password.fill('1234');
   await dialog.getByRole('button', { name: '취소', exact: true }).click();

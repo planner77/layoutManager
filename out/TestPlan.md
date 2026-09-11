@@ -1,5 +1,13 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## GitHub #6 — 목표 0.19.0
+
+- TC-NAME-001: 이름 생략/공백 기본값, trim/NFC,255/256 경계·제어문자/타입 거부, HTML plain text. 실제 transaction 순번 V1/V2 및 삭제 후 순번 비재사용으로 기본 이름 계산을 검증한다.
+- TC-NAME-002: 실제 multipart에서 사용자 이름/설명/기존 필드 모두 등록, 공개 응답·list/Location/Viewer 표시 일치, 원본 파일명 검색/bytes 보존 및 잘못된 입력의 정리 확인.
+- TC-NAME-003: Browser에서 기본 이름 안내·선택 입력·사용자 이름 우선·새로고침 유지·기존 파일명 보조 표시/검색·Viewer/삭제 확인 이름, 긴 이름의 목록 레이아웃을 검증한다. 기존 이름 기반 E2E locator는 보조 파일명 또는 의미에 맞게 수정한다.
+- TC-NAME-004: 0.18.0 populated DB에 새 migration 적용, 기존 모든 metadata/Current/hash/locator/순번 보존과 기본 이름 조회, FK 및 재실행을 검증한다. typecheck/lint/unit/build/local 전체 E2E·S3 통합·DWG 회귀를 수행한다.
+- root Manager 요구/설계 기록 → Sol Developer 구현/집중 시험 → root review → Luna QA 독립 검증/문서 → root commit/push·이미지 검증·백업/배포·GitHub 댓글/종료.
+
 ## GitHub #5 — 목표 0.18.0
 
 - TC-LAYER-001: 서로 겹치지 않는 3개 레이어의 합성 DXF를 실제 three-dxf-viewer에서 연다. 초기 전체 선택, 여러 항목 토글 후 메뉴 유지/체크 상태/선택 개수, canvas 이미지의 차이 및 재선택 복원을 확인한다. 전체 해제→빈 canvas, 전체 선택→원래 canvas 복원을 확인한다. 메뉴 overlay를 닫고 canvas 픽셀을 비교한다.

@@ -1,6 +1,6 @@
 # 운영·환경설정 초안
 
-**현재 소스 0.17.1, 업로드 크기 사전 검증·삭제 비밀번호·폐쇄망 업로드 진단·Docker 배포·host IP 접속·S3 호환 저장소 및 DWG 계측 지원.** 실제 게시·배포 버전은 TestReport의 해당 실행 기록을 확인한다. install/generate/deploy/dev/build/start/typecheck/lint/test/db:check/test:e2e가 동작한다. 초기 설치는 npm ci → db:generate → db:deploy 순서이다. 서버는 `0.0.0.0`으로 수신하며 기본 검증 주소는 `127.0.0.1:3100`이다.
+**현재 소스 0.19.0, 도면 이름 선택 입력· 업로드 크기 사전 검증·삭제 비밀번호·폐쇄망 업로드 진단·Docker 배포·host IP 접속·S3 호환 저장소 및 DWG 계측 지원.** 실제 게시·배포 버전은 TestReport의 해당 실행 기록을 확인한다. install/generate/deploy/dev/build/start/typecheck/lint/test/db:check/test:e2e가 동작한다. 초기 설치는 npm ci → db:generate → db:deploy 순서이다. 서버는 `0.0.0.0`으로 수신하며 기본 검증 주소는 `127.0.0.1:3100`이다.
 
 Playwright 기본 설치는 `cd src` 후 `npx playwright install chromium`이다. 이미 설치된 Chromium을 사용할 때는 `PLAYWRIGHT_CHROMIUM_EXECUTABLE`에 실행 파일 경로를 설정한다. E2E는 기본 3101 포트와 독립 `/tmp/cad-e2e-*` DB/Storage를 사용하며, 포트 충돌 시 `CAD_E2E_PORT=3111`처럼 바꿀 수 있다. 이 임시 데이터는 운영 데이터와 분리되며 Git에 포함되지 않는다.
 
@@ -64,6 +64,12 @@ Commit/Push 절차:
 6. Commit ID와 Push 성공/실패, remote와 HEAD 일치 여부를 안전한 결과로 기록한다. 미검증 권한을 OK로 미리 쓰지 않는다.
 
 인증 실패는 변수 존재→URL 형태→helper 방식→token scope/계정 접근 권한 순으로 확인한다. 값은 출력하지 않고 network/DNS, authentication/permission, branch protection 등 범주로만 안내한다. 자동 승인 검토나 sandbox 제약으로 차단되면 해당 action과 이유를 그대로 설명한다.
+
+## 도면 이름 — 0.19.0
+
+등록 화면의 도면 이름은 선택 입력이다. 비우면 `[사업부][사업장][동][층]_V번호`를 사용하고 입력하면 해당 이름을 우선한다. 버전 번호는 실제 등록 시 확정된다. 원본 파일명 검색과 원본 다운로드는 그대로 유지한다. 등록 후 이름 편집은 제공하지 않는다.
+
+0.18.0에서 올릴 때에는 앱 쓰기 중지와 DB/원본 백업 후 `db:deploy`로 새 nullable 이름 Column을 추가한다. 기존 행은 NULL이며 조회 시 기본 이름이 표시된다. 새 Column 이외의 기존 metadata·Current·순번·비밀번호 hash와 원본을 비교하고 health를 확인한다. Docker 시작 절차도 같은 migration 명령을 실행한다. 실제 적용 결과는 TestReport U-ISSUE6-20260911을 따른다.
 
 ## 데이터 백업·복구 계획
 

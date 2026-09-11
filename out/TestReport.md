@@ -1,5 +1,19 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE6-20260911 — 도면 이름 0.19.0
+
+- 상태: 구현·재작업 및 독립 QA 완료, root Manager 수용. FR-CAD-008 → TC-NAME-001–004. 게시·배포는 진행 전이다.
+- 역할: root Manager가 요구사항·설계/수용을 담당했고 gpt-5.6-sol Developer 구현·재작업 후 gpt-5.6-luna QA가 독립 검증·문서화했다. root가 릴리스/배포/이슈 처리를 담당한다.
+
+- Developer 1차 검증: unit/integration22 files/96 PASS, typecheck/lint/build PASS, 신규 이름 Browser3 PASS. root 검토에서 기존 파일명 기반 E2E selector와0.18.0 populated DB 단독 이름 migration 검증의 보완이 필요해 재작업을 지시했다. 이후 기존 selector/mock DTO·fixture 격리와 실제0.18.0 업그레이드/이름 경계 검증을 보완했다. Developer의 최종 전체 Browser31 및 DWG4 PASS를 검토하고 독립 QA에 인계했다.
+
+- 독립 QA: gpt-5.6-luna, 2026-09-11, Linux x86_64, Node 22.14.0, package 0.19.0, Playwright 1.63.0, Chromium 1208 executable, isolated local SQLite/storage (port 3101) 및 isolated SeaweedFS 4.45.
+- `npm test`: 22 files / 98 passed / 0 failed, exit 0. `npm run typecheck`, `npm run lint`, `npm run build`: 각각 exit 0.
+- Local production Browser: `PLAYWRIGHT_CHROMIUM_EXECUTABLE=/home/planner/.cache/ms-playwright/chromium-1208/chrome-linux64/chrome CAD_E2E_PORT=3101 npm run test:e2e` — 31 passed / 0 failed / 1.8분. TC-NAME-001–003 관련 등록·기본/사용자 이름·원본 파일명 검색·새로고침·Viewer/삭제 표시와 기존 전체 회귀를 통과했다. 첫 sandbox 실행은 tsx IPC pipe EPERM으로 앱 시작 전 중단되어 허용된 동일 환경에서 재실행했다.
+- Focused name Browser: `... CAD_E2E_PORT=3101 npx playwright test tests/e2e/drawing-name.spec.ts` — 3 passed / 0 failed / 8.7초. 캡처를 직접 확인했다: `src/test-results/drawing-name-TC-NAME-002-0-56047-filename-remains-searchable/drawing-name-list-custom.png`는 custom 이름 plain text와 `원본: name-source-two.dxf`를 표시했고, `src/test-results/drawing-name-TC-NAME-003-a-41755--inside-the-viewer-viewport/drawing-name-viewer-long.png`는 360px에서 긴 제목이 콘텐츠 폭 안에 줄바꿈된다. 해당 빈 DXF fixture는 캡처 시 로딩 상태여서 Viewer 렌더링 PASS로 확대하지 않는다. 캡처에서 360px 전역 header navigation clipping/overlap이 관찰되었으며 이름 기능 범위 밖의 후속 반응형 UI 관찰이다.
+- S3 integration: `npm run test:s3` — isolated SeaweedFS 4.45, 1 file / 6 passed / 0 failed, exit 0. DWG regression: `PLAYWRIGHT_CHROMIUM_EXECUTABLE=... CAD_E2E_PORT=3111 npm run test:dwg` — 4 passed / 0 failed / 22.0초, cached samples; no redownload.
+- 판정: TC-NAME-001–004 실제 범위 PASS/VERIFIED. migration/legacy populated DB 검증은 통합 98 tests의 `delete.test.ts` migration fixture에서 `drawing_name=NULL`, 기존 metadata/Current/hash/locator/순번/FK 보존과 삭제 후V3 비재사용을 확인했다. 기존0.16.0 업그레이드 시험에서는 password backfill 재실행도 회귀했다. root의 배포/image smoke, managed db deploy, 운영 legacy-name validation은 별도 수행 범위이며 root가 담당한다.
+
 ## U-ISSUE5-20260911 — 레이어 다중 선택 0.18.0
 
 - 상태: 구현·자동·시각 검증 완료, root Manager 수용. 게시·배포 및 GitHub #5 종료 완료. GitHub #5의 three-dxf-viewer 다중 선택 드롭다운, 전체 선택/해제와 선택 개수를 제공한다. 원본·DB/API와 Viewer Adapter의 기존 표시 규칙은 변경하지 않는다.

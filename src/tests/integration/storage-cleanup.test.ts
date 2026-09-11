@@ -14,7 +14,7 @@ let directory: string, db: Database;
 beforeEach(async () => {
   directory = await mkdtemp(path.join(tmpdir(), 'cad-cleanup-cli-'));
   const sqlite = new Sqlite(`${directory}/db.sqlite`);
-  try { for (const migration of ['202609070001_locations','202609090001_description','202609110001_delete_password','202609110002_delete_invariants']) sqlite.exec(await readFile(new URL(`../../prisma/migrations/${migration}/migration.sql`,import.meta.url),'utf8')); }
+  try { for (const migration of ['202609070001_locations','202609090001_description','202609110001_delete_password','202609110002_delete_invariants','202609110003_drawing_name']) sqlite.exec(await readFile(new URL(`../../prisma/migrations/${migration}/migration.sql`,import.meta.url),'utf8')); }
   finally { sqlite.close(); }
   db = createDb(`file:${directory}/db.sqlite`);
   await mkdir(`${directory}/cad`);

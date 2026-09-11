@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { CadError, type Registration } from '@/domain/cad';
+import { CadError, resolvedDrawingName, type Registration } from '@/domain/cad';
 import { type Database, writeTransaction } from '../db';
 import { hashDeletePassword, verifyDeletePassword } from '../password';
 export type FileRecord = { originalFilename: string; fileFormat: 'DXF' | 'DWG'; fileSize: number; sha256: string; storagePath: string };
@@ -14,10 +14,10 @@ export class CadRepository {
       const id = randomUUID();
       const storagePath = store ? await store(location.id, id) : file.storagePath;
       const duplicateCount = await tx.cadFileVersion.count({ where: { sha256: file.sha256 } });
-      const version = await tx.cadFileVersion.create({ data: { ...file, storagePath, id, locationId: location.id, version: next, deletePasswordHash, registeredAt: input.registeredAt, description: input.description } });
+      const version = await tx.cadFileVersion.create({ data: { ...file, storagePath, id, locationId: location.id, version: next, drawingName: input.drawingName, deletePasswordHash, registeredAt: input.registeredAt, description: input.description } });
       await tx.cadLocation.update({ where: { id: location.id }, data: { nextVersion: { increment: 1 } } });
       if (input.makeCurrent) await tx.cadLocation.update({ where: { id: location.id }, data: { currentVersionId: id } });
-      return { id, locationId: location.id, version: version.version, duplicateCount, description: version.description };
+      return { id, locationId: location.id, version: version.version, displayName: resolvedDrawingName(input, version.version, version.drawingName), originalFilename: version.originalFilename, duplicateCount, description: version.description };
     });
   }
   async setCurrent(locationId: string, versionId: string) {

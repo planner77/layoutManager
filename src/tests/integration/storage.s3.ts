@@ -24,7 +24,7 @@ function request(name='layout.dxf', bytes=Buffer.from('0\nEOF\n')) {
 async function keys() { return (await client.send(new ListObjectsV2Command({Bucket:options.bucket}))).Contents?.map(x=>x.Key).sort() ?? []; }
 beforeEach(async()=>{
   directory=await mkdtemp(path.join(tmpdir(),'cad-s3-db-'));db=createDb(`file:${directory}/db.sqlite`);repo=new CadRepository(db);
-  for(const migration of ['202609070001_locations','202609090001_description','202609110001_delete_password']) for(const sql of (await readFile(new URL(`../../prisma/migrations/${migration}/migration.sql`,import.meta.url),'utf8')).split(';').filter(x=>x.trim()))await db.$executeRawUnsafe(sql);
+  for(const migration of ['202609070001_locations','202609090001_description','202609110001_delete_password','202609110003_drawing_name']) for(const sql of (await readFile(new URL(`../../prisma/migrations/${migration}/migration.sql`,import.meta.url),'utf8')).split(';').filter(x=>x.trim()))await db.$executeRawUnsafe(sql);
   storage=new ConfiguredCadStorage(path.join(directory,'cad'),1024*1024,process.env);
 });
 afterEach(async()=>{vi.restoreAllMocks();storage.close();await db.$disconnect();await rm(directory,{recursive:true,force:true});});
