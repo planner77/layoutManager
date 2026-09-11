@@ -26,9 +26,9 @@ P0=필수, P1=가능한 범위 구현 또는 지원 여부 평가. `PLANNED`=미
 | FR-DELETE-002 | 목록/Location 상세의 선택 Version에 삭제 동작을 제공한다. 파일명·Version·위치를 확인하고 비밀번호 입력 후 명시적인 삭제 버튼을 누르면 서버가 검증한다. 틀린/누락 비밀번호는 DB·Current·원본을 변경하지 않는다. | TC-DELETE-002/003 | VERIFIED (U-ISSUES의 시험 범위) |
 | FR-DELETE-003 | 일치한 Version만 삭제하고 나머지 Version을 보존한다. 삭제 대상이 Current이면 같은 transaction에서 NULL로 해제하며 자동 승격하지 않는다. 마지막 Version 삭제 후 Location은 보존하고 재등록 순번을 재사용하지 않는다. | TC-DELETE-003/004 | VERIFIED (U-ISSUES의 시험 범위) |
 | FR-DELETE-004 | 삭제 완료 Version은 목록·검색·Location·메타데이터·원본·직접 Viewer 링크와 Current 지정에서 조회/선택할 수 없다. local/S3 원본은 DB 삭제 확정 뒤 제거하며 실패 시 원본 정리 대기를 명시하고 영속 재시도 기록을 유지한다. | TC-DELETE-004/005 | VERIFIED (U-ISSUES의 시험 범위) |
-| FR-DELETE-005 | 최초 적용 전 등록돼 있던 모든 Version을 `1234`로 검증 가능한 salt hash로 채운다. 재실행은 미설정 행만 처리하고 신규 비밀번호를 덮지 않는다. ID·위치·순번·Current·원본 bytes/locator·설명은 유지한다. | TC-DELETE-006 | IN_PROGRESS |
+| FR-DELETE-005 | 최초 적용 전 등록돼 있던 모든 Version을 `1234`로 검증 가능한 salt hash로 채운다. 재실행은 미설정 행만 처리하고 신규 비밀번호를 덮지 않는다. ID·위치·순번·Current·원본 bytes/locator·설명은 유지한다. | TC-DELETE-006 | VERIFIED (U-ISSUES 운영 적용 포함) |
 | NFR-DELETE-001 | 비밀번호 평문·hash·salt는 응답/DTO/HTML/로그/진단/URL/브라우저 저장소에 포함하지 않는다. 서버에서 느린 salt KDF와 일정 시간 비교를 사용하고 요청 크기·시도율·동시 KDF 수를 제한한다. 기존 인증/사용자 관리 시스템은 추가하지 않는다. | TC-DELETE-001/007 | VERIFIED (U-ISSUES의 시험 범위) |
-| NFR-DELETE-002 | migration·backfill·삭제 실패 보상·승인된 정리 작업의 운영 절차, schema, 회귀 시험을 문서와 버전에 일치시킨다. 이전 앱 실행으로 비밀번호 검증이 우회되지 않도록 업그레이드 순서를 정한다. | TC-DELETE-005/006/008 | IN_PROGRESS |
+| NFR-DELETE-002 | migration·backfill·삭제 실패 보상·승인된 정리 작업의 운영 절차, schema, 회귀 시험을 문서와 버전에 일치시킨다. 이전 앱 실행으로 비밀번호 검증이 우회되지 않도록 업그레이드 순서를 정한다. | TC-DELETE-005/006/008 | VERIFIED (U-ISSUES 운영 적용 포함) |
 
 기존 범위 제외 중 **Version 삭제**만 이 요청으로 확장한다. Location 일괄 삭제, 비밀번호 변경/재설정 UI, Viewer/다운로드 비밀번호 보호, 로그인·소유자 권한·관리자 우회, 휴지통/복원 UI는 포함하지 않는다. 비밀번호는 삭제 확인용이며 기존 열람 권한은 그대로다.
 

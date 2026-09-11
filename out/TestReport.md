@@ -34,6 +34,17 @@
 - Browser에서 삭제 취소·틀린 비밀번호·정답 삭제·직접 content 404 및 Viewer의 404 화면/no canvas를 확인했다. 주입한 202·잘못된 JSON·통신 실패에서 입력 비우기, 결과 불확실 안내 및 자동 재시도 0회를 확인했다.
 - 제한: 동시 등록/Current 변경/삭제의 모든 경쟁 순서, 실제 S3 응답 유실과 job 삭제 실패, 모든 공개 경로에 대한 password canary 주입은 별도 미실행이다. 이 항목까지 통과한 것으로 해석하지 않는다. `TC-DELETE-001–008`의 실제 검증 범위는 위 근거와 배포 기록으로 한정한다.
 
+### 게시·운영 적용 및 최종 판정
+
+- 최종 소스 `27a132f6a7d2f1da35fa630c0835b751db350137`를 지정된 origin/main에 정상 push했다. root가 변경/staged diff, `git diff --check` 및 144개 추적/추가 후보 파일의 실제 Secret·runtime 산출물 검사를 수행했으며 위반 0건이었다.
+- 해당 소스로 linux/amd64 이미지 `ghcr.io/planner77/layoutmanager:0.17.1`을 빌드·게시하고 인증된 pull을 확인했다. OCI revision은 위 소스와 일치하며 digest는 `sha256:836c23a1fc56215f6d94b891a60f23411a533aecf9bcd09aac852a1e08b77412`이다.
+- 기존 앱을 정지한 상태에서 named volume 전체를 Git 제외 경로 `data/backups/issues-0.17.1-20260911/data-before-0.17.1.tar.gz`로 백업했다. archive 222,229 bytes / 파일 3개를 모두 읽어 검사했고 SHA-256은 `980155cf1f104644ef6b7ad95400ea52f0f1c192eb1d56c5e60df661f7c4eaee`이다.
+- Compose에서 같은 `cad-layout-viewer-data` 볼륨으로 0.17.1을 실행했다. migration/backfill 완료 후 container healthy, `GET /api/health` 200 및 `status=ok`를 확인했다. 로컬 `.env`의 GHCR_IMAGE도 0.17.1로 고정했다.
+- 운영 DB 읽기 전용 비교: 기존 Version 2개/Location 2개, metadata·Current fingerprint 및 원본 SHA/bytes fingerprint가 배포 전후 동일했다. 원본 총 2,234,286 bytes 보존, `integrity_check=ok`, FK 오류 0건이며 기존 두 Version 모두 `1234`로 hash 검증에 성공했다. 운영 도면 삭제 시험은 수행하지 않았다.
+- GitHub #2/#3에 각각 변경·시험·제한 요약 댓글을 남기고 `closed/completed` 응답을 확인했다. 댓글 ID는 #2 `5628501839`, #3 `5628502545`이다.
+- 기존 의존성 경고는 남아 있다. 이번 `npm audit --omit=dev` 재확인에서 high 4건(`prisma`, `@prisma/config`, `deepmerge-ts`, `mysql2`), exit 1이었다. 검증한 기능 시험 PASS와 이 경고를 구분하며 자동 major downgrade는 수행하지 않았다.
+- Manager 판정: #2/#3 요구 및 DELETE 보완의 검증 범위는 수용한다. 운영 기존 비밀번호 적용·이미지 게시·재배포를 완료했다. 후속은 기존 의존성 경고와 실도면/복잡 DWG 평가이며 이번 완료 판정에 포함하지 않는다.
+
 ## U-OBS-20260909 — 폐쇄망 업로드 오류 진단 0.16.0
 
 - 범위: 공개 업로드 진단(요약·상세·복사·JSON 저장), HTTP/프록시/연결 오류 분류, 요청 ID 기반 서버 구조화 로그, 원인 정제·비노출, local/S3 보상 및 Docker logging 설정. DB migration과 업무 데이터는 변경하지 않았다.
