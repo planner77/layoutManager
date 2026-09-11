@@ -5,6 +5,8 @@
 - Added: 위치·버전 기반 기본 도면 이름과 등록 시 사용자 이름 선택 입력. 원본 파일명과 별도로 목록·Location·Viewer에 표시한다.
 - Database: 사용자 이름의 nullable column 추가로 기존 도면을 기본 이름으로 표시한다. 실제 migration·시험·게시/배포 결과는 TestReport U-ISSUE6-20260911을 따른다.
 
+- Release: 소스 `0b1c620` push, GHCR 0.19.0 게시/pull 및 이미지 Browser·db:deploy 재실행 검증 완료. 기존 볼륨 백업 후 migration/배포·healthy·기존 데이터/원본 보존과 기본 이름 표시를 확인하고 GitHub #6을 완료 종료했다.
+
 # 0.18.0 — GitHub #5
 
 - Added: three-dxf-viewer 레이어 다중 선택 드롭다운과 전체 선택·전체 해제, 선택 개수 표시. 현재 Viewer에서 선택을 유지하며 새 load와 Renderer/Version 전환 시 초기화한다.

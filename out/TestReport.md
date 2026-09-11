@@ -2,7 +2,7 @@
 
 ## U-ISSUE6-20260911 — 도면 이름 0.19.0
 
-- 상태: 구현·재작업 및 독립 QA 완료, root Manager 수용. FR-CAD-008 → TC-NAME-001–004. 게시·배포는 진행 전이다.
+- 상태: 구현·재작업 및 독립 QA 완료, root Manager 수용. FR-CAD-008 → TC-NAME-001–004. 게시·배포 및 GitHub #6 완료 종료.
 - 역할: root Manager가 요구사항·설계/수용을 담당했고 gpt-5.6-sol Developer 구현·재작업 후 gpt-5.6-luna QA가 독립 검증·문서화했다. root가 릴리스/배포/이슈 처리를 담당한다.
 
 - Developer 1차 검증: unit/integration22 files/96 PASS, typecheck/lint/build PASS, 신규 이름 Browser3 PASS. root 검토에서 기존 파일명 기반 E2E selector와0.18.0 populated DB 단독 이름 migration 검증의 보완이 필요해 재작업을 지시했다. 이후 기존 selector/mock DTO·fixture 격리와 실제0.18.0 업그레이드/이름 경계 검증을 보완했다. Developer의 최종 전체 Browser31 및 DWG4 PASS를 검토하고 독립 QA에 인계했다.
@@ -13,6 +13,15 @@
 - Focused name Browser: `... CAD_E2E_PORT=3101 npx playwright test tests/e2e/drawing-name.spec.ts` — 3 passed / 0 failed / 8.7초. 캡처를 직접 확인했다: `src/test-results/drawing-name-TC-NAME-002-0-56047-filename-remains-searchable/drawing-name-list-custom.png`는 custom 이름 plain text와 `원본: name-source-two.dxf`를 표시했고, `src/test-results/drawing-name-TC-NAME-003-a-41755--inside-the-viewer-viewport/drawing-name-viewer-long.png`는 360px에서 긴 제목이 콘텐츠 폭 안에 줄바꿈된다. 해당 빈 DXF fixture는 캡처 시 로딩 상태여서 Viewer 렌더링 PASS로 확대하지 않는다. 캡처에서 360px 전역 header navigation clipping/overlap이 관찰되었으며 이름 기능 범위 밖의 후속 반응형 UI 관찰이다.
 - S3 integration: `npm run test:s3` — isolated SeaweedFS 4.45, 1 file / 6 passed / 0 failed, exit 0. DWG regression: `PLAYWRIGHT_CHROMIUM_EXECUTABLE=... CAD_E2E_PORT=3111 npm run test:dwg` — 4 passed / 0 failed / 22.0초, cached samples; no redownload.
 - 판정: TC-NAME-001–004 실제 범위 PASS/VERIFIED. migration/legacy populated DB 검증은 통합 98 tests의 `delete.test.ts` migration fixture에서 `drawing_name=NULL`, 기존 metadata/Current/hash/locator/순번/FK 보존과 삭제 후V3 비재사용을 확인했다. 기존0.16.0 업그레이드 시험에서는 password backfill 재실행도 회귀했다. root의 배포/image smoke, managed db deploy, 운영 legacy-name validation은 별도 수행 범위이며 root가 담당한다.
+
+### 게시·배포 확인
+
+- source `0b1c620ffd18e4328c149c92c47c7ceef9e8fd7f`를 origin/main에 push했다. staged/diff-check 및 실제 Secret/runtime 후보149파일 검사 위반0건이다.
+- 동일 source의 linux/amd64 이미지 `ghcr.io/planner77/layoutmanager:0.19.0`을 빌드·게시하고 인증된 pull을 확인했다. OCI revision 일치, digest `sha256:e055f66da3e63dc755c46e891461e6cecbef2e76aa74c2f2ac7f4d7d38c6ea7b`이다. 빌드에서 기존 npm high4 의존성 경고가 재확인됐으며 이번 기능에서 해결하지 않았다.
+- root가 이미지의 port3145/임시 볼륨에 기본 이름과 사용자 지정 이름의 합성 LINE DXF 두 건을 등록했다. 등록 displayName과 목록/Viewer 제목, 원본 다운로드 bytes 일치를 검증하고 `/tmp/cad-issue6-packaged-list.png` 및 `-viewer.png`를 직접 검토했다. 같은 임시 컨테이너의 `npm run db:deploy` 재실행이 성공했고 이름·password hash를 포함한 전체 fixture metadata fingerprint가 보존됐다. 임시 컨테이너/볼륨은 정리했다.
+- 운영 앱 정지 후 전체 `cad-layout-viewer-data`를 Git 제외 `data/backups/issues-0.19.0-20260911/data-before-0.19.0.tar.gz`로 백업했다. archive114,673bytes, SHA-256 `5980658b5ae01df326c6946a7b558409ee25af611db13c50516871a48a41eaf0`, archive 읽기 검사 성공이다.
+- 같은 볼륨으로0.19.0 Compose migration/배포 후 container healthy 및 health API200/status=ok. 새 `drawing_name TEXT NULL` schema를 확인했다. 정지 후 snapshot과 배포 후 snapshot을 비교해 신규 NULL drawing_name만 제외한 모든 기존 Column/행이 일치했고 기존 원본 SHA/크기도 일치했다. 실제 Version1개/Location3개/DeletionJob0개, 원본1,117,143bytes, integrity=ok/FK오류0건이다. 기존 도면1개의 API displayName이 위치와 실제 version의 기본 규칙과 일치함을 확인했다. 비밀번호 입력은 운영 도면에 재시험하지 않았고 저장된 hash 보존으로 한정한다. 로컬 GHCR_IMAGE는0.19.0으로 고정했다.
+- GitHub #6 결과 댓글 `5630033809` 및 `closed/completed` 확인. root Manager 완료 판정. 등록 후 이름 편집은 범위 밖이며 기존360px 전역 header 표시와 실도면/복잡 Entity 평가는 후속 관찰 사항이다.
 
 ## U-ISSUE5-20260911 — 레이어 다중 선택 0.18.0
 
