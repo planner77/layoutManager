@@ -13,6 +13,15 @@
 - 시각·geometry capture: `/tmp/cad-issue4-after-desktop.png` 및 `-longtext.png`, `-shortheight.png`, `-error.png`, `-pending.png`와 동명 `.json`을 생성해 실제 상태를 확인했다. desktop 1280×800 panel 384px, scrollWidth 384px; 375×667 panel x16 width343 height635, long text scrollHeight754; 375×260 panel x16 width343 height228, scrollHeight754; error scrollHeight782; pending panel height204. 모든 capture에서 white-space normal, overflow-wrap anywhere 및 clientWidth=scrollWidth를 확인했다. 자동 E2E의 descendant geometry 검사에서도 가로 넘침이 없었다. 좁은 화면은 내부 세로 스크롤로 입력/버튼에 접근했고 오류·정리 대기 표시도 panel 안에 배치됐다.
 - 판정: FR-DELETE-006 및 TC-DELETE-LAYOUT-001–003 PASS/VERIFIED. sandbox 단독 capture는 Chromium IPC `SIGTRAP`으로 제한됐으나 escalated 동일 환경에서 capture를 완료했다. 이 제한은 제품 시험 실패가 아니다.
 
+### 게시·배포 확인
+
+- source `56fb1c43258dabc403033eb5895122ebdcbd9f4d`를 origin/main에 push했다. staged/diff-check와 실제 Secret/runtime 후보145파일 검사에서 위반0건이었다.
+- 같은 source의 linux/amd64 이미지 `ghcr.io/planner77/layoutmanager:0.17.2`를 빌드·게시하고 인증된 pull을 확인했다. OCI revision 일치, digest `sha256:ecd4be1dbbe7cdb5f8e41d91583cf3ac3f5bce4da7f8308b100dbd0ab70d1df5`이다. 빌드의 npm ci는 기존 high4 의존성 경고를 다시 보고했으며 이번 UI 수정에서 해결하지 않았다.
+- root가 해당 이미지의 port3145/임시 볼륨에서 수정 전과 같은 `floorplan.dxf` 합성 fixture를 열었다. panel/client/scroll width가 모두384px이고 입력 오른쪽808px가 panel 오른쪽832px 안에 위치했다. desktop1280×800과375×667 화면을 직접 확인했다. 원본 비교 시나리오는 삭제를 실행하지 않고 취소했다. QA capture server와 root 임시 image 컨테이너/볼륨은 정리했다.
+- 운영 앱 정지 후 전체 `cad-layout-viewer-data`를 Git 제외 `data/backups/issues-0.17.2-20260911/data-before-0.17.2.tar.gz`로 백업했다. archive114,490bytes, SHA-256 `d75e87dd81919f94c3ebf3f52a34c641c227984cf5f010b09ad5baad42c82f42`, 읽기 검사 성공이다.
+- 같은 볼륨으로0.17.2 Compose 배포 후 container healthy 및 health API200/status=ok를 확인했다. 정지 후 기준 snapshot과 배포 후 readonly snapshot의 모든 필드가 일치했다: 당시 Version1개/Location2개, 원본1,117,143bytes, metadata/Current 및 원본 fingerprint 보존, 기존 password검증 결과보존, integrity=ok/FK오류0건. 로컬 GHCR_IMAGE도0.17.2로 고정했다.
+- GitHub #4에 결과 댓글 `5628838933`을 남겼고 `closed/completed` 응답을 확인했다. Manager는 해당 UI 이슈를 완료로 판정한다. 기존 의존성 경고·실도면 평가와 실제 모바일 키보드/다른 브라우저 검증은 후속 범위이다.
+
 ## U-ISSUES-20260911 — GitHub #2/#3 등록 메모·업로드 preflight 0.17.1
 
 - 범위: 여러 줄 도면 설명을 등록·목록·Location·Viewer·새로고침까지 확인하고, 브라우저 File 크기 preflight(100 MiB 기본 및 7 MiB 설정), 제출 우회, 서버 413 진단을 검증했다. DELETE 회귀도 같은 브라우저 회귀에서 확인했다.
