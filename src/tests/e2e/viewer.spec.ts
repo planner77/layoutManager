@@ -10,9 +10,11 @@ for (const renderer of ['dxf-viewer','three-dxf-viewer']) test(`TC-DXF/THREE-001
   const canvas=page.locator('canvas');await expect(canvas).toHaveCount(1);
   const initial=await canvas.screenshot();
   if(renderer==='three-dxf-viewer') {
-    const layer=page.getByRole('checkbox',{name:'0',exact:true});
-    await layer.uncheck();expect((await canvas.screenshot()).equals(initial)).toBe(false);
-    await layer.check();expect((await canvas.screenshot()).equals(initial)).toBe(true);
+    await page.getByRole('button',{name:/레이어 선택/}).click();
+    const layer=page.getByRole('menuitemcheckbox',{name:'0',exact:true});
+    await layer.uncheck();await page.keyboard.press('Escape');expect((await canvas.screenshot()).equals(initial)).toBe(false);
+    await page.getByRole('button',{name:/레이어 선택/}).click();await layer.check();await page.keyboard.press('Escape');
+    await expect.poll(async()=>(await canvas.screenshot()).equals(initial)).toBe(true);
   }
   await page.getByRole('button',{name:'확대',exact:true}).click(); expect((await canvas.screenshot()).equals(initial)).toBe(false);
   await page.getByRole('button',{name:'축소',exact:true}).click();

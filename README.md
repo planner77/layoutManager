@@ -1,6 +1,6 @@
 # CAD Web Viewer P.O.C.
 
-현재 소스 버전은 0.17.2이며 도면 등록 비밀번호와 비밀번호 확인 삭제, 업로드 오류 진단을 지원합니다. 게시·배포 검증 결과는 [TestReport](out/TestReport.md)를 기준으로 합니다.
+현재 소스 버전은 0.18.0이며 도면 등록 비밀번호와 비밀번호 확인 삭제, 업로드 오류 진단을 지원합니다. 게시·배포 검증 결과는 [TestReport](out/TestReport.md)를 기준으로 합니다.
 
 공장·설비의 DXF/DWG 도면을 등록·검색·버전 관리하고, 세 오픈소스 기술의 브라우저 렌더링 적용 가능성을 평가하는 프로젝트입니다.
 
@@ -14,7 +14,7 @@
 - DXF Viewer 두 방식 전환, DWG 전용 경로, 오류·부분 지원·성능 계측.
 - 실도면 Entity 충실도·대형 파일·사용성 비교와 재현 가능한 테스트/문서.
 
-현재 지원: 파일 등록·메타데이터 검증·SHA-256·원본 조회·목록·검색·페이지 이동·Location 상세·Current 변경. 파일명은 대소문자를 구분하는 부분 일치, 위치 네 항목은 정확히 일치하는 조건으로 검색합니다. DXF 행의 **도면 보기**에서 dxf-viewer를 실행합니다. 확대·축소·드래그 이동·화면 맞춤·Resize·다시 불러오기를 지원합니다. Viewer 버튼으로 dxf-viewer와 three-dxf-viewer를 새로고침 없이 전환합니다. 같은 Version의 원본 다운로드를 재사용합니다. DWG는 libredwg-web과 자체 LINE 렌더러로 표시합니다.
+현재 지원: 파일 등록·메타데이터 검증·SHA-256·원본 조회·목록·검색·페이지 이동·Location 상세·Current 변경. 파일명은 대소문자를 구분하는 부분 일치, 위치 네 항목은 정확히 일치하는 조건으로 검색합니다. DXF 행의 **도면 보기**에서 dxf-viewer를 실행합니다. 확대·축소·드래그 이동·화면 맞춤·Resize·다시 불러오기를 지원합니다. Viewer 버튼으로 dxf-viewer와 three-dxf-viewer를 새로고침 없이 전환합니다. three-dxf-viewer에서는 레이어 드롭다운으로 여러 레이어를 선택하거나 전체 선택·전체 해제할 수 있습니다. 선택은 현재 Viewer에서 유지되며 재로드·Viewer 전환 시 전체 선택으로 초기화됩니다. 같은 Version의 원본 다운로드를 재사용합니다. DWG는 libredwg-web과 자체 LINE 렌더러로 표시합니다.
 
 직접 링크는 목록·Location의 특정 Version 또는 Viewer에서 `링크 복사`를 선택해 사용합니다. Clipboard 권한이 없으면 표시된 URL을 직접 복사하거나 `도면 열기`를 선택합니다. 링크는 현재 origin의 Version 주소이므로 Current 교체 후에도 해당 Version을 열지만, `localhost`/`127.0.0.1`은 링크를 여는 장치 자체를 뜻하고 사설 IP는 같은 네트워크/VPN과 listener·방화벽이 필요합니다.
 

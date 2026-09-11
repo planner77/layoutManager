@@ -1,5 +1,10 @@
 # ChangeLog
 
+# 0.18.0 — GitHub #5
+
+- Added: three-dxf-viewer 레이어 다중 선택 드롭다운과 전체 선택·전체 해제, 선택 개수 표시. 현재 Viewer에서 선택을 유지하며 새 load와 Renderer/Version 전환 시 초기화한다.
+- Tests: 여러 레이어의 실제 canvas 표시·숨김/복원, 메뉴/키보드·일괄 조작·수명주기 회귀를 보강하고 검증했다. 실제 결과와 배포 기록은 TestReport U-ISSUE5-20260911을 따른다.
+
 # 0.17.2 — GitHub #4
 
 - Fixed: 삭제 대화창을 표와 분리해 긴 파일명·위치·경고 문구의 줄바꿈과 좁은 화면의 버튼 접근을 보장한다. 키보드 포커스 및 닫기 동작을 modal Dialog로 관리한다.

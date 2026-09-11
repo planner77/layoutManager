@@ -6,6 +6,7 @@ import { selectRenderer, type ViewerFormat, type ViewerRenderer } from '@/viewer
 import { ViewerSource } from '@/viewers/core/source';
 import type {ViewerMetric} from '@/viewers/core/metrics';
 import { CopyCadLink } from '@/features/cad-link/copy-cad-link';
+import { LayerDropdown } from '@/features/cad-viewer/layer-dropdown';
 
 export function CadViewer({ versionId, renderer: initialRenderer = 'dxf-viewer', format = 'DXF' }: { versionId: string; renderer?: ViewerRenderer; format?: ViewerFormat }) {
   const [renderer,setRenderer]=useState(selectRenderer(format, initialRenderer));
@@ -13,11 +14,12 @@ export function CadViewer({ versionId, renderer: initialRenderer = 'dxf-viewer',
   const container = useRef<HTMLDivElement>(null), manager = useRef<ViewerManager | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [layers,setLayers] = useState<string[]>([]);
+  const [selectedLayers,setSelectedLayers] = useState<Set<string>>(()=>new Set());
   const [metric,setMetric]=useState<ViewerMetric|null>(null);
   const [state, setState] = useState<{ status: string; ready: boolean; error?: string; warning?:string }>({status:'도면 로딩 중…',ready:false});
   useEffect(()=>()=>source.dispose(),[source,versionId]);
   function choose(value:typeof renderer) {
-    setState({status:'도면 로딩 중…',ready:false});setMetric(null);setLayers([]);setRenderer(value);
+    setState({status:'도면 로딩 중…',ready:false});setMetric(null);setLayers([]);setSelectedLayers(new Set());setRenderer(value);
     const url=new URL(window.location.href);url.searchParams.set('renderer',value);
     window.history.replaceState(null,'',url);
   }
@@ -40,9 +42,9 @@ export function CadViewer({ versionId, renderer: initialRenderer = 'dxf-viewer',
     },source,{renderer,versionId,report:value=>{if(active)setMetric(value);}},format);
     manager.current = instance;
     instance.load(`/api/cad-files/${versionId}/content`, format).then(result => {
-      if (active) {setState({status:result.empty ? '표시할 도형이 없습니다.' : result.warning ? '도면 일부 표시 완료' : '도면 표시 완료',ready:!result.empty,warning:result.warning});setLayers(instance.getLayers());}
+      if (active) {const nextLayers=instance.getLayers();setState({status:result.empty ? '표시할 도형이 없습니다.' : result.warning ? '도면 일부 표시 완료' : '도면 표시 완료',ready:!result.empty,warning:result.warning});setLayers(nextLayers);setSelectedLayers(new Set(nextLayers));}
     }).catch(error => {
-      if (active) setState({status:'표시 실패',ready:false,error:error instanceof Error ? error.message : 'Viewer 초기화에 실패했습니다.'});
+      if (active) {setLayers([]);setSelectedLayers(new Set());setState({status:'표시 실패',ready:false,error:error instanceof Error ? error.message : 'Viewer 초기화에 실패했습니다.'});}
     });
     return () => { active = false; instance.dispose(); manager.current = null; };
   }, [versionId,attempt,renderer,source,format]);
@@ -52,10 +54,10 @@ export function CadViewer({ versionId, renderer: initialRenderer = 'dxf-viewer',
       <Button variant="outline" disabled={!state.ready} onClick={()=>manager.current?.zoomIn()}>확대</Button>
       <Button variant="outline" disabled={!state.ready} onClick={()=>manager.current?.zoomOut()}>축소</Button>
       <Button variant="outline" disabled={!state.ready} onClick={()=>manager.current?.fitToView()}>화면 맞춤</Button>
-      <Button variant="outline" onClick={()=>{source.dispose();setMetric(null);setLayers([]);setState({status:'도면 로딩 중…',ready:false});setAttempt(v=>v+1);}}>다시 불러오기</Button>
+      <Button variant="outline" onClick={()=>{source.dispose();setMetric(null);setLayers([]);setSelectedLayers(new Set());setState({status:'도면 로딩 중…',ready:false});setAttempt(v=>v+1);}}>다시 불러오기</Button>
       <CopyCadLink key={`${versionId}-${renderer}`} versionId={versionId} format={format} renderer={renderer}/>
     </div>
-    {layers.length>0 && state.ready && <div className="flex flex-wrap gap-4 text-sm" aria-label="Layer 목록">{layers.map(name=><label key={`${attempt}-${name}`}><input type="checkbox" defaultChecked onChange={event=>manager.current?.showLayer(name,event.target.checked)}/>{name}</label>)}</div>}
+    {renderer==='three-dxf-viewer' && layers.length>0 && state.ready && <LayerDropdown layers={layers} selected={selectedLayers} onLayerChange={(name,visible)=>{manager.current?.showLayer(name,visible);setSelectedLayers(current=>{const next=new Set(current);if(visible)next.add(name);else next.delete(name);return next;});}} onAllChange={visible=>{for(const name of layers)manager.current?.showLayer(name,visible);setSelectedLayers(visible?new Set(layers):new Set());}}/>}
     <div ref={container} data-testid="cad-canvas" className="h-[65vh] min-h-96 overflow-hidden rounded-xl bg-black" aria-label={`${format} 도면`}/>
     <p role="status" className="text-sm text-slate-600">{state.status}</p>
     {state.warning && <p className="text-sm text-amber-800" data-testid="viewer-coverage">{state.warning}</p>}

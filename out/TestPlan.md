@@ -1,5 +1,12 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## GitHub #5 — 목표 0.18.0
+
+- TC-LAYER-001: 서로 겹치지 않는 3개 레이어의 합성 DXF를 실제 three-dxf-viewer에서 연다. 초기 전체 선택, 여러 항목 토글 후 메뉴 유지/체크 상태/선택 개수, canvas 이미지의 차이 및 재선택 복원을 확인한다. 전체 해제→빈 canvas, 전체 선택→원래 canvas 복원을 확인한다. 메뉴 overlay를 닫고 canvas 픽셀을 비교한다.
+- TC-LAYER-002: 메뉴 닫기/재열기 시 선택 유지, 재로드/Renderer 전환/다른 Version 이동 시 초기화와 이전 항목 미노출. 레이어 조작 동안 원본 GET 및 Viewer canvas 재생성 없음, 기존 20회 Viewer 전환/오류/빈 도면/DWG 회귀에서 메뉴 부재를 확인한다.
+- TC-LAYER-003: 키보드 열기/이동/Space 토글/Escape 닫기·포커스 복귀, 긴 이름/많은 항목과 좁은 viewport의 메뉴 경계/내부 스크롤·전체선택 버튼 접근. 실제 합성 fixture와 화면 근거로 확인하며 미실행 범위를 구분한다.
+- Manager AC/설계 → Sol Developer 구현/집중 시험 → Manager review → Luna QA typecheck/lint/unit/build/local 전체 Browser·DWG 전용 회귀/시각 확인 → root commit/push/게시/배포/이슈 댓글·종료. S3 저장소는 API/저장소 미변경으로 전체 재실행하지 않는다.
+
 ## GitHub #4 — 목표 0.17.2
 
 - TC-DELETE-LAYOUT-001: 현행 빌드에서 긴 파일명/위치/Current 경고가 대화창 경계를 넘는지 재현하고 수정 후 같은 조건으로 비교한다. 목록과 Location 상세, desktop 1280×800 및 좁은 viewport 375×667에서 panel 및 내부 요소의 가로 넘침 0, 텍스트 줄바꿈과 입력/버튼 영역을 확인한다.
