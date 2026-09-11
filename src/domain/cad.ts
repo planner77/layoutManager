@@ -1,9 +1,11 @@
 export class CadError extends Error {
   readonly recoveryId?: string;
-  constructor(public code: string, message: string, public status = 400, options?: ErrorOptions & { recoveryId?: string }) {
+  readonly retryAfterSeconds?: number;
+  constructor(public code: string, message: string, public status = 400, options?: ErrorOptions & { recoveryId?: string; retryAfterSeconds?: number }) {
     super(message, options);
     this.name = 'CadError';
     this.recoveryId = options?.recoveryId;
+    this.retryAfterSeconds = options?.retryAfterSeconds;
   }
 }
 export const locationFields = ['businessUnit', 'site', 'building', 'floor'] as const;

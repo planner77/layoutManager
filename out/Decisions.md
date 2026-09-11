@@ -4,7 +4,7 @@
 
 ## ADR-025 — Version별 삭제 비밀번호와 승인된 원본 정리
 
-- Date / Status: 2026-09-11 / 사용자 비밀번호·삭제·기존1234 초기화 요청에 따른 Manager 설계, 구현 전.
+- Date / Status: 2026-09-11 / 사용자 요청 범위로 구현했으며 미게시 0.17.0의 검증 누락을 0.17.1에서 보완한다. 실제 수용·운영 적용은 TestReport의 U-ISSUES-20260911 결과를 따른다.
 - Decision: 선택 Version 1개의 삭제만 비밀번호로 보호한다. 신규 비밀번호는 필수이며 기존 행만 최초 적용 시1234로 salt hash 초기화한다. Node 22 내장 scrypt를 사용하고 평문/hash를 public 정보로 보내지 않는다. 로그인·열람보호·재설정/우회 기능을 추가하지 않는다.
 - Current/순번: 삭제 대상이 Current이면 같은 transaction에서 NULL로 해제하고 자동으로 다른 Version을 Current로 정하지 않는다. 빈 Location은 보존하고 nextVersion으로 삭제 순번을 재사용하지 않는다.
 - 정합성: DB transaction에서 승인된 `CadDeletionJob`을 만들고 Version 삭제를 확정한 뒤 원본을 지운다. 원본 실패는 202 정리 대기이며 DB job으로 재시도한다. 별도 큐/서비스는 없고 승인되지 않은 원본을 스캔 삭제하지 않는다. Soft-delete로 도면 설명·파일명을 장기 보관하는 대안과 원본 선삭제의 DB 실패 위험을 고려한 선택이다.

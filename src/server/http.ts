@@ -9,7 +9,7 @@ export function failure(error: unknown, diagnostics?: UploadDiagnostics, stage: 
   diagnostics?.finishFailure(error, stage, status);
   if (!diagnostics && !(error instanceof CadError)) console.error('CAD_REQUEST_FAILED', { requestId, category: error instanceof Error ? error.name : 'Unknown' });
   const headers: Record<string,string> = { 'X-Request-Id': requestId };
-  if (status === 429) headers['Retry-After'] = '60';
+  if (status === 429) headers['Retry-After'] = String(error instanceof CadError ? error.retryAfterSeconds ?? 60 : 60);
   return Response.json({ error: { code, message, requestId } }, { status, headers });
 }
 export function requireSameOrigin(request: Request) {

@@ -1,5 +1,39 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUES-20260911 — GitHub #2/#3 등록 메모·업로드 preflight 0.17.1
+
+- 범위: 여러 줄 도면 설명을 등록·목록·Location·Viewer·새로고침까지 확인하고, 브라우저 File 크기 preflight(100 MiB 기본 및 7 MiB 설정), 제출 우회, 서버 413 진단을 검증했다. DELETE 회귀도 같은 브라우저 회귀에서 확인했다.
+- 실행 역할: root Manager가 요구사항·AC·설계와 최종 수용을 담당했다. gpt-5.6-sol Developer 두 명이 이슈 UI/시험과 DELETE 보완을 구현했고, gpt-5.6-luna QA가 전체 단위·local Browser·7 MiB 설정 회귀 및 문서화를 수행했다. root는 cleanup CLI 수정, 잘못된 DELETE 응답 처리, 접근성 label 및 보강 시험과 S3/DWG·배포 검증을 수행했다.
+- 검증 환경: Linux x86_64, Node 22.14.0, package `0.17.1`, Playwright 1.63.0, Chromium 1208 executable `/home/planner/.cache/ms-playwright/chromium-1208/chrome-linux64/chrome`, SwiftShader, worker 1, 격리 임시 DB/storage.
+
+| 검사 | 실제 결과 |
+| --- | --- |
+| `npm test` | 22 files / 92 passed / 0 failed / exit 0 |
+| `npm run typecheck` / `npm run lint` | 각각 exit 0 |
+| `npm run build` | exit 0; final aria-label correction 포함 |
+| local 전체 Browser E2E | 22 passed / 0 failed / 1.3분 |
+| 100 MiB preflight | PASS; 100 MiB - 1, exact, +1, submit bypass, recovery; intercepted accepted POST 0 for rejected cases |
+| `CAD_E2E_MAX_UPLOAD_SIZE_MB=7` preflight | 2 passed / 0 failed / 6.0초, separate port 3112 |
+| S3 통합 `npm run test:s3` | SeaweedFS 4.45 / 6 passed / 0 failed |
+| S3 전체 Browser `npm run test:s3:e2e` | 22 passed / 0 failed / 1.4분, port 3113 |
+| DWG `npm run test:dwg` | 4 passed / 0 failed / 18.7초, port 3111 |
+
+- TC-DESC-005 / GitHub #2: PASS. 여러 줄 메모가 목록·Location·Viewer와 새로고침 뒤 보존되며 literal 검색과 직접 Location 이동을 확인했다.
+- TC-PREFLIGHT-001/002 / #3: PASS. `File.size > maxMb * 1024 * 1024`만 차단하고 선택값 초기화·최대 MiB 안내·정상 재선택을 확인했다. 100 MiB accepted cases are client-side intercepted to avoid Chromium CDP payload serialization; rejected cases sent POST 0회이다.
+- TC-PREFLIGHT-003: PASS. 서버 크기 경계 통합 시험에서 413을 확인했고, Browser에서는 주입한 413 응답의 진단 UI를 확인했다. 두 시험의 근거를 구분하며 Browser에서 실제 100 MiB 초과 전송은 수행하지 않았다.
+- 재작업 기록: password input에 명시 `aria-label`/`aria-describedby`를 추가해 accessible-name selector를 고정했고, 100 MiB Browser harness는 in-browser FormData size 측정으로 조정했다. Next streaming `notFound`의 HTTP 200 가능성 때문에 삭제 Viewer는 rendered 404/no canvas와 content API 404로 판정했다.
+- 제한: intercepted 100 MiB accepted POST는 client acceptance 검증이며 실제 100 MiB server upload 성공·처리량 시험은 별도 수행하지 않았다.
+- 추적: FR-CAD-006/TC-DESC-005 → `upload-form.tsx`/description query → PASS. FR-CAD-007/TC-PREFLIGHT-001–003 → `upload-limit.ts`/`upload-form.tsx`/server validation → PASS.
+
+### DELETE 보완 검증
+
+- repository에서 비밀번호를 실제 검증하고 transaction 안에서 검증한 hash가 유지되는지 확인한다. 잘못된 비밀번호는 Current·Version·원본을 바꾸지 않는다. Current 삭제 후 NULL, 남은 Version 보존 및 순번 비재사용을 통합/Browser 시험했다.
+- 실제 0.16.0 schema fixture에 두 migration을 적용하고 기존 두 Version의 `1234` 검증, 독립 salt, metadata/Current 보존, 재실행과 신규 사용자 비밀번호 보존을 확인했다. 운영 DB 적용 결과는 아래 배포 기록에 별도 기록한다.
+- KDF 실행 2개·대기 16개 제한 및 실패 후 slot 회수, 대상별 60초 5회 예약과 429/Retry-After, API 입력/Origin 거부를 자동 시험했다. DB 실패 시 원본 삭제 0회, 원본 정리 실패 시 202와 job 보존을 주입했다.
+- 실제 독립 `storage:cleanup` CLI로 승인 job 재처리·이미 없는 원본·다른 파일 보존을 검증했다. unsafe locator는 처리하지 않고 job과 실패 종료를 유지한다. 최초 CLI 실행에서 `server-only` import 실패를 발견해 storage를 직접 생성하도록 수정한 후 2건 모두 통과했다.
+- Browser에서 삭제 취소·틀린 비밀번호·정답 삭제·직접 content 404 및 Viewer의 404 화면/no canvas를 확인했다. 주입한 202·잘못된 JSON·통신 실패에서 입력 비우기, 결과 불확실 안내 및 자동 재시도 0회를 확인했다.
+- 제한: 동시 등록/Current 변경/삭제의 모든 경쟁 순서, 실제 S3 응답 유실과 job 삭제 실패, 모든 공개 경로에 대한 password canary 주입은 별도 미실행이다. 이 항목까지 통과한 것으로 해석하지 않는다. `TC-DELETE-001–008`의 실제 검증 범위는 위 근거와 배포 기록으로 한정한다.
+
 ## U-OBS-20260909 — 폐쇄망 업로드 오류 진단 0.16.0
 
 - 범위: 공개 업로드 진단(요약·상세·복사·JSON 저장), HTTP/프록시/연결 오류 분류, 요청 ID 기반 서버 구조화 로그, 원인 정제·비노출, local/S3 보상 및 Docker logging 설정. DB migration과 업무 데이터는 변경하지 않았다.
@@ -655,7 +689,7 @@ Run ID / Date / Unit / Version / Commit 또는 uncommitted snapshot / OS·Browse
 
 ## U-DELETE-20260911 — 삭제 비밀번호 보호 0.17.0
 
-- 자동 검증: `npm test` 17 files / 74 tests PASS; `npm run typecheck`, `npm run lint`, `npm run build`, `git diff --check` PASS.
-- 삭제 대상 Version 비밀번호 검증, scrypt salted hash, Current 해제 및 순번 재사용 방지, 삭제 작업 영속화와 원본 정리 재시도를 통합 테스트로 확인했다.
-- 기존 행은 deploy backfill에서 기본 비밀번호 `1234` hash로 보강하며, 비밀번호 원문은 저장·로그·응답에 노출하지 않는다.
-- Browser/S3 운영 배포와 장기 메모리·실도면 평가는 후속 검증이다. GitHub push는 현재 실행 환경의 DNS 차단으로 보류됐다.
+- 당시 `npm test` 17 files / 74 tests, production build, diff check가 통과했다. typecheck/lint는 최종 수정 전 실행 기록이므로 최종 snapshot 전체 통과로 해석하지 않는다.
+- 정정: 당시 새 DELETE 통합 테스트는 salted hash 검증 및 기본 Current 삭제·순번 보존의 두 건이었다. 원본 정리 재시도·API 오류·Browser·실제 기존 DB backfill까지 통과했다는 이전 기록은 실행 근거가 없어 철회한다. repository가 비밀번호 인수를 사용하지 않는 누락도 후속 검토에서 발견했다.
+- 0.17.0은 로컬 commit `1e5c5fd`/`09721ff`까지 생성했으며 당시 운영 DB backfill·GitHub push·GHCR 게시·Compose 배포는 미완료였다. DNS 실패 후 허용 환경에서 재시도하지 않아 원격 장애로 확정할 수 없었다.
+- 후속 이슈 조치에서 인증된 fetch에 성공했고, 미게시 코드 보완 및 재검증을 수행한다. 실제 수용·게시·배포 결과는 이후 실행 기록을 기준으로 한다.

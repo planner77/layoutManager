@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { CadError, type Registration } from '@/domain/cad';
 import { type Database, writeTransaction } from '../db';
-import { hashDeletePassword } from '../password';
+import { hashDeletePassword, verifyDeletePassword } from '../password';
 export type FileRecord = { originalFilename: string; fileFormat: 'DXF' | 'DWG'; fileSize: number; sha256: string; storagePath: string };
 export class CadRepository {
   constructor(public db: Database) {}
@@ -28,16 +28,17 @@ export class CadRepository {
       return tx.cadLocation.update({ where: { id: locationId }, data: { currentVersionId: versionId } });
     });
   }
-  async deleteVersion(id: string, _password: string) {
+  async deleteVersion(id: string, password: string) {
     const file = await this.db.cadFileVersion.findUnique({ where: { id }, select: { id:true, locationId:true, storagePath:true, deletePasswordHash:true } });
     if (!file) throw new CadError('FILE_NOT_FOUND', '도면 버전을 찾을 수 없습니다.', 404);
+    if (!await verifyDeletePassword(password, file.deletePasswordHash)) throw new CadError('INVALID_DELETE_PASSWORD', '삭제 비밀번호가 올바르지 않습니다.', 403);
     return writeTransaction(this.db, async tx => {
       const current = await tx.cadFileVersion.findUnique({ where: { id }, select: { id:true, locationId:true, storagePath:true, deletePasswordHash:true } });
       if (!current || current.deletePasswordHash !== file.deletePasswordHash) throw new CadError('FILE_NOT_FOUND', '도면 버전을 찾을 수 없습니다.', 404);
-      await tx.cadLocation.updateMany({ where: { id: current.locationId, currentVersionId: id }, data: { currentVersionId: null } });
+      const cleared = await tx.cadLocation.updateMany({ where: { id: current.locationId, currentVersionId: id }, data: { currentVersionId: null } });
       const job = await tx.cadDeletionJob.create({ data: { id: randomUUID(), versionId: id, storagePath: current.storagePath } });
       await tx.cadFileVersion.delete({ where: { id } });
-      return { id, storagePath: current.storagePath, jobId: job.id };
+      return { id, locationId: current.locationId, wasCurrent: cleared.count === 1, storagePath: current.storagePath, jobId: job.id };
     });
   }
 }

@@ -20,6 +20,7 @@ test('TC-E2E-002/DWG-001/003: registered DWG uses its own adapter, controls and 
   await page.goto('/cad/upload');
   await page.getByLabel('CAD 파일').setInputFiles(sample('Line.dwg'));
   for (const [label, value] of [['사업부','DWG통합'],['사업장','U7B'],['동','A'],['층','1']]) await page.getByLabel(label,{exact:true}).fill(value);
+  await page.getByLabel('삭제 비밀번호', {exact:true}).fill('1234');
   const response = page.waitForResponse(r => r.url().endsWith('/api/cad-files') && r.request().method() === 'POST');
   await page.getByRole('button', { name: '도면 등록', exact: true }).click();
   const uploaded = await response; expect(uploaded.status()).toBe(201); const file = await uploaded.json();

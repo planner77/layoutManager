@@ -46,7 +46,7 @@ model CadFileVersion {
 model CadDeletionJob {
   id String @id
   versionId String @map("version_id")
-  storagePath String @map("storage_path")
+  storagePath String @unique(map: "uq_deletion_job_storage_path") @map("storage_path")
   createdAt DateTime @default(now()) @map("created_at")
   @@index([createdAt], map: "ix_deletion_job_created")
 }

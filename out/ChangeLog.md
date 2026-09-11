@@ -1,11 +1,17 @@
 # ChangeLog
 
+# 0.17.1 — GitHub #2 / #3
+
+- Fixed: 파일 선택과 제출 시 서버 설정의 최대 MiB를 기준으로 사전 검증해 초과 파일의 전송을 차단한다. 서버 413 검증을 유지한다.
+- Tests: 기존 도면 설명의 UI 메모 등록·저장·조회 회귀와 100 MiB 경계/설정 변경/전송 차단 시험을 보강한다. 실제 결과는 TestReport의 이슈 조치 기록을 기준으로 한다.
+- Fixed: 미게시 DELETE 구현의 서버 비밀번호 검증 누락과 제한/정리 경계에 대한 게시 전 보완. 배포는 실제 검증 완료 후 기록한다.
+
 # 0.17.0 — 2026-09-11 Unit DELETE
 
 - Added: 신규 등록 삭제 비밀번호, 비밀번호 확인 후 선택 Version 삭제, 기존 Version 비밀번호 1234의 salt hash 초기화.
 - Added: 삭제 Current 해제, 순번 재사용 방지, DB 승인 기록 기반 local/S3 원본 정리와 실패 재시도.
-- Compatibility: 신규 업로드 API의 비밀번호는 필수이며 미입력400. DB migration/backfill 필요. 현행 앱 버전은 구현 전까지0.16.0이며 이 항목은 출시 완료 기록이 아니다.
-- Tests: TC-DELETE-001–008 NOT RUN. 실제 검증·DB 적용·release/배포 결과는 `U-DELETE-20260911`에 기록한다.
+- Compatibility: 신규 업로드 API의 비밀번호는 필수이며 미입력400. DB migration/backfill 필요. 0.17.0 커밋 당시 원격 게시·운영 DB 적용·배포는 미완료였다.
+- Tests: 당시 자동 시험은17 files/74 tests였다. TC-DELETE 전체 수용 결과는 아니며 게시 전 보완과 실제 DB 적용 결과를 TestReport에서 확인한다.
 
 # 0.16.0 — 2026-09-09 Unit OBS
 

@@ -1,5 +1,14 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## GitHub #2 / #3 — 목표 0.17.1
+
+- TC-DESC-005 강화: UI에서 여러 줄 메모 입력→등록→목록/Location/Viewer 표시→새로고침 후 유지. 기존 선택 필드·literal 검색도 회귀한다.
+- TC-PREFLIGHT-001: 실제 브라우저 File의 100 MiB - 1 / 정확히 100 MiB / 100 MiB + 1 경계와 설정 변경에 따른 기준 일치. 과대 선택은 즉시 현재 최대 용량 안내·선택 초기화·POST 0회.
+- TC-PREFLIGHT-002: 정상 파일 재선택으로 오류 해제·등록 가능; change 이벤트를 우회한 제출도 과대 파일 POST 0회. 기존 업로드 진단 UI 유지.
+- TC-PREFLIGHT-003: 클라이언트 검증 우회 API에서 서버 FILE_TOO_LARGE/413 유지, 기존 정확한 서버 크기 경계 회귀.
+- Manager(root)가 요구사항/AC를 기록하고 Developer 구현 검토 후 QA가 독립 검증한다. typecheck/lint/unit/build/관련 Browser 결과와 실제 소스 commit/push를 TestReport에 기록하고 통과한 이슈만 요약 댓글 후 닫는다.
+- 게시 전 DELETE 회귀: 기존 미게시 변경의 repository 비밀번호 검증 누락을 보완하고 검증한 hash를 transaction에서 재확인한다. KDF 동시 실행/대기열·실패 시도 카운터를 제한하고, 원본 정리 대기202 및 결과 불확실 안내, backfill 검증을 실제 시험한다. 이전 U-DELETE 기록 중 실행 근거 없는 통과 주장은 이번 결과로 정정한다.
+
 ## Unit DELETE 실행 계획 — 2026-09-11 사용자 요청 / 목표 0.17.0
 
 Manager 설계→Sol 구현→Manager review→Luna QA 시험/문서→Manager 판정→root release/운영 적용. 승인 범위는 신규 비밀번호·선택 Version 삭제·기존 비밀번호 `1234` 초기화다. 비밀번호/삭제 설정 변경이 있는 기존 데이터는 실제 적용 전 백업하고 검증한다. 이번 설계 기록 시 모든 아래 TC는 NOT RUN이다.

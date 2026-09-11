@@ -14,8 +14,8 @@ test('TC-E2E-001: UI registration through current replacement and both DXF rende
     for (const [label, value] of [['사업부', '통합검증'], ['사업장', 'DXF릴리스'], ['동', 'A동'], ['층', '2층']]) {
       await page.getByLabel(label, { exact: true }).fill(value);
     }
-      await page.getByLabel('등록일', { exact: true }).fill('2026-09-08');
-      await page.getByLabel('삭제 비밀번호', { exact: true }).fill('1234');
+    await page.getByLabel('등록일', { exact: true }).fill('2026-09-08');
+    await page.getByLabel('삭제 비밀번호', { exact: true }).fill('1234');
     const response = page.waitForResponse(r => r.url().endsWith('/api/cad-files') && r.request().method() === 'POST');
     await page.getByRole('button', { name: '도면 등록', exact: true }).click();
     const uploaded = await response;

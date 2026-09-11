@@ -2,11 +2,9 @@ import { context } from '@/server/context';
 import { failure, requireSameOrigin } from '@/server/http';
 import { validateDeletePassword, validateId, CadError } from '@/domain/cad';
 import { revalidatePath } from 'next/cache';
-import { verifyDeletePassword } from '@/server/password';
 import { randomUUID } from 'node:crypto';
+import { clearDeleteAttempts, reserveDeleteAttempt } from '@/server/delete-rate-limit';
 export const runtime = 'nodejs';
-const attempts = new Map<string, { count: number; until: number }>();
-function pruneAttempts(now: number) { for (const [key, state] of attempts) if (state.until <= now) attempts.delete(key); if (attempts.size > 10000) attempts.clear(); }
 export async function DELETE(request: Request, { params }: { params: Promise<{ versionId: string }> }) {
   const requestId = randomUUID();
   try {
@@ -22,22 +20,16 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ v
       body = JSON.parse(new TextDecoder().decode(Buffer.concat(chunks.map(chunk => Buffer.from(chunk)))));
     } catch (error) { if (error instanceof CadError) throw error; throw new CadError('INVALID_DELETE_PASSWORD', 'JSON 비밀번호를 입력해주세요.'); }
     const password = validateDeletePassword((body as { password?: unknown })?.password);
-    const key = id, now = Date.now(); pruneAttempts(now); const state = attempts.get(key);
-    if (state && state.until > now && state.count >= 5) { const e = new CadError('DELETE_RATE_LIMITED', '잠시 후 다시 시도해주세요.', 429); throw e; }
+    reserveDeleteAttempt(id);
     const { repo, storage } = context();
-    const file = await repo.db.cadFileVersion.findUnique({ where: { id }, select: { deletePasswordHash: true } });
-    if (!file) throw new CadError('FILE_NOT_FOUND', '도면 버전을 찾을 수 없습니다.', 404);
-    if (!await verifyDeletePassword(password, file.deletePasswordHash)) {
-      const next = state && state.until > now ? { count: state.count + 1, until: state.until } : { count: 1, until: now + 60_000 }; attempts.set(key, next);
-      if (next.count > 5) throw new CadError('DELETE_RATE_LIMITED', '잠시 후 다시 시도해주세요.', 429);
-      throw new CadError('INVALID_DELETE_PASSWORD', '삭제 비밀번호가 올바르지 않습니다.', 403);
-    }
-    attempts.delete(key);
     const deleted = await repo.deleteVersion(id, password);
+    clearDeleteAttempts(id);
     let cleanupPending = false;
     try { await storage.removeUncommitted(deleted.storagePath); await repo.db.cadDeletionJob.delete({ where: { id: deleted.jobId } }); }
     catch { cleanupPending = true; }
     try { revalidatePath('/'); } catch { /* cache refresh is best effort */ }
-    return Response.json({ deleted: true, cleanupPending, requestId }, { status: cleanupPending ? 202 : 200, headers: { 'X-Request-Id': requestId } });
+    try { revalidatePath(`/cad/locations/${deleted.locationId}`); } catch { /* cache refresh is best effort */ }
+    try { revalidatePath(`/cad/versions/${id}/viewer`); } catch { /* cache refresh is best effort */ }
+    return Response.json({ deleted: true, cleanupPending, locationId: deleted.locationId, wasCurrent: deleted.wasCurrent, requestId }, { status: cleanupPending ? 202 : 200, headers: { 'X-Request-Id': requestId } });
   } catch (error) { return failure(error); }
 }

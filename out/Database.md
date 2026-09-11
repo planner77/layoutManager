@@ -4,15 +4,16 @@
 
 ## 관계
 
-### Unit DELETE 추가 schema — 0.17.0 설계, 아직 미적용
+### Unit DELETE 추가 schema — 0.17.0 도입 / 0.17.1 제약 보완
 
-아래 정의가 이 Unit의 schema 기준이다. 후속 구현에서 실제 migration 이름과 introspection/회귀 결과를 변경 이력에 기록한다. 아래 기존 표/그림은 0.16.0 상태이며 새로운 Column/Table은 이 절과 함께 읽는다.
+아래 정의가 이 Unit의 schema 기준이다. `202609110001_delete_password`는 필드·삭제 작업과 기존 순번 초기화를, `202609110002_delete_invariants`는 삭제 locator Unique와 양수 순번 trigger를 추가한다. 실제 적용·검증 결과는 TestReport를 기준으로 한다. 아래 기존 표/그림은 0.16.0 상태이며 새로운 Column/Table은 이 절과 함께 읽는다.
 
 | 모델 / Column | 타입·Null·초기값 | 계약 |
 | --- | --- | --- |
 | CadFileVersion.delete_password_hash (`deletePasswordHash`) | TEXT/String?, migration 기존 행은 NULL | 서버 전용 scrypt encoding. SQL default 비밀번호/hash 없음. backfill 완료 후 모든 활성 행 non-null; 신규 INSERT의 NULL/빈 hash는 DB trigger로 거부하며 기존 hash를 NULL/빈 값으로 돌리는 UPDATE도 거부. 공개 DTO에서 제외. |
-| CadLocation.next_version (`nextVersion`) | INTEGER/Int NOT NULL DEFAULT 1, CHECK > 0 | migration에서 Location별 기존 MAX(version)+1로 채움. 등록 transaction이 이 값을 순번으로 사용하고 1 증가시킴. 삭제 시 감소하지 않음. 기존 `(location_id,version)` Unique 유지. |
-| CadDeletionJob.id | TEXT/String PK | 삭제 승인된 Version UUID. 삭제된 Version을 참조하는 FK는 두지 않음. |
+| CadLocation.next_version (`nextVersion`) | INTEGER/Int NOT NULL DEFAULT 1, INSERT/UPDATE trigger로 > 0 강제 | migration에서 Location별 기존 MAX(version)+1로 채움. 등록 transaction이 이 값을 순번으로 사용하고 1 증가시킴. 삭제 시 감소하지 않음. 기존 `(location_id,version)` Unique 유지. |
+| CadDeletionJob.id | TEXT/String PK | 삭제 작업 자체의 랜덤 UUID. 삭제된 Version을 참조하는 FK는 두지 않음. |
+| CadDeletionJob.version_id (`versionId`) | TEXT/String NOT NULL | 삭제 승인된 Version UUID. 대상 행 삭제 뒤에도 작업 식별을 위해 보존한다. |
 | CadDeletionJob.storage_path (`storagePath`) | TEXT/String NOT NULL UNIQUE | 승인된 삭제 대상 locator. 원본 정리 성공 때까지 보존하며 새 경로를 입력받지 않음. |
 | CadDeletionJob.created_at (`createdAt`) | DATETIME/DateTime NOT NULL DEFAULT now | 삭제 승인 transaction 시각. 완료 job은 제거하고 원본 이름·설명·비밀번호/hash를 job에 복사하지 않음. |
 

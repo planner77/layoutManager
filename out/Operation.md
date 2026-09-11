@@ -1,6 +1,6 @@
 # 운영·환경설정 초안
 
-**현재 0.16.0, 폐쇄망 업로드 진단·Docker 배포·host IP 접속·S3 호환 저장소 및 DWG 계측 지원.** install/generate/deploy/dev/build/start/typecheck/lint/test/db:check/test:e2e가 동작한다. 초기 설치는 npm ci → db:generate → db:deploy 순서이다. 서버는 `0.0.0.0`으로 수신하며 기본 검증 주소는 `127.0.0.1:3100`이다.
+**현재 소스 0.17.1, 업로드 크기 사전 검증·삭제 비밀번호·폐쇄망 업로드 진단·Docker 배포·host IP 접속·S3 호환 저장소 및 DWG 계측 지원.** 실제 게시·배포 버전은 TestReport의 해당 실행 기록을 확인한다. install/generate/deploy/dev/build/start/typecheck/lint/test/db:check/test:e2e가 동작한다. 초기 설치는 npm ci → db:generate → db:deploy 순서이다. 서버는 `0.0.0.0`으로 수신하며 기본 검증 주소는 `127.0.0.1:3100`이다.
 
 Playwright 기본 설치는 `cd src` 후 `npx playwright install chromium`이다. 이미 설치된 Chromium을 사용할 때는 `PLAYWRIGHT_CHROMIUM_EXECUTABLE`에 실행 파일 경로를 설정한다. E2E는 기본 3101 포트와 독립 `/tmp/cad-e2e-*` DB/Storage를 사용하며, 포트 충돌 시 `CAD_E2E_PORT=3111`처럼 바꿀 수 있다. 이 임시 데이터는 운영 데이터와 분리되며 Git에 포함되지 않는다.
 
@@ -67,12 +67,12 @@ Commit/Push 절차:
 
 ## 데이터 백업·복구 계획
 
-### Unit DELETE 적용 계획 — 0.17.0 / 구현 전
+### Unit DELETE 업그레이드 — 0.17.0 도입 / 0.17.1 보완
 
 - 신규 등록은 삭제용 비밀번호가 필수다. 비밀번호를 아는 사용자는 선택 Version을 삭제할 수 있으며 열람·원본 다운로드에는 기존 정책이 유지된다. 기존 도면 비밀번호는 사용자 요청대로 최초 적용 시 `1234`로 초기화한다. 신규 등록에 이 값을 자동 입력하지 않는다.
-- 실제 적용 순서: 운영 쓰기 중지→SQLite와 local/S3 원본의 일관된 백업→0.17.0의 `db:deploy`(migration+기존 NULL hash backfill)→NULL hash 0/기존 수·Current·locator 검증→앱 재시작/health·등록 페이지 확인. 기존 도면의 1234 검증은 읽기 전용 hash 검증으로 하고 사용자 도면을 시험 삭제하지 않는다. build만으로 운영 DB를 변경하지 않는다.
+- 실제 적용 순서: 운영 쓰기 중지→SQLite와 local/S3 원본의 일관된 백업→0.17.1의 `db:deploy`(migration+기존 NULL hash backfill)→NULL hash 0/기존 수·Current·locator 검증→앱 재시작/health·등록 페이지 확인. 기존 도면의 1234 검증은 읽기 전용 hash 검증으로 하고 사용자 도면을 시험 삭제하지 않는다. build만으로 운영 DB를 변경하지 않는다.
 - backfill 실패 시 서비스 재개를 중단하고 같은 명령으로 남은 NULL 행만 재개한다. 이미 설정된 hash를 일괄 재설정하지 않는다. hash 자체를 로그/보고서에 출력하지 않고 처리 건수·성공 여부만 남긴다. 새 schema 적용 후 구버전 앱만 되돌리면 신규 등록 필수 입력과 정합성이 맞지 않으므로 호환 코드 또는 일관된 백업 복구를 검토한다.
-- 삭제는 선택 Version만 대상이며 Current이면 NULL로 해제한다. 마지막 Version 삭제 후 Location은 보존한다. 성공 200은 원본 정리도 완료됐다는 뜻이고 202는 화면상 삭제 완료·원본 정리 대기이다. 원본 정리 실패는 DB의 승인된 job으로 남는다. 구현될 `npm --prefix src run storage:cleanup`은 이 job만 재시도하며 다른 원본/orphan을 자동 삭제하지 않는다. 실제 명령 구현·결과는 TestReport로 확정한다.
+- 삭제는 선택 Version만 대상이며 Current이면 NULL로 해제한다. 마지막 Version 삭제 후 Location은 보존한다. 성공 200은 원본 정리도 완료됐다는 뜻이고 202는 화면상 삭제 완료·원본 정리 대기이다. 원본 정리 실패는 DB의 승인된 job으로 남는다. `npm --prefix src run storage:cleanup`은 이 job만 재시도하며 다른 원본/orphan을 자동 삭제하지 않는다. 미처리 job 또는 오류가 있으면 종료 코드1이며 경로를 출력하지 않는 오류 코드로 확인한다. 실행 결과는 TestReport를 기준으로 한다.
 - 비밀번호 오입력 제한 429는 남은 대기 시간 후 재시도하며 기본값/우회 비밀번호를 사용하지 않는다. 통신·COMMIT 결과 불확실은 먼저 목록에서 상태를 확인한다. 비밀번호·hash를 문의 로그나 진단 파일에 복사하지 않는다. 외부 백업·S3 versioning의 과거 원본 영구 삭제는 별도 보관 정책의 영역이다.
 
 - 안전한 초기 방식은 앱 쓰기 중지 후 SQLite connection을 닫고 DB와 CAD directory를 함께 백업하는 것이다. WAL 사용 시 DB 한 파일만 임의 복사하지 않는다. 온라인 백업은 SQLite backup 방식 검증 후 제공한다.
