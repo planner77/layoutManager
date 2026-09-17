@@ -1,6 +1,5 @@
 import packageInfo from '../package.json';
 import { randomUUID } from 'node:crypto';
-import { sanitizeServerError, type SafeServerError } from './upload-observability';
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 export type LogFormat = 'json' | 'pretty';
@@ -9,6 +8,7 @@ export type LogOutcome = 'started' | 'success' | 'warning' | 'failure';
 const priorities: Record<LogLevel, number> = { debug: 10, info: 20, warn: 30, error: 40 };
 const sensitiveKey = /(password|authorization|cookie|token|secret|credential|access[_-]?key|session)/i;
 const allowedScalar = new Set(['string', 'number', 'boolean']);
+const safeErrorCodes = /^(?:E[A-Z0-9_]+|P\d{4}|SQLITE_[A-Z0-9_]+|[A-Z][A-Z0-9_]{2,63})$/;
 
 function configuredLevel(): LogLevel {
   const value = process.env.LOG_LEVEL?.toLowerCase();
@@ -24,11 +24,22 @@ function safeString(value: string) {
   return normalized.length <= 256 ? normalized : `${normalized.slice(0, 253)}...`;
 }
 
+function safeError(error: Error) {
+  const value = error as Error & { code?: unknown; cause?: unknown };
+  const code = typeof value.code === 'string' && safeErrorCodes.test(value.code) ? value.code : undefined;
+  return {
+    name: /^[A-Za-z][A-Za-z0-9_.-]{0,63}$/.test(error.name) ? error.name : 'Error',
+    ...(code ? { code } : {}),
+    message: 'Internal error details suppressed.',
+    ...(value.cause instanceof Error ? { cause: { name: value.cause.name || 'Error', message: 'Internal error details suppressed.' } } : {}),
+  };
+}
+
 function sanitizeValue(key: string, value: unknown, depth = 0): unknown {
   if (sensitiveKey.test(key)) return '[REDACTED]';
   if (value === null || value === undefined) return value;
   if (depth >= 3) return '[TRUNCATED]';
-  if (value instanceof Error) return sanitizeServerError(value);
+  if (value instanceof Error) return safeError(value);
   if (allowedScalar.has(typeof value)) return typeof value === 'string' ? safeString(value) : value;
   if (Array.isArray(value)) return value.slice(0, 20).map((item, index) => sanitizeValue(String(index), item, depth + 1));
   if (typeof value === 'object') {
@@ -93,7 +104,7 @@ export class RequestLogContext {
   info(event: string, fields: Record<string, unknown> = {}) { writeLog('info', event, this.base(fields)); }
   warn(event: string, fields: Record<string, unknown> = {}) { writeLog('warn', event, this.base(fields)); }
   error(event: string, error: unknown, fields: Record<string, unknown> = {}) {
-    writeLog('error', event, this.base({ ...fields, error: sanitizeServerError(error) }));
+    writeLog('error', event, this.base({ ...fields, error }));
   }
 
   completed(status: number, outcome: Exclude<LogOutcome, 'started'> = status >= 400 ? 'failure' : 'success') {
@@ -106,8 +117,4 @@ export class RequestLogContext {
     headers.set('X-Request-Id', this.requestId);
     return headers;
   }
-}
-
-export function logErrorFields(error: unknown): { error: SafeServerError } {
-  return { error: sanitizeServerError(error) };
 }
