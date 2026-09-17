@@ -35,7 +35,7 @@ test('TC-NAME-002/003: default and custom names lead list, viewer and delete con
 test('TC-NAME-003: upload form previews the normalized location with an unresolved version', async ({ page }) => {
   await page.goto('/cad/upload');
   for (const [label, value] of [['사업부',' 이름UI '],['사업장','전용미리보기'],['동','P동'],['층','9층']]) await page.getByLabel(label, { exact: true }).fill(value);
-  await expect(page.getByLabel('도면 이름')).toHaveAttribute('placeholder', '[이름UI][전용미리보기][P동][9층]_V{등록 시 확정}');
+  await expect(page.getByText('비워두면 [이름UI][전용미리보기][P동][9층]_V{등록 시 확정} 형식으로 표시됩니다.')).toBeVisible();
   await expect(page.getByText('실제 버전 번호는 등록할 때 확정됩니다.')).toBeVisible();
   await page.getByLabel('CAD 파일').setInputFiles({ name: 'ui-name-source.dxf', mimeType: 'application/octet-stream', buffer: drawing });
   await page.getByLabel('도면 이름').fill('사용자 입력 이름');
