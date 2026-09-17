@@ -24,6 +24,8 @@ services:
       DATABASE_URL: file:/data/db/cad.sqlite
       CAD_STORAGE_PATH: /data/cad
       MAX_UPLOAD_SIZE_MB: "${MAX_UPLOAD_SIZE_MB:-100}"
+      LOG_LEVEL: "${LOG_LEVEL:-info}"
+      LOG_FORMAT: "${LOG_FORMAT:-json}"
       CAD_STORAGE_BACKEND: "${CAD_STORAGE_BACKEND:-local}"
       # S3 모드에서만 아래 값을 채운다. credential은 image build argument가 아닌 runtime env다.
       CAD_S3_ENDPOINT: "${CAD_S3_ENDPOINT:-}"
@@ -47,6 +49,7 @@ services:
       start_period: 20s
       retries: 3
     logging:
+      # stdout/stderr의 한 줄 JSON을 Docker local driver가 보존하며 중앙 수집기 추가 시 그대로 전달할 수 있다.
       driver: local
       options:
         max-size: "10m"
