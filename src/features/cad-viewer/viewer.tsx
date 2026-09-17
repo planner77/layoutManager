@@ -74,9 +74,9 @@ export function CadViewer({
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
       const shell = viewerShell.current;
-      if (document.fullscreenElement === shell) return;
       fullscreenRequestedRef.current = false;
       setIsFullscreen(false);
+      if (document.fullscreenElement === shell) void document.exitFullscreen?.().catch(() => undefined);
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
