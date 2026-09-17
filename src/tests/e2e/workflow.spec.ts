@@ -8,6 +8,7 @@ test('TC-E2E-001: UI registration through current replacement and both DXF rende
   const drawing = Buffer.from('0\nSECTION\n2\nENTITIES\n0\nLINE\n8\n0\n10\n0\n20\n0\n11\n100\n21\n100\n0\nCIRCLE\n8\n0\n10\n50\n20\n50\n40\n25\n0\nENDSEC\n0\nEOF\n');
   const files: { id: string; locationId: string }[] = [];
   await page.goto('/');
+  await expect(page.getByRole('combobox', { name: '현재 버전', exact: true })).toHaveCount(0);
   for (const version of [1, 2]) {
     await page.getByRole('navigation').getByRole('link', { name: '파일 등록', exact: true }).click();
     await page.getByLabel('CAD 파일').setInputFiles({ name: `release-v${version}.dxf`, mimeType: 'application/octet-stream', buffer: drawing });
@@ -31,8 +32,14 @@ test('TC-E2E-001: UI registration through current replacement and both DXF rende
   await page.getByRole('button', { name: '검색', exact: true }).click();
   await expect(page.getByRole('row').filter({ hasText: 'release-v1.dxf' })).toContainText('이전 버전');
 
+  await page.goto('/?filename=release-v&site=DXF릴리스&current=false');
+  await expect(page.getByRole('button', { name: '현재 버전만 표시', exact: true })).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.getByRole('combobox', { name: '현재 버전', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('row').filter({ hasText: 'release-v1.dxf' })).toContainText('이전 버전');
+  await expect(page.getByRole('row').filter({ hasText: 'release-v2.dxf' })).toContainText('Current');
+  await expect(page.getByText('등록일 최신순 · 모든 버전')).toBeVisible();
+
   const toggle = page.getByRole('button', { name: '현재 버전만 표시', exact: true });
-  await expect(toggle).toHaveAttribute('aria-pressed', 'false');
   await toggle.click();
   await expect(page).toHaveURL(/filename=release-v/);
   await expect(page).toHaveURL(/site=DXF%EB%A6%B4%EB%A6%AC%EC%8A%A4/);
@@ -55,6 +62,10 @@ test('TC-E2E-001: UI registration through current replacement and both DXF rende
   const listed = await current.json();
   expect(listed.total).toBe(1);
   expect(listed.items[0].id).toBe(files[0].id);
+  const previous = await request.get('/api/cad-files?site=DXF릴리스&current=false');
+  const previousListed = await previous.json();
+  expect(previousListed.total).toBe(1);
+  expect(previousListed.items[0].id).toBe(files[1].id);
   const detail = await request.get(`/api/cad-locations/${files[0].locationId}`);
   const versions = (await detail.json()).versions;
   expect(versions.filter((v: { isCurrent: boolean }) => v.isCurrent).map((v: { id: string }) => v.id)).toEqual([files[0].id]);
