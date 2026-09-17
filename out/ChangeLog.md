@@ -1,5 +1,14 @@
 # ChangeLog
 
+# 0.21.0 — GitHub #10
+
+- Added: 도면 Viewer에 전체 화면 진입/종료를 추가했다. 표준 Fullscreen API를 우선 사용하고 제한되는 환경에서는 CSS fixed viewport fallback으로 화면 가용 영역을 최대화한다.
+- Added: 전체 화면 안에서 확대·축소·화면 맞춤·이동과 명시적인 종료 버튼을 제공한다. `Escape`는 native/fallback 모두 종료하며 `fullscreenchange`로 브라우저 자체 해제와 상태를 동기화한다.
+- Changed: 전체 화면 전환은 Viewer/Canvas를 재생성하지 않고 같은 DOM의 크기만 바꾸므로 현재 확대/이동 상태를 불필요하게 초기화하지 않는다. 기존 dxf-viewer `autoResize`와 three-dxf-viewer/DWG `ResizeObserver` 경계를 유지한다.
+- Tests: PR #13의 최초 run `35210713169`은 Playwright 합성 ESC와 native fullscreen 해제 차이로 Viewer E2E 2건이 실패했다(31/33). ESC를 명시적 종료 경로로 보강한 최종 기능 head `9eff6d438ec86fffd6acdc99ea4d046c028f6690`의 run `35211193682`에서 TypeScript, ESLint, 22 files/100 Unit·Integration, Production build, Chromium E2E 33/33이 모두 통과했다.
+- Version: 신규 UI 기능이므로 SemVer MINOR `0.20.0` → `0.21.0`. DB schema 및 외부 의존성 변경 없음.
+- Release: PR #13 병합 후 `Build and publish Docker image` workflow가 `v0.21.0`, `ghcr.io/planner77/layoutmanager:0.21.0`, `latest`를 관리한다. 실제 merge SHA, workflow run, digest는 `Release-0.21.0.md`를 기준으로 한다.
+
 # Unreleased — GitHub #8
 
 - Added: 도면 목록에 `현재 버전만 표시` 빠른 토글을 추가했다. ON은 기존 `current=true` 조회를 재사용하고 OFF는 Current 조건을 제거한다.
