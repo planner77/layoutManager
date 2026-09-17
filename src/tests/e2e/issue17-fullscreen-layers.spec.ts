@@ -35,18 +35,24 @@ test('TC-ISSUE17-001: fullscreen layer panel controls three-dxf-viewer without r
   await expect(panel).toBeVisible();
   await expect(panel.getByRole('checkbox', { name: '배관 A', exact: true })).toBeChecked();
   await expect(panel.getByRole('checkbox', { name: 'EQUIP 01', exact: true })).toBeChecked();
+  await expect.poll(async () => canvas.evaluate(element => {
+    const rect = element.getBoundingClientRect();
+    const canvasElement = element as HTMLCanvasElement;
+    return Math.abs(canvasElement.width - rect.width * devicePixelRatio) < 2 && Math.abs(canvasElement.height - rect.height * devicePixelRatio) < 2;
+  })).toBe(true);
+  const fullscreenZoomed = await canvas.screenshot();
 
   await panel.getByRole('checkbox', { name: '배관 A', exact: true }).uncheck();
-  expect((await canvas.screenshot()).equals(zoomed)).toBe(false);
+  expect((await canvas.screenshot()).equals(fullscreenZoomed)).toBe(false);
   await panel.getByRole('checkbox', { name: '배관 A', exact: true }).check();
-  await expect.poll(async () => (await canvas.screenshot()).equals(zoomed)).toBe(true);
+  await expect.poll(async () => (await canvas.screenshot()).equals(fullscreenZoomed)).toBe(true);
   expect(contentRequests).toBe(1);
 
   await panel.getByRole('button', { name: '전체 해제', exact: true }).click();
   await expect(panel.getByRole('checkbox', { name: '배관 A', exact: true })).not.toBeChecked();
   await expect(panel.getByRole('checkbox', { name: 'EQUIP 01', exact: true })).not.toBeChecked();
   await panel.getByRole('button', { name: '전체 선택', exact: true }).click();
-  await expect.poll(async () => (await canvas.screenshot()).equals(zoomed)).toBe(true);
+  await expect.poll(async () => (await canvas.screenshot()).equals(fullscreenZoomed)).toBe(true);
 
   await panel.getByRole('button', { name: '레이어 패널 접기', exact: true }).click();
   await expect(panel).toHaveCount(0);
@@ -54,6 +60,7 @@ test('TC-ISSUE17-001: fullscreen layer panel controls three-dxf-viewer without r
   await expect(page.getByRole('complementary', { name: '전체 화면 레이어' })).toBeVisible();
 
   await page.getByRole('button', { name: '전체 화면 종료', exact: true }).click();
+  await expect.poll(async () => (await canvas.screenshot()).equals(zoomed)).toBe(true);
   await page.getByRole('button', { name: /레이어 선택/ }).click();
   await expect(page.getByRole('menuitemcheckbox', { name: '배관 A', exact: true })).toBeChecked();
   await expect(page.getByRole('menuitemcheckbox', { name: 'EQUIP 01', exact: true })).toBeChecked();
