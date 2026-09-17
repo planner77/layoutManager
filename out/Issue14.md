@@ -1,6 +1,6 @@
 # Issue #14 — 사설 IP HTTP 환경 Viewer 회귀 수정
 
-기준일: 2026-09-17
+기준일: 2026-09-18
 
 ## 요구사항 명확화
 
@@ -20,7 +20,7 @@ Issue #14의 핵심 요구사항은 `crypto.randomUUID()` 자체를 대체하는
 
 ## 원인 분석
 
-`0.20.0`에서 추가된 전역 로딩의 `beginLoading()`은 현재 다음 순서로 실행된다.
+`0.20.0`에서 추가된 전역 로딩의 `beginLoading()`은 다음 순서로 실행되고 있었다.
 
 1. `crypto.randomUUID()` 호출
 2. sequence 증가
@@ -49,7 +49,7 @@ const id = `global-loading-${sequence}`;
 
 `CadViewer` 자체에는 수정이 필요하지 않다. 원인은 Viewer보다 앞단의 공통 loading provider에 있고, 공통 위치를 수정하면 등록/삭제/Current 변경 등 동일 provider를 사용하는 기능도 함께 호환된다.
 
-## 회귀 테스트 계획
+## 회귀 테스트
 
 Playwright의 localhost는 일반적인 Secure Context 취급을 받을 수 있으므로 운영 사설 IP HTTP 조건을 그대로 재현하는 것만으로는 회귀 검출이 안정적이지 않다. 자동 테스트에서는 페이지 초기화 시 `crypto.randomUUID`를 의도적으로 제거하여 실패 조건을 결정적으로 모사한다.
 
@@ -67,11 +67,11 @@ Playwright의 localhost는 일반적인 Secure Context 취급을 받을 수 있�
 
 ### 별도 운영 회귀
 
-자동 CI와 별개로 실제 배포 검증 시에는 기존 0.19.2 데이터 volume을 보존한 상태에서 최신 이미지를 연결하고 `http://<사설 IP>:<port>`로 접속하여 기존 DXF가 표시되는지 확인한다. 이 검증은 Docker image 생성/배포 단계에서 수행하며 이번 코드 변경만으로 완료 처리하지 않는다.
+자동 CI와 별개로 실제 배포 검증 시에는 기존 0.19.2 데이터 volume을 보존한 상태에서 최신 이미지를 연결하고 `http://<사설 IP>:<port>`로 접속하여 기존 DXF가 표시되는지 확인한다. 이 검증은 GitHub Actions의 localhost 회귀와 별개인 운영 smoke test다.
 
 ## 버저닝
 
-현재 버전은 `0.21.0`이다. 이번 변경은 기존 기능의 HTTP 환경 호환성 회귀를 수정하며 공개 기능/API를 추가하지 않으므로 SemVer PATCH인 `0.21.1`로 변경한다.
+이번 변경은 기존 기능의 HTTP 환경 호환성 회귀를 수정하며 공개 기능/API를 추가하지 않으므로 SemVer PATCH인 `0.21.1`로 변경했다.
 
 - `0.21.0` → `0.21.1`
 - 버전 단일 기준: `src/package.json`
@@ -85,8 +85,39 @@ Playwright의 localhost는 일반적인 Secure Context 취급을 받을 수 있�
 - `src/tests/e2e/global-loading.spec.ts`: randomUUID 부재 Viewer 회귀 추가
 - `src/package.json`: 0.21.1 PATCH 버전 반영
 
-## 검증 상태
+## 검증 및 릴리스 결과
 
-작업 브랜치: `fix/issue-14-insecure-randomuuid`
+### PR / CI
 
-코드 및 회귀 테스트는 본 이슈 범위에서 반영한다. 저장소의 GitHub Actions PR CI는 `pull_request -> main` 이벤트에서 실행되므로 PR 생성 전에는 원격 CI 결과를 완료로 기록하지 않는다. 실제 CI 결과와 Docker 사설-IP/기존-volume 검증은 후속 PR/릴리스 단계에서 갱신한다.
+- PR: #15 `fix: 사설 IP HTTP 환경의 Viewer 로딩 회귀 수정`
+- 작업 branch: `fix/issue-14-insecure-randomuuid`
+- PR CI run: `35231047884`
+- TypeScript: PASS
+- ESLint: PASS
+- Unit / Integration: **22 files / 100 tests PASS**
+- Production build: PASS
+- Playwright Chromium E2E: **34 / 34 PASS**
+- 신규 `TC-ISSUE14-001`: PASS
+
+### 병합 / 이슈 / 브랜치
+
+- 병합 방식: squash merge
+- `main` merge commit: `642bde71f9d9c0e1205df66c3828489ff2d4078f`
+- Issue #14: `completed` 종료 확인
+- 작업 branch: merge 후 자동 삭제 확인
+
+### 태그 / GHCR
+
+- Release tag: `v0.21.1`
+- Annotated tag object: `fb5eca8c9b9e70cca870ed37a2b2ab88093da336`
+- Tag 대상 commit: `642bde71f9d9c0e1205df66c3828489ff2d4078f`
+- Docker publish workflow run: `35263308541` — SUCCESS
+- `ghcr.io/planner77/layoutmanager:0.21.1`
+- `ghcr.io/planner77/layoutmanager:latest`
+- Digest: `sha256:fbb7b21ab81250a3d0a47fa963683895f57e8c02a9f4ceac57f37170469be451`
+- OCI revision: `642bde71f9d9c0e1205df66c3828489ff2d4078f`
+- OCI version: `0.21.1`
+
+## 남은 운영 확인
+
+GitHub Actions 자동 검증은 `crypto.randomUUID` 부재를 주입하여 문제의 직접 원인을 검증했으며, 실제 사설 IP HTTP 접속과 기존 0.19.2 named volume을 0.21.1 이미지에 연결하는 현장 smoke test는 수행하지 않았다. 운영 배포 시 해당 항목을 별도 확인한다.
