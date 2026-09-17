@@ -1,6 +1,6 @@
 # CAD Web Viewer P.O.C.
 
-현재 소스 버전은 0.19.1이며 도면 등록 비밀번호와 비밀번호 확인 삭제, 업로드 오류 진단을 지원합니다. 게시·배포 검증 결과는 [TestReport](out/TestReport.md)를 기준으로 합니다.
+현재 소스 버전은 0.21.0이며 도면 등록 비밀번호와 비밀번호 확인 삭제, 업로드 오류 진단, 전역 로딩 차단, 도면 뷰어 전체 화면 보기를 지원합니다. 게시·배포 검증 결과는 [TestReport](out/TestReport.md)와 버전별 Release 문서를 기준으로 합니다.
 
 공장·설비의 DXF/DWG 도면을 등록·검색·버전 관리하고, 세 오픈소스 기술의 브라우저 렌더링 적용 가능성을 평가하는 프로젝트입니다.
 
@@ -14,7 +14,7 @@
 - DXF Viewer 두 방식 전환, DWG 전용 경로, 오류·부분 지원·성능 계측.
 - 실도면 Entity 충실도·대형 파일·사용성 비교와 재현 가능한 테스트/문서.
 
-현재 지원: 파일 등록·메타데이터 검증·SHA-256·원본 조회·목록·검색·페이지 이동·Location 상세·Current 변경. 파일명은 대소문자를 구분하는 부분 일치, 위치 네 항목은 정확히 일치하는 조건으로 검색합니다. DXF 행의 **도면 보기**에서 dxf-viewer를 실행합니다. 확대·축소·드래그 이동·화면 맞춤·Resize·다시 불러오기를 지원합니다. Viewer 버튼으로 dxf-viewer와 three-dxf-viewer를 새로고침 없이 전환합니다. three-dxf-viewer에서는 레이어 드롭다운으로 여러 레이어를 선택하거나 전체 선택·전체 해제할 수 있습니다. 선택은 현재 Viewer에서 유지되며 재로드·Viewer 전환 시 전체 선택으로 초기화됩니다. 같은 Version의 원본 다운로드를 재사용합니다. DWG는 libredwg-web과 자체 LINE 렌더러로 표시합니다.
+현재 지원: 파일 등록·메타데이터 검증·SHA-256·원본 조회·목록·검색·페이지 이동·Location 상세·Current 변경. 파일명은 대소문자를 구분하는 부분 일치, 위치 네 항목은 정확히 일치하는 조건으로 검색합니다. DXF 행의 **도면 보기**에서 dxf-viewer를 실행합니다. 확대·축소·드래그 이동·화면 맞춤·Resize·다시 불러오기를 지원합니다. Viewer 버튼으로 dxf-viewer와 three-dxf-viewer를 새로고침 없이 전환합니다. three-dxf-viewer에서는 레이어 드롭다운으로 여러 레이어를 선택하거나 전체 선택·전체 해제할 수 있습니다. 선택은 현재 Viewer에서 유지되며 재로드·Viewer 전환 시 전체 선택으로 초기화됩니다. Viewer가 로드되면 **전체 화면**으로 확대할 수 있고 전체 화면에서도 확대·축소·화면 맞춤·이동을 사용할 수 있습니다. 표준 Fullscreen API가 제한되면 viewport fixed fallback을 사용하며 `Escape` 또는 **전체 화면 종료**로 복귀합니다. 전체 화면 전환 자체로 Viewer를 다시 생성하지 않아 현재 view state를 불필요하게 초기화하지 않습니다. 같은 Version의 원본 다운로드를 재사용합니다. DWG는 libredwg-web과 자체 LINE 렌더러로 표시합니다.
 
 직접 링크는 목록·Location의 특정 Version 또는 Viewer에서 `링크 복사`를 선택해 사용합니다. Clipboard 권한이 없으면 표시된 URL을 직접 복사하거나 `도면 열기`를 선택합니다. 링크는 현재 origin의 Version 주소이므로 Current 교체 후에도 해당 Version을 열지만, `localhost`/`127.0.0.1`은 링크를 여는 장치 자체를 뜻하고 사설 IP는 같은 네트워크/VPN과 listener·방화벽이 필요합니다.
 
@@ -133,8 +133,10 @@ CAD 편집/Geometry 변경/저장, DWG→DXF 우회, 별도 검색 엔진·Backe
 | [Operation](out/Operation.md) | 설정·명령·Git·복구·장애 대응 |
 | [Decisions](out/Decisions.md) | 주요 판단·제안·확인 대기 |
 | [ChangeLog](out/ChangeLog.md) | 변경 및 버전 이력 |
+| [Issue10](out/Issue10.md) | GitHub #10 전체 화면 요구사항·설계·CI 추적 |
+| [Release 0.21.0](out/Release-0.21.0.md) | 0.21.0 병합·태그·GHCR 게시 근거 |
 
-Unit 9A DXF 통합·회귀, Unit 7B 등록 DWG Viewer, Unit 8B DWG 계측을 완료했습니다. Unit OBS에서 업로드 오류의 화면 진단과 요청 ID 기반 서버 로그를 연결했습니다. 등록 메모 요청(원격 이슈 #2)은 기존 도면 설명의 등록·저장·표시 검증으로, 파일 크기 사전 검증(#3)은 0.17.1 조치로 추적합니다. 승인된 범위에서는 Unit별 구현→테스트→문서→Commit→필요 시 Push를 반복합니다.
+Unit 9A DXF 통합·회귀, Unit 7B 등록 DWG Viewer, Unit 8B DWG 계측을 완료했습니다. Unit OBS에서 업로드 오류의 화면 진단과 요청 ID 기반 서버 로그를 연결했습니다. GitHub #9 전역 로딩 차단을 0.20.0에서 반영했고, GitHub #10 전체 화면 기능은 0.21.0에서 추적합니다. 등록 메모 요청(원격 이슈 #2)은 기존 도면 설명의 등록·저장·표시 검증으로, 파일 크기 사전 검증(#3)은 0.17.1 조치로 추적합니다. 승인된 범위에서는 Unit별 구현→테스트→문서→Commit→필요 시 Push를 반복합니다.
 
 ## 2026-09-07 실행 순서 변경
 
@@ -211,10 +213,10 @@ docker compose --env-file .env -f src/docker-compose.yml stop
 
 ## GitHub Container Registry 이미지 내려받기
 
-검증·게시한 최신 이미지는 `ghcr.io/planner77/layoutmanager:0.19.1`입니다. 아래 명령으로 내려받고 `.env`에 `GHCR_IMAGE=ghcr.io/planner77/layoutmanager:0.19.1`을 설정합니다. 실제 pull 검증은 인증된 계정으로 수행했으며 익명 공개 접근은 검증하지 않았습니다.
+0.21.0 릴리스 이미지는 `ghcr.io/planner77/layoutmanager:0.21.0`이며 `main` 병합 시 GitHub Actions가 버전 태그와 `latest`를 게시합니다. 실제 게시 workflow, source revision과 digest는 [Release 0.21.0](out/Release-0.21.0.md)을 기준으로 확인합니다.
 
 ```bash
-docker pull ghcr.io/planner77/layoutmanager:0.19.1
+docker pull ghcr.io/planner77/layoutmanager:0.21.0
 ```
 
 게시된 이미지 주소와 tag를 `.env`의 `GHCR_IMAGE`에 지정합니다. 저장소/계정 식별값은 환경설정으로 유지합니다. 비공개 package는 해당 package를 읽을 권한으로 먼저 `docker login ghcr.io`를 수행해야 합니다. Token을 명령행 인수·소스·로그에 기록하지 않고 password stdin 방식이나 승인된 credential 관리 방식을 사용합니다.
@@ -224,7 +226,7 @@ docker compose --env-file .env -f src/docker-compose.yml pull app
 docker compose --env-file .env -f src/docker-compose.yml up -d --no-build app
 ```
 
-검증 이미지의 플랫폼은 `linux/amd64`이며 0.19.1 digest는 `sha256:ca093a71ce6e78e9291cd002d253196c285eb270918710e3c6cf674dc839068a`입니다. 실제 게시·pull 결과는 [TestReport](out/TestReport.md)의 배포 기록을 확인합니다. `latest` 대신 검증한 버전 tag 또는 digest를 고정할 수 있습니다. 이미지 빌드 방법·볼륨 백업·실행 제약은 [Operation](out/Operation.md)을 참조하세요.
+검증 이미지의 플랫폼은 `linux/amd64`입니다. 0.21.0의 실제 digest와 `org.opencontainers.image.revision`은 게시 완료 후 `out/Release-0.21.0.md`에 기록합니다. `latest` 대신 검증한 버전 tag 또는 digest를 고정할 수 있습니다. 이미지 빌드 방법·볼륨 백업·실행 제약은 [Operation](out/Operation.md)을 참조하세요.
 
 ## GitHub Container Registry에 직접 빌드·게시하기
 
