@@ -185,9 +185,11 @@ export class UploadDiagnostics {
   }
 
   private write(event: string, stage: UploadStage, outcome: Outcome, status?: number, error?: SafeServerError, recoveryId?: string) {
+    const level = outcome === 'failure' ? 'error' : outcome === 'warning' ? 'warn' : 'info';
     const entry = {
       event,
       timestamp: new Date().toISOString(),
+      level,
       appVersion: packageInfo.version,
       requestId: this.requestId,
       stage,
@@ -199,7 +201,8 @@ export class UploadDiagnostics {
       ...(error ? { error } : {}),
     };
     const line = JSON.stringify(entry);
-    if (outcome === 'failure' || outcome === 'warning') console.error(line);
+    if (level === 'error') console.error(line);
+    else if (level === 'warn') console.warn(line);
     else console.log(line);
   }
 }

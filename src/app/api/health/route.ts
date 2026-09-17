@@ -1,13 +1,18 @@
 import { context } from '@/server/context';
+import { RequestLogContext } from '@/server/logger';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-export async function GET() {
+export async function GET(request: Request) {
+  const requestLog = new RequestLogContext(request, 'api', 'health');
   try {
     await context().list.options();
-    return Response.json({ status: 'ok' }, { headers: { 'Cache-Control': 'no-store' } });
-  } catch {
-    return Response.json({ status: 'unavailable' }, { status: 503, headers: { 'Cache-Control': 'no-store' } });
+    requestLog.completed(200);
+    return Response.json({ status: 'ok' }, { headers: requestLog.responseHeaders({ 'Cache-Control': 'no-store' }) });
+  } catch (error) {
+    requestLog.error('health_check_failed', error, { outcome: 'failure', httpStatus: 503, errorCode: 'HEALTH_UNAVAILABLE' });
+    requestLog.completed(503, 'failure');
+    return Response.json({ status: 'unavailable' }, { status: 503, headers: requestLog.responseHeaders({ 'Cache-Control': 'no-store' }) });
   }
 }

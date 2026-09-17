@@ -1,17 +1,34 @@
-import { randomUUID } from 'node:crypto';
 import { CadError } from '@/domain/cad';
 import type { UploadDiagnostics, UploadStage } from './upload-observability';
-export function failure(error: unknown, diagnostics?: UploadDiagnostics, stage: UploadStage = 'response') {
-  const requestId = diagnostics?.requestId ?? randomUUID();
+import { RequestLogContext } from './logger';
+
+type FailureOptions = {
+  request?: RequestLogContext;
+  diagnostics?: UploadDiagnostics;
+  stage?: UploadStage;
+};
+
+export function failure(error: unknown, options: FailureOptions = {}) {
+  const request = options.request;
+  const diagnostics = options.diagnostics;
+  const stage = options.stage ?? 'response';
+  const requestId = diagnostics?.requestId ?? request?.requestId;
   const status = error instanceof CadError ? error.status : 500;
   const code = error instanceof CadError ? error.code : 'SERVER_ERROR';
   const message = error instanceof CadError ? error.message : '요청을 처리하지 못했습니다. 잠시 후 다시 시도해주세요.';
+
   diagnostics?.finishFailure(error, stage, status);
-  if (!diagnostics && !(error instanceof CadError)) console.error('CAD_REQUEST_FAILED', { requestId, category: error instanceof Error ? error.name : 'Unknown' });
-  const headers: Record<string,string> = { 'X-Request-Id': requestId };
-  if (status === 429) headers['Retry-After'] = String(error instanceof CadError ? error.retryAfterSeconds ?? 60 : 60);
+  if (request) {
+    request.error('http_request_failed', error, { outcome: 'failure', httpStatus: status, errorCode: code, stage });
+    request.completed(status, 'failure');
+  }
+
+  const headers = request?.responseHeaders() ?? new Headers();
+  if (!request && requestId) headers.set('X-Request-Id', requestId);
+  if (status === 429) headers.set('Retry-After', String(error instanceof CadError ? error.retryAfterSeconds ?? 60 : 60));
   return Response.json({ error: { code, message, requestId } }, { status, headers });
 }
+
 export function requireSameOrigin(request: Request) {
   const origin = request.headers.get('origin');
   if (origin) {
