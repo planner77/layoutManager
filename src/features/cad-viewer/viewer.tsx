@@ -13,7 +13,7 @@ export function CadViewer({ versionId, renderer: initialRenderer = 'dxf-viewer',
   const [renderer,setRenderer]=useState(selectRenderer(format, initialRenderer));
   const [source]=useState(()=>new ViewerSource());
   const container = useRef<HTMLDivElement>(null), manager = useRef<ViewerManager | null>(null);
-  const loadingRef = useRef(false), loadSequenceRef = useRef(0);
+  const loadSequenceRef = useRef(0);
   const { beginLoading, endLoading } = useGlobalLoading();
   const [loading,setLoading] = useState(true);
   const [attempt, setAttempt] = useState(0);
@@ -23,22 +23,20 @@ export function CadViewer({ versionId, renderer: initialRenderer = 'dxf-viewer',
   const [state, setState] = useState<{ status: string; ready: boolean; error?: string; warning?:string }>({status:'도면 로딩 중…',ready:false});
   useEffect(()=>()=>source.dispose(),[source,versionId]);
   function choose(value:typeof renderer) {
-    if (loadingRef.current || value === renderer) return;
-    loadingRef.current = true; setLoading(true);
+    if (loading || value === renderer) return;
+    setLoading(true);
     setState({status:'도면 로딩 중…',ready:false});setMetric(null);setLayers([]);setSelectedLayers(new Set());setRenderer(value);
     const url=new URL(window.location.href);url.searchParams.set('renderer',value);
     window.history.replaceState(null,'',url);
   }
   function reload() {
-    if (loadingRef.current) return;
-    loadingRef.current = true; setLoading(true);
+    if (loading) return;
+    setLoading(true);
     source.dispose();setMetric(null);setLayers([]);setSelectedLayers(new Set());setState({status:'도면 로딩 중…',ready:false});setAttempt(v=>v+1);
   }
   useEffect(() => {
     let active = true;
     const sequence = ++loadSequenceRef.current;
-    loadingRef.current = true;
-    setLoading(true);
     const loadingTaskId = beginLoading('도면을 여는 중입니다...');
     const instance = new ViewerManager(async () => {
       if (renderer === 'libredwg-web') {
@@ -62,7 +60,7 @@ export function CadViewer({ versionId, renderer: initialRenderer = 'dxf-viewer',
       if (active) {setLayers([]);setSelectedLayers(new Set());setState({status:'표시 실패',ready:false,error:error instanceof Error ? error.message : 'Viewer 초기화에 실패했습니다.'});}
     }).finally(() => {
       endLoading(loadingTaskId);
-      if (loadSequenceRef.current === sequence) { loadingRef.current = false; setLoading(false); }
+      if (loadSequenceRef.current === sequence) setLoading(false);
     });
     return () => { active = false; endLoading(loadingTaskId); instance.dispose(); manager.current = null; };
   }, [versionId,attempt,renderer,source,format,beginLoading,endLoading]);
