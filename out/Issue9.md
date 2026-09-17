@@ -92,7 +92,7 @@ PR: #12
 
 PR #12에서 PR 전용 CI를 실행했다.
 
-최종 통과 실행은 GitHub Actions run `35202994276`이며 head SHA는 `15c8bfcce2c76a12ba95c18dedbc5d7d25d323a3`이다.
+최종 통과 실행은 GitHub Actions run `35203650606`이며 head SHA는 `28e81f9eabd1addb1758d2e44aa77b5a018037e1`이다.
 
 - Node.js 22.14.0 / `npm ci`: PASS
 - Prisma Client 생성: PASS
@@ -103,6 +103,16 @@ PR #12에서 PR 전용 CI를 실행했다.
 - Playwright Chromium E2E: 33 / 33 PASS
 
 초기 CI에서는 React hook lint 규칙 위반과 전역 오버레이의 접근성 역할 충돌을 수정했다. 이후 WebGL canvas 위의 `backdrop-blur`가 headless Chromium 합성 성능을 크게 저하시켜 Viewer E2E를 지연시키는 현상을 trace로 확인했고, blur를 제거하면서 반투명 입력 차단 오버레이는 유지했다. 최종 CI에서 전체 회귀가 통과했다.
+
+## 병합 / 릴리스
+
+- PR #12를 squash merge하여 `main` 커밋 `c7cbff41ed03c6994d387a34d367b40d706dcd81`로 반영했다.
+- `Closes #9`에 의해 Issue #9가 `completed` 상태로 종료되었다.
+- GitHub Actions `Build and publish Docker image` run `35205938957`가 성공했다.
+- 릴리스 태그 `v0.20.0`이 병합 커밋을 기준으로 생성되었다.
+- GHCR에 `ghcr.io/planner77/layoutmanager:0.20.0`과 `ghcr.io/planner77/layoutmanager:latest`가 게시되었다.
+- 게시 이미지 digest는 `sha256:3d5e567ddf7e1c72a1cf5696e67c3e8c65d6c24293d9c7801d5ee765e6b5b91a`이다.
+- OCI `org.opencontainers.image.revision`은 `c7cbff41ed03c6994d387a34d367b40d706dcd81`, version은 `0.20.0`이다.
 
 ## 범위 외
 
