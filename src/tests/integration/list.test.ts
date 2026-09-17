@@ -88,6 +88,15 @@ test('TC-LIST-008: current-only toggle preserves filters and resets pagination',
   expect(disabled.searchParams.get('filename')).toBe('one');
   expect(disabled.searchParams.get('page')).toBe('1');
 });
+test('TC-LIST-009: current-only filter combines with existing filters and excludes locations without current', async()=>{
+  const matching = await repo.register(input,file('matching-current.dxf'));
+  await repo.register({...input,businessUnit:'설비',site:'서울',building:'B동',floor:'1층'},file('other-current.dwg','DWG'));
+  await repo.register({...input,floor:'3층',makeCurrent:false},file('without-current.dxf'));
+  const result = await search('current=true&filename=matching&site=평택&format=DXF');
+  expect(result.items.map(v=>v.id)).toEqual([matching.id]);
+  expect((await search('current=true&floor=3층')).total).toBe(0);
+  expect((await search('current=true&site=서울&format=DXF')).total).toBe(0);
+});
 test('TC-LIST-005: pagination is stable and bounded', async()=>{
   for(let i=0;i<3;i++) await repo.register(input,file(`${i}.dxf`));
   const a = await search('pageSize=2'); const b = await search('pageSize=2&page=2');
