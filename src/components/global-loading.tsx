@@ -16,7 +16,7 @@ const GlobalLoadingContext = createContext<GlobalLoadingContextValue | null>(nul
 
 export function GlobalLoadingOverlay({ message = '처리 중입니다...', testId = 'global-loading-overlay' }: { message?: string; testId?: string }) {
   return <div
-    className="fixed inset-0 z-[1000] flex items-center justify-center bg-slate-950/45 backdrop-blur-[1px]"
+    className="fixed inset-0 z-[1000] flex items-center justify-center bg-slate-950/45"
     data-testid={testId}
     role="progressbar"
     aria-label={message}
