@@ -1,7 +1,7 @@
 # Structured Logging 운영 가이드
 
 기준일: 2026-09-18  
-적용 버전: 0.23.0 (GitHub Issue #18 작업 브랜치)
+적용 버전: 0.23.0 (`v0.23.0`, GitHub Issue #18 / PR #20)
 
 ## 목적
 
@@ -141,6 +141,33 @@ docker compose --env-file .env -f src/docker-compose.yml logs --no-color app
 ```
 
 운영 검색에는 문자열 검색으로 충분하며, 중앙 수집기로 연동할 때는 애플리케이션 JSON 필드를 parser 단계에서 추출한다.
+
+## Docker 배포 예
+
+0.23.0 게시 이미지는 다음과 같이 지정할 수 있다.
+
+```env
+GHCR_IMAGE=ghcr.io/planner77/layoutmanager:0.23.0
+LOG_LEVEL=info
+LOG_FORMAT=json
+```
+
+적용 후에는 이미지 digest와 앱 버전을 확인하고, 문제가 발생하면 `X-Request-Id`를 기준으로 동일 요청의 lifecycle을 검색한다. `latest`도 제공되지만 운영에서 재현성과 rollback을 중시하면 명시적 버전 태그를 권장한다.
+
+## 릴리스 검증 근거
+
+- PR: #20 `feat: 공통 구조화 로깅 및 요청 추적 개선`
+- 최종 PR CI: run `35272622375` PASS
+  - TypeScript / ESLint PASS
+  - Unit + Integration: 23 files / 105 tests PASS
+  - Production build PASS
+  - Chromium E2E 34 / 34 PASS
+- `main` merge commit: `cf28a011aef3cd8a7090de6f8f66d3beef168414`
+- Release tag: `v0.23.0`
+- Docker publish workflow: run `35273102719` PASS
+- Image: `ghcr.io/planner77/layoutmanager:0.23.0`, `ghcr.io/planner77/layoutmanager:latest`
+- Digest: `sha256:c117020ea781cc9b0119fb82d9aa003c245de0b05bde0d7b5ef8ab004754dffe`
+- OCI revision: `cf28a011aef3cd8a7090de6f8f66d3beef168414`
 
 ## 제한사항
 

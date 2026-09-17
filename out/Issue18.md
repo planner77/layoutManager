@@ -17,16 +17,16 @@
 
 ## 기존 구조 분석
 
-- `src/server/upload-observability.ts`: 업로드에 한정해 UUID, stage, elapsed time, safe error chain, JSON line 로그가 이미 존재한다.
-- `src/server/http.ts`: 일반 API 실패는 별도 UUID를 생성하고 예상하지 못한 오류만 `console.error`로 남긴다.
+- `src/server/upload-observability.ts`: 업로드에 한정해 UUID, stage, elapsed time, safe error chain, JSON line 로그가 이미 존재했다.
+- `src/server/http.ts`: 일반 API 실패는 별도 UUID를 생성하고 예상하지 못한 오류만 `console.error`로 남겼다.
 - 삭제 API는 성공용 UUID와 실패 응답의 UUID 생성 경로가 달라 실패 상관관계가 끊길 수 있었다.
 - health route는 DB 실패를 503으로 변환하지만 서버 로그에 원인을 남기지 않았다.
 - 삭제 후 storage cleanup 및 revalidate 실패는 `catch {}`로 무시되었다.
 - maintenance script 일부는 JSON을 직접 출력하지만 공통 timestamp/version/level/error 정제가 없었다.
-- Docker Compose는 `local` driver, `10m × 5` rotation을 이미 사용하고 있어 stdout/stderr JSON 유지가 적절하다.
+- Docker Compose는 `local` driver, `10m × 5` rotation을 이미 사용하고 있어 stdout/stderr JSON 유지가 적절했다.
 - 프런트엔드 업로드 진단은 공개 진단 객체를 `console.error`로 출력한다. 브라우저 로그는 서버 공통 logger 범위 밖이며 Secret 원문을 추가하지 않는 기존 공개 진단 계약을 유지한다.
 
-## 설계
+## 설계 및 구현
 
 ### `src/server/logger.ts`
 
@@ -48,7 +48,7 @@
 
 `RequestLogContext`가 API 시작 로그, 동일 requestId, 경과 시간, 응답 헤더 생성을 담당한다.
 
-민감정보는 key 기반 deny/redaction과 문자열 길이 제한을 적용한다. Error message는 내부 상세를 그대로 출력하지 않는다.
+민감정보는 key 기반 redaction과 문자열/객체 깊이 제한을 적용한다. Error message, stack/path, credential-like 값은 임의 원문 그대로 출력하지 않는다.
 
 ### API lifecycle
 
@@ -72,7 +72,7 @@
 
 ### maintenance
 
-다음 script를 공통 logger로 전환한다.
+다음 script를 공통 logger로 전환했다.
 
 - `storage-cleanup.ts`
 - `backfill-delete-passwords.ts`
@@ -95,14 +95,14 @@ LOG_FORMAT=json
 
 ## 버전
 
-공통 로깅 인프라 및 API 관측성 기능 추가이므로 SemVer MINOR를 적용한다.
+공통 로깅 인프라 및 API 관측성 기능 추가이므로 SemVer MINOR를 적용했다.
 
 - 기존: `0.22.0`
 - 변경: `0.23.0`
 - DB schema/migration/dependency 변경 없음
 - 기존 JSON payload 필드는 유지하며 주요 API 정상 응답에도 `X-Request-Id`가 추가된다.
 
-## 자동 테스트 추가
+## 자동 테스트
 
 `src/tests/unit/logger.test.ts`
 
@@ -112,12 +112,47 @@ LOG_FORMAT=json
 - `TC-LOG-004`: RequestLogContext 동일 requestId와 응답 헤더
 - `TC-LOG-005`: Error 원문/credential-like 값 비노출
 
-기존 upload observability, delete route, health route 테스트는 회귀 대상으로 유지한다.
+기존 upload observability, delete route, health route 테스트도 회귀 대상으로 유지했다.
 
-## 현재 검증 상태
+## PR 및 CI 결과
 
-이 문서 작성 시점에는 작업 브랜치 소스와 테스트 코드 반영 및 GitHub diff 정적 검토까지 완료했다. PR/Actions CI는 아직 실행하지 않았으므로 typecheck/lint/unit/integration/build/E2E를 PASS로 기록하지 않는다. 최종 자동 검증 결과는 후속 PR/CI 단계에서 갱신한다.
+- PR: #20 `feat: 공통 구조화 로깅 및 요청 추적 개선`
+- 최초 PR CI run `35272211298`: TypeScript/ESLint PASS 후 OBS warning 출력 채널 기대값 2건 실패. 새 레벨 정책(`warn` → `console.warn`)에 테스트를 정렬했다.
+- 두 번째 run `35272399422`: 23 files / 105 tests PASS 후 Next.js Route Handler의 health `GET` 인자 계약 오류를 production build가 검출했다. route signature를 `GET(request: Request)`로 복구하고 unit test가 명시적 Request를 전달하도록 수정했다.
+- 최종 PR CI run `35272622375`: **PASS**
+  - Node.js 22.14.0 / `npm ci`: PASS
+  - Prisma Client 생성: PASS
+  - TypeScript: PASS
+  - ESLint: PASS
+  - Vitest Unit / Integration: **23 files / 105 tests PASS**
+  - Production build: PASS
+  - Playwright Chromium E2E: **34 / 34 PASS**
+- `npm ci`는 기존 dependency에 대해 high severity audit 경고 4건을 표시했으나 이번 변경에서 dependency 버전은 변경하지 않았으며 CI 실패 조건은 아니다.
 
-## 작업 브랜치
+## 병합 및 릴리스
 
-`feature/issue-18-structured-logging`
+- 병합 방식: squash merge
+- `main` 병합 commit: `cf28a011aef3cd8a7090de6f8f66d3beef168414`
+- 작업 branch `feature/issue-18-structured-logging`: merge 후 자동 삭제 확인
+- Release tag: `v0.23.0`
+- Annotated tag 대상: `cf28a011aef3cd8a7090de6f8f66d3beef168414`
+- Docker publish workflow: run `35273102719` PASS
+- GHCR: `ghcr.io/planner77/layoutmanager:0.23.0`, `ghcr.io/planner77/layoutmanager:latest`
+- Digest: `sha256:c117020ea781cc9b0119fb82d9aa003c245de0b05bde0d7b5ef8ab004754dffe`
+- OCI revision: `cf28a011aef3cd8a7090de6f8f66d3beef168414`
+- OCI version: `0.23.0`
+
+상세 릴리스 근거는 [Release 0.23.0](Release-0.23.0.md), 운영 절차는 [Logging 운영 가이드](Logging.md)를 기준으로 한다.
+
+## 완료 조건 매핑
+
+- 현재 로그 구조 및 직접 `console.*` 사용 위치 분석: 완료
+- 서버 공통 logger: 완료
+- 주요 API 동일 requestId/correlation 추적: 완료
+- debug/info/warn/error 정책: 완료
+- production 한 줄 JSON: 완료
+- 주요 장애 원인 코드/단계 보존: 완료
+- 공개 오류와 내부 진단 분리: 완료
+- Secret/Password/Token 등 redaction 자동 테스트: 완료
+- Docker 로그 조회/requestId 검색 절차 문서화: 완료
+- 관련 운영/릴리스 문서 갱신: 완료
