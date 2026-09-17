@@ -4,7 +4,7 @@ import { RequestLogContext } from '@/server/logger';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-export async function GET(request: Request) {
+export async function GET(request = new Request('http://localhost/api/health')) {
   const requestLog = new RequestLogContext(request, 'api', 'health');
   try {
     await context().list.options();
