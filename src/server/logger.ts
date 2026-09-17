@@ -8,7 +8,7 @@ export type LogOutcome = 'started' | 'success' | 'warning' | 'failure';
 const priorities: Record<LogLevel, number> = { debug: 10, info: 20, warn: 30, error: 40 };
 const sensitiveKey = /(password|authorization|cookie|token|secret|credential|access[_-]?key|session)/i;
 const allowedScalar = new Set(['string', 'number', 'boolean']);
-const safeErrorCodes = /^(?:E[A-Z0-9_]+|P\d{4}|SQLITE_[A-Z0-9_]+|[A-Z][A-Z0-9_]{2,63})$/;
+const safeErrorCodes = /^(?:E[A-Z0-9_]+|P\d{4}|SQLITE_[A-Z0-9_]+)$/;
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function configuredLevel(): LogLevel {
@@ -38,6 +38,11 @@ function safeError(error: Error) {
 
 function sanitizeValue(key: string, value: unknown, depth = 0): unknown {
   if (sensitiveKey.test(key)) return '[REDACTED]';
+  if (key.toLowerCase() === 'error') {
+    return value instanceof Error
+      ? safeError(value)
+      : { name: 'UnknownError', message: 'Internal error details suppressed.' };
+  }
   if (value === null || value === undefined) return value;
   if (depth >= 3) return '[TRUNCATED]';
   if (value instanceof Error) return safeError(value);
