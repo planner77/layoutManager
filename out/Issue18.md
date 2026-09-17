@@ -91,6 +91,7 @@ LOG_FORMAT=json
 - `LOG_FORMAT`: `json | pretty`, Docker production 기본은 `json`
 - Compose는 두 값을 runtime environment로 전달한다.
 - 기존 Docker `local` logging driver와 `max-size=10m`, `max-file=5`는 유지한다.
+- 상세 운영 절차, event 의미, requestId 검색, 장애 로그 export 및 민감정보 취급 규칙은 [Logging 운영 가이드](Logging.md)를 기준으로 한다.
 
 ## 버전
 
