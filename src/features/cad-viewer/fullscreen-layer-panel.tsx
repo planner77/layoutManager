@@ -22,11 +22,11 @@ export function FullscreenLayerPanel({
       <Button
         type="button"
         size="sm"
-        variant="secondary"
+        variant="outline"
         aria-label="레이어 패널 펼치기"
         aria-expanded="false"
         data-testid="fullscreen-layer-panel-toggle"
-        className="absolute left-4 top-4 z-20 shadow-lg"
+        className="absolute left-4 top-4 z-20 bg-white/95 shadow-lg"
         onClick={() => setCollapsed(false)}
       >
         <ChevronRight aria-hidden="true" className="size-4" />
