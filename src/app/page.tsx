@@ -14,13 +14,20 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
   const params = new URLSearchParams();
   for (const [key, values] of Object.entries(await searchParams)) for (const value of Array.isArray(values) ? values : values === undefined ? [] : [values]) params.append(key, value);
   let query;
-  try { query = listQuery(params); }
+  try {
+    query = listQuery(params);
+    // Issue #16: 목록 UI는 Current=true 토글만 제공한다. 과거 current=false URL은 오류 대신 토글 OFF(전체 Version)로 처리한다.
+    if (query.current === 'false') {
+      params.delete('current');
+      query = listQuery(params);
+    }
+  }
   catch(error) { if (!(error instanceof CadError)) throw error; return <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-6"><p>{error.message}</p><Link className="mt-3 inline-block underline" href="/">검색 조건 초기화</Link></div>; }
   const service = context().list;
   const [result, options] = await Promise.all([service.search(params), service.options()]);
   const pages = Math.max(1, Math.ceil(result.total / result.pageSize));
   const filtered = Boolean(query.filename || query.description || query.businessUnit || query.site || query.building || query.floor || query.format || query.current);
-  const versionScope = query.current === 'true' ? '현재 버전만' : query.current === 'false' ? '이전 버전만' : '모든 버전';
+  const versionScope = query.current === 'true' ? '현재 버전만' : '모든 버전';
   return <section>
     <div className="mb-7 flex items-center justify-between gap-4"><div><p className="mb-2 text-xs font-semibold uppercase tracking-[.14em] text-teal-700">Drawing Library</p><h1 className="text-2xl font-bold">CAD 도면 목록</h1><p className="mt-2 text-sm text-slate-500">사업장과 설비 위치별 도면을 찾고 버전을 관리합니다.</p></div><Button asChild><Link href="/cad/upload"><Plus size={17}/>파일 등록</Link></Button></div>
     <ListFilters query={query} options={options}/>
