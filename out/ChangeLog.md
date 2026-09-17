@@ -1,5 +1,13 @@
 # ChangeLog
 
+# Unreleased — GitHub #8
+
+- Added: 도면 목록에 `현재 버전만 표시` 빠른 토글을 추가했다. ON은 기존 `current=true` 조회를 재사용하고 OFF는 Current 조건을 제거한다.
+- Changed: 토글 전환 시 파일명·도면 설명·사업부·사업장·동·층·형식·페이지당 표시 조건을 유지하면서 `page=1`로 초기화한다. `aria-pressed`와 활성/비활성 시각 상태를 제공하며 기존 `current=false`(이전 버전만) 필터는 그대로 유지한다.
+- Tests: `TC-LIST-008/009`로 URL 상태 보존·페이지 초기화·기존 조건 AND 결합·Current 미지정 Location 제외를 검증하고, Playwright에서 OFF→ON→OFF와 검색조건·`aria-pressed`·표시 행 변화를 검증했다.
+- CI: PR #11의 최초 실행은 기존 `TC-NAME-003` fixture가 현재 도면 이름 안내 UI와 불일치해 30/31 E2E로 실패했다. fixture를 요구사항에 맞게 갱신한 두 번째 실행에서 typecheck, lint, 22 files/100 unit·integration tests, production build, 31 E2E가 모두 통과했다.
+- Scope: DB schema, Current 지정/교체 transaction, Location별 Current 최대 1개 규칙 및 API contract는 변경하지 않는다.
+
 # 0.19.1 — GitHub #7
 
 - Changed: 공통 header 좌측 제목의 CAD 접두어와 P.O.C. 배지를 제거해 Layout Manager로 표시한다. 실제 검증·배포 기록은 TestReport U-ISSUE7-20260911을 따른다.
