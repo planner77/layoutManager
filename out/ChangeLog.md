@@ -1,5 +1,14 @@
 # ChangeLog
 
+# 0.24.0 — GitHub #17
+
+- Added: 전체 화면 `three-dxf-viewer`에 접이식 레이어 패널을 추가했다. 현재 DXF 레이어의 개별 표시/숨김, 전체 선택/전체 해제, 내부 스크롤을 지원하며 일반 화면 `LayerDropdown`과 선택 상태를 공유한다.
+- Changed: 레이어 조작은 기존 `ViewerManager.showLayer()`를 재사용해 Viewer/Adapter/Canvas 재생성과 원본 재다운로드 없이 즉시 반영한다. 현재 Zoom/Pan 상태를 유지하고 `dxf-viewer` 등 다른 Viewer에는 전체 화면 레이어 UI를 표시하지 않는다.
+- Tests: PR #21 최종 CI run `35278486135`에서 TypeScript, ESLint, 23 files/105 Unit·Integration, Production build, Chromium E2E 35/35가 모두 통과했다. `TC-ISSUE17-001`은 복수 레이어, 개별/일괄 토글, 동일 Canvas 유지, 추가 content GET 없음, 전체 화면 종료 후 view state 복원, 일반 드롭다운 동기화, 다른 Viewer 미표시를 검증한다.
+- Version: 신규 UI 기능이므로 SemVer MINOR `0.23.0` → `0.24.0`. DB schema/migration, API contract, 외부 dependency 변경 없음.
+- Release: PR #21을 squash merge한 commit `b7fdeb34e25f0dc66790ed421bcaf105f6801db3`에서 `v0.24.0`을 생성하고 `ghcr.io/planner77/layoutmanager:0.24.0` 및 `latest`를 digest `sha256:bfd80f24e43b5e108c480b3a51913daa66d47331c880855f340233468616993c`로 게시했다. 상세 근거는 `Issue17.md`와 `Release-0.24.0.md`를 따른다.
+- Limitation: 매우 많은 레이어를 가진 실제 업무 DXF의 현장 사용성·성능은 CI 범위 밖이며 운영 smoke test 대상으로 남긴다.
+
 # 0.21.1 — GitHub #14
 
 - Fixed: 사설 IP HTTP 등 비-Secure Context에서 전역 로딩 작업 ID 생성이 `crypto.randomUUID()`에 의존해 Viewer 콘텐츠 요청 전에 중단될 수 있던 회귀를 수정했다. Provider-local sequence 기반 ID로 변경해 Secure Context 의존성을 제거했다.

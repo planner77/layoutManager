@@ -1,14 +1,15 @@
 # GitHub Issue #17 — 전체 화면 three-dxf-viewer 레이어 선택/표시 제어
 
 기준일: 2026-09-18  
-작업 브랜치: `feature/issue-17-fullscreen-layer-panel`  
-대상 버전: `0.24.0`
+작업 브랜치: `feature/issue-17-fullscreen-layer-panel` (PR #21 병합 후 자동 삭제)  
+대상/릴리스 버전: `0.24.0`  
+PR: #21
 
 ## 버저닝 판단
 
-이번 변경은 기존 Viewer/API/DB 호환성을 유지하면서 전체 화면에서 사용할 수 있는 신규 레이어 제어 UI를 추가하므로 SemVer MINOR로 분류한다. 애플리케이션 버전의 단일 기준인 `src/package.json`을 `0.23.0`에서 `0.24.0`으로 갱신한다.
+이번 변경은 기존 Viewer/API/DB 호환성을 유지하면서 전체 화면에서 사용할 수 있는 신규 레이어 제어 UI를 추가하므로 SemVer MINOR로 분류했다. 애플리케이션 버전의 단일 기준인 `src/package.json`을 `0.23.0`에서 `0.24.0`으로 갱신했다.
 
-외부 dependency, DB schema/migration, API contract는 변경하지 않는다. `src/package-lock.json`의 루트 version 메타데이터는 기존 릴리스부터 애플리케이션 버전과 분리되어 있으므로 dependency graph 변경이 없는 이번 작업에서는 수정하지 않는다.
+외부 dependency, DB schema/migration, API contract는 변경하지 않았다. `src/package-lock.json`의 루트 version 메타데이터는 기존 릴리스부터 애플리케이션 버전과 분리되어 있으며 dependency graph 변경이 없으므로 이번 작업에서 수정하지 않았다.
 
 ## 요구사항 명확화
 
@@ -27,18 +28,14 @@ Issue #17은 기존 일반 화면 레이어 드롭다운을 대체하지 않는�
 - 다른 Viewer에는 전체 화면 레이어 패널을 표시하지 않는다.
 - 다른 도면, Renderer 전환, 다시 불러오기는 기존 load lifecycle에 따라 새 레이어 목록을 취득하고 전체 선택 상태로 초기화한다.
 
-## 기존 구조 분석
+## 기존 구조 분석 및 구현
 
-`src/viewers/three-dxf-viewer/adapter.ts`는 이미 다음 공개 Adapter contract를 구현한다.
+`src/viewers/three-dxf-viewer/adapter.ts`는 이미 다음 Adapter contract를 구현한다.
 
 - `getLayers()`: Three.js Object tree의 `userData.entity.layer` metadata를 순회하여 정렬된 레이어 목록 반환
 - `showLayer(name, visible)`: 동일 metadata를 가진 Object의 `visible`만 변경하고 즉시 render
 
-따라서 upstream `three-dxf-viewer` 내부 API를 추가로 의존하거나 Three.js scene 구조를 UI에서 직접 다룰 필요가 없다. 기존 Adapter 경계를 유지하는 것이 회귀 위험이 가장 낮다.
-
-일반 화면의 `LayerDropdown`도 이미 `layers`, `selected`, `onLayerChange`, `onAllChange` controlled contract를 사용한다. 이번 구현은 `CadViewer`에 공통 레이어 변경 함수를 두고 일반 드롭다운과 전체 화면 패널이 이를 공유하도록 한다.
-
-## 구현 설계
+따라서 upstream `three-dxf-viewer` 내부 API를 추가로 의존하거나 Three.js scene 구조를 UI에서 직접 다루지 않았다. 기존 Adapter 경계를 유지하는 방식으로 구현했다.
 
 ### `src/features/cad-viewer/fullscreen-layer-panel.tsx`
 
@@ -50,36 +47,71 @@ Issue #17은 기존 일반 화면 레이어 드롭다운을 대체하지 않는�
 
 ### `src/features/cad-viewer/viewer.tsx`
 
-- 기존 inline 레이어 변경 코드를 `setLayerVisibility`, `setAllLayersVisibility` 함수로 통합한다.
+- 기존 inline 레이어 변경 코드를 `setLayerVisibility`, `setAllLayersVisibility` 함수로 통합했다.
 - 일반 `LayerDropdown`과 `FullscreenLayerPanel`에 동일 함수를 전달한다.
 - 전체 화면 shell 내부에만 패널을 mount한다.
-- `isFullscreen`은 기존과 동일하게 Viewer load effect dependency가 아니므로 패널 조작/접기/펼치기로 Viewer가 재생성되지 않는다.
+- `isFullscreen`은 Viewer load effect dependency가 아니므로 패널 조작/접기/펼치기로 Viewer가 재생성되지 않는다.
 
 ## Acceptance Criteria 매핑
 
-- AC1 전체 화면 레이어 패널 표시: `three-dxf-viewer` + ready + layers 조건부 mount
-- AC2 레이어 목록 누락 방지: 기존 Adapter `getLayers()` 결과를 그대로 사용
-- AC3 즉시 표시/숨김: 기존 `showLayer()` 호출 후 render
-- AC4 카메라/줌 유지: Viewer/Adapter/Canvas 재생성 없음
-- AC5 다른 도면 갱신: 기존 load 완료 시 `setLayers(nextLayers)` 및 전체 선택 초기화
-- AC6 다른 Viewer 영향 없음: renderer 조건으로 패널 미표시
-- AC7 기존 Viewer 기능 회귀 방지: 기존 전체 화면/확대/축소/맞춤/Escape lifecycle 유지
+- AC1 전체 화면 레이어 패널 표시: `three-dxf-viewer` + ready + layers 조건부 mount — 완료
+- AC2 레이어 목록 표시: 기존 Adapter `getLayers()` 결과 사용 — 완료
+- AC3 즉시 표시/숨김: 기존 `showLayer()` 호출 후 render — 완료
+- AC4 카메라/줌 유지: Viewer/Adapter/Canvas 재생성 없음 — 완료
+- AC5 다른 도면 갱신: 기존 load 완료 시 새 `layers` 및 전체 선택 초기화 — 완료
+- AC6 다른 Viewer 영향 없음: renderer 조건으로 패널 미표시 — 완료
+- AC7 기존 Viewer 기능 회귀 방지: 전체 화면/확대/축소/맞춤/Escape 기존 E2E 포함 — 완료
 
-## 자동 테스트 계획
+## 자동 검증
 
-`src/tests/e2e/issue17-fullscreen-layers.spec.ts`에 `TC-ISSUE17-001`을 추가한다.
+`src/tests/e2e/issue17-fullscreen-layers.spec.ts`의 `TC-ISSUE17-001`은 다음을 검증한다.
 
-1. 한글/영문/숫자/공백이 포함된 2개 레이어 DXF 등록
-2. `three-dxf-viewer` 로드 후 확대하여 비기본 view state 생성
-3. 전체 화면 진입 후 레이어 패널과 두 레이어가 모두 선택됐는지 확인
-4. 개별 레이어 해제 후 canvas 변경 확인
-5. 다시 선택 후 확대된 기존 canvas 결과가 복원되는지 확인하여 토글이 view state를 초기화하지 않음을 검증
-6. content API 요청이 추가되지 않았는지 확인
-7. 전체 해제/전체 선택 확인
-8. 패널 접기/펼치기 확인
-9. 전체 화면 종료 후 일반 LayerDropdown 상태 동기화 확인
-10. `dxf-viewer` 전체 화면에서는 패널이 표시되지 않는지 확인
+1. 한글/영문/숫자/공백이 포함된 복수 레이어 DXF
+2. 전체 화면 패널 및 최초 전체 선택 상태
+3. 개별 레이어 표시/숨김에 따른 실제 canvas 변화
+4. 전체 선택/전체 해제와 선택 상태
+5. 레이어 조작 중 content API 추가 요청 없음
+6. 레이어 조작 중 동일 Canvas DOM 인스턴스 유지
+7. 전체 화면 종료 후 진입 전 확대 상태 복원
+8. 패널 접기/펼치기
+9. 일반 `LayerDropdown`과 상태 동기화
+10. `dxf-viewer` 전체 화면에서 레이어 패널 미표시
 
-## 현재 상태
+## PR / CI 결과
 
-요구사항 명확화, 구조 분석, 설계, 버저닝, 작업 브랜치 생성 및 코드/테스트 작성까지 진행한다. 실제 TypeScript/Lint/Unit/Build/E2E 결과는 후속 PR/CI 단계에서 검증하며 실행 전 PASS로 기록하지 않는다.
+PR #21에서 다음 CI 보완 과정을 거쳤다.
+
+- run `35277124003`: TypeScript 단계 실패. 공통 `Button`이 지원하지 않는 `secondary` variant를 사용한 것이 원인이며 `outline`으로 수정했다.
+- run `35277242955`: TypeScript/ESLint/23 files 105 tests/Production build PASS, Chromium E2E 34/35. 전체 화면 진입 전 screenshot을 진입 후 resize된 canvas와 직접 비교한 잘못된 기준점을 수정했다.
+- run `35277825527`: 정적 검사/Unit·Integration/Build PASS, Chromium E2E 34/35. WebGL 레이어 복원 후 픽셀 완전 일치를 요구한 assertion이 과도하게 엄격해, 렌더 변화·선택 상태·동일 canvas·추가 GET 없음·view state 복원을 각각 검증하도록 안정화했다.
+- 최종 run `35278486135`: **PASS**
+  - Node.js 22.14.0 / `npm ci`: PASS
+  - Prisma Client 생성: PASS
+  - TypeScript: PASS
+  - ESLint: PASS
+  - Unit / Integration: **23 files / 105 tests PASS**
+  - Production build: PASS
+  - Chromium Playwright E2E: **35 / 35 PASS**
+
+`npm ci`와 Docker build에서 기존 dependency에 대한 high severity audit 경고 4건이 출력됐으나 Issue #17에서는 dependency 버전을 변경하지 않았고 CI 실패 조건도 아니다.
+
+## 병합 및 릴리스
+
+- 병합 방식: squash merge
+- PR #21 merge commit: `b7fdeb34e25f0dc66790ed421bcaf105f6801db3`
+- merge commit: GitHub verified
+- 작업 branch `feature/issue-17-fullscreen-layer-panel`: 병합 후 자동 삭제 확인
+- Issue #17: `completed` 상태로 종료
+- Release tag: `v0.24.0`
+- Annotated tag 대상: `b7fdeb34e25f0dc66790ed421bcaf105f6801db3`
+- Docker publish workflow: run `35279000480` PASS
+- GHCR: `ghcr.io/planner77/layoutmanager:0.24.0`, `ghcr.io/planner77/layoutmanager:latest`
+- Digest: `sha256:bfd80f24e43b5e108c480b3a51913daa66d47331c880855f340233468616993c`
+- OCI revision: `b7fdeb34e25f0dc66790ed421bcaf105f6801db3`
+- OCI version: `0.24.0`
+
+상세 릴리스 근거는 [Release 0.24.0](Release-0.24.0.md)을 기준으로 한다.
+
+## 검증 경계
+
+CI는 합성 복수 레이어 DXF와 기존 Viewer 회귀를 검증했다. 매우 많은 레이어를 가진 실제 업무 DXF의 현장 사용성·성능은 이번 GitHub Actions 검증 범위에 포함하지 않았으므로 별도 운영 smoke test 대상으로 남긴다.
