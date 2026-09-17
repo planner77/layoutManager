@@ -14,17 +14,17 @@ type GlobalLoadingContextValue = {
 
 const GlobalLoadingContext = createContext<GlobalLoadingContextValue | null>(null);
 
-export function GlobalLoadingOverlay({ message = '처리 중입니다...' }: { message?: string }) {
+export function GlobalLoadingOverlay({ message = '처리 중입니다...', testId = 'global-loading-overlay' }: { message?: string; testId?: string }) {
   return <div
     className="fixed inset-0 z-[1000] flex items-center justify-center bg-slate-950/45 backdrop-blur-[1px]"
-    data-testid="global-loading-overlay"
-    role="status"
-    aria-live="polite"
+    data-testid={testId}
+    role="progressbar"
     aria-label={message}
+    aria-valuetext={message}
   >
     <div className="flex min-w-64 flex-col items-center gap-4 rounded-2xl bg-white px-8 py-7 shadow-2xl">
       <LoaderCircle className="animate-spin text-teal-700" size={38} aria-hidden="true" />
-      <p className="text-sm font-semibold text-slate-800">{message}</p>
+      <p aria-live="polite" className="text-sm font-semibold text-slate-800">{message}</p>
     </div>
   </div>;
 }
