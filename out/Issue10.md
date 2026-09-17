@@ -2,7 +2,14 @@
 
 기준일: 2026-09-17
 작업 브랜치: `feature/issue-10-viewer-fullscreen`
-대상 버전: 후속 PR/릴리스 단계에서 확정
+대상 버전: `0.21.0`
+PR: 생성 후 기록
+
+## 버저닝 판단
+
+이번 변경은 기존 Viewer/API/DB 호환성을 유지하면서 사용자가 사용할 수 있는 새 UI 기능인 전체 화면 보기를 추가하므로 SemVer MINOR로 분류한다. 애플리케이션 버전의 단일 기준인 `src/package.json`을 `0.20.0`에서 `0.21.0`으로 갱신한다.
+
+`src/package-lock.json`의 루트 version 메타데이터가 이전 릴리스부터 `0.19.1`로 남아 있으나 의존성 해시/버전 lock과는 별개이며 기존 0.20.0 CI에서도 사용된 상태이다. 이번 기능 구현에서는 의존성 변경이 없으므로 lock dependency graph는 변경하지 않는다.
 
 ## 요구사항 구체화
 
@@ -54,6 +61,20 @@ Issue #10의 “전체 화면”은 브라우저 Fullscreen API만을 전제로 
 7. 기존 다시 불러오기/화면 이탈/재진입 회귀 유지
 
 Playwright의 실제 native fullscreen 동작은 실행 환경/브라우저 정책 영향을 받을 수 있으므로 `data-fullscreen`과 viewport layout 검증은 fallback 포함 공통 contract를 대상으로 한다. native fullscreen 자체의 `fullscreenchange` 경로는 브라우저 수동 확인 또는 지원되는 CI 환경에서 추가 검증한다.
+
+## PR / CI
+
+PR 생성 후 GitHub Actions에서 다음을 확인한다.
+
+- Node.js 22.14.0 / `npm ci`
+- Prisma Client 생성
+- TypeScript typecheck
+- ESLint
+- Unit / Integration tests
+- Production build
+- Playwright Chromium E2E
+
+실제 run ID, head SHA, 테스트 수와 실패/수정 이력은 CI 완료 후 이 문서에 갱신한다.
 
 ## 범위 외
 
