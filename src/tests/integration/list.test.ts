@@ -5,7 +5,7 @@ import path from 'node:path';
 import { createDb, type Database } from '../../server/db';
 import { CadRepository } from '../../server/repositories/cad';
 import { CadListRepository } from '../../server/repositories/cad-list';
-import { listQuery } from '../../domain/cad-list';
+import { currentOnlyToggleUrl, listQuery } from '../../domain/cad-list';
 import { registration } from '../../domain/cad';
 
 let directory: string, db: Database, repo: CadRepository, lists: CadListRepository;
@@ -72,6 +72,30 @@ test('TC-LIST-003/004: current filters track replacement and null pointers', asy
   const detail = await lists.location(a.locationId);
   expect(detail.versions.map(v=>v.version)).toEqual([2,1]); expect(detail.versions.filter(v=>v.isCurrent)).toHaveLength(1);
   await expect(lists.location(crypto.randomUUID())).rejects.toThrow('찾을 수 없습니다');
+});
+test('TC-LIST-008: current-only toggle preserves filters and resets pagination', async()=>{
+  const query = listQuery(new URLSearchParams('filename=one&description=설명&site=평택&format=DXF&current=false&page=7&pageSize=50'));
+  const enabled = new URL(currentOnlyToggleUrl(query), 'http://localhost');
+  expect(enabled.searchParams.get('filename')).toBe('one');
+  expect(enabled.searchParams.get('description')).toBe('설명');
+  expect(enabled.searchParams.get('site')).toBe('평택');
+  expect(enabled.searchParams.get('format')).toBe('DXF');
+  expect(enabled.searchParams.get('pageSize')).toBe('50');
+  expect(enabled.searchParams.get('current')).toBe('true');
+  expect(enabled.searchParams.get('page')).toBe('1');
+  const disabled = new URL(currentOnlyToggleUrl(listQuery(enabled.searchParams)), 'http://localhost');
+  expect(disabled.searchParams.has('current')).toBe(false);
+  expect(disabled.searchParams.get('filename')).toBe('one');
+  expect(disabled.searchParams.get('page')).toBe('1');
+});
+test('TC-LIST-009: current-only filter combines with existing filters and excludes locations without current', async()=>{
+  const matching = await repo.register(input,file('matching-current.dxf'));
+  await repo.register({...input,businessUnit:'설비',site:'서울',building:'B동',floor:'1층'},file('other-current.dwg','DWG'));
+  await repo.register({...input,floor:'3층',makeCurrent:false},file('without-current.dxf'));
+  const result = await search('current=true&filename=matching&site=평택&format=DXF');
+  expect(result.items.map(v=>v.id)).toEqual([matching.id]);
+  expect((await search('current=true&floor=3층')).total).toBe(0);
+  expect((await search('current=true&site=서울&format=DXF')).total).toBe(0);
 });
 test('TC-LIST-005: pagination is stable and bounded', async()=>{
   for(let i=0;i<3;i++) await repo.register(input,file(`${i}.dxf`));

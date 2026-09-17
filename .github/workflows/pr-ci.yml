@@ -1,0 +1,69 @@
+name: PR CI
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Typecheck, lint, test, build, E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    defaults:
+      run:
+        working-directory: src
+
+    steps:
+      - name: 저장소 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.14.0
+          cache: npm
+          cache-dependency-path: src/package-lock.json
+
+      - name: 의존성 설치
+        run: npm ci
+
+      - name: Prisma Client 생성
+        run: npm run db:generate
+
+      - name: TypeScript 검사
+        run: npm run typecheck
+
+      - name: ESLint 검사
+        run: npm run lint
+
+      - name: Unit 및 Integration 테스트
+        run: npm test
+
+      - name: Production 빌드
+        run: npm run build
+
+      - name: Playwright Chromium 설치
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E 테스트
+        run: npm run test:e2e
+
+      - name: E2E 실패 결과 업로드
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results
+          path: src/test-results
+          if-no-files-found: ignore
+          retention-days: 7

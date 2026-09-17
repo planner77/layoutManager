@@ -55,3 +55,7 @@ export function listUrl(query: CadListQuery, page: number) {
   for (const [key, value] of Object.entries({ ...query, page })) if (value !== '') params.set(key, String(value));
   return `/?${params}`;
 }
+
+export function currentOnlyToggleUrl(query: CadListQuery) {
+  return listUrl({ ...query, current: query.current === 'true' ? '' : 'true' }, 1);
+}
