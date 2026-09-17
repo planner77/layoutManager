@@ -61,3 +61,32 @@ test('TC-ISSUE9-003: viewer load keeps the global overlay until CAD content reso
   await expect(overlay).toHaveCount(0);
   await expect(page.getByRole('status').filter({ hasText: '도면 표시 완료' })).toBeVisible();
 });
+
+test('TC-ISSUE14-001: viewer loads without crypto.randomUUID and both DXF renderers remain usable', async ({ page, request }) => {
+  const uploaded = await request.post('/api/cad-files', { multipart: {
+    file: { name: 'viewer-insecure-context.dxf', mimeType: 'application/octet-stream', buffer: drawing },
+    businessUnit: '회귀', site: 'HTTP', building: 'A동', floor: '1층', registeredAt: '2026-09-17', makeCurrent: 'true', deletePassword: '1234'
+  } });
+  expect(uploaded.status()).toBe(201);
+  const version = await uploaded.json() as { id: string };
+
+  await page.addInitScript(() => {
+    Object.defineProperty(globalThis.crypto, 'randomUUID', { configurable: true, value: undefined });
+  });
+
+  let contentRequests = 0;
+  page.on('request', browserRequest => {
+    if (browserRequest.url().includes(`/api/cad-files/${version.id}/content`)) contentRequests += 1;
+  });
+
+  await page.goto(`/cad/versions/${version.id}/viewer`);
+  expect(await page.evaluate(() => typeof globalThis.crypto.randomUUID)).toBe('undefined');
+  await expect.poll(() => contentRequests).toBeGreaterThan(0);
+  await expect(page.getByRole('status').filter({ hasText: '도면 표시 완료' })).toBeVisible();
+  await expect(page.getByTestId('global-loading-overlay')).toHaveCount(0);
+
+  await page.getByRole('button', { name: 'three-dxf-viewer', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'three-dxf-viewer', exact: true })).toBeDisabled();
+  await expect(page.getByRole('status').filter({ hasText: '도면 표시 완료' })).toBeVisible();
+  await expect(page.getByTestId('global-loading-overlay')).toHaveCount(0);
+});

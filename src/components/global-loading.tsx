@@ -34,8 +34,8 @@ export function GlobalLoadingProvider({ children }: { children: React.ReactNode 
   const sequenceRef = useRef(0);
 
   const beginLoading = useCallback((message = '처리 중입니다...') => {
-    const id = crypto.randomUUID();
     const sequence = ++sequenceRef.current;
+    const id = `global-loading-${sequence}`;
     setTasks(current => [...current, { id, message, sequence }]);
     return id;
   }, []);
