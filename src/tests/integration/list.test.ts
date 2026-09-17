@@ -74,7 +74,7 @@ test('TC-LIST-003/004: current filters track replacement and null pointers', asy
   await expect(lists.location(crypto.randomUUID())).rejects.toThrow('찾을 수 없습니다');
 });
 test('TC-LIST-008: current-only toggle preserves filters and resets pagination', async()=>{
-  const query = listQuery(new URLSearchParams('filename=one&description=설명&site=평택&format=DXF&current=false&page=7&pageSize=50'));
+  const query = listQuery(new URLSearchParams('filename=one&description=설명&site=평택&format=DXF&page=7&pageSize=50'));
   const enabled = new URL(currentOnlyToggleUrl(query), 'http://localhost');
   expect(enabled.searchParams.get('filename')).toBe('one');
   expect(enabled.searchParams.get('description')).toBe('설명');
