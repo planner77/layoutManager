@@ -1,15 +1,18 @@
 'use client';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { UploadCloud, FileCheck2, ArrowLeft, Download, Copy } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { useGlobalLoading } from '@/components/global-loading';
 import { connectionDiagnostic, diagnosticJson, diagnosticText, interpretUploadResponse, type PublicUploadDiagnostic, type UploadResult } from './diagnostics';
 import { exceedsUploadLimit, uploadLimitDiagnostic } from './upload-limit';
 import { defaultDrawingName, type LocationInput } from '@/domain/cad';
 
 export function UploadForm({ today, maxMb }: { today: string; maxMb: number }) {
   const router = useRouter();
+  const { runWithLoading } = useGlobalLoading();
+  const submittingRef = useRef(false);
   const [busy, setBusy] = useState(false), [error, setError] = useState<PublicUploadDiagnostic | null>(null);
   const [copyStatus, setCopyStatus] = useState(''), [result, setResult] = useState<UploadResult | null>(null), [filename, setFilename] = useState('');
   const [location, setLocation] = useState<LocationInput>({ businessUnit: '', site: '', building: '', floor: '' });
@@ -18,17 +21,21 @@ export function UploadForm({ today, maxMb }: { today: string; maxMb: number }) {
   function updateLocation(key: string, event: React.ChangeEvent<HTMLInputElement>) { const value = event.currentTarget.value; setLocation(previous => ({ ...previous, [key]: value })); }
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (submittingRef.current) return;
     const formElement = event.currentTarget;
     const input = formElement.elements.namedItem('file') as HTMLInputElement;
     if (exceedsUploadLimit(input.files?.[0], maxMb)) { input.value = ''; setFilename(''); setError(uploadLimitDiagnostic(maxMb)); setCopyStatus(''); setResult(null); return; }
+    submittingRef.current = true;
     setError(null); setCopyStatus(''); setResult(null); setBusy(true);
     const form = new FormData(formElement); form.set('makeCurrent', form.get('makeCurrent') === 'on' ? 'true' : 'false');
     try {
-      const interpreted = await interpretUploadResponse(await fetch('/api/cad-files', { method: 'POST', body: form }));
-      if ('diagnostic' in interpreted) { setError(interpreted.diagnostic); console.error('CAD upload diagnostic', interpreted.diagnostic); }
-      else { (formElement.elements.namedItem('deletePassword') as HTMLInputElement).value = ''; setResult(interpreted.result); router.refresh(); }
+      await runWithLoading('도면을 등록하는 중입니다...', async () => {
+        const interpreted = await interpretUploadResponse(await fetch('/api/cad-files', { method: 'POST', body: form }));
+        if ('diagnostic' in interpreted) { setError(interpreted.diagnostic); console.error('CAD upload diagnostic', interpreted.diagnostic); }
+        else { (formElement.elements.namedItem('deletePassword') as HTMLInputElement).value = ''; setResult(interpreted.result); router.refresh(); }
+      });
     } catch { const diagnostic = connectionDiagnostic(); setError(diagnostic); console.error('CAD upload diagnostic', diagnostic); }
-    finally { setBusy(false); }
+    finally { submittingRef.current = false; setBusy(false); }
   }
   function selectFile(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.currentTarget.files?.[0]; setCopyStatus(''); setResult(null);
