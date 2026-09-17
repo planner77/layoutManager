@@ -1,6 +1,8 @@
 # GitHub Issue #9 — 전역 로딩 스피너 및 사용자 입력 차단
 
 기준일: 2026-09-17
+대상 버전: 0.20.0
+PR: #12
 
 ## 요구사항 구체화
 
@@ -9,7 +11,7 @@
 - 현재 표시 문구는 가장 최근에 시작된 활성 작업의 메시지를 사용한다.
 - 전체 화면 오버레이는 기존 Dialog보다 높은 stacking level을 사용하고 pointer 입력을 가로막는다.
 - 전역 로딩 중 keyboard 입력도 capture 단계에서 차단하여 메뉴 단축키, Enter/Space 재실행 등의 추가 조작을 막는다.
-- `body`에 `aria-busy=true`, 오버레이에 `role=status`, `aria-live=polite`를 적용한다.
+- `body`에 `aria-busy=true`를 적용하고, 오버레이는 진행 중 상태를 `role=progressbar`, `aria-label`, `aria-valuetext`로 제공한다. 상태 문구는 `aria-live=polite`로 알린다.
 - 모든 작업은 성공/실패/예외와 무관하게 `finally` 성격의 정리 경로에서 작업 ID를 제거한다.
 - 변경 API는 React state 반영 전에 들어올 수 있는 빠른 연속 이벤트까지 막기 위해 ref 기반 즉시 실행 가드를 사용한다.
 - 기존 화면의 오류 안내/진단 UI는 유지하며, 실패 후 오버레이를 제거한 다음 사용자가 오류 내용을 조작할 수 있어야 한다.
@@ -33,6 +35,7 @@
 - `endLoading(taskId)`: 지정 작업만 제거한다. 이미 제거된 ID에 대해서도 안전하게 동작한다.
 - `runWithLoading(message, action)`: action을 실행하고 `finally`에서 task ID를 제거한다.
 - `GlobalLoadingOverlay`: 전체 viewport 입력 차단, spinner, 상태 문구, 접근성 속성을 담당한다.
+- CAD/WebGL canvas 위에서 `backdrop-filter`가 headless Chromium의 합성/페인트를 지연시키는 회귀가 확인되어 배경 blur는 사용하지 않는다. 반투명 배경은 유지한다.
 
 ### Root layout
 
@@ -42,9 +45,9 @@
 
 - Viewer 실제 원본 로드가 시작될 때 `도면을 여는 중입니다...` task를 등록한다.
 - Promise 완료/실패/cleanup 경로 모두에서 task를 해제한다.
-- renderer 전환과 다시 불러오기는 local loading/ref guard로 중복 실행을 막는다.
+- renderer 전환과 다시 불러오기는 local `loading` 상태로 중복 실행을 막는다.
 - 이전 load Promise가 늦게 끝나 새 load의 local busy 상태를 해제하지 않도록 sequence를 비교한다.
-- `src/app/cad/versions/[versionId]/viewer/loading.tsx`에서도 동일 오버레이 UI를 재사용하여 route 이동 단계부터 상태를 보인다.
+- `src/app/cad/versions/[versionId]/viewer/loading.tsx`에서도 동일 오버레이 UI를 재사용하되 Provider 오버레이와 구분되는 test id를 사용한다.
 
 ### Upload / Delete / Current
 
@@ -64,7 +67,7 @@
 - AC7 오류 안내 유지 → 기존 error/diagnostic state 유지
 - AC8 공통 구현 → Root `GlobalLoadingProvider`
 - AC9 중첩 안전 → task ID collection
-- AC10 검증 → `tests/e2e/global-loading.spec.ts`
+- AC10 검증 → `tests/e2e/global-loading.spec.ts` 및 전체 Chromium 회귀
 
 ## 테스트
 
@@ -84,6 +87,22 @@
 ### TC-ISSUE9-003
 
 등록된 DXF의 content API 응답을 지연시키고 Viewer 화면에서 `도면을 여는 중입니다...` 오버레이가 응답 완료까지 유지되고, 완료 후 `도면 표시 완료` 상태로 전환되는지 확인한다.
+
+## PR / CI 검증
+
+PR #12에서 PR 전용 CI를 실행했다.
+
+최종 통과 실행은 GitHub Actions run `35202994276`이며 head SHA는 `15c8bfcce2c76a12ba95c18dedbc5d7d25d323a3`이다.
+
+- Node.js 22.14.0 / `npm ci`: PASS
+- Prisma Client 생성: PASS
+- TypeScript: PASS
+- ESLint: PASS
+- Unit / Integration: 22 files / 100 tests PASS
+- Production build: PASS
+- Playwright Chromium E2E: 33 / 33 PASS
+
+초기 CI에서는 React hook lint 규칙 위반과 전역 오버레이의 접근성 역할 충돌을 수정했다. 이후 WebGL canvas 위의 `backdrop-blur`가 headless Chromium 합성 성능을 크게 저하시켜 Viewer E2E를 지연시키는 현상을 trace로 확인했고, blur를 제거하면서 반투명 입력 차단 오버레이는 유지했다. 최종 CI에서 전체 회귀가 통과했다.
 
 ## 범위 외
 
