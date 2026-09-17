@@ -4,14 +4,17 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Dialog } from 'radix-ui';
 import { Button } from '@/components/ui/button';
+import { useGlobalLoading } from '@/components/global-loading';
 
 export function DeleteButton({ versionId, filename, version, location, isCurrent }: { versionId: string; filename: string; version: number; location: string; isCurrent: boolean }) {
   const router = useRouter();
+  const { runWithLoading } = useGlobalLoading();
   const [open, setOpen] = useState(false);
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
+  const deletingRef = useRef(false);
   const acknowledgeRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -36,38 +39,43 @@ export function DeleteButton({ versionId, filename, version, location, isCurrent
   }
 
   async function remove() {
+    if (deletingRef.current) return;
+    deletingRef.current = true;
     setBusy(true);
     setError('');
     try {
-      let r: Response;
-      try {
-        r = await fetch(`/api/cad-files/${versionId}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }) });
-      } catch {
-        throw new Error('OUTCOME_UNKNOWN');
-      }
-      let d: unknown;
-      try {
-        d = await r.json();
-      } catch {
-        throw new Error('OUTCOME_UNKNOWN');
-      }
-      if (!d || typeof d !== 'object' || Array.isArray(d)) throw new Error('OUTCOME_UNKNOWN');
-      const body = d as { deleted?: unknown; cleanupPending?: unknown; error?: { code?: unknown } };
-      if (!r.ok) {
-        const messages: Record<string, string> = { INVALID_DELETE_PASSWORD: '삭제 비밀번호가 올바르지 않습니다.', DELETE_RATE_LIMITED: '요청이 많습니다. 잠시 후 다시 시도해주세요.', FILE_NOT_FOUND: '도면 버전을 찾을 수 없습니다.' };
-        throw new Error(messages[String(body.error?.code)] ?? '삭제 요청을 처리하지 못했습니다.');
-      }
-      if (body.deleted !== true || typeof body.cleanupPending !== 'boolean') throw new Error('OUTCOME_UNKNOWN');
-      setPassword('');
-      if (r.status === 202 || body.cleanupPending) {
-        setPending(true);
-        return;
-      }
-      close();
-      router.refresh();
+      await runWithLoading('도면을 삭제하는 중입니다...', async () => {
+        let r: Response;
+        try {
+          r = await fetch(`/api/cad-files/${versionId}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }) });
+        } catch {
+          throw new Error('OUTCOME_UNKNOWN');
+        }
+        let d: unknown;
+        try {
+          d = await r.json();
+        } catch {
+          throw new Error('OUTCOME_UNKNOWN');
+        }
+        if (!d || typeof d !== 'object' || Array.isArray(d)) throw new Error('OUTCOME_UNKNOWN');
+        const body = d as { deleted?: unknown; cleanupPending?: unknown; error?: { code?: unknown } };
+        if (!r.ok) {
+          const messages: Record<string, string> = { INVALID_DELETE_PASSWORD: '삭제 비밀번호가 올바르지 않습니다.', DELETE_RATE_LIMITED: '요청이 많습니다. 잠시 후 다시 시도해주세요.', FILE_NOT_FOUND: '도면 버전을 찾을 수 없습니다.' };
+          throw new Error(messages[String(body.error?.code)] ?? '삭제 요청을 처리하지 못했습니다.');
+        }
+        if (body.deleted !== true || typeof body.cleanupPending !== 'boolean') throw new Error('OUTCOME_UNKNOWN');
+        setPassword('');
+        if (r.status === 202 || body.cleanupPending) {
+          setPending(true);
+          return;
+        }
+        close();
+        router.refresh();
+      });
     } catch (e) {
       setError(e instanceof Error && e.message === 'OUTCOME_UNKNOWN' ? '서버 응답을 확인할 수 없습니다. 삭제 결과가 불확실하므로 목록을 새로고침해 확인해주세요.' : e instanceof Error ? e.message : '삭제에 실패했습니다.');
     } finally {
+      deletingRef.current = false;
       setBusy(false);
     }
   }

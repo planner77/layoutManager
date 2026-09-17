@@ -1,5 +1,5 @@
 import {test,expect} from '@playwright/test';
-test('TC-SWITCH-001/002: no navigation, shared bytes, racing load and twenty switches release resources',async({page,request})=>{
+test('TC-SWITCH-001/002: loading blocks renderer changes, shared bytes and twenty switches release resources',async({page,request})=>{
   test.setTimeout(120_000);
   await page.addInitScript(()=>{
     const stats={workers:0,blobs:0,contexts:0,lost:0};Object.defineProperty(window,'__cadResources',{value:stats});
@@ -26,14 +26,18 @@ test('TC-SWITCH-001/002: no navigation, shared bytes, racing load and twenty swi
   const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
   await page.goto(`/cad/versions/${file.id}/viewer`);
   await expect.poll(()=>downloads).toBe(1);
+  await expect(page.getByTestId('global-loading-overlay')).toBeVisible();
+  await expect(page.getByRole('button',{name:'three-dxf-viewer',exact:true})).toBeDisabled();
+  await expect(page.getByRole('button',{name:'다시 불러오기'})).toBeDisabled();
+  release();
+  await expect(page.getByTestId('global-loading-overlay')).toHaveCount(0);
+  await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
   const marker=await page.evaluate(()=>{const marker=crypto.randomUUID();Object.defineProperty(window,'__documentMarker',{value:marker});return marker;});
-  await page.getByRole('button',{name:'three-dxf-viewer',exact:true}).click();
-  await page.getByRole('button',{name:'dxf-viewer',exact:true}).click();
-  release();await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
   const resource=()=>page.evaluate(()=>{const stats=(window as unknown as {__cadResources:{workers:number;blobs:number;contexts:number;lost:number}}).__cadResources;return {workers:stats.workers,blobs:stats.blobs,active:stats.contexts-stats.lost};});
   for(let i=0;i<20;i++){
     const renderer=i%2===0?'three-dxf-viewer':'dxf-viewer';
     await page.getByRole('button',{name:renderer,exact:true}).click();
+    await expect(page.getByTestId('global-loading-overlay')).toHaveCount(0);
     await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
     await expect(page.locator('canvas')).toHaveCount(1);
     await expect.poll(resource).toEqual({workers:0,blobs:0,active:1});
@@ -41,7 +45,7 @@ test('TC-SWITCH-001/002: no navigation, shared bytes, racing load and twenty swi
     await expect(page).toHaveURL(new RegExp(`${file.id}/viewer\\?renderer=${renderer}$`));
   }
   expect(downloads).toBe(1);await expect(page.getByRole('heading')).toHaveText(file.displayName);
-  await page.getByRole('button',{name:'다시 불러오기'}).click();await expect(page.getByRole('status')).toHaveText('도면 표시 완료');expect(downloads).toBe(2);
+  await page.getByRole('button',{name:'다시 불러오기'}).click();await expect(page.getByTestId('global-loading-overlay')).toHaveCount(0);await expect(page.getByRole('status')).toHaveText('도면 표시 완료');expect(downloads).toBe(2);
   await page.getByRole('link',{name:'← 버전 목록'}).click();await expect(page.locator('canvas')).toHaveCount(0);await expect.poll(resource).toEqual({workers:0,blobs:0,active:0});
   expect(errors).toEqual([]);
 });

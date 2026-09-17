@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { useGlobalLoading } from '@/components/global-loading';
 import { ViewerManager } from '@/viewers/core/adapter';
 import { selectRenderer, type ViewerFormat, type ViewerRenderer } from '@/viewers/core/selection';
 import { ViewerSource } from '@/viewers/core/source';
@@ -12,6 +13,9 @@ export function CadViewer({ versionId, renderer: initialRenderer = 'dxf-viewer',
   const [renderer,setRenderer]=useState(selectRenderer(format, initialRenderer));
   const [source]=useState(()=>new ViewerSource());
   const container = useRef<HTMLDivElement>(null), manager = useRef<ViewerManager | null>(null);
+  const loadSequenceRef = useRef(0);
+  const { beginLoading, endLoading } = useGlobalLoading();
+  const [loading,setLoading] = useState(true);
   const [attempt, setAttempt] = useState(0);
   const [layers,setLayers] = useState<string[]>([]);
   const [selectedLayers,setSelectedLayers] = useState<Set<string>>(()=>new Set());
@@ -19,12 +23,21 @@ export function CadViewer({ versionId, renderer: initialRenderer = 'dxf-viewer',
   const [state, setState] = useState<{ status: string; ready: boolean; error?: string; warning?:string }>({status:'도면 로딩 중…',ready:false});
   useEffect(()=>()=>source.dispose(),[source,versionId]);
   function choose(value:typeof renderer) {
+    if (loading || value === renderer) return;
+    setLoading(true);
     setState({status:'도면 로딩 중…',ready:false});setMetric(null);setLayers([]);setSelectedLayers(new Set());setRenderer(value);
     const url=new URL(window.location.href);url.searchParams.set('renderer',value);
     window.history.replaceState(null,'',url);
   }
+  function reload() {
+    if (loading) return;
+    setLoading(true);
+    source.dispose();setMetric(null);setLayers([]);setSelectedLayers(new Set());setState({status:'도면 로딩 중…',ready:false});setAttempt(v=>v+1);
+  }
   useEffect(() => {
     let active = true;
+    const sequence = ++loadSequenceRef.current;
+    const loadingTaskId = beginLoading('도면을 여는 중입니다...');
     const instance = new ViewerManager(async () => {
       if (renderer === 'libredwg-web') {
         const { LibreDwgWebAdapter } = await import('@/viewers/libredwg-web/adapter');
@@ -45,16 +58,19 @@ export function CadViewer({ versionId, renderer: initialRenderer = 'dxf-viewer',
       if (active) {const nextLayers=instance.getLayers();setState({status:result.empty ? '표시할 도형이 없습니다.' : result.warning ? '도면 일부 표시 완료' : '도면 표시 완료',ready:!result.empty,warning:result.warning});setLayers(nextLayers);setSelectedLayers(new Set(nextLayers));}
     }).catch(error => {
       if (active) {setLayers([]);setSelectedLayers(new Set());setState({status:'표시 실패',ready:false,error:error instanceof Error ? error.message : 'Viewer 초기화에 실패했습니다.'});}
+    }).finally(() => {
+      endLoading(loadingTaskId);
+      if (loadSequenceRef.current === sequence) setLoading(false);
     });
-    return () => { active = false; instance.dispose(); manager.current = null; };
-  }, [versionId,attempt,renderer,source,format]);
+    return () => { active = false; endLoading(loadingTaskId); instance.dispose(); manager.current = null; };
+  }, [versionId,attempt,renderer,source,format,beginLoading,endLoading]);
   return <div className="space-y-3">
     <div className="flex flex-wrap items-center gap-3"><span className="mr-auto rounded bg-teal-50 px-3 py-2 text-sm text-teal-800">{renderer}</span>
-      {format==='DXF' && (['dxf-viewer','three-dxf-viewer'] as const).map(value=><Button key={value} variant={renderer===value?'default':'outline'} aria-pressed={renderer===value} disabled={renderer===value} onClick={()=>choose(value)}>{value}</Button>)}
-      <Button variant="outline" disabled={!state.ready} onClick={()=>manager.current?.zoomIn()}>확대</Button>
-      <Button variant="outline" disabled={!state.ready} onClick={()=>manager.current?.zoomOut()}>축소</Button>
-      <Button variant="outline" disabled={!state.ready} onClick={()=>manager.current?.fitToView()}>화면 맞춤</Button>
-      <Button variant="outline" onClick={()=>{source.dispose();setMetric(null);setLayers([]);setSelectedLayers(new Set());setState({status:'도면 로딩 중…',ready:false});setAttempt(v=>v+1);}}>다시 불러오기</Button>
+      {format==='DXF' && (['dxf-viewer','three-dxf-viewer'] as const).map(value=><Button key={value} variant={renderer===value?'default':'outline'} aria-pressed={renderer===value} disabled={loading || renderer===value} onClick={()=>choose(value)}>{value}</Button>)}
+      <Button variant="outline" disabled={loading || !state.ready} onClick={()=>manager.current?.zoomIn()}>확대</Button>
+      <Button variant="outline" disabled={loading || !state.ready} onClick={()=>manager.current?.zoomOut()}>축소</Button>
+      <Button variant="outline" disabled={loading || !state.ready} onClick={()=>manager.current?.fitToView()}>화면 맞춤</Button>
+      <Button variant="outline" disabled={loading} onClick={reload}>다시 불러오기</Button>
       <CopyCadLink key={`${versionId}-${renderer}`} versionId={versionId} format={format} renderer={renderer}/>
     </div>
     {renderer==='three-dxf-viewer' && layers.length>0 && state.ready && <LayerDropdown layers={layers} selected={selectedLayers} onLayerChange={(name,visible)=>{manager.current?.showLayer(name,visible);setSelectedLayers(current=>{const next=new Set(current);if(visible)next.add(name);else next.delete(name);return next;});}} onAllChange={visible=>{for(const name of layers)manager.current?.showLayer(name,visible);setSelectedLayers(visible?new Set(layers):new Set());}}/>}
