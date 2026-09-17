@@ -9,6 +9,7 @@ const priorities: Record<LogLevel, number> = { debug: 10, info: 20, warn: 30, er
 const sensitiveKey = /(password|authorization|cookie|token|secret|credential|access[_-]?key|session)/i;
 const allowedScalar = new Set(['string', 'number', 'boolean']);
 const safeErrorCodes = /^(?:E[A-Z0-9_]+|P\d{4}|SQLITE_[A-Z0-9_]+|[A-Z][A-Z0-9_]{2,63})$/;
+const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function configuredLevel(): LogLevel {
   const value = process.env.LOG_LEVEL?.toLowerCase();
@@ -76,14 +77,16 @@ export function writeLog(level: LogLevel, event: string, fields: Record<string, 
 }
 
 export class RequestLogContext {
-  readonly requestId = randomUUID();
+  readonly requestId: string;
   readonly startedAt = Date.now();
 
   constructor(
     readonly request: Request,
     readonly component = 'api',
     readonly operation?: string,
+    requestId?: string,
   ) {
+    this.requestId = requestId && uuid.test(requestId) ? requestId : randomUUID();
     this.info('http_request_started', { outcome: 'started' });
   }
 
