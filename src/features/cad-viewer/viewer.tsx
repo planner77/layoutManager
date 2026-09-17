@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useGlobalLoading } from '@/components/global-loading';
 import { CopyCadLink } from '@/features/cad-link/copy-cad-link';
+import { FullscreenLayerPanel } from '@/features/cad-viewer/fullscreen-layer-panel';
 import { LayerDropdown } from '@/features/cad-viewer/layer-dropdown';
 import { ViewerManager } from '@/viewers/core/adapter';
 import type { ViewerMetric } from '@/viewers/core/metrics';
@@ -111,6 +112,21 @@ export function CadViewer({
     setAttempt(value => value + 1);
   }
 
+  function setLayerVisibility(name: string, visible: boolean) {
+    manager.current?.showLayer(name, visible);
+    setSelectedLayers(current => {
+      const next = new Set(current);
+      if (visible) next.add(name);
+      else next.delete(name);
+      return next;
+    });
+  }
+
+  function setAllLayersVisibility(visible: boolean) {
+    for (const name of layers) manager.current?.showLayer(name, visible);
+    setSelectedLayers(visible ? new Set(layers) : new Set());
+  }
+
   function enterFullscreen() {
     const shell = viewerShell.current;
     if (!shell || loading || !state.ready) return;
@@ -203,19 +219,8 @@ export function CadViewer({
     {renderer === 'three-dxf-viewer' && layers.length > 0 && state.ready && <LayerDropdown
       layers={layers}
       selected={selectedLayers}
-      onLayerChange={(name, visible) => {
-        manager.current?.showLayer(name, visible);
-        setSelectedLayers(current => {
-          const next = new Set(current);
-          if (visible) next.add(name);
-          else next.delete(name);
-          return next;
-        });
-      }}
-      onAllChange={visible => {
-        for (const name of layers) manager.current?.showLayer(name, visible);
-        setSelectedLayers(visible ? new Set(layers) : new Set());
-      }}
+      onLayerChange={setLayerVisibility}
+      onAllChange={setAllLayersVisibility}
     />}
 
     <div
@@ -224,6 +229,12 @@ export function CadViewer({
       data-fullscreen={isFullscreen ? 'true' : 'false'}
       className={isFullscreen ? 'fixed inset-0 z-[90] flex h-screen w-screen flex-col bg-black p-3' : 'relative'}
     >
+      {isFullscreen && renderer === 'three-dxf-viewer' && layers.length > 0 && state.ready && <FullscreenLayerPanel
+        layers={layers}
+        selected={selectedLayers}
+        onLayerChange={setLayerVisibility}
+        onAllChange={setAllLayersVisibility}
+      />}
       {isFullscreen && <div className="absolute right-4 top-4 z-20 flex flex-wrap gap-2 rounded-lg bg-white/95 p-2 shadow-lg">
         <Button variant="outline" size="sm" onClick={() => manager.current?.zoomIn()}>전체 화면 확대</Button>
         <Button variant="outline" size="sm" onClick={() => manager.current?.zoomOut()}>전체 화면 축소</Button>
