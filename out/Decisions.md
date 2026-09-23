@@ -235,3 +235,11 @@
 - Alternatives: Location 공통 메모, filename과 설명을 하나의OR검색에 병합, richtext editor, 별도 fulltext검색엔진. 사용자 요청범위·기존검색호환·구조단순성을 기준으로 제외했다.
 - Reason / Trade-offs: 작은 additive migration으로 기존Version/Current/원본을 보존한다. 대소문자구분 substring은 기존filename과같고 대규모검색성능/텍스트색인은이번P.O.C.범위에서추가하지 않는다. 등록후설명편집은 별도요청이필요하다.
 - Consequences:0.14.0. UTF16길이는 textarea maxlength/JS문자열과일치하며 UTF8전송바이트한도는8192로 별도설정한다. 최종Migration검증/설명없는기존API회귀/검색과HTML표시는 TC-DESC-001–005로검증한다.
+
+## ADR-026 — GPT-6 Sol/Luna 도입에 따른 역할별 모델 매핑 갱신
+
+- Date / Status: 2026-09-23 / 사용자 요청으로 채택.
+- Context: 현재 역할 정책은 gpt-6-astra Manager, gpt-5.6-sol Developer, gpt-5.6-luna QA로 운영되고 있었다. 새 GPT-6 Sol/Luna 사용 가능성을 반영하되 역할 책임과 검증 독립성은 유지할 필요가 있다.
+- Decision: Manager는 gpt-6-astra를 유지한다. Developer는 gpt-6-sol로 갱신하여 구현, 리팩터링, 복잡한 기술 분석의 주 실행 모델로 사용한다. QA는 gpt-6-luna로 갱신하여 독립 검증, 회귀 시험, 문서·추적성 점검을 담당한다. Manager가 요구사항/AC/작업 분배와 최종 재작업 여부를 판단하는 구조는 유지한다.
+- Fallback / Evidence: 지정 모델 사용이 불가능하거나 사용량 제한이 발생하면 실제 대행 주체와 검증 근거를 TestReport에 기록한다. 역할을 수행하지 않고 수행한 것으로 기록하지 않는다. 과거 TestReport와 기존 ADR에 남은 gpt-5.6-sol/luna 기록은 당시 실행 증거이므로 소급 수정하지 않는다.
+- Consequences: 새 세션은 AGENTS.md의 최신 역할 매핑을 따른다. 애플리케이션 소스, DB, 런타임, SemVer, Docker/GHCR 산출물에는 영향이 없다.
