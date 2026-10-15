@@ -50,3 +50,7 @@ gpt-5.6-luna가 source frozen 상태에서 `db:generate`, typecheck, lint, build
 ## Manager 최종 수용
 
 2026-10-15: 지정 Developer와 독립 QA의 실제 결과 및 source/시각 검토를 근거로 FR-MASTER-001~007 구현을 수용한다. 0.25.0 source는 root의 최종 commit/push/PR·CI 시작 단계로 인계한다. 운영 migration·배포는 수행하지 않았다. 상세 근거는 TestReport U-ISSUE24-QA-20261015 및 Manager 판정을 따른다.
+
+## Root 원격 게시
+
+2026-10-15: source `e8189b4543ce53b00a6c2feb02e0eae3f125263b`를 지정 저장소의 `feat/issue-24-master-hierarchy`에 게시했다. stage 67개 파일의 Secret/런타임 검사 위반은 0건이며 원격 Git tree와 검증한 local index가 일치했다. 최신 main은 작업 브랜치의 조상이므로 병합 충돌이 없다. 기존 열린 PR은 없으며 새 PR의 opened 이벤트로 PR CI를 시작한다. CI 결과 모니터링·병합·운영 migration·배포는 이번 작업에서 수행하지 않는다.

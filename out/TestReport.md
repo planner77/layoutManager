@@ -1,5 +1,13 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE24-PUBLISH-20261015 — Root 원격 게시
+
+- 0.25.0 source commit `e8189b4543ce53b00a6c2feb02e0eae3f125263b`, branch `feat/issue-24-master-hierarchy`를 지정 저장소에 게시했다. 기존 Git 인증의 dry-run이 실패해 연결된 GitHub 도구로 Git object와 ref를 생성했으며 인증 값은 출력하지 않았다. 일반 push 성공으로 기록하지 않는다.
+- stage 67개 파일 Secret/credential URL/token/runtime/CAD/DB/cache/build 검사 위반 0건, staged diff 공백 검사 통과, 문서 local link 61개 오류 0건. 원격 tree `68a3b66616f5724f8f6bca2865d041a5c165b4fc`가 검사한 local index tree와 정확히 일치했다. local branch는 동일 commit으로 fast-forward 동기화했다.
+- 원격 main `ba83dcf3451c50088895a84900487dc606e57503`을 재조회하고 작업 브랜치의 조상임을 확인했다. 충돌 없음. 기존 열린 PR 없음. 새 PR의 opened 이벤트로 PR CI가 정적/자동/build/Browser와 실제 legacy migration E2E를 실행하며 CI 결과 모니터링은 요청 범위 밖이다.
+- Root도 관리 desktop·등록/재분류 narrow 캡처를 직접 검토했다. 별도 임시 SQL migration 검증에서 4 Location/4 Version의 metadata·Current·nextVersion·timestamps 보존, 부모별 dedup(BU2/Product2/Site3/Building3/Floor4), FK/integrity, 다른 층 Current·순번 감소 거부와 오류 주입 rollback을 확인했다. SQL-only 보조 시험이며 실제 scrypt/원본 시험은 아래 Developer/QA 근거로 구분한다.
+- 원래 작업 폴더의 미커밋 `src/next-env.d.ts` 변경과 운영 DB/CAD는 보존했다. Tag/GHCR 게시·운영 migration·배포는 미실행. 다음 단계는 새 PR CI 시작과 사용자/리뷰어의 결과 확인·병합 판단이다.
+
 ## U-ISSUE24-QA-20261015 — 독립 QA 기준정보 계층 검증
 
 - 상태: 독립 QA PASS/VERIFIED (root Manager의 commit/push/운영 DB 적용 전). 역할: gpt-5.6-luna QA. 환경: Linux x86_64, Node 22.14.0, package `0.25.0`, Playwright 1.63.0, Chromium executable `/home/planner/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome`, worker 1, 격리 local SQLite/storage 및 격리 SeaweedFS 4.45.
