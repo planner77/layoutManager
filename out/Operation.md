@@ -1,5 +1,13 @@
 # 운영·환경설정 초안
 
+문서의 현재 기준 버전은 0.25.0이다. 아래 과거 버전별 문구는 당시 운영 기록으로 읽는다.
+
+## 0.25.0 기준정보 migration 운영 절차
+
+운영 적용은 쓰기를 중지한 뒤 같은 시점의 SQLite DB, local CAD, 모든 S3 object를 함께 백업한다. 복제 DB에서 `npm --prefix src run db:deploy`를 dry run하고 migration 전후 Location/Version 행 수, Location UUID/current/nextVersion/timestamps, Version UUID/filename/drawingName/description/password hash/size/SHA-256/storage locator/registeredAt/timestamps를 비교한다. `PRAGMA foreign_key_check`, Current 소속, 부모별 이름 중복, 사업부별 미분류 Product 수를 확인하고 원본 bytes의 SHA-256을 DB 값과 표본 대조한다.
+
+검증 후 새 이미지로 migration하고 readiness, 기준정보 조회, 기존 목록·상세·Viewer·원본 다운로드, 신규 ID chain 업로드를 smoke test한다. 실패하면 새 앱을 중지하고 DB와 원본의 같은 시점 백업을 복구한 뒤 이전 이미지를 시작한다. 0.25 schema는 legacy 문자열 열을 제거하므로 이전 이미지를 migration된 DB에 직접 연결하는 rollback은 금지한다.
+
 **현재 소스 0.19.1, 도면 이름 선택 입력· 업로드 크기 사전 검증·삭제 비밀번호·폐쇄망 업로드 진단·Docker 배포·host IP 접속·S3 호환 저장소 및 DWG 계측 지원.** 실제 게시·배포 버전은 TestReport의 해당 실행 기록을 확인한다. install/generate/deploy/dev/build/start/typecheck/lint/test/db:check/test:e2e가 동작한다. 초기 설치는 npm ci → db:generate → db:deploy 순서이다. 서버는 `0.0.0.0`으로 수신하며 기본 검증 주소는 `127.0.0.1:3100`이다.
 
 Playwright 기본 설치는 `cd src` 후 `npx playwright install chromium`이다. 이미 설치된 Chromium을 사용할 때는 `PLAYWRIGHT_CHROMIUM_EXECUTABLE`에 실행 파일 경로를 설정한다. E2E는 기본 3101 포트와 독립 `/tmp/cad-e2e-*` DB/Storage를 사용하며, 포트 충돌 시 `CAD_E2E_PORT=3111`처럼 바꿀 수 있다. 이 임시 데이터는 운영 데이터와 분리되며 Git에 포함되지 않는다.

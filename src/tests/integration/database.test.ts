@@ -1,18 +1,127 @@
-import { beforeEach, afterEach, test, expect } from 'vitest';
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import path from 'node:path';
-import { createDb, type Database } from '../../server/db';
-import { CadRepository } from '../../server/repositories/cad';
-import { registration } from '../../domain/cad';
-let directory: string, db: Database, repo: CadRepository;
-const input = registration({ businessUnit:'사업부',site:'평택',building:'A동',floor:'2층',registeredAt:'2026-09-07',makeCurrent:true,deletePassword:'1234' });
-const file = (n: number) => ({ originalFilename:`file${n}.dxf`,fileFormat:'DXF' as const,fileSize:100,sha256:'a'.repeat(64),storagePath:`test/${n}.dxf` });
-beforeEach(async () => { directory = await mkdtemp(path.join(tmpdir(),'cad-db-')); db = createDb(`file:${directory}/test.sqlite`); for (const migration of ['202609070001_locations','202609090001_description','202609110001_delete_password','202609110003_drawing_name']) { const sql=await readFile(new URL(`../../prisma/migrations/${migration}/migration.sql`,import.meta.url),'utf8'); for (const statement of sql.split(';').filter(s=>s.trim())) await db.$executeRawUnsafe(statement); } repo=new CadRepository(db); });
-afterEach(async()=>{ await db.$disconnect(); await rm(directory,{recursive:true,force:true}); });
-test('TC-DB-001: normalized unique locations and separate floors',async()=>{const a=await repo.register(input,file(1)); const b=await repo.register(registration({...input,site:' 평택 '}),file(2)); expect(a.locationId).toBe(b.locationId); await expect(db.cadLocation.create({data:{id:crypto.randomUUID(),businessUnit:input.businessUnit,site:input.site,building:input.building,floor:input.floor}})).rejects.toThrow(); expect((await repo.register({...input,floor:'3층'},file(3))).locationId).not.toBe(a.locationId);});
-test('TC-DB-002/003/004: versions, current replacement, zero current, idempotency',async()=>{const a=await repo.register({...input,makeCurrent:false},file(1)); expect((await db.cadLocation.findUniqueOrThrow({where:{id:a.locationId}})).currentVersionId).toBeNull(); const b=await repo.register(input,file(2)); expect(b.version).toBe(2); await repo.setCurrent(a.locationId,a.id); await repo.setCurrent(a.locationId,a.id); expect((await db.cadLocation.findUniqueOrThrow({where:{id:a.locationId}})).currentVersionId).toBe(a.id);});
-test('TC-DB-005: concurrent writes keep a single current and unique sequence',async()=>{const versions=await Promise.all(Array.from({length:8},(_,i)=>repo.register(input,file(i)))); expect(new Set(versions.map(v=>v.version)).size).toBe(8); expect(await db.cadLocation.count()).toBe(1); const loc=await db.cadLocation.findFirstOrThrow(); expect(versions.some(v=>v.id===loc.currentVersionId)).toBe(true);});
-test('TC-DB-005: transaction rolls back pointer change and version creation',async()=>{const a=await repo.register(input,file(1)); await expect(db.$transaction(async tx=>{await tx.cadLocation.update({where:{id:a.locationId},data:{currentVersionId:null}}); throw new Error('fault');})).rejects.toThrow('fault'); expect((await db.cadLocation.findFirstOrThrow()).currentVersionId).toBe(a.id); await expect(repo.register(input,file(2),async()=>{throw new Error('storage fault');})).rejects.toThrow(); expect(await db.cadFileVersion.count()).toBe(1);});
-test('TC-DB-006: SQL and service reject foreign current and invalid owner/deletion',async()=>{const a=await repo.register(input,file(1));const b=await repo.register({...input,floor:'1층'},file(2)); await expect(repo.setCurrent(a.locationId,b.id)).rejects.toThrow('다른 위치'); await expect(db.$executeRaw`UPDATE CadLocation SET current_version_id=${b.id} WHERE id=${a.locationId}`).rejects.toThrow(); await expect(db.cadFileVersion.delete({where:{id:a.id}})).rejects.toThrow(); await expect(db.cadFileVersion.create({data:{...file(3),id:crypto.randomUUID(),locationId:crypto.randomUUID(),version:1,registeredAt:input.registeredAt}})).rejects.toThrow();});
-test('TC-DB-007: foreign keys and expected unique indexes are active',async()=>{expect(await db.$queryRaw`PRAGMA foreign_key_check`).toEqual([]); expect(await db.$queryRaw`PRAGMA foreign_keys`).toEqual([{foreign_keys:1n}]); const indexes=await db.$queryRawUnsafe<{name:string}[]>('PRAGMA index_list("CadFileVersion")'); for(const name of ['uq_version_sequence','uq_version_owner_id','uq_storage_path','ix_version_sha256']) expect(indexes.some(i=>i.name===name)).toBe(true);});
+import { beforeEach, afterEach, test, expect } from "vitest";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { createDb, type Database } from "../../server/db";
+import { CadRepository } from "../../server/repositories/cad";
+import { migrate, seedChain } from "../helpers/database";
+let directory: string,
+  db: Database,
+  repo: CadRepository,
+  chain: Awaited<ReturnType<typeof seedChain>>;
+const file = (n: number) => ({
+  originalFilename: `file${n}.dxf`,
+  fileFormat: "DXF" as const,
+  fileSize: 100,
+  sha256: String(n).repeat(64),
+  storagePath: `test/${n}.dxf`,
+});
+beforeEach(async () => {
+  directory = await mkdtemp(path.join(tmpdir(), "cad-db-"));
+  const filename = `${directory}/test.sqlite`;
+  await migrate(filename);
+  db = createDb(`file:${filename}`);
+  repo = new CadRepository(db);
+  chain = await seedChain(db);
+});
+afterEach(async () => {
+  await db.$disconnect();
+  await rm(directory, { recursive: true, force: true });
+});
+test("TC-MASTER-002: exact seeded ID chain registers and mismatched chain is rejected", async () => {
+  const a = await repo.register(chain.input, file(1));
+  expect(a.locationId).toBe(chain.floor.id);
+  const other = await seedChain(db, {
+    businessUnit: "설비",
+    product: "제품 B",
+    site: "서울",
+    building: "B동",
+    floor: "1층",
+  });
+  await expect(
+    repo.register({ ...chain.input, productId: other.product.id }, file(2)),
+  ).rejects.toMatchObject({ code: "INVALID_LOCATION_CHAIN" });
+  expect(await db.cadFileVersion.count()).toBe(1);
+});
+test("TC-MASTER-002: inactive floor or ancestor rejects registration", async () => {
+  await db.product.update({
+    where: { id: chain.product.id },
+    data: { active: false },
+  });
+  await expect(repo.register(chain.input, file(1))).rejects.toMatchObject({
+    code: "INACTIVE_LOCATION_CHAIN",
+  });
+  expect(await db.cadFileVersion.count()).toBe(0);
+});
+test("TC-MASTER-003: versions, current replacement, concurrency and rollback", async () => {
+  const versions = await Promise.all(
+    Array.from({ length: 8 }, (_, i) =>
+      repo.register(chain.input, file(i + 1)),
+    ),
+  );
+  expect(new Set(versions.map((v) => v.version)).size).toBe(8);
+  const location = await db.cadLocation.findUniqueOrThrow({
+    where: { id: chain.floor.id },
+  });
+  expect(versions.some((v) => v.id === location.currentVersionId)).toBe(true);
+  await repo.setCurrent(chain.floor.id, versions[0].id);
+  expect(
+    (await db.cadLocation.findUniqueOrThrow({ where: { id: chain.floor.id } }))
+      .currentVersionId,
+  ).toBe(versions[0].id);
+
+  const competing = versions.slice(1, 4);
+  const currentChanges = await Promise.allSettled(
+    competing.map((version) => repo.setCurrent(chain.floor.id, version.id)),
+  );
+  expect(currentChanges.every((result) => result.status === "fulfilled")).toBe(
+    true,
+  );
+  const afterCompetition = await db.cadLocation.findUniqueOrThrow({
+    where: { id: chain.floor.id },
+    include: { versions: true },
+  });
+  expect(
+    competing.some(
+      (version) => version.id === afterCompetition.currentVersionId,
+    ),
+  ).toBe(true);
+  expect(
+    afterCompetition.versions.filter(
+      (version) => version.id === afterCompetition.currentVersionId,
+    ),
+  ).toHaveLength(1);
+
+  const currentBeforeRollback = afterCompetition.currentVersionId;
+  await expect(
+    db.$transaction(async (tx) => {
+      await tx.cadLocation.update({
+        where: { id: chain.floor.id },
+        data: { currentVersionId: null },
+      });
+      throw new Error("fault");
+    }),
+  ).rejects.toThrow("fault");
+  expect(
+    (await db.cadLocation.findUniqueOrThrow({ where: { id: chain.floor.id } }))
+      .currentVersionId,
+  ).toBe(currentBeforeRollback);
+});
+test("TC-MASTER-003: API and SQL reject another floor/product current", async () => {
+  const a = await repo.register(chain.input, file(1)),
+    other = await seedChain(db, {
+      businessUnit: "설비",
+      product: "제품 B",
+      site: "서울",
+      building: "B동",
+      floor: "1층",
+    }),
+    b = await repo.register(other.input, file(2));
+  await expect(repo.setCurrent(a.locationId, b.id)).rejects.toMatchObject({
+    code: "LOCATION_MISMATCH",
+  });
+  await expect(
+    db.$executeRaw`UPDATE CadLocation SET current_version_id=${b.id} WHERE id=${a.locationId}`,
+  ).rejects.toThrow();
+  expect(await db.$queryRaw`PRAGMA foreign_key_check`).toEqual([]);
+});

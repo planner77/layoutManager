@@ -4,9 +4,10 @@ import { CadRepository } from './repositories/cad';
 import { ConfiguredCadStorage } from './storage/configured-storage';
 import { CadListRepository } from './repositories/cad-list';
 import { CadListService } from './services/cad-list';
+import { MasterRepository } from './repositories/master';
 let storage: ConfiguredCadStorage | undefined;
 export function context() {
   if (!process.env.CAD_STORAGE_PATH) throw new Error('CAD_STORAGE_PATH is required');
   const db = database();
-  return { repo: new CadRepository(db), list: new CadListService(new CadListRepository(db)), storage: storage ??= new ConfiguredCadStorage(process.env.CAD_STORAGE_PATH, Number(process.env.MAX_UPLOAD_SIZE_MB ?? 100) * 1024 * 1024, process.env) };
+  return { repo: new CadRepository(db), masters: new MasterRepository(db), list: new CadListService(new CadListRepository(db)), storage: storage ??= new ConfiguredCadStorage(process.env.CAD_STORAGE_PATH, Number(process.env.MAX_UPLOAD_SIZE_MB ?? 100) * 1024 * 1024, process.env) };
 }

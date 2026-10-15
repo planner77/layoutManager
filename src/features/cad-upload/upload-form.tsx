@@ -1,66 +1,520 @@
-'use client';
-import { useRef, useState } from 'react';
-import { UploadCloud, FileCheck2, ArrowLeft, Download, Copy } from 'lucide-react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { useGlobalLoading } from '@/components/global-loading';
-import { connectionDiagnostic, diagnosticJson, diagnosticText, interpretUploadResponse, type PublicUploadDiagnostic, type UploadResult } from './diagnostics';
-import { exceedsUploadLimit, uploadLimitDiagnostic } from './upload-limit';
-import { defaultDrawingName, type LocationInput } from '@/domain/cad';
+"use client";
+import { useEffect, useRef, useState } from "react";
+import {
+  UploadCloud,
+  FileCheck2,
+  ArrowLeft,
+  Download,
+  Copy,
+} from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { useGlobalLoading } from "@/components/global-loading";
+import {
+  connectionDiagnostic,
+  diagnosticJson,
+  diagnosticText,
+  interpretUploadResponse,
+  type PublicUploadDiagnostic,
+  type UploadResult,
+} from "./diagnostics";
+import { exceedsUploadLimit, uploadLimitDiagnostic } from "./upload-limit";
+import { defaultDrawingName, type LocationInput } from "@/domain/cad";
+
+type Floor = { id: string; name: string; active: boolean; buildingId: string };
+type Building = {
+  id: string;
+  name: string;
+  active: boolean;
+  siteId: string;
+  floors: Floor[];
+};
+type Site = {
+  id: string;
+  name: string;
+  kind: "SITE" | "LEGAL_ENTITY";
+  active: boolean;
+  productId: string;
+  buildings: Building[];
+};
+type Product = {
+  id: string;
+  name: string;
+  active: boolean;
+  businessUnitId: string;
+  sites: Site[];
+};
+type BusinessUnit = {
+  id: string;
+  name: string;
+  active: boolean;
+  products: Product[];
+};
 
 export function UploadForm({ today, maxMb }: { today: string; maxMb: number }) {
   const router = useRouter();
   const { runWithLoading } = useGlobalLoading();
   const submittingRef = useRef(false);
-  const [busy, setBusy] = useState(false), [error, setError] = useState<PublicUploadDiagnostic | null>(null);
-  const [copyStatus, setCopyStatus] = useState(''), [result, setResult] = useState<UploadResult | null>(null), [filename, setFilename] = useState('');
-  const [location, setLocation] = useState<LocationInput>({ businessUnit: '', site: '', building: '', floor: '' });
-  const previewLocation = Object.fromEntries(Object.entries(location).map(([key, value]) => [key, value.trim().normalize('NFC')])) as LocationInput;
-  const preview = defaultDrawingName(previewLocation, '{등록 시 확정}');
-  function updateLocation(key: string, event: React.ChangeEvent<HTMLInputElement>) { const value = event.currentTarget.value; setLocation(previous => ({ ...previous, [key]: value })); }
+  const [busy, setBusy] = useState(false),
+    [error, setError] = useState<PublicUploadDiagnostic | null>(null);
+  const [copyStatus, setCopyStatus] = useState(""),
+    [result, setResult] = useState<UploadResult | null>(null),
+    [filename, setFilename] = useState("");
+  const [tree, setTree] = useState<BusinessUnit[]>([]),
+    [masterError, setMasterError] = useState("");
+  const [ids, setIds] = useState({
+    businessUnitId: "",
+    productId: "",
+    siteId: "",
+    buildingId: "",
+    floorId: "",
+  });
+  useEffect(() => {
+    fetch("/api/masters?active=true", { cache: "no-store" })
+      .then(async (r) => {
+        if (!r.ok) throw new Error();
+        return r.json();
+      })
+      .then((v) => setTree(v.items))
+      .catch(() =>
+        setMasterError("기준정보를 불러오지 못했습니다. 다시 시도해주세요."),
+      );
+  }, []);
+  const bu = tree.find((x) => x.id === ids.businessUnitId),
+    product = bu?.products.find((x) => x.id === ids.productId),
+    site = product?.sites.find((x) => x.id === ids.siteId),
+    building = site?.buildings.find((x) => x.id === ids.buildingId),
+    floor = building?.floors.find((x) => x.id === ids.floorId);
+  const previewLocation: LocationInput = {
+    businessUnit: bu?.name ?? "{사업부}",
+    product: product?.name ?? "{제품}",
+    site: site?.name ?? "{사업장/법인}",
+    building: building?.name ?? "{동}",
+    floor: floor?.name ?? "{층}",
+  };
+  const preview = defaultDrawingName(previewLocation, "{등록 시 확정}");
+  function choose(key: keyof typeof ids, value: string) {
+    setIds((old) => {
+      const order = [
+          "businessUnitId",
+          "productId",
+          "siteId",
+          "buildingId",
+          "floorId",
+        ] as const,
+        index = order.indexOf(key);
+      return Object.fromEntries(
+        order.map((k, i) => [k, i < index ? old[k] : i === index ? value : ""]),
+      ) as typeof ids;
+    });
+  }
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (submittingRef.current) return;
     const formElement = event.currentTarget;
-    const input = formElement.elements.namedItem('file') as HTMLInputElement;
-    if (exceedsUploadLimit(input.files?.[0], maxMb)) { input.value = ''; setFilename(''); setError(uploadLimitDiagnostic(maxMb)); setCopyStatus(''); setResult(null); return; }
+    const input = formElement.elements.namedItem("file") as HTMLInputElement;
+    if (exceedsUploadLimit(input.files?.[0], maxMb)) {
+      input.value = "";
+      setFilename("");
+      setError(uploadLimitDiagnostic(maxMb));
+      setCopyStatus("");
+      setResult(null);
+      return;
+    }
     submittingRef.current = true;
-    setError(null); setCopyStatus(''); setResult(null); setBusy(true);
-    const form = new FormData(formElement); form.set('makeCurrent', form.get('makeCurrent') === 'on' ? 'true' : 'false');
+    setError(null);
+    setCopyStatus("");
+    setResult(null);
+    setBusy(true);
+    const form = new FormData(formElement);
+    form.set(
+      "makeCurrent",
+      form.get("makeCurrent") === "on" ? "true" : "false",
+    );
     try {
-      await runWithLoading('도면을 등록하는 중입니다...', async () => {
-        const interpreted = await interpretUploadResponse(await fetch('/api/cad-files', { method: 'POST', body: form }));
-        if ('diagnostic' in interpreted) { setError(interpreted.diagnostic); console.error('CAD upload diagnostic', interpreted.diagnostic); }
-        else { (formElement.elements.namedItem('deletePassword') as HTMLInputElement).value = ''; setResult(interpreted.result); router.refresh(); }
+      await runWithLoading("도면을 등록하는 중입니다...", async () => {
+        const interpreted = await interpretUploadResponse(
+          await fetch("/api/cad-files", { method: "POST", body: form }),
+        );
+        if ("diagnostic" in interpreted) {
+          setError(interpreted.diagnostic);
+          console.error("CAD upload diagnostic", interpreted.diagnostic);
+        } else {
+          (
+            formElement.elements.namedItem("deletePassword") as HTMLInputElement
+          ).value = "";
+          setResult(interpreted.result);
+          router.refresh();
+        }
       });
-    } catch { const diagnostic = connectionDiagnostic(); setError(diagnostic); console.error('CAD upload diagnostic', diagnostic); }
-    finally { submittingRef.current = false; setBusy(false); }
+    } catch {
+      const diagnostic = connectionDiagnostic();
+      setError(diagnostic);
+      console.error("CAD upload diagnostic", diagnostic);
+    } finally {
+      submittingRef.current = false;
+      setBusy(false);
+    }
   }
   function selectFile(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.currentTarget.files?.[0]; setCopyStatus(''); setResult(null);
-    if (exceedsUploadLimit(file, maxMb)) { event.currentTarget.value = ''; setFilename(''); setError(uploadLimitDiagnostic(maxMb)); return; }
-    setFilename(file?.name ?? ''); setError(null);
+    const file = event.currentTarget.files?.[0];
+    setCopyStatus("");
+    setResult(null);
+    if (exceedsUploadLimit(file, maxMb)) {
+      event.currentTarget.value = "";
+      setFilename("");
+      setError(uploadLimitDiagnostic(maxMb));
+      return;
+    }
+    setFilename(file?.name ?? "");
+    setError(null);
   }
   async function copyDiagnostic() {
     if (!error) return;
-    try { if (!navigator.clipboard?.writeText) throw new Error(); await navigator.clipboard.writeText(diagnosticText(error)); setCopyStatus('진단 정보를 복사했습니다.'); }
-    catch { setCopyStatus('복사하지 못했습니다. 아래 전체 내용을 직접 선택하거나 JSON으로 저장하세요.'); }
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error();
+      await navigator.clipboard.writeText(diagnosticText(error));
+      setCopyStatus("진단 정보를 복사했습니다.");
+    } catch {
+      setCopyStatus(
+        "복사하지 못했습니다. 아래 전체 내용을 직접 선택하거나 JSON으로 저장하세요.",
+      );
+    }
   }
   function saveDiagnostic() {
     if (!error) return;
-    const url = URL.createObjectURL(new Blob([diagnosticJson(error)], { type: 'application/json;charset=utf-8' }));
-    const anchor = document.createElement('a'); anchor.href = url; anchor.download = `cad-upload-diagnostic-${error.occurredAt.replace(/[:.]/g, '-')}.json`; anchor.click(); setTimeout(() => URL.revokeObjectURL(url), 0);
+    const url = URL.createObjectURL(
+      new Blob([diagnosticJson(error)], {
+        type: "application/json;charset=utf-8",
+      }),
+    );
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `cad-upload-diagnostic-${error.occurredAt.replace(/[:.]/g, "-")}.json`;
+    anchor.click();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
   }
-  return <div className="mx-auto max-w-4xl"><Link href="/" className="mb-6 inline-flex items-center gap-2 text-sm text-slate-500"><ArrowLeft size={16}/>도면 목록</Link><h1 className="text-2xl font-bold">새 도면 등록</h1><p className="mt-2 mb-7 text-sm text-slate-500">도면 파일과 위치 정보를 등록합니다. 같은 위치의 도면은 새 버전으로 관리됩니다.</p><form onSubmit={submit} className="space-y-7 rounded-2xl border border-slate-200 bg-white p-6 sm:p-8">
-    <label className="block rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 p-8 text-center"><UploadCloud className="mx-auto mb-3 text-teal-700" size={32}/><span className="block text-base">{filename || 'DXF 또는 DWG 파일 선택'}</span><span className="mt-2 block font-normal text-slate-400">최대 {maxMb} MiB · DWG Viewer는 20 MiB 이하 평면 LINE을 지원합니다.</span><input aria-label="CAD 파일" className="mt-5 max-w-full text-sm" type="file" name="file" accept=".dxf,.dwg" required disabled={busy} onChange={selectFile}/></label>
-    <fieldset className="rounded-xl border border-slate-200 p-5"><legend className="px-2 text-sm font-semibold text-slate-700">도면 위치 및 등록 정보</legend><div className="grid grid-cols-1 gap-5 sm:grid-cols-2">{[['businessUnit','사업부','컴포넌트 사업부'],['site','사업장','SEMPHIL'],['building','동','6공장'],['floor','층','1층']].map(([key,label,placeholder])=><label key={key}>{label}<input name={key} placeholder={placeholder} maxLength={100} required disabled={busy} onChange={event => updateLocation(key, event)}/></label>)}<label>등록일<input type="date" name="registeredAt" defaultValue={today} required disabled={busy}/></label></div></fieldset>
-    <label className="block rounded-lg bg-slate-50 p-4">도면 이름 (선택)<input aria-label="도면 이름" name="drawingName" maxLength={255} disabled={busy}/><span className="mt-1 block break-all text-xs font-normal text-slate-500">비워두면 {preview} 형식으로 표시됩니다. 실제 버전 번호는 등록할 때 확정됩니다.</span></label>
-    <label className="block rounded-lg bg-amber-50 p-4">삭제 비밀번호<input aria-label="삭제 비밀번호" aria-describedby="delete-password-help" type="password" name="deletePassword" minLength={4} maxLength={128} required disabled={busy} autoComplete="new-password"/><span id="delete-password-help" className="mt-1 block text-xs font-normal">등록 후 도면 삭제 시 필요합니다. 4~128자</span></label>
-    <section className="rounded-xl border border-teal-200 bg-teal-50/40 p-5" aria-labelledby="description-heading"><div className="mb-3"><h2 id="description-heading" className="text-sm font-semibold text-slate-800">도면 설명</h2><p className="mt-1 text-xs text-slate-500">도면의 용도, 구역, 설비 등 검색에 사용할 설명을 입력하세요.</p></div><textarea aria-labelledby="description-heading" name="description" maxLength={2000} rows={7} className="min-h-36 w-full resize-y" placeholder="예: A동 2층 자동화 설비 배치도 · 2026년 증설 구역" disabled={busy}/><p className="mt-2 text-xs text-slate-500">최대 2,000자 · 여러 줄 입력 가능</p></section>
-    <label className="flex items-start gap-3 rounded-lg bg-teal-50 p-4"><input type="checkbox" name="makeCurrent" defaultChecked disabled={busy} className="mt-1 accent-teal-700"/><span>현재 버전으로 지정<span className="mt-1 block text-xs font-normal text-slate-500">동일 위치의 기존 Current는 자동으로 해제됩니다.</span></span></label>
-    {error && <section role="alert" className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800"><p className="font-semibold">{error.summary}</p><p className="mt-2">{error.guidance}</p><details className="mt-3"><summary className="cursor-pointer font-medium">오류 상세 보기</summary><pre aria-label="업로드 오류 진단 전체 내용" tabIndex={0} className="mt-3 max-h-72 select-text overflow-auto whitespace-pre-wrap rounded bg-white p-3 font-mono text-xs text-slate-800">{diagnosticText(error)}</pre><div className="mt-3 flex flex-wrap gap-2"><Button type="button" variant="outline" onClick={copyDiagnostic}><Copy size={15}/>진단 정보 복사</Button><Button type="button" variant="outline" onClick={saveDiagnostic}><Download size={15}/>진단 JSON 저장</Button></div>{copyStatus && <p role="status" className="mt-2 text-xs">{copyStatus}</p>}</details></section>}
-    {result && <div role="status" className="break-all rounded-lg bg-teal-50 p-4 text-sm text-teal-800"><span className="flex items-start gap-2 font-semibold"><FileCheck2 className="mt-0.5 shrink-0" size={18}/>{result.displayName} 등록 완료</span><p className="mt-2">원본: {result.originalFilename}</p>{result.duplicateCount > 0 && <p className="mt-2">동일한 내용의 파일이 있습니다. 새 버전으로 등록했습니다.</p>}{result.description && <p className="mt-2 whitespace-pre-wrap">설명: {result.description}</p>}<p className="mt-2">등록 ID: <span className="font-mono text-xs">{result.id}</span></p><a className="mt-3 inline-block underline" href={`/api/cad-files/${result.id}/content`}>등록한 원본 다운로드</a></div>}
-    <div className="flex justify-end gap-3 border-t border-slate-100 pt-5"><Button variant="outline" asChild><Link href="/">목록으로</Link></Button><Button type="submit" disabled={busy}>{busy ? '등록 중…' : '도면 등록'}</Button></div>
-  </form></div>;
+  return (
+    <div className="mx-auto max-w-4xl">
+      <Link
+        href="/"
+        className="mb-6 inline-flex items-center gap-2 text-sm text-slate-500"
+      >
+        <ArrowLeft size={16} />
+        도면 목록
+      </Link>
+      <h1 className="text-2xl font-bold">새 도면 등록</h1>
+      <p className="mt-2 mb-7 text-sm text-slate-500">
+        도면 파일과 위치 정보를 등록합니다. 같은 위치의 도면은 새 버전으로
+        관리됩니다.
+      </p>
+      <form
+        onSubmit={submit}
+        className="space-y-7 rounded-2xl border border-slate-200 bg-white p-6 sm:p-8"
+      >
+        <label className="block rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 p-8 text-center">
+          <UploadCloud className="mx-auto mb-3 text-teal-700" size={32} />
+          <span className="block text-base">
+            {filename || "DXF 또는 DWG 파일 선택"}
+          </span>
+          <span className="mt-2 block font-normal text-slate-400">
+            최대 {maxMb} MiB · DWG Viewer는 20 MiB 이하 평면 LINE을 지원합니다.
+          </span>
+          <input
+            aria-label="CAD 파일"
+            className="mt-5 max-w-full text-sm"
+            type="file"
+            name="file"
+            accept=".dxf,.dwg"
+            required
+            disabled={busy}
+            onChange={selectFile}
+          />
+        </label>
+        <fieldset className="rounded-xl border border-slate-200 p-5">
+          <legend className="px-2 text-sm font-semibold text-slate-700">
+            도면 위치 및 등록 정보
+          </legend>
+          {masterError && (
+            <p role="alert" className="mb-4 text-sm text-red-700">
+              {masterError}
+            </p>
+          )}
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            <label>
+              사업부
+              <select
+                name="businessUnitId"
+                value={ids.businessUnitId}
+                required
+                disabled={busy || !tree.length}
+                onChange={(e) => choose("businessUnitId", e.target.value)}
+              >
+                <option value="">선택</option>
+                {tree.map((x) => (
+                  <option key={x.id} value={x.id}>
+                    {x.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              제품
+              <select
+                name="productId"
+                value={ids.productId}
+                required
+                disabled={busy || !bu}
+                onChange={(e) => choose("productId", e.target.value)}
+              >
+                <option value="">
+                  {bu && !bu.products.length ? "등록된 제품 없음" : "선택"}
+                </option>
+                {bu?.products.map((x) => (
+                  <option key={x.id} value={x.id}>
+                    {x.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              사업장 / 법인
+              <select
+                name="siteId"
+                value={ids.siteId}
+                required
+                disabled={busy || !product}
+                onChange={(e) => choose("siteId", e.target.value)}
+              >
+                <option value="">
+                  {product && !product.sites.length
+                    ? "등록된 사업장/법인 없음"
+                    : "선택"}
+                </option>
+                {product?.sites.map((x) => (
+                  <option key={x.id} value={x.id}>
+                    [{x.kind === "SITE" ? "사업장" : "법인"}] {x.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              동
+              <select
+                name="buildingId"
+                value={ids.buildingId}
+                required
+                disabled={busy || !site}
+                onChange={(e) => choose("buildingId", e.target.value)}
+              >
+                <option value="">
+                  {site && !site.buildings.length ? "등록된 동 없음" : "선택"}
+                </option>
+                {site?.buildings.map((x) => (
+                  <option key={x.id} value={x.id}>
+                    {x.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              층
+              <select
+                name="floorId"
+                value={ids.floorId}
+                required
+                disabled={busy || !building}
+                onChange={(e) => choose("floorId", e.target.value)}
+              >
+                <option value="">
+                  {building && !building.floors.length
+                    ? "등록된 층 없음"
+                    : "선택"}
+                </option>
+                {building?.floors.map((x) => (
+                  <option key={x.id} value={x.id}>
+                    {x.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              등록일
+              <input
+                type="date"
+                name="registeredAt"
+                defaultValue={today}
+                required
+                disabled={busy}
+              />
+            </label>
+          </div>
+          <p className="mt-4 text-xs text-slate-500">
+            기준정보가 없으면 상단의 기준정보 메뉴에서 먼저 등록하세요. 상위
+            선택을 바꾸면 하위 선택이 초기화됩니다.
+          </p>
+        </fieldset>
+        <label className="block rounded-lg bg-slate-50 p-4">
+          도면 이름 (선택)
+          <input
+            aria-label="도면 이름"
+            name="drawingName"
+            maxLength={255}
+            disabled={busy}
+          />
+          <span className="mt-1 block break-all text-xs font-normal text-slate-500">
+            비워두면 {preview} 형식으로 표시됩니다. 실제 버전 번호는 등록할 때
+            확정됩니다.
+          </span>
+        </label>
+        <label className="block rounded-lg bg-amber-50 p-4">
+          삭제 비밀번호
+          <input
+            aria-label="삭제 비밀번호"
+            aria-describedby="delete-password-help"
+            type="password"
+            name="deletePassword"
+            minLength={4}
+            maxLength={128}
+            required
+            disabled={busy}
+            autoComplete="new-password"
+          />
+          <span
+            id="delete-password-help"
+            className="mt-1 block text-xs font-normal"
+          >
+            등록 후 도면 삭제 시 필요합니다. 4~128자
+          </span>
+        </label>
+        <section
+          className="rounded-xl border border-teal-200 bg-teal-50/40 p-5"
+          aria-labelledby="description-heading"
+        >
+          <div className="mb-3">
+            <h2
+              id="description-heading"
+              className="text-sm font-semibold text-slate-800"
+            >
+              도면 설명
+            </h2>
+            <p className="mt-1 text-xs text-slate-500">
+              도면의 용도, 구역, 설비 등 검색에 사용할 설명을 입력하세요.
+            </p>
+          </div>
+          <textarea
+            aria-labelledby="description-heading"
+            name="description"
+            maxLength={2000}
+            rows={7}
+            className="min-h-36 w-full resize-y"
+            placeholder="예: A동 2층 자동화 설비 배치도 · 2026년 증설 구역"
+            disabled={busy}
+          />
+          <p className="mt-2 text-xs text-slate-500">
+            최대 2,000자 · 여러 줄 입력 가능
+          </p>
+        </section>
+        <label className="flex items-start gap-3 rounded-lg bg-teal-50 p-4">
+          <input
+            type="checkbox"
+            name="makeCurrent"
+            defaultChecked
+            disabled={busy}
+            className="mt-1 accent-teal-700"
+          />
+          <span>
+            현재 버전으로 지정
+            <span className="mt-1 block text-xs font-normal text-slate-500">
+              동일 위치의 기존 Current는 자동으로 해제됩니다.
+            </span>
+          </span>
+        </label>
+        {error && (
+          <section
+            role="alert"
+            className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800"
+          >
+            <p className="font-semibold">{error.summary}</p>
+            <p className="mt-2">{error.guidance}</p>
+            <details className="mt-3">
+              <summary className="cursor-pointer font-medium">
+                오류 상세 보기
+              </summary>
+              <pre
+                aria-label="업로드 오류 진단 전체 내용"
+                tabIndex={0}
+                className="mt-3 max-h-72 select-text overflow-auto whitespace-pre-wrap rounded bg-white p-3 font-mono text-xs text-slate-800"
+              >
+                {diagnosticText(error)}
+              </pre>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={copyDiagnostic}
+                >
+                  <Copy size={15} />
+                  진단 정보 복사
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={saveDiagnostic}
+                >
+                  <Download size={15} />
+                  진단 JSON 저장
+                </Button>
+              </div>
+              {copyStatus && (
+                <p role="status" className="mt-2 text-xs">
+                  {copyStatus}
+                </p>
+              )}
+            </details>
+          </section>
+        )}
+        {result && (
+          <div
+            role="status"
+            className="break-all rounded-lg bg-teal-50 p-4 text-sm text-teal-800"
+          >
+            <span className="flex items-start gap-2 font-semibold">
+              <FileCheck2 className="mt-0.5 shrink-0" size={18} />
+              {result.displayName} 등록 완료
+            </span>
+            <p className="mt-2">원본: {result.originalFilename}</p>
+            {result.duplicateCount > 0 && (
+              <p className="mt-2">
+                동일한 내용의 파일이 있습니다. 새 버전으로 등록했습니다.
+              </p>
+            )}
+            {result.description && (
+              <p className="mt-2 whitespace-pre-wrap">
+                설명: {result.description}
+              </p>
+            )}
+            <p className="mt-2">
+              등록 ID: <span className="font-mono text-xs">{result.id}</span>
+            </p>
+            <a
+              className="mt-3 inline-block underline"
+              href={`/api/cad-files/${result.id}/content`}
+            >
+              등록한 원본 다운로드
+            </a>
+          </div>
+        )}
+        <div className="flex justify-end gap-3 border-t border-slate-100 pt-5">
+          <Button variant="outline" asChild>
+            <Link href="/">목록으로</Link>
+          </Button>
+          <Button type="submit" disabled={busy}>
+            {busy ? "등록 중…" : "도면 등록"}
+          </Button>
+        </div>
+      </form>
+    </div>
+  );
 }

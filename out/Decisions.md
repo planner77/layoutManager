@@ -243,3 +243,8 @@
 - Decision: Manager는 gpt-6-astra를 유지한다. Developer는 gpt-6-sol로 갱신하여 구현, 리팩터링, 복잡한 기술 분석의 주 실행 모델로 사용한다. QA는 gpt-6-luna로 갱신하여 독립 검증, 회귀 시험, 문서·추적성 점검을 담당한다. Manager가 요구사항/AC/작업 분배와 최종 재작업 여부를 판단하는 구조는 유지한다.
 - Fallback / Evidence: 지정 모델 사용이 불가능하거나 사용량 제한이 발생하면 실제 대행 주체와 검증 근거를 TestReport에 기록한다. 역할을 수행하지 않고 수행한 것으로 기록하지 않는다. 과거 TestReport와 기존 ADR에 남은 gpt-5.6-sol/luna 기록은 당시 실행 증거이므로 소급 수정하지 않는다.
 - Consequences: 새 세션은 AGENTS.md의 최신 역할 매핑을 따른다. 애플리케이션 소스, DB, 런타임, SemVer, Docker/GHCR 산출물에는 영향이 없다.
+
+
+## ADR-027 — 제품 계층과 기존 층 식별 보존
+
+Manager 결정 (2026-10-15): 제품별 운영 site 계층, 명시 SITE/LEGAL_ENTITY 종류, CadLocation ID 보존, 사업부별 미분류 제품 및 수동 재분류, #6 기본 이름 형식 유지. 상세 근거와 수용 기준은 [Issue24](Issue24.md). 전사 물리 자산의 추정 병합은 하지 않는다. 운영 migration은 이번 실행 범위 밖이다.

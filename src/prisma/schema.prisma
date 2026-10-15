@@ -5,20 +5,69 @@ generator client {
 datasource db {
   provider = "sqlite"
 }
+
+model BusinessUnit {
+  id String @id
+  name String
+  active Boolean @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  products Product[]
+  @@unique([name], map: "uq_business_unit_name")
+}
+model Product {
+  id String @id
+  businessUnitId String @map("business_unit_id")
+  name String
+  isUnclassified Boolean @default(false) @map("is_unclassified")
+  active Boolean @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  businessUnit BusinessUnit @relation(fields: [businessUnitId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  sites CadSite[]
+  @@unique([businessUnitId, name], map: "uq_product_parent_name")
+  @@index([businessUnitId], map: "ix_product_business_unit")
+}
+model CadSite {
+  id String @id
+  productId String @map("product_id")
+  name String
+  kind String @default("SITE")
+  active Boolean @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  product Product @relation(fields: [productId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  buildings Building[]
+  @@unique([productId, name], map: "uq_site_parent_name")
+  @@index([productId], map: "ix_site_product")
+}
+model Building {
+  id String @id
+  siteId String @map("site_id")
+  name String
+  active Boolean @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  site CadSite @relation(fields: [siteId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  floors CadLocation[]
+  @@unique([siteId, name], map: "uq_building_parent_name")
+  @@index([siteId], map: "ix_building_site")
+}
 model CadLocation {
   id String @id
-  businessUnit String @map("business_unit")
-  site String
-  building String
-  floor String
+  buildingId String @map("building_id")
+  name String
+  active Boolean @default(true)
   currentVersionId String? @map("current_version_id")
   nextVersion Int @default(1) @map("next_version")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  building Building @relation(fields: [buildingId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   versions CadFileVersion[] @relation("OwnedVersions")
   currentVersion CadFileVersion? @relation("CurrentVersion", fields: [id, currentVersionId], references: [locationId, id], onDelete: NoAction, onUpdate: NoAction)
-  @@unique([businessUnit, site, building, floor], map: "uq_location_key")
+  @@unique([buildingId, name], map: "uq_floor_parent_name")
   @@unique([id, currentVersionId], map: "uq_location_current_owner")
+  @@index([buildingId], map: "ix_floor_building")
   @@index([currentVersionId], map: "ix_location_current")
 }
 model CadFileVersion {

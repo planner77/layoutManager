@@ -1,32 +1,421 @@
-import { beforeEach, afterEach, test, expect, vi } from 'vitest';
-import { mkdtemp, readFile, rm, readdir, mkdir, symlink, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import path from 'node:path';
-import { createDb, type Database } from '../../server/db';
-import { CadRepository } from '../../server/repositories/cad';
-import { CadStorage } from '../../server/storage/cad-storage';
-import { uploadCad } from '../../server/services/upload';
-import { createHash, randomUUID } from 'node:crypto';
-import { UploadDiagnostics } from '../../server/upload-observability';
-import { cadDrawingName } from '../../domain/cad';
+import { beforeEach, afterEach, test, expect, vi } from "vitest";
+import {
+  mkdtemp,
+  rm,
+  readdir,
+  mkdir,
+  symlink,
+  writeFile,
+} from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { createDb, type Database } from "../../server/db";
+import { CadRepository } from "../../server/repositories/cad";
+import { CadStorage } from "../../server/storage/cad-storage";
+import { uploadCad } from "../../server/services/upload";
+import { createHash, randomUUID } from "node:crypto";
+import { UploadDiagnostics } from "../../server/upload-observability";
+import { cadDrawingName } from "../../domain/cad";
+import { migrate, seedChain } from "../helpers/database";
 let directory: string, db: Database, repo: CadRepository, storage: CadStorage;
-function request(name = 'layout.dxf', content = '0\nSECTION\n2\nENTITIES\n0\nENDSEC\n0\nEOF\n', overrides: Record<string,string> = {}) { const data = new FormData(); data.set('file', new File([content], name)); for (const [key, value] of Object.entries({businessUnit:'자동화',site:'평택',building:'A동',floor:'2층',registeredAt:'2026-09-07',makeCurrent:'true',deletePassword:'1234',...overrides})) data.set(key,value); return new Request('http://localhost/api/cad-files',{method:'POST',body:data}); }
-beforeEach(async()=>{ directory=await mkdtemp(path.join(tmpdir(),'cad-upload-test-')); db=createDb(`file:${directory}/test.sqlite`); for(const migration of ['202609070001_locations','202609090001_description','202609110001_delete_password','202609110003_drawing_name']) { const sql=await readFile(new URL(`../../prisma/migrations/${migration}/migration.sql`,import.meta.url),'utf8'); for(const statement of sql.split(';').filter(s=>s.trim())) await db.$executeRawUnsafe(statement); } repo=new CadRepository(db); storage=new CadStorage(path.join(directory,'cad'),1024); });
-afterEach(async()=>{vi.restoreAllMocks(); await db.$disconnect(); await rm(directory,{recursive:true,force:true});});
-test('TC-UP-001/004: exact bytes, SHA-256, versioning and duplicate identification',async()=>{ const a=await uploadCad(request(),repo,storage);const b=await uploadCad(request(),repo,storage);expect(b.version).toBe(2);expect(b.duplicateCount).toBe(1);const file=await db.cadFileVersion.findUniqueOrThrow({where:{id:a.id}});const content=await storage.content(file.storagePath); const bytes=await new Response(content.stream as ReadableStream).arrayBuffer(); expect(createHash('sha256').update(Buffer.from(bytes)).digest('hex')).toBe(file.sha256);expect(content.size).toBe(file.fileSize);expect((await db.cadLocation.findFirstOrThrow()).currentVersionId).toBe(b.id);});
-test('TC-UP-001: DWG registration preserves binary bytes without claiming rendering',async()=>{const a=await uploadCad(request('layout.DWG','AC1027binary'),repo,storage);expect((await db.cadFileVersion.findUniqueOrThrow({where:{id:a.id}})).fileFormat).toBe('DWG');});
-test('TC-NAME-001/002: custom name is normalized, returned and stored only as override',async()=>{const result=await uploadCad(request('source.dxf','bytes',{drawingName:'  e\u0301 설비도  ',description:'메모'}),repo,storage);expect(result).toMatchObject({displayName:'é 설비도',originalFilename:'source.dxf',version:1});expect(await db.cadFileVersion.findUniqueOrThrow({where:{id:result.id},select:{drawingName:true,originalFilename:true}})).toEqual({drawingName:'é 설비도',originalFilename:'source.dxf'});});
-test('TC-NAME-001/002: blank name resolves from allocated sequence and invalid names clean up',async()=>{const first=await uploadCad(request('one.dxf','bytes',{drawingName:'   '}),repo,storage);const second=await uploadCad(request('two.dxf','more',{drawingName:''}),repo,storage);expect(first.displayName).toBe('[자동화][평택][A동][2층]_V1');expect(second.displayName).toBe('[자동화][평택][A동][2층]_V2');for(const drawingName of ['line\nbreak','x'.repeat(256)]) await expect(uploadCad(request('bad.dxf','bad',{drawingName}),repo,storage)).rejects.toMatchObject({code:'INVALID_METADATA'});expect(await db.cadFileVersion.count()).toBe(2);expect((await readdir(storage.directory,{recursive:true})).filter(name=>name.endsWith('.dxf'))).toHaveLength(2);});
-test('TC-NAME-002: multipart accepts nine metadata fields and rejects an extra field',async()=>{await expect(uploadCad(request('nine.dxf','bytes',{drawingName:'이름',description:'설명'}),repo,storage)).resolves.toHaveProperty('displayName','이름');await expect(uploadCad(request('ten.dxf','bytes',{drawingName:'이름',description:'설명',unexpected:'x'}),repo,storage)).rejects.toMatchObject({code:'INVALID_UPLOAD'});});
-test('TC-NAME-001: drawing name validates type, controls and UTF-16 boundaries',()=>{expect(cadDrawingName('가'.repeat(255))).toBe('가'.repeat(255));expect(cadDrawingName('   ')).toBeNull();for(const value of [123,'\nname','name\t','가'.repeat(256)]) expect(()=>cadDrawingName(value)).toThrow();});
-test.each([['invalid.exe','bytes',415],['empty.dxf','',400],['large.dxf','a'.repeat(1025),413]])('TC-UP-002: rejects %s',async(name,bytes,status)=>{await expect(uploadCad(request(name,bytes),repo,storage)).rejects.toMatchObject({status});expect(await db.cadFileVersion.count()).toBe(0);expect(await readdir(storage.directory)).toEqual([]);});
-test('TC-UP-002: accepts exact size boundary and rejects a missing file',async()=>{await expect(uploadCad(request('exact.dxf','a'.repeat(1024)),repo,storage)).resolves.toHaveProperty('id'); await expect(uploadCad(new Request('http://localhost',{method:'POST',body:new FormData()}),repo,storage)).rejects.toMatchObject({status:400});});
-test.each<Record<string,string>>([{site:' '},{registeredAt:'2026-02-30'},{makeCurrent:'invalid'}])('TC-UP-003: invalid metadata %j',async(overrides)=>{await expect(uploadCad(request('a.dxf','bytes',overrides),repo,storage)).rejects.toMatchObject({status:400});expect(await db.cadLocation.count()).toBe(0);});
-test('TC-UP-005: storage failure leaves no DB version or temporary file',async()=>{vi.spyOn(storage,'publish').mockRejectedValue(new Error('storage fault'));await expect(uploadCad(request(),repo,storage)).rejects.toThrow('storage fault');expect(await db.cadFileVersion.count()).toBe(0);expect(await readdir(storage.directory)).toEqual([]);});
-test('TC-UP-005: DB failure after publication compensates file and preserves current',async()=>{const previous=await uploadCad(request(),repo,storage);const original=repo.register.bind(repo);vi.spyOn(repo,'register').mockImplementation((input,file,store)=>original(input,{...file,fileSize:0},store));await expect(uploadCad(request(),repo,storage)).rejects.toThrow();expect(await db.cadFileVersion.count()).toBe(1);expect((await db.cadLocation.findFirstOrThrow()).currentVersionId).toBe(previous.id);const files=await readdir(storage.directory,{recursive:true});expect(files.filter(f=>f.endsWith('.dxf'))).toHaveLength(1);});
-test('TC-OBS-006: temporary cleanup failure preserves confirmed registration success',async()=>{const received=await storage.receive(request());vi.spyOn(storage,'receive').mockResolvedValue({...received,cleanup:vi.fn().mockRejectedValue(Object.assign(new Error('private path canary'),{code:'EACCES'}))});vi.spyOn(console,'log').mockImplementation(()=>{});const warnings=vi.spyOn(console,'warn').mockImplementation(()=>{});const diagnostics=new UploadDiagnostics();await expect(uploadCad(request(),repo,storage,diagnostics)).resolves.toHaveProperty('id');expect(await db.cadFileVersion.count()).toBe(1);expect(warnings.mock.calls.map(call=>String(call[0])).some(line=>line.includes('temporary_cleanup')&&line.includes('warning')&&line.includes('EACCES'))).toBe(true);expect(warnings.mock.calls.join('')).not.toContain('canary');});
-test('TC-OBS-006: cleanup failure does not replace the first upload failure',async()=>{const received=await storage.receive(request());vi.spyOn(storage,'receive').mockResolvedValue({...received,cleanup:vi.fn().mockRejectedValue(Object.assign(new Error('cleanup canary'),{code:'EACCES'}))});const primary=Object.assign(new Error('publish canary'),{code:'ENOSPC'});vi.spyOn(storage,'publish').mockRejectedValue(primary);const lines:string[]=[];vi.spyOn(console,'log').mockImplementation(()=>{});vi.spyOn(console,'warn').mockImplementation(value=>lines.push(String(value)));vi.spyOn(console,'error').mockImplementation(value=>lines.push(String(value)));const diagnostics=new UploadDiagnostics();await expect(uploadCad(request(),repo,storage,diagnostics)).rejects.toBe(primary);expect(lines.some(line=>line.includes('storage_publish')&&line.includes('failure')&&line.includes('ENOSPC'))).toBe(true);expect(lines.some(line=>line.includes('temporary_cleanup')&&line.includes('warning')&&line.includes('EACCES'))).toBe(true);expect(lines.join('')).not.toContain('canary');});
-test('TC-OBS-004/007: parsed metadata failure logs validation and successful cleanup once without input',async()=>{const lines:string[]=[];vi.spyOn(console,'log').mockImplementation(value=>lines.push(String(value)));vi.spyOn(console,'error').mockImplementation(value=>lines.push(String(value)));const diagnostics=new UploadDiagnostics();await expect(uploadCad(request('input-canary.dxf','bytes',{site:'Authorization\ncanary'}),repo,storage,diagnostics)).rejects.toMatchObject({code:'INVALID_METADATA'});const entries=lines.map(line=>JSON.parse(line));expect(entries).toEqual(expect.arrayContaining([expect.objectContaining({stage:'upload_receive',outcome:'success'}),expect.objectContaining({stage:'upload_validation',outcome:'failure',error:expect.objectContaining({code:'INVALID_METADATA'})}),expect.objectContaining({stage:'temporary_cleanup',outcome:'success'})]));expect(entries.filter(entry=>entry.outcome==='failure')).toHaveLength(1);expect(entries.filter(entry=>entry.stage==='temporary_cleanup')).toHaveLength(1);expect(lines.join('')).not.toMatch(/input-canary|Authorization|canary/);});
-test('TC-OBS-004: malformed multipart fails once at upload_receive',async()=>{const lines:string[]=[];vi.spyOn(console,'log').mockImplementation(value=>lines.push(String(value)));vi.spyOn(console,'error').mockImplementation(value=>lines.push(String(value)));const diagnostics=new UploadDiagnostics();const malformed=new Request('http://localhost/api/cad-files',{method:'POST',body:'not multipart',headers:{'content-type':'text/plain'}});await expect(uploadCad(malformed,repo,storage,diagnostics)).rejects.toMatchObject({code:'INVALID_UPLOAD'});const failures=lines.map(line=>JSON.parse(line)).filter(entry=>entry.outcome==='failure');expect(failures).toEqual([expect.objectContaining({stage:'upload_receive',error:expect.objectContaining({code:'INVALID_UPLOAD'})})]);});
-test('TC-OBS-004: stream failure logs receive failure and successful temporary cleanup',async()=>{const lines:string[]=[];vi.spyOn(console,'log').mockImplementation(value=>lines.push(String(value)));vi.spyOn(console,'error').mockImplementation(value=>lines.push(String(value)));const diagnostics=new UploadDiagnostics();const streamError=Object.assign(new Error('stream canary'),{code:'ECONNRESET'});const body=new ReadableStream<Uint8Array>({start(controller){controller.error(streamError);}});const interrupted=new Request('http://localhost/api/cad-files',{method:'POST',body,headers:{'content-type':'multipart/form-data; boundary=fixture'},duplex:'half'} as RequestInit & {duplex:'half'});await expect(uploadCad(interrupted,repo,storage,diagnostics)).rejects.toBe(streamError);const entries=lines.map(line=>JSON.parse(line));expect(entries).toEqual(expect.arrayContaining([expect.objectContaining({stage:'upload_receive',outcome:'failure',error:expect.objectContaining({code:'ECONNRESET'})}),expect.objectContaining({stage:'temporary_cleanup',outcome:'success'})]));expect(entries.filter(entry=>entry.outcome==='failure')).toHaveLength(1);expect(entries.filter(entry=>entry.stage==='temporary_cleanup')).toHaveLength(1);expect(lines.join('')).not.toContain('canary');expect(await readdir(storage.directory)).toEqual([]);});
-test('TC-SEC-001: rejects traversal, arbitrary paths, and symlink escape',async()=>{for(const key of ['../test.sqlite','/etc/passwd','%2e%2e/test']) await expect(storage.content(key)).rejects.toMatchObject({status:404});const key=`${randomUUID()}/${randomUUID()}/original.dxf`;await mkdir(path.join(storage.directory,path.dirname(key)),{recursive:true});const outside=path.join(directory,'outside');await writeFile(outside,'private');await symlink(outside,path.join(storage.directory,key));await expect(storage.content(key)).rejects.toMatchObject({status:404});});
+let ids: Record<string, string> = {};
+function request(
+  name = "layout.dxf",
+  content = "0\nSECTION\n2\nENTITIES\n0\nENDSEC\n0\nEOF\n",
+  overrides: Record<string, string> = {},
+) {
+  const data = new FormData();
+  data.set("file", new File([content], name));
+  for (const [key, value] of Object.entries({
+    ...ids,
+    registeredAt: "2026-09-07",
+    makeCurrent: "true",
+    deletePassword: "1234",
+    ...overrides,
+  }))
+    data.set(key, value);
+  return new Request("http://localhost/api/cad-files", {
+    method: "POST",
+    body: data,
+  });
+}
+beforeEach(async () => {
+  directory = await mkdtemp(path.join(tmpdir(), "cad-upload-test-"));
+  const filename = `${directory}/test.sqlite`;
+  await migrate(filename);
+  db = createDb(`file:${filename}`);
+  const chain = await seedChain(db);
+  ids = {
+    businessUnitId: chain.businessUnit.id,
+    productId: chain.product.id,
+    siteId: chain.site.id,
+    buildingId: chain.building.id,
+    floorId: chain.floor.id,
+  };
+  repo = new CadRepository(db);
+  storage = new CadStorage(path.join(directory, "cad"), 1024);
+});
+afterEach(async () => {
+  vi.restoreAllMocks();
+  await db.$disconnect();
+  await rm(directory, { recursive: true, force: true });
+});
+test("TC-UP-001/004: exact bytes, SHA-256, versioning and duplicate identification", async () => {
+  const a = await uploadCad(request(), repo, storage);
+  const b = await uploadCad(request(), repo, storage);
+  expect(b.version).toBe(2);
+  expect(b.duplicateCount).toBe(1);
+  const file = await db.cadFileVersion.findUniqueOrThrow({
+    where: { id: a.id },
+  });
+  const content = await storage.content(file.storagePath);
+  const bytes = await new Response(
+    content.stream as ReadableStream,
+  ).arrayBuffer();
+  expect(createHash("sha256").update(Buffer.from(bytes)).digest("hex")).toBe(
+    file.sha256,
+  );
+  expect(content.size).toBe(file.fileSize);
+  expect((await db.cadLocation.findFirstOrThrow()).currentVersionId).toBe(b.id);
+});
+test("TC-UP-001: DWG registration preserves binary bytes without claiming rendering", async () => {
+  const a = await uploadCad(
+    request("layout.DWG", "AC1027binary"),
+    repo,
+    storage,
+  );
+  expect(
+    (await db.cadFileVersion.findUniqueOrThrow({ where: { id: a.id } }))
+      .fileFormat,
+  ).toBe("DWG");
+});
+test("TC-NAME-001/002: custom name is normalized, returned and stored only as override", async () => {
+  const result = await uploadCad(
+    request("source.dxf", "bytes", {
+      drawingName: "  e\u0301 설비도  ",
+      description: "메모",
+    }),
+    repo,
+    storage,
+  );
+  expect(result).toMatchObject({
+    displayName: "é 설비도",
+    originalFilename: "source.dxf",
+    version: 1,
+  });
+  expect(
+    await db.cadFileVersion.findUniqueOrThrow({
+      where: { id: result.id },
+      select: { drawingName: true, originalFilename: true },
+    }),
+  ).toEqual({ drawingName: "é 설비도", originalFilename: "source.dxf" });
+});
+test("TC-NAME-001/002: blank name resolves from allocated sequence and invalid names clean up", async () => {
+  const first = await uploadCad(
+    request("one.dxf", "bytes", { drawingName: "   " }),
+    repo,
+    storage,
+  );
+  const second = await uploadCad(
+    request("two.dxf", "more", { drawingName: "" }),
+    repo,
+    storage,
+  );
+  expect(first.displayName).toBe("[자동화][평택][A동][2층]_V1");
+  expect(second.displayName).toBe("[자동화][평택][A동][2층]_V2");
+  for (const drawingName of ["line\nbreak", "x".repeat(256)])
+    await expect(
+      uploadCad(request("bad.dxf", "bad", { drawingName }), repo, storage),
+    ).rejects.toMatchObject({ code: "INVALID_METADATA" });
+  expect(await db.cadFileVersion.count()).toBe(2);
+  expect(
+    (await readdir(storage.directory, { recursive: true })).filter((name) =>
+      name.endsWith(".dxf"),
+    ),
+  ).toHaveLength(2);
+});
+test("TC-NAME-002: multipart accepts ID-chain metadata fields and rejects an extra field", async () => {
+  await expect(
+    uploadCad(
+      request("valid.dxf", "bytes", {
+        drawingName: "이름",
+        description: "설명",
+      }),
+      repo,
+      storage,
+    ),
+  ).resolves.toHaveProperty("displayName", "이름");
+  await expect(
+    uploadCad(
+      request("extra.dxf", "bytes", {
+        drawingName: "이름",
+        description: "설명",
+        unexpected: "x",
+      }),
+      repo,
+      storage,
+    ),
+  ).rejects.toMatchObject({ code: "INVALID_UPLOAD" });
+});
+test("TC-NAME-001: drawing name validates type, controls and UTF-16 boundaries", () => {
+  expect(cadDrawingName("가".repeat(255))).toBe("가".repeat(255));
+  expect(cadDrawingName("   ")).toBeNull();
+  for (const value of [123, "\nname", "name\t", "가".repeat(256)])
+    expect(() => cadDrawingName(value)).toThrow();
+});
+test.each([
+  ["invalid.exe", "bytes", 415],
+  ["empty.dxf", "", 400],
+  ["large.dxf", "a".repeat(1025), 413],
+])("TC-UP-002: rejects %s", async (name, bytes, status) => {
+  await expect(
+    uploadCad(request(name, bytes), repo, storage),
+  ).rejects.toMatchObject({ status });
+  expect(await db.cadFileVersion.count()).toBe(0);
+  expect(await readdir(storage.directory)).toEqual([]);
+});
+test("TC-UP-002: accepts exact size boundary and rejects a missing file", async () => {
+  await expect(
+    uploadCad(request("exact.dxf", "a".repeat(1024)), repo, storage),
+  ).resolves.toHaveProperty("id");
+  await expect(
+    uploadCad(
+      new Request("http://localhost", { method: "POST", body: new FormData() }),
+      repo,
+      storage,
+    ),
+  ).rejects.toMatchObject({ status: 400 });
+});
+test.each<Record<string, string>>([
+  { siteId: " " },
+  { registeredAt: "2026-02-30" },
+  { makeCurrent: "invalid" },
+])("TC-UP-003: invalid metadata %j", async (overrides) => {
+  await expect(
+    uploadCad(request("a.dxf", "bytes", overrides), repo, storage),
+  ).rejects.toMatchObject({ status: 400 });
+  expect(await db.cadFileVersion.count()).toBe(0);
+});
+test("TC-UP-005: storage failure leaves no DB version or temporary file", async () => {
+  vi.spyOn(storage, "publish").mockRejectedValue(new Error("storage fault"));
+  await expect(uploadCad(request(), repo, storage)).rejects.toThrow(
+    "storage fault",
+  );
+  expect(await db.cadFileVersion.count()).toBe(0);
+  expect(await readdir(storage.directory)).toEqual([]);
+});
+test("TC-UP-005: DB failure after publication compensates file and preserves current", async () => {
+  const previous = await uploadCad(request(), repo, storage);
+  const original = repo.register.bind(repo);
+  vi.spyOn(repo, "register").mockImplementation((input, file, store) =>
+    original(input, { ...file, fileSize: 0 }, store),
+  );
+  await expect(uploadCad(request(), repo, storage)).rejects.toThrow();
+  expect(await db.cadFileVersion.count()).toBe(1);
+  expect((await db.cadLocation.findFirstOrThrow()).currentVersionId).toBe(
+    previous.id,
+  );
+  const files = await readdir(storage.directory, { recursive: true });
+  expect(files.filter((f) => f.endsWith(".dxf"))).toHaveLength(1);
+});
+test("TC-OBS-006: temporary cleanup failure preserves confirmed registration success", async () => {
+  const received = await storage.receive(request());
+  vi.spyOn(storage, "receive").mockResolvedValue({
+    ...received,
+    cleanup: vi
+      .fn()
+      .mockRejectedValue(
+        Object.assign(new Error("private path canary"), { code: "EACCES" }),
+      ),
+  });
+  vi.spyOn(console, "log").mockImplementation(() => {});
+  const warnings = vi.spyOn(console, "warn").mockImplementation(() => {});
+  const diagnostics = new UploadDiagnostics();
+  await expect(
+    uploadCad(request(), repo, storage, diagnostics),
+  ).resolves.toHaveProperty("id");
+  expect(await db.cadFileVersion.count()).toBe(1);
+  expect(
+    warnings.mock.calls
+      .map((call) => String(call[0]))
+      .some(
+        (line) =>
+          line.includes("temporary_cleanup") &&
+          line.includes("warning") &&
+          line.includes("EACCES"),
+      ),
+  ).toBe(true);
+  expect(warnings.mock.calls.join("")).not.toContain("canary");
+});
+test("TC-OBS-006: cleanup failure does not replace the first upload failure", async () => {
+  const received = await storage.receive(request());
+  vi.spyOn(storage, "receive").mockResolvedValue({
+    ...received,
+    cleanup: vi
+      .fn()
+      .mockRejectedValue(
+        Object.assign(new Error("cleanup canary"), { code: "EACCES" }),
+      ),
+  });
+  const primary = Object.assign(new Error("publish canary"), {
+    code: "ENOSPC",
+  });
+  vi.spyOn(storage, "publish").mockRejectedValue(primary);
+  const lines: string[] = [];
+  vi.spyOn(console, "log").mockImplementation(() => {});
+  vi.spyOn(console, "warn").mockImplementation((value) =>
+    lines.push(String(value)),
+  );
+  vi.spyOn(console, "error").mockImplementation((value) =>
+    lines.push(String(value)),
+  );
+  const diagnostics = new UploadDiagnostics();
+  await expect(uploadCad(request(), repo, storage, diagnostics)).rejects.toBe(
+    primary,
+  );
+  expect(
+    lines.some(
+      (line) =>
+        line.includes("storage_publish") &&
+        line.includes("failure") &&
+        line.includes("ENOSPC"),
+    ),
+  ).toBe(true);
+  expect(
+    lines.some(
+      (line) =>
+        line.includes("temporary_cleanup") &&
+        line.includes("warning") &&
+        line.includes("EACCES"),
+    ),
+  ).toBe(true);
+  expect(lines.join("")).not.toContain("canary");
+});
+test("TC-OBS-004/007: parsed metadata failure logs validation and successful cleanup once without input", async () => {
+  const lines: string[] = [];
+  vi.spyOn(console, "log").mockImplementation((value) =>
+    lines.push(String(value)),
+  );
+  vi.spyOn(console, "error").mockImplementation((value) =>
+    lines.push(String(value)),
+  );
+  const diagnostics = new UploadDiagnostics();
+  await expect(
+    uploadCad(
+      request("input-canary.dxf", "bytes", { siteId: "Authorization-canary" }),
+      repo,
+      storage,
+      diagnostics,
+    ),
+  ).rejects.toMatchObject({ code: "INVALID_METADATA" });
+  const entries = lines.map((line) => JSON.parse(line));
+  expect(entries).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ stage: "upload_receive", outcome: "success" }),
+      expect.objectContaining({
+        stage: "upload_validation",
+        outcome: "failure",
+        error: expect.objectContaining({ code: "INVALID_METADATA" }),
+      }),
+      expect.objectContaining({
+        stage: "temporary_cleanup",
+        outcome: "success",
+      }),
+    ]),
+  );
+  expect(entries.filter((entry) => entry.outcome === "failure")).toHaveLength(
+    1,
+  );
+  expect(
+    entries.filter((entry) => entry.stage === "temporary_cleanup"),
+  ).toHaveLength(1);
+  expect(lines.join("")).not.toMatch(/input-canary|Authorization|canary/);
+});
+test("TC-OBS-004: malformed multipart fails once at upload_receive", async () => {
+  const lines: string[] = [];
+  vi.spyOn(console, "log").mockImplementation((value) =>
+    lines.push(String(value)),
+  );
+  vi.spyOn(console, "error").mockImplementation((value) =>
+    lines.push(String(value)),
+  );
+  const diagnostics = new UploadDiagnostics();
+  const malformed = new Request("http://localhost/api/cad-files", {
+    method: "POST",
+    body: "not multipart",
+    headers: { "content-type": "text/plain" },
+  });
+  await expect(
+    uploadCad(malformed, repo, storage, diagnostics),
+  ).rejects.toMatchObject({ code: "INVALID_UPLOAD" });
+  const failures = lines
+    .map((line) => JSON.parse(line))
+    .filter((entry) => entry.outcome === "failure");
+  expect(failures).toEqual([
+    expect.objectContaining({
+      stage: "upload_receive",
+      error: expect.objectContaining({ code: "INVALID_UPLOAD" }),
+    }),
+  ]);
+});
+test("TC-OBS-004: stream failure logs receive failure and successful temporary cleanup", async () => {
+  const lines: string[] = [];
+  vi.spyOn(console, "log").mockImplementation((value) =>
+    lines.push(String(value)),
+  );
+  vi.spyOn(console, "error").mockImplementation((value) =>
+    lines.push(String(value)),
+  );
+  const diagnostics = new UploadDiagnostics();
+  const streamError = Object.assign(new Error("stream canary"), {
+    code: "ECONNRESET",
+  });
+  const body = new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.error(streamError);
+    },
+  });
+  const interrupted = new Request("http://localhost/api/cad-files", {
+    method: "POST",
+    body,
+    headers: { "content-type": "multipart/form-data; boundary=fixture" },
+    duplex: "half",
+  } as RequestInit & { duplex: "half" });
+  await expect(uploadCad(interrupted, repo, storage, diagnostics)).rejects.toBe(
+    streamError,
+  );
+  const entries = lines.map((line) => JSON.parse(line));
+  expect(entries).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        stage: "upload_receive",
+        outcome: "failure",
+        error: expect.objectContaining({ code: "ECONNRESET" }),
+      }),
+      expect.objectContaining({
+        stage: "temporary_cleanup",
+        outcome: "success",
+      }),
+    ]),
+  );
+  expect(entries.filter((entry) => entry.outcome === "failure")).toHaveLength(
+    1,
+  );
+  expect(
+    entries.filter((entry) => entry.stage === "temporary_cleanup"),
+  ).toHaveLength(1);
+  expect(lines.join("")).not.toContain("canary");
+  expect(await readdir(storage.directory)).toEqual([]);
+});
+test("TC-SEC-001: rejects traversal, arbitrary paths, and symlink escape", async () => {
+  for (const key of ["../test.sqlite", "/etc/passwd", "%2e%2e/test"])
+    await expect(storage.content(key)).rejects.toMatchObject({ status: 404 });
+  const key = `${randomUUID()}/${randomUUID()}/original.dxf`;
+  await mkdir(path.join(storage.directory, path.dirname(key)), {
+    recursive: true,
+  });
+  const outside = path.join(directory, "outside");
+  await writeFile(outside, "private");
+  await symlink(outside, path.join(storage.directory, key));
+  await expect(storage.content(key)).rejects.toMatchObject({ status: 404 });
+});

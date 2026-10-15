@@ -1,0 +1,5 @@
+import { test,expect } from 'vitest';
+import { boundedJson } from '../../server/http';
+function request(body:BodyInit|null,headers:HeadersInit={'content-type':'application/json'}){return new Request('http://localhost/api/test',{method:'POST',body,headers,duplex:'half'} as RequestInit&{duplex:'half'})}
+test('TC-MASTER-006: bounded JSON rejects malformed, arrays, null and headerless oversized body',async()=>{for(const body of ['{',[1],null])await expect(boundedJson(request(typeof body==='string'?body:JSON.stringify(body)),32)).rejects.toMatchObject({code:'INVALID_JSON',status:400});const stream=new ReadableStream({start(controller){controller.enqueue(new TextEncoder().encode(`{"value":"${'x'.repeat(100)}"}`));controller.close()}});await expect(boundedJson(request(stream),32)).rejects.toMatchObject({code:'REQUEST_TOO_LARGE',status:413})});
+test('TC-MASTER-006: bounded JSON accepts an object and rejects wrong media type',async()=>{await expect(boundedJson(request('{"name":"A"}'))).resolves.toEqual({name:'A'});await expect(boundedJson(request('{}',{'content-type':'text/plain'}))).rejects.toMatchObject({code:'INVALID_JSON'})});
