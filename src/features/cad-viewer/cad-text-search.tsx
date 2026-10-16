@@ -11,9 +11,9 @@ const PAGE_SIZE = 100;
 
 /** A renderer-neutral overlay; works inside regular, CSS immersive and native fullscreen shells. */
 export function CadTextSearch({
-  manager, format, ready, loading, layers, selectedLayers,
+  getManager, format, ready, loading, layers, selectedLayers,
 }: {
-  manager: ViewerManager | null;
+  getManager: () => ViewerManager | null;
   format: ViewerFormat;
   ready: boolean;
   loading: boolean;
@@ -31,7 +31,9 @@ export function CadTextSearch({
   const [focusError, setFocusError] = useState('');
 
   useEffect(() => {
-    if (!open || !ready || format !== 'DXF' || !manager || index) return;
+    if (!open || !ready || format !== 'DXF' || index) return;
+    const manager = getManager();
+    if (!manager) return;
     let active = true;
     // The viewer has already loaded the bytes. This creates only a cancellable Worker.
     manager.getTextIndex().then(value => {
@@ -40,7 +42,7 @@ export function CadTextSearch({
       if (active) setError(reason instanceof Error ? reason.message : '도면 텍스트 검색 준비에 실패했습니다.');
     }).finally(() => { if (active) setWorking(false); });
     return () => { active = false; };
-  }, [open, ready, format, manager, index]);
+  }, [open, ready, format, getManager, index]);
 
   const matches = useMemo(() => {
     const key = searchKey(query);
@@ -57,7 +59,7 @@ export function CadTextSearch({
   function selectResult(position: number) {
     const hit = matches[position];
     if (!hit) return;
-    if (!manager?.focusBounds(hit.focus)) {
+    if (!getManager()?.focusBounds(hit.focus)) {
       setFocusError('이 검색 결과의 화면 좌표로 이동할 수 없습니다.');
       return;
     }
