@@ -39,6 +39,9 @@ for (const renderer of ["dxf-viewer", "three-dxf-viewer"])
         .click();
     await expect(page.getByRole("status")).toHaveText("도면 표시 완료");
 
+    // Historical normal-mode regression starts after leaving the new auto-immersive entry.
+    await expect(page.getByTestId("cad-viewer-shell")).toHaveAttribute("data-fullscreen", "true");
+    await page.getByRole("button", { name: "전체 화면 종료", exact: true }).click();
     const canvas = page.locator("canvas");
     await expect(canvas).toHaveCount(1);
     const initial = await canvas.screenshot();

@@ -43,6 +43,7 @@ test("TC-LAYER001: individual multi-select and all controls alter the existing c
   });
   await page.goto(`/cad/versions/${file.id}/viewer?renderer=three-dxf-viewer`);
   await expect(page.getByRole("status")).toHaveText("도면 표시 완료");
+  await page.getByRole("button", { name: "전체 화면 종료", exact: true }).click();
   const trigger = page.getByTestId("layer-dropdown-trigger");
   const canvas = page.locator("canvas");
   await canvas.evaluate((node) => {
@@ -91,6 +92,7 @@ test("TC-LAYER002: selection resets across reload, renderer switch, and version 
   });
   await page.goto(`/cad/versions/${first.id}/viewer?renderer=three-dxf-viewer`);
   await expect(page.getByRole("status")).toHaveText("도면 표시 완료");
+  await page.getByRole("button", { name: "전체 화면 종료", exact: true }).click();
   const trigger = page.getByTestId("layer-dropdown-trigger");
   await trigger.click();
   await page.getByRole("menuitemcheckbox", { name: "A-one" }).click();
@@ -113,6 +115,7 @@ test("TC-LAYER002: selection resets across reload, renderer switch, and version 
     `/cad/versions/${second.id}/viewer?renderer=three-dxf-viewer`,
   );
   await expect(page.getByRole("status")).toHaveText("도면 표시 완료");
+  await page.getByRole("button", { name: "전체 화면 종료", exact: true }).click();
   await expect(trigger).toContainText("레이어 1/1");
   await trigger.click();
   await expect(
@@ -139,6 +142,7 @@ test("TC-LAYER003: many long layers fit a narrow viewport and support keyboard a
   await page.setViewportSize({ width: 360, height: 480 });
   await page.goto(`/cad/versions/${file.id}/viewer?renderer=three-dxf-viewer`);
   await expect(page.getByRole("status")).toHaveText("도면 표시 완료");
+  await page.getByRole("button", { name: "전체 화면 종료", exact: true }).click();
   const trigger = page.getByTestId("layer-dropdown-trigger");
   await trigger.focus();
   await page.keyboard.press("Enter");

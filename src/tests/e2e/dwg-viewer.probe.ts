@@ -91,6 +91,7 @@ test("TC-E2E-002/DWG-001/003: registered DWG uses its own adapter, controls and 
   await expect(
     page.getByRole("button", { name: "three-dxf-viewer", exact: true }),
   ).toHaveCount(0);
+  await page.getByRole("button", { name: "전체 화면 종료", exact: true }).click();
   let metric = JSON.parse(
     (await page.getByTestId("viewer-metric").textContent())!,
   );
@@ -150,6 +151,7 @@ test("TC-E2E-002/DWG-001/003: registered DWG uses its own adapter, controls and 
   // Forged query must not enter either DXF renderer.
   await page.goto(`/cad/versions/${file.id}/viewer?renderer=three-dxf-viewer`);
   await expect(page.getByRole("status")).toHaveText("도면 표시 완료");
+  await page.getByRole("button", { name: "전체 화면 종료", exact: true }).click();
   metric = JSON.parse((await page.getByTestId("viewer-metric").textContent())!);
   expect(metric.renderer).toBe("libredwg-web");
   expect(
@@ -222,6 +224,7 @@ test("TC-DWG-002/004: partial coverage, unsupported header, missing file/WASM an
     "표시할 도형이 없습니다",
   );
   await expect(page.getByTestId("viewer-coverage")).toContainText("CIRCLE");
+  await page.getByRole("button", { name: "전체 화면 종료", exact: true }).click();
   expect(
     JSON.parse((await page.getByTestId("viewer-metric").textContent())!).result,
   ).toBe("partial");

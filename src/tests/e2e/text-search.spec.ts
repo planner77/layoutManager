@@ -17,6 +17,7 @@ for (const renderer of ['dxf-viewer', 'three-dxf-viewer'] as const) {
     await page.route('**/api/cad-files/*/content', route => { downloads++; return route.continue(); });
     await page.goto('/cad/versions/' + file.id + '/viewer?renderer=' + renderer);
     await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
+    await page.getByRole('button', { name: '전체 화면 종료', exact: true }).click();
     const canvas = page.locator('canvas');
     await page.getByRole('button', { name: '도면 내 텍스트 검색' }).click();
     const panel = page.getByTestId('cad-text-search');
