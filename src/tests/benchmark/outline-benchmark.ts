@@ -4,7 +4,7 @@
  * npm run test:outline-benchmark -- --quick # 1k only
  * JSON to stdout (run metadata and observed timing/heap, never synthetic SLA).
  */
-import {parseDxfOutlineIndex,type OutlineEntity} from '../../viewers/core/outline-geometry';
+import {parseDxfOutlineIndex} from '../../viewers/core/outline-geometry';
 import {computeOutline} from '../../viewers/core/outline-compute';
 import {SelectionSpatialIndex} from '../../viewers/three-dxf-viewer/selection-spatial-index';
 import {cpus,totalmem} from 'node:os';
