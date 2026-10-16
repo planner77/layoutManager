@@ -76,4 +76,7 @@ test('TC-OUT-REAL-BROWSER: locally approved real-DXF rendering, mappings and sel
    writeFileSync(name,JSON.stringify(report,null,2)+'\n',{flag:'w',mode:0o600});}
  expect(measurements.every(x=>x.pageErrors===0&&x.consoleErrors===0)).toBe(true);
  expect(measurements.every(x=>Number.isFinite(x.loadMs))).toBe(true);
+ const threshold=Number(process.env.CAD_OUTLINE_ACCEPTANCE_MIN_SELECTED??1);
+ expect(Number.isInteger(threshold)&&threshold>0).toBe(true);
+ expect(measurements.every(x=>x.selected>=threshold)).toBe(true);
 });
