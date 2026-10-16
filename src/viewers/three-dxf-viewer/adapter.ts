@@ -5,6 +5,7 @@ import { DXFViewer } from 'three-dxf-viewer';
 import type { CadViewerAdapter } from '../core/adapter';
 import { explicitElevation } from './normalize';
 import {SelectionController,type SelectionMode} from './selection-controller';
+import {reconcileRenderCoverage,type RenderObservation,type RenderCoverage} from './render-coverage';
 import type {DxfOutlineIndex,OutlineEntity,OutlineKind,OutlinePath} from '../core/outline-geometry';
 import type {OutlineResult} from '../core/outline-compute';
 import type {OutlineInfo,SavedOutline} from '../core/adapter';
@@ -33,6 +34,10 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
   private bounds = new THREE.Box3();
   private index?: DxfOutlineIndex;
   private indexError?: string;
+  private renderCoverage?: RenderCoverage;
+  private spatialIndexMs?:number;
+  private sourceIndexMs?:number;
+  private renderAuditMs?:number;
   private selector?: SelectionController;
   private mode: SelectionMode='pan';
   private visibleLayers=new Set<string>();
@@ -103,17 +108,21 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
       this.fitToView();this.render();
       if(this.outline && !this.bounds.isEmpty()) {
         try {
+          const indexStarted=performance.now();
           this.index=await this.runOutlineWorker<DxfOutlineIndex>('index',{
             text,versionId:this.outline.versionId,sourceSha256:this.outline.sourceSha256
           });
+          this.sourceIndexMs=performance.now()-indexStarted;
           if(this.disposed)throw new DOMException('취소됨','AbortError');
+          const auditStarted=performance.now();
+          this.renderCoverage=this.auditRenderedObjects(this.index.entities);
+          this.renderAuditMs=performance.now()-auditStarted;
           this.visibleLayers=new Set(this.getLayers());
-          // The parsed index is a source-coordinate overlay. Non-rendered layers are excluded.
-          if(!this.visibleLayers.size)this.visibleLayers=new Set(this.index.entities.map(e=>e.layer));
-          const selectable=this.index.entities.filter(e=>this.visibleLayers.has(e.layer));
+          const selectable=this.renderCoverage.selectable.filter(e=>this.visibleLayers.has(e.layer));
           this.selector=new SelectionController(this.renderer.domElement,this.container,selectable,
             (x,y)=>this.screenToWorld(x,y),this.selectionChanged,
             pan=>{this.controls.mouseButtons.LEFT=pan?THREE.MOUSE.PAN:THREE.MOUSE.ROTATE;});
+          this.spatialIndexMs=this.selector.indexBuildMs;
           this.selector.setMode(this.mode);
         }catch(error) {
           if(this.disposed)throw error;
@@ -161,6 +170,30 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     this.selector?.setVisibleLayers(this.visibleLayers);this.render();
   }
 
+  /** Reconcile only by top-level DXF handles, not screen bounds or mesh order.
+   * Both handle and WCS bounds must agree. Missing/merged/unsupported content
+   * is deliberately excluded from selection until the mapping is verified.
+   * Notes on BLOCK merging and 1:N mapping: out/Issue31.md. */
+  private auditRenderedObjects(entities:readonly OutlineEntity[]):RenderCoverage {
+    const handles=new Set(entities.filter(e=>e.handle).map(e=>e.handle!.toUpperCase()));
+    const observations:RenderObservation[]=[];
+    this.object?.updateWorldMatrix(true,true);
+    this.object?.traverse(object=>{
+      const value:unknown=object.userData?.entity;
+      if(!value||typeof value!=='object')return;
+      const entity=value as Record<string,unknown>;
+      if(typeof entity.handle!=='string'||!handles.has(entity.handle.toUpperCase())||
+         typeof entity.type!=='string'||!object.visible)return;
+      const bounds=new THREE.Box3().setFromObject(object);
+      const valid=!bounds.isEmpty()&&[
+        bounds.min.x,bounds.min.y,bounds.max.x,bounds.max.y,
+      ].every(Number.isFinite);
+      observations.push({handle:entity.handle,entityType:entity.type,
+        layer:typeof entity.layer==='string'?entity.layer:undefined,
+        bounds:valid?[bounds.min.x,bounds.min.y,bounds.max.x,bounds.max.y]:null});
+    });
+    return reconcileRenderCoverage(entities,observations);
+  }
   private screenToWorld=(x:number,y:number):[number,number]=>{
     const rect=this.renderer.domElement.getBoundingClientRect();
     const p=new THREE.Vector3(x/Math.max(1,rect.width)*2-1,1-y/Math.max(1,rect.height)*2,0).unproject(this.camera);
@@ -222,8 +255,13 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
   getOutlineInfo():OutlineInfo|null {
     if(!this.outline)return null;
     if(!this.index && !this.indexError)return null;
-    return {entityCount:this.index?.entities.length??0,unitCode:this.index?.unitCode??null,
-      warnings:[...(this.indexError?[this.indexError]:[]),...(this.index?.warnings??[])]};
+    return {entityCount:this.renderCoverage?.mappedSource??0,unitCode:this.index?.unitCode??null,
+      renderedObjectCount:this.renderCoverage?.renderedObjects??0,
+      excludedEntityCount:(this.renderCoverage?.unmappedSource??0)+(this.renderCoverage?.boundsMismatch??0),
+      spatialIndexMs:this.spatialIndexMs,
+      sourceIndexMs:this.sourceIndexMs,renderAuditMs:this.renderAuditMs,
+      warnings:[...(this.indexError?[this.indexError]:[]),
+        ...(this.renderCoverage?.warnings??[]),...(this.index?.warnings??[])]};
   }
   setSelectionMode(mode:SelectionMode){this.mode=mode;this.selector?.setMode(mode);}
   getOutlineSelection(){return this.selector?.getSelection()??[];}

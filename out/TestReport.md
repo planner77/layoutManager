@@ -1,5 +1,21 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE31-PR33-REVIEW-P2-20261016 — Render layer guard 보완 (재CI 대기)
+
+- PR #33 Codex 리뷰 P2: 원본 Handle이 같아도 Render Object의 `layer`가 누락되거나 1:N 조각 중 일부 Type/Layer가 불일치하면 기존 `(!o.layer || o.layer===sourceLayer)` 조건이 잘못 수용할 수 있음.
+- 조치: 모든 조각에 Type/Layer/World Bounds가 명시·일치해야만 1:N aggregate bbox를 승인. 불확실 조각은 선택 미승인(fail closed). `TC-OUT-MAP-005` Unit로 누락 layer/혼합 type 회귀 추가.
+- 해당 변경의 신규 CI 실행 결과는 미확정. 리뷰 회신·스레드 해결을 완료하였으나 실제 도면 매핑은 계속 미검증.
+
+
+
+## U-ISSUE31-P0-P5-P4-PREP-20261016 — 잔여 범위 개발 / CI 전
+
+- 이전 0.27.0 PR #32: PR CI run `38874300056` Typecheck/Lint/Test/Build/Browser/Docker **SUCCESS**, Main CI run `38875068317` **SUCCESS**. 이로써 P1~P3 합성 기준은 검증했으나 P0 실도면·P4 영속화·P5 성능 수용은 미완료.
+- 후속 0.28.1 작업 브랜치: Render Handle/Type/Layer/WCS bbox reconciliation(1:N 합산, 미렌더/mismatch 선택 제한), SpatialIndex, UI 인덱스·매핑 timing, synthetic 1k/10k/100k benchmark 명령, P4 브라우저 JSON 버전·Source SHA·EntityRef 안전 validator, Unit 및 기존 DXF E2E 확장.
+- **본 변경에 대한 신규 CI·로컬 전체 빌드/브라우저·실제 DXF/GPU·성능 실측은 아직 확인하지 않았다.** JS-only 로컬 smoke 및 작성된 테스트는 정식 CI PASS를 대신하지 않는다. 개인정보·운영 DXF·DB/원본 파일은 업로드/수정하지 않았다. P4 인증·인가 Owner 승인 전 Database schema/Write API 미개발. [Issue31](Issue31.md).
+
+
+
 ## U-ISSUE26-PR30-CI55-FAIL-20261016 — E2E 초기 목록 페이지네이션 가정 수정 (재CI 대기)
 
 - PR #30 / CI #55 Run 38878433970 / source d4fda35d733cbe5bcbdac4aa5c79992503276453. GitHub Actions PASS: TypeScript, ESLint, Unit/Integration 136/136, production build, Docker image/migration/runtime smoke. Playwright E2E 40/41 PASS; Legacy migration E2E는 E2E 실패로 skipped. 신규 DXF 텍스트 검색 두 E2E는 이번 run에서 모두 통과.

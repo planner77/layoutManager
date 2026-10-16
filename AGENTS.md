@@ -1,5 +1,12 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #31 후속 0.28.1 작업 상태 (2026-10-16)
+
+- 0.27.0 PR #32, PR CI run `38874300056`, Main CI run `38875068317`은 실제 SUCCESS. Issue #31은 P0/P4/P5 미완료로 **열린 상태를 유지**한다.
+- 0.28.1 P0/P5: Source↔Three Renderer unique Handle/type/layer/World bbox fail-closed 대조, 2D SpatialIndex, synthetic 1k/10k/100k opt-in benchmark 및 Unit/E2E 확대. 실 CAD 성능/정확도는 별도 평가 전 PASS 금지. [Issue31](out/Issue31.md).
+- P4: 사용자/Owner가 IdP/인증·인가·audit/scope 정책을 승인하기 전 **서버 영속 DB/Write API 구현·배포 금지**. 브라우저 JSON의 순수 validator·시험만 준비한다. 도면 삭제용 비밀번호·신뢰되지 않은 User 헤더를 재사용하지 않는다.
+
+
 ## Issue #26 (2026-10-16) — DXF 도면 내부 텍스트 검색
 
 - 최신 main 0.27.0(#31) 정렬 후 통합 PR 후보는 **0.28.0**이다. 최초 0.27.0 작업 브랜치에서 현재 도면 DXF TEXT/MTEXT 색인·삽입점 world 좌표 focus, 검색 UI, 단위/Browser 테스트 소스를 추가했다. 현재 단계는 **PR CI 전**, 로컬 실행 결과 및 독립 QA 통과를 주장하지 않는다.

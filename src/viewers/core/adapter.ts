@@ -2,7 +2,7 @@ import type { CadFocusBounds, CadTextIndex } from './text-index';
 import type { ViewerFormat } from './selection';
 import type {OutlineEntity,OutlineKind} from './outline-geometry';
 import type {OutlineResult} from './outline-compute';
-export type OutlineInfo = {entityCount:number;unitCode:number|null;warnings:string[]};
+export type OutlineInfo = {entityCount:number;unitCode:number|null;warnings:string[];renderedObjectCount?:number;excludedEntityCount?:number;spatialIndexMs?:number;sourceIndexMs?:number;renderAuditMs?:number};
 export type SavedOutline = {id:string;createdAt:string;result:OutlineResult};
 import { ViewerSource } from './source';
 import {heapBytes,observeFrame,type ViewerMetric} from './metrics';

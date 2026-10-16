@@ -1,5 +1,13 @@
 # CAD Web Viewer P.O.C.
 
+## Issue #31 성능·정확도 진단 (0.28.1 브랜치 / 검증 전)
+
+- `three-dxf-viewer`는 Source top-level Entity의 Handle/Type/Layer/WCS XY Box를 실제 Three Object와 대조하고, 불일치 객체는 선택에서 제외합니다. Viewer `렌더 관측 / 매핑 제외 / 원본 인덱스·렌더 대조·공간 인덱스 ms`로 상태를 확인합니다.
+- Synthetic 벤치마크: `cd src && npm ci && npm run test:outline-benchmark` (LINE 1,000 / 10,000 / 100,000개, JSON stdout), 빠른 테스트 `npm run test:outline-benchmark -- --quick` (1,000개). 이 값은 브라우저 GPU/실제 현장 CAD SLA가 아닙니다. 운영 DXF/DB 원본은 Git에 등록하지 마세요.
+- P4의 버전/SHA/EntityRef JSON validator는 안전한 사전 준비일 뿐 서버 쓰기·DB migration이 아닙니다. RBAC 및 인증 정책 Owner 결정 전 CRUD를 배포하지 않습니다. 상세 [Issue31](out/Issue31.md), [Database](out/Database.md).
+
+
+
 ## 0.28.0 신규 기능 — 도면 내부 텍스트 검색 (#26)
 
 열린 DXF Viewer의 검은 화면 오른쪽에서 **도면 내 텍스트 검색**을 펼치면 현재 도면의 TEXT/MTEXT 값을 검색할 수 있습니다. 한글·영문·숫자 부분 일치, 공백/MTEXT 개행, 검색 결과 목록과 이전/다음 및 클릭 위치 Pan/Zoom을 제공합니다. dxf-viewer와 three-dxf-viewer 모두 사용하며 일반/전체 화면 Viewer에서 검색할 수 있도록 패널을 도면 shell 안에 배치했습니다. **기존 도면 파일명·설명 검색과 별개**입니다.
