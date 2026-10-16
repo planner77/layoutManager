@@ -1,5 +1,12 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-026 — Docker image pair 정규화 및 GHCR 게시 단계 보호
+
+- Date / Status: 2026-10-16 / PR #29 (#28) 리뷰 후 설계 보강, 최종 PR CI·실운영 릴리스 검증 대기.
+- Context: Next.js standalone 앱과 Prisma migrator를 별도 GHCR 이미지로 게시한다. 앱 공개 태그를 먼저 갱신하면 후속 migrator 빌드 실패 시 버전이 엇갈린다. Compose는 태그 없는 이미지 참조를 `:latest`로 해석하지만 `${GHCR_IMAGE}-migrate` 문자열 결합만으로는 `:latest-migrate`를 생성하지 못한다.
+- Decision: 두 타깃을 커밋 SHA에 연계된 별도 후보 이미지로 우선 빌드·게시하고 둘 다 registry에서 확인된 경우에만 공개 `:version-migrate`, `:version`, `:latest-migrate`, `:latest`를 순서대로 승격한다. Publish workflow의 취소를 방지한다. Compose 실행 helper는 `.env`를 실행하지 않고 두 image 키만 안전하게 읽어 태그 없는 앱 참조를 `:latest`와 `:latest-migrate`로 정규화한다. Digest pin은 migrator 별도 명시를 필수로 한다. CI health 검증에는 연결 초기화(exit 56) 재시도를 포함한다.
+- Alternatives: 앱 공개 태그 직접 push(릴리스 불일치 위험), 항상 명시적 migrator tag 입력(기존 사용 흐름 저해), 별도 GHCR 패키지로 image alias 발행(운영·권한 복잡도 증가).
+- Trade-off: 두 레지스트리 태그의 승격은 원자적 트랜잭션이 아니므로 아주 짧은 최신 별칭 불일치 창이 가능하다. 운영 업그레이드에는 항상 일치하는 명시적 릴리스 버전/검증된 digest pair를 사용하고 구 앱 중지→migrator 성공→신규 앱 기동 순서를 지킨다. 후보 SHA 태그는 감사/복구용으로 남기며, GHCR 게시 및 수용은 Main CI 이후에만 판정한다.
 ## ADR-028 — Standalone 웹과 별도 DB migration Job
 
 - Date/Status: 2026-10-16 / 소스 구현·PR CI 검증 대기. 기존 단일 Docker 이미지 전체 source/node_modules 복사는 개발용 자산 포함 위험. Prisma CLI/tsx를 제거하면 DB migration/backfill 실패.
