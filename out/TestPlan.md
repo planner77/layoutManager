@@ -1,5 +1,13 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+### Issue #26 — CI #42 보완 회귀
+
+- TC-TEXT-010: DXF Unicode escape \U+00B0C는 °C, MTEXT/검색 키 동일 처리. Reviewer의 4자리 고정 escape 계약을 unit/dxf-text-index.test.ts에서 검증한다.
+- UI 규칙: viewer.tsx 렌더 중 ref.current를 참조하지 않고 getter를 통해 effect/이벤트에서만 사용한다. PR CI ESLint react-hooks/refs와 기존 Viewer E2E를 회귀 기준으로 한다.
+- PR CI #42에서 ESLint 실패하여 Unit/Browser는 미실행이었다. 수정 후 새로운 CI 결과를 실제 확인하기 전 수용 PASS 아님.
+
+
+
 ## Issue #26 — 검색/좌표/생명주기 검증 계획 (0.27.0)
 
 | Test case | 기준 | 증거 위치 | 상태 |
