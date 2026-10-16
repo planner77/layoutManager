@@ -1,5 +1,11 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE28-PR29-CI39-FAIL-20261016 — 추가한 Unit test matcher 오류 보완 (신규 CI 재검증 대기)
+
+- CI #39 run `38860855614`, head `000774b5432868e696fefc84068e36472e26337d`: TypeScript와 ESLint 검사는 진행·성공했으며 Unit/Integration에서 **113 passed / 1 failed (총 114)**. 실패 지점은 기존 앱/DB 기능이 아닌 신규 `TC-IMAGE-010` 테스트 구현.
+- 구체적 원인: `expect(resolve({ GHCR_IMAGE: '...@sha256:abc' })).toThrow;`처럼 `resolve()`를 assertion 함수 밖에서 먼저 실행했고 `.toThrow` 메서드를 호출하지 않아 의도한 실패를 정상적으로 검증하지 못함. ESLint도 `@typescript-eslint/no-unused-expressions` 경고를 출력. `expect(() => resolve({ GHCR_IMAGE: '...@sha256:abc' })).toThrow()`로 수정해 예상 예외를 Vitest matcher가 포착하도록 보완.
+- 이 수정에 대한 실제 CI 결과는 **미확정**. 구 CI의 Docker job이 동작 중/종료 상태인지와 신규 run은 각각 GitHub 결과를 기준으로 판정해야 하며 기존 테스트 전체 통과를 주장하지 않는다.
+
 ## U-ISSUE28-PR29-CI30-FAIL-20261016 — 신규 Docker smoke 실패 및 보완 (재검증 대기)
 
 - PR #29 / CI #30 run `38858349603`, original head `ab02e281c8d8c70cfe473db7e8c24ed5772ebdfa`: Node typecheck, lint, unit/integration, production build, Browser E2E, Legacy migration E2E **모두 CI에서 SUCCESS**. Docker 이미지 4개 빌드/크기 측정, migration 실패의 nonzero 검증도 SUCCESS.
