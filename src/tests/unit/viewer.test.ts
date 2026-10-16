@@ -32,3 +32,20 @@ test('TC-VIEW-003: completed stale load cannot replace the next result',async()=
   const manager=new ViewerManager(async()=>a);const pending=manager.load('/file','DXF');const rejected=expect(pending).rejects.toThrow();
   await vi.waitFor(()=>expect(a.load).toHaveBeenCalled());manager.dispose();resolve({empty:false});await rejected;
 });
+
+
+test('TC-TEXT-007: world-space focus delegates once, rejects invalid bounds and stops on dispose', async () => {
+  vi.stubGlobal('fetch', vi.fn(async () => new Response('DXF bytes')));
+  const a = adapter();
+  a.focusBounds = vi.fn();
+  const manager = new ViewerManager(async () => a);
+  await manager.load('/drawing', 'DXF');
+  const valid = { minX: 100, minY: 20, maxX: 500, maxY: 30 };
+  expect(manager.focusBounds(valid)).toBe(true);
+  expect(a.focusBounds).toHaveBeenCalledWith(valid);
+  expect(manager.focusBounds({ ...valid, maxX: 100 })).toBe(false);
+  expect(manager.focusBounds({ ...valid, maxY: Number.POSITIVE_INFINITY })).toBe(false);
+  expect(a.focusBounds).toHaveBeenCalledTimes(1);
+  manager.dispose();
+  expect(manager.focusBounds(valid)).toBe(false);
+});
