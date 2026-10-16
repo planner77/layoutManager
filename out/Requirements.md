@@ -182,3 +182,18 @@ DXF 등록→Metadata→Current→목록→검색→선택→dxf-viewer→three-
 | FR-STORAGE-003 | 원격 실패 정합성 | P0 | PUT은 DB transaction 전, overwrite 차단, DB 실패 보상 삭제, 불확실한 PUT/COMMIT 보존, 안전한 오류 | TC-S3-002 | VERIFIED / upload service/S3 adapter; TestReport U-S3-20260908 |
 
 자동 local/S3 migration, 여러 endpoint 동시 registry, browser 직접/presigned upload, bucket 관리 UI, SQLite 자체 S3 저장은 이번 추가 요구 범위에 포함하지 않는다.
+
+
+## GitHub #24 — FR-MASTER-001~007
+
+승인 범위는 다섯 단계 기준정보 CRUD/비활성화, ID 기반 등록, 제품을 포함한 조회, 층별 Current, legacy 이관·재분류이다. 기존 네 문자열 Location 계약은 이 단위부터 ID 계층 계약으로 대체한다. 요구·수용 기준은 [Issue24](Issue24.md), schema는 [Database](Database.md)를 따른다. 구현 상태: 독립 QA 검증 완료 (root Manager의 commit/push/운영 DB 적용 전).
+
+| 요구사항 | 내용 | 구현 | 검증 | 결과 |
+| --- | --- | --- | --- | --- |
+| FR-MASTER-001 | 5단계 기준정보 생성·조회·편집·비활성/재활성·안전 삭제 | MasterRepository, `/api/masters`, `/masters` | TC-MASTER-001 | PASS / 독립 QA |
+| FR-MASTER-002 | 같은 활성 ID chain으로만 등록하고 변조·비활성 chain 거부 | registration domain, CadRepository transaction 검증 | TC-MASTER-002 | PASS / 독립 QA |
+| FR-MASTER-003 | 층별 순번·Current 단일성·경쟁·rollback | nextVersion 및 Current 복합 FK/transaction | TC-MASTER-003 | PASS / 독립 QA |
+| FR-MASTER-004 | 제품·사업장 종류 표시와 기존 이름/검색 호환, 비활성 이력 조회 | list/detail/viewer DTO와 master join | TC-MASTER-004 | PASS / 독립 QA |
+| FR-MASTER-005 | legacy dedup, 미분류 생성, UUID·metadata·hash·bytes 보존과 전체 이력 재분류 | `202610150001_master_hierarchy`, reclassify transaction | TC-MASTER-005 | PASS / 독립 QA |
+| FR-MASTER-006 | 부모/미분류 불변, 참조 삭제·재분류 충돌·혼합 ID 차단 | Domain/Repository 및 DB FK/Unique | TC-MASTER-006 | PASS / 독립 QA |
+| FR-MASTER-007 | 관리·등록·Current·재분류 전 Browser 흐름과 기존 회귀 | master/upload UI, 별도 legacy migration E2E | TC-MASTER-007 | PASS / 독립 QA |

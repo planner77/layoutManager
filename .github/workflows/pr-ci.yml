@@ -59,6 +59,9 @@ jobs:
       - name: E2E 테스트
         run: npm run test:e2e
 
+      - name: Legacy migration E2E 테스트
+        run: npm run test:master-migration
+
       - name: E2E 실패 결과 업로드
         if: failure()
         uses: actions/upload-artifact@v4

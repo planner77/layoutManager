@@ -4,6 +4,8 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 
 ## 현재 단계와 작업 위치
 
+- GitHub #24 소스는 0.25.0이다. 사업부→제품→사업장/법인→동→층 master, 활성 ID chain 등록, 제품 포함 조회, legacy 미분류 이관·층 이력 재분류를 구현하고 독립 QA 및 Manager 수용을 완료했다. 구현 source commit은 `e8189b4`이며 원격 기능 브랜치에 게시했다. 상세 근거는 Issue24/TestReport를 따른다. PR CI 결과와 운영 migration·배포는 이 수용 범위 밖이다. 아래 0.21.0 기록은 이전 릴리스의 역사 기록이다.
+
 - 최신 관리 기능은 등록·목록·검색·Location 상세·Current 변경이다. GitHub #1 조치 결과는 TestReport의 U3-20260908을 참조한다. Unit 4 dxf-viewer를 연결했다. 현재 결과는 TestReport의 U4-20260908을 참조한다. Unit 5에서 three-dxf-viewer와 한글 기본 글꼴을 연결했다. 최신 결과는 U5-20260908을 참조한다. Unit 6에서 새로고침 없는 전환과 원본 공유를 연결했다. 최신 결과는 U6-20260908을 참조한다. Unit 8A에서 측정 UI/JSON 및 반복 비교를 추가했다. U9A-20260908에서 DXF 전체 흐름 및 20회 전환 회귀를 검증했다. Unit 7A에서 libredwg-web의 실제 DWG LINE parse/render/free 독립 실험을 검증했다(U7A-20260908). Unit 7B에서 등록 DWG Viewer와 기본 탐색/오류/재진입을 검증했다(U7B-20260908). Unit 8B에서 DWG WASM 초기화·파싱 계측을 추가했다(U8B-20260909). 사용자 요청 Unit S3에서 선택적 S3 호환 저장소를 추가했다(U-S3-20260908). Unit OBS에서 폐쇄망 업로드 오류의 공개 진단과 요청 ID 기반 서버 로그를 추가했다. 소스 버전은 0.21.0이다. GitHub #10 도면 뷰어 전체 화면 보기 기능을 PR #13에서 구현·검증했으며 native Fullscreen API와 CSS fallback, 상태 보존, ESC/종료, resize 회귀를 포함한다. 요구사항·설계·CI 근거는 Issue10 문서, 실제 병합·태그·GHCR 게시 근거는 Release-0.21.0 문서를 기준으로 한다. GitHub #9 전역 로딩 오버레이와 중복 요청 방지를 구현·검증하고 PR #12 병합, `v0.20.0` 및 GHCR 0.20.0 게시, 이슈 종료를 완료했으며 요구사항·설계·CI·릴리스 근거는 Issue9 문서를 기준으로 한다. GitHub #8 도면 목록의 `현재 버전만 표시` 토글을 구현·검증하고 PR #11 병합 및 이슈 종료를 완료했으며 요구사항과 CI 근거는 Issue8 문서를 기준으로 한다. GitHub #7 상단 제목 간소화의 검증·0.19.1 배포 및 이슈 댓글·종료를 완료했으며 실제 결과는 TestReport U-ISSUE7-20260911을 기준으로 한다. GitHub #6 위치·버전 기반 기본 도면 이름과 사용자 이름 입력의 검증·0.19.0 배포 및 이슈 댓글·종료를 완료했으며 실제 결과는 TestReport U-ISSUE6-20260911을 기준으로 한다. GitHub #5 레이어 다중 선택 드롭다운과 전체 선택·해제의 검증·0.18.0 배포 및 이슈 댓글·종료를 완료했으며 실제 검증·게시·배포 결과는 TestReport U-ISSUE5-20260911을 기준으로 한다. GitHub #4 삭제 대화창 레이아웃을 수정·검증하고 0.17.2 배포 및 이슈 댓글·종료를 완료했으며 실제 수용·게시·배포 결과는 TestReport U-ISSUE4-20260911을 기준으로 한다. GitHub #2 메모를 기존 도면 설명으로 검증했고 #3 파일 크기 사전 검증과 Unit DELETE 보완을 완료했다. 두 이슈를 댓글·종료 처리했으며 GHCR 0.17.1과 기존 볼륨 배포 및 기존 도면1234 적용을 검증했다. 실제 수용·게시·배포 결과는 TestReport U-ISSUES-20260911을 기준으로 한다. 사용자 요청 Unit LINK의 특정 Version 직접 링크와 Unit DEPLOY의 Docker/host IP/GHCR 배포를 완료했다. DWG는 현재 평면 LINE/20 MiB 범위이며 제외 Entity는 partial로 기록한다. 실도면 평가는 미완료이다.
 
 - 2026-09-07 사용자가 계획 실행을 승인했다. **DXF 우선 릴리스: 0B→1→2→3→4→5→6→8A→9A**, 이후 별도 MINOR 버전에서 **7A→7B→8B→9B(libredwg-web)**를 진행한다. DWG 선행 실험은 DXF 구현의 선행 조건이 아니다. 승인 범위 내 반복 승인은 요구하지 않는다.
@@ -15,7 +17,7 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 
 ## 반드시 지킬 규칙
 
-- 사업부+사업장+동+층이 Location이다. 내부 ID와 네 필드 Unique를 사용하고 **Location별 Current는 최대 하나**이다. Current 교체는 트랜잭션으로 처리하고 다른 Location의 Version 참조를 DB에서도 차단한다.
+- 사업부→제품→사업장/법인→동→층의 다섯 ID chain이 Location 계층이며 CadLocation ID는 최종 층을 식별한다. 각 단계는 부모 ID+이름 Unique를 사용하고 **Location별 Current는 최대 하나**이다. Current 교체는 트랜잭션으로 처리하고 다른 Location의 Version 참조를 DB에서도 차단한다.
 - DXF는 `dxf-viewer` / `three-dxf-viewer` 선택, DWG는 `libredwg-web` Adapter만 허용한다. DWG→DXF 우회와 CAD 편집은 범위 밖이다.
 - Viewer는 Manager/Adapter로 격리하고 Browser 전용 의존성을 SSR에서 실행하지 않는다. DWG 파서와 직접 렌더링 계층의 구분은 Architecture 및 ADR-004를 먼저 읽는다.
 - UI에 DB 업무 규칙·파일 I/O를 넣지 않는다. 파일은 Version ID로 조회하며 임의 filesystem 경로를 받지 않는다.
@@ -52,6 +54,7 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 | [Issue10](out/Issue10.md) | GitHub #10 전체 화면 요구사항·설계·CI 근거 | Viewer 전체 화면, ESC/종료, 컨테이너 resize 또는 view state 보존 변경 시 |
 | [Release 0.20.0](out/Release-0.20.0.md) | 0.20.0 병합·태그·GHCR 게시 근거 | 0.20.0 릴리스 확인 및 운영 이미지 식별 시 |
 | [Release 0.21.0](out/Release-0.21.0.md) | 0.21.0 병합·태그·GHCR 게시 근거 | 0.21.0 릴리스 확인 및 운영 이미지 식별 시 |
+| [Issue24](out/Issue24.md) | 기준정보 계층·이관·층별 Current 요구/설계/AC | 기준정보·계층 등록·제품 조회·legacy 이관 변경 시 |
 | [README](README.md) | 사용자/개발자 프로젝트 안내 | 기능·구조·설정·실행방법 변경 시 |
 
 추가 Markdown 문서가 필요하면 이 표에 목적과 필수 참조 시점을 등록한다. 상세정보를 여러 문서에 독립적으로 복제하지 않는다.

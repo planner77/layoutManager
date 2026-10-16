@@ -1,5 +1,56 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE24-PR27-CI28-FAIL-20261016 — E2E Locator 실패 분석 및 수정 (재검증 대기)
+
+- 실패 증거: PR #27 `PR CI #28` run `38852895275`, commit `0be21f5`, Job `116817839530`. Prisma Client 생성, TypeScript, ESLint, Unit/Integration, Production build는 성공했으며 Chromium E2E는 **37 passed / 1 failed**. Legacy migration E2E는 E2E 실패에 따라 `skipped`이다.
+- 직접 원인: `src/tests/e2e/master.spec.ts:198`의 `page.getByRole("alert")`가 재분류 컴포넌트의 안내 `<p role="alert">대상 기준정보를 불러오지 못했습니다.</p>`와 Next.js의 `<div id="__next-route-announcer__" role="alert">`를 동시에 찾아 Playwright `strict mode violation`이 발생했다. 503 오류 안내 자체는 표시되었으므로 서버 API/재분류 화면 결함으로 오판하지 않는다.
+- 수정: 재분류 `form` 범위에 한정한 `page.locator("form").getByRole("alert")`를 사용해 503 안내 확인과 새로고침 후 안내 소멸을 검증한다. 기존 정상 Current/원본·Viewer·재분류 검증을 유지하며 DB/API/패키지 버전은 변경하지 않는다. TC-MASTER-008 계획을 동일하게 갱신했다.
+- 최신 수정에 대한 로컬 빌드·E2E는 수행하지 않았고, 새 PR CI의 결과는 아직 확인 전이다. **통과 판정은 새 CI 결과를 확인한 뒤 수행한다.** 리뷰 스레드와 충돌은 별도 GitHub 상태로 확인한다.
+
+## U-ISSUE24-PR27-REVIEW-20261016 — 리뷰 P2 보완 (CI 검증 전)
+
+- PR #27의 미해결 P2 지적: 미분류 층 상세 `/api/masters?active=true`가 HTTP 오류와 JSON `error`를 반환하면 응답 성공 여부를 검사하지 않아 `setTree(undefined)` 후 `tree.find`에서 화면이 중단될 수 있었다.
+- 수정: HTTP `response.ok` 및 응답 `items` 배열을 검사한 뒤 상태를 갱신한다. 실패/비정상 응답은 기존 `role=alert` 오류 안내로 처리하며 도면 버전 조회 화면은 유지한다.
+- 회귀 계획/소스: `src/tests/e2e/master.spec.ts`의 기존 legacy/재분류 시나리오에 HTTP 503 JSON 실패 주입 → 오류 안내·폼·버전 보존 → 라우트 해제·새로고침 → 정상 재분류를 추가했다(TC-MASTER-008).
+- 이전 PR CI(기존 커밋 `4ab9451`) 결과는 SUCCESS(run 38747384469)였으나 본 보완 변경에 대한 local typecheck/lint/E2E는 수행하지 않았다. 새 PR CI 실행 결과는 별도 확인 대상이며 **이 시점에서 PASS라고 기록하지 않는다**. 기준 브랜치 충돌은 수정 전 `main` 대비 behind=0, mergeable=true로 확인했다. 패키지 버전 0.25.0 유지, 운영 migration/배포 미실시.
+
+## U-ISSUE24-PUBLISH-20261015 — Root 원격 게시
+
+- 0.25.0 source commit `e8189b4543ce53b00a6c2feb02e0eae3f125263b`, branch `feat/issue-24-master-hierarchy`를 지정 저장소에 게시했다. 기존 Git 인증의 dry-run이 실패해 연결된 GitHub 도구로 Git object와 ref를 생성했으며 인증 값은 출력하지 않았다. 일반 push 성공으로 기록하지 않는다.
+- stage 67개 파일 Secret/credential URL/token/runtime/CAD/DB/cache/build 검사 위반 0건, staged diff 공백 검사 통과, 문서 local link 61개 오류 0건. 원격 tree `68a3b66616f5724f8f6bca2865d041a5c165b4fc`가 검사한 local index tree와 정확히 일치했다. local branch는 동일 commit으로 fast-forward 동기화했다.
+- 원격 main `ba83dcf3451c50088895a84900487dc606e57503`을 재조회하고 작업 브랜치의 조상임을 확인했다. 충돌 없음. 기존 열린 PR 없음. 새 PR의 opened 이벤트로 PR CI가 정적/자동/build/Browser와 실제 legacy migration E2E를 실행하며 CI 결과 모니터링은 요청 범위 밖이다.
+- Root도 관리 desktop·등록/재분류 narrow 캡처를 직접 검토했다. 별도 임시 SQL migration 검증에서 4 Location/4 Version의 metadata·Current·nextVersion·timestamps 보존, 부모별 dedup(BU2/Product2/Site3/Building3/Floor4), FK/integrity, 다른 층 Current·순번 감소 거부와 오류 주입 rollback을 확인했다. SQL-only 보조 시험이며 실제 scrypt/원본 시험은 아래 Developer/QA 근거로 구분한다.
+- 원래 작업 폴더의 미커밋 `src/next-env.d.ts` 변경과 운영 DB/CAD는 보존했다. Tag/GHCR 게시·운영 migration·배포는 미실행. 다음 단계는 새 PR CI 시작과 사용자/리뷰어의 결과 확인·병합 판단이다.
+
+## U-ISSUE24-QA-20261015 — 독립 QA 기준정보 계층 검증
+
+- 상태: 독립 QA PASS/VERIFIED (root Manager의 commit/push/운영 DB 적용 전). 역할: gpt-5.6-luna QA. 환경: Linux x86_64, Node 22.14.0, package `0.25.0`, Playwright 1.63.0, Chromium executable `/home/planner/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome`, worker 1, 격리 local SQLite/storage 및 격리 SeaweedFS 4.45.
+- 정적/자동 검증: `npm run db:generate`, `npm run typecheck`, `npm run lint`, `npm run build` 모두 exit 0. `npm test` 25 files / 109 tests passed / 0 failed.
+- 기존 전체 Browser: `PLAYWRIGHT_CHROMIUM_EXECUTABLE=/home/planner/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome npm run test:e2e` — 38 passed / 0 failed / 2.2분. 기준정보 3개, dropdown reset/활성 chain, 3-version Current, 제품·비활성 이력·재분류 및 기존 DXF/삭제/링크 회귀를 포함한다.
+- Legacy migration: `npm run test:master-migration` — 1 passed / 0 failed. 실제 pre-0.25 populated DB를 `db:deploy`해 Browser에서 이력·Current·원본·Viewer를 읽고 재분류했다. 독립 통합 시험은 migration transaction rollback, 행 수/FK guard, 두 사업부 동일 명칭 분리, UUID/순번/Current/metadata, 실제 scrypt password 검증과 original bytes/SHA-256 보존을 확인한다.
+- 저장/특수 형식: `npm run test:s3` — 격리 SeaweedFS 4.45, 1 file / 6 passed / 0 failed. `PLAYWRIGHT_CHROMIUM_EXECUTABLE=... npm run test:dwg` — 4 passed / 0 failed / 1.3분. Benchmark 30 passed는 Developer 자체 검증 근거로만 구분하며 QA에서 재실행하지 않았다.
+- UI/UX: UI Pro Max의 visible focus, keyboard order, submit feedback, responsive no-horizontal-overflow 기준을 적용해 `/masters`, `/cad/upload`, 재분류가 포함된 Location을 desktop 1440px 및 narrow 390px에서 캡처·검토했다. DOM `scrollWidth=clientWidth=390`을 세 화면에서 확인했다. 캡처는 `src/test-results/issue24-ui/issue24-masters-desktop.png`, `issue24-masters-narrow.png`, `issue24-upload-desktop.png`, `issue24-upload-narrow.png`, `issue24-reclass-desktop.png`, `issue24-reclass-narrow.png`에 있다. Playwright CLI는 설치된 1247 browser revision을 요구해 세션이 시작되지 않았고, 동일 Playwright 엔진의 지정된 1243 executable로 캡처·검증했다.
+- Source review: migration의 생성→dedup/backfill→CadLocation 재구성→count/FK guard 및 transaction rollback, repository의 transaction 내 full ID-chain/active 검증, immutable IDs/parent/product rules, Current 복합 FK와 reclassify collision guard, bounded JSON/same-origin/request ID logging을 확인했다. 제품/사업장 kind와 4-part default name 표시 계약도 확인했다.
+- 판정: FR-MASTER-001~007 및 TC-MASTER-001~007은 위 실제 범위에서 PASS/VERIFIED. 운영 DB migration/backup/배포와 root publication 검증은 이 QA 범위가 아니다. 시험 중 생성한 `/tmp/cad-qa-ui-issue24.aSu7ot` 및 `src/test-results/issue24-ui`는 commit 대상이 아니다.
+
+### Manager 수용 판정 — 2026-10-15
+
+- gpt-6-astra Manager가 구현 전 요구/설계/AC를 기록하고 gpt-5.6-sol Developer의 구현·재작업 보고와 gpt-5.6-luna의 독립 QA 결과를 검토했다. 지정 모델 대행은 없었다.
+- FR-MASTER-001~007 구현·검증 범위를 수용한다. Manager도 기준정보 desktop, 등록·재분류 narrow 캡처를 직접 확인했고 제품 blocker를 발견하지 않았다. 최종 `git diff --check` 통과. 캡처는 Git 제외 `src/test-results/issue24-ui/`로 이동했다.
+- 버전은 0.25.0이다. commit/push/PR·CI 시작은 root 후속 단계이며 이 판정은 게시·운영 DB migration·배포 완료를 뜻하지 않는다. 이번 실행의 다음 단계는 root의 최종 staged/Secret 검사와 PR 게시이다.
+
+## U-ISSUE24-DEV-20261015 — 기준정보 계층 Developer 자체 검증
+
+- 상태: Developer 구현·자체 회귀 완료, 독립 QA 전 `IN_PROGRESS`. package `0.25.0`. commit/push/운영 DB 적용/배포는 수행하지 않았다.
+- `npm test`: 25 files / 109 passed. 실제 scrypt migrated-row 검증, 원본 bytes/SHA-256 보존, 두 사업부에서 같은 사업장·동·층 명칭의 독립 dedup, UUID/Current/nextVersion/version metadata 보존, 재분류 후 전체 이력·비밀번호 검증, 3개 동시 Current 변경과 transaction rollback을 포함한다.
+- `npm run test:e2e`: 38 passed / 0 failed. 보강된 `master.spec.ts` 3개도 별도 재실행해 5단계 UI 생성·편집·비활성/재활성, 3버전 이력, 실제 UI Current 교체, 이력 소유 제품 비활성 시 신규 등록 거부와 기존 원본/Viewer/direct link 유지, 전체 이력 재분류를 확인했다.
+- `npm run test:master-migration`: 1 passed. 격리 임시 위치에서 pre-0.25 schema와 실제 DXF 3개를 만든 뒤 기존 migration들을 applied로 표시하고 실제 `npm run db:deploy`를 실행했다. Browser에서 3개 이력·Current·원본·Viewer route를 읽고 실제 계층으로 재분류했다. fixture setup은 전용 `CAD_MASTER_MIGRATION_DIR`의 canonical temp prefix와 정확한 DB/storage 자식만 허용하고 기존 target이 있으면 중단하며 삭제를 수행하지 않는다. 이 시험은 PR CI에도 포함한다.
+- `npm run test:s3`: isolated SeaweedFS 4.45, 6 passed. 새 ID chain fixture로 local/S3 혼합 조회, bytes/hash, conditional PUT, DB 실패 보상과 불확실 완료 보존을 회귀했다.
+- `npm run test:dwg`: 고정 `Line.dwg`/`circle.dwg`, 4 passed. 등록 DWG lifecycle/직접 링크/원본 bytes, partial·unsupported·missing·retry와 worker 종료를 회귀했다.
+- `npm run test:benchmark`: 100/10,000/100,000 LINE × 두 DXF Viewer × 5회, 30 passed / 4.7분. 새 ID chain으로 fixture를 전환하고 냉·온 source mode, bytes, 성공 결과, entity 수와 console/page error 0을 확인했다.
+- 마지막 fixture 보강 후 `db:generate`, `typecheck`, `lint`, 25 files/109 Vitest 및 production `build`를 다시 실행해 모두 exit 0을 확인했다.
+- 판정: Developer 범위 PASS. 운영 복제본 dry run·운영 백업/배포 및 독립 QA 수용은 미실행이며 완료로 확대하지 않는다.
+
 ## U-ISSUE7-20260911 — 상단 제목 0.19.1
 
 - 상태: 독립 QA 완료, root Manager 수용(구현·정적 검사·관련 Browser 범위). FR-UI-002 → TC-TITLE-001. Header 홈 링크는 아이콘과 `/` 이동을 유지하면서 accessible name `Layout Manager`를 표시하고 `CAD` 접두어와 `P.O.C.` 배지를 제거한다. 브라우저 metadata `CAD Layout Manager`는 요구 범위 밖으로 유지한다.

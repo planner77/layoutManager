@@ -1,6 +1,6 @@
 # Database Schema — 단일 기준 문서
 
-상태: 2026-09-07 Unit 1 구현·검증. Prisma/Client/SQLite adapter 7.10.0, SQLite 파일 및 실제 Migration이 존재한다. 실제 정의는 src/prisma/schema.prisma와 202609070001_locations/migration.sql에 있으며 이 문서를 함께 갱신한다.
+상태: 2026-10-15 Issue #24 구현. Prisma/Client/SQLite adapter 7.10.0과 실제 migration이 존재한다. 현재 단일 기준은 아래 `0.25.0 기준정보 계층` 절, `src/prisma/schema.prisma`, `202610150001_master_hierarchy`이며 그 이전 네 문자열 CadLocation 표와 그림은 migration 전 역사 기록이다.
 
 ## GitHub #6 — 0.19.0 추가 schema
 
@@ -153,11 +153,28 @@ Current 0개 허용, 다른 Location의 Current 독립, 잘못된 소속/존재�
 
 ## Schema 변경 이력
 
+## 0.25.0 기준정보 계층 (schema 단일 기준)
+
+`BusinessUnit(id, name, active) → Product(id, business_unit_id, name, is_unclassified, active) → CadSite(id, product_id, name, kind, active) → Building(id, site_id, name, active) → CadLocation(id, building_id, name, active)` 순서다. 각 이름은 1~100자 trim/NFC이며 부모+이름 Unique다. `CadSite.kind`는 `SITE|LEGAL_ENTITY`, 각 사업부의 `is_unclassified=1` Product는 최대 하나다. 일반 편집은 ID, 부모 FK, 미분류 표식을 바꾸지 않으며 미분류 제품 이름도 변경하지 않는다.
+
+| Table | 핵심 필드와 기본값 | Unique / FK / 시각 |
+| --- | --- | --- |
+| BusinessUnit | `id TEXT PK`, `name TEXT`, `active INTEGER DEFAULT 1` | `name` Unique; `created_at`, `updated_at`은 `CURRENT_TIMESTAMP` 기본 |
+| Product | `business_unit_id`, `name`, `is_unclassified INTEGER DEFAULT 0`, `active DEFAULT 1` | `(business_unit_id,name)` Unique, BU FK; `is_unclassified=1`은 사업부별 partial Unique; 두 timestamp 기본 |
+| CadSite | `product_id`, `name`, `kind TEXT DEFAULT 'SITE'`, `active DEFAULT 1` | `(product_id,name)` Unique, Product FK, kind CHECK; 두 timestamp 기본 |
+| Building | `site_id`, `name`, `active DEFAULT 1` | `(site_id,name)` Unique, CadSite FK; 두 timestamp 기본 |
+| CadLocation | `building_id`, `name`, `active DEFAULT 1`, `current_version_id NULL`, `next_version DEFAULT 1` | `(building_id,name)` Unique, Building FK, Current 소유 복합 FK; 기존 `created_at`,`updated_at` 보존 |
+
+CadLocation은 기존 UUID를 층 ID로 그대로 사용한다. `current_version_id`, `next_version`, timestamps와 CadFileVersion의 모든 열은 보존한다. `(location_id, version)` 및 `(location_id, id)` Unique와 `(CadLocation.id,current_version_id) → CadFileVersion(location_id,id)` 복합 FK가 층별 Current 소속을 강제한다. 신규 등록은 다섯 ID가 실제 같은 활성 chain인지 transaction 안에서 재검증한다.
+
+`202610150001_master_hierarchy`는 FK를 잠시 끄고 즉시 transaction을 시작해 master dedup/backfill과 CadLocation 재구성을 원자 작업으로 수행한다. 복사 행 수/NULL 연결 guard와 `pragma_foreign_key_check` guard가 실패하면 commit하지 않는다. migration 후 이전 문자열 열이 없으므로 0.24 이하 이미지는 새 schema에 연결할 수 없다.
+
 | 날짜 | 단계 | 변경 | Migration / 검증 |
 | --- | --- | --- | --- |
 | 2026-09-07 | 설계 초안 | Location/Version, 소속 검증 복합 Current FK, 순번/파일 식별/날짜 정의 | 없음 / 구현 전 |
 | 2026-09-07 | 0.2.0 / Unit 1 | 두 모델·복합 Current FK·Unique/Index·위치/크기/형식/hash CHECK 구현 | 202609070001_locations / DB integration 6개 통과 |
 | 2026-09-09 | 0.14.0 / Unit DESC | Version 설명 TEXT NOT NULL DEFAULT '', 기존 행 호환, description literal 검색 | 202609090001_description / 관련 Unit·E2E 검증 |
+| 2026-10-15 | 0.25.0 / Issue #24 | 5단계 master, Product 미분류 표식, Location 층 ID 보존·master FK 전환 | 202610150001_master_hierarchy / TC-MASTER-001~007 |
 
 실제 연결은 adapter의 FK 활성화를 PRAGMA 시험으로 확인했다. 쓰기는 단일 프로세스 queue로 직렬화하며 SQLite busy timeout 5초, transaction timeout 10초이다. commit 결과가 불확실한 작업을 자동 재실행하지 않는다. WAL은 아직 활성화하지 않았다. 운영 범위는 단일 Node 프로세스이다.
 

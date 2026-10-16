@@ -1,5 +1,13 @@
 # ChangeLog
 
+## 0.25.0 — 2026-10-15
+
+- 사업부→제품→사업장/법인→동→층 기준정보 CRUD, 활성/비활성 및 SITE/LEGAL_ENTITY 종류를 추가했다.
+- 등록을 완전한 활성 ID chain으로 제한하고 모든 위치 조회를 master join으로 전환했다. 기본 도면 이름 네 부분 형식은 유지하고 제품을 별도로 표시한다.
+- 기존 Location ID와 Version/Current/순번/metadata를 보존하는 `미분류` 이관과 충돌을 거부하는 층 전체 이력 재분류를 추가했다.
+- 검증: 독립 QA에서 정적 검사·빌드, Unit/Integration 109개, Browser 38개, 실제 legacy migration 1개, S3 6개, DWG 4개를 통과하고 Manager가 수용했다.
+- 게시: source `e8189b4`를 지정 저장소의 기능 브랜치에 게시했다. PR CI는 일반 E2E와 실제 legacy migration E2E를 실행하도록 구성했다. Tag/GHCR 게시·운영 migration·배포는 수행하지 않았다.
+
 # 0.24.0 — GitHub #17
 
 - Added: 전체 화면 `three-dxf-viewer`에 접이식 레이어 패널을 추가했다. 현재 DXF 레이어의 개별 표시/숨김, 전체 선택/전체 해제, 내부 스크롤을 지원하며 일반 화면 `LayerDropdown`과 선택 상태를 공유한다.
