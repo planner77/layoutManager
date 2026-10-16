@@ -1,5 +1,7 @@
 import {test,expect} from '@playwright/test';
 import {masterFields} from './master-helper';
+import {readFile} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
 const drawing=[
  '0','SECTION','2','HEADER','9','$INSUNITS','70','4','0','ENDSEC',
  '0','SECTION','2','ENTITIES',
@@ -47,6 +49,28 @@ test('TC-OUT-E2E-001: selection and convex/precise preview, non-destructive JSON
  }
  await tools.getByRole('button',{name:'정밀 외곽선 미리보기'}).click();
  await expect(page.getByTestId('outline-preview')).toContainText('실제 폐곡선 Union');
+ // Verify the PRODUCTION-bundled Web Worker really ran polygon-clipping,
+ // instead of accepting a static preview label or a webpack warning.
+ await tools.getByRole('button',{name:'임시 확정'}).click();
+ const preciseDownload=page.waitForEvent('download');
+ await tools.getByRole('button',{name:/JSON 내보내기/}).click();
+ const downloaded=await preciseDownload;
+ const exported=JSON.parse(await readFile(await downloaded.path(),'utf8'));
+ expect(exported.sourceSha256).toBe(createHash('sha256').update(drawing).digest('hex'));
+ expect(exported.outlines).toHaveLength(2);
+ const result=exported.outlines[1].result;
+ expect(result.kind).toBe('PRECISE');
+ expect(result.algorithm).toBe('polygon-clipping-union-v1');
+ expect(result.persistable).toBe(true);
+ expect(result.geometry.type).toBe('Polygon');
+ expect(result.sourceEntityIds).toEqual([file.id+':'+exported.sourceSha256+':1A']);
+ const ring:number[][]=result.geometry.coordinates[0];
+ expect(ring[0]).toEqual(ring[ring.length-1]);
+ const polygonArea=Math.abs(ring.slice(0,-1).reduce((sum,p,i)=>{
+   const next=ring[i+1];
+   return sum+p[0]*next[1]-next[0]*p[1];
+ },0)/2);
+ expect(polygonArea).toBeCloseTo(10000,2);
  await page.getByRole('button',{name:'전체 화면',exact:true}).click();
  await expect(page.getByTestId('cad-viewer-shell')).toHaveAttribute('data-fullscreen','true');
  await expect(page.getByTestId('outline-selection-count')).toContainText('선택 1개');

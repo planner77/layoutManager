@@ -1,5 +1,13 @@
 # 운영·환경설정 초안
 
+## Issue #31 v0.28.2 — 실도면/정밀 외곽선 검증 운영 절차
+
+1. v0.28.1 GHCR 게시 Run `38894507390`은 성공했지만 Webpack `polygon-clipping` named-export 경고가 있었으므로 정밀 외곽선의 Production 정상 작동은 보장되지 않는다. v0.28.2 PR CI에서 실제 PRECISE Worker JSON E2E와 오류 발생 시 Next build hard-fail을 확인한 뒤 업데이트한다.
+2. 폐쇄망 승인된 사용자 PC에서만 `cd src && npm ci && npm run audit:outline -- --file /private/sample.dxf` 실행. 최대 100MiB UTF-8 ASCII DXF 원본을 **읽기만** 한다. JSON stdout은 SHA, 지원 Entity/Handle/경고 분류, CPU parse/query p50/p95, heap/RSS를 표시하지만 원본 내용·레이어 이름·경로는 출력하지 않는다. 승인된 내부 위치에만 결과 보존.
+3. CI synthetic 1k: `npm run test:outline-benchmark -- --quick`; 선택적 CPU 1k/10k/100k: `npm run test:outline-benchmark`. 실제 고객 CAD 화면/Worker/GPU/메모리/작업자 입력 응답과 별개다.
+4. P0/P5 현장 수용은 승인된 도면 3종 이상, BLOCK/INSERT/OCS 및 CAD WCS 기준값, 버전 SHA 고정, 1k/10k/100k 현장 반복 측정, 클릭/범위 선택·Renderer/GPU·Worker/Memory 및 p50/p95 지표가 필요하다. P4 Server 영속 CRUD는 Owner 인증/역할/사업장·Version Scope/감사 정책 승인 전 미지원.
+
+
 ## 0.26.0 — migration job / standalone 운영 절차
 
 **운영 적용 전** 동일 시점 SQLite DB, local CAD 원본, S3 객체의 백업 및 복원 가능성을 검증한다. migration 중 구 앱이 동시에 DB를 쓰지 않도록 한다. 실제 운영 migration과 GHCR 게시 확인은 PR 구현 범위 밖이다.

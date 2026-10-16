@@ -1,5 +1,13 @@
 # CAD Web Viewer P.O.C.
 
+## DXF 정밀 외곽선 v0.28.2 — Worker 호환성 및 사내 시험
+
+- v0.28.1 GHCR은 게시됐으나 Webpack ESM `polygon-clipping` named-import 경고가 있었다. v0.28.2는 default export로 수정하고 Next Production Build에서 미해결 import/export 경고를 하드 실패 처리한다. Browser E2E에서 실제 Worker 연산 결과를 JSON으로 확인한다.
+- 합성 P5 점검: `cd src && npm run test:outline-benchmark -- --quick` (1k, PR CI 포함), `npm run test:outline-benchmark` (1k/10k/100k, 선택 실행).
+- 실도면 P0/P5 소스 점검: 사내 승인된 PC·폐쇄망에서 `cd src && npm ci && npm run audit:outline -- --file /private/sample.dxf`. UTF-8 ASCII DXF 100MiB 이하, 읽기 전용. JSON은 SHA/단위/Entity·안정 Handle·경고 분류/CPU p50·p95·heap/RSS 통계를 담고 **경로·원본·레이어 이름을 출력하지 않는다**. 실제 Renderer↔Source 매핑 및 GPU/Browser Acceptance는 별도.
+- P4 서버 영구 저장 API/Schema 변경은 인증·인가 Owner 승인 전 계속 보류. 상세 [Issue31](out/Issue31.md), [TestPlan](out/TestPlan.md).
+
+
 ## Issue #31 성능·정확도 진단 (0.28.1 브랜치 / 검증 전)
 
 - `three-dxf-viewer`는 Source top-level Entity의 Handle/Type/Layer/WCS XY Box를 실제 Three Object와 대조하고, 불일치 객체는 선택에서 제외합니다. Viewer `렌더 관측 / 매핑 제외 / 원본 인덱스·렌더 대조·공간 인덱스 ms`로 상태를 확인합니다.

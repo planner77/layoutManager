@@ -5,6 +5,7 @@ import { appEnvironment, project } from './env.mjs';
 import { prepareWasm } from './wasm.mjs';
 import { prepareFonts } from './fonts.mjs';
 import { standalonePort, prepareStandaloneAssets } from './standalone.mjs';
+import { hasFatalModuleDiagnostic } from './build-diagnostics.mjs';
 
 const env = appEnvironment();
 mkdirSync(path.dirname(env.DATABASE_URL.slice(5)), { recursive: true });
@@ -25,11 +26,36 @@ const start = action === 'start';
 const childEnv = start ? { ...env, HOSTNAME: '0.0.0.0', PORT: standalonePort(process.argv.slice(3)) } : env;
 const command = start ? process.execPath : path.join(project, 'node_modules/.bin', commands[action][0]);
 const args = start ? [path.join(project, '.next/standalone/server.js')] : [...commands[action].slice(1), ...process.argv.slice(3)];
-const child = spawn(command, args, { cwd: project, env: childEnv, stdio: 'inherit' });
+// Next/Webpack may exit 0 despite a missing named export in a browser Worker.
+ // Tee the full build log to the caller while blocking such release warnings.
+const isBuild = action === 'build';
+const child = spawn(command, args, {
+  cwd: project, env: childEnv,
+  stdio: isBuild ? ['inherit', 'pipe', 'pipe'] : 'inherit',
+});
+let buildLogTail = '';
+let brokenModuleImport = false;
+if (isBuild) {
+  const forward = (source, destination) => {
+    source?.on('data', bytes => {
+      destination.write(bytes);
+      buildLogTail = (buildLogTail + bytes.toString('utf8')).slice(-16384);
+      if (hasFatalModuleDiagnostic(buildLogTail)) brokenModuleImport = true;
+    });
+  };
+  forward(child.stdout, process.stdout);
+  forward(child.stderr, process.stderr);
+}
 for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => child.kill(signal));
 child.on('error', () => { console.error('Command could not start'); process.exitCode = 1; });
-child.on('exit', code => {
+// 'close' waits for stdout/stderr to drain, including last-chunk import warnings.
+child.on('close', code => {
   if (action === 'build' && code === 0) {
+    if (brokenModuleImport) {
+      console.error('Production build has unresolved module imports/exports; release blocked.');
+      process.exitCode = 1;
+      return;
+    }
     try { prepareStandaloneAssets(project); }
     catch (error) { console.error('Standalone packaging failed', error); process.exitCode = 1; return; }
   }

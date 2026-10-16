@@ -1,5 +1,12 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-031C — ESM Worker import 경고는 릴리스 차단 오류 (2026-10-16)
+
+- Main CI `38894507390`에서 `polygon-clipping`에 없는 named `union` import Webpack 경고가 기록됐는데, CI와 GHCR 게시가 성공했다. TypeScript declaration/CJS import 형태와 실제 ESM Worker bundle Export 계약이 달라 발생할 수 있는 기능 위험으로 판정한다.
+- 조치: 공식 v0.15.7 ESM default export를 사용하고, `run.mjs build`에서 import/export warning을 exit 0과 무관하게 fail-closed 처리. 실제 Polygon Union의 수치 E2E와 export 데이터 검증 추가.
+- Scope: 원본 CAD/SQLite/S3/현장 비밀정보 불변. P0 실제 도면·P5 Renderer 성능은 제공된 승인 데이터로 별도 수용하고 P4 서버 쓰기는 사용자 인증 방식 승인 전 계속 금지. v0.28.2 테스트/릴리스는 실행 결과 확인 전에 성공이라고 기록하지 않는다.
+
+
 ## ADR-031B — Source↔Renderer 오매핑 방지, P4 영속 fail-closed
 
 - 2026-10-16 / 코드 추가, CI 전. `three-dxf-viewer`는 BLOCK 내부 geometry 병합이 가능하며 Object3D userData.entity를 노출한다. 단순 원본 Handle만으로 렌더된 객체라고 가정하거나 화면 픽셀 Bounds로 영속 ID를 만들면 위험하다.

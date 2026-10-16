@@ -1,6 +1,8 @@
 /** Issue #31: pure outline computation. Only genuinely closed linework has area.
  * Polygon Union is delegated to polygon-clipping; no guessed concave hulls. */
-import {union} from 'polygon-clipping';
+// polygon-clipping 0.15.7 exposes a DEFAULT export in its ESM build.
+ // Named "union" only works via CJS interop and silently breaks Webpack Workers.
+import polygonClipping from 'polygon-clipping';
 import { convexHull, type XY, type OutlineKind, type OutlineEntity, type OutlinePath } from './outline-geometry';
 export type GeoJSONOutline = {type:'Polygon';coordinates:XY[][]} | {type:'MultiPolygon';coordinates:XY[][][]};
 export type OutlineResult = {
@@ -124,7 +126,7 @@ export function computeOutline(kind:OutlineKind,entities:OutlineEntity[],toleran
      polys.push([close(rings[i]),...holes.map(close)]);
    }
    // polygon-clipping returns MultiPolygon geometry with interior holes preserved.
-   const merged=union(polys[0],...polys.slice(1)) as XY[][][];
+   const merged=polygonClipping.union(polys[0],...polys.slice(1)) as XY[][][];
    if(!merged.length)throw new Error('정밀 Polygon Union 결과가 비어 있습니다.');
    geometry=merged.length===1?{type:'Polygon',coordinates:merged[0]}:{type:'MultiPolygon',coordinates:merged};
  }else throw new Error('지원하지 않는 외곽선 유형입니다.');

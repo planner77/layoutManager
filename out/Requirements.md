@@ -1,5 +1,13 @@
 # 상세 요구사항
 
+## Issue #31 추가 AC: Production Worker export·대형 도면 사전 검증 (0.28.2)
+
+- OUT-BUILD-001: Webpack Worker import/export 미해결 오류를 감지하면 Next Build exit code 0이어도 CI/릴리스 실패. 배포 실패가 명확하게 보고되어야 한다.
+- OUT-GEO-004: Production Worker의 PRECISE Polygon Union 결과를 임시 확정·JSON 다운로드 후 실제 WCS² 면적/닫힌 Ring/Version·SHA/EntityRef로 검증한다. UI의 정적 표시·TypeScript 검사만으로 성공 처리하지 않는다.
+- OUT-PERF-002: PR CI에서 synthetic 1k benchmark smoke를 실행하고, 10k/100k 및 실제 승인된 CAD는 별도 CPU/Browser·Worker/GPU 실측 절차로 관리한다. 가공 Entity 성능 지표를 운영 SLA로 오인하지 않는다.
+- OUT-DATA-004: P4 인증·인가 미확정 동안 DB/Server 영속 쓰기 API를 추가하지 않는다. 기존 도면 삭제 비밀번호는 편집권한으로 사용하지 않는다. 실 DXF에 대한 현장 검증과 분리한다.
+
+
 ## Issue #31 잔여 요구사항 명세 (0.28.1)
 
 - P0-MAP: Source Handle만으로 Selection을 허용하지 않고 THREE `userData.entity`와 render Type/Layer/WCS XY Box 일치 여부 검사. 1:N 객체 Bounds 합산. 미일치 Entity는 선택 제외와 경고.
