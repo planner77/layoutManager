@@ -1,4 +1,3 @@
-/// <reference lib="webworker" />
 import { extractDxfText } from './text-index';
 
 self.onmessage = (event: MessageEvent<{ bytes: ArrayBuffer }>) => {
