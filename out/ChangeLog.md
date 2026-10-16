@@ -1,5 +1,14 @@
 # ChangeLog
 
+## 0.28.2 — 2026-10-16 / Issue #31 Production PRECISE Worker import 수정 (PR CI 전)
+
+- Fix: `polygon-clipping@0.15.7`의 Webpack ESM default export로 `union` 호출하여 v0.28.1의 named-export warning을 해결하도록 수정.
+- Build/Release: `scripts/run.mjs`에서 unresolved import/export 경고는 Next Build exit 0이어도 fail-closed; PR·Docker 공통 안전장치.
+- Test: default import/Union 면적/빌드 warning Unit, Production E2E PRECISE Worker 계산→확정→JSON 좌표·면적·SHA 확인, PR CI synthetic 1k benchmark smoke.
+- P0/P5: 100MiB 이하 UTF-8 ASCII 현장 DXF의 read-only private source audit 명령(원본·경로 미출력). 현장 정확도/100k GPU는 여전히 별도 수용.
+- P4: 영속 DB/API/인증 변경 없음 (Owner 정책 승인 전). 신규 PR CI/실도면 운영 수용은 미확정.
+
+
 ## 0.28.1 — 2026-10-16 / Issue #31 후속 P0/P5와 P4 기초 (PR CI 전)
 
 - Fixed: top-level DXF Source Handle/type/layer/WCS box와 THREE rendered Object3D 1:N bbox 합산 대조. 미렌더·불일치 도형 선택을 제외하고 UI에 진단 수를 표시.
