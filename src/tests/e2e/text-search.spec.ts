@@ -8,7 +8,7 @@ function fixture() {
       '\n20\n100\n40\n20\n1\n장비 ABC 123\n';
     entities += '0\nCIRCLE\n8\nFIND\n10\n' + (x + 60) + '\n20\n60\n40\n' + (12 + i * 18) + '\n';
   }
-  entities += '0\nMTEXT\n8\nFIND\n10\n100\n20\n400\n40\n15\n1\n검사\\P구역 45\n';
+  // Group 71 = 1 (top-left attachment): dxf-viewer RenderMText requires explicit alignment.\n  entities += '0\nMTEXT\n8\nFIND\n10\n100\n20\n400\n40\n15\n71\n1\n1\n검사\\P구역 45\n';
   return '0\nSECTION\n2\nENTITIES\n' + entities + '0\nENDSEC\n0\nEOF\n';
 }
 
