@@ -95,7 +95,8 @@ export class ViewerManager {
       };
       worker.onerror = () => finish(new Error('DXF 텍스트 검색 Worker가 실패했습니다.'));
       const copy = bytes.slice(0);
-      worker.postMessage({ bytes: copy }, [copy]);
+      try { worker.postMessage({ bytes: copy }, [copy]); }
+      catch (error) { finish(error instanceof Error ? error : new Error('Worker 메시지 전달 실패')); }
       if (generation !== this.generation) cancel();
     })).then(index => {
       if (generation !== this.generation || url !== this.activeUrl) throw new DOMException('취소됨', 'AbortError');
