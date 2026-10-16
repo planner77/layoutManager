@@ -1,5 +1,15 @@
 # Issue #31 — DXF 복수 선택과 볼록·정밀 외곽선 (0.27.0)
 
+## 2026-10-16 후속 0.28.2 — Production ESM·실도면 수용 작업 (CI 대기)
+
+- **발견**: Main CI [#38894507390](https://github.com/planner77/layoutManager/actions/runs/38894507390) Docker Build에 `Attempted import error: 'union' is not exported from 'polygon-clipping'` 경고가 있었으나 exit 0으로 GHCR `0.28.1`/migrate를 게시. `polygon-clipping@0.15.7`의 TypeScript `d.ts`는 named `union`이지만 ESM dist는 `export {index as default}`, CJS는 `module.exports = index`이다.
+- **조치**: `outline-compute.ts`에서 default import의 `.union` 호출. `scripts/build-diagnostics.mjs`와 `scripts/run.mjs`는 import/export 불일치 Webpack 경고가 있으면 Next build exit 0이라도 실패 처리한다. stdout/stderr의 마지막 chunk까지 수집하고 PR/Docker 빌드에 모두 적용.
+- **증거 추가**: default ESM export/실제 Union 면적/오류 분류 Unit `TC-OUT-EXPORT-001~003`; Production Playwright는 PRECISE Worker 임시 확정 후 JSON 다운로드로 닫힌 좌표·면적 10,000 WCS²·SHA·Version/Handle을 검증. PR CI synthetic 1k Parser/Spatial/Convex smoke 추가. **해당 신규 PR CI가 완료되기 전 PASS 주장 금지**.
+- **P0/P5 도구**: `npm run audit:outline -- --file /private/sample.dxf`는 현장 로컬 UTF-8 ASCII DXF를 서버 업로드 없이 분석하여 source hash, INSUNITS, Entity/Handle 수·미지원 오류 범주, Parse/Spatial Build/100회 동일 범위 조회 CPU p50/p95 및 heap/RSS 차이를 로컬 JSON으로 생성한다. 파일 경로/Layer 이름/원본은 출력하지 않는다. 하지만 실제 CAD 원본은 대화에 제공되지 않았으므로 실행 실측값, Three.js 1:N Renderer mapping, Worker/GPU·클릭 지연 **미검증**.
+- **P4 보류**: 인증/역할/Version Scope·감사 정책 Owner 확정 필요. 신규 CadOutline 쓰기 API/Prisma migration은 구현하지 않았고 기존 삭제용 비밀번호를 인증으로 사용하지 않는다. 승인 후 server canonical reparse+recompute, revision CAS 409, Server CRUD·재진입·삭제 정합성을 구현해야 한다.
+- **이슈 상태**: 이번 PR은 `Refs #31`만 연결하며 원 이슈는 계속 OPEN. Main CI/GHCR 성공과 실서비스 배포·현장 수용은 별개.
+
+
 ### PR #33 P2 리뷰 후속 보완
 
 동일 Handle의 일부 Three render fragment가 Layer 정보가 없거나 Type/Layer 정보가 서로 다르면 정상 조각만 골라 허용하지 않고 **Handle 전체를 불일치로 판정**한다. 누락 Layer/혼합 Type을 다루는 `TC-OUT-MAP-005` 회귀 Unit을 추가했다. 브라우저 실도면 평가 전 안전한 제외 정책을 유지한다.
