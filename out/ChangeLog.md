@@ -1,5 +1,13 @@
 # ChangeLog
 
+## 0.28.3 — 2026-10-16 / Issue #31 P0/P5 보완과 P4 원본 검증 사전 계약 (PR CI 전)
+
+- Fix: 미지원 BLOCK 내부 자식이 있어도 root INSERT가 stable=true가 되는 오매핑을 차단, 512-샘플 상한을 초과한 대형 ARC/CIRCLE의 chord tolerance 위반을 거부.
+- P4 trust boundary: immutable DXF SHA/Version/Unit/고유 Handle 검증과 서버 재계산 Polygon symmetric-difference 검증 모듈, 변조 방지 Unit 추가. **실제 API/DB/인증/영구 저장은 Owner 정책 미승인으로 미구현**.
+- P5: PR CI의 synthetic 1k/10k/100k 벤치마크 확대, private real-DXF Playwright 5회 Browse/Select/Mapping/load p50·p95/Heap test config, 결과 파일 Git/Docker 제외.
+- Tests/Docs: P0 fail-closed·P4 canonical attestation Unit, 재현 프로토콜/운영 체크리스트 및 요구·설계·테스트 문서 갱신. CI/실 DXF 수용은 미확정.
+
+
 ## 0.28.2 — 2026-10-16 / Issue #31 Production PRECISE Worker import 수정 (PR CI 전)
 
 - Fix: `polygon-clipping@0.15.7`의 Webpack ESM default export로 `union` 호출하여 v0.28.1의 named-export warning을 해결하도록 수정.
