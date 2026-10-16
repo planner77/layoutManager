@@ -1,5 +1,13 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE31-P0-P5-ACCEPTANCE-20261016 — 코드/시험 추가, 실DXF·IdP 미확보 (CI 대기)
+
+- 기준: #34 PR CI 수정본 `38906697401` 성공 및 Main CI `38907443840` GHCR v0.28.2 게시 성공. 단, 이전 P0/P4/P5 운영 수용은 미완료였음.
+- v0.28.3 신규 작업: (1) BLOCK 내부 미지원 자식의 안정 참조 부정, (2) 샘플링 상한으로 chord tolerance가 깨지는 대형 곡선 거부, (3) `server/outline/attestation.ts` immutable 원본 SHA→canonical Source 재계산→client Polygon XOR 비교 준비, (4) 관련 Unit, (5) private real-DXF Playwright 5회 브라우저 성능·매핑 측정 suite, (6) PR CI synthetic 1k/10k/100k 측정.
+- 검증 상태: 신규 PR CI/실 도면 평가는 문서 작성 시 **미실행**; Source 개인 파일·수치·IdP를 제공받지 않았으므로 **P0 실도면, P5 현장 체감/GPU, P4 실제 서버 영구 저장 전부 미완료**. DB Migration/API, 권한, 운영 원본은 변경하지 않음.
+- 새 CI 성공 여부·100k synthetic 수치는 해당 Run 로그 확인 후 별도 기록. 사내/private 도면의 수치는 외부 PR artifact에 기록하지 않는다.
+
+
 ## U-ISSUE31-PR34-P2-REVIEW-20261016 — Webpack parenthesized import warning 차단 보완
 
 - PR #34 초기 Run [38904729194](https://github.com/planner77/layoutManager/actions/runs/38904729194): TypeScript/ESLint, Unit/Integration, Next Production Build, Browser E2E, Legacy Migration E2E, Docker smoke **모두 SUCCESS** (HEAD `9c2d821f`). 그러나 Codex P2 review 1건이 `export 'union' (imported as 'union') was not found` 경고의 미검출을 발견.
