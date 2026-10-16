@@ -50,3 +50,19 @@ test('TC-TEXT-008: index Worker is cancelled on renderer disposal, while shared 
   expect(new TextDecoder().decode(await source.read('/one'))).toContain('ENTITIES');
   source.dispose();
 });
+
+
+test('TC-TEXT-009: text index is cached by drawing URL and is removed on source change/reload', async () => {
+  vi.stubGlobal('fetch', vi.fn(async () => new Response('DXF bytes')));
+  const source = new ViewerSource();
+  const index = { hits: [], skipped: {}, truncated: false };
+  await source.read('/first');
+  source.setTextIndex('/first', index);
+  expect(source.getTextIndex('/first')).toBe(index);
+  await source.read('/second');
+  expect(source.getTextIndex('/first')).toBeUndefined();
+  expect(source.getTextIndex('/second')).toBeUndefined();
+  source.setTextIndex('/second', index);
+  source.dispose();
+  expect(source.getTextIndex('/second')).toBeUndefined();
+});
