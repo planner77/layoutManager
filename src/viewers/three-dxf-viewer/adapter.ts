@@ -35,6 +35,8 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
   private indexError?: string;
   private renderCoverage?: RenderCoverage;
   private spatialIndexMs?:number;
+  private sourceIndexMs?:number;
+  private renderAuditMs?:number;
   private selector?: SelectionController;
   private mode: SelectionMode='pan';
   private visibleLayers=new Set<string>();
@@ -105,11 +107,15 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
       this.fitToView();this.render();
       if(this.outline && !this.bounds.isEmpty()) {
         try {
+          const indexStarted=performance.now();
           this.index=await this.runOutlineWorker<DxfOutlineIndex>('index',{
             text,versionId:this.outline.versionId,sourceSha256:this.outline.sourceSha256
           });
+          this.sourceIndexMs=performance.now()-indexStarted;
           if(this.disposed)throw new DOMException('취소됨','AbortError');
+          const auditStarted=performance.now();
           this.renderCoverage=this.auditRenderedObjects(this.index.entities);
+          this.renderAuditMs=performance.now()-auditStarted;
           this.visibleLayers=new Set(this.getLayers());
           const selectable=this.renderCoverage.selectable.filter(e=>this.visibleLayers.has(e.layer));
           this.selector=new SelectionController(this.renderer.domElement,this.container,selectable,
@@ -239,6 +245,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
       renderedObjectCount:this.renderCoverage?.renderedObjects??0,
       excludedEntityCount:(this.renderCoverage?.unmappedSource??0)+(this.renderCoverage?.boundsMismatch??0),
       spatialIndexMs:this.spatialIndexMs,
+      sourceIndexMs:this.sourceIndexMs,renderAuditMs:this.renderAuditMs,
       warnings:[...(this.indexError?[this.indexError]:[]),
         ...(this.renderCoverage?.warnings??[]),...(this.index?.warnings??[])]};
   }
