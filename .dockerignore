@@ -17,6 +17,7 @@
 **/test-results
 **/dwg-test-results
 **/benchmark-results
+**/acceptance-results
 **/*.tsbuildinfo
 **/*.log
 
