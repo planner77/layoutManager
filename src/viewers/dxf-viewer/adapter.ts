@@ -1,3 +1,4 @@
+import type { CadFocusBounds } from '../core/text-index';
 import { DxfViewer } from 'dxf-viewer';
 import type { CadViewerAdapter } from '../core/adapter';
 
@@ -36,6 +37,19 @@ export class DxfViewerAdapter implements CadViewerAdapter {
     const width = (camera.right-camera.left)/camera.zoom*factor;
     if (Number.isFinite(width) && width > 1e-8 && width < 1e15) {
       this.viewer.SetView({x:camera.position.x,y:camera.position.y},width); this.viewer.Render();
+    }
+  }
+  focusBounds(bounds: CadFocusBounds) {
+    const origin = this.viewer.GetOrigin();
+    const canvas = this.viewer.GetCanvas();
+    const aspect = Math.max(1, canvas.clientWidth) / Math.max(1, canvas.clientHeight);
+    const width = Math.max(bounds.maxX - bounds.minX, (bounds.maxY - bounds.minY) * aspect) * 1.15;
+    const x = (bounds.minX + bounds.maxX) / 2 - origin.x;
+    const y = (bounds.minY + bounds.maxY) / 2 - origin.y;
+    if (Number.isFinite(width) && width > 1e-8 && width < 1e15 &&
+        Number.isFinite(x) && Number.isFinite(y)) {
+      this.viewer.SetView({ x, y }, width);
+      this.viewer.Render();
     }
   }
   zoomIn() { this.zoom(0.8); }

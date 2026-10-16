@@ -1,10 +1,19 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
-## Issue #31 후속 0.27.1 작업 상태 (2026-10-16)
+## Issue #31 후속 0.28.1 작업 상태 (2026-10-16)
 
 - 0.27.0 PR #32, PR CI run `38874300056`, Main CI run `38875068317`은 실제 SUCCESS. Issue #31은 P0/P4/P5 미완료로 **열린 상태를 유지**한다.
-- 0.27.1 P0/P5: Source↔Three Renderer unique Handle/type/layer/World bbox fail-closed 대조, 2D SpatialIndex, synthetic 1k/10k/100k opt-in benchmark 및 Unit/E2E 확대. 실 CAD 성능/정확도는 별도 평가 전 PASS 금지. [Issue31](out/Issue31.md).
+- 0.28.1 P0/P5: Source↔Three Renderer unique Handle/type/layer/World bbox fail-closed 대조, 2D SpatialIndex, synthetic 1k/10k/100k opt-in benchmark 및 Unit/E2E 확대. 실 CAD 성능/정확도는 별도 평가 전 PASS 금지. [Issue31](out/Issue31.md).
 - P4: 사용자/Owner가 IdP/인증·인가·audit/scope 정책을 승인하기 전 **서버 영속 DB/Write API 구현·배포 금지**. 브라우저 JSON의 순수 validator·시험만 준비한다. 도면 삭제용 비밀번호·신뢰되지 않은 User 헤더를 재사용하지 않는다.
+
+
+## Issue #26 (2026-10-16) — DXF 도면 내부 텍스트 검색
+
+- 최신 main 0.27.0(#31) 정렬 후 통합 PR 후보는 **0.28.0**이다. 최초 0.27.0 작업 브랜치에서 현재 도면 DXF TEXT/MTEXT 색인·삽입점 world 좌표 focus, 검색 UI, 단위/Browser 테스트 소스를 추가했다. 현재 단계는 **PR CI 전**, 로컬 실행 결과 및 독립 QA 통과를 주장하지 않는다.
+- DXF만 1차 검색 지원. BLOCK/INSERT 기본 2D affine은 지원하되 ATTRIB·ATTDEF/비기본 OCS/배열 INSERT는 제외·안내한다. DWG LINE-only 제한을 유지하며 DWG TEXT/MTEXT 추출·렌더링·줌 가능성을 검증하지 않은 상태에서 지원으로 표시하지 않는다.
+- 검색 색인은 Adapter 바깥의 Worker에서 생성하고 ViewerSource로 Version 간 격리/원본 다운로드 공유한다. focusBounds는 각각 dxf-viewer GetOrigin과 three-dxf-viewer world camera로 대응한다. 일반/CSS/fullscreen shell 내부 검색 UI 위치를 유지한다.
+- 상세 요구/코드·미지원·TC 목록은 out/Issue26.md 기준. #25 기본 전체 화면 진입 구현은 독립 이슈이며 본 변경의 수용으로 처리하지 않는다.
+
 
 
 ## Issue #31 (2026-10-16) 구현 범위
@@ -74,6 +83,7 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 | [Release 0.20.0](out/Release-0.20.0.md) | 0.20.0 병합·태그·GHCR 게시 근거 | 0.20.0 릴리스 확인 및 운영 이미지 식별 시 |
 | [Release 0.21.0](out/Release-0.21.0.md) | 0.21.0 병합·태그·GHCR 게시 근거 | 0.21.0 릴리스 확인 및 운영 이미지 식별 시 |
 | [Issue31](out/Issue31.md) | DXF 다중 선택·볼록/정밀 외곽선·실험 상태·P4 권한 보류 | Viewer 선택·외곽선/Worker/JSON 변경 시 |
+| [Issue26](out/Issue26.md) | DXF TEXT/MTEXT 색인·world 좌표 focus·검색 범위/검증 | Viewer 검색·Pan/Zoom·Worker·BLOCK/INSERT·DWG 텍스트 지원 검토 시 |
 | [Issue28](out/Issue28.md) | 운영 이미지 경량화·Migration 분리·측정/롤백 | Dockerfile, Standalone, Compose, GHCR 변경 시 |
 | [Issue24](out/Issue24.md) | 기준정보 계층·이관·층별 Current 요구/설계/AC | 기준정보·계층 등록·제품 조회·legacy 이관 변경 시 |
 | [README](README.md) | 사용자/개발자 프로젝트 안내 | 기능·구조·설정·실행방법 변경 시 |

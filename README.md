@@ -1,10 +1,18 @@
 # CAD Web Viewer P.O.C.
 
-## Issue #31 성능·정확도 진단 (0.27.1 브랜치 / 검증 전)
+## Issue #31 성능·정확도 진단 (0.28.1 브랜치 / 검증 전)
 
 - `three-dxf-viewer`는 Source top-level Entity의 Handle/Type/Layer/WCS XY Box를 실제 Three Object와 대조하고, 불일치 객체는 선택에서 제외합니다. Viewer `렌더 관측 / 매핑 제외 / 원본 인덱스·렌더 대조·공간 인덱스 ms`로 상태를 확인합니다.
 - Synthetic 벤치마크: `cd src && npm ci && npm run test:outline-benchmark` (LINE 1,000 / 10,000 / 100,000개, JSON stdout), 빠른 테스트 `npm run test:outline-benchmark -- --quick` (1,000개). 이 값은 브라우저 GPU/실제 현장 CAD SLA가 아닙니다. 운영 DXF/DB 원본은 Git에 등록하지 마세요.
 - P4의 버전/SHA/EntityRef JSON validator는 안전한 사전 준비일 뿐 서버 쓰기·DB migration이 아닙니다. RBAC 및 인증 정책 Owner 결정 전 CRUD를 배포하지 않습니다. 상세 [Issue31](out/Issue31.md), [Database](out/Database.md).
+
+
+
+## 0.28.0 신규 기능 — 도면 내부 텍스트 검색 (#26)
+
+열린 DXF Viewer의 검은 화면 오른쪽에서 **도면 내 텍스트 검색**을 펼치면 현재 도면의 TEXT/MTEXT 값을 검색할 수 있습니다. 한글·영문·숫자 부분 일치, 공백/MTEXT 개행, 검색 결과 목록과 이전/다음 및 클릭 위치 Pan/Zoom을 제공합니다. dxf-viewer와 three-dxf-viewer 모두 사용하며 일반/전체 화면 Viewer에서 검색할 수 있도록 패널을 도면 shell 안에 배치했습니다. **기존 도면 파일명·설명 검색과 별개**입니다.
+
+검색 시 필요할 때만 원본 DXF의 브라우저 Worker 인덱스를 만듭니다. BLOCK/INSERT 기본 2D 좌표를 지원하지만 ATTRIB·ATTDEF·비기본 OCS·배열 INSERT 등은 제외됩니다. 검색 위치는 글꼴 bbox가 아니라 삽입점을 기준으로 하는 근사 범위입니다. 20,000개 텍스트 상한, 페이지당 100개 표시이며 숨겨진 레이어의 텍스트는 결과에서 제외하고 사용자의 레이어 설정을 바꾸지 않습니다. DWG는 현재 LINE 표시만 지원하므로 **DWG 내부 텍스트 검색은 지원하지 않습니다**. 제약/AC/테스트 상태는 [Issue26](out/Issue26.md)에 명시되어 있습니다. #25의 자동 전체 화면 시작은 별도 이슈입니다.
 
 
 
@@ -21,7 +29,7 @@ DXF 도면을 `three-dxf-viewer`로 열고 도구의 **선택 모드**로 전환
 - **업그레이드는 기존 app stop 후 migration 재실행이 필수이다.** 데이터 백업/pull/중지/migrate exit0/app 시작/rollback 명령은 [Operation](out/Operation.md), 3단계 이미지 측정 및 테스트 상태는 [Issue28](out/Issue28.md)·[TestReport](out/TestReport.md) 참조. 최초 CI 크기 측정은 2,054,848,814 → 376,228,092 bytes(81.69% 절감); 최종 PR CI/GHCR 검증 결과는 별도 판정한다.
 
 
-현재 제안 소스 버전은 0.26.0입니다. Docker는 Next.js standalone 웹과 별도 일회성 Prisma migration/backfill 이미지로 분리합니다. 0.25.0의 DB 계층 기능은 유지합니다. 사업부 → 제품 → 사업장/법인 → 동 → 층의 기준정보를 관리하고 활성 ID 계층을 선택해 도면을 등록합니다. 기존 도면은 사업부별 `미분류` 제품으로 이관하며 층 상세에서 전체 이력을 실제 제품 계층으로 재분류할 수 있습니다. 게시·배포 검증 결과는 [TestReport](out/TestReport.md)와 버전별 Release 문서를 기준으로 합니다.
+현재 제안 소스 버전은 0.28.0입니다. Docker는 Next.js standalone 웹과 별도 일회성 Prisma migration/backfill 이미지로 분리합니다. 0.25.0의 DB 계층 기능은 유지합니다. 사업부 → 제품 → 사업장/법인 → 동 → 층의 기준정보를 관리하고 활성 ID 계층을 선택해 도면을 등록합니다. 기존 도면은 사업부별 `미분류` 제품으로 이관하며 층 상세에서 전체 이력을 실제 제품 계층으로 재분류할 수 있습니다. 게시·배포 검증 결과는 [TestReport](out/TestReport.md)와 버전별 Release 문서를 기준으로 합니다.
 
 공장·설비의 DXF/DWG 도면을 등록·검색·버전 관리하고, 세 오픈소스 기술의 브라우저 렌더링 적용 가능성을 평가하는 프로젝트입니다.
 

@@ -6,7 +6,7 @@
 
 
 
-## 2026-10-16 — 잔여 P0/P5·P4 안전 선행 개발 (0.27.1 / PR CI 전)
+## 2026-10-16 — 잔여 P0/P5·P4 안전 선행 개발 (0.28.1 / PR CI 전)
 
 ### P0: 원본 ↔ 렌더 객체 정합성 강화
 - `render-coverage.ts`: 원본 DXF의 top-level Handle/Entity type/Layer/WCS XY Bounds와 실제 `Object3D.userData.entity`의 world bounds를 대조. 한 Entity가 여러 객체로 분할된 경우(1:N)는 Bounds를 Union한 뒤 비교한다. Render object와 일치하지 않거나 Handle이 없으면 객체를 **선택 대상에서 제외**하고 제외 수를 UI에 표시한다. BLOCK 내부 Child와 개별 renderer element를 영속 EntityRef로 추정하지 않는다.

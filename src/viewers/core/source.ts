@@ -1,9 +1,13 @@
+import type { CadTextIndex } from './text-index';
 /** One immutable download per mounted version, shared by renderer attempts. */
 export class ViewerSource {
   private url?: string;
   private pending?: Promise<ArrayBuffer>;
   private abort?: AbortController;
   private complete=false;
+  private textIndex?: CadTextIndex;
+  getTextIndex(url: string) { return this.url === url ? this.textIndex : undefined; }
+  setTextIndex(url: string, index: CadTextIndex) { if (this.url === url && this.complete) this.textIndex = index; }
   state(url:string):'miss'|'pending'|'memory' {return this.url!==url||!this.pending?'miss':this.complete?'memory':'pending';}
   read(url:string): Promise<ArrayBuffer> {
     if(this.url===url && this.pending)return this.pending;
@@ -20,5 +24,5 @@ export class ViewerSource {
     void pending.catch(()=>{if(this.pending===pending){this.pending=undefined;this.url=undefined;}});
     return pending;
   }
-  dispose() {this.abort?.abort();this.abort=undefined;this.pending=undefined;this.url=undefined;this.complete=false;}
+  dispose() {this.textIndex=undefined;this.abort?.abort();this.abort=undefined;this.pending=undefined;this.url=undefined;this.complete=false;}
 }

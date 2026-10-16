@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useGlobalLoading } from '@/components/global-loading';
 import { CopyCadLink } from '@/features/cad-link/copy-cad-link';
 import { FullscreenLayerPanel } from '@/features/cad-viewer/fullscreen-layer-panel';
+import { CadTextSearch } from '@/features/cad-viewer/cad-text-search';
 import { LayerDropdown } from '@/features/cad-viewer/layer-dropdown';
 import { ViewerManager, type OutlineInfo } from '@/viewers/core/adapter';
 import type {OutlineKind,OutlineEntity} from '@/viewers/core/outline-geometry';
@@ -29,6 +30,7 @@ export function CadViewer({
   const container = useRef<HTMLDivElement>(null);
   const viewerShell = useRef<HTMLDivElement>(null);
   const manager = useRef<ViewerManager | null>(null);
+  const getManager = useCallback(() => manager.current, []);
   const loadSequenceRef = useRef(0);
   const nativeFullscreenRef = useRef(false);
   const fullscreenRequestedRef = useRef(false);
@@ -320,6 +322,8 @@ export function CadViewer({
           <ul className="max-h-28 list-disc overflow-y-auto pl-4">{outlineInfo.warnings.slice(0,30).map((warning,i)=><li key={i}>{warning}</li>)}</ul>
         </details>}
       </div>}
+      <CadTextSearch key={versionId + ':' + renderer + ':' + attempt} getManager={getManager} format={format}
+        ready={state.ready} loading={loading} layers={layers} selectedLayers={selectedLayers} />
       <div
         ref={container}
         data-testid="cad-canvas"

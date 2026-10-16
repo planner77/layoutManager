@@ -1,6 +1,6 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
-## Issue #31 잔여 검증 — 0.27.1 (PR CI 전)
+## Issue #31 잔여 검증 — 0.28.1 (PR CI 전)
 
 | TC | 방법/Acceptance | 상태 |
 | --- | --- | --- |
@@ -15,6 +15,73 @@
 
 측정한 조건·설비·Node/브라우저·CPU/RAM·도면 Entity 구성·Unit/Scale 및 실제 실행값 없이는 PASS 판정하지 않는다. synthetic benchmark는 기본 PR CI에 자동 추가하지 않는다. [Issue31](Issue31.md).
 
+
+
+### Issue #26 / CI #55 — 기존 Workflow E2E 페이지네이션 비의존성
+
+- TC-E2E-001: V1과 V2를 2026-09-08 business registeredAt으로 등록하더라도 목록에는 다른 E2E에서 생성한 최신 2026-10-16 항목이 25개 이상 있을 수 있다. 최초 '/ ' 목록의 page 1에 새로 등록된 과거 일자 Version이 있다는 전제를 제거한다.
+- 등록 성공(HTTP 201 및 Vn 등록 완료) → 목록 이동 → 원본 파일명 release-vN.dxf로 UI 검색 → 현재 업로드 response.id 기반 version 행의 파일명과 ● Current 상태 확인. 전체 목록 페이지 분할 및 기존 Current 교체·검색·Viewer 검증은 유지한다.
+- CI #55 (38878433970)는 browser E2E 40/41 PASS. TC-TEXT-E2E-001 양 renderer PASS, TC-E2E-001만 FAIL, Legacy migration skipped. 새 PR CI로 전체 E2E 및 legacy migration을 확인한다.
+
+
+### Issue #26 — main(#31) 통합과 캐시 인덱스 로딩 종료 회귀
+
+- TC-TEXT-E2E-001: dxf-viewer→three-dxf-viewer 및 역방향 전환 시 동일 메모리 CAD 원본/인덱스 재사용, "검색용 텍스트를 분석 중" 상태가 종료되고 "검색 결과 3개"가 표시되며 World focus가 가능해야 한다. 기존 #54의 두 렌더러 공통 실패를 재검증한다.
+- TC-OUT/Issue31 기존 객체 선택·외곽선 E2E는 merge 이후에도 유지하며, SelectionController와 CadTextSearch가 공통 Viewer shell에서 서로 간섭하지 않아야 한다.
+- 기존 main version 0.27.0에 DXF 검색 기능을 추가하므로 병합 후보 version 0.28.0. 전체 lint, unit, build, E2E, legacy migration과 Docker PR CI 결과는 새 run 이후 판정한다.
+
+
+
+### Issue #26 / CI #52 — Fixture source and presence regression gate
+
+- TC-TEXT-FIXTURE-001 (Unit): actual DXF fixture shared by Browser E2E must contain exactly 3 parsed TEXT hits and 1 parsed MTEXT hit. Its MTEXT has 41=240, 71=1, 72=1 and rendered/searchable string "검사 구역 45"; verify three copies of "abc 123" separately.
+- The Browser TC-TEXT-E2E-001 must import the SAME fixture generator, not maintain a duplicate DXF literal or entity creation hidden after a single-line comment. Build each DXF group-code/value as array members and join with real newline characters.
+- CI #52 demonstrated 125 successful Unit/Integration tests but no fixture coverage, causing Browser E2E to fail at the MTEXT search after three TEXT navigation assertions. Corrected scope requires Unit fixture gate first, then complete Browser E2E and Legacy migration E2E.
+- CI #52 run: https://github.com/planner77/layoutManager/actions/runs/38872015982
+
+
+
+### Issue #26 / CI #49 Browser E2E MTEXT renderer interoperability
+
+- TC-TEXT-E2E-001의 합성 DXF MTEXT 필수 명시값: group 41=240(reference width), group 71=1(top-left attachment), group 72=1(left-to-right); TEXT group 5는 16진 handle을 사용한다.
+- 수용: dxf-viewer와 three-dxf-viewer 각각 최초 표시 성공, 3개의 분리된 TEXT 결과에서 위치 이동·줌, MTEXT 검색·이동, 전체 화면과 renderer 전환 뒤 재검색, 원본 다운로드 단 1회 유지.
+- CI #49에서 38개 Browser E2E 성공, 새 두 케이스는 MTEXT 71 누락으로 RenderMText "Unhandled alignment". 수정 후 신규 CI에서 두 케이스, 기존 38개, Legacy migration 검증 확인 필수.
+- 근거: https://github.com/planner77/layoutManager/actions/runs/38868174246
+
+
+
+### CI #46 대응 — TC-TEXT-001과 011
+
+- TC-TEXT-001: 실제 MTEXT 그룹 코드 fixture에 fraction 앞 명시적인 ASCII 공백이 있으며 표시 문자열 "생산 ABC 동 12 1/2가"와 정확히 일치하는지 확인한다.
+- TC-TEXT-011: group 3 + 1 연속 텍스트 "AB"+"CD"는 "ABCD", "AB "+"CD"는 "AB CD"가 되어야 한다. 데이터에 없는 공백을 검색 문자열에 조작해 넣지 않는다.
+- 신규 PR CI에서 Unit/Integration을 통과하고 나서 Build/Browser E2E를 확인한다. 이전 CI #46의 Build/E2E는 미실행으로 기록한다.
+
+
+
+### Issue #26 — CI #42 보완 회귀
+
+- TC-TEXT-010: DXF Unicode escape \U+00B0C는 °C, MTEXT/검색 키 동일 처리. Reviewer의 4자리 고정 escape 계약을 unit/dxf-text-index.test.ts에서 검증한다.
+- UI 규칙: viewer.tsx 렌더 중 ref.current를 참조하지 않고 getter를 통해 effect/이벤트에서만 사용한다. PR CI ESLint react-hooks/refs와 기존 Viewer E2E를 회귀 기준으로 한다.
+- PR CI #42에서 ESLint 실패하여 Unit/Browser는 미실행이었다. 수정 후 새로운 CI 결과를 실제 확인하기 전 수용 PASS 아님.
+
+
+
+## Issue #26 — 검색/좌표/생명주기 검증 계획 (0.27.0)
+
+| Test case | 기준 | 증거 위치 | 상태 |
+| --- | --- | --- | --- |
+| TC-TEXT-001 | TEXT/MTEXT·한글·영문·숫자·NFC/서식/개행 일치 | unit/dxf-text-index.test.ts | CI 전 |
+| TC-TEXT-002 | 동일 문자열의 3개 서로 다른 좌표 | unit/dxf-text-index.test.ts | CI 전 |
+| TC-TEXT-003 | BLOCK base point와 2D scale/rotation/translate | unit/dxf-text-index.test.ts | CI 전 |
+| TC-TEXT-004 | hidden/OCS/ATTRIB/없는 BLOCK 제외 기록 | unit/dxf-text-index.test.ts | CI 전 |
+| TC-TEXT-005 | 손상/이진/HTML literal 안전성 | unit/dxf-text-index.test.ts | CI 전 |
+| TC-TEXT-006 | 순환 INSERT 조기 종료 | unit/dxf-text-index.test.ts | CI 전 |
+| TC-TEXT-E2E-001 | 두 DXF 렌더러, 3위치 Pan/Zoom, 검색, 전체 화면, Renderer 변경 원본 공유 | e2e/text-search.spec.ts | CI 전 |
+| TC-TEXT-007 | Manager focus 위임, 이상 bbox 거부, Worker 취소·재시도 | viewer unit + 환경 회귀 | 증거 확대 필요 |
+| TC-TEXT-008 | Layer 숨김, 빠른 연속 검색/Version 교체, 2만 건, 모바일 | 확대 E2E/실도면 | 미실행 |
+| TC-TEXT-DWG | 실제 DWG TEXT/MTEXT 추출→렌더링→focus 기술 검증 | 독립 DWG 실험 | 미실행/비지원 |
+
+검증 기준: 실제 camera 중심 이동/줌, 다른 Version 유실·worker 누수 없음, 검색 결과가 이전 Version 좌표를 참조하지 않음. 외부 실도면 미제공으로 합성 fixture와 운영 인수 기준을 구분한다. 테스트 실행 전 PASS를 기입하지 않는다.
 
 
 ## Issue #31 — 검증 계획 (0.27.0 PR CI 재검증 전)

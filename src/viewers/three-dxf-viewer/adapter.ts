@@ -1,3 +1,4 @@
+import type { CadFocusBounds } from '../core/text-index';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { DXFViewer } from 'three-dxf-viewer';
@@ -143,6 +144,19 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     this.camera.zoom=1;this.camera.far=Math.max(10000,extent.z*4+1000);
     this.camera.position.set(center.x,center.y,center.z+this.camera.far/2);
     this.controls.target.copy(center);this.camera.updateProjectionMatrix();this.controls.update();this.render();
+  }
+  focusBounds(bounds: CadFocusBounds) {
+    const aspect = Math.max(1, this.container.clientWidth) / Math.max(1, this.container.clientHeight);
+    const height = Math.max(bounds.maxY - bounds.minY, (bounds.maxX - bounds.minX) / aspect) * 1.15;
+    const x = (bounds.minX + bounds.maxX) / 2;
+    const y = (bounds.minY + bounds.maxY) / 2;
+    if (![height, x, y].every(Number.isFinite) || height <= 1e-8 || height >= 1e15) return;
+    this.camera.top = height / 2; this.camera.bottom = -height / 2;
+    this.camera.left = -height * aspect / 2; this.camera.right = height * aspect / 2;
+    this.camera.zoom = 1;
+    this.camera.position.x = x; this.camera.position.y = y;
+    this.controls.target.x = x; this.controls.target.y = y;
+    this.camera.updateProjectionMatrix(); this.controls.update(); this.render();
   }
   zoomIn() {this.camera.zoom=Math.min(1e8,this.camera.zoom*1.25);this.camera.updateProjectionMatrix();this.render();}
   zoomOut() {this.camera.zoom=Math.max(1e-8,this.camera.zoom/1.25);this.camera.updateProjectionMatrix();this.render();}

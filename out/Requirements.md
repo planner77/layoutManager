@@ -1,11 +1,25 @@
 # 상세 요구사항
 
-## Issue #31 잔여 요구사항 명세 (0.27.1)
+## Issue #31 잔여 요구사항 명세 (0.28.1)
 
 - P0-MAP: Source Handle만으로 Selection을 허용하지 않고 THREE `userData.entity`와 render Type/Layer/WCS XY Box 일치 여부 검사. 1:N 객체 Bounds 합산. 미일치 Entity는 선택 제외와 경고.
 - P5-INDEX: 대형 도면 hit-test 범위 가속과 giant Entity cell 상한; 1k/10k/100k CPU synthetic 벤치 JSON 재현성, 실제 도면·Worker 전송/GPU/입력 latency 수용은 별개.
 - P4-DRAFT: browser-export JSON의 Version·sourceSha256·고유 Handle·유효 Polygon을 확인하되 Client geometry를 인증된 기록으로 신뢰하지 않는다. Owner AuthN/AuthZ 결정 전 DB/Server Outline CRUD 미배포.
 - 실제 도면 소·중·대형 sample 3종+CAD 수치 기준·환경·반복 측정이 없으면 P0/P5 운영 적합성을 확인할 수 없다. 이슈 종료는 전체 범위 수용 후만 가능. [Issue31](Issue31.md).
+
+
+## GitHub Issue #26 — 도면 내부 텍스트 검색 (0.27.0)
+
+- FR-TEXT-001: 현재 열린 DXF Version의 TEXT/MTEXT 표시 문자열만 별도 검색하며 Unicode NFC, MTEXT 서식/개행 정규화와 대소문자 무시 부분일치 제공.
+- FR-TEXT-002: 문자열·Entity Type·layer·결과 개수/순번·이전/다음 및 결과 클릭 이동. 동일한 텍스트의 서로 다른 위치는 개별 결과.
+- FR-TEXT-003: BLOCK/INSERT의 2D affine 변환을 처리하고 비지원 OCS/attribute/배열 INSERT는 표시된 제외 건수로 안내.
+- FR-TEXT-004: dxf-viewer 원점 보정, three-dxf-viewer world camera target 설정으로 Pan/Zoom. 단순 zoomIn 반복 금지.
+- FR-TEXT-005: 검색 패널이 Viewer shell의 일반/전체 화면에서 동작, 레이어 숨김 상태를 유지하며 보이지 않는 레이어는 검색 제외.
+- FR-TEXT-006: 동일 원본 다운로드 공유, Version별 text index cache, 검색 Worker와 취소/timeout/20k 한도.
+- FR-TEXT-007: DWG는 현재 텍스트 검색 **미지원**을 명시하고 실험 증거 없는 지원 선언 금지.
+- FR-TEXT-008: HTML/스크립트 삽입 금지, CAD 텍스트는 브라우저 내부에서만 검색하고 외부 서비스에 전송 금지.
+
+구현·정확 좌표의 제한 및 시험 상태는 Issue26.md를 기준으로 한다. 본 문서 작성 시 자동 검증과 실도면 수용은 대기 중.
 
 
 ## Issue #31 요구사항 (0.27.0 구현 브랜치·수용 전)
