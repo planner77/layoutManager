@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useGlobalLoading } from '@/components/global-loading';
 import { CopyCadLink } from '@/features/cad-link/copy-cad-link';
@@ -26,6 +26,8 @@ export function CadViewer({
   const container = useRef<HTMLDivElement>(null);
   const viewerShell = useRef<HTMLDivElement>(null);
   const manager = useRef<ViewerManager | null>(null);
+  // Ref reads happen only in callbacks/effects, never in React render.
+  const getManager = useCallback(() => manager.current, []);
   const loadSequenceRef = useRef(0);
   const nativeFullscreenRef = useRef(false);
   const fullscreenRequestedRef = useRef(false);
@@ -242,7 +244,7 @@ export function CadViewer({
         <Button variant="outline" size="sm" onClick={() => manager.current?.fitToView()}>전체 화면 맞춤</Button>
         <Button size="sm" onClick={exitFullscreen}>전체 화면 종료</Button>
       </div>}
-      <CadTextSearch key={versionId + ':' + renderer + ':' + attempt} manager={manager.current} format={format}
+      <CadTextSearch key={versionId + ':' + renderer + ':' + attempt} getManager={getManager} format={format}
         ready={state.ready} loading={loading} layers={layers} selectedLayers={selectedLayers} />
       <div
         ref={container}
