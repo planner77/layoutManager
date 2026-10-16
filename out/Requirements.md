@@ -1,5 +1,16 @@
 # 상세 요구사항
 
+## Issue #25 — 0.29.0 기본 immersive Viewer (PR CI 전)
+
+- FR-VIEW-IMM-001: 도면 목록/상세/직접 링크(주소창·새 탭·새 Context)·브라우저 새로고침 등 동일 Viewer URL 진입 즉시 CSS fixed/100dvh 전체 뷰포트 레이아웃을 기본 제공한다. native Fullscreen API 자동 요청은 하지 않으며 기존 Version UUID·renderer query 호환을 보존한다.
+- FR-VIEW-IMM-002: 명시적 **브라우저 전체 화면** 버튼만 native `requestFullscreen()`을 요청하고 거절·미지원에서도 CSS 모드를 유지한다. 브라우저 주소창 자동 숨김을 약속하지 않는다.
+- FR-VIEW-IMM-003: immersive 안에서 도면 이름·Version·위치, Renderer, 줌/맞춤, 레이어(#17), 검색(#26), 외곽선(#31), 원본 다운로드·링크 복사·로딩 상태·오류/재시도·뒤로 가기를 제공한다.
+- FR-VIEW-IMM-004: 명시적 종료/ESC/native 해제를 충돌 없이 분리하며 일반 Viewer 복귀·수동 재진입·브라우저 Back 및 포커스·스크롤 복원을 지원한다.
+- FR-VIEW-IMM-005: mode 변경 자체는 ViewerManager/Adapter/Canvas를 재생성하지 않으며 100dvh 및 resize가 canvas backing size에 반영되고 기존 Renderer 전환·Version 교체의 lifecycle/cleanup과 전역 Spinner를 회귀시키지 않는다. DXF/dxf-viewer, DXF/three-dxf-viewer, DWG/libredwg-web에 공통 정책을 적용한다.
+- 세부 AC/TC 및 한계: [Issue25](Issue25.md), [TestPlan](TestPlan.md). 실제 CI PASS/현장 수용은 **미확정**.
+
+
+
 ## Issue #31 후속 수용 변경점 0.28.3
 
 - OUT-P0-FIDELITY: INSERT/BLOCK의 일부 Entity가 미지원이면 stable EntityRef 선택·저장 승인 금지. 원/호의 512 segment 한도 내 WCS chord error 목표 충족 불가능시 명시적 실패.

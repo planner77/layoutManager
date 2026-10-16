@@ -115,3 +115,7 @@ PR #21에서 다음 CI 보완 과정을 거쳤다.
 ## 검증 경계
 
 CI는 합성 복수 레이어 DXF와 기존 Viewer 회귀를 검증했다. 매우 많은 레이어를 가진 실제 업무 DXF의 현장 사용성·성능은 이번 GitHub Actions 검증 범위에 포함하지 않았으므로 별도 운영 smoke test 대상으로 남긴다.
+
+## 2026-10-17 후속 #25: immersive 기본 진입과 기존 레이어 기능
+
+#17 전체 화면 `FullscreenLayerPanel`과 일반 화면 `LayerDropdown`의 동일 Adapter 상태 연결은 유지한다. #25부터 Viewer 진입 시 CSS immersive가 기본이므로 three-dxf-viewer는 자동으로 전체 화면 레이어 패널을 제공하고, `전체 화면 종료` 후 기존 일반 드롭다운으로 전환한다. 이 모드 전환은 Canvas/Adapter 재생성을 일으키지 않도록 구현한다. 테스트는 초기 immersive 상태를 확인하고 일반 화면으로 나와 기존 #17 회귀를 실행하도록 수정했다. [Issue25](Issue25.md), PR CI 결과 미확인.

@@ -1,5 +1,15 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE25-DEV-20261017 — 신규 CSS immersive Viewer 구현/시험 코드 (실행 결과 미확정)
+
+- 대상: #25 / v0.29.0 / `feat/issue-25-auto-immersive-viewer`.
+- 구현: Viewer 페이지의 metadata를 Client shell로 이동; 목록/상세·direct URL/Reload에서 CSS fixed `100dvh` 기본; native fullscreen은 별도 명시 클릭만; native ESC와 CSS ESC 분리. 새 툴바에 Renderer, zoom/fit, 파일명/Version/원본·링크·다운로드·상태/에러·다시 불러오기·종료/목록 복귀 배치. normal LayerDropdown/immersive LayerPanel, 검색/외곽선은 같은 Canvas shell 공유. app header inert/scroll lock/focus cleanup.
+- Test 소스: `tests/e2e/issue25-immersive.spec.ts`(두 DXF renderer, 목록·직접링크·새 Context/리로드·모바일/Resize/Canvas backing·Fullscreen API 거절·ESC·목록 복귀), 기존 `viewer`, `issue17`, `text-search`, `issue31-outlines`, `layer-dropdown`, `metrics`, `workflow`, `link`, `dwg-viewer.probe`, `metrics.benchmark` 기본진입 변경에 대한 정상 모드 명시 진입/회귀 업데이트.
+- **기록 한계: 이 환경에서 npm 의존성 설치·typecheck/lint/Unit/Production build/Playwright/실 Chrome·Edge·DWG를 직접 실행하지 못함. 모두 NOT RUN/PR CI 대기.** E2E가 작성되었다고 PASS·독립 QA 검토·현장 CAD 수용으로 기록하지 않음.
+- 소스와 요구·추적 근거: [Issue25](Issue25.md). CI run 번호와 실제 결과는 PR CI 실행 결과 확인 시 후속 기록.
+
+
+
 ## U-ISSUE31-PR35-P1P2-REVIEW-20261016 — PR 리뷰 3건 처리 (수정 HEAD CI 재검증 전)
 
 - Initial PR #35 Source HEAD `eb01756b`에서 Codex 리뷰 3건: P1 INSERT attached ATTRIB/SEQEND 누락, P2 Client tolerance가 Source canonical 재계산을 완화할 위험, P2 Browser acceptance가 선택 0개에도 PASS 가능.
