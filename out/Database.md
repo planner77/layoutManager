@@ -1,5 +1,25 @@
 # Database Schema — 단일 기준 문서
 
+## Issue #31 P4 — 영구 저장 Schema 제안 (DDL / Migration 미적용)
+
+**이 절은 제안이며 배포 DB schema가 아닙니다.** 사용자/Owner가 인증·인가 수단, 역할 및 Scope, 감사 보존 기간을 결정하기 전 새 Table·Route·Migration을 적용하지 않는다.
+
+| 제안 필드 | 정책·DB 정합성 |
+| --- | --- |
+| `CadOutline.id` | 서버 생성 UUID PK, Browser 임시 ID 별개 |
+| `versionId` + `sourceSha256` | `CadFileVersion`에 버전·원본 Hash 동시 귀속, 복합 FK/unique anchor 검증. Current 교체·새 Version에 자동 재바인딩 금지 |
+| `name`, `kind`, `algorithm` | 이름 정규화·길이 제한, CONVEX/PRECISE 및 허용 Algorithm만 |
+| `sourceEntities`, `geometry`, `parameters` | JSON; **server-owned DXF에서 Handle/WCS canonical Geometry를 재계산**하여 client-supplied JSON과 대조. 좌표·polygon 수와 요청 body 상한 |
+| `revision`, `createdAt`, `updatedAt` | revision >=1, CAS UPDATE (id+expected revision) / 409 동시 변경. 시간 UTC |
+| `createdBy`, `updatedBy` | 인증된 사용자 ID 기반 변경자 감사 (원본 경로·패스워드·RAW geometry 로깅 금지) |
+| Version 삭제 | Version DELETE transaction 내 outline 연쇄삭제/이력 보존 정책 중 선택. 현재 원본 삭제 구조의 승인·Storage cleanup 안전성 유지 |
+
+제안 Route: `GET/POST /api/cad-files/[versionId]/outlines` 및 `PATCH/DELETE /.../outlines/[id]` (현재 **미구현**). POST/PATCH/DELETE는 서명 검증된 JWT나 안전한 앱 세션, RBAC/Version scope, CSRF/Origin, validation/recompute, FK/409/413를 갖춘 뒤 개방. 삭제용 비밀번호/클라이언트 임의 헤더를 외곽선 편집 권한으로 재사용 금지.
+
+운영 Migration 게이트: 같은 시점 DB/CAD local·S3 백업→격리 복제 DB dry run→fk_check/Version·Current·hash/행 수 검증→단일 app stop/migrate/start→오류 시 동일 시점 백업 복원. 실제 데이터·Schema 변경은 Owner 승인 후 별도 구현·시험.
+
+
+
 상태: 2026-10-15 Issue #24 구현. Prisma/Client/SQLite adapter 7.10.0과 실제 migration이 존재한다. 현재 단일 기준은 아래 `0.25.0 기준정보 계층` 절, `src/prisma/schema.prisma`, `202610150001_master_hierarchy`이며 그 이전 네 문자열 CadLocation 표와 그림은 migration 전 역사 기록이다.
 
 ## GitHub #6 — 0.19.0 추가 schema
