@@ -10,6 +10,8 @@ import {parseOutlineExport} from '@/domain/outline-draft';
 import {computeOutline,type GeoJSONOutline,type OutlineResult} from '@/viewers/core/outline-compute';
 import {parseDxfOutlineIndex,type XY} from '@/viewers/core/outline-geometry';
 
+// Matches the viewer's fixed, documented tolerance; a client cannot widen it.
+export const OUTLINE_CANONICAL_TOLERANCE=0.02;
 type WcsMultiPolygon=XY[][][];
 function multiPolygon(geometry:GeoJSONOutline):WcsMultiPolygon{
  return geometry.type==='Polygon'?[geometry.coordinates]:geometry.coordinates;
@@ -72,11 +74,13 @@ export function attestOutlineDraftAgainstImmutableDxf(
  const entities=new Map(index.entities.filter(e=>e.stable).map(e=>[e.id,e]));
  const outlines:AttestedOutline[]=[];
  for(const item of draft.outlines){
+   if(item.tolerance!==OUTLINE_CANONICAL_TOLERANCE)
+     throw new CadError('OUTLINE_TOLERANCE_UNSUPPORTED','서버 외곽선 허용 오차와 일치하지 않습니다.',409);
    const selected=item.sourceEntityIds.map(id=>entities.get(id));
    if(selected.some(e=>!e))
      throw new CadError('OUTLINE_UNKNOWN_ENTITY','원본에 없는 Entity 참조입니다.',409);
    let result:OutlineResult;
-   try {result=computeOutline(item.kind,selected.filter((e):e is NonNullable<typeof e>=>!!e),item.tolerance);}
+   try {result=computeOutline(item.kind,selected.filter((e):e is NonNullable<typeof e>=>!!e),OUTLINE_CANONICAL_TOLERANCE);}
    catch {throw new CadError('OUTLINE_UNSUPPORTED_SOURCE','원본 도형을 재계산할 수 없습니다.',422);}
    if(!result.persistable || !equalGeometry(result.geometry,item.geometry))
      throw new CadError('OUTLINE_GEOMETRY_MISMATCH','원본과 외곽선 결과가 일치하지 않습니다.',409);
