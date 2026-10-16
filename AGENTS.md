@@ -1,5 +1,13 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #31 v0.28.3 후속 — P0/P5 수용 및 P4 원본 검증 (2026-10-16)
+
+- 이전 #34 PR/새 Main CI 성공·GHCR v0.28.2 게시는 완료. 실설비 DXF 원본/운영 브라우저/GPU/권한 IdP가 제공되지 않아 Issue #31의 P0·P4·P5 전체 수용 완료는 **아님**.
+- P0 fail-closed: INSERT/BLOCK 내 지원 불가 Entity가 하나라도 있으면 부분 geometry의 stable 참조를 부정하고 렌더 선택에서 제외. 대형 ARC/CIRCLE 샘플 상한 512로 지정한 sagitta 허용 오차를 충족할 수 없다면 제외·경고하고 정확하다고 표시하지 않는다.
+- P4 순수 서버 검증 함수(`server/outline/attestation.ts`): 원본 immutable bytes SHA와 버전, 신뢰 가능한 unique Handle, canonical Source Polygon Union을 재계산·비교하여 임의 JSON/좌표를 거부. **인증 IdP/RBAC/Site scope 정책이 Owner 승인되지 않았으므로 실제 DB migration/Write API/영구 저장 구현·배포 금지.**
+- P5 합성 1k/10k/100k 소스 CPU 벤치를 PR CI에서 실행하되 실제 CAD·GPU 수용과 구분. private E2E는 `CAD_OUTLINE_ACCEPTANCE_DXF` 지정 시 별도 Playwright config에서만 실행, 현장 DXF/기준 값/보고서는 Git·CI artifact에 커밋/업로드 금지. Issue #31은 운영 실증·P4 승인 전 OPEN 유지.
+
+
 ## Issue #31 — v0.28.2 Production Worker export fix (2026-10-16; PR CI 전)
 
 - v0.28.1 Main CI [#38894507390](https://github.com/planner77/layoutManager/actions/runs/38894507390)은 SUCCESS/GHCR 게시했지만 **실제 Webpack 경고** `Attempted import error: 'union' is not exported from 'polygon-clipping'`가 있었다. 빌드/게시 성공만으로 정밀 외곽선 Worker 정상 동작을 판정하지 않는다.
