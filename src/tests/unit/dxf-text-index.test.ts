@@ -19,6 +19,13 @@ test('TC-TEXT-001: TEXT + formatted/continued MTEXT normalize Unicode, whitespac
   expect(plainMtext('A\\P\\L한글\\l \\{B\\}')).toBe('A\n한글 {B}');
 });
 
+test('TC-TEXT-010: Unicode escape ends at exactly four hex digits even if next char is hex-like', () => {
+  const index = extractDxfText(document(text(15, '\\U+00B0C')));
+  expect(index.hits[0].text).toBe('°C');
+  expect(searchKey(index.hits[0].text)).toBe(searchKey('°c'));
+  expect(plainMtext('TEMP \\U+00B0C')).toBe('TEMP °C');
+});
+
 test('TC-TEXT-002: three distant identical TEXT objects have distinct world focus centers', () => {
   const index = extractDxfText(document(text(0, 'same') + text(1000, 'same') + text(2000, 'same')));
   expect(index.hits.map(h => (h.focus.minX + h.focus.maxX) / 2)).toEqual([0, 1000, 2000]);
