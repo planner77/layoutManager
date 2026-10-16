@@ -108,7 +108,11 @@ function createPaths(raw: Raw, tolerance: number): OutlinePath[] {
     const span=full?2*Math.PI:((end-start)%(2*Math.PI)+2*Math.PI)%(2*Math.PI);
     if (!full && span<EPS) throw new Error('ARC 시작/종료 각도가 같습니다.');
     const step=2*Math.acos(Math.max(-1,Math.min(1,1-tolerance/radius)));
-    const count=Math.min(512,Math.max(8,Math.ceil(span/Math.max(step,1e-5))));
+    // Do not claim the requested chord-sagitta accuracy after silently
+    // truncating a large-radius curve to 512 segments.
+    const required=Math.max(8,Math.ceil(span/Math.max(step,1e-5)));
+    if(required>512)throw new Error('CIRCLE/ARC 곡선 오차 허용 범위에서 512 샘플 제한을 초과했습니다.');
+    const count=required;
     const vertices:XY[]=[];
     for(let i=0;i<(full?count:count+1);i++) {
       const a=start+span*i/count;
@@ -163,9 +167,10 @@ export function parseDxfOutlineIndex(text:string,versionId:string,sourceSha256:s
   if(!text.includes('SECTION') || !text.includes('EOF'))throw new Error('올바른 ASCII DXF가 아닙니다.');
   const {blocks,entities:source,counts,unitCode}=buildIndex(readPairs(text));
   const entities:OutlineEntity[]=[],warnings:string[]=[];
+  const partialBlocks=new Set<Raw>();
   const goodHash=/^[a-f0-9]{64}$/i.test(sourceSha256);
   const warn=(raw:Raw,message:string)=>{if(warnings.length<200)warnings.push(raw.type+' #'+raw.index+': '+message);};
-  function transformed(raw:Raw,t:Affine,stack:string[],depth:number):OutlinePath[] {
+  function transformed(raw:Raw,t:Affine,stack:string[],depth:number,root:Raw):OutlinePath[] {
     if(depth>12) throw new Error('BLOCK 재귀 깊이가 초과되었습니다.');
     if(raw.type!=='INSERT') {
       return createPaths(raw,tolerance).map(path=>({closed:path.closed,points:path.points.map(p=>apply(t,p))}));
@@ -185,8 +190,13 @@ export function parseDxfOutlineIndex(text:string,versionId:string,sourceSha256:s
     const nested=multiply(t,local);
     const paths:OutlinePath[]=[];
     for(const child of block.entities) {
-      try {paths.push(...transformed(child,nested,[...stack,name],depth+1));}
-      catch(error){warn(child,error instanceof Error?error.message:String(error));}
+      try {paths.push(...transformed(child,nested,[...stack,name],depth+1,root));}
+      catch(error){
+        // A partial BLOCK can have the same bbox as the rendered block despite
+        // missing internal geometry. Never certify its entity reference.
+        partialBlocks.add(root);
+        warn(child,error instanceof Error?error.message:String(error));
+      }
     }
     if(!paths.length)throw new Error('INSERT 내부에 지원되는 도형이 없습니다.');
     return paths;
@@ -194,13 +204,14 @@ export function parseDxfOutlineIndex(text:string,versionId:string,sourceSha256:s
   for(const raw of source) {
     if(entities.length>=OUTLINE_VERTEX_LIMIT)throw new Error('분석 가능한 Entity 개수 제한을 초과했습니다.');
     try {
-      const paths=transformed(raw,identity,[],0);
+      const paths=transformed(raw,identity,[],0,raw);
       if(!paths.length || paths.some(p=>p.points.some(([x,y])=>!Number.isFinite(x)||!Number.isFinite(y))))throw new Error('유효한 2D 경로가 없습니다.');
-      const handle=pairValue(raw,5)??null,stable=goodHash&&handleIsStable(raw,counts);
+      const handle=pairValue(raw,5)??null,stable=goodHash&&handleIsStable(raw,counts)&&!partialBlocks.has(raw);
       const id=stable?versionId+':'+sourceSha256.toLowerCase()+':'+handle!.toUpperCase():versionId+':TEMP:'+raw.index;
       const layer=pairValue(raw,8)??'0';
       entities.push({id,handle,entityType:raw.type,layer,instancePath:[],stable,paths,bounds:bounds(paths)});
-      if(!stable)warn(raw,'Handle 또는 SHA가 안정적이지 않아 JSON 참조를 영속화할 수 없습니다.');
+      if(partialBlocks.has(raw))warn(raw,'미지원 BLOCK 내부 도형이 있으므로 이 인스턴스를 안전한 선택·영구 참조로 인정하지 않습니다.');
+      if(!stable)warn(raw,'Handle, SHA 또는 BLOCK 구성이 안정적이지 않아 JSON 참조를 영속화할 수 없습니다.');
 
     } catch(error) {warn(raw,error instanceof Error?error.message:String(error));}
   }
