@@ -26,6 +26,9 @@ export function reconcileRenderCoverage(
   const selectable:OutlineEntity[]=[];
   let unmappedSource=0,boundsMismatch=0;
   for(const entity of source){
+    // Duplicate/missing handles or a missing SHA are not uniquely attributable:
+    // even matching rendered geometry cannot establish a stable source identity.
+    if(!entity.stable){unmappedSource++;continue;}
     const observed=entity.handle?byHandle.get(entity.handle.toUpperCase()):undefined;
     if(!observed?.length){unmappedSource++;continue;}
     const shapes=observed.filter(o=>o.entityType===entity.entityType&&
