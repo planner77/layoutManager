@@ -1,5 +1,14 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE26-PR30-CI46-FAIL-20261016 — MTEXT continuation fixture whitespace mismatch, fixed (new CI pending)
+
+- PR #30 / PR CI #46 run 38867179402, head 7aef7c7b628eaffac93ec3f8e0b9217dd3c22cea: TypeScript/ESLint **PASS**, Docker image/migration/smoke **PASS**, Unit+Integration **123 passed/1 failed** out of 124 in 27 files. Because the unit step failed, Build and both Browser E2E/migration E2E did not execute. This run does not establish those stages as PASS.
+- Failure: TC-TEXT-001 expected MTEXT display text "생산 ABC 동 12 1/2가", but the fixture had a group-3/group-1 continuation "동\\P1" + "2\\S1#2;" (no literal separator between 12 and fraction), correctly rendering "생산 ABC 동 121/2가". MTEXT group-code 3 and 1 concatenate without inserting whitespace; implicit spaces would alter DXF visible content and text search semantics.
+- Corrected the synthetic fixture to explicitly include the intended space before the fraction. Added TC-TEXT-011 confirming MTEXT group continuation with and without a literal space. Parser behavior was intentionally preserved; no production source or database contract changed for this correction.
+- Fresh CI for the subsequent head still requires actual verification. React Ref lint and Unicode four-digit test passed in #46. See https://github.com/planner77/layoutManager/actions/runs/38867179402.
+
+
+
 ## U-ISSUE26-PR30-CI42-FAIL-20261016 — React Ref lint 및 Unicode 리뷰 수정 (재CI 대기)
 
 - PR #30 / PR CI #42 / Run 38865738285 / head 179e8cd1a22c5eb0c0609080953c98b0e45ece2d.
