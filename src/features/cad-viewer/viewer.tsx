@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useGlobalLoading } from '@/components/global-loading';
 import { CopyCadLink } from '@/features/cad-link/copy-cad-link';
 import { FullscreenLayerPanel } from '@/features/cad-viewer/fullscreen-layer-panel';
+import { CadTextSearch } from '@/features/cad-viewer/cad-text-search';
 import { LayerDropdown } from '@/features/cad-viewer/layer-dropdown';
 import { ViewerManager } from '@/viewers/core/adapter';
 import type { ViewerMetric } from '@/viewers/core/metrics';
@@ -241,6 +242,8 @@ export function CadViewer({
         <Button variant="outline" size="sm" onClick={() => manager.current?.fitToView()}>전체 화면 맞춤</Button>
         <Button size="sm" onClick={exitFullscreen}>전체 화면 종료</Button>
       </div>}
+      <CadTextSearch key={versionId + ':' + renderer + ':' + attempt} manager={manager.current} format={format}
+        ready={state.ready} loading={loading} layers={layers} selectedLayers={selectedLayers} />
       <div
         ref={container}
         data-testid="cad-canvas"
