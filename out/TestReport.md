@@ -1,5 +1,14 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE26-DEV-20261016 — DXF 내부 텍스트 검색 구현, 검증 대기
+
+- Issue #26 / 작업 브랜치 feat/issue-26-dxf-text-search / SemVer 0.27.0.
+- 실제 코드 변경: 순수 ASCII DXF TEXT/MTEXT/BLOCK-INSERT 인덱스 및 NFC/MTEXT 정규화, 별도 Worker, ViewerSource 캐시, 두 Adapter에 world XY focusBounds, 내부 검색 오버레이/레이어 필터/페이지/키보드 이동.
+- 추적 TC-TEXT-001~006 단위 테스트와 TC-TEXT-E2E-001 브라우저 테스트 추가. **이 기록 작성 시 로컬 npm ci/tsc/lint/Vitest/Build/Chromium E2E는 미실행이며 PASS 아님**. PR CI run ID/결과 확인 전 최종 수용 불가.
+- 한계: 현장 업무 DXF/DWG/복잡한 OCS/실제 글꼴 bbox는 미검증. ATTRIB/ATTDEF, 다중 배열 INSERT 및 DWG TEXT/MTEXT는 비지원. 비지원 Entity는 잘못된 좌표 이동 대신 제외 집계.
+- 독립 QA 대행을 수행한 것으로 주장하지 않는다. GHCR 게시, main 병합·운영 배포는 요청 범위에 포함하지 않는다. 기술 계약 및 AC는 Issue26.md 참조.
+
+
 ## U-ISSUE28-PR29-CI39-FAIL-20261016 — 추가한 Unit test matcher 오류 보완 (신규 CI 재검증 대기)
 
 - CI #39 run `38860855614`, head `000774b5432868e696fefc84068e36472e26337d`: TypeScript와 ESLint 검사는 진행·성공했으며 Unit/Integration에서 **113 passed / 1 failed (총 114)**. 실패 지점은 기존 앱/DB 기능이 아닌 신규 `TC-IMAGE-010` 테스트 구현.
