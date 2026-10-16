@@ -31,8 +31,10 @@ export function reconcileRenderCoverage(
     if(!entity.stable){unmappedSource++;continue;}
     const observed=entity.handle?byHandle.get(entity.handle.toUpperCase()):undefined;
     if(!observed?.length){unmappedSource++;continue;}
+    // Fail closed: a handle is unsafe if ANY observed fragment has missing or
+    // inconsistent type/layer/bounds. Do not silently ignore bad siblings.
     const shapes=observed.filter(o=>o.entityType===entity.entityType&&
-      (!o.layer||o.layer===entity.layer)&&o.bounds!==null);
+      o.layer===entity.layer&&o.bounds!==null);
     // Multiple display objects can represent a single DXF handle; compare the
     // union of their extents, never require any one fragment to cover all.
     const merged=shapes.reduce<Bounds2D>((box,o)=>[
