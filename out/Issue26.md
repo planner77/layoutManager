@@ -1,5 +1,13 @@
 # GitHub Issue #26 — DXF TEXT/MTEXT 검색과 좌표 줌
 
+## PR #30 / CI #55 — 신규 검색 E2E 성공, 기존 목록 페이지네이션 가정 실패
+
+- CI #55 Run 38878433970: TypeScript/ESLint, Unit/Integration 136/136, Build, Docker 전부 PASS; Playwright 40/41 PASS. 기존 TC-E2E-001 첫 번째 version 등록 이후 'release-v1.dxf'가 목록 첫 페이지에 없어서 실패하며 Legacy migration은 미실행.
+- Playwright 오류 화면에 등록된 도면 44개, 페이지당 25개, 등록일 최신순이 표시된다. 업무 등록일 2026-09-08로 생성한 파일은 다른 E2E에서 등록한 2026-10-16자 파일보다 뒤에 정렬되어 최초 페이지에 없을 수 있다.
+- 보완: '목록으로' 이동 후 파일명 검색 UI에서 해당 version의 원본 파일명을 필터링하고 API 응답 version ID에 대응하는 행에 원본명과 Current 표시를 확인하도록 TC-E2E-001 변경. Product code, DB schema/API 또는 표준 페이지네이션은 변경하지 않음.
+- Issue #26 검색 관련 두 신규 E2E는 #55에서 통과했으나 전체 PR CI 성공 및 사용자 인수는 새로운 CI가 필요하다.
+
+
 
 ## PR #30 — main(#31) 정렬 및 CI #54 실패 보완 (0.28.0 후보)
 

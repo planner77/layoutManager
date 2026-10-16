@@ -1,5 +1,11 @@
 # ChangeLog
 
+### 0.28.0 / PR #30 CI #55 Workflow E2E 회귀 보완 (2026-10-16)
+
+- Typecheck/ESLint, 136 Unit·Integration, production Build, Docker smoke 및 신규 TEXT/MTEXT 검색 두 Browser E2E가 PASS. 기존 Workflow E2E 1건은 44개 도면/25개 기본 페이지네이션에서 과거 등록일(2026-09-08) Version을 첫 페이지에서 찾는 기대가 잘못되어 실패.
+- 등록 이후 원본 파일명 UI 검색과 업로드 Version ID 기반 Current 검증으로 테스트 안정화. 앱/DB/API 구현 변화 없음. 전체 CI 및 독립 QA는 신규 Run 검증 전 미확정.
+
+
 ## 0.28.0 — main 0.27.0(#31) 정렬 + GitHub #26 DXF 텍스트 검색 통합 (PR CI 대기)
 
 - 기존 main의 DXF 객체 선택·볼록/정밀 외곽선 생성 및 관련 라이브러리와 테스트를 보존하고 DXF TEXT/MTEXT 검색, 위치 Pan/Zoom, Worker 인덱스를 결합.

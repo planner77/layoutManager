@@ -1,5 +1,15 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE26-PR30-CI55-FAIL-20261016 — E2E 초기 목록 페이지네이션 가정 수정 (재CI 대기)
+
+- PR #30 / CI #55 Run 38878433970 / source d4fda35d733cbe5bcbdac4aa5c79992503276453. GitHub Actions PASS: TypeScript, ESLint, Unit/Integration 136/136, production build, Docker image/migration/runtime smoke. Playwright E2E 40/41 PASS; Legacy migration E2E는 E2E 실패로 skipped. 신규 DXF 텍스트 검색 두 E2E는 이번 run에서 모두 통과.
+- 실패: 기존 TC-E2E-001 (src/tests/e2e/workflow.spec.ts:56)에서 첫 번째 DXF 등록 후 목록 첫 페이지에 originalFilename release-v1.dxf 행이 없다고 판정. Upload API는 201, 등록 완료 V1 표시는 통과하였다.
+- Playwright artifact error-context에서 등록 도면 총 44개, default list pageSize 25, 등록일 최신순 전체 버전을 확인. 해당 테스트의 registeredAt은 2026-09-08이며 상당수 앞선 테스트가 2026-10-16자로 새 도면을 등록해 첫 페이지에 표시되지 않는다. 파일명/Current가 잘못 저장됐다는 증거는 없고 UI 목록 pagination 조건을 고려하지 않은 테스트의 비결정적인 기대가 원인.
+- 해결: 각 등록 후 목록으로 돌아와 UI의 '파일명' 검색 필드에 해당 release-vN.dxf를 입력하여 검색 실행, 응답 ID에서 파생한 version-ID 행이 실제 파일명과 '● Current'를 포함하는지 확인한다. 전체 목록 첫 페이지 노출은 수용 조건에서 제외한다. 기존 Current 교체/필터/E2E 후반 단계와 API 검증을 보존한다.
+- 애플리케이션/API/DB 구현 변경 없이 테스트 재현성만 강화. 후속 PR CI, 브라우저 및 Legacy migration 전체 PASS는 새 결과 확인 전 미확정.
+- Evidence: https://github.com/planner77/layoutManager/actions/runs/38878433970
+
+
 ## U-ISSUE26-PR30-CI54-FAIL-20261016 — Renderer 전환 후 캐시 검색의 로딩 상태 무한 표시
 
 - PR #30 / CI #54 Run 38874916901 / head 8462b772654ee810546edfb229f0cdd50c393291: TypeScript, ESLint, Unit/Integration 126/126, Production build, Docker smoke 모두 PASS; Playwright 38 passed/2 failed; Legacy migration E2E skipped.

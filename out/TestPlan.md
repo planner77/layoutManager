@@ -1,5 +1,12 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+### Issue #26 / CI #55 — 기존 Workflow E2E 페이지네이션 비의존성
+
+- TC-E2E-001: V1과 V2를 2026-09-08 business registeredAt으로 등록하더라도 목록에는 다른 E2E에서 생성한 최신 2026-10-16 항목이 25개 이상 있을 수 있다. 최초 '/ ' 목록의 page 1에 새로 등록된 과거 일자 Version이 있다는 전제를 제거한다.
+- 등록 성공(HTTP 201 및 Vn 등록 완료) → 목록 이동 → 원본 파일명 release-vN.dxf로 UI 검색 → 현재 업로드 response.id 기반 version 행의 파일명과 ● Current 상태 확인. 전체 목록 페이지 분할 및 기존 Current 교체·검색·Viewer 검증은 유지한다.
+- CI #55 (38878433970)는 browser E2E 40/41 PASS. TC-TEXT-E2E-001 양 renderer PASS, TC-E2E-001만 FAIL, Legacy migration skipped. 새 PR CI로 전체 E2E 및 legacy migration을 확인한다.
+
+
 ### Issue #26 — main(#31) 통합과 캐시 인덱스 로딩 종료 회귀
 
 - TC-TEXT-E2E-001: dxf-viewer→three-dxf-viewer 및 역방향 전환 시 동일 메모리 CAD 원본/인덱스 재사용, "검색용 텍스트를 분석 중" 상태가 종료되고 "검색 결과 3개"가 표시되며 World focus가 가능해야 한다. 기존 #54의 두 렌더러 공통 실패를 재검증한다.
