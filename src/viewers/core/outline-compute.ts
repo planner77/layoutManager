@@ -1,6 +1,6 @@
 /** Issue #31: pure outline computation. Only genuinely closed linework has area.
  * Polygon Union is delegated to polygon-clipping; no guessed concave hulls. */
-import polygonClipping from 'polygon-clipping';
+import {union} from 'polygon-clipping';
 import { convexHull, type XY, type OutlineKind, type OutlineEntity, type OutlinePath } from './outline-geometry';
 export type GeoJSONOutline = {type:'Polygon';coordinates:XY[][]} | {type:'MultiPolygon';coordinates:XY[][][]};
 export type OutlineResult = {
@@ -107,9 +107,9 @@ export function computeOutline(kind:OutlineKind,entities:OutlineEntity[],toleran
      polys.push([close(rings[i]),...holes.map(close)]);
    }
    // polygon-clipping returns MultiPolygon geometry with interior holes preserved.
-   const union=polygonClipping.union(...polys) as XY[][][];
-   if(!union.length)throw new Error('정밀 Polygon Union 결과가 비어 있습니다.');
-   geometry=union.length===1?{type:'Polygon',coordinates:union[0]}:{type:'MultiPolygon',coordinates:union};
+   const merged=union(polys[0],...polys.slice(1)) as XY[][][];
+   if(!merged.length)throw new Error('정밀 Polygon Union 결과가 비어 있습니다.');
+   geometry=merged.length===1?{type:'Polygon',coordinates:merged[0]}:{type:'MultiPolygon',coordinates:merged};
  }else throw new Error('지원하지 않는 외곽선 유형입니다.');
  return {kind,algorithm:kind==='CONVEX'?'monotone-chain-v1':'polygon-clipping-union-v1',
    geometry,sourceEntityIds:entities.map(e=>e.id),persistable:entities.every(e=>e.stable),
