@@ -1,5 +1,13 @@
 # ChangeLog
 
+## 0.27.0 — 2026-10-16 / GitHub #26 (PR CI 전)
+
+- Added: 현재 DXF 내 TEXT/MTEXT 문자열 부분검색, 한글/영문/숫자, 정규화된 MTEXT, 결과 선택·이전/다음 및 world XY Pan/Zoom. 2D BLOCK/INSERT 좌표 해석과 미지원 Entity 집계.
+- Added: 재사용 가능한 브라우저 Worker text index, ViewerSource 캐시, 두 DXF Adapter의 focusBounds, 전체 화면 Viewer shell의 접이식 검색 패널.
+- Compatibility: DB/API/migration/새 npm dependency 없음. DWG 텍스트 검색은 미지원. 기존 #25 기본 fullscreen 진입은 별도 작업.
+- Tests: TC-TEXT-001~006 Unit, TC-TEXT-E2E-001 브라우저 테스트 소스 추가. 이 시점 정적/실행/CI PASS 및 실제 업무 도면 수용은 **미확인**.
+
+
 ## 0.26.0 — 2026-10-16 / GitHub #28 (CI 전)
 
 - Web: Next standalone 및 native SQLite 기반 Docker 운영 이미지로 축소; 비교용 phase1 타깃 추가.
