@@ -19,6 +19,7 @@ test('TC-OUT-E2E-001: selection and convex/precise preview, non-destructive JSON
  await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
  const tools=page.getByTestId('cad-outline-tools');
  await expect(tools).toBeVisible();
+ await expect(page.getByTestId('outline-render-mapping')).toContainText('매핑 제외 0개');
  await tools.getByRole('button',{name:'선택 모드'}).click();
  const canvas=page.locator('canvas');
  const box=(await canvas.boundingBox())!;
