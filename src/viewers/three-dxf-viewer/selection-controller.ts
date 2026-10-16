@@ -16,7 +16,14 @@ function segmentIntersectsBox(a:XY,b:XY,rect:[number,number,number,number]){
    [[right,top],[left,top]],[[left,top],[left,bottom]],
  ];
  const orient=(p:XY,q:XY,r:XY)=>(q[0]-p[0])*(r[1]-p[1])-(q[1]-p[1])*(r[0]-p[0]);
- return edges.some(([c,d])=>orient(a,b,c)*orient(a,b,d)<=0&&orient(c,d,a)*orient(c,d,b)<=0);
+ return edges.some(([c,d])=>{
+   const u=orient(a,b,c),v=orient(a,b,d),w=orient(c,d,a),x=orient(c,d,b);
+   const cross=u*v<0&&w*x<0;
+   const on=(p:XY,q:XY,r:XY)=>Math.abs(orient(p,q,r))<=1e-8&&
+     q[0]>=Math.min(p[0],r[0])-1e-8&&q[0]<=Math.max(p[0],r[0])+1e-8&&
+     q[1]>=Math.min(p[1],r[1])-1e-8&&q[1]<=Math.max(p[1],r[1])+1e-8;
+   return cross||on(a,c,b)||on(a,d,b)||on(c,a,d)||on(c,b,d);
+ });
 }
 function pathsFor(entity:OutlineEntity) {
  return entity.paths.flatMap(path=>{
@@ -111,7 +118,7 @@ export class SelectionController {
      });
    }else{
      const p=this.screenToWorld(x,y),q=this.screenToWorld(x+CLICK_PX,y),radius=Math.hypot(q[0]-p[0],q[1]-p[1]);
-     const ranked=candidates.map(e=>({e,d:Math.min(Infinity,...pathsFor(e).map(([a,b])=>distanceToSegment(p,a,b)))})).sort((a,b)=>a.d-b.d);
+     const ranked=candidates.map(e=>({e,d:pathsFor(e).reduce((best,[a,b])=>Math.min(best,distanceToSegment(p,a,b)),Infinity)})).sort((a,b)=>a.d-b.d);
      if(ranked[0]&&ranked[0].d<=radius)hits=[ranked[0].e];
    }
    if(!start.mod)this.ids.clear();
