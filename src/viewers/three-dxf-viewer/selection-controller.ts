@@ -131,7 +131,8 @@ export class SelectionController {
    if(el?.closest('input,textarea,select,[contenteditable="true"]'))return;
    if(event.code==='Space'&&this.mode==='select'&&!event.repeat){this.space=true;this.onPanKey(true);event.preventDefault();}
    if(event.key==='Escape'&&this.mode==='select'&&(this.down||this.ids.size)){
-     this.clear();event.preventDefault();event.stopImmediatePropagation();
+     // Also allow the fullscreen Escape handler to close native/CSS fullscreen.
+     this.clear();event.preventDefault();
    }
  };
  private keyUp=(event:KeyboardEvent)=>{

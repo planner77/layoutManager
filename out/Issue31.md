@@ -1,6 +1,6 @@
 # Issue #31 — DXF 복수 선택과 볼록·정밀 외곽선 (0.27.0)
 
-상태: **구현 브랜치의 실험적 P0~P3 부분 구현, CI/독립 QA/실도면 검증 전**. 이 문서는 적용 범위와 미구현 조건을 명시한다. P4 서버 영속화는 Owner의 권한 정책 결정 전 **구현하지 않는다**. P5 실제 대형 도면 수용도 아직 수행하지 않았다.
+상태: **구현 브랜치의 실험적 P0~P3 부분 구현, 새 CI/독립 QA/실도면 검증 전**. 이 문서는 적용 범위와 미구현 조건을 명시한다. P4 서버 영속화는 Owner의 권한 정책 결정 전 **구현하지 않는다**. P5 실제 대형 도면 수용도 아직 수행하지 않았다.
 
 ## 범위/사용 절차
 
@@ -37,6 +37,12 @@
 ## 데이터 권한/후속 단계
 
 서버 영속 `CadOutline`은 Issue #31의 P4 제안 `id,versionId,name,kind,algorithm,sourceEntities,geometry,parameters,sourceSha256,revision,timestamps`와 DB FK/CAS revision을 따른다. **삭제용 비밀번호는 다른 편집 권한을 부여하지 않는다.** 인가 주체·범위·감사·권한 모델이 Owner 승인될 때까지 API/테이블을 배포하지 않는다. P4 착수 시 `out/Database.md` 단일 근거로 schema/migration을 작성하고 보안·동시성·삭제 회귀를 필수로 한다. P5 실도면·성능·정확도 PASS 전에는 운영 수용/릴리스 완료로 판정하지 않는다.
+
+## 2026-10-16 PR #32 CI 실패·P2 리뷰 보완
+
+- run `38868848174`: TypeScript와 Docker smoke 성공, ESLint `prefer-const` 실패로 Unit/Build/E2E 미실행. timeout `const` 교정.
+- 리뷰: 선택 중 Escape 전체화면 해제 전파, 새 Worker 전에 이전 Preview 동기 무효화, 오목 외곽선 경계 교차 후에만 Hole 판정. 기존 ESC 정책은 *선택 취소와 fullscreen 종료 동시*로 정의하고 CSS fallback E2E로 검증한다.
+- 회귀: concave overlap Unit, preview invalidation·CSS fullscreen fallback Esc E2E 추가. **새 CI 결과는 아직 미확정**.
 
 ## 외부 라이브러리 선택 근거
 

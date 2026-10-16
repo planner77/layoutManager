@@ -35,11 +35,30 @@ test('TC-OUT-E2E-001: selection and convex/precise preview, non-destructive JSON
  expect(fileDownload.suggestedFilename()).toMatch(/cad-outlines-/);
  await tools.getByRole('button',{name:'정밀 외곽선 미리보기'}).click();
  await expect(page.getByTestId('outline-preview')).toContainText('실제 폐곡선 Union');
+ // The old selection's result must become unconfirmable synchronously.
+ await tools.getByRole('button',{name:'선택 해제'}).click();
+ await expect(tools.getByRole('button',{name:'임시 확정'})).toBeDisabled();
+ {
+   const again=(await canvas.boundingBox())!;
+   await page.mouse.move(again.x+5,again.y+5);await page.mouse.down();
+   await page.mouse.move(again.x+again.width-5,again.y+again.height-5,{steps:8});await page.mouse.up();
+   await expect(page.getByTestId('outline-selection-count')).toContainText('선택 1개');
+ }
+ await tools.getByRole('button',{name:'정밀 외곽선 미리보기'}).click();
+ await expect(page.getByTestId('outline-preview')).toContainText('실제 폐곡선 Union');
  await page.getByRole('button',{name:'전체 화면',exact:true}).click();
  await expect(page.getByTestId('cad-viewer-shell')).toHaveAttribute('data-fullscreen','true');
  await expect(page.getByTestId('outline-selection-count')).toContainText('선택 1개');
  await page.getByRole('button',{name:'전체 화면 종료',exact:true}).click();
- await tools.getByRole('button',{name:'선택 해제'}).click();
+ // Force CSS fallback and verify Escape clears selection AND exits fullscreen.
+ await page.getByTestId('cad-viewer-shell').evaluate(shell=>{
+   Object.defineProperty(shell,'requestFullscreen',{configurable:true,
+      value:()=>Promise.reject(new Error('test CSS fallback'))});
+ });
+ await page.getByRole('button',{name:'전체 화면',exact:true}).click();
+ await expect(page.getByTestId('cad-viewer-shell')).toHaveAttribute('data-fullscreen','true');
+ await page.keyboard.press('Escape');
+ await expect(page.getByTestId('cad-viewer-shell')).toHaveAttribute('data-fullscreen','false');
  await expect(page.getByTestId('outline-selection-count')).toContainText('선택 0개');
  await tools.getByRole('button',{name:'탐색 모드'}).click();
  await page.getByRole('button',{name:'다시 불러오기'}).click();

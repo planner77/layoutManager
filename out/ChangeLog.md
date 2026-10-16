@@ -1,10 +1,10 @@
 # ChangeLog
 
-## 0.27.0 — 2026-10-16 / GitHub #31 (PR CI 전, 범위 제한)
+## 0.27.0 — 2026-10-16 / GitHub #31 (PR CI 재검증 전, 범위 제한)
 
 - Feature: three-dxf-viewer의 DXF 객체 클릭/다중·방향별 영역 선택, 레이어 동기화, 독립적인 Convex 및 실제 폐곡선 Polygon Union(+MultiPolygon/Holes), Worker 취소 및 Preview/임시 확정·JSON 내보내기.
 - Design: Version SHA + Entity Handle, 기본 2D WCS/INSERT 변환·INSUNITS, 오류가 있는 Entity의 명시적 제외; polygon-clipping@0.15.7(MIT) 도입. 브라우저 임시 결과만 지원, 서버 DB/API/원본 변경 없음.
-- Validation: 테스트 코드 작성, PR CI/독립 QA/실제 DXF·성능 검증 전. 범위·미지원과 P4 정책 대기는 [Issue31](Issue31.md).
+- Validation: 최초 PR #32 CI #38868848174 TypeScript/Docker PASS, ESLint prefer-const 실패로 Unit/E2E 미실행. Fullscreen ESC/Preview stale/오목 Hole P2 리뷰 3건 보완 및 회귀 테스트 추가. 신규 CI·독립 QA·실도면 검증 전. 범위·미지원과 P4 정책 대기는 [Issue31](Issue31.md).
 
 
 ## 0.26.0 — 2026-10-16 / GitHub #28 (CI 전)

@@ -1,13 +1,13 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
-## Issue #31 — 검증 계획 (0.27.0 PR CI 전)
+## Issue #31 — 검증 계획 (0.27.0 PR CI 재검증 전)
 
 | Case | 증거 계획 | 현재 상태 |
 | --- | --- | --- |
 | TC-OUT-ID | 합성 DXF Unique/Duplicate Handle, Version/SHA, 회전·스케일 INSERT WCS | Unit 코드 작성·미실행 |
 | TC-OUT-GEO1 | Monotone Hull 극점/공선/원호·OCS 실패 | Unit 코드 작성·미실행 |
-| TC-OUT-GEO2 | 오목 L, 중첩 Union, MultiPolygon, hole, 연결 LINE, 열린/자기교차 | Unit 코드 작성·미실행 |
-| TC-OUT-E2E-001 | DXF Viewer 클릭/영역, 볼록·정밀 Preview/JSON, fullscreen/reload | E2E 코드 작성·미실행 |
+| TC-OUT-GEO2 | 오목 L, 중첩 Union, MultiPolygon, hole, 연결 LINE, 열린/자기교차, 오목 경계와 교차하는 도형 | Unit 확장·미실행 |
+| TC-OUT-E2E-001 | DXF Viewer 클릭/영역, 볼록·정밀 Preview/JSON, fullscreen/reload, preview 무효화·CSS fallback Esc | E2E 확장·미실행 |
 | AC-SEL-002/REG-001 | 기존 전체 DXF/DWG/레이어/Fullscreen/Version E2E 무회귀 | PR CI 대기 |
 | AC-ID-001/AC-PERF-001 | 실제 설비 DXF Object3D↔Entity mapping 및 1k/10k/100k 수행시간·정확도 | P0/P5 BLOCKED(샘플·실측 필요) |
 | AC-DATA-002 | 쓰기 정책/무권한/동시 충돌 검증 | P4 BLOCKED(Owner 권한 정책 결정 전) |

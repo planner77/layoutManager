@@ -162,7 +162,6 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     return new Promise<T>((resolve,reject)=>{
       const worker=new Worker(new URL('../core/outline-worker.ts',import.meta.url),{type:'module'});
       let settled=false;
-      let timer:ReturnType<typeof setTimeout>;
       const finish=(error?:Error,result?:T)=>{
         if(settled)return;settled=true;clearTimeout(timer);
         if(this.activeWorkers[kind]?.worker===worker)delete this.activeWorkers[kind];
@@ -175,7 +174,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
         else finish(new Error(response?.error??'외곽선 Worker 실패'));
       };
       worker.onerror=()=>finish(new Error('외곽선 Worker를 실행할 수 없습니다.'));
-      timer=setTimeout(()=>finish(new Error('외곽선 계산 제한 시간(30초) 초과')),30000);
+      const timer=setTimeout(()=>finish(new Error('외곽선 계산 제한 시간(30초) 초과')),30000);
       worker.postMessage({task:kind,...payload});
     });
   }
@@ -219,6 +218,8 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     if(!this.index||!this.selector)throw new Error(this.indexError??'DXF 객체 인덱스가 준비되지 않았습니다.');
     const selected=this.selector.getSelection();
     if(!selected.length)throw new Error('외곽선을 만들 객체를 먼저 선택하세요.');
+    // Invalidate the old selection's preview before a new worker can finish.
+    this.cancelOutlinePreview();
     this.previewKind=kind;
     const sequence=++this.computeSequence;
     try {

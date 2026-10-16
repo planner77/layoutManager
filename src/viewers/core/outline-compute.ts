@@ -35,6 +35,22 @@ function normalizeRing(input:XY[],tol:number):XY[] {
  }
  return compact;
 }
+function boundaryCrosses(inner:XY[],outer:XY[]):boolean {
+ // A ring's vertices can all be within a concave polygon while an edge crosses
+ // outside of its notch. Crossing contours are not parent/child holes.
+ for(let i=0;i<inner.length;i++){
+   const a=inner[i],b=inner[(i+1)%inner.length];
+   for(let j=0;j<outer.length;j++){
+     const c=outer[j],d=outer[(j+1)%outer.length];
+     if(Math.max(a[0],b[0])<Math.min(c[0],d[0])-EPS||
+        Math.min(a[0],b[0])>Math.max(c[0],d[0])+EPS||
+        Math.max(a[1],b[1])<Math.min(c[1],d[1])-EPS||
+        Math.min(a[1],b[1])>Math.max(c[1],d[1])+EPS)continue;
+     if(intersects(a,b,c,d))return true;
+   }
+ }
+ return false;
+}
 function pointInside(p:XY,ring:XY[]):boolean {
  let inside=false;
  for(let i=0,j=ring.length-1;i<ring.length;j=i++){
@@ -94,6 +110,7 @@ export function computeOutline(kind:OutlineKind,entities:OutlineEntity[],toleran
      for(let j=0;j<rings.length;j++){
        if(i===j||Math.abs(signedArea(rings[j]))<=Math.abs(signedArea(ring))+EPS)continue;
        if(!ring.every(p=>pointInside(p,rings[j])))continue;
+       if(boundaryCrosses(ring,rings[j]))continue;
        const a=Math.abs(signedArea(rings[j]));
        if(a<area){area=a;parent=j;}
      }

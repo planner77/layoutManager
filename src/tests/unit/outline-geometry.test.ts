@@ -72,6 +72,14 @@ describe('Issue #31 WCS EntityRef and geometry AC',()=>{
    expect(multi.geometry.type).toBe('MultiPolygon');
    expect(area(multi.geometry)).toBeCloseTo(28);
  });
+ it('TC-OUT-GEO2: crossing an L-shaped concavity is overlap, not a hole',()=>{
+   const outer=poly('AC',[[0,0],[5,0],[5,1],[1,1],[1,5],[0,5]]);
+   const overlap=poly('AD',[[0.5,0.5],[3,0.5],[0.5,3]]);
+   const selected=parseDxfOutlineIndex(dxf(outer+'\n'+overlap),id,sha).entities;
+   // Original L shape has area 9. Crossing triangle adds area beyond the notch.
+   // Misclassification as an interior hole would give an area less than 9.
+   expect(area(computeOutline('PRECISE',selected).geometry)).toBeGreaterThan(9);
+ });
  it('TC-OUT-GEO2: nested closed contours preserve an interior hole',()=>{
    const outer=poly('1A',[[0,0],[10,0],[10,10],[0,10]]);
    const inner=poly('1B',[[2,2],[8,2],[8,8],[2,8]]);

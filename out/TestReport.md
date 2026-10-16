@@ -1,5 +1,12 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE31-PR32-CI-FAIL-20261016 — ESLint 및 P2 리뷰 보완 (재검증 대기)
+
+- 최초 PR #32 CI run `38868848174`: `npm ci`, Prisma 생성, `tsc --noEmit` **PASS**; **ESLint 실패**(`src/viewers/three-dxf-viewer/adapter.ts:165:11`, `prefer-const`). Unit/Integration, Build 및 E2E는 이전 단계 실패로 **미실행**, 별도의 Docker build/migration/runtime smoke Job은 **PASS**.
+- 보완: timeout handle `let timer`→`const timer`. Codex P2 리뷰 3건 처리 대상: (1) 선택 중 Escape가 Fullscreen 종료를 막지 않도록 이벤트 전달, (2) 새 Worker 전에 기존 preview/확정 데이터 동기 무효화, (3) 오목 Polygon 경계를 가로지르는 내부 꼭짓점의 Hole 오판 방지를 위한 선분 교차 검사.
+- 테스트 추가: 오목 경계를 넘는 삼각형의 Union Unit; 선택 해제 시 확정 비활성화 및 CSS Fullscreen fallback Escape E2E. **새 CI 실행 전 해당 테스트 결과는 미확정.** 운영 수용·독립 QA도 미완료.
+
+
 ## U-ISSUE31-DEV-20261016 — 구현 기록 (자동 시험 전)
 
 - 소스 `feat/issue-31-outline-selection`, 개발 버전 0.27.0. DXF WCS source index/Handle, 기본 INSERT affine, SelectionController, Web Worker, convex/precise union, 렌더와 분리된 Overlay, 임시 확정·JSON 내보내기 및 합성 Unit/E2E 시험 코드를 작성했다.
