@@ -77,7 +77,7 @@ function decodeSource(bytes: ArrayBuffer): string {
   }
 }
 function unicodeEscape(text: string) {
-  return text.replace(/\\U\+([0-9A-Fa-f]{4,8})/g, (original, hex: string) => {
+  return text.replace(/\\U\+([0-9A-Fa-f]{4})/g, (original, hex: string) => {
     const value = Number.parseInt(hex, 16);
     return value <= 0x10ffff && !(value >= 0xd800 && value <= 0xdfff)
       ? String.fromCodePoint(value) : original;
