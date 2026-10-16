@@ -1,5 +1,13 @@
 # 상세 요구사항
 
+## Issue #31 잔여 요구사항 명세 (0.27.1)
+
+- P0-MAP: Source Handle만으로 Selection을 허용하지 않고 THREE `userData.entity`와 render Type/Layer/WCS XY Box 일치 여부 검사. 1:N 객체 Bounds 합산. 미일치 Entity는 선택 제외와 경고.
+- P5-INDEX: 대형 도면 hit-test 범위 가속과 giant Entity cell 상한; 1k/10k/100k CPU synthetic 벤치 JSON 재현성, 실제 도면·Worker 전송/GPU/입력 latency 수용은 별개.
+- P4-DRAFT: browser-export JSON의 Version·sourceSha256·고유 Handle·유효 Polygon을 확인하되 Client geometry를 인증된 기록으로 신뢰하지 않는다. Owner AuthN/AuthZ 결정 전 DB/Server Outline CRUD 미배포.
+- 실제 도면 소·중·대형 sample 3종+CAD 수치 기준·환경·반복 측정이 없으면 P0/P5 운영 적합성을 확인할 수 없다. 이슈 종료는 전체 범위 수용 후만 가능. [Issue31](Issue31.md).
+
+
 ## Issue #31 요구사항 (0.27.0 구현 브랜치·수용 전)
 
 - SEL-001~006: three-dxf-viewer DXF에 한정해 탐색/선택 모드, 클릭·Mod+클릭·양방향 영역 선택, 숨김 레이어 제외/해제, 오버레이/Fullscreen/ESC·전환 cleanup. 다른 Viewer·DWG는 미지원.
