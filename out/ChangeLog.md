@@ -1,5 +1,13 @@
 # ChangeLog
 
+### 0.27.0 / PR #30 보완 (2026-10-16)
+
+- Fixed: JSX 렌더링 중 ViewerManager ref 읽기로 발생한 ESLint react-hooks/refs 실패를 stable getter로 변경.
+- Fixed: DXF Unicode escape가 바로 뒤의 영문 16진 문자까지 잘못 소비하던 문제를 정해진 4자리 코드로 제한하고 회귀 테스트 추가.
+- Verification: PR CI #42 (38865738285)는 TypeScript/Docker success, ESLint failure, Unit/Browser skipped. 후속 PR CI 및 QA 판정 대기.
+
+
+
 ## 0.27.0 — 2026-10-16 / GitHub #26 (PR CI 전)
 
 - Added: 현재 DXF 내 TEXT/MTEXT 문자열 부분검색, 한글/영문/숫자, 정규화된 MTEXT, 결과 선택·이전/다음 및 world XY Pan/Zoom. 2D BLOCK/INSERT 좌표 해석과 미지원 Entity 집계.
