@@ -35,6 +35,7 @@ export class CadListRepository {
         drawingName: true,
         description: true,
         fileFormat: true,
+        sha256: true,
         version: true,
         fileSize: true,
         registeredAt: true,

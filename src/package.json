@@ -1,6 +1,6 @@
 {
   "name": "cad-layout-viewer",
-  "version": "0.26.0",
+  "version": "0.27.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -42,7 +42,8 @@
     "server-only": "0.0.1",
     "tailwind-merge": "3.6.0",
     "three": "0.171.0",
-    "three-dxf-viewer": "1.0.44"
+    "three-dxf-viewer": "1.0.44",
+    "polygon-clipping": "0.15.7"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",

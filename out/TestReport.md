@@ -1,5 +1,19 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE31-PR32-CI-FAIL-20261016 — ESLint 및 P2 리뷰 보완 (재검증 대기)
+
+- 최초 PR #32 CI run `38868848174`: `npm ci`, Prisma 생성, `tsc --noEmit` **PASS**; **ESLint 실패**(`src/viewers/three-dxf-viewer/adapter.ts:165:11`, `prefer-const`). Unit/Integration, Build 및 E2E는 이전 단계 실패로 **미실행**, 별도의 Docker build/migration/runtime smoke Job은 **PASS**.
+- 보완: timeout handle `let timer`→`const timer`. Codex P2 리뷰 3건 처리 대상: (1) 선택 중 Escape가 Fullscreen 종료를 막지 않도록 이벤트 전달, (2) 새 Worker 전에 기존 preview/확정 데이터 동기 무효화, (3) 오목 Polygon 경계를 가로지르는 내부 꼭짓점의 Hole 오판 방지를 위한 선분 교차 검사.
+- 테스트 추가: 오목 경계를 넘는 삼각형의 Union Unit; 선택 해제 시 확정 비활성화 및 CSS Fullscreen fallback Escape E2E. **새 CI 실행 전 해당 테스트 결과는 미확정.** 운영 수용·독립 QA도 미완료.
+
+
+## U-ISSUE31-DEV-20261016 — 구현 기록 (자동 시험 전)
+
+- 소스 `feat/issue-31-outline-selection`, 개발 버전 0.27.0. DXF WCS source index/Handle, 기본 INSERT affine, SelectionController, Web Worker, convex/precise union, 렌더와 분리된 Overlay, 임시 확정·JSON 내보내기 및 합성 Unit/E2E 시험 코드를 작성했다.
+- **검증 상태: PENDING.** 이 기록 작성 시 개발자 로컬 TypeScript/ESLint/Unit/Browser 테스트, PR CI, 독립 QA, 실제 설비 DXF 판정은 수행하지 않았음. PR CI 실행 결과와 코드 오류 수정 전에는 수용/운영 배포 PASS를 주장하지 않는다.
+- P4 인증/인가·server persistence/CRUD 및 P5 대형 도면 성능/정밀 매핑 검증은 미구현. Source와 DB 원본 쓰기 계약에 변경 없음. [Issue31](Issue31.md).
+
+
 ## U-ISSUE28-PR29-CI39-FAIL-20261016 — 추가한 Unit test matcher 오류 보완 (신규 CI 재검증 대기)
 
 - CI #39 run `38860855614`, head `000774b5432868e696fefc84068e36472e26337d`: TypeScript와 ESLint 검사는 진행·성공했으며 Unit/Integration에서 **113 passed / 1 failed (총 114)**. 실패 지점은 기존 앱/DB 기능이 아닌 신규 `TC-IMAGE-010` 테스트 구현.
