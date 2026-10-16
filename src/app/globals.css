@@ -7,3 +7,6 @@ input:not([type='checkbox']):not([type='file']), select { width: 100%; height: 4
 input:focus, select:focus { outline: 2px solid #0f766e; outline-offset: 1px; }
 label { display: block; font-size: 13px; font-weight: 600; color: #475569; }
 label > input, label > select { margin-top: 7px; }
+
+/* CSS immersive mode is independent of the user-activation-gated Fullscreen API. */
+html.cad-viewer-immersive, html.cad-viewer-immersive body { overflow: hidden; overscroll-behavior: none; }
