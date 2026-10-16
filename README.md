@@ -1,5 +1,10 @@
 # CAD Web Viewer P.O.C.
 
+### v0.28.3 Private acceptance selection gate
+
+실DXF 브라우저 수용 명령은 기본적으로 모든 반복에서 실제 선택 가능한 Source Entity가 **1개 이상**이어야 성공하며, 필요 시 `CAD_OUTLINE_ACCEPTANCE_MIN_SELECTED=10` 등으로 문턱값을 지정할 수 있습니다. 운영자가 확정한 실제 DXF SHA와 기준 CAD 치수/면적을 검증한 뒤에만 완전한 수용으로 기록하세요.
+
+
 ## Issue #31 v0.28.3 — 후속 DXF 정확도·성능 수용 도구
 
 - P0 안전성: 지원되지 않는 BLOCK 자식이 일부라도 포함되면 INSERT의 Source ID를 stable로 인정하지 않아 잘못된 부분 외곽선의 영구 참조를 방지한다. 대형 CIRCLE/ARC에서 512 포인트로 허용 오차를 만족할 수 없으면 계산을 거부한다.
