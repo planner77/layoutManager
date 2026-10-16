@@ -186,7 +186,25 @@ test("TC-MASTER-003/005/007: three-version current history survives inactive mas
     "INACTIVE_LOCATION_CHAIN",
   );
 
+  // PR #27 review regression: non-2xx JSON must not crash the reclassification view.
+  await page.route("**/api/masters?active=true", (route) =>
+    route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({ error: { message: "Database unavailable" } }),
+    }),
+  );
   await page.goto(`/cad/locations/${legacy.floorId}`);
+  await expect(page.getByRole("alert")).toHaveText(
+    "대상 기준정보를 불러오지 못했습니다.",
+  );
+  await expect(
+    page.getByRole("heading", { name: "미분류 층 재분류" }),
+  ).toBeVisible();
+  await expect(page.getByText("총 3개 버전")).toBeVisible();
+  await page.unroute("**/api/masters?active=true");
+  await page.reload();
+  await expect(page.getByRole("alert")).toHaveCount(0);
   await expect(page.getByText("총 3개 버전")).toBeVisible();
   await expect(
     page.getByRole("row").filter({ hasText: "legacy-v2.dxf" }),

@@ -21,9 +21,16 @@ export function FloorReclassify({ locationId }: { locationId: string }) {
   useEffect(() => {
     let active = true;
     fetch("/api/masters?active=true")
-      .then((r) => r.json())
-      .then((v) => {
-        if (active) setTree(v.items);
+      .then(async (response) => {
+        if (!response.ok) throw new Error("기준정보 요청에 실패했습니다.");
+        const body: { items?: Bu[] } = await response.json();
+        if (!Array.isArray(body?.items)) {
+          throw new Error("기준정보 응답 형식이 올바르지 않습니다.");
+        }
+        return body.items;
+      })
+      .then((items) => {
+        if (active) setTree(items);
       })
       .catch(() => {
         if (active) setError("대상 기준정보를 불러오지 못했습니다.");

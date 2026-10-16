@@ -54,3 +54,9 @@ gpt-5.6-luna가 source frozen 상태에서 `db:generate`, typecheck, lint, build
 ## Root 원격 게시
 
 2026-10-15: source `e8189b4543ce53b00a6c2feb02e0eae3f125263b`를 지정 저장소의 `feat/issue-24-master-hierarchy`에 게시했다. stage 67개 파일의 Secret/런타임 검사 위반은 0건이며 원격 Git tree와 검증한 local index가 일치했다. 최신 main은 작업 브랜치의 조상이므로 병합 충돌이 없다. 기존 열린 PR은 없으며 새 PR의 opened 이벤트로 PR CI를 시작한다. CI 결과 모니터링·병합·운영 migration·배포는 이번 작업에서 수행하지 않는다.
+
+## PR #27 리뷰 보완 (2026-10-16)
+
+- Code Review의 P2 지적을 반영해 미분류 층 재분류 기준정보 GET에서 HTTP 오류와 잘못된 `items` 구조를 예외 처리하며, 오류 시 빈 초기 트리와 안내를 유지하도록 개선한다.
+- TC-MASTER-008로 503 JSON 오류 재현, 오류 안내·도면 버전/폼 유지, 복구 후 기존 정상 재분류를 검증할 Browser 시나리오를 추가한다.
+- 0.25.0 병합 전 오류 보완으로 별도 버전 증가 없음. 기존 독립 QA 통과를 신규 커밋 테스트 PASS로 소급 적용하지 않으며 새 PR CI에서 검증한다. 운영 DB migration·배포는 수행하지 않는다.

@@ -1,5 +1,12 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE24-PR27-REVIEW-20261016 — 리뷰 P2 보완 (CI 검증 전)
+
+- PR #27의 미해결 P2 지적: 미분류 층 상세 `/api/masters?active=true`가 HTTP 오류와 JSON `error`를 반환하면 응답 성공 여부를 검사하지 않아 `setTree(undefined)` 후 `tree.find`에서 화면이 중단될 수 있었다.
+- 수정: HTTP `response.ok` 및 응답 `items` 배열을 검사한 뒤 상태를 갱신한다. 실패/비정상 응답은 기존 `role=alert` 오류 안내로 처리하며 도면 버전 조회 화면은 유지한다.
+- 회귀 계획/소스: `src/tests/e2e/master.spec.ts`의 기존 legacy/재분류 시나리오에 HTTP 503 JSON 실패 주입 → 오류 안내·폼·버전 보존 → 라우트 해제·새로고침 → 정상 재분류를 추가했다(TC-MASTER-008).
+- 이전 PR CI(기존 커밋 `4ab9451`) 결과는 SUCCESS(run 38747384469)였으나 본 보완 변경에 대한 local typecheck/lint/E2E는 수행하지 않았다. 새 PR CI 실행 결과는 별도 확인 대상이며 **이 시점에서 PASS라고 기록하지 않는다**. 기준 브랜치 충돌은 수정 전 `main` 대비 behind=0, mergeable=true로 확인했다. 패키지 버전 0.25.0 유지, 운영 migration/배포 미실시.
+
 ## U-ISSUE24-PUBLISH-20261015 — Root 원격 게시
 
 - 0.25.0 source commit `e8189b4543ce53b00a6c2feb02e0eae3f125263b`, branch `feat/issue-24-master-hierarchy`를 지정 저장소에 게시했다. 기존 Git 인증의 dry-run이 실패해 연결된 GitHub 도구로 Git object와 ref를 생성했으며 인증 값은 출력하지 않았다. 일반 push 성공으로 기록하지 않는다.
