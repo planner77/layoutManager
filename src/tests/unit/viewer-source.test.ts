@@ -23,3 +23,46 @@ test('TC-SWITCH-002: failed fetch can retry and a different version never reuses
   const source=new ViewerSource();await expect(source.read('/a')).rejects.toThrow('찾을 수');
   expect(new TextDecoder().decode(await source.read('/a'))).toBe('a');expect(new TextDecoder().decode(await source.read('/b'))).toBe('b');expect(fetcher).toHaveBeenCalledTimes(3);
 });
+
+
+test('TC-TEXT-008: index Worker is cancelled on renderer disposal, while shared source remains reusable', async () => {
+  vi.stubGlobal('fetch', vi.fn(async () => new Response('0\nSECTION\n2\nENTITIES\n0\nENDSEC\n0\nEOF\n')));
+  let spawned = 0, terminated = 0;
+  vi.stubGlobal('Worker', class {
+    onmessage = null;
+    onerror = null;
+    postMessage() { spawned++; }
+    terminate() { terminated++; }
+  });
+  const source = new ViewerSource();
+  const factory = async (): Promise<CadViewerAdapter> => ({
+    load: async () => ({ empty: false }), dispose: vi.fn(), fitToView: vi.fn(), zoomIn: vi.fn(), zoomOut: vi.fn(),
+  });
+  const manager = new ViewerManager(factory, source);
+  await manager.load('/one', 'DXF');
+  const pending = manager.getTextIndex();
+  const rejected = expect(pending).rejects.toMatchObject({ name: 'AbortError' });
+  await vi.waitFor(() => expect(spawned).toBe(1));
+  manager.dispose();
+  await rejected;
+  expect(terminated).toBe(1);
+  expect(source.state('/one')).toBe('memory');
+  expect(new TextDecoder().decode(await source.read('/one'))).toContain('ENTITIES');
+  source.dispose();
+});
+
+
+test('TC-TEXT-009: text index is cached by drawing URL and is removed on source change/reload', async () => {
+  vi.stubGlobal('fetch', vi.fn(async () => new Response('DXF bytes')));
+  const source = new ViewerSource();
+  const index = { hits: [], skipped: {}, truncated: false };
+  await source.read('/first');
+  source.setTextIndex('/first', index);
+  expect(source.getTextIndex('/first')).toBe(index);
+  await source.read('/second');
+  expect(source.getTextIndex('/first')).toBeUndefined();
+  expect(source.getTextIndex('/second')).toBeUndefined();
+  source.setTextIndex('/second', index);
+  source.dispose();
+  expect(source.getTextIndex('/second')).toBeUndefined();
+});

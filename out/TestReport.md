@@ -1,5 +1,76 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE26-PR30-CI55-FAIL-20261016 — E2E 초기 목록 페이지네이션 가정 수정 (재CI 대기)
+
+- PR #30 / CI #55 Run 38878433970 / source d4fda35d733cbe5bcbdac4aa5c79992503276453. GitHub Actions PASS: TypeScript, ESLint, Unit/Integration 136/136, production build, Docker image/migration/runtime smoke. Playwright E2E 40/41 PASS; Legacy migration E2E는 E2E 실패로 skipped. 신규 DXF 텍스트 검색 두 E2E는 이번 run에서 모두 통과.
+- 실패: 기존 TC-E2E-001 (src/tests/e2e/workflow.spec.ts:56)에서 첫 번째 DXF 등록 후 목록 첫 페이지에 originalFilename release-v1.dxf 행이 없다고 판정. Upload API는 201, 등록 완료 V1 표시는 통과하였다.
+- Playwright artifact error-context에서 등록 도면 총 44개, default list pageSize 25, 등록일 최신순 전체 버전을 확인. 해당 테스트의 registeredAt은 2026-09-08이며 상당수 앞선 테스트가 2026-10-16자로 새 도면을 등록해 첫 페이지에 표시되지 않는다. 파일명/Current가 잘못 저장됐다는 증거는 없고 UI 목록 pagination 조건을 고려하지 않은 테스트의 비결정적인 기대가 원인.
+- 해결: 각 등록 후 목록으로 돌아와 UI의 '파일명' 검색 필드에 해당 release-vN.dxf를 입력하여 검색 실행, 응답 ID에서 파생한 version-ID 행이 실제 파일명과 '● Current'를 포함하는지 확인한다. 전체 목록 첫 페이지 노출은 수용 조건에서 제외한다. 기존 Current 교체/필터/E2E 후반 단계와 API 검증을 보존한다.
+- 애플리케이션/API/DB 구현 변경 없이 테스트 재현성만 강화. 후속 PR CI, 브라우저 및 Legacy migration 전체 PASS는 새 결과 확인 전 미확정.
+- Evidence: https://github.com/planner77/layoutManager/actions/runs/38878433970
+
+
+## U-ISSUE26-PR30-CI54-FAIL-20261016 — Renderer 전환 후 캐시 검색의 로딩 상태 무한 표시
+
+- PR #30 / CI #54 Run 38874916901 / head 8462b772654ee810546edfb229f0cdd50c393291: TypeScript, ESLint, Unit/Integration 126/126, Production build, Docker smoke 모두 PASS; Playwright 38 passed/2 failed; Legacy migration E2E skipped.
+- 실제 Playwright error-context는 두 렌더러 모두 전환 후 TEXT 3개 목록과 각 버튼이 화면에 존재하지만 aria-live 문구가 계속 "검색용 텍스트를 분석 중입니다…"인 상태를 보여준다. TC-TEXT-E2E-001은 "검색 결과 3개"를 기다리다 타임아웃.
+- 근본 원인: CadTextSearch useEffect의 getTextIndex() 완료 후 setIndex()가 의존성을 바꾸면서 Effect cleanup을 실행하고, .finally의 active=false 검사 때문에 setWorking(false)가 수행되지 않음. 특히 재전환 후 ViewerSource의 캐시된 index가 즉시 반환될 때 재현.
+- 조치: 성공/실패 .then/.catch 내부에서 active 여부를 확인하고 setIndex/setError와 함께 setWorking(false)를 동일 Effect 수명에서 처리. 사후 .finally 콜백에 의존하지 않는다. E2E의 renderer 전환 후 검색 결과 수 검증을 regression으로 유지.
+- 최신 main(0.27.0, Issue #31 outline 기능)과 통합하면서 원본 ViewerSource 공유, DXF world 좌표 focus, outline selection/Worker를 모두 보존. 충돌 해결 후 Release candidate 0.28.0. 새 CI와 독립 QA 결과는 미확정.
+- 실패 기록: https://github.com/planner77/layoutManager/actions/runs/38874916901
+
+
+
+## U-ISSUE26-PR30-CI52-FAIL-20261016 — test fixture comment swallowed MTEXT source
+
+- PR #30 / CI #52 Run 38872015982, source head aa0f1d6595d2dfbab8af74975a26646df067ea6b.
+- Actual GitHub CI: TypeScript and ESLint PASS; Unit+Integration 125/125 PASS; production Build PASS; Docker image/migration/runtime smoke PASS. Browser Playwright E2E 38/40 PASS and both TC-TEXT-E2E-001 variants FAIL; Legacy migration E2E skipped after Browser failure.
+- Both renderer variants completed TEXT search (3 positions), then failed on the same assertion: "검사 구역 45" yielded no visible "검색 결과 1개". Source inspection found a literal backslash-n inside a single-line // comment on src/tests/e2e/text-search.spec.ts line 11. Because JavaScript single-line comments end only at a REAL newline, the appended entities += MTEXT statement was commented out; uploaded drawing contained TEXT entities but no MTEXT at all.
+- Corrective change: remove the fragile inline DXF generator from the E2E spec and move it to src/tests/fixtures/text-search-dxf.ts. Generate group-code pairs as an array joined by real newline, preserve MTEXT group 41/71/72 and valid hexadecimal TEXT handles. New TC-TEXT-FIXTURE-001 validates actual shared fixture parsing before the browser test: 3 TEXT entities and 1 MTEXT with visible text "검사 구역 45". Both renderer E2Es import the SAME generator, so test/fixture drift is prevented.
+- No production viewer, database, migration, packages or behavior were changed. New CI and independent QA still require verification; success is not inferred from code edits.
+- Evidence: https://github.com/planner77/layoutManager/actions/runs/38872015982 and the PR #30 source diff.
+
+
+
+## U-ISSUE26-PR30-CI49-FAIL-20261016 — Browser E2E 합성 DXF의 MTEXT attachment 누락
+
+- PR #30 / CI #49 Run 38868174246, head 91932bd9a9ddfeeb4370de137d267090ca714d2b. 실제 통과: Typecheck/ESLint, Unit+Integration 125/125, Production Build, Docker image/migration/runtime smoke. Browser E2E 38 passed / **2 failed**; Legacy migration E2E는 선행 실패로 미실행.
+- 다운로드한 Playwright trace.zip: 신규 TC-TEXT-E2E-001의 dxf-viewer 경로와 three-dxf-viewer→dxf-viewer 전환 경로에서 동일한 "Unhandled alignment" 발생. 스택: RenderMText→_DecomposeMText. three-dxf-viewer 최초 표시 및 TEXT/MTEXT 검색·줌은 해당 trace에서 정상 진행되었다.
+- 원인: 합성 DXF MTEXT에 attachment point group 71이 누락됨. Autodesk DXF MTEXT 공식 명세상 71=1은 top-left attachment이다. 렌더러 공통 입력 계약인 테스트 fixture 문제로서 현재 증거가 ViewerManager.focusBounds 오류를 의미하지는 않는다.
+- 조치: 테스트 fixture의 MTEXT에 group 41=240(reference width), 71=1(top left), 72=1(left-to-right)를 명시하고 TEXT entity handle(code 5)은 유효한 hexadecimal로 변경. 실제 애플리케이션 기능 코드는 수정하지 않았다.
+- 공식 명세 https://help.autodesk.com/cloudhelp/2020/ENU/AutoCAD-DXF/files/GUID-5E5DB93B-F8D3-4433-ADF7-E92E250D2BAB.htm ; CI https://github.com/planner77/layoutManager/actions/runs/38868174246. 후속 CI/QA/실도면 결과 미확인. PASS로 단정하지 않는다.
+
+
+
+## U-ISSUE26-PR30-CI46-FAIL-20261016 — MTEXT continuation fixture whitespace mismatch, fixed (new CI pending)
+
+- PR #30 / PR CI #46 run 38867179402, head 7aef7c7b628eaffac93ec3f8e0b9217dd3c22cea: TypeScript/ESLint **PASS**, Docker image/migration/smoke **PASS**, Unit+Integration **123 passed/1 failed** out of 124 in 27 files. Because the unit step failed, Build and both Browser E2E/migration E2E did not execute. This run does not establish those stages as PASS.
+- Failure: TC-TEXT-001 expected MTEXT display text "생산 ABC 동 12 1/2가", but the fixture had a group-3/group-1 continuation "동\\P1" + "2\\S1#2;" (no literal separator between 12 and fraction), correctly rendering "생산 ABC 동 121/2가". MTEXT group-code 3 and 1 concatenate without inserting whitespace; implicit spaces would alter DXF visible content and text search semantics.
+- Corrected the synthetic fixture to explicitly include the intended space before the fraction. Added TC-TEXT-011 confirming MTEXT group continuation with and without a literal space. Parser behavior was intentionally preserved; no production source or database contract changed for this correction.
+- Fresh CI for the subsequent head still requires actual verification. React Ref lint and Unicode four-digit test passed in #46. See https://github.com/planner77/layoutManager/actions/runs/38867179402.
+
+
+
+## U-ISSUE26-PR30-CI42-FAIL-20261016 — React Ref lint 및 Unicode 리뷰 수정 (재CI 대기)
+
+- PR #30 / PR CI #42 / Run 38865738285 / head 179e8cd1a22c5eb0c0609080953c98b0e45ece2d.
+- 실제 GitHub Actions 관찰: TypeScript **success**, ESLint **failure**, 따라서 Unit/Integration·production build·Chromium E2E·legacy migration E2E는 **skipped**. 병렬 Docker image size/migration/runtime smoke Job은 **success**.
+- ESLint react-hooks/refs 실패 위치: src/features/cad-viewer/viewer.tsx:245:80, JSX render 중 manager.current 접근. Ref의 직접 렌더링 참조를 제거하고 stable useCallback getter를 prop으로 제공하며 자식 useEffect/이벤트 내에서만 사용하도록 수정.
+- Codex P2 리뷰: DXF \U+00B0C와 같은 고정 4자리 Unicode escape 직후 hex 문자를 기존 {4,8} 정규식이 삼켜 glyph가 달라짐. {4}로 수정, TC-TEXT-010 인접 16진 문자 단위 테스트 추가.
+- 상기 수정 후 TypeScript/ESLint/Unit/E2E 전체 통과는 **새 CI 결과 확인 전 미확정**. 실제 원인 분석은 CI 로그와 inline review를 기준으로 하며 미실행 테스트를 PASS로 기입하지 않는다.
+- 참조: https://github.com/planner77/layoutManager/actions/runs/38865738285 및 https://github.com/planner77/layoutManager/pull/30.
+
+
+
+## U-ISSUE26-DEV-20261016 — DXF 내부 텍스트 검색 구현, 검증 대기
+
+- Issue #26 / 작업 브랜치 feat/issue-26-dxf-text-search / SemVer 0.27.0.
+- 실제 코드 변경: 순수 ASCII DXF TEXT/MTEXT/BLOCK-INSERT 인덱스 및 NFC/MTEXT 정규화, 별도 Worker, ViewerSource 캐시, 두 Adapter에 world XY focusBounds, 내부 검색 오버레이/레이어 필터/페이지/키보드 이동.
+- 추적 TC-TEXT-001~006 단위 테스트와 TC-TEXT-E2E-001 브라우저 테스트 추가. **이 기록 작성 시 로컬 npm ci/tsc/lint/Vitest/Build/Chromium E2E는 미실행이며 PASS 아님**. PR CI run ID/결과 확인 전 최종 수용 불가.
+- 한계: 현장 업무 DXF/DWG/복잡한 OCS/실제 글꼴 bbox는 미검증. ATTRIB/ATTDEF, 다중 배열 INSERT 및 DWG TEXT/MTEXT는 비지원. 비지원 Entity는 잘못된 좌표 이동 대신 제외 집계.
+- 독립 QA 대행을 수행한 것으로 주장하지 않는다. GHCR 게시, main 병합·운영 배포는 요청 범위에 포함하지 않는다. 기술 계약 및 AC는 Issue26.md 참조.
+
+
 ## U-ISSUE31-PR32-CI-FAIL-20261016 — ESLint 및 P2 리뷰 보완 (재검증 대기)
 
 - 최초 PR #32 CI run `38868848174`: `npm ci`, Prisma 생성, `tsc --noEmit` **PASS**; **ESLint 실패**(`src/viewers/three-dxf-viewer/adapter.ts:165:11`, `prefer-const`). Unit/Integration, Build 및 E2E는 이전 단계 실패로 **미실행**, 별도의 Docker build/migration/runtime smoke Job은 **PASS**.

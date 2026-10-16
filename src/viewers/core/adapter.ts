@@ -1,3 +1,4 @@
+import type { CadFocusBounds, CadTextIndex } from './text-index';
 import type { ViewerFormat } from './selection';
 import type {OutlineEntity,OutlineKind} from './outline-geometry';
 import type {OutlineResult} from './outline-compute';
@@ -12,6 +13,7 @@ export interface CadViewerAdapter {
   zoomOut(): void;
   getLayers?(): string[];
   showLayer?(name: string, visible: boolean): void;
+  focusBounds?(bounds: CadFocusBounds): void;
   getOutlineInfo?(): OutlineInfo | null;
   setSelectionMode?(mode:'pan'|'select'): void;
   getOutlineSelection?(): OutlineEntity[];
@@ -30,6 +32,9 @@ export class ViewerManager {
   private generation = 0;
   private source: ViewerSource;
   private ownsSource: boolean;
+  private activeUrl?: string;
+  private pendingIndex?: Promise<CadTextIndex>;
+  private cancelIndex?: () => void;
   constructor(private factory: ViewerFactory, source?: ViewerSource, private measurement?:{renderer:string;versionId:string;report:(metric:ViewerMetric)=>void}, private format:ViewerFormat = 'DXF') {this.source=source??new ViewerSource();this.ownsSource=!source;}
   async load(url: string, format: string) {
     this.dispose();
@@ -56,6 +61,7 @@ export class ViewerManager {
       metric.result=result.warning?'partial':result.empty?'empty':'success';
       if(result.warning)metric.reasons.coverage=result.warning;
       metric.entityCount=result.entityCount??null;if(metric.entityCount!==null)delete metric.reasons.entityCount;
+      this.activeUrl=url;
       return result;
     }
     catch(error) { if (this.adapter === adapter) { adapter.dispose(); this.adapter = undefined; } throw error; }
@@ -67,6 +73,60 @@ export class ViewerManager {
       if(metric.jsHeapBytes!==null)metric.reasons.jsHeapBytes='Nonstandard browser JS heap snapshot; may be rounded and excludes GPU/WASM allocations.';
       this.measurement?.report(metric);
     }
+  }
+  /**
+   * Lazy index build: the same immutable source bytes are used by both renderers.
+   * Worker is cancelled on version/renderer change; only the active generation may cache results.
+   */
+  async getTextIndex(): Promise<CadTextIndex> {
+    if (this.format !== 'DXF') throw new Error('DWG 내부 텍스트 검색은 현재 지원하지 않습니다.');
+    const url = this.activeUrl;
+    if (!url || !this.adapter) throw new Error('도면 표시가 완료된 뒤 검색할 수 있습니다.');
+    const cached = this.source.getTextIndex(url);
+    if (cached) return cached;
+    if (this.pendingIndex) return this.pendingIndex;
+    const generation = this.generation;
+    const pending = this.source.read(url).then(bytes => new Promise<CadTextIndex>((resolve, reject) => {
+      const worker = new Worker(new URL('./text-index.worker.ts', import.meta.url), { type: 'module' });
+      let complete = false;
+      const finish = (error: Error | null, index?: CadTextIndex) => {
+        if (complete) return;
+        complete = true;
+        clearTimeout(timeout);
+        worker.terminate();
+        if (this.cancelIndex === cancel) this.cancelIndex = undefined;
+        if (error) reject(error);
+        else resolve(index!);
+      };
+      const cancel = () => finish(new DOMException('취소됨', 'AbortError'));
+      const timeout = setTimeout(() => finish(new Error('DXF 텍스트 검색 준비 시간이 초과되었습니다.')), 60_000);
+      this.cancelIndex = cancel;
+      worker.onmessage = (event: MessageEvent<{ ok: boolean; index?: CadTextIndex; message?: string }>) => {
+        if (event.data.ok && event.data.index) finish(null, event.data.index);
+        else finish(new Error(event.data.message || 'DXF 텍스트 검색을 준비하지 못했습니다.'));
+      };
+      worker.onerror = () => finish(new Error('DXF 텍스트 검색 Worker가 실패했습니다.'));
+      const copy = bytes.slice(0);
+      try { worker.postMessage({ bytes: copy }, [copy]); }
+      catch (error) { finish(error instanceof Error ? error : new Error('Worker 메시지 전달 실패')); }
+      if (generation !== this.generation) cancel();
+    })).then(index => {
+      if (generation !== this.generation || url !== this.activeUrl) throw new DOMException('취소됨', 'AbortError');
+      this.source.setTextIndex(url, index);
+      return index;
+    });
+    this.pendingIndex = pending;
+    void pending.then(() => { if (this.pendingIndex === pending) this.pendingIndex = undefined; },
+      () => { if (this.pendingIndex === pending) this.pendingIndex = undefined; });
+    return pending;
+  }
+  /** Pan+zoom to a validated world-coordinate envelope, never repeat guessed zoom steps. */
+  focusBounds(bounds: CadFocusBounds): boolean {
+    if (!this.adapter?.focusBounds ||
+        !Object.values(bounds).every(Number.isFinite) ||
+        bounds.minX >= bounds.maxX || bounds.minY >= bounds.maxY) return false;
+    this.adapter.focusBounds(bounds);
+    return true;
   }
   fitToView() { this.adapter?.fitToView(); }
   zoomIn() { this.adapter?.zoomIn(); }
@@ -85,5 +145,5 @@ export class ViewerManager {
   confirmOutline() { if(!this.adapter?.confirmOutline)throw new Error('미리보기를 먼저 생성해야 합니다.'); return this.adapter.confirmOutline(); }
   getSavedOutlines() { return this.adapter?.getSavedOutlines?.() ?? []; }
   clearSavedOutlines() { this.adapter?.clearSavedOutlines?.(); }
-  dispose() { this.generation++; if(this.ownsSource)this.source.dispose(); this.adapter?.dispose(); this.adapter = undefined; }
+  dispose() { this.generation++; this.cancelIndex?.(); this.cancelIndex=undefined; this.pendingIndex=undefined; this.activeUrl=undefined; if(this.ownsSource)this.source.dispose(); this.adapter?.dispose(); this.adapter = undefined; }
 }

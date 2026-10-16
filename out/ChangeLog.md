@@ -1,5 +1,51 @@
 # ChangeLog
 
+### 0.28.0 / PR #30 CI #55 Workflow E2E 회귀 보완 (2026-10-16)
+
+- Typecheck/ESLint, 136 Unit·Integration, production Build, Docker smoke 및 신규 TEXT/MTEXT 검색 두 Browser E2E가 PASS. 기존 Workflow E2E 1건은 44개 도면/25개 기본 페이지네이션에서 과거 등록일(2026-09-08) Version을 첫 페이지에서 찾는 기대가 잘못되어 실패.
+- 등록 이후 원본 파일명 UI 검색과 업로드 Version ID 기반 Current 검증으로 테스트 안정화. 앱/DB/API 구현 변화 없음. 전체 CI 및 독립 QA는 신규 Run 검증 전 미확정.
+
+
+## 0.28.0 — main 0.27.0(#31) 정렬 + GitHub #26 DXF 텍스트 검색 통합 (PR CI 대기)
+
+- 기존 main의 DXF 객체 선택·볼록/정밀 외곽선 생성 및 관련 라이브러리와 테스트를 보존하고 DXF TEXT/MTEXT 검색, 위치 Pan/Zoom, Worker 인덱스를 결합.
+- PR #30 CI #54: TypeScript/ESLint/126 Unit·Integration/Build/Docker PASS; Renderer 전환 시 캐시 검색의 working 플래그가 남는 E2E 2건 FAIL. Effect 결과·오류 분기에서 로딩 상태를 직접 종료하는 수정 및 추적 문서 반영.
+- DB/API/migration 및 추가 npm dependency 없음 (polygon-clipping은 기존 main #31 의존성). 0.28.0은 미게시/PR CI 검증 전 후보 버전.
+
+
+
+### 0.27.0 / PR #30 / CI #52 Browser Fixture regression repair
+
+- CI #52: TypeScript/ESLint, Unit/Integration 125/125, production Build and Docker smoke PASS. Browser E2E 38/40 PASS; newly added TEXT/MTEXT search variants failed because the E2E's literal \n in a // comment suppressed the entire MTEXT insertion statement.
+- Extracted shared DXF fixture (group-code array + LF join) and added Unit TC-TEXT-FIXTURE-001 checking three TEXT and one MTEXT with normalized Korean text. Browser tests now import the shared fixture. Viewer production code unchanged.
+- Final result, real CAD and QA remain pending until follow-up CI.
+
+
+
+### 0.27.0 / PR #30 CI #49 E2E fixture 수정 (2026-10-16)
+
+- Typecheck/ESLint/125 Unit·Integration/Build/Docker PASS; Browser E2E 38 PASS / 신규 2 FAIL.
+- 공식 DXF에 따라 MTEXT 테스트 파일에 group 41(width), 71=1(top-left), 72=1(left-to-right)을 명시하고 TEXT handle을 유효한 hex로 갱신. CI trace의 RenderMText "Unhandled alignment" 원인 해결을 목표로 한 테스트 데이터 보완.
+- 운영 소스 변경 없음. 최종 Browser E2E 및 독립 QA 결과 재검증 대기.
+
+
+
+### 0.27.0 / PR #30 보완 (2026-10-16)
+
+- Fixed: JSX 렌더링 중 ViewerManager ref 읽기로 발생한 ESLint react-hooks/refs 실패를 stable getter로 변경.
+- Fixed: DXF Unicode escape가 바로 뒤의 영문 16진 문자까지 잘못 소비하던 문제를 정해진 4자리 코드로 제한하고 회귀 테스트 추가.
+- Verification: PR CI #42 (38865738285)는 TypeScript/Docker success, ESLint failure, Unit/Browser skipped. 후속 PR CI 및 QA 판정 대기.
+
+
+
+## 0.27.0 — 2026-10-16 / GitHub #26 (PR CI 전)
+
+- Added: 현재 DXF 내 TEXT/MTEXT 문자열 부분검색, 한글/영문/숫자, 정규화된 MTEXT, 결과 선택·이전/다음 및 world XY Pan/Zoom. 2D BLOCK/INSERT 좌표 해석과 미지원 Entity 집계.
+- Added: 재사용 가능한 브라우저 Worker text index, ViewerSource 캐시, 두 DXF Adapter의 focusBounds, 전체 화면 Viewer shell의 접이식 검색 패널.
+- Compatibility: DB/API/migration/새 npm dependency 없음. DWG 텍스트 검색은 미지원. 기존 #25 기본 fullscreen 진입은 별도 작업.
+- Tests: TC-TEXT-001~006 Unit, TC-TEXT-E2E-001 브라우저 테스트 소스 추가. 이 시점 정적/실행/CI PASS 및 실제 업무 도면 수용은 **미확인**.
+
+
 ## 0.27.0 — 2026-10-16 / GitHub #31 (PR CI 재검증 전, 범위 제한)
 
 - Feature: three-dxf-viewer의 DXF 객체 클릭/다중·방향별 영역 선택, 레이어 동기화, 독립적인 Convex 및 실제 폐곡선 Polygon Union(+MultiPolygon/Holes), Worker 취소 및 Preview/임시 확정·JSON 내보내기.

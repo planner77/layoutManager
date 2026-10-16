@@ -51,9 +51,13 @@ test("TC-E2E-001: UI registration through current replacement and both DXF rende
       `V${version} 등록 완료`,
     );
     await page.getByRole("link", { name: "목록으로", exact: true }).click();
-    await expect(
-      page.getByRole("row").filter({ hasText: `release-v${version}.dxf` }),
-    ).toContainText("Current");
+    // Old registeredAt dates can fall outside page 1 once other E2E tests upload
+    // more than the default 25 records. Filter before asserting Current.
+    await page.getByLabel("파일명", { exact: true }).fill(`release-v${version}.dxf`);
+    await page.getByRole("button", { name: "검색", exact: true }).click();
+    const row = page.locator(`[id="version-${files[files.length - 1].id}"]`);
+    await expect(row).toContainText(`release-v${version}.dxf`);
+    await expect(row).toContainText("● Current");
   }
   expect(files[0].locationId).toBe(files[1].locationId);
   await page.getByLabel("파일명", { exact: true }).fill("release-v");
