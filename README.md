@@ -2,9 +2,10 @@
 
 ## Docker 0.26.0 빠른 배포 안내 (#28)
 
-- `docker compose --env-file .env -f src/docker-compose.yml build` → `up -d`: 두 이미지(app/migrate)를 빌드해 migrate가 exit 0인 경우만 웹 서버를 시작한다.
-- GHCR `GHCR_IMAGE=ghcr.io/planner77/layoutmanager:0.26.0`일 때 migrate image는 자동으로 `:0.26.0-migrate`. digest pin을 사용하는 경우 `GHCR_MIGRATION_IMAGE`도 지정한다.
-- **업그레이드는 기존 app stop 후 migration 재실행이 필수이다.** 데이터 백업/pull/중지/migrate exit0/app 시작/rollback 명령은 [Operation](out/Operation.md), 3단계 이미지 측정 및 테스트 상태는 [Issue28](out/Issue28.md)·[TestReport](out/TestReport.md) 참조. 압축·비압축 절감률은 CI 전 미확정이다.
+- 신규/로컬 설치: `bash src/scripts/compose.sh .env build` 후 `bash src/scripts/compose.sh .env up -d`. 기존의 `docker compose --env-file .env -f src/docker-compose.yml ...`도 **태그가 명시된 이미지**에서는 사용할 수 있다. Helper는 기존 `.env`를 `source`하지 않고 이미지 참조 키만 읽는다.
+- GHCR `GHCR_IMAGE=ghcr.io/planner77/layoutmanager:0.26.0`은 `:0.26.0-migrate`와 쌍으로 배포한다. **태그 없는** `GHCR_IMAGE=ghcr.io/planner77/layoutmanager`는 helper 사용 시 app `:latest`/migrator `:latest-migrate`로 정규화된다. 기존 raw Compose 사용 시에는 `GHCR_MIGRATION_IMAGE`를 명시해야 한다. digest pin은 두 이미지를 각각 명시적으로 고정한다.
+- 릴리스 CI는 앱/마이그레이터의 immutable candidate digest를 **둘 다 빌드·검증한 뒤** 공개 `:version`/`:latest` 태그를 승격한다. 다중 태그의 완전 원자성은 제공되지 않으므로 운영 배포는 반드시 같은 버전의 두 이미지를 명시적으로 지정한다.
+- **업그레이드는 기존 app stop 후 migration 재실행이 필수이다.** 데이터 백업/pull/중지/migrate exit0/app 시작/rollback 명령은 [Operation](out/Operation.md), 3단계 이미지 측정 및 테스트 상태는 [Issue28](out/Issue28.md)·[TestReport](out/TestReport.md) 참조. 최초 CI 크기 측정은 2,054,848,814 → 376,228,092 bytes(81.69% 절감); 최종 PR CI/GHCR 검증 결과는 별도 판정한다.
 
 
 현재 제안 소스 버전은 0.26.0입니다. Docker는 Next.js standalone 웹과 별도 일회성 Prisma migration/backfill 이미지로 분리합니다. 0.25.0의 DB 계층 기능은 유지합니다. 사업부 → 제품 → 사업장/법인 → 동 → 층의 기준정보를 관리하고 활성 ID 계층을 선택해 도면을 등록합니다. 기존 도면은 사업부별 `미분류` 제품으로 이관하며 층 상세에서 전체 이력을 실제 제품 계층으로 재분류할 수 있습니다. 게시·배포 검증 결과는 [TestReport](out/TestReport.md)와 버전별 Release 문서를 기준으로 합니다.
