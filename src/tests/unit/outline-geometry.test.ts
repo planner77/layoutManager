@@ -41,6 +41,24 @@ describe('Issue #31 WCS EntityRef and geometry AC',()=>{
    expect(e[0].paths[0].points[1][0]).toBeCloseTo(100);
    expect(e[0].paths[0].points[1][1]).toBeCloseTo(120);
  });
+ it('TC-OUT-ID: rejects partial BLOCK geometry for stable source binding',()=>{
+   const blocks=['0','BLOCK','2','PART','10','0','20','0',
+     line('22',0,0,10,0),
+     ['0','HATCH','5','23','8','0','10','0','20','0'].join('\n'),
+     '0','ENDBLK'].join('\n');
+   const insert=['0','INSERT','5','AB','8','0','2','PART','10','20','20','30'].join('\n');
+   const index=parseDxfOutlineIndex(dxf(insert,blocks),id,sha);
+   expect(index.entities).toHaveLength(1);
+   expect(index.entities[0].stable).toBe(false);
+   expect(index.entities[0].paths).toHaveLength(1);
+   expect(index.warnings.join(' ')).toMatch(/BLOCK/);
+ });
+ it('TC-OUT-GEO1: refuses a too-large circle that exceeds chord tolerance at 512 samples',()=>{
+   const large=['0','CIRCLE','5','EF','8','0','10','0','20','0','40','10000000'].join('\n');
+   const index=parseDxfOutlineIndex(dxf(large),id,sha);
+   expect(index.entities).toHaveLength(0);
+   expect(index.warnings.join(' ')).toMatch(/512/);
+ });
  it('TC-OUT-GEO1: monotone chain includes extremes and rejects collinear/degenerate input',()=>{
    expect(convexHull([[0,0],[2,0],[2,2],[0,2],[1,1],[0,0]])).toEqual([[0,0],[2,0],[2,2],[0,2]]);
    expect(()=>convexHull([[0,0],[1,1],[2,2]])).toThrow(/공선/);
