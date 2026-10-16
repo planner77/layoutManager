@@ -3,12 +3,37 @@
 name: cad-layout-viewer
 
 services:
+  migrate:
+    # With GHCR_IMAGE=:version the default becomes :version-migrate.
+    # Digest-pinned deployments must set GHCR_MIGRATION_IMAGE explicitly.
+    image: ${GHCR_MIGRATION_IMAGE:-${GHCR_IMAGE:-cad-layout-viewer:local}-migrate}
+    build:
+      context: ..
+      dockerfile: src/Dockerfile
+      target: migrator
+    restart: "no"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: file:/data/db/cad.sqlite
+      CAD_STORAGE_PATH: /data/cad
+      CAD_STORAGE_BACKEND: local
+      LOG_LEVEL: "${LOG_LEVEL:-info}"
+      LOG_FORMAT: "${LOG_FORMAT:-json}"
+    volumes:
+      - type: volume
+        source: cad-layout-viewer-data
+        target: /data
+
   app:
     # GHCR_IMAGE를 지정하면 게시 이미지를 pull하고, 없으면 같은 설정으로 로컬 build도 가능하다.
     image: ${GHCR_IMAGE:-cad-layout-viewer:local}
     build:
       context: ..
       dockerfile: src/Dockerfile
+      target: runtime
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
     container_name: cad-layout-viewer-app
     restart: unless-stopped
     ports:
