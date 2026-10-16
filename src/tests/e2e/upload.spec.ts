@@ -490,7 +490,9 @@ test("TC-DESC-005: description registration, literal search and viewer display",
     .getByRole("link", { name: "도면 보기", exact: true })
     .click();
   await expect(page.getByLabel("도면 설명")).toHaveText(description);
+  await expect(page.getByLabel("도면 설명")).toBeVisible();
   await page.reload();
   await expect(page.getByLabel("도면 설명")).toHaveText(description);
+  await expect(page.getByLabel("도면 설명")).toBeVisible();
   expect(await page.getByLabel("도면 설명").textContent()).toBe(description);
 });

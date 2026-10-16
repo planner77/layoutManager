@@ -1,5 +1,20 @@
 # ChangeLog
 
+## 0.29.0 — 2026-10-17 / Issue #25 도면 Viewer 기본 immersive 진입 (PR CI 전)
+
+- PR #36 E2E 회귀 보완: Run `38974687861`에서 40 PASS/4 FAIL (도면 원본명 중복, 설명 a11y label 누락, FONT 2 Renderer 일반 모드 버튼 기대). 원본명 중복 제거, 설명의 표시 및 접근성 계약 복원, FONT E2E의 fullscreen→normal 전환 절차 추가. TypeScript/ESLint/Unit/Build/Docker 성공은 이전 HEAD에 한정하고 수정된 HEAD의 검증은 새 PR CI 대기.
+
+- PR #36 보완: 최초 CI `38963238965`의 ESLint `react/no-unescaped-entities` 2건을 JSX escape로 해결. P2 native fullscreen top-layer에서 global loading spinner가 숨겨지는 구조적 문제를 같은 Viewer shell 자손 spinner로 방지. 지연 reload/native 상태 합성 E2E (`TC-ISSUE25-002`) 추가. **보완 후 PR CI 검증 전**.
+
+- Added: 목록·Location·공유/직접 Version URL·새 탭·재로딩의 CSS fixed `100dvh` viewport 전체 화면 기본 진입; 모든 Viewer DXF 2종/DWG 1종 공통 적용.
+- Added: immersive shell 안에 파일명/Version·원본명/위치, DXF Renderer, zoom/fit, 레이어/텍스트 검색/외곽선, 원본 다운로드, 링크 복사, 상태·오류·재시도, 일반 Viewer 종료/목록 복귀 표시.
+- Changed: 브라우저 native Fullscreen API는 명시적 버튼 클릭 시에만 시도. native 해제/ESC와 앱 CSS immersive 종료를 별개로 관리. HTML/Body scroll lock, app header inert/focus cleanup, 모바일 dvh 대응.
+- Compatibility: 기존 링크 Renderer query·Version UUID/원본 API, DB/마이그레이션·Viewer Adapter 기능 호환. Renderer 변경/Resize/원본 요청/cleanup은 기존 계약 유지.
+- Tests: TC-ISSUE25-001 2종 DXF E2E 및 기존 Viewer/Layer/Search/Outline/Link/Metric/DWG regression 코드를 변경. **PR CI 및 실제 현장 수용은 아직 미확인**, PASS로 기록하지 않음.
+- Details: [Issue25](Issue25.md), [TestPlan](TestPlan.md), [TestReport](TestReport.md).
+
+
+
 ## 0.28.3 — 2026-10-16 / Issue #31 P0/P5 보완과 P4 원본 검증 사전 계약 (PR CI 전)
 
 - Fix: 미지원 BLOCK 내부 자식이 있어도 root INSERT가 stable=true가 되는 오매핑을 차단, 512-샘플 상한을 초과한 대형 ARC/CIRCLE의 chord tolerance 위반을 거부.

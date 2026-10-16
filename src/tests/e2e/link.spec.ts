@@ -80,6 +80,8 @@ test("TC-LINK-001/002: list, location and viewer create pinned renderer-specific
     new RegExp(`/cad/versions/${first.id}/viewer\\?renderer=dxf-viewer$`),
   );
   await expect(direct.getByRole("status")).toHaveText("도면 표시 완료");
+  await expect(direct.getByTestId("cad-viewer-shell")).toHaveAttribute("data-fullscreen", "true");
+  await expect(direct.getByTestId("cad-viewer-shell")).toHaveAttribute("data-native-fullscreen", "false");
   // The copied URL remains pinned to V1 after V2 becomes Current.
   await expect(
     direct.getByRole("heading", { name: first.displayName }),

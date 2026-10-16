@@ -1,5 +1,29 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #25 — v0.29.0 자동 CSS immersive 진입 (PR CI 전)
+
+### PR #36 E2E 연계 변경 (Run 38974687861 기준)
+- `TC-NAME-002/003`: toolbar 원본명 중복 없이 정확 표시, `viewer-toolbar` 안의 고유 원본명 locator.
+- `TC-DESC-005`: `aria-label="도면 설명"` + literal multiline description을 Viewer가 처음 열릴 때 및 reload 후에 노출.
+- `TC-FONT-002` (2 renderers): 기본 immersive 진입 확인, 명시적으로 normal 모드 전환한 다음 확대/Fit·한글 TEXT Canvas 검증.
+- 구 Run에서는 40 PASS / 4 FAIL이며 새 HEAD는 검증 전이다.
+
+| TC | 절차 및 완료 기준 | 실행 상태 |
+| --- | --- | --- |
+| TC-ISSUE25-001 DXF 2종 | 목록 → 공통 Version Viewer 자동 immersive, URL Renderer 선택, 원본·링크·재시도·툴바, Desktop/mobile 360×700/Canvas backing buffer, 신규 Browser Context/직접 URL/새로고침, native API reject/CSS 유지, ESC 일반 모드 복귀/재진입, 목록 복귀/뒤로 가기, 헤더 inert·스크롤 복구 | E2E 작성, NOT RUN |
+| TC-ISSUE25-002 | Native fullscreen top-layer 상태에서 reload 원본 GET을 지연·Provider global overlay와 shell 자손 overlay를 함께 확인, 완료 시 제거·조작 비활성화/복구. `fullscreenchange` mock과 실제 native 브라우저 정책 분리 | E2E 작성, NOT RUN |
+| TC-LINK-001..003 | 기존 URL/UUID/renderer/복사 및 fallback. 신규 direct context에서 자동 immersive/native=false | E2E 수정, NOT RUN |
+| TC-ISSUE17-001, TC-LAYER001..003 | 전용 전체 화면 레이어 패널, 일반 LayerDropdown, 선택/비선택, Switch·Reload·모바일, view state/Canvas reuse | 기존 E2E 기본 진입 대응 수정, NOT RUN |
+| TC-DXF/THREE-001, TC-SWITCH-001/002 | 확대/축소/맞춤/Pan, ESC/전체 화면 전환, Back·재진입, 전역 Loading/중복, WebGL cleanup | 기존 E2E 기본 진입 대응 수정, NOT RUN |
+| TC-TEXT-E2E-001, TC-OUT-E2E-001 | DXF 검색·선택/외곽선 overlay, fullscreen CSS 및 일반 전환 | 기존 E2E 기본 진입 대응 수정, NOT RUN |
+| TC-MET-001, TC-E2E-001 | 기존 일반 Viewer에서 측정 JSON·등록·전환 검증, default immersive에서 명시적 일반 모드 복귀 | 기존 E2E 수정, NOT RUN |
+| TC-E2E-002/DWG-001/003 | DWG 기본 CSS immersive·libredwg-web 강제·성능/도면 재진입·오류/재시도/cleanup | 별도 DWG probe 회귀 수정, NOT RUN |
+| TC-FOCUS-001 | 실제 데스크톱 Chrome/Edge, 모바일 크기에서 tab/ESC/native 거절·화면 낭독기 상태·주소창 동작 수동 점검 | 실기기 NOT RUN |
+
+검증 명령(승인된 환경): `cd src && npm ci && npm run db:generate && npm run typecheck && npm run lint && npm test && npm run build && npm run test:e2e`. DWG는 `npm run prepare:dwg-samples && npm run test:dwg`의 전용 config 사용. PR CI가 동작하기 전까지 PASS 표시 금지. [Issue25](Issue25.md).
+
+
+
 ## Issue #31 v0.28.3 추가 시험 설계 — CI 대기
 
 | ID | 확인 내용 | 증거 |

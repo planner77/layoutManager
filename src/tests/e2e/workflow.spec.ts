@@ -155,6 +155,7 @@ test("TC-E2E-001: UI registration through current replacement and both DXF rende
     .filter({ hasText: "release-v1.dxf" })
     .getByRole("link", { name: "도면 보기", exact: true })
     .click();
+  await page.getByRole("button", { name: "전체 화면 종료", exact: true }).click();
   for (const renderer of ["dxf-viewer", "three-dxf-viewer"]) {
     if (renderer === "three-dxf-viewer")
       await page.getByRole("button", { name: renderer, exact: true }).click();

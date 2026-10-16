@@ -91,3 +91,7 @@ PR #13 병합 시 저장소의 `Build and publish Docker image` workflow가 `src
 - 전체 화면 상태 URL 영속화
 - 모바일 전용 제스처/UI 최적화
 - 브라우저별 비표준 fullscreen prefix 지원
+
+## 2026-10-17 후속 #25: 기본 전체 화면 진입 정책 변경 (미검증)
+
+기존 #10의 **버튼 클릭 후 CSS/native 전체 화면** 테스트/설계는 당시 릴리스 검증 근거로 유지한다. #25에서는 직접 URL/목록에서 **CSS immersive를 기본 진입 상태로** 설정하고 native Fullscreen API는 사용자 클릭으로만 요청한다. 종료 후 일반 Viewer에서도 #10의 수동 전체 화면 버튼을 유지한다. 새로운 진입/ESC(native 우선 CSS 후속)/툴바·스크롤·mobile/Regression 계약은 [Issue25](Issue25.md)를 참조한다. 이 후속 변경의 PR CI 및 실기기 결과는 미확인이다.

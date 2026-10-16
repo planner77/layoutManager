@@ -71,6 +71,7 @@ test("TC-ISSUE17-001: fullscreen layer panel controls three-dxf-viewer without r
   await page.goto(`/cad/versions/${file.id}/viewer?renderer=three-dxf-viewer`);
   await expect(page.getByRole("status")).toHaveText("도면 표시 완료");
   expect(contentRequests).toBe(1);
+  await page.getByRole("button", { name: "전체 화면 종료", exact: true }).click();
 
   const canvas = page.locator("canvas");
   await canvas.evaluate((element) =>

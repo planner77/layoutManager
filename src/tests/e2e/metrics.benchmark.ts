@@ -49,6 +49,7 @@ for (const count of [100, 10000, 100000])
         });
         page.on("pageerror", () => pageErrors++);
         await page.goto(`/cad/versions/${file.id}/viewer?renderer=${renderer}`);
+        await page.getByRole("button", { name: "전체 화면 종료", exact: true }).click();
         for (const mode of ["cold", "warm"]) {
           if (mode === "warm") {
             await page

@@ -25,6 +25,7 @@ test("TC-MET-001: measurement export matches displayed renderer and empty state"
   const file = await response.json();
   await page.goto(`/cad/versions/${file.id}/viewer`);
   await expect(page.getByRole("status")).toContainText("표시할 도형");
+  await page.getByRole("button", { name: "전체 화면 종료", exact: true }).click();
   const metric = JSON.parse(
     (await page.getByTestId("viewer-metric").textContent())!,
   );

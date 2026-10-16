@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { CadError } from '@/domain/cad';
 import { context } from '@/server/context';
@@ -14,5 +13,11 @@ export default async function Page({ params, searchParams }: {params: Promise<{v
   const format = file.fileFormat;
   if (format !== 'DXF' && format !== 'DWG') notFound();
   const l = file.location;
-  return <section><Link className="text-sm text-teal-700" href={`/cad/locations/${l.id}`}>← 버전 목록</Link><h1 className="mb-2 mt-4 break-all text-xl font-bold">{file.displayName}</h1><p className="mb-1 text-sm text-slate-500">원본: {file.originalFilename}</p><p className="mb-6 text-sm text-slate-500">{l.businessUnit} / {l.product} / [{l.siteKind === 'SITE' ? '사업장' : '법인'}] {l.site} / {l.building} / {l.floor} · V{file.version} · {file.registeredAt} · {(file.fileSize/1024/1024).toFixed(2)} MB</p>{file.description && <p className="mb-5 whitespace-pre-wrap rounded-lg bg-slate-50 p-4 text-sm text-slate-700" aria-label="도면 설명">{file.description}</p>}<CadViewer key={file.id} versionId={file.id} sourceSha256={file.sha256} format={format} renderer={selectRenderer(format,requested)}/></section>;
+  return <CadViewer key={file.id} versionId={file.id} sourceSha256={file.sha256}
+    format={format} renderer={selectRenderer(format, requested)}
+    displayName={file.displayName} originalFilename={file.originalFilename}
+    version={file.version} registeredAt={file.registeredAt} fileSize={file.fileSize}
+    description={file.description} locationId={l.id}
+    locationDescription={`${l.businessUnit} / ${l.product} / [${l.siteKind === 'SITE' ? '사업장' : '법인'}] ${l.site} / ${l.building} / ${l.floor}`}
+  />;
 }

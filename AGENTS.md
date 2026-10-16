@@ -1,5 +1,12 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #25 (2026-10-17) — 기본 도면 뷰어 전체 뷰포트 자동 진입
+
+- Issue #25: 목록/Location/직접 URL/복사 링크/새 탭/새로고침은 **CSS immersive viewport**로 시작. 브라우저 native fullscreen 자동 요청 불가; 명시 사용자 버튼에서만 API를 사용한다. 기본 모드에서 Renderer·zoom/fit·#17 레이어·#26 검색·#31 외곽선·다운로드·링크·오류/재시도·뒤로·종료를 사용한다.
+- `src/package.json` 기준 작업 버전 `0.29.0`. Viewer API/DB 계약 변경 없음. [Issue25](out/Issue25.md)에 신규 AC·자동 시험 및 ESC/native 구분·포커스·모바일 기준 기록. **PR CI 미실행이며 통과로 표시하지 않는다.**
+
+
+
 ## Issue #31 v0.28.3 후속 — P0/P5 수용 및 P4 원본 검증 (2026-10-16)
 
 - 이전 #34 PR/새 Main CI 성공·GHCR v0.28.2 게시는 완료. 실설비 DXF 원본/운영 브라우저/GPU/권한 IdP가 제공되지 않아 Issue #31의 P0·P4·P5 전체 수용 완료는 **아님**.
@@ -96,6 +103,7 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 | [Issue8](out/Issue8.md) | GitHub #8 요구사항·구현·CI 수용 근거 | Issue #8 변경 추적 또는 유사 목록 필터 변경 시 |
 | [Issue9](out/Issue9.md) | GitHub #9 전역 로딩 요구사항·구현·CI·릴리스 근거 | 전역 로딩, 중복 요청 방지 또는 비동기 입력 차단 변경 시 |
 | [Issue10](out/Issue10.md) | GitHub #10 전체 화면 요구사항·설계·CI 근거 | Viewer 전체 화면, ESC/종료, 컨테이너 resize 또는 view state 보존 변경 시 |
+| [Issue25](out/Issue25.md) | 기본 immersive 진입, native 수동 선택, 복귀·툴바·회귀 수용 | Viewer 전체 화면 기본 진입/링크/포커스/레이어·검색 변경 시 |
 | [Release 0.20.0](out/Release-0.20.0.md) | 0.20.0 병합·태그·GHCR 게시 근거 | 0.20.0 릴리스 확인 및 운영 이미지 식별 시 |
 | [Release 0.21.0](out/Release-0.21.0.md) | 0.21.0 병합·태그·GHCR 게시 근거 | 0.21.0 릴리스 확인 및 운영 이미지 식별 시 |
 | [Issue31](out/Issue31.md) | DXF 다중 선택·볼록/정밀 외곽선·실험 상태·P4 권한 보류 | Viewer 선택·외곽선/Worker/JSON 변경 시 |

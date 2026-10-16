@@ -19,6 +19,7 @@ test('TC-OUT-E2E-001: selection and convex/precise preview, non-destructive JSON
  const file=await created.json();
  await page.goto('/cad/versions/'+file.id+'/viewer?renderer=three-dxf-viewer');
  await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
+ await page.getByRole('button',{name:'전체 화면 종료',exact:true}).click();
  const tools=page.getByTestId('cad-outline-tools');
  await expect(tools).toBeVisible();
  await expect(page.getByTestId('outline-render-mapping')).toContainText('매핑 제외 0개');

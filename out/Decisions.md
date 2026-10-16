@@ -1,5 +1,14 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-032 — Viewer 기본 viewport immersive, native fullscreen은 명시 클릭 전용 (2026-10-17)
+
+- Context: #10은 로드 후 전체 화면 버튼 선택, #17은 fullscreen layer UI 제공. #25는 모든 URL/목록 진입에서 자동 전체 화면을 원하지만 Fullscreen API는 일시적 사용자 활성화가 필요해 URL 접근에서 자동 요청하면 실패한다.
+- Decision: 공통 Viewer 페이지에서 React state를 기본 CSS fixed `inset-0;height:100dvh` immersive로 시작한다. URL schema/Renderer 강제 규칙은 유지. 사용자에게 보이는 `브라우저 전체 화면` 버튼의 onClick에서만 `requestFullscreen()`을 요청한다. 브라우저 거절은 CSS 상태를 변경하지 않는다. Native/fullscreenchange와 CSS immersive/ESC 상태를 구분하고 일반 모드·목록 복귀를 제공한다.
+- Layout: 파일명·Version, Renderer, 원본 다운로드/링크/에러·재시도, 기존 #17 layer panel/#26 search/#31 outline을 동일 Viewer shell 안에 유지. 앱 header inert, html/body scroll lock, focus cleanup. Viewer load effect와 독립 상태이므로 확대/팬/레이어 상태와 Canvas가 fullscreen 토글만으로 초기화되지 않는다.
+- Consequences: 기존 외부 툴바의 정상 화면 위치가 변경되므로 이전 #10/#17/Layer/Metric E2E를 새 초기값에 맞게 수정한다. Native API가 거절되는 모바일/브라우저에서도 CSS immersive만 보장하며 주소창을 숨긴다고 주장하지 않는다. DB/API/원본/Adapter 수정 없음. 검증 결과는 [Issue25](Issue25.md), [TestReport](TestReport.md)를 따른다.
+
+
+
 ## ADR-031D — 부분 BLOCK/곡선 허용오차는 참조 승인 불가, Source는 서버 재계산 (2026-10-16)
 
 - P0 결정: 일부 자식 Entity가 미지원인 INSERT는 전체를 신뢰 가능한 Source reference로 식별하지 않는다(fail-closed). 커브 512 샘플 상한이 지정한 0.02 WCS sagitta를 만족하지 못하면 좌표 수를 임의 축소하지 않고 제외한다.

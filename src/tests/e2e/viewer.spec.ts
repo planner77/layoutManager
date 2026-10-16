@@ -39,6 +39,9 @@ for (const renderer of ["dxf-viewer", "three-dxf-viewer"])
         .click();
     await expect(page.getByRole("status")).toHaveText("도면 표시 완료");
 
+    // Historical normal-mode regression starts after leaving the new auto-immersive entry.
+    await expect(page.getByTestId("cad-viewer-shell")).toHaveAttribute("data-fullscreen", "true");
+    await page.getByRole("button", { name: "전체 화면 종료", exact: true }).click();
     const canvas = page.locator("canvas");
     await expect(canvas).toHaveCount(1);
     const initial = await canvas.screenshot();
@@ -194,6 +197,9 @@ for (const renderer of ["dxf-viewer", "three-dxf-viewer"])
     await page.goto(`/cad/versions/${file.id}/viewer?renderer=${renderer}`);
     await font;
     await expect(page.getByRole("status")).toHaveText("도면 표시 완료");
+    await expect(page.getByTestId("cad-viewer-shell")).toHaveAttribute("data-fullscreen", "true");
+    // TC-FONT continues exercising normal Viewer controls after the default immersive entry.
+    await page.getByRole("button", { name: "전체 화면 종료", exact: true }).click();
     const before = await page.locator("canvas").screenshot();
     await page.getByRole("button", { name: "확대", exact: true }).click();
     expect((await page.locator("canvas").screenshot()).equals(before)).toBe(

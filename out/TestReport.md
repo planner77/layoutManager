@@ -1,5 +1,33 @@
 # 실제 검증 결과 및 Viewer 평가
 
+
+## PR #36 두 번째 CI 실패 대응 — Chromium E2E 계약 복구 (2026-10-17)
+
+- 대상: [PR CI 38974687861](https://github.com/planner77/layoutManager/actions/runs/38974687861) / Head `7fcddb0`. `npm ci`, Prisma, TypeScript, ESLint, Unit/Integration, synthetic benchmark, Production build, Chromium 설치 **PASS**. 별도 Docker image size·migration·runtime smoke **PASS**. 전체 Chromium E2E **40 PASS / 4 FAIL**, 후속 Legacy Migration E2E는 **SKIPPED**.
+- `TC-NAME-002/003`: 파일명이 toolbar 원본 표시와 접이식 정보에 이중으로 나타나 `getByText` strict locator 충돌. Viewer toolbar에만 원본 이름을 남기고 접이식 등록정보에서는 반복을 제거, 테스트는 `viewer-toolbar` 및 exact text로 범위 한정.
+- `TC-DESC-005`: 이전 `aria-label="도면 설명"` DOM 계약이 정보 패널 이동 시 사라짐. shell 상단에 접근 가능한 `aria-label="도면 설명"` 내용(원본 줄바꿈 유지, 고정 최대 높이 스크롤)을 재제공하고 E2E에서 reload 전/후 존재뿐 아니라 visibility를 확인.
+- `TC-FONT-002` (DXF 두 Renderer): #25 기본 immersive 시작에서 버튼의 accessible name은 `전체 화면 확대`인데 구 검사는 `확대`를 기대. **기본 fullscreen 진입을 확인한 뒤 명시적으로 일반 Viewer에 복귀하여** 기존 normal zoom/fit contract를 그대로 검사하도록 테스트 수정; 기능/버튼을 임의 변경하지 않음.
+- 보완 후 새 PR CI는 **미검증**, 결과를 PASS로 기록하지 않는다. 기존 #10/#17/#26/#31 UI/Adapter/데이터/API 및 작업 버전 `0.29.0` 유지.
+
+
+## U-ISSUE25-PR36-REPAIR-20261017 — ESLint 오류·P2 Native Spinner (새 CI 전)
+
+- 최초 PR #36 / run `38963238965`: dependency install, Prisma client, TypeScript 검사 **PASS**. ESLint `viewer.tsx:314:56,67 react/no-unescaped-entities`의 작은따옴표 때문에 **FAIL**. Unit/Integration·benchmark·Production build·Chromium E2E·Legacy Migration E2E **SKIPPED**, 별도 Docker 이미지/Migration/Runtime smoke **PASS**.
+- 수정: JSX 문자열의 두 작은따옴표를 escape; Native Fullscreen top layer 바깥 Provider spinner가 보이지 않는 리뷰 P2를 위해 `GlobalLoadingOverlay`를 native 상태의 Viewer shell 내부에도 렌더. `GlobalLoadingProvider`와 동일 loading state로 노출·정리하며 CSS immersive에서 중복 렌더 없음.
+- 추가 E2E `TC-ISSUE25-002`: native `fullscreenchange` 모의, 지연된 원본 GET·로딩 중 local overlay와 disabled 상태, 완료 후 해제 검증. 실제 native Chrome/Edge 렌더링과 사용성은 별도.
+- 수정 후 ESLint/Unit/Production/Playwright **최신 실행 결과 확인 전 NOT RUN**. 초기 TypeScript/별도 Docker 성공을 신규 HEAD의 CI PASS로 소급하지 않음.
+
+
+## U-ISSUE25-DEV-20261017 — 신규 CSS immersive Viewer 구현/시험 코드 (실행 결과 미확정)
+
+- 대상: #25 / v0.29.0 / `feat/issue-25-auto-immersive-viewer`.
+- 구현: Viewer 페이지의 metadata를 Client shell로 이동; 목록/상세·direct URL/Reload에서 CSS fixed `100dvh` 기본; native fullscreen은 별도 명시 클릭만; native ESC와 CSS ESC 분리. 새 툴바에 Renderer, zoom/fit, 파일명/Version/원본·링크·다운로드·상태/에러·다시 불러오기·종료/목록 복귀 배치. normal LayerDropdown/immersive LayerPanel, 검색/외곽선은 같은 Canvas shell 공유. app header inert/scroll lock/focus cleanup.
+- Test 소스: `tests/e2e/issue25-immersive.spec.ts`(두 DXF renderer, 목록·직접링크·새 Context/리로드·모바일/Resize/Canvas backing·Fullscreen API 거절·ESC·목록 복귀), 기존 `viewer`, `issue17`, `text-search`, `issue31-outlines`, `layer-dropdown`, `metrics`, `workflow`, `link`, `dwg-viewer.probe`, `metrics.benchmark` 기본진입 변경에 대한 정상 모드 명시 진입/회귀 업데이트.
+- **기록 한계: 이 환경에서 npm 의존성 설치·typecheck/lint/Unit/Production build/Playwright/실 Chrome·Edge·DWG를 직접 실행하지 못함. 모두 NOT RUN/PR CI 대기.** E2E가 작성되었다고 PASS·독립 QA 검토·현장 CAD 수용으로 기록하지 않음.
+- 소스와 요구·추적 근거: [Issue25](Issue25.md). CI run 번호와 실제 결과는 PR CI 실행 결과 확인 시 후속 기록.
+
+
+
 ## U-ISSUE31-PR35-P1P2-REVIEW-20261016 — PR 리뷰 3건 처리 (수정 HEAD CI 재검증 전)
 
 - Initial PR #35 Source HEAD `eb01756b`에서 Codex 리뷰 3건: P1 INSERT attached ATTRIB/SEQEND 누락, P2 Client tolerance가 Source canonical 재계산을 완화할 위험, P2 Browser acceptance가 선택 0개에도 PASS 가능.

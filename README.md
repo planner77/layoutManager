@@ -1,5 +1,13 @@
 # CAD Web Viewer P.O.C.
 
+## v0.29.0 — Issue #25 도면 열기 시 기본 전체 화면
+
+목록의 **도면 보기**, Location/Version 상세와 링크 복사·새 탭·직접 URL·새로고침은 별도 클릭 없이 **화면의 뷰포트 전체를 사용하는 Viewer**로 시작합니다. 파일명/Version/위치, Renderer 변경(DXF 2종, DWG 1종), 확대·축소·맞춤, #17 레이어, #26 텍스트 검색, #31 외곽선(지원 Viewer), 원본 다운로드/링크 복사, 오류·재시도, **전체 화면 종료**·**← 버전 목록**을 화면 안에서 사용합니다.
+
+이는 브라우저 주소 표시줄까지 숨기는 native fullscreen이 **아닙니다**. 별도의 **브라우저 전체 화면** 버튼을 직접 누르면 Fullscreen API를 시도하고, 거부되어도 CSS 전체 뷰포트 상태는 유지됩니다. ESC는 native에서 native만 먼저 해제하고, CSS 모드에서는 일반 Viewer로 돌아옵니다. 일반 Viewer의 **전체 화면** 버튼으로 다시 들어갈 수 있습니다. 관련 요구·구현·시험은 [Issue25](out/Issue25.md)를 참조하세요. 이 변경의 PR CI 및 현장 수용 결과는 별도 확인 전까지 미확정입니다.
+
+
+
 ### v0.28.3 Private acceptance selection gate
 
 실DXF 브라우저 수용 명령은 기본적으로 모든 반복에서 실제 선택 가능한 Source Entity가 **1개 이상**이어야 성공하며, 필요 시 `CAD_OUTLINE_ACCEPTANCE_MIN_SELECTED=10` 등으로 문턱값을 지정할 수 있습니다. 운영자가 확정한 실제 DXF SHA와 기준 CAD 치수/면적을 검증한 뒤에만 완전한 수용으로 기록하세요.
@@ -67,7 +75,7 @@ DXF 도면을 `three-dxf-viewer`로 열고 도구의 **선택 모드**로 전환
 - DXF Viewer 두 방식 전환, DWG 전용 경로, 오류·부분 지원·성능 계측.
 - 실도면 Entity 충실도·대형 파일·사용성 비교와 재현 가능한 테스트/문서.
 
-현재 지원: 파일 등록·메타데이터 검증·SHA-256·원본 조회·목록·검색·페이지 이동·Location 상세·Current 변경. 파일명은 대소문자를 구분하는 부분 일치, 위치 네 항목은 정확히 일치하는 조건으로 검색합니다. DXF 행의 **도면 보기**에서 dxf-viewer를 실행합니다. 확대·축소·드래그 이동·화면 맞춤·Resize·다시 불러오기를 지원합니다. Viewer 버튼으로 dxf-viewer와 three-dxf-viewer를 새로고침 없이 전환합니다. three-dxf-viewer에서는 레이어 드롭다운으로 여러 레이어를 선택하거나 전체 선택·전체 해제할 수 있습니다. 선택은 현재 Viewer에서 유지되며 재로드·Viewer 전환 시 전체 선택으로 초기화됩니다. Viewer가 로드되면 **전체 화면**으로 확대할 수 있고 전체 화면에서도 확대·축소·화면 맞춤·이동을 사용할 수 있습니다. 표준 Fullscreen API가 제한되면 viewport fixed fallback을 사용하며 `Escape` 또는 **전체 화면 종료**로 복귀합니다. 전체 화면 전환 자체로 Viewer를 다시 생성하지 않아 현재 view state를 불필요하게 초기화하지 않습니다. 같은 Version의 원본 다운로드를 재사용합니다. DWG는 libredwg-web과 자체 LINE 렌더러로 표시합니다.
+현재 지원: 파일 등록·메타데이터 검증·SHA-256·원본 조회·목록·검색·페이지 이동·Location 상세·Current 변경. 파일명은 대소문자를 구분하는 부분 일치, 위치 네 항목은 정확히 일치하는 조건으로 검색합니다. DXF 행의 **도면 보기**에서 dxf-viewer를 실행합니다. 확대·축소·드래그 이동·화면 맞춤·Resize·다시 불러오기를 지원합니다. Viewer 버튼으로 dxf-viewer와 three-dxf-viewer를 새로고침 없이 전환합니다. three-dxf-viewer에서는 레이어 드롭다운으로 여러 레이어를 선택하거나 전체 선택·전체 해제할 수 있습니다. 선택은 현재 Viewer에서 유지되며 재로드·Viewer 전환 시 전체 선택으로 초기화됩니다. Viewer는 기본적으로 **CSS 전체 화면**으로 열리고 일반 모드로 나갔다가 다시 확대할 수 있으며 전체 화면에서도 확대·축소·화면 맞춤·이동을 사용할 수 있습니다. 표준 Fullscreen API가 제한되면 viewport fixed fallback을 사용하며 `Escape` 또는 **전체 화면 종료**로 복귀합니다. 전체 화면 전환 자체로 Viewer를 다시 생성하지 않아 현재 view state를 불필요하게 초기화하지 않습니다. 같은 Version의 원본 다운로드를 재사용합니다. DWG는 libredwg-web과 자체 LINE 렌더러로 표시합니다.
 
 직접 링크는 목록·Location의 특정 Version 또는 Viewer에서 `링크 복사`를 선택해 사용합니다. Clipboard 권한이 없으면 표시된 URL을 직접 복사하거나 `도면 열기`를 선택합니다. 링크는 현재 origin의 Version 주소이므로 Current 교체 후에도 해당 Version을 열지만, `localhost`/`127.0.0.1`은 링크를 여는 장치 자체를 뜻하고 사설 IP는 같은 네트워크/VPN과 listener·방화벽이 필요합니다.
 
