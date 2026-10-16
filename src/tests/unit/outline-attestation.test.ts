@@ -64,6 +64,14 @@ describe('Issue #31 immutable DXF P4 attestation (no server writes)',()=>{
      throw new Error('Must reject wrong units');
    }catch(error){expect(matches(error,'OUTLINE_UNITS_MISMATCH')).toBe(true);}
  });
+ it('TC-OUT-CANON-005: arbitrary client tolerance cannot turn open linework into an accepted polygon',()=>{
+   const sample=fixture();
+   sample.input.outlines[0].result.tolerance=1000;
+   try{
+     attestOutlineDraftAgainstImmutableDxf(sample.input,versionId,sample.sha,sample.bytes);
+     throw new Error('Must reject a client-supplied broad endpoint tolerance');
+   }catch(error){expect(matches(error,'OUTLINE_TOLERANCE_UNSUPPORTED')).toBe(true);}
+ });
  it('TC-OUT-CANON-004: fabricated or duplicate handles cannot be attested',()=>{
    const f=fixture();
    f.input.outlines[0].result.sourceEntityIds=[versionId+':'+f.sha+':AB'];
