@@ -1,5 +1,12 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #31 후속 0.27.1 작업 상태 (2026-10-16)
+
+- 0.27.0 PR #32, PR CI run `38874300056`, Main CI run `38875068317`은 실제 SUCCESS. Issue #31은 P0/P4/P5 미완료로 **열린 상태를 유지**한다.
+- 0.27.1 P0/P5: Source↔Three Renderer unique Handle/type/layer/World bbox fail-closed 대조, 2D SpatialIndex, synthetic 1k/10k/100k opt-in benchmark 및 Unit/E2E 확대. 실 CAD 성능/정확도는 별도 평가 전 PASS 금지. [Issue31](out/Issue31.md).
+- P4: 사용자/Owner가 IdP/인증·인가·audit/scope 정책을 승인하기 전 **서버 영속 DB/Write API 구현·배포 금지**. 브라우저 JSON의 순수 validator·시험만 준비한다. 도면 삭제용 비밀번호·신뢰되지 않은 User 헤더를 재사용하지 않는다.
+
+
 ## Issue #31 (2026-10-16) 구현 범위
 
 - 작업 버전 0.27.0의 `three-dxf-viewer` DXF 선택·외곽선 P0~P3 실험 구현. **합성 Unit/E2E 및 PR CI 검증 전이며 실제 설비 DXF 정확도·성능, 엔터티→Object3D 1:N 매핑은 미확정**. 조건·지원 범위·실험·보류는 [Issue31](out/Issue31.md)을 따른다.
