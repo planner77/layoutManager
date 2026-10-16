@@ -1,5 +1,12 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE31-PR35-P1P2-REVIEW-20261016 — PR 리뷰 3건 처리 (수정 HEAD CI 재검증 전)
+
+- Initial PR #35 Source HEAD `eb01756b`에서 Codex 리뷰 3건: P1 INSERT attached ATTRIB/SEQEND 누락, P2 Client tolerance가 Source canonical 재계산을 완화할 위험, P2 Browser acceptance가 선택 0개에도 PASS 가능.
+- 처리: `buildIndex`에서 INSERT group 66과 연속 ATTRIB를 소속으로 처리·루트 INSERT 안전 제외, group 66 누락 Fixture까지 Unit 추가. `attestation.ts`의 재계산 오차를 서버 상수 `0.02`로 고정·일치하지 않는 JSON 오류(409), tolerance 1000 위변조 Unit 추가. private Browser 수용 5회 모두 선택 수 >= `CAD_OUTLINE_ACCEPTANCE_MIN_SELECTED`(기본 1) 강제.
+- 리뷰 3건은 모두 회신 및 해결 처리했고, **이 수정 후의 최신 HEAD PR CI는 재검증이 필요**. 최초 CI 중 일부 성공은 최신 Source PASS를 의미하지 않는다.
+
+
 ## U-ISSUE31-P0-P5-ACCEPTANCE-20261016 — 코드/시험 추가, 실DXF·IdP 미확보 (CI 대기)
 
 - 기준: #34 PR CI 수정본 `38906697401` 성공 및 Main CI `38907443840` GHCR v0.28.2 게시 성공. 단, 이전 P0/P4/P5 운영 수용은 미완료였음.
