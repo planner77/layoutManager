@@ -88,3 +88,53 @@ for (const renderer of ['dxf-viewer', 'three-dxf-viewer'] as const) {
     await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
   });
 }
+
+test('TC-ISSUE25-002: native fullscreen has an in-shell blocking loading overlay', async ({ page, request }) => {
+  const response = await request.post('/api/cad-files', {
+    multipart: {
+      file: { name: 'issue25-native-loading.dxf', mimeType: 'application/octet-stream', buffer: drawing },
+      ...(await masterFields(request, { businessUnit: 'Issue25-native', site: 'site', building: 'B', floor: '2' })),
+      registeredAt: '2026-10-17', makeCurrent: 'true', deletePassword: '1234',
+    },
+  });
+  expect(response.status()).toBe(201);
+  const file = await response.json();
+  await page.goto(`/cad/versions/${file.id}/viewer?renderer=dxf-viewer`);
+  await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
+
+  const shell = page.getByTestId('cad-viewer-shell');
+  // Model a browser native fullscreenchange deterministically. Real fullscreen
+  // permissions vary by browser/runner, while this contract is top-layer subtree placement.
+  await shell.evaluate(element => {
+    Object.defineProperty(document, 'fullscreenElement', { configurable: true, get: () => element });
+    document.dispatchEvent(new Event('fullscreenchange'));
+  });
+  await expect(shell).toHaveAttribute('data-native-fullscreen', 'true');
+
+  let release!: () => void;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  let requests = 0;
+  await page.route(`**/api/cad-files/${file.id}/content`, async route => {
+    requests++;
+    await gate;
+    await route.continue();
+  });
+  try {
+    await page.getByRole('button', { name: '다시 불러오기' }).click();
+    await expect.poll(() => requests).toBe(1);
+    await expect(page.getByTestId('global-loading-overlay')).toBeVisible();
+    // A sibling provider overlay is NOT in the native browser fullscreen top layer;
+    // the in-shell copy remains visible above the drawing and prevents interaction.
+    await expect(shell.getByTestId('viewer-native-loading-overlay')).toBeVisible();
+    await expect(page.getByRole('button', { name: '다시 불러오기' })).toBeDisabled();
+  } finally {
+    release();
+  }
+  await expect(shell.getByTestId('viewer-native-loading-overlay')).toHaveCount(0);
+  await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
+  await shell.evaluate(() => {
+    Reflect.deleteProperty(document, 'fullscreenElement');
+    document.dispatchEvent(new Event('fullscreenchange'));
+  });
+  await expect(shell).toHaveAttribute('data-native-fullscreen', 'false');
+});

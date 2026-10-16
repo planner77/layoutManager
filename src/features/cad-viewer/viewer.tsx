@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { useGlobalLoading } from '@/components/global-loading';
+import { GlobalLoadingOverlay, useGlobalLoading } from '@/components/global-loading';
 import { CopyCadLink } from '@/features/cad-link/copy-cad-link';
 import { FullscreenLayerPanel } from '@/features/cad-viewer/fullscreen-layer-panel';
 import { CadTextSearch } from '@/features/cad-viewer/cad-text-search';
@@ -50,7 +50,7 @@ export function CadViewer({
   const getManager = useCallback(() => manager.current, []);
   const loadSequenceRef = useRef(0);
   const [isNativeFullscreen, setIsNativeFullscreen] = useState(false);
-  const { beginLoading, endLoading } = useGlobalLoading();
+  const { isLoading, beginLoading, endLoading } = useGlobalLoading();
   const [loading, setLoading] = useState(true);
   const [attempt, setAttempt] = useState(0);
   const [layers, setLayers] = useState<string[]>([]);
@@ -311,7 +311,7 @@ export function CadViewer({
           <div className="max-h-24 overflow-y-auto py-2">
             <p>등록일: {registeredAt} · 크기: {(fileSize / 1024 / 1024).toFixed(2)} MB · 원본: {originalFilename}</p>
             {description && <p className="mt-1 whitespace-pre-wrap break-all">설명: {description}</p>}
-            <p>기본 모드는 브라우저 전체 화면 API가 아닌 뷰포트 전체 사용입니다. '브라우저 전체 화면'은 직접 클릭해야 합니다.</p>
+            <p>기본 모드는 브라우저 전체 화면 API가 아닌 뷰포트 전체 사용입니다. &apos;브라우저 전체 화면&apos;은 직접 클릭해야 합니다.</p>
           </div>
         </details>
         {!isFullscreen && renderer === 'three-dxf-viewer' && layers.length > 0 && state.ready && <div className="mt-2 rounded bg-white p-1 text-slate-900">
@@ -378,6 +378,14 @@ export function CadViewer({
         {state.warning && <p className="text-xs text-amber-800" data-testid="viewer-coverage">{state.warning}</p>}
         {state.error && <p role="alert" className="text-xs text-red-700">{state.error}</p>}
       </div>
+      {/*
+        The provider overlay is a sibling of the app and cannot cover a browser
+        fullscreen element in the top layer, irrespective of its z-index.
+        Keep the same loading boundary within the fullscreen subtree as well.
+      */}
+      {isNativeFullscreen && isLoading && (
+        <GlobalLoadingOverlay message="도면을 여는 중입니다..." testId="viewer-native-loading-overlay" />
+      )}
     </div>
     {!isFullscreen && metric && <div className="rounded border border-slate-200 bg-white p-4 text-sm">
       <div className="flex flex-wrap items-center gap-4">

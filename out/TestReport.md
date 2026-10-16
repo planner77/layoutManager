@@ -1,5 +1,13 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE25-PR36-REPAIR-20261017 — ESLint 오류·P2 Native Spinner (새 CI 전)
+
+- 최초 PR #36 / run `38963238965`: dependency install, Prisma client, TypeScript 검사 **PASS**. ESLint `viewer.tsx:314:56,67 react/no-unescaped-entities`의 작은따옴표 때문에 **FAIL**. Unit/Integration·benchmark·Production build·Chromium E2E·Legacy Migration E2E **SKIPPED**, 별도 Docker 이미지/Migration/Runtime smoke **PASS**.
+- 수정: JSX 문자열의 두 작은따옴표를 escape; Native Fullscreen top layer 바깥 Provider spinner가 보이지 않는 리뷰 P2를 위해 `GlobalLoadingOverlay`를 native 상태의 Viewer shell 내부에도 렌더. `GlobalLoadingProvider`와 동일 loading state로 노출·정리하며 CSS immersive에서 중복 렌더 없음.
+- 추가 E2E `TC-ISSUE25-002`: native `fullscreenchange` 모의, 지연된 원본 GET·로딩 중 local overlay와 disabled 상태, 완료 후 해제 검증. 실제 native Chrome/Edge 렌더링과 사용성은 별도.
+- 수정 후 ESLint/Unit/Production/Playwright **최신 실행 결과 확인 전 NOT RUN**. 초기 TypeScript/별도 Docker 성공을 신규 HEAD의 CI PASS로 소급하지 않음.
+
+
 ## U-ISSUE25-DEV-20261017 — 신규 CSS immersive Viewer 구현/시험 코드 (실행 결과 미확정)
 
 - 대상: #25 / v0.29.0 / `feat/issue-25-auto-immersive-viewer`.

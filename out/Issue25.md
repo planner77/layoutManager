@@ -49,3 +49,11 @@
 ## UX 문구
 
 '전체 화면'은 **앱 뷰포트 최대화**, '브라우저 전체 화면'은 **표준 Fullscreen API 사용자 선택 동작**이다. 둘은 독립 상태이며 주소창 자동 숨김으로 소개하지 않는다. 성공 후 실제 브라우저별 추가 수동 시험은 `out/TestReport.md`에 따로 기록한다.
+
+## PR #36 최초 CI 실패와 P2 리뷰 보완 (2026-10-17)
+
+- 최초 PR CI [run 38963238965](https://github.com/planner77/layoutManager/actions/runs/38963238965): Node 22.14.0 `npm ci`, Prisma generate, `tsc --noEmit` 성공; **ESLint 실패**(`src/features/cad-viewer/viewer.tsx:314:56,67`, `react/no-unescaped-entities`). JSX 안내 문구의 작은따옴표는 `&apos;`로 escape. 이 실패로 Unit/Integration, benchmark, Production build, Playwright E2E, Legacy Migration E2E는 **미실행**. 별도 Docker size/migration/runtime smoke Job은 성공.
+- Codex P2 리뷰 [PR #36](https://github.com/planner77/layoutManager/pull/36): Native fullscreen인 Viewer shell은 브라우저의 top layer에 들어가므로 Provider의 형제 노드인 global spinner는 `z-index: 1000`이어도 그 위에 그려지지 않는다. renderer 전환/재로드가 최대 120초 지연될 때 spinner/클릭 방지가 불충분해진다.
+- 조치: `useGlobalLoading().isLoading` 상태를 공유하고, native fullscreen이 실제 활성일 때 shell 내부에도 기존 `GlobalLoadingOverlay`를 렌더한다. Overlay는 top-layer shell 자손이므로 global spinner의 body 키보드 차단과 함께 mouse/touch 차단 UI를 제공. CSS immersive에서는 기존 Provider spinner만 사용하여 overlay 중복을 방지한다.
+- 회귀: `TC-ISSUE25-002`는 `fullscreenchange`에 의한 native 상태 변화를 합성으로 고정하고, 원본 GET을 지연시킨 명시적 reload 중 Provider/global 및 shell/local spinner 표시, 조작 비활성화, 요청 완료 후 제거·native 상태 해제를 확인한다. 실제 브라우저 native 렌더링의 실증은 별도이며 테스트 코드만으로 PASS가 아니다.
+- 보완된 커밋에 대한 **새 PR CI 검증 전**으로 최신 Unit/Build/E2E PASS를 주장하지 않는다.
