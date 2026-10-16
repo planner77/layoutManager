@@ -1,5 +1,23 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #26 — 검색/좌표/생명주기 검증 계획 (0.27.0)
+
+| Test case | 기준 | 증거 위치 | 상태 |
+| --- | --- | --- | --- |
+| TC-TEXT-001 | TEXT/MTEXT·한글·영문·숫자·NFC/서식/개행 일치 | unit/dxf-text-index.test.ts | CI 전 |
+| TC-TEXT-002 | 동일 문자열의 3개 서로 다른 좌표 | unit/dxf-text-index.test.ts | CI 전 |
+| TC-TEXT-003 | BLOCK base point와 2D scale/rotation/translate | unit/dxf-text-index.test.ts | CI 전 |
+| TC-TEXT-004 | hidden/OCS/ATTRIB/없는 BLOCK 제외 기록 | unit/dxf-text-index.test.ts | CI 전 |
+| TC-TEXT-005 | 손상/이진/HTML literal 안전성 | unit/dxf-text-index.test.ts | CI 전 |
+| TC-TEXT-006 | 순환 INSERT 조기 종료 | unit/dxf-text-index.test.ts | CI 전 |
+| TC-TEXT-E2E-001 | 두 DXF 렌더러, 3위치 Pan/Zoom, 검색, 전체 화면, Renderer 변경 원본 공유 | e2e/text-search.spec.ts | CI 전 |
+| TC-TEXT-007 | Manager focus 위임, 이상 bbox 거부, Worker 취소·재시도 | viewer unit + 환경 회귀 | 증거 확대 필요 |
+| TC-TEXT-008 | Layer 숨김, 빠른 연속 검색/Version 교체, 2만 건, 모바일 | 확대 E2E/실도면 | 미실행 |
+| TC-TEXT-DWG | 실제 DWG TEXT/MTEXT 추출→렌더링→focus 기술 검증 | 독립 DWG 실험 | 미실행/비지원 |
+
+검증 기준: 실제 camera 중심 이동/줌, 다른 Version 유실·worker 누수 없음, 검색 결과가 이전 Version 좌표를 참조하지 않음. 외부 실도면 미제공으로 합성 fixture와 운영 인수 기준을 구분한다. 테스트 실행 전 PASS를 기입하지 않는다.
+
+
 ## Issue #28 — 이미지 경량화 검증 항목 (0.26.0)
 
 | TC | 검증 내용 | 자동 검증 | 현재 |
