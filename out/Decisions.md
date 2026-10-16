@@ -1,5 +1,12 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-031D — 부분 BLOCK/곡선 허용오차는 참조 승인 불가, Source는 서버 재계산 (2026-10-16)
+
+- P0 결정: 일부 자식 Entity가 미지원인 INSERT는 전체를 신뢰 가능한 Source reference로 식별하지 않는다(fail-closed). 커브 512 샘플 상한이 지정한 0.02 WCS sagitta를 만족하지 못하면 좌표 수를 임의 축소하지 않고 제외한다.
+- P4 결정: 사용자가 제공한 JSON은 진위가 보장되지 않는다. 서버의 immutable DXF bytes SHA, Version/단위, 유일/지원 Handle 검증 뒤 canonical Convex/Precise Geometry를 재계산하고 XOR 면적을 비교하여 **서버 계산 결과만** 신뢰한다. 인증 Provider·세션/RBAC/Scope·감사는 별도 승인 전 미구현.
+- P5 결정: CI synthetic 100k CPU와 private 사용자 DXF의 Browser 5회 관측을 구분한다. 실제 회사 도면/측정값/직원 정보는 외부 CI 및 PR artifact에 올리지 않는다. 데이터·기준 SLA가 없으면 현장 수용 PASS 금지.
+
+
 ## ADR-031C — ESM Worker import 경고는 릴리스 차단 오류 (2026-10-16)
 
 - Main CI `38894507390`에서 `polygon-clipping`에 없는 named `union` import Webpack 경고가 기록됐는데, CI와 GHCR 게시가 성공했다. TypeScript declaration/CJS import 형태와 실제 ESM Worker bundle Export 계약이 달라 발생할 수 있는 기능 위험으로 판정한다.
