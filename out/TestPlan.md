@@ -1,5 +1,20 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #31 v0.28.3 추가 시험 설계 — CI 대기
+
+| ID | 확인 내용 | 증거 |
+| --- | --- | --- |
+| TC-OUT-ID-BLOCK-PARTIAL | BLOCK 미지원 child가 있으면 INSERT geometry 부분 계산이 있더라도 stable=false, 안전한 선택·영속 참조 제외 | Unit 신규 |
+| TC-OUT-GEO-CURVE-CAP | 실제 반경에 필요한 샘플 수가 512 초과하면 0.02 WCS sagitta 정확도를 주장하지 않고 거부 | Unit 신규 |
+| TC-OUT-CANON-001..004 | Source SHA/Version/Units/Handle/GeoJSON에 의한 canonical recompute; 변조·존재하지 않는 Entity 거부 | Unit 신규 |
+| TC-OUT-PERF-100K | CI synthetic 1k/10k/100k Parse/SpatialIndex/Query/Convex CPU/heap 출력, 요청 수·파싱 수 동일 | `npm run test:outline-benchmark` PR CI |
+| TC-OUT-REAL-001 | 폐쇄망 승인된 DXF 3종: Source↔Renderer, Insert/BLOCK/OCS/거리·Polygon 면적을 CAD 기준 값과 대조 | 실제 파일/수치 기준 미확보 |
+| TC-OUT-REAL-002 | `npm run test:outline-acceptance` 5회 Browser Load, 화면 mapping/선택, p50/p95, JS heap, CPU/GPU 기록 | private env input 미확보 |
+| TC-OUT-P4-001 | IdP/RBAC/Scope/세션/감사 정책 확정 후 Write API/CRUD/CAS/Version 삭제 및 인증 오류 | **Owner 승인 전 보류** |
+
+**신규 PR CI 통과와 현장 실DXF 수용은 별개**. 미실행 항목을 PASS로 표기하지 않는다. [Issue31](Issue31.md).
+
+
 ## Issue #31 v0.28.2 — Production Worker / 실도면 후속 계획 (PR CI 전)
 
 | TC | 시험 계약 | 신규 실행 결과 |
