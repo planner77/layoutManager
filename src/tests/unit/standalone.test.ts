@@ -44,3 +44,45 @@ test('TC-IMAGE-003: release images separate the one-shot migrator from web start
   expect(compose).toContain('target: migrator');
   expect(compose).toContain('target: runtime');
 });
+
+
+test.skipIf(process.platform === 'win32')('TC-IMAGE-010: Compose launcher normalizes tagless image pairs and enforces digest pairing', async () => {
+  const { execFileSync } = await import('node:child_process');
+  const root = path.resolve(process.cwd(), '..');
+  const launcher = path.join(root, 'src/scripts/compose.sh');
+  const envfile = path.join(root, '.env.example');
+  const resolve = (vars: Record<string, string> = {}) => execFileSync(
+    'bash', [launcher, envfile, '--print-images'], {
+      cwd: root,
+      encoding: 'utf8',
+      env: { ...process.env, GHCR_IMAGE: '', GHCR_MIGRATION_IMAGE: '', ...vars },
+    },
+  );
+  expect(resolve()).toContain('migrate=cad-layout-viewer:local-migrate');
+  expect(resolve({ GHCR_IMAGE: 'ghcr.io/planner77/layoutmanager:0.26.0' }))
+    .toContain('migrate=ghcr.io/planner77/layoutmanager:0.26.0-migrate');
+  expect(resolve({ GHCR_IMAGE: 'ghcr.io/planner77/layoutmanager' }))
+    .toBe('app=ghcr.io/planner77/layoutmanager:latest\nmigrate=ghcr.io/planner77/layoutmanager:latest-migrate\n');
+  expect(resolve({ GHCR_IMAGE: 'registry.example:5000/org/cad' }))
+    .toContain('migrate=registry.example:5000/org/cad:latest-migrate');
+  expect(resolve({ GHCR_IMAGE: 'ghcr.io/planner77/layoutmanager@sha256:abc' })).toThrow;
+  expect(resolve({
+    GHCR_IMAGE: 'ghcr.io/planner77/layoutmanager@sha256:abc',
+    GHCR_MIGRATION_IMAGE: 'ghcr.io/planner77/layoutmanager@sha256:def',
+  })).toContain('migrate=ghcr.io/planner77/layoutmanager@sha256:def');
+});
+
+test('TC-IMAGE-011: GHCR publication stages two candidates before public alias promotion', () => {
+  const root = path.resolve(process.cwd(), '..');
+  const workflow = readFileSync(path.join(root, '.github/workflows/docker-publish.yml'), 'utf8');
+  const app = workflow.indexOf('name: Build application candidate');
+  const migration = workflow.indexOf('name: Build migration candidate');
+  const promote = workflow.indexOf('name: Promote paired release images after both candidates succeed');
+  expect(app).toBeGreaterThan(0);
+  expect(migration).toBeGreaterThan(app);
+  expect(promote).toBeGreaterThan(migration);
+  expect(workflow.slice(app, promote)).not.toContain('tags: ${{ steps.meta.outputs.tags }}');
+  expect(workflow.slice(app, promote)).not.toContain('tags: ${{ steps.meta_migration.outputs.tags }}');
+  expect(workflow).toContain('docker buildx imagetools create --tag "$IMAGE:${APP_VERSION}-migrate"');
+  expect(workflow).toContain('cancel-in-progress: false');
+});
