@@ -26,6 +26,13 @@ test('TC-TEXT-010: Unicode escape ends at exactly four hex digits even if next c
   expect(plainMtext('TEMP \\U+00B0C')).toBe('TEMP °C');
 });
 
+test('TC-TEXT-011: MTEXT group 3 continuation adds no implicit whitespace', () => {
+  const withoutGap = document('0\nMTEXT\n10\n10\n20\n20\n40\n10\n3\nAB\n1\nCD\n');
+  const withGap = document('0\nMTEXT\n10\n10\n20\n20\n40\n10\n3\nAB \n1\nCD\n');
+  expect(extractDxfText(withoutGap).hits[0].text).toBe('ABCD');
+  expect(extractDxfText(withGap).hits[0].text).toBe('AB CD');
+});
+
 test('TC-TEXT-002: three distant identical TEXT objects have distinct world focus centers', () => {
   const index = extractDxfText(document(text(0, 'same') + text(1000, 'same') + text(2000, 'same')));
   expect(index.hits.map(h => (h.focus.minX + h.focus.maxX) / 2)).toEqual([0, 1000, 2000]);
