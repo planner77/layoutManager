@@ -73,7 +73,7 @@ export function CadTextSearch({
 
   return <div className="pointer-events-none absolute right-4 top-20 z-[40] flex max-w-[calc(100vw-2rem)] flex-col items-end">
     <Button type="button" size="sm" variant="outline" onClick={toggle}
-      aria-expanded={open} aria-controls={id} disabled={loading || !ready}
+      aria-expanded={open} aria-controls={id} disabled={format === 'DXF' && (loading || !ready)}
       className="pointer-events-auto max-w-full border-slate-300 bg-white text-slate-900 shadow">
       도면 내 텍스트 검색
     </Button>
