@@ -1,10 +1,23 @@
 import { expect, test } from 'vitest';
+import { createTextSearchDxf } from '../fixtures/text-search-dxf';
 import { extractDxfText, normalizedText, plainMtext, searchKey } from '@/viewers/core/text-index';
 
 const document = (entities: string) =>
   '0\nSECTION\n2\nENTITIES\n' + entities + '0\nENDSEC\n0\nEOF\n';
 const text = (x: number, label: string, layer = '0') =>
   '0\nTEXT\n5\nH' + x + '\n8\n' + layer + '\n10\n' + x + '\n20\n0\n40\n10\n1\n' + label + '\n';
+
+test('TC-TEXT-FIXTURE-001: shared browser DXF contains three TEXTs and one searchable MTEXT', () => {
+  const drawing = createTextSearchDxf();
+  expect(drawing).toContain('0\nMTEXT\n');
+  expect(drawing).toContain('41\n240\n71\n1\n72\n1\n1\n검사\\P구역 45\n');
+  const index = extractDxfText(drawing);
+  expect(index.hits.filter(hit => hit.type === 'TEXT')).toHaveLength(3);
+  const mtexts = index.hits.filter(hit => hit.type === 'MTEXT');
+  expect(mtexts).toHaveLength(1);
+  expect(mtexts[0]).toMatchObject({ text: '검사 구역 45', layer: 'FIND' });
+  expect(index.hits.filter(hit => searchKey(hit.text).includes('abc 123'))).toHaveLength(3);
+});
 
 test('TC-TEXT-001: TEXT + formatted/continued MTEXT normalize Unicode, whitespace, case and number', () => {
   const mtext = '0\nMTEXT\n5\nM1\n8\nZONE\n10\n300\n20\n20\n40\n10\n3\n생산 \\C1;ABC\\P\n' +

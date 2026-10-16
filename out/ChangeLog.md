@@ -1,5 +1,13 @@
 # ChangeLog
 
+### 0.27.0 / PR #30 / CI #52 Browser Fixture regression repair
+
+- CI #52: TypeScript/ESLint, Unit/Integration 125/125, production Build and Docker smoke PASS. Browser E2E 38/40 PASS; newly added TEXT/MTEXT search variants failed because the E2E's literal \n in a // comment suppressed the entire MTEXT insertion statement.
+- Extracted shared DXF fixture (group-code array + LF join) and added Unit TC-TEXT-FIXTURE-001 checking three TEXT and one MTEXT with normalized Korean text. Browser tests now import the shared fixture. Viewer production code unchanged.
+- Final result, real CAD and QA remain pending until follow-up CI.
+
+
+
 ### 0.27.0 / PR #30 CI #49 E2E fixture 수정 (2026-10-16)
 
 - Typecheck/ESLint/125 Unit·Integration/Build/Docker PASS; Browser E2E 38 PASS / 신규 2 FAIL.

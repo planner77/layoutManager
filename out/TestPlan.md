@@ -1,5 +1,14 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+### Issue #26 / CI #52 — Fixture source and presence regression gate
+
+- TC-TEXT-FIXTURE-001 (Unit): actual DXF fixture shared by Browser E2E must contain exactly 3 parsed TEXT hits and 1 parsed MTEXT hit. Its MTEXT has 41=240, 71=1, 72=1 and rendered/searchable string "검사 구역 45"; verify three copies of "abc 123" separately.
+- The Browser TC-TEXT-E2E-001 must import the SAME fixture generator, not maintain a duplicate DXF literal or entity creation hidden after a single-line comment. Build each DXF group-code/value as array members and join with real newline characters.
+- CI #52 demonstrated 125 successful Unit/Integration tests but no fixture coverage, causing Browser E2E to fail at the MTEXT search after three TEXT navigation assertions. Corrected scope requires Unit fixture gate first, then complete Browser E2E and Legacy migration E2E.
+- CI #52 run: https://github.com/planner77/layoutManager/actions/runs/38872015982
+
+
+
 ### Issue #26 / CI #49 Browser E2E MTEXT renderer interoperability
 
 - TC-TEXT-E2E-001의 합성 DXF MTEXT 필수 명시값: group 41=240(reference width), group 71=1(top-left attachment), group 72=1(left-to-right); TEXT group 5는 16진 handle을 사용한다.

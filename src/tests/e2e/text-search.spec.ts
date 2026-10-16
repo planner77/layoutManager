@@ -1,22 +1,12 @@
 import { test, expect } from '@playwright/test';
 import { masterFields } from './master-helper';
-
-function fixture() {
-  let entities = '';
-  for (const [i, x] of [0, 1800, 3600].entries()) {
-    entities += '0\nTEXT\n5\n' + (0x1A0 + i).toString(16).toUpperCase() + '\n8\nFIND\n10\n' + x +
-      '\n20\n100\n40\n20\n1\n장비 ABC 123\n';
-    entities += '0\nCIRCLE\n8\nFIND\n10\n' + (x + 60) + '\n20\n60\n40\n' + (12 + i * 18) + '\n';
-  }
-  // MTEXT 41=width, 71=1 top-left attachment, 72=1 left-to-right (Autodesk DXF).\n  // Without group 71, dxf-viewer RenderMText threw 'Unhandled alignment' in CI #49.\n  entities += '0\nMTEXT\n8\nFIND\n10\n100\n20\n400\n40\n15\n41\n240\n71\n1\n72\n1\n1\n검사\\P구역 45\n';
-  return '0\nSECTION\n2\nENTITIES\n' + entities + '0\nENDSEC\n0\nEOF\n';
-}
+import { createTextSearchDxf } from '../fixtures/text-search-dxf';
 
 for (const renderer of ['dxf-viewer', 'three-dxf-viewer'] as const) {
   test('TC-TEXT-E2E-001: ' + renderer + ' search, pan and zoom across distinct text positions and renderer re-entry', async ({ page, request }) => {
     const response = await request.post('/api/cad-files', {
       multipart: {
-        file: { name: 'text-search-' + renderer + '.dxf', mimeType: 'application/octet-stream', buffer: Buffer.from(fixture()) },
+        file: { name: 'text-search-' + renderer + '.dxf', mimeType: 'application/octet-stream', buffer: Buffer.from(createTextSearchDxf()) },
         ...(await masterFields(request, { businessUnit: 'Search-' + renderer, site: 'site', building: 'A', floor: '3' })),
         registeredAt: '2026-10-16', makeCurrent: 'false', deletePassword: '1234',
       },

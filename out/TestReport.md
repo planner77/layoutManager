@@ -1,5 +1,16 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE26-PR30-CI52-FAIL-20261016 — test fixture comment swallowed MTEXT source
+
+- PR #30 / CI #52 Run 38872015982, source head aa0f1d6595d2dfbab8af74975a26646df067ea6b.
+- Actual GitHub CI: TypeScript and ESLint PASS; Unit+Integration 125/125 PASS; production Build PASS; Docker image/migration/runtime smoke PASS. Browser Playwright E2E 38/40 PASS and both TC-TEXT-E2E-001 variants FAIL; Legacy migration E2E skipped after Browser failure.
+- Both renderer variants completed TEXT search (3 positions), then failed on the same assertion: "검사 구역 45" yielded no visible "검색 결과 1개". Source inspection found a literal backslash-n inside a single-line // comment on src/tests/e2e/text-search.spec.ts line 11. Because JavaScript single-line comments end only at a REAL newline, the appended entities += MTEXT statement was commented out; uploaded drawing contained TEXT entities but no MTEXT at all.
+- Corrective change: remove the fragile inline DXF generator from the E2E spec and move it to src/tests/fixtures/text-search-dxf.ts. Generate group-code pairs as an array joined by real newline, preserve MTEXT group 41/71/72 and valid hexadecimal TEXT handles. New TC-TEXT-FIXTURE-001 validates actual shared fixture parsing before the browser test: 3 TEXT entities and 1 MTEXT with visible text "검사 구역 45". Both renderer E2Es import the SAME generator, so test/fixture drift is prevented.
+- No production viewer, database, migration, packages or behavior were changed. New CI and independent QA still require verification; success is not inferred from code edits.
+- Evidence: https://github.com/planner77/layoutManager/actions/runs/38872015982 and the PR #30 source diff.
+
+
+
 ## U-ISSUE26-PR30-CI49-FAIL-20261016 — Browser E2E 합성 DXF의 MTEXT attachment 누락
 
 - PR #30 / CI #49 Run 38868174246, head 91932bd9a9ddfeeb4370de137d267090ca714d2b. 실제 통과: Typecheck/ESLint, Unit+Integration 125/125, Production Build, Docker image/migration/runtime smoke. Browser E2E 38 passed / **2 failed**; Legacy migration E2E는 선행 실패로 미실행.

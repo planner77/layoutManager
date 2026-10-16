@@ -1,5 +1,14 @@
 # GitHub Issue #26 — DXF TEXT/MTEXT 검색과 좌표 줌
 
+## PR #30 / CI #52 — 검색 테스트 Fixture 수정 및 조기 회귀 검증
+
+- Run 38872015982 (CI #52): Typecheck, ESLint, 125 Unit/Integration tests, Build, Docker Job 모두 PASS. Playwright 38 PASS / 2 FAIL: 두 DXF 렌더러 모두 "검사 구역 45"을 검색할 때 결과 1건 조건 실패. Legacy migration E2E는 미실행.
+- 직접 원인: E2E spec 11행의 // 주석 안에 실제 줄바꿈 대신 문자 그대로 \n이 삽입되어 뒤따르는 MTEXT 엔터티 추가 코드가 전부 주석 처리됨. 이번 CI에서 두 렌더러의 MTEXT 렌더링·검색 성공 여부를 검증한 것으로 볼 수 없음.
+- 조치: 그룹 코드와 값을 문자열 배열로 생성해 실제 LF로 연결하는 별도 순수 Fixture(src/tests/fixtures/text-search-dxf.ts)로 분리. Unit TC-TEXT-FIXTURE-001이 같은 Fixture에서 TEXT 3개/MTEXT 1개 및 MTEXT의 실제 표시 문자열과 코드 41/71/72를 먼저 검증하고, E2E는 이를 공유한다.
+- 제품 파서나 좌표 focus 코드를 변경하지 않음. 새 CI를 통해 실제 MTEXT 렌더링/선택/전환 및 Legacy migration을 재확인해야 함.
+
+
+
 ## PR #30 / CI #49 — Browser E2E MTEXT 정렬 그룹코드 조치
 
 - CI #49 Run 38868174246: Typecheck, ESLint, Unit/Integration 125건, Production Build, Docker CI 성공. E2E는 38/40 통과로 신규 텍스트 검색 E2E 2건 실패. Legacy migration E2E는 미실행.
