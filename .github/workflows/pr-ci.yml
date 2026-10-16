@@ -70,3 +70,80 @@ jobs:
           path: src/test-results
           if-no-files-found: ignore
           retention-days: 7
+
+  docker-runtime:
+    name: Docker image size, migration and runtime smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout including baseline revision
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Validate tagless and digest image-pair Compose resolution
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash -n src/scripts/compose.sh
+          GHCR_IMAGE=ghcr.io/planner77/layoutmanager GHCR_MIGRATION_IMAGE= \
+            bash src/scripts/compose.sh .env.example config --format json \
+            | python3 -c "import json,sys; s=json.load(sys.stdin)['services']; assert s['app']['image']=='ghcr.io/planner77/layoutmanager:latest'; assert s['migrate']['image']=='ghcr.io/planner77/layoutmanager:latest-migrate'"
+          if GHCR_IMAGE=ghcr.io/planner77/layoutmanager@sha256:abc GHCR_MIGRATION_IMAGE= \
+            bash src/scripts/compose.sh .env.example --print-images; then
+            echo "::error::Digest-pinned app unexpectedly accepted without migrator reference"
+            exit 1
+          fi
+      - name: Build pre-change baseline (same source, original Dockerfile)
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          if [ -z "$BASE_SHA" ]; then BASE_SHA="$(git rev-parse origin/main)"; fi
+          git show "$BASE_SHA:src/Dockerfile" > "$RUNNER_TEMP/issue28-baseline.Dockerfile"
+          docker buildx build --load --platform linux/amd64 -f "$RUNNER_TEMP/issue28-baseline.Dockerfile" -t cad-layout-viewer:baseline .
+      - name: Build phase1, standalone app and migration targets
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker buildx build --load --platform linux/amd64 --target phase1 -f src/Dockerfile -t cad-layout-viewer:phase1 .
+          docker buildx build --load --platform linux/amd64 --target runtime -f src/Dockerfile -t cad-layout-viewer:ci .
+          docker buildx build --load --platform linux/amd64 --target migrator -f src/Dockerfile -t cad-layout-viewer:ci-migrate .
+      - name: Measure 3 image sizes, layers and directories
+        run: bash src/scripts/measure-images.sh cad-layout-viewer:baseline cad-layout-viewer:phase1 cad-layout-viewer:ci "$GITHUB_STEP_SUMMARY"
+      - name: Confirm failed migration is nonzero before app startup
+        run: |
+          if docker run --rm -e DATABASE_URL=file:/proc/cad.sqlite -e CAD_STORAGE_PATH=/data/cad cad-layout-viewer:ci-migrate; then
+            echo "::error::Unwritable database path unexpectedly passed migration"
+            exit 1
+          fi
+      # A newly started Node server can reset a connection before its listener is ready.
+      # curl --retry-connrefused alone does not retry exit 56; retry-all-errors covers it.
+      - name: Compose fresh install, static assets, health and idempotent migration
+        shell: bash
+        env:
+          GHCR_IMAGE: cad-layout-viewer:ci
+          GHCR_MIGRATION_IMAGE: cad-layout-viewer:ci-migrate
+        run: |
+          set -euo pipefail
+          docker compose --env-file .env.example -f src/docker-compose.yml config --quiet
+          docker compose --env-file .env.example -f src/docker-compose.yml up -d --no-build app
+          curl --fail --silent --show-error --retry 40 --retry-delay 3 --retry-connrefused --retry-all-errors --connect-timeout 3 --max-time 10 http://127.0.0.1:3000/api/health
+          curl --fail http://127.0.0.1:3000/fonts/NanumGothic-Regular.ttf --output /dev/null
+          curl --fail http://127.0.0.1:3000/fonts/CadKorean.typeface.json --output /dev/null
+          curl --fail http://127.0.0.1:3000/libredwg/wasm/libredwg-web.wasm --output /dev/null
+          docker compose --env-file .env.example -f src/docker-compose.yml stop app
+          docker compose --env-file .env.example -f src/docker-compose.yml up --no-build --force-recreate migrate
+          docker compose --env-file .env.example -f src/docker-compose.yml up -d --no-build app
+          curl --fail --silent --show-error --retry 40 --retry-delay 3 --retry-connrefused --retry-all-errors --connect-timeout 3 --max-time 10 http://127.0.0.1:3000/api/health
+      - name: Dump Docker diagnostics and stop without deleting volume
+        if: always()
+        shell: bash
+        env:
+          GHCR_IMAGE: cad-layout-viewer:ci
+          GHCR_MIGRATION_IMAGE: cad-layout-viewer:ci-migrate
+        run: |
+          docker compose --env-file .env.example -f src/docker-compose.yml ps || true
+          docker compose --env-file .env.example -f src/docker-compose.yml logs --tail 80 || true
+          docker compose --env-file .env.example -f src/docker-compose.yml down || true

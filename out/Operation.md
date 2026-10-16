@@ -1,6 +1,27 @@
 # 운영·환경설정 초안
 
-문서의 현재 기준 버전은 0.25.0이다. 아래 과거 버전별 문구는 당시 운영 기록으로 읽는다.
+## 0.26.0 — migration job / standalone 운영 절차
+
+**운영 적용 전** 동일 시점 SQLite DB, local CAD 원본, S3 객체의 백업 및 복원 가능성을 검증한다. migration 중 구 앱이 동시에 DB를 쓰지 않도록 한다. 실제 운영 migration과 GHCR 게시 확인은 PR 구현 범위 밖이다.
+
+**신규 설치:** 권장 실행은 `bash src/scripts/compose.sh .env build` → `bash src/scripts/compose.sh .env up -d`. 이 helper는 `.env`를 shell에서 실행하지 않고 `GHCR_IMAGE`/`GHCR_MIGRATION_IMAGE` 두 값만 읽어 image pair를 정규화한 뒤 Compose로 전달한다. `bash src/scripts/compose.sh .env ps -a`, `logs migrate app`, `/api/health` 200 확인. migrate 컨테이너는 성공 후 종료됨이 정상이다. `GHCR_IMAGE`가 이미 태그를 포함하면 기존 raw Docker Compose 명령과 호환된다.
+
+**GHCR 업그레이드:** `.env`에 `GHCR_IMAGE=ghcr.io/planner77/layoutmanager:0.26.0`을 설정하면 `:0.26.0-migrate`가 선택된다. **태그 없는** `GHCR_IMAGE=ghcr.io/planner77/layoutmanager`를 helper로 실행하면 app은 `:latest`, migration은 `:latest-migrate`가 되며, **raw Docker Compose를 직접 쓸 경우에는 `GHCR_MIGRATION_IMAGE`를 반드시 명시**한다. registry host의 포트는 이미지 태그로 혼동하지 않는다. Digest-pinned app은 `GHCR_MIGRATION_IMAGE`도 명시해야 하며, 동일 릴리스의 두 digest가 일치하는 source revision에서 만들어졌는지 확인한다.
+
+- 배포 준비 확인: `bash src/scripts/compose.sh .env --print-images`(두 이미지 참조만 표시) 및 `bash src/scripts/compose.sh .env config`로 확인한다. 이미지 변수를 포함한 `.env` 전체나 Secret 값은 출력하지 않는다.
+- 버전별 pair가 GHCR에 모두 존재하는지 `docker buildx imagetools inspect`로 검사한다. Workflow는 `build-<SHA>-app/migrate` 후보 digest를 먼저 게시·검증하고, 두 빌드가 모두 성공한 다음에만 버전/최신 별칭을 승격한다. **GHCR에서는 두 공개 태그를 단일 트랜잭션으로 갱신할 수 없으므로** 자동 배포의 `latest` 의존을 피하고 앱·마이그레이터를 동일한 명시적 버전 또는 각각 검증한 digest로 고정한다.
+
+1. 운영 쓰기 중단, DB/CAD/S3 일관 백업 및 기존 이미지·Compose 기록.
+2. `bash src/scripts/compose.sh .env pull app migrate`
+3. `bash src/scripts/compose.sh .env stop app`
+4. `bash src/scripts/compose.sh .env up --no-build --force-recreate migrate` → **exit 0인지 확인**. 실패 시 앱 기동 금지, `logs --tail 200 migrate` 확인.
+5. `bash src/scripts/compose.sh .env up -d --no-build app`
+6. `/api/health` 200, 기존 도면/Current/비밀번호/원본/한글 및 WASM·S3 회귀 확인.
+
+**복구:** schema가 비호환이면 변경된 DB에 과거 앱을 직접 연결하지 말고 원본·DB·S3 같은 시점 백업과 당시 Compose/이미지를 함께 복원한다. `docker compose down -v` 사용 금지. `docker buildx imagetools inspect`의 GHCR digest는 출시 후 검증; PR CI의 `docker save | gzip`는 OCI 전송 바이트와 다른 지표이다. 상세 `Issue28.md`.
+
+
+현재 소스 기준 버전은 0.26.0이다. 0.25.0 절차는 해당 시점의 DB 변경 기록이다. 아래 과거 버전별 문구는 당시 운영 기록으로 읽는다.
 
 ## 0.25.0 기준정보 migration 운영 절차
 

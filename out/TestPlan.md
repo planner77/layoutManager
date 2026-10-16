@@ -1,5 +1,25 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #28 — 이미지 경량화 검증 항목 (0.26.0)
+
+| TC | 검증 내용 | 자동 검증 | 현재 |
+| --- | --- | --- | --- |
+| TC-IMAGE-001 | standalone PORT/기존 `--port` 계약 | `standalone.test.ts` | CI 전 |
+| TC-IMAGE-002 | static/font/license/WASM 복사 및 HTTP 접근 | unit + Docker curl + Viewer E2E | CI 전 |
+| TC-IMAGE-003 | migrator/runtime 타깃 구분/완료 의존 | unit + Compose config | CI 전 |
+| TC-IMAGE-004 | 3단계 크기/레이어/비압축·gzip 측정 | Docker job `measure-images.sh` | CI 전 |
+| TC-IMAGE-005 | 빈 DB migration→backfill→health 200 | Docker compose fresh install | CI 전 |
+| TC-IMAGE-006 | migration 실패 시 nonzero/app 기동 차단 | 불가용 DB 경로 + depends_on | CI 전 |
+| TC-IMAGE-007 | migration 재실행/legacy 데이터 불변 | Docker rerun + legacy E2E | CI 전 |
+| TC-IMAGE-008 | DXF/DWG/삭제·S3 기능 회귀 | 기존 Unit/E2E/S3 | CI 전 |
+| TC-IMAGE-009 | UID10001, native, Secret 제외, GHCR 복수 태그 | Docker/CI/Publish 확인 | CI 전 |
+| TC-IMAGE-010 | 로컬/tagged/tagless/registry port/digest 이미지 쌍 정규화·검증 | `compose.sh --print-images` + unit (Linux) | 재검증 대기 |
+| TC-IMAGE-011 | 두 GHCR candidate 성공 전 공개 태그 게시 금지, release 취소 방지 | workflow 순서/후보 태그 unit + 게시 단계 | CI 검증 전 |
+| TC-IMAGE-012 | Compose Node 초기 기동 중 connection reset(56) 회복 | PR Docker smoke: `curl --retry-all-errors` health/restart | 실패 run 38858349603 보완·재검증 대기 |
+
+실제 실행 전 PASS를 기록하지 않는다. 독립 QA/실서비스 DB·S3 검증은 별도이다. `Issue28.md`와 `TestReport.md` 참고.
+
+
 ## GitHub #7 — 목표 0.19.1
 
 - TC-TITLE-001: 목록·등록의 banner 홈 링크 accessible name `Layout Manager`, CAD/P.O.C. 부재, 아이콘 및 홈 이동 보존. 실제 화면 캡처와 기존 관련 Browser 회귀, typecheck/lint/build로 검증한다.

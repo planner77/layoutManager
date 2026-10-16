@@ -1,5 +1,27 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE28-PR29-CI39-FAIL-20261016 — 추가한 Unit test matcher 오류 보완 (신규 CI 재검증 대기)
+
+- CI #39 run `38860855614`, head `000774b5432868e696fefc84068e36472e26337d`: TypeScript와 ESLint 검사는 진행·성공했으며 Unit/Integration에서 **113 passed / 1 failed (총 114)**. 실패 지점은 기존 앱/DB 기능이 아닌 신규 `TC-IMAGE-010` 테스트 구현.
+- 구체적 원인: `expect(resolve({ GHCR_IMAGE: '...@sha256:abc' })).toThrow;`처럼 `resolve()`를 assertion 함수 밖에서 먼저 실행했고 `.toThrow` 메서드를 호출하지 않아 의도한 실패를 정상적으로 검증하지 못함. ESLint도 `@typescript-eslint/no-unused-expressions` 경고를 출력. `expect(() => resolve({ GHCR_IMAGE: '...@sha256:abc' })).toThrow()`로 수정해 예상 예외를 Vitest matcher가 포착하도록 보완.
+- 이 수정에 대한 실제 CI 결과는 **미확정**. 구 CI의 Docker job이 동작 중/종료 상태인지와 신규 run은 각각 GitHub 결과를 기준으로 판정해야 하며 기존 테스트 전체 통과를 주장하지 않는다.
+
+## U-ISSUE28-PR29-CI30-FAIL-20261016 — 신규 Docker smoke 실패 및 보완 (재검증 대기)
+
+- PR #29 / CI #30 run `38858349603`, original head `ab02e281c8d8c70cfe473db7e8c24ed5772ebdfa`: Node typecheck, lint, unit/integration, production build, Browser E2E, Legacy migration E2E **모두 CI에서 SUCCESS**. Docker 이미지 4개 빌드/크기 측정, migration 실패의 nonzero 검증도 SUCCESS.
+- Docker Compose `migrate`는 빈 DB에 6개 Prisma migration과 delete password backfill을 정상 수행했다. 이어서 `app` 시작 직후 health curl이 `Recv failure: Connection reset by peer`(exit 56)를 반환하여 **Docker runtime smoke job만 FAILED**. 기존 `--retry-connrefused`는 exit 56을 재시도하지 않음. Health smoke 신규·재기동에 `--retry-all-errors`, retry interval, connect/max timeout 추가. 변경 후 CI는 미확인.
+- Image 측정(동일 linux/amd64, 비압축 bytes): baseline **2,054,848,814**, phase1 **2,053,874,911**, standalone runtime **376,228,092** → **81.69% 절감**. `docker save | gzip -1` 압축 tar 대용값: 625,871,345 / 625,636,529 / 139,214,422 bytes; GHCR OCI 전송 크기 또는 합산 배포 이미지 크기가 아님.
+- Codex 리뷰 P2 2건: ① app 정식 태그 조기 게시 위험 → app·migration 후보 이미지 모두 성공/검증 후 공개 태그 승격, publish 취소 방지; ② 태그 없는 app 지정에서 migrator 잘못 파생 → `src/scripts/compose.sh` tagless→`:latest`/`:latest-migrate` 정규화, digest pairing 필수·raw Compose override 명시.
+- TC-IMAGE-010~012 추가. 관련 README/Operation/Issue28/Decisions/TestPlan/ChangeLog 갱신. **이 후속 수정에 대한 CI/P2 수용/운영 실제 배포는 아직 PASS로 판정하지 않음**.
+
+## U-ISSUE28-DEV-20261016 — Docker 경량화 구현 기록 (검증 대기)
+
+- Issue #28 / `feat/issue-28-standalone-runtime` / 소스 0.26.0. Next standalone runtime, 별도 Prisma CLI/tsx migrator, Compose exit0 의존성, 로컬 start --port 변환, static/WASM/TTF 복사, GHCR dual target 구성.
+- TC-IMAGE-001~009 및 baseline→phase1→runtime 크기·레이어 기록/빈 DB 설치·재실행·실패·health/정적 자산 Docker CI job 추가.
+- **개발 초기 기록 당시에는 CI가 미실행(PENDING)이었음.** 그 이후 CI #30의 정적/Browser/빌드/측정 결과와 Docker smoke 실패는 상단 기록을 따른다. 실운영 migration·독립 QA·GHCR digest는 미검증. 사용자 데이터·버전/Current·schema를 변경하지 않음.
+- 독립 QA 전용 모델을 실행할 수 있는 도구가 제공되지 않아 별도 모델 검증 미실시. `Issue28.md`와 `Operation.md`에 복구·위험 사항 기술.
+
+
 ## U-ISSUE24-PR27-CI28-FAIL-20261016 — E2E Locator 실패 분석 및 수정 (재검증 대기)
 
 - 실패 증거: PR #27 `PR CI #28` run `38852895275`, commit `0be21f5`, Job `116817839530`. Prisma Client 생성, TypeScript, ESLint, Unit/Integration, Production build는 성공했으며 Chromium E2E는 **37 passed / 1 failed**. Legacy migration E2E는 E2E 실패에 따라 `skipped`이다.

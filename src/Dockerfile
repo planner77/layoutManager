@@ -1,18 +1,15 @@
 # syntax=docker/dockerfile:1
-
-# Node/배포 OS를 고정해 better-sqlite3와 Prisma native 구성의 재현성을 유지한다.
+# Issue #28: reproducible linux/amd64 image comparison: original / phase1 / runtime.
+# Keep Debian glibc for Prisma 7 and better-sqlite3; builder tools never enter the web image.
 FROM node:22.14.0-bookworm-slim AS dependencies
 WORKDIR /app/src
 ENV NEXT_TELEMETRY_DISABLED=1
-# better-sqlite3 사전 빌드가 내려오지 않을 때 node-gyp가 사용할 도구를 포함한다.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates openssl python3 make g++ \
     && rm -rf /var/lib/apt/lists/*
 COPY src/package.json src/package-lock.json ./
 RUN npm ci
 
-# Prisma Client, 한글 글꼴 JSON, LibreDWG ESM/WASM과 Next production bundle을 생성한다.
-# 임시 경로는 build에만 쓰며 실제 DB/CAD 원본을 이미지에 포함하지 않는다.
 FROM dependencies AS builder
 COPY src/ ./
 RUN DATABASE_URL=file:/tmp/cad-build.sqlite \
@@ -24,9 +21,8 @@ RUN DATABASE_URL=file:/tmp/cad-build.sqlite \
        CAD_STORAGE_BACKEND=local \
        npm run build
 
-# Prisma migration CLI와 native SQLite adapter가 필요하므로 검증된 node_modules를 함께 옮긴다.
-# 앱 실행 계정은 영속 /data와 Next runtime cache만 쓰고 나머지 애플리케이션 파일은 읽는다.
-FROM node:22.14.0-bookworm-slim AS runtime
+# Shared non-root runtime environment. /data is the only durable writable mount.
+FROM node:22.14.0-bookworm-slim AS runtime-base
 WORKDIR /app/src
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
@@ -41,14 +37,52 @@ RUN apt-get update \
     && useradd --system --uid 10001 --gid cad --home-dir /app --shell /usr/sbin/nologin cad \
     && mkdir -p /data/db /data/cad \
     && chown -R cad:cad /data
-COPY --from=builder /app/src /app/src
+VOLUME ["/data"]
+
+# Measurement-only phase 1: remove application source/tests from the full-dependency image.
+# This target is not published and MUST NOT be used as the production app image.
+FROM runtime-base AS phase1
+COPY --from=dependencies /app/src/node_modules ./node_modules
+COPY --from=builder /app/src/package.json ./package.json
+COPY --from=builder /app/src/.next ./.next
+COPY --from=builder /app/src/public ./public
+COPY --from=builder /app/src/generated ./generated
+COPY --from=builder /app/src/prisma ./prisma
+COPY --from=builder /app/src/prisma.config.ts ./prisma.config.ts
+COPY --from=builder /app/src/tsconfig.json ./tsconfig.json
+COPY --from=builder /app/src/scripts ./scripts
+COPY --from=builder /app/src/server ./server
+COPY --from=builder /app/src/domain ./domain
+RUN mkdir -p /app/src/.next/cache && chown -R cad:cad /app/src/.next/cache
+USER cad
+CMD ["sh", "-c", "node scripts/run.mjs deploy && node .next/standalone/server.js"]
+
+# One-shot migration/backfill image. Prisma CLI and tsx are not shipped in runtime.
+# Both targets must use the same version and be deployed against one /data volume.
+FROM runtime-base AS migrator
+COPY --from=dependencies /app/src/node_modules ./node_modules
+COPY --from=builder /app/src/package.json ./package.json
+COPY --from=builder /app/src/tsconfig.json ./tsconfig.json
+COPY --from=builder /app/src/prisma.config.ts ./prisma.config.ts
+COPY --from=builder /app/src/prisma ./prisma
+COPY --from=builder /app/src/generated ./generated
+COPY --from=builder /app/src/scripts ./scripts
+COPY --from=builder /app/src/server ./server
+COPY --from=builder /app/src/domain ./domain
+USER cad
+CMD ["node", "scripts/run.mjs", "deploy"]
+
+# Default production image: Next.js standalone traced dependencies and static assets only.
+FROM runtime-base AS runtime
+ENV HOSTNAME=0.0.0.0 PORT=3000
+COPY --from=builder --chown=cad:cad /app/src/.next/standalone ./
+# Prisma adapter loads the glibc-linked native SQLite binary at runtime.
+COPY --from=builder --chown=cad:cad /app/src/node_modules/better-sqlite3 ./node_modules/better-sqlite3
 RUN mkdir -p /app/src/.next/cache \
-    && chown -R cad:cad /app/src/.next/cache
+    && chown -R cad:cad /app/src/.next/cache \
+    && node -e "const db=require('better-sqlite3');new db(':memory:').close()"
 USER cad
 EXPOSE 3000
-VOLUME ["/data"]
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD ["node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
-
-# migration 성공 뒤에만 모든 인터페이스에서 production 서버를 연다.
-CMD ["sh", "-c", "npm run db:deploy && npm run start -- --port 3000"]
+CMD ["node", "server.js"]

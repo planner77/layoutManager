@@ -1,5 +1,13 @@
 # ChangeLog
 
+## 0.26.0 — 2026-10-16 / GitHub #28 (CI 전)
+
+- Web: Next standalone 및 native SQLite 기반 Docker 운영 이미지로 축소; 비교용 phase1 타깃 추가.
+- DB: migration/backfill은 별도 일회성 migrator 타깃으로 분리. Compose는 성공 종료 이후 웹을 시작한다. UID10001, 단일 /data, DXF/DWG font/JS/WASM/스토리지 계약 유지.
+- Release: 앱·마이그레이터를 SHA 기반 후보로 각각 빌드·검증한 후에만 동일 릴리스의 공개 태그를 승격하도록 변경. 태그 없는 `GHCR_IMAGE`를 `:latest`/`:latest-migrate` 쌍으로 정규화하는 `scripts/compose.sh` 추가. GHCR 다중 태그 승격의 비원자성을 고려해 운영은 버전/digest pair 고정·백업·구 앱 중단·migration 성공 후 시작 필수.
+- Test: 최초 PR #29 CI #30 run `38858349603`의 정적/Unit/Browser/Legacy migration, Docker 빌드·측정, migrate/backfill 정상. **Docker smoke 실패**는 컨테이너 기동 직후 curl exit 56 재시도 누락으로 확인해 보완함. 비압축 크기 baseline 2,054,848,814 → runtime 376,228,092 bytes, **81.69% 절감**(동일 linux/amd64); 최종 smoke/재CI, 독립 QA, GHCR 게시 상태는 재검증 대기. TC-IMAGE-010~012 추가.
+
+
 ## 0.25.0 — 2026-10-15
 
 - 사업부→제품→사업장/법인→동→층 기준정보 CRUD, 활성/비활성 및 SITE/LEGAL_ENTITY 종류를 추가했다.

@@ -1,6 +1,14 @@
 # CAD Web Viewer P.O.C.
 
-현재 소스 버전은 0.25.0입니다. 사업부 → 제품 → 사업장/법인 → 동 → 층의 기준정보를 관리하고 활성 ID 계층을 선택해 도면을 등록합니다. 기존 도면은 사업부별 `미분류` 제품으로 이관하며 층 상세에서 전체 이력을 실제 제품 계층으로 재분류할 수 있습니다. 게시·배포 검증 결과는 [TestReport](out/TestReport.md)와 버전별 Release 문서를 기준으로 합니다.
+## Docker 0.26.0 빠른 배포 안내 (#28)
+
+- 신규/로컬 설치: `bash src/scripts/compose.sh .env build` 후 `bash src/scripts/compose.sh .env up -d`. 기존의 `docker compose --env-file .env -f src/docker-compose.yml ...`도 **태그가 명시된 이미지**에서는 사용할 수 있다. Helper는 기존 `.env`를 `source`하지 않고 이미지 참조 키만 읽는다.
+- GHCR `GHCR_IMAGE=ghcr.io/planner77/layoutmanager:0.26.0`은 `:0.26.0-migrate`와 쌍으로 배포한다. **태그 없는** `GHCR_IMAGE=ghcr.io/planner77/layoutmanager`는 helper 사용 시 app `:latest`/migrator `:latest-migrate`로 정규화된다. 기존 raw Compose 사용 시에는 `GHCR_MIGRATION_IMAGE`를 명시해야 한다. digest pin은 두 이미지를 각각 명시적으로 고정한다.
+- 릴리스 CI는 앱/마이그레이터의 immutable candidate digest를 **둘 다 빌드·검증한 뒤** 공개 `:version`/`:latest` 태그를 승격한다. 다중 태그의 완전 원자성은 제공되지 않으므로 운영 배포는 반드시 같은 버전의 두 이미지를 명시적으로 지정한다.
+- **업그레이드는 기존 app stop 후 migration 재실행이 필수이다.** 데이터 백업/pull/중지/migrate exit0/app 시작/rollback 명령은 [Operation](out/Operation.md), 3단계 이미지 측정 및 테스트 상태는 [Issue28](out/Issue28.md)·[TestReport](out/TestReport.md) 참조. 최초 CI 크기 측정은 2,054,848,814 → 376,228,092 bytes(81.69% 절감); 최종 PR CI/GHCR 검증 결과는 별도 판정한다.
+
+
+현재 제안 소스 버전은 0.26.0입니다. Docker는 Next.js standalone 웹과 별도 일회성 Prisma migration/backfill 이미지로 분리합니다. 0.25.0의 DB 계층 기능은 유지합니다. 사업부 → 제품 → 사업장/법인 → 동 → 층의 기준정보를 관리하고 활성 ID 계층을 선택해 도면을 등록합니다. 기존 도면은 사업부별 `미분류` 제품으로 이관하며 층 상세에서 전체 이력을 실제 제품 계층으로 재분류할 수 있습니다. 게시·배포 검증 결과는 [TestReport](out/TestReport.md)와 버전별 Release 문서를 기준으로 합니다.
 
 공장·설비의 DXF/DWG 도면을 등록·검색·버전 관리하고, 세 오픈소스 기술의 브라우저 렌더링 적용 가능성을 평가하는 프로젝트입니다.
 
@@ -202,7 +210,7 @@ docker compose --env-file .env -f src/docker-compose.yml up -d
 docker compose --env-file .env -f src/docker-compose.yml ps
 ```
 
-컨테이너 시작 시 검토된 DB migration을 적용한 뒤 앱을 실행합니다. 기본 주소는 `http://localhost:3000`이며 다른 장치에서는 `http://<서버 IP>:3000`으로 접속합니다. `.env`의 `CAD_HOST_PORT`로 호스트 포트를 바꿀 수 있습니다. 같은 네트워크/VPN, 서버 방화벽과 수신 포트가 접근을 허용해야 합니다. `0.0.0.0`은 수신 설정이며 브라우저 접속 주소로 사용하지 않습니다.
+Compose의 일회성 migrate 컨테이너가 DB migration·백필을 완료한 경우에만 app 컨테이너를 시작합니다. 기본 주소는 `http://localhost:3000`이며 다른 장치에서는 `http://<서버 IP>:3000`으로 접속합니다. `.env`의 `CAD_HOST_PORT`로 호스트 포트를 바꿀 수 있습니다. 같은 네트워크/VPN, 서버 방화벽과 수신 포트가 접근을 허용해야 합니다. `0.0.0.0`은 수신 설정이며 브라우저 접속 주소로 사용하지 않습니다.
 
 프로젝트 `cad-layout-viewer`, 컨테이너 `cad-layout-viewer-app`, 네트워크 `cad-layout-viewer-network`, 데이터 볼륨 `cad-layout-viewer-data`를 사용합니다. 기존 호스트 `data/`를 자동 복사하거나 기존 서비스와 공유하지 않습니다. SQLite와 CAD/임시 업로드는 볼륨에 남고 S3 모드도 SQLite/임시 디스크가 필요합니다. `down`은 볼륨을 보존하지만 `down -v`는 데이터를 삭제하므로 정상 종료에 사용하지 않습니다.
 
