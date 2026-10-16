@@ -65,7 +65,7 @@ test.skipIf(process.platform === 'win32')('TC-IMAGE-010: Compose launcher normal
     .toBe('app=ghcr.io/planner77/layoutmanager:latest\nmigrate=ghcr.io/planner77/layoutmanager:latest-migrate\n');
   expect(resolve({ GHCR_IMAGE: 'registry.example:5000/org/cad' }))
     .toContain('migrate=registry.example:5000/org/cad:latest-migrate');
-  expect(resolve({ GHCR_IMAGE: 'ghcr.io/planner77/layoutmanager@sha256:abc' })).toThrow;
+  expect(() => resolve({ GHCR_IMAGE: 'ghcr.io/planner77/layoutmanager@sha256:abc' })).toThrow();
   expect(resolve({
     GHCR_IMAGE: 'ghcr.io/planner77/layoutmanager@sha256:abc',
     GHCR_MIGRATION_IMAGE: 'ghcr.io/planner77/layoutmanager@sha256:def',
