@@ -7,8 +7,8 @@ const text = (x: number, label: string, layer = '0') =>
   '0\nTEXT\n5\nH' + x + '\n8\n' + layer + '\n10\n' + x + '\n20\n0\n40\n10\n1\n' + label + '\n';
 
 test('TC-TEXT-001: TEXT + formatted/continued MTEXT normalize Unicode, whitespace, case and number', () => {
-  const mtext = '0\nMTEXT\n5\nM1\n8\nZONE\n10\n300\n20\n20\n40\n10\n3\n생산 \\C1;ABC\\P' +
-    '3\n동\\P1' + '\n1\n2\\S1#2;\\U+AC00\n';
+  const mtext = '0\nMTEXT\n5\nM1\n8\nZONE\n10\n300\n20\n20\n40\n10\n3\n생산 \\C1;ABC\\P\n' +
+    '3\n동\\P1\n' + '1\n2\\S1#2;\\U+AC00\n';
   const index = extractDxfText(document(text(0, '한글 ABC 10') + mtext));
   expect(index.hits).toHaveLength(2);
   expect(index.hits[0]).toMatchObject({ type: 'TEXT', layer: '0', text: '한글 ABC 10', handle: 'H0' });
