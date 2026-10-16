@@ -11,9 +11,10 @@ function segmentIntersectsBox(a:XY,b:XY,rect:[number,number,number,number]){
  const [left,bottom,right,top]=rect;
  const inside=(p:XY)=>p[0]>=left&&p[0]<=right&&p[1]>=bottom&&p[1]<=top;
  if(inside(a)||inside(b))return true;
- const edges:[[XY,XY],[XY,XY],[XY,XY],[XY,XY]]=[
-   [[[left,bottom],[right,bottom]],[[right,bottom],[right,top]],[[right,top],[left,top]],[[left,top],[left,bottom]]]
- ] as unknown as [[XY,XY],[XY,XY],[XY,XY],[XY,XY]];
+ const edges: Array<[XY,XY]> = [
+   [[left,bottom],[right,bottom]],[[right,bottom],[right,top]],
+   [[right,top],[left,top]],[[left,top],[left,bottom]],
+ ];
  const orient=(p:XY,q:XY,r:XY)=>(q[0]-p[0])*(r[1]-p[1])-(q[1]-p[1])*(r[0]-p[0]);
  return edges.some(([c,d])=>orient(a,b,c)*orient(a,b,d)<=0&&orient(c,d,a)*orient(c,d,b)<=0);
 }
