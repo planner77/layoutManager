@@ -13,6 +13,9 @@
 | TC-IMAGE-007 | migration 재실행/legacy 데이터 불변 | Docker rerun + legacy E2E | CI 전 |
 | TC-IMAGE-008 | DXF/DWG/삭제·S3 기능 회귀 | 기존 Unit/E2E/S3 | CI 전 |
 | TC-IMAGE-009 | UID10001, native, Secret 제외, GHCR 복수 태그 | Docker/CI/Publish 확인 | CI 전 |
+| TC-IMAGE-010 | 로컬/tagged/tagless/registry port/digest 이미지 쌍 정규화·검증 | `compose.sh --print-images` + unit (Linux) | 재검증 대기 |
+| TC-IMAGE-011 | 두 GHCR candidate 성공 전 공개 태그 게시 금지, release 취소 방지 | workflow 순서/후보 태그 unit + 게시 단계 | CI 검증 전 |
+| TC-IMAGE-012 | Compose Node 초기 기동 중 connection reset(56) 회복 | PR Docker smoke: `curl --retry-all-errors` health/restart | 실패 run 38858349603 보완·재검증 대기 |
 
 실제 실행 전 PASS를 기록하지 않는다. 독립 QA/실서비스 DB·S3 검증은 별도이다. `Issue28.md`와 `TestReport.md` 참고.
 
