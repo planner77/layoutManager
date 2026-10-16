@@ -6,17 +6,21 @@ import { useGlobalLoading } from '@/components/global-loading';
 import { CopyCadLink } from '@/features/cad-link/copy-cad-link';
 import { FullscreenLayerPanel } from '@/features/cad-viewer/fullscreen-layer-panel';
 import { LayerDropdown } from '@/features/cad-viewer/layer-dropdown';
-import { ViewerManager } from '@/viewers/core/adapter';
+import { ViewerManager, type OutlineInfo } from '@/viewers/core/adapter';
+import type {OutlineKind,OutlineEntity} from '@/viewers/core/outline-geometry';
+import type {OutlineResult} from '@/viewers/core/outline-compute';
 import type { ViewerMetric } from '@/viewers/core/metrics';
 import { selectRenderer, type ViewerFormat, type ViewerRenderer } from '@/viewers/core/selection';
 import { ViewerSource } from '@/viewers/core/source';
 
 export function CadViewer({
   versionId,
+  sourceSha256 = '',
   renderer: initialRenderer = 'dxf-viewer',
   format = 'DXF',
 }: {
   versionId: string;
+  sourceSha256?: string;
   renderer?: ViewerRenderer;
   format?: ViewerFormat;
 }) {
@@ -35,6 +39,12 @@ export function CadViewer({
   const [selectedLayers, setSelectedLayers] = useState<Set<string>>(() => new Set());
   const [metric, setMetric] = useState<ViewerMetric | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [outlineInfo,setOutlineInfo]=useState<OutlineInfo|null>(null);
+  const [outlineMode,setOutlineMode]=useState<'pan'|'select'>('pan');
+  const [outlineSelection,setOutlineSelection]=useState<OutlineEntity[]>([]);
+  const [preview,setPreview]=useState<OutlineResult|null>(null);
+  const [previewError,setPreviewError]=useState<string|null>(null);
+  const [savedCount,setSavedCount]=useState(0);
   const [state, setState] = useState<{ status: string; ready: boolean; error?: string; warning?: string }>({
     status: '도면 로딩 중…',
     ready: false,
@@ -88,6 +98,27 @@ export function CadViewer({
     return () => window.cancelAnimationFrame(frame);
   }, [isFullscreen]);
 
+  function resetOutline() {
+    setOutlineInfo(null);setOutlineMode('pan');setOutlineSelection([]);
+    setPreview(null);setPreviewError(null);setSavedCount(0);
+  }
+  function selectionMode(value:'pan'|'select') {
+    manager.current?.setSelectionMode(value);setOutlineMode(value);
+  }
+  function requestOutline(kind:OutlineKind) {
+    setPreviewError(null);
+    void manager.current?.previewOutline(kind).catch(error=>
+      setPreviewError(error instanceof Error?error.message:'외곽선을 만들 수 없습니다.'));
+  }
+  function exportOutlines() {
+    const outlines=manager.current?.getSavedOutlines()??[];
+    if(!outlines.length)return;
+    const payload={schemaVersion:1,versionId,sourceSha256,coordinateSystem:'DXF_WCS_XY',
+      unitCode:outlineInfo?.unitCode??null,persistence:'BROWSER_EXPORT_ONLY',outlines};
+    const url=URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}));
+    const anchor=document.createElement('a');anchor.href=url;anchor.download='cad-outlines-'+versionId.slice(0,8)+'.json';anchor.click();
+    setTimeout(()=>URL.revokeObjectURL(url),0);
+  }
   function choose(value: typeof renderer) {
     if (loading || value === renderer) return;
     setLoading(true);
@@ -96,6 +127,7 @@ export function CadViewer({
     setLayers([]);
     setSelectedLayers(new Set());
     setRenderer(value);
+    resetOutline();
     const url = new URL(window.location.href);
     url.searchParams.set('renderer', value);
     window.history.replaceState(null, '', url);
@@ -109,6 +141,7 @@ export function CadViewer({
     setLayers([]);
     setSelectedLayers(new Set());
     setState({ status: '도면 로딩 중…', ready: false });
+    resetOutline();
     setAttempt(value => value + 1);
   }
 
@@ -158,7 +191,12 @@ export function CadViewer({
         if (renderer === 'three-dxf-viewer') {
           const { ThreeDxfViewerAdapter } = await import('@/viewers/three-dxf-viewer/adapter');
           if (!active || !container.current) throw new DOMException('취소됨', 'AbortError');
-          return new ThreeDxfViewerAdapter(container.current);
+          return new ThreeDxfViewerAdapter(container.current,{
+            versionId,sourceSha256,
+            onSelection:value=>{if(active)setOutlineSelection(value);},
+            onPreview:(value,error)=>{if(active){setPreview(value);setPreviewError(error??null);}},
+            onSaved:count=>{if(active)setSavedCount(count);},
+          });
         }
         const { DxfViewerAdapter } = await import('@/viewers/dxf-viewer/adapter');
         if (!active || !container.current) throw new DOMException('취소됨', 'AbortError');
@@ -172,6 +210,7 @@ export function CadViewer({
     instance.load(`/api/cad-files/${versionId}/content`, format).then(result => {
       if (active) {
         const nextLayers = instance.getLayers();
+        setOutlineInfo(instance.getOutlineInfo());
         setState({
           status: result.empty ? '표시할 도형이 없습니다.' : result.warning ? '도면 일부 표시 완료' : '도면 표시 완료',
           ready: !result.empty,
@@ -184,6 +223,7 @@ export function CadViewer({
       if (active) {
         setLayers([]);
         setSelectedLayers(new Set());
+        resetOutline();
         setState({
           status: '표시 실패',
           ready: false,
@@ -200,7 +240,7 @@ export function CadViewer({
       instance.dispose();
       manager.current = null;
     };
-  }, [versionId, attempt, renderer, source, format, beginLoading, endLoading]);
+  }, [versionId, sourceSha256, attempt, renderer, source, format, beginLoading, endLoading]);
 
   return <div className="space-y-3">
     <div className="flex flex-wrap items-center gap-3">
@@ -241,6 +281,38 @@ export function CadViewer({
         <Button variant="outline" size="sm" onClick={() => manager.current?.fitToView()}>전체 화면 맞춤</Button>
         <Button size="sm" onClick={exitFullscreen}>전체 화면 종료</Button>
       </div>}
+
+      {renderer==='three-dxf-viewer' && format==='DXF' && state.ready && outlineInfo && <div
+        data-testid="cad-outline-tools"
+        className={isFullscreen
+          ? 'absolute bottom-3 left-3 z-30 max-h-[40vh] w-[min(620px,95vw)] overflow-y-auto rounded-lg bg-white/95 p-3 text-xs shadow-lg'
+          : 'mb-2 rounded-lg border bg-white p-3 text-xs shadow-sm'}
+      >
+        <div className="mb-2 flex flex-wrap items-center gap-2">
+          <strong>객체 선택 · 외곽선</strong>
+          <Button size="sm" variant={outlineMode==='pan'?'default':'outline'} aria-pressed={outlineMode==='pan'} onClick={()=>selectionMode('pan')}>탐색 모드</Button>
+          <Button size="sm" variant={outlineMode==='select'?'default':'outline'} aria-pressed={outlineMode==='select'} disabled={!outlineInfo.entityCount} onClick={()=>selectionMode('select')}>선택 모드</Button>
+          <Button size="sm" variant="outline" disabled={!outlineSelection.length} onClick={()=>manager.current?.clearOutlineSelection()}>선택 해제</Button>
+          <span data-testid="outline-selection-count">선택 {outlineSelection.length}개 / 분석 {outlineInfo.entityCount}개</span>
+        </div>
+        <div className="mb-2 flex flex-wrap items-center gap-2">
+          <Button size="sm" variant="outline" disabled={!outlineSelection.length} onClick={()=>requestOutline('CONVEX')}>볼록 외곽선 미리보기</Button>
+          <Button size="sm" variant="outline" disabled={!outlineSelection.length} onClick={()=>requestOutline('PRECISE')}>정밀 외곽선 미리보기</Button>
+          <Button size="sm" disabled={!preview} onClick={()=>{try{manager.current?.confirmOutline();}catch(error){setPreviewError(String(error));}}}>임시 확정</Button>
+          <Button size="sm" variant="outline" disabled={!preview} onClick={()=>manager.current?.cancelOutlinePreview()}>미리보기 취소</Button>
+          <Button size="sm" variant="outline" disabled={!savedCount} onClick={exportOutlines}>JSON 내보내기 ({savedCount})</Button>
+          <Button size="sm" variant="outline" disabled={!savedCount} onClick={()=>manager.current?.clearSavedOutlines()}>임시 결과 삭제</Button>
+        </div>
+        <p className="text-slate-600">선택 모드: 클릭 한 개, Ctrl/⌘+클릭 토글, 좌→우 완전 포함, 우→좌 교차 선택 · Space+드래그 이동 · 휠 확대 · Esc 선택 취소.</p>
+        <p className="mt-1 text-slate-600">좌표: WCS XY · 도면 단위: {outlineInfo.unitCode===4?'mm':outlineInfo.unitCode===1?'inch':outlineInfo.unitCode===6?'m':outlineInfo.unitCode===5?'cm':outlineInfo.unitCode===0||outlineInfo.unitCode===null?'미상':'INSUNITS '+outlineInfo.unitCode} · 서버 저장/다시 불러오기 미지원 (권한 정책 결정 전)</p>
+        {preview && <p data-testid="outline-preview" className="mt-1 text-cyan-800">{preview.kind==='CONVEX'?'볼록 경계':'실제 폐곡선 Union'} · {preview.geometry.type} · {preview.durationMs.toFixed(1)}ms · {preview.persistable?'안정적 Handle':'임시 참조 포함'}</p>}
+        {preview?.warnings.map((message,i)=><p key={i} className="text-amber-800">{message}</p>)}
+        {previewError && <p role="alert" className="text-red-700">{previewError}</p>}
+        {outlineInfo.warnings.length>0 && <details className="mt-2 text-amber-800">
+          <summary>미지원/불안정 Entity 안내 ({outlineInfo.warnings.length}건, 최대 200건 표시)</summary>
+          <ul className="max-h-28 list-disc overflow-y-auto pl-4">{outlineInfo.warnings.slice(0,30).map((warning,i)=><li key={i}>{warning}</li>)}</ul>
+        </details>}
+      </div>}
       <div
         ref={container}
         data-testid="cad-canvas"
@@ -273,6 +345,6 @@ export function CadViewer({
         <pre data-testid="viewer-metric" className="mt-2 overflow-auto text-xs">{JSON.stringify(metric, null, 2)}</pre>
       </details>
     </div>}
-    <p className="text-xs text-slate-500">마우스 드래그로 이동 · 휠로 확대/축소. {format === 'DWG' ? 'DWG는 현재 20 MiB 이하의 평면 LINE만 직접 표시합니다. TEXT/BLOCK/곡선 등은 지원하지 않습니다.' : '한글 기본 글꼴을 사용합니다.'} 원본 글꼴·문자 인코딩·일부 Entity·선종·치수에 따라 CAD 원본과 다르게 표시될 수 있습니다.</p>
+    <p className="text-xs text-slate-500">탐색 모드: 마우스 드래그로 이동 · 휠로 확대/축소. {format === 'DWG' ? 'DWG는 현재 20 MiB 이하의 평면 LINE만 직접 표시합니다. TEXT/BLOCK/곡선 등은 지원하지 않습니다.' : '한글 기본 글꼴을 사용합니다.'} 원본 글꼴·문자 인코딩·일부 Entity·선종·치수에 따라 CAD 원본과 다르게 표시될 수 있습니다.</p>
   </div>;
 }
