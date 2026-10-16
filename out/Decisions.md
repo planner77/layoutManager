@@ -1,5 +1,14 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-031B — Source↔Renderer 오매핑 방지, P4 영속 fail-closed
+
+- 2026-10-16 / 코드 추가, CI 전. `three-dxf-viewer`는 BLOCK 내부 geometry 병합이 가능하며 Object3D userData.entity를 노출한다. 단순 원본 Handle만으로 렌더된 객체라고 가정하거나 화면 픽셀 Bounds로 영속 ID를 만들면 위험하다.
+- 대안: Rendered Handle/Type/Layer/World XY bounds를 1:N 합산 후 Source와 대조하고 일치하지 않는 Entity는 선택에서 제외. SpatialIndex는 ID 대신 탐색 가속 전용으로 사용하며 오류/누락 수를 표시한다.
+- P4 인증 정책은 **Owner 승인 대기**(내부 OIDC signed token+RBAC 권장, IdP 없는 경우 로컬 계정/세션 가능). 인증 없는 외곽선 서버 쓰기·도면 삭제 비밀번호 재활용·서명 없는 `X-User` 신뢰 금지.
+- 합성 100k CPU benchmark 결과는 실 CAD/GPU와 동일하지 않으므로 실도면 반복 수용 전 운영 PASS 금지. [Issue31](Issue31.md).
+
+
+
 ## ADR-031 — DXF Outline를 Viewer Adapter와 브라우저 임시 데이터로 격리
 
 - Date/Status: 2026-10-16 / Issue #31 P0~P3 부분 구현, 합성 자동시험·CI·실도면 검증 전.
