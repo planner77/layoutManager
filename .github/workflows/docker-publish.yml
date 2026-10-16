@@ -12,8 +12,9 @@ permissions:
   packages: write
 
 concurrency:
-  group: docker-publish-${{ github.ref }}
-  cancel-in-progress: true
+  # Serialize releases: cancellation during paired alias promotion is unsafe.
+  group: docker-publish-release
+  cancel-in-progress: false
 
 env:
   REGISTRY: ghcr.io
@@ -130,8 +131,8 @@ jobs:
           echo "publish=$SHOULD_PUBLISH" >> "$GITHUB_OUTPUT"
           echo "Publish version image: $SHOULD_PUBLISH"
 
-      # 게시되는 Docker 태그는 정식 버전과 latest뿐이다.
-      # main 브랜치용 :main 이미지는 만들지 않는다.
+      # Public release aliases are :version/:latest and :version-migrate/:latest-migrate.
+      # Temporary immutable :build-SHA-* candidate tags are not deployment entry points.
       - name: Generate Docker metadata
         id: meta
         if: steps.publish.outputs.publish == 'true'
@@ -166,7 +167,10 @@ jobs:
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.version=${{ steps.version.outputs.version }}
 
-      - name: Build and push Docker image
+      # Build/push candidate digests first. Public release aliases must not be
+      # touched if either app or migrator build fails. Candidate SHA tags are
+      # intentionally retained as reproducible rollback/audit references.
+      - name: Build application candidate
         id: build
         if: steps.publish.outputs.publish == 'true'
         uses: docker/build-push-action@v6
@@ -176,12 +180,12 @@ jobs:
           target: runtime
           platforms: linux/amd64
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:build-${{ github.sha }}-app
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Build and push DB migration image
+      - name: Build migration candidate
         id: build_migration
         if: steps.publish.outputs.publish == 'true'
         uses: docker/build-push-action@v6
@@ -191,21 +195,49 @@ jobs:
           target: migrator
           platforms: linux/amd64
           push: true
-          tags: ${{ steps.meta_migration.outputs.tags }}
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:build-${{ github.sha }}-migrate
           labels: ${{ steps.meta_migration.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Show published image digest
+      # Registry tags cannot be promoted atomically across two manifests.
+      # Verify BOTH immutable candidates before touching version/latest,
+      # publish the migrator first and the app second, and require paired,
+      # version-pinned references for production deployments.
+      - name: Promote paired release images after both candidates succeed
         if: steps.publish.outputs.publish == 'true'
         shell: bash
+        env:
+          APP_VERSION: ${{ steps.version.outputs.version }}
+          APP_DIGEST: ${{ steps.build.outputs.digest }}
+          MIGRATION_DIGEST: ${{ steps.build_migration.outputs.digest }}
         run: |
-          echo "Published tags:"
-          echo '${{ steps.meta.outputs.tags }}'
-          echo "App digest: ${{ steps.build.outputs.digest }}"
-          echo "Migration tags:"
-          echo '${{ steps.meta_migration.outputs.tags }}'
-          echo "Migration digest: ${{ steps.build_migration.outputs.digest }}"
+          set -euo pipefail
+          IMAGE="${REGISTRY}/${IMAGE_NAME}"
+          for digest in "$APP_DIGEST" "$MIGRATION_DIGEST"; do
+            if ! [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+              echo "::error::Invalid candidate digest"
+              exit 1
+            fi
+            docker buildx imagetools inspect "$IMAGE@$digest" >/dev/null
+          done
+          # Public tags are created only after both targets have built and
+          # their candidate registry manifests are independently readable.
+          docker buildx imagetools create --tag "$IMAGE:${APP_VERSION}-migrate" "$IMAGE@$MIGRATION_DIGEST"
+          docker buildx imagetools create --tag "$IMAGE:${APP_VERSION}" "$IMAGE@$APP_DIGEST"
+          docker buildx imagetools create --tag "$IMAGE:latest-migrate" "$IMAGE@$MIGRATION_DIGEST"
+          docker buildx imagetools create --tag "$IMAGE:latest" "$IMAGE@$APP_DIGEST"
+          docker buildx imagetools inspect "$IMAGE:${APP_VERSION}-migrate" >/dev/null
+          docker buildx imagetools inspect "$IMAGE:${APP_VERSION}" >/dev/null
+          echo "Published version pair: $IMAGE:${APP_VERSION} and $IMAGE:${APP_VERSION}-migrate"
+          echo "App digest: $APP_DIGEST"
+          echo "Migration digest: $MIGRATION_DIGEST"
+          {
+            echo "### GHCR paired release ${APP_VERSION}"
+            echo "- App: \`$IMAGE@$APP_DIGEST\`"
+            echo "- Migrator: \`$IMAGE@$MIGRATION_DIGEST\`"
+            echo "- Both candidates verified before public tag promotion (not a cross-tag transaction)."
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Skip duplicate version build
         if: steps.publish.outputs.publish != 'true'
