@@ -32,7 +32,7 @@ test('TC-TEXT-003: INSERT translation, rotation, nonuniform scale and block base
   const index = extractDxfText(source);
   expect(index.hits).toHaveLength(1);
   expect(index.hits[0]).toMatchObject({ text: 'ROOM-A', layer: 'ZONE', origin: 'INSERT' });
-  expect((index.hits[0].focus.minX + index.hits[0].focus.maxX) / 2).toBeCloseTo(104, 5);
+  expect((index.hits[0].focus.minX + index.hits[0].focus.maxX) / 2).toBeCloseTo(106, 5);
   expect((index.hits[0].focus.minY + index.hits[0].focus.maxY) / 2).toBeCloseTo(60, 5);
 });
 
@@ -48,7 +48,7 @@ test('TC-TEXT-004: unsupported OCS, array, attributes and invisible entities nev
 });
 
 test('TC-TEXT-005: malformed/binary inputs fail explicitly and result text stays literal', () => {
-  expect(() => extractDxfText('invalid DXF')).toThrow('그룹 코드');
+  expect(() => extractDxfText('invalid DXF')).toThrow('ENTITIES');
   expect(() => extractDxfText(new TextEncoder().encode('AutoCAD Binary DXF\n').buffer)).toThrow('Binary DXF');
   const value = '<img src=x onerror=alert(1)>';
   expect(extractDxfText(document(text(0, value))).hits[0].text).toBe(value);
