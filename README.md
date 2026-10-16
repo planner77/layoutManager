@@ -1,5 +1,13 @@
 # CAD Web Viewer P.O.C.
 
+## Issue #31 성능·정확도 진단 (0.27.1 브랜치 / 검증 전)
+
+- `three-dxf-viewer`는 Source top-level Entity의 Handle/Type/Layer/WCS XY Box를 실제 Three Object와 대조하고, 불일치 객체는 선택에서 제외합니다. Viewer `렌더 관측 / 매핑 제외 / 원본 인덱스·렌더 대조·공간 인덱스 ms`로 상태를 확인합니다.
+- Synthetic 벤치마크: `cd src && npm ci && npm run test:outline-benchmark` (LINE 1,000 / 10,000 / 100,000개, JSON stdout), 빠른 테스트 `npm run test:outline-benchmark -- --quick` (1,000개). 이 값은 브라우저 GPU/실제 현장 CAD SLA가 아닙니다. 운영 DXF/DB 원본은 Git에 등록하지 마세요.
+- P4의 버전/SHA/EntityRef JSON validator는 안전한 사전 준비일 뿐 서버 쓰기·DB migration이 아닙니다. RBAC 및 인증 정책 Owner 결정 전 CRUD를 배포하지 않습니다. 상세 [Issue31](out/Issue31.md), [Database](out/Database.md).
+
+
+
 ## DXF 복수 객체 선택·외곽선 실험 기능 (#31, 0.27.0 브랜치/CI 전)
 
 DXF 도면을 `three-dxf-viewer`로 열고 도구의 **선택 모드**로 전환하면 클릭·Ctrl/⌘+클릭·양방향 영역 선택 후 **볼록/정밀 외곽선**을 각각 미리보기할 수 있습니다. 임시 확정 결과는 JSON으로 내보낼 수 있으나 **서버 저장·재진입 복원은 지원하지 않습니다**. 지원 Entity·오차·WCS/Handle 규칙과 미지원 BLOCK/OCS/HATCH·실도면 검증 상태는 [Issue31](out/Issue31.md) 참조. 기존 0.26.0 운영 배포 설명은 아래에 보존하며 0.27.0 GHCR 게시/운영 수용을 의미하지 않습니다.
