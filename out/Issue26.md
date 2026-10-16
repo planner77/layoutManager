@@ -1,5 +1,13 @@
 # GitHub Issue #26 — DXF TEXT/MTEXT 검색과 좌표 줌
 
+## CI #46 진단 — MTEXT continuation spacing
+
+- PR #30 / run 38867179402: TypeScript, ESLint, Docker image/migration/runtime smoke 성공; Unit+Integration 123개 통과·1개 실패. 뒤의 Build/Browser E2E는 실행되지 않았다.
+- TC-TEXT-001 테스트 Fixture는 문자열 '동\\P1' + '2\\S1#2;'를 연결하면서 파서가 자동으로 공백을 넣기를 기대했다. MTEXT group-3과 최종 group-1은 문자 그대로 붙여야 하므로 예상이 잘못되었다. 원하는 결과를 재현하도록 Fixture 원문에 실제 공백을 추가했다.
+- TC-TEXT-011로 그룹 코드 경계에서 자동 공백 삽입이 없고 실제 공백이 있으면 보존됨을 검증한다. production 파서 변경 없음. 수정 후 전체 CI/Browser 결과는 미확인.
+
+
+
 ## PR #30 CI #42 실패 분석 및 수정
 
 - 2026-10-16 Run 38865738285: TypeScript 성공, ESLint react-hooks/refs 실패 (Viewer JSX의 manager.current 접근); 이후 Unit/Build/Browser E2E는 스킵. 병렬 Docker runtime CI는 성공.
