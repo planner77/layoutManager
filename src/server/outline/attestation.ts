@@ -8,13 +8,13 @@ import polygonClipping from 'polygon-clipping';
 import {CadError} from '@/domain/cad';
 import {parseOutlineExport} from '@/domain/outline-draft';
 import {computeOutline,type GeoJSONOutline,type OutlineResult} from '@/viewers/core/outline-compute';
-import {parseDxfOutlineIndex} from '@/viewers/core/outline-geometry';
+import {parseDxfOutlineIndex,type XY} from '@/viewers/core/outline-geometry';
 
-type WcsMultiPolygon=number[][][][];
+type WcsMultiPolygon=XY[][][];
 function multiPolygon(geometry:GeoJSONOutline):WcsMultiPolygon{
  return geometry.type==='Polygon'?[geometry.coordinates]:geometry.coordinates;
 }
-function areaRing(ring:number[][]){
+function areaRing(ring:XY[]){
  return Math.abs(ring.reduce((sum,point,i)=>{
    const other=ring[(i+1)%ring.length];
    return sum+point[0]*other[1]-other[0]*point[1];
