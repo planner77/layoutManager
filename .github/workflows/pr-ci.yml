@@ -105,6 +105,8 @@ jobs:
             echo "::error::Unwritable database path unexpectedly passed migration"
             exit 1
           fi
+      # A newly started Node server can reset a connection before its listener is ready.
+      # curl --retry-connrefused alone does not retry exit 56; retry-all-errors covers it.
       - name: Compose fresh install, static assets, health and idempotent migration
         shell: bash
         env:
@@ -114,14 +116,14 @@ jobs:
           set -euo pipefail
           docker compose --env-file .env.example -f src/docker-compose.yml config --quiet
           docker compose --env-file .env.example -f src/docker-compose.yml up -d --no-build app
-          curl --fail --retry 40 --retry-delay 3 --retry-connrefused http://127.0.0.1:3000/api/health
+          curl --fail --silent --show-error --retry 40 --retry-delay 3 --retry-connrefused --retry-all-errors --connect-timeout 3 --max-time 10 http://127.0.0.1:3000/api/health
           curl --fail http://127.0.0.1:3000/fonts/NanumGothic-Regular.ttf --output /dev/null
           curl --fail http://127.0.0.1:3000/fonts/CadKorean.typeface.json --output /dev/null
           curl --fail http://127.0.0.1:3000/libredwg/wasm/libredwg-web.wasm --output /dev/null
           docker compose --env-file .env.example -f src/docker-compose.yml stop app
           docker compose --env-file .env.example -f src/docker-compose.yml up --no-build --force-recreate migrate
           docker compose --env-file .env.example -f src/docker-compose.yml up -d --no-build app
-          curl --fail --retry 40 --retry-delay 3 --retry-connrefused http://127.0.0.1:3000/api/health
+          curl --fail --silent --show-error --retry 40 --retry-delay 3 --retry-connrefused --retry-all-errors --connect-timeout 3 --max-time 10 http://127.0.0.1:3000/api/health
       - name: Dump Docker diagnostics and stop without deleting volume
         if: always()
         shell: bash
