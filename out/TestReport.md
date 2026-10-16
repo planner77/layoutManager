@@ -1,5 +1,12 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE31-PR34-P2-REVIEW-20261016 — Webpack parenthesized import warning 차단 보완
+
+- PR #34 초기 Run [38904729194](https://github.com/planner77/layoutManager/actions/runs/38904729194): TypeScript/ESLint, Unit/Integration, Next Production Build, Browser E2E, Legacy Migration E2E, Docker smoke **모두 SUCCESS** (HEAD `9c2d821f`). 그러나 Codex P2 review 1건이 `export 'union' (imported as 'union') was not found` 경고의 미검출을 발견.
+- 보완: `scripts/build-diagnostics.mjs`의 정규식이 `(imported as '...')` 유무 모두 탐지하도록 수정. 기존 plain export 경고, 다른 alias, ANSI 경고 Unit 회귀를 유지/확장. Build의 fail-closed·PR CI/릴리스 보호 원칙은 변경하지 않음.
+- 리뷰 응답/해결 후 **수정 HEAD의 새 PR CI SUCCESS가 필수**. 최초 Run 성공을 새 커밋의 성공으로 간주하거나 Main/GHCR 완료로 기록하지 않는다. 실제 DXF·P4 영속 저장 수용도 미완료.
+
+
 ## U-ISSUE31-ESM-20261016 — v0.28.1 경고 사실 확인 / v0.28.2 보완 코드 (PR CI 전)
 
 - 이전 [Main CI #38894507390](https://github.com/planner77/layoutManager/actions/runs/38894507390) Docker Build 로그에서 `Attempted import error: 'union' is not exported from 'polygon-clipping'` 확인. Next Build warning 상태였지만 workflow 및 GHCR `v0.28.1` 게시까지 성공했다. 이 결과를 정밀 외곽선 Worker 정상 작동의 증거로 취급하지 않는다.

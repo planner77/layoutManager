@@ -37,6 +37,9 @@ describe('Issue #31 polygon-clipping production compatibility',()=>{
   it('TC-OUT-EXPORT-003: build diagnostics reject missing module exports even with exit 0',()=>{
     expect(hasFatalModuleDiagnostic("Attempted import error: 'union' is not exported from 'polygon-clipping'")).toBe(true);
     expect(hasFatalModuleDiagnostic("export 'union' was not found in 'polygon-clipping'")).toBe(true);
+    // Standard webpack variant includes a parenthesized imported-as alias.
+    expect(hasFatalModuleDiagnostic("export 'union' (imported as 'union') was not found in 'polygon-clipping'")).toBe(true);
+    expect(hasFatalModuleDiagnostic("export 'union' (imported as 'aliasedUnion') was not found in 'polygon-clipping'")).toBe(true);
     expect(hasFatalModuleDiagnostic("Module not found: Can't resolve 'worker'")).toBe(true);
     expect(hasFatalModuleDiagnostic("\u001b[31mAttempted import error:\u001b[0m missing")).toBe(true);
     expect(hasFatalModuleDiagnostic('Compiled with warnings\nDeprecated API notice\nCompiled successfully')).toBe(false);

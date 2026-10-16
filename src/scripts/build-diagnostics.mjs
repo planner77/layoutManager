@@ -3,7 +3,7 @@
  * would fail at runtime, as observed in Issue #31 v0.28.1. */
 const fatalDiagnostics = [
   /Attempted import error:/i,
-  /export\s+['"`][^'"`]+['"`]\s+was not found/i,
+  /export\s+['"`][^'"`]+['"`](?:\s+\(imported as\s+['"`][^'"`]+['"`]\))?\s+was not found/i,
   /Module not found:\s+Can't resolve/i,
 ];
 
