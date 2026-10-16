@@ -27,6 +27,12 @@ describe('Issue #31 P0 renderer handle reconciliation',()=>{
     expect(result.mappedSource).toBe(1);
     expect(result.renderedObjects).toBe(2);
   });
+  it('TC-OUT-MAP-004: rejects non-unique or unstable source handle despite matching render',()=>{
+    const unstable={...entity('AB',[0,0,10,10]),stable:false};
+    const result=reconcileRenderCoverage([unstable],[observation('AB',[0,0,10,10])]);
+    expect(result.mappedSource).toBe(0);
+    expect(result.unmappedSource).toBe(1);
+  });
   it('TC-OUT-MAP-003: rejects type, layer and WCS bounds mismatches',()=>{
     const src=[entity('AA',[0,0,10,10]),entity('BB',[50,50,60,60])];
     const incorrect=[{...observation('AA',[100,0,110,10])},
