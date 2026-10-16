@@ -33,6 +33,21 @@ describe('Issue #31 P0 renderer handle reconciliation',()=>{
     expect(result.mappedSource).toBe(0);
     expect(result.unmappedSource).toBe(1);
   });
+  it('TC-OUT-MAP-005: rejects missing metadata or inconsistent sibling fragments',()=>{
+    const src=[entity('FF',[0,0,20,20])];
+    const missing=reconcileRenderCoverage(src,[
+      observation('FF',[0,0,10,10]),
+      {...observation('FF',[10,10,20,20]),layer:undefined},
+    ]);
+    expect(missing.mappedSource).toBe(0);
+    expect(missing.boundsMismatch).toBe(1);
+    const mixed=reconcileRenderCoverage(src,[
+      observation('FF',[0,0,10,10]),
+      {...observation('FF',[10,10,20,20]),entityType:'CIRCLE'},
+    ]);
+    expect(mixed.mappedSource).toBe(0);
+    expect(mixed.boundsMismatch).toBe(1);
+  });
   it('TC-OUT-MAP-003: rejects type, layer and WCS bounds mismatches',()=>{
     const src=[entity('AA',[0,0,10,10]),entity('BB',[50,50,60,60])];
     const incorrect=[{...observation('AA',[100,0,110,10])},
