@@ -82,6 +82,19 @@ jobs:
           fetch-depth: 0
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+      - name: Validate tagless and digest image-pair Compose resolution
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash -n src/scripts/compose.sh
+          GHCR_IMAGE=ghcr.io/planner77/layoutmanager GHCR_MIGRATION_IMAGE= \
+            bash src/scripts/compose.sh .env.example config --format json \
+            | python3 -c "import json,sys; s=json.load(sys.stdin)['services']; assert s['app']['image']=='ghcr.io/planner77/layoutmanager:latest'; assert s['migrate']['image']=='ghcr.io/planner77/layoutmanager:latest-migrate'"
+          if GHCR_IMAGE=ghcr.io/planner77/layoutmanager@sha256:abc GHCR_MIGRATION_IMAGE= \
+            bash src/scripts/compose.sh .env.example --print-images; then
+            echo "::error::Digest-pinned app unexpectedly accepted without migrator reference"
+            exit 1
+          fi
       - name: Build pre-change baseline (same source, original Dockerfile)
         shell: bash
         run: |
