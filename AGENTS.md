@@ -1,5 +1,13 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #26 (2026-10-16) — DXF 도면 내부 텍스트 검색
+
+- 0.27.0 작업 브랜치에서 현재 도면 DXF TEXT/MTEXT 색인·삽입점 world 좌표 focus, 검색 UI, 단위/Browser 테스트 소스를 추가했다. 현재 단계는 **PR CI 전**, 로컬 실행 결과 및 독립 QA 통과를 주장하지 않는다.
+- DXF만 1차 검색 지원. BLOCK/INSERT 기본 2D affine은 지원하되 ATTRIB·ATTDEF/비기본 OCS/배열 INSERT는 제외·안내한다. DWG LINE-only 제한을 유지하며 DWG TEXT/MTEXT 추출·렌더링·줌 가능성을 검증하지 않은 상태에서 지원으로 표시하지 않는다.
+- 검색 색인은 Adapter 바깥의 Worker에서 생성하고 ViewerSource로 Version 간 격리/원본 다운로드 공유한다. focusBounds는 각각 dxf-viewer GetOrigin과 three-dxf-viewer world camera로 대응한다. 일반/CSS/fullscreen shell 내부 검색 UI 위치를 유지한다.
+- 상세 요구/코드·미지원·TC 목록은 out/Issue26.md 기준. #25 기본 전체 화면 진입 구현은 독립 이슈이며 본 변경의 수용으로 처리하지 않는다.
+
+
 ## Issue #28 (2026-10-16) 작업 현황
 
 - 기능 브랜치에 0.26.0 Next.js standalone 웹 + 일회성 Prisma/tsx migration image 구성을 작성했다. 이전 0.25.0 기록은 역사 근거이다. 수용 기준/측정/배포 위험은 `out/Issue28.md`를 따른다. **PR CI와 독립 QA 결과 확인 전 PASS나 이미지 절감 수치를 주장하지 않는다.**
@@ -60,6 +68,7 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 | [Issue10](out/Issue10.md) | GitHub #10 전체 화면 요구사항·설계·CI 근거 | Viewer 전체 화면, ESC/종료, 컨테이너 resize 또는 view state 보존 변경 시 |
 | [Release 0.20.0](out/Release-0.20.0.md) | 0.20.0 병합·태그·GHCR 게시 근거 | 0.20.0 릴리스 확인 및 운영 이미지 식별 시 |
 | [Release 0.21.0](out/Release-0.21.0.md) | 0.21.0 병합·태그·GHCR 게시 근거 | 0.21.0 릴리스 확인 및 운영 이미지 식별 시 |
+| [Issue26](out/Issue26.md) | DXF TEXT/MTEXT 색인·world 좌표 focus·검색 범위/검증 | Viewer 검색·Pan/Zoom·Worker·BLOCK/INSERT·DWG 텍스트 지원 검토 시 |
 | [Issue28](out/Issue28.md) | 운영 이미지 경량화·Migration 분리·측정/롤백 | Dockerfile, Standalone, Compose, GHCR 변경 시 |
 | [Issue24](out/Issue24.md) | 기준정보 계층·이관·층별 Current 요구/설계/AC | 기준정보·계층 등록·제품 조회·legacy 이관 변경 시 |
 | [README](README.md) | 사용자/개발자 프로젝트 안내 | 기능·구조·설정·실행방법 변경 시 |
