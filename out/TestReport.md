@@ -1,5 +1,16 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE26-PR30-CI42-FAIL-20261016 — React Ref lint 및 Unicode 리뷰 수정 (재CI 대기)
+
+- PR #30 / PR CI #42 / Run 38865738285 / head 179e8cd1a22c5eb0c0609080953c98b0e45ece2d.
+- 실제 GitHub Actions 관찰: TypeScript **success**, ESLint **failure**, 따라서 Unit/Integration·production build·Chromium E2E·legacy migration E2E는 **skipped**. 병렬 Docker image size/migration/runtime smoke Job은 **success**.
+- ESLint react-hooks/refs 실패 위치: src/features/cad-viewer/viewer.tsx:245:80, JSX render 중 manager.current 접근. Ref의 직접 렌더링 참조를 제거하고 stable useCallback getter를 prop으로 제공하며 자식 useEffect/이벤트 내에서만 사용하도록 수정.
+- Codex P2 리뷰: DXF \U+00B0C와 같은 고정 4자리 Unicode escape 직후 hex 문자를 기존 {4,8} 정규식이 삼켜 glyph가 달라짐. {4}로 수정, TC-TEXT-010 인접 16진 문자 단위 테스트 추가.
+- 상기 수정 후 TypeScript/ESLint/Unit/E2E 전체 통과는 **새 CI 결과 확인 전 미확정**. 실제 원인 분석은 CI 로그와 inline review를 기준으로 하며 미실행 테스트를 PASS로 기입하지 않는다.
+- 참조: https://github.com/planner77/layoutManager/actions/runs/38865738285 및 https://github.com/planner77/layoutManager/pull/30.
+
+
+
 ## U-ISSUE26-DEV-20261016 — DXF 내부 텍스트 검색 구현, 검증 대기
 
 - Issue #26 / 작업 브랜치 feat/issue-26-dxf-text-search / SemVer 0.27.0.
