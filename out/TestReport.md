@@ -1,5 +1,13 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE31-P0-P5-P4-PREP-20261016 — 잔여 범위 개발 / CI 전
+
+- 이전 0.27.0 PR #32: PR CI run `38874300056` Typecheck/Lint/Test/Build/Browser/Docker **SUCCESS**, Main CI run `38875068317` **SUCCESS**. 이로써 P1~P3 합성 기준은 검증했으나 P0 실도면·P4 영속화·P5 성능 수용은 미완료.
+- 후속 0.27.1 작업 브랜치: Render Handle/Type/Layer/WCS bbox reconciliation(1:N 합산, 미렌더/mismatch 선택 제한), SpatialIndex, UI 인덱스·매핑 timing, synthetic 1k/10k/100k benchmark 명령, P4 브라우저 JSON 버전·Source SHA·EntityRef 안전 validator, Unit 및 기존 DXF E2E 확장.
+- **본 변경에 대한 신규 CI·로컬 전체 빌드/브라우저·실제 DXF/GPU·성능 실측은 아직 확인하지 않았다.** JS-only 로컬 smoke 및 작성된 테스트는 정식 CI PASS를 대신하지 않는다. 개인정보·운영 DXF·DB/원본 파일은 업로드/수정하지 않았다. P4 인증·인가 Owner 승인 전 Database schema/Write API 미개발. [Issue31](Issue31.md).
+
+
+
 ## U-ISSUE31-PR32-CI-FAIL-20261016 — ESLint 및 P2 리뷰 보완 (재검증 대기)
 
 - 최초 PR #32 CI run `38868848174`: `npm ci`, Prisma 생성, `tsc --noEmit` **PASS**; **ESLint 실패**(`src/viewers/three-dxf-viewer/adapter.ts:165:11`, `prefer-const`). Unit/Integration, Build 및 E2E는 이전 단계 실패로 **미실행**, 별도의 Docker build/migration/runtime smoke Job은 **PASS**.
