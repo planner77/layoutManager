@@ -307,4 +307,4 @@ Manager 설계→Sol 구현→Manager review→Luna QA 시험/문서→Manager �
 
 [Issue24](Issue24.md)의 TC-MASTER-001~007을 구현 전 수용 기준으로 확정한다. legacy populated DB 보존과 재분류, Current 경쟁/rollback, 변조/비활성 chain, 관리·등록 Browser 흐름 및 기존 전체 회귀를 독립 QA가 검증한다.
 
-- TC-MASTER-008 (PR #27 P2 리뷰): 미분류 층 상세에서 `/api/masters?active=true`의 HTTP 503 + JSON 오류를 Browser route로 주입하고 오류 안내가 나타나며 버전 목록·재분류 폼이 비정상 종료되지 않는지 확인한다. 실패 주입을 제거하고 페이지를 다시 열면 정상 선택·재분류 흐름이 복원되어야 한다. 기존 TC-MASTER-003/005/007 E2E에 추가하고 PR CI에서 재검증한다.
+- TC-MASTER-008 (PR #27 P2 리뷰): 미분류 층 상세에서 `/api/masters?active=true`의 HTTP 503 + JSON 오류를 Browser route로 주입하고 재분류 `form` 내부 `role=alert`로 오류 안내가 나타나는지 검증한다. Next.js `#__next-route-announcer__`도 `role=alert`이므로 전역 `getByRole("alert")` 선택을 금지한다. 버전 목록·재분류 폼이 유지되는지 확인하고 실패 주입을 제거해 새로고침하면 form 오류가 사라지며 정상 선택·재분류 흐름이 복원되어야 한다. 기존 TC-MASTER-003/005/007 E2E에 추가하고 PR CI에서 재검증한다.

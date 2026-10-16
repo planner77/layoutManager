@@ -195,7 +195,10 @@ test("TC-MASTER-003/005/007: three-version current history survives inactive mas
     }),
   );
   await page.goto(`/cad/locations/${legacy.floorId}`);
-  await expect(page.getByRole("alert")).toHaveText(
+  // Scope to the reclassification form; Next.js also renders a route-announcer
+  // with role="alert", which must not cause a strict-mode selector collision.
+  const reclassifyAlert = page.locator("form").getByRole("alert");
+  await expect(reclassifyAlert).toHaveText(
     "대상 기준정보를 불러오지 못했습니다.",
   );
   await expect(
@@ -204,7 +207,7 @@ test("TC-MASTER-003/005/007: three-version current history survives inactive mas
   await expect(page.getByText("총 3개 버전")).toBeVisible();
   await page.unroute("**/api/masters?active=true");
   await page.reload();
-  await expect(page.getByRole("alert")).toHaveCount(0);
+  await expect(reclassifyAlert).toHaveCount(0);
   await expect(page.getByText("총 3개 버전")).toBeVisible();
   await expect(
     page.getByRole("row").filter({ hasText: "legacy-v2.dxf" }),

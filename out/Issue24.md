@@ -60,3 +60,8 @@ gpt-5.6-luna가 source frozen 상태에서 `db:generate`, typecheck, lint, build
 - Code Review의 P2 지적을 반영해 미분류 층 재분류 기준정보 GET에서 HTTP 오류와 잘못된 `items` 구조를 예외 처리하며, 오류 시 빈 초기 트리와 안내를 유지하도록 개선한다.
 - TC-MASTER-008로 503 JSON 오류 재현, 오류 안내·도면 버전/폼 유지, 복구 후 기존 정상 재분류를 검증할 Browser 시나리오를 추가한다.
 - 0.25.0 병합 전 오류 보완으로 별도 버전 증가 없음. 기존 독립 QA 통과를 신규 커밋 테스트 PASS로 소급 적용하지 않으며 새 PR CI에서 검증한다. 운영 DB migration·배포는 수행하지 않는다.
+
+### PR CI #28 실패 원인 및 보완 (2026-10-16)
+
+- Run `38852895275`에서 정적 검사·단위/통합·빌드는 성공, E2E 37 PASS/1 FAIL, legacy migration E2E SKIPPED. 신규 TC-MASTER-008의 전역 `getByRole("alert")`가 재분류 오류 안내와 Next.js `__next-route-announcer__`의 두 `role=alert`를 동시에 선택해 strict mode violation이 발생한 것이 직접 원인이다.
+- 재분류 `form` 범위에 한정한 오류 안내 locator로 수정하고 성공/실패 응답에 대한 기존 검증 의도를 유지한다. 서비스 코드와 데이터 모델은 변경하지 않으며, 수정 후 실제 CI 성공 여부는 새 PR CI에서 확인한다.

@@ -1,5 +1,12 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE24-PR27-CI28-FAIL-20261016 — E2E Locator 실패 분석 및 수정 (재검증 대기)
+
+- 실패 증거: PR #27 `PR CI #28` run `38852895275`, commit `0be21f5`, Job `116817839530`. Prisma Client 생성, TypeScript, ESLint, Unit/Integration, Production build는 성공했으며 Chromium E2E는 **37 passed / 1 failed**. Legacy migration E2E는 E2E 실패에 따라 `skipped`이다.
+- 직접 원인: `src/tests/e2e/master.spec.ts:198`의 `page.getByRole("alert")`가 재분류 컴포넌트의 안내 `<p role="alert">대상 기준정보를 불러오지 못했습니다.</p>`와 Next.js의 `<div id="__next-route-announcer__" role="alert">`를 동시에 찾아 Playwright `strict mode violation`이 발생했다. 503 오류 안내 자체는 표시되었으므로 서버 API/재분류 화면 결함으로 오판하지 않는다.
+- 수정: 재분류 `form` 범위에 한정한 `page.locator("form").getByRole("alert")`를 사용해 503 안내 확인과 새로고침 후 안내 소멸을 검증한다. 기존 정상 Current/원본·Viewer·재분류 검증을 유지하며 DB/API/패키지 버전은 변경하지 않는다. TC-MASTER-008 계획을 동일하게 갱신했다.
+- 최신 수정에 대한 로컬 빌드·E2E는 수행하지 않았고, 새 PR CI의 결과는 아직 확인 전이다. **통과 판정은 새 CI 결과를 확인한 뒤 수행한다.** 리뷰 스레드와 충돌은 별도 GitHub 상태로 확인한다.
+
 ## U-ISSUE24-PR27-REVIEW-20261016 — 리뷰 P2 보완 (CI 검증 전)
 
 - PR #27의 미해결 P2 지적: 미분류 층 상세 `/api/masters?active=true`가 HTTP 오류와 JSON `error`를 반환하면 응답 성공 여부를 검사하지 않아 `setTree(undefined)` 후 `tree.find`에서 화면이 중단될 수 있었다.
