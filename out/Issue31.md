@@ -1,5 +1,28 @@
 # Issue #31 — DXF 복수 선택과 볼록·정밀 외곽선 (0.27.0)
 
+## 2026-10-16 — 잔여 P0/P5·P4 안전 선행 개발 (0.27.1 / PR CI 전)
+
+### P0: 원본 ↔ 렌더 객체 정합성 강화
+- `render-coverage.ts`: 원본 DXF의 top-level Handle/Entity type/Layer/WCS XY Bounds와 실제 `Object3D.userData.entity`의 world bounds를 대조. 한 Entity가 여러 객체로 분할된 경우(1:N)는 Bounds를 Union한 뒤 비교한다. Render object와 일치하지 않거나 Handle이 없으면 객체를 **선택 대상에서 제외**하고 제외 수를 UI에 표시한다. BLOCK 내부 Child와 개별 renderer element를 영속 EntityRef로 추정하지 않는다.
+- `selection-spatial-index.ts`: 2D 균일 grid 기반 범위 후보 필터(최대 128²), 커다란 도형은 별도 overflow(최대 64 tiles/Entity)를 사용한다. 넓은 영역은 bounded linear fallback. 실제 선택 여부는 기존 선분 거리 및 완전 포함/교차 판정에서 결정한다.
+- 원본 Worker index / Render 대조 / SpatialIndex 생성 경과 시간(ms)을 Viewer에 표시한다. 합성 DXF E2E는 선택 가능한 1개 도형의 매핑 제외 0을 확인한다.
+- upstream `three-dxf-viewer@1.0.44`는 Block 내부 geometry를 merge할 수 있고 `userData.entity` 또는 grouped child를 제공한다. Source/Renderer의 직접 ID 재사용은 검증되지 않았으므로 직접 Map 기반 정합성 검사를 유지한다. 실제 공장 도면의 복합 BLOCK/비표준 OCS·3D WCS/단위 정확도는 여전히 **미검증**.
+
+### P5: 실행 가능한 계측 수단
+- `cd src && npm run test:outline-benchmark`: 합성 DXF LINE **1k/10k/100k**를 생성하여 Source parser, 공간 인덱스 구성, 범위 선택 후보, Convex subset 계산 시간·대략적 JS heap 변화·원본 byte 수·환경을 **JSON stdout**으로 출력. `npm run test:outline-benchmark -- --quick`: 1k만. 기본 PR CI에는 무거운 벤치를 추가하지 않고 명시적 수동 성능시험으로 분리한다.
+- `src/tests/unit/outline-mapping-spatial.test.ts`: 1:N render mapping, mismatch 차단, 1k brute force 검색 동등성, 큰 도형 Overflow 검증. **실측 수치를 만들었다거나 100k 실제 도면의 원활한 렌더링이 입증되었다고 주장하지 않는다.**
+- 최종 수용은 사용 권한을 가진 DXF 3종 이상에서 전체 로딩·Worker 전달·GPU/브라우저 heap·선택 p50/p95, 정확한 면적/거리/WCS 좌표/INSERT instance, 1k/10k/100k 부하를 여러 차례 반복·기록해야 한다. 실제 CAD 원본 및 경로를 Git에 올리지 않는다.
+
+### P4: Owner 권한 정책 결정 대기
+- `domain/outline-draft.ts`는 브라우저 JSON의 versionId, sourceSha256, coordinateSystem, 안정적 Handle, kind, algorithm, 유한·폐합 Polygon 좌표 및 한도를 **읽기 전용 순수 함수**로 검증한다. 다른 Version·TEMP EntityRef·중복/불안정 좌표는 거부. 단, JSON 검증이 성공하더라도 **Server가 원본 파일과 canonical geometry를 재검증하지 않으면 서버 저장 데이터로 신뢰할 수 없다.**
+- 권장안: **OIDC 서명 검증(JWT issuer/audience/JWKS)+Reader/Editor/Admin RBAC+Version/사업장 Scope+CSRF/감사**. 사내 IdP가 없다면 **별도 App 로컬 로그인·HTTP-only 세션** 방식이 대안. 공유 비밀번호, 도면 삭제 비밀번호, IP 제한, 서명 없는 프록시 `X-User` 헤더는 영속 편집 권한 수단으로 선택하지 않는다.
+- 정책 승인 후 `CadOutline` DB additive migration, Version+SHA FK, CRUD, 수정 충돌 409/revision, 감사·인증 실패, Source 재계산, Version 삭제 정합성과 재진입 복원을 구현한다. 현재는 **쓰기 API와 DB migration을 만들지 않음**.
+- 구체 Schema 제안: `out/Database.md`. P4 권한 방식·적용 범위에 대한 Owner 결정이 남아 있다.
+
+**상태:** 코드/Unit/E2E·성능 도구 작성, 새 PR CI·독립 QA·실제 CAD 평가 전. Issue #31 Open 유지; P0/P5 실증과 P4 인증·영구 저장 수용 전 종료 불가.
+
+
+
 상태: **구현 브랜치의 실험적 P0~P3 부분 구현, 새 CI/독립 QA/실도면 검증 전**. 이 문서는 적용 범위와 미구현 조건을 명시한다. P4 서버 영속화는 Owner의 권한 정책 결정 전 **구현하지 않는다**. P5 실제 대형 도면 수용도 아직 수행하지 않았다.
 
 ## 범위/사용 절차
