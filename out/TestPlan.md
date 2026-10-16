@@ -1,5 +1,14 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+### Issue #26 / CI #49 Browser E2E MTEXT renderer interoperability
+
+- TC-TEXT-E2E-001의 합성 DXF MTEXT 필수 명시값: group 41=240(reference width), group 71=1(top-left attachment), group 72=1(left-to-right); TEXT group 5는 16진 handle을 사용한다.
+- 수용: dxf-viewer와 three-dxf-viewer 각각 최초 표시 성공, 3개의 분리된 TEXT 결과에서 위치 이동·줌, MTEXT 검색·이동, 전체 화면과 renderer 전환 뒤 재검색, 원본 다운로드 단 1회 유지.
+- CI #49에서 38개 Browser E2E 성공, 새 두 케이스는 MTEXT 71 누락으로 RenderMText "Unhandled alignment". 수정 후 신규 CI에서 두 케이스, 기존 38개, Legacy migration 검증 확인 필수.
+- 근거: https://github.com/planner77/layoutManager/actions/runs/38868174246
+
+
+
 ### CI #46 대응 — TC-TEXT-001과 011
 
 - TC-TEXT-001: 실제 MTEXT 그룹 코드 fixture에 fraction 앞 명시적인 ASCII 공백이 있으며 표시 문자열 "생산 ABC 동 12 1/2가"와 정확히 일치하는지 확인한다.

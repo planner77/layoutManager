@@ -4,11 +4,11 @@ import { masterFields } from './master-helper';
 function fixture() {
   let entities = '';
   for (const [i, x] of [0, 1800, 3600].entries()) {
-    entities += '0\nTEXT\n5\nT' + i + '\n8\nFIND\n10\n' + x +
+    entities += '0\nTEXT\n5\n' + (0x1A0 + i).toString(16).toUpperCase() + '\n8\nFIND\n10\n' + x +
       '\n20\n100\n40\n20\n1\n장비 ABC 123\n';
     entities += '0\nCIRCLE\n8\nFIND\n10\n' + (x + 60) + '\n20\n60\n40\n' + (12 + i * 18) + '\n';
   }
-  // Group 71 = 1 (top-left attachment): dxf-viewer RenderMText requires explicit alignment.\n  entities += '0\nMTEXT\n8\nFIND\n10\n100\n20\n400\n40\n15\n71\n1\n1\n검사\\P구역 45\n';
+  // MTEXT 41=width, 71=1 top-left attachment, 72=1 left-to-right (Autodesk DXF).\n  // Without group 71, dxf-viewer RenderMText threw 'Unhandled alignment' in CI #49.\n  entities += '0\nMTEXT\n8\nFIND\n10\n100\n20\n400\n40\n15\n41\n240\n71\n1\n72\n1\n1\n검사\\P구역 45\n';
   return '0\nSECTION\n2\nENTITIES\n' + entities + '0\nENDSEC\n0\nEOF\n';
 }
 

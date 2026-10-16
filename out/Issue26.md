@@ -1,5 +1,15 @@
 # GitHub Issue #26 — DXF TEXT/MTEXT 검색과 좌표 줌
 
+## PR #30 / CI #49 — Browser E2E MTEXT 정렬 그룹코드 조치
+
+- CI #49 Run 38868174246: Typecheck, ESLint, Unit/Integration 125건, Production Build, Docker CI 성공. E2E는 38/40 통과로 신규 텍스트 검색 E2E 2건 실패. Legacy migration E2E는 미실행.
+- Playwright Trace에서 dxf-viewer의 RenderMText가 "Unhandled alignment"를 발생시킴. three-dxf-viewer에서 최초 검색·좌표 줌은 동작하였으나 dxf-viewer로 전환하면서 같은 오류. 신규 테스트 DXF에 MTEXT group 71 attachment 정보가 없던 것이 원인.
+- Autodesk 공식 DXF MTEXT 표에 따라 테스트 문자열에 group 41 reference width, group 71=1(상단 좌측 부착점), group 72=1(좌→우 문자 방향)을 명시. TEXT group 5 핸들도 유효한 hexadecimal로 변경. 생산용 파서/카메라 코드는 변경하지 않음.
+- https://help.autodesk.com/cloudhelp/2020/ENU/AutoCAD-DXF/files/GUID-5E5DB93B-F8D3-4433-ADF7-E92E250D2BAB.htm
+- 새 CI 재검증, 실제 도면과 독립 QA 검증은 별도. 증거 없는 완료 주장 금지.
+
+
+
 ## CI #46 진단 — MTEXT continuation spacing
 
 - PR #30 / run 38867179402: TypeScript, ESLint, Docker image/migration/runtime smoke 성공; Unit+Integration 123개 통과·1개 실패. 뒤의 Build/Browser E2E는 실행되지 않았다.

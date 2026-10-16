@@ -1,5 +1,13 @@
 # ChangeLog
 
+### 0.27.0 / PR #30 CI #49 E2E fixture 수정 (2026-10-16)
+
+- Typecheck/ESLint/125 Unit·Integration/Build/Docker PASS; Browser E2E 38 PASS / 신규 2 FAIL.
+- 공식 DXF에 따라 MTEXT 테스트 파일에 group 41(width), 71=1(top-left), 72=1(left-to-right)을 명시하고 TEXT handle을 유효한 hex로 갱신. CI trace의 RenderMText "Unhandled alignment" 원인 해결을 목표로 한 테스트 데이터 보완.
+- 운영 소스 변경 없음. 최종 Browser E2E 및 독립 QA 결과 재검증 대기.
+
+
+
 ### 0.27.0 / PR #30 보완 (2026-10-16)
 
 - Fixed: JSX 렌더링 중 ViewerManager ref 읽기로 발생한 ESLint react-hooks/refs 실패를 stable getter로 변경.

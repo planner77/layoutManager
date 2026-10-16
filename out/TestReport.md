@@ -1,5 +1,15 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE26-PR30-CI49-FAIL-20261016 — Browser E2E 합성 DXF의 MTEXT attachment 누락
+
+- PR #30 / CI #49 Run 38868174246, head 91932bd9a9ddfeeb4370de137d267090ca714d2b. 실제 통과: Typecheck/ESLint, Unit+Integration 125/125, Production Build, Docker image/migration/runtime smoke. Browser E2E 38 passed / **2 failed**; Legacy migration E2E는 선행 실패로 미실행.
+- 다운로드한 Playwright trace.zip: 신규 TC-TEXT-E2E-001의 dxf-viewer 경로와 three-dxf-viewer→dxf-viewer 전환 경로에서 동일한 "Unhandled alignment" 발생. 스택: RenderMText→_DecomposeMText. three-dxf-viewer 최초 표시 및 TEXT/MTEXT 검색·줌은 해당 trace에서 정상 진행되었다.
+- 원인: 합성 DXF MTEXT에 attachment point group 71이 누락됨. Autodesk DXF MTEXT 공식 명세상 71=1은 top-left attachment이다. 렌더러 공통 입력 계약인 테스트 fixture 문제로서 현재 증거가 ViewerManager.focusBounds 오류를 의미하지는 않는다.
+- 조치: 테스트 fixture의 MTEXT에 group 41=240(reference width), 71=1(top left), 72=1(left-to-right)를 명시하고 TEXT entity handle(code 5)은 유효한 hexadecimal로 변경. 실제 애플리케이션 기능 코드는 수정하지 않았다.
+- 공식 명세 https://help.autodesk.com/cloudhelp/2020/ENU/AutoCAD-DXF/files/GUID-5E5DB93B-F8D3-4433-ADF7-E92E250D2BAB.htm ; CI https://github.com/planner77/layoutManager/actions/runs/38868174246. 후속 CI/QA/실도면 결과 미확인. PASS로 단정하지 않는다.
+
+
+
 ## U-ISSUE26-PR30-CI46-FAIL-20261016 — MTEXT continuation fixture whitespace mismatch, fixed (new CI pending)
 
 - PR #30 / PR CI #46 run 38867179402, head 7aef7c7b628eaffac93ec3f8e0b9217dd3c22cea: TypeScript/ESLint **PASS**, Docker image/migration/smoke **PASS**, Unit+Integration **123 passed/1 failed** out of 124 in 27 files. Because the unit step failed, Build and both Browser E2E/migration E2E did not execute. This run does not establish those stages as PASS.
