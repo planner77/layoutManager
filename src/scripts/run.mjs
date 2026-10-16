@@ -48,7 +48,8 @@ if (isBuild) {
 }
 for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => child.kill(signal));
 child.on('error', () => { console.error('Command could not start'); process.exitCode = 1; });
-child.on('exit', code => {
+// 'close' waits for stdout/stderr to drain, including last-chunk import warnings.
+child.on('close', code => {
   if (action === 'build' && code === 0) {
     if (brokenModuleImport) {
       console.error('Production build has unresolved module imports/exports; release blocked.');
