@@ -4,6 +4,10 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { DXFViewer } from 'three-dxf-viewer';
 import type { CadViewerAdapter } from '../core/adapter';
 import { explicitElevation } from './normalize';
+import {SelectionController,type SelectionMode} from './selection-controller';
+import type {DxfOutlineIndex,OutlineEntity,OutlineKind,OutlinePath} from '../core/outline-geometry';
+import type {OutlineResult} from '../core/outline-compute';
+import type {OutlineInfo,SavedOutline} from '../core/adapter';
 
 function release(group: THREE.Object3D) {
   const geometries = new Set<THREE.BufferGeometry>(), materials = new Set<THREE.Material>(), textures = new Set<THREE.Texture>();
@@ -27,7 +31,25 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
   private disposed = false;
   private cancel?: () => void;
   private bounds = new THREE.Box3();
-  constructor(private container: HTMLElement) {
+  private index?: DxfOutlineIndex;
+  private indexError?: string;
+  private selector?: SelectionController;
+  private mode: SelectionMode='pan';
+  private visibleLayers=new Set<string>();
+  private selectionGroup?: THREE.Group;
+  private previewGroup?: THREE.Group;
+  private savedGroup=new THREE.Group();
+  private preview?: OutlineResult;
+  private previewKind?: OutlineKind;
+  private saved: SavedOutline[]=[];
+  private activeWorkers: Partial<Record<'index'|'compute',{worker:Worker;cancel:()=>void}>>={};
+  private computeSequence=0;
+  constructor(private container: HTMLElement, private outline?:{
+    versionId:string;sourceSha256:string;
+    onSelection?:(entities:OutlineEntity[])=>void;
+    onPreview?:(result:OutlineResult|null,error?:string)=>void;
+    onSaved?:(count:number)=>void;
+  }) {
     this.renderer = new THREE.WebGLRenderer({antialias:true});
     this.renderer.setPixelRatio(window.devicePixelRatio);
     this.renderer.setClearColor(0x000000);
@@ -79,6 +101,25 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
       this.object=object;this.scene.add(object);this.bounds.setFromObject(object);
       if(!this.bounds.isEmpty() && ![...this.bounds.min.toArray(),...this.bounds.max.toArray()].every(Number.isFinite)) throw new Error('유효하지 않은 도형 좌표');
       this.fitToView();this.render();
+      if(this.outline && !this.bounds.isEmpty()) {
+        try {
+          this.index=await this.runOutlineWorker<DxfOutlineIndex>('index',{
+            text,versionId:this.outline.versionId,sourceSha256:this.outline.sourceSha256
+          });
+          if(this.disposed)throw new DOMException('취소됨','AbortError');
+          this.visibleLayers=new Set(this.getLayers());
+          // The parsed index is a source-coordinate overlay. Non-rendered layers are excluded.
+          if(!this.visibleLayers.size)this.visibleLayers=new Set(this.index.entities.map(e=>e.layer));
+          const selectable=this.index.entities.filter(e=>this.visibleLayers.has(e.layer));
+          this.selector=new SelectionController(this.renderer.domElement,this.container,selectable,
+            (x,y)=>this.screenToWorld(x,y),this.selectionChanged,
+            pan=>{this.controls.mouseButtons.LEFT=pan?THREE.MOUSE.PAN:THREE.MOUSE.ROTATE;});
+          this.selector.setMode(this.mode);
+        }catch(error) {
+          if(this.disposed)throw error;
+          this.indexError=error instanceof Error?error.message:'객체 선택 인덱스를 만들 수 없습니다.';
+        }
+      }
       return {empty:this.bounds.isEmpty(),entityCount:viewer.lastDXF?.entities?.length};
     } catch(error) {
       if(error instanceof DOMException && error.name==='AbortError') throw error;
@@ -114,9 +155,126 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     const names=new Set<string>();this.object?.traverse(o=>{if(typeof o.userData.entity?.layer==='string') names.add(o.userData.entity.layer);});
     return [...names].sort();
   }
-  showLayer(name:string,visible:boolean) {this.object?.traverse(o=>{if(o.userData.entity?.layer===name)o.visible=visible;});this.render();}
+  showLayer(name:string,visible:boolean) {
+    this.object?.traverse(o=>{if(o.userData.entity?.layer===name)o.visible=visible;});
+    if(visible)this.visibleLayers.add(name);else this.visibleLayers.delete(name);
+    this.selector?.setVisibleLayers(this.visibleLayers);this.render();
+  }
+
+  private screenToWorld=(x:number,y:number):[number,number]=>{
+    const rect=this.renderer.domElement.getBoundingClientRect();
+    const p=new THREE.Vector3(x/Math.max(1,rect.width)*2-1,1-y/Math.max(1,rect.height)*2,0).unproject(this.camera);
+    return [p.x,p.y];
+  };
+  private terminateWorker(kind:'index'|'compute') {
+    const task=this.activeWorkers[kind];delete this.activeWorkers[kind];
+    task?.worker.terminate();task?.cancel();
+  }
+  private runOutlineWorker<T>(kind:'index'|'compute',payload:Record<string,unknown>):Promise<T>{
+    this.terminateWorker(kind);
+    if(this.disposed)return Promise.reject(new DOMException('취소됨','AbortError'));
+    return new Promise<T>((resolve,reject)=>{
+      const worker=new Worker(new URL('../core/outline-worker.ts',import.meta.url),{type:'module'});
+      let settled=false;
+      const finish=(error?:Error,result?:T)=>{
+        if(settled)return;settled=true;clearTimeout(timer);
+        if(this.activeWorkers[kind]?.worker===worker)delete this.activeWorkers[kind];
+        worker.terminate();if(error)reject(error);else resolve(result as T);
+      };
+      this.activeWorkers[kind]={worker,cancel:()=>finish(new DOMException('취소됨','AbortError'))};
+      worker.onmessage=(event:MessageEvent)=>{
+        const response=event.data;
+        if(response?.ok)finish(undefined,(kind==='index'?response.index:response.result) as T);
+        else finish(new Error(response?.error??'외곽선 Worker 실패'));
+      };
+      worker.onerror=()=>finish(new Error('외곽선 Worker를 실행할 수 없습니다.'));
+      const timer=setTimeout(()=>finish(new Error('외곽선 계산 제한 시간(30초) 초과')),30000);
+      worker.postMessage({task:kind,...payload});
+    });
+  }
+  private selectionChanged=(selected:OutlineEntity[])=>{
+    if(this.selectionGroup){this.scene.remove(this.selectionGroup);release(this.selectionGroup);}
+    this.selectionGroup=this.createPathGroup(selected.flatMap(e=>e.paths),0xffd000);
+    this.scene.add(this.selectionGroup);this.render();
+    this.outline?.onSelection?.(selected);
+    if(this.previewKind){
+      if(selected.length)void this.previewOutline(this.previewKind).catch(()=>undefined);
+      else this.cancelOutlinePreview();
+    }
+  };
+  private createPathGroup(paths:OutlinePath[],color:number){
+    const group=new THREE.Group(),z=this.bounds.isEmpty()?0:this.bounds.max.z+0.5;
+    for(const path of paths){
+      if(path.points.length<2)continue;
+      const points=path.points.map(([x,y])=>new THREE.Vector3(x,y,z));
+      if(path.closed)points.push(points[0].clone());
+      const geometry=new THREE.BufferGeometry().setFromPoints(points);
+      const material=new THREE.LineBasicMaterial({color,depthTest:false,transparent:true,opacity:0.95});
+      const line=new THREE.Line(geometry,material);line.renderOrder=1000;
+      group.add(line);
+    }
+    return group;
+  }
+  private renderGeometry(result:OutlineResult,color:number) {
+    const polygons=result.geometry.type==='Polygon'?[result.geometry.coordinates]:result.geometry.coordinates;
+    return this.createPathGroup(polygons.flatMap(poly=>poly.map(ring=>({points:ring,closed:true}))),color);
+  }
+  getOutlineInfo():OutlineInfo|null {
+    if(!this.outline)return null;
+    if(!this.index && !this.indexError)return null;
+    return {entityCount:this.index?.entities.length??0,unitCode:this.index?.unitCode??null,
+      warnings:[...(this.indexError?[this.indexError]:[]),...(this.index?.warnings??[])]};
+  }
+  setSelectionMode(mode:SelectionMode){this.mode=mode;this.selector?.setMode(mode);}
+  getOutlineSelection(){return this.selector?.getSelection()??[];}
+  clearOutlineSelection(){this.selector?.clear();}
+  async previewOutline(kind:OutlineKind):Promise<OutlineResult> {
+    if(!this.index||!this.selector)throw new Error(this.indexError??'DXF 객체 인덱스가 준비되지 않았습니다.');
+    const selected=this.selector.getSelection();
+    if(!selected.length)throw new Error('외곽선을 만들 객체를 먼저 선택하세요.');
+    // Invalidate the old selection's preview before a new worker can finish.
+    this.cancelOutlinePreview();
+    this.previewKind=kind;
+    const sequence=++this.computeSequence;
+    try {
+      const result=await this.runOutlineWorker<OutlineResult>('compute',{kind,entities:selected,tolerance:0.02});
+      if(this.disposed||sequence!==this.computeSequence)throw new DOMException('취소됨','AbortError');
+      this.preview=result;
+      if(this.previewGroup){this.scene.remove(this.previewGroup);release(this.previewGroup);}
+      this.previewGroup=this.renderGeometry(result,0x00f0ff);
+      this.scene.add(this.previewGroup);this.render();
+      this.outline?.onPreview?.(result);return result;
+    }catch(error) {
+      if(sequence===this.computeSequence && !this.disposed) {
+        this.preview=undefined;
+        if(this.previewGroup){this.scene.remove(this.previewGroup);release(this.previewGroup);this.previewGroup=undefined;this.render();}
+        this.outline?.onPreview?.(null,error instanceof Error?error.message:'외곽선을 계산하지 못했습니다.');
+      }
+      throw error;
+    }
+  }
+  cancelOutlinePreview(){
+    this.computeSequence++;this.terminateWorker('compute');this.preview=undefined;this.previewKind=undefined;
+    if(this.previewGroup){this.scene.remove(this.previewGroup);release(this.previewGroup);this.previewGroup=undefined;this.render();}
+    this.outline?.onPreview?.(null);
+  }
+  confirmOutline():SavedOutline {
+    if(!this.preview)throw new Error('미리보기를 먼저 생성해야 합니다.');
+    const saved:SavedOutline={id:'local-'+(this.saved.length+1),createdAt:new Date().toISOString(),result:this.preview};
+    this.saved.push(saved);this.savedGroup.add(this.renderGeometry(this.preview,0xff8c00));
+    this.scene.add(this.savedGroup);this.cancelOutlinePreview();
+    this.outline?.onSaved?.(this.saved.length);this.render();return saved;
+  }
+  getSavedOutlines(){return [...this.saved];}
+  clearSavedOutlines(){
+    this.scene.remove(this.savedGroup);release(this.savedGroup);this.savedGroup=new THREE.Group();this.saved=[];
+    this.outline?.onSaved?.(0);this.render();
+  }
   dispose() {
     if(this.disposed)return;this.disposed=true;this.cancel?.();this.resize.disconnect();
+    this.terminateWorker('index');this.terminateWorker('compute');
+    this.selector?.dispose();this.selector=undefined;
+    for(const group of [this.selectionGroup,this.previewGroup,this.savedGroup])if(group)release(group);
     this.controls.dispose();if(this.object)release(this.object);this.scene.clear();
     this.renderer.dispose();this.renderer.forceContextLoss();this.renderer.domElement.remove();
   }

@@ -1,5 +1,13 @@
 # ChangeLog
 
+## 0.28.0 — main 0.27.0(#31) 정렬 + GitHub #26 DXF 텍스트 검색 통합 (PR CI 대기)
+
+- 기존 main의 DXF 객체 선택·볼록/정밀 외곽선 생성 및 관련 라이브러리와 테스트를 보존하고 DXF TEXT/MTEXT 검색, 위치 Pan/Zoom, Worker 인덱스를 결합.
+- PR #30 CI #54: TypeScript/ESLint/126 Unit·Integration/Build/Docker PASS; Renderer 전환 시 캐시 검색의 working 플래그가 남는 E2E 2건 FAIL. Effect 결과·오류 분기에서 로딩 상태를 직접 종료하는 수정 및 추적 문서 반영.
+- DB/API/migration 및 추가 npm dependency 없음 (polygon-clipping은 기존 main #31 의존성). 0.28.0은 미게시/PR CI 검증 전 후보 버전.
+
+
+
 ### 0.27.0 / PR #30 / CI #52 Browser Fixture regression repair
 
 - CI #52: TypeScript/ESLint, Unit/Integration 125/125, production Build and Docker smoke PASS. Browser E2E 38/40 PASS; newly added TEXT/MTEXT search variants failed because the E2E's literal \n in a // comment suppressed the entire MTEXT insertion statement.
@@ -30,6 +38,13 @@
 - Added: 재사용 가능한 브라우저 Worker text index, ViewerSource 캐시, 두 DXF Adapter의 focusBounds, 전체 화면 Viewer shell의 접이식 검색 패널.
 - Compatibility: DB/API/migration/새 npm dependency 없음. DWG 텍스트 검색은 미지원. 기존 #25 기본 fullscreen 진입은 별도 작업.
 - Tests: TC-TEXT-001~006 Unit, TC-TEXT-E2E-001 브라우저 테스트 소스 추가. 이 시점 정적/실행/CI PASS 및 실제 업무 도면 수용은 **미확인**.
+
+
+## 0.27.0 — 2026-10-16 / GitHub #31 (PR CI 재검증 전, 범위 제한)
+
+- Feature: three-dxf-viewer의 DXF 객체 클릭/다중·방향별 영역 선택, 레이어 동기화, 독립적인 Convex 및 실제 폐곡선 Polygon Union(+MultiPolygon/Holes), Worker 취소 및 Preview/임시 확정·JSON 내보내기.
+- Design: Version SHA + Entity Handle, 기본 2D WCS/INSERT 변환·INSUNITS, 오류가 있는 Entity의 명시적 제외; polygon-clipping@0.15.7(MIT) 도입. 브라우저 임시 결과만 지원, 서버 DB/API/원본 변경 없음.
+- Validation: 최초 PR #32 CI #38868848174 TypeScript/Docker PASS, ESLint prefer-const 실패로 Unit/E2E 미실행. Fullscreen ESC/Preview stale/오목 Hole P2 리뷰 3건 보완 및 회귀 테스트 추가. 신규 CI·독립 QA·실도면 검증 전. 범위·미지원과 P4 정책 대기는 [Issue31](Issue31.md).
 
 
 ## 0.26.0 — 2026-10-16 / GitHub #28 (CI 전)

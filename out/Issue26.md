@@ -1,5 +1,16 @@
 # GitHub Issue #26 — DXF TEXT/MTEXT 검색과 좌표 줌
 
+
+## PR #30 — main(#31) 정렬 및 CI #54 실패 보완 (0.28.0 후보)
+
+- 기준 main b92c07cb5e5e3d3b01151c7e433fa5d8ec09fed1 (Issue #31 DXF 객체 선택·외곽선 기능); Issue #26 기존 작업 head 8462b772654ee810546edfb229f0cdd50c393291. 두 부모 Merge commit으로 이력을 유지한다.
+- ThreeDxfViewerAdapter 객체 선택·외곽선 프리뷰/Worker와 camera focusBounds, ViewerManager outline API와 텍스트 index/focus API, Viewer shell의 두 패널이 동시에 유지되도록 공통 파일 변경을 통합했다.
+- PR CI #54 (Run 38874916901): 정적 검사, 126/126 Unit, Build, Docker Job PASS; Browser E2E 38/40 PASS. 새 텍스트 검색 E2E 2건이 renderer 전환 후 "검색용 텍스트를 분석 중입니다…" 문구를 무한 표시하여 timeout.
+- 원인: cached index가 즉시 도착하면 setIndex가 React Effect cleanup을 유발하고 finally 내부 active 검사 때문에 setWorking(false)가 스킵됨. 완료/오류 callback 안에서 loading 상태를 직접 종료하도록 보완했다. E2E의 renderer 전환 후 "검색 결과 3개" 검증을 유지한다.
+- main 0.27.0과 버전 충돌을 피하기 위해 merged source version은 0.28.0으로 설정하고 polygon-clipping(#31)를 그대로 유지한다. PR CI 및 독립 QA·실도면 결과는 새 run 이후 판정한다.
+
+
+
 ## PR #30 / CI #52 — 검색 테스트 Fixture 수정 및 조기 회귀 검증
 
 - Run 38872015982 (CI #52): Typecheck, ESLint, 125 Unit/Integration tests, Build, Docker Job 모두 PASS. Playwright 38 PASS / 2 FAIL: 두 DXF 렌더러 모두 "검사 구역 45"을 검색할 때 결과 1건 조건 실패. Legacy migration E2E는 미실행.

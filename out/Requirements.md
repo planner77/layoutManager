@@ -14,6 +14,15 @@
 구현·정확 좌표의 제한 및 시험 상태는 Issue26.md를 기준으로 한다. 본 문서 작성 시 자동 검증과 실도면 수용은 대기 중.
 
 
+## Issue #31 요구사항 (0.27.0 구현 브랜치·수용 전)
+
+- SEL-001~006: three-dxf-viewer DXF에 한정해 탐색/선택 모드, 클릭·Mod+클릭·양방향 영역 선택, 숨김 레이어 제외/해제, 오버레이/Fullscreen/ESC·전환 cleanup. 다른 Viewer·DWG는 미지원.
+- GEO-001~005: WCS 2D 직선/기본 폐곡선/원호 샘플링, 결정론적 Convex Hull, 실제 닫힌 geometry의 Polygon Union/MultiPolygon/hole, 열린/자기교차 경고, 취소 가능한 Worker. 추정 Concave Hull은 별도 수용·정확도 검증 전 비활성.
+- ID-001~003: Version+SHA+고유 Handle EntityRef, 원본 2D 좌표/INSUNITS, 임시 참조의 저장 금지, 복합 OCS·BULGE/특수 Entity 미지원 명시.
+- DATA-001~003: 원본 불변 독립 Overlay와 JSON 출력. 서버 영속 CRUD 및 수정/감사/동시성은 권한 정책 승인 전 BLOCKED.
+- PERF-001: 성능·실제 도면 적합성 조건부 검증, 정량 SLA 미확정. 세부 요구/상태: [Issue31](Issue31.md).
+
+
 ## IMG-01~IMG-05 — Issue #28 (0.26.0)
 
 - IMG-01: 동일 linux/amd64 조건에서 기준선/Phase1/Standalone 운영 이미지의 비압축/압축 프록시/레이어/절감률을 추적한다(30%는 soft target).

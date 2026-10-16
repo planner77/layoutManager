@@ -37,10 +37,10 @@ export function CadTextSearch({
     let active = true;
     // The viewer has already loaded the bytes. This creates only a cancellable Worker.
     manager.getTextIndex().then(value => {
-      if (active) { setIndex(value); setError(''); }
+      if (active) { setIndex(value); setError(''); setWorking(false); }
     }).catch(reason => {
-      if (active) setError(reason instanceof Error ? reason.message : '도면 텍스트 검색 준비에 실패했습니다.');
-    }).finally(() => { if (active) setWorking(false); });
+      if (active) { setError(reason instanceof Error ? reason.message : '도면 텍스트 검색 준비에 실패했습니다.'); setWorking(false); }
+    });
     return () => { active = false; };
   }, [open, ready, format, getManager, index]);
 

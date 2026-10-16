@@ -1,5 +1,16 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE26-PR30-CI54-FAIL-20261016 — Renderer 전환 후 캐시 검색의 로딩 상태 무한 표시
+
+- PR #30 / CI #54 Run 38874916901 / head 8462b772654ee810546edfb229f0cdd50c393291: TypeScript, ESLint, Unit/Integration 126/126, Production build, Docker smoke 모두 PASS; Playwright 38 passed/2 failed; Legacy migration E2E skipped.
+- 실제 Playwright error-context는 두 렌더러 모두 전환 후 TEXT 3개 목록과 각 버튼이 화면에 존재하지만 aria-live 문구가 계속 "검색용 텍스트를 분석 중입니다…"인 상태를 보여준다. TC-TEXT-E2E-001은 "검색 결과 3개"를 기다리다 타임아웃.
+- 근본 원인: CadTextSearch useEffect의 getTextIndex() 완료 후 setIndex()가 의존성을 바꾸면서 Effect cleanup을 실행하고, .finally의 active=false 검사 때문에 setWorking(false)가 수행되지 않음. 특히 재전환 후 ViewerSource의 캐시된 index가 즉시 반환될 때 재현.
+- 조치: 성공/실패 .then/.catch 내부에서 active 여부를 확인하고 setIndex/setError와 함께 setWorking(false)를 동일 Effect 수명에서 처리. 사후 .finally 콜백에 의존하지 않는다. E2E의 renderer 전환 후 검색 결과 수 검증을 regression으로 유지.
+- 최신 main(0.27.0, Issue #31 outline 기능)과 통합하면서 원본 ViewerSource 공유, DXF world 좌표 focus, outline selection/Worker를 모두 보존. 충돌 해결 후 Release candidate 0.28.0. 새 CI와 독립 QA 결과는 미확정.
+- 실패 기록: https://github.com/planner77/layoutManager/actions/runs/38874916901
+
+
+
 ## U-ISSUE26-PR30-CI52-FAIL-20261016 — test fixture comment swallowed MTEXT source
 
 - PR #30 / CI #52 Run 38872015982, source head aa0f1d6595d2dfbab8af74975a26646df067ea6b.
@@ -48,6 +59,20 @@
 - 추적 TC-TEXT-001~006 단위 테스트와 TC-TEXT-E2E-001 브라우저 테스트 추가. **이 기록 작성 시 로컬 npm ci/tsc/lint/Vitest/Build/Chromium E2E는 미실행이며 PASS 아님**. PR CI run ID/결과 확인 전 최종 수용 불가.
 - 한계: 현장 업무 DXF/DWG/복잡한 OCS/실제 글꼴 bbox는 미검증. ATTRIB/ATTDEF, 다중 배열 INSERT 및 DWG TEXT/MTEXT는 비지원. 비지원 Entity는 잘못된 좌표 이동 대신 제외 집계.
 - 독립 QA 대행을 수행한 것으로 주장하지 않는다. GHCR 게시, main 병합·운영 배포는 요청 범위에 포함하지 않는다. 기술 계약 및 AC는 Issue26.md 참조.
+
+
+## U-ISSUE31-PR32-CI-FAIL-20261016 — ESLint 및 P2 리뷰 보완 (재검증 대기)
+
+- 최초 PR #32 CI run `38868848174`: `npm ci`, Prisma 생성, `tsc --noEmit` **PASS**; **ESLint 실패**(`src/viewers/three-dxf-viewer/adapter.ts:165:11`, `prefer-const`). Unit/Integration, Build 및 E2E는 이전 단계 실패로 **미실행**, 별도의 Docker build/migration/runtime smoke Job은 **PASS**.
+- 보완: timeout handle `let timer`→`const timer`. Codex P2 리뷰 3건 처리 대상: (1) 선택 중 Escape가 Fullscreen 종료를 막지 않도록 이벤트 전달, (2) 새 Worker 전에 기존 preview/확정 데이터 동기 무효화, (3) 오목 Polygon 경계를 가로지르는 내부 꼭짓점의 Hole 오판 방지를 위한 선분 교차 검사.
+- 테스트 추가: 오목 경계를 넘는 삼각형의 Union Unit; 선택 해제 시 확정 비활성화 및 CSS Fullscreen fallback Escape E2E. **새 CI 실행 전 해당 테스트 결과는 미확정.** 운영 수용·독립 QA도 미완료.
+
+
+## U-ISSUE31-DEV-20261016 — 구현 기록 (자동 시험 전)
+
+- 소스 `feat/issue-31-outline-selection`, 개발 버전 0.27.0. DXF WCS source index/Handle, 기본 INSERT affine, SelectionController, Web Worker, convex/precise union, 렌더와 분리된 Overlay, 임시 확정·JSON 내보내기 및 합성 Unit/E2E 시험 코드를 작성했다.
+- **검증 상태: PENDING.** 이 기록 작성 시 개발자 로컬 TypeScript/ESLint/Unit/Browser 테스트, PR CI, 독립 QA, 실제 설비 DXF 판정은 수행하지 않았음. PR CI 실행 결과와 코드 오류 수정 전에는 수용/운영 배포 PASS를 주장하지 않는다.
+- P4 인증/인가·server persistence/CRUD 및 P5 대형 도면 성능/정밀 매핑 검증은 미구현. Source와 DB 원본 쓰기 계약에 변경 없음. [Issue31](Issue31.md).
 
 
 ## U-ISSUE28-PR29-CI39-FAIL-20261016 — 추가한 Unit test matcher 오류 보완 (신규 CI 재검증 대기)

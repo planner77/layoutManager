@@ -1,5 +1,9 @@
 import type { CadFocusBounds, CadTextIndex } from './text-index';
 import type { ViewerFormat } from './selection';
+import type {OutlineEntity,OutlineKind} from './outline-geometry';
+import type {OutlineResult} from './outline-compute';
+export type OutlineInfo = {entityCount:number;unitCode:number|null;warnings:string[]};
+export type SavedOutline = {id:string;createdAt:string;result:OutlineResult};
 import { ViewerSource } from './source';
 import {heapBytes,observeFrame,type ViewerMetric} from './metrics';
 export interface CadViewerAdapter {
@@ -7,10 +11,18 @@ export interface CadViewerAdapter {
   fitToView(): void;
   zoomIn(): void;
   zoomOut(): void;
-  /** World DXF coordinates; adapters translate to their own camera origin. */
-  focusBounds?(bounds: CadFocusBounds): void;
   getLayers?(): string[];
   showLayer?(name: string, visible: boolean): void;
+  focusBounds?(bounds: CadFocusBounds): void;
+  getOutlineInfo?(): OutlineInfo | null;
+  setSelectionMode?(mode:'pan'|'select'): void;
+  getOutlineSelection?(): OutlineEntity[];
+  clearOutlineSelection?(): void;
+  previewOutline?(kind: OutlineKind): Promise<OutlineResult>;
+  cancelOutlinePreview?(): void;
+  confirmOutline?(): SavedOutline;
+  getSavedOutlines?(): SavedOutline[];
+  clearSavedOutlines?(): void;
   dispose(): void;
 }
 export type ViewerFactory = () => Promise<CadViewerAdapter>;
@@ -121,5 +133,17 @@ export class ViewerManager {
   zoomOut() { this.adapter?.zoomOut(); }
   getLayers() { return this.adapter?.getLayers?.() ?? []; }
   showLayer(name:string,visible:boolean) { this.adapter?.showLayer?.(name,visible); }
+  getOutlineInfo() { return this.adapter?.getOutlineInfo?.() ?? null; }
+  setSelectionMode(mode:'pan'|'select') { this.adapter?.setSelectionMode?.(mode); }
+  getOutlineSelection() { return this.adapter?.getOutlineSelection?.() ?? []; }
+  clearOutlineSelection() { this.adapter?.clearOutlineSelection?.(); }
+  previewOutline(kind:OutlineKind) {
+    if(!this.adapter?.previewOutline)throw new Error('이 Viewer는 객체 외곽선을 지원하지 않습니다.');
+    return this.adapter.previewOutline(kind);
+  }
+  cancelOutlinePreview() { this.adapter?.cancelOutlinePreview?.(); }
+  confirmOutline() { if(!this.adapter?.confirmOutline)throw new Error('미리보기를 먼저 생성해야 합니다.'); return this.adapter.confirmOutline(); }
+  getSavedOutlines() { return this.adapter?.getSavedOutlines?.() ?? []; }
+  clearSavedOutlines() { this.adapter?.clearSavedOutlines?.(); }
   dispose() { this.generation++; this.cancelIndex?.(); this.cancelIndex=undefined; this.pendingIndex=undefined; this.activeUrl=undefined; if(this.ownsSource)this.source.dispose(); this.adapter?.dispose(); this.adapter = undefined; }
 }

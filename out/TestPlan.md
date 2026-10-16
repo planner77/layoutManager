@@ -1,5 +1,13 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+### Issue #26 — main(#31) 통합과 캐시 인덱스 로딩 종료 회귀
+
+- TC-TEXT-E2E-001: dxf-viewer→three-dxf-viewer 및 역방향 전환 시 동일 메모리 CAD 원본/인덱스 재사용, "검색용 텍스트를 분석 중" 상태가 종료되고 "검색 결과 3개"가 표시되며 World focus가 가능해야 한다. 기존 #54의 두 렌더러 공통 실패를 재검증한다.
+- TC-OUT/Issue31 기존 객체 선택·외곽선 E2E는 merge 이후에도 유지하며, SelectionController와 CadTextSearch가 공통 Viewer shell에서 서로 간섭하지 않아야 한다.
+- 기존 main version 0.27.0에 DXF 검색 기능을 추가하므로 병합 후보 version 0.28.0. 전체 lint, unit, build, E2E, legacy migration과 Docker PR CI 결과는 새 run 이후 판정한다.
+
+
+
 ### Issue #26 / CI #52 — Fixture source and presence regression gate
 
 - TC-TEXT-FIXTURE-001 (Unit): actual DXF fixture shared by Browser E2E must contain exactly 3 parsed TEXT hits and 1 parsed MTEXT hit. Its MTEXT has 41=240, 71=1, 72=1 and rendered/searchable string "검사 구역 45"; verify three copies of "abc 123" separately.
@@ -50,6 +58,21 @@
 | TC-TEXT-DWG | 실제 DWG TEXT/MTEXT 추출→렌더링→focus 기술 검증 | 독립 DWG 실험 | 미실행/비지원 |
 
 검증 기준: 실제 camera 중심 이동/줌, 다른 Version 유실·worker 누수 없음, 검색 결과가 이전 Version 좌표를 참조하지 않음. 외부 실도면 미제공으로 합성 fixture와 운영 인수 기준을 구분한다. 테스트 실행 전 PASS를 기입하지 않는다.
+
+
+## Issue #31 — 검증 계획 (0.27.0 PR CI 재검증 전)
+
+| Case | 증거 계획 | 현재 상태 |
+| --- | --- | --- |
+| TC-OUT-ID | 합성 DXF Unique/Duplicate Handle, Version/SHA, 회전·스케일 INSERT WCS | Unit 코드 작성·미실행 |
+| TC-OUT-GEO1 | Monotone Hull 극점/공선/원호·OCS 실패 | Unit 코드 작성·미실행 |
+| TC-OUT-GEO2 | 오목 L, 중첩 Union, MultiPolygon, hole, 연결 LINE, 열린/자기교차, 오목 경계와 교차하는 도형 | Unit 확장·미실행 |
+| TC-OUT-E2E-001 | DXF Viewer 클릭/영역, 볼록·정밀 Preview/JSON, fullscreen/reload, preview 무효화·CSS fallback Esc | E2E 확장·미실행 |
+| AC-SEL-002/REG-001 | 기존 전체 DXF/DWG/레이어/Fullscreen/Version E2E 무회귀 | PR CI 대기 |
+| AC-ID-001/AC-PERF-001 | 실제 설비 DXF Object3D↔Entity mapping 및 1k/10k/100k 수행시간·정확도 | P0/P5 BLOCKED(샘플·실측 필요) |
+| AC-DATA-002 | 쓰기 정책/무권한/동시 충돌 검증 | P4 BLOCKED(Owner 권한 정책 결정 전) |
+
+실행하지 않은 항목을 PASS로 기록하지 않는다. [Issue31](Issue31.md) 상세 추적표 참고.
 
 
 ## Issue #28 — 이미지 경량화 검증 항목 (0.26.0)
