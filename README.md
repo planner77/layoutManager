@@ -1,5 +1,10 @@
 # CAD Web Viewer P.O.C.
 
+## DXF 복수 객체 선택·외곽선 실험 기능 (#31, 0.27.0 브랜치/CI 전)
+
+DXF 도면을 `three-dxf-viewer`로 열고 도구의 **선택 모드**로 전환하면 클릭·Ctrl/⌘+클릭·양방향 영역 선택 후 **볼록/정밀 외곽선**을 각각 미리보기할 수 있습니다. 임시 확정 결과는 JSON으로 내보낼 수 있으나 **서버 저장·재진입 복원은 지원하지 않습니다**. 지원 Entity·오차·WCS/Handle 규칙과 미지원 BLOCK/OCS/HATCH·실도면 검증 상태는 [Issue31](out/Issue31.md) 참조. 기존 0.26.0 운영 배포 설명은 아래에 보존하며 0.27.0 GHCR 게시/운영 수용을 의미하지 않습니다.
+
+
 ## Docker 0.26.0 빠른 배포 안내 (#28)
 
 - 신규/로컬 설치: `bash src/scripts/compose.sh .env build` 후 `bash src/scripts/compose.sh .env up -d`. 기존의 `docker compose --env-file .env -f src/docker-compose.yml ...`도 **태그가 명시된 이미지**에서는 사용할 수 있다. Helper는 기존 `.env`를 `source`하지 않고 이미지 참조 키만 읽는다.
