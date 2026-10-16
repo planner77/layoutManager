@@ -1,5 +1,13 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+### CI #46 대응 — TC-TEXT-001과 011
+
+- TC-TEXT-001: 실제 MTEXT 그룹 코드 fixture에 fraction 앞 명시적인 ASCII 공백이 있으며 표시 문자열 "생산 ABC 동 12 1/2가"와 정확히 일치하는지 확인한다.
+- TC-TEXT-011: group 3 + 1 연속 텍스트 "AB"+"CD"는 "ABCD", "AB "+"CD"는 "AB CD"가 되어야 한다. 데이터에 없는 공백을 검색 문자열에 조작해 넣지 않는다.
+- 신규 PR CI에서 Unit/Integration을 통과하고 나서 Build/Browser E2E를 확인한다. 이전 CI #46의 Build/E2E는 미실행으로 기록한다.
+
+
+
 ### Issue #26 — CI #42 보완 회귀
 
 - TC-TEXT-010: DXF Unicode escape \U+00B0C는 °C, MTEXT/검색 키 동일 처리. Reviewer의 4자리 고정 escape 계약을 unit/dxf-text-index.test.ts에서 검증한다.
