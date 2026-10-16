@@ -1,5 +1,21 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #31 v0.28.2 — Production Worker / 실도면 후속 계획 (PR CI 전)
+
+| TC | 시험 계약 | 신규 실행 결과 |
+| --- | --- | --- |
+| TC-OUT-EXPORT-001 | `polygon-clipping` default 객체의 실제 `union` 함수 호출, ESM 진입점 호환 | Unit 작성·미확인 |
+| TC-OUT-EXPORT-002 | PRECISE 겹친 정사각형 면적 80 WCS² | Unit 작성·미확인 |
+| TC-OUT-EXPORT-003 | ANSI 포함 Webpack import/export 오류가 빌드 exit 0이어도 fatal 판정 | Unit/Build 게이트 작성·미확인 |
+| TC-OUT-E2E-001 확장 | Production Worker PRECISE 확정→JSON 파일의 SHA/Version/Handle/Polygon Ring/10,000 WCS² 실제 확인 | E2E 작성·미확인 |
+| TC-OUT-PERF-002 | CI `npm run test:outline-benchmark -- --quick`에서 synthetic 1k 파서·인덱스·계산 | CI Step 작성·미확인 |
+| TC-OUT-REAL-003 | 내부 승인된 실DXF 3종 Source-only `npm run audit:outline -- --file ...`: SHA/Entity 안정성/OCS·단위/CPU·메모리; 원본 불변 | 현장 원본 미제공·미실행 |
+| TC-OUT-REAL-004 | 실제 1k/10k/100k 도면의 화면 1:N Renderer/Worker/GPU·클릭 p50/p95와 CAD 수치 기준값 교차 확인 | 미실행 |
+| TC-OUT-P4-002 | Owner 권한 정책 승인 후 OIDC 또는 로컬 인증/RBAC/Version scope/서버 재계산/CRUD/revision 409/감사 | 정책 미승인, 구현 보류 |
+
+미실행 TC를 PASS로 기록하지 않는다. 신규 PR CI가 성공하더라도 실설비 도면 수용·P4 완료와 구분한다.
+
+
 ## Issue #31 잔여 검증 — 0.28.1 (PR CI 전)
 
 | TC | 방법/Acceptance | 상태 |
