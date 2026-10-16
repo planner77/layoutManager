@@ -1,5 +1,14 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-029 — 도면 내부 텍스트 검색을 브라우저 원본 기반/좌표 focus로 분리
+
+- Date / Status: 2026-10-16 / Issue #26 기능 구현, PR CI·독립 QA 검증 대기.
+- Context: 기존 Viewer는 렌더링만 담당하며 TEXT/MTEXT 위치 검색과 좌표 중심 이동 계약이 없다. DWG는 LINE 중심이라 실제 글자 추출/표시가 성립하지 않는다.
+- Decision: DXF 텍스트는 브라우저 내 별도 순수 parser+Worker로 필요시 추출하고, 메모리 원본/색인을 Version별 공유한다. ViewerManager.focusBounds를 추가하여 dxf-viewer GetOrigin 보정 또는 Three camera target으로 변환한다. 검색 UI는 Viewer shell 내부 배치. 숨김 레이어는 검색 결과 제외. 불확실한 좌표/OCS/속성은 잘못된 Pan을 수행하는 대신 제외 사유를 표시한다.
+- Trade-off: 추가 파서 로직 유지보수와 추정 focus 영역(정확한 glyph bbox 아님), 20k 제한이 따른다. 직접 upstream 패키지 수정·서버 원본 인덱싱·DWG 지원 추정·외부 CAD 전송보다 격리와 취소/검증 가능성을 우선한다. 실제 도면/글꼴/삽입 변환 적합성은 QA 증거로 별도 확인한다.
+- Scope: DXF TEXT/MTEXT와 기본 2D INSERT, 기타 형식은 비지원. #25 기본 fullscreen 진입을 변경하지 않는다. 결정 상세/테스트 추적은 Issue26.md.
+
+
 ## ADR-026 — Docker image pair 정규화 및 GHCR 게시 단계 보호
 
 - Date / Status: 2026-10-16 / PR #29 (#28) 리뷰 후 설계 보강, 최종 PR CI·실운영 릴리스 검증 대기.
