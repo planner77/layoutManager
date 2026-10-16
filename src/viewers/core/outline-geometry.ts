@@ -129,7 +129,7 @@ function buildIndex(pairs: Pair[]) {
   }
   for(const raw of all) {
     const h=pairValue(raw,5);
-    if (h) counts.set(h,(counts.get(h)??0)+1);
+    if (h) counts.set(h.toUpperCase(),(counts.get(h.toUpperCase())??0)+1);
     if(raw.type==='SECTION'){section=pairValue(raw,2)?.toUpperCase()??'';polyline=null;continue;}
     if(raw.type==='ENDSEC'){section='';block=null;polyline=null;continue;}
     if(section==='BLOCKS' && raw.type==='BLOCK') {
@@ -157,7 +157,7 @@ function bounds(paths: OutlinePath[]): [number,number,number,number] {
 }
 function handleIsStable(raw: Raw, counts: Map<string,number>) {
   const handle=pairValue(raw,5);
-  return !!handle && /^[0-9a-f]+$/i.test(handle) && counts.get(handle)===1;
+  return !!handle && /^[0-9a-f]+$/i.test(handle) && counts.get(handle.toUpperCase())===1;
 }
 export function parseDxfOutlineIndex(text:string,versionId:string,sourceSha256:string,tolerance=0.02):DxfOutlineIndex {
   if(!text.includes('SECTION') || !text.includes('EOF'))throw new Error('올바른 ASCII DXF가 아닙니다.');
@@ -192,22 +192,26 @@ export function parseDxfOutlineIndex(text:string,versionId:string,sourceSha256:s
     return paths;
   }
   for(const raw of source) {
+    if(entities.length>=OUTLINE_VERTEX_LIMIT)throw new Error('분석 가능한 Entity 개수 제한을 초과했습니다.');
     try {
       const paths=transformed(raw,identity,[],0);
       if(!paths.length || paths.some(p=>p.points.some(([x,y])=>!Number.isFinite(x)||!Number.isFinite(y))))throw new Error('유효한 2D 경로가 없습니다.');
       const handle=pairValue(raw,5)??null,stable=goodHash&&handleIsStable(raw,counts);
-      const id=stable?versionId+':'+sourceSha256+':'+handle:versionId+':TEMP:'+raw.index;
+      const id=stable?versionId+':'+sourceSha256.toLowerCase()+':'+handle!.toUpperCase():versionId+':TEMP:'+raw.index;
       const layer=pairValue(raw,8)??'0';
       entities.push({id,handle,entityType:raw.type,layer,instancePath:[],stable,paths,bounds:bounds(paths)});
       if(!stable)warn(raw,'Handle 또는 SHA가 안정적이지 않아 JSON 참조를 영속화할 수 없습니다.');
-      if(entities.length>OUTLINE_VERTEX_LIMIT)throw new Error('분석 가능한 Entity 개수 제한을 초과했습니다.');
+
     } catch(error) {warn(raw,error instanceof Error?error.message:String(error));}
   }
   return {versionId,sourceSha256,unitCode,entities,warnings};
 }
 export function geometryBounds(entities:OutlineEntity[]):[number,number,number,number]|null {
   if(!entities.length)return null;
-  return [Math.min(...entities.map(e=>e.bounds[0])),Math.min(...entities.map(e=>e.bounds[1])),Math.max(...entities.map(e=>e.bounds[2])),Math.max(...entities.map(e=>e.bounds[3]))];
+  return entities.reduce<[number,number,number,number]>((box,e)=>[
+    Math.min(box[0],e.bounds[0]),Math.min(box[1],e.bounds[1]),
+    Math.max(box[2],e.bounds[2]),Math.max(box[3],e.bounds[3]),
+  ],[Infinity,Infinity,-Infinity,-Infinity]);
 }
 export function convexHull(points:XY[]):XY[] {
   const clean=[...new Map(points.filter(p=>Number.isFinite(p[0])&&Number.isFinite(p[1])).map(p=>[p[0]+','+p[1],p])).values()]
