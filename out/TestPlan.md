@@ -2,6 +2,12 @@
 
 ## Issue #25 — v0.29.0 자동 CSS immersive 진입 (PR CI 전)
 
+### PR #36 E2E 연계 변경 (Run 38974687861 기준)
+- `TC-NAME-002/003`: toolbar 원본명 중복 없이 정확 표시, `viewer-toolbar` 안의 고유 원본명 locator.
+- `TC-DESC-005`: `aria-label="도면 설명"` + literal multiline description을 Viewer가 처음 열릴 때 및 reload 후에 노출.
+- `TC-FONT-002` (2 renderers): 기본 immersive 진입 확인, 명시적으로 normal 모드 전환한 다음 확대/Fit·한글 TEXT Canvas 검증.
+- 구 Run에서는 40 PASS / 4 FAIL이며 새 HEAD는 검증 전이다.
+
 | TC | 절차 및 완료 기준 | 실행 상태 |
 | --- | --- | --- |
 | TC-ISSUE25-001 DXF 2종 | 목록 → 공통 Version Viewer 자동 immersive, URL Renderer 선택, 원본·링크·재시도·툴바, Desktop/mobile 360×700/Canvas backing buffer, 신규 Browser Context/직접 URL/새로고침, native API reject/CSS 유지, ESC 일반 모드 복귀/재진입, 목록 복귀/뒤로 가기, 헤더 inert·스크롤 복구 | E2E 작성, NOT RUN |

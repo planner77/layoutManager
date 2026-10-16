@@ -73,7 +73,7 @@ test("TC-NAME-002/003: default and custom names lead list, viewer and delete con
   await expect(
     page.getByRole("heading", { name: "<b>사용자 설비 배치도</b>" }),
   ).toBeVisible();
-  await expect(page.getByText("원본: name-source-two.dxf")).toBeVisible();
+  await expect(page.getByTestId("viewer-toolbar").getByText("원본: name-source-two.dxf", { exact: true })).toBeVisible();
   await page.goto(`/cad/locations/${custom.locationId}`);
   const locationRow = page.locator(`#version-${custom.id}`);
   await locationRow.getByRole("button", { name: "삭제", exact: true }).click();

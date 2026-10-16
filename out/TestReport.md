@@ -1,5 +1,15 @@
 # 실제 검증 결과 및 Viewer 평가
 
+
+## PR #36 두 번째 CI 실패 대응 — Chromium E2E 계약 복구 (2026-10-17)
+
+- 대상: [PR CI 38974687861](https://github.com/planner77/layoutManager/actions/runs/38974687861) / Head `7fcddb0`. `npm ci`, Prisma, TypeScript, ESLint, Unit/Integration, synthetic benchmark, Production build, Chromium 설치 **PASS**. 별도 Docker image size·migration·runtime smoke **PASS**. 전체 Chromium E2E **40 PASS / 4 FAIL**, 후속 Legacy Migration E2E는 **SKIPPED**.
+- `TC-NAME-002/003`: 파일명이 toolbar 원본 표시와 접이식 정보에 이중으로 나타나 `getByText` strict locator 충돌. Viewer toolbar에만 원본 이름을 남기고 접이식 등록정보에서는 반복을 제거, 테스트는 `viewer-toolbar` 및 exact text로 범위 한정.
+- `TC-DESC-005`: 이전 `aria-label="도면 설명"` DOM 계약이 정보 패널 이동 시 사라짐. shell 상단에 접근 가능한 `aria-label="도면 설명"` 내용(원본 줄바꿈 유지, 고정 최대 높이 스크롤)을 재제공하고 E2E에서 reload 전/후 존재뿐 아니라 visibility를 확인.
+- `TC-FONT-002` (DXF 두 Renderer): #25 기본 immersive 시작에서 버튼의 accessible name은 `전체 화면 확대`인데 구 검사는 `확대`를 기대. **기본 fullscreen 진입을 확인한 뒤 명시적으로 일반 Viewer에 복귀하여** 기존 normal zoom/fit contract를 그대로 검사하도록 테스트 수정; 기능/버튼을 임의 변경하지 않음.
+- 보완 후 새 PR CI는 **미검증**, 결과를 PASS로 기록하지 않는다. 기존 #10/#17/#26/#31 UI/Adapter/데이터/API 및 작업 버전 `0.29.0` 유지.
+
+
 ## U-ISSUE25-PR36-REPAIR-20261017 — ESLint 오류·P2 Native Spinner (새 CI 전)
 
 - 최초 PR #36 / run `38963238965`: dependency install, Prisma client, TypeScript 검사 **PASS**. ESLint `viewer.tsx:314:56,67 react/no-unescaped-entities`의 작은따옴표 때문에 **FAIL**. Unit/Integration·benchmark·Production build·Chromium E2E·Legacy Migration E2E **SKIPPED**, 별도 Docker 이미지/Migration/Runtime smoke **PASS**.

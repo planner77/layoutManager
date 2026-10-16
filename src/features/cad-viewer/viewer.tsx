@@ -288,6 +288,7 @@ export function CadViewer({
           <Link href={`/cad/locations/${locationId}`} className="shrink-0 text-sm text-teal-200 underline">← 버전 목록</Link>
         </div>
         <p className="truncate text-xs text-slate-200" title={originalFilename}>원본: {originalFilename}</p>
+        {description && <p aria-label="도면 설명" className="mt-1 max-h-12 overflow-y-auto whitespace-pre-wrap break-all text-xs text-slate-200">{description}</p>}
         <div role="toolbar" aria-label="도면 조작" className="mt-2 flex min-w-0 items-center gap-2 overflow-x-auto pb-1">
           <span className="shrink-0 rounded bg-teal-50 px-2 py-1 text-xs text-teal-800">{renderer}</span>
           {format === 'DXF' && (['dxf-viewer', 'three-dxf-viewer'] as const).map(value =>
@@ -309,8 +310,7 @@ export function CadViewer({
         <details className="text-xs text-slate-200">
           <summary className="cursor-pointer">도면 정보 · {locationDescription}</summary>
           <div className="max-h-24 overflow-y-auto py-2">
-            <p>등록일: {registeredAt} · 크기: {(fileSize / 1024 / 1024).toFixed(2)} MB · 원본: {originalFilename}</p>
-            {description && <p className="mt-1 whitespace-pre-wrap break-all">설명: {description}</p>}
+            <p>등록일: {registeredAt} · 크기: {(fileSize / 1024 / 1024).toFixed(2)} MB</p>
             <p>기본 모드는 브라우저 전체 화면 API가 아닌 뷰포트 전체 사용입니다. &apos;브라우저 전체 화면&apos;은 직접 클릭해야 합니다.</p>
           </div>
         </details>

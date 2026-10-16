@@ -2,6 +2,8 @@
 
 ## 0.29.0 — 2026-10-17 / Issue #25 도면 Viewer 기본 immersive 진입 (PR CI 전)
 
+- PR #36 E2E 회귀 보완: Run `38974687861`에서 40 PASS/4 FAIL (도면 원본명 중복, 설명 a11y label 누락, FONT 2 Renderer 일반 모드 버튼 기대). 원본명 중복 제거, 설명의 표시 및 접근성 계약 복원, FONT E2E의 fullscreen→normal 전환 절차 추가. TypeScript/ESLint/Unit/Build/Docker 성공은 이전 HEAD에 한정하고 수정된 HEAD의 검증은 새 PR CI 대기.
+
 - PR #36 보완: 최초 CI `38963238965`의 ESLint `react/no-unescaped-entities` 2건을 JSX escape로 해결. P2 native fullscreen top-layer에서 global loading spinner가 숨겨지는 구조적 문제를 같은 Viewer shell 자손 spinner로 방지. 지연 reload/native 상태 합성 E2E (`TC-ISSUE25-002`) 추가. **보완 후 PR CI 검증 전**.
 
 - Added: 목록·Location·공유/직접 Version URL·새 탭·재로딩의 CSS fixed `100dvh` viewport 전체 화면 기본 진입; 모든 Viewer DXF 2종/DWG 1종 공통 적용.
