@@ -14,7 +14,7 @@ export type DxfOutlineIndex = {
   entities: OutlineEntity[]; warnings: string[];
 };
 type Pair = { code: number; value: string };
-type Raw = { type: string; pairs: Pair[]; index: number; vertices?: Raw[] };
+type Raw = { type: string; pairs: Pair[]; index: number; vertices?: Raw[]; hasAttachedAttributes?:boolean };
 type Block = { base: XY; entities: Raw[] };
 type Affine = { a: number; b: number; c: number; d: number; x: number; y: number };
 const identity: Affine = {a: 1, b: 0, c: 0, d: 1, x: 0, y: 0};
@@ -125,7 +125,7 @@ function createPaths(raw: Raw, tolerance: number): OutlinePath[] {
 function buildIndex(pairs: Pair[]) {
   const all=records(pairs), blocks=new Map<string,Block>(), entities:Raw[]=[];
   const counts=new Map<string,number>();
-  let section='', block:Block|null=null, polyline:Raw|null=null, unitCode:number|null=null;
+  let section='', block:Block|null=null, polyline:Raw|null=null, lastInsert:Raw|null=null, unitCode:number|null=null;
   for(let k=0;k<pairs.length;k++) {
     if(pairs[k].code===9 && pairs[k].value==='$INSUNITS') {
       const v=pairs[k+1];if(v?.code===70 && Number.isInteger(Number(v.value)))unitCode=Number(v.value);
@@ -134,19 +134,31 @@ function buildIndex(pairs: Pair[]) {
   for(const raw of all) {
     const h=pairValue(raw,5);
     if (h) counts.set(h.toUpperCase(),(counts.get(h.toUpperCase())??0)+1);
-    if(raw.type==='SECTION'){section=pairValue(raw,2)?.toUpperCase()??'';polyline=null;continue;}
-    if(raw.type==='ENDSEC'){section='';block=null;polyline=null;continue;}
+    if(raw.type==='SECTION'){section=pairValue(raw,2)?.toUpperCase()??'';polyline=null;lastInsert=null;continue;}
+    if(raw.type==='ENDSEC'){section='';block=null;polyline=null;lastInsert=null;continue;}
     if(section==='BLOCKS' && raw.type==='BLOCK') {
       const name=pairValue(raw,2);
       if(name){block={base:point(raw)??[0,0],entities:[]};blocks.set(name,block);}else block=null;
       continue;
     }
-    if(raw.type==='ENDBLK'){block=null;polyline=null;continue;}
+    if(raw.type==='ENDBLK'){block=null;polyline=null;lastInsert=null;continue;}
     if(section!=='ENTITIES' && section!=='BLOCKS')continue;
     const destination=section==='BLOCKS'?block?.entities:entities;
     if(!destination)continue;
     if(raw.type==='VERTEX' && polyline){polyline.vertices?.push(raw);continue;}
-    if(raw.type==='SEQEND'){polyline=null;continue;}
+    if(raw.type==='ATTRIB'&&lastInsert){
+      // These attributes belong to the preceding INSERT, not to the
+      // top-level canvas; Geometry extraction does not support them.
+      lastInsert.hasAttachedAttributes=true;continue;
+    }
+    if(raw.type==='SEQEND'){polyline=null;lastInsert=null;continue;}
+    // A missing group 66 is common in imperfect drawings: still flag an
+    // immediately attached ATTRIB sequence when observed above.
+    if(raw.type!=='ATTRIB')lastInsert=null;
+    if(raw.type==='INSERT'){
+      raw.hasAttachedAttributes=numberValue(raw,66,0)!==0;
+      lastInsert=raw;
+    }
     if(raw.type==='POLYLINE'){raw.vertices=[];polyline=raw;} else polyline=null;
     destination.push(raw);
   }
@@ -176,6 +188,7 @@ export function parseDxfOutlineIndex(text:string,versionId:string,sourceSha256:s
       return createPaths(raw,tolerance).map(path=>({closed:path.closed,points:path.points.map(p=>apply(t,p))}));
     }
     if(!extrusionSupported(raw))throw new Error('비표준 OCS INSERT는 지원하지 않습니다.');
+    if(raw.hasAttachedAttributes)throw new Error('INSERT에 연결된 ATTRIB/SEQEND는 완전한 외곽선 대상이 아니므로 제외합니다.');
     const name=pairValue(raw,2),block=name&&blocks.get(name);
     if(!name || !block)throw new Error('INSERT 블록 정의를 찾을 수 없습니다.');
     if(stack.includes(name))throw new Error('재귀 순환 BLOCK을 지원하지 않습니다.');
