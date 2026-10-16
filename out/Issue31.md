@@ -1,5 +1,13 @@
 # Issue #31 — DXF 복수 선택과 볼록·정밀 외곽선 (0.27.0)
 
+### PR #35 P1/P2 리뷰 보완 (2026-10-16)
+
+- 기존 부분 BLOCK 감지에 추가하여 INSERT group code 66 또는 실제 이어진 ATTRIB/SEQEND를 루트에 귀속하며, 지원하지 않는 ATTRIB가 존재하면 루트 INSERT를 stable로 인정하지 않는다. group 66이 누락된 입력도 연속된 속성이 있으면 fail-closed한다.
+- P4 canonical 재계산 tolerance는 **server-owned 0.02 Drawing Unit**. Client JSON에 더 큰 값이 있으면 409 거부하고 서버가 그 값을 Geometry 계산에 사용하지 않는다.
+- Private 실제 DXF Browser 5회 반복 검사에서 매회 최소 선택 객체 1개(또는 `CAD_OUTLINE_ACCEPTANCE_MIN_SELECTED`의 운영자 기준)가 없으면 테스트 **FAIL**. 도면 렌더 표시 성공만으로 수용하지 않는다.
+- 수정 후 PR CI 통과/실도면 운영 수용/IdP 승인 등은 여전히 미확인.
+
+
 ## v0.28.3 잔여 수용 개발 및 미충족 조건 (2026-10-16, 신규 CI 전)
 
 ### P0 데이터 충실도 fail-closed
