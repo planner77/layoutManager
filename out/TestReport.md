@@ -1,5 +1,14 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE31-ESM-20261016 — v0.28.1 경고 사실 확인 / v0.28.2 보완 코드 (PR CI 전)
+
+- 이전 [Main CI #38894507390](https://github.com/planner77/layoutManager/actions/runs/38894507390) Docker Build 로그에서 `Attempted import error: 'union' is not exported from 'polygon-clipping'` 확인. Next Build warning 상태였지만 workflow 및 GHCR `v0.28.1` 게시까지 성공했다. 이 결과를 정밀 외곽선 Worker 정상 작동의 증거로 취급하지 않는다.
+- upstream v0.15.7: ESM `export { index as default }`; CJS `module.exports=index`; d.ts에서는 named `union`을 기술. `outline-compute.ts`를 ESM default 기반 `polygonClipping.union`으로 수정.
+- 보완 시험 코드: 직접 default export 및 Union 면적 Unit, warning diagnostic Unit, Next Build stdout/stderr 검사·exit 1 guard, Production E2E 실제 PRECISE Worker JSON 다운로드에서 면적·SHA·닫힌 Ring 확인, CI quick 1k synthetic benchmark.
+- P0/P5: 파일 업로드 없이 사내 현장 UTF-8 ASCII DXF의 구조·안정 Handle·parse·spatial CPU 및 메모리만 기록하는 read-only `audit:outline` 명령 제공. 실DXF 파일·Browser/GPU 수치 및 P4 권한 정책은 아직 확보되지 않았다.
+- **본 v0.28.2 변경에 대한 PR CI·Unit·Browser 및 현장 실측 결과는 문서 작성 시 미확인**. 성공 판정 이전에 GHCR 게시·운영 배포·Issue 완료를 주장하지 않는다.
+
+
 ## U-ISSUE31-PR33-REVIEW-P2-20261016 — Render layer guard 보완 (재CI 대기)
 
 - PR #33 Codex 리뷰 P2: 원본 Handle이 같아도 Render Object의 `layer`가 누락되거나 1:N 조각 중 일부 Type/Layer가 불일치하면 기존 `(!o.layer || o.layer===sourceLayer)` 조건이 잘못 수용할 수 있음.
