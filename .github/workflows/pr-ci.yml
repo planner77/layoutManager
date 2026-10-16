@@ -50,6 +50,12 @@ jobs:
       - name: Unit 및 Integration 테스트
         run: npm test
 
+      # P5 deterministic, low-cost 1k smoke; 10k/100k and real DXF stay opt-in.
+      - name: DXF outline benchmark smoke (1k synthetic)
+        run: npm run test:outline-benchmark -- --quick
+
+      # run.mjs treats unresolved Webpack import/export warnings as hard failures.
+      # This must run BEFORE browser tests and GHCR promotion.
       - name: Production 빌드
         run: npm run build
 
