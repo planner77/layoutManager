@@ -53,6 +53,20 @@ describe('Issue #31 WCS EntityRef and geometry AC',()=>{
    expect(index.entities[0].paths).toHaveLength(1);
    expect(index.warnings.join(' ')).toMatch(/BLOCK/);
  });
+ it('TC-OUT-ID: refuses INSERT with attached ATTRIB/SEQEND despite valid block LINE',()=>{
+   const blocks=['0','BLOCK','2','WITH-ATTR','10','0','20','0',
+     line('5A',0,0,10,10),'0','ENDBLK'].join('\n');
+   const insert=['0','INSERT','5','5B','8','0','2','WITH-ATTR','10','0','20','0','66','1',
+     '0','ATTRIB','5','5C','8','0','1','unsupported',
+     '0','SEQEND','5','5D'].join('\n');
+   const index=parseDxfOutlineIndex(dxf(insert,blocks),id,sha);
+   expect(index.entities).toHaveLength(0);
+   expect(index.warnings.join(' ')).toMatch(/ATTRIB/);
+   // Even if group 66 was omitted, attached ATTRIB must not become
+   // a detached independent Entity with a stable source INSERT.
+   const absentFlag=parseDxfOutlineIndex(dxf(insert.replace('66\n1\n',''),blocks),id,sha);
+   expect(absentFlag.entities).toHaveLength(0);
+ });
  it('TC-OUT-GEO1: refuses a too-large circle that exceeds chord tolerance at 512 samples',()=>{
    const large=['0','CIRCLE','5','EF','8','0','10','0','20','0','40','10000000'].join('\n');
    const index=parseDxfOutlineIndex(dxf(large),id,sha);
