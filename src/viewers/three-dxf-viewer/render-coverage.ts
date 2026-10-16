@@ -41,7 +41,8 @@ export function reconcileRenderCoverage(
       Math.min(box[0],o.bounds![0]),Math.min(box[1],o.bounds![1]),
       Math.max(box[2],o.bounds![2]),Math.max(box[3],o.bounds![3]),
     ],[Infinity,Infinity,-Infinity,-Infinity]);
-    if(!shapes.length||!comparable(entity.bounds,merged,entity.entityType)){
+    if(shapes.length!==observed.length||!shapes.length||
+       !comparable(entity.bounds,merged,entity.entityType)){
       boundsMismatch++;continue;
     }
     selectable.push(entity);
