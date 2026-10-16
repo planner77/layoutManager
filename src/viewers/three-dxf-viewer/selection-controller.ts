@@ -1,4 +1,5 @@
 import type {OutlineEntity,XY} from '../core/outline-geometry';
+import {SelectionSpatialIndex} from './selection-spatial-index';
 
 export type SelectionMode='pan'|'select';
 const MIN_DRAG_PX=5,CLICK_PX=7;
@@ -36,6 +37,11 @@ function pathsFor(entity:OutlineEntity) {
 /** DOM controls are owned by the three-dxf-viewer adapter and always disposed with it. */
 export class SelectionController {
  private ids=new Set<string>();
+ private readonly spatial:SelectionSpatialIndex;
+ private readonly idToLayer:Map<string,string>;
+ get indexBuildMs(){return this.spatial.buildMs;}
+ get indexAssignments(){return this.spatial.assignmentCount;}
+ get overflowEntities(){return this.spatial.overflowCount;}
  private mode:SelectionMode='pan';
  private visible=new Set<string>();
  private down?:{pointerId:number;x:number;y:number;mod:boolean};
@@ -51,6 +57,8 @@ export class SelectionController {
    private onChange:(selected:OutlineEntity[])=>void,
    private onPanKey:(pan:boolean)=>void,
  ) {
+   this.spatial=new SelectionSpatialIndex(entities);
+   this.idToLayer=new Map(entities.map(e=>[e.id,e.layer]));
    this.visible=new Set(entities.map(e=>e.layer));
    this.previousPosition=container.style.position;
    this.previousCursor=canvas.style.cursor;
@@ -71,7 +79,9 @@ export class SelectionController {
  setVisibleLayers(layers:Set<string>){
    this.visible=new Set(layers);
    const before=this.ids.size;
-   this.ids=new Set([...this.ids].filter(id=>this.entities.some(e=>e.id===id&&this.visible.has(e.layer))));
+   this.ids=new Set([...this.ids].filter(id=>{
+     const layer=this.idToLayer.get(id);return layer!==undefined&&this.visible.has(layer);
+   }));
    if(before!==this.ids.size)this.emit();
  }
  getSelection(){return this.entities.filter(e=>this.ids.has(e.id));}
@@ -104,13 +114,13 @@ export class SelectionController {
    const [x,y]=this.position(event.clientX,event.clientY);
    const dragging=Math.hypot(x-start.x,y-start.y)>=MIN_DRAG_PX;
    this.cancelDrag();
-   const candidates=this.entities.filter(e=>this.visible.has(e.layer));
    let hits:OutlineEntity[]=[];
    if(dragging){
      const min=this.screenToWorld(Math.min(x,start.x),Math.max(y,start.y));
      const max=this.screenToWorld(Math.max(x,start.x),Math.min(y,start.y));
      const rect:[number,number,number,number]=[Math.min(min[0],max[0]),Math.min(min[1],max[1]),Math.max(min[0],max[0]),Math.max(min[1],max[1])];
      const contained=x>=start.x;
+     const candidates=this.spatial.query(rect).filter(e=>this.visible.has(e.layer));
      hits=candidates.filter(e=>{
        if(contained)return e.paths.every(path=>path.points.every(p=>p[0]>=rect[0]&&p[0]<=rect[2]&&p[1]>=rect[1]&&p[1]<=rect[3]));
        if(e.bounds[2]<rect[0]||e.bounds[0]>rect[2]||e.bounds[3]<rect[1]||e.bounds[1]>rect[3])return false;
@@ -118,6 +128,7 @@ export class SelectionController {
      });
    }else{
      const p=this.screenToWorld(x,y),q=this.screenToWorld(x+CLICK_PX,y),radius=Math.hypot(q[0]-p[0],q[1]-p[1]);
+     const candidates=this.spatial.query([p[0]-radius,p[1]-radius,p[0]+radius,p[1]+radius]).filter(e=>this.visible.has(e.layer));
      const ranked=candidates.map(e=>({e,d:pathsFor(e).reduce((best,[a,b])=>Math.min(best,distanceToSegment(p,a,b)),Infinity)})).sort((a,b)=>a.d-b.d);
      if(ranked[0]&&ranked[0].d<=radius)hits=[ranked[0].e];
    }
