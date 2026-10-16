@@ -1,5 +1,12 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-031 — DXF Outline를 Viewer Adapter와 브라우저 임시 데이터로 격리
+
+- Date/Status: 2026-10-16 / Issue #31 P0~P3 부분 구현, 합성 자동시험·CI·실도면 검증 전.
+- Decision: three-dxf-viewer DXF만 지원, 원본 Scene/Object3D는 수정하지 않고 별도 source WCS index + Worker geometry + 독립 Overlay 사용. Convex 및 실제 Polygon Union은 다른 결과 유형이며 열린 선분을 추정 폐합하지 않는다. polygon-clipping 0.15.7(MIT)을 선택했다.
+- Data: Version/SHA/unique Handle 외 키는 임시로만 사용, 서버 영속 API/권한 부재. 운영 인증 모델 결정과 실제 CAD Viewer 객체 변환 검증 전 P4·P5 수용 금지. 자세한 변환/오차/미지원 요소는 [Issue31](Issue31.md).
+
+
 ## ADR-026 — Docker image pair 정규화 및 GHCR 게시 단계 보호
 
 - Date / Status: 2026-10-16 / PR #29 (#28) 리뷰 후 설계 보강, 최종 PR CI·실운영 릴리스 검증 대기.
