@@ -1,5 +1,14 @@
 # 상세 요구사항
 
+## IMG-01~IMG-05 — Issue #28 (0.26.0)
+
+- IMG-01: 동일 linux/amd64 조건에서 기준선/Phase1/Standalone 운영 이미지의 비압축/압축 프록시/레이어/절감률을 추적한다(30%는 soft target).
+- IMG-02: Next Standalone, Prisma Client/SQLite native, DXF 2종, DWG ESM/WASM, 한국어 TTF/글꼴·license/static 제공을 보존한다.
+- IMG-03: 기존·빈 볼륨 모두 migration→backfill 성공 후 서버를 열며 실패 시 차단한다. 재실행과 UID10001/health를 보장한다.
+- IMG-04: 단일 SQLite와 원본 local/S3 locator, 버전·Current·hash/데이터, 비밀번호/삭제/조회·업로드 계약을 보존한다.
+- IMG-05: credential/DB/CAD 제외, 개발 의존성 제거, app+migrator GHCR image tag/digest의 동일 버전 관리, 백업·롤백 절차를 갖춘다. 상세: `Issue28.md`.
+
+
 기준일: 2026-09-07. 원본: 사용자 제공 「CAD Web Viewer P.O.C. — Coding Agent 통합 지시」 §0–102. 이 문서는 원문을 기능/품질/운영 요구로 재구성한 기준이며 변경은 원본 의도와 대조한다.
 
 ## 목표와 범위

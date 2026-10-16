@@ -1,5 +1,11 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #28 (2026-10-16) 작업 현황
+
+- 기능 브랜치에 0.26.0 Next.js standalone 웹 + 일회성 Prisma/tsx migration image 구성을 작성했다. 이전 0.25.0 기록은 역사 근거이다. 수용 기준/측정/배포 위험은 `out/Issue28.md`를 따른다. **PR CI와 독립 QA 결과 확인 전 PASS나 이미지 절감 수치를 주장하지 않는다.**
+- 운영 업그레이드 전 DB/local CAD/S3의 동일 시점 백업, 기존 app stop, migration 성공 후 app 기동이 필수이다. `out/Operation.md` 참조.
+
+
 DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기술의 실제 적용 가능성을 검증한다. 문서와 테스트 근거를 코드와 함께 유지한다.
 
 ## 현재 단계와 작업 위치
@@ -54,6 +60,7 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 | [Issue10](out/Issue10.md) | GitHub #10 전체 화면 요구사항·설계·CI 근거 | Viewer 전체 화면, ESC/종료, 컨테이너 resize 또는 view state 보존 변경 시 |
 | [Release 0.20.0](out/Release-0.20.0.md) | 0.20.0 병합·태그·GHCR 게시 근거 | 0.20.0 릴리스 확인 및 운영 이미지 식별 시 |
 | [Release 0.21.0](out/Release-0.21.0.md) | 0.21.0 병합·태그·GHCR 게시 근거 | 0.21.0 릴리스 확인 및 운영 이미지 식별 시 |
+| [Issue28](out/Issue28.md) | 운영 이미지 경량화·Migration 분리·측정/롤백 | Dockerfile, Standalone, Compose, GHCR 변경 시 |
 | [Issue24](out/Issue24.md) | 기준정보 계층·이관·층별 Current 요구/설계/AC | 기준정보·계층 등록·제품 조회·legacy 이관 변경 시 |
 | [README](README.md) | 사용자/개발자 프로젝트 안내 | 기능·구조·설정·실행방법 변경 시 |
 

@@ -1,6 +1,13 @@
 # CAD Web Viewer P.O.C.
 
-현재 소스 버전은 0.25.0입니다. 사업부 → 제품 → 사업장/법인 → 동 → 층의 기준정보를 관리하고 활성 ID 계층을 선택해 도면을 등록합니다. 기존 도면은 사업부별 `미분류` 제품으로 이관하며 층 상세에서 전체 이력을 실제 제품 계층으로 재분류할 수 있습니다. 게시·배포 검증 결과는 [TestReport](out/TestReport.md)와 버전별 Release 문서를 기준으로 합니다.
+## Docker 0.26.0 빠른 배포 안내 (#28)
+
+- `docker compose --env-file .env -f src/docker-compose.yml build` → `up -d`: 두 이미지(app/migrate)를 빌드해 migrate가 exit 0인 경우만 웹 서버를 시작한다.
+- GHCR `GHCR_IMAGE=ghcr.io/planner77/layoutmanager:0.26.0`일 때 migrate image는 자동으로 `:0.26.0-migrate`. digest pin을 사용하는 경우 `GHCR_MIGRATION_IMAGE`도 지정한다.
+- **업그레이드는 기존 app stop 후 migration 재실행이 필수이다.** 데이터 백업/pull/중지/migrate exit0/app 시작/rollback 명령은 [Operation](out/Operation.md), 3단계 이미지 측정 및 테스트 상태는 [Issue28](out/Issue28.md)·[TestReport](out/TestReport.md) 참조. 압축·비압축 절감률은 CI 전 미확정이다.
+
+
+현재 제안 소스 버전은 0.26.0입니다. Docker는 Next.js standalone 웹과 별도 일회성 Prisma migration/backfill 이미지로 분리합니다. 0.25.0의 DB 계층 기능은 유지합니다. 사업부 → 제품 → 사업장/법인 → 동 → 층의 기준정보를 관리하고 활성 ID 계층을 선택해 도면을 등록합니다. 기존 도면은 사업부별 `미분류` 제품으로 이관하며 층 상세에서 전체 이력을 실제 제품 계층으로 재분류할 수 있습니다. 게시·배포 검증 결과는 [TestReport](out/TestReport.md)와 버전별 Release 문서를 기준으로 합니다.
 
 공장·설비의 DXF/DWG 도면을 등록·검색·버전 관리하고, 세 오픈소스 기술의 브라우저 렌더링 적용 가능성을 평가하는 프로젝트입니다.
 
@@ -202,7 +209,7 @@ docker compose --env-file .env -f src/docker-compose.yml up -d
 docker compose --env-file .env -f src/docker-compose.yml ps
 ```
 
-컨테이너 시작 시 검토된 DB migration을 적용한 뒤 앱을 실행합니다. 기본 주소는 `http://localhost:3000`이며 다른 장치에서는 `http://<서버 IP>:3000`으로 접속합니다. `.env`의 `CAD_HOST_PORT`로 호스트 포트를 바꿀 수 있습니다. 같은 네트워크/VPN, 서버 방화벽과 수신 포트가 접근을 허용해야 합니다. `0.0.0.0`은 수신 설정이며 브라우저 접속 주소로 사용하지 않습니다.
+Compose의 일회성 migrate 컨테이너가 DB migration·백필을 완료한 경우에만 app 컨테이너를 시작합니다. 기본 주소는 `http://localhost:3000`이며 다른 장치에서는 `http://<서버 IP>:3000`으로 접속합니다. `.env`의 `CAD_HOST_PORT`로 호스트 포트를 바꿀 수 있습니다. 같은 네트워크/VPN, 서버 방화벽과 수신 포트가 접근을 허용해야 합니다. `0.0.0.0`은 수신 설정이며 브라우저 접속 주소로 사용하지 않습니다.
 
 프로젝트 `cad-layout-viewer`, 컨테이너 `cad-layout-viewer-app`, 네트워크 `cad-layout-viewer-network`, 데이터 볼륨 `cad-layout-viewer-data`를 사용합니다. 기존 호스트 `data/`를 자동 복사하거나 기존 서비스와 공유하지 않습니다. SQLite와 CAD/임시 업로드는 볼륨에 남고 S3 모드도 SQLite/임시 디스크가 필요합니다. `down`은 볼륨을 보존하지만 `down -v`는 데이터를 삭제하므로 정상 종료에 사용하지 않습니다.
 

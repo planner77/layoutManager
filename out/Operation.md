@@ -1,6 +1,24 @@
 # 운영·환경설정 초안
 
-문서의 현재 기준 버전은 0.25.0이다. 아래 과거 버전별 문구는 당시 운영 기록으로 읽는다.
+## 0.26.0 — migration job / standalone 운영 절차
+
+**운영 적용 전** 동일 시점 SQLite DB, local CAD 원본, S3 객체의 백업 및 복원 가능성을 검증한다. migration 중 구 앱이 동시에 DB를 쓰지 않도록 한다. 실제 운영 migration과 GHCR 게시 확인은 PR 구현 범위 밖이다.
+
+**신규 설치:** `docker compose --env-file .env -f src/docker-compose.yml build`, 이어 `docker compose --env-file .env -f src/docker-compose.yml up -d`. `docker compose --env-file .env -f src/docker-compose.yml ps -a` 및 `logs migrate app`, `/api/health` 200 확인. migrate 컨테이너는 성공 후 종료됨이 정상이다.
+
+**GHCR 업그레이드:** `.env`에 `GHCR_IMAGE=ghcr.io/planner77/layoutmanager:0.26.0` 설정. `-migrate` suffix를 자동 파생하며 digest pin에서는 `GHCR_MIGRATION_IMAGE`를 별도 입력한다. `docker compose --env-file .env -f src/docker-compose.yml config`로 참조 2개를 확인한다.
+
+1. 운영 쓰기 중단, DB/CAD/S3 일관 백업 및 기존 이미지·Compose 기록.
+2. `docker compose --env-file .env -f src/docker-compose.yml pull app migrate`
+3. `docker compose --env-file .env -f src/docker-compose.yml stop app`
+4. `docker compose --env-file .env -f src/docker-compose.yml up --no-build --force-recreate migrate` → **exit 0인지 확인**. 실패 시 앱 기동 금지, `logs --tail 200 migrate` 확인.
+5. `docker compose --env-file .env -f src/docker-compose.yml up -d --no-build app`
+6. `/api/health` 200, 기존 도면/Current/비밀번호/원본/한글 및 WASM·S3 회귀 확인.
+
+**복구:** schema가 비호환이면 변경된 DB에 과거 앱을 직접 연결하지 말고 원본·DB·S3 같은 시점 백업과 당시 Compose/이미지를 함께 복원한다. `docker compose down -v` 사용 금지. `docker buildx imagetools inspect`의 GHCR digest는 출시 후 검증; PR CI의 `docker save | gzip`는 OCI 전송 바이트와 다른 지표이다. 상세 `Issue28.md`.
+
+
+현재 소스 기준 버전은 0.26.0이다. 0.25.0 절차는 해당 시점의 DB 변경 기록이다. 아래 과거 버전별 문구는 당시 운영 기록으로 읽는다.
 
 ## 0.25.0 기준정보 migration 운영 절차
 

@@ -1,5 +1,13 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE28-DEV-20261016 — Docker 경량화 구현 기록 (검증 대기)
+
+- Issue #28 / `feat/issue-28-standalone-runtime` / 소스 0.26.0. Next standalone runtime, 별도 Prisma CLI/tsx migrator, Compose exit0 의존성, 로컬 start --port 변환, static/WASM/TTF 복사, GHCR dual target 구성.
+- TC-IMAGE-001~009 및 baseline→phase1→runtime 크기·레이어 기록/빈 DB 설치·재실행·실패·health/정적 자산 Docker CI job 추가.
+- **실제 typecheck/lint/Unit/Browser/Docker 빌드/실운영 migration/독립 QA 결과는 아직 미실행(PENDING).** 현재 이미지 실측 byte, 30% 목표 판정, GHCR digest를 제공할 수 없다. PR CI 실행 결과를 근거로 후속 판정 필요. 사용자 데이터·버전/Current·schema를 변경하지 않음.
+- 독립 QA 전용 모델을 실행할 수 있는 도구가 제공되지 않아 별도 모델 검증 미실시. `Issue28.md`와 `Operation.md`에 복구·위험 사항 기술.
+
+
 ## U-ISSUE24-PR27-CI28-FAIL-20261016 — E2E Locator 실패 분석 및 수정 (재검증 대기)
 
 - 실패 증거: PR #27 `PR CI #28` run `38852895275`, commit `0be21f5`, Job `116817839530`. Prisma Client 생성, TypeScript, ESLint, Unit/Integration, Production build는 성공했으며 Chromium E2E는 **37 passed / 1 failed**. Legacy migration E2E는 E2E 실패에 따라 `skipped`이다.

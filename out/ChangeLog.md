@@ -1,5 +1,13 @@
 # ChangeLog
 
+## 0.26.0 — 2026-10-16 / GitHub #28 (CI 전)
+
+- Web: Next standalone 및 native SQLite 기반 Docker 운영 이미지로 축소; 비교용 phase1 타깃 추가.
+- DB: migration/backfill은 별도 일회성 migrator 타깃으로 분리. Compose는 성공 종료 이후 웹을 시작한다. UID10001, 단일 /data, DXF/DWG font/JS/WASM/스토리지 계약 유지.
+- Release: 앱 및 `-migrate` GHCR 동일 source 태그 게시 예정, 운영 이전에 백업/구 앱 stop/마이그레이션 성공 확인 필요.
+- Test: CI 3단계 크기·Docker migration/smoke와 TC-IMAGE-001~009를 등록했으며 **결과, 측정 절감률, 독립 QA, GHCR 게시 상태는 검증 대기**이다.
+
+
 ## 0.25.0 — 2026-10-15
 
 - 사업부→제품→사업장/법인→동→층 기준정보 CRUD, 활성/비활성 및 SITE/LEGAL_ENTITY 종류를 추가했다.

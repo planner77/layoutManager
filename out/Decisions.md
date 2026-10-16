@@ -1,5 +1,12 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-028 — Standalone 웹과 별도 DB migration Job
+
+- Date/Status: 2026-10-16 / 소스 구현·PR CI 검증 대기. 기존 단일 Docker 이미지 전체 source/node_modules 복사는 개발용 자산 포함 위험. Prisma CLI/tsx를 제거하면 DB migration/backfill 실패.
+- Decision: Debian bookworm-slim Node22, UID10001, /data 영속성을 보존하면서 웹 runtime을 Next standalone으로 축소. 별도 Prisma/tsx migrator를 동일 release로 배포, Compose에서 exit0 게이트. 기본 `phase1`은 크기 측정 기준을 위한 비게시 target.
+- Reject: 근거 없는 Alpine 전환, migration 제거, 구 앱 실행 중 DB migration, 전체 dev node_modules 웹 포함. Trade-off: 웹은 가벼워지나 migrator 이미지 하나가 추가된다. GHCR 두 태그를 같은 source로 관리하고 업그레이드 시 백업·앱 정지 필수. 30% 감소는 측정 전 확정하지 않는다.
+
+
 기준일: 2026-09-07. `요구사항 확정`은 사용자 원문이 결정한 사항, `제안`은 이 계획 확인 후 채택할 기본안, `확인 대기`는 별도 중요한 판단이 필요한 사항이다. 2026-09-07 사용자가 DXF 우선, DWG 다음 버전 순서로 계획 실행을 승인했다. 최신 순서는 ADR-011을 따른다.
 
 ## ADR-025 — Version별 삭제 비밀번호와 승인된 원본 정리
