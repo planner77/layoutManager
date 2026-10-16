@@ -1,5 +1,14 @@
 # GitHub Issue #26 — DXF TEXT/MTEXT 검색과 좌표 줌
 
+## PR #30 CI #42 실패 분석 및 수정
+
+- 2026-10-16 Run 38865738285: TypeScript 성공, ESLint react-hooks/refs 실패 (Viewer JSX의 manager.current 접근); 이후 Unit/Build/Browser E2E는 스킵. 병렬 Docker runtime CI는 성공.
+- React Ref는 render 시 조회하지 않고 stable useCallback getter를 전달하여 자식 effect/결과 선택 이벤트에서 접근한다.
+- 리뷰 P2 Unicode escape 길이 문제: Autodesk DXF는 \U+00B0 네 자리만 escape이며 뒤따른 C는 일반 문자. 정규식을 정확히 4자리로 수정, TC-TEXT-010 회귀 테스트 추가.
+- 재실행 PR CI는 실제 GitHub run 결과 확인 후 판정한다. 실도면/독립 QA는 계속 미검증이다.
+
+
+
 기준일: 2026-10-16. 상태: **기능 브랜치 구현, PR CI 검증 전**. 대상 SemVer 0.27.0. DB/API/schema 변경 없음.
 
 ## 요구 및 설계 계약
