@@ -93,7 +93,7 @@ jobs:
 
       # main에서 같은 버전 태그가 이미 존재하더라도 이미지 게시가 중간에 실패했을 수 있으므로
       # GHCR에 실제 버전 이미지가 있는지 확인한다.
-      - name: Check version image on GHCR
+      - name: Check version images on GHCR
         id: release_image
         if: github.ref == 'refs/heads/main'
         shell: bash
@@ -102,12 +102,14 @@ jobs:
         run: |
           set -euo pipefail
           IMAGE="${REGISTRY}/${IMAGE_NAME}:${APP_VERSION}"
-          if docker buildx imagetools inspect "$IMAGE" >/dev/null 2>&1; then
+          MIGRATION_IMAGE="${IMAGE}-migrate"
+          if docker buildx imagetools inspect "$IMAGE" >/dev/null 2>&1 &&
+             docker buildx imagetools inspect "$MIGRATION_IMAGE" >/dev/null 2>&1; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
-            echo "Version image already exists: $IMAGE"
+            echo "Both version images already exist: $IMAGE and $MIGRATION_IMAGE"
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
-            echo "Version image does not exist yet: $IMAGE"
+            echo "App or migration version image is missing; publish both."
           fi
 
       - name: Decide whether to publish
@@ -147,6 +149,23 @@ jobs:
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.version=${{ steps.version.outputs.version }}
 
+      - name: Generate migration image metadata
+        id: meta_migration
+        if: steps.publish.outputs.publish == 'true'
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ steps.version.outputs.version }}-migrate,enable=${{ github.ref == 'refs/heads/main' }}
+            type=semver,pattern={{version}}-migrate,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+            type=raw,value=latest-migrate
+          labels: |
+            org.opencontainers.image.title=Layout Manager DB migration runner
+            org.opencontainers.image.description=Prisma migration and password backfill
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ steps.version.outputs.version }}
+
       - name: Build and push Docker image
         id: build
         if: steps.publish.outputs.publish == 'true'
@@ -154,10 +173,26 @@ jobs:
         with:
           context: .
           file: ./src/Dockerfile
+          target: runtime
           platforms: linux/amd64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push DB migration image
+        id: build_migration
+        if: steps.publish.outputs.publish == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./src/Dockerfile
+          target: migrator
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta_migration.outputs.tags }}
+          labels: ${{ steps.meta_migration.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -167,10 +202,13 @@ jobs:
         run: |
           echo "Published tags:"
           echo '${{ steps.meta.outputs.tags }}'
-          echo "Digest: ${{ steps.build.outputs.digest }}"
+          echo "App digest: ${{ steps.build.outputs.digest }}"
+          echo "Migration tags:"
+          echo '${{ steps.meta_migration.outputs.tags }}'
+          echo "Migration digest: ${{ steps.build_migration.outputs.digest }}"
 
       - name: Skip duplicate version build
         if: steps.publish.outputs.publish != 'true'
         shell: bash
         run: |
-          echo "The release tag and GHCR version image already exist. No Docker image was built for this main push."
+          echo "The release tag and BOTH GHCR images already exist. No Docker image was built for this main push."
