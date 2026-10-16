@@ -1,5 +1,13 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #31 — v0.28.2 Production Worker export fix (2026-10-16; PR CI 전)
+
+- v0.28.1 Main CI [#38894507390](https://github.com/planner77/layoutManager/actions/runs/38894507390)은 SUCCESS/GHCR 게시했지만 **실제 Webpack 경고** `Attempted import error: 'union' is not exported from 'polygon-clipping'`가 있었다. 빌드/게시 성공만으로 정밀 외곽선 Worker 정상 동작을 판정하지 않는다.
+- polygon-clipping@0.15.7 ESM은 **default export 객체**만 제공하므로 `import polygonClipping from 'polygon-clipping'`, `polygonClipping.union`을 사용한다. `scripts/run.mjs build`는 import/export 오류를 종료 코드 0에서도 실패시켜 PR/Docker Release를 차단한다.
+- Production E2E는 Worker PRECISE 실행→임시 확정→다운로드 JSON의 Polygon 좌표·면적·원본 SHA·Handle을 검사한다. PR CI 1k synthetic benchmark smoke. 실 DXF는 `npm run audit:outline -- --file /private/sample.dxf`로 폐쇄망의 승인된 PC에서만 소스 CPU 통계를 생성하며 원본·경로를 외부 업로드하지 않는다.
+- **P4 정책 미확정**: 영구 DB/CRUD·권한 변경 금지, 도면 삭제 비밀번호 재사용 금지. P0/P5 실 DXF/GPU 현장 검증 및 P4 승인 전 Issue #31 **OPEN 유지**. 실제로 실행하지 않은 시험은 PASS라고 기록하지 않는다.
+
+
 ## Issue #31 후속 0.28.1 작업 상태 (2026-10-16)
 
 - 0.27.0 PR #32, PR CI run `38874300056`, Main CI run `38875068317`은 실제 SUCCESS. Issue #31은 P0/P4/P5 미완료로 **열린 상태를 유지**한다.
