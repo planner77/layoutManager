@@ -1,5 +1,14 @@
 # ChangeLog
 
+## 0.27.1 — 2026-10-16 / Issue #31 후속 P0/P5와 P4 기초 (PR CI 전)
+
+- Fixed: top-level DXF Source Handle/type/layer/WCS box와 THREE rendered Object3D 1:N bbox 합산 대조. 미렌더·불일치 도형 선택을 제외하고 UI에 진단 수를 표시.
+- Performance: bounded spatial tile index, giant Entity overflow 및 광역 선택 fallback, Worker source-index/render audit/spatial build 시간 표시. 1k/10k/100k synthetic CPU DXF benchmark CLI 추가.
+- P4 foundation: Version/SHA/정상 Handle/Polygon JSON의 검증 함수·Unit 추가. **Server outline DB/API 및 별도 인증은 미구현**, Owner 승인 대기.
+- QA: mapping/spatial/JSON validator Unit 및 DXF Viewer mapping E2E 추가. PR CI/실도면·GPU 성능 PASS 미확인.
+
+
+
 ## 0.27.0 — 2026-10-16 / GitHub #31 (PR CI 재검증 전, 범위 제한)
 
 - Feature: three-dxf-viewer의 DXF 객체 클릭/다중·방향별 영역 선택, 레이어 동기화, 독립적인 Convex 및 실제 폐곡선 Polygon Union(+MultiPolygon/Holes), Worker 취소 및 Preview/임시 확정·JSON 내보내기.
