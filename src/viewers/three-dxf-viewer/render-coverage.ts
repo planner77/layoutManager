@@ -28,10 +28,17 @@ export function reconcileRenderCoverage(
   for(const entity of source){
     const observed=entity.handle?byHandle.get(entity.handle.toUpperCase()):undefined;
     if(!observed?.length){unmappedSource++;continue;}
-    const matches=observed.some(o=>o.entityType===entity.entityType&&
-      (!o.layer||o.layer===entity.layer)&&o.bounds!==null&&
-      comparable(entity.bounds,o.bounds,entity.entityType));
-    if(!matches){boundsMismatch++;continue;}
+    const shapes=observed.filter(o=>o.entityType===entity.entityType&&
+      (!o.layer||o.layer===entity.layer)&&o.bounds!==null);
+    // Multiple display objects can represent a single DXF handle; compare the
+    // union of their extents, never require any one fragment to cover all.
+    const merged=shapes.reduce<Bounds2D>((box,o)=>[
+      Math.min(box[0],o.bounds![0]),Math.min(box[1],o.bounds![1]),
+      Math.max(box[2],o.bounds![2]),Math.max(box[3],o.bounds![3]),
+    ],[Infinity,Infinity,-Infinity,-Infinity]);
+    if(!shapes.length||!comparable(entity.bounds,merged,entity.entityType)){
+      boundsMismatch++;continue;
+    }
     selectable.push(entity);
   }
   const warnings:string[]=[];
