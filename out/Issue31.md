@@ -1,5 +1,34 @@
 # Issue #31 — DXF 복수 선택과 볼록·정밀 외곽선 (0.27.0)
 
+### PR #35 P1/P2 리뷰 보완 (2026-10-16)
+
+- 기존 부분 BLOCK 감지에 추가하여 INSERT group code 66 또는 실제 이어진 ATTRIB/SEQEND를 루트에 귀속하며, 지원하지 않는 ATTRIB가 존재하면 루트 INSERT를 stable로 인정하지 않는다. group 66이 누락된 입력도 연속된 속성이 있으면 fail-closed한다.
+- P4 canonical 재계산 tolerance는 **server-owned 0.02 Drawing Unit**. Client JSON에 더 큰 값이 있으면 409 거부하고 서버가 그 값을 Geometry 계산에 사용하지 않는다.
+- Private 실제 DXF Browser 5회 반복 검사에서 매회 최소 선택 객체 1개(또는 `CAD_OUTLINE_ACCEPTANCE_MIN_SELECTED`의 운영자 기준)가 없으면 테스트 **FAIL**. 도면 렌더 표시 성공만으로 수용하지 않는다.
+- 수정 후 PR CI 통과/실도면 운영 수용/IdP 승인 등은 여전히 미확인.
+
+
+## v0.28.3 잔여 수용 개발 및 미충족 조건 (2026-10-16, 신규 CI 전)
+
+### P0 데이터 충실도 fail-closed
+- `outline-geometry.ts`의 BLOCK/INSERT 재귀는 미지원 HATCH/3D 등의 자식이 포함될 때 일부 경로를 계산해도 해당 INSERT를 **unstable**로 표시한다. 렌더↔원본 매핑의 `render-coverage`는 stable=false를 선택 불가로 판단한다. 외곽선이 눈에 보이는 일부분의 잘못된 기하만 대표하는 문제를 방지한다.
+- 아주 큰 CIRCLE/ARC의 허용오차 0.02 Drawing Unit을 512 샘플로 만족할 수 없으면 거부·경고한다. 이전 코드의 silent cap은 허용오차를 지키지 못하면서 정상 경계를 반환할 위험이 있었다. `TC-OUT-ID-PARTIAL-BLOCK` 및 `TC-OUT-GEO1-LARGE-CURVE` Unit 추가.
+
+### P4 코드 수준의 원본 무결성 검증 (DB/Write API 미승인)
+- `server/outline/attestation.ts`: 향후 권한이 부여된 저장 서비스는 최종 등록된 도면 bytes를 읽고 **실제 SHA-256 일치 확인** → 기존 `parseOutlineExport`의 Version/SHA/Stable Handle/Polygon 검증 → 서버가 원본으로 Source Geometry Index 생성 → SELECT된 고유 Handle의 canonical Convex/Precise geometry 재계산 → client JSON과 symmetric-difference 면적 비교 → **클라이언트 JSON을 믿지 않고 재계산한 서버 Geometry만 사용**.
+- SHA, Version, 단위, 존재하지 않는 Handle, 변조된 좌표, 미지원 도형은 각각 오류로 거부하며 Unit `TC-OUT-CANON-001..004`을 추가. 이 함수는 **인증/인가·Storage·Migration/API를 수행하지 않는다**. 안전 정책 승인 없이 Server Write API를 열지 않는다.
+
+### P5 현장 브라우저 반복 검증
+- CI synthetic 1k 단일 smoke를 **1k/10k/100k** source parse/index/query/Convex benchmark로 확대. 결과는 실제 CI Run 로그로 확인한 뒤만 PASS 기록.
+- `src/playwright.outline-acceptance.config.ts`/ `tests/e2e/outline.acceptance.ts`: 별도 *사내 전용* 테스트에서 승인된 `CAD_OUTLINE_ACCEPTANCE_DXF`(공개 CI에는 미제공) 한 건을 격리된 DB에 업로드, 실제 three-dxf-viewer 로드·렌더 매핑·선택 및 오류를 다섯 번 반복 관측하여 p50/p95, Browser heap(지원 시), 인덱스·감사 시간·선택/제외 건수를 출력 없이 승인된 JSON 파일 경로에만 저장. `--report`/환경변수 값에는 파일 경로/레이어명/원본 포함 금지. 기본 E2E에는 자동 포함되지 않는다.
+- 실설비 도면 **최소 3종**, 원본 CAD 기준점/기하 면적, BLOCK·OCS·곡선, 실제 사용자 환경의 GPU/Worker·메모리·선택 정확도, 1k/10k/100k 실측/목표치가 사용자에게서 제공되지 않았으므로 **최종 P0/P5 운영 수용 불가**.
+
+### P4 운영 정책에 필요한 Owner 선택
+- 기본 권장 **사내 OIDC 서명 JWT + Viewer/Editor/Admin RBAC + Site/Version Scope + HTTPS Secure/HttpOnly 세션 + Origin/CSRF·감사**; 내부 IdP가 없으면 별도 로컬 로그인/세션. **Identity Provider/계정/역할·scope·감사 보존 기간 등 Owner 결정 부재**.
+- 권한 정책 승인 후 별도 변경으로 additive DB `CadOutline`, Server 원본 DXF 재계산 기반 CRUD, revision CAS/409, Version Delete FK, 로그인/권한 테스트, 재진입 Overlay 복원/운영 수용을 적용한다. 기존 삭제용 비밀번호를 외곽선 편집 인증에 사용하지 않는다.
+- 현재 `Issue #31`은 OPEN 유지. 이 단계의 순수 검증/오프라인 시험 코드가 완료돼도 영구 저장/실도면 수용은 미완료.
+
+
 ## 2026-10-16 후속 0.28.2 — Production ESM·실도면 수용 작업 (CI 대기)
 
 - **발견**: Main CI [#38894507390](https://github.com/planner77/layoutManager/actions/runs/38894507390) Docker Build에 `Attempted import error: 'union' is not exported from 'polygon-clipping'` 경고가 있었으나 exit 0으로 GHCR `0.28.1`/migrate를 게시. `polygon-clipping@0.15.7`의 TypeScript `d.ts`는 named `union`이지만 ESM dist는 `export {index as default}`, CJS는 `module.exports = index`이다.

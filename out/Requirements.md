@@ -1,5 +1,13 @@
 # 상세 요구사항
 
+## Issue #31 후속 수용 변경점 0.28.3
+
+- OUT-P0-FIDELITY: INSERT/BLOCK의 일부 Entity가 미지원이면 stable EntityRef 선택·저장 승인 금지. 원/호의 512 segment 한도 내 WCS chord error 목표 충족 불가능시 명시적 실패.
+- OUT-P4-CANONICAL: Server-owned bytes sha256/Version/INSUNITS와 unique Handle을 검증한 후 양면 Polygon XOR에 의해 Client JSON 위변조 감지 및 서버 산출 Geometry만 사용. 이 안전 모듈은 실제 CRUD/Auth의 대체가 아니다.
+- OUT-P5-ACCEPTANCE: synthetic 1k/10k/100k CPU/Heap 수치를 CI에서 재현하며 고객 real DXF의 선택·Load p50/p95·Viewer/GPU·WCS 일치 확인은 내부 전용 5회 Browser 재현 절차로 분리. 실제 DXF, IdP, 운영 수용 SLA가 없는 동안 미완료 상태 표기.
+- OUT-P4-SECURITY: Owner 인증·인가 승인 없는 DB Migration/Write API 금지 유지. 로그와 외부 Git에 원본 도면/SHA 외 추가 개인정보를 저장하지 않음.
+
+
 ## Issue #31 추가 AC: Production Worker export·대형 도면 사전 검증 (0.28.2)
 
 - OUT-BUILD-001: Webpack Worker import/export 미해결 오류를 감지하면 Next Build exit code 0이어도 CI/릴리스 실패. 배포 실패가 명확하게 보고되어야 한다.

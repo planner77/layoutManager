@@ -50,9 +50,10 @@ jobs:
       - name: Unit 및 Integration 테스트
         run: npm test
 
-      # P5 deterministic, low-cost 1k smoke; 10k/100k and real DXF stay opt-in.
-      - name: DXF outline benchmark smoke (1k synthetic)
-        run: npm run test:outline-benchmark -- --quick
+      # P5 source CPU evidence: actual 1k/10k/100k synthetic runs, not real DXF acceptance.
+      # Private CAD inputs are never uploaded to GitHub CI.
+      - name: DXF outline source benchmark (1k 10k 100k synthetic)
+        run: npm run test:outline-benchmark
 
       # run.mjs treats unresolved Webpack import/export warnings as hard failures.
       # This must run BEFORE browser tests and GHCR promotion.

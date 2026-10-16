@@ -1,5 +1,20 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE31-PR35-P1P2-REVIEW-20261016 — PR 리뷰 3건 처리 (수정 HEAD CI 재검증 전)
+
+- Initial PR #35 Source HEAD `eb01756b`에서 Codex 리뷰 3건: P1 INSERT attached ATTRIB/SEQEND 누락, P2 Client tolerance가 Source canonical 재계산을 완화할 위험, P2 Browser acceptance가 선택 0개에도 PASS 가능.
+- 처리: `buildIndex`에서 INSERT group 66과 연속 ATTRIB를 소속으로 처리·루트 INSERT 안전 제외, group 66 누락 Fixture까지 Unit 추가. `attestation.ts`의 재계산 오차를 서버 상수 `0.02`로 고정·일치하지 않는 JSON 오류(409), tolerance 1000 위변조 Unit 추가. private Browser 수용 5회 모두 선택 수 >= `CAD_OUTLINE_ACCEPTANCE_MIN_SELECTED`(기본 1) 강제.
+- 리뷰 3건은 모두 회신 및 해결 처리했고, **이 수정 후의 최신 HEAD PR CI는 재검증이 필요**. 최초 CI 중 일부 성공은 최신 Source PASS를 의미하지 않는다.
+
+
+## U-ISSUE31-P0-P5-ACCEPTANCE-20261016 — 코드/시험 추가, 실DXF·IdP 미확보 (CI 대기)
+
+- 기준: #34 PR CI 수정본 `38906697401` 성공 및 Main CI `38907443840` GHCR v0.28.2 게시 성공. 단, 이전 P0/P4/P5 운영 수용은 미완료였음.
+- v0.28.3 신규 작업: (1) BLOCK 내부 미지원 자식의 안정 참조 부정, (2) 샘플링 상한으로 chord tolerance가 깨지는 대형 곡선 거부, (3) `server/outline/attestation.ts` immutable 원본 SHA→canonical Source 재계산→client Polygon XOR 비교 준비, (4) 관련 Unit, (5) private real-DXF Playwright 5회 브라우저 성능·매핑 측정 suite, (6) PR CI synthetic 1k/10k/100k 측정.
+- 검증 상태: 신규 PR CI/실 도면 평가는 문서 작성 시 **미실행**; Source 개인 파일·수치·IdP를 제공받지 않았으므로 **P0 실도면, P5 현장 체감/GPU, P4 실제 서버 영구 저장 전부 미완료**. DB Migration/API, 권한, 운영 원본은 변경하지 않음.
+- 새 CI 성공 여부·100k synthetic 수치는 해당 Run 로그 확인 후 별도 기록. 사내/private 도면의 수치는 외부 PR artifact에 기록하지 않는다.
+
+
 ## U-ISSUE31-PR34-P2-REVIEW-20261016 — Webpack parenthesized import warning 차단 보완
 
 - PR #34 초기 Run [38904729194](https://github.com/planner77/layoutManager/actions/runs/38904729194): TypeScript/ESLint, Unit/Integration, Next Production Build, Browser E2E, Legacy Migration E2E, Docker smoke **모두 SUCCESS** (HEAD `9c2d821f`). 그러나 Codex P2 review 1건이 `export 'union' (imported as 'union') was not found` 경고의 미검출을 발견.

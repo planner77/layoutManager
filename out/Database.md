@@ -1,5 +1,13 @@
 # Database Schema — 단일 기준 문서
 
+## Issue #31 v0.28.3 — CadOutline 미배포 상태와 정합성 사전 게이트
+
+- 이번 브랜치는 **Prisma schema, Migration, 기존 DB, 원본 DXF, Storage locator를 수정하지 않는다**. 기존 P4 제안 Schema는 계속 *미승인*이다.
+- 저장 로직 구현 선행 조건: 검증 가능한 IdP(OIDC issuer/audience/JWKS) 또는 별도 로컬 로그인/HttpOnly 세션 정책, Reader/Editor/Admin Roles와 Site·Version scope, 운영 관리자·감사 기록 보존 기간 확정. 임의 HTTP 헤더/삭제 비밀번호/공유 토큰만으로 쓰기 허용 금지.
+- 코드의 `server/outline/attestation.ts`는 향후 저장 시 서버가 `CadFileVersion.id/sha256`와 immutable Source bytes 일치를 확인하고 stable Handle을 재파싱·Polygon을 재계산하여 Client 좌표 위·변조를 거부하는 **쓰기 기능이 없는** 보조 계약이다.
+- 권한 승인 이후 기존 제안 CadOutline FK/Revision 및 Version 삭제 정합성(ON DELETE 정책), 감사·복구·백업 dry run, 영구 overlay load/update/delete API를 구현해야 실제 P4 완료라고 평가할 수 있다.
+
+
 ## Issue #31 P4 — 영구 저장 Schema 제안 (DDL / Migration 미적용)
 
 **이 절은 제안이며 배포 DB schema가 아닙니다.** 사용자/Owner가 인증·인가 수단, 역할 및 Scope, 감사 보존 기간을 결정하기 전 새 Table·Route·Migration을 적용하지 않는다.

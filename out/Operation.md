@@ -1,5 +1,20 @@
 # 운영·환경설정 초안
 
+## Issue #31 v0.28.3 — 폐쇄망 DXF 브라우저 수용 실행
+
+- Source-only 검증: `cd src && npm run audit:outline -- --file /private/sample.dxf` (개인/운영 CAD는 외부에 업로드하지 않음).
+- 실제 Browser 검증: 별도로 `cd src && npm ci && npm run build` 수행 후 아래처럼 **원본을 가진 승인된 운영망**에서 실행한다. 앱 개발용 격리 DB/스토리지에 테스트 원본이 등록되므로 실제 운영 DB 연결 절대 금지.
+  ```bash
+  export CAD_OUTLINE_ACCEPTANCE_DXF=/private/sample.dxf
+  export CAD_OUTLINE_ACCEPTANCE_EXPECTED_SHA256=<approved-64-char-source-sha>
+  export CAD_OUTLINE_ACCEPTANCE_REPORT_PATH=/private/acceptance-results/report.json
+  npm run test:outline-acceptance
+  ```
+- 보고서: 원본 SHA, Entity 제외/선택 수, 5회 Render Source 인덱스/공간 Index ms, Load p50/p95, JS Heap(지원 브라우저에서만), Console/PageError count. 원본 도면 bytes·Filename 실제 경로·레이어명은 포함하지 않으며 지정한 사용자 전용 경로에 파일 mode 0600으로 저장한다. 시험은 별도 Playwright config에서만 동작하고 PR CI에는 포함되지 않는다.
+- 수용 전제: 실제 DXF 최소 3종과 CAD 공식 면적/좌표/INSERT·OCS 기준값을 확보하고 사용 장비/Node/브라우저/GPU·1k/10k/100k 성능 목표 및 결과를 Owner가 확인할 것. Synthetic CI CPU 결과는 이 검증을 대체하지 않는다.
+- P4 보안: Owner가 IdP와 RBAC/Scope 정책을 승인하기 전 서버 외곽선 CRUD·Migration은 미배포. 운영 배포 전 DB/원본/S3 백업, Migration dry run 및 복원 증거 필수.
+
+
 ## Issue #31 v0.28.2 — 실도면/정밀 외곽선 검증 운영 절차
 
 1. v0.28.1 GHCR 게시 Run `38894507390`은 성공했지만 Webpack `polygon-clipping` named-export 경고가 있었으므로 정밀 외곽선의 Production 정상 작동은 보장되지 않는다. v0.28.2 PR CI에서 실제 PRECISE Worker JSON E2E와 오류 발생 시 Next build hard-fail을 확인한 뒤 업데이트한다.

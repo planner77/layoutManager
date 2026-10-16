@@ -1,5 +1,19 @@
 # CAD Web Viewer P.O.C.
 
+### v0.28.3 Private acceptance selection gate
+
+실DXF 브라우저 수용 명령은 기본적으로 모든 반복에서 실제 선택 가능한 Source Entity가 **1개 이상**이어야 성공하며, 필요 시 `CAD_OUTLINE_ACCEPTANCE_MIN_SELECTED=10` 등으로 문턱값을 지정할 수 있습니다. 운영자가 확정한 실제 DXF SHA와 기준 CAD 치수/면적을 검증한 뒤에만 완전한 수용으로 기록하세요.
+
+
+## Issue #31 v0.28.3 — 후속 DXF 정확도·성능 수용 도구
+
+- P0 안전성: 지원되지 않는 BLOCK 자식이 일부라도 포함되면 INSERT의 Source ID를 stable로 인정하지 않아 잘못된 부분 외곽선의 영구 참조를 방지한다. 대형 CIRCLE/ARC에서 512 포인트로 허용 오차를 만족할 수 없으면 계산을 거부한다.
+- P4 사전 검증: `src/server/outline/attestation.ts`는 저장 전 Server-owned DXF 원본 bytes와 SHA/Version/Handle을 검증하고 canonical Convex/Precise 경계를 재계산한 뒤 Client Polygon과 비교하는 순수 함수. **DB/쓰기 API 및 인증 기능은 아직 없으며**, Owner가 OIDC 또는 로컬 세션/RBAC·Site Scope 정책을 승인한 뒤에만 연결한다.
+- PR CI: `npm run test:outline-benchmark`는 1k/10k/100k synthetic Source CPU 측정. 실제 설비 DXF를 Git에 올리지 않는다.
+- 폐쇄망 실제 도면 브라우저 테스트: `cd src && npm ci && npm run build && CAD_OUTLINE_ACCEPTANCE_DXF=/private/sample.dxf CAD_OUTLINE_ACCEPTANCE_EXPECTED_SHA256=<SHA256> CAD_OUTLINE_ACCEPTANCE_REPORT_PATH=/private/report.json npm run test:outline-acceptance`. 5회 브라우저 Load·선택·매핑 제외·인덱스 시간/JS Heap 및 오류를 사내 JSON에만 기록한다. 기존 `npm run audit:outline -- --file /private/sample.dxf` Source-only 분석과 상보적이다.
+- 실제 CAD 3종 이상/기하 기준 값·브라우저 GPU 측정·인가 정책이 제공되지 않아 Issue #31 최종 운영 수용/종료는 불가. [Issue31](out/Issue31.md), [Operation](out/Operation.md), [TestPlan](out/TestPlan.md).
+
+
 ## DXF 정밀 외곽선 v0.28.2 — Worker 호환성 및 사내 시험
 
 - v0.28.1 GHCR은 게시됐으나 Webpack ESM `polygon-clipping` named-import 경고가 있었다. v0.28.2는 default export로 수정하고 Next Production Build에서 미해결 import/export 경고를 하드 실패 처리한다. Browser E2E에서 실제 Worker 연산 결과를 JSON으로 확인한다.
