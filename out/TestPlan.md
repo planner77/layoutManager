@@ -1,5 +1,22 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #31 잔여 검증 — 0.27.1 (PR CI 전)
+
+| TC | 방법/Acceptance | 상태 |
+| --- | --- | --- |
+| TC-OUT-MAP-001..003 | unique Handle/1:N Renderer World bounds 합산, 타입·레이어·좌표 mismatch 차단 | Unit 작성·미실행 |
+| TC-OUT-SPATIAL-001..002 | 1,000개 selection bbox ↔ brute-force 동일, giant Entity Overflow 상한 | Unit 작성·미실행 |
+| TC-OUT-DRAFT-001..004 | Version/SHA/불안정 ID/중복 참조/비유한 좌표/열린 ring/Algorithm 거부 | Unit 작성·미실행 |
+| TC-OUT-E2E-001 확장 | 실제 브라우저에서 source-render mapping exclude=0, 기존 Selection/Preview/Fullscreen/JSON | E2E 작성·미실행 |
+| TC-OUT-BENCH-001 | `npm run test:outline-benchmark`로 synthetic LINE 1k/10k/100k index/query/convex/heap delta JSON | 실행 수치 미확인 |
+| TC-OUT-REAL-001 | 실제 DXF 소·중·대형 3종: WCS·BLOCK/INSERT·Layer/OCS·Hash·외곽선 면적 및 좌표 대조 | 현장 샘플 미제공/미실행 |
+| TC-OUT-REAL-002 | 실도면 1k/10k/100k Pan/Zoom/FullScreen·Worker·GPU·browser heap/input p50/p95 반복 | 현장 샘플/측정 미실행 |
+| TC-OUT-P4-001 | 정책 결정 시 401/403/CSRF/Version FK/SHA canonical reparse/CAS revision409·삭제 정합성 | Owner Auth Policy 결정 대기 |
+
+측정한 조건·설비·Node/브라우저·CPU/RAM·도면 Entity 구성·Unit/Scale 및 실제 실행값 없이는 PASS 판정하지 않는다. synthetic benchmark는 기본 PR CI에 자동 추가하지 않는다. [Issue31](Issue31.md).
+
+
+
 ## Issue #31 — 검증 계획 (0.27.0 PR CI 재검증 전)
 
 | Case | 증거 계획 | 현재 상태 |
