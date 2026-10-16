@@ -4,8 +4,10 @@ name: cad-layout-viewer
 
 services:
   migrate:
-    # With GHCR_IMAGE=:version the default becomes :version-migrate.
-    # Digest-pinned deployments must set GHCR_MIGRATION_IMAGE explicitly.
+    # For tagged GHCR_IMAGE, :version-migrate is derived by Compose.
+    # For TAGLESS references use scripts/compose.sh (normalizes :latest),
+    # or set GHCR_MIGRATION_IMAGE explicitly with raw docker compose.
+    # Digest-pinned deployments MUST set GHCR_MIGRATION_IMAGE explicitly.
     image: ${GHCR_MIGRATION_IMAGE:-${GHCR_IMAGE:-cad-layout-viewer:local}-migrate}
     build:
       context: ..
