@@ -1,5 +1,14 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE38-DEV-20261024 — v0.30.0 앱형 Shell 구현, 실행 결과 미확정
+
+- 대상: [Issue #38](https://github.com/planner77/layoutManager/issues/38), 작업 브랜치 `feat/issue-38-viewer-app-shell`, base main `d22b4575`.
+- 구현: `viewer-app-shell.tsx`, `viewer-menu-bar.tsx`, `viewer-app-state.ts`; `viewer.tsx`의 기존 toolbar/#17 레이어/#26 검색/#31 도구를 동일 shell에 배치하고 controlled layer dock/중앙 resize/검색 ESC 우선순위 적용. Native/CSS fullscreen 경계 및 서버 영구저장 제한 유지.
+- 작성한 자동시험: `tests/unit/viewer-app-state.test.ts` (`TC-U1-UNIT-001`), `tests/e2e/issue38-app-shell.spec.ts` (`TC-U1-E2E-001/002`), #31 Escape 회귀 계약 수정.
+- **실행 근거:** 로컬 `npm ci`/TypeScript/ESLint/Unit/Integration/Production build/Playwright/native/실도면 **NOT RUN**. 소스와 시험 추가는 PASS를 의미하지 않는다. PR CI run/검증 결과는 실행 확인 후 이 행과 분리해 갱신.
+- **잔여/제외:** 외곽선 생성 토글·업무 타입/Admin CRUD·타입 트리/영속 저장은 후속 #40~#43과 P4 보안 승인 범위. DWG 손상 파일 E2E는 정상 DWG 실도면 증거가 아니다. 상위 #37/Issue38 AC는 CI 완료 전 수용 판정하지 않는다.
+
+
 
 ## PR #36 두 번째 CI 실패 대응 — Chromium E2E 계약 복구 (2026-10-17)
 
