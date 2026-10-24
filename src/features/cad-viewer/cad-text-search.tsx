@@ -83,7 +83,7 @@ export function CadTextSearch({
         onOpenChange(false);
       }
     }}
-    className="pointer-events-none absolute right-2 top-2 z-[40] flex max-w-[calc(100vw-1rem)] flex-col items-end"
+    className="pointer-events-none absolute inset-y-2 right-2 z-[40] flex max-w-[calc(100%-1rem)] flex-col items-end"
   >
     <Button type="button" size="sm" variant="outline" onClick={toggle}
       aria-expanded={open} aria-controls={id} disabled={format === 'DXF' && (loading || !ready)}
@@ -92,7 +92,7 @@ export function CadTextSearch({
     </Button>
     {open && <aside id={id} aria-label="도면 내 텍스트 검색"
       data-testid="cad-text-search"
-      className="pointer-events-auto mt-2 flex max-h-[min(64dvh,38rem)] w-[min(23rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-lg border border-slate-200 bg-white p-3 text-slate-900 shadow-xl">
+      className="pointer-events-auto mt-2 flex min-h-0 max-h-[min(64dvh,38rem)] w-[min(23rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-lg border border-slate-200 bg-white p-3 text-slate-900 shadow-xl">
       <div className="mb-2 flex items-center justify-between gap-2">
         <strong className="text-sm">현재 도면 내 텍스트 검색</strong>
         <Button type="button" size="sm" variant="ghost" onClick={() => setOpen(false)}>닫기</Button>
