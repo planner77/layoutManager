@@ -5,7 +5,7 @@ import path from "node:path";
 import { createDb, type Database } from "../../server/db";
 import { CadRepository } from "../../server/repositories/cad";
 import { CadListRepository } from "../../server/repositories/cad-list";
-import { currentOnlyToggleUrl, listQuery } from "../../domain/cad-list";
+import { currentOnlyListParams, listQuery, listUrl } from "../../domain/cad-list";
 import { registration } from "../../domain/cad";
 import { migrate, seedChain } from "../helpers/database";
 import type { Registration } from "../../domain/cad";
@@ -169,28 +169,49 @@ test("TC-LIST-003/004: current filters track replacement and null pointers", asy
     "찾을 수 없습니다",
   );
 });
-test("TC-LIST-008: current-only toggle preserves filters and resets pagination", async () => {
-  const query = listQuery(
-    new URLSearchParams(
-      "filename=one&description=설명&site=평택&format=DXF&page=7&pageSize=50",
-    ),
-  );
-  const enabled = new URL(currentOnlyToggleUrl(query), "http://localhost");
-  expect(enabled.searchParams.get("filename")).toBe("one");
-  expect(enabled.searchParams.get("description")).toBe("설명");
-  expect(enabled.searchParams.get("site")).toBe("평택");
-  expect(enabled.searchParams.get("format")).toBe("DXF");
-  expect(enabled.searchParams.get("pageSize")).toBe("50");
-  expect(enabled.searchParams.get("current")).toBe("true");
-  expect(enabled.searchParams.get("page")).toBe("1");
-  const disabled = new URL(
-    currentOnlyToggleUrl(listQuery(enabled.searchParams)),
-    "http://localhost",
-  );
-  expect(disabled.searchParams.has("current")).toBe(false);
-  expect(disabled.searchParams.get("filename")).toBe("one");
-  expect(disabled.searchParams.get("page")).toBe("1");
+test("TC-LIST-045-001: library enforces Current for legacy URL states, API parser unchanged", () => {
+  for (const oldCurrent of ["", "current=false&", "current=true&"]) {
+    const params = new URLSearchParams(
+      `${oldCurrent}filename=one&description=설명&site=평택&format=DXF&page=7&pageSize=50`,
+    );
+    const scoped = currentOnlyListParams(params);
+    expect(scoped.query.current).toBe("true");
+    expect(scoped.params.get("current")).toBe("true");
+    expect(scoped.query.page).toBe(7);
+    expect(scoped.query.pageSize).toBe(50);
+    expect(scoped.params.get("filename")).toBe("one");
+    expect(scoped.params.get("description")).toBe("설명");
+    expect(scoped.params.get("site")).toBe("평택");
+    expect(scoped.params.get("format")).toBe("DXF");
+    const next = new URL(listUrl(scoped.query, 2), "http://localhost");
+    expect(next.searchParams.get("current")).toBe("true");
+    expect(next.searchParams.get("page")).toBe("2");
+  }
+  expect(listQuery(new URLSearchParams("current=false")).current).toBe("false");
+  expect(() => currentOnlyListParams(new URLSearchParams("current=yes"))).toThrow();
+  expect(() => currentOnlyListParams(new URLSearchParams("current=false&current=true"))).toThrow();
 });
+
+test("TC-LIST-045-002: Current-only scope excludes previous/newer and unassigned, then follows reassignment", async () => {
+  const first = await repo.register(input, file("old-current.dxf"));
+  const newer = await repo.register(input, file("new-current.dxf"));
+  const unassigned = await seedChain(db, {
+    businessUnit: "미지정",
+    product: "제품 A",
+    site: "별도사업장",
+    building: "B동",
+    floor: "5층",
+  });
+  await repo.register({ ...unassigned.input, makeCurrent: false }, file("never-current.dxf"));
+  const scope = () => currentOnlyListParams(new URLSearchParams("current=false")).query;
+  expect((await lists.list(scope())).items.map((row) => row.id)).toEqual([newer.id]);
+  expect((await search("current=false")).total).toBe(2);
+  await repo.setCurrent(first.locationId, first.id);
+  expect((await lists.list(scope())).items.map((row) => row.id)).toEqual([first.id]);
+  expect((await lists.list(currentOnlyListParams(new URLSearchParams("filename=never-current")).query)).total).toBe(0);
+  expect((await lists.location(unassigned.floorId)).versions).toHaveLength(1);
+});
+
 test("TC-LIST-009: current-only filter combines with existing filters and excludes locations without current", async () => {
   const matching = await repo.register(input, file("matching-current.dxf"));
   const other = await seedChain(db, {

@@ -67,66 +67,24 @@ test("TC-E2E-001: UI registration through current replacement and both DXF rende
   await page.getByRole("button", { name: "검색", exact: true }).click();
   await expect(
     page.getByRole("row").filter({ hasText: "release-v1.dxf" }),
-  ).toContainText("이전 버전");
-
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("row").filter({ hasText: "release-v2.dxf" }),
+  ).toContainText("Current");
   await page.goto("/?filename=release-v&site=DXF릴리스&current=false");
-  await expect(
-    page.getByRole("button", { name: "현재 버전만 표시", exact: true }),
-  ).toHaveAttribute("aria-pressed", "false");
-  await expect(
-    page.getByRole("combobox", { name: "현재 버전", exact: true }),
-  ).toHaveCount(0);
-  await expect(
-    page.getByRole("row").filter({ hasText: "release-v1.dxf" }),
-  ).toContainText("이전 버전");
-  await expect(
-    page.getByRole("row").filter({ hasText: "release-v2.dxf" }),
-  ).toContainText("Current");
-  await expect(page.getByText("등록일 최신순 · 모든 버전")).toBeVisible();
-
-  const toggle = page.getByRole("button", {
-    name: "현재 버전만 표시",
-    exact: true,
-  });
-  await toggle.click();
-  await expect(page).toHaveURL(/filename=release-v/);
-  await expect(page).toHaveURL(/site=DXF%EB%A6%B4%EB%A6%AC%EC%8A%A4/);
-  await expect(page).toHaveURL(/current=true/);
-  await expect(page).toHaveURL(/page=1/);
-  await expect(
-    page.getByRole("button", { name: "현재 버전만 표시", exact: true }),
-  ).toHaveAttribute("aria-pressed", "true");
-  await expect(
-    page.getByRole("row").filter({ hasText: "release-v1.dxf" }),
-  ).toHaveCount(0);
-  await expect(
-    page.getByRole("row").filter({ hasText: "release-v2.dxf" }),
-  ).toContainText("Current");
-  await page
-    .getByRole("button", { name: "현재 버전만 표시", exact: true })
-    .click();
-  await expect(page).not.toHaveURL(/current=true/);
-  await expect(
-    page.getByRole("button", { name: "현재 버전만 표시", exact: true }),
-  ).toHaveAttribute("aria-pressed", "false");
-  await expect(
-    page.getByRole("row").filter({ hasText: "release-v1.dxf" }),
-  ).toContainText("이전 버전");
-
-  await page
-    .getByRole("row")
-    .filter({ hasText: "release-v1.dxf" })
-    .locator('a[href^="/cad/locations/"]')
-    .first()
-    .click();
-  await page
-    .getByRole("row")
-    .filter({ hasText: "release-v1.dxf" })
-    .getByRole("button", { name: "Current 지정" })
-    .click();
-  await expect(
-    page.getByRole("row").filter({ hasText: "release-v1.dxf" }),
-  ).toContainText("● Current");
+  await expect(page.getByRole("button", { name: "현재 버전만 표시", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("combobox", { name: "현재 버전", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("row").filter({ hasText: "release-v1.dxf" })).toHaveCount(0);
+  await expect(page.getByRole("row").filter({ hasText: "release-v2.dxf" })).toContainText("Current");
+  await expect(page.getByText("등록일 최신순 · 현재 버전 도면")).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("row").filter({ hasText: "release-v1.dxf" })).toHaveCount(0);
+  await page.getByRole("row").filter({ hasText: "release-v2.dxf" })
+    .locator('a[href^="/cad/locations/"]').first().click();
+  await expect(page.getByRole("row").filter({ hasText: "release-v1.dxf" })).toContainText("이전 버전");
+  await page.getByRole("row").filter({ hasText: "release-v1.dxf" })
+    .getByRole("button", { name: "Current 지정" }).click();
+  await expect(page.getByRole("row").filter({ hasText: "release-v1.dxf" })).toContainText("● Current");
   await page.reload();
   await expect(
     page.getByRole("row").filter({ hasText: "release-v2.dxf" }),
@@ -150,6 +108,9 @@ test("TC-E2E-001: UI registration through current replacement and both DXF rende
       .filter((v: { isCurrent: boolean }) => v.isCurrent)
       .map((v: { id: string }) => v.id),
   ).toEqual([files[0].id]);
+  await page.goto("/?filename=release-v&site=DXF릴리스");
+  await expect(page.getByRole("row").filter({ hasText: "release-v1.dxf" })).toContainText("Current");
+  await expect(page.getByRole("row").filter({ hasText: "release-v2.dxf" })).toHaveCount(0);
   await page
     .getByRole("row")
     .filter({ hasText: "release-v1.dxf" })
