@@ -1,5 +1,13 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #45 (2026-10-25) — Current-only 도면 목록, v0.31.0
+
+- `/`의 도면 목록은 사용자가 변경할 수 없는 **Current Version 전용**이다. `currentOnlyListParams`에서 기존 검색 query 검증 뒤 `current=true`를 서버 조회에 강제한다. `?current=false` 및 파라미터 누락도 홈에서는 Current만 표시하며 필터·count·pageSize는 보존한다.
+- #8의 `현재 버전만 표시` 토글은 제거한다(#16의 드롭다운 제거 유지). 이전 버전/Current 미지정 층은 `위치별 버전 관리`→`/masters` 다섯 단계 선택→층 `버전 이력` 링크→Location 상세에서 조회·Current 재지정할 수 있다. Location별 Current는 자동 승격하지 않는다.
+- **홈 전용 정책**: `/api/cad-files?current=false` 및 공통 `listQuery`/Location 상세는 기존처럼 non-Current/전체 이력 조회가 가능해야 한다. DB migration·기존 도면/버전/원본·권한 변경 없음.
+- 회귀: TC-LIST-045-001~003 및 기존 Workflow/Link/Name/Current/Delete/Master E2E. **2026-10-25 최초 PR CI #40142618328 ESLint 실패**(`masters/page.tsx` JSX apostrophe) 및 P2 리뷰에서 `upload.spec.ts` 비Current 홈 접근 회귀 발견; `69e6b175`로 둘 다 보완. 첫 CI에서 E2E는 SKIPPED이므로 실패라고 표기하지 않는다. 수정 HEAD의 CI 증거 전 NOT VERIFIED. 상세 [Issue45](out/Issue45.md), [FailureLedger](out/FailureLedger.md), [TestPlan](out/TestPlan.md).
+
+
 ## Issue #38 (2026-10-24) — Viewer 앱형 메뉴·도킹 셸 U1, v0.30.0
 
 - Epic #37 / 선행 U1: `ViewerAppShell`·`ViewerMenuBar`·`viewerAppReducer`에 CAD 앱 메뉴/좌우 패널 호스트·독립 상태를 도입한다. CSS immersive 기본 진입·사용자 제스처 native fullscreen(#25), 기존 ViewerManager/Adapter lifecycle, 원본 DB/API는 유지한다.

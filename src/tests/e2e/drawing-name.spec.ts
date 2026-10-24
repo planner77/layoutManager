@@ -7,6 +7,7 @@ async function register(
   request: import("@playwright/test").APIRequestContext,
   filename: string,
   drawingName?: string,
+  makeCurrent = false,
 ) {
   const multipart: Record<
     string,
@@ -24,7 +25,7 @@ async function register(
       floor: "6층",
     })),
     registeredAt: "2026-09-11",
-    makeCurrent: "false",
+    makeCurrent: String(makeCurrent),
     deletePassword: "1234",
     description: "",
   };
@@ -49,6 +50,7 @@ test("TC-NAME-002/003: default and custom names lead list, viewer and delete con
     request,
     "name-source-two.dxf",
     "<b>사용자 설비 배치도</b>",
+    true,
   );
   expect(automatic).toMatchObject({
     displayName: `[이름E2E][전용사업장][N동][6층]_V${automatic.version}`,

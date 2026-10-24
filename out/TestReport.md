@@ -1,5 +1,13 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issue #45 / v0.31.0 — Current-only CAD 목록 (2026-10-25)
+
+- **구현 상태:** `currentOnlyListParams` 홈 Current 강제, 토글 제거, 기준정보→층 상세 링크 추가, #8/#16 관련 E2E 기대 변경 및 TC-LIST-045-001~003 신규 시험 코드 작성.
+- **최초 PR CI 검증 결과:** [Run 40142618328](https://github.com/planner77/layoutManager/actions/runs/40142618328) (HEAD `1a35b089`): npm ci·Prisma Client 생성·TypeScript **PASS**, ESLint **FAIL** (`src/app/masters/page.tsx:8:67,8:73`, `react/no-unescaped-entities` 두 건). 해당 Job의 Vitest·Build·Chromium E2E·Legacy migration E2E는 **SKIPPED**. Docker-runtime 독립 Job은 **SUCCESS**. 로컬 실행은 **NOT RUN**.
+- **분석/보완:** [P2 review #4368927952](https://github.com/planner77/layoutManager/pull/46#discussion_r4368927952)가 `upload.spec.ts`의 비Current 홈 선택 회귀를 지적했으나 최초 Run의 E2E는 미실행이므로 **예상 실패**로 분류. [fix `69e6b175`](https://github.com/planner77/layoutManager/commit/69e6b17548f35c248c700c5526e9993fc3eaf7c7)에서 JSX escape, Current 행→Location 전체 이력→이전 Version Current 지정으로 갱신. 5단계 위치 관리/Current 삭제 및 전체 regression, 수정 HEAD의 새 PR CI 결과는 **미검증**. 자세한 실패·예방 기록: [FailureLedger](FailureLedger.md).
+- **추적:** [Issue45](Issue45.md) AC1~9 → TC-LIST-045-001~003 및 기존 TC-LIST/DELETE/MASTER/LINK/NAMES/`TC-ISSUE-001/LIST`. 수정 HEAD의 성공 판정은 새로운 PR CI 결과로만 할 수 있다.
+
+
 ## U-ISSUE38-PR44-REVIEW-20261024 — PR CI 성공 이후 P1 ESC 리뷰 보완 (새 CI 필요)
 
 - 기존 PR #44 / head `a2b8bbdf5c` / [PR CI #40077595050](https://github.com/planner77/layoutManager/actions/runs/40077595050): **completed / success**, 2026-10-24 08:25:48 UTC 완료. 이 성공은 리뷰 수정 **이전** 커밋에만 유효하다.

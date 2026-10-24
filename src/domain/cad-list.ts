@@ -97,9 +97,11 @@ export function listUrl(query: CadListQuery, page: number) {
   return `/?${params}`;
 }
 
-export function currentOnlyToggleUrl(query: CadListQuery) {
-  return listUrl(
-    { ...query, current: query.current === "true" ? "" : "true" },
-    1,
-  );
+// The drawing-library UI always shows the explicitly designated Current Version.
+// Keep listQuery() unchanged for API callers that intentionally request history.
+export function currentOnlyListParams(input: URLSearchParams) {
+  const query = listQuery(input); // Validate before normalizing legacy current=false.
+  const params = new URLSearchParams(input);
+  params.set("current", "true");
+  return { query: { ...query, current: "true" as const }, params };
 }

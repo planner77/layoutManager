@@ -1,5 +1,20 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #45 / v0.31.0 — Current-only 목록 및 이력 관리 시험 계획 (2026-10-25)
+
+| TC | 검증 방법 | AC |
+| --- | --- | --- |
+| TC-LIST-045-001 (Vitest) | Current 파라미터 누락/true/false에서 홈 전용 쿼리 정규화, 기존 검색/페이지·pageSize 유지, API `listQuery(current=false)` 호환/오류 검증 | AC1/AC3/AC5/AC8 |
+| TC-LIST-045-002 (Vitest+DB) | Current 지정 없는 층과 신/구 비Current 제외, 재지정 시 서버 결과 즉시 변경 및 API history 유지 | AC4/AC6/AC8 |
+| TC-LIST-045-003 (Playwright) | 홈 초기 0건·토글 부재, Current 최신 불일치, 레거시 URL, 필터·API 이력, 기준정보 5단계→Current 없는 층 상세, Current 지정·교체·삭제 후 홈 반영 | AC1~AC8 |
+| TC-E2E-001, TC-LINK-001~003, TC-NAME-002/003, TC-ISSUE-001/LIST | 기존 업로드→Current 교체/Location의 이전 Version 직접 링크·Viewer·다운로드·이름/표시 | AC6/AC7/AC8 |
+| TC-LIST-003/004/005/009, TC-DELETE-002/004, TC-MASTER-003/005/007 | 기존 API Current/non-Current 계약, 페이징, Current 교체·삭제, 마스터·기록 회귀 | AC5~AC8 |
+
+- 검증 단계: `npm ci`, `db:generate`, `typecheck`, `lint`, `npm test`, `npm run build`, `npm run test:e2e`, `npm run test:master-migration`, 기존 Docker-runtime smoke. 사용자 요청에 따라 PR CI 트리거 후 모니터링 생략.
+- 실행 결과는 이 계획의 통과 요건과 구분한다. 로컬/CI의 실행 근거가 확인되지 않은 동안 **NOT RUN / NOT VERIFIED**이며, 이력·데이터/API 손상 없음은 CI/실증으로 최종 확인한다.
+- 상세 매핑: [Issue45](Issue45.md).
+
+
 ## Issue #38 / U1 v0.30.0 — 앱형 Viewer 회귀 시험 계획
 
 | TC | 검증 대상 | 기대 결과 / 연계 AC |

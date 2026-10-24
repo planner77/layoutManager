@@ -1,5 +1,13 @@
 # 운영·환경설정 초안
 
+## 2026-10-25 / Issue #45 — 도면 목록 Current-only 운영·조회 동선
+
+- `/`은 `CadLocation.currentVersionId`에 지정된 Version만 표시한다. 등록된 파일이 있어도 Current를 지정하지 않았다면 홈에서 보이지 않는다. 가장 높은 Version 번호도 Current 지정이 없으면 보이지 않는다. 이는 데이터 손실이 아니다.
+- 확인·복구 동선: `위치별 버전 관리`(`/masters`)에서 사업부→제품→사업장/법인→동→층을 선택하고 **버전 이력**을 열어 Version 목록과 Current 상태를 확인한다. 해당 Version의 **Current 지정**으로 목록에 다시 노출할 수 있다. 기존 Version 원본·직접 링크는 그대로다.
+- `/api/cad-files?current=false`는 기존 이력 소비자 호환으로 non-Current Version을 반환한다. 홈의 과거 `?current=false` URL은 현재 도면 전용으로 해석한다. DB migration/데이터 정리·자동 승격 작업은 필요 없으며 금지.
+- 진단/회귀 및 기능 범위는 [Issue45](Issue45.md), [TestPlan](TestPlan.md) 참조. 실제 배포 전 PR CI 및 권한별 운영 검증 필요.
+
+
 ## Issue #31 v0.28.3 — 폐쇄망 DXF 브라우저 수용 실행
 
 - Source-only 검증: `cd src && npm run audit:outline -- --file /private/sample.dxf` (개인/운영 CAD는 외부에 업로드하지 않음).
