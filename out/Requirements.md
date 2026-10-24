@@ -1,5 +1,13 @@
 # 상세 요구사항
 
+## Issue #45 / v0.31.0 — 도면 목록은 항상 Current 전용 (2026-10-25)
+
+- **FR-LIST-045-01 (AC1/AC3/AC4):** `/`의 모든 조회(최초/검색/초기화/페이지/새로고침/직접 URL)는 Location에 지정된 `Current Version`만 반환한다. 최신 Version을 자동 승격하지 않으며 Current 미지정 Location은 제외한다. 과거 `current=false`/누락 URL도 Current-only, 잘못된 입력은 기존 검증으로 거부.
+- **FR-LIST-045-02 (AC2/AC5):** 목록의 ON/OFF 토글·전체 버전 모드를 제거한다. 파일명/설명/사업부→제품→사업장·법인→동→층/형식/pageSize를 Current와 AND 결합하고 총건수/페이지/빈 상태도 서버 Current 결과만 집계한다.
+- **FR-LIST-045-03 (AC6/AC7):** Current 없는 층도 기준정보에서 `버전 이력` 링크로 Location 상세에 진입하여 이력 확인/Current 재지정/이전 버전 보기·다운로드/삭제를 계속할 수 있어야 한다. 재조회는 새로운 Current를 반영한다.
+- **NFR-LIST-045-01 (AC8/AC9):** `/api/cad-files`의 `current=true|false` 계약, `CadListService`·DB Current 0~1개/FK/원본 불변. Schema/migration 없음. 요구사항·시험·문서 추적 유지. [Issue45](Issue45.md), [TestPlan](TestPlan.md), [Decisions](Decisions.md).
+
+
 ## Issue #38 / U1 — v0.30.0 Viewer 앱형 메뉴·도킹 계약 (2026-10-24)
 
 - **FR-U1-01 (AC-U1-01):** #25 기본 CSS immersive 진입·직접 링크·새로고침·native 사용자 선택을 보존하면서 단일 앱 메뉴바/도킹 셸을 제공한다.

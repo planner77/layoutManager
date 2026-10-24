@@ -1,5 +1,13 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issue #45 / v0.31.0 — Current-only CAD 목록 (2026-10-25)
+
+- **구현 상태:** `currentOnlyListParams` 홈 Current 강제, 토글 제거, 기준정보→층 상세 링크 추가, #8/#16 관련 E2E 기대 변경 및 TC-LIST-045-001~003 신규 시험 코드 작성.
+- **실행 증거:** 로컬 `npm ci`/TypeScript/ESLint/Vitest/Next Build/Playwright/Docker 검증을 실행하지 않았음 (**NOT RUN**). PR CI의 결과 확인 전 성공/실패를 기록하지 않는다. 사용자는 PR CI 시작 후 모니터링을 요청하지 않았다.
+- **미검증:** 실제 Dev/Chrome 브라우저 상의 5단계 마스터 클릭·Current 지정/삭제 UX와 전체 regression, PR CI 결론, 운영 배포. 증거 확보 시 별도 보고/실패 원장 갱신 필요.
+- **추적:** [Issue45](Issue45.md) AC1~9 → TC-LIST-045-001~003 및 기존 TC-LIST/DELETE/MASTER/LINK/NAMES. `out/FailureLedger.md`는 실패 확인 시에만 신규 Run을 추가한다.
+
+
 ## U-ISSUE38-PR44-REVIEW-20261024 — PR CI 성공 이후 P1 ESC 리뷰 보완 (새 CI 필요)
 
 - 기존 PR #44 / head `a2b8bbdf5c` / [PR CI #40077595050](https://github.com/planner77/layoutManager/actions/runs/40077595050): **completed / success**, 2026-10-24 08:25:48 UTC 완료. 이 성공은 리뷰 수정 **이전** 커밋에만 유효하다.

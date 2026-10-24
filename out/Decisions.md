@@ -1,5 +1,13 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-034 — 홈 Current 전용 목록, API 이력 조회 유지 (2026-10-25 / Issue #45)
+
+- **Context:** #8 토글은 기본 OFF, #16에서 중복 드롭다운만 제거했다. 따라서 `/` 접근 시 과거 Version이 함께 보이며 `?current=false` 같은 레거시 URL도 목록의 전체 Version을 노출한다. Location별 Current는 최대 하나이며 최신 등록 Version과 다를 수 있다.
+- **Decision:** UI 홈에서만 기존 조회 파서의 유효성을 검사한 뒤 `current=true`로 강제한다(`currentOnlyListParams`). 리포지토리에서 필터링하고 총건수·pagination을 재계산한다. 토글/전체 모드 삭제. 공유 `listQuery`·`/api/cad-files?current=false` 계약은 보존한다. 기준정보 트리의 층마다 `버전 이력` 링크를 제공하여 Current 없는 위치의 접근·재지정을 보장한다.
+- **Rejected:** (1) API 기본값을 Current로 변경→외부 소비자/이력 조회 파괴. (2) 프런트엔드 row 숨김→count/pagination 불일치. (3) Current 없는 위치 자동 승격→관리 의도 위반. (4) 이력 조회/다운로드 제거→기존 Version 손실·업무 퇴행.
+- **Consequences:** 홈페이지의 `current=false`는 별도의 안내 없이 Current-only로 정규화되며, Location 상세에서는 전체 이력 조회/Current 지정이 가능하다. DB/API/migration/원본 변경 없음. 실제 E2E/CI 결과는 [TestReport](TestReport.md)에서 별도 확인; 검증 전 PASS 금지. 상세 [Issue45](Issue45.md).
+
+
 ## ADR-033 — 앱형 도킹 Viewer와 Escape 단일 계층 우선순위 (2026-10-24, Issue #38)
 
 - **Context:** #25는 CSS immersive 자동 진입, native 요청은 클릭으로 제한한다. #17 레이어 Overlay와 #31 하단 외곽선 Overlay가 캔버스 hit test·가용 영역을 침범하고, #25/#31 ESC가 같은 키 입력으로 선택 취소와 fullscreen 이탈을 동시에 실행하는 충돌이 있었다.
