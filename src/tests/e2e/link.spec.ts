@@ -114,7 +114,7 @@ test("TC-LINK-002/003: DWG canonical renderer and clipboard failure fallback", a
   baseURL,
 }) => {
   const dwg = await upload(request, "link.dwg");
-  await page.goto(`/?filename=link.dwg`);
+  await page.goto(`/cad/locations/${dwg.locationId}`);
   await page.evaluate(() =>
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
@@ -154,7 +154,7 @@ test("TC-LINK-003: unavailable clipboard exposes a manual link fallback", async 
   baseURL,
 }) => {
   const file = await upload(request, "link-unavailable.dxf");
-  await page.goto("/?filename=link-unavailable.dxf");
+  await page.goto(`/cad/locations/${file.locationId}`);
   await page.evaluate(() =>
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,

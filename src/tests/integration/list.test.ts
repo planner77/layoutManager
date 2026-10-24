@@ -209,7 +209,7 @@ test("TC-LIST-045-002: Current-only scope excludes previous/newer and unassigned
   await repo.setCurrent(first.locationId, first.id);
   expect((await lists.list(scope())).items.map((row) => row.id)).toEqual([first.id]);
   expect((await lists.list(currentOnlyListParams(new URLSearchParams("filename=never-current")).query)).total).toBe(0);
-  expect((await lists.location(unassigned.floorId)).versions).toHaveLength(1);
+  expect((await lists.location(unassigned.floor.id)).versions).toHaveLength(1);
 });
 
 test("TC-LIST-009: current-only filter combines with existing filters and excludes locations without current", async () => {
