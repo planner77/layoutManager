@@ -3,7 +3,7 @@
 - 기준일: 2026-10-25
 - 이슈: https://github.com/planner77/layoutManager/issues/45
 - 대상 버전: `0.31.0` (UI 정책 변경 / MINOR)
-- 상태: 구현·회귀 테스트 코드 작성, PR CI 실행 결과 확인 전
+- 상태: 최초 PR CI ESLint 실패(실패 Run 40142618328) 원인 보완; 새 수정 HEAD PR CI 결과 미검증
 - 설계 기준: `AGENTS.md`, `out/Requirements.md`, `out/Architecture.md`, `out/Decisions.md` (저장소에 별도 `DESIGN.md`는 없음)
 
 ## 1. 현행 분석
@@ -53,9 +53,16 @@
 
 기존 `workflow.spec.ts`의 OFF→ON→OFF 검사에서 Current-only 홈페이지 계약으로 변경하며, `link.spec.ts`의 non-Current 사례는 Location 상세로 이동한다. `drawing-name.spec.ts`는 홈에서 검증하는 버전을 명시적 Current로 등록한다.
 
-## 5. 검증 상태와 릴리스 경계
+## 5. 최초 CI 실패와 보완 (2026-10-25)
+
+- [Run 40142618328](https://github.com/planner77/layoutManager/actions/runs/40142618328)의 ESLint step은 `src/app/masters/page.tsx` 내 신규 설명의 인용부호 2개 때문에 `react/no-unescaped-entities`로 FAIL. Typecheck와 Docker-runtime은 PASS; E2E는 실패가 아니라 **SKIPPED**.
+- [PR review P2 #4368927952](https://github.com/planner77/layoutManager/pull/46#discussion_r4368927952)가 최초 CI에서 아직 실행되지 않은 `upload.spec.ts / TC-ISSUE-001/LIST`의 이전 비Current 행 표시 기대가 현행 홈 정책과 충돌함을 발견.
+- [fix `69e6b175`](https://github.com/planner77/layoutManager/commit/69e6b17548f35c248c700c5526e9993fc3eaf7c7): JSX `&apos;` escape 및 기존 Current 행으로 Location 상세에 진입해 이전 Version을 선택하는 테스트 수정. 새 Run 전 성공으로 판정하지 않음.
+- 기록: [FailureLedger](FailureLedger.md), [TestReport](TestReport.md).
+
+## 6. 검증 상태와 릴리스 경계
 
 - 준비된 자동 시험: `src/tests/integration/list.test.ts`, `src/tests/e2e/current-only-list.spec.ts`, `workflow.spec.ts`, `link.spec.ts`, `drawing-name.spec.ts`.
 - 권장 실행: `cd src && npm ci && npm run db:generate && npm run typecheck && npm run lint && npm test && npm run build && npm run test:e2e`. PR CI의 독립 Docker-runtime, legacy migration E2E 역시 정책상 검증 대상.
-- **로컬 실행 증거 없음 / PR CI 결과 미확인 (NOT VERIFIED).** PR 생성·CI 트리거는 통과와 다르다. 실 운영 배포·GHCR 게시·Issue 종료는 이번 요청에 포함되지 않는다.
+- **로컬 실행 증거 없음 / 최초 PR CI 실패 확인 / 수정 HEAD의 PR CI 결과 미확인 (NOT VERIFIED).** PR CI를 시작해도 통과와 다르며, 실 운영 배포·GHCR 게시·Issue 종료는 이번 요청 범위에 포함되지 않는다.
 - 사용자 지정: PR CI를 시작한 뒤 **모니터링하지 않는다**. 향후 실패가 보고되면 `out/FailureLedger.md`에 해당 Run/Step/원인/대응/재실행을 기록한다.
