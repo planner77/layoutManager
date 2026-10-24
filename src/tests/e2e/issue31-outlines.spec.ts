@@ -76,16 +76,19 @@ test('TC-OUT-E2E-001: selection and convex/precise preview, non-destructive JSON
  await expect(page.getByTestId('cad-viewer-shell')).toHaveAttribute('data-fullscreen','true');
  await expect(page.getByTestId('outline-selection-count')).toContainText('선택 1개');
  await page.getByRole('button',{name:'전체 화면 종료',exact:true}).click();
- // Force CSS fallback and verify Escape clears selection AND exits fullscreen.
+ // Force CSS fallback and verify Escape prioritizes selection before fullscreen.
  await page.getByTestId('cad-viewer-shell').evaluate(shell=>{
    Object.defineProperty(shell,'requestFullscreen',{configurable:true,
       value:()=>Promise.reject(new Error('test CSS fallback'))});
  });
  await page.getByRole('button',{name:'전체 화면',exact:true}).click();
  await expect(page.getByTestId('cad-viewer-shell')).toHaveAttribute('data-fullscreen','true');
+ // U1 layered ESC: selected CAD objects are cleared first, immersive exits second.
+ await page.keyboard.press('Escape');
+ await expect(page.getByTestId('outline-selection-count')).toContainText('선택 0개');
+ await expect(page.getByTestId('cad-viewer-shell')).toHaveAttribute('data-fullscreen','true');
  await page.keyboard.press('Escape');
  await expect(page.getByTestId('cad-viewer-shell')).toHaveAttribute('data-fullscreen','false');
- await expect(page.getByTestId('outline-selection-count')).toContainText('선택 0개');
  await tools.getByRole('button',{name:'탐색 모드'}).click();
  await page.getByRole('button',{name:'다시 불러오기'}).click();
  await expect(page.getByTestId('outline-selection-count')).toContainText('선택 0개');
