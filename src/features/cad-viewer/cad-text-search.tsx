@@ -83,7 +83,7 @@ export function CadTextSearch({
         onOpenChange(false);
       }
     }}
-    className="pointer-events-none absolute inset-y-2 right-2 z-[40] flex max-w-[calc(100%-1rem)] flex-col items-end"
+    className="pointer-events-none absolute inset-y-2 right-2 z-[40] flex max-w-[calc(100vw-1rem)] flex-col items-end"
   >
     <Button type="button" size="sm" variant="outline" onClick={toggle}
       aria-expanded={open} aria-controls={id} disabled={format === 'DXF' && (loading || !ready)}
