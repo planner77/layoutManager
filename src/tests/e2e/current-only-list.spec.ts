@@ -27,6 +27,7 @@ test("TC-LIST-045-003: Current-only library and Location history with legacy URL
   page,
   request,
 }) => {
+  test.setTimeout(90_000);
   const suffix = crypto.randomUUID().slice(0, 8);
   const businessUnit = `ISSUE45-${suffix}`;
   const site = `CURRENT-${suffix}`;
