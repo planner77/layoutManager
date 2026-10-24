@@ -1,5 +1,15 @@
 # 상세 요구사항
 
+## Issue #38 / U1 — v0.30.0 Viewer 앱형 메뉴·도킹 계약 (2026-10-24)
+
+- **FR-U1-01 (AC-U1-01):** #25 기본 CSS immersive 진입·직접 링크·새로고침·native 사용자 선택을 보존하면서 단일 앱 메뉴바/도킹 셸을 제공한다.
+- **FR-U1-02 (AC-U1-02):** 기존 Renderer 전환/Zoom/fit/원본 다운로드/링크 복사/뒤로/종료/재시도/Version·설명/로딩·경고/레이어/검색/선택을 모두 유지하고 접근 가능하게 한다.
+- **FR-U1-03 (AC-U1-03):** 레이어 도크 표시 상태와 개별 CAD 레이어 visibility는 서로 독립. 패널 열기·닫기로 ViewerManager/Adapter 생성·source 재요청·camera reset 금지.
+- **FR-U1-04 (AC-U1-04):** 좌측 레이어·우측 트리 패널 호스트와 가운데 캔버스는 공간 분할 방식. 모바일(320px)/낮은 높이에서 단일 도크 전환과 viewport 크기 반영, Tab/focus/ESC 1회 한 계층 처리.
+- **FR-U1-05 (AC-U1-05):** 두 DXF Renderer와 DWG Viewer 공통 셸 적용, unsupported 도구 비활성/사유 표시. `outlineToolEnabled=false`, `outlineTreeOpen=false` 초기 상태 및 U2/U3/U6 확장 가능한 독립 상태 계약.
+- **범위 경계:** #40 생성 모드 토글, #41 관리자 타입 서버 API/DB(인증 RBAC 승인 전 차단), #42 메타데이터, #43 타입별 트리 기능은 U1에서 미구현/비활성. #31 임시 외곽선 기능 유지, 원본 CAD/Version/SHA/DB/API 변경 금지. 상세 [Issue38](Issue38.md).
+
+
 ## Issue #25 — 0.29.0 기본 immersive Viewer (PR CI 전)
 
 - FR-VIEW-IMM-001: 도면 목록/상세/직접 링크(주소창·새 탭·새 Context)·브라우저 새로고침 등 동일 Viewer URL 진입 즉시 CSS fixed/100dvh 전체 뷰포트 레이아웃을 기본 제공한다. native Fullscreen API 자동 요청은 하지 않으며 기존 Version UUID·renderer query 호환을 보존한다.

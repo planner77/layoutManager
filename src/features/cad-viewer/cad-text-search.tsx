@@ -11,7 +11,7 @@ const PAGE_SIZE = 100;
 
 /** A renderer-neutral overlay; works inside regular, CSS immersive and native fullscreen shells. */
 export function CadTextSearch({
-  getManager, format, ready, loading, layers, selectedLayers,
+  getManager, format, ready, loading, layers, selectedLayers, open, onOpenChange,
 }: {
   getManager: () => ViewerManager | null;
   format: ViewerFormat;
@@ -19,9 +19,11 @@ export function CadTextSearch({
   loading: boolean;
   layers: readonly string[];
   selectedLayers: ReadonlySet<string>;
+  open: boolean;
+  onOpenChange: (value: boolean) => void;
 }) {
   const id = useId();
-  const [open, setOpen] = useState(false);
+  const setOpen = onOpenChange;
   const [index, setIndex] = useState<CadTextIndex | null>(null);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState('');
@@ -73,7 +75,18 @@ export function CadTextSearch({
     if (next && ready && format === 'DXF' && !index) { setWorking(true); setError(''); }
   }
 
-  return <div className="pointer-events-none absolute right-4 top-20 z-[40] flex max-w-[calc(100vw-2rem)] flex-col items-end">
+  return <div
+    onKeyDown={event => {
+      // SelectionController handles Escape during window capture and may consume it.
+      // Never close this panel when another UI layer already used this keystroke.
+      if (event.key === 'Escape' && open && !event.defaultPrevented) {
+        event.preventDefault();
+        event.stopPropagation();
+        onOpenChange(false);
+      }
+    }}
+    className="pointer-events-none absolute inset-y-2 right-2 z-[40] flex max-w-[calc(100vw-1rem)] flex-col items-end"
+  >
     <Button type="button" size="sm" variant="outline" onClick={toggle}
       aria-expanded={open} aria-controls={id} disabled={format === 'DXF' && (loading || !ready)}
       className="pointer-events-auto max-w-full border-slate-300 bg-white text-slate-900 shadow">
@@ -81,7 +94,7 @@ export function CadTextSearch({
     </Button>
     {open && <aside id={id} aria-label="도면 내 텍스트 검색"
       data-testid="cad-text-search"
-      className="pointer-events-auto mt-2 flex max-h-[min(64dvh,38rem)] w-[min(23rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-lg border border-slate-200 bg-white p-3 text-slate-900 shadow-xl">
+      className="pointer-events-auto mt-2 flex min-h-0 max-h-[min(64dvh,38rem)] w-[min(23rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-lg border border-slate-200 bg-white p-3 text-slate-900 shadow-xl">
       <div className="mb-2 flex items-center justify-between gap-2">
         <strong className="text-sm">현재 도면 내 텍스트 검색</strong>
         <Button type="button" size="sm" variant="ghost" onClick={() => setOpen(false)}>닫기</Button>
@@ -91,7 +104,7 @@ export function CadTextSearch({
           onChange={event => { setQuery(event.target.value); setSelected(-1); setPage(0); setFocusError(''); }}
           onKeyDown={event => {
             if (event.key === 'Enter' && matches.length) { event.preventDefault(); selectResult(0); }
-            if (event.key === 'Escape') { event.stopPropagation(); setOpen(false); }
+            if (event.key === 'Escape' && !event.defaultPrevented) { event.preventDefault(); event.stopPropagation(); setOpen(false); }
           }}
           placeholder="한글, 영문, 숫자 또는 일부 문자열"
           className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-teal-600" />

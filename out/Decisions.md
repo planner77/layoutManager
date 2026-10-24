@@ -1,5 +1,14 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-033 — 앱형 도킹 Viewer와 Escape 단일 계층 우선순위 (2026-10-24, Issue #38)
+
+- **Context:** #25는 CSS immersive 자동 진입, native 요청은 클릭으로 제한한다. #17 레이어 Overlay와 #31 하단 외곽선 Overlay가 캔버스 hit test·가용 영역을 침범하고, #25/#31 ESC가 같은 키 입력으로 선택 취소와 fullscreen 이탈을 동시에 실행하는 충돌이 있었다.
+- **Decision:** Version 단위 `CadViewer`/ViewerManager 생명주기는 그대로 두고 `<ViewerAppShell>`에 메뉴바·좌/중/우 flex 도킹 영역, 스크롤 가능한 하단 #31 도구 및 상태바를 넣는다. `ViewerAppState`의 패널 토글은 개별 CAD Layer visibility와 독립. 지원 Renderer만 layer 도킹 노출, U3/U4/U6 미구현/보안 게이트 항목은 명시적으로 비활성.
+- **ESC policy:** 선택 도구의 active selection 취소가 우선(SelectionController defaultPrevented), 다음 검색 패널 닫기, 그 다음 native fullscreen 종료, 마지막 CSS immersive 종료. 이벤트 하나로 여러 계층을 종료하지 않는다. 이 부분만 #25 기존 ESC '패널 없는 상태에서 CSS 종료'를 구체화한다.
+- **Alternatives:** absolute overlay 계속 확대, Renderer 새로 load하는 Layout mode, 미완성 버튼 가짜 활성화. 모두 캔버스 occlusion/state loss/기능 오인 우려로 배제.
+- **Effects:** 큰 화면 좌우 도크는 실제 레이아웃 공간을 차지, 모바일은 하나의 compact dock만 문서 흐름에 표시. 도킹/검색 state는 Manager.load 의존성에 넣지 않고 native fullscreen은 동일 shell subtree 사용. DB/API/원본/외곽선 Geometry/Worker 변경 없음. 실제 CI/브라우저/실도면 시험은 검증 전 NOT RUN. [Issue38](Issue38.md).
+
+
 ## ADR-032 — Viewer 기본 viewport immersive, native fullscreen은 명시 클릭 전용 (2026-10-17)
 
 - Context: #10은 로드 후 전체 화면 버튼 선택, #17은 fullscreen layer UI 제공. #25는 모든 URL/목록 진입에서 자동 전체 화면을 원하지만 Fullscreen API는 일시적 사용자 활성화가 필요해 URL 접근에서 자동 요청하면 실패한다.

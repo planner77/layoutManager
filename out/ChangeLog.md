@@ -1,5 +1,13 @@
 # ChangeLog
 
+## 0.30.0 — 2026-10-24 / Issue #38 앱형 Viewer 메뉴바·도킹 셸 (PR CI 시작 전)
+
+- Added: `ViewerAppShell`(CSS/native 공통 shell, left/center/right docking host, mobile compact panel, 하단 도구, status), `ViewerMenuBar`, 독립 `ViewerAppState` reducer, U2/U3/U6 확장 계약.
+- Changed: 기존 #17 fullscreen layer panel을 controlled dock으로 전환. 상단 레이어 메뉴에서 보이기/숨기기를 제어하되 실제 layer visibility·Canvas/zoom·원본 다운로드 상태는 보존. 검색 패널의 controlled 열기/ESC 처리, selection→search→native→CSS ESC 우선순위 명시.
+- Compatibility: 기존 Renderer(dxf-viewer/three-dxf-viewer/libredwg-web), version URL, #31 브라우저 임시 결과/JSON, #25 native 사용자 활성화/immersive policy 및 DB/API/schema/CAD bytes 유지. Outline ON/OFF·tree·Admin 관리는 후속 이슈까지 메뉴 비활성.
+- Tests: U1 state Unit + 2 DXF Renderer/손상 DWG/모바일/레이어/ESC Playwright 신규 작성, #31 회귀 수정. **실제 검증 NOT RUN**. 상세 [Issue38](Issue38.md), [FailureLedger](FailureLedger.md), [TestReport](TestReport.md).
+
+
 ## 0.29.0 — 2026-10-17 / Issue #25 도면 Viewer 기본 immersive 진입 (PR CI 전)
 
 - PR #36 E2E 회귀 보완: Run `38974687861`에서 40 PASS/4 FAIL (도면 원본명 중복, 설명 a11y label 누락, FONT 2 Renderer 일반 모드 버튼 기대). 원본명 중복 제거, 설명의 표시 및 접근성 계약 복원, FONT E2E의 fullscreen→normal 전환 절차 추가. TypeScript/ESLint/Unit/Build/Docker 성공은 이전 HEAD에 한정하고 수정된 HEAD의 검증은 새 PR CI 대기.

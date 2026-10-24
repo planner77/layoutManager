@@ -1,5 +1,11 @@
 # Issue #31 — DXF 복수 선택과 볼록·정밀 외곽선 (0.27.0)
 
+## Issue #38 후속 UI 도킹·ESC 영향 (2026-10-24)
+
+- #31 선택/볼록·정밀 geometry Worker, 임시 확정/JSON 및 영구 API 금지 정책은 그대로 유지한다. #38은 화면 아래쪽에 스크롤 가능한 도킹 도구를 제공하고 Viewer Canvas와 분리한다.
+- SelectionController에서 ESC 1회로 활성 선택을 취소하면 해당 이벤트에서 CSS immersive를 종료하지 않는다(다음 ESC에서 종료). #31 기존 E2E 기대값을 이 단일 계층 우선순위에 맞추어 갱신하였다. 실도면 P0/P5 및 보안 P4 승인 상태는 불변.
+
+
 ### PR #35 P1/P2 리뷰 보완 (2026-10-16)
 
 - 기존 부분 BLOCK 감지에 추가하여 INSERT group code 66 또는 실제 이어진 ATTRIB/SEQEND를 루트에 귀속하며, 지원하지 않는 ATTRIB가 존재하면 루트 INSERT를 stable로 인정하지 않는다. group 66이 누락된 입력도 연속된 속성이 있으면 fail-closed한다.

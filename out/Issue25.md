@@ -1,5 +1,12 @@
 # GitHub Issue #25 — 도면 Viewer 기본 CSS 전체 뷰포트 진입
 
+## Issue #38 후속 UI/ESC 계약 (2026-10-24, v0.30.0)
+
+- #25 기본 CSS immersive/수동 native fullscreen/같은 Version URL 진입 정책은 그대로 유지하며 #38은 도면 조작을 앱 메뉴바/중앙 캔버스/도킹 패널로 재배치한다.
+- ESC가 선택 도구(#31)와 겹친 경우 **선택 해제 1회 → 열린 검색 닫기 → native fullscreen 해제 → CSS immersive 종료** 순서를 적용한다. 원래 #25의 'CSS에서 Esc 종료'는 우선 도구/패널이 없는 상황을 의미한다. ADR-033 및 [Issue38](Issue38.md).
+- 이전 #25 릴리스/CI 근거는 변경하지 않는다. v0.30.0 후속 자동시험 실행 근거는 #38 TestReport/CI에서 별도 확인한다.
+
+
 - 구현 기준일: 2026-10-17
 - 대상: [Issue #25](https://github.com/planner77/layoutManager/issues/25)
 - 기준 브랜치: `feat/issue-25-auto-immersive-viewer` (`main` v0.28.3에서 분기)

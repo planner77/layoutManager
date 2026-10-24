@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { GlobalLoadingOverlay, useGlobalLoading } from '@/components/global-loading';
@@ -8,6 +8,9 @@ import { CopyCadLink } from '@/features/cad-link/copy-cad-link';
 import { FullscreenLayerPanel } from '@/features/cad-viewer/fullscreen-layer-panel';
 import { CadTextSearch } from '@/features/cad-viewer/cad-text-search';
 import { LayerDropdown } from '@/features/cad-viewer/layer-dropdown';
+import { ViewerAppShell } from '@/features/cad-viewer/viewer-app-shell';
+import { ViewerMenuBar } from '@/features/cad-viewer/viewer-menu-bar';
+import { initialViewerAppState, viewerAppReducer } from '@/features/cad-viewer/viewer-app-state';
 import { ViewerManager, type OutlineInfo } from '@/viewers/core/adapter';
 import type {OutlineKind,OutlineEntity} from '@/viewers/core/outline-geometry';
 import type {OutlineResult} from '@/viewers/core/outline-compute';
@@ -52,6 +55,8 @@ export function CadViewer({
   const [isNativeFullscreen, setIsNativeFullscreen] = useState(false);
   const { isLoading, beginLoading, endLoading } = useGlobalLoading();
   const [loading, setLoading] = useState(true);
+  const [appState, dispatchApp] = useReducer(viewerAppReducer, initialViewerAppState);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [layers, setLayers] = useState<string[]>([]);
   const [selectedLayers, setSelectedLayers] = useState<Set<string>>(() => new Set());
@@ -101,9 +106,16 @@ export function CadViewer({
   useEffect(() => {
     if (!isFullscreen) return;
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
-      // Native ESC exits only the browser fullscreen; CSS immersive remains.
+      if (event.key !== 'Escape' || event.defaultPrevented) return;
+      // Highest priority is a pending selection/tool cancellation in the adapter.
+      // An open search pane consumes the next Escape; only then exit native/CSS.
+      if (searchOpen) {
+        event.preventDefault();
+        setSearchOpen(false);
+        return;
+      }
       if (document.fullscreenElement === viewerShell.current) {
+        event.preventDefault();
         void document.exitFullscreen?.().catch(() => undefined);
         return;
       }
@@ -111,12 +123,29 @@ export function CadViewer({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isFullscreen]);
+  }, [isFullscreen, searchOpen]);
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => window.dispatchEvent(new Event('resize')));
     return () => window.cancelAnimationFrame(frame);
   }, [isFullscreen]);
+
+  // The canvas host does not remount when a dock is opened/closed.
+  // All adapters observe size directly or subscribe to the window resize event.
+  useEffect(() => {
+    const element = container.current;
+    if (!element || typeof ResizeObserver === 'undefined') return;
+    let frame = 0;
+    const observer = new ResizeObserver(() => {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(() => window.dispatchEvent(new Event('resize')));
+    });
+    observer.observe(element);
+    return () => {
+      observer.disconnect();
+      window.cancelAnimationFrame(frame);
+    };
+  }, []);
 
 
   function resetOutline() {
@@ -148,6 +177,8 @@ export function CadViewer({
     setLayers([]);
     setSelectedLayers(new Set());
     setRenderer(value);
+    dispatchApp({ type: 'reset' });
+    setSearchOpen(false);
     resetOutline();
     const url = new URL(window.location.href);
     url.searchParams.set('renderer', value);
@@ -162,6 +193,8 @@ export function CadViewer({
     setLayers([]);
     setSelectedLayers(new Set());
     setState({ status: '도면 로딩 중…', ready: false });
+    dispatchApp({ type: 'reset' });
+    setSearchOpen(false);
     resetOutline();
     setAttempt(value => value + 1);
   }
@@ -270,17 +303,27 @@ export function CadViewer({
     };
   }, [versionId, sourceSha256, attempt, renderer, source, format, beginLoading, endLoading]);
 
+  const layerAvailable = isFullscreen && renderer === 'three-dxf-viewer' && layers.length > 0 && state.ready;
+  const outlineAvailable = renderer === 'three-dxf-viewer' && format === 'DXF' && state.ready && !!outlineInfo;
+
   return <div className="space-y-3">
-    <div
-      ref={viewerShell}
-      tabIndex={-1}
-      data-testid="cad-viewer-shell"
-      data-fullscreen={isFullscreen ? 'true' : 'false'}
-      data-native-fullscreen={isNativeFullscreen ? 'true' : 'false'}
-      className={isFullscreen
-        ? 'fixed inset-0 z-[90] flex h-[100dvh] w-screen flex-col overflow-hidden bg-black'
-        : 'relative overflow-hidden rounded-xl border border-slate-200 bg-white'}
-    >
+    <ViewerAppShell
+      shellRef={viewerShell}
+      isFullscreen={isFullscreen}
+      isNativeFullscreen={isNativeFullscreen}
+      menuBar={
+        <ViewerMenuBar
+          layerAvailable={layerAvailable}
+          layerPanelOpen={appState.layerPanelOpen}
+          onToggleLayerPanel={() => dispatchApp({ type: 'toggle-layers' })}
+          outlineAvailable={outlineAvailable}
+          outlineToolEnabled={appState.outlineToolEnabled}
+          outlineTreeOpen={appState.outlineTreeOpen}
+        />
+      }
+      toolbar={
+        <>
+
       <div data-testid="viewer-toolbar" className="relative z-50 shrink-0 border-b border-slate-700 bg-slate-950 p-2 text-white sm:p-3">
         <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
           <h1 className="min-w-0 flex-1 break-all text-base font-bold line-clamp-2" title={displayName}>{displayName}</h1>
@@ -318,19 +361,38 @@ export function CadViewer({
           <LayerDropdown layers={layers} selected={selectedLayers} onLayerChange={setLayerVisibility} onAllChange={setAllLayersVisibility} />
         </div>}
       </div>
-      <div className={isFullscreen ? 'relative min-h-0 flex-1' : 'relative'}>
-      {isFullscreen && renderer === 'three-dxf-viewer' && layers.length > 0 && state.ready && <FullscreenLayerPanel
-        layers={layers}
-        selected={selectedLayers}
-        onLayerChange={setLayerVisibility}
-        onAllChange={setAllLayersVisibility}
-      />}
 
-      {renderer==='three-dxf-viewer' && format==='DXF' && state.ready && outlineInfo && <div
+        </>
+      }
+      layerPanel={layerAvailable && appState.layerPanelOpen ? (
+        <FullscreenLayerPanel
+          layers={layers}
+          selected={selectedLayers}
+          onLayerChange={setLayerVisibility}
+          onAllChange={setAllLayersVisibility}
+          onClose={() => dispatchApp({ type: 'close-layers' })}
+        />
+      ) : null}
+      compactPanel={appState.compactPanel}
+      canvas={
+        <>
+          <CadTextSearch key={versionId + ':' + renderer + ':' + attempt}
+            getManager={getManager} format={format} ready={state.ready} loading={loading}
+            layers={layers} selectedLayers={selectedLayers}
+            open={searchOpen} onOpenChange={setSearchOpen} />
+          <div
+            ref={container}
+            data-testid="cad-canvas"
+            className="absolute inset-0 h-full min-h-0 w-full overflow-hidden bg-black"
+            aria-label={`${format} 도면`}
+          />
+        </>
+      }
+      tools={
+
+renderer==='three-dxf-viewer' && format==='DXF' && state.ready && outlineInfo && <div
         data-testid="cad-outline-tools"
-        className={isFullscreen
-          ? 'absolute bottom-3 left-3 z-30 max-h-[40vh] w-[min(620px,95vw)] overflow-y-auto rounded-lg bg-white/95 p-3 text-xs shadow-lg'
-          : 'mb-2 rounded-lg border bg-white p-3 text-xs shadow-sm'}
+        className="bg-white p-2 text-xs text-slate-800"
       >
         <div className="mb-2 flex flex-wrap items-center gap-2">
           <strong>객체 선택 · 외곽선</strong>
@@ -363,30 +425,20 @@ export function CadViewer({
           <summary>미지원/불안정 Entity 안내 ({outlineInfo.warnings.length}건, 최대 200건 표시)</summary>
           <ul className="max-h-28 list-disc overflow-y-auto pl-4">{outlineInfo.warnings.slice(0,30).map((warning,i)=><li key={i}>{warning}</li>)}</ul>
         </details>}
-      </div>}
-      <CadTextSearch key={versionId + ':' + renderer + ':' + attempt} getManager={getManager} format={format}
-        ready={state.ready} loading={loading} layers={layers} selectedLayers={selectedLayers} />
-      <div
-        ref={container}
-        data-testid="cad-canvas"
-        className={isFullscreen ? 'h-full min-h-0 w-full overflow-hidden bg-black' : 'h-[65vh] min-h-96 overflow-hidden bg-black'}
-        aria-label={`${format} 도면`}
-      />
       </div>
-      <div className="shrink-0 bg-white px-3 py-1">
-        <p role="status" className="text-xs text-slate-700">{state.status}</p>
-        {state.warning && <p className="text-xs text-amber-800" data-testid="viewer-coverage">{state.warning}</p>}
-        {state.error && <p role="alert" className="text-xs text-red-700">{state.error}</p>}
-      </div>
-      {/*
-        The provider overlay is a sibling of the app and cannot cover a browser
-        fullscreen element in the top layer, irrespective of its z-index.
-        Keep the same loading boundary within the fullscreen subtree as well.
-      */}
-      {isNativeFullscreen && isLoading && (
-        <GlobalLoadingOverlay message="도면을 여는 중입니다..." testId="viewer-native-loading-overlay" />
-      )}
-    </div>
+      }
+      status={
+        <>
+          <p role="status" className="text-xs text-slate-700">{state.status}</p>
+          {state.warning && <p className="text-xs text-amber-800" data-testid="viewer-coverage">{state.warning}</p>}
+          {state.error && <p role="alert" className="text-xs text-red-700">{state.error}</p>}
+        </>
+      }
+      nativeLoadingOverlay={isNativeFullscreen && isLoading
+        ? <GlobalLoadingOverlay message="도면을 여는 중입니다..." testId="viewer-native-loading-overlay" />
+        : null}
+    />
+
     {!isFullscreen && metric && <div className="rounded border border-slate-200 bg-white p-4 text-sm">
       <div className="flex flex-wrap items-center gap-4">
         <span>전체 {metric.totalMs.toFixed(1)} ms</span>

@@ -1,5 +1,14 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #38 (2026-10-24) — Viewer 앱형 메뉴·도킹 셸 U1, v0.30.0
+
+- Epic #37 / 선행 U1: `ViewerAppShell`·`ViewerMenuBar`·`viewerAppReducer`에 CAD 앱 메뉴/좌우 패널 호스트·독립 상태를 도입한다. CSS immersive 기본 진입·사용자 제스처 native fullscreen(#25), 기존 ViewerManager/Adapter lifecycle, 원본 DB/API는 유지한다.
+- `layerPanelOpen`(초기 true), `outlineToolEnabled`(초기 false), `outlineTreeOpen`(초기 false)은 캔버스/레이어 표시 상태와 독립이다. 좌측 레이어 도크는 #17의 레이어 조작을 재사용하며 메뉴 토글/도크 접기는 도면 레이어 가시성을 변경하지 않는다.
+- 외곽선 ON/OFF(#40), 관리자 타입(#41, P4 RBAC 승인 대기), 타입 지정(#42), 외곽선 트리(#43)는 후속이며 U1에서는 해당 메뉴를 *비활성으로 명시*. 서버 영구 저장/타입 등록 API를 추가하지 않는다. 기존 #31 객체 선택/임시 외곽선/JSON은 하단 도크에서 유지한다.
+- ESC: 진행 중 선택 취소 → 검색 패널 닫기 → native fullscreen 해제 → CSS immersive 종료, 한 번에 여러 계층 종료 금지. #31 및 #25 회귀 시 이 우선순위를 따른다. Canvas를 패널 조작만으로 재마운트하지 않는다.
+- 실제 시험은 로컬 미실행/CI 시작 전이면 NOT RUN으로, 결과 추적은 [Issue38](out/Issue38.md), [FailureLedger](out/FailureLedger.md)와 [TestReport](out/TestReport.md)로 남긴다. 기능 버전 0.30.0, DB migration/Schema 변경 없음.
+
+
 ## Issue #25 (2026-10-17) — 기본 도면 뷰어 전체 뷰포트 자동 진입
 
 - Issue #25: 목록/Location/직접 URL/복사 링크/새 탭/새로고침은 **CSS immersive viewport**로 시작. 브라우저 native fullscreen 자동 요청 불가; 명시 사용자 버튼에서만 API를 사용한다. 기본 모드에서 Renderer·zoom/fit·#17 레이어·#26 검색·#31 외곽선·다운로드·링크·오류/재시도·뒤로·종료를 사용한다.
@@ -103,6 +112,8 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 | [Issue8](out/Issue8.md) | GitHub #8 요구사항·구현·CI 수용 근거 | Issue #8 변경 추적 또는 유사 목록 필터 변경 시 |
 | [Issue9](out/Issue9.md) | GitHub #9 전역 로딩 요구사항·구현·CI·릴리스 근거 | 전역 로딩, 중복 요청 방지 또는 비동기 입력 차단 변경 시 |
 | [Issue10](out/Issue10.md) | GitHub #10 전체 화면 요구사항·설계·CI 근거 | Viewer 전체 화면, ESC/종료, 컨테이너 resize 또는 view state 보존 변경 시 |
+| [Issue38](out/Issue38.md) | Viewer 앱형 메뉴·도킹 셸/ESC 상태·후속 U2/U3/U6 계약 | Viewer shell·도킹·메뉴·검색/선택 ESC 변경 시 |
+| [FailureLedger](out/FailureLedger.md) | PR/Main CI 관측 실패·조치·재검증 누적 원장 | CI 실패·취소·재시작 시 |
 | [Issue25](out/Issue25.md) | 기본 immersive 진입, native 수동 선택, 복귀·툴바·회귀 수용 | Viewer 전체 화면 기본 진입/링크/포커스/레이어·검색 변경 시 |
 | [Release 0.20.0](out/Release-0.20.0.md) | 0.20.0 병합·태그·GHCR 게시 근거 | 0.20.0 릴리스 확인 및 운영 이미지 식별 시 |
 | [Release 0.21.0](out/Release-0.21.0.md) | 0.21.0 병합·태그·GHCR 게시 근거 | 0.21.0 릴리스 확인 및 운영 이미지 식별 시 |

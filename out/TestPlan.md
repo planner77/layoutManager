@@ -1,5 +1,20 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #38 / U1 v0.30.0 — 앱형 Viewer 회귀 시험 계획
+
+| TC | 검증 대상 | 기대 결과 / 연계 AC |
+| --- | --- | --- |
+| `TC-U1-UNIT-001` | 순수 ViewerAppState reducer 기본값·레이어 열기/닫기·트리/도구 독립 전환·reset | AC-U1-03 / U2·U3·U6 상태 호스트 독립 |
+| `TC-U1-E2E-001` | DXF `dxf-viewer`/`three-dxf-viewer` 직링크, 메뉴/기존 버튼, layer checkbox+panel toggle, 단일 GET·Canvas DOM, 모바일 320px backing, 검색/ESC, reload | AC-U1-01~05 |
+| `TC-U1-E2E-002` | 손상된 DWG의 공통 메뉴·로딩/에러/재시도·원본/뒤로, DXF 전용 메뉴 disable | AC-U1-02/05; 정상 DWG 렌더링은 기존 `dwg-viewer.probe.ts` 별도 |
+| `TC-ISSUE25-001/002` | CSS immersive/native 거절 및 in-shell loading, 링크/ESC/포커스/resize 회귀 | AC-U1-01/04 |
+| `TC-ISSUE17-001`, `TC-OUT-E2E-001`, `TC-TEXT-E2E-001` | 레이어/외곽선/검색 및 한 계층 ESC·원본 요청/카메라 유지 | AC-U1-02/03/04 |
+
+- PR CI 기준: `npm ci → db:generate → typecheck → lint → npm test → outline-benchmark → production build → chromium E2E → migration E2E`, 별도 docker-runtime job. 실제로 실행하지 않은 각 단계는 **NOT RUN**, CI 시작만으로 통과 아님.
+- 수동/현장: 실제 DWG LINE, native browser top-layer, Chrome/Edge/GPU, 물류 CAD 큰 도면 성능, viewport 320px & 360px 키보드/포커스/Tab·resize·좌우 dock 동시 표시(#43 연결 후) 별도 검증. 증거 없는 항목 PASS 금지.
+- `out/Issue38.md`에서 AC→코드→TC를 추적. 실패 발견 시 `out/FailureLedger.md`에 Run/Step/원인/보완/재실행을 축적.
+
+
 ## Issue #25 — v0.29.0 자동 CSS immersive 진입 (PR CI 전)
 
 ### PR #36 E2E 연계 변경 (Run 38974687861 기준)
