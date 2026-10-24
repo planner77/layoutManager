@@ -11,7 +11,7 @@ const PAGE_SIZE = 100;
 
 /** A renderer-neutral overlay; works inside regular, CSS immersive and native fullscreen shells. */
 export function CadTextSearch({
-  getManager, format, ready, loading, layers, selectedLayers,
+  getManager, format, ready, loading, layers, selectedLayers, open, onOpenChange,
 }: {
   getManager: () => ViewerManager | null;
   format: ViewerFormat;
@@ -19,9 +19,11 @@ export function CadTextSearch({
   loading: boolean;
   layers: readonly string[];
   selectedLayers: ReadonlySet<string>;
+  open: boolean;
+  onOpenChange: (value: boolean) => void;
 }) {
   const id = useId();
-  const [open, setOpen] = useState(false);
+  const setOpen = onOpenChange;
   const [index, setIndex] = useState<CadTextIndex | null>(null);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState('');
@@ -73,7 +75,16 @@ export function CadTextSearch({
     if (next && ready && format === 'DXF' && !index) { setWorking(true); setError(''); }
   }
 
-  return <div className="pointer-events-none absolute right-4 top-20 z-[40] flex max-w-[calc(100vw-2rem)] flex-col items-end">
+  return <div
+    onKeyDown={event => {
+      if (event.key === 'Escape' && open) {
+        event.preventDefault();
+        event.stopPropagation();
+        onOpenChange(false);
+      }
+    }}
+    className="pointer-events-none absolute right-2 top-2 z-[40] flex max-w-[calc(100vw-1rem)] flex-col items-end"
+  >
     <Button type="button" size="sm" variant="outline" onClick={toggle}
       aria-expanded={open} aria-controls={id} disabled={format === 'DXF' && (loading || !ready)}
       className="pointer-events-auto max-w-full border-slate-300 bg-white text-slate-900 shadow">
