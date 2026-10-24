@@ -1,45 +1,27 @@
 'use client';
 
-import { useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
+/** Controlled dock: closing it never changes CAD layer visibility. */
 export function FullscreenLayerPanel({
   layers,
   selected,
   onLayerChange,
   onAllChange,
+  onClose,
 }: {
   layers: string[];
   selected: ReadonlySet<string>;
   onLayerChange: (name: string, visible: boolean) => void;
   onAllChange: (visible: boolean) => void;
+  onClose: () => void;
 }) {
-  const [collapsed, setCollapsed] = useState(false);
-
-  if (collapsed) {
-    return (
-      <Button
-        type="button"
-        size="sm"
-        variant="outline"
-        aria-label="레이어 패널 펼치기"
-        aria-expanded="false"
-        data-testid="fullscreen-layer-panel-toggle"
-        className="absolute left-4 top-4 z-20 bg-white/95 shadow-lg"
-        onClick={() => setCollapsed(false)}
-      >
-        <ChevronRight aria-hidden="true" className="size-4" />
-        레이어
-      </Button>
-    );
-  }
-
   return (
     <aside
       aria-label="전체 화면 레이어"
       data-testid="fullscreen-layer-panel"
-      className="absolute bottom-4 left-4 top-4 z-20 flex w-[min(20rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-lg border border-slate-200 bg-white/95 text-slate-900 shadow-lg backdrop-blur-sm"
+      className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-white text-slate-900"
     >
       <div className="flex items-center gap-2 border-b border-slate-200 px-3 py-2">
         <strong className="mr-auto text-sm">레이어 {selected.size}/{layers.length}</strong>
@@ -50,7 +32,7 @@ export function FullscreenLayerPanel({
           aria-label="레이어 패널 접기"
           aria-expanded="true"
           data-testid="fullscreen-layer-panel-toggle"
-          onClick={() => setCollapsed(true)}
+          onClick={onClose}
         >
           <ChevronLeft aria-hidden="true" className="size-4" />
         </Button>
