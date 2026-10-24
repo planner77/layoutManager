@@ -381,23 +381,32 @@ test("TC-ISSUE-001/LIST: list API, filters, detail and current change persist", 
     .getByRole("combobox", { name: "사업장 / 법인", exact: true })
     .selectOption("이슈검증");
   await page.getByRole("button", { name: "검색", exact: true }).click();
+  // The drawing library is always Current-only. Open the Current row's
+  // Location history to manage a previous Version instead of expecting
+  // the previous Version to be visible or actionable on the home page.
   await expect(
     page.getByRole("row").filter({ hasText: "issue-one.dxf" }),
-  ).toBeVisible();
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("row").filter({ hasText: "issue-two.dxf" }),
+  ).toContainText("Current");
+  await page
+    .getByRole("row")
+    .filter({ hasText: "issue-two.dxf" })
+    .locator('a[href^="/cad/locations/"]')
+    .first()
+    .click();
+  await expect(
+    page.getByRole("row").filter({ hasText: "issue-one.dxf" }),
+  ).toContainText("이전 버전");
   await page
     .getByRole("row")
     .filter({ hasText: "issue-one.dxf" })
     .getByRole("button", { name: "Current 지정" })
     .click();
   await expect(
-    page.getByRole("row").filter({ hasText: "issue-one.dxf" }),
-  ).toContainText("Current");
-  await page
-    .getByRole("row")
-    .filter({ hasText: "issue-one.dxf" })
-    .locator('a[href^="/cad/locations/"]')
-    .first()
-    .click();
+    page.getByRole("row").filter({ hasText: "issue-two.dxf" }),
+  ).toContainText("이전 버전");
   await expect(
     page.getByRole("row").filter({ hasText: "issue-one.dxf" }),
   ).toContainText("Current");
