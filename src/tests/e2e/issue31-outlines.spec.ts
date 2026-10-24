@@ -83,9 +83,18 @@ test('TC-OUT-E2E-001: selection and convex/precise preview, non-destructive JSON
  });
  await page.getByRole('button',{name:'전체 화면',exact:true}).click();
  await expect(page.getByTestId('cad-viewer-shell')).toHaveAttribute('data-fullscreen','true');
- // U1 layered ESC: selected CAD objects are cleared first, immersive exits second.
+ // P1 review regression: while search toggle (button) is focused, SelectionController
+ // consumes the first Escape during capture. Search must remain open until next Escape.
+ const searchToggle=page.getByRole('button',{name:'도면 내 텍스트 검색'});
+ await searchToggle.click();
+ await expect(page.getByTestId('cad-text-search')).toBeVisible();
+ await expect(searchToggle).toBeFocused();
  await page.keyboard.press('Escape');
  await expect(page.getByTestId('outline-selection-count')).toContainText('선택 0개');
+ await expect(page.getByTestId('cad-text-search')).toBeVisible();
+ await expect(page.getByTestId('cad-viewer-shell')).toHaveAttribute('data-fullscreen','true');
+ await page.keyboard.press('Escape');
+ await expect(page.getByTestId('cad-text-search')).toHaveCount(0);
  await expect(page.getByTestId('cad-viewer-shell')).toHaveAttribute('data-fullscreen','true');
  await page.keyboard.press('Escape');
  await expect(page.getByTestId('cad-viewer-shell')).toHaveAttribute('data-fullscreen','false');

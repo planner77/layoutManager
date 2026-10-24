@@ -77,7 +77,9 @@ export function CadTextSearch({
 
   return <div
     onKeyDown={event => {
-      if (event.key === 'Escape' && open) {
+      // SelectionController handles Escape during window capture and may consume it.
+      // Never close this panel when another UI layer already used this keystroke.
+      if (event.key === 'Escape' && open && !event.defaultPrevented) {
         event.preventDefault();
         event.stopPropagation();
         onOpenChange(false);
@@ -102,7 +104,7 @@ export function CadTextSearch({
           onChange={event => { setQuery(event.target.value); setSelected(-1); setPage(0); setFocusError(''); }}
           onKeyDown={event => {
             if (event.key === 'Enter' && matches.length) { event.preventDefault(); selectResult(0); }
-            if (event.key === 'Escape') { event.stopPropagation(); setOpen(false); }
+            if (event.key === 'Escape' && !event.defaultPrevented) { event.preventDefault(); event.stopPropagation(); setOpen(false); }
           }}
           placeholder="한글, 영문, 숫자 또는 일부 문자열"
           className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-teal-600" />

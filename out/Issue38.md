@@ -55,3 +55,8 @@ CadViewer [Version/Renderer/ViewerManager/Source/Outline/Search 상태 소유]
 - 로컬 종속성 `npm ci`, Typecheck, ESLint, Unit, Playwright, Production build 실제 결과는 **NOT RUN**. PR CI가 최초 실행 근거를 제공한다.
 - native fullscreen 실제 top-layer/focus/ESC 브라우저 수동 실증과 DWG 실제 LINE 수용은 CI 합성 데이터/오류 도면 시험과 구분한다.
 - 외곽선 영구 저장/Admin Type/타입별 트리/그룹 토글은 이 이슈의 완료로 주장하지 않는다.
+
+## PR #44 P1 리뷰 보완 (2026-10-24)
+
+- 최초 PR CI `40077595050`의 기존 head `a2b8bbdf5c` 성공은 확인했으나, 리뷰 [#4366517148](https://github.com/planner77/layoutManager/pull/44#discussion_r4366517148)의 선택+검색 동시 Escape 처리 결함을 보완했다.
+- `CadTextSearch`는 이미 `defaultPrevented`인 키 이벤트를 다시 소비하지 않는다. `TC-OUT-E2E-001`에 검색 토글 버튼 포커스·선택 1개 조건에서 ESC 3단계 회귀 검사 추가. 최신 수정 HEAD는 새 PR CI 실행으로 별도 확인할 것.

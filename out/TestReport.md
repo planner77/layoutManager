@@ -1,5 +1,13 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE38-PR44-REVIEW-20261024 — PR CI 성공 이후 P1 ESC 리뷰 보완 (새 CI 필요)
+
+- 기존 PR #44 / head `a2b8bbdf5c` / [PR CI #40077595050](https://github.com/planner77/layoutManager/actions/runs/40077595050): **completed / success**, 2026-10-24 08:25:48 UTC 완료. 이 성공은 리뷰 수정 **이전** 커밋에만 유효하다.
+- [P1 inline review](https://github.com/planner77/layoutManager/pull/44#discussion_r4366517148): `SelectionController.keyDown`은 window capture에서 Esc 선택 취소 후 `preventDefault()`를 수행하나, `CadTextSearch` 루트의 React `onKeyDown`이 `defaultPrevented` 무시하고 검색을 닫아 한 번에 두 계층이 종료되는 문제.
+- 수정: 검색 패널 루트 및 검색 input에서 이미 소비된 `Escape` 이벤트는 닫힘 로직을 수행하지 않도록 조건식 보강. 검색 토글에 포커스 둔 채 선택 1개+검색 열림 상태에서 첫 Esc는 선택만 비우고 검색/immersive 유지, 두 번째 Esc는 검색만 닫고 세 번째 Esc는 CSS immersive를 종료하도록 `TC-OUT-E2E-001` 연장.
+- 새 HEAD에 대한 실제 Unit/Browser/Build/CI 결과는 별도 워크플로 기록 전 **NOT RUN**으로 취급. Native 브라우저/현장 CAD/GPU 실증도 이번 조치의 검증 범위 밖.
+
+
 ## U-ISSUE38-DEV-20261024 — v0.30.0 앱형 Shell 구현, 실행 결과 미확정
 
 - 대상: [Issue #38](https://github.com/planner77/layoutManager/issues/38), 작업 브랜치 `feat/issue-38-viewer-app-shell`, base main `d22b4575`.
