@@ -1,5 +1,13 @@
 # ChangeLog
 
+## 0.31.0 — 2026-10-25 / Issue #45 Current-only 도면 목록 (PR CI 결과 확인 전)
+
+- Changed: `/` 목록은 Current Version만 서버에서 조회. 초기·검색·초기화·검색 필터·페이지네이션·과거 `current=false` URL에서도 Current-only 결과/count 유지. 최신 버전이 Current가 아니라면 표시하지 않음.
+- UI: #8의 `현재 버전만 표시` 토글/전용 컴포넌트 제거. Current-only 요약/빈 상태 문구, `위치별 버전 관리` 링크 및 기준정보 층별 `버전 이력` 진입 추가.
+- Compatibility: `GET /api/cad-files?current=false` 기존 API와 Location 상세 전체 버전/Current 변경·삭제·직접 Viewer/원본 다운로드 유지. Location Current 0~1개 및 DB schema·원본 불변.
+- Test: TC-LIST-045-001~003, Workflow/Link/Name 회귀 갱신, 관련 요구·설계·운영 문서/ADR 추가. **로컬 및 PR CI 결과는 확인 전 NOT VERIFIED**. [Issue45](Issue45.md), [TestPlan](TestPlan.md), [TestReport](TestReport.md).
+
+
 ## 0.30.0 — 2026-10-24 / Issue #38 앱형 Viewer 메뉴바·도킹 셸 (PR CI 시작 전)
 
 - Added: `ViewerAppShell`(CSS/native 공통 shell, left/center/right docking host, mobile compact panel, 하단 도구, status), `ViewerMenuBar`, 독립 `ViewerAppState` reducer, U2/U3/U6 확장 계약.
