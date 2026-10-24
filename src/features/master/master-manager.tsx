@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useGlobalLoading } from "@/components/global-loading";
 type Node = {
@@ -191,6 +192,7 @@ export function MasterManager() {
                     node={node}
                     selected={selected[index] === node.id}
                     site={index === 2}
+                    floor={index === 4}
                     onSelect={() =>
                       setSelected((old) => old.slice(0, index).concat(node.id))
                     }
@@ -245,6 +247,7 @@ function MasterRow({
   node,
   selected,
   site,
+  floor,
   onSelect,
   onUpdate,
   onDelete,
@@ -252,6 +255,7 @@ function MasterRow({
   node: Node;
   selected: boolean;
   site: boolean;
+  floor: boolean;
   onSelect: () => void;
   onUpdate: (x: Record<string, unknown>) => Promise<void>;
   onDelete: () => void;
@@ -320,6 +324,7 @@ function MasterRow({
         </span>
       </button>
       <div className="mt-1 flex flex-wrap gap-1">
+        {floor && <Button size="sm" variant="outline" asChild><Link href={`/cad/locations/${node.id}`}>버전 이력</Link></Button>}
         <Button size="sm" variant="outline" onClick={() => setEditing(true)}>
           편집
         </Button>
