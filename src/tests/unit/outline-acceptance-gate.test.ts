@@ -74,6 +74,7 @@ describe('Issue #99 P0/P5 real-DXF evidence completeness (not operational accept
     const a=approvedFixture();
     a.cases[0].audit.scope='synthetic-not-operational-acceptance';
     a.cases[1].audit.source.supportedEntityCount=1;
+    a.cases[1].audit.source.stableIdentityCount=1;
     const reasons=assessPrivateOutlineEvidence(a).reasonCodes;
     expect(reasons).toContain('SOURCE_AUDIT_INVALID');
     expect(reasons).toContain('SIZE_BAND_COUNT_MISMATCH');
