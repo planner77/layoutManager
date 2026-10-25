@@ -1,5 +1,11 @@
 # PR/Main CI 실패 원장
 
+## #103 G1 / #102 PR #114 동시 문서 작업 통합 위험 (2026-10-25 KST)
+
+- #102 추가 Owner 5개 정책 문서 PR [#114](https://github.com/planner77/layoutManager/pull/114)가 별도로 Open이고 G1과 `AGENTS.md`, `out/{Decisions,Database,Architecture,Operation,Requirements,TestPlan,TestReport,Issue96}` 등을 수정한다. **현재 G1의 기준 Main `d85b86a` 대비 behind=0, 실제 충돌·CI 실패는 아직 발생하지 않음**. PR #114가 먼저 병합되면 최신 Main을 통합해 두 이슈 정책을 모두 보존하고 새 HEAD PR CI 시작 필요. 잘못된 종전 HEAD CI PASS 전용 금지.
+- G1 브랜치는 일회용 `src/tests/fixtures/auth-g1/**` SQL/Prisma와 Integration 테스트 9개만 소스 추가, 운영 Prisma/API/Compose 변경 없음. 로컬 실행 없음(NOT RUN). CI 실패 Run/Job은 관찰될 경우에만 식별자·원인·조치·대체 HEAD를 누적 기재.
+
+
 ## Issue #103 / G1 — PR CI 시작 전 최초 기준선 (2026-10-25 KST)
 
 - **신규 CI 실패 이력:** 아직 PR CI를 실행하지 않아 실패 Run/Job/Attempt/로그 0건 **(NOT RUN)**. 실패가 없음을 CI 성공으로 간주하지 않으며 향후 Run 실패/취소는 로그·원인·시도·조치·최종 HEAD를 별도 추가하여 영구 기록한다.

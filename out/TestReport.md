@@ -1,5 +1,10 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## #103 G1 정책 보완 및 시험 비실행 유지 (2026-10-25)
+
+최신 #102 Owner 5개 결정은 이 격리 SQL 모델의 Session/Grant/Nonce/Audit 무결성 범위와 충돌하지 않는다. 기존 공개 CAD 익명 GET 경로는 그대로 두며 Current/Delete Auth API 활성화는 G4/G7 후속이다. PR #114 최신 Main 병합 여부·G1 PR CI 통과는 아직 검증 전. TC-P4-G1-001~009는 구현만 완료한 **NOT RUN**이며 실 사내 DB/S3 Recovery도 NOT RUN.
+
+
 ## Issue #103 / G1 — 구현·검증 증거 상태 (2026-10-25)
 
 - **구현 범위:** 테스트 전용 `src/tests/fixtures/auth-g1/{schema.prisma,migration.sql,store.ts}`와 `src/tests/integration/auth-g1.test.ts` (TC-P4-G1-001~009). 기준 #102 Owner R1 / #96 ADR-051. 7개 SQL 엔터티 User/Session/Grant(3종)/Audit/RecoveryNonce, SQLite lock/slot/nonce/Audit Trigger, 실제 CAD 6 Migration 기반 합성 Source/Current/SHA 및 실패/복구 실험 작성.

@@ -1,5 +1,10 @@
 # 운영·환경설정 초안
 
+## #103 후속 Owner 결정과 감사 파기 보류 (2026-10-25)
+
+#102 5개 업무 원칙(기존 CAD GET 익명, Current Editor/Admin+Site, Delete Editor/Admin+Site+삭제 비밀번호, Admin 초기/복구 지정 운영자, Audit 365일 경과 정리)은 승인됐으나 문서 PR #114의 병합/CI 성공은 아직 별도 확인이 필요하다. **Audit 물리·자동 파기 시각/주기/백업본 처리/복원 후 재출현 방지 SOP와 업로드 POST 권한은 미정**이다. 이번 G1 backup/restore는 합성 fixture만 대상이고 원장 행의 물리 파기 명령은 포함하지 않는다.
+
+
 ## Issue #103 G1 — 격리 Migration·Backup·Restore Runbook (2026-10-25)
 
 **운영 기능 OFF / G7 미승인:** `src/tests/fixtures/auth-g1/schema.prisma`는 운영/자동 Prisma migrator 입력이 아니며 `migration.sql`을 `src/prisma/migrations`로 옮기거나 `prisma migrate deploy/db push`로 실행하면 안 된다. `src/tests/integration/auth-g1.test.ts` 실행은 내부 테스트용 `mkdtemp('cad-auth-g1-*')` 아래 `fixture.sqlite`와 합성 CAD만 만든다. App routes/Docker/Nginx/GHCR는 이 작업에서 바꾸지 않는다.

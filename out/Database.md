@@ -1,5 +1,10 @@
 # Database Schema — 단일 기준 문서
 
+## #103 / #102 최신 Owner 업무 정책 연결 (2026-10-25)
+
+#102 Owner는 기존 CAD GET 익명 조회 유지, Current=Editor/Admin+Site, Delete=Editor/Admin+Site+기존 삭제 비밀번호, Admin 초기/복구 담당자, Audit 365일 경과 이력 정리 원칙을 승인했다([PR #114](https://github.com/planner77/layoutManager/pull/114), 병합 미확인). 이 결정은 G1 User/SiteGrant DB 제약 자체를 바꾸지 않으며 G1의 `cad:read` 권한 테스트를 기존 익명 GET API로 연결하지 않는다. **Audit 물리 파기·백업 복원시 재출현 방지 SOP는 여전히 PENDING**으로 Fixture append-only/nonce 불변 정책을 유지한다.
+
+
 ## Issue #103 G1 — 격리 User/Session/Grant/Audit 물리 계약 (운영 DDL OFF, 2026-10-25)
 
 적용 대상은 **기존 CAD 6개 SQL Migration을 실행한 일회용 DB 사본**뿐이다. `src/tests/fixtures/auth-g1/migration.sql`에 다음 7개 테이블의 실행형 SQL과 FK/Unique/CHECK/트리거를 명시했고, `schema.prisma`는 **검토용 독립 투영**(기존 CadSite의 id/관계만 표현)이다. 기존 `src/prisma/schema.prisma` 및 `src/prisma/migrations/**`는 수정·자동 적용하지 않음.
