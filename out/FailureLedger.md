@@ -1,5 +1,13 @@
 # PR/Main CI 실패 원장
 
+## Issue #74 / PR #75 — 실행명 회귀, PR CI 성공 및 v0.36.1 게시 준비 (2026-10-25 KST)
+
+- **PR CI 실패 없음:** [Run 40163919324](https://github.com/planner77/layoutManager/actions/runs/40163919324), 원 HEAD `71c577ed8f975c0d2e505e38a32bc05cdb5b0043`, **completed/success**. Verify Job `121080972437`(Typecheck/Lint/Unit·Integration/Benchmark/Build/Chromium E2E/Legacy Migration) SUCCESS; Docker Runtime Job `121080972286` SUCCESS. 실패 Artifact Step은 정상 **SKIPPED**. 관련 신규 FAIL/CANCELLED Run 0건, 이를 허위 실패로 기록하지 않는다.
+- **실제 결함은 GitHub Actions 실행명 메타데이터:** MAIN #34 정상과 달리 [#35](https://github.com/planner77/layoutManager/actions/runs/40159667229)·[#36](https://github.com/planner77/layoutManager/actions/runs/40162889687)은 multi-line squash commit body를 `head_commit.message`로 받아 긴 Run 이름이 되었다. 원인은 `run-name`의 전체 commit message 결합과 repo 기본 `COMMIT_OR_PR_TITLE/COMMIT_MESSAGES`. CI 자체 실패 또는 GHCR 실패가 아니다.
+- **교정:** `run-name`은 LF가 있으면 짧은 `SUBJECT-ONLY-REQUIRED | run N` 진단으로 변경, 정상 단일행 `#Issue | 짧은 설명` 유지. `on:`/jobs/concurrency/permission/paired GHCR publish 로직 불변. PR #75 Review Threads **0**, 최초 HEAD mergeable clean/behind 0 확인.
+- **사용자의 GHCR 게시 요구:** #68 문서/Workflow-only GHCR 제외 게이트를 임의로 우회하지 않고 `0.36.1` **새 버전**으로 패치 릴리스한다. `v0.36.1` 태그는 변경 전 미존재, `v0.36.0` 태그 불변. `src/package.json`과 lockfile 루트 변경으로 Main scope 정상 게시 대상. App/Migrator 쌍 후보 Digest 확인·승격은 Main 작업 결과로 검증해야 하며 지금은 **게시 미확인**.
+- **새 HEAD 검증:** 버전/원장 기록 변경 후 기존 성공 Run을 새 HEAD로 소급하면 안 된다. 최신 PR CI 성공·리뷰/충돌 재점검 후 Squash 제목 `#74 | Main CI 실행명 커밋 본문 유입 방지` 및 **빈 본문**으로 병합. 실제 Main 이름/게시 결과는 별도. 기본 Squash Merge 저장소 관리자 설정은 [#76](https://github.com/planner77/layoutManager/issues/76)으로 이관하여 변경 완료로 주장하지 않는다.
+
 ## Issue #43 / PR #72 — 성공 PR CI 이후 P2 리뷰 정정 (2026-10-25 KST)
 
 - **CI 실패 아님:** 초기 HEAD `5cd223cc2837fc5772154fd67138680263f159e4`에서 [PR CI Run 40161078593](https://github.com/planner77/layoutManager/actions/runs/40161078593) `completed/success`. Verify Job `121072582232`: npm/Prisma/TS/ESLint/Unit+Integration/Benchmark/Production Build/Chromium E2E/Legacy migration **SUCCESS**, Docker Job `121072582347` **SUCCESS**. 이 성공을 이후 변경 HEAD의 검증 결과로 전용하지 않는다.

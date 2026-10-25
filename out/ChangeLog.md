@@ -1,5 +1,11 @@
 # ChangeLog
 
+## v0.36.1 — Issue #74 Main CI 실행명 안정화 및 명시적 GHCR 릴리스 (2026-10-25)
+
+- 한 줄 Squash commit은 `MAIN CI | #Issue | 요약`, 커밋 본문이 있으면 긴 문자열 대신 `SUBJECT-ONLY-REQUIRED | run N`을 표시한다. #34 정상 표기 유지, #35/#36의 불필요한 본문 노출 회귀 방지.
+- 사용자의 **GHCR 게시 지시**로 패치 버전 `0.36.0 → 0.36.1`을 `src/package.json`과 lockfile 루트에 동기화한다. 기존 `v0.36.0` 태그는 움직이지 않고 main `release-scope`의 정상 runtime change 판정 → 신규 `v0.36.1` 태그 및 앱/마이그레이터 쌍의 digest 검증·게시 경로를 사용한다. 실제 게시 성공은 Main Job 확인 전 **NOT VERIFIED**.
+- 관리자 Squash 기본 메시지 변경(`PR_TITLE/BLANK`)은 [#76](https://github.com/planner77/layoutManager/issues/76)에서 별도 추적한다. 실제 app/DB/원본/런타임 의존성/배포 파이프라인 작업 단계는 불변. 이전 [PR CI 40163919324](https://github.com/planner77/layoutManager/actions/runs/40163919324) 성공은 **버전 변경 전 HEAD만** 검증함. [Issue74](Issue74.md), [FailureLedger](FailureLedger.md).
+
 ## v0.36.0 — Issue #43 U6 브라우저 세션 외곽선 목록 (2026-10-25)
 
 - DXF three-dxf-viewer 상단 외곽선 목록 토글·우측 도킹 트리/legacy grouping, 임시·개수·종류 표시, 키보드 접근성, compact 320px, 메뉴 포커스 복귀.

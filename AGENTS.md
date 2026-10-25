@@ -1,5 +1,12 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #74 — MAIN CI 실행명에 Squash Commit 본문 유입 방지 (2026-10-25)
+
+- [MAIN #34](https://github.com/planner77/layoutManager/actions/runs/40158498214)는 `MAIN CI | #68 | 요약` 정상; [#35](https://github.com/planner77/layoutManager/actions/runs/40159667229)·[#36](https://github.com/planner77/layoutManager/actions/runs/40162889687)은 긴 squash commit body 전체가 `github.event.head_commit.message`로 유입되었다.
+- **정상 경로:** PR 제목 `#<Issue> | 간략한 설명`(가급적 80자 이내), squash commit **제목 동일·본문 비움**. API 병합은 `commit_title`을 명시하고 `commit_message: ""`을 전달한다. PR 설명/검증 증거는 PR/이슈/FailureLedger에 기록한다.
+- **저장소 관리자 설정 필요:** GitHub Settings → General → Pull Requests → Allow squash merging → Default commit message → **Pull request title** (REST: `squash_merge_commit_title=PR_TITLE`, `squash_merge_commit_message=BLANK`). 2026-10-25 조회 당시 설정은 `COMMIT_OR_PR_TITLE / COMMIT_MESSAGES`; 바뀌었다고 주장할 수 없다.
+- **방어 처리:** main push에 개행이 있는 commit message가 들어오면 긴 body 대신 `MAIN CI | SUBJECT-ONLY-REQUIRED | run N`을 표시한다. 이 경고명에서는 Issue를 추측하지 않는다. 한 줄 정상 commit은 기존 `MAIN CI | #Issue | 설명`, tag는 `RELEASE` 규약 유지. 기존 Actions 실행명 변경 불가. 상세 [Issue74](out/Issue74.md), [Operation](out/Operation.md), [TestPlan](out/TestPlan.md) 참조.
+
 ## Issue #43 / PR #72 — P2 키보드 가시성·CI 게이트 및 잔여 분리 (2026-10-25)
 
 - 기존 [CI Run 40161078593](https://github.com/planner77/layoutManager/actions/runs/40161078593), HEAD `5cd223cc2837fc5772154fd67138680263f159e4`: Verify(Typecheck/Lint/Unit/E2E/Legacy)/Docker jobs 모두 SUCCESS. 후속 코드 변경이 있으면 동일 CI 성공으로 대체하지 않는다.
