@@ -1,5 +1,14 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE93-20261025 — Current 기본 + 이전 검색·토글 복원 (PR CI 결과 확인 전)
+
+- 근거: Issue #93, 기존 #8/#16/#45, `AGENTS.md`·`out/Requirements.md`·`out/Architecture.md`·ADR-034-R1. 작업 시작 `main 14111b45a36907245342751d9d1a139b5215474d`, 브랜치 `fix/issue-93-drawing-history-search`; v0.39.1.
+- 작성 변경: 홈 UI 전용 `drawingListParams`(`versions=all`, 기본 Current, 레거시 `current=false`), `drawingListUrl`(페이지 링크 상태 유지), 검색/토글 독립 GET forms, 기본 ON 단일 버튼 `aria-pressed`, 기존 위치·형식·파일명/설명·pageSize 유지. 공통 `listQuery`/API current=false·Repo·DB/원본·Current 포인터 불변.
+- 변경/작성 테스트: `TC-LIST-093-001~003` Unit/Integration; `TC-LIST-093-E2E-001~002` Playwright; 기존 workflow/upload 기대값 정정. 목록 전체 버전 count/검색·포인터 교체/삭제 및 API 비Current 분리 검증.
+- **실행 상태: NOT RUN.** GitHub Connector를 통한 코드·문서 변경이며, 이 세션의 실행 컨테이너에서 github.com DNS 해석이 실패하여 원격 checkout 및 npm 의존 설치·Vitest·Playwright·Docker 현장 검증을 수행하지 못했다. TS/ESLint/Build/Unit/E2E/Legacy 및 실 CAD/DWG 운영 데이터 결과를 성공으로 주장하지 않는다. PR CI 생성은 실제 Run 성공과 별개이며 사용자의 요청으로 결과 모니터링 생략.
+- CI 실패를 실제 확인한 경우만 `out/FailureLedger.md`에 Run/Job/HEAD/원인/조치 기재. 계획 및 수용 추적: [Issue93](Issue93.md)/[TestPlan](TestPlan.md).
+
+
 ## U-ISSUE76-PREFLIGHT-20261025 — 관리자 설정 불일치 및 CI 진단의 로컬 사전 검증
 
 - GitHub REST `GET https://api.github.com/repos/planner77/layoutManager` (2026-10-25) 응답에서 `allow_squash_merge=true`, `squash_merge_commit_title=COMMIT_OR_PR_TITLE`, `squash_merge_commit_message=COMMIT_MESSAGES`를 확인했다. **관리자 UI / PATCH 미실행, AC-76-01 미완료**.

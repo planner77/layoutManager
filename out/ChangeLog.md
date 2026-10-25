@@ -1,5 +1,13 @@
 # ChangeLog
 
+## v0.39.1 — Issue #93 도면 목록 Current 기본 유지·이전 Version 검색 복원 (2026-10-25)
+
+- #45의 '홈 항상 Current-only/토글 없음' UX를 조정. 기본 조회는 **Current-only**, 검색 영역에 **현재 버전만 표시** 단일 버튼(기본 ON) 복원, OFF에서 이전/현재·Current 미지정 Location 도면까지 목록에 표시·검색. 기존 #16 Current 드롭다운 복원 없음.
+- `versions=all`을 홈 전용 검색 모드로 도입하고 기존 `/?current=false`는 홈에서 전체로 정규화. `/api/cad-files?current=false`는 이전 버전만 조회하는 기존 API 계약 그대로 유지. 중복/모드 충돌 조회 거부. 토글/검색/페이지 링크/뒤로/새로고침에서 검색 조건과 `pageSize`·모드 지속, 기본 Current 초기화.
+- 도메인 `drawingListParams/drawingListUrl`, UI `ListFilters` GET forms, Unit/Integration/Chromium E2E(검색·페이지네이션·Current 교체·API 분리) 보강. DB Schema/원본 bytes/SHA·Current 0~1/Renderer·인증·외부 API 변경 없음.
+- 검증: 코드·시험 작성, 실 실행 **NOT RUN** (원격 Github Connector 및 로컬 checkout/DNS 제한); PR CI 성공 및 릴리스/게시 추정 금지. [Issue93](Issue93.md), [ADR-034-R1](Decisions.md), [TestPlan](TestPlan.md), [TestReport](TestReport.md).
+
+
 ## v0.39.0 — Issue #53 E3 생성 개체 안전 삭제·다중 삭제 (2026-10-25)
 
 - 생성 확정 Polygon/MultiPolygon/Hole의 단일·다중 삭제를 Toolbar·Tree 행·선택 Canvas 우클릭·Canvas 초점 Delete/Backspace로 제공. 명칭/개수 모달로 Confirm/Cancel, ESC/modal 취소 무변경, 원본·혼합 선택 거부 및 E2 Version/SHA/UUID·동일 선택 재검증 유지.
