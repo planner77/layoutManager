@@ -1,5 +1,13 @@
 # PR/Main CI 실패 원장
 
+## Issue #99 / PR #110 — 성공 PR CI 이후 P1 비공개 경로 심볼릭 링크 취약점 (2026-10-25 KST)
+
+- **초기 성공 — CI 실패 아님:** HEAD `637742610b3eb25461b095edb5899494ce6dd054` / [PR CI 40195335561](https://github.com/planner77/layoutManager/actions/runs/40195335561) `completed/success`, Verify Job `121174841714`/Docker Job `121174841754` 모두 success. 이 실행은 Source-only/합성 테스트이지 실제 CAD 3종/GPU 현장 합격 증거가 아니다.
+- **검출 출처:** [Codex P1 review #4370918614](https://github.com/planner77/layoutManager/pull/110#discussion_r4370918614), 미해결 Thread `PRRT_kwDOUQjDfc6wBc6t`, `src/tests/e2e/outline.acceptance.ts:27~29`. `path.resolve`만으로 repo 외부 절대 경로를 검사하여 디렉터리 Symlink가 Git worktree로 연결되는 경우 private Browser report(SHA/GPU 디바이스 정보)가 worktree에 기록될 수 있음. **사내 실제 파일 실행/정보 유출 증거가 아님**, 재현 가능한 정적 검토 취약성.
+- **원인·수정:** `realpathSync`로 repo/source/기존 report parent의 실제 디렉터리를 비교하여 사내↔worktree alias를 거부. 부모 경로 존재 필수, report 경로 기존 파일/dangling link 거부, `wx` + `0600` 배타 신규 쓰기·쓰기 직전 parent 재검증, 테스트 대상 수정 및 Symlink/변경 중단/절대경로를 검증하는 Unit `TC-P0P5-PATH-001~006`. 운영 디렉터리는 별도 ACL/비공유로 유지해야 하며 이 코드만으로 악의적 concurrent parent 교체의 모든 TOCTOU 공격을 증명하지 않음.
+- **릴리스/재검증:** 기존 `v0.40.2` Release tag 이미 존재; GHCR 새 게시를 위해 package/lock `0.40.3`으로 올림, 옛 태그/digest 이동 금지. **최종 수정 HEAD의 새 PR CI는 별도 확인 필요**, 기존 성공을 새 HEAD로 전용 금지. 리뷰 스레드 답변/해결·behind 0·최종 CI 성공 후 Squash 병합/새 Main CI만 허용. Issue #99 실 CAD/GPU Owner 현장 AC 4개는 여전히 BLOCKED, `completed` 단정 금지.
+
+
 ## Issue #96 / PR #101 — Ready 재트리거 취소·성공 및 #97 main 선행 병합 충돌 (2026-10-25 KST)
 
 - **기존 검증 HEAD:** `d85ee3583d897dde2100c0c7738d1ab6fc2fb6f5`. PR Draft `pull_request.opened` [Run 40190070251](https://github.com/planner77/layoutManager/actions/runs/40190070251) **completed/cancelled**. Verify [121158976430](https://github.com/planner77/layoutManager/actions/runs/40190070251/job/121158976430)와 Docker [121158976650](https://github.com/planner77/layoutManager/actions/runs/40190070251/job/121158976650) 각각 **cancelled**. Ready-for-review에서 새 PR CI가 실행되며 기존 작업이 취소된 것으로, 테스트 실패와 구분한다. 취소 결과를 삭제하거나 PASS로 쓰지 않는다.
