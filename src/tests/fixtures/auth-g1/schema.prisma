@@ -1,0 +1,103 @@
+// #103 G1 isolated model CONTRACT / review artifact; not an operational datasource.
+ // NEVER run migrate deploy/dev/db push using this file. Raw SQL enforces
+ // case-insensitive login uniqueness, checks, session slots and append-only triggers.
+ // CadSite below is a read-only relation projection of the existing full CAD model.
+generator client {
+  provider = "prisma-client"
+  output   = "../../generated/issue103-g1-only"
+}
+datasource db {
+  provider = "sqlite"
+}
+model User {
+  id                 String @id
+  loginName          String @unique(map: "uq_user_login_name") @map("login_name")
+  passwordHash       String @map("password_hash")
+  status             String @default("ACTIVE")
+  mustChangePassword Boolean @default(true) @map("must_change_password")
+  createdAt          BigInt @map("created_at")
+  updatedAt          BigInt @map("updated_at")
+  roles              UserRoleGrant[] @relation("RoleOwner")
+  rolesGranted       UserRoleGrant[] @relation("RoleActor")
+  sites              UserSiteGrant[] @relation("SiteOwner")
+  sitesGranted       UserSiteGrant[] @relation("SiteActor")
+  specials           SpecialGrant[] @relation("SpecialOwner")
+  specialsGranted    SpecialGrant[] @relation("SpecialActor")
+  sessions           AuthSession[]
+  events             AuditEvent[]
+  recoveryNonces     AdminRecoveryNonce[]
+  @@map("User")
+}
+model CadSite {
+  id String @id
+  siteGrants UserSiteGrant[]
+  @@map("CadSite")
+}
+model UserRoleGrant {
+  userId          String @map("user_id")
+  role            String
+  grantedByUserId String? @map("granted_by_user_id")
+  grantedAt       BigInt @map("granted_at")
+  user            User @relation("RoleOwner", fields:[userId], references:[id], onDelete:NoAction, onUpdate:NoAction)
+  actor           User? @relation("RoleActor", fields:[grantedByUserId], references:[id], onDelete:NoAction, onUpdate:NoAction)
+  @@id([userId, role])
+  @@map("UserRoleGrant")
+}
+model UserSiteGrant {
+  userId          String @map("user_id")
+  siteId          String @map("site_id")
+  grantedByUserId String? @map("granted_by_user_id")
+  grantedAt       BigInt @map("granted_at")
+  user            User @relation("SiteOwner", fields:[userId], references:[id], onDelete:NoAction, onUpdate:NoAction)
+  site            CadSite @relation(fields:[siteId], references:[id], onDelete:NoAction, onUpdate:NoAction)
+  actor           User? @relation("SiteActor", fields:[grantedByUserId], references:[id], onDelete:NoAction, onUpdate:NoAction)
+  @@id([userId, siteId])
+  @@index([siteId], map:"ix_g1_site_grant_site")
+  @@map("UserSiteGrant")
+}
+model SpecialGrant {
+  userId          String @map("user_id")
+  permission      String
+  grantedByUserId String? @map("granted_by_user_id")
+  grantedAt       BigInt @map("granted_at")
+  user            User @relation("SpecialOwner", fields:[userId], references:[id], onDelete:NoAction, onUpdate:NoAction)
+  actor           User? @relation("SpecialActor", fields:[grantedByUserId], references:[id], onDelete:NoAction, onUpdate:NoAction)
+  @@id([userId, permission])
+  @@map("SpecialGrant")
+}
+model AuthSession {
+  id         String @id
+  userId     String @map("user_id")
+  tokenHash  String @unique(map: "uq_g1_session_token_hash") @map("token_hash")
+  issuedAt   BigInt @map("issued_at")
+  lastSeenAt BigInt @map("last_seen_at")
+  expiresAt  BigInt @map("expires_at")
+  revokedAt  BigInt? @map("revoked_at")
+  user       User @relation(fields:[userId], references:[id], onDelete:NoAction, onUpdate:NoAction)
+  @@index([userId, revokedAt, expiresAt, lastSeenAt], map:"ix_g1_session_slots")
+  @@map("AuthSession")
+}
+model AuditEvent {
+  id             String @id
+  actorUserId    String? @map("actor_user_id")
+  action         String
+  targetKind     String @map("target_kind")
+  targetId       String @map("target_id")
+  beforeRevision Int? @map("before_revision")
+  afterRevision  Int? @map("after_revision")
+  outcome        String
+  timestampUtc   String @map("timestamp_utc")
+  requestId      String @map("request_id")
+  actor          User? @relation(fields:[actorUserId], references:[id], onDelete:NoAction, onUpdate:NoAction)
+  @@index([timestampUtc], map:"ix_g1_audit_time")
+  @@index([actorUserId, timestampUtc], map:"ix_g1_audit_actor_time")
+  @@map("AuditEvent")
+}
+model AdminRecoveryNonce {
+  nonceHash   String @id @map("nonce_hash")
+  userId      String @map("user_id")
+  consumedAt  BigInt @map("consumed_at")
+  user        User @relation(fields:[userId], references:[id], onDelete:NoAction, onUpdate:NoAction)
+  @@index([userId], map:"ix_g1_recovery_user")
+  @@map("AdminRecoveryNonce")
+}
