@@ -2,6 +2,13 @@
 
 ## ADR-052 — #99 실 CAD P0/P5 수용 증거 분리·자동 게이트 fail-closed (2026-10-25)
 
+### ADR-052-R1 — Private DXF evidence symlink 차단·릴리스 후보 버전 (2026-10-25)
+
+- 원본 검증은 기존 `realpathSync`로 Git checkout과 source file, **출력 부모**의 canonical file-system 경로를 비교하는 것으로 보강. 단순 `resolve`는 Symlink를 따라가지 못하므로 검증에 사용하지 않는다. 결과 파일 이름은 미사용이어야 하고 기존 결과/심볼릭 링크는 덮어쓰지 않는다(`wx`/0600). 사내 승인된 출력 부모 디렉터리의 권한과 안정성은 현장 작업자의 책임이다.
+- 본 변경은 공개 CI의 실DXF 수용 근거가 아니며 Owner 현장 판정은 계속 BLOCKED. 이미 존재하는 `v0.40.2` Git tag와 GHCR immutable 릴리스를 재사용하지 않도록 신규 App/Migrator 쌍 후보 `0.40.3` package/lock를 준비한다. **최신 HEAD CI 성공·리뷰 0·무충돌** 후에만 main squash→조건부 GHCR 신규 릴리스; 시작을 게시 성공으로 주장하지 않는다. [Issue99](Issue99.md), [FailureLedger](FailureLedger.md).
+
+
+
 - **결정:** Synthetic PR CI·SOURCE-only CPU·비공개 Browser 5회 관측과 최종 실 CAD 좌표/면적·Render 매핑/장치 GPU 운영 수용을 분리. 승인된 실제 SHA 3개 이상 및 1k/10k/100k, CAD WCS XY·relative area·Handle/instancePath/BLOCK/OCS·곡선/Hole 지원 Matrix, click/box/layer/zoom/pan/ESC/fullscreen/Worker cancel, CPU/heap/frame·외부 GPU 장비 근거가 모두 있어야 최종 Owner 판정 대상으로 올린다. 미측정 항목은 PASS 대체 불가.
 - **정확성/성능 Budget:** 허용 최대 CAD 오차(도면 단위/상대 면적), parse/index/query, browser load/box p95/rAF frame, heap 및 외부 VRAM은 Owner가 현장 운영 SLA로 **사전 결정**해야 하며 지금 임의의 ms/bytes 수치를 승인하지 않는다. 현장 기준 5회 p95(nearest rank)는 참고 최소 표본. 1k/10k/100k 구간은 분석된 supported entity 500–4,999/5,000–49,999/50,000–1,000,000로 분류한다(실 측정 대상의 정보이지 renderer 보장치 아님).
 - **증거 게이트:** `src/tests/benchmark/outline-acceptance-gate.ts`는 비공개 manifest 입력 검증 후 `BLOCKED` 또는 `READY_FOR_OWNER_REVIEW`만 반환한다. latter는 실제 측정 진위 또는 운영 합격이 아니다. `audit:outline` schema v1 + `outline.acceptance.ts` schema v2를 연결하며 SHA mismatch·3종 부족·반복 부족·오차/SLA 초과·불명확한 지원/제외·GPU 증거 없음/인간 기능 확인 없음은 차단한다. 기능 미지원은 제외 건수를 기록하며 필수 특징의 실검증 누락은 차단.
