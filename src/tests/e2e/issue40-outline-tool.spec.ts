@@ -2,10 +2,12 @@ import { expect, test, type APIRequestContext, type Page } from '@playwright/tes
 import { readFile } from 'node:fs/promises';
 import { masterFields } from './master-helper';
 
+// Portable LWPOLYLINE: DXF group 90 must state the four vertex (10/20) pairs.
+// Missing group 90 let three-dxf-viewer render this but crashed dxf-viewer's parser.
 const square = Buffer.from([
   '0','SECTION','2','HEADER','9','$INSUNITS','70','4','0','ENDSEC',
   '0','SECTION','2','ENTITIES',
-  '0','LWPOLYLINE','5','1A','8','EQUIP','70','1',
+  '0','LWPOLYLINE','5','1A','8','EQUIP','90','4','70','1',
   '10','0','20','0','10','100','20','0','10','100','20','100','10','0','20','100',
   '0','ENDSEC','0','EOF','',
 ].join('\n'));
@@ -147,6 +149,8 @@ async function selectNothing(page: Page) {
 }
 
 test('TC-U3-E2E-003: unsupported renderer, no entities, reload and SHA-bound switch reset', async ({ page, request }) => {
+  // Use the same valid DXF in both renderers rather than a 90-less,
+  // renderer-dependent approximation of a closed LWPOLYLINE.
   const file = await createDrawing(request, 'issue40-renderer');
   await page.goto(`/cad/versions/${file.id}/viewer?renderer=dxf-viewer`);
   await expect(page.getByRole('status')).toHaveText('도면 표시 완료');

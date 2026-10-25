@@ -5,7 +5,7 @@ import {createHash} from 'node:crypto';
 const drawing=[
  '0','SECTION','2','HEADER','9','$INSUNITS','70','4','0','ENDSEC',
  '0','SECTION','2','ENTITIES',
- '0','LWPOLYLINE','5','1A','8','0','70','1',
+ '0','LWPOLYLINE','5','1A','8','0','90','4','70','1',
  '10','0','20','0','10','100','20','0','10','100','20','100','10','0','20','100',
  '0','ENDSEC','0','EOF','',
 ].join('\n');
@@ -104,5 +104,11 @@ test('TC-OUT-E2E-001: selection and convex/precise preview, non-destructive JSON
  await expect(page.getByTestId('cad-viewer-shell')).toHaveAttribute('data-fullscreen','false');
  await tools.getByRole('button',{name:'탐색 모드'}).click();
  await page.getByRole('button',{name:'다시 불러오기'}).click();
+ await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
+ // U3 reload resets the tool to OFF; selection controls do not exist until ON.
+ await expect(outlineToggle).toHaveAttribute('aria-pressed','false');
+ await expect(tools).toHaveCount(0);
+ await outlineToggle.click();
+ await expect(outlineToggle).toHaveAttribute('aria-pressed','true');
  await expect(page.getByTestId('outline-selection-count')).toContainText('선택 0개');
 });
