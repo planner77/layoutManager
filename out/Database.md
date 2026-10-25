@@ -1,5 +1,14 @@
 # Database Schema — 단일 기준 문서
 
+## Issue #104 G2 — G1 일회용 인증 DB 활용/운영 DDL 변경 0 (2026-10-26)
+
+- 신규 운영 Table/Index/Prisma Migration **없음**. 격리 `User`/`UserRoleGrant`/`AuthSession`/`AuditEvent`/`AdminRecoveryNonce` 및 G1 BEGIN IMMEDIATE·Unique·append-only trigger 재사용.
+- 최초 빈 인증 DB에만 User UUID + Admin RoleGrant + `must_change_password=1` + `ADMIN_BOOTSTRAP` Audit(actor=null/affected=User ID) 원자 생성. 다른 User/이력 존재 시 자동 승격 금지, 재시작 UUID/Hash/Role 불변.
+- 기존 ACTIVE Admin 복구는 nonce SHA-256 unique+불변, passwordHash/초기 변경·Session revoke·`ADMIN_RECOVERY` Audit(actor=null/affected=대상 UUID) 단일 transaction. 재사용·실패 rollback, nonce 원문/비밀번호 로그·DB 저장 없음.
+- 운영 `src/prisma/schema.prisma`/migrations 및 CAD Version/Current/SHA/삭제 비밀번호, 실제 DB/CAD/S3 변경 0. 실 데이터 Migration/Restore는 #108/#109. [Issue104](Issue104.md).
+
+
+
 ## Issue #103 P1 교정 — 감사 대상 사용자·Site 영구 추적 (2026-10-26)
 
 - PR #116 리뷰 [r4371167619](https://github.com/planner77/layoutManager/pull/116#discussion_r4371167619)에 따라 테스트 전용 `AuditEvent`에 `affected_user_id TEXT NULL`(User FK)와 `site_id TEXT NULL`(CadSite FK), `ix_g1_audit_affected_site_time` 색인 추가. `SITE_GRANTED`·`SITE_REVOKED`는 **두 컬럼 모두 필수**로 검사하며 다른 action은 `site_id IS NULL`을 요구한다.

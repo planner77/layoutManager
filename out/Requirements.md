@@ -1,5 +1,19 @@
 # 상세 요구사항
 
+## Issue #104 G2 — 관리자 단발 생성/복구 요구사항 (2026-10-26)
+
+| 요구 ID | 기능·업무 기준 | 구현 및 Test |
+| --- | --- | --- |
+| P4-G2-R01 | 최초/복구 .env Flag 기본 OFF·동시 ON 거부/명시 실행만, 실패 기본 거부 | `bootstrap.ts`/`admin-setup.ts`; TC-P4-G2-001~002 |
+| P4-G2-R02 | 실행 UID 0400/0600 regular 절대 Secret, symlink/invalid bytes 거부, 최소 8자+scrypt/원문 로그 0 | `password.ts`/`admin-setup.ts`; TC-P4-G2-003~004 |
+| P4-G2-R03 | 미초기화 DB 최초 Admin UUID/Role/Audit 원자 생성, 동시 실행 1회·재시작/기존 User 비승격 | `auth-g2/store.ts`; TC-P4-G2-004~006,009 |
+| P4-G2-R04 | 기존 ACTIVE Admin nonce 1회·세션 전량 폐기/비밀번호·Audit 원자성, 실패 rollback | G1/G2 adapter; TC-P4-G2-007~008 |
+| P4-G2-R05 | 지정 사내 운영자 실행·Owner 책임·실 명칭/Secret SOP 비공개, 실 운영 Auth/API/Prisma G7 전 OFF | `auth-g2-isolated.ts`/문서; AC4/PR diff |
+
+공격·탈취 대응 강화는 Owner #102 범위 밖이나 Secret 비로그·기능 원자성 유지. 기존 CAD GET은 익명 유지; G3 #105, G4 #106, G6 #108, G7 #109 후속. [Issue104](Issue104.md).
+
+
+
 ## Issue #103 / G1 P1 감사 추적 상세화 (2026-10-26)
 
 - **REQ-G1-AUD-01:** Site 권한 부여/회수 Audit 이벤트는 행위 관리자(actor), 영향받은 사용자(affectedUser), 대상 Site 및 action/requestId를 **서버 DB FK 기준으로 분리 보존**한다. Revocation 뒤 Grant 행이 삭제되어도 두 사용자의 동일 Site 변경 이력을 혼동하지 않을 것. Fixture `AuditEvent`의 Site action은 affectedUser/site NOT NULL 검사, Actor·Site·User FK/변경 불가 Trigger 유지; `TC-P4-G1-005`.

@@ -1,5 +1,11 @@
 # Issue #96 — 로컬 계정·세션·Role/Site·감사 공통 기반
 
+## G2 #104 — 단발 Admin/Secret 격리 구현 (2026-10-26)
+
+#103 G1 User/Role/Audit/Nonce DB와 #102 Owner R1 기준으로 #104 명시 executor, 실행 UID 0400/0600 Secret, 최초 User/Admin Role/Audit 한 거래, 복구 nonce SHA unique·Session revoke/Audit, 9개 통합 TC 작성. [Issue104](Issue104.md)/[ADR-051-G2](Decisions.md). 실제 수행자·승인/Secret 경로는 사내 비공개 SOP. **운영 Auth/Admin/Prisma/API/Compose/Nginx·실 DB/CAD/S3 기능 OFF**, #96/#109 BLOCKED. 테스트 코드 작성은 PASS 아님; 새 HEAD CI 결과 전 G2-AC1~4 수용 보류. #105 G3/#106 G4/#108 G6 후속. G0 docs PR #114/업로드 POST/감사 물리파기 세칙 별도.
+
+
+
 ## G1 #103 — 격리 User/Session/Grant/Audit 물리 모델 및 원자성 (2026-10-25)
 
 - [Issue #103](https://github.com/planner77/layoutManager/issues/103)에서 User/AuthSession/Role·Site·Special Grant/AuditEvent/RecoveryNonce의 **비운영 SQLite DDL, Prisma 참조 투영, Lock/Transaction 원자성 Fixture 및 9개 Integration 테스트**를 구현했다. 상세 [Issue103](Issue103.md), [ADR-051-G1](Decisions.md).

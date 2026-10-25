@@ -1,5 +1,11 @@
 # ChangeLog
 
+## Unreleased — #104 G2 격리 Admin 최초 생성·복구 (2026-10-26)
+
+#103 G1 일회용 SQLite 계약을 활용한 명시 최초 Admin 단발 생성·복구/nonce·Session revoke, Linux Secret 권한 검증, 9개 Integration TC와 지정 운영 담당자용 비공개 SOP 템플릿 추가. **운영 API/Prisma/Compose/GHCR 변경 없음**, package 0.40.4 유지(운영 미출시·G7 별도 승인). 최신 PR HEAD CI 결과는 미확인. [Issue104](Issue104.md).
+
+
+
 ## Unreleased — v0.40.4 후보 / Issue #107 G5 경량 Preview 및 Viewer 정합성 (2026-10-26)
 
 - PROD Nginx→App/DEV App 직결 **비운영** Preview, 독립 SQLite/CAD·네트워크, 정상 Health/CAD 목록·Viewer/content Read-Only Smoke 및 Unit·CI Compose config-only 검증 추가. 추가 침입·탈취 방어는 Owner 정책상 비범위.
