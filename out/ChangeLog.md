@@ -1,5 +1,11 @@
 # ChangeLog
 
+## 2026-10-25 — Issue #68 GitHub Actions 실행명 개선 (배포 기능 변경 없음)
+
+- Added: PR CI, Main/GHCR, Release의 최상위 `run-name`; 수동 PR CI `issue_ref` / `run_description` 입력. 신규 PR/squash 제목은 `#Issue | 설명`, 이슈 없는 경우 `NO-ISSUE | 설명`, 비정형은 `ISSUE-UNKNOWN`으로 표기한다.
+- Compatibility: 기존 workflow trigger/jobs/권한/concurrency/GHCR 이미지 pair 계약 불변, 앱 version 및 database 변경 없음. 새 Run에서만 적용되고 CI/게시 성공을 의미하지 않는다. [Issue68](Issue68.md), ADR-038, [Operation](Operation.md).
+
+
 ## v0.34.0 PR #64 검증·병합 및 릴리스 시작 근거 (2026-10-25)
 
 - [PR CI 40154979531](https://github.com/planner77/layoutManager/actions/runs/40154979531) SUCCESS: Typecheck/Lint/Unit·Integration/Synthetic Benchmark/Build/Chromium E2E/Legacy Migration E2E/Docker. 직전 실패 [40153913566](https://github.com/planner77/layoutManager/actions/runs/40153913566)는 원장에 보존; 시안 alert locator 및 HTTP UUID P2 수정 검증.
