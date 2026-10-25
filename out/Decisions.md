@@ -1,5 +1,14 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-045 — E3 GENERATED 삭제는 E2 원자 Command로 단일화하고 확인 시점에 다시 검증 (2026-10-25 / #53)
+
+- **문제:** 기존 U6 `deleteSavedOutline→discardLegacy`는 직접 제거/Undo 초기화를 사용해 #52의 원자·이력·scope 검증을 우회한다. UI만 생성 OFF에 묶으면 생성과 편집을 분리한 E1/#49 계약도 위반한다.
+- **결정:** 이력 없는 삭제 인터페이스 제거. 이미 선택된 단일/복수 GENERATED와 Tree 행은 동일 `Delete(ids)` 명령을 Manager→Adapter→Document에 전달하고 UI 삭제 전 명칭·개수를 공개하며 Confirm/Cancel을 제공한다. Confirmation 스냅샷은 현재 선택/Version/SHA와 다시 비교한다; SOURCE 또는 혼합은 전체 거부, Source 분리 자동 필터링 금지. Adapter의 `objects/generated` 편집 모드 검사와 E2 domain 재검증을 유지한다.
+- **조작/접근성:** 생성 OFF에서는 Pan 기본 상태를 지키되 명시적 객체 편집 선택 모드에서 삭제 허용. Canvas에 실제 focus가 있고 modifier 없는 Delete/Backspace만 삭제. Form/search/native keys를 침범하지 않고 ESC는 Confirm→Context→E2 stage→Selection→Fullscreen 우선. Tree 접근성·포커스/리사이즈 수명주기 보존.
+- **결과:** 삭제 ID와 Geometry/Transform/Visibility/metadata는 E2의 before patch 및 동일 UUID로 Undo/Redo 복원. GPU 객체 제거는 기존 Three Scene release 로직에 위임; Source/Preview/레이어/원본 DXF/DB/P4 불변. 생성 최대 100개·100k 정점/이력 제한 유지. 기존 #43 생성 ON에서만 삭제 가능했던 정책은 E3 이후 확정 개체 편집과 분리(과거 기록은 보존). #54/#55가 같은 명령·scope UI 패턴을 재사용 가능.
+- **거부 대안:** 별도 SavedOutline 배열/서버 삭제 API/이력 없는 legacy delete, 임의 mixed 부분 삭제, hidden/Version 불일치 자동 복원, 입력창 전역 Delete 매핑은 데이터 무결성·접근성·보안 위험으로 채택하지 않는다. [Issue53](Issue53.md)와 TC-E3.
+
+
 ### ADR-044 보완: CI 오류 및 P2 안전성 계약 (2026-10-25 / PR #79)
 
 - Polygon 면적 검증은 절대좌표 Shoelace의 부동소수점 상쇄 대신 첫 꼭짓점 대비 상대좌표 사용. 작은 외곽선이 큰 WCS 원점 근처에서 소멸하지 않아야 한다.
