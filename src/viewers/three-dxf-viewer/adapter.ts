@@ -419,7 +419,8 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
   getGeneratedObjects(){
     return (this.document?.getObjects()??[]).map(item=>({
       ref:item.ref,savedOutlineId:item.savedOutlineId,visible:item.visible,
-      geometry:generatedResult(item).geometry,
+      geometry:generatedResult(item).geometry,baseGeometry:item.baseGeometry,
+      transform:item.transform,edited:item.edited,dirty:item.dirty,
       sourceEntityIds:[...item.baseResult.sourceEntityIds],kind:item.kind,
       name:item.name||'외곽선',outlineTypeId:item.outlineTypeId,
     }));
