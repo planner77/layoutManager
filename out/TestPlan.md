@@ -1,5 +1,27 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #96 D1~D6 — 비활성 인증 모듈 검증 계획 (2026-10-25)
+
+**전제:** Owner 정책 승인, 운영 API/DDL/배포 미승인. 아래 Unit은 src/tests/unit/auth-foundation.test.ts 및 auth-password.test.ts에서 **작성**되었으나 CI 이전 실행 결과는 NOT RUN.
+
+| TC | 목적 | 상태 |
+| --- | --- | --- |
+| TC-P4-D1-003 | Reader/Editor/Admin, SiteGrant와 DB 신뢰 Version→Site, 타 사이트·없는 Version deny | 코드 작성 / NOT RUN |
+| TC-P4-D1-004 | Admin도 Site 자동 접근 금지, audit:read/logs:read 독립, Memo Editor 쓰기 거부, 비활성/암호교체 필요 상태 거부 | 코드 작성 / NOT RUN |
+| TC-P4-D1-005~007 | .env 기본 비활성, bootstrap 최초 1회, 기존 Admin 재시작 보호, secret 경로 검증, 복구 nonce 반복 거부 | 코드 작성 / NOT RUN |
+| TC-P4-D1-008 | 무작위 세션/digest, 절대 만료 8h·유휴 30m·동시 3개/폐기/HttpOnly/SameSite/HTTP Cookie | 코드 작성 / NOT RUN |
+| TC-P4-D1-009~010 | 세션 귀속 CSRF+trusted Origin fail-closed, 같은 계정·peer 5회/60초 로그인 예산 | 코드 작성 / NOT RUN |
+| TC-P4-D1-011 | Audit allowlist fields/immutable UTC/revision, Secret 제외·365일 보존 계산, 자동 파기 없음 | 코드 작성 / NOT RUN |
+| TC-P4-D1-012 | 비밀번호 최소 8자(Unicode), bounded scrypt salt/검증, 원시 암호 및 손상 hash 거부 | 코드 작성 / NOT RUN |
+| TC-P4-D1-013 | diff에 API Routes/Prisma schema+migration/Docker+Compose, CAD Source/SHA/Current/Version 변경 0 확인 | PR 정적 검토 / NOT RUN |
+| TC-P4-D1-014 | 실제 DB 원자 세션 발급 3개·회수/복구 nonce, Audit append-only, Proxy/CIDR/Origin/CSRF, 백업→마이그레이션→복구, 실 LAN E2E | 운영 게이트 / BLOCKED |
+| TC-P4-D1-015 | Typecheck/Lint/Vitest/Build/Playwright/Legacy/Docker PR CI | PR 생성 후 자동 시작, 완료 결과 확인 전 NOT VERIFIED |
+
+- 로그인 실패 limiter는 단일 프로세스 참조 구현일 뿐 여러 replica/worker 보호 근거가 아님; 실제 DB·네트워크·보안 시험은 별도 운영 활성화 게이트에서 필요하다.
+- 미실행을 PASS로 기록하지 않는다. 현재 운영 DXF·Current/Version/Origin·기존 GET/API 권한 동작 보존, 비밀번호·세션/Geometry는 CI Artifact에 기록하지 않는다. [Issue96](Issue96.md), [TestReport](TestReport.md).
+
+
+
 ## Issue #31 P4-D0 — Owner 정책/문서 정합성 테스트 계약 (2026-10-25)
 
 **범위:** Markdown-only Owner 설계 확정, 테스트 *계획* 정의. 아래 실제 API·브라우저·DB·HTTP LAN 운영 검사는 D1~D6 구현 전 **NOT RUN / BLOCKED**. D0 PR CI 시작/성공으로 운영 수용 PASS 기록 금지. 근거 [ADR-048/049](Decisions.md), [Issue31](Issue31.md).

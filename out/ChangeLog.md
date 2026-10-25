@@ -1,5 +1,12 @@
 # ChangeLog
 
+## Unreleased — Issue #96 비활성 인증·Scope·세션·감사 도메인 (2026-10-25)
+
+- D1~D6 Owner 세부 정책/ADR-050 반영. UserAccess/Version↔Site deny-first 권한, .env 단발 Admin 계획, local scrypt password, 8h/30m/3개 session, 세션 귀속 CSRF/로그인 시도 제한, Audit allowlist/365일 cutoff, Unit TC-P4-D1-003~012 코드 추가.
+- 인증/영속 API·DB/Prisma/Migration·Docker/Compose·Viewer/원본/Current·GHCR **변경 없음**. 사용자 기능이 아직 비활성이므로 package 0.40.1 유지. 실제 Typecheck/Unit/PR CI/사내 LAN·복구 검증 성공 여부는 증거 확보 전 NOT VERIFIED.
+
+
+
 ## v0.40.1 — Issue #93 도면 목록 Current 기본 유지·이전 Version 검색 복원 (2026-10-25)
 
 - #45의 '홈 항상 Current-only/토글 없음' UX를 조정. 기본 조회는 **Current-only**, 검색 영역에 **현재 버전만 표시** 단일 버튼(기본 ON) 복원, OFF에서 이전/현재·Current 미지정 Location 도면까지 목록에 표시·검색. 기존 #16 Current 드롭다운 복원 없음.

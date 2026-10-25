@@ -1,5 +1,13 @@
 # CAD Web Viewer P.O.C.
 
+## Issue #96 — 앱 로컬 계정·Role/Scope·Audit 비활성 공통 기반
+
+- Owner D1~D6 정책 확정: .env 관리자 단발 설정/복구, 비밀번호 최소 8자+scrypt, 세션 절대 8h/idle 30m/동시 3개, 명시 Site Grant, 감사 365일/별도 읽기, 지정 사내 LAN·HTTP 위험 수용.
+- **운영 로그인·관리 API는 여전히 OFF.** 독립 도메인/헬퍼·Unit만 추가, 새 Route/UI/Prisma/Migration/Docker/Compose는 변경하지 않음. .env.example의 ADMIN_*는 실행시 읽지 않는 비활성 설정 예시다. DXF/Version/SHA/Current/기존 API 불변.
+- 실 CIDR, Secret/단발복구/세션 DB 원자성/감사 DB/실 LAN 권한 E2E/Backup-Migration-Restore 및 별도 Owner 운영 승인이 완료되어야 실제 기능 활성화 가능. [Issue96](out/Issue96.md) / [ADR-050](out/Decisions.md) / [Operation](out/Operation.md). 버전 0.40.1 유지(운영 기능 미릴리스).
+
+
+
 ## v0.40.1 — Issue #93 도면 목록에서 이전 버전 표시·검색 복원
 
 - **기본은 Current만 표시:** CAD 도면 목록(`/`)에 들어오거나 `초기화`를 누르면 Location별로 Current로 지정된 도면만 보입니다. 최신 등록/높은 V번호를 자동 Current로 지정하지 않습니다.

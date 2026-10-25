@@ -1,5 +1,13 @@
 # Issue #31 — DXF 복수 선택과 볼록·정밀 외곽선 (0.27.0)
 
+## 2026-10-25 상태 갱신 — #96 세부정책 확정
+
+- #31은 P4 작업을 #96~#99로 분할하여 not_planned로 종료하였고 기능 전체 완료를 의미하지 않음. 이 아래 D0의 '#31 OPEN' 및 계정/TTL/감사 기간 미정 문장은 당시 기록.
+- #96 D1~D6 Owner 승인: Admin 최초/복구 .env 및 단발 Secret 파일, 계정 암호 최소 8자+scrypt, 세션 8h/30m/3개, Admin만 grant/명시 Site, 감사 365일/별도 조회, 제한 LAN IP/방화벽/HTTP 위험 수용. [Issue96](Issue96.md), [ADR-050](Decisions.md).
+- 구체 CIDR, 복구/세션/감사 DB 영속 트랜잭션 및 백업·Migration/실제 LAN E2E, Owner 운영 승인 미완료로 #96은 운영 BLOCKED. #98 등 서버 영속 API/DDL 추가 금지.
+
+
+
 ## 2026-10-25 — P4 D0 Owner 정책 확정 (설계만 승인 / 운영 미승인)
 
 > **현재 우선 계약:** [ADR-048/049](Decisions.md)와 [Database](Database.md), [Architecture](Architecture.md), [Requirements](Requirements.md), [TestPlan](TestPlan.md). 이하 2026-10-16의 OIDC 권장·미결정 기록 및 브라우저 임시 구현 설명은 해당 시점의 이력이다. #31은 OPEN, P0 실 DXF/P5 GPU·현장 수용과 P4 서버 운영 CRUD는 완료 아님.
