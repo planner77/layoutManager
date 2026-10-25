@@ -1,5 +1,15 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #31 P4 D0 Owner 승인 계약 (2026-10-25 / 문서 전용)
+
+- **최신 적용 설계:** [Issue31](out/Issue31.md), [ADR-048/049](out/Decisions.md), [Database](out/Database.md), [Architecture](out/Architecture.md), [Requirements](out/Requirements.md), [TestPlan](out/TestPlan.md). **D0 정책 확정은 서버 구현/배포 승인이 아니다.** 아래보다 오래된 OIDC 추천, Scope 미확정 서술은 당시 기록만 유지한다.
+- 사내 LAN 여러 PC에서 서버 IP **HTTP**로 접근(외부 인터넷 공개망 인바운드 제한). HTTPS/TLS/인증서, OIDC/SSO/MFA는 사용자 선택상 비범위. 로컬 사용자 계정·서버 세션은 담당자별 **권한·변경 감사**를 위한 경량 기능이다. 평문 HTTP의 비밀번호/세션 도청·변조 위험과 네트워크 허용 대역/수용 주체 미확정은 문서화; HTTP를 TLS만큼 안전하다고 주장 금지.
+- Owner 확정 7개: ①앱 로컬 계정/세션 ②전체 앱 공통 `OutlineType` ③담당 Site/Version Scope 내 Editor 공동 외곽선 편집(메모에는 자동 적용 금지) ④서버 Canonical + 허용 Translate/Rotate 검증 후 영속화 ⑤외곽선 논리 삭제/감사 보존 ⑥외곽선 Show/Hide 사용자 세션별 ⑦삭제된 객체에 연결된 메모는 마지막 정상 WCS 유지+`BROKEN_ANCHOR`/참조 해제.
+- D1 공통 identity/Role/Scope/Audit 기반은 #60/#65/#83에서 재사용. D2 server-owned Source SHA/StableHandle/WCS + Transform; D3 `CadOutline` CAS(409)/soft delete/atomic audit·Memo reconcile; 뒤에 #65/#71/#73, #83/#84 연계. 현재 #49/#54/#55/#56의 브라우저 편집·Undo/Redo/JSON은 영속 인증 기능 아님.
+- 미확정: 최초 Admin·계정 복구, 세션 만료·관리, 권한 부여 운영, Audit 보존·조회, Version 삭제/FK/복원·물리 삭제, Show/Hide 새로고침·탭간 수명, 메모 Editor 권한, HTTP 상세 허용망/잔여 위험 수용, 실도면 P0/P5 기준. 결정하지 않은 세부값을 편의상 코드에서 허용하지 말 것.
+- **차단:** D0 범위는 Markdown만. 새 로그인/외곽선/메모/관리자·로그 서버 영속 GET/Write API, DB Prisma schema/migration, Docker/Runtime 변경과 실제 운영 활성화는 각각 필요한 정책/보안/무결성/감사/백업·복구 검증 및 별도 승인 전 금지. 원본 DXF bytes/SHA/Current, Viewer Adapter, GHCR 동작을 변경하지 않는다. 미실행 CI나 현장시험을 PASS라 쓰지 않는다.
+
+
 ## Issue #93 / v0.40.1 — 도면 목록 기본 Current, 이전 버전 표시·검색 복원 (2026-10-25)
 
 - **#45 / ADR-034 후속 UI 계약(ADR-034-R1):** 홈페이지 `/` 최초 진입·초기화는 명시 Current 도면만 표시. 단일 `현재 버전만 표시` 버튼은 기본 ON이고, OFF에서 과거 버전과 Current 미지정 층의 도면도 **같은 도면 목록**에서 검색/열람/Current 지정 가능하다. #16에 따라 중복 Current 드롭다운은 복원하지 않는다.
