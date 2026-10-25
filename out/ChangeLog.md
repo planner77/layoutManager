@@ -1,5 +1,12 @@
 # ChangeLog
 
+## Unreleased — Issue #99 실 DXF P0/P5 Evidence Readiness (2026-10-25)
+
+- 승인 real DXF 3종/1k·10k·100k, Source audit SHA + Browser report Schema v2/5회, CAD WCS·면적 및 Source↔Render·BLOCK/OCS·지원 Matrix, 외부 GPU telemetry와 8개 조작/Owner SLA를 **비공개** manifest로 검증하는 fail-closed pure gate/CLI + TC-P0P5-001~008 Unit 작성.
+- `test:outline-acceptance`는 승인 SHA·Repo 외부 report path 필수. 로컬 Three Browser의 box interaction 시간·rAF frame p95·WebGL identity를 계측하나 GPU 이용률/VRAM은 외부 장비 검사. 기존 `audit:outline` source-only와 공개 synthetic benchmark 분리 유지.
+- Owner 현장 샘플/SLA/실측/서명 **NOT RUN/BLOCKED**, `READY_FOR_OWNER_REVIEW`는 합격 아님. 기존 CAD 원본/SHA/Current/Version, DB/API/Prisma/Viewer Adapter/GHCR/Docker/인증 런타임 불변, 앱 버전 0.40.2 유지. [Issue99](Issue99.md), ADR-052, TestPlan/TestReport.
+
+
 ## Unreleased — Issue #96 비활성 인증·Scope·세션·감사 도메인 (2026-10-25)
 
 - D1~D6 Owner 세부 정책/ADR-051 반영. UserAccess/Version↔Site deny-first 권한, .env 단발 Admin 계획, local scrypt password, 8h/30m/3개 session, 세션 귀속 CSRF/로그인 시도 제한, Audit allowlist/365일 cutoff, Unit TC-P4-D1-003~012 코드 추가.
