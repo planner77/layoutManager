@@ -1,5 +1,30 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## #67 / main 정렬 — #52 v0.38.0 반영, #67 v0.38.1 (2026-10-25)
+
+- 최신 main의 Issue #52 E2 생성 객체 편집·Undo/Redo 변경을 보존하며 #67 웹 Docker Runtime 레이어 최적화만 병합한다. #52의 ADR-044와 충돌하지 않도록 #67 웹 패키징 설계는 ADR-045로 재지정한다. PR CI의 최신 통합 HEAD 검증 후 병합·GHCR 후보 Pair 게시. 이전 #67 0.37.2는 **미게시 작업 브랜치 버전**이었다.
+
+
+### Issue #67 / PR #80 — Python audit syntax 실패 및 CI early gate (2026-10-25)
+
+- P1 리뷰 수정 HEAD `95cd745`의 [PR CI 40171968883](https://github.com/planner77/layoutManager/actions/runs/40171968883) Docker Job `121104610668` FAIL: Python audit `f-string`의 종료 문자 누락. **이미지 mismatch 아님**, 실제 layer hash/Compose 검증은 SKIPPED, Verify E2E 상태는 확인 당시 in_progress였다.
+- 스크립트 구문 보완과 Docker build 이전 `py_compile` + Synthetic Unit 필수 실행, dedup transition positive saving vs already dedup equal-size PASS 검사 모두 유지. 최초 성공 HEAD/실패 HEAD 이력 [FailureLedger](out/FailureLedger.md), 새 HEAD 성공 검증 전 merge 및 게시 금지.
+
+
+## Issue #67 / PR #80 — 성공 CI 후 P1 공통 Docker 검사 개선 (2026-10-25)
+
+- [PR CI 40170910369](https://github.com/planner77/layoutManager/actions/runs/40170910369) HEAD `6a35660`의 Verify(121101364113)·Docker(121101364198) jobs는 모두 SUCCESS. [P1 review 4369963432](https://github.com/planner77/layoutManager/pull/80#discussion_r4369963432)에서 이후 `main`이 이미 최적화된 상태이면 unrelated PR의 baseline 중복 0개/size delta 0을 강제 실패시키는 CI 회귀가 발견됐다.
+- 해결: 실제 baseline이 중복 레이어를 포함할 때에만 SHA/중복 raw bytes와 positive saving 강제, 정상 deduplicated baseline이면 no-saving도 허용. 두 경우 **optimized no-dup/native .node/최종 package SHA 일치, Docker runtime/Compose·API, 브라우저 E2E/Legacy**는 전부 검증한다. Python positive/negative fixture 추가. 새 HEAD PR CI PASS 전 merge/GHCR success 주장 금지, 검증 이력은 [FailureLedger](out/FailureLedger.md).
+
+
+## Issue #67 — 웹 Standalone 중복 SQLite 패키지 레이어 안전 제거 (2026-10-25 / v0.38.1)
+
+- 웹 Docker `runtime`에서 `.next/standalone` 다음에 별도 `node_modules/better-sqlite3` COPY를 **제거**한다. `next.config.ts`의 `outputFileTracingIncludes`(native SQLite/Prisma)와 `serverExternalPackages`는 유지한다. 이미지 빌드 시 `better_sqlite3.node` 존재 검사 및 `require('better-sqlite3')` SQLite `:memory:` smoke 실패면 이미지 빌드도 실패한다.
+- PR CI: 같은 HEAD 소스·Node22.14.0·linux/amd64의 *PR base Dockerfile*과 최종 `runtime`을 동시에 빌드. `audit_standalone_layers.py`에서 실제 Docker save layer TAR file SHA256/기존 중복/new 중복 없음과 최종 package identity, `docker inspect .Size`/`history`/`du`로 비압축 bytes/MiB/%를 검사한다. Asset 원본 Nanum TTF/파생 typeface/LibreDWG JS/WASM raw·gzip proxy 및 server traced top20도 출력한다. **압축 GHCR OCI layer 크기와 gzip TAR proxy를 혼동 금지**.
+- 새 Docker Compose API smoke는 disposable `/data`에서 master→DXF 등록→재migration/restart→Current/content read→delete/404 및 health를 검증한다. 기존 Typecheck/Lint/Unit/Playwright·Legacy/두 DXF 뷰어·DWG WASM·font, UID10001, Prisma/Compose, S3/local, DB schema/보안 경계를 그대로 유지. 실 운영 데이터·GHCR immutable digest/압축 OCI 수치 및 실제 렌더러·S3 현장 수용은 별도. `CI START`는 `PASS`가 아니다.
+- `DESIGN.md` 부재 → `out/Architecture.md`/ADR-045 설계 기준. 기능/추적/시험/배포: [Issue67](out/Issue67.md), [Issue28](out/Issue28.md), [Operation](out/Operation.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md). 실패 시 [FailureLedger](out/FailureLedger.md)를 기존 Run/Job/HEAD/조치와 함께 누적 기록한다.
+
+
 ## Issue #52 / PR #79 — 두 번째 CI Unit 실패 수정 및 QA 결과 (2026-10-25)
 
 - 두 번째 Verify의 6 Unit 실패 원인은 `generated-document.test.ts` fixture helper geometry 공유와 deep-copy 검증 변이로 인한 테스트 간 오염이었다. 호출별 deep clone/fresh fixture 검증으로 교정했고 제품의 Ring closure 검사/validator는 유지했다.

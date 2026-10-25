@@ -1,5 +1,26 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE67-PR80-CI-FAIL-20261025 — 2차 PR CI의 Python 구문 차단 및 조기 검사 보완
+
+- [Run 40171968883](https://github.com/planner77/layoutManager/actions/runs/40171968883), HEAD `95cd745222055ce934e5ee3016d3551179b30a7f`: Docker Job [121104610668](https://github.com/planner77/layoutManager/actions/runs/40171968883/job/121104610668) `completed/failure`. 이미지 build·3-way size measurement 단계 완료 후 Python self-test import 시 `audit_standalone_layers.py:113` `SyntaxError: unterminated f-string literal`. 따라서 실제 layer audit/후속 migrator·Compose smoke는 **실행되지 않았음(SKIPPED)**; 기능 회귀라고 판단 불가. Verify Job 상태는 검사 시 in_progress/E2E였으며 성공으로 기입 금지.
+- 교정: f-string 마감과 `validate_image_size`를 수정하고 Python audit/self-test/API smoke를 Docker build 전 `py_compile` 및 Synthetic regression으로 먼저 검사한다. transition positive saving과 이미 deduplicated baseline equal-size 두 분기의 Unit을 추가. 새 HEAD CI 전 PASS 아님. [FailureLedger](FailureLedger.md)/[TestPlan](TestPlan.md).
+
+
+## U-ISSUE67-PR80-REVIEW-20261025 — 첫 CI 성공·후속 PR P1 리뷰 수정
+
+- 최초 [Run 40170910369](https://github.com/planner77/layoutManager/actions/runs/40170910369), 검증 HEAD `6a35660d192a586158e4380ae8e9618c46032202`, **completed/success**. Verify [121101364113](https://github.com/planner77/layoutManager/actions/runs/40170910369/job/121101364113), Docker [121101364198](https://github.com/planner77/layoutManager/actions/runs/40170910369/job/121101364198) 모두 성공. Docker layer/hash/size/Compose는 최초 HEAD 통과 근거이며 이번 수정 이후에 소급 적용 금지.
+- [P1 review 4369963432](https://github.com/planner77/layoutManager/pull/80#discussion_r4369963432): #67 merge 이후 unrelated PR에서 이미 최적화된 baseline을 잘못 FAIL시키는 조건 발견. 교정: baseline에 duplication이 존재하는 transition에서만 positive saving 강제; 이미 최적화된 baseline이면 size delta 정보, optimized SHA/native/no-dup 및 전체 Docker/Verify 검증은 유지. 추가 Python synthetic 정상/재중복 regression.
+- 새 HEAD의 CI가 완료되기 전 PASS/비압축 절감 수치/GHCR OCI compressed bytes/현장 운영 승인 **NOT VERIFIED**. GHCR 공개 배포 및 Issue 종료는 후속 단계. [FailureLedger](FailureLedger.md), [Issue67](Issue67.md).
+
+
+## U-ISSUE67-DEV-20261025 — Web SQLite 중복 이미지 계층 최소화, PR CI 이전 증거 경계
+
+- **코드/브랜치:** `build/issue-67-web-standalone-layer-audit`, 웹 `runtime`에 SQLite native package 추가 COPY 제거 + 기존 Next forced tracing 및 `serverExternalPackages` 유지. 빌드에 native `.node` 파일 존재/SQLite memory require smoke fail-closed. 기존 별도 #66 migrator/DB Schema/API/Viewer/Compose/GHCR pairing 변경 없음. 앱 `src/package.json` 및 lock root version 0.38.1 동기.
+- **새 검증 코드:** `src/scripts/audit_standalone_layers.py`는 Docker save 실제 layer TAR 경로·SHA256·최종 package 파일 identity/중복 raw bytes, inspect .Size, diffIDs와 비교; Python Unit synthetic corrupt/duplicate cases; `measure-images.sh`는 font/typeface/LibreDWG JS/WASM raw/gzip proxy와 server traced top20. PR CI Docker Job에 baseline/current 비교 및 disposable Docker Compose `/data` Master→DXF upload→idempotent migration/app restart→Current·original content read→delete 404 smoke. 기존 unit/browser/legacy/static health 재사용.
+- **실행 상태:** GitHub 연결로 원격 파일 작성만 수행. 로컬 Docker/Node install/TypeScript/Vitest/Playwright/Buildx/실제 이미지 차이 측정 및 실제 API 실행 **NOT RUN**. 작성한 TC-IMG67-001`007 **NOT VERIFIED**, 새 HEAD PR CI의 verify/docker-runtime Job PASS 여부는 결과 확인 후만 기재한다. 동일 출처 이전 376,458,636 bytes 및 별도 COPY 12.5MB는 사전 가설이지 이번 절감 수치가 아니다.
+- **별도 실제 수용:** GHCR version+immutable digest linux/amd64 compressed OCI layer 크기/공유 digest, 운영 DB/CAD/S3 동시점 백업/복구, 실 DXF·DWG·Hangul·실 브라우저/현장 프로토콜은 후속 공개 이미지/현장 실증 전 **미확인**. [Issue67](Issue67.md)/[TestPlan](TestPlan.md)/[Operation](Operation.md).
+
+
 ## U-ISSUE52-QA-20261025 — 수정 HEAD 독립 로컬 검증
 
 - 역할: Manager `gpt-6-astra`가 사전 요구·설계·AC를 기록하고 Developer `gpt-5.6-sol`의 재현/수정을 검토한 뒤 독립 QA를 지시했다. 지정 QA `gpt-5.6-luna`는 사용 가능한 모델 목록에 없어 `gpt-6-luna`가 실제 검증을 대행했다. 검증 대상은 checkout HEAD `41cf16c`에 이 fixture 수정 working-tree patch를 적용한 상태; 앱 버전 `0.38.0`; 실행 환경 Node `v22.14.0`, 로컬 Chromium/Playwright. Root의 `npm ci` 관측은 13 vulnerabilities(3 moderate, 9 high, 1 critical); 이 test-only 수정 범위 밖이며 자동 audit fix는 실행하지 않았다.

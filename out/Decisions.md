@@ -1,5 +1,20 @@
 # 주요 기술 결정과 승인 기록
 
+### ADR-045 보완 — 전환 시 절감 강제, 안정 상태에서는 무중복/ABI 검증 유지 (#67 P1, 2026-10-25)
+
+- 최초 성공 CI 뒤 [P1 4369963432](https://github.com/planner77/layoutManager/pull/80#discussion_r4369963432)에서 후속 PR이 이미 deduplicated main을 기준으로 할 경우 positive saving 강제 검사로 정상 CI가 막히는 문제를 발견.
+- **결정:** baseline에 실제 duplicate가 있을 때만 동일 SHA의 중복 package+positive uncompressed image saving 필수. 기존 최적화된 baseline이라면 0 byte reduction도 정상. 어느 쪽이든 native `.node` 존재, baseline/new package **전체 최종 파일 SHA 동일**, optimized package에 double layer 없음, Docker/Compose/Browser 검사는 필수. Test skip이나 issue number flag로 우회하지 않는다.
+- 기존 Main GHCR OCI published version+immutable digest 구별 규칙은 불변. [Issue67](Issue67.md), [FailureLedger](FailureLedger.md).
+
+
+## ADR-045 — 웹 native SQLite는 Standalone tracing 단일 경로, 중복 layer는 실제 SHA로 검증 (2026-10-25 / #67)
+
+- **문제:** #28 `.next/standalone`에 `next.config.ts`의 강제 include glob으로 `better-sqlite3`가 수록될 수 있으나, Docker runtime은 같은 node_modules 경로를 별도 COPY한다. 기존 약 12.5MB COPY는 **로컬 비압축 계층**이며 실제 GHCR OCI 압축 전송량이 아니다.
+- **결정:** native/Prisma 동적 require 안정성을 우선해 `serverExternalPackages`와 `outputFileTracingIncludes`는 유지, 중복 가능성 높은 *별도 Docker COPY*만 제거한다. 새 runtime의 native `.node` 존재와 `better-sqlite3` 메모리 DB open 실패 시 이미지 빌드 차단. ABI·UID10001·schema/API/migrator/Compose/GHCR release pair 불변.
+- **검증:** 같은 PR HEAD source + Node22.14 + linux/amd64로 base/new Dockerfile 빌드; 실제 `docker save` TAR 각 패키지 경로·SHA256 동등성/중복 횟수·원시 bytes, `docker image inspect .Size`, `docker history --no-trunc`; fonts/생성 typeface/WASM JS와 traced server 대형 파일은 raw/gzip(proxy) 보고만 하고 실제 렌더링 동일성 증명 전 삭제하지 않는다. OCI compressed layer는 정식 version+immutable digest의 amd64 manifest `layers[].size`로만 계측한다.
+- **기각 대안:** 강제 tracing 전체/부분 제거(Prisma·native runtime 누락), TTF/Hangul glyph subset/LibreDWG WASM 제거(한글·DWG 회귀), 정적 파일명만 보고 중복 판정, PR에서 GHCR 공개 tag 게시. 이미지 크기 감소보다 운영 안정성 우선. [Issue67](Issue67.md), [Operation](Operation.md), [TestPlan](TestPlan.md).
+
+
 ### ADR-044 보완: CI 오류 및 P2 안전성 계약 (2026-10-25 / PR #79)
 
 - Polygon 면적 검증은 절대좌표 Shoelace의 부동소수점 상쇄 대신 첫 꼭짓점 대비 상대좌표 사용. 작은 외곽선이 큰 WCS 원점 근처에서 소멸하지 않아야 한다.

@@ -1,5 +1,26 @@
 # PR/Main CI 실패 원장
 
+## Issue #67 / PR #80 — #52 main 선행 병합으로 HEAD 통합 및 CI 재검증 (2026-10-25 KST)
+
+- #67 브랜치 수정 HEAD `aa9083c8ac3be5b21bc87e8eaa54e1f0273abc4d`의 CI 시작 전 main이 [Issue #52 commit e1adfe5b](https://github.com/planner77/layoutManager/commit/e1adfe5b9de28ddd3821a0de2466d810e5c6c209)로 이동해 PR `mergeable_state=dirty`, `behind=1` 확인. 이는 코드 테스트 실패가 아닌 동시 작업 충돌로, 원격 기준 문서·package version 중복 변경의 충돌이다.
+- #52의 GeneratedDocument/UndoRedo 코드·신규 테스트·문서를 **전부 보존**하고 #67 Docker runtime/CI 측정 코드만 통합하는 merge commit을 생성한다. 기존 #52 ADR-044 ID가 사용 중이므로 #67 웹 패키징은 ADR-045; 미게시 #67 v0.37.2 → 새 패치 `0.38.1`(main #52 v0.38.0 다음)로 정렬한다. 구 태그를 이동하거나 기존 이슈 기록을 삭제하지 않는다. 최신 통합 HEAD의 PR CI 성공 전 PASS나 GHCR 게시·이슈 종료 주장 금지.
+
+
+## Issue #67 / PR #80 — 2차 CI에서 Python syntax 검증 누락으로 Docker Job 차단 (2026-10-25 KST)
+
+- **실패 원본:** [PR CI Run 40171968883](https://github.com/planner77/layoutManager/actions/runs/40171968883), 검증 HEAD `95cd745222055ce934e5ee3016d3551179b30a7f`, attempt 1. Docker Job [121104610668](https://github.com/planner77/layoutManager/actions/runs/40171968883/job/121104610668) `completed/failure`. Step `Verify web layer SHA, native and transition-only size saving (#67)`의 첫 `python3 src/scripts/test_audit_standalone_layers.py`에서 import 시 SyntaxError `unterminated f-string literal` (`audit_standalone_layers.py:113`). 실패는 실 Docker layer/hash가 상이하다는 증거가 아니라 **수정한 계측 리포트 f-string의 닫는 따옴표/콤마 누락**이며 실제 이미지 검사·이어지는 migrator/Compose smoke는 SKIPPED. Verify Job은 당시 E2E 실행 중이었으므로 성공/실패 판정을 하지 않는다.
+- **Root cause/교정:** P1 조건 분기 추가 중 f-string 줄의 마감 기호를 누락했으며, Python self-test가 크기가 큰 Docker baseline/build/measure 작업 **이후**에 배치되어 사전 감지가 불가능했다. 문자열 구문 교정 + `python3 -m py_compile`(audit/self-test/API smoke 전부)·Synthetic Unit **이미지 빌드 전에 실행**하도록 순서를 이동. size gate를 `validate_image_size`로 분리, 이미 deduplicated·equal-size PASS와 실제 duplicate transition에서 equal-size FAIL 둘 다 테스트. SHA/native/no-dup/전체 Docker/Compose gate 제거·skip 없음.
+- **보존 및 후속:** 첫 성공 [Run 40170910369](https://github.com/planner77/layoutManager/actions/runs/40170910369) HEAD `6a35660` Verify+Docker PASS를 보존하되 교정 HEAD PASS로 전용하지 않는다. 기존 리뷰 P1 답변/resolve는 그대로. 새로운 HEAD PR CI 재시작 후 통과한 경우에만 merge/GHCR 진행. 신규 결과/OCI digest/실운영 검증은 그때까지 NOT VERIFIED.
+
+
+## Issue #67 / PR #80 — 최초 PR CI SUCCESS 후 P1 후속 PR 공통 게이트 리뷰 (2026-10-25 KST)
+
+- **성공 Run 보존:** [PR CI 40170910369](https://github.com/planner77/layoutManager/actions/runs/40170910369), 첫 검증 HEAD `6a35660d192a586158e4380ae8e9618c46032202`, `completed/success`. Verify [Job 121101364113](https://github.com/planner77/layoutManager/actions/runs/40170910369/job/121101364113), Docker [Job 121101364198](https://github.com/planner77/layoutManager/actions/runs/40170910369/job/121101364198) 모두 `completed/success`. **이 항목은 CI 실패가 아니라 성공 후 추가 리뷰에서 발견한 잠재적인 다음 PR의 CI 차단 결함**이다.
+- **P1 리뷰 원본:** [Review 4369963432](https://github.com/planner77/layoutManager/pull/80#discussion_r4369963432), 최초 HEAD `6a35660`: #67 제거 후 `main` Dockerfile은 이미 deduplicated 상태이므로 다른 PR의 `base`에도 중복이 없는데 `compare_inventories`가 `Baseline has no duplicate files`로 무조건 실패하고, `base_size <= size`도 정상 동일 크기를 거부함. 실제 신규 기능의 실패가 아닌 공통 CI의 false failure 위험.
+- **교정:** 동일 HEAD/Node22.14/linux-amd64에서 baseline에 중복이 **실제 존재하는 transition**이면 final package SHA 일치·duplicate raw bytes·positive size saving 강제. 이미 중복 0개인 base이면 size는 informational, 현재 image의 native `.node`와 모든 package SHA 일치/중복 재도입 없음은 계속 강제. Python 합성 fixture에 이미 deduplicated base 정상 PASS와 재중복 FAIL을 추가. Docker/Compose/Unit/Browser·migrator 검증 생략 없음.
+- **검증 경계:** 위 교정 후 새 HEAD에서 PR CI `pull_request.synchronize` 재실행이 필요하다. 최초 Run PASS를 새 HEAD PASS로 대체 금지. 실패/취소/스킵 발생 시 Run/Job/HEAD/원인/재실행을 누적 기입. inline P1 답변·resolve 및 최신 main 무충돌 확인 후에만 squash merge. GHCR version+immutable digest OCI 게이트 및 Main CI는 병합 이후 별도. [Issue67](Issue67.md), [TestPlan](TestPlan.md), [TestReport](TestReport.md).
+
+
 ## Issue #52 / PR #79 — QA 독립 재검증 및 두 번째 Unit 실패 원인 (2026-10-25)
 
 - [Run 40169744777](https://github.com/planner77/layoutManager/actions/runs/40169744777), HEAD `41cf16c`, Verify [Job 121097994868](https://github.com/planner77/layoutManager/actions/runs/40169744777/job/121097994868): TypeScript/Lint PASS; Unit **196 PASS/6 FAIL**, `generated-document.test.ts`에서 `닫히지 않은 Ring입니다.`. 이후 benchmark/build/E2E/Legacy **SKIPPED**. Docker [Job 121097994934](https://github.com/planner77/layoutManager/actions/runs/40169744777/job/121097994934) SUCCESS. 최초 TS 실패는 아래 별도 Issue #52 원장에 보존.
