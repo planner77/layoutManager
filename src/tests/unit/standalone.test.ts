@@ -35,14 +35,44 @@ test('TC-IMAGE-003: release images separate the one-shot migrator from web start
   const root = path.resolve(process.cwd(), '..');
   const docker = readFileSync(path.join(root, 'src/Dockerfile'), 'utf8');
   const compose = readFileSync(path.join(root, 'src/docker-compose.yml'), 'utf8');
-  expect(docker).toContain('FROM runtime-base AS migrator');
-  expect(docker).toContain('FROM runtime-base AS runtime');
-  expect(docker).toContain('CMD ["node", "scripts/run.mjs", "deploy"]');
-  expect(docker).toContain('CMD ["node", "server.js"]');
+  const migratorDependencies = docker.split('FROM dependencies AS migrator-dependencies\n')[1]?.split('\nFROM runtime-base AS migrator')[0];
+  const migrator = docker.split('FROM runtime-base AS migrator\n')[1]?.split('\nFROM runtime-base AS runtime')[0];
+  const webRuntime = docker.split('FROM runtime-base AS runtime\n')[1];
+
+  expect(migratorDependencies).toContain('npm prune --omit=dev --offline --legacy-peer-deps');
+  expect(migratorDependencies).toContain('node scripts/prepare-migrator-package.mjs --verify');
+  expect(migrator).toContain('COPY --from=migrator-dependencies --chown=cad:cad /app/src/node_modules ./node_modules');
+  expect(migrator).not.toContain('COPY --from=dependencies /app/src/node_modules ./node_modules');
+  expect(migrator).not.toContain('COPY --from=builder /app/src/node_modules');
+  expect(migrator).toContain('USER cad');
+
+  // Check the *migrator stage*, not an obsolete image-wide CMD string.
+  const migratorCmd = migrator?.split('\n').find(line => line.trim().startsWith('CMD ['));
+  expect(migratorCmd).toBeDefined();
+  expect(JSON.parse(migratorCmd?.trim().replace(/^CMD\s+/, '') ?? '[]')).toEqual([
+    './node_modules/.bin/tsx', 'scripts/deploy.ts',
+  ]);
+  expect(migrator).not.toContain('server.js');
+  expect(webRuntime).toContain('CMD ["node", "server.js"]');
   expect(docker).not.toContain('COPY --from=builder /app/src /app/src');
   expect(compose).toContain('condition: service_completed_successfully');
   expect(compose).toContain('target: migrator');
   expect(compose).toContain('target: runtime');
+});
+
+test('TC-IMG66-010: migrator deploy waits for Prisma migration before password backfill', () => {
+  const root = path.resolve(process.cwd(), '..');
+  const deploy = readFileSync(path.join(root, 'src/scripts/deploy.ts'), 'utf8');
+  const migrateSpawn = deploy.indexOf("['migrate', 'deploy']");
+  const migrateCompletion = deploy.indexOf('await new Promise<void>');
+  const backfillSpawn = deploy.indexOf("['scripts/backfill-delete-passwords.ts']");
+  expect(deploy).toContain('node_modules/.bin/prisma');
+  expect(deploy).toContain('node_modules/.bin/tsx');
+  expect(migrateSpawn).toBeGreaterThan(-1);
+  expect(migrateCompletion).toBeGreaterThan(migrateSpawn);
+  expect(backfillSpawn).toBeGreaterThan(migrateCompletion);
+  expect(deploy).toContain('code === 0 ? resolve() : reject');
+  expect(deploy).not.toContain('server.js');
 });
 
 

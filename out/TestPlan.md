@@ -27,6 +27,33 @@
 **회귀 게이트:** TC-E1-UNIT-001~004/E2E-001~003, TC-U6/#43 Tree, #31 Precise Worker+v1 JSON, #40 OFF/ON, #42 typed v2, #17/#25/#26/#38/#39, TypeScript/ESLint/Vitest/Build/Playwright/Docker/Legacy migration. Scene/Worker/GPU 반복 실측 및 실 DXF 데이터는 PR CI 합성 시험과 분리. 현 세션 로컬 실행은 NOT RUN, PR CI 실행 결과 확인 전 PASS 금지. `#31 P4` 서버 인증 정책 Gate 불변. [Issue52](Issue52.md).
 
 
+## Issue #66 / PR #78 — 첫 PR CI 차단 원인 및 수정 TC (2026-10-25)
+
+| TC | 최초 Run 40167191799 | 교정 및 재검증 기대 |
+| --- | --- | --- |
+| TC-IMAGE-003 | 기존 `node scripts/run.mjs deploy` 명령 문자열 기대 때문에 **FAIL** | Dockerfile을 migrator/웹 별도 stage로 범위 구분; migrator-dependencies offline prune, 최소 node_modules copy, UID 10001/tsx deploy command, 웹 server.js, Compose service completed 의존 모두 확인. 고정 예전 CMD 기대 제거하고 실제 entrypoint contract 검증 |
+| TC-IMG66-010 (신규) | 없음 / **NOT RUN** | `deploy.ts` Prisma `migrate deploy` spawn → 종료 대기 후 `tsx backfill-delete-passwords.ts` 실행, 서버 기동 불포함. Unit 추가 |
+| TC-IMG66-001,003,004,006,007,008 | Docker Job 121090554257 **SUCCESS** | 해당 HEAD의 이미지 baseline **1,336,572,597→578,862,325 bytes(56.69%)**, gzip proxy **462,720,650→212,574,989 bytes**, native/UID, 신규·멱등 migrate, 오류 fail-closed 검증. 신규 HEAD에서 재실행 필요 |
+| TC-IMG66-002,005,009 | 실제 OCI manifest / Legacy E2E / GHCR release 미완 | 다음 PR CI Node parser·Legacy/E2E 검증; 실제 GHCR OCI 사이즈는 Main publish 이후. 운영 DB/CAD 백업복원 별도 |
+
+- 테스트 기대값 변경은 **작동하는 migrator의 진입점 전환을 반영**하는 것이며 assertion 약화/skip이 아니다. 1차 CI에서 TypeScript·Lint PASS, Docker PASS, Unit 187 PASS/1 FAIL, OCI parser·DXF Benchmark·Production Build·E2E·Legacy SKIPPED를 정확히 구분. [FailureLedger](FailureLedger.md).
+
+## Issue #66 — Migrator 독립 최소 런타임 및 OCI 계측 (v0.37.1)
+
+| TC | Acceptance | 자동 검증 기준 | 상태 |
+| --- | --- | --- | --- |
+| TC-IMG66-001 | 동시 baseline/후속 측정 | PR base Dockerfile과 새 migrator를 같은 소스·Node 22.14.0·linux/amd64로 빌드. inspect Size, history, du, top modules, gzip proxy 및 절감률(30% soft)을 Docker Job Summary에 기록 | Code / NOT RUN |
+| TC-IMG66-002 | GHCR OCI 전송량 | Node parser: amd64 descriptor 1개, attestation 제외, 계층 크기·두 이미지 shared digest dedup; 릴리스의 실제 `:<version>`/`:<version>-migrate` manifest 계측 | Unit 코드 / NOT RUN; 실제 publish 미실행 |
+| TC-IMG66-003 | 파일/패키지 봉인 | Prisma CLI+tsx+generated/Prisma config, better-sqlite3 native load, React/Next/Playwright/Vitest/ESLint/CAD 관련 모듈·tests/public 제외; npm stage 검증 및 컨테이너 확인 | Code / NOT RUN |
+| TC-IMG66-004 | 최초 설치/멱등 | Compose 신규 DB migration + 백필 exit0 → 앱 health 200/정적 WASM·font, 재시작 migration 재실행 성공 | 기존 PR Docker smoke 확장 / NOT RUN |
+| TC-IMG66-005 | 구 스키마 이행·보존 | 기존 Legacy migration E2E(보호 데이터/Current/hash/Version 비교), QA backup/restore 실증은 별도 운영 절차 | CI/E2E NOT RUN, 현장 NOT RUN |
+| TC-IMG66-006 | read-only DB | `DATABASE_URL=file:/proc/cad.sqlite`로 migrator nonzero 확인, 앱 의존 완료 조건 유지 | 기존 Docker step / NOT RUN |
+| TC-IMG66-007 | invalid SQL | 일회성 CI bind mount에 불량 migration 추가, nonroot migrator 실패; 운영 volume 사용 없음 | 신규 Docker step / NOT RUN |
+| TC-IMG66-008 | UID/CA/S3 Secret | runtime Debian glibc/OpenSSL/CA, UID 10001, /data 권한, migrate env에 S3 Secret 부재; SQLite native load | 정적+Docker / NOT RUN |
+| TC-IMG66-009 | release pair | Tagless/digest Compose resolution, build app+migrate candidate → digest 검증 → version/latest paired 승격, 게시 후 OCI 측정; 임의 개별 태그 이동 금지 | PR 정적 검증/릴리스 NOT RUN |
+
+- PR CI 흐름에서 `verify`는 Typecheck/Lint/Vitest/Build/E2E/Legacy를, 독립 `docker-runtime`은 실제 migrator/native/Compose/실패/측정 경로를 수행한다. 로컬 Docker/소스 설치 시험은 현재 환경에서 미실행. **PR CI 시작과 성공을 구분**하며 Main/GHCR의 공개 version OCI 크기는 PR CI로 대체할 수 없다.
+- 노드만 사용하는 OCI 파서 회귀는 `node --test src/scripts/measure-ghcr-pair.check.mjs`로 검증(실제 registry 연결은 Main publish). [Issue66](Issue66.md), [TestReport](TestReport.md), [Operation](Operation.md).
 ## Issue #51 / PR #77 — 최초 Unit 차단 및 작은 좌표 교차 회귀 계획 (2026-10-25)
 
 - **TC-U6-UNIT-003 (기존):** 단일 `focusSavedOutline('local-1')` 호출은 Adapter의 `selectSavedOutline('local-1')` **인수 1개** 계약 유지. 최초 Run 40164835838에서 인수 false 추가로 FAIL; 수정 HEAD 재실행 후 판정.

@@ -1,13 +1,13 @@
 # 주요 기술 결정과 승인 기록
 
-### ADR-043 보완: CI 오류 및 P2 안전성 계약 (2026-10-25 / PR #79)
+### ADR-044 보완: CI 오류 및 P2 안전성 계약 (2026-10-25 / PR #79)
 
 - Polygon 면적 검증은 절대좌표 Shoelace의 부동소수점 상쇄 대신 첫 꼭짓점 대비 상대좌표 사용. 작은 외곽선이 큰 WCS 원점 근처에서 소멸하지 않아야 한다.
 - `Delete` Undo 가능 객체는 실재 객체와 별도로 **복원 용량 예약**. 새 객체 확정 후 100개/100k 정점 제한을 벗어나면 기존 불일치 Undo 이력을 무효화한 다음 append하여 항상 용량 불변식 유지. 이전 UUID는 재사용 불가.
 - `commitPending(currentSelection)`은 stage 시점 캡처 대상이 아니라 최신 selection의 전부 GENERATED/동일 Scope·ID를 재검증한다. 선택·모드 변경 시 준비 중 명령 취소. TC-E2-UNIT-006~008로 고정.
 
 
-## ADR-043 — E2 생성 개체는 버전 스코프 메모리 Document/원자 Command/유한 history로 관리 (2026-10-25 / #52)
+## ADR-044 — E2 생성 개체는 버전 스코프 메모리 Document/원자 Command/유한 history로 관리 (2026-10-25 / #52)
 
 - **Context:** #31 savedGroup/JSON local-N 과 E1 Generated UUID 인덱스를 각각 직접 수정하면 트리/선택/외곽선/내보내기가 불일치하고 Delete/Translate/Rotate Undo가 불안정해진다. Source DXF 편집 및 #31 P4 서버 영속은 Owner 보안 정책 미승인으로 제외된다.
 - **Decision:** E1 Ref(UUID, origin, versionId, SHA)를 Document의 불변 identity로 채택, v1/v2 legacy local-N은 외부 호환 키로만 유지. `baseGeometry`는 깊은 불변 WCS 복사, 개별 edit 상태는 affine matrix 및 patch 이력. 먼저 전 선택 대상 scope·GENERATED·중복/존재/visible·좌표·명령 결과를 **전체 검증**, 한 번의 array 교체로 commit한다. Undo/Redo는 제거 위치 포함 before/after를 재적용하며 source bytes/geometry Worker는 건드리지 않는다.
@@ -16,6 +16,13 @@
 - **Consequences:** Scene/Tree/Export는 Document의 projection, 기존 다운로드 형식은 유지하되 edited geometry는 canonical attestation으로 서버 수용 불가. 다른 렌더러/DWG 비지원. 재로드 시 작업 소멸을 UI 고지. AC/테스트는 [Issue52](Issue52.md)/[TestPlan](TestPlan.md)이며 PR CI 및 실 CAD 성공은 별도 확인.
 
 
+## ADR-043 — Migrator 이미지 전용 런타임 의존성을 잠금 그래프에서 가지치기 (2026-10-25 / #66)
+
+- **문제:** #28 이후 운영 웹 standalone 이미지는 경량화됐지만 별도 migrator는 전체 web/dev `node_modules` ~1.1GB 레이어를 복사하여 로컬 비압축 약 1.34GB로 남았다. `prisma`, `tsx`는 devDependencies 분류지만 실제 운영 migration/backfill에 필수라 단순 `--omit=dev`가 기능 장애를 만든다.
+- **결정:** 기존 `src/package-lock.json`과 full `npm ci` Build graph 유지 → 자식 stage에서 정확히 잠긴 migrator direct runtime 패키지/SQLite native 버전으로 manifest 파생 → `npm prune --omit=dev --offline --legacy-peer-deps`. 전체 web/dev/transitive 테스트 패키지의 **최종 복사**를 금지하고 CLI/DB/tsx/Generated Prisma 및 최소 TS source만 복사. Prisma Studio의 React peer 자동 설치는 피하되 Prisma CLI 자체 transitive 패키지 임의 제거 금지. 최종 USER 10001에서 CLI/native 로드와 독립 Compose migration을 검증.
+- **대안 배제:** 기존 full `node_modules` 복사(절감 없음), 원 root 그대로 `npm prune --omit=dev`(Prisma CLI/tsx 제거), Dockerfile 빌드 중 매번 floating `npm install`(잠금/재현성 결함), 수동 `rm -rf`로 Prisma package internals 삭제(숨은 의존성/CLI 불안정). 근본적으로 별도 lockfile 설치 stage로 옮기는 것은 빌드 비용·이중 잠금 운영 및 E2E 증거를 갖춘 뒤 검토.
+- **측정:** #28의 2.05GB **pre-standalone 웹** baseline은 절감률에 재사용 금지. PR base migrator와 #66 migrator 동일 Node/소스/amd64 비압축 비교(30% soft target); GHCR 공개 version+version-migrate의 OCI 압축 layer 합, shared digest dedup 합 및 docker-save gzip proxy **분리**. 기준 미달·실행 실패는 수치와 근거로 남기며 성공으로 위장하지 않는다.
+- **통제:** candidate app+migrator digest 둘 다 확인 후 공개 tag 승격. 보안/데이터/Compose 계약 불변; 운영 writer 중지·백업·복구 확인 필수. [Issue66](Issue66.md), [Operation](Operation.md), [TestPlan](TestPlan.md).
 ### ADR-042 추가 — 기존 U6 호출 호환 및 작은 좌표의 수치 안정성 (2026-10-25 / PR #77)
 
 - E1 확장으로 `selectSavedOutline(id,false)`를 무조건 넘겨 기존 Manager→Adapter 단일 선택 호출 계약을 변경하는 것은 불필요하다. 기본 선택은 `selectSavedOutline(id)`, 실제 additive만 `(id,true)`를 전달한다.

@@ -11,9 +11,19 @@
 - `GeneratedDocument`를 Version·SHA 기반 브라우저 메모리 단일 상태로 도입: E1 UUID, legacy local-N, 기준 WCS Geometry·provenance, transform/visible/edit flag 유지. Overlay Scene/Hit/Tree/기존 임시 JSON은 Document에서 투영하며 GPU 그룹 증분 갱신/dispose.
 - Generated-only/전체 선택 검증과 원자적 Delete/Translate/Rotate 도메인 명령(후속 E3~E5 UI 미구현), preview-independent stage/commit/cancel, Undo/Redo 최대 100단계·추정 16MiB 및 Redo 분기 무효화.
 - Viewer Undo/Redo 버튼과 Ctrl/⌘+Z·Ctrl/⌘+Shift+Z·Ctrl+Y(입력 native 우선), Session 작업 소멸 안내. 원본 DXF/DB/서버 API·Source 인덱스 변경 없음; #31 P4 보안 Gate 유지. 
-- Unit/Chromium E2E 시나리오·[Issue52](Issue52.md)/ADR-043/Requirements/Architecture/TestPlan/TestReport/README/AGENTS 문서 갱신. 로컬/현장 검증 NOT RUN, PR CI 성공은 확인 전 주장하지 않음.
+- Unit/Chromium E2E 시나리오·[Issue52](Issue52.md)/ADR-044/Requirements/Architecture/TestPlan/TestReport/README/AGENTS 문서 갱신. 로컬/현장 검증 NOT RUN, PR CI 성공은 확인 전 주장하지 않음.
 
 
+### PR #78 / 최초 CI 보완 — v0.37.1 버전 유지 (2026-10-25)
+
+- [Run 40167191799](https://github.com/planner77/layoutManager/actions/runs/40167191799): TypeScript/ESLint PASS, Vitest **187 PASS/1 FAIL** (`TC-IMAGE-003` 이전 `node scripts/run.mjs deploy` 기대와 새 migrator `tsx scripts/deploy.ts` 불일치); Unit 실패로 이후 Build/E2E/Legacy SKIPPED. 기존 테스트를 실제 분리된 migrator entrypoint와 Compose 생명주기 계약으로 개정, `TC-IMG66-010` Migration→Backfill 순서 회귀 추가.
+- Docker Job 별도 SUCCESS: linux/amd64 **1,336,572,597→578,862,325 bytes**, 비압축 **56.69% 감소**, gzip tar proxy **462,720,650→212,574,989 bytes**. OCI GHCR 계층 및 실제 운영 복구 실측은 미완. 기능 Dockerfile/DB/API/버전 변경 없음, 최신 HEAD CI 결과 전 전체 PASS 주장 금지.
+
+## v0.37.1 — Issue #66 독립 migrator 경량화 (2026-10-25)
+
+- Build: 원 `src/package-lock.json` 고정 전체 의존성에서 migrator 전용 runtime manifest를 생성하고 오프라인 prune해 단 한 번 실행하는 `migrator` 타깃에 필요한 CLI/native 및 DB/backfill source만 복사. 웹 `runtime`/schema/Viewer/API·원본은 변경하지 않는다.
+- CI: PR base migrator와 신규 migrator의 linux/amd64 비압축 이미지 크기, history, `du`, gzip proxy 비교 및 강제 실패·Compose smoke 강화. 30%는 soft target. Main GHCR version pair가 실제 게시된 후 linux/amd64 OCI 압축 layer 중복/공유 digest를 측정한다.
+- 기존 `migrate` Compose 성공 의존, /data, UID 10001, Debian glibc/OpenSSL/CA, tag/digest pair와 candidate→public 순서, 업그레이드/롤백 절차 유지. **실제 Docker/PR CI/OCI 계측 결과는 실행 전 NOT VERIFIED.** [Issue66](Issue66.md), [TestPlan](TestPlan.md), [Operation](Operation.md).
 ## v0.37.0 — Issue #51 E1 원본/생성 통합 선택 (2026-10-25)
 
 - 생성 Overlay의 CSPRNG UUIDv4 세션 참조/Origin·Version·SHA 계약과 전용 Generated 객체 조회 추가. v1/v2 다운로드의 local-N은 그대로 유지.

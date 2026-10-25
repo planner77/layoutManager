@@ -1,5 +1,10 @@
 # Issue #28 — Docker 운영 이미지 경량화 및 Migration 분리
 
+## #66 후속 — 이미 분리된 migrator만 추가 경량화 (2026-10-25)
+
+- 원래 #28에서 측정한 **2.05GB baseline** 및 81.69% 감소는 **웹 이미지 standalone 최적화**의 당시 비교다. 후속 #66에서는 이를 migrator 절감률 분모로 사용하지 않는다.
+- #66은 현재 별도 migrator의 전체 `node_modules` 복사(~1.34GB 로컬 이미지)를 별도 runtime 의존성으로 축소한다. #28에서 도입한 Compose `migrate` 성공 조건·/data·페어 태그/digest 후보 검증·런타임 앱 구성은 불변. 측정 방법/AC/OCI manifest 실제 다운로드량은 [Issue66](Issue66.md)를 기준으로 한다. 신규 PR CI 수치/릴리스 성공 전 NOT VERIFIED.
+
 ## 요구·설계/AC (2026-10-16)
 
 현재 0.25.0 `main` (`d534ca8a58ae6f13fd9c5321ab8c5392559aa872`)을 기준으로 0.26.0의 운영 이미지 패키징을 개선한다. **30% 비압축 이미지 절감은 초기 목표(soft target)이며 최초 PR CI #30에서 81.69%를 측정했지만 전체 CI는 실패해 재검증 중**이다. 기존 /data SQLite·CAD 원본·hash·Version/Current, DXF/DWG Viewer·글꼴·WASM, local/S3 locator, non-root UID 10001, health endpoint, Secret/DB 이미지 제외는 불변조건이다.
