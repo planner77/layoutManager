@@ -2,7 +2,7 @@
 
 ## Issue #42 / U5 v0.35.0 — OutlineAssignment·JSON v2, 서버 종속 경계
 
-\`\`\`text
+```text
 [future #65: verified session + Version/Scope active catalog]
         | (currently NOT implemented; no server catalog/DB API)
         v
@@ -14,10 +14,10 @@ ViewerManager -> CadViewerAdapter -> ThreeDxfViewerAdapter
         +--> Canvas temporary overlay (browser only)
         +--> buildOutlineExport -> v1 legacy / v2 typed or mixed
         +--> #43 Tree (future)
-\`\`\`
+```
 
-- Domain \`outline-assignment.ts\` is a **local check only**, not a privileged backend or proof that a client value is authentic. \`ScopedOutlineCatalog\` carries \`versionId/sourceSha256/scopeKey/types\` and rejects lab null scopes and mismatching sources. Actual server catalog binding is **intentionally absent** until #65 IdP/RBAC/Scope/Audit approval.
-- Adapter accepts an optional \`OutlineAssignment\` for future typed local confirmation; existing U3 call without assignment is legacy/unclassified. No new geometry invocation, Worker recompute, CAD byte rewrite, database or route. Mixed exports explicitly encode null metadata for legacy.
+- Domain `outline-assignment.ts` is a **local check only**, not a privileged backend or proof that a client value is authentic. `ScopedOutlineCatalog` carries `versionId/sourceSha256/scopeKey/types` and rejects lab null scopes and mismatching sources. Actual server catalog binding is **intentionally absent** until #65 IdP/RBAC/Scope/Audit approval.
+- Adapter accepts an optional `OutlineAssignment` for future typed local confirmation; existing U3 call without assignment is legacy/unclassified. No new geometry invocation, Worker recompute, CAD byte rewrite, database or route. Mixed exports explicitly encode null metadata for legacy.
 - Server writes (P4) remain disabled until server-owned immutable DXF bytes/SHA→stable Handle→canonical XY geometry reparse/recompute, authenticated role/site/version scope, revision CAS(409), audit and rollback are implemented. Browser JSON cannot authorize writes. Details: [Issue42](Issue42.md), [Issue31](Issue31.md).
 
 

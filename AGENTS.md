@@ -2,8 +2,8 @@
 
 ## Issue #42 U5 — 타입 지정 메타데이터 안전 선행 개발 (2026-10-25)
 
-- v0.35.0 기능 브랜치: \`src/domain/outline-assignment.ts\`에 Verified Scope Catalogue 입력 계약·업무 타입/이름 로컬 검증, \`outline-draft.ts\`에 schemaVersion 1 유지 + type-aware v2 JSON을 작성. Viewer/Adapter에는 분리된 \`outlineTypeId/outlineTypeName/name\` 메타데이터 경로와 잠금 UI를 연결.
-- **#65는 OPEN/BLOCKED**: 인증·RBAC·Scope·Audit 및 #31 P4 승인 전에는 실제 서버 타입 목록/쓰기 API·DB·영속 저장을 만들지 않는다. \`/lab/outline-types\`의 임시 타입은 Viewer's real CAD type selection에 주입 금지. 타입 지정 버튼은 현재 disabled이며, 과거 U3 미분류 임시 확정/v1 JSON만 기존 방식으로 동작한다.
+- v0.35.0 기능 브랜치: `src/domain/outline-assignment.ts`에 Verified Scope Catalogue 입력 계약·업무 타입/이름 로컬 검증, `outline-draft.ts`에 schemaVersion 1 유지 + type-aware v2 JSON을 작성. Viewer/Adapter에는 분리된 `outlineTypeId/outlineTypeName/name` 메타데이터 경로와 잠금 UI를 연결.
+- **#65는 OPEN/BLOCKED**: 인증·RBAC·Scope·Audit 및 #31 P4 승인 전에는 실제 서버 타입 목록/쓰기 API·DB·영속 저장을 만들지 않는다. `/lab/outline-types`의 임시 타입은 Viewer's real CAD type selection에 주입 금지. 타입 지정 버튼은 현재 disabled이며, 과거 U3 미분류 임시 확정/v1 JSON만 기존 방식으로 동작한다.
 - 근거·잔여 및 테스트 추적: [Issue42](out/Issue42.md), TestPlan/Report. Unit/E2E 코드 작성과 성공은 별개이며, PR CI는 시작 여부·결과를 분리해 기록한다.
 
 

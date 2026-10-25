@@ -2,7 +2,7 @@
 
 ## ADR-038 — U5 외곽선 타입 메타데이터는 독립, 서버 카탈로그 전 fail-closed (2026-10-25)
 
-- **Decision:** \`kind\`(기하 알고리즘)와 \`outlineTypeId\`(업무 분류)는 서로 독립. \`outlineTypeName\`은 다운로드 시점 표시용 snapshot, 실제 동일성은 타입 ID. 이름은 1~100자 NFC/trim, 기본 \`외곽선 N\`, 중복 허용(로컬 ID 고유).
+- **Decision:** `kind`(기하 알고리즘)와 `outlineTypeId`(업무 분류)는 서로 독립. `outlineTypeName`은 다운로드 시점 표시용 snapshot, 실제 동일성은 타입 ID. 이름은 1~100자 NFC/trim, 기본 `외곽선 N`, 중복 허용(로컬 ID 고유).
 - **Schema:** 미분류 브라우저 임시 확정의 schemaVersion 1 출력은 보존, 타입 지정/혼합은 v2. v2에서 Legacy 항목만 ID/타입명/이름을 모두 null로 표시. v1 Parser는 그대로 지원하며 v2도 같은 Version/SHA/WCS/Handle/Persistable 검사 실시.
 - **Security:** #65 실제 Admin 타입 등록·Server Scope/세션/권한이 아직 없다. #41 lab 타입 주입·가짜 헤더·임의 카탈로그 API/DB 또는 server outline write 절대 금지. UI의 U5 typed confirm은 서버 근거 없으면 disabled; 기존 U3 로컬 미분류 버튼은 이전 실험 경로와 구별한다. #65/#31 P4 승인 후 운영 typed-only 강제 전환을 별도 수용한다.
 - **Consequence:** 현재 AC-U5 전체 운영 완료 아님. 타입 재분류·레거시 마이그레이션·색상·트리뷰 #43은 승인 전 범위 밖. [Issue42](Issue42.md).

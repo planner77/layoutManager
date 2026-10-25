@@ -2,8 +2,8 @@
 
 ## Issue #42 / v0.35.0 — 영속 Schema 변경 없음 (U5 safe contract)
 
-- \`outlineTypeId/outlineTypeName/name\`은 **브라우저 \`SavedOutline\` DTO 및 선택적인 v2 다운로드 JSON 메타데이터**일 뿐, Prisma Column/FK/DDL/마이그레이션에 추가하지 않았다.
-- #65 실제 \`OutlineType\` table/Scope/Unique/Revision 및 #31 \`CadOutline\` P4는 미승인 상태. \`outlineTypeId\`를 DB FK로 추가하거나 브라우저 JSON을 그대로 저장하면 안 된다. 서버 authoritative file SHA/Version/Handle/Geometry 검증, RBAC/Scope/CAS/Audit 승인 후 별도 Migration 설계 필요. [Issue42](Issue42.md).
+- `outlineTypeId/outlineTypeName/name`은 **브라우저 `SavedOutline` DTO 및 선택적인 v2 다운로드 JSON 메타데이터**일 뿐, Prisma Column/FK/DDL/마이그레이션에 추가하지 않았다.
+- #65 실제 `OutlineType` table/Scope/Unique/Revision 및 #31 `CadOutline` P4는 미승인 상태. `outlineTypeId`를 DB FK로 추가하거나 브라우저 JSON을 그대로 저장하면 안 된다. 서버 authoritative file SHA/Version/Handle/Geometry 검증, RBAC/Scope/CAS/Audit 승인 후 별도 Migration 설계 필요. [Issue42](Issue42.md).
 
 
 ## Issue #41 / v0.34.0 — OutlineType 영속 Schema는 미승인 (DDL 없음)

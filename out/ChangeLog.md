@@ -1,5 +1,13 @@
 # ChangeLog
 
+## 0.35.0 — 2026-10-25 / Issue #42 U5 타입 연계 안전 선행 (PR CI 미검증)
+
+- `outline-assignment.ts`: 현재 DXF Version/SHA/scope 바인딩, active 타입 검증·이름 NFC/기본 이름·ID 독립 계약 추가.
+- `SavedOutline`, ViewerManager/Three adapter, Viewer UI에 타입 지정 메타데이터 및 이름 입력 경로 추가. **#65 실 서버 타입 카탈로그 미구현으로 U5 typed 확정 disabled**, #41 lab 타입은 연결하지 않음. U3 구형 미분류 브라우저 임시 확정은 유지.
+- JSON v1 legacy export/parser 보존 및 typed/mixed v2 추가; source Handle·geometry·kind 독립 유지. Unit/E2E gate 시험 코드·AGENTS/README/Issue42/Requirements/Architecture/Decisions/Database/TestPlan/Report 동기화.
+- 영구 저장/API/Prisma/DDL/IdP/RBAC/Audit·트리뷰 없음. 실제 사용 가능 판정과 Test PASS는 #65/#31 P4 승인 및 PR CI/현장 검증 전 보류. 상세 [Issue42](Issue42.md).
+
+
 ## v0.34.0 PR #64 검증·병합 및 릴리스 시작 근거 (2026-10-25)
 
 - [PR CI 40154979531](https://github.com/planner77/layoutManager/actions/runs/40154979531) SUCCESS: Typecheck/Lint/Unit·Integration/Synthetic Benchmark/Build/Chromium E2E/Legacy Migration E2E/Docker. 직전 실패 [40153913566](https://github.com/planner77/layoutManager/actions/runs/40153913566)는 원장에 보존; 시안 alert locator 및 HTTP UUID P2 수정 검증.

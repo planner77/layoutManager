@@ -1,5 +1,18 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #42 / U5 v0.35.0 — 타입 지정 외곽선 로컬 계약·게이트 (2026-10-25)
+
+| AC / TC | 검증 항목 | 코드 / 상태 |
+| --- | --- | --- |
+| U5-01/03; TC-U5-UNIT-001 | 같은 CONVEX에 서로 다른 업무 타입, 같은 타입의 CONVEX/PRECISE, 기본 이름, type 변경 후 kind/geometry/Handle 불변 | `outline-assignment.test.ts`; TEST NOT RUN |
+| U5-02; TC-U5-UNIT-002 | 미지정/미존재/비활성/다른 Scope·Version·SHA/null-lab 타입 차단, name NFC/기본값/제어 문자/길이/중복 정책 | 동일 Unit; TEST NOT RUN |
+| U5-04; TC-U5-UNIT-003 | v1 JSON 파싱·출력 그대로, v2 typed/mixed 메타데이터, null legacy, 유효하지 않은 UUID/필드/Version 거부 | 동일 Unit 및 기존 `outline-draft.test.ts`; TEST NOT RUN |
+| U5-02/05; TC-U5-E2E-GATE-001 | 실제 type server API 없음 404, 사용자 Viewer U5 selector/confirm disabled·안내, U4 Admin 메뉴 disabled | `issue42-outline-assignment-gate.spec.ts`; TEST NOT RUN |
+| U5-01~05 운영 수용 | verified session/Scope catalogue, 401/403·type active 변경 경쟁, 원본 DXF 재파싱·Geometry tamper·409·Audit | BLOCKED #65/#31 P4; 서버 인증/DB 미구현 |
+
+기존 #31/#40/#41/Renderer/Version/Layer/Worker/기존 v1 JSON E2E 및 legacy DB migration, TypeScript/ESLint/Vitest/production Build, DXF synthetic benchmark/Docker runtime은 PR CI 필수 회귀. 타입 데이터 공급 후 typed end-to-end는 별도 추가 필요. [Issue42](Issue42.md). **코드 작성 ≠ 실행 성공.**
+
+
 ## Issue #41 / PR #64 E2E 및 HTTP 비보안 컨텍스트 회귀 보완 (2026-10-25)
 
 | TC | 검증 의도 | 관측/계획 | 
