@@ -11,12 +11,16 @@ import { LayerDropdown } from '@/features/cad-viewer/layer-dropdown';
 import { ViewerAppShell } from '@/features/cad-viewer/viewer-app-shell';
 import { ViewerMenuBar } from '@/features/cad-viewer/viewer-menu-bar';
 import { OutlineTreePanel } from '@/features/cad-viewer/outline-tree-panel';
+import { GeneratedDeleteDialog } from '@/features/cad-viewer/generated-delete-dialog';
 import { initialViewerAppState, viewerAppReducer } from '@/features/cad-viewer/viewer-app-state';
 import { isLiveOutlineRequest, outlineToolUnavailableReason } from '@/features/cad-viewer/outline-tool-policy';
 import { ViewerManager, type OutlineInfo, type SavedOutline, type SavedOutlineOverlayState } from '@/viewers/core/adapter';
 import {buildOutlineExport} from '@/domain/outline-draft';
 import {canvasEditCapability,type CanvasObjectRef} from '@/domain/canvas-object-selection';
-import {getGeneratedHistoryShortcut} from '@/domain/generated-keyboard';
+import {getGeneratedDeleteShortcut,getGeneratedHistoryShortcut} from '@/domain/generated-keyboard';
+import {
+  prepareGeneratedDelete,assertGeneratedDeleteCurrent,type GeneratedDeleteRequest,
+} from '@/domain/generated-delete';
 import {resolveOutlineAssignment,selectableOutlineTypes,type ScopedOutlineCatalog} from '@/domain/outline-assignment';
 import type {OutlineKind,OutlineEntity} from '@/viewers/core/outline-geometry';
 import type {OutlineResult} from '@/viewers/core/outline-compute';
@@ -89,6 +93,9 @@ export function CadViewer({
   const [savedOutlines,setSavedOutlines]=useState<SavedOutline[]>([]);
   const [savedOverlayStates,setSavedOverlayStates]=useState<SavedOutlineOverlayState[]>([]);
   const [generatedHistory,setGeneratedHistory]=useState({undo:0,redo:0,limit:100});
+  const [deleteRequest,setDeleteRequest]=useState<GeneratedDeleteRequest|null>(null);
+  const [deleteError,setDeleteError]=useState<string|null>(null);
+  const [contextMenu,setContextMenu]=useState<{x:number;y:number}|null>(null);
   const [selectedOutlineTypeId,setSelectedOutlineTypeId]=useState('');
   const [outlineName,setOutlineName]=useState('');
   const [outlineNotice,setOutlineNotice]=useState<string|null>(null);
@@ -176,13 +183,82 @@ export function CadViewer({
     setSavedOverlayStates(manager.current?.getSavedOutlineStates() ?? []);
     setGeneratedHistory(manager.current?.getGeneratedHistory() ?? {undo:0,redo:0,limit:100});
   }, []);
+  /** Snapshot intent before confirmation, revalidate against the live Version on commit. */
+  const openDelete = useCallback((savedOutlineId?:string) => {
+    const current=manager.current;
+    if(!current || renderer!=='three-dxf-viewer' || format!=='DXF' ||
+       !state.ready || canvasMode==='pan' || outlineEnabledRef.current){
+      setDeleteError('생성 개체 편집 모드에서만 삭제할 수 있습니다. 먼저 생성 개체만 선택하세요.');
+      return;
+    }
+    try {
+      // A Tree action must never strip SOURCE silently from a mixed selection.
+      if(savedOutlineId){
+        if(current.getCanvasObjectSelection().some(ref=>ref.origin==='SOURCE'))
+          throw new Error('SOURCE/혼합 선택은 읽기 전용입니다. 생성 개체만 다시 선택하세요.');
+        if(!current.selectSavedOutline(savedOutlineId))
+          throw new Error('삭제할 생성 개체가 없거나 숨김 상태입니다.');
+      }
+      const request=prepareGeneratedDelete(current.getCanvasObjectSelection(),
+        current.getGeneratedObjects(),{versionId,sourceSha256});
+      current.cancelGeneratedCommand();
+      setContextMenu(null);
+      setDeleteError(null);
+      setDeleteRequest(request);
+    }catch(error){
+      setDeleteError(error instanceof Error?error.message:'삭제 대상을 확인하지 못했습니다.');
+      setContextMenu(null);
+    }
+  },[renderer,format,state.ready,canvasMode,versionId,sourceSha256]);
+  const confirmDelete = useCallback(() => {
+    if(!deleteRequest)return;
+    try {
+      const current=manager.current;
+      if(!current || renderer!=='three-dxf-viewer'||format!=='DXF'||
+         !state.ready||canvasMode==='pan'||outlineEnabledRef.current)
+        throw new Error('편집 모드 또는 도면이 변경되어 삭제하지 않았습니다.');
+      assertGeneratedDeleteCurrent(deleteRequest,current.getCanvasObjectSelection(),
+        current.getGeneratedObjects(),{versionId,sourceSha256});
+      current.executeGeneratedCommand({type:'Delete',ids:deleteRequest.targets.map(t=>t.id)});
+      setDeleteError(null);
+      syncSavedOutlines();
+    }catch(error){
+      setDeleteError(error instanceof Error?error.message:'삭제가 거부되었습니다.');
+    }finally{
+      setDeleteRequest(null);
+    }
+  },[deleteRequest,renderer,format,state.ready,canvasMode,versionId,sourceSha256,syncSavedOutlines]);
+  useEffect(()=>{
+    if(!contextMenu)return;
+    const close=(event:PointerEvent)=>{
+      const target=event.target as HTMLElement|null;
+      if(!target?.closest?.('[data-testid="generated-context-menu"]'))setContextMenu(null);
+    };
+    window.addEventListener('pointerdown',close,true);
+    return ()=>window.removeEventListener('pointerdown',close,true);
+  },[contextMenu]);
   useEffect(() => {
     const handleKeyDown = (event:KeyboardEvent) => {
-      if(event.key==='Escape' && manager.current?.cancelGeneratedCommand()){
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        return;
+      if(event.key==='Escape' && deleteRequest){
+        event.preventDefault();event.stopImmediatePropagation();
+        setDeleteRequest(null);return;
       }
+      if(event.key==='Escape' && contextMenu){
+        event.preventDefault();event.stopImmediatePropagation();
+        setContextMenu(null);return;
+      }
+      if(event.key==='Escape' && manager.current?.cancelGeneratedCommand()){
+        event.preventDefault();event.stopImmediatePropagation();return;
+      }
+      // A real WebGL canvas focus (never search/forms/tree/buttons) is required.
+      const canvasFocused=event.target instanceof HTMLCanvasElement &&
+        !!container.current?.contains(event.target);
+      if(!deleteRequest && getGeneratedDeleteShortcut(event,canvasFocused) &&
+         state.ready && canvasMode!=='pan' && !outlineEnabledRef.current){
+        event.preventDefault();event.stopImmediatePropagation();
+        openDelete();return;
+      }
+      if(deleteRequest)return;
       const action=getGeneratedHistoryShortcut(event);
       if(!action || !viewerShell.current?.contains(document.activeElement))return;
       const history=manager.current?.getGeneratedHistory();
@@ -195,7 +271,7 @@ export function CadViewer({
     // Capture ahead of native fullscreen/selection handling for staged edit ESC.
     window.addEventListener('keydown',handleKeyDown,true);
     return ()=>window.removeEventListener('keydown',handleKeyDown,true);
-  },[syncSavedOutlines]);
+  },[syncSavedOutlines,deleteRequest,contextMenu,state.ready,canvasMode,openDelete]);
   const stopOutlineEditing = useCallback(() => {
     // Must cancel the Worker BEFORE clearing selection: selection callbacks can
     // otherwise enqueue a new compute job for the previous previewKind.
@@ -216,6 +292,7 @@ export function CadViewer({
     setSavedOutlines([]);
     setSavedOverlayStates([]);
     setGeneratedHistory({undo:0,redo:0,limit:100});
+    setDeleteRequest(null);setDeleteError(null);setContextMenu(null);
     setCanvasMode('pan');
     setCanvasSelection([]);
     setSelectedOutlineTypeId('');
@@ -224,6 +301,7 @@ export function CadViewer({
   }, [stopOutlineEditing]);
   function toggleOutlineTool() {
     if (!outlineAvailable) return;
+    setDeleteRequest(null);setContextMenu(null);
     const enabled = !outlineEnabledRef.current;
     outlineEnabledRef.current = enabled;
     if (enabled) {
@@ -242,6 +320,7 @@ export function CadViewer({
   /** General selection and generated-only targeting are independent of U3. */
   function changeCanvasMode(next:'pan'|'objects'|'generated') {
     if (!outlineAvailable) return;
+    setDeleteRequest(null);setContextMenu(null);
     if (outlineEnabledRef.current) {
       outlineEnabledRef.current=false;
       stopOutlineEditing();
@@ -289,10 +368,6 @@ export function CadViewer({
     let changed=false;
     for(const id of ids)changed=(manager.current?.setSavedOutlineVisibility(id,visible)??false)||changed;
     if(changed)syncSavedOutlines();
-  }
-  function deleteSavedOutline(id:string) {
-    if(!outlineEnabledRef.current || !outlineAvailable)return;
-    if(manager.current?.deleteSavedOutline(id))syncSavedOutlines();
   }
   function confirmOutline() {
     if (!outlineEnabledRef.current || !outlineAvailable || !preview) return;
@@ -479,6 +554,9 @@ export function CadViewer({
   const editCapability=canvasEditCapability(canvasSelection,{versionId,sourceSha256});
   const sourceCount=canvasSelection.filter(ref=>ref.origin==='SOURCE').length;
   const generatedCount=canvasSelection.length-sourceCount;
+  const deleteModeAvailable=outlineAvailable && !appState.outlineToolEnabled &&
+    canvasMode!=='pan';
+  const canDeleteSelection=deleteModeAvailable && editCapability.canEdit;
 
   return <div className="space-y-3">
     <ViewerAppShell
@@ -569,11 +647,13 @@ export function CadViewer({
           outlines={savedOutlines}
           overlayStates={savedOverlayStates}
           types={selectableTypes}
-          allowDelete={appState.outlineToolEnabled && outlineAvailable}
+          allowDelete={deleteModeAvailable && sourceCount===0}
+          deleteUnavailableReason={sourceCount>0 ? editCapability.reason :
+            '생성 개체 편집 모드(원본·생성 또는 생성 개체만 선택)로 전환하세요.'}
           onSelect={focusSavedOutline}
           onVisibility={setSavedVisibility}
           onGroupVisibility={setGroupSavedVisibility}
-          onDelete={deleteSavedOutline}
+          onDelete={id=>openDelete(id)}
           onClose={() => {
             dispatchApp({ type: 'toggle-outline-tree' });
             outlineTreeMenuButton.current?.focus({ preventScroll: true });
@@ -593,14 +673,39 @@ export function CadViewer({
             data-testid="cad-canvas"
             className="absolute inset-0 h-full min-h-0 w-full overflow-hidden bg-black"
             aria-label={`${format} 도면`}
+            onContextMenu={event=>{
+              if(event.target instanceof HTMLCanvasElement && deleteModeAvailable &&
+                 manager.current?.isSelectedGeneratedAt(event.clientX,event.clientY)){
+                event.preventDefault();
+                setContextMenu({
+                  x:Math.min(event.clientX,Math.max(0,window.innerWidth-230)),
+                  y:Math.min(event.clientY,Math.max(0,window.innerHeight-100)),
+                });
+              }
+            }}
           />
+          {contextMenu && <div data-testid="generated-context-menu" data-canvas-edit-escape-layer="context" role="menu"
+            aria-label="생성 개체 컨텍스트 작업"
+            className="fixed z-[70] rounded border border-slate-300 bg-white p-2 text-slate-800 shadow-lg"
+            style={{left:contextMenu.x,top:contextMenu.y}}>
+            <button type="button" role="menuitem" data-testid="generated-context-delete"
+              disabled={!canDeleteSelection}
+              title={canDeleteSelection?'현재 선택된 생성 개체 삭제':editCapability.reason}
+              onClick={()=>openDelete()}
+              className="rounded px-2 py-1 text-sm hover:bg-slate-100 disabled:opacity-50">
+              선택한 생성 개체 {generatedCount}개 삭제
+            </button>
+            {!canDeleteSelection && <p className="max-w-56 text-xs text-amber-800">{editCapability.reason}</p>}
+          </div>}
+          {deleteRequest && <GeneratedDeleteDialog request={deleteRequest}
+            onCancel={()=>setDeleteRequest(null)} onConfirm={confirmDelete} />}
         </>
       }
       tools={
         outlineAvailable || (renderer === 'three-dxf-viewer' && format === 'DXF' && state.ready && savedCount > 0) ? <>
           {outlineAvailable && <div data-testid="cad-object-selection-tools"
             className="flex flex-wrap items-center gap-2 border-b border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-800">
-            <strong>객체 선택 (E1) · 로컬 편집 이력 (E2)</strong>
+            <strong>객체 선택 · 생성 개체 로컬 편집 (E3)</strong>
             <Button size="sm" variant={canvasMode==='pan'&&!appState.outlineToolEnabled?'default':'outline'}
               data-testid="canvas-mode-pan" aria-pressed={canvasMode==='pan'&&!appState.outlineToolEnabled}
               onClick={()=>changeCanvasMode('pan')}>탐색 (Pan)</Button>
@@ -612,6 +717,11 @@ export function CadViewer({
               onClick={()=>changeCanvasMode('generated')}>생성 개체만 선택</Button>
             <Button size="sm" variant="outline" disabled={!canvasSelection.length}
               onClick={()=>manager.current?.clearCanvasObjectSelection()}>통합 선택 해제</Button>
+            <Button size="sm" variant="outline" data-testid="generated-delete-selected"
+              disabled={!canDeleteSelection}
+              title={canDeleteSelection ? '현재 선택된 생성 개체 삭제' :
+                (deleteModeAvailable ? editCapability.reason : '생성 개체 편집 모드가 필요합니다.')}
+              onClick={()=>openDelete()}>선택 삭제 ({generatedCount})</Button>
             <Button size="sm" variant="outline" data-testid="generated-undo"
               disabled={generatedHistory.undo===0} title="생성 개체 편집 취소 (Ctrl/⌘+Z)"
               onClick={()=>manager.current?.undoGeneratedEdit()}>실행 취소 ({generatedHistory.undo})</Button>
@@ -620,6 +730,7 @@ export function CadViewer({
               onClick={()=>manager.current?.redoGeneratedEdit()}>다시 실행 ({generatedHistory.redo})</Button>
             <span data-testid="generated-history-status" className="text-slate-600">
               최대 {generatedHistory.limit}단계 · 세션 임시 · 편집 결과는 서버에 저장되지 않음
+              {' · '}Canvas 초점 Delete/Backspace 삭제 · Ctrl/⌘+Z 실행 취소
             </span>
             <span data-testid="canvas-selection-count">
               선택 {canvasSelection.length}개 · 원본 {sourceCount}개 · 생성 {generatedCount}개
@@ -705,6 +816,7 @@ export function CadViewer({
           {state.warning && <p className="text-xs text-amber-800" data-testid="viewer-coverage">{state.warning}</p>}
           {state.error && <p role="alert" className="text-xs text-red-700">{state.error}</p>}
           {outlineNotice && <p data-testid="outline-tool-notice" className="text-xs text-teal-800">{outlineNotice}</p>}
+           {deleteError && <p data-testid="generated-delete-error" role="alert" className="text-xs text-red-700">{deleteError}</p>}
           {outlineUnavailable && <p data-testid="outline-tool-unavailable" className="text-xs text-slate-500">{outlineUnavailable}</p>}
         </>
       }

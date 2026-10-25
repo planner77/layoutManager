@@ -1,5 +1,12 @@
 # ChangeLog
 
+## v0.39.0 — Issue #53 E3 생성 개체 안전 삭제·다중 삭제 (2026-10-25)
+
+- 생성 확정 Polygon/MultiPolygon/Hole의 단일·다중 삭제를 Toolbar·Tree 행·선택 Canvas 우클릭·Canvas 초점 Delete/Backspace로 제공. 명칭/개수 모달로 Confirm/Cancel, ESC/modal 취소 무변경, 원본·혼합 선택 거부 및 E2 Version/SHA/UUID·동일 선택 재검증 유지.
+- U6 레거시 이력 없는 `deleteSavedOutline/discardLegacy` 제거: 모든 삭제가 E2 원자 `Delete(ids)`와 Undo/Redo로 통과. Deleted GPU group dispose, Tree/Canvas/JSON 동기화, selected stale ID 제거, 생성 ON/OFF 별도 모드 정책 유지. Source/Preview/DB/API·DXF bytes/SHA/Layer/Current 불변.
+- Unit TC-E3-UNIT-001~005·Chromium E2E TC-E3-E2E-001~003 작성, #43/Manager 회귀 갱신. 실행기 checkout 실패로 로컬 타입 검사·Unit/Build/E2E/실 CAD/GPU **NOT RUN**. 새 PR CI/릴리스 성공과 혼동 금지. [Issue53](Issue53.md)/[TestPlan](TestPlan.md)/[TestReport](TestReport.md).
+
+
 ### v0.38.1 / PR #80 — 이미 최적화된 이미지에서 CI false failure 방지 (P1 리뷰, 2026-10-25)
 
 - 최초 [PR CI 40170910369](https://github.com/planner77/layoutManager/actions/runs/40170910369) 최초 HEAD `6a35660`의 Verify/Docker PASS. 후속 [P1 리뷰 4369963432](https://github.com/planner77/layoutManager/pull/80#discussion_r4369963432)에서 모든 PR에 이전 중복/positive saving을 요구하면 정상 후속 PR도 막는 결함을 발견.

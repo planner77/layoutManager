@@ -2,6 +2,11 @@
 
 Date: 2026-10-25 · Scope: GitHub repository admin setting / read-only CI audit / operator guide · State: **admin setting NOT APPLIED**
 
+## PR #89 검증·main 통합 기록 (2026-10-25)
+
+- 원 HEAD `53fd648f8ec4daa2c7979245d441f82da51cf676`에 대한 [PR CI 40174728906](https://github.com/planner77/layoutManager/actions/runs/40174728906)는 `completed/success`이나 #53 최신 main 통합 이전 결과다.
+- #53 main `3ff1f94b3fbf11737a827536e223114ea4ca0e96`로 생긴 문서 충돌을 #53 내용 모두 보존하며 해결했다. 통합 HEAD CI 성공 확인 전 병합 성공으로 간주하지 않는다. Repository 기본값 미적용이므로 Issue #76은 OPEN 유지.
+
 ## 목표·근거
 
 - [Issue #68](https://github.com/planner77/layoutManager/issues/68) 실행명 계약: PR/squash subject는 `#<Issue> | 짧은 설명`; main Actions 제목은 `MAIN CI | #<Issue> | 설명`.

@@ -30,9 +30,10 @@ export interface CadViewerAdapter {
   setSelectionMode?(mode:CanvasSelectionMode): void;
   getCanvasObjectSelection?():CanvasObjectRef[];
   clearCanvasObjectSelection?():void;
+  isSelectedGeneratedAt?(clientX:number,clientY:number):boolean;
   getGeneratedObjects?():GeneratedOutlineObject[];
   getCanvasEditCapability?():CanvasEditCapability;
-  /** E2 browser-only command entry point; actual Delete/Translate/Rotate UI is E3~E5. */
+  /** Browser-only command entry point, with E2 scope and selection validation. */
   getGeneratedHistory?():{undo:number;redo:number;limit:number};
   executeGeneratedCommand?(command:GeneratedCommand):void;
   stageGeneratedCommand?(command:GeneratedCommand):void;
@@ -49,7 +50,6 @@ export interface CadViewerAdapter {
   getSavedOutlineStates?(): SavedOutlineOverlayState[];
   setSavedOutlineVisibility?(id:string,visible:boolean):boolean;
   selectSavedOutline?(id:string,additive?:boolean):boolean;
-  deleteSavedOutline?(id:string):boolean;
   clearSavedOutlines?(): void;
   dispose(): void;
 }
@@ -166,6 +166,7 @@ export class ViewerManager {
   getCanvasObjectSelection(){return this.adapter?.getCanvasObjectSelection?.()??[];}
   getGeneratedObjects(){return this.adapter?.getGeneratedObjects?.()??[];}
   clearCanvasObjectSelection(){this.adapter?.clearCanvasObjectSelection?.();}
+  isSelectedGeneratedAt(clientX:number,clientY:number){return this.adapter?.isSelectedGeneratedAt?.(clientX,clientY)??false;}
   getCanvasEditCapability():CanvasEditCapability{
     return this.adapter?.getCanvasEditCapability?.()??{canSelect:false,canEdit:false,reason:'이 Renderer는 통합 객체 선택을 지원하지 않습니다.'};
   }
@@ -195,7 +196,10 @@ export class ViewerManager {
   setSavedOutlineVisibility(id:string,visible:boolean) {
     return this.adapter?.setSavedOutlineVisibility?.(id,visible) ?? false;
   }
-  deleteSavedOutline(id:string) { return this.adapter?.deleteSavedOutline?.(id) ?? false; }
+  /** Select a tree row without moving the camera, so E3 stages only that row. */
+  selectSavedOutline(id:string):boolean {
+    return this.adapter?.selectSavedOutline?.(id) ?? false;
+  }
   /** Compute focus only from the confirmed local geometry, never from source DXF layers. */
   focusSavedOutline(id:string,additive=false):boolean {
     const item=this.getSavedOutlines().find(item=>item.id===id);

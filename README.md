@@ -7,6 +7,13 @@
 - 앱 버전, GHCR 게시 범위, 기존 #74 multiline 보호, DXF/DWG 데이터는 변동 없습니다.
 
 
+## v0.39.0 — Issue #53 생성 개체 개별·다중 삭제 (E3)
+
+- **DXF + three-dxf-viewer 전용:** 기존 생성 외곽선을 선택한 후 하단 **선택 삭제**, 트리 행 **삭제**, 이미 선택된 개체의 Canvas 우클릭 **선택한 생성 개체 삭제**, 또는 **Canvas 초점**에서 Delete/Backspace로 브라우저 임시 개체만 삭제합니다. 삭제 전 개수/이름 확인창이 표시되고, 취소하면 아무것도 바뀌지 않습니다.
+- **생성과 편집은 별도 모드입니다.** 외곽선 생성 메뉴가 OFF여도 **생성 개체만 선택** 또는 **원본·생성 선택** 모드에서 GENERATED만 선택한 뒤 삭제할 수 있습니다. 기본 Pan과 생성 ON 작업 중에는 삭제하지 않습니다. SOURCE 또는 원본·생성 혼합 선택은 읽기 전용이며 삭제 버튼도 비활성화됩니다. 입력창/검색창에 초점이 있는 Delete/Backspace는 CAD 삭제로 처리하지 않습니다.
+- **복원/보호:** Undo/Redo로 삭제 개체의 UUID·좌표/변환/메타데이터·가시성과 순서를 복원합니다. Tree/Canvas·기존 임시 JSON 다운로드는 삭제된 객체를 제외한 동일 상태를 표시하며 Source/Layer/Preview·DXF 원본 파일·Current·DB는 변경되지 않습니다. 세션·Renderer/Version/reload 시 삭제/생성 이력도 소멸합니다. 서버 저장 및 영구 복원은 #31 P4 승인 전 차단됩니다. [Issue53 상세](out/Issue53.md), [테스트 계획](out/TestPlan.md). **현재 로컬 테스트/실 CAD·GPU NOT RUN이며 PR CI 성공 여부는 별도입니다.**
+
+
 ## v0.38.1 — Issue #67 GHCR 웹 이미지 Standalone native SQLite 중복 COPY 개선 (PR CI 검증 전)
 
 - Next.js `.next/standalone` 추적 경로가 포함하는 `better-sqlite3` 패키지를 Docker runtime 단계에서 다시 COPY하지 않도록 변경했습니다. `next.config.ts`에서 Prisma와 native SQLite tracing을 유지하고 이미지 빌드 중 `.node`/메모리 DB 동작을 확인합니다. 데이터 스키마·API·기존 migrator/배포 계약은 그대로입니다.

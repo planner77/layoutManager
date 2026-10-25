@@ -354,6 +354,9 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
       ...this.selector.getSelectedGeneratedIds().map(id=>canvasObjectRef('GENERATED',id,this.outline!))];
   }
   clearCanvasObjectSelection(){this.selector?.clearObjects();}
+  isSelectedGeneratedAt(clientX:number,clientY:number):boolean{
+    return this.selector?.isSelectedGeneratedAt(clientX,clientY)??false;
+  }
   getCanvasEditCapability(){
     return canvasEditCapability(this.getCanvasObjectSelection(),this.outline??{versionId:'',sourceSha256:''});
   }
@@ -427,7 +430,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
       geometry:generatedResult(item).geometry,baseGeometry:item.baseGeometry,
       transform:item.transform,edited:item.edited,dirty:item.dirty,
       sourceEntityIds:[...item.baseResult.sourceEntityIds],kind:item.kind,
-      name:item.name||'외곽선',outlineTypeId:item.outlineTypeId,
+      name:item.name||'외곽선 '+item.savedOutlineId.replace(/^local-/,''),outlineTypeId:item.outlineTypeId,
     }));
   }
   getSavedOutlineStates():SavedOutlineOverlayState[]{
@@ -444,14 +447,11 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     if(this.disposed||!entry?.visible)return false;
     return this.selector?.selectGenerated(entry.ref.id,additive)??false;
   }
-  /** Legacy U6 delete remains a separate non-historic compatibility operation.
-   * E3 will replace its UI with selected multi-Delete through executeGeneratedCommand. */
-  deleteSavedOutline(id:string):boolean {
-    return this.document?.discardLegacy(id)??false;
-  }
   getGeneratedHistory(){return this.document?.history()??{undo:0,redo:0,limit:100};}
   executeGeneratedCommand(command:GeneratedCommand):void {
     if(!this.document)throw new Error('이 Renderer에서는 생성 개체 편집을 지원하지 않습니다.');
+    if(this.mode!=='objects'&&this.mode!=='generated')
+      throw new Error('생성 개체 편집 모드에서만 변경할 수 있습니다.');
     this.document.execute(command,this.getCanvasObjectSelection());
   }
   stageGeneratedCommand(command:GeneratedCommand):void{
