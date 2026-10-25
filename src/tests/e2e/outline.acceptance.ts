@@ -92,7 +92,7 @@ test('TC-P0P5-REAL-BROWSER: private real-DXF mapping and interaction samples',as
       await page.mouse.up();
       await expect.poll(async()=>{
         const label=await page.getByTestId('outline-selection-count').textContent()??'';
-        return Number(/선택\\s+(\\d+)개/.exec(label)?.[1]??0);
+        return Number(label.match(/[0-9]+/)?.[0]??0);
       },{timeout:10000}).toBeGreaterThan(0);
       const countText=await page.getByTestId('outline-selection-count').textContent()??'';
       const selected=Number(/선택\s+(\d+)개/.exec(countText)?.[1]??0);
