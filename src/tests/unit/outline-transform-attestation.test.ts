@@ -259,6 +259,9 @@ describe('Issue #97 D2 rigid composition, geometry integrity and hostile input',
    // helper: the client would reject the overflow before serializing it.
    const beyond=edited(f.input,steps);
    beyond.outlines[0].result.transformOperations=[{type:'Translate',dx:1e12,dy:0}];
+   // Otherwise a stale optional matrix claim would reject earlier than
+   // verifying the WCS effective-geometry overflow we intend to exercise.
+   delete beyond.outlines[0].result.transform;
    expectedError(()=>attest(f,beyond),'OUTLINE_TRANSFORM_RANGE');
    const unnatural=edited(f.input,steps);
    unnatural.outlines[0].result.tolerance=1000;
