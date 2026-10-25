@@ -97,11 +97,34 @@ export function listUrl(query: CadListQuery, page: number) {
   return `/?${params}`;
 }
 
-// The drawing-library UI always shows the explicitly designated Current Version.
-// Keep listQuery() unchanged for API callers that intentionally request history.
-export function currentOnlyListParams(input: URLSearchParams) {
-  const query = listQuery(input); // Validate before normalizing legacy current=false.
+// Library-only display mode. Unlike this UI, the API current=false means
+// non-Current records ONLY, so keep the shared listQuery contract unchanged.
+export type DrawingListMode = "current" | "all";
+
+export function drawingListUrl(query: CadListQuery, page: number, mode: DrawingListMode) {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries({ ...query, page })) {
+    if (key !== "current" && value !== "") params.set(key, String(value));
+  }
+  if (mode === "all") params.set("versions", "all");
+  return "/?" + params.toString();
+}
+
+export function drawingListParams(input: URLSearchParams) {
+  const parsed = listQuery(input);
+  const versions = input.getAll("versions");
+  if (versions.length > 1 || (versions.length === 1 && versions[0] !== "all")) {
+    throw new CadError("INVALID_QUERY", "버전 표시 조건을 확인해주세요.");
+  }
+  if (versions.length && parsed.current === "true") {
+    throw new CadError("INVALID_QUERY", "서로 충돌하는 버전 표시 조건입니다.");
+  }
+  // Previously shared library URLs used current=false to mean all versions.
+  const mode: DrawingListMode = versions.length || parsed.current === "false" ? "all" : "current";
   const params = new URLSearchParams(input);
-  params.set("current", "true");
-  return { query: { ...query, current: "true" as const }, params };
+  params.delete("versions");
+  params.delete("current");
+  if (mode === "current") params.set("current", "true");
+  const query: CadListQuery = { ...parsed, current: mode === "current" ? "true" : "" };
+  return { mode, query, params };
 }
