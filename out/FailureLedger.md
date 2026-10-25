@@ -3,7 +3,7 @@
 ## Issue #103 / G1 — PR CI 시작 전 최초 기준선 (2026-10-25 KST)
 
 - **신규 CI 실패 이력:** 아직 PR CI를 실행하지 않아 실패 Run/Job/Attempt/로그 0건 **(NOT RUN)**. 실패가 없음을 CI 성공으로 간주하지 않으며 향후 Run 실패/취소는 로그·원인·시도·조치·최종 HEAD를 별도 추가하여 영구 기록한다.
-- **원인/예방·설계상 위험:** G1 SQL을 \`src/prisma/migrations\`에 넣으면 자동 migrator가 운영 DDL을 적용하는 변경 위험. 따라서 \`src/tests/fixtures/auth-g1/\`에만 별도 스키마/DDL, 임시 \`cad-auth-g1-*/fixture.sqlite\` 경로 가드, 테스트만 연결. SQLite Session count 검사만 쓰면 동시 제4세션 race 위험: \`BEGIN IMMEDIATE\` + DB 트리거로 차단. nonce 해시 유일성·Grant/Audit commit 동시성·Audit append-only를 격리 Fixture에서 검증하도록 작성.
+- **원인/예방·설계상 위험:** G1 SQL을 `src/prisma/migrations`에 넣으면 자동 migrator가 운영 DDL을 적용하는 변경 위험. 따라서 `src/tests/fixtures/auth-g1/`에만 별도 스키마/DDL, 임시 `cad-auth-g1-*/fixture.sqlite` 경로 가드, 테스트만 연결. SQLite Session count 검사만 쓰면 동시 제4세션 race 위험: `BEGIN IMMEDIATE` + DB 트리거로 차단. nonce 해시 유일성·Grant/Audit commit 동시성·Audit append-only를 격리 Fixture에서 검증하도록 작성.
 - **검증 미실행:** 실제 Node/Vitest/Prisma/SQLite native/Docker/Playwright 로컬 실행 **NOT RUN**. PR 생성 시 최신 head의 Verify/Docker 실행 시작을 확인하되 사용자의 모니터링 생략 요청에 따라 결과 성공이라고 기록하지 않는다. 리뷰 스레드·main drift/충돌 점검 후 PR 시작, 최신 HEAD 성공 이전 병합·G7 운영 승인은 금지.
 - 참조: [Issue103](Issue103.md), [Issue96](Issue96.md), [TestPlan](TestPlan.md), GitHub Issue #103. 이 항목은 **확인된 CI 실패 사고가 아닌 사전 기준선/위험 원장**이다.
 

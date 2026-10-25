@@ -3,7 +3,7 @@
 ## G1 #103 — 격리 User/Session/Grant/Audit 물리 모델 및 원자성 (2026-10-25)
 
 - [Issue #103](https://github.com/planner77/layoutManager/issues/103)에서 User/AuthSession/Role·Site·Special Grant/AuditEvent/RecoveryNonce의 **비운영 SQLite DDL, Prisma 참조 투영, Lock/Transaction 원자성 Fixture 및 9개 Integration 테스트**를 구현했다. 상세 [Issue103](Issue103.md), [ADR-051-G1](Decisions.md).
-- **운영 승인 아님:** \`src/tests/fixtures/auth-g1/**\`·Integration/문서만 변경, \`src/prisma/schema.prisma\`와 자동 migrations, 실제 API/Runtime/DB/로그인·관리·Audit 활성화는 0. G0 #102 세부 미정 및 #104~#109 선행/운영 게이트는 그대로 남고 #96 OPEN/BLOCKED. 실행 확인 전 G1 AC PASS 기록 금지.
+- **운영 승인 아님:** `src/tests/fixtures/auth-g1/**`·Integration/문서만 변경, `src/prisma/schema.prisma`와 자동 migrations, 실제 API/Runtime/DB/로그인·관리·Audit 활성화는 0. G0 #102 세부 미정 및 #104~#109 선행/운영 게이트는 그대로 남고 #96 OPEN/BLOCKED. 실행 확인 전 G1 AC PASS 기록 금지.
 
 
 ## G0 #102 — Owner 경량 보안 범위 결정 R1 (2026-10-25)

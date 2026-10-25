@@ -2,9 +2,9 @@
 
 ## Issue #103 / G1 — User·Session·Grant·Audit 격리 DB 설계·검증 (2026-10-25)
 
-- **#102 Owner R1 우선:** #103은 기존 CAD 테이블을 담은 일회용 SQLite 사본만 대상으로 한다. \`src/tests/fixtures/auth-g1/{schema.prisma,migration.sql,store.ts}\`는 **비운영·비연결 계약**이며 \`src/tests/integration/auth-g1.test.ts\`에서만 사용. \`src/prisma/schema.prisma\`, \`src/prisma/migrations\`, App API, runtime/Compose/Nginx, 운영 DB/원본 파일/실 S3/GHCR는 수정하지 않는다. G7 #109 Owner 별도 승인 전 활성화 금지.
-- G1 트랜잭션: \`BEGIN IMMEDIATE\`, 8h/30m/최대 3개 세션(트리거+원자 count/insert, 4번째 거부·시계 역행 거부), 세션 원시 토큰 미저장, 비활성/복구 세션 폐기, Role/Site/Special Grant와 Audit 동일 트랜잭션, nonce hash 단발·재사용/삭제 불가, Audit append-only. Version→Location→Building→CadSite DB 검증, Admin도 Site 자동 승인 금지.
-- **검증 경계:** 실제 여섯 CAD Migration을 일회용 SQLite에 적용한 뒤 G1 DDL/장애 주입/FK·Unique·복원과 CAD Version/Current/SHA/삭제 hash 불변을 점검하는 TC-P4-G1-001~009. 합성 로컬 CAD/가상 S3 복제는 실제 운영 백업·S3 복구 증거가 아니다(G6 #108). 실행 전 \`NOT RUN\`, CI 시작을 PASS로 주장 금지.
+- **#102 Owner R1 우선:** #103은 기존 CAD 테이블을 담은 일회용 SQLite 사본만 대상으로 한다. `src/tests/fixtures/auth-g1/{schema.prisma,migration.sql,store.ts}`는 **비운영·비연결 계약**이며 `src/tests/integration/auth-g1.test.ts`에서만 사용. `src/prisma/schema.prisma`, `src/prisma/migrations`, App API, runtime/Compose/Nginx, 운영 DB/원본 파일/실 S3/GHCR는 수정하지 않는다. G7 #109 Owner 별도 승인 전 활성화 금지.
+- G1 트랜잭션: `BEGIN IMMEDIATE`, 8h/30m/최대 3개 세션(트리거+원자 count/insert, 4번째 거부·시계 역행 거부), 세션 원시 토큰 미저장, 비활성/복구 세션 폐기, Role/Site/Special Grant와 Audit 동일 트랜잭션, nonce hash 단발·재사용/삭제 불가, Audit append-only. Version→Location→Building→CadSite DB 검증, Admin도 Site 자동 승인 금지.
+- **검증 경계:** 실제 여섯 CAD Migration을 일회용 SQLite에 적용한 뒤 G1 DDL/장애 주입/FK·Unique·복원과 CAD Version/Current/SHA/삭제 hash 불변을 점검하는 TC-P4-G1-001~009. 합성 로컬 CAD/가상 S3 복제는 실제 운영 백업·S3 복구 증거가 아니다(G6 #108). 실행 전 `NOT RUN`, CI 시작을 PASS로 주장 금지.
 - 지침/설계/시험·복구 가이드: [Issue103](out/Issue103.md), [ADR-051-G1](out/Decisions.md), [Database](out/Database.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md), [Operation](out/Operation.md). #102 남은 업무 API·Current/DELETE 정책, 초기 Admin 책임, Audit 365일 이후 파기는 임의로 승인하지 않는다.
 
 

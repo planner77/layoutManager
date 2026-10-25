@@ -2,7 +2,7 @@
 
 ## Issue #103 / G1 — 격리 DB·원자성·복구 Test Matrix (2026-10-25)
 
-모든 TC는 기존 6개 CAD Migration의 실 SQL과 합성 Version/Current/SHA를 일회용 SQLite에 적용하고 **운영 연결 0**. 테스트 위치 \`src/tests/integration/auth-g1.test.ts\`. 미실행은 \`NOT RUN\`, PR CI 최신 HEAD 결과를 따로 검증하기 전 PASS 기록 금지.
+모든 TC는 기존 6개 CAD Migration의 실 SQL과 합성 Version/Current/SHA를 일회용 SQLite에 적용하고 **운영 연결 0**. 테스트 위치 `src/tests/integration/auth-g1.test.ts`. 미실행은 `NOT RUN`, PR CI 최신 HEAD 결과를 따로 검증하기 전 PASS 기록 금지.
 
 | Test ID | 검증 내용 | 근거 AC | 계획 상태 |
 | --- | --- | --- | --- |
@@ -16,7 +16,7 @@
 | TC-P4-G1-008 | nonce hash unique 1회, 암호 변경·세션 폐기·Audit rollback, 원문 미저장 | AC2 | NOT RUN |
 | TC-P4-G1-009 | 중단(quiesced)된 합성 DB/local/S3-mirror 일관 백업→격리 G1 dry-run→손상 주입→복원, 기존 Current/SHA/delete hash 불변 | AC3 | NOT RUN |
 
-추가 PR 정적 Diff 확인: \`src/prisma/schema.prisma\`, \`src/prisma/migrations/**\`, \`src/app/api/**\`, \`src/server/db.ts\`, Runtime/Compose/Nginx/실 CAD/S3 변경 0; 새 G1 파일은 tests/fixtures·tests/integration·docs에 한정. 실 운영 DB/CAD/원격 S3 복구·실 LAN E2E 및 Owner 운영 승인은 **#108/#109 NOT RUN**. 관련 [Issue103](Issue103.md), [TestReport](TestReport.md).
+추가 PR 정적 Diff 확인: `src/prisma/schema.prisma`, `src/prisma/migrations/**`, `src/app/api/**`, `src/server/db.ts`, Runtime/Compose/Nginx/실 CAD/S3 변경 0; 새 G1 파일은 tests/fixtures·tests/integration·docs에 한정. 실 운영 DB/CAD/원격 S3 복구·실 LAN E2E 및 Owner 운영 승인은 **#108/#109 NOT RUN**. 관련 [Issue103](Issue103.md), [TestReport](TestReport.md).
 
 
 ## Issue #102 / ADR-051-R1 — 보안 강화 비범위와 기능/운영 수용 시험 (2026-10-25)
