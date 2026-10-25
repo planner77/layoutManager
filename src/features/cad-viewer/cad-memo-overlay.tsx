@@ -37,8 +37,25 @@ export function CadMemoOverlay({
   const root = useRef<HTMLDivElement>(null);
   const gesture = useRef<Gesture | null>(null);
   const [preview, setPreview] = useState<{id: string; point: MemoWcsXY} | null>(null);
-  // Used by the adapter's viewport-change callback even before React rerenders.
-  void viewRevision;
+  const [screenPositions, setScreenPositions] = useState<Record<string,{x:number;y:number}>>({});
+  // Camera projection reads a live adapter, so measure after commit rather than
+  // reading refs or imperative WebGL state during React render.
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      const rect = root.current?.getBoundingClientRect();
+      const manager = getManager();
+      if (!rect || !manager) { setScreenPositions({}); return; }
+      const positions:Record<string,{x:number;y:number}> = {};
+      for (const memo of memos) {
+        const point=preview?.id===memo.id?preview.point:memo.anchorWcsXY;
+        const xy=manager.projectWcsToCanvas(point);
+        if (!xy || xy.x<0 || xy.y<0 || xy.x>rect.width || xy.y>rect.height) continue;
+        positions[memo.id]=xy;
+      }
+      setScreenPositions(positions);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [memos, preview, getManager, viewRevision]);
 
   function cancelGesture() {
     gesture.current = null;
@@ -120,7 +137,6 @@ export function CadMemoOverlay({
     event.stopPropagation();
   }
 
-  const bounds = root.current?.getBoundingClientRect();
   return <div ref={root} data-testid="cad-memo-overlay"
     className="pointer-events-none absolute inset-0 z-20 overflow-hidden"
     onWheelCapture={() => { if (gesture.current) cancelGesture(); }}
@@ -140,9 +156,8 @@ export function CadMemoOverlay({
     />}
     {memos.map(memo => {
       const point = preview?.id === memo.id ? preview.point : memo.anchorWcsXY;
-      const screen = getManager()?.projectWcsToCanvas(point);
-      if (!screen || !bounds || screen.x < 0 || screen.y < 0 ||
-          screen.x > bounds.width || screen.y > bounds.height) return null;
+      const screen = screenPositions[memo.id];
+      if (!screen) return null;
       return <button type="button" key={memo.id} data-testid="cad-memo-pin"
         data-memo-id={memo.id} data-memo-preview={preview?.id===memo.id?'true':'false'}
         data-memo-wcs-x={point.x} data-memo-wcs-y={point.y}
