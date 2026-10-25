@@ -1,5 +1,13 @@
 # ChangeLog
 
+## 0.34.0 — 2026-10-25 / Issue #41 관리자 최상위 외곽선 타입 비영속 안전 시안
+
+- Added: 타입 계약 및 순수 NFC/trim·중복·길이·sortOrder·UUID·revision CAS 시뮬레이션·비활성/복구 도메인, `/lab/outline-types` **비영속 React UI 시안**, UNIT/E2E 회귀 스위트. 브라우저 reload 시 데이터 삭제.
+- Blocked intentionally: **실 Viewer 관리자 메뉴 disabled 유지**, 계정/Admin RBAC·Scope·Audit 결정 전 `/api/outline-types` CRUD, DB migration, 영속 저장, 외곽선 typeId FK, 트리/분류 기능 미구현. 단순 시안을 관리자 기능 완료로 표시하지 않는다.
+- Compatibility: Viewer/Renderer/Canvas/레이어/기하 #31·#40, CadFileVersion/원본/Storage 불변. `src/package.json`/lockfile 루트 버전 0.33.0→0.34.0. [Issue41](Issue41.md), ADR-037 및 관련 기준 문서 갱신.
+- QA: 신규 TC-U4-UNIT-001~004, TC-U4-E2E-PREVIEW-001/GATE-002는 **코드 작성됨, 로컬 NOT RUN**, PR CI 결과 모니터링 전 NOT VERIFIED.
+
+
 ## 0.33.0 — 2026-10-25 / Issue #40 외곽선 생성 메뉴 ON/OFF U3 (PR CI 검증 전)
 
 - Added: `ViewerMenuBar` 외곽선 토글 ON/OFF + 접근성 상태/지원 사유. 정상 DXF+three-dxf-viewer+검증된 Source↔Render 매핑/64-hex Version SHA에서 ON→select/하단 도구, OFF→Pan/Worker·미확정 Preview·Selection 취소 및 안내. 기존 확정 Overlay·JSON 다운로드 유지(OFF 읽기 도크).

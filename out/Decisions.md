@@ -1,5 +1,14 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-037 — #41 인증 없는 관리자 CRUD 대신 비영속 카탈로그 시안만 제공 (2026-10-25)
+
+- **Context:** #38 메뉴에 '외곽선 타입 관리' 진입점이 있으나 #31 P4의 IdP/Admin RBAC/Scope/감사 운영 정책은 승인되지 않음. 화면 숨김이나 deletePassword/X-User는 보안수단이 아니다.
+- **Decision:** 지금은 관리 메뉴 disabled, 관리자 API/Prisma migration/사용자 Scope 감지 불구현. `/lab/outline-types`에서 React 메모리 시안으로 입력 UX·고정 ID·NFC+case-insensitive 예약명·soft deactivate·CAS revision 도메인 로직만 실험한다. 브라우저 refresh 시 삭제되는 비영속 상태를 눈에 띄게 표시한다.
+- **Schema pending:** 제안 `OutlineType(id,name,description,active,sortOrder,scopeKey?,revision,createdAt,updatedAt)` + immutable ID/FK. scopeKey=null은 미확정이지 global default가 아니다. 비활성 이름도 예약; 이름 키 NFC+locale-independent lowercase는 **초기 제안**, DB 실제 collations/Unique key와 Site visibility는 Owner 승인 필요.
+- **Rejected:** 익명 작성 API·admin query flag·X-Role 헤더/삭제 비밀번호 재사용, localStorage를 실제 기준정보로 취급, 임시 외곽선 JSON에 서버 권한 없는 typeId 주입, 권한 없이 '관리자 모드' 클릭을 허용.
+- **Consequences:** AC-U4-01~04는 실서비스 미완, AC-U4-05 fail-closed 증거만 코드에 준비. Owner 승인 후 #31 인증·감사 재사용 → additive schema/FK→Service/GET/POST/PATCH/RBAC/CAS/Audit→#42/#43 연계. [Issue41](Issue41.md).
+
+
 ## ADR-036 — 외곽선 도구 ON/OFF는 비확정 작업만 취소 (2026-10-25 / Issue #40)
 
 - **배경:** #38 U1에서 상단 메뉴는 비활성이지만 하단 #31 도구로 객체 선택이 가능했다. 실제 ON/OFF를 도입하면서 Worker가 늦게 반환된 Preview, Renderer/Version 경계, 이미 확정한 Overlay/다운로드의 수명을 명시해야 한다.

@@ -1,5 +1,12 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #41 (2026-10-25) — 외곽선 최상위 업무 타입 U4 안전 시안, v0.34.0
+
+- #41은 **인증·Admin RBAC/Scope·감사 보존 정책 Owner 미승인으로 BLOCKED**. `DESIGN.md` 부재, 설계 기준은 `out/Architecture.md`/ADR-037이다. #31 P4와 공통 보안 게이트 사용: 관리 API/DB migration/실제 관리 UI 쓰기 활성화를 금지한다.
+- `domain/outline-type.ts`는 순수 정규화/NFC·중복·Revision/비활성 검증 **프로토타입**이다. `/lab/outline-types`는 서버 API, localStorage, DB를 사용하지 않는 **새로고침 시 소멸하는 시안**; 실제 CAD의 typeId/OutlineKind/Overlay와 연결하지 않는다. 기존 Viewer 상단 관리 메뉴는 disabled 유지.
+- 실제 수용 AC-U4-01~04는 미충족·일부 도메인 규칙만 선행 검증. `out/Issue41.md`의 AC/TC, `out/TestPlan.md` 및 `out/TestReport.md` 상태를 기준으로 하며, **PR CI 결과 확인 전 NOT RUN/NOT VERIFIED**. Issue 종료·운영 타입 저장 활성화 금지.
+
+
 ## Issue #40 (2026-10-25) — 상단 외곽선 생성 ON/OFF U3, v0.33.0
 
 - `ViewerMenuBar`의 외곽선 생성 토글은 **기본 OFF**. 지원 가능한 DXF + three-dxf-viewer의 정상 로드·유효한 SHA-256 메타데이터·검증된 매핑 Entity >0에서만 ON 및 `select` 허용. OFF는 **Worker/Preview 취소 → 선택 해제 → pan 복귀**와 고지를 수행한다. 기존 #31 선택/Geometry/Worker는 재사용한다.

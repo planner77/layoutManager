@@ -1,5 +1,13 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issue #41 / U4 v0.34.0 — 안전 시안 검증 상태 (2026-10-25)
+
+- 범위: 관리자 업무 타입 도메인·UI 시안만, 실 RBAC/API/DB 없음. `src/tests/unit/outline-type.test.ts` TC-U4-UNIT-001~004 및 `src/tests/e2e/issue41-outline-type-preview.spec.ts` TC-U4-E2E-PREVIEW-001, TC-U4-E2E-GATE-002를 작성하였다.
+- **현재 실행 증거:** 로컬 npm ci/TypeScript/ESLint/Vitest/Next Build/Chromium/Legacy DB migration/Docker runtime **NOT RUN**; PR CI 결과는 이 시점에 확인하지 않았으며 PASS/FAIL 판정하지 않는다. 별도 QA 에이전트 검증을 수행했다고 주장하지 않는다.
+- **수용:** AC-U4-01/02 및 scope별 DB 보장·실 typeId FK는 BLOCKED; AC-U4-03/04 규칙 일부는 코드/시험 명세 수준, AC-U4-05는 실 Route 부재와 메뉴 disabled를 코드로 보존. 테스트 작성만으로 AC 완료가 아니다.
+- 보안 Owner 승인 후 auth/scope/audit/DB migration/동시성/복구 및 운영 Viewer 시험을 다시 수행해야 한다. [Issue41](Issue41.md) / [TestPlan](TestPlan.md).
+
+
 ## U-ISSUE40-PR48-E2E-REPAIR-20261025 — 2차 PR CI E2E 실패 원인/Fixture 수정 (다음 검증 전)
 
 - [PR #48 Run #40150085136](https://github.com/planner77/layoutManager/actions/runs/40150085136) HEAD `76018b6b`: CI verify Job `121039597527`. npm ci·Prisma·TypeScript·ESLint·Unit/Integration·1k/10k/100k CPU benchmark·Production Build·Chromium 설치 **PASS**; Playwright Chromium **52 PASS / 2 FAIL (54 총건)**. Legacy migration E2E **SKIPPED**. Docker runtime job `121039597376` **PASS**. `react-hooks/refs` 이전 CI 차단은 이번 HEAD에 존재하지 않음.

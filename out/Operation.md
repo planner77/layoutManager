@@ -1,5 +1,13 @@
 # 운영·환경설정 초안
 
+## Issue #41 / v0.34.0 — 관리자 타입 시안 운영 경계
+
+- 이 변경은 DB migration/API/파일 저장소/환경변수/인증 구성을 추가하지 않는다. `/lab/outline-types`는 메모리 **단일 탭 시안**이며 reload/닫기/재배포로 모두 소멸. 운영 기준정보로 Import/Export하거나 관리자 권한으로 안내하지 않는다.
+- 기존 Viewer 상단 '외곽선 타입 관리'는 **Owner 정책 승인 전 disabled**. 사용자가 `/lab/outline-types` URL을 직접 열 수 있어도 실제 타입 생성/도면 분류/DB 권한은 전혀 부여되지 않는다. 유효한 Admin을 client의 X-Role/X-User·삭제 비밀번호로 대체하지 않는다.
+- 후속 운영 차단 해제 체크: IdP 또는 안전한 세션, Reader/Editor/Admin 및 Site/Version scope, 감사 보존 기간/읽기 정책, DB Unique/FK/CAS, CSRF/Origin 테스트, 기존 DB/CAD 백업·dry-run migration·복구 시험 **모두 완료 후 별도 승인을 득할 것**. 현 버전에서는 이 체크리스트를 충족했다고 주장하지 않는다.
+- 롤백은 PR commit revert로 충분하며 신규 DB/운영 타입 데이터는 없다. 수용 경계·시험 명세는 [Issue41](Issue41.md) 참조.
+
+
 ## 2026-10-25 / Issue #45 — 도면 목록 Current-only 운영·조회 동선
 
 - `/`은 `CadLocation.currentVersionId`에 지정된 Version만 표시한다. 등록된 파일이 있어도 Current를 지정하지 않았다면 홈에서 보이지 않는다. 가장 높은 Version 번호도 Current 지정이 없으면 보이지 않는다. 이는 데이터 손실이 아니다.

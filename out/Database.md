@@ -1,5 +1,13 @@
 # Database Schema — 단일 기준 문서
 
+## Issue #41 / v0.34.0 — OutlineType 영속 Schema는 미승인 (DDL 없음)
+
+- 이번 단계는 **schema.prisma와 migration 변경 없음**. `/lab/outline-types`의 목록은 React state만 사용; 신규 DB 테이블, 임의 사용자, 서버 CRUD, FK 없음. 원본 CadFileVersion/CadLocation 및 #31 CadOutline 제안 불변.
+- **승인 후 제안:** `OutlineType(id UUID PK, scope_key <미결정>, name NFC, name_key NFC+lowercase, description?, active BOOL, sort_order INT, revision INT, created_at UTC, updated_at UTC)` 및 scope별 Unique(name_key), CHECK/Index. `name_key`의 case folding/Unicode DB 구현, NULL scope와 key 구성은 Owner 결정 및 SQLite 실제 충돌 검증 뒤 확정. 조회 Scope 누락 시 기본 거부.
+- 추후 `CadOutline.type_id`는 OutlineType.id FK를 참조하고 이름변경/비활성 뒤에도 보존; 타입 물리 DELETE 미제공. `revision` CAS UPDATE(expectedRevision)→409, 트랜잭션 FK/Unique와 감사 event(행위, actor, scope, result, timestamp, revision)를 원자적으로 기록.
+- 기존 백업·복제 dry run→migration→foreign_key_check→복구 검증 및 IdP/CSRF/RBAC(Reader/Editor/Admin)/Audit 보존 승인 없이는 DDL·쓰기 API 시행 금지. [Issue41](Issue41.md) / ADR-037.
+
+
 ## Issue #31 v0.28.3 — CadOutline 미배포 상태와 정합성 사전 게이트
 
 - 이번 브랜치는 **Prisma schema, Migration, 기존 DB, 원본 DXF, Storage locator를 수정하지 않는다**. 기존 P4 제안 Schema는 계속 *미승인*이다.

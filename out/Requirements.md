@@ -1,5 +1,14 @@
 # 상세 요구사항
 
+## Issue #41 / U4 v0.34.0 — 최상위 외곽선 업무 타입 안전 선행 (2026-10-25)
+
+- **FR-U4-01 (AC-U4-01/04):** 향후 Admin은 변경 불가 ID의 업무 타입을 생성·이름/설명/순서 수정·비활성·복구. 활성 타입만 새 외곽선 선택에서 사용, inactive도 기존 FK/트리 참조 유지. `OutlineKind` CONVEX/PRECISE와 분리.
+- **FR-U4-02 (AC-U4-03):** 이름 trim→NFC(1~100)/제어·비표시 문자 거부, 설명 최대 500, 0~9999 정렬순서, 같은 scope의 대소문자 무시 중복 불가, inactive 이름 예약. ID/createdAt 불변·revision 충돌 반환. 실제 scope/DB collation 미승인.
+- **FR-U4-03 (AC-U4-02/05):** 실 GET/POST/PATCH/비활성 Route/DB 및 상단 관리 메뉴 활성화는 Owner의 인증·Admin RBAC·scope·CSRF/Origin·감사 승인 **이전 금지**. 삭제용 비밀번호/임의 X-User/X-Role은 권한이 아니다.
+- **FR-U4-04 (설계검증 전용):** `/lab/outline-types` 시안은 React 브라우저 메모리에서 추가·수정·비활성·복구 및 입력 오류를 재현하되 reload 때 삭제, 실제 데이터/외곽선/API와 단절. 운영 메뉴는 disabled 유지.
+- **NFR-U4-01:** #31 P4 서버 인증·Storage source 무결성/Revision, #38/#39/#40 셸/도구, CadFileVersion/Prisma/원본은 불변. 설계 [Issue41](Issue41.md), ADR-037, TC-U4-UNIT-001~004 / E2E-PREVIEW-001 / E2E-GATE-002.
+
+
 ## Issue #40 / U3 — v0.33.0 상단 외곽선 생성 제어 (2026-10-25)
 
 - **FR-U3-01 (AC-U3-01):** Viewer 외곽선 생성 메뉴의 초기 상태는 OFF. 매핑된 객체가 있는 DXF `three-dxf-viewer`에서만 ON 시 객체 선택(`select`) 및 기존 하단 도구로 전환하며 OFF 시 Pan으로 돌아간다. 앱 상태 토글과 실제 Overlay 표시·CAD 레이어 체크는 독립.
