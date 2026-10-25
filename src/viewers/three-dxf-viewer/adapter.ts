@@ -11,6 +11,7 @@ import type {OutlineResult} from '../core/outline-compute';
 import type {OutlineInfo,SavedOutline,SavedOutlineOverlayState} from '../core/adapter';
 import type {OutlineAssignment} from '../../domain/outline-assignment';
 import {parseOutlineAssignmentMetadata} from '../../domain/outline-assignment';
+import {canvasObjectRef,createGeneratedId,validCanvasScope,type CanvasObjectRef} from '../../domain/canvas-object-selection';
 
 function release(group: THREE.Object3D) {
   const geometries = new Set<THREE.BufferGeometry>(), materials = new Set<THREE.Material>(), textures = new Set<THREE.Texture>();
@@ -48,7 +49,9 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
   private savedGroup=new THREE.Group();
   private savedGroups=new Map<string,THREE.Group>();
   private selectedSavedGroup?: THREE.Group;
-  private selectedSavedOutlineId:string|null=null;
+  /** Legacy local-N JSON IDs and collision-free canvas UUIDs are separate. */
+  private generatedIds=new Map<string,string>();
+  private issuedGeneratedIds=new Set<string>();
   private nextSavedId=1;
   private preview?: OutlineResult;
   private previewKind?: OutlineKind;
@@ -58,6 +61,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
   constructor(private container: HTMLElement, private outline?:{
     versionId:string;sourceSha256:string;
     onSelection?:(entities:OutlineEntity[])=>void;
+    onObjectSelection?:(refs:CanvasObjectRef[])=>void;
     onPreview?:(result:OutlineResult|null,error?:string)=>void;
     onSaved?:(count:number)=>void;
   }) {
@@ -127,7 +131,8 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
           const selectable=this.renderCoverage.selectable.filter(e=>this.visibleLayers.has(e.layer));
           this.selector=new SelectionController(this.renderer.domElement,this.container,selectable,
             (x,y)=>this.screenToWorld(x,y),this.selectionChanged,
-            pan=>{this.controls.mouseButtons.LEFT=pan?THREE.MOUSE.PAN:THREE.MOUSE.ROTATE;});
+            pan=>{this.controls.mouseButtons.LEFT=pan?THREE.MOUSE.PAN:THREE.MOUSE.ROTATE;},
+            this.objectSelectionChanged);
           this.spatialIndexMs=this.selector.indexBuildMs;
           this.selector.setMode(this.mode);
         }catch(error) {
@@ -241,6 +246,21 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
       else this.cancelOutlinePreview();
     }
   };
+  /** Canvas/tree/layer changes share the same selection set. */
+  private objectSelectionChanged=(sources:OutlineEntity[],generated:readonly string[])=>{
+    this.refreshSavedHighlight();
+    if(!this.outline || !validCanvasScope(this.outline))return;
+    this.outline.onObjectSelection?.([
+      ...sources.map(e=>canvasObjectRef('SOURCE',e.id,this.outline!)),
+      ...generated.map(id=>canvasObjectRef('GENERATED',id,this.outline!)),
+    ]);
+  };
+  private updateGeneratedCandidates(){
+    this.selector?.setGeneratedObjects(this.saved.flatMap(item=>{
+      const id=this.generatedIds.get(item.id),group=this.savedGroups.get(item.id);
+      return id&&group?.visible?[{id,geometry:item.result.geometry}]:[];
+    }));
+  }
   private createPathGroup(paths:OutlinePath[],color:number){
     const group=new THREE.Group(),z=this.bounds.isEmpty()?0:this.bounds.max.z+0.5;
     for(const path of paths){
@@ -264,10 +284,15 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
       release(this.selectedSavedGroup);
       this.selectedSavedGroup=undefined;
     }
-    const saved=this.saved.find(item=>item.id===this.selectedSavedOutlineId);
-    if(saved && this.savedGroups.get(saved.id)?.visible){
-      // An independent highlight overlay: no changes to source-layer materials.
-      this.selectedSavedGroup=this.renderGeometry(saved.result,0x00ffcc);
+    const ids=new Set(this.selector?.getSelectedGeneratedIds()??[]);
+    const paths:OutlinePath[]=this.saved.flatMap(item=>{
+      if(!ids.has(this.generatedIds.get(item.id)??'')||!this.savedGroups.get(item.id)?.visible)return [];
+      const g=item.result.geometry;
+      const polygons=g.type==='Polygon'?[g.coordinates]:g.coordinates;
+      return polygons.flatMap(poly=>poly.map(ring=>({points:ring,closed:true})));
+    });
+    if(paths.length){
+      this.selectedSavedGroup=this.createPathGroup(paths,0x00ffcc);
       this.scene.add(this.selectedSavedGroup);
     }
     this.render();
@@ -286,6 +311,12 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
   setSelectionMode(mode:SelectionMode){this.mode=mode;this.selector?.setMode(mode);}
   getOutlineSelection(){return this.selector?.getSelection()??[];}
   clearOutlineSelection(){this.selector?.clear();}
+  getCanvasObjectSelection():CanvasObjectRef[]{
+    if(!this.selector||!this.outline||!validCanvasScope(this.outline))return [];
+    return [...this.selector.getSelection().map(e=>canvasObjectRef('SOURCE',e.id,this.outline!)),
+      ...this.selector.getSelectedGeneratedIds().map(id=>canvasObjectRef('GENERATED',id,this.outline!))];
+  }
+  clearCanvasObjectSelection(){this.selector?.clearObjects();}
   async previewOutline(kind:OutlineKind):Promise<OutlineResult> {
     if(!this.index||!this.selector)throw new Error(this.indexError??'DXF 객체 인덱스가 준비되지 않았습니다.');
     const selected=this.selector.getSelection();
@@ -321,53 +352,75 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     if(assignment && !this.preview.persistable)throw new Error('불안정한 Entity 참조는 타입 지정 확정이 불가합니다.');
     const typed=assignment?parseOutlineAssignmentMetadata(assignment):null;
     if(this.saved.length>=100)throw new Error('임시 외곽선은 현재 Session에서 최대 100개까지 생성할 수 있습니다.');
+    if(!this.outline || !validCanvasScope(this.outline))throw new Error('검증된 Version/SHA 범위가 없습니다.');
+    let generatedId='';
+    for(let i=0;i<4;i++){
+      const candidate=createGeneratedId();
+      if(!this.issuedGeneratedIds.has(candidate)){generatedId=candidate;break;}
+    }
+    if(!generatedId)throw new Error('유일한 생성 개체 ID를 발급할 수 없습니다.');
     const saved:SavedOutline={id:'local-'+this.nextSavedId++,createdAt:new Date().toISOString(),result:this.preview,
       ...(typed?{outlineTypeId:typed.outlineTypeId,outlineTypeName:typed.outlineTypeName,name:typed.name}:{})};
+    this.issuedGeneratedIds.add(generatedId);
+    this.generatedIds.set(saved.id,generatedId);
     this.saved.push(saved);
     const group=this.renderGeometry(this.preview,0xff8c00);
     this.savedGroups.set(saved.id,group);this.savedGroup.add(group);
     this.scene.add(this.savedGroup);this.cancelOutlinePreview();
+    this.updateGeneratedCandidates();
     this.outline?.onSaved?.(this.saved.length);this.render();return saved;
   }
   getSavedOutlines(){return [...this.saved];}
+  /** E2 reuses the UUID refs, never the legacy export ordinal. */
+  getGeneratedObjects(){
+    if(!this.outline||!validCanvasScope(this.outline))return [];
+    return this.saved.flatMap(item=>{
+      const id=this.generatedIds.get(item.id);
+      return id?[{ref:canvasObjectRef('GENERATED',id,this.outline!),savedOutlineId:item.id,
+        visible:this.savedGroups.get(item.id)?.visible??false,
+        geometry:item.result.geometry,sourceEntityIds:[...item.result.sourceEntityIds],kind:item.result.kind,
+        name:item.name??'외곽선',outlineTypeId:item.outlineTypeId??null}]:[];
+    });
+  }
   getSavedOutlineStates():SavedOutlineOverlayState[]{
     return this.saved.map(item=>({
       id:item.id,visible:this.savedGroups.get(item.id)?.visible??false,
-      selected:this.selectedSavedOutlineId===item.id,
+      selected:(this.selector?.getSelectedGeneratedIds()??[]).includes(this.generatedIds.get(item.id)??''),
     }));
   }
   setSavedOutlineVisibility(id:string,visible:boolean):boolean {
     const group=this.savedGroups.get(id);
     if(!group || this.disposed)return false;
-    group.visible=visible;this.refreshSavedHighlight();return true;
+    group.visible=visible;this.updateGeneratedCandidates();this.refreshSavedHighlight();return true;
   }
-  selectSavedOutline(id:string):boolean {
-    if(this.disposed||!this.savedGroups.has(id))return false;
-    this.selectedSavedOutlineId=id;this.refreshSavedHighlight();return true;
+  selectSavedOutline(id:string,additive=false):boolean {
+    const generatedId=this.generatedIds.get(id),group=this.savedGroups.get(id);
+    if(this.disposed||!group?.visible||!generatedId)return false;
+    return this.selector?.selectGenerated(generatedId,additive)??false;
   }
   deleteSavedOutline(id:string):boolean {
     const index=this.saved.findIndex(item=>item.id===id);
     const group=this.savedGroups.get(id);
     if(index<0||!group||this.disposed)return false;
     this.savedGroup.remove(group);release(group);this.savedGroups.delete(id);
-    this.saved.splice(index,1);
-    if(this.selectedSavedOutlineId===id)this.selectedSavedOutlineId=null;
-    this.refreshSavedHighlight();this.outline?.onSaved?.(this.saved.length);return true;
+    this.saved.splice(index,1);this.generatedIds.delete(id);
+    this.updateGeneratedCandidates();this.refreshSavedHighlight();
+    this.outline?.onSaved?.(this.saved.length);return true;
   }
   clearSavedOutlines(){
     if(this.selectedSavedGroup){
       this.scene.remove(this.selectedSavedGroup);release(this.selectedSavedGroup);this.selectedSavedGroup=undefined;
     }
     this.scene.remove(this.savedGroup);release(this.savedGroup);this.savedGroup=new THREE.Group();this.saved=[];
-    this.savedGroups.clear();this.selectedSavedOutlineId=null;
-    this.outline?.onSaved?.(0);this.render();
+    this.savedGroups.clear();this.generatedIds.clear();
+    this.updateGeneratedCandidates();this.outline?.onSaved?.(0);this.render();
   }
   dispose() {
     if(this.disposed)return;this.disposed=true;this.cancel?.();this.resize.disconnect();
     this.terminateWorker('index');this.terminateWorker('compute');
     this.selector?.dispose();this.selector=undefined;
     for(const group of [this.selectionGroup,this.previewGroup,this.savedGroup,this.selectedSavedGroup])if(group)release(group);
-    this.savedGroups.clear();this.selectedSavedOutlineId=null;
+    this.savedGroups.clear();this.generatedIds.clear();this.issuedGeneratedIds.clear();
     this.controls.dispose();if(this.object)release(this.object);this.scene.clear();
     this.renderer.dispose();this.renderer.forceContextLoss();this.renderer.domElement.remove();
   }
