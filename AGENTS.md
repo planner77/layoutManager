@@ -1,10 +1,23 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #51 / PR #77 — Unit API 계약 실패 및 미세 WCS P2 (2026-10-25)
+
+- 첫 [PR CI 40164835838](https://github.com/planner77/layoutManager/actions/runs/40164835838): `TC-U6-UNIT-003` 실패(`focusSavedOutline` 기본 false 인수로 이전 단일 호출 계약 불일치), Unit 186 PASS/1 FAIL; TS/Lint PASS, Benchmark/Build/E2E/Legacy SKIPPED, Docker Job PASS. 기본 `selectSavedOutline(id)` 호출은 유지하고 E1 additive에서만 `(id,true)` 사용한다.
+- [P2 #4369760096](https://github.com/planner77/layoutManager/pull/77#discussion_r4369760096)는 CI 실패 별개: 0.001 WCS crossing window에서 고정 orientation product epsilon에 의한 false negative. orientation sign 직접 비교와 상대적 round-off bound, TC-E1-UNIT-004 적용. 증거·조치 [FailureLedger](out/FailureLedger.md), [Issue51](out/Issue51.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md). 변경 HEAD CI 성공 전 PASS 주장 금지.
+
+
 ## Issue #51 / E1 — 통합 Canvas 선택·편집 경계 (2026-10-25)
 
 - v0.37.0: SOURCE는 #31 RenderCoverage에 의해 검증된 DXF Entity, GENERATED는 브라우저 확정 Polygon/MultiPolygon Overlay. SelectionController 하나로 Pan/U3 Source 선택/일반 통합/생성 전용 네 모드를 처리한다. 동일 Version/SHA/Origin을 갖는 Ref와 generated UUIDv4를 사용하며 기존 local-N JSON 스키마를 보존한다.
-- 편집 가능 표시는 *권한/명령 실행이 아니다*: SOURCE 및 혼합은 전체 거부, 생성만 향후 E2~E5 편집 대상으로 판정. 트리 다중 선택·레이어/Overlay 숨김·Zoom/ESC/Space·Reset과 동기화한다. #31 P4/#65 승인 전 서버 쓰기/관리 API 절대 구현 금지. [Issue51](out/Issue51.md), [ADR-041](out/Decisions.md), Unit/E2E(TestPlan/Report) 참조. 테스트 미실행·CI 시작은 PASS로 간주하지 않는다.
+- 편집 가능 표시는 *권한/명령 실행이 아니다*: SOURCE 및 혼합은 전체 거부, 생성만 향후 E2~E5 편집 대상으로 판정. 트리 다중 선택·레이어/Overlay 숨김·Zoom/ESC/Space·Reset과 동기화한다. #31 P4/#65 승인 전 서버 쓰기/관리 API 절대 구현 금지. [Issue51](out/Issue51.md), [ADR-042](out/Decisions.md), Unit/E2E(TestPlan/Report) 참조. 테스트 미실행·CI 시작은 PASS로 간주하지 않는다.
 
+
+## Issue #74 — MAIN CI 실행명에 Squash Commit 본문 유입 방지 (2026-10-25)
+
+- [MAIN #34](https://github.com/planner77/layoutManager/actions/runs/40158498214)는 `MAIN CI | #68 | 요약` 정상; [#35](https://github.com/planner77/layoutManager/actions/runs/40159667229)·[#36](https://github.com/planner77/layoutManager/actions/runs/40162889687)은 긴 squash commit body 전체가 `github.event.head_commit.message`로 유입되었다.
+- **정상 경로:** PR 제목 `#<Issue> | 간략한 설명`(가급적 80자 이내), squash commit **제목 동일·본문 비움**. API 병합은 `commit_title`을 명시하고 `commit_message: ""`을 전달한다. PR 설명/검증 증거는 PR/이슈/FailureLedger에 기록한다.
+- **저장소 관리자 설정 필요:** GitHub Settings → General → Pull Requests → Allow squash merging → Default commit message → **Pull request title** (REST: `squash_merge_commit_title=PR_TITLE`, `squash_merge_commit_message=BLANK`). 2026-10-25 조회 당시 설정은 `COMMIT_OR_PR_TITLE / COMMIT_MESSAGES`; 바뀌었다고 주장할 수 없다.
+- **방어 처리:** main push에 개행이 있는 commit message가 들어오면 긴 body 대신 `MAIN CI | SUBJECT-ONLY-REQUIRED | run N`을 표시한다. 이 경고명에서는 Issue를 추측하지 않는다. 한 줄 정상 commit은 기존 `MAIN CI | #Issue | 설명`, tag는 `RELEASE` 규약 유지. 기존 Actions 실행명 변경 불가. 상세 [Issue74](out/Issue74.md), [Operation](out/Operation.md), [TestPlan](out/TestPlan.md) 참조.
 
 ## Issue #43 / PR #72 — P2 키보드 가시성·CI 게이트 및 잔여 분리 (2026-10-25)
 

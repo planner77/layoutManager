@@ -1,12 +1,17 @@
 name: Main CI and conditional Docker publish
-# Use the issue reference in the squash-merge commit SUBJECT: "#<issue> | short description".
-# GitHub Actions cannot parse an issue number from a free-form commit message at run-name evaluation time.
+# For one-line squash subjects use "#<issue> | short description".
+# The push event head_commit.message contains the FULL commit body, not just its subject.
+# Expressions in run-name cannot split strings or use step outputs.
+# A multiline message must never become an unbounded Actions run title.
+# The normal resolution is repo squash settings PR_TITLE + BLANK (see out/Issue74.md).
 run-name: >-
   ${{ startsWith(github.ref, 'refs/tags/v')
       && format('RELEASE | NO-ISSUE | {0} GHCR 이미지 게시', github.ref_name)
-      || ((startsWith(github.event.head_commit.message, '#') || startsWith(github.event.head_commit.message, 'NO-ISSUE |'))
-          && format('MAIN CI | {0}', github.event.head_commit.message)
-          || format('MAIN CI | ISSUE-UNKNOWN | {0}', github.event.head_commit.message || github.sha)) }}
+      || (contains(github.event.head_commit.message || '', fromJSON('"\n"'))
+          && format('MAIN CI | SUBJECT-ONLY-REQUIRED | run {0}', github.run_number)
+          || ((startsWith(github.event.head_commit.message, '#') || startsWith(github.event.head_commit.message, 'NO-ISSUE |'))
+              && format('MAIN CI | {0}', github.event.head_commit.message)
+              || format('MAIN CI | ISSUE-UNKNOWN | {0}', github.event.head_commit.message || github.sha))) }}
 
 on:
   push:

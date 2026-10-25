@@ -73,6 +73,17 @@ describe('TC-E1-UNIT-002: polygon hole, MultiPolygon and crossing/containment',(
     expect(geometryIntersectsBox(multi,[21,21,22,22])).toBe(true);
     expect(geometryIntersectsBox(multi,[13,13,16,16])).toBe(false);
   });
+  it('TC-E1-UNIT-004: selects actual tiny-scale crossings, not adjacent near misses',()=>{
+    const tiny:GeoJSONOutline={type:'Polygon',coordinates:[[
+      [0,0],[0.001,0],[0.001,0.001],[0,0.001],[0,0],
+    ]]};
+    // The old orientation-product epsilon dropped this rectangle/window crossing.
+    expect(geometryIntersectsBox(tiny,[-0.001,0.0004,0.002,0.0006])).toBe(true);
+    expect(geometryIntersectsBox(tiny,[0.0005,0.0005,0.0007,0.0007])).toBe(true);
+    expect(geometryIntersectsBox(tiny,[0.002,0.0004,0.003,0.0006])).toBe(false);
+    expect(geometryIntersectsBox(tiny,[-0.0000005,0.0004,-0.0000001,0.0006])).toBe(false);
+    expect(geometryHitPoint(tiny,[-0.0001,0.0005],0.000001)).toBe(false);
+  });
   it('fails closed on degenerate, nonfinite or invalid window coordinates',()=>{
     expect(geometryHitPoint(poly,[NaN,0],1)).toBe(false);
     expect(geometryHitPoint(poly,[0,0],-1)).toBe(false);

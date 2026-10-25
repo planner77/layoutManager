@@ -1,12 +1,25 @@
 # 주요 기술 결정과 승인 기록
 
-## ADR-041 — E1 CanvasSelection은 Origin/Version/SHA를 검증한 단일 Controller로 관리 (2026-10-25 / #51)
+### ADR-042 추가 — 기존 U6 호출 호환 및 작은 좌표의 수치 안정성 (2026-10-25 / PR #77)
+
+- E1 확장으로 `selectSavedOutline(id,false)`를 무조건 넘겨 기존 Manager→Adapter 단일 선택 호출 계약을 변경하는 것은 불필요하다. 기본 선택은 `selectSavedOutline(id)`, 실제 additive만 `(id,true)`를 전달한다.
+- Segment/Box 교차의 orientation determinants는 **WCS 길이²**이고 두 값의 곱은 **WCS 길이⁴**. 길이와 무관한 절대 임계값 `u*v<-1e-9`는 작은 좌표에서 참인 교차를 배제한다. proper crossing은 orientation 부호로, endpoint collinearity는 곱 규모에 따른 부동소수점 오차로 구분한다. 교차 및 근접 미교차 단위 회귀 후에도 운영 실도면 정확도는 별도 검증한다.
+
+
+## ADR-042 — E1 CanvasSelection은 Origin/Version/SHA를 검증한 단일 Controller로 관리 (2026-10-25 / #51)
 
 - **Decision:** 기존 #31 SOURCE/RenderCoverage/SpatialIndex를 재사용하고 브라우저에서 확정한 GENERATED Polygon/MultiPolygon만 동적 hit 후보로 확장한다. 일반 객체 모드 겹침 SOURCE 우선; generated 전용 모드/트리에서 Overlay 선택. 이전 Source-only `select`는 Worker와 연결된 별도 모드이고 #40 OFF→Pan을 침해하지 않는다.
 - **Identity:** 외곽선 JSON v1/v2 및 #43 Tree local-N은 호환성 보존. 생성 객체의 편집용 참조는 별도의 crypto UUIDv4 + current Version/SHA + Origin 네임스페이스, 발급 실패/충돌 시 중단. 서버 인증/영속 identifier로 해석 금지.
 - **Edit boundary:** `canEdit`는 비어 있지 않은 동일 Scope의 전부 GENERATED인 Ref 집합만 true. SOURCE 또는 혼합·중복·유효하지 않은 Ref는 전부 거부, 부분 편집 금지. E1은 편집 Command를 구현하지 않으며 E2~E5가 유효성 재검증한다.
 - **Security & lifecycle:** Current 원본/Layer/File SHA/DB/Server Auth 변경 없음. #31 P4/#65 승인 전 영속 Write/API를 열지 않는다. 선택은 Session-only, Renderer/Version/Reload/Dispose에서 해제. [Issue51](Issue51.md) 참고.
 
+
+## ADR-041 — Main Actions 실행명은 단일행 Squash 제목 계약으로 제어 (2026-10-25 / #74)
+
+- **원인:** #68 `run-name`에서 main `head_commit.message`를 직접 쓰면서 PR #70·#72 병합의 squash commit 본문까지 UI에 노출. #34와 #35·#36의 차이는 Workflow 로직 변경이 아니라 commit message의 줄 수였다. 저장소 squash 기본값 `COMMIT_OR_PR_TITLE / COMMIT_MESSAGES`는 문제를 반복시킬 수 있다.
+- **결정:** GitHub Expressions에 `split`/정규식/사후 step output이 없는 제약을 인정. 정상 main push는 `#N | 짧은 설명` 단일행 commit이며 이전 표시명 유지; LF가 존재하면 `SUBJECT-ONLY-REQUIRED | run N`으로 폴백하여 복수행 본문이 run-name에 유입되지 않게 한다. Tag/PR CI 표기, 트리거/permissions/release scope/GHCR promotion은 변경하지 않는다.
+- **영구 운영 통제:** 저장소 squash default를 `PR_TITLE / BLANK`로 변경하고, agent/API squash merge는 `commit_title` 지정 및 빈 `commit_message` 명시. 현재 관리자 설정 변경 기능은 사용 가능한 GitHub 연결에서 제공되지 않으므로 문서화만 하고 실제 변경 완료는 별도로 검증한다. 증거/추적 정보는 PR, Issue, FailureLedger 등에 남긴다.
+- **대안 기각:** 임의 커밋 본문에서 Issue 번호 추측(잘못 연결될 위험), 인위적인 merge/push 재트리거 또는 GHCR CI 대폭 재설계(중복 실행·게시 위험), 과거 run-name 소급 변경(미지원). [Issue74](Issue74.md)·[Operation](Operation.md).
 
 ## ADR-040 — 외곽선 트리는 브라우저 세션 기반 Overlay 뷰로 제공 (2026-10-25 / #43)
 

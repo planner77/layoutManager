@@ -1,5 +1,12 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE51-PR77-FAIL-20261025 — 첫 CI Unit 차단과 P2 리뷰 보완
+
+- [PR #77](https://github.com/planner77/layoutManager/pull/77) 최초 HEAD `c84a04e61cbaa413ee166ff896dcb7c10f1ec04b`, [Run #40164835838](https://github.com/planner77/layoutManager/actions/runs/40164835838) **completed/failure**. Verify [Job #121083652315](https://github.com/planner77/layoutManager/actions/runs/40164835838/job/121083652315) npm ci/Prisma/TypeScript/ESLint PASS, Unit/Integration **186 PASS / 1 FAIL** (`tests/unit/viewer.test.ts:75`, TC-U6-UNIT-003, 기존 `selectSavedOutline('local-1')` 호출 기대와 `('local-1',false)` 실제 호출 불일치). Benchmark/Production Build/Chromium E2E/Legacy Migration SKIPPED, Artifact 업로드 성공. Docker [Job #121083652401](https://github.com/planner77/layoutManager/actions/runs/40164835838/job/121083652401) SUCCESS.
+- 신규 수정: 기본 Manager 단일 호출 1개 인수 호환 유지, additive true에서만 2개 인수 전달. [P2 #4369760096](https://github.com/planner77/layoutManager/pull/77#discussion_r4369760096)은 **Unit 실패와 별개의** 작은 WCS 교차 누락 지적: orientation 곱 고정 epsilon→orientation 부호 검사+scale-aware endpoint rounding. 수정 이후 TC-U6-UNIT-003 재검증 **NOT VERIFIED**, TC-E1-UNIT-003/004 신규 코드는 **CODED/NOT RUN**.
+- 첫 HEAD의 기존 186건/TS/Lint/Docker PASS를 새 코드 통과 증거로 전용하지 않는다. 이 수정은 GitHub 원격 파일 작업으로 수행되어 로컬 npm/TypeScript/Vitest/Playwright/실 CAD·GPU **NOT RUN**. 재검증은 새 PR CI, 실제 운영 수용은 현장 별도. [FailureLedger](FailureLedger.md), [Issue51](Issue51.md) 참조.
+
+
 ## U-ISSUE51-20261025 — E1 통합 선택 브랜치 구현 및 CI 전 증거 경계
 
 - 브랜치 `feat/issue-51-unified-canvas-selection`, v0.37.0. 수정: identity/permission + generated GeoJSON hit + SelectionController source/generated 모드 + UUID Adapter/Manager API + Viewer UI/Tree + Unit/E2E, 설계/테스트 추적 문서.

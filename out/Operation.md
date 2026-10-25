@@ -1,5 +1,21 @@
 # 운영·환경설정 초안
 
+### Issue #74 / v0.36.1 — 승인된 GHCR 패치 릴리스 경로
+
+- 사용자가 GHCR 게시를 명시적으로 요청하여 신규 버전 `0.36.1`을 `src/package.json` 및 lockfile 루트에 부여한다. 기존 #68 GHCR scope gate는 유지하고, runtime-impacting 변경 파일 `src/package.json`이 포함되어 기존 게시 Job이 조건에 따라 실행되도록 한다.
+- `v0.36.0` tag/이미지 유지. 성공한 최신 PR CI HEAD를 `#74 | Main CI 실행명 커밋 본문 유입 방지` 제목과 **비어 있는 Squash 본문**으로 병합한다. Main push는 `v0.36.1` 태그 자동 생성(미존재 시) → 앱/마이그레이터 후보 build/digest 검증 → pair 공개 태그 승격을 시도한다. Main CI **시작 != GHCR 게시 완료**.
+- 저장소 기본값 `PR_TITLE / BLANK` 변경은 관리자 수행이 필요한 [Issue #76](https://github.com/planner77/layoutManager/issues/76)에 분리. 운영 배포는 앱과 migrator 같은 버전 고정·DB/CAD/S3 백업 절차 유지.
+
+## Issue #74 — Main CI 실행명 길이 회귀 방지 (2026-10-25)
+
+[Run #34](https://github.com/planner77/layoutManager/actions/runs/40158498214)의 간결한 `MAIN CI | #68 | 설명`과 달리 [#35](https://github.com/planner77/layoutManager/actions/runs/40159667229)·[#36](https://github.com/planner77/layoutManager/actions/runs/40162889687)은 squash commit 본문(`Refs`, 증거, 잔여 작업 등)이 `run-name`에 추가됐다. `github.event.head_commit.message`는 첫 줄이 아니라 전체 commit message다. GitHub `run-name`은 workflow 시작 전 평가되어 step의 `git log -1 --format=%s` 또는 문자열 `split`으로 해결할 수 없다.
+
+**권장 영구 조치(저장소 관리자 1회):** Repository → Settings → General → Pull Requests → **Allow squash merging → Default commit message: Pull request title**. REST equivalent: `squash_merge_commit_title=PR_TITLE` + `squash_merge_commit_message=BLANK`. 2026-10-25 읽기 API에서 확인된 **현재 설정은** `COMMIT_OR_PR_TITLE / COMMIT_MESSAGES`이므로 사용자/관리자가 바꾸기 전에는 *적용 완료가 아님*. 변경 후 다시 조회하여 확인한다. [GitHub REST 문서](https://docs.github.com/en/rest/repos/repos#update-a-repository).
+
+**병합 시 실행 규칙:** PR 제목/최종 squash commit 제목을 `#<Issue> | 간략한 설명` 또는 `NO-ISSUE | 간략한 설명`으로 하고, 커밋 본문은 비운다. GitHub 병합 UI의 **commit message/body** 영역을 확인하고 삭제한다. API/agent 병합은 `merge_method=squash`, `commit_title="#N | 짧은 설명"`, `commit_message=""`을 명시한다. 복수행 본문이나 불필요한 `Refs/CI` 증거는 GitHub PR 본문·Issue·FailureLedger로 옮긴다. 병합 직후 실제 main commit 메시지가 단일 행인지 확인한다.
+
+**워크플로 예외 대응:** 수정된 `docker-publish.yml`은 commit 메시지에 LF가 있으면 `MAIN CI | SUBJECT-ONLY-REQUIRED | run N`으로 **짧고 정직하게** 표시한다. 이 경우 제목의 Issue 추출이 불가능하므로 번호를 위조하지 않는다. 단일 행 정상 메시지의 `MAIN CI | #N | 설명`, tag `RELEASE` 및 PR CI 규약은 그대로 유지한다. 메타데이터/워크플로만 변경된 main push에서는 기존 GHCR 게시 제외 게이트를 유지한다. 이전 #35/#36 실행명은 변경할 수 없다. [Issue74](Issue74.md).
+
 ## GitHub Actions 실행명 / Issue #68 (2026-10-25)
 
 - **자동 PR CI:** PR 제목을 `#68 | Actions 실행명 정리` 형식으로 작성한다. Actions Run에 `PR CI | #68 | Actions 실행명 정리`가 표시된다. PR 번호(`github.event.pull_request.number`)는 Issue가 아니므로 표시명에 대용하지 않는다.

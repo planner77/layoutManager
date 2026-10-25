@@ -178,7 +178,11 @@ export class ViewerManager {
     const item=this.getSavedOutlines().find(item=>item.id===id);
     if(!item || !this.adapter?.selectSavedOutline)return false;
     const bounds=outlineGeometryBounds(item.result.geometry);
-    if(!bounds || !this.adapter.selectSavedOutline(id,additive))return false;
+    if(!bounds)return false;
+    // U6 callers still use the original one-argument single-selection contract.
+    // Only the E1 additive path supplies an explicit second argument.
+    const selected=additive?this.adapter.selectSavedOutline(id,true):this.adapter.selectSavedOutline(id);
+    if(!selected)return false;
     return this.focusBounds(bounds);
   }
   clearSavedOutlines() { this.adapter?.clearSavedOutlines?.(); }

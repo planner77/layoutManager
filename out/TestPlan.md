@@ -1,5 +1,13 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #51 / PR #77 — 최초 Unit 차단 및 작은 좌표 교차 회귀 계획 (2026-10-25)
+
+- **TC-U6-UNIT-003 (기존):** 단일 `focusSavedOutline('local-1')` 호출은 Adapter의 `selectSavedOutline('local-1')` **인수 1개** 계약 유지. 최초 Run 40164835838에서 인수 false 추가로 FAIL; 수정 HEAD 재실행 후 판정.
+- **TC-E1-UNIT-003 (추가):** Ctrl/⌘ `focusSavedOutline('local-1',true)`일 때만 Adapter `('local-1',true)` 및 WCS focus를 유지. 첫 Run에서 실행되지 않은 추가 assertion, 새 CI 전 NOT VERIFIED.
+- **TC-E1-UNIT-004 (추가):** 0.001 WCS 정사각형에 `[-0.001,0.0004,0.002,0.0006]` 가로창이 교차=true, 내부창 true, 떨어진 근접 평행·인접 창=false, 점 히트 근접성 기준. 고정 determinant product 임계값 재발 방지. [P2 Review 4369760096](https://github.com/planner77/layoutManager/pull/77#discussion_r4369760096). 새 CI 전 NOT VERIFIED.
+- 첫 Run에서 Unit 실패 후 Benchmark/Build/E2E/Legacy 전부 SKIPPED. 해당 단계가 실패했다고 표시하지 않으며 최신 HEAD PR CI에서 검증해야 한다.
+
+
 ## Issue #51 / E1 v0.37.0 — 통합 객체 선택 시험 계획 (2026-10-25)
 
 | TC | AC | 검증 목적 | 작성/실행 상태 |
@@ -13,6 +21,31 @@
 
 실제 다중 CAD/성능/GPU/OS·브라우저 수용은 현장 실증 별도. 로컬 실행 불가 시 PASS로 기록하지 않으며 Actions run 성공 전 수용 승인 금지. 상세 [Issue51](Issue51.md).
 
+
+## Issue #74 — GHCR v0.36.1 패치 게시 검증 (2026-10-25)
+
+| ID | 조건 | 기대 | 현재 |
+| --- | --- | --- | --- |
+| TC-CI-74-RELEASE-001 | package 및 lockfile 루트 버전 | 0.36.1 동기, dependencies 동일 | 정적 검증 |
+| TC-CI-74-RELEASE-002 | Main `before..sha`에 `src/package.json` 변경 포함 | release-scope `publish=true` 후 GHCR Job 진입 | Main 미실행 |
+| TC-CI-74-RELEASE-003 | `v0.36.1` 태그 및 GHCR app+migrate digest | 신규 태그와 이미지 쌍 검증·게시, 기존 `v0.36.0` 변경 없음 | 실제 게시 미확인 |
+| TC-CI-74-RELEASE-004 | 새 PR HEAD | Verify+Docker CI SUCCESS 후 Squash merge, review 0, conflict 0 | 신규 CI 필요 |
+| TC-CI-74-RELEASE-005 | Main push commit 단일행 | `MAIN CI | #74 | 짧은 설명` 표시 | Main 미실행 |
+
+- 기존 [PR CI 40163919324](https://github.com/planner77/layoutManager/actions/runs/40163919324) 성공은 **버전 변경 이전 HEAD**에만 적용. Repo admin Squash 기본값은 #76에서 추적. GHCR 게시 경로는 기존 release-scope를 우회하지 않고 version bump로 정식 유도.
+
+## Issue #74 — Main CI 실행명 multiline squash 회귀 방지 (2026-10-25)
+
+| Test ID | 입력 | 기대 실행명 | 검증 상태 |
+| --- | --- | --- | --- |
+| TC-CI-NAME-007 | main 단일행 `#74 \| 실행명 회귀 방지` | `MAIN CI \| #74 \| 실행명 회귀 방지` | 정적 규칙 확인, 실제 Main 미실행 |
+| TC-CI-NAME-008 | main 단일행 `NO-ISSUE \| 정리` | `MAIN CI \| NO-ISSUE \| 정리` | 정적 규칙 확인, 실제 Main 미실행 |
+| TC-CI-NAME-009 | main `#42 \| 요약\\n\\nRefs #42 ...` (squash body 존재) | `MAIN CI \| SUBJECT-ONLY-REQUIRED \| run N` (긴 본문 미노출, Issue 미추정) | 정적 규칙 확인, 실제 Main 미실행 |
+| TC-CI-NAME-010 | tag `v0.37.0` | `RELEASE \| NO-ISSUE \| v0.37.0 GHCR 이미지 게시` | 기존 식 유지, 실제 Tag 미실행 |
+| TC-CI-NAME-011 | Repository squash 기본값 점검, API squash 병합 | `PR_TITLE / BLANK`(관리자 조치), `commit_title` 지정+`commit_message=""` | **Admin 설정 미적용**, 실제 merge 미실행 |
+
+- Workflow `on:` 이하 본문은 바꾸지 않고 `run-name`과 설명 주석만 변경한다. #68 GHCR 게시 제외(Job scope), concurrency/permissions, PR CI workflow는 불변이다.
+- 본 변경 PR CI 성공이 Main run-name의 실제 event 평가를 검증하지 않는다. 정상/폴백 main push와 tag는 실제 해당 이벤트의 Run 제목을 관찰해야 완료 판정한다. [Issue74](Issue74.md).
 
 ## Issue #43 / PR #72 P2 키보드 가시성 회귀 (2026-10-25)
 

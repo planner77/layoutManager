@@ -1,7 +1,15 @@
 # Issue #51 — E1 DXF 원본/생성 Overlay 통합 선택 (v0.37.0)
 
+## PR #77 첫 CI 실패 및 Codex P2 보완 (2026-10-25)
+
+- [Run #40164835838](https://github.com/planner77/layoutManager/actions/runs/40164835838) HEAD `c84a04e`: Unit/Integration 186 PASS / 1 FAIL(`TC-U6-UNIT-003`), TypeScript/ESLint PASS, Benchmark/Build/E2E/Legacy SKIPPED, 별도 Docker Job PASS. `ViewerManager.focusSavedOutline`이 `('local-1',false)`를 호출하여 기존 U6 `('local-1')` 단일 호출 기대와 충돌.
+- **코드 수정:** default single-select는 Adapter 인수 1개 그대로, Ctrl/⌘ additive는 `(id,true)`로 전달. 기존 U6 Unit 기대 완화 없이 TC-E1-UNIT-003으로 additive 경로 검증.
+- **P2 review:** [#4369760096](https://github.com/planner77/layoutManager/pull/77#discussion_r4369760096) 저좌표 0.001 WCS에서 고정 orientation product 임계값 때문에 교차 판정 false negative. 부호 직접 비교 + 곱의 부동소수점 오류 범위 비례 endpoint 판정으로 변경하고 TC-E1-UNIT-004 작은 진교차/near miss 추가.
+- FailureLedger/TestPlan/TestReport에 추적. 수정 HEAD의 CI/실 CAD 수용은 **미검증**이며 P4 영속 저장·관리 권한 차단은 계속 유지.
+
+
 - Issue: https://github.com/planner77/layoutManager/issues/51 · Epic #49 · 후속 #52~#56.
-- 설계 기준: AGENTS.md, out/Architecture.md, out/Requirements.md, ADR-041, #31/#40/#42/#43. 루트 DESIGN.md는 존재하지 않음.
+- 설계 기준: AGENTS.md, out/Architecture.md, out/Requirements.md, ADR-042, #31/#40/#42/#43. 루트 DESIGN.md는 존재하지 않음.
 - 범위: DXF + three-dxf-viewer의 기존 SOURCE 선택과 브라우저 임시 확정 GENERATED(**CONVEX** 및 **PRECISE**)의 단일 Canvas/Tree 선택 상태 및 편집 가능 여부. **실제 편집 명령, Delete/Move/Rotate/Undo, JSON Import, DB/API 쓰기는 이 PR 범위가 아님**.
 
 ## 요구 및 구현 결정

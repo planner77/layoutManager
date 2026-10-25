@@ -5,8 +5,14 @@
 - 생성 Overlay의 CSPRNG UUIDv4 세션 참조/Origin·Version·SHA 계약과 전용 Generated 객체 조회 추가. v1/v2 다운로드의 local-N은 그대로 유지.
 - #31 SOURCE SpatialIndex/Layer/Renderer 검증을 유지하면서 GENERATED Polygon/MultiPolygon/Hole의 화면 hit, 왼→오른쪽 포함/오른→왼쪽 교차, Ctrl/⌘ 토글을 SelectionController로 통합. 트리 선택/표시·숨김과 강조/카운트 동기화.
 - Pan/원본·생성/생성 전용/#40 외곽선 소스 선택 모드 분리. SOURCE/혼합 선택은 readonly, GENERATED-only는 향후 로컬 편집 대상; 실제 명령은 #52~#55. Server/DB/Source DXF 불변.
-- Unit/E2E 코드 및 Issue51/Architecture/Requirements/ADR-041/TestPlan/TestReport/README/AGENTS 동기화. 로컬 시험 NOT RUN, PR CI 성공 미확인.
+- Unit/E2E 코드 및 Issue51/Architecture/Requirements/ADR-042/TestPlan/TestReport/README/AGENTS 동기화. 로컬 시험 NOT RUN, PR CI 성공 미확인.
 
+
+## v0.36.1 — Issue #74 Main CI 실행명 안정화 및 명시적 GHCR 릴리스 (2026-10-25)
+
+- 한 줄 Squash commit은 `MAIN CI | #Issue | 요약`, 커밋 본문이 있으면 긴 문자열 대신 `SUBJECT-ONLY-REQUIRED | run N`을 표시한다. #34 정상 표기 유지, #35/#36의 불필요한 본문 노출 회귀 방지.
+- 사용자의 **GHCR 게시 지시**로 패치 버전 `0.36.0 → 0.36.1`을 `src/package.json`과 lockfile 루트에 동기화한다. 기존 `v0.36.0` 태그는 움직이지 않고 main `release-scope`의 정상 runtime change 판정 → 신규 `v0.36.1` 태그 및 앱/마이그레이터 쌍의 digest 검증·게시 경로를 사용한다. 실제 게시 성공은 Main Job 확인 전 **NOT VERIFIED**.
+- 관리자 Squash 기본 메시지 변경(`PR_TITLE/BLANK`)은 [#76](https://github.com/planner77/layoutManager/issues/76)에서 별도 추적한다. 실제 app/DB/원본/런타임 의존성/배포 파이프라인 작업 단계는 불변. 이전 [PR CI 40163919324](https://github.com/planner77/layoutManager/actions/runs/40163919324) 성공은 **버전 변경 전 HEAD만** 검증함. [Issue74](Issue74.md), [FailureLedger](FailureLedger.md).
 
 ## v0.36.0 — Issue #43 U6 브라우저 세션 외곽선 목록 (2026-10-25)
 

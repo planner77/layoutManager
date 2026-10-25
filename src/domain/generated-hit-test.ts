@@ -6,7 +6,6 @@ import type {XY} from '../viewers/core/outline-geometry';
 import {outlineGeometryBounds} from './outline-tree';
 export type HitBox = readonly [number,number,number,number];
 type Segment = readonly [XY,XY];
-const EPS=1e-9;
 function polygons(g:GeoJSONOutline):XY[][][]{
   return g.type==='Polygon'?[g.coordinates]:g.type==='MultiPolygon'?g.coordinates:[];
 }
@@ -43,13 +42,22 @@ function orientation(a:XY,b:XY,c:XY):number{
   return (b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]);
 }
 function onSegment(a:XY,p:XY,b:XY):boolean{
-  return Math.abs(orientation(a,b,p))<=EPS &&
-    p[0]>=Math.min(a[0],b[0])-EPS && p[0]<=Math.max(a[0],b[0])+EPS &&
-    p[1]>=Math.min(a[1],b[1])-EPS && p[1]<=Math.max(a[1],b[1])+EPS;
+  const dx=b[0]-a[0],dy=b[1]-a[1],px=p[0]-a[0],py=p[1]-a[1];
+  // The determinant has squared WCS units; fixed epsilons treat distinct
+  // small-coordinate segments as collinear.
+  const rounding=32*Number.EPSILON*(Math.abs(dx*py)+Math.abs(dy*px));
+  if(Math.abs(orientation(a,b,p))>rounding)return false;
+  const tolerance=32*Number.EPSILON*Math.max(Math.abs(dx),Math.abs(dy),Math.abs(px),Math.abs(py),1e-12);
+  return p[0]>=Math.min(a[0],b[0])-tolerance && p[0]<=Math.max(a[0],b[0])+tolerance &&
+    p[1]>=Math.min(a[1],b[1])-tolerance && p[1]<=Math.max(a[1],b[1])+tolerance;
 }
 function crossed(a:XY,b:XY,c:XY,d:XY):boolean{
   const u=orientation(a,b,c),v=orientation(a,b,d),w=orientation(c,d,a),x=orientation(c,d,b);
-  return (u*v<-EPS&&w*x<-EPS)||onSegment(a,c,b)||onSegment(a,d,b)||onSegment(c,a,d)||onSegment(c,b,d);
+  // Direct sign comparison preserves proper crossing at 0.001 WCS scales.
+  const straddle=(first:number,second:number)=>
+    (first>0 && second<0)||(first<0 && second>0);
+  return (straddle(u,v)&&straddle(w,x)) ||
+    onSegment(a,c,b)||onSegment(a,d,b)||onSegment(c,a,d)||onSegment(c,b,d);
 }
 function intersectsSegmentBox(a:XY,b:XY,box:HitBox):boolean{
   if(within(a,box)||within(b,box))return true;
