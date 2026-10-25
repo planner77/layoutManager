@@ -13,6 +13,13 @@
 - **별도 P2 리뷰:** [Space/keyboard](https://github.com/planner77/layoutManager/pull/48#discussion_r4369181241) — window capture는 버튼·메뉴 등 인터랙티브 포커스 대상을 Space Pan으로 가로채지 않는다. E2E에서 상단 버튼 **Enter ON → Space OFF → Space ON**과 **canvas Space+drag**가 선택을 만들지 않음을 검증하도록 수정했다.
 - 코드 보완 commit `0ba21a66e02c5a842e527ececdb678f447940a8f`. 새 Head의 PR CI/실기기/실도면 결과는 **미확인**; Run 시작만 확인 후 모니터링하지 않는다.
 
+## PR #48 두 번째 CI 실패 원인과 테스트만 보완 (2026-10-25)
+
+- [Run 40150085136](https://github.com/planner77/layoutManager/actions/runs/40150085136): npm ci·Prisma·Typecheck·Lint·Unit·Benchmark·Production Build **PASS**. Chromium E2E **52/54 PASS, 2 FAIL**, Legacy migration E2E **SKIPPED**, 독립 Docker smoke **PASS**. 첫 번째 `react-hooks/refs` 오류는 이 HEAD에서 재발하지 않았다. 자세한 Job/Trace 출처는 [FailureLedger](FailureLedger.md).
+- `TC-OUT-E2E-001`: 재로드는 U3 도구를 **OFF로 초기화**하므로 패널을 찾으면 안 된다. 정상 표시와 `aria-pressed=false`/panel absent 후 메뉴 ON→`선택 0개`로 테스트 기대를 교정한다.
+- `TC-U3-E2E-003`: Playwright Artifact `trace.zip`의 Browser console 오류 `n must be greater than 0 vertices`를 확인. 원본 합성 LWPOLYLINE에 4개 좌표쌍을 제공하면서 **group 90=vertex count 4**를 누락하여 `dxf-viewer`가 실패했다. [Autodesk DXF Reference](https://help.autodesk.com/cloudhelp/2020/ENU/AutoCAD-DXF/files/GUID-748FC305-F3F2-4F74-825A-61F04D757A50.htm) 기준으로 두 합성 DXF에 `90,4`를 추가한다. 운영 DXF/라이브러리 Parser/제품 기능 변경 없이 Renderer 교차 호환성을 검증.
+- [수정 Commit `fd1f4613`](https://github.com/planner77/layoutManager/commit/fd1f4613c1cc69b2f383c7cc4129a8d95d70ec39): E2E Fixture/Expectation 2파일 교정, 기존 #31 worker/export/ESC 정책 유지. 새 HEAD의 Unit/E2E/Build 성과는 새 CI Run 결과 확인 전 **NOT VERIFIED**.
+
 ## 현황 및 문제 정의
 
 #38과 #39의 `ViewerAppShell`·`ViewerMenuBar`는 상단 **외곽선 생성** 항목이 준비 중(disabled)이었으나 #31 선택 기능은 하단 도크에서 직접 켤 수 있었다. 이 때문에 시작 상태 OFF, 미확정 경계 취소, 임시 확정 결과 보존, Renderer 미지원 차단을 하나의 UI 계약으로 보장하지 못했다. #31의 Source ↔ rendered Handle/Type/Layer/WCS audit과 Worker는 정상 개발 자산이므로 재구현하지 않는다.

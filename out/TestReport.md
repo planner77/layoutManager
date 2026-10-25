@@ -1,5 +1,13 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE40-PR48-E2E-REPAIR-20261025 — 2차 PR CI E2E 실패 원인/Fixture 수정 (다음 검증 전)
+
+- [PR #48 Run #40150085136](https://github.com/planner77/layoutManager/actions/runs/40150085136) HEAD `76018b6b`: CI verify Job `121039597527`. npm ci·Prisma·TypeScript·ESLint·Unit/Integration·1k/10k/100k CPU benchmark·Production Build·Chromium 설치 **PASS**; Playwright Chromium **52 PASS / 2 FAIL (54 총건)**. Legacy migration E2E **SKIPPED**. Docker runtime job `121039597376` **PASS**. `react-hooks/refs` 이전 CI 차단은 이번 HEAD에 존재하지 않음.
+- **실패 1:** `TC-OUT-E2E-001` `issue31-outlines.spec.ts:107` reload 후 `outline-selection-count` locator 없음. 정상 U3 기본 OFF 상태의 UI에 맞지 않는 테스트 기대. Error context의 메뉴는 OFF, 렌더 표시 완료. 정상 로딩→OFF/패널 부재 확인→ON→선택 0으로 교정.
+- **실패 2:** `TC-U3-E2E-003` `issue40-outline-tool.spec.ts:152` `dxf-viewer` load error. [Playwright 실패 Trace/Artifact 12582184252](https://github.com/planner77/layoutManager/actions/runs/40150085136/artifacts/12582184252) console의 `Error: n must be greater than 0 vertices`/parseEntity가 원인 단서. Test DXF의 LWPOLYLINE에 4개 vertex 좌표만 있고 그룹코드 `90` (꼭짓점 수)이 누락된 형식 오류로 판정. 공식 DXF Reference를 근거로 `'90','4'` 추가; 단순 Renderer 변경 테스트 삭제·skip 없이 계속 실행.
+- **교정:** [commit `fd1f4613`](https://github.com/planner77/layoutManager/commit/fd1f4613c1cc69b2f383c7cc4129a8d95d70ec39), 두 Test 파일만 변경. 소스/DB/migration/API/Viewer Adapter/Worker 변경 없음.
+- **검증 제한:** 새 HEAD는 로컬 Test·Chromium E2E **NOT RUN**, 새 CI 성공 **NOT VERIFIED**. Autodesk group-90 형식 근거는 E2E 성공을 대체하지 않음. 실제 고객 도면·native Fullscreen/GPU는 별도 현장 수용 필요. [실패 원장](FailureLedger.md) 참조.
+
 ## U-ISSUE40-PR48-REPAIR-20261025 — ESLint 실패·Space 포커스 회귀 수정(재검증 전)
 
 - [PR #48](https://github.com/planner77/layoutManager/pull/48) 최초 [Run 40149077671](https://github.com/planner77/layoutManager/actions/runs/40149077671) (HEAD `850ded81`): npm ci·Prisma generate·TypeScript **PASS**; **ESLint FAIL**, `viewer.tsx:404:186 react-hooks/refs`(error), `363:6 react-hooks/exhaustive-deps`(warning). Unit/Integration, 1k/10k/100k, Production Build, Browser E2E, Legacy migration E2E **SKIPPED**; Docker-runtime 독립 Job **PASS**. [원장](FailureLedger.md) 참고.

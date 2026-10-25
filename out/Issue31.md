@@ -7,6 +7,12 @@
 - `dxf-viewer`/DWG/로딩·에러/0 mapped entity/invalid Version SHA는 비활성/사유 표시. Layer hidden 원본 선택 차단·Source↔Render fail-closed·ESC·CSS/native Fullscreen·Renderer 변경 cleanup·#31 P4 저장 미승인 정책은 동일하다. [Issue40](Issue40.md), [TestPlan](TestPlan.md), [TestReport](TestReport.md).
 
 
+## Issue #40 / PR #48 Run #40150085136 — #31 E2E 기본 OFF 회귀 보완
+
+- 신규 U3 기본 OFF/Renderer·Reload reset에 따라 `TC-OUT-E2E-001`에서는 재로드 성공 직후 도구/선택 개수 UI를 기대하지 않고, 상단 메뉴 OFF 및 도구 DOM 없음 확인 후 ON 하여 선택 0개를 확인한다. 최초 Run의 2차 CI에서 실제 이 불일치로 FAIL 발생 (Playwright 54건 중 2건 실패). [원장](FailureLedger.md).
+- 기존 #31 합성 `LWPOLYLINE`은 꼭짓점 4개 좌표를 제공했으나 `90` 그룹코드가 없었다. #40의 Renderer 교차 테스트에서 `dxf-viewer`가 `n must be greater than 0 vertices` 예외를 일으키므로 [Autodesk DXF LWPOLYLINE Reference](https://help.autodesk.com/cloudhelp/2020/ENU/AutoCAD-DXF/files/GUID-748FC305-F3F2-4F74-825A-61F04D757A50.htm)에 맞춰 #31과 #40 두 Fixture에 `90=4`를 추가했다. 원본 운영 DXF, Geometry, 저장 정책에 영향 없음.
+- 실제 실DXF P0/P5의 지원도·정확성이나 운영 승인 상태를 이 Fixture 수정/합성 CI로 대신 판정하지 않는다.
+
 ## Issue #38 후속 UI 도킹·ESC 영향 (2026-10-24)
 
 - #31 선택/볼록·정밀 geometry Worker, 임시 확정/JSON 및 영구 API 금지 정책은 그대로 유지한다. #38은 화면 아래쪽에 스크롤 가능한 도킹 도구를 제공하고 Viewer Canvas와 분리한다.

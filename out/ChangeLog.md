@@ -13,6 +13,13 @@
 - 수정: Ref 접근이 렌더 과정으로 전파되지 않도록 `useCallback`/정적 Renderer JSX 및 안정적인 load effect dependency. Space Pan은 캔버스에만 적용, 버튼 포커스에서는 Space 클릭을 허용(#48 P2 리뷰). E2E Enter ON → Space OFF → Space ON 및 Space+drag 회귀 추가.
 - 수정 후 PR CI는 새 HEAD에 대한 **검증 전**, 처음의 성공 단계를 이 HEAD의 PASS로 재사용하지 않는다.
 
+### PR #48 2차 CI Chromium E2E 실패 및 Fixture/기대 수정 (2026-10-25)
+
+- [Run 40150085136](https://github.com/planner77/layoutManager/actions/runs/40150085136): TypeScript/ESLint/Unit/Benchmark/Build PASS; Chromium E2E 52/54 PASS (2 FAIL); Legacy migration E2E SKIPPED; Docker runtime PASS.
+- #31 E2E가 reload 후 기본 OFF인 상태에서 선택 도구 렌더를 기대하는 회귀 테스트 불일치를 수정하여, OFF/도구 부재를 먼저 확인하고 다시 ON 뒤 선택 개수 0을 검증.
+- #40 E2E용 합성 `LWPOLYLINE`에 필수 group `90=4`가 없어 dxf-viewer parser `n must be greater than 0 vertices` 실패. Autodesk DXF Reference 기준으로 두 Square Fixtures의 vertex count를 추가. 실제 앱/Geometry/Worker 변경 없음. [Issue40](Issue40.md), [FailureLedger](FailureLedger.md) 참조.
+- 코드 [`fd1f4613`](https://github.com/planner77/layoutManager/commit/fd1f4613c1cc69b2f383c7cc4129a8d95d70ec39) 이후 새 PR CI 결과는 **NOT VERIFIED**. 이전 성공 체크를 수정 HEAD 성공으로 오인하지 않는다.
+
 ## 0.32.0 — 2026-10-25 / Issue #39 레이어 메뉴·도크 U2 (PR CI 검증 전)
 
 - UI: U1의 단일 `layerPanelOpen` 상태를 메뉴/내부 접기에 연결. 가능한 경우 레이어 도크 host를 유지하고 숨김 시 내부 panel만 닫아 `aria-controls` 대상으로 유효하게 유지. 접기 버튼 삭제 후 메뉴에 포커스 복귀 및 키보드 Enter/Space 재열기.

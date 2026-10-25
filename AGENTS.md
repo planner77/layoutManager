@@ -12,6 +12,11 @@
 - [Run 40149077671](https://github.com/planner77/layoutManager/actions/runs/40149077671)의 TypeScript PASS / ESLint FAIL(`viewer.tsx react-hooks/refs`), Docker-runtime PASS, Unit/Build/E2E SKIPPED를 분리해 기록한다. `resetOutline` Ref 접근과 Renderer 메뉴 map 렌더링 경로는 `useCallback`/명시적 Renderer 버튼으로 분리하고 effect 의존성을 안정화한다.
 - 선택 모드 Space Pan은 **캔버스/비대화형 대상**에서만 `preventDefault`; 포커스된 상단 버튼·메뉴 등은 Space native 키보드 click을 허용해 ON→OFF 가능해야 한다. ESC 선택 취소/검색/native/CSS 우선순위를 변경하지 않는다. [P2 review](https://github.com/planner77/layoutManager/pull/48#discussion_r4369181241), [FailureLedger](out/FailureLedger.md), [Issue40](out/Issue40.md) 참조. 수정 HEAD의 새 CI 결과를 미확인 상태에서 PASS로 기재하지 말 것.
 
+## Issue #40 / PR #48 — E2E 실패 반복 방지 (2026-10-25)
+
+- [Run 40150085136](https://github.com/planner77/layoutManager/actions/runs/40150085136)은 ESLint·Unit·Benchmark·Build/Docker **PASS** 후 Chromium E2E **52 PASS / 2 FAIL**. `TC-OUT-E2E-001`은 reload 이후 기본 OFF에 따라 도구 패널이 사라지는 것을 실패로 오해한 테스트. `TC-U3-E2E-003`은 `dxf-viewer`에 `LWPOLYLINE` group `90`(vertex count) 없이 좌표만 준 **불완전한 합성 DXF**로 실패했고, 실제 Trace console에서 `n must be greater than 0 vertices`를 확인. [Autodesk 공식 그룹코드](https://help.autodesk.com/cloudhelp/2020/ENU/AutoCAD-DXF/files/GUID-748FC305-F3F2-4F74-825A-61F04D757A50.htm) 준수하여 `90=4` 삽입.
+- #31 회귀는 reload→OFF/패널 없음→ON→선택 0을 검증한다. 이전 Head에서 통과한 Unit/Lint/Build가 새 Head 성공의 증거는 아니며, 실패/취소·SKIPPED 상태 구분은 [FailureLedger](out/FailureLedger.md), [Issue40](out/Issue40.md), [TestReport](out/TestReport.md) 참조. 새 CI는 시작까지만 진행하며 결과 모니터링·병합/Issue 종료는 요청 범위 밖.
+
 ## Issue #39 (2026-10-25) — 상단 레이어 패널 표시/숨김 U2, v0.32.0
 
 - #38 `ViewerAppState.layerPanelOpen`이 메뉴/도크의 유일한 열림 상태다. `layerAvailable`(immersive + three-dxf-viewer + ready + layers>0)을 충족하면 `aria-controls` 대상 도크 host를 닫힌 상태에서도 유지하고, 내부 접기 후 메뉴로 키보드 포커스를 돌린다.
