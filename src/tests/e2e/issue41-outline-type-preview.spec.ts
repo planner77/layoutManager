@@ -23,7 +23,7 @@ test('TC-U4-E2E-PREVIEW-001: isolated type draft CRUD, duplicate/soft-delete/rev
 
   await page.getByTestId('outline-type-name').fill('wip');
   await page.getByRole('button', { name: '시안 추가' }).click();
-  await expect(page.getByRole('alert')).toContainText('같은 이름');
+  await expect(preview.getByRole('alert')).toContainText('같은 이름');
   await expect(page.getByTestId('outline-type-row')).toHaveCount(1);
 
   await page.getByRole('button', { name: 'WIP 수정' }).click();
@@ -50,4 +50,30 @@ test('TC-U4-E2E-GATE-002: production management routes are absent before Owner R
     data: { name: 'bypass', deletePassword: '1234' },
   });
   expect(mutate.status()).toBe(404);
+});
+
+
+test('TC-U4-E2E-HTTP-003: prototype creation works without crypto.randomUUID (insecure HTTP simulation)', async ({ page }) => {
+  // Same browser method removal used by TC-ISSUE14-001; getRandomValues remains available.
+  await page.addInitScript(() => {
+    Object.defineProperty(globalThis.crypto, 'randomUUID', {
+      configurable: true,
+      value: undefined,
+    });
+  });
+  await page.goto('/lab/outline-types');
+  expect(await page.evaluate(() => typeof globalThis.crypto.randomUUID)).toBe('undefined');
+  expect(await page.evaluate(() => typeof globalThis.crypto.getRandomValues)).toBe('function');
+
+  await page.getByTestId('outline-type-name').fill('현장 구역');
+  await page.getByRole('button', { name: '시안 추가' }).click();
+  const row = page.getByTestId('outline-type-row');
+  await expect(row).toHaveCount(1);
+  await expect(row).toContainText('현장 구역');
+  await expect(row).toContainText('rev 1');
+  await expect(page.getByRole('status').filter({ hasText: '서버에는 저장되지 않았습니다.' })).toBeVisible();
+  await expect(page.getByTestId('outline-type-prototype').getByRole('alert')).toHaveCount(0);
+
+  await page.reload();
+  await expect(page.getByTestId('outline-type-row')).toHaveCount(0);
 });

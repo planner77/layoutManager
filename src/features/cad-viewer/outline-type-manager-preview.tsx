@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
+import { createPreviewUuid } from './preview-uuid';
 import {
   addPreviewOutlineType,
   sortedPreviewOutlineTypes,
@@ -39,7 +40,7 @@ export function OutlineTypeManagerPreview() {
     };
     try {
       const next = selectedId === null
-        ? addPreviewOutlineType(items, draft, crypto.randomUUID(), new Date().toISOString())
+        ? addPreviewOutlineType(items, draft, createPreviewUuid(), new Date().toISOString())
         : updatePreviewOutlineType(items, selectedId, selectedRevision ?? -1, draft, new Date().toISOString());
       setItems(next);
       setNotice(selectedId === null ? '시안에 타입을 추가했습니다. 서버에는 저장되지 않았습니다.' :
