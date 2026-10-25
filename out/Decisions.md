@@ -1,5 +1,14 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-043 — E2 생성 개체는 버전 스코프 메모리 Document/원자 Command/유한 history로 관리 (2026-10-25 / #52)
+
+- **Context:** #31 savedGroup/JSON local-N 과 E1 Generated UUID 인덱스를 각각 직접 수정하면 트리/선택/외곽선/내보내기가 불일치하고 Delete/Translate/Rotate Undo가 불안정해진다. Source DXF 편집 및 #31 P4 서버 영속은 Owner 보안 정책 미승인으로 제외된다.
+- **Decision:** E1 Ref(UUID, origin, versionId, SHA)를 Document의 불변 identity로 채택, v1/v2 legacy local-N은 외부 호환 키로만 유지. `baseGeometry`는 깊은 불변 WCS 복사, 개별 edit 상태는 affine matrix 및 patch 이력. 먼저 전 선택 대상 scope·GENERATED·중복/존재/visible·좌표·명령 결과를 **전체 검증**, 한 번의 array 교체로 commit한다. Undo/Redo는 제거 위치 포함 before/after를 재적용하며 source bytes/geometry Worker는 건드리지 않는다.
+- **Capacity:** 메모리 이력 최신 100단계 및 추정 patch 참조 16MiB 양쪽 상한, 총 100개 객체/100k 좌표. 이동·회전 history는 immutable base geometry 공유, E3 Delete history는 참조 보존; GPU 메모리와 실제 고용량 도면 성능은 별도 QA/실측 필요.
+- **UX/Safety:** E2는 Command fixture 및 Undo/Redo UI만 제공. 실제 Delete/Move/Rotate 조작은 E3~E5, 편집 상태 수동 안전 JSON v2 저장·복원은 E6, 인증된 영속 API는 #31 P4. 입력 키보드 native Undo 보존, Zoom/Pan/Visibility 이력 제외, 취소/Dispose/Version 변경 rollback. 과거 #43 삭제는 legacy 동작으로 분리해 history 무효화.
+- **Consequences:** Scene/Tree/Export는 Document의 projection, 기존 다운로드 형식은 유지하되 edited geometry는 canonical attestation으로 서버 수용 불가. 다른 렌더러/DWG 비지원. 재로드 시 작업 소멸을 UI 고지. AC/테스트는 [Issue52](Issue52.md)/[TestPlan](TestPlan.md)이며 PR CI 및 실 CAD 성공은 별도 확인.
+
+
 ### ADR-042 추가 — 기존 U6 호출 호환 및 작은 좌표의 수치 안정성 (2026-10-25 / PR #77)
 
 - E1 확장으로 `selectSavedOutline(id,false)`를 무조건 넘겨 기존 Manager→Adapter 단일 선택 호출 계약을 변경하는 것은 불필요하다. 기본 선택은 `selectSavedOutline(id)`, 실제 additive만 `(id,true)`를 전달한다.
