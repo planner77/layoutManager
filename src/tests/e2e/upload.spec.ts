@@ -381,15 +381,19 @@ test("TC-ISSUE-001/LIST: list API, filters, detail and current change persist", 
     .getByRole("combobox", { name: "사업장 / 법인", exact: true })
     .selectOption("이슈검증");
   await page.getByRole("button", { name: "검색", exact: true }).click();
-  // The drawing library is always Current-only. Open the Current row's
-  // Location history to manage a previous Version instead of expecting
-  // the previous Version to be visible or actionable on the home page.
+  // Current is the default; toggling OFF exposes older versions directly
+  // without changing the persisted Current selection.
   await expect(
     page.getByRole("row").filter({ hasText: "issue-one.dxf" }),
   ).toHaveCount(0);
   await expect(
     page.getByRole("row").filter({ hasText: "issue-two.dxf" }),
   ).toContainText("Current");
+  await page.getByRole("button", { name: "현재 버전만 표시" }).click();
+  await expect(page).toHaveURL(/versions=all/);
+  await expect(
+    page.getByRole("row").filter({ hasText: "issue-one.dxf" }),
+  ).toContainText("이전 버전");
   await page
     .getByRole("row")
     .filter({ hasText: "issue-two.dxf" })
