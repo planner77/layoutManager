@@ -1,5 +1,14 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE53-20261025 — E3 선택 GENERATED 삭제 코드·테스트 작성 (검증 전)
+
+- Source baseline: `main e1adfe5b9de28ddd3821a0de2466d810e5c6c209`, feature branch `feat/issue-53-generated-delete`, v0.39.0. E2 Command/Undo/Redo, U6 Tree, E1 Selection 재사용. 사용자 요청에 따라 PR CI를 시작만 하고 **결과 모니터링하지 않음**.
+- 변경: domain `generated-delete.ts` 현재 선택/Version/SHA 검증·확인 스냅샷, `generated-keyboard.ts` Canvas focus 조건, Tree/Toolbar/Canvas 선택 context·확인창 UI, Manager/ThreeAdapter 전달·모드 체크, U6 이력 없는 deletion API 제거, E2 Document Scene/selection event 재사용. 서버 API·DB/Migration·원본 DXF/SHA/Layer/Current 불변 설계.
+- 신규/갱신 테스트: `generated-delete.test.ts` TC-E3-UNIT-001~004, `generated-keyboard.test.ts` UNIT-005, `issue53-generated-delete.spec.ts` E2E-001~003, #43 트리, Manager 회귀. 작성했다는 사실과 통과는 별개.
+- **실행 결과: NOT RUN** — GitHub Connector로 변경을 커밋했으며, 이 세션의 runner 컨테이너는 `github.com` DNS 조회 실패로 checkout 불가. `npm ci/typecheck/lint/unit/build/Playwright/legacy/benchmark/Docker`를 수행하지 않았으므로 PASS 건수·성능/메모리 지표를 주장할 수 없다. 실제 GPU dispose 경로를 코드로 검토했으나 WebGL/GPU 메모리 누수 실측, 실 CAD, native fullscreen(OS/browser별), 운영 영향 분석은 NOT RUN.
+- CI 시작/상태 및 리뷰·충돌 처리 근거는 생성된 PR 링크에서 확인해야 한다. PR 등록만으로 CI 성공, merge, GHCR 게시 또는 Issue 종료를 의미하지 않는다. [Issue53](Issue53.md) / [TestPlan](TestPlan.md).
+
+
 ## U-ISSUE52-QA-20261025 — 수정 HEAD 독립 로컬 검증
 
 - 역할: Manager `gpt-6-astra`가 사전 요구·설계·AC를 기록하고 Developer `gpt-5.6-sol`의 재현/수정을 검토한 뒤 독립 QA를 지시했다. 지정 QA `gpt-5.6-luna`는 사용 가능한 모델 목록에 없어 `gpt-6-luna`가 실제 검증을 대행했다. 검증 대상은 checkout HEAD `41cf16c`에 이 fixture 수정 working-tree patch를 적용한 상태; 앱 버전 `0.38.0`; 실행 환경 Node `v22.14.0`, 로컬 Chromium/Playwright. Root의 `npm ci` 관측은 13 vulnerabilities(3 moderate, 9 high, 1 critical); 이 test-only 수정 범위 밖이며 자동 audit fix는 실행하지 않았다.
