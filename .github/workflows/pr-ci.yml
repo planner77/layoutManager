@@ -237,6 +237,14 @@ jobs:
           # Above uses a disposable CI directory; never a production DB/CAD volume.
       # A newly started Node server can reset a connection before its listener is ready.
       # curl --retry-connrefused alone does not retry exit 56; retry-all-errors covers it.
+      - name: Validate #107 isolated G5 PROD and DEV preview configurations
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Config-only: never starts the G5 containers, touches production data or activates auth.
+          docker compose -f src/deploy/g5/compose.preview.yml --profile g5-prod config --quiet
+          docker compose -f src/deploy/g5/compose.preview.yml --profile g5-dev config --quiet
+
       - name: Compose fresh install, static assets, health and idempotent migration
         shell: bash
         env:

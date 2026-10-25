@@ -1,5 +1,17 @@
 # 상세 요구사항
 
+## Issue #107 / G5 — 내부망 간소 PROD/DEV 정상 연결 (2026-10-25)
+
+| ID | 요구사항 | 수용 상태 |
+| --- | --- | --- |
+| FR-P4-G5-01 | 격리 PROD Nginx 경유 Viewer·API·Health, App 직접 host publish 없는 Preview; 실제 운영 구성 변경 없음 | 구현 코드 작성, PR CI/현장 미확인 |
+| FR-P4-G5-02 | DEV App direct Preview·PROD/DEV DB/CAD 볼륨·네트워크 독립 | 구현 코드 작성, PR CI/현장 미확인 |
+| NFR-P4-G5-01 | 기존 Origin 정상 업로드/조회·원본 다운로드, 향후 G3 Cookie 정상 전달; 운영 API/Prisma/인증 미활성 유지 | 정상 경로 수동/후속 G3·G6 실증 필요 |
+| NFR-P4-G5-02 | 내부 소수 사용자·외부망 인바운드 제한: 공격/탈취·침투 대응은 비범위(Owner R1). 운영 실제 적용은 G7 별도 승인 | OWNER_ACCEPTED_SCOPE, 운영 미승인 |
+
+- 문서/구현·AC/TC 매핑: [Issue107](Issue107.md), [Architecture](Architecture.md), [TestPlan](TestPlan.md), [TestReport](TestReport.md). PR CI는 실제 사내 PC 2대·Host/WSL2 Port·업로드/Cookie를 대신하지 않는다.
+
+
 ## Issue #102 G0 / ADR-051-R1 — Owner 경량 보안 범위 재정의 (2026-10-25)
 
 | 요구 ID | 수용할 결정·기능 | 상태/후속 |

@@ -1,5 +1,12 @@
 # CAD Web Viewer P.O.C.
 
+## Issue #107 — PROD Nginx / DEV 직접 접속의 비운영 Preview
+
+- 조직 내부 소수 사용자가 사용하는 HTTP 환경에서 **보안 침투·탈취 대응 강화 없이** 정상 배포 경로만 검증합니다. 운영 Nginx/Compose는 변경하지 않습니다.
+- 독립 Compose `src/deploy/g5/compose.preview.yml`: PROD Preview 127.0.0.1:3302 → Nginx → App(직접 host port 없음), DEV Preview 127.0.0.1:3301 → 개발 App 직접 접속. 두 환경은 별도 테스트 DB/CAD 볼륨입니다.
+- 격리 실행/철거와 Health·목록·Viewer/다운로드 확인 절차는 [Issue107](out/Issue107.md), [Operation](out/Operation.md)을 참고하세요. Preview 도면의 `--version-id ID`는 실제 `/cad/versions/ID/viewer` 및 content를 검증합니다. 신규 GHCR 게시 후보는 v0.40.4이며 운영 Nginx/Compose 변경은 없습니다. 실제 내부 PC 업로드·Cookie·운영 연결과 G7 승인 전의 운영 기능 활성화는 미수행입니다.
+
+
 ## Issue #99 — 실제 DXF 비공개 P0/P5 수용 (현장 전용)
 
 **Issue #99 P1 비공개 파일 경로 제한:** 내부 DXF 경로와 보고서 출력 경로는 절대 경로뿐 아니라 심볼릭 링크를 해석한 최종 실제 경로까지 Git checkout 밖이어야 합니다. 보고서 출력 디렉터리는 시험 전에 별도로 만들고 쓰기 권한을 제한하세요. 재실행 시에는 새 JSON 보고서 파일명을 사용하세요(기존 파일 덮어쓰기 금지). 수정 HEAD `0.40.3`은 신규 GHCR 쌍 후보이며 CI/최종 릴리스·실 CAD 수용 완료를 의미하지 않습니다.

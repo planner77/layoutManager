@@ -1,5 +1,22 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issue #107 / PR #115 — 원 HEAD CI PASS 이후 Viewer P2 수정 (2026-10-26)
+
+- **검증된 과거 HEAD:** [PR CI 40201366001](https://github.com/planner77/layoutManager/actions/runs/40201366001), d771d553cdf7d00a467fead6f8f9d788898ea314, Verify Job 121193043560 및 Docker Job 121193043322 모두 completed/success.
+- **P2 조치:** [review 4371142398](https://github.com/planner77/layoutManager/pull/115#discussion_r4371142398) 지적에 따라 위치 관리 HTML 200을 실제 Viewer PASS로 오인하지 않도록 --version-id에서 /cad/versions/ID/viewer 경로 자동 조회, 경로/ID 일치 거부 및 TC-P4-G5-003/004/007 테스트 변경. **변경 HEAD CI 결과 아직 미확인**, 과거 CI를 전용하지 않음.
+- **릴리스:** v0.40.3 Main CI 40199597907 App/Migrator 게시 성공 단계 확인, v0.40.4 신규 tag/GHCR 게시 후보. Main CI와 GHCR 게시 실제 성공 증거는 별도.
+- **현장 검증:** 사내 Nginx/WSL2, PC 2대, 실제 Viewer/Upload/Download/Session Cookie 및 Backup/Migration/Restore는 NOT RUN → #108 G6. 운영 적용 G7 승인 전 금지.
+
+
+## Issue #107 / G5 — 격리 연결 Preview 개발 기록 (2026-10-25)
+
+- **작성한 코드/설계:** PROD/DEV 독립 Preview Compose, Nginx 경유 정상 경로, read-only Node Smoke(Health/Home/CAD list/font/선택 Viewer·content), Vitest 4건, CI Docker profile config-only 검증, Issue107·운영/설계/AC 문서.
+- **운영 미변경:** 원래 `src/docker-compose.yml`의 `host_ip: 0.0.0.0`은 유지. `.env.example`, Prisma, 기존 앱 Auth/API/Viewer, 운영 Nginx/DB, CAD bytes/SHA/Current/S3 변경 없음(최종 PR diff 확인 필요).
+- **실행 상태:** 원격 GitHub 파일 작성 시점 Node/Vitest/Typecheck/Lint/E2E/Docker Compose/실 Preview 및 PR CI 전체 결과는 **NOT RUN/NOT VERIFIED**. CI 시작을 PASS로 기록하지 않는다.
+- **G6 인계:** Windows/WSL2 실제 Nginx upstream·사내 PC 최소 2대, Viewer/Upload/Download·원본 SHA, G3 실제 Cookie, Backup/Migration/Restore는 **NOT RUN**. 공격·탈취 시험은 Owner 비범위. OWNER_ACCEPTED_SCOPE는 안전성 PASS가 아니다.
+- 참고: [Issue107](Issue107.md), [Issue102](Issue102.md), [TestPlan](TestPlan.md), [FailureLedger](FailureLedger.md).
+
+
 ## Issue #102 — Owner 공격 대응 비범위 문서 정렬 (2026-10-25)
 
 - G0 #102 및 ADR-051-R1에서 보안 공격/자격증명·세션 탈취 대비 강화·침투시험은 Owner에 의해 비범위로 결정되었다. `OWNER_ACCEPTED_SCOPE`는 **정책상 위험 수용**이며 안전성/침투시험 PASS가 아니다. HTTP 비암호화 위험은 여전히 존재한다.
