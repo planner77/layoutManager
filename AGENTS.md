@@ -1,5 +1,13 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #107 / G5 — 간소 조직망 PROD Nginx·DEV 직결 Preview (2026-10-25)
+
+- [Issue107](out/Issue107.md) / [Issue102](out/Issue102.md) 및 GitHub #102 최신 Owner 5개 업무 정책 참조. G5는 **실제 운영 보안강화가 아니라 비운영 접속 구성과 정상 기능 검증**이다. 별도 `DESIGN.md`는 없어 Architecture/Decisions/Operation이 설계 기준이다.
+- 격리 Preview는 `src/deploy/g5/compose.preview.yml`(PROD Nginx→App, DEV 직결, 각자 독립 볼륨·네트워크), `nginx.preview.conf`, 읽기 전용 `src/scripts/g5-preview-smoke.mjs`, Unit으로 구성. 사내 실제 Nginx/Compose/Prisma/Auth/API/운영 CAD·DB 변경 없음.
+- 조직망 소수 사용자/외부 인바운드 제한 전제하에 공격·탈취/침투·CIDR 단말 방어는 추가하지 않는다. `OWNER_ACCEPTED_SCOPE`는 안전성 PASS가 아님. 정상 Proxy/Host/Origin·Viewer·Upload/Download/Health, PROD/DEV 분리, 실 LAN 검증 및 G7 별도 승인만 유지.
+- Preview 작성/Unit 테스트와 실제 PROD Windows Nginx/WSL2/LAN 2대 PC·G3 Cookie·업로드 실증은 **구분**한다. PR CI 시작을 현장 시험 PASS나 운영 활성화로 쓰지 않는다.
+
+
 ## Issue #102 / ADR-051-R1 — Owner 내부망 경량 보안 범위 결정 (2026-10-25)
 
 - **최신 우선 정책:** [Issue102](out/Issue102.md), [ADR-051-R1](out/Decisions.md). 운영은 공개망 인바운드 제한 사내 업무망의 **Nginx 경유**, 개발은 **개발 App 직접 접속**. 이전 #96 D6/G0~G7의 적대적 공격·계정/세션 탈취 대응/침투시험을 필수 보안 게이트로 제시한 문구는 R1에서 대체한다.
@@ -394,6 +402,7 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 | [Release 0.20.0](out/Release-0.20.0.md) | 0.20.0 병합·태그·GHCR 게시 근거 | 0.20.0 릴리스 확인 및 운영 이미지 식별 시 |
 | [Release 0.21.0](out/Release-0.21.0.md) | 0.21.0 병합·태그·GHCR 게시 근거 | 0.21.0 릴리스 확인 및 운영 이미지 식별 시 |
 | [Issue102](out/Issue102.md) | G0 내부 LAN PROD Nginx/DEV App 직접 접속, Owner 경량 보안 범위·잔여 위험 수용·G0~G7 운영 게이트 | 운영/개발 배포 경로·Nginx/직접 포트, 인증·Site/Version 권한·기존 CAD API 전환, 위험 범위·운영 Go/No-Go/수용 기준 변경 시 |
+| [Issue107](out/Issue107.md) | G5 PROD Nginx/DEV 직결 격리 Preview, 테스트·실 LAN 인계 | Proxy/접속 경로·정상 Viewer/API/Upload/Health 검증, 운영 환경 변경 경계 |
 | [Issue31](out/Issue31.md) | DXF 다중 선택·볼록/정밀 외곽선·실험 상태·P4 권한 보류 | Viewer 선택·외곽선/Worker/JSON 변경 시 |
 | [Issue26](out/Issue26.md) | DXF TEXT/MTEXT 색인·world 좌표 focus·검색 범위/검증 | Viewer 검색·Pan/Zoom·Worker·BLOCK/INSERT·DWG 텍스트 지원 검토 시 |
 | [Issue66](out/Issue66.md) | Migrator 최소 의존성·크기 측정/OCI manifest·복구 계약 | Docker migrator/CI/GHCR 및 버전·패키징 변경 시 |
