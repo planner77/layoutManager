@@ -3,6 +3,7 @@ import type { ViewerFormat } from './selection';
 import type {OutlineEntity,OutlineKind} from './outline-geometry';
 import type {OutlineResult,GeoJSONOutline} from './outline-compute';
 import {type CanvasObjectRef,type CanvasEditCapability,type CanvasSelectionMode} from '../../domain/canvas-object-selection';
+import type {GeneratedCommand} from '../../domain/generated-document';
 import type {OutlineAssignment} from '../../domain/outline-assignment';
 import {outlineGeometryBounds} from '../../domain/outline-tree';
 export type SavedOutlineOverlayState = {id:string;visible:boolean;selected:boolean};
@@ -30,6 +31,14 @@ export interface CadViewerAdapter {
   clearCanvasObjectSelection?():void;
   getGeneratedObjects?():GeneratedOutlineObject[];
   getCanvasEditCapability?():CanvasEditCapability;
+  /** E2 browser-only command entry point; actual Delete/Translate/Rotate UI is E3~E5. */
+  getGeneratedHistory?():{undo:number;redo:number;limit:number};
+  executeGeneratedCommand?(command:GeneratedCommand):void;
+  stageGeneratedCommand?(command:GeneratedCommand):void;
+  commitGeneratedCommand?():boolean;
+  cancelGeneratedCommand?():boolean;
+  undoGeneratedEdit?():boolean;
+  redoGeneratedEdit?():boolean;
   getOutlineSelection?(): OutlineEntity[];
   clearOutlineSelection?(): void;
   previewOutline?(kind: OutlineKind): Promise<OutlineResult>;
@@ -159,6 +168,19 @@ export class ViewerManager {
   getCanvasEditCapability():CanvasEditCapability{
     return this.adapter?.getCanvasEditCapability?.()??{canSelect:false,canEdit:false,reason:'이 Renderer는 통합 객체 선택을 지원하지 않습니다.'};
   }
+  getGeneratedHistory(){return this.adapter?.getGeneratedHistory?.()??{undo:0,redo:0,limit:100};}
+  executeGeneratedCommand(command:GeneratedCommand):void{
+    if(!this.adapter?.executeGeneratedCommand)throw new Error('생성 객체 편집이 지원되지 않습니다.');
+    this.adapter.executeGeneratedCommand(command);
+  }
+  stageGeneratedCommand(command:GeneratedCommand):void{
+    if(!this.adapter?.stageGeneratedCommand)throw new Error('생성 객체 편집이 지원되지 않습니다.');
+    this.adapter.stageGeneratedCommand(command);
+  }
+  commitGeneratedCommand(){return this.adapter?.commitGeneratedCommand?.()??false;}
+  cancelGeneratedCommand(){return this.adapter?.cancelGeneratedCommand?.()??false;}
+  undoGeneratedEdit(){return this.adapter?.undoGeneratedEdit?.()??false;}
+  redoGeneratedEdit(){return this.adapter?.redoGeneratedEdit?.()??false;}
   getOutlineSelection() { return this.adapter?.getOutlineSelection?.() ?? []; }
   clearOutlineSelection() { this.adapter?.clearOutlineSelection?.(); }
   previewOutline(kind:OutlineKind) {
