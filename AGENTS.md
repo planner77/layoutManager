@@ -1,5 +1,20 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #102 / ADR-051-R1 — Owner 내부망 경량 보안 범위 결정 (2026-10-25)
+
+- **최신 우선 정책:** [Issue102](out/Issue102.md), [ADR-051-R1](out/Decisions.md). 운영은 공개망 인바운드 제한 사내 업무망의 **Nginx 경유**, 개발은 **개발 App 직접 접속**. 이전 #96 D6/G0~G7의 적대적 공격·계정/세션 탈취 대응/침투시험을 필수 보안 게이트로 제시한 문구는 R1에서 대체한다.
+- Owner는 HTTP 비암호화/내부망 탈취·변조 위험을 알고 **추가 공격 대비를 범위 밖으로 수용**했다(`OWNER_ACCEPTED_SCOPE`). 안전성 PASS·TLS 동등 보장·G7 운영 승인으로 해석하지 않는다. TLS/MFA/OIDC/SSO, 추가 per-client 보안 ACL, Header/Origin/CSRF 위조·브루트포스·패킷 탈취/침투시험은 새로운 필수요건이 아니다. 기존 비활성 검증 코드와 정상 흐름은 임의로 제거하지 않는다.
+- **여전히 필수:** D1~D5 User/Session/Role/Site/Audit, 계정/권한 업무 정확성, 원자 DB 및 정상 Session 만료/회수, 운영·개발 데이터 분리, PROD Nginx/DEV direct 실제 동작, 기존 도면/API 호환, 동일시점 DB/CAD/S3 백업·격리 migration·복구, QA·독립 G7 Owner Go/No-Go. 상세 CIDR·비밀은 공개 GitHub에 올리지 않는다.
+- 기존 `src/docker-compose.yml`의 `0.0.0.0:3000`은 운영 전용 Nginx 경로 충족 증거가 아니다. G5 격리 점검 후 G7에서만 실제 설정 변경; **운영 로그인/관리/영속 API, Prisma/DDL/migration, Nginx/Compose/.env/방화벽 변경·활성화 금지**. G0 문서 PR 시작이나 CI 성공도 운영 활성화 승인 아님.
+
+
+## Issue #82 / PR #111 — ESLint 차단 및 기존 메모 P1/P2 편집 안정성 보완 (2026-10-25)
+
+- 최초 [PR CI 40196496297](https://github.com/planner77/layoutManager/actions/runs/40196496297) HEAD `1515eca`는 Typecheck PASS / ESLint 2 errors FAIL / Unit·Build·Chromium E2E·Legacy **SKIPPED**, Docker Job SUCCESS. `react-hooks/refs`(Overlay render 중 `gesture.current`), E2E `prefer-const`(pin), unused lint-disable warning을 수정. 기존 Outline Tree ARIA 경고는 별도, 이번 실패 원인 아님.
+- [P1 review 4370961641](https://github.com/planner77/layoutManager/pull/111#discussion_r4370961641): **새 메모 배치뿐 아니라 기존 메모 pin pointerdown·최근 목록 클릭에서도** Outline/Generated edit mode와 독점. 먼저 Pending Outline worker/selection·Generated command를 취소하고 Pan으로 전환, 그 뒤 memo drag anchor를 획득. [P2 review 4370961642](https://github.com/planner77/layoutManager/pull/111#discussion_r4370961642): 5px 이상 drag 뒤 synthetic click으로 미저장 메모 제목·본문이 초기화되지 않게 click 1회 무시, 일반/키보드 선택은 유지. 같은 memo 재선택은 편집 폼 데이터 덮어쓰기 금지.
+- 신규 `TC-M1-E2E-004/005` 작성; 실제 실행/새 PR CI PASS는 별도 증거 필요. [FailureLedger](out/FailureLedger.md), [Issue82](out/Issue82.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md), ADR-052. 0.41.0 유지, Server CRUD/Prisma/Auth/원본/Current/GeneratedDocument/GHCR 불변.
+
+
 ## Issue #82 / M1 — DXF WCS 메모 세션 Overlay · 명시적 위치 확정 (2026-10-25)
 
 - **범위/설계:** [Issue82](out/Issue82.md), [ADR-052](out/Decisions.md), [Architecture](out/Architecture.md), [Requirements](out/Requirements.md), [TestPlan](out/TestPlan.md). 루트 DESIGN.md 부재로 Architecture/Decisions를 기준으로 한다. 상위 #81, M2 #83(영속 인증/DB)은 별도 BLOCKED.
@@ -375,6 +390,7 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 | [Issue66](out/Issue66.md) | Migrator 최소 의존성·크기 측정/OCI manifest·복구 계약 | Docker migrator/CI/GHCR 및 버전·패키징 변경 시 |
 | [Issue28](out/Issue28.md) | 운영 이미지 경량화·Migration 분리·측정/롤백 | Dockerfile, Standalone, Compose, GHCR 변경 시 |
 | [Issue24](out/Issue24.md) | 기준정보 계층·이관·층별 Current 요구/설계/AC | 기준정보·계층 등록·제품 조회·legacy 이관 변경 시 |
+| [Issue102](out/Issue102.md) | G0 내부 LAN PROD Nginx/DEV App 직접 접속, Owner 경량 보안 범위·잔여 위험 수용·G0~G7 운영 게이트 | 운영/개발 배포 경로·Nginx/직접 포트, 인증·Site/Version 권한·기존 CAD API 전환, 위험 범위·운영 Go/No-Go/수용 기준 변경 시 |
 | [Issue76](out/Issue76.md) | GitHub Squash 기본 메시지 관리자 설정·CI 진단·Main 실행명 확인 | 저장소 설정·PR/Main CI run-name 변경 시 |
 | [README](README.md) | 사용자/개발자 프로젝트 안내 | 기능·구조·설정·실행방법 변경 시 |
 

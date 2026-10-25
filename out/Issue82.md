@@ -1,5 +1,12 @@
 # Issue #82 — CAD Memo M1 / WCS 브라우저 세션 메모
 
+## PR #111 — 첫 CI 실패와 P1/P2 리뷰 대응 (2026-10-25)
+
+- [CI Run 40196496297](https://github.com/planner77/layoutManager/actions/runs/40196496297) 기존 HEAD `1515eca`, Verify Job ESLint 오류 2건으로 failure(React `react-hooks/refs`, Playwright E2E `prefer-const`), TypeScript SUCCESS, 나머지 Verify Unit/Build/E2E/Legacy SKIPPED. Docker Job SUCCESS. Reviewer finding P1 #4370961641(기존 메모 모드 중첩), P2 #4370961642(Drag synth click 초안 초기화). 위 세 가지는 서로 구분.
+- **교정:** `beginMemoInteraction`를 새 배치·기존 PIN pointerdown·최근 목록의 단일 경계로 도입, Outline Worker/선택/Generated pending 취소+Pan 전환. `ignoredDragClick`은 drag click만 소비, 키보드/정상 선택 유지; 같은 memo 재선택 초안 불변. JSX render 안 ref 접근 삭제, let→const/unused suppression 제거.
+- **추가 시험:** `TC-M1-E2E-004/005` 등 기존 E2E/Unit/Typecheck/Lint/Docker 전부 새 HEAD CI가 필요. 별도 실 CAD/native/GPU 수용 미실시. 이전 HEAD CI 결과와 수정 HEAD CI 성공 혼동 금지. 이슈 종료/병합/GHCR 게시 미실행, #83 서버 Memo 영속 운영 게이트 BLOCKED 유지.
+
+
 - **원 이슈:** https://github.com/planner77/layoutManager/issues/82
 - **Epic:** #81 / **선행:** #25/#38 ViewerAppShell, #51/52 객체 선택·생성, #26 WCS focus, #54 이동; **후속:** #83/#84/#85/#86/#88/#90
 - **설계:** DESIGN.md 없음; `AGENTS.md`, `out/Architecture.md` 및 ADR-052(Decisions.md)를 우선.

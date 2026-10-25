@@ -84,7 +84,7 @@ test('TC-M1-E2E-002: drag cancellation, invalid coordinates, explicit release an
   const version=await drawing(request,'issue82-cancel');
   await openThree(page,version.id);
   await createAt(page,'50','50','드래그 시험');
-  let pin=page.getByTestId('cad-memo-pin');
+  const pin=page.getByTestId('cad-memo-pin');
   await pin.scrollIntoViewIfNeeded();
   let bounds=await pin.boundingBox();
   expect(bounds).not.toBeNull();
@@ -154,4 +154,66 @@ test('TC-M1-E2E-003: placement cancels, Source/Outline modes remain exclusive, V
   await page.goto('/cad/versions/'+first.id+'/viewer?renderer=three-dxf-viewer');
   await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
   await expect(page.getByTestId('cad-memo-pin')).toHaveCount(0);
+});
+
+test('TC-M1-E2E-004: existing memo pin/list interactions cancel outline and object selection',async({page,request})=>{
+  const version=await drawing(request,'issue82-review-exclusive');
+  await openThree(page,version.id);
+  await createAt(page,'50','50','기존 메모');
+  const pin=page.getByTestId('cad-memo-pin');
+  const outlineTool=page.getByTestId('viewer-menu-outline-tool');
+
+  await outlineTool.click();
+  await expect(outlineTool).toHaveAttribute('aria-pressed','true');
+  await page.getByTestId('cad-memo-latest').getByRole('button',{name:'기존 메모'}).click();
+  await expect(outlineTool).toHaveAttribute('aria-pressed','false');
+  await expect(page.getByTestId('canvas-mode-pan')).toHaveAttribute('aria-pressed','true');
+  await expect(page.getByTestId('cad-memo-editor')).toBeVisible();
+
+  await page.getByTestId('canvas-mode-objects').click();
+  await expect(page.getByTestId('cad-memo-editor')).toHaveCount(0);
+  await pin.click();
+  await expect(page.getByTestId('canvas-mode-pan')).toHaveAttribute('aria-pressed','true');
+  await expect(page.getByTestId('cad-memo-editor')).toBeVisible();
+
+  // Tool exclusivity is established on pointer-down, not at pointer-up/click.
+  await outlineTool.click();
+  await expect(outlineTool).toHaveAttribute('aria-pressed','true');
+  await pin.scrollIntoViewIfNeeded();
+  const bounds=await pin.boundingBox();
+  expect(bounds).not.toBeNull();
+  const x=bounds!.x+bounds!.width/2,y=bounds!.y+bounds!.height/2;
+  await page.mouse.move(x,y);
+  await page.mouse.down();
+  await expect(outlineTool).toHaveAttribute('aria-pressed','false');
+  await expect(page.getByTestId('canvas-mode-pan')).toHaveAttribute('aria-pressed','true');
+  await page.mouse.move(x+24,y+8,{steps:5});
+  await expect(pin).toHaveAttribute('data-memo-preview','true');
+  await page.mouse.up();
+  await expect(page.getByTestId('cad-memo-pin')).toHaveCount(1);
+});
+
+test('TC-M1-E2E-005: dragging selected memo retains unsaved text draft after synthetic click',async({page,request})=>{
+  const version=await drawing(request,'issue82-review-draft');
+  await openThree(page,version.id);
+  await createAt(page,'50','50','확정 제목','확정 본문');
+  const pin=page.getByTestId('cad-memo-pin');
+  await page.getByTestId('cad-memo-title').fill('미저장 변경 제목');
+  await page.getByTestId('cad-memo-content').fill('미저장 변경 내용');
+  await pin.scrollIntoViewIfNeeded();
+  const bounds=await pin.boundingBox();
+  expect(bounds).not.toBeNull();
+  const x=bounds!.x+bounds!.width/2,y=bounds!.y+bounds!.height/2;
+  await page.mouse.move(x,y);
+  await page.mouse.down();
+  await page.mouse.move(x+28,y+12,{steps:6});
+  await expect(pin).toHaveAttribute('data-memo-preview','true');
+  await page.mouse.up();
+  await expect(pin).toHaveAttribute('data-memo-preview','false');
+  await expect(pin).not.toHaveAttribute('data-memo-wcs-x','50');
+  await expect(page.getByTestId('cad-memo-title')).toHaveValue('미저장 변경 제목');
+  await expect(page.getByTestId('cad-memo-content')).toHaveValue('미저장 변경 내용');
+  // Commit the draft explicitly; dragging only confirmed the WCS anchor.
+  await page.getByTestId('cad-memo-save-text').click();
+  await expect(pin).toContainText('미저장 변경 제목');
 });

@@ -1,5 +1,26 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-051-R1 — #102 내부망 경량 보안 범위 재결정 (2026-10-25)
+
+**Owner 결정 승인 / 운영 활성화 미승인.** 기존 ADR-048/049/051 및 #96 D1~D6 가운데 공격 방어·탈취 대비가 **G0~G7 진행을 차단하는 보안 게이트**였던 부분을 다음과 같이 개정한다. 상세 [Issue102](Issue102.md).
+
+1. **전제:** 외부 공개망으로부터 인바운드 접근이 제한된 사내 업무망의 내부 사용자끼리 사용한다. PROD 접속은 **사용자 PC → Nginx → App**, DEV 접속은 **개발 PC → 개발 App 직접 연결**이다. 경로는 기능/배포 정합성으로 확인하며 실제 IP/CIDR·포트/Secret은 비공개.
+2. **명시적 범위 제외:** 공격 방어 수준 고도화, 인증정보·세션 탈취 공격 대응, 모의침투/취약점 스캔·공격 실증, TLS/HTTPS·OIDC/SSO/MFA, 방화벽/CIDR별 위협 방어, Host/Forwarded/Origin 위조·CSRF·브루트포스 적대적 E2E 및 별도 보안 위험 서명은 필수 수용 기준이 아니다. 이전 문서의 '보안 공격 테스트 0건 통과 없이는 G7 금지'는 **R1이 대체**한다.
+3. **위험 지위:** Owner는 HTTP 평문 비밀번호/세션 도청·변조, 탈취·재생, 최소 8자 비밀번호와 관련된 위험이 **여전히 존재함을 인지한 채 추가 보호를 범위 밖으로 수용**한다(`OWNER_ACCEPTED_SCOPE`). 이는 안전하다는 주장이나 기술 검증 PASS가 아니며 공격방어 보완을 실행했다는 의미도 아니다. 업무/운영 미확정은 여전히 PENDING이다.
+4. **유지하는 기능:** 이전 승인 D1~D5의 로컬 계정/1회 bootstrap·복구, 최소 8자+scrypt, 8h 절대·30m idle·최대 3개 세션 및 회수, Reader/Editor/Admin·Site/Version Scope, 365일 Audit·별도 열람 권한, DB/Grant/Session 원자성·업무 정합성·비밀 로그 제외·백업/복구/원본 DXF·Current/SHA 불변. 기존 비활성 Origin/CSRF/Session helper를 자동 삭제/무력화하지 않는다.
+5. **릴리스 게이트:** G0 #102은 접속·업무 범위/잔여 운영 결정을 정리, G5 #107은 PROD Nginx/DEV direct **정상 연결/배포 경로**, G6 #108은 **기능 E2E·DB/CAD/S3 Backup/Migration dry-run/Restore**, G7 #109는 **Owner 별도 Go/No-Go**로 역할 축소. 인증/관리/영속 API 및 운영 Prisma·Nginx·Compose 실제 변경은 G7 승인 전 OFF.
+6. **기존 API 전환:** GET/다운로드 Reader, POST Editor, Current Editor, 삭제 Admin+Site 등은 아직 **제안/미확정**이며 현재 공개 CAD API 동작을 변경하지 않는다. 별도 기능별 API 승인 유지.
+
+**효력:** ADR-051-R1은 본 이슈의 이전 공격 중심 PENDING/개별 보안 실증 선행 게이트 서술보다 우선한다. 타 작업의 데이터 무결성·업무권한 검증 및 실 운영 배포 통제는 완화하지 않는다.
+
+
+### ADR-052 보완 — 기존 메모 진입도 동일 Tool 독점, Drag synthetic click 무시 (#82 PR #111 리뷰, 2026-10-25)
+
+- P1 #4370961641: 새 배치와 기존 PIN pointerdown/최근 목록 선택 모두 동일 `beginMemoInteraction` 경계를 호출한다. 먼저 진행 중 Outline Worker/미확정 선택과 Generated Command를 취소하고 `pan`으로 복귀한 뒤 메모 편집·드래그를 허용한다. ESC/View epoch 검증, 이미 확정된 Generated Overlay는 삭제하지 않는다.
+- P2 #4370961642: 5px 이상 drag의 위치 수정은 pointerup 1회, 뒤따르는 mouse click은 선택 재실행으로 해석하지 않는다. PIN 클릭과 키보드 선택은 유지하고, 같은 memo 재선택이 미저장 텍스트를 폐기하지 않도록 한다. 원본 WCS/Source Geometry/서버 인증·영속화는 변경하지 않는다.
+- 최초 PR CI는 lint 단계 실패(원본 `1515eca`); 새 수정 HEAD의 실제 CI 성공 전 수용 PASS 미주장. [FailureLedger](FailureLedger.md), [Issue82](Issue82.md), [TestPlan](TestPlan.md).
+
+
 ## ADR-052 — #82 CAD 메모 M1은 WCS 정본/세션 Overlay와 독립 이동 명령 (2026-10-25)
 
 - **맥락:** 도면 버전별 텍스트 메모를 임시로 배치/수정해야 하지만 #83 영속 인증/RBAC/감사/DB 활성화는 #96/Owner 승인·운영 게이트 대기 중이다. #2 `CadFileVersion.description`와 별개. 기존 #51/#52/#54 GENERATED 객체 편집 및 #40/#43 Tool/Tree·Canvas hit와의 충돌 방지 필요.

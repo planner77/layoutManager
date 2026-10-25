@@ -1,5 +1,34 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #102 / ADR-051-R1 — 보안 강화 비범위와 기능/운영 수용 시험 (2026-10-25)
+
+**정책:** HTTP와 계정/세션 탈취·공격 방어 관련 위험은 Owner가 `OWNER_ACCEPTED_SCOPE`로 결정했다. 이는 시험 성공이 아니라 해당 *공격 전용 대응/침투 실증을 완료 게이트에서 제외*한 기록이다. 기존 비활성 Auth helper 및 기존 작성된 단위테스트를 제거하는 지시가 아님. [Issue102](Issue102.md).
+
+| 시험/검토 ID | 검증 대상·수용 기준 | 최초 상태 |
+| --- | --- | --- |
+| TC-P4-G0-R1-001 | G0 정책/위험 수용 범위, PROD Nginx/DEV direct, 업무 미확정, ADR·이슈 일치 | 문서 작성 / NOT RUN |
+| TC-P4-G0-R1-002 | Markdown-only diff, 기존 API/SQLite/CAD/Prisma/Proxy/Docker/GHCR 변경 0 | PR diff 검토 / NOT RUN |
+| TC-P4-G5-R1-001 | PROD Nginx 정상 진입·Upstream/Health/Viewer/업로드, 개발 App 직접 접속·데이터 분리 | G5 현장·격리 / NOT RUN |
+| TC-P4-G3-R1-001 | 정상 login/logout/세션 8h·30m·3개·회수·계정 상태 기능 | G3/G6 / NOT RUN |
+| TC-P4-G4-R1-001 | Reader/Editor/Admin·Site/Version 업무 권한 허용/거부, Audit 원자성·365일 | G4/G6 / NOT RUN |
+| TC-P4-G6-R1-001 | 실제 내부 PC 업무 E2E·기존 API 호환, DB/CAD/S3 동일시점 backup→격리 migration→실 Restore | G6 / NOT RUN |
+| TC-P4-G7-R1-001 | G1~G6 기능·운영 증거, 별도 Owner 활성화 Go/No-Go, 런타임 기능 기본 OFF | G7 / BLOCKED |
+
+**필수 게이트에서 제외:** TLS/MFA/SSO, 공격자 기반 Host/Origin/Forwarded 위조·브루트포스·CSRF 공격 모의, 패킷 도청/세션 탈취 시험, 취약점/침투 테스트, 별도 보안 위험 실증. 과거 `TC-P4-D1-014` 등의 목록에 포함된 공격 실증은 R1에서 요구하지 않으며 DB 원자성·업무 허용/거부·백업/복구 부분은 유지. 정상 Proxy/Origin/Cookie 호환과 기존 API 회귀는 필수.
+**상태 규칙:** 실행되지 않은 테스트를 PASS로 기록하지 않는다. 본 PR은 문서 전용이며 운영 서비스/Schema/로그인·관리 API는 OFF다.
+
+
+### Issue #82 / PR #111 — CI 실패/리뷰 회귀 추가 (2026-10-25)
+
+| TC | 조건 / 기대 | 상태 |
+| --- | --- | --- |
+| TC-M1-LINT-001 | `cad-memo-overlay.tsx` 렌더 중 ref read 없음/unused eslint-disable 없음, `issue82-cad-memo.spec.ts` let→const. 기존 Outline Tree ARIA warning과 ESLint errors 구분 | 정적 코드 수정, 수정 HEAD CI NOT RUN |
+| TC-M1-E2E-004 | 메모 생성 후 Outline ON→기존 최근 메모 선택 → Outline OFF/Pan·편집기 표시; 원본/생성 선택 모드→기존 PIN 클릭→Pan; Outline ON 상태 PIN **pointerdown**에서 즉시 OFF 후 Ghost Drag | CODED / NOT RUN |
+| TC-M1-E2E-005 | 같은 메모 제목·내용의 미저장 폼 변경 → PIN drag(5px+) pointerup·synthetic click → 초안 값 그대로, WCS만 갱신, 명시 텍스트 저장 때 label 변경 | CODED / NOT RUN |
+
+- 최초 `1515eca` [Run 40196496297](https://github.com/planner77/layoutManager/actions/runs/40196496297): Typecheck/Docker 성공, ESLint error 2(React ref/render, prefer-const)/warning 2, Unit/Build/E2E SKIPPED. 이 성공/실패는 해당 HEAD만의 결과. 수정 HEAD CI 미실행 시 NOT RUN, PR 열림 자체를 PASS로 오인 금지.
+
+
 ## Issue #82 / M1 — Browser Memo WCS Session 테스트 계획 (2026-10-25)
 
 | TC | 절차/기대 | 현재 상태 |

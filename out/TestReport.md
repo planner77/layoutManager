@@ -1,5 +1,20 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issue #102 — Owner 공격 대응 비범위 문서 정렬 (2026-10-25)
+
+- G0 #102 및 ADR-051-R1에서 보안 공격/자격증명·세션 탈취 대비 강화·침투시험은 Owner에 의해 비범위로 결정되었다. `OWNER_ACCEPTED_SCOPE`는 **정책상 위험 수용**이며 안전성/침투시험 PASS가 아니다. HTTP 비암호화 위험은 여전히 존재한다.
+- PROD 사용자 Nginx 경유 / DEV 개발 App 직접 접속 정책 및 G1~G7 기능·업무/DB 복구 운영 게이트는 유지. 본 문서 전용 변경은 운영 Auth/API/Prisma/Nginx/Docker/DB를 활성화하지 않는다.
+- **실행 상태:** 이 문서 작업 자체로 LAN E2E, 기능 E2E, Backup/Migration/Restore, Typecheck, Docker 등 새 실행 결과가 생기지 않는다. 해당 시험은 `NOT RUN` 또는 후속 증거 대기로 명시하며 기존 이력의 PASS를 새 HEAD의 PASS로 전용하지 않는다.
+- 근거: [Issue102](Issue102.md), [Issue96](Issue96.md), [ADR-051-R1](Decisions.md), [TestPlan](TestPlan.md). GitHub docs-only PR 생성/CI 시작은 PASS 및 운영 승인과 구별한다.
+
+
+## Issue #82 / PR #111 — 첫 PR CI 실패와 수정 HEAD 검증 경계 (2026-10-25)
+
+- [첫 Run 40196496297](https://github.com/planner77/layoutManager/actions/runs/40196496297) `1515eca9708258bc0f80c4480773f6d26d06aee7`, `completed/failure`: **TypeScript SUCCESS, ESLint FAILURE(2 errors/2 warnings), Docker Runtime/Migration Job SUCCESS**. ESLint 이후 Vitest/Build/E2E/Legacy **SKIPPED**. 실패 상세/미해결 리뷰는 [FailureLedger](FailureLedger.md) 참조.
+- 수정 내용: Overlay `react-hooks/refs` render 금지 제거, unused suppression 제거, E2E let→const. Review P1 `4370961641` 새 배치/기존 pin pointerdown·최근 목록의 독점 도구 전환 일원화, Review P2 `4370961642` 드래그 뒤 synthetic click/동일 memo 재선택에서 미저장 텍스트 덮어쓰기 차단. 신규 E2E `TC-M1-E2E-004/005` 작성.
+- 수정 HEAD의 로컬 npm ci/Typecheck/ESLint/Vitest/Build/Playwright/Legacy/Docker/현장 실DXF·GPU/native fullscreen **NOT RUN**. 원본 HEAD의 Typecheck·Docker 성공을 수정 HEAD로 전용하지 않으며 PR CI 새 트리거 이후 종료/성공을 확인할 때만 PASS 표기. 사용자의 요청상 CI 모니터링 생략. #83 서버 저장/인증 BLOCKED 유지.
+
+
 ## U-ISSUE82-M1-20261025 — WCS 세션 메모 구현/시험 코드 작성, 실제 실행 대기
 
 - **범위/출처:** [Issue82](Issue82.md), 상위 #81, [ADR-052](Decisions.md), [Architecture](Architecture.md), [Requirements](Requirements.md). 구현 브랜치 `feat/82-cad-memo-m1`; 최초 main 기준 SHA `ab094a541b4db44c15598f40b0699f8e6214ecae`.

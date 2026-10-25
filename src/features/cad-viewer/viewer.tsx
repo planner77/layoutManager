@@ -403,19 +403,45 @@ export function CadViewer({
     setOutlineName('');
     setOutlineNotice(null);
   }, [stopOutlineEditing]);
+  /** One transition for new-memo placement, existing pin press, and recent-list selection.
+   * Cancel outline Worker before clearing Source selection, so stale previews cannot restart.
+   * Do not call this from render or synthesize an authorization/DB update. */
+  const beginMemoInteraction = useCallback((id?:string):boolean => {
+    if (!memoScoped || renderer!=='three-dxf-viewer' || format!=='DXF' ||
+        loading || !state.ready || !/^[a-f0-9]{64}$/i.test(sourceSha256)) return false;
+    if (id && (!memoSession.current?.matches({versionId,sourceSha256}) ||
+               !memoSession.current.get(id))) return false;
+    if (outlineEnabledRef.current) {
+      outlineEnabledRef.current=false;
+      stopOutlineEditing();
+      dispatchApp({type:'set-outline-tool',enabled:false});
+    }
+    manager.current?.cancelGeneratedCommand();
+    manager.current?.clearCanvasObjectSelection();
+    manager.current?.setSelectionMode('pan');
+    setCanvasMode('pan');
+    setDeleteRequest(null);
+    setContextMenu(null);
+    return true;
+  },[memoScoped,renderer,format,loading,state.ready,versionId,sourceSha256,stopOutlineEditing]);
+
   const selectMemo = useCallback((id:string) => {
-    const item = memoSession.current?.get(id);
-    if (!item) return;
+    const item = memoSession.current?.matches({versionId,sourceSha256})
+      ? memoSession.current.get(id) : undefined;
+    if (!item || !beginMemoInteraction(id)) return;
     setMemoPlacing(false);
     setMemoCandidate(null);
     setMemoSelectedId(id);
     setMemoDeleteArmed(false);
     setMemoError(null);
-    setMemoFields({
-      title:item.title,content:item.content,
-      x:String(item.anchorWcsXY.x),y:String(item.anchorWcsXY.y),
-    });
-  }, []);
+    // Re-selecting an already open memo is a focus action, not a discard-draft command.
+    if (memoSelectedId !== id) {
+      setMemoFields({
+        title:item.title,content:item.content,
+        x:String(item.anchorWcsXY.x),y:String(item.anchorWcsXY.y),
+      });
+    }
+  }, [beginMemoInteraction,memoSelectedId,versionId,sourceSha256]);
   const placeMemo = useCallback((point:MemoWcsXY) => {
     setMemoCandidate(point);
     setMemoPlacing(false);
@@ -444,16 +470,7 @@ export function CadViewer({
   function startMemoPlacement() {
     if (!memoAvailable) return;
     if (memoPlacing) { closeMemoEditor(); return; }
-    manager.current?.cancelGeneratedCommand();
-    manager.current?.clearCanvasObjectSelection();
-    setContextMenu(null); setDeleteRequest(null);
-    if (outlineEnabledRef.current) {
-      outlineEnabledRef.current=false;
-      stopOutlineEditing();
-      dispatchApp({type:'set-outline-tool',enabled:false});
-    }
-    manager.current?.setSelectionMode('pan');
-    setCanvasMode('pan');
+    if (!beginMemoInteraction()) return;
     setMemoSelectedId(null);
     setMemoCandidate(null);
     setMemoFields({title:'',content:'',x:'0',y:'0'});
@@ -932,6 +949,7 @@ export function CadViewer({
             cancelGestureSignal={memoCancelSignal}
             onPlace={placeMemo}
             onSelect={selectMemo}
+            onStartInteraction={id=>beginMemoInteraction(id)}
             onMove={moveMemoFromCanvas}
             onGestureActive={onMemoGestureActive}
           />}

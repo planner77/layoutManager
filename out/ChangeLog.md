@@ -1,5 +1,11 @@
 # ChangeLog
 
+### Issue #82 / PR #111 — 최초 CI ESLint 차단 및 편집 리뷰 보완 (2026-10-25)
+
+- 기존 `1515eca` [Run 40196496297](https://github.com/planner77/layoutManager/actions/runs/40196496297) Verify Typecheck PASS/ESLint 2 errors FAIL, 나머지 Verify SKIPPED, Docker Job PASS. React ref/render 규칙 위반, E2E let→const, 불필요 lint suppression 제거.
+- [P1 4370961641](https://github.com/planner77/layoutManager/pull/111#discussion_r4370961641) 기존 memo pin/list 접근 도구 독점, [P2 4370961642](https://github.com/planner77/layoutManager/pull/111#discussion_r4370961642) Drag click이 편집 폼 미저장 텍스트를 덮어쓰는 결함 수정. `TC-M1-E2E-004/005` 추가, 실패 원장 누적. 최신 CI 결과 전 NOT VERIFIED, 버전 0.41.0 및 기존 Source/DB/Auth/Current 불변.
+
+
 ## v0.41.0 — Issue #82 CAD 메모 M1 WCS 세션 Overlay (2026-10-25 / PR CI 검증 전)
 
 - `MemoSession` 도메인(Version UUIDv4+SHA64/UUIDv4 local, NFC 제목·본문 유효성, WCS finite ±1e12, 100건 상한), `CadMemoOverlay` WCS 고정 pin+plain-text label, 클릭 자유 배치/위치 드래그 Ghost 취소·확정, 수치 이동과 텍스트만 별도 수정/삭제.

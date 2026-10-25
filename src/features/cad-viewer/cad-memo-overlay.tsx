@@ -20,7 +20,7 @@ type Gesture = {
  */
 export function CadMemoOverlay({
   memos, selectedId, placing, candidate, getManager, viewRevision, getViewEpoch,
-  cancelGestureSignal, onPlace, onSelect, onMove, onGestureActive,
+  cancelGestureSignal, onPlace, onSelect, onStartInteraction, onMove, onGestureActive,
 }: {
   memos: readonly MemoDraft[];
   selectedId: string | null;
@@ -32,11 +32,15 @@ export function CadMemoOverlay({
   cancelGestureSignal: number;
   onPlace: (point: MemoWcsXY) => void;
   onSelect: (id: string) => void;
+  onStartInteraction: (id: string) => boolean;
   onMove: (id: string, point: MemoWcsXY) => void;
   onGestureActive: (active: boolean) => void;
 }) {
   const root = useRef<HTMLDivElement>(null);
   const gesture = useRef<Gesture | null>(null);
+  // Pointer-up may synthesize a click; never let that click overwrite unsaved text.
+  // Cleared on the next pointer-down so canceled gestures cannot suppress later clicks.
+  const ignoredDragClick = useRef<string | null>(null);
   const [preview, setPreview] = useState<{id: string; point: MemoWcsXY} | null>(null);
   const [screenPositions, setScreenPositions] = useState<Record<string,{x:number;y:number}>>({});
   const [candidateScreen, setCandidateScreen] = useState<{x:number;y:number}|null>(null);
@@ -71,7 +75,6 @@ export function CadMemoOverlay({
     if (gesture.current) {
       gesture.current = null;
       // Intentional rollback of a transient ghost after the parent changes tool/scope.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPreview(null);
       onGestureActive(false);
     }
@@ -94,6 +97,10 @@ export function CadMemoOverlay({
 
   function start(event: ReactPointerEvent<HTMLButtonElement>, memo: MemoDraft) {
     if (event.button !== 0 || (event.pointerType === 'touch' && !event.isPrimary)) return;
+    ignoredDragClick.current = null;
+    // Pin press MUST apply the same exclusivity gate as the recent-memo button,
+    // before any camera/selection state is captured for a possible drag.
+    if (!onStartInteraction(memo.id)) return;
     const point = getManager()?.clientToWcs(event.clientX, event.clientY);
     if (!point) return;
     gesture.current = {
@@ -114,6 +121,7 @@ export function CadMemoOverlay({
     if (Math.hypot(event.clientX - start.clientX, event.clientY - start.clientY) < 5 &&
         !start.moved) return;
     start.moved = true;
+    ignoredDragClick.current = start.id;
     const now = getManager()?.clientToWcs(event.clientX, event.clientY);
     if (!now) { cancelGesture(); return; }
     try {
@@ -178,7 +186,6 @@ export function CadMemoOverlay({
       return <button type="button" key={memo.id} data-testid="cad-memo-pin"
         data-memo-id={memo.id} data-memo-preview={preview?.id===memo.id?'true':'false'}
         data-memo-wcs-x={point.x} data-memo-wcs-y={point.y}
-        data-canvas-edit-escape-layer={gesture.current?.id === memo.id ? 'memo' : undefined}
         aria-label={`메모: ${memo.title}`}
         title="메모 선택 · 5px 이상 드래그 시 위치 변경 · ESC 취소"
         onPointerDown={event=>start(event,memo)}
@@ -186,7 +193,12 @@ export function CadMemoOverlay({
         onPointerUp={finish}
         onPointerCancel={cancelGesture}
         onLostPointerCapture={cancelGesture}
-        onClick={event=>{event.stopPropagation();onSelect(memo.id);}}
+        onClick={event=>{
+          event.stopPropagation();
+          const ignore=event.detail>0 && ignoredDragClick.current===memo.id;
+          ignoredDragClick.current=null;
+          if (!ignore) onSelect(memo.id);
+        }}
         className={'pointer-events-auto absolute flex h-6 w-6 items-center justify-center rounded-full border-2 text-xs font-bold shadow-md ' +
           (selectedId===memo.id?'border-white bg-teal-700 text-white':'border-white bg-amber-500 text-black')}
         style={{ left:screen.x,top:screen.y,transform:'translate(-50%, -50%)' }}>
