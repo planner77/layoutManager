@@ -3,7 +3,8 @@
 ## Issue #68 — GitHub Actions 실행명 표준 규약 (2026-10-25)
 
 - 모든 신규 PR 제목과 main squash commit **첫 줄**은 `#<Issue번호> | 간략한 설명`을 사용한다. PR 번호를 Issue 번호로 혼동하지 않는다. 실제 연결 이슈가 없으면 `NO-ISSUE | 간략한 설명`을 사용한다. 기존 비정형 제목은 `ISSUE-UNKNOWN` 표시 후 수정한다.
-- Actions 목록의 실행명은 자동 PR `PR CI | #번호 | 설명`, main push `MAIN/GHCR | #번호 | 설명`, tag push `RELEASE | NO-ISSUE | 버전 GHCR 이미지 게시`; 수동 PR CI에는 `issue_ref`/`run_description` 입력을 쓴다.
+- Actions 목록의 실행명은 자동 PR `PR CI | #번호 | 설명`, main push `MAIN CI | #번호 | 설명`, tag push `RELEASE | NO-ISSUE | 버전 GHCR 이미지 게시`; 수동 PR CI에는 `issue_ref`/`run_description` 입력을 쓴다.
+- **PR #69 게시 제외 정책:** `main` push로 변경된 전체 파일이 Markdown 또는 `.github/workflows/*.yml|yaml`인 경우 scope CI만 수행하고 GHCR 빌드/게시 Job을 건너뛴다. 실소스/런타임 변경이나 tag push는 기존 paired GHCR 게시 심사를 유지한다. main diff 기준 SHA가 유효하지 않으면 의도치 않은 게시 방지를 위해 CI를 실패 처리한다.
 - `run-name`은 CI Job보다 먼저 결정된다. 이슈 검색 Step·PR number를 사용한 Issue 위조·이전 Run 이름 변경은 불가. **Workflow 표시명은 성공 상태/GHCR 게시를 보장하지 않는다.** 실행 상태는 Run/Job과 Digest로 검증한다. 규칙·예외·테스트 [Issue68](out/Issue68.md), [Operation](out/Operation.md), [ADR-038](out/Decisions.md).
 
 
