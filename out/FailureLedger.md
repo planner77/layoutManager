@@ -1,5 +1,13 @@
 # PR/Main CI 실패 원장
 
+## Issue #99 / PR #110 — 최신 #102 Main의 문서 변경으로 인한 병합 정렬 (2026-10-25 KST)
+
+- **성공한 이전 HEAD:** PR #110 `6e00d3385a5c16362669d0672b828ddc1eaebf04` [PR CI 40197221768](https://github.com/planner77/layoutManager/actions/runs/40197221768), attempt 1 `completed/success`. Verify [121180619434](https://github.com/planner77/layoutManager/actions/runs/40197221768/job/121180619434) / Docker [121180619279](https://github.com/planner77/layoutManager/actions/runs/40197221768/job/121180619279) 모두 success. P1 Symlink 보완 및 TC-P0P5-PATH Unit, GHCR 후보 `0.40.3`을 포함한 이전 HEAD만의 증거.
+- **CI 실패가 아닌 문서 동시 변경:** `main` [#102 commit a14df20f](https://github.com/planner77/layoutManager/commit/a14df20f1fa466b7ede61ab3b4dc36f93daa014f) 최신 Owner 정책 ADR-051-R1에서 PROD Nginx/DEV Direct 및 경량 내부망 위험 수용 정책을 정렬했다. PR #110이 `behind=1`, `mergeable=false`; `AGENTS.md`, `out/{Architecture,Decisions,Operation,Requirements,TestPlan,TestReport}.md` 공통 머리글의 변경이 중복되었다. #102 자체 파일 `out/Issue102.md`와 #96/Database 연관 갱신도 손실되면 안 된다.
+- **통합 정책:** #102 Owner의 ADR-051-R1을 각 공통 문서 최상단에 보존하고 #99의 비공개 DXF 증거 게이트/P1 Symlink 방어/현장 AC #113 이관·FailureLedger를 함께 유지. #102만 수정한 `out/Database.md`, `out/Issue96.md`, `out/Issue102.md`는 Main 버전을 그대로 채택. Source/Viewer/API/Prisma/Docker 설정·운영 Auth 활성화는 하지 않으며 `src/package.json`/lock 신규 `0.40.3` 후보 보존. Force push/history rewrite 및 이전 GHCR 버전 태그 이동 없음.
+- **필수 이후 게이트:** 해당 2-parent 통합 커밋은 앞의 검증된 HEAD와 **달라지므로** 신규 PR CI를 실행해야 하며, Verify·Docker 최신 HEAD 성공 및 리뷰/충돌 0 확인 전 PR 병합/Issue #99 종료/Main GHCR 출시는 금지. 사용자는 새 CI 모니터링 생략을 명시; 실행 시작을 PASS로 기록하지 않는다. 원 필드 현장 수용 AC는 [후속 #113](https://github.com/planner77/layoutManager/issues/113) OPEN/BLOCKED 유지.
+
+
 ## Issue #99 / PR #110 — 성공 PR CI 이후 P1 비공개 경로 심볼릭 링크 취약점 (2026-10-25 KST)
 
 - **초기 성공 — CI 실패 아님:** HEAD `637742610b3eb25461b095edb5899494ce6dd054` / [PR CI 40195335561](https://github.com/planner77/layoutManager/actions/runs/40195335561) `completed/success`, Verify Job `121174841714`/Docker Job `121174841754` 모두 success. 이 실행은 Source-only/합성 테스트이지 실제 CAD 3종/GPU 현장 합격 증거가 아니다.

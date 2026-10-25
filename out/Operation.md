@@ -1,5 +1,16 @@
 # 운영·환경설정 초안
 
+## Issue #102 / ADR-051-R1 — 내부망 PROD/DEV 경량 운영 계약 (2026-10-25)
+
+**정책 승인, 운영 비활성:** 공개망 인바운드가 제한된 사내 업무망에서 내부 사용자끼리 HTTP로 사용한다. 운영 사용자 PC는 **Nginx**를 거쳐 App에 접근하고 개발 PC는 **별도 개발 App에 직접** 접근한다. 사용자별 상세 망 방어·침투테스트·HTTP 계정/세션 탈취 대응은 Owner가 비범위로 결정했다([Issue102](Issue102.md)). 평문 HTTP가 안전해진 것은 아니며 `OWNER_ACCEPTED_SCOPE`는 테스트 PASS가 아니다.
+
+- G5/배포 전 정상 경로 체크: 운영 Nginx URL → Upstream App Health/도면 목록·Viewer/업로드/쿠키·설정 전달, 개발 App 직접 URL → 분리된 개발 DB/도면/설정. 실제 접근 주소/포트는 사내 운영 문서에서만 관리.
+- 현재 Compose의 App `0.0.0.0:3000` Publish를 운영 최종 정상 경로라고 간주하지 않는다. 필요한 진입점/Upstream/host binding 변경은 **G7 승인 후**이며 이 문서 작업에서는 하지 않는다.
+- 공격 대비용 Host/Origin/Forwarded/CSRF/브루트포스 위조 시뮬레이션과 추가 TLS/MFA/WAF 등은 필수 완료 판정 제외. 기존 Auth helper 및 Secret 비로그 정책·로그인/권한/세션 정상 기능은 보존.
+- G0~G6 문서/격리 구현/테스트가 통과해도 **G7 Owner 별도 승인** 없이는 운영 Auth/관리·영속 API, Prisma Schema/Migration, Nginx/Compose/.env 및 기존 공개 CAD API 인증 전환 금지. 운영 전 DB/CAD(local)/S3 동일시점 백업→격리 migration dry-run→실 Restore·이전 이미지 호환 롤백은 필수.
+- 상세 `out/Issue102.md`, [ADR-051-R1](Decisions.md), [TestPlan](TestPlan.md), [Issue96](Issue96.md). 이력 내 이전 '보안 실증 없으면 운영 승인 불가'는 해당 공격·탈취 부분만 R1로 대체하며 업무·무결성 항목은 유지한다.
+
+
 ## Issue #99 종료 후 실 도면 운영 수용 책임 분리 (2026-10-25)
 
 - 사용자 요청의 #99 구현 PR 병합/신규 GHCR 게시 시작과 **실제 공장 DXF 수용은 서로 다른 게이트**다. 잔여 현장 수용은 [#113](https://github.com/planner77/layoutManager/issues/113)에서 Owner가 비공개 실측과 4개 AC를 완료한 뒤 별도로 승인한다. #99를 행정 종료해도 #113 미완 상태와 Auth/Outline 운영 기능 OFF는 변하지 않는다.

@@ -1,5 +1,20 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issue #102 — Owner 공격 대응 비범위 문서 정렬 (2026-10-25)
+
+- G0 #102 및 ADR-051-R1에서 보안 공격/자격증명·세션 탈취 대비 강화·침투시험은 Owner에 의해 비범위로 결정되었다. `OWNER_ACCEPTED_SCOPE`는 **정책상 위험 수용**이며 안전성/침투시험 PASS가 아니다. HTTP 비암호화 위험은 여전히 존재한다.
+- PROD 사용자 Nginx 경유 / DEV 개발 App 직접 접속 정책 및 G1~G7 기능·업무/DB 복구 운영 게이트는 유지. 본 문서 전용 변경은 운영 Auth/API/Prisma/Nginx/Docker/DB를 활성화하지 않는다.
+- **실행 상태:** 이 문서 작업 자체로 LAN E2E, 기능 E2E, Backup/Migration/Restore, Typecheck, Docker 등 새 실행 결과가 생기지 않는다. 해당 시험은 `NOT RUN` 또는 후속 증거 대기로 명시하며 기존 이력의 PASS를 새 HEAD의 PASS로 전용하지 않는다.
+- 근거: [Issue102](Issue102.md), [Issue96](Issue96.md), [ADR-051-R1](Decisions.md), [TestPlan](TestPlan.md). GitHub docs-only PR 생성/CI 시작은 PASS 및 운영 승인과 구별한다.
+
+
+## Issue #99 / PR #110 — 성공 HEAD와 #102 통합 HEAD 테스트 분리 (2026-10-25)
+
+- 원 P1 리뷰 보완 HEAD `6e00d3385a5c16362669d0672b828ddc1eaebf04`의 [PR CI 40197221768](https://github.com/planner77/layoutManager/actions/runs/40197221768)는 Verify Job `121180619434` 및 Docker Job `121180619279` 모두 **completed/success**. 이전 최초 HEAD `6377426`의 성공 [40195335561](https://github.com/planner77/layoutManager/actions/runs/40195335561)와 구별.
+- 후속 [#102 Main a14df20f](https://github.com/planner77/layoutManager/commit/a14df20f1fa466b7ede61ab3b4dc36f93daa014f)는 **문서 전용** ADR-051-R1 Owner 내부망 보안 범위 보완; #99 브랜치와 공통 문서 충돌을 해소할 때 두 정책을 보존하고 새로운 통합 HEAD로 PR CI 재검증 필요. **통합 HEAD 검증 결과는 새 Run 별도 확인 전 NOT VERIFIED**.
+- 현장 실 DXF 3종/GPU·CAD 좌표/오차·1k/10k/100k/Owner SLA·서명은 여전히 **NOT RUN**. 코드 CI 성공/후속 Main CI/GHCR 이미지 게시는 #113 현장 수용 PASS가 아니다. #113 OPEN/BLOCKED.
+
+
 ## Issue #99 현장 AC 추적 이전 — Issue #113 (2026-10-25)
 
 - 사용자의 Issue #99 종료 요청과 별개로, 실제 DXF 3종/1k·10k·100k Browser·GPU/CDR reference/오차·SLA·Owner 서명 **미수행/미완**은 [#113](https://github.com/planner77/layoutManager/issues/113)으로 독립 이관한다.

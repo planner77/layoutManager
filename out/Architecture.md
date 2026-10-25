@@ -1,5 +1,18 @@
 # Architecture 초안
 
+## Issue #102 / ADR-051-R1 — PROD Nginx·DEV Direct 경계 (2026-10-25)
+
+```text
+PROD: [사내 업무 PC] -> HTTP [Nginx] -> [layoutManager App] -> [SQLite/CAD/S3]
+DEV:  [개발 PC] -----------------> HTTP [별도 개발 App] -> [개발 DB/CAD]
+```
+
+- Owner는 공개망 인바운드가 제한된 사내망에서 공격 방어·탈취 대응을 **추가 개발 범위에서 제외**했다. 이 토폴로지는 업무 접속 방식이며 보안 시험/암호화 보장 표현이 아니다. HTTP 평문 위험은 `OWNER_ACCEPTED_SCOPE`로 기록한다([Issue102](Issue102.md), [ADR-051-R1](Decisions.md)).
+- PROD App direct host publish(`src/docker-compose.yml`의 `host_ip:0.0.0.0`)는 Nginx 단일 진입 계약에 대한 **배포 확인 필요 사항**이다. DEV direct는 별도 개발 서버/데이터에 한정된다. 실제 host/bind/upstream 설정은 G5에서 **비운영 계획/격리 시험**, G7 승인 이후에만 운영 적용한다.
+- Auth 도메인 순수 모듈·DB Session/Role/Site/Audit 및 기존 정상 접근 검사 흐름은 D1~D5대로 유지. 공격 시뮬레이션 전용 구현·침투검증은 G5/G6 필수 경로에서 제외. 데이터·권한·세션·감사·마이그레이션/복구 검증과 외곽선 원본 불변 계약은 유지.
+- 기존 Viewer/도면 조회 경로를 G0 문서만으로 인증 차단하거나 API에 신규 코드를 연결하지 않는다. 운영 로그인/관리/영속 API·Prisma·Proxy/Compose OFF.
+
+
 ## Issue #99 — 실설비 DXF Source/Render·Browser/GPU 증거 전용 경로 (2026-10-25)
 
 ### Issue #99 P1 — Repo-private evidence file-system boundary (2026-10-25)
