@@ -255,7 +255,10 @@ describe('Issue #97 D2 rigid composition, geometry integrity and hostile input',
    big.outlines[0].result.transformOperations=
      Array.from({length:OUTLINE_TRANSFORM_STEP_LIMIT+1},()=>({type:'Translate',dx:0,dy:0}));
    expectedError(()=>attest(f,big),'OUTLINE_TRANSFORM_INVALID');
-   const beyond=edited(f.input,[{type:'Translate',dx:1e12,dy:0}]);
+   // Construct the hostile claim without applying it through the browser
+   // helper: the client would reject the overflow before serializing it.
+   const beyond=edited(f.input,steps);
+   beyond.outlines[0].result.transformOperations=[{type:'Translate',dx:1e12,dy:0}];
    expectedError(()=>attest(f,beyond),'OUTLINE_TRANSFORM_RANGE');
    const unnatural=edited(f.input,steps);
    unnatural.outlines[0].result.tolerance=1000;
