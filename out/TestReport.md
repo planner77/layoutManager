@@ -1,5 +1,13 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE43-DEV-20261025 — U6 외곽선 트리 구현 검증 경계
+
+- 구현 코드: v0.36.0 우측 Tree Panel, 상단 토글, Reader legacy 분류 및 향후 검증 카탈로그 타입 투영, Overlay 별도 Group별 show/hide, WCS Bounds/하이라이트, Session 삭제/Version·Renderer·Reload 정리.
+- 테스트 추가: TC-U6-UNIT-001~003, TC-U6-E2E-001~002. 기존 U1~U5/Renderer/Legacy migration/Production Build 결과는 이 코드 변경 이후 아직 검증하지 않았다.
+- **로컬 npm ci, tsc, ESLint, Vitest, Playwright, Next build, 실제 DXF/GPU, native fullscreen: NOT RUN.** 브라우저와 Node 의존성을 갖춘 CI 성공 전 PASS 표시 금지.
+- 실제 관리자 타입 2개/typed-only 서버 카탈로그·인증·영속 GET/reload 복원은 BLOCKED #65/#31 P4. Test fixture로 대체 불가. 상세 [Issue43](Issue43.md).
+
+
 ## U-ISSUE42-PR70-FAIL-20261025 — E2E 회귀 원인 및 수정 검증 경계
 
 - [PR CI 40157734271](https://github.com/planner77/layoutManager/actions/runs/40157734271) (HEAD `526a1be`, completed/failure): Job `121062609278` npm ci/Prisma/Typecheck/ESLint/Unit·Integration/DXF Benchmark/Production Build PASS, Chromium E2E **57 PASS/1 FAIL** (`issue31-outlines.spec.ts:53` TC-OUT-E2E-001: 두 번째 선택 결과 0 vs 1), Legacy Migration SKIPPED. Docker Job `121062609436` SUCCESS.
