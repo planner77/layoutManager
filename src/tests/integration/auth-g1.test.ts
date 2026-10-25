@@ -8,7 +8,7 @@ import { migrate } from '../helpers/database';
 import { requirePermission, type UserAccess } from '../../domain/auth';
 import { SESSION_ABSOLUTE_MS, SESSION_IDLE_MS } from '../../server/auth/session';
 import {
-  applyG1Fixture, changeG1SiteGrant, consumeG1Recovery, disableG1User,
+  applyG1Fixture, changeG1SiteGrant, changeG1RoleGrant, changeG1SpecialGrant, consumeG1Recovery, disableG1User,
   fixtureCount, issueG1Session, openG1Fixture, resolveG1VersionSite,
   seedFixtureUser, type IsolatedDb,
 } from '../fixtures/auth-g1/store';
@@ -18,6 +18,7 @@ let directory: string;
 let filename: string;
 let db: IsolatedDb;
 const hash = (value: string) => createHash('sha256').update(value).digest('hex');
+const FIXTURE_DXF = '0\nSECTION\n2\nENTITIES\n0\nENDSEC\n0\nEOF\n';
 
 function seedCad(): void {
   db.prepare('INSERT INTO "BusinessUnit"(id,name) VALUES(?,?)').run('bu-a', 'Plant');
@@ -32,7 +33,7 @@ function seedCad(): void {
     const id = 'version-' + site;
     db.prepare('INSERT INTO "CadFileVersion"(id,location_id,version,original_filename,description,delete_password_hash,file_format,file_size,sha256,storage_path,registered_at) VALUES(?,?,1,?,?,?,?,?,?,?,?)')
       .run(id, 'floor-' + site, 'cad.dxf', 'fixture', 'scrypt$synthetic-delete-hash',
-        'DXF', 36, hash(site), 'storage/' + site + '.dxf', '2026-10-25');
+        'DXF', Buffer.byteLength(FIXTURE_DXF, 'utf8'), hash(FIXTURE_DXF), 'storage/' + site + '.dxf', '2026-10-25');
     db.prepare('UPDATE "CadLocation" SET current_version_id=?,next_version=2 WHERE id=?')
       .run(id, 'floor-' + site);
   }
@@ -156,6 +157,13 @@ describe('Issue #103 G1 isolated persistence contract', () => {
     changeG1SiteGrant(db, 'admin-a', 'reader-a', 'site-a', false, NOW, 'req-2');
     expect(fixtureCount(db, 'UserSiteGrant')).toBe(0);
     expect(fixtureCount(db, 'AuditEvent')).toBe(2);
+    expect(() => changeG1RoleGrant(db, 'admin-a', 'reader-a', 'Reader', true, NOW, 'req-role-fail', true)).toThrow();
+    expect(fixtureCount(db, 'UserRoleGrant')).toBe(1); // seeded Admin only
+    changeG1RoleGrant(db, 'admin-a', 'reader-a', 'Reader', true, NOW, 'req-role');
+    changeG1SpecialGrant(db, 'admin-a', 'reader-a', 'audit:read', true, NOW, 'req-audit');
+    changeG1SpecialGrant(db, 'admin-a', 'reader-a', 'logs:read', true, NOW, 'req-logs');
+    expect(fixtureCount(db, 'SpecialGrant')).toBe(2);
+    expect(fixtureCount(db, 'AuditEvent')).toBe(5);
     expect(() => db.prepare("UPDATE \"AuditEvent\" SET outcome='FAILED'").run()).toThrow('G1_AUDIT_APPEND_ONLY');
     expect(() => db.prepare('DELETE FROM "AuditEvent"').run()).toThrow('G1_AUDIT_APPEND_ONLY');
   });
@@ -223,12 +231,14 @@ describe('Issue #103 G1 isolated persistence contract', () => {
 
   test('TC-P4-G1-009: quiesced DB/CAD/local-S3 fixture backup → dry-run → real restore', async () => {
     const before = cadSnapshot();
-    const bytes = Buffer.from('0\nSECTION\n2\nENTITIES\n0\nENDSEC\n0\nEOF\n');
+    const bytes = Buffer.from(FIXTURE_DXF, 'utf8');
     const local = path.join(directory, 'local-cad.dxf');
     const s3Mirror = path.join(directory, 'mock-s3-object.dxf');
     await writeFile(local, bytes);
     await writeFile(s3Mirror, bytes);
     const expectedSha = hash(bytes.toString('utf8'));
+    expect(db.prepare('SELECT COUNT(*) AS n FROM "CadFileVersion" WHERE sha256=? AND file_size=?')
+      .get(expectedSha, bytes.byteLength)?.n).toBe(2);
     const backup = path.join(directory, 'backup.sqlite');
     const localBackup = path.join(directory, 'backup-local.dxf');
     const s3Backup = path.join(directory, 'backup-s3.dxf');

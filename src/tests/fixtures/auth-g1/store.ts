@@ -48,7 +48,7 @@ function atomic<T>(db: IsolatedDb, work: () => T): T {
   }
 }
 const count = (db: IsolatedDb, table: string): number => {
-  if (!['User','AuthSession','AuditEvent','UserSiteGrant','AdminRecoveryNonce'].includes(table)) throw new Error('UNKNOWN_TABLE');
+  if (!['User','AuthSession','AuditEvent','UserRoleGrant','UserSiteGrant','SpecialGrant','AdminRecoveryNonce'].includes(table)) throw new Error('UNKNOWN_TABLE');
   return Number(db.prepare('SELECT COUNT(*) AS n FROM "' + table + '"').get()?.n);
 };
 export function fixtureCount(db: IsolatedDb, table: string): number { return count(db, table); }
@@ -147,6 +147,41 @@ export function consumeG1Recovery(db: IsolatedDb, target: string, nonce: string,
     event(db, target, 'ADMIN_RECOVERY', 'ACCOUNT', target, now, requestId);
   });
 }
+/** All three grant kinds require the same Admin+Audit transaction boundary. */
+export function changeG1RoleGrant(db: IsolatedDb, actor: string, target: string, role: string,
+                                 enabled: boolean, now: number, requestId: string, injectFailure = false): void {
+  if (!['Reader','Editor','Admin'].includes(role)) throw new Error('G1_ROLE_INVALID');
+  atomic(db, () => {
+    requireAdmin(db, actor);
+    if (enabled) {
+      db.prepare('INSERT INTO "UserRoleGrant"(user_id,role,granted_by_user_id,granted_at) VALUES(?,?,?,?)')
+        .run(target, role, actor, now);
+    } else {
+      const removed = db.prepare('DELETE FROM "UserRoleGrant" WHERE user_id=? AND role=?').run(target, role);
+      if (removed.changes !== 1) throw new Error('G1_GRANT_NOT_FOUND');
+    }
+    if (injectFailure) throw new Error('G1_INJECTED_GRANT_FAILURE');
+    event(db, actor, enabled ? 'ROLE_GRANTED' : 'ROLE_REVOKED', 'ROLE', target + '_' + role, now, requestId);
+  });
+}
+export function changeG1SpecialGrant(db: IsolatedDb, actor: string, target: string, permission: string,
+                                    enabled: boolean, now: number, requestId: string, injectFailure = false): void {
+  if (!['audit:read','logs:read'].includes(permission)) throw new Error('G1_PERMISSION_INVALID');
+  atomic(db, () => {
+    requireAdmin(db, actor);
+    if (enabled) {
+      db.prepare('INSERT INTO "SpecialGrant"(user_id,permission,granted_by_user_id,granted_at) VALUES(?,?,?,?)')
+        .run(target, permission, actor, now);
+    } else {
+      const removed = db.prepare('DELETE FROM "SpecialGrant" WHERE user_id=? AND permission=?').run(target, permission);
+      if (removed.changes !== 1) throw new Error('G1_GRANT_NOT_FOUND');
+    }
+    if (injectFailure) throw new Error('G1_INJECTED_GRANT_FAILURE');
+    event(db, actor, enabled ? 'ROLE_GRANTED' : 'ROLE_REVOKED', 'ROLE',
+      target + '_' + permission.replace(':', '_'), now, requestId);
+  });
+}
+
 /** Version scope comes exclusively from persisted Version→Floor→Building→Site. */
 export function resolveG1VersionSite(db: IsolatedDb, versionId: string): string | null {
   const row = db.prepare('SELECT b.site_id AS site_id FROM "CadFileVersion" v JOIN "CadLocation" l ON l.id=v.location_id JOIN "Building" b ON b.id=l.building_id JOIN "CadSite" s ON s.id=b.site_id WHERE v.id=?')

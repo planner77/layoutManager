@@ -62,6 +62,9 @@ BEGIN
     SELECT 1 FROM "User" u
     WHERE u."id"=NEW."user_id" AND u."status"='ACTIVE' AND u."must_change_password"=0
   ) THEN RAISE(ABORT,'G1_ACCOUNT_INELIGIBLE') END;
+  SELECT CASE WHEN NEW."issued_at" < COALESCE(
+    (SELECT MAX(s."issued_at") FROM "AuthSession" s WHERE s."user_id"=NEW."user_id"), 0
+  ) THEN RAISE(ABORT,'G1_CLOCK_ROLLBACK') END;
   SELECT CASE WHEN (
     SELECT COUNT(*) FROM "AuthSession" s
     WHERE s."user_id"=NEW."user_id" AND s."revoked_at" IS NULL
