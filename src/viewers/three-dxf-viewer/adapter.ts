@@ -11,7 +11,7 @@ import type {OutlineResult} from '../core/outline-compute';
 import type {OutlineInfo,SavedOutline,SavedOutlineOverlayState} from '../core/adapter';
 import type {OutlineAssignment} from '../../domain/outline-assignment';
 import {parseOutlineAssignmentMetadata} from '../../domain/outline-assignment';
-import {canvasObjectRef,createGeneratedId,validCanvasScope,type CanvasObjectRef} from '../../domain/canvas-object-selection';
+import {canvasEditCapability,canvasObjectRef,createGeneratedId,validCanvasScope,type CanvasObjectRef} from '../../domain/canvas-object-selection';
 
 function release(group: THREE.Object3D) {
   const geometries = new Set<THREE.BufferGeometry>(), materials = new Set<THREE.Material>(), textures = new Set<THREE.Texture>();
@@ -317,6 +317,9 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
       ...this.selector.getSelectedGeneratedIds().map(id=>canvasObjectRef('GENERATED',id,this.outline!))];
   }
   clearCanvasObjectSelection(){this.selector?.clearObjects();}
+  getCanvasEditCapability(){
+    return canvasEditCapability(this.getCanvasObjectSelection(),this.outline??{versionId:'',sourceSha256:''});
+  }
   async previewOutline(kind:OutlineKind):Promise<OutlineResult> {
     if(!this.index||!this.selector)throw new Error(this.indexError??'DXF 객체 인덱스가 준비되지 않았습니다.');
     const selected=this.selector.getSelection();
