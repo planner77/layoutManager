@@ -63,7 +63,9 @@ export function CadMemoOverlay({
       }
     };
     window.addEventListener('blur', onCancel);
-    return () => window.removeEventListener('blur', onCancel);
+    window.addEventListener('scroll', onCancel, true);
+    return () => { window.removeEventListener('blur', onCancel);
+      window.removeEventListener('scroll', onCancel, true); };
   }, [onGestureActive]);
 
   function start(event: ReactPointerEvent<HTMLButtonElement>, memo: MemoDraft) {
@@ -121,6 +123,7 @@ export function CadMemoOverlay({
   const bounds = root.current?.getBoundingClientRect();
   return <div ref={root} data-testid="cad-memo-overlay"
     className="pointer-events-none absolute inset-0 z-20 overflow-hidden"
+    onWheelCapture={() => { if (gesture.current) cancelGesture(); }}
     data-memo-count={memos.length}
     data-placing={placing?'true':'false'}>
     {placing && <div role="button" tabIndex={0}
@@ -158,7 +161,8 @@ export function CadMemoOverlay({
         <span aria-hidden="true">M</span>
         <span aria-hidden="true" className="pointer-events-none absolute z-10 max-h-20 w-max max-w-40 overflow-hidden rounded border border-slate-300 bg-white/95 px-1.5 py-1 text-left text-[11px] font-normal leading-tight text-slate-900 shadow-sm"
           style={{left:12+memo.labelOffset.x,top:memo.labelOffset.y,whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>
-          {memo.title}
+          <strong className="block font-semibold">{memo.title}</strong>
+          {memo.content && <span className="mt-0.5 block max-h-12 overflow-hidden whitespace-pre-wrap font-normal text-slate-700">{memo.content}</span>}
         </span>
       </button>;
     })}
