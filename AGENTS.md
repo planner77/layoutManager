@@ -1,5 +1,13 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #102 / ADR-051-R1 — Owner 내부망 경량 보안 범위 결정 (2026-10-25)
+
+- **최신 우선 정책:** [Issue102](out/Issue102.md), [ADR-051-R1](out/Decisions.md). 운영은 공개망 인바운드 제한 사내 업무망의 **Nginx 경유**, 개발은 **개발 App 직접 접속**. 이전 #96 D6/G0~G7의 적대적 공격·계정/세션 탈취 대응/침투시험을 필수 보안 게이트로 제시한 문구는 R1에서 대체한다.
+- Owner는 HTTP 비암호화/내부망 탈취·변조 위험을 알고 **추가 공격 대비를 범위 밖으로 수용**했다(`OWNER_ACCEPTED_SCOPE`). 안전성 PASS·TLS 동등 보장·G7 운영 승인으로 해석하지 않는다. TLS/MFA/OIDC/SSO, 추가 per-client 보안 ACL, Header/Origin/CSRF 위조·브루트포스·패킷 탈취/침투시험은 새로운 필수요건이 아니다. 기존 비활성 검증 코드와 정상 흐름은 임의로 제거하지 않는다.
+- **여전히 필수:** D1~D5 User/Session/Role/Site/Audit, 계정/권한 업무 정확성, 원자 DB 및 정상 Session 만료/회수, 운영·개발 데이터 분리, PROD Nginx/DEV direct 실제 동작, 기존 도면/API 호환, 동일시점 DB/CAD/S3 백업·격리 migration·복구, QA·독립 G7 Owner Go/No-Go. 상세 CIDR·비밀은 공개 GitHub에 올리지 않는다.
+- 기존 `src/docker-compose.yml`의 `0.0.0.0:3000`은 운영 전용 Nginx 경로 충족 증거가 아니다. G5 격리 점검 후 G7에서만 실제 설정 변경; **운영 로그인/관리/영속 API, Prisma/DDL/migration, Nginx/Compose/.env/방화벽 변경·활성화 금지**. G0 문서 PR 시작이나 CI 성공도 운영 활성화 승인 아님.
+
+
 ## Issue #96 — D1~D6 Owner 세부 정책 및 비활성 구현 (2026-10-25)
 
 - **최신 기준:** [Issue96](out/Issue96.md) / [ADR-051](out/Decisions.md). 기존 #31 D0의 '관리자/세션/감사 세부값 미확정' 서술은 승인 이전 기록이며 다음 값이 우선한다.
