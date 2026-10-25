@@ -1,5 +1,23 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #107 / G5 — 비운영 PROD Nginx·DEV Direct 시험 계획 (2026-10-25)
+
+**Owner R1 우선:** 정상 연결·업무 기능 검증만 G5 필수; TLS/WAF/CIDR·CSRF/Host/Forwarded 공격 우회·탈취/침투 실증은 비범위. 보안 기능 PASS 주장 없음. [Issue107](Issue107.md).
+
+| TC | 점검 내용 | 방법/상태 |
+| --- | --- | --- |
+| TC-P4-G5-001 | PROD Nginx만 host publish, Proxy Upstream/Host·body limit 전달 | Vitest 정적 계약 + CI Docker Compose config; 새 HEAD 결과 전 NOT RUN |
+| TC-P4-G5-002 | DEV 직접 host port와 PROD/DEV 데이터 볼륨·net 독립, 운영 volume 재사용 0 | Vitest 정적 계약 + CI Compose config; 결과 전 NOT RUN |
+| TC-P4-G5-003 | Health 200/status ok, Home HTML, CAD list JSON, font 200, 선택적 Viewer/content 경로 | Mock Vitest + 실제 Preview read-only CLI(실행 여부 별도); NOT RUN |
+| TC-P4-G5-004 | Health 503·비정상 응답을 성공으로 보지 않음 | Mock Vitest; 결과 전 NOT RUN |
+| TC-P4-G5-005 | src/docker-compose.yml/.env·Prisma·API·운영 Nginx·원본 데이터 변경 0 | GitHub PR changed-file diff 검사 예정 |
+| TC-P4-G5-006 | Owner R1/익명 CAD GET 최신 업무 정책, 미실행 현장·Cookie·업로드 E2E 기록 | docs+Issue cross-check; G3/G6 실증 NOT RUN |
+| TC-P4-G5-LAN-001 | 조직 내 PC 2대 PROD Nginx→App, Viewer·등록/다운로드/Current·Cookie(후속 G3), DEV 분리 확인 | **G6 사내 현장/일회용 데이터에서만** 수동 시험, NOT RUN |
+
+- CI 검증은 Docker Compose **config-only**(profiles g5-prod/g5-dev)와 Vitest Mock이다. Docker Preview 실제 실행/Upload/Windows Nginx·WSL2/실 PC 연결·DB/CAD/S3 복구 수용을 자동으로 PASS 표시하지 않는다.
+- G5 결과는 #108 G6에 인계. #109 G7 Owner 별도 승인 전 운영 Auth/관리/영속 API/Prisma·Nginx·Compose 활성화 금지.
+
+
 ## Issue #102 / ADR-051-R1 — 보안 강화 비범위와 기능/운영 수용 시험 (2026-10-25)
 
 **정책:** HTTP와 계정/세션 탈취·공격 방어 관련 위험은 Owner가 `OWNER_ACCEPTED_SCOPE`로 결정했다. 이는 시험 성공이 아니라 해당 *공격 전용 대응/침투 실증을 완료 게이트에서 제외*한 기록이다. 기존 비활성 Auth helper 및 기존 작성된 단위테스트를 제거하는 지시가 아님. [Issue102](Issue102.md).
