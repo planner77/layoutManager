@@ -54,8 +54,8 @@ jobs:
           publish=true
           reason="Tagged release or runtime-affecting main change"
           if [[ "$GITHUB_REF" == "refs/heads/main" ]]; then
-            # Unknown or missing baseline fails closed for publishing safety:
-            # do not incorrectly classify a runtime change as documentation.
+            # Do not guess if the push baseline is missing: block release
+            # rather than risk an unintended GHCR publish.
             BEFORE="${EVENT_BEFORE:-}"
             if [[ "$BEFORE" =~ ^[0-9a-f]{40}$ ]] &&
                [[ ! "$BEFORE" =~ ^0+$ ]] &&
@@ -76,10 +76,12 @@ jobs:
                   esac
                 done
               else
-                reason="Empty diff: retain normal release gate"
+                publish=false
+                reason="Empty diff: no release-relevant change"
               fi
             else
-              reason="Missing/invalid before SHA: retain normal release gate"
+              echo "::error::Cannot verify main diff baseline; refusing GHCR publication"
+              exit 1
             fi
           fi
           echo "publish=$publish" >> "$GITHUB_OUTPUT"
@@ -88,7 +90,7 @@ jobs:
             echo "### Main CI / GHCR scope"
             echo "- Decision: $(if [[ "$publish" == "true" ]]; then echo 'Normal release gate'; else echo 'Skip all GHCR publication'; fi)"
             echo "- Reason: $reason"
-            echo "- Ref: `$GITHUB_REF`"
+            echo "- Ref: $GITHUB_REF"
           } >> "$GITHUB_STEP_SUMMARY"
           if [[ "$publish" == "false" ]]; then
             # Scope-validated documentation-only main CI; functional tests
