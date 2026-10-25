@@ -12,6 +12,7 @@ import { ViewerAppShell } from '@/features/cad-viewer/viewer-app-shell';
 import { ViewerMenuBar } from '@/features/cad-viewer/viewer-menu-bar';
 import { OutlineTreePanel } from '@/features/cad-viewer/outline-tree-panel';
 import { GeneratedDeleteDialog } from '@/features/cad-viewer/generated-delete-dialog';
+import {parseWcsTranslation,selectedTranslationIds} from '@/domain/generated-translate';
 import { initialViewerAppState, viewerAppReducer } from '@/features/cad-viewer/viewer-app-state';
 import { isLiveOutlineRequest, outlineToolUnavailableReason } from '@/features/cad-viewer/outline-tool-policy';
 import { ViewerManager, type OutlineInfo, type SavedOutline, type SavedOutlineOverlayState } from '@/viewers/core/adapter';
@@ -95,6 +96,9 @@ export function CadViewer({
   const [generatedHistory,setGeneratedHistory]=useState({undo:0,redo:0,limit:100});
   const [deleteRequest,setDeleteRequest]=useState<GeneratedDeleteRequest|null>(null);
   const [deleteError,setDeleteError]=useState<string|null>(null);
+  const [translateX,setTranslateX]=useState('0');
+  const [translateY,setTranslateY]=useState('0');
+  const [translateError,setTranslateError]=useState<string|null>(null);
   const [contextMenu,setContextMenu]=useState<{x:number;y:number}|null>(null);
   const [selectedOutlineTypeId,setSelectedOutlineTypeId]=useState('');
   const [outlineName,setOutlineName]=useState('');
@@ -228,6 +232,22 @@ export function CadViewer({
       setDeleteRequest(null);
     }
   },[deleteRequest,renderer,format,state.ready,canvasMode,versionId,sourceSha256,syncSavedOutlines]);
+  const applyTranslation=useCallback(()=>{
+    try{
+      const current=manager.current;
+      if(!current||renderer!=='three-dxf-viewer'||format!=='DXF'||
+         !state.ready||canvasMode==='pan'||outlineEnabledRef.current)
+        throw new Error('생성 개체 편집 모드에서 현재 도면을 연 뒤 이동하세요.');
+      const {dx,dy}=parseWcsTranslation(translateX,translateY);
+      const ids=selectedTranslationIds(
+        current.getCanvasObjectSelection(),current.getGeneratedObjects(),{versionId,sourceSha256});
+      current.executeGeneratedCommand({type:'Translate',ids,dx,dy});
+      setTranslateError(null);
+      syncSavedOutlines();
+    }catch(error){
+      setTranslateError(error instanceof Error?error.message:'이동이 거부되었습니다.');
+    }
+  },[renderer,format,state.ready,canvasMode,translateX,translateY,versionId,sourceSha256,syncSavedOutlines]);
   useEffect(()=>{
     if(!contextMenu)return;
     const close=(event:PointerEvent)=>{
@@ -293,6 +313,7 @@ export function CadViewer({
     setSavedOverlayStates([]);
     setGeneratedHistory({undo:0,redo:0,limit:100});
     setDeleteRequest(null);setDeleteError(null);setContextMenu(null);
+    setTranslateX('0');setTranslateY('0');setTranslateError(null);
     setCanvasMode('pan');
     setCanvasSelection([]);
     setSelectedOutlineTypeId('');
@@ -487,6 +508,7 @@ export function CadViewer({
             onObjectSelection:refs=>{if(active){setCanvasSelection(refs);syncSavedOutlines();}},
             onPreview:(value,error)=>{if(active && outlineEnabledRef.current){setPreview(value);setPreviewError(error??null);}},
             onSaved:count=>{if(active){setSavedCount(count);syncSavedOutlines();}},
+            onEditError:message=>{if(active)setTranslateError(message);},
           });
         }
         const { DxfViewerAdapter } = await import('@/viewers/dxf-viewer/adapter');
@@ -705,7 +727,7 @@ export function CadViewer({
         outlineAvailable || (renderer === 'three-dxf-viewer' && format === 'DXF' && state.ready && savedCount > 0) ? <>
           {outlineAvailable && <div data-testid="cad-object-selection-tools"
             className="flex flex-wrap items-center gap-2 border-b border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-800">
-            <strong>객체 선택 · 생성 개체 로컬 편집 (E3)</strong>
+            <strong>객체 선택 · 생성 개체 로컬 편집 (E3/E4)</strong>
             <Button size="sm" variant={canvasMode==='pan'&&!appState.outlineToolEnabled?'default':'outline'}
               data-testid="canvas-mode-pan" aria-pressed={canvasMode==='pan'&&!appState.outlineToolEnabled}
               onClick={()=>changeCanvasMode('pan')}>탐색 (Pan)</Button>
@@ -722,6 +744,31 @@ export function CadViewer({
               title={canDeleteSelection ? '현재 선택된 생성 개체 삭제' :
                 (deleteModeAvailable ? editCapability.reason : '생성 개체 편집 모드가 필요합니다.')}
               onClick={()=>openDelete()}>선택 삭제 ({generatedCount})</Button>
+            <form data-testid="generated-translate-form" className="flex flex-wrap items-center gap-1 rounded border border-slate-300 bg-white px-2 py-1"
+              onSubmit={event=>{event.preventDefault();applyTranslation();}}>
+              <span className="font-medium">WCS 평행이동</span>
+              <label htmlFor="generated-translate-x">ΔX</label>
+              <input id="generated-translate-x" data-testid="generated-translate-x" type="text" inputMode="decimal"
+                autoComplete="off" className="w-24 rounded border border-slate-300 bg-white px-1.5 py-1 text-slate-900"
+                value={translateX} onChange={event=>setTranslateX(event.target.value)}
+                aria-label="이동량 ΔX" disabled={!deleteModeAvailable}/>
+              <label htmlFor="generated-translate-y">ΔY</label>
+              <input id="generated-translate-y" data-testid="generated-translate-y" type="text" inputMode="decimal"
+                autoComplete="off" className="w-24 rounded border border-slate-300 bg-white px-1.5 py-1 text-slate-900"
+                value={translateY} onChange={event=>setTranslateY(event.target.value)}
+                aria-label="이동량 ΔY" disabled={!deleteModeAvailable}/>
+              <span data-testid="generated-translate-unit" className="text-slate-600">
+                {outlineInfo?.unitCode===4?'mm':outlineInfo?.unitCode===1?'inch':
+                  outlineInfo?.unitCode===6?'m':outlineInfo?.unitCode===5?'cm':
+                  outlineInfo?.unitCode==null||outlineInfo?.unitCode===0?'단위 미상':'INSUNITS '+outlineInfo.unitCode}
+              </span>
+              <button type="submit" data-testid="generated-translate-apply" disabled={!canDeleteSelection}
+                title={canDeleteSelection?'선택한 모든 생성 개체에 동일 ΔX/ΔY 적용':editCapability.reason}
+                className="rounded bg-teal-700 px-2.5 py-1 text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-400">
+                이동 적용 ({generatedCount})
+              </button>
+              <span className="text-slate-500">선택된 생성 개체 경계를 5px 이상 드래그하면 미리보기 후 확정 · Esc 취소</span>
+            </form>
             <Button size="sm" variant="outline" data-testid="generated-undo"
               disabled={generatedHistory.undo===0} title="생성 개체 편집 취소 (Ctrl/⌘+Z)"
               onClick={()=>manager.current?.undoGeneratedEdit()}>실행 취소 ({generatedHistory.undo})</Button>
@@ -817,6 +864,7 @@ export function CadViewer({
           {state.error && <p role="alert" className="text-xs text-red-700">{state.error}</p>}
           {outlineNotice && <p data-testid="outline-tool-notice" className="text-xs text-teal-800">{outlineNotice}</p>}
            {deleteError && <p data-testid="generated-delete-error" role="alert" className="text-xs text-red-700">{deleteError}</p>}
+           {translateError && <p data-testid="generated-translate-error" role="alert" className="text-xs text-red-700">{translateError}</p>}
           {outlineUnavailable && <p data-testid="outline-tool-unavailable" className="text-xs text-slate-500">{outlineUnavailable}</p>}
         </>
       }

@@ -1,6 +1,6 @@
 # CAD Web Viewer P.O.C.
 
-## v0.39.1 — Issue #93 도면 목록에서 이전 버전 표시·검색 복원
+## v0.40.1 — Issue #93 도면 목록에서 이전 버전 표시·검색 복원
 
 - **기본은 Current만 표시:** CAD 도면 목록(`/`)에 들어오거나 `초기화`를 누르면 Location별로 Current로 지정된 도면만 보입니다. 최신 등록/높은 V번호를 자동 Current로 지정하지 않습니다.
 - **이전 버전 검색:** 목록 검색 영역의 `현재 버전만 표시` 버튼이 기본 **ON**입니다. 버튼을 한 번 눌러 **OFF**로 바꾸면 기존 Current와 모든 이전 Version, Current 미지정 층의 도면까지 같은 표에 표시되며 파일명·설명·5단계 위치·DXF/DWG로 검색할 수 있습니다. 상태 배지/버전 번호 및 Viewer 열기·원본 다운로드·Current 지정 작업이 유지됩니다.
@@ -15,6 +15,12 @@
 - PR CI는 이를 읽기 전용으로 조회해 `PASS`, `NOT APPLIED`, `NOT VERIFIED` 중 하나를 경고/Job Summary로 표시합니다. 경고 자체는 다른 PR CI를 차단하지 않으며, 실제 설정 변경·새 Main CI 단일행 확인을 대체하지 않습니다. 세부 절차 [Issue76](out/Issue76.md) / [Operation](out/Operation.md).
 - 앱 버전, GHCR 게시 범위, 기존 #74 multiline 보호, DXF/DWG 데이터는 변동 없습니다.
 
+## v0.40.0 — Issue #54 생성 개체 WCS 이동·그룹 이동 (E4)
+
+- **DXF + three-dxf-viewer의 생성 확정 객체 전용:** 하단에서 **생성 개체만 선택** 또는 **원본·생성 선택**으로 GENERATED 개체 하나 또는 여러 개를 고른 뒤 **ΔX/ΔY → 이동 적용**을 누릅니다. 입력값은 도면 WCS XY 단위로 적용하며, 단위 정보가 없으면 **단위 미상**으로 표시합니다. 예: (10,20)에서 (+3,-5) 입력 시 (13,15).
+- **캔버스 직접 이동:** 생성 개체 전용 선택 모드에서 먼저 선택한 개체의 **외곽선 경계**를 5px 이상 드래그하면 청록색 미리보기만 움직입니다. 포인터를 놓을 때 확정하고 선택한 개체 전체가 같은 양만큼 이동합니다. Esc·포인터 취소·Space Pan·Zoom/Fit·모드 전환은 미리보기만 취소하며 편집 기록을 남기지 않습니다. 경계 이외의 드래그는 기존 영역 선택입니다.
+- **원자·복구:** SOURCE 또는 원본·생성 혼합 선택은 전체 거부. Polygon/MultiPolygon/Hole/트리 Focus/Hit/기존 JSON에 새 WCS 좌표가 반영되며 한 번의 이동=Undo 한 단계. 기존 원본 DXF/Layer/SHA/Current·DB/API는 불변, 세션 종료·Reload/Renderer 교체 시 브라우저 임시 개체가 사라집니다. 서버 영구 저장은 #31 P4 승인 전 불가합니다.
+- [Issue #54 설계](out/Issue54.md) · [검증 계획](out/TestPlan.md). **로컬 검증/실 CAD/GPU/native Fullscreen은 NOT RUN이며 CI 시작을 성공으로 보지 않습니다.**
 
 ## v0.39.0 — Issue #53 생성 개체 개별·다중 삭제 (E3)
 
@@ -109,7 +115,7 @@ Issue #52 CI에서 발견한 테스트 간 공유 geometry 오염을 교정했�
 - **호환성**: 일반 화면은 기존 레이어 선택 드롭다운을 유지. `dxf-viewer`·DWG·빈 도면/로딩/오류에서는 레이어 메뉴가 비활성화된다. 작은 화면에서는 패널과 Canvas가 겹치지 않는 도킹 레이아웃. Browser native fullscreen은 명시 클릭에서만 동작.
 - 버전 0.32.0은 **UI 개선**이며 도면/DB/API/Renderer/원본 파일의 형식을 변경하지 않는다. 실행 검증 결과는 [Issue39](out/Issue39.md)·[TestPlan](out/TestPlan.md)·[TestReport](out/TestReport.md)를 참조한다. PR CI/실기기 증거 확인 전 수용 완료를 주장하지 않는다.
 
-> **역사 정책(후속 #93에서 변경):** 다음 0.31.0 절은 #45 당시 동작 기록입니다. 현재 기본 Current+전체 버전 검색 정책은 위 v0.39.1을 우선합니다.
+> **역사 정책(후속 #93에서 변경):** 다음 0.31.0 절은 #45 당시 동작 기록입니다. 현재 기본 Current+전체 버전 검색 정책은 위 v0.40.1을 우선합니다.
 
 ## v0.31.0 — Issue #45 현재 도면만 목록에 표시
 

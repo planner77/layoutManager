@@ -1,7 +1,7 @@
 # Issue #93 — 도면 목록 Current 기본 유지 및 이전 버전 표시·검색 복원
 
 - 요청/이슈: https://github.com/planner77/layoutManager/issues/93
-- 기준일: 2026-10-25 / 대상 버전 `0.39.1` (기존 기능 회귀 수정/PATCH)
+- 기준일: 2026-10-25 / 대상 버전 `0.40.1` (기존 기능 회귀 수정/PATCH)
 - 작업 기준: `main 14111b45a36907245342751d9d1a139b5215474d` → `fix/issue-93-drawing-history-search`
 - 설계: `AGENTS.md`, `out/Requirements.md`, `out/Architecture.md`, `out/Decisions.md` ADR-034-R1. 별도 `DESIGN.md`는 저장소에 없음.
 - 현 단계: 코드/테스트/문서 작성 및 원격 feature branch 갱신. 로컬 테스트·CI 성공·병합·GHCR **미검증**.

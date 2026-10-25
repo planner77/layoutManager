@@ -10,6 +10,19 @@
 - **Supersession:** 아래 ADR-034의 '홈 항상 Current·토글 제거' 문장만 R1으로 대체하고 기타 API/보안/이력 경로 결정은 유지한다. [Issue93](Issue93.md)/[Requirements](Requirements.md)/[TestPlan](TestPlan.md).
 
 
+### ADR-047 보완 — Camera 변경 시 GENERATED 드래그 후보 임계값 이전이라도 폐기 (#54 PR #92)
+
+- [P1 리뷰](https://github.com/planner77/layoutManager/pull/92#discussion_r4370223581)의 원인은 `SelectionController.cancelGeneratedDrag`가 `down.moving`만 검사해 pointerdown 후 5px 미만의 후보를 wheel/Resize 이후에도 유지한 것이다. 화면/카메라 변환 경계가 바뀌면 이전 `down.world`는 유효하지 않다.
+- **결정:** 휠/Resize/Fit/Zoom 등 camera change에서 모든 활성 pointer/box/ghost를 `cancelDrag` 경로로 취소한다. 이동 확정은 해당 입력 제스처의 최초→최종 WCS가 같은 카메라 상태에서 계산된 경우에만 허용한다. Stage 취소/History0 및 기존 SOURCE/로컬 보안 경계 유지. `TC-E4-E2E-004` 추가.
+
+
+## ADR-047 — E4 생성 개체 이동은 WCS Camera 역투영 + Scene Ghost + E2 원자 Translate로 분리 (2026-10-25 / #54)
+
+- **문제:** E2에는 `Translate` 명령·Undo가 있지만 실제 Pointer/숫자 UX가 없고, #51 Drag Selection 및 OrbitControls Pan과 동일 pointer를 경쟁시키면 의도치 않은 DXF/Overlay 변경 위험이 있다. 화면 Pixel을 WCS로 저장하는 방법은 Zoom/고 DPI/Fullscreen에서 틀리다.
+- **결정:** GENERATED 전용 모드에서 *이미 선택된 경계*의 modifier 없는 5px 이상의 제스처만 이동, 기타 입력은 기존 #31/#51 선택. `screenToWorld` canvas CSS rectangle→orthographic camera.unproject로 WCS 변위 산정. 수치 입력은 독립 strict parse, `$INSUNITS` 미상 표기. 전 선택 집합은 GENERATED·유일 ID·Scope/visible 일치 검증, 혼합/SOURCE 필터링 후 부분 실행은 금지.
+- **미리보기/원자성:** Ghost는 별도 THREE.Group으로 Scene에만 존재하고 Document에는 stage만 기록(History 0). pointerup에서만 최신 선택을 다시 검증해 `Translate` 한 번=Undo 한 단계. ESC/cancel/lostpointercapture/Space/2차 touch/blur/Zoom/Fit/Resize/모드·선택·Dispose는 rollback, GPU 자원 해제. Scene/Tree/JSON/Hit/bounds는 기존 E2 Document projection과 동일하며 변환 전후 NaN/Infinity/1e12 bounds는 fail-closed.
+- **결과/미지원:** 원본 DXF, Source Index/Layer, Version/SHA, server API/DB, #31 P4 보안 승인 미변경. 스냅/그리드/3D Z/Rotate/영구 Import는 E4 제외. 성능 최적화는 100개/100k vertices의 기존 E2 상한을 따르며 GPU/실 CAD/native fullscreen 검증은 별도. [Issue54](Issue54.md), [TestPlan](TestPlan.md).
+
 ## ADR-046 — E3 GENERATED 삭제는 E2 원자 Command로 단일화하고 확인 시점에 다시 검증 (2026-10-25 / #53)
 
 - **문제:** 기존 U6 `deleteSavedOutline→discardLegacy`는 직접 제거/Undo 초기화를 사용해 #52의 원자·이력·scope 검증을 우회한다. UI만 생성 OFF에 묶으면 생성과 편집을 분리한 E1/#49 계약도 위반한다.
@@ -147,7 +160,7 @@
 - **Rejected:** (1) 패널 상태와 실제 `selectedLayers`를 결합→CAD 객체 가시성 변경 위험. (2) 패널 닫을 때 ViewerManager/Adapter reload→camera/source/Selection 유실. (3) 숨긴 내용을 키보드 탐색 가능한 상태로 유지→접근성/포커스 문제. (4) 미지원 Renderer에서도 빈 도크 노출→기능 오인.
 - **Effects:** 기존 #17 레이어 조작/Canvas 생명주기, #25 CSS/native Fullscreen 및 #38 compact 도킹 유지. 패널 토글만으로 재파싱·영속 데이터 변경 없음. 실제 native/접근성 실기기 수용은 E2E 모의 이벤트와 구분. [Issue39](Issue39.md).
 
-> **후속 변경 #93 / ADR-034-R1:** 아래 ADR-034는 0.31.0 당시 정책 기록입니다. 홈 Current-only 고정 및 토글 제거는 0.39.1부터 대체합니다. API 이력 조회 불변 원칙은 유지합니다.
+> **후속 변경 #93 / ADR-034-R1:** 아래 ADR-034는 0.31.0 당시 정책 기록입니다. 홈 Current-only 고정 및 토글 제거는 0.40.1부터 대체합니다. API 이력 조회 불변 원칙은 유지합니다.
 
 ## ADR-034 — 홈 Current 전용 목록, API 이력 조회 유지 (2026-10-25 / Issue #45)
 

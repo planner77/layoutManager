@@ -1,6 +1,6 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
-## Issue #93 / v0.39.1 — Current 기본·전체 버전 검색 토글 회귀 (2026-10-25)
+## Issue #93 / v0.40.1 — Current 기본·전체 버전 검색 토글 회귀 (2026-10-25)
 
 | TC | 연계 AC | 시나리오 / 기대 결과 | 상태 |
 | --- | --- | --- | --- |
@@ -31,6 +31,50 @@
 
 - Bash `set -euo pipefail` 구문 점검과 REST 응답 mock 분기는 별도로 확인한다. GitHub Actions Runner의 실제 output 및 적용 후 Main title은 원격 workflow/run 증거가 있어야 PASS이다. 설정 불일치는 CI 자체 실패가 아니므로 FailedLedger에 가짜 Failure로 기록하지 않는다. [Issue76](Issue76.md).
 
+### Issue #54/#76 최신 main 통합 검증 (2026-10-25)
+
+- 원본 수정 HEAD `6845c4b4`의 PR CI #40181171710 성공은 확인했다. #76 비차단 읽기 전용 CI 진단 추가 및 문서 병합 결과의 새 HEAD CI는 별도 검증 대상. TC-E4-E2E-001~004/#31·#51·#52·#53/Docker/Legacy를 유지하며 #76의 관리자 설정 미적용은 앱 CI 실패로 오인하지 않는다.
+
+## Issue #76 — GitHub Squash 기본 메시지 관리자 정책 및 진단 (2026-10-25)
+
+| TC | 조건 | 기대 / 실패 분류 | 실행 현황 |
+| --- | --- | --- | --- |
+| TC-CI-76-001 | API `true / PR_TITLE / BLANK` fixture | `PASS`, Summary PASS, CI 정상 진행 | 로컬 Bash fixture PASS |
+| TC-CI-76-002 | API `true / COMMIT_OR_PR_TITLE / COMMIT_MESSAGES` fixture | warning + `NOT APPLIED`, CI 진단은 non-blocking; 관리자 승인 **미완료** | 로컬 Bash fixture PASS, 실제 REST 불일치 확인 |
+| TC-CI-76-003 | 잘못된 JSON/배열 fixture | warning + `NOT VERIFIED`, 잘못된 응답을 PASS로 처리 금지 | 로컬 Bash fixture PASS |
+| TC-CI-76-004 | REST GET 실패 | warning + `NOT VERIFIED`, 다른 앱 CI 방해 금지 | 설계/셸 분기 검사; CI 미실행 |
+| TC-CI-76-005 | 관리자 설정 변경 + 새로운 PR squash | GET 3항목 PASS, main commit subject 단일행/body 빈 문자열, `MAIN CI | #N | 설명` | **BLOCKED: 관리자 설정 미적용** |
+| TC-CI-76-006 | PR CI YAML diff 및 GHCR scope | 기존 trigger/permissions/concurrency/Typecheck·Docker·GHCR 의사결정 불변, docs/workflow-only Main은 GHCR SKIP | 정적 확인, PR CI 미실행 |
+
+- Bash `set -euo pipefail` 구문 점검과 REST 응답 mock 분기는 별도로 확인한다. GitHub Actions Runner의 실제 output 및 적용 후 Main title은 원격 workflow/run 증거가 있어야 PASS이다. 설정 불일치는 CI 자체 실패가 아니므로 FailedLedger에 가짜 Failure로 기록하지 않는다. [Issue76](Issue76.md).
+
+### Issue #54 P1 리뷰 대응 — 임계값 이전 Wheel/Resize Cancellation
+
+| TC | 기대 결과 | 검증 상태 |
+| --- | --- | --- |
+| TC-E4-E2E-004 | 선택된 GENERATED 경계 pointerdown 5px 미만 → wheel zoom → 25px move/up에서 Ghost 및 Document 변경 없음, Undo0, JSON 불변, 기존 선택 유지 | 코드 추가 / 수정 HEAD CI NOT RUN |
+| TC-E4-E2E-004 | 선택된 GENERATED 경계 pointerdown 5px 미만 → native viewport Resize → move/up에서도 위 결과 동일 | 코드 추가 / 수정 HEAD CI NOT RUN |
+| 기존 E4-E2E-003 및 #31/#51/#52/#53 | 정상 Ghost→단일 Commit, ESC 취소, 원본/영역 선택/Undo 회귀 | 최초 HEAD CI SUCCESS; 수정 HEAD 재검증 필요 |
+
+[기존 성공 CI #40177837419](https://github.com/planner77/layoutManager/actions/runs/40177837419)는 `2f57a642`에서 Verify·Docker 성공이며 새 코드까지 검증한 것은 아니다.
+
+
+## Issue #54 / E4 v0.40.0 — WCS 이동·그룹 드래그 수용 검사 (2026-10-25)
+
+| Test Case | AC | 검증 내용 | 현재 |
+| --- | --- | --- | --- |
+| TC-E4-UNIT-001 | AC1/4 | strict ΔX/ΔY 수치(+3,-5/.5/지수), empty/NaN/Infinity/0/1e12 상한, Preview bbox overflow | 코드 작성 / NOT RUN |
+| TC-E4-UNIT-002 | AC1/2 | (10,20)→(13,15), 다중 같은 delta, Polygon/MultiPolygon/Hole, bounds·stroke hit·metadata/UUID·UndoRedo 1단계 | 코드 작성 / NOT RUN |
+| TC-E4-UNIT-003 | AC1/3 | SOURCE/혼합/중복/다른 SHA/없음/hidden/invalid 전부 거부, Document·History 무변경 | 코드 작성 / NOT RUN |
+| TC-E4-UNIT-004 | AC2/3 | staged preview 0 history, ESC/cancel 0 history, pointerup 1단계, 중간 선택 변경 atomic fail | 코드 작성 / NOT RUN |
+| TC-E4-E2E-001 | AC1/2/4 | 합성 DXF에서 다중 수치 +3/-5, Tree/JSON geometry, Undo/Redo 동일 복구, mm 단위 표시 | 코드 작성 / NOT RUN |
+| TC-E4-E2E-002 | AC3/4 | invalid numeric/mixed SOURCE/Pan 거부, Reload/미지원 Renderer 제한 | 코드 작성 / NOT RUN |
+| TC-E4-E2E-003 | AC2/3 | 이미 선택한 외곽 경계 5px Ghost, ESC 취소→History0, pointerup→History1, Canvas↔WCS displacement | 코드 작성 / NOT RUN |
+| Regression | AC3/4 | 기존 #17/#25/#26/#31/#38/#39/#40/#42/#43/#51/#52/#53 및 Worker/Legacy, WCS/Zoom/Layer/Source 안전성 | NOT RUN |
+| 현장 | AC2/3/4 | Native Fullscreen·Touch/pointercancel 브라우저별 실기기, GPU 회수·고 DPI·대형/실 DXF, DWG 비지원 | NOT RUN |
+
+- 실행 게이트: `cd src && npm ci && npm run db:generate && npm run typecheck && npm run lint && npm test && npm run build && npm run test:e2e && npm run test:master-migration`. 사용 가능한 원격 GitHub connector는 코드 변경/PR CI 트리거만 지원하며 본 세션 container checkout은 DNS 문제로 불가. 수행하지 않은 검증은 PASS 아님.
+- 관련 근거: [Issue54](Issue54.md), [TestReport](TestReport.md), [ADR-047](Decisions.md).
 
 ## Issue #53 / E3 v0.39.0 — 삭제 편집 AC 검증 (2026-10-25)
 
