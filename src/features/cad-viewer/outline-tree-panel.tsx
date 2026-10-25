@@ -10,6 +10,7 @@ type Props = {
   overlayStates: readonly SavedOutlineOverlayState[];
   types: readonly OutlineTreeType[];
   allowDelete: boolean;
+  deleteUnavailableReason?: string;
   onSelect: (id: string, additive?: boolean) => void;
   onVisibility: (id: string, visible: boolean) => void;
   onGroupVisibility: (ids: string[], visible: boolean) => void;
@@ -21,7 +22,7 @@ type Props = {
  * Buttons control overlays, never Source layers or ViewerManager.load().
  * Keyboard navigation is on the treeitems, independent of action buttons. */
 export function OutlineTreePanel({
-  outlines, overlayStates, types, allowDelete,
+  outlines, overlayStates, types, allowDelete, deleteUnavailableReason,
   onSelect, onVisibility, onGroupVisibility, onDelete, onClose,
 }: Props) {
   const groups = buildOutlineTree(outlines, overlayStates, types);
@@ -157,9 +158,10 @@ export function OutlineTreePanel({
                             className="shrink-0 rounded border border-slate-400 px-1">
                             {item.visible ? '숨김' : '표시'}
                           </button>
-                          <button type="button" disabled={!allowDelete}
-                            title={allowDelete ? '이 임시 외곽선 삭제' : '삭제하려면 외곽선 생성 도구를 켜세요.'}
-                            aria-label={item.name + ' 삭제'}
+                          <button type="button" disabled={!allowDelete || !item.visible}
+                            title={!item.visible ? '숨김 개체는 표시한 뒤 삭제할 수 있습니다.' :
+                              (allowDelete ? '선택한 생성 개체 삭제 (실행 취소 가능)' : (deleteUnavailableReason??'생성 개체 편집 모드를 선택하세요.'))}
+                            aria-label={item.name + ' 삭제'} data-testid="outline-tree-delete"
                             onClick={event => { event.stopPropagation(); onDelete(item.id); }}
                             className="shrink-0 rounded border border-slate-400 px-1 disabled:opacity-40">
                             삭제

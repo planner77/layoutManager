@@ -95,7 +95,11 @@ test('TC-U6-E2E-001: legacy tree, individual/group overlay visibility, focus and
   await toolMenu.click();
   await expect(toolMenu).toHaveAttribute('aria-pressed','false');
   await expect(panel.getByTestId('outline-tree-item')).toHaveCount(2);
+  // E3: Outline tool OFF is not an edit mode. Confirmed objects become deletable
+  // only after entering the independent generated edit/selection mode.
   await expect(first.getByRole('button',{name:'외곽선 1 삭제'})).toBeDisabled();
+  await page.getByTestId('canvas-mode-generated').click();
+  await expect(first.getByRole('button',{name:'외곽선 1 삭제'})).toBeEnabled();
   const pending=page.waitForEvent('download');
   await page.getByTestId('outline-saved-tools').getByRole('button',{name:/JSON 내보내기/}).click();
   const downloaded=JSON.parse(await readFile(await (await pending).path(),'utf8'));

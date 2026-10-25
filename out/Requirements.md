@@ -1,5 +1,14 @@
 # 상세 요구사항
 
+## Issue #53 / E3 v0.39.0 — 선택 GENERATED 삭제·확인·Undo/Redo (2026-10-25)
+
+- **FR-E3-01 / AC1/2:** DXF+three-dxf-viewer에서 현재 생성 외곽선 단일/복수 삭제를 편집 도구바, #43 Tree 행, 선택된 Canvas 개체의 우클릭 작업, Canvas 초점 Delete/Backspace에 동일한 E2 `Delete(ids)`로 제공. 이름·개수 확인, 취소하면 상태 및 이력 무변경.
+- **FR-E3-02 / AC3:** SOURCE와 SOURCE+GENERATED 혼합, 누락·중복·숨김·다른 Version/SHA Ref, selection/모드 변경 요청을 UI·Manager/Adapter·GeneratedDocument 도메인에서 fail-closed. 트리 행 액션으로 혼합 선택의 SOURCE를 자동 제거하여 편집 가능하게 만드는 행위 금지.
+- **FR-E3-03 / AC2/4:** 한 번의 atomic Delete=1 undo step, Undo/Redo로 기존 UUID/legacy local-N·기준 WCS Geometry/Transform/metadata/visibility·정렬 복구, 제거된 선택/트리 포커스 정리. 남은 Scene/Preview/Source/레이어 유지, 제거 GPU Geometry/Material dispose, 재생성 ID 충돌 금지.
+- **FR-E3-04 / AC4:** 생성 Tool #40 OFF 기본 Pan 독립 정책 유지하되 생성 편집 모드 진입 시 삭제 가능. keyboard는 Canvas 실제 초점 + modifier 없는 Delete/Backspace만, textarea/input/searchbox/contenteditable 및 다른 UI native 입력 보호. ESC=삭제 확인창/컨텍스트→staged 취소→selection→fullscreen; Renderer/Version/reload/dispose 수명 종료.
+- **NFR-E3-01 / AC3/5:** 원본 DXF bytes/SHA/Layer/Current, Source Geometry·Worker Preview, DB/Migration/Server API 및 P4 보안 정책 변경 없음. 기존 JSON v1/typed v2 export는 남은 Document 투영, JSON edit import는 #56. [Issue53](Issue53.md)/ADR-046/TC-E3 참조.
+
+
 ## Issue #52 / E2 v0.38.0 — 생성 개체 로컬 Document 및 명령 이력 (2026-10-25)
 
 - **FR-E2-01 / AC1:** E1 불변 UUID/Version/SHA Generated Ref에 생성 시 기준 WCS XY Polygon/MultiPolygon/Hole, source Entity provenance/algorithm, name/type/kind/visibility, edited/dirty, 편집 affine 변환을 단일 브라우저 Document에서 관리한다. #43 Scene/Tree/Export는 파생 뷰이며 원본 DXF/Preview는 포함하지 않는다.

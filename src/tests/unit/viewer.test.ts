@@ -64,7 +64,6 @@ test('TC-U6-UNIT-003: manager safely delegates only confirmed outlines without a
   a.focusBounds = vi.fn();
   a.selectSavedOutline = vi.fn(()=>true);
   a.setSavedOutlineVisibility = vi.fn(()=>true);
-  a.deleteSavedOutline = vi.fn(()=>true);
   a.showLayer = vi.fn();
   const manager = new ViewerManager(async()=>a);
   await manager.load('/drawing','DXF');
@@ -74,7 +73,7 @@ test('TC-U6-UNIT-003: manager safely delegates only confirmed outlines without a
   expect(a.focusBounds).toHaveBeenCalledWith({minX:0,minY:0,maxX:10,maxY:10});
   expect(a.selectSavedOutline).toHaveBeenCalledWith('local-1');
   expect(manager.setSavedOutlineVisibility('local-1',false)).toBe(true);
-  expect(manager.deleteSavedOutline('local-1')).toBe(true);
+  expect(manager.selectSavedOutline('local-1')).toBe(true);
   expect(a.showLayer).not.toHaveBeenCalled();
   manager.dispose();
   expect(manager.focusSavedOutline('local-1')).toBe(false);

@@ -40,7 +40,7 @@ export type GeneratedEntry=Readonly<{
 type Patch=Readonly<{id:string;index:number;before:GeneratedEntry;after?:GeneratedEntry}>;
 type History=Readonly<{type:GeneratedCommand['type'];patches:readonly Patch[];bytes:number}>;
 type Pending=Readonly<{command:GeneratedCommand;selection:readonly CanvasObjectRef[]}>;
-export type GeneratedDocumentEvent=Readonly<{type:'append'|'change'|'visibility'|'legacy-delete'|'clear'|'undo'|'redo'}>;
+export type GeneratedDocumentEvent=Readonly<{type:'append'|'change'|'visibility'|'clear'|'undo'|'redo'}>;
 
 const MAX_WCS=1e12;
 const MAX_TRANSLATE=1e12;
@@ -204,15 +204,6 @@ export class GeneratedDocument{
     if(this.objects[index].visible===visible)return true;
     this.objects=this.objects.map((o,i)=>i===index?Object.freeze({...o,visible,dirty:true}):o);
     this.pending=null;this.emit('visibility');return true;
-  }
-  /** Backward compatible #43 single-row deletion, not an E3 edit command.
-   * History is invalidated so an old undo can never resurrect discarded data. */
-  discardLegacy(savedOutlineId:string):boolean{
-    this.assertLive();
-    if(!this.objects.some(o=>o.savedOutlineId===savedOutlineId))return false;
-    this.objects=this.objects.filter(o=>o.savedOutlineId!==savedOutlineId);
-    this.pending=null;this.undoEntries=[];this.redoEntries=[];
-    this.emit('legacy-delete');return true;
   }
   private prepare(command:GeneratedCommand,selection:readonly CanvasObjectRef[]){
     this.assertLive();

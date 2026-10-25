@@ -57,6 +57,7 @@ export class SelectionController {
  private space=false;
  private previousPosition:string;
  private previousCursor:string;
+ private previousTabIndex:string|null;
  constructor(
    private canvas:HTMLCanvasElement,
    private container:HTMLElement,
@@ -71,6 +72,8 @@ export class SelectionController {
    this.visible=new Set(entities.map(e=>e.layer));
    this.previousPosition=container.style.position;
    this.previousCursor=canvas.style.cursor;
+   this.previousTabIndex=canvas.getAttribute('tabindex');
+   if(this.previousTabIndex===null)canvas.tabIndex=0;
    container.style.position='relative';
    this.box=document.createElement('div');
    this.box.dataset.outlineSelectionBox='true';
@@ -106,6 +109,15 @@ export class SelectionController {
  }
  getSelection(){return this.entities.filter(e=>this.ids.has(e.id));}
  getSelectedGeneratedIds(){return [...this.generatedIds];}
+ /** Right-click context actions must hit an already-selected confirmed shape. */
+ isSelectedGeneratedAt(clientX:number,clientY:number):boolean {
+   if(!this.generatedIds.size)return false;
+   const [x,y]=this.position(clientX,clientY);
+   const world=this.screenToWorld(x,y),near=this.screenToWorld(x+CLICK_PX,y);
+   const radius=Math.hypot(near[0]-world[0],near[1]-world[1]);
+   return this.generated.some(item=>this.generatedIds.has(item.id) &&
+     geometryHitPoint(item.geometry,world,radius));
+ }
  selectGenerated(id:string,additive=false):boolean{
    if(!this.generated.some(item=>item.id===id))return false;
    if(!additive){this.ids.clear();this.generatedIds.clear();}
@@ -131,6 +143,7 @@ export class SelectionController {
  private pointerDown=(event:PointerEvent)=>{
    if(this.mode==='pan'||this.space||event.button!==0)return;
    const [x,y]=this.position(event.clientX,event.clientY);
+   this.canvas.focus({preventScroll:true});
    this.down={pointerId:event.pointerId,x,y,mod:event.ctrlKey||event.metaKey};
  };
  private pointerMove=(event:PointerEvent)=>{
@@ -196,6 +209,11 @@ export class SelectionController {
  };
  private pointerCancel=()=>this.cancelDrag();
  private keyDown=(event:KeyboardEvent)=>{
+   // E3 overlays are siblings of the WebGL canvas inside the same workspace.
+   // Their Escape closes only the top layer; it must not clear the underlying
+   // selection, even when this capture listener was registered earlier.
+   if(event.key==='Escape' &&
+     this.container.parentElement?.querySelector('[data-canvas-edit-escape-layer]'))return;
    const el=event.target as HTMLElement|null;
    if(el?.closest('input,textarea,select,[contenteditable="true"]'))return;
    if(event.code==='Space'&&this.mode!=='pan'&&!event.repeat){
@@ -220,6 +238,8 @@ export class SelectionController {
    window.removeEventListener('keyup',this.keyUp,true);
    window.removeEventListener('blur',this.blur);
    this.box.remove();this.canvas.style.cursor=this.previousCursor;this.container.style.position=this.previousPosition;
+   if(this.previousTabIndex===null)this.canvas.removeAttribute('tabindex');
+   else this.canvas.setAttribute('tabindex',this.previousTabIndex);
    this.onPanKey(true);
  }
 }
