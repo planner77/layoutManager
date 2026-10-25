@@ -1,5 +1,28 @@
 # Issue #31 — DXF 복수 선택과 볼록·정밀 외곽선 (0.27.0)
 
+## 2026-10-25 — P4 D0 Owner 정책 확정 (설계만 승인 / 운영 미승인)
+
+> **현재 우선 계약:** [ADR-048/049](Decisions.md)와 [Database](Database.md), [Architecture](Architecture.md), [Requirements](Requirements.md), [TestPlan](TestPlan.md). 이하 2026-10-16의 OIDC 권장·미결정 기록 및 브라우저 임시 구현 설명은 해당 시점의 이력이다. #31은 OPEN, P0 실 DXF/P5 GPU·현장 수용과 P4 서버 운영 CRUD는 완료 아님.
+
+| ID | 확정 Owner 정책 |
+| --- | --- |
+| P4-POL-01 | 앱 로컬 계정 + 서버 관리 세션. 인터넷 인바운드 제한된 사내 LAN의 여러 PC가 서버 IP HTTP로 접속; HTTPS/TLS·OIDC/SSO/MFA 구축은 범위 밖. 계정은 권한/작업자 식별/감사 목적. HTTP 도청·세션 탈취 위험은 별도 표기하고 TLS 수준 보안 주장 금지 |
+| P4-POL-02 | `OutlineType` 관리 범위는 **전체 앱 공통**. 하지만 개별 CAD·외곽선/메모 접근은 Site/Version Scope로 제한 |
+| P4-POL-03 | Editor는 담당 Scope 안에서 작성자가 다른 외곽선도 공동 수정·논리 삭제 가능. `createdBy` 불변, `updatedBy`/CAS/감사 |
+| P4-POL-04 | GENERATED 이동·회전 결과는 **서버 원본 Canonical Geometry + 제한된 Transform을 재검증한 후에만** 저장 허용. 기존 `attestation.ts` canonical-only 경로를 무조건 편집 저장으로 해석하지 않음 |
+| P4-POL-05 | 외곽선 삭제는 논리 삭제 및 감사 보존. 물리 파기·복원/Version DELETE 연쇄정책은 미확정 |
+| P4-POL-06 | 외곽선 Show/Hide는 **사용자 세션별** UI 상태. 다른 사용자/DB 공유값 수정 금지 |
+| P4-POL-07 | 삭제된 객체에 연결된 메모는 마지막 유효 WCS 위치에 고정, 참조 해제 및 `BROKEN_ANCHOR` 표시. 자동 재연결·메모 삭제 금지 |
+
+**Source/Generated 영속 참조:** SOURCE=Version/SHA/unique Handle/instancePath; GENERATED=서버 UUID. 원본 bytes·SHA/Current 불변, 브라우저 `GeneratedDocument`/JSON v1·v2/Undo·Redo는 세션 범위; 서버 재발급 ID 매핑·공동 편집 Revision CAS(409) 및 서버 보유 Source로 재계산 필수.
+
+**미확정 — 임의 기본값/암묵 승인 금지:** 최초 Admin 생성·계정 복구·비밀번호 해시 세부 설정, 세션 만료/탭 경계, 사용자별 Role/Site Grant 관리자, 감사 보존 기간·조회 권한, HTTP 잔여 위험 수용/허용 LAN 범위, Version 삭제 FK·Audit와 물리 삭제/복원 정책, legacy 외곽선 신규 영속 등록, 메모의 Editor 권한, P0/P5 실도면 정량 수용치. 이들 중 해당 작업에 필요한 조건은 운영 승인 전 BLOCKED.
+
+**독립 구현 흐름/소유:** D0 문서 확정→D1 공통 로컬 User/Session/Permission/Scope/Audit 기반→D2 Source Canonical+Translate/Rotate 검증→D3 CadOutline DB/CRUD/CAS/논리 삭제→#65 전역 타입 카탈로그→#71 타입 기반 영속 확정→#73 서버 트리 복원. #60 로그 읽기/ #83 메모 영속은 D1 공유 기반에서 별도 진행 가능; #84 메모 스냅은 D3와 #83의 영속 ID/삭제 정합성 이후. #49/#54/#55/#56 브라우저 작업과 P0/P5 실 DXF 검증은 병렬 가능.
+
+**Fail-closed:** 미확정 및 해당 보안·DB·마이그레이션·감사/복구 검증 승인 전 새 로그인/관리자/서버 영속 GET·Write API/Prisma schema/migration 활성화 금지. 이번 D0은 **Markdown-only**, 코드·DB·Runtime·GHCR 변경 없음. PR CI 결과와 실제 운영 적합성 수용은 분리한다.
+
+
 ## Issue #43 U6 브라우저 임시 외곽선 Overlay 연계 (2026-10-25)
 
 - #31 CONVEX/PRECISE Geometry/Worker/Selection/Immutable Source SHA·Handle 및 P4 Server attestation 계약은 그대로. #43은 임시 확정된 결과를 우측 도킹 트리에 투영·그룹 show/hide·선택 강조·WCS Bounds 이동만 추가한다.
