@@ -18,6 +18,25 @@
 
 PR 검증: 최신 HEAD typecheck/lint/unit/integration/build/E2E/Docker; 운영 `src/app/api/**`/`src/prisma/**`/`src/server/db.ts`, Compose/Nginx/.env/CAD/Viewer/GHCR diff 0. 미실행은 PASS 금지; 현장 Backup/Restore는 #108, Owner 운영 승인은 #109. [Issue104](Issue104.md).
 
+**TC-P4-G2-SYNTAX-001 (CI 실패 재발 방지):** G2 recovery/replay 테스트의 `.get(adminId)?.password_hash` 및 `.get(adminId)?.revoked_at` optional chaining 표현식은 올바른 구문이어야 하며 PR CI `npm run typecheck`를 첫 게이트로 확인한다. Typecheck 실패 시 하위 Lint/Unit/Integration/E2E를 `SKIPPED`로 기록한다. 최초 CI 실패 및 후속 HEAD 재검증은 [FailureLedger](FailureLedger.md) 참조.
+
+## Issue #102 G0 — Owner 6개 업무 정책/후속 게이트 검증 (2026-10-25)
+
+[Issue102](Issue102.md)/ADR-051-R1은 사내망 **기존 공개 CAD 익명 GET 허용**, `Current PUT=Editor 이상+담당 Site`, `Version DELETE=Editor 이상+담당 Site+기존 비밀번호`를 승인했다. 관리자 담당자/Owner 역할 분리, Audit 만료 후 정리 원칙은 승인하되 백업/물리 정리 SOP는 후속 확정, 등록 POST 권한은 Editor 이상+담당 Site Owner 승인. **현재 배포에서 로그인/권한 기능이 활성화되었다는 뜻이 아니다.**
+
+| TC ID | 확인 내용 | 실행 단계/현재 상태 |
+| --- | --- | --- |
+| TC-P4-G0-BIZ-001 | 승인 정책 표·AGENTS·ADR-051-R1·Issue102·#96~#109 정합성. 공개 CAD GET만 익명, 신규 영속/로그/감사 API 익명 확장 0 | G0 문서 정적 검토 / NOT RUN |
+| TC-P4-G0-BIZ-002 | 기존 목록·위치·Current/Version·Viewer·원본 GET/다운로드를 **익명으로** 정상 조회, Reader/SiteGrant가 불필요하며 익명 Actor 위조/신규 영속 익명 조회 없음 | G5/G6 / NOT RUN |
+| TC-P4-G0-BIZ-003 | **G7 이후 목표:** Current 변경은 Editor/Admin+담당 Site 허용, 익명·Reader·타 Site/권한 없는 Admin 거부, Current 0~1개 유지 | G4/G6 / NOT RUN |
+| TC-P4-G0-BIZ-004 | **G7 이후 목표:** 삭제는 Editor/Admin+담당 Site+기존 삭제 비밀번호 AND. 암호만/범위만/인증만/타 Site 각각 실패, 승인된 삭제 성공 및 Actor/Audit·Current·SHA 회귀 | G4/G6 / NOT RUN |
+| TC-P4-G0-BIZ-005 | 지정 운영 담당자의 Admin 단발 초기화/복구·재기동 불변, Owner 책임/SOP 기록, Secret 미출력 | G2/G6 / NOT RUN |
+| TC-P4-G0-BIZ-006 | Audit 365일 경계, 미만 보존·이후 정리 대상 분류. Backup/Restore 후 만료 기록·예외 처리 정책 승인 전 **purge 미실행** | G4/G6/G7 / NOT RUN |
+| TC-P4-G0-BIZ-007 | **G7 목표:** `POST /api/cad-files`는 인증 Editor/Admin+담당 Site 성공, 익명·Reader·타 Site 거부, Actor/Audit·원본/Current·기존 API 동작 보존 | #106/#108 / NOT RUN |
+| TC-P4-G0-BIZ-008 | **문서 전용 변경**(AGENTS/ADR/Issue102 등), Source/API/Prisma/Compose/Nginx/.env/운영 볼륨 변경 0, 동일 HEAD CI·미해결 리뷰·충돌 확인 | PR diff/CI / NOT RUN |
+
+**수용 구분:** G0 AC1은 5개 Owner 정책 명세와 후속 위임이 문서화됐는지 평가, AC2는 앞서 승인된 HTTP 위험 범위 결정(보안 시험 PASS 아님), AC3은 docs-only/OFF, AC4는 최신 HEAD PR CI·리뷰·병합 근거 필요. G0 문서 승인 자체는 G2~G7 실제 업무 E2E/배포 PASS를 의미하지 않는다.
+
 
 ## Issue #107 G5 — 최종 자동 테스트 수용·현장 인계 (2026-10-26)
 

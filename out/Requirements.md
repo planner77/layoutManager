@@ -12,6 +12,22 @@
 
 공격·탈취 대응 강화는 Owner #102 범위 밖이나 Secret 비로그·기능 원자성 유지. 기존 CAD GET은 익명 유지; G3 #105, G4 #106, G6 #108, G7 #109 후속. [Issue104](Issue104.md).
 
+## Issue #102 G0 — 6개 Owner 업무 정책 승인 / 요구 추적 (2026-10-25)
+
+**최신 승인 우선:** 아래 과거 `FR-P4-G0-R1-04`의 Reader 익명 조회 금지·삭제 Admin-only 등 **권장/미확정 값은 이 요구표로 대체**한다. [Issue102](Issue102.md), ADR-051-R1.
+
+| 요구 ID | 승인 범위 및 수용 기준 | 후속 확인 |
+| --- | --- | --- |
+| FR-P4-G0-BIZ-01 | 공개망 인바운드 제한 사내 LAN의 **기존 공개 CAD 목록·검색/위치·Version·Current·Viewer·DXF/DWG 다운로드는 익명 조회**. 로그인·Reader·SiteGrant 없이 작동, 익명 User/Actor를 위장하지 않음. 신규 영속 메모·외곽선·타입, 감사·로그·관리 GET는 예외 | Owner 승인 / G5·G6 정상 GET E2E |
+| FR-P4-G0-BIZ-02 | `PUT /api/cad-locations/:id/current`: **로그인된 Editor/Admin + 담당 Site/Version**. Admin 무범위 자동 전체 접근 불가, 동일 Location Current 0~1개 유지 | Owner 승인 / G4·G6 |
+| FR-P4-G0-BIZ-03 | `DELETE /api/cad-files/:versionId`: **로그인된 Editor/Admin + 담당 Site/Version + 기존 삭제 비밀번호** 세 조건 모두 만족. Actor/Revision 감사 및 Current/원본 무결성, 비밀번호 단독 인가 금지 | Owner 승인 / G4·G6 |
+| FR-P4-G0-BIZ-04 | 최초 Admin 생성·단발 복구 **실행 = 지정 사내 운영 담당자, 운영 책임 = Owner**. 재시작 자동 재설정 금지 | Owner 승인 / 실제 담당·Secret SOP는 G2 |
+| FR-P4-G0-BIZ-05 | **Audit 365일 이내 보존, 이후 만료 기록 정리**. 정리 실행/주기/방법·Backup/Restore/예외 세칙 승인 전에 물리·자동 파기 금지 | Owner 원칙 승인 / SOP G4·G6·G7 |
+| FR-P4-G0-BIZ-06 | **Owner 승인:** `POST /api/cad-files`는 로그인 Editor 이상+담당 Site, 익명 CAD GET와 달리 등록 Actor/Site 검증·Audit 필요, 현재 운영 Route 미변경 | #106/#108 기능 시험 · #109 Go/No-Go |
+| NFR-P4-G0-BIZ-01 | G0 PR은 Markdown-only, 실 Auth/관리/영속 API/Prisma/DDL/Nginx/Compose/.env/운영 DB·CAD·S3 변화 0. G7 별도 Go/No-Go 전 운영 OFF | G0 정적 diff / G7 |
+
+공개 CAD GET는 누구나 볼 수 있으므로 **Site/Version 읽기 기밀성을 제공하지 않는다**. Role+SiteGrant는 승인된 쓰기 및 별도 보호 리소스에만 필수. HTTP 공격/탈취 대응 비범위 결정은 그대로다. 업무용 Reader Role을 없애거나 임의 관리자/로그 API 익명 공개를 뜻하지 않는다.
+
 
 ## Issue #107 G5 — 요구사항별 최종 구현 상태 (2026-10-26)
 

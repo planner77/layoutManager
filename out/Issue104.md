@@ -1,8 +1,14 @@
 # Issue #104 — G2 최초 Admin 생성·단발 복구 및 Secret 보호
 
+## #118 최초 PR CI 실패·파서 교정 (2026-10-26 KST)
+
+- **Run 40232479678 / HEAD `534de74c`:** Verify Job `121286959176` TypeScript 파서 오류로 `completed/failure`, Docker Job `121286959564` `completed/success`. `tests/integration/auth-g2.test.ts:198:22` TS1005 및 :232 TS1128 후속 파싱 오류. :213도 같은 잘못된 괄호와 optional chaining 결합으로 확인.
+- **Fix [ae002997](https://github.com/planner77/layoutManager/commit/ae002997bcbc394cf40a9adb9c0475d74f73f22e):** 복구 재사용/장애 테스트의 `db.prepare(...).get(adminId)?.password_hash`와 `?.revoked_at`를 각각 `replayHash`/`revokedAtBeforeRetry` 변수로 분리하여 올바른 식으로 변경. 코드 작성 당시 TypeScript 검증을 실행하지 않은 것이 직접 예방 검증 공백. 로컬 tests 및 최신 HEAD CI 성공은 아직 `NOT VERIFIED`.
+- `npm ci`/Prisma Client 생성 성공, Typecheck exit2로 Lint·Unit/Integration·Build·E2E는 **SKIPPED**. 실제 런타임 장애나 권한/보안/DB의 실패로 확장하지 않는다. #102 Owner 6개 승인 문서 PR #114가 main에 병합됨에 따라 G2 문서와 최신 main을 통합하며, 실 운영 Auth/Prisma·관리 API는 G7 #109 승인 전 OFF.
+
 ## Owner 승인·범위
 
-2026-10-26 기준 #102 G0 Owner R1(지정 사내 운영 담당자 실행, Owner 운영 책임), 병합된 #103 G1 User/Session/Grant/Audit/Nonce SQLite fixture 및 #107 G5 Preview를 따른다. 실 수행자/승인·대리인·Secret 실제 경로/Nonce/backup/회수 이력은 **사내 비공개 SOP**, 공개 GitHub/CI 로그에는 기록하지 않는다. #102 문서 PR #114는 확인 당시 OPEN/mergeable=false로 G0 별도 정렬 필요. 실 운영 Auth/Admin/영속 API·Prisma/DDL·Compose/Nginx/.env 및 CAD DB/S3 원본·익명 GET/Current/Delete 변경 **0**, G7 #109 Owner 별도 Go/No-Go 전 OFF.
+2026-10-26 기준 #102 G0 Owner R1(지정 사내 운영 담당자 실행, Owner 운영 책임), 병합된 #103 G1 User/Session/Grant/Audit/Nonce SQLite fixture 및 #107 G5 Preview를 따른다. 실 수행자/승인·대리인·Secret 실제 경로/Nonce/backup/회수 이력은 **사내 비공개 SOP**, 공개 GitHub/CI 로그에는 기록하지 않는다. #102 문서 PR #114는 2026-10-26 main에 병합 완료. G0 #102는 별도 OPEN이며 POST 도면 등록도 Editor/Admin+담당 Site로 Owner 최종 승인되었다. 실 운영 Auth/Admin/영속 API·Prisma/DDL·Compose/Nginx/.env 및 CAD DB/S3 원본·익명 GET/Current/Delete 변경 **0**, G7 #109 Owner 별도 Go/No-Go 전 OFF.
 
 ## 기술 구현
 
@@ -25,4 +31,4 @@
 | G2-AC3 복구 nonce/세션 revoke/감사 원자성 | TC-P4-G2-007~008 | 테스트 작성, 실행 NOT RUN |
 | G2-AC4 격리 DB/장애복구/운영 OFF | TC-P4-G2-001~009 + PR diff | 테스트 작성, 실행 NOT RUN |
 
-이 연결 환경에서는 tsc/npm/Vitest/Playwright/Docker/실 사내 PC·DB/CAD/S3 시험 미수행. CI Run 시작/성공을 구분하며 실제 실행 확인 전 PASS 체크 금지. 이후 #105 G3 로그인/초기 변경, #106 G4 권한, #108 G6 E2E·Backup/Restore, #109 G7 별도 운영 승인 순서. 업로드 POST의 Editor+Site 권장안, Audit 365일 경과 자동 정리/Backup 세칙은 여전히 미확정이다.
+이 연결 환경에서는 tsc/npm/Vitest/Playwright/Docker/실 사내 PC·DB/CAD/S3 시험 미수행. CI Run 시작/성공을 구분하며 실제 실행 확인 전 PASS 체크 금지. 이후 #105 G3 로그인/초기 변경, #106 G4 권한, #108 G6 E2E·Backup/Restore, #109 G7 별도 운영 승인 순서. POST 업로드 Editor/Admin+담당 Site는 Owner 승인 완료. Audit 365일 이후 실제 자동 정리·Backup/Restore 세칙과 G7 별도 운영 승인은 여전히 미확정이다.
