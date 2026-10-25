@@ -50,7 +50,7 @@ jobs:
 
       # Advisory only until a repository administrator applies Issue #76.
       # Do not mistake an advisory PR CI success for acceptance of the repo setting.
-      - name: Squash Merge defaults read-only audit (Issue #76; advisory)
+      - name: 'Squash Merge defaults read-only audit (Issue #76; advisory)'
         shell: bash
         env:
           AUDIT_GITHUB_TOKEN: ${{ github.token }}
