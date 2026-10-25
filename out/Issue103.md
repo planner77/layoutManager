@@ -1,5 +1,13 @@
 # Issue #103 — G1 User·Session·Grant·Audit 격리 DB 계약·Migration
 
+## #107 Main 선행 병합에 따른 G1 정렬 기록 (2026-10-26)
+
+- #103 PR #116 수정 HEAD `40153240d593c9d645dcc7c79bc9d9ac82d073e0`의 [PR CI #40225147249](https://github.com/planner77/layoutManager/actions/runs/40225147249)는 Verify `121264822767`, Docker `121264822603` 두 Job **SUCCESS**. 이는 #107 main 통합 **이전 HEAD의 결과**이며 새 정렬 HEAD에는 그대로 적용되지 않는다.
+- [#107 Main `142c4b9bc0bd`](https://github.com/planner77/layoutManager/commit/142c4b9bc0bdb2ad0403fb1ee6640cf070d0bbbc)가 들어온 뒤 #116이 `behind=1` / `dirty`가 됨. 이는 CI 테스트 실패가 아닌 동시 병합에 의한 문서 충돌이다. G1/#103과 G5/#107의 AGENTS·README·Architecture·FailureLedger·Operation·Requirements·TestPlan·TestReport 신규 절을 모두 보존하고, G5의 workflow/Preview compose·nginx/스크립트/Unit/package 버전을 최신 Main 그대로 유지하는 비강제 2-parent merge 정렬을 진행.
+- #103 격리 User/Session/Grant/Audit/RecoveryNonce SQL/Prisma Fixture·Integration Tests, Owner #102 업무 정책, P1 Site Audit 대상 사용자/사이트 추적 및 과거 실패 원장 전체 보존. 운영 Auth/API/Prisma/migrations/Compose 적용·실 DB/CAD/S3 변경 **0**.
+- 새 PR CI는 정렬 HEAD의 `pull_request.synchronize` 실행 시작만 확인하며 최종 결과 모니터링 생략. 기존 성공 40225147249를 새 HEAD PASS로 전용 금지. 리뷰 unresolved 0 및 새 병합 충돌 해소 여부 검증이 선행조건.
+
+
 ## PR #116 최초 실패 및 R2 보완 (2026-10-26)
 
 - 원 HEAD `50014e68`, PR CI [#40202066291](https://github.com/planner77/layoutManager/actions/runs/40202066291) Verify/Docker 모두 **failure**. 공통 원인은 `store.ts:134:98` TS1002 및 연쇄 구문 오류(비밀번호 변경/복구 helper 치환 중 선언 파손·중복), 후속 Unit/E2E/Docker smoke는 미실행. 실행 이력은 [FailureLedger](FailureLedger.md)에 보존.

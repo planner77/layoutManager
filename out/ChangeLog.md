@@ -1,5 +1,13 @@
 # ChangeLog
 
+## Unreleased — v0.40.4 후보 / Issue #107 G5 경량 Preview 및 Viewer 정합성 (2026-10-26)
+
+- PROD Nginx→App/DEV App 직결 **비운영** Preview, 독립 SQLite/CAD·네트워크, 정상 Health/CAD 목록·Viewer/content Read-Only Smoke 및 Unit·CI Compose config-only 검증 추가. 추가 침입·탈취 방어는 Owner 정책상 비범위.
+- PR #115 구 HEAD d771d553 CI 40201366001 Verify/Docker 성공 이후 Codex P2 리뷰 4371142398에 따라 관리 화면을 Viewer로 오인할 수 있는 검증을 실제 /cad/versions/ID/viewer 요청으로 교정하고 Unit TC-P4-G5-007 추가.
+- 기존 v0.40.3 GHCR pair를 재사용하지 않고 src/package.json과 lock root 신규 0.40.4 버전으로 정렬. 수정 HEAD PR CI, Main CI/GHCR 최종 게시 및 실제 LAN 기능 E2E는 증거 확인 전 NOT VERIFIED.
+- 기존 운영 Nginx/Compose/Auth/API/Prisma/DB/CAD/S3/원본 SHA·Current 불변. G6 현장 수용과 G7 별도 Owner 운영 승인 유지.
+
+
 ## Unreleased — Issue #99 PR #110 P1 보안 리뷰 보완 / GHCR v0.40.3 후보 (2026-10-25)
 
 - 원 HEAD `6377426` [PR CI 40195335561](https://github.com/planner77/layoutManager/actions/runs/40195335561) Verify/Docker 모두 SUCCESS. 이후 P1 리뷰에서 실제 repo 외부 경로가 Symlink를 통해 repo 내부를 가리킬 수 있는 개인 정보/도면 SHA 기록 위험 지적.

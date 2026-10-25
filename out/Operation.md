@@ -19,6 +19,16 @@
 **테스트 명령:** `cd src && npm ci && npm run db:generate && npx vitest run tests/integration/auth-g1.test.ts`; 전체 PR Verify(Typecheck/Lint/Unit+Integration/Build/E2E)+Docker는 기존 Workflow대로. 로컬 실행하지 않았다면 `NOT RUN`; PR CI 시작은 성공 증빙 아님. [Issue103](Issue103.md), [TestPlan](TestPlan.md), [TestReport](TestReport.md).
 
 
+## Issue #107 / G5 — 실제 운영 변경 없는 연결 Preview Runbook (2026-10-25)
+
+- G5는 외부 공개망 인바운드 제한·소수 내부 사용자 환경의 **정상 운영 경로 확인**이다. 추가 TLS/WAF/침투/CIDR 하드닝 대신 Nginx↔App Viewer·API/업로드·Health, DEV 직결 및 독립 데이터만 점검한다. [Issue107](Issue107.md).
+- 저장소 root에서 `docker build -f src/Dockerfile --target migrator -t cad-layout-viewer:g5-migrate .` 와 `docker build -f src/Dockerfile --target runtime -t cad-layout-viewer:g5-web .` 후 `docker compose -f src/deploy/g5/compose.preview.yml --profile g5-prod --profile g5-dev up -d`.
+- 기본 접속: PROD Preview `http://127.0.0.1:3302`(Nginx)·DEV Preview `http://127.0.0.1:3301`(direct); `node src/scripts/g5-preview-smoke.mjs --base-url http://127.0.0.1:3302` 및 3301을 각자 실행. 선택적인 실 도면 Viewer/다운로드 검증에는 `--version-id ID`만으로 실제 Viewer `/cad/versions/ID/viewer`와 content를 확인한다. 선택적 `--viewer-path /cad/versions/ID/viewer`는 같은 ID를 써야 하며 위치 관리 화면은 Viewer 합격으로 판단하지 않는다. Preview 도면만 허용.
+- 필요 시 Preview의 `G5_PROD_PORT`, `G5_DEV_PORT`, `G5_PROD_BIND_IP`, `G5_DEV_BIND_IP`만 조절. 사내 IP·장비명·실 Secret/CAD는 사내 비공개로 유지. Windows Nginx·WSL2 upstream 실동작은 G6 별도 확인.
+- 임시 도면 등록/이력/Current·삭제 비밀번호 및 (후속 G3) 쿠키 왕복은 일회용 Preview 데이터에서 **수동** 검증. Preview는 local-only 두 개의 분리된 SQLite/CAD 볼륨. 실 운영 Compose·Nginx/DB/API·Prisma·Auth ON은 G7 승인 전 금지.
+- 종료는 반드시 `docker compose -f src/deploy/g5/compose.preview.yml --profile g5-prod --profile g5-dev down -v` (Preview 전용 볼륨 삭제). `src/docker-compose.yml`과 함께 쓰지 않는다. 상세 재현 명령과 AC/누락 증거는 [Issue107](Issue107.md).
+
+
 ## Issue #102 / ADR-051-R1 — 내부망 PROD/DEV 경량 운영 계약 (2026-10-25)
 
 **정책 승인, 운영 비활성:** 공개망 인바운드가 제한된 사내 업무망에서 내부 사용자끼리 HTTP로 사용한다. 운영 사용자 PC는 **Nginx**를 거쳐 App에 접근하고 개발 PC는 **별도 개발 App에 직접** 접근한다. 사용자별 상세 망 방어·침투테스트·HTTP 계정/세션 탈취 대응은 Owner가 비범위로 결정했다([Issue102](Issue102.md)). 평문 HTTP가 안전해진 것은 아니며 `OWNER_ACCEPTED_SCOPE`는 테스트 PASS가 아니다.

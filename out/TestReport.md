@@ -1,5 +1,12 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issue #103 / PR #116 — #107 main 정렬·검증 인계 (2026-10-26)
+
+- **이전 수정 HEAD 실증:** `40153240d593`의 [PR CI 40225147249](https://github.com/planner77/layoutManager/actions/runs/40225147249) **completed/success**; Verify Job `121264822767` 및 Docker Job `121264822603` 성공. 이 완료 결과는 main #107 합류 **전** HEAD에만 적용되며 병합 후 HEAD PASS 근거로 재사용하지 않는다. 최초 TypeScript/Docker 실패 [40202066291](https://github.com/planner77/layoutManager/actions/runs/40202066291)는 원장에 계속 보존.
+- **원인·조치:** #107 G5 `main:142c4b9bc0bd` 선행 병합으로 `behind=1 / dirty`; 공통 문서 #103 G1과 #107 G5 추가 섹션을 모두 보존하고, #107의 G5 Preview 구현·PR workflow·package/lock 및 #103 G1 격리 DB·9 Integration TC를 함께 보존한 2-parent 통합 HEAD 생성. 이 충돌은 추가된 코드 CI 결함으로 오인하지 않는다.
+- **정렬 후 검증:** 새로운 PR CI(`pull_request.synchronize`) 시작 전 검증 상태 `NOT RUN/PENDING`; 실제 CI 실행 뒤 별도 Run ID/최종 HEAD 확인이 있어야 PASS 가능. G7 운영 Auth/schema/API/GHCR 활성화 없음. 관련 [Issue103](Issue103.md) 및 [FailureLedger](FailureLedger.md).
+
+
 ## Issue #103 — 최초 실패 Run 40202066291 및 감사 P1 보완 (2026-10-26)
 
 - `pull_request.opened`의 PR #116 HEAD `50014e68...` **실패**: Verify Job 121195140490은 TypeScript `store.ts:134 TS1002`와 연쇄 구문 오류로 중단, Docker Job 121195140285도 baseline Build의 동일 TypeScript 실패. Unit·Integration·E2E·Docker smoke/size 비교는 **SKIPPED/NOT RUN**. [Run 상세](https://github.com/planner77/layoutManager/actions/runs/40202066291).
@@ -19,6 +26,23 @@
 - **원격 코드 작성 시점:** GitHub 브랜치 소스 생성만 완료; 연결 환경에서 npm/SQLite native/Prisma/Playwright/Docker 명령을 **직접 실행하지 않음**. TC-P4-G1-001~009: **NOT RUN**. PR CI는 생성/시작 후 결과를 모니터링하지 않는 사용자 지시에 따라 **PENDING/미확인**, PASS 아님.
 - **정적 설계 경계:** 변경 대상은 `src/tests/fixtures/auth-g1/**`, `src/tests/integration/auth-g1.test.ts`, AGENTS·out 문서. 기존 `src/prisma/schema.prisma`/`src/prisma/migrations/**`/App API/Viewer/Docker/Compose/.env/운영 DB/CAD/S3 변경·운영 활성화 **의도적 0**. 실제 Diff·PR HEAD/mergeability/리뷰 근거는 PR 생성 후 확인.
 - **격리 합성 한계:** SQLite 백업 API·로컬 CAD+mock S3 객체 복원 테스트는 작성했으나 미실행. 실 S3/운영 데이터·네트워크·운영 Go-Live는 #107/#108/#109에서 별도 증거 필요. 감사 365일 후 파기는 G0 미결정이므로 구현하지 않음.
+
+
+## Issue #107 / PR #115 — 원 HEAD CI PASS 이후 Viewer P2 수정 (2026-10-26)
+
+- **검증된 과거 HEAD:** [PR CI 40201366001](https://github.com/planner77/layoutManager/actions/runs/40201366001), d771d553cdf7d00a467fead6f8f9d788898ea314, Verify Job 121193043560 및 Docker Job 121193043322 모두 completed/success.
+- **P2 조치:** [review 4371142398](https://github.com/planner77/layoutManager/pull/115#discussion_r4371142398) 지적에 따라 위치 관리 HTML 200을 실제 Viewer PASS로 오인하지 않도록 --version-id에서 /cad/versions/ID/viewer 경로 자동 조회, 경로/ID 일치 거부 및 TC-P4-G5-003/004/007 테스트 변경. **변경 HEAD CI 결과 아직 미확인**, 과거 CI를 전용하지 않음.
+- **릴리스:** v0.40.3 Main CI 40199597907 App/Migrator 게시 성공 단계 확인, v0.40.4 신규 tag/GHCR 게시 후보. Main CI와 GHCR 게시 실제 성공 증거는 별도.
+- **현장 검증:** 사내 Nginx/WSL2, PC 2대, 실제 Viewer/Upload/Download/Session Cookie 및 Backup/Migration/Restore는 NOT RUN → #108 G6. 운영 적용 G7 승인 전 금지.
+
+
+## Issue #107 / G5 — 격리 연결 Preview 개발 기록 (2026-10-25)
+
+- **작성한 코드/설계:** PROD/DEV 독립 Preview Compose, Nginx 경유 정상 경로, read-only Node Smoke(Health/Home/CAD list/font/선택 Viewer·content), Vitest 4건, CI Docker profile config-only 검증, Issue107·운영/설계/AC 문서.
+- **운영 미변경:** 원래 `src/docker-compose.yml`의 `host_ip: 0.0.0.0`은 유지. `.env.example`, Prisma, 기존 앱 Auth/API/Viewer, 운영 Nginx/DB, CAD bytes/SHA/Current/S3 변경 없음(최종 PR diff 확인 필요).
+- **실행 상태:** 원격 GitHub 파일 작성 시점 Node/Vitest/Typecheck/Lint/E2E/Docker Compose/실 Preview 및 PR CI 전체 결과는 **NOT RUN/NOT VERIFIED**. CI 시작을 PASS로 기록하지 않는다.
+- **G6 인계:** Windows/WSL2 실제 Nginx upstream·사내 PC 최소 2대, Viewer/Upload/Download·원본 SHA, G3 실제 Cookie, Backup/Migration/Restore는 **NOT RUN**. 공격·탈취 시험은 Owner 비범위. OWNER_ACCEPTED_SCOPE는 안전성 PASS가 아니다.
+- 참고: [Issue107](Issue107.md), [Issue102](Issue102.md), [TestPlan](TestPlan.md), [FailureLedger](FailureLedger.md).
 
 
 ## Issue #102 — Owner 공격 대응 비범위 문서 정렬 (2026-10-25)

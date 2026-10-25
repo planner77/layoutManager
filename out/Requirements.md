@@ -16,6 +16,18 @@
 - 선행 정책: #102 ADR-051-R1. 2026-10-25 #102 Owner 5개 승인: 기존 CAD 목록/Viewer/다운로드 익명 GET 유지, Current=Editor/Admin+담당 Site, Version 삭제=Editor/Admin+담당 Site+기존 삭제 비밀번호, 최초 Admin/복구=지정 사내 운영 담당자(Owner 책임), Audit 365일 경과 이력 정리 원칙. 관련 문서 PR #114는 병합·CI 완료 미확인. POST 업로드 권한, Secret/실 담당자, Audit 물리 정리·백업 복원 세칙, 실제 배포는 PENDING; #103 G1 운영 활성화 승인 아님. 상세 [Issue103](Issue103.md).
 
 
+## Issue #107 / G5 — 내부망 간소 PROD/DEV 정상 연결 (2026-10-25)
+
+| ID | 요구사항 | 수용 상태 |
+| --- | --- | --- |
+| FR-P4-G5-01 | 격리 PROD Nginx 경유 Viewer·API·Health, App 직접 host publish 없는 Preview; 실제 운영 구성 변경 없음 | 구현 코드 작성, PR CI/현장 미확인 |
+| FR-P4-G5-02 | DEV App direct Preview·PROD/DEV DB/CAD 볼륨·네트워크 독립 | 구현 코드 작성, PR CI/현장 미확인 |
+| NFR-P4-G5-01 | 기존 Origin 정상 업로드/조회·원본 다운로드, 향후 G3 Cookie 정상 전달; 운영 API/Prisma/인증 미활성 유지 | 정상 경로 수동/후속 G3·G6 실증 필요 |
+| NFR-P4-G5-02 | 내부 소수 사용자·외부망 인바운드 제한: 공격/탈취·침투 대응은 비범위(Owner R1). 운영 실제 적용은 G7 별도 승인 | OWNER_ACCEPTED_SCOPE, 운영 미승인 |
+
+- 문서/구현·AC/TC 매핑: [Issue107](Issue107.md), [Architecture](Architecture.md), [TestPlan](TestPlan.md), [TestReport](TestReport.md). PR CI는 실제 사내 PC 2대·Host/WSL2 Port·업로드/Cookie를 대신하지 않는다.
+
+
 ## Issue #102 G0 / ADR-051-R1 — Owner 경량 보안 범위 재정의 (2026-10-25)
 
 | 요구 ID | 수용할 결정·기능 | 상태/후속 |

@@ -1,5 +1,13 @@
 # PR/Main CI 실패 원장
 
+## Issue #103 / PR #116 — #107 main 선행 병합에 따른 정렬 (2026-10-26 KST)
+
+- **이전 실행 성공은 별도 HEAD 증거:** #103 수정 HEAD `40153240d593c9d645dcc7c79bc9d9ac82d073e0`의 [PR CI Run 40225147249](https://github.com/planner77/layoutManager/actions/runs/40225147249), attempt 1, `completed/success`; Verify [Job 121264822767](https://github.com/planner77/layoutManager/actions/runs/40225147249/job/121264822767) / Docker [Job 121264822603](https://github.com/planner77/layoutManager/actions/runs/40225147249/job/121264822603) **각각 성공**. 이는 이전 실패 [40202066291](https://github.com/planner77/layoutManager/actions/runs/40202066291)의 해결 검증일 뿐 main #107 병합 후 통합 HEAD의 성공 증거가 아니다. 실패 Job/로그 원장은 아래에 계속 보존한다.
+- **동시 변경 충돌·원인:** #107 G5 [main `142c4b9bc0bdb2ad0403fb1ee6640cf070d0bbbc`](https://github.com/planner77/layoutManager/commit/142c4b9bc0bdb2ad0403fb1ee6640cf070d0bbbc) 선행 병합으로 #103 PR #116 `ahead=9/behind=1`, GitHub `mergeable_state=dirty`. 이는 **CI 실패가 아닌 병합 충돌**. 충돌 가능 공통 문서는 `AGENTS.md`, `README.md`, `out/{Architecture,FailureLedger,Operation,Requirements,TestPlan,TestReport}.md`.
+- **해결 계약:** 공통 문서 8개는 기존 base를 기준으로 양쪽에 **추가된 섹션을 모두 유지**하여 정렬한다. #107의 PR CI workflow 및 G5 Preview Compose/Nginx·smoke 스크립트·Unit, `src/package.json`/lock의 버전·의존성, `out/Issue107.md` 및 ChangeLog는 main을 채택한다. #103의 격리 Auth SQL/Prisma fixture·Integration tests와 ADR/DB/Issue103/Issue96 문서는 온전히 보존. 운영 `src/prisma/schema.prisma`/`migrations`, 기존 app API, 실 DB/CAD/S3 변경 없이 G7 OFF.
+- **정렬·재검증:** #103 HEAD와 main을 두 부모로 가진 **비강제 2-parent merge commit**으로 통합. 기존 40225147249 성공을 새 HEAD PASS로 전용하지 않으며 `pull_request.synchronize` PR CI의 실행 시작만 확인, 이후 요청에 따라 모니터링 생략. 수정 CI 미실행 또는 결과 미확인시 `PENDING`으로 기록. P1 [r4371167619](https://github.com/planner77/layoutManager/pull/116#discussion_r4371167619)은 기존 HEAD에서 답변·resolve 완료, 새 review thread 발생 여부 재확인.
+
+
 ## Issue #103 / PR #116 — 최초 PR CI 실패와 P1 리뷰 교정 (2026-10-26 KST)
 
 - **실패 원본(보존):** [Run 40202066291](https://github.com/planner77/layoutManager/actions/runs/40202066291), attempt 1, PR `pull_request.opened`, HEAD `50014e68b64623969bfc722e9a31f835469009cf`, **completed/failure**. Verify [Job 121195140490](https://github.com/planner77/layoutManager/actions/runs/40202066291/job/121195140490) **failure**, Docker [Job 121195140285](https://github.com/planner77/layoutManager/actions/runs/40202066291/job/121195140285) **failure**. 실제 로그를 확인했으며 CI 실패를 취소·성공과 혼동하지 않는다.
@@ -24,6 +32,22 @@
 - **원인/예방·설계상 위험:** G1 SQL을 `src/prisma/migrations`에 넣으면 자동 migrator가 운영 DDL을 적용하는 변경 위험. 따라서 `src/tests/fixtures/auth-g1/`에만 별도 스키마/DDL, 임시 `cad-auth-g1-*/fixture.sqlite` 경로 가드, 테스트만 연결. SQLite Session count 검사만 쓰면 동시 제4세션 race 위험: `BEGIN IMMEDIATE` + DB 트리거로 차단. nonce 해시 유일성·Grant/Audit commit 동시성·Audit append-only를 격리 Fixture에서 검증하도록 작성.
 - **검증 미실행:** 실제 Node/Vitest/Prisma/SQLite native/Docker/Playwright 로컬 실행 **NOT RUN**. PR 생성 시 최신 head의 Verify/Docker 실행 시작을 확인하되 사용자의 모니터링 생략 요청에 따라 결과 성공이라고 기록하지 않는다. 리뷰 스레드·main drift/충돌 점검 후 PR 시작, 최신 HEAD 성공 이전 병합·G7 운영 승인은 금지.
 - 참조: [Issue103](Issue103.md), [Issue96](Issue96.md), [TestPlan](TestPlan.md), GitHub Issue #103. 이 항목은 **확인된 CI 실패 사고가 아닌 사전 기준선/위험 원장**이다.
+
+
+## Issue #107 / PR #115 — CI 성공 후 P2 Viewer 경로 리뷰 (2026-10-26 KST)
+
+- **CI 실패가 아닌 리뷰:** [Run 40201366001](https://github.com/planner77/layoutManager/actions/runs/40201366001), HEAD d771d553cdf7d00a467fead6f8f9d788898ea314, Verify Job 121193043560 및 Docker Job 121193043322 모두 completed/success.
+- **지적:** [P2 thread 4371142398](https://github.com/planner77/layoutManager/pull/115#discussion_r4371142398), PRRT_kwDOUQjDfc6wB-qZ, src/scripts/g5-preview-smoke.mjs. /cad/locations/:id는 버전 관리 테이블이라 HTML 200이 실제 /cad/versions/:id/viewer 검증을 대신할 수 없는 거짓 PASS 위험. 운영 장애/정보 누출 확인 사실은 없음.
+- **교정:** --version-id → 실제 Version Viewer 자동 요청, 명시 Viewer URL 허용·ID 일치 검사, TC-P4-G5-003/004/007 보완과 문서 정렬. 새 HEAD PR CI 결과 확인 전 기존 성공을 재사용하지 않는다.
+- **버전:** 기존 v0.40.3/Main CI 40199597907에서 GHCR App/Migrator 게시 성공하였으므로 이전 태그 재사용 금지, 신규 0.40.4 package/lock 후보. 본 PR 새 HEAD CI·리뷰 해결·main 정렬을 최종 게이트로 유지.
+- **범위:** 공격·탈취 대응 Owner 비범위, 실 내부망/업로드/Auth Cookie/Backup·Restore NOT RUN; 운영 변경은 G7 별도 승인 전 금지. 사용자 지시에 따라 CI 모니터링 생략.
+
+
+## Issue #107 / G5 — 격리 Preview 최초 PR CI 이전 기록 (2026-10-25 KST)
+
+- **상태:** 이 항목 작성 시 신규 PR CI Run/Job/HEAD 결과는 아직 없음(**NOT RUN**). 이번 이슈의 실패·취소를 관측하지 않았으므로 허위 실패 이력은 추가하지 않는다. 기존 다른 이슈의 실패 기록은 원문 유지.
+- **변경 범위:** Owner R1 경량 사내망 정책, 독립 Preview Compose/NGINX 정상 경로·read-only smoke·Unit·CI Compose config-only; 운영 Auth/API/Prisma/기존 Compose/Nginx·데이터 변경 금지. [Issue107](Issue107.md).
+- **후속 기록 조건:** 실제 CI failure/cancel/review/merge conflict를 관측하면 PR/HEAD/Run/Job/Step/원인/재시도/해결을 누적한다. CI 시작은 성공 아님; #108 현장 테스트는 미실행.
 
 
 ## Issue #99 / PR #110 — 최신 #102 Main의 문서 변경으로 인한 병합 정렬 (2026-10-25 KST)
