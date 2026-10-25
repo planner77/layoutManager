@@ -1,5 +1,10 @@
 # Database Schema — 단일 기준 문서
 
+## Issue #102 G0 / ADR-051-R1 — DB 계약 유지 (2026-10-25)
+
+Owner는 외부 공개망 인바운드가 제한된 내부 사용자용 환경에서 **공격·탈취 대응 강화는 비범위**로 선택했다([Issue102](Issue102.md)). **DB 구조·원자성·FK/Unique/Grant/Audit/Session 수명·Admin RecoveryNonce 1회·365일 감사/정상 권한 허용/거부 및 DB/CAD/S3 백업/복구는 그대로 필수**다. 이는 해킹·탈취 방어의 보안시험이 아니라 업무 및 데이터 정합성 요구다. 추가 사내 CIDR/Host 공격 테스트는 DB G1/G6 선행 게이트가 아님. 신규 운영 Schema/Prisma Migration 적용은 여전히 G7 별도 Owner 승인 전 금지.
+
+
 ## Issue #96 — D1~D6 승인값 / 물리 DB 비활성 (2026-10-25)
 
 - D1 최초 Admin/복구 .env + Secret 파일 단발 정책, D2 비밀번호 최소 8자/scrypt local-v1/강제 초기변경, D3 절대 8시간·idle 30분·동시 세션 3개, D4 명시적 Site Grant/Admin 전용 권한관리, D5 감사 365일/별도 audit:read, D6 LAN 접근제한+HTTP 위험 수용 원칙 승인. ADR-051이 기존 D0 미결정 표기보다 우선한다.

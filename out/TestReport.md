@@ -1,5 +1,13 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issue #102 — Owner 공격 대응 비범위 문서 정렬 (2026-10-25)
+
+- G0 #102 및 ADR-051-R1에서 보안 공격/자격증명·세션 탈취 대비 강화·침투시험은 Owner에 의해 비범위로 결정되었다. `OWNER_ACCEPTED_SCOPE`는 **정책상 위험 수용**이며 안전성/침투시험 PASS가 아니다. HTTP 비암호화 위험은 여전히 존재한다.
+- PROD 사용자 Nginx 경유 / DEV 개발 App 직접 접속 정책 및 G1~G7 기능·업무/DB 복구 운영 게이트는 유지. 본 문서 전용 변경은 운영 Auth/API/Prisma/Nginx/Docker/DB를 활성화하지 않는다.
+- **실행 상태:** 이 문서 작업 자체로 LAN E2E, 기능 E2E, Backup/Migration/Restore, Typecheck, Docker 등 새 실행 결과가 생기지 않는다. 해당 시험은 `NOT RUN` 또는 후속 증거 대기로 명시하며 기존 이력의 PASS를 새 HEAD의 PASS로 전용하지 않는다.
+- 근거: [Issue102](Issue102.md), [Issue96](Issue96.md), [ADR-051-R1](Decisions.md), [TestPlan](TestPlan.md). GitHub docs-only PR 생성/CI 시작은 PASS 및 운영 승인과 구별한다.
+
+
 ## Issue #96 — 비활성 P4-D1 구현 및 미실행 시험 기록 (2026-10-25)
 
 - **승인 근거:** [Issue #96](https://github.com/planner77/layoutManager/issues/96) D1~D6 Owner 정책 / ADR-051. scope/계정 bootstrap 계획/비밀번호 scrypt/세션/CSRF·Rate/감사 헬퍼와 TC-P4-D1-003~012 Unit 코드 작성.
