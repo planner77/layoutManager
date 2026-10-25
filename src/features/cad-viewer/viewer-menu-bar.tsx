@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 
 /**
  * Menu commands do not touch Viewer adapters; the caller owns all state.
- * U3 outline mode is a controlled toggle; U4/U6 remain disabled.
+ * U3 outline mode and U6 browser-only tree are independent controlled toggles;
+ * U4 admin management remains disabled pending authorization policy.
  */
 export function ViewerMenuBar({
   layerAvailable,
@@ -17,6 +18,10 @@ export function ViewerMenuBar({
   outlineToolEnabled,
   onToggleOutlineTool,
   outlineTreeOpen,
+  outlineTreeAvailable,
+  outlineTreeUnavailableReason,
+  outlineTreeToggleRef,
+  onToggleOutlineTree,
 }: {
   layerAvailable: boolean;
   layerPanelOpen: boolean;
@@ -27,6 +32,10 @@ export function ViewerMenuBar({
   outlineToolEnabled: boolean;
   onToggleOutlineTool: () => void;
   outlineTreeOpen: boolean;
+  outlineTreeAvailable: boolean;
+  outlineTreeUnavailableReason: string | null;
+  outlineTreeToggleRef: Ref<HTMLButtonElement>;
+  onToggleOutlineTree: () => void;
 }) {
   return (
     <nav
@@ -70,13 +79,21 @@ export function ViewerMenuBar({
         {outlineUnavailableReason}
       </span>}
       <Button
+        ref={outlineTreeToggleRef}
         type="button" size="sm" variant="outline"
         data-testid="viewer-menu-outline-tree"
-        aria-pressed={outlineTreeOpen}
-        disabled
-        title="후속 이슈 #43에서 외곽선 타입별 트리를 제공합니다."
+        aria-pressed={outlineTreeAvailable && outlineTreeOpen}
+        aria-expanded={outlineTreeAvailable && outlineTreeOpen}
+        aria-controls={outlineTreeAvailable ? 'viewer-outline-tree-dock' : undefined}
+        aria-describedby={!outlineTreeAvailable ? 'viewer-tree-unavailable-reason' : undefined}
+        disabled={!outlineTreeAvailable}
+        title={outlineTreeUnavailableReason ?? '임시 외곽선 트리 보기/숨기기 (CAD 레이어·생성 모드 독립)'}
+        onClick={onToggleOutlineTree}
         className="shrink-0"
-      >외곽선 목록 (준비 중)</Button>
+      >외곽선 목록</Button>
+      {!outlineTreeAvailable && <span id="viewer-tree-unavailable-reason" className="sr-only">
+        {outlineTreeUnavailableReason}
+      </span>}
       <Button
         type="button" size="sm" variant="outline"
         data-testid="viewer-menu-outline-types"
