@@ -1,5 +1,13 @@
 # PR/Main CI 실패 원장
 
+## Issue #67 / PR #80 — 최초 PR CI SUCCESS 후 P1 후속 PR 공통 게이트 리뷰 (2026-10-25 KST)
+
+- **성공 Run 보존:** [PR CI 40170910369](https://github.com/planner77/layoutManager/actions/runs/40170910369), 첫 검증 HEAD `6a35660d192a586158e4380ae8e9618c46032202`, `completed/success`. Verify [Job 121101364113](https://github.com/planner77/layoutManager/actions/runs/40170910369/job/121101364113), Docker [Job 121101364198](https://github.com/planner77/layoutManager/actions/runs/40170910369/job/121101364198) 모두 `completed/success`. **이 항목은 CI 실패가 아니라 성공 후 추가 리뷰에서 발견한 잠재적인 다음 PR의 CI 차단 결함**이다.
+- **P1 리뷰 원본:** [Review 4369963432](https://github.com/planner77/layoutManager/pull/80#discussion_r4369963432), 최초 HEAD `6a35660`: #67 제거 후 `main` Dockerfile은 이미 deduplicated 상태이므로 다른 PR의 `base`에도 중복이 없는데 `compare_inventories`가 `Baseline has no duplicate files`로 무조건 실패하고, `base_size <= size`도 정상 동일 크기를 거부함. 실제 신규 기능의 실패가 아닌 공통 CI의 false failure 위험.
+- **교정:** 동일 HEAD/Node22.14/linux-amd64에서 baseline에 중복이 **실제 존재하는 transition**이면 final package SHA 일치·duplicate raw bytes·positive size saving 강제. 이미 중복 0개인 base이면 size는 informational, 현재 image의 native `.node`와 모든 package SHA 일치/중복 재도입 없음은 계속 강제. Python 합성 fixture에 이미 deduplicated base 정상 PASS와 재중복 FAIL을 추가. Docker/Compose/Unit/Browser·migrator 검증 생략 없음.
+- **검증 경계:** 위 교정 후 새 HEAD에서 PR CI `pull_request.synchronize` 재실행이 필요하다. 최초 Run PASS를 새 HEAD PASS로 대체 금지. 실패/취소/스킵 발생 시 Run/Job/HEAD/원인/재실행을 누적 기입. inline P1 답변·resolve 및 최신 main 무충돌 확인 후에만 squash merge. GHCR version+immutable digest OCI 게이트 및 Main CI는 병합 이후 별도. [Issue67](Issue67.md), [TestPlan](TestPlan.md), [TestReport](TestReport.md).
+
+
 ## Issue #66 / PR #78 — 첫 PR CI Unit 실행 계약 회귀 및 경량화 실측 (2026-10-25 KST)
 
 - **실패 원본 보존:** [PR #78](https://github.com/planner77/layoutManager/pull/78), [PR CI Run 40167191799](https://github.com/planner77/layoutManager/actions/runs/40167191799), `pull_request.synchronize`, 원 HEAD `45389a4661d424e7ad6aa6ee66bcd643bbc6ad76`, **completed/failure**. Verify [Job 121090554088](https://github.com/planner77/layoutManager/actions/runs/40167191799/job/121090554088): checkout/npm ci/Prisma generate/TypeScript/ESLint **SUCCESS**, Unit+Integration **187 PASS / 1 FAIL** (38 files passed/1 failed). OCI parser Node test, synthetic DXF benchmark, Production Build, Chromium 설치, E2E, Legacy migration E2E **SKIPPED** (실패로 주장 금지). Artifact 업로드 Step 성공했으나 파일이 없어 실제 artifact 없음.

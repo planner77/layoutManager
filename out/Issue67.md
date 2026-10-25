@@ -1,5 +1,12 @@
 # Issue #67 — GHCR 웹 Standalone better-sqlite3 중복 계층 제거 및 정밀 계측
 
+## PR #80 첫 CI 성공과 P1 리뷰 수정 (2026-10-25)
+
+- 최초 [Run 40170910369](https://github.com/planner77/layoutManager/actions/runs/40170910369), HEAD `6a35660d192a`, Verify/Docker Job 모두 SUCCESS. 이 값은 최초 HEAD에 한정되며 GHCR OCI 용량/실운영 증거는 아니다.
+- [P1 #4369963432](https://github.com/planner77/layoutManager/pull/80#discussion_r4369963432)에서 다른 PR의 baseline Dockerfile에 이미 duplicate가 없으면 기존 audit가 정상 CI도 실패시킨다는 문제를 지적. **기본 원칙:** baseline duplicate가 존재하는 실제 제거 전환에만 positive size saving 의무; 정상 deduplicated baseline에서는 no-duplicate와 최종 package SHA/native 동일성을 필수, size delta는 참고로 기록. 재도입된 duplicate/파일 불일치는 계속 차단. 추가 synthetic Python tests로 분기 검증.
+- 교정 이후 커밋은 최초 성공 Run과 다른 HEAD이므로 다시 PR CI를 검증해야 병합 가능. Main GHCR app/migrator pair 및 immutable version/digest 수치는 정식 게시 후 별도. [FailureLedger](FailureLedger.md).
+
+
 **일자:** 2026-10-25 · **버전:** 0.37.2 · **브랜치:** build/issue-67-web-standalone-layer-audit · **상태:** 코드 작성 / 새 PR CI 미확인
 
 ## 분석/설계 근거

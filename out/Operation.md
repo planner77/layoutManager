@@ -1,5 +1,10 @@
 # 운영·환경설정 초안
 
+### Issue #67 P1 후속 PR CI — 이미 최적화된 base Dockerfile 처리 (2026-10-25)
+
+- `audit_standalone_layers.py`는 baseline에 실제 중복이 있는 최초 migration transition일 때만 **positive uncompressed saving을 요구**한다. 이후 PR에서 baseline과 신규 runtime이 모두 최적화돼 있으면 size delta 0도 정상으로 기록한다. 단, 최종 package SHA/native `.node` 존재 및 새 이미지에 duplicate가 없는지 검사하고 Docker Compose/Runtime/Browser smoke는 모두 그대로 실행한다. [P1 리뷰](https://github.com/planner77/layoutManager/pull/80#discussion_r4369963432) 대응이며 새 HEAD CI PASS 전 완료 주장 금지.
+
+
 ## Issue #67 / v0.37.2 — Standalone 웹 중복 SQLite layer 검증 및 운영 절차 (2026-10-25)
 
 - **동일 소스/플랫폼 기준선:** PR CI는 `git show <PR_BASE_SHA>:src/Dockerfile`로 기존 Dockerfile을 복원해 현재 PR HEAD와 같은 Source/Node22.14/linux-amd64로 `runtime` 빌드. 현재 Dockerfile은 `docker buildx build --load --platform linux/amd64 --target runtime -f src/Dockerfile -t cad-layout-viewer:ci .`로 빌드한다. 이전 #28 pre-standalone / #66 migrator 이미지 크기를 비교 분모로 쓰지 않는다.

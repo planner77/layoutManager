@@ -1,5 +1,12 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE67-PR80-REVIEW-20261025 — 첫 CI 성공·후속 PR P1 리뷰 수정
+
+- 최초 [Run 40170910369](https://github.com/planner77/layoutManager/actions/runs/40170910369), 검증 HEAD `6a35660d192a586158e4380ae8e9618c46032202`, **completed/success**. Verify [121101364113](https://github.com/planner77/layoutManager/actions/runs/40170910369/job/121101364113), Docker [121101364198](https://github.com/planner77/layoutManager/actions/runs/40170910369/job/121101364198) 모두 성공. Docker layer/hash/size/Compose는 최초 HEAD 통과 근거이며 이번 수정 이후에 소급 적용 금지.
+- [P1 review 4369963432](https://github.com/planner77/layoutManager/pull/80#discussion_r4369963432): #67 merge 이후 unrelated PR에서 이미 최적화된 baseline을 잘못 FAIL시키는 조건 발견. 교정: baseline에 duplication이 존재하는 transition에서만 positive saving 강제; 이미 최적화된 baseline이면 size delta 정보, optimized SHA/native/no-dup 및 전체 Docker/Verify 검증은 유지. 추가 Python synthetic 정상/재중복 regression.
+- 새 HEAD의 CI가 완료되기 전 PASS/비압축 절감 수치/GHCR OCI compressed bytes/현장 운영 승인 **NOT VERIFIED**. GHCR 공개 배포 및 Issue 종료는 후속 단계. [FailureLedger](FailureLedger.md), [Issue67](Issue67.md).
+
+
 ## U-ISSUE67-DEV-20261025 — Web SQLite 중복 이미지 계층 최소화, PR CI 이전 증거 경계
 
 - **코드/브랜치:** `build/issue-67-web-standalone-layer-audit`, 웹 `runtime`에 SQLite native package 추가 COPY 제거 + 기존 Next forced tracing 및 `serverExternalPackages` 유지. 빌드에 native `.node` 파일 존재/SQLite memory require smoke fail-closed. 기존 별도 #66 migrator/DB Schema/API/Viewer/Compose/GHCR pairing 변경 없음. 앱 `src/package.json` 및 lock root version 0.37.2 동기.

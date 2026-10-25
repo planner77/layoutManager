@@ -1,5 +1,17 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #67 — PR #80 P1 리뷰: 이미 deduplicated 기준선의 후속 CI 안전성
+
+| TC | 기대 | 검증 단계 |
+| --- | --- | --- |
+| TC-IMG67-002A | 이전/새 package SHA/native 동일, **둘 다 baseline duplicate 0개**면 정상 PASS | Python 합성 fixture; 새 HEAD CI 대기 |
+| TC-IMG67-002B | baseline duplicate 0개여도 optimized에 같은 package가 두 번 쓰이면 FAIL | Python 합성 fixture; 새 HEAD CI 대기 |
+| TC-IMG67-003A | 실제 duplicate가 **있던** 전환에서는 positive saving 의무. 이전부터 duplicate가 없었다면 baseline/new size 동일도 허용, delta 정보 표시 | Python+Docker CI; 새 HEAD 대기 |
+| TC-IMG67-006A | 두 경우 모두 native .node, 전체 SHA256/UID/SQLite·Docker Compose/API·Browser/Legacy 성공 강제 | 전체 Verify/Docker CI; 새 HEAD 대기 |
+
+- 최초 [Run 40170910369](https://github.com/planner77/layoutManager/actions/runs/40170910369), `6a35660`은 Verify/Docker SUCCESS이며 새 P1 수정 HEAD PASS를 대신하지 않는다. 원인 [리뷰 4369963432](https://github.com/planner77/layoutManager/pull/80#discussion_r4369963432). [FailureLedger](FailureLedger.md).
+
+
 ## Issue #67 — 웹 Standalone 중복 copy layer 정밀 검증 (2026-10-25 / v0.37.2)
 
 | TC | Acceptance | 자동 검증 기준 / 증거 | 상태 |

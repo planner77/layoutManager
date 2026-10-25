@@ -1,5 +1,12 @@
 # 주요 기술 결정과 승인 기록
 
+### ADR-044 보완 — 전환 시 절감 강제, 안정 상태에서는 무중복/ABI 검증 유지 (#67 P1, 2026-10-25)
+
+- 최초 성공 CI 뒤 [P1 4369963432](https://github.com/planner77/layoutManager/pull/80#discussion_r4369963432)에서 후속 PR이 이미 deduplicated main을 기준으로 할 경우 positive saving 강제 검사로 정상 CI가 막히는 문제를 발견.
+- **결정:** baseline에 실제 duplicate가 있을 때만 동일 SHA의 중복 package+positive uncompressed image saving 필수. 기존 최적화된 baseline이라면 0 byte reduction도 정상. 어느 쪽이든 native `.node` 존재, baseline/new package **전체 최종 파일 SHA 동일**, optimized package에 double layer 없음, Docker/Compose/Browser 검사는 필수. Test skip이나 issue number flag로 우회하지 않는다.
+- 기존 Main GHCR OCI published version+immutable digest 구별 규칙은 불변. [Issue67](Issue67.md), [FailureLedger](FailureLedger.md).
+
+
 ## ADR-044 — 웹 native SQLite는 Standalone tracing 단일 경로, 중복 layer는 실제 SHA로 검증 (2026-10-25 / #67)
 
 - **문제:** #28 `.next/standalone`에 `next.config.ts`의 강제 include glob으로 `better-sqlite3`가 수록될 수 있으나, Docker runtime은 같은 node_modules 경로를 별도 COPY한다. 기존 약 12.5MB COPY는 **로컬 비압축 계층**이며 실제 GHCR OCI 압축 전송량이 아니다.

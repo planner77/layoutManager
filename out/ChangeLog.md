@@ -1,5 +1,11 @@
 # ChangeLog
 
+### v0.37.2 / PR #80 — 이미 최적화된 이미지에서 CI false failure 방지 (P1 리뷰, 2026-10-25)
+
+- 최초 [PR CI 40170910369](https://github.com/planner77/layoutManager/actions/runs/40170910369) 최초 HEAD `6a35660`의 Verify/Docker PASS. 후속 [P1 리뷰 4369963432](https://github.com/planner77/layoutManager/pull/80#discussion_r4369963432)에서 모든 PR에 이전 중복/positive saving을 요구하면 정상 후속 PR도 막는 결함을 발견.
+- Docker layer audit는 baseline에 duplicate가 있던 transition에서는 SHA/positive size saving 필수, 이미 없던 PR에서는 package SHA/native/no-dup을 계속 확인하고 delta는 참고로만 보고한다. Python 미래 PR regression fixture를 추가. 새 HEAD PR CI 성공 전 결과를 PASS로 재사용하지 않는다.
+
+
 ### v0.37.2 — Issue #67 웹 Standalone better-sqlite3 중복 COPY 계층 안전 제거·계측 (2026-10-25)
 
 - Docker `runtime`에서 `.next/standalone` 이후 별도 `node_modules/better-sqlite3` COPY 제거, Prisma/native dynamic trace 유지. Native `.node` 유무와 `better-sqlite3` 메모리 DB 사용 가능 여부가 image build-time gate. Database schema/API/Viewer 및 #66 migrator/Compose/GHCR paired release 계약 불변.

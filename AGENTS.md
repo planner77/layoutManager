@@ -1,5 +1,11 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #67 / PR #80 — 성공 CI 후 P1 공통 Docker 검사 개선 (2026-10-25)
+
+- [PR CI 40170910369](https://github.com/planner77/layoutManager/actions/runs/40170910369) HEAD `6a35660`의 Verify(121101364113)·Docker(121101364198) jobs는 모두 SUCCESS. [P1 review 4369963432](https://github.com/planner77/layoutManager/pull/80#discussion_r4369963432)에서 이후 `main`이 이미 최적화된 상태이면 unrelated PR의 baseline 중복 0개/size delta 0을 강제 실패시키는 CI 회귀가 발견됐다.
+- 해결: 실제 baseline이 중복 레이어를 포함할 때에만 SHA/중복 raw bytes와 positive saving 강제, 정상 deduplicated baseline이면 no-saving도 허용. 두 경우 **optimized no-dup/native .node/최종 package SHA 일치, Docker runtime/Compose·API, 브라우저 E2E/Legacy**는 전부 검증한다. Python positive/negative fixture 추가. 새 HEAD PR CI PASS 전 merge/GHCR success 주장 금지, 검증 이력은 [FailureLedger](out/FailureLedger.md).
+
+
 ## Issue #67 — 웹 Standalone 중복 SQLite 패키지 레이어 안전 제거 (2026-10-25 / v0.37.2)
 
 - 웹 Docker `runtime`에서 `.next/standalone` 다음에 별도 `node_modules/better-sqlite3` COPY를 **제거**한다. `next.config.ts`의 `outputFileTracingIncludes`(native SQLite/Prisma)와 `serverExternalPackages`는 유지한다. 이미지 빌드 시 `better_sqlite3.node` 존재 검사 및 `require('better-sqlite3')` SQLite `:memory:` smoke 실패면 이미지 빌드도 실패한다.
