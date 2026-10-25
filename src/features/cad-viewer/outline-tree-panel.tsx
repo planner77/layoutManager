@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useRef, useState, type KeyboardEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { buildOutlineTree, type OutlineTreeType } from '@/domain/outline-tree';
 import type { SavedOutline, SavedOutlineOverlayState } from '@/viewers/core/adapter';
@@ -44,7 +44,7 @@ export function OutlineTreePanel({
       return next;
     });
   };
-  const handleKey = (event: React.KeyboardEvent<HTMLDivElement>, key: string, groupId: string, leafId?: string) => {
+  const handleKey = (event: KeyboardEvent<HTMLDivElement>, key: string, groupId: string, leafId?: string) => {
     if (event.target !== event.currentTarget) return;
     let nextKey: string | null = null;
     const index = visibleKeys.indexOf(key);
