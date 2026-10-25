@@ -13,9 +13,21 @@
 | D5 | 365일 append-only Audit, 별도 권한 보유 Admin 읽기, Secret/원본 CAD/Geometry 제외 | DB Audit 쓰기/조회·복구/백업, 365일 이후 파기/backup 정책 별도 승인 |
 | D6 | 사내 지정 LAN CIDR/방화벽/Reverse Proxy/backend 차단, HTTP 잔여 위험 Owner 인지 | **구체 CIDR 미제공**, trusted peer/forwarded Host 규칙/서버 직접 접근 제한과 HTTP 위험 수용·실측 기록 |
 
-**기준:** 실제 .env·비밀번호·토큰/파일경로/사내 IP를 코드·Git·공개 CI·운영 로그에 출력하지 않는다. 비밀번호 Secret은 권한제한 파일/Compose Secret 전달 제안. 네트워크 차단은 HTTP 암호화 대체가 아니다. 서버 설정/DB 마이그레이션/신규 인증 API는 Owner 별도 운영 승인과 보안·백업·실복구 검증 후 별도 PR에서 시행한다. [Issue96](Issue96.md), [ADR-050](Decisions.md), [TestPlan](TestPlan.md).
+**기준:** 실제 .env·비밀번호·토큰/파일경로/사내 IP를 코드·Git·공개 CI·운영 로그에 출력하지 않는다. 비밀번호 Secret은 권한제한 파일/Compose Secret 전달 제안. 네트워크 차단은 HTTP 암호화 대체가 아니다. 서버 설정/DB 마이그레이션/신규 인증 API는 Owner 별도 운영 승인과 보안·백업·실복구 검증 후 별도 PR에서 시행한다. [Issue96](Issue96.md), [ADR-051](Decisions.md), [TestPlan](TestPlan.md).
 
 
+
+## Issue #97 / PR #100 — GHCR 0.40.2 신규 패치 게시 운영 경계 (2026-10-25)
+
+- `0.40.1`은 [#93 Main 40184907533](https://github.com/planner77/layoutManager/actions/runs/40184907533)의 paired 이미지 promotion+OCI 측정까지 SUCCESS, `v0.40.1` 태그는 이미 존재한다. 신규 코드 #97을 같은 버전으로 병합하면 기존 이미지 존재 검사가 Build/Publish를 건너뛴다. 소스/lock root 버전을 `0.40.2`로 올려 기존 immutable `v0.40.1` 및 GHCR alias digest를 임의로 재사용하지 않는다.
+- 새 HEAD PR CI 성공 후 merge만 허용. `main` push에서 `release-scope` → app+migrator candidates build → 두 digest inspect → version `0.40.2`/`0.40.2-migrate` pair→ `latest`/`latest-migrate` 순서 게시. 실행 시작/Job 단계 성공/실제 GHCR digest 확인을 구별한다. CI monitor 생략 시 publish 성공 주장하지 않는다.
+- P4 D2는 비활성 validator 모듈; #96/#98 승인 전 인증·영속 API 활성화/운영 배포 승인 아니다. 현장 업그레이드는 복구 가능한 SQLite/CAD/S3 동시 백업 및 paired digest 확인 후 별도 수행.
+
+## Issue #97 — D2 서버 Geometry 검증 구현의 비운영 상태 (2026-10-25)
+
+- 신규 코드 `src/server/outline/transform-attestation.ts`는 Auth/HTTP Route/Prisma/Storage/배포 플래그 없이 D3에서 미래 호출할 수 있는 순수 validator이다. 어떤 신규 로그인·외곽선 영속 GET/Write API·실제 CAD 공유 편집 서비스도 **현재 열지 않는다**.
+- 운영 전 의무: #96 최초 Admin·세션/Role/Site/Version Scope 및 Audit/HTTP LAN 잔여 위험 Owner 승인, #98 원본 Storage bytes SHA 재조회·Revision CAS/Soft Delete·FK/Backup Restore·Prisma migration dry-run, #99 실 DXF 3종/브라우저·GPU 성능 현장 수용. 비승인 데이터/자격증명·CAD 원본을 Git/CI artifacts/로그에 포함하지 않는다.
+- 단위/형상 검증 계약은 [Issue97](Issue97.md)/[ADR-050](Decisions.md), TC 001~009; 테스트는 실제 실행 전에 NOT RUN. PR CI 시작/성공만으로 서버 쓰기/운영 승인 주장 금지.
 
 ## Issue #31 P4-D0 — LAN HTTP 경량 계정 운영 **계약만 승인** (2026-10-25)
 
