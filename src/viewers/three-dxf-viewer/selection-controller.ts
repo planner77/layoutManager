@@ -1,14 +1,18 @@
 import type {OutlineEntity,XY} from '../core/outline-geometry';
+import type {GeoJSONOutline} from '../core/outline-compute';
+import {geometryContainedInBox,geometryHitPoint,geometryIntersectsBox,type HitBox} from '../../domain/generated-hit-test';
 import {SelectionSpatialIndex} from './selection-spatial-index';
 
-export type SelectionMode='pan'|'select';
+/** 'select' is the #31/#40 SOURCE-only outline worker mode. */
+export type SelectionMode='pan'|'select'|'objects'|'generated';
+export type GeneratedSelectable=Readonly<{id:string;geometry:GeoJSONOutline}>;
 const MIN_DRAG_PX=5,CLICK_PX=7;
 function distanceToSegment(p:XY,a:XY,b:XY){
  const dx=b[0]-a[0],dy=b[1]-a[1],denom=dx*dx+dy*dy;
  const t=denom===0?0:Math.max(0,Math.min(1,((p[0]-a[0])*dx+(p[1]-a[1])*dy)/denom));
  return Math.hypot(p[0]-a[0]-t*dx,p[1]-a[1]-t*dy);
 }
-function segmentIntersectsBox(a:XY,b:XY,rect:[number,number,number,number]){
+function segmentIntersectsBox(a:XY,b:XY,rect:HitBox){
  const [left,bottom,right,top]=rect;
  const inside=(p:XY)=>p[0]>=left&&p[0]<=right&&p[1]>=bottom&&p[1]<=top;
  if(inside(a)||inside(b))return true;
@@ -34,9 +38,13 @@ function pathsFor(entity:OutlineEntity) {
    return segments;
  });
 }
-/** DOM controls are owned by the three-dxf-viewer adapter and always disposed with it. */
+/** One DOM input controller and one source SpatialIndex for all four modes.
+ * Generated shapes are at most 100 confirmed session objects and are tested
+ * dynamically; never add their paths to the immutable source index/Worker. */
 export class SelectionController {
  private ids=new Set<string>();
+ private generatedIds=new Set<string>();
+ private generated:readonly GeneratedSelectable[]=[];
  private readonly spatial:SelectionSpatialIndex;
  private readonly idToLayer:Map<string,string>;
  get indexBuildMs(){return this.spatial.buildMs;}
@@ -56,6 +64,7 @@ export class SelectionController {
    private screenToWorld:(x:number,y:number)=>XY,
    private onChange:(selected:OutlineEntity[])=>void,
    private onPanKey:(pan:boolean)=>void,
+   private onObjectsChange?:(sources:OutlineEntity[],generatedIds:readonly string[])=>void,
  ) {
    this.spatial=new SelectionSpatialIndex(entities);
    this.idToLayer=new Map(entities.map(e=>[e.id,e.layer]));
@@ -75,7 +84,11 @@ export class SelectionController {
    window.addEventListener('keyup',this.keyUp,true);
    window.addEventListener('blur',this.blur);
  }
- setMode(mode:SelectionMode){this.mode=mode;this.cancelDrag();this.canvas.style.cursor=mode==='select'?'crosshair':this.previousCursor;this.onPanKey(mode==='pan'||this.space);}
+ setMode(mode:SelectionMode){
+   this.mode=mode;this.cancelDrag();
+   this.canvas.style.cursor=mode==='pan'?this.previousCursor:'crosshair';
+   this.onPanKey(mode==='pan'||this.space);
+ }
  setVisibleLayers(layers:Set<string>){
    this.visible=new Set(layers);
    const before=this.ids.size;
@@ -84,15 +97,39 @@ export class SelectionController {
    }));
    if(before!==this.ids.size)this.emit();
  }
+ setGeneratedObjects(objects:readonly GeneratedSelectable[]){
+   const unique=new Map(objects.map(o=>[o.id,o]));
+   this.generated=[...unique.values()];
+   const before=this.generatedIds.size;
+   this.generatedIds=new Set([...this.generatedIds].filter(id=>unique.has(id)));
+   if(before!==this.generatedIds.size)this.emit();
+ }
  getSelection(){return this.entities.filter(e=>this.ids.has(e.id));}
+ getSelectedGeneratedIds(){return [...this.generatedIds];}
+ selectGenerated(id:string,additive=false):boolean{
+   if(!this.generated.some(item=>item.id===id))return false;
+   if(!additive){this.ids.clear();this.generatedIds.clear();}
+   if(additive&&this.generatedIds.has(id))this.generatedIds.delete(id);
+   else this.generatedIds.add(id);
+   this.emit();return true;
+ }
  clear(){if(this.ids.size){this.ids.clear();this.emit();}this.cancelDrag();}
- private emit(){this.onChange(this.getSelection());}
+ clearObjects(){
+   const changed=this.ids.size>0||this.generatedIds.size>0;
+   this.ids.clear();this.generatedIds.clear();this.cancelDrag();
+   if(changed)this.emit();
+ }
+ private emit(){
+   const sources=this.getSelection();
+   this.onChange(sources);
+   this.onObjectsChange?.(sources,this.getSelectedGeneratedIds());
+ }
  private position(clientX:number,clientY:number):XY {
    const rect=this.canvas.getBoundingClientRect();
    return [clientX-rect.left,clientY-rect.top];
  }
  private pointerDown=(event:PointerEvent)=>{
-   if(this.mode!=='select'||this.space||event.button!==0)return;
+   if(this.mode==='pan'||this.space||event.button!==0)return;
    const [x,y]=this.position(event.clientX,event.clientY);
    this.down={pointerId:event.pointerId,x,y,mod:event.ctrlKey||event.metaKey};
  };
@@ -114,42 +151,59 @@ export class SelectionController {
    const [x,y]=this.position(event.clientX,event.clientY);
    const dragging=Math.hypot(x-start.x,y-start.y)>=MIN_DRAG_PX;
    this.cancelDrag();
-   let hits:OutlineEntity[]=[];
+   const includeSource=this.mode==='select'||this.mode==='objects';
+   const includeGenerated=this.mode==='objects'||this.mode==='generated';
+   let sourceHits:OutlineEntity[]=[];
+   let generatedHits:GeneratedSelectable[]=[];
    if(dragging){
      const min=this.screenToWorld(Math.min(x,start.x),Math.max(y,start.y));
      const max=this.screenToWorld(Math.max(x,start.x),Math.min(y,start.y));
-     const rect:[number,number,number,number]=[Math.min(min[0],max[0]),Math.min(min[1],max[1]),Math.max(min[0],max[0]),Math.max(min[1],max[1])];
+     const rect:HitBox=[Math.min(min[0],max[0]),Math.min(min[1],max[1]),Math.max(min[0],max[0]),Math.max(min[1],max[1])];
      const contained=x>=start.x;
-     const candidates=this.spatial.query(rect).filter(e=>this.visible.has(e.layer));
-     hits=candidates.filter(e=>{
-       if(contained)return e.paths.every(path=>path.points.every(p=>p[0]>=rect[0]&&p[0]<=rect[2]&&p[1]>=rect[1]&&p[1]<=rect[3]));
-       if(e.bounds[2]<rect[0]||e.bounds[0]>rect[2]||e.bounds[3]<rect[1]||e.bounds[1]>rect[3])return false;
-       return pathsFor(e).some(([a,b])=>segmentIntersectsBox(a,b,rect));
-     });
+     if(includeSource){
+       const candidates=this.spatial.query([rect[0],rect[1],rect[2],rect[3]]).filter(e=>this.visible.has(e.layer));
+       sourceHits=candidates.filter(e=>{
+         if(contained)return e.paths.every(path=>path.points.every(p=>p[0]>=rect[0]&&p[0]<=rect[2]&&p[1]>=rect[1]&&p[1]<=rect[3]));
+         if(e.bounds[2]<rect[0]||e.bounds[0]>rect[2]||e.bounds[3]<rect[1]||e.bounds[1]>rect[3])return false;
+         return pathsFor(e).some(([a,b])=>segmentIntersectsBox(a,b,rect));
+       });
+     }
+     if(includeGenerated)generatedHits=this.generated.filter(o=>contained?
+       geometryContainedInBox(o.geometry,rect):geometryIntersectsBox(o.geometry,rect));
    }else{
      const p=this.screenToWorld(x,y),q=this.screenToWorld(x+CLICK_PX,y),radius=Math.hypot(q[0]-p[0],q[1]-p[1]);
-     const candidates=this.spatial.query([p[0]-radius,p[1]-radius,p[0]+radius,p[1]+radius]).filter(e=>this.visible.has(e.layer));
-     const ranked=candidates.map(e=>({e,d:pathsFor(e).reduce((best,[a,b])=>Math.min(best,distanceToSegment(p,a,b)),Infinity)})).sort((a,b)=>a.d-b.d);
-     if(ranked[0]&&ranked[0].d<=radius)hits=[ranked[0].e];
+     if(includeSource){
+       const candidates=this.spatial.query([p[0]-radius,p[1]-radius,p[0]+radius,p[1]+radius]).filter(e=>this.visible.has(e.layer));
+       const ranked=candidates.map(e=>({e,d:pathsFor(e).reduce((best,[a,b])=>Math.min(best,distanceToSegment(p,a,b)),Infinity)})).sort((a,b)=>a.d-b.d);
+       if(ranked[0]&&ranked[0].d<=radius)sourceHits=[ranked[0].e];
+     }
+     // In general-object mode a matching DXF entity ALWAYS wins over its
+     // overlay; select an overlapping generated object in GENERATED mode/tree.
+     if(includeGenerated && (!sourceHits.length || this.mode==='generated')){
+       const match=[...this.generated].reverse().find(o=>geometryHitPoint(o.geometry,p,radius));
+       if(match)generatedHits=[match];
+     }
    }
-   if(!start.mod)this.ids.clear();
-   for(const hit of hits){if(start.mod&&this.ids.has(hit.id))this.ids.delete(hit.id);else this.ids.add(hit.id);}
+   if(!start.mod){this.ids.clear();this.generatedIds.clear();}
+   for(const hit of sourceHits){
+     if(start.mod&&this.ids.has(hit.id))this.ids.delete(hit.id);else this.ids.add(hit.id);
+   }
+   for(const hit of generatedHits){
+     if(start.mod&&this.generatedIds.has(hit.id))this.generatedIds.delete(hit.id);
+     else this.generatedIds.add(hit.id);
+   }
    this.emit();
  };
  private pointerCancel=()=>this.cancelDrag();
  private keyDown=(event:KeyboardEvent)=>{
    const el=event.target as HTMLElement|null;
    if(el?.closest('input,textarea,select,[contenteditable="true"]'))return;
-   if(event.code==='Space'&&this.mode==='select'&&!event.repeat){
-     // A focused button/menu control owns Space activation. Intercepting it at
-     // window capture would prevent the browser's keyboard click (U3 toggle OFF).
-     // Only canvas/non-interactive targets receive temporary Space+drag pan.
-     const interactive=el?.closest('button,a[href],summary,[role="button"],[role="link"],[role="switch"],[role="checkbox"],[role="radio"],[role="tab"],[role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"]');
+   if(event.code==='Space'&&this.mode!=='pan'&&!event.repeat){
+     const interactive=el?.closest('button,a[href],summary,[role="button"],[role="link"],[role="switch"],[role="checkbox"],[role="radio"],[role="tab"],[role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"],[role="treeitem"]');
      if(!interactive){this.space=true;this.onPanKey(true);event.preventDefault();}
    }
-   if(event.key==='Escape'&&this.mode==='select'&&(this.down||this.ids.size)){
-     // Also allow the fullscreen Escape handler to close native/CSS fullscreen.
-     this.clear();event.preventDefault();
+   if(event.key==='Escape'&&(this.down||this.ids.size||this.generatedIds.size)){
+     this.clearObjects();event.preventDefault();
    }
  };
  private keyUp=(event:KeyboardEvent)=>{
