@@ -1,11 +1,26 @@
 # PR/Main CI 실패 원장
 
+## Issue #102 / PR #114 — #107 후속 Main 갱신 재정렬 (2026-10-26 KST)
+
+- **재정렬 원인:** PR #114 기존 통합 HEAD [`671f4e2`](https://github.com/planner77/layoutManager/commit/671f4e2a32d888900d0b583db90487a53530da64) 대비 #107의 문서-only 후속 [main `3caca50`](https://github.com/planner77/layoutManager/commit/3caca50df917ca9ea7b372ac102abd29b47236ff)이 새로 병합됨. 비교 결과 `behind=1`, GitHub `mergeable=false`. 동시 수정 경로는 `AGENTS.md`, `out/FailureLedger.md`, `out/Requirements.md`, `out/TestPlan.md`, `out/TestReport.md`의 Markdown 최상단 추가 섹션. **CI 실패가 아닌 문서 충돌**; 실패·취소 Job을 창작하거나 기존 원장을 삭제하지 않음.
+- **기존 PR CI 실증:** [Run 40230535926](https://github.com/planner77/layoutManager/actions/runs/40230535926) `completed/success` 는 **이전 HEAD `671f4e2` 전용**으로 보존. 최신 Main 통합 HEAD를 검증한 결과는 아님.
+- **충돌 처리:** #107의 G5 완료·[Main CI 40225537167](https://github.com/planner77/layoutManager/actions/runs/40225537167) GHCR App/Migrator Pair 검증 기록과 #102의 `G0-BIZ-01~06`(익명 CAD GET, Editor+Site POST/Current, Editor+Site+기존 비밀번호 Delete, 관리자 책임, Audit 365일)를 모두 보존. Main의 `README.md`·`ChangeLog.md`·`Issue107.md` 변경도 유지하고 APP/API/Prisma/Nginx/Compose/원본 CAD/GHCR 변경 없음.
+- **해결방식:** 기존 PR HEAD를 첫 부모, 신규 Main `3caca50df917ca9ea7b372ac102abd29b47236ff`을 둘째 부모로 하는 **비강제 2-parent merge commit**을 계획하고, 최신 Main Git tree에서 문서 5개의 양측 신규 섹션을 충돌 없이 결합. `behind=0`·미해결 리뷰 스레드 0·CI 신규 실행 시작 확인 후 사용자 지시에 따라 **CI 모니터링 생략**. 새 HEAD의 CI가 실제 완료되기 전 PASS로 표기하지 않음.
+
 ## Issue #102 / PR #114 — #107·#103 Main 선행 병합 충돌 정렬 (2026-10-26 KST)
 
 - **구 HEAD PR CI 성공:** [Run 40200082645](https://github.com/planner77/layoutManager/actions/runs/40200082645) 기존 HEAD `638da7e02c04e64989bc745b6ebc2cda4166077b` `completed/success`. 이전 리뷰 스레드 0. 이 결과는 새 HEAD 검증에 전용 불가.
 - **원인:** [#107 main 142c4b9](https://github.com/planner77/layoutManager/commit/142c4b9bc0bdb2ad0403fb1ee6640cf070d0bbbc)와 [#103 main `1bd6734c`](https://github.com/planner77/layoutManager/commit/1bd6734c1f9eb2b75592b9990e640195cd1ba51e)가 #114 이후 병합되어 `behind=2`·`mergeable=false`. 이는 **CI 실패가 아닌 공통 Markdown 문서 상단 병합 충돌**이며 PR #114 기존 성공과 무관하다. 실패/취소 Job을 새로 꾸며 기록하지 않는다.
 - **해결:** #103 격리 Auth DB/Integration, #107 Preview/Viewer 검증·CI Workflow와 Main의 AGENTS/Architecture/Database/Decisions/Requirements/Operation/TestPlan/TestReport/Issue96·README·ChangeLog·기존 실패 원장을 모두 보존. 기존 #114 정책 문서를 Main 트리 위에 통합하고, 새 Owner 승인 **G0-BIZ-06 `POST /api/cad-files` 로그인 Editor 이상+담당 Site**를 ADR/요구/시험/이슈에 반영. 코드·운영 Auth/API/Prisma/Migration/Nginx/Compose/.env/원본 데이터·GHCR 변경 0.
 - **정렬 방식:** PR HEAD 첫 부모, 당시 최신 main `1bd6734c1f9eb2b75592b9990e640195cd1ba51e` 둘째 부모의 **비강제 2-parent merge commit**으로 문서 충돌 정리. 새 HEAD의 PR CI는 `pull_request.synchronize`로 **시작 확인까지만** 하고 모니터링 안 함. 실행/성공을 혼동하지 않으며 새 리뷰 스레드·충돌은 병합 전 재점검. G0 완료/운영 Go-Live는 별도.
+
+## Issue #107 — 최종 성공 증거 확정 / 신규 실패 없음 (2026-10-26 KST)
+
+- **초기 HEAD 성공 후 P2 수정:** 최초 PR #115 HEAD `d771d553` [Run 40201366001](https://github.com/planner77/layoutManager/actions/runs/40201366001) 성공, 이후 [리뷰 4371142398](https://github.com/planner77/layoutManager/pull/115#discussion_r4371142398)에 따라 실제 Viewer URL 검사·TC-P4-G5-007을 보완. 이 리뷰는 CI 실패로 분류하지 않고 이전 원장 내역을 그대로 보존한다.
+- **수정 HEAD 재검증 PASS:** PR HEAD `44132fcaa31aff0c4643edfeb8db6949d801ca5b`, [Run 40224438075](https://github.com/planner77/layoutManager/actions/runs/40224438075) completed/success, Verify Job `121263027541`·Docker Job `121263027604` success, 미해결 리뷰 0·충돌 0 뒤 Squash 병합.
+- **Main CI/GHCR PASS:** main `142c4b9bc0bdb2ad0403fb1ee6640cf070d0bbbc`, [Run 40225537167](https://github.com/planner77/layoutManager/actions/runs/40225537167) `completed/success`, App·Migrator 후보 build/paired digest promotion 및 OCI 계측 성공. Git tag `v0.40.4` 확인. 운영 구성·인증 기능 활성화·실제 LAN/백업 복원은 수행하지 않음.
+- **이번 추가 문서 동기화 작업:** 완료 상태와 현장 `NOT RUN` 경계를 기록할 뿐 기존 성공 Run을 다시 실행하거나 신규 실패로 기록하지 않는다. 이 후속 문서 PR의 새 HEAD CI는 별도 검증 결과 전 `NOT VERIFIED`.
+
 
 ## Issue #103 / PR #116 — #107 main 선행 병합에 따른 정렬 (2026-10-26 KST)
 

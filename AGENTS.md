@@ -9,6 +9,15 @@
 - **배포 금지:** 이 결정은 현재 익명 GET/삭제 암호/API 동작을 변경하지 않으며, 신규 Auth/DB/Prisma/Migration/Proxy/Nginx/Compose/.env 설정을 활성화하지 않는다. G1~G6 격리 구현/기능 시험 후 G7 별도 Owner Go/No-Go 전까지 운영 OFF. 테스트 미실행을 PASS로 기록 금지.
 
 
+## Issue #107 — 구현 최종 판정 및 G6 인계 (2026-10-26)
+
+- **구현 완료:** [PR #115](https://github.com/planner77/layoutManager/pull/115) Squash 병합. 최종 PR HEAD `44132fcaa31aff0c4643edfeb8db6949d801ca5b`, main commit `142c4b9bc0bdb2ad0403fb1ee6640cf070d0bbbc`. Issue #107은 `closed/completed`이며 재구현하지 않는다.
+- **자동 검증 PASS:** [PR CI #40224438075](https://github.com/planner77/layoutManager/actions/runs/40224438075) Verify/Typecheck/Lint/Unit·E2E·Build 및 Docker/Migration/Runtime 두 Job `completed/success`. Viewer P2 리뷰 4371142398 답변·해결, 미해결 리뷰 0·당시 main 병합 충돌 0.
+- **Main 릴리스 PASS:** [Main CI #40225537167](https://github.com/planner77/layoutManager/actions/runs/40225537167) `completed/success`, GHCR App·Migrator candidate build, paired image promotion 및 OCI measurement 관련 필수 step 모두 success. 기존 v0.40.3 불변, 새 tag `v0.40.4` 생성 확인. 런타임 실제 배포는 수행하지 않았다.
+- **실 LAN 증거는 별개:** Windows Nginx↔WSL2/App 실제 연결, 사내 PC 2대, 업무 Upload/Download·Viewer 실제 조작, G3 Cookie/Session, DB/CAD/S3 백업·복원은 `NOT RUN`, [#108 G6](https://github.com/planner77/layoutManager/issues/108)에서 수용한다. #109 Owner 별도 Go/No-Go 이전 운영 Compose/Nginx/Prisma/Auth/API/데이터 변경·활성화 금지.
+- 본 추가 작업은 **종료된 #107의 증거 상태를 Markdown으로 최신화하는 후속 문서 PR**이다. 이미 완료된 코드/CI/GHCR 게시를 재수행하지 않고 공격·탈취 보안 강화를 다시 요구하지 않는다.
+
+
 ## Issue #103 — PR #116 CI 실패·감사 P1 교정 (2026-10-26)
 
 - 기존 [CI #40202066291](https://github.com/planner77/layoutManager/actions/runs/40202066291)의 Verify(TypeScript `store.ts:134 TS1002`)·Docker(baseline Next TypeScript) 두 Job은 동일 소스 결함으로 **FAILURE**, Unit/Integration/E2E 등은 **SKIPPED**. `src/tests/fixtures/auth-g1/store.ts`의 함수 선언 중복·문자열 파손을 단일 구현으로 정리해야 하며 수정 전 HEAD 성공을 전용하지 않는다.
