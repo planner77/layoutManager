@@ -41,7 +41,7 @@ fi
 
 # Issue #67: report file-level raw/gzip proxy sizes for required static assets.
 # No glyph subsets, fonts, WASM, or dynamically traced modules are deleted.
-optimized="\${images[2]}"
+optimized="${images[2]}"
 asset_table='| Public asset | Raw bytes | File gzip-1 proxy bytes (NOT OCI) |'
 asset_table+=$'\n| --- | ---: | ---: |'
 for asset in \
