@@ -11,6 +11,8 @@ import type {OutlineResult} from '../core/outline-compute';
 import type {OutlineInfo,SavedOutline,SavedOutlineOverlayState} from '../core/adapter';
 import type {OutlineAssignment} from '../../domain/outline-assignment';
 import {parseOutlineAssignmentMetadata} from '../../domain/outline-assignment';
+import {outlineGeometryBounds} from '../../domain/outline-tree';
+import {selectedTranslationIds,validTranslationPreview} from '../../domain/generated-translate';
 import {canvasEditCapability,canvasObjectRef,createGeneratedId,validCanvasScope,type CanvasObjectRef} from '../../domain/canvas-object-selection';
 import {
   GeneratedDocument,generatedResult,
@@ -53,6 +55,15 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
   private savedGroup=new THREE.Group();
   private savedGroups=new Map<string,THREE.Group>();
   private selectedSavedGroup?: THREE.Group;
+  /** E4 preview is a disposable Scene-only ghost; never an extra Document entry. */
+  private dragGhostGroup?:THREE.Group;
+  private dragTranslation?:Readonly<{
+    ids:readonly string[];
+    bounds:Readonly<{minX:number;minY:number;maxX:number;maxY:number}>;
+  }>;
+  private cameraChanged=()=>{
+    if(this.dragTranslation)this.selector?.cancelGeneratedDrag();
+  };
   /** GeneratedDocument owns all confirmed geometry, ordering, UUIDs, metadata and visibility. */
   private document?:GeneratedDocument;
   private renderedTransforms=new Map<string,Affine2D>();
@@ -67,6 +78,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     onObjectSelection?:(refs:CanvasObjectRef[])=>void;
     onPreview?:(result:OutlineResult|null,error?:string)=>void;
     onSaved?:(count:number)=>void;
+    onEditError?:(message:string)=>void;
   }) {
     if(outline && validCanvasScope(outline))
       this.document=new GeneratedDocument(outline,()=>this.documentChanged());
@@ -79,12 +91,14 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     this.controls.enableRotate = false;
     this.controls.mouseButtons.LEFT = THREE.MOUSE.PAN;
     this.controls.addEventListener('change',this.render);
+    this.controls.addEventListener('change',this.cameraChanged);
     this.resize = new ResizeObserver(this.size);
     this.resize.observe(container); this.size();
   }
   private render = () => { if (!this.disposed) this.renderer.render(this.scene,this.camera); };
   private size = () => {
     if (this.disposed) return;
+    this.selector?.cancelGeneratedDrag();
     const w=Math.max(1,this.container.clientWidth), h=Math.max(1,this.container.clientHeight);
     this.renderer.setSize(w,h);
     const height=this.camera.top-this.camera.bottom;
@@ -137,7 +151,12 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
           this.selector=new SelectionController(this.renderer.domElement,this.container,selectable,
             (x,y)=>this.screenToWorld(x,y),this.selectionChanged,
             pan=>{this.controls.mouseButtons.LEFT=pan?THREE.MOUSE.PAN:THREE.MOUSE.ROTATE;},
-            this.objectSelectionChanged);
+            this.objectSelectionChanged,{
+              begin:ids=>this.beginGeneratedDrag(ids),
+              move:(start,current)=>this.moveGeneratedDrag(start,current),
+              end:(start,current)=>this.endGeneratedDrag(start,current),
+              cancel:()=>this.dropTranslationPreview(),
+            });
           this.spatialIndexMs=this.selector.indexBuildMs;
           this.selector.setMode(this.mode);
         }catch(error) {
@@ -242,7 +261,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     });
   }
   private selectionChanged=(selected:OutlineEntity[])=>{
-    this.document?.cancelPending();
+    this.cancelGeneratedCommand();
     if(this.selectionGroup){this.scene.remove(this.selectionGroup);release(this.selectionGroup);}
     this.selectionGroup=this.createPathGroup(selected.flatMap(e=>e.paths),0xffd000);
     this.scene.add(this.selectionGroup);this.render();
@@ -254,7 +273,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
   };
   /** Canvas/tree/layer changes share the same selection set. */
   private objectSelectionChanged=(sources:OutlineEntity[],generated:readonly string[])=>{
-    this.document?.cancelPending();
+    this.cancelGeneratedCommand();
     this.refreshSavedHighlight();
     if(!this.outline || !validCanvasScope(this.outline))return;
     this.outline.onObjectSelection?.([
@@ -294,6 +313,79 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     this.refreshSavedHighlight();
     this.outline?.onSaved?.(objects.length);
     this.render();
+  }
+  private dropTranslationPreview(){
+    const ghost=this.dragGhostGroup;
+    this.dragTranslation=undefined;
+    this.dragGhostGroup=undefined;
+    if(ghost){this.scene.remove(ghost);release(ghost);this.render();}
+    this.document?.cancelPending();
+  }
+  /** A previously selected visible GENERATED boundary starts drag in generated-only mode. */
+  private beginGeneratedDrag(ids:readonly string[]):boolean{
+    if(this.disposed||this.mode!=='generated'||!this.document||!this.outline||
+       !this.selector||this.dragTranslation)return false;
+    try {
+      const selected=selectedTranslationIds(this.getCanvasObjectSelection(),
+        this.getGeneratedObjects(),this.outline);
+      if(selected.length!==ids.length||selected.some(id=>!ids.includes(id)))
+        throw new Error('이동 대상 선택이 변경되었습니다.');
+      const entries=this.document.getObjects().filter(item=>ids.includes(item.ref.id));
+      const geometries=entries.map(item=>generatedResult(item).geometry);
+      const bounds=geometries.map(geometry=>outlineGeometryBounds(geometry));
+      if(bounds.some(bound=>!bound))throw new Error('이동 미리보기를 위한 WCS 범위가 유효하지 않습니다.');
+      const envelope={
+        minX:Math.min(...bounds.map(b=>b!.minX)),minY:Math.min(...bounds.map(b=>b!.minY)),
+        maxX:Math.max(...bounds.map(b=>b!.maxX)),maxY:Math.max(...bounds.map(b=>b!.maxY)),
+      };
+      if(!validTranslationPreview(0,0,envelope))throw new Error('이동 대상 WCS 범위가 유효하지 않습니다.');
+      const paths:OutlinePath[]=geometries.flatMap(g=>{
+        const polys=g.type==='Polygon'?[g.coordinates]:g.coordinates;
+        return polys.flatMap(poly=>poly.map(ring=>({points:ring,closed:true})));
+      });
+      // Stage is validation only. A drag never changes history or Document until release.
+      this.document.stage({type:'Translate',ids:[...ids],dx:0,dy:0},this.getCanvasObjectSelection());
+      const ghost=this.createPathGroup(paths,0x22d3ee);
+      this.dragGhostGroup=ghost;this.dragTranslation={ids:[...ids],bounds:envelope};
+      this.scene.add(ghost);this.render();
+      return true;
+    }catch(error){
+      this.dropTranslationPreview();
+      this.outline?.onEditError?.(error instanceof Error?error.message:'이동을 시작할 수 없습니다.');
+      return false;
+    }
+  }
+  private moveGeneratedDrag(start:readonly [number,number],current:readonly [number,number]):boolean{
+    const drag=this.dragTranslation;
+    if(!drag||!this.dragGhostGroup)return false;
+    const dx=current[0]-start[0],dy=current[1]-start[1];
+    if(!validTranslationPreview(dx,dy,drag.bounds)){
+      this.outline?.onEditError?.('이동이 허용된 WCS 범위를 벗어나 취소되었습니다.');
+      this.dropTranslationPreview();
+      return false;
+    }
+    this.dragGhostGroup.position.set(dx,dy,0);this.render();return true;
+  }
+  private endGeneratedDrag(start:readonly [number,number],current:readonly [number,number]){
+    const drag=this.dragTranslation;
+    try{
+      if(!drag||!this.document||!this.outline||this.mode!=='generated')
+        throw new Error('이동 도중 편집 모드가 변경되었습니다.');
+      const dx=current[0]-start[0],dy=current[1]-start[1];
+      if(!validTranslationPreview(dx,dy,drag.bounds))
+        throw new Error('확정할 WCS 이동 범위가 유효하지 않습니다.');
+      if(dx===0&&dy===0)return;
+      const selection=this.getCanvasObjectSelection();
+      const ids=selectedTranslationIds(selection,this.getGeneratedObjects(),this.outline);
+      if(ids.length!==drag.ids.length||ids.some(id=>!drag.ids.includes(id)))
+        throw new Error('드래그 중 선택 대상이 바뀌었습니다.');
+      this.document.stage({type:'Translate',ids:drag.ids,dx,dy},selection);
+      this.document.commitPending(this.getCanvasObjectSelection());
+    }catch(error){
+      this.outline?.onEditError?.(error instanceof Error?error.message:'이동이 취소되었습니다.');
+    }finally{
+      this.dropTranslationPreview();
+    }
   }
   private createPathGroup(paths:OutlinePath[],color:number){
     const group=new THREE.Group(),z=this.bounds.isEmpty()?0:this.bounds.max.z+0.5;
@@ -343,7 +435,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
         ...(this.renderCoverage?.warnings??[]),...(this.index?.warnings??[])]};
   }
   setSelectionMode(mode:SelectionMode){
-    if(this.mode!==mode)this.document?.cancelPending();
+    this.cancelGeneratedCommand();
     this.mode=mode;this.selector?.setMode(mode);
   }
   getOutlineSelection(){return this.selector?.getSelection()??[];}
@@ -353,7 +445,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     return [...this.selector.getSelection().map(e=>canvasObjectRef('SOURCE',e.id,this.outline!)),
       ...this.selector.getSelectedGeneratedIds().map(id=>canvasObjectRef('GENERATED',id,this.outline!))];
   }
-  clearCanvasObjectSelection(){this.selector?.clearObjects();}
+  clearCanvasObjectSelection(){this.cancelGeneratedCommand();this.selector?.clearObjects();}
   isSelectedGeneratedAt(clientX:number,clientY:number):boolean{
     return this.selector?.isSelectedGeneratedAt(clientX,clientY)??false;
   }
@@ -440,6 +532,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     }));
   }
   setSavedOutlineVisibility(id:string,visible:boolean):boolean {
+    this.cancelGeneratedCommand();
     return this.document?.setVisible(id,visible)??false;
   }
   selectSavedOutline(id:string,additive=false):boolean {
@@ -449,28 +542,37 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
   }
   getGeneratedHistory(){return this.document?.history()??{undo:0,redo:0,limit:100};}
   executeGeneratedCommand(command:GeneratedCommand):void {
+    this.cancelGeneratedCommand();
     if(!this.document)throw new Error('이 Renderer에서는 생성 개체 편집을 지원하지 않습니다.');
     if(this.mode!=='objects'&&this.mode!=='generated')
       throw new Error('생성 개체 편집 모드에서만 변경할 수 있습니다.');
     this.document.execute(command,this.getCanvasObjectSelection());
   }
   stageGeneratedCommand(command:GeneratedCommand):void{
+    this.cancelGeneratedCommand();
     if(!this.document)throw new Error('이 Renderer에서는 생성 개체 편집을 지원하지 않습니다.');
     this.document.stage(command,this.getCanvasObjectSelection());
   }
   commitGeneratedCommand():boolean{
     return this.document?.commitPending(this.getCanvasObjectSelection())??false;
   }
-  cancelGeneratedCommand():boolean{return this.document?.cancelPending()??false;}
-  undoGeneratedEdit():boolean{return this.document?.undo()??false;}
-  redoGeneratedEdit():boolean{return this.document?.redo()??false;}
-  clearSavedOutlines(){this.document?.clear();}
+  cancelGeneratedCommand():boolean{
+    const hadGhost=!!this.dragGhostGroup;
+    const stopped=this.selector?.cancelGeneratedDrag()??false;
+    this.dropTranslationPreview();
+    return stopped||hadGhost;
+  }
+  undoGeneratedEdit():boolean{this.cancelGeneratedCommand();return this.document?.undo()??false;}
+  redoGeneratedEdit():boolean{this.cancelGeneratedCommand();return this.document?.redo()??false;}
+  clearSavedOutlines(){this.cancelGeneratedCommand();this.document?.clear();}
   dispose() {
     if(this.disposed)return;this.disposed=true;this.cancel?.();this.resize.disconnect();
     this.terminateWorker('index');this.terminateWorker('compute');
     this.selector?.dispose();this.selector=undefined;
+    this.dropTranslationPreview();
     for(const group of [this.selectionGroup,this.previewGroup,this.savedGroup,this.selectedSavedGroup])if(group)release(group);
     this.savedGroups.clear();this.renderedTransforms.clear();this.document?.dispose();this.document=undefined;
+    this.controls.removeEventListener('change',this.cameraChanged);
     this.controls.dispose();if(this.object)release(this.object);this.scene.clear();
     this.renderer.dispose();this.renderer.forceContextLoss();this.renderer.domElement.remove();
   }
