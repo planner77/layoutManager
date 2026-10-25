@@ -22,6 +22,10 @@ export function ViewerMenuBar({
   outlineTreeUnavailableReason,
   outlineTreeToggleRef,
   onToggleOutlineTree,
+  memoAvailable,
+  memoUnavailableReason,
+  memoPlacing,
+  onToggleMemo,
 }: {
   layerAvailable: boolean;
   layerPanelOpen: boolean;
@@ -36,6 +40,10 @@ export function ViewerMenuBar({
   outlineTreeUnavailableReason: string | null;
   outlineTreeToggleRef: Ref<HTMLButtonElement>;
   onToggleOutlineTree: () => void;
+  memoAvailable: boolean;
+  memoUnavailableReason: string | null;
+  memoPlacing: boolean;
+  onToggleMemo: () => void;
 }) {
   return (
     <nav
@@ -94,6 +102,12 @@ export function ViewerMenuBar({
       {!outlineTreeAvailable && <span id="viewer-tree-unavailable-reason" className="sr-only">
         {outlineTreeUnavailableReason}
       </span>}
+      <Button type="button" size="sm" variant="outline"
+        data-testid="viewer-menu-memo-add" aria-pressed={memoPlacing}
+        disabled={!memoAvailable} onClick={onToggleMemo}
+        title={memoUnavailableReason ?? 'WCS 좌표 메모 추가 (브라우저 세션 임시, 서버 저장 없음)'}
+        className="shrink-0"
+      >메모 추가{memoPlacing?' (배치 중)':''}</Button>
       <Button
         type="button" size="sm" variant="outline"
         data-testid="viewer-menu-outline-types"
