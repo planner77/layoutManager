@@ -1,5 +1,15 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-034-R1 — 기본 Current + 명시적인 전체 버전 검색으로 홈 정책 갱신 (2026-10-25 / #93)
+
+- **Context:** #8에서 Current 토글을 도입, #16에서 중복 드롭다운 제거, #45(ADR-034)에서 아예 Current-only로 고정. 사용자가 과거 도면을 찾으려면 층 상세를 거쳐야 하고 홈 파일명/설명 검색에서 이전 Version을 찾을 수 없는 회귀가 발생.
+- **Decision:** 홈 `/`은 기본 Current-only지만, 단일 `현재 버전만 표시` 토글(기본 ON)을 통해 OFF에서 **전체 Version(Current+이전+Current 없는 층)** 을 검색·관리할 수 있다. Current는 `CadLocation.currentVersionId` 포인터 기준이며 최대 1개; 자동 승격 없음. 기존 #16의 드롭다운 부활 금지.
+- **파라미터 계약:** 홈에서만 `versions=all`을 명시 전체 모드로 사용. 생략/`current=true`는 Current, 레거시 홈 `current=false`는 전체 모드로 정규화. `versions=all&current=true` 충돌, `versions` 중복/미지원 값은 거부. API `GET /api/cad-files?current=false`는 **non-Current-only**로 유지. 공통 `listQuery()`/Repo/DB는 변경하지 않는다.
+- **UI/질의 일관성:** 검색·토글 별도 GET form으로 nested form을 방지하고 query/5단계 위치/format/pageSize를 보존, 모드 전환 시 page=1. 페이지 URL은 `drawingListUrl`을 통해 all mode를 확실히 직렬화. Server 검색 SQL과 count/page를 함께 전환하여 프런트엔드 행 숨김 금지. Button `aria-pressed`와 ON/OFF 설명 표시.
+- **대안:** API의 `current=false`를 전체로 재정의하면 외부 클라이언트 기존 의미 파괴; UI에서 전건 조회 후 이전 버전을 숨기면 count/pagination 불일치; 전체 버전 목록만 기본으로 쓰면 일상 Current 우선 원칙 위반. 모두 배제.
+- **Supersession:** 아래 ADR-034의 '홈 항상 Current·토글 제거' 문장만 R1으로 대체하고 기타 API/보안/이력 경로 결정은 유지한다. [Issue93](Issue93.md)/[Requirements](Requirements.md)/[TestPlan](TestPlan.md).
+
+
 ## ADR-046 — E3 GENERATED 삭제는 E2 원자 Command로 단일화하고 확인 시점에 다시 검증 (2026-10-25 / #53)
 
 - **문제:** 기존 U6 `deleteSavedOutline→discardLegacy`는 직접 제거/Undo 초기화를 사용해 #52의 원자·이력·scope 검증을 우회한다. UI만 생성 OFF에 묶으면 생성과 편집을 분리한 E1/#49 계약도 위반한다.
@@ -136,6 +146,8 @@
 - **Decision:** 열린/닫힌 상태를 `ViewerAppState.layerPanelOpen` 하나로 제어하되 **지원 가능한 Viewer에서는 도크 host를 계속 mount하고, 닫힌 경우 CSS hidden 처리하며 내용 panel만 unmount**한다. 메뉴 버튼 ref를 내부 닫기 콜백에 전달하여 close 후 focus를 상단 메뉴로 이동한다. 메뉴의 `aria-controls`는 host가 있는 동안만 제공한다.
 - **Rejected:** (1) 패널 상태와 실제 `selectedLayers`를 결합→CAD 객체 가시성 변경 위험. (2) 패널 닫을 때 ViewerManager/Adapter reload→camera/source/Selection 유실. (3) 숨긴 내용을 키보드 탐색 가능한 상태로 유지→접근성/포커스 문제. (4) 미지원 Renderer에서도 빈 도크 노출→기능 오인.
 - **Effects:** 기존 #17 레이어 조작/Canvas 생명주기, #25 CSS/native Fullscreen 및 #38 compact 도킹 유지. 패널 토글만으로 재파싱·영속 데이터 변경 없음. 실제 native/접근성 실기기 수용은 E2E 모의 이벤트와 구분. [Issue39](Issue39.md).
+
+> **후속 변경 #93 / ADR-034-R1:** 아래 ADR-034는 0.31.0 당시 정책 기록입니다. 홈 Current-only 고정 및 토글 제거는 0.39.1부터 대체합니다. API 이력 조회 불변 원칙은 유지합니다.
 
 ## ADR-034 — 홈 Current 전용 목록, API 이력 조회 유지 (2026-10-25 / Issue #45)
 

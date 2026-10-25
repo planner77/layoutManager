@@ -1,5 +1,14 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #93 / v0.39.1 — 도면 목록 기본 Current, 이전 버전 표시·검색 복원 (2026-10-25)
+
+- **#45 / ADR-034 후속 UI 계약(ADR-034-R1):** 홈페이지 `/` 최초 진입·초기화는 명시 Current 도면만 표시. 단일 `현재 버전만 표시` 버튼은 기본 ON이고, OFF에서 과거 버전과 Current 미지정 층의 도면도 **같은 도면 목록**에서 검색/열람/Current 지정 가능하다. #16에 따라 중복 Current 드롭다운은 복원하지 않는다.
+- `drawingListParams`는 `listQuery`를 먼저 검증한 뒤 `versions=all` (홈 UI 전용)을 기존 서버 `current=''` 전체 조회로 매핑; 누락/`current=true`는 `current=true`. 과거 홈 `?current=false`는 전체 이력 모드로 해석하되 `/api/cad-files?current=false`는 **이전 버전만**이라는 기존 API 계약을 유지한다. `versions` 중복/잘못된 값, `versions=all&current=true` 충돌은 INVALID_QUERY.
+- 두 개의 독립 GET form(검색/토글)으로 중첩 form을 피한다. 토글은 `aria-pressed` 및 시각 상태를 표시하고 파일명·설명·5단계 위치·형식·pageSize는 보존, page를 1로 초기화한다. 검색·페이지 이동·새로고침·뒤로가기에서도 명시 `versions=all`을 유지한다. 결과 total/pages/빈 상태는 서버 필터와 같아야 한다.
+- DB/Version/SHA/Current 최대 1개/원본·Viewer/API/인증 정책 불변. 회귀 Unit `TC-LIST-093-001~003`, E2E `TC-LIST-093-E2E-001/002` 및 기존 Workflow/Upload. 연결 환경은 GitHub 원격 파일 수정이며 로컬 node_modules/GPU/Docker **실행하지 않음(NOT RUN)**; PR CI 시작은 PASS가 아니다.
+- 기준 문서: [Issue93](out/Issue93.md), [Requirements](out/Requirements.md), [Architecture](out/Architecture.md), [ADR-034-R1](out/Decisions.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md). 별도 `DESIGN.md`가 없으므로 Architecture/Decisions가 설계 기준.
+
+
 ## Issue #76 — Squash Merge 관리자 설정·PR CI 읽기 전용 진단 (2026-10-25)
 
 - #74 Main 실행명 fallback 구현과 저장소 영구 설정을 분리한다. 2026-10-25 REST GET에서는 `allow_squash_merge=true`, `squash_merge_commit_title=COMMIT_OR_PR_TITLE`, `squash_merge_commit_message=COMMIT_MESSAGES`로 확인되어 **#76 관리자 적용은 미완료**다.
@@ -288,6 +297,7 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 | [Decisions](out/Decisions.md) | 주요 판단, 승인 상태, Trade-off | 중요한 선택 또는 기존 결정 변경 시 |
 | [ChangeLog](out/ChangeLog.md) | 버전별 변경사항 | Version 변경 또는 Release 시 |
 | [Issue8](out/Issue8.md) | GitHub #8 요구사항·구현·CI 수용 근거 | Issue #8 변경 추적 또는 유사 목록 필터 변경 시 |
+| [Issue93](out/Issue93.md) | 기본 Current·전체 버전 검색 토글 및 목록/API URL 분리 | 도면 목록 검색·버전 필터·페이지네이션 변경 시 |
 | [Issue9](out/Issue9.md) | GitHub #9 전역 로딩 요구사항·구현·CI·릴리스 근거 | 전역 로딩, 중복 요청 방지 또는 비동기 입력 차단 변경 시 |
 | [Issue10](out/Issue10.md) | GitHub #10 전체 화면 요구사항·설계·CI 근거 | Viewer 전체 화면, ESC/종료, 컨테이너 resize 또는 view state 보존 변경 시 |
 | [Issue38](out/Issue38.md) | Viewer 앱형 메뉴·도킹 셸/ESC 상태·후속 U2/U3/U6 계약 | Viewer shell·도킹·메뉴·검색/선택 ESC 변경 시 |

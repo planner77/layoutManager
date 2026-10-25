@@ -1,5 +1,21 @@
 # Architecture 초안
 
+## Issue #93 — Drawing Library 조회 모드 분리, DB/공유 API 변경 없이 (v0.39.1)
+
+```text
+홈 URL: / [기본 current] /?versions=all [전체] /?current=false [레거시 전체]
+  → drawingListParams(): listQuery 검증 → 홈 전용 mode 결정
+  → mode=current: 서비스 current=true / mode=all: 서비스 current=''
+  → CadListService.search() → CadListRepository.list(): 기존 SQL + COUNT/Pagination
+API /api/cad-files: 공통 listQuery 유지 (current=false = non-Current만)
+```
+
+- 홈 전용 `versions=all`은 `params`에서 제거한 뒤 기존 서비스에 전달한다. `?current=false`는 목록에서만 전체 모드로 안전하게 정규화. `versions=all&current=true` 및 중복/잘못된 버전 모드 입력은 실패. 이로써 `#45 currentOnlyListParams`의 Current 강제는 `drawingListParams`로 교체하면서 외부 API 의미를 보호한다.
+- `ListFilters`는 기존 검색 GET form과 독립된 토글 GET form(중첩 form 없음)을 같은 필터 카드에 둔다. 토글 form은 현재 서버 검색어/5단계 위치·형식·pageSize를 hidden으로 보존하며 새 mode를 직렬화하고 page를 생략해 첫 페이지로 이동한다. 검색 form은 OFF일 때만 `versions=all`을 hidden으로 전송한다.
+- `drawingListUrl(query,page,mode)`는 URL 표시 상태를 분리 직렬화해 URL에서 `current=false`를 생성하지 않고 모드가 all일 때 `versions=all`을 항상 포함한다. 서버가 모드에 맞는 행/total을 반환하며 그 결과로 페이지/빈 상태를 구성한다. 기존 `CadTable`의 Current/이전 Version·Viewer/CurrentButton/Download/Delete 경로를 재사용한다.
+- #45의 위치 기준정보→층 버전 이력 링크는 유지한다. Current는 최대 한 개 또는 없음, 자동 승격 금지. DXF/DWG 렌더러·원본 파일/권한/DB/외부 검색 API 불변. 결론 [ADR-034-R1](Decisions.md), [Issue93](Issue93.md).
+
+
 ## Issue #53 / E3 — GeneratedDocument Delete adapter/UX 연결 (v0.39.0)
 
 - **흐름:** Toolbar / #43 Tree Row / 선택 GENERATED의 Canvas 우클릭 / Canvas 초점 Delete·Backspace → `domain/generated-delete.ts`의 `prepareGeneratedDelete`(현재 선택·Version/SHA·전부 GENERATED·UUID·존재/visible/동일 scope) → 확인창 대상 이름/개수 → `assertGeneratedDeleteCurrent`로 대상·scope 재검증 → `ViewerManager.executeGeneratedCommand({type:'Delete',ids})` → `ThreeDxfViewerAdapter` 모드 검사 → E2 `GeneratedDocument.execute` 최종 검증·원자 변경.
