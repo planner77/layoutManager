@@ -1,5 +1,14 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE51-20261025 — E1 통합 선택 브랜치 구현 및 CI 전 증거 경계
+
+- 브랜치 `feat/issue-51-unified-canvas-selection`, v0.37.0. 수정: identity/permission + generated GeoJSON hit + SelectionController source/generated 모드 + UUID Adapter/Manager API + Viewer UI/Tree + Unit/E2E, 설계/테스트 추적 문서.
+- **로컬 Typecheck/ESLint/Vitest/Playwright/Next build/실 CAD·GPU: NOT RUN.** GitHub Connector 원격 파일 조작만 수행하며 검증용 실행환경은 이 세션에서 제공되지 않았다. 테스트 코드를 PR CI에 포함했지만 결과 통과로 기록하지 않는다.
+- **TC-E1-UNIT-001/002, TC-E1-E2E-001~003: CODED / NOT EXECUTED.** 기존 #31/#40/#42/#43/#17/#25/Legacy/Docker 회귀도 재실행 전 NOT VERIFIED.
+- **정적 설계 확인:** 원본 render coverage/index를 재사용하는 경로, SavedOutline local-N JSON 불변, 생성 UUID/Scope 및 삭제/숨김에서 선택 invalidation, Tree/Canvas 공통 이벤트 계약을 코드로 반영. 타입/키보드/실 기하/성능 수용은 CI/현장 실증 대상.
+- CI 시작 여부와 정확한 PR/Run 링크는 PR 생성·GitHub Actions 트리거 확인 후 갱신한다. 원격 리뷰/충돌 여부도 PR 생성 이후 검증하며 모니터링은 하지 않는다. [Issue51](Issue51.md).
+
+
 ## U-ISSUE43-PR72-REVIEW-20261025 — 최초 성공 / P2 리뷰 보완과 재검증 경계
 
 - [PR #72](https://github.com/planner77/layoutManager/pull/72), 최초 검증 HEAD `5cd223cc2837fc5772154fd67138680263f159e4`, [PR CI 40161078593](https://github.com/planner77/layoutManager/actions/runs/40161078593) **completed/success**: TypeScript/ESLint/Unit·Integration/Benchmark/Build/Chromium E2E/Legacy Migration 검증 Job `121072582232`와 Docker Runtime `121072582347` 모두 success.
