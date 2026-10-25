@@ -1,5 +1,14 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE52-20261025 — E2 GeneratedDocument/Command/Undo·Redo 작업 브랜치 (검증 전)
+
+- Branch `feat/issue-52-generated-command-history` / v0.38.0. E1 main 병합 기준 별도 작업, 루트 `DESIGN.md` 부재로 `out/Architecture.md`/ADR-043 사용.
+- 구현 파일: `domain/generated-document.ts`, `domain/generated-keyboard.ts`, `viewers/core/adapter.ts`, `viewers/three-dxf-viewer/adapter.ts`, `features/cad-viewer/viewer.tsx`. 기준 geometry 불변 + WCS affine/원자 명령 + bounded history + Undo/Redo UI/키보드, Tree/Scene/Export projection. Source/DB/API/Worker 원본 변경 없음.
+- 테스트 작성: `tests/unit/generated-document.test.ts` TC-E2-UNIT-001~003, `generated-keyboard.test.ts` TC-E2-UNIT-004, `tests/e2e/issue52-generated-history.spec.ts` TC-E2-E2E-001~002. **CODED / NOT EXECUTED**: 이 세션에서 npm ci, TypeScript/ESLint, Vitest, Build, Playwright, GPU/실도면, Legacy migration은 실행하지 않았다. 작성·커밋은 PASS 증거가 아니다.
+- #53~#55 실제 삭제/드래그·수치/회전 UI 및 #56 안전한 편집 JSON Import는 범위 밖. 현재 테스트와 Adapter 등록 API는 후속 구현의 계약 검증만 한다. 운영/Server P4 저장은 Owner 보안 정책 승인 전 BLOCKED.
+- PR CI는 PR 생성으로 별도 시작하며 사용자가 모니터링 생략을 지시했다. **PR CI의 성공/실패/GHCR 게시/병합/이슈 종료는 여기서 미확인·미완료**. 별도 수행/관측한 사실이 없으면 PASS로 갱신하지 않는다. 상세 [Issue52](Issue52.md)/[TestPlan](TestPlan.md).
+
+
 ## U-ISSUE51-PR77-FAIL-20261025 — 첫 CI Unit 차단과 P2 리뷰 보완
 
 - [PR #77](https://github.com/planner77/layoutManager/pull/77) 최초 HEAD `c84a04e61cbaa413ee166ff896dcb7c10f1ec04b`, [Run #40164835838](https://github.com/planner77/layoutManager/actions/runs/40164835838) **completed/failure**. Verify [Job #121083652315](https://github.com/planner77/layoutManager/actions/runs/40164835838/job/121083652315) npm ci/Prisma/TypeScript/ESLint PASS, Unit/Integration **186 PASS / 1 FAIL** (`tests/unit/viewer.test.ts:75`, TC-U6-UNIT-003, 기존 `selectSavedOutline('local-1')` 호출 기대와 `('local-1',false)` 실제 호출 불일치). Benchmark/Production Build/Chromium E2E/Legacy Migration SKIPPED, Artifact 업로드 성공. Docker [Job #121083652401](https://github.com/planner77/layoutManager/actions/runs/40164835838/job/121083652401) SUCCESS.
