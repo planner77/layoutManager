@@ -1,5 +1,13 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-041 — E1 CanvasSelection은 Origin/Version/SHA를 검증한 단일 Controller로 관리 (2026-10-25 / #51)
+
+- **Decision:** 기존 #31 SOURCE/RenderCoverage/SpatialIndex를 재사용하고 브라우저에서 확정한 GENERATED Polygon/MultiPolygon만 동적 hit 후보로 확장한다. 일반 객체 모드 겹침 SOURCE 우선; generated 전용 모드/트리에서 Overlay 선택. 이전 Source-only `select`는 Worker와 연결된 별도 모드이고 #40 OFF→Pan을 침해하지 않는다.
+- **Identity:** 외곽선 JSON v1/v2 및 #43 Tree local-N은 호환성 보존. 생성 객체의 편집용 참조는 별도의 crypto UUIDv4 + current Version/SHA + Origin 네임스페이스, 발급 실패/충돌 시 중단. 서버 인증/영속 identifier로 해석 금지.
+- **Edit boundary:** `canEdit`는 비어 있지 않은 동일 Scope의 전부 GENERATED인 Ref 집합만 true. SOURCE 또는 혼합·중복·유효하지 않은 Ref는 전부 거부, 부분 편집 금지. E1은 편집 Command를 구현하지 않으며 E2~E5가 유효성 재검증한다.
+- **Security & lifecycle:** Current 원본/Layer/File SHA/DB/Server Auth 변경 없음. #31 P4/#65 승인 전 영속 Write/API를 열지 않는다. 선택은 Session-only, Renderer/Version/Reload/Dispose에서 해제. [Issue51](Issue51.md) 참고.
+
+
 ## ADR-040 — 외곽선 트리는 브라우저 세션 기반 Overlay 뷰로 제공 (2026-10-25 / #43)
 
 - **Decision:** U6 트리 상태의 원천은 현재 Adapter의 SavedOutline 목록이며 UI에는 immutable local ID와 typeId 기준으로 투영한다. 원본 Geometry/CAD Source Layer/Type DB를 조작하지 않고 임시 Overlay 자식 THREE.Group만 개별/타입별 표시. 강조는 별도 Geometry, 이동은 validated WCS bounds에 의존. v1 JSON 필드에 UI Visibility·Selected를 추가하지 않는다.
