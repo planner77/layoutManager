@@ -1,5 +1,11 @@
 # ChangeLog
 
+## 0.32.0 — 2026-10-25 / Issue #39 레이어 메뉴·도크 U2 (PR CI 검증 전)
+
+- UI: U1의 단일 `layerPanelOpen` 상태를 메뉴/내부 접기에 연결. 가능한 경우 레이어 도크 host를 유지하고 숨김 시 내부 panel만 닫아 `aria-controls` 대상으로 유효하게 유지. 접기 버튼 삭제 후 메뉴에 포커스 복귀 및 키보드 Enter/Space 재열기.
+- Compatibility: 기존 체크박스/전체 선택·해제의 실제 `ViewerManager.showLayer` 및 Canvas/Source/줌 상태, #25 CSS/native 진입, 모바일 도킹/검색/외곽선 도구 유지. 미지원 Renderer/DWG/0 layer/로딩/오류에서 메뉴 disabled 및 aria-controls 제거. DB/API/migration/원본/의존성 변경 없음.
+- Tests: Vitest `TC-U2-UNIT-001` 강화 + Chromium `TC-U2-E2E-001~003`(패널·레이어 독립/포커스/320px/Renderer/reload/모의 native/zero drawable) 신규 작성. **로컬 CI/실 CAD 검증 NOT RUN**. PR CI는 생성 이벤트에서 시작하며 통과 판정 전까지 결과 미검증. [Issue39](Issue39.md).
+
 ## 0.31.0 — 2026-10-25 / Issue #45 Current-only 도면 목록 (PR CI 결과 확인 전)
 
 - Changed: `/` 목록은 Current Version만 서버에서 조회. 초기·검색·초기화·검색 필터·페이지네이션·과거 `current=false` URL에서도 Current-only 결과/count 유지. 최신 버전이 Current가 아니라면 표시하지 않음.

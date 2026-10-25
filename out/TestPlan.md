@@ -1,5 +1,18 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #39 / U2 v0.32.0 — 레이어 메뉴·도크 독립 상태 (2026-10-25)
+
+| TC | 자동/수동 시험 내용 | AC |
+| --- | --- | --- |
+| `TC-U2-UNIT-001` | 기존 `viewer-app-state.test.ts` 강화: close idempotent, compact panel 트리 fallback·reopen/default, layer visibility는 reducer 독립 | AC-U2-01/02 |
+| `TC-U2-E2E-001` | two-layer DXF의 메뉴 aria 상태·controls host, 실제 캔버스에 반영된 checkbox 효과, 메뉴 반복 토글/패널 접기 Enter→메뉴 focus→Space 재개, Canvas ref/단일 Source GET, 확대, 모바일 320px, 일반 드롭다운 선택 유지·전체 화면 복귀 | AC-U2-01/02/03/04 |
+| `TC-U2-E2E-002` | native `fullscreenchange` **모의 이벤트**에서 패널 상태 보존, reload/Renderer 변경시 초기 layer reset·지원 여부 반영 | AC-U2-01/03/04 (실제 native 수용은 별도) |
+| `TC-U2-E2E-003` | drawable 0개 DXF의 UI disabled/도크 미노출, aria-controls 부재 | AC-U2-04 |
+| `TC-U1-E2E-001/002`, `TC-ISSUE17-001`, `TC-LAYER001~003`, `TC-ISSUE25-001/002`, `TC-TEXT-E2E-001`, `TC-OUT-E2E-001` | #38 도킹, #17 선택/전체 선택·해제/일반 드롭다운, DXF/DWG 오류, CSS/native, 검색/선택·ESC 회귀 | AC-U2-02/04 |
+
+- CI: `npm ci`, Prisma generate, typecheck/lint, Vitest, outline benchmark, build, Chromium E2E, legacy migration E2E, Docker-runtime. 작업 브랜치의 PR `pull_request.opened` 트리거로 시작. 실행 전 **NOT RUN**, CI 시작 이후 모니터링 없으면 **결과 미확인**으로 남긴다.
+- 실제 native fullscreen 허가/거절·browser top-layer·screen-reader 포커스/Tab·실 CAD GPU/장시간·좁은 화면 터치 조작은 수동 추가 수용이며 모의 테스트로 대체하지 않는다. [Issue39](Issue39.md).
+
 ## Issue #45 / v0.31.0 — Current-only 목록 및 이력 관리 시험 계획 (2026-10-25)
 
 | TC | 검증 방법 | AC |

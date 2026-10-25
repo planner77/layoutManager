@@ -1,5 +1,13 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE39-DEV-20261025 — v0.32.0 레이어 도크 U2 구현 (PR CI 결과 확인 전)
+
+- Issue: [#39](https://github.com/planner77/layoutManager/issues/39), Epic #37, #38/#17 재사용. 기준 main `0e11f957`, 기능 브랜치 `feat/issue-39-layer-panel-toggle`; 최초 코드 커밋 `a0f9f29f` (문서 후속 커밋 별도).
+- 코드: `ViewerAppShell`은 사용 가능한 레이어 도크 host를 유지하고 닫힌 상태에는 내부 panel만 숨김. `ViewerMenuBar`는 aria-controls/expanded/pressed와 focus용 button ref 전달. `CadViewer`는 패널 접기 후 메뉴 focus 복귀; 기존 layer checkbox·Manager/Source/Canvas/Renderer loading effect 변경 없음. `FullscreenLayerPanel`에 controls 대상 명시.
+- TC 작성: `TC-U2-UNIT-001`(reducer 경계 추가), `TC-U2-E2E-001`(패널/visibility/키보드/focus/Canvas/GET/모바일/일반), `TC-U2-E2E-002`(simulated native·reload·Renderer), `TC-U2-E2E-003`(0 drawable layers), 기존 #17/#38/#25/검색·외곽선 회귀 재사용.
+- **실행 결과:** 로컬 npm install/typecheck/lint/Unit/Build/Playwright/native 수동/실도면: **NOT RUN**. 작성된 테스트나 소스만으로 PASS 아님. PR CI가 시작돼도 실행 완료·성공으로 단정하지 않는다. CI run/job/검증 결과 확보 시 별도 기록.
+- 미완료 수용: 실제 브라우저 허가 native fullscreen/접근성 도구 실측·현장 DXF/GPU는 별도 수동 검증 대상. #40~#43, 외곽선 DB/관리 API 및 #31 P4 인증 승인 사항은 변경하지 않음. [Issue39](Issue39.md), [TestPlan](TestPlan.md).
+
 ## Issue #45 / v0.31.0 — Current-only CAD 목록 (2026-10-25)
 
 - **구현 상태:** `currentOnlyListParams` 홈 Current 강제, 토글 제거, 기준정보→층 상세 링크 추가, #8/#16 관련 E2E 기대 변경 및 TC-LIST-045-001~003 신규 시험 코드 작성.

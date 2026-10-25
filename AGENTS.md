@@ -1,5 +1,11 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #39 (2026-10-25) — 상단 레이어 패널 표시/숨김 U2, v0.32.0
+
+- #38 `ViewerAppState.layerPanelOpen`이 메뉴/도크의 유일한 열림 상태다. `layerAvailable`(immersive + three-dxf-viewer + ready + layers>0)을 충족하면 `aria-controls` 대상 도크 host를 닫힌 상태에서도 유지하고, 내부 접기 후 메뉴로 키보드 포커스를 돌린다.
+- **패널 표시**는 `selectedLayers`(실제 CAD layer visibility)와 독립; 기존 #17의 checkbox·전체 선택/해제·Manager API/Canvas/Source는 유지. 도크 조작 시 Viewer 재생성·다운로드/Zoom/Pan/Selection 초기화 금지. Normal/dxf-viewer/DWG/0 레이어/오류/로딩에서는 메뉴 disabled 및 무효한 aria-controls 미노출.
+- 회귀: `TC-U2-UNIT-001`, `TC-U2-E2E-001~003`, 기존 #17/#38/#25/검색/외곽선. Simulated native 이벤트는 실제 브라우저 Fullscreen 실증이 아님. 구현 상태와 CI 결과는 [Issue39](out/Issue39.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md)를 따르며 **PR CI 전 테스트는 NOT RUN**이다.
+
 ## Issue #45 (2026-10-25) — Current-only 도면 목록, v0.31.0
 
 - `/`의 도면 목록은 사용자가 변경할 수 없는 **Current Version 전용**이다. `currentOnlyListParams`에서 기존 검색 query 검증 뒤 `current=true`를 서버 조회에 강제한다. `?current=false` 및 파라미터 누락도 홈에서는 Current만 표시하며 필터·count·pageSize는 보존한다.
@@ -121,6 +127,7 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 | [Issue9](out/Issue9.md) | GitHub #9 전역 로딩 요구사항·구현·CI·릴리스 근거 | 전역 로딩, 중복 요청 방지 또는 비동기 입력 차단 변경 시 |
 | [Issue10](out/Issue10.md) | GitHub #10 전체 화면 요구사항·설계·CI 근거 | Viewer 전체 화면, ESC/종료, 컨테이너 resize 또는 view state 보존 변경 시 |
 | [Issue38](out/Issue38.md) | Viewer 앱형 메뉴·도킹 셸/ESC 상태·후속 U2/U3/U6 계약 | Viewer shell·도킹·메뉴·검색/선택 ESC 변경 시 |
+| [Issue39](out/Issue39.md) | Viewer 메뉴와 레이어 패널 표시 상태 독립/접근성·포커스·회귀 근거 | 레이어 메뉴·도크 접기/Renderer·fullscreen 레이어 UX 변경 시 |
 | [FailureLedger](out/FailureLedger.md) | PR/Main CI 관측 실패·조치·재검증 누적 원장 | CI 실패·취소·재시작 시 |
 | [Issue25](out/Issue25.md) | 기본 immersive 진입, native 수동 선택, 복귀·툴바·회귀 수용 | Viewer 전체 화면 기본 진입/링크/포커스/레이어·검색 변경 시 |
 | [Release 0.20.0](out/Release-0.20.0.md) | 0.20.0 병합·태그·GHCR 게시 근거 | 0.20.0 릴리스 확인 및 운영 이미지 식별 시 |

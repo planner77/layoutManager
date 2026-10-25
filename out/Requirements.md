@@ -1,5 +1,12 @@
 # 상세 요구사항
 
+## Issue #39 / U2 — v0.32.0 레이어 메뉴·패널 상태 일치 (2026-10-25)
+
+- **FR-U2-01 (AC-U2-01):** 전체 화면에서 지원 Renderer(`three-dxf-viewer`, DXF, ready, 1+ layers)의 상단 레이어 메뉴로 좌측 도크를 닫고 다시 열 수 있고, 내부 접기 버튼과 `layerPanelOpen` 하나의 상태를 사용한다. 최초 로드/Renderer 재설정은 보이는 기본값.
+- **FR-U2-02 (AC-U2-01/02):** CAD `selectedLayers` 체크와 패널 열림은 독립. 열기/닫기가 체크·Canvas/ViewerManager/Source/Zoom/Pan/Fit/Selection을 변경해서는 안 된다. 기존 checkbox·전체 선택/해제 콜백만 CAD layer visibility를 변경한다.
+- **FR-U2-03 (AC-U2-03):** 사용 가능한 메뉴의 `aria-expanded`/`aria-pressed`는 실제 패널 표시와 일치, `aria-controls`는 닫힌 상태에도 존재하는 도크 host를 참조. 내부 접기 시 포커스는 메뉴로 복귀하고 Enter/Space 재열기가 된다. disabled 상태에서 유효하지 않은 controls 제거.
+- **FR-U2-04 (AC-U2-04):** 일반 모드 기존 LayerDropdown 유지, 다른 Renderer·DWG·로딩/오류/0 레이어 disabled; 모바일 독립 레이아웃 및 native/CSS fullscreen/재로드 상태 오염·메모리 누수 금지. #40~#43 추가 기능이나 DB/API 변경 없음. [Issue39](Issue39.md), [ADR-035](Decisions.md).
+
 ## Issue #45 / v0.31.0 — 도면 목록은 항상 Current 전용 (2026-10-25)
 
 - **FR-LIST-045-01 (AC1/AC3/AC4):** `/`의 모든 조회(최초/검색/초기화/페이지/새로고침/직접 URL)는 Location에 지정된 `Current Version`만 반환한다. 최신 Version을 자동 승격하지 않으며 Current 미지정 Location은 제외한다. 과거 `current=false`/누락 URL도 Current-only, 잘못된 입력은 기존 검증으로 거부.

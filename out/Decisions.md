@@ -1,5 +1,12 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-035 — 지원 Renderer에서 레이어 도크 host 유지·포커스 복원 (2026-10-25 / Issue #39)
+
+- **Context:** #38의 U1에서 메뉴/레이어 패널 열림 state는 통합됐지만, 닫힘 시 도크 DOM까지 제거되어 사용 가능한 메뉴의 `aria-controls=viewer-layer-dock` 참조가 사라졌다. 내부 접기 버튼은 클릭 후 DOM에서 사라져 키보드 포커스가 유실될 수 있었다.
+- **Decision:** 열린/닫힌 상태를 `ViewerAppState.layerPanelOpen` 하나로 제어하되 **지원 가능한 Viewer에서는 도크 host를 계속 mount하고, 닫힌 경우 CSS hidden 처리하며 내용 panel만 unmount**한다. 메뉴 버튼 ref를 내부 닫기 콜백에 전달하여 close 후 focus를 상단 메뉴로 이동한다. 메뉴의 `aria-controls`는 host가 있는 동안만 제공한다.
+- **Rejected:** (1) 패널 상태와 실제 `selectedLayers`를 결합→CAD 객체 가시성 변경 위험. (2) 패널 닫을 때 ViewerManager/Adapter reload→camera/source/Selection 유실. (3) 숨긴 내용을 키보드 탐색 가능한 상태로 유지→접근성/포커스 문제. (4) 미지원 Renderer에서도 빈 도크 노출→기능 오인.
+- **Effects:** 기존 #17 레이어 조작/Canvas 생명주기, #25 CSS/native Fullscreen 및 #38 compact 도킹 유지. 패널 토글만으로 재파싱·영속 데이터 변경 없음. 실제 native/접근성 실기기 수용은 E2E 모의 이벤트와 구분. [Issue39](Issue39.md).
+
 ## ADR-034 — 홈 Current 전용 목록, API 이력 조회 유지 (2026-10-25 / Issue #45)
 
 - **Context:** #8 토글은 기본 OFF, #16에서 중복 드롭다운만 제거했다. 따라서 `/` 접근 시 과거 Version이 함께 보이며 `?current=false` 같은 레거시 URL도 목록의 전체 Version을 노출한다. Location별 Current는 최대 하나이며 최신 등록 Version과 다를 수 있다.
