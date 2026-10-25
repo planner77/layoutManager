@@ -13,6 +13,31 @@ DEV:  [개발 PC] -----------------> HTTP [별도 개발 App] -> [개발 DB/CAD]
 - 기존 Viewer/도면 조회 경로를 G0 문서만으로 인증 차단하거나 API에 신규 코드를 연결하지 않는다. 운영 로그인/관리/영속 API·Prisma·Proxy/Compose OFF.
 
 
+## Issue #99 — 실설비 DXF Source/Render·Browser/GPU 증거 전용 경로 (2026-10-25)
+
+### Issue #99 P1 — Repo-private evidence file-system boundary (2026-10-25)
+
+- `src/tests/benchmark/private-acceptance-paths.ts`의 `validatePrivateAcceptancePaths`: `src/test/e2e/outline.acceptance.ts`의 입력값(실DXF 절대 파일경로, 사내 JSON 절대 출력경로)을 **실제 file-system 경로**로 해석. `realpathSync(repositoryRoot/sourcePath/dirname(reportPath))` 후 repo 내부 포함 여부 차단; `lstatSync(reportPath)`로 존재하는 파일 및 dangling symlink 거부. Output parent가 아직 없으면 `realpath` 실패로 차단, 비공개 폴더 생성은 사전 Operator 작업.
+- `writePrivateAcceptanceReport`: 쓰기 직전 부모 canonical 위치를 재확인하고 `flag:wx`와 `mode:0o600`로 하나의 새로운 report file만 생성. 보고서 쓰기 시 실데이터 Git 유입·기존 symlink overwrite 방지. 비신뢰 다른 사용자에게 디렉터리 쓰기 권한을 허용하면 TOCTOU 위험이 남으므로 사내 ACL/분리된 디렉터리가 운영 전제다. [TC-P0P5-PATH-001~006](TestPlan.md), [P1 리뷰 원장](FailureLedger.md).
+
+
+
+```text
+승인된 PRIVATE DXF (repo/공개 CI 밖)
+  ├─ audit:outline (SHA/INSUNITS/Entity·stable Handle/CPU/heap, JSON v1)
+  ├─ 격리 DB/Storage → Playwright test:outline-acceptance
+  │    (Three Browser 실 DXF, 5회 Mapping/Box/select/heap/rAF/WebGL, JSON v2)
+  └─ 사내 CAD WCS·면적/지원 Matrix + 기능 조작 수동 기록 + OS/GPU 계측
+       ↓ (Owner가 정한 budget, 동일 SHA/장비 조건, 최소 3종)
+  verify:outline-acceptance → BLOCKED(reason codes) / READY_FOR_OWNER_REVIEW
+       ↓ Owner 별도 판정/승인 (자동 합격 또는 운영 DB/API 활성화 없음)
+```
+
+- `outline-acceptance-gate.ts`는 JSON-only 순수 결정 함수. 실제 DXF/Storage/network를 조회하거나 Canonical Geometry를 다시 계산하지 **않고**, 사내에서 작성된 증거의 기초 일치·누락/한도 초과를 선별한다. `verify-outline-acceptance.ts` CLI는 개인정보·SHA/경로·Layer/Handle·GPU 상세 대신 reason code만 출력한다. 실측값 위조/미확인 CAD 비교를 도구가 탐지할 수 없어 Owner 서명이 최종 필요.
+- `outline.acceptance.ts`는 Private env DXF+ExpectedSHA+Report absolute path를 받고 repo 내부 파일/결과 경로를 거부; 비Current 등록이지만 영속 테스트 데이터가 **증가**하므로 운영 DB/Storage 절대 금지. 화면 프레임 간격(WebGL 유무/identity)과 별개로 실제 GPU 사용률·VRAM은 외부 장치 도구에서 검증한다. 기본 PR CI는 synthetic만 수행한다.
+- `src/viewers/*`, `src/server/*`, `src/app/api/*`, Prisma/DDL/DB/Current/Version/Source SHA 및 release pipeline 변화 없음. #96/#98 보호 경계를 우회하지 않는다. 상세 [Issue99](Issue99.md), ADR-052, TestPlan/Operation.
+
+
 ## Issue #96 — 비활성 Identity/Session/Role/Site/Audit 공통 기반 (2026-10-25)
 
 - **Owner 계약:** ADR-051 D1~D6 승인. DESIGN.md는 현재 저장소에 없으므로 Architecture/Decisions가 설계 기준. src/app/api, src/server/context.ts, Prisma schema/migrations, Docker/Compose, Viewer는 변경하지 않음.

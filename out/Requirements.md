@@ -14,6 +14,19 @@
 이 표는 이전 FR-P4-D1-06의 '보안 공격 차단/세부 CIDR·프록시 헤더 위조 실증'을 **필수 수용기준으로 요구하던 범위**를 대체한다. 기존 D1~D5의 비활성 기능 정책·테스트 및 기본 업무 권한 정합성은 유지한다. [Issue102](Issue102.md), [ADR-051-R1](Decisions.md), [Issue96](Issue96.md).
 
 
+## Issue #99 — P0 정확도·P5 성능 현장 증거 요구 (2026-10-25)
+
+| ID | 수용 전 필수 조건 | 검증 |
+| --- | --- | --- |
+| FR-P0P5-01 | 사내 승인 실 DXF 서로 다른 SHA 최소 3종, 1k·10k·100k 대표 supported Entity, 동일 SHA/byte source audit·Browser 결과, 5회 이상 반복 | TC-P0P5-001~004; 현장 샘플 |
+| FR-P0P5-02 | 실제 CAD WCS XY·면적 상대 오차, Handle/instancePath/INSERT·BLOCK/OCS, 곡선/Polygon union/Holes, Source↔Render 1:N/N:1, 미지원 fail-closed 제외 건수+Matrix를 독립 검증 | TC-P0P5-006; Owner CAD 비교 |
+| FR-P0P5-03 | 실제 Browser click/box/layer/zoom/pan/ESC/fullscreen/Worker 취소, 로드/선택·rAF frame p95, Browser heap·CPU parse/query, 장비 GPU 이용률·VRAM 외부 계측 | TC-P0P5-005/007; 사내 브라우저/계측 |
+| FR-P0P5-04 | Owner가 모든 위치·면적 오차, CPU/browser/GPU·메모리 SLA를 사전 지정, 누락·초과는 BLOCKED. READY_FOR_OWNER_REVIEW는 최종 Owner 승인 아닌 입력 증거 충족 | TC-P0P5-002/005~008 |
+| NFR-P0P5-01 | DXF/경로·Layer·Handle·장비 정보는 공개 Repo/Actions 제외, 격리된 DB·Storage에서만 비Current test upload. 원본 SHA/Current/Version/Viewer/API/Prisma/런타임 변경 금지 | 코드/문서 정적 검토 및 현장 감사 |
+
+- **실제 측정과 승인 상태:** 현재 approved 실 DXF, CAD Reference, GPU 장치, Owner SLA 및 서명 입력 없음. 따라서 FR 모두 **FIELD BLOCKED**이며 synthetic CI가 통과하더라도 이를 완료로 변환하지 않는다. [Issue99](Issue99.md), [ADR-052](Decisions.md), [TestPlan](TestPlan.md).
+
+
 ## Issue #96 — P4-D1 승인 정책/비활성 요구 추적 (2026-10-25)
 
 | ID | Owner 승인 요구 / 현재 범위 | Unit ID |

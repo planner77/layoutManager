@@ -1,6 +1,6 @@
 {
   "name": "cad-layout-viewer",
-  "version": "0.40.2",
+  "version": "0.40.3",
   "private": true,
   "type": "module",
   "scripts": {
@@ -25,7 +25,8 @@
     "test:s3:e2e": "node scripts/test-s3.mjs --e2e",
     "test:outline-benchmark": "tsx tests/benchmark/outline-benchmark.ts",
     "audit:outline": "tsx tests/benchmark/outline-real-audit.ts",
-    "test:outline-acceptance": "playwright test --config playwright.outline-acceptance.config.ts"
+    "test:outline-acceptance": "playwright test --config playwright.outline-acceptance.config.ts",
+    "verify:outline-acceptance": "tsx scripts/verify-outline-acceptance.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.1127.0",
