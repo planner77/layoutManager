@@ -1,5 +1,11 @@
 # 운영·환경설정 초안
 
+## Issue #97 — D2 서버 Geometry 검증 구현의 비운영 상태 (2026-10-25)
+
+- 신규 코드 `src/server/outline/transform-attestation.ts`는 Auth/HTTP Route/Prisma/Storage/배포 플래그 없이 D3에서 미래 호출할 수 있는 순수 validator이다. 어떤 신규 로그인·외곽선 영속 GET/Write API·실제 CAD 공유 편집 서비스도 **현재 열지 않는다**.
+- 운영 전 의무: #96 최초 Admin·세션/Role/Site/Version Scope 및 Audit/HTTP LAN 잔여 위험 Owner 승인, #98 원본 Storage bytes SHA 재조회·Revision CAS/Soft Delete·FK/Backup Restore·Prisma migration dry-run, #99 실 DXF 3종/브라우저·GPU 성능 현장 수용. 비승인 데이터/자격증명·CAD 원본을 Git/CI artifacts/로그에 포함하지 않는다.
+- 단위/형상 검증 계약은 [Issue97](Issue97.md)/[ADR-050](Decisions.md), TC 001~009; 테스트는 실제 실행 전에 NOT RUN. PR CI 시작/성공만으로 서버 쓰기/운영 승인 주장 금지.
+
 ## Issue #31 P4-D0 — LAN HTTP 경량 계정 운영 **계약만 승인** (2026-10-25)
 
 - **배포 네트워크:** 외부 공개망에서 인바운드 접근이 제한된 사내 LAN의 여러 PC가 `http://서버IP:포트`로 접근한다. **HTTPS/TLS/인증서 구축과 OIDC/SSO/MFA는 이번 범위에서 제외.** 계정 목적은 권한 제한·공동 편집·작성자·변경 이력. 현재 실 운영 인증 기능은 아직 없다.
