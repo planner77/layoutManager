@@ -1,5 +1,14 @@
 # 상세 요구사항
 
+## Issue #40 / U3 — v0.33.0 상단 외곽선 생성 제어 (2026-10-25)
+
+- **FR-U3-01 (AC-U3-01):** Viewer 외곽선 생성 메뉴의 초기 상태는 OFF. 매핑된 객체가 있는 DXF `three-dxf-viewer`에서만 ON 시 객체 선택(`select`) 및 기존 하단 도구로 전환하며 OFF 시 Pan으로 돌아간다. 앱 상태 토글과 실제 Overlay 표시·CAD 레이어 체크는 독립.
+- **FR-U3-02 (AC-U3-02/03):** OFF 전환 시 진행 중 Worker/미리보기와 선택을 안전하게 무효화하고 사용자에게 비확정 취소를 안내. 반복 토글/늦은 Worker 완료에 의한 Preview 재노출·이벤트 핸들러 중복 금지. 임시 확정 Overlay와 브라우저 JSON 다운로드는 동일 Version/Renderer 세션의 OFF에서도 보존.
+- **FR-U3-03 (AC-U3-04):** #31 다중선택(양방향 드래그/Mod/Space Pan), 레이어 숨김 선택 제거, Source↔Renderer fail-closed, ESC 선택→검색→native→CSS 우선순위, 기존 Renderer 전환/reload/dispose 시 메모리 정리 보존.
+- **FR-U3-04 (AC-U3-05):** `dxf-viewer`/DWG, 로딩/오류/빈 Entity/검증 불가능 SHA 또는 mapped source 0개는 메뉴 disabled/사유 안내. Renderer·Version/reload 실패 시 강제 OFF 및 기존 임시 결과 수명 종료. 실제 SHA bytes 검증은 기존 업로드/조회 계약과 구분하고 Viewer에서는 64-hex metadata 가용성을 추가 확인.
+- **NFR-U3-01:** 영구 저장/재조회 API, RBAC, 관리자 유형/트리, DB migration, CAD source 변경 없음. `out/Issue40.md` / ADR-036 / TC-U3-UNIT-001~003 / TC-U3-E2E-001~003로 추적.
+
+
 ## Issue #39 / U2 — v0.32.0 레이어 메뉴·패널 상태 일치 (2026-10-25)
 
 - **FR-U2-01 (AC-U2-01):** 전체 화면에서 지원 Renderer(`three-dxf-viewer`, DXF, ready, 1+ layers)의 상단 레이어 메뉴로 좌측 도크를 닫고 다시 열 수 있고, 내부 접기 버튼과 `layerPanelOpen` 하나의 상태를 사용한다. 최초 로드/Renderer 재설정은 보이는 기본값.

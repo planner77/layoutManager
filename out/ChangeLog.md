@@ -1,5 +1,25 @@
 # ChangeLog
 
+## 0.33.0 — 2026-10-25 / Issue #40 외곽선 생성 메뉴 ON/OFF U3 (PR CI 검증 전)
+
+- Added: `ViewerMenuBar` 외곽선 토글 ON/OFF + 접근성 상태/지원 사유. 정상 DXF+three-dxf-viewer+검증된 Source↔Render 매핑/64-hex Version SHA에서 ON→select/하단 도구, OFF→Pan/Worker·미확정 Preview·Selection 취소 및 안내. 기존 확정 Overlay·JSON 다운로드 유지(OFF 읽기 도크).
+- Safety/Compatibility: #31 Geometry/Worker/source audit/hidden layer/ESC 우선순위·#38/#39 앱셸·Canvas/Zoom/Source 유지, reload/Renderer/Version 간 격리, stale Promise guard. Overlay visibility/영구 DB API/권한/관리타입/트리 구현 제외. Version `0.32.0 → 0.33.0`, `src/package-lock.json` 동기화.
+- Tests/Docs: TC-U3-UNIT-001~003, TC-U3-E2E-001~003, 기존 #31/private/#38 테스트 조건 갱신, [Issue40](Issue40.md), [ADR-036](Decisions.md), Requirements/Architecture/TestPlan/TestReport/README/AGENTS/Issue31 갱신. **typecheck/lint/unit/build/Chromium/실 CAD는 새 PR CI 증거 전 NOT RUN**, 성공 판정하지 않는다.
+
+
+### PR #48 첫 CI 실패 및 P2 리뷰 보완 (2026-10-25)
+
+- 실패 Run [40149077671](https://github.com/planner77/layoutManager/actions/runs/40149077671): TypeScript PASS, ESLint `react-hooks/refs` FAIL(+ `exhaustive-deps` warning), Unit/Build/E2E SKIPPED, Docker runtime PASS. [FailureLedger](FailureLedger.md).
+- 수정: Ref 접근이 렌더 과정으로 전파되지 않도록 `useCallback`/정적 Renderer JSX 및 안정적인 load effect dependency. Space Pan은 캔버스에만 적용, 버튼 포커스에서는 Space 클릭을 허용(#48 P2 리뷰). E2E Enter ON → Space OFF → Space ON 및 Space+drag 회귀 추가.
+- 수정 후 PR CI는 새 HEAD에 대한 **검증 전**, 처음의 성공 단계를 이 HEAD의 PASS로 재사용하지 않는다.
+
+### PR #48 2차 CI Chromium E2E 실패 및 Fixture/기대 수정 (2026-10-25)
+
+- [Run 40150085136](https://github.com/planner77/layoutManager/actions/runs/40150085136): TypeScript/ESLint/Unit/Benchmark/Build PASS; Chromium E2E 52/54 PASS (2 FAIL); Legacy migration E2E SKIPPED; Docker runtime PASS.
+- #31 E2E가 reload 후 기본 OFF인 상태에서 선택 도구 렌더를 기대하는 회귀 테스트 불일치를 수정하여, OFF/도구 부재를 먼저 확인하고 다시 ON 뒤 선택 개수 0을 검증.
+- #40 E2E용 합성 `LWPOLYLINE`에 필수 group `90=4`가 없어 dxf-viewer parser `n must be greater than 0 vertices` 실패. Autodesk DXF Reference 기준으로 두 Square Fixtures의 vertex count를 추가. 실제 앱/Geometry/Worker 변경 없음. [Issue40](Issue40.md), [FailureLedger](FailureLedger.md) 참조.
+- 코드 [`fd1f4613`](https://github.com/planner77/layoutManager/commit/fd1f4613c1cc69b2f383c7cc4129a8d95d70ec39) 이후 새 PR CI 결과는 **NOT VERIFIED**. 이전 성공 체크를 수정 HEAD 성공으로 오인하지 않는다.
+
 ## 0.32.0 — 2026-10-25 / Issue #39 레이어 메뉴·도크 U2 (PR CI 검증 전)
 
 - UI: U1의 단일 `layerPanelOpen` 상태를 메뉴/내부 접기에 연결. 가능한 경우 레이어 도크 host를 유지하고 숨김 시 내부 panel만 닫아 `aria-controls` 대상으로 유효하게 유지. 접기 버튼 삭제 후 메뉴에 포커스 복귀 및 키보드 Enter/Space 재열기.

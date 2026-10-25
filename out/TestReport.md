@@ -1,5 +1,30 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE40-PR48-E2E-REPAIR-20261025 — 2차 PR CI E2E 실패 원인/Fixture 수정 (다음 검증 전)
+
+- [PR #48 Run #40150085136](https://github.com/planner77/layoutManager/actions/runs/40150085136) HEAD `76018b6b`: CI verify Job `121039597527`. npm ci·Prisma·TypeScript·ESLint·Unit/Integration·1k/10k/100k CPU benchmark·Production Build·Chromium 설치 **PASS**; Playwright Chromium **52 PASS / 2 FAIL (54 총건)**. Legacy migration E2E **SKIPPED**. Docker runtime job `121039597376` **PASS**. `react-hooks/refs` 이전 CI 차단은 이번 HEAD에 존재하지 않음.
+- **실패 1:** `TC-OUT-E2E-001` `issue31-outlines.spec.ts:107` reload 후 `outline-selection-count` locator 없음. 정상 U3 기본 OFF 상태의 UI에 맞지 않는 테스트 기대. Error context의 메뉴는 OFF, 렌더 표시 완료. 정상 로딩→OFF/패널 부재 확인→ON→선택 0으로 교정.
+- **실패 2:** `TC-U3-E2E-003` `issue40-outline-tool.spec.ts:152` `dxf-viewer` load error. [Playwright 실패 Trace/Artifact 12582184252](https://github.com/planner77/layoutManager/actions/runs/40150085136/artifacts/12582184252) console의 `Error: n must be greater than 0 vertices`/parseEntity가 원인 단서. Test DXF의 LWPOLYLINE에 4개 vertex 좌표만 있고 그룹코드 `90` (꼭짓점 수)이 누락된 형식 오류로 판정. 공식 DXF Reference를 근거로 `'90','4'` 추가; 단순 Renderer 변경 테스트 삭제·skip 없이 계속 실행.
+- **교정:** [commit `fd1f4613`](https://github.com/planner77/layoutManager/commit/fd1f4613c1cc69b2f383c7cc4129a8d95d70ec39), 두 Test 파일만 변경. 소스/DB/migration/API/Viewer Adapter/Worker 변경 없음.
+- **검증 제한:** 새 HEAD는 로컬 Test·Chromium E2E **NOT RUN**, 새 CI 성공 **NOT VERIFIED**. Autodesk group-90 형식 근거는 E2E 성공을 대체하지 않음. 실제 고객 도면·native Fullscreen/GPU는 별도 현장 수용 필요. [실패 원장](FailureLedger.md) 참조.
+
+## U-ISSUE40-PR48-REPAIR-20261025 — ESLint 실패·Space 포커스 회귀 수정(재검증 전)
+
+- [PR #48](https://github.com/planner77/layoutManager/pull/48) 최초 [Run 40149077671](https://github.com/planner77/layoutManager/actions/runs/40149077671) (HEAD `850ded81`): npm ci·Prisma generate·TypeScript **PASS**; **ESLint FAIL**, `viewer.tsx:404:186 react-hooks/refs`(error), `363:6 react-hooks/exhaustive-deps`(warning). Unit/Integration, 1k/10k/100k, Production Build, Browser E2E, Legacy migration E2E **SKIPPED**; Docker-runtime 독립 Job **PASS**. [원장](FailureLedger.md) 참고.
+- 별도 P2 코드 리뷰 [#4369181241](https://github.com/planner77/layoutManager/pull/48#discussion_r4369181241): 선택 모드 window capture가 Space keyboard click을 차단해 메뉴 ON에서 OFF 불가. 첫 CI의 미실행 E2E 결과로 오인하지 않음.
+- [소스 교정 `0ba21a66`](https://github.com/planner77/layoutManager/commit/0ba21a66e02c5a842e527ececdb678f447940a8f): `stopOutlineEditing/resetOutline/choose` 안정화, useEffect 의존성 명시, 2개 Renderer 버튼 명시적 JSX, SelectionController Space interactive focus guard. `TC-U3-E2E-001`에 Space 버튼 양방향 전환, `TC-U3-E2E-002`에 비대화형 Space Pan+drag를 추가.
+- **재검증 경계:** 위 **첫 Run**의 성공 단계는 수정 HEAD의 성공 근거가 아니다. 로컬 lint/test/Playwright·브라우저 native·실 DXF 실행은 **NOT RUN**, 새 synchronize PR CI 완료/성공 여부는 사용자의 모니터링 생략 지시에 따라 **미확인**.
+
+
+## U-ISSUE40-DEV-20261025 — v0.33.0 U3 코드·시험 작성 (PR CI 검증 전)
+
+- 대상: [#40](https://github.com/planner77/layoutManager/issues/40) / Epic #37 / 기준 main `296d570ea62e26a3fc40c57685268921df15199a`, 브랜치 `feat/issue-40-outline-tool-toggle`.
+- 개발 내용: 상단 ON/OFF + 접근성·지원조건 사유, 기존 #31 Selection/Worker에 안전하게 연결, OFF시 Worker/Preview/선택 취소·Pan 복귀, 확정 saved Overlay 및 OFF 읽기 전용 JSON Export 유지. Renderer/reload/Version 변경은 기존 reset. 새 DB/API/원본 변경 없음.
+- 새 Test 소스: `TC-U3-UNIT-001~003`(reducer/지원 정책/stale Worker 오류), `TC-U3-E2E-001~003`(ON/OFF·실 Worker JSON export·반복·레이어·ESC·Renderer·reload·빈 도면), 기존 `issue31-outlines.spec.ts` / `outline.acceptance.ts` U3 메뉴 호출 적응 및 `issue38-app-shell.spec.ts` fail-closed 기대 변경. 기대된 소스/테스트 연결은 [Issue40](Issue40.md) 및 [TestPlan](TestPlan.md).
+- **검증 상태:** 이 환경에서 소스 전체 의존성/npm 빌드 및 Browser/Chromium 실행 증거는 확보하지 못함. `npm ci`/typecheck/lint/Vitest/build/Playwright/Legacy migration/Docker/native 실기기/실도면 전부 **NOT RUN**; CI는 PR 작성 이후 시작되더라도 실행 결과/성공을 모니터링하지 않음.
+- 미완: 합성 실험은 실설비 도면 3종·원본 CAD 기준 좌표·GPU/Worker 장기 메모리·실 native 브라우저 ESC를 대체하지 못한다. #31 P4 IdP/RBAC 승인 대기·#41~#43 후속 항목은 여전히 범위 밖.
+
+
 ## U-ISSUE39-DEV-20261025 — v0.32.0 레이어 도크 U2 구현 (PR CI 결과 확인 전)
 
 - Issue: [#39](https://github.com/planner77/layoutManager/issues/39), Epic #37, #38/#17 재사용. 기준 main `0e11f957`, 기능 브랜치 `feat/issue-39-layer-panel-toggle`; 최초 코드 커밋 `a0f9f29f` (문서 후속 커밋 별도).

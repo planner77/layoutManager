@@ -140,7 +140,13 @@ export class SelectionController {
  private keyDown=(event:KeyboardEvent)=>{
    const el=event.target as HTMLElement|null;
    if(el?.closest('input,textarea,select,[contenteditable="true"]'))return;
-   if(event.code==='Space'&&this.mode==='select'&&!event.repeat){this.space=true;this.onPanKey(true);event.preventDefault();}
+   if(event.code==='Space'&&this.mode==='select'&&!event.repeat){
+     // A focused button/menu control owns Space activation. Intercepting it at
+     // window capture would prevent the browser's keyboard click (U3 toggle OFF).
+     // Only canvas/non-interactive targets receive temporary Space+drag pan.
+     const interactive=el?.closest('button,a[href],summary,[role="button"],[role="link"],[role="switch"],[role="checkbox"],[role="radio"],[role="tab"],[role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"]');
+     if(!interactive){this.space=true;this.onPanKey(true);event.preventDefault();}
+   }
    if(event.key==='Escape'&&this.mode==='select'&&(this.down||this.ids.size)){
      // Also allow the fullscreen Escape handler to close native/CSS fullscreen.
      this.clear();event.preventDefault();

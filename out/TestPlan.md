@@ -1,5 +1,34 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #40 / U3 v0.33.0 — 외곽선 도구 ON/OFF (2026-10-25)
+
+| TC | 자동/수동 범위 | AC |
+| --- | --- | --- |
+| `TC-U3-UNIT-001` | reducer 기본 OFF, 10회 ON/OFF 반복 시 독립 레이어/트리 상태 및 reset | AC-U3-01/02/04 |
+| `TC-U3-UNIT-002` | 정책 함수: DXF+three+ready+SHA 64hex+mapped >0만 허용, DWG/다른 Viewer/loading/error/0 index/invalid SHA 비활성·사유 | AC-U3-05 |
+| `TC-U3-UNIT-003` | 계산 revision·enabled·AbortError에서 이전 Worker 오류 무효화, 현재 세션 오류만 표시 | AC-U3-02 |
+| `TC-U3-E2E-001` | 합성 DXF/Polygon: 메뉴 Enter ON→영역선택→PRECISE Worker→임시 확정→새 CONVEX Preview→OFF(비확정 취소·Pan)→확정 Overlay/JSON Export 보존→ON 전환 후 선택 0/Preview 없음/동일 Canvas·단일 원본 GET | AC-U3-01/02/03 |
+| `TC-U3-E2E-002` | 3회 ON/OFF, Layer hidden 선택 차단·기존 선택 제거, 재표시, 선택/검색/native·CSS 중 ESC 1회 한 계층 | AC-U3-01/02/04 |
+| `TC-U3-E2E-003` | dxf-viewer disabled/사유, three-dxf-viewer ON 후 reload/Renderer 강제 OFF, 빈 도면 메뉴 disabled | AC-U3-04/05 |
+| **기존 회귀** | `TC-OUT-E2E-001` #31 활성 메뉴 추가, private `TC-OUT-REAL-BROWSER` 메뉴 재사용, `TC-U1-E2E-001`의 미안정 Handle fixture disabled 정책, #25/#17/#26/#39 + build/test/legacy migration/Docker | 전체 |
+
+- 합성 테스트는 **선택/Worker UI 동작** 검증이며 실 DXF Source↔Renderer 정확도·GPU/메모리/실 native Fullscreen 실증이 아니다. 사내 승인 DXF는 별도 opt-in 절차로 확인한다.
+- **실행 상태:** 구현 시 작성된 TC는 PASS가 아니다. PR CI 완료 결과 및 실험 로그 확인 전 **NOT RUN / NOT VERIFIED**. 실패·취소는 실제 Run ID·Job·로그와 함께 `out/FailureLedger.md`에 보존.
+
+
+## PR #48 CI #40149077671 후속 예방 회귀 (2026-10-25)
+
+- TC-U3-E2E-001: 상단 버튼에 포커스하고 **Enter ON → Space OFF → Space ON**을 반복하여 `aria-pressed`와 실제 도구 도크가 동기화됨을 검증. 이벤트는 `SelectionController`의 capture를 통과하더라도 버튼의 native Space click을 허용해야 한다.
+- TC-U3-E2E-002: 메뉴 포커스를 해제한 캔버스에서는 **Space+drag**가 선택 객체를 만들지 않으며 Pan 모드로 임시 전환/복귀. `fitToView` 이후 정상 영역 선택·레이어 hide·ESC 선택/검색/전체 화면 회귀를 계속 검증.
+- CI 차단 방지: `npm run lint`의 `react-hooks/refs` 및 `react-hooks/exhaustive-deps` 검증을 Unit/Build/E2E 선행 게이트로 유지. [Run 40149077671](https://github.com/planner77/layoutManager/actions/runs/40149077671)에서 후속 시험은 실행되지 않았으므로 **SKIPPED**, 수정 HEAD 테스트는 **NOT VERIFIED**.
+
+## Issue #40 / PR #48 — CI Run #40150085136 E2E 교정 항목 (2026-10-25)
+
+- **`TC-OUT-E2E-001` / AC-U3-01/04:** 기존 #31 실 Polygon Union/JSON Export/ESC 경로 유지. 명시적 Reload 직후 도면 표시 완료와 `viewer-menu-outline-tool[aria-pressed=false]`, `cad-outline-tools` 미존재(기본 OFF) → ON 클릭 후 `outline-selection-count`의 `선택 0개`를 확인한다. 테스트가 OFF 화면에서 존재하지 않는 선택 패널을 찾지 않도록 한다.
+- **`TC-U3-E2E-003` / AC-U3-04/05:** 두 Renderer 전환·리로드 강제 OFF 테스트의 DXF `LWPOLYLINE`에는 group `90=4`와 `10/20` 좌표 4쌍을 포함한다. `dxf-viewer` 실제 처리 완료와 `three-dxf-viewer`의 매핑/선택 가능 상태를 모두 검증하며, 오류가 나면 건너뛰거나 Renderer별 다른 시험 문서로 대체하지 않는다.
+- 실제 실패의 trace에서 `n must be greater than 0 vertices`를 확인했고, [Autodesk LWPOLYLINE DXF Reference](https://help.autodesk.com/cloudhelp/2020/ENU/AutoCAD-DXF/files/GUID-748FC305-F3F2-4F74-825A-61F04D757A50.htm)의 `90: Number of vertices`에 맞춘다. [FailureLedger](FailureLedger.md), [Issue40](Issue40.md).
+- **첫 Run 40150085136**의 E2E는 52 PASS/2 FAIL. Fixture 교정 HEAD의 새 CI에서 위 TC 및 전체 54+ E2E/Legacy migration 등을 재검증하기 전 성공 판정 금지. 실도면·GPU P0/P5는 별개.
+
 ## Issue #39 / U2 v0.32.0 — 레이어 메뉴·도크 독립 상태 (2026-10-25)
 
 | TC | 자동/수동 시험 내용 | AC |

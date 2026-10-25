@@ -54,3 +54,19 @@ describe('TC-U1-UNIT-001: viewer app docking state', () => {
     expect(withTree.layerPanelOpen).toBe(true);
   });
 });
+
+describe('TC-U3-UNIT-001: outline tool state machine', () => {
+  it('defaults OFF and switches without changing unrelated layer/tree state', () => {
+    let state = initialViewerAppState;
+    for (let i = 0; i < 10; i++) {
+      state = viewerAppReducer(state, { type: 'set-outline-tool', enabled: true });
+      expect(state).toMatchObject({ outlineToolEnabled: true, layerPanelOpen: true, outlineTreeOpen: false });
+      state = viewerAppReducer(state, { type: 'set-outline-tool', enabled: false });
+      expect(state).toEqual(initialViewerAppState);
+    }
+  });
+  it('clears the enabled bit on renderer switch/reload (reset)', () => {
+    const active = viewerAppReducer(initialViewerAppState, { type: 'set-outline-tool', enabled: true });
+    expect(viewerAppReducer(active, { type: 'reset' })).toEqual(initialViewerAppState);
+  });
+});
