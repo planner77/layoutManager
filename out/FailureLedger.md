@@ -1,5 +1,14 @@
 # PR/Main CI 실패 원장
 
+## Issue #96 / PR #101 — Ready 재트리거 취소·성공 및 #97 main 선행 병합 충돌 (2026-10-25 KST)
+
+- **기존 검증 HEAD:** `d85ee3583d897dde2100c0c7738d1ab6fc2fb6f5`. PR Draft `pull_request.opened` [Run 40190070251](https://github.com/planner77/layoutManager/actions/runs/40190070251) **completed/cancelled**. Verify [121158976430](https://github.com/planner77/layoutManager/actions/runs/40190070251/job/121158976430)와 Docker [121158976650](https://github.com/planner77/layoutManager/actions/runs/40190070251/job/121158976650) 각각 **cancelled**. Ready-for-review에서 새 PR CI가 실행되며 기존 작업이 취소된 것으로, 테스트 실패와 구분한다. 취소 결과를 삭제하거나 PASS로 쓰지 않는다.
+- **대체 CI 성공:** [Run 40190126225](https://github.com/planner77/layoutManager/actions/runs/40190126225) 같은 HEAD, attempt 1 **completed/success**. Verify [121159246791](https://github.com/planner77/layoutManager/actions/runs/40190126225/job/121159246791), Docker [121159247092](https://github.com/planner77/layoutManager/actions/runs/40190126225/job/121159247092) 모두 **completed/success**. Codex Review Summary는 d85ee35에 지적사항 0, inline 미해결 리뷰 스레드 0.
+- **충돌 원인:** #97 [main 0e9031ea](https://github.com/planner77/layoutManager/commit/0e9031ea05774d76dd10c6742f2a12a3dc0d4ed5) 선행 병합 후 #101 `behind=1/mergeable_state=dirty`. AGENTS/README/out/{Architecture,ChangeLog,Database,Decisions,Issue31,Operation,Requirements,TestPlan,TestReport}.md 11개가 상단 문서 동시 수정으로 충돌하며, #97이 이미 **ADR-050**을 사용하여 #96과 결정 ID 중복 발생.
+- **해결:** #97 변환 검증기·Unit·패키지/lock `0.40.2`·ADR-050/릴리스 기록을 그대로 유지하면서 #96의 독립 비활성 Auth/Session/Scope/Audit 코드와 테스트, Owner D1~D6 정책을 보존. #96 결정은 **ADR-051**로 재번호화하고 관련 문서 링크·버전 표기를 갱신, 문서 세트 정렬. 원본 DXF/Current/SHA/Prisma·auth API·Docker 운영 설정 활성화는 하지 않는다. Force push/history rewrite 없음.
+- **병합 게이트:** 기존 성공 d85ee35는 **main 통합 HEAD의 성공 증거가 아님**. 통합 브랜치에 새 PR CI가 성공하고 리뷰 0·behind 0·mergeable true가 확인된 다음에만 Squash 병합한다. 사내 CIDR/Secret 복구/세션 DB 원자성·감사/백업/실 LAN 시험 및 별도 Owner 운영 활성화 승인까지 Issue #96 **OPEN/BLOCKED** 유지. Main CI/GHCR 실행·배포 확인은 별도.
+
+
 ## Issue #54 / PR #92 — #76 최신 main에 의한 문서 충돌·정렬 (2026-10-25)
 
 - **사전 검증:** `6845c4b4e1e22157b64ce05215e67710c9a3a985`의 [PR CI 40181171710](https://github.com/planner77/layoutManager/actions/runs/40181171710) `completed/success`; P1 리뷰 #4370223581 해결. 이전 #40177837419 역시 성공이나 이전 HEAD 전용.

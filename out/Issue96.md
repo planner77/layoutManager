@@ -2,7 +2,7 @@
 
 ## Owner D1~D6 결정 (2026-10-25)
 
-**정책 승인 / 실제 운영 기능 BLOCKED.** 원 이슈 [#96](https://github.com/planner77/layoutManager/issues/96), 선행 #31 D0/ADR-048/049 및 최신 ADR-050. 별도 DESIGN.md는 저장소에 없고 AGENTS/Architecture/Decisions가 기준.
+**정책 승인 / 실제 운영 기능 BLOCKED.** 원 이슈 [#96](https://github.com/planner77/layoutManager/issues/96), 선행 #31 D0/ADR-048/049 및 최신 ADR-051. 별도 DESIGN.md는 저장소에 없고 AGENTS/Architecture/Decisions가 기준.
 
 - **D1:** .env 기반 bootstrap/복구. ADMIN_BOOTSTRAP_ENABLED / ADMIN_BOOTSTRAP_USERNAME / ADMIN_BOOTSTRAP_PASSWORD_FILE 및 ADMIN_RECOVERY_ENABLED / ADMIN_RECOVERY_TARGET_USER_ID / ADMIN_RECOVERY_ONCE_ID / ADMIN_RECOVERY_PASSWORD_FILE 제안. 플래그 모두 false가 초기값; 비밀번호 내용은 env에 두지 않고 별도 Secret file만 사용. 이미 초기화된 DB에서 재시작 bootstrap 금지, 명시적 복구 nonce 단발·감사 필요.
 - **D2:** 계정 비밀번호 최소 8자, 최초 변경, 로그인 실패 횟수 제한. 기존 삭제 비밀번호와 다른 Node 내장 scrypt(local-v1) 사용. Argon2id 신규 의존성 없음.
@@ -25,7 +25,7 @@
 
 ## 후속 게이트/AC
 
-- TC-P4-D1-003~012 Unit은 코드만 작성; TypeScript/Lint/Unit/E2E/Docker 실제 실행 전 PASS 미표기. PR CI는 결과 모니터링하지 않고 시작까지만 진행.
+- TC-P4-D1-003~012 Unit 코드 작성. 원 HEAD d85ee35의 PR CI 40190126225는 Verify/Docker 모두 PASS. #97 main 통합 HEAD의 CI는 별도 검증 필요하며 현장 E2E 미실행.
 - 실제 Secret 파일 권한·초기/복구 DB CAS/nonce 영속, KDF 워크팩터/실 계정 악의적 로그인, Session 발급 3개 원자성·폐기, Server Peer Origin/CSRF·LAN CIDR, Role/Site 교차 접근, append-only Audit와 감사 보존/백업·파기, DB/CAD/S3 동일 시점 backup→격리 migrate dry-run/FK→restore 및 별도 Owner 운영 배포 수용 모두 완료 전 서버 기능 OFF.
 - #97 Canonical/Transform은 병행 가능. #98 영속 Outline, #60 Logs, #65 Global Type, #83 Memo 영속은 권한 연동·별도 승인 후. #99 실 DXF/GPU 수용 별도.
 
