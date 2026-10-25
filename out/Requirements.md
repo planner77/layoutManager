@@ -1,5 +1,14 @@
 # 상세 요구사항
 
+## Issue #43 / U6 v0.36.0 — 외곽선 트리·Overlay 표시 (2026-10-25)
+
+- **FR-U6-01/AC-U6-01:** 현재 Version의 SavedOutline만 ID 기반 업무 타입별 그룹(수량·이름·kind)으로 구성하고 기존 미분류 v1은 legacy group. 실 서버 scoped catalog(#65) 부재 시 가상 업무 타입을 임의로 만들지 않는다. 비활성/삭제 타입의 과거 표시용 이름 스냅샷 유지.
+- **FR-U6-02/AC-U6-02:** 트리 외곽선 선택 시 독립 Overlay 하이라이트와 WCS Polygon/MultiPolygon Bounds focus; 퇴화·비유한 좌표 차단. Source DXF/Layer/Handle/Worker 불변.
+- **FR-U6-03/AC-U6-03:** 개별·타입별 show/hide는 별도 Adapter saved Group.visible만 변경. 트리·데이터·JSON 유지, 생성 ON/OFF·실 CAD Layer visibility 독립. 도구 OFF 삭제 차단.
+- **FR-U6-04~05:** 생성/삭제 동기 갱신, Renderer/Version/Reload 폐기, 320px compactPanel/ARIA tree/키보드/메뉴 focus/scroll, Canvas 재마운트·중복 Fetch/Worker 금지. SavedOutline 생성은 최대 100건.
+- **FR-U6-06 BLOCKED:** 영속화는 #65/#31 P4 승인 후 인증·Scope·CAS·source 재검증·Audit/GET 계약 확정. 현재는 브라우저 메모리만. 검증/추적 [Issue43](Issue43.md).
+
+
 ## Issue #42 / U5 v0.35.0 — 외곽선 업무 타입 지정 (2026-10-25)
 
 - **FR-U5-01**: 업무 타입 `outlineTypeId`는 ID 기준 1개, `kind`는 기존 `CONVEX|PRECISE`로 독립 유지. 타입만 바뀌어도 원본 SHA/Handle/geometry/Worker 결과 불변. `SavedOutline`과 브라우저 다운로드 DTO에 타입명 스냅샷·외곽선 이름 추가.
