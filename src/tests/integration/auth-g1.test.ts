@@ -9,7 +9,7 @@ import { requirePermission, type UserAccess } from '../../domain/auth';
 import { SESSION_ABSOLUTE_MS, SESSION_IDLE_MS } from '../../server/auth/session';
 import {
   applyG1Fixture, changeG1SiteGrant, changeG1RoleGrant, changeG1SpecialGrant, consumeG1Recovery, disableG1User,
-  fixtureCount, issueG1Session, openG1Fixture, resolveG1VersionSite,
+  fixtureCount, issueG1Session, changeG1Password, openG1Fixture, resolveG1VersionSite,
   seedFixtureUser, type IsolatedDb,
 } from '../fixtures/auth-g1/store';
 
@@ -112,6 +112,11 @@ describe('Issue #103 G1 isolated persistence contract', () => {
     expect(() => db.prepare('INSERT INTO "AuthSession"(id,user_id,token_hash,issued_at,last_seen_at,expires_at) VALUES(?,?,?,?,?,?)')
       .run('direct-4', 'user-a', hash('direct4'), NOW + 3, NOW + 3, NOW + 3 + SESSION_ABSOLUTE_MS)).toThrow('G1_SESSION_CAP');
     expect(fixtureCount(db, 'AuthSession')).toBe(3);
+    expect(() => db.prepare('INSERT INTO "AuthSession"(id,user_id,token_hash,issued_at,last_seen_at,expires_at) VALUES(?,?,?,?,?,?)')
+      .run('old-clock', 'user-a', hash('old-clock'), NOW - 1, NOW - 1, NOW - 1 + SESSION_ABSOLUTE_MS))
+      .toThrow('G1_CLOCK_ROLLBACK');
+    expect(() => db.prepare('UPDATE "AuthSession" SET last_seen_at=? WHERE id=?')
+      .run(NOW + SESSION_IDLE_MS, candidates[0].session.id)).toThrow('G1_SESSION_IMMUTABLE_OR_EXPIRED');
     expect(() => issueG1Session(db, 'user-a', NOW + SESSION_IDLE_MS + 3, true))
       .toThrow('G1_INJECTED_SESSION_FAILURE');
     expect(fixtureCount(db, 'AuthSession')).toBe(3);
@@ -205,6 +210,15 @@ describe('Issue #103 G1 isolated persistence contract', () => {
     expect(db.prepare('SELECT revoked_at FROM "AuthSession" WHERE user_id=?').get('reader-a')?.revoked_at).toBe(NOW + 100);
     expect(() => issueG1Session(db, 'reader-a', NOW + 101)).toThrow('G1_ACCOUNT_INELIGIBLE');
     expect(fixtureCount(db, 'AuditEvent')).toBe(1);
+    seedFixtureUser(db, 'reader-b', 'reader_b', NOW);
+    issueG1Session(db, 'reader-b', NOW);
+    expect(() => changeG1Password(db, 'reader-b', 'reader-b', 'scrypt$new', NOW + 100, 'pwd-fault', true))
+      .toThrow('G1_INJECTED_PASSWORD_FAILURE');
+    expect(db.prepare('SELECT revoked_at FROM "AuthSession" WHERE user_id=?').get('reader-b')?.revoked_at).toBeNull();
+    changeG1Password(db, 'reader-b', 'reader-b', 'scrypt$new', NOW + 100, 'pwd-ok');
+    expect(db.prepare('SELECT password_hash FROM "User" WHERE id=?').get('reader-b')?.password_hash).toBe('scrypt$new');
+    expect(db.prepare('SELECT revoked_at FROM "AuthSession" WHERE user_id=?').get('reader-b')?.revoked_at).toBe(NOW + 100);
+    expect(fixtureCount(db, 'AuditEvent')).toBe(2);
   });
 
   test('TC-P4-G1-008: recovery nonce consumption + password change + revoke + audit rollback/one-use', () => {

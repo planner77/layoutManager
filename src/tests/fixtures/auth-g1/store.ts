@@ -128,6 +128,82 @@ export function disableG1User(db: IsolatedDb, actor: string, target: string, now
     event(db, actor, 'ACCOUNT_DISABLED', 'ACCOUNT', target, now, requestId);
   });
 }
+/** G3 may later adopt this contract after G7; a password change revokes every session. */
+export function changeG1Password(db: IsolatedDb, actor: string, target: string, newHash: string,
+                                 now: number, requestId: string, injectFailure = false): void {
+  if (!newHash.startsWith('scrypt(db: IsolatedDb, target: string, nonce: string, newHash: string,
+                                  now: number, requestId: string, injectFailure = false): void {
+  if (!/^[a-zA-Z0-9_-]{16,128}$/.test(nonce) || !newHash.startsWith('scrypt$')) {
+    throw new Error('G1_RECOVERY_INPUT_INVALID');
+  }
+  const nonceHash = createHash('sha256').update(nonce, 'utf8').digest('hex');
+  atomic(db, () => {
+    const admin = db.prepare("SELECT 1 FROM \"UserRoleGrant\" WHERE user_id=? AND role='Admin'").get(target);
+    if (!admin) throw new Error('G1_RECOVERY_TARGET_NOT_ADMIN');
+    db.prepare('INSERT INTO "AdminRecoveryNonce"(nonce_hash,user_id,consumed_at) VALUES(?,?,?)')
+      .run(nonceHash, target, now);
+    db.prepare('UPDATE "User" SET password_hash=?,must_change_password=1,updated_at=? WHERE id=?')
+      .run(newHash, now, target);
+    db.prepare('UPDATE "AuthSession" SET revoked_at=? WHERE user_id=? AND revoked_at IS NULL')
+      .run(now, target);
+    if (injectFailure) throw new Error('G1_INJECTED_RECOVERY_FAILURE');
+    event(db, target, 'ADMIN_RECOVERY', 'ACCOUNT', target, now, requestId);
+  });
+}
+/** All three grant kinds require the same Admin+Audit transaction boundary. */
+export function changeG1RoleGrant(db: IsolatedDb, actor: string, target: string, role: string,
+                                 enabled: boolean, now: number, requestId: string, injectFailure = false): void {
+  if (!['Reader','Editor','Admin'].includes(role)) throw new Error('G1_ROLE_INVALID');
+  atomic(db, () => {
+    requireAdmin(db, actor);
+    if (enabled) {
+      db.prepare('INSERT INTO "UserRoleGrant"(user_id,role,granted_by_user_id,granted_at) VALUES(?,?,?,?)')
+        .run(target, role, actor, now);
+    } else {
+      const removed = db.prepare('DELETE FROM "UserRoleGrant" WHERE user_id=? AND role=?').run(target, role);
+      if (removed.changes !== 1) throw new Error('G1_GRANT_NOT_FOUND');
+    }
+    if (injectFailure) throw new Error('G1_INJECTED_GRANT_FAILURE');
+    event(db, actor, enabled ? 'ROLE_GRANTED' : 'ROLE_REVOKED', 'ROLE', target + '_' + role, now, requestId);
+  });
+}
+export function changeG1SpecialGrant(db: IsolatedDb, actor: string, target: string, permission: string,
+                                    enabled: boolean, now: number, requestId: string, injectFailure = false): void {
+  if (!['audit:read','logs:read'].includes(permission)) throw new Error('G1_PERMISSION_INVALID');
+  atomic(db, () => {
+    requireAdmin(db, actor);
+    if (enabled) {
+      db.prepare('INSERT INTO "SpecialGrant"(user_id,permission,granted_by_user_id,granted_at) VALUES(?,?,?,?)')
+        .run(target, permission, actor, now);
+    } else {
+      const removed = db.prepare('DELETE FROM "SpecialGrant" WHERE user_id=? AND permission=?').run(target, permission);
+      if (removed.changes !== 1) throw new Error('G1_GRANT_NOT_FOUND');
+    }
+    if (injectFailure) throw new Error('G1_INJECTED_GRANT_FAILURE');
+    event(db, actor, enabled ? 'ROLE_GRANTED' : 'ROLE_REVOKED', 'ROLE',
+      target + '_' + permission.replace(':', '_'), now, requestId);
+  });
+}
+
+/** Version scope comes exclusively from persisted Version→Floor→Building→Site. */
+export function resolveG1VersionSite(db: IsolatedDb, versionId: string): string | null {
+  const row = db.prepare('SELECT b.site_id AS site_id FROM "CadFileVersion" v JOIN "CadLocation" l ON l.id=v.location_id JOIN "Building" b ON b.id=l.building_id JOIN "CadSite" s ON s.id=b.site_id WHERE v.id=?')
+    .get(versionId);
+  return typeof row?.site_id === 'string' ? row.site_id : null;
+}
+)) throw new Error('G1_PASSWORD_HASH_INVALID');
+  atomic(db, () => {
+    if (actor !== target) requireAdmin(db, actor);
+    const changed = db.prepare("UPDATE \"User\" SET password_hash=?,must_change_password=0,updated_at=? WHERE id=? AND status='ACTIVE'")
+      .run(newHash, now, target);
+    if (changed.changes !== 1) throw new Error('G1_ACCOUNT_INELIGIBLE');
+    db.prepare('UPDATE "AuthSession" SET revoked_at=? WHERE user_id=? AND revoked_at IS NULL')
+      .run(now, target);
+    if (injectFailure) throw new Error('G1_INJECTED_PASSWORD_FAILURE');
+    event(db, actor, 'PASSWORD_RESET', 'ACCOUNT', target, now, requestId);
+  });
+}
+
 export function consumeG1Recovery(db: IsolatedDb, target: string, nonce: string, newHash: string,
                                   now: number, requestId: string, injectFailure = false): void {
   if (!/^[a-zA-Z0-9_-]{16,128}$/.test(nonce) || !newHash.startsWith('scrypt$')) {
