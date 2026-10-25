@@ -1,5 +1,23 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #102 G0 — Owner 5개 업무 정책/후속 게이트 검증 (2026-10-25)
+
+[Issue102](Issue102.md)/ADR-051-R1은 사내망 **기존 공개 CAD 익명 GET 허용**, `Current PUT=Editor 이상+담당 Site`, `Version DELETE=Editor 이상+담당 Site+기존 비밀번호`를 승인했다. 관리자 담당자/Owner 역할 분리, Audit 만료 후 정리 원칙은 승인하되 백업/물리 정리 SOP와 등록 POST 권한은 미확정. **현재 배포에서 로그인/권한 기능이 활성화되었다는 뜻이 아니다.**
+
+| TC ID | 확인 내용 | 실행 단계/현재 상태 |
+| --- | --- | --- |
+| TC-P4-G0-BIZ-001 | 승인 정책 표·AGENTS·ADR-051-R1·Issue102·#96~#109 정합성. 공개 CAD GET만 익명, 신규 영속/로그/감사 API 익명 확장 0 | G0 문서 정적 검토 / NOT RUN |
+| TC-P4-G0-BIZ-002 | 기존 목록·위치·Current/Version·Viewer·원본 GET/다운로드를 **익명으로** 정상 조회, Reader/SiteGrant가 불필요하며 익명 Actor 위조/신규 영속 익명 조회 없음 | G5/G6 / NOT RUN |
+| TC-P4-G0-BIZ-003 | **G7 이후 목표:** Current 변경은 Editor/Admin+담당 Site 허용, 익명·Reader·타 Site/권한 없는 Admin 거부, Current 0~1개 유지 | G4/G6 / NOT RUN |
+| TC-P4-G0-BIZ-004 | **G7 이후 목표:** 삭제는 Editor/Admin+담당 Site+기존 삭제 비밀번호 AND. 암호만/범위만/인증만/타 Site 각각 실패, 승인된 삭제 성공 및 Actor/Audit·Current·SHA 회귀 | G4/G6 / NOT RUN |
+| TC-P4-G0-BIZ-005 | 지정 운영 담당자의 Admin 단발 초기화/복구·재기동 불변, Owner 책임/SOP 기록, Secret 미출력 | G2/G6 / NOT RUN |
+| TC-P4-G0-BIZ-006 | Audit 365일 경계, 미만 보존·이후 정리 대상 분류. Backup/Restore 후 만료 기록·예외 처리 정책 승인 전 **purge 미실행** | G4/G6/G7 / NOT RUN |
+| TC-P4-G0-BIZ-007 | 기존 `POST /api/cad-files` Editor+Site가 **PROPOSED**임을 유지하며 임의 강화/개방 0, 익명 브라우징과 원래 API/북마크 호환 | G0 문서/후속 G7 / NOT RUN |
+| TC-P4-G0-BIZ-008 | **문서 전용 변경**(AGENTS/ADR/Issue102 등), Source/API/Prisma/Compose/Nginx/.env/운영 볼륨 변경 0, 동일 HEAD CI·미해결 리뷰·충돌 확인 | PR diff/CI / NOT RUN |
+
+**수용 구분:** G0 AC1은 5개 Owner 정책 명세와 후속 위임이 문서화됐는지 평가, AC2는 앞서 승인된 HTTP 위험 범위 결정(보안 시험 PASS 아님), AC3은 docs-only/OFF, AC4는 최신 HEAD PR CI·리뷰·병합 근거 필요. G0 문서 승인 자체는 G2~G7 실제 업무 E2E/배포 PASS를 의미하지 않는다.
+
+
 ## Issue #102 / ADR-051-R1 — 보안 강화 비범위와 기능/운영 수용 시험 (2026-10-25)
 
 **정책:** HTTP와 계정/세션 탈취·공격 방어 관련 위험은 Owner가 `OWNER_ACCEPTED_SCOPE`로 결정했다. 이는 시험 성공이 아니라 해당 *공격 전용 대응/침투 실증을 완료 게이트에서 제외*한 기록이다. 기존 비활성 Auth helper 및 기존 작성된 단위테스트를 제거하는 지시가 아님. [Issue102](Issue102.md).
