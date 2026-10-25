@@ -4,8 +4,9 @@
 
 - **자동 PR CI:** PR 제목을 `#68 | Actions 실행명 정리` 형식으로 작성한다. Actions Run에 `PR CI | #68 | Actions 실행명 정리`가 표시된다. PR 번호(`github.event.pull_request.number`)는 Issue가 아니므로 표시명에 대용하지 않는다.
 - **수동 PR CI:** Actions → `PR CI` → `Run workflow`에서 `issue_ref`(예: `#68`, 기본 `NO-ISSUE`), `run_description`(기본 `수동 검증`)을 지정한다. 결과는 `MANUAL CI | #68 | CI 재검증` 형태. 입력 UI는 main에 워크플로 변경이 반영된 후 이용할 수 있다.
-- **Main/GHCR:** squash 병합 시 커밋 첫 줄을 `#68 | Actions 실행명 정리`로 명시한다. `MAIN/GHCR | #68 | Actions 실행명 정리` 형태로 표시된다. 일반 push도 동일; 이슈가 전혀 없으면 `NO-ISSUE | 설명`으로 시작한다. 비정형 제목은 `ISSUE-UNKNOWN` 표시.
+- **Main CI:** squash 병합 시 커밋 첫 줄을 `#68 | Actions 실행명 정리`로 명시한다. `MAIN CI | #68 | Actions 실행명 정리` 형태로 표시된다. 일반 push도 동일; 이슈가 전혀 없으면 `NO-ISSUE | 설명`으로 시작한다. 비정형 제목은 `ISSUE-UNKNOWN` 표시.
 - **태그 푸시:** `vX.Y.Z` 형태에서는 `RELEASE | NO-ISSUE | vX.Y.Z GHCR 이미지 게시`. GitHub token이 생성한 자동 릴리스 태그는 추가 workflow를 트리거하지 않음(기존 정책 유지).
+- **GHCR 게시 제외 게이트:** main push에서 `release-scope` Job은 git `before...GITHUB_SHA` 변경 경로를 점검한다. 모든 변경이 `.md` 또는 `.github/workflows/*.yml|*.yaml`만이면 `publish=false`로 GHCR Job 전체를 `skipped` 처리한다. 이때 Main CI scope 검증은 실행된다. source/빌드/배포 자산 등 다른 경로 하나라도 변경되면 기존 버전 이미지 판정/후보 digest 게시 및 검증 단계를 유지한다. tag `v*.*.*`는 기존 릴리스 대상으로 유지한다. 비교 기준 SHA를 확인할 수 없으면 자동 게시하지 않고 Main CI에서 오류로 중단한다. 이번 #68 워크플로+문서 PR 병합은 GHCR 게시 대상이 아니다.
 - 중요: `run-name`은 실행 생성 시 고정되어 과거 Run에 소급되지 않는다. commit 본문이 긴 경우 Actions 표시가 잘릴 수 있으므로 첫 줄은 간결하게 작성한다. Workflow 이름은 최종 GHCR 이미지 게시를 인증하지 않는다. 상세 [Issue68](Issue68.md)·[ADR-038](Decisions.md).
 
 
