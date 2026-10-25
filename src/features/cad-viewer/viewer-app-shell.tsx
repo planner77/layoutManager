@@ -17,6 +17,7 @@ export function ViewerAppShell({
   layerPanel,
   layerPanelOpen,
   outlineTreePanel,
+  outlineTreeOpen,
   compactPanel,
   canvas,
   tools,
@@ -31,6 +32,7 @@ export function ViewerAppShell({
   layerPanel?: ReactNode;
   layerPanelOpen: boolean;
   outlineTreePanel?: ReactNode;
+  outlineTreeOpen: boolean;
   compactPanel: ViewerCompactPanel;
   canvas: ReactNode;
   tools?: ReactNode;
@@ -74,9 +76,10 @@ export function ViewerAppShell({
         </section>
         {outlineTreePanel && (
           <div
+            id="viewer-outline-tree-dock"
             data-testid="viewer-outline-tree-dock"
             className={'order-first flex max-h-[20dvh] min-h-0 w-full shrink-0 flex-col overflow-hidden border-b border-slate-300 bg-white md:order-last md:h-full md:max-h-none md:w-[min(17rem,28vw)] md:border-l md:border-b-0 ' +
-              (compactPanel === 'outlines' ? '' : 'hidden md:flex')}
+              (!outlineTreeOpen ? 'hidden' : compactPanel === 'outlines' ? '' : 'hidden md:flex')}
           >
             {outlineTreePanel}
           </div>
