@@ -2,6 +2,10 @@
 
 ## Issue #99 — 실제 DXF 비공개 P0/P5 수용 (현장 전용)
 
+**Issue #99 P1 비공개 파일 경로 제한:** 내부 DXF 경로와 보고서 출력 경로는 절대 경로뿐 아니라 심볼릭 링크를 해석한 최종 실제 경로까지 Git checkout 밖이어야 합니다. 보고서 출력 디렉터리는 시험 전에 별도로 만들고 쓰기 권한을 제한하세요. 재실행 시에는 새 JSON 보고서 파일명을 사용하세요(기존 파일 덮어쓰기 금지). 수정 HEAD `0.40.3`은 신규 GHCR 쌍 후보이며 CI/최종 릴리스·실 CAD 수용 완료를 의미하지 않습니다.
+
+
+
 - 기존 `cd src && npm run audit:outline -- --file /private/sample.dxf`는 Source-only 분석(파서/Spatial/heap/경고)이며 Render/GPU 합격 근거가 아닙니다.
 - **승인된 격리 테스트 DB/Storage에서만** `CAD_OUTLINE_ACCEPTANCE_DXF=/private/sample.dxf CAD_OUTLINE_ACCEPTANCE_EXPECTED_SHA256=<승인된 SHA256> CAD_OUTLINE_ACCEPTANCE_REPORT_PATH=/private/browser.json npm run test:outline-acceptance` (모든 경로는 Git 저장소 밖 절대 경로). 1개 실제 DXF의 Browser/Mapping/Box·프레임 5회 schema v2 보고서를 사내에 보관합니다.
 - 서로 다른 실제 DXF 3종(1k/10k/100k), CAD 기준 WCS/면적·지원 Matrix, 8개 기능 동작, 외부 GPU 사용/VRAM, Owner SLA/서명 참조를 비공개 manifest로 묶어 `npm run verify:outline-acceptance -- /private/manifest.json`로 점검합니다. `BLOCKED`는 증거 부족/기준 위반, `READY_FOR_OWNER_REVIEW`는 형식상 리뷰 가능일 뿐 합격이 아닙니다.
