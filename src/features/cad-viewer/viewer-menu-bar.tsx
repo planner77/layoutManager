@@ -1,5 +1,6 @@
 'use client';
 
+import type { Ref } from 'react';
 import { Button } from '@/components/ui/button';
 
 /**
@@ -9,6 +10,7 @@ import { Button } from '@/components/ui/button';
 export function ViewerMenuBar({
   layerAvailable,
   layerPanelOpen,
+  layerToggleRef,
   onToggleLayerPanel,
   outlineAvailable,
   outlineToolEnabled,
@@ -16,6 +18,7 @@ export function ViewerMenuBar({
 }: {
   layerAvailable: boolean;
   layerPanelOpen: boolean;
+  layerToggleRef: Ref<HTMLButtonElement>;
   onToggleLayerPanel: () => void;
   outlineAvailable: boolean;
   outlineToolEnabled: boolean;
@@ -32,6 +35,7 @@ export function ViewerMenuBar({
     >
       <span className="shrink-0 text-xs font-semibold tracking-wide text-teal-200">CAD VIEWER</span>
       <Button
+        ref={layerToggleRef}
         type="button"
         size="sm"
         variant="outline"
@@ -39,7 +43,7 @@ export function ViewerMenuBar({
         aria-label={layerAvailable && !layerPanelOpen ? '레이어 패널 펼치기' : '레이어'}
         aria-expanded={layerAvailable && layerPanelOpen}
         aria-pressed={layerAvailable && layerPanelOpen}
-        aria-controls="viewer-layer-dock"
+        aria-controls={layerAvailable ? 'viewer-layer-dock' : undefined}
         title={layerAvailable ? '레이어 패널 보기/숨기기 (도면 레이어 표시 상태는 유지)' : '이 Renderer에는 레이어 패널이 없습니다.'}
         disabled={!layerAvailable}
         onClick={onToggleLayerPanel}

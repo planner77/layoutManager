@@ -31,6 +31,7 @@ export function FullscreenLayerPanel({
           variant="ghost"
           aria-label="레이어 패널 접기"
           aria-expanded="true"
+          aria-controls="viewer-layer-dock"
           data-testid="fullscreen-layer-panel-toggle"
           onClick={onClose}
         >
