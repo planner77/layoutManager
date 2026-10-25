@@ -1,5 +1,12 @@
 # PR/Main CI 실패 원장
 
+## Issue #107 / G5 — 격리 Preview 최초 PR CI 이전 기록 (2026-10-25 KST)
+
+- **상태:** 이 항목 작성 시 신규 PR CI Run/Job/HEAD 결과는 아직 없음(**NOT RUN**). 이번 이슈의 실패·취소를 관측하지 않았으므로 허위 실패 이력은 추가하지 않는다. 기존 다른 이슈의 실패 기록은 원문 유지.
+- **변경 범위:** Owner R1 경량 사내망 정책, 독립 Preview Compose/NGINX 정상 경로·read-only smoke·Unit·CI Compose config-only; 운영 Auth/API/Prisma/기존 Compose/Nginx·데이터 변경 금지. [Issue107](Issue107.md).
+- **후속 기록 조건:** 실제 CI failure/cancel/review/merge conflict를 관측하면 PR/HEAD/Run/Job/Step/원인/재시도/해결을 누적한다. CI 시작은 성공 아님; #108 현장 테스트는 미실행.
+
+
 ## Issue #99 / PR #110 — 최신 #102 Main의 문서 변경으로 인한 병합 정렬 (2026-10-25 KST)
 
 - **성공한 이전 HEAD:** PR #110 `6e00d3385a5c16362669d0672b828ddc1eaebf04` [PR CI 40197221768](https://github.com/planner77/layoutManager/actions/runs/40197221768), attempt 1 `completed/success`. Verify [121180619434](https://github.com/planner77/layoutManager/actions/runs/40197221768/job/121180619434) / Docker [121180619279](https://github.com/planner77/layoutManager/actions/runs/40197221768/job/121180619279) 모두 success. P1 Symlink 보완 및 TC-P0P5-PATH Unit, GHCR 후보 `0.40.3`을 포함한 이전 HEAD만의 증거.
