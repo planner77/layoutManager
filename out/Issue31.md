@@ -1,5 +1,12 @@
 # Issue #31 — DXF 복수 선택과 볼록·정밀 외곽선 (0.27.0)
 
+## Issue #40 (U3) — #31 선택 도구의 상단 토글 제어 (2026-10-25)
+
+- #38/#39의 상단 메뉴 `외곽선 생성`을 #40에서 **기본 OFF** 실제 ON/OFF 도구로 연결했다. OFF 동안은 #31의 SelectionController 입력 모드 `pan`이며 기존 볼록/정밀 미리보기·확정 조작을 노출하지 않는다. ON 후 select/드래그/Worker/확정 및 JSON은 기존 그대로 동작한다.
+- OFF 진입은 기존 `cancelOutlinePreview`로 진행 중 Worker/비확정 Preview를 무효화하고 선택을 해제하되, **savedGroup/JSON은 삭제하지 않는다**. OFF 읽기용 확정 결과 내보내기 UI는 보존한다. 도구 ON/OFF와 Overlay 숨김 제어(#43)는 별개다.
+- `dxf-viewer`/DWG/로딩·에러/0 mapped entity/invalid Version SHA는 비활성/사유 표시. Layer hidden 원본 선택 차단·Source↔Render fail-closed·ESC·CSS/native Fullscreen·Renderer 변경 cleanup·#31 P4 저장 미승인 정책은 동일하다. [Issue40](Issue40.md), [TestPlan](TestPlan.md), [TestReport](TestReport.md).
+
+
 ## Issue #38 후속 UI 도킹·ESC 영향 (2026-10-24)
 
 - #31 선택/볼록·정밀 geometry Worker, 임시 확정/JSON 및 영구 API 금지 정책은 그대로 유지한다. #38은 화면 아래쪽에 스크롤 가능한 도킹 도구를 제공하고 Viewer Canvas와 분리한다.

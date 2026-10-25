@@ -1,5 +1,12 @@
 # ChangeLog
 
+## 0.33.0 — 2026-10-25 / Issue #40 외곽선 생성 메뉴 ON/OFF U3 (PR CI 검증 전)
+
+- Added: `ViewerMenuBar` 외곽선 토글 ON/OFF + 접근성 상태/지원 사유. 정상 DXF+three-dxf-viewer+검증된 Source↔Render 매핑/64-hex Version SHA에서 ON→select/하단 도구, OFF→Pan/Worker·미확정 Preview·Selection 취소 및 안내. 기존 확정 Overlay·JSON 다운로드 유지(OFF 읽기 도크).
+- Safety/Compatibility: #31 Geometry/Worker/source audit/hidden layer/ESC 우선순위·#38/#39 앱셸·Canvas/Zoom/Source 유지, reload/Renderer/Version 간 격리, stale Promise guard. Overlay visibility/영구 DB API/권한/관리타입/트리 구현 제외. Version `0.32.0 → 0.33.0`, `src/package-lock.json` 동기화.
+- Tests/Docs: TC-U3-UNIT-001~003, TC-U3-E2E-001~003, 기존 #31/private/#38 테스트 조건 갱신, [Issue40](Issue40.md), [ADR-036](Decisions.md), Requirements/Architecture/TestPlan/TestReport/README/AGENTS/Issue31 갱신. **typecheck/lint/unit/build/Chromium/실 CAD는 새 PR CI 증거 전 NOT RUN**, 성공 판정하지 않는다.
+
+
 ## 0.32.0 — 2026-10-25 / Issue #39 레이어 메뉴·도크 U2 (PR CI 검증 전)
 
 - UI: U1의 단일 `layerPanelOpen` 상태를 메뉴/내부 접기에 연결. 가능한 경우 레이어 도크 host를 유지하고 숨김 시 내부 panel만 닫아 `aria-controls` 대상으로 유효하게 유지. 접기 버튼 삭제 후 메뉴에 포커스 복귀 및 키보드 Enter/Space 재열기.

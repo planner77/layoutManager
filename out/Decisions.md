@@ -1,5 +1,14 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-036 — 외곽선 도구 ON/OFF는 비확정 작업만 취소 (2026-10-25 / Issue #40)
+
+- **배경:** #38 U1에서 상단 메뉴는 비활성이지만 하단 #31 도구로 객체 선택이 가능했다. 실제 ON/OFF를 도입하면서 Worker가 늦게 반환된 Preview, Renderer/Version 경계, 이미 확정한 Overlay/다운로드의 수명을 명시해야 한다.
+- **결정:** 단일 `ViewerAppState.outlineToolEnabled` 기본 OFF, `ViewerMenuBar` controlled button으로 ON 시 select/OFF 시 pan. OFF는 Worker와 미확정 Preview를 *먼저* 취소하고 selection을 비운다. `outlineEnabledRef` 및 monotonically increasing revision으로 비동기 stale callback을 차단한다. **임시 확정 `savedGroup`은 유지하고 OFF에서도 JSON Export**; 도구 활성 여부와 Overlay 가시성은 독립이다.
+- **Availability:** DXF+three-dxf-viewer, ready, loaded, 64-hex Version SHA 메타데이터, Source↔Renderer audit의 mapped Entity 1개 이상을 모두 요구. 불확실한 매핑/미지원 Renderer/비정상 버전은 false + 사유. 실제 SHA 원본 bytes 검증까지 새 UI가 수행한다고 주장하지 않는다.
+- **기각한 대안:** OFF 때 Adapter dispose/reload(카메라/확정 경계 소멸), OFF 때 savedGroup clear(사용자 결과 손실), 단순 도구 panel hidden(선택 이벤트/Worker 계속 동작), 비활성 상태에서 확정/삭제 허용(도구 ON/OFF 계약 파손).
+- **영향/제외:** #31 Layer/Space Pan/ESC/Worker·Geometry 및 #38/#39 Canvas·Shell 계약 유지. Renderer/Version/reload에서는 기존 세션 삭제. 트리 기반 Overlay 가시성(#43), 관리 타입(#41), DB/RBAC P4 미구현. 실기기 native·실 CAD 수용은 별개. [Issue40](Issue40.md).
+
+
 ## ADR-035 — 지원 Renderer에서 레이어 도크 host 유지·포커스 복원 (2026-10-25 / Issue #39)
 
 - **Context:** #38의 U1에서 메뉴/레이어 패널 열림 state는 통합됐지만, 닫힘 시 도크 DOM까지 제거되어 사용 가능한 메뉴의 `aria-controls=viewer-layer-dock` 참조가 사라졌다. 내부 접기 버튼은 클릭 후 DOM에서 사라져 키보드 포커스가 유실될 수 있었다.

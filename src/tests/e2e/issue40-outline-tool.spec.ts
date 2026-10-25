@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import { masterFields } from './master-helper';
 
@@ -10,7 +10,7 @@ const square = Buffer.from([
   '0','ENDSEC','0','EOF','',
 ].join('\n'));
 
-async function createDrawing(request: Parameters<Parameters<typeof test>[1]>[0]['request'], name: string, data = square) {
+async function createDrawing(request: APIRequestContext, name: string, data = square) {
   const created = await request.post('/api/cad-files', { multipart: {
     file: { name: name + '.dxf', mimeType: 'application/octet-stream', buffer: data },
     ...(await masterFields(request, { businessUnit: name, site: 'outline-toggle', building: 'A', floor: '1' })),
@@ -20,7 +20,7 @@ async function createDrawing(request: Parameters<Parameters<typeof test>[1]>[0][
   return (await created.json()) as { id: string };
 }
 
-async function selectSquare(page: Parameters<Parameters<typeof test>[1]>[0]['page']) {
+async function selectSquare(page: Page) {
   const canvas = page.getByTestId('cad-canvas').locator('canvas');
   const box = (await canvas.boundingBox())!;
   await page.mouse.move(box.x + 5, box.y + 5);
@@ -118,7 +118,7 @@ test('TC-U3-E2E-002: repeated ON/OFF, layer-hidden safety and ESC scope', async 
   await expect(page.getByTestId('cad-viewer-shell')).toHaveAttribute('data-fullscreen', 'false');
 });
 
-async function selectNothing(page: Parameters<Parameters<typeof test>[1]>[0]['page']) {
+async function selectNothing(page: Page) {
   const canvas = page.getByTestId('cad-canvas').locator('canvas');
   const box = (await canvas.boundingBox())!;
   await page.mouse.move(box.x + 5, box.y + 5);

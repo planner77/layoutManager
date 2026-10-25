@@ -1,5 +1,12 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #40 (2026-10-25) — 상단 외곽선 생성 ON/OFF U3, v0.33.0
+
+- `ViewerMenuBar`의 외곽선 생성 토글은 **기본 OFF**. 지원 가능한 DXF + three-dxf-viewer의 정상 로드·유효한 SHA-256 메타데이터·검증된 매핑 Entity >0에서만 ON 및 `select` 허용. OFF는 **Worker/Preview 취소 → 선택 해제 → pan 복귀**와 고지를 수행한다. 기존 #31 선택/Geometry/Worker는 재사용한다.
+- 임시 **확정** Outline Overlay와 브라우저 JSON 내보내기는 OFF에도 보존한다. 비확정 선택/Preview만 지우며, 확정 결과 삭제는 ON 도구에서 수행. Overlay 표시/숨김은 U6(#43) 별개; 다른 Renderer/Version/reload/load 실패는 기존 수명주기대로 결과 폐기·OFF. 메뉴 ON/OFF 자체는 ViewerManager 재생성 금지.
+- 레이어 숨김/Source↔Renderer fail-closed/Space Pan/ESC 단일 계층/Fullscreen 규칙과 #31 P4 영구 저장·인증 보류는 불변. `DESIGN.md`가 없어 `out/Architecture.md`/ADR-036을 설계 기준으로 한다. [Issue40](out/Issue40.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md) 참조. **PR CI 실행 결과는 검증 전 NOT RUN**.
+
+
 ## Issue #39 (2026-10-25) — 상단 레이어 패널 표시/숨김 U2, v0.32.0
 
 - #38 `ViewerAppState.layerPanelOpen`이 메뉴/도크의 유일한 열림 상태다. `layerAvailable`(immersive + three-dxf-viewer + ready + layers>0)을 충족하면 `aria-controls` 대상 도크 host를 닫힌 상태에서도 유지하고, 내부 접기 후 메뉴로 키보드 포커스를 돌린다.
@@ -128,6 +135,7 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 | [Issue10](out/Issue10.md) | GitHub #10 전체 화면 요구사항·설계·CI 근거 | Viewer 전체 화면, ESC/종료, 컨테이너 resize 또는 view state 보존 변경 시 |
 | [Issue38](out/Issue38.md) | Viewer 앱형 메뉴·도킹 셸/ESC 상태·후속 U2/U3/U6 계약 | Viewer shell·도킹·메뉴·검색/선택 ESC 변경 시 |
 | [Issue39](out/Issue39.md) | Viewer 메뉴와 레이어 패널 표시 상태 독립/접근성·포커스·회귀 근거 | 레이어 메뉴·도크 접기/Renderer·fullscreen 레이어 UX 변경 시 |
+| [Issue40](out/Issue40.md) | U3 외곽선 ON/OFF·Worker 취소·임시 확정/JSON 보존 정책 및 AC 추적 | 외곽선 메뉴·객체 선택·취소·임시 Overlay/Renderer·ESC 변경 시 |
 | [FailureLedger](out/FailureLedger.md) | PR/Main CI 관측 실패·조치·재검증 누적 원장 | CI 실패·취소·재시작 시 |
 | [Issue25](out/Issue25.md) | 기본 immersive 진입, native 수동 선택, 복귀·툴바·회귀 수용 | Viewer 전체 화면 기본 진입/링크/포커스/레이어·검색 변경 시 |
 | [Release 0.20.0](out/Release-0.20.0.md) | 0.20.0 병합·태그·GHCR 게시 근거 | 0.20.0 릴리스 확인 및 운영 이미지 식별 시 |

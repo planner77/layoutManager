@@ -1,5 +1,14 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE40-DEV-20261025 — v0.33.0 U3 코드·시험 작성 (PR CI 검증 전)
+
+- 대상: [#40](https://github.com/planner77/layoutManager/issues/40) / Epic #37 / 기준 main `296d570ea62e26a3fc40c57685268921df15199a`, 브랜치 `feat/issue-40-outline-tool-toggle`.
+- 개발 내용: 상단 ON/OFF + 접근성·지원조건 사유, 기존 #31 Selection/Worker에 안전하게 연결, OFF시 Worker/Preview/선택 취소·Pan 복귀, 확정 saved Overlay 및 OFF 읽기 전용 JSON Export 유지. Renderer/reload/Version 변경은 기존 reset. 새 DB/API/원본 변경 없음.
+- 새 Test 소스: `TC-U3-UNIT-001~003`(reducer/지원 정책/stale Worker 오류), `TC-U3-E2E-001~003`(ON/OFF·실 Worker JSON export·반복·레이어·ESC·Renderer·reload·빈 도면), 기존 `issue31-outlines.spec.ts` / `outline.acceptance.ts` U3 메뉴 호출 적응 및 `issue38-app-shell.spec.ts` fail-closed 기대 변경. 기대된 소스/테스트 연결은 [Issue40](Issue40.md) 및 [TestPlan](TestPlan.md).
+- **검증 상태:** 이 환경에서 소스 전체 의존성/npm 빌드 및 Browser/Chromium 실행 증거는 확보하지 못함. `npm ci`/typecheck/lint/Vitest/build/Playwright/Legacy migration/Docker/native 실기기/실도면 전부 **NOT RUN**; CI는 PR 작성 이후 시작되더라도 실행 결과/성공을 모니터링하지 않음.
+- 미완: 합성 실험은 실설비 도면 3종·원본 CAD 기준 좌표·GPU/Worker 장기 메모리·실 native 브라우저 ESC를 대체하지 못한다. #31 P4 IdP/RBAC 승인 대기·#41~#43 후속 항목은 여전히 범위 밖.
+
+
 ## U-ISSUE39-DEV-20261025 — v0.32.0 레이어 도크 U2 구현 (PR CI 결과 확인 전)
 
 - Issue: [#39](https://github.com/planner77/layoutManager/issues/39), Epic #37, #38/#17 재사용. 기준 main `0e11f957`, 기능 브랜치 `feat/issue-39-layer-panel-toggle`; 최초 코드 커밋 `a0f9f29f` (문서 후속 커밋 별도).
