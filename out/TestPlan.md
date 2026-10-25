@@ -1,5 +1,21 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #99 / PR #110 — P1 Symlink 경로 회귀 및 GHCR 0.40.3 게이트 (2026-10-25)
+
+| TC | 검증 목적 | 상태 |
+| --- | --- | --- |
+| TC-P0P5-PATH-001 | 승인된 repo 외부 실제 파일+기존 사내 출력 폴더에서 1회 `wx` 쓰기·재쓰기 거부 | Unit 작성 / 수정 HEAD CI 필요 |
+| TC-P0P5-PATH-002 | 외부 입력 파일 symlink가 repo 내부 DXF를 가리키면 realpath 차단 | Unit 작성 / 수정 HEAD CI 필요 |
+| TC-P0P5-PATH-003 | 외부 출력 디렉터리 symlink/junction이 repo 내부를 가리키면 차단 | Unit 작성 / 수정 HEAD CI 필요 |
+| TC-P0P5-PATH-004 | 기존 결과 파일·dangling symlink 파일 덮어쓰기 금지 | Unit 작성 / 수정 HEAD CI 필요 |
+| TC-P0P5-PATH-005 | 프리플라이트 이후 parent symlink 교체는 저장 직전 차단 | Unit 작성 / 수정 HEAD CI 필요 |
+| TC-P0P5-PATH-006 | 상대 경로·미생성 출력 부모 폴더 거부 | Unit 작성 / 수정 HEAD CI 필요 |
+| TC-P0P5-REL-001 | package/lock root `0.40.3` 일치, 기존 `v0.40.2` 이동/덮어쓰기 없음 | 정적 확인 / 실제 GHCR 게시 대기 |
+
+- 사전 PR CI HEAD `6377426`: [40195335561](https://github.com/planner77/layoutManager/actions/runs/40195335561) Verify/Docker 2 Job 성공. P1 리뷰 발견 이후 변경된 HEAD의 성공으로 간주하지 않는다. 실 설비 DXF 사내 검증/실 GPU 수용은 여전히 NOT RUN.
+- 경로 관련 E2E 테스트를 실행할 때는 부모 폴더가 **사전에 존재**하고 전용 ACL로 보호되어야 한다. 보고서는 자동 폴더 생성/기존 JSON 덮어쓰기 없이 사내에 신규 생성. 애플리케이션 정상 배포 시 GHCR App+Migrator immutable 버전 쌍은 Main push에서만 검증.
+
+
 ## Issue #99 — 현장 실 DXF 매핑·GPU 성능 수용 시험 계획 (2026-10-25)
 
 **증거 구분:** Unit/PR CI는 합성 검증 전용. 사내 승인된 원본 DXF·CAD 정답값·외부 장비 계측·Owner SLA는 미입력. 현장 AC 4개는 전부 **BLOCKED / NOT RUN**.
