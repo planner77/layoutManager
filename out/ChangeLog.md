@@ -1,5 +1,20 @@
 # ChangeLog
 
+### v0.34.0 / PR #64 — 첫 CI E2E 실패·HTTP UUID 리뷰 교정 (2026-10-25)
+
+- [Run 40153913566](https://github.com/planner77/layoutManager/actions/runs/40153913566) Chromium E2E **55 PASS/1 FAIL**(프로토타입 error alert + Next route announcer 중복 locator), Legacy migration SKIPPED; TypeScript/Lint/Unit/Benchmark/Build/Docker PASS. [FailureLedger](FailureLedger.md).
+- Corrected: `TC-U4-E2E-PREVIEW-001` alert locator를 prototype scope로 한정, 일반 사내 HTTP의 `crypto.randomUUID` 부재는 CSPRNG `getRandomValues`→UUIDv4 fallback으로 해결. [P2 review](https://github.com/planner77/layoutManager/pull/64#discussion_r4369348797) 및 `TC-U4-UNIT-005/006`, `TC-U4-E2E-HTTP-003` 신규 회귀. 코드 [`b389b66e`](https://github.com/planner77/layoutManager/commit/b389b66e11a34ad6fa737fc5ff760277d192797a).
+- No change: v0.34.0 버전, Renderer/Source/Viewer/DB/관리자 권한 게이트. 수정 HEAD의 새 PR CI **결과 확인 전 NOT VERIFIED**.
+
+
+## 0.34.0 — 2026-10-25 / Issue #41 관리자 최상위 외곽선 타입 비영속 안전 시안
+
+- Added: 타입 계약 및 순수 NFC/trim·중복·길이·sortOrder·UUID·revision CAS 시뮬레이션·비활성/복구 도메인, `/lab/outline-types` **비영속 React UI 시안**, UNIT/E2E 회귀 스위트. 브라우저 reload 시 데이터 삭제.
+- Blocked intentionally: **실 Viewer 관리자 메뉴 disabled 유지**, 계정/Admin RBAC·Scope·Audit 결정 전 `/api/outline-types` CRUD, DB migration, 영속 저장, 외곽선 typeId FK, 트리/분류 기능 미구현. 단순 시안을 관리자 기능 완료로 표시하지 않는다.
+- Compatibility: Viewer/Renderer/Canvas/레이어/기하 #31·#40, CadFileVersion/원본/Storage 불변. `src/package.json`/lockfile 루트 버전 0.33.0→0.34.0. [Issue41](Issue41.md), ADR-037 및 관련 기준 문서 갱신.
+- QA: 신규 TC-U4-UNIT-001~004, TC-U4-E2E-PREVIEW-001/GATE-002는 **코드 작성됨, 로컬 NOT RUN**, PR CI 결과 모니터링 전 NOT VERIFIED.
+
+
 ## 0.33.0 — 2026-10-25 / Issue #40 외곽선 생성 메뉴 ON/OFF U3 (PR CI 검증 전)
 
 - Added: `ViewerMenuBar` 외곽선 토글 ON/OFF + 접근성 상태/지원 사유. 정상 DXF+three-dxf-viewer+검증된 Source↔Render 매핑/64-hex Version SHA에서 ON→select/하단 도구, OFF→Pan/Worker·미확정 Preview·Selection 취소 및 안내. 기존 확정 Overlay·JSON 다운로드 유지(OFF 읽기 도크).

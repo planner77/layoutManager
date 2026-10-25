@@ -1,5 +1,19 @@
 # CAD Web Viewer P.O.C.
 
+### Issue #41 / PR #64 비영속 타입 시안 HTTP 접속·CI 교정
+
+- 시안 URL `/lab/outline-types`는 `crypto.randomUUID`를 지원하지 않는 사내 `http://서버IP:3000` 브라우저에서도 `crypto.getRandomValues`를 사용해 임시 UUIDv4를 만듭니다. 브라우저 메모리 시안 외 영역에 저장하거나 관리자 권한으로 사용하지 않습니다. 암호학적 난수 API가 아예 없다면 안내 후 차단합니다.
+- 최초 [PR CI 40153913566](https://github.com/planner77/layoutManager/actions/runs/40153913566)은 Chromium E2E 55건 PASS/1건 FAIL(Next route-announcer와 검증 안내의 `role=alert` Locator 중복). 테스트 선택 범위와 HTTP 호환 문제를 보완하여 PR CI 재검증을 시작합니다. 재검증 완료 전 PASS는 아님. 실제 관리자 저장 API/DB는 보안 승인이 있기 전까지 계속 차단합니다. [Issue41](out/Issue41.md)·[FailureLedger](out/FailureLedger.md).
+
+
+## v0.34.0 — Issue #41 최상위 외곽선 업무 타입 관리 설계 시안 (운영 차단)
+
+- 현재 상단 **외곽선 타입 관리** 메뉴는 관리자 인증·역할·scope·감사 정책 미승인으로 **비활성**입니다. 실제 등록·DB 영구 저장·공유 카탈로그 조회, 외곽선 typeId 지정 및 타입별 트리 기능은 제공하지 않습니다.
+- 검토용 URL: `/lab/outline-types`. **운영 데이터가 아닌 브라우저 메모리 시안**에서 타입 추가·수정·비활성·복구와 이름 중복·정렬순서·수정 충돌 정책을 시험할 수 있습니다. 페이지를 새로고침하면 시안 항목이 모두 사라지고 원본 DXF/기존 Viewer/DB에는 변경이 없습니다.
+- 업무 타입(공정/설비 등 사용자 분류)은 기하 알고리즘 `CONVEX`/`PRECISE`와 별개입니다. 이름 NFC 정규화·대소문자 무시 중복·inactive 이름 예약 정책은 **제안**이며 적용 Scope(전역 vs 사업부/제품/사업장)는 미확정입니다.
+- 실제 Admin CRUD 개발에는 Owner의 IdP/세션, 역할·적용 범위, 감사 보존기간 승인과 서버측 권한 확인·DB migration·FK/경쟁 시험이 필요합니다. **Issue #41은 BLOCKED 유지**, [Issue41](out/Issue41.md)·[ADR-037](out/Decisions.md)·[TestPlan](out/TestPlan.md)를 참조하세요. 테스트 작성 결과를 CI PASS로 해석하지 마세요.
+
+
 ## v0.33.0 — Issue #40 외곽선 생성 상단 메뉴 ON/OFF
 
 - DXF 도면을 **three-dxf-viewer**로 열면(원본 SHA-256 정보 정상·검증된 매핑 Entity 1개 이상) 상단 **외곽선 생성: OFF**가 사용 가능해집니다. 클릭 또는 Enter/Space로 **ON**하면 객체 선택 모드와 하단 외곽선 도구가 활성화됩니다. 클릭/다중 선택·영역 선택·볼록/정밀 미리보기·임시 확정 조작은 기존 #31과 같습니다.

@@ -1,5 +1,35 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #41 / PR #64 E2E 및 HTTP 비보안 컨텍스트 회귀 보완 (2026-10-25)
+
+| TC | 검증 의도 | 관측/계획 | 
+| --- | --- | --- |
+| `TC-U4-E2E-PREVIEW-001` | 중복 타입 경고는 Next.js `__next-route-announcer__` 외 **prototype 내부** `role=alert` 만 검사하며 이후 수정/비활성/복구/refresh까지 검증 | [Run 40153913566](https://github.com/planner77/layoutManager/actions/runs/40153913566) 기존 Locator **FAIL**, 수정 HEAD 재CI 결과 미검증 |
+| `TC-U4-UNIT-005` | secure context의 native `randomUUID` 우선, getRandomValues 중복 호출 방지 | 신규 작성/재CI NOT VERIFIED |
+| `TC-U4-UNIT-006` | `randomUUID` 없음→CSPRNG `getRandomValues`로 RFC UUIDv4 format·version/variant, 암호학적 난수 API 전체 부재 시 fail-closed | 신규 작성/재CI NOT VERIFIED |
+| `TC-U4-E2E-HTTP-003` | `page.addInitScript`로 `crypto.randomUUID` 제거(기존 TC-ISSUE14-001과 동일) 후 메모리 시안 생성 정상·API 저장 없음·reload 삭제 | 신규 작성/재CI NOT VERIFIED |
+| 기존 회귀 | U4 API GET/POST/PATCH 404, #38 disabled 관리자 메뉴, #40 outline worker·#39 layer·#25 immersive, Legacy migration, Docker | 최초 Run에서 E2E 총 55 PASS/1 FAIL 및 Legacy SKIPPED, 수정 HEAD는 재검증 필요 |
+
+- 일반 `http://<server IP>:3000`에서 `randomUUID`는 없을 수 있으나 `getRandomValues`는 사용할 수 있다. 테스트의 method 제거는 **비보안 컨텍스트의 API 가용성을 모의**하며 실제 외부 HTTP 접속/현장 네트워크·권한 테스트 통과를 주장하지 않는다. 실서버 타입 저장/인증/RBAC/DB scope는 차단 유지. [FailureLedger](FailureLedger.md)·[Issue41](Issue41.md).
+
+
+## Issue #41 / U4 v0.34.0 — 비영속 타입 시안과 Fail-Closed 테스트 (2026-10-25)
+
+| TC | 범위 | AC/상태 |
+| --- | --- | --- |
+| TC-U4-UNIT-001 | NFC/trim, 대소문자 무시 중복, 비활성명 예약, scopeKey 미결정 | AC-U4-03 **부분** |
+| TC-U4-UNIT-002 | 공백·제어/방향 문자·길이·정수·UUID 검증 | AC-U4-03 **부분** |
+| TC-U4-UNIT-003 | 이름변경/불변 ID·createdAt/비활성·복구/Revision stale 충돌 | AC-U4-03/04 **부분** |
+| TC-U4-UNIT-004 | 이름변경 중복 거부, 불변 명령, 안정적 정렬 | AC-U4-03 **부분** |
+| TC-U4-E2E-PREVIEW-001 | `/lab/outline-types` 추가·중복·수정·비활성·복구, no API requests, reload 후 0건 | 비영속 UX만 검증 |
+| TC-U4-E2E-GATE-002 | 실제 GET/POST/PATCH `/api/outline-types` = 404, spoofed headers/deletePassword 우회 불가(미구현 API) | AC-U4-05 **코드 경계** |
+| 기존 회귀 | #38 관리 메뉴 disabled, #40 외곽선 선택/Worker, #39 레이어, #31 P4 전용 validator, #25 immersive | Viewer 호환 |
+| **승인 후 신규 필요** | 인증된 Admin 세션 영속 CRUD, non-Admin 401/403, scope 분리/복구, DB Unique/FK CAS 동시 업데이트 409, 감사 기록, Migration/Restore E2E | AC-U4-01~04 **BLOCKED** |
+
+- 로컬 npm ci/typecheck/lint/unit/build/Playwright 결과: **NOT RUN**. PR CI도 시작 즉시 성공 처리하지 않으며, 실 CAD·GPU·RBAC·DB 영속 수용은 별개.
+- E2E의 API 404는 **인가 401/403를 검증한 것이 아님**. 인증/Scope 결정 전 실제 Route를 실험용으로 만들지 않는다. [Issue41](Issue41.md).
+
+
 ## Issue #40 / U3 v0.33.0 — 외곽선 도구 ON/OFF (2026-10-25)
 
 | TC | 자동/수동 범위 | AC |
