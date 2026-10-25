@@ -1,5 +1,13 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #52 / E2 — 생성 개체 Document·Command·Undo/Redo 기반 (2026-10-25)
+
+- v0.38.0: E1 (#51) UUID 기반 Generated Ref를 재사용하며 브라우저 메모리의 `GeneratedDocument`를 유일한 생성 개체 상태로 사용한다. 기존 Scene `savedGroup`, #43 Tree, v1/v2 임시 JSON 내보내기는 Document 투영이며 원본 Source/Worker Preview는 **편집 불가·Document 미포함**.
+- `executeGeneratedCommand` 및 stage/commit/cancel, `undoGeneratedEdit/redoGeneratedEdit`를 Manager/Adapter에서 노출. 편집 대상은 같은 Version·SHA의 전부 GENERATED·유효 UUID·선택 목록과 정확히 일치해야 하고 변환 전/후 WCS 좌표를 전체 검증한다. 한 명령=한 이력, 실패는 전체 롤백. HISTORY_MAX=100, 예상 이력 메모리 16MiB, polygon 총 정점 100k; #53~#55 실제 Delete/Move/Rotate UI는 **별개**.
+- Ctrl/⌘+Z, Ctrl/⌘+Shift+Z, Ctrl+Y는 Viewer 안에서만 활성화하고 입력/텍스트 편집과 충돌하지 않는다. Zoom/Pan/트리 표시·숨김/생성 모드 전환은 이력에 기록하지 않는다. 재로드/Version/Renderer/Dispose 시 모두 폐기. P4 인증·권한 승인 전 서버 API/DB/Attestation 우회 금지.
+- 근거와 테스트 상태: [Issue52](out/Issue52.md), [ADR-043](out/Decisions.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md). 원격 작업 환경에서 작성된 테스트는 로컬 NOT RUN이며 CI 성공/실 CAD 사용 가능 판정과 구분한다.
+
+
 ## Issue #51 / PR #77 — Unit API 계약 실패 및 미세 WCS P2 (2026-10-25)
 
 - 첫 [PR CI 40164835838](https://github.com/planner77/layoutManager/actions/runs/40164835838): `TC-U6-UNIT-003` 실패(`focusSavedOutline` 기본 false 인수로 이전 단일 호출 계약 불일치), Unit 186 PASS/1 FAIL; TS/Lint PASS, Benchmark/Build/E2E/Legacy SKIPPED, Docker Job PASS. 기본 `selectSavedOutline(id)` 호출은 유지하고 E1 additive에서만 `(id,true)` 사용한다.
