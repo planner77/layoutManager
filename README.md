@@ -1,5 +1,12 @@
 # CAD Web Viewer P.O.C.
 
+## v0.38.0 — Issue #52 생성 개체 편집 기반과 Undo·Redo (E2)
+
+- DXF + **three-dxf-viewer**에서 임시 확정한 볼록/정밀 외곽선은 하나의 브라우저 전용 GeneratedDocument로 관리됩니다. E1의 원본 SOURCE와 생성 GENERATED 선택을 구분하며 SOURCE/혼합 선택은 **항상 읽기 전용**입니다. Tree/표시/선택/기존 JSON 다운로드는 한 Document를 참조합니다.
+- Viewer의 생성 개체 선택 도구에 **실행 취소/다시 실행** 버튼과 Ctrl/⌘+Z / Ctrl/⌘+Shift+Z (Windows Ctrl+Y) 기반을 추가했습니다. 입력·텍스트 편집의 브라우저 기본 Undo는 그대로 유지합니다. 이력은 최대 **100건**(별도 계산 메모리 예산 16MiB)이며 이동/회전·Delete 동작은 **후속 #53~#55에서 제공**하므로 이번 버전에서는 기능 확인 버튼이 비활성화될 수 있습니다.
+- **서버 자동 저장 없음**: 현재 생성 객체/이력은 새로고침, 도면 Version·Renderer 전환 시 사라집니다. 현재 JSON 다운로드는 과거 #31 v1 및 #42 typed v2 호환 경로이고, 편집본 안전 복원은 후속 **#56**입니다. 실제 CAD 원본·Current·Source Layer/Geometry는 수정되지 않으며 인증된 서버 저장(#31 P4)은 승인 전 미지원입니다. 다른 DXF Renderer와 DWG는 편집 미지원입니다. 요구/명령 API·시험 계획은 [Issue52](out/Issue52.md).
+
+
 ## v0.37.0 — Issue #51 원본·생성 개체 통합 선택 (E1)
 
 - DXF + three-dxf-viewer에서 외곽선 **생성 OFF** 상태로도 하단 **원본·생성 선택** 또는 **생성 개체만 선택**을 사용할 수 있습니다. Ctrl/⌘+클릭과 방향별 영역 선택, 트리 클릭/키보드 다중 선택을 같은 선택 집합에서 처리합니다. 일반 모드의 겹침 클릭은 원본 우선이며 생성 개체 선택은 전용 모드 또는 트리를 사용합니다.
