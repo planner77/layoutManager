@@ -124,7 +124,11 @@ export function CadViewer({
     setMemoError(null);
     setMemoDeleteArmed(false);
   }, [versionId,sourceSha256]);
-  useEffect(() => { resetMemos(); }, [versionId, sourceSha256, resetMemos]);
+  useEffect(() => {
+    // Version/SHA changes are an explicit destructive M1 session boundary.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    resetMemos();
+  }, [versionId, sourceSha256, resetMemos]);
   // Synchronously gate events before React's reducer has rendered the next frame.
   const outlineEnabledRef = useRef(false);
   const outlineRequestRevisionRef = useRef(0);
