@@ -52,11 +52,12 @@ test('TC-M1-E2E-001: WCS memo survives zoom/pan/CSS fullscreen and text-only cha
   expect(await page.locator('img[src="x"]').count()).toBe(0);
   await page.getByRole('button',{name:'전체 화면 확대'}).click();
   await page.getByRole('button',{name:'전체 화면 확대'}).click();
+  // Pins outside the viewport may be culled; fit restores them without changing WCS.
   await page.getByRole('button',{name:'전체 화면 맞춤'}).click();
   await expect(pin).toHaveAttribute('data-memo-wcs-x','10');
   await page.getByRole('button',{name:'전체 화면 종료'}).click();
   await expect(pin).toHaveAttribute('data-memo-wcs-y','20');
-  await page.getByRole('button',{name:'전체 화면'}).click();
+  await page.getByRole('button',{name:'전체 화면',exact:true}).click();
   await page.getByTestId('cad-memo-x').fill('13');
   await page.getByTestId('cad-memo-y').fill('15');
   await page.getByTestId('cad-memo-apply-position').click();
