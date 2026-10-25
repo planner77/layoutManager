@@ -1,5 +1,13 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE54-20261025 — E4 WCS 이동 기능/시험 작성 (PR CI 검증 전)
+
+- 기능 기준선: `main 3ff1f94b3fbf11737a827536e223114ea4ca0e96` (#53 E3 포함). 브랜치 `feat/issue-54-generated-translate`, 버전 `0.40.0`, 상위 #49/선행 #51/#52/#53. DESIGN.md 없음→`out/Architecture.md` 설계. GitHub connector로 분석/코드 커밋; 현재 container는 `git ls-remote`부터 DNS `Could not resolve host: github.com`로 실패해 checkout 불가.
+- 개발 변경: `generated-translate.ts`의 numeric/scope/bounds gate, `generated-hit-test.ts` 경계 선분 히트, `selection-controller.ts` 단일 포인터 gesture/ESC·Space·wheel·touch·cancel, `three-dxf-viewer/adapter.ts` WCS Ghost/원자 Document Translate + GPU cleanup, `viewer.tsx` WCS 폼/units/error. E2 기존 History 및 #43 Tree/JSON 투영 재사용. API/DB/Schema/DXF Source 미수정.
+- 신규 Unit `generated-translate.test.ts`: **4 test cases 코드 작성 / NOT RUN**. 신규 Playwright `issue54-generated-translate.spec.ts`: **3 test cases 코드 작성 / NOT RUN**. 기타 Typecheck/Lint/npm ci/Build/전체 Unit/E2E/Docker/Legacy: **NOT RUN**. Native Fullscreen·Touch/HID·실 DXF·GPU 누수·성능 측정: **NOT RUN**. 추정·정적 코드 검토를 실행 PASS로 기재하지 않는다.
+- 기대 잔여 검증: CI Verify(Typecheck→Lint→Unit→Build→E2E→Legacy) 및 Docker 각 Job 실제 성공/실패 로그 구별; 사용자의 지시상 **PR CI 시작까지만** 하고 CI 상태 모니터링·병합·GHCR 공개·Issue #54 종료 안 함. 향후 실패 발생 시 `out/FailureLedger.md`에 실제 run/job/head/원인/조치/재실행을 누적할 것.
+- 결함/주의: 5px drag은 generated 전용 모드/기존 선택된 경계에서만, 경계가 아니라 채움 클릭은 기존 선택; 서버에 저장되지 않으므로 Renderer/reload 시 소멸. `data-generated-drag-preview`는 테스트 관측 마커로 실제 GPU 자원 수명까지 입증하지 않는다. [Issue54](Issue54.md), [TestPlan](TestPlan.md).
+
 ## U-ISSUE53-20261025 — E3 선택 GENERATED 삭제 코드·테스트 작성 (검증 전)
 
 - Source baseline: `main e1adfe5b9de28ddd3821a0de2466d810e5c6c209`, feature branch `feat/issue-53-generated-delete`, v0.39.0. E2 Command/Undo/Redo, U6 Tree, E1 Selection 재사용. 사용자 요청에 따라 PR CI를 시작만 하고 **결과 모니터링하지 않음**.

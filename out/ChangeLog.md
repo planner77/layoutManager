@@ -1,5 +1,11 @@
 # ChangeLog
 
+## v0.40.0 — Issue #54 E4 GENERATED WCS 이동·그룹 이동 (2026-10-25)
+
+- DXF three-dxf-viewer에 이미 선택된 확정 외곽선의 WCS 수치 입력(ΔX/ΔY) 및 경계 Drag Ghost Preview→pointerup 단일 Translate·Undo/Redo 추가. 다중 동일 Delta, Polygon/MultiPolygon/Hole, WCS bounds/hit/Tree/JSON 동기화. `$INSUNITS` 0/누락은 단위 미상 표시.
+- SOURCE/혼합·숨김·중복·stale·NaN/Infinity/과도한 이동 fail-closed. ESC/Space Pan/2차 Touch/PointerCancel/LostCapture/Blur/Zoom/Fit/Resize/Renderer 전환에서는 Preview/Stage/GPU 해제. Area Selection/Source/Worker/기존 트리·삭제를 보존.
+- 신규 TC-E4 Unit 4건/E2E 3건 작성, `out/Issue54.md` 및 Requirements/Architecture/ADR-047/TestPlan/TestReport/README/AGENTS 갱신. CI/실도면 검증 전 NOT RUN. 원본 DXF bytes/SHA/Layer/Current·Server API/Prisma/권한/DB/배포 계약 불변.
+
 ## v0.39.0 — Issue #53 E3 생성 개체 안전 삭제·다중 삭제 (2026-10-25)
 
 - 생성 확정 Polygon/MultiPolygon/Hole의 단일·다중 삭제를 Toolbar·Tree 행·선택 Canvas 우클릭·Canvas 초점 Delete/Backspace로 제공. 명칭/개수 모달로 Confirm/Cancel, ESC/modal 취소 무변경, 원본·혼합 선택 거부 및 E2 Version/SHA/UUID·동일 선택 재검증 유지.

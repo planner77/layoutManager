@@ -1,5 +1,11 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #54 / E4 — 생성 개체 WCS 수치·경계 드래그 이동 (2026-10-25)
+
+- v0.40.0: DXF+three-dxf-viewer의 현재 GENERATED 단일/다중 선택을 `Translate(ids,dx,dy)` E2 원자 Command로 이동한다. UI ΔX/ΔY는 **WCS drawing unit**이며 `$INSUNITS` 0/누락은 '단위 미상' 표시; mm/inch와 화면 픽셀을 혼동하지 않는다. 선택에 SOURCE/혼합/중복/stale/숨김이 하나라도 있으면 전체 거부.
+- Generated 전용 모드에서 **이미 선택된** 외곽선 경계(홀 포함)를 modifier 없이 5px 이상 움직인 때만 Ghost 드래그; 이외는 기존 Box/Click/Space Pan. Ghost는 Scene-only, Document/Tree/JSON/History는 pointerup 최종 재검증 뒤 한 번만 commit한다. ESC·pointercancel/lostcapture·blur·Space·two-finger·Zoom/Fit/Resize·선택/모드·Viewer 변경 시 즉시 취소/GPU 해제.
+- E2 Immutable baseline+affine으로 Polygon/MultiPolygon/Hole 및 bounds/hit/Scene/Tree/export를 동기 반영하고 Undo/Redo 1단계. Original Source/bytes/SHA/Layer/Current, Worker/DB/API/#31 P4는 변경 금지. [Issue54](out/Issue54.md), [ADR-047](out/Decisions.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md). 현재 로컬 Typecheck/Lint/Unit/E2E/실도면/native Fullscreen **NOT RUN**; CI 트리거와 성공 구분.
+
 ## Issue #53 / E3 — 생성 개체 선택 삭제·Undo/Redo·Tree 일관성 (2026-10-25)
 
 - v0.39.0: `GeneratedDocument.execute({type:'Delete',ids})`만 객체 삭제에 사용한다. #43 기존 `deleteSavedOutline/discardLegacy`는 Undo/Redo와 원자성 우회 경로이므로 제거한다. ToolBar·Tree 행·Canvas hit 우클릭·Canvas 초점 Delete/Backspace는 모두 동일한 범위·선택·UUID·명령 대상 재검증과 개수/명칭 확인창을 거친다. 취소=무변경.

@@ -1,5 +1,22 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #54 / E4 v0.40.0 — WCS 이동·그룹 드래그 수용 검사 (2026-10-25)
+
+| Test Case | AC | 검증 내용 | 현재 |
+| --- | --- | --- | --- |
+| TC-E4-UNIT-001 | AC1/4 | strict ΔX/ΔY 수치(+3,-5/.5/지수), empty/NaN/Infinity/0/1e12 상한, Preview bbox overflow | 코드 작성 / NOT RUN |
+| TC-E4-UNIT-002 | AC1/2 | (10,20)→(13,15), 다중 같은 delta, Polygon/MultiPolygon/Hole, bounds·stroke hit·metadata/UUID·UndoRedo 1단계 | 코드 작성 / NOT RUN |
+| TC-E4-UNIT-003 | AC1/3 | SOURCE/혼합/중복/다른 SHA/없음/hidden/invalid 전부 거부, Document·History 무변경 | 코드 작성 / NOT RUN |
+| TC-E4-UNIT-004 | AC2/3 | staged preview 0 history, ESC/cancel 0 history, pointerup 1단계, 중간 선택 변경 atomic fail | 코드 작성 / NOT RUN |
+| TC-E4-E2E-001 | AC1/2/4 | 합성 DXF에서 다중 수치 +3/-5, Tree/JSON geometry, Undo/Redo 동일 복구, mm 단위 표시 | 코드 작성 / NOT RUN |
+| TC-E4-E2E-002 | AC3/4 | invalid numeric/mixed SOURCE/Pan 거부, Reload/미지원 Renderer 제한 | 코드 작성 / NOT RUN |
+| TC-E4-E2E-003 | AC2/3 | 이미 선택한 외곽 경계 5px Ghost, ESC 취소→History0, pointerup→History1, Canvas↔WCS displacement | 코드 작성 / NOT RUN |
+| Regression | AC3/4 | 기존 #17/#25/#26/#31/#38/#39/#40/#42/#43/#51/#52/#53 및 Worker/Legacy, WCS/Zoom/Layer/Source 안전성 | NOT RUN |
+| 현장 | AC2/3/4 | Native Fullscreen·Touch/pointercancel 브라우저별 실기기, GPU 회수·고 DPI·대형/실 DXF, DWG 비지원 | NOT RUN |
+
+- 실행 게이트: `cd src && npm ci && npm run db:generate && npm run typecheck && npm run lint && npm test && npm run build && npm run test:e2e && npm run test:master-migration`. 사용 가능한 원격 GitHub connector는 코드 변경/PR CI 트리거만 지원하며 본 세션 container checkout은 DNS 문제로 불가. 수행하지 않은 검증은 PASS 아님.
+- 관련 근거: [Issue54](Issue54.md), [TestReport](TestReport.md), [ADR-047](Decisions.md).
+
 ## Issue #53 / E3 v0.39.0 — 삭제 편집 AC 검증 (2026-10-25)
 
 | Test Case | AC | 검증 목표 | 현재 |
