@@ -1,5 +1,12 @@
 # Database Schema — 단일 기준 문서
 
+## Issue #103 P1 교정 — 감사 대상 사용자·Site 영구 추적 (2026-10-26)
+
+- PR #116 리뷰 [r4371167619](https://github.com/planner77/layoutManager/pull/116#discussion_r4371167619)에 따라 테스트 전용 `AuditEvent`에 `affected_user_id TEXT NULL`(User FK)와 `site_id TEXT NULL`(CadSite FK), `ix_g1_audit_affected_site_time` 색인 추가. `SITE_GRANTED`·`SITE_REVOKED`는 **두 컬럼 모두 필수**로 검사하며 다른 action은 `site_id IS NULL`을 요구한다.
+- `actor_user_id`는 관리자, `affected_user_id`는 실제 권한 변경 대상 사용자, `site_id`는 대상 Site의 DB 식별자. 복합 문자열을 `target_id`에만 넣어두지 않는다. UserSiteGrant가 DELETE되어도 append-only Audit에는 누가 어느 Site에서 변경되었는지가 남는다. 이 변경은 독립 `src/tests/fixtures/auth-g1/{migration.sql,schema.prisma,store.ts}`에만 있으며 운영 Prisma/DDL 적용 **0**.
+
+
+
 ## #103 / #102 최신 Owner 업무 정책 연결 (2026-10-25)
 
 #102 Owner는 기존 CAD GET 익명 조회 유지, Current=Editor/Admin+Site, Delete=Editor/Admin+Site+기존 삭제 비밀번호, Admin 초기/복구 담당자, Audit 365일 경과 이력 정리 원칙을 승인했다([PR #114](https://github.com/planner77/layoutManager/pull/114), 병합 미확인). 이 결정은 G1 User/SiteGrant DB 제약 자체를 바꾸지 않으며 G1의 `cad:read` 권한 테스트를 기존 익명 GET API로 연결하지 않는다. **Audit 물리 파기·백업 복원시 재출현 방지 SOP는 여전히 PENDING**으로 Fixture append-only/nonce 불변 정책을 유지한다.

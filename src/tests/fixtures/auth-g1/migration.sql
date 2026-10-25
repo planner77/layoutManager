@@ -91,6 +91,8 @@ CREATE TABLE "AuditEvent" (
     'ACCOUNT_DISABLED','PASSWORD_RESET','ADMIN_BOOTSTRAP','ADMIN_RECOVERY',
     'ROLE_GRANTED','ROLE_REVOKED','SITE_GRANTED','SITE_REVOKED',
     'OUTLINE_CREATED','OUTLINE_EDITED','OUTLINE_DELETED','AUTHORIZATION_DENIED')),
+  "affected_user_id" TEXT,
+  "site_id" TEXT,
   "target_kind" TEXT NOT NULL CHECK("target_kind" IN ('ACCOUNT','SESSION','SITE','VERSION','OUTLINE','ROLE')),
   "target_id" TEXT NOT NULL CHECK(length("target_id") BETWEEN 1 AND 128),
   "before_revision" INTEGER CHECK("before_revision" IS NULL OR "before_revision">=0),
@@ -98,10 +100,17 @@ CREATE TABLE "AuditEvent" (
   "outcome" TEXT NOT NULL CHECK("outcome" IN ('SUCCESS','DENIED','FAILED')),
   "timestamp_utc" TEXT NOT NULL,
   "request_id" TEXT NOT NULL CHECK(length("request_id") BETWEEN 1 AND 128),
-  FOREIGN KEY("actor_user_id") REFERENCES "User"("id") ON DELETE NO ACTION ON UPDATE NO ACTION
+  CHECK(
+    ("action" IN ('SITE_GRANTED','SITE_REVOKED') AND "affected_user_id" IS NOT NULL AND "site_id" IS NOT NULL)
+    OR ("action" NOT IN ('SITE_GRANTED','SITE_REVOKED') AND "site_id" IS NULL)
+  ),
+  FOREIGN KEY("actor_user_id") REFERENCES "User"("id") ON DELETE NO ACTION ON UPDATE NO ACTION,
+  FOREIGN KEY("affected_user_id") REFERENCES "User"("id") ON DELETE NO ACTION ON UPDATE NO ACTION,
+  FOREIGN KEY("site_id") REFERENCES "CadSite"("id") ON DELETE NO ACTION ON UPDATE NO ACTION
 );
 CREATE INDEX "ix_g1_audit_time" ON "AuditEvent"("timestamp_utc");
 CREATE INDEX "ix_g1_audit_actor_time" ON "AuditEvent"("actor_user_id","timestamp_utc");
+CREATE INDEX "ix_g1_audit_affected_site_time" ON "AuditEvent"("affected_user_id","site_id","timestamp_utc");
 CREATE TRIGGER "g1_audit_no_update" BEFORE UPDATE ON "AuditEvent"
 BEGIN SELECT RAISE(ABORT,'G1_AUDIT_APPEND_ONLY'); END;
 CREATE TRIGGER "g1_audit_no_delete" BEFORE DELETE ON "AuditEvent"

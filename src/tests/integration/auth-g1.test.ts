@@ -162,6 +162,18 @@ describe('Issue #103 G1 isolated persistence contract', () => {
     changeG1SiteGrant(db, 'admin-a', 'reader-a', 'site-a', false, NOW, 'req-2');
     expect(fixtureCount(db, 'UserSiteGrant')).toBe(0);
     expect(fixtureCount(db, 'AuditEvent')).toBe(2);
+    const firstSiteAudit = db.prepare(
+      "SELECT actor_user_id,affected_user_id,site_id,action FROM \"AuditEvent\" WHERE action IN ('SITE_GRANTED','SITE_REVOKED') ORDER BY request_id",
+    ).all();
+    expect(firstSiteAudit).toEqual([
+      { actor_user_id: 'admin-a', affected_user_id: 'reader-a', site_id: 'site-a', action: 'SITE_GRANTED' },
+      { actor_user_id: 'admin-a', affected_user_id: 'reader-a', site_id: 'site-a', action: 'SITE_REVOKED' },
+    ]);
+    // The grant has been deleted; its user/site association must remain in immutable audit rows.
+    expect(() => db.prepare(
+      'INSERT INTO "AuditEvent"(id,action,affected_user_id,site_id,actor_user_id,target_kind,target_id,outcome,timestamp_utc,request_id) VALUES(?,?,?,?,?,?,?,?,?,?)',
+    ).run('invalid-site-audit', 'SITE_GRANTED', null, 'site-a', 'admin-a', 'SITE', 'site-a',
+      'SUCCESS', new Date(NOW).toISOString(), 'missing-affected-user')).toThrow();
     expect(() => changeG1RoleGrant(db, 'admin-a', 'reader-a', 'Reader', true, NOW, 'req-role-fail', true)).toThrow();
     expect(fixtureCount(db, 'UserRoleGrant')).toBe(1); // seeded Admin only
     changeG1RoleGrant(db, 'admin-a', 'reader-a', 'Reader', true, NOW, 'req-role');
@@ -169,6 +181,17 @@ describe('Issue #103 G1 isolated persistence contract', () => {
     changeG1SpecialGrant(db, 'admin-a', 'reader-a', 'logs:read', true, NOW, 'req-logs');
     expect(fixtureCount(db, 'SpecialGrant')).toBe(2);
     expect(fixtureCount(db, 'AuditEvent')).toBe(5);
+    seedFixtureUser(db, 'reader-b', 'reader_b', NOW);
+    changeG1SiteGrant(db, 'admin-a', 'reader-b', 'site-a', true, NOW, 'req-b-grant');
+    changeG1SiteGrant(db, 'admin-a', 'reader-b', 'site-a', false, NOW, 'req-b-revoke');
+    const secondSiteAudit = db.prepare(
+      "SELECT actor_user_id,affected_user_id,site_id,action FROM \"AuditEvent\" WHERE request_id LIKE 'req-b-%' ORDER BY request_id",
+    ).all();
+    expect(secondSiteAudit).toEqual([
+      { actor_user_id: 'admin-a', affected_user_id: 'reader-b', site_id: 'site-a', action: 'SITE_GRANTED' },
+      { actor_user_id: 'admin-a', affected_user_id: 'reader-b', site_id: 'site-a', action: 'SITE_REVOKED' },
+    ]);
+    expect(fixtureCount(db, 'AuditEvent')).toBe(7);
     expect(() => db.prepare("UPDATE \"AuditEvent\" SET outcome='FAILED'").run()).toThrow('G1_AUDIT_APPEND_ONLY');
     expect(() => db.prepare('DELETE FROM "AuditEvent"').run()).toThrow('G1_AUDIT_APPEND_ONLY');
   });

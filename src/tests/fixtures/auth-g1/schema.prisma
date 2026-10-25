@@ -24,13 +24,15 @@ model User {
   specials           SpecialGrant[] @relation("SpecialOwner")
   specialsGranted    SpecialGrant[] @relation("SpecialActor")
   sessions           AuthSession[]
-  events             AuditEvent[]
+  events             AuditEvent[] @relation("AuditActor")
+  eventsAffected     AuditEvent[] @relation("AuditAffected")
   recoveryNonces     AdminRecoveryNonce[]
   @@map("User")
 }
 model CadSite {
   id String @id
   siteGrants UserSiteGrant[]
+  auditEvents AuditEvent[]
   @@map("CadSite")
 }
 model UserRoleGrant {
@@ -80,6 +82,8 @@ model AuthSession {
 model AuditEvent {
   id             String @id
   actorUserId    String? @map("actor_user_id")
+  affectedUserId String? @map("affected_user_id")
+  siteId         String? @map("site_id")
   action         String
   targetKind     String @map("target_kind")
   targetId       String @map("target_id")
@@ -88,9 +92,12 @@ model AuditEvent {
   outcome        String
   timestampUtc   String @map("timestamp_utc")
   requestId      String @map("request_id")
-  actor          User? @relation(fields:[actorUserId], references:[id], onDelete:NoAction, onUpdate:NoAction)
+  actor          User? @relation("AuditActor", fields:[actorUserId], references:[id], onDelete:NoAction, onUpdate:NoAction)
+  affected       User? @relation("AuditAffected", fields:[affectedUserId], references:[id], onDelete:NoAction, onUpdate:NoAction)
+  site           CadSite? @relation(fields:[siteId], references:[id], onDelete:NoAction, onUpdate:NoAction)
   @@index([timestampUtc], map:"ix_g1_audit_time")
   @@index([actorUserId, timestampUtc], map:"ix_g1_audit_actor_time")
+  @@index([affectedUserId, siteId, timestampUtc], map:"ix_g1_audit_affected_site_time")
   @@map("AuditEvent")
 }
 model AdminRecoveryNonce {

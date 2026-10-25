@@ -1,5 +1,11 @@
 # Architecture 초안
 
+## Issue #103 — 실패 회복/P1 감사 추적 설계 교정 (2026-10-26)
+
+PR #116의 첫 CI([40202066291](https://github.com/planner77/layoutManager/actions/runs/40202066291))는 Fixture helper `store.ts`에 중복·깨진 비밀번호 변경 함수가 있어 TypeScript와 Docker baseline Build가 동일 TS1002로 실패했다. 이를 단일 선언/원자 트랜잭션으로 교정하는 중이며 신규 HEAD 검증 필요. SiteGrant Audit 계약은 `actorUserId → affectedUserId → siteId`를 모두 DB FK/append-only event에 보존하여 Grant 행 삭제 후에도 per-user 추적 가능하게 함. 앱/운영 DB에는 연결되지 않음.
+
+
+
 ## #103 / #102 G0 최신 업무 인증 경계 (2026-10-25)
 
 기존 CAD 목록·검색·Viewer·원본 GET은 Owner 승인에 따라 **익명 유지**하고, Current·삭제는 향후 Editor/Admin+서버 DB SiteGrant 검증을 통과해야 하며 삭제에는 기존 삭제 비밀번호도 필요하다. 이는 #102 정책(문서 PR #114 진행)이며 **G1 fixture의 authenticated Version-site 검증을 기존 공개 API에 연결하지 않는다**. 운영 Auth/API 및 Schema 변경·배포는 G7 Owner 승인 이전 금지.

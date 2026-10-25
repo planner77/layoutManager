@@ -1,5 +1,12 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #103 — PR #116 CI 실패·감사 P1 교정 (2026-10-26)
+
+- 기존 [CI #40202066291](https://github.com/planner77/layoutManager/actions/runs/40202066291)의 Verify(TypeScript `store.ts:134 TS1002`)·Docker(baseline Next TypeScript) 두 Job은 동일 소스 결함으로 **FAILURE**, Unit/Integration/E2E 등은 **SKIPPED**. `src/tests/fixtures/auth-g1/store.ts`의 함수 선언 중복·문자열 파손을 단일 구현으로 정리해야 하며 수정 전 HEAD 성공을 전용하지 않는다.
+- [P1 리뷰 r4371167619](https://github.com/planner77/layoutManager/pull/116#discussion_r4371167619): 관리자 actor + Site만으로는 권한 피변경 사용자 식별 불가. G1 Audit에 `affected_user_id`(User FK), `site_id`(CadSite FK)를 보존하고 Site grant/revoke에는 두 값이 필수. `TC-P4-G1-005`에서 서로 다른 사용자 동일 Site의 변경/철회 뒤에도 구분되는지 확인. **운영 Auth/API/Prisma migration/Compose/Nginx/GHCR 변경 금지**, G7 별도 승인 전 OFF.
+
+
+
 ## Issue #103 / G1 — User·Session·Grant·Audit 격리 DB 설계·검증 (2026-10-25)
 
 - **#102 Owner R1 우선:** #103은 기존 CAD 테이블을 담은 일회용 SQLite 사본만 대상으로 한다. `src/tests/fixtures/auth-g1/{schema.prisma,migration.sql,store.ts}`는 **비운영·비연결 계약**이며 `src/tests/integration/auth-g1.test.ts`에서만 사용. `src/prisma/schema.prisma`, `src/prisma/migrations`, App API, runtime/Compose/Nginx, 운영 DB/원본 파일/실 S3/GHCR는 수정하지 않는다. G7 #109 Owner 별도 승인 전 활성화 금지.

@@ -1,5 +1,17 @@
 # PR/Main CI 실패 원장
 
+## Issue #103 / PR #116 — 최초 PR CI 실패와 P1 리뷰 교정 (2026-10-26 KST)
+
+- **실패 원본(보존):** [Run 40202066291](https://github.com/planner77/layoutManager/actions/runs/40202066291), attempt 1, PR `pull_request.opened`, HEAD `50014e68b64623969bfc722e9a31f835469009cf`, **completed/failure**. Verify [Job 121195140490](https://github.com/planner77/layoutManager/actions/runs/40202066291/job/121195140490) **failure**, Docker [Job 121195140285](https://github.com/planner77/layoutManager/actions/runs/40202066291/job/121195140285) **failure**. 실제 로그를 확인했으며 CI 실패를 취소·성공과 혼동하지 않는다.
+- **Verify 실패 지점:** `npm ci`/Prisma Client 생성은 정상, `npm run typecheck`에서 `src/tests/fixtures/auth-g1/store.ts:134:98` **TS1002 Unterminated string literal** 및 TS1005/TS1128 후속 구문 오류 → exit 2. ESLint/Unit·Integration/Benchmark/Build/E2E/Legacy migration 모두 **SKIPPED**(실행 성공 아님). Typecheck 자체가 게이트를 막았다.
+- **Docker 독립 실패 지점:** 기존 Dockerfile을 이용한 baseline image Build의 Next.js production TypeScript 검사에서 **동일** `store.ts:134:98` 구문 오류 → build exit 1. Docker native 의존성/Compose·Migration 오류가 따로 확인된 것이 아니며, 이후 Docker smoke/측정 단계는 **SKIPPED**. 따라서 두 Job은 하나의 공통 TypeScript 소스 결함으로 분류한다.
+- **원인:** 이전 #103 브랜치에서 `changeG1Password`를 삽입할 때 선언 문자열 치환이 `consumeG1Recovery` 함수 본문 일부를 침범하고 Role/Special/Version helper 정의가 **중복 삽입**돼 파서가 중단됐다. 정적 작성 후 실제 TypeScript 검증을 실행하지 않은 검증 공백이 존재했다. 기존 PASS 증거는 이 HEAD의 성공을 보장하지 않음.
+- **보완:** `store.ts`의 비밀번호 변경/복구/Role·Special/Version resolver 구간을 단일 함수 정의로 재작성, `startsWith('scrypt$')` 등의 문자열과 복구·revoke·감사 트랜잭션 보존. 운영 Prisma/실 API/Compose 변경 없음.
+- **별도 코드 리뷰 P1(실제 CI 오류가 아님):** [PR #116 inline r4371167619](https://github.com/planner77/layoutManager/pull/116#discussion_r4371167619), 최초 `src/tests/fixtures/auth-g1/store.ts:115`. Site grant 변경의 기존 Audit는 `actor_user_id`와 `target_id=site`만 기록하고 권한 대상 `userId`를 누락했으며, grant revoke 후 누가 영향받았는지 복구할 수 없었음. 감사 스키마에 `affected_user_id` FK→User와 `site_id` FK→CadSite를 추가하고 Site grant/revoke Audit의 양쪽 **NOT NULL CHECK**, 관련 Index·Prisma 참조 투영을 보완. `TC-P4-G1-005`에서 동일 Site의 서로 다른 두 사용자 grant/revoke, revoke 후 불변 audit, 필수 필드 누락 거부 확인하도록 확대.
+- **검증 상태:** 변경 HEAD에서 Typecheck/Vitest/Prisma/Docker/실 DB 실행 결과 아직 확보 전(**NOT RUN**). 새 PR CI는 브랜치 갱신 이후 시작할 계획이며 결과 **PENDING**, 구 실행의 실패 상태는 덮어쓰지 않음. P1 인라인 스레드 답변·해결, 최신 main drift/충돌 0 재확인 필요. `DESIGN.md`는 저장소에 없어 AGENTS·ADR-051/Database/Architecture를 우선 사용.
+
+
+
 ## #103 G1 / #102 PR #114 동시 문서 작업 통합 위험 (2026-10-25 KST)
 
 - #102 추가 Owner 5개 정책 문서 PR [#114](https://github.com/planner77/layoutManager/pull/114)가 별도로 Open이고 G1과 `AGENTS.md`, `out/{Decisions,Database,Architecture,Operation,Requirements,TestPlan,TestReport,Issue96}` 등을 수정한다. **현재 G1의 기준 Main `d85b86a` 대비 behind=0, 실제 충돌·CI 실패는 아직 발생하지 않음**. PR #114가 먼저 병합되면 최신 Main을 통합해 두 이슈 정책을 모두 보존하고 새 HEAD PR CI 시작 필요. 잘못된 종전 HEAD CI PASS 전용 금지.

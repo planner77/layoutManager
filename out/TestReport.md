@@ -1,5 +1,13 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issue #103 — 최초 실패 Run 40202066291 및 감사 P1 보완 (2026-10-26)
+
+- `pull_request.opened`의 PR #116 HEAD `50014e68...` **실패**: Verify Job 121195140490은 TypeScript `store.ts:134 TS1002`와 연쇄 구문 오류로 중단, Docker Job 121195140285도 baseline Build의 동일 TypeScript 실패. Unit·Integration·E2E·Docker smoke/size 비교는 **SKIPPED/NOT RUN**. [Run 상세](https://github.com/planner77/layoutManager/actions/runs/40202066291).
+- 리뷰 P1 [r4371167619](https://github.com/planner77/layoutManager/pull/116#discussion_r4371167619)은 인증 변경의 Audit에서 Site와 **대상 사용자**를 함께 영구 보존하도록 요청. SQL `AuditEvent.affected_user_id` 및 `AuditEvent.site_id` FK, Site action의 두 값 필수 CHECK와 fixture INSERT를 추가. `TC-P4-G1-005`에 서로 다른 사용자 동일 Site 이력, 삭제 후 추적, 누락 필드 거부를 검증하도록 보완.
+- 비밀번호 변경·복구/Role·Special 함수 선언을 하나씩 재구성하여 구문 오류 원인을 제거하는 코드 변경을 준비. **수정 HEAD의 CI/런타임 PASS를 주장하지 않음**. 실제 실 운영 DB/S3 백업·복구 및 G7 운영 활성화는 계속 NOT RUN / BLOCKED.
+
+
+
 ## #103 G1 정책 보완 및 시험 비실행 유지 (2026-10-25)
 
 최신 #102 Owner 5개 결정은 이 격리 SQL 모델의 Session/Grant/Nonce/Audit 무결성 범위와 충돌하지 않는다. 기존 공개 CAD 익명 GET 경로는 그대로 두며 Current/Delete Auth API 활성화는 G4/G7 후속이다. PR #114 최신 Main 병합 여부·G1 PR CI 통과는 아직 검증 전. TC-P4-G1-001~009는 구현만 완료한 **NOT RUN**이며 실 사내 DB/S3 Recovery도 NOT RUN.

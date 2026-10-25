@@ -1,5 +1,13 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #103 — 최초 실패 재발 방지와 P1 추적 (2026-10-26)
+
+- `TC-P4-G1-SYNTAX-001`: PR Verify `npm run typecheck` 및 Docker baseline Next build의 **동일 HEAD** 성공 필요. 최초 실패 `store.ts:134 TS1002` 후속 TS1005/TS1128 재발 없어야 함. 수정 후 아직 **NOT RUN**.
+- `TC-P4-G1-005` 강화: Site grant/revoke Audit에 `actor_user_id`(관리자), `affected_user_id`(대상 사용자), `site_id`(업무 Site), action/requestId가 보존돼야 한다. **서로 다른 사용자에게 동일 Site를 부여·철회한 후 grant 행이 없어져도** 누가 영향받았는지 추적 가능해야 하며 `affected_user_id/site_id` 누락 SQL INSERT는 실패해야 함. FK·append-only 원자성 보존.
+- 미실행 단계(Unit·Integration·Build/E2E/Docker smoke)는 첫 CI 실패의 `SKIPPED`를 그대로 기록하며 수정 HEAD의 실행 확인 이후에만 PASS 가능. 운영 `src/prisma/schema.prisma`/migrations·API 변경 0 유지.
+
+
+
 ## Issue #103 / G1 — 격리 DB·원자성·복구 Test Matrix (2026-10-25)
 
 모든 TC는 기존 6개 CAD Migration의 실 SQL과 합성 Version/Current/SHA를 일회용 SQLite에 적용하고 **운영 연결 0**. 테스트 위치 `src/tests/integration/auth-g1.test.ts`. 미실행은 `NOT RUN`, PR CI 최신 HEAD 결과를 따로 검증하기 전 PASS 기록 금지.

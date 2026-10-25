@@ -1,5 +1,12 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-051-G1-R2 — SiteGrant 감사 피감사 사용자 추적 및 검증 게이트 (2026-10-26)
+
+- [PR #116 리뷰 P1](https://github.com/planner77/layoutManager/pull/116#discussion_r4371167619): 관리자 actor + Site ID만 기록하면 동일 Site 여러 사용자에 대한 Grant 철회가 발생했을 때 대상 사용자를 복구할 수 없다. **결정:** `AuditEvent.affected_user_id` (User FK) 및 `site_id` (CadSite FK)를 각각 둬서 Site grant/revoke 이벤트에 필수로 기록하고 원장 UPDATE/DELETE 금지·Grant/Audit 원자성을 유지한다.
+- 적용은 G1 격리 Fixture SQL·Prisma 참조 투영·Integration Test에 한정. G0의 기존 CAD 익명 GET 승인 및 운영 G7 별도 승인 경계는 유지. 첫 CI TS 구문 실패를 정상 컴파일/테스트 PASS로 오인하지 않고 신규 HEAD CI로 재검증한다.
+
+
+
 ## ADR-051-G1 — Issue #103 비운영 SQLite·Prisma 계약과 원자성 구현 결정 (2026-10-25)
 
 **상태: 격리 구현·검증용 기술 결정 / 운영 배포 승인 아님.** [#103](Issue103.md)은 [ADR-051-R1](Issue102.md)의 사내 LAN 경량 보안 범위와 D1~D5 업무 무결성을 따른다. 2026-10-25 #102 Owner 5개 승인: 기존 CAD 목록/Viewer/다운로드 익명 GET 유지, Current=Editor/Admin+담당 Site, Version 삭제=Editor/Admin+담당 Site+기존 삭제 비밀번호, 최초 Admin/복구=지정 사내 운영 담당자(Owner 책임), Audit 365일 경과 이력 정리 원칙. 관련 문서 PR #114는 병합·CI 완료 미확인. POST 업로드 권한, Secret/실 담당자, Audit 물리 정리·백업 복원 세칙, 실제 배포는 PENDING; #103 G1 운영 활성화 승인 아님.

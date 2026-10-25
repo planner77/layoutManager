@@ -1,5 +1,12 @@
 # 상세 요구사항
 
+## Issue #103 / G1 P1 감사 추적 상세화 (2026-10-26)
+
+- **REQ-G1-AUD-01:** Site 권한 부여/회수 Audit 이벤트는 행위 관리자(actor), 영향받은 사용자(affectedUser), 대상 Site 및 action/requestId를 **서버 DB FK 기준으로 분리 보존**한다. Revocation 뒤 Grant 행이 삭제되어도 두 사용자의 동일 Site 변경 이력을 혼동하지 않을 것. Fixture `AuditEvent`의 Site action은 affectedUser/site NOT NULL 검사, Actor·Site·User FK/변경 불가 Trigger 유지; `TC-P4-G1-005`.
+- **REQ-G1-QA-01:** 최초 CI에서 `store.ts:134 TS1002`로 실패한 Typecheck·Docker baseline TypeScript를 새 HEAD에서 재검증한다. 이전 SKIPPED 단계를 PASS로 대체하지 않는다. 운영 DB/API/migration G7 전 OFF.
+
+
+
 ## Issue #103 / P4-D1 G1 — 격리 영속 DB 요구/추적 (2026-10-25)
 
 - **REQ-G1-01:** User(id 불변/loginName unique/passwordHash/status/mustChange), Session(tokenHash/8h/30m/3개), Role/Site/SpecialGrant(audit:read/logs:read 분리), Audit(append-only/365일 정책), RecoveryNonce(hash 1회) 제약/FK; TC-P4-G1-001/002/003/008.

@@ -1,5 +1,13 @@
 # Issue #103 — G1 User·Session·Grant·Audit 격리 DB 계약·Migration
 
+## PR #116 최초 실패 및 R2 보완 (2026-10-26)
+
+- 원 HEAD `50014e68`, PR CI [#40202066291](https://github.com/planner77/layoutManager/actions/runs/40202066291) Verify/Docker 모두 **failure**. 공통 원인은 `store.ts:134:98` TS1002 및 연쇄 구문 오류(비밀번호 변경/복구 helper 치환 중 선언 파손·중복), 후속 Unit/E2E/Docker smoke는 미실행. 실행 이력은 [FailureLedger](FailureLedger.md)에 보존.
+- Reviewer P1 [r4371167619](https://github.com/planner77/layoutManager/pull/116#discussion_r4371167619) 해결안: Site Grant 변경의 `AuditEvent`에 관리자 actor 외 `affected_user_id`와 `site_id`를 독립 FK 컬럼으로 추가, Site 이벤트에는 필수 제약. `TC-P4-G1-005`에 사용자 A/B 동일 Site 부여·철회 후 양쪽 이력 보존과 결손 거부 추가.
+- 수정 Fixture는 여전히 **비운영 격리 데이터**이며 `src/prisma/schema.prisma`/자동 migrator/실 Runtime 전부 OFF. 신규 HEAD 테스트 PASS 및 Owner G7 승인은 별도.
+
+
+
 2026-10-25 / [GitHub #103](https://github.com/planner77/layoutManager/issues/103) / #96 D1 기반 / 선행 #102 Owner R1 [ADR-051-R1](Issue102.md). **코드 준비·시험 대기 / 운영 기능 OFF**.
 
 ## 1. 계약 범위와 배치 경계
