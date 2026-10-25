@@ -141,6 +141,12 @@ jobs:
           docker buildx build --load --platform linux/amd64 --target migrator -f src/Dockerfile -t cad-layout-viewer:ci-migrate .
       - name: Measure 3 image sizes, layers and directories
         run: bash src/scripts/measure-images.sh cad-layout-viewer:baseline cad-layout-viewer:phase1 cad-layout-viewer:ci "$GITHUB_STEP_SUMMARY"
+      - name: Verify web layer path/SHA identity and size saving (#67)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 src/scripts/test_audit_standalone_layers.py
+          python3 src/scripts/audit_standalone_layers.py cad-layout-viewer:baseline cad-layout-viewer:ci "$GITHUB_STEP_SUMMARY"
       - name: Measure migrator baseline vs dedicated dependency closure
         run: bash src/scripts/measure-migrator.sh cad-layout-viewer:baseline-migrate cad-layout-viewer:ci-migrate "$GITHUB_STEP_SUMMARY"
       - name: Verify migrator packaged files and native dependencies
@@ -198,6 +204,7 @@ jobs:
           docker compose --env-file .env.example -f src/docker-compose.yml config --quiet
           docker compose --env-file .env.example -f src/docker-compose.yml up -d --no-build app
           curl --fail --silent --show-error --retry 40 --retry-delay 3 --retry-connrefused --retry-all-errors --connect-timeout 3 --max-time 10 http://127.0.0.1:3000/api/health
+          python3 src/scripts/smoke_web_runtime.py create http://127.0.0.1:3000 "$RUNNER_TEMP/issue67-crud.json"
           curl --fail http://127.0.0.1:3000/fonts/NanumGothic-Regular.ttf --output /dev/null
           curl --fail http://127.0.0.1:3000/fonts/CadKorean.typeface.json --output /dev/null
           curl --fail http://127.0.0.1:3000/libredwg/wasm/libredwg-web.wasm --output /dev/null
@@ -205,6 +212,7 @@ jobs:
           docker compose --env-file .env.example -f src/docker-compose.yml up --no-build --force-recreate migrate
           docker compose --env-file .env.example -f src/docker-compose.yml up -d --no-build app
           curl --fail --silent --show-error --retry 40 --retry-delay 3 --retry-connrefused --retry-all-errors --connect-timeout 3 --max-time 10 http://127.0.0.1:3000/api/health
+          python3 src/scripts/smoke_web_runtime.py verify-delete http://127.0.0.1:3000 "$RUNNER_TEMP/issue67-crud.json"
       - name: Dump Docker diagnostics and stop without deleting volume
         if: always()
         shell: bash
