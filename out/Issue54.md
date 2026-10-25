@@ -1,5 +1,12 @@
 # Issue #54 — E4 생성 개체 WCS 평행이동·다중 이동 (v0.40.0)
 
+## PR #92 사후 P1 리뷰: 임계 미만 경계 드래그 후보의 Camera 변경 취소
+
+- [최초 CI #40177837419](https://github.com/planner77/layoutManager/actions/runs/40177837419)는 HEAD `2f57a642`에서 completed/success (Verify/Docker 모두 SUCCESS). 수정 후 코드의 CI 결과는 별도 필요.
+- [리뷰 #4370223581](https://github.com/planner77/layoutManager/pull/92#discussion_r4370223581): 경계 pointerdown/5px 미만에서 zoom/Resize → 이전 WCS 시작점 보존 → 나중에 move/up 하면서 의도치 않은 Translate. `cancelGeneratedDrag`를 `moving`이 아닌 **모든 활성 `down`** 기준으로 변경하여 진행 중 box/ghost까지 폐기. 이후 pointermove/up은 오래된 Camera Snapshot으로 stage/commit 불가.
+- 신규 `TC-E4-E2E-004`는 wheel 및 실제 viewport Resize 각각에서 ghost 없음/Undo 0/JSON 불변/선택 유지 검증. 수정 HEAD CI 완료 전 해당 수용항목 **NOT VERIFIED**. [FailureLedger](FailureLedger.md), [TestReport](TestReport.md).
+
+
 - 이슈: https://github.com/planner77/layoutManager/issues/54 · Epic #49
 - 기준선: 2026-10-25 `main 3ff1f94b3fbf11737a827536e223114ea4ca0e96`, #51 E1 선택/#52 E2 Command·Document/#53 E3 삭제 이후.
 - 근거: `AGENTS.md`, `out/Architecture.md`(루트 DESIGN.md 없음), `out/Requirements.md`, `out/Decisions.md` ADR-042/044/046, `out/Issue31.md`, `out/Issue43.md`, `out/Issue51.md`, `out/Issue52.md`, `out/Issue53.md`, `out/TestPlan.md`, `README.md`.

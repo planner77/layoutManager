@@ -137,9 +137,11 @@ export class SelectionController {
    return this.generated.some(item=>this.generatedIds.has(item.id)&&
      geometryHitBoundary(item.geometry,p,radius));
  }
- /** Called for mode/visibility/zoom/undo/reload changes before staged commit. */
+ /** Any camera/viewport change invalidates the captured down.world coordinates.
+  * Even a boundary press BELOW 5px must be discarded before wheel/resize/fit.
+  * A normal selection box is also stale after camera motion; cancel it too. */
  cancelGeneratedDrag():boolean{
-   if(!this.down?.moving)return false;
+   if(!this.down)return false;
    this.cancelDrag();return true;
  }
  selectGenerated(id:string,additive=false):boolean{

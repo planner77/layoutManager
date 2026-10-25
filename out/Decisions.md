@@ -1,5 +1,11 @@
 # 주요 기술 결정과 승인 기록
 
+### ADR-047 보완 — Camera 변경 시 GENERATED 드래그 후보 임계값 이전이라도 폐기 (#54 PR #92)
+
+- [P1 리뷰](https://github.com/planner77/layoutManager/pull/92#discussion_r4370223581)의 원인은 `SelectionController.cancelGeneratedDrag`가 `down.moving`만 검사해 pointerdown 후 5px 미만의 후보를 wheel/Resize 이후에도 유지한 것이다. 화면/카메라 변환 경계가 바뀌면 이전 `down.world`는 유효하지 않다.
+- **결정:** 휠/Resize/Fit/Zoom 등 camera change에서 모든 활성 pointer/box/ghost를 `cancelDrag` 경로로 취소한다. 이동 확정은 해당 입력 제스처의 최초→최종 WCS가 같은 카메라 상태에서 계산된 경우에만 허용한다. Stage 취소/History0 및 기존 SOURCE/로컬 보안 경계 유지. `TC-E4-E2E-004` 추가.
+
+
 ## ADR-047 — E4 생성 개체 이동은 WCS Camera 역투영 + Scene Ghost + E2 원자 Translate로 분리 (2026-10-25 / #54)
 
 - **문제:** E2에는 `Translate` 명령·Undo가 있지만 실제 Pointer/숫자 UX가 없고, #51 Drag Selection 및 OrbitControls Pan과 동일 pointer를 경쟁시키면 의도치 않은 DXF/Overlay 변경 위험이 있다. 화면 Pixel을 WCS로 저장하는 방법은 Zoom/고 DPI/Fullscreen에서 틀리다.

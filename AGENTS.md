@@ -1,5 +1,12 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #54 / PR #92 — CI 성공 후 P1 카메라 변환 경계 보완 (2026-10-25)
+
+- [CI #40177837419](https://github.com/planner77/layoutManager/actions/runs/40177837419): **수정 전 HEAD** `2f57a642197f7d22d457ad65a70eda76b8ba7df4`의 Verify(121122289273)·Docker(121122289396) 모두 SUCCESS. 이 성공을 새로운 리뷰 수정 HEAD의 테스트 증거로 재사용하지 않는다.
+- [P1 리뷰 #4370223581](https://github.com/planner77/layoutManager/pull/92#discussion_r4370223581): GENERATED 경계 `pointerdown` 뒤 5px 미만에서 wheel·Resize가 일어나면 `cancelGeneratedDrag`의 `moving=false` 검사가 후보를 방치, 새 Camera WCS에서 잘못된 translate가 commit될 수 있다. 수정: **모든 진행 중 pointer/box/ghost를 카메라 변경 전에 취소**하고 `TC-E4-E2E-004` wheel·Resize·후속 move/up History0/JSON 불변 회귀 추가.
+- CI 실패가 아닌 **CI 성공 후 코드 리뷰 결함**으로 [FailureLedger](out/FailureLedger.md) 구분. 수정 HEAD CI 성공·미해결 리뷰 0·main 정렬 전에는 merge/Issue 종료/GHCR 게시 불가. 실 CAD/GPU/native fullscreen 별도 검증.
+
+
 ## Issue #54 / E4 — 생성 개체 WCS 수치·경계 드래그 이동 (2026-10-25)
 
 - v0.40.0: DXF+three-dxf-viewer의 현재 GENERATED 단일/다중 선택을 `Translate(ids,dx,dy)` E2 원자 Command로 이동한다. UI ΔX/ΔY는 **WCS drawing unit**이며 `$INSUNITS` 0/누락은 '단위 미상' 표시; mm/inch와 화면 픽셀을 혼동하지 않는다. 선택에 SOURCE/혼합/중복/stale/숨김이 하나라도 있으면 전체 거부.

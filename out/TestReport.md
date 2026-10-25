@@ -1,5 +1,12 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE54-PR92-CI-REVIEW-20261025 — 첫 성공 CI와 P1 보완의 증거 구분
+
+- [PR CI 40177837419](https://github.com/planner77/layoutManager/actions/runs/40177837419), HEAD `2f57a642197f7d22d457ad65a70eda76b8ba7df4` completed/**success**, Verify [121122289273](https://github.com/planner77/layoutManager/actions/runs/40177837419/job/121122289273) 및 Docker [121122289396](https://github.com/planner77/layoutManager/actions/runs/40177837419/job/121122289396) 모두 completed/success. 실 DXF/네이티브 fullscreen/실 GPU 수용의 증거는 아니다.
+- **별도 P1 리뷰 [4370223581](https://github.com/planner77/layoutManager/pull/92#discussion_r4370223581)**: Ghost threshold 도달 전 카메라가 wheel/Resize로 바뀌어도 stale `down.world`가 남아 의도치 않은 WCS 이동이 가능. 코드 수정: 진행 중 모든 pointer candidate/selection box/ghost에 동일한 cancel 경로 적용. Playwright `TC-E4-E2E-004` 신규.
+- 수정 HEAD의 Typecheck/ESLint/Unit/Build/E2E/Legacy/Docker **새 CI 필요 / NOT VERIFIED**. 초기 PASS는 새 HEAD로 소급 불가. PR 리뷰 해결 및 최신 main 정렬 후 승인된 게이트에 따라 squash merge/Main CI 및 GHCR pair를 진행한다.
+
+
 ## U-ISSUE54-20261025 — E4 WCS 이동 기능/시험 작성 (PR CI 검증 전)
 
 - 기능 기준선: `main 3ff1f94b3fbf11737a827536e223114ea4ca0e96` (#53 E3 포함). 브랜치 `feat/issue-54-generated-translate`, 버전 `0.40.0`, 상위 #49/선행 #51/#52/#53. DESIGN.md 없음→`out/Architecture.md` 설계. GitHub connector로 분석/코드 커밋; 현재 container는 `git ls-remote`부터 DNS `Could not resolve host: github.com`로 실패해 checkout 불가.

@@ -1,5 +1,13 @@
 # PR/Main CI 실패 원장
 
+## Issue #54 / PR #92 — 최초 CI PASS 뒤 발견된 P1 리뷰 (CI 실패 아님, 2026-10-25)
+
+- **최초 CI:** [Run 40177837419](https://github.com/planner77/layoutManager/actions/runs/40177837419), HEAD `2f57a642197f7d22d457ad65a70eda76b8ba7df4`, attempt 1, completed/**success**. Verify Job `121122289273` 및 Docker Job `121122289396` 모두 success. CI 실패로 분류하지 않는다.
+- **P1 입력 안전성:** [review 4370223581](https://github.com/planner77/layoutManager/pull/92#discussion_r4370223581), thread `PRRT_kwDOUQjDfc6v_xi4`, 파일 `src/viewers/three-dxf-viewer/selection-controller.ts:142`. 5px 임계 이전의 GENERATED 경계 pointerdown에서 wheel/Resize로 카메라가 바뀌어도 `cancelGeneratedDrag()`는 `moving=false`이므로 `down.world`를 지우지 않아 다음 move/up에서 다른 카메라 역변환을 조합해 의도치 않은 WCS Translate를 생성할 수 있다.
+- **해결:** 활성 `down` 전체를 `cancelDrag`로 폐기해 Ghost 이전 후보·진행 중 선택 box·Ghost 모두 카메라 변경/Resize/Zoom에 안전 취소. `TC-E4-E2E-004` wheel·viewport Resize 두 경우 History0/JSON 불변/선택 유지 추가. 기존 SOURCE/DB/파일/Worker/버전 0.40.0 및 GHCR 정책 불변.
+- **검증 경계:** 최초 성공 HEAD와 새 수정 HEAD를 엄격히 분리. 새 PR CI `pull_request.synchronize` 성공/리뷰 resolved/최신 main 무충돌 전 **병합·Issue 종료·GHCR 공개 게시 금지**. [Issue54](Issue54.md)/[TestReport](TestReport.md) 참조.
+
+
 ## Issue #67 / PR #80 — #52 main 선행 병합으로 HEAD 통합 및 CI 재검증 (2026-10-25 KST)
 
 - #67 브랜치 수정 HEAD `aa9083c8ac3be5b21bc87e8eaa54e1f0273abc4d`의 CI 시작 전 main이 [Issue #52 commit e1adfe5b](https://github.com/planner77/layoutManager/commit/e1adfe5b9de28ddd3821a0de2466d810e5c6c209)로 이동해 PR `mergeable_state=dirty`, `behind=1` 확인. 이는 코드 테스트 실패가 아닌 동시 작업 충돌로, 원격 기준 문서·package version 중복 변경의 충돌이다.

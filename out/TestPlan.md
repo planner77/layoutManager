@@ -1,5 +1,16 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+### Issue #54 P1 리뷰 대응 — 임계값 이전 Wheel/Resize Cancellation
+
+| TC | 기대 결과 | 검증 상태 |
+| --- | --- | --- |
+| TC-E4-E2E-004 | 선택된 GENERATED 경계 pointerdown 5px 미만 → wheel zoom → 25px move/up에서 Ghost 및 Document 변경 없음, Undo0, JSON 불변, 기존 선택 유지 | 코드 추가 / 수정 HEAD CI NOT RUN |
+| TC-E4-E2E-004 | 선택된 GENERATED 경계 pointerdown 5px 미만 → native viewport Resize → move/up에서도 위 결과 동일 | 코드 추가 / 수정 HEAD CI NOT RUN |
+| 기존 E4-E2E-003 및 #31/#51/#52/#53 | 정상 Ghost→단일 Commit, ESC 취소, 원본/영역 선택/Undo 회귀 | 최초 HEAD CI SUCCESS; 수정 HEAD 재검증 필요 |
+
+[기존 성공 CI #40177837419](https://github.com/planner77/layoutManager/actions/runs/40177837419)는 `2f57a642`에서 Verify·Docker 성공이며 새 코드까지 검증한 것은 아니다.
+
+
 ## Issue #54 / E4 v0.40.0 — WCS 이동·그룹 드래그 수용 검사 (2026-10-25)
 
 | Test Case | AC | 검증 내용 | 현재 |

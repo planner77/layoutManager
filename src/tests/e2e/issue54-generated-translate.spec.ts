@@ -164,3 +164,46 @@ test('TC-E4-E2E-003: selected boundary ghost / Escape rollback / one pointerup h
     expect(shifted[i][1]-original[i][1]).toBeCloseTo(0,4);
   }
 });
+test('TC-E4-E2E-004: pre-threshold boundary press cancels on wheel and resize without committing',async({page,request})=>{
+  const version=await drawing(request,'issue54-prethreshold');
+  await page.goto('/cad/versions/'+version.id+'/viewer?renderer=three-dxf-viewer');
+  await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
+  await createGenerated(page,1);
+  await page.getByTestId('outline-tree-item').click();
+  const canvas=page.getByTestId('cad-canvas').locator('canvas');
+  await canvas.scrollIntoViewIfNeeded();
+  await expect(canvas).toBeInViewport({ratio:1});
+  const base=await exportGeometry(page);
+  const boundary=async()=>{
+    const r=await canvas.boundingBox();
+    expect(r).not.toBeNull();
+    const px=Math.max(100,100/(r!.width/r!.height))*1.15/r!.height;
+    return {x:r!.x+r!.width/2+50/px,y:r!.y+r!.height/2};
+  };
+  // A wheel changes camera/unproject even before drag threshold.
+  const start=await boundary();
+  await page.mouse.move(start.x,start.y);
+  await page.mouse.down();
+  await page.mouse.wheel(0,200);
+  await page.mouse.move(start.x+25,start.y,{steps:5});
+  await expect(canvas).not.toHaveAttribute('data-generated-drag-preview','true');
+  await page.mouse.up();
+  await expect(page.getByTestId('generated-undo')).toBeDisabled();
+  expect((await exportGeometry(page)).outlines).toEqual(base.outlines);
+  await expect(page.getByTestId('canvas-selection-count')).toContainText('선택 1개 · 원본 0개 · 생성 1개');
+
+  // A genuine canvas Resize must discard another pre-threshold boundary press.
+  await page.getByRole('button',{name:'전체 화면 맞춤'}).click();
+  const resized=await boundary();
+  await page.mouse.move(resized.x,resized.y);
+  await page.mouse.down();
+  await page.setViewportSize({width:1110,height:765});
+  await page.evaluate(()=>new Promise<void>(resolve=>
+    requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
+  await page.mouse.move(resized.x+25,resized.y,{steps:5});
+  await expect(canvas).not.toHaveAttribute('data-generated-drag-preview','true');
+  await page.mouse.up();
+  await expect(page.getByTestId('generated-undo')).toBeDisabled();
+  expect((await exportGeometry(page)).outlines).toEqual(base.outlines);
+  await expect(page.getByTestId('canvas-selection-count')).toContainText('선택 1개 · 원본 0개 · 생성 1개');
+});
