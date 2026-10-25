@@ -1,5 +1,11 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE66-PR78-FAIL-20261025 — 첫 CI Unit 정적 계약 차단, Docker 실측 성공
+
+- [Run 40167191799](https://github.com/planner77/layoutManager/actions/runs/40167191799), `pull_request.synchronize`, HEAD `45389a4661d424e7ad6aa6ee66bcd643bbc6ad76`, **completed/failure**. Verify Job `121090554088`: TypeScript/ESLint/npm/Prisma success, Unit **187 passed/1 failed** (`TC-IMAGE-003`, `standalone.test.ts`). OCI parser, DXF source benchmark, Build, Chromium/E2E, Legacy **SKIPPED**. 기존 `CMD ["node", "scripts/run.mjs", "deploy"]` 정적 기대와 신규 `CMD ["./node_modules/.bin/tsx", "scripts/deploy.ts"]`의 불일치.
+- 독립 Docker Job `121090554257` **completed/success**, 이전 migrator **1,336,572,597 bytes** → 새 **578,862,325 bytes** (**56.69% 로컬 비압축 절감**), gzip tar proxy **462,720,650→212,574,989 bytes**. node_modules ~365MiB, native/Prisma/UID 검증, Compose 신규·재실행 마이그레이션+backfill 및 `/api/health` 200, invalid SQL P3018 및 read-only DB에 exit nonzero 성공. 이는 GitHub 레지스트리 OCI compressed layers나 현장 운영 데이터 보존 실측이 아님.
+- 수정: 기존 TC-IMAGE-003에 분리된 Docker stage와 새 migration CMD·Compose 성공 종속·web runtime 불변을 검사하고, 신규 `TC-IMG66-010`에 Prisma 종료 대기 후 Backfill 실행 순서 정적 회귀를 추가한다. 도메인/DB/Docker runtime 실제 구현 변경 없음. **새 HEAD CI 전 아직 NOT VERIFIED**; Docker 이전 성공을 변경 HEAD 성공으로 전용 금지. [FailureLedger](FailureLedger.md), [Issue66](Issue66.md), [TestPlan](TestPlan.md).
+
 ## U-ISSUE66-DEV-20261025 — 전용 migrator 의존성 분리 / 검증 대기
 
 - 기준/변경: 선행 PR CI run `40154979531`의 local migrator 약 1.34GB, full `node_modules` 약 1.1GB는 **과거 비압축 추정 기준선**. 이번 `0.37.1` 변경 후의 동일 소스 이미지 차이·절감률은 **아직 측정되지 않았다**. GHCR OCI compressed bytes/고정 digest도 게시 전이다.

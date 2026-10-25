@@ -1,5 +1,16 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #66 / PR #78 — 첫 PR CI 차단 원인 및 수정 TC (2026-10-25)
+
+| TC | 최초 Run 40167191799 | 교정 및 재검증 기대 |
+| --- | --- | --- |
+| TC-IMAGE-003 | 기존 `node scripts/run.mjs deploy` 명령 문자열 기대 때문에 **FAIL** | Dockerfile을 migrator/웹 별도 stage로 범위 구분; migrator-dependencies offline prune, 최소 node_modules copy, UID 10001/tsx deploy command, 웹 server.js, Compose service completed 의존 모두 확인. 고정 예전 CMD 기대 제거하고 실제 entrypoint contract 검증 |
+| TC-IMG66-010 (신규) | 없음 / **NOT RUN** | `deploy.ts` Prisma `migrate deploy` spawn → 종료 대기 후 `tsx backfill-delete-passwords.ts` 실행, 서버 기동 불포함. Unit 추가 |
+| TC-IMG66-001,003,004,006,007,008 | Docker Job 121090554257 **SUCCESS** | 해당 HEAD의 이미지 baseline **1,336,572,597→578,862,325 bytes(56.69%)**, gzip proxy **462,720,650→212,574,989 bytes**, native/UID, 신규·멱등 migrate, 오류 fail-closed 검증. 신규 HEAD에서 재실행 필요 |
+| TC-IMG66-002,005,009 | 실제 OCI manifest / Legacy E2E / GHCR release 미완 | 다음 PR CI Node parser·Legacy/E2E 검증; 실제 GHCR OCI 사이즈는 Main publish 이후. 운영 DB/CAD 백업복원 별도 |
+
+- 테스트 기대값 변경은 **작동하는 migrator의 진입점 전환을 반영**하는 것이며 assertion 약화/skip이 아니다. 1차 CI에서 TypeScript·Lint PASS, Docker PASS, Unit 187 PASS/1 FAIL, OCI parser·DXF Benchmark·Production Build·E2E·Legacy SKIPPED를 정확히 구분. [FailureLedger](FailureLedger.md).
+
 ## Issue #66 — Migrator 독립 최소 런타임 및 OCI 계측 (v0.37.1)
 
 | TC | Acceptance | 자동 검증 기준 | 상태 |

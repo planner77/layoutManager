@@ -1,5 +1,10 @@
 # ChangeLog
 
+### PR #78 / 최초 CI 보완 — v0.37.1 버전 유지 (2026-10-25)
+
+- [Run 40167191799](https://github.com/planner77/layoutManager/actions/runs/40167191799): TypeScript/ESLint PASS, Vitest **187 PASS/1 FAIL** (`TC-IMAGE-003` 이전 `node scripts/run.mjs deploy` 기대와 새 migrator `tsx scripts/deploy.ts` 불일치); Unit 실패로 이후 Build/E2E/Legacy SKIPPED. 기존 테스트를 실제 분리된 migrator entrypoint와 Compose 생명주기 계약으로 개정, `TC-IMG66-010` Migration→Backfill 순서 회귀 추가.
+- Docker Job 별도 SUCCESS: linux/amd64 **1,336,572,597→578,862,325 bytes**, 비압축 **56.69% 감소**, gzip tar proxy **462,720,650→212,574,989 bytes**. OCI GHCR 계층 및 실제 운영 복구 실측은 미완. 기능 Dockerfile/DB/API/버전 변경 없음, 최신 HEAD CI 결과 전 전체 PASS 주장 금지.
+
 ## v0.37.1 — Issue #66 독립 migrator 경량화 (2026-10-25)
 
 - Build: 원 `src/package-lock.json` 고정 전체 의존성에서 migrator 전용 runtime manifest를 생성하고 오프라인 prune해 단 한 번 실행하는 `migrator` 타깃에 필요한 CLI/native 및 DB/backfill source만 복사. 웹 `runtime`/schema/Viewer/API·원본은 변경하지 않는다.

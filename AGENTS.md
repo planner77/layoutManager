@@ -1,5 +1,11 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #66 / PR #78 — 최초 CI 실패 원인·수정 지침 (2026-10-25)
+
+- [Run 40167191799](https://github.com/planner77/layoutManager/actions/runs/40167191799) / HEAD `45389a4661d`: Verify Job `121090554088`의 `TC-IMAGE-003` Unit **1 FAIL(187 PASS)**, 기존 migrator `CMD ["node", "scripts/run.mjs", "deploy"]` 고정 기대값과 #66 전용 `CMD ["./node_modules/.bin/tsx", "scripts/deploy.ts"]` 불일치. 이 변경은 로컬 수동 값이 아니라 실제 Docker CI가 migration→backfill→health를 성공시킨 합법적 실행 계약이다.
+- Docker Job `121090554257` **SUCCESS**: 동일 소스/amd64 비압축 migrator **1,336,572,597→578,862,325 bytes, 56.69% 절감**, gzip tar proxy는 **462,720,650→212,574,989 bytes**, GHCR OCI/다운로드량은 아님. read-only 및 invalid SQL expected-failure, Compose 신규/멱등 migration 및 health 200 성공. Verify의 Benchmark/Build/E2E/Legacy는 **SKIPPED**.
+- 보완: 기존 `TC-IMAGE-003`은 migrator **stage**·최소 의존성/실행기·app runtime 분리 및 Compose fail-closed를 검사하도록 개정하고 `TC-IMG66-010`은 migration 완료 확인 뒤 백필 순서를 고정. 테스트를 제거/건너뛰지 않고 실행 코드·Schema/버전·GHCR publisher는 불변. [FailureLedger](out/FailureLedger.md), [Issue66](out/Issue66.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md). 최신 HEAD PR CI 완료 전 PASS 주장 금지.
+
 ## Issue #66 — 독립 migrator 실행 의존성·GHCR OCI 계측 (2026-10-25)
 
 - 분리된 `migrator`는 더 이상 `dependencies/node_modules` 전체를 복사하지 않는다. `migrator-dependencies`는 `src/package-lock.json`의 고정 버전으로 최소 런타임 manifest 생성 → `npm prune --omit=dev --offline --legacy-peer-deps` → 필수 Prisma CLI/tsx/native 및 불필요 Next/React/test 모듈 부재 검증을 수행한다. 웹 `runtime`/builder 패키징은 그대로다.
