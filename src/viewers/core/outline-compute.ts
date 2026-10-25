@@ -13,7 +13,14 @@ export type OutlineResult = {
 const EPS=1e-8;
 function close(ring:XY[]):XY[] {return [...ring,[...ring[0]] as XY];}
 function distance(a:XY,b:XY){return Math.hypot(a[0]-b[0],a[1]-b[1]);}
-function signedArea(p:XY[]){return p.reduce((sum,v,i)=>{const n=p[(i+1)%p.length];return sum+v[0]*n[1]-n[0]*v[1];},0)/2;}
+function signedArea(p:XY[]){
+ // Relative triangle areas avoid catastrophic cancellation for small
+ // polygons far from WCS (e.g. a 1x1 ring at 1e9,1e9).
+ const [x,y]=p[0];let twice=0;
+ for(let i=1;i+1<p.length;i++)
+   twice+=(p[i][0]-x)*(p[i+1][1]-y)-(p[i][1]-y)*(p[i+1][0]-x);
+ return twice/2;
+}
 function orientation(a:XY,b:XY,c:XY){return (b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]);}
 function onSegment(a:XY,p:XY,b:XY){
  return Math.abs(orientation(a,p,b))<EPS&&p[0]>=Math.min(a[0],b[0])-EPS&&p[0]<=Math.max(a[0],b[0])+EPS&&p[1]>=Math.min(a[1],b[1])-EPS&&p[1]<=Math.max(a[1],b[1])+EPS;
