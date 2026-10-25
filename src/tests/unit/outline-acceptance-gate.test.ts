@@ -19,7 +19,7 @@ function approvedFixture(){
       sizeBand:['1k','10k','100k'][index],expectedSha256:hashes[index],
       audit:{schemaVersion:1,scope:'local-source-cpu-only-not-render-acceptance',
         source:{sha256:hashes[index],fileBytes:10000+count,
-          supportedEntityCount:count,stableIdentityCount:count},
+          supportedEntityCount:Number(count),stableIdentityCount:Number(count)},
         cpu:{sourceParseMs:10,spatialBuildMs:20,queryP95Ms:3}},
       browser:{schemaVersion:2,type:'private-browser-observation-not-operational-PASS',
         sourceSha256:hashes[index],bytes:10000+count,
