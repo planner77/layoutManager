@@ -4,8 +4,9 @@
  * local DXF; no raw CAD, path, handles or layers are added to test artifacts.
  */
 import {test,expect} from '@playwright/test';
-import {readFileSync,writeFileSync,mkdirSync} from 'node:fs';
-import {dirname,resolve,relative,isAbsolute,sep} from 'node:path';
+import {readFileSync} from 'node:fs';
+import {resolve} from 'node:path';
+import {validatePrivateAcceptancePaths,writePrivateAcceptanceReport} from '../benchmark/private-acceptance-paths';
 import {createHash} from 'node:crypto';
 import {masterFields} from './master-helper';
 
@@ -22,17 +23,10 @@ test('TC-P0P5-REAL-BROWSER: private real-DXF mapping and interaction samples',as
   const reportPath=process.env.CAD_OUTLINE_ACCEPTANCE_REPORT_PATH;
   if(!expected || !/^[a-f0-9]{64}$/i.test(expected) || !reportPath)
     throw new Error('Operator must supply expected source SHA256 and private report path');
-  // Reject repo/worktree paths even when a caller supplied a full absolute path.
-  const repositoryRoot=resolve(process.cwd(),'..');
-  const insideRepo=(path:string)=>{
-    const rel=relative(repositoryRoot,resolve(path));
-    return rel==='' || (rel!=='..'&&!rel.startsWith('..'+sep)&&!isAbsolute(rel));
-  };
-  if(!isAbsolute(sourcePath!) || !isAbsolute(reportPath) ||
-     insideRepo(sourcePath!) || insideRepo(reportPath))
-    throw new Error('Private input and output must use absolute paths outside the repository');
+  const privatePaths=validatePrivateAcceptancePaths(
+    sourcePath!,reportPath,resolve(process.cwd(),'..'));
   let file:Buffer;
-  try{file=readFileSync(sourcePath!);}
+  try{file=readFileSync(privatePaths.sourceRealPath);}
   catch{throw new Error('Private source file could not be read');}
   if(!file.length||file.length>100*1024*1024)
     throw new Error('Expected nonempty authorized DXF <=100 MiB');
@@ -92,7 +86,7 @@ test('TC-P0P5-REAL-BROWSER: private real-DXF mapping and interaction samples',as
       await page.mouse.up();
       await expect.poll(async()=>{
         const label=await page.getByTestId('outline-selection-count').textContent()??'';
-        return Number(label.match(/[0-9]+/)?.[0]??0);
+        return Number(/선택\s+(\d+)개/.exec(label)?.[1]??0);
       },{timeout:10000}).toBeGreaterThan(0);
       const countText=await page.getByTestId('outline-selection-count').textContent()??'';
       const selected=Number(/선택\s+(\d+)개/.exec(countText)?.[1]??0);
@@ -149,9 +143,7 @@ test('TC-P0P5-REAL-BROWSER: private real-DXF mapping and interaction samples',as
       'No raw CAD, path, handles or layers are written to this private report.',
     ],
   };
-  const name=resolve(reportPath);
-  mkdirSync(dirname(name),{recursive:true});
-  writeFileSync(name,JSON.stringify(report,null,2)+'\n',{flag:'w',mode:0o600});
+  writePrivateAcceptanceReport(privatePaths,JSON.stringify(report,null,2)+'\n');
   expect(measurements.every(s=>s.consoleErrors===0&&s.pageErrors===0)).toBe(true);
   expect(measurements.every(s=>Number.isFinite(s.loadMs)&&Number.isFinite(s.boxSelectionMs))).toBe(true);
   const threshold=Number(process.env.CAD_OUTLINE_ACCEPTANCE_MIN_SELECTED??1);
