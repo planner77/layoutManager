@@ -3,7 +3,7 @@ import type { ViewerFormat } from './selection';
 import type {OutlineEntity,OutlineKind} from './outline-geometry';
 import type {OutlineResult,GeoJSONOutline} from './outline-compute';
 import {type CanvasObjectRef,type CanvasEditCapability,type CanvasSelectionMode} from '../../domain/canvas-object-selection';
-import type {GeneratedCommand} from '../../domain/generated-document';
+import type {GeneratedCommand,Affine2D} from '../../domain/generated-document';
 import type {OutlineAssignment} from '../../domain/outline-assignment';
 import {outlineGeometryBounds} from '../../domain/outline-tree';
 export type SavedOutlineOverlayState = {id:string;visible:boolean;selected:boolean};
@@ -13,6 +13,7 @@ export type SavedOutline = {id:string;createdAt:string;result:OutlineResult;
 /** Independent E1 edit-model exposure: not a serialized v1/v2 SavedOutline. */
 export type GeneratedOutlineObject = Readonly<{
   ref:CanvasObjectRef;savedOutlineId:string;visible:boolean;geometry:GeoJSONOutline;
+  baseGeometry:GeoJSONOutline;transform:Affine2D;edited:boolean;dirty:boolean;
   sourceEntityIds:readonly string[];kind:OutlineKind;name:string;outlineTypeId:string|null;
 }>;
 import { ViewerSource } from './source';
