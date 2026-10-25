@@ -1,5 +1,14 @@
 # 상세 요구사항
 
+## Issue #42 / U5 v0.35.0 — 외곽선 업무 타입 지정 (2026-10-25)
+
+- **FR-U5-01**: 업무 타입 `outlineTypeId`는 ID 기준 1개, `kind`는 기존 `CONVEX|PRECISE`로 독립 유지. 타입만 바뀌어도 원본 SHA/Handle/geometry/Worker 결과 불변. `SavedOutline`과 브라우저 다운로드 DTO에 타입명 스냅샷·외곽선 이름 추가.
+- **FR-U5-02**: 타입은 향후 #65에서 서버가 전달할 active/current version/scope의 읽기 전용 기준정보만 사용. 없거나 일치하지 않거나 비활성·다른 Scope이면 typed confirmation 차단. #41 브라우저 실험 타입은 금지. Owner 승인 전 실제 API/DB/영속 저장 미구현.
+- **FR-U5-03**: 타입 확정 시 이름은 1~100자 trim/NFC/Cc·Cf·Cs 거부, 공백이면 `외곽선 N`, 중복 표시 이름 허용(Identity는 local-N). 다른 Version 자동 상속 없음.
+- **FR-U5-04**: 기존 v1 import/export 및 Source/SHA 검증 유지, typed/mixed 결과는 v2. v2 null triple은 legacy 미분류만 의미하며 서버 쓰기 승인 불가. #43 Tree UI는 후속.
+- **현행 수용 상태**: AC-U5-01/03 CODED, 02/04 PARTIAL, 05 Fail-closed Code Gate. #65 완료 이후 서버 기반 E2E/권한·원본 재검증·CAS를 추가해야 운영 수용 가능. [Issue42](Issue42.md).
+
+
 ### Issue #41 / PR #64 — U4 시안 실행 환경·검증 보완
 
 - **FR-U4-05(보강):** 실제 Admin 기능/API/DB 미승인 차단을 유지하면서도 **비영속 프로토타입**은 `randomUUID`가 미제공되는 사내 HTTP host 접속에서도 CSPRNG 기반 임시 UUID 생성이 가능해야 한다. 안전한 난수 API가 모두 없으면 명확하게 거부하며 `Math.random` 또는 서버 영속 ID로 위장하지 않는다.

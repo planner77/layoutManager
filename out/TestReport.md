@@ -1,5 +1,21 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE42-PR70-FAIL-20261025 — E2E 회귀 원인 및 수정 검증 경계
+
+- [PR CI 40157734271](https://github.com/planner77/layoutManager/actions/runs/40157734271) (HEAD `526a1be`, completed/failure): Job `121062609278` npm ci/Prisma/Typecheck/ESLint/Unit·Integration/DXF Benchmark/Production Build PASS, Chromium E2E **57 PASS/1 FAIL** (`issue31-outlines.spec.ts:53` TC-OUT-E2E-001: 두 번째 선택 결과 0 vs 1), Legacy Migration SKIPPED. Docker Job `121062609436` SUCCESS.
+- [Artifact 12585362916](https://github.com/planner77/layoutManager/actions/runs/40157734271/artifacts/12585362916) Trace 재검토: 버튼 클릭 후 비전체화면 페이지 스크롤로 캔버스 `y=-63`, 두 번째 마우스 `(38,-58)`에서 `pointerdown`이 뷰포트 밖으로 나감. 이전 첫 선택·DXF Geometry·PRECISE preview는 통과. **테스트의 스크롤 전제 결함**으로 확인.
+- [fix `a5d9f843`](https://github.com/planner77/layoutManager/commit/a5d9f8430e06fe3b223dc97157c917ac6e793394): 두 Canvas 선택에 모두 `scrollIntoViewIfNeeded` + 100% viewport 확인 후 실제 drag. Assert 그대로 유지. 수정 HEAD의 수동/로컬 CI **NOT RUN**, 신규 PR CI synchronize 시작·결과 미확정. [FailureLedger](FailureLedger.md) / [Issue42](Issue42.md).
+
+
+## U-ISSUE42-DEV-20261025 — v0.35.0 U5 계약·잠금 UI / PR CI 전 증거
+
+- Issue #42에 대해 `outline-assignment.ts`, v1/v2 Draft parser/export, ViewerManager/Three adapter metadata, 타입 지정 UI gate 및 신규 Unit/E2E 코드를 작성. 기존 U3 untyped 로컬 버튼은 유지, 비영속 타입 ID는 서버 영속 저장·권한 증거가 아님.
+- #65 실제 서버 active scoped catalog 및 #31 P4 IdP/RBAC/Server geometry/DB Write가 없어 **U5 운영 타입 지정은 의도적으로 비활성**. #41 lab 시안 타입은 Viewer에 주입하지 않음. U6 Tree는 #43 별도.
+- **로컬 실행: NOT RUN** — 외부 GitHub 원격 코드 수정 도구 환경에서 의존성 설치·Node 테스트·실 CAD 렌더/GPU/IdP/DB E2E를 실행할 수 없었다. Unit/Typecheck/Lint/Build/Chromium/Legacy migration 성공은 주장하지 않는다.
+- **PR CI: 추후 PR 생성 시 자동 시작 예정** (`.github/workflows/pr-ci.yml` `pull_request.opened`); 결과·GHCR 게시/릴리스는 미확정. PR CI 실패 시 [FailureLedger](FailureLedger.md)에 Run ID, Job, Error, 조치, rerun 근거 기록 필요.
+- 추적: TC-U5-UNIT-001~003, TC-U5-E2E-GATE-001; 상세 [Issue42](Issue42.md), [TestPlan](TestPlan.md).
+
+
 ## Issue #41 / PR #64 — 최종 CI PASS 및 릴리스 시작 상태 (2026-10-25)
 
 - [CI #40154979531](https://github.com/planner77/layoutManager/actions/runs/40154979531) (HEAD `e2f0a64d45f601420a2bc38b99531c748269f61a`) 최종 **completed/success**. [verify job 121054317463](https://github.com/planner77/layoutManager/actions/runs/40154979531/job/121054317463)의 TypeScript/ESLint/Vitest Unit+Integration/Outline synthetic Benchmark/Next build/Chromium Playwright E2E/Legacy migration E2E 전 단계 **success**. [Docker Runtime job 121054317216](https://github.com/planner77/layoutManager/actions/runs/40154979531/job/121054317216) **success**. 실패 결과 artifact 단계는 SKIPPED(문제 없음).

@@ -1,5 +1,12 @@
 # CAD Web Viewer P.O.C.
 
+## v0.35.0 — Issue #42 타입 지정 외곽선 계약·JSON v2 (서버 카탈로그 대기)
+
+- DXF `three-dxf-viewer`의 외곽선 생성 ON 도크에 **업무 타입 선택/외곽선 이름/타입 지정 후 확정** 입력 경로를 준비했습니다. 업무 타입은 #65의 인증·Scope 서버 기준정보에만 연결하도록 설계하여 현재는 **타입 선택·확정 disabled** 상태입니다. 관리자 등록 필요 안내가 표시됩니다.
+- `CONVEX/PRECISE` 기하 종류와 업무 타입 ID는 별도 필드입니다. 브라우저 결과의 type ID·type name snapshot·outline name은 schemaVersion **2** JSON에 포함되며 기존 미분류 v1 JSON import/export 경로는 보존됩니다. 타입이 없는 기존 U3 '임시 확정'은 **미분류·브라우저 메모리 전용**이며 운영 영속 저장을 의미하지 않습니다.
+- Server-side 타입 카탈로그/인증·401/403·P4 geometry 재검증/CAS·감사/트리뷰는 아직 미구현. #65 및 #31 승인/수용 후 활성화해야 합니다. 상세: [Issue42](out/Issue42.md). 신규 테스트 코드는 CI 전 **실행 미확인**.
+
+
 ### Issue #41 / v0.34.0 PR CI 성공·부분 범위 릴리스 상태
 
 - [PR #64](https://github.com/planner77/layoutManager/pull/64)는 [PR CI 40154979531](https://github.com/planner77/layoutManager/actions/runs/40154979531) 성공 후 병합되었습니다. 브라우저 메모리 시안 `/lab/outline-types`와 UUID·검증 기능만 포함하며 **실제 관리자 타입 DB 저장 및 접근 권한은 구현되지 않았습니다**.

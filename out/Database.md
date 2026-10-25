@@ -1,5 +1,11 @@
 # Database Schema — 단일 기준 문서
 
+## Issue #42 / v0.35.0 — 영속 Schema 변경 없음 (U5 safe contract)
+
+- `outlineTypeId/outlineTypeName/name`은 **브라우저 `SavedOutline` DTO 및 선택적인 v2 다운로드 JSON 메타데이터**일 뿐, Prisma Column/FK/DDL/마이그레이션에 추가하지 않았다.
+- #65 실제 `OutlineType` table/Scope/Unique/Revision 및 #31 `CadOutline` P4는 미승인 상태. `outlineTypeId`를 DB FK로 추가하거나 브라우저 JSON을 그대로 저장하면 안 된다. 서버 authoritative file SHA/Version/Handle/Geometry 검증, RBAC/Scope/CAS/Audit 승인 후 별도 Migration 설계 필요. [Issue42](Issue42.md).
+
+
 ## Issue #41 / v0.34.0 — OutlineType 영속 Schema는 미승인 (DDL 없음)
 
 - 이번 단계는 **schema.prisma와 migration 변경 없음**. `/lab/outline-types`의 목록은 React state만 사용; 신규 DB 테이블, 임의 사용자, 서버 CRUD, FK 없음. 원본 CadFileVersion/CadLocation 및 #31 CadOutline 제안 불변.

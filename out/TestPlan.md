@@ -13,6 +13,26 @@
 - **상태:** 변경 작성; 실제 Actions run에 표시되는 값은 PR 생성 뒤 확인. Main/tag/manual 검증은 실행 전이며 PASS로 기록하지 않는다. 세부 입력/기대/제약 [Issue68](Issue68.md).
 
 
+## PR #70 E2E 회귀 — Canvas 스크롤 후 2회 영역 선택 (2026-10-25)
+
+- **TC-OUT-E2E-001 보강:** 비전체화면 일반 레이아웃의 `ViewerAppShell`/U5 확장 도크 상태에서 첫 CONVEX 선택·다운로드, PRECISE preview·`선택 해제`, **두 번째 실제 영역 드래그**가 계속 정상이어야 한다. 마우스 동작 전 Canvas 전체가 Viewport 안에 있도록 Playwright `scrollIntoViewIfNeeded` + `toBeInViewport({ratio:1})`를 검사한다. 선택된 Entity 1개를 실제로 검증하고, 곧바로 PRECISE Worker·기하·JSON 출력까지 검증한다.
+- 최초 실패 [Run 40157734271](https://github.com/planner77/layoutManager/actions/runs/40157734271) / Artifact 12585362916: Canvas 화면 밖 `y=-63`, 두 번째 `mouseDown y=-58`, `선택 0개` 경과. Source/Renderer/Worker 수정이 아니라 **E2E 제어 좌표/스크롤 준비 문제**. 재CI 성공 전 regression PASS 표기 금지.
+- 같은 `TC-OUT-E2E-001`을 유지하며 시험을 skip/삭제하거나 timeout만 늘리지 않는다. 세부 원장 [FailureLedger](FailureLedger.md).
+
+
+## Issue #42 / U5 v0.35.0 — 타입 지정 외곽선 로컬 계약·게이트 (2026-10-25)
+
+| AC / TC | 검증 항목 | 코드 / 상태 |
+| --- | --- | --- |
+| U5-01/03; TC-U5-UNIT-001 | 같은 CONVEX에 서로 다른 업무 타입, 같은 타입의 CONVEX/PRECISE, 기본 이름, type 변경 후 kind/geometry/Handle 불변 | `outline-assignment.test.ts`; TEST NOT RUN |
+| U5-02; TC-U5-UNIT-002 | 미지정/미존재/비활성/다른 Scope·Version·SHA/null-lab 타입 차단, name NFC/기본값/제어 문자/길이/중복 정책 | 동일 Unit; TEST NOT RUN |
+| U5-04; TC-U5-UNIT-003 | v1 JSON 파싱·출력 그대로, v2 typed/mixed 메타데이터, null legacy, 유효하지 않은 UUID/필드/Version 거부 | 동일 Unit 및 기존 `outline-draft.test.ts`; TEST NOT RUN |
+| U5-02/05; TC-U5-E2E-GATE-001 | 실제 type server API 없음 404, 사용자 Viewer U5 selector/confirm disabled·안내, U4 Admin 메뉴 disabled | `issue42-outline-assignment-gate.spec.ts`; TEST NOT RUN |
+| U5-01~05 운영 수용 | verified session/Scope catalogue, 401/403·type active 변경 경쟁, 원본 DXF 재파싱·Geometry tamper·409·Audit | BLOCKED #65/#31 P4; 서버 인증/DB 미구현 |
+
+기존 #31/#40/#41/Renderer/Version/Layer/Worker/기존 v1 JSON E2E 및 legacy DB migration, TypeScript/ESLint/Vitest/production Build, DXF synthetic benchmark/Docker runtime은 PR CI 필수 회귀. 타입 데이터 공급 후 typed end-to-end는 별도 추가 필요. [Issue42](Issue42.md). **코드 작성 ≠ 실행 성공.**
+
+
 ## Issue #41 / PR #64 E2E 및 HTTP 비보안 컨텍스트 회귀 보완 (2026-10-25)
 
 | TC | 검증 의도 | 관측/계획 | 

@@ -1,5 +1,22 @@
 # PR/Main CI 실패 원장
 
+## Issue #42 / PR #70 — 최신 main #68 병합 충돌 대응 (2026-10-25 KST)
+
+- 원장 기록을 푸시한 뒤 [main #68, commit 38f05e0f](https://github.com/planner77/layoutManager/commit/38f05e0f2633ca15bfd689b03846d4f0b13f249a)의 CI workflow/AGENTS/ChangeLog/Decisions/TestPlan/Issue68/Operation 변경으로 PR이 일시적으로 behind=1 및 mergeable=dirty가 됨. 기존 #42 코드와 #68 기능은 독립이며 공통 Markdown 전면 삽입부 충돌.
+- **해결:** #68의 원본 Git blob으로 변경된 workflow/Issue68/Operation을 인수하고 공통 4개 문서 AGENTS/ChangeLog/Decisions/TestPlan에는 두 이슈의 섹션을 모두 보존. 중복 ADR-038을 #68에 유지하고 #42는 ADR-039로 변경. 두 부모 merge commit을 non-force fast-forward 반영해 최신 main과 정렬. PR 제목을 #68 규칙에 따라 `#42 | U5 외곽선 업무 타입 지정·JSON v2 안전 계약`으로 변경.
+- 실패 Run 40157734271, Job 121062609278, Artifact 12585362916 및 최초 수정 a5d9f843 기록은 삭제 없이 아래 기록에 계속 보존한다. 병합 후 신규 CI 성공을 미리 주장하지 않는다.
+
+
+## Issue #42 / PR #70 — 최초 CI U3/U5 도구 높이 연계 E2E 화면 밖 드래그 (2026-10-25 KST)
+
+- **실패 실행 보존:** [PR #70](https://github.com/planner77/layoutManager/pull/70), [PR CI Run 40157734271](https://github.com/planner77/layoutManager/actions/runs/40157734271) (pull_request.opened, attempt 1, 원본 HEAD `526a1be98232e16d004f9d23915a051e2fca9e2a`), `completed/failure`. [검증 Job 121062609278](https://github.com/planner77/layoutManager/actions/runs/40157734271/job/121062609278) Step 12 **Playwright Chromium E2E 57 PASS / 1 FAIL**. npm ci, Prisma Client 생성, TypeScript, ESLint, Unit·Integration, DXF synthetic benchmark, production Build, Chromium 설치는 PASS. 이후 Legacy Migration E2E는 **SKIPPED**, 실패 artifact 업로드 성공. 별도 [Docker Runtime Job 121062609436](https://github.com/planner77/layoutManager/actions/runs/40157734271/job/121062609436)는 **SUCCESS**. E2E 실패를 Docker 실패로 분류하지 않는다.
+- **실패 정확 위치:** `src/tests/e2e/issue31-outlines.spec.ts:53`, `TC-OUT-E2E-001`의 **두 번째 좌→우 영역 선택** 이후 `getByTestId('outline-selection-count')` 예상 `선택 1개`, 실제 `선택 0개 / 분석 1개`, Playwright 5s timeout. 첫 영역 선택, CONVEX preview/임시 확정, v1 JSON 다운로드, PRECISE preview 및 기존 선택 해제까지는 실제 통과. Render mapping 정상 `매핑 제외 0개`.
+- **직접 근거/근본 원인:** [실패 Artifact 12585362916](https://github.com/planner77/layoutManager/actions/runs/40157734271/artifacts/12585362916)의 `error-context.md`와 Playwright `trace.zip`: 첫 `mouseDown` 전 `mouse.move(38,314)` 및 마우스 drag 종료 `(1402,954)`는 정상 viewport. 이후 하단 도구의 `선택 해제` 버튼을 클릭하면서 **NORMAL(non-immersive) 페이지 스크롤**이 발생하고 캔버스 `boundingBox.y=-63`; 동일 테스트의 두 번째 `mouse.move(38,-58)` → `mouseDown`은 화면 밖에서 시작해 Canvas `pointerdown`을 전달할 수 없었다. U5 추가 폼/안내로 하단 도구가 커진 상태에서 이 잠재적인 Viewport 좌표 가정이 노출됨. Geometry Worker/Source mapping/DB 오류라는 근거 없음.
+- **수정 및 재발 방지:** [test commit `a5d9f843`](https://github.com/planner77/layoutManager/commit/a5d9f8430e06fe3b223dc97157c917ac6e793394): `selectFullCanvas(page)` 테스트 Helper로 첫/두 번째 드래그 모두 `canvas.scrollIntoViewIfNeeded()`, `expect(canvas).toBeInViewport({ratio:1})`, `boundingBox` 검증 후 실제 viewport 마우스 드래그와 기존 `선택 1개` 관측을 유지. Pointer Controller, Canvas resize, Geometry·DXF Worker, U5 유형 로직·권한·DB/API는 수정하지 않는다. 실패를 재시도/대기시간 증가나 Assertion 제거로 숨기지 않음.
+- **Review/Main:** 첫 점검에서 [PR #70](https://github.com/planner77/layoutManager/pull/70) inline review **0건(미해결 0)**, Codex review summary `526a1be`에 발견 없음. `main` 비교 최초 **behind 0**, `mergeable=true`로 충돌 없음. docs 반영 후 재확인 필요; 새 리뷰/변경이 생기면 이력 보존 후 처리.
+- **재검증 상태:** 최초 HEAD의 Unit/Build/Docker PASS를 수정 HEAD의 PASS로 전용하지 않음. 로컬 `npm ci`/Playwright/실 CAD 검증 **NOT RUN**. 실패 Run을 삭제/덮어쓰기 없이 보존하고 이 수정+원장/TC 문서를 기능 브랜치에 fast-forward push하여 `pull_request.synchronize` 새 PR CI를 시작한다. **새 Run의 결론은 아직 NOT VERIFIED; CI 모니터링은 사용자 요청에 따라 생략.** 운영 카탈로그·P4 보안 게이트(#65/#31) 변동 없음.
+
+
 ## Issue #41 / PR #64 — 재검증 PASS·병합·Main GHCR 시작까지의 종결 기록 (2026-10-25 KST)
 
 - **이전 실패 보존:** [PR #64](https://github.com/planner77/layoutManager/pull/64), [실패 Run 40153913566](https://github.com/planner77/layoutManager/actions/runs/40153913566) (HEAD `d548df2`, Step 12 Chromium E2E `TC-U4-E2E-PREVIEW-001` locator strict violation, 55 PASS/1 FAIL, Legacy migration SKIPPED; Docker PASS)는 바로 아래 최초 실패 항목과 [artifact 12583742658](https://github.com/planner77/layoutManager/actions/runs/40153913566/artifacts/12583742658)에 보존한다. 중복 이름 오류 자체는 정상이며 Next Route Announcer까지 범위가 넓은 E2E locator가 원인이었다.

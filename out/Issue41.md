@@ -1,5 +1,11 @@
 # Issue #41 — 관리자 최상위 외곽선 업무 타입 (U4) / v0.34.0 안전 선행 시안
 
+## Issue #42 후속 계약 상태 (2026-10-25)
+
+- #41 비영속 `/lab/outline-types` 목록을 실제 Viewer U5 타입 카탈로그로 사용하지 않는다. #42 타입/이름 DTO·v2 JSON은 독립 선행 준비지만, typed confirm 운영 활성화는 #65 Admin DB·RBAC·Scope·Audit 승인 후만 가능. [Issue42](Issue42.md).
+- #41 원래 AC-U4-01~04 영속 범위는 계속 #65에 남으며 #42 준비 코드로 자동 완료되지 않는다.
+
+
 ## PR #64 CI 성공·병합 및 영속 수용 기준 이관 (2026-10-25)
 
 - 검증: [PR CI 40154979531](https://github.com/planner77/layoutManager/actions/runs/40154979531) = **SUCCESS** (최종 코드 HEAD `e2f0a64d`): TypeScript, Lint, Unit/Integration, Benchmark, Next Production Build, Chromium E2E, Legacy Migration E2E, Docker runtime. 최초 E2E FAIL [40153913566](https://github.com/planner77/layoutManager/actions/runs/40153913566)은 실패 원장에 보존. Reviewer P2 HTTP UUID 조치 완료, unresolved 0 / mergeable / behind 0 확인.

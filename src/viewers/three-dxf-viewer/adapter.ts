@@ -9,6 +9,8 @@ import {reconcileRenderCoverage,type RenderObservation,type RenderCoverage} from
 import type {DxfOutlineIndex,OutlineEntity,OutlineKind,OutlinePath} from '../core/outline-geometry';
 import type {OutlineResult} from '../core/outline-compute';
 import type {OutlineInfo,SavedOutline} from '../core/adapter';
+import type {OutlineAssignment} from '../../domain/outline-assignment';
+import {parseOutlineAssignmentMetadata} from '../../domain/outline-assignment';
 
 function release(group: THREE.Object3D) {
   const geometries = new Set<THREE.BufferGeometry>(), materials = new Set<THREE.Material>(), textures = new Set<THREE.Texture>();
@@ -296,9 +298,12 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     if(this.previewGroup){this.scene.remove(this.previewGroup);release(this.previewGroup);this.previewGroup=undefined;this.render();}
     this.outline?.onPreview?.(null);
   }
-  confirmOutline():SavedOutline {
+  confirmOutline(assignment?:OutlineAssignment):SavedOutline {
     if(!this.preview)throw new Error('미리보기를 먼저 생성해야 합니다.');
-    const saved:SavedOutline={id:'local-'+(this.saved.length+1),createdAt:new Date().toISOString(),result:this.preview};
+    if(assignment && !this.preview.persistable)throw new Error('불안정한 Entity 참조는 타입 지정 확정이 불가합니다.');
+    const typed=assignment?parseOutlineAssignmentMetadata(assignment):null;
+    const saved:SavedOutline={id:'local-'+(this.saved.length+1),createdAt:new Date().toISOString(),result:this.preview,
+      ...(typed?{outlineTypeId:typed.outlineTypeId,outlineTypeName:typed.outlineTypeName,name:typed.name}:{})};
     this.saved.push(saved);this.savedGroup.add(this.renderGeometry(this.preview,0xff8c00));
     this.scene.add(this.savedGroup);this.cancelOutlinePreview();
     this.outline?.onSaved?.(this.saved.length);this.render();return saved;

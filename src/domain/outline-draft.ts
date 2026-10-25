@@ -4,13 +4,16 @@
  * server-owned DXF bytes, never trust client-supplied geometry/handles. */
 import type {OutlineKind,XY} from '../viewers/core/outline-geometry';
 import type {GeoJSONOutline} from '../viewers/core/outline-compute';
+import type {SavedOutline} from '../viewers/core/adapter';
+import {parseOutlineAssignmentMetadata} from './outline-assignment';
 export type OutlineDraft={
   id:string;kind:OutlineKind;algorithm:string;
   sourceEntityIds:string[];geometry:GeoJSONOutline;
   tolerance:number;
+  outlineTypeId:string|null;outlineTypeName:string|null;name:string|null;
 };
 export type ParsedOutlineExport={
-  schemaVersion:1;versionId:string;sourceSha256:string;
+  schemaVersion:1|2;versionId:string;sourceSha256:string;
   coordinateSystem:'DXF_WCS_XY';unitCode:number|null;outlines:OutlineDraft[];
 };
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -65,7 +68,7 @@ export function parseOutlineExport(
   if(!uuid.test(expectedVersionId)||!sha.test(expectedSourceSha256))
     throw new Error('검증된 도면 Version/SHA 정보가 없습니다.');
   const root=obj(input,'외곽선 JSON 객체가 필요합니다.');
-  if(root.schemaVersion!==1||root.coordinateSystem!=='DXF_WCS_XY')
+  if((root.schemaVersion!==1&&root.schemaVersion!==2)||root.coordinateSystem!=='DXF_WCS_XY')
     throw new Error('외곽선 JSON 스키마/좌표계를 지원하지 않습니다.');
   if(root.versionId!==expectedVersionId||typeof root.sourceSha256!=='string'||
      root.sourceSha256.toLowerCase()!==expectedSourceSha256.toLowerCase())
@@ -104,9 +107,37 @@ export function parseOutlineExport(
       throw new Error('볼록 외곽선은 단일 Polygon의 외부 Ring만 허용합니다.');
     if(!finite(result.tolerance)||result.tolerance<=0||result.tolerance>1000)
       throw new Error('외곽선 허용 오차를 확인해주세요.');
-    drafts.push({id:item.id,kind,algorithm,sourceEntityIds,geometry,tolerance:result.tolerance});
+    const assignment=root.schemaVersion===2?parseOutlineAssignmentMetadata(item):null;
+    drafts.push({id:item.id,kind,algorithm,sourceEntityIds,geometry,tolerance:result.tolerance,
+      outlineTypeId:assignment?.outlineTypeId??null,outlineTypeName:assignment?.outlineTypeName??null,
+      name:assignment?.name??null});
   }
-  return {schemaVersion:1,versionId:expectedVersionId,
+  return {schemaVersion:root.schemaVersion as 1|2,versionId:expectedVersionId,
     sourceSha256:expectedSourceSha256.toLowerCase(),
     coordinateSystem:'DXF_WCS_XY',unitCode:root.unitCode as number|null,outlines:drafts};
+}
+
+
+/**
+ * U5: preserve U3's untyped v1 export byte shape. Mixed/typed local sessions
+ * export explicit v2 metadata; v1 parser and source/handle checks remain intact.
+ * This function produces a browser DOWNLOAD, not a server-side write.
+ */
+export function buildOutlineExport(
+  versionId:string,sourceSha256:string,unitCode:number|null,outlines:readonly SavedOutline[],
+) {
+  if(!uuid.test(versionId)||!sha.test(sourceSha256))
+    throw new Error('검증된 Version/SHA 정보가 없어 JSON을 내보낼 수 없습니다.');
+  const shared={versionId,sourceSha256,
+    coordinateSystem:'DXF_WCS_XY' as const,unitCode,persistence:'BROWSER_EXPORT_ONLY' as const};
+  if(!outlines.some(o=>o.outlineTypeId!==undefined))
+    return {schemaVersion:1 as const,...shared,outlines:[...outlines]};
+  const typed=outlines.map(o=>{
+    const assignment=parseOutlineAssignmentMetadata({
+      outlineTypeId:o.outlineTypeId??null,outlineTypeName:o.outlineTypeName??null,name:o.name??null,
+    });
+    return {...o,outlineTypeId:assignment?.outlineTypeId??null,
+      outlineTypeName:assignment?.outlineTypeName??null,name:assignment?.name??null};
+  });
+  return {schemaVersion:2 as const,...shared,outlines:typed};
 }

@@ -1,5 +1,11 @@
 # Issue #40 — 상단 메뉴 외곽선 생성 토글 / U3 (v0.33.0)
 
+## Issue #42 U5 타입 지정 확장 경계 (2026-10-25)
+
+- #40 ON/OFF, Worker 취소 및 기존 브라우저 임시 확정의 JSON v1/Overlay 보존은 계속 동작. U5 타입 선택·이름 DTO, v2 JSON은 별도 typed 호출에서만 사용.
+- 실제 서버 타입 카탈로그는 #65 보안 게이트 대기, 현재 typed confirm disabled. #41 lab 타입으로 서버 카탈로그를 위조하지 않는다. [Issue42](Issue42.md).
+
+
 - GitHub: https://github.com/planner77/layoutManager/issues/40
 - Epic: #37; 선행 #38(U1), #39(U2), #31(기하·Worker·Mapping); 후속 #41(관리자 유형), #42(외곽선 타입 지정), #43(트리/표시).
 - 기준: main `296d570ea62e26a3fc40c57685268921df15199a`; 브랜치 `feat/issue-40-outline-tool-toggle`.

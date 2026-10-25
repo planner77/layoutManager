@@ -8,6 +8,19 @@
 - `run-name`은 CI Job보다 먼저 결정된다. 이슈 검색 Step·PR number를 사용한 Issue 위조·이전 Run 이름 변경은 불가. **Workflow 표시명은 성공 상태/GHCR 게시를 보장하지 않는다.** 실행 상태는 Run/Job과 Digest로 검증한다. 규칙·예외·테스트 [Issue68](out/Issue68.md), [Operation](out/Operation.md), [ADR-038](out/Decisions.md).
 
 
+## Issue #42 / PR #70 — 첫 PR CI E2E 실패와 반복 선택 테스트 보완 (2026-10-25)
+
+- [실패 CI 40157734271](https://github.com/planner77/layoutManager/actions/runs/40157734271): Lint·Type·Unit/Bench·Production Build/Docker PASS, Chromium E2E **57 PASS/1 FAIL**, Legacy migration SKIPPED. 실패는 `TC-OUT-E2E-001`의 두 번째 Canvas drag가 **offscreen y=-58px**에서 시작해 `선택 0개`로 남은 것. 실제 trace는 U5 확장 도구 사용 후 NORMAL 페이지 scroll → canvas top -63px를 보여준다.
+- [test `a5d9f843`](https://github.com/planner77/layoutManager/commit/a5d9f8430e06fe3b223dc97157c917ac6e793394): E2E에서 Canvas 영역 선택 **매번** `scrollIntoViewIfNeeded` → `toBeInViewport(ratio:1)` → 실제 drag 후 `선택 1개` assertion. 기존 Geometry/Worker/영구 저장 게이트 변경 없음. [FailureLedger](out/FailureLedger.md), [Issue42](out/Issue42.md), TestReport/Plan 참조. 수정 후 새 CI 성공 전 PASS 주장 금지.
+
+
+## Issue #42 U5 — 타입 지정 메타데이터 안전 선행 개발 (2026-10-25)
+
+- v0.35.0 기능 브랜치: `src/domain/outline-assignment.ts`에 Verified Scope Catalogue 입력 계약·업무 타입/이름 로컬 검증, `outline-draft.ts`에 schemaVersion 1 유지 + type-aware v2 JSON을 작성. Viewer/Adapter에는 분리된 `outlineTypeId/outlineTypeName/name` 메타데이터 경로와 잠금 UI를 연결.
+- **#65는 OPEN/BLOCKED**: 인증·RBAC·Scope·Audit 및 #31 P4 승인 전에는 실제 서버 타입 목록/쓰기 API·DB·영속 저장을 만들지 않는다. `/lab/outline-types`의 임시 타입은 Viewer's real CAD type selection에 주입 금지. 타입 지정 버튼은 현재 disabled이며, 과거 U3 미분류 임시 확정/v1 JSON만 기존 방식으로 동작한다.
+- 근거·잔여 및 테스트 추적: [Issue42](out/Issue42.md), TestPlan/Report. Unit/E2E 코드 작성과 성공은 별개이며, PR CI는 시작 여부·결과를 분리해 기록한다.
+
+
 ## Issue #41 / PR #64 — CI 성공·병합·U4 영속 AC 이관 (2026-10-25)
 
 - [PR CI #40154979531](https://github.com/planner77/layoutManager/actions/runs/40154979531), 검증 HEAD `e2f0a64d45f601420a2bc38b99531c748269f61a`는 **SUCCESS**: TypeScript/ESLint/Unit·Integration/DXF Benchmark/Production Build/Chromium E2E/Legacy Migration E2E 및 독립 Docker Runtime Job 모두 성공. 이전 [실패 #40153913566](https://github.com/planner77/layoutManager/actions/runs/40153913566)는 실패 원장에 보존한다.
@@ -175,6 +188,7 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 | [Issue10](out/Issue10.md) | GitHub #10 전체 화면 요구사항·설계·CI 근거 | Viewer 전체 화면, ESC/종료, 컨테이너 resize 또는 view state 보존 변경 시 |
 | [Issue38](out/Issue38.md) | Viewer 앱형 메뉴·도킹 셸/ESC 상태·후속 U2/U3/U6 계약 | Viewer shell·도킹·메뉴·검색/선택 ESC 변경 시 |
 | [Issue39](out/Issue39.md) | Viewer 메뉴와 레이어 패널 표시 상태 독립/접근성·포커스·회귀 근거 | 레이어 메뉴·도크 접기/Renderer·fullscreen 레이어 UX 변경 시 |
+| [Issue42](out/Issue42.md) | U5 업무 타입 지정·이름 및 schemaVersion 2 JSON 계약·#65 보안 승인 경계 | Viewer 타입 선택·외곽선 임시 확정·JSON/Tree 연계 변경 시 |
 | [Issue40](out/Issue40.md) | U3 외곽선 ON/OFF·Worker 취소·임시 확정/JSON 보존 정책 및 AC 추적 | 외곽선 메뉴·객체 선택·취소·임시 Overlay/Renderer·ESC 변경 시 |
 | [FailureLedger](out/FailureLedger.md) | PR/Main CI 관측 실패·조치·재검증 누적 원장 | CI 실패·취소·재시작 시 |
 | [Issue25](out/Issue25.md) | 기본 immersive 진입, native 수동 선택, 복귀·툴바·회귀 수용 | Viewer 전체 화면 기본 진입/링크/포커스/레이어·검색 변경 시 |

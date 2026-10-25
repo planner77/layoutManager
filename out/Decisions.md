@@ -9,6 +9,14 @@
 - **영향:** 기존 push/PR/dispatch 이벤트, 릴리스 직렬화/concurrency/공개 태그 승격 순서 불변. Release scope Job이 추가되고 GHCR publish job은 조건부 실행된다. main squash commit body가 긴 경우 첫 줄만 보여야 식별성이 높다. release Run 자체를 성공으로 오인하지 않으며 기존 Run 이름은 소급 변경되지 않는다. [Issue68](Issue68.md)·[Operation](Operation.md).
 
 
+## ADR-039 — U5 외곽선 타입 메타데이터는 독립, 서버 카탈로그 전 fail-closed (2026-10-25)
+
+- **Decision:** `kind`(기하 알고리즘)와 `outlineTypeId`(업무 분류)는 서로 독립. `outlineTypeName`은 다운로드 시점 표시용 snapshot, 실제 동일성은 타입 ID. 이름은 1~100자 NFC/trim, 기본 `외곽선 N`, 중복 허용(로컬 ID 고유).
+- **Schema:** 미분류 브라우저 임시 확정의 schemaVersion 1 출력은 보존, 타입 지정/혼합은 v2. v2에서 Legacy 항목만 ID/타입명/이름을 모두 null로 표시. v1 Parser는 그대로 지원하며 v2도 같은 Version/SHA/WCS/Handle/Persistable 검사 실시.
+- **Security:** #65 실제 Admin 타입 등록·Server Scope/세션/권한이 아직 없다. #41 lab 타입 주입·가짜 헤더·임의 카탈로그 API/DB 또는 server outline write 절대 금지. UI의 U5 typed confirm은 서버 근거 없으면 disabled; 기존 U3 로컬 미분류 버튼은 이전 실험 경로와 구별한다. #65/#31 P4 승인 후 운영 typed-only 강제 전환을 별도 수용한다.
+- **Consequence:** 현재 AC-U5 전체 운영 완료 아님. 타입 재분류·레거시 마이그레이션·색상·트리뷰 #43은 승인 전 범위 밖. [Issue42](Issue42.md).
+
+
 ### ADR-037 종결 보강 — #41 안전 시안 인수, 운영 CRUD는 #65 (2026-10-25)
 
 - PR #64의 최종 [CI #40154979531](https://github.com/planner77/layoutManager/actions/runs/40154979531) 성공 및 병합은 **브라우저 메모리 시안만의 수용**이다. Owner 인증·Admin RBAC·Scope·감사 보존 정책은 여전히 결재 대기이므로 실제 관리 API/Prisma Migration/Type FK를 만들지 않는다.

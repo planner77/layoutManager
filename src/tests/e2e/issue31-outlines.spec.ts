@@ -1,4 +1,4 @@
-import {test,expect} from '@playwright/test';
+import {test,expect,type Page} from '@playwright/test';
 import {masterFields} from './master-helper';
 import {readFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
@@ -9,6 +9,29 @@ const drawing=[
  '10','0','20','0','10','100','20','0','10','100','20','100','10','0','20','100',
  '0','ENDSEC','0','EOF','',
 ].join('\n');
+
+/**
+ * Clicks in the extended U5 tools dock can scroll the NORMAL (non-immersive)
+ * document and leave the canvas with a negative viewport Y coordinate.
+ * Playwright's page.mouse works in viewport coordinates, so an offscreen
+ * pointerdown never reaches SelectionController (CI #40157734271).
+ * Reposition before each real drag, keeping the original hit-test assertion.
+ */
+async function selectFullCanvas(page: Page) {
+  const canvas = page.getByTestId('cad-canvas').locator('canvas');
+  await canvas.scrollIntoViewIfNeeded();
+  await expect(canvas).toBeInViewport({ ratio: 1 });
+  const box = await canvas.boundingBox();
+  expect(box).not.toBeNull();
+  const { x, y, width, height } = box!;
+  expect(width).toBeGreaterThan(10);
+  expect(height).toBeGreaterThan(10);
+  await page.mouse.move(x + 5, y + 5);
+  await page.mouse.down();
+  await page.mouse.move(x + width - 5, y + height - 5, { steps: 8 });
+  await page.mouse.up();
+  await expect(page.getByTestId('outline-selection-count')).toContainText('선택 1개');
+}
 test('TC-OUT-E2E-001: selection and convex/precise preview, non-destructive JSON export',async({page,request})=>{
  const created=await request.post('/api/cad-files',{multipart:{
    file:{name:'issue31-outline-square.dxf',mimeType:'application/octet-stream',buffer:Buffer.from(drawing)},
@@ -28,12 +51,8 @@ test('TC-OUT-E2E-001: selection and convex/precise preview, non-destructive JSON
  await expect(tools).toBeVisible();
  await expect(page.getByTestId('outline-render-mapping')).toContainText('매핑 제외 0개');
  await tools.getByRole('button',{name:'선택 모드'}).click();
- const canvas=page.locator('canvas');
- const box=(await canvas.boundingBox())!;
  // Left-to-right window contains the entire fitted 2D square.
- await page.mouse.move(box.x+5,box.y+5);await page.mouse.down();
- await page.mouse.move(box.x+box.width-5,box.y+box.height-5,{steps:8});await page.mouse.up();
- await expect(page.getByTestId('outline-selection-count')).toContainText('선택 1개');
+ await selectFullCanvas(page);
  await tools.getByRole('button',{name:'볼록 외곽선 미리보기'}).click();
  await expect(page.getByTestId('outline-preview')).toContainText('볼록 경계');
  await tools.getByRole('button',{name:'임시 확정'}).click();
@@ -46,12 +65,9 @@ test('TC-OUT-E2E-001: selection and convex/precise preview, non-destructive JSON
  // The old selection's result must become unconfirmable synchronously.
  await tools.getByRole('button',{name:'선택 해제'}).click();
  await expect(tools.getByRole('button',{name:'임시 확정'})).toBeDisabled();
- {
-   const again=(await canvas.boundingBox())!;
-   await page.mouse.move(again.x+5,again.y+5);await page.mouse.down();
-   await page.mouse.move(again.x+again.width-5,again.y+again.height-5,{steps:8});await page.mouse.up();
-   await expect(page.getByTestId('outline-selection-count')).toContainText('선택 1개');
- }
+ // Regression: the toolbar can scroll the page; scroll the canvas into view
+ // before the SECOND real drag, not only the first one.
+ await selectFullCanvas(page);
  await tools.getByRole('button',{name:'정밀 외곽선 미리보기'}).click();
  await expect(page.getByTestId('outline-preview')).toContainText('실제 폐곡선 Union');
  // Verify the PRODUCTION-bundled Web Worker really ran polygon-clipping,

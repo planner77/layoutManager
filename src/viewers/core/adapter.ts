@@ -2,8 +2,10 @@ import type { CadFocusBounds, CadTextIndex } from './text-index';
 import type { ViewerFormat } from './selection';
 import type {OutlineEntity,OutlineKind} from './outline-geometry';
 import type {OutlineResult} from './outline-compute';
+import type {OutlineAssignment} from '../../domain/outline-assignment';
 export type OutlineInfo = {entityCount:number;unitCode:number|null;warnings:string[];renderedObjectCount?:number;excludedEntityCount?:number;spatialIndexMs?:number;sourceIndexMs?:number;renderAuditMs?:number};
-export type SavedOutline = {id:string;createdAt:string;result:OutlineResult};
+export type SavedOutline = {id:string;createdAt:string;result:OutlineResult;
+  outlineTypeId?:string;outlineTypeName?:string;name?:string};
 import { ViewerSource } from './source';
 import {heapBytes,observeFrame,type ViewerMetric} from './metrics';
 export interface CadViewerAdapter {
@@ -20,7 +22,7 @@ export interface CadViewerAdapter {
   clearOutlineSelection?(): void;
   previewOutline?(kind: OutlineKind): Promise<OutlineResult>;
   cancelOutlinePreview?(): void;
-  confirmOutline?(): SavedOutline;
+  confirmOutline?(assignment?:OutlineAssignment): SavedOutline;
   getSavedOutlines?(): SavedOutline[];
   clearSavedOutlines?(): void;
   dispose(): void;
@@ -142,7 +144,7 @@ export class ViewerManager {
     return this.adapter.previewOutline(kind);
   }
   cancelOutlinePreview() { this.adapter?.cancelOutlinePreview?.(); }
-  confirmOutline() { if(!this.adapter?.confirmOutline)throw new Error('미리보기를 먼저 생성해야 합니다.'); return this.adapter.confirmOutline(); }
+  confirmOutline(assignment?:OutlineAssignment) { if(!this.adapter?.confirmOutline)throw new Error('미리보기를 먼저 생성해야 합니다.'); return this.adapter.confirmOutline(assignment); }
   getSavedOutlines() { return this.adapter?.getSavedOutlines?.() ?? []; }
   clearSavedOutlines() { this.adapter?.clearSavedOutlines?.(); }
   dispose() { this.generation++; this.cancelIndex?.(); this.cancelIndex=undefined; this.pendingIndex=undefined; this.activeUrl=undefined; if(this.ownsSource)this.source.dispose(); this.adapter?.dispose(); this.adapter = undefined; }

@@ -1,5 +1,11 @@
 # Issue #31 — DXF 복수 선택과 볼록·정밀 외곽선 (0.27.0)
 
+## Issue #42 연계 영향 (2026-10-25 / v0.35.0)
+
+- #31 원본 immutable DXF/SHA, stable Handle, WCS XY, CONVEX/PRECISE Worker, Source↔Renderer audit 및 P4 fail-closed는 변경하지 않음. 별도의 U5 타입 ID·이름 메타데이터와 v2 JSON만 추가.
+- #65 인증된 서버 타입 카탈로그·#31 P4 Authoritative Geometry/권한 승인이 없는 상태에서 영구 저장/재분류 API 없음. U3 legacy 미분류 로컬 임시 확정/v1 유지. [Issue42](Issue42.md).
+
+
 ## Issue #40 (U3) — #31 선택 도구의 상단 토글 제어 (2026-10-25)
 
 - #38/#39의 상단 메뉴 `외곽선 생성`을 #40에서 **기본 OFF** 실제 ON/OFF 도구로 연결했다. OFF 동안은 #31의 SelectionController 입력 모드 `pan`이며 기존 볼록/정밀 미리보기·확정 조작을 노출하지 않는다. ON 후 select/드래그/Worker/확정 및 JSON은 기존 그대로 동작한다.

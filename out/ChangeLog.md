@@ -7,6 +7,21 @@
 - Compatibility: 기존 workflow trigger/권한/concurrency/이미지 페어 빌드/게시 Step은 불변, 단 조건부 게이트 Job 추가. 앱 version 및 database 변경 없음. 새 Run에서만 적용되고 CI/게시 성공을 의미하지 않는다. [Issue68](Issue68.md), ADR-038, [Operation](Operation.md).
 
 
+### v0.35.0 / PR #70 — 첫 Chromium E2E 회귀 보완 (2026-10-25)
+
+- 초기 [Run 40157734271](https://github.com/planner77/layoutManager/actions/runs/40157734271)은 Unit/Lint/Build/Docker PASS, Chromium 57 PASS/1 FAIL, legacy migration SKIPPED. 원인: #31 기존 테스트의 두 번째 Canvas drag가 U5 확장 도크 사용 후 스크롤된 페이지의 **음수 Y**에서 시작.
+- [test `a5d9f843`](https://github.com/planner77/layoutManager/commit/a5d9f8430e06fe3b223dc97157c917ac6e793394): 두 Canvas 실제 드래그 전 `scrollIntoViewIfNeeded` / viewport 확인, selection/geometry assertions 유지. 런타임/DB/API 변경 없음.
+- 실패 로그·Artifact 보존: [FailureLedger](FailureLedger.md). 수정 HEAD의 CI 성공/운영 배포는 확인 전 미확정; SemVer `0.35.0` 유지(아직 병합되지 않은 PR 테스트 교정).
+
+
+## 0.35.0 — 2026-10-25 / Issue #42 U5 타입 연계 안전 선행 (PR CI 미검증)
+
+- `outline-assignment.ts`: 현재 DXF Version/SHA/scope 바인딩, active 타입 검증·이름 NFC/기본 이름·ID 독립 계약 추가.
+- `SavedOutline`, ViewerManager/Three adapter, Viewer UI에 타입 지정 메타데이터 및 이름 입력 경로 추가. **#65 실 서버 타입 카탈로그 미구현으로 U5 typed 확정 disabled**, #41 lab 타입은 연결하지 않음. U3 구형 미분류 브라우저 임시 확정은 유지.
+- JSON v1 legacy export/parser 보존 및 typed/mixed v2 추가; source Handle·geometry·kind 독립 유지. Unit/E2E gate 시험 코드·AGENTS/README/Issue42/Requirements/Architecture/Decisions/Database/TestPlan/Report 동기화.
+- 영구 저장/API/Prisma/DDL/IdP/RBAC/Audit·트리뷰 없음. 실제 사용 가능 판정과 Test PASS는 #65/#31 P4 승인 및 PR CI/현장 검증 전 보류. 상세 [Issue42](Issue42.md).
+
+
 ## v0.34.0 PR #64 검증·병합 및 릴리스 시작 근거 (2026-10-25)
 
 - [PR CI 40154979531](https://github.com/planner77/layoutManager/actions/runs/40154979531) SUCCESS: Typecheck/Lint/Unit·Integration/Synthetic Benchmark/Build/Chromium E2E/Legacy Migration E2E/Docker. 직전 실패 [40153913566](https://github.com/planner77/layoutManager/actions/runs/40153913566)는 원장에 보존; 시안 alert locator 및 HTTP UUID P2 수정 검증.
