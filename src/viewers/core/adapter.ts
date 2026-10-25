@@ -26,6 +26,9 @@ export interface CadViewerAdapter {
   getLayers?(): string[];
   showLayer?(name: string, visible: boolean): void;
   focusBounds?(bounds: CadFocusBounds): void;
+  /** M1 viewport conversions are valid only for the active renderer/visible canvas. */
+  clientToWcs?(clientX:number,clientY:number):{x:number;y:number}|null;
+  projectWcsToCanvas?(point:{x:number;y:number}):{x:number;y:number}|null;
   getOutlineInfo?(): OutlineInfo | null;
   setSelectionMode?(mode:CanvasSelectionMode): void;
   getCanvasObjectSelection?():CanvasObjectRef[];
@@ -162,6 +165,8 @@ export class ViewerManager {
   getLayers() { return this.adapter?.getLayers?.() ?? []; }
   showLayer(name:string,visible:boolean) { this.adapter?.showLayer?.(name,visible); }
   getOutlineInfo() { return this.adapter?.getOutlineInfo?.() ?? null; }
+  clientToWcs(clientX:number,clientY:number) { return this.adapter?.clientToWcs?.(clientX,clientY) ?? null; }
+  projectWcsToCanvas(point:{x:number;y:number}) { return this.adapter?.projectWcsToCanvas?.(point) ?? null; }
   setSelectionMode(mode:CanvasSelectionMode) { this.adapter?.setSelectionMode?.(mode); }
   getCanvasObjectSelection(){return this.adapter?.getCanvasObjectSelection?.()??[];}
   getGeneratedObjects(){return this.adapter?.getGeneratedObjects?.()??[];}
