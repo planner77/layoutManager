@@ -18,7 +18,8 @@ it('TC-E2-UNIT-005: Manager forwards commands, history, cancel and dispose witho
   await manager.load('/file','DXF');
   const command:GeneratedCommand={type:'Delete',ids:['a']};
   manager.executeGeneratedCommand(command);
-  expect(execute).toHaveBeenCalledExactlyOnceWith(command);
+  expect(execute).toHaveBeenCalledOnce();
+  expect(execute).toHaveBeenCalledWith(command);
   expect(manager.getGeneratedHistory()).toEqual({undo:3,redo:1,limit:100});
   expect(manager.undoGeneratedEdit()).toBe(true);
   expect(manager.redoGeneratedEdit()).toBe(true);
