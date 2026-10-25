@@ -1,5 +1,17 @@
 # 운영·환경설정 초안
 
+## Issue #99 — 비공개 실 CAD P0/P5 현장 수용 Runbook (2026-10-25)
+
+1. 실제 공장 DXF 사용/보관 승인을 받는다. 서로 다른 SHA 최소 3종, supported entities 1k/10k/100k 각 대표 도면을 Owner 선정. CAD WCS XY·기준 면적·Handle/INSERT/OCS·허용 오차 및 CPU/GPU/Browser p95/heap/VRAM SLA는 **시험 전에 Owner 서면 승인**한다. 미결정 값은 fail closed.
+2. 사내 네트워크의 승인 PC에서 Docker/Next app **격리된 폐기 가능한 DB+Storage**를 먼저 구성하고 승인 DXF만 넣는다. `test:outline-acceptance`는 자체적으로 `POST /api/cad-files`를 사용하므로 `makeCurrent=false`라도 DB에 버전이 **추가**된다. 운영 실 DB 및 원본 백업본 사용 금지, 종료 후 작업자가 테스트 인스턴스를 안전 폐기/원상 확인.
+3. `cd src && npm run audit:outline -- --file /private/sample.dxf > /private/source.json`. 외부 CAD 기준 실측과 비교. `CAD_OUTLINE_ACCEPTANCE_DXF=/private/sample.dxf CAD_OUTLINE_ACCEPTANCE_EXPECTED_SHA256=<64자리 승인 해시> CAD_OUTLINE_ACCEPTANCE_REPORT_PATH=/private/browser.json npm run test:outline-acceptance`로 sample당 5회 실제 Browser 관측. 실 DXF path와 보고서 path는 Git worktree **외부 절대 경로**.
+4. Report schema v2에는 GPU/WebGL identity·rAF frame 간격이 있으나 실제 GPU util/VRAM은 없다. 별도 OS/GPU 계측 장비에서 GPU 사용률/VRAM 및 브라우저/드라이버 식별 기록, 클릭·box·레이어·ESC/Fullscreen·Pan/Zoom·Worker Cancel 실증. 지원 Matrix는 CAD 참조와 함께 검증하거나 미지원 명시·제외 건수 기록.
+5. 승인 Source JSON + Browser JSON 세 쌍 및 Owner budgets/CAD 비교/기능 수동 확인/외부 GPU 수치를 사내 manifest v1에 취합, `npm run verify:outline-acceptance -- /private/manifest.json`. CLI stdout은 BLOCKED의 **이유 코드만**. READY_FOR_OWNER_REVIEW는 Owner 검토 후보일 뿐 PASS가 아니다. 검증 명령이 실패하면 재시험·오류 원장 기록.
+6. 보고서 원본/장비 상세/Source 파일/레이어/Handle/정확한 위치/비밀값·개인 정보를 GitHub Issues/PR/Public Actions/Artifacts에 게시하지 않는다. Issue #99에는 비민감 판정·장비군·비공개 증거 ID 및 Owner 수용/거절 사유만 기록. 현재는 **FIELD BLOCKED**.
+
+자세한 manifest 구조·검증 열·수동 Owner 최종 서명은 [Issue99](Issue99.md), [TestPlan](TestPlan.md), [ADR-052](Decisions.md). 이 작업은 새 운영 API·계정/외곽선 CRUD·Migration·Reverse Proxy/Docker를 활성화하지 않으며 #96/#98 분리 승인도 그대로다.
+
+
 ## Issue #96 — D1~D6 .env 기반 관리자 계약과 운영 차단 (2026-10-25)
 
 **정책 승인, 실제 인증/영속 API/Prisma/Compose 런타임 OFF.** .env.example은 비밀값을 포함하지 않는 제안이며, 현재 launcher·Docker Compose·앱 API가 ADMIN_* 값을 사용하지 않으므로 true를 지정해도 관리자나 API가 생성되지 않는다.
