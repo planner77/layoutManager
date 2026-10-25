@@ -1,6 +1,6 @@
 # 주요 기술 결정과 승인 기록
 
-## ADR-050 — Issue #96 D1~D6 Owner 정책과 운영 차단 (2026-10-25)
+## ADR-051 — Issue #96 D1~D6 Owner 정책과 운영 차단 (2026-10-25)
 
 **상태: 세부 정책 승인, 운영 API/DB/배포 미승인.** ADR-048/049의 사내 LAN HTTP·앱 로컬 계정·Role/Site 권한 계약을 보완하며, 구 D0 미확정 표현보다 본 기록이 우선한다.
 
@@ -15,6 +15,14 @@
 [Issue96](Issue96.md), [Architecture](Architecture.md), [Database](Database.md), [Requirements](Requirements.md), [TestPlan](TestPlan.md), [Operation](Operation.md).
 
 
+
+## ADR-050 — #97 P4-D2 Server-owned DXF Canonical + Rigid Transform (2026-10-25)
+
+- **결정/경계:** ADR-048/049·#31 D0의 P4-POL-04 구현을 #97에 한정. 기존 `attestation.ts`의 immutable bytes SHA, Version, unit, stable root Handle 및 canonical CONVEX/PRECISE XOR 비교를 유지하며, 새 `server/outline/transform-attestation.ts`는 Server 입력 bytes만으로 baseGeometry와 effectiveGeometry를 계산한다. Browser GeneratedDocument는 신뢰 근거가 아니다.
+- **계약:** 기존 v1/v2 browser export 그대로 수용. 편집 D2 확장은 원본 `baseGeometry` claim, 최대 64개의 순서 있는 `transformOperations` (Translate/Rotate·pivot), 마지막 `geometry` claim, 검증용 선택적 6원소 `transform`이다. Raw affine 단독, Scale/Shear/Reflect/Z, 비유한·초과 좌표/각도/미승인 알고리즘·tolerance는 거부. CCW+deg, 2D affine 좌측 합성, 좌표 상한 ±1e12, server tolerance 0.02 Drawing Unit. Polygon/MultiPolygon/Hole topology·링 면적·winding은 서버 검증하며 Client geometry를 반환값으로 신뢰하지 않는다.
+- **Stable identity의 한계:** 현재 DXF parser는 stable root INSERT Handle/WCS expanded geometry만 제공하고 nested child `instancePath`를 발급하지 않는다. 따라서 선택적 sourceEntityRefs의 비어 있지 않은 `instancePath`는 지원한다고 가정하지 않고 **fail-closed**. Duplicate/missing handles, unsupported OCS/BLOCK, partial source geometry 역시 거부. 고 WCS 원점에서의 면적 상쇄를 방지하기 위해 원점 상대 삼각형 면적 계산을 사용.
+- **보안·수명:** 이 검증기는 AuthN/AuthZ·Source Storage retrieval·D1 role/site scope·D3 CAS/Prisma/Audit/HTTP CRUD가 아니다. 서버 UUID가 아닌 browser local ID만 통과한다. #96/#98/#99의 Owner 보안·DB·현장 수용 게이트는 여전히 미완/활성화 금지, Current/원본 DXF 불변. #56 미래 `objects[]` 브라우저 파일은 명시적 변환 adapter가 생기기 전 서버에 자동 등록하지 않는다.
+- **근거/검증:** [Issue97](Issue97.md), [TestPlan](TestPlan.md) TC-P4-D2-001~009, [TestReport](TestReport.md). 코드와 Unit 작성은 실제 CI·현장 PASS의 증거가 아니다.
 
 ## ADR-049 — #31 P4 GENERATED 외곽선 영속 ID·기하 검증·논리 삭제·메모 연계 (2026-10-25 / D0 Owner 정책 승인)
 

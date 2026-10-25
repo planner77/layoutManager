@@ -2,10 +2,16 @@
 
 ## Unreleased — Issue #96 비활성 인증·Scope·세션·감사 도메인 (2026-10-25)
 
-- D1~D6 Owner 세부 정책/ADR-050 반영. UserAccess/Version↔Site deny-first 권한, .env 단발 Admin 계획, local scrypt password, 8h/30m/3개 session, 세션 귀속 CSRF/로그인 시도 제한, Audit allowlist/365일 cutoff, Unit TC-P4-D1-003~012 코드 추가.
-- 인증/영속 API·DB/Prisma/Migration·Docker/Compose·Viewer/원본/Current·GHCR **변경 없음**. 사용자 기능이 아직 비활성이므로 package 0.40.1 유지. 실제 Typecheck/Unit/PR CI/사내 LAN·복구 검증 성공 여부는 증거 확보 전 NOT VERIFIED.
+- D1~D6 Owner 세부 정책/ADR-051 반영. UserAccess/Version↔Site deny-first 권한, .env 단발 Admin 계획, local scrypt password, 8h/30m/3개 session, 세션 귀속 CSRF/로그인 시도 제한, Audit allowlist/365일 cutoff, Unit TC-P4-D1-003~012 코드 추가.
+- 인증/영속 API·DB/Prisma/Migration·Docker/Compose·Viewer/원본/Current·GHCR **변경 없음**. 사용자 기능이 아직 비활성이므로 package 0.40.2 유지. 실제 Typecheck/Unit/PR CI/사내 LAN·복구 검증 성공 여부는 증거 확보 전 NOT VERIFIED.
 
 
+
+## v0.40.2 — Issue #97 / P4-D2 DXF 서버 Canonical·강체 이동/회전 오프라인 검증기 (2026-10-25)
+
+- 새 `server/outline/transform-attestation.ts`: 기존 v1/v2 canonical JSON과 편집 D2 확장(baseGeometry/ordered Translate·Rotate/pivot/최종 geometry/선택적 affine claim)을 **독립적으로** 검증. 불변 DXF bytes SHA/Version/INSUNITS·Stable Root Handle·0.02 tolerance·CONVEX/PRECISE Polygon/Multi/Hole은 서버 재계산, scale/shear/reflect/Z/nonfinite/oversize/미지원 child instancePath·BLOCK/OCS fail-closed.
+- 1e9 WCS 인근 작은 Polygon의 면적 상쇄를 줄이기 위해 서버 canonical attestation과 순수 Geometry 계산의 링 면적을 상대좌표 삼각형 방식으로 변경. Unit TC-P4-D2-001~009 추가. [ADR-050](Decisions.md), [Issue97](Issue97.md), TestPlan/TestReport.
+- 신규 게시용 앱 버전 **0.40.2**로 정렬(이전 GHCR v0.40.1 앱·마이그레이터 Pair 이미 게시되어 동일 버전 태그 재사용 금지; 기존 서버 Route/DB/Prisma/Viewer 기능 활성화 없음). D1 #96·D3 #98 및 실DXF #99 현장 게이트 불변. 실제 CI/로컬 시험 결과 확인 전 **NOT RUN**, 이미지 게시/운영 적용 아님.
 
 ## v0.40.1 — Issue #93 도면 목록 Current 기본 유지·이전 Version 검색 복원 (2026-10-25)
 

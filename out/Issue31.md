@@ -3,10 +3,15 @@
 ## 2026-10-25 상태 갱신 — #96 세부정책 확정
 
 - #31은 P4 작업을 #96~#99로 분할하여 not_planned로 종료하였고 기능 전체 완료를 의미하지 않음. 이 아래 D0의 '#31 OPEN' 및 계정/TTL/감사 기간 미정 문장은 당시 기록.
-- #96 D1~D6 Owner 승인: Admin 최초/복구 .env 및 단발 Secret 파일, 계정 암호 최소 8자+scrypt, 세션 8h/30m/3개, Admin만 grant/명시 Site, 감사 365일/별도 조회, 제한 LAN IP/방화벽/HTTP 위험 수용. [Issue96](Issue96.md), [ADR-050](Decisions.md).
+- #96 D1~D6 Owner 승인: Admin 최초/복구 .env 및 단발 Secret 파일, 계정 암호 최소 8자+scrypt, 세션 8h/30m/3개, Admin만 grant/명시 Site, 감사 365일/별도 조회, 제한 LAN IP/방화벽/HTTP 위험 수용. [Issue96](Issue96.md), [ADR-051](Decisions.md).
 - 구체 CIDR, 복구/세션/감사 DB 영속 트랜잭션 및 백업·Migration/실제 LAN E2E, Owner 운영 승인 미완료로 #96은 운영 BLOCKED. #98 등 서버 영속 API/DDL 추가 금지.
 
 
+
+## 2026-10-25 — P4-D2 #97 서버 canonical+강체 Transform 선행 구현 (운영 미승인)
+
+- #97은 D0 P4-POL-04를 Auth/Storage/DB/API와 분리한 서버 전용 검증기로 구현한다. 불변 원본 DXF bytes/SHA/Version/INSUNITS 및 unique Root Handle 검증 뒤 CONVEX/PRECISE canonical baseGeometry를 tolerance 0.02로 재계산, Translate/Rotate(+deg CCW,pivot)의 서버 effectiveGeometry만 반환한다. Raw affine/scale/shear/reflect/Z/임의 client geometry·중복 Handle·unsupported OCS/partial BLOCK/중첩 child instancePath는 거부한다. 기존 browser v1/v2 canonical JSON을 보존한다.
+- 코드/Unit 작성은 P4 D2 **검증 준비**이며 D1 #96 보안/Scope/Audit, D3 #98 CadOutline DB/CRUD/CAS/Soft Delete, #99 실제 공장 DXF/GPU·성능 수용을 완료하거나 활성화한 게 아니다. Issue #31은 OPEN. [Issue97](Issue97.md), [ADR-050](Decisions.md), [TestPlan](TestPlan.md), [TestReport](TestReport.md). PR CI 결과 전 NOT RUN.
 
 ## 2026-10-25 — P4 D0 Owner 정책 확정 (설계만 승인 / 운영 미승인)
 
