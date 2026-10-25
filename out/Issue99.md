@@ -1,5 +1,12 @@
 # Issue #99 — 실설비 DXF P0 매핑·P5 Browser/GPU 현장 수용
 
+## Issue #99 종료 요청 시 현장 수용 이관 계약 (2026-10-25)
+
+- 사용자가 PR CI 성공 후 병합/GHCR와 Issue #99 종료를 요청함. 하지만 원 #99의 AC 4개는 **현장 실 DXF·GPU/Owner 검증 미실행**이므로 `completed` 상태로 닫을 수 없음.
+- 잔여 원 AC-99-01~04 및 사내 비공개 CAD/GPU 자료·사용자 조작·SLA·Owner 서명까지 [Issue #113](https://github.com/planner77/layoutManager/issues/113)로 분리하여 OPEN/BLOCKED 유지한다. #99는 코드/증거 하네스 작업 병합과 새 Main CI 시작 후에만 `not_planned`로 행정 종료 가능(범위 이관 사유 명시).
+- 신규 GHCR `0.40.3` 후보 App/Migrator 검증은 릴리스 이미지 CI이지 실제 P0/P5 운영 수용이 아니다. #96/#98 보안/영속 API 기능 OFF 유지.
+
+
 ## PR #110 P1 리뷰 이후 추가 조치 및 릴리스 추적 (2026-10-25)
 
 - 초기 [PR CI 40195335561](https://github.com/planner77/layoutManager/actions/runs/40195335561) HEAD `6377426`: Verify/Docker 모두 success. 다음 코드 리뷰에서 외부 Symlink→Git worktree를 통해 private report SHA/GPU 정보를 repo에 기록할 수 있는 P1 결함 [4370918614](https://github.com/planner77/layoutManager/pull/110#discussion_r4370918614) 발견.
