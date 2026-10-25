@@ -1,5 +1,22 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #97 — P4-D2 Source Canonical/Translate/Rotate 서버 검증 (2026-10-25)
+
+| TC | 검증 내용 | 상태 |
+| --- | --- | --- |
+| TC-P4-D2-001 | 기존 source canonical JSON v1/v2·type null 호환, 원본 Geometry 보존 | CODED / NOT RUN |
+| TC-P4-D2-002 | root INSERT WCS 변환 + unique Stable Handle + explicit empty instancePath. 위조·nonempty child path 거부 | CODED / NOT RUN |
+| TC-P4-D2-003 | SHA/Version/INSUNITS/고정 tolerance/중복·없는 Handle 거부 | CODED / NOT RUN |
+| TC-P4-D2-004 | unsupported OCS, partial/mixed BLOCK의 stable ref 전체 거부 | CODED / NOT RUN |
+| TC-P4-D2-005 | Translate→Rotate pivot 합성; 독립 Browser GeneratedDocument affine/GeoJSON 결과 비교, server-owned base/final | CODED / NOT RUN |
+| TC-P4-D2-006 | PRECISE Polygon/MultiPolygon/Hole의 ring/winding/area 유지 | CODED / NOT RUN |
+| TC-P4-D2-007 | Raw-only matrix, scale/shear/mirror/Z, 미지원 명령/속성/행렬 불일치 거부 | CODED / NOT RUN |
+| TC-P4-D2-008 | 조작 base/final Geometry, NaN/Infinity, >64 연산, WCS overflow, tolerance 위조 거부 | CODED / NOT RUN |
+| TC-P4-D2-009 | 원점 1e9 주변 유효 소형 WCS Polygon/CONVEX·CCW 회전 재계산 | CODED / NOT RUN |
+
+- 권장 실제 실행: `cd src && npm ci && npm run db:generate && npm run typecheck && npm run lint && npm test && npm run build && npm run test:e2e && npm run test:master-migration`; 기존 Docker PR Job 및 WCS/source mapping 회귀를 모두 유지한다. 이 원격 connector 작업에서 로컬 test suite는 **NOT RUN**. CI 성공/실DXF 수용/실 GPU는 별도 증거로만 PASS 판단한다.
+- D2는 Server Storage accessor/HTTPS/Auth/Prisma/Migration/HTTP API가 없는 순수 함수이므로 실제 불변 Storage 조회·권한/RBAC·CAS 동시편집·감사/복구 통합은 #96/#98 이후, 실도면 3종 및 1k/10k/100k GPU/성능은 #99에서 검증한다. [Issue97](Issue97.md), ADR-050/049.
+
 ## Issue #31 P4-D0 — Owner 정책/문서 정합성 테스트 계약 (2026-10-25)
 
 **범위:** Markdown-only Owner 설계 확정, 테스트 *계획* 정의. 아래 실제 API·브라우저·DB·HTTP LAN 운영 검사는 D1~D6 구현 전 **NOT RUN / BLOCKED**. D0 PR CI 시작/성공으로 운영 수용 PASS 기록 금지. 근거 [ADR-048/049](Decisions.md), [Issue31](Issue31.md).
