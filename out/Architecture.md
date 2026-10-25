@@ -1,5 +1,12 @@
 # Architecture 초안
 
+## Issue #97 / P4-D2 — 서버 원본 DXF/강체 Transform 검증 경계 (2026-10-25)
+
+- 데이터 흐름(순수 보조 모듈): 미래 D3 인증 서비스가 **변경 불가능한 Storage DXF Version·SHA·bytes**를 획득 → `server/outline/transform-attestation.ts` → 기존 `attestation.ts`의 SHA·INSUNITS·고유 Root Handle·Canonical CONVEX/PRECISE·고정 0.02 tolerance 확인 → Translate/Rotate 연산(피벗/CCW/좌측 합성)만 다시 계산 → WCS XY Polygon/MultiPolygon/Hole invariant 및 Client claim 차이 검증 → **server-derived** baseGeometry/transform/effectiveGeometry 반환.
+- 호환 데이터: `schemaVersion=1|2` / `BROWSER_EXPORT_ONLY` / `outlines[].result` canonical은 변형 없이 허용; 편집 확장은 `baseGeometry`와 `transformOperations` (64개 이하) 명시. 최종 `geometry`와 선택적 affine matrix는 **서버와 비교할 미신뢰 입력**이며 가공된 raw affine만 단독 전송해선 승인되지 않는다. #56 E6 `objects[]`는 별도 변환·출처 설계 전 연결하지 않는다.
+- 현재 parser는 root INSERT가 포함하는 BLOCK 자식들을 WCS로 변환·검증하지만 nested child를 독립 stable instancePath로 식별하지 않는다. 임의 nonempty path를 무시하지 않고 거부한다. OCS/부분 BLOCK/중복 Handle/위조된 SHA·geometry도 거부한다.
+- D2는 개별 검증 함수와 Unit만 추가하며 **Auth/Permission/HTTP Route/DB/Prisma/Current/Version/Reader API/Viewer Adapter/GHCR 런타임 설정을 추가·활성화하지 않는다**. D1 #96 후 D3 #98이 Site/Version 권한, CAS(409), Global OutlineType FK, append-only Audit, soft delete, Memo reconcile를 별도 구현해야 한다. 실 DXF P0/P5 수용 #99 별도. [ADR-050](Decisions.md), [Issue97](Issue97.md).
+
 ## Issue #31 P4-D0 — 사내 LAN HTTP 경량 계정·영속 외곽선 **설계 전용** (2026-10-25)
 
 - **Owner 결정:** 인터넷 인바운드 제한된 사내 LAN 여러 PC → `http://서버IP:포트` → 앱 로컬 계정/서버 관리 세션. 권한·작업자 식별·감사 목적이며 HTTPS/TLS·OIDC/SSO/MFA 구축은 이번 범위에서 제외. HTTP는 비밀번호·세션이 네트워크에서 노출/변조될 수 있어 LAN 격리가 TLS 대체 수단 아님을 명시한다. 서버 접근 제한/프록시 Backend 비노출, 안전한 비밀번호 해시, HttpOnly/SameSite cookie(HTTP에서 Secure 미설정), 서버 소유 세션/CSRF·Origin 및 요청별 Role/Scope 재검증은 최소 계약. 기간·계정 초기화·네트워크 허용 대역은 미확정.
