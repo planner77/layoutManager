@@ -1,5 +1,18 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #74 — Main CI 실행명 multiline squash 회귀 방지 (2026-10-25)
+
+| Test ID | 입력 | 기대 실행명 | 검증 상태 |
+| --- | --- | --- | --- |
+| TC-CI-NAME-007 | main 단일행 `#74 \| 실행명 회귀 방지` | `MAIN CI \| #74 \| 실행명 회귀 방지` | 정적 규칙 확인, 실제 Main 미실행 |
+| TC-CI-NAME-008 | main 단일행 `NO-ISSUE \| 정리` | `MAIN CI \| NO-ISSUE \| 정리` | 정적 규칙 확인, 실제 Main 미실행 |
+| TC-CI-NAME-009 | main `#42 \| 요약\\n\\nRefs #42 ...` (squash body 존재) | `MAIN CI \| SUBJECT-ONLY-REQUIRED \| run N` (긴 본문 미노출, Issue 미추정) | 정적 규칙 확인, 실제 Main 미실행 |
+| TC-CI-NAME-010 | tag `v0.37.0` | `RELEASE \| NO-ISSUE \| v0.37.0 GHCR 이미지 게시` | 기존 식 유지, 실제 Tag 미실행 |
+| TC-CI-NAME-011 | Repository squash 기본값 점검, API squash 병합 | `PR_TITLE / BLANK`(관리자 조치), `commit_title` 지정+`commit_message=""` | **Admin 설정 미적용**, 실제 merge 미실행 |
+
+- Workflow `on:` 이하 본문은 바꾸지 않고 `run-name`과 설명 주석만 변경한다. #68 GHCR 게시 제외(Job scope), concurrency/permissions, PR CI workflow는 불변이다.
+- 본 변경 PR CI 성공이 Main run-name의 실제 event 평가를 검증하지 않는다. 정상/폴백 main push와 tag는 실제 해당 이벤트의 Run 제목을 관찰해야 완료 판정한다. [Issue74](Issue74.md).
+
 ## Issue #43 / PR #72 P2 키보드 가시성 회귀 (2026-10-25)
 
 - **TC-U6-E2E-001 확장:** 폭 320px·높이 700px(도크 최대 20dvh)에서 트리 첫 그룹에 focus → `End` 이동 후 마지막 항목이 `role=tree` 스크롤 영역의 사각형에 완전히 들어오는지 확인한다. `Home`은 첫 그룹에 되돌아오고 `window.scrollY`는 불변. Canvas DOM 유지·Scroll 허용 범위를 tree 내부로만 제한.

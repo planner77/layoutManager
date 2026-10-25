@@ -2,6 +2,11 @@
 
 Date: 2026-10-25 · Scope: CI workflow metadata, documentation and release-publish safety gate · Status: PR validation pending
 
+## 후속 Issue #74 — Main commit body 회귀 (2026-10-25)
+
+- 실제 [MAIN #34](https://github.com/planner77/layoutManager/actions/runs/40158498214)는 의도대로 간결했으나 [#35](https://github.com/planner77/layoutManager/actions/runs/40159667229)·[#36](https://github.com/planner77/layoutManager/actions/runs/40162889687)은 `head_commit.message` 전체(commit body 포함)를 표시하였다.
+- 원래 4항의 '첫 줄을 간결하게 작성'만으로는 부족하다. 후속 #74는 squash merge 기본값 `PR_TITLE / BLANK` 적용을 요구하며, API 병합에서 본문을 명시적으로 비우고 multiline push에는 짧은 진단명으로 폴백한다. Admin 저장소 설정 적용 전까지 단일행 이름을 모든 squash merge에서 보장하지 않는다. 상세 [Issue74](Issue74.md).
+
 ## 목적
 
 - GitHub Actions Run 목록에서 **Run Type | Issue 참조 | 간략 설명** 순서로 확인한다.

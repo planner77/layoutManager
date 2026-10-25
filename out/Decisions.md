@@ -1,5 +1,12 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-041 — Main Actions 실행명은 단일행 Squash 제목 계약으로 제어 (2026-10-25 / #74)
+
+- **원인:** #68 `run-name`에서 main `head_commit.message`를 직접 쓰면서 PR #70·#72 병합의 squash commit 본문까지 UI에 노출. #34와 #35·#36의 차이는 Workflow 로직 변경이 아니라 commit message의 줄 수였다. 저장소 squash 기본값 `COMMIT_OR_PR_TITLE / COMMIT_MESSAGES`는 문제를 반복시킬 수 있다.
+- **결정:** GitHub Expressions에 `split`/정규식/사후 step output이 없는 제약을 인정. 정상 main push는 `#N | 짧은 설명` 단일행 commit이며 이전 표시명 유지; LF가 존재하면 `SUBJECT-ONLY-REQUIRED | run N`으로 폴백하여 복수행 본문이 run-name에 유입되지 않게 한다. Tag/PR CI 표기, 트리거/permissions/release scope/GHCR promotion은 변경하지 않는다.
+- **영구 운영 통제:** 저장소 squash default를 `PR_TITLE / BLANK`로 변경하고, agent/API squash merge는 `commit_title` 지정 및 빈 `commit_message` 명시. 현재 관리자 설정 변경 기능은 사용 가능한 GitHub 연결에서 제공되지 않으므로 문서화만 하고 실제 변경 완료는 별도로 검증한다. 증거/추적 정보는 PR, Issue, FailureLedger 등에 남긴다.
+- **대안 기각:** 임의 커밋 본문에서 Issue 번호 추측(잘못 연결될 위험), 인위적인 merge/push 재트리거 또는 GHCR CI 대폭 재설계(중복 실행·게시 위험), 과거 run-name 소급 변경(미지원). [Issue74](Issue74.md)·[Operation](Operation.md).
+
 ## ADR-040 — 외곽선 트리는 브라우저 세션 기반 Overlay 뷰로 제공 (2026-10-25 / #43)
 
 - **Decision:** U6 트리 상태의 원천은 현재 Adapter의 SavedOutline 목록이며 UI에는 immutable local ID와 typeId 기준으로 투영한다. 원본 Geometry/CAD Source Layer/Type DB를 조작하지 않고 임시 Overlay 자식 THREE.Group만 개별/타입별 표시. 강조는 별도 Geometry, 이동은 validated WCS bounds에 의존. v1 JSON 필드에 UI Visibility·Selected를 추가하지 않는다.
