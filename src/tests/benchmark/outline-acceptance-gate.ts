@@ -51,7 +51,8 @@ export function assessPrivateOutlineEvidence(input:unknown):OutlineGateResult {
   if(input.schemaVersion!==1 || input.kind!=='PRIVATE_REAL_DXF')
     fail('PRIVATE_MANIFEST_REQUIRED');
   const budgets=record(input.ownerBudgets)?input.ownerBudgets:null;
-  if(!budgets || budgetKeys.some(key=>!positive(budgets[key])))
+  if(!budgets || budgetKeys.some(key=>(key==='wcsErrorDrawingUnits'||key==='areaRelativeError')
+    ? !number(budgets[key]) : !positive(budgets[key])))
     fail('OWNER_THRESHOLDS_REQUIRED');
   const owner=record(input.ownerReview)?input.ownerReview:null;
   if(!owner || owner.cadReferenceApproved!==true ||
