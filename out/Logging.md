@@ -1,5 +1,12 @@
 # Structured Logging 운영 가이드
 
+## Issue #31 P4-D0 — 감사와 운영 로그의 책임 경계 (설계, 2026-10-25)
+
+- Owner는 앱 로컬 계정·서버 세션과 담당 Scope 공동 편집을 작업자 식별·변경 이력 목적으로 선택했다([ADR-048/049](Decisions.md)); 웹 인증/로그 조회 API는 아직 미구현. HTTP 사내 LAN의 전송 위협은 보안·감사 주체 신뢰 수준의 제한이며 앱 로그 자체가 전송 암호화를 제공하지 않는다.
+- 향후 `AuditEvent`는 사용자ID/작업종류/대상ID/Site·Version/UTC/before·after revision/결과/requestId 등을 DB의 삭제·업무 변경과 원자적으로 보존한다. 반면 현재 `src/server/logger.ts` 구조화 stdout/stderr은 장애 진단용이며 장기 불변 감사 원장으로 혼동 금지. 원시 CAD Geometry/비밀번호/세션 토큰/검색 내용 로그 금지.
+- 감사 보존 기간·조회권한과 로그 `logs:read` 전용 권한은 별도 미확정/이슈 #60 범위다. 해당 승인 및 구현·검증 전 로그 운영자 조회 API/접근을 활성화하지 않는다. 현재 이 문서 변경은 코드·DB·logger 동작을 수정하지 않는다.
+
+
 기준일: 2026-09-18  
 적용 버전: 0.23.0 (`v0.23.0`, GitHub Issue #18 / PR #20)
 
