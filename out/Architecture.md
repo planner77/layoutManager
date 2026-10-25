@@ -1,5 +1,25 @@
 # Architecture 초안
 
+## Issue #102 G0 — Owner 승인 CAD 익명 조회 / Scope가 적용되는 쓰기 경계 (2026-10-25)
+
+**최신 정책:** [Issue102](Issue102.md), ADR-051-R1. 사내 LAN 운영은 Nginx, 개발은 별도 App direct. **기존 CAD GET/Viewer/원본 다운로드는 익명**으로 허용하고 **SiteGrant로 공개 도면의 읽기 기밀성을 주장하지 않는다**. 사용자별 제한이 필요한 미래 리소스/로그·관리 API에는 이 정책을 확대 적용하지 않는다.
+
+```text
+PROD 사내 브라우저 -> Nginx -> App:
+  기존 CAD 목록/위치·Version·Current/Viewer/원본 GET
+    -> 현재 익명 응답 그대로 유지 (UserSession/SiteGrant 필요 없음)
+  Current PUT -> [미래 G7] AuthSession -> Editor|Admin + 담당 Site/Version -> Current 변경 + Audit
+  Version DELETE -> [미래 G7] AuthSession -> Editor|Admin + 담당 Site/Version
+    -> 기존 삭제 비밀번호 재검증 -> 삭제 및 Audit (세 조건 AND)
+  CAD POST -> Editor + 담당 Site 제안만 존재, 아직 Owner 미승인
+DEV 개발 브라우저 -> 별도 App 직접 연결 -> 개발 DB/CAD (운영 데이터와 분리)
+```
+
+- 익명 GET의 Actor는 존재하지 않으므로 익명 호출을 Reader/가상 사용자로 기록하거나 보안 Scope를 가장하지 않는다. 로그인된 Editor/Admin도 해당 Site에 명시 Grant 없으면 **Current·삭제 불가**. 삭제용 비밀번호는 신원/Grant 대체가 아닌 **추가 검증값**이다.
+- Admin 초기화·복구 **실행 = 지정 운영 담당자 / 운영 책임 = Owner**, 단발/재시작 불변. Audit **365일 보존 → 만료분 정리**는 원칙 승인, 수집·파기·백업 SOP 미확정이므로 운영 자동 정리 API/Job 없음.
+- **설계만** 변경: Auth/Session/Role/Scope/Audit 영속 Route, Prisma/migrations, 공개 API/Auth 연결, Nginx/Compose/env/실 CAD/DB/Docker/GHCR 변경 금지. 후속 #103~#109 작업과 별도 Go/No-Go 전 운영 OFF.
+
+
 ## Issue #102 / ADR-051-R1 — PROD Nginx·DEV Direct 경계 (2026-10-25)
 
 ```text
