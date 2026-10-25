@@ -165,7 +165,9 @@ export class SelectionController {
    return [clientX-rect.left,clientY-rect.top];
  }
  private pointerDown=(event:PointerEvent)=>{
-   if(this.mode==='pan'||this.space||event.button!==0)return;
+   // A secondary touch denotes pinch/zoom; never translate a polygon from two pointers.
+   if(event.pointerType==='touch'&&!event.isPrimary){this.cancelDrag();return;}
+   if(this.down||this.mode==='pan'||this.space||event.button!==0)return;
    const [x,y]=this.position(event.clientX,event.clientY);
    this.canvas.focus({preventScroll:true});
    const mod=event.ctrlKey||event.metaKey;

@@ -171,6 +171,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     } finally {clearTimeout(timer);this.cancel=undefined;URL.revokeObjectURL(url);}
   }
   fitToView() {
+    this.cancelGeneratedCommand();
     if(this.bounds.isEmpty()) return;
     const center=this.bounds.getCenter(new THREE.Vector3()), extent=this.bounds.getSize(new THREE.Vector3());
     const aspect=Math.max(1,this.container.clientWidth)/Math.max(1,this.container.clientHeight);
@@ -181,6 +182,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     this.controls.target.copy(center);this.camera.updateProjectionMatrix();this.controls.update();this.render();
   }
   focusBounds(bounds: CadFocusBounds) {
+    this.cancelGeneratedCommand();
     const aspect = Math.max(1, this.container.clientWidth) / Math.max(1, this.container.clientHeight);
     const height = Math.max(bounds.maxY - bounds.minY, (bounds.maxX - bounds.minX) / aspect) * 1.15;
     const x = (bounds.minX + bounds.maxX) / 2;
@@ -193,8 +195,8 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     this.controls.target.x = x; this.controls.target.y = y;
     this.camera.updateProjectionMatrix(); this.controls.update(); this.render();
   }
-  zoomIn() {this.camera.zoom=Math.min(1e8,this.camera.zoom*1.25);this.camera.updateProjectionMatrix();this.render();}
-  zoomOut() {this.camera.zoom=Math.max(1e-8,this.camera.zoom/1.25);this.camera.updateProjectionMatrix();this.render();}
+  zoomIn() {this.cancelGeneratedCommand();this.camera.zoom=Math.min(1e8,this.camera.zoom*1.25);this.camera.updateProjectionMatrix();this.render();}
+  zoomOut() {this.cancelGeneratedCommand();this.camera.zoom=Math.max(1e-8,this.camera.zoom/1.25);this.camera.updateProjectionMatrix();this.render();}
   getLayers() {
     const names=new Set<string>();this.object?.traverse(o=>{if(typeof o.userData.entity?.layer==='string') names.add(o.userData.entity.layer);});
     return [...names].sort();
