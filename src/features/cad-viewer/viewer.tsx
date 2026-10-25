@@ -374,6 +374,129 @@ export function CadViewer({
     setOutlineName('');
     setOutlineNotice(null);
   }, [stopOutlineEditing]);
+  const closeMemoEditor = useCallback(() => {
+    memoDragActive.current = false;
+    setMemoCancelSignal(previous => previous + 1);
+    setMemoPlacing(false);
+    setMemoCandidate(null);
+    setMemoSelectedId(null);
+    setMemoDeleteArmed(false);
+    setMemoError(null);
+  }, []);
+  const selectMemo = useCallback((id:string) => {
+    const item = memoSession.current?.get(id);
+    if (!item) return;
+    setMemoPlacing(false);
+    setMemoCandidate(null);
+    setMemoSelectedId(id);
+    setMemoDeleteArmed(false);
+    setMemoError(null);
+    setMemoFields({
+      title:item.title,content:item.content,
+      x:String(item.anchorWcsXY.x),y:String(item.anchorWcsXY.y),
+    });
+  }, []);
+  const placeMemo = useCallback((point:MemoWcsXY) => {
+    setMemoCandidate(point);
+    setMemoPlacing(false);
+    setMemoDeleteArmed(false);
+    setMemoError(null);
+    setMemoFields(previous=>({...previous,x:String(point.x),y:String(point.y)}));
+  }, []);
+  const moveMemoFromCanvas = useCallback((id:string,point:MemoWcsXY) => {
+    try {
+      const document=getMemoSession();
+      const item=document.move(id,point,{versionId,sourceSha256});
+      setMemos(document.list());
+      setMemoError(null);
+      setMemoSelectedId(id);
+      setMemoFields(previous=>({
+        ...previous,
+        ...(memoSession.current?.get(id) && memoSession.current.get(id)?.id !== memoSelectedId
+          ? {title:item.title,content:item.content} : {}),
+        x:String(item.anchorWcsXY.x),y:String(item.anchorWcsXY.y),
+      }));
+    } catch(error) {
+      setMemoError(error instanceof Error?error.message:'메모 이동이 취소되었습니다.');
+    }
+  // Only a committed pointer-up invokes this callback.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [versionId,sourceSha256,memoSelectedId]);
+  function startMemoPlacement() {
+    if (!memoAvailable) return;
+    if (memoPlacing) { closeMemoEditor(); return; }
+    manager.current?.cancelGeneratedCommand();
+    manager.current?.clearCanvasObjectSelection();
+    setContextMenu(null); setDeleteRequest(null);
+    if (outlineEnabledRef.current) {
+      outlineEnabledRef.current=false;
+      stopOutlineEditing();
+      dispatchApp({type:'set-outline-tool',enabled:false});
+    }
+    manager.current?.setSelectionMode('pan');
+    setCanvasMode('pan');
+    setMemoSelectedId(null);
+    setMemoCandidate(null);
+    setMemoFields({title:'',content:'',x:'0',y:'0'});
+    setMemoDeleteArmed(false);
+    setMemoError(null);
+    setMemoPlacing(true);
+  }
+  function placeMemoAtEnteredWcs() {
+    try { placeMemo(parseMemoWcsXY(memoFields.x,memoFields.y)); }
+    catch(error){ setMemoError(error instanceof Error?error.message:'WCS 좌표가 유효하지 않습니다.'); }
+  }
+  function createMemo() {
+    if (!memoCandidate || !memoAvailable) return;
+    try {
+      const doc=getMemoSession();
+      // Explicitly confirm the coordinate fields; changing them alone never moves a memo.
+      const location=parseMemoWcsXY(memoFields.x,memoFields.y);
+      const created=doc.create({id:createPreviewUuid(),anchorWcsXY:location,
+        title:memoFields.title,content:memoFields.content},{versionId,sourceSha256});
+      setMemos(doc.list());
+      selectMemo(created.id);
+      setMemoError(null);
+    } catch(error) {
+      setMemoError(error instanceof Error?error.message:'메모를 작성할 수 없습니다.');
+    }
+  }
+  function saveMemoText() {
+    if (!memoSelectedId || !memoAvailable) return;
+    try {
+      const doc=getMemoSession();
+      doc.editText(memoSelectedId,memoFields.title,memoFields.content,{versionId,sourceSha256});
+      setMemos(doc.list());
+      setMemoError(null);
+    } catch(error) {
+      setMemoError(error instanceof Error?error.message:'메모 텍스트를 저장할 수 없습니다.');
+    }
+  }
+  function moveMemoFromFields() {
+    if (!memoSelectedId || !memoAvailable) return;
+    try {
+      const doc=getMemoSession();
+      const item=doc.move(memoSelectedId,
+        parseMemoWcsXY(memoFields.x,memoFields.y),{versionId,sourceSha256});
+      setMemos(doc.list());
+      setMemoFields(previous=>({...previous,x:String(item.anchorWcsXY.x),
+        y:String(item.anchorWcsXY.y)}));
+      setMemoError(null);
+    } catch(error) {
+      setMemoError(error instanceof Error?error.message:'메모 좌표를 이동할 수 없습니다.');
+    }
+  }
+  function deleteMemo() {
+    if (!memoSelectedId || !memoDeleteArmed || !memoAvailable) return;
+    try {
+      const doc=getMemoSession();
+      doc.remove(memoSelectedId,{versionId,sourceSha256});
+      setMemos(doc.list());
+      closeMemoEditor();
+    } catch(error) {
+      setMemoError(error instanceof Error?error.message:'메모 삭제가 취소되었습니다.');
+    }
+  }
   function toggleOutlineTool() {
     if (!outlineAvailable) return;
     setDeleteRequest(null);setContextMenu(null);
