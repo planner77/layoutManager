@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, test } from 'vitest';
-import { createHash } from 'node:crypto';
 import { chmodSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -95,7 +94,10 @@ describe('Issue #104 G2 explicit one-shot Admin service (isolated database only)
     const linked = path.join(directory, 'linked.secret');
     symlinkSync(good, linked);
     chmodSync(good, 0o644);
-    for (const candidate of [good, weak, eol, linked, path.join(directory, 'missing.secret')]) {
+    await expect(executeAdminSetup(bootstrapEnv(good), store, 'g2-secret-mode', NOW))
+      .rejects.toThrow('G2_SECRET_INVALID');
+    chmodSync(good, 0o600);
+    for (const candidate of [weak, eol, linked, path.join(directory, 'missing.secret')]) {
       await expect(executeAdminSetup(bootstrapEnv(candidate), store, 'g2-secret', NOW))
         .rejects.toThrow('G2_SECRET_INVALID');
     }

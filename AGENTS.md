@@ -7,6 +7,14 @@
 - **G7 Owner 승인 전 실제 Auth/Admin/API/Prisma/DDL·Compose/Nginx/.env·실 DB/CAD/S3/GHCR 및 기존 CAD 익명 GET/Current/삭제 동작 변경 0.** G2 테스트 TC-P4-G2-001~009 작성과 실행 PASS는 구분. #102 docs PR #114 미병합 충돌·POST 업로드 정책은 후속.
 
 
+## Issue #107 — 구현 최종 판정 및 G6 인계 (2026-10-26)
+
+- **구현 완료:** [PR #115](https://github.com/planner77/layoutManager/pull/115) Squash 병합. 최종 PR HEAD `44132fcaa31aff0c4643edfeb8db6949d801ca5b`, main commit `142c4b9bc0bdb2ad0403fb1ee6640cf070d0bbbc`. Issue #107은 `closed/completed`이며 재구현하지 않는다.
+- **자동 검증 PASS:** [PR CI #40224438075](https://github.com/planner77/layoutManager/actions/runs/40224438075) Verify/Typecheck/Lint/Unit·E2E·Build 및 Docker/Migration/Runtime 두 Job `completed/success`. Viewer P2 리뷰 4371142398 답변·해결, 미해결 리뷰 0·당시 main 병합 충돌 0.
+- **Main 릴리스 PASS:** [Main CI #40225537167](https://github.com/planner77/layoutManager/actions/runs/40225537167) `completed/success`, GHCR App·Migrator candidate build, paired image promotion 및 OCI measurement 관련 필수 step 모두 success. 기존 v0.40.3 불변, 새 tag `v0.40.4` 생성 확인. 런타임 실제 배포는 수행하지 않았다.
+- **실 LAN 증거는 별개:** Windows Nginx↔WSL2/App 실제 연결, 사내 PC 2대, 업무 Upload/Download·Viewer 실제 조작, G3 Cookie/Session, DB/CAD/S3 백업·복원은 `NOT RUN`, [#108 G6](https://github.com/planner77/layoutManager/issues/108)에서 수용한다. #109 Owner 별도 Go/No-Go 이전 운영 Compose/Nginx/Prisma/Auth/API/데이터 변경·활성화 금지.
+- 본 추가 작업은 **종료된 #107의 증거 상태를 Markdown으로 최신화하는 후속 문서 PR**이다. 이미 완료된 코드/CI/GHCR 게시를 재수행하지 않고 공격·탈취 보안 강화를 다시 요구하지 않는다.
+
 
 ## Issue #103 — PR #116 CI 실패·감사 P1 교정 (2026-10-26)
 
@@ -430,7 +438,7 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 | [Issue25](out/Issue25.md) | 기본 immersive 진입, native 수동 선택, 복귀·툴바·회귀 수용 | Viewer 전체 화면 기본 진입/링크/포커스/레이어·검색 변경 시 |
 | [Release 0.20.0](out/Release-0.20.0.md) | 0.20.0 병합·태그·GHCR 게시 근거 | 0.20.0 릴리스 확인 및 운영 이미지 식별 시 |
 | [Release 0.21.0](out/Release-0.21.0.md) | 0.21.0 병합·태그·GHCR 게시 근거 | 0.21.0 릴리스 확인 및 운영 이미지 식별 시 |
-| [Issue104](out/Issue104.md) | 최초 관리자/Secret/단발 복구·격리 CLI/TC/운영 OFF | G2 Admin·복구·운영자 SOP·G3~G7 검토 시 |
+| [Issue104](out/Issue104.md) | 최초 관리자·Secret·복구·격리 CLI/TC/운영 OFF | G2~G7 관리자 정책·복구 검토 시 |
 | [Issue103](out/Issue103.md) | G1 User/Session/Role·Site·SpecialGrant/Audit/RecoveryNonce 격리 SQL·Prisma 계약 및 원자성·복구 시험 | Auth DB/세션/권한/복구·백업 검토 및 #102 G0→G7 선행 조건 확인 시 |
 | [Issue102](out/Issue102.md) | G0 내부 LAN PROD Nginx/DEV App 직접 접속, Owner 경량 보안 범위·잔여 위험 수용·G0~G7 운영 게이트 | 운영/개발 배포 경로·Nginx/직접 포트, 인증·Site/Version 권한·기존 CAD API 전환, 위험 범위·운영 Go/No-Go/수용 기준 변경 시 |
 | [Issue107](out/Issue107.md) | G5 PROD Nginx/DEV 직결 격리 Preview, 테스트·실 LAN 인계 | Proxy/접속 경로·정상 Viewer/API/Upload/Health 검증, 운영 환경 변경 경계 |
