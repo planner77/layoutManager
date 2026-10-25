@@ -428,8 +428,8 @@ export function CadViewer({
       ? '외곽선 목록은 DXF의 three-dxf-viewer에서만 사용할 수 있습니다.'
       : loading || !state.ready
         ? '도면 로딩이 완료된 뒤 외곽선 목록을 볼 수 있습니다.'
-        : !/^[a-f0-9]{64}$/i.test(sourceSha256) || !outlineInfo
-          ? '검증된 원본 SHA-256 및 외곽선 인덱스가 필요합니다.'
+        : !/^[a-f0-9]{64}$/i.test(sourceSha256) || !outlineInfo || !outlineInfo.entityCount
+          ? '검증된 원본 SHA-256 및 선택 가능한 외곽선 인덱스가 필요합니다.'
           : null;
   const treeAvailable=treeUnavailable===null;
 
