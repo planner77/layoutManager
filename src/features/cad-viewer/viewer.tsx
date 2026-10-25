@@ -154,7 +154,7 @@ export function CadViewer({
   }, []);
 
 
-  function stopOutlineEditing() {
+  const stopOutlineEditing = useCallback(() => {
     // Must cancel the Worker BEFORE clearing selection: selection callbacks can
     // otherwise enqueue a new compute job for the previous previewKind.
     outlineRequestRevisionRef.current++;
@@ -165,14 +165,14 @@ export function CadViewer({
     setOutlineSelection([]);
     setPreview(null);
     setPreviewError(null);
-  }
-  function resetOutline() {
+  }, []);
+  const resetOutline = useCallback(() => {
     outlineEnabledRef.current = false;
     stopOutlineEditing();
     setOutlineInfo(null);
     setSavedCount(0);
     setOutlineNotice(null);
-  }
+  }, [stopOutlineEditing]);
   function toggleOutlineTool() {
     if (!outlineAvailable) return;
     const enabled = !outlineEnabledRef.current;
@@ -227,7 +227,7 @@ export function CadViewer({
     const anchor=document.createElement('a');anchor.href=url;anchor.download='cad-outlines-'+versionId.slice(0,8)+'.json';anchor.click();
     setTimeout(()=>URL.revokeObjectURL(url),0);
   }
-  function choose(value: typeof renderer) {
+  const choose = useCallback((value: typeof renderer) => {
     if (loading || value === renderer) return;
     setLoading(true);
     setState({ status: '도면 로딩 중…', ready: false });
@@ -241,7 +241,7 @@ export function CadViewer({
     const url = new URL(window.location.href);
     url.searchParams.set('renderer', value);
     window.history.replaceState(null, '', url);
-  }
+  }, [loading, renderer, resetOutline]);
 
   function reload() {
     if (loading) return;
@@ -360,7 +360,7 @@ export function CadViewer({
       instance.dispose();
       manager.current = null;
     };
-  }, [versionId, sourceSha256, attempt, renderer, source, format, beginLoading, endLoading]);
+  }, [versionId, sourceSha256, attempt, renderer, source, format, beginLoading, endLoading, resetOutline]);
 
   const layerAvailable = isFullscreen && renderer === 'three-dxf-viewer' && layers.length > 0 && state.ready;
   const outlineUnavailable = outlineToolUnavailableReason({
@@ -400,9 +400,14 @@ export function CadViewer({
         {description && <p aria-label="도면 설명" className="mt-1 max-h-12 overflow-y-auto whitespace-pre-wrap break-all text-xs text-slate-200">{description}</p>}
         <div role="toolbar" aria-label="도면 조작" className="mt-2 flex min-w-0 items-center gap-2 overflow-x-auto pb-1">
           <span className="shrink-0 rounded bg-teal-50 px-2 py-1 text-xs text-teal-800">{renderer}</span>
-          {format === 'DXF' && (['dxf-viewer', 'three-dxf-viewer'] as const).map(value =>
-            <Button key={value} size="sm" variant={renderer === value ? 'default' : 'outline'} aria-pressed={renderer === value} disabled={loading || renderer === value} onClick={() => choose(value)}>{value}</Button>,
-          )}
+          {format === 'DXF' && <>
+            <Button size="sm" variant={renderer === 'dxf-viewer' ? 'default' : 'outline'}
+              aria-pressed={renderer === 'dxf-viewer'} disabled={loading || renderer === 'dxf-viewer'}
+              onClick={() => choose('dxf-viewer')}>dxf-viewer</Button>
+            <Button size="sm" variant={renderer === 'three-dxf-viewer' ? 'default' : 'outline'}
+              aria-pressed={renderer === 'three-dxf-viewer'} disabled={loading || renderer === 'three-dxf-viewer'}
+              onClick={() => choose('three-dxf-viewer')}>three-dxf-viewer</Button>
+          </>}
           <Button size="sm" variant="outline" disabled={loading || !state.ready} onClick={() => manager.current?.zoomIn()}>{isFullscreen ? '전체 화면 확대' : '확대'}</Button>
           <Button size="sm" variant="outline" disabled={loading || !state.ready} onClick={() => manager.current?.zoomOut()}>{isFullscreen ? '전체 화면 축소' : '축소'}</Button>
           <Button size="sm" variant="outline" disabled={loading || !state.ready} onClick={() => manager.current?.fitToView()}>{isFullscreen ? '전체 화면 맞춤' : '화면 맞춤'}</Button>

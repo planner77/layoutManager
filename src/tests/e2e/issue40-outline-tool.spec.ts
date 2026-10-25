@@ -48,6 +48,12 @@ test('TC-U3-E2E-001: ON enables selection; OFF clears draft but preserves confir
   await toggle.focus();
   await page.keyboard.press('Enter');
   await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+  // P2 review: a focused toolbar button must consume Space as a native click
+  // even while the SelectionController is active (not temporary canvas pan).
+  await page.keyboard.press('Space');
+  await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+  await page.keyboard.press('Space');
+  await expect(toggle).toHaveAttribute('aria-pressed', 'true');
   await expect(toggle).toHaveAttribute('aria-controls', 'viewer-tools-dock');
   const tools = page.getByTestId('cad-outline-tools');
   await expect(tools).toBeVisible();
@@ -98,6 +104,18 @@ test('TC-U3-E2E-002: repeated ON/OFF, layer-hidden safety and ESC scope', async 
     await expect(tools).toHaveCount(0);
   }
   await toggle.click();
+  // Keep Space+drag pan when no interactive control owns keyboard focus.
+  await toggle.evaluate(node => (node as HTMLButtonElement).blur());
+  const panCanvas = page.getByTestId('cad-canvas').locator('canvas');
+  const panBox = (await panCanvas.boundingBox())!;
+  await page.keyboard.down('Space');
+  await page.mouse.move(panBox.x + panBox.width / 2, panBox.y + panBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(panBox.x + panBox.width / 2 + 20, panBox.y + panBox.height / 2 + 20, { steps: 4 });
+  await page.mouse.up();
+  await page.keyboard.up('Space');
+  await expect(page.getByTestId('outline-selection-count')).toContainText('선택 0개');
+  await page.getByRole('button', { name: '전체 화면 맞춤' }).click();
   await selectSquare(page);
   await page.getByRole('complementary', { name: '전체 화면 레이어' })
     .getByRole('checkbox', { name: 'EQUIP' }).uncheck();
