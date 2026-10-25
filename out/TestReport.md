@@ -1,5 +1,21 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issue #99 — P0/P5 비공개 Evidence Gate 작성 상태 (2026-10-25)
+
+| 구분 | 상태/증거 |
+| --- | --- |
+| Test harness | `src/tests/e2e/outline.acceptance.ts`에서 expected SHA·repo 외부 report path 필수, isolated DB의 개별 real DXF 5회 Browser (mapping/selected/box latency/rAF p95/heap/WebGL) 보고서 schema v2 작성 |
+| Pure gate/CLI | `src/tests/benchmark/outline-acceptance-gate.ts` 및 `src/scripts/verify-outline-acceptance.ts`; SHA/세 규모/반복/Owner 허용치·CAD 기준·지원 매트릭스·GPU 외부 로그·8개 조작 확인값이 누락·초과하면 BLOCKED |
+| Unit TC-P0P5-001~008 | 테스트 코드 작성. 이 원격 GitHub 변경 작업 시점에 `npm ci`, tsc, lint, Vitest, Playwright, Docker **NOT RUN**. PR CI 시작 ≠ 성공 |
+| Real DXF 3종 WCS/면적/1:N:N:1/BLOCK/OCS/미지원 | **NOT RUN / 현장 비공개 승인 샘플 미제공** |
+| 실제 1k/10k/100k CPU/GPU/heap/Latency | **NOT RUN**. Synthetic 기존 benchmark를 field PASS로 취급하지 않음 |
+| Owner 정확도 허용치/응답 SLA 및 Signoff | **NOT DEFINED / NOT APPROVED**. 게이트는 숫자 자동 승인하지 않음 |
+| 기존 원본 SHA/Version/Current·DB/API·Prisma/Viewer·GHCR | 이번 코드 변경 대상에서 제외, 실 운영 데이터 변경/현장 무변조 증거는 별도 검증 필요 |
+
+- 비공개 `READY_FOR_OWNER_REVIEW`는 필수 수치/보고서가 형식상 충족됨을 뜻하며 진위/근거·출처·신뢰성 및 최종 Owner 수용을 검증하지 못한다. AC 4개 완료를 뜻하지 않는다. [Issue99](Issue99.md), TestPlan/ADR-052.
+- GitHub PR CI의 실제 실행 Run/Job/HEAD와 성공·실패는 추후 실제 로그 확인에만 기입한다. 실패한 실행 및 reviewer 결함은 [FailureLedger](FailureLedger.md)에 독립 기록한다.
+
+
 ## Issue #96 — 비활성 P4-D1 구현 및 미실행 시험 기록 (2026-10-25)
 
 - **승인 근거:** [Issue #96](https://github.com/planner77/layoutManager/issues/96) D1~D6 Owner 정책 / ADR-051. scope/계정 bootstrap 계획/비밀번호 scrypt/세션/CSRF·Rate/감사 헬퍼와 TC-P4-D1-003~012 Unit 코드 작성.
