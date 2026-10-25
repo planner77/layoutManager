@@ -25,7 +25,7 @@ E1 이전에는 `SavedOutline[]`와 `savedGroup`/UUID 매핑이 각각 상태를
 | E2-AC2 SOURCE/혼합, stale/ref/NaN/중복/Pivot | canvasEditCapability+Document 재검증 | TC-E2-UNIT-002 / CODED, NOT RUN |
 | E2-AC3 redo 무효화·100 제한·키보드 충돌 방지 | History/Shortcut | TC-E2-UNIT-003~004, E2-E2E-001 / CODED, NOT RUN |
 | E2-AC4 Document=Scene=Tree=Export, release | Adapter projection + GPU dispose | E2-E2E-001/002 및 E1/U6 회귀 / CODED, NOT RUN |
-| E2-AC5 E3~E6 확장 계약과 원본 불변 | GeneratedCommand/Entry/Manager | typecheck/후속 E3~E6 / NOT VERIFIED |
+| E2-AC5 E3~E6 확장 계약과 원본 불변 | GeneratedCommand/Entry/Manager | TC-E2-UNIT-005 / CODED, NOT RUN; 후속 E3~E6 / NOT VERIFIED |
 
 ## 게이트 및 후속
 
