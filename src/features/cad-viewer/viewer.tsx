@@ -313,6 +313,16 @@ export function CadViewer({
   },[contextMenu]);
   useEffect(() => {
     const handleKeyDown = (event:KeyboardEvent) => {
+      if(event.key==='Escape' && memoDragActive.current){
+        event.preventDefault();event.stopImmediatePropagation();
+        memoDragActive.current=false;
+        setMemoCancelSignal(previous=>previous+1);
+        return;
+      }
+      if(event.key==='Escape' && (memoPlacing || memoCandidate || memoSelectedId)){
+        event.preventDefault();event.stopImmediatePropagation();
+        closeMemoEditor();return;
+      }
       if(event.key==='Escape' && deleteRequest){
         event.preventDefault();event.stopImmediatePropagation();
         setDeleteRequest(null);return;
@@ -345,7 +355,8 @@ export function CadViewer({
     // Capture ahead of native fullscreen/selection handling for staged edit ESC.
     window.addEventListener('keydown',handleKeyDown,true);
     return ()=>window.removeEventListener('keydown',handleKeyDown,true);
-  },[syncSavedOutlines,deleteRequest,contextMenu,state.ready,canvasMode,openDelete]);
+  },[syncSavedOutlines,deleteRequest,contextMenu,state.ready,canvasMode,openDelete,
+    memoPlacing,memoCandidate,memoSelectedId,closeMemoEditor]);
   const stopOutlineEditing = useCallback(() => {
     // Must cancel the Worker BEFORE clearing selection: selection callbacks can
     // otherwise enqueue a new compute job for the previous previewKind.
@@ -499,6 +510,7 @@ export function CadViewer({
   }
   function toggleOutlineTool() {
     if (!outlineAvailable) return;
+    closeMemoEditor();
     setDeleteRequest(null);setContextMenu(null);
     const enabled = !outlineEnabledRef.current;
     outlineEnabledRef.current = enabled;
@@ -518,6 +530,7 @@ export function CadViewer({
   /** General selection and generated-only targeting are independent of U3. */
   function changeCanvasMode(next:'pan'|'objects'|'generated') {
     if (!outlineAvailable) return;
+    closeMemoEditor();
     setDeleteRequest(null);setContextMenu(null);
     if (outlineEnabledRef.current) {
       outlineEnabledRef.current=false;
@@ -607,10 +620,11 @@ export function CadViewer({
     dispatchApp({ type: 'reset' });
     setSearchOpen(false);
     resetOutline();
+    resetMemos();
     const url = new URL(window.location.href);
     url.searchParams.set('renderer', value);
     window.history.replaceState(null, '', url);
-  }, [loading, renderer, resetOutline]);
+  }, [loading, renderer, resetOutline, resetMemos]);
 
   function reload() {
     if (loading) return;
@@ -623,6 +637,7 @@ export function CadViewer({
     dispatchApp({ type: 'reset' });
     setSearchOpen(false);
     resetOutline();
+    resetMemos();
     setAttempt(value => value + 1);
   }
 
@@ -686,6 +701,7 @@ export function CadViewer({
             onPreview:(value,error)=>{if(active && outlineEnabledRef.current){setPreview(value);setPreviewError(error??null);}},
             onSaved:count=>{if(active){setSavedCount(count);syncSavedOutlines();}},
             onEditError:message=>{if(active)setTranslateError(message);},
+            onViewChange:()=>{if(active)onAdapterViewChange();},
           });
         }
         const { DxfViewerAdapter } = await import('@/viewers/dxf-viewer/adapter');
@@ -731,7 +747,7 @@ export function CadViewer({
       instance.dispose();
       manager.current = null;
     };
-  }, [versionId, sourceSha256, attempt, renderer, source, format, beginLoading, endLoading, resetOutline, syncSavedOutlines]);
+  }, [versionId, sourceSha256, attempt, renderer, source, format, beginLoading, endLoading, resetOutline, syncSavedOutlines,onAdapterViewChange]);
 
   const layerAvailable = isFullscreen && renderer === 'three-dxf-viewer' && layers.length > 0 && state.ready;
   const outlineUnavailable = outlineToolUnavailableReason({
@@ -739,6 +755,16 @@ export function CadViewer({
     entityCount: outlineInfo?.entityCount, sourceSha256,
   });
   const outlineAvailable = outlineUnavailable === null;
+  const memoUnavailable =
+    format !== 'DXF' || renderer !== 'three-dxf-viewer'
+      ? '메모 M1은 현재 DXF three-dxf-viewer에서만 지원합니다.'
+      : loading || !state.ready
+        ? '도면 표시 완료 후 메모를 배치할 수 있습니다.'
+        : !/^[0-9a-f]{64}$/i.test(sourceSha256) ||
+          !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(versionId)
+          ? '검증된 도면 Version UUID와 원본 SHA-256이 필요합니다.'
+          : null;
+  const memoAvailable=memoUnavailable===null;
   const selectableTypes=selectableOutlineTypes(outlineTypeCatalog,versionId,sourceSha256);
   const typedConfirmAvailable=!!preview?.persistable && selectableTypes.some(item=>item.id===selectedOutlineTypeId);
   const treeUnavailable =
@@ -777,6 +803,10 @@ export function CadViewer({
           outlineTreeUnavailableReason={treeUnavailable}
           outlineTreeToggleRef={outlineTreeMenuButton}
           onToggleOutlineTree={() => dispatchApp({ type: 'toggle-outline-tree' })}
+          memoAvailable={memoAvailable}
+          memoUnavailableReason={memoUnavailable}
+          memoPlacing={memoPlacing}
+          onToggleMemo={startMemoPlacement}
         />
       }
       toolbar={
