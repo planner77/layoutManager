@@ -25,7 +25,7 @@
 
 `/private/manifest.json` 최상위는 `{schemaVersion:1, kind:"PRIVATE_REAL_DXF", ownerBudgets, ownerReview, cases}`이며 실제 값은 **현장 작성**한다. 저장소에는 사내 데이터·보고서 원문을 커밋하지 않는다.
 
-- `ownerBudgets`: **모두 양수이며 Owner 승인 전 기본값 없음.** `sourceParseMs, spatialBuildMs, queryP95Ms, loadP95Ms, boxSelectionP95Ms, frameP95Ms, browserHeapBytes, gpuPeakBytes, wcsErrorDrawingUnits, areaRelativeError`. 테스트 조건/위험도·사용자 업무 허용 시간을 기준으로 설정하고 p95는 최소 5회 실측값의 nearest-rank. CPU 측정과 브라우저/GPU 기준을 혼용하지 않는다.
+- `ownerBudgets`: **시간·메모리 한도는 양수, WCS·면적 오차 허용값은 0 이상이며 Owner 승인 전 기본값 없음.** `sourceParseMs, spatialBuildMs, queryP95Ms, loadP95Ms, boxSelectionP95Ms, frameP95Ms, browserHeapBytes, gpuPeakBytes, wcsErrorDrawingUnits, areaRelativeError`. 테스트 조건/위험도·사용자 업무 허용 시간을 기준으로 설정하고 p95는 최소 5회 실측값의 nearest-rank. CPU 측정과 브라우저/GPU 기준을 혼용하지 않는다.
 - `ownerReview`: `{cadReferenceApproved:true,reviewerReference:"<비공개 승인 ID>",approvalDate:"YYYY-MM-DD"}`. 이는 파일 자체에 대한 승인 **참조 정보**이며 별도 실제 서명은 Owner가 수행한다.
 - `cases[]`: 3개 이상, 각 `sizeBand`는 `1k`(supported Entity 500–4,999), `10k`(5,000–49,999), `100k`(50,000–1,000,000). `expectedSha256`은 승인된 소스와 일치해야 하며 **서로 달라야 함**. 각 `audit`는 `audit:outline` 전체 JSON, 각 `browser`는 `test:outline-acceptance` 전체 JSON(schema v2).
 - `cadReference`: `{coordinateSystem:"WCS_XY",coordinateChecks:10,areaChecks:10,maxWcsErrorDrawingUnits:0.001,maxAreaRelativeError:0.0001,sourceRenderChecks:10,unsupportedExcludedCount:2,unstableRejected:true,sourceRenderReconciled:true}`와 같은 **필드 예시** (숫자·true는 실제 관찰 후에만 사용, 예시를 결과로 재사용 금지). 위치·면적의 raw 좌표가 아닌 검증된 최대 *오차값*만 등록.
