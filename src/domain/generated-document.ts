@@ -296,7 +296,7 @@ export class GeneratedDocument{
         // Visibility is independent of editing history; never undo a Tree toggle.
         return Object.freeze({...o,transform:reference.transform,
           edited:reference.edited,editedAt:reference.editedAt,
-          dirty:o.dirty||reference.dirty});
+          dirty:reference.dirty || o.visible!==patch.before.visible});
       });
     }
   }
