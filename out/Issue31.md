@@ -1,5 +1,11 @@
 # Issue #31 — DXF 복수 선택과 볼록·정밀 외곽선 (0.27.0)
 
+## Issue #43 U6 브라우저 임시 외곽선 Overlay 연계 (2026-10-25)
+
+- #31 CONVEX/PRECISE Geometry/Worker/Selection/Immutable Source SHA·Handle 및 P4 Server attestation 계약은 그대로. #43은 임시 확정된 결과를 우측 도킹 트리에 투영·그룹 show/hide·선택 강조·WCS Bounds 이동만 추가한다.
+- Source Layer visibility와 Overlay visibility를 분리하고, 기존 v1 브라우저 JSON에는 Visibility/Selected UI 필드를 넣지 않는다. Reload/Version/Renderer 전환은 Adapter dispose로 임시 목록 전체 폐기. 실제 서버 타입/영속화는 #65/#31 P4 승인 전 차단. 상세 [Issue43](Issue43.md).
+
+
 ## Issue #42 연계 영향 (2026-10-25 / v0.35.0)
 
 - #31 원본 immutable DXF/SHA, stable Handle, WCS XY, CONVEX/PRECISE Worker, Source↔Renderer audit 및 P4 fail-closed는 변경하지 않음. 별도의 U5 타입 ID·이름 메타데이터와 v2 JSON만 추가.
