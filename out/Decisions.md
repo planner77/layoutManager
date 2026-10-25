@@ -1,5 +1,14 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-052 — #82 CAD 메모 M1은 WCS 정본/세션 Overlay와 독립 이동 명령 (2026-10-25)
+
+- **맥락:** 도면 버전별 텍스트 메모를 임시로 배치/수정해야 하지만 #83 영속 인증/RBAC/감사/DB 활성화는 #96/Owner 승인·운영 게이트 대기 중이다. #2 `CadFileVersion.description`와 별개. 기존 #51/#52/#54 GENERATED 객체 편집 및 #40/#43 Tool/Tree·Canvas hit와의 충돌 방지 필요.
+- **결정:** browser-only `MemoSession`의 `{id:UUIDv4,versionId,sourceSha256,anchorWcsXY,labelOffset,title,content,textFormat:'plain',createdAt,updatedAt}` 범위와 `create/editText/move/remove` 명령을 사용. 인증된 작성자/수정자 ID 표시·서버 저장을 금지. 도면 좌표는 항상 WCS이고 Label은 파생 CSS 좌표. 카메라 변경은 표시만 재계산하며 변경 확정은 별도 수치 입력 또는 5px 이상 드래그 pointerup뿐. 메모는 pin만 hit, 텍스트는 선택을 통과, 메모 추가 시 외곽선/Generated selection 모드를 끈다.
+- **보안/수명:** 입력 NFC/제어문자/글자 수와 finite/±1e12 좌표·최대 100개 강제; HTML/Markdown 실행 대신 React text. 임시 ID는 신뢰되지 않은 로컬 key. reload/Version/SHA/Renderer change는 모두 버림 및 안내. Source Geometry·Current·DB/REST·Auth·Prisma/GHCR 유지.
+- **기각 대안:** 메모를 화면 픽셀에 보관(Zoom에 떠다님), 텍스트 수정 시 마지막 클릭 좌표 자동 갱신(사용자 의도 파괴), memo pin을 Source spatial hit-test에 합침(레이어/Source 선택 충돌), LocalStorage를 영속이라고 표시(보안/버전 불일치), #96 승인 전 메모 서버 저장 기능 연결(운영 차단 위반).
+- **추적/제약:** [Issue82](Issue82.md), [Architecture](Architecture.md), TC-M1-UNIT-001~006 / E2E-001~003. native fullscreen/실 CAD/GPU/대형 DXF 현장 성능은 검증 전. #83 인증 영속, #84 Snap, #85 Tree, #86 일정, #88 Deep Link, #90 검색 별도.
+
+
 ## ADR-051 — Issue #96 D1~D6 Owner 정책과 운영 차단 (2026-10-25)
 
 **상태: 세부 정책 승인, 운영 API/DB/배포 미승인.** ADR-048/049의 사내 LAN HTTP·앱 로컬 계정·Role/Site 권한 계약을 보완하며, 구 D0 미확정 표현보다 본 기록이 우선한다.

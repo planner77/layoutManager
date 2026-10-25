@@ -1,5 +1,21 @@
 # 상세 요구사항
 
+## Issue #82 / M1 v0.41.0 — WCS 메모 배치·편집(임시 세션) 요구사항
+
+| ID | 요구사항 | 검증·후속 |
+| --- | --- | --- |
+| FR-M1-01 | 검증된 DXF+three-dxf-viewer ready, version UUIDv4 + SHA64 범위에서만 임시 메모 배치·조회·편집/삭제. 미지원 Renderer는 이유 포함 disabled | E2E-002/003, #83 |
+| FR-M1-02 | WCS XY anchor 정본/label CSS offset 분리. 클릭·좌표 입력 후 확정. Zoom×2/Pan/Resize/CSS/native fullscreen에서 명시적 이동 없는 한 anchor 불변 | UNIT-001/002, E2E-001, 실제 native 실증 미완 |
+| FR-M1-03 | 제목·다중행 본문 plain-text 수정을 수행해도 anchor 불변. 위치 이동은 별도 coordinate confirm 또는 5px 이상 pin drag pointerup만 적용 | UNIT-002/003, E2E-001/002 |
+| FR-M1-04 | Esc/blur/scroll/wheel/Resize/view epoch/모드·Version/Renderer/reload 전환, invalid/stale/NaN/Infinity 좌표는 pending drag/draft 취소, 기존 정본 불변 | UNIT-003/004, E2E-002/003 |
+| FR-M1-05 | 기존 DXF Source/Generated/Outline Tree·Layer·#40 Tool·#49 edit/Pan 이벤트와 격리. pin의 24px hit 외 text/leader pointer-through | E2E-003, Viewer 회귀 |
+| FR-M1-06 | 최대 100메모; 제목 1~100, 본문 0~2000, NFC, 제어문자 거부, ±1e12 finite WCS. React escaped text only; 본문 Label은 160자 프리뷰 | UNIT-005/006, 100 memo performance |
+| FR-M1-07 | M1은 인증된 작성자/수정자, 서버 Persistence/Scope/감사 아님. reload/renderer/version 변경 데이터 소멸·UI 명시, Version/SHA 교차표시 금지 | UNIT-001/004, E2E-002/003, #83 |
+
+- **비범위:** #83 영속 UUID·작성자·API/DB, #84 Source/Generated target snap/relative transform, #85 메모 Tree/show-hide, #86 schedule/done, #88 memo link, #90 목록 전역 검색. #2 도면 설명 그대로. 원본 bytes/SHA/Current/Layer 및 Auth/Prisma/API 기능 활성화 없음.
+- **실행 근거:** TC-M1-UNIT-001~006/E2E-001~003 작성 상태; CI/실 DXF/Native/GPU PASS 판단은 실제 실행 후 별도.
+
+
 ## Issue #96 — P4-D1 승인 정책/비활성 요구 추적 (2026-10-25)
 
 | ID | Owner 승인 요구 / 현재 범위 | Unit ID |

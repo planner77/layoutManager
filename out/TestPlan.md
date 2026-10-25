@@ -1,5 +1,25 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #82 / M1 — Browser Memo WCS Session 테스트 계획 (2026-10-25)
+
+| TC | 절차/기대 | 현재 상태 |
+| --- | --- | --- |
+| TC-M1-UNIT-001 | 정확한 Version v4/SHA-256, UUIDv4 로컬 key·labelOffset/default, 인증된 creator 없음 | CODED / NOT RUN |
+| TC-M1-UNIT-002 | (10,20) create→HTML literal/멀티라인 text edit 좌표 (10,20)→명시 move (+3,-5)→(13,15)와 text 재수정 좌표 고정 | CODED / NOT RUN |
+| TC-M1-UNIT-003 | 숫자 finite/bounds/Infinity/NaN/빈 값/단위 포함/좌표 초과 거절; 부분 mutation 없음 | CODED / NOT RUN |
+| TC-M1-UNIT-004 | 다른 Version·원본 SHA의 read/write/patch/delete 거부, session.clear/reload 후 없음 | CODED / NOT RUN |
+| TC-M1-UNIT-005 | 제목/본문 빈 값(제목 필수), NFC, 길이, C0/C1, Markdown/HTML literal 출력 | CODED / NOT RUN |
+| TC-M1-UNIT-006 | 100 memo 허용, 101번째 거부, 삭제 후 추가, 다른 scope 격리 | CODED / NOT RUN |
+| TC-M1-E2E-001 | Synthetic DXF, (10,20) PIN과 text only→Zoom/fit/CSS fullscreen→WCS (13,15), XSS 무실행 | CODED / NOT RUN |
+| TC-M1-E2E-002 | PIN drag preview/Escape rollback, nonfinite 좌표/휠 중 drag 취소, 명시적 pointerup commit, reload clear/미지원 renderer disabled | CODED / NOT RUN |
+| TC-M1-E2E-003 | 외곽선 ON→메모 ON 시 독점, Escape placement cancel/Mode 전환, Version 바꿨다 돌아와도 없음 | CODED / NOT RUN |
+| TC-M1-AC-NATIVE | 실제 Chrome native fullscreen+DPR/devicePixelRatio/Resize/Touch/ESC/blur/scroll + 100 memo frame budget 실측 | 현장 확인 / NOT RUN |
+| TC-M1-AC-REG | 전체 Typecheck/ESLint/Vitest/Build/Playwright DXF Viewer/Generated E1~E4/Search/Outlines/Layer/Upload/Legacy/Docker, 대형 DXF fixture·real CAD GPU | PR CI + 현장 / NOT RUN |
+
+- 기존 E2E fixtures는 ASCII DXF `LWPOLYLINE` group 90=4를 사용. 도면 업로드·등록·이미지·실측 데이터는 영속 메모 성능 기준이 아니다.
+- 원격 GitHub 수정 컨텍스트에서 로컬 Node/Browser/Prod build는 실제 실행하지 않음. PR CI **시작은 성공과 다름**, CI 모니터링은 사용자 범위 밖. 실제 실패 발생 시 FailureLedger에 Run ID/Job/HEAD·원인·조치 기록.
+
+
 ## Issue #96 D1~D6 — 비활성 인증 모듈 검증 계획 (2026-10-25)
 
 **전제:** Owner 정책 승인, 운영 API/DDL/배포 미승인. 아래 Unit은 src/tests/unit/auth-foundation.test.ts 및 auth-password.test.ts에서 **작성**되었으나 CI 이전 실행 결과는 NOT RUN.

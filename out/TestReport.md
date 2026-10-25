@@ -1,5 +1,15 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE82-M1-20261025 — WCS 세션 메모 구현/시험 코드 작성, 실제 실행 대기
+
+- **범위/출처:** [Issue82](Issue82.md), 상위 #81, [ADR-052](Decisions.md), [Architecture](Architecture.md), [Requirements](Requirements.md). 구현 브랜치 `feat/82-cad-memo-m1`; 최초 main 기준 SHA `ab094a541b4db44c15598f40b0699f8e6214ecae`.
+- **코드:** `domain/cad-memo.ts`는 Preview UUIDv4/Version·SHA scope/finite WCS/길이·제어문자/100 memo session 문서. ViewerManager/three-dxf-viewer는 WCS ↔ CSS pixel 카메라 변환과 리프레시 notify. `CadMemoOverlay`는 pin 클릭/ghost drag, label plain-text 및 viewport render 동기화. `CadMemoEditor` 제목·본문/수치 위치를 독립 확정. 기존 UI Outline Tool과 상호 배타 제어.
+- **작성된 테스트:** Vitest 6(`TC-M1-UNIT-001~006`), Playwright synthetic DXF 3(`TC-M1-E2E-001~003`). 테스트 추가는 PASS 근거가 아님. 제한/버전·SHA/HTML 문자 표기/부정 입력·Cancel·Reload/Renderer/Mode/기존 Source hit 경계를 검증하도록 설계.
+- **실행 상태:** GitHub Connector 원격 브랜치 수정. 컨테이너 `git ls-remote`는 DNS `Could not resolve host: github.com`로 실패해 checkout 불가. `npm ci`/Typecheck/Lint/Unit/Build/Chromium E2E/Legacy migration/Docker/실 CAD·GPU/native fullscreen/100 memos 프레임 실측 **NOT RUN**, PASS·성능 수치·원본 Source 안전 확인 주장 금지. PR 생성에 의한 PR CI 시작/성공/현장 승인 구별.
+- **무변경:** `src/app/api`, Prisma/DDL/Migration, Auth/Session/Role/Scope/Audit 운영 기능, Docker/Compose/원본 bytes/SHA·Version/Current, Canvas Source Geometry/GeneratedDocument/Undo/JSON, 이전 #2 description. #83 영속 및 관련 보안 승인 BLOCKED.
+- **수용 잔여:** 최신 HEAD CI 모든 Job 실제 성공, 리뷰 미해결 0/Conflict 0 확인 후 후속 merge 판단. DXF 1k/10k/100k·실도면 GPU/Native/DPR/100 메모 성능은 현장별 별도 결과 필요. 실패 확인 전 FailureLedger에 허위 기록 없음.
+
+
 ## Issue #96 — 비활성 P4-D1 구현 및 미실행 시험 기록 (2026-10-25)
 
 - **승인 근거:** [Issue #96](https://github.com/planner77/layoutManager/issues/96) D1~D6 Owner 정책 / ADR-051. scope/계정 bootstrap 계획/비밀번호 scrypt/세션/CSRF·Rate/감사 헬퍼와 TC-P4-D1-003~012 Unit 코드 작성.

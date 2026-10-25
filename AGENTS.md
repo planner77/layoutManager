@@ -1,5 +1,14 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #82 / M1 — DXF WCS 메모 세션 Overlay · 명시적 위치 확정 (2026-10-25)
+
+- **범위/설계:** [Issue82](out/Issue82.md), [ADR-052](out/Decisions.md), [Architecture](out/Architecture.md), [Requirements](out/Requirements.md), [TestPlan](out/TestPlan.md). 루트 DESIGN.md 부재로 Architecture/Decisions를 기준으로 한다. 상위 #81, M2 #83(영속 인증/DB)은 별도 BLOCKED.
+- **구현:** `src/domain/cad-memo.ts`의 Version UUIDv4 + SHA-256(64 hex) 범위 브라우저 전용 `MemoSession`(최대 100건), NFC 제목 1~100자/본문 0~2,000자, C0/C1 제어문자 차단/문자열 그대로 렌더, WCS XY ±1e12 유한 검증, 로컬 CSPRNG UUID. createdBy/updatedBy는 인증되지 않아 저장·표시하지 않는다.
+- **상호작용:** `ViewerMenuBar` 메모 추가→`ViewerManager.clientToWcs`→`ThreeDxfViewerAdapter` WCS↔CSS pixel projection→독립 `CadMemoOverlay`/편집 도크. 자유 Canvas 배치/좌표 직접 입력 → 확정; 텍스트 수정은 좌표 불변, 좌표 적용 또는 pin 드래그 5px 이상 pointerup만 위치 확정. Escape/blur/wheel/scroll/camera/resize/대상 소실/모드·Renderer·Version 변경은 미확정 드래그 취소. 메모 도구는 외곽선 생성/객체 편집 선택과 동시 동작하지 않고, pin 이외 label은 hit-test 통과.
+- **수명·안전:** 임시 메모 reload/renderer/Version 변경에 소멸. 원본 DXF bytes/SHA/Current/Layer·GeneratedDocument/JSON·#2 description·서버 API/Prisma/DB/배포/계정 활성화 불변. DXF+three-dxf-viewer ready와 Version/SHA 형식 확인시에만 UI 활성. 이 형식 확인은 실제 원본 서버 검증·권한 승인으로 오인 금지.
+- **증거:** Unit `TC-M1-UNIT-001~006`, Playwright `TC-M1-E2E-001~003` 코드 작성. 원격 GitHub 커넥터 환경에서 Typecheck/Lint/Unit/Build/E2E/Docker/실 CAD·GPU **NOT RUN**. PR CI 시작만으로 PASS/현장 승인 주장 금지. #83 서버 M2, #84 Snap, #85 Tree, #86 일정, #88 공유 링크, #90 목록 검색은 후속.
+
+
 ## Issue #96 — D1~D6 Owner 세부 정책 및 비활성 구현 (2026-10-25)
 
 - **최신 기준:** [Issue96](out/Issue96.md) / [ADR-051](out/Decisions.md). 기존 #31 D0의 '관리자/세션/감사 세부값 미확정' 서술은 승인 이전 기록이며 다음 값이 우선한다.
