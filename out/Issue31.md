@@ -1,5 +1,10 @@
 # Issue #31 — DXF 복수 선택과 볼록·정밀 외곽선 (0.27.0)
 
+## 2026-10-25 — P4-D2 #97 서버 canonical+강체 Transform 선행 구현 (운영 미승인)
+
+- #97은 D0 P4-POL-04를 Auth/Storage/DB/API와 분리한 서버 전용 검증기로 구현한다. 불변 원본 DXF bytes/SHA/Version/INSUNITS 및 unique Root Handle 검증 뒤 CONVEX/PRECISE canonical baseGeometry를 tolerance 0.02로 재계산, Translate/Rotate(+deg CCW,pivot)의 서버 effectiveGeometry만 반환한다. Raw affine/scale/shear/reflect/Z/임의 client geometry·중복 Handle·unsupported OCS/partial BLOCK/중첩 child instancePath는 거부한다. 기존 browser v1/v2 canonical JSON을 보존한다.
+- 코드/Unit 작성은 P4 D2 **검증 준비**이며 D1 #96 보안/Scope/Audit, D3 #98 CadOutline DB/CRUD/CAS/Soft Delete, #99 실제 공장 DXF/GPU·성능 수용을 완료하거나 활성화한 게 아니다. Issue #31은 OPEN. [Issue97](Issue97.md), [ADR-050](Decisions.md), [TestPlan](TestPlan.md), [TestReport](TestReport.md). PR CI 결과 전 NOT RUN.
+
 ## 2026-10-25 — P4 D0 Owner 정책 확정 (설계만 승인 / 운영 미승인)
 
 > **현재 우선 계약:** [ADR-048/049](Decisions.md)와 [Database](Database.md), [Architecture](Architecture.md), [Requirements](Requirements.md), [TestPlan](TestPlan.md). 이하 2026-10-16의 OIDC 권장·미결정 기록 및 브라우저 임시 구현 설명은 해당 시점의 이력이다. #31은 OPEN, P0 실 DXF/P5 GPU·현장 수용과 P4 서버 운영 CRUD는 완료 아님.
