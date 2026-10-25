@@ -49,3 +49,19 @@ export function canvasEditCapability(
     return {canSelect:true,canEdit:false,reason:'원본 DXF 또는 원본·생성 혼합 선택은 읽기 전용입니다. 생성 개체만 다시 선택하세요.'};
   return {canSelect:true,canEdit:true,reason:'생성 개체만 선택됨 (변경 명령은 E2~E5에서 제공)'};
 }
+
+/** Web Crypto is required; randomUUID is not available on ordinary HTTP hosts.
+ * getRandomValues works on these hosts and produces RFC 9562 UUIDv4 IDs.
+ * Never fall back to Math.random or interpret this ID as a permission token. */
+export function createGeneratedId(
+  source: Pick<Crypto,'getRandomValues'> & Partial<Pick<Crypto,'randomUUID'>> = globalThis.crypto,
+):string {
+  if(source && typeof source.randomUUID==='function')return source.randomUUID();
+  if(!source || typeof source.getRandomValues!=='function')
+    throw new Error('이 브라우저는 안전한 객체 ID 생성을 지원하지 않습니다.');
+  const bytes=source.getRandomValues(new Uint8Array(16));
+  bytes[6]=(bytes[6]&0x0f)|0x40;
+  bytes[8]=(bytes[8]&0x3f)|0x80;
+  const h=Array.from(bytes,v=>v.toString(16).padStart(2,'0')).join('');
+  return [h.slice(0,8),h.slice(8,12),h.slice(12,16),h.slice(16,20),h.slice(20)].join('-');
+}
