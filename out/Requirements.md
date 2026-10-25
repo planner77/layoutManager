@@ -1,5 +1,24 @@
 # 상세 요구사항
 
+## Issue #31 P4-D0 — Owner 결정 기반 경량 계정/영속화 요구사항 (2026-10-25)
+
+> **D0 POLICY APPROVED / IMPLEMENTATION BLOCKED:** [ADR-048/049](Decisions.md), [Issue31](Issue31.md), [Database](Database.md), [Architecture](Architecture.md). 문서 계약 수립만 포함하며 Server Session/Prisma/API/운영 릴리스 구현 없음. 아래 확정 정책이 과거의 OIDC 추천·Scope TBD 예시보다 우선한다.
+
+| ID | 승인 정책 및 시험 가능한 요구사항 |
+| --- | --- |
+| FR-P4-D0-01 | 외부 공개망 인바운드 제한 사내 LAN의 여러 클라이언트가 서버 IP의 **HTTP**로 사용; 앱 로컬 계정/서버 관리 세션. OIDC/SSO/MFA/HTTPS/TLS 구축 제외. 계정의 주요 목적은 담당 Scope 권한과 변경자·이력 추적. HTTP상 비밀번호/세션 노출 위험과 LAN 제약 명시 |
+| FR-P4-D0-02 | Reader/Editor/Admin의 단일 서버 RBAC + 검증된 UserSiteGrant 및 CAD Version 실제 소속 Site 관계. 다른 Scope 거부/메타데이터 누수 방지. `OutlineType` 카탈로그는 전체 앱 **공통**이고 Site별 별도 타입 관리 금지 |
+| FR-P4-D0-03 | 담당 Site/Version Scope 내 Editor 간 GENERATED 외곽선 **공동 수정·논리 삭제**. createdBy 불변, updatedBy/revision/감사 갱신. 다른 Editor 작성자라는 이유만으로 차단 금지; 메모 권한에 이 규칙 전파 금지 |
+| FR-P4-D0-04 | 서버는 SOURCE Version/SHA/stable Handle/instancePath→WCS canonical baseGeometry를 독립 계산하고 허용 Translate/Rotate의 강체 Transform만 검증하여 최종 geometry를 재계산. 임의 client polygons/scale/shear/reflect/Z/edit JSON 바로 DB 저장 금지 |
+| FR-P4-D0-05 | CadOutline 논리 삭제(status/deletedAt/deletedBy) 및 append-only audit; 물리 삭제/복구는 별도 정책 승인 전 금지. 서로 다른 Scope, stale revision, 미검증 source에서 전체 fail-closed |
+| FR-P4-D0-06 | Show/Hide는 사용자 세션별 임시 UI 상태, 글로벌 DB 속성·다른 사용자 상태·CadOutline revision 불변. 새로고침/다중 탭 지속 여부는 미확정 |
+| FR-P4-D0-07 | 영속 GENERATED 대상 삭제 시 Memo Anchor 마지막 정상 WCS 보존, target ref 해제·BROKEN_ANCHOR. 다른 객체 자동 연결 및 메모 자동 삭제 금지; #83/#84 연계 구현 후 단일 DB 트랜잭션 검증 |
+
+- **불변:** 원본 DXF bytes/SHA/Version/Current 변경 금지; Source/Generated 이름공간 분리. `kind`(CONVEX/PRECISE)과 `outlineTypeId`(Global Catalog) 분리; JSON v1/v2/Session Undo 호환. D1 공통 Auth 후 D2 Server Geometry, D3 CadOutline 영속 CRUD/CAS, #65 Global Catalog, #71 typed confirm, #73 복원, #83/84 메모 연계. #60 로그/ #83 메모는 D1 공유 기반 이후 독립 착수 가능.
+- **최소 보안 및 한계:** 서버 로그인 hash·랜덤 세션·HttpOnly/SameSite Cookie·CSRF/Origin·기본 rate limit·로그아웃 폐기·LAN 허용 범위 검토. 일반 HTTP 서버 IP에 Secure 쿠키/TLS 암호화가 있다고 주장하지 않는다.
+- **미확정/게이트:** 최초 Admin/계정 복구, password/session 상세, Role 부여 책임, HTTP LAN 허용 대역/잔여 위험, audit 보존 기간/조회, Version 삭제 FK/restore/purge, legacy import 이관, Memo Editor policy, Show/Hide reload/tab lifetime, 실 DXF P0/P5 성능 기준. 관련 세부 결정을 요구하는 서버 API/DDL/운영 활성화는 승인·검증 전 차단.
+
+
 ## Issue #93 / v0.40.1 — 목록 기본 Current + 이전 Version 표시·검색 정책 복원 (2026-10-25)
 
 - **FR-LIST-093-01 / AC1~3:** `/` 기본/초기화=Location별 명시 Current만. `현재 버전만 표시` 단일 토글 기본 ON, OFF는 과거·현재 **전체 Version**(Current 미지정 Location 포함)을 보여준다. 더 높은 Version 번호를 자동 Current로 해석/승격하지 않는다. 중복 Current 드롭다운은 재도입하지 않는다.
