@@ -12,6 +12,10 @@ import type {OutlineInfo,SavedOutline,SavedOutlineOverlayState} from '../core/ad
 import type {OutlineAssignment} from '../../domain/outline-assignment';
 import {parseOutlineAssignmentMetadata} from '../../domain/outline-assignment';
 import {canvasEditCapability,canvasObjectRef,createGeneratedId,validCanvasScope,type CanvasObjectRef} from '../../domain/canvas-object-selection';
+import {
+  GeneratedDocument,generatedResult,
+  type GeneratedEntry,type GeneratedCommand,type Affine2D,
+} from '../../domain/generated-document';
 
 function release(group: THREE.Object3D) {
   const geometries = new Set<THREE.BufferGeometry>(), materials = new Set<THREE.Material>(), textures = new Set<THREE.Texture>();
@@ -49,13 +53,12 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
   private savedGroup=new THREE.Group();
   private savedGroups=new Map<string,THREE.Group>();
   private selectedSavedGroup?: THREE.Group;
-  /** Legacy local-N JSON IDs and collision-free canvas UUIDs are separate. */
-  private generatedIds=new Map<string,string>();
-  private issuedGeneratedIds=new Set<string>();
+  /** GeneratedDocument owns all confirmed geometry, ordering, UUIDs, metadata and visibility. */
+  private document?:GeneratedDocument;
+  private renderedTransforms=new Map<string,Affine2D>();
   private nextSavedId=1;
   private preview?: OutlineResult;
   private previewKind?: OutlineKind;
-  private saved: SavedOutline[]=[];
   private activeWorkers: Partial<Record<'index'|'compute',{worker:Worker;cancel:()=>void}>>={};
   private computeSequence=0;
   constructor(private container: HTMLElement, private outline?:{
@@ -65,6 +68,8 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     onPreview?:(result:OutlineResult|null,error?:string)=>void;
     onSaved?:(count:number)=>void;
   }) {
+    if(outline && validCanvasScope(outline))
+      this.document=new GeneratedDocument(outline,()=>this.documentChanged());
     this.renderer = new THREE.WebGLRenderer({antialias:true});
     this.renderer.setPixelRatio(window.devicePixelRatio);
     this.renderer.setClearColor(0x000000);
@@ -256,10 +261,37 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     ]);
   };
   private updateGeneratedCandidates(){
-    this.selector?.setGeneratedObjects(this.saved.flatMap(item=>{
-      const id=this.generatedIds.get(item.id),group=this.savedGroups.get(item.id);
-      return id&&group?.visible?[{id,geometry:item.result.geometry}]:[];
-    }));
+    this.selector?.setGeneratedObjects((this.document?.getObjects()??[]).flatMap(item=>
+      item.visible?[{id:item.ref.id,geometry:generatedResult(item).geometry}]:[]
+    ));
+  }
+  /** Incremental Scene projection: rebuild only transformed/created overlays;
+   * release all replaced/removed GPU buffers, never reparse the SOURCE index. */
+  private documentChanged(){
+    if(this.disposed)return;
+    const objects=this.document?.getObjects()??[];
+    const present=new Set(objects.map(item=>item.savedOutlineId));
+    for(const [id,group] of this.savedGroups){
+      if(present.has(id))continue;
+      this.savedGroup.remove(group);release(group);this.savedGroups.delete(id);
+      this.renderedTransforms.delete(id);
+    }
+    for(const item of objects){
+      const id=item.savedOutlineId;
+      let group=this.savedGroups.get(id);
+      if(!group || this.renderedTransforms.get(id)!==item.transform){
+        if(group){this.savedGroup.remove(group);release(group);}
+        group=this.renderGeometry(generatedResult(item),0xff8c00);
+        this.savedGroups.set(id,group);this.savedGroup.add(group);
+        this.renderedTransforms.set(id,item.transform);
+      }
+      group.visible=item.visible;
+    }
+    this.scene.add(this.savedGroup);
+    this.updateGeneratedCandidates();
+    this.refreshSavedHighlight();
+    this.outline?.onSaved?.(objects.length);
+    this.render();
   }
   private createPathGroup(paths:OutlinePath[],color:number){
     const group=new THREE.Group(),z=this.bounds.isEmpty()?0:this.bounds.max.z+0.5;
@@ -285,9 +317,9 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
       this.selectedSavedGroup=undefined;
     }
     const ids=new Set(this.selector?.getSelectedGeneratedIds()??[]);
-    const paths:OutlinePath[]=this.saved.flatMap(item=>{
-      if(!ids.has(this.generatedIds.get(item.id)??'')||!this.savedGroups.get(item.id)?.visible)return [];
-      const g=item.result.geometry;
+    const paths:OutlinePath[]=(this.document?.getObjects()??[]).flatMap(item=>{
+      if(!ids.has(item.ref.id)||!item.visible)return [];
+      const g=generatedResult(item).geometry;
       const polygons=g.type==='Polygon'?[g.coordinates]:g.coordinates;
       return polygons.flatMap(poly=>poly.map(ring=>({points:ring,closed:true})));
     });
@@ -354,76 +386,83 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     if(!this.preview)throw new Error('미리보기를 먼저 생성해야 합니다.');
     if(assignment && !this.preview.persistable)throw new Error('불안정한 Entity 참조는 타입 지정 확정이 불가합니다.');
     const typed=assignment?parseOutlineAssignmentMetadata(assignment):null;
-    if(this.saved.length>=100)throw new Error('임시 외곽선은 현재 Session에서 최대 100개까지 생성할 수 있습니다.');
-    if(!this.outline || !validCanvasScope(this.outline))throw new Error('검증된 Version/SHA 범위가 없습니다.');
+    if(!this.document)throw new Error('검증된 Version/SHA 범위가 없습니다.');
+    const count=this.document.getObjects().length;
+    if(count>=100)throw new Error('임시 외곽선은 현재 Session에서 최대 100개까지 생성할 수 있습니다.');
+    // UUIDs cannot be reused, even after legacy deletion/clear or Undo.
     let generatedId='';
     for(let i=0;i<4;i++){
       const candidate=createGeneratedId();
-      if(!this.issuedGeneratedIds.has(candidate)){generatedId=candidate;break;}
+      if(!this.document.getObjects().some(o=>o.ref.id===candidate)){generatedId=candidate;break;}
     }
     if(!generatedId)throw new Error('유일한 생성 개체 ID를 발급할 수 없습니다.');
-    const saved:SavedOutline={id:'local-'+this.nextSavedId++,createdAt:new Date().toISOString(),result:this.preview,
-      ...(typed?{outlineTypeId:typed.outlineTypeId,outlineTypeName:typed.outlineTypeName,name:typed.name}:{})};
-    this.issuedGeneratedIds.add(generatedId);
-    this.generatedIds.set(saved.id,generatedId);
-    this.saved.push(saved);
-    const group=this.renderGeometry(this.preview,0xff8c00);
-    this.savedGroups.set(saved.id,group);this.savedGroup.add(group);
-    this.scene.add(this.savedGroup);this.cancelOutlinePreview();
-    this.updateGeneratedCandidates();
-    this.outline?.onSaved?.(this.saved.length);this.render();return saved;
-  }
-  getSavedOutlines(){return [...this.saved];}
-  /** E2 reuses the UUID refs, never the legacy export ordinal. */
-  getGeneratedObjects(){
-    if(!this.outline||!validCanvasScope(this.outline))return [];
-    return this.saved.flatMap(item=>{
-      const id=this.generatedIds.get(item.id);
-      return id?[{ref:canvasObjectRef('GENERATED',id,this.outline!),savedOutlineId:item.id,
-        visible:this.savedGroups.get(item.id)?.visible??false,
-        geometry:item.result.geometry,sourceEntityIds:[...item.result.sourceEntityIds],kind:item.result.kind,
-        name:item.name??'외곽선',outlineTypeId:item.outlineTypeId??null}]:[];
+    const savedId='local-'+this.nextSavedId;
+    const createdAt=new Date().toISOString();
+    const preview=this.preview;
+    this.document.append({id:generatedId,savedOutlineId:savedId,createdAt,
+      result:preview,...(typed?{outlineTypeId:typed.outlineTypeId,outlineTypeName:typed.outlineTypeName,
+        name:typed.name}:{}),
     });
+    this.nextSavedId++;
+    this.cancelOutlinePreview();
+    return this.getSavedOutlines().find(o=>o.id===savedId)!;
+  }
+  getSavedOutlines():SavedOutline[]{
+    return (this.document?.getObjects()??[]).map(item=>({
+      id:item.savedOutlineId,createdAt:item.createdAt,
+      result:generatedResult(item),
+      ...(item.outlineTypeId?{outlineTypeId:item.outlineTypeId,
+        outlineTypeName:item.outlineTypeName??undefined,name:item.name}:{}),
+    }));
+  }
+  /** No mirrored saved array: Manager, Tree, v1/v2 export and Scene share Document. */
+  getGeneratedObjects(){
+    return (this.document?.getObjects()??[]).map(item=>({
+      ref:item.ref,savedOutlineId:item.savedOutlineId,visible:item.visible,
+      geometry:generatedResult(item).geometry,
+      sourceEntityIds:[...item.baseResult.sourceEntityIds],kind:item.kind,
+      name:item.name||'외곽선',outlineTypeId:item.outlineTypeId,
+    }));
   }
   getSavedOutlineStates():SavedOutlineOverlayState[]{
-    return this.saved.map(item=>({
-      id:item.id,visible:this.savedGroups.get(item.id)?.visible??false,
-      selected:(this.selector?.getSelectedGeneratedIds()??[]).includes(this.generatedIds.get(item.id)??''),
+    const selected=new Set(this.selector?.getSelectedGeneratedIds()??[]);
+    return (this.document?.getObjects()??[]).map(item=>({
+      id:item.savedOutlineId,visible:item.visible,selected:selected.has(item.ref.id),
     }));
   }
   setSavedOutlineVisibility(id:string,visible:boolean):boolean {
-    const group=this.savedGroups.get(id);
-    if(!group || this.disposed)return false;
-    group.visible=visible;this.updateGeneratedCandidates();this.refreshSavedHighlight();return true;
+    return this.document?.setVisible(id,visible)??false;
   }
   selectSavedOutline(id:string,additive=false):boolean {
-    const generatedId=this.generatedIds.get(id),group=this.savedGroups.get(id);
-    if(this.disposed||!group?.visible||!generatedId)return false;
-    return this.selector?.selectGenerated(generatedId,additive)??false;
+    const entry=this.document?.getObjects().find(o=>o.savedOutlineId===id);
+    if(this.disposed||!entry?.visible)return false;
+    return this.selector?.selectGenerated(entry.ref.id,additive)??false;
   }
+  /** Legacy U6 delete remains a separate non-historic compatibility operation.
+   * E3 will replace its UI with selected multi-Delete through executeGeneratedCommand. */
   deleteSavedOutline(id:string):boolean {
-    const index=this.saved.findIndex(item=>item.id===id);
-    const group=this.savedGroups.get(id);
-    if(index<0||!group||this.disposed)return false;
-    this.savedGroup.remove(group);release(group);this.savedGroups.delete(id);
-    this.saved.splice(index,1);this.generatedIds.delete(id);
-    this.updateGeneratedCandidates();this.refreshSavedHighlight();
-    this.outline?.onSaved?.(this.saved.length);return true;
+    return this.document?.discardLegacy(id)??false;
   }
-  clearSavedOutlines(){
-    if(this.selectedSavedGroup){
-      this.scene.remove(this.selectedSavedGroup);release(this.selectedSavedGroup);this.selectedSavedGroup=undefined;
-    }
-    this.scene.remove(this.savedGroup);release(this.savedGroup);this.savedGroup=new THREE.Group();this.saved=[];
-    this.savedGroups.clear();this.generatedIds.clear();
-    this.updateGeneratedCandidates();this.outline?.onSaved?.(0);this.render();
+  getGeneratedHistory(){return this.document?.history()??{undo:0,redo:0,limit:100};}
+  executeGeneratedCommand(command:GeneratedCommand):void {
+    if(!this.document)throw new Error('이 Renderer에서는 생성 개체 편집을 지원하지 않습니다.');
+    this.document.execute(command,this.getCanvasObjectSelection());
   }
+  stageGeneratedCommand(command:GeneratedCommand):void{
+    if(!this.document)throw new Error('이 Renderer에서는 생성 개체 편집을 지원하지 않습니다.');
+    this.document.stage(command,this.getCanvasObjectSelection());
+  }
+  commitGeneratedCommand():boolean{return this.document?.commitPending()??false;}
+  cancelGeneratedCommand():boolean{return this.document?.cancelPending()??false;}
+  undoGeneratedEdit():boolean{return this.document?.undo()??false;}
+  redoGeneratedEdit():boolean{return this.document?.redo()??false;}
+  clearSavedOutlines(){this.document?.clear();}
   dispose() {
     if(this.disposed)return;this.disposed=true;this.cancel?.();this.resize.disconnect();
     this.terminateWorker('index');this.terminateWorker('compute');
     this.selector?.dispose();this.selector=undefined;
     for(const group of [this.selectionGroup,this.previewGroup,this.savedGroup,this.selectedSavedGroup])if(group)release(group);
-    this.savedGroups.clear();this.generatedIds.clear();this.issuedGeneratedIds.clear();
+    this.savedGroups.clear();this.renderedTransforms.clear();this.document?.dispose();this.document=undefined;
     this.controls.dispose();if(this.object)release(this.object);this.scene.clear();
     this.renderer.dispose();this.renderer.forceContextLoss();this.renderer.domElement.remove();
   }
