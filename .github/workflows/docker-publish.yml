@@ -1,12 +1,12 @@
-name: Build and publish Docker image
+name: Main CI and conditional Docker publish
 # Use the issue reference in the squash-merge commit SUBJECT: "#<issue> | short description".
 # GitHub Actions cannot parse an issue number from a free-form commit message at run-name evaluation time.
 run-name: >-
   ${{ startsWith(github.ref, 'refs/tags/v')
       && format('RELEASE | NO-ISSUE | {0} GHCR 이미지 게시', github.ref_name)
       || ((startsWith(github.event.head_commit.message, '#') || startsWith(github.event.head_commit.message, 'NO-ISSUE |'))
-          && format('MAIN/GHCR | {0}', github.event.head_commit.message)
-          || format('MAIN/GHCR | ISSUE-UNKNOWN | {0}', github.event.head_commit.message || github.sha)) }}
+          && format('MAIN CI | {0}', github.event.head_commit.message)
+          || format('MAIN CI | ISSUE-UNKNOWN | {0}', github.event.head_commit.message || github.sha)) }}
 
 on:
   push:
@@ -29,8 +29,79 @@ env:
   IMAGE_NAME: planner77/layoutmanager
 
 jobs:
+  # Always run on main. This makes a metadata-only merge produce a successful
+  # Main CI run without creating/moving any GHCR image tag.
+  release-scope:
+    name: Main CI - verify release scope
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      publish: ${{ steps.scope.outputs.publish }}
+    steps:
+      - name: Checkout revisions
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check changed paths before GHCR publication
+        id: scope
+        shell: bash
+        env:
+          EVENT_BEFORE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          publish=true
+          reason="Tagged release or runtime-affecting main change"
+          if [[ "$GITHUB_REF" == "refs/heads/main" ]]; then
+            # Unknown or missing baseline fails closed for publishing safety:
+            # do not incorrectly classify a runtime change as documentation.
+            BEFORE="${EVENT_BEFORE:-}"
+            if [[ "$BEFORE" =~ ^[0-9a-f]{40}$ ]] &&
+               [[ ! "$BEFORE" =~ ^0+$ ]] &&
+               git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
+              git diff --name-only -z "$BEFORE" "$GITHUB_SHA" -- > "$RUNNER_TEMP/changed-files"
+              mapfile -d '' -t changed < "$RUNNER_TEMP/changed-files"
+              if (( ${#changed[@]} > 0 )); then
+                publish=false
+                reason="Only documentation/workflow metadata changed"
+                for file in "${changed[@]}"; do
+                  case "$file" in
+                    *.md|.github/workflows/*.yml|.github/workflows/*.yaml) ;;
+                    *)
+                      publish=true
+                      reason="Runtime-affecting change detected: $file"
+                      break
+                      ;;
+                  esac
+                done
+              else
+                reason="Empty diff: retain normal release gate"
+              fi
+            else
+              reason="Missing/invalid before SHA: retain normal release gate"
+            fi
+          fi
+          echo "publish=$publish" >> "$GITHUB_OUTPUT"
+          echo "Release scope: $reason"
+          {
+            echo "### Main CI / GHCR scope"
+            echo "- Decision: $(if [[ "$publish" == "true" ]]; then echo 'Normal release gate'; else echo 'Skip all GHCR publication'; fi)"
+            echo "- Reason: $reason"
+            echo "- Ref: `$GITHUB_REF`"
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [[ "$publish" == "false" ]]; then
+            # Scope-validated documentation-only main CI; functional tests
+            # remain in PR CI and must pass before merge.
+            test -s .github/workflows/pr-ci.yml
+            test -s .github/workflows/docker-publish.yml
+            test -s AGENTS.md
+          fi
+
   build-and-push:
     name: Build and push to GHCR
+    needs: release-scope
+    if: ${{ needs.release-scope.outputs.publish == 'true' }}
     runs-on: ubuntu-latest
 
     steps:
