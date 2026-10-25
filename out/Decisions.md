@@ -1,5 +1,15 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-051-G2 — #104 단발 Admin 생성·복구, Secret 보호 (2026-10-26)
+
+**범위:** G2 격리 구현 결정/운영 승인 아님. #102 지정 운영 담당자 실행·Owner 책임, #103 G1 SQLite 계약 준수. [Issue104](Issue104.md).
+- `executeAdminSetup`는 명시 호출만, Linux/WSL2 실행 UID 소유 absolute Secret regular file(0400/0600, O_NOFOLLOW, 유효 UTF-8·NUL/CRLF 거부)에서만 비밀번호 취득·scrypt(local-v1) 사용. 0444 Compose Secret 기본 마운트/Windows 직접은 fail closed; JS 문자열 완전 zeroize는 보장하지 않음.
+- 최초 생성: 인증 관련 전 테이블 공백 확인을 `BEGIN IMMEDIATE` 안에서 재검증해 User UUID/Admin RoleGrant/`ADMIN_BOOTSTRAP` Audit 한 거래, username ASCII lowercase·must-change. 동시성·기존 사용자 승격/재기동 Hash/Role/ID 변경 차단.
+- 복구: 기존 ACTIVE Admin + SHA-256 nonce Unique/append-only, password hash/필수 변경/모든 세션 revoke/`ADMIN_RECOVERY` Audit 한 거래, 실패·replay 전체 rollback. Auth되지 않은 운영자 실행이므로 Audit actor=null/affected_user_id=대상 Admin; requestId를 사내 비공개 운영자 수행 기록과 연계.
+- `--ack-isolated` 임시 G1 SQLite 전용 CLI 이외 App Runtime/운영 Prisma/Auth Route/Compose/DDL 연결 0. G7 #109 별도 Owner Go/No-Go 전 OFF, G6 백업·실복구 선행. Owner R1 공격/탈취 강화는 비범위지만 Secret 비로그/데이터 무결성 필수. #102 PR #114·POST 업로드·감사 물리파기 세칙 후속.
+
+
+
 ## ADR-051-G1-R2 — SiteGrant 감사 피감사 사용자 추적 및 검증 게이트 (2026-10-26)
 
 - [PR #116 리뷰 P1](https://github.com/planner77/layoutManager/pull/116#discussion_r4371167619): 관리자 actor + Site ID만 기록하면 동일 Site 여러 사용자에 대한 Grant 철회가 발생했을 때 대상 사용자를 복구할 수 없다. **결정:** `AuditEvent.affected_user_id` (User FK) 및 `site_id` (CadSite FK)를 각각 둬서 Site grant/revoke 이벤트에 필수로 기록하고 원장 UPDATE/DELETE 금지·Grant/Audit 원자성을 유지한다.

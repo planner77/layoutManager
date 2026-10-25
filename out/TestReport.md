@@ -1,5 +1,13 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issue #104 G2 — 구현·검증 인계 (2026-10-26)
+
+- **작성:** `server/auth/admin-setup.ts` 명시 서비스, `tests/fixtures/auth-g2/store.ts` 일회용 DB adapter, `scripts/auth-g2-isolated.ts` 제한 CLI, `tests/integration/auth-g2.test.ts` 9 TC 및 설계·운영 SOP 문서. G1 `ADMIN_RECOVERY` 감사 actor=null/affected=Admin ID 변경으로 실제 운영 담당자(비공개 requestId 기록)와 사용자 로그인 Actor를 혼동하지 않도록 조치.
+- **실행 상태:** 원격 소스·테스트/문서 작성 단계로 Node/tsc/ESLint/Vitest/Playwright/Docker/실 DB·CAD·S3 및 현장 PC 테스트 **NOT RUN**. PR CI는 시작·Run ID까지 별도 추적하되 사용자 요청으로 결과 모니터링 없음. 테스트 작성/CI 트리거 ≠ PASS; G2-AC1~4 체크 보류.
+- **운영 차단:** App Auth/Admin Route, 운영 Prisma/DDL/Compose/Nginx/.env, 원본/Current/삭제 비밀번호 및 GHCR 활성화 0. #102 Owner R1 정책 승인이나 docs PR #114 별도 정렬, POST 업로드/실 Secret·감사 파기·백업 세칙 미확정, #105 G3/#106 G4/#108 G6/#109 G7 후속. [Issue104](Issue104.md)/[TestPlan](TestPlan.md).
+
+
+
 ## Issue #103 / PR #116 — #107 main 정렬·검증 인계 (2026-10-26)
 
 - **이전 수정 HEAD 실증:** `40153240d593`의 [PR CI 40225147249](https://github.com/planner77/layoutManager/actions/runs/40225147249) **completed/success**; Verify Job `121264822767` 및 Docker Job `121264822603` 성공. 이 완료 결과는 main #107 합류 **전** HEAD에만 적용되며 병합 후 HEAD PASS 근거로 재사용하지 않는다. 최초 TypeScript/Docker 실패 [40202066291](https://github.com/planner77/layoutManager/actions/runs/40202066291)는 원장에 계속 보존.

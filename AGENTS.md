@@ -1,5 +1,13 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #104 / G2 — Admin 최초 단발 생성·복구 격리 구현 (2026-10-26)
+
+- [Issue104](out/Issue104.md), [ADR-051-G2](out/Decisions.md), #102 Owner R1과 종료된 #103 G1 DB/Nonce 계약 우선. DESIGN.md는 부재하여 Architecture/Decisions/Requirements 기준. 지정 사내 운영 담당자가 최초 Admin 생성·복구 실행, Owner 운영 책임. 실제 수행자/Secret 경로·승인·대체자/증거는 사내 비공개 SOP로 관리.
+- `src/server/auth/admin-setup.ts`는 **명시 호출 전용**; `src/tests/fixtures/auth-g2/store.ts`는 G1 disposable SQLite에만 연결, `src/scripts/auth-g2-isolated.ts`는 `--ack-isolated`와 G1 경로 Guard 필수. 최초 1회 User/Role/Audit atomic·must-change+scrypt, 복구 nonce SHA unique·세션 전량 revoke/Audit, 재시작 Admin ID/Role/Hash 덮어쓰기 금지. Linux 실행 UID 소유 0400/0600 regular Secret·final symlink 거부, 비밀번호/Secret 경로/hash/nonce 로그·Git/CI 출력 금지.
+- **G7 Owner 승인 전 실제 Auth/Admin/API/Prisma/DDL·Compose/Nginx/.env·실 DB/CAD/S3/GHCR 및 기존 CAD 익명 GET/Current/삭제 동작 변경 0.** G2 테스트 TC-P4-G2-001~009 작성과 실행 PASS는 구분. #102 docs PR #114 미병합 충돌·POST 업로드 정책은 후속.
+
+
+
 ## Issue #103 — PR #116 CI 실패·감사 P1 교정 (2026-10-26)
 
 - 기존 [CI #40202066291](https://github.com/planner77/layoutManager/actions/runs/40202066291)의 Verify(TypeScript `store.ts:134 TS1002`)·Docker(baseline Next TypeScript) 두 Job은 동일 소스 결함으로 **FAILURE**, Unit/Integration/E2E 등은 **SKIPPED**. `src/tests/fixtures/auth-g1/store.ts`의 함수 선언 중복·문자열 파손을 단일 구현으로 정리해야 하며 수정 전 HEAD 성공을 전용하지 않는다.
@@ -422,6 +430,7 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 | [Issue25](out/Issue25.md) | 기본 immersive 진입, native 수동 선택, 복귀·툴바·회귀 수용 | Viewer 전체 화면 기본 진입/링크/포커스/레이어·검색 변경 시 |
 | [Release 0.20.0](out/Release-0.20.0.md) | 0.20.0 병합·태그·GHCR 게시 근거 | 0.20.0 릴리스 확인 및 운영 이미지 식별 시 |
 | [Release 0.21.0](out/Release-0.21.0.md) | 0.21.0 병합·태그·GHCR 게시 근거 | 0.21.0 릴리스 확인 및 운영 이미지 식별 시 |
+| [Issue104](out/Issue104.md) | 최초 관리자/Secret/단발 복구·격리 CLI/TC/운영 OFF | G2 Admin·복구·운영자 SOP·G3~G7 검토 시 |
 | [Issue103](out/Issue103.md) | G1 User/Session/Role·Site·SpecialGrant/Audit/RecoveryNonce 격리 SQL·Prisma 계약 및 원자성·복구 시험 | Auth DB/세션/권한/복구·백업 검토 및 #102 G0→G7 선행 조건 확인 시 |
 | [Issue102](out/Issue102.md) | G0 내부 LAN PROD Nginx/DEV App 직접 접속, Owner 경량 보안 범위·잔여 위험 수용·G0~G7 운영 게이트 | 운영/개발 배포 경로·Nginx/직접 포트, 인증·Site/Version 권한·기존 CAD API 전환, 위험 범위·운영 Go/No-Go/수용 기준 변경 시 |
 | [Issue107](out/Issue107.md) | G5 PROD Nginx/DEV 직결 격리 Preview, 테스트·실 LAN 인계 | Proxy/접속 경로·정상 Viewer/API/Upload/Health 검증, 운영 환경 변경 경계 |

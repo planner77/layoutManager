@@ -1,5 +1,25 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #104 G2 — Admin·Secret·Nonce 검증 계획 (2026-10-26)
+
+**테스트 환경:** 기존 CAD 6개 migration → disposable G1 `cad-auth-g1-*/fixture.sqlite` → #103 G1 SQL → #104 명시 서비스. 운영 Prisma/Runtime 연결 없음. 작성 시점 Typecheck/Vitest/Docker NOT RUN.
+
+| TC | AC | 검증 범위 |
+| --- | --- | --- |
+| TC-P4-G2-001 | AC1/4 | OFF 상태 implicit 생성/Secret 접근/Audit 없음 |
+| TC-P4-G2-002 | AC1 | 두 flag 동시 ON, 잘못된 username/경로/requestId 거부 |
+| TC-P4-G2-003 | AC1 | missing·0644·symlink·CRLF·짧은 Secret 실패/원문 로그 0 |
+| TC-P4-G2-004 | AC1/2 | User/Admin Role/Audit, scrypt/must-change·재기동 ID/Hash/Role 불변 |
+| TC-P4-G2-005 | AC2 | 동시 최초 생성 2건 중 단 1회만 commit |
+| TC-P4-G2-006 | AC2/4 | 첫 생성 중 장애 롤백 후 재시도 정상 |
+| TC-P4-G2-007 | AC3 | ACTIVE Admin 단발 nonce·세션 revoke·Audit, replay 거부 |
+| TC-P4-G2-008 | AC3/4 | 복구 중 장애 nonce/hash/session/audit rollback |
+| TC-P4-G2-009 | AC2/4 | 기존 일반 User 승격 금지, CAD baseline FK/운영 Prisma 불변 |
+
+PR 검증: 최신 HEAD typecheck/lint/unit/integration/build/E2E/Docker; 운영 `src/app/api/**`/`src/prisma/**`/`src/server/db.ts`, Compose/Nginx/.env/CAD/Viewer/GHCR diff 0. 미실행은 PASS 금지; 현장 Backup/Restore는 #108, Owner 운영 승인은 #109. [Issue104](Issue104.md).
+
+
+
 ## Issue #103 — 최초 실패 재발 방지와 P1 추적 (2026-10-26)
 
 - `TC-P4-G1-SYNTAX-001`: PR Verify `npm run typecheck` 및 Docker baseline Next build의 **동일 HEAD** 성공 필요. 최초 실패 `store.ts:134 TS1002` 후속 TS1005/TS1128 재발 없어야 함. 수정 후 아직 **NOT RUN**.

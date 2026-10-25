@@ -1,5 +1,18 @@
 # 운영·환경설정 초안
 
+## Issue #104 G2 — 명시 Admin 초기화·복구 격리 SOP (2026-10-26)
+
+**운영 적용/자동 초기화 금지; #109 G7 전 OFF.** 사내 지정 운영 담당자 실행, Owner 책임. 인명·대리인·승인·실 Secret 경로·nonce·backup·회수 기록은 사내 비공개 운영 문서에만 작성.
+1. Owner 정책·작업 요청 ID(requestId)·임시 G1 fixture DB 준비와 백업/담당자 확인. 운영 DB/실 CAD/S3/Compose에 접속하지 않는다.
+2. Linux/WSL2 실행 UID 소유 0400/0600 Secret regular file을 절대 경로로 공급. 최소 8자·1024 byte 이하, 유효 UTF-8/종단 개행 불허. Symlink/0444 Compose Secret/Windows 직접/원문 .env·로그·Git·CI 아티팩트 금지. Shell trace OFF.
+3. 격리 프로세스에 `ADMIN_BOOTSTRAP_ENABLED=true`+username+password file 또는 `ADMIN_RECOVERY_ENABLED=true`+기존 Admin 불변 ID+16~128 문자 nonce+password file 설정(동시 ON 금지). 사전 G1 schema가 적용된 disposable fixture에서만 `cd src && npx tsx scripts/auth-g2-isolated.ts --fixture-db /tmp/cad-auth-g1-EXAMPLE/fixture.sqlite --request-id G2_PRIVATE_RUN_ID --ack-isolated` 실행. 예시 경로/ID는 비밀 없는 placeholder다.
+4. 최초 User/Role/Audit 또는 복구 nonce/password/세션 revoke/Audit **원자 commit**과 장애 rollback, 재실행·재사용 거부 확인. Audit actor=null·affected Admin ID와 requestId를 사내 비공개 담당자 승인 이력에 연결한다.
+5. Secret file/mount 즉시 회수·플래그 OFF·재기동 계정 덮어쓰기 금지 및 결과·실패/대체자 기록. 운영 경로 연결, 실제 backup/restore 및 Owner Go/No-Go는 #108/#109에서 별도 승인. 이 CLI를 App/Release migrator에 연결 금지.
+
+[Issue104](Issue104.md), [ADR-051-G2](Decisions.md). 공격·탈취 강화는 Owner 비범위이나 Secret 비로그/원자성 필수, JS 문자열 완전 메모리 파기 미보장.
+
+
+
 ## #103 후속 Owner 결정과 감사 파기 보류 (2026-10-25)
 
 #102 5개 업무 원칙(기존 CAD GET 익명, Current Editor/Admin+Site, Delete Editor/Admin+Site+삭제 비밀번호, Admin 초기/복구 지정 운영자, Audit 365일 경과 정리)은 승인됐으나 문서 PR #114의 병합/CI 성공은 아직 별도 확인이 필요하다. **Audit 물리·자동 파기 시각/주기/백업본 처리/복원 후 재출현 방지 SOP와 업로드 POST 권한은 미정**이다. 이번 G1 backup/restore는 합성 fixture만 대상이고 원장 행의 물리 파기 명령은 포함하지 않는다.
