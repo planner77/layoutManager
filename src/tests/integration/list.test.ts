@@ -5,7 +5,7 @@ import path from "node:path";
 import { createDb, type Database } from "../../server/db";
 import { CadRepository } from "../../server/repositories/cad";
 import { CadListRepository } from "../../server/repositories/cad-list";
-import { currentOnlyListParams, listQuery, listUrl } from "../../domain/cad-list";
+import { drawingListParams, drawingListUrl, listQuery } from "../../domain/cad-list";
 import { registration } from "../../domain/cad";
 import { migrate, seedChain } from "../helpers/database";
 import type { Registration } from "../../domain/cad";
@@ -169,30 +169,45 @@ test("TC-LIST-003/004: current filters track replacement and null pointers", asy
     "찾을 수 없습니다",
   );
 });
-test("TC-LIST-045-001: library enforces Current for legacy URL states, API parser unchanged", () => {
-  for (const oldCurrent of ["", "current=false&", "current=true&"]) {
-    const params = new URLSearchParams(
-      `${oldCurrent}filename=one&description=설명&site=평택&format=DXF&page=7&pageSize=50`,
-    );
-    const scoped = currentOnlyListParams(params);
-    expect(scoped.query.current).toBe("true");
-    expect(scoped.params.get("current")).toBe("true");
+test("TC-LIST-093-001: Current default, history and legacy URLs are distinct from API filters", () => {
+  const values: Array<[string, "current" | "all", string | null]> = [
+    ["", "current", "true"],
+    ["current=true", "current", "true"],
+    ["current=false", "all", null],
+    ["versions=all", "all", null],
+    ["versions=all&current=false", "all", null],
+  ];
+  for (const [raw, expectedMode, expectedCurrent] of values) {
+    const params = new URLSearchParams(raw + (raw ? "&" : "") + "filename=one&description=설명&site=평택&format=DXF&page=7&pageSize=50");
+    const scoped = drawingListParams(params);
+    expect(scoped.mode).toBe(expectedMode);
+    expect(scoped.params.get("current")).toBe(expectedCurrent);
+    expect(scoped.params.has("versions")).toBe(false);
+    expect(scoped.query.current).toBe(expectedCurrent ?? "");
     expect(scoped.query.page).toBe(7);
     expect(scoped.query.pageSize).toBe(50);
     expect(scoped.params.get("filename")).toBe("one");
     expect(scoped.params.get("description")).toBe("설명");
     expect(scoped.params.get("site")).toBe("평택");
     expect(scoped.params.get("format")).toBe("DXF");
-    const next = new URL(listUrl(scoped.query, 2), "http://localhost");
-    expect(next.searchParams.get("current")).toBe("true");
+    const next = new URL(drawingListUrl(scoped.query, 2, scoped.mode), "http://localhost");
+    expect(next.searchParams.get("versions")).toBe(expectedMode === "all" ? "all" : null);
+    expect(next.searchParams.has("current")).toBe(false);
     expect(next.searchParams.get("page")).toBe("2");
+    expect(drawingListParams(next.searchParams).mode).toBe(expectedMode);
+    expect(drawingListParams(next.searchParams).query.filename).toBe("one");
   }
   expect(listQuery(new URLSearchParams("current=false")).current).toBe("false");
-  expect(() => currentOnlyListParams(new URLSearchParams("current=yes"))).toThrow();
-  expect(() => currentOnlyListParams(new URLSearchParams("current=false&current=true"))).toThrow();
 });
 
-test("TC-LIST-045-002: Current-only scope excludes previous/newer and unassigned, then follows reassignment", async () => {
+test("TC-LIST-093-002: duplicate, invalid and contradictory mode requests are rejected", () => {
+  for (const invalid of [
+    "current=yes", "current=false&current=true", "versions=history",
+    "versions=all&versions=all", "versions=all&current=true", "versions=",
+  ]) expect(() => drawingListParams(new URLSearchParams(invalid))).toThrow();
+});
+
+test("TC-LIST-093-003: default Current and full history track reassignment and unassigned locations", async () => {
   const first = await repo.register(input, file("old-current.dxf"));
   const newer = await repo.register(input, file("new-current.dxf"));
   const unassigned = await seedChain(db, {
@@ -202,13 +217,17 @@ test("TC-LIST-045-002: Current-only scope excludes previous/newer and unassigned
     building: "B동",
     floor: "5층",
   });
-  await repo.register({ ...unassigned.input, makeCurrent: false }, file("never-current.dxf"));
-  const scope = () => currentOnlyListParams(new URLSearchParams("current=false")).query;
-  expect((await lists.list(scope())).items.map((row) => row.id)).toEqual([newer.id]);
+  const neverCurrent = await repo.register({ ...unassigned.input, makeCurrent: false }, file("never-current.dxf"));
+  const current = () => drawingListParams(new URLSearchParams()).query;
+  const history = () => drawingListParams(new URLSearchParams("versions=all")).query;
+  expect((await lists.list(current())).items.map((row) => row.id)).toEqual([newer.id]);
+  expect((await lists.list(history())).total).toBe(3);
   expect((await search("current=false")).total).toBe(2);
+  expect((await lists.list(drawingListParams(new URLSearchParams("versions=all&filename=never-current")).query)).items.map(v => v.id)).toEqual([neverCurrent.id]);
   await repo.setCurrent(first.locationId, first.id);
-  expect((await lists.list(scope())).items.map((row) => row.id)).toEqual([first.id]);
-  expect((await lists.list(currentOnlyListParams(new URLSearchParams("filename=never-current")).query)).total).toBe(0);
+  expect((await lists.list(current())).items.map((row) => row.id)).toEqual([first.id]);
+  expect((await lists.list(history())).total).toBe(3);
+  expect((await lists.list(drawingListParams(new URLSearchParams("filename=never-current")).query)).total).toBe(0);
   expect((await lists.location(unassigned.floor.id)).versions).toHaveLength(1);
 });
 
