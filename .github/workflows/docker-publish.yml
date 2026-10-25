@@ -325,6 +325,18 @@ jobs:
             echo "- Both candidates verified before public tag promotion (not a cross-tag transaction)."
           } >> "$GITHUB_STEP_SUMMARY"
 
+      # Only published version aliases are measured. OCI index/attestation and
+      # shared-layer double-counting are reported separately (not docker-save gzip).
+      - name: Measure published linux-amd64 OCI layer bytes for paired version images
+        if: steps.publish.outputs.publish == 'true'
+        shell: bash
+        env:
+          APP_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          IMAGE="${REGISTRY}/${IMAGE_NAME}"
+          node src/scripts/measure-ghcr-pair.mjs "$IMAGE:${APP_VERSION}" "$IMAGE:${APP_VERSION}-migrate" "$GITHUB_STEP_SUMMARY"
+
       - name: Skip duplicate version build
         if: steps.publish.outputs.publish != 'true'
         shell: bash

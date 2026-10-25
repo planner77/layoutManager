@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-# Issue #28: reproducible linux/amd64 image comparison: original / phase1 / runtime.
+# Issues #28/#66: reproducible linux/amd64 web and migrator image comparison.
 # Keep Debian glibc for Prisma 7 and better-sqlite3; builder tools never enter the web image.
 FROM node:22.14.0-bookworm-slim AS dependencies
 WORKDIR /app/src
@@ -57,20 +57,37 @@ RUN mkdir -p /app/src/.next/cache && chown -R cad:cad /app/src/.next/cache
 USER cad
 CMD ["sh", "-c", "node scripts/run.mjs deploy && node .next/standalone/server.js"]
 
-# One-shot migration/backfill image. Prisma CLI and tsx are not shipped in runtime.
-# Both targets must use the same version and be deployed against one /data volume.
+# One-shot migration/backfill: prune the pinned FULL build dependency tree to
+# a dedicated runtime closure. No network/resolution during pruning; dev+peer
+# packages used only by Studio/Next/browser must not be copied to this image.
+FROM dependencies AS migrator-dependencies
+COPY src/scripts/prepare-migrator-package.mjs ./scripts/prepare-migrator-package.mjs
+RUN node scripts/prepare-migrator-package.mjs \
+    && npm prune --omit=dev --offline --legacy-peer-deps --no-audit --no-fund \
+    && node scripts/prepare-migrator-package.mjs --verify
+
+# The web runtime is unchanged. Both images share one version and /data volume.
 FROM runtime-base AS migrator
-COPY --from=dependencies /app/src/node_modules ./node_modules
-COPY --from=builder /app/src/package.json ./package.json
+COPY --from=migrator-dependencies --chown=cad:cad /app/src/node_modules ./node_modules
+COPY --from=migrator-dependencies --chown=cad:cad /app/src/package.json ./package.json
 COPY --from=builder /app/src/tsconfig.json ./tsconfig.json
 COPY --from=builder /app/src/prisma.config.ts ./prisma.config.ts
 COPY --from=builder /app/src/prisma ./prisma
 COPY --from=builder /app/src/generated ./generated
-COPY --from=builder /app/src/scripts ./scripts
-COPY --from=builder /app/src/server ./server
-COPY --from=builder /app/src/domain ./domain
+COPY --from=builder /app/src/scripts/deploy.ts ./scripts/deploy.ts
+COPY --from=builder /app/src/scripts/backfill-delete-passwords.ts ./scripts/backfill-delete-passwords.ts
+COPY --from=builder /app/src/scripts/env.mjs ./scripts/env.mjs
+COPY --from=builder /app/src/scripts/storage-config.mjs ./scripts/storage-config.mjs
+COPY --from=builder /app/src/server/db.ts ./server/db.ts
+COPY --from=builder /app/src/server/backfill-delete-passwords.ts ./server/backfill-delete-passwords.ts
+COPY --from=builder /app/src/server/password.ts ./server/password.ts
+COPY --from=builder /app/src/server/logger.ts ./server/logger.ts
+COPY --from=builder /app/src/domain/cad.ts ./domain/cad.ts
 USER cad
-CMD ["node", "scripts/run.mjs", "deploy"]
+RUN ./node_modules/.bin/prisma --version >/dev/null \
+    && ./node_modules/.bin/tsx --version >/dev/null \
+    && node -e "const Database=require('better-sqlite3'); new Database(':memory:').close()"
+CMD ["./node_modules/.bin/tsx", "scripts/deploy.ts"]
 
 # Default production image: Next.js standalone traced dependencies and static assets only.
 FROM runtime-base AS runtime
