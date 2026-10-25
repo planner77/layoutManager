@@ -2,7 +2,7 @@
 
 - Issue: https://github.com/planner77/layoutManager/issues/51 · Epic #49 · 후속 #52~#56.
 - 설계 기준: AGENTS.md, out/Architecture.md, out/Requirements.md, ADR-041, #31/#40/#42/#43. 루트 DESIGN.md는 존재하지 않음.
-- 범위: DXF + three-dxf-viewer의 기존 SOURCE 선택과 브라우저 임시 확정 GENERATED(CÖNVEX가 아닌 **CONVEX** 및 PRECISE)의 단일 Canvas/Tree 선택 상태 및 편집 가능 여부. **실제 편집 명령, Delete/Move/Rotate/Undo, JSON Import, DB/API 쓰기는 이 PR 범위가 아님**.
+- 범위: DXF + three-dxf-viewer의 기존 SOURCE 선택과 브라우저 임시 확정 GENERATED(**CONVEX** 및 **PRECISE**)의 단일 Canvas/Tree 선택 상태 및 편집 가능 여부. **실제 편집 명령, Delete/Move/Rotate/Undo, JSON Import, DB/API 쓰기는 이 PR 범위가 아님**.
 
 ## 요구 및 구현 결정
 
