@@ -38,7 +38,9 @@ Date: 2026-10-25 · Scope: CI workflow metadata and documentation only · Status
 | TC-CI-NAME-003 | 수동 issue_ref `#68` / run_description `CI 재검증`; 기본값 | `MANUAL CI | #68 | CI 재검증`; `MANUAL CI | NO-ISSUE | 수동 검증` | main 반영 후 가능 |
 | TC-CI-NAME-004 | main squash subject `#68 | Actions 실행명 정리`, `NO-ISSUE | 정리`, 비정형 제목 | `MAIN/GHCR` + 적절한 참조·설명 / 비정형은 `ISSUE-UNKNOWN` | main push 미실행 |
 | TC-CI-NAME-005 | tag `v0.35.0` | `RELEASE | NO-ISSUE | v0.35.0 GHCR 이미지 게시` | tag push 미실행 |
-| TC-CI-NAME-006 | workflow 구문 및 기존 triggers/jobs/concurrency/permissions diff | 실행 정책·GHCR 배포 로직 불변 | 정적 검토 필요 |
+| TC-CI-NAME-006 | workflow 구문 및 기존 triggers/jobs/concurrency/permissions diff | 실행 정책·GHCR 배포 로직 불변 | 문자열 diff 검증: 기존 PR trigger와 두 YAML의 permissions/concurrency/jobs/main push 로직 동일. Actions YAML 서버 평가 미확인 |
+
+**작성 후 정적 점검:** 신규 형식·이슈 없음·비정형 PR/Main·tag·manual 7개 fixture의 명명 로직과 두 YAML 기존 실행 구간의 diff를 검사했다. 이는 Actions parser/Runner 검증을 대체하지 않는다.
 
 실행하지 않은 CI, Main 이미지 게시, tag 검증은 PASS로 기록하지 않는다. 실제 Run ID와 Head SHA를 확인한 뒤 결과를 갱신한다.
 
