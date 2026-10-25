@@ -13,6 +13,7 @@
 | TC-M1-E2E-001 | Synthetic DXF, (10,20) PIN과 text only→Zoom/fit/CSS fullscreen→WCS (13,15), XSS 무실행 | CODED / NOT RUN |
 | TC-M1-E2E-002 | PIN drag preview/Escape rollback, nonfinite 좌표/휠 중 drag 취소, 명시적 pointerup commit, reload clear/미지원 renderer disabled | CODED / NOT RUN |
 | TC-M1-E2E-003 | 외곽선 ON→메모 ON 시 독점, Escape placement cancel/Mode 전환, Version 바꿨다 돌아와도 없음 | CODED / NOT RUN |
+| TC-M1-BENCH-1000/10000 | **Opt-in** Playwright `test:benchmark`에서 합성 DXF LINE 1k/10k 로드·5 pin/zoom/fit/resize/reload·경과 ms 수집, 임계/SLA 단정 금지 | CODED / NOT RUN |
 | TC-M1-AC-NATIVE | 실제 Chrome native fullscreen+DPR/devicePixelRatio/Resize/Touch/ESC/blur/scroll + 100 memo frame budget 실측 | 현장 확인 / NOT RUN |
 | TC-M1-AC-REG | 전체 Typecheck/ESLint/Vitest/Build/Playwright DXF Viewer/Generated E1~E4/Search/Outlines/Layer/Upload/Legacy/Docker, 대형 DXF fixture·real CAD GPU | PR CI + 현장 / NOT RUN |
 

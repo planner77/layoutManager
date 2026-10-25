@@ -4,7 +4,7 @@
 
 - `MemoSession` 도메인(Version UUIDv4+SHA64/UUIDv4 local, NFC 제목·본문 유효성, WCS finite ±1e12, 100건 상한), `CadMemoOverlay` WCS 고정 pin+plain-text label, 클릭 자유 배치/위치 드래그 Ghost 취소·확정, 수치 이동과 텍스트만 별도 수정/삭제.
 - `ViewerManager/ThreeDxfViewerAdapter` CSS px↔WCS Orthographic 변환과 카메라/Resize 갱신; M1 메뉴/툴을 Viewer shell에 연결하고 #40 Outline 생성/Generated 선택·Source hit-test와 분리. 메모는 Reload/Version/Renderer 전환에서 소멸하고 Auth/영속 저장이 없음을 명시.
-- Unit 6/E2E 3 작성, [Issue82](Issue82.md)/ADR-052·Requirements/Architecture/TestPlan/TestReport/README/AGENTS 동기화. Native/실 CAD/GPU/100 Memo 성능 미실측. Typecheck/Lint/Unit/E2E/Build/Docker/PR CI 결과 **NOT RUN/NOT VERIFIED**(실제 완료 뒤 판단).
+- Unit 6/E2E 3 및 opt-in Benchmark 2(1k/10k synthetic DXF) 작성, [Issue82](Issue82.md)/ADR-052·Requirements/Architecture/TestPlan/TestReport/README/AGENTS 동기화. Native/실 CAD/GPU/100 Memo 성능 미실측. Typecheck/Lint/Unit/E2E/Build/Docker/PR CI 결과 **NOT RUN/NOT VERIFIED**(실제 완료 뒤 판단).
 - `src/package.json`/`src/package-lock.json` root 0.41.0 정렬. DB/API/Prisma/Auth/Docker/Version·SHA/Current/원본·Generated edit·#2 설명 기능 불변, 영속 #83 별도 차단.
 
 

@@ -20,7 +20,7 @@
 1. `src/domain/cad-memo.ts`: 유효 범위와 수정 명령 분리, createdAt immutable, updatedAt 매 커밋 시 갱신, max capacity 100, 명시 `clear()`.
 2. `src/viewers/core/adapter.ts` / `src/viewers/three-dxf-viewer/adapter.ts`: 활성 Canvas CSS viewport ↔ world Orthographic 좌표 변환; invalid/nonfinite/no adapter fail-closed. `onViewChange` 알림은 RAF로 UI 투영 갱신, WCS 데이터 변경 금지.
 3. `src/features/cad-viewer/`: `CadMemoOverlay` pointer capture/epoch rollback 및 `CadMemoEditor` 분리 텍스트·좌표 커밋; `ViewerMenuBar` 지원 게이트와 `viewer.tsx` 내 세션/도구/ESC/리로드 정리.
-4. Unit `cad-memo.test.ts` TC-M1-UNIT-001~006; Playwright `issue82-cad-memo.spec.ts` TC-M1-E2E-001~003; 기존 viewer/outline/generated/legacy/DXF/large-fixture 검증.
+4. Unit `cad-memo.test.ts` TC-M1-UNIT-001~006; Playwright `issue82-cad-memo.spec.ts` TC-M1-E2E-001~003; opt-in `tests/benchmark/issue82-memo-large.benchmark.ts` TC-M1-BENCH-1000/10000 synthetic 1k/10k DXF 로드·5 pin 배치·Resize/Reload 계측(성능 SLA 미설정), 기존 viewer/outline/generated/legacy/DXF/실 CAD 검증.
 5. AGENTS/Architecture/Decisions/Requirements/TestPlan/TestReport/README/ChangeLog 동기화. 서버 DB `out/Database.md`는 M1 모델이 영속 테이블을 추가하지 않으므로 기존 계약 유지.
 
 ## AC 추적 / 판단
