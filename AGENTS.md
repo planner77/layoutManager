@@ -1,5 +1,12 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #43 U6 — 외곽선 트리·브라우저 Overlay (2026-10-25)
+
+- v0.36.0: 우측 Dock/상단 외곽선 목록 토글, 업무 타입 ID 그룹·미분류 legacy, WCS Bounds 선택/별도 Overlay 강조, 개별/그룹 show/hide, 키보드 트리 탐색, 320px 표시. 왼쪽 CAD 레이어 및 외곽선 생성 ON/OFF와 독립이며 도구 OFF에도 목록·Overlay 남는다.
+- #40 계약 유지: **개별 삭제는 외곽선 생성 ON에서만** 가능. 임시 결과/Visibility/선택은 브라우저 세션에만 존재, reload/Version/Renderer 전환 시 폐기. v1 JSON 구조 유지. 실제 관리자 타입 카탈로그 #65 미구현이므로 현 Viewer의 기본 트리는 legacy만 가능(시험용 타입 2개는 Unit fixture).
+- #31 P4/#65 승인 전 Server GET/쓰기, DB/Migration, Admin/RBAC/영속 복원 절대 구현/활성화 금지. 로컬 시험 NOT RUN, PR CI 통과 주장 금지. 상세 [Issue43](out/Issue43.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md).
+
+
 ## Issue #68 — GitHub Actions 실행명 표준 규약 (2026-10-25)
 
 - 모든 신규 PR 제목과 main squash commit **첫 줄**은 `#<Issue번호> | 간략한 설명`을 사용한다. PR 번호를 Issue 번호로 혼동하지 않는다. 실제 연결 이슈가 없으면 `NO-ISSUE | 간략한 설명`을 사용한다. 기존 비정형 제목은 `ISSUE-UNKNOWN` 표시 후 수정한다.
