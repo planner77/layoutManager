@@ -1,5 +1,12 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #99 → #113 현장 수용 잔여 이관/행정 종료 경계 (2026-10-25)
+
+- [후속 #113](https://github.com/planner77/layoutManager/issues/113)에 원 #99의 **실 DXF/CAD/GPU·UI/Worker·데이터 보호·Owner 서명 AC-99-01~04를 체크 전부 미완 상태로 보존**한다. PR #110 구현은 수용 증거를 모으는 도구만 제공하며 실제 현장 합격을 증명하지 않는다.
+- 사용자의 #99 이슈 종료 지시는 **PR 구현/코드 검증 후 범위 분리 행정 종료**로 해석한다. #113이 OPEN/BLOCKED이고 현장 검증이 없다면 #99를 `completed`로 잘못 표시하거나 #96/#98 서버 운영을 ON 하지 않는다. #99를 닫는 경우 `not_planned`(잔여 필드 AC #113으로 이관) 사유와 사용자의 별도 최종 수용 의무를 반드시 남긴다.
+- **절차:** P1 리뷰 해결→현재 변경 HEAD의 PR CI 전체 성공/behind 0/mergeable→Squash 병합→Main CI 시작/신규 GHCR paired publish 시작 확인→#99 잔여 이관 확인 후 행정 종료. Main CI/GHCR 상태를 감시하지 않는 경우 실행 시작과 이미지 게시 성공을 구별한다.
+
+
 ## Issue #99 / PR #110 — P1 private 경로 Symlink 차단·v0.40.3 재검증 게이트 (2026-10-25)
 
 - **기존 성공과 수정 HEAD 구분:** [PR CI 40195335561](https://github.com/planner77/layoutManager/actions/runs/40195335561)는 원 HEAD `637742610b3eb25461b095edb5899494ce6dd054`의 Verify(121174841714)/Docker(121174841754) 모두 `completed/success`. 이 성공 이후 [P1 리뷰 4370918614](https://github.com/planner77/layoutManager/pull/110#discussion_r4370918614)에서 `resolve()`가 외부 Symlink→repo를 따라가지 않아 승인 사내 SHA/GPU 보고서가 Git worktree에 기록될 수 있음이 발견되었다. CI 실패와 구분해 [FailureLedger](out/FailureLedger.md)에 이력 보존.
