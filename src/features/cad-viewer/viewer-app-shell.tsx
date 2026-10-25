@@ -15,6 +15,7 @@ export function ViewerAppShell({
   menuBar,
   toolbar,
   layerPanel,
+  layerPanelOpen,
   outlineTreePanel,
   compactPanel,
   canvas,
@@ -28,6 +29,7 @@ export function ViewerAppShell({
   menuBar: ReactNode;
   toolbar: ReactNode;
   layerPanel?: ReactNode;
+  layerPanelOpen: boolean;
   outlineTreePanel?: ReactNode;
   compactPanel: ViewerCompactPanel;
   canvas: ReactNode;
@@ -58,9 +60,9 @@ export function ViewerAppShell({
             id="viewer-layer-dock"
             data-testid="viewer-layer-dock"
             className={'order-first flex max-h-[20dvh] min-h-0 w-full shrink-0 flex-col overflow-hidden border-b border-slate-300 bg-white md:order-none md:h-full md:max-h-none md:w-[min(17rem,28vw)] md:border-r md:border-b-0 ' +
-              (compactPanel === 'layers' ? '' : 'hidden md:flex')}
+              (!layerPanelOpen ? 'hidden' : compactPanel === 'layers' ? '' : 'hidden md:flex')}
           >
-            {layerPanel}
+            {layerPanelOpen ? layerPanel : null}
           </div>
         )}
         <section

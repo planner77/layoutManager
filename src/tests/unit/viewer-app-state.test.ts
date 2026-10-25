@@ -42,4 +42,15 @@ describe('TC-U1-UNIT-001: viewer app docking state', () => {
     expect(viewerAppReducer(state, { type: 'close-layers' })).toBe(state);
     expect(viewerAppReducer(state, { type: 'reset' })).toEqual(initialViewerAppState);
   });
+
+  it('is idempotent on internal panel close and restores the active compact dock on reopen', () => {
+    const withTree = viewerAppReducer(initialViewerAppState, { type: 'toggle-outline-tree' });
+    expect(withTree.compactPanel).toBe('outlines');
+    const closed = viewerAppReducer(withTree, { type: 'close-layers' });
+    expect(closed).toMatchObject({ layerPanelOpen: false, outlineTreeOpen: true, compactPanel: 'outlines' });
+    expect(viewerAppReducer(closed, { type: 'close-layers' })).toBe(closed);
+    const reopened = viewerAppReducer(closed, { type: 'toggle-layers' });
+    expect(reopened).toMatchObject({ layerPanelOpen: true, outlineTreeOpen: true, compactPanel: 'layers' });
+    expect(withTree.layerPanelOpen).toBe(true);
+  });
 });

@@ -49,6 +49,7 @@ export function CadViewer({
   const [source] = useState(() => new ViewerSource());
   const container = useRef<HTMLDivElement>(null);
   const viewerShell = useRef<HTMLDivElement>(null);
+  const layerMenuButton = useRef<HTMLButtonElement>(null);
   const manager = useRef<ViewerManager | null>(null);
   const getManager = useCallback(() => manager.current, []);
   const loadSequenceRef = useRef(0);
@@ -315,6 +316,7 @@ export function CadViewer({
         <ViewerMenuBar
           layerAvailable={layerAvailable}
           layerPanelOpen={appState.layerPanelOpen}
+          layerToggleRef={layerMenuButton}
           onToggleLayerPanel={() => dispatchApp({ type: 'toggle-layers' })}
           outlineAvailable={outlineAvailable}
           outlineToolEnabled={appState.outlineToolEnabled}
@@ -364,15 +366,20 @@ export function CadViewer({
 
         </>
       }
-      layerPanel={layerAvailable && appState.layerPanelOpen ? (
+      layerPanel={layerAvailable ? (
         <FullscreenLayerPanel
           layers={layers}
           selected={selectedLayers}
           onLayerChange={setLayerVisibility}
           onAllChange={setAllLayersVisibility}
-          onClose={() => dispatchApp({ type: 'close-layers' })}
+          onClose={() => {
+            dispatchApp({ type: 'close-layers' });
+            // The close button disappears: return keyboard focus to its persistent menu toggle.
+            layerMenuButton.current?.focus({ preventScroll: true });
+          }}
         />
       ) : null}
+      layerPanelOpen={appState.layerPanelOpen}
       compactPanel={appState.compactPanel}
       canvas={
         <>
