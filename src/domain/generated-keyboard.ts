@@ -1,5 +1,15 @@
 /** Issue #52: shortcuts only within the Viewer, never while editing text. */
 export type HistoryShortcut='undo'|'redo';
+/** Delete/Backspace operates only on an explicitly focused canvas in edit mode. */
+export function getGeneratedDeleteShortcut(
+  event:Pick<KeyboardEvent,'key'|'ctrlKey'|'metaKey'|'altKey'|'shiftKey'|'repeat'|'defaultPrevented'|'target'>,
+  canvasFocused:boolean,
+):boolean {
+  return canvasFocused && !event.defaultPrevented && !event.repeat &&
+    !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey &&
+    !isTextEditingTarget(event.target) &&
+    (event.key==='Delete'||event.key==='Backspace');
+}
 type KeyInput=Pick<KeyboardEvent,
   'key'|'ctrlKey'|'metaKey'|'altKey'|'shiftKey'|'defaultPrevented'|'target'>;
 
