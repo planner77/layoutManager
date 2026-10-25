@@ -2,6 +2,8 @@
 
 ## PR #79 실패 및 P2 재발 방지 계획 (2026-10-25)
 
+아래 E2 표의 CODED / NOT RUN 및 작성 / NOT RUN은 최초 작성 시점 상태를 보존한 기록이다. 현재 실행 결과는 [수정 HEAD 로컬 QA](#issue-52-재검증-결과--수정-head-로컬-qa-2026-10-25)와 [TestReport](TestReport.md)를 따른다.
+
 | TC | 범위 | 검증 내용 | 상태 |
 | --- | --- | --- | --- |
 | TC-E2-UNIT-006 | E2-AC1 | WCS (1e9,1e9) 원점에서 먼 1×1 Polygon이 false degenerate로 거부되지 않음 | CODED / NOT RUN |
@@ -10,6 +12,12 @@
 | TC-E2-E2E-001 | CI TS2339 | `HTMLInputElement` 키보드 이벤트 타입 고정 및 기존 native Ctrl+Z 검증 | CODE FIX / NOT RUN |
 
 첫 Run `40168296155`: Typecheck 실패, 뒤 단계 SKIPPED, 독립 Docker SUCCESS; 최신 HEAD에서 전체 PR CI 필요.
+
+## Issue #52 재검증 결과 — 수정 HEAD 로컬 QA (2026-10-25)
+
+- 실제 원인은 `generated-document.test.ts`의 `result()` helper가 geometry 참조를 공유하여 deep-copy mutation이 후속 fixture를 오염시킨 것이었다. 호출별 `structuredClone`과 fresh fixture `[0,0]` assertion으로 수정; 닫힘 검사/제품 validator는 그대로 유지. 사전 계획의 fixture closure 가설은 가설로 보존한다.
+- `TC-E2-UNIT-001~008` 포함 전체 Vitest **202/202 PASS**; Typecheck PASS; Lint PASS(오류 0, 기존 ARIA warning 1); GHCR pair parser 3/3 PASS; outline benchmark PASS; production build PASS; Chromium E2E **65/65 PASS**; Legacy migration **1/1 PASS**. [TestReport](TestReport.md)에서 환경/실행 역할과 한계를 확인한다.
+- Docker 로컬 **NOT RUN**(test-only 수정); 기존 다른 실행 HEAD의 Docker 성공은 최신 HEAD 실증으로 계산하지 않는다. 실 CAD/GPU/운영 수용도 NOT RUN. PR CI 성공 전에는 이 로컬 결과만으로 CI/게시/병합 완료를 주장하지 않는다.
 
 
 ## Issue #52 / E2 v0.38.0 — Command·History·Keyboard·Scene 수용 계획 (2026-10-25)

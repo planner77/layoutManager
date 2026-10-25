@@ -1,5 +1,10 @@
 # ChangeLog
 
+### v0.38.0 / Issue #52 QA 보완 (2026-10-25)
+
+- 테스트 helper의 공유 Polygon 참조가 deep-copy mutation으로 후속 fixture를 오염시키던 원인을 `structuredClone` 격리와 fresh fixture assertion으로 수정. 제품 validator/Ring closure 검증, 앱 버전 및 기능 동작은 변경하지 않음.
+- 독립 로컬 gate Unit 202/202, Typecheck/Lint/Build, Chromium E2E 65/65, Legacy migration 1/1 PASS. PR CI 성공·로컬 Docker·실 CAD/GPU/배포를 주장하지 않음. 상세 [TestReport](TestReport.md) / [Issue52](Issue52.md).
+
 ### v0.38.0 / PR #79 Typecheck 차단·P2 무결성 보완 (2026-10-25)
 
 - 첫 CI `40168296155`의 E2E 테스트 Event TS2339 2건을 input keyboard type 좁히기로 보완. 뒤 Verify 단계 SKIPPED, 별도 Docker SUCCESS 보존.

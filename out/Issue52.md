@@ -1,5 +1,20 @@
 # Issue #52 — E2 GeneratedDocument / Command / Undo·Redo (v0.38.0)
 
+## QA 수정 결과 — Issue52 Verify 재현 독립 확인 (2026-10-25)
+
+- 실행 코드 변경은 `src/tests/unit/generated-document.test.ts`에 한정되며 관련 문서도 갱신했다. `result()`가 기본 Polygon을 공유해 TC-E2-UNIT-001 deep-copy 검증에서 좌표를 `x=900`으로 변이한 뒤, 후속 Ring closure fixture까지 오염시킨 것이 실제 원인이다. 매 helper 호출에서 `structuredClone(geometry)`를 반환하고 변이 후 생성한 fresh fixture의 시작점 `[0,0]` 확인을 추가했다. **닫힘 검증과 제품 validator는 그대로**이며, 당시 사전 계획의 closure-fixture 가설과 구별한다.
+- 독립 검증: 수정 전 파일 단위 4 PASS/6 FAIL 및 detaches 단독 1 PASS 관측(Developer 보고); 수정 후 파일 10/10 PASS 2회(Developer 보고). QA 대행 `gpt-6-luna`가 Node `v22.14.0`에서 전체 Unit 202/202, Typecheck, Lint(오류 0/기존 ARIA warning 1), GHCR parser 3/3, synthetic benchmark, Production Build, Chromium E2E 65/65, Legacy migration E2E 1/1을 실행해 모두 PASS로 재확인했다. 실 CAD/GPU 및 로컬 Docker는 NOT RUN. 세부 [TestReport](TestReport.md), 누적 실패·원인 [FailureLedger](FailureLedger.md).
+- Unit 수정 전후 자체 회귀는 현재 Unit gate의 일부이며, PR CI Run `40169744777`의 6 Unit 실패 및 더 이른 TS 실패를 덮어쓰지 않는다. 로컬 결과는 PR CI 성공/게시/병합/Issue 종료를 뜻하지 않는다. 버전 `0.38.0`, 제품 코드/DB/API/원본 및 #31 P4 정책 불변.
+
+## 두 번째 CI Unit 실패 보완 요구·설계·AC (2026-10-25)
+
+- 관측: [Run 40169744777](https://github.com/planner77/layoutManager/actions/runs/40169744777), HEAD `41cf16c`, Verify `121097994868`: TypeScript/Lint PASS, Unit 196 PASS / 6 FAIL (`generated-document.test.ts`, `닫히지 않은 Ring입니다.`), 이후 Build/E2E/Legacy SKIPPED. Docker `121097994934` SUCCESS. 최초 TS 실패 이력은 보존한다.
+- 요구: 기존 E2 Command/History·좌표 검증 계약을 유지하면서 6건의 실제 실패 원인을 재현하고 최소 수정한다. 닫힌 Ring·유한좌표·원자성 검사를 약화하거나 실패 테스트를 건너뛰지 않는다.
+- 설계: 실패 fixture와 실제 WCS Ring closure 계약을 대조하여 fixture 결함인지 운영 코드 결함인지 먼저 판별한다. fixture의 closure 좌표를 명시적으로 재사용하는 것이 필요한 경우 테스트 작성부만 교정한다. DB/API/원본/서버 권한 및 기능 버전 `0.38.0` 유지.
+- AC: (1) 수정 전 6개 실패 재현, (2) E2 회귀 001~008 및 전체 Unit PASS, (3) Typecheck/Lint/Build 및 관련 E2E·기존 Legacy gate 실행 결과 기록, (4) 실패 원장에 두 Run의 서로 다른 원인·단계 결과 보존, (5) 리뷰 미해결/충돌 재확인 후 새 HEAD PR CI 시작만 확인. CI 모니터링·병합·게시·이슈 종료는 범위 밖이다.
+- 역할: Manager가 이 계획을 먼저 기록하고 Developer 구현 검토 후 QA 검증·문서화한다. 지정 모델 실행 불가 시 실제 대행 모델과 결과를 TestReport에 명시한다.
+
+
 ## 최초 PR CI 실패 및 P2 리뷰 대응 (2026-10-25)
 
 - [Run 40168296155](https://github.com/planner77/layoutManager/actions/runs/40168296155) HEAD `40aba11f`: E2E input `Event` 추론에 의한 TypeScript TS2339 2건, Typecheck FAIL. 나머지 Verify Lint/Unit/Build/E2E/Legacy SKIPPED, Docker 별도 SUCCESS.

@@ -1,5 +1,13 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE52-QA-20261025 — 수정 HEAD 독립 로컬 검증
+
+- 역할: Manager `gpt-6-astra`가 사전 요구·설계·AC를 기록하고 Developer `gpt-5.6-sol`의 재현/수정을 검토한 뒤 독립 QA를 지시했다. 지정 QA `gpt-5.6-luna`는 사용 가능한 모델 목록에 없어 `gpt-6-luna`가 실제 검증을 대행했다. 검증 대상은 checkout HEAD `41cf16c`에 이 fixture 수정 working-tree patch를 적용한 상태; 앱 버전 `0.38.0`; 실행 환경 Node `v22.14.0`, 로컬 Chromium/Playwright. Root의 `npm ci` 관측은 13 vulnerabilities(3 moderate, 9 high, 1 critical); 이 test-only 수정 범위 밖이며 자동 audit fix는 실행하지 않았다.
+- `npm run typecheck` **PASS**; `npm run lint` **PASS**(0 error, 기존 `outline-tree-panel.tsx:115` treeitem `aria-selected` warning 1); `npm test` **PASS 202/202 (42 files)**; `node --test scripts/measure-ghcr-pair.check.mjs` **PASS 3/3**; `npm run test:outline-benchmark` **PASS**, 합성 1k/10k/100k 측정 완료. 벤치마크 JSON stdout에는 machine/timing 데이터만 출력했고 artifact로 커밋하지 않았다.
+- `npm run build` **PASS**; `npm run test:e2e` **PASS 65/65** (Chromium, 4.8 min), TC-E2-E2E-001/002 포함; `npm run test:master-migration` **PASS 1/1** (10.9s). 로컬 Docker는 test-only fixture 수정으로 **NOT RUN**이며, 선행 CI HEAD의 Docker Job SUCCESS는 이 HEAD의 Docker 재실행으로 취급하지 않는다. 실 CAD/GPU/현장 수용은 **NOT RUN**.
+- 원인/수정: 테스트 helper `result()`가 공유 Polygon geometry 참조를 반환했고, deep-copy 검증이 `x=900`으로 변이해 후속 테스트 fixture를 오염시켰다. `src/tests/unit/generated-document.test.ts`에서 helper 호출별 `structuredClone(geometry)`를 반환하고, 변이 후 새 fixture가 `[0,0]`인지 확인하는 assertion을 추가했다. 닫힘 검증 및 제품 validator는 변경하지 않았다. Issue52의 당시 closure fixture 가설은 계획 시점 기록으로 보존하고 아래 [Issue52](Issue52.md)/[FailureLedger](FailureLedger.md)에 최종 원인과 구분한다.
+- PR Run `40169744777`의 이전 6 Unit 실패와 최초 TS 실패는 각각 당시 단계 결과로 보존한다. 이번 로컬 PASS는 PR CI 성공, GHCR 게시, 병합, Issue 종료를 의미하지 않는다. [Issue52](Issue52.md), [TestPlan](TestPlan.md), [FailureLedger](FailureLedger.md).
+
 ## Issue #52 / PR #79 — 최초 TypeScript 실패·P2 3건 수정 (새 CI 전)
 
 - [Run 40168296155](https://github.com/planner77/layoutManager/actions/runs/40168296155) HEAD `40aba11f`: npm ci/Prisma PASS, Typecheck **FAIL** (E2E `Event.key`/`ctrlKey` TS2339 ×2); Lint/Unit/Benchmark/Build/Chromium E2E/Legacy SKIPPED, 별도 Docker SUCCESS.

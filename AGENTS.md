@@ -1,5 +1,10 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #52 / PR #79 — 두 번째 CI Unit 실패 수정 및 QA 결과 (2026-10-25)
+
+- 두 번째 Verify의 6 Unit 실패 원인은 `generated-document.test.ts` fixture helper geometry 공유와 deep-copy 검증 변이로 인한 테스트 간 오염이었다. 호출별 deep clone/fresh fixture 검증으로 교정했고 제품의 Ring closure 검사/validator는 유지했다.
+- Issue #52를 재개하거나 릴리스할 때 실제 로컬 검증·대행 역할·미검증 범위는 [TestReport](out/TestReport.md), 두 CI 실패 원인은 [FailureLedger](out/FailureLedger.md), AC는 [Issue52](out/Issue52.md)를 확인한다. 새 PR CI 성공 여부는 별도 확인한다.
+
 ## Issue #52 / PR #79 — TypeScript 실패와 무결성 리뷰 보완 (2026-10-25)
 
 - 최초 [PR CI 40168296155](https://github.com/planner77/layoutManager/actions/runs/40168296155) HEAD `40aba11f`: E2E 테스트 `Event.key/ctrlKey` TS2339 2건으로 Typecheck FAIL, Lint/Unit/Build/E2E/Legacy SKIPPED, Docker 별도 SUCCESS. `querySelector<HTMLInputElement>`로 typecheck 오류 보완.

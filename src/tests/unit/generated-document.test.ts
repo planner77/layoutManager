@@ -21,7 +21,7 @@ const multi:GeoJSONOutline={type:'MultiPolygon',coordinates:[
   [[[20,20],[25,20],[25,25],[20,25],[20,20]]],
 ]};
 function result(geometry=polygon):OutlineResult{
-  return {kind:'PRECISE',algorithm:'polygon-clipping-union-v1',geometry,
+  return {kind:'PRECISE',algorithm:'polygon-clipping-union-v1',geometry:structuredClone(geometry),
     tolerance:0.02,sourceEntityIds:['ref/A1','ref/B2'],persistable:true,
     warnings:[],durationMs:2};
 }
@@ -76,6 +76,8 @@ describe('TC-E2-UNIT-001: immutable WCS document and lossless history',()=>{
     const before=doc.getObjects()[0].baseGeometry;
     if(external.geometry.type==='Polygon')external.geometry.coordinates[0][0][0]=900;
     expect(before.type==='Polygon' && before.coordinates[0][0]).toEqual([0,0]);
+    const fresh=result();
+    expect(fresh.geometry.type==='Polygon' && fresh.geometry.coordinates[0][0]).toEqual([0,0]);
     expect(applyAffine(before,IDENTITY_2D)).toEqual(before);
     expect(Object.isFrozen(before)).toBe(true);
     doc.dispose();
