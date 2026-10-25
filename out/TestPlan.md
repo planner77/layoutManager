@@ -1,6 +1,6 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
-## Issue #66 — Migrator 독립 최소 런타임 및 OCI 계측 (v0.36.2)
+## Issue #66 — Migrator 독립 최소 런타임 및 OCI 계측 (v0.37.1)
 
 | TC | Acceptance | 자동 검증 기준 | 상태 |
 | --- | --- | --- | --- |
@@ -16,6 +16,27 @@
 
 - PR CI 흐름에서 `verify`는 Typecheck/Lint/Vitest/Build/E2E/Legacy를, 독립 `docker-runtime`은 실제 migrator/native/Compose/실패/측정 경로를 수행한다. 로컬 Docker/소스 설치 시험은 현재 환경에서 미실행. **PR CI 시작과 성공을 구분**하며 Main/GHCR의 공개 version OCI 크기는 PR CI로 대체할 수 없다.
 - 노드만 사용하는 OCI 파서 회귀는 `node --test src/scripts/measure-ghcr-pair.check.mjs`로 검증(실제 registry 연결은 Main publish). [Issue66](Issue66.md), [TestReport](TestReport.md), [Operation](Operation.md).
+## Issue #51 / PR #77 — 최초 Unit 차단 및 작은 좌표 교차 회귀 계획 (2026-10-25)
+
+- **TC-U6-UNIT-003 (기존):** 단일 `focusSavedOutline('local-1')` 호출은 Adapter의 `selectSavedOutline('local-1')` **인수 1개** 계약 유지. 최초 Run 40164835838에서 인수 false 추가로 FAIL; 수정 HEAD 재실행 후 판정.
+- **TC-E1-UNIT-003 (추가):** Ctrl/⌘ `focusSavedOutline('local-1',true)`일 때만 Adapter `('local-1',true)` 및 WCS focus를 유지. 첫 Run에서 실행되지 않은 추가 assertion, 새 CI 전 NOT VERIFIED.
+- **TC-E1-UNIT-004 (추가):** 0.001 WCS 정사각형에 `[-0.001,0.0004,0.002,0.0006]` 가로창이 교차=true, 내부창 true, 떨어진 근접 평행·인접 창=false, 점 히트 근접성 기준. 고정 determinant product 임계값 재발 방지. [P2 Review 4369760096](https://github.com/planner77/layoutManager/pull/77#discussion_r4369760096). 새 CI 전 NOT VERIFIED.
+- 첫 Run에서 Unit 실패 후 Benchmark/Build/E2E/Legacy 전부 SKIPPED. 해당 단계가 실패했다고 표시하지 않으며 최신 HEAD PR CI에서 검증해야 한다.
+
+
+## Issue #51 / E1 v0.37.0 — 통합 객체 선택 시험 계획 (2026-10-25)
+
+| TC | AC | 검증 목적 | 작성/실행 상태 |
+| --- | --- | --- | --- |
+| TC-E1-UNIT-001 | AC1/2/4/5 | SOURCE/GENERATED 동일 Scope의 Ref·UUIDv4(getRandomValues HTTP fallback)·혼합/원본/중복/버전 위조 edit gate | 테스트 작성 / **NOT RUN** |
+| TC-E1-UNIT-002 | AC3 | Polygon/Hole/Stroke/MultiPolygon·퇴화/NaN·Window 완전 포함/교차 정합성 | 테스트 작성 / **NOT RUN** |
+| TC-E1-E2E-001 | AC1/2/3 | 유효 90=4 합성 DXF, SOURCE 1+GENERATED 2 영역 선택, readonly gate, Tree Ctrl/⌘ 다중 선택·highlight·v1 JSON 로컬 ID/원본 재요청 없음 | 테스트 작성 / **NOT RUN** |
+| TC-E1-E2E-002 | AC3/4 | Source Layer/Generated hide 개별 선택 해제, 우→좌 영역, ESC, Reload 폐기 | 테스트 작성 / **NOT RUN** |
+| TC-E1-E2E-003 | AC3/4 | 미지원 DXF Renderer 비활성 및 원본 작업 격리 | 테스트 작성 / **NOT RUN** |
+| #31/#40/#42/#43 + Build/Docker | 회귀 | #31 Source selection/Worker, #40 생성 ON/OFF, JSON v1/2, Tree, UI, Legacy migration 등 PR CI gate | **NOT RUN** |
+
+실제 다중 CAD/성능/GPU/OS·브라우저 수용은 현장 실증 별도. 로컬 실행 불가 시 PASS로 기록하지 않으며 Actions run 성공 전 수용 승인 금지. 상세 [Issue51](Issue51.md).
+
 
 ## Issue #74 — GHCR v0.36.1 패치 게시 검증 (2026-10-25)
 

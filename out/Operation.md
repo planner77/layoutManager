@@ -1,12 +1,12 @@
 # 운영·환경설정 초안
 
-## Issue #66 / v0.36.2 — 최소 migrator 이미지 구축·배포·측정
+## Issue #66 / v0.37.1 — 최소 migrator 이미지 구축·배포·측정
 
 **빌드 범위:** `docker buildx build --load --platform linux/amd64 --target migrator -f src/Dockerfile -t cad-layout-viewer:ci-migrate .`. `dependencies` stage 전체 `npm ci` → lock 기반 전용 manifest → offline prune → 최종 작은 `node_modules` copy. 최종 컨테이너에서 npm install/prune을 수행하지 않으므로 GHCR 이미지 Pair Pull 후 인터넷 불필요. Prisma CLI, tsx, native SQLite, schema/migrations/generated client는 남는다.
 
 **크기 계측:** PR CI가 같은 HEAD에서 *PR base Dockerfile* migrator를 `cad-layout-viewer:baseline-migrate`, 수정본을 `:ci-migrate`로 빌드하고 `bash src/scripts/measure-migrator.sh cad-layout-viewer:baseline-migrate cad-layout-viewer:ci-migrate "$GITHUB_STEP_SUMMARY"`를 실행. `docker image inspect Size`·history·`du`·패키지 상위 목록은 로컬 **비압축**, `docker save|gzip -1`는 네트워크 전송량 대체 불가 proxy. **30%는 soft target**. #28 pre-standalone web(2.05GB) baseline을 migrator 절감률에 쓰지 않는다.
 
-**실제 GHCR OCI 압축 계측(게시 후):** `node src/scripts/measure-ghcr-pair.mjs ghcr.io/planner77/layoutmanager:0.36.2 ghcr.io/planner77/layoutmanager:0.36.2-migrate`. Workflow가 version pair 게시/inspect 후 Job Summary에 앱/마이그레이터 각각의 linux/amd64 **압축 layer.size** 합, 단순 합, 공통 layer digest 중복 제거 합/공유량을 남긴다. OCI index/config/attestation descriptor, docker-save gzip를 OCI 다운로드 크기에 혼합하지 않는다. **실제 version tag 게시 전에는 수치·digest를 확정할 수 없다.**
+**실제 GHCR OCI 압축 계측(게시 후):** `node src/scripts/measure-ghcr-pair.mjs ghcr.io/planner77/layoutmanager:0.37.1 ghcr.io/planner77/layoutmanager:0.37.1-migrate`. Workflow가 version pair 게시/inspect 후 Job Summary에 앱/마이그레이터 각각의 linux/amd64 **압축 layer.size** 합, 단순 합, 공통 layer digest 중복 제거 합/공유량을 남긴다. OCI index/config/attestation descriptor, docker-save gzip를 OCI 다운로드 크기에 혼합하지 않는다. **실제 version tag 게시 전에는 수치·digest를 확정할 수 없다.**
 
 **신규 설치 / 업그레이드:** 운영 DB/CAD/S3를 같은 시점에 백업하고 실제 복구 경로를 확인 → 옛 `app` writer 중지 → 동일 `version` 앱/마이그레이터 이미지 Pair 존재·digest 확인 → `docker compose --env-file .env -f src/docker-compose.yml up --no-build --force-recreate migrate`(exit 0 필수) → `up -d --no-build app` → `/api/health` 200 및 데이터·Current·hash 확인. `migrate` 서비스 이름/volume 이름/depends_on 성공 조건은 그대로다. Tagless `latest` 정규화는 `bash src/scripts/compose.sh .env ...`, digest pin은 `GHCR_MIGRATION_IMAGE`을 반드시 명시. 구 앱과 schema 변경 중 동시에 쓰기 금지.
 

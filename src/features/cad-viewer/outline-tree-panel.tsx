@@ -10,7 +10,7 @@ type Props = {
   overlayStates: readonly SavedOutlineOverlayState[];
   types: readonly OutlineTreeType[];
   allowDelete: boolean;
-  onSelect: (id: string) => void;
+  onSelect: (id: string, additive?: boolean) => void;
   onVisibility: (id: string, visible: boolean) => void;
   onGroupVisibility: (ids: string[], visible: boolean) => void;
   onDelete: (id: string) => void;
@@ -76,7 +76,7 @@ export function OutlineTreePanel({
         break;
       case 'Enter':
       case ' ':
-        if (leafId) onSelect(leafId);
+        if (leafId) onSelect(leafId, event.ctrlKey || event.metaKey);
         else toggle(groupId);
         break;
       default: return;
@@ -143,7 +143,7 @@ export function OutlineTreePanel({
                           tabIndex={focusedKey === key ? 0 : -1}
                           onFocus={() => setFocusedKey(key)}
                           onKeyDown={event => handleKey(event, key, group.id, item.id)}
-                          onClick={() => onSelect(item.id)}
+                          onClick={event => onSelect(item.id, event.ctrlKey || event.metaKey)}
                           className={'my-1 flex cursor-pointer items-center gap-1 rounded px-1 py-1 focus-visible:outline-2 focus-visible:outline-teal-600 ' +
                             (item.selected ? 'bg-teal-100' : 'hover:bg-slate-100')}>
                           <span className="min-w-0 flex-1 truncate" title={item.name}>

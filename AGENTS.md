@@ -5,7 +5,18 @@
 - 분리된 `migrator`는 더 이상 `dependencies/node_modules` 전체를 복사하지 않는다. `migrator-dependencies`는 `src/package-lock.json`의 고정 버전으로 최소 런타임 manifest 생성 → `npm prune --omit=dev --offline --legacy-peer-deps` → 필수 Prisma CLI/tsx/native 및 불필요 Next/React/test 모듈 부재 검증을 수행한다. 웹 `runtime`/builder 패키징은 그대로다.
 - Entrypoint는 `tsx scripts/deploy.ts`로 Prisma `migrate deploy` → 비밀번호 backfill의 기존 실행 순서를 보존. 최종 이미지에는 generated client, Prisma schema/migrations/config, 필요한 source module만 포함하며 UID 10001, /data, CA/OpenSSL, Compose 완료 성공 의존, GHCR digest/tag 쌍 계약 유지. 앱/DB schema는 변경하지 않는다.
 - PR CI에서 **PR base migrator**와 현재 migrator의 같은 Node22.14/linux-amd64 비압축 크기를 비교한다. 과거 #28 웹 2.05GB를 migrator 기준으로 쓰지 않고, 30% 절감은 soft target. Main 릴리스는 실제 공개 version app+migrator의 OCI compressed layers 및 공유 digest를 별도로 계측한다. CI 미실행은 성공 아님.
-- 버전 `0.36.2`. 근거·AC/테스트/배포·복구: [Issue66](out/Issue66.md), [Architecture](out/Architecture.md), [Operation](out/Operation.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md), [ADR-042](out/Decisions.md).
+- 버전 `0.37.1`. 근거·AC/테스트/배포·복구: [Issue66](out/Issue66.md), [Architecture](out/Architecture.md), [Operation](out/Operation.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md), [ADR-043](out/Decisions.md).
+## Issue #51 / PR #77 — Unit API 계약 실패 및 미세 WCS P2 (2026-10-25)
+
+- 첫 [PR CI 40164835838](https://github.com/planner77/layoutManager/actions/runs/40164835838): `TC-U6-UNIT-003` 실패(`focusSavedOutline` 기본 false 인수로 이전 단일 호출 계약 불일치), Unit 186 PASS/1 FAIL; TS/Lint PASS, Benchmark/Build/E2E/Legacy SKIPPED, Docker Job PASS. 기본 `selectSavedOutline(id)` 호출은 유지하고 E1 additive에서만 `(id,true)` 사용한다.
+- [P2 #4369760096](https://github.com/planner77/layoutManager/pull/77#discussion_r4369760096)는 CI 실패 별개: 0.001 WCS crossing window에서 고정 orientation product epsilon에 의한 false negative. orientation sign 직접 비교와 상대적 round-off bound, TC-E1-UNIT-004 적용. 증거·조치 [FailureLedger](out/FailureLedger.md), [Issue51](out/Issue51.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md). 변경 HEAD CI 성공 전 PASS 주장 금지.
+
+
+## Issue #51 / E1 — 통합 Canvas 선택·편집 경계 (2026-10-25)
+
+- v0.37.0: SOURCE는 #31 RenderCoverage에 의해 검증된 DXF Entity, GENERATED는 브라우저 확정 Polygon/MultiPolygon Overlay. SelectionController 하나로 Pan/U3 Source 선택/일반 통합/생성 전용 네 모드를 처리한다. 동일 Version/SHA/Origin을 갖는 Ref와 generated UUIDv4를 사용하며 기존 local-N JSON 스키마를 보존한다.
+- 편집 가능 표시는 *권한/명령 실행이 아니다*: SOURCE 및 혼합은 전체 거부, 생성만 향후 E2~E5 편집 대상으로 판정. 트리 다중 선택·레이어/Overlay 숨김·Zoom/ESC/Space·Reset과 동기화한다. #31 P4/#65 승인 전 서버 쓰기/관리 API 절대 구현 금지. [Issue51](out/Issue51.md), [ADR-042](out/Decisions.md), Unit/E2E(TestPlan/Report) 참조. 테스트 미실행·CI 시작은 PASS로 간주하지 않는다.
+
 
 ## Issue #74 — MAIN CI 실행명에 Squash Commit 본문 유입 방지 (2026-10-25)
 
@@ -216,6 +227,7 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 | [Issue10](out/Issue10.md) | GitHub #10 전체 화면 요구사항·설계·CI 근거 | Viewer 전체 화면, ESC/종료, 컨테이너 resize 또는 view state 보존 변경 시 |
 | [Issue38](out/Issue38.md) | Viewer 앱형 메뉴·도킹 셸/ESC 상태·후속 U2/U3/U6 계약 | Viewer shell·도킹·메뉴·검색/선택 ESC 변경 시 |
 | [Issue39](out/Issue39.md) | Viewer 메뉴와 레이어 패널 표시 상태 독립/접근성·포커스·회귀 근거 | 레이어 메뉴·도크 접기/Renderer·fullscreen 레이어 UX 변경 시 |
+| [Issue51](out/Issue51.md) | 원본/생성 객체 통합 선택·편집 가능 판정·트리/Canvas 동일 선택 집합 | 객체 선택·편집 권한/Geometry·Overlay·선택 모드 변경 시 |
 | [Issue42](out/Issue42.md) | U5 업무 타입 지정·이름 및 schemaVersion 2 JSON 계약·#65 보안 승인 경계 | Viewer 타입 선택·외곽선 임시 확정·JSON/Tree 연계 변경 시 |
 | [Issue40](out/Issue40.md) | U3 외곽선 ON/OFF·Worker 취소·임시 확정/JSON 보존 정책 및 AC 추적 | 외곽선 메뉴·객체 선택·취소·임시 Overlay/Renderer·ESC 변경 시 |
 | [FailureLedger](out/FailureLedger.md) | PR/Main CI 관측 실패·조치·재검증 누적 원장 | CI 실패·취소·재시작 시 |
@@ -224,7 +236,8 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 | [Release 0.21.0](out/Release-0.21.0.md) | 0.21.0 병합·태그·GHCR 게시 근거 | 0.21.0 릴리스 확인 및 운영 이미지 식별 시 |
 | [Issue31](out/Issue31.md) | DXF 다중 선택·볼록/정밀 외곽선·실험 상태·P4 권한 보류 | Viewer 선택·외곽선/Worker/JSON 변경 시 |
 | [Issue26](out/Issue26.md) | DXF TEXT/MTEXT 색인·world 좌표 focus·검색 범위/검증 | Viewer 검색·Pan/Zoom·Worker·BLOCK/INSERT·DWG 텍스트 지원 검토 시 |
-| [Issue66](out/Issue66.md) | Migrator 최소 의존성·크기 측정/OCI manifest·복구 계약 | Docker migrator/CI/GHCR 및 버전·패키징 변경 시 |\n| [Issue28](out/Issue28.md) | 운영 이미지 경량화·Migration 분리·측정/롤백 | Dockerfile, Standalone, Compose, GHCR 변경 시 |
+| [Issue66](out/Issue66.md) | Migrator 최소 의존성·크기 측정/OCI manifest·복구 계약 | Docker migrator/CI/GHCR 및 버전·패키징 변경 시 |
+| [Issue28](out/Issue28.md) | 운영 이미지 경량화·Migration 분리·측정/롤백 | Dockerfile, Standalone, Compose, GHCR 변경 시 |
 | [Issue24](out/Issue24.md) | 기준정보 계층·이관·층별 Current 요구/설계/AC | 기준정보·계층 등록·제품 조회·legacy 이관 변경 시 |
 | [README](README.md) | 사용자/개발자 프로젝트 안내 | 기능·구조·설정·실행방법 변경 시 |
 

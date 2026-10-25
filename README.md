@@ -1,11 +1,17 @@
 # CAD Web Viewer P.O.C.
 
-## v0.36.2 — Issue #66 migrator 이미지 의존성 경량화 (검증 전)
+## v0.37.1 — Issue #66 migrator 이미지 의존성 경량화 (검증 전)
 
 - 신규/업그레이드 시 `migrate` Compose 서비스와 `app`의 성공 순서·`/data` 볼륨·UID 10001은 종전과 동일합니다. 변경은 **migrator 이미지 내부 패키징**에 한정되며 앱 UI, DB 스키마, 원본 CAD는 변경하지 않습니다.
-- Prisma CLI·TypeScript runner·SQLite Native와 실제 비밀번호 Backfill 모듈만 포함하도록 전용 의존성을 정리하고 웹/테스트·빌드 패키지 복사를 피합니다. 신규 웹 기능이 아니라 버전 `0.36.2` 패치입니다.
-- 배포 전 동일 시점 DB/CAD/S3 백업 및 복구 확인, 기존 앱 writer 정지, **동일 버전** `ghcr.io/planner77/layoutmanager:0.36.2` + `:0.36.2-migrate` 사용, migrate exit 0 후 app health 확인. GHCR tag/이미지 게시 여부는 Main CI에서 실제 확인해야 합니다. 디지털 크기 절감률과 OCI 다운로드량은 PR CI/릴리스 측정 전 **미확정**입니다.
+- Prisma CLI·TypeScript runner·SQLite Native와 실제 비밀번호 Backfill 모듈만 포함하도록 전용 의존성을 정리하고 웹/테스트·빌드 패키지 복사를 피합니다. 신규 웹 기능이 아니라 버전 `0.37.1` 패치입니다.
+- 배포 전 동일 시점 DB/CAD/S3 백업 및 복구 확인, 기존 앱 writer 정지, **동일 버전** `ghcr.io/planner77/layoutmanager:0.37.1` + `:0.37.1-migrate` 사용, migrate exit 0 후 app health 확인. GHCR tag/이미지 게시 여부는 Main CI에서 실제 확인해야 합니다. 디지털 크기 절감률과 OCI 다운로드량은 PR CI/릴리스 측정 전 **미확정**입니다.
 - [Issue66 상세](out/Issue66.md) · [운영 지침](out/Operation.md) · [테스트 계획](out/TestPlan.md).
+## v0.37.0 — Issue #51 원본·생성 개체 통합 선택 (E1)
+
+- DXF + three-dxf-viewer에서 외곽선 **생성 OFF** 상태로도 하단 **원본·생성 선택** 또는 **생성 개체만 선택**을 사용할 수 있습니다. Ctrl/⌘+클릭과 방향별 영역 선택, 트리 클릭/키보드 다중 선택을 같은 선택 집합에서 처리합니다. 일반 모드의 겹침 클릭은 원본 우선이며 생성 개체 선택은 전용 모드 또는 트리를 사용합니다.
+- 원본 SOURCE는 항상 읽기 전용입니다. 생성 GENERATED만 향후 로컬 편집 가능한 개체로 표시되고, SOURCE 혼합·중복·다른 버전 Ref는 전체 편집 불가입니다. **E1은 실제 삭제·이동·회전·Undo를 구현하지 않습니다**(후속 #52~#55).
+- 생성 개체 참조는 UUIDv4/Version/SHA 기반의 세션 내부 ID입니다. 기존 JSON v1/v2의 local-N 형식과 확정 Overlay/트리/가시성·생성 OFF 기본 Pan 계약을 보존합니다. Reload/Renderer/Version 변경 시 임시 객체가 폐기되고 서버 DB/원본 DXF는 변경되지 않습니다. 미지원 Renderer/DWG, 보안 승인 전 서버 저장은 비활성. [Issue51](out/Issue51.md) 참고. 로컬 테스트 및 PR CI 성공은 아직 검증되지 않았습니다.
+
 
 ## v0.36.0 — Issue #43 외곽선 목록·타입별 임시 트리
 

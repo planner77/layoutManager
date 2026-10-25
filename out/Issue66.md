@@ -1,6 +1,6 @@
 # Issue #66 — GHCR migrator 전용 의존성 경량화 (2026-10-25)
 
-**상태:** 설계·코드·CI·문서 반영 / PR CI 시작 전. 실제 Docker 빌드, 운영 환경 수용, GHCR 게시 결과 **NOT VERIFIED**. 이 문서는 #28의 이전 웹 이미지 경량화와 구별되는 후속 이슈 추적 문서다. 기능 변경이 아닌 빌드 최적화 패치 버전은 `0.36.2`.
+**상태:** 설계·코드·CI·문서 반영 / PR CI 시작 전. 실제 Docker 빌드, 운영 환경 수용, GHCR 게시 결과 **NOT VERIFIED**. 이 문서는 #28의 이전 웹 이미지 경량화와 구별되는 후속 이슈 추적 문서다. 기능 변경이 아닌 빌드 최적화 패치 버전은 `0.37.1`.
 
 ## 배경 및 기준선
 
@@ -35,5 +35,5 @@
 
 - 코드 작성만으로 절감률·Prisma CLI 동작·Docker build 성공·GHCR 게시 성공을 주장하지 않는다. 현 접속 환경에는 Docker 및 Node 패키지 설치된 로컬 재현 환경이 없으므로 **PR CI 결과**와 **릴리스 후 GHCR manifest 관측**이 각각 필요하다.
 - 기존 운영 데이터/원본은 변경하지 않는다. 업그레이드 시 **동일 시점 DB/CAD/S3 백업·복구 점검 → 구 앱 writer 정지 → 동일 버전 migrator exit 0 → 앱 기동/health 확인**. 실패하면 앱 기동 보류, 로그/backup 점검. 이전 app+과거 DB 스키마 조합으로 임의 재시작 금지, `docker compose down -v` 금지.
-- `0.36.2` GHCR 두 version tag 및 두 최신 별칭은 Main CI가 실제로 candidate pair 승격할 때만 존재한다고 판정할 수 있다. PR CI 성공만으로 게시·이슈 종료하지 않는다.
-- 재현·복구 명령과 롤백 기준: [Operation](Operation.md). 이전 baseline 정의: [Issue28](Issue28.md). 중요 설계 판단: [ADR-042](Decisions.md).
+- `0.37.1` GHCR 두 version tag 및 두 최신 별칭은 Main CI가 실제로 candidate pair 승격할 때만 존재한다고 판정할 수 있다. PR CI 성공만으로 게시·이슈 종료하지 않는다.
+- 재현·복구 명령과 롤백 기준: [Operation](Operation.md). 이전 baseline 정의: [Issue28](Issue28.md). 중요 설계 판단: [ADR-043](Decisions.md).
