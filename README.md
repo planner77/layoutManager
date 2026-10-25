@@ -1,5 +1,11 @@
 # CAD Web Viewer P.O.C.
 
+## Issue #97 — P4-D2 서버 DXF 이동·회전 검증기 (개발용, 영속 API 비활성)
+
+- [Issue97](out/Issue97.md), [ADR-050](out/Decisions.md): 기존 `src/server/outline/attestation.ts`가 원본 canonical-only JSON을 검사하는 기능에 더해 별도 `src/server/outline/transform-attestation.ts`가 서버 불변 DXF의 SHA/Stable root Handle/INSUNITS/WCS XY 기준 Geometry와 **Translate·Rotate(pivot)만** 다시 계산합니다. JSON v1/v2 하위호환, 0.02 Drawing Unit, Polygon/MultiPolygon/Hole 및 client geometry 위조 거부. nested child BLOCK instancePath는 현 파서에서 안정적으로 발급되지 않아 거부하며, Scale/Shear/Mirror/Z/대좌표 오버플로우는 미지원입니다.
+- **운영 기능이 아닙니다.** 실제 원본 획득·로그인/권한·사이트 범위·Prisma/CRUD/Revision CAS/감사는 미연결(#96/#98), 실제 공장 도면·GPU 실증은 #99 별도입니다. 도면 원본/Current/Version/SHA와 Viewer UI 및 브라우저 JSON 내보내기 동작은 바뀌지 않습니다. 기능 버전은 0.40.1 유지.
+- 자동 Unit `src/tests/unit/outline-transform-attestation.test.ts`를 작성했으나 Node Typecheck/Vitest/Playwright/Docker/실 DXF는 현재 원격 작업에서 실행하지 않았습니다(**NOT RUN**). 사용 방법·오류 코드·입력 확장은 [Issue97](out/Issue97.md) 참조.
+
 ## v0.40.1 — Issue #93 도면 목록에서 이전 버전 표시·검색 복원
 
 - **기본은 Current만 표시:** CAD 도면 목록(`/`)에 들어오거나 `초기화`를 누르면 Location별로 Current로 지정된 도면만 보입니다. 최신 등록/높은 V번호를 자동 Current로 지정하지 않습니다.
