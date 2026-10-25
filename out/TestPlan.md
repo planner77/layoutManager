@@ -1,5 +1,19 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #51 / E1 v0.37.0 — 통합 객체 선택 시험 계획 (2026-10-25)
+
+| TC | AC | 검증 목적 | 작성/실행 상태 |
+| --- | --- | --- | --- |
+| TC-E1-UNIT-001 | AC1/2/4/5 | SOURCE/GENERATED 동일 Scope의 Ref·UUIDv4(getRandomValues HTTP fallback)·혼합/원본/중복/버전 위조 edit gate | 테스트 작성 / **NOT RUN** |
+| TC-E1-UNIT-002 | AC3 | Polygon/Hole/Stroke/MultiPolygon·퇴화/NaN·Window 완전 포함/교차 정합성 | 테스트 작성 / **NOT RUN** |
+| TC-E1-E2E-001 | AC1/2/3 | 유효 90=4 합성 DXF, SOURCE 1+GENERATED 2 영역 선택, readonly gate, Tree Ctrl/⌘ 다중 선택·highlight·v1 JSON 로컬 ID/원본 재요청 없음 | 테스트 작성 / **NOT RUN** |
+| TC-E1-E2E-002 | AC3/4 | Source Layer/Generated hide 개별 선택 해제, 우→좌 영역, ESC, Reload 폐기 | 테스트 작성 / **NOT RUN** |
+| TC-E1-E2E-003 | AC3/4 | 미지원 DXF Renderer 비활성 및 원본 작업 격리 | 테스트 작성 / **NOT RUN** |
+| #31/#40/#42/#43 + Build/Docker | 회귀 | #31 Source selection/Worker, #40 생성 ON/OFF, JSON v1/2, Tree, UI, Legacy migration 등 PR CI gate | **NOT RUN** |
+
+실제 다중 CAD/성능/GPU/OS·브라우저 수용은 현장 실증 별도. 로컬 실행 불가 시 PASS로 기록하지 않으며 Actions run 성공 전 수용 승인 금지. 상세 [Issue51](Issue51.md).
+
+
 ## Issue #43 / PR #72 P2 키보드 가시성 회귀 (2026-10-25)
 
 - **TC-U6-E2E-001 확장:** 폭 320px·높이 700px(도크 최대 20dvh)에서 트리 첫 그룹에 focus → `End` 이동 후 마지막 항목이 `role=tree` 스크롤 영역의 사각형에 완전히 들어오는지 확인한다. `Home`은 첫 그룹에 되돌아오고 `window.scrollY`는 불변. Canvas DOM 유지·Scroll 허용 범위를 tree 내부로만 제한.
