@@ -102,7 +102,7 @@ describe('TC-E2-UNIT-002: atomic command and hostile scope validation',()=>{
       [translate(refs,1e13,0),selection],
       [{type:'Rotate',ids:refs,angleDegrees:Infinity,pivot:[0,0]},selection],
       [{type:'Rotate',ids:refs,angleDegrees:90,pivot:[Number.NaN,0]},selection],
-      [{type:'Rotate',ids:refs,angleDegrees:90,pivot:[0]},selection],
+      [{type:'Rotate',ids:refs,angleDegrees:90,pivot:[0] as unknown as [number,number]},selection],
       [{type:'Delete',ids:[refs[0],refs[0]]},selection],
     ];
     for(const [cmd,select] of invalid){
