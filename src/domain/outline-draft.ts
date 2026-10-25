@@ -128,7 +128,7 @@ export function buildOutlineExport(
 ) {
   if(!uuid.test(versionId)||!sha.test(sourceSha256))
     throw new Error('검증된 Version/SHA 정보가 없어 JSON을 내보낼 수 없습니다.');
-  const shared={versionId,sourceSha256:sourceSha256.toLowerCase(),
+  const shared={versionId,sourceSha256,
     coordinateSystem:'DXF_WCS_XY' as const,unitCode,persistence:'BROWSER_EXPORT_ONLY' as const};
   if(!outlines.some(o=>o.outlineTypeId!==undefined))
     return {schemaVersion:1 as const,...shared,outlines:[...outlines]};
