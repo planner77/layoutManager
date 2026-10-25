@@ -423,8 +423,7 @@ export function CadViewer({
       setMemoSelectedId(id);
       setMemoFields(previous=>({
         ...previous,
-        ...(memoSession.current?.get(id) && memoSession.current.get(id)?.id !== memoSelectedId
-          ? {title:item.title,content:item.content} : {}),
+        ...(id === memoSelectedId ? {} : {title:item.title,content:item.content}),
         x:String(item.anchorWcsXY.x),y:String(item.anchorWcsXY.y),
       }));
     } catch(error) {
