@@ -60,7 +60,9 @@ describe('Issue #107: isolated LAN preview is not an operational switch', () => 
     const failing = (async () => Response.json({ status: 'unavailable' }, { status: 503 })) as typeof fetch;
     await expect(runG5Probes('http://127.0.0.1:3302', failing)).rejects.toThrow('health: HTTP 503');
     await expect(runG5Probes('http://127.0.0.1:3302', fetch, { viewerPath: '//other-host' }))
-      .rejects.toThrow();
+      .rejects.toThrow('Use a relative /cad/locations/... path');
+    await expect(runG5Probes('http://127.0.0.1:3302', fetch, { versionId: '../invalid' }))
+      .rejects.toThrow('--version-id must be a bare version identifier');
     await expect(runG5Probes('http://user:password@127.0.0.1:3302', failing)).rejects.toThrow();
   });
 });
