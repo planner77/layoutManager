@@ -1,5 +1,13 @@
 # PR/Main CI 실패 원장
 
+## Issue #107 — 최종 성공 증거 확정 / 신규 실패 없음 (2026-10-26 KST)
+
+- **초기 HEAD 성공 후 P2 수정:** 최초 PR #115 HEAD `d771d553` [Run 40201366001](https://github.com/planner77/layoutManager/actions/runs/40201366001) 성공, 이후 [리뷰 4371142398](https://github.com/planner77/layoutManager/pull/115#discussion_r4371142398)에 따라 실제 Viewer URL 검사·TC-P4-G5-007을 보완. 이 리뷰는 CI 실패로 분류하지 않고 이전 원장 내역을 그대로 보존한다.
+- **수정 HEAD 재검증 PASS:** PR HEAD `44132fcaa31aff0c4643edfeb8db6949d801ca5b`, [Run 40224438075](https://github.com/planner77/layoutManager/actions/runs/40224438075) completed/success, Verify Job `121263027541`·Docker Job `121263027604` success, 미해결 리뷰 0·충돌 0 뒤 Squash 병합.
+- **Main CI/GHCR PASS:** main `142c4b9bc0bdb2ad0403fb1ee6640cf070d0bbbc`, [Run 40225537167](https://github.com/planner77/layoutManager/actions/runs/40225537167) `completed/success`, App·Migrator 후보 build/paired digest promotion 및 OCI 계측 성공. Git tag `v0.40.4` 확인. 운영 구성·인증 기능 활성화·실제 LAN/백업 복원은 수행하지 않음.
+- **이번 추가 문서 동기화 작업:** 완료 상태와 현장 `NOT RUN` 경계를 기록할 뿐 기존 성공 Run을 다시 실행하거나 신규 실패로 기록하지 않는다. 이 후속 문서 PR의 새 HEAD CI는 별도 검증 결과 전 `NOT VERIFIED`.
+
+
 ## Issue #103 / PR #116 — #107 main 선행 병합에 따른 정렬 (2026-10-26 KST)
 
 - **이전 실행 성공은 별도 HEAD 증거:** #103 수정 HEAD `40153240d593c9d645dcc7c79bc9d9ac82d073e0`의 [PR CI Run 40225147249](https://github.com/planner77/layoutManager/actions/runs/40225147249), attempt 1, `completed/success`; Verify [Job 121264822767](https://github.com/planner77/layoutManager/actions/runs/40225147249/job/121264822767) / Docker [Job 121264822603](https://github.com/planner77/layoutManager/actions/runs/40225147249/job/121264822603) **각각 성공**. 이는 이전 실패 [40202066291](https://github.com/planner77/layoutManager/actions/runs/40202066291)의 해결 검증일 뿐 main #107 병합 후 통합 HEAD의 성공 증거가 아니다. 실패 Job/로그 원장은 아래에 계속 보존한다.

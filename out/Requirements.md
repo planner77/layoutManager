@@ -1,5 +1,13 @@
 # 상세 요구사항
 
+## Issue #107 G5 — 요구사항별 최종 구현 상태 (2026-10-26)
+
+- FR-P4-G5-01/02: 독립 PROD Nginx→App 및 DEV 직접 연결용 Preview Compose·데이터 분리 구현, [PR CI #40224438075](https://github.com/planner77/layoutManager/actions/runs/40224438075) 두 Job success. 구현 완료/현장 접속 실측 미수행.
+- NFR-P4-G5-01: 실제 Version Viewer 경로 ` /cad/versions/ID/viewer `·목록·Health/정적 리소스·원본 GET 정상 경로 검증 도구와 Unit 성공. 실제 사내 업로드·다운로드·Cookie 및 사용자 PC E2E는 #108로 인계(`NOT RUN`).
+- NFR-P4-G5-02: Owner R1에 따라 침투·탈취 방어 강화는 비범위; 운영 Nginx/Compose/인증 API/Prisma는 별도 #109 승인 전 미활성.
+- 본 섹션이 아래 2026-10-25 작성 당시의 `PR CI 미확인` 상태보다 최신 증거다. 새 기능 요구는 발견되지 않아 재구현하지 않는다.
+
+
 ## Issue #103 / G1 P1 감사 추적 상세화 (2026-10-26)
 
 - **REQ-G1-AUD-01:** Site 권한 부여/회수 Audit 이벤트는 행위 관리자(actor), 영향받은 사용자(affectedUser), 대상 Site 및 action/requestId를 **서버 DB FK 기준으로 분리 보존**한다. Revocation 뒤 Grant 행이 삭제되어도 두 사용자의 동일 Site 변경 이력을 혼동하지 않을 것. Fixture `AuditEvent`의 Site action은 affectedUser/site NOT NULL 검사, Actor·Site·User FK/변경 불가 Trigger 유지; `TC-P4-G1-005`.
