@@ -1,5 +1,13 @@
 # ChangeLog
 
+## v0.37.0 — Issue #51 E1 원본/생성 통합 선택 (2026-10-25)
+
+- 생성 Overlay의 CSPRNG UUIDv4 세션 참조/Origin·Version·SHA 계약과 전용 Generated 객체 조회 추가. v1/v2 다운로드의 local-N은 그대로 유지.
+- #31 SOURCE SpatialIndex/Layer/Renderer 검증을 유지하면서 GENERATED Polygon/MultiPolygon/Hole의 화면 hit, 왼→오른쪽 포함/오른→왼쪽 교차, Ctrl/⌘ 토글을 SelectionController로 통합. 트리 선택/표시·숨김과 강조/카운트 동기화.
+- Pan/원본·생성/생성 전용/#40 외곽선 소스 선택 모드 분리. SOURCE/혼합 선택은 readonly, GENERATED-only는 향후 로컬 편집 대상; 실제 명령은 #52~#55. Server/DB/Source DXF 불변.
+- Unit/E2E 코드 및 Issue51/Architecture/Requirements/ADR-041/TestPlan/TestReport/README/AGENTS 동기화. 로컬 시험 NOT RUN, PR CI 성공 미확인.
+
+
 ## v0.36.0 — Issue #43 U6 브라우저 세션 외곽선 목록 (2026-10-25)
 
 - DXF three-dxf-viewer 상단 외곽선 목록 토글·우측 도킹 트리/legacy grouping, 임시·개수·종류 표시, 키보드 접근성, compact 320px, 메뉴 포커스 복귀.
