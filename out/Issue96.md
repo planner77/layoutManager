@@ -1,5 +1,13 @@
 # Issue #96 — 로컬 계정·세션·Role/Site·감사 공통 기반
 
+## G0 #102 — Owner 경량 보안 범위 결정 R1 (2026-10-25)
+
+- **최신 기준:** [Issue102](Issue102.md) 및 [ADR-051-R1](Decisions.md). 공개망 인바운드가 제한된 사내 업무망에서 **운영 사용자 PC는 Nginx 경유**, 개발자는 **별도 개발 App 직접 접속**. 공격 대응·자격증명/세션 탈취 방어·침투시험 및 상세 보안 수용 실증은 **비범위**로 Owner가 결정했다. HTTP 평문 위험은 여전히 존재하며 정책상 `OWNER_ACCEPTED_SCOPE`로 기록하되 안전성 PASS로 쓰지 않는다.
+- 이전 D6와 아래 후속 게이트의 'Host/Origin/CSRF 공격 시험·CIDR 차단/탈취 위협 검증/별도 위험 서명'은 이 R1이 **완료 요건을 축소**한다. 기존 코드/Unit을 자동 삭제하거나 우회하라는 뜻은 아니다.
+- **계속 필수:** D1~D5 Admin/계정/세션/Role/Site/Audit의 업무 기능, DB 원자성·변경 감사/365일 보존, 개발/운영 데이터 분리, PROD/DEV 정상 경로 검증, CAD Source/SHA/Version/Current·기존 API 동작 보호, DB/CAD/S3 backup→격리 migration→실 restore, 별도 G7 Owner 운영 Go/No-Go. 보류된 Current/삭제/기존 API 인증 전환 및 Audit 만료 파기는 미승인.
+- 이 문서의 아래 원래 승인 D1~D6 수치/역사 기록은 유지하고 **R1이 충돌하는 보안 게이트만 우선**한다. 현재 Auth/API/DDL/Prisma/Compose/Nginx/운영 데이터 변경 없음, #96 OPEN/BLOCKED 유지.
+
+
 ## Owner D1~D6 결정 (2026-10-25)
 
 **정책 승인 / 실제 운영 기능 BLOCKED.** 원 이슈 [#96](https://github.com/planner77/layoutManager/issues/96), 선행 #31 D0/ADR-048/049 및 최신 ADR-051. 별도 DESIGN.md는 저장소에 없고 AGENTS/Architecture/Decisions가 기준.
