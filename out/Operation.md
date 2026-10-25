@@ -1,5 +1,15 @@
 # 운영·환경설정 초안
 
+## Issue #31 P4-D0 — LAN HTTP 경량 계정 운영 **계약만 승인** (2026-10-25)
+
+- **배포 네트워크:** 외부 공개망에서 인바운드 접근이 제한된 사내 LAN의 여러 PC가 `http://서버IP:포트`로 접근한다. **HTTPS/TLS/인증서 구축과 OIDC/SSO/MFA는 이번 범위에서 제외.** 계정 목적은 권한 제한·공동 편집·작성자·변경 이력. 현재 실 운영 인증 기능은 아직 없다.
+- **HTTP 잔여 위험:** 일반 HTTP에서는 전송되는 비밀번호와 세션 쿠키의 기밀성/무결성이 보장되지 않는다. 인터넷 인바운드 차단·LAN 접근대역/OS 방화벽·Nginx 백엔드 직접 접근 차단은 위험 감소 수단일 뿐 TLS의 대체 증거가 아니다. 쿠키 `HttpOnly`·`SameSite`, 서버 검증 Origin/CSRF 및 명시적 로그아웃/세션 만료가 필요하나, `Secure` Cookie는 일반 서버 IP HTTP에서 사용 가능하다고 주장하지 않는다.
+- **D1 후속:** User/Admin 초기화·계정 해시, 세션 발급/폐기/TTL/동시 로그인, Role/Scope Grant 관리(Version→Site DB 검증), 로그인 시도 제한, 권한 실패 감사, `logs:read` 별도 권한. 초기 Admin·복구 절차/TTL 값/허용 LAN 대역/감사 보존 기간/HTTP 위험 수용 세부 책임은 **미확정**으로 기록하고 추후 Owner 결정한다. 값을 편의상 기본 승인하지 않는다.
+- **D0 구현 차단:** 이 PR은 Markdown만; `schema.prisma`, 새 session/outline/memo API, 로그인/관리 UI, Docker/Nginx runtime 설정, Migration, S3/원본 데이터·GHCR 이미지는 수정하지 않는다. 필요한 Owner 결재·보안/권한/감사/DB/백업·복구 검증 전 운영 기능 ON 금지. 기존 도면 읽기·Version/Current 계약 유지.
+- **D2~D6 운영 수용:** 원본 Source SHA/stable Handle/WCS canonical+Translate/Rotate server recalculation, Same-Scope Editor 공동 편집/409 CAS, Global OutlineType(#65), soft delete+Audit, Mono-transaction Memo BROKEN_ANCHOR(#83/#84), 세션 Show/Hide 분리(#73). 실DXF 최소 3종 및 1k/10k/100k 실 GPU 시험은 P0/P5에서 별도 기록. 문서 PR CI PASS만으로 실제 운영 적합성 보장 불가.
+- **참조:** [Issue31](Issue31.md), [ADR-048/049](Decisions.md), [Architecture](Architecture.md), [Database](Database.md), [TestPlan](TestPlan.md). OIDC/TLS 우선이라는 과거 기록은 D0 Owner 확정 방침으로 대체하되 원래 기록은 역사·회귀 참고로 보존한다.
+
+
 ## Issue #76 — Squash Merge 기본값 관리자 적용 및 CI 감사 (2026-10-25)
 
 **현황:** 공개 GitHub REST `GET /repos/planner77/layoutManager`로 `allow_squash_merge=true`, `squash_merge_commit_title=COMMIT_OR_PR_TITLE`, `squash_merge_commit_message=COMMIT_MESSAGES` 확인. 요구값 `true / PR_TITLE / BLANK`가 아니므로 **관리자 설정 적용되지 않음**. `DESIGN.md`는 없고 기존 ADR-041/Architecture 정책을 사용한다.
