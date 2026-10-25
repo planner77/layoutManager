@@ -1,5 +1,12 @@
 # CAD Web Viewer P.O.C.
 
+## Issue #76 — GitHub Squash Merge 커밋 메시지 기본값 (운영 관리자 조치 필요)
+
+- GitHub 저장소 Settings → General → Pull Requests → **Allow squash merging / Default commit message: Pull request title**로 지정해야 합니다. 현재 REST 확인값 `COMMIT_OR_PR_TITLE / COMMIT_MESSAGES`는 목표 `PR_TITLE / BLANK`와 달라 **미완료**입니다.
+- PR CI는 이를 읽기 전용으로 조회해 `PASS`, `NOT APPLIED`, `NOT VERIFIED` 중 하나를 경고/Job Summary로 표시합니다. 경고 자체는 다른 PR CI를 차단하지 않으며, 실제 설정 변경·새 Main CI 단일행 확인을 대체하지 않습니다. 세부 절차 [Issue76](out/Issue76.md) / [Operation](out/Operation.md).
+- 앱 버전, GHCR 게시 범위, 기존 #74 multiline 보호, DXF/DWG 데이터는 변동 없습니다.
+
+
 ## v0.38.1 — Issue #67 GHCR 웹 이미지 Standalone native SQLite 중복 COPY 개선 (PR CI 검증 전)
 
 - Next.js `.next/standalone` 추적 경로가 포함하는 `better-sqlite3` 패키지를 Docker runtime 단계에서 다시 COPY하지 않도록 변경했습니다. `next.config.ts`에서 Prisma와 native SQLite tracing을 유지하고 이미지 빌드 중 `.node`/메모리 DB 동작을 확인합니다. 데이터 스키마·API·기존 migrator/배포 계약은 그대로입니다.

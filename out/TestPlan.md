@@ -1,5 +1,19 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #76 — GitHub Squash 기본 메시지 관리자 정책 및 진단 (2026-10-25)
+
+| TC | 조건 | 기대 / 실패 분류 | 실행 현황 |
+| --- | --- | --- | --- |
+| TC-CI-76-001 | API `true / PR_TITLE / BLANK` fixture | `PASS`, Summary PASS, CI 정상 진행 | 로컬 Bash fixture PASS |
+| TC-CI-76-002 | API `true / COMMIT_OR_PR_TITLE / COMMIT_MESSAGES` fixture | warning + `NOT APPLIED`, CI 진단은 non-blocking; 관리자 승인 **미완료** | 로컬 Bash fixture PASS, 실제 REST 불일치 확인 |
+| TC-CI-76-003 | 잘못된 JSON/배열 fixture | warning + `NOT VERIFIED`, 잘못된 응답을 PASS로 처리 금지 | 로컬 Bash fixture PASS |
+| TC-CI-76-004 | REST GET 실패 | warning + `NOT VERIFIED`, 다른 앱 CI 방해 금지 | 설계/셸 분기 검사; CI 미실행 |
+| TC-CI-76-005 | 관리자 설정 변경 + 새로운 PR squash | GET 3항목 PASS, main commit subject 단일행/body 빈 문자열, `MAIN CI | #N | 설명` | **BLOCKED: 관리자 설정 미적용** |
+| TC-CI-76-006 | PR CI YAML diff 및 GHCR scope | 기존 trigger/permissions/concurrency/Typecheck·Docker·GHCR 의사결정 불변, docs/workflow-only Main은 GHCR SKIP | 정적 확인, PR CI 미실행 |
+
+- Bash `set -euo pipefail` 구문 점검과 REST 응답 mock 분기는 별도로 확인한다. GitHub Actions Runner의 실제 output 및 적용 후 Main title은 원격 workflow/run 증거가 있어야 PASS이다. 설정 불일치는 CI 자체 실패가 아니므로 FailedLedger에 가짜 Failure로 기록하지 않는다. [Issue76](Issue76.md).
+
+
 ### Issue #67 / PR #80 — Python audit 조기 구문 검사 및 크기 분기 테스트 (2차 CI 실패)
 
 - [Run 40171968883](https://github.com/planner77/layoutManager/actions/runs/40171968883) Docker [121104610668](https://github.com/planner77/layoutManager/actions/runs/40171968883/job/121104610668): `TC-IMG67-002/003` 앞 Python import SyntaxError 1건; 실제 layer hash/새 Compose **SKIPPED**. Python `py_compile`을 baseline Docker 빌드 **전에** 추가.

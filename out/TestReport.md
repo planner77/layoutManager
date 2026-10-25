@@ -1,5 +1,12 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE76-PREFLIGHT-20261025 — 관리자 설정 불일치 및 CI 진단의 로컬 사전 검증
+
+- GitHub REST `GET https://api.github.com/repos/planner77/layoutManager` (2026-10-25) 응답에서 `allow_squash_merge=true`, `squash_merge_commit_title=COMMIT_OR_PR_TITLE`, `squash_merge_commit_message=COMMIT_MESSAGES`를 확인했다. **관리자 UI / PATCH 미실행, AC-76-01 미완료**.
+- 작성한 read-only CI 셸 분기를 별도 임시 Bash 스크립트로 `bash -n` 검사했고, mock `curl` 응답 **정상 정책 / 현재 잘못된 정책 / 잘못된 JSON / 배열 JSON** 4가지에서 예상 `PASS / NOT APPLIED / NOT VERIFIED / NOT VERIFIED` 로그와 Summary, 0 exit을 관측했다. 이는 실제 GitHub REST/Runner에서 동일한 경로를 실행한 증거가 아니며, 네트워크 오류 분기의 실제 실행은 **NOT RUN**.
+- 기존 `.github/workflows/pr-ci.yml`의 Trigger/permissions/concurrency/Docker Job/GHCR Main workflow는 그대로 두고 Verify에 사전 read-only advisory step만 추가하는 방식. 이로 인한 CI 성공 또는 실제 관리자 설정 적용, 실제 새 Main Push 단일행은 **NOT VERIFIED**. 자세한 대응은 [Issue76](Issue76.md)·[TestPlan](TestPlan.md).
+
+
 ## U-ISSUE67-PR80-CI-FAIL-20261025 — 2차 PR CI의 Python 구문 차단 및 조기 검사 보완
 
 - [Run 40171968883](https://github.com/planner77/layoutManager/actions/runs/40171968883), HEAD `95cd745222055ce934e5ee3016d3551179b30a7f`: Docker Job [121104610668](https://github.com/planner77/layoutManager/actions/runs/40171968883/job/121104610668) `completed/failure`. 이미지 build·3-way size measurement 단계 완료 후 Python self-test import 시 `audit_standalone_layers.py:113` `SyntaxError: unterminated f-string literal`. 따라서 실제 layer audit/후속 migrator·Compose smoke는 **실행되지 않았음(SKIPPED)**; 기능 회귀라고 판단 불가. Verify Job 상태는 검사 시 in_progress/E2E였으며 성공으로 기입 금지.

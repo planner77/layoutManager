@@ -1,5 +1,12 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #76 — Squash Merge 관리자 설정·PR CI 읽기 전용 진단 (2026-10-25)
+
+- #74 Main 실행명 fallback 구현과 저장소 영구 설정을 분리한다. 2026-10-25 REST GET에서는 `allow_squash_merge=true`, `squash_merge_commit_title=COMMIT_OR_PR_TITLE`, `squash_merge_commit_message=COMMIT_MESSAGES`로 확인되어 **#76 관리자 적용은 미완료**다.
+- PR CI Verify의 새 read-only audit는 정확히 `true/PR_TITLE/BLANK`만 PASS라 표시하고 불일치 시 **NOT APPLIED**, API 장애 시 **NOT VERIFIED**로 경고한다. 경고가 non-blocking인 것은 앱 CI 보호를 위한 것이며 설정 수용 PASS를 뜻하지 않는다. 관리자 UI 변경 및 실제 새 Main squash subject/body/run-name 확인이 완료 조건이다.
+- 상세 [Issue76](out/Issue76.md), [Operation](out/Operation.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md), [ADR-041](out/Decisions.md). `DESIGN.md` 부재로 [Architecture](out/Architecture.md) 대체. Workflow/GHCR scope와 `src/package.json` 버전, DB/API/Viewer는 불변.
+
+
 ## #67 / main 정렬 — #52 v0.38.0 반영, #67 v0.38.1 (2026-10-25)
 
 - 최신 main의 Issue #52 E2 생성 객체 편집·Undo/Redo 변경을 보존하며 #67 웹 Docker Runtime 레이어 최적화만 병합한다. #52의 ADR-044와 충돌하지 않도록 #67 웹 패키징 설계는 ADR-045로 재지정한다. PR CI의 최신 통합 HEAD 검증 후 병합·GHCR 후보 Pair 게시. 이전 #67 0.37.2는 **미게시 작업 브랜치 버전**이었다.
@@ -290,6 +297,7 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 | [Issue66](out/Issue66.md) | Migrator 최소 의존성·크기 측정/OCI manifest·복구 계약 | Docker migrator/CI/GHCR 및 버전·패키징 변경 시 |
 | [Issue28](out/Issue28.md) | 운영 이미지 경량화·Migration 분리·측정/롤백 | Dockerfile, Standalone, Compose, GHCR 변경 시 |
 | [Issue24](out/Issue24.md) | 기준정보 계층·이관·층별 Current 요구/설계/AC | 기준정보·계층 등록·제품 조회·legacy 이관 변경 시 |
+| [Issue76](out/Issue76.md) | GitHub Squash 기본 메시지 관리자 설정·CI 진단·Main 실행명 확인 | 저장소 설정·PR/Main CI run-name 변경 시 |
 | [README](README.md) | 사용자/개발자 프로젝트 안내 | 기능·구조·설정·실행방법 변경 시 |
 
 추가 Markdown 문서가 필요하면 이 표에 목적과 필수 참조 시점을 등록한다. 상세정보를 여러 문서에 독립적으로 복제하지 않는다.

@@ -47,6 +47,34 @@ jobs:
       - name: 저장소 체크아웃
         uses: actions/checkout@v4
 
+
+      # Advisory only until a repository administrator applies Issue #76.
+      # Do not mistake an advisory PR CI success for acceptance of the repo setting.
+      - name: Squash Merge defaults read-only audit (Issue #76; advisory)
+        shell: bash
+        env:
+          AUDIT_GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          prefix='Issue #76 squash defaults'
+          if ! response="$(curl --fail --silent --show-error --retry 2 --connect-timeout 5 --max-time 20 -H 'Accept: application/vnd.github+json' -H 'X-GitHub-Api-Version: 2022-11-28' -H "Authorization: Bearer ${AUDIT_GITHUB_TOKEN}" "https://api.github.com/repos/${GITHUB_REPOSITORY}")"; then
+            echo "::warning title=${prefix}::REST GET failed; policy is NOT VERIFIED."
+            echo "- ${prefix}: API unavailable — **NOT VERIFIED**." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          if ! observed="$(jq -er 'if type == "object" then [(if .allow_squash_merge == true then "enabled" elif .allow_squash_merge == false then "disabled" else "unset" end), (.squash_merge_commit_title // "unset"), (.squash_merge_commit_message // "unset")] | join("/") else error("invalid repository response") end' <<< "$response")"; then
+            echo "::warning title=${prefix}::Invalid REST response; policy is NOT VERIFIED."
+            echo "- ${prefix}: API response invalid — **NOT VERIFIED**." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          if [[ "$observed" == 'enabled/PR_TITLE/BLANK' ]]; then
+            echo "${prefix}: PASS (enabled/PR_TITLE/BLANK)."
+            echo "- ${prefix}: **PASS** (enabled/PR_TITLE/BLANK)." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning title=${prefix}::Expected enabled/PR_TITLE/BLANK, observed ${observed}. Administrator must update repository Settings; diagnostic is non-blocking."
+            echo "- ${prefix}: **NOT APPLIED** (expected enabled/PR_TITLE/BLANK; observed ${observed}). See Issue #76." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
       - name: Node.js 설정
         uses: actions/setup-node@v4
         with:
