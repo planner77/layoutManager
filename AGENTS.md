@@ -5,7 +5,7 @@
 - **#102 Owner R1 우선:** #103은 기존 CAD 테이블을 담은 일회용 SQLite 사본만 대상으로 한다. `src/tests/fixtures/auth-g1/{schema.prisma,migration.sql,store.ts}`는 **비운영·비연결 계약**이며 `src/tests/integration/auth-g1.test.ts`에서만 사용. `src/prisma/schema.prisma`, `src/prisma/migrations`, App API, runtime/Compose/Nginx, 운영 DB/원본 파일/실 S3/GHCR는 수정하지 않는다. G7 #109 Owner 별도 승인 전 활성화 금지.
 - G1 트랜잭션: `BEGIN IMMEDIATE`, 8h/30m/최대 3개 세션(트리거+원자 count/insert, 4번째 거부·시계 역행 거부), 세션 원시 토큰 미저장, 비활성/복구 세션 폐기, Role/Site/Special Grant와 Audit 동일 트랜잭션, nonce hash 단발·재사용/삭제 불가, Audit append-only. Version→Location→Building→CadSite DB 검증, Admin도 Site 자동 승인 금지.
 - **검증 경계:** 실제 여섯 CAD Migration을 일회용 SQLite에 적용한 뒤 G1 DDL/장애 주입/FK·Unique·복원과 CAD Version/Current/SHA/삭제 hash 불변을 점검하는 TC-P4-G1-001~009. 합성 로컬 CAD/가상 S3 복제는 실제 운영 백업·S3 복구 증거가 아니다(G6 #108). 실행 전 `NOT RUN`, CI 시작을 PASS로 주장 금지.
-- 지침/설계/시험·복구 가이드: [Issue103](out/Issue103.md), [ADR-051-G1](out/Decisions.md), [Database](out/Database.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md), [Operation](out/Operation.md). #102 남은 업무 API·Current/DELETE 정책, 초기 Admin 책임, Audit 365일 이후 파기는 임의로 승인하지 않는다.
+- 지침/설계/시험·복구 가이드: [Issue103](out/Issue103.md), [ADR-051-G1](out/Decisions.md), [Database](out/Database.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md), [Operation](out/Operation.md). 2026-10-25 #102 Owner 5개 승인: 기존 CAD 목록/Viewer/다운로드 익명 GET 유지, Current=Editor/Admin+담당 Site, Version 삭제=Editor/Admin+담당 Site+기존 삭제 비밀번호, 최초 Admin/복구=지정 사내 운영 담당자(Owner 책임), Audit 365일 경과 이력 정리 원칙. 관련 문서 PR #114는 병합·CI 완료 미확인. POST 업로드 권한, Secret/실 담당자, Audit 물리 정리·백업 복원 세칙, 실제 배포는 PENDING; #103 G1 운영 활성화 승인 아님. 기존 공개 CAD 익명 GET을 G1의 인증된 SiteGrant 검증으로 차단하지 않는다.
 
 
 ## Issue #102 / ADR-051-R1 — Owner 내부망 경량 보안 범위 결정 (2026-10-25)
@@ -401,6 +401,7 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 | [Issue25](out/Issue25.md) | 기본 immersive 진입, native 수동 선택, 복귀·툴바·회귀 수용 | Viewer 전체 화면 기본 진입/링크/포커스/레이어·검색 변경 시 |
 | [Release 0.20.0](out/Release-0.20.0.md) | 0.20.0 병합·태그·GHCR 게시 근거 | 0.20.0 릴리스 확인 및 운영 이미지 식별 시 |
 | [Release 0.21.0](out/Release-0.21.0.md) | 0.21.0 병합·태그·GHCR 게시 근거 | 0.21.0 릴리스 확인 및 운영 이미지 식별 시 |
+| [Issue103](out/Issue103.md) | G1 User/Session/Role·Site·SpecialGrant/Audit/RecoveryNonce 격리 SQL·Prisma 계약 및 원자성·복구 시험 | Auth DB/세션/권한/복구·백업 검토 및 #102 G0→G7 선행 조건 확인 시 |
 | [Issue102](out/Issue102.md) | G0 내부 LAN PROD Nginx/DEV App 직접 접속, Owner 경량 보안 범위·잔여 위험 수용·G0~G7 운영 게이트 | 운영/개발 배포 경로·Nginx/직접 포트, 인증·Site/Version 권한·기존 CAD API 전환, 위험 범위·운영 Go/No-Go/수용 기준 변경 시 |
 | [Issue31](out/Issue31.md) | DXF 다중 선택·볼록/정밀 외곽선·실험 상태·P4 권한 보류 | Viewer 선택·외곽선/Worker/JSON 변경 시 |
 | [Issue26](out/Issue26.md) | DXF TEXT/MTEXT 색인·world 좌표 focus·검색 범위/검증 | Viewer 검색·Pan/Zoom·Worker·BLOCK/INSERT·DWG 텍스트 지원 검토 시 |

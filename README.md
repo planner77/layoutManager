@@ -1,5 +1,12 @@
 # CAD Web Viewer P.O.C.
 
+## Issue #103 — G1 User/Session/Grant/Audit 격리 DB (운영 OFF)
+
+- [Issue103](out/Issue103.md) / [ADR-051-G1](out/Decisions.md): 기존 CAD SQL 6개를 적용한 disposable SQLite 사본에 User/AuthSession/3종 Grant/Audit/RecoveryNonce DB 계약, 동시 세션 3개/nonce·감사 원자성, 합성 local CAD/S3 mirror 백업·복구 Fixture와 TC-P4-G1-001~009를 추가했습니다.
+- 런타임·운영 Prisma/migrations·기존 API·Compose/Nginx·실 CAD/S3는 변경하지 않습니다. 실행 전 테스트는 NOT RUN이고 정식 운영 활성화는 G7 별도 Owner 승인이 필요합니다.
+- 2026-10-25 #102 Owner 5개 승인: 기존 CAD 목록/Viewer/다운로드 익명 GET 유지, Current=Editor/Admin+담당 Site, Version 삭제=Editor/Admin+담당 Site+기존 삭제 비밀번호, 최초 Admin/복구=지정 사내 운영 담당자(Owner 책임), Audit 365일 경과 이력 정리 원칙. 관련 문서 PR #114는 병합·CI 완료 미확인. POST 업로드 권한, Secret/실 담당자, Audit 물리 정리·백업 복원 세칙, 실제 배포는 PENDING; #103 G1 운영 활성화 승인 아님.
+
+
 ## Issue #99 — 실제 DXF 비공개 P0/P5 수용 (현장 전용)
 
 **Issue #99 P1 비공개 파일 경로 제한:** 내부 DXF 경로와 보고서 출력 경로는 절대 경로뿐 아니라 심볼릭 링크를 해석한 최종 실제 경로까지 Git checkout 밖이어야 합니다. 보고서 출력 디렉터리는 시험 전에 별도로 만들고 쓰기 권한을 제한하세요. 재실행 시에는 새 JSON 보고서 파일명을 사용하세요(기존 파일 덮어쓰기 금지). 수정 HEAD `0.40.3`은 신규 GHCR 쌍 후보이며 CI/최종 릴리스·실 CAD 수용 완료를 의미하지 않습니다.

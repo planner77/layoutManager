@@ -6,7 +6,7 @@
 
 - **허용:** 기존 CAD migration을 재현한 disposable `cad-auth-g1-*/fixture.sqlite` DB에서 User/AuthSession/UserRoleGrant/UserSiteGrant/SpecialGrant/AuditEvent/AdminRecoveryNonce 테이블을 추가·확인. 테스트 전용 `src/tests/fixtures/auth-g1/{schema.prisma,migration.sql,store.ts}`; `src/tests/integration/auth-g1.test.ts`.
 - **금지:** `src/prisma/schema.prisma`, `src/prisma/migrations/**`, `src/app/api/**`, `src/server/db.ts`, 운영 DB/CAD/S3, Compose/Nginx/GHCR/Runtime flag 변경 및 실제 Auth/Admin/Audit/Outline/Memo/Type/Logs API 활성화. 이 G1 SQL을 migrator에 연결하거나 Prisma 문서 투영에서 정식 migration 생성 불가. 적용은 #109 G7 **별도 Owner 승인**.
-- **미결정 유지:** G0 #102 기존 익명조회·Current/DELETE/기존 삭제 암호 전환, 최초/복구 Admin 책임자, Audit 365일 이후 파기/백업 보존, 실제 Nginx/DEV 설정. 이에 대한 임의 기본값 없음. 공격/탈취 보안 강화·침투 실증은 Owner R1 비범위이나 데이터·업무권한·원자성·복구는 필수.
+- **Owner 최신 정책:** 2026-10-25 #102 Owner 5개 승인: 기존 CAD 목록/Viewer/다운로드 익명 GET 유지, Current=Editor/Admin+담당 Site, Version 삭제=Editor/Admin+담당 Site+기존 삭제 비밀번호, 최초 Admin/복구=지정 사내 운영 담당자(Owner 책임), Audit 365일 경과 이력 정리 원칙. 관련 문서 PR #114는 병합·CI 완료 미확인. POST 업로드 권한, Secret/실 담당자, Audit 물리 정리·백업 복원 세칙, 실제 배포는 PENDING; #103 G1 운영 활성화 승인 아님. **계약 경계:** G1의 인증된 User/SiteGrant 검사 Fixture는 기존 익명 CAD GET 경로에 연결하지 않는다. 공격·탈취 강화는 비범위지만 데이터 정합성/복구는 필수.
 - **DESIGN.md 부재:** [AGENTS](../AGENTS.md), [Decisions](Decisions.md) ADR-051-G1, [Architecture](Architecture.md), [Database](Database.md), [Requirements](Requirements.md), [TestPlan](TestPlan.md), [Operation](Operation.md)를 설계 기준으로 한다.
 
 ## 2. 물리 모델과 Lifecycle
@@ -57,4 +57,4 @@ SQL 트리거는 체크 값을 보호하며 Prisma 모델은 읽기/설계 **투
 - #108 G6: 실제 사내 업무 E2E 및 동일시점 DB/CAD/S3 실복구.
 - #109 G7: 잔여 Owner 결정·실운영 DDL/Auth 활성화 승인/배포/롤백 Go/No-Go.
 
-**상위 Issue #96는 OPEN/BLOCKED 유지.** 작성한 테스트가 실행되기 전에는 #103 AC 체크, CI PASS 또는 실 운영 승인 판정 금지.
+**상위 Issue #96는 OPEN/BLOCKED 유지.** 기존 공개 CAD 익명 조회는 인증 도메인과 별개이며, TC-P4-G1-006은 인증된 User의 Version/Site 허용/거부만 검증한다. Current/DELETE 업무 API 반영은 G4/G7 별도. 작성한 테스트가 실행되기 전에는 #103 AC 체크, CI PASS 또는 실 운영 승인 판정 금지.

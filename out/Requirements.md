@@ -6,7 +6,7 @@
 - **REQ-G1-02:** `BEGIN IMMEDIATE` writer serial, 세션 4번째 발급·시간 역행·만료 touch·중복 nonce 실패, 관리자 전용 Role/Site/SpecialGrant+Audit/비활성·회수·복구 원자 rollback; TC-P4-G1-003/004/005/007/008.
 - **REQ-G1-03:** 기존 CadSite 실 FK와 Version→CadLocation→Building→Site 관계 조회, Admin Site 자동 허용 없음, 원본 bytes/SHA/Current/delete password/5단계 CAD 불변; TC-P4-G1-001/006/009.
 - **REQ-G1-04:** **격리 Fixture SQL/Prisma 설계만** 적용. 운영 Prisma/schema/migrations/API/Runtime/Compose/GHCR 변경 금지. 실제 사내 DB/CAD/S3 일관 백업·복구 및 Owner G7 운영 승인은 별도; TC-P4-G1-001/009 및 정적 Diff·PR CI.
-- 선행 정책: #102 ADR-051-R1. 현행 API Current/삭제 권한, 초기 Admin 책임, 감사 365일 이후 파기, 실제 DEV/PROD 설정은 `PENDING`. 임의 Default 구현 금지. 상세 [Issue103](Issue103.md).
+- 선행 정책: #102 ADR-051-R1. 2026-10-25 #102 Owner 5개 승인: 기존 CAD 목록/Viewer/다운로드 익명 GET 유지, Current=Editor/Admin+담당 Site, Version 삭제=Editor/Admin+담당 Site+기존 삭제 비밀번호, 최초 Admin/복구=지정 사내 운영 담당자(Owner 책임), Audit 365일 경과 이력 정리 원칙. 관련 문서 PR #114는 병합·CI 완료 미확인. POST 업로드 권한, Secret/실 담당자, Audit 물리 정리·백업 복원 세칙, 실제 배포는 PENDING; #103 G1 운영 활성화 승인 아님. 상세 [Issue103](Issue103.md).
 
 
 ## Issue #102 G0 / ADR-051-R1 — Owner 경량 보안 범위 재정의 (2026-10-25)

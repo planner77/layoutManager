@@ -2,11 +2,11 @@
 
 ## ADR-051-G1 — Issue #103 비운영 SQLite·Prisma 계약과 원자성 구현 결정 (2026-10-25)
 
-**상태: 격리 구현·검증용 기술 결정 / 운영 배포 승인 아님.** [#103](Issue103.md)은 [ADR-051-R1](Issue102.md)의 사내 LAN 경량 보안 범위와 D1~D5 업무 무결성을 따른다. G0 세부 업무 미결정은 그대로 `PENDING`.
+**상태: 격리 구현·검증용 기술 결정 / 운영 배포 승인 아님.** [#103](Issue103.md)은 [ADR-051-R1](Issue102.md)의 사내 LAN 경량 보안 범위와 D1~D5 업무 무결성을 따른다. 2026-10-25 #102 Owner 5개 승인: 기존 CAD 목록/Viewer/다운로드 익명 GET 유지, Current=Editor/Admin+담당 Site, Version 삭제=Editor/Admin+담당 Site+기존 삭제 비밀번호, 최초 Admin/복구=지정 사내 운영 담당자(Owner 책임), Audit 365일 경과 이력 정리 원칙. 관련 문서 PR #114는 병합·CI 완료 미확인. POST 업로드 권한, Secret/실 담당자, Audit 물리 정리·백업 복원 세칙, 실제 배포는 PENDING; #103 G1 운영 활성화 승인 아님.
 
 - `src/tests/fixtures/auth-g1/schema.prisma`는 User/Session/Role/Site/Special/Audit/Nonce **물리 모델 참조**이며 기존 `CadSite`를 부분 투영한다. 실제 적용 가능한 SQL은 동일 fixture `migration.sql`; 이 Prisma 투영으로 `prisma migrate`/push를 돌리는 것은 **금지**. 실행 Fixture는 기존 6개 CAD Migration을 우선 적용한 `cad-auth-g1-*/fixture.sqlite` 일회용 사본만 허용하며 G7 승인 전 정식 `src/prisma/` 경로에 반영하지 않는다.
 - SQLite 쓰기 직렬화 `BEGIN IMMEDIATE` + DB 트리거로 8h 절대/30m idle/3개 active 동시 세션을 확인하며, 재활성화/clock rollback/4번째 원시 SQL INSERT도 기본 거부. 비밀번호/원시 Session 토큰/복구 nonce 원문/전체 CAD Geometry는 이벤트·DB에 저장하지 않는다. 계정 ID 불변, Role·Site·Special FK/Unique/값 범위, 명시적 Site 소유권 확인.
-- Admin만 Grant 변경. 각 Role/Site/Special 변경+안전 Audit는 원자 commit/rollback. 비활성/관리자 복구는 세션 회수와 함께 수행. nonce hash insert(unique)+passwordHash 갱신+세션 폐기+Audit는 단일 트랜잭션. Audit/소비 nonce는 append-only; Audit 365일 경계는 요구사항으로만 유지하며 자동 파기/백업 제거는 **G0 Owner 별도 결정 전 금지**.
+- Admin만 Grant 변경. 각 Role/Site/Special 변경+안전 Audit는 원자 commit/rollback. 비활성/관리자 복구는 세션 회수와 함께 수행. nonce hash insert(unique)+passwordHash 갱신+세션 폐기+Audit는 단일 트랜잭션. Audit/소비 nonce는 append-only; Audit 365일 경과 이력 정리 원칙은 Owner 승인됐지만, 실제 자동/물리 파기·백업/복원 SOP는 후속 결정·검증 전까지 금지.
 - 격리 SQL 테스트 결과만 G1 증거. 실제 사내 CAD/DB/S3 백업·복구, 배포 인입 경로, 기존 API 인증 전환, Admin secret 절차는 #102/#104~#109 책임으로 유지. 상세 근거/롤백 [Issue103](Issue103.md) 및 [Operation](Operation.md).
 
 
