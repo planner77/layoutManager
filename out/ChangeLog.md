@@ -1,5 +1,12 @@
 # ChangeLog
 
+## Unreleased — Issue #99 PR #110 P1 보안 리뷰 보완 / GHCR v0.40.3 후보 (2026-10-25)
+
+- 원 HEAD `6377426` [PR CI 40195335561](https://github.com/planner77/layoutManager/actions/runs/40195335561) Verify/Docker 모두 SUCCESS. 이후 P1 리뷰에서 실제 repo 외부 경로가 Symlink를 통해 repo 내부를 가리킬 수 있는 개인 정보/도면 SHA 기록 위험 지적.
+- `private-acceptance-paths.ts`의 canonical 실제 경로 비교, 기존 별도 사내 출력 디렉터리 필수, 기존 Report/symlink 덮어쓰기 금지 및 `wx/0600`·쓰기 직전 부모 재검사로 보완. TC-P0P5-PATH-001~006 Unit 추가, Private E2E 연계. 2차 Run은 원본 성능/정확도 현장 수용과 분리.
+- 기존 `v0.40.2` tag와 immutable 이미지를 재사용하지 않도록 신규 paired GHCR 발행 **준비 버전 `0.40.3`**으로 package/lock 정렬. 최신 HEAD CI, Main CI/GHCR 게시 및 현장 수용 여부는 별도 증거 확보 전 NOT VERIFIED. 영속 운영 Auth/API/Prisma/Viewer/원본 DXF/Current 기능 OFF 유지.
+
+
 ## Unreleased — Issue #99 실 DXF P0/P5 Evidence Readiness (2026-10-25)
 
 - 승인 real DXF 3종/1k·10k·100k, Source audit SHA + Browser report Schema v2/5회, CAD WCS·면적 및 Source↔Render·BLOCK/OCS·지원 Matrix, 외부 GPU telemetry와 8개 조작/Owner SLA를 **비공개** manifest로 검증하는 fail-closed pure gate/CLI + TC-P0P5-001~008 Unit 작성.
