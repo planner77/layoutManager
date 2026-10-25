@@ -1,5 +1,11 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issue #99 현장 AC 추적 이전 — Issue #113 (2026-10-25)
+
+- 사용자의 Issue #99 종료 요청과 별개로, 실제 DXF 3종/1k·10k·100k Browser·GPU/CDR reference/오차·SLA·Owner 서명 **미수행/미완**은 [#113](https://github.com/planner77/layoutManager/issues/113)으로 독립 이관한다.
+- **#99 코드 검증 성공 ≠ #113 현장 수용 성공.** #99 종결 사유가 범위 이관(`not_planned`)일 경우라도 #113의 4개 수용 체크박스를 자동 완료/닫기 하지 않는다.
+
+
 ## Issue #99 / PR #110 — CI 성공과 P1 리뷰·수정 HEAD 분리 (2026-10-25)
 
 - **검증된 원 HEAD** `637742610b3eb25461b095edb5899494ce6dd054` [PR CI 40195335561](https://github.com/planner77/layoutManager/actions/runs/40195335561): Verify(Typecheck/Lint/Unit/Build/E2E) Job 121174841714 **completed/success**, Docker Job 121174841754 **completed/success**. 공개 합성/제품 회귀의 증거로만 사용.
