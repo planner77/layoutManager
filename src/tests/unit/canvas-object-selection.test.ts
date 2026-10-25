@@ -47,7 +47,7 @@ describe('TC-E1-UNIT-001: namespace and edit boundaries',()=>{
     });
     expect(id).toBe('00010203-0405-4607-8809-0a0b0c0d0e0f');
     expect(canvasObjectRef('GENERATED',id,scope).id).toBe(id);
-    expect(()=>createGeneratedId(undefined as unknown as Crypto)).toThrow();
+    expect(()=>createGeneratedId(null as unknown as Crypto)).toThrow();
   });
 });
 
