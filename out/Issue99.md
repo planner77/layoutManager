@@ -1,5 +1,13 @@
 # Issue #99 — 실설비 DXF P0 매핑·P5 Browser/GPU 현장 수용
 
+## PR #110 P1 리뷰 이후 추가 조치 및 릴리스 추적 (2026-10-25)
+
+- 초기 [PR CI 40195335561](https://github.com/planner77/layoutManager/actions/runs/40195335561) HEAD `6377426`: Verify/Docker 모두 success. 다음 코드 리뷰에서 외부 Symlink→Git worktree를 통해 private report SHA/GPU 정보를 repo에 기록할 수 있는 P1 결함 [4370918614](https://github.com/planner77/layoutManager/pull/110#discussion_r4370918614) 발견.
+- `src/tests/benchmark/private-acceptance-paths.ts` 도입: `realpathSync`로 소스·report 기존 상위 디렉터리·repo 기준 경로를 검증. 사내 보고서 부모 폴더를 **미리 생성**하여 접근 제한하며 기존 파일/링크 overwrite 금지, `wx/0600` 새 파일만 기록. TC-P0P5-PATH-001~006 Unit과 E2E 연결. 최신 HEAD CI 통과 이전에 리뷰 성공·보안 검증 완료·합병 완료로 주장하지 않는다.
+- User가 GHCR 신규 게시 요청함. `v0.40.2` 태그가 이미 있으므로 package/lock root `0.40.3`으로 버전 정렬, 이후 최신 HEAD PR CI→리뷰/충돌→Squash Main→GHCR app+migrator pair의 신규 버전 게시 게이트. GHCR publish 미실행 시 미게시 표기.
+- **필드 AC 유지:** 실 승인 DXF 3종, CAD WCS·면적, 실제 1k/10k/100k GPU·Memory·Latency, 8개 브라우저 조작, Owner SLA·서명/정보보호 현장 검증 미실행. CLI 준비를 운영 수용으로 오인하거나 completed 처리 금지. #96/#98 운영 기능은 여전히 비활성.
+
+
 - **상태 (2026-10-25):** 검증 보조 코드/절차 작성. **실도면 수용 BLOCKED**, 현장 실행/Owner 서명/실 GPU 측정 **NOT RUN**. 별도 `DESIGN.md`가 없어 `Architecture.md`·`Decisions.md`(ADR-048/049/050)가 설계 기준.
 - 상위 분리: [#31](https://github.com/planner77/layoutManager/issues/31)의 P0/P5 잔여. #96(Auth), #97(Canonical), #98(CadOutline 영속), #65/#71/#73(타입·트리)와 병행 시험은 가능하나 **운영 릴리스 수용은 통합 Owner 판정**. 본 PR은 서버 영속/인증/Prisma/API/Docker/Viewer Adapter/원본 bytes·SHA·Current/Version을 변경하지 않는다.
 - **실제 자료:** 3종 이상의 Owner 승인된 실제 설비 ASCII DXF를 사내 승인 스토리지에만 보관. 1k/10k/100k 대표 부하를 각각 포함하며 기준 AutoCAD/WCS XY 위치·면적·INSUNITS·BLOCK/INSERT/OCS/Handle/곡선/Hole과 렌더 결과를 원본 CAD 도구로 독립 비교. 현 파일/장비/측정 결과는 제공되지 않았으므로 PASS 미표기.
