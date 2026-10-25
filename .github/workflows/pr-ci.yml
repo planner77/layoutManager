@@ -123,6 +123,12 @@ jobs:
             echo "::error::Digest-pinned app unexpectedly accepted without migrator reference"
             exit 1
           fi
+      - name: Check Python audit syntax and synthetic regressions before Docker builds (#67)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile src/scripts/audit_standalone_layers.py src/scripts/test_audit_standalone_layers.py src/scripts/smoke_web_runtime.py
+          python3 src/scripts/test_audit_standalone_layers.py
       - name: Build pre-change baseline (same source, original Dockerfile)
         shell: bash
         run: |
@@ -145,7 +151,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 src/scripts/test_audit_standalone_layers.py
           python3 src/scripts/audit_standalone_layers.py cad-layout-viewer:baseline cad-layout-viewer:ci "$GITHUB_STEP_SUMMARY"
       - name: Measure migrator baseline vs dedicated dependency closure
         run: bash src/scripts/measure-migrator.sh cad-layout-viewer:baseline-migrate cad-layout-viewer:ci-migrate "$GITHUB_STEP_SUMMARY"

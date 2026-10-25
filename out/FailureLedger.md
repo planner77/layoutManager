@@ -1,5 +1,12 @@
 # PR/Main CI 실패 원장
 
+## Issue #67 / PR #80 — 2차 CI에서 Python syntax 검증 누락으로 Docker Job 차단 (2026-10-25 KST)
+
+- **실패 원본:** [PR CI Run 40171968883](https://github.com/planner77/layoutManager/actions/runs/40171968883), 검증 HEAD `95cd745222055ce934e5ee3016d3551179b30a7f`, attempt 1. Docker Job [121104610668](https://github.com/planner77/layoutManager/actions/runs/40171968883/job/121104610668) `completed/failure`. Step `Verify web layer SHA, native and transition-only size saving (#67)`의 첫 `python3 src/scripts/test_audit_standalone_layers.py`에서 import 시 SyntaxError `unterminated f-string literal` (`audit_standalone_layers.py:113`). 실패는 실 Docker layer/hash가 상이하다는 증거가 아니라 **수정한 계측 리포트 f-string의 닫는 따옴표/콤마 누락**이며 실제 이미지 검사·이어지는 migrator/Compose smoke는 SKIPPED. Verify Job은 당시 E2E 실행 중이었으므로 성공/실패 판정을 하지 않는다.
+- **Root cause/교정:** P1 조건 분기 추가 중 f-string 줄의 마감 기호를 누락했으며, Python self-test가 크기가 큰 Docker baseline/build/measure 작업 **이후**에 배치되어 사전 감지가 불가능했다. 문자열 구문 교정 + `python3 -m py_compile`(audit/self-test/API smoke 전부)·Synthetic Unit **이미지 빌드 전에 실행**하도록 순서를 이동. size gate를 `validate_image_size`로 분리, 이미 deduplicated·equal-size PASS와 실제 duplicate transition에서 equal-size FAIL 둘 다 테스트. SHA/native/no-dup/전체 Docker/Compose gate 제거·skip 없음.
+- **보존 및 후속:** 첫 성공 [Run 40170910369](https://github.com/planner77/layoutManager/actions/runs/40170910369) HEAD `6a35660` Verify+Docker PASS를 보존하되 교정 HEAD PASS로 전용하지 않는다. 기존 리뷰 P1 답변/resolve는 그대로. 새로운 HEAD PR CI 재시작 후 통과한 경우에만 merge/GHCR 진행. 신규 결과/OCI digest/실운영 검증은 그때까지 NOT VERIFIED.
+
+
 ## Issue #67 / PR #80 — 최초 PR CI SUCCESS 후 P1 후속 PR 공통 게이트 리뷰 (2026-10-25 KST)
 
 - **성공 Run 보존:** [PR CI 40170910369](https://github.com/planner77/layoutManager/actions/runs/40170910369), 첫 검증 HEAD `6a35660d192a586158e4380ae8e9618c46032202`, `completed/success`. Verify [Job 121101364113](https://github.com/planner77/layoutManager/actions/runs/40170910369/job/121101364113), Docker [Job 121101364198](https://github.com/planner77/layoutManager/actions/runs/40170910369/job/121101364198) 모두 `completed/success`. **이 항목은 CI 실패가 아니라 성공 후 추가 리뷰에서 발견한 잠재적인 다음 PR의 CI 차단 결함**이다.

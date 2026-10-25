@@ -1,5 +1,11 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+### Issue #67 / PR #80 — Python audit 조기 구문 검사 및 크기 분기 테스트 (2차 CI 실패)
+
+- [Run 40171968883](https://github.com/planner77/layoutManager/actions/runs/40171968883) Docker [121104610668](https://github.com/planner77/layoutManager/actions/runs/40171968883/job/121104610668): `TC-IMG67-002/003` 앞 Python import SyntaxError 1건; 실제 layer hash/새 Compose **SKIPPED**. Python `py_compile`을 baseline Docker 빌드 **전에** 추가.
+- `TC-IMG67-003B`: 실제 duplication transition + 동일 비압축 size → FAIL; baseline/new 이미 deduplicated + equal size → PASS, 단 native SHA/optimized no-dup 검사는 반드시 PASS. 새 Synthetic Unit 작성 / 수정 HEAD CI 미확인.
+
+
 ## Issue #67 — PR #80 P1 리뷰: 이미 deduplicated 기준선의 후속 CI 안전성
 
 | TC | 기대 | 검증 단계 |

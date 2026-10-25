@@ -1,5 +1,11 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE67-PR80-CI-FAIL-20261025 — 2차 PR CI의 Python 구문 차단 및 조기 검사 보완
+
+- [Run 40171968883](https://github.com/planner77/layoutManager/actions/runs/40171968883), HEAD `95cd745222055ce934e5ee3016d3551179b30a7f`: Docker Job [121104610668](https://github.com/planner77/layoutManager/actions/runs/40171968883/job/121104610668) `completed/failure`. 이미지 build·3-way size measurement 단계 완료 후 Python self-test import 시 `audit_standalone_layers.py:113` `SyntaxError: unterminated f-string literal`. 따라서 실제 layer audit/후속 migrator·Compose smoke는 **실행되지 않았음(SKIPPED)**; 기능 회귀라고 판단 불가. Verify Job 상태는 검사 시 in_progress/E2E였으며 성공으로 기입 금지.
+- 교정: f-string 마감과 `validate_image_size`를 수정하고 Python audit/self-test/API smoke를 Docker build 전 `py_compile` 및 Synthetic regression으로 먼저 검사한다. transition positive saving과 이미 deduplicated baseline equal-size 두 분기의 Unit을 추가. 새 HEAD CI 전 PASS 아님. [FailureLedger](FailureLedger.md)/[TestPlan](TestPlan.md).
+
+
 ## U-ISSUE67-PR80-REVIEW-20261025 — 첫 CI 성공·후속 PR P1 리뷰 수정
 
 - 최초 [Run 40170910369](https://github.com/planner77/layoutManager/actions/runs/40170910369), 검증 HEAD `6a35660d192a586158e4380ae8e9618c46032202`, **completed/success**. Verify [121101364113](https://github.com/planner77/layoutManager/actions/runs/40170910369/job/121101364113), Docker [121101364198](https://github.com/planner77/layoutManager/actions/runs/40170910369/job/121101364198) 모두 성공. Docker layer/hash/size/Compose는 최초 HEAD 통과 근거이며 이번 수정 이후에 소급 적용 금지.

@@ -1,5 +1,11 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+### Issue #67 / PR #80 — Python audit syntax 실패 및 CI early gate (2026-10-25)
+
+- P1 리뷰 수정 HEAD `95cd745`의 [PR CI 40171968883](https://github.com/planner77/layoutManager/actions/runs/40171968883) Docker Job `121104610668` FAIL: Python audit `f-string`의 종료 문자 누락. **이미지 mismatch 아님**, 실제 layer hash/Compose 검증은 SKIPPED, Verify E2E 상태는 확인 당시 in_progress였다.
+- 스크립트 구문 보완과 Docker build 이전 `py_compile` + Synthetic Unit 필수 실행, dedup transition positive saving vs already dedup equal-size PASS 검사 모두 유지. 최초 성공 HEAD/실패 HEAD 이력 [FailureLedger](out/FailureLedger.md), 새 HEAD 성공 검증 전 merge 및 게시 금지.
+
+
 ## Issue #67 / PR #80 — 성공 CI 후 P1 공통 Docker 검사 개선 (2026-10-25)
 
 - [PR CI 40170910369](https://github.com/planner77/layoutManager/actions/runs/40170910369) HEAD `6a35660`의 Verify(121101364113)·Docker(121101364198) jobs는 모두 SUCCESS. [P1 review 4369963432](https://github.com/planner77/layoutManager/pull/80#discussion_r4369963432)에서 이후 `main`이 이미 최적화된 상태이면 unrelated PR의 baseline 중복 0개/size delta 0을 강제 실패시키는 CI 회귀가 발견됐다.

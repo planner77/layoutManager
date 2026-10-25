@@ -6,7 +6,7 @@ from pathlib import Path
 import tarfile
 import tempfile
 import unittest
-from audit_standalone_layers import inventory, compare_inventories
+from audit_standalone_layers import inventory, compare_inventories, validate_image_size
 
 NATIVE = "app/src/node_modules/better-sqlite3/build/Release/better_sqlite3.node"
 JS = "app/src/node_modules/better-sqlite3/lib/database.js"
@@ -68,6 +68,13 @@ class TestAudit(unittest.TestCase):
                 {NATIVE: [(1, 1, "a")]},
                 {NATIVE: [(1, 1, "a"), (2, 1, "a")]},
             )
+
+    def test_equal_size_is_valid_if_baseline_was_already_deduplicated(self):
+        validate_image_size(364008031, 364008031, False)
+
+    def test_transition_requires_positive_size_saving(self):
+        with self.assertRaisesRegex(ValueError, "did not reduce"):
+            validate_image_size(364008031, 364008031, True)
 
     def test_reject_remaining_optimized_duplication(self):
         with self.assertRaisesRegex(ValueError, "still duplicates"):

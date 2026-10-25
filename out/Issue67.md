@@ -1,5 +1,11 @@
 # Issue #67 — GHCR 웹 Standalone better-sqlite3 중복 계층 제거 및 정밀 계측
 
+### PR #80 2차 CI에서 발견한 계측 Python 구문 회귀 (2026-10-25)
+
+- [Run 40171968883](https://github.com/planner77/layoutManager/actions/runs/40171968883) HEAD `95cd745`에서 Docker Job의 Python audit import가 `f-string` 종료 문자 누락으로 FAIL. 이미지 계측 검사 자체와 후속 Compose 스모크는 실행되지 않았고, 원래 P1 수정의 의미적 정상/실패 증거로 해석하지 않는다.
+- `py_compile`과 Synthetic Unit을 Docker 빌드 전으로 옮기고 구문을 수정한다. 최초 duplication transition positive saving과 이후 deduplicated base equal-size 허용을 분리 테스트한다. [FailureLedger](FailureLedger.md)/[TestPlan](TestPlan.md).
+
+
 ## PR #80 첫 CI 성공과 P1 리뷰 수정 (2026-10-25)
 
 - 최초 [Run 40170910369](https://github.com/planner77/layoutManager/actions/runs/40170910369), HEAD `6a35660d192a`, Verify/Docker Job 모두 SUCCESS. 이 값은 최초 HEAD에 한정되며 GHCR OCI 용량/실운영 증거는 아니다.

@@ -66,6 +66,14 @@ def compare_inventories(before, after):
     return duplicates, wasted
 
 
+def validate_image_size(baseline_bytes, optimized_bytes, transition):
+    """Require positive saving only for a real duplicate-layer transition."""
+    if baseline_bytes <= 0 or optimized_bytes <= 0:
+        raise ValueError("Invalid image size")
+    if transition and baseline_bytes <= optimized_bytes:
+        raise ValueError("Deduplication transition did not reduce uncompressed image size")
+
+
 def inspect(image):
     data = json.loads(subprocess.check_output(["docker", "image", "inspect", image], text=True))
     if len(data) != 1 or (data[0]["Os"], data[0]["Architecture"]) != ("linux", "amd64"):
@@ -93,8 +101,7 @@ def main():
     duplicates, wasted = compare_inventories(before, after)
     base_size, size = int(old["Size"]), int(new["Size"])
     transition = bool(duplicates)
-    if transition and base_size <= size:
-        raise ValueError("Deduplication transition did not reduce uncompressed image size")
+    validate_image_size(base_size, size, transition)
     diffids = old["RootFS"]["Layers"]
     if len(diffids) != before_count or len(new["RootFS"]["Layers"]) != after_count:
         raise ValueError("Docker archive layer order differs from inspect diffIDs")
@@ -110,7 +117,7 @@ def main():
         "",
         f"- Baseline duplicate present: {'YES (deduplication transition)' if transition else 'NO (already deduplicated)'}.",
         f"- Local uncompressed delta (baseline minus current): {base_size - size} bytes ({(base_size-size)/base_size*100:.2f}%); {'positive saving REQUIRED' if transition else 'size delta INFORMATIONAL'}.",
-        f"- Identical package bytes written AGAIN in baseline layers: {wasted} raw bytes (not GHCR compressed savings).
+        f"- Identical package bytes written AGAIN in baseline layers: {wasted} raw bytes (not GHCR compressed savings).",
         "- All final package file paths and SHA256 values match, including a native .node binding.",
         "- Source: actual docker-save TAR layer members and docker inspect RootFS diffIDs.",
         "",
