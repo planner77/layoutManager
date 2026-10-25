@@ -1,5 +1,12 @@
 # CAD Web Viewer P.O.C.
 
+## Issue #76 — GitHub Squash Merge 커밋 메시지 기본값 (운영 관리자 조치 필요)
+
+- GitHub 저장소 Settings → General → Pull Requests → **Allow squash merging / Default commit message: Pull request title**로 지정해야 합니다. 현재 REST 확인값 `COMMIT_OR_PR_TITLE / COMMIT_MESSAGES`는 목표 `PR_TITLE / BLANK`와 달라 **미완료**입니다.
+- PR CI는 이를 읽기 전용으로 조회해 `PASS`, `NOT APPLIED`, `NOT VERIFIED` 중 하나를 경고/Job Summary로 표시합니다. 경고 자체는 다른 PR CI를 차단하지 않으며, 실제 설정 변경·새 Main CI 단일행 확인을 대체하지 않습니다. 세부 절차 [Issue76](out/Issue76.md) / [Operation](out/Operation.md).
+- 앱 버전, GHCR 게시 범위, 기존 #74 multiline 보호, DXF/DWG 데이터는 변동 없습니다.
+
+
 ## v0.39.0 — Issue #53 생성 개체 개별·다중 삭제 (E3)
 
 - **DXF + three-dxf-viewer 전용:** 기존 생성 외곽선을 선택한 후 하단 **선택 삭제**, 트리 행 **삭제**, 이미 선택된 개체의 Canvas 우클릭 **선택한 생성 개체 삭제**, 또는 **Canvas 초점**에서 Delete/Backspace로 브라우저 임시 개체만 삭제합니다. 삭제 전 개수/이름 확인창이 표시되고, 취소하면 아무것도 바뀌지 않습니다.

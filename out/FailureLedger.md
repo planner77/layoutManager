@@ -1,5 +1,12 @@
 # PR/Main CI 실패 원장
 
+## Issue #76 / PR #89 — #53 main 선행 병합으로 문서 충돌 (2026-10-25 KST)
+
+- **기존 PR 성공:** [PR CI 40174728906](https://github.com/planner77/layoutManager/actions/runs/40174728906), HEAD `53fd648f8ec4daa2c7979245d441f82da51cf676`, attempt 1, `completed/success`. #53 병합 **전**의 성공으로서 새 통합 HEAD의 검증에 전용 불가.
+- **충돌:** #53 [main 3ff1f94b](https://github.com/planner77/layoutManager/commit/3ff1f94b3fbf11737a827536e223114ea4ca0e96) 반영 후 PR #89 `behind=1`, `mergeable_state=dirty`. `AGENTS.md`, `README.md`, `out/TestPlan.md`, `out/TestReport.md` 동시 상단 삽입 충돌이다. 런타임 파일 충돌 없음.
+- **보완:** 최신 main #53 v0.39.0 Generated Delete/테스트/설계 전부 보존하고 #76의 read-only audit·운영 가이드·문서 인덱스를 2-parent merge로 통합. 관리자 repository squash default는 당시 `COMMIT_OR_PR_TITLE/COMMIT_MESSAGES`로 **미적용**이므로 이슈 수용 조건 완료로 표시 금지.
+- **후속:** 통합 HEAD PR CI 성공·리뷰 0·충돌 0 재확인 후 `squash`, 제목 `#76 | Squash 기본 메시지 정책 진단 및 운영 가이드`, 빈 본문으로 병합. Markdown/Workflow-only GHCR `release-scope`에 의해 이미지 게시 제외. 본 건은 **CI 테스트 실패가 아닌 동시 작업 충돌**.
+
 ## Issue #67 / PR #80 — #52 main 선행 병합으로 HEAD 통합 및 CI 재검증 (2026-10-25 KST)
 
 - #67 브랜치 수정 HEAD `aa9083c8ac3be5b21bc87e8eaa54e1f0273abc4d`의 CI 시작 전 main이 [Issue #52 commit e1adfe5b](https://github.com/planner77/layoutManager/commit/e1adfe5b9de28ddd3821a0de2466d810e5c6c209)로 이동해 PR `mergeable_state=dirty`, `behind=1` 확인. 이는 코드 테스트 실패가 아닌 동시 작업 충돌로, 원격 기준 문서·package version 중복 변경의 충돌이다.

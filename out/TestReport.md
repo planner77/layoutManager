@@ -1,5 +1,12 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE76-PREFLIGHT-20261025 — 관리자 설정 불일치 및 CI 진단의 로컬 사전 검증
+
+- GitHub REST `GET https://api.github.com/repos/planner77/layoutManager` (2026-10-25) 응답에서 `allow_squash_merge=true`, `squash_merge_commit_title=COMMIT_OR_PR_TITLE`, `squash_merge_commit_message=COMMIT_MESSAGES`를 확인했다. **관리자 UI / PATCH 미실행, AC-76-01 미완료**.
+- 작성한 read-only CI 셸 분기를 별도 임시 Bash 스크립트로 `bash -n` 검사했고, mock `curl` 응답 **정상 정책 / 현재 잘못된 정책 / 잘못된 JSON / 배열 JSON** 4가지에서 예상 `PASS / NOT APPLIED / NOT VERIFIED / NOT VERIFIED` 로그와 Summary, 0 exit을 관측했다. 이는 실제 GitHub REST/Runner에서 동일한 경로를 실행한 증거가 아니며, 네트워크 오류 분기의 실제 실행은 **NOT RUN**.
+- 기존 `.github/workflows/pr-ci.yml`의 Trigger/permissions/concurrency/Docker Job/GHCR Main workflow는 그대로 두고 Verify에 사전 read-only advisory step만 추가하는 방식. 이로 인한 CI 성공 또는 실제 관리자 설정 적용, 실제 새 Main Push 단일행은 **NOT VERIFIED**. 자세한 대응은 [Issue76](Issue76.md)·[TestPlan](TestPlan.md).
+
+
 ## U-ISSUE53-20261025 — E3 선택 GENERATED 삭제 코드·테스트 작성 (검증 전)
 
 - Source baseline: `main e1adfe5b9de28ddd3821a0de2466d810e5c6c209`, feature branch `feat/issue-53-generated-delete`, v0.39.0. E2 Command/Undo/Redo, U6 Tree, E1 Selection 재사용. 사용자 요청에 따라 PR CI를 시작만 하고 **결과 모니터링하지 않음**.
