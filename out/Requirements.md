@@ -1,5 +1,13 @@
 # 상세 요구사항
 
+## Issue #54 / E4 v0.40.0 — 생성 개체 WCS 수치·그룹 드래그 이동 (2026-10-25)
+
+- **FR-E4-01 / AC1:** DXF+three-dxf-viewer Generated 편집에서 선택한 하나/복수 확정 외곽선을 WCS XY `ΔX,ΔY`로 평행이동. 두 값 동일 적용으로 상대 위치 유지. `$INSUNITS` 코드 표기/0·미상 안내, 픽셀/수치 단위 혼동 금지.
+- **FR-E4-02 / AC3/4:** 이미 선택한 GENERATED 개체 외곽 경계에서만 5 CSS px 이상 이동 시 Ghost 시작, 화면→WCS camera.unproject. 화면 Zoom/Space Pan/영역 선택/생성 ON/OFF/Fullscreen/터치 두 번째 포인터, ESC/포인터 취소·손실·blur/Renderer·Version·reload/Dispose에서 즉시 preview 취소. pointerup 전 Document/history 불변.
+- **FR-E4-03 / AC1/2:** 최신 선택·UUID·Version/SHA·visible/Origin·다중 중복/누락을 UI/Adapter/E2 Document에서 재검증. SOURCE/혼합/NaN/Infinity/과도 Δ/overflow는 일괄 거부. 성공한 명령은 1 history step이고 Undo/Redo는 기준 Geometry 및 외곽선 metadata/provenance/UUID 불변으로 복원.
+- **FR-E4-04 / AC2:** Polygon/MultiPolygon/Hole/모든 링·bbox·hit·Tree·Canvas·Fit·기존 임시 JSON을 Document projection 기준으로 일치시키고 Worker/source spatial index 새로 계산하지 않음; 변경된 GPU 그룹/ghost dispose.
+- **NFR-E4-01 / AC3/4:** 원본 Source bytes/SHA/Layer/Current/Version, server API/DB/P4 보안 승인, 미지원 Renderer/DWG, E5 Rotate·E6 JSON Import 불변. 새 브라우저 Session에서 이동 사라짐. 자세한 기준 [Issue54](Issue54.md)/ADR-047/TC-E4.
+
 ## Issue #53 / E3 v0.39.0 — 선택 GENERATED 삭제·확인·Undo/Redo (2026-10-25)
 
 - **FR-E3-01 / AC1/2:** DXF+three-dxf-viewer에서 현재 생성 외곽선 단일/복수 삭제를 편집 도구바, #43 Tree 행, 선택된 Canvas 개체의 우클릭 작업, Canvas 초점 Delete/Backspace에 동일한 E2 `Delete(ids)`로 제공. 이름·개수 확인, 취소하면 상태 및 이력 무변경.

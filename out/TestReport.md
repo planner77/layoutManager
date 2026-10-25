@@ -1,11 +1,30 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE54-PR92-CI-SUCCESS-MAIN-ALIGN-20261025
+
+- [수정 HEAD PR CI 40181171710](https://github.com/planner77/layoutManager/actions/runs/40181171710), SHA `6845c4b4e1e22157b64ce05215e67710c9a3a985`, **completed/success**: P1의 5px 이전 Wheel/Resize 후보 취소와 TC-E4-E2E-004 포함. 최초 Run 40177837419는 수정 이전 별도 PASS.
+- #76 [main 14111b45](https://github.com/planner77/layoutManager/commit/14111b45a36907245342751d9d1a139b5215474d)의 PR CI advisory 및 문서 변경을 #54 브랜치에 통합한다. 이 merge commit에서 앱 기능 코드 변경 없으나 새 PR CI 결과는 **NOT VERIFIED**. GHCR 게시·실 CAD/GPU 수용은 별도.
+
 ## U-ISSUE76-PREFLIGHT-20261025 — 관리자 설정 불일치 및 CI 진단의 로컬 사전 검증
 
 - GitHub REST `GET https://api.github.com/repos/planner77/layoutManager` (2026-10-25) 응답에서 `allow_squash_merge=true`, `squash_merge_commit_title=COMMIT_OR_PR_TITLE`, `squash_merge_commit_message=COMMIT_MESSAGES`를 확인했다. **관리자 UI / PATCH 미실행, AC-76-01 미완료**.
 - 작성한 read-only CI 셸 분기를 별도 임시 Bash 스크립트로 `bash -n` 검사했고, mock `curl` 응답 **정상 정책 / 현재 잘못된 정책 / 잘못된 JSON / 배열 JSON** 4가지에서 예상 `PASS / NOT APPLIED / NOT VERIFIED / NOT VERIFIED` 로그와 Summary, 0 exit을 관측했다. 이는 실제 GitHub REST/Runner에서 동일한 경로를 실행한 증거가 아니며, 네트워크 오류 분기의 실제 실행은 **NOT RUN**.
 - 기존 `.github/workflows/pr-ci.yml`의 Trigger/permissions/concurrency/Docker Job/GHCR Main workflow는 그대로 두고 Verify에 사전 read-only advisory step만 추가하는 방식. 이로 인한 CI 성공 또는 실제 관리자 설정 적용, 실제 새 Main Push 단일행은 **NOT VERIFIED**. 자세한 대응은 [Issue76](Issue76.md)·[TestPlan](TestPlan.md).
 
+## U-ISSUE54-PR92-CI-REVIEW-20261025 — 첫 성공 CI와 P1 보완의 증거 구분
+
+- [PR CI 40177837419](https://github.com/planner77/layoutManager/actions/runs/40177837419), HEAD `2f57a642197f7d22d457ad65a70eda76b8ba7df4` completed/**success**, Verify [121122289273](https://github.com/planner77/layoutManager/actions/runs/40177837419/job/121122289273) 및 Docker [121122289396](https://github.com/planner77/layoutManager/actions/runs/40177837419/job/121122289396) 모두 completed/success. 실 DXF/네이티브 fullscreen/실 GPU 수용의 증거는 아니다.
+- **별도 P1 리뷰 [4370223581](https://github.com/planner77/layoutManager/pull/92#discussion_r4370223581)**: Ghost threshold 도달 전 카메라가 wheel/Resize로 바뀌어도 stale `down.world`가 남아 의도치 않은 WCS 이동이 가능. 코드 수정: 진행 중 모든 pointer candidate/selection box/ghost에 동일한 cancel 경로 적용. Playwright `TC-E4-E2E-004` 신규.
+- 수정 HEAD의 Typecheck/ESLint/Unit/Build/E2E/Legacy/Docker **새 CI 필요 / NOT VERIFIED**. 초기 PASS는 새 HEAD로 소급 불가. PR 리뷰 해결 및 최신 main 정렬 후 승인된 게이트에 따라 squash merge/Main CI 및 GHCR pair를 진행한다.
+
+
+## U-ISSUE54-20261025 — E4 WCS 이동 기능/시험 작성 (PR CI 검증 전)
+
+- 기능 기준선: `main 3ff1f94b3fbf11737a827536e223114ea4ca0e96` (#53 E3 포함). 브랜치 `feat/issue-54-generated-translate`, 버전 `0.40.0`, 상위 #49/선행 #51/#52/#53. DESIGN.md 없음→`out/Architecture.md` 설계. GitHub connector로 분석/코드 커밋; 현재 container는 `git ls-remote`부터 DNS `Could not resolve host: github.com`로 실패해 checkout 불가.
+- 개발 변경: `generated-translate.ts`의 numeric/scope/bounds gate, `generated-hit-test.ts` 경계 선분 히트, `selection-controller.ts` 단일 포인터 gesture/ESC·Space·wheel·touch·cancel, `three-dxf-viewer/adapter.ts` WCS Ghost/원자 Document Translate + GPU cleanup, `viewer.tsx` WCS 폼/units/error. E2 기존 History 및 #43 Tree/JSON 투영 재사용. API/DB/Schema/DXF Source 미수정.
+- 신규 Unit `generated-translate.test.ts`: **4 test cases 코드 작성 / NOT RUN**. 신규 Playwright `issue54-generated-translate.spec.ts`: **3 test cases 코드 작성 / NOT RUN**. 기타 Typecheck/Lint/npm ci/Build/전체 Unit/E2E/Docker/Legacy: **NOT RUN**. Native Fullscreen·Touch/HID·실 DXF·GPU 누수·성능 측정: **NOT RUN**. 추정·정적 코드 검토를 실행 PASS로 기재하지 않는다.
+- 기대 잔여 검증: CI Verify(Typecheck→Lint→Unit→Build→E2E→Legacy) 및 Docker 각 Job 실제 성공/실패 로그 구별; 사용자의 지시상 **PR CI 시작까지만** 하고 CI 상태 모니터링·병합·GHCR 공개·Issue #54 종료 안 함. 향후 실패 발생 시 `out/FailureLedger.md`에 실제 run/job/head/원인/조치/재실행을 누적할 것.
+- 결함/주의: 5px drag은 generated 전용 모드/기존 선택된 경계에서만, 경계가 아니라 채움 클릭은 기존 선택; 서버에 저장되지 않으므로 Renderer/reload 시 소멸. `data-generated-drag-preview`는 테스트 관측 마커로 실제 GPU 자원 수명까지 입증하지 않는다. [Issue54](Issue54.md), [TestPlan](TestPlan.md).
 
 ## U-ISSUE53-20261025 — E3 선택 GENERATED 삭제 코드·테스트 작성 (검증 전)
 

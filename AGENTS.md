@@ -1,11 +1,27 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #54 / PR #92 — #76 main 통합 및 검증 기록 (2026-10-25)
+
+- 수정된 #54 HEAD `6845c4b4`: [PR CI 40181171710](https://github.com/planner77/layoutManager/actions/runs/40181171710) **completed/success**, P1 thread resolved. #76 [main 14111b45](https://github.com/planner77/layoutManager/commit/14111b45a36907245342751d9d1a139b5215474d)는 문서·PR CI 비차단 read-only audit만 변경하며 Viewer/DB/GHCR 런타임 변경 없음. #54와 #76 문서 및 CI 작업을 모두 보존하고 main을 통합한다. 병합 HEAD의 새 PR CI 성공은 별도 확인해야 한다.
+
 ## Issue #76 — Squash Merge 관리자 설정·PR CI 읽기 전용 진단 (2026-10-25)
 
 - #74 Main 실행명 fallback 구현과 저장소 영구 설정을 분리한다. 2026-10-25 REST GET에서는 `allow_squash_merge=true`, `squash_merge_commit_title=COMMIT_OR_PR_TITLE`, `squash_merge_commit_message=COMMIT_MESSAGES`로 확인되어 **#76 관리자 적용은 미완료**다.
 - PR CI Verify의 새 read-only audit는 정확히 `true/PR_TITLE/BLANK`만 PASS라 표시하고 불일치 시 **NOT APPLIED**, API 장애 시 **NOT VERIFIED**로 경고한다. 경고가 non-blocking인 것은 앱 CI 보호를 위한 것이며 설정 수용 PASS를 뜻하지 않는다. 관리자 UI 변경 및 실제 새 Main squash subject/body/run-name 확인이 완료 조건이다.
 - 상세 [Issue76](out/Issue76.md), [Operation](out/Operation.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md), [ADR-041](out/Decisions.md). `DESIGN.md` 부재로 [Architecture](out/Architecture.md) 대체. Workflow/GHCR scope와 `src/package.json` 버전, DB/API/Viewer는 불변.
 
+## Issue #54 / PR #92 — CI 성공 후 P1 카메라 변환 경계 보완 (2026-10-25)
+
+- [CI #40177837419](https://github.com/planner77/layoutManager/actions/runs/40177837419): **수정 전 HEAD** `2f57a642197f7d22d457ad65a70eda76b8ba7df4`의 Verify(121122289273)·Docker(121122289396) 모두 SUCCESS. 이 성공을 새로운 리뷰 수정 HEAD의 테스트 증거로 재사용하지 않는다.
+- [P1 리뷰 #4370223581](https://github.com/planner77/layoutManager/pull/92#discussion_r4370223581): GENERATED 경계 `pointerdown` 뒤 5px 미만에서 wheel·Resize가 일어나면 `cancelGeneratedDrag`의 `moving=false` 검사가 후보를 방치, 새 Camera WCS에서 잘못된 translate가 commit될 수 있다. 수정: **모든 진행 중 pointer/box/ghost를 카메라 변경 전에 취소**하고 `TC-E4-E2E-004` wheel·Resize·후속 move/up History0/JSON 불변 회귀 추가.
+- CI 실패가 아닌 **CI 성공 후 코드 리뷰 결함**으로 [FailureLedger](out/FailureLedger.md) 구분. 수정 HEAD CI 성공·미해결 리뷰 0·main 정렬 전에는 merge/Issue 종료/GHCR 게시 불가. 실 CAD/GPU/native fullscreen 별도 검증.
+
+
+## Issue #54 / E4 — 생성 개체 WCS 수치·경계 드래그 이동 (2026-10-25)
+
+- v0.40.0: DXF+three-dxf-viewer의 현재 GENERATED 단일/다중 선택을 `Translate(ids,dx,dy)` E2 원자 Command로 이동한다. UI ΔX/ΔY는 **WCS drawing unit**이며 `$INSUNITS` 0/누락은 '단위 미상' 표시; mm/inch와 화면 픽셀을 혼동하지 않는다. 선택에 SOURCE/혼합/중복/stale/숨김이 하나라도 있으면 전체 거부.
+- Generated 전용 모드에서 **이미 선택된** 외곽선 경계(홀 포함)를 modifier 없이 5px 이상 움직인 때만 Ghost 드래그; 이외는 기존 Box/Click/Space Pan. Ghost는 Scene-only, Document/Tree/JSON/History는 pointerup 최종 재검증 뒤 한 번만 commit한다. ESC·pointercancel/lostcapture·blur·Space·two-finger·Zoom/Fit/Resize·선택/모드·Viewer 변경 시 즉시 취소/GPU 해제.
+- E2 Immutable baseline+affine으로 Polygon/MultiPolygon/Hole 및 bounds/hit/Scene/Tree/export를 동기 반영하고 Undo/Redo 1단계. Original Source/bytes/SHA/Layer/Current, Worker/DB/API/#31 P4는 변경 금지. [Issue54](out/Issue54.md), [ADR-047](out/Decisions.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md). 현재 로컬 Typecheck/Lint/Unit/E2E/실도면/native Fullscreen **NOT RUN**; CI 트리거와 성공 구분.
 
 ## Issue #53 / E3 — 생성 개체 선택 삭제·Undo/Redo·Tree 일관성 (2026-10-25)
 

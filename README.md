@@ -6,6 +6,12 @@
 - PR CI는 이를 읽기 전용으로 조회해 `PASS`, `NOT APPLIED`, `NOT VERIFIED` 중 하나를 경고/Job Summary로 표시합니다. 경고 자체는 다른 PR CI를 차단하지 않으며, 실제 설정 변경·새 Main CI 단일행 확인을 대체하지 않습니다. 세부 절차 [Issue76](out/Issue76.md) / [Operation](out/Operation.md).
 - 앱 버전, GHCR 게시 범위, 기존 #74 multiline 보호, DXF/DWG 데이터는 변동 없습니다.
 
+## v0.40.0 — Issue #54 생성 개체 WCS 이동·그룹 이동 (E4)
+
+- **DXF + three-dxf-viewer의 생성 확정 객체 전용:** 하단에서 **생성 개체만 선택** 또는 **원본·생성 선택**으로 GENERATED 개체 하나 또는 여러 개를 고른 뒤 **ΔX/ΔY → 이동 적용**을 누릅니다. 입력값은 도면 WCS XY 단위로 적용하며, 단위 정보가 없으면 **단위 미상**으로 표시합니다. 예: (10,20)에서 (+3,-5) 입력 시 (13,15).
+- **캔버스 직접 이동:** 생성 개체 전용 선택 모드에서 먼저 선택한 개체의 **외곽선 경계**를 5px 이상 드래그하면 청록색 미리보기만 움직입니다. 포인터를 놓을 때 확정하고 선택한 개체 전체가 같은 양만큼 이동합니다. Esc·포인터 취소·Space Pan·Zoom/Fit·모드 전환은 미리보기만 취소하며 편집 기록을 남기지 않습니다. 경계 이외의 드래그는 기존 영역 선택입니다.
+- **원자·복구:** SOURCE 또는 원본·생성 혼합 선택은 전체 거부. Polygon/MultiPolygon/Hole/트리 Focus/Hit/기존 JSON에 새 WCS 좌표가 반영되며 한 번의 이동=Undo 한 단계. 기존 원본 DXF/Layer/SHA/Current·DB/API는 불변, 세션 종료·Reload/Renderer 교체 시 브라우저 임시 개체가 사라집니다. 서버 영구 저장은 #31 P4 승인 전 불가합니다.
+- [Issue #54 설계](out/Issue54.md) · [검증 계획](out/TestPlan.md). **로컬 검증/실 CAD/GPU/native Fullscreen은 NOT RUN이며 CI 시작을 성공으로 보지 않습니다.**
 
 ## v0.39.0 — Issue #53 생성 개체 개별·다중 삭제 (E3)
 
