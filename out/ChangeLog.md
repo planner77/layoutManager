@@ -1,5 +1,12 @@
 # ChangeLog
 
+## v0.34.0 PR #64 검증·병합 및 릴리스 시작 근거 (2026-10-25)
+
+- [PR CI 40154979531](https://github.com/planner77/layoutManager/actions/runs/40154979531) SUCCESS: Typecheck/Lint/Unit·Integration/Synthetic Benchmark/Build/Chromium E2E/Legacy Migration E2E/Docker. 직전 실패 [40153913566](https://github.com/planner77/layoutManager/actions/runs/40153913566)는 원장에 보존; 시안 alert locator 및 HTTP UUID P2 수정 검증.
+- PR #64 → main [squash merge 7da613d1](https://github.com/planner77/layoutManager/commit/7da613d1ed9e2893849a3c3a7f0931d4f32ff850), 변경 버전 v0.34.0. [Main/GHCR workflow 40155833554](https://github.com/planner77/layoutManager/actions/runs/40155833554) **시작 확인**, 완료·digest·태그 게시 실증은 미확정.
+- 원 이슈 #41은 범위 분할로 닫되, 실제 Admin 영속 API/DB/RBAC/Scope/감사/외곽선 typeId 연계는 미구현·Owner 승인 대기하여 [#65](https://github.com/planner77/layoutManager/issues/65)에 이관. 운영 Admin 기능 완료로 표현하지 않음.
+
+
 ### v0.34.0 / PR #64 — 첫 CI E2E 실패·HTTP UUID 리뷰 교정 (2026-10-25)
 
 - [Run 40153913566](https://github.com/planner77/layoutManager/actions/runs/40153913566) Chromium E2E **55 PASS/1 FAIL**(프로토타입 error alert + Next route announcer 중복 locator), Legacy migration SKIPPED; TypeScript/Lint/Unit/Benchmark/Build/Docker PASS. [FailureLedger](FailureLedger.md).

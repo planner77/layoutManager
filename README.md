@@ -1,5 +1,11 @@
 # CAD Web Viewer P.O.C.
 
+### Issue #41 / v0.34.0 PR CI 성공·부분 범위 릴리스 상태
+
+- [PR #64](https://github.com/planner77/layoutManager/pull/64)는 [PR CI 40154979531](https://github.com/planner77/layoutManager/actions/runs/40154979531) 성공 후 병합되었습니다. 브라우저 메모리 시안 `/lab/outline-types`와 UUID·검증 기능만 포함하며 **실제 관리자 타입 DB 저장 및 접근 권한은 구현되지 않았습니다**.
+- #41의 나머지 원래 영속/관리 수용 기준은 [후속 #65](https://github.com/planner77/layoutManager/issues/65)로 이관(인증·Scope·Audit 승인 전 BLOCKED)하고 #41은 범위 분할로 종료했습니다. [Main/GHCR workflow #40155833554](https://github.com/planner77/layoutManager/actions/runs/40155833554)는 시작했으나 GHCR 게시 성공·실서비스 배포는 별도 확인이 필요합니다.
+
+
 ### Issue #41 / PR #64 비영속 타입 시안 HTTP 접속·CI 교정
 
 - 시안 URL `/lab/outline-types`는 `crypto.randomUUID`를 지원하지 않는 사내 `http://서버IP:3000` 브라우저에서도 `crypto.getRandomValues`를 사용해 임시 UUIDv4를 만듭니다. 브라우저 메모리 시안 외 영역에 저장하거나 관리자 권한으로 사용하지 않습니다. 암호학적 난수 API가 아예 없다면 안내 후 차단합니다.

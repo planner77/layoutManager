@@ -1,5 +1,13 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #41 / PR #64 — CI 성공·병합·U4 영속 AC 이관 (2026-10-25)
+
+- [PR CI #40154979531](https://github.com/planner77/layoutManager/actions/runs/40154979531), 검증 HEAD `e2f0a64d45f601420a2bc38b99531c748269f61a`는 **SUCCESS**: TypeScript/ESLint/Unit·Integration/DXF Benchmark/Production Build/Chromium E2E/Legacy Migration E2E 및 독립 Docker Runtime Job 모두 성공. 이전 [실패 #40153913566](https://github.com/planner77/layoutManager/actions/runs/40153913566)는 실패 원장에 보존한다.
+- 미해결 P2 리뷰 1건은 답변·해결됐고 최종 0건, 충돌 없음/behind 0 확인 후 [PR #64](https://github.com/planner77/layoutManager/pull/64)를 **squash merge `7da613d1`**로 병합. `main` push가 [Build and publish #40155833554](https://github.com/planner77/layoutManager/actions/runs/40155833554)를 시작했으나 GHCR 게시 완료·Main CI 성공은 미확인이다.
+- **중요:** 사용자의 이슈 종료 요청에 따라 원래 #41은 **범위 분할 / not_planned 종료**했지만, 실제 관리자 영속 등록·RBAC/Scope/Audit·DB API·FK 등의 미완 AC-U4-01~04는 후속 [#65](https://github.com/planner77/layoutManager/issues/65)로 이관했다. #31 P4 Owner 보안 정책 승인 전 영속 저장 구현/활성화 금지. #41의 브라우저 시안 CI 성공을 실제 Admin CRUD 완료로 해석하지 않는다.
+- 이 기록은 릴리스 완료가 아니라 **Main CI/GHCR 작업 시작 증거**이며, CI 모니터링은 요청 범위 밖이다. [FailureLedger](out/FailureLedger.md), [Issue41](out/Issue41.md), [TestReport](out/TestReport.md).
+
+
 ## Issue #41 / PR #64 — E2E Strict Locator 실패·HTTP UUID 리뷰 대응 (2026-10-25)
 
 - [PR CI 40153913566](https://github.com/planner77/layoutManager/actions/runs/40153913566), 원본 HEAD `d548df2`: TypeScript·Lint·Unit/Integration·Synthetic Benchmark·Production Build **PASS**, Chromium E2E **55 PASS/1 FAIL**, Legacy migration **SKIPPED**, Docker runtime **PASS**. 실패는 `TC-U4-E2E-PREVIEW-001`의 `page.getByRole('alert')`가 실제 오류 메시지와 Next.js `__next-route-announcer__` 두 요소를 선택한 strict-mode locator 충돌. 중복 입력 자체는 정상 차단됨.

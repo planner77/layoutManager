@@ -1,5 +1,13 @@
 # Issue #41 — 관리자 최상위 외곽선 업무 타입 (U4) / v0.34.0 안전 선행 시안
 
+## PR #64 CI 성공·병합 및 영속 수용 기준 이관 (2026-10-25)
+
+- 검증: [PR CI 40154979531](https://github.com/planner77/layoutManager/actions/runs/40154979531) = **SUCCESS** (최종 코드 HEAD `e2f0a64d`): TypeScript, Lint, Unit/Integration, Benchmark, Next Production Build, Chromium E2E, Legacy Migration E2E, Docker runtime. 최초 E2E FAIL [40153913566](https://github.com/planner77/layoutManager/actions/runs/40153913566)은 실패 원장에 보존. Reviewer P2 HTTP UUID 조치 완료, unresolved 0 / mergeable / behind 0 확인.
+- 반영: [PR #64 squash merge](https://github.com/planner77/layoutManager/pull/64) → main [commit 7da613d1](https://github.com/planner77/layoutManager/commit/7da613d1ed9e2893849a3c3a7f0931d4f32ff850), 버전 0.34.0. 앱/마이그레이터 GHCR 자동 게시/Main workflow [40155833554](https://github.com/planner77/layoutManager/actions/runs/40155833554)는 시작 확인, 완료 결과는 미확정.
+- **종결 의미:** 원래 #41의 기능 전체가 아니라 `/lab/outline-types` **비영속 시안**의 코딩/CI 범위만 완료. 원 이슈는 사용자 요청 및 기능 재분할에 따라 **closed/not_planned** (전체 AC 미완), 실제 Admin 타입 영속 CRUD·RBAC 401/403·Scope·감사·FK/Revision 경쟁 AC-U4-01~04는 후속 [Issue #65](https://github.com/planner77/layoutManager/issues/65)로 이관. #31 P4 인증·권한 Owner 승인 없이는 서버 쓰기 API/DB migration/관리 메뉴 활성화 금지. #37·#42 의존성을 #65로 갱신.
+- #41 코드의 synthetic UI/Unit/CI PASS는 실제 영속 관리, 실 CAD·GPU 운영 수용, OIDC/CSRF/site scope 및 운영 데이터 복구 결과가 아니므로 별도 승인 전 완료 주장 금지. [FailureLedger](FailureLedger.md) 참조.
+
+
 ## PR #64 첫 PR CI 실패 및 P2 리뷰 조치 (2026-10-25 KST)
 
 - [Run 40153913566](https://github.com/planner77/layoutManager/actions/runs/40153913566) (HEAD `d548df2b4bb183ff6a2df1c227124e93f40c4054`, completed/failure). [verify job 121051041258](https://github.com/planner77/layoutManager/actions/runs/40153913566/job/121051041258): TS/Lint/Unit/Integration/Benchmark/Build PASS → Chromium E2E **55/56 PASS, 1 FAIL** → Legacy migration E2E SKIPPED. [Docker job 121051041382](https://github.com/planner77/layoutManager/actions/runs/40153913566/job/121051041382) PASS. E2E 증거 [artifact 12583742658](https://github.com/planner77/layoutManager/actions/runs/40153913566/artifacts/12583742658).

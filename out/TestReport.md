@@ -1,5 +1,13 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issue #41 / PR #64 — 최종 CI PASS 및 릴리스 시작 상태 (2026-10-25)
+
+- [CI #40154979531](https://github.com/planner77/layoutManager/actions/runs/40154979531) (HEAD `e2f0a64d45f601420a2bc38b99531c748269f61a`) 최종 **completed/success**. [verify job 121054317463](https://github.com/planner77/layoutManager/actions/runs/40154979531/job/121054317463)의 TypeScript/ESLint/Vitest Unit+Integration/Outline synthetic Benchmark/Next build/Chromium Playwright E2E/Legacy migration E2E 전 단계 **success**. [Docker Runtime job 121054317216](https://github.com/planner77/layoutManager/actions/runs/40154979531/job/121054317216) **success**. 실패 결과 artifact 단계는 SKIPPED(문제 없음).
+- 이전 [CI #40153913566](https://github.com/planner77/layoutManager/actions/runs/40153913566)의 55/56 E2E(1 FAIL)와 Legacy SKIPPED, Docker PASS는 삭제하지 않고 [FailureLedger](FailureLedger.md)에 보존. P2 리뷰 HTTP UUID 보완 및 E2E locator scope 교정 후 성공한 것을 확인했다. 실제 다른 브라우저/사내 URL 수동 검증, 실제 DXF·GPU, Owner IdP/RBAC/Scope/Audit 및 DB 영속 동시성 테스트는 **NOT RUN / BLOCKED**.
+- 최종 PR 미해결 리뷰 스레드 0, main behind 0, mergeable true → [PR #64 squash merged](https://github.com/planner77/layoutManager/pull/64) at [7da613d1](https://github.com/planner77/layoutManager/commit/7da613d1ed9e2893849a3c3a7f0931d4f32ff850). 이슈 #41 범위 분할 종료, 미구현 영속 AC는 [#65](https://github.com/planner77/layoutManager/issues/65)에 이관.
+- Main/GHCR workflow [40155833554](https://github.com/planner77/layoutManager/actions/runs/40155833554)는 **실행 시작만 확인**; 이 보고서에서 게시 성공·tag/digest/운영 배포/최종 Main CI 결과를 PASS라고 기록하지 않는다. 사용자 요청에 따라 모니터링 생략.
+
+
 ## Issue #41 / PR #64 PR CI 첫 실패·수정 HEAD 검증 경계 (2026-10-25)
 
 - [Run 40153913566](https://github.com/planner77/layoutManager/actions/runs/40153913566) HEAD `d548df2`: Typecheck, lint, unit/integration(35 test files), synthetic benchmark, production build, Chromium install, Docker runtime **PASS**. E2E **55 PASS / 1 FAIL**: `TC-U4-E2E-PREVIEW-001` `getByRole('alert')` strict mode가 실제 중복 메시지와 Next.js route-announcer 두 요소를 선택. Legacy migration E2E **SKIPPED**. 단 하나의 E2E 실패가 PR Run 전체를 failure로 종료한 것이며, 해당 HEAD를 'PASS'로 분류하지 않음. [verify job](https://github.com/planner77/layoutManager/actions/runs/40153913566/job/121051041258) / [E2E artifact](https://github.com/planner77/layoutManager/actions/runs/40153913566/artifacts/12583742658).

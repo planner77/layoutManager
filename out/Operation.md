@@ -1,5 +1,12 @@
 # 운영·환경설정 초안
 
+## Issue #41 v0.34.0 — Main GHCR 게시 시작·운영 게이트 (2026-10-25)
+
+- [PR CI #40154979531](https://github.com/planner77/layoutManager/actions/runs/40154979531) 성공 → [main squash 7da613d1](https://github.com/planner77/layoutManager/commit/7da613d1ed9e2893849a3c3a7f0931d4f32ff850) 반영. [Build/publish run #40155833554](https://github.com/planner77/layoutManager/actions/runs/40155833554) **시작 확인**. Runner는 `src/package.json=0.34.0`을 기준으로 `v0.34.0` Tag(기존 태그 없으면) 및 앱/마이그레이터 후보 digest 검증 뒤 두 버전·latest 태그 승격. 사용자 지시상 모니터링하지 않으므로 **게시 성공 및 이미지 digest 아직 확인하지 않음**.
+- 운영 배포 시 앱 `ghcr.io/planner77/layoutmanager:0.34.0` 및 migration `ghcr.io/planner77/layoutmanager:0.34.0-migrate` 두 이미지를 **같은 버전으로 지정**하고 실제 registry에 모두 존재하는지 확인. 기존 Docker·Compose 절차대로 DB/원본 동시점 백업 후 app stop→migrator exit 0→app start. 이번 #41은 새 Prisma migration이 없으나 배포 기본 절차를 생략하지 않는다.
+- `/lab/outline-types`는 실제 저장 기능이 아닌 메모리 Preview. Admin CRUD 인증/범위/감사 및 DB 스키마 변경은 #65(#31 P4 포함)에서 Owner 승인 전 BLOCKED. #41 종료를 관리자 기능 운영 허가로 해석하지 않는다.
+
+
 ### Issue #41 / PR #64 — HTTP 접근 제한과 UUID 시안 보완
 
 - `/lab/outline-types`는 문서화된 `http://<server IP>:3000`에서도 사용자가 **메모리 타입 시안을 추가**할 수 있어야 한다. `crypto.randomUUID`는 HTTP insecure context에서 불가할 수 있어 `crypto.getRandomValues` UUIDv4 fallback을 추가한다. 실제 운영관리 등록/공유/DB/API/IdP 로그인은 **여전히 없다**.

@@ -1,5 +1,12 @@
 # 주요 기술 결정과 승인 기록
 
+### ADR-037 종결 보강 — #41 안전 시안 인수, 운영 CRUD는 #65 (2026-10-25)
+
+- PR #64의 최종 [CI #40154979531](https://github.com/planner77/layoutManager/actions/runs/40154979531) 성공 및 병합은 **브라우저 메모리 시안만의 수용**이다. Owner 인증·Admin RBAC·Scope·감사 보존 정책은 여전히 결재 대기이므로 실제 관리 API/Prisma Migration/Type FK를 만들지 않는다.
+- 사용자의 이슈 종료 요청을 원래 영속화 AC 완료로 오해하지 않기 위해, #41은 부분 범위 분할로 종결(not_planned)하고 **AC-U4-01~04 영속 기능 수용을 #65**에서 계속 추적한다. #31 P4 정책 및 후속 #42/#43 관계를 훼손하지 않는다.
+- Main workflow가 자동으로 GHCR 게시를 시도하지만 **시작과 성공은 다른 사건**이다. Run #40155833554는 시작 확인만 수행하고 최종 GHCR/DB 운영 수용을 PASS로 표기하지 않는다.
+
+
 ### ADR-037 보완 — 시안 UUID의 일반 HTTP 지원·테스트 Locator 범위 (2026-10-25 / PR #64)
 
 - **Decision:** 운영에서 문서화한 `http://<IP>:3000`는 secure context가 아니어서 Web Crypto `randomUUID`가 없을 수 있다. 비영속 U4 시안 UUID는 native randomUUID가 있을 때 사용하고, 없으면 `crypto.getRandomValues` 16 cryptographic bytes에 RFC 9562 v4/variant bits를 부여한다. 난수 API 전체 부재 시 명시적 오류 처리; `Math.random` 부정, Admin ID·server persisted FK/authorization과 무관.
