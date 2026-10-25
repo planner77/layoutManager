@@ -60,9 +60,8 @@ export function buildOutlineTree(
     });
   }
   // Always put legacy items after typed groups; empty catalogue nodes are valid.
-  return [...typeOrder.filter(id => id !== 'legacy'), ...('legacy' in Object.fromEntries(groups) ? ['legacy'] : [])]
-    .map(id => groups.get(id)!)
-    .filter(Boolean);
+  return [...typeOrder.filter(id => id !== 'legacy'), ...(groups.has('legacy') ? ['legacy'] : [])]
+    .map(id => groups.get(id)!);
 }
 
 /**
