@@ -1,5 +1,21 @@
 # PR/Main CI 실패 원장
 
+## Issue #40 / PR #48 — 최초 PR CI ESLint 차단 및 P2 리뷰 보완 (2026-10-25 KST)
+
+- **확인된 실패:** [PR #48](https://github.com/planner77/layoutManager/pull/48), [Run 40149077671](https://github.com/planner77/layoutManager/actions/runs/40149077671) (`pull_request.opened`, attempt 1, HEAD `850ded81fcd0d27267a5c38ac9bcff1a980ac39b`) = `completed/failure`. [verify Job 121036582144](https://github.com/planner77/layoutManager/actions/runs/40149077671/job/121036582144)의 **step 7 ESLint**에서 `src/features/cad-viewer/viewer.tsx:404:186`에 `react-hooks/refs` **error**(`Cannot access refs during render`; `Passing a ref to a function may read its value during render`), 같은 파일 363:6의 `react-hooks/exhaustive-deps` **warning**(`resetOutline` 의존성 누락). ESLint exit 1이 직접 CI 실패 원인.
+- **근본 원인:** U3 변경으로 `resetOutline`이 Ref(`outlineEnabledRef`, `manager.current`, request revision)를 읽는 코드가 되었으나 Renderer 선택 `choose(value)`의 간접 호출 및 JSX render 단계 `[...].map`에 연결되었다. React Hooks refs lint가 render 단계의 잠재적 Ref 접근으로 차단했다. `resetOutline`이 매 렌더마다 새 함수인 채 load effect에서 사용되어 의존성 경고도 발생.
+- **Job 사실 구분:** 첫 Run의 npm ci/Prisma Client 생성/TypeScript **PASS**, ESLint **FAIL**. Unit/Integration, 1k/10k/100k benchmark, Production build, Chromium 설치/E2E, Legacy migration E2E는 **SKIPPED**(시도되지 않음). 별도 [Docker runtime Job 121036582209](https://github.com/planner77/layoutManager/actions/runs/40149077671/job/121036582209)는 **SUCCESS**. 도커 성공을 Renderer/Worker/E2E 성공으로 확대 해석하지 않음.
+- **별도 Review (CI 실패 자체와 구분):** [P2 inline comment #4369181241](https://github.com/planner77/layoutManager/pull/48#discussion_r4369181241)는 `SelectionController`의 `window keydown capture`가 `button` 포커스에서 Space를 `preventDefault()`하여 ON 이후 Space로 OFF 불가한 키보드 결함을 지적. ESLint failure의 직접 원인은 아니며 테스트는 SKIPPED 상태여서 관측된 E2E 실패로 보고하지 않는다.
+- **보완(코드 commit [`0ba21a66`](https://github.com/planner77/layoutManager/commit/0ba21a66e02c5a842e527ececdb678f447940a8f)):** `stopOutlineEditing/resetOutline/choose`를 안정적인 `useCallback`으로 분리, `resetOutline`을 load effect dependency에 명시하고 Renderer 버튼의 render `map` 우회(두 explicit button)로 ref 전달 경로 제거. Space Pan 핸들러는 실제 **비대화형 대상**에서만 키를 가로채고 버튼/메뉴·링크·요약은 native Space 동작을 유지. 기존 선택 ESC·캔버스 Space Pan은 변경하지 않음. E2E `TC-U3-E2E-001`(Enter ON → Space OFF → Space ON) 및 `TC-U3-E2E-002`(캔버스 Space+drag 후 선택 0, fit → 정상 선택)를 보강.
+- **재검증/상태:** 수정 HEAD의 로컬 npm/lint/Unit/Playwright/Build/현장 CAD 검증은 네트워크·환경 제약으로 **NOT RUN**. Git 객체 commit 작성만으로 PR CI가 재실행되지 않으므로 **최종 문서 commit까지 생성한 뒤 브랜치 fast-forward 갱신 1회**로 `pull_request.synchronize` PR CI를 자동 시작한다. 새 Run ID/결과는 시작 직후 확인하되 완료 모니터링은 사용자 지시에 따라 생략한다.
+
+### 누적 실패 요약 테이블 추가 행
+
+| 날짜(KST) | Issue / PR / Run | 실패·취소 또는 현재 상태 | 근거와 원인 | 조치·커밋 | 새 CI / 검증 |
+| --- | --- | --- | --- | --- | --- |
+| 2026-10-25 | #40 / [PR #48](https://github.com/planner77/layoutManager/pull/48) / [Run 40149077671](https://github.com/planner77/layoutManager/actions/runs/40149077671) (attempt 1, HEAD `850ded8`) | **FAIL**: TypeScript PASS, ESLint FAIL(error 1/warning 1), Unit·Build·E2E SKIPPED; Docker-runtime PASS | [verify Job 121036582144](https://github.com/planner77/layoutManager/actions/runs/40149077671/job/121036582144) `viewer.tsx:404:186 react-hooks/refs`; `363:6 exhaustive-deps`. 별도 P2 Space keyboard review | [fix `0ba21a66`](https://github.com/planner77/layoutManager/commit/0ba21a66e02c5a842e527ececdb678f447940a8f) callback/ref/render 분리, Space focus guard, E2E 강화, 문서·원장 기록 | 새 head 브랜치 `pull_request.synchronize` PR CI 시작; 새 HEAD 검증 전 **NOT VERIFIED**, 완료 모니터링 제외 |
+
+
 실패를 관측한 경우 아래 템플릿에 **실제 Run URL, job/step, log 증거, 원인/수정 Commit, 재실행 Run, 결과**를 누적 기록한다. 취소된 실행은 실패와 구분해 보존한다. 미실행 테스트는 성공으로 표기하지 않는다. 이 파일은 #38부터 사용하는 신규 공통 원장으로, 기존 이슈별 실패 기록은 역사적 `out/TestReport.md`와 개별 Issue 문서를 참조한다.
 
 | 날짜(KST) | Issue / PR / Run | 실패·취소 또는 현재 상태 | 근거와 원인 | 조치·커밋 | 새 CI / 검증 |

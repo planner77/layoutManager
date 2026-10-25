@@ -7,6 +7,12 @@
 - Tests/Docs: TC-U3-UNIT-001~003, TC-U3-E2E-001~003, 기존 #31/private/#38 테스트 조건 갱신, [Issue40](Issue40.md), [ADR-036](Decisions.md), Requirements/Architecture/TestPlan/TestReport/README/AGENTS/Issue31 갱신. **typecheck/lint/unit/build/Chromium/실 CAD는 새 PR CI 증거 전 NOT RUN**, 성공 판정하지 않는다.
 
 
+### PR #48 첫 CI 실패 및 P2 리뷰 보완 (2026-10-25)
+
+- 실패 Run [40149077671](https://github.com/planner77/layoutManager/actions/runs/40149077671): TypeScript PASS, ESLint `react-hooks/refs` FAIL(+ `exhaustive-deps` warning), Unit/Build/E2E SKIPPED, Docker runtime PASS. [FailureLedger](FailureLedger.md).
+- 수정: Ref 접근이 렌더 과정으로 전파되지 않도록 `useCallback`/정적 Renderer JSX 및 안정적인 load effect dependency. Space Pan은 캔버스에만 적용, 버튼 포커스에서는 Space 클릭을 허용(#48 P2 리뷰). E2E Enter ON → Space OFF → Space ON 및 Space+drag 회귀 추가.
+- 수정 후 PR CI는 새 HEAD에 대한 **검증 전**, 처음의 성공 단계를 이 HEAD의 PASS로 재사용하지 않는다.
+
 ## 0.32.0 — 2026-10-25 / Issue #39 레이어 메뉴·도크 U2 (PR CI 검증 전)
 
 - UI: U1의 단일 `layerPanelOpen` 상태를 메뉴/내부 접기에 연결. 가능한 경우 레이어 도크 host를 유지하고 숨김 시 내부 panel만 닫아 `aria-controls` 대상으로 유효하게 유지. 접기 버튼 삭제 후 메뉴에 포커스 복귀 및 키보드 Enter/Space 재열기.

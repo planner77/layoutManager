@@ -1,5 +1,13 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE40-PR48-REPAIR-20261025 — ESLint 실패·Space 포커스 회귀 수정(재검증 전)
+
+- [PR #48](https://github.com/planner77/layoutManager/pull/48) 최초 [Run 40149077671](https://github.com/planner77/layoutManager/actions/runs/40149077671) (HEAD `850ded81`): npm ci·Prisma generate·TypeScript **PASS**; **ESLint FAIL**, `viewer.tsx:404:186 react-hooks/refs`(error), `363:6 react-hooks/exhaustive-deps`(warning). Unit/Integration, 1k/10k/100k, Production Build, Browser E2E, Legacy migration E2E **SKIPPED**; Docker-runtime 독립 Job **PASS**. [원장](FailureLedger.md) 참고.
+- 별도 P2 코드 리뷰 [#4369181241](https://github.com/planner77/layoutManager/pull/48#discussion_r4369181241): 선택 모드 window capture가 Space keyboard click을 차단해 메뉴 ON에서 OFF 불가. 첫 CI의 미실행 E2E 결과로 오인하지 않음.
+- [소스 교정 `0ba21a66`](https://github.com/planner77/layoutManager/commit/0ba21a66e02c5a842e527ececdb678f447940a8f): `stopOutlineEditing/resetOutline/choose` 안정화, useEffect 의존성 명시, 2개 Renderer 버튼 명시적 JSX, SelectionController Space interactive focus guard. `TC-U3-E2E-001`에 Space 버튼 양방향 전환, `TC-U3-E2E-002`에 비대화형 Space Pan+drag를 추가.
+- **재검증 경계:** 위 **첫 Run**의 성공 단계는 수정 HEAD의 성공 근거가 아니다. 로컬 lint/test/Playwright·브라우저 native·실 DXF 실행은 **NOT RUN**, 새 synchronize PR CI 완료/성공 여부는 사용자의 모니터링 생략 지시에 따라 **미확인**.
+
+
 ## U-ISSUE40-DEV-20261025 — v0.33.0 U3 코드·시험 작성 (PR CI 검증 전)
 
 - 대상: [#40](https://github.com/planner77/layoutManager/issues/40) / Epic #37 / 기준 main `296d570ea62e26a3fc40c57685268921df15199a`, 브랜치 `feat/issue-40-outline-tool-toggle`.

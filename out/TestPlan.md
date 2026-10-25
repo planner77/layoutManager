@@ -16,6 +16,12 @@
 - **실행 상태:** 구현 시 작성된 TC는 PASS가 아니다. PR CI 완료 결과 및 실험 로그 확인 전 **NOT RUN / NOT VERIFIED**. 실패·취소는 실제 Run ID·Job·로그와 함께 `out/FailureLedger.md`에 보존.
 
 
+## PR #48 CI #40149077671 후속 예방 회귀 (2026-10-25)
+
+- TC-U3-E2E-001: 상단 버튼에 포커스하고 **Enter ON → Space OFF → Space ON**을 반복하여 `aria-pressed`와 실제 도구 도크가 동기화됨을 검증. 이벤트는 `SelectionController`의 capture를 통과하더라도 버튼의 native Space click을 허용해야 한다.
+- TC-U3-E2E-002: 메뉴 포커스를 해제한 캔버스에서는 **Space+drag**가 선택 객체를 만들지 않으며 Pan 모드로 임시 전환/복귀. `fitToView` 이후 정상 영역 선택·레이어 hide·ESC 선택/검색/전체 화면 회귀를 계속 검증.
+- CI 차단 방지: `npm run lint`의 `react-hooks/refs` 및 `react-hooks/exhaustive-deps` 검증을 Unit/Build/E2E 선행 게이트로 유지. [Run 40149077671](https://github.com/planner77/layoutManager/actions/runs/40149077671)에서 후속 시험은 실행되지 않았으므로 **SKIPPED**, 수정 HEAD 테스트는 **NOT VERIFIED**.
+
 ## Issue #39 / U2 v0.32.0 — 레이어 메뉴·도크 독립 상태 (2026-10-25)
 
 | TC | 자동/수동 시험 내용 | AC |

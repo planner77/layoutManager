@@ -7,6 +7,11 @@
 - 레이어 숨김/Source↔Renderer fail-closed/Space Pan/ESC 단일 계층/Fullscreen 규칙과 #31 P4 영구 저장·인증 보류는 불변. `DESIGN.md`가 없어 `out/Architecture.md`/ADR-036을 설계 기준으로 한다. [Issue40](out/Issue40.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md) 참조. **PR CI 실행 결과는 검증 전 NOT RUN**.
 
 
+## Issue #40 / PR #48 — 첫 CI 실패·수정 준수사항 (2026-10-25)
+
+- [Run 40149077671](https://github.com/planner77/layoutManager/actions/runs/40149077671)의 TypeScript PASS / ESLint FAIL(`viewer.tsx react-hooks/refs`), Docker-runtime PASS, Unit/Build/E2E SKIPPED를 분리해 기록한다. `resetOutline` Ref 접근과 Renderer 메뉴 map 렌더링 경로는 `useCallback`/명시적 Renderer 버튼으로 분리하고 effect 의존성을 안정화한다.
+- 선택 모드 Space Pan은 **캔버스/비대화형 대상**에서만 `preventDefault`; 포커스된 상단 버튼·메뉴 등은 Space native 키보드 click을 허용해 ON→OFF 가능해야 한다. ESC 선택 취소/검색/native/CSS 우선순위를 변경하지 않는다. [P2 review](https://github.com/planner77/layoutManager/pull/48#discussion_r4369181241), [FailureLedger](out/FailureLedger.md), [Issue40](out/Issue40.md) 참조. 수정 HEAD의 새 CI 결과를 미확인 상태에서 PASS로 기재하지 말 것.
+
 ## Issue #39 (2026-10-25) — 상단 레이어 패널 표시/숨김 U2, v0.32.0
 
 - #38 `ViewerAppState.layerPanelOpen`이 메뉴/도크의 유일한 열림 상태다. `layerAvailable`(immersive + three-dxf-viewer + ready + layers>0)을 충족하면 `aria-controls` 대상 도크 host를 닫힌 상태에서도 유지하고, 내부 접기 후 메뉴로 키보드 포커스를 돌린다.

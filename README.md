@@ -8,6 +8,11 @@
 - 버전 `0.33.0`은 Viewer UI 추가 변경입니다. DB/API/도면 원본 변경 없음. [Issue40](out/Issue40.md)·[TestPlan](out/TestPlan.md)·[TestReport](out/TestReport.md)에서 검증 상태 확인; PR CI 및 실제 DXF/네이티브 Fullscreen 증거 확보 전 PASS 판단하지 않습니다.
 
 
+### #40 / PR #48 실패 보완 안내 (2026-10-25)
+
+- 첫 CI [Run 40149077671](https://github.com/planner77/layoutManager/actions/runs/40149077671)은 TypeScript/Docker만 성공, **ESLint `react-hooks/refs` 실패**로 Unit/Build/E2E가 **건너뛰어졌습니다**. 수정 코드의 검증 결과는 신규 CI가 종료되기 전 확정하지 않습니다.
+- 상단 **외곽선 생성** 버튼은 키보드 `Enter`뿐 아니라 `Space`로 **ON↔OFF**를 전환하도록 보완했습니다. Space를 누른 채 캔버스를 드래그하면 기존 일시 Pan이 유지됩니다. 자세한 기록: [Issue40](out/Issue40.md)·[FailureLedger](out/FailureLedger.md).
+
 ## v0.32.0 — Issue #39 전체 화면 레이어 패널 표시·숨김
 
 - **지원 환경**: DXF의 `three-dxf-viewer`가 정상적으로 1개 이상 레이어를 읽었을 때 전체 화면 상단 **레이어** 버튼으로 좌측 패널을 표시/숨긴다. 첫 진입은 열림 상태이며 패널 내부 **레이어 패널 접기**와 동일 상태를 사용한다.

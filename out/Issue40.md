@@ -6,6 +6,13 @@
 - 설계 근거: `AGENTS.md`, `out/Architecture.md`, `out/Decisions.md`(ADR-033/035/036), `out/Issue31.md`, `out/Issue38.md`, `out/Issue39.md`. 이 저장소에는 별도 루트 `DESIGN.md`가 없다.
 - 상태: 소스·시험 코드 작성, **PR CI 결과 미검증**. Build/Typecheck/Lint/Vitest/Playwright/현장 CAD는 실행 증거 없는 동안 NOT RUN. 병합·GHCR·릴리스·이슈 종료는 현재 요청 범위 밖.
 
+## PR #48 최초 CI 차단 및 보완 — 2026-10-25
+
+- [Run 40149077671](https://github.com/planner77/layoutManager/actions/runs/40149077671), HEAD `850ded8`: npm ci·Prisma Client·TypeScript **PASS**, `viewer.tsx:404:186 react-hooks/refs` **FAIL**, `viewer.tsx:363:6 exhaustive-deps` **warning**, 후속 Unit/Benchmark/Build/E2E **SKIPPED**, 독립 Docker-runtime **PASS**. 실패 상세는 [FailureLedger](FailureLedger.md).
+- **원인/교정:** `resetOutline`에서 읽는 Ref가 동적 Renderer 버튼 render `map` 안의 `choose(value)` 경로로 전파되고 load effect에는 `resetOutline` 의존성이 없었다. `stopOutlineEditing/resetOutline/choose`를 `useCallback`으로 안정화하고 load effect의 dependency를 명시했으며, Renderer 버튼을 2개의 정적 JSX로 변경. #31 Worker·Adapter 및 확정 결과 세션 정책은 유지한다.
+- **별도 P2 리뷰:** [Space/keyboard](https://github.com/planner77/layoutManager/pull/48#discussion_r4369181241) — window capture는 버튼·메뉴 등 인터랙티브 포커스 대상을 Space Pan으로 가로채지 않는다. E2E에서 상단 버튼 **Enter ON → Space OFF → Space ON**과 **canvas Space+drag**가 선택을 만들지 않음을 검증하도록 수정했다.
+- 코드 보완 commit `0ba21a66e02c5a842e527ececdb678f447940a8f`. 새 Head의 PR CI/실기기/실도면 결과는 **미확인**; Run 시작만 확인 후 모니터링하지 않는다.
+
 ## 현황 및 문제 정의
 
 #38과 #39의 `ViewerAppShell`·`ViewerMenuBar`는 상단 **외곽선 생성** 항목이 준비 중(disabled)이었으나 #31 선택 기능은 하단 도크에서 직접 켤 수 있었다. 이 때문에 시작 상태 OFF, 미확정 경계 취소, 임시 확정 결과 보존, Renderer 미지원 차단을 하나의 UI 계약으로 보장하지 못했다. #31의 Source ↔ rendered Handle/Type/Layer/WCS audit과 Worker는 정상 개발 자산이므로 재구현하지 않는다.
