@@ -1,5 +1,14 @@
 # 상세 요구사항
 
+## Issue #52 / E2 v0.38.0 — 생성 개체 로컬 Document 및 명령 이력 (2026-10-25)
+
+- **FR-E2-01 / AC1:** E1 불변 UUID/Version/SHA Generated Ref에 생성 시 기준 WCS XY Polygon/MultiPolygon/Hole, source Entity provenance/algorithm, name/type/kind/visibility, edited/dirty, 편집 affine 변환을 단일 브라우저 Document에서 관리한다. #43 Scene/Tree/Export는 파생 뷰이며 원본 DXF/Preview는 포함하지 않는다.
+- **FR-E2-02 / AC2/5:** Delete/Translate/Rotate 명령 등록 기반. 동일 버전·SHA·GENERATED-only·고유 ID·정확한 선택 대상, 유한 좌표·Pivot·결과 Geometry를 전체 검증한 뒤 한 번에 적용한다. invalid·SOURCE·혼합은 부분 변경 없이 거부한다. 실제 삭제/이동/회전 조작 UI는 E3~E5 범위.
+- **FR-E2-03 / AC1/3:** Undo/Redo 최대 100단계/예상 참조 history 16MiB 예산, 손실 없이 상태/순서 복원, 새 명령 시 redo 폐기. 포인터/확정은 한 단계, ESC·취소·Version 변경 시 미확정 작업 폐기. Ctrl/⌘+Z·Shift+Z·Ctrl+Y, native 폼 단축키와 충돌 금지.
+- **FR-E2-04 / AC4:** Document 이벤트로 Overlay GPU 증분 갱신, 취소/Dispose 시 GPU/Worker 정리, Source index·DXF geometry Worker 불필요한 재계산 금지. Zoom/Pan/가시성은 Undo 기록 대상 아님. total 100k vertex/100 object 및 WCS 범위 상한.
+- **NFR-E2-01 / AC4~5:** 로컬 세션만. 재로드/Renderer/Version 전환 시 소멸. 명시 JSON 복원은 E6 별도, 기존 #31 v1/typed v2 다운로드 하위호환 유지. 편집된 Geometry는 canonical attestation(#31 P4) 동일성 검증 우회 금지; 서버 DB/API/권한 추가 금지. [Issue52](Issue52.md), ADR-043 및 TC-E2-UNIT-001~004/E2E-001~002.
+
+
 ## Issue #51 / E1 v0.37.0 — SOURCE·GENERATED 통합 선택 (2026-10-25)
 
 - **FR-E1-01 / AC1:** SOURCE(#31 검증된 WCS/Handle 참조)와 GENERATED(현재 브라우저에서 확정된 Overlay) 선택을 통합하되 Origin·Version·SHA·불변 UUID로 식별하고 선택/강조/개수와 Tree(#43)를 일치시킨다. 기존 local-N JSON v1/v2 식별자는 호환성 때문에 변경하지 않는다.
