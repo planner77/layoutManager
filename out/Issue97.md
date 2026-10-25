@@ -6,6 +6,13 @@
 - #96(D1)은 로컬 인증·권한·Scope·Audit 기반(BLOCKED), #98(D3)은 CadOutline DB/CRUD/CAS·논리 삭제, #99는 실제 DXF P0/P5 현장 실증으로 분리한다. #56 브라우저 편집 JSON에는 영속 권한이 없다.
 - 루트 DESIGN.md 없음: Architecture.md 및 ADR-048/049/050을 기준으로 한다.
 
+## GHCR 버전 불변성 및 검증 게이트
+
+- 최초 PR 성공: `195f633b0bce` [PR CI 40189428698](https://github.com/planner77/layoutManager/actions/runs/40189428698) completed/success(Verify/Docker). Mergeable=true, 미해결 inline review 0, main behind 0 (검사 당시 기준).
+- `v0.40.1`은 과거 #93 Main CI `40184907533`에서 신규 태그 및 paired `0.40.1`/`0.40.1-migrate` 이미지를 성공적으로 발행했으므로 **태그 재사용이나 override 금지**. Owner의 신규 GHCR 게시 요청에 따라 root `src/package.json`·lock 버전만 `0.40.2`로 정렬한다.
+- 이 문서·버전 변경은 PR의 HEAD를 바꾸므로 성공했던 CI 결과로 새 HEAD를 대신 검증할 수 없다. 새 PR CI 성공·리뷰/충돌 확인 이후에만 병합. Main push의 `docker-publish.yml`이 `0.40.2` app/migrator 이미지를 후보 digest로 검증한 다음 함께 게시한다. **Main CI 시작은 실제 GHCR 게시 성공과 다름**.
+- D1 #96/D3 #98 미승인 인증·DB/REST 기능은 활성화하지 않는다. CAD 원본/Version/SHA/Current 불변, 실제 실도면 P0/P5 #99 분리.
+
 ## 서버 전용 검증 인터페이스
 
 - 파일: src/server/outline/transform-attestation.ts. 함수: attestTransformedOutlineDraftAgainstImmutableDxf(input, versionId, sourceSha256, sourceBytes).

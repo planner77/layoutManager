@@ -1,5 +1,11 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE97-PR100-PATCH-20261025 — v0.40.2 GHCR 발행 패치 사전 기록
+
+- **기존 성공:** PR #100 [Run 40189428698](https://github.com/planner77/layoutManager/actions/runs/40189428698), HEAD `195f633b0bcefdc6f1964223f2fef0b1a379721c` completed/success, Verify Job 121157064278 + Docker Job 121157064494 모두 success. 이전 HEAD 전용 증거로 유지.
+- **이전 GHCR 게시 확인:** #93 [Main Run 40184907533](https://github.com/planner77/layoutManager/actions/runs/40184907533), `Build application candidate`, `Build migration candidate`, `Promote paired release images`, `Measure published OCI layer bytes` 모두 success; tag `v0.40.1` 존재. 따라서 동일 `0.40.1` version 재사용 금지.
+- **신규 수정:** 사용자 요청의 GHCR 신규 게시를 위한 root package/lock 버전 `0.40.2` 동기 및 릴리스 문서/CI/배포 안전 게이트. Source runtime/Schema/HTTP API/Auth 기능 변경 없음. **수정 HEAD의 PR CI, Main CI, GHCR publish 및 실 CAD/GPU는 아직 NOT RUN**. 최신 HEAD CI 성공 확인 전에 병합 금지.
+
 ## U-ISSUE97-20261025 — D2 서버 DXF/Transform 검증 코드 작성 (실행 전)
 
 - 근거: [Issue97](Issue97.md), ADR-048/049/050, AGENTS, TestPlan TC-P4-D2-001~009. 기존 `server/outline/attestation.ts` canonical-only는 v1/v2 import 거부되지 않도록 보존, 신규 `server/outline/transform-attestation.ts`에서 불변 SHA/Handle/INSUNITS/baseGeometry + Translate/Rotate/pivot→effectiveGeometry를 독립 검증. `outline-compute.ts`와 서버 attestation의 큰 WCS 좌표 면적 상쇄 방지 보완.

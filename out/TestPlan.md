@@ -1,5 +1,16 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #97 / PR #100 — GHCR 패치 발행 및 HEAD 동일성 게이트 (2026-10-25)
+
+| TC | 기대 | 상태 |
+| --- | --- | --- |
+| TC-P4-D2-REL-001 | `package.json`과 lock root version 모두 `0.40.2`, 기존 `v0.40.1`을 이동/덮어쓰기 하지 않음 | 정적 변경 / 신규 HEAD CI NOT RUN |
+| TC-P4-D2-REL-002 | Version bump HEAD PR CI에서 Typecheck/Lint/Unit/Build/E2E/Legacy/Docker Runtime 성공, review 0/behind 0 | 신규 HEAD CI 대기 |
+| TC-P4-D2-REL-003 | Main push에서 `0.40.2` 신규 태그 + app/migrator Pair 후보 digest 검사 후 GHCR 공개 alias 게시, Main CI 실행 기록 | 병합 전 NOT RUN |
+| TC-P4-D2-REL-004 | D1/D3 Auth/API/Prisma migration/원본 CAD 변경 없음, 실도면 #99/실 운영 배포 미수용 유지 | PR diff 검토 |
+
+- [과거 `0.40.1` GHCR 정상 게시 Main 40184907533](https://github.com/planner77/layoutManager/actions/runs/40184907533); 해당 릴리스 이미지 존재는 #97 코드가 게시되었다는 의미가 아님. 새 PR CI 및 실제 GHCR 결과를 혼용하지 않는다.
+
 ## Issue #97 — P4-D2 Source Canonical/Translate/Rotate 서버 검증 (2026-10-25)
 
 | TC | 검증 내용 | 상태 |

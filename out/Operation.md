@@ -1,5 +1,11 @@
 # 운영·환경설정 초안
 
+## Issue #97 / PR #100 — GHCR 0.40.2 신규 패치 게시 운영 경계 (2026-10-25)
+
+- `0.40.1`은 [#93 Main 40184907533](https://github.com/planner77/layoutManager/actions/runs/40184907533)의 paired 이미지 promotion+OCI 측정까지 SUCCESS, `v0.40.1` 태그는 이미 존재한다. 신규 코드 #97을 같은 버전으로 병합하면 기존 이미지 존재 검사가 Build/Publish를 건너뛴다. 소스/lock root 버전을 `0.40.2`로 올려 기존 immutable `v0.40.1` 및 GHCR alias digest를 임의로 재사용하지 않는다.
+- 새 HEAD PR CI 성공 후 merge만 허용. `main` push에서 `release-scope` → app+migrator candidates build → 두 digest inspect → version `0.40.2`/`0.40.2-migrate` pair→ `latest`/`latest-migrate` 순서 게시. 실행 시작/Job 단계 성공/실제 GHCR digest 확인을 구별한다. CI monitor 생략 시 publish 성공 주장하지 않는다.
+- P4 D2는 비활성 validator 모듈; #96/#98 승인 전 인증·영속 API 활성화/운영 배포 승인 아니다. 현장 업그레이드는 복구 가능한 SQLite/CAD/S3 동시 백업 및 paired digest 확인 후 별도 수행.
+
 ## Issue #97 — D2 서버 Geometry 검증 구현의 비운영 상태 (2026-10-25)
 
 - 신규 코드 `src/server/outline/transform-attestation.ts`는 Auth/HTTP Route/Prisma/Storage/배포 플래그 없이 D3에서 미래 호출할 수 있는 순수 validator이다. 어떤 신규 로그인·외곽선 영속 GET/Write API·실제 CAD 공유 편집 서비스도 **현재 열지 않는다**.
