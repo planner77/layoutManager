@@ -1,5 +1,14 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #99 — 실 DXF P0/P5 Evidence Gate, Owner 현장 수용 미완 (2026-10-25)
+
+- 별도 DESIGN.md는 저장소에 없다. [Issue99](out/Issue99.md), [Architecture](out/Architecture.md), [ADR-052](out/Decisions.md), [Requirements](out/Requirements.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md)가 우선 근거다. #31 P0/P5 운영 잔여를 별도 검증한다.
+- 기존 `audit:outline` schema v1 SOURCE-only/CI synthetic 1k·10k·100k는 실 CAD·GPU PASS가 아니다. 비공개 `test:outline-acceptance`는 승인 SHA + 보고서 절대 경로를 필수로 하고 repo 외부/격리 DB에서 실제 파일 한 건, 브라우저 5회 Schema v2(render mapping/selected/excluded/box latency/rAF frame/heap/WebGL)를 생성. rAF·WebGL 문자열은 GPU 사용률/VRAM이 아니며 외부 GPU 성능 수치는 Owner 현장에서 별도 측정한다.
+- `npm run verify:outline-acceptance -- /private/manifest.json`는 비공개 감사+브라우저 결과의 SHA/크기·각 5회·3종/1k/10k/100k, CAD WCS/면적·1:N/N:1/Handle·BLOCK·OCS/곡선/Holes·미지원 제외, 8개 조작·외부 GPU 계측·Owner SLA를 fail-closed 판정한다. **임계값 기본값을 만들어내지 않으며** 출력은 비민감 이유 코드 `BLOCKED` 또는 `READY_FOR_OWNER_REVIEW`(합격 아님)뿐이다. 단위 TC-P0P5-001~008 추가.
+- 원본 DXF/경로/레이어·Handle/로그·기기 식별자를 Git/공개 CI에 포함 금지. 실 파일 시험은 승인된 disposable DB/Storage만 허용(업로드는 DB에 행을 추가하므로 production 실행 금지). 소스·Viewer Adapter/API/Prisma/DB/Current/SHA/Version/GHCR·런타임 env 변경 없음, 앱 버전 0.40.2 유지.
+- 실도면·CAD 정답·실 GPU/Owner 수치 예산/실제 기능 수동시험 및 Owner 서명은 **NOT RUN / BLOCKED**. PR CI가 성공해도 Issue #99 AC 4개 완료나 #96/#98 운영 활성화가 아니다. Owner 검증 이후에만 Issue 종료 검토.
+
+
 ## Issue #96 — D1~D6 Owner 세부 정책 및 비활성 구현 (2026-10-25)
 
 - **최신 기준:** [Issue96](out/Issue96.md) / [ADR-051](out/Decisions.md). 기존 #31 D0의 '관리자/세션/감사 세부값 미확정' 서술은 승인 이전 기록이며 다음 값이 우선한다.
