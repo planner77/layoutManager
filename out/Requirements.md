@@ -1,5 +1,17 @@
 # 상세 요구사항
 
+## Issue #93 / v0.40.1 — 목록 기본 Current + 이전 Version 표시·검색 정책 복원 (2026-10-25)
+
+- **FR-LIST-093-01 / AC1~3:** `/` 기본/초기화=Location별 명시 Current만. `현재 버전만 표시` 단일 토글 기본 ON, OFF는 과거·현재 **전체 Version**(Current 미지정 Location 포함)을 보여준다. 더 높은 Version 번호를 자동 Current로 해석/승격하지 않는다. 중복 Current 드롭다운은 재도입하지 않는다.
+- **FR-LIST-093-02 / AC4:** OFF에서 파일명/도면명(현행 지원 검색 범위), 설명·사업부/제품/사업장·법인/동/층/형식/페이지당 표시 필터의 단독·AND 검색을 허용한다. 현재 목록/이력 목록 모두 올바른 서버 SQL 행 수 및 페이지 수와 빈 상태를 사용한다.
+- **FR-LIST-093-03 / AC5:** ON/OFF 전환 시 기존 검색값·pageSize 보존 + page=1. 검색 제출·페이지 링크·URL 복사/새로고침·브라우저 뒤로/앞으로 이후에도 전체/Current 상태를 보존; 초기화는 Current로 복귀한다. `aria-pressed` 및 시각적 ON/OFF 안내를 제공한다.
+- **FR-LIST-093-04 / AC6:** 홈 UI에서만 `versions=all`을 허용해 `current=''` 전체 조회로 매핑. 과거 홈페이지 `?current=false`는 전체로 정규화하되 **API `current=false`는 non-Current만** 조회한다. 이외 `versions` 값·중복·모드 충돌은 검증 오류로 처리.
+- **FR-LIST-093-05 / AC7~8:** 이전 Version 행의 Viewer·상세·링크 복사·다운로드·Current 지정/변경/삭제를 재사용. Current 최대 1개/수동 지정·해제/삭제 후 재검색 정합성 보존; DB Schema/마이그레이션/원본 bytes·SHA/External API 변경 없음.
+- **NFR-LIST-093-01 / AC9:** 기존 `listQuery`/Repo 구조 불변, URL 정규화·다중 GET form·ARIA/Unit/Integration/E2E 및 Workflow·Upload 회귀 검증. [Issue93](Issue93.md), ADR-034-R1, TC-LIST-093-001~003/E2E-001~002. PR CI 성공은 실제 Run 결과 확인 후만 기록한다.
+
+> **우선 적용 정책:** 아래 #45 당시에 문서화된 '홈 목록 항상 Current-only' UX는 #93에 의해 대체됨. #45의 구현·검증 이력, `/api/cad-files`의 Current 조회 계약은 보존한다.
+
+
 ## Issue #54 / E4 v0.40.0 — 생성 개체 WCS 수치·그룹 드래그 이동 (2026-10-25)
 
 - **FR-E4-01 / AC1:** DXF+three-dxf-viewer Generated 편집에서 선택한 하나/복수 확정 외곽선을 WCS XY `ΔX,ΔY`로 평행이동. 두 값 동일 적용으로 상대 위치 유지. `$INSUNITS` 코드 표기/0·미상 안내, 픽셀/수치 단위 혼동 금지.

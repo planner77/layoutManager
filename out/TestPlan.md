@@ -1,5 +1,36 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #93 / v0.40.1 — Current 기본·전체 버전 검색 토글 회귀 (2026-10-25)
+
+| TC | 연계 AC | 시나리오 / 기대 결과 | 상태 |
+| --- | --- | --- | --- |
+| TC-LIST-093-001 | 1,2,5,6 | 모드 미지정/current=true → Current-only, versions=all 및 레거시 홈 current=false → 전체 조회. 공용 listQuery(current=false)는 non-Current 유지. 검색·pageSize/2페이지 링크 보존 | 작성 / **NOT RUN** |
+| TC-LIST-093-002 | 6 | versions 중복/미지원/빈값, versions=all+current=true, current 중복/잘못된 값은 Invalid Query | 작성 / **NOT RUN** |
+| TC-LIST-093-003 | 1~4,8 | 서로 다른 층의 Current 미지정 Version 및 최신 비Current 포함 전체 수·Current count 비교. Current 재지정 뒤 홈 결과 전환·과거 이력 보존·이전 파일명 검색 | 작성 / **NOT RUN** |
+| TC-LIST-093-E2E-001 | 1~4,6~8 | 기본 ON, OFF로 V1/V2/V3·미지정 층 4건 노출, 이전 버전 filename 검색, 레거시 URL/외부 API 의미 분리, Current 지정·삭제 뒤 반영 | 작성 / **NOT RUN** |
+| TC-LIST-093-E2E-002 | 4~6 | versions=all+위치/형식/pageSize=1 → 페이지 1/2와 이전/다음 URL, 브라우저 Back/Reload, 이전 버전 description-only 검색·ON 빈 결과·초기화 Current | 작성 / **NOT RUN** |
+| TC-E2E-001 / Upload | 2,7~9 | 기존 전체 등록→Current 교체→홈에서는 기본 현재만, 홈 OFF에서는 과거 행 + 링크/Current 지정 경로 노출. 기존 두 DXF Viewer 및 업로드 계약 회귀 | 기대 변경 작성 / **NOT RUN** |
+| 기존 TC-LIST-003/004/009, API/Link/Master/삭제/Version | 6~9 | 공용 current=false 의미, Current 최대1개/수동 승격, 번호/원본 조회/상세/다운로드 및 UI 필터 상호 운용 | 회귀 재실행 예정 / **NOT RUN** |
+| Typecheck / Lint / Vitest / Build / Chromium E2E / Legacy migration / Docker | 9 | Node 22.14/Prisma locked deps 및 기본 CI 전 단계 검증. 실패 Run/HEAD·조치/검증을 원장과 함께 기록 | **NOT RUN** |
+
+- `DESIGN.md` 부재: 설계 기준은 `out/Architecture.md`, `out/Decisions.md`의 ADR-034-R1.
+- 실제 실행: `cd src && npm ci && npm run db:generate && npm run typecheck && npm run lint && npm test && npm run build && npm run test:e2e && npm run test:master-migration`. 독립 PR Docker/CI도 저장소 정책대로 확인하되 사용자는 이번 요청에서 **PR CI 시작까지만**, 모니터링 불필요로 지정.
+- 코드/테스트 작성은 수용 검증 성공으로 표시하지 않는다. [Issue93](Issue93.md), [TestReport](TestReport.md).
+
+
+## Issue #76 — GitHub Squash 기본 메시지 관리자 정책 및 진단 (2026-10-25)
+
+| TC | 조건 | 기대 / 실패 분류 | 실행 현황 |
+| --- | --- | --- | --- |
+| TC-CI-76-001 | API `true / PR_TITLE / BLANK` fixture | `PASS`, Summary PASS, CI 정상 진행 | 로컬 Bash fixture PASS |
+| TC-CI-76-002 | API `true / COMMIT_OR_PR_TITLE / COMMIT_MESSAGES` fixture | warning + `NOT APPLIED`, CI 진단은 non-blocking; 관리자 승인 **미완료** | 로컬 Bash fixture PASS, 실제 REST 불일치 확인 |
+| TC-CI-76-003 | 잘못된 JSON/배열 fixture | warning + `NOT VERIFIED`, 잘못된 응답을 PASS로 처리 금지 | 로컬 Bash fixture PASS |
+| TC-CI-76-004 | REST GET 실패 | warning + `NOT VERIFIED`, 다른 앱 CI 방해 금지 | 설계/셸 분기 검사; CI 미실행 |
+| TC-CI-76-005 | 관리자 설정 변경 + 새로운 PR squash | GET 3항목 PASS, main commit subject 단일행/body 빈 문자열, `MAIN CI | #N | 설명` | **BLOCKED: 관리자 설정 미적용** |
+| TC-CI-76-006 | PR CI YAML diff 및 GHCR scope | 기존 trigger/permissions/concurrency/Typecheck·Docker·GHCR 의사결정 불변, docs/workflow-only Main은 GHCR SKIP | 정적 확인, PR CI 미실행 |
+
+- Bash `set -euo pipefail` 구문 점검과 REST 응답 mock 분기는 별도로 확인한다. GitHub Actions Runner의 실제 output 및 적용 후 Main title은 원격 workflow/run 증거가 있어야 PASS이다. 설정 불일치는 CI 자체 실패가 아니므로 FailedLedger에 가짜 Failure로 기록하지 않는다. [Issue76](Issue76.md).
+
 ### Issue #54/#76 최신 main 통합 검증 (2026-10-25)
 
 - 원본 수정 HEAD `6845c4b4`의 PR CI #40181171710 성공은 확인했다. #76 비차단 읽기 전용 CI 진단 추가 및 문서 병합 결과의 새 HEAD CI는 별도 검증 대상. TC-E4-E2E-001~004/#31·#51·#52·#53/Docker/Legacy를 유지하며 #76의 관리자 설정 미적용은 앱 CI 실패로 오인하지 않는다.

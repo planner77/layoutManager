@@ -1,5 +1,14 @@
 # CAD Web Viewer P.O.C.
 
+## v0.40.1 — Issue #93 도면 목록에서 이전 버전 표시·검색 복원
+
+- **기본은 Current만 표시:** CAD 도면 목록(`/`)에 들어오거나 `초기화`를 누르면 Location별로 Current로 지정된 도면만 보입니다. 최신 등록/높은 V번호를 자동 Current로 지정하지 않습니다.
+- **이전 버전 검색:** 목록 검색 영역의 `현재 버전만 표시` 버튼이 기본 **ON**입니다. 버튼을 한 번 눌러 **OFF**로 바꾸면 기존 Current와 모든 이전 Version, Current 미지정 층의 도면까지 같은 표에 표시되며 파일명·설명·5단계 위치·DXF/DWG로 검색할 수 있습니다. 상태 배지/버전 번호 및 Viewer 열기·원본 다운로드·Current 지정 작업이 유지됩니다.
+- **상태 유지:** OFF에서는 `?versions=all`이 붙으며 검색 제출, 다음/이전 페이지, 뒤로/앞으로 및 새로고침에서도 유지됩니다. 토글 전환은 검색어·페이지당 개수를 유지하되 첫 페이지부터 시작합니다. `초기화`는 Current 전용으로 복귀합니다.
+- **API/기존 링크:** 이전 홈페이지 `?current=false` 주소는 전체 버전 목록으로 해석합니다. 반면 API `GET /api/cad-files?current=false`는 이전 Version만 돌려주는 기존 의미를 유지합니다. #45의 별도 `위치별 버전 관리`도 계속 사용할 수 있습니다.
+- 설계/검증 경계: [Issue93](out/Issue93.md)/[ADR-034-R1](out/Decisions.md)/[TestPlan](out/TestPlan.md). 이번 단계 작성 코드는 PR CI/실 CAD 검증 전이므로 실행 성공을 주장하지 않습니다.
+
+
 ## Issue #76 — GitHub Squash Merge 커밋 메시지 기본값 (운영 관리자 조치 필요)
 
 - GitHub 저장소 Settings → General → Pull Requests → **Allow squash merging / Default commit message: Pull request title**로 지정해야 합니다. 현재 REST 확인값 `COMMIT_OR_PR_TITLE / COMMIT_MESSAGES`는 목표 `PR_TITLE / BLANK`와 달라 **미완료**입니다.
@@ -105,6 +114,8 @@ Issue #52 CI에서 발견한 테스트 간 공유 geometry 오염을 교정했�
 - **패널 표시 vs 실제 레이어**: 체크박스/전체 선택·전체 해제는 CAD 도면의 레이어 ON/OFF이고, 상단 메뉴/접기는 **패널만** 숨긴다. 닫았다 열면 체크 상태, 확대/이동 및 현재 Canvas가 유지된다. 내부 접기 후 포커스는 상단 버튼으로 돌아가 키보드 Enter/Space 재열기가 가능하다.
 - **호환성**: 일반 화면은 기존 레이어 선택 드롭다운을 유지. `dxf-viewer`·DWG·빈 도면/로딩/오류에서는 레이어 메뉴가 비활성화된다. 작은 화면에서는 패널과 Canvas가 겹치지 않는 도킹 레이아웃. Browser native fullscreen은 명시 클릭에서만 동작.
 - 버전 0.32.0은 **UI 개선**이며 도면/DB/API/Renderer/원본 파일의 형식을 변경하지 않는다. 실행 검증 결과는 [Issue39](out/Issue39.md)·[TestPlan](out/TestPlan.md)·[TestReport](out/TestReport.md)를 참조한다. PR CI/실기기 증거 확인 전 수용 완료를 주장하지 않는다.
+
+> **역사 정책(후속 #93에서 변경):** 다음 0.31.0 절은 #45 당시 동작 기록입니다. 현재 기본 Current+전체 버전 검색 정책은 위 v0.40.1을 우선합니다.
 
 ## v0.31.0 — Issue #45 현재 도면만 목록에 표시
 

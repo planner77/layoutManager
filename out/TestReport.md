@@ -1,5 +1,14 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE93-20261025 — Current 기본 + 이전 검색·토글 복원 (PR CI 결과 확인 전)
+
+- 근거: Issue #93, 기존 #8/#16/#45, `AGENTS.md`·`out/Requirements.md`·`out/Architecture.md`·ADR-034-R1. 작업 시작 `main 14111b45a36907245342751d9d1a139b5215474d`, 브랜치 `fix/issue-93-drawing-history-search`; v0.40.1.
+- 작성 변경: 홈 UI 전용 `drawingListParams`(`versions=all`, 기본 Current, 레거시 `current=false`), `drawingListUrl`(페이지 링크 상태 유지), 검색/토글 독립 GET forms, 기본 ON 단일 버튼 `aria-pressed`, 기존 위치·형식·파일명/설명·pageSize 유지. 공통 `listQuery`/API current=false·Repo·DB/원본·Current 포인터 불변.
+- 변경/작성 테스트: `TC-LIST-093-001~003` Unit/Integration; `TC-LIST-093-E2E-001~002` Playwright; 기존 workflow/upload 기대값 정정. 목록 전체 버전 count/검색·포인터 교체/삭제 및 API 비Current 분리 검증.
+- **실행 상태: NOT RUN.** GitHub Connector를 통한 코드·문서 변경이며, 이 세션의 실행 컨테이너에서 github.com DNS 해석이 실패하여 원격 checkout 및 npm 의존 설치·Vitest·Playwright·Docker 현장 검증을 수행하지 못했다. TS/ESLint/Build/Unit/E2E/Legacy 및 실 CAD/DWG 운영 데이터 결과를 성공으로 주장하지 않는다. PR CI 생성은 실제 Run 성공과 별개이며 사용자의 요청으로 결과 모니터링 생략.
+- #54 main 병합 선행 변경(v0.40.0)과 본 #93 패치(v0.40.1)를 함께 반영하되 CI/실도면 검증은 여전히 미실행 상태다.
+- CI 실패를 실제 확인한 경우만 `out/FailureLedger.md`에 Run/Job/HEAD/원인/조치 기재. 계획 및 수용 추적: [Issue93](Issue93.md)/[TestPlan](TestPlan.md).
+
 ## U-ISSUE54-PR92-CI-SUCCESS-MAIN-ALIGN-20261025
 
 - [수정 HEAD PR CI 40181171710](https://github.com/planner77/layoutManager/actions/runs/40181171710), SHA `6845c4b4e1e22157b64ce05215e67710c9a3a985`, **completed/success**: P1의 5px 이전 Wheel/Resize 후보 취소와 TC-E4-E2E-004 포함. 최초 Run 40177837419는 수정 이전 별도 PASS.

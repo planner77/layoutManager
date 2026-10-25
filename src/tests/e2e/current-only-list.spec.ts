@@ -9,12 +9,14 @@ async function upload(
   ids: MasterIds,
   filename: string,
   makeCurrent: boolean,
+  description = "",
 ) {
   const response = await request.post("/api/cad-files", {
     multipart: {
       file: { name: filename, mimeType: "application/octet-stream", buffer: drawing },
       ...ids,
       registeredAt: "2026-10-25",
+      description,
       makeCurrent: String(makeCurrent),
       deletePassword: "1234",
     },
@@ -23,7 +25,7 @@ async function upload(
   return (await response.json()) as { id: string; locationId: string };
 }
 
-test("TC-LIST-045-003: Current-only library and Location history with legacy URL, reassignment and deletion", async ({
+test("TC-LIST-093-E2E-001: default Current, toggle, history search and Location reassignment", async ({
   page,
   request,
 }) => {
@@ -39,17 +41,31 @@ test("TC-LIST-045-003: Current-only library and Location history with legacy URL
 
   await page.goto(`/?filename=${prefix}`);
   await expect(page.locator('table[aria-label="등록된 도면"] tbody tr')).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "현재 버전만 표시" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "현재 버전만 표시" })).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByText("등록일 최신순 · 현재 버전 도면")).toBeVisible();
 
   const current = await upload(request, main, `${prefix}-v2.dxf`, true);
   const newer = await upload(request, main, `${prefix}-v3.dxf`, false);
-  await page.goto(`/?filename=${prefix}&current=false`);
+  await page.goto(`/?filename=${prefix}`);
   await expect(page.locator('table[aria-label="등록된 도면"] tbody tr')).toHaveCount(1);
+  await page.getByRole("button", { name: "현재 버전만 표시" }).click();
+  await expect(page).toHaveURL(/versions=all/);
+  await expect(page.getByRole("button", { name: "현재 버전만 표시" })).toHaveAttribute("aria-pressed", "false");
+  await expect(page.locator('table[aria-label="등록된 도면"] tbody tr')).toHaveCount(4);
   await expect(page.locator(`#version-${current.id}`)).toContainText("Current");
-  await expect(page.locator(`#version-${old.id}`)).toHaveCount(0);
-  await expect(page.locator(`#version-${newer.id}`)).toHaveCount(0);
-  await expect(page.locator(`#version-${onlyOld.id}`)).toHaveCount(0);
+  await expect(page.locator(`#version-${old.id}`)).toContainText("이전 버전");
+  await expect(page.locator(`#version-${newer.id}`)).toContainText("이전 버전");
+  await expect(page.locator(`#version-${onlyOld.id}`)).toContainText("이전 버전");
+  await page.getByLabel("파일명", { exact: true }).fill(`${prefix}-v1`);
+  await page.getByRole("button", { name: "검색", exact: true }).click();
+  await expect(page).toHaveURL(/versions=all/);
+  await expect(page.locator(`#version-${old.id}`)).toBeVisible();
+  await expect(page.locator('table[aria-label="등록된 도면"] tbody tr')).toHaveCount(1);
+  await page.getByRole("button", { name: "현재 버전만 표시" }).click();
+  await expect(page.locator('table[aria-label="등록된 도면"] tbody tr')).toHaveCount(0);
+  await page.goto(`/?filename=${prefix}&current=false`);
+  await expect(page.getByRole("button", { name: "현재 버전만 표시" })).toHaveAttribute("aria-pressed", "false");
+  await expect(page.locator('table[aria-label="등록된 도면"] tbody tr')).toHaveCount(4);
   const history = await request.get(`/api/cad-files?filename=${prefix}&current=false`);
   expect(history.status()).toBe(200);
   expect((await history.json()).total).toBe(3);
@@ -73,7 +89,7 @@ test("TC-LIST-045-003: Current-only library and Location history with legacy URL
   await expect(page.locator(`#version-${onlyOld.id}`)).toContainText("Current");
 
   await page.goto(`/?filename=${prefix}&current=false`);
-  await expect(page.locator('table[aria-label="등록된 도면"] tbody tr')).toHaveCount(2);
+  await expect(page.locator('table[aria-label="등록된 도면"] tbody tr')).toHaveCount(4);
   await expect(page.locator(`#version-${onlyOld.id}`)).toContainText("Current");
   await expect(page.locator(`#version-${current.id}`)).toContainText("Current");
 
@@ -100,4 +116,40 @@ test("TC-LIST-045-003: Current-only library and Location history with legacy URL
   await expect(page.locator('table[aria-label="등록된 도면"] tbody tr')).toHaveCount(1);
   await expect(page.locator(`#version-${onlyOld.id}`)).toContainText("Current");
   await expect(page.locator(`#version-${current.id}`)).toHaveCount(0);
+});
+
+test("TC-LIST-093-E2E-002: all-version pagination, reload, back navigation and previous-only description search", async ({
+  page,
+  request,
+}) => {
+  test.setTimeout(90_000);
+  const suffix = crypto.randomUUID().slice(0, 8);
+  const site = `HISTORY-${suffix}`;
+  const ids = await masterFields(request, { businessUnit: `HISTORY-${suffix}`, site, building: "B동", floor: "4층" });
+  const old = await upload(request, ids, `history-${suffix}-v1.dxf`, false, `old-${suffix}`);
+  await upload(request, ids, `history-${suffix}-v2.dxf`, true, `current-${suffix}`);
+
+  await page.goto(`/?site=${site}&format=DXF&versions=all&pageSize=1`);
+  await expect(page.getByRole("button", { name: "현재 버전만 표시" })).toHaveAttribute("aria-pressed", "false");
+  await expect(page.locator('table[aria-label="등록된 도면"] tbody tr')).toHaveCount(1);
+  await expect(page.getByText("1 / 2 페이지")).toBeVisible();
+  await page.getByRole("navigation", { name: "목록 페이지" }).getByRole("link", { name: "다음" }).click();
+  await expect(page).toHaveURL(/versions=all/);
+  await expect(page).toHaveURL(/page=2/);
+  await expect(page.getByText("2 / 2 페이지")).toBeVisible();
+  await expect(page.locator('table[aria-label="등록된 도면"] tbody tr')).toHaveCount(1);
+  await page.goBack();
+  await expect(page.getByText("1 / 2 페이지")).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("button", { name: "현재 버전만 표시" })).toHaveAttribute("aria-pressed", "false");
+
+  await page.getByLabel("도면 설명", { exact: true }).fill(`old-${suffix}`);
+  await page.getByRole("button", { name: "검색", exact: true }).click();
+  await expect(page).toHaveURL(/versions=all/);
+  await expect(page.locator(`#version-${old.id}`)).toContainText("이전 버전");
+  await expect(page.locator('table[aria-label="등록된 도면"] tbody tr')).toHaveCount(1);
+  await page.getByRole("button", { name: "현재 버전만 표시" }).click();
+  await expect(page.locator('table[aria-label="등록된 도면"] tbody tr')).toHaveCount(0);
+  await page.getByRole("link", { name: "초기화", exact: true }).click();
+  await expect(page.getByRole("button", { name: "현재 버전만 표시" })).toHaveAttribute("aria-pressed", "true");
 });
