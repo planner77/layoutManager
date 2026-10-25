@@ -177,7 +177,7 @@ export function CadMemoOverlay({
         <span aria-hidden="true" className="pointer-events-none absolute z-10 max-h-20 w-max max-w-40 overflow-hidden rounded border border-slate-300 bg-white/95 px-1.5 py-1 text-left text-[11px] font-normal leading-tight text-slate-900 shadow-sm"
           style={{left:12+memo.labelOffset.x,top:memo.labelOffset.y,whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>
           <strong className="block font-semibold">{memo.title}</strong>
-          {memo.content && <span className="mt-0.5 block max-h-12 overflow-hidden whitespace-pre-wrap font-normal text-slate-700">{memo.content}</span>}
+          {memo.content && <span className="mt-0.5 block max-h-12 overflow-hidden whitespace-pre-wrap font-normal text-slate-700">{memo.content.slice(0,160)}{memo.content.length>160?'…':''}</span>}
         </span>
       </button>;
     })}
