@@ -1,5 +1,9 @@
 # CAD Web Viewer P.O.C.
 
+## Issue #104 — v0.40.5 GHCR 신규 Pair 준비 (2026-10-26)
+
+이미 게시된 v0.40.4를 재사용하지 않고 사용자가 요청한 신규 GHCR App/Migrator 게시용으로 `src/package.json`과 `src/package-lock.json`의 루트 버전을 **0.40.5**로 정렬했습니다. 버전 변경 이전 G2 구현 HEAD `f5f7ea2e`은 [PR CI 40234510320](https://github.com/planner77/layoutManager/actions/runs/40234510320)에서 Verify/Docker 모두 성공했지만, **새 HEAD는 별도 PR CI 성공 후에만 병합/게시**합니다. G2 초기 관리자 서비스는 격리 CLI 전용이며 운영 Auth·Admin·Prisma/API·DB 기능은 #109 G7 승인 전 계속 OFF.
+
 ## Issue #104 — G2 격리 Admin 최초 생성·복구 (운영 OFF)
 
 #102 Owner 정책(지정 운영 담당자 실행/Owner 책임)과 #103 G1 계약을 따른 명시 `server/auth/admin-setup.ts` 서비스, 실행 UID 제한 Secret 파일, 최초 User/Role/Audit·복구 nonce/Session 원자성 및 `scripts/auth-g2-isolated.ts` 임시 DB CLI를 작성했습니다. 실제 App 시작/관리·로그인 API/운영 Prisma migration/기존 익명 CAD 조회·Current·삭제 비밀번호에 **연결하지 않습니다**. 요구/AC/TC와 사내 운영자 비공개 SOP 템플릿은 [Issue104](out/Issue104.md)/[Operation](out/Operation.md)/[TestPlan](out/TestPlan.md). #109 Owner Go/No-Go 전 운영 OFF, 실행 안 된 시험은 PASS가 아닙니다.

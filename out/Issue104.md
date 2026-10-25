@@ -1,5 +1,11 @@
 # Issue #104 — G2 최초 Admin 생성·단발 복구 및 Secret 보호
 
+## Issue #104 / PR #118 — CI 검증과 신규 GHCR v0.40.5 게시 후보 (2026-10-26)
+
+- **기존 코드 HEAD 검증 성공:** [PR CI 40234510320](https://github.com/planner77/layoutManager/actions/runs/40234510320), `f5f7ea2e`, Verify·Docker completed/success. 첫 실패 Run 40232479678는 실패 원장에 보존.
+- **신규 릴리스 요청:** 기존 v0.40.4 GHCR App/Migrator pair/tag 불변을 지키기 위해 0.40.5 PATCH 후보 package/lock 루트 일치. G2는 사내 비운영 격리 초기 관리자·Nonce 복구 테스트/도구이며 실제 기존 CAD/Viewer/Auth API/Prisma/운영 데이터 기능 자동 활성화 아님.
+- **잔여 게이트:** 0.40.5 HEAD의 새로운 PR CI 성공+리뷰 0+Main behind 0/mergeable 이후 PR squash 병합/Issue 종료, 이어 Main CI conditional paired GHCR build/promotion 시작. Main CI 시작만으로 GHCR 공개 게시 완료를 주장하지 않으며 사용자는 CI 모니터링을 요청하지 않았음. G7 Owner 별도 운영 Go/No-Go와 G6 실제 DB/CAD/S3 복구는 계속 BLOCKED.
+
 ## #118 최초 PR CI 실패·파서 교정 (2026-10-26 KST)
 
 - **Run 40232479678 / HEAD `534de74c`:** Verify Job `121286959176` TypeScript 파서 오류로 `completed/failure`, Docker Job `121286959564` `completed/success`. `tests/integration/auth-g2.test.ts:198:22` TS1005 및 :232 TS1128 후속 파싱 오류. :213도 같은 잘못된 괄호와 optional chaining 결합으로 확인.

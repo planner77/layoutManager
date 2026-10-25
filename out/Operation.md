@@ -1,5 +1,10 @@
 # 운영·환경설정 초안
 
+## Issue #104 — GHCR v0.40.5 신규 Pair 게시 절차 (2026-10-26)
+
+- G2 격리 서비스에 대한 GHCR 신규 게시 요청은 기존 v0.40.4 이미지·Git tag/digest를 이동하지 않는 새 PATCH 버전 **0.40.5** 준비로 처리한다. 신규 PR HEAD CI 검증·review 0·main 정렬 후 squash merge하면 Main push Workflow의 `release-scope`가 변경 경로를 확인하고 후보 App/Migrator 두 개를 빌드·digest 검증한 후 `:0.40.5`/`:0.40.5-migrate` 및 latest Pair를 승격하도록 설정되어 있다.
+- **실제 게시 전/후 운영 경계 동일:** G2 도구는 격리 SQLite에만 연결하고 실제 `ADMIN_* `운영 플래그, 운영 DB/Prisma Migration 및 로그인/관리 영속 API, 기존 CAD 데이터/Viewer를 켜지 않는다. Main CI 시작, GHCR 태그의 실제 게시, 사내 장비 배포·G7 운영 활성화는 각각 별도 상태이며 후자의 둘은 실행하지 않는다. [Issue104](Issue104.md), [ChangeLog](ChangeLog.md), [TestReport](TestReport.md).
+
 ## Issue #104 G2 — 명시 Admin 초기화·복구 격리 SOP (2026-10-26)
 
 **운영 적용/자동 초기화 금지; #109 G7 전 OFF.** 사내 지정 운영 담당자 실행, Owner 책임. 인명·대리인·승인·실 Secret 경로·nonce·backup·회수 기록은 사내 비공개 운영 문서에만 작성.
