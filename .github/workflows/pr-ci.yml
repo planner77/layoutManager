@@ -164,6 +164,16 @@ jobs:
             node -e "const Db=require(\"better-sqlite3\");new Db(\":memory:\").close()"
           '
 
+      - name: Validate nonroot web native SQLite and packaged Prisma client (#67)
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run --rm --entrypoint sh cad-layout-viewer:ci -c '
+            test "$(id -u)" = 10001
+            test -f /app/src/node_modules/better-sqlite3/build/Release/better_sqlite3.node
+            node -e "const Db=require(\"better-sqlite3\");new Db(\":memory:\").close()"
+            test -f /app/src/server.js
+          '
       - name: Confirm failed migration is nonzero before app startup
         run: |
           if docker run --rm -e DATABASE_URL=file:/proc/cad.sqlite -e CAD_STORAGE_PATH=/data/cad cad-layout-viewer:ci-migrate; then
