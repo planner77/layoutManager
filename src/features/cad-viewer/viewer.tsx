@@ -684,7 +684,7 @@ export function CadViewer({
               }
             }}
           />
-          {contextMenu && <div data-testid="generated-context-menu" role="menu"
+          {contextMenu && <div data-testid="generated-context-menu" data-canvas-edit-escape-layer="context" role="menu"
             aria-label="생성 개체 컨텍스트 작업"
             className="fixed z-[70] rounded border border-slate-300 bg-white p-2 text-slate-800 shadow-lg"
             style={{left:contextMenu.x,top:contextMenu.y}}>

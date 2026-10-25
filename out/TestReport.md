@@ -6,6 +6,7 @@
 - 변경: domain `generated-delete.ts` 현재 선택/Version/SHA 검증·확인 스냅샷, `generated-keyboard.ts` Canvas focus 조건, Tree/Toolbar/Canvas 선택 context·확인창 UI, Manager/ThreeAdapter 전달·모드 체크, U6 이력 없는 deletion API 제거, E2 Document Scene/selection event 재사용. 서버 API·DB/Migration·원본 DXF/SHA/Layer/Current 불변 설계.
 - 신규/갱신 테스트: `generated-delete.test.ts` TC-E3-UNIT-001~004, `generated-keyboard.test.ts` UNIT-005, `issue53-generated-delete.spec.ts` E2E-001~003, #43 트리, Manager 회귀. 작성했다는 사실과 통과는 별개.
 - **실행 결과: NOT RUN** — GitHub Connector로 변경을 커밋했으며, 이 세션의 runner 컨테이너는 `github.com` DNS 조회 실패로 checkout 불가. `npm ci/typecheck/lint/unit/build/Playwright/legacy/benchmark/Docker`를 수행하지 않았으므로 PASS 건수·성능/메모리 지표를 주장할 수 없다. 실제 GPU dispose 경로를 코드로 검토했으나 WebGL/GPU 메모리 누수 실측, 실 CAD, native fullscreen(OS/browser별), 운영 영향 분석은 NOT RUN.
+- PR #87 P1 리뷰 대응: Window capture 순서상 Dialog/Context ESC가 먼저 Canvas 선택을 지울 수 있는 결함을 overlay gate로 차단하고, 이름 변경 stale 확인을 거부하도록 수정. TC-E3-UNIT-004, TC-E3-E2E-002/003의 회귀 검증을 추가했으나 **실행 결과 NOT RUN**.
 - CI 시작/상태 및 리뷰·충돌 처리 근거는 생성된 PR 링크에서 확인해야 한다. PR 등록만으로 CI 성공, merge, GHCR 게시 또는 Issue 종료를 의미하지 않는다. [Issue53](Issue53.md) / [TestPlan](TestPlan.md).
 
 

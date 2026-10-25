@@ -158,8 +158,9 @@ export function OutlineTreePanel({
                             className="shrink-0 rounded border border-slate-400 px-1">
                             {item.visible ? '숨김' : '표시'}
                           </button>
-                          <button type="button" disabled={!allowDelete}
-                            title={allowDelete ? '선택한 생성 개체 삭제 (실행 취소 가능)' : (deleteUnavailableReason??'생성 개체 편집 모드를 선택하세요.')}
+                          <button type="button" disabled={!allowDelete || !item.visible}
+                            title={!item.visible ? '숨김 개체는 표시한 뒤 삭제할 수 있습니다.' :
+                              (allowDelete ? '선택한 생성 개체 삭제 (실행 취소 가능)' : (deleteUnavailableReason??'생성 개체 편집 모드를 선택하세요.'))}
                             aria-label={item.name + ' 삭제'} data-testid="outline-tree-delete"
                             onClick={event => { event.stopPropagation(); onDelete(item.id); }}
                             className="shrink-0 rounded border border-slate-400 px-1 disabled:opacity-40">

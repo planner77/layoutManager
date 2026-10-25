@@ -4,6 +4,7 @@
 
 - v0.39.0: `GeneratedDocument.execute({type:'Delete',ids})`만 객체 삭제에 사용한다. #43 기존 `deleteSavedOutline/discardLegacy`는 Undo/Redo와 원자성 우회 경로이므로 제거한다. ToolBar·Tree 행·Canvas hit 우클릭·Canvas 초점 Delete/Backspace는 모두 동일한 범위·선택·UUID·명령 대상 재검증과 개수/명칭 확인창을 거친다. 취소=무변경.
 - DXF+three-dxf-viewer의 브라우저 GENERATED만 삭제 가능하다. SOURCE 및 혼합, 중복/누락·숨김, 버전/SHA 불일치, 모드 변경은 전체 거부. 외곽선 **생성 OFF**여도 독립 Generated 편집/선택 모드 진입 후 삭제 가능. 입력·검색창·Tree/버튼 focus에서는 Delete/Backspace를 인터셉트하지 않고 ESC는 삭제 확인창→컨텍스트→staged edit→일반 선택/전체화면 순서.
+- SelectionController window capture ESC는 확인 Dialog/Context overlay가 존재하면 선택을 지우지 않아야 한다. 대상 명칭도 확인 시점 snapshot과 비교하며 숨김 Tree 행 삭제 버튼은 비활성화한다. 작성된 TC-E3-UNIT-004/E2E-002/003은 실제 실행 전 PASS가 아니다.
 - 삭제 Scene 그룹의 geometry/material을 dispose하며 E2 기존 Document→Selection/Tree/Export projection, Undo/Redo UUID·Geometry·Transform·metadata·visibility 복원을 재사용한다. Source/Preview/원본 bytes/SHA/Layer/Version/Current·서버 API/DB 불변. 문서 [Issue53](out/Issue53.md), [ADR-046](out/Decisions.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md). 현재 원격 컨텍스트 Typecheck/Lint/Unit/Playwright/GPU **NOT RUN**; PR CI 트리거와 성공을 혼동하지 않는다.
 
 

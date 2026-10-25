@@ -209,6 +209,11 @@ export class SelectionController {
  };
  private pointerCancel=()=>this.cancelDrag();
  private keyDown=(event:KeyboardEvent)=>{
+   // E3 overlays are siblings of the WebGL canvas inside the same workspace.
+   // Their Escape closes only the top layer; it must not clear the underlying
+   // selection, even when this capture listener was registered earlier.
+   if(event.key==='Escape' &&
+     this.container.parentElement?.querySelector('[data-canvas-edit-escape-layer]'))return;
    const el=event.target as HTMLElement|null;
    if(el?.closest('input,textarea,select,[contenteditable="true"]'))return;
    if(event.code==='Space'&&this.mode!=='pan'&&!event.repeat){

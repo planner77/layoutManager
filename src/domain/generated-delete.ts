@@ -45,8 +45,11 @@ export function assertGeneratedDeleteCurrent(
      request.scope.sourceSha256.toLowerCase()!==scope.sourceSha256.toLowerCase())
     throw new Error('도면 버전이 변경되어 삭제를 취소했습니다.');
   const live=prepareGeneratedDelete(selection,objects,scope);
-  const key=(values:readonly {id:string;savedOutlineId:string}[])=>
-    values.map(item=>item.id+':'+item.savedOutlineId).sort().join('|');
+  // Names are part of the text the user confirmed; a renamed target requires
+  // renewed consent rather than silently deleting a different label.
+  const key=(values:readonly {id:string;savedOutlineId:string;name:string}[])=>
+    JSON.stringify(values.map(item=>[item.id,item.savedOutlineId,item.name] as const)
+      .sort(([left],[right])=>left.localeCompare(right)));
   if(request.targets.length!==live.targets.length ||
      key(request.targets)!==key(live.targets))
     throw new Error('삭제 확인 중 선택 대상이 변경되었습니다. 다시 선택하세요.');

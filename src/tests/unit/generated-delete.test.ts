@@ -105,6 +105,8 @@ describe('Issue #53 / E3 generated deletion',()=>{
     const request=prepareGeneratedDelete([doc.getObjects()[0].ref],objects(),scope);
     const fake=objects().map(o=>o.ref.id===ids[0]?{...o,savedOutlineId:'local-99'}:o);
     expect(()=>assertGeneratedDeleteCurrent(request,[doc.getObjects()[0].ref],fake,scope)).toThrow();
+    const renamed=objects().map(o=>o.ref.id===ids[0]?{...o,name:'확인 후 바뀐 이름'}:o);
+    expect(()=>assertGeneratedDeleteCurrent(request,[doc.getObjects()[0].ref],renamed,scope)).toThrow();
     doc.setVisible('local-1',false);
     expect(()=>assertGeneratedDeleteCurrent(request,[doc.getObjects()[0].ref],objects(),scope)).toThrow();
   });

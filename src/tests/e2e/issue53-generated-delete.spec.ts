@@ -100,6 +100,9 @@ test('TC-E3-E2E-002: multi-select cancel/confirm, Canvas keyboard, Escape and na
   await expect(dialog).toContainText('생성 개체 2개 삭제 확인');
   await page.keyboard.press('Escape');
   await expect(dialog).toHaveCount(0);
+  // Escape cancels only the modal; the current multi-selection must remain intact.
+  await expect(page.getByTestId('canvas-selection-count')).toContainText('선택 2개 · 원본 0개 · 생성 2개');
+  await expect(page.getByTestId('generated-delete-selected')).toBeEnabled();
   await expect(page.getByTestId('cad-viewer-shell')).toHaveAttribute('data-fullscreen','true');
   await expect(rows).toHaveCount(3);
   await page.getByTestId('generated-delete-selected').click();
@@ -153,6 +156,13 @@ test('TC-E3-E2E-003: SOURCE/mixed and pan fail closed, selected shape context an
   const canvas=page.getByTestId('cad-canvas').locator('canvas');
   await canvas.scrollIntoViewIfNeeded();
   await expect(canvas).toBeInViewport({ratio:1});
+  await canvas.click({button:'right',position:{
+    x:(await canvas.boundingBox())!.width/2,y:(await canvas.boundingBox())!.height/2,
+  }});
+  await expect(page.getByTestId('generated-context-delete')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('generated-context-menu')).toHaveCount(0);
+  await expect(page.getByTestId('canvas-selection-count')).toContainText('선택 1개 · 원본 0개 · 생성 1개');
   await canvas.click({button:'right',position:{
     x:(await canvas.boundingBox())!.width/2,y:(await canvas.boundingBox())!.height/2,
   }});

@@ -7,10 +7,10 @@
 | TC-E3-UNIT-001 | E3-AC1/2 | 생성 3개 중 1개 Delete, 잔여 순서/UUID/기하 불변, Undo/Redo 원래 metadata·transform 복구 | 코드 작성 / NOT RUN |
 | TC-E3-UNIT-002 | E3-AC2 | 선택 2개 다중 Delete 1회 이력, Confirm 취소 무변경, Undo/Redo, 삭제 ID 재사용·새 객체 중복 거부 | 코드 작성 / NOT RUN |
 | TC-E3-UNIT-003 | E3-AC3 | SOURCE/혼합/중복/없는 UUID/다른 Version/SHA/숨김 대상 차단, Document/History 무오염 | 코드 작성 / NOT RUN |
-| TC-E3-UNIT-004 | E3-AC2/3 | 확인창 열림 중 대상 selection·legacy local ID·visible 변경 시 stale commit 거부 | 코드 작성 / NOT RUN |
+| TC-E3-UNIT-004 | E3-AC2/3 | 확인창 열림 중 대상 selection·legacy local ID·명칭·visible 변경 시 stale commit 거부 | 코드 작성 / NOT RUN |
 | TC-E3-UNIT-005 | E3-AC4 | Canvas focus, plain Delete/Backspace, input/search/contenteditable·modifier/repeat/defaultPrevented 격리 | 코드 작성 / NOT RUN |
 | TC-E3-E2E-001 | E3-AC1/2 | 합성 DXF 외곽선 3개, Tree 단일 삭제/취소/Undo/Redo, JSON/Canvas count 정합, 재생성 unique local ID | 코드 작성 / NOT RUN |
-| TC-E3-E2E-002 | E3-AC2/4 | Tree 다중 선택 2개 삭제 취소/Confirm, Backspace Canvas focus, Esc dialog 우선, input native key, 마지막 빈 Tree | 코드 작성 / NOT RUN |
+| TC-E3-E2E-002 | E3-AC2/4 | Tree 다중 선택 2개 삭제 취소/Confirm, Esc dialog 시 선택 2개 보존, Backspace Canvas focus, input native key, 마지막 빈 Tree | 코드 작성 / NOT RUN |
 | TC-E3-E2E-003 | E3-AC3/4 | SOURCE+GENERATED 혼합·Pan 삭제 차단, 선택된 Generated hit context menu, reload/Renderer 전환에서 임시 개체 해제 | 코드 작성 / NOT RUN |
 | 회귀 | E3-AC3~5 | #17/#25/#26/#31/#38/#39/#40/#42/#43/#51/#52 Unit/E2E/Legacy, #31 원본 SHA·Current 불변, 세션 재로드 | NOT RUN |
 | 현장 | E3-AC4 | Native Fullscreen OS/browser 조합, GPU 메모리 장기 사용·실 DXF·DWG 비지원, JSON canonical/P4 보안 | NOT RUN |

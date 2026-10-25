@@ -35,7 +35,7 @@ export function GeneratedDeleteDialog({
     }
   };
   return (
-    <div data-testid="generated-delete-dialog-backdrop"
+    <div data-testid="generated-delete-dialog-backdrop" data-canvas-edit-escape-layer="dialog"
       className="fixed inset-0 z-[120] flex items-center justify-center bg-black/65 p-4"
       onPointerDown={event=>{if(event.target===event.currentTarget)onCancel();}}>
       <section role="alertdialog" aria-modal="true" aria-labelledby="generated-delete-title"
