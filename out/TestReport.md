@@ -1,5 +1,13 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issue #31 P4-D0 — 문서 설계 반영 기록 (2026-10-25)
+
+- **범위:** Owner 확정 7개 정책 + 외부 인터넷 인바운드 제한 사내 LAN의 다중 PC HTTP/앱 로컬 계정 목적(권한·감사)을 Issue31/ADR-048·049/Database/Architecture/Requirements/TestPlan/AGENTS/Operation에 명시. 기존 OIDC 우선은 당시 기록으로 유지하고 본 결정이 우선한다.
+- **영향 경계:** D0 Markdown-only. Runtime API/Prisma schema/Migration/세션 구현/로그 GET/Outline GET·CRUD/메모영속/Viewer/원본·GHCR 동작 변경 없음. Issue #31 OPEN. 관련 업무 이슈에는 P4 Owner 승인과 미결정 운영 게이트를 구별해 표시한다.
+- **검증:** 원격 문서 편집으로 작성; 로컬 Node/Typecheck/Lint/E2E/실 DXF/GPU/DB Migration **NOT RUN**. PR CI 생성/완료 확인은 별도이며 실제 HTTP 인증·서버 저장·현장 수용 증거 아님. [TestPlan](TestPlan.md) TC-P4-D0 및 TC-P4-D1~D6.
+- **미확정:** 초기 Admin/세션 TTL, 보존 기간, Site 접근 범위/HTTP 잔여 위험 수용, Version DELETE FK/복원/물리 파기, Memo Editor/Show-Hide tab lifetime. 실제 server auth/CRUD/DDL은 추가 Owner 결정·보안/감사/백업 검증 전 BLOCKED.
+
+
 ## U-ISSUE93-20261025 — Current 기본 + 이전 검색·토글 복원 (PR CI 결과 확인 전)
 
 - 근거: Issue #93, 기존 #8/#16/#45, `AGENTS.md`·`out/Requirements.md`·`out/Architecture.md`·ADR-034-R1. 작업 시작 `main 14111b45a36907245342751d9d1a139b5215474d`, 브랜치 `fix/issue-93-drawing-history-search`; v0.40.1.

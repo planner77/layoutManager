@@ -1,5 +1,26 @@
 # Database Schema — 단일 기준 문서
 
+## Issue #31 P4 D0 Owner 승인 설계안 — **DDL 미적용** (2026-10-25)
+
+**우선순위:** 최신 Owner [ADR-048/049](Decisions.md) 승인 정책이 아래 과거 #41/#42의 OIDC/Scope-key 미결정 예시보다 우선한다. 이는 **개념 모델**, 배포된 `schema.prisma`/migration이 아니다. 신규 DB/CRUD 활성화는 별도 구현·검증 승인 전 BLOCKED.
+
+| 제안 Model/Column | D0 계약 (물리형식·세부값은 후속 migration ADR) |
+| --- | --- |
+| `User(id PK, loginName unique, passwordHash, displayName, status, createdAt, updatedAt)` | 로컬 계정, 불변 ID가 감사 주체. 초기 Admin 발급·비밀번호/회수 정책 미확정 |
+| `AuthSession(id/tokenHash PK, userId FK, expiresAt, revokedAt?, createdAt)` | 서버 소유 난수 세션; 원시 토큰 DB/감사 로그 기록 금지, HTTP-only cookie + SameSite. 일반 HTTP 서버 IP에서 Secure 쿠키 동작을 주장하지 않음. TTL/동시 로그인 미확정 |
+| `UserRoleGrant(userId, role)` / `UserSiteGrant(userId, siteId, permissions?)` | Reader/Editor/Admin 및 담당 Site Scope; Version의 실제 Site 관계 서버 검증, 무범위 기본 거부. 실제 Grant/Unique 구조·관리자 범위는 D1에서 구체화 |
+| `OutlineType(id, name, nameKey, description?, active, sortOrder, revision, ...)` | **단일 Global Catalogue**. Site/사업부별 Scope Key로 분리하지 않음. `nameKey`는 전체 앱 고유성, Unicode/NFC case-fold 규칙 및 DB index 검증 이후 확정. 관리 Admin만 허용, 참조 타입 물리 삭제 금지 |
+| `CadOutline(id UUID, versionId FK, sourceSha256, kind, outlineTypeId FK?, name, sourceEntityRefs, algorithmName/Version, canonicalBaseGeometry, transform, revision, status, createdById, updatedById, createdAt, updatedAt, deletedAt?, deletedById?)` | GENERATED 서버 발급 ID; Source immutable bytes+SHA+stable Handle/instancePath 검증. `kind`=CONVEX/PRECISE이며 `outlineTypeId` 업무 분류와 독립. Geometry WCS XY, Translate/Rotate 강체 affine만 허용. 서버가 결과 Geometry 계산, 필요하면 파생 캐시로만 보관. `status=ACTIVE|DELETED` 논리 삭제; CAS `expectedRevision` / 409 |
+| `AuditEvent(id, actorUserId?, action, targetKind/Id, siteId, versionId, beforeRevision, afterRevision, outcome, requestId, timestampUtc, safeMetadata)` | Create/Edit/SoftDelete/Grant 및 거부 이벤트, append-only. 원본 도면·비밀번호·세션·전체 Geometry 기록 금지; 보존 기간·읽기 권한·물리 삭제 미확정 |
+| `CadMemo(...anchorStatus, targetOrigin, targetId?, lastResolvedWcsXY, revision...)` | #83/#84 담당. 영속 GENERATED target 삭제 시 동일 트랜잭션으로 `BROKEN_ANCHOR`+마지막 WCS 저장+연결 해제, 메모 행은 유지; 실제 FK/트랜잭션·Version 삭제 정책 후속 확정 |
+
+- `CadOutline.visible` 공유 필드는 **추가하지 않음**. 외곽선 개별/그룹 Show/Hide는 각 사용자 **세션 상태**이고 Catalog·다른 Editor 데이터/Revision을 갱신하지 않는다. Reload/다중 탭 지속 정책은 미정.
+- 글로벌 업무 타입도 사용자의 도면 Version/Site Read/Edit 권한을 확대하지 않는다. Editor는 할당된 Site/Version Scope 내에서 공동 편집하되 최초 작성자·source SHA/Version은 불변; 메모 Editor 권한은 승인된 것으로 확대 해석 금지.
+- SOURCE 참조는 `{versionId, sourceSha256, handle, instancePath?}`, GENERATED는 서버 영속 UUID와 Origin. 클라이언트 local-N/UUID를 신뢰되는 DB ID로 취급하거나 다른 Version으로 자동 재연결 금지.
+- API는 `/api/cad-files/[versionId]/outlines[/id]`를 후속 제안으로만 유지. 모든 읽기/쓰기에서 Session→Role/Scope→Version/SHA→서버 canonical/Transform 검증→revision CAS→DB/Audit atomicity. 인증 없는 미승인 신규 GET/POST/PATCH/DELETE를 만들지 않는다.
+- **보류:** Version 물리 삭제와 논리 삭제 객체·감사/메모 FK 처리, Audit retention/복원·파기, Session TTL/계정 초기화, legacy typed v1/v2 이관, HTTP LAN 접근 범위. 백업→격리 migration dry-run→FK/변경 불변/복구 시험 승인 전 DDL 적용 금지.
+
+
 ## Issue #42 / v0.35.0 — 영속 Schema 변경 없음 (U5 safe contract)
 
 - `outlineTypeId/outlineTypeName/name`은 **브라우저 `SavedOutline` DTO 및 선택적인 v2 다운로드 JSON 메타데이터**일 뿐, Prisma Column/FK/DDL/마이그레이션에 추가하지 않았다.
