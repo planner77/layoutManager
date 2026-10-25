@@ -1,5 +1,12 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #97 / P4-D2 — 불변 DXF Canonical·Translate/Rotate 서버 검증 선행 구현 (2026-10-25)
+
+- [ADR-050](out/Decisions.md), [Issue97](out/Issue97.md), [Architecture](out/Architecture.md), [Requirements](out/Requirements.md), [TestPlan](out/TestPlan.md) 근거. 별도 `DESIGN.md` 없음; Architecture/Decisions가 설계 기준. #31 D0의 Owner 7정책 중 P4-POL-04만 서버 전용 **순수 검증 모듈**로 구현한다.
+- `src/server/outline/transform-attestation.ts`는 서버 소유 Version/SHA/immutable DXF bytes를 기존 `attestation.ts`에서 검사하고 unique root stable Handle·INSUNITS·WCS XY CONVEX/PRECISE baseGeometry를 tolerance 0.02로 재계산한다. 입력 JSON v1/v2 canonical 호환, 편집 확장은 `baseGeometry`(untrusted), 최대 64 `transformOperations`(Translate/Rotate/pivot, CCW·좌측 합성), `geometry`(untrusted final), 선택적 검사용 affine matrix이며 server effectiveGeometry만 반환한다. Unsupported OCS/partial BLOCK·중복 Handle/중첩 child instancePath·raw affine/scale/shear/reflect/Z/nonfinite/overflow/위조 좌표는 거부.
+- **안전 경계:** #96 D1 로컬 인증·Scope/Audit와 #98 D3 CadOutline CAS/DB CRUD는 여전히 BLOCKED. 실제 Storage fetch, Admin, 서버 영속 GET·Write Route, Prisma migration, 배포·운영 활성화 없음. Browser GeneratedDocument 및 #56 E6 `objects[]`가 서버 영속 권한을 부여하지 않는다. #99 실 DXF 3종/GPU 현장 수용 별도. 원본 DXF bytes/SHA/Version/Current/Viewer Adapter 변동 없음. 버전 0.40.1 유지.
+- 작성 Unit TC-P4-D2-001~009 및 모든 Typecheck/Lint/Vitest/Build/E2E/Docker/실 CAD 상태는 별도 증거 전 **NOT RUN**. GitHub PR CI 시작을 PASS나 D3 운영 승인으로 해석 금지.
+
 ## Issue #31 P4 D0 Owner 승인 계약 (2026-10-25 / 문서 전용)
 
 - **최신 적용 설계:** [Issue31](out/Issue31.md), [ADR-048/049](out/Decisions.md), [Database](out/Database.md), [Architecture](out/Architecture.md), [Requirements](out/Requirements.md), [TestPlan](out/TestPlan.md). **D0 정책 확정은 서버 구현/배포 승인이 아니다.** 아래보다 오래된 OIDC 추천, Scope 미확정 서술은 당시 기록만 유지한다.
