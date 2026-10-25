@@ -1,5 +1,12 @@
 # Issue #96 — 로컬 계정·세션·Role/Site·감사 공통 기반
 
+## G0 #102 Owner 5개 업무 정책 승인 — 최우선 경계 (2026-10-25)
+
+[Issue102](Issue102.md) / [ADR-051-R1](Decisions.md): 사내망의 **기존 공개 도면 GET/Viewer/원본 다운로드는 익명 허용**하며 해당 경로에는 UserSiteGrant로 Site 읽기 기밀성을 주장하지 않는다. **Current 지정은 로그인한 Editor 이상 + 담당 Site, 기존 도면 Version 삭제는 로그인한 Editor 이상 + 담당 Site + 기존 삭제 비밀번호**(AND)로 G7 이후 적용할 정책이 승인됐다. Admin도 Site 자동 전체 접근 없음.
+최초 Admin 생성·단발 복구 실행은 **지정 사내 운영 담당자**, 운영 책임은 Owner. Audit 365일 유지 후 만료 기록 정리 원칙만 승인; **자동 파기·백업본 세칙은 후속 #106/#108/#109**에서 확정 후 구현. 도면 `POST` 등록의 Editor+Site 권장안은 **미승인** 유지.
+이 결정은 기존 #96 D1~D5 인증/업무 Role/Scope/Audit의 **쓰기 및 미래 영속 API**에 적용하는 것이며, 기존 익명 CAD 읽기까지 인증 강제하는 기존 제안은 명시적으로 대체한다. 신규 Outline/Memo/Type/Logs GET/관리 API의 익명 허용 또는 운영 기능 활성화를 승인하지 않는다. G0 정책/문서 PR과 G7 운영 Go/No-Go 별개, 현재 API·Schema·Nginx/Compose·DB 및 운영 기능 OFF 상태 불변.
+
+
 ## G0 #102 — Owner 경량 보안 범위 결정 R1 (2026-10-25)
 
 - **최신 기준:** [Issue102](Issue102.md) 및 [ADR-051-R1](Decisions.md). 공개망 인바운드가 제한된 사내 업무망에서 **운영 사용자 PC는 Nginx 경유**, 개발자는 **별도 개발 App 직접 접속**. 공격 대응·자격증명/세션 탈취 방어·침투시험 및 상세 보안 수용 실증은 **비범위**로 Owner가 결정했다. HTTP 평문 위험은 여전히 존재하며 정책상 `OWNER_ACCEPTED_SCOPE`로 기록하되 안전성 PASS로 쓰지 않는다.
