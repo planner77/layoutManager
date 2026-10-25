@@ -76,7 +76,7 @@ export function createG2IsolatedStore(db: IsolatedDb, faults: Faults = {}): Admi
         initialized: count(db, 'User') !== 0 || count(db, 'AuditEvent') !== 0 ||
           count(db, 'AdminRecoveryNonce') !== 0,
         adminIds,
-        usedRecoveryIds: consumed ? [recoveryNonce!] : [],
+        usedRecoveryIds: consumed ? [recoveryNonce ?? ''] : [],
       };
     },
     bootstrap(command: AdminBootstrapCommand) {

@@ -182,8 +182,8 @@ describe('Issue #104 G2 explicit one-shot Admin service (isolated database only)
     expect(db.prepare('SELECT role FROM "UserRoleGrant" WHERE user_id=?').get(adminId))
       .toMatchObject({ role: 'Admin' });
     expect(count('AdminRecoveryNonce')).toBe(1);
-    expect(db.prepare('SELECT action,affected_user_id FROM "AuditEvent" WHERE action=?')
-      .get('ADMIN_RECOVERY')).toMatchObject({ action: 'ADMIN_RECOVERY', affected_user_id: adminId });
+    expect(db.prepare('SELECT actor_user_id,action,affected_user_id FROM "AuditEvent" WHERE action=?')
+      .get('ADMIN_RECOVERY')).toMatchObject({ actor_user_id: null, action: 'ADMIN_RECOVERY', affected_user_id: adminId });
     const snapshot = JSON.stringify([
       ...db.prepare('SELECT * FROM "AdminRecoveryNonce"').all(),
       ...db.prepare('SELECT * FROM "AuditEvent"').all(),

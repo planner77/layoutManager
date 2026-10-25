@@ -76,7 +76,7 @@ export function seedFixtureUser(db: IsolatedDb, id: string, login: string, now: 
  * Grant revocation erases the grant row, so neither the affected user nor Site
  * may be inferred from the remaining UserSiteGrant table after that operation.
  */
-function event(db: IsolatedDb, actor: string, action: AuditAction, kind: AuditTarget,
+function event(db: IsolatedDb, actor: string | null, action: AuditAction, kind: AuditTarget,
                target: string, now: number, requestId: string,
                affectedUserId: string | null = null, siteId: string | null = null): void {
   const safe = createAuditEvent({
@@ -167,7 +167,7 @@ export function consumeG1Recovery(db: IsolatedDb, target: string, nonce: string,
     db.prepare('UPDATE "AuthSession" SET revoked_at=? WHERE user_id=? AND revoked_at IS NULL')
       .run(now, target);
     if (injectFailure) throw new Error('G1_INJECTED_RECOVERY_FAILURE');
-    event(db, target, 'ADMIN_RECOVERY', 'ACCOUNT', target, now, requestId, target);
+    event(db, null, 'ADMIN_RECOVERY', 'ACCOUNT', target, now, requestId, target);
   });
 }
 /** All three grant kinds require the same Admin+Audit transaction boundary. */
