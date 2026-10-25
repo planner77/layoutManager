@@ -61,7 +61,7 @@ test('TC-E2-E2E-001: history buttons and editable text keep native Ctrl+Z, reloa
     input.addEventListener('keydown',event=>{
       if(event.key.toLowerCase()==='z'&&event.ctrlKey)
         input.setAttribute('data-input-keydown',event.defaultPrevented?'blocked':'native');
-    },{once:true});
+    });
   });
   await page.keyboard.press('Control+z');
   await expect(input).toHaveAttribute('data-input-keydown','native');
