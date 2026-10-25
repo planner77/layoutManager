@@ -15,6 +15,7 @@ import { initialViewerAppState, viewerAppReducer } from '@/features/cad-viewer/v
 import { isLiveOutlineRequest, outlineToolUnavailableReason } from '@/features/cad-viewer/outline-tool-policy';
 import { ViewerManager, type OutlineInfo, type SavedOutline, type SavedOutlineOverlayState } from '@/viewers/core/adapter';
 import {buildOutlineExport} from '@/domain/outline-draft';
+import {canvasEditCapability,type CanvasObjectRef} from '@/domain/canvas-object-selection';
 import {resolveOutlineAssignment,selectableOutlineTypes,type ScopedOutlineCatalog} from '@/domain/outline-assignment';
 import type {OutlineKind,OutlineEntity} from '@/viewers/core/outline-geometry';
 import type {OutlineResult} from '@/viewers/core/outline-compute';
@@ -79,6 +80,8 @@ export function CadViewer({
   const [outlineInfo,setOutlineInfo]=useState<OutlineInfo|null>(null);
   const [outlineMode,setOutlineMode]=useState<'pan'|'select'>('pan');
   const [outlineSelection,setOutlineSelection]=useState<OutlineEntity[]>([]);
+  const [canvasMode,setCanvasMode]=useState<'pan'|'objects'|'generated'>('pan');
+  const [canvasSelection,setCanvasSelection]=useState<CanvasObjectRef[]>([]);
   const [preview,setPreview]=useState<OutlineResult|null>(null);
   const [previewError,setPreviewError]=useState<string|null>(null);
   const [savedCount,setSavedCount]=useState(0);
@@ -189,6 +192,8 @@ export function CadViewer({
     setSavedCount(0);
     setSavedOutlines([]);
     setSavedOverlayStates([]);
+    setCanvasMode('pan');
+    setCanvasSelection([]);
     setSelectedOutlineTypeId('');
     setOutlineName('');
     setOutlineNotice(null);
@@ -199,6 +204,8 @@ export function CadViewer({
     outlineEnabledRef.current = enabled;
     if (enabled) {
       outlineRequestRevisionRef.current++;
+      manager.current?.clearCanvasObjectSelection();
+      setCanvasMode('pan');
       manager.current?.setSelectionMode('select');
       setOutlineMode('select');
       setOutlineNotice(null);
@@ -207,6 +214,18 @@ export function CadViewer({
       setOutlineNotice('외곽선 생성 OFF: 비확정 선택·미리보기 및 진행 중 계산이 취소되었습니다. 임시 확정 결과와 JSON 내보내기는 유지됩니다.');
     }
     dispatchApp({ type: 'set-outline-tool', enabled });
+  }
+  /** General selection and generated-only targeting are independent of U3. */
+  function changeCanvasMode(next:'pan'|'objects'|'generated') {
+    if (!outlineAvailable) return;
+    if (outlineEnabledRef.current) {
+      outlineEnabledRef.current=false;
+      stopOutlineEditing();
+      dispatchApp({type:'set-outline-tool',enabled:false});
+      setOutlineNotice('외곽선 생성을 종료하고 일반 객체 선택으로 전환했습니다. 미확정 결과는 취소되었습니다.');
+    }
+    manager.current?.setSelectionMode(next);
+    setCanvasMode(next);
   }
   function selectionMode(value:'pan'|'select') {
     if (!outlineEnabledRef.current || !outlineAvailable) return;
@@ -228,10 +247,10 @@ export function CadViewer({
       }
     }
   }
-  function focusSavedOutline(id:string) {
+  function focusSavedOutline(id:string,additive=false) {
     if(!treeAvailable)return;
-    if(!manager.current?.focusSavedOutline(id)){
-      setOutlineNotice('해당 외곽선의 WCS 경계를 계산할 수 없어 이동하지 않았습니다.');
+    if(!manager.current?.focusSavedOutline(id,additive)){
+      setOutlineNotice('숨김 처리된 외곽선이거나 유효한 WCS 경계가 없어 선택·이동하지 않았습니다.');
       return;
     }
     syncSavedOutlines();
@@ -366,6 +385,7 @@ export function CadViewer({
           return new ThreeDxfViewerAdapter(container.current,{
             versionId,sourceSha256,
             onSelection:value=>{if(active && outlineEnabledRef.current)setOutlineSelection(value);},
+            onObjectSelection:refs=>{if(active){setCanvasSelection(refs);syncSavedOutlines();}},
             onPreview:(value,error)=>{if(active && outlineEnabledRef.current){setPreview(value);setPreviewError(error??null);}},
             onSaved:count=>{if(active){setSavedCount(count);syncSavedOutlines();}},
           });
@@ -432,6 +452,9 @@ export function CadViewer({
           ? '검증된 원본 SHA-256 및 선택 가능한 외곽선 인덱스가 필요합니다.'
           : null;
   const treeAvailable=treeUnavailable===null;
+  const editCapability=canvasEditCapability(canvasSelection,{versionId,sourceSha256});
+  const sourceCount=canvasSelection.filter(ref=>ref.origin==='SOURCE').length;
+  const generatedCount=canvasSelection.length-sourceCount;
 
   return <div className="space-y-3">
     <ViewerAppShell
@@ -550,7 +573,39 @@ export function CadViewer({
         </>
       }
       tools={
-        appState.outlineToolEnabled && outlineAvailable && outlineInfo ? <div
+        outlineAvailable || (renderer === 'three-dxf-viewer' && format === 'DXF' && state.ready && savedCount > 0) ? <>
+          {outlineAvailable && <div data-testid="cad-object-selection-tools"
+            className="flex flex-wrap items-center gap-2 border-b border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-800">
+            <strong>객체 선택 (E1)</strong>
+            <Button size="sm" variant={canvasMode==='pan'&&!appState.outlineToolEnabled?'default':'outline'}
+              data-testid="canvas-mode-pan" aria-pressed={canvasMode==='pan'&&!appState.outlineToolEnabled}
+              onClick={()=>changeCanvasMode('pan')}>탐색 (Pan)</Button>
+            <Button size="sm" variant={canvasMode==='objects'&&!appState.outlineToolEnabled?'default':'outline'}
+              data-testid="canvas-mode-objects" aria-pressed={canvasMode==='objects'&&!appState.outlineToolEnabled}
+              onClick={()=>changeCanvasMode('objects')}>원본·생성 선택</Button>
+            <Button size="sm" variant={canvasMode==='generated'&&!appState.outlineToolEnabled?'default':'outline'}
+              data-testid="canvas-mode-generated" aria-pressed={canvasMode==='generated'&&!appState.outlineToolEnabled}
+              onClick={()=>changeCanvasMode('generated')}>생성 개체만 선택</Button>
+            <Button size="sm" variant="outline" disabled={!canvasSelection.length}
+              onClick={()=>manager.current?.clearCanvasObjectSelection()}>통합 선택 해제</Button>
+            <span data-testid="canvas-selection-count">
+              선택 {canvasSelection.length}개 · 원본 {sourceCount}개 · 생성 {generatedCount}개
+            </span>
+            <span data-testid="canvas-edit-gate" data-edit-enabled={editCapability.canEdit ? 'true' : 'false'}
+              className={editCapability.canEdit?'font-medium text-teal-800':'font-medium text-amber-800'}>
+              {editCapability.canEdit?'생성 개체 편집 대상':'편집 불가 · 읽기 전용'} — {editCapability.reason}
+            </span>
+            {canvasSelection.length>0 && <details>
+              <summary>통합 선택 참조 ({canvasSelection.length}건)</summary>
+              <ul className="max-h-24 overflow-y-auto pl-2">
+                {canvasSelection.slice(0,25).map(ref=><li key={ref.origin+':'+ref.id}>
+                  {ref.origin==='SOURCE'?'SOURCE · 원본 (읽기 전용)':'GENERATED · 생성 (로컬 편집 대상)'}
+                  {' · '}{ref.id.slice(0,64)}
+                </li>)}
+              </ul>
+            </details>}
+          </div>}
+          {appState.outlineToolEnabled && outlineAvailable && outlineInfo ? <div
         data-testid="cad-outline-tools"
         className="bg-white p-2 text-xs text-slate-800"
       >
@@ -608,7 +663,8 @@ export function CadViewer({
           <span>생성 도구 OFF · 확정된 Overlay는 계속 표시됩니다.</span>
           <Button size="sm" variant="outline" onClick={exportOutlines}>JSON 내보내기 ({savedCount})</Button>
         </div>
-      ) : null
+      ) : null}
+        </> : null
       }
       status={
         <>
