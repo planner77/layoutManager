@@ -1,9 +1,10 @@
 # ChangeLog
 
-## 2026-10-25 — Issue #68 GitHub Actions 실행명 개선 (배포 기능 변경 없음)
+## 2026-10-25 — Issue #68 GitHub Actions 실행명 개선 / 메타데이터 GHCR 게시 제외
 
-- Added: PR CI, Main/GHCR, Release의 최상위 `run-name`; 수동 PR CI `issue_ref` / `run_description` 입력. 신규 PR/squash 제목은 `#Issue | 설명`, 이슈 없는 경우 `NO-ISSUE | 설명`, 비정형은 `ISSUE-UNKNOWN`으로 표기한다.
-- Compatibility: 기존 workflow trigger/jobs/권한/concurrency/GHCR 이미지 pair 계약 불변, 앱 version 및 database 변경 없음. 새 Run에서만 적용되고 CI/게시 성공을 의미하지 않는다. [Issue68](Issue68.md), ADR-038, [Operation](Operation.md).
+- Added: PR CI, Main CI, Release의 최상위 `run-name`; 수동 PR CI `issue_ref` / `run_description` 입력. 신규 PR/squash 제목은 `#Issue | 설명`, 이슈 없는 경우 `NO-ISSUE | 설명`, 비정형은 `ISSUE-UNKNOWN`으로 표기한다.
+- Release safety: 신규 `release-scope` Job이 main의 Markdown/Workflow YAML만 포함하는 변경을 감지하면 GHCR Publish Job을 skip한다. Tag push 및 런타임 변경은 기존 GHCR 이미지 pair 계약을 유지하며, 확인 불가능한 비교 기준은 게시 전에 실패 처리한다.
+- Compatibility: 기존 workflow trigger/권한/concurrency/이미지 페어 빌드/게시 Step은 불변, 단 조건부 게이트 Job 추가. 앱 version 및 database 변경 없음. 새 Run에서만 적용되고 CI/게시 성공을 의미하지 않는다. [Issue68](Issue68.md), ADR-038, [Operation](Operation.md).
 
 
 ## v0.34.0 PR #64 검증·병합 및 릴리스 시작 근거 (2026-10-25)
