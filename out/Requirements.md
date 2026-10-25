@@ -1,5 +1,13 @@
 # 상세 요구사항
 
+## Issue #51 / E1 v0.37.0 — SOURCE·GENERATED 통합 선택 (2026-10-25)
+
+- **FR-E1-01 / AC1:** SOURCE(#31 검증된 WCS/Handle 참조)와 GENERATED(현재 브라우저에서 확정된 Overlay) 선택을 통합하되 Origin·Version·SHA·불변 UUID로 식별하고 선택/강조/개수와 Tree(#43)를 일치시킨다. 기존 local-N JSON v1/v2 식별자는 호환성 때문에 변경하지 않는다.
+- **FR-E1-02 / AC2:** 원본 SOURCE와 혼합 선택은 전체 편집 거부/읽기 전용, GENERATED-only Ref만 `canEdit` (실제 Delete/Translate/Rotate/Undo는 E2~E5 이후). 중복·위조 ID/다른 버전은 fail-closed.
+- **FR-E1-03 / AC3:** 원본 레이어/Geometry Index 정책을 보존하고 GENERATED는 보이는 Polygon/MultiPolygon/Hole의 WCS hit/영역 선택, Ctrl/⌘ 토글·드래그 방향·Space 임시 Pan/ESC를 지원. 숨김·삭제와 기존 선택을 동기화하며 Preview는 선택 불가.
+- **FR-E1-04 / AC4~5:** Pan·일반 객체·생성 외곽선 Source·Generated 전용 모드 분리. Reload/Renderer/Version/dispose 폐기. Manager/Adapter 계약으로 E2~E6 재사용. DXF+three만 지원, DB/API/원본 파일/Current 수정 금지. 수용 추적 [Issue51](Issue51.md), TC-E1-UNIT-001~002/E2E-001~003.
+
+
 ## Issue #43 / U6 v0.36.0 — 외곽선 트리·Overlay 표시 (2026-10-25)
 
 - **FR-U6-01/AC-U6-01:** 현재 Version의 SavedOutline만 ID 기반 업무 타입별 그룹(수량·이름·kind)으로 구성하고 기존 미분류 v1은 legacy group. 실 서버 scoped catalog(#65) 부재 시 가상 업무 타입을 임의로 만들지 않는다. 비활성/삭제 타입의 과거 표시용 이름 스냅샷 유지.
