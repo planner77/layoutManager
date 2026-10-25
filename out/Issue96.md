@@ -1,5 +1,12 @@
 # Issue #96 — 로컬 계정·세션·Role/Site·감사 공통 기반
 
+## G0 #102 Owner 5개 업무 정책 승인 — 최우선 경계 (2026-10-25)
+
+[Issue102](Issue102.md) / [ADR-051-R1](Decisions.md): 사내망의 **기존 공개 도면 GET/Viewer/원본 다운로드는 익명 허용**하며 해당 경로에는 UserSiteGrant로 Site 읽기 기밀성을 주장하지 않는다. **Current 지정은 로그인한 Editor 이상 + 담당 Site, 기존 도면 Version 삭제는 로그인한 Editor 이상 + 담당 Site + 기존 삭제 비밀번호**(AND)로 G7 이후 적용할 정책이 승인됐다. Admin도 Site 자동 전체 접근 없음.
+최초 Admin 생성·단발 복구 실행은 **지정 사내 운영 담당자**, 운영 책임은 Owner. Audit 365일 유지 후 만료 기록 정리 원칙만 승인; **자동 파기·백업본 세칙은 후속 #106/#108/#109**에서 확정 후 구현. 도면 `POST` 등록은 **Editor 이상+담당 Site**로 G0-BIZ-06 Owner 추가 승인.
+이 결정은 기존 #96 D1~D5 인증/업무 Role/Scope/Audit의 **쓰기 및 미래 영속 API**에 적용하는 것이며, 기존 익명 CAD 읽기까지 인증 강제하는 기존 제안은 명시적으로 대체한다. 신규 Outline/Memo/Type/Logs GET/관리 API의 익명 허용 또는 운영 기능 활성화를 승인하지 않는다. G0 정책/문서 PR과 G7 운영 Go/No-Go 별개, 현재 API·Schema·Nginx/Compose·DB 및 운영 기능 OFF 상태 불변.
+
+
 ## G1 #103 — 격리 User/Session/Grant/Audit 물리 모델 및 원자성 (2026-10-25)
 
 - [Issue #103](https://github.com/planner77/layoutManager/issues/103)에서 User/AuthSession/Role·Site·Special Grant/AuditEvent/RecoveryNonce의 **비운영 SQLite DDL, Prisma 참조 투영, Lock/Transaction 원자성 Fixture 및 9개 Integration 테스트**를 구현했다. 상세 [Issue103](Issue103.md), [ADR-051-G1](Decisions.md).

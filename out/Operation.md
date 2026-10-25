@@ -1,5 +1,17 @@
 # 운영·환경설정 초안
 
+## Issue #102 G0 — Owner 5개 업무 정책에 따른 운영 절차 초안 (2026-10-25)
+
+**정책 승인 ≠ 운영 적용.** [Issue102](Issue102.md)/[ADR-051-R1](Decisions.md) 최우선 Owner 결정.
+- **CAD 열람:** 사내망 사용자는 로그인 없이 기존 도면 목록·검색/위치·현재/과거 Version·Viewer·원본 파일을 읽는다. 익명에게 별도 Reader/SiteGrant 계정을 부여하지 않으며 공개 도면은 Site별 읽기 비밀 보호 대상이 아님. 새 메모·외곽선 영속 조회와 로그/감사/관리 API는 공개하지 않는다.
+- **Current 지정:** 향후 G7 적용 시 로그인된 Editor/Admin과 **서버가 확인한 담당 Site/Version Grant** 모두 필요(없는 Site는 Admin도 거부). 로그인하지 않은 사용자가 보기 가능한 Current 설정 UI를 누르더라도 실제 쓰기 승인 전 로그인/권한 확인이 필요; 지금 UI/Route 수정 금지.
+- **Version 삭제:** 향후 G7 적용 시 **인증된 Editor/Admin + 담당 Site Grant + 현행 삭제 비밀번호** 모두 필수. 기존 삭제 비밀번호를 제거/변경하지 않고 기존 사용자·자동화 Script 및 Current/원본 데이터 호환 검증. 비밀번호만으로 Actor·Scope 인정 금지.
+- **도면 등록 POST:** Owner 승인 **로그인 Editor 이상+담당 Site**. 기존 공개 익명 조회의 쓰기 예외 아님. #106 업무권한·#108 정상 동작 시험 후 #109 별도 운영 승인까지 현행 Route 불변.
+- **Admin 책임:** Owner가 내부 운영 책임을 지고 지정 운영 담당자가 최초 Admin 초기화·단발 복구를 실행한다. 실제 이름·최초 부여 절차·Secret file 경로, 마운트·사용 후 폐기, 이력은 비공개 운영 SOP(#104)에만 보관. 재시작 시 계정/암호 덮어쓰기 금지.
+- **Audit 만료:** 365일 이내 Event 보존(append-only). 365일 지난 이력은 정리 방향 승인. 구체 만료 기준·수동/자동 실행·정리 시점·백업본 보존·복구 후 재정리와 예외는 **후속 승인 전 물리/자동 파기 금지** (#106/#108/#109).
+- **배포/회귀:** PROD Nginx / DEV direct/개발 데이터 분리 유지. 기존 익명 GET 성공, Current·Delete 인증/Scope/비밀번호 AND 및 관리 API 비공개, 외부 Client/북마크/삭제 비밀번호 UX, Backup→격리 Migration dry-run→실 Restore를 G6에서 시험. G7 별도 Owner Go/No-Go 전 현재 익명 GET·등록/Current/삭제 API·Nginx/Compose/.env/Prisma 변경 0.
+
+
 ## #103 후속 Owner 결정과 감사 파기 보류 (2026-10-25)
 
 #102 5개 업무 원칙(기존 CAD GET 익명, Current Editor/Admin+Site, Delete Editor/Admin+Site+삭제 비밀번호, Admin 초기/복구 지정 운영자, Audit 365일 경과 정리)은 승인됐으나 문서 PR #114의 병합/CI 성공은 아직 별도 확인이 필요하다. **Audit 물리·자동 파기 시각/주기/백업본 처리/복원 후 재출현 방지 SOP와 업로드 POST 권한은 미정**이다. 이번 G1 backup/restore는 합성 fixture만 대상이고 원장 행의 물리 파기 명령은 포함하지 않는다.

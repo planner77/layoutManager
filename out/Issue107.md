@@ -11,7 +11,7 @@
 - 상위 [#96](https://github.com/planner77/layoutManager/issues/96) / 선행 [#102](https://github.com/planner77/layoutManager/issues/102) / 후속 [#108](https://github.com/planner77/layoutManager/issues/108) / 승인 [#109](https://github.com/planner77/layoutManager/issues/109).
 - 상태: **G5 격리 Preview/Smoke 구현 및 PR #115 최종 HEAD CI SUCCESS, Main Squash 병합·GHCR v0.40.4 App/Migrator Pair 게시 완료, Issue #107 구현 단위 종료**. 단, 사내 실제 LAN 현장/로그인 Cookie/Upload/Backup·Restore 수용은 #108 G6 `NOT RUN`. `DESIGN.md`가 없으므로 AGENTS·Architecture·Decisions·Operation이 설계 기준이다.
 - Owner 전제: 외부망 인바운드 제한 조직망 소수 사용자. 공격방어·탈취 대응 하드닝/침투시험/상세 CIDR은 G5 필수조건이 아니다. HTTP 잔여 위험 `OWNER_ACCEPTED_SCOPE`는 안전성 PASS가 아니다.
-- 업무 정책(익명 기존 CAD GET/다운로드, Current=Editor+Site, Delete=Editor+Site+기존 암호, Admin 담당, Audit 365일)은 #102의 최신 Owner 결정이 출처이며 이 G5에서 기능/API 변경 없음.
+- 업무 정책(익명 기존 CAD GET/다운로드, **도면 등록 POST=Editor 이상+담당 Site**(G0-BIZ-06), Current=Editor+Site, Delete=Editor+Site+기존 암호, Admin 담당, Audit 365일)은 #102의 Owner 결정이 출처이며 이 G5에서 운영 기능/API 변경 없음.
 
 ## 분석·설계
 
@@ -56,4 +56,4 @@ docker compose -f src/deploy/g5/compose.preview.yml --profile g5-prod --profile 
 
 **GHCR 게시 증거:** 기존 v0.40.3 이미지 태그는 유지하고, 새 v0.40.4 App/Migrator Pair를 Main CI #40225537167에서 성공적으로 build·digest 확인·promote·OCI 계측 완료하였다. Git tag `v0.40.4` 존재. CI 성공은 사내 운영 적용·G7 승인이나 #108 현장 수용의 증거가 아니다.
 
-**추가 Owner 결정을 즉시 요구하지 않음:** 실제 Nginx upstream 주소/포트·WSL2 host publish·담당자·현장 실측 PC와 CAD 샘플은 G6/G7 비공개 설정 단계에서 결정. POST 등록 권한 전환은 #106/#109의 별도 미승인 업무 정책. 운영 인증/관리/영속 API 및 배포는 **G7 별도 Owner 승인 전 OFF**.
+**추가 Owner 결정을 즉시 요구하지 않음:** 실제 Nginx upstream 주소/포트·WSL2 host publish·담당자·현장 실측 PC와 CAD 샘플은 G6/G7 비공개 설정 단계에서 결정. POST 등록 권한은 #102의 G0-BIZ-06으로 **Editor 이상+담당 Site가 Owner 승인되었으며**, 실제 인증 Route 연결·시험은 #106/#108, 운영 적용은 #109의 별도 승인을 따른다. 운영 인증/관리/영속 API 및 배포는 **G7 별도 Owner 승인 전 OFF**.

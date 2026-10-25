@@ -1,5 +1,14 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #102 G0 — Owner 6개 업무 정책 추가 승인 (2026-10-25, ADR-051-R1)
+
+- **최신 최우선 결정:** [Issue102](out/Issue102.md) / [ADR-051-R1](out/Decisions.md)의 5개 업무 정책은 아래의 과거 `Reader+Site 조회 필수`, `Admin만 CAD 삭제`, `기존 삭제 비밀번호 폐지 검토`, `Audit 만료 후 정리 미승인` 등 제안보다 우선한다.
+- **익명 CAD 조회:** 사내 LAN의 기존 공개 CAD 목록·검색/위치·Current/Version 메타데이터·Viewer·원본 파일 GET/다운로드는 로그인/SiteGrant 없이 허용. 익명은 Reader 계정/가상 Actor가 아니고, 공개 도면에 사용자별 Site 읽기 기밀성 통제를 제공하지 않는다. **신규 Outline/Memo/Type 영속 API, Admin/로그·Audit 조회는 익명 공개 승인 대상이 아니다.**
+- **쓰기 업무권한:** Current 지정 `Editor 이상 + 담당 Site`; CAD Version 삭제 `Editor 이상 + 담당 Site + 기존 삭제 비밀번호` **모두 필요**. Admin도 Site 자동 권한 없음, Client의 Site·Actor claim/삭제 비밀번호만으로 권한 부여 불가. `POST /api/cad-files`는 **Owner 승인 로그인 Editor 이상+담당 Site(G0-BIZ-06)**이며 익명 CAD 조회 예외로 등록을 허용하지 않는다.
+- **운영 책임/보존:** 최초 Admin 단발 초기화·복구 실행 = 지정 사내 운영 담당자, 전체 운영 책임 = Owner. Audit 365일 보존 후 만료 기록을 정리하는 방향 승인; 정리 방식·주기·백업 보존/복구 세칙은 후속 승인 대상이며 **지금 자동/물리 파기 금지**.
+- **배포 금지:** 이 결정은 현재 익명 GET/삭제 암호/API 동작을 변경하지 않으며, 신규 Auth/DB/Prisma/Migration/Proxy/Nginx/Compose/.env 설정을 활성화하지 않는다. G1~G6 격리 구현/기능 시험 후 G7 별도 Owner Go/No-Go 전까지 운영 OFF. 테스트 미실행을 PASS로 기록 금지.
+
+
 ## Issue #107 — 구현 최종 판정 및 G6 인계 (2026-10-26)
 
 - **구현 완료:** [PR #115](https://github.com/planner77/layoutManager/pull/115) Squash 병합. 최종 PR HEAD `44132fcaa31aff0c4643edfeb8db6949d801ca5b`, main commit `142c4b9bc0bdb2ad0403fb1ee6640cf070d0bbbc`. Issue #107은 `closed/completed`이며 재구현하지 않는다.

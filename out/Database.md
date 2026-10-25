@@ -1,5 +1,15 @@
 # Database Schema — 단일 기준 문서
 
+## Issue #102 G0 — 익명 CAD Read와 인증된 Mutation·Audit 보존 계약 (2026-10-25)
+
+- 기존 도면 목록·위치·Version·Current·Viewer·원본 GET/다운로드는 Owner 승인 **익명 사내망 조회**. **익명 조회를 위해 User/AuthSession/UserSiteGrant/가상 Reader 행을 생성하지 않는다**. 공개 GET에는 Site 단위 사용자 기밀성 제약을 적용할 수 없음을 명시한다. 신규 CadOutline/Memo/Type 및 로그·Audit 영속 GET에는 자동 상속 금지.
+- `PUT Location.currentVersionId`는 로그인한 **Editor 또는 Admin + 해당 Location의 Site Grant** 및 서버 소유 Site/Version 연관 검증 필수. `DELETE CadFileVersion`은 같은 Actor/Grant 조건에 **기존 삭제 비밀번호 검증**을 더한 AND 조건. 삭제 비밀번호 단독/클라이언트 User·Role·Site claim은 인가 아님. Mutation 성공·거부와 Revision/Actor/Audit DB 원자성은 G1/G4/D3 후속에서 설계·시험.
+- 기존 `POST /api/cad-files` 권한은 **Editor 이상 + 담당 Site**로 Owner 승인(G0-BIZ-06); G7 이전 운영 Schema/Route 미변경.
+- Admin 단발 Bootstrap/Recovery/Nonce가 실제 사람 책임 대신 DB 초기화 재시도에 노출되어서는 안 된다. 운영 담당자 실행, Owner 책임(실명/Secret 경로 비공개); G2 #104 SOP와 원자성 필요.
+- Audit Event는 **365일 내 append-only 유지** 및 만료 이후 정리 대상이라는 방향이 승인됐다. 만료 판정(UTC), purge 주기/방법·권한, 운영 Backup에 잔존한 만료 원장의 Restore 후 처리, 예외 보존 정책은 **#106/#108/#109 승인 전 미확정**이다. 이번 문서 변경은 Prisma DDL·Migration·DB Job/데이터·복구 적용 **0**.
+- 정식 Schema 활성화와 공개 CAD API의 Auth 쓰기 전환은 G7의 별도 Owner 승인이 필요하며 DXF bytes/SHA, Current 0~1·Version FK, 기존 deletePassword 계약은 보존한다. [ADR-051-R1](Decisions.md), [Issue102](Issue102.md).
+
+
 ## Issue #103 P1 교정 — 감사 대상 사용자·Site 영구 추적 (2026-10-26)
 
 - PR #116 리뷰 [r4371167619](https://github.com/planner77/layoutManager/pull/116#discussion_r4371167619)에 따라 테스트 전용 `AuditEvent`에 `affected_user_id TEXT NULL`(User FK)와 `site_id TEXT NULL`(CadSite FK), `ix_g1_audit_affected_site_time` 색인 추가. `SITE_GRANTED`·`SITE_REVOKED`는 **두 컬럼 모두 필수**로 검사하며 다른 action은 `site_id IS NULL`을 요구한다.
