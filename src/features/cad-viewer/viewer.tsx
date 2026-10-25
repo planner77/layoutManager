@@ -12,6 +12,10 @@ import { ViewerAppShell } from '@/features/cad-viewer/viewer-app-shell';
 import { ViewerMenuBar } from '@/features/cad-viewer/viewer-menu-bar';
 import { OutlineTreePanel } from '@/features/cad-viewer/outline-tree-panel';
 import { GeneratedDeleteDialog } from '@/features/cad-viewer/generated-delete-dialog';
+import { CadMemoOverlay } from '@/features/cad-viewer/cad-memo-overlay';
+import { CadMemoEditor, type MemoEditorFields } from '@/features/cad-viewer/cad-memo-editor';
+import { createPreviewUuid } from '@/features/cad-viewer/preview-uuid';
+import { MemoSession, parseMemoWcsXY, type MemoDraft, type MemoWcsXY } from '@/domain/cad-memo';
 import {parseWcsTranslation,selectedTranslationIds} from '@/domain/generated-translate';
 import { initialViewerAppState, viewerAppReducer } from '@/features/cad-viewer/viewer-app-state';
 import { isLiveOutlineRequest, outlineToolUnavailableReason } from '@/features/cad-viewer/outline-tool-policy';
@@ -66,6 +70,56 @@ export function CadViewer({
   const layerMenuButton = useRef<HTMLButtonElement>(null);
   const outlineTreeMenuButton = useRef<HTMLButtonElement>(null);
   const manager = useRef<ViewerManager | null>(null);
+  const memoSession = useRef<MemoSession | null>(null);
+  const memoDragActive = useRef(false);
+  const viewEpoch = useRef(0);
+  const viewFrame = useRef(0);
+  const [viewRevision, setViewRevision] = useState(0);
+  const [memoCancelSignal, setMemoCancelSignal] = useState(0);
+  const [memos, setMemos] = useState<MemoDraft[]>([]);
+  const [memoPlacing, setMemoPlacing] = useState(false);
+  const [memoCandidate, setMemoCandidate] = useState<MemoWcsXY | null>(null);
+  const [memoSelectedId, setMemoSelectedId] = useState<string | null>(null);
+  const [memoFields, setMemoFields] = useState<MemoEditorFields>({title:'',content:'',x:'0',y:'0'});
+  const [memoError, setMemoError] = useState<string|null>(null);
+  const [memoDeleteArmed, setMemoDeleteArmed] = useState(false);
+  const getViewEpoch = useCallback(() => viewEpoch.current, []);
+  const onMemoGestureActive = useCallback((active:boolean) => { memoDragActive.current = active; }, []);
+  const onAdapterViewChange = useCallback(() => {
+    viewEpoch.current++;
+    if (memoDragActive.current) {
+      memoDragActive.current = false;
+      setMemoCancelSignal(previous => previous + 1);
+    }
+    if (!viewFrame.current) {
+      viewFrame.current = requestAnimationFrame(() => {
+        viewFrame.current = 0;
+        setViewRevision(previous => previous + 1);
+      });
+    }
+  }, []);
+  useEffect(() => () => { if(viewFrame.current) cancelAnimationFrame(viewFrame.current); }, []);
+  const memoScope = { versionId, sourceSha256 };
+  const getMemoSession = () => {
+    if (!memoSession.current || !memoSession.current.matches(memoScope)) {
+      memoSession.current = new MemoSession(memoScope);
+    }
+    return memoSession.current;
+  };
+  const resetMemos = useCallback(() => {
+    memoSession.current?.clear();
+    memoSession.current = null;
+    memoDragActive.current = false;
+    setMemoCancelSignal(previous => previous + 1);
+    setMemos([]);
+    setMemoPlacing(false);
+    setMemoCandidate(null);
+    setMemoSelectedId(null);
+    setMemoFields({title:'',content:'',x:'0',y:'0'});
+    setMemoError(null);
+    setMemoDeleteArmed(false);
+  }, []);
+  useEffect(() => { resetMemos(); }, [versionId, sourceSha256, resetMemos]);
   // Synchronously gate events before React's reducer has rendered the next frame.
   const outlineEnabledRef = useRef(false);
   const outlineRequestRevisionRef = useRef(0);
