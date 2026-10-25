@@ -14,7 +14,7 @@ import {parseOutlineAssignmentMetadata} from '../../domain/outline-assignment';
 import {canvasEditCapability,canvasObjectRef,createGeneratedId,validCanvasScope,type CanvasObjectRef} from '../../domain/canvas-object-selection';
 import {
   GeneratedDocument,generatedResult,
-  type GeneratedEntry,type GeneratedCommand,type Affine2D,
+  type GeneratedCommand,type Affine2D,
 } from '../../domain/generated-document';
 
 function release(group: THREE.Object3D) {
