@@ -1,5 +1,29 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-049 — #31 P4 GENERATED 외곽선 영속 ID·기하 검증·논리 삭제·메모 연계 (2026-10-25 / D0 Owner 정책 승인)
+
+- **상태:** Owner 업무 정책 확정 / 설계 계약만 승인. 구현·DB migration·Server GET/CRUD·릴리스 미승인; #31 OPEN. ADR-042/044/046/047의 브라우저 임시 작업 계약과 원본 DXF 불변은 유지한다.
+- **식별:** SOURCE는 변경 불가능한 DXF Version+SHA256+검증된 unique Handle+필요한 instancePath, GENERATED는 서버 발급 불변 UUID와 Version/SHA를 사용한다. 브라우저 UUID/local-N은 영속 ID로 인정하지 않으며 신규 저장 응답에서 매핑한다. 미확인/중복 Handle, unsupported OCS/BLOCK은 저장 참조 거부.
+- **외곽선 타입:** CONVEX/PRECISE `kind`(기하)와 전역 `OutlineType.id`(업무 분류)를 분리한다. #65 카탈로그는 전체 앱 공통, 서버에서 활성 타입과 ID/FK를 검증한다. 명칭의 Unicode case-fold/중복 세부값은 이 후속 DB 검증에서 확정.
+- **서버 소유 기하:** 신뢰되는 불변 원본 bytes SHA→Stable SourceRefs→WCS XY Canonical `baseGeometry`(기존 0.02 Drawing Unit 서버 고정 tolerance, 알고리즘 버전 명시)→허용된 Translate/Rotate 강체 2D affine `transform`→서버 `effectiveGeometry` 계산/검증. client geometry·JSON·raw affine·권한 claims를 그대로 신뢰하지 않는다. Scale/Shear/Mirror/Z/임의 vertex 수정은 초기 범위에서 금지하며 허용 범위·오차 초과는 실패로 처리한다. #54/#55 편집 결과는 이 확장 검증기 승인 뒤에만 서버 저장 가능; 현재 canonical-only attestation이 edited geometry를 승인하는 것은 아님.
+- **공동 편집/충돌:** 서버 확인된 Site·Version Scope에 속한 Editor는 작성자가 다르더라도 GENERATED 외곽선을 수정·논리 삭제할 수 있다. `createdById`는 불변, `updatedById` 및 revision은 매 변경 시 기록한다. atomic CAS(expectedRevision) 불일치=409, partial write 금지. 이는 메모(#83)의 Editor 정책까지 자동 승인하는 것이 아니다.
+- **삭제:** `status=DELETED`, `deletedAt/By` 등으로 논리 삭제하고 append-only 감사 이벤트를 보존한다. 정상 목록/선택·Export에서는 기본 제외; 물리 파기·복구 API는 별도 Owner 결정 전 금지. Version 삭제 시 FK/감사 보존 정책은 미확정이므로 삭제 경로 확장 구현을 차단한다.
+- **메모 참조:** 서버 영속 GENERATED가 삭제되면 동일 트랜잭션에서 연결된 메모의 마지막 정상 WCS 위치를 보존하고 참조를 해제해 `BROKEN_ANCHOR`로 표시한다. 자동 다른 객체 재스냅/메모 동반 삭제 금지. #83/#84가 구현되기 전 기존 Browser 생성 객체의 스냅은 세션 전용이고 서버 보존을 주장하지 않는다.
+- **표시:** 외곽선 개별/그룹 Show/Hide는 사용자 세션별 화면 상태이며 서버 공유 `CadOutline.visible`로 저장하거나 다른 사용자에게 전파하지 않는다. 새로고침/다중 탭 사이 상태의 지속 기간은 별도 결정; 트리 #73·Layer Visibility와 독립.
+- **미확정/차단:** 감사 보존 기간, Version 삭제 FK 및 고아 데이터 처분, 복구·물리 삭제, 세션 visibility lifetime, 실 DXF P0/P5 수용치, UUID 이관/legacy typed 정책. 필요한 결정과 구현·회귀·백업 승인 전 실제 CadOutline API/Prisma migration/운영 복원은 BLOCKED. 관련 #49/#54/#55/#56/#65/#71/#73/#83/#84/#91.
+- **범위:** DXF + three-dxf-viewer 우선, DWG와 dxf-viewer의 확대 해석 금지. 원본 DXF, Current Version, 로컬 E2 Undo/Redo, JSON v1/v2 계약 유지. [Issue31](Issue31.md), [Database](Database.md), [Architecture](Architecture.md), [TestPlan](TestPlan.md).
+
+## ADR-048 — #31 P4 사내 LAN HTTP·앱 로컬 계정 및 공통 Role/Scope/Audit (2026-10-25 / D0 Owner 정책 승인)
+
+- **상태/목적:** Owner가 **인터넷 공개망 인바운드 제한 + 여러 PC가 서버 IP의 HTTP로 접속하는 사내 LAN**을 선택하고, 계정을 주로 업무 권한·작업자 식별·변경 이력 관리에 사용하기로 확정했다. 앱 로컬 계정과 서버 관리 세션으로 통일; OIDC/SSO/MFA/HTTPS/TLS 구축은 이번 범위에서 제외. 과거 #31/#41/#60/#65/#83의 OIDC 우선 또는 인증 방식 미정 기록은 역사 기록이며 본 Owner 결정이 우선한다.
+- **위험 경계:** 일반 `http://서버IP:포트`는 암호화되지 않아 사내 LAN에서 비밀번호·세션 쿠키 도청/변조 위험이 남는다. 외부 인바운드 차단·방화벽/허용 LAN 대역·프록시 백엔드 포트 비노출은 표면을 줄일 뿐 TLS와 동등하지 않다. `Secure` 쿠키를 일반 HTTP 주소에 강제로 사용해 작동한다고 주장하지 않는다. `HttpOnly`, `SameSite`, 검증된 Host/Origin 및 CSRF 방어, 서버 전용 랜덤 세션 토큰, 비밀번호 단방향 해시, 세션 폐기, 기본 속도 제한을 요구한다. 로그인·세션으로 얻은 감사 주체 신뢰 수준에 해당 전송 위험을 명시한다.
+- **단일 인증 계약:** `User`(불변 ID), 서버 세션, Reader/Editor/Admin, 사용자가 허가받은 Site(및 검증된 Version 종속 관계) 범위, `requirePermission(action, version/site)` 공통 서버 권한 추상화를 적용한다. `X-User/X-Role`, 요청 body의 actor/scope, 기존 CAD 삭제 비밀번호, 단순 UI 숨김은 인증·권한 근거로 인정하지 않는다. 기본 거부/Role+Scope 모두 만족 필요. `logs:read`는 별도 권한으로 #60이 연결.
+- **Global Type:** `OutlineType` 카탈로그는 전체 앱 공통. Admin만 관리; Reader/Editor가 업무 타입 이름을 읽어도 Outline/Version 접근은 개인 Scope로 제한한다. Reader 조회, Editor 담당 Scope 내 GENERATED 공동 편집, Admin은 정책상 허용 범위 검증 이후 관리(무조건 모든 사업장 접근을 뜻하지 않음).
+- **감사/동시성:** Create/Edit/Delete/Role·Scope 변경의 actor immutable ID, target Version·ID, before/after revision, action/outcome/UTC/requestId를 보존; 민감 본문·비밀번호·세션·전체 CAD Geometry는 원시 운영 로그에 기록 금지. 보존 기간·접근·복구는 추후 결정, 값 임의 지정 금지.
+- **별도 결정 필요:** 최초 Admin 발급/계정 복구, 비밀번호 최소 정책·해시 구성값, 세션 만료/동시 세션·재로그인, LAN 허용 대역/HTTP 잔여 위험 수용 절차, Role·Scope 부여 담당자, 감사 보존 기간/조회 주체, Version 삭제 보존/복구. 승인된 기본 방향과 운영 활성화 승인을 구별한다.
+- **게이트:** D0는 설계만. 공통 auth/role/scope/audit 구현 및 정책 세부 결정·테스트/운영 승인 전 관리자·메모·로그·외곽선의 신규 영속 GET/쓰기 API 및 DB migration/복원을 금지한다. 기존 공개 도면 읽기 API까지 일괄 차단하는 변경은 하지 않는다. 문서/테스트 준비만 진행 가능. [Issue31](Issue31.md), [Operation](Operation.md), [Database](Database.md), #60/#65/#83.
+
+
 ### ADR-047 보완 — Camera 변경 시 GENERATED 드래그 후보 임계값 이전이라도 폐기 (#54 PR #92)
 
 - [P1 리뷰](https://github.com/planner77/layoutManager/pull/92#discussion_r4370223581)의 원인은 `SelectionController.cancelGeneratedDrag`가 `down.moving`만 검사해 pointerdown 후 5px 미만의 후보를 wheel/Resize 이후에도 유지한 것이다. 화면/카메라 변환 경계가 바뀌면 이전 `down.world`는 유효하지 않다.
