@@ -1,5 +1,15 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #54 / PR #92 — #76 main 통합 및 검증 기록 (2026-10-25)
+
+- 수정된 #54 HEAD `6845c4b4`: [PR CI 40181171710](https://github.com/planner77/layoutManager/actions/runs/40181171710) **completed/success**, P1 thread resolved. #76 [main 14111b45](https://github.com/planner77/layoutManager/commit/14111b45a36907245342751d9d1a139b5215474d)는 문서·PR CI 비차단 read-only audit만 변경하며 Viewer/DB/GHCR 런타임 변경 없음. #54와 #76 문서 및 CI 작업을 모두 보존하고 main을 통합한다. 병합 HEAD의 새 PR CI 성공은 별도 확인해야 한다.
+
+## Issue #76 — Squash Merge 관리자 설정·PR CI 읽기 전용 진단 (2026-10-25)
+
+- #74 Main 실행명 fallback 구현과 저장소 영구 설정을 분리한다. 2026-10-25 REST GET에서는 `allow_squash_merge=true`, `squash_merge_commit_title=COMMIT_OR_PR_TITLE`, `squash_merge_commit_message=COMMIT_MESSAGES`로 확인되어 **#76 관리자 적용은 미완료**다.
+- PR CI Verify의 새 read-only audit는 정확히 `true/PR_TITLE/BLANK`만 PASS라 표시하고 불일치 시 **NOT APPLIED**, API 장애 시 **NOT VERIFIED**로 경고한다. 경고가 non-blocking인 것은 앱 CI 보호를 위한 것이며 설정 수용 PASS를 뜻하지 않는다. 관리자 UI 변경 및 실제 새 Main squash subject/body/run-name 확인이 완료 조건이다.
+- 상세 [Issue76](out/Issue76.md), [Operation](out/Operation.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md), [ADR-041](out/Decisions.md). `DESIGN.md` 부재로 [Architecture](out/Architecture.md) 대체. Workflow/GHCR scope와 `src/package.json` 버전, DB/API/Viewer는 불변.
+
 ## Issue #54 / PR #92 — CI 성공 후 P1 카메라 변환 경계 보완 (2026-10-25)
 
 - [CI #40177837419](https://github.com/planner77/layoutManager/actions/runs/40177837419): **수정 전 HEAD** `2f57a642197f7d22d457ad65a70eda76b8ba7df4`의 Verify(121122289273)·Docker(121122289396) 모두 SUCCESS. 이 성공을 새로운 리뷰 수정 HEAD의 테스트 증거로 재사용하지 않는다.
@@ -311,6 +321,7 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 | [Issue66](out/Issue66.md) | Migrator 최소 의존성·크기 측정/OCI manifest·복구 계약 | Docker migrator/CI/GHCR 및 버전·패키징 변경 시 |
 | [Issue28](out/Issue28.md) | 운영 이미지 경량화·Migration 분리·측정/롤백 | Dockerfile, Standalone, Compose, GHCR 변경 시 |
 | [Issue24](out/Issue24.md) | 기준정보 계층·이관·층별 Current 요구/설계/AC | 기준정보·계층 등록·제품 조회·legacy 이관 변경 시 |
+| [Issue76](out/Issue76.md) | GitHub Squash 기본 메시지 관리자 설정·CI 진단·Main 실행명 확인 | 저장소 설정·PR/Main CI run-name 변경 시 |
 | [README](README.md) | 사용자/개발자 프로젝트 안내 | 기능·구조·설정·실행방법 변경 시 |
 
 추가 Markdown 문서가 필요하면 이 표에 목적과 필수 참조 시점을 등록한다. 상세정보를 여러 문서에 독립적으로 복제하지 않는다.

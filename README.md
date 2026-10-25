@@ -1,5 +1,11 @@
 # CAD Web Viewer P.O.C.
 
+## Issue #76 — GitHub Squash Merge 커밋 메시지 기본값 (운영 관리자 조치 필요)
+
+- GitHub 저장소 Settings → General → Pull Requests → **Allow squash merging / Default commit message: Pull request title**로 지정해야 합니다. 현재 REST 확인값 `COMMIT_OR_PR_TITLE / COMMIT_MESSAGES`는 목표 `PR_TITLE / BLANK`와 달라 **미완료**입니다.
+- PR CI는 이를 읽기 전용으로 조회해 `PASS`, `NOT APPLIED`, `NOT VERIFIED` 중 하나를 경고/Job Summary로 표시합니다. 경고 자체는 다른 PR CI를 차단하지 않으며, 실제 설정 변경·새 Main CI 단일행 확인을 대체하지 않습니다. 세부 절차 [Issue76](out/Issue76.md) / [Operation](out/Operation.md).
+- 앱 버전, GHCR 게시 범위, 기존 #74 multiline 보호, DXF/DWG 데이터는 변동 없습니다.
+
 ## v0.40.0 — Issue #54 생성 개체 WCS 이동·그룹 이동 (E4)
 
 - **DXF + three-dxf-viewer의 생성 확정 객체 전용:** 하단에서 **생성 개체만 선택** 또는 **원본·생성 선택**으로 GENERATED 개체 하나 또는 여러 개를 고른 뒤 **ΔX/ΔY → 이동 적용**을 누릅니다. 입력값은 도면 WCS XY 단위로 적용하며, 단위 정보가 없으면 **단위 미상**으로 표시합니다. 예: (10,20)에서 (+3,-5) 입력 시 (13,15).

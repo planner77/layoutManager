@@ -1,5 +1,18 @@
 # PR/Main CI 실패 원장
 
+## Issue #54 / PR #92 — #76 최신 main에 의한 문서 충돌·정렬 (2026-10-25)
+
+- **사전 검증:** `6845c4b4e1e22157b64ce05215e67710c9a3a985`의 [PR CI 40181171710](https://github.com/planner77/layoutManager/actions/runs/40181171710) `completed/success`; P1 리뷰 #4370223581 해결. 이전 #40177837419 역시 성공이나 이전 HEAD 전용.
+- **충돌:** #54 브랜치가 [main 14111b45](https://github.com/planner77/layoutManager/commit/14111b45a36907245342751d9d1a139b5215474d)(#76 관리자 Squash 정책 읽기 전용 PR CI 감사)보다 behind 1, mergeable=false. main 변경은 `.github/workflows/pr-ci.yml`, AGENTS/README/FailureLedger/Issue76/Operation/TestPlan/TestReport 등 **메타데이터·문서만**, Viewer/DB/package version/GHCR 빌드 변화 없음.
+- **조치:** #54 E4 제품 코드·테스트·ADR-047·버전 0.40.0을 유지하고 main #76 workflow 및 새 문서를 채택. 공유 문서는 두 이슈 섹션을 보존해 병합. 새 HEAD의 synchronize CI를 별도 판정하며 성공한 이전 HEAD를 통합 HEAD의 검증으로 전용하지 않는다. 이는 **CI 실패가 아니라 main 동시 변경으로 인한 충돌**이다. Main CI/GHCR app+migrator version pair는 최종 병합 push가 트리거하며 시작/게시 성공을 구별한다.
+
+## Issue #76 / PR #89 — #53 main 선행 병합으로 문서 충돌 (2026-10-25 KST)
+
+- **기존 PR 성공:** [PR CI 40174728906](https://github.com/planner77/layoutManager/actions/runs/40174728906), HEAD `53fd648f8ec4daa2c7979245d441f82da51cf676`, attempt 1, `completed/success`. #53 병합 **전**의 성공으로서 새 통합 HEAD의 검증에 전용 불가.
+- **충돌:** #53 [main 3ff1f94b](https://github.com/planner77/layoutManager/commit/3ff1f94b3fbf11737a827536e223114ea4ca0e96) 반영 후 PR #89 `behind=1`, `mergeable_state=dirty`. `AGENTS.md`, `README.md`, `out/TestPlan.md`, `out/TestReport.md` 동시 상단 삽입 충돌이다. 런타임 파일 충돌 없음.
+- **보완:** 최신 main #53 v0.39.0 Generated Delete/테스트/설계 전부 보존하고 #76의 read-only audit·운영 가이드·문서 인덱스를 2-parent merge로 통합. 관리자 repository squash default는 당시 `COMMIT_OR_PR_TITLE/COMMIT_MESSAGES`로 **미적용**이므로 이슈 수용 조건 완료로 표시 금지.
+- **후속:** 통합 HEAD PR CI 성공·리뷰 0·충돌 0 재확인 후 `squash`, 제목 `#76 | Squash 기본 메시지 정책 진단 및 운영 가이드`, 빈 본문으로 병합. Markdown/Workflow-only GHCR `release-scope`에 의해 이미지 게시 제외. 본 건은 **CI 테스트 실패가 아닌 동시 작업 충돌**.
+
 ## Issue #54 / PR #92 — 최초 CI PASS 뒤 발견된 P1 리뷰 (CI 실패 아님, 2026-10-25)
 
 - **최초 CI:** [Run 40177837419](https://github.com/planner77/layoutManager/actions/runs/40177837419), HEAD `2f57a642197f7d22d457ad65a70eda76b8ba7df4`, attempt 1, completed/**success**. Verify Job `121122289273` 및 Docker Job `121122289396` 모두 success. CI 실패로 분류하지 않는다.
