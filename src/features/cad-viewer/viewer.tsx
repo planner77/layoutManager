@@ -913,6 +913,19 @@ export function CadViewer({
               }
             }}
           />
+          {memoAvailable && <CadMemoOverlay
+            memos={memos}
+            selectedId={memoSelectedId}
+            placing={memoPlacing}
+            getManager={getManager}
+            viewRevision={viewRevision}
+            getViewEpoch={getViewEpoch}
+            cancelGestureSignal={memoCancelSignal}
+            onPlace={placeMemo}
+            onSelect={selectMemo}
+            onMove={moveMemoFromCanvas}
+            onGestureActive={onMemoGestureActive}
+          />}
           {contextMenu && <div data-testid="generated-context-menu" data-canvas-edit-escape-layer="context" role="menu"
             aria-label="생성 개체 컨텍스트 작업"
             className="fixed z-[70] rounded border border-slate-300 bg-white p-2 text-slate-800 shadow-lg"
@@ -931,7 +944,26 @@ export function CadViewer({
         </>
       }
       tools={
-        outlineAvailable || (renderer === 'three-dxf-viewer' && format === 'DXF' && state.ready && savedCount > 0) ? <>
+        outlineAvailable || memoAvailable || (renderer === 'three-dxf-viewer' && format === 'DXF' && state.ready && savedCount > 0) ? <>
+          {memoAvailable && <div data-testid="cad-memo-status"
+            className="flex flex-wrap items-center gap-2 border-b border-amber-200 bg-amber-50 px-3 py-1 text-xs text-slate-800">
+            <strong>CAD 메모 M1 · {memos.length}/100</strong>
+            <span>WCS 고정 · 임시 세션만 · Reload/Renderer/Version 변경 시 소실 · Snap/저장/작성자 미지원</span>
+            {memos.length>0 && <span data-testid="cad-memo-latest">
+              {memos.slice(-5).map(item=><button key={item.id} type="button"
+                className="mr-1 rounded border border-amber-500 bg-white px-1.5 py-0.5 hover:bg-amber-100"
+                onClick={()=>selectMemo(item.id)}>{item.title.slice(0,24)}</button>)}
+            </span>}
+          </div>}
+          {memoAvailable && (memoPlacing || memoCandidate || memoSelectedId) && <CadMemoEditor
+            fields={memoFields} onFieldsChange={setMemoFields}
+            placing={memoPlacing} newAnchor={memoCandidate} selectedId={memoSelectedId}
+            count={memos.length} error={memoError} confirmDelete={memoDeleteArmed}
+            onConfirmCoordinate={placeMemoAtEnteredWcs} onCreate={createMemo}
+            onSaveText={saveMemoText} onApplyPosition={moveMemoFromFields}
+            onArmDelete={()=>setMemoDeleteArmed(true)} onDelete={deleteMemo}
+            onCancel={closeMemoEditor}
+          />}
           {outlineAvailable && <div data-testid="cad-object-selection-tools"
             className="flex flex-wrap items-center gap-2 border-b border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-800">
             <strong>객체 선택 · 생성 개체 로컬 편집 (E3/E4)</strong>
@@ -1072,6 +1104,8 @@ export function CadViewer({
           {outlineNotice && <p data-testid="outline-tool-notice" className="text-xs text-teal-800">{outlineNotice}</p>}
            {deleteError && <p data-testid="generated-delete-error" role="alert" className="text-xs text-red-700">{deleteError}</p>}
            {translateError && <p data-testid="generated-translate-error" role="alert" className="text-xs text-red-700">{translateError}</p>}
+          {memoError && !memoPlacing && !memoCandidate && !memoSelectedId &&
+            <p data-testid="cad-memo-status-error" role="alert" className="text-xs text-red-700">{memoError}</p>}
           {outlineUnavailable && <p data-testid="outline-tool-unavailable" className="text-xs text-slate-500">{outlineUnavailable}</p>}
         </>
       }
