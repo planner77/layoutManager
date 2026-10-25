@@ -1,5 +1,12 @@
 # PR/Main CI 실패 원장
 
+## Issue #42 / PR #70 — 최신 main #68 병합 충돌 대응 (2026-10-25 KST)
+
+- 원장 기록을 푸시한 뒤 [main #68, commit 38f05e0f](https://github.com/planner77/layoutManager/commit/38f05e0f2633ca15bfd689b03846d4f0b13f249a)의 CI workflow/AGENTS/ChangeLog/Decisions/TestPlan/Issue68/Operation 변경으로 PR이 일시적으로 behind=1 및 mergeable=dirty가 됨. 기존 #42 코드와 #68 기능은 독립이며 공통 Markdown 전면 삽입부 충돌.
+- **해결:** #68의 원본 Git blob으로 변경된 workflow/Issue68/Operation을 인수하고 공통 4개 문서 AGENTS/ChangeLog/Decisions/TestPlan에는 두 이슈의 섹션을 모두 보존. 중복 ADR-038을 #68에 유지하고 #42는 ADR-039로 변경. 두 부모 merge commit을 non-force fast-forward 반영해 최신 main과 정렬. PR 제목을 #68 규칙에 따라 `#42 | U5 외곽선 업무 타입 지정·JSON v2 안전 계약`으로 변경.
+- 실패 Run 40157734271, Job 121062609278, Artifact 12585362916 및 최초 수정 a5d9f843 기록은 삭제 없이 아래 기록에 계속 보존한다. 병합 후 신규 CI 성공을 미리 주장하지 않는다.
+
+
 ## Issue #42 / PR #70 — 최초 CI U3/U5 도구 높이 연계 E2E 화면 밖 드래그 (2026-10-25 KST)
 
 - **실패 실행 보존:** [PR #70](https://github.com/planner77/layoutManager/pull/70), [PR CI Run 40157734271](https://github.com/planner77/layoutManager/actions/runs/40157734271) (pull_request.opened, attempt 1, 원본 HEAD `526a1be98232e16d004f9d23915a051e2fca9e2a`), `completed/failure`. [검증 Job 121062609278](https://github.com/planner77/layoutManager/actions/runs/40157734271/job/121062609278) Step 12 **Playwright Chromium E2E 57 PASS / 1 FAIL**. npm ci, Prisma Client 생성, TypeScript, ESLint, Unit·Integration, DXF synthetic benchmark, production Build, Chromium 설치는 PASS. 이후 Legacy Migration E2E는 **SKIPPED**, 실패 artifact 업로드 성공. 별도 [Docker Runtime Job 121062609436](https://github.com/planner77/layoutManager/actions/runs/40157734271/job/121062609436)는 **SUCCESS**. E2E 실패를 Docker 실패로 분류하지 않는다.

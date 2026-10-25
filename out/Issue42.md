@@ -1,5 +1,11 @@
 # Issue #42 — U5 외곽선 업무 타입 지정·이름·JSON 메타데이터 (v0.35.0)
 
+## #68 main 변경 통합 및 ADR 번호 충돌 해결 (2026-10-25)
+
+- [main commit 38f05e0f](https://github.com/planner77/layoutManager/commit/38f05e0f2633ca15bfd689b03846d4f0b13f249a) 이후 PR #70은 뒤처짐 1건/mergeable dirty 상태였다. #68의 CI 실행명·GHCR 게시 안전 정책·Issue68/Operation 및 공통 문서 변경을 보존해 두 부모 merge commit으로 통합한다.
+- #68이 ADR-038을 선점하므로 U5 타입 정책 ADR은 **ADR-039**로 재번호한다. PR 제목도 `#42 | ...` 형식으로 변경했다. Force push/historical rewrite는 사용하지 않는다.
+
+
 ## PR #70 첫 PR CI 실패·교정 (2026-10-25)
 
 - [Run 40157734271](https://github.com/planner77/layoutManager/actions/runs/40157734271), HEAD `526a1be`: TypeScript/ESLint/Unit·Integration/DXF Benchmark/Build/Docker **PASS**. Chromium E2E 58개 중 **57 PASS/1 FAIL**, Legacy Migration **SKIPPED**. 실패는 기존 #31 `TC-OUT-E2E-001`의 두 번째 Canvas 영역 선택 (`선택 0개`).
