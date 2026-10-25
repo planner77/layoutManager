@@ -107,6 +107,26 @@ test('TC-U6-E2E-001: legacy tree, individual/group overlay visibility, focus and
   await expect(panel).toBeVisible();
   const box=await canvas.boundingBox();
   expect(box?.height).toBeGreaterThan(50);
+  // P2 regression: keyboard navigation must scroll only the tree viewport,
+  // not the outer CAD workspace, even in the 20dvh compact dock.
+  const scrollTopBefore=await page.evaluate(()=>window.scrollY);
+  const treeViewport=panel.getByTestId('outline-tree-items');
+  await expect(treeViewport).toBeVisible();
+  await group.focus();
+  await page.keyboard.press('End');
+  const last=panel.getByTestId('outline-tree-item').last();
+  await expect(last).toBeFocused();
+  const visible=await last.evaluate(node=>{
+    const viewport=node.closest('[role="tree"]');
+    if(!viewport)return false;
+    const item=node.getBoundingClientRect();
+    const container=viewport.getBoundingClientRect();
+    return item.top>=container.top-1 && item.bottom<=container.bottom+1;
+  });
+  expect(visible).toBe(true);
+  expect(await page.evaluate(()=>window.scrollY)).toBe(scrollTopBefore);
+  await page.keyboard.press('Home');
+  await expect(group).toBeFocused();
   await panel.getByRole('button',{name:'외곽선 목록 닫기'}).click();
   await expect(menu).toHaveAttribute('aria-pressed','false');
   await expect(menu).toBeFocused();

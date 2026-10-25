@@ -1,5 +1,12 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #43 / PR #72 — P2 키보드 가시성·CI 게이트 및 잔여 분리 (2026-10-25)
+
+- 기존 [CI Run 40161078593](https://github.com/planner77/layoutManager/actions/runs/40161078593), HEAD `5cd223cc2837fc5772154fd67138680263f159e4`: Verify(Typecheck/Lint/Unit/E2E/Legacy)/Docker jobs 모두 SUCCESS. 후속 코드 변경이 있으면 동일 CI 성공으로 대체하지 않는다.
+- [P2 #4369618943](https://github.com/planner77/layoutManager/pull/72#discussion_r4369618943): 320px/20dvh Tree의 키보드 선택 항목이 화면 밖인데 `preventScroll`이 자동 스크롤을 막는 문제. Tree viewport만 최소 scrollTop 조정, End/Home E2E 보강, Canvas/page scroll 비변경. PR 리뷰에 답변·resolve 후 최신 HEAD CI를 검증해야 병합 가능.
+- U6 Browser temporary Overlay 부분과 실제 Admin/영속 트리 AC를 구분한다. 남은 AC-U6-01/06은 [후속 #73](https://github.com/planner77/layoutManager/issues/73), 선행 #65/#71/#31 P4의 보안 승인 전 운영 구현 불가. [FailureLedger](out/FailureLedger.md), [Issue43](out/Issue43.md), TestPlan/Report 참조.
+
+
 ## Issue #43 U6 — 외곽선 트리·브라우저 Overlay (2026-10-25)
 
 - v0.36.0: 우측 Dock/상단 외곽선 목록 토글, 업무 타입 ID 그룹·미분류 legacy, WCS Bounds 선택/별도 Overlay 강조, 개별/그룹 show/hide, 키보드 트리 탐색, 320px 표시. 왼쪽 CAD 레이어 및 외곽선 생성 ON/OFF와 독립이며 도구 OFF에도 목록·Overlay 남는다.

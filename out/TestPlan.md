@@ -1,5 +1,11 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #43 / PR #72 P2 키보드 가시성 회귀 (2026-10-25)
+
+- **TC-U6-E2E-001 확장:** 폭 320px·높이 700px(도크 최대 20dvh)에서 트리 첫 그룹에 focus → `End` 이동 후 마지막 항목이 `role=tree` 스크롤 영역의 사각형에 완전히 들어오는지 확인한다. `Home`은 첫 그룹에 되돌아오고 `window.scrollY`는 불변. Canvas DOM 유지·Scroll 허용 범위를 tree 내부로만 제한.
+- P2 리뷰 [4369618943](https://github.com/planner77/layoutManager/pull/72#discussion_r4369618943)의 지적은 최초 CI `40161078593` 성공 HEAD `5cd223cc2837fc5772154fd67138680263f159e4`의 미검출 사용성 결함이다. 후속 수정 HEAD 결과는 CI success 확인 전 NOT VERIFIED.
+
+
 ## Issue #43 / U6 v0.36.0 — 트리/Overlay 시험 계획 (2026-10-25)
 
 | TC | 수용 | 시나리오 및 기준 | 상태 |

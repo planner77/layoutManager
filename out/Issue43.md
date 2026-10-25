@@ -1,5 +1,12 @@
 # Issue #43 — U6 외곽선 목록·업무 타입별 트리 (v0.36.0)
 
+## PR #72 리뷰/CI 및 운영 잔여 분리 (2026-10-25)
+
+- PR #72 최초 HEAD `5cd223cc2837fc5772154fd67138680263f159e4`의 [CI 40161078593](https://github.com/planner77/layoutManager/actions/runs/40161078593)은 Verify(+E2E/Legacy) 및 Docker Job `completed/success`.
+- 신규 검토 [P2 #4369618943](https://github.com/planner77/layoutManager/pull/72#discussion_r4369618943): 20dvh 트리에서 키보드 focus가 offscreen인데 `preventScroll`로 스크롤되지 않음. `focusKey`의 Tree 내부 scrollTop 보정과 320px Home/End E2E를 추가. **수정 뒤 PR CI 다시 필요**, 이전 성공은 최초 HEAD 한정.
+- 서버 업무 타입 두 개와 영속 GET/relogin 복원 등 원래 **AC-U6-01/06 운영 잔여는 [#73](https://github.com/planner77/layoutManager/issues/73)**으로 구분. 승인 전 #31 P4/#65/#71을 우회하지 않음. #43 종료 시 전체 운영 AC를 completed로 오인하지 않는다.
+
+
 - 이슈: https://github.com/planner77/layoutManager/issues/43 · Epic #37, 선행 #31/#38/#39/#40/#42.
 - DESIGN.md는 현 저장소에 없으므로 AGENTS.md, out/Architecture.md, out/Requirements.md, ADR-039 및 관련 Issue 문서를 기준으로 한다.
 - **구현 범위**: 현재 Viewer 브라우저 세션에서 생성·임시 확정한 SavedOutline Overlay의 트리 조회, 그룹화, 강조/Zoom, 개별·그룹 표시/숨김, 선택/삭제, 접근성/도킹.

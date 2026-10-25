@@ -1,5 +1,14 @@
 # PR/Main CI 실패 원장
 
+## Issue #43 / PR #72 — 성공 PR CI 이후 P2 리뷰 정정 (2026-10-25 KST)
+
+- **CI 실패 아님:** 초기 HEAD `5cd223cc2837fc5772154fd67138680263f159e4`에서 [PR CI Run 40161078593](https://github.com/planner77/layoutManager/actions/runs/40161078593) `completed/success`. Verify Job `121072582232`: npm/Prisma/TS/ESLint/Unit+Integration/Benchmark/Production Build/Chromium E2E/Legacy migration **SUCCESS**, Docker Job `121072582347` **SUCCESS**. 이 성공을 이후 변경 HEAD의 검증 결과로 전용하지 않는다.
+- **리뷰 [P2 #4369618943](https://github.com/planner77/layoutManager/pull/72#discussion_r4369618943) / thread `PRRT_kwDOUQjDfc6v-TBd`:** 20dvh 축소 도크의 트리에서 ArrowDown/End로 화면 밖 항목에 키보드 focus를 옮기면 `focus({preventScroll:true})`가 기본 스크롤을 억제하여 선택 항목이 화면에 보이지 않음. 자동 검토 지적이며 **CI 테스트 실패로 관측된 사건이 아님**.
+- **수정:** 외곽선 트리 `focusKey`에서 키보드 이동 시 현재 항목과 `role=tree` 스크롤 뷰포트만 비교하고 `scrollTop`을 최소량 이동. 외부 CAD 페이지/Canvas는 스크롤하지 않으며 Source Layer·geometry/Worker·Adapter lifecycle 불변. `TC-U6-E2E-001` 320px/20dvh에서 `End/Home` 포커스 가시성 및 `window.scrollY` 불변 회귀 보강.
+- **게이트:** 코드·테스트·문서가 바뀌면 PR synchronize가 새 CI를 시작한다. 초기 HEAD 성공을 신규 HEAD PASS로 잘못 보고하거나 CI가 미완인데 릴리스 성공으로 표시하지 않는다. GitHub Review를 답변·resolve하고 최신 main behind/mergeable 및 최신 HEAD CI 성공을 재검증한 뒤 병합한다. Owner 요청에 따라 별도 CI 결과 지속 모니터링은 생략할 수 있지만 성공 확인 전 병합 게이트는 유지.
+- **수용 범위:** 운영 관리자 타입·영속 재접속 복원 AC는 후속 [#73](https://github.com/planner77/layoutManager/issues/73)으로 분리, #65/#71/#31 P4 차단. 원 Issue #43 전체 AC 완료로 표기하지 않는다.
+
+
 ## Issue #42 / PR #70 — 최신 main #68 병합 충돌 대응 (2026-10-25 KST)
 
 - 원장 기록을 푸시한 뒤 [main #68, commit 38f05e0f](https://github.com/planner77/layoutManager/commit/38f05e0f2633ca15bfd689b03846d4f0b13f249a)의 CI workflow/AGENTS/ChangeLog/Decisions/TestPlan/Issue68/Operation 변경으로 PR이 일시적으로 behind=1 및 mergeable=dirty가 됨. 기존 #42 코드와 #68 기능은 독립이며 공통 Markdown 전면 삽입부 충돌.

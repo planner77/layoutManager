@@ -1,5 +1,12 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE43-PR72-REVIEW-20261025 — 최초 성공 / P2 리뷰 보완과 재검증 경계
+
+- [PR #72](https://github.com/planner77/layoutManager/pull/72), 최초 검증 HEAD `5cd223cc2837fc5772154fd67138680263f159e4`, [PR CI 40161078593](https://github.com/planner77/layoutManager/actions/runs/40161078593) **completed/success**: TypeScript/ESLint/Unit·Integration/Benchmark/Build/Chromium E2E/Legacy Migration 검증 Job `121072582232`와 Docker Runtime `121072582347` 모두 success.
+- [P2 #4369618943](https://github.com/planner77/layoutManager/pull/72#discussion_r4369618943)은 원래 테스트에 없었던 offscreen 키보드 포커스 가시성 문제. 최소 Tree 내 스크롤 보정 및 320px `Home/End` 포커스+outer scroll 불변 E2E 보강. 해당 변경을 반영한 후속 HEAD는 **PR CI 성공 전 NOT VERIFIED**. 실 CAD/GPU/Native fullscreen 및 보안·영속 운영 시험은 별도.
+- 실제 관리자 타입/재접속 영속 트리 AC-U6-01/06 잔여는 [#73](https://github.com/planner77/layoutManager/issues/73), 기반 #31 P4/#65/#71에서 추적. 이 CI 성공을 실 DB/RBAC 기능 성공으로 해석하지 않는다.
+
+
 ## U-ISSUE43-DEV-20261025 — U6 외곽선 트리 구현 검증 경계
 
 - 구현 코드: v0.36.0 우측 Tree Panel, 상단 토글, Reader legacy 분류 및 향후 검증 카탈로그 타입 투영, Overlay 별도 Group별 show/hide, WCS Bounds/하이라이트, Session 삭제/Version·Renderer·Reload 정리.

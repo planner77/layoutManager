@@ -34,7 +34,20 @@ export function OutlineTreePanel({
   ]);
   const focusKey = (key: string) => {
     setFocusedKey(key);
-    refs.current.get(key)?.focus({ preventScroll: true });
+    const node = refs.current.get(key);
+    if (!node) return;
+    // Prevent the browser from scrolling the surrounding CAD workspace.
+    // Scroll only the tree's own viewport, including on compact 20dvh docks.
+    node.focus({ preventScroll: true });
+    const viewport = node.closest<HTMLElement>('[role="tree"]');
+    if (!viewport) return;
+    const itemRect = node.getBoundingClientRect();
+    const viewRect = viewport.getBoundingClientRect();
+    if (itemRect.top < viewRect.top) {
+      viewport.scrollTop -= viewRect.top - itemRect.top;
+    } else if (itemRect.bottom > viewRect.bottom) {
+      viewport.scrollTop += itemRect.bottom - viewRect.bottom;
+    }
   };
   const toggle = (id: string) => {
     setCollapsed(current => {
