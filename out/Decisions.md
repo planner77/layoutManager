@@ -3,9 +3,10 @@
 ## ADR-038 — CI 실행명은 실행 시작 전 입력으로만 결정 (2026-10-25 / Issue #68)
 
 - **문제:** 기존 PR CI 및 Build/publish가 GitHub 기본 PR 제목/commit message를 그대로 사용하므로 Run Type·업무 Issue·목적이 일관되게 식별되지 않는다.
-- **결정:** 최상위 `run-name`을 도입해 `PR CI`, `MANUAL CI`, `MAIN/GHCR`, `RELEASE`를 구분한다. 연결 Issue 번호는 PR 제목 또는 squash commit 첫 줄의 `#N | 설명`에서 **사람이 명시**한다. 수동은 `workflow_dispatch.inputs`를 사용하고, 비정형 자동 실행 제목은 `ISSUE-UNKNOWN`으로 남긴다. 진짜 Issue 없는 건 `NO-ISSUE`로 표시한다.
+- **결정:** 최상위 `run-name`을 도입해 `PR CI`, `MANUAL CI`, `MAIN CI`, `RELEASE`를 구분한다. 연결 Issue 번호는 PR 제목 또는 squash commit 첫 줄의 `#N | 설명`에서 **사람이 명시**한다. 수동은 `workflow_dispatch.inputs`를 사용하고, 비정형 자동 실행 제목은 `ISSUE-UNKNOWN`으로 남긴다. 진짜 Issue 없는 건 `NO-ISSUE`로 표시한다.
 - **근거:** [GitHub 공식 workflow syntax](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#run-name)에 따라 실행명은 생성 시 `github`/`inputs` context에서만 계산된다. Job output에서 추출, 정규식 파싱 또는 workflow 실행 후 이름 변경은 이 구조에서 사용할 수 없다. `github.event.pull_request.number`는 Issue가 아닌 PR 번호이다.
-- **영향:** 기존 push/PR/dispatch 이벤트, job, 권한 및 release 직렬화/concurrency/GHCR 게시 순서 불변. main squash commit body가 긴 경우 첫 줄만 보여야 식별성이 높다. release Run 자체를 성공으로 오인하지 않으며 기존 Run 이름은 소급 변경되지 않는다. [Issue68](Issue68.md)·[Operation](Operation.md).
+- **GHCR 정책 보완:** 사용자 지정 #68 순수 메타데이터 병합 시 게시 금지를 우선한다. `release-scope`가 main `before...sha` 변경 경로를 분석하고 모든 변경 파일이 Markdown 또는 GitHub workflow YAML일 경우 `publish=false`로 게시 Job 전체를 skip한다. `src/` 등 런타임 변경, 명시적 버전 태그 push는 원래 릴리스/후보 검증 경로로 진행한다. base를 확인하지 못하면 게시 전에 fail-closed로 중단한다. 이는 기존 GHCR 릴리스 job 로직을 바꾸지 않고 사전 게이트만 추가한다.
+- **영향:** 기존 push/PR/dispatch 이벤트, 릴리스 직렬화/concurrency/공개 태그 승격 순서 불변. Release scope Job이 추가되고 GHCR publish job은 조건부 실행된다. main squash commit body가 긴 경우 첫 줄만 보여야 식별성이 높다. release Run 자체를 성공으로 오인하지 않으며 기존 Run 이름은 소급 변경되지 않는다. [Issue68](Issue68.md)·[Operation](Operation.md).
 
 
 ### ADR-037 종결 보강 — #41 안전 시안 인수, 운영 CRUD는 #65 (2026-10-25)
