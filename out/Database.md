@@ -1,5 +1,11 @@
 # Database Schema — 단일 기준 문서
 
+## Issue #97 / P4-D2 — 원본/Transform 서버 검증은 DB 변경이 아님 (2026-10-25)
+
+- 새 `src/server/outline/transform-attestation.ts`가 서버 보유 immutable DXF bytes Version/SHA → Stable Root Handle·WCS Canonical baseGeometry/algorithmVersion·tolerance 0.02 → 명시적 Translate/Rotate → **서버 계산 effectiveGeometry**를 검증해 반환한다. 전역 `OutlineType` FK/활성 여부·영속 UUID는 여기서 판정하지 않는다.
+- **Prisma `schema.prisma`/migration/데이터 모델/Current/Version/SHA/Source bytes를 수정하지 않는다.** D1 #96 인증·Role/Scope/Audit 및 D3 #98 `CadOutline` CRUD/revision CAS(409)/soft-delete/Memo reconcile/Version FK/Backup 시험 없이는 이 결과를 저장할 수 없다. 기존 D0 개념 Schema 제안을 실제 DB에 적용했다고 해석 금지.
+- 구현·차단·후속 판정은 [Issue97](Issue97.md), [ADR-050](Decisions.md), [TestPlan](TestPlan.md) 참조.
+
 ## Issue #31 P4 D0 Owner 승인 설계안 — **DDL 미적용** (2026-10-25)
 
 **우선순위:** 최신 Owner [ADR-048/049](Decisions.md) 승인 정책이 아래 과거 #41/#42의 OIDC/Scope-key 미결정 예시보다 우선한다. 이는 **개념 모델**, 배포된 `schema.prisma`/migration이 아니다. 신규 DB/CRUD 활성화는 별도 구현·검증 승인 전 BLOCKED.

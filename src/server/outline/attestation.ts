@@ -17,10 +17,14 @@ function multiPolygon(geometry:GeoJSONOutline):WcsMultiPolygon{
  return geometry.type==='Polygon'?[geometry.coordinates]:geometry.coordinates;
 }
 function areaRing(ring:XY[]){
- return Math.abs(ring.reduce((sum,point,i)=>{
-   const other=ring[(i+1)%ring.length];
-   return sum+point[0]*other[1]-other[0]*point[1];
- },0)/2);
+ // Use the first vertex as origin: direct shoelace cancellation loses
+ // small (yet valid) WCS areas around coordinates such as 1e9.
+ const [x,y]=ring[0];
+ let twiceArea=0;
+ for(let i=1;i+1<ring.length;i++)
+   twiceArea+=(ring[i][0]-x)*(ring[i+1][1]-y)-
+     (ring[i][1]-y)*(ring[i+1][0]-x);
+ return Math.abs(twiceArea/2);
 }
 function areaMultiPolygon(poly:WcsMultiPolygon) {
  return poly.reduce((sum,rings)=>sum+areaRing(rings[0])-

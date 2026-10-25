@@ -1,5 +1,18 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE97-PR100-PATCH-20261025 — v0.40.2 GHCR 발행 패치 사전 기록
+
+- **기존 성공:** PR #100 [Run 40189428698](https://github.com/planner77/layoutManager/actions/runs/40189428698), HEAD `195f633b0bcefdc6f1964223f2fef0b1a379721c` completed/success, Verify Job 121157064278 + Docker Job 121157064494 모두 success. 이전 HEAD 전용 증거로 유지.
+- **이전 GHCR 게시 확인:** #93 [Main Run 40184907533](https://github.com/planner77/layoutManager/actions/runs/40184907533), `Build application candidate`, `Build migration candidate`, `Promote paired release images`, `Measure published OCI layer bytes` 모두 success; tag `v0.40.1` 존재. 따라서 동일 `0.40.1` version 재사용 금지.
+- **신규 수정:** 사용자 요청의 GHCR 신규 게시를 위한 root package/lock 버전 `0.40.2` 동기 및 릴리스 문서/CI/배포 안전 게이트. Source runtime/Schema/HTTP API/Auth 기능 변경 없음. **수정 HEAD의 PR CI, Main CI, GHCR publish 및 실 CAD/GPU는 아직 NOT RUN**. 최신 HEAD CI 성공 확인 전에 병합 금지.
+
+## U-ISSUE97-20261025 — D2 서버 DXF/Transform 검증 코드 작성 (실행 전)
+
+- 근거: [Issue97](Issue97.md), ADR-048/049/050, AGENTS, TestPlan TC-P4-D2-001~009. 기존 `server/outline/attestation.ts` canonical-only는 v1/v2 import 거부되지 않도록 보존, 신규 `server/outline/transform-attestation.ts`에서 불변 SHA/Handle/INSUNITS/baseGeometry + Translate/Rotate/pivot→effectiveGeometry를 독립 검증. `outline-compute.ts`와 서버 attestation의 큰 WCS 좌표 면적 상쇄 방지 보완.
+- Unit 코드: `src/tests/unit/outline-transform-attestation.test.ts` TC 001~009. 편집 결과가 client geometry와 동일해야 하지만 서버 반환 Geometry는 재계산된 별도 객체. 위조·nonfinite·unsupported BLOCK/OCS/scale/shear/reflect/Z·64 step limit·큰 WCS를 적대적으로 검사.
+- **실행 상태: NOT RUN.** GitHub connector로 원격 브랜치에 코드·테스트·문서 작성. 본 실행 환경에서 repository checkout/Node 의존 모듈 실행은 수행하지 않았으므로 Typecheck/Lint/Vitest/Build/E2E/Legacy/Docker/GHCR·실 DXF/GPU를 PASS라 주장하지 않는다. PR Open으로 발생하는 CI 시작은 성공/배포를 뜻하지 않는다. 신규 실측치 없음.
+- **미구현/유보:** D1 #96 인증·Role/Site/Version Scope/Audit, D3 #98 Prisma·CRUD·CAS(409)·soft-delete·Memo reconcile·D3용 실제 immutable Storage accessor, nested child instancePath 지원, #56 E6 objects[] 연결, #99 실 DXF/GPU 성능 수용. Source/Current/Version/SHA/Viewer 운영 동작 및 인증 없는 API는 변경하지 않음.
+
 ## Issue #31 P4-D0 — 문서 설계 반영 기록 (2026-10-25)
 
 - **범위:** Owner 확정 7개 정책 + 외부 인터넷 인바운드 제한 사내 LAN의 다중 PC HTTP/앱 로컬 계정 목적(권한·감사)을 Issue31/ADR-048·049/Database/Architecture/Requirements/TestPlan/AGENTS/Operation에 명시. 기존 OIDC 우선은 당시 기록으로 유지하고 본 결정이 우선한다.

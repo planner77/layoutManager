@@ -1,5 +1,17 @@
 # 상세 요구사항
 
+## Issue #97 / P4-D2 — 변형 가능한 외곽선의 서버 Canonical 검증 요구 (2026-10-25)
+
+| ID | 승인 정책의 시험 가능 구현 | 검증 |
+| --- | --- | --- |
+| FR-P4-D2-01 | Immutable server DXF bytes+Version+SHA 및 $INSUNITS 검증, 고유 Stable root Handle·INSERT WCS의 실제 SourceRef만 허용. 유효하지 않은/중복 Handle, unsupported OCS/BLOCK, 발급 불가 child instancePath 거부 | TC-P4-D2-001~004 |
+| FR-P4-D2-02 | CONVEX/PRECISE Canonical baseGeometry를 서버에서 독립 재계산; algorithmVersion(현 v1 명칭), 고정 0.02 Drawing Unit tolerance·Polygon/MultiPolygon/Hole 유지 | TC-P4-D2-001/003/006 |
+| FR-P4-D2-03 | Translate/Rotate(+deg CCW; pivot; left-compose)만 명시적 순서로 재계산해 effectiveGeometry 반환. raw affine만/Scale/Shear/Reflect/Z, 비유한·허용범위 외·위조된 최종 Polygon을 거부 | TC-P4-D2-005~009 |
+| FR-P4-D2-04 | 기존 browser JSON v1/v2는 canonical-only 방식으로 하위호환; 편집 확장은 명시적 operations와 untrusted base/final claims를 독립 비교. browser GeneratedDocument/Local ID를 인증된 서버 객체·DB UUID로 취급 금지 | TC-P4-D2-001/005/007 |
+| NFR-P4-D2-01 | 순수 검증/오류 계약만 추가하며 신규 인증·서버 GET/Write API·Prisma·Migration·Current·DXF 원본·Viewer·GHCR 동작 변경 없음. 권한/Scope/CAS/Audit/운영 활성화는 #96/#98 승인 게이트, 실DXF 3종/GPU 성능은 #99 | TC-P4-D2-001~009 + 후속 통합 |
+
+- [ADR-050](Decisions.md), [Issue97](Issue97.md), [TestPlan](TestPlan.md). Code 작성과 PR CI 시작은 실행 검증·현장 승인으로 기록하지 않는다. 기존 FR-P4-D0-04의 합의 범위를 변경하지 않는다.
+
 ## Issue #31 P4-D0 — Owner 결정 기반 경량 계정/영속화 요구사항 (2026-10-25)
 
 > **D0 POLICY APPROVED / IMPLEMENTATION BLOCKED:** [ADR-048/049](Decisions.md), [Issue31](Issue31.md), [Database](Database.md), [Architecture](Architecture.md). 문서 계약 수립만 포함하며 Server Session/Prisma/API/운영 릴리스 구현 없음. 아래 확정 정책이 과거의 OIDC 추천·Scope TBD 예시보다 우선한다.

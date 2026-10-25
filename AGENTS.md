@@ -1,5 +1,20 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #97 / PR #100 — GHCR v0.40.2 릴리스 게이트 정렬 (2026-10-25)
+
+- PR #100 기존 HEAD `195f633b0bce`의 [CI 40189428698](https://github.com/planner77/layoutManager/actions/runs/40189428698) **completed/success** (Verify/Docker 2개 Job 성공), 미해결 리뷰 0·main behind 0. 이 성공을 새 `0.40.2` 버전 정렬 HEAD의 테스트 결과로 전용 금지.
+- 이전 [#93 Main CI 40184907533](https://github.com/planner77/layoutManager/actions/runs/40184907533)는 `v0.40.1` 태그와 GHCR `0.40.1`/`0.40.1-migrate` 앱·마이그레이터 쌍 게시 단계를 성공했다. 같은 버전으로 #97을 병합하면 현 `docker-publish.yml`은 기존 쌍을 감지해 Build를 건너뛴다. **기존 태그/버전 digest 이동 없이**, `src/package.json`과 `src/package-lock.json` root version을 `0.40.2`로 올려 새 쌍을 정상 릴리스할 준비를 한다.
+- GHCR 게시 요청은 이미지 빌드·배포 진입점의 신규 버전화를 뜻하며 D1 #96 인증·D3 #98 API/Prisma/권한·외곽선 영속 기능을 활성화하는 승인으로 해석하지 않는다. #99 실 DXF/GPU 현장 수용 별도.
+- **필수 게이트:** 신규 HEAD의 PR CI 전체 성공·리뷰 0·main 무충돌 후 `squash` merge. Main push가 GHCR app+migrator 후보 build→digest 검증→`:0.40.2/-migrate` 및 `:latest/-migrate` 승격, Main CI 시작. 그 전 게시 완료/릴리스 PASS 주장 금지. CI 모니터링은 사용자 요청에 따라 생략.
+
+
+## Issue #97 / P4-D2 — 불변 DXF Canonical·Translate/Rotate 서버 검증 선행 구현 (2026-10-25)
+
+- [ADR-050](out/Decisions.md), [Issue97](out/Issue97.md), [Architecture](out/Architecture.md), [Requirements](out/Requirements.md), [TestPlan](out/TestPlan.md) 근거. 별도 `DESIGN.md` 없음; Architecture/Decisions가 설계 기준. #31 D0의 Owner 7정책 중 P4-POL-04만 서버 전용 **순수 검증 모듈**로 구현한다.
+- `src/server/outline/transform-attestation.ts`는 서버 소유 Version/SHA/immutable DXF bytes를 기존 `attestation.ts`에서 검사하고 unique root stable Handle·INSUNITS·WCS XY CONVEX/PRECISE baseGeometry를 tolerance 0.02로 재계산한다. 입력 JSON v1/v2 canonical 호환, 편집 확장은 `baseGeometry`(untrusted), 최대 64 `transformOperations`(Translate/Rotate/pivot, CCW·좌측 합성), `geometry`(untrusted final), 선택적 검사용 affine matrix이며 server effectiveGeometry만 반환한다. Unsupported OCS/partial BLOCK·중복 Handle/중첩 child instancePath·raw affine/scale/shear/reflect/Z/nonfinite/overflow/위조 좌표는 거부.
+- **안전 경계:** #96 D1 로컬 인증·Scope/Audit와 #98 D3 CadOutline CAS/DB CRUD는 여전히 BLOCKED. 실제 Storage fetch, Admin, 서버 영속 GET·Write Route, Prisma migration, 배포·운영 활성화 없음. Browser GeneratedDocument 및 #56 E6 `objects[]`가 서버 영속 권한을 부여하지 않는다. #99 실 DXF 3종/GPU 현장 수용 별도. 원본 DXF bytes/SHA/Version/Current/Viewer Adapter 변동 없음. 버전 0.40.1 유지.
+- 작성 Unit TC-P4-D2-001~009 및 모든 Typecheck/Lint/Vitest/Build/E2E/Docker/실 CAD 상태는 별도 증거 전 **NOT RUN**. GitHub PR CI 시작을 PASS나 D3 운영 승인으로 해석 금지.
+
 ## Issue #31 P4 D0 Owner 승인 계약 (2026-10-25 / 문서 전용)
 
 - **최신 적용 설계:** [Issue31](out/Issue31.md), [ADR-048/049](out/Decisions.md), [Database](out/Database.md), [Architecture](out/Architecture.md), [Requirements](out/Requirements.md), [TestPlan](out/TestPlan.md). **D0 정책 확정은 서버 구현/배포 승인이 아니다.** 아래보다 오래된 OIDC 추천, Scope 미확정 서술은 당시 기록만 유지한다.
