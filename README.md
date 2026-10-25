@@ -1,5 +1,13 @@
 # CAD Web Viewer P.O.C.
 
+## Issue #99 — 실제 DXF 비공개 P0/P5 수용 (현장 전용)
+
+- 기존 `cd src && npm run audit:outline -- --file /private/sample.dxf`는 Source-only 분석(파서/Spatial/heap/경고)이며 Render/GPU 합격 근거가 아닙니다.
+- **승인된 격리 테스트 DB/Storage에서만** `CAD_OUTLINE_ACCEPTANCE_DXF=/private/sample.dxf CAD_OUTLINE_ACCEPTANCE_EXPECTED_SHA256=<승인된 SHA256> CAD_OUTLINE_ACCEPTANCE_REPORT_PATH=/private/browser.json npm run test:outline-acceptance` (모든 경로는 Git 저장소 밖 절대 경로). 1개 실제 DXF의 Browser/Mapping/Box·프레임 5회 schema v2 보고서를 사내에 보관합니다.
+- 서로 다른 실제 DXF 3종(1k/10k/100k), CAD 기준 WCS/면적·지원 Matrix, 8개 기능 동작, 외부 GPU 사용/VRAM, Owner SLA/서명 참조를 비공개 manifest로 묶어 `npm run verify:outline-acceptance -- /private/manifest.json`로 점검합니다. `BLOCKED`는 증거 부족/기준 위반, `READY_FOR_OWNER_REVIEW`는 형식상 리뷰 가능일 뿐 합격이 아닙니다.
+- 이 자료는 Git/공개 CI artifact에 절대 업로드하지 않으며, 본 기능은 운영 API/DB/기존 DXF Source를 변경하지 않습니다. [구체 실행 절차와 샘플 계약](out/Issue99.md), [운영 가이드](out/Operation.md), [시험계획](out/TestPlan.md).
+
+
 ## Issue #96 — 앱 로컬 계정·Role/Scope·Audit 비활성 공통 기반
 
 - Owner D1~D6 정책 확정: .env 관리자 단발 설정/복구, 비밀번호 최소 8자+scrypt, 세션 절대 8h/idle 30m/동시 3개, 명시 Site Grant, 감사 365일/별도 읽기, 지정 사내 LAN·HTTP 위험 수용.
