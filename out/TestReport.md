@@ -7,6 +7,13 @@
 - **운영 차단:** App Auth/Admin Route, 운영 Prisma/DDL/Compose/Nginx/.env, 원본/Current/삭제 비밀번호 및 GHCR 활성화 0. #102 Owner R1 정책 승인이나 docs PR #114 별도 정렬, POST 업로드/실 Secret·감사 파기·백업 세칙 미확정, #105 G3/#106 G4/#108 G6/#109 G7 후속. [Issue104](Issue104.md)/[TestPlan](TestPlan.md).
 
 
+## Issue #107 — 최종 PR CI·Main CI·GHCR Pair 검증 (2026-10-26)
+
+- 최종 PR #115 HEAD `44132fcaa31aff0c4643edfeb8db6949d801ca5b`, [Run 40224438075](https://github.com/planner77/layoutManager/actions/runs/40224438075) `completed/success`: Verify Job `121263027541`(Typecheck/Lint/Test/Build/E2E), Docker/Migration/Runtime Job `121263027604` 모두 success. [Viewer P2 4371142398](https://github.com/planner77/layoutManager/pull/115#discussion_r4371142398) 응답·해결, 미해결 0.
+- [Squash PR #115](https://github.com/planner77/layoutManager/pull/115) main commit `142c4b9bc0bdb2ad0403fb1ee6640cf070d0bbbc`. [Main CI 40225537167](https://github.com/planner77/layoutManager/actions/runs/40225537167) `completed/success`: `release-scope` 및 `Build and push to GHCR` 성공, App/Migrator 후보 빌드·두 digest 검증 후 공개 버전 Pair 승격·OCI 계측 단계 각각 success, Git tag `v0.40.4` 확인. 기존 `v0.40.3` 불변.
+- **실행하지 않은 항목:** 외부망 인바운드 제한 사내 실제 PC 2대와 Windows Nginx/WSL2, Preview 실제 운영과 동일한 환경의 Viewer/Upload/Download·Cookie, DB/CAD/S3 Backup·Migration·Restore는 `NOT RUN`, [Issue #108](https://github.com/planner77/layoutManager/issues/108) 인계. PR CI 자동 Mock/정적 검증 결과를 현장 실증 PASS로 확대하지 않는다.
+- G5 격리 구현 종료는 #96/#109 업무 Auth/API/Prisma 활성화 승인이 아니며 실제 운영 설정은 그대로 둔다. 과거 같은 이슈의 `CI PENDING` 내용은 역사적 HEAD 기준 기록으로 보존한다.
+
 
 ## Issue #103 / PR #116 — #107 main 정렬·검증 인계 (2026-10-26)
 

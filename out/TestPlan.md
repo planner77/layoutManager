@@ -19,6 +19,17 @@
 PR 검증: 최신 HEAD typecheck/lint/unit/integration/build/E2E/Docker; 운영 `src/app/api/**`/`src/prisma/**`/`src/server/db.ts`, Compose/Nginx/.env/CAD/Viewer/GHCR diff 0. 미실행은 PASS 금지; 현장 Backup/Restore는 #108, Owner 운영 승인은 #109. [Issue104](Issue104.md).
 
 
+## Issue #107 G5 — 최종 자동 테스트 수용·현장 인계 (2026-10-26)
+
+| 시험 | 최종 실행 판정 |
+| --- | --- |
+| TC-P4-G5-001/002 | PROD Nginx/DEV direct 정적 설정·볼륨 분리, PR #115 HEAD `44132fcaa31a` [CI #40224438075](https://github.com/planner77/layoutManager/actions/runs/40224438075) SUCCESS |
+| TC-P4-G5-003/004/007 | Health·목록·실제 Version Viewer URL 정규 요청/거부 경계 Unit, 동일 CI SUCCESS |
+| TC-P4-G5-005/006 | PR diff 및 Owner R1 문서·운영 OFF 검증 완료; GHCR `v0.40.4` App/Migrator [Main CI #40225537167](https://github.com/planner77/layoutManager/actions/runs/40225537167) 게시 Step SUCCESS |
+| TC-P4-G5-LAN-001 | **NOT RUN**. Windows Nginx/WSL2, 사내 PC 2대, 실 업무 Viewer·Upload·Download·Cookie는 G6 #108 현장 검증으로 인계 |
+
+- 이전에 작성된 원 계획표의 `NOT RUN/CI 대기`는 해당 작성 시점의 역사적 기록이며 위 최종 실행 결과로 판정한다. Main CI/GHCR 성공이 실제 운영 인증 활성화 또는 Backup/Restore 수용은 아니다.
+
 
 ## Issue #103 — 최초 실패 재발 방지와 P1 추적 (2026-10-26)
 

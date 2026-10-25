@@ -13,6 +13,13 @@
 공격·탈취 대응 강화는 Owner #102 범위 밖이나 Secret 비로그·기능 원자성 유지. 기존 CAD GET은 익명 유지; G3 #105, G4 #106, G6 #108, G7 #109 후속. [Issue104](Issue104.md).
 
 
+## Issue #107 G5 — 요구사항별 최종 구현 상태 (2026-10-26)
+
+- FR-P4-G5-01/02: 독립 PROD Nginx→App 및 DEV 직접 연결용 Preview Compose·데이터 분리 구현, [PR CI #40224438075](https://github.com/planner77/layoutManager/actions/runs/40224438075) 두 Job success. 구현 완료/현장 접속 실측 미수행.
+- NFR-P4-G5-01: 실제 Version Viewer 경로 ` /cad/versions/ID/viewer `·목록·Health/정적 리소스·원본 GET 정상 경로 검증 도구와 Unit 성공. 실제 사내 업로드·다운로드·Cookie 및 사용자 PC E2E는 #108로 인계(`NOT RUN`).
+- NFR-P4-G5-02: Owner R1에 따라 침투·탈취 방어 강화는 비범위; 운영 Nginx/Compose/인증 API/Prisma는 별도 #109 승인 전 미활성.
+- 본 섹션이 아래 2026-10-25 작성 당시의 `PR CI 미확인` 상태보다 최신 증거다. 새 기능 요구는 발견되지 않아 재구현하지 않는다.
+
 
 ## Issue #103 / G1 P1 감사 추적 상세화 (2026-10-26)
 
