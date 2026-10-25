@@ -1,10 +1,10 @@
 # Issue #28 — Docker 운영 이미지 경량화 및 Migration 분리
 
-## #67 후속 — 웹 Standalone better-sqlite3 중복 전달 제거 (2026-10-25 / v0.37.2)
+## #67 후속 — 웹 Standalone better-sqlite3 중복 전달 제거 (2026-10-25 / v0.38.1)
 
 - #28의 `runtime`은 `next.config.ts.outputFileTracingIncludes`에 의해 `better-sqlite3` 전체/native binding을 이미 Standalone에 포함한다. 별도 Docker COPY 중복 가능성을 #67에서 제거하되 native `.node`와 Prisma 등 동적 경로는 build smoke 및 PR CI로 확인한다.
 - 비교 기준은 동일 PR HEAD 소스·Node22.14/linux-amd64의 **PR base Dockerfile vs 개선 runtime Dockerfile**이다. 과거 #28 pre-standalone 2.05GB, #66 migrator 1.34GB를 감축률 기준선으로 재사용하지 않는다. `docker inspect .Size`(비압축), 실제 `docker save` TAR layer SHA/중복 raw bytes, `history`, asset raw/gzip(proxy), 출판된 버전+immutable digest의 OCI compressed layers는 별도 지표. 신규 측정/PR CI 전 **NOT VERIFIED**.
-- fonts/Hangul glyph/typeface/LibreDWG JS/WASM/.next/static 제거 및 강제 subset 금지, 다른 앱/DB/migrator/Compose/GHCR pairing 불변. [Issue67](Issue67.md), [ADR-044](Decisions.md) 참조.
+- fonts/Hangul glyph/typeface/LibreDWG JS/WASM/.next/static 제거 및 강제 subset 금지, 다른 앱/DB/migrator/Compose/GHCR pairing 불변. [Issue67](Issue67.md), [ADR-045](Decisions.md) 참조.
 
 
 ## #66 후속 — 이미 분리된 migrator만 추가 경량화 (2026-10-25)

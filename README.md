@@ -1,10 +1,22 @@
 # CAD Web Viewer P.O.C.
 
-## v0.37.2 — Issue #67 GHCR 웹 이미지 Standalone native SQLite 중복 COPY 개선 (PR CI 검증 전)
+## v0.38.1 — Issue #67 GHCR 웹 이미지 Standalone native SQLite 중복 COPY 개선 (PR CI 검증 전)
 
 - Next.js `.next/standalone` 추적 경로가 포함하는 `better-sqlite3` 패키지를 Docker runtime 단계에서 다시 COPY하지 않도록 변경했습니다. `next.config.ts`에서 Prisma와 native SQLite tracing을 유지하고 이미지 빌드 중 `.node`/메모리 DB 동작을 확인합니다. 데이터 스키마·API·기존 migrator/배포 계약은 그대로입니다.
 - PR Docker 검증에는 실제 Docker TAR layer 경로·SHA256 중복, 비압축 image bytes 전후 비교, 자산(한국어 TTF/파생 typeface·DWG JS/WASM) raw·gzip proxy 크기, 재migration/app 재시작 후 임시 `/data` API 등록·조회·삭제를 포함합니다.
 - 과거 약 **12.5MB 추가 COPY**는 이전 linux/amd64 로컬 비압축 계측으로 새 절감량이 아닙니다. 실제 PR CI 성공/감축 bytes와 GHCR OCI 압축 레이어/고정 digest는 각각 검증 후 판정합니다. GHCR app+`migrate` 버전 Pair 배포에는 동일 시점 DB/CAD/S3 backup, 기존 writer stop, migrator exit0가 필수입니다. [Issue67](out/Issue67.md), [Operation](out/Operation.md), [TestPlan](out/TestPlan.md).
+
+
+Issue #52 CI에서 발견한 테스트 간 공유 geometry 오염을 교정했습니다. 최신 로컬 검증 결과와 PR CI·실도면 검증의 구분은 [TestReport](out/TestReport.md), 수정 범위는 [Issue52](out/Issue52.md)를 참조하세요.
+
+- Undo 한도: 삭제한 개체의 복원 가능 객체 수·정점도 100개/100k 용량으로 예약합니다. 삭제 이후 새 개체를 확정하여 그 예약을 넘으면 이전 호환 불가 Undo 이력은 초기화되며 새 객체가 우선 보존됩니다. 선택 대상이 바뀌면 확정 전 편집 명령은 취소됩니다.
+
+
+## v0.38.0 — Issue #52 생성 개체 편집 기반과 Undo·Redo (E2)
+
+- DXF + **three-dxf-viewer**에서 임시 확정한 볼록/정밀 외곽선은 하나의 브라우저 전용 GeneratedDocument로 관리됩니다. E1의 원본 SOURCE와 생성 GENERATED 선택을 구분하며 SOURCE/혼합 선택은 **항상 읽기 전용**입니다. Tree/표시/선택/기존 JSON 다운로드는 한 Document를 참조합니다.
+- Viewer의 생성 개체 선택 도구에 **실행 취소/다시 실행** 버튼과 Ctrl/⌘+Z / Ctrl/⌘+Shift+Z (Windows Ctrl+Y) 기반을 추가했습니다. 입력·텍스트 편집의 브라우저 기본 Undo는 그대로 유지합니다. 이력은 최대 **100건**(별도 계산 메모리 예산 16MiB)이며 이동/회전·Delete 동작은 **후속 #53~#55에서 제공**하므로 이번 버전에서는 기능 확인 버튼이 비활성화될 수 있습니다.
+- **서버 자동 저장 없음**: 현재 생성 객체/이력은 새로고침, 도면 Version·Renderer 전환 시 사라집니다. 현재 JSON 다운로드는 과거 #31 v1 및 #42 typed v2 호환 경로이고, 편집본 안전 복원은 후속 **#56**입니다. 실제 CAD 원본·Current·Source Layer/Geometry는 수정되지 않으며 인증된 서버 저장(#31 P4)은 승인 전 미지원입니다. 다른 DXF Renderer와 DWG는 편집 미지원입니다. 요구/명령 API·시험 계획은 [Issue52](out/Issue52.md).
 
 
 ## v0.37.1 — Issue #66 migrator 이미지 의존성 경량화 (검증 전)

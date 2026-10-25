@@ -13,13 +13,13 @@
 - 교정 이후 커밋은 최초 성공 Run과 다른 HEAD이므로 다시 PR CI를 검증해야 병합 가능. Main GHCR app/migrator pair 및 immutable version/digest 수치는 정식 게시 후 별도. [FailureLedger](FailureLedger.md).
 
 
-**일자:** 2026-10-25 · **버전:** 0.37.2 · **브랜치:** build/issue-67-web-standalone-layer-audit · **상태:** 코드 작성 / 새 PR CI 미확인
+**일자:** 2026-10-25 · **버전:** 0.38.1 · **브랜치:** build/issue-67-web-standalone-layer-audit · **상태:** 코드 작성 / 새 PR CI 미확인
 
 ## 분석/설계 근거
 
 - #28에서 Next.js Standalone 런타임으로 웹 이미지를 이미 경량화했다. `next.config.ts`는 `better-sqlite3/**/*`와 `generated/prisma/**/*` 파일 추적을 명시하지만, 기존 `src/Dockerfile`은 `.next/standalone`과 `node_modules/better-sqlite3`를 연속 COPY해 동일 경로에 중복 압축/비압축 레이어를 만들 수 있다.
 - 성공했던 [CI 40154979531](https://github.com/planner77/layoutManager/actions/runs/40154979531)에서 웹 image local 비압축 **376,458,636 bytes**, Standalone COPY 약 **132MB**, 추가 SQLite COPY 약 **12.5MB**, runtime node_modules 약 **89MiB**, public 약 **37MiB**를 관측했다. 이 값은 **과거 linux/amd64 비압축 기준선**이며 새로운 전후 실측이나 GHCR OCI 압축 다운로드량이 아니다.
-- #66은 별도의 migrator 경량화다. #67은 **웹 runtime** 패키지 복사 소유권을 한 곳으로 만드는 좁은 변경으로, `DESIGN.md` 부재 시 `out/Architecture.md`/ADR-044를 설계 기준으로 한다.
+- #66은 별도의 migrator 경량화다. #67은 **웹 runtime** 패키지 복사 소유권을 한 곳으로 만드는 좁은 변경으로, `DESIGN.md` 부재 시 `out/Architecture.md`/ADR-045를 설계 기준으로 한다.
 
 ## 구현 결정
 
@@ -47,4 +47,4 @@
 
 ## 관련 공식 자료·문서
 
-[Next.js output tracing](https://nextjs.org/docs/app/api-reference/config/next-config-js/output) · [Docker image save](https://docs.docker.com/reference/cli/docker/image/save/) · [#28](Issue28.md) · [#66](Issue66.md) · [Architecture](Architecture.md) · [ADR-044](Decisions.md) · [Operation](Operation.md) · [TestPlan](TestPlan.md) · [TestReport](TestReport.md)
+[Next.js output tracing](https://nextjs.org/docs/app/api-reference/config/next-config-js/output) · [Docker image save](https://docs.docker.com/reference/cli/docker/image/save/) · [#28](Issue28.md) · [#66](Issue66.md) · [Architecture](Architecture.md) · [ADR-045](Decisions.md) · [Operation](Operation.md) · [TestPlan](TestPlan.md) · [TestReport](TestReport.md)

@@ -1,5 +1,11 @@
 # PR/Main CI 실패 원장
 
+## Issue #67 / PR #80 — #52 main 선행 병합으로 HEAD 통합 및 CI 재검증 (2026-10-25 KST)
+
+- #67 브랜치 수정 HEAD `aa9083c8ac3be5b21bc87e8eaa54e1f0273abc4d`의 CI 시작 전 main이 [Issue #52 commit e1adfe5b](https://github.com/planner77/layoutManager/commit/e1adfe5b9de28ddd3821a0de2466d810e5c6c209)로 이동해 PR `mergeable_state=dirty`, `behind=1` 확인. 이는 코드 테스트 실패가 아닌 동시 작업 충돌로, 원격 기준 문서·package version 중복 변경의 충돌이다.
+- #52의 GeneratedDocument/UndoRedo 코드·신규 테스트·문서를 **전부 보존**하고 #67 Docker runtime/CI 측정 코드만 통합하는 merge commit을 생성한다. 기존 #52 ADR-044 ID가 사용 중이므로 #67 웹 패키징은 ADR-045; 미게시 #67 v0.37.2 → 새 패치 `0.38.1`(main #52 v0.38.0 다음)로 정렬한다. 구 태그를 이동하거나 기존 이슈 기록을 삭제하지 않는다. 최신 통합 HEAD의 PR CI 성공 전 PASS나 GHCR 게시·이슈 종료 주장 금지.
+
+
 ## Issue #67 / PR #80 — 2차 CI에서 Python syntax 검증 누락으로 Docker Job 차단 (2026-10-25 KST)
 
 - **실패 원본:** [PR CI Run 40171968883](https://github.com/planner77/layoutManager/actions/runs/40171968883), 검증 HEAD `95cd745222055ce934e5ee3016d3551179b30a7f`, attempt 1. Docker Job [121104610668](https://github.com/planner77/layoutManager/actions/runs/40171968883/job/121104610668) `completed/failure`. Step `Verify web layer SHA, native and transition-only size saving (#67)`의 첫 `python3 src/scripts/test_audit_standalone_layers.py`에서 import 시 SyntaxError `unterminated f-string literal` (`audit_standalone_layers.py:113`). 실패는 실 Docker layer/hash가 상이하다는 증거가 아니라 **수정한 계측 리포트 f-string의 닫는 따옴표/콤마 누락**이며 실제 이미지 검사·이어지는 migrator/Compose smoke는 SKIPPED. Verify Job은 당시 E2E 실행 중이었으므로 성공/실패 판정을 하지 않는다.
@@ -13,6 +19,22 @@
 - **P1 리뷰 원본:** [Review 4369963432](https://github.com/planner77/layoutManager/pull/80#discussion_r4369963432), 최초 HEAD `6a35660`: #67 제거 후 `main` Dockerfile은 이미 deduplicated 상태이므로 다른 PR의 `base`에도 중복이 없는데 `compare_inventories`가 `Baseline has no duplicate files`로 무조건 실패하고, `base_size <= size`도 정상 동일 크기를 거부함. 실제 신규 기능의 실패가 아닌 공통 CI의 false failure 위험.
 - **교정:** 동일 HEAD/Node22.14/linux-amd64에서 baseline에 중복이 **실제 존재하는 transition**이면 final package SHA 일치·duplicate raw bytes·positive size saving 강제. 이미 중복 0개인 base이면 size는 informational, 현재 image의 native `.node`와 모든 package SHA 일치/중복 재도입 없음은 계속 강제. Python 합성 fixture에 이미 deduplicated base 정상 PASS와 재중복 FAIL을 추가. Docker/Compose/Unit/Browser·migrator 검증 생략 없음.
 - **검증 경계:** 위 교정 후 새 HEAD에서 PR CI `pull_request.synchronize` 재실행이 필요하다. 최초 Run PASS를 새 HEAD PASS로 대체 금지. 실패/취소/스킵 발생 시 Run/Job/HEAD/원인/재실행을 누적 기입. inline P1 답변·resolve 및 최신 main 무충돌 확인 후에만 squash merge. GHCR version+immutable digest OCI 게이트 및 Main CI는 병합 이후 별도. [Issue67](Issue67.md), [TestPlan](TestPlan.md), [TestReport](TestReport.md).
+
+
+## Issue #52 / PR #79 — QA 독립 재검증 및 두 번째 Unit 실패 원인 (2026-10-25)
+
+- [Run 40169744777](https://github.com/planner77/layoutManager/actions/runs/40169744777), HEAD `41cf16c`, Verify [Job 121097994868](https://github.com/planner77/layoutManager/actions/runs/40169744777/job/121097994868): TypeScript/Lint PASS; Unit **196 PASS/6 FAIL**, `generated-document.test.ts`에서 `닫히지 않은 Ring입니다.`. 이후 benchmark/build/E2E/Legacy **SKIPPED**. Docker [Job 121097994934](https://github.com/planner77/layoutManager/actions/runs/40169744777/job/121097994934) SUCCESS. 최초 TS 실패는 아래 별도 Issue #52 원장에 보존.
+- **실제 원인/교정:** `result()` helper가 기본 Polygon geometry 객체를 테스트 간 공유했다. deep-copy 검사 자체의 변이(`x=900`)가 공유 fixture를 오염해 뒤 테스트의 Ring closure 검사를 실패시켰다. helper가 호출별 `structuredClone(geometry)`를 반환하도록 하고 새 fixture `[0,0]` 검증을 추가. 운영 validator 및 Ring 닫힘 assertion 변경/완화 없음. 당시 사전 계획의 fixture 좌표 closure 가설은 가설로 보존하고 최종 원인과 혼합하지 않는다.
+- **재현/수정 확인:** Developer가 수정 전 대상 파일 4 PASS/6 FAIL 및 단독 detach 1 PASS를 확인했고, 수정 후 10/10 PASS를 2회 확인했다. QA는 전체 Unit **202/202**, Typecheck, Lint(오류 0/기존 ARIA warning 1), GHCR parser 3/3, synthetic outline benchmark, production build, Chromium **65/65**, Legacy migration **1/1**을 모두 독립 로컬 실행하여 PASS. 실 CAD/GPU 및 로컬 Docker NOT RUN. 상세 실행 환경·대행 역할은 [TestReport](TestReport.md).
+- 첫 TS 및 두 번째 Unit CI 실패는 서로 다른 HEAD/단계 결과로 유지한다. 로컬 재검증은 새 PR CI 성공이나 배포 결과로 전용할 수 없다.
+- **게시 전 점검:** 기존 P2 스레드 3건 모두 resolved, 미해결 0건. PR HEAD `41cf16c`가 main `bfbd523`을 포함해 behind 0/mergeable=true이며 추가 충돌 해결은 필요하지 않았다. 최종 수정 커밋을 같은 PR 브랜치에 non-force push하여 새 PR CI 시작만 확인한다. 시작 Run 링크는 PR 검증 댓글에 기록하며 모니터링·병합·GHCR 게시·이슈 종료는 수행하지 않는다.
+
+## Issue #52 / PR #79 — CI TypeScript 실패 및 P2 리뷰 3건 (2026-10-25 KST)
+
+- **최초 실패 원장:** [PR #79](https://github.com/planner77/layoutManager/pull/79), [Run 40168296155](https://github.com/planner77/layoutManager/actions/runs/40168296155) 최초 HEAD `40aba11f9bb8117149e8487c39d8cf72f9f384cd`, completed/**failure**. Verify [Job 121093743809](https://github.com/planner77/layoutManager/actions/runs/40168296155/job/121093743809): checkout/npm ci/Prisma PASS, TypeScript **FAIL** (`tests/e2e/issue52-generated-history.spec.ts:62` TS2339 `Event.key`·`Event.ctrlKey` 2건). ESLint, Unit, Benchmark, Build, Playwright, E2E, Legacy migration SKIPPED. Artifact upload Step 성공. 독립 Docker [Job 121093744225](https://github.com/planner77/layoutManager/actions/runs/40168296155/job/121093744225)는 SUCCESS.
+- **직접 원인/조치:** `querySelector`의 일반 `Element`→`Event` 타입 추론을 `querySelector<HTMLInputElement>`로 구체화해 키보드 접근 컴파일 오류를 차단. 기존 Ctrl+Z E2E 검증은 유지, skip/삭제 없음.
+- **별도 P2 리뷰 3건:** [#4369873353](https://github.com/planner77/layoutManager/pull/79#discussion_r4369873353), thread `PRRT_kwDOUQjDfc6v-6n7`: WCS (1e9,1e9) unit Polygon Shoelace cancellation → 링 원점 상대좌표 면적 검증 및 TC-E2-UNIT-006. [#4369873355](https://github.com/planner77/layoutManager/pull/79#discussion_r4369873355), thread `PRRT_kwDOUQjDfc6v-6n9`: Delete Undo + 새 append로 100k vertex/100 object 복원 초과 → Undo-restorable capacity 예약, 새 확정 시 호환불가 Undo 이력 무효화 및 TC-E2-UNIT-007. [#4369873358](https://github.com/planner77/layoutManager/pull/79#discussion_r4369873358), thread `PRRT_kwDOUQjDfc6v-6oA`: captured selection으로 stage commit이 SOURCE/혼합 또는 다른 ID 변경을 무시 → 현재 선택 재검증·선택/모드 변경 시 취소, TC-E2-UNIT-008.
+- **재검증 경계:** 기존 실패를 보존. 수정된 HEAD의 Typecheck/Lint/Unit/Build/E2E 및 실 CAD/GPU 결과는 아직 **NOT VERIFIED**. 새 PR CI 실행 시작과 성공은 별도, 원본 DXF/Worker/DB/서버 API/#31 P4 보안 정책 불변.
 
 
 ## Issue #66 / PR #78 — 첫 PR CI Unit 실행 계약 회귀 및 경량화 실측 (2026-10-25 KST)

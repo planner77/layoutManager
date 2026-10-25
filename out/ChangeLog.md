@@ -1,16 +1,35 @@
 # ChangeLog
 
-### v0.37.2 / PR #80 — 이미 최적화된 이미지에서 CI false failure 방지 (P1 리뷰, 2026-10-25)
+### v0.38.1 / PR #80 — 이미 최적화된 이미지에서 CI false failure 방지 (P1 리뷰, 2026-10-25)
 
 - 최초 [PR CI 40170910369](https://github.com/planner77/layoutManager/actions/runs/40170910369) 최초 HEAD `6a35660`의 Verify/Docker PASS. 후속 [P1 리뷰 4369963432](https://github.com/planner77/layoutManager/pull/80#discussion_r4369963432)에서 모든 PR에 이전 중복/positive saving을 요구하면 정상 후속 PR도 막는 결함을 발견.
 - Docker layer audit는 baseline에 duplicate가 있던 transition에서는 SHA/positive size saving 필수, 이미 없던 PR에서는 package SHA/native/no-dup을 계속 확인하고 delta는 참고로만 보고한다. Python 미래 PR regression fixture를 추가. 새 HEAD PR CI 성공 전 결과를 PASS로 재사용하지 않는다.
 
 
-### v0.37.2 — Issue #67 웹 Standalone better-sqlite3 중복 COPY 계층 안전 제거·계측 (2026-10-25)
+### v0.38.1 — Issue #67 웹 Standalone better-sqlite3 중복 COPY 계층 안전 제거·계측 (2026-10-25)
 
 - Docker `runtime`에서 `.next/standalone` 이후 별도 `node_modules/better-sqlite3` COPY 제거, Prisma/native dynamic trace 유지. Native `.node` 유무와 `better-sqlite3` 메모리 DB 사용 가능 여부가 image build-time gate. Database schema/API/Viewer 및 #66 migrator/Compose/GHCR paired release 계약 불변.
 - Python Docker 실제 `docker save` TAR layer package path/SHA-256 identity/중복 bytes + negative synthetic fixture, 비압축 `docker inspect .Size`, history/du, 원본 TTF·파생 한글 typeface·LibreDWG JS/WASM raw/gzip proxy 및 top20 server traced files. gzip TAR는 GHCR OCI 압축 층 크기가 아님.
-- PR Docker CI disposable `/data` master 등록/DXF API 업로드→migrator 재실행/app 재시작→health/Current/content 조회/삭제 후 404. 기존 Typecheck/Lint/Unit/Build/Chromium E2E/Legacy migration/정적 자산 검사 유지. Package/lock 0.37.2 동기. **작업 시점 신규 image 절감·PR CI 성공·GHCR OCI compressed 수치 및 현장 수용은 미측정/NOT VERIFIED**. [Issue67](Issue67.md), [TestPlan](TestPlan.md).
+- PR Docker CI disposable `/data` master 등록/DXF API 업로드→migrator 재실행/app 재시작→health/Current/content 조회/삭제 후 404. 기존 Typecheck/Lint/Unit/Build/Chromium E2E/Legacy migration/정적 자산 검사 유지. Package/lock 0.38.1 동기. **작업 시점 신규 image 절감·PR CI 성공·GHCR OCI compressed 수치 및 현장 수용은 미측정/NOT VERIFIED**. [Issue67](Issue67.md), [TestPlan](TestPlan.md).
+
+
+### v0.38.0 / Issue #52 QA 보완 (2026-10-25)
+
+- 테스트 helper의 공유 Polygon 참조가 deep-copy mutation으로 후속 fixture를 오염시키던 원인을 `structuredClone` 격리와 fresh fixture assertion으로 수정. 제품 validator/Ring closure 검증, 앱 버전 및 기능 동작은 변경하지 않음.
+- 독립 로컬 gate Unit 202/202, Typecheck/Lint/Build, Chromium E2E 65/65, Legacy migration 1/1 PASS. PR CI 성공·로컬 Docker·실 CAD/GPU/배포를 주장하지 않음. 상세 [TestReport](TestReport.md) / [Issue52](Issue52.md).
+
+### v0.38.0 / PR #79 Typecheck 차단·P2 무결성 보완 (2026-10-25)
+
+- 첫 CI `40168296155`의 E2E 테스트 Event TS2339 2건을 input keyboard type 좁히기로 보완. 뒤 Verify 단계 SKIPPED, 별도 Docker SUCCESS 보존.
+- 고 WCS 면적 계산, Undo 복원 용량 정책, staged command 최신 선택 검증 및 TC-E2-UNIT-006~008 추가. 새 CI/실도면 검증 전 성공 미주장.
+
+
+## v0.38.0 — Issue #52 E2 생성 개체 Document/Undo·Redo 기반 (2026-10-25)
+
+- `GeneratedDocument`를 Version·SHA 기반 브라우저 메모리 단일 상태로 도입: E1 UUID, legacy local-N, 기준 WCS Geometry·provenance, transform/visible/edit flag 유지. Overlay Scene/Hit/Tree/기존 임시 JSON은 Document에서 투영하며 GPU 그룹 증분 갱신/dispose.
+- Generated-only/전체 선택 검증과 원자적 Delete/Translate/Rotate 도메인 명령(후속 E3~E5 UI 미구현), preview-independent stage/commit/cancel, Undo/Redo 최대 100단계·추정 16MiB 및 Redo 분기 무효화.
+- Viewer Undo/Redo 버튼과 Ctrl/⌘+Z·Ctrl/⌘+Shift+Z·Ctrl+Y(입력 native 우선), Session 작업 소멸 안내. 원본 DXF/DB/서버 API·Source 인덱스 변경 없음; #31 P4 보안 Gate 유지. 
+- Unit/Chromium E2E 시나리오·[Issue52](Issue52.md)/ADR-044/Requirements/Architecture/TestPlan/TestReport/README/AGENTS 문서 갱신. 로컬/현장 검증 NOT RUN, PR CI 성공은 확인 전 주장하지 않음.
 
 
 ### PR #78 / 최초 CI 보완 — v0.37.1 버전 유지 (2026-10-25)

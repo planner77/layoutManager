@@ -15,10 +15,34 @@
 
 ## U-ISSUE67-DEV-20261025 — Web SQLite 중복 이미지 계층 최소화, PR CI 이전 증거 경계
 
-- **코드/브랜치:** `build/issue-67-web-standalone-layer-audit`, 웹 `runtime`에 SQLite native package 추가 COPY 제거 + 기존 Next forced tracing 및 `serverExternalPackages` 유지. 빌드에 native `.node` 파일 존재/SQLite memory require smoke fail-closed. 기존 별도 #66 migrator/DB Schema/API/Viewer/Compose/GHCR pairing 변경 없음. 앱 `src/package.json` 및 lock root version 0.37.2 동기.
+- **코드/브랜치:** `build/issue-67-web-standalone-layer-audit`, 웹 `runtime`에 SQLite native package 추가 COPY 제거 + 기존 Next forced tracing 및 `serverExternalPackages` 유지. 빌드에 native `.node` 파일 존재/SQLite memory require smoke fail-closed. 기존 별도 #66 migrator/DB Schema/API/Viewer/Compose/GHCR pairing 변경 없음. 앱 `src/package.json` 및 lock root version 0.38.1 동기.
 - **새 검증 코드:** `src/scripts/audit_standalone_layers.py`는 Docker save 실제 layer TAR 경로·SHA256·최종 package 파일 identity/중복 raw bytes, inspect .Size, diffIDs와 비교; Python Unit synthetic corrupt/duplicate cases; `measure-images.sh`는 font/typeface/LibreDWG JS/WASM raw/gzip proxy와 server traced top20. PR CI Docker Job에 baseline/current 비교 및 disposable Docker Compose `/data` Master→DXF upload→idempotent migration/app restart→Current·original content read→delete 404 smoke. 기존 unit/browser/legacy/static health 재사용.
 - **실행 상태:** GitHub 연결로 원격 파일 작성만 수행. 로컬 Docker/Node install/TypeScript/Vitest/Playwright/Buildx/실제 이미지 차이 측정 및 실제 API 실행 **NOT RUN**. 작성한 TC-IMG67-001`007 **NOT VERIFIED**, 새 HEAD PR CI의 verify/docker-runtime Job PASS 여부는 결과 확인 후만 기재한다. 동일 출처 이전 376,458,636 bytes 및 별도 COPY 12.5MB는 사전 가설이지 이번 절감 수치가 아니다.
 - **별도 실제 수용:** GHCR version+immutable digest linux/amd64 compressed OCI layer 크기/공유 digest, 운영 DB/CAD/S3 동시점 백업/복구, 실 DXF·DWG·Hangul·실 브라우저/현장 프로토콜은 후속 공개 이미지/현장 실증 전 **미확인**. [Issue67](Issue67.md)/[TestPlan](TestPlan.md)/[Operation](Operation.md).
+
+
+## U-ISSUE52-QA-20261025 — 수정 HEAD 독립 로컬 검증
+
+- 역할: Manager `gpt-6-astra`가 사전 요구·설계·AC를 기록하고 Developer `gpt-5.6-sol`의 재현/수정을 검토한 뒤 독립 QA를 지시했다. 지정 QA `gpt-5.6-luna`는 사용 가능한 모델 목록에 없어 `gpt-6-luna`가 실제 검증을 대행했다. 검증 대상은 checkout HEAD `41cf16c`에 이 fixture 수정 working-tree patch를 적용한 상태; 앱 버전 `0.38.0`; 실행 환경 Node `v22.14.0`, 로컬 Chromium/Playwright. Root의 `npm ci` 관측은 13 vulnerabilities(3 moderate, 9 high, 1 critical); 이 test-only 수정 범위 밖이며 자동 audit fix는 실행하지 않았다.
+- `npm run typecheck` **PASS**; `npm run lint` **PASS**(0 error, 기존 `outline-tree-panel.tsx:115` treeitem `aria-selected` warning 1); `npm test` **PASS 202/202 (42 files)**; `node --test scripts/measure-ghcr-pair.check.mjs` **PASS 3/3**; `npm run test:outline-benchmark` **PASS**, 합성 1k/10k/100k 측정 완료. 벤치마크 JSON stdout에는 machine/timing 데이터만 출력했고 artifact로 커밋하지 않았다.
+- `npm run build` **PASS**; `npm run test:e2e` **PASS 65/65** (Chromium, 4.8 min), TC-E2-E2E-001/002 포함; `npm run test:master-migration` **PASS 1/1** (10.9s). 로컬 Docker는 test-only fixture 수정으로 **NOT RUN**이며, 선행 CI HEAD의 Docker Job SUCCESS는 이 HEAD의 Docker 재실행으로 취급하지 않는다. 실 CAD/GPU/현장 수용은 **NOT RUN**.
+- 원인/수정: 테스트 helper `result()`가 공유 Polygon geometry 참조를 반환했고, deep-copy 검증이 `x=900`으로 변이해 후속 테스트 fixture를 오염시켰다. `src/tests/unit/generated-document.test.ts`에서 helper 호출별 `structuredClone(geometry)`를 반환하고, 변이 후 새 fixture가 `[0,0]`인지 확인하는 assertion을 추가했다. 닫힘 검증 및 제품 validator는 변경하지 않았다. Issue52의 당시 closure fixture 가설은 계획 시점 기록으로 보존하고 아래 [Issue52](Issue52.md)/[FailureLedger](FailureLedger.md)에 최종 원인과 구분한다.
+- PR Run `40169744777`의 이전 6 Unit 실패와 최초 TS 실패는 각각 당시 단계 결과로 보존한다. 이번 로컬 PASS는 PR CI 성공, GHCR 게시, 병합, Issue 종료를 의미하지 않는다. [Issue52](Issue52.md), [TestPlan](TestPlan.md), [FailureLedger](FailureLedger.md).
+
+## Issue #52 / PR #79 — 최초 TypeScript 실패·P2 3건 수정 (새 CI 전)
+
+- [Run 40168296155](https://github.com/planner77/layoutManager/actions/runs/40168296155) HEAD `40aba11f`: npm ci/Prisma PASS, Typecheck **FAIL** (E2E `Event.key`/`ctrlKey` TS2339 ×2); Lint/Unit/Benchmark/Build/Chromium E2E/Legacy SKIPPED, 별도 Docker SUCCESS.
+- 코드 보완: 타입 지정 input keydown, 먼 WCS 기준 Ring area, Undo 삭제 복구 capacity 예약/호환불가 history 무효화, stale selection staged commit 거부. 신규 Unit TC-E2-UNIT-006~008. 코드를 작성한 것과 실제 테스트 PASS를 구분한다.
+- 현재 세션 로컬 TypeScript/ESLint/Vitest/Build/Playwright/실 CAD·GPU **NOT RUN**. 새 PR CI는 시작 여부와 성공 여부를 별도 보고하며 병합/GHCR/Issue 종료 없음. [FailureLedger](FailureLedger.md).
+
+
+## U-ISSUE52-20261025 — E2 GeneratedDocument/Command/Undo·Redo 작업 브랜치 (검증 전)
+
+- Branch `feat/issue-52-generated-command-history` / v0.38.0. E1 main 병합 기준 별도 작업, 루트 `DESIGN.md` 부재로 `out/Architecture.md`/ADR-044 사용.
+- 구현 파일: `domain/generated-document.ts`, `domain/generated-keyboard.ts`, `viewers/core/adapter.ts`, `viewers/three-dxf-viewer/adapter.ts`, `features/cad-viewer/viewer.tsx`. 기준 geometry 불변 + WCS affine/원자 명령 + bounded history + Undo/Redo UI/키보드, Tree/Scene/Export projection. Source/DB/API/Worker 원본 변경 없음.
+- 테스트 작성: `tests/unit/generated-document.test.ts` TC-E2-UNIT-001~003, `generated-keyboard.test.ts` TC-E2-UNIT-004, `generated-manager.test.ts` TC-E2-UNIT-005, `tests/e2e/issue52-generated-history.spec.ts` TC-E2-E2E-001~002. **CODED / NOT EXECUTED**: 이 세션에서 npm ci, TypeScript/ESLint, Vitest, Build, Playwright, GPU/실도면, Legacy migration은 실행하지 않았다. 작성·커밋은 PASS 증거가 아니다.
+- #53~#55 실제 삭제/드래그·수치/회전 UI 및 #56 안전한 편집 JSON Import는 범위 밖. 현재 테스트와 Adapter 등록 API는 후속 구현의 계약 검증만 한다. 운영/Server P4 저장은 Owner 보안 정책 승인 전 BLOCKED.
+- PR CI는 PR 생성으로 별도 시작하며 사용자가 모니터링 생략을 지시했다. **PR CI의 성공/실패/GHCR 게시/병합/이슈 종료는 여기서 미확인·미완료**. 별도 수행/관측한 사실이 없으면 PASS로 갱신하지 않는다. 상세 [Issue52](Issue52.md)/[TestPlan](TestPlan.md).
 
 
 ## U-ISSUE66-PR78-FAIL-20261025 — 첫 CI Unit 정적 계약 차단, Docker 실측 성공

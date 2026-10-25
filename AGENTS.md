@@ -1,5 +1,10 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## #67 / main 정렬 — #52 v0.38.0 반영, #67 v0.38.1 (2026-10-25)
+
+- 최신 main의 Issue #52 E2 생성 객체 편집·Undo/Redo 변경을 보존하며 #67 웹 Docker Runtime 레이어 최적화만 병합한다. #52의 ADR-044와 충돌하지 않도록 #67 웹 패키징 설계는 ADR-045로 재지정한다. PR CI의 최신 통합 HEAD 검증 후 병합·GHCR 후보 Pair 게시. 이전 #67 0.37.2는 **미게시 작업 브랜치 버전**이었다.
+
+
 ### Issue #67 / PR #80 — Python audit syntax 실패 및 CI early gate (2026-10-25)
 
 - P1 리뷰 수정 HEAD `95cd745`의 [PR CI 40171968883](https://github.com/planner77/layoutManager/actions/runs/40171968883) Docker Job `121104610668` FAIL: Python audit `f-string`의 종료 문자 누락. **이미지 mismatch 아님**, 실제 layer hash/Compose 검증은 SKIPPED, Verify E2E 상태는 확인 당시 in_progress였다.
@@ -12,12 +17,31 @@
 - 해결: 실제 baseline이 중복 레이어를 포함할 때에만 SHA/중복 raw bytes와 positive saving 강제, 정상 deduplicated baseline이면 no-saving도 허용. 두 경우 **optimized no-dup/native .node/최종 package SHA 일치, Docker runtime/Compose·API, 브라우저 E2E/Legacy**는 전부 검증한다. Python positive/negative fixture 추가. 새 HEAD PR CI PASS 전 merge/GHCR success 주장 금지, 검증 이력은 [FailureLedger](out/FailureLedger.md).
 
 
-## Issue #67 — 웹 Standalone 중복 SQLite 패키지 레이어 안전 제거 (2026-10-25 / v0.37.2)
+## Issue #67 — 웹 Standalone 중복 SQLite 패키지 레이어 안전 제거 (2026-10-25 / v0.38.1)
 
 - 웹 Docker `runtime`에서 `.next/standalone` 다음에 별도 `node_modules/better-sqlite3` COPY를 **제거**한다. `next.config.ts`의 `outputFileTracingIncludes`(native SQLite/Prisma)와 `serverExternalPackages`는 유지한다. 이미지 빌드 시 `better_sqlite3.node` 존재 검사 및 `require('better-sqlite3')` SQLite `:memory:` smoke 실패면 이미지 빌드도 실패한다.
 - PR CI: 같은 HEAD 소스·Node22.14.0·linux/amd64의 *PR base Dockerfile*과 최종 `runtime`을 동시에 빌드. `audit_standalone_layers.py`에서 실제 Docker save layer TAR file SHA256/기존 중복/new 중복 없음과 최종 package identity, `docker inspect .Size`/`history`/`du`로 비압축 bytes/MiB/%를 검사한다. Asset 원본 Nanum TTF/파생 typeface/LibreDWG JS/WASM raw·gzip proxy 및 server traced top20도 출력한다. **압축 GHCR OCI layer 크기와 gzip TAR proxy를 혼동 금지**.
 - 새 Docker Compose API smoke는 disposable `/data`에서 master→DXF 등록→재migration/restart→Current/content read→delete/404 및 health를 검증한다. 기존 Typecheck/Lint/Unit/Playwright·Legacy/두 DXF 뷰어·DWG WASM·font, UID10001, Prisma/Compose, S3/local, DB schema/보안 경계를 그대로 유지. 실 운영 데이터·GHCR immutable digest/압축 OCI 수치 및 실제 렌더러·S3 현장 수용은 별도. `CI START`는 `PASS`가 아니다.
-- `DESIGN.md` 부재 → `out/Architecture.md`/ADR-044 설계 기준. 기능/추적/시험/배포: [Issue67](out/Issue67.md), [Issue28](out/Issue28.md), [Operation](out/Operation.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md). 실패 시 [FailureLedger](out/FailureLedger.md)를 기존 Run/Job/HEAD/조치와 함께 누적 기록한다.
+- `DESIGN.md` 부재 → `out/Architecture.md`/ADR-045 설계 기준. 기능/추적/시험/배포: [Issue67](out/Issue67.md), [Issue28](out/Issue28.md), [Operation](out/Operation.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md). 실패 시 [FailureLedger](out/FailureLedger.md)를 기존 Run/Job/HEAD/조치와 함께 누적 기록한다.
+
+
+## Issue #52 / PR #79 — 두 번째 CI Unit 실패 수정 및 QA 결과 (2026-10-25)
+
+- 두 번째 Verify의 6 Unit 실패 원인은 `generated-document.test.ts` fixture helper geometry 공유와 deep-copy 검증 변이로 인한 테스트 간 오염이었다. 호출별 deep clone/fresh fixture 검증으로 교정했고 제품의 Ring closure 검사/validator는 유지했다.
+- Issue #52를 재개하거나 릴리스할 때 실제 로컬 검증·대행 역할·미검증 범위는 [TestReport](out/TestReport.md), 두 CI 실패 원인은 [FailureLedger](out/FailureLedger.md), AC는 [Issue52](out/Issue52.md)를 확인한다. 새 PR CI 성공 여부는 별도 확인한다.
+
+## Issue #52 / PR #79 — TypeScript 실패와 무결성 리뷰 보완 (2026-10-25)
+
+- 최초 [PR CI 40168296155](https://github.com/planner77/layoutManager/actions/runs/40168296155) HEAD `40aba11f`: E2E 테스트 `Event.key/ctrlKey` TS2339 2건으로 Typecheck FAIL, Lint/Unit/Build/E2E/Legacy SKIPPED, Docker 별도 SUCCESS. `querySelector<HTMLInputElement>`로 typecheck 오류 보완.
+- 별도 P2 리뷰 3건: 고 WCS 원점에서 먼 Polygon의 면적 상쇄→상대좌표, 삭제 복구 capacity 예약 초과→호환불가 Undo 이력 무효화, stale staged 선택 우회→현재 선택 비교/모드 변경 취소. TC-E2-UNIT-006~008 추가, 원본 Source/DB/API/P4 불변. 자세한 실패·P2 원장 [FailureLedger](out/FailureLedger.md)/[Issue52](out/Issue52.md). 새 HEAD 시험 전 PASS 금지.
+
+
+## Issue #52 / E2 — 생성 개체 Document·Command·Undo/Redo 기반 (2026-10-25)
+
+- v0.38.0: E1 (#51) UUID 기반 Generated Ref를 재사용하며 브라우저 메모리의 `GeneratedDocument`를 유일한 생성 개체 상태로 사용한다. 기존 Scene `savedGroup`, #43 Tree, v1/v2 임시 JSON 내보내기는 Document 투영이며 원본 Source/Worker Preview는 **편집 불가·Document 미포함**.
+- `executeGeneratedCommand` 및 stage/commit/cancel, `undoGeneratedEdit/redoGeneratedEdit`를 Manager/Adapter에서 노출. 편집 대상은 같은 Version·SHA의 전부 GENERATED·유효 UUID·선택 목록과 정확히 일치해야 하고 변환 전/후 WCS 좌표를 전체 검증한다. 한 명령=한 이력, 실패는 전체 롤백. HISTORY_MAX=100, 예상 이력 메모리 16MiB, polygon 총 정점 100k; #53~#55 실제 Delete/Move/Rotate UI는 **별개**.
+- Ctrl/⌘+Z, Ctrl/⌘+Shift+Z, Ctrl+Y는 Viewer 안에서만 활성화하고 입력/텍스트 편집과 충돌하지 않는다. Zoom/Pan/트리 표시·숨김/생성 모드 전환은 이력에 기록하지 않는다. 재로드/Version/Renderer/Dispose 시 모두 폐기. P4 인증·권한 승인 전 서버 API/DB/Attestation 우회 금지.
+- 근거와 테스트 상태: [Issue52](out/Issue52.md), [ADR-044](out/Decisions.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md). 원격 작업 환경에서 작성된 테스트는 로컬 NOT RUN이며 CI 성공/실 CAD 사용 가능 판정과 구분한다.
 
 
 ## Issue #66 / PR #78 — 최초 CI 실패 원인·수정 지침 (2026-10-25)
@@ -254,6 +278,7 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 | [Issue38](out/Issue38.md) | Viewer 앱형 메뉴·도킹 셸/ESC 상태·후속 U2/U3/U6 계약 | Viewer shell·도킹·메뉴·검색/선택 ESC 변경 시 |
 | [Issue39](out/Issue39.md) | Viewer 메뉴와 레이어 패널 표시 상태 독립/접근성·포커스·회귀 근거 | 레이어 메뉴·도크 접기/Renderer·fullscreen 레이어 UX 변경 시 |
 | [Issue51](out/Issue51.md) | 원본/생성 객체 통합 선택·편집 가능 판정·트리/Canvas 동일 선택 집합 | 객체 선택·편집 권한/Geometry·Overlay·선택 모드 변경 시 |
+| [Issue52](out/Issue52.md) | 브라우저 GeneratedDocument·Command/Undo·Redo·이력 메모리 및 보안 범위 | 생성 개체 변형·Undo/Redo·Tree/Scene/JSON 투영·#53~#56 변경 시 |
 | [Issue42](out/Issue42.md) | U5 업무 타입 지정·이름 및 schemaVersion 2 JSON 계약·#65 보안 승인 경계 | Viewer 타입 선택·외곽선 임시 확정·JSON/Tree 연계 변경 시 |
 | [Issue40](out/Issue40.md) | U3 외곽선 ON/OFF·Worker 취소·임시 확정/JSON 보존 정책 및 AC 추적 | 외곽선 메뉴·객체 선택·취소·임시 Overlay/Renderer·ESC 변경 시 |
 | [FailureLedger](out/FailureLedger.md) | PR/Main CI 관측 실패·조치·재검증 누적 원장 | CI 실패·취소·재시작 시 |
