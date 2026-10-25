@@ -150,14 +150,21 @@ export function CadMemoOverlay({
     {placing && <div role="button" tabIndex={0}
       data-testid="cad-memo-placement-plane"
       aria-label="Canvas에서 임시 메모 위치 지정"
-      title="클릭해서 도면 WCS 좌표 지정 · ESC 취소. 키보드는 하단 WCS 좌표 입력 사용."
+      title="Canvas 클릭 또는 Enter/Space로 화면 중심 WCS 위치 지정 · ESC 취소. 키보드 수치 위치 수정 가능."
       className="pointer-events-auto absolute inset-0 cursor-crosshair bg-transparent"
       onClick={event => {
         if (event.button !== 0) return;
         const point = getManager()?.clientToWcs(event.clientX, event.clientY);
         if (point) onPlace(point);
       }}
-      onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') event.preventDefault(); }}
+      onKeyDown={event => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        const rect=root.current?.getBoundingClientRect();
+        if (!rect) return;
+        const point=getManager()?.clientToWcs(rect.left+rect.width/2,rect.top+rect.height/2);
+        if (point) onPlace(point);
+      }}
     />}
     {candidateScreen && <span data-testid="cad-memo-candidate-pin" aria-label="확정 전 메모 위치"
       className="pointer-events-none absolute flex h-6 w-6 items-center justify-center rounded-full border-2 border-dashed border-white bg-amber-400/70 text-xs font-semibold text-black"
