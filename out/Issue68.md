@@ -1,6 +1,6 @@
 # Issue #68 — GitHub Actions 실행명 표준화
 
-Date: 2026-10-25 · Scope: CI workflow metadata and documentation only · Status: PR validation pending
+Date: 2026-10-25 · Scope: CI workflow metadata, documentation and release-publish safety gate · Status: PR validation pending
 
 ## 목적
 
@@ -14,7 +14,7 @@ Date: 2026-10-25 · Scope: CI workflow metadata and documentation only · Status
 | --- | --- | --- | --- |
 | `pull_request` | `PR CI` | PR 제목을 `#68 \| Actions 실행명 정리`와 같이 시작 | `PR CI \| #68 \| Actions 실행명 정리` |
 | `workflow_dispatch` | `MANUAL CI` | `issue_ref`, `run_description` | `MANUAL CI \| #68 \| CI 재검증` |
-| `push: main` | `MAIN/GHCR` | squash merge **커밋 제목**에 `#68 \| Actions 실행명 정리` 지정 | `MAIN/GHCR \| #68 \| Actions 실행명 정리` |
+| `push: main` | `MAIN CI` | squash merge **커밋 제목**에 `#68 \| Actions 실행명 정리` 지정 | `MAIN CI \| #68 \| Actions 실행명 정리` |
 | `push: v*.*.*` | `RELEASE` | 버전 태그에 특정 Issue 강제 연계하지 않음 | `RELEASE \| NO-ISSUE \| v0.35.0 GHCR 이미지 게시` |
 
 연관 이슈가 실제 없으면 PR 제목/커밋 제목을 `NO-ISSUE | 설명`으로 시작한다. PR 및 main 커밋 제목이 위 규약을 따르지 않으면 `ISSUE-UNKNOWN`을 접두에 붙여 *확인 불가*를 명시한다. Issue가 없다고 단정하지 않는다. 수동 실행의 Issue 참조 기본값은 `NO-ISSUE`이다.
@@ -38,12 +38,21 @@ Date: 2026-10-25 · Scope: CI workflow metadata and documentation only · Status
 | TC-CI-NAME-003 | 수동 issue_ref `#68` / run_description `CI 재검증`; 기본값 | `MANUAL CI | #68 | CI 재검증`; `MANUAL CI | NO-ISSUE | 수동 검증` | main 반영 후 가능 |
 | TC-CI-NAME-004 | main squash subject `#68 | Actions 실행명 정리`, `NO-ISSUE | 정리`, 비정형 제목 | `MAIN/GHCR` + 적절한 참조·설명 / 비정형은 `ISSUE-UNKNOWN` | main push 미실행 |
 | TC-CI-NAME-005 | tag `v0.35.0` | `RELEASE | NO-ISSUE | v0.35.0 GHCR 이미지 게시` | tag push 미실행 |
-| TC-CI-NAME-006 | workflow 구문 및 기존 triggers/jobs/concurrency/permissions diff | 실행 정책·GHCR 배포 로직 불변 | 문자열 diff 검증: 기존 PR trigger와 두 YAML의 permissions/concurrency/jobs/main push 로직 동일. Actions YAML 서버 평가 미확인 |
+| TC-CI-NAME-006 | workflow 구문 및 기존 triggers/jobs/concurrency/permissions diff | 기존 trigger/권한/concurrency/배포 Step 불변, `release-scope` 조건부 추가 | 문자열 diff 검증: 기존 PR trigger와 기존 Publish Steps 보존, 릴리스 scope Job 신규 추가. Actions YAML 서버 평가 미확인 |
 
 **작성 후 정적 점검:** 신규 형식·이슈 없음·비정형 PR/Main·tag·manual 7개 fixture의 명명 로직과 두 YAML 기존 실행 구간의 diff를 검사했다. 이는 Actions parser/Runner 검증을 대체하지 않는다.
+
+## PR #69 배포 제외 추가 검증
+
+- [Run 40157364426](https://github.com/planner77/layoutManager/actions/runs/40157364426): 원 HEAD `cfad5eff`의 PR CI **SUCCESS** 확인; Codex 리뷰 미해결 0건, 충돌 clean.
+- PR #69의 사용자 추가 조건: GHCR 게시 생략, Main CI 시작 및 Issue 종료. 기존 Release Job은 버전 이미지 누락 시 메타데이터 변경만으로도 이미지를 게시할 수 있으므로 위 `release-scope`를 추가했다.
+- `TC-CI-SCOPE-001`: Markdown + Workflow YAML만 있는 이번 PR -> `publish=false`, `build-and-push`는 SKIPPED, Main CI scope job 실행 확인 예정.
+- `TC-CI-SCOPE-002`: `src/**`, Dockerfile 등 하나라도 포함되면 게시 판단 경로 진입.
+- `TC-CI-SCOPE-003`: Release Tag push는 기존 publish 유지; before SHA 비교 불가능하면 main CI 실패, 의도치 않은 게시 금지.
+- **주의:** scope gate 추가 이후 HEAD는 기존 성공 HEAD와 달라진다. 새 PR CI/실제 Main CI 결과는 각각 실제 run 확인 전 PASS로 간주하지 않는다.
 
 실행하지 않은 CI, Main 이미지 게시, tag 검증은 PASS로 기록하지 않는다. 실제 Run ID와 Head SHA를 확인한 뒤 결과를 갱신한다.
 
 ## 영향
 
-App/DXF/DWG/DB/Prisma/Dockerfile/버전 및 GHCR tag 생성 정책 변경 없음. 워크플로 제목, 수동 실행 폼, 개발 협업 규칙만 변경한다. 롤백은 본 변경 revert로 가능하다.
+App/DXF/DWG/DB/Prisma/Dockerfile/버전 및 GHCR 이미지 쌍 출시 로직 변경 없음. 워크플로 실행명, 수동 폼, main scope 검증과 메타데이터-only GHCR 게시 차단만 변경한다. 롤백은 본 변경 revert로 가능하다.
