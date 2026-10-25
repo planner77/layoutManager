@@ -16,6 +16,7 @@ import { isLiveOutlineRequest, outlineToolUnavailableReason } from '@/features/c
 import { ViewerManager, type OutlineInfo, type SavedOutline, type SavedOutlineOverlayState } from '@/viewers/core/adapter';
 import {buildOutlineExport} from '@/domain/outline-draft';
 import {canvasEditCapability,type CanvasObjectRef} from '@/domain/canvas-object-selection';
+import {getGeneratedHistoryShortcut} from '@/domain/generated-keyboard';
 import {resolveOutlineAssignment,selectableOutlineTypes,type ScopedOutlineCatalog} from '@/domain/outline-assignment';
 import type {OutlineKind,OutlineEntity} from '@/viewers/core/outline-geometry';
 import type {OutlineResult} from '@/viewers/core/outline-compute';
@@ -87,6 +88,7 @@ export function CadViewer({
   const [savedCount,setSavedCount]=useState(0);
   const [savedOutlines,setSavedOutlines]=useState<SavedOutline[]>([]);
   const [savedOverlayStates,setSavedOverlayStates]=useState<SavedOutlineOverlayState[]>([]);
+  const [generatedHistory,setGeneratedHistory]=useState({undo:0,redo:0,limit:100});
   const [selectedOutlineTypeId,setSelectedOutlineTypeId]=useState('');
   const [outlineName,setOutlineName]=useState('');
   const [outlineNotice,setOutlineNotice]=useState<string|null>(null);
@@ -168,11 +170,32 @@ export function CadViewer({
   }, []);
 
 
-  /** Pull tree state from the active adapter only when an overlay changes. */
+  /** Both Tree/Export and history are projections of one generated document. */
   const syncSavedOutlines = useCallback(() => {
     setSavedOutlines(manager.current?.getSavedOutlines() ?? []);
     setSavedOverlayStates(manager.current?.getSavedOutlineStates() ?? []);
+    setGeneratedHistory(manager.current?.getGeneratedHistory() ?? {undo:0,redo:0,limit:100});
   }, []);
+  useEffect(() => {
+    const handleKeyDown = (event:KeyboardEvent) => {
+      if(event.key==='Escape' && manager.current?.cancelGeneratedCommand()){
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        return;
+      }
+      const action=getGeneratedHistoryShortcut(event);
+      if(!action || !viewerShell.current?.contains(document.activeElement))return;
+      const history=manager.current?.getGeneratedHistory();
+      if(!history || (action==='undo'?history.undo:history.redo)===0)return;
+      event.preventDefault();
+      if(action==='undo')manager.current?.undoGeneratedEdit();
+      else manager.current?.redoGeneratedEdit();
+      syncSavedOutlines();
+    };
+    // Capture ahead of native fullscreen/selection handling for staged edit ESC.
+    window.addEventListener('keydown',handleKeyDown,true);
+    return ()=>window.removeEventListener('keydown',handleKeyDown,true);
+  },[syncSavedOutlines]);
   const stopOutlineEditing = useCallback(() => {
     // Must cancel the Worker BEFORE clearing selection: selection callbacks can
     // otherwise enqueue a new compute job for the previous previewKind.
@@ -192,6 +215,7 @@ export function CadViewer({
     setSavedCount(0);
     setSavedOutlines([]);
     setSavedOverlayStates([]);
+    setGeneratedHistory({undo:0,redo:0,limit:100});
     setCanvasMode('pan');
     setCanvasSelection([]);
     setSelectedOutlineTypeId('');
@@ -576,7 +600,7 @@ export function CadViewer({
         outlineAvailable || (renderer === 'three-dxf-viewer' && format === 'DXF' && state.ready && savedCount > 0) ? <>
           {outlineAvailable && <div data-testid="cad-object-selection-tools"
             className="flex flex-wrap items-center gap-2 border-b border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-800">
-            <strong>객체 선택 (E1)</strong>
+            <strong>객체 선택 (E1) · 로컬 편집 이력 (E2)</strong>
             <Button size="sm" variant={canvasMode==='pan'&&!appState.outlineToolEnabled?'default':'outline'}
               data-testid="canvas-mode-pan" aria-pressed={canvasMode==='pan'&&!appState.outlineToolEnabled}
               onClick={()=>changeCanvasMode('pan')}>탐색 (Pan)</Button>
@@ -588,6 +612,15 @@ export function CadViewer({
               onClick={()=>changeCanvasMode('generated')}>생성 개체만 선택</Button>
             <Button size="sm" variant="outline" disabled={!canvasSelection.length}
               onClick={()=>manager.current?.clearCanvasObjectSelection()}>통합 선택 해제</Button>
+            <Button size="sm" variant="outline" data-testid="generated-undo"
+              disabled={generatedHistory.undo===0} title="생성 개체 편집 취소 (Ctrl/⌘+Z)"
+              onClick={()=>manager.current?.undoGeneratedEdit()}>실행 취소 ({generatedHistory.undo})</Button>
+            <Button size="sm" variant="outline" data-testid="generated-redo"
+              disabled={generatedHistory.redo===0} title="생성 개체 편집 다시 실행 (Ctrl/⌘+Shift+Z / Ctrl+Y)"
+              onClick={()=>manager.current?.redoGeneratedEdit()}>다시 실행 ({generatedHistory.redo})</Button>
+            <span data-testid="generated-history-status" className="text-slate-600">
+              최대 {generatedHistory.limit}단계 · 세션 임시 · 편집 결과는 서버에 저장되지 않음
+            </span>
             <span data-testid="canvas-selection-count">
               선택 {canvasSelection.length}개 · 원본 {sourceCount}개 · 생성 {generatedCount}개
             </span>

@@ -1,5 +1,40 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## PR #79 실패 및 P2 재발 방지 계획 (2026-10-25)
+
+아래 E2 표의 CODED / NOT RUN 및 작성 / NOT RUN은 최초 작성 시점 상태를 보존한 기록이다. 현재 실행 결과는 [수정 HEAD 로컬 QA](#issue-52-재검증-결과--수정-head-로컬-qa-2026-10-25)와 [TestReport](TestReport.md)를 따른다.
+
+| TC | 범위 | 검증 내용 | 상태 |
+| --- | --- | --- | --- |
+| TC-E2-UNIT-006 | E2-AC1 | WCS (1e9,1e9) 원점에서 먼 1×1 Polygon이 false degenerate로 거부되지 않음 | CODED / NOT RUN |
+| TC-E2-UNIT-007 | E2-AC1/3 | Delete 후 60k+60k 정점·100개 경계 새 append 시 복구 Undo 한도 초과 방지, 중복 ID 거부 | CODED / NOT RUN |
+| TC-E2-UNIT-008 | E2-AC2/3 | stage A 후 현재 B 또는 혼합 SOURCE 선택은 전체 commit 거부, 동일 선택만 1회 확정 | CODED / NOT RUN |
+| TC-E2-E2E-001 | CI TS2339 | `HTMLInputElement` 키보드 이벤트 타입 고정 및 기존 native Ctrl+Z 검증 | CODE FIX / NOT RUN |
+
+첫 Run `40168296155`: Typecheck 실패, 뒤 단계 SKIPPED, 독립 Docker SUCCESS; 최신 HEAD에서 전체 PR CI 필요.
+
+## Issue #52 재검증 결과 — 수정 HEAD 로컬 QA (2026-10-25)
+
+- 실제 원인은 `generated-document.test.ts`의 `result()` helper가 geometry 참조를 공유하여 deep-copy mutation이 후속 fixture를 오염시킨 것이었다. 호출별 `structuredClone`과 fresh fixture `[0,0]` assertion으로 수정; 닫힘 검사/제품 validator는 그대로 유지. 사전 계획의 fixture closure 가설은 가설로 보존한다.
+- `TC-E2-UNIT-001~008` 포함 전체 Vitest **202/202 PASS**; Typecheck PASS; Lint PASS(오류 0, 기존 ARIA warning 1); GHCR pair parser 3/3 PASS; outline benchmark PASS; production build PASS; Chromium E2E **65/65 PASS**; Legacy migration **1/1 PASS**. [TestReport](TestReport.md)에서 환경/실행 역할과 한계를 확인한다.
+- Docker 로컬 **NOT RUN**(test-only 수정); 기존 다른 실행 HEAD의 Docker 성공은 최신 HEAD 실증으로 계산하지 않는다. 실 CAD/GPU/운영 수용도 NOT RUN. PR CI 성공 전에는 이 로컬 결과만으로 CI/게시/병합 완료를 주장하지 않는다.
+
+
+## Issue #52 / E2 v0.38.0 — Command·History·Keyboard·Scene 수용 계획 (2026-10-25)
+
+| Test Case | AC | 검증 내용 | 현재 |
+| --- | --- | --- | --- |
+| TC-E2-UNIT-001 | E2-AC1/5 | 생성 2개 Polygon+MultiPolygon/Hole, Translate/Rotate 2회→Undo2→Redo2: UUID·순서·기준 Geometry·변환·provenance 왕복; input Geometry deep-copy/freeze | 작성 / NOT RUN |
+| TC-E2-UNIT-002 | E2-AC2 | SOURCE/혼합, 다른 Version, duplicate/ref spoof, missing/hidden ID, NaN/Infinity·과도 좌표·잘못된 Pivot·중복 Delete에서 전체 무변경/History 0; 다중 Delete 순서 복원 | 작성 / NOT RUN |
+| TC-E2-UNIT-003 | E2-AC3/4 | stage/ESC·cancel은 0 history, 1 commit=1 history, visibility는 history 제외, redo 무효화, 100 entry trim, dispose/clear 리소스 정리 | 작성 / NOT RUN |
+| TC-E2-UNIT-004 | E2-AC3 | Ctrl/⌘+Z, Shift+Z, Ctrl+Y 및 input/textarea/select/contenteditable/alt/defaultPrevented native 이벤트 비침범 | 작성 / NOT RUN |
+| TC-E2-UNIT-005 | E2-AC4/5 | ViewerManager 명령·History·취소/Dispose 위임, 미지원 Viewer는 fail-closed | 작성 / NOT RUN |
+| TC-E2-E2E-001 | E2-AC3/4 | 유효 group90 합성 DXF 생성 외곽선과 tree, 버튼 disabled/no edit history, 원본 input Ctrl+Z native 유지, renderer reload/History 폐기 | 작성 / NOT RUN |
+| TC-E2-E2E-002 | E2-AC4/5 | dxf-viewer 비지원 상태에서 생성 history UI 없음 | 작성 / NOT RUN |
+
+**회귀 게이트:** TC-E1-UNIT-001~004/E2E-001~003, TC-U6/#43 Tree, #31 Precise Worker+v1 JSON, #40 OFF/ON, #42 typed v2, #17/#25/#26/#38/#39, TypeScript/ESLint/Vitest/Build/Playwright/Docker/Legacy migration. Scene/Worker/GPU 반복 실측 및 실 DXF 데이터는 PR CI 합성 시험과 분리. 현 세션 로컬 실행은 NOT RUN, PR CI 실행 결과 확인 전 PASS 금지. `#31 P4` 서버 인증 정책 Gate 불변. [Issue52](Issue52.md).
+
+
 ## Issue #66 / PR #78 — 첫 PR CI 차단 원인 및 수정 TC (2026-10-25)
 
 | TC | 최초 Run 40167191799 | 교정 및 재검증 기대 |

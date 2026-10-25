@@ -1,5 +1,24 @@
 # ChangeLog
 
+### v0.38.0 / Issue #52 QA 보완 (2026-10-25)
+
+- 테스트 helper의 공유 Polygon 참조가 deep-copy mutation으로 후속 fixture를 오염시키던 원인을 `structuredClone` 격리와 fresh fixture assertion으로 수정. 제품 validator/Ring closure 검증, 앱 버전 및 기능 동작은 변경하지 않음.
+- 독립 로컬 gate Unit 202/202, Typecheck/Lint/Build, Chromium E2E 65/65, Legacy migration 1/1 PASS. PR CI 성공·로컬 Docker·실 CAD/GPU/배포를 주장하지 않음. 상세 [TestReport](TestReport.md) / [Issue52](Issue52.md).
+
+### v0.38.0 / PR #79 Typecheck 차단·P2 무결성 보완 (2026-10-25)
+
+- 첫 CI `40168296155`의 E2E 테스트 Event TS2339 2건을 input keyboard type 좁히기로 보완. 뒤 Verify 단계 SKIPPED, 별도 Docker SUCCESS 보존.
+- 고 WCS 면적 계산, Undo 복원 용량 정책, staged command 최신 선택 검증 및 TC-E2-UNIT-006~008 추가. 새 CI/실도면 검증 전 성공 미주장.
+
+
+## v0.38.0 — Issue #52 E2 생성 개체 Document/Undo·Redo 기반 (2026-10-25)
+
+- `GeneratedDocument`를 Version·SHA 기반 브라우저 메모리 단일 상태로 도입: E1 UUID, legacy local-N, 기준 WCS Geometry·provenance, transform/visible/edit flag 유지. Overlay Scene/Hit/Tree/기존 임시 JSON은 Document에서 투영하며 GPU 그룹 증분 갱신/dispose.
+- Generated-only/전체 선택 검증과 원자적 Delete/Translate/Rotate 도메인 명령(후속 E3~E5 UI 미구현), preview-independent stage/commit/cancel, Undo/Redo 최대 100단계·추정 16MiB 및 Redo 분기 무효화.
+- Viewer Undo/Redo 버튼과 Ctrl/⌘+Z·Ctrl/⌘+Shift+Z·Ctrl+Y(입력 native 우선), Session 작업 소멸 안내. 원본 DXF/DB/서버 API·Source 인덱스 변경 없음; #31 P4 보안 Gate 유지. 
+- Unit/Chromium E2E 시나리오·[Issue52](Issue52.md)/ADR-044/Requirements/Architecture/TestPlan/TestReport/README/AGENTS 문서 갱신. 로컬/현장 검증 NOT RUN, PR CI 성공은 확인 전 주장하지 않음.
+
+
 ### PR #78 / 최초 CI 보완 — v0.37.1 버전 유지 (2026-10-25)
 
 - [Run 40167191799](https://github.com/planner77/layoutManager/actions/runs/40167191799): TypeScript/ESLint PASS, Vitest **187 PASS/1 FAIL** (`TC-IMAGE-003` 이전 `node scripts/run.mjs deploy` 기대와 새 migrator `tsx scripts/deploy.ts` 불일치); Unit 실패로 이후 Build/E2E/Legacy SKIPPED. 기존 테스트를 실제 분리된 migrator entrypoint와 Compose 생명주기 계약으로 개정, `TC-IMG66-010` Migration→Backfill 순서 회귀 추가.

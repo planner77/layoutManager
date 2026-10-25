@@ -1,5 +1,21 @@
 # PR/Main CI 실패 원장
 
+## Issue #52 / PR #79 — QA 독립 재검증 및 두 번째 Unit 실패 원인 (2026-10-25)
+
+- [Run 40169744777](https://github.com/planner77/layoutManager/actions/runs/40169744777), HEAD `41cf16c`, Verify [Job 121097994868](https://github.com/planner77/layoutManager/actions/runs/40169744777/job/121097994868): TypeScript/Lint PASS; Unit **196 PASS/6 FAIL**, `generated-document.test.ts`에서 `닫히지 않은 Ring입니다.`. 이후 benchmark/build/E2E/Legacy **SKIPPED**. Docker [Job 121097994934](https://github.com/planner77/layoutManager/actions/runs/40169744777/job/121097994934) SUCCESS. 최초 TS 실패는 아래 별도 Issue #52 원장에 보존.
+- **실제 원인/교정:** `result()` helper가 기본 Polygon geometry 객체를 테스트 간 공유했다. deep-copy 검사 자체의 변이(`x=900`)가 공유 fixture를 오염해 뒤 테스트의 Ring closure 검사를 실패시켰다. helper가 호출별 `structuredClone(geometry)`를 반환하도록 하고 새 fixture `[0,0]` 검증을 추가. 운영 validator 및 Ring 닫힘 assertion 변경/완화 없음. 당시 사전 계획의 fixture 좌표 closure 가설은 가설로 보존하고 최종 원인과 혼합하지 않는다.
+- **재현/수정 확인:** Developer가 수정 전 대상 파일 4 PASS/6 FAIL 및 단독 detach 1 PASS를 확인했고, 수정 후 10/10 PASS를 2회 확인했다. QA는 전체 Unit **202/202**, Typecheck, Lint(오류 0/기존 ARIA warning 1), GHCR parser 3/3, synthetic outline benchmark, production build, Chromium **65/65**, Legacy migration **1/1**을 모두 독립 로컬 실행하여 PASS. 실 CAD/GPU 및 로컬 Docker NOT RUN. 상세 실행 환경·대행 역할은 [TestReport](TestReport.md).
+- 첫 TS 및 두 번째 Unit CI 실패는 서로 다른 HEAD/단계 결과로 유지한다. 로컬 재검증은 새 PR CI 성공이나 배포 결과로 전용할 수 없다.
+- **게시 전 점검:** 기존 P2 스레드 3건 모두 resolved, 미해결 0건. PR HEAD `41cf16c`가 main `bfbd523`을 포함해 behind 0/mergeable=true이며 추가 충돌 해결은 필요하지 않았다. 최종 수정 커밋을 같은 PR 브랜치에 non-force push하여 새 PR CI 시작만 확인한다. 시작 Run 링크는 PR 검증 댓글에 기록하며 모니터링·병합·GHCR 게시·이슈 종료는 수행하지 않는다.
+
+## Issue #52 / PR #79 — CI TypeScript 실패 및 P2 리뷰 3건 (2026-10-25 KST)
+
+- **최초 실패 원장:** [PR #79](https://github.com/planner77/layoutManager/pull/79), [Run 40168296155](https://github.com/planner77/layoutManager/actions/runs/40168296155) 최초 HEAD `40aba11f9bb8117149e8487c39d8cf72f9f384cd`, completed/**failure**. Verify [Job 121093743809](https://github.com/planner77/layoutManager/actions/runs/40168296155/job/121093743809): checkout/npm ci/Prisma PASS, TypeScript **FAIL** (`tests/e2e/issue52-generated-history.spec.ts:62` TS2339 `Event.key`·`Event.ctrlKey` 2건). ESLint, Unit, Benchmark, Build, Playwright, E2E, Legacy migration SKIPPED. Artifact upload Step 성공. 독립 Docker [Job 121093744225](https://github.com/planner77/layoutManager/actions/runs/40168296155/job/121093744225)는 SUCCESS.
+- **직접 원인/조치:** `querySelector`의 일반 `Element`→`Event` 타입 추론을 `querySelector<HTMLInputElement>`로 구체화해 키보드 접근 컴파일 오류를 차단. 기존 Ctrl+Z E2E 검증은 유지, skip/삭제 없음.
+- **별도 P2 리뷰 3건:** [#4369873353](https://github.com/planner77/layoutManager/pull/79#discussion_r4369873353), thread `PRRT_kwDOUQjDfc6v-6n7`: WCS (1e9,1e9) unit Polygon Shoelace cancellation → 링 원점 상대좌표 면적 검증 및 TC-E2-UNIT-006. [#4369873355](https://github.com/planner77/layoutManager/pull/79#discussion_r4369873355), thread `PRRT_kwDOUQjDfc6v-6n9`: Delete Undo + 새 append로 100k vertex/100 object 복원 초과 → Undo-restorable capacity 예약, 새 확정 시 호환불가 Undo 이력 무효화 및 TC-E2-UNIT-007. [#4369873358](https://github.com/planner77/layoutManager/pull/79#discussion_r4369873358), thread `PRRT_kwDOUQjDfc6v-6oA`: captured selection으로 stage commit이 SOURCE/혼합 또는 다른 ID 변경을 무시 → 현재 선택 재검증·선택/모드 변경 시 취소, TC-E2-UNIT-008.
+- **재검증 경계:** 기존 실패를 보존. 수정된 HEAD의 Typecheck/Lint/Unit/Build/E2E 및 실 CAD/GPU 결과는 아직 **NOT VERIFIED**. 새 PR CI 실행 시작과 성공은 별도, 원본 DXF/Worker/DB/서버 API/#31 P4 보안 정책 불변.
+
+
 ## Issue #66 / PR #78 — 첫 PR CI Unit 실행 계약 회귀 및 경량화 실측 (2026-10-25 KST)
 
 - **실패 원본 보존:** [PR #78](https://github.com/planner77/layoutManager/pull/78), [PR CI Run 40167191799](https://github.com/planner77/layoutManager/actions/runs/40167191799), `pull_request.synchronize`, 원 HEAD `45389a4661d424e7ad6aa6ee66bcd643bbc6ad76`, **completed/failure**. Verify [Job 121090554088](https://github.com/planner77/layoutManager/actions/runs/40167191799/job/121090554088): checkout/npm ci/Prisma generate/TypeScript/ESLint **SUCCESS**, Unit+Integration **187 PASS / 1 FAIL** (38 files passed/1 failed). OCI parser Node test, synthetic DXF benchmark, Production Build, Chromium 설치, E2E, Legacy migration E2E **SKIPPED** (실패로 주장 금지). Artifact 업로드 Step 성공했으나 파일이 없어 실제 artifact 없음.
