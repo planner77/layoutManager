@@ -39,6 +39,10 @@ test('TC-OUT-REAL-BROWSER: locally approved real-DXF rendering, mappings and sel
    await page.goto('/cad/versions/'+version.id+'/viewer?renderer=three-dxf-viewer');
    await expect(page.getByRole('status')).toContainText(/도면 표시 완료|도면 일부 표시 완료/,{timeout:120000});
    const loadMs=performance.now()-started;
+   const menu=page.getByTestId('viewer-menu-outline-tool');
+   // A real DXF with no source↔render mapped entities cannot be accepted.
+   await expect(menu).toBeEnabled({timeout:120000});
+   await menu.click();
    const tools=page.getByTestId('cad-outline-tools');
    await expect(tools).toBeVisible({timeout:120000});
    const state=await page.getByTestId('outline-render-mapping').textContent()??'';

@@ -11,6 +11,7 @@ import { LayerDropdown } from '@/features/cad-viewer/layer-dropdown';
 import { ViewerAppShell } from '@/features/cad-viewer/viewer-app-shell';
 import { ViewerMenuBar } from '@/features/cad-viewer/viewer-menu-bar';
 import { initialViewerAppState, viewerAppReducer } from '@/features/cad-viewer/viewer-app-state';
+import { isLiveOutlineRequest, outlineToolUnavailableReason } from '@/features/cad-viewer/outline-tool-policy';
 import { ViewerManager, type OutlineInfo } from '@/viewers/core/adapter';
 import type {OutlineKind,OutlineEntity} from '@/viewers/core/outline-geometry';
 import type {OutlineResult} from '@/viewers/core/outline-compute';
@@ -51,6 +52,9 @@ export function CadViewer({
   const viewerShell = useRef<HTMLDivElement>(null);
   const layerMenuButton = useRef<HTMLButtonElement>(null);
   const manager = useRef<ViewerManager | null>(null);
+  // Synchronously gate events before React's reducer has rendered the next frame.
+  const outlineEnabledRef = useRef(false);
+  const outlineRequestRevisionRef = useRef(0);
   const getManager = useCallback(() => manager.current, []);
   const loadSequenceRef = useRef(0);
   const [isNativeFullscreen, setIsNativeFullscreen] = useState(false);
@@ -71,6 +75,7 @@ export function CadViewer({
   const [preview,setPreview]=useState<OutlineResult|null>(null);
   const [previewError,setPreviewError]=useState<string|null>(null);
   const [savedCount,setSavedCount]=useState(0);
+  const [outlineNotice,setOutlineNotice]=useState<string|null>(null);
   const [state, setState] = useState<{ status: string; ready: boolean; error?: string; warning?: string }>({
     status: '도면 로딩 중…',
     ready: false,
@@ -149,17 +154,69 @@ export function CadViewer({
   }, []);
 
 
+  function stopOutlineEditing() {
+    // Must cancel the Worker BEFORE clearing selection: selection callbacks can
+    // otherwise enqueue a new compute job for the previous previewKind.
+    outlineRequestRevisionRef.current++;
+    manager.current?.cancelOutlinePreview();
+    manager.current?.clearOutlineSelection();
+    manager.current?.setSelectionMode('pan');
+    setOutlineMode('pan');
+    setOutlineSelection([]);
+    setPreview(null);
+    setPreviewError(null);
+  }
   function resetOutline() {
-    setOutlineInfo(null);setOutlineMode('pan');setOutlineSelection([]);
-    setPreview(null);setPreviewError(null);setSavedCount(0);
+    outlineEnabledRef.current = false;
+    stopOutlineEditing();
+    setOutlineInfo(null);
+    setSavedCount(0);
+    setOutlineNotice(null);
+  }
+  function toggleOutlineTool() {
+    if (!outlineAvailable) return;
+    const enabled = !outlineEnabledRef.current;
+    outlineEnabledRef.current = enabled;
+    if (enabled) {
+      outlineRequestRevisionRef.current++;
+      manager.current?.setSelectionMode('select');
+      setOutlineMode('select');
+      setOutlineNotice(null);
+    } else {
+      stopOutlineEditing();
+      setOutlineNotice('외곽선 생성 OFF: 비확정 선택·미리보기 및 진행 중 계산이 취소되었습니다. 임시 확정 결과와 JSON 내보내기는 유지됩니다.');
+    }
+    dispatchApp({ type: 'set-outline-tool', enabled });
   }
   function selectionMode(value:'pan'|'select') {
+    if (!outlineEnabledRef.current || !outlineAvailable) return;
     manager.current?.setSelectionMode(value);setOutlineMode(value);
   }
   function requestOutline(kind:OutlineKind) {
+    if (!outlineEnabledRef.current || !outlineAvailable || !outlineSelection.length) return;
+    const revision = ++outlineRequestRevisionRef.current;
     setPreviewError(null);
-    void manager.current?.previewOutline(kind).catch(error=>
-      setPreviewError(error instanceof Error?error.message:'외곽선을 만들 수 없습니다.'));
+    try {
+      void manager.current?.previewOutline(kind).catch(error => {
+        if (isLiveOutlineRequest(revision, outlineRequestRevisionRef.current, outlineEnabledRef.current, error)) {
+          setPreviewError(error instanceof Error ? error.message : '외곽선을 만들 수 없습니다.');
+        }
+      });
+    } catch (error) {
+      if (isLiveOutlineRequest(revision, outlineRequestRevisionRef.current, outlineEnabledRef.current, error)) {
+        setPreviewError(error instanceof Error ? error.message : '외곽선을 만들 수 없습니다.');
+      }
+    }
+  }
+  function confirmOutline() {
+    if (!outlineEnabledRef.current || !outlineAvailable || !preview) return;
+    try { manager.current?.confirmOutline(); }
+    catch (error) { setPreviewError(error instanceof Error ? error.message : '외곽선을 확정하지 못했습니다.'); }
+  }
+  function cancelOutline() {
+    if (!outlineEnabledRef.current || !outlineAvailable) return;
+    outlineRequestRevisionRef.current++;
+    manager.current?.cancelOutlinePreview();
   }
   function exportOutlines() {
     const outlines=manager.current?.getSavedOutlines()??[];
@@ -255,8 +312,8 @@ export function CadViewer({
           if (!active || !container.current) throw new DOMException('취소됨', 'AbortError');
           return new ThreeDxfViewerAdapter(container.current,{
             versionId,sourceSha256,
-            onSelection:value=>{if(active)setOutlineSelection(value);},
-            onPreview:(value,error)=>{if(active){setPreview(value);setPreviewError(error??null);}},
+            onSelection:value=>{if(active && outlineEnabledRef.current)setOutlineSelection(value);},
+            onPreview:(value,error)=>{if(active && outlineEnabledRef.current){setPreview(value);setPreviewError(error??null);}},
             onSaved:count=>{if(active)setSavedCount(count);},
           });
         }
@@ -286,6 +343,7 @@ export function CadViewer({
         setLayers([]);
         setSelectedLayers(new Set());
         resetOutline();
+        dispatchApp({ type: 'set-outline-tool', enabled: false });
         setState({
           status: '표시 실패',
           ready: false,
@@ -305,7 +363,11 @@ export function CadViewer({
   }, [versionId, sourceSha256, attempt, renderer, source, format, beginLoading, endLoading]);
 
   const layerAvailable = isFullscreen && renderer === 'three-dxf-viewer' && layers.length > 0 && state.ready;
-  const outlineAvailable = renderer === 'three-dxf-viewer' && format === 'DXF' && state.ready && !!outlineInfo;
+  const outlineUnavailable = outlineToolUnavailableReason({
+    renderer, format, loading, ready: state.ready,
+    entityCount: outlineInfo?.entityCount, sourceSha256,
+  });
+  const outlineAvailable = outlineUnavailable === null;
 
   return <div className="space-y-3">
     <ViewerAppShell
@@ -319,7 +381,9 @@ export function CadViewer({
           layerToggleRef={layerMenuButton}
           onToggleLayerPanel={() => dispatchApp({ type: 'toggle-layers' })}
           outlineAvailable={outlineAvailable}
+          outlineUnavailableReason={outlineUnavailable}
           outlineToolEnabled={appState.outlineToolEnabled}
+          onToggleOutlineTool={toggleOutlineTool}
           outlineTreeOpen={appState.outlineTreeOpen}
         />
       }
@@ -396,8 +460,7 @@ export function CadViewer({
         </>
       }
       tools={
-
-renderer==='three-dxf-viewer' && format==='DXF' && state.ready && outlineInfo && <div
+        appState.outlineToolEnabled && outlineAvailable && outlineInfo ? <div
         data-testid="cad-outline-tools"
         className="bg-white p-2 text-xs text-slate-800"
       >
@@ -418,8 +481,8 @@ renderer==='three-dxf-viewer' && format==='DXF' && state.ready && outlineInfo &&
         <div className="mb-2 flex flex-wrap items-center gap-2">
           <Button size="sm" variant="outline" disabled={!outlineSelection.length} onClick={()=>requestOutline('CONVEX')}>볼록 외곽선 미리보기</Button>
           <Button size="sm" variant="outline" disabled={!outlineSelection.length} onClick={()=>requestOutline('PRECISE')}>정밀 외곽선 미리보기</Button>
-          <Button size="sm" disabled={!preview} onClick={()=>{try{manager.current?.confirmOutline();}catch(error){setPreviewError(String(error));}}}>임시 확정</Button>
-          <Button size="sm" variant="outline" disabled={!preview} onClick={()=>manager.current?.cancelOutlinePreview()}>미리보기 취소</Button>
+          <Button size="sm" disabled={!preview} onClick={confirmOutline}>임시 확정</Button>
+          <Button size="sm" variant="outline" disabled={!preview} onClick={cancelOutline}>미리보기 취소</Button>
           <Button size="sm" variant="outline" disabled={!savedCount} onClick={exportOutlines}>JSON 내보내기 ({savedCount})</Button>
           <Button size="sm" variant="outline" disabled={!savedCount} onClick={()=>manager.current?.clearSavedOutlines()}>임시 결과 삭제</Button>
         </div>
@@ -432,13 +495,21 @@ renderer==='three-dxf-viewer' && format==='DXF' && state.ready && outlineInfo &&
           <summary>미지원/불안정 Entity 안내 ({outlineInfo.warnings.length}건, 최대 200건 표시)</summary>
           <ul className="max-h-28 list-disc overflow-y-auto pl-4">{outlineInfo.warnings.slice(0,30).map((warning,i)=><li key={i}>{warning}</li>)}</ul>
         </details>}
-      </div>
+      </div> : renderer === 'three-dxf-viewer' && format === 'DXF' && state.ready && savedCount > 0 ? (
+        <div data-testid="outline-saved-tools" className="flex flex-wrap items-center gap-3 bg-white p-2 text-xs text-slate-800">
+          <strong>임시 확정 외곽선 {savedCount}건</strong>
+          <span>생성 도구 OFF · 확정된 Overlay는 계속 표시됩니다.</span>
+          <Button size="sm" variant="outline" onClick={exportOutlines}>JSON 내보내기 ({savedCount})</Button>
+        </div>
+      ) : null
       }
       status={
         <>
           <p role="status" className="text-xs text-slate-700">{state.status}</p>
           {state.warning && <p className="text-xs text-amber-800" data-testid="viewer-coverage">{state.warning}</p>}
           {state.error && <p role="alert" className="text-xs text-red-700">{state.error}</p>}
+          {outlineNotice && <p data-testid="outline-tool-notice" className="text-xs text-teal-800">{outlineNotice}</p>}
+          {outlineUnavailable && <p data-testid="outline-tool-unavailable" className="text-xs text-slate-500">{outlineUnavailable}</p>}
         </>
       }
       nativeLoadingOverlay={isNativeFullscreen && isLoading

@@ -84,6 +84,7 @@ export function ViewerAppShell({
       </div>
       {tools && (
         <section
+          id="viewer-tools-dock"
           data-testid="viewer-tools-dock"
           aria-label="도면 선택 및 외곽선 도구"
           className="max-h-[22dvh] shrink-0 overflow-auto border-t border-slate-300 bg-white"

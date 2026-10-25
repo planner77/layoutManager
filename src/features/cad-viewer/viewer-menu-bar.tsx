@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 
 /**
  * Menu commands do not touch Viewer adapters; the caller owns all state.
- * Unimplemented U3/U4/U6 entries are deliberately disabled, not faux controls.
+ * U3 outline mode is a controlled toggle; U4/U6 remain disabled.
  */
 export function ViewerMenuBar({
   layerAvailable,
@@ -13,7 +13,9 @@ export function ViewerMenuBar({
   layerToggleRef,
   onToggleLayerPanel,
   outlineAvailable,
+  outlineUnavailableReason,
   outlineToolEnabled,
+  onToggleOutlineTool,
   outlineTreeOpen,
 }: {
   layerAvailable: boolean;
@@ -21,12 +23,11 @@ export function ViewerMenuBar({
   layerToggleRef: Ref<HTMLButtonElement>;
   onToggleLayerPanel: () => void;
   outlineAvailable: boolean;
+  outlineUnavailableReason: string | null;
   outlineToolEnabled: boolean;
+  onToggleOutlineTool: () => void;
   outlineTreeOpen: boolean;
 }) {
-  const outlineUnavailableReason = outlineAvailable
-    ? '후속 이슈 #40에서 상단 메뉴로 외곽선 생성 모드를 제어합니다.'
-    : '외곽선 기능은 DXF + three-dxf-viewer에서만 지원합니다.';
   return (
     <nav
       aria-label="도면 앱 메뉴"
@@ -55,10 +56,19 @@ export function ViewerMenuBar({
         type="button" size="sm" variant="outline"
         data-testid="viewer-menu-outline-tool"
         aria-pressed={outlineToolEnabled}
-        disabled
-        title={outlineUnavailableReason}
+        aria-expanded={outlineToolEnabled}
+        aria-controls={outlineToolEnabled ? 'viewer-tools-dock' : undefined}
+        aria-describedby={!outlineAvailable ? 'viewer-outline-unavailable-reason' : undefined}
+        disabled={!outlineAvailable}
+        title={outlineUnavailableReason ?? (outlineToolEnabled
+          ? '외곽선 생성 끄기: 비확정 선택·미리보기 취소, 확정된 결과 보존'
+          : '외곽선 생성 켜기: 객체 선택 도구 활성화')}
+        onClick={onToggleOutlineTool}
         className="shrink-0"
-      >외곽선 생성 (준비 중)</Button>
+      >외곽선 생성: {outlineToolEnabled ? 'ON' : 'OFF'}</Button>
+      {!outlineAvailable && <span id="viewer-outline-unavailable-reason" className="sr-only">
+        {outlineUnavailableReason}
+      </span>}
       <Button
         type="button" size="sm" variant="outline"
         data-testid="viewer-menu-outline-tree"

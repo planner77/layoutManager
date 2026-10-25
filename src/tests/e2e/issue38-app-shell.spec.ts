@@ -54,7 +54,8 @@ for (const renderer of ['dxf-viewer', 'three-dxf-viewer'] as const) {
       await expect(panel).toBeVisible();
       await expect(equip).not.toBeChecked();
       await expect(canvas).toHaveAttribute('data-stable', stable);
-      await expect(page.getByTestId('viewer-tools-dock')).toBeVisible();
+      // No stable source Handle is present in this fixture: U3 must fail closed.
+      await expect(page.getByTestId('viewer-tools-dock')).toHaveCount(0);
       expect(contentRequests).toBe(1);
     } else {
       await expect(layerMenu).toBeDisabled();
