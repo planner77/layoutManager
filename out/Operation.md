@@ -1,5 +1,14 @@
 # 운영·환경설정 초안
 
+## GitHub Actions 실행명 / Issue #68 (2026-10-25)
+
+- **자동 PR CI:** PR 제목을 `#68 | Actions 실행명 정리` 형식으로 작성한다. Actions Run에 `PR CI | #68 | Actions 실행명 정리`가 표시된다. PR 번호(`github.event.pull_request.number`)는 Issue가 아니므로 표시명에 대용하지 않는다.
+- **수동 PR CI:** Actions → `PR CI` → `Run workflow`에서 `issue_ref`(예: `#68`, 기본 `NO-ISSUE`), `run_description`(기본 `수동 검증`)을 지정한다. 결과는 `MANUAL CI | #68 | CI 재검증` 형태. 입력 UI는 main에 워크플로 변경이 반영된 후 이용할 수 있다.
+- **Main/GHCR:** squash 병합 시 커밋 첫 줄을 `#68 | Actions 실행명 정리`로 명시한다. `MAIN/GHCR | #68 | Actions 실행명 정리` 형태로 표시된다. 일반 push도 동일; 이슈가 전혀 없으면 `NO-ISSUE | 설명`으로 시작한다. 비정형 제목은 `ISSUE-UNKNOWN` 표시.
+- **태그 푸시:** `vX.Y.Z` 형태에서는 `RELEASE | NO-ISSUE | vX.Y.Z GHCR 이미지 게시`. GitHub token이 생성한 자동 릴리스 태그는 추가 workflow를 트리거하지 않음(기존 정책 유지).
+- 중요: `run-name`은 실행 생성 시 고정되어 과거 Run에 소급되지 않는다. commit 본문이 긴 경우 Actions 표시가 잘릴 수 있으므로 첫 줄은 간결하게 작성한다. Workflow 이름은 최종 GHCR 이미지 게시를 인증하지 않는다. 상세 [Issue68](Issue68.md)·[ADR-038](Decisions.md).
+
+
 ## Issue #41 v0.34.0 — Main GHCR 게시 시작·운영 게이트 (2026-10-25)
 
 - [PR CI #40154979531](https://github.com/planner77/layoutManager/actions/runs/40154979531) 성공 → [main squash 7da613d1](https://github.com/planner77/layoutManager/commit/7da613d1ed9e2893849a3c3a7f0931d4f32ff850) 반영. [Build/publish run #40155833554](https://github.com/planner77/layoutManager/actions/runs/40155833554) **시작 확인**. Runner는 `src/package.json=0.34.0`을 기준으로 `v0.34.0` Tag(기존 태그 없으면) 및 앱/마이그레이터 후보 digest 검증 뒤 두 버전·latest 태그 승격. 사용자 지시상 모니터링하지 않으므로 **게시 성공 및 이미지 digest 아직 확인하지 않음**.
