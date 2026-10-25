@@ -8,7 +8,7 @@ import {SelectionController,type SelectionMode} from './selection-controller';
 import {reconcileRenderCoverage,type RenderObservation,type RenderCoverage} from './render-coverage';
 import type {DxfOutlineIndex,OutlineEntity,OutlineKind,OutlinePath} from '../core/outline-geometry';
 import type {OutlineResult} from '../core/outline-compute';
-import type {OutlineInfo,SavedOutline} from '../core/adapter';
+import type {OutlineInfo,SavedOutline,SavedOutlineOverlayState} from '../core/adapter';
 import type {OutlineAssignment} from '../../domain/outline-assignment';
 import {parseOutlineAssignmentMetadata} from '../../domain/outline-assignment';
 
@@ -46,6 +46,10 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
   private selectionGroup?: THREE.Group;
   private previewGroup?: THREE.Group;
   private savedGroup=new THREE.Group();
+  private savedGroups=new Map<string,THREE.Group>();
+  private selectedSavedGroup?: THREE.Group;
+  private selectedSavedOutlineId:string|null=null;
+  private nextSavedId=1;
   private preview?: OutlineResult;
   private previewKind?: OutlineKind;
   private saved: SavedOutline[]=[];
@@ -254,6 +258,20 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     const polygons=result.geometry.type==='Polygon'?[result.geometry.coordinates]:result.geometry.coordinates;
     return this.createPathGroup(polygons.flatMap(poly=>poly.map(ring=>({points:ring,closed:true}))),color);
   }
+  private refreshSavedHighlight() {
+    if(this.selectedSavedGroup){
+      this.scene.remove(this.selectedSavedGroup);
+      release(this.selectedSavedGroup);
+      this.selectedSavedGroup=undefined;
+    }
+    const saved=this.saved.find(item=>item.id===this.selectedSavedOutlineId);
+    if(saved && this.savedGroups.get(saved.id)?.visible){
+      // An independent highlight overlay: no changes to source-layer materials.
+      this.selectedSavedGroup=this.renderGeometry(saved.result,0x00ffcc);
+      this.scene.add(this.selectedSavedGroup);
+    }
+    this.render();
+  }
   getOutlineInfo():OutlineInfo|null {
     if(!this.outline)return null;
     if(!this.index && !this.indexError)return null;
@@ -302,22 +320,54 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     if(!this.preview)throw new Error('미리보기를 먼저 생성해야 합니다.');
     if(assignment && !this.preview.persistable)throw new Error('불안정한 Entity 참조는 타입 지정 확정이 불가합니다.');
     const typed=assignment?parseOutlineAssignmentMetadata(assignment):null;
-    const saved:SavedOutline={id:'local-'+(this.saved.length+1),createdAt:new Date().toISOString(),result:this.preview,
+    if(this.saved.length>=100)throw new Error('임시 외곽선은 현재 Session에서 최대 100개까지 생성할 수 있습니다.');
+    const saved:SavedOutline={id:'local-'+this.nextSavedId++,createdAt:new Date().toISOString(),result:this.preview,
       ...(typed?{outlineTypeId:typed.outlineTypeId,outlineTypeName:typed.outlineTypeName,name:typed.name}:{})};
-    this.saved.push(saved);this.savedGroup.add(this.renderGeometry(this.preview,0xff8c00));
+    this.saved.push(saved);
+    const group=this.renderGeometry(this.preview,0xff8c00);
+    this.savedGroups.set(saved.id,group);this.savedGroup.add(group);
     this.scene.add(this.savedGroup);this.cancelOutlinePreview();
     this.outline?.onSaved?.(this.saved.length);this.render();return saved;
   }
   getSavedOutlines(){return [...this.saved];}
+  getSavedOutlineStates():SavedOutlineOverlayState[]{
+    return this.saved.map(item=>({
+      id:item.id,visible:this.savedGroups.get(item.id)?.visible??false,
+      selected:this.selectedSavedOutlineId===item.id,
+    }));
+  }
+  setSavedOutlineVisibility(id:string,visible:boolean):boolean {
+    const group=this.savedGroups.get(id);
+    if(!group || this.disposed)return false;
+    group.visible=visible;this.refreshSavedHighlight();return true;
+  }
+  selectSavedOutline(id:string):boolean {
+    if(this.disposed||!this.savedGroups.has(id))return false;
+    this.selectedSavedOutlineId=id;this.refreshSavedHighlight();return true;
+  }
+  deleteSavedOutline(id:string):boolean {
+    const index=this.saved.findIndex(item=>item.id===id);
+    const group=this.savedGroups.get(id);
+    if(index<0||!group||this.disposed)return false;
+    this.savedGroup.remove(group);release(group);this.savedGroups.delete(id);
+    this.saved.splice(index,1);
+    if(this.selectedSavedOutlineId===id)this.selectedSavedOutlineId=null;
+    this.refreshSavedHighlight();this.outline?.onSaved?.(this.saved.length);return true;
+  }
   clearSavedOutlines(){
+    if(this.selectedSavedGroup){
+      this.scene.remove(this.selectedSavedGroup);release(this.selectedSavedGroup);this.selectedSavedGroup=undefined;
+    }
     this.scene.remove(this.savedGroup);release(this.savedGroup);this.savedGroup=new THREE.Group();this.saved=[];
+    this.savedGroups.clear();this.selectedSavedOutlineId=null;
     this.outline?.onSaved?.(0);this.render();
   }
   dispose() {
     if(this.disposed)return;this.disposed=true;this.cancel?.();this.resize.disconnect();
     this.terminateWorker('index');this.terminateWorker('compute');
     this.selector?.dispose();this.selector=undefined;
-    for(const group of [this.selectionGroup,this.previewGroup,this.savedGroup])if(group)release(group);
+    for(const group of [this.selectionGroup,this.previewGroup,this.savedGroup,this.selectedSavedGroup])if(group)release(group);
+    this.savedGroups.clear();this.selectedSavedOutlineId=null;
     this.controls.dispose();if(this.object)release(this.object);this.scene.clear();
     this.renderer.dispose();this.renderer.forceContextLoss();this.renderer.domElement.remove();
   }

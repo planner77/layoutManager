@@ -49,3 +49,34 @@ test('TC-TEXT-007: world-space focus delegates once, rejects invalid bounds and 
   manager.dispose();
   expect(manager.focusBounds(valid)).toBe(false);
 });
+
+
+test('TC-U6-UNIT-003: manager safely delegates only confirmed outlines without altering CAD layers', async () => {
+  vi.stubGlobal('fetch', vi.fn(async () => new Response('DXF bytes')));
+  const a = adapter();
+  const rectangle = {type:'Polygon' as const,coordinates:[[[0,0],[10,0],[10,10],[0,0]] as [number,number][]]};
+  a.getSavedOutlines = () => [{
+    id:'local-1',createdAt:'2026-10-25T00:00:00Z',
+    result:{kind:'CONVEX',algorithm:'monotone-chain-v1',geometry:rectangle,
+      persistable:true,tolerance:0.02,durationMs:1,warnings:[],sourceEntityIds:['ref']},
+  }];
+  a.getSavedOutlineStates = () => [{id:'local-1',visible:true,selected:false}];
+  a.focusBounds = vi.fn();
+  a.selectSavedOutline = vi.fn(()=>true);
+  a.setSavedOutlineVisibility = vi.fn(()=>true);
+  a.deleteSavedOutline = vi.fn(()=>true);
+  a.showLayer = vi.fn();
+  const manager = new ViewerManager(async()=>a);
+  await manager.load('/drawing','DXF');
+  expect(manager.getSavedOutlineStates()).toEqual([{id:'local-1',visible:true,selected:false}]);
+  expect(manager.focusSavedOutline('missing')).toBe(false);
+  expect(manager.focusSavedOutline('local-1')).toBe(true);
+  expect(a.focusBounds).toHaveBeenCalledWith({minX:0,minY:0,maxX:10,maxY:10});
+  expect(a.selectSavedOutline).toHaveBeenCalledWith('local-1');
+  expect(manager.setSavedOutlineVisibility('local-1',false)).toBe(true);
+  expect(manager.deleteSavedOutline('local-1')).toBe(true);
+  expect(a.showLayer).not.toHaveBeenCalled();
+  manager.dispose();
+  expect(manager.focusSavedOutline('local-1')).toBe(false);
+  expect(manager.setSavedOutlineVisibility('local-1',true)).toBe(false);
+});

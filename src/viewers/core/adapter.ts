@@ -3,6 +3,8 @@ import type { ViewerFormat } from './selection';
 import type {OutlineEntity,OutlineKind} from './outline-geometry';
 import type {OutlineResult} from './outline-compute';
 import type {OutlineAssignment} from '../../domain/outline-assignment';
+import {outlineGeometryBounds} from '../../domain/outline-tree';
+export type SavedOutlineOverlayState = {id:string;visible:boolean;selected:boolean};
 export type OutlineInfo = {entityCount:number;unitCode:number|null;warnings:string[];renderedObjectCount?:number;excludedEntityCount?:number;spatialIndexMs?:number;sourceIndexMs?:number;renderAuditMs?:number};
 export type SavedOutline = {id:string;createdAt:string;result:OutlineResult;
   outlineTypeId?:string;outlineTypeName?:string;name?:string};
@@ -24,6 +26,10 @@ export interface CadViewerAdapter {
   cancelOutlinePreview?(): void;
   confirmOutline?(assignment?:OutlineAssignment): SavedOutline;
   getSavedOutlines?(): SavedOutline[];
+  getSavedOutlineStates?(): SavedOutlineOverlayState[];
+  setSavedOutlineVisibility?(id:string,visible:boolean):boolean;
+  selectSavedOutline?(id:string):boolean;
+  deleteSavedOutline?(id:string):boolean;
   clearSavedOutlines?(): void;
   dispose(): void;
 }
@@ -146,6 +152,19 @@ export class ViewerManager {
   cancelOutlinePreview() { this.adapter?.cancelOutlinePreview?.(); }
   confirmOutline(assignment?:OutlineAssignment) { if(!this.adapter?.confirmOutline)throw new Error('미리보기를 먼저 생성해야 합니다.'); return this.adapter.confirmOutline(assignment); }
   getSavedOutlines() { return this.adapter?.getSavedOutlines?.() ?? []; }
+  getSavedOutlineStates() { return this.adapter?.getSavedOutlineStates?.() ?? []; }
+  setSavedOutlineVisibility(id:string,visible:boolean) {
+    return this.adapter?.setSavedOutlineVisibility?.(id,visible) ?? false;
+  }
+  deleteSavedOutline(id:string) { return this.adapter?.deleteSavedOutline?.(id) ?? false; }
+  /** Compute focus only from the confirmed local geometry, never from source DXF layers. */
+  focusSavedOutline(id:string):boolean {
+    const item=this.getSavedOutlines().find(item=>item.id===id);
+    if(!item || !this.adapter?.selectSavedOutline) return false;
+    const bounds=outlineGeometryBounds(item.result.geometry);
+    if(!bounds || !this.focusBounds(bounds))return false;
+    return this.adapter.selectSavedOutline(id);
+  }
   clearSavedOutlines() { this.adapter?.clearSavedOutlines?.(); }
   dispose() { this.generation++; this.cancelIndex?.(); this.cancelIndex=undefined; this.pendingIndex=undefined; this.activeUrl=undefined; if(this.ownsSource)this.source.dispose(); this.adapter?.dispose(); this.adapter = undefined; }
 }

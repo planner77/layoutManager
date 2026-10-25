@@ -1,5 +1,25 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #43 / PR #72 P2 키보드 가시성 회귀 (2026-10-25)
+
+- **TC-U6-E2E-001 확장:** 폭 320px·높이 700px(도크 최대 20dvh)에서 트리 첫 그룹에 focus → `End` 이동 후 마지막 항목이 `role=tree` 스크롤 영역의 사각형에 완전히 들어오는지 확인한다. `Home`은 첫 그룹에 되돌아오고 `window.scrollY`는 불변. Canvas DOM 유지·Scroll 허용 범위를 tree 내부로만 제한.
+- P2 리뷰 [4369618943](https://github.com/planner77/layoutManager/pull/72#discussion_r4369618943)의 지적은 최초 CI `40161078593` 성공 HEAD `5cd223cc2837fc5772154fd67138680263f159e4`의 미검출 사용성 결함이다. 후속 수정 HEAD 결과는 CI success 확인 전 NOT VERIFIED.
+
+
+## Issue #43 / U6 v0.36.0 — 트리/Overlay 시험 계획 (2026-10-25)
+
+| TC | 수용 | 시나리오 및 기준 | 상태 |
+| --- | --- | --- | --- |
+| TC-U6-UNIT-001 | U6-01 | 타입 2개(합성 catalogue) + 여러 instance + legacy, ID 기준 그룹/리네임/빈 노드·비활성 snapshot, Group 수량·Visibility | 코드 작성 / NOT RUN |
+| TC-U6-UNIT-002 | U6-02 | Polygon/MultiPolygon/hole·분리 섬 전체 WCS envelope, 퇴화/비유한/한도 초과 거부 | 코드 작성 / NOT RUN |
+| TC-U6-UNIT-003 | U6-02/03 | Manager focus/visibility/delete delegation, CAD Layer 미호출, dispose 이후 fail-closed | 코드 작성 / NOT RUN |
+| TC-U6-E2E-001 | U6-01~05 | 90=4 유효한 합성 DXF, 실제 CONVEX/PRECISE worker, legacy tree 즉시 갱신, 개별·그룹 숨김, 레이어 독립, 선택·ARIA keyboard, OFF+v1 JSON, 320px 및 메뉴 포커스, content 단일 요청 | 코드 작성 / NOT RUN |
+| TC-U6-E2E-002 | U6-04/05 | dxf-viewer 비활성, three 전환, Reload로 임시 폐기, 다른 Version 데이터 누수 없음 | 코드 작성 / NOT RUN |
+| 실제 관리자 타입/영속 재접속 | U6-01/06 | Verified server catalogue 2개·scope/401/403/DB CAS·audit·server owned Source SHA/Version | BLOCKED #65/#31 P4 |
+
+기존 #17/#25/#31/#38/#39/#40/#41/#42/Legacy migration, ESLint/Typecheck/Build, Docker runtime 회귀를 PR CI에서 수행. 로컬 시험 NOT RUN, PR CI 결과 전 PASS 기재 금지.
+
+
 ## Issue #68 — GitHub Actions Run 이름 정적/실행 검증 계획 (2026-10-25)
 
 - `TC-CI-NAME-001`: 표준 PR 제목 `#68 | Actions 실행명 정리` → `PR CI | #68 | Actions 실행명 정리`, PR 번호를 Issue로 사용하지 않음.

@@ -10,9 +10,10 @@ import { CadTextSearch } from '@/features/cad-viewer/cad-text-search';
 import { LayerDropdown } from '@/features/cad-viewer/layer-dropdown';
 import { ViewerAppShell } from '@/features/cad-viewer/viewer-app-shell';
 import { ViewerMenuBar } from '@/features/cad-viewer/viewer-menu-bar';
+import { OutlineTreePanel } from '@/features/cad-viewer/outline-tree-panel';
 import { initialViewerAppState, viewerAppReducer } from '@/features/cad-viewer/viewer-app-state';
 import { isLiveOutlineRequest, outlineToolUnavailableReason } from '@/features/cad-viewer/outline-tool-policy';
-import { ViewerManager, type OutlineInfo } from '@/viewers/core/adapter';
+import { ViewerManager, type OutlineInfo, type SavedOutline, type SavedOutlineOverlayState } from '@/viewers/core/adapter';
 import {buildOutlineExport} from '@/domain/outline-draft';
 import {resolveOutlineAssignment,selectableOutlineTypes,type ScopedOutlineCatalog} from '@/domain/outline-assignment';
 import type {OutlineKind,OutlineEntity} from '@/viewers/core/outline-geometry';
@@ -56,6 +57,7 @@ export function CadViewer({
   const container = useRef<HTMLDivElement>(null);
   const viewerShell = useRef<HTMLDivElement>(null);
   const layerMenuButton = useRef<HTMLButtonElement>(null);
+  const outlineTreeMenuButton = useRef<HTMLButtonElement>(null);
   const manager = useRef<ViewerManager | null>(null);
   // Synchronously gate events before React's reducer has rendered the next frame.
   const outlineEnabledRef = useRef(false);
@@ -80,6 +82,8 @@ export function CadViewer({
   const [preview,setPreview]=useState<OutlineResult|null>(null);
   const [previewError,setPreviewError]=useState<string|null>(null);
   const [savedCount,setSavedCount]=useState(0);
+  const [savedOutlines,setSavedOutlines]=useState<SavedOutline[]>([]);
+  const [savedOverlayStates,setSavedOverlayStates]=useState<SavedOutlineOverlayState[]>([]);
   const [selectedOutlineTypeId,setSelectedOutlineTypeId]=useState('');
   const [outlineName,setOutlineName]=useState('');
   const [outlineNotice,setOutlineNotice]=useState<string|null>(null);
@@ -161,6 +165,11 @@ export function CadViewer({
   }, []);
 
 
+  /** Pull tree state from the active adapter only when an overlay changes. */
+  const syncSavedOutlines = useCallback(() => {
+    setSavedOutlines(manager.current?.getSavedOutlines() ?? []);
+    setSavedOverlayStates(manager.current?.getSavedOutlineStates() ?? []);
+  }, []);
   const stopOutlineEditing = useCallback(() => {
     // Must cancel the Worker BEFORE clearing selection: selection callbacks can
     // otherwise enqueue a new compute job for the previous previewKind.
@@ -178,6 +187,8 @@ export function CadViewer({
     stopOutlineEditing();
     setOutlineInfo(null);
     setSavedCount(0);
+    setSavedOutlines([]);
+    setSavedOverlayStates([]);
     setSelectedOutlineTypeId('');
     setOutlineName('');
     setOutlineNotice(null);
@@ -216,6 +227,29 @@ export function CadViewer({
         setPreviewError(error instanceof Error ? error.message : '외곽선을 만들 수 없습니다.');
       }
     }
+  }
+  function focusSavedOutline(id:string) {
+    if(!treeAvailable)return;
+    if(!manager.current?.focusSavedOutline(id)){
+      setOutlineNotice('해당 외곽선의 WCS 경계를 계산할 수 없어 이동하지 않았습니다.');
+      return;
+    }
+    syncSavedOutlines();
+    setOutlineNotice(null);
+  }
+  function setSavedVisibility(id:string,visible:boolean) {
+    if(!treeAvailable)return;
+    if(manager.current?.setSavedOutlineVisibility(id,visible))syncSavedOutlines();
+  }
+  function setGroupSavedVisibility(ids:string[],visible:boolean) {
+    if(!treeAvailable)return;
+    let changed=false;
+    for(const id of ids)changed=(manager.current?.setSavedOutlineVisibility(id,visible)??false)||changed;
+    if(changed)syncSavedOutlines();
+  }
+  function deleteSavedOutline(id:string) {
+    if(!outlineEnabledRef.current || !outlineAvailable)return;
+    if(manager.current?.deleteSavedOutline(id))syncSavedOutlines();
   }
   function confirmOutline() {
     if (!outlineEnabledRef.current || !outlineAvailable || !preview) return;
@@ -333,7 +367,7 @@ export function CadViewer({
             versionId,sourceSha256,
             onSelection:value=>{if(active && outlineEnabledRef.current)setOutlineSelection(value);},
             onPreview:(value,error)=>{if(active && outlineEnabledRef.current){setPreview(value);setPreviewError(error??null);}},
-            onSaved:count=>{if(active)setSavedCount(count);},
+            onSaved:count=>{if(active){setSavedCount(count);syncSavedOutlines();}},
           });
         }
         const { DxfViewerAdapter } = await import('@/viewers/dxf-viewer/adapter');
@@ -379,7 +413,7 @@ export function CadViewer({
       instance.dispose();
       manager.current = null;
     };
-  }, [versionId, sourceSha256, attempt, renderer, source, format, beginLoading, endLoading, resetOutline]);
+  }, [versionId, sourceSha256, attempt, renderer, source, format, beginLoading, endLoading, resetOutline, syncSavedOutlines]);
 
   const layerAvailable = isFullscreen && renderer === 'three-dxf-viewer' && layers.length > 0 && state.ready;
   const outlineUnavailable = outlineToolUnavailableReason({
@@ -389,6 +423,15 @@ export function CadViewer({
   const outlineAvailable = outlineUnavailable === null;
   const selectableTypes=selectableOutlineTypes(outlineTypeCatalog,versionId,sourceSha256);
   const typedConfirmAvailable=!!preview?.persistable && selectableTypes.some(item=>item.id===selectedOutlineTypeId);
+  const treeUnavailable =
+    format !== 'DXF' || renderer !== 'three-dxf-viewer'
+      ? '외곽선 목록은 DXF의 three-dxf-viewer에서만 사용할 수 있습니다.'
+      : loading || !state.ready
+        ? '도면 로딩이 완료된 뒤 외곽선 목록을 볼 수 있습니다.'
+        : !/^[a-f0-9]{64}$/i.test(sourceSha256) || !outlineInfo || !outlineInfo.entityCount
+          ? '검증된 원본 SHA-256 및 선택 가능한 외곽선 인덱스가 필요합니다.'
+          : null;
+  const treeAvailable=treeUnavailable===null;
 
   return <div className="space-y-3">
     <ViewerAppShell
@@ -406,6 +449,10 @@ export function CadViewer({
           outlineToolEnabled={appState.outlineToolEnabled}
           onToggleOutlineTool={toggleOutlineTool}
           outlineTreeOpen={appState.outlineTreeOpen}
+          outlineTreeAvailable={treeAvailable}
+          outlineTreeUnavailableReason={treeUnavailable}
+          outlineTreeToggleRef={outlineTreeMenuButton}
+          onToggleOutlineTree={() => dispatchApp({ type: 'toggle-outline-tree' })}
         />
       }
       toolbar={
@@ -470,6 +517,23 @@ export function CadViewer({
         />
       ) : null}
       layerPanelOpen={appState.layerPanelOpen}
+      outlineTreePanel={treeAvailable ? (
+        <OutlineTreePanel
+          outlines={savedOutlines}
+          overlayStates={savedOverlayStates}
+          types={selectableTypes}
+          allowDelete={appState.outlineToolEnabled && outlineAvailable}
+          onSelect={focusSavedOutline}
+          onVisibility={setSavedVisibility}
+          onGroupVisibility={setGroupSavedVisibility}
+          onDelete={deleteSavedOutline}
+          onClose={() => {
+            dispatchApp({ type: 'toggle-outline-tree' });
+            outlineTreeMenuButton.current?.focus({ preventScroll: true });
+          }}
+        />
+      ) : null}
+      outlineTreeOpen={treeAvailable && appState.outlineTreeOpen}
       compactPanel={appState.compactPanel}
       canvas={
         <>

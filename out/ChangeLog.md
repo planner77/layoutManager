@@ -1,5 +1,12 @@
 # ChangeLog
 
+## v0.36.0 — Issue #43 U6 브라우저 세션 외곽선 목록 (2026-10-25)
+
+- DXF three-dxf-viewer 상단 외곽선 목록 토글·우측 도킹 트리/legacy grouping, 임시·개수·종류 표시, 키보드 접근성, compact 320px, 메뉴 포커스 복귀.
+- SavedOutline Overlay 개별/그룹 표시·숨김, 선택 및 WCS Polygon/MultiPolygon Envelope 확대·독립 강조; CAD Source Layer/Worker/기하 불변, ON 도구에서만 개별 임시 삭제. Adapter local ID 단조 증가, Session 100건 제한, Reload/Version 폐기.
+- Unit/E2E 코드·Issue43/AGENTS/README/Requirements/Architecture/ADR-040/TestPlan/Report 동기화. #65/#31 P4의 Admin/Server API/영속 저장 미승인 유지. PR CI 전 실행 결과 NOT RUN.
+
+
 ## 2026-10-25 — Issue #68 GitHub Actions 실행명 개선 / 메타데이터 GHCR 게시 제외
 
 - Added: PR CI, Main CI, Release의 최상위 `run-name`; 수동 PR CI `issue_ref` / `run_description` 입력. 신규 PR/squash 제목은 `#Issue | 설명`, 이슈 없는 경우 `NO-ISSUE | 설명`, 비정형은 `ISSUE-UNKNOWN`으로 표기한다.
