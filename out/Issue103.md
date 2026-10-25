@@ -1,5 +1,11 @@
 # Issue #103 — G1 User·Session·Grant·Audit 격리 DB 계약·Migration
 
+## Issue #104 G2 후속 — G1 Recovery Audit actor 정정 (2026-10-26)
+
+종료된 G1 fixture의 User/Session/Role/Audit/Nonce·`consumeG1Recovery` 원자성을 G2에서 재사용한다. 실제 단발 복구의 행위자는 세션으로 로그인한 Admin 자신이 아닌 사내 지정 운영 담당자다. 따라서 G1 fixture `ADMIN_RECOVERY` 이벤트의 `actor_user_id=null`/`affected_user_id=대상 Admin UUID`로 정정, 실행자 실명은 사내 비공개 SOP requestId로 추적한다. nonce Unique/회수·rollback/Role/기존 CAD 계약 불변. 운영 Prisma/실 데이터/Auth/API 비활성·G7 별도 승인 유지. [Issue104](Issue104.md).
+
+
+
 ## #107 Main 선행 병합에 따른 G1 정렬 기록 (2026-10-26)
 
 - #103 PR #116 수정 HEAD `40153240d593c9d645dcc7c79bc9d9ac82d073e0`의 [PR CI #40225147249](https://github.com/planner77/layoutManager/actions/runs/40225147249)는 Verify `121264822767`, Docker `121264822603` 두 Job **SUCCESS**. 이는 #107 main 통합 **이전 HEAD의 결과**이며 새 정렬 HEAD에는 그대로 적용되지 않는다.

@@ -1,5 +1,13 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-051-G2 — #104 단발 Admin 생성·복구, Secret 보호 (2026-10-26)
+
+**범위:** G2 격리 구현 결정/운영 승인 아님. #102 지정 운영 담당자 실행·Owner 책임, #103 G1 SQLite 계약 준수. [Issue104](Issue104.md).
+- `executeAdminSetup`는 명시 호출만, Linux/WSL2 실행 UID 소유 absolute Secret regular file(0400/0600, O_NOFOLLOW, 유효 UTF-8·NUL/CRLF 거부)에서만 비밀번호 취득·scrypt(local-v1) 사용. 0444 Compose Secret 기본 마운트/Windows 직접은 fail closed; JS 문자열 완전 zeroize는 보장하지 않음.
+- 최초 생성: 인증 관련 전 테이블 공백 확인을 `BEGIN IMMEDIATE` 안에서 재검증해 User UUID/Admin RoleGrant/`ADMIN_BOOTSTRAP` Audit 한 거래, username ASCII lowercase·must-change. 동시성·기존 사용자 승격/재기동 Hash/Role/ID 변경 차단.
+- 복구: 기존 ACTIVE Admin + SHA-256 nonce Unique/append-only, password hash/필수 변경/모든 세션 revoke/`ADMIN_RECOVERY` Audit 한 거래, 실패·replay 전체 rollback. Auth되지 않은 운영자 실행이므로 Audit actor=null/affected_user_id=대상 Admin; requestId를 사내 비공개 운영자 수행 기록과 연계.
+- `--ack-isolated` 임시 G1 SQLite 전용 CLI 이외 App Runtime/운영 Prisma/Auth Route/Compose/DDL 연결 0. G7 #109 별도 Owner Go/No-Go 전 OFF, G6 백업·실복구 선행. Owner R1 공격/탈취 강화는 비범위지만 Secret 비로그/데이터 무결성 필수. #102 PR #114 main 병합 및 POST 업로드 Editor/Admin+담당 Site 업무 정책 승인 완료. G0 이슈 #102과 Audit 파기·백업 세칙은 후속.
+
 ## ADR-051-R1 / #102 G0 Owner 업무 정책 5개 승인 (2026-10-25)
 
 **정책 확정 / 구현·운영 활성화 미승인.** 아래 여섯 개 Owner 명시 결정은 ADR-051-R1 및 이전 ADR-048/049/051 중 상충하는 권장/미확정 표현보다 **최우선**으로 적용한다. [Issue102](Issue102.md) 참조.

@@ -1,5 +1,24 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issue #104 / G2 — 새 GHCR Pair 후보와 PR CI HEAD 증거 분리 (2026-10-26)
+
+- G2 코드·격리 통합 기능은 이전 PR HEAD `f5f7ea2e00a95b24e65f16c67fc8484d03031dce`의 [PR CI 40234510320](https://github.com/planner77/layoutManager/actions/runs/40234510320), attempt 1에서 Verify (Job `121293089381`)와 Docker (Job `121293089179`) 모두 **completed/success**. 과거 TypeScript 실패 [40232479678](https://github.com/planner77/layoutManager/actions/runs/40232479678)는 실패 원장에 유지.
+- 신규 GHCR `0.40.5` 게시를 위한 `src/package.json`/lock 루트 버전 변경 후의 **최신 HEAD PR CI는 별도 검증 필수**. 이전 HEAD 성공을 새 HEAD 성공으로 사용하지 않는다. Main CI 시작은 이미지 Pair 공개 태그 실제 게시 성공 증거가 아니다.
+- 자동 검증은 합성 G1/G2 SQLite Unit/Integration·일반 E2E 범위만 충족, 사내 실제 작업자 Secret/비밀번호 처리·실 운영 DB/CAD/S3 Backup/Restore/LAN/Owner G7 Go-Live는 NOT RUN/BLOCKED. G2 기능은 승인된 별도 실행 경로의 비운영 격리 준비 상태만 유지.
+
+## Issue #104 G2 — 구현·검증 인계 (2026-10-26)
+
+- **작성:** `server/auth/admin-setup.ts` 명시 서비스, `tests/fixtures/auth-g2/store.ts` 일회용 DB adapter, `scripts/auth-g2-isolated.ts` 제한 CLI, `tests/integration/auth-g2.test.ts` 9 TC 및 설계·운영 SOP 문서. G1 `ADMIN_RECOVERY` 감사 actor=null/affected=Admin ID 변경으로 실제 운영 담당자(비공개 requestId 기록)와 사용자 로그인 Actor를 혼동하지 않도록 조치.
+- **실행 상태:** 원격 소스·테스트/문서 작성 단계로 Node/tsc/ESLint/Vitest/Playwright/Docker/실 DB·CAD·S3 및 현장 PC 테스트 **NOT RUN**. PR CI는 시작·Run ID까지 별도 추적하되 사용자 요청으로 결과 모니터링 없음. 테스트 작성/CI 트리거 ≠ PASS; G2-AC1~4 체크 보류.
+- **운영 차단:** App Auth/Admin Route, 운영 Prisma/DDL/Compose/Nginx/.env, 원본/Current/삭제 비밀번호 및 GHCR 활성화 0. #102 Owner R1 + POST 업로드 Editor/Admin+Site 승인 및 docs PR #114 main 병합; 실 Secret·감사 파기·백업 세칙은 후속, #105 G3/#106 G4/#108 G6/#109 G7 후속. [Issue104](Issue104.md)/[TestPlan](TestPlan.md).
+
+### #104 / PR #118 최초 CI 실패 (2026-10-26 KST)
+
+- **실제 확인:** [Run 40232479678](https://github.com/planner77/layoutManager/actions/runs/40232479678), attempt 1, PR HEAD `534de74cce4418afb66fc4dad445ea654187d190`, `completed/failure`. Verify [Job 121286959176](https://github.com/planner77/layoutManager/actions/runs/40232479678/job/121286959176) Typecheck 실패; Docker [Job 121286959564](https://github.com/planner77/layoutManager/actions/runs/40232479678/job/121286959564) `completed/success`.
+- `tests/integration/auth-g2.test.ts:198:22` `TS1005 ';' expected`, `:232` `TS1128` 파생 오류, :213에도 동일한 잘못된 optional chaining 괄호가 있어 함께 정정했다. `npm ci`·Prisma generate는 성공, `npm run typecheck` exit 2, 이후 Lint·Unit/Integration·Build·E2E는 **SKIPPED(성공 아님)**. 실제 기능 회귀를 실행해 확인하지 않았다.
+- **보완 소스:** [fix commit ae002997](https://github.com/planner77/layoutManager/commit/ae002997bcbc394cf40a9adb9c0475d74f73f22e). 조회 결과를 먼저 `replayHash`/`revokedAtBeforeRetry` 변수에 저장하고 안전하게 `expect`에 전달. G1/Schema/Auth 운영 활성화 없음. 최신 main #102 정책 PR #114 병합으로 병행 문서 drift 발생→G0 업무 변경을 보존하며 2-parent 정렬; 새 통합 HEAD의 Typecheck/전체 PR CI **PENDING**(기존 실패 CI를 성공으로 변경 금지).
+
+
 ## Issue #102 — Owner G0 6개 업무 정책 승인·문서 반영 추적 (2026-10-25)
 
 - **결정 근거:** Owner가 승인한 ①사내 LAN **기존 공개 CAD 익명 GET/Viewer/다운로드**, ②Current **Editor 이상+담당 Site**, ③Version 삭제 **Editor 이상+담당 Site+기존 삭제 비밀번호 유지**, ④지정 사내 운영 담당자 Admin 초기화/복구 실행·Owner 운영 책임, ⑤Audit **365일 이후 만료 기록 정리**(Backup/파기 세칙 별도)를 [Issue102](Issue102.md)와 [ADR-051-R1](Decisions.md)에 반영.

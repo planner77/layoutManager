@@ -1,5 +1,12 @@
 # Database Schema — 단일 기준 문서
 
+## Issue #104 G2 — G1 일회용 인증 DB 활용/운영 DDL 변경 0 (2026-10-26)
+
+- 신규 운영 Table/Index/Prisma Migration **없음**. 격리 `User`/`UserRoleGrant`/`AuthSession`/`AuditEvent`/`AdminRecoveryNonce` 및 G1 BEGIN IMMEDIATE·Unique·append-only trigger 재사용.
+- 최초 빈 인증 DB에만 User UUID + Admin RoleGrant + `must_change_password=1` + `ADMIN_BOOTSTRAP` Audit(actor=null/affected=User ID) 원자 생성. 다른 User/이력 존재 시 자동 승격 금지, 재시작 UUID/Hash/Role 불변.
+- 기존 ACTIVE Admin 복구는 nonce SHA-256 unique+불변, passwordHash/초기 변경·Session revoke·`ADMIN_RECOVERY` Audit(actor=null/affected=대상 UUID) 단일 transaction. 재사용·실패 rollback, nonce 원문/비밀번호 로그·DB 저장 없음.
+- 운영 `src/prisma/schema.prisma`/migrations 및 CAD Version/Current/SHA/삭제 비밀번호, 실제 DB/CAD/S3 변경 0. 실 데이터 Migration/Restore는 #108/#109. [Issue104](Issue104.md).
+
 ## Issue #102 G0 — 익명 CAD Read와 인증된 Mutation·Audit 보존 계약 (2026-10-25)
 
 - 기존 도면 목록·위치·Version·Current·Viewer·원본 GET/다운로드는 Owner 승인 **익명 사내망 조회**. **익명 조회를 위해 User/AuthSession/UserSiteGrant/가상 Reader 행을 생성하지 않는다**. 공개 GET에는 Site 단위 사용자 기밀성 제약을 적용할 수 없음을 명시한다. 신규 CadOutline/Memo/Type 및 로그·Audit 영속 GET에는 자동 상속 금지.

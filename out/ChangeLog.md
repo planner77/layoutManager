@@ -1,5 +1,14 @@
 # ChangeLog
 
+## v0.40.5 후보 — #104 G2 격리 Admin 최초 생성·복구 (2026-10-26)
+
+- 이전 G2 코드 HEAD `f5f7ea2e`의 [PR CI 40234510320](https://github.com/planner77/layoutManager/actions/runs/40234510320) Verify·Docker Job 모두 **completed/success**. 이 성공은 아래 버전 정렬 전 HEAD의 증거일 뿐 새 HEAD의 PR CI 통과가 아니다.
+- GHCR App/Migrator Pair는 기존 `v0.40.4` tag·digest를 재사용하지 않는다. 신규 `src/package.json`과 lockfile 루트 버전을 **0.40.5**로 정렬하여 새 Pair를 정식 Main CI가 게시하도록 준비한다. 격리 G2 서비스는 운영 Route에 연결하지 않았으므로 PATCH 릴리스 후보로 간주하고 **실 운영 인증/Admin/Prisma 활성화는 G7 #109 승인 전 OFF**.
+- 새 HEAD PR CI Verify·Docker 성공/리뷰 0/main 무충돌 후 squash merge→Main CI의 `release-scope`와 candidate digest·Pair 승격이 시작된다. GHCR 배포/실제 게시 성공은 Main CI 시작만으로 보장되지 않는다. 승인된 현장 G6·G7 이후 운영 활성화 별도.
+
+#103 G1 일회용 SQLite 계약을 활용한 명시 최초 Admin 단발 생성·복구/nonce·Session revoke, Linux Secret 권한 검증, 9개 Integration TC와 지정 운영 담당자용 비공개 SOP 템플릿 추가. **운영 API/Prisma/Compose의 인증 기능 활성화 없음.** 신규 GHCR v0.40.5 후보 package/lock 변경 외 운영 설정은 불변. 실제 GHCR 공개 게시 여부는 Main CI 결과 확인 전까지 NOT VERIFIED. [Issue104](Issue104.md).
+
+
 ## v0.40.4 — Issue #107 G5 경량 Preview 및 Viewer 정합성 (2026-10-26)
 
 - PROD Nginx→App/DEV App 직결 **비운영** Preview, 독립 SQLite/CAD·네트워크, 정상 Health/CAD 목록·Viewer/content Read-Only Smoke 및 Unit·CI Compose config-only 검증 추가. 추가 침입·탈취 방어는 Owner 정책상 비범위.

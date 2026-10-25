@@ -1,5 +1,21 @@
 # PR/Main CI 실패 원장
 
+## Issue #104 / PR #118 — 최초 TypeScript 실패 보존·수정 HEAD CI 성공·0.40.5 재검증 게이트 (2026-10-26)
+
+- **최초 실패는 보존:** [Run 40232479678](https://github.com/planner77/layoutManager/actions/runs/40232479678), HEAD `534de74c`; Verify `121286959176` TS1005/TS1128 실패, Docker `121286959564` 성공, Lint/Unit/E2E SKIPPED. 원인·수정 `ae002997`은 아래 원장에 상세 기록.
+- **수정 코드 HEAD 검증 완료:** `f5f7ea2e00a95b24e65f16c67fc8484d03031dce` [PR CI Run 40234510320](https://github.com/planner77/layoutManager/actions/runs/40234510320) `completed/success`, Verify [Job 121293089381](https://github.com/planner77/layoutManager/actions/runs/40234510320/job/121293089381)·Docker [Job 121293089179](https://github.com/planner77/layoutManager/actions/runs/40234510320/job/121293089179) 각 성공. 최초 실패와 별도 Run이며 실 G6 사내 DB/CAD/S3 복구 시험은 NOT RUN.
+- **릴리스 정책 변경 ≠ CI 실패:** 사용자의 새 GHCR 게시 요청을 이행하려면 기존 v0.40.4 Pair/태그 불변을 보존하며 새 v0.40.5 App/Migrator Pair가 필요. package/lock root 버전 정렬은 이전 검증 HEAD를 변경하므로 새 PR CI 완료 전 PASS 기록/병합/Issue 종료/GHCR 게시 금지. 새 HEAD 실패·취소 발생 시 Run/Job·로그 증거를 추가 보존하며 기존 실패 이력을 삭제하지 않는다. 운영 인증 G7 승인 전 OFF.
+
+## Issue #104 / PR #118 — G2 최초 CI 실패와 TypeScript 복구 테스트 구문 수정 (2026-10-26 KST)
+
+- **실제 실패 증거:** [PR CI Run 40232479678](https://github.com/planner77/layoutManager/actions/runs/40232479678), attempt `1`, PR HEAD `534de74cce4418afb66fc4dad445ea654187d190`, `completed/failure`. Verify [Job 121286959176](https://github.com/planner77/layoutManager/actions/runs/40232479678/job/121286959176) `completed/failure`. Docker [Job 121286959564](https://github.com/planner77/layoutManager/actions/runs/40232479678/job/121286959564) `completed/success`; 별도 Docker/Prisma migration 실패는 **관측되지 않음**.
+- **로그 / 단계:** Verify에서 `npm ci`, Prisma Client generate 성공 뒤 `npm run typecheck` `exit code 2`. `src/tests/integration/auth-g2.test.ts(198,22)` `TS1005: ';' expected`; 동일 파일 `(232,1)` 및 `(232,2)` `TS1128: Declaration or statement expected`. `Squash Merge defaults` 관련 #76 경고(예상 enabled/PR_TITLE/BLANK vs observed unset/unset/unset)는 별도 *non-blocking warning*, TypeScript 실패 원인이 아님. Verify의 ESLint, Unit/Integration, OCI 통계 Unit, DXF benchmark, Build, Playwright E2E, legacy migration E2E는 **SKIPPED**(PASS 아님); Docker Job만 독립 SUCCESS.
+- **결함 원인:** G2 복구 테스트의 기존 `expect(db.prepare(...).get(adminId))\n?.password_hash).toEqual(...)`에서 `expect(...)` 괄호를 너무 일찍 닫아 optional chaining 식이 분리됐으며 `TS1128`은 해당 파서 오류의 후속 진단. 동일 유형의 잠재 결함을 `revoked_at` assert 주변 :213에서도 정적 검토로 확인했다. PR 코드 작성 시 TypeScript를 직접 실행하지 않아 사전 차단하지 못함. #103 과거 TS 구문 실패와 유형상 재발이지만 G2의 독립 코드 결함·Run으로 별도 보존.
+- **코드 조치:** [commit ae002997](https://github.com/planner77/layoutManager/commit/ae002997bcbc394cf40a9adb9c0475d74f73f22e)에서 두 SQL `.get(adminId)?.field` 결과를 각각 `replayHash`와 `revokedAtBeforeRetry` 변수로 분리한 후 `expect(variable)`를 사용하도록 수정. TC-P4-G2-007/008 테스트의 의미(복구 nonce 재사용 거부/세션 폐기·장애 rollback) 유지. `TC-P4-G2-SYNTAX-001`로 최신 HEAD Typecheck를 첫 게이트로 추적하고, 새 CI 실제 실행 전에는 해결 `PASS` 주장 금지.
+- **main drift(시험 실패와 구별):** 수정 중 #102 G0 [PR #114](https://github.com/planner77/layoutManager/pull/114)가 main에 병합되어 G0 6개 Owner 업무 정책(기존 도면 등록 POST = 로그인 Editor/Admin+담당 Site 포함)이 반영됨. PR #118 브랜치는 잠시 `behind=1`이고 공통 AGENTS/ADR/Architecture/DB/Operation/Requirements/TestPlan/TestReport 등 문서가 양측 변경됨. **G2 코드와 G0 정책/과거 실패 원장을 모두 보존하는 비강제 two-parent main 정렬**로 충돌 해결, 실패 원장 기록 후 신규 `pull_request.synchronize` CI 시작 예정.
+- **재검증/범위:** 신규 PR HEAD의 Verify/Docker 테스트 완료/성공은 현재 `PENDING / NOT VERIFIED`; 리뷰 스레드·main drift·mergeability는 최종 HEAD에서 재확인 필요. 실 운영 Auth/Admin/Prisma/Compose/Nginx, 기존 CAD·Version/Current·삭제 비밀번호/실 DB/S3 및 G7 Owner 운영 승인은 **변경·활성화 없음**. CI 시작을 시험 성공으로 기록하거나 기존 실패/취소 이력을 삭제하지 않는다.
+
+
 ## Issue #102 / PR #114 — #107 후속 Main 갱신 재정렬 (2026-10-26 KST)
 
 - **재정렬 원인:** PR #114 기존 통합 HEAD [`671f4e2`](https://github.com/planner77/layoutManager/commit/671f4e2a32d888900d0b583db90487a53530da64) 대비 #107의 문서-only 후속 [main `3caca50`](https://github.com/planner77/layoutManager/commit/3caca50df917ca9ea7b372ac102abd29b47236ff)이 새로 병합됨. 비교 결과 `behind=1`, GitHub `mergeable=false`. 동시 수정 경로는 `AGENTS.md`, `out/FailureLedger.md`, `out/Requirements.md`, `out/TestPlan.md`, `out/TestReport.md`의 Markdown 최상단 추가 섹션. **CI 실패가 아닌 문서 충돌**; 실패·취소 Job을 창작하거나 기존 원장을 삭제하지 않음.

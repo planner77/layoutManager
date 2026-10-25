@@ -1,5 +1,9 @@
 # Architecture 초안
 
+## Issue #104 G2 — 명시 Admin executor와 G1 격리 Adapter (2026-10-26)
+
+`isolated CLI --ack-isolated` → `server/auth/bootstrap.ts` 설정 판단 → `server/auth/admin-setup.ts` 제한 Secret + scrypt → `tests/fixtures/auth-g2/store.ts` → `#103 G1 disposable SQLite BEGIN IMMEDIATE` → 신규 User/Admin Role/Audit 또는 RecoveryNonce/Password/Session revoke/Audit. 실행은 명시 수동 호출만 가능하며 **실 App Router/start/Prisma/자동 migrator 연결 없음**. Snapshot은 참고이고 경쟁·nonce replay 실제 차단은 원자 DB/Unique가 수행한다. Bootstrap/Recovery Audit actor=null, affected=Admin ID, 사내 비공개 수행자 기록은 requestId로 연계. [Issue104](Issue104.md), [ADR-051-G2](Decisions.md), 운영 활성화 #109 별도 승인.
+
 ## Issue #102 G0 — Owner 승인 CAD 익명 조회 / Scope가 적용되는 쓰기 경계 (2026-10-25)
 
 **최신 정책:** [Issue102](Issue102.md), ADR-051-R1. 사내 LAN 운영은 Nginx, 개발은 별도 App direct. **기존 CAD GET/Viewer/원본 다운로드는 익명**으로 허용하고 **SiteGrant로 공개 도면의 읽기 기밀성을 주장하지 않는다**. 사용자별 제한이 필요한 미래 리소스/로그·관리 API에는 이 정책을 확대 적용하지 않는다.

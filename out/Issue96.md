@@ -1,5 +1,9 @@
 # Issue #96 — 로컬 계정·세션·Role/Site·감사 공통 기반
 
+## G2 #104 — 단발 Admin/Secret 격리 구현 (2026-10-26)
+
+#103 G1 User/Role/Audit/Nonce DB와 #102 Owner R1 기준으로 #104 명시 executor, 실행 UID 0400/0600 Secret, 최초 User/Admin Role/Audit 한 거래, 복구 nonce SHA unique·Session revoke/Audit, 9개 통합 TC 작성. [Issue104](Issue104.md)/[ADR-051-G2](Decisions.md). 실제 수행자·승인/Secret 경로는 사내 비공개 SOP. **운영 Auth/Admin/Prisma/API/Compose/Nginx·실 DB/CAD/S3 기능 OFF**, #96/#109 BLOCKED. 테스트 코드 작성은 PASS 아님; 새 HEAD CI 결과 전 G2-AC1~4 수용 보류. #105 G3/#106 G4/#108 G6 후속. G0 #102 PR #114 main 병합·POST 업로드 Editor/Admin+담당 Site 정책 승인 완료. 사내 담당자/감사 파기·백업 세칙은 G2/G4/G6/G7 후속이며 G7 전 운영 OFF.
+
 ## G0 #102 Owner 5개 업무 정책 승인 — 최우선 경계 (2026-10-25)
 
 [Issue102](Issue102.md) / [ADR-051-R1](Decisions.md): 사내망의 **기존 공개 도면 GET/Viewer/원본 다운로드는 익명 허용**하며 해당 경로에는 UserSiteGrant로 Site 읽기 기밀성을 주장하지 않는다. **Current 지정은 로그인한 Editor 이상 + 담당 Site, 기존 도면 Version 삭제는 로그인한 Editor 이상 + 담당 Site + 기존 삭제 비밀번호**(AND)로 G7 이후 적용할 정책이 승인됐다. Admin도 Site 자동 전체 접근 없음.
