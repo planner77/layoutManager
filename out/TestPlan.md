@@ -1,8 +1,8 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
-## Issue #102 G0 — Owner 5개 업무 정책/후속 게이트 검증 (2026-10-25)
+## Issue #102 G0 — Owner 6개 업무 정책/후속 게이트 검증 (2026-10-25)
 
-[Issue102](Issue102.md)/ADR-051-R1은 사내망 **기존 공개 CAD 익명 GET 허용**, `Current PUT=Editor 이상+담당 Site`, `Version DELETE=Editor 이상+담당 Site+기존 비밀번호`를 승인했다. 관리자 담당자/Owner 역할 분리, Audit 만료 후 정리 원칙은 승인하되 백업/물리 정리 SOP와 등록 POST 권한은 미확정. **현재 배포에서 로그인/권한 기능이 활성화되었다는 뜻이 아니다.**
+[Issue102](Issue102.md)/ADR-051-R1은 사내망 **기존 공개 CAD 익명 GET 허용**, `Current PUT=Editor 이상+담당 Site`, `Version DELETE=Editor 이상+담당 Site+기존 비밀번호`를 승인했다. 관리자 담당자/Owner 역할 분리, Audit 만료 후 정리 원칙은 승인하되 백업/물리 정리 SOP는 후속 확정, 등록 POST 권한은 Editor 이상+담당 Site Owner 승인. **현재 배포에서 로그인/권한 기능이 활성화되었다는 뜻이 아니다.**
 
 | TC ID | 확인 내용 | 실행 단계/현재 상태 |
 | --- | --- | --- |
@@ -12,10 +12,56 @@
 | TC-P4-G0-BIZ-004 | **G7 이후 목표:** 삭제는 Editor/Admin+담당 Site+기존 삭제 비밀번호 AND. 암호만/범위만/인증만/타 Site 각각 실패, 승인된 삭제 성공 및 Actor/Audit·Current·SHA 회귀 | G4/G6 / NOT RUN |
 | TC-P4-G0-BIZ-005 | 지정 운영 담당자의 Admin 단발 초기화/복구·재기동 불변, Owner 책임/SOP 기록, Secret 미출력 | G2/G6 / NOT RUN |
 | TC-P4-G0-BIZ-006 | Audit 365일 경계, 미만 보존·이후 정리 대상 분류. Backup/Restore 후 만료 기록·예외 처리 정책 승인 전 **purge 미실행** | G4/G6/G7 / NOT RUN |
-| TC-P4-G0-BIZ-007 | 기존 `POST /api/cad-files` Editor+Site가 **PROPOSED**임을 유지하며 임의 강화/개방 0, 익명 브라우징과 원래 API/북마크 호환 | G0 문서/후속 G7 / NOT RUN |
+| TC-P4-G0-BIZ-007 | **G7 목표:** `POST /api/cad-files`는 인증 Editor/Admin+담당 Site 성공, 익명·Reader·타 Site 거부, Actor/Audit·원본/Current·기존 API 동작 보존 | #106/#108 / NOT RUN |
 | TC-P4-G0-BIZ-008 | **문서 전용 변경**(AGENTS/ADR/Issue102 등), Source/API/Prisma/Compose/Nginx/.env/운영 볼륨 변경 0, 동일 HEAD CI·미해결 리뷰·충돌 확인 | PR diff/CI / NOT RUN |
 
 **수용 구분:** G0 AC1은 5개 Owner 정책 명세와 후속 위임이 문서화됐는지 평가, AC2는 앞서 승인된 HTTP 위험 범위 결정(보안 시험 PASS 아님), AC3은 docs-only/OFF, AC4는 최신 HEAD PR CI·리뷰·병합 근거 필요. G0 문서 승인 자체는 G2~G7 실제 업무 E2E/배포 PASS를 의미하지 않는다.
+
+
+## Issue #103 — 최초 실패 재발 방지와 P1 추적 (2026-10-26)
+
+- `TC-P4-G1-SYNTAX-001`: PR Verify `npm run typecheck` 및 Docker baseline Next build의 **동일 HEAD** 성공 필요. 최초 실패 `store.ts:134 TS1002` 후속 TS1005/TS1128 재발 없어야 함. 수정 후 아직 **NOT RUN**.
+- `TC-P4-G1-005` 강화: Site grant/revoke Audit에 `actor_user_id`(관리자), `affected_user_id`(대상 사용자), `site_id`(업무 Site), action/requestId가 보존돼야 한다. **서로 다른 사용자에게 동일 Site를 부여·철회한 후 grant 행이 없어져도** 누가 영향받았는지 추적 가능해야 하며 `affected_user_id/site_id` 누락 SQL INSERT는 실패해야 함. FK·append-only 원자성 보존.
+- 미실행 단계(Unit·Integration·Build/E2E/Docker smoke)는 첫 CI 실패의 `SKIPPED`를 그대로 기록하며 수정 HEAD의 실행 확인 이후에만 PASS 가능. 운영 `src/prisma/schema.prisma`/migrations·API 변경 0 유지.
+
+
+
+## Issue #103 / G1 — 격리 DB·원자성·복구 Test Matrix (2026-10-25)
+
+모든 TC는 기존 6개 CAD Migration의 실 SQL과 합성 Version/Current/SHA를 일회용 SQLite에 적용하고 **운영 연결 0**. 테스트 위치 `src/tests/integration/auth-g1.test.ts`. 미실행은 `NOT RUN`, PR CI 최신 HEAD 결과를 따로 검증하기 전 PASS 기록 금지.
+
+| Test ID | 검증 내용 | 근거 AC | 계획 상태 |
+| --- | --- | --- | --- |
+| TC-P4-G1-001 | Migration 장애 주입 rollback, 기존 CAD 스냅샷 불변, FK, 중복 DDL 거부·격리 경로 Guard | AC1/3/4 | NOT RUN |
+| TC-P4-G1-002 | User ID 불변/login unique(정규화), Role/Site/SpecialGrant FK·Unique·CHECK | AC1/2 | NOT RUN |
+| TC-P4-G1-003 | 8h·30m·3 active, 4번째 app/direct SQL 거부, 실패 주입 rollback, 원시 토큰 DB 없음 | AC2 | NOT RUN |
+| TC-P4-G1-004 | 두 SQLite writer/BEGIN IMMEDIATE lock 충돌이 fail closed | AC2 | NOT RUN |
+| TC-P4-G1-005 | Role/Site/SpecialGrant+Audit atomic commit/rollback, duplicate/권한 거부, Audit UPDATE/DELETE 거부 | AC2 | NOT RUN |
+| TC-P4-G1-006 | 실제 DB Version→Floor→Building→CadSite+Reader Site grant, Admin 무범위 거부 | AC1/2 | NOT RUN |
+| TC-P4-G1-007 | 비활성 계정+세션 회수+Audit 원자 처리, 실패 복원/재로그인 거부 | AC2 | NOT RUN |
+| TC-P4-G1-008 | nonce hash unique 1회, 암호 변경·세션 폐기·Audit rollback, 원문 미저장 | AC2 | NOT RUN |
+| TC-P4-G1-009 | 중단(quiesced)된 합성 DB/local/S3-mirror 일관 백업→격리 G1 dry-run→손상 주입→복원, 기존 Current/SHA/delete hash 불변 | AC3 | NOT RUN |
+
+추가 PR 정적 Diff 확인: `src/prisma/schema.prisma`, `src/prisma/migrations/**`, `src/app/api/**`, `src/server/db.ts`, Runtime/Compose/Nginx/실 CAD/S3 변경 0; 새 G1 파일은 tests/fixtures·tests/integration·docs에 한정. 실 운영 DB/CAD/원격 S3 복구·실 LAN E2E 및 Owner 운영 승인은 **#108/#109 NOT RUN**. 관련 [Issue103](Issue103.md), [TestReport](TestReport.md).
+
+
+## Issue #107 / G5 — 비운영 PROD Nginx·DEV Direct 시험 계획 (2026-10-25)
+
+**Owner R1 우선:** 정상 연결·업무 기능 검증만 G5 필수; TLS/WAF/CIDR·CSRF/Host/Forwarded 공격 우회·탈취/침투 실증은 비범위. 보안 기능 PASS 주장 없음. [Issue107](Issue107.md).
+
+| TC | 점검 내용 | 방법/상태 |
+| --- | --- | --- |
+| TC-P4-G5-001 | PROD Nginx만 host publish, Proxy Upstream/Host·body limit 전달 | Vitest 정적 계약 + CI Docker Compose config; 새 HEAD 결과 전 NOT RUN |
+| TC-P4-G5-002 | DEV 직접 host port와 PROD/DEV 데이터 볼륨·net 독립, 운영 volume 재사용 0 | Vitest 정적 계약 + CI Compose config; 결과 전 NOT RUN |
+| TC-P4-G5-003 | Health 200/status ok, Home HTML, CAD list JSON, font 200, 선택적 Viewer/content 경로 | Mock Vitest + 실제 Preview CLI; 원 HEAD CI SUCCESS, 리뷰 보완 HEAD 결과 대기 |
+| TC-P4-G5-004 | Health 503·비정상 응답을 성공으로 보지 않음 | Mock Vitest; 결과 전 NOT RUN |
+| TC-P4-G5-007 | --version-id에서 실제 /cad/versions/:versionId/viewer 검증, 관리 화면 false PASS 방지, 명시 ID 불일치 시 네트워크 전 거부 | Unit 보강 / 수정 HEAD CI 미확인 |
+| TC-P4-G5-005 | src/docker-compose.yml/.env·Prisma·API·운영 Nginx·원본 데이터 변경 0 | GitHub PR changed-file diff 검사 예정 |
+| TC-P4-G5-006 | Owner R1/익명 CAD GET 최신 업무 정책, 미실행 현장·Cookie·업로드 E2E 기록 | docs+Issue cross-check; G3/G6 실증 NOT RUN |
+| TC-P4-G5-LAN-001 | 조직 내 PC 2대 PROD Nginx→App, Viewer·등록/다운로드/Current·Cookie(후속 G3), DEV 분리 확인 | **G6 사내 현장/일회용 데이터에서만** 수동 시험, NOT RUN |
+
+- CI 검증은 Docker Compose **config-only**(profiles g5-prod/g5-dev)와 Vitest Mock이다. Docker Preview 실제 실행/Upload/Windows Nginx·WSL2/실 PC 연결·DB/CAD/S3 복구 수용을 자동으로 PASS 표시하지 않는다.
+- G5 결과는 #108 G6에 인계. #109 G7 Owner 별도 승인 전 운영 Auth/관리/영속 API/Prisma·Nginx·Compose 활성화 금지.
 
 
 ## Issue #102 / ADR-051-R1 — 보안 강화 비범위와 기능/운영 수용 시험 (2026-10-25)

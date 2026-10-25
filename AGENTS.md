@@ -1,12 +1,41 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
-## Issue #102 G0 — Owner 5개 업무 정책 추가 승인 (2026-10-25, ADR-051-R1)
+## Issue #102 G0 — Owner 6개 업무 정책 추가 승인 (2026-10-25, ADR-051-R1)
 
 - **최신 최우선 결정:** [Issue102](out/Issue102.md) / [ADR-051-R1](out/Decisions.md)의 5개 업무 정책은 아래의 과거 `Reader+Site 조회 필수`, `Admin만 CAD 삭제`, `기존 삭제 비밀번호 폐지 검토`, `Audit 만료 후 정리 미승인` 등 제안보다 우선한다.
 - **익명 CAD 조회:** 사내 LAN의 기존 공개 CAD 목록·검색/위치·Current/Version 메타데이터·Viewer·원본 파일 GET/다운로드는 로그인/SiteGrant 없이 허용. 익명은 Reader 계정/가상 Actor가 아니고, 공개 도면에 사용자별 Site 읽기 기밀성 통제를 제공하지 않는다. **신규 Outline/Memo/Type 영속 API, Admin/로그·Audit 조회는 익명 공개 승인 대상이 아니다.**
-- **쓰기 업무권한:** Current 지정 `Editor 이상 + 담당 Site`; CAD Version 삭제 `Editor 이상 + 담당 Site + 기존 삭제 비밀번호` **모두 필요**. Admin도 Site 자동 권한 없음, Client의 Site·Actor claim/삭제 비밀번호만으로 권한 부여 불가. `POST /api/cad-files` 업로드 권한은 기존 `Editor+Site` **권장안 상태 유지(별도 승인 전 미확정)**.
+- **쓰기 업무권한:** Current 지정 `Editor 이상 + 담당 Site`; CAD Version 삭제 `Editor 이상 + 담당 Site + 기존 삭제 비밀번호` **모두 필요**. Admin도 Site 자동 권한 없음, Client의 Site·Actor claim/삭제 비밀번호만으로 권한 부여 불가. `POST /api/cad-files`는 **Owner 승인 로그인 Editor 이상+담당 Site(G0-BIZ-06)**이며 익명 CAD 조회 예외로 등록을 허용하지 않는다.
 - **운영 책임/보존:** 최초 Admin 단발 초기화·복구 실행 = 지정 사내 운영 담당자, 전체 운영 책임 = Owner. Audit 365일 보존 후 만료 기록을 정리하는 방향 승인; 정리 방식·주기·백업 보존/복구 세칙은 후속 승인 대상이며 **지금 자동/물리 파기 금지**.
 - **배포 금지:** 이 결정은 현재 익명 GET/삭제 암호/API 동작을 변경하지 않으며, 신규 Auth/DB/Prisma/Migration/Proxy/Nginx/Compose/.env 설정을 활성화하지 않는다. G1~G6 격리 구현/기능 시험 후 G7 별도 Owner Go/No-Go 전까지 운영 OFF. 테스트 미실행을 PASS로 기록 금지.
+
+
+## Issue #103 — PR #116 CI 실패·감사 P1 교정 (2026-10-26)
+
+- 기존 [CI #40202066291](https://github.com/planner77/layoutManager/actions/runs/40202066291)의 Verify(TypeScript `store.ts:134 TS1002`)·Docker(baseline Next TypeScript) 두 Job은 동일 소스 결함으로 **FAILURE**, Unit/Integration/E2E 등은 **SKIPPED**. `src/tests/fixtures/auth-g1/store.ts`의 함수 선언 중복·문자열 파손을 단일 구현으로 정리해야 하며 수정 전 HEAD 성공을 전용하지 않는다.
+- [P1 리뷰 r4371167619](https://github.com/planner77/layoutManager/pull/116#discussion_r4371167619): 관리자 actor + Site만으로는 권한 피변경 사용자 식별 불가. G1 Audit에 `affected_user_id`(User FK), `site_id`(CadSite FK)를 보존하고 Site grant/revoke에는 두 값이 필수. `TC-P4-G1-005`에서 서로 다른 사용자 동일 Site의 변경/철회 뒤에도 구분되는지 확인. **운영 Auth/API/Prisma migration/Compose/Nginx/GHCR 변경 금지**, G7 별도 승인 전 OFF.
+
+
+
+## Issue #103 / G1 — User·Session·Grant·Audit 격리 DB 설계·검증 (2026-10-25)
+
+- **#102 Owner R1 우선:** #103은 기존 CAD 테이블을 담은 일회용 SQLite 사본만 대상으로 한다. `src/tests/fixtures/auth-g1/{schema.prisma,migration.sql,store.ts}`는 **비운영·비연결 계약**이며 `src/tests/integration/auth-g1.test.ts`에서만 사용. `src/prisma/schema.prisma`, `src/prisma/migrations`, App API, runtime/Compose/Nginx, 운영 DB/원본 파일/실 S3/GHCR는 수정하지 않는다. G7 #109 Owner 별도 승인 전 활성화 금지.
+- G1 트랜잭션: `BEGIN IMMEDIATE`, 8h/30m/최대 3개 세션(트리거+원자 count/insert, 4번째 거부·시계 역행 거부), 세션 원시 토큰 미저장, 비활성/복구 세션 폐기, Role/Site/Special Grant와 Audit 동일 트랜잭션, nonce hash 단발·재사용/삭제 불가, Audit append-only. Version→Location→Building→CadSite DB 검증, Admin도 Site 자동 승인 금지.
+- **검증 경계:** 실제 여섯 CAD Migration을 일회용 SQLite에 적용한 뒤 G1 DDL/장애 주입/FK·Unique·복원과 CAD Version/Current/SHA/삭제 hash 불변을 점검하는 TC-P4-G1-001~009. 합성 로컬 CAD/가상 S3 복제는 실제 운영 백업·S3 복구 증거가 아니다(G6 #108). 실행 전 `NOT RUN`, CI 시작을 PASS로 주장 금지.
+- 지침/설계/시험·복구 가이드: [Issue103](out/Issue103.md), [ADR-051-G1](out/Decisions.md), [Database](out/Database.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md), [Operation](out/Operation.md). 2026-10-25 #102 Owner 5개 승인: 기존 CAD 목록/Viewer/다운로드 익명 GET 유지, Current=Editor/Admin+담당 Site, Version 삭제=Editor/Admin+담당 Site+기존 삭제 비밀번호, 최초 Admin/복구=지정 사내 운영 담당자(Owner 책임), Audit 365일 경과 이력 정리 원칙. 관련 문서 PR #114는 병합·CI 완료 미확인. POST 업로드 권한, Secret/실 담당자, Audit 물리 정리·백업 복원 세칙, 실제 배포는 PENDING; #103 G1 운영 활성화 승인 아님. 기존 공개 CAD 익명 GET을 G1의 인증된 SiteGrant 검증으로 차단하지 않는다.
+
+
+## Issue #107 / PR #115 — Viewer P2 리뷰·GHCR v0.40.4 준비 (2026-10-26)
+
+- 기존 HEAD d771d553의 [PR CI 40201366001](https://github.com/planner77/layoutManager/actions/runs/40201366001)은 Verify 및 Docker 두 Job 모두 성공. Codex [P2 4371142398](https://github.com/planner77/layoutManager/pull/115#discussion_r4371142398)에서 위치 관리 페이지를 Viewer로 잘못 검사할 수 있음을 지적하여 실제 /cad/versions/:versionId/viewer 검증과 TC-P4-G5-007을 추가. 수정 HEAD CI 성공을 소급 주장 금지.
+- 기존 v0.40.3은 Main CI 40199597907 GHCR App/Migrator 성공으로 발행됨. 새 GHCR 요청에 대해 0.40.4 package/lock 신규 릴리스 후보를 만들고 이전 버전 태그 이동 금지. 운영 Nginx/Compose·Auth/API·Prisma/원본 CAD/Current 변경 및 자동 활성화 없음. 새 PR CI·리뷰·충돌 통과 후 Main CI/GHCR 시작과 최종 게시 성공을 구분.
+
+
+## Issue #107 / G5 — 간소 조직망 PROD Nginx·DEV 직결 Preview (2026-10-25)
+
+- [Issue107](out/Issue107.md) / [Issue102](out/Issue102.md) 및 GitHub #102 최신 Owner 5개 업무 정책 참조. G5는 **실제 운영 보안강화가 아니라 비운영 접속 구성과 정상 기능 검증**이다. 별도 `DESIGN.md`는 없어 Architecture/Decisions/Operation이 설계 기준이다.
+- 격리 Preview는 `src/deploy/g5/compose.preview.yml`(PROD Nginx→App, DEV 직결, 각자 독립 볼륨·네트워크), `nginx.preview.conf`, 읽기 전용 `src/scripts/g5-preview-smoke.mjs`, Unit으로 구성. 사내 실제 Nginx/Compose/Prisma/Auth/API/운영 CAD·DB 변경 없음.
+- 조직망 소수 사용자/외부 인바운드 제한 전제하에 공격·탈취/침투·CIDR 단말 방어는 추가하지 않는다. `OWNER_ACCEPTED_SCOPE`는 안전성 PASS가 아님. 정상 Proxy/Host/Origin·Viewer·Upload/Download/Health, PROD/DEV 분리, 실 LAN 검증 및 G7 별도 승인만 유지.
+- Preview 작성/Unit 테스트와 실제 PROD Windows Nginx/WSL2/LAN 2대 PC·G3 Cookie·업로드 실증은 **구분**한다. PR CI 시작을 현장 시험 PASS나 운영 활성화로 쓰지 않는다.
 
 
 ## Issue #102 / ADR-051-R1 — Owner 내부망 경량 보안 범위 결정 (2026-10-25)
@@ -402,7 +431,9 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 | [Issue25](out/Issue25.md) | 기본 immersive 진입, native 수동 선택, 복귀·툴바·회귀 수용 | Viewer 전체 화면 기본 진입/링크/포커스/레이어·검색 변경 시 |
 | [Release 0.20.0](out/Release-0.20.0.md) | 0.20.0 병합·태그·GHCR 게시 근거 | 0.20.0 릴리스 확인 및 운영 이미지 식별 시 |
 | [Release 0.21.0](out/Release-0.21.0.md) | 0.21.0 병합·태그·GHCR 게시 근거 | 0.21.0 릴리스 확인 및 운영 이미지 식별 시 |
+| [Issue103](out/Issue103.md) | G1 User/Session/Role·Site·SpecialGrant/Audit/RecoveryNonce 격리 SQL·Prisma 계약 및 원자성·복구 시험 | Auth DB/세션/권한/복구·백업 검토 및 #102 G0→G7 선행 조건 확인 시 |
 | [Issue102](out/Issue102.md) | G0 내부 LAN PROD Nginx/DEV App 직접 접속, Owner 경량 보안 범위·잔여 위험 수용·G0~G7 운영 게이트 | 운영/개발 배포 경로·Nginx/직접 포트, 인증·Site/Version 권한·기존 CAD API 전환, 위험 범위·운영 Go/No-Go/수용 기준 변경 시 |
+| [Issue107](out/Issue107.md) | G5 PROD Nginx/DEV 직결 격리 Preview, 테스트·실 LAN 인계 | Proxy/접속 경로·정상 Viewer/API/Upload/Health 검증, 운영 환경 변경 경계 |
 | [Issue31](out/Issue31.md) | DXF 다중 선택·볼록/정밀 외곽선·실험 상태·P4 권한 보류 | Viewer 선택·외곽선/Worker/JSON 변경 시 |
 | [Issue26](out/Issue26.md) | DXF TEXT/MTEXT 색인·world 좌표 focus·검색 범위/검증 | Viewer 검색·Pan/Zoom·Worker·BLOCK/INSERT·DWG 텍스트 지원 검토 시 |
 | [Issue66](out/Issue66.md) | Migrator 최소 의존성·크기 측정/OCI manifest·복구 계약 | Docker migrator/CI/GHCR 및 버전·패키징 변경 시 |

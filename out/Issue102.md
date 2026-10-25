@@ -1,6 +1,6 @@
 # Issue #102 — 사내 업무망 경량 운영 정책 (G0 · Owner R1)
 
-작성/Owner 정책 결정: 2026-10-25. 상위 [Issue #96](https://github.com/planner77/layoutManager/issues/96), 하위 [#102](https://github.com/planner77/layoutManager/issues/102). 기준 [ADR-051-R1](Decisions.md). **Owner 업무 정책 5개 승인 / 세부 운영 SOP 후속 / 실제 운영 미활성화**.
+작성/Owner 정책 결정: 2026-10-25. 상위 [Issue #96](https://github.com/planner77/layoutManager/issues/96), 하위 [#102](https://github.com/planner77/layoutManager/issues/102). 기준 [ADR-051-R1](Decisions.md). **Owner 업무 정책 6개 승인 / 세부 운영 SOP 후속 / 실제 운영 미활성화**.
 
 ## 1. 적용 전제 및 범위
 
@@ -29,7 +29,7 @@ DEV:  개발 PC ── HTTP ─────────────────�
 - 운영에서는 일반 사용자 브라우저에 App direct URL을 안내하지 않으며 개발 직결 설정을 운영 환경에 복제하지 않는다. 이 점검은 **배포 정합성 및 실수 방지**이며 침입방어 보안인증이 아니다.
 - 실제 사내 IP/CIDR/포트·계정명·Secret/토큰·CAD 데이터는 공개 GitHub/CI에 넣지 않는다.
 
-## 3. 기존 CAD API — Owner 승인 5정책 (G7 전 실제 Route 불변)
+## 3. 기존 CAD API — Owner 승인 6개 업무 정책 (G7 전 실제 Route 불변)
 
 2026-10-25 Owner 후속 의사결정은 아래의 과거 조회 Reader 필수·삭제 Admin 전용 제안보다 **우선**한다. **기존 공개 CAD Read vs 인증된 쓰기**를 분리한다.
 
@@ -39,7 +39,7 @@ DEV:  개발 PC ── HTTP ─────────────────�
 | `GET /api/cad-files`, `GET /api/cad-locations/:id`, `GET /api/cad-files/:versionId/content` 및 기존 공개 도면 다운로드 | **기존 공개 GET 보존**, 익명 호출 가능. 익명은 특정 사용자/Reader Actor로 가장하지 않고 **모든 기존 공개 Site 도면을 조회 가능**(업무상 Site별 읽기 기밀성 제어 제공 안 됨) | APPROVED |
 | `PUT /api/cad-locations/:id/current` | **로그인한 Editor 또는 Admin + 서버가 확인한 담당 Site/Version Grant**. Admin이라도 Site 자동 전체 부여 아님 | APPROVED |
 | `DELETE /api/cad-files/:versionId` | **로그인한 Editor 또는 Admin + 담당 Site/Version Grant + 기존 삭제 비밀번호**를 모두 만족(AND). 비밀번호만으로 인증·Scope 대체 불가. 삭제 시 actor·revision 감사 | APPROVED |
-| `POST /api/cad-files` | Editor 이상 + 담당 Site **권장안이지만 이번 5개 승인에 포함되지 않음**. 후속 #106/#109 결정 전 정책 확정 주장 금지 | PROPOSED |
+| `POST /api/cad-files` | **Owner 승인: 로그인 Editor/Admin + 담당 Site Grant**. 익명 CAD 조회는 업로드 쓰기 권한을 포함하지 않는다. 업무 등록은 Actor·Site/Version 정합성 및 감사 검증 후 G7 활성화 | APPROVED · G0-BIZ-06 |
 | `GET /api/health` | 기존 내부 Health Probe 최소 상태 응답 그대로 | EXISTING CONTRACT |
 | 신규 Outline/Memo/Type 영속 조회·로그/Audit/관리 API | **익명 CAD 조회 승인 범위 밖**. 각 #98/#83/#65/#60 권한·DB·릴리스 승인 후 별도 계약 | BLOCKED / NOT GRANTED |
 
@@ -64,7 +64,7 @@ DEV:  개발 PC ── HTTP ─────────────────�
 
 `OWNER_ACCEPTED_SCOPE`는 2026-10-25 Owner가 공격 대비·탈취 방어를 비범위로 지정한 **범위 결정 증거**다. 테스트/현장 검증이 실제 없으면 `NOT RUN`으로 표시한다. `OPEN_FUNCTIONAL`과 `OPEN_OPERATIONAL`은 수용되지 않았으며 담당·기일과 시험을 별도 관리한다.
 
-## 5. 2026-10-25 Owner 5개 추가 승인과 후속 세칙
+## 5. Owner 6개 승인 업무 정책과 후속 세칙 (2026-10-26)
 
 | 정책 | 승인 내용 | 후속 이관/미확정 |
 | --- | --- | --- |
@@ -73,8 +73,9 @@ DEV:  개발 PC ── HTTP ─────────────────�
 | G0-BIZ-03 | 도면 삭제 **Editor 이상 + 담당 Site + 기존 삭제 비밀번호 유지** | 비밀번호 입력/기존 삭제 API·Audit 정상 작동 시험 #108 |
 | G0-BIZ-04 | 지정 운영 담당자가 Admin 최초 생성·단발 복구 실행, **Owner가 운영 책임** | 담당자 실명/비밀 파일 공급·회수·단발 SOP 사내 비공개 및 #104 |
 | G0-BIZ-05 | 감사 **365일 보존 이후 만료 기록 정리** 방향 승인 | 정리 주기·자동/수동·기록 예외 및 백업 사본 보존/복구는 #106/#108/#109에서 별도 확정, 지금 자동 파기 금지 |
+| G0-BIZ-06 | **도면 등록 POST = 로그인 Editor 이상 + 담당 Site** Owner 추가 승인 | #106 서버 업무권한·Audit, #108 실증, #109 별도 운영 활성화 Go/No-Go; 기존 POST 동작 G7 전 불변 |
 
-**계속 미정이며 G0 Owner 승인 아님:** 기존 `POST /api/cad-files` 업로드 Editor+Site 권장안, 배포용 Nginx upstream/호스트 바인딩 및 PROD/DEV 사내 실제 값(#107), 관리자 수행자 지정 및 Secret SOP(#104), Audit 자동/물리 파기·백업 세칙(#106/#108/#109), 단계별 기존 API 전환 시점·rollback(#109). 해당 정책은 운영 Go/No-Go 전 반드시 확정하되 **G0의 이미 승인된 5개 정책을 보류로 되돌리지 않는다**.
+**G0 업무 정책 확정:** 기존 공개 CAD GET는 사내망 익명, 도면 등록 POST와 Current PUT은 Editor 이상+담당 Site, Version DELETE는 Editor 이상+담당 Site+기존 삭제 비밀번호. 미정은 신규 보안 정책이 아닌 **운영 실행 세칙**: Nginx/DEV 실제 바인딩(#107/#108), Admin 실수행자/Secret SOP(#104), Audit 만료 정리·백업/Restore(#106/#108/#109), API cutover/rollback(#109). 각 후속 이슈에 명시적으로 이관한다.
 
 ## 6. G0~G7 인계 및 검증
 
@@ -89,7 +90,7 @@ DEV:  개발 PC ── HTTP ─────────────────�
 | G6 #108 | 실제 사내 PC 정상 업무 E2E, DB/CAD/S3 Backup→격리 dry-run→Restore, 회귀·실패 원장 | 보안 공격 E2E 비범위 |
 | G7 #109 | 별도 Owner 운영 Go/No-Go, 정식 배포·Migration·롤백 및 승인 범위 | 추가 보안 서명 필요 없음 |
 
-- **G0 AC-1:** PROD Nginx/DEV 직접 경로와 Owner 5개 업무 정책이 확정되어 문서화됨. POST 등록 권한·상세 운영 SOP·전환/rollback은 책임과 함께 G2/G4/G5/G6/G7 후속으로 명시 인계하고 미승인으로 유지.
+- **G0 AC-1:** G0-BIZ-01~06 Owner 업무 정책 승인 및 PROD/DEV 범위 문서화. 운영 세칙은 #104/#106/#107/#108/#109에 위임하고 실행·현장 검증 완료라고 주장하지 않는다.
 - **G0 AC-2:** 공격·탈취 위험의 범위 수용 상태 및 안전성 미검증이 명시됨. 모의 공격·추가 보안 서명은 불요.
 - **G0 AC-3:** 서버 API/Prisma/DDL/Nginx/Compose/.env/운영 데이터 **변경 0**; #96 OPEN/BLOCKED.
 - **G0 AC-4:** ADR-051-R1·AGENTS·Architecture·Operation·Requirements·TestPlan·#96~#109 일치 및 **본 Owner 추가 승인 전용 docs-only PR 최신 HEAD의 CI/리뷰/병합 결과**를 별도 확인 후 완료 판정.

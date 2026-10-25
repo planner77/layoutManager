@@ -4,10 +4,41 @@
 
 - 기존 도면 목록·위치·Version·Current·Viewer·원본 GET/다운로드는 Owner 승인 **익명 사내망 조회**. **익명 조회를 위해 User/AuthSession/UserSiteGrant/가상 Reader 행을 생성하지 않는다**. 공개 GET에는 Site 단위 사용자 기밀성 제약을 적용할 수 없음을 명시한다. 신규 CadOutline/Memo/Type 및 로그·Audit 영속 GET에는 자동 상속 금지.
 - `PUT Location.currentVersionId`는 로그인한 **Editor 또는 Admin + 해당 Location의 Site Grant** 및 서버 소유 Site/Version 연관 검증 필수. `DELETE CadFileVersion`은 같은 Actor/Grant 조건에 **기존 삭제 비밀번호 검증**을 더한 AND 조건. 삭제 비밀번호 단독/클라이언트 User·Role·Site claim은 인가 아님. Mutation 성공·거부와 Revision/Actor/Audit DB 원자성은 G1/G4/D3 후속에서 설계·시험.
-- 기존 `POST /api/cad-files`의 Editor+Site 요구는 **권장 미확정**, 신규 업로드 권한을 승인된 것으로 저장하지 않는다.
+- 기존 `POST /api/cad-files` 권한은 **Editor 이상 + 담당 Site**로 Owner 승인(G0-BIZ-06); G7 이전 운영 Schema/Route 미변경.
 - Admin 단발 Bootstrap/Recovery/Nonce가 실제 사람 책임 대신 DB 초기화 재시도에 노출되어서는 안 된다. 운영 담당자 실행, Owner 책임(실명/Secret 경로 비공개); G2 #104 SOP와 원자성 필요.
 - Audit Event는 **365일 내 append-only 유지** 및 만료 이후 정리 대상이라는 방향이 승인됐다. 만료 판정(UTC), purge 주기/방법·권한, 운영 Backup에 잔존한 만료 원장의 Restore 후 처리, 예외 보존 정책은 **#106/#108/#109 승인 전 미확정**이다. 이번 문서 변경은 Prisma DDL·Migration·DB Job/데이터·복구 적용 **0**.
 - 정식 Schema 활성화와 공개 CAD API의 Auth 쓰기 전환은 G7의 별도 Owner 승인이 필요하며 DXF bytes/SHA, Current 0~1·Version FK, 기존 deletePassword 계약은 보존한다. [ADR-051-R1](Decisions.md), [Issue102](Issue102.md).
+
+
+## Issue #103 P1 교정 — 감사 대상 사용자·Site 영구 추적 (2026-10-26)
+
+- PR #116 리뷰 [r4371167619](https://github.com/planner77/layoutManager/pull/116#discussion_r4371167619)에 따라 테스트 전용 `AuditEvent`에 `affected_user_id TEXT NULL`(User FK)와 `site_id TEXT NULL`(CadSite FK), `ix_g1_audit_affected_site_time` 색인 추가. `SITE_GRANTED`·`SITE_REVOKED`는 **두 컬럼 모두 필수**로 검사하며 다른 action은 `site_id IS NULL`을 요구한다.
+- `actor_user_id`는 관리자, `affected_user_id`는 실제 권한 변경 대상 사용자, `site_id`는 대상 Site의 DB 식별자. 복합 문자열을 `target_id`에만 넣어두지 않는다. UserSiteGrant가 DELETE되어도 append-only Audit에는 누가 어느 Site에서 변경되었는지가 남는다. 이 변경은 독립 `src/tests/fixtures/auth-g1/{migration.sql,schema.prisma,store.ts}`에만 있으며 운영 Prisma/DDL 적용 **0**.
+
+
+
+## #103 / #102 최신 Owner 업무 정책 연결 (2026-10-25)
+
+#102 Owner는 기존 CAD GET 익명 조회 유지, Current=Editor/Admin+Site, Delete=Editor/Admin+Site+기존 삭제 비밀번호, Admin 초기/복구 담당자, Audit 365일 경과 이력 정리 원칙을 승인했다([PR #114](https://github.com/planner77/layoutManager/pull/114), 병합 미확인). 이 결정은 G1 User/SiteGrant DB 제약 자체를 바꾸지 않으며 G1의 `cad:read` 권한 테스트를 기존 익명 GET API로 연결하지 않는다. **Audit 물리 파기·백업 복원시 재출현 방지 SOP는 여전히 PENDING**으로 Fixture append-only/nonce 불변 정책을 유지한다.
+
+
+## Issue #103 G1 — 격리 User/Session/Grant/Audit 물리 계약 (운영 DDL OFF, 2026-10-25)
+
+적용 대상은 **기존 CAD 6개 SQL Migration을 실행한 일회용 DB 사본**뿐이다. `src/tests/fixtures/auth-g1/migration.sql`에 다음 7개 테이블의 실행형 SQL과 FK/Unique/CHECK/트리거를 명시했고, `schema.prisma`는 **검토용 독립 투영**(기존 CadSite의 id/관계만 표현)이다. 기존 `src/prisma/schema.prisma` 및 `src/prisma/migrations/**`는 수정·자동 적용하지 않음.
+
+| 모델 / FK | 최소 무결성 계약 |
+| --- | --- |
+| `User` | 불변 PK id, normalized lowercase login_name unique(NOCASE/ASCII), password_hash, ACTIVE/DISABLED, must_change_password, UTC ms 시간. 비밀번호 원문 없음 |
+| `AuthSession` → User | hash(토큰) unique, issued/lastSeen/expires/revoked 정수 UTC ms, expires=issued+8h, idle 30m, 3개 active 트리거/lock, clock rollback·reanimate 거부 |
+| `UserRoleGrant` → User | 복합 PK(user, Reader/Editor/Admin), grant actor FK, 삭제시 다른 테이블의 referential history 보존 |
+| `UserSiteGrant` → User/CadSite | 복합 PK(user,site), 기존 물리 CadSite FK; Version→CadLocation→Building→CadSite join으로 실제 소속 확인 |
+| `SpecialGrant` → User | 복합 PK(user, permission); `audit:read`와 `logs:read` 별개, Admin role과 함께 검사 |
+| `AuditEvent` → User? | 안전 actor/action/target/revision/outcome/requestId/UTC만; UPDATE/DELETE 트리거 차단; 365일 이후 실제 파기는 보류 |
+| `AdminRecoveryNonce` → User | nonce_hash 64자리 sha256 PK, 원문 미저장; INSERT 후 UPDATE/DELETE 불가, 중복 복구 rollback |
+
+세션 후보 생성 후 `BEGIN IMMEDIATE`에서 사용자 상태·active count와 DB 제약을 검사하고 INSERT를 원자 수행. Role/Site/Special 변경과 Audit, Disable+전체 Session revoke+Audit, nonce 해시 INSERT+비밀번호 변경+revoke+Audit는 같은 SQLite Transaction. 계정 비활성 시 대상 Session을 전량 revoke하며 실패 주입 시 이전 상태로 rollback. `AuditEvent`에는 Raw Token·Secret·CAD Geometry 등을 담을 열 자체를 만들지 않음.
+
+기존 Version, Current, SHA, delete_password_hash 및 계층 5단계의 실제 컬럼 값을 전후 스냅샷으로 비교하고 `PRAGMA foreign_key_check`를 수행한다. SQL fixture의 기존 CadSite FK가 실패하거나 DDL 재실행하면 fail-closed. SQLite `NOCASE`는 완전한 Unicode case-fold가 아니므로 G2에서 계정명 정규화 계약 유지. `schema.prisma` 투영으로 운영 Migration을 생성/적용하는 것은 명시적 금지. 참조 [Issue103](Issue103.md), [ADR-051-G1](Decisions.md), [TestPlan](TestPlan.md).
 
 
 ## Issue #102 G0 / ADR-051-R1 — DB 계약 유지 (2026-10-25)

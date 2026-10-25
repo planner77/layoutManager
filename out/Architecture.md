@@ -11,13 +11,53 @@ PROD 사내 브라우저 -> Nginx -> App:
   Current PUT -> [미래 G7] AuthSession -> Editor|Admin + 담당 Site/Version -> Current 변경 + Audit
   Version DELETE -> [미래 G7] AuthSession -> Editor|Admin + 담당 Site/Version
     -> 기존 삭제 비밀번호 재검증 -> 삭제 및 Audit (세 조건 AND)
-  CAD POST -> Editor + 담당 Site 제안만 존재, 아직 Owner 미승인
+  CAD POST -> [미래 G7] 로그인 Editor|Admin + 담당 Site -> 등록 + Audit (G0-BIZ-06 승인)
 DEV 개발 브라우저 -> 별도 App 직접 연결 -> 개발 DB/CAD (운영 데이터와 분리)
 ```
 
 - 익명 GET의 Actor는 존재하지 않으므로 익명 호출을 Reader/가상 사용자로 기록하거나 보안 Scope를 가장하지 않는다. 로그인된 Editor/Admin도 해당 Site에 명시 Grant 없으면 **Current·삭제 불가**. 삭제용 비밀번호는 신원/Grant 대체가 아닌 **추가 검증값**이다.
 - Admin 초기화·복구 **실행 = 지정 운영 담당자 / 운영 책임 = Owner**, 단발/재시작 불변. Audit **365일 보존 → 만료분 정리**는 원칙 승인, 수집·파기·백업 SOP 미확정이므로 운영 자동 정리 API/Job 없음.
 - **설계만** 변경: Auth/Session/Role/Scope/Audit 영속 Route, Prisma/migrations, 공개 API/Auth 연결, Nginx/Compose/env/실 CAD/DB/Docker/GHCR 변경 금지. 후속 #103~#109 작업과 별도 Go/No-Go 전 운영 OFF.
+
+
+## Issue #103 — 실패 회복/P1 감사 추적 설계 교정 (2026-10-26)
+
+PR #116의 첫 CI([40202066291](https://github.com/planner77/layoutManager/actions/runs/40202066291))는 Fixture helper `store.ts`에 중복·깨진 비밀번호 변경 함수가 있어 TypeScript와 Docker baseline Build가 동일 TS1002로 실패했다. 이를 단일 선언/원자 트랜잭션으로 교정하는 중이며 신규 HEAD 검증 필요. SiteGrant Audit 계약은 `actorUserId → affectedUserId → siteId`를 모두 DB FK/append-only event에 보존하여 Grant 행 삭제 후에도 per-user 추적 가능하게 함. 앱/운영 DB에는 연결되지 않음.
+
+
+
+## #103 / #102 G0 최신 업무 인증 경계 (2026-10-25)
+
+기존 CAD 목록·검색·Viewer·원본 GET은 Owner 승인에 따라 **익명 유지**하고, Current·삭제는 향후 Editor/Admin+서버 DB SiteGrant 검증을 통과해야 하며 삭제에는 기존 삭제 비밀번호도 필요하다. 이는 #102 정책(문서 PR #114 진행)이며 **G1 fixture의 authenticated Version-site 검증을 기존 공개 API에 연결하지 않는다**. 운영 Auth/API 및 Schema 변경·배포는 G7 Owner 승인 이전 금지.
+
+
+## Issue #103 G1 — 격리 DB adapter/물리 계약, 운영 경로 OFF (2026-10-25)
+
+```text
+[Tests/Fixture only] mkdtemp(cad-auth-g1-*) → existing 6 CAD migrations
+  → synthetic Version/Current/SHA + CAD local/S3-mirror copies
+  → begin immediate → isolated migration.sql → FK/check/snapshot/restore
+  → store.ts transaction helpers (G1 Unit/Integration calls only)
+PROD/DEV App → existing src/server/db.ts → existing src/prisma/** [UNCHANGED]
+  └─ auth/session/audit remain non-routed helpers; NO G1 import or runtime hook
+```
+
+`src/tests/fixtures/auth-g1/store.ts`는 기존 `src/server/auth/{session,audit}.ts` 순수 정책을 참조하지만 **App은 이 fixture를 호출하지 않는다.** SQLite `BEGIN IMMEDIATE` writer lock과 세션 슬롯 트리거로 두 연결의 동시 쓰기를 직렬화/기본 거부하며 과거 Session 재활성화와 시계 역행을 막는다. Grant 3종 변경+Audit, Disable+revoke+Audit, Nonce consumed+passwordHash change+revoke+Audit를 하나의 원자 transaction으로 검증한다. Version의 Site는 CAD Version→Floor→Building→CadSite FK 조인으로 확인하며 API 헤더/Client 주장값은 사용하지 않는다.
+
+운영 User/API/Prisma/Nginx/Compose/실 데이터 **변경 및 활성화 0**; G1 이후 #104(최초 Admin), #105(Session), #106(RBAC/Audit), #107(경로), #108(실제 복구), #109(운영 Go/No-Go) 순서. [ADR-051-G1](Decisions.md), [Issue103](Issue103.md).
+
+
+## Issue #107 / G5 — 비운영 접속 경로 토폴로지 (2026-10-25)
+
+```text
+preview PROD  Host:3302 → g5-prod-nginx:80 → g5-prod-app:3000 → g5-prod-data(SQLite/CAD)
+preview DEV   Host:3301 ────────────────→ g5-dev-app:3000  → g5-dev-data(SQLite/CAD)
+actual PROD   사내 PC → 현행 Nginx → 운영 App  (G7 변경 미승인)
+```
+
+- 격리 Compose와 Nginx 예시만 추가: `src/deploy/g5/{compose.preview.yml,nginx.preview.conf}`. PROD preview App은 host port publish가 없고 Dev App만 직접 port를 publish한다. 두 profile·net/volume을 분리하며 원본 운영 `src/docker-compose.yml`의 host_ip 0.0.0.0 설정은 그대로다.
+- 기존 upload POST의 `requireSameOrigin`이 정상 동작할 수 있도록 Host·X-Forwarded-Proto를 upstream에 전달하고 100MiB 업로드의 multipart 여유로 proxy body 상한 110m을 제공한다. G3 Cookie 전달은 기본 proxy 응답 전달 동작이며 실제 Auth Route/Session 기능 테스트는 후속이다.
+- 공격/CIDR 차단 구성이 아닌 업무 배포 정합성 검증이다. 저장/이관/인증·CAD bytes/SHA/Current/API/Prisma 미변경. 세부 매트릭스·검증 상태는 [Issue107](Issue107.md), [TestPlan](TestPlan.md), [Operation](Operation.md).
 
 
 ## Issue #102 / ADR-051-R1 — PROD Nginx·DEV Direct 경계 (2026-10-25)

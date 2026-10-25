@@ -6,10 +6,39 @@
 - **CAD 열람:** 사내망 사용자는 로그인 없이 기존 도면 목록·검색/위치·현재/과거 Version·Viewer·원본 파일을 읽는다. 익명에게 별도 Reader/SiteGrant 계정을 부여하지 않으며 공개 도면은 Site별 읽기 비밀 보호 대상이 아님. 새 메모·외곽선 영속 조회와 로그/감사/관리 API는 공개하지 않는다.
 - **Current 지정:** 향후 G7 적용 시 로그인된 Editor/Admin과 **서버가 확인한 담당 Site/Version Grant** 모두 필요(없는 Site는 Admin도 거부). 로그인하지 않은 사용자가 보기 가능한 Current 설정 UI를 누르더라도 실제 쓰기 승인 전 로그인/권한 확인이 필요; 지금 UI/Route 수정 금지.
 - **Version 삭제:** 향후 G7 적용 시 **인증된 Editor/Admin + 담당 Site Grant + 현행 삭제 비밀번호** 모두 필수. 기존 삭제 비밀번호를 제거/변경하지 않고 기존 사용자·자동화 Script 및 Current/원본 데이터 호환 검증. 비밀번호만으로 Actor·Scope 인정 금지.
-- **도면 등록 POST:** Editor+Site는 설계상 권장안이지만 **Owner 미확정**. #106/#109에서 승인 없이 해당 Route에 새로운 차단/개방 구현 금지.
+- **도면 등록 POST:** Owner 승인 **로그인 Editor 이상+담당 Site**. 기존 공개 익명 조회의 쓰기 예외 아님. #106 업무권한·#108 정상 동작 시험 후 #109 별도 운영 승인까지 현행 Route 불변.
 - **Admin 책임:** Owner가 내부 운영 책임을 지고 지정 운영 담당자가 최초 Admin 초기화·단발 복구를 실행한다. 실제 이름·최초 부여 절차·Secret file 경로, 마운트·사용 후 폐기, 이력은 비공개 운영 SOP(#104)에만 보관. 재시작 시 계정/암호 덮어쓰기 금지.
 - **Audit 만료:** 365일 이내 Event 보존(append-only). 365일 지난 이력은 정리 방향 승인. 구체 만료 기준·수동/자동 실행·정리 시점·백업본 보존·복구 후 재정리와 예외는 **후속 승인 전 물리/자동 파기 금지** (#106/#108/#109).
 - **배포/회귀:** PROD Nginx / DEV direct/개발 데이터 분리 유지. 기존 익명 GET 성공, Current·Delete 인증/Scope/비밀번호 AND 및 관리 API 비공개, 외부 Client/북마크/삭제 비밀번호 UX, Backup→격리 Migration dry-run→실 Restore를 G6에서 시험. G7 별도 Owner Go/No-Go 전 현재 익명 GET·등록/Current/삭제 API·Nginx/Compose/.env/Prisma 변경 0.
+
+
+## #103 후속 Owner 결정과 감사 파기 보류 (2026-10-25)
+
+#102 5개 업무 원칙(기존 CAD GET 익명, Current Editor/Admin+Site, Delete Editor/Admin+Site+삭제 비밀번호, Admin 초기/복구 지정 운영자, Audit 365일 경과 정리)은 승인됐으나 문서 PR #114의 병합/CI 성공은 아직 별도 확인이 필요하다. **Audit 물리·자동 파기 시각/주기/백업본 처리/복원 후 재출현 방지 SOP와 업로드 POST 권한은 미정**이다. 이번 G1 backup/restore는 합성 fixture만 대상이고 원장 행의 물리 파기 명령은 포함하지 않는다.
+
+
+## Issue #103 G1 — 격리 Migration·Backup·Restore Runbook (2026-10-25)
+
+**운영 기능 OFF / G7 미승인:** `src/tests/fixtures/auth-g1/schema.prisma`는 운영/자동 Prisma migrator 입력이 아니며 `migration.sql`을 `src/prisma/migrations`로 옮기거나 `prisma migrate deploy/db push`로 실행하면 안 된다. `src/tests/integration/auth-g1.test.ts` 실행은 내부 테스트용 `mkdtemp('cad-auth-g1-*')` 아래 `fixture.sqlite`와 합성 CAD만 만든다. App routes/Docker/Nginx/GHCR는 이 작업에서 바꾸지 않는다.
+
+**격리 Rehearsal 표준 절차** (실 데이터 사용 시 별도 승인 및 #108 G6 증거 필요):
+1. App/DB/CAD/S3 쓰기를 정지·quiesce하고 같은 시점의 DB SQLite 일관 백업(API backup), CAD local bytes, S3 object/version list·SHA·크기 manifest를 하나의 snapshotId로 보존. 백업 원본은 사내 비공개로 보관하고 Secret/CAD/SHA 실내용 Git 업로드 금지.
+2. 원본이 아닌 검증용 `cad-auth-g1-*/fixture.sqlite` 사본과 보관된 객체만 격리 복제. 기존 6개 CAD migration 및 Version/Current/SHA/delete hash·5단계 FK·`foreign_key_check` 사전 기준을 기록(시스템 비밀값 미출력).
+3. 격리 DB에만 `PRAGMA foreign_keys=ON`, `BEGIN IMMEDIATE`, G1 `migration.sql` 실행. 같은 transaction에서 `foreign_key_check` 확인 후 commit. 비교 시 기존 CAD 행/Current/Version/SHA/delete hash 및 파일 SHA/크기 일치, Auth FK/Unique/3-session/nonces/rollback 시험. 장애/불일치 시 rollback 및 테스트 중단.
+4. **실복구 리허설:** 앱을 중단한 격리 대상에서 동일 snapshotId의 DB+CAD local+S3 객체를 함께 복구, `foreign_key_check`와 양쪽 content SHA/Current/Version 비교. 스키마 및 데이터가 백업과 정확히 같은 상태인지 확인. 실패 시 운영 적용 **NO-GO**.
+5. G1 합성 S3 mirror/일회용 DB 성공은 실제 S3 백업/복구 성공이 아니다. 실제 접근/권한·복원·기존 API 호환·Nginx PROD/DEV 접속은 #107/#108, 실제 신규 Prisma/DDL 및 애플리케이션 기능 활성화는 #109 Owner 서면 Go/No-Go 후 별도 PR·배포에서만 진행.
+
+**테스트 명령:** `cd src && npm ci && npm run db:generate && npx vitest run tests/integration/auth-g1.test.ts`; 전체 PR Verify(Typecheck/Lint/Unit+Integration/Build/E2E)+Docker는 기존 Workflow대로. 로컬 실행하지 않았다면 `NOT RUN`; PR CI 시작은 성공 증빙 아님. [Issue103](Issue103.md), [TestPlan](TestPlan.md), [TestReport](TestReport.md).
+
+
+## Issue #107 / G5 — 실제 운영 변경 없는 연결 Preview Runbook (2026-10-25)
+
+- G5는 외부 공개망 인바운드 제한·소수 내부 사용자 환경의 **정상 운영 경로 확인**이다. 추가 TLS/WAF/침투/CIDR 하드닝 대신 Nginx↔App Viewer·API/업로드·Health, DEV 직결 및 독립 데이터만 점검한다. [Issue107](Issue107.md).
+- 저장소 root에서 `docker build -f src/Dockerfile --target migrator -t cad-layout-viewer:g5-migrate .` 와 `docker build -f src/Dockerfile --target runtime -t cad-layout-viewer:g5-web .` 후 `docker compose -f src/deploy/g5/compose.preview.yml --profile g5-prod --profile g5-dev up -d`.
+- 기본 접속: PROD Preview `http://127.0.0.1:3302`(Nginx)·DEV Preview `http://127.0.0.1:3301`(direct); `node src/scripts/g5-preview-smoke.mjs --base-url http://127.0.0.1:3302` 및 3301을 각자 실행. 선택적인 실 도면 Viewer/다운로드 검증에는 `--version-id ID`만으로 실제 Viewer `/cad/versions/ID/viewer`와 content를 확인한다. 선택적 `--viewer-path /cad/versions/ID/viewer`는 같은 ID를 써야 하며 위치 관리 화면은 Viewer 합격으로 판단하지 않는다. Preview 도면만 허용.
+- 필요 시 Preview의 `G5_PROD_PORT`, `G5_DEV_PORT`, `G5_PROD_BIND_IP`, `G5_DEV_BIND_IP`만 조절. 사내 IP·장비명·실 Secret/CAD는 사내 비공개로 유지. Windows Nginx·WSL2 upstream 실동작은 G6 별도 확인.
+- 임시 도면 등록/이력/Current·삭제 비밀번호 및 (후속 G3) 쿠키 왕복은 일회용 Preview 데이터에서 **수동** 검증. Preview는 local-only 두 개의 분리된 SQLite/CAD 볼륨. 실 운영 Compose·Nginx/DB/API·Prisma·Auth ON은 G7 승인 전 금지.
+- 종료는 반드시 `docker compose -f src/deploy/g5/compose.preview.yml --profile g5-prod --profile g5-dev down -v` (Preview 전용 볼륨 삭제). `src/docker-compose.yml`과 함께 쓰지 않는다. 상세 재현 명령과 AC/누락 증거는 [Issue107](Issue107.md).
 
 
 ## Issue #102 / ADR-051-R1 — 내부망 PROD/DEV 경량 운영 계약 (2026-10-25)

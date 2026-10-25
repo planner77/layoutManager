@@ -2,7 +2,7 @@
 
 ## ADR-051-R1 / #102 G0 Owner 업무 정책 5개 승인 (2026-10-25)
 
-**정책 확정 / 구현·운영 활성화 미승인.** 아래 다섯 개 Owner 명시 결정은 ADR-051-R1 및 이전 ADR-048/049/051 중 상충하는 권장/미확정 표현보다 **최우선**으로 적용한다. [Issue102](Issue102.md) 참조.
+**정책 확정 / 구현·운영 활성화 미승인.** 아래 여섯 개 Owner 명시 결정은 ADR-051-R1 및 이전 ADR-048/049/051 중 상충하는 권장/미확정 표현보다 **최우선**으로 적용한다. [Issue102](Issue102.md) 참조.
 
 | ID | Owner 승인 | 경계와 후속 |
 | --- | --- | --- |
@@ -11,10 +11,28 @@
 | G0-BIZ-03 | **Version 삭제는 Editor 이상 + 담당 Site + 기존 삭제 비밀번호 유지** | 로그인·업무 Grant·기존 비밀번호의 **논리 AND**. 삭제 암호만 있거나 다른 Site면 거부. 삭제 감사 Actor/Revision 불변식 및 원본/Current 보존. 현재 DELETE 구현은 G7 전 그대로 |
 | G0-BIZ-04 | **최초 Admin/복구는 지정 운영 담당자가 실행, Owner가 운영 책임** | 실제 담당자/Secret file/SOP와 단발 복구 절차는 #104·사내 운영 기록에서 구체화. 자동 재시작 재설정 불허 |
 | G0-BIZ-05 | **Audit 365일 보존 후 만료 기록 정리** | 365일 이내 append-only. 365일 경과 기록 정리 **방향만 승인**, 실제 실행 주기·물리/자동 파기 방법·백업 사본 보존/복원·예외는 #106/#108/#109 세칙 승인 전 **보류** |
+| G0-BIZ-06 | **도면 등록 POST = 로그인 Editor 이상 + 담당 Site** | 기존 CAD 익명 조회 범위 밖; 등록 시 Actor·Site/Version·Audit 확인. 운영 기능 G7 승인 전 OFF |
 
-**미승인:** 기존 `POST /api/cad-files`의 Editor+Site 등록 권한은 여전히 **PROPOSED**, 신규 영속 API의 익명 READ 확장도 미승인. PROD Nginx/DEV 직접 접속 실배치·실명 담당자/비밀 경로·백업 세칙은 후속 게이트에서 확정한다. 현재 공개 CAD 조회·등록·Current·삭제 API의 실제 동작, 원본 DXF bytes/SHA, CadFileVersion/Current, 삭제 비밀번호는 **변경 0**.
+**Owner 승인:** 기존 `POST /api/cad-files`의 Editor+담당 Site 등록 권한 추가 확정(G0-BIZ-06). **미승인:** 신규 영속 API 익명 READ 확장. PROD Nginx/DEV 직접 접속 실배치·실명 담당자/비밀 경로·백업 세칙은 후속 게이트에서 확정한다. 현재 공개 CAD 조회·등록·Current·삭제 API의 실제 동작, 원본 DXF bytes/SHA, CadFileVersion/Current, 삭제 비밀번호는 **변경 0**.
 
-**G0 재평가:** AC1 = 승인 5개/후속 미정 항목 인계 문서화(등록·운영 세칙은 OPEN 후속), AC2 = HTTP 공격·탈취 대응 비범위 Owner 수용(안전성 PASS 아님), AC3 = 배포/기능 OFF, AC4 = 이 문서의 PR CI/리뷰/병합 근거 필요. G0 설계 계약 확정과 **G7 운영 활성화는 별개 승인**이다.
+**G0 재평가:** AC1 = Owner 업무 정책 6개 확정 및 운영 세칙 후속 인계, AC2 = HTTP 공격·탈취 대응 비범위 Owner 수용(안전성 PASS 아님), AC3 = 배포/기능 OFF, AC4 = 이 문서의 PR CI/리뷰/병합 근거 필요. G0 설계 계약 확정과 **G7 운영 활성화는 별개 승인**이다.
+
+
+## ADR-051-G1-R2 — SiteGrant 감사 피감사 사용자 추적 및 검증 게이트 (2026-10-26)
+
+- [PR #116 리뷰 P1](https://github.com/planner77/layoutManager/pull/116#discussion_r4371167619): 관리자 actor + Site ID만 기록하면 동일 Site 여러 사용자에 대한 Grant 철회가 발생했을 때 대상 사용자를 복구할 수 없다. **결정:** `AuditEvent.affected_user_id` (User FK) 및 `site_id` (CadSite FK)를 각각 둬서 Site grant/revoke 이벤트에 필수로 기록하고 원장 UPDATE/DELETE 금지·Grant/Audit 원자성을 유지한다.
+- 적용은 G1 격리 Fixture SQL·Prisma 참조 투영·Integration Test에 한정. G0의 기존 CAD 익명 GET 승인 및 운영 G7 별도 승인 경계는 유지. 첫 CI TS 구문 실패를 정상 컴파일/테스트 PASS로 오인하지 않고 신규 HEAD CI로 재검증한다.
+
+
+
+## ADR-051-G1 — Issue #103 비운영 SQLite·Prisma 계약과 원자성 구현 결정 (2026-10-25)
+
+**상태: 격리 구현·검증용 기술 결정 / 운영 배포 승인 아님.** [#103](Issue103.md)은 [ADR-051-R1](Issue102.md)의 사내 LAN 경량 보안 범위와 D1~D5 업무 무결성을 따른다. 2026-10-25 #102 Owner 5개 승인: 기존 CAD 목록/Viewer/다운로드 익명 GET 유지, Current=Editor/Admin+담당 Site, Version 삭제=Editor/Admin+담당 Site+기존 삭제 비밀번호, 최초 Admin/복구=지정 사내 운영 담당자(Owner 책임), Audit 365일 경과 이력 정리 원칙. 관련 문서 PR #114는 병합·CI 완료 미확인. POST 업로드 권한, Secret/실 담당자, Audit 물리 정리·백업 복원 세칙, 실제 배포는 PENDING; #103 G1 운영 활성화 승인 아님.
+
+- `src/tests/fixtures/auth-g1/schema.prisma`는 User/Session/Role/Site/Special/Audit/Nonce **물리 모델 참조**이며 기존 `CadSite`를 부분 투영한다. 실제 적용 가능한 SQL은 동일 fixture `migration.sql`; 이 Prisma 투영으로 `prisma migrate`/push를 돌리는 것은 **금지**. 실행 Fixture는 기존 6개 CAD Migration을 우선 적용한 `cad-auth-g1-*/fixture.sqlite` 일회용 사본만 허용하며 G7 승인 전 정식 `src/prisma/` 경로에 반영하지 않는다.
+- SQLite 쓰기 직렬화 `BEGIN IMMEDIATE` + DB 트리거로 8h 절대/30m idle/3개 active 동시 세션을 확인하며, 재활성화/clock rollback/4번째 원시 SQL INSERT도 기본 거부. 비밀번호/원시 Session 토큰/복구 nonce 원문/전체 CAD Geometry는 이벤트·DB에 저장하지 않는다. 계정 ID 불변, Role·Site·Special FK/Unique/값 범위, 명시적 Site 소유권 확인.
+- Admin만 Grant 변경. 각 Role/Site/Special 변경+안전 Audit는 원자 commit/rollback. 비활성/관리자 복구는 세션 회수와 함께 수행. nonce hash insert(unique)+passwordHash 갱신+세션 폐기+Audit는 단일 트랜잭션. Audit/소비 nonce는 append-only; Audit 365일 경과 이력 정리 원칙은 Owner 승인됐지만, 실제 자동/물리 파기·백업/복원 SOP는 후속 결정·검증 전까지 금지.
+- 격리 SQL 테스트 결과만 G1 증거. 실제 사내 CAD/DB/S3 백업·복구, 배포 인입 경로, 기존 API 인증 전환, Admin secret 절차는 #102/#104~#109 책임으로 유지. 상세 근거/롤백 [Issue103](Issue103.md) 및 [Operation](Operation.md).
 
 
 ## ADR-051-R1 — #102 내부망 경량 보안 범위 재결정 (2026-10-25)
@@ -26,7 +44,7 @@
 3. **위험 지위:** Owner는 HTTP 평문 비밀번호/세션 도청·변조, 탈취·재생, 최소 8자 비밀번호와 관련된 위험이 **여전히 존재함을 인지한 채 추가 보호를 범위 밖으로 수용**한다(`OWNER_ACCEPTED_SCOPE`). 이는 안전하다는 주장이나 기술 검증 PASS가 아니며 공격방어 보완을 실행했다는 의미도 아니다. 업무/운영 미확정은 여전히 PENDING이다.
 4. **유지하는 기능:** 이전 승인 D1~D5의 로컬 계정/1회 bootstrap·복구, 최소 8자+scrypt, 8h 절대·30m idle·최대 3개 세션 및 회수, Reader/Editor/Admin·Site/Version Scope, 365일 Audit·별도 열람 권한, DB/Grant/Session 원자성·업무 정합성·비밀 로그 제외·백업/복구/원본 DXF·Current/SHA 불변. 기존 비활성 Origin/CSRF/Session helper를 자동 삭제/무력화하지 않는다.
 5. **릴리스 게이트:** G0 #102은 접속·업무 범위/잔여 운영 결정을 정리, G5 #107은 PROD Nginx/DEV direct **정상 연결/배포 경로**, G6 #108은 **기능 E2E·DB/CAD/S3 Backup/Migration dry-run/Restore**, G7 #109는 **Owner 별도 Go/No-Go**로 역할 축소. 인증/관리/영속 API 및 운영 Prisma·Nginx·Compose 실제 변경은 G7 승인 전 OFF.
-6. **기존 API 전환:** #102 G0 Owner 후속 승인에 따라 기존 CAD 목록·Viewer·원본 다운로드는 **사내 LAN 익명 허용(Reader/SiteGrant 불필요)**, Current는 **Editor 이상+담당 Site**, CAD Version 삭제는 **Editor 이상+담당 Site+기존 삭제 비밀번호 유지**로 확정했다. `POST /api/cad-files` 등록 Editor+Site는 아직 **제안/미확정**이다. 신규 Outline/Memo/Type/Logs 영속 API 익명 GET 확장 금지. 현재 API는 G7 전 불변.
+6. **기존 API 전환:** 기존 공개 CAD 목록·Viewer·원본 GET는 **사내망 익명 허용**. 도면 등록 `POST /api/cad-files`·Current PUT는 **로그인 Editor 이상+담당 Site**, Version DELETE는 **Editor 이상+담당 Site+기존 삭제 비밀번호**(AND). G0-BIZ-01~06 Owner 정책 승인. 신규 Outline/Memo/Type/Logs/Audit 영속 GET 익명 개방은 미승인, G7 이전 기존 API 불변.
 
 **효력:** ADR-051-R1은 본 이슈의 이전 공격 중심 PENDING/개별 보안 실증 선행 게이트 서술보다 우선한다. 타 작업의 데이터 무결성·업무권한 검증 및 실 운영 배포 통제는 완화하지 않는다.
 
