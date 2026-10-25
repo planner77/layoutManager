@@ -311,6 +311,15 @@ export function CadViewer({
     window.addEventListener('pointerdown',close,true);
     return ()=>window.removeEventListener('pointerdown',close,true);
   },[contextMenu]);
+  const closeMemoEditor = useCallback(() => {
+    memoDragActive.current = false;
+    setMemoCancelSignal(previous => previous + 1);
+    setMemoPlacing(false);
+    setMemoCandidate(null);
+    setMemoSelectedId(null);
+    setMemoDeleteArmed(false);
+    setMemoError(null);
+  }, []);
   useEffect(() => {
     const handleKeyDown = (event:KeyboardEvent) => {
       if(event.key==='Escape' && memoDragActive.current){
@@ -385,15 +394,6 @@ export function CadViewer({
     setOutlineName('');
     setOutlineNotice(null);
   }, [stopOutlineEditing]);
-  const closeMemoEditor = useCallback(() => {
-    memoDragActive.current = false;
-    setMemoCancelSignal(previous => previous + 1);
-    setMemoPlacing(false);
-    setMemoCandidate(null);
-    setMemoSelectedId(null);
-    setMemoDeleteArmed(false);
-    setMemoError(null);
-  }, []);
   const selectMemo = useCallback((id:string) => {
     const item = memoSession.current?.get(id);
     if (!item) return;
