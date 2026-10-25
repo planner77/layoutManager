@@ -916,6 +916,7 @@ export function CadViewer({
             memos={memos}
             selectedId={memoSelectedId}
             placing={memoPlacing}
+            candidate={memoCandidate}
             getManager={getManager}
             viewRevision={viewRevision}
             getViewEpoch={getViewEpoch}
