@@ -1,5 +1,21 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #67 — 웹 Standalone 중복 copy layer 정밀 검증 (2026-10-25 / v0.37.2)
+
+| TC | Acceptance | 자동 검증 기준 / 증거 | 상태 |
+| --- | --- | --- | --- |
+| TC-IMG67-001 | Web native 단일 전달/기존 계약 | Vitest가 Standalone COPY+extra SQLite COPY 제거, native `.node` 검사 및 `require` 메모리 DB smoke, Next externalPackages/trace glob, `node server.js`, USER cad를 확인 | 코드 작성 / **NOT RUN** |
+| TC-IMG67-002 | 거짓 중복/손상 안전 차단 | Python synthetic Docker TAR fixture: 두 개의 동일 native/JS package layer→하나의 package layer; SHA 불일치, 잘못된 누락/비중복 주장, optimized 중복 잔존을 reject | 코드 작성 / **NOT RUN** |
+| TC-IMG67-003 | 실제 중복 SHA/bytes·history | PR base와 current Dockerfile의 동일 소스, Node22.14, linux/amd64 runtime 빌드. Docker TAR layer-by-layer package 경로/sha256/diffID, final package identity, before/after `docker inspect .Size` bytes/MiB/% 및 `docker history --no-trunc` | PR Docker Job 추가 / **NOT RUN** |
+| TC-IMG67-004 | 정적/대형 traced 파일 | Nanum TTF, CadKorean typeface, LibreDWG dist/wasm JS/WASM 파일 raw/gzip proxy 크기 및 runtime `node_modules` + `.next/server` traced 큰 파일 top20; 정적 HTTP 200; 삭제/Unicode subset 금지 | PR Docker Job 추가 / **NOT RUN** |
+| TC-IMG67-005 | nonroot SQLite/기존 볼륨 보존 | Docker build native/Prisma ABI, Compose disposable `/data` fresh migrate→health200/Master/DXF 등록→app restart+idempotent migrate→Current/content read→삭제 후 404 | PR Docker Job 추가 / **NOT RUN** |
+| TC-IMG67-006 | Viewer/Storage/Security 회귀 | 기존 TS/Lint/Unit, Next production build, Chromium E2E (2 DXF/Layer/Text/Outline/WASM/font/local)/Legacy E2E/Compose/health; S3/실 CAD 현장 수용 별도 | 기존 CI 실행 전 **NOT VERIFIED** |
+| TC-IMG67-007 | 실제 GHCR OCI compressed bytes/paired digest | PR에는 GHCR 공개 태그 게시 금지. 정식 게시 후 version+immutable digest app+migrate에 대한 linux/amd64 OCI manifest compressed `layers[].size`, shared layer digest, attestation/index/config 배제 | **정식 릴리스 이후 NOT RUN** |
+
+- 이전 [CI 40154979531](https://github.com/planner77/layoutManager/actions/runs/40154979531)의 별도 `better-sqlite3` COPY `12.5 MB는 과거 local 비압축 후보이며 #67 HEAD 절감 실측치로 단정하지 않는다. #28 pre-standalone 2.05 GB와 #66 migrator 1.34 GB를 baseline으로 재사용 금지. 기존 schema/API/Prisma CLI/tsx/migrator/Compose pair는 그대로.
+- 단일 native 경로의 **실제 빌드 통과**와 TAR 최종 동일성/크기 계측, Docker/Browser/Legacy CI 성공을 모두 확인해야 PR 후속 병합 검토 가능. `CI 시작`과 `PASS`는 별도 기록. 파일별 gzip/이미지 gzip TAR 크기를 OCI compressed layer라고 표기 금지. [Issue67](Issue67.md), [ADR-044](Decisions.md), [TestReport](TestReport.md).
+
+
 ## Issue #66 / PR #78 — 첫 PR CI 차단 원인 및 수정 TC (2026-10-25)
 
 | TC | 최초 Run 40167191799 | 교정 및 재검증 기대 |

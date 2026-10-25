@@ -1,5 +1,12 @@
 # ChangeLog
 
+### v0.37.2 — Issue #67 웹 Standalone better-sqlite3 중복 COPY 계층 안전 제거·계측 (2026-10-25)
+
+- Docker `runtime`에서 `.next/standalone` 이후 별도 `node_modules/better-sqlite3` COPY 제거, Prisma/native dynamic trace 유지. Native `.node` 유무와 `better-sqlite3` 메모리 DB 사용 가능 여부가 image build-time gate. Database schema/API/Viewer 및 #66 migrator/Compose/GHCR paired release 계약 불변.
+- Python Docker 실제 `docker save` TAR layer package path/SHA-256 identity/중복 bytes + negative synthetic fixture, 비압축 `docker inspect .Size`, history/du, 원본 TTF·파생 한글 typeface·LibreDWG JS/WASM raw/gzip proxy 및 top20 server traced files. gzip TAR는 GHCR OCI 압축 층 크기가 아님.
+- PR Docker CI disposable `/data` master 등록/DXF API 업로드→migrator 재실행/app 재시작→health/Current/content 조회/삭제 후 404. 기존 Typecheck/Lint/Unit/Build/Chromium E2E/Legacy migration/정적 자산 검사 유지. Package/lock 0.37.2 동기. **작업 시점 신규 image 절감·PR CI 성공·GHCR OCI compressed 수치 및 현장 수용은 미측정/NOT VERIFIED**. [Issue67](Issue67.md), [TestPlan](TestPlan.md).
+
+
 ### PR #78 / 최초 CI 보완 — v0.37.1 버전 유지 (2026-10-25)
 
 - [Run 40167191799](https://github.com/planner77/layoutManager/actions/runs/40167191799): TypeScript/ESLint PASS, Vitest **187 PASS/1 FAIL** (`TC-IMAGE-003` 이전 `node scripts/run.mjs deploy` 기대와 새 migrator `tsx scripts/deploy.ts` 불일치); Unit 실패로 이후 Build/E2E/Legacy SKIPPED. 기존 테스트를 실제 분리된 migrator entrypoint와 Compose 생명주기 계약으로 개정, `TC-IMG66-010` Migration→Backfill 순서 회귀 추가.

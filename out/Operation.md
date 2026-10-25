@@ -1,5 +1,14 @@
 # 운영·환경설정 초안
 
+## Issue #67 / v0.37.2 — Standalone 웹 중복 SQLite layer 검증 및 운영 절차 (2026-10-25)
+
+- **동일 소스/플랫폼 기준선:** PR CI는 `git show <PR_BASE_SHA>:src/Dockerfile`로 기존 Dockerfile을 복원해 현재 PR HEAD와 같은 Source/Node22.14/linux-amd64로 `runtime` 빌드. 현재 Dockerfile은 `docker buildx build --load --platform linux/amd64 --target runtime -f src/Dockerfile -t cad-layout-viewer:ci .`로 빌드한다. 이전 #28 pre-standalone / #66 migrator 이미지 크기를 비교 분모로 쓰지 않는다.
+- **재현 및 실측:** `python3 src/scripts/test_audit_standalone_layers.py` → `python3 src/scripts/audit_standalone_layers.py cad-layout-viewer:baseline cad-layout-viewer:ci [summary.md]`. 실제 `docker save` TAR 각 layer의 `better-sqlite3` SHA256/파일 경로/ordinal/diffID, final 파일 동일성 및 기존 중복/new 중복 없음/네이티브 .node 존재를 검사한다. 오류 또는 saving 증거 부재 시 fail-closed. `bash src/scripts/measure-images.sh cad-layout-viewer:baseline cad-layout-viewer:phase1 cad-layout-viewer:ci [summary.md]`에서는 `docker inspect .Size` 비압축 image bytes, `docker history --no-trunc`, `du`, TTF/typeface·LibreDWG JS/WASM 개별 raw/gzip(proxy), 서버 추적 대형 파일 top20을 확인. gzip TAR/파일 압축은 실제 GHCR OCI 전송 크기 아님.
+- **런타임 검사:** `docker run --rm --entrypoint sh cad-layout-viewer:ci -c 'id -u; node -e "const DB=require(\"better-sqlite3\");new DB(\":memory:\").close()"'`. PR CI Docker Compose는 **disposable** `/data`에서 migrate exit0 후 app health 200, Master 5단계→DXF 업로드, 원본/Current/Version, app stop+재migration+restart, read/delete/404, 원본 Nanum TTF/파생 typeface/LibreDWG WASM 정적 200 확인. 실제 운영 DB/CAD/S3 볼륨과 분리한다. 기존 Browser/Legacy E2E 검증이 별도로 필요.
+- **정식 GHCR 게시 후 OCI 확인:** `docker buildx imagetools inspect --raw ghcr.io/planner77/layoutmanager:0.37.2` 및 `:0.37.2-migrate`의 정확한 app+migrator image digest를 읽는다. immutable digest별 linux/amd64 OCI `layers[].size` 합/공유 digest를 `node src/scripts/measure-ghcr-pair.mjs ghcr.io/planner77/layoutmanager:0.37.2 ghcr.io/planner77/layoutmanager:0.37.2-migrate`로 측정. attestation `unknown/unknown`, index/config bytes와 `docker save|gzip` proxy를 제외. PR CI에는 GHCR public tag publish 권한 요구 금지. 고정 digest/OS/arch는 해당 릴리스 증거로만 기록.
+- **현장 보호/롤백:** app+migrator 같은 버전/digest 존재 확인, 동일 시점 DB/local CAD/S3 백업·복구 검증 → 기존 writer stop → migrator exit0 → app healthy → 브라우저 DXF/DWG/Hangul·S3 실제 통합 확인. 실패 시 기존 schema 호환되지 않는 앱을 임의 시작하지 말고 같은 시점 데이터/이미지 복원. `docker compose down -v` 금지. 폰트/WASM/Unicode 강제 subset·삭제 금지. 개발 시점 실제 Docker/CI/GHCR/현장 실측은 **NOT VERIFIED**. 상세 [Issue67](Issue67.md).
+
+
 ## Issue #66 / v0.37.1 — 최소 migrator 이미지 구축·배포·측정
 
 **빌드 범위:** `docker buildx build --load --platform linux/amd64 --target migrator -f src/Dockerfile -t cad-layout-viewer:ci-migrate .`. `dependencies` stage 전체 `npm ci` → lock 기반 전용 manifest → offline prune → 최종 작은 `node_modules` copy. 최종 컨테이너에서 npm install/prune을 수행하지 않으므로 GHCR 이미지 Pair Pull 후 인터넷 불필요. Prisma CLI, tsx, native SQLite, schema/migrations/generated client는 남는다.

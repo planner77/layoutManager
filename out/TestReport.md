@@ -1,5 +1,13 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE67-DEV-20261025 — Web SQLite 중복 이미지 계층 최소화, PR CI 이전 증거 경계
+
+- **코드/브랜치:** `build/issue-67-web-standalone-layer-audit`, 웹 `runtime`에 SQLite native package 추가 COPY 제거 + 기존 Next forced tracing 및 `serverExternalPackages` 유지. 빌드에 native `.node` 파일 존재/SQLite memory require smoke fail-closed. 기존 별도 #66 migrator/DB Schema/API/Viewer/Compose/GHCR pairing 변경 없음. 앱 `src/package.json` 및 lock root version 0.37.2 동기.
+- **새 검증 코드:** `src/scripts/audit_standalone_layers.py`는 Docker save 실제 layer TAR 경로·SHA256·최종 package 파일 identity/중복 raw bytes, inspect .Size, diffIDs와 비교; Python Unit synthetic corrupt/duplicate cases; `measure-images.sh`는 font/typeface/LibreDWG JS/WASM raw/gzip proxy와 server traced top20. PR CI Docker Job에 baseline/current 비교 및 disposable Docker Compose `/data` Master→DXF upload→idempotent migration/app restart→Current·original content read→delete 404 smoke. 기존 unit/browser/legacy/static health 재사용.
+- **실행 상태:** GitHub 연결로 원격 파일 작성만 수행. 로컬 Docker/Node install/TypeScript/Vitest/Playwright/Buildx/실제 이미지 차이 측정 및 실제 API 실행 **NOT RUN**. 작성한 TC-IMG67-001`007 **NOT VERIFIED**, 새 HEAD PR CI의 verify/docker-runtime Job PASS 여부는 결과 확인 후만 기재한다. 동일 출처 이전 376,458,636 bytes 및 별도 COPY 12.5MB는 사전 가설이지 이번 절감 수치가 아니다.
+- **별도 실제 수용:** GHCR version+immutable digest linux/amd64 compressed OCI layer 크기/공유 digest, 운영 DB/CAD/S3 동시점 백업/복구, 실 DXF·DWG·Hangul·실 브라우저/현장 프로토콜은 후속 공개 이미지/현장 실증 전 **미확인**. [Issue67](Issue67.md)/[TestPlan](TestPlan.md)/[Operation](Operation.md).
+
+
 ## U-ISSUE66-PR78-FAIL-20261025 — 첫 CI Unit 정적 계약 차단, Docker 실측 성공
 
 - [Run 40167191799](https://github.com/planner77/layoutManager/actions/runs/40167191799), `pull_request.synchronize`, HEAD `45389a4661d424e7ad6aa6ee66bcd643bbc6ad76`, **completed/failure**. Verify Job `121090554088`: TypeScript/ESLint/npm/Prisma success, Unit **187 passed/1 failed** (`TC-IMAGE-003`, `standalone.test.ts`). OCI parser, DXF source benchmark, Build, Chromium/E2E, Legacy **SKIPPED**. 기존 `CMD ["node", "scripts/run.mjs", "deploy"]` 정적 기대와 신규 `CMD ["./node_modules/.bin/tsx", "scripts/deploy.ts"]`의 불일치.
