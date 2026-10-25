@@ -1,5 +1,29 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #31 P4-D0 — Owner 정책/문서 정합성 테스트 계약 (2026-10-25)
+
+**범위:** Markdown-only Owner 설계 확정, 테스트 *계획* 정의. 아래 실제 API·브라우저·DB·HTTP LAN 운영 검사는 D1~D6 구현 전 **NOT RUN / BLOCKED**. D0 PR CI 시작/성공으로 운영 수용 PASS 기록 금지. 근거 [ADR-048/049](Decisions.md), [Issue31](Issue31.md).
+
+| TC | 수용/검증 조건 | 단계/상태 |
+| --- | --- | --- |
+| TC-P4-D0-001 | Issue31/ADR/DB/Architecture/Requirements/AGENTS/Operation에 앱 로컬 계정·HTTP LAN·HTTPS 미사용·OIDC 미사용 일치, 기존 역사 기록에 우선순위 명시 | D0 문서 리뷰 |
+| TC-P4-D0-002 | Global OutlineType 하나만 존재, 사이트 별 타입 테이블/unique scope key 미사용; 권한 없는 타입 관리 403, Site Scope 외 조회 금지 | 설계 리뷰; 서버 시험 BLOCKED |
+| TC-P4-D1-001 | 안전한 서버 소유 HttpOnly/SameSite 세션, 암호화되지 않은 HTTP 위험 고지, Token/계정 위조·허용 외 LAN 대역·반복 로그인 방어; CSRF/Origin·서버 로그아웃 | D1 구현 후; NOT RUN |
+| TC-P4-D1-002 | Reader/Editor/Admin 및 Site/Version 매핑: 다른 Scope·임의 X-User/Role·삭제 비밀번호는 조회/쓰기 권한이 되지 않음; `logs:read` 별도 | D1/#60 후; NOT RUN |
+| TC-P4-D2-001 | 불변 DXF SHA+Stable Handle+BLOCK instancePath 정상/위조·누락·중복·불일치 검증, 기존 server-owned 0.02 WCS tolerance 재계산 | D2 후; NOT RUN |
+| TC-P4-D2-002 | baseGeometry + Translate/Rotate 강체 Transform만 서버 계산. client result 조작·scale/shear/reflection/Z/nonfinite 값 거부, Polygon/MultiPolygon/Hole 불변 | D2 후; NOT RUN |
+| TC-P4-D3-001 | 같은 Scope 내 다른 Editor가 외곽선 수정 가능·createdBy 유지·updatedBy 변경, 다른 Site 거부; revision 경쟁 1 성공/1 409, 부분 쓰기 없음 | D3 후; NOT RUN |
+| TC-P4-D3-002 | 외곽선 논리 삭제 후 일반 목록/선택/Export 제외, Audit/UUID/Revision 유지. 물리 삭제 및 복구 API는 정책 미정 상태에서 차단 | D3 후; NOT RUN |
+| TC-P4-D3-003 | 독립 사용자 세션 A 숨김·B 표시: 공유 CadOutline/Revision/타 사용자 화면 변경 없음. Renderer/Layer/Tree 복원 회귀 | D3/#73 후; NOT RUN |
+| TC-P4-D4-001 | 전역 타입 2종 + 같은 Kind 별도 typeId, active 비활성 참조 보존, 타입 이름·정규화 unique 글로벌 검증 | #65/#71/#73 후; NOT RUN |
+| TC-P4-D5-001 | Generated soft-delete와 연결 CadMemo BROKEN_ANCHOR/마지막 WCS/참조 해제가 단일 DB transaction, 메모 유실/자동 재바인딩 0 | #83/#84 후; NOT RUN |
+| TC-P4-D5-002 | 삭제 메모의 최초 작성자·본문 유지, 메모 공동 편집은 별도 미승인으로 구현되지 않음 | #83/#84 후; NOT RUN |
+| TC-P4-D6-001 | SQLite migration/backup/foreign_key_check/restore, 신구 앱 pair 복구 및 무권한 direct URL 거부 | P4 운영 전; NOT RUN |
+| TC-P4-D6-002 | 승인된 실DXF 3종, OCS/BLOCK 및 1k/10k/100k Browser/GPU/Worker·입력 지연 기록; synthetic과 운영 실측 구분 | P0/P5 현장; NOT RUN |
+
+**D0 정적 검사:** 변경 파일이 `.md`로 한정되는지, 신규 API/Prisma/Migration/Workflow·GHCR 설정이 없는지, Issue #31이 OPEN/Closes 문구 없음인지, ADR 번호·선행 참조와 docs-only CI scope가 맞는지 확인한다. 문서 PR은 PASS 증거가 확인되기 전까지 미검증으로 기록한다.
+
+
 ### Issue #54/#76 최신 main 통합 검증 (2026-10-25)
 
 - 원본 수정 HEAD `6845c4b4`의 PR CI #40181171710 성공은 확인했다. #76 비차단 읽기 전용 CI 진단 추가 및 문서 병합 결과의 새 HEAD CI는 별도 검증 대상. TC-E4-E2E-001~004/#31·#51·#52·#53/Docker/Legacy를 유지하며 #76의 관리자 설정 미적용은 앱 CI 실패로 오인하지 않는다.
