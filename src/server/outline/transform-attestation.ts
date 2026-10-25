@@ -223,6 +223,15 @@ export function attestTransformedOutlineDraftAgainstImmutableDxf(
   if(!object(input)||!Array.isArray(input.outlines))
     return error('OUTLINE_INVALID_EXPORT','외곽선 JSON 객체가 필요합니다.');
   const rawRows=input.outlines as unknown[];
+  // GeneratedDocument's total-vertex limit applies across the entire batch,
+  // not just separately to each row of an attacker-controlled export.
+  const totalVertices=parsed.outlines.reduce((sum,item)=>{
+    const polygons=item.geometry.type==='Polygon'
+      ? [item.geometry.coordinates] : item.geometry.coordinates;
+    return sum+polygons.reduce((a,poly)=>a+poly.reduce((b,ring)=>b+ring.length,0),0);
+  },0);
+  if(totalVertices>100_000)
+    return error('OUTLINE_GEOMETRY_LIMIT','전체 외곽선 좌표가 100,000개를 초과했습니다.',413);
   const operations:ServerTransformOperation[][]=[];
   const sanitizedRows=rawRows.map((raw,index)=>{
     if(!object(raw)||!object(raw.result))
@@ -254,7 +263,11 @@ export function attestTransformedOutlineDraftAgainstImmutableDxf(
     const matrix=fromOperations(operations[index]);
     checkClaimedMatrix(result.transform,matrix,result.transformOperations!==undefined);
     const effective=applyAndVerify(base.geometry,matrix);
-    if(!equalEffective(effective,parsed.outlines[index].geometry))
+    // Legacy v1/v2 had no transform and allowed equivalent ring ordering
+    // under the canonical polygon XOR comparison. Preserve that behavior.
+    const legacyCanonical=operations[index].length===0 &&
+      result.baseGeometry===undefined && result.transform===undefined;
+    if(!legacyCanonical&&!equalEffective(effective,parsed.outlines[index].geometry))
       return error('OUTLINE_GEOMETRY_MISMATCH','편집 좌표와 서버 재계산 결과가 다릅니다.',409);
     const meta=parsed.outlines[index];
     return {
