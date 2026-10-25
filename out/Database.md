@@ -1,5 +1,13 @@
 # Database Schema — 단일 기준 문서
 
+## Issue #96 — D1~D6 승인값 / 물리 DB 비활성 (2026-10-25)
+
+- D1 최초 Admin/복구 .env + Secret 파일 단발 정책, D2 비밀번호 최소 8자/scrypt local-v1/강제 초기변경, D3 절대 8시간·idle 30분·동시 세션 3개, D4 명시적 Site Grant/Admin 전용 권한관리, D5 감사 365일/별도 audit:read, D6 LAN 접근제한+HTTP 위험 수용 원칙 승인. ADR-050이 기존 D0 미결정 표기보다 우선한다.
+- 개념 User/AuthSession/UserRoleGrant/UserSiteGrant/AuditEvent 표와 FK 설계는 유지하며 **src/prisma/schema.prisma, src/prisma/migrations에 이번 변경 없음**. Session token은 해시만 저장하고 4번째 발급은 미래 DB 원자 count+insert로 거부. 단발 복구 nonce는 DB CAS/불변 이력으로 재사용 차단해야 한다. 실제 append-only/365일 Audit 조회·파기 정책 및 Version FK 구현은 차후 승인 대상.
+- 원본 CAD/Version/Current/SHA·기존 CAD 삭제 비밀번호는 불변. 복제 DB 백업→Migration dry-run/foreign_key_check→복원, CIDR·권한 E2E 및 별도 Owner 배포 승인 없이는 새 Schema/API **OFF**. [Issue96](Issue96.md).
+
+
+
 ## Issue #31 P4 D0 Owner 승인 설계안 — **DDL 미적용** (2026-10-25)
 
 **우선순위:** 최신 Owner [ADR-048/049](Decisions.md) 승인 정책이 아래 과거 #41/#42의 OIDC/Scope-key 미결정 예시보다 우선한다. 이는 **개념 모델**, 배포된 `schema.prisma`/migration이 아니다. 신규 DB/CRUD 활성화는 별도 구현·검증 승인 전 BLOCKED.

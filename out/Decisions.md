@@ -1,5 +1,21 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-050 — Issue #96 D1~D6 Owner 정책과 운영 차단 (2026-10-25)
+
+**상태: 세부 정책 승인, 운영 API/DB/배포 미승인.** ADR-048/049의 사내 LAN HTTP·앱 로컬 계정·Role/Site 권한 계약을 보완하며, 구 D0 미확정 표현보다 본 기록이 우선한다.
+
+- **D1:** .env 플래그로 최초 Admin 생성 및 관리자 분실 시 명시적 단발 복구를 선택한다. 설정에는 사용자명/대상 불변 ID/복구 일회 ID/Secret 파일 경로만 허용하며 **비밀번호 원문은 .env에 넣지 않음**. 이미 초기화된 DB의 Admin·권한을 재기동 시 자동 변경하지 않는다.
+- **D2:** 최소 8자, 초기 암호 강제 변경, 로그인 시도 제한. 기존 삭제 암호와 분리한 scrypt(local-v1, 16-byte salt, bounded work) 선택; 새 Argon2id 패키지는 도입하지 않음. NIST SP 800-63B-4의 단일 요소 비밀번호 최소 15자보다 완화된 정책임을 고지하며 준수라고 주장하지 않는다.
+- **D3:** 서버 절대 만료 8h/미사용 만료 30m/최대 3개 동시 활성 세션. 원본 token 저장·로그 금지, SHA-256 digest와 HttpOnly/SameSite Cookie. 네 번째 발급은 거부, 로그아웃·계정 비활성·암호 변경 시 기존 세션 폐기.
+- **D4:** Admin만 Role/Site 권한 부여·회수, Site 범위 자동 전체 부여 금지. Version의 Site는 서버 권위 DB 조회. audit:read 및 logs:read는 Admin이라도 별도 허가 필요. Memo Editor 공동 편집 미승인.
+- **D5:** 허용된 안전 필드만 append-only 감사 원장에 보존하고 별도 audit:read Admin만 조회. 보존 기간 365일. 기한 이후 삭제·백업/복구·물리 파기는 별도 승인 전 자동 실행 금지.
+- **D6:** 지정 사내 LAN CIDR/OS 방화벽/Reverse Proxy/backend 직접 접속 제한과 Owner의 HTTP 잔여 위험 수용 원칙 승인. 실제 CIDR 및 검증 기록 미제공; LAN을 TLS로 간주하지 않는다.
+- **결정의 적용 범위:** 독립 domain/helper/fixture/tests/doc만 허용. 실 운영 Session/Role/Grant/Audit DB 트랜잭션·계정 복구와 Secret 보호/프록시 실증·DB backup/migration/restore·실제 LAN 권한/CSRF E2E/Owner 배포 승인 전 신규 로그인/관리·로그·Outline/Memo/Type 영속 API 및 Prisma DDL **OFF**. 기존 CAD 원본/Version/SHA/Current 불변.
+
+[Issue96](Issue96.md), [Architecture](Architecture.md), [Database](Database.md), [Requirements](Requirements.md), [TestPlan](TestPlan.md), [Operation](Operation.md).
+
+
+
 ## ADR-049 — #31 P4 GENERATED 외곽선 영속 ID·기하 검증·논리 삭제·메모 연계 (2026-10-25 / D0 Owner 정책 승인)
 
 - **상태:** Owner 업무 정책 확정 / 설계 계약만 승인. 구현·DB migration·Server GET/CRUD·릴리스 미승인; #31 OPEN. ADR-042/044/046/047의 브라우저 임시 작업 계약과 원본 DXF 불변은 유지한다.

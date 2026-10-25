@@ -1,0 +1,32 @@
+# Issue #96 — 로컬 계정·세션·Role/Site·감사 공통 기반
+
+## Owner D1~D6 결정 (2026-10-25)
+
+**정책 승인 / 실제 운영 기능 BLOCKED.** 원 이슈 [#96](https://github.com/planner77/layoutManager/issues/96), 선행 #31 D0/ADR-048/049 및 최신 ADR-050. 별도 DESIGN.md는 저장소에 없고 AGENTS/Architecture/Decisions가 기준.
+
+- **D1:** .env 기반 bootstrap/복구. ADMIN_BOOTSTRAP_ENABLED / ADMIN_BOOTSTRAP_USERNAME / ADMIN_BOOTSTRAP_PASSWORD_FILE 및 ADMIN_RECOVERY_ENABLED / ADMIN_RECOVERY_TARGET_USER_ID / ADMIN_RECOVERY_ONCE_ID / ADMIN_RECOVERY_PASSWORD_FILE 제안. 플래그 모두 false가 초기값; 비밀번호 내용은 env에 두지 않고 별도 Secret file만 사용. 이미 초기화된 DB에서 재시작 bootstrap 금지, 명시적 복구 nonce 단발·감사 필요.
+- **D2:** 계정 비밀번호 최소 8자, 최초 변경, 로그인 실패 횟수 제한. 기존 삭제 비밀번호와 다른 Node 내장 scrypt(local-v1) 사용. Argon2id 신규 의존성 없음.
+- **D3:** 8시간 절대/30분 idle/3개 동시, 원시 token 미저장, cookie HttpOnly/SameSite. 실제 DB 원자 발급 및 로그아웃/disable/reset revoke는 운영 기능 구현 단계.
+- **D4:** Admin만 User/Role/Site 부여·회수, Admin도 Site 자동 전체 열람 불가. Version→Site는 서버 권위 조회. audit:read/logs:read는 각각 별도 grant, 미승인 Memo Editor 쓰기는 거부.
+- **D5:** Audit append-only(향후 DB), 안전한 actor/action/target/revision/outcome/UTC/requestId만 기록. 보존 365일, audit:read 별도 권한 Admin만 조회. 물리 파기 미승인.
+- **D6:** 허용 사내 IP/CIDR+OS 방화벽/Reverse Proxy backend 직접 접근 차단, Owner HTTP 잔여 위험 인지·수용 원칙. 실제 IP/CIDR 및 실증 수용 기록은 아직 없음.
+
+## 구현 범위·의도적 비활성
+
+1. src/domain/auth.ts: trusted UserAccess+SiteGrant, VersionSiteResolver, deny-first requirePermission.
+2. src/server/auth/bootstrap.ts: 명시 env/planned bootstrap/recover(파일·DB 접근 없음).
+3. src/server/auth/password.ts: 단방향 scrypt/KDF 용량 제한, 최소 8자·검증.
+4. src/server/auth/session.ts: 토큰 해시·만료/동시 개수·폐기·HTTP 쿠키 정책의 순수 함수.
+5. src/server/auth/guards.ts: 세션 귀속 CSRF/Origin 및 mock 로그인 횟수 limiter.
+6. src/server/auth/audit.ts: 무비밀 immutable 이벤트·365일 보존 cutoff.
+7. src/tests/unit/auth-foundation.test.ts, auth-password.test.ts: TC-P4-D1-003~012.
+
+**금지:** 새 app API Route/로그인 UI/DB/Prisma schema/migration/Docker Compose/Nginx/실 데이터 및 GHCR 변경 없음. .env.example 설정을 true로 바꿔도 앱 런타임에서 소비하지 않으므로 활성화되지 않는다. 기존 CAD 원본 bytes/SHA/Current/Version/Viewer/삭제비밀번호 불변.
+
+## 후속 게이트/AC
+
+- TC-P4-D1-003~012 Unit은 코드만 작성; TypeScript/Lint/Unit/E2E/Docker 실제 실행 전 PASS 미표기. PR CI는 결과 모니터링하지 않고 시작까지만 진행.
+- 실제 Secret 파일 권한·초기/복구 DB CAS/nonce 영속, KDF 워크팩터/실 계정 악의적 로그인, Session 발급 3개 원자성·폐기, Server Peer Origin/CSRF·LAN CIDR, Role/Site 교차 접근, append-only Audit와 감사 보존/백업·파기, DB/CAD/S3 동일 시점 backup→격리 migrate dry-run/FK→restore 및 별도 Owner 운영 배포 수용 모두 완료 전 서버 기능 OFF.
+- #97 Canonical/Transform은 병행 가능. #98 영속 Outline, #60 Logs, #65 Global Type, #83 Memo 영속은 권한 연동·별도 승인 후. #99 실 DXF/GPU 수용 별도.
+
+[Architecture](Architecture.md) · [Database](Database.md) · [Requirements](Requirements.md) · [TestPlan](TestPlan.md) · [TestReport](TestReport.md) · [Operation](Operation.md).
