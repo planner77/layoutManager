@@ -1,5 +1,23 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #53 / E3 v0.39.0 — 삭제 편집 AC 검증 (2026-10-25)
+
+| Test Case | AC | 검증 목표 | 현재 |
+| --- | --- | --- | --- |
+| TC-E3-UNIT-001 | E3-AC1/2 | 생성 3개 중 1개 Delete, 잔여 순서/UUID/기하 불변, Undo/Redo 원래 metadata·transform 복구 | 코드 작성 / NOT RUN |
+| TC-E3-UNIT-002 | E3-AC2 | 선택 2개 다중 Delete 1회 이력, Confirm 취소 무변경, Undo/Redo, 삭제 ID 재사용·새 객체 중복 거부 | 코드 작성 / NOT RUN |
+| TC-E3-UNIT-003 | E3-AC3 | SOURCE/혼합/중복/없는 UUID/다른 Version/SHA/숨김 대상 차단, Document/History 무오염 | 코드 작성 / NOT RUN |
+| TC-E3-UNIT-004 | E3-AC2/3 | 확인창 열림 중 대상 selection·legacy local ID·visible 변경 시 stale commit 거부 | 코드 작성 / NOT RUN |
+| TC-E3-UNIT-005 | E3-AC4 | Canvas focus, plain Delete/Backspace, input/search/contenteditable·modifier/repeat/defaultPrevented 격리 | 코드 작성 / NOT RUN |
+| TC-E3-E2E-001 | E3-AC1/2 | 합성 DXF 외곽선 3개, Tree 단일 삭제/취소/Undo/Redo, JSON/Canvas count 정합, 재생성 unique local ID | 코드 작성 / NOT RUN |
+| TC-E3-E2E-002 | E3-AC2/4 | Tree 다중 선택 2개 삭제 취소/Confirm, Backspace Canvas focus, Esc dialog 우선, input native key, 마지막 빈 Tree | 코드 작성 / NOT RUN |
+| TC-E3-E2E-003 | E3-AC3/4 | SOURCE+GENERATED 혼합·Pan 삭제 차단, 선택된 Generated hit context menu, reload/Renderer 전환에서 임시 개체 해제 | 코드 작성 / NOT RUN |
+| 회귀 | E3-AC3~5 | #17/#25/#26/#31/#38/#39/#40/#42/#43/#51/#52 Unit/E2E/Legacy, #31 원본 SHA·Current 불변, 세션 재로드 | NOT RUN |
+| 현장 | E3-AC4 | Native Fullscreen OS/browser 조합, GPU 메모리 장기 사용·실 DXF·DWG 비지원, JSON canonical/P4 보안 | NOT RUN |
+
+실행 도구 기준: `cd src && npm ci && npm run typecheck && npm run lint && npm test && npm run build && npm run test:e2e && npm run test:master-migration`. 현재 연결 환경에 실행 가능한 repository checkout이 없어 **이 테스트들을 아직 실행하지 않았다**. CI는 PR 생성으로 시작만 하고 결과 모니터링하지 않는다. 상세 [Issue53](Issue53.md)/[TestReport](TestReport.md).
+
+
 ## PR #79 실패 및 P2 재발 방지 계획 (2026-10-25)
 
 아래 E2 표의 CODED / NOT RUN 및 작성 / NOT RUN은 최초 작성 시점 상태를 보존한 기록이다. 현재 실행 결과는 [수정 HEAD 로컬 QA](#issue-52-재검증-결과--수정-head-로컬-qa-2026-10-25)와 [TestReport](TestReport.md)를 따른다.
