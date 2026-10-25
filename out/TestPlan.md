@@ -8,6 +8,7 @@
 | TC-E2-UNIT-002 | E2-AC2 | SOURCE/혼합, 다른 Version, duplicate/ref spoof, missing/hidden ID, NaN/Infinity·과도 좌표·잘못된 Pivot·중복 Delete에서 전체 무변경/History 0; 다중 Delete 순서 복원 | 작성 / NOT RUN |
 | TC-E2-UNIT-003 | E2-AC3/4 | stage/ESC·cancel은 0 history, 1 commit=1 history, visibility는 history 제외, redo 무효화, 100 entry trim, dispose/clear 리소스 정리 | 작성 / NOT RUN |
 | TC-E2-UNIT-004 | E2-AC3 | Ctrl/⌘+Z, Shift+Z, Ctrl+Y 및 input/textarea/select/contenteditable/alt/defaultPrevented native 이벤트 비침범 | 작성 / NOT RUN |
+| TC-E2-UNIT-005 | E2-AC4/5 | ViewerManager 명령·History·취소/Dispose 위임, 미지원 Viewer는 fail-closed | 작성 / NOT RUN |
 | TC-E2-E2E-001 | E2-AC3/4 | 유효 group90 합성 DXF 생성 외곽선과 tree, 버튼 disabled/no edit history, 원본 input Ctrl+Z native 유지, renderer reload/History 폐기 | 작성 / NOT RUN |
 | TC-E2-E2E-002 | E2-AC4/5 | dxf-viewer 비지원 상태에서 생성 history UI 없음 | 작성 / NOT RUN |
 
