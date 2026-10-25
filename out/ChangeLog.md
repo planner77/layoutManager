@@ -1,5 +1,12 @@
 # ChangeLog
 
+### v0.35.0 / PR #70 — 첫 Chromium E2E 회귀 보완 (2026-10-25)
+
+- 초기 [Run 40157734271](https://github.com/planner77/layoutManager/actions/runs/40157734271)은 Unit/Lint/Build/Docker PASS, Chromium 57 PASS/1 FAIL, legacy migration SKIPPED. 원인: #31 기존 테스트의 두 번째 Canvas drag가 U5 확장 도크 사용 후 스크롤된 페이지의 **음수 Y**에서 시작.
+- [test `a5d9f843`](https://github.com/planner77/layoutManager/commit/a5d9f8430e06fe3b223dc97157c917ac6e793394): 두 Canvas 실제 드래그 전 `scrollIntoViewIfNeeded` / viewport 확인, selection/geometry assertions 유지. 런타임/DB/API 변경 없음.
+- 실패 로그·Artifact 보존: [FailureLedger](FailureLedger.md). 수정 HEAD의 CI 성공/운영 배포는 확인 전 미확정; SemVer `0.35.0` 유지(아직 병합되지 않은 PR 테스트 교정).
+
+
 ## 0.35.0 — 2026-10-25 / Issue #42 U5 타입 연계 안전 선행 (PR CI 미검증)
 
 - `outline-assignment.ts`: 현재 DXF Version/SHA/scope 바인딩, active 타입 검증·이름 NFC/기본 이름·ID 독립 계약 추가.

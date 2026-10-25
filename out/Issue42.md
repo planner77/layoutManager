@@ -1,5 +1,13 @@
 # Issue #42 — U5 외곽선 업무 타입 지정·이름·JSON 메타데이터 (v0.35.0)
 
+## PR #70 첫 PR CI 실패·교정 (2026-10-25)
+
+- [Run 40157734271](https://github.com/planner77/layoutManager/actions/runs/40157734271), HEAD `526a1be`: TypeScript/ESLint/Unit·Integration/DXF Benchmark/Build/Docker **PASS**. Chromium E2E 58개 중 **57 PASS/1 FAIL**, Legacy Migration **SKIPPED**. 실패는 기존 #31 `TC-OUT-E2E-001`의 두 번째 Canvas 영역 선택 (`선택 0개`).
+- [실패 Trace/Artifact 12585362916](https://github.com/planner77/layoutManager/actions/runs/40157734271/artifacts/12585362916): 도크 버튼 조작으로 NORMAL 문서가 스크롤되어 Canvas `top=-63px`가 됨. 기존 E2E가 오프스크린 `mouse.move(x=38,y=-58)`로 시작해 `pointerdown`을 놓침. Geometry/SHA/Worker 결함이 아니라 **viewport 기반 E2E 조작 전 scroll 보장 누락**.
+- [수정 `a5d9f843`](https://github.com/planner77/layoutManager/commit/a5d9f8430e06fe3b223dc97157c917ac6e793394): 반복 드래그 전에 `scrollIntoViewIfNeeded`, `toBeInViewport(ratio:1)` 및 실제 영역 선택/assertion 유지. E2E Timeout 확대, 앱 선택 알고리즘/데이터 변경 없음.
+- 코드 수정 이후 로컬 검증 **NOT RUN**. 원장 [FailureLedger](FailureLedger.md)·[TestPlan](TestPlan.md)·[TestReport](TestReport.md)에 원인/조치/미검증 상태 추적. 현재 typed U5 기능은 #65 Server Scope Catalogue 승인 전 계속 차단.
+
+
 ## 현황과 선행 조건 (2026-10-25)
 
 - Epic #37, DXF 기하·선택 #31, 도구 ON/OFF #40, 비영속 타입 설계 시안 #41/PR #64.

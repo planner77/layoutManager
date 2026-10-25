@@ -1,5 +1,12 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE42-PR70-FAIL-20261025 — E2E 회귀 원인 및 수정 검증 경계
+
+- [PR CI 40157734271](https://github.com/planner77/layoutManager/actions/runs/40157734271) (HEAD `526a1be`, completed/failure): Job `121062609278` npm ci/Prisma/Typecheck/ESLint/Unit·Integration/DXF Benchmark/Production Build PASS, Chromium E2E **57 PASS/1 FAIL** (`issue31-outlines.spec.ts:53` TC-OUT-E2E-001: 두 번째 선택 결과 0 vs 1), Legacy Migration SKIPPED. Docker Job `121062609436` SUCCESS.
+- [Artifact 12585362916](https://github.com/planner77/layoutManager/actions/runs/40157734271/artifacts/12585362916) Trace 재검토: 버튼 클릭 후 비전체화면 페이지 스크롤로 캔버스 `y=-63`, 두 번째 마우스 `(38,-58)`에서 `pointerdown`이 뷰포트 밖으로 나감. 이전 첫 선택·DXF Geometry·PRECISE preview는 통과. **테스트의 스크롤 전제 결함**으로 확인.
+- [fix `a5d9f843`](https://github.com/planner77/layoutManager/commit/a5d9f8430e06fe3b223dc97157c917ac6e793394): 두 Canvas 선택에 모두 `scrollIntoViewIfNeeded` + 100% viewport 확인 후 실제 drag. Assert 그대로 유지. 수정 HEAD의 수동/로컬 CI **NOT RUN**, 신규 PR CI synchronize 시작·결과 미확정. [FailureLedger](FailureLedger.md) / [Issue42](Issue42.md).
+
+
 ## U-ISSUE42-DEV-20261025 — v0.35.0 U5 계약·잠금 UI / PR CI 전 증거
 
 - Issue #42에 대해 `outline-assignment.ts`, v1/v2 Draft parser/export, ViewerManager/Three adapter metadata, 타입 지정 UI gate 및 신규 Unit/E2E 코드를 작성. 기존 U3 untyped 로컬 버튼은 유지, 비영속 타입 ID는 서버 영속 저장·권한 증거가 아님.

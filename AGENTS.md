@@ -1,5 +1,11 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #42 / PR #70 — 첫 PR CI E2E 실패와 반복 선택 테스트 보완 (2026-10-25)
+
+- [실패 CI 40157734271](https://github.com/planner77/layoutManager/actions/runs/40157734271): Lint·Type·Unit/Bench·Production Build/Docker PASS, Chromium E2E **57 PASS/1 FAIL**, Legacy migration SKIPPED. 실패는 `TC-OUT-E2E-001`의 두 번째 Canvas drag가 **offscreen y=-58px**에서 시작해 `선택 0개`로 남은 것. 실제 trace는 U5 확장 도구 사용 후 NORMAL 페이지 scroll → canvas top -63px를 보여준다.
+- [test `a5d9f843`](https://github.com/planner77/layoutManager/commit/a5d9f8430e06fe3b223dc97157c917ac6e793394): E2E에서 Canvas 영역 선택 **매번** `scrollIntoViewIfNeeded` → `toBeInViewport(ratio:1)` → 실제 drag 후 `선택 1개` assertion. 기존 Geometry/Worker/영구 저장 게이트 변경 없음. [FailureLedger](out/FailureLedger.md), [Issue42](out/Issue42.md), TestReport/Plan 참조. 수정 후 새 CI 성공 전 PASS 주장 금지.
+
+
 ## Issue #42 U5 — 타입 지정 메타데이터 안전 선행 개발 (2026-10-25)
 
 - v0.35.0 기능 브랜치: `src/domain/outline-assignment.ts`에 Verified Scope Catalogue 입력 계약·업무 타입/이름 로컬 검증, `outline-draft.ts`에 schemaVersion 1 유지 + type-aware v2 JSON을 작성. Viewer/Adapter에는 분리된 `outlineTypeId/outlineTypeName/name` 메타데이터 경로와 잠금 UI를 연결.

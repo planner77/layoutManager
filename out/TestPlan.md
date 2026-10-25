@@ -1,5 +1,12 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## PR #70 E2E 회귀 — Canvas 스크롤 후 2회 영역 선택 (2026-10-25)
+
+- **TC-OUT-E2E-001 보강:** 비전체화면 일반 레이아웃의 `ViewerAppShell`/U5 확장 도크 상태에서 첫 CONVEX 선택·다운로드, PRECISE preview·`선택 해제`, **두 번째 실제 영역 드래그**가 계속 정상이어야 한다. 마우스 동작 전 Canvas 전체가 Viewport 안에 있도록 Playwright `scrollIntoViewIfNeeded` + `toBeInViewport({ratio:1})`를 검사한다. 선택된 Entity 1개를 실제로 검증하고, 곧바로 PRECISE Worker·기하·JSON 출력까지 검증한다.
+- 최초 실패 [Run 40157734271](https://github.com/planner77/layoutManager/actions/runs/40157734271) / Artifact 12585362916: Canvas 화면 밖 `y=-63`, 두 번째 `mouseDown y=-58`, `선택 0개` 경과. Source/Renderer/Worker 수정이 아니라 **E2E 제어 좌표/스크롤 준비 문제**. 재CI 성공 전 regression PASS 표기 금지.
+- 같은 `TC-OUT-E2E-001`을 유지하며 시험을 skip/삭제하거나 timeout만 늘리지 않는다. 세부 원장 [FailureLedger](FailureLedger.md).
+
+
 ## Issue #42 / U5 v0.35.0 — 타입 지정 외곽선 로컬 계약·게이트 (2026-10-25)
 
 | AC / TC | 검증 항목 | 코드 / 상태 |
