@@ -1,5 +1,14 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issue #107 / G5 — 격리 연결 Preview 개발 기록 (2026-10-25)
+
+- **작성한 코드/설계:** PROD/DEV 독립 Preview Compose, Nginx 경유 정상 경로, read-only Node Smoke(Health/Home/CAD list/font/선택 Viewer·content), Vitest 4건, CI Docker profile config-only 검증, Issue107·운영/설계/AC 문서.
+- **운영 미변경:** 원래 `src/docker-compose.yml`의 `host_ip: 0.0.0.0`은 유지. `.env.example`, Prisma, 기존 앱 Auth/API/Viewer, 운영 Nginx/DB, CAD bytes/SHA/Current/S3 변경 없음(최종 PR diff 확인 필요).
+- **실행 상태:** 원격 GitHub 파일 작성 시점 Node/Vitest/Typecheck/Lint/E2E/Docker Compose/실 Preview 및 PR CI 전체 결과는 **NOT RUN/NOT VERIFIED**. CI 시작을 PASS로 기록하지 않는다.
+- **G6 인계:** Windows/WSL2 실제 Nginx upstream·사내 PC 최소 2대, Viewer/Upload/Download·원본 SHA, G3 실제 Cookie, Backup/Migration/Restore는 **NOT RUN**. 공격·탈취 시험은 Owner 비범위. OWNER_ACCEPTED_SCOPE는 안전성 PASS가 아니다.
+- 참고: [Issue107](Issue107.md), [Issue102](Issue102.md), [TestPlan](TestPlan.md), [FailureLedger](FailureLedger.md).
+
+
 ## Issue #102 — Owner 공격 대응 비범위 문서 정렬 (2026-10-25)
 
 - G0 #102 및 ADR-051-R1에서 보안 공격/자격증명·세션 탈취 대비 강화·침투시험은 Owner에 의해 비범위로 결정되었다. `OWNER_ACCEPTED_SCOPE`는 **정책상 위험 수용**이며 안전성/침투시험 PASS가 아니다. HTTP 비암호화 위험은 여전히 존재한다.
