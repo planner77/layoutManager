@@ -1,5 +1,19 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #52 / E2 v0.38.0 — Command·History·Keyboard·Scene 수용 계획 (2026-10-25)
+
+| Test Case | AC | 검증 내용 | 현재 |
+| --- | --- | --- | --- |
+| TC-E2-UNIT-001 | E2-AC1/5 | 생성 2개 Polygon+MultiPolygon/Hole, Translate/Rotate 2회→Undo2→Redo2: UUID·순서·기준 Geometry·변환·provenance 왕복; input Geometry deep-copy/freeze | 작성 / NOT RUN |
+| TC-E2-UNIT-002 | E2-AC2 | SOURCE/혼합, 다른 Version, duplicate/ref spoof, missing/hidden ID, NaN/Infinity·과도 좌표·잘못된 Pivot·중복 Delete에서 전체 무변경/History 0; 다중 Delete 순서 복원 | 작성 / NOT RUN |
+| TC-E2-UNIT-003 | E2-AC3/4 | stage/ESC·cancel은 0 history, 1 commit=1 history, visibility는 history 제외, redo 무효화, 100 entry trim, dispose/clear 리소스 정리 | 작성 / NOT RUN |
+| TC-E2-UNIT-004 | E2-AC3 | Ctrl/⌘+Z, Shift+Z, Ctrl+Y 및 input/textarea/select/contenteditable/alt/defaultPrevented native 이벤트 비침범 | 작성 / NOT RUN |
+| TC-E2-E2E-001 | E2-AC3/4 | 유효 group90 합성 DXF 생성 외곽선과 tree, 버튼 disabled/no edit history, 원본 input Ctrl+Z native 유지, renderer reload/History 폐기 | 작성 / NOT RUN |
+| TC-E2-E2E-002 | E2-AC4/5 | dxf-viewer 비지원 상태에서 생성 history UI 없음 | 작성 / NOT RUN |
+
+**회귀 게이트:** TC-E1-UNIT-001~004/E2E-001~003, TC-U6/#43 Tree, #31 Precise Worker+v1 JSON, #40 OFF/ON, #42 typed v2, #17/#25/#26/#38/#39, TypeScript/ESLint/Vitest/Build/Playwright/Docker/Legacy migration. Scene/Worker/GPU 반복 실측 및 실 DXF 데이터는 PR CI 합성 시험과 분리. 현 세션 로컬 실행은 NOT RUN, PR CI 실행 결과 확인 전 PASS 금지. `#31 P4` 서버 인증 정책 Gate 불변. [Issue52](Issue52.md).
+
+
 ## Issue #51 / PR #77 — 최초 Unit 차단 및 작은 좌표 교차 회귀 계획 (2026-10-25)
 
 - **TC-U6-UNIT-003 (기존):** 단일 `focusSavedOutline('local-1')` 호출은 Adapter의 `selectSavedOutline('local-1')` **인수 1개** 계약 유지. 최초 Run 40164835838에서 인수 false 추가로 FAIL; 수정 HEAD 재실행 후 판정.
