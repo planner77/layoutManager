@@ -12,6 +12,12 @@ Date: 2026-10-25 · Scope: GitHub Actions run-name metadata, squash merge operat
 
 원인: push payload의 `github.event.head_commit.message`는 **commit subject+body 전체**이다. 저장소 설정 API 조회 결과 `squash_merge_commit_title=COMMIT_OR_PR_TITLE`, `squash_merge_commit_message=COMMIT_MESSAGES`; 기본 squash merge에 다중행 message가 추가될 수 있다. [GitHub Actions run-name 공식 제약](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#run-name), [Expressions 지원 함수](https://docs.github.com/en/actions/reference/workflows-and-actions/expressions), [저장소 설정 API](https://docs.github.com/en/rest/repos/repos#update-a-repository).
 
+## v0.36.1 게시 요청에 따른 승인 범위 갱신 (2026-10-25)
+
+- 최초 HEAD `71c577ed8f975c0d2e505e38a32bc05cdb5b0043`의 PR CI [40163919324](https://github.com/planner77/layoutManager/actions/runs/40163919324) 성공: Verify Job `121080972437`, Docker Job `121080972286`, unresolved Review 0, mergeable clean. 별도 CI 실패는 없다.
+- GHCR 게시 요청의 기술적 전제: 이 PR의 YAML/Markdown만으로는 #68 scope gate가 게시를 막는다. `v0.36.0`을 재발행/이동하지 않고 새 패치 릴리스 **v0.36.1**을 만든다. `src/package.json`/lockfile 버전 이외 runtime 코드·DB/API/이미지 쌍 보호 규칙은 불변. 실제 PR CI 새 HEAD 재검증 후에만 병합.
+- 저장소 Default Squash Setting `PR_TITLE / BLANK` 영구 변경은 관리자가 수행할 [#76](https://github.com/planner77/layoutManager/issues/76)으로 이관. 본 이슈 #74는 Workflow 코드 수정+정상 제목의 명시적 병합+Main CI 개시를 수용 범위로 하되, 관리자 기본값 변경 완료 또는 GHCR 게시 성공을 증거 없이 주장하지 않는다.
+
 ## 설계 결정
 
 1. **일상 경로:** PR 제목과 squash commit subject는 `#N | 짧은 설명` 또는 `NO-ISSUE | 짧은 설명`, 한 줄, 권장 80자 이내. 이때 현재 `MAIN CI | #N | 설명` 표현식이 그대로 적용된다.

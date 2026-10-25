@@ -1,5 +1,17 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #74 — GHCR v0.36.1 패치 게시 검증 (2026-10-25)
+
+| ID | 조건 | 기대 | 현재 |
+| --- | --- | --- | --- |
+| TC-CI-74-RELEASE-001 | package 및 lockfile 루트 버전 | 0.36.1 동기, dependencies 동일 | 정적 검증 |
+| TC-CI-74-RELEASE-002 | Main `before..sha`에 `src/package.json` 변경 포함 | release-scope `publish=true` 후 GHCR Job 진입 | Main 미실행 |
+| TC-CI-74-RELEASE-003 | `v0.36.1` 태그 및 GHCR app+migrate digest | 신규 태그와 이미지 쌍 검증·게시, 기존 `v0.36.0` 변경 없음 | 실제 게시 미확인 |
+| TC-CI-74-RELEASE-004 | 새 PR HEAD | Verify+Docker CI SUCCESS 후 Squash merge, review 0, conflict 0 | 신규 CI 필요 |
+| TC-CI-74-RELEASE-005 | Main push commit 단일행 | `MAIN CI | #74 | 짧은 설명` 표시 | Main 미실행 |
+
+- 기존 [PR CI 40163919324](https://github.com/planner77/layoutManager/actions/runs/40163919324) 성공은 **버전 변경 이전 HEAD**에만 적용. Repo admin Squash 기본값은 #76에서 추적. GHCR 게시 경로는 기존 release-scope를 우회하지 않고 version bump로 정식 유도.
+
 ## Issue #74 — Main CI 실행명 multiline squash 회귀 방지 (2026-10-25)
 
 | Test ID | 입력 | 기대 실행명 | 검증 상태 |

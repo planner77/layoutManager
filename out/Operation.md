@@ -1,5 +1,11 @@
 # 운영·환경설정 초안
 
+### Issue #74 / v0.36.1 — 승인된 GHCR 패치 릴리스 경로
+
+- 사용자가 GHCR 게시를 명시적으로 요청하여 신규 버전 `0.36.1`을 `src/package.json` 및 lockfile 루트에 부여한다. 기존 #68 GHCR scope gate는 유지하고, runtime-impacting 변경 파일 `src/package.json`이 포함되어 기존 게시 Job이 조건에 따라 실행되도록 한다.
+- `v0.36.0` tag/이미지 유지. 성공한 최신 PR CI HEAD를 `#74 | Main CI 실행명 커밋 본문 유입 방지` 제목과 **비어 있는 Squash 본문**으로 병합한다. Main push는 `v0.36.1` 태그 자동 생성(미존재 시) → 앱/마이그레이터 후보 build/digest 검증 → pair 공개 태그 승격을 시도한다. Main CI **시작 != GHCR 게시 완료**.
+- 저장소 기본값 `PR_TITLE / BLANK` 변경은 관리자 수행이 필요한 [Issue #76](https://github.com/planner77/layoutManager/issues/76)에 분리. 운영 배포는 앱과 migrator 같은 버전 고정·DB/CAD/S3 백업 절차 유지.
+
 ## Issue #74 — Main CI 실행명 길이 회귀 방지 (2026-10-25)
 
 [Run #34](https://github.com/planner77/layoutManager/actions/runs/40158498214)의 간결한 `MAIN CI | #68 | 설명`과 달리 [#35](https://github.com/planner77/layoutManager/actions/runs/40159667229)·[#36](https://github.com/planner77/layoutManager/actions/runs/40162889687)은 squash commit 본문(`Refs`, 증거, 잔여 작업 등)이 `run-name`에 추가됐다. `github.event.head_commit.message`는 첫 줄이 아니라 전체 commit message다. GitHub `run-name`은 workflow 시작 전 평가되어 step의 `git log -1 --format=%s` 또는 문자열 `split`으로 해결할 수 없다.
