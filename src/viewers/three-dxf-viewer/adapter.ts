@@ -318,6 +318,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     const ghost=this.dragGhostGroup;
     this.dragTranslation=undefined;
     this.dragGhostGroup=undefined;
+    delete this.renderer.domElement.dataset.generatedDragPreview;
     if(ghost){this.scene.remove(ghost);release(ghost);this.render();}
     this.document?.cancelPending();
   }
@@ -347,6 +348,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
       this.document.stage({type:'Translate',ids:[...ids],dx:0,dy:0},this.getCanvasObjectSelection());
       const ghost=this.createPathGroup(paths,0x22d3ee);
       this.dragGhostGroup=ghost;this.dragTranslation={ids:[...ids],bounds:envelope};
+      this.renderer.domElement.dataset.generatedDragPreview='true';
       this.scene.add(ghost);this.render();
       return true;
     }catch(error){
@@ -558,9 +560,10 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
   }
   cancelGeneratedCommand():boolean{
     const hadGhost=!!this.dragGhostGroup;
+    const hadPending=this.document?.hasPending??false;
     const stopped=this.selector?.cancelGeneratedDrag()??false;
     this.dropTranslationPreview();
-    return stopped||hadGhost;
+    return stopped||hadGhost||hadPending;
   }
   undoGeneratedEdit():boolean{this.cancelGeneratedCommand();return this.document?.undo()??false;}
   redoGeneratedEdit():boolean{this.cancelGeneratedCommand();return this.document?.redo()??false;}

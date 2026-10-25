@@ -89,7 +89,7 @@ export class SelectionController {
    Object.assign(this.box.style,{position:'absolute',pointerEvents:'none',display:'none',zIndex:'2',border:'1px dashed #38bdf8',background:'rgba(14,165,233,.18)'});
    container.append(this.box);
    canvas.addEventListener('pointerdown',this.pointerDown);
-   canvas.addEventListener('pointermove',this.pointerMove);
+   window.addEventListener('pointermove',this.pointerMove);
    canvas.addEventListener('lostpointercapture',this.pointerCancel);
    canvas.addEventListener('wheel',this.wheel,{passive:true});
    window.addEventListener('pointerup',this.pointerUp);
@@ -288,7 +288,7 @@ export class SelectionController {
  dispose(){
    this.cancelDrag();
    this.canvas.removeEventListener('pointerdown',this.pointerDown);
-   this.canvas.removeEventListener('pointermove',this.pointerMove);
+   window.removeEventListener('pointermove',this.pointerMove);
    this.canvas.removeEventListener('lostpointercapture',this.pointerCancel);
    this.canvas.removeEventListener('wheel',this.wheel);
    window.removeEventListener('pointerup',this.pointerUp);
