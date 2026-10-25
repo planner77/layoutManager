@@ -1,5 +1,12 @@
 # 운영·환경설정 초안
 
+## Issue #99 — P1 비공개 경로 방어 및 0.40.3 GHCR 준비 (2026-10-25)
+
+- **경로 계약 변경:** `CAD_OUTLINE_ACCEPTANCE_DXF`는 사내 승인된 절대 경로이면서 실제 파일의 canonical `realpath`가 Git checkout 밖이어야 한다. `CAD_OUTLINE_ACCEPTANCE_REPORT_PATH`도 절대 경로이며 **출력 부모 폴더를 사전에 직접 생성해 ACL 제한**, 그 부모의 symlink 해결 후 실제 경로가 checkout 외부인지 확인한다. 기존 보고서 경로·dangling symlink 및 repo로 향하는 폴더 symlink는 오류. 파일은 `wx`/0600 배타 생성하므로 2회 수행할 때는 **새로운 보고서 파일명**을 사용한다. 실패 원인에 경로/SHA/민감한 운영 정보가 출력되지 않도록 한다.
+- 사내 DB/Storage 격리 및 예외 처리/정리 의무는 기존 Issue #99 Runbook 그대로이며, Node 경로 검사만으로 악의적 다른 프로세스의 디렉터리 교체를 완전히 차단하지 않는다. **일반 사용자에게 쓰기 권한 없는 전용 출력 폴더**를 준비한다.
+- GHCR: Git tag `v0.40.2` 이미 존재. 새로운 source/시험 하네스에 대한 사용자 요청은 `0.40.3` package/lock 준비와 PR 최신 CI/리뷰 게이트 통과 후 Squash Main CI → App/Migrator 후보 SHA digest 검증 → `0.40.3/-migrate`, `latest/-migrate` 게시 가능성 순서. Publish 성공 여부/실 digest는 Main Job 및 OCI 레지스트리 증거로만 기록. 사전 PR CI 성공은 신규 버전 릴리스 성공 아님.
+
+
 ## Issue #99 — 비공개 실 CAD P0/P5 현장 수용 Runbook (2026-10-25)
 
 1. 실제 공장 DXF 사용/보관 승인을 받는다. 서로 다른 SHA 최소 3종, supported entities 1k/10k/100k 각 대표 도면을 Owner 선정. CAD WCS XY·기준 면적·Handle/INSERT/OCS·허용 오차 및 CPU/GPU/Browser p95/heap/VRAM SLA는 **시험 전에 Owner 서면 승인**한다. 미결정 값은 fail closed.
