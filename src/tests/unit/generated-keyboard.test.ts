@@ -1,5 +1,5 @@
 import {describe,expect,it} from 'vitest';
-import {getGeneratedHistoryShortcut,isTextEditingTarget} from '../../domain/generated-keyboard';
+import {getGeneratedDeleteShortcut,getGeneratedHistoryShortcut,isTextEditingTarget} from '../../domain/generated-keyboard';
 type TestEvent=Parameters<typeof getGeneratedHistoryShortcut>[0];
 function event(key:string,modifiers:Partial<TestEvent>={}):TestEvent{
   return {key,ctrlKey:false,metaKey:false,altKey:false,shiftKey:false,
@@ -29,5 +29,30 @@ describe('TC-E2-UNIT-004: keyboard shortcut input isolation',()=>{
     const roleInput={tagName:'DIV',closest:()=>({tagName:'DIV'})};
     expect(getGeneratedHistoryShortcut(event('y',{ctrlKey:true,target:roleInput as unknown as EventTarget}))).toBeNull();
     expect(isTextEditingTarget(null)).toBe(false);
+  });
+});
+
+describe('TC-E3-UNIT-005: Delete/Backspace only with Canvas focus and no text input',()=>{
+  const deletion=(key:string,modifiers:Partial<TestEvent>&{repeat?:boolean}={})=>
+    ({...event(key),repeat:false,...modifiers});
+  it('supports plain Delete/Backspace only in focused canvas',()=>{
+    expect(getGeneratedDeleteShortcut(deletion('Delete'),true)).toBe(true);
+    expect(getGeneratedDeleteShortcut(deletion('Backspace'),true)).toBe(true);
+    expect(getGeneratedDeleteShortcut(deletion('Delete'),false)).toBe(false);
+    expect(getGeneratedDeleteShortcut(deletion('a'),true)).toBe(false);
+    expect(getGeneratedDeleteShortcut(deletion('Delete',{ctrlKey:true}),true)).toBe(false);
+    expect(getGeneratedDeleteShortcut(deletion('Delete',{metaKey:true}),true)).toBe(false);
+    expect(getGeneratedDeleteShortcut(deletion('Delete',{shiftKey:true}),true)).toBe(false);
+    expect(getGeneratedDeleteShortcut(deletion('Backspace',{altKey:true}),true)).toBe(false);
+    expect(getGeneratedDeleteShortcut(deletion('Delete',{repeat:true}),true)).toBe(false);
+    expect(getGeneratedDeleteShortcut(deletion('Delete',{defaultPrevented:true}),true)).toBe(false);
+  });
+  it('never consumes input, textarea, role searchbox or contenteditable descendants',()=>{
+    for(const tagName of ['INPUT','TEXTAREA','SELECT']){
+      const target={tagName,closest:()=>({tagName})};
+      expect(getGeneratedDeleteShortcut(deletion('Backspace',{target:target as unknown as EventTarget}),true)).toBe(false);
+    }
+    const search={tagName:'SPAN',closest:()=>({tagName:'DIV'})};
+    expect(getGeneratedDeleteShortcut(deletion('Delete',{target:search as unknown as EventTarget}),true)).toBe(false);
   });
 });
