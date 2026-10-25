@@ -54,8 +54,9 @@ def compare_inventories(before, after):
     if not any(name.endswith(".node") for name in after):
         raise ValueError("Native .node binding absent")
     duplicates = {name: rows for name, rows in before.items() if len(rows) > 1}
-    if not duplicates:
-        raise ValueError("Baseline has no duplicate files; do not claim savings")
+    # Subsequent PRs can legitimately use an already-deduplicated main.
+    # Always enforce identical package file hashes and no optimized duplicate,
+    # but require baseline duplication only when measuring the transition.
     for name, rows in duplicates.items():
         if len({row[2] for row in rows}) != 1:
             raise ValueError("Nonidentical baseline layer writes: " + name)
@@ -91,8 +92,9 @@ def main():
         after, after_count = save_and_inventory(args.optimized, Path(tmp) / "after.tar")
     duplicates, wasted = compare_inventories(before, after)
     base_size, size = int(old["Size"]), int(new["Size"])
-    if base_size <= size:
-        raise ValueError("No local uncompressed image saving")
+    transition = bool(duplicates)
+    if transition and base_size <= size:
+        raise ValueError("Deduplication transition did not reduce uncompressed image size")
     diffids = old["RootFS"]["Layers"]
     if len(diffids) != before_count or len(new["RootFS"]["Layers"]) != after_count:
         raise ValueError("Docker archive layer order differs from inspect diffIDs")
@@ -106,8 +108,9 @@ def main():
         f"| Final better-sqlite3 regular files | {len(before)} | {len(after)} |",
         f"| Repeated package paths in layer TARs | {len(duplicates)} | 0 |",
         "",
-        f"- Local uncompressed reduction: {base_size - size} bytes ({(base_size-size)/base_size*100:.2f}%).",
-        f"- Identical package bytes written AGAIN in baseline layers: {wasted} raw bytes (not GHCR compressed savings).",
+        f"- Baseline duplicate present: {'YES (deduplication transition)' if transition else 'NO (already deduplicated)'}.",
+        f"- Local uncompressed delta (baseline minus current): {base_size - size} bytes ({(base_size-size)/base_size*100:.2f}%); {'positive saving REQUIRED' if transition else 'size delta INFORMATIONAL'}.",
+        f"- Identical package bytes written AGAIN in baseline layers: {wasted} raw bytes (not GHCR compressed savings).
         "- All final package file paths and SHA256 values match, including a native .node binding.",
         "- Source: actual docker-save TAR layer members and docker inspect RootFS diffIDs.",
         "",

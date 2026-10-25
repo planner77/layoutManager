@@ -141,7 +141,7 @@ jobs:
           docker buildx build --load --platform linux/amd64 --target migrator -f src/Dockerfile -t cad-layout-viewer:ci-migrate .
       - name: Measure 3 image sizes, layers and directories
         run: bash src/scripts/measure-images.sh cad-layout-viewer:baseline cad-layout-viewer:phase1 cad-layout-viewer:ci "$GITHUB_STEP_SUMMARY"
-      - name: Verify web layer path/SHA identity and size saving (#67)
+      - name: Verify web layer SHA, native and transition-only size saving (#67)
         shell: bash
         run: |
           set -euo pipefail

@@ -54,9 +54,20 @@ class TestAudit(unittest.TestCase):
             compare_inventories({NATIVE: [(1, 1, "a"), (2, 1, "b")]},
                                 {NATIVE: [(1, 1, "b")]})
 
-    def test_reject_false_duplicate_claim(self):
-        with self.assertRaisesRegex(ValueError, "no duplicate"):
-            compare_inventories({NATIVE: [(1, 1, "a")]}, {NATIVE: [(1, 1, "a")]})
+    def test_accept_already_deduplicated_baseline(self):
+        duplicates, wasted = compare_inventories(
+            {NATIVE: [(1, 1, "a")], JS: [(1, 1, "b")]},
+            {NATIVE: [(1, 1, "a")], JS: [(1, 1, "b")]},
+        )
+        self.assertEqual(duplicates, {})
+        self.assertEqual(wasted, 0)
+
+    def test_reject_duplicate_reintroduced_after_deduplicated_baseline(self):
+        with self.assertRaisesRegex(ValueError, "still duplicates"):
+            compare_inventories(
+                {NATIVE: [(1, 1, "a")]},
+                {NATIVE: [(1, 1, "a"), (2, 1, "a")]},
+            )
 
     def test_reject_remaining_optimized_duplication(self):
         with self.assertRaisesRegex(ValueError, "still duplicates"):
