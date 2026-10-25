@@ -45,19 +45,24 @@ async function probe(base, label, pathname, expected, fetchImpl) {
 export async function runG5Probes(baseUrl, fetchImpl = fetch, options = {}) {
   const base = checkedBaseUrl(baseUrl);
   // Validate optional paths before making any network request.
-  if (options.viewerPath && !/^\/cad\/locations\/[a-zA-Z0-9-]+(?:\/[a-zA-Z0-9-]+)*$/.test(options.viewerPath)) {
-    throw new Error('Use a relative /cad/locations/... path for --viewer-path');
+  if (options.viewerPath && !/^\/cad\/versions\/[a-zA-Z0-9-]+\/viewer$/.test(options.viewerPath)) {
+    throw new Error('Use a relative /cad/versions/ID/viewer path for --viewer-path');
   }
   if (options.versionId && !/^[a-zA-Z0-9-]+$/.test(options.versionId)) {
     throw new Error('--version-id must be a bare version identifier');
   }
+  const derivedViewer = options.versionId ? '/cad/versions/' + encodeURIComponent(options.versionId) + '/viewer' : undefined;
+  if (options.viewerPath && derivedViewer && options.viewerPath !== derivedViewer) {
+    throw new Error('--viewer-path and --version-id must refer to the same Viewer');
+  }
+  const viewerPath = options.viewerPath ?? derivedViewer;
   const results = [];
   results.push(await probe(base, 'health', '/api/health', 'health', fetchImpl));
   results.push(await probe(base, 'home/viewer entry', '/', 'html', fetchImpl));
   results.push(await probe(base, 'cad list API', '/api/cad-files', 'json', fetchImpl));
   results.push(await probe(base, 'static font', '/fonts/NanumGothic-Regular.ttf', 'binary', fetchImpl));
-  if (options.viewerPath) {
-    results.push(await probe(base, 'viewer page', options.viewerPath, 'html', fetchImpl));
+  if (viewerPath) {
+    results.push(await probe(base, 'viewer page', viewerPath, 'html', fetchImpl));
   }
   if (options.versionId) {
     results.push(await probe(base, 'CAD content/download', '/api/cad-files/' + encodeURIComponent(options.versionId) + '/content', 'binary', fetchImpl));
@@ -70,7 +75,7 @@ function commandArgs(args) {
   for (let i = 0; i < args.length; i += 2) {
     const key = args[i], value = args[i + 1];
     if (!['--base-url', '--viewer-path', '--version-id'].includes(key) || !value) {
-      throw new Error('Usage: node src/scripts/g5-preview-smoke.mjs --base-url http://127.0.0.1:3302 [--viewer-path /cad/locations/ID] [--version-id ID]');
+      throw new Error('Usage: node src/scripts/g5-preview-smoke.mjs --base-url http://127.0.0.1:3302 [--version-id ID] [--viewer-path /cad/versions/ID/viewer]');
     }
     options[key] = value;
   }

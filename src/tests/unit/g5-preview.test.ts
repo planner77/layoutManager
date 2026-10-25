@@ -41,18 +41,18 @@ describe('Issue #107: isolated LAN preview is not an operational switch', () => 
       paths.push(uri.pathname);
       if (uri.pathname === '/api/health') return Response.json({ status: 'ok' });
       if (uri.pathname === '/api/cad-files') return Response.json({ items: [] });
-      if (uri.pathname === '/' || uri.pathname.startsWith('/cad/locations/')) {
+      if (uri.pathname === '/' || /^\/cad\/versions\/[a-zA-Z0-9-]+\/viewer$/.test(uri.pathname)) {
         return new Response('<html>CAD</html>', { headers: { 'content-type': 'text/html; charset=utf-8' } });
       }
       return new Response('fixture', { status: 200 });
     }) as typeof fetch;
     const checked = await runG5Probes('http://127.0.0.1:3302', mockFetch, {
-      viewerPath: '/cad/locations/site-1', versionId: 'version-1',
+      viewerPath: '/cad/versions/version-1/viewer', versionId: 'version-1',
     });
     expect(checked).toHaveLength(6);
     expect(paths).toEqual([
       '/api/health', '/', '/api/cad-files', '/fonts/NanumGothic-Regular.ttf',
-      '/cad/locations/site-1', '/api/cad-files/version-1/content',
+      '/cad/versions/version-1/viewer', '/api/cad-files/version-1/content',
     ]);
   });
 
@@ -60,9 +60,31 @@ describe('Issue #107: isolated LAN preview is not an operational switch', () => 
     const failing = (async () => Response.json({ status: 'unavailable' }, { status: 503 })) as typeof fetch;
     await expect(runG5Probes('http://127.0.0.1:3302', failing)).rejects.toThrow('health: HTTP 503');
     await expect(runG5Probes('http://127.0.0.1:3302', fetch, { viewerPath: '//other-host' }))
-      .rejects.toThrow('Use a relative /cad/locations/... path');
+      .rejects.toThrow('Use a relative /cad/versions/ID/viewer path');
     await expect(runG5Probes('http://127.0.0.1:3302', fetch, { versionId: '../invalid' }))
       .rejects.toThrow('--version-id must be a bare version identifier');
     await expect(runG5Probes('http://user:password@127.0.0.1:3302', failing)).rejects.toThrow();
   });
+  test('TC-P4-G5-007: Version ID probes real Viewer and never passes location management page', async () => {
+    const requested: string[] = [];
+    const mockFetch = (async (input: URL) => {
+      const uri = new URL(String(input));
+      requested.push(uri.pathname);
+      if (uri.pathname === '/api/health') return Response.json({ status: 'ok' });
+      if (uri.pathname === '/api/cad-files') return Response.json({ items: [] });
+      if (uri.pathname === '/' || uri.pathname === '/cad/versions/version-1/viewer') {
+        return new Response('<html>Viewer</html>', { headers: { 'content-type': 'text/html' } });
+      }
+      return new Response('fixture', { status: 200 });
+    }) as typeof fetch;
+    await expect(runG5Probes('http://127.0.0.1:3301', mockFetch, { versionId: 'version-1' }))
+      .resolves.toHaveLength(6);
+    expect(requested).toContain('/cad/versions/version-1/viewer');
+    const before = requested.length;
+    await expect(runG5Probes('http://127.0.0.1:3301', mockFetch, {
+      versionId: 'version-1', viewerPath: '/cad/versions/other/viewer',
+    })).rejects.toThrow('--viewer-path and --version-id must refer to the same Viewer');
+    expect(requested).toHaveLength(before);
+  });
+
 });
