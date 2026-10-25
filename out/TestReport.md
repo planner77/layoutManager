@@ -1,5 +1,13 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issue #99 / PR #110 — CI 성공과 P1 리뷰·수정 HEAD 분리 (2026-10-25)
+
+- **검증된 원 HEAD** `637742610b3eb25461b095edb5899494ce6dd054` [PR CI 40195335561](https://github.com/planner77/layoutManager/actions/runs/40195335561): Verify(Typecheck/Lint/Unit/Build/E2E) Job 121174841714 **completed/success**, Docker Job 121174841754 **completed/success**. 공개 합성/제품 회귀의 증거로만 사용.
+- **P1 리뷰 [#4370918614](https://github.com/planner77/layoutManager/pull/110#discussion_r4370918614):** 보고서 출력 부모의 Symlink가 repo 내부로 이어지면 `resolve` 경로 검사가 무효화될 위험을 지적. 원본 실 DXF/현장 실행은 없었으며 실제 민감정보 노출 증거 없음. `private-acceptance-paths.ts` canonical `realpathSync`·기존 부모 필수·`wx/0600`·신규 6 Unit + Private E2E 연동으로 보완.
+- **신규 코드 HEAD 상태:** GitHub connector에서 소스/문서 변경, 로컬 Typecheck/Lint/Vitest/Build/Playwright/GPU **NOT RUN**. 새 PR CI는 새 실행의 Run/HEAD 확인 이후에만 PASS 기재, 이전 40195335561 성공을 재사용하지 않는다. 신규 GHCR용 `0.40.3` root package/lock 정렬은 미게시.
+- **현장 AC #99-01~04:** 승인 실제 DXF 최소 3종/CAD 좌표·면적·GPU/Owner budget·실 UI/Worker/장비/서명 모두 **NOT RUN/BLOCKED**. 성공한 CI·문서 수정으로 운영 수용/Owner 승인 완료라고 판단 금지. [FailureLedger](FailureLedger.md), [Issue99](Issue99.md).
+
+
 ## Issue #99 — P0/P5 비공개 Evidence Gate 작성 상태 (2026-10-25)
 
 | 구분 | 상태/증거 |
