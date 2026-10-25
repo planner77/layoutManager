@@ -1,4 +1,12 @@
 name: PR CI
+# The run title is resolved before jobs start; use the PR title contract
+# "#<issue> | short description" (not the GitHub PR number).
+run-name: >-
+  ${{ github.event_name == 'pull_request'
+      && ((startsWith(github.event.pull_request.title, '#') || startsWith(github.event.pull_request.title, 'NO-ISSUE |'))
+          && format('PR CI | {0}', github.event.pull_request.title)
+          || format('PR CI | ISSUE-UNKNOWN | {0}', github.event.pull_request.title))
+      || format('MANUAL CI | {0} | {1}', inputs.issue_ref || 'NO-ISSUE', inputs.run_description || '수동 검증') }}
 
 on:
   pull_request:
@@ -6,6 +14,17 @@ on:
       - main
     types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
+    inputs:
+      issue_ref:
+        description: '연관 Issue 번호(# 포함, 예: #68). 없으면 NO-ISSUE'
+        type: string
+        required: false
+        default: NO-ISSUE
+      run_description:
+        description: 'Actions 목록에 표시할 짧은 실행 설명'
+        type: string
+        required: false
+        default: 수동 검증
 
 permissions:
   contents: read

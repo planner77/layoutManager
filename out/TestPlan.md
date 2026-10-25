@@ -1,5 +1,18 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #68 — GitHub Actions Run 이름 정적/실행 검증 계획 (2026-10-25)
+
+- `TC-CI-NAME-001`: 표준 PR 제목 `#68 | Actions 실행명 정리` → `PR CI | #68 | Actions 실행명 정리`, PR 번호를 Issue로 사용하지 않음.
+- `TC-CI-NAME-002`: `NO-ISSUE | 문서 정리` / 비표준 `docs: update` 입력은 각각 `NO-ISSUE` / `ISSUE-UNKNOWN`으로 명시. 제목 수정을 위해 `pull_request.edited` 이벤트를 새로 추가하지 않음.
+- `TC-CI-NAME-003`: 수동 실행에서 Issue 참조·간략 설명 폼 입력/기본값 확인(기본 브랜치 반영 이후 가능).
+- `TC-CI-NAME-004`: main squash `#68 | ...` / `NO-ISSUE | ...` / legacy 비정형은 `MAIN CI | ...`, tag `vX.Y.Z`는 `RELEASE | ...`로 구분. 버전/이미지 게시 성공과 실행명 구별.
+- `TC-CI-NAME-005`: 기존 트리거·permissions/concurrency/기존 빌드/배포 step의 코드 diff 비교. 신규 `release-scope`/게시 `if`는 메타데이터 변경으로 GHCR가 실행되지 않는지 별도 시험.
+- `TC-CI-SCOPE-001`: PR #69 파일 전부 `.md` 또는 `.github/workflows/*.yml|yaml` → main `release-scope` PASS, `build-and-push` SKIPPED, GHCR 신규 태그/푸시 없음.
+- `TC-CI-SCOPE-002`: `src/`/Dockerfile/Compose 기타 실행 코드 1개라도 변경 → 원래 GHCR 게시 여부 판정 Job 진입(버전 이미지 중복 확인 등은 유지).
+- `TC-CI-SCOPE-003`: `v*.*.*` Tag push → scope `publish=true`, 기존 GHCR 게시 단계 실행. baseline missing 또는 비교 실패한 main push는 오류 차단(임의 게시 금지).
+- **상태:** 변경 작성; 실제 Actions run에 표시되는 값은 PR 생성 뒤 확인. Main/tag/manual 검증은 실행 전이며 PASS로 기록하지 않는다. 세부 입력/기대/제약 [Issue68](Issue68.md).
+
+
 ## Issue #41 / PR #64 E2E 및 HTTP 비보안 컨텍스트 회귀 보완 (2026-10-25)
 
 | TC | 검증 의도 | 관측/계획 | 
