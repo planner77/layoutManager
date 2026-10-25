@@ -116,3 +116,25 @@ test('TC-IMAGE-011: GHCR publication stages two candidates before public alias p
   expect(workflow).toContain('docker buildx imagetools create --tag "$IMAGE:${APP_VERSION}-migrate"');
   expect(workflow).toContain('cancel-in-progress: false');
 });
+
+
+test('TC-IMG67-001: standalone traced native SQLite has no second image COPY', () => {
+  const root = path.resolve(process.cwd(), '..');
+  const docker = readFileSync(path.join(root, 'src/Dockerfile'), 'utf8');
+  const config = readFileSync(path.join(root, 'src/next.config.ts'), 'utf8');
+  const runtime = docker.split('FROM runtime-base AS runtime\n')[1];
+  expect(runtime).toContain('COPY --from=builder --chown=cad:cad /app/src/.next/standalone ./');
+  expect(runtime).not.toContain('COPY --from=builder --chown=cad:cad /app/src/node_modules/better-sqlite3');
+  expect(runtime).toContain('test -f /app/src/node_modules/better-sqlite3/build/Release/better_sqlite3.node');
+  expect(runtime).toContain("require('better-sqlite3')");
+  expect(runtime).toContain('USER cad');
+  expect(runtime).toContain('CMD ["node", "server.js"]');
+  expect(config).toContain("serverExternalPackages: ['@prisma/client', '@prisma/adapter-better-sqlite3', 'better-sqlite3']");
+  expect(config).toContain("'./node_modules/better-sqlite3/**/*'");
+  expect(config).toContain("'./generated/prisma/**/*'");
+  const workflow = readFileSync(path.join(root, '.github/workflows/pr-ci.yml'), 'utf8');
+  expect(workflow).toContain('test_audit_standalone_layers.py');
+  expect(workflow).toContain('audit_standalone_layers.py');
+  expect(workflow).toContain('smoke_web_runtime.py create');
+  expect(workflow).toContain('smoke_web_runtime.py verify-delete');
+});

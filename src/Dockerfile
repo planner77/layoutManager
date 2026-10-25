@@ -93,9 +93,11 @@ CMD ["./node_modules/.bin/tsx", "scripts/deploy.ts"]
 FROM runtime-base AS runtime
 ENV HOSTNAME=0.0.0.0 PORT=3000
 COPY --from=builder --chown=cad:cad /app/src/.next/standalone ./
-# Prisma adapter loads the glibc-linked native SQLite binary at runtime.
-COPY --from=builder --chown=cad:cad /app/src/node_modules/better-sqlite3 ./node_modules/better-sqlite3
-RUN mkdir -p /app/src/.next/cache \
+# better-sqlite3 and its glibc-linked native .node are traced into standalone
+# by next.config.ts; a second explicit COPY would repeat the same paths in a
+# new layer. Missing trace must fail image build, not trigger a full copy.
+RUN test -f /app/src/node_modules/better-sqlite3/build/Release/better_sqlite3.node \
+    && mkdir -p /app/src/.next/cache \
     && chown -R cad:cad /app/src/.next/cache \
     && node -e "const db=require('better-sqlite3');new db(':memory:').close()"
 USER cad

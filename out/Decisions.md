@@ -1,12 +1,27 @@
 # 주요 기술 결정과 승인 기록
 
-## ADR-045 — E3 GENERATED 삭제는 E2 원자 Command로 단일화하고 확인 시점에 다시 검증 (2026-10-25 / #53)
+## ADR-046 — E3 GENERATED 삭제는 E2 원자 Command로 단일화하고 확인 시점에 다시 검증 (2026-10-25 / #53)
 
 - **문제:** 기존 U6 `deleteSavedOutline→discardLegacy`는 직접 제거/Undo 초기화를 사용해 #52의 원자·이력·scope 검증을 우회한다. UI만 생성 OFF에 묶으면 생성과 편집을 분리한 E1/#49 계약도 위반한다.
 - **결정:** 이력 없는 삭제 인터페이스 제거. 이미 선택된 단일/복수 GENERATED와 Tree 행은 동일 `Delete(ids)` 명령을 Manager→Adapter→Document에 전달하고 UI 삭제 전 명칭·개수를 공개하며 Confirm/Cancel을 제공한다. Confirmation 스냅샷은 현재 선택/Version/SHA와 다시 비교한다; SOURCE 또는 혼합은 전체 거부, Source 분리 자동 필터링 금지. Adapter의 `objects/generated` 편집 모드 검사와 E2 domain 재검증을 유지한다.
 - **조작/접근성:** 생성 OFF에서는 Pan 기본 상태를 지키되 명시적 객체 편집 선택 모드에서 삭제 허용. Canvas에 실제 focus가 있고 modifier 없는 Delete/Backspace만 삭제. Form/search/native keys를 침범하지 않고 ESC는 Confirm→Context→E2 stage→Selection→Fullscreen 우선. Tree 접근성·포커스/리사이즈 수명주기 보존.
 - **결과:** 삭제 ID와 Geometry/Transform/Visibility/metadata는 E2의 before patch 및 동일 UUID로 Undo/Redo 복원. GPU 객체 제거는 기존 Three Scene release 로직에 위임; Source/Preview/레이어/원본 DXF/DB/P4 불변. 생성 최대 100개·100k 정점/이력 제한 유지. 기존 #43 생성 ON에서만 삭제 가능했던 정책은 E3 이후 확정 개체 편집과 분리(과거 기록은 보존). #54/#55가 같은 명령·scope UI 패턴을 재사용 가능.
 - **거부 대안:** 별도 SavedOutline 배열/서버 삭제 API/이력 없는 legacy delete, 임의 mixed 부분 삭제, hidden/Version 불일치 자동 복원, 입력창 전역 Delete 매핑은 데이터 무결성·접근성·보안 위험으로 채택하지 않는다. [Issue53](Issue53.md)와 TC-E3.
+
+
+### ADR-045 보완 — 전환 시 절감 강제, 안정 상태에서는 무중복/ABI 검증 유지 (#67 P1, 2026-10-25)
+
+- 최초 성공 CI 뒤 [P1 4369963432](https://github.com/planner77/layoutManager/pull/80#discussion_r4369963432)에서 후속 PR이 이미 deduplicated main을 기준으로 할 경우 positive saving 강제 검사로 정상 CI가 막히는 문제를 발견.
+- **결정:** baseline에 실제 duplicate가 있을 때만 동일 SHA의 중복 package+positive uncompressed image saving 필수. 기존 최적화된 baseline이라면 0 byte reduction도 정상. 어느 쪽이든 native `.node` 존재, baseline/new package **전체 최종 파일 SHA 동일**, optimized package에 double layer 없음, Docker/Compose/Browser 검사는 필수. Test skip이나 issue number flag로 우회하지 않는다.
+- 기존 Main GHCR OCI published version+immutable digest 구별 규칙은 불변. [Issue67](Issue67.md), [FailureLedger](FailureLedger.md).
+
+
+## ADR-045 — 웹 native SQLite는 Standalone tracing 단일 경로, 중복 layer는 실제 SHA로 검증 (2026-10-25 / #67)
+
+- **문제:** #28 `.next/standalone`에 `next.config.ts`의 강제 include glob으로 `better-sqlite3`가 수록될 수 있으나, Docker runtime은 같은 node_modules 경로를 별도 COPY한다. 기존 약 12.5MB COPY는 **로컬 비압축 계층**이며 실제 GHCR OCI 압축 전송량이 아니다.
+- **결정:** native/Prisma 동적 require 안정성을 우선해 `serverExternalPackages`와 `outputFileTracingIncludes`는 유지, 중복 가능성 높은 *별도 Docker COPY*만 제거한다. 새 runtime의 native `.node` 존재와 `better-sqlite3` 메모리 DB open 실패 시 이미지 빌드 차단. ABI·UID10001·schema/API/migrator/Compose/GHCR release pair 불변.
+- **검증:** 같은 PR HEAD source + Node22.14 + linux/amd64로 base/new Dockerfile 빌드; 실제 `docker save` TAR 각 패키지 경로·SHA256 동등성/중복 횟수·원시 bytes, `docker image inspect .Size`, `docker history --no-trunc`; fonts/생성 typeface/WASM JS와 traced server 대형 파일은 raw/gzip(proxy) 보고만 하고 실제 렌더링 동일성 증명 전 삭제하지 않는다. OCI compressed layer는 정식 version+immutable digest의 amd64 manifest `layers[].size`로만 계측한다.
+- **기각 대안:** 강제 tracing 전체/부분 제거(Prisma·native runtime 누락), TTF/Hangul glyph subset/LibreDWG WASM 제거(한글·DWG 회귀), 정적 파일명만 보고 중복 판정, PR에서 GHCR 공개 tag 게시. 이미지 크기 감소보다 운영 안정성 우선. [Issue67](Issue67.md), [Operation](Operation.md), [TestPlan](TestPlan.md).
 
 
 ### ADR-044 보완: CI 오류 및 P2 안전성 계약 (2026-10-25 / PR #79)

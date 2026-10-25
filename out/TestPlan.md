@@ -18,6 +18,40 @@
 실행 도구 기준: `cd src && npm ci && npm run typecheck && npm run lint && npm test && npm run build && npm run test:e2e && npm run test:master-migration`. 현재 연결 환경에 실행 가능한 repository checkout이 없어 **이 테스트들을 아직 실행하지 않았다**. CI는 PR 생성으로 시작만 하고 결과 모니터링하지 않는다. 상세 [Issue53](Issue53.md)/[TestReport](TestReport.md).
 
 
+### Issue #67 / PR #80 — Python audit 조기 구문 검사 및 크기 분기 테스트 (2차 CI 실패)
+
+- [Run 40171968883](https://github.com/planner77/layoutManager/actions/runs/40171968883) Docker [121104610668](https://github.com/planner77/layoutManager/actions/runs/40171968883/job/121104610668): `TC-IMG67-002/003` 앞 Python import SyntaxError 1건; 실제 layer hash/새 Compose **SKIPPED**. Python `py_compile`을 baseline Docker 빌드 **전에** 추가.
+- `TC-IMG67-003B`: 실제 duplication transition + 동일 비압축 size → FAIL; baseline/new 이미 deduplicated + equal size → PASS, 단 native SHA/optimized no-dup 검사는 반드시 PASS. 새 Synthetic Unit 작성 / 수정 HEAD CI 미확인.
+
+
+## Issue #67 — PR #80 P1 리뷰: 이미 deduplicated 기준선의 후속 CI 안전성
+
+| TC | 기대 | 검증 단계 |
+| --- | --- | --- |
+| TC-IMG67-002A | 이전/새 package SHA/native 동일, **둘 다 baseline duplicate 0개**면 정상 PASS | Python 합성 fixture; 새 HEAD CI 대기 |
+| TC-IMG67-002B | baseline duplicate 0개여도 optimized에 같은 package가 두 번 쓰이면 FAIL | Python 합성 fixture; 새 HEAD CI 대기 |
+| TC-IMG67-003A | 실제 duplicate가 **있던** 전환에서는 positive saving 의무. 이전부터 duplicate가 없었다면 baseline/new size 동일도 허용, delta 정보 표시 | Python+Docker CI; 새 HEAD 대기 |
+| TC-IMG67-006A | 두 경우 모두 native .node, 전체 SHA256/UID/SQLite·Docker Compose/API·Browser/Legacy 성공 강제 | 전체 Verify/Docker CI; 새 HEAD 대기 |
+
+- 최초 [Run 40170910369](https://github.com/planner77/layoutManager/actions/runs/40170910369), `6a35660`은 Verify/Docker SUCCESS이며 새 P1 수정 HEAD PASS를 대신하지 않는다. 원인 [리뷰 4369963432](https://github.com/planner77/layoutManager/pull/80#discussion_r4369963432). [FailureLedger](FailureLedger.md).
+
+
+## Issue #67 — 웹 Standalone 중복 copy layer 정밀 검증 (2026-10-25 / v0.38.1)
+
+| TC | Acceptance | 자동 검증 기준 / 증거 | 상태 |
+| --- | --- | --- | --- |
+| TC-IMG67-001 | Web native 단일 전달/기존 계약 | Vitest가 Standalone COPY+extra SQLite COPY 제거, native `.node` 검사 및 `require` 메모리 DB smoke, Next externalPackages/trace glob, `node server.js`, USER cad를 확인 | 코드 작성 / **NOT RUN** |
+| TC-IMG67-002 | 거짓 중복/손상 안전 차단 | Python synthetic Docker TAR fixture: 두 개의 동일 native/JS package layer→하나의 package layer; SHA 불일치, 잘못된 누락/비중복 주장, optimized 중복 잔존을 reject | 코드 작성 / **NOT RUN** |
+| TC-IMG67-003 | 실제 중복 SHA/bytes·history | PR base와 current Dockerfile의 동일 소스, Node22.14, linux/amd64 runtime 빌드. Docker TAR layer-by-layer package 경로/sha256/diffID, final package identity, before/after `docker inspect .Size` bytes/MiB/% 및 `docker history --no-trunc` | PR Docker Job 추가 / **NOT RUN** |
+| TC-IMG67-004 | 정적/대형 traced 파일 | Nanum TTF, CadKorean typeface, LibreDWG dist/wasm JS/WASM 파일 raw/gzip proxy 크기 및 runtime `node_modules` + `.next/server` traced 큰 파일 top20; 정적 HTTP 200; 삭제/Unicode subset 금지 | PR Docker Job 추가 / **NOT RUN** |
+| TC-IMG67-005 | nonroot SQLite/기존 볼륨 보존 | Docker build native/Prisma ABI, Compose disposable `/data` fresh migrate→health200/Master/DXF 등록→app restart+idempotent migrate→Current/content read→삭제 후 404 | PR Docker Job 추가 / **NOT RUN** |
+| TC-IMG67-006 | Viewer/Storage/Security 회귀 | 기존 TS/Lint/Unit, Next production build, Chromium E2E (2 DXF/Layer/Text/Outline/WASM/font/local)/Legacy E2E/Compose/health; S3/실 CAD 현장 수용 별도 | 기존 CI 실행 전 **NOT VERIFIED** |
+| TC-IMG67-007 | 실제 GHCR OCI compressed bytes/paired digest | PR에는 GHCR 공개 태그 게시 금지. 정식 게시 후 version+immutable digest app+migrate에 대한 linux/amd64 OCI manifest compressed `layers[].size`, shared layer digest, attestation/index/config 배제 | **정식 릴리스 이후 NOT RUN** |
+
+- 이전 [CI 40154979531](https://github.com/planner77/layoutManager/actions/runs/40154979531)의 별도 `better-sqlite3` COPY `12.5 MB는 과거 local 비압축 후보이며 #67 HEAD 절감 실측치로 단정하지 않는다. #28 pre-standalone 2.05 GB와 #66 migrator 1.34 GB를 baseline으로 재사용 금지. 기존 schema/API/Prisma CLI/tsx/migrator/Compose pair는 그대로.
+- 단일 native 경로의 **실제 빌드 통과**와 TAR 최종 동일성/크기 계측, Docker/Browser/Legacy CI 성공을 모두 확인해야 PR 후속 병합 검토 가능. `CI 시작`과 `PASS`는 별도 기록. 파일별 gzip/이미지 gzip TAR 크기를 OCI compressed layer라고 표기 금지. [Issue67](Issue67.md), [ADR-045](Decisions.md), [TestReport](TestReport.md).
+
+
 ## PR #79 실패 및 P2 재발 방지 계획 (2026-10-25)
 
 아래 E2 표의 CODED / NOT RUN 및 작성 / NOT RUN은 최초 작성 시점 상태를 보존한 기록이다. 현재 실행 결과는 [수정 HEAD 로컬 QA](#issue-52-재검증-결과--수정-head-로컬-qa-2026-10-25)와 [TestReport](TestReport.md)를 따른다.

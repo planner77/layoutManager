@@ -6,7 +6,7 @@
 - **FR-E3-02 / AC3:** SOURCE와 SOURCE+GENERATED 혼합, 누락·중복·숨김·다른 Version/SHA Ref, selection/모드 변경 요청을 UI·Manager/Adapter·GeneratedDocument 도메인에서 fail-closed. 트리 행 액션으로 혼합 선택의 SOURCE를 자동 제거하여 편집 가능하게 만드는 행위 금지.
 - **FR-E3-03 / AC2/4:** 한 번의 atomic Delete=1 undo step, Undo/Redo로 기존 UUID/legacy local-N·기준 WCS Geometry/Transform/metadata/visibility·정렬 복구, 제거된 선택/트리 포커스 정리. 남은 Scene/Preview/Source/레이어 유지, 제거 GPU Geometry/Material dispose, 재생성 ID 충돌 금지.
 - **FR-E3-04 / AC4:** 생성 Tool #40 OFF 기본 Pan 독립 정책 유지하되 생성 편집 모드 진입 시 삭제 가능. keyboard는 Canvas 실제 초점 + modifier 없는 Delete/Backspace만, textarea/input/searchbox/contenteditable 및 다른 UI native 입력 보호. ESC=삭제 확인창/컨텍스트→staged 취소→selection→fullscreen; Renderer/Version/reload/dispose 수명 종료.
-- **NFR-E3-01 / AC3/5:** 원본 DXF bytes/SHA/Layer/Current, Source Geometry·Worker Preview, DB/Migration/Server API 및 P4 보안 정책 변경 없음. 기존 JSON v1/typed v2 export는 남은 Document 투영, JSON edit import는 #56. [Issue53](Issue53.md)/ADR-045/TC-E3 참조.
+- **NFR-E3-01 / AC3/5:** 원본 DXF bytes/SHA/Layer/Current, Source Geometry·Worker Preview, DB/Migration/Server API 및 P4 보안 정책 변경 없음. 기존 JSON v1/typed v2 export는 남은 Document 투영, JSON edit import는 #56. [Issue53](Issue53.md)/ADR-046/TC-E3 참조.
 
 
 ## Issue #52 / E2 v0.38.0 — 생성 개체 로컬 Document 및 명령 이력 (2026-10-25)
