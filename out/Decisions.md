@@ -1,5 +1,13 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-040 — 외곽선 트리는 브라우저 세션 기반 Overlay 뷰로 제공 (2026-10-25 / #43)
+
+- **Decision:** U6 트리 상태의 원천은 현재 Adapter의 SavedOutline 목록이며 UI에는 immutable local ID와 typeId 기준으로 투영한다. 원본 Geometry/CAD Source Layer/Type DB를 조작하지 않고 임시 Overlay 자식 THREE.Group만 개별/타입별 표시. 강조는 별도 Geometry, 이동은 validated WCS bounds에 의존. v1 JSON 필드에 UI Visibility·Selected를 추가하지 않는다.
+- **Contract:** U1 Layer Dock와 Outline Dock, U3 생성 ON/OFF, Source Layer visibility는 독립. 생성 OFF에서도 트리 보기·숨김/표시는 허용하되 U3 삭제 정책을 존중하여 임시 삭제만 ON에서 허용. Hidden Overlay는 존재·export 보존. local ID 재사용 금지·임시 최대100개.
+- **Authority:** 현재 #65의 실제 active Scope Server Catalog 없음 → legacy 그룹만; Unit fixture의 두 업무 타입은 실제 관리자 저장 증거 아님. #31 P4·#65 IdP/RBAC/Scope/감사 승인 전 server CRUD/GET/restore 금지. 보안 승인 후 새로운 API/Cache 전략·대량 row virtualization은 별도 설계로 결정.
+- **Evidence:** [Issue43](Issue43.md), [TestPlan](TestPlan.md), [TestReport](TestReport.md). PR CI 시작과 결과 성공 구분.
+
+
 ## ADR-038 — CI 실행명은 실행 시작 전 입력으로만 결정 (2026-10-25 / Issue #68)
 
 - **문제:** 기존 PR CI 및 Build/publish가 GitHub 기본 PR 제목/commit message를 그대로 사용하므로 Run Type·업무 Issue·목적이 일관되게 식별되지 않는다.
