@@ -19,12 +19,13 @@ type Gesture = {
  * tool is active. Camera projection is delegated to the active adapter.
  */
 export function CadMemoOverlay({
-  memos, selectedId, placing, getManager, viewRevision, getViewEpoch,
+  memos, selectedId, placing, candidate, getManager, viewRevision, getViewEpoch,
   cancelGestureSignal, onPlace, onSelect, onMove, onGestureActive,
 }: {
   memos: readonly MemoDraft[];
   selectedId: string | null;
   placing: boolean;
+  candidate: MemoWcsXY | null;
   getManager: () => ViewerManager | null;
   viewRevision: number;
   getViewEpoch: () => number;
@@ -38,13 +39,14 @@ export function CadMemoOverlay({
   const gesture = useRef<Gesture | null>(null);
   const [preview, setPreview] = useState<{id: string; point: MemoWcsXY} | null>(null);
   const [screenPositions, setScreenPositions] = useState<Record<string,{x:number;y:number}>>({});
+  const [candidateScreen, setCandidateScreen] = useState<{x:number;y:number}|null>(null);
   // Camera projection reads a live adapter, so measure after commit rather than
   // reading refs or imperative WebGL state during React render.
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
       const rect = root.current?.getBoundingClientRect();
       const manager = getManager();
-      if (!rect || !manager) { setScreenPositions({}); return; }
+      if (!rect || !manager) { setScreenPositions({});setCandidateScreen(null);return; }
       const positions:Record<string,{x:number;y:number}> = {};
       for (const memo of memos) {
         const point=preview?.id===memo.id?preview.point:memo.anchorWcsXY;
@@ -53,9 +55,12 @@ export function CadMemoOverlay({
         positions[memo.id]=xy;
       }
       setScreenPositions(positions);
+      const candidatePoint=candidate ? manager.projectWcsToCanvas(candidate) : null;
+      setCandidateScreen(candidatePoint && candidatePoint.x >= 0 && candidatePoint.y >= 0 &&
+        candidatePoint.x <= rect.width && candidatePoint.y <= rect.height ? candidatePoint : null);
     });
     return () => cancelAnimationFrame(frame);
-  }, [memos, preview, getManager, viewRevision]);
+  }, [memos, preview, candidate, getManager, viewRevision]);
 
   function cancelGesture() {
     gesture.current = null;
@@ -154,6 +159,9 @@ export function CadMemoOverlay({
       }}
       onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') event.preventDefault(); }}
     />}
+    {candidateScreen && <span data-testid="cad-memo-candidate-pin" aria-label="확정 전 메모 위치"
+      className="pointer-events-none absolute flex h-6 w-6 items-center justify-center rounded-full border-2 border-dashed border-white bg-amber-400/70 text-xs font-semibold text-black"
+      style={{left:candidateScreen.x,top:candidateScreen.y,transform:'translate(-50%, -50%)'}}>+</span>}
     {memos.map(memo => {
       const point = preview?.id === memo.id ? preview.point : memo.anchorWcsXY;
       const screen = screenPositions[memo.id];
