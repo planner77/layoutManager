@@ -44,21 +44,22 @@ async function probe(base, label, pathname, expected, fetchImpl) {
 
 export async function runG5Probes(baseUrl, fetchImpl = fetch, options = {}) {
   const base = checkedBaseUrl(baseUrl);
+  // Validate optional paths before making any network request.
+  if (options.viewerPath && !/^\/cad\/locations\/[a-zA-Z0-9-]+(?:\/[a-zA-Z0-9-]+)*$/.test(options.viewerPath)) {
+    throw new Error('Use a relative /cad/locations/... path for --viewer-path');
+  }
+  if (options.versionId && !/^[a-zA-Z0-9-]+$/.test(options.versionId)) {
+    throw new Error('--version-id must be a bare version identifier');
+  }
   const results = [];
   results.push(await probe(base, 'health', '/api/health', 'health', fetchImpl));
   results.push(await probe(base, 'home/viewer entry', '/', 'html', fetchImpl));
   results.push(await probe(base, 'cad list API', '/api/cad-files', 'json', fetchImpl));
   results.push(await probe(base, 'static font', '/fonts/NanumGothic-Regular.ttf', 'binary', fetchImpl));
   if (options.viewerPath) {
-    if (!/^\/cad\/locations\/[a-zA-Z0-9-]+(?:\/[a-zA-Z0-9-]+)*$/.test(options.viewerPath)) {
-      throw new Error('Use a relative /cad/locations/... path for --viewer-path');
-    }
     results.push(await probe(base, 'viewer page', options.viewerPath, 'html', fetchImpl));
   }
   if (options.versionId) {
-    if (!/^[a-zA-Z0-9-]+$/.test(options.versionId)) {
-      throw new Error('--version-id must be a bare version identifier');
-    }
     results.push(await probe(base, 'CAD content/download', '/api/cad-files/' + encodeURIComponent(options.versionId) + '/content', 'binary', fetchImpl));
   }
   return results;
