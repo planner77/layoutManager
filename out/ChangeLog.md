@@ -1,5 +1,13 @@
 # ChangeLog
 
+## v0.38.0 — Issue #52 E2 생성 개체 Document/Undo·Redo 기반 (2026-10-25)
+
+- `GeneratedDocument`를 Version·SHA 기반 브라우저 메모리 단일 상태로 도입: E1 UUID, legacy local-N, 기준 WCS Geometry·provenance, transform/visible/edit flag 유지. Overlay Scene/Hit/Tree/기존 임시 JSON은 Document에서 투영하며 GPU 그룹 증분 갱신/dispose.
+- Generated-only/전체 선택 검증과 원자적 Delete/Translate/Rotate 도메인 명령(후속 E3~E5 UI 미구현), preview-independent stage/commit/cancel, Undo/Redo 최대 100단계·추정 16MiB 및 Redo 분기 무효화.
+- Viewer Undo/Redo 버튼과 Ctrl/⌘+Z·Ctrl/⌘+Shift+Z·Ctrl+Y(입력 native 우선), Session 작업 소멸 안내. 원본 DXF/DB/서버 API·Source 인덱스 변경 없음; #31 P4 보안 Gate 유지. 
+- Unit/Chromium E2E 시나리오·[Issue52](Issue52.md)/ADR-043/Requirements/Architecture/TestPlan/TestReport/README/AGENTS 문서 갱신. 로컬/현장 검증 NOT RUN, PR CI 성공은 확인 전 주장하지 않음.
+
+
 ## v0.37.0 — Issue #51 E1 원본/생성 통합 선택 (2026-10-25)
 
 - 생성 Overlay의 CSPRNG UUIDv4 세션 참조/Origin·Version·SHA 계약과 전용 Generated 객체 조회 추가. v1/v2 다운로드의 local-N은 그대로 유지.
