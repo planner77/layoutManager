@@ -1,5 +1,13 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issue #107 / PR #115 — 원 HEAD CI PASS 이후 Viewer P2 수정 (2026-10-26)
+
+- **검증된 과거 HEAD:** [PR CI 40201366001](https://github.com/planner77/layoutManager/actions/runs/40201366001), d771d553cdf7d00a467fead6f8f9d788898ea314, Verify Job 121193043560 및 Docker Job 121193043322 모두 completed/success.
+- **P2 조치:** [review 4371142398](https://github.com/planner77/layoutManager/pull/115#discussion_r4371142398) 지적에 따라 위치 관리 HTML 200을 실제 Viewer PASS로 오인하지 않도록 --version-id에서 /cad/versions/ID/viewer 경로 자동 조회, 경로/ID 일치 거부 및 TC-P4-G5-003/004/007 테스트 변경. **변경 HEAD CI 결과 아직 미확인**, 과거 CI를 전용하지 않음.
+- **릴리스:** v0.40.3 Main CI 40199597907 App/Migrator 게시 성공 단계 확인, v0.40.4 신규 tag/GHCR 게시 후보. Main CI와 GHCR 게시 실제 성공 증거는 별도.
+- **현장 검증:** 사내 Nginx/WSL2, PC 2대, 실제 Viewer/Upload/Download/Session Cookie 및 Backup/Migration/Restore는 NOT RUN → #108 G6. 운영 적용 G7 승인 전 금지.
+
+
 ## Issue #107 / G5 — 격리 연결 Preview 개발 기록 (2026-10-25)
 
 - **작성한 코드/설계:** PROD/DEV 독립 Preview Compose, Nginx 경유 정상 경로, read-only Node Smoke(Health/Home/CAD list/font/선택 Viewer·content), Vitest 4건, CI Docker profile config-only 검증, Issue107·운영/설계/AC 문서.

@@ -1,5 +1,11 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #107 / PR #115 — Viewer P2 리뷰·GHCR v0.40.4 준비 (2026-10-26)
+
+- 기존 HEAD d771d553의 [PR CI 40201366001](https://github.com/planner77/layoutManager/actions/runs/40201366001)은 Verify 및 Docker 두 Job 모두 성공. Codex [P2 4371142398](https://github.com/planner77/layoutManager/pull/115#discussion_r4371142398)에서 위치 관리 페이지를 Viewer로 잘못 검사할 수 있음을 지적하여 실제 /cad/versions/:versionId/viewer 검증과 TC-P4-G5-007을 추가. 수정 HEAD CI 성공을 소급 주장 금지.
+- 기존 v0.40.3은 Main CI 40199597907 GHCR App/Migrator 성공으로 발행됨. 새 GHCR 요청에 대해 0.40.4 package/lock 신규 릴리스 후보를 만들고 이전 버전 태그 이동 금지. 운영 Nginx/Compose·Auth/API·Prisma/원본 CAD/Current 변경 및 자동 활성화 없음. 새 PR CI·리뷰·충돌 통과 후 Main CI/GHCR 시작과 최종 게시 성공을 구분.
+
+
 ## Issue #107 / G5 — 간소 조직망 PROD Nginx·DEV 직결 Preview (2026-10-25)
 
 - [Issue107](out/Issue107.md) / [Issue102](out/Issue102.md) 및 GitHub #102 최신 Owner 5개 업무 정책 참조. G5는 **실제 운영 보안강화가 아니라 비운영 접속 구성과 정상 기능 검증**이다. 별도 `DESIGN.md`는 없어 Architecture/Decisions/Operation이 설계 기준이다.

@@ -8,8 +8,9 @@
 | --- | --- | --- |
 | TC-P4-G5-001 | PROD Nginx만 host publish, Proxy Upstream/Host·body limit 전달 | Vitest 정적 계약 + CI Docker Compose config; 새 HEAD 결과 전 NOT RUN |
 | TC-P4-G5-002 | DEV 직접 host port와 PROD/DEV 데이터 볼륨·net 독립, 운영 volume 재사용 0 | Vitest 정적 계약 + CI Compose config; 결과 전 NOT RUN |
-| TC-P4-G5-003 | Health 200/status ok, Home HTML, CAD list JSON, font 200, 선택적 Viewer/content 경로 | Mock Vitest + 실제 Preview read-only CLI(실행 여부 별도); NOT RUN |
+| TC-P4-G5-003 | Health 200/status ok, Home HTML, CAD list JSON, font 200, 선택적 Viewer/content 경로 | Mock Vitest + 실제 Preview CLI; 원 HEAD CI SUCCESS, 리뷰 보완 HEAD 결과 대기 |
 | TC-P4-G5-004 | Health 503·비정상 응답을 성공으로 보지 않음 | Mock Vitest; 결과 전 NOT RUN |
+| TC-P4-G5-007 | --version-id에서 실제 /cad/versions/:versionId/viewer 검증, 관리 화면 false PASS 방지, 명시 ID 불일치 시 네트워크 전 거부 | Unit 보강 / 수정 HEAD CI 미확인 |
 | TC-P4-G5-005 | src/docker-compose.yml/.env·Prisma·API·운영 Nginx·원본 데이터 변경 0 | GitHub PR changed-file diff 검사 예정 |
 | TC-P4-G5-006 | Owner R1/익명 CAD GET 최신 업무 정책, 미실행 현장·Cookie·업로드 E2E 기록 | docs+Issue cross-check; G3/G6 실증 NOT RUN |
 | TC-P4-G5-LAN-001 | 조직 내 PC 2대 PROD Nginx→App, Viewer·등록/다운로드/Current·Cookie(후속 G3), DEV 분리 확인 | **G6 사내 현장/일회용 데이터에서만** 수동 시험, NOT RUN |

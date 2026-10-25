@@ -4,7 +4,7 @@
 
 - G5는 외부 공개망 인바운드 제한·소수 내부 사용자 환경의 **정상 운영 경로 확인**이다. 추가 TLS/WAF/침투/CIDR 하드닝 대신 Nginx↔App Viewer·API/업로드·Health, DEV 직결 및 독립 데이터만 점검한다. [Issue107](Issue107.md).
 - 저장소 root에서 `docker build -f src/Dockerfile --target migrator -t cad-layout-viewer:g5-migrate .` 와 `docker build -f src/Dockerfile --target runtime -t cad-layout-viewer:g5-web .` 후 `docker compose -f src/deploy/g5/compose.preview.yml --profile g5-prod --profile g5-dev up -d`.
-- 기본 접속: PROD Preview `http://127.0.0.1:3302`(Nginx)·DEV Preview `http://127.0.0.1:3301`(direct); `node src/scripts/g5-preview-smoke.mjs --base-url http://127.0.0.1:3302` 및 3301을 각자 실행. 선택적인 실 도면 Viewer/다운로드 검증에는 `--viewer-path /cad/locations/ID --version-id ID`를 사용하되 오직 Preview 도면만 허용.
+- 기본 접속: PROD Preview `http://127.0.0.1:3302`(Nginx)·DEV Preview `http://127.0.0.1:3301`(direct); `node src/scripts/g5-preview-smoke.mjs --base-url http://127.0.0.1:3302` 및 3301을 각자 실행. 선택적인 실 도면 Viewer/다운로드 검증에는 `--version-id ID`만으로 실제 Viewer `/cad/versions/ID/viewer`와 content를 확인한다. 선택적 `--viewer-path /cad/versions/ID/viewer`는 같은 ID를 써야 하며 위치 관리 화면은 Viewer 합격으로 판단하지 않는다. Preview 도면만 허용.
 - 필요 시 Preview의 `G5_PROD_PORT`, `G5_DEV_PORT`, `G5_PROD_BIND_IP`, `G5_DEV_BIND_IP`만 조절. 사내 IP·장비명·실 Secret/CAD는 사내 비공개로 유지. Windows Nginx·WSL2 upstream 실동작은 G6 별도 확인.
 - 임시 도면 등록/이력/Current·삭제 비밀번호 및 (후속 G3) 쿠키 왕복은 일회용 Preview 데이터에서 **수동** 검증. Preview는 local-only 두 개의 분리된 SQLite/CAD 볼륨. 실 운영 Compose·Nginx/DB/API·Prisma·Auth ON은 G7 승인 전 금지.
 - 종료는 반드시 `docker compose -f src/deploy/g5/compose.preview.yml --profile g5-prod --profile g5-dev down -v` (Preview 전용 볼륨 삭제). `src/docker-compose.yml`과 함께 쓰지 않는다. 상세 재현 명령과 AC/누락 증거는 [Issue107](Issue107.md).
