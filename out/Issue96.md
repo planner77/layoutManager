@@ -1,5 +1,9 @@
 # Issue #96 — 로컬 계정·세션·Role/Site·감사 공통 기반
 
+## G3 #105 — 격리 로그인/초기 변경/세션 구현 (2026-10-26)
+
+[Issue105](Issue105.md)에 Manager 요구·설계·AC/TC를 구현 전 기록했다. G1 must-change session 거부를 유지하고 credential 재입력으로 초기 변경 후 새 로그인한다. 32 byte/hash-only token, 8h/30m/원자 3개, logout/disable/password/recovery 회수, 현재 DB Actor와 정상 cookie/Origin/CSRF를 검증한다. 운영 Auth/API/Prisma/Compose·기존 CAD GET/Current/Delete는 G7 전 OFF/불변. 실제 코드·실행 및 역할 근거는 TestReport, G4 권한과 G6 실 LAN/복구는 별도 인계다.
+
 ## G2 #104 — 단발 Admin/Secret 격리 구현 (2026-10-26)
 
 #103 G1 User/Role/Audit/Nonce DB와 #102 Owner R1 기준으로 #104 명시 executor, 실행 UID 0400/0600 Secret, 최초 User/Admin Role/Audit 한 거래, 복구 nonce SHA unique·Session revoke/Audit, 9개 통합 TC 작성. [Issue104](Issue104.md)/[ADR-051-G2](Decisions.md). 실제 수행자·승인/Secret 경로는 사내 비공개 SOP. **운영 Auth/Admin/Prisma/API/Compose/Nginx·실 DB/CAD/S3 기능 OFF**, #96/#109 BLOCKED. 테스트 코드 작성은 PASS 아님; 새 HEAD CI 결과 전 G2-AC1~4 수용 보류. #105 G3/#106 G4/#108 G6 후속. G0 #102 PR #114 main 병합·POST 업로드 Editor/Admin+담당 Site 정책 승인 완료. 사내 담당자/감사 파기·백업 세칙은 G2/G4/G6/G7 후속이며 G7 전 운영 OFF.

@@ -1,5 +1,11 @@
 # ChangeLog
 
+## 0.41.0 — Issue #105 G3 격리 세션 (후보, 2026-10-26)
+
+- 비운영 로그인/초기 및 일반 암호 변경/logout, DB-backed 32 byte/hash-only 세션·8h/30m/최대 3개 원자 발급/회수, 현재 DB Actor와 정상 cookie/Origin/CSRF 검증을 추가했다. 상세 [Issue105](Issue105.md), 실제 구현·시험 상태는 TestReport를 기준으로 한다.
+- 기존 G1/G2 fixture 계약을 재사용하며 운영 Auth Route/UI·Prisma/migrations/Compose/Nginx/DB·CAD 원본/Current/삭제 비밀번호 변경·활성화 없음. 기존 CAD GET는 익명 유지한다.
+- 내부 기능 추가 MINOR 후보로 package/lock/README 버전을 정렬한다. PR CI 시작은 성공/병합/게시가 아니며 이번 요청에서 GHCR 게시·배포를 수행하지 않는다.
+
 ## v0.40.5 후보 — #104 G2 격리 Admin 최초 생성·복구 (2026-10-26)
 
 - 이전 G2 코드 HEAD `f5f7ea2e`의 [PR CI 40234510320](https://github.com/planner77/layoutManager/actions/runs/40234510320) Verify·Docker Job 모두 **completed/success**. 이 성공은 아래 버전 정렬 전 HEAD의 증거일 뿐 새 HEAD의 PR CI 통과가 아니다.

@@ -452,6 +452,7 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 | [Issue25](out/Issue25.md) | 기본 immersive 진입, native 수동 선택, 복귀·툴바·회귀 수용 | Viewer 전체 화면 기본 진입/링크/포커스/레이어·검색 변경 시 |
 | [Release 0.20.0](out/Release-0.20.0.md) | 0.20.0 병합·태그·GHCR 게시 근거 | 0.20.0 릴리스 확인 및 운영 이미지 식별 시 |
 | [Release 0.21.0](out/Release-0.21.0.md) | 0.21.0 병합·태그·GHCR 게시 근거 | 0.21.0 릴리스 확인 및 운영 이미지 식별 시 |
+| [Issue105](out/Issue105.md) | G3 격리 로그인·초기 변경·세션 수명/회수·Actor·Cookie AC/TC | 로그인/암호 변경·Session/Actor 구현·G3 검증 및 G4/G6 인계 시 |
 | [Issue104](out/Issue104.md) | 최초 관리자·Secret·복구·격리 CLI/TC/운영 OFF | G2~G7 관리자 정책·복구 검토 시 |
 | [Issue103](out/Issue103.md) | G1 User/Session/Role·Site·SpecialGrant/Audit/RecoveryNonce 격리 SQL·Prisma 계약 및 원자성·복구 시험 | Auth DB/세션/권한/복구·백업 검토 및 #102 G0→G7 선행 조건 확인 시 |
 | [Issue102](out/Issue102.md) | G0 내부 LAN PROD Nginx/DEV App 직접 접속, Owner 경량 보안 범위·잔여 위험 수용·G0~G7 운영 게이트 | 운영/개발 배포 경로·Nginx/직접 포트, 인증·Site/Version 권한·기존 CAD API 전환, 위험 범위·운영 Go/No-Go/수용 기준 변경 시 |

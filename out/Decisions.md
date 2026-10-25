@@ -1,5 +1,15 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-051-G3 — #105 격리 DB Session과 초기 변경 (2026-10-26)
+
+**Manager 설계 결정 / 운영 승인 아님.** [Issue105](Issue105.md), #102 Owner R1, 기존 G1/G2를 따른다.
+
+- G1이 must-change 계정의 일반 세션 발급을 거부하므로 초기/복구 로그인은 403 PASSWORD_CHANGE_REQUIRED만 반환한다. 현재 credential 재입력→암호·flag·전체 revoke·Audit 원자 변경→fresh login을 선택한다. provisional session/schema 없이 기존 DB 제약을 보존한다.
+- 로그인 발급은 scrypt 검증 이후 transaction 안에서 같은 passwordHash/현재 계정 상태를 재검증하고 count/insert/Audit을 묶는다. 과거 credential 확인 후 동시 recovery/disable이 있었는데도 새 세션을 발급하는 경쟁을 허용하지 않는다.
+- Actor는 유효 session과 현재 DB grants의 결과만 사용한다. 기존 공개 CAD GET에 인증을 붙이지 않으며 G4의 미래 업무 권한 판정과 분리한다. G4 write는 거래 안에서 권한을 다시 확인한다.
+- 기존 HTTP cookie/Origin/CSRF/limiter의 정상 흐름을 유지하고 Owner가 제외한 공격 대응/침투시험을 새 완료조건으로 추가하지 않는다. 실제 LAN E2E는 G6, 운영 Auth/API/Prisma/Compose 연결은 G7 후속이다.
+- 이번 전달 범위는 구현·검증·문서 및 PR 리뷰/충돌 조치·CI 시작까지다. CI 모니터링/병합/Issue 종료/GHCR 게시/배포는 수행하지 않는다.
+
 ## ADR-051-G2 — #104 단발 Admin 생성·복구, Secret 보호 (2026-10-26)
 
 **범위:** G2 격리 구현 결정/운영 승인 아님. #102 지정 운영 담당자 실행·Owner 책임, #103 G1 SQLite 계약 준수. [Issue104](Issue104.md).

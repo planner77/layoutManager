@@ -1,5 +1,15 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issue #105 / G3 — 독립 QA 결과 (2026-10-26)
+
+- **역할·범위:** Manager `gpt-6-astra`가 요구사항/설계/AC와 구현 검토를 완료하고 QA 가능 상태로 인계, Developer `gpt-6-sol` 구현·동결, QA `gpt-6-luna`가 독립 소스 검토·실행·기록. Root가 조정 및 최종 commit/push를 담당. 이번 QA는 #105 격리 구현이며 운영 Auth/API/Prisma/DDL/Compose/Nginx/.env 활성화나 CI·배포를 수행하지 않음.
+- **소스 검토:** 인증 서비스·Request/Response adapter·disposable G1 SQLite adapter·통합 시험을 검토. 런타임 App Route, 운영 Prisma schema/migrations, Compose/배포/Nginx 및 `server/db.ts` diff 없음. 기존 CAD API와 원본/Current/삭제 비밀번호 경로 변경 없음. 검토 중 수정 요구 blocker 발견 안 됨.
+- **자동 검증 PASS:** `npm run typecheck` exit 0; `npm run lint` exit 0 (오류 0, 기존 warning 2개: `outline-tree-panel.tsx` treeitem `aria-selected`, `private-acceptance-paths.ts` unused `resolve`); `npm test` 53 files / 288 tests PASS; `npm run build` exit 0.
+- **환경·root 추가 회귀:** Node 22.14.0/npm 11.10.0, 소스 후보 0.41.0. Root가 같은 Chromium 1243, `CAD_E2E_PORT=3115`와 임시 local DB/storage에서 `npx playwright test tests/e2e/upload.spec.ts tests/e2e/workflow.spec.ts tests/e2e/delete.spec.ts tests/e2e/viewer.spec.ts tests/e2e/switch.spec.ts tests/e2e/deployment.spec.ts tests/e2e/link.spec.ts`를 실행해 21/21 PASS(2.2분). 두 DXF Viewer·한글·링크와 20회 전환을 포함한다. 이 실행은 G3 최종 소스 동결 전 기존 앱 빌드의 회귀이며 아래 QA 4건은 최종 빌드에서 재확인했다.
+- **독립 브라우저 회귀 PASS:** `PLAYWRIGHT_CHROMIUM_EXECUTABLE=/home/planner/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome CAD_E2E_PORT=3116 npx playwright test tests/e2e/workflow.spec.ts tests/e2e/delete.spec.ts tests/e2e/deployment.spec.ts` — 4 tests PASS (workflow 1, delete 2, deployment 1). 합성 임시 DB 기준 기존 CAD 등록/Current/삭제/Health 흐름 회귀.
+- **G3 범위 근거:** 전체 Vitest 내 G3 통합 18개 시험을 포함하며 G2 bootstrap→G3 must-change, 초기·일반 암호 변경, 재검증/rollback, 3개 세션 동시성(별도 프로세스 포함), idle/absolute 만료, logout/disable/recovery 폐기, 최신 DB Actor/grant, Request/Response cookie·정상 Origin/CSRF·공유 limiter/reset 오류를 확인. G3 HTTP는 Node `Request`/`Response` 계약 adapter 시험이며 Browser 로그인 화면이나 실제 App Router 실행은 아님.
+- **미수행/한계:** 독립 QA 범위에서 PR CI는 실행/확인하지 않음. Root의 최신 HEAD PR/CI 시작 근거는 PR에 별도 기록하며 결과 모니터링·병합은 이번 요청 범위 밖이다. 실제 Windows Nginx↔WSL2, 사내 PC 브라우저 Cookie, 운영 DB/CAD/S3·백업/복구, 실 LAN 및 G7 Owner Go/No-Go는 `NOT RUN`; G3 PASS는 합성·격리 기능 근거만이며 운영 활성화 승인이 아님.
+
 ## Issue #104 / G2 — 새 GHCR Pair 후보와 PR CI HEAD 증거 분리 (2026-10-26)
 
 - G2 코드·격리 통합 기능은 이전 PR HEAD `f5f7ea2e00a95b24e65f16c67fc8484d03031dce`의 [PR CI 40234510320](https://github.com/planner77/layoutManager/actions/runs/40234510320), attempt 1에서 Verify (Job `121293089381`)와 Docker (Job `121293089179`) 모두 **completed/success**. 과거 TypeScript 실패 [40232479678](https://github.com/planner77/layoutManager/actions/runs/40232479678)는 실패 원장에 유지.

@@ -1,5 +1,13 @@
 # Database Schema — 단일 기준 문서
 
+## Issue #105 G3 — 기존 격리 Session 모델 재사용 (2026-10-26)
+
+**새 운영 Table/Column/Index/Prisma migration 없이** #103 G1 `User/AuthSession/Grant/AuditEvent`와 #104 recovery 계약을 사용한다. G1 Session의 must-change 계정 INSERT 거부, 8h·30m·3개·불변 tokenHash/issued/expires·단조 lastSeen 트리거를 유지한다. 초기 변경은 credential 재확인 거래로 passwordHash/must-change 갱신+전체 revoke+Audit 후 새 로그인하며 별도 provisional Session은 만들지 않는다.
+
+G3 login은 `BEGIN IMMEDIATE`에서 검증에 사용한 현재 hash·ACTIVE·must-change 확인→슬롯 count→Session INSERT→LOGIN_SUCCESS Audit을 묶는다. logout revoke/Audit와 password change/revoke/Audit도 원자 처리한다. authenticate는 DB 현재 User/Role/Site/SpecialGrant를 조회하고 유효 수명 안에서만 lastSeen을 갱신한다. token 원문은 DB/Audit에 저장하지 않는다. 두 연결 경쟁과 hash 변경 경쟁·Audit 실패 rollback을 [Issue105](Issue105.md)의 TC004~009로 검증한다. G1 disable/G2 recovery가 G3 session을 전량 무효화해야 한다.
+
+G3 fixture 전용 `G3LoginAttempt(key_hash TEXT PRIMARY KEY, count INTEGER CHECK 1..5, until_at INTEGER >=0)`를 추가한다. 서버 peer+정규화 계정 key의 SHA-256만 저장하고 `BEGIN IMMEDIATE`에서 5회/60초 예약·창 만료 갱신을 직렬화하며 성공 후 해당 key를 reset한다. 이미 commit한 로그인/암호 변경의 reset 정리 실패는 성공 응답을 취소하지 않고 남은 창의 60초 만료에 맡긴다. G1 AuthSession 존재 확인 후에만 이 테이블을 생성하며 운영 Prisma/DDL로 복사하지 않는다. 기존 G1 세션/계정 제약은 유지한다. 실 DB/CAD/S3 및 운영 `src/prisma/**`는 변경하지 않는다. 향후 운영 Schema 반영·실 데이터 복구·활성화는 #108/#109의 별도 수용 범위다.
+
 ## Issue #104 G2 — G1 일회용 인증 DB 활용/운영 DDL 변경 0 (2026-10-26)
 
 - 신규 운영 Table/Index/Prisma Migration **없음**. 격리 `User`/`UserRoleGrant`/`AuthSession`/`AuditEvent`/`AdminRecoveryNonce` 및 G1 BEGIN IMMEDIATE·Unique·append-only trigger 재사용.

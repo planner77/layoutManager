@@ -1,5 +1,13 @@
 # Architecture 초안
 
+## Issue #105 G3 — 비연결 Session 서비스 경계 (2026-10-26)
+
+`격리 요청 adapter → 명시 G3 서비스 → 주입 store → G1 disposable SQLite`로 로그인/초기 및 일반 암호 변경/logout/authenticate를 검증한다. App Router와 `server/db.ts`는 이 경로를 import하지 않는다. 서버 DB에서 User/Role/Site/SpecialGrant를 매 요청 조회해 G4용 Actor를 구성하며 클라이언트 claim을 병합하지 않는다. G4 업무 write는 같은 transaction에서 권한을 다시 검사해야 한다.
+
+G1 must-change Session INSERT 거부를 유지한다. 초기/복구 credential 로그인은 변경 필요 상태만 반환하고 기존 credential 재입력으로 암호·flag·세션 전량 회수·Audit을 원자 갱신한 뒤 다시 로그인한다. 비동기 scrypt 이후 실제 발급/변경 transaction에서 검증했던 hash·계정 상태를 다시 확인한다. login count/insert/Audit 및 logout revoke/Audit의 실패는 전체 rollback한다. 상세 [Issue105](Issue105.md), [ADR-051-G3](Decisions.md), 물리 계약 [Database](Database.md).
+
+정상 proxy/DEV Origin·cookie·기존 CSRF/limiter를 격리 검증한다. 이것은 실 Windows Nginx/WSL2·사내 PC cookie 시험 증거가 아니며 #108로 인계한다. 운영 API/Prisma/Compose·CAD GET/Current/Delete는 #109 별도 승인 전 불변이다.
+
 ## Issue #104 G2 — 명시 Admin executor와 G1 격리 Adapter (2026-10-26)
 
 `isolated CLI --ack-isolated` → `server/auth/bootstrap.ts` 설정 판단 → `server/auth/admin-setup.ts` 제한 Secret + scrypt → `tests/fixtures/auth-g2/store.ts` → `#103 G1 disposable SQLite BEGIN IMMEDIATE` → 신규 User/Admin Role/Audit 또는 RecoveryNonce/Password/Session revoke/Audit. 실행은 명시 수동 호출만 가능하며 **실 App Router/start/Prisma/자동 migrator 연결 없음**. Snapshot은 참고이고 경쟁·nonce replay 실제 차단은 원자 DB/Unique가 수행한다. Bootstrap/Recovery Audit actor=null, affected=Admin ID, 사내 비공개 수행자 기록은 requestId로 연계. [Issue104](Issue104.md), [ADR-051-G2](Decisions.md), 운영 활성화 #109 별도 승인.
