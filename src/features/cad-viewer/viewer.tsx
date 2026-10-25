@@ -13,6 +13,8 @@ import { ViewerMenuBar } from '@/features/cad-viewer/viewer-menu-bar';
 import { initialViewerAppState, viewerAppReducer } from '@/features/cad-viewer/viewer-app-state';
 import { isLiveOutlineRequest, outlineToolUnavailableReason } from '@/features/cad-viewer/outline-tool-policy';
 import { ViewerManager, type OutlineInfo } from '@/viewers/core/adapter';
+import {buildOutlineExport} from '@/domain/outline-draft';
+import {resolveOutlineAssignment,selectableOutlineTypes,type ScopedOutlineCatalog} from '@/domain/outline-assignment';
 import type {OutlineKind,OutlineEntity} from '@/viewers/core/outline-geometry';
 import type {OutlineResult} from '@/viewers/core/outline-compute';
 import type { ViewerMetric } from '@/viewers/core/metrics';
@@ -32,6 +34,7 @@ export function CadViewer({
   registeredAt,
   fileSize,
   description,
+  outlineTypeCatalog = null,
 }: {
   versionId: string;
   sourceSha256?: string;
@@ -45,6 +48,8 @@ export function CadViewer({
   registeredAt: string;
   fileSize: number;
   description?: string | null;
+  /** Must be loaded only through #65's verified session/server scope; no browser lab fallback. */
+  outlineTypeCatalog?: ScopedOutlineCatalog | null;
 }) {
   const [renderer, setRenderer] = useState(selectRenderer(format, initialRenderer));
   const [source] = useState(() => new ViewerSource());
@@ -75,6 +80,8 @@ export function CadViewer({
   const [preview,setPreview]=useState<OutlineResult|null>(null);
   const [previewError,setPreviewError]=useState<string|null>(null);
   const [savedCount,setSavedCount]=useState(0);
+  const [selectedOutlineTypeId,setSelectedOutlineTypeId]=useState('');
+  const [outlineName,setOutlineName]=useState('');
   const [outlineNotice,setOutlineNotice]=useState<string|null>(null);
   const [state, setState] = useState<{ status: string; ready: boolean; error?: string; warning?: string }>({
     status: '도면 로딩 중…',
@@ -171,6 +178,8 @@ export function CadViewer({
     stopOutlineEditing();
     setOutlineInfo(null);
     setSavedCount(0);
+    setSelectedOutlineTypeId('');
+    setOutlineName('');
     setOutlineNotice(null);
   }, [stopOutlineEditing]);
   function toggleOutlineTool() {
@@ -213,6 +222,17 @@ export function CadViewer({
     try { manager.current?.confirmOutline(); }
     catch (error) { setPreviewError(error instanceof Error ? error.message : '외곽선을 확정하지 못했습니다.'); }
   }
+  function confirmTypedOutline() {
+    if (!outlineEnabledRef.current || !outlineAvailable || !preview || !preview.persistable) return;
+    try {
+      const assignment=resolveOutlineAssignment(outlineTypeCatalog,versionId,sourceSha256,
+        selectedOutlineTypeId,outlineName,savedCount+1);
+      manager.current?.confirmOutline(assignment);
+      setOutlineName('');
+    } catch (error) {
+      setPreviewError(error instanceof Error?error.message:'업무 타입을 확인할 수 없습니다.');
+    }
+  }
   function cancelOutline() {
     if (!outlineEnabledRef.current || !outlineAvailable) return;
     outlineRequestRevisionRef.current++;
@@ -221,8 +241,7 @@ export function CadViewer({
   function exportOutlines() {
     const outlines=manager.current?.getSavedOutlines()??[];
     if(!outlines.length)return;
-    const payload={schemaVersion:1,versionId,sourceSha256,coordinateSystem:'DXF_WCS_XY',
-      unitCode:outlineInfo?.unitCode??null,persistence:'BROWSER_EXPORT_ONLY',outlines};
+    const payload=buildOutlineExport(versionId,sourceSha256,outlineInfo?.unitCode??null,outlines);
     const url=URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}));
     const anchor=document.createElement('a');anchor.href=url;anchor.download='cad-outlines-'+versionId.slice(0,8)+'.json';anchor.click();
     setTimeout(()=>URL.revokeObjectURL(url),0);
@@ -368,6 +387,8 @@ export function CadViewer({
     entityCount: outlineInfo?.entityCount, sourceSha256,
   });
   const outlineAvailable = outlineUnavailable === null;
+  const selectableTypes=selectableOutlineTypes(outlineTypeCatalog,versionId,sourceSha256);
+  const typedConfirmAvailable=!!preview?.persistable && selectableTypes.some(item=>item.id===selectedOutlineTypeId);
 
   return <div className="space-y-3">
     <ViewerAppShell
@@ -486,11 +507,28 @@ export function CadViewer({
         <div className="mb-2 flex flex-wrap items-center gap-2">
           <Button size="sm" variant="outline" disabled={!outlineSelection.length} onClick={()=>requestOutline('CONVEX')}>볼록 외곽선 미리보기</Button>
           <Button size="sm" variant="outline" disabled={!outlineSelection.length} onClick={()=>requestOutline('PRECISE')}>정밀 외곽선 미리보기</Button>
-          <Button size="sm" disabled={!preview} onClick={confirmOutline}>임시 확정</Button>
+          <Button size="sm" disabled={!preview} title="기존 U3 미분류 브라우저 임시 확정 (schemaVersion 1 호환)" onClick={confirmOutline}>임시 확정</Button>
+          <label htmlFor="outline-type-select" className="font-medium">업무 타입</label>
+          <select id="outline-type-select" data-testid="outline-type-select"
+            className="max-w-48 rounded border border-slate-400 bg-white p-1 text-slate-900"
+            value={selectedOutlineTypeId}
+            onChange={event=>setSelectedOutlineTypeId(event.target.value)}
+            disabled={selectableTypes.length===0}>
+            <option value="">업무 타입 선택</option>
+            {selectableTypes.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}
+          </select>
+          <label htmlFor="outline-instance-name" className="font-medium">외곽선 이름</label>
+          <input id="outline-instance-name" data-testid="outline-instance-name" type="text" maxLength={100}
+            className="max-w-40 rounded border border-slate-400 bg-white p-1 text-slate-900"
+            value={outlineName} onChange={event=>setOutlineName(event.target.value)}
+            placeholder="기본: 외곽선 N" />
+          <Button size="sm" data-testid="outline-typed-confirm"
+            disabled={!typedConfirmAvailable} onClick={confirmTypedOutline}>타입 지정 후 확정</Button>
           <Button size="sm" variant="outline" disabled={!preview} onClick={cancelOutline}>미리보기 취소</Button>
           <Button size="sm" variant="outline" disabled={!savedCount} onClick={exportOutlines}>JSON 내보내기 ({savedCount})</Button>
           <Button size="sm" variant="outline" disabled={!savedCount} onClick={()=>manager.current?.clearSavedOutlines()}>임시 결과 삭제</Button>
         </div>
+        {!selectableTypes.length && <p data-testid="outline-type-gate" className="mb-1 text-amber-800">서버에서 제공하는 활성·해당 Scope 업무 타입이 없습니다. 관리자 등록 및 보안 선행 이슈 #65 완료 전에는 타입 지정 확정을 사용할 수 없습니다. 기존 미분류 임시 확정은 서버에 저장되지 않습니다.</p>}
         <p className="text-slate-600">선택 모드: 클릭 한 개, Ctrl/⌘+클릭 토글, 좌→우 완전 포함, 우→좌 교차 선택 · Space+드래그 이동 · 휠 확대 · Esc 선택 취소.</p>
         <p className="mt-1 text-slate-600">좌표: WCS XY · 도면 단위: {outlineInfo.unitCode===4?'mm':outlineInfo.unitCode===1?'inch':outlineInfo.unitCode===6?'m':outlineInfo.unitCode===5?'cm':outlineInfo.unitCode===0||outlineInfo.unitCode===null?'미상':'INSUNITS '+outlineInfo.unitCode} · 서버 저장/다시 불러오기 미지원 (권한 정책 결정 전)</p>
         {preview && <p data-testid="outline-preview" className="mt-1 text-cyan-800">{preview.kind==='CONVEX'?'볼록 경계':'실제 폐곡선 Union'} · {preview.geometry.type} · {preview.durationMs.toFixed(1)}ms · {preview.persistable?'안정적 Handle':'임시 참조 포함'}</p>}
