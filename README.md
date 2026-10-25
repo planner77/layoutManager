@@ -4,9 +4,15 @@
 
 - Owner D1~D6 정책 확정: .env 관리자 단발 설정/복구, 비밀번호 최소 8자+scrypt, 세션 절대 8h/idle 30m/동시 3개, 명시 Site Grant, 감사 365일/별도 읽기, 지정 사내 LAN·HTTP 위험 수용.
 - **운영 로그인·관리 API는 여전히 OFF.** 독립 도메인/헬퍼·Unit만 추가, 새 Route/UI/Prisma/Migration/Docker/Compose는 변경하지 않음. .env.example의 ADMIN_*는 실행시 읽지 않는 비활성 설정 예시다. DXF/Version/SHA/Current/기존 API 불변.
-- 실 CIDR, Secret/단발복구/세션 DB 원자성/감사 DB/실 LAN 권한 E2E/Backup-Migration-Restore 및 별도 Owner 운영 승인이 완료되어야 실제 기능 활성화 가능. [Issue96](out/Issue96.md) / [ADR-050](out/Decisions.md) / [Operation](out/Operation.md). 버전 0.40.1 유지(운영 기능 미릴리스).
+- 실 CIDR, Secret/단발복구/세션 DB 원자성/감사 DB/실 LAN 권한 E2E/Backup-Migration-Restore 및 별도 Owner 운영 승인이 완료되어야 실제 기능 활성화 가능. [Issue96](out/Issue96.md) / [ADR-051](out/Decisions.md) / [Operation](out/Operation.md). 버전 0.40.2 유지(운영 기능 미릴리스).
 
 
+
+## Issue #97 — P4-D2 서버 DXF 이동·회전 검증기 (개발용, 영속 API 비활성)
+
+- [Issue97](out/Issue97.md), [ADR-050](out/Decisions.md): 기존 `src/server/outline/attestation.ts`가 원본 canonical-only JSON을 검사하는 기능에 더해 별도 `src/server/outline/transform-attestation.ts`가 서버 불변 DXF의 SHA/Stable root Handle/INSUNITS/WCS XY 기준 Geometry와 **Translate·Rotate(pivot)만** 다시 계산합니다. JSON v1/v2 하위호환, 0.02 Drawing Unit, Polygon/MultiPolygon/Hole 및 client geometry 위조 거부. nested child BLOCK instancePath는 현 파서에서 안정적으로 발급되지 않아 거부하며, Scale/Shear/Mirror/Z/대좌표 오버플로우는 미지원입니다.
+- **운영 기능이 아닙니다.** 실제 원본 획득·로그인/권한·사이트 범위·Prisma/CRUD/Revision CAS/감사는 미연결(#96/#98), 실제 공장 도면·GPU 실증은 #99 별도입니다. 도면 원본/Current/Version/SHA와 Viewer UI 및 브라우저 JSON 내보내기 동작은 바뀌지 않습니다. 기능 버전은 명시된 GHCR 게시 승인에 맞춰 0.40.2로 신규 패치 발행합니다(기존 v0.40.1 immutable tag 재사용 금지).
+- 자동 Unit `src/tests/unit/outline-transform-attestation.test.ts`를 작성했으나 Node Typecheck/Vitest/Playwright/Docker/실 DXF는 현재 원격 작업에서 실행하지 않았습니다(**NOT RUN**). 사용 방법·오류 코드·입력 확장은 [Issue97](out/Issue97.md) 참조.
 
 ## v0.40.1 — Issue #93 도면 목록에서 이전 버전 표시·검색 복원
 
