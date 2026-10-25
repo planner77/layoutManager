@@ -68,6 +68,8 @@ jobs:
 
       - name: Unit 및 Integration 테스트
         run: npm test
+      - name: OCI manifest layer statistics unit tests
+        run: node --test scripts/measure-ghcr-pair.check.mjs
 
       # P5 source CPU evidence: actual 1k/10k/100k synthetic runs, not real DXF acceptance.
       # Private CAD inputs are never uploaded to GitHub CI.
@@ -171,7 +173,7 @@ jobs:
           mkdir -p "$tmp/migrations" "$tmp/data/db" "$tmp/data/cad"
           cp -R src/prisma/migrations/. "$tmp/migrations/"
           mkdir "$tmp/migrations/99999999999999_invalid_ci"
-          printf '%s\\n' 'THIS IS NOT VALID SQL;' > "$tmp/migrations/99999999999999_invalid_ci/migration.sql"
+          printf '%s\n' 'THIS IS NOT VALID SQL;' > "$tmp/migrations/99999999999999_invalid_ci/migration.sql"
           chmod 755 "$tmp"
           chmod -R a+rX "$tmp/migrations"
           chmod -R a+rwX "$tmp/data"

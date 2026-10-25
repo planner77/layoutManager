@@ -1,5 +1,13 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-042 — Migrator 이미지 전용 런타임 의존성을 잠금 그래프에서 가지치기 (2026-10-25 / #66)
+
+- **문제:** #28 이후 운영 웹 standalone 이미지는 경량화됐지만 별도 migrator는 전체 web/dev `node_modules` ~1.1GB 레이어를 복사하여 로컬 비압축 약 1.34GB로 남았다. `prisma`, `tsx`는 devDependencies 분류지만 실제 운영 migration/backfill에 필수라 단순 `--omit=dev`가 기능 장애를 만든다.
+- **결정:** 기존 `src/package-lock.json`과 full `npm ci` Build graph 유지 → 자식 stage에서 정확히 잠긴 migrator direct runtime 패키지/SQLite native 버전으로 manifest 파생 → `npm prune --omit=dev --offline --legacy-peer-deps`. 전체 web/dev/transitive 테스트 패키지의 **최종 복사**를 금지하고 CLI/DB/tsx/Generated Prisma 및 최소 TS source만 복사. Prisma Studio의 React peer 자동 설치는 피하되 Prisma CLI 자체 transitive 패키지 임의 제거 금지. 최종 USER 10001에서 CLI/native 로드와 독립 Compose migration을 검증.
+- **대안 배제:** 기존 full `node_modules` 복사(절감 없음), 원 root 그대로 `npm prune --omit=dev`(Prisma CLI/tsx 제거), Dockerfile 빌드 중 매번 floating `npm install`(잠금/재현성 결함), 수동 `rm -rf`로 Prisma package internals 삭제(숨은 의존성/CLI 불안정). 근본적으로 별도 lockfile 설치 stage로 옮기는 것은 빌드 비용·이중 잠금 운영 및 E2E 증거를 갖춘 뒤 검토.
+- **측정:** #28의 2.05GB **pre-standalone 웹** baseline은 절감률에 재사용 금지. PR base migrator와 #66 migrator 동일 Node/소스/amd64 비압축 비교(30% soft target); GHCR 공개 version+version-migrate의 OCI 압축 layer 합, shared digest dedup 합 및 docker-save gzip proxy **분리**. 기준 미달·실행 실패는 수치와 근거로 남기며 성공으로 위장하지 않는다.
+- **통제:** candidate app+migrator digest 둘 다 확인 후 공개 tag 승격. 보안/데이터/Compose 계약 불변; 운영 writer 중지·백업·복구 확인 필수. [Issue66](Issue66.md), [Operation](Operation.md), [TestPlan](TestPlan.md).
+
 ## ADR-041 — Main Actions 실행명은 단일행 Squash 제목 계약으로 제어 (2026-10-25 / #74)
 
 - **원인:** #68 `run-name`에서 main `head_commit.message`를 직접 쓰면서 PR #70·#72 병합의 squash commit 본문까지 UI에 노출. #34와 #35·#36의 차이는 Workflow 로직 변경이 아니라 commit message의 줄 수였다. 저장소 squash 기본값 `COMMIT_OR_PR_TITLE / COMMIT_MESSAGES`는 문제를 반복시킬 수 있다.

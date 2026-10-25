@@ -1,5 +1,11 @@
 # ChangeLog
 
+## v0.36.2 — Issue #66 독립 migrator 경량화 (2026-10-25)
+
+- Build: 원 `src/package-lock.json` 고정 전체 의존성에서 migrator 전용 runtime manifest를 생성하고 오프라인 prune해 단 한 번 실행하는 `migrator` 타깃에 필요한 CLI/native 및 DB/backfill source만 복사. 웹 `runtime`/schema/Viewer/API·원본은 변경하지 않는다.
+- CI: PR base migrator와 신규 migrator의 linux/amd64 비압축 이미지 크기, history, `du`, gzip proxy 비교 및 강제 실패·Compose smoke 강화. 30%는 soft target. Main GHCR version pair가 실제 게시된 후 linux/amd64 OCI 압축 layer 중복/공유 digest를 측정한다.
+- 기존 `migrate` Compose 성공 의존, /data, UID 10001, Debian glibc/OpenSSL/CA, tag/digest pair와 candidate→public 순서, 업그레이드/롤백 절차 유지. **실제 Docker/PR CI/OCI 계측 결과는 실행 전 NOT VERIFIED.** [Issue66](Issue66.md), [TestPlan](TestPlan.md), [Operation](Operation.md).
+
 ## v0.36.1 — Issue #74 Main CI 실행명 안정화 및 명시적 GHCR 릴리스 (2026-10-25)
 
 - 한 줄 Squash commit은 `MAIN CI | #Issue | 요약`, 커밋 본문이 있으면 긴 문자열 대신 `SUBJECT-ONLY-REQUIRED | run N`을 표시한다. #34 정상 표기 유지, #35/#36의 불필요한 본문 노출 회귀 방지.

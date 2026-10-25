@@ -1,5 +1,12 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE66-DEV-20261025 — 전용 migrator 의존성 분리 / 검증 대기
+
+- 기준/변경: 선행 PR CI run `40154979531`의 local migrator 약 1.34GB, full `node_modules` 약 1.1GB는 **과거 비압축 추정 기준선**. 이번 `0.36.2` 변경 후의 동일 소스 이미지 차이·절감률은 **아직 측정되지 않았다**. GHCR OCI compressed bytes/고정 digest도 게시 전이다.
+- 구현: `migrator-dependencies` lock 기반 offline prune, 최소 TS source/Prisma/generated bundle 복사, UID 10001 Prisma CLI/tsx/native SQLite image sanity, Compose migrate 재사용. PR Docker baseline migrator 비교 및 invalid SQL fixture, OCI linux/amd64 manifest layer 합/중복 digest 수치, Node parser 테스트 추가.
+- **현재 상태:** GitHub 코드/워크플로 작성 완료. 로컬 Docker/Node install/npx Prisma/TS source E2E/실제 이미지 sizes/health/실행/운영 데이터 보존 실측 **NOT RUN**; PR CI 별도 실행 후 결과를 확인해야 PASS로 기록 가능. 최근 다른 Issue CI 성공은 #66의 증거가 아님.
+- 현장 보류: 기존 운영 DB/CAD/S3 동시점 백업·복구 시험, 실제 GHCR image tag 존재 및 manifest 검증, 실환경 CA/인증서·migration 차단 실증. [Issue66](Issue66.md), [TestPlan](TestPlan.md), [Operation](Operation.md).
+
 ## U-ISSUE43-PR72-REVIEW-20261025 — 최초 성공 / P2 리뷰 보완과 재검증 경계
 
 - [PR #72](https://github.com/planner77/layoutManager/pull/72), 최초 검증 HEAD `5cd223cc2837fc5772154fd67138680263f159e4`, [PR CI 40161078593](https://github.com/planner77/layoutManager/actions/runs/40161078593) **completed/success**: TypeScript/ESLint/Unit·Integration/Benchmark/Build/Chromium E2E/Legacy Migration 검증 Job `121072582232`와 Docker Runtime `121072582347` 모두 success.

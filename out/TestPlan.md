@@ -1,5 +1,22 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #66 — Migrator 독립 최소 런타임 및 OCI 계측 (v0.36.2)
+
+| TC | Acceptance | 자동 검증 기준 | 상태 |
+| --- | --- | --- | --- |
+| TC-IMG66-001 | 동시 baseline/후속 측정 | PR base Dockerfile과 새 migrator를 같은 소스·Node 22.14.0·linux/amd64로 빌드. inspect Size, history, du, top modules, gzip proxy 및 절감률(30% soft)을 Docker Job Summary에 기록 | Code / NOT RUN |
+| TC-IMG66-002 | GHCR OCI 전송량 | Node parser: amd64 descriptor 1개, attestation 제외, 계층 크기·두 이미지 shared digest dedup; 릴리스의 실제 `:<version>`/`:<version>-migrate` manifest 계측 | Unit 코드 / NOT RUN; 실제 publish 미실행 |
+| TC-IMG66-003 | 파일/패키지 봉인 | Prisma CLI+tsx+generated/Prisma config, better-sqlite3 native load, React/Next/Playwright/Vitest/ESLint/CAD 관련 모듈·tests/public 제외; npm stage 검증 및 컨테이너 확인 | Code / NOT RUN |
+| TC-IMG66-004 | 최초 설치/멱등 | Compose 신규 DB migration + 백필 exit0 → 앱 health 200/정적 WASM·font, 재시작 migration 재실행 성공 | 기존 PR Docker smoke 확장 / NOT RUN |
+| TC-IMG66-005 | 구 스키마 이행·보존 | 기존 Legacy migration E2E(보호 데이터/Current/hash/Version 비교), QA backup/restore 실증은 별도 운영 절차 | CI/E2E NOT RUN, 현장 NOT RUN |
+| TC-IMG66-006 | read-only DB | `DATABASE_URL=file:/proc/cad.sqlite`로 migrator nonzero 확인, 앱 의존 완료 조건 유지 | 기존 Docker step / NOT RUN |
+| TC-IMG66-007 | invalid SQL | 일회성 CI bind mount에 불량 migration 추가, nonroot migrator 실패; 운영 volume 사용 없음 | 신규 Docker step / NOT RUN |
+| TC-IMG66-008 | UID/CA/S3 Secret | runtime Debian glibc/OpenSSL/CA, UID 10001, /data 권한, migrate env에 S3 Secret 부재; SQLite native load | 정적+Docker / NOT RUN |
+| TC-IMG66-009 | release pair | Tagless/digest Compose resolution, build app+migrate candidate → digest 검증 → version/latest paired 승격, 게시 후 OCI 측정; 임의 개별 태그 이동 금지 | PR 정적 검증/릴리스 NOT RUN |
+
+- PR CI 흐름에서 `verify`는 Typecheck/Lint/Vitest/Build/E2E/Legacy를, 독립 `docker-runtime`은 실제 migrator/native/Compose/실패/측정 경로를 수행한다. 로컬 Docker/소스 설치 시험은 현재 환경에서 미실행. **PR CI 시작과 성공을 구분**하며 Main/GHCR의 공개 version OCI 크기는 PR CI로 대체할 수 없다.
+- 노드만 사용하는 OCI 파서 회귀는 `node --test src/scripts/measure-ghcr-pair.check.mjs`로 검증(실제 registry 연결은 Main publish). [Issue66](Issue66.md), [TestReport](TestReport.md), [Operation](Operation.md).
+
 ## Issue #74 — GHCR v0.36.1 패치 게시 검증 (2026-10-25)
 
 | ID | 조건 | 기대 | 현재 |

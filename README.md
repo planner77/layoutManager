@@ -1,5 +1,12 @@
 # CAD Web Viewer P.O.C.
 
+## v0.36.2 — Issue #66 migrator 이미지 의존성 경량화 (검증 전)
+
+- 신규/업그레이드 시 `migrate` Compose 서비스와 `app`의 성공 순서·`/data` 볼륨·UID 10001은 종전과 동일합니다. 변경은 **migrator 이미지 내부 패키징**에 한정되며 앱 UI, DB 스키마, 원본 CAD는 변경하지 않습니다.
+- Prisma CLI·TypeScript runner·SQLite Native와 실제 비밀번호 Backfill 모듈만 포함하도록 전용 의존성을 정리하고 웹/테스트·빌드 패키지 복사를 피합니다. 신규 웹 기능이 아니라 버전 `0.36.2` 패치입니다.
+- 배포 전 동일 시점 DB/CAD/S3 백업 및 복구 확인, 기존 앱 writer 정지, **동일 버전** `ghcr.io/planner77/layoutmanager:0.36.2` + `:0.36.2-migrate` 사용, migrate exit 0 후 app health 확인. GHCR tag/이미지 게시 여부는 Main CI에서 실제 확인해야 합니다. 디지털 크기 절감률과 OCI 다운로드량은 PR CI/릴리스 측정 전 **미확정**입니다.
+- [Issue66 상세](out/Issue66.md) · [운영 지침](out/Operation.md) · [테스트 계획](out/TestPlan.md).
+
 ## v0.36.0 — Issue #43 외곽선 목록·타입별 임시 트리
 
 - DXF를 three-dxf-viewer에서 연 뒤 **외곽선 목록**을 누르면 우측 도크에 현재 세션의 확정된 외곽선이 나타납니다. 기존 타입이 없는 항목은 **미분류 (legacy)** 아래에 표시됩니다. 개별/그룹 표시·숨김, 클릭/키보드 선택 후 외곽선으로 이동·강조, 수량·임시 표식을 제공합니다.

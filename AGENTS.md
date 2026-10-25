@@ -1,5 +1,12 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #66 — 독립 migrator 실행 의존성·GHCR OCI 계측 (2026-10-25)
+
+- 분리된 `migrator`는 더 이상 `dependencies/node_modules` 전체를 복사하지 않는다. `migrator-dependencies`는 `src/package-lock.json`의 고정 버전으로 최소 런타임 manifest 생성 → `npm prune --omit=dev --offline --legacy-peer-deps` → 필수 Prisma CLI/tsx/native 및 불필요 Next/React/test 모듈 부재 검증을 수행한다. 웹 `runtime`/builder 패키징은 그대로다.
+- Entrypoint는 `tsx scripts/deploy.ts`로 Prisma `migrate deploy` → 비밀번호 backfill의 기존 실행 순서를 보존. 최종 이미지에는 generated client, Prisma schema/migrations/config, 필요한 source module만 포함하며 UID 10001, /data, CA/OpenSSL, Compose 완료 성공 의존, GHCR digest/tag 쌍 계약 유지. 앱/DB schema는 변경하지 않는다.
+- PR CI에서 **PR base migrator**와 현재 migrator의 같은 Node22.14/linux-amd64 비압축 크기를 비교한다. 과거 #28 웹 2.05GB를 migrator 기준으로 쓰지 않고, 30% 절감은 soft target. Main 릴리스는 실제 공개 version app+migrator의 OCI compressed layers 및 공유 digest를 별도로 계측한다. CI 미실행은 성공 아님.
+- 버전 `0.36.2`. 근거·AC/테스트/배포·복구: [Issue66](out/Issue66.md), [Architecture](out/Architecture.md), [Operation](out/Operation.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md), [ADR-042](out/Decisions.md).
+
 ## Issue #74 — MAIN CI 실행명에 Squash Commit 본문 유입 방지 (2026-10-25)
 
 - [MAIN #34](https://github.com/planner77/layoutManager/actions/runs/40158498214)는 `MAIN CI | #68 | 요약` 정상; [#35](https://github.com/planner77/layoutManager/actions/runs/40159667229)·[#36](https://github.com/planner77/layoutManager/actions/runs/40162889687)은 긴 squash commit body 전체가 `github.event.head_commit.message`로 유입되었다.
@@ -217,7 +224,7 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 | [Release 0.21.0](out/Release-0.21.0.md) | 0.21.0 병합·태그·GHCR 게시 근거 | 0.21.0 릴리스 확인 및 운영 이미지 식별 시 |
 | [Issue31](out/Issue31.md) | DXF 다중 선택·볼록/정밀 외곽선·실험 상태·P4 권한 보류 | Viewer 선택·외곽선/Worker/JSON 변경 시 |
 | [Issue26](out/Issue26.md) | DXF TEXT/MTEXT 색인·world 좌표 focus·검색 범위/검증 | Viewer 검색·Pan/Zoom·Worker·BLOCK/INSERT·DWG 텍스트 지원 검토 시 |
-| [Issue28](out/Issue28.md) | 운영 이미지 경량화·Migration 분리·측정/롤백 | Dockerfile, Standalone, Compose, GHCR 변경 시 |
+| [Issue66](out/Issue66.md) | Migrator 최소 의존성·크기 측정/OCI manifest·복구 계약 | Docker migrator/CI/GHCR 및 버전·패키징 변경 시 |\n| [Issue28](out/Issue28.md) | 운영 이미지 경량화·Migration 분리·측정/롤백 | Dockerfile, Standalone, Compose, GHCR 변경 시 |
 | [Issue24](out/Issue24.md) | 기준정보 계층·이관·층별 Current 요구/설계/AC | 기준정보·계층 등록·제품 조회·legacy 이관 변경 시 |
 | [README](README.md) | 사용자/개발자 프로젝트 안내 | 기능·구조·설정·실행방법 변경 시 |
 
