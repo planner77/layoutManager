@@ -1,5 +1,11 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issue #104 / G2 — 새 GHCR Pair 후보와 PR CI HEAD 증거 분리 (2026-10-26)
+
+- G2 코드·격리 통합 기능은 이전 PR HEAD `f5f7ea2e00a95b24e65f16c67fc8484d03031dce`의 [PR CI 40234510320](https://github.com/planner77/layoutManager/actions/runs/40234510320), attempt 1에서 Verify (Job `121293089381`)와 Docker (Job `121293089179`) 모두 **completed/success**. 과거 TypeScript 실패 [40232479678](https://github.com/planner77/layoutManager/actions/runs/40232479678)는 실패 원장에 유지.
+- 신규 GHCR `0.40.5` 게시를 위한 `src/package.json`/lock 루트 버전 변경 후의 **최신 HEAD PR CI는 별도 검증 필수**. 이전 HEAD 성공을 새 HEAD 성공으로 사용하지 않는다. Main CI 시작은 이미지 Pair 공개 태그 실제 게시 성공 증거가 아니다.
+- 자동 검증은 합성 G1/G2 SQLite Unit/Integration·일반 E2E 범위만 충족, 사내 실제 작업자 Secret/비밀번호 처리·실 운영 DB/CAD/S3 Backup/Restore/LAN/Owner G7 Go-Live는 NOT RUN/BLOCKED. G2 기능은 승인된 별도 실행 경로의 비운영 격리 준비 상태만 유지.
+
 ## Issue #104 G2 — 구현·검증 인계 (2026-10-26)
 
 - **작성:** `server/auth/admin-setup.ts` 명시 서비스, `tests/fixtures/auth-g2/store.ts` 일회용 DB adapter, `scripts/auth-g2-isolated.ts` 제한 CLI, `tests/integration/auth-g2.test.ts` 9 TC 및 설계·운영 SOP 문서. G1 `ADMIN_RECOVERY` 감사 actor=null/affected=Admin ID 변경으로 실제 운영 담당자(비공개 requestId 기록)와 사용자 로그인 Actor를 혼동하지 않도록 조치.

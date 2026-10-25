@@ -1,5 +1,11 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #104 / PR #118 — 이전 CI 통과 및 GHCR v0.40.5 신규 후보 (2026-10-26)
+
+- **이전 HEAD G2 CI:** [Run 40234510320](https://github.com/planner77/layoutManager/actions/runs/40234510320), HEAD `f5f7ea2e00a95b24e65f16c67fc8484d03031dce`는 Verify/Typecheck·Lint·Unit·E2E 및 Docker/Migration·Smoke Job 모두 completed/success. 미해결 리뷰 0, 당시 main behind=0/mergeable=true.
+- **새 GHCR 사용자 요청:** 이미 발행된 v0.40.4 앱·마이그레이터 Pair/tag를 변경하지 않고 새 v0.40.5 PATCH 후보로 `src/package.json`/lockfile 루트 버전 일치. G2 격리 내부 구현 외 **운영 인증/관리 API, 운영 Prisma/Compose·Nginx/.env/실 DB/CAD/S3 자동 활성화 0**. 기능 G7 #109 별도 Owner Go/No-Go 유지.
+- **새 HEAD 필수 게이트:** 버전 변경으로 이전 CI PASS를 재사용하지 않고 최신 PR CI 양쪽 Job 성공·리뷰 Thread 0·main 뒤처짐/충돌 0 후에만 squash merge/Issue 종료. Main CI의 GHCR candidate 이미지 두 digest 검증→버전/최신 쌍 승격은 그 후 진행하며, 시작과 실제 게시 성공 구분. [FailureLedger](out/FailureLedger.md), [TestReport](out/TestReport.md), [ChangeLog](out/ChangeLog.md).
+
 ## Issue #104 / G2 — Admin 최초 단발 생성·복구 격리 구현 (2026-10-26)
 
 - [Issue104](out/Issue104.md), [ADR-051-G2](out/Decisions.md), #102 Owner R1과 종료된 #103 G1 DB/Nonce 계약 우선. DESIGN.md는 부재하여 Architecture/Decisions/Requirements 기준. 지정 사내 운영 담당자가 최초 Admin 생성·복구 실행, Owner 운영 책임. 실제 수행자/Secret 경로·승인·대체자/증거는 사내 비공개 SOP로 관리.
