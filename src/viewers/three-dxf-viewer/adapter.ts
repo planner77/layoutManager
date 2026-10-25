@@ -79,6 +79,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     onPreview?:(result:OutlineResult|null,error?:string)=>void;
     onSaved?:(count:number)=>void;
     onEditError?:(message:string)=>void;
+    onViewChange?:()=>void;
   }) {
     if(outline && validCanvasScope(outline))
       this.document=new GeneratedDocument(outline,()=>this.documentChanged());
@@ -95,7 +96,12 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     this.resize = new ResizeObserver(this.size);
     this.resize.observe(container); this.size();
   }
-  private render = () => { if (!this.disposed) this.renderer.render(this.scene,this.camera); };
+  private render = () => {
+    if (!this.disposed) {
+      this.renderer.render(this.scene,this.camera);
+      this.outline?.onViewChange?.();
+    }
+  };
   private size = () => {
     if (this.disposed) return;
     this.selector?.cancelGeneratedDrag();
@@ -236,6 +242,24 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     const p=new THREE.Vector3(x/Math.max(1,rect.width)*2-1,1-y/Math.max(1,rect.height)*2,0).unproject(this.camera);
     return [p.x,p.y];
   };
+  /** M1 coordinate conversion uses CSS px, not WebGL drawing-buffer px (DPR). */
+  clientToWcs(clientX:number,clientY:number):{x:number;y:number}|null{
+    if(this.disposed||!Number.isFinite(clientX)||!Number.isFinite(clientY))return null;
+    const rect=this.renderer.domElement.getBoundingClientRect();
+    if(rect.width<=0||rect.height<=0||clientX<rect.left||clientX>rect.right||
+       clientY<rect.top||clientY>rect.bottom)return null;
+    const [x,y]=this.screenToWorld(clientX-rect.left,clientY-rect.top);
+    return Number.isFinite(x)&&Number.isFinite(y)&&Math.abs(x)<=1e12&&Math.abs(y)<=1e12?{x,y}:null;
+  }
+  projectWcsToCanvas(point:{x:number;y:number}):{x:number;y:number}|null{
+    if(this.disposed||!Number.isFinite(point.x)||!Number.isFinite(point.y)||
+       Math.abs(point.x)>1e12||Math.abs(point.y)>1e12)return null;
+    const rect=this.renderer.domElement.getBoundingClientRect();
+    if(rect.width<=0||rect.height<=0)return null;
+    const projected=new THREE.Vector3(point.x,point.y,0).project(this.camera);
+    const x=(projected.x+1)*rect.width/2, y=(1-projected.y)*rect.height/2;
+    return Number.isFinite(x)&&Number.isFinite(y)?{x,y}:null;
+  }
   private terminateWorker(kind:'index'|'compute') {
     const task=this.activeWorkers[kind];delete this.activeWorkers[kind];
     task?.worker.terminate();task?.cancel();
