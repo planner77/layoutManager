@@ -1,5 +1,14 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issue #102 — Owner G0 5개 업무 정책 승인·문서 반영 추적 (2026-10-25)
+
+- **결정 근거:** Owner가 승인한 ①사내 LAN **기존 공개 CAD 익명 GET/Viewer/다운로드**, ②Current **Editor 이상+담당 Site**, ③Version 삭제 **Editor 이상+담당 Site+기존 삭제 비밀번호 유지**, ④지정 사내 운영 담당자 Admin 초기화/복구 실행·Owner 운영 책임, ⑤Audit **365일 이후 만료 기록 정리**(Backup/파기 세칙 별도)를 [Issue102](Issue102.md)와 [ADR-051-R1](Decisions.md)에 반영.
+- **Scope:** 익명 읽기 범위를 기존 공개 CAD 리소스로 한정. 신규 Outline/Memo/Type 영속/로그·Audit API 익명 허용 아님. `POST /api/cad-files` Editor+Site는 **Owner 미승인 PROPOSED**. 정책/기능/G7 Go-Live는 구별한다.
+- **검증 계획:** [TestPlan](TestPlan.md) TC-P4-G0-BIZ-001~008. 현재 원격 **문서 변경**에는 Auth 코드·Router·Prisma/DDL·Nginx/Compose 설정/DB/원본 CAD 변경 없음. 본 정책 기록은 실 운영 로그인/Current/Delete 권한을 지금 작동시키지 않는다.
+- **실행 결과:** 신규 코드·실 LAN·업무 E2E·Audit purge·Backup/Restore **NOT RUN**. 문서 PR 최신 HEAD CI·리뷰·diff 증거를 확인할 때 별도로 추가하고, 이전 [PR #112](https://github.com/planner77/layoutManager/pull/112)의 통과를 신규 변경 HEAD PASS로 재사용하지 않는다.
+- **G0 상태:** Owner 5개 정책 승인(정책 계약), 등록 POST·Admin 실명/SOP·Audit/Backup 정리 세칙과 실제 Nginx 배치/Go-Live는 후속 #104/#106/#107/#108/#109에 미확정으로 이관. G0 문서 PR 검증 완료 전 완료/이슈 종료 선언 금지. 운영 OFF.
+
+
 ## Issue #102 — Owner 공격 대응 비범위 문서 정렬 (2026-10-25)
 
 - G0 #102 및 ADR-051-R1에서 보안 공격/자격증명·세션 탈취 대비 강화·침투시험은 Owner에 의해 비범위로 결정되었다. `OWNER_ACCEPTED_SCOPE`는 **정책상 위험 수용**이며 안전성/침투시험 PASS가 아니다. HTTP 비암호화 위험은 여전히 존재한다.
