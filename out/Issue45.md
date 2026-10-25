@@ -1,5 +1,7 @@
 # Issue #45 — 도면 목록 Current Version 전용 표시
 
+> **후속 Issue #93 / v0.39.1 (2026-10-25):** #45의 Current-only 고정/토글 제거 UX는 *역사 정책*입니다. 현재 목록은 **기본 Current-only + 단일 토글 OFF에서 과거·현재 전체 도면 검색**으로 조정합니다. `?versions=all`/레거시 홈 `?current=false`는 전체 목록, API `current=false`는 여전히 비Current만. 이 문서의 당시 설계/검증 이력은 변경 없이 보존하며 최신 계약은 [Issue93](Issue93.md)/ADR-034-R1을 우선합니다.
+
 - 기준일: 2026-10-25
 - 이슈: https://github.com/planner77/layoutManager/issues/45
 - 대상 버전: `0.31.0` (UI 정책 변경 / MINOR)
