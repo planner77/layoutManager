@@ -76,6 +76,7 @@ export function CadViewer({
   const viewFrame = useRef(0);
   const [viewRevision, setViewRevision] = useState(0);
   const [memoCancelSignal, setMemoCancelSignal] = useState(0);
+  const [memoLifecycleKey, setMemoLifecycleKey] = useState(() => versionId + ':' + sourceSha256);
   const [memos, setMemos] = useState<MemoDraft[]>([]);
   const [memoPlacing, setMemoPlacing] = useState(false);
   const [memoCandidate, setMemoCandidate] = useState<MemoWcsXY | null>(null);
@@ -100,6 +101,9 @@ export function CadViewer({
   }, []);
   useEffect(() => () => { if(viewFrame.current) cancelAnimationFrame(viewFrame.current); }, []);
   const memoScope = { versionId, sourceSha256 };
+  // Fail closed *during render*, before cleanup effects run on a new Version/SHA.
+  const memoScoped = memoLifecycleKey === versionId + ':' + sourceSha256;
+  const scopedMemos = memoScoped ? memos : [];
   const getMemoSession = () => {
     if (!memoSession.current || !memoSession.current.matches(memoScope)) {
       memoSession.current = new MemoSession(memoScope);
@@ -109,6 +113,7 @@ export function CadViewer({
   const resetMemos = useCallback(() => {
     memoSession.current?.clear();
     memoSession.current = null;
+    setMemoLifecycleKey(versionId + ':' + sourceSha256);
     memoDragActive.current = false;
     setMemoCancelSignal(previous => previous + 1);
     setMemos([]);
@@ -118,7 +123,7 @@ export function CadViewer({
     setMemoFields({title:'',content:'',x:'0',y:'0'});
     setMemoError(null);
     setMemoDeleteArmed(false);
-  }, []);
+  }, [versionId,sourceSha256]);
   useEffect(() => { resetMemos(); }, [versionId, sourceSha256, resetMemos]);
   // Synchronously gate events before React's reducer has rendered the next frame.
   const outlineEnabledRef = useRef(false);
@@ -763,7 +768,7 @@ export function CadViewer({
           !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(versionId)
           ? '검증된 도면 Version UUID와 원본 SHA-256이 필요합니다.'
           : null;
-  const memoAvailable=memoUnavailable===null;
+  const memoAvailable=memoUnavailable===null && memoScoped;
   const selectableTypes=selectableOutlineTypes(outlineTypeCatalog,versionId,sourceSha256);
   const typedConfirmAvailable=!!preview?.persistable && selectableTypes.some(item=>item.id===selectedOutlineTypeId);
   const treeUnavailable =
@@ -804,7 +809,7 @@ export function CadViewer({
           onToggleOutlineTree={() => dispatchApp({ type: 'toggle-outline-tree' })}
           memoAvailable={memoAvailable}
           memoUnavailableReason={memoUnavailable}
-          memoPlacing={memoPlacing}
+          memoPlacing={memoScoped && memoPlacing}
           onToggleMemo={startMemoPlacement}
         />
       }
@@ -913,10 +918,10 @@ export function CadViewer({
             }}
           />
           {memoAvailable && <CadMemoOverlay
-            memos={memos}
-            selectedId={memoSelectedId}
-            placing={memoPlacing}
-            candidate={memoCandidate}
+            memos={scopedMemos}
+            selectedId={memoScoped?memoSelectedId:null}
+            placing={memoScoped && memoPlacing}
+            candidate={memoScoped?memoCandidate:null}
             getManager={getManager}
             viewRevision={viewRevision}
             getViewEpoch={getViewEpoch}
@@ -947,10 +952,10 @@ export function CadViewer({
         outlineAvailable || memoAvailable || (renderer === 'three-dxf-viewer' && format === 'DXF' && state.ready && savedCount > 0) ? <>
           {memoAvailable && <div data-testid="cad-memo-status"
             className="flex flex-wrap items-center gap-2 border-b border-amber-200 bg-amber-50 px-3 py-1 text-xs text-slate-800">
-            <strong>CAD 메모 M1 · {memos.length}/100</strong>
+            <strong>CAD 메모 M1 · {scopedMemos.length}/100</strong>
             <span>WCS 고정 · 임시 세션만 · Reload/Renderer/Version 변경 시 소실 · Snap/저장/작성자 미지원</span>
-            {memos.length>0 && <span data-testid="cad-memo-latest">
-              {memos.slice(-5).map(item=><button key={item.id} type="button"
+            {scopedMemos.length>0 && <span data-testid="cad-memo-latest">
+              {scopedMemos.slice(-5).map(item=><button key={item.id} type="button"
                 className="mr-1 rounded border border-amber-500 bg-white px-1.5 py-0.5 hover:bg-amber-100"
                 onClick={()=>selectMemo(item.id)}>{item.title.slice(0,24)}</button>)}
             </span>}
