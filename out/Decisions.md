@@ -1,5 +1,13 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-038 — CI 실행명은 실행 시작 전 입력으로만 결정 (2026-10-25 / Issue #68)
+
+- **문제:** 기존 PR CI 및 Build/publish가 GitHub 기본 PR 제목/commit message를 그대로 사용하므로 Run Type·업무 Issue·목적이 일관되게 식별되지 않는다.
+- **결정:** 최상위 `run-name`을 도입해 `PR CI`, `MANUAL CI`, `MAIN/GHCR`, `RELEASE`를 구분한다. 연결 Issue 번호는 PR 제목 또는 squash commit 첫 줄의 `#N | 설명`에서 **사람이 명시**한다. 수동은 `workflow_dispatch.inputs`를 사용하고, 비정형 자동 실행 제목은 `ISSUE-UNKNOWN`으로 남긴다. 진짜 Issue 없는 건 `NO-ISSUE`로 표시한다.
+- **근거:** [GitHub 공식 workflow syntax](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#run-name)에 따라 실행명은 생성 시 `github`/`inputs` context에서만 계산된다. Job output에서 추출, 정규식 파싱 또는 workflow 실행 후 이름 변경은 이 구조에서 사용할 수 없다. `github.event.pull_request.number`는 Issue가 아닌 PR 번호이다.
+- **영향:** 기존 push/PR/dispatch 이벤트, job, 권한 및 release 직렬화/concurrency/GHCR 게시 순서 불변. main squash commit body가 긴 경우 첫 줄만 보여야 식별성이 높다. release Run 자체를 성공으로 오인하지 않으며 기존 Run 이름은 소급 변경되지 않는다. [Issue68](Issue68.md)·[Operation](Operation.md).
+
+
 ### ADR-037 종결 보강 — #41 안전 시안 인수, 운영 CRUD는 #65 (2026-10-25)
 
 - PR #64의 최종 [CI #40154979531](https://github.com/planner77/layoutManager/actions/runs/40154979531) 성공 및 병합은 **브라우저 메모리 시안만의 수용**이다. Owner 인증·Admin RBAC·Scope·감사 보존 정책은 여전히 결재 대기이므로 실제 관리 API/Prisma Migration/Type FK를 만들지 않는다.
