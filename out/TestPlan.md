@@ -1,5 +1,23 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+### Issue #82 / #99 — 최신 Main 연계 추가 재검증 (2026-10-25)
+
+- #82 M1 E2E `TC-U1-E2E-001/002`, `TC-M1-E2E-001~006`와 #99 신규 `outline-acceptance-gate`·`private-acceptance-paths` Unit을 모두 새로운 통합 HEAD CI에서 검증한다. 공개 Synthetic DXF는 #99 실 CAD/GPU/Owner 현장 판정을 대체할 수 없으며 private DXF 업로드를 공개 CI artifact에 포함하지 않는다.
+- #99 ADR-052와 #82 Memo ADR-053 및 신규 npm `verify:outline-acceptance` script/0.41.0 package+lock 정합성 추가 점검. 최신 CI 시작과 전체 SUCCESS/현장 수용은 엄격히 구분.
+
+
+## Issue #82 / PR #111 — 2차 CI U1 Dock 공존 회귀 정렬 (2026-10-25)
+
+| TC | 원인·확장된 수용 기준 | 상태 |
+| --- | --- | --- |
+| TC-U1-E2E-001 (개정) | 무Handle three DXF에서 U3 Outline 버튼 disabled, Source/Generated selection 도구 및 Outline 실행 도크 미표시. 공통 `viewer-tools-dock`은 M1 Memo status 0/100을 표시할 수 있고 Memo 추가 버튼 enabled. dxf-viewer에서는 Memo disabled/status·dock 미표시. 기존 CSS fullscreen·Layer·DPR·ESC·reload·원본 GET 1회 회귀 유지 | 수정 코드 작성; 새 CI NOT VERIFIED |
+| TC-M1-E2E-006 | 안정 Source Handle이 없는 DXF LINE 2개 → Outline disabled/Source selection 도구 0 → Memo 직접 WCS(10,20) 생성→핀 WCS 불변·Zoom/Fit→Source 선택 도구 계속 0 | 신규 코드 작성; 새 CI NOT VERIFIED |
+| TC-U1-E2E-002 (확장) | 손상 DWG에서도 DXF·Outline·Memo 버튼 disabled, Memo status 0; 기존 오류 안내·링크·재로드 동작 불변 | 수정 코드 작성; 새 CI NOT VERIFIED |
+
+- [Run 40198344153](https://github.com/planner77/layoutManager/actions/runs/40198344153) 이전 HEAD ac9226ff: Typecheck/Lint/Unit/OCI/DXF source benchmark/Build/Docker PASS, Chromium **77 PASS/1 FAIL** (`TC-U1-E2E-001`, 58행 도크 기대 0 vs 실제 1), Legacy SKIPPED. 제품 버그와 이전 U1 test fixture의 범위 오류를 분리한다. 신규 수정 HEAD의 실행 결과가 나오기 전 PASS 금지.
+- Benchmark `TC-M1-BENCH-1000/10000`는 별도 opt-in이며 이 Run에서 자동으로 실행된 DXF **Source** 1k/10k/100k Benchmark와 구별한다. 실 DXF/GPU/native·100 memo FPS는 미검증.
+
+
 ## Issue #102 / ADR-051-R1 — 보안 강화 비범위와 기능/운영 수용 시험 (2026-10-25)
 
 **정책:** HTTP와 계정/세션 탈취·공격 방어 관련 위험은 Owner가 `OWNER_ACCEPTED_SCOPE`로 결정했다. 이는 시험 성공이 아니라 해당 *공격 전용 대응/침투 실증을 완료 게이트에서 제외*한 기록이다. 기존 비활성 Auth helper 및 기존 작성된 단위테스트를 제거하는 지시가 아님. [Issue102](Issue102.md).
@@ -48,6 +66,45 @@
 
 - 기존 E2E fixtures는 ASCII DXF `LWPOLYLINE` group 90=4를 사용. 도면 업로드·등록·이미지·실측 데이터는 영속 메모 성능 기준이 아니다.
 - 원격 GitHub 수정 컨텍스트에서 로컬 Node/Browser/Prod build는 실제 실행하지 않음. PR CI **시작은 성공과 다름**, CI 모니터링은 사용자 범위 밖. 실제 실패 발생 시 FailureLedger에 Run ID/Job/HEAD·원인·조치 기록.
+
+
+## Issue #99 / PR #110 — P1 Symlink 경로 회귀 및 GHCR 0.40.3 게이트 (2026-10-25)
+
+| TC | 검증 목적 | 상태 |
+| --- | --- | --- |
+| TC-P0P5-PATH-001 | 승인된 repo 외부 실제 파일+기존 사내 출력 폴더에서 1회 `wx` 쓰기·재쓰기 거부 | Unit 작성 / 수정 HEAD CI 필요 |
+| TC-P0P5-PATH-002 | 외부 입력 파일 symlink가 repo 내부 DXF를 가리키면 realpath 차단 | Unit 작성 / 수정 HEAD CI 필요 |
+| TC-P0P5-PATH-003 | 외부 출력 디렉터리 symlink/junction이 repo 내부를 가리키면 차단 | Unit 작성 / 수정 HEAD CI 필요 |
+| TC-P0P5-PATH-004 | 기존 결과 파일·dangling symlink 파일 덮어쓰기 금지 | Unit 작성 / 수정 HEAD CI 필요 |
+| TC-P0P5-PATH-005 | 프리플라이트 이후 parent symlink 교체는 저장 직전 차단 | Unit 작성 / 수정 HEAD CI 필요 |
+| TC-P0P5-PATH-006 | 상대 경로·미생성 출력 부모 폴더 거부 | Unit 작성 / 수정 HEAD CI 필요 |
+| TC-P0P5-REL-001 | package/lock root `0.40.3` 일치, 기존 `v0.40.2` 이동/덮어쓰기 없음 | 정적 확인 / 실제 GHCR 게시 대기 |
+
+- 사전 PR CI HEAD `6377426`: [40195335561](https://github.com/planner77/layoutManager/actions/runs/40195335561) Verify/Docker 2 Job 성공. P1 리뷰 발견 이후 변경된 HEAD의 성공으로 간주하지 않는다. 실 설비 DXF 사내 검증/실 GPU 수용은 여전히 NOT RUN.
+- 경로 관련 E2E 테스트를 실행할 때는 부모 폴더가 **사전에 존재**하고 전용 ACL로 보호되어야 한다. 보고서는 자동 폴더 생성/기존 JSON 덮어쓰기 없이 사내에 신규 생성. 애플리케이션 정상 배포 시 GHCR App+Migrator immutable 버전 쌍은 Main push에서만 검증.
+
+
+## Issue #99 — 현장 실 DXF 매핑·GPU 성능 수용 시험 계획 (2026-10-25)
+
+**증거 구분:** Unit/PR CI는 합성 검증 전용. 사내 승인된 원본 DXF·CAD 정답값·외부 장비 계측·Owner SLA는 미입력. 현장 AC 4개는 전부 **BLOCKED / NOT RUN**.
+
+| TC | 입력/검사 | 코드/사내 시험 상태 |
+| --- | --- | --- |
+| TC-P0P5-001 | 최소 3개 다른 SHA 실제 승인 Source audit/browser report, 1k/10k/100k, Browser 5회; 완전하면 READY_FOR_OWNER_REVIEW (PASS 아님) | Unit 작성 / NOT RUN |
+| TC-P0P5-002 | Owner 오차/SLA 누락, 승인 누락, 3종/규모 부족을 BLOCKED | Unit 작성 / NOT RUN |
+| TC-P0P5-003 | 승인 SHA, source audit SHA, browser SHA, 파일 크기, 복제 SHA 불일치 차단 | Unit 작성 / NOT RUN |
+| TC-P0P5-004 | SOURCE-only schema 아닌 synthetic/범위 외 규모 및 임의 입력 차단 | Unit 작성 / NOT RUN |
+| TC-P0P5-005 | Browser 5회 미달·JS console/page 오류·box/load/frame/heap p95 SLA 초과 | Unit 작성 / NOT RUN |
+| TC-P0P5-006 | 원본 CAD WCS/면적 오차·SourceRender 매핑·BLOCK/OCS/Handle/곡선/Holes·미검증 Matrix 차단 | Unit 작성 / NOT RUN |
+| TC-P0P5-007 | GPU 사용/VRAM 외부 확인 누락, 8개 UI 동작·Worker cancel·CPU budget·Browser heap 초과 차단 | Unit 작성 / NOT RUN |
+| TC-P0P5-008 | null/손상 schema는 BLOCKED, PASS 반환 경로 없음 | Unit 작성 / NOT RUN |
+| TC-P0P5-REAL-01 | 승인 실 DXF 3종: WCS 좌표·면적·BLOCK/OCS, SHA/unique Handle, 1:N/N:1, 원본 미지원 제외/정합성, 외부 CAD 기준 독립 검증 | **FIELD NOT RUN** |
+| TC-P0P5-REAL-02 | 독립 Browser 5회/각 규모: mouse click/box, layer, zoom/pan, ESC/fullscreen, Worker cancellation, render mapping, errors, heap, rAF frame/interaction p50/p95 | **FIELD NOT RUN** |
+| TC-P0P5-REAL-03 | 브라우저/드라이버/CPU/GPU/VRAM/OS 환경 기록, 외부 GPU Utilization/VRAM, Owner SLA 사전 확정·초과 판정 | **FIELD NOT RUN** |
+| TC-P0P5-REAL-04 | 작업 DB/Storage isolation, 서명·비공개 반출 통제, 5회 이상 반복 결과 보존, Owner Signoff·실 데이터 복구/폐기 | **FIELD NOT RUN** |
+
+- 코드 변경 영향 PR CI: `npm run typecheck && npm run lint && npm test && npm run test:outline-benchmark && npm run build && npm run test:e2e` 및 기존 Legacy/Docker, 가능하면 신규 HEAD만 판정. **비공개 실 DXF 테스트는 GitHub CI에 넣지 않음**. 새로운 `npm run verify:outline-acceptance -- /private/manifest.json`은 승인 자료 보유 PC에서만 실행하며 이유 코드 이외 민감한 원본·SHA를 stdout에 출력하지 않는다.
+- 허용 오차(0.02 Drawing Unit)는 기존 서버 Geometry 분해 tolerance일 뿐 **현장 WCS/면적 정확도 Owner SLA로 임의 대체하지 않는다**. rAF WebGL identity도 GPU 이용률 근거로 전용하지 않는다. [Issue99](Issue99.md), [ADR-052](Decisions.md), [Operation](Operation.md).
 
 
 ## Issue #96 D1~D6 — 비활성 인증 모듈 검증 계획 (2026-10-25)

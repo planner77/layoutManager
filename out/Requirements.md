@@ -1,5 +1,18 @@
 # 상세 요구사항
 
+### #82 M1과 #99 Main 동시 요구 보존 (2026-10-25)
+
+- #82 Memo ADR-053은 Source Handle 0에도 자유 WCS 메모 생성 UI를 허용하면서 기존 Outline 도구를 fail-closed 유지한다. #99 ADR-052의 비공개 CAD/GPU P0/P5 Owner 판정·이행 게이트는 그대로, M1 공개 합성 E2E가 실도면 수용을 대체하지 않는다.
+- #99 신규 `verify:outline-acceptance` 실행 명령/검증 코드는 통합하고 app/lock root를 0.41.0 유지. #83 영속 Memo Auth/DB/API는 운영 게이트 미승인으로 비활성.
+
+
+### Issue #82 M1 요구 보완 — Stable Handle 없는 도면에서도 자유 WCS 메모 활성화
+
+- FR-M1-01/05 세부 계약: 도면 Renderer가 DXF three-dxf-viewer ready이고 Version/SHA 식별자가 유효하면 메모는 **Source 선택 가능한 Entity 수 0/안정 Handle 0에도** 자유 WCS XY 배치 가능. 기존 U3/U5 Source/Generated Selection Tool과 Outline 생성은 별도 RenderCoverage·Handle gate에 의해 계속 차단된다.
+- 공유 `viewer-tools-dock`의 존재 자체를 선택/외곽선 생성 활성화 판단으로 취급하지 않는다. `cad-object-selection-tools`/Outline panel/버튼 enabled 여부와 `cad-memo-status`를 독립 검사하고, 비지원 Renderer에서 Memo와 도크를 차단한다. TC-U1-E2E-001/002·TC-M1-E2E-006.
+- 실제 업무/운영 메모 서버 저장·작성자·RBAC/감사/Prisma는 미변경(#83). Run 40198344153 기존 HEAD E2E 실패 이후 **요구/테스트만 보완**, 기능 런타임 확장 없음.
+
+
 ## Issue #102 G0 / ADR-051-R1 — Owner 경량 보안 범위 재정의 (2026-10-25)
 
 | 요구 ID | 수용할 결정·기능 | 상태/후속 |
@@ -35,6 +48,19 @@
 
 - **비범위:** #83 영속 UUID·작성자·API/DB, #84 Source/Generated target snap/relative transform, #85 메모 Tree/show-hide, #86 schedule/done, #88 memo link, #90 목록 전역 검색. #2 도면 설명 그대로. 원본 bytes/SHA/Current/Layer 및 Auth/Prisma/API 기능 활성화 없음.
 - **실행 근거:** TC-M1-UNIT-001~006/E2E-001~003 작성 상태; CI/실 DXF/Native/GPU PASS 판단은 실제 실행 후 별도.
+
+
+## Issue #99 — P0 정확도·P5 성능 현장 증거 요구 (2026-10-25)
+
+| ID | 수용 전 필수 조건 | 검증 |
+| --- | --- | --- |
+| FR-P0P5-01 | 사내 승인 실 DXF 서로 다른 SHA 최소 3종, 1k·10k·100k 대표 supported Entity, 동일 SHA/byte source audit·Browser 결과, 5회 이상 반복 | TC-P0P5-001~004; 현장 샘플 |
+| FR-P0P5-02 | 실제 CAD WCS XY·면적 상대 오차, Handle/instancePath/INSERT·BLOCK/OCS, 곡선/Polygon union/Holes, Source↔Render 1:N/N:1, 미지원 fail-closed 제외 건수+Matrix를 독립 검증 | TC-P0P5-006; Owner CAD 비교 |
+| FR-P0P5-03 | 실제 Browser click/box/layer/zoom/pan/ESC/fullscreen/Worker 취소, 로드/선택·rAF frame p95, Browser heap·CPU parse/query, 장비 GPU 이용률·VRAM 외부 계측 | TC-P0P5-005/007; 사내 브라우저/계측 |
+| FR-P0P5-04 | Owner가 모든 위치·면적 오차, CPU/browser/GPU·메모리 SLA를 사전 지정, 누락·초과는 BLOCKED. READY_FOR_OWNER_REVIEW는 최종 Owner 승인 아닌 입력 증거 충족 | TC-P0P5-002/005~008 |
+| NFR-P0P5-01 | DXF/경로·Layer·Handle·장비 정보는 공개 Repo/Actions 제외, 격리된 DB·Storage에서만 비Current test upload. 원본 SHA/Current/Version/Viewer/API/Prisma/런타임 변경 금지 | 코드/문서 정적 검토 및 현장 감사 |
+
+- **실제 측정과 승인 상태:** 현재 approved 실 DXF, CAD Reference, GPU 장치, Owner SLA 및 서명 입력 없음. 따라서 FR 모두 **FIELD BLOCKED**이며 synthetic CI가 통과하더라도 이를 완료로 변환하지 않는다. [Issue99](Issue99.md), [ADR-052](Decisions.md), [TestPlan](TestPlan.md).
 
 
 ## Issue #96 — P4-D1 승인 정책/비활성 요구 추적 (2026-10-25)

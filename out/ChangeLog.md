@@ -1,5 +1,18 @@
 # ChangeLog
 
+### #82 PR #111 — #99 Main 코드·정책 통합, ADR-053 재번호화 (2026-10-25)
+
+- #99 실 DXF Private evidence gate/CLI, symlink path 보호, 테스트와 npm `verify:outline-acceptance` script를 최신 main에서 모두 유지. #99 실DXF ADR-052는 불변, #82 WCS Memo ADR은 중복 방지 위해 ADR-053으로 이동. 0.41.0(app/lock root)과 현 0.40.3 main 패치 이력을 구분하며 재게시·태그 이동·GHCR 승격 없음.
+- 새 통합 HEAD CI에서 U1 shared Memo Dock 정정과 #99 Unit/Build/E2E 회귀를 다시 검증해야 한다. CI 시작은 PASS와 다름.
+
+
+### Issue #82 / PR #111 — 2차 CI 77/78 E2E 회귀 U1/M1 계약 수정 (2026-10-25)
+
+- 최초 lint 실패 교정 뒤 PR CI [40198344153](https://github.com/planner77/layoutManager/actions/runs/40198344153)에서 Typecheck/Lint/Unit/Benchmark/Build/Docker PASS, Chromium E2E 77 PASS/1 FAIL (U1 기존 dock 부재 assertion). Legacy SKIPPED.
+- Memo M1 FREE WCS가 Source stable Handle 없이도 지원되는 현행 설계를 유지하며, U1 test assertion을 Memo status Dock과 Source/Outline 도구 미노출 개별 검사로 전환. dxf-viewer·DWG에서는 Memo disabled 검증, 무Handle DXF의 WCS 메모 생성 신규 TC-M1-E2E-006 추가. 원본 U1 기능/스크롤·ESC·레이어 테스트 유지.
+- 제품 코드·앱 버전 0.41.0·API/DB/Prisma/Auth/원본 SHA/Current/GeneratedDocument/배포 정책 불변. 새 HEAD CI 미확인; 기존 실패 원장 보존.
+
+
 ### Issue #82 / PR #111 — 최초 CI ESLint 차단 및 편집 리뷰 보완 (2026-10-25)
 
 - 기존 `1515eca` [Run 40196496297](https://github.com/planner77/layoutManager/actions/runs/40196496297) Verify Typecheck PASS/ESLint 2 errors FAIL, 나머지 Verify SKIPPED, Docker Job PASS. React ref/render 규칙 위반, E2E let→const, 불필요 lint suppression 제거.
@@ -10,8 +23,22 @@
 
 - `MemoSession` 도메인(Version UUIDv4+SHA64/UUIDv4 local, NFC 제목·본문 유효성, WCS finite ±1e12, 100건 상한), `CadMemoOverlay` WCS 고정 pin+plain-text label, 클릭 자유 배치/위치 드래그 Ghost 취소·확정, 수치 이동과 텍스트만 별도 수정/삭제.
 - `ViewerManager/ThreeDxfViewerAdapter` CSS px↔WCS Orthographic 변환과 카메라/Resize 갱신; M1 메뉴/툴을 Viewer shell에 연결하고 #40 Outline 생성/Generated 선택·Source hit-test와 분리. 메모는 Reload/Version/Renderer 전환에서 소멸하고 Auth/영속 저장이 없음을 명시.
-- Unit 6/E2E 3 및 opt-in Benchmark 2(1k/10k synthetic DXF) 작성, [Issue82](Issue82.md)/ADR-052·Requirements/Architecture/TestPlan/TestReport/README/AGENTS 동기화. Native/실 CAD/GPU/100 Memo 성능 미실측. Typecheck/Lint/Unit/E2E/Build/Docker/PR CI 결과 **NOT RUN/NOT VERIFIED**(실제 완료 뒤 판단).
+- Unit 6/E2E 3 및 opt-in Benchmark 2(1k/10k synthetic DXF) 작성, [Issue82](Issue82.md)/ADR-053·Requirements/Architecture/TestPlan/TestReport/README/AGENTS 동기화. Native/실 CAD/GPU/100 Memo 성능 미실측. Typecheck/Lint/Unit/E2E/Build/Docker/PR CI 결과 **NOT RUN/NOT VERIFIED**(실제 완료 뒤 판단).
 - `src/package.json`/`src/package-lock.json` root 0.41.0 정렬. DB/API/Prisma/Auth/Docker/Version·SHA/Current/원본·Generated edit·#2 설명 기능 불변, 영속 #83 별도 차단.
+
+
+## Unreleased — Issue #99 PR #110 P1 보안 리뷰 보완 / GHCR v0.40.3 후보 (2026-10-25)
+
+- 원 HEAD `6377426` [PR CI 40195335561](https://github.com/planner77/layoutManager/actions/runs/40195335561) Verify/Docker 모두 SUCCESS. 이후 P1 리뷰에서 실제 repo 외부 경로가 Symlink를 통해 repo 내부를 가리킬 수 있는 개인 정보/도면 SHA 기록 위험 지적.
+- `private-acceptance-paths.ts`의 canonical 실제 경로 비교, 기존 별도 사내 출력 디렉터리 필수, 기존 Report/symlink 덮어쓰기 금지 및 `wx/0600`·쓰기 직전 부모 재검사로 보완. TC-P0P5-PATH-001~006 Unit 추가, Private E2E 연계. 2차 Run은 원본 성능/정확도 현장 수용과 분리.
+- 기존 `v0.40.2` tag와 immutable 이미지를 재사용하지 않도록 신규 paired GHCR 발행 **준비 버전 `0.40.3`**으로 package/lock 정렬. 최신 HEAD CI, Main CI/GHCR 게시 및 현장 수용 여부는 별도 증거 확보 전 NOT VERIFIED. 영속 운영 Auth/API/Prisma/Viewer/원본 DXF/Current 기능 OFF 유지.
+
+
+## Unreleased — Issue #99 실 DXF P0/P5 Evidence Readiness (2026-10-25)
+
+- 승인 real DXF 3종/1k·10k·100k, Source audit SHA + Browser report Schema v2/5회, CAD WCS·면적 및 Source↔Render·BLOCK/OCS·지원 Matrix, 외부 GPU telemetry와 8개 조작/Owner SLA를 **비공개** manifest로 검증하는 fail-closed pure gate/CLI + TC-P0P5-001~008 Unit 작성.
+- `test:outline-acceptance`는 승인 SHA·Repo 외부 report path 필수. 로컬 Three Browser의 box interaction 시간·rAF frame p95·WebGL identity를 계측하나 GPU 이용률/VRAM은 외부 장비 검사. 기존 `audit:outline` source-only와 공개 synthetic benchmark 분리 유지.
+- Owner 현장 샘플/SLA/실측/서명 **NOT RUN/BLOCKED**, `READY_FOR_OWNER_REVIEW`는 합격 아님. 기존 CAD 원본/SHA/Current/Version, DB/API/Prisma/Viewer Adapter/GHCR/Docker/인증 런타임 불변, 앱 버전 0.40.2 유지. [Issue99](Issue99.md), ADR-052, TestPlan/TestReport.
 
 
 ## Unreleased — Issue #96 비활성 인증·Scope·세션·감사 도메인 (2026-10-25)

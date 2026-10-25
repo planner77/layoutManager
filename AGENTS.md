@@ -1,5 +1,18 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #82 / PR #111 — #99 Main 통합 및 ADR-053 (2026-10-25)
+
+- 최신 #99 main의 비공개 실DXF evidence gate/CLI·Unit·Private E2E, npm `verify:outline-acceptance` script와 설계·원장을 보존한다. #99의 ADR-052와 구별하기 위해 #82 Memo M1의 기존 ADR-052를 **ADR-053**으로 재번호화한다. #99 0.40.3 후보 이후 #82 app/lock 버전 **0.41.0**을 유지(과거 태그/digest 이동 없음).
+- #99 실 DXF/GPU 현장 수용과 #96/#83 운영 인증·메모 영속화는 미승인/비활성. 메모 단위 TEST/Source Handle 분리와 이전 실패 원장을 보호하고 신규 통합 HEAD CI 성공 전 PASS 금지.
+
+
+## Issue #82 / PR #111 — 2차 CI E2E U1/M1 shared dock 회귀 계약 (2026-10-25)
+
+- [PR CI 40198344153](https://github.com/planner77/layoutManager/actions/runs/40198344153) 수정 전 HEAD ac9226ff: Typecheck/Lint/Unit/OCI test/DXF source benchmark/Build PASS, Chromium E2E 77 PASS/1 FAIL, Legacy SKIPPED, Docker PASS. 실패는 TC-U1-E2E-001의 구형 `viewer-tools-dock == 0` (actual 1) 기대. #82 Memo 자유 WCS 도구는 안정 Source Handle 0이어도 활성이고, U3 Source/Outline 생성은 **계속 disabled**여야 한다.
+- #38 U1 시험은 실제 업무 의미로 구체화: 세션 Memo status Dock 유효·Source selection/outline tools 없음·Outline 메뉴 disabled, `dxf-viewer`/DWG에서는 Memo disabled·Memo Dock 없음. 추가 TC-M1-E2E-006에서 Handle 없는 DXF의 메모 WCS(10,20) 표시/Zoom·Fit 및 #40 fail-closed 병행 검증. 제품 코드/DB/Auth/원본/GHCR 버전(0.41.0)은 변경하지 않음.
+- 실패 원장 [FailureLedger](out/FailureLedger.md), [Issue82](out/Issue82.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md)를 확인. E2E가 예전 UI와 다르다는 이유만으로 Memo 기능을 비활성화하거나 Source 안전 게이트를 풀지 말 것. 새 HEAD CI 시작은 PASS 아님.
+
+
 ## Issue #102 / ADR-051-R1 — Owner 내부망 경량 보안 범위 결정 (2026-10-25)
 
 - **최신 우선 정책:** [Issue102](out/Issue102.md), [ADR-051-R1](out/Decisions.md). 운영은 공개망 인바운드 제한 사내 업무망의 **Nginx 경유**, 개발은 **개발 App 직접 접속**. 이전 #96 D6/G0~G7의 적대적 공격·계정/세션 탈취 대응/침투시험을 필수 보안 게이트로 제시한 문구는 R1에서 대체한다.
@@ -12,16 +25,40 @@
 
 - 최초 [PR CI 40196496297](https://github.com/planner77/layoutManager/actions/runs/40196496297) HEAD `1515eca`는 Typecheck PASS / ESLint 2 errors FAIL / Unit·Build·Chromium E2E·Legacy **SKIPPED**, Docker Job SUCCESS. `react-hooks/refs`(Overlay render 중 `gesture.current`), E2E `prefer-const`(pin), unused lint-disable warning을 수정. 기존 Outline Tree ARIA 경고는 별도, 이번 실패 원인 아님.
 - [P1 review 4370961641](https://github.com/planner77/layoutManager/pull/111#discussion_r4370961641): **새 메모 배치뿐 아니라 기존 메모 pin pointerdown·최근 목록 클릭에서도** Outline/Generated edit mode와 독점. 먼저 Pending Outline worker/selection·Generated command를 취소하고 Pan으로 전환, 그 뒤 memo drag anchor를 획득. [P2 review 4370961642](https://github.com/planner77/layoutManager/pull/111#discussion_r4370961642): 5px 이상 drag 뒤 synthetic click으로 미저장 메모 제목·본문이 초기화되지 않게 click 1회 무시, 일반/키보드 선택은 유지. 같은 memo 재선택은 편집 폼 데이터 덮어쓰기 금지.
-- 신규 `TC-M1-E2E-004/005` 작성; 실제 실행/새 PR CI PASS는 별도 증거 필요. [FailureLedger](out/FailureLedger.md), [Issue82](out/Issue82.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md), ADR-052. 0.41.0 유지, Server CRUD/Prisma/Auth/원본/Current/GeneratedDocument/GHCR 불변.
+- 신규 `TC-M1-E2E-004/005` 작성; 실제 실행/새 PR CI PASS는 별도 증거 필요. [FailureLedger](out/FailureLedger.md), [Issue82](out/Issue82.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md), ADR-053. 0.41.0 유지, Server CRUD/Prisma/Auth/원본/Current/GeneratedDocument/GHCR 불변.
 
 
 ## Issue #82 / M1 — DXF WCS 메모 세션 Overlay · 명시적 위치 확정 (2026-10-25)
 
-- **범위/설계:** [Issue82](out/Issue82.md), [ADR-052](out/Decisions.md), [Architecture](out/Architecture.md), [Requirements](out/Requirements.md), [TestPlan](out/TestPlan.md). 루트 DESIGN.md 부재로 Architecture/Decisions를 기준으로 한다. 상위 #81, M2 #83(영속 인증/DB)은 별도 BLOCKED.
+- **범위/설계:** [Issue82](out/Issue82.md), [ADR-053](out/Decisions.md), [Architecture](out/Architecture.md), [Requirements](out/Requirements.md), [TestPlan](out/TestPlan.md). 루트 DESIGN.md 부재로 Architecture/Decisions를 기준으로 한다. 상위 #81, M2 #83(영속 인증/DB)은 별도 BLOCKED.
 - **구현:** `src/domain/cad-memo.ts`의 Version UUIDv4 + SHA-256(64 hex) 범위 브라우저 전용 `MemoSession`(최대 100건), NFC 제목 1~100자/본문 0~2,000자, C0/C1 제어문자 차단/문자열 그대로 렌더, WCS XY ±1e12 유한 검증, 로컬 CSPRNG UUID. createdBy/updatedBy는 인증되지 않아 저장·표시하지 않는다.
 - **상호작용:** `ViewerMenuBar` 메모 추가→`ViewerManager.clientToWcs`→`ThreeDxfViewerAdapter` WCS↔CSS pixel projection→독립 `CadMemoOverlay`/편집 도크. 자유 Canvas 배치/좌표 직접 입력 → 확정; 텍스트 수정은 좌표 불변, 좌표 적용 또는 pin 드래그 5px 이상 pointerup만 위치 확정. Escape/blur/wheel/scroll/camera/resize/대상 소실/모드·Renderer·Version 변경은 미확정 드래그 취소. 메모 도구는 외곽선 생성/객체 편집 선택과 동시 동작하지 않고, pin 이외 label은 hit-test 통과.
 - **수명·안전:** 임시 메모 reload/renderer/Version 변경에 소멸. 원본 DXF bytes/SHA/Current/Layer·GeneratedDocument/JSON·#2 description·서버 API/Prisma/DB/배포/계정 활성화 불변. DXF+three-dxf-viewer ready와 Version/SHA 형식 확인시에만 UI 활성. 이 형식 확인은 실제 원본 서버 검증·권한 승인으로 오인 금지.
 - **증거:** Unit `TC-M1-UNIT-001~006`, Playwright `TC-M1-E2E-001~003` 및 opt-in `src/tests/benchmark/issue82-memo-large.benchmark.ts`(synthetic 1k/10k LINE, 실제 CPU/GPU 수치 미측정) 코드 작성. 원격 GitHub 커넥터 환경에서 Typecheck/Lint/Unit/Build/E2E/Docker/실 CAD·GPU **NOT RUN**. PR CI 시작만으로 PASS/현장 승인 주장 금지. #83 서버 M2, #84 Snap, #85 Tree, #86 일정, #88 공유 링크, #90 목록 검색은 후속.
+
+
+## Issue #99 → #113 현장 수용 잔여 이관/행정 종료 경계 (2026-10-25)
+
+- [후속 #113](https://github.com/planner77/layoutManager/issues/113)에 원 #99의 **실 DXF/CAD/GPU·UI/Worker·데이터 보호·Owner 서명 AC-99-01~04를 체크 전부 미완 상태로 보존**한다. PR #110 구현은 수용 증거를 모으는 도구만 제공하며 실제 현장 합격을 증명하지 않는다.
+- 사용자의 #99 이슈 종료 지시는 **PR 구현/코드 검증 후 범위 분리 행정 종료**로 해석한다. #113이 OPEN/BLOCKED이고 현장 검증이 없다면 #99를 `completed`로 잘못 표시하거나 #96/#98 서버 운영을 ON 하지 않는다. #99를 닫는 경우 `not_planned`(잔여 필드 AC #113으로 이관) 사유와 사용자의 별도 최종 수용 의무를 반드시 남긴다.
+- **절차:** P1 리뷰 해결→현재 변경 HEAD의 PR CI 전체 성공/behind 0/mergeable→Squash 병합→Main CI 시작/신규 GHCR paired publish 시작 확인→#99 잔여 이관 확인 후 행정 종료. Main CI/GHCR 상태를 감시하지 않는 경우 실행 시작과 이미지 게시 성공을 구별한다.
+
+
+## Issue #99 / PR #110 — P1 private 경로 Symlink 차단·v0.40.3 재검증 게이트 (2026-10-25)
+
+- **기존 성공과 수정 HEAD 구분:** [PR CI 40195335561](https://github.com/planner77/layoutManager/actions/runs/40195335561)는 원 HEAD `637742610b3eb25461b095edb5899494ce6dd054`의 Verify(121174841714)/Docker(121174841754) 모두 `completed/success`. 이 성공 이후 [P1 리뷰 4370918614](https://github.com/planner77/layoutManager/pull/110#discussion_r4370918614)에서 `resolve()`가 외부 Symlink→repo를 따라가지 않아 승인 사내 SHA/GPU 보고서가 Git worktree에 기록될 수 있음이 발견되었다. CI 실패와 구분해 [FailureLedger](out/FailureLedger.md)에 이력 보존.
+- `src/tests/benchmark/private-acceptance-paths.ts`의 `realpathSync`로 Source 파일과 Report **기존 부모 디렉터리**의 실제 위치를 검증, Git worktree 내부로 가는 symlink·junction 차단. Report 부모는 운영자가 **미리 만든 사내 전용 디렉터리**여야 한다. 기존 파일·dangling symlink 거부, `wx/0600` 배타 생성(덮어쓰기 금지), 저장 직전 부모 실제 경로 재확인. 기존 E2E는 같은 안전 경로를 사용. `TC-P0P5-PATH-001~006` Unit 추가. 신뢰할 수 없는 사용자가 부모 디렉터리를 실행 중 변경하지 못하도록 사내 ACL 필수.
+- GHCR `v0.40.2` 태그 존재를 확인했다. User의 신규 GHCR 게시 요청은 구 태그 이동/덮어쓰기 금지이므로 package+lock root `0.40.3`으로 정렬하여 Main의 조건부 App/Migrator Pair 신규 게시 후보로 준비한다. **수정 HEAD PR CI 전체 성공·미해결 리뷰 0·main 무충돌 전 병합 불가**. Main CI 시작은 GHCR digest 게시 성공이 아니다.
+- 실제 DXF 3종/CAD 기준 오차·1k/10k/100k GPU·Owner SLA/수동 E2E/서명은 여전히 `NOT RUN / BLOCKED`. **운영 수용 완료로 Issue #99를 completed 종결하지 않는다.** Field AC의 계속 추적/이관 없는 행정 종결도 방지해야 한다. #96/#98 Auth/Outline 운영 기능 OFF 유지.
+
+
+## Issue #99 — 실 DXF P0/P5 Evidence Gate, Owner 현장 수용 미완 (2026-10-25)
+
+- 별도 DESIGN.md는 저장소에 없다. [Issue99](out/Issue99.md), [Architecture](out/Architecture.md), [ADR-052](out/Decisions.md), [Requirements](out/Requirements.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md)가 우선 근거다. #31 P0/P5 운영 잔여를 별도 검증한다.
+- 기존 `audit:outline` schema v1 SOURCE-only/CI synthetic 1k·10k·100k는 실 CAD·GPU PASS가 아니다. 비공개 `test:outline-acceptance`는 승인 SHA + 보고서 절대 경로를 필수로 하고 repo 외부/격리 DB에서 실제 파일 한 건, 브라우저 5회 Schema v2(render mapping/selected/excluded/box latency/rAF frame/heap/WebGL)를 생성. rAF·WebGL 문자열은 GPU 사용률/VRAM이 아니며 외부 GPU 성능 수치는 Owner 현장에서 별도 측정한다.
+- `npm run verify:outline-acceptance -- /private/manifest.json`는 비공개 감사+브라우저 결과의 SHA/크기·각 5회·3종/1k/10k/100k, CAD WCS/면적·1:N/N:1/Handle·BLOCK·OCS/곡선/Holes·미지원 제외, 8개 조작·외부 GPU 계측·Owner SLA를 fail-closed 판정한다. **임계값 기본값을 만들어내지 않으며** 출력은 비민감 이유 코드 `BLOCKED` 또는 `READY_FOR_OWNER_REVIEW`(합격 아님)뿐이다. 단위 TC-P0P5-001~008 추가.
+- 원본 DXF/경로/레이어·Handle/로그·기기 식별자를 Git/공개 CI에 포함 금지. 실 파일 시험은 승인된 disposable DB/Storage만 허용(업로드는 DB에 행을 추가하므로 production 실행 금지). 소스·Viewer Adapter/API/Prisma/DB/Current/SHA/Version/GHCR·런타임 env 변경 없음, 초기 버전 0.40.2에서 신규 GHCR 후보 0.40.3으로 변경.
+- 실도면·CAD 정답·실 GPU/Owner 수치 예산/실제 기능 수동시험 및 Owner 서명은 **NOT RUN / BLOCKED**. PR CI가 성공해도 Issue #99 AC 4개 완료나 #96/#98 운영 활성화가 아니다. Owner 검증 이후에만 Issue 종료 검토.
 
 
 ## Issue #96 — D1~D6 Owner 세부 정책 및 비활성 구현 (2026-10-25)

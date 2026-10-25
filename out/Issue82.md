@@ -1,5 +1,20 @@
 # Issue #82 — CAD Memo M1 / WCS 브라우저 세션 메모
 
+## #99 최신 main 통합과 ADR 재번호화 (2026-10-25)
+
+- #99 main d85b86ab의 비공개 실 DXF evidence 게이트/검증 CLI·private acceptance Browser/Unit 및 신규 `verify:outline-acceptance` package script는 보존한다. #99 실DXF 의사결정이 ADR-052를 소유하므로 이 Issue #82 메모 M1의 설계 ADR만 **ADR-053**으로 변경한다.
+- 기존 main 0.40.3 후보보다 뒤 버전인 Memo M1 후보 0.41.0을 app·lock root에 적용하되 신규 실제 릴리스/GHCR 게시 완료로 주장하지 않는다. #99/#113 실DXF/GPU/Owner 수용, #83 서버 영속 Auth/Prisma는 별도 미완 게이트다.
+- #99 병합 이후 U1/M1 shared dock 테스트와 새로운 P0/P5 순수 게이트 Unit을 포함한 최신 HEAD의 PR CI 결과를 다시 검증해야 한다. 앞선 40198344153 Run의 E2E 77/78은 구 HEAD 근거이다.
+
+
+## PR #111 — 두 번째 CI E2E U1/M1 공존 계약 교정 (2026-10-25)
+
+- [Run 40198344153](https://github.com/planner77/layoutManager/actions/runs/40198344153), HEAD ac9226ff2e2c619bc009dd8bf293c3f26c22dc44. Typecheck/ESLint/Vitest/OCI manifest/DXF source synthetic benchmark/Production Build 및 Docker Job **SUCCESS**. Chromium Playwright 78건 중 **77 PASS / 1 FAIL**, Legacy E2E SKIPPED. 원본 증거/Job/trace ID는 [FailureLedger](FailureLedger.md) 참조.
+- 실패: `TC-U1-E2E-001`의 도크 0개 단정은 U1/U3 전용 시절 계약. U1 합성 DXF는 Stable Handle이 없어서 Outline 버튼 및 객체 선택 도구는 여전히 비활성이나, #82 새 Memo M1은 free WCS anchor이고 안정 Handle이 필요 없으므로 **Memo status Dock 1개가 정상**.
+- 개선: `issue38-app-shell.spec.ts`에서 shared dock 존재 여부 대신 **기능별 계약**(Outline disabled/선택·생성 tools 없음/Memo status 0·Memo 버튼 enable/비지원 Renderer disable)을 검증. `TC-M1-E2E-006` 신규 독립 no-Handle DXF에서 WCS(10,20) 메모 작성·Zoom/Fit·원본 선택 불가 동시 확인. 기존 Viewer/Layer/Resize/ESC 및 Memo E2E-001~005 회귀는 유지. 제품/UI/Server/API/Prisma 코드 변경 없음.
+- 새 HEAD의 테스트 PASS/실 CAD/GPU/native/fullscreen 수용은 별도. #83 Memo 영속과 #96 운영 인증 활성화는 계속 BLOCKED.
+
+
 ## PR #111 — 첫 CI 실패와 P1/P2 리뷰 대응 (2026-10-25)
 
 - [CI Run 40196496297](https://github.com/planner77/layoutManager/actions/runs/40196496297) 기존 HEAD `1515eca`, Verify Job ESLint 오류 2건으로 failure(React `react-hooks/refs`, Playwright E2E `prefer-const`), TypeScript SUCCESS, 나머지 Verify Unit/Build/E2E/Legacy SKIPPED. Docker Job SUCCESS. Reviewer finding P1 #4370961641(기존 메모 모드 중첩), P2 #4370961642(Drag synth click 초안 초기화). 위 세 가지는 서로 구분.
@@ -9,7 +24,7 @@
 
 - **원 이슈:** https://github.com/planner77/layoutManager/issues/82
 - **Epic:** #81 / **선행:** #25/#38 ViewerAppShell, #51/52 객체 선택·생성, #26 WCS focus, #54 이동; **후속:** #83/#84/#85/#86/#88/#90
-- **설계:** DESIGN.md 없음; `AGENTS.md`, `out/Architecture.md` 및 ADR-052(Decisions.md)를 우선.
+- **설계:** DESIGN.md 없음; `AGENTS.md`, `out/Architecture.md` 및 ADR-053(Decisions.md)를 우선.
 - **계획/개발:** `feat/82-cad-memo-m1`, 2026-10-25. 현행 버전 0.40.2 기반 기능 추가 → 신규 0.41.0 예정. 원격 GitHub 커넥터 코드·문서 작성, PR CI 시작까지만 진행(사용자가 모니터링 생략 지시).
 
 ## 현재 요구/범위 계약

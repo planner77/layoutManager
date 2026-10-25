@@ -1,5 +1,18 @@
 # 실제 검증 결과 및 Viewer 평가
 
+### PR #111 — 동시 main #99 통합 HEAD의 검증 경계 (2026-10-25)
+
+- 두 번째 CI [40198344153](https://github.com/planner77/layoutManager/actions/runs/40198344153) E2E 77/78은 #99 선행 병합 **전**의 HEAD `ac9226ff`에 대한 판정이다. #99에서 추가된 실DXF P0/P5 Evidence gate/CLI, Unit, package script를 통합한 새로운 HEAD는 Typecheck/ESLint/Vitest/Build/Chromium/Legacy/Docker 성공을 아직 확인하지 않았다.
+- ADR 중복은 #99의 **ADR-052**, #82 Memo의 **ADR-053**으로 분리. 0.41.0(app/lock)과 `verify:outline-acceptance` 보존. 실도면/GPU/Owner/P4 Auth·Memo 영속 활성화는 본 PR의 검증 결과가 아니다.
+
+
+## Issue #82 / PR #111 — 두 번째 CI: E2E 77/78 및 U1 공유 도크 기대 불일치 (2026-10-25)
+
+- [PR CI #40198344153](https://github.com/planner77/layoutManager/actions/runs/40198344153), HEAD `ac9226ff2e2c619bc009dd8bf293c3f26c22dc44`, synthetic merge `8445df4c361e469d68e161010a66869fdbb0bd75`, **completed/failure**. Verify [Job 121183959441](https://github.com/planner77/layoutManager/actions/runs/40198344153/job/121183959441): Typecheck·ESLint·Vitest (Memo Unit 6 포함)·OCI Unit·synthetic DXF Source benchmark·Production Build SUCCESS, Chromium E2E **77 PASS / 1 FAIL (78건)**, Legacy E2E SKIPPED. Docker [Job 121183959402](https://github.com/planner77/layoutManager/actions/runs/40198344153/job/121183959402) SUCCESS. trace artifact ID `12601805000`. 이 결과는 이전 HEAD 한정.
+- 실패 테스트 `src/tests/e2e/issue38-app-shell.spec.ts:58` `TC-U1-E2E-001`: 무Handle fixture의 옛 `viewer-tools-dock` 0 기대/실제 1. U3 Source 선택/Outline 도구는 fail-closed이나 #82 Memo는 독립 WCS 자유 배치 기능이므로 새로운 공유 Dock 자체는 올바르게 표시됨. 제품 코드 변경 없이 기능별 U1 기대값을 분리하고 `TC-M1-E2E-006`(무Handle DXF Memo WCS 배치) 추가.
+- 원본 U1/신규 M1 E2E를 skip하거나 기존 Source mapping 검증을 완화하지 않음. 새 수정 HEAD E2E·타 Gate는 **NOT VERIFIED**, 실 CAD/GPU/native·메모 100개 장기 성능은 **NOT RUN**. [FailureLedger](FailureLedger.md), [Issue82](Issue82.md), ADR-053. #96/#83 운영 auth/Memo CRUD 활성화 없음.
+
+
 ## Issue #102 — Owner 공격 대응 비범위 문서 정렬 (2026-10-25)
 
 - G0 #102 및 ADR-051-R1에서 보안 공격/자격증명·세션 탈취 대비 강화·침투시험은 Owner에 의해 비범위로 결정되었다. `OWNER_ACCEPTED_SCOPE`는 **정책상 위험 수용**이며 안전성/침투시험 PASS가 아니다. HTTP 비암호화 위험은 여전히 존재한다.
@@ -17,12 +30,49 @@
 
 ## U-ISSUE82-M1-20261025 — WCS 세션 메모 구현/시험 코드 작성, 실제 실행 대기
 
-- **범위/출처:** [Issue82](Issue82.md), 상위 #81, [ADR-052](Decisions.md), [Architecture](Architecture.md), [Requirements](Requirements.md). 구현 브랜치 `feat/82-cad-memo-m1`; 최초 main 기준 SHA `ab094a541b4db44c15598f40b0699f8e6214ecae`.
+- **범위/출처:** [Issue82](Issue82.md), 상위 #81, [ADR-053](Decisions.md), [Architecture](Architecture.md), [Requirements](Requirements.md). 구현 브랜치 `feat/82-cad-memo-m1`; 최초 main 기준 SHA `ab094a541b4db44c15598f40b0699f8e6214ecae`.
 - **코드:** `domain/cad-memo.ts`는 Preview UUIDv4/Version·SHA scope/finite WCS/길이·제어문자/100 memo session 문서. ViewerManager/three-dxf-viewer는 WCS ↔ CSS pixel 카메라 변환과 리프레시 notify. `CadMemoOverlay`는 pin 클릭/ghost drag, label plain-text 및 viewport render 동기화. `CadMemoEditor` 제목·본문/수치 위치를 독립 확정. 기존 UI Outline Tool과 상호 배타 제어.
 - **작성된 테스트:** Vitest 6(`TC-M1-UNIT-001~006`), Playwright synthetic DXF 3(`TC-M1-E2E-001~003`), 별도 opt-in Benchmark 2(`TC-M1-BENCH-1000/10000`, 합성 LINE 1k/10k DXF 로드·5 메모·Resize/Reload 계측, 실행 및 값 확인 전). 테스트 추가는 PASS 근거가 아님. 제한/버전·SHA/HTML 문자 표기/부정 입력·Cancel·Reload/Renderer/Mode/기존 Source hit 경계를 검증하도록 설계.
 - **실행 상태:** GitHub Connector 원격 브랜치 수정. 컨테이너 `git ls-remote`는 DNS `Could not resolve host: github.com`로 실패해 checkout 불가. `npm ci`/Typecheck/Lint/Unit/Build/Chromium E2E/Legacy migration/Docker/실 CAD·GPU/native fullscreen/100 memos 프레임 실측 **NOT RUN**, PASS·성능 수치·원본 Source 안전 확인 주장 금지. PR 생성에 의한 PR CI 시작/성공/현장 승인 구별.
 - **무변경:** `src/app/api`, Prisma/DDL/Migration, Auth/Session/Role/Scope/Audit 운영 기능, Docker/Compose/원본 bytes/SHA·Version/Current, Canvas Source Geometry/GeneratedDocument/Undo/JSON, 이전 #2 description. #83 영속 및 관련 보안 승인 BLOCKED.
 - **수용 잔여:** 최신 HEAD CI 모든 Job 실제 성공, 리뷰 미해결 0/Conflict 0 확인 후 후속 merge 판단. DXF 1k/10k/100k·실도면 GPU/Native/DPR/100 메모 성능은 현장별 별도 결과 필요. 실패 확인 전 FailureLedger에 허위 기록 없음.
+
+
+## Issue #99 / PR #110 — 성공 HEAD와 #102 통합 HEAD 테스트 분리 (2026-10-25)
+
+- 원 P1 리뷰 보완 HEAD `6e00d3385a5c16362669d0672b828ddc1eaebf04`의 [PR CI 40197221768](https://github.com/planner77/layoutManager/actions/runs/40197221768)는 Verify Job `121180619434` 및 Docker Job `121180619279` 모두 **completed/success**. 이전 최초 HEAD `6377426`의 성공 [40195335561](https://github.com/planner77/layoutManager/actions/runs/40195335561)와 구별.
+- 후속 [#102 Main a14df20f](https://github.com/planner77/layoutManager/commit/a14df20f1fa466b7ede61ab3b4dc36f93daa014f)는 **문서 전용** ADR-051-R1 Owner 내부망 보안 범위 보완; #99 브랜치와 공통 문서 충돌을 해소할 때 두 정책을 보존하고 새로운 통합 HEAD로 PR CI 재검증 필요. **통합 HEAD 검증 결과는 새 Run 별도 확인 전 NOT VERIFIED**.
+- 현장 실 DXF 3종/GPU·CAD 좌표/오차·1k/10k/100k/Owner SLA·서명은 여전히 **NOT RUN**. 코드 CI 성공/후속 Main CI/GHCR 이미지 게시는 #113 현장 수용 PASS가 아니다. #113 OPEN/BLOCKED.
+
+
+## Issue #99 현장 AC 추적 이전 — Issue #113 (2026-10-25)
+
+- 사용자의 Issue #99 종료 요청과 별개로, 실제 DXF 3종/1k·10k·100k Browser·GPU/CDR reference/오차·SLA·Owner 서명 **미수행/미완**은 [#113](https://github.com/planner77/layoutManager/issues/113)으로 독립 이관한다.
+- **#99 코드 검증 성공 ≠ #113 현장 수용 성공.** #99 종결 사유가 범위 이관(`not_planned`)일 경우라도 #113의 4개 수용 체크박스를 자동 완료/닫기 하지 않는다.
+
+
+## Issue #99 / PR #110 — CI 성공과 P1 리뷰·수정 HEAD 분리 (2026-10-25)
+
+- **검증된 원 HEAD** `637742610b3eb25461b095edb5899494ce6dd054` [PR CI 40195335561](https://github.com/planner77/layoutManager/actions/runs/40195335561): Verify(Typecheck/Lint/Unit/Build/E2E) Job 121174841714 **completed/success**, Docker Job 121174841754 **completed/success**. 공개 합성/제품 회귀의 증거로만 사용.
+- **P1 리뷰 [#4370918614](https://github.com/planner77/layoutManager/pull/110#discussion_r4370918614):** 보고서 출력 부모의 Symlink가 repo 내부로 이어지면 `resolve` 경로 검사가 무효화될 위험을 지적. 원본 실 DXF/현장 실행은 없었으며 실제 민감정보 노출 증거 없음. `private-acceptance-paths.ts` canonical `realpathSync`·기존 부모 필수·`wx/0600`·신규 6 Unit + Private E2E 연동으로 보완.
+- **신규 코드 HEAD 상태:** GitHub connector에서 소스/문서 변경, 로컬 Typecheck/Lint/Vitest/Build/Playwright/GPU **NOT RUN**. 새 PR CI는 새 실행의 Run/HEAD 확인 이후에만 PASS 기재, 이전 40195335561 성공을 재사용하지 않는다. 신규 GHCR용 `0.40.3` root package/lock 정렬은 미게시.
+- **현장 AC #99-01~04:** 승인 실제 DXF 최소 3종/CAD 좌표·면적·GPU/Owner budget·실 UI/Worker/장비/서명 모두 **NOT RUN/BLOCKED**. 성공한 CI·문서 수정으로 운영 수용/Owner 승인 완료라고 판단 금지. [FailureLedger](FailureLedger.md), [Issue99](Issue99.md).
+
+
+## Issue #99 — P0/P5 비공개 Evidence Gate 작성 상태 (2026-10-25)
+
+| 구분 | 상태/증거 |
+| --- | --- |
+| Test harness | `src/tests/e2e/outline.acceptance.ts`에서 expected SHA·repo 외부 report path 필수, isolated DB의 개별 real DXF 5회 Browser (mapping/selected/box latency/rAF p95/heap/WebGL) 보고서 schema v2 작성 |
+| Pure gate/CLI | `src/tests/benchmark/outline-acceptance-gate.ts` 및 `src/scripts/verify-outline-acceptance.ts`; SHA/세 규모/반복/Owner 허용치·CAD 기준·지원 매트릭스·GPU 외부 로그·8개 조작 확인값이 누락·초과하면 BLOCKED |
+| Unit TC-P0P5-001~008 | 테스트 코드 작성. 이 원격 GitHub 변경 작업 시점에 `npm ci`, tsc, lint, Vitest, Playwright, Docker **NOT RUN**. PR CI 시작 ≠ 성공 |
+| Real DXF 3종 WCS/면적/1:N:N:1/BLOCK/OCS/미지원 | **NOT RUN / 현장 비공개 승인 샘플 미제공** |
+| 실제 1k/10k/100k CPU/GPU/heap/Latency | **NOT RUN**. Synthetic 기존 benchmark를 field PASS로 취급하지 않음 |
+| Owner 정확도 허용치/응답 SLA 및 Signoff | **NOT DEFINED / NOT APPROVED**. 게이트는 숫자 자동 승인하지 않음 |
+| 기존 원본 SHA/Version/Current·DB/API·Prisma/Viewer·GHCR | 이번 코드 변경 대상에서 제외, 실 운영 데이터 변경/현장 무변조 증거는 별도 검증 필요 |
+
+- 비공개 `READY_FOR_OWNER_REVIEW`는 필수 수치/보고서가 형식상 충족됨을 뜻하며 진위/근거·출처·신뢰성 및 최종 Owner 수용을 검증하지 못한다. AC 4개 완료를 뜻하지 않는다. [Issue99](Issue99.md), TestPlan/ADR-052.
+- GitHub PR CI의 실제 실행 Run/Job/HEAD와 성공·실패는 추후 실제 로그 확인에만 기입한다. 실패한 실행 및 reviewer 결함은 [FailureLedger](FailureLedger.md)에 독립 기록한다.
 
 
 ## Issue #96 — 비활성 P4-D1 구현 및 미실행 시험 기록 (2026-10-25)

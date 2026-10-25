@@ -1,5 +1,17 @@
 # CAD Web Viewer P.O.C.
 
+### #82 / #99 통합 참고 — 메모 ADR-053, 실DXF ADR-052 (2026-10-25)
+
+- WCS 메모 M1은 `ADR-053`(브라우저 임시 세션)이며 실도면 P0/P5 비공개 검증 정책은 #99의 `ADR-052`이다. 최신 #99의 `npm run verify:outline-acceptance` 명령을 보존하며 합성 E2E 통과는 운영 실 DXF/GPU 수용이 아니다.
+- #99 후보 패치 0.40.3 이후 메모 M1 후보는 0.41.0으로 정렬한다. 서버 인증/영속화는 별도 #83/G7 Owner 승인이 없으므로 활성화하지 않는다.
+
+
+### Issue #82 / PR #111 — FREE 메모와 Source 외곽선 도구의 독립 범위
+
+- DXF three-dxf-viewer에서 원본의 안정 Handle/선택 가능한 외곽선 인덱스가 없는 경우에도 **자유 WCS 메모**를 배치할 수 있습니다. 이때 외곽선 생성/원본 객체 선택 기능은 기존대로 disabled이며 Memo status/추가 기능만 사용됩니다. `dxf-viewer`나 DWG에서는 메모가 비활성입니다.
+- 이 동작으로 기존 U1의 '외곽선 도구가 없으면 전체 도크 없음' 검사를 기능별 상태로 수정하고, 무Handle 합성 DXF 메모 배치 회귀를 추가했습니다. 실제 서버 메모 저장·작성자 인증/공유 기능은 아직 없으며 Reload/Version 변경 시 임시 메모는 소멸합니다. 자세한 시험 이력은 [FailureLedger](out/FailureLedger.md), [TestPlan](out/TestPlan.md) 참조.
+
+
 ### Issue #82 / PR #111 — 메모/외곽선 편집 도구 독점 정책 보완
 
 - 이미 배치한 메모 핀을 클릭하거나 드래그 또는 하단 최근 메모 버튼으로 선택해도 **외곽선 생성·원본/생성 객체 선택이 자동 종료되고 탐색(Pan) 모드로 전환**됩니다. 메모 편집과 외곽선 생성은 동시에 활성화되지 않습니다.
@@ -13,7 +25,19 @@
 - **텍스트 저장 (좌표 불변)**은 제목/내용만 수정합니다. 위치 변경은 `WCS X/Y` 수정 후 **위치 이동 적용** 또는 핀을 5px 이상 드래그해 놓는 것으로만 확정됩니다. ESC/취소·휠/화면 변동 중 드래그는 원래 위치를 유지합니다. 로컬 삭제는 별도 확인이 필요합니다. 제목/본문은 HTML/Markdown으로 실행하지 않습니다.
 - M1은 메모가 **브라우저 세션 임시**입니다. 저장 API/DB·작성자 식별/다른 사용자 공유 기능이 없으므로 **새로고침, Viewer 변경, Version 변경 시 모든 메모가 사라집니다**. 현재 100건 상한·제목 100자·본문 2000자, 표시 프리뷰 160자. 다른 Renderer/DWG/도면 실패에는 메모 버튼이 비활성입니다. #2 도면 등록 설명과 별도입니다.
 - 1k/10k Synthetic DXF opt-in 성능 회귀는 `cd src && npm run test:benchmark -- --grep TC-M1-BENCH` 명령으로 실행합니다. 실제 실행 값/현장 SLA는 아직 확보하지 않았습니다.
-- **후속:** #83 메모 영속/작성자/인증/감사, #84 객체 Snap, #85 메모 트리·표시, #86 일정, #88 Deep Link, #90 목록 검색. 관련 운영 인증 정책 미검증/미승인 상태에서는 서버 영속을 활성화하지 않습니다. 설계/검증은 [Issue82](out/Issue82.md), [ADR-052](out/Decisions.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md)를 참조. CI·실 도면/GPU/native 수용 미검증.
+- **후속:** #83 메모 영속/작성자/인증/감사, #84 객체 Snap, #85 메모 트리·표시, #86 일정, #88 Deep Link, #90 목록 검색. 관련 운영 인증 정책 미검증/미승인 상태에서는 서버 영속을 활성화하지 않습니다. 설계/검증은 [Issue82](out/Issue82.md), [ADR-053](out/Decisions.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md)를 참조. CI·실 도면/GPU/native 수용 미검증.
+
+
+## Issue #99 — 실제 DXF 비공개 P0/P5 수용 (현장 전용)
+
+**Issue #99 P1 비공개 파일 경로 제한:** 내부 DXF 경로와 보고서 출력 경로는 절대 경로뿐 아니라 심볼릭 링크를 해석한 최종 실제 경로까지 Git checkout 밖이어야 합니다. 보고서 출력 디렉터리는 시험 전에 별도로 만들고 쓰기 권한을 제한하세요. 재실행 시에는 새 JSON 보고서 파일명을 사용하세요(기존 파일 덮어쓰기 금지). 수정 HEAD `0.40.3`은 신규 GHCR 쌍 후보이며 CI/최종 릴리스·실 CAD 수용 완료를 의미하지 않습니다.
+
+
+
+- 기존 `cd src && npm run audit:outline -- --file /private/sample.dxf`는 Source-only 분석(파서/Spatial/heap/경고)이며 Render/GPU 합격 근거가 아닙니다.
+- **승인된 격리 테스트 DB/Storage에서만** `CAD_OUTLINE_ACCEPTANCE_DXF=/private/sample.dxf CAD_OUTLINE_ACCEPTANCE_EXPECTED_SHA256=<승인된 SHA256> CAD_OUTLINE_ACCEPTANCE_REPORT_PATH=/private/browser.json npm run test:outline-acceptance` (모든 경로는 Git 저장소 밖 절대 경로). 1개 실제 DXF의 Browser/Mapping/Box·프레임 5회 schema v2 보고서를 사내에 보관합니다.
+- 서로 다른 실제 DXF 3종(1k/10k/100k), CAD 기준 WCS/면적·지원 Matrix, 8개 기능 동작, 외부 GPU 사용/VRAM, Owner SLA/서명 참조를 비공개 manifest로 묶어 `npm run verify:outline-acceptance -- /private/manifest.json`로 점검합니다. `BLOCKED`는 증거 부족/기준 위반, `READY_FOR_OWNER_REVIEW`는 형식상 리뷰 가능일 뿐 합격이 아닙니다.
+- 이 자료는 Git/공개 CI artifact에 절대 업로드하지 않으며, 본 기능은 운영 API/DB/기존 DXF Source를 변경하지 않습니다. [구체 실행 절차와 샘플 계약](out/Issue99.md), [운영 가이드](out/Operation.md), [시험계획](out/TestPlan.md).
 
 
 ## Issue #96 — 앱 로컬 계정·Role/Scope·Audit 비활성 공통 기반
