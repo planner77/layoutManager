@@ -1,5 +1,12 @@
 # CAD Web Viewer P.O.C.
 
+## v0.37.2 — Issue #67 GHCR 웹 이미지 Standalone native SQLite 중복 COPY 개선 (PR CI 검증 전)
+
+- Next.js `.next/standalone` 추적 경로가 포함하는 `better-sqlite3` 패키지를 Docker runtime 단계에서 다시 COPY하지 않도록 변경했습니다. `next.config.ts`에서 Prisma와 native SQLite tracing을 유지하고 이미지 빌드 중 `.node`/메모리 DB 동작을 확인합니다. 데이터 스키마·API·기존 migrator/배포 계약은 그대로입니다.
+- PR Docker 검증에는 실제 Docker TAR layer 경로·SHA256 중복, 비압축 image bytes 전후 비교, 자산(한국어 TTF/파생 typeface·DWG JS/WASM) raw·gzip proxy 크기, 재migration/app 재시작 후 임시 `/data` API 등록·조회·삭제를 포함합니다.
+- 과거 약 **12.5MB 추가 COPY**는 이전 linux/amd64 로컬 비압축 계측으로 새 절감량이 아닙니다. 실제 PR CI 성공/감축 bytes와 GHCR OCI 압축 레이어/고정 digest는 각각 검증 후 판정합니다. GHCR app+`migrate` 버전 Pair 배포에는 동일 시점 DB/CAD/S3 backup, 기존 writer stop, migrator exit0가 필수입니다. [Issue67](out/Issue67.md), [Operation](out/Operation.md), [TestPlan](out/TestPlan.md).
+
+
 ## v0.37.1 — Issue #66 migrator 이미지 의존성 경량화 (검증 전)
 
 - 신규/업그레이드 시 `migrate` Compose 서비스와 `app`의 성공 순서·`/data` 볼륨·UID 10001은 종전과 동일합니다. 변경은 **migrator 이미지 내부 패키징**에 한정되며 앱 UI, DB 스키마, 원본 CAD는 변경하지 않습니다.

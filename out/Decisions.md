@@ -1,5 +1,13 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-044 — 웹 native SQLite는 Standalone tracing 단일 경로, 중복 layer는 실제 SHA로 검증 (2026-10-25 / #67)
+
+- **문제:** #28 `.next/standalone`에 `next.config.ts`의 강제 include glob으로 `better-sqlite3`가 수록될 수 있으나, Docker runtime은 같은 node_modules 경로를 별도 COPY한다. 기존 약 12.5MB COPY는 **로컬 비압축 계층**이며 실제 GHCR OCI 압축 전송량이 아니다.
+- **결정:** native/Prisma 동적 require 안정성을 우선해 `serverExternalPackages`와 `outputFileTracingIncludes`는 유지, 중복 가능성 높은 *별도 Docker COPY*만 제거한다. 새 runtime의 native `.node` 존재와 `better-sqlite3` 메모리 DB open 실패 시 이미지 빌드 차단. ABI·UID10001·schema/API/migrator/Compose/GHCR release pair 불변.
+- **검증:** 같은 PR HEAD source + Node22.14 + linux/amd64로 base/new Dockerfile 빌드; 실제 `docker save` TAR 각 패키지 경로·SHA256 동등성/중복 횟수·원시 bytes, `docker image inspect .Size`, `docker history --no-trunc`; fonts/생성 typeface/WASM JS와 traced server 대형 파일은 raw/gzip(proxy) 보고만 하고 실제 렌더링 동일성 증명 전 삭제하지 않는다. OCI compressed layer는 정식 version+immutable digest의 amd64 manifest `layers[].size`로만 계측한다.
+- **기각 대안:** 강제 tracing 전체/부분 제거(Prisma·native runtime 누락), TTF/Hangul glyph subset/LibreDWG WASM 제거(한글·DWG 회귀), 정적 파일명만 보고 중복 판정, PR에서 GHCR 공개 tag 게시. 이미지 크기 감소보다 운영 안정성 우선. [Issue67](Issue67.md), [Operation](Operation.md), [TestPlan](TestPlan.md).
+
+
 ## ADR-043 — Migrator 이미지 전용 런타임 의존성을 잠금 그래프에서 가지치기 (2026-10-25 / #66)
 
 - **문제:** #28 이후 운영 웹 standalone 이미지는 경량화됐지만 별도 migrator는 전체 web/dev `node_modules` ~1.1GB 레이어를 복사하여 로컬 비압축 약 1.34GB로 남았다. `prisma`, `tsx`는 devDependencies 분류지만 실제 운영 migration/backfill에 필수라 단순 `--omit=dev`가 기능 장애를 만든다.

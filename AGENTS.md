@@ -1,5 +1,13 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #67 — 웹 Standalone 중복 SQLite 패키지 레이어 안전 제거 (2026-10-25 / v0.37.2)
+
+- 웹 Docker `runtime`에서 `.next/standalone` 다음에 별도 `node_modules/better-sqlite3` COPY를 **제거**한다. `next.config.ts`의 `outputFileTracingIncludes`(native SQLite/Prisma)와 `serverExternalPackages`는 유지한다. 이미지 빌드 시 `better_sqlite3.node` 존재 검사 및 `require('better-sqlite3')` SQLite `:memory:` smoke 실패면 이미지 빌드도 실패한다.
+- PR CI: 같은 HEAD 소스·Node22.14.0·linux/amd64의 *PR base Dockerfile*과 최종 `runtime`을 동시에 빌드. `audit_standalone_layers.py`에서 실제 Docker save layer TAR file SHA256/기존 중복/new 중복 없음과 최종 package identity, `docker inspect .Size`/`history`/`du`로 비압축 bytes/MiB/%를 검사한다. Asset 원본 Nanum TTF/파생 typeface/LibreDWG JS/WASM raw·gzip proxy 및 server traced top20도 출력한다. **압축 GHCR OCI layer 크기와 gzip TAR proxy를 혼동 금지**.
+- 새 Docker Compose API smoke는 disposable `/data`에서 master→DXF 등록→재migration/restart→Current/content read→delete/404 및 health를 검증한다. 기존 Typecheck/Lint/Unit/Playwright·Legacy/두 DXF 뷰어·DWG WASM·font, UID10001, Prisma/Compose, S3/local, DB schema/보안 경계를 그대로 유지. 실 운영 데이터·GHCR immutable digest/압축 OCI 수치 및 실제 렌더러·S3 현장 수용은 별도. `CI START`는 `PASS`가 아니다.
+- `DESIGN.md` 부재 → `out/Architecture.md`/ADR-044 설계 기준. 기능/추적/시험/배포: [Issue67](out/Issue67.md), [Issue28](out/Issue28.md), [Operation](out/Operation.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md). 실패 시 [FailureLedger](out/FailureLedger.md)를 기존 Run/Job/HEAD/조치와 함께 누적 기록한다.
+
+
 ## Issue #66 / PR #78 — 최초 CI 실패 원인·수정 지침 (2026-10-25)
 
 - [Run 40167191799](https://github.com/planner77/layoutManager/actions/runs/40167191799) / HEAD `45389a4661d`: Verify Job `121090554088`의 `TC-IMAGE-003` Unit **1 FAIL(187 PASS)**, 기존 migrator `CMD ["node", "scripts/run.mjs", "deploy"]` 고정 기대값과 #66 전용 `CMD ["./node_modules/.bin/tsx", "scripts/deploy.ts"]` 불일치. 이 변경은 로컬 수동 값이 아니라 실제 Docker CI가 migration→backfill→health를 성공시킨 합법적 실행 계약이다.
