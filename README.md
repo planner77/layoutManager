@@ -1,5 +1,12 @@
 # CAD Web Viewer P.O.C.
 
+## Issue #103 — G1 User/Session/Grant/Audit 격리 DB (운영 OFF)
+
+- [Issue103](out/Issue103.md) / [ADR-051-G1](out/Decisions.md): 기존 CAD SQL 6개를 적용한 disposable SQLite 사본에 User/AuthSession/3종 Grant/Audit/RecoveryNonce DB 계약, 동시 세션 3개/nonce·감사 원자성, 합성 local CAD/S3 mirror 백업·복구 Fixture와 TC-P4-G1-001~009를 추가했습니다.
+- 런타임·운영 Prisma/migrations·기존 API·Compose/Nginx·실 CAD/S3는 변경하지 않습니다. 실행 전 테스트는 NOT RUN이고 정식 운영 활성화는 G7 별도 Owner 승인이 필요합니다.
+- 2026-10-25 #102 Owner 5개 승인: 기존 CAD 목록/Viewer/다운로드 익명 GET 유지, Current=Editor/Admin+담당 Site, Version 삭제=Editor/Admin+담당 Site+기존 삭제 비밀번호, 최초 Admin/복구=지정 사내 운영 담당자(Owner 책임), Audit 365일 경과 이력 정리 원칙. 관련 문서 PR #114는 병합·CI 완료 미확인. POST 업로드 권한, Secret/실 담당자, Audit 물리 정리·백업 복원 세칙, 실제 배포는 PENDING; #103 G1 운영 활성화 승인 아님.
+
+
 ## Issue #107 — PROD Nginx / DEV 직접 접속의 비운영 Preview
 
 - 조직 내부 소수 사용자가 사용하는 HTTP 환경에서 **보안 침투·탈취 대응 강화 없이** 정상 배포 경로만 검증합니다. 운영 Nginx/Compose는 변경하지 않습니다.

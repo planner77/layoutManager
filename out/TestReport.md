@@ -1,5 +1,33 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issue #103 / PR #116 — #107 main 정렬·검증 인계 (2026-10-26)
+
+- **이전 수정 HEAD 실증:** `40153240d593`의 [PR CI 40225147249](https://github.com/planner77/layoutManager/actions/runs/40225147249) **completed/success**; Verify Job `121264822767` 및 Docker Job `121264822603` 성공. 이 완료 결과는 main #107 합류 **전** HEAD에만 적용되며 병합 후 HEAD PASS 근거로 재사용하지 않는다. 최초 TypeScript/Docker 실패 [40202066291](https://github.com/planner77/layoutManager/actions/runs/40202066291)는 원장에 계속 보존.
+- **원인·조치:** #107 G5 `main:142c4b9bc0bd` 선행 병합으로 `behind=1 / dirty`; 공통 문서 #103 G1과 #107 G5 추가 섹션을 모두 보존하고, #107의 G5 Preview 구현·PR workflow·package/lock 및 #103 G1 격리 DB·9 Integration TC를 함께 보존한 2-parent 통합 HEAD 생성. 이 충돌은 추가된 코드 CI 결함으로 오인하지 않는다.
+- **정렬 후 검증:** 새로운 PR CI(`pull_request.synchronize`) 시작 전 검증 상태 `NOT RUN/PENDING`; 실제 CI 실행 뒤 별도 Run ID/최종 HEAD 확인이 있어야 PASS 가능. G7 운영 Auth/schema/API/GHCR 활성화 없음. 관련 [Issue103](Issue103.md) 및 [FailureLedger](FailureLedger.md).
+
+
+## Issue #103 — 최초 실패 Run 40202066291 및 감사 P1 보완 (2026-10-26)
+
+- `pull_request.opened`의 PR #116 HEAD `50014e68...` **실패**: Verify Job 121195140490은 TypeScript `store.ts:134 TS1002`와 연쇄 구문 오류로 중단, Docker Job 121195140285도 baseline Build의 동일 TypeScript 실패. Unit·Integration·E2E·Docker smoke/size 비교는 **SKIPPED/NOT RUN**. [Run 상세](https://github.com/planner77/layoutManager/actions/runs/40202066291).
+- 리뷰 P1 [r4371167619](https://github.com/planner77/layoutManager/pull/116#discussion_r4371167619)은 인증 변경의 Audit에서 Site와 **대상 사용자**를 함께 영구 보존하도록 요청. SQL `AuditEvent.affected_user_id` 및 `AuditEvent.site_id` FK, Site action의 두 값 필수 CHECK와 fixture INSERT를 추가. `TC-P4-G1-005`에 서로 다른 사용자 동일 Site 이력, 삭제 후 추적, 누락 필드 거부를 검증하도록 보완.
+- 비밀번호 변경·복구/Role·Special 함수 선언을 하나씩 재구성하여 구문 오류 원인을 제거하는 코드 변경을 준비. **수정 HEAD의 CI/런타임 PASS를 주장하지 않음**. 실제 실 운영 DB/S3 백업·복구 및 G7 운영 활성화는 계속 NOT RUN / BLOCKED.
+
+
+
+## #103 G1 정책 보완 및 시험 비실행 유지 (2026-10-25)
+
+최신 #102 Owner 5개 결정은 이 격리 SQL 모델의 Session/Grant/Nonce/Audit 무결성 범위와 충돌하지 않는다. 기존 공개 CAD 익명 GET 경로는 그대로 두며 Current/Delete Auth API 활성화는 G4/G7 후속이다. PR #114 최신 Main 병합 여부·G1 PR CI 통과는 아직 검증 전. TC-P4-G1-001~009는 구현만 완료한 **NOT RUN**이며 실 사내 DB/S3 Recovery도 NOT RUN.
+
+
+## Issue #103 / G1 — 구현·검증 증거 상태 (2026-10-25)
+
+- **구현 범위:** 테스트 전용 `src/tests/fixtures/auth-g1/{schema.prisma,migration.sql,store.ts}`와 `src/tests/integration/auth-g1.test.ts` (TC-P4-G1-001~009). 기준 #102 Owner R1 / #96 ADR-051. 7개 SQL 엔터티 User/Session/Grant(3종)/Audit/RecoveryNonce, SQLite lock/slot/nonce/Audit Trigger, 실제 CAD 6 Migration 기반 합성 Source/Current/SHA 및 실패/복구 실험 작성.
+- **원격 코드 작성 시점:** GitHub 브랜치 소스 생성만 완료; 연결 환경에서 npm/SQLite native/Prisma/Playwright/Docker 명령을 **직접 실행하지 않음**. TC-P4-G1-001~009: **NOT RUN**. PR CI는 생성/시작 후 결과를 모니터링하지 않는 사용자 지시에 따라 **PENDING/미확인**, PASS 아님.
+- **정적 설계 경계:** 변경 대상은 `src/tests/fixtures/auth-g1/**`, `src/tests/integration/auth-g1.test.ts`, AGENTS·out 문서. 기존 `src/prisma/schema.prisma`/`src/prisma/migrations/**`/App API/Viewer/Docker/Compose/.env/운영 DB/CAD/S3 변경·운영 활성화 **의도적 0**. 실제 Diff·PR HEAD/mergeability/리뷰 근거는 PR 생성 후 확인.
+- **격리 합성 한계:** SQLite 백업 API·로컬 CAD+mock S3 객체 복원 테스트는 작성했으나 미실행. 실 S3/운영 데이터·네트워크·운영 Go-Live는 #107/#108/#109에서 별도 증거 필요. 감사 365일 후 파기는 G0 미결정이므로 구현하지 않음.
+
+
 ## Issue #107 / PR #115 — 원 HEAD CI PASS 이후 Viewer P2 수정 (2026-10-26)
 
 - **검증된 과거 HEAD:** [PR CI 40201366001](https://github.com/planner77/layoutManager/actions/runs/40201366001), d771d553cdf7d00a467fead6f8f9d788898ea314, Verify Job 121193043560 및 Docker Job 121193043322 모두 completed/success.

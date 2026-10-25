@@ -1,5 +1,24 @@
 # 운영·환경설정 초안
 
+## #103 후속 Owner 결정과 감사 파기 보류 (2026-10-25)
+
+#102 5개 업무 원칙(기존 CAD GET 익명, Current Editor/Admin+Site, Delete Editor/Admin+Site+삭제 비밀번호, Admin 초기/복구 지정 운영자, Audit 365일 경과 정리)은 승인됐으나 문서 PR #114의 병합/CI 성공은 아직 별도 확인이 필요하다. **Audit 물리·자동 파기 시각/주기/백업본 처리/복원 후 재출현 방지 SOP와 업로드 POST 권한은 미정**이다. 이번 G1 backup/restore는 합성 fixture만 대상이고 원장 행의 물리 파기 명령은 포함하지 않는다.
+
+
+## Issue #103 G1 — 격리 Migration·Backup·Restore Runbook (2026-10-25)
+
+**운영 기능 OFF / G7 미승인:** `src/tests/fixtures/auth-g1/schema.prisma`는 운영/자동 Prisma migrator 입력이 아니며 `migration.sql`을 `src/prisma/migrations`로 옮기거나 `prisma migrate deploy/db push`로 실행하면 안 된다. `src/tests/integration/auth-g1.test.ts` 실행은 내부 테스트용 `mkdtemp('cad-auth-g1-*')` 아래 `fixture.sqlite`와 합성 CAD만 만든다. App routes/Docker/Nginx/GHCR는 이 작업에서 바꾸지 않는다.
+
+**격리 Rehearsal 표준 절차** (실 데이터 사용 시 별도 승인 및 #108 G6 증거 필요):
+1. App/DB/CAD/S3 쓰기를 정지·quiesce하고 같은 시점의 DB SQLite 일관 백업(API backup), CAD local bytes, S3 object/version list·SHA·크기 manifest를 하나의 snapshotId로 보존. 백업 원본은 사내 비공개로 보관하고 Secret/CAD/SHA 실내용 Git 업로드 금지.
+2. 원본이 아닌 검증용 `cad-auth-g1-*/fixture.sqlite` 사본과 보관된 객체만 격리 복제. 기존 6개 CAD migration 및 Version/Current/SHA/delete hash·5단계 FK·`foreign_key_check` 사전 기준을 기록(시스템 비밀값 미출력).
+3. 격리 DB에만 `PRAGMA foreign_keys=ON`, `BEGIN IMMEDIATE`, G1 `migration.sql` 실행. 같은 transaction에서 `foreign_key_check` 확인 후 commit. 비교 시 기존 CAD 행/Current/Version/SHA/delete hash 및 파일 SHA/크기 일치, Auth FK/Unique/3-session/nonces/rollback 시험. 장애/불일치 시 rollback 및 테스트 중단.
+4. **실복구 리허설:** 앱을 중단한 격리 대상에서 동일 snapshotId의 DB+CAD local+S3 객체를 함께 복구, `foreign_key_check`와 양쪽 content SHA/Current/Version 비교. 스키마 및 데이터가 백업과 정확히 같은 상태인지 확인. 실패 시 운영 적용 **NO-GO**.
+5. G1 합성 S3 mirror/일회용 DB 성공은 실제 S3 백업/복구 성공이 아니다. 실제 접근/권한·복원·기존 API 호환·Nginx PROD/DEV 접속은 #107/#108, 실제 신규 Prisma/DDL 및 애플리케이션 기능 활성화는 #109 Owner 서면 Go/No-Go 후 별도 PR·배포에서만 진행.
+
+**테스트 명령:** `cd src && npm ci && npm run db:generate && npx vitest run tests/integration/auth-g1.test.ts`; 전체 PR Verify(Typecheck/Lint/Unit+Integration/Build/E2E)+Docker는 기존 Workflow대로. 로컬 실행하지 않았다면 `NOT RUN`; PR CI 시작은 성공 증빙 아님. [Issue103](Issue103.md), [TestPlan](TestPlan.md), [TestReport](TestReport.md).
+
+
 ## Issue #107 / G5 — 실제 운영 변경 없는 연결 Preview Runbook (2026-10-25)
 
 - G5는 외부 공개망 인바운드 제한·소수 내부 사용자 환경의 **정상 운영 경로 확인**이다. 추가 TLS/WAF/침투/CIDR 하드닝 대신 Nginx↔App Viewer·API/업로드·Health, DEV 직결 및 독립 데이터만 점검한다. [Issue107](Issue107.md).

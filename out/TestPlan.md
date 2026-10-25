@@ -1,5 +1,32 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #103 — 최초 실패 재발 방지와 P1 추적 (2026-10-26)
+
+- `TC-P4-G1-SYNTAX-001`: PR Verify `npm run typecheck` 및 Docker baseline Next build의 **동일 HEAD** 성공 필요. 최초 실패 `store.ts:134 TS1002` 후속 TS1005/TS1128 재발 없어야 함. 수정 후 아직 **NOT RUN**.
+- `TC-P4-G1-005` 강화: Site grant/revoke Audit에 `actor_user_id`(관리자), `affected_user_id`(대상 사용자), `site_id`(업무 Site), action/requestId가 보존돼야 한다. **서로 다른 사용자에게 동일 Site를 부여·철회한 후 grant 행이 없어져도** 누가 영향받았는지 추적 가능해야 하며 `affected_user_id/site_id` 누락 SQL INSERT는 실패해야 함. FK·append-only 원자성 보존.
+- 미실행 단계(Unit·Integration·Build/E2E/Docker smoke)는 첫 CI 실패의 `SKIPPED`를 그대로 기록하며 수정 HEAD의 실행 확인 이후에만 PASS 가능. 운영 `src/prisma/schema.prisma`/migrations·API 변경 0 유지.
+
+
+
+## Issue #103 / G1 — 격리 DB·원자성·복구 Test Matrix (2026-10-25)
+
+모든 TC는 기존 6개 CAD Migration의 실 SQL과 합성 Version/Current/SHA를 일회용 SQLite에 적용하고 **운영 연결 0**. 테스트 위치 `src/tests/integration/auth-g1.test.ts`. 미실행은 `NOT RUN`, PR CI 최신 HEAD 결과를 따로 검증하기 전 PASS 기록 금지.
+
+| Test ID | 검증 내용 | 근거 AC | 계획 상태 |
+| --- | --- | --- | --- |
+| TC-P4-G1-001 | Migration 장애 주입 rollback, 기존 CAD 스냅샷 불변, FK, 중복 DDL 거부·격리 경로 Guard | AC1/3/4 | NOT RUN |
+| TC-P4-G1-002 | User ID 불변/login unique(정규화), Role/Site/SpecialGrant FK·Unique·CHECK | AC1/2 | NOT RUN |
+| TC-P4-G1-003 | 8h·30m·3 active, 4번째 app/direct SQL 거부, 실패 주입 rollback, 원시 토큰 DB 없음 | AC2 | NOT RUN |
+| TC-P4-G1-004 | 두 SQLite writer/BEGIN IMMEDIATE lock 충돌이 fail closed | AC2 | NOT RUN |
+| TC-P4-G1-005 | Role/Site/SpecialGrant+Audit atomic commit/rollback, duplicate/권한 거부, Audit UPDATE/DELETE 거부 | AC2 | NOT RUN |
+| TC-P4-G1-006 | 실제 DB Version→Floor→Building→CadSite+Reader Site grant, Admin 무범위 거부 | AC1/2 | NOT RUN |
+| TC-P4-G1-007 | 비활성 계정+세션 회수+Audit 원자 처리, 실패 복원/재로그인 거부 | AC2 | NOT RUN |
+| TC-P4-G1-008 | nonce hash unique 1회, 암호 변경·세션 폐기·Audit rollback, 원문 미저장 | AC2 | NOT RUN |
+| TC-P4-G1-009 | 중단(quiesced)된 합성 DB/local/S3-mirror 일관 백업→격리 G1 dry-run→손상 주입→복원, 기존 Current/SHA/delete hash 불변 | AC3 | NOT RUN |
+
+추가 PR 정적 Diff 확인: `src/prisma/schema.prisma`, `src/prisma/migrations/**`, `src/app/api/**`, `src/server/db.ts`, Runtime/Compose/Nginx/실 CAD/S3 변경 0; 새 G1 파일은 tests/fixtures·tests/integration·docs에 한정. 실 운영 DB/CAD/원격 S3 복구·실 LAN E2E 및 Owner 운영 승인은 **#108/#109 NOT RUN**. 관련 [Issue103](Issue103.md), [TestReport](TestReport.md).
+
+
 ## Issue #107 / G5 — 비운영 PROD Nginx·DEV Direct 시험 계획 (2026-10-25)
 
 **Owner R1 우선:** 정상 연결·업무 기능 검증만 G5 필수; TLS/WAF/CIDR·CSRF/Host/Forwarded 공격 우회·탈취/침투 실증은 비범위. 보안 기능 PASS 주장 없음. [Issue107](Issue107.md).

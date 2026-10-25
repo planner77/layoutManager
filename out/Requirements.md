@@ -1,5 +1,21 @@
 # 상세 요구사항
 
+## Issue #103 / G1 P1 감사 추적 상세화 (2026-10-26)
+
+- **REQ-G1-AUD-01:** Site 권한 부여/회수 Audit 이벤트는 행위 관리자(actor), 영향받은 사용자(affectedUser), 대상 Site 및 action/requestId를 **서버 DB FK 기준으로 분리 보존**한다. Revocation 뒤 Grant 행이 삭제되어도 두 사용자의 동일 Site 변경 이력을 혼동하지 않을 것. Fixture `AuditEvent`의 Site action은 affectedUser/site NOT NULL 검사, Actor·Site·User FK/변경 불가 Trigger 유지; `TC-P4-G1-005`.
+- **REQ-G1-QA-01:** 최초 CI에서 `store.ts:134 TS1002`로 실패한 Typecheck·Docker baseline TypeScript를 새 HEAD에서 재검증한다. 이전 SKIPPED 단계를 PASS로 대체하지 않는다. 운영 DB/API/migration G7 전 OFF.
+
+
+
+## Issue #103 / P4-D1 G1 — 격리 영속 DB 요구/추적 (2026-10-25)
+
+- **REQ-G1-01:** User(id 불변/loginName unique/passwordHash/status/mustChange), Session(tokenHash/8h/30m/3개), Role/Site/SpecialGrant(audit:read/logs:read 분리), Audit(append-only/365일 정책), RecoveryNonce(hash 1회) 제약/FK; TC-P4-G1-001/002/003/008.
+- **REQ-G1-02:** `BEGIN IMMEDIATE` writer serial, 세션 4번째 발급·시간 역행·만료 touch·중복 nonce 실패, 관리자 전용 Role/Site/SpecialGrant+Audit/비활성·회수·복구 원자 rollback; TC-P4-G1-003/004/005/007/008.
+- **REQ-G1-03:** 기존 CadSite 실 FK와 Version→CadLocation→Building→Site 관계 조회, Admin Site 자동 허용 없음, 원본 bytes/SHA/Current/delete password/5단계 CAD 불변; TC-P4-G1-001/006/009.
+- **REQ-G1-04:** **격리 Fixture SQL/Prisma 설계만** 적용. 운영 Prisma/schema/migrations/API/Runtime/Compose/GHCR 변경 금지. 실제 사내 DB/CAD/S3 일관 백업·복구 및 Owner G7 운영 승인은 별도; TC-P4-G1-001/009 및 정적 Diff·PR CI.
+- 선행 정책: #102 ADR-051-R1. 2026-10-25 #102 Owner 5개 승인: 기존 CAD 목록/Viewer/다운로드 익명 GET 유지, Current=Editor/Admin+담당 Site, Version 삭제=Editor/Admin+담당 Site+기존 삭제 비밀번호, 최초 Admin/복구=지정 사내 운영 담당자(Owner 책임), Audit 365일 경과 이력 정리 원칙. 관련 문서 PR #114는 병합·CI 완료 미확인. POST 업로드 권한, Secret/실 담당자, Audit 물리 정리·백업 복원 세칙, 실제 배포는 PENDING; #103 G1 운영 활성화 승인 아님. 상세 [Issue103](Issue103.md).
+
+
 ## Issue #107 / G5 — 내부망 간소 PROD/DEV 정상 연결 (2026-10-25)
 
 | ID | 요구사항 | 수용 상태 |
