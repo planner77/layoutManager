@@ -1,5 +1,19 @@
 # 상세 요구사항
 
+## Issue #102 G0 / ADR-051-R1 — Owner 경량 보안 범위 재정의 (2026-10-25)
+
+| 요구 ID | 수용할 결정·기능 | 상태/후속 |
+| --- | --- | --- |
+| FR-P4-G0-R1-01 | 인바운드가 제한된 내부망 운영 사용자는 PROD Nginx 경유, 개발자는 별도 DEV App 직접 접속 | OWNER CONFIRMED, G5 접속 시험 |
+| FR-P4-G0-R1-02 | 공격 대비·자격증명/세션 탈취 방어·TLS/MFA/SSO/침투·위조 공격시험은 비범위. HTTP 위험은 OWNER_ACCEPTED_SCOPE이지 보안 PASS 아님 | OWNER APPROVED SCOPE |
+| FR-P4-G0-R1-03 | D1~D5 계정/세션/Role/Site/Audit·Admin 단발·365일 보존·실제 DB 원자성·기존 API/Viewer 무변경 | 필수, G1~G4/G6 |
+| FR-P4-G0-R1-04 | 업무상 CAD 조회/등록/Current/삭제에 대한 Reader/Editor/Admin + Site Grant 전환 매트릭스는 별도 확정 | PROPOSED/PENDING, G7 |
+| NFR-P4-G0-R1-01 | PROD/DEV 데이터 분리·정상 API 연결, 일관 DB/CAD/S3 backup/migration dry-run/restore, 정상 회귀. 적대적 공격 E2E는 별도 의무 아님 | G5/G6 |
+| NFR-P4-G0-R1-02 | 운영 인증/관리/영속 API, DB/Prisma Migration, Nginx/Compose/.env 활성화는 G7 별도 Owner 승인까지 OFF | BLOCKED |
+
+이 표는 이전 FR-P4-D1-06의 '보안 공격 차단/세부 CIDR·프록시 헤더 위조 실증'을 **필수 수용기준으로 요구하던 범위**를 대체한다. 기존 D1~D5의 비활성 기능 정책·테스트 및 기본 업무 권한 정합성은 유지한다. [Issue102](Issue102.md), [ADR-051-R1](Decisions.md), [Issue96](Issue96.md).
+
+
 ## Issue #96 — P4-D1 승인 정책/비활성 요구 추적 (2026-10-25)
 
 | ID | Owner 승인 요구 / 현재 범위 | Unit ID |
