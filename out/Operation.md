@@ -1,5 +1,11 @@
 # 운영·환경설정 초안
 
+## Issue #99 종료 후 실 도면 운영 수용 책임 분리 (2026-10-25)
+
+- 사용자 요청의 #99 구현 PR 병합/신규 GHCR 게시 시작과 **실제 공장 DXF 수용은 서로 다른 게이트**다. 잔여 현장 수용은 [#113](https://github.com/planner77/layoutManager/issues/113)에서 Owner가 비공개 실측과 4개 AC를 완료한 뒤 별도로 승인한다. #99를 행정 종료해도 #113 미완 상태와 Auth/Outline 운영 기능 OFF는 변하지 않는다.
+- #99 코드 보완에서 태그 `v0.40.2`를 재사용하지 않고 `0.40.3`으로 정렬했다. 최신 HEAD CI 성공 이전의 병합/게시 금지, Main CI 자동 시작은 GHCR pair 완료 증거가 아님.
+
+
 ## Issue #99 — P1 비공개 경로 방어 및 0.40.3 GHCR 준비 (2026-10-25)
 
 - **경로 계약 변경:** `CAD_OUTLINE_ACCEPTANCE_DXF`는 사내 승인된 절대 경로이면서 실제 파일의 canonical `realpath`가 Git checkout 밖이어야 한다. `CAD_OUTLINE_ACCEPTANCE_REPORT_PATH`도 절대 경로이며 **출력 부모 폴더를 사전에 직접 생성해 ACL 제한**, 그 부모의 symlink 해결 후 실제 경로가 checkout 외부인지 확인한다. 기존 보고서 경로·dangling symlink 및 repo로 향하는 폴더 symlink는 오류. 파일은 `wx`/0600 배타 생성하므로 2회 수행할 때는 **새로운 보고서 파일명**을 사용한다. 실패 원인에 경로/SHA/민감한 운영 정보가 출력되지 않도록 한다.
