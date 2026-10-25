@@ -1,5 +1,15 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #96 — D1~D6 Owner 세부 정책 및 비활성 구현 (2026-10-25)
+
+- **최신 기준:** [Issue96](out/Issue96.md) / [ADR-051](out/Decisions.md). 기존 #31 D0의 '관리자/세션/감사 세부값 미확정' 서술은 승인 이전 기록이며 다음 값이 우선한다.
+- D1: 최초 Admin/복구는 .env 기반 설정 및 별도 절대 경로 Secret 파일; 단발 처리, 서버 재시작 때 계정/암호/Role 자동 덮어쓰기 금지. D2: 비밀번호 최소 8자, scrypt 로컬 credential, 최초 변경·로그인 실패 횟수 제한. D3: 절대 8h·idle 30m·동시 세션 최대 3개.
+- D4: Admin만 Role/Site Grant 관리, Site/Version Scope는 명시적으로 검사하고 Admin도 전체 Site 자동 접근 없음. D5: Audit 365일 보존, 별도 권한을 가진 관리자만 조회. D6: 승인된 사내 IP 대역·방화벽·프록시 및 Owner의 평문 HTTP 잔여 위험 인지. **정확한 CIDR·보안·배포 수용은 미완**.
+- 비활성 모듈만 추가: src/domain/auth.ts와 src/server/auth/{bootstrap,password,session,audit,guards}.ts 및 Unit. 새 로그인/관리자/로그·외곽선·메모 영속 API, Prisma/DDL/Migration, runtime env 전달, Docker/Compose/Nginx 변경 **금지**. .env.example은 현재 런타임에서 읽지 않는 제안값이고 true로 바꾸더라도 운영 기능이 활성화되지 않는다.
+- 실 운영용 Session DB 원자 발급, 단발 복구/Secret 취급, Origin/CSRF·CIDR 검증, append-only Audit/복구, 백업→dry-run migration→restore, 실제 LAN E2E 및 별도 Owner 활성화 승인 전 Issue #96 **OPEN/BLOCKED**. DESIGN.md는 저장소에 없어 Architecture/Decisions/Issue96이 기준이다.
+
+
+
 ## Issue #97 / PR #100 — GHCR v0.40.2 릴리스 게이트 정렬 (2026-10-25)
 
 - PR #100 기존 HEAD `195f633b0bce`의 [CI 40189428698](https://github.com/planner77/layoutManager/actions/runs/40189428698) **completed/success** (Verify/Docker 2개 Job 성공), 미해결 리뷰 0·main behind 0. 이 성공을 새 `0.40.2` 버전 정렬 HEAD의 테스트 결과로 전용 금지.

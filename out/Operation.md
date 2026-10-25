@@ -1,5 +1,22 @@
 # 운영·환경설정 초안
 
+## Issue #96 — D1~D6 .env 기반 관리자 계약과 운영 차단 (2026-10-25)
+
+**정책 승인, 실제 인증/영속 API/Prisma/Compose 런타임 OFF.** .env.example은 비밀값을 포함하지 않는 제안이며, 현재 launcher·Docker Compose·앱 API가 ADMIN_* 값을 사용하지 않으므로 true를 지정해도 관리자나 API가 생성되지 않는다.
+
+| 항목 | 확정 정책 / 설정 계약 | 운영 전 차단 해제 증거 |
+| --- | --- | --- |
+| D1 | ADMIN_BOOTSTRAP_ENABLED=false, ADMIN_BOOTSTRAP_USERNAME, ADMIN_BOOTSTRAP_PASSWORD_FILE(절대 경로); ADMIN_RECOVERY_ENABLED=false, ADMIN_RECOVERY_TARGET_USER_ID, ADMIN_RECOVERY_ONCE_ID, ADMIN_RECOVERY_PASSWORD_FILE | 실제 Secret은 .env 내 원문 금지, 읽기권한 제한 Secret mount, DB 최초 한 번/복구 단발 nonce 원자 CAS, 재시작 계정 덮어쓰기 0 및 감사 |
+| D2 | 최소 8자, built-in scrypt local-v1/salt, 초기 변경·로그인 시도 제한 | 작업 비용/병렬 리소스 계측, 추측 공격·분산 worker 방어, 회복 시 전체 세션 폐기 E2E |
+| D3 | 절대 8h/유휴 30분/동시 세션 3개, 원시 token 로그/DB 미보관, HttpOnly/SameSite Cookie | 영속 DB 원자 issue/check/revoke/회수·동시 login/timeout E2E |
+| D4 | Admin 전용 권한 부여, 개별 Site Grant, Admin의 타 Site 무권한 자동 접근 금지, audit:read/logs:read 별도 | Version→Site DB 관계·각 Role/Site/Version 검증, Grant 변경 Audit |
+| D5 | 365일 append-only Audit, 별도 권한 보유 Admin 읽기, Secret/원본 CAD/Geometry 제외 | DB Audit 쓰기/조회·복구/백업, 365일 이후 파기/backup 정책 별도 승인 |
+| D6 | 사내 지정 LAN CIDR/방화벽/Reverse Proxy/backend 차단, HTTP 잔여 위험 Owner 인지 | **구체 CIDR 미제공**, trusted peer/forwarded Host 규칙/서버 직접 접근 제한과 HTTP 위험 수용·실측 기록 |
+
+**기준:** 실제 .env·비밀번호·토큰/파일경로/사내 IP를 코드·Git·공개 CI·운영 로그에 출력하지 않는다. 비밀번호 Secret은 권한제한 파일/Compose Secret 전달 제안. 네트워크 차단은 HTTP 암호화 대체가 아니다. 서버 설정/DB 마이그레이션/신규 인증 API는 Owner 별도 운영 승인과 보안·백업·실복구 검증 후 별도 PR에서 시행한다. [Issue96](Issue96.md), [ADR-051](Decisions.md), [TestPlan](TestPlan.md).
+
+
+
 ## Issue #97 / PR #100 — GHCR 0.40.2 신규 패치 게시 운영 경계 (2026-10-25)
 
 - `0.40.1`은 [#93 Main 40184907533](https://github.com/planner77/layoutManager/actions/runs/40184907533)의 paired 이미지 promotion+OCI 측정까지 SUCCESS, `v0.40.1` 태그는 이미 존재한다. 신규 코드 #97을 같은 버전으로 병합하면 기존 이미지 존재 검사가 Build/Publish를 건너뛴다. 소스/lock root 버전을 `0.40.2`로 올려 기존 immutable `v0.40.1` 및 GHCR alias digest를 임의로 재사용하지 않는다.

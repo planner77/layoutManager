@@ -1,5 +1,21 @@
 # 상세 요구사항
 
+## Issue #96 — P4-D1 승인 정책/비활성 요구 추적 (2026-10-25)
+
+| ID | Owner 승인 요구 / 현재 범위 | Unit ID |
+| --- | --- | --- |
+| FR-P4-D1-01 | .env 최초 Admin 단발 bootstrap/복구, 기존 계정 재시작 자동 reset 금지, Secret 파일 경로만 설정(원문 미기록) | TC-P4-D1-005~007 |
+| FR-P4-D1-02 | 계정 비밀번호 최소 8자, scrypt/Argon2id, 최초 변경·로그인 실패 제한 | TC-P4-D1-004,010,012 |
+| FR-P4-D1-03 | Session 8h 절대/30m idle/동시 3개, 원시 token 저장 금지, 폐기·HttpOnly/SameSite | TC-P4-D1-008 |
+| FR-P4-D1-04 | Reader/Editor/Admin 및 권위 Version→Site·명시적 SiteGrant, Admin만 Grant, audit:read/logs:read 별도 | TC-P4-D1-003/004 |
+| FR-P4-D1-05 | 안전한 append-only Audit/365일 보존, Admin+별도 감사 권한, 원본 CAD/Geometry·Secret 미노출 | TC-P4-D1-011 |
+| FR-P4-D1-06 | 지정 LAN CIDR·방화벽/프록시·HTTP 잔여 위험 수용, CSRF/Origin/로그인 시도 제한 | TC-P4-D1-009/010 |
+| NFR-P4-D1-01 | 새 인증/관리자/영속 API, Prisma/DB/Migration, Docker/Compose **비활성**, 별도 Owner 운영 승인 게이트 | TC-P4-D1-013/014 |
+
+- 위 작업은 순수 도메인·헬퍼/Unit만 구현하며 런타임 연동 없음. 정확한 CIDR/Secret 취급/원자 DB/감사/복구·백업/실제 LAN 보안 수용 미확정. #98 Version 삭제 FK, Memo Editor, 세션 Show/Hide reload 범위와 #99 실 DXF P5 수용은 후속. [Issue96](Issue96.md), [ADR-051](Decisions.md).
+
+
+
 ## Issue #97 / P4-D2 — 변형 가능한 외곽선의 서버 Canonical 검증 요구 (2026-10-25)
 
 | ID | 승인 정책의 시험 가능 구현 | 검증 |

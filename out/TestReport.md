@@ -1,5 +1,14 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issue #96 — 비활성 P4-D1 구현 및 미실행 시험 기록 (2026-10-25)
+
+- **승인 근거:** [Issue #96](https://github.com/planner77/layoutManager/issues/96) D1~D6 Owner 정책 / ADR-051. scope/계정 bootstrap 계획/비밀번호 scrypt/세션/CSRF·Rate/감사 헬퍼와 TC-P4-D1-003~012 Unit 코드 작성.
+- **코드 작성과 실제 실행 구분:** 원격 GitHub 연결을 통해 저장소를 갱신함. 원격 저장소 checkout·node_modules/Docker/브라우저·사내 LAN 접근이 제공되지 않아 로컬 Typecheck/Lint/Vitest/Build/E2E/Legacy/Migration 복구 및 실제 보안 E2E **NOT RUN**. 별개로 PR #101 기존 HEAD d85ee35 [Run 40190126225](https://github.com/planner77/layoutManager/actions/runs/40190126225) Verify+Docker **completed/success**; #97 main 통합 변경 HEAD의 CI는 아직 미검증. PR CI 시작은 성공 증거 아님.
+- **비활성 보장 범위:** src/app/api, Prisma schema/migration, Dockerfile/Compose, server/context, CAD 데이터·Current/Version/SHA/Viewer, 실제 env runtime 소비 미변경. .env.example 변수는 계약 예시로 실제 활성화 경로가 없음.
+- **잔여 운영 BLOCKED:** 정확한 CIDR, 관리자 복구 Secret/원자 nonce, 세션 동시 발급 DB CAS·세션 회수, 계정 관리/로그인·감사 영속, HTTP 위험 실증, DB/CAD/S3 backup→migrate dry-run→restore와 Owner 별도 운영 승인. #98/#60/#65/#83 영속 API 연동 미수행.
+
+
+
 ## U-ISSUE97-PR100-PATCH-20261025 — v0.40.2 GHCR 발행 패치 사전 기록
 
 - **기존 성공:** PR #100 [Run 40189428698](https://github.com/planner77/layoutManager/actions/runs/40189428698), HEAD `195f633b0bcefdc6f1964223f2fef0b1a379721c` completed/success, Verify Job 121157064278 + Docker Job 121157064494 모두 success. 이전 HEAD 전용 증거로 유지.

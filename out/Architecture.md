@@ -1,5 +1,16 @@
 # Architecture 초안
 
+## Issue #96 — 비활성 Identity/Session/Role/Site/Audit 공통 기반 (2026-10-25)
+
+- **Owner 계약:** ADR-051 D1~D6 승인. DESIGN.md는 현재 저장소에 없으므로 Architecture/Decisions가 설계 기준. src/app/api, src/server/context.ts, Prisma schema/migrations, Docker/Compose, Viewer는 변경하지 않음.
+- **권한 경계:** src/domain/auth.ts의 requirePermission(UserAccess, Action, Resource, resolveVersionSite)는 서버가 보관한 Actor/Role/SiteGrant와 Version→Site 조회를 반드시 함께 사용한다. Reader/Editor/Admin의 site별 조회·편집, Admin의 글로벌 계정/타입 관리, audit:read/logs:read 특별 권한을 분리. Memo Editor 쓰기는 Action에서 제외.
+- **자격증명·관리자:** src/server/auth/password.ts는 별도 scrypt local-v1 salt+bounded KDF, 기존 CAD 삭제용 비밀번호와 분리. bootstrap.ts는 .env 최초 Admin/복구 플래그·사용자/Secret 파일 경로·단발 ID의 **계획만** 계산하며 실제 파일이나 DB를 읽거나 수정하지 않는다.
+- **세션·요청:** session.ts는 원시 난수→tokenHash, 8h/30m/3개, 폐기/쿠키 정책 순수 헬퍼. guards.ts는 Origin과 세션 귀속 CSRF synchronizer 및 단일 프로세스 테스트용 로그인 제한. 실제 세션 수량과 복구 nonce는 추후 DB 단일 원자 트랜잭션으로 구현해야 하고 여러 프로세스에서 memory limiter 사용 금지.
+- **감사:** audit.ts는 허용 action/target/outcome/Revision/UTC/requestId 필드와 보존 365일 경계만 정의. append-only DB, 감사 읽기 UI/물리 파기/백업은 미구현.
+- **실행 경로 OFF:** Browser→로그인 API/DB/쿠키 발급→권한 검증→업무 CRUD→DB+Audit는 현 PR에서 연결하지 않는다. CIDR/Proxy·Secret/복구·Session DB 원자성/감사/실 LAN E2E/DB 백업·Migration/Owner 운영 승인 후 별도 진행한다. HTTP 위험은 잔존한다.
+
+
+
 ## Issue #97 / P4-D2 — 서버 원본 DXF/강체 Transform 검증 경계 (2026-10-25)
 
 - 데이터 흐름(순수 보조 모듈): 미래 D3 인증 서비스가 **변경 불가능한 Storage DXF Version·SHA·bytes**를 획득 → `server/outline/transform-attestation.ts` → 기존 `attestation.ts`의 SHA·INSUNITS·고유 Root Handle·Canonical CONVEX/PRECISE·고정 0.02 tolerance 확인 → Translate/Rotate 연산(피벗/CCW/좌측 합성)만 다시 계산 → WCS XY Polygon/MultiPolygon/Hole invariant 및 Client claim 차이 검증 → **server-derived** baseGeometry/transform/effectiveGeometry 반환.
