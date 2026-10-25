@@ -45,7 +45,7 @@ services:
 
   g5-prod-nginx:
     profiles: [g5-prod]
-    image: nginx:stable-alpine
+    image: ${G5_NGINX_IMAGE:-nginx:stable-alpine}
     depends_on:
       g5-prod-app:
         condition: service_healthy
