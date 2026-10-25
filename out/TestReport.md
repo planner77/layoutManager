@@ -1,5 +1,13 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issue #103 / G1 — 구현·검증 증거 상태 (2026-10-25)
+
+- **구현 범위:** 테스트 전용 \`src/tests/fixtures/auth-g1/{schema.prisma,migration.sql,store.ts}\`와 \`src/tests/integration/auth-g1.test.ts\` (TC-P4-G1-001~009). 기준 #102 Owner R1 / #96 ADR-051. 7개 SQL 엔터티 User/Session/Grant(3종)/Audit/RecoveryNonce, SQLite lock/slot/nonce/Audit Trigger, 실제 CAD 6 Migration 기반 합성 Source/Current/SHA 및 실패/복구 실험 작성.
+- **원격 코드 작성 시점:** GitHub 브랜치 소스 생성만 완료; 연결 환경에서 npm/SQLite native/Prisma/Playwright/Docker 명령을 **직접 실행하지 않음**. TC-P4-G1-001~009: **NOT RUN**. PR CI는 생성/시작 후 결과를 모니터링하지 않는 사용자 지시에 따라 **PENDING/미확인**, PASS 아님.
+- **정적 설계 경계:** 변경 대상은 \`src/tests/fixtures/auth-g1/**\`, \`src/tests/integration/auth-g1.test.ts\`, AGENTS·out 문서. 기존 \`src/prisma/schema.prisma\`/\`src/prisma/migrations/**\`/App API/Viewer/Docker/Compose/.env/운영 DB/CAD/S3 변경·운영 활성화 **의도적 0**. 실제 Diff·PR HEAD/mergeability/리뷰 근거는 PR 생성 후 확인.
+- **격리 합성 한계:** SQLite 백업 API·로컬 CAD+mock S3 객체 복원 테스트는 작성했으나 미실행. 실 S3/운영 데이터·네트워크·운영 Go-Live는 #107/#108/#109에서 별도 증거 필요. 감사 365일 후 파기는 G0 미결정이므로 구현하지 않음.
+
+
 ## Issue #102 — Owner 공격 대응 비범위 문서 정렬 (2026-10-25)
 
 - G0 #102 및 ADR-051-R1에서 보안 공격/자격증명·세션 탈취 대비 강화·침투시험은 Owner에 의해 비범위로 결정되었다. `OWNER_ACCEPTED_SCOPE`는 **정책상 위험 수용**이며 안전성/침투시험 PASS가 아니다. HTTP 비암호화 위험은 여전히 존재한다.

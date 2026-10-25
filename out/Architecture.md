@@ -1,5 +1,21 @@
 # Architecture 초안
 
+## Issue #103 G1 — 격리 DB adapter/물리 계약, 운영 경로 OFF (2026-10-25)
+
+\`\`\`text
+[Tests/Fixture only] mkdtemp(cad-auth-g1-*) → existing 6 CAD migrations
+  → synthetic Version/Current/SHA + CAD local/S3-mirror copies
+  → begin immediate → isolated migration.sql → FK/check/snapshot/restore
+  → store.ts transaction helpers (G1 Unit/Integration calls only)
+PROD/DEV App → existing src/server/db.ts → existing src/prisma/** [UNCHANGED]
+  └─ auth/session/audit remain non-routed helpers; NO G1 import or runtime hook
+\`\`\`
+
+\`src/tests/fixtures/auth-g1/store.ts\`는 기존 \`src/server/auth/{session,audit}.ts\` 순수 정책을 참조하지만 **App은 이 fixture를 호출하지 않는다.** SQLite \`BEGIN IMMEDIATE\` writer lock과 세션 슬롯 트리거로 두 연결의 동시 쓰기를 직렬화/기본 거부하며 과거 Session 재활성화와 시계 역행을 막는다. Grant 3종 변경+Audit, Disable+revoke+Audit, Nonce consumed+passwordHash change+revoke+Audit를 하나의 원자 transaction으로 검증한다. Version의 Site는 CAD Version→Floor→Building→CadSite FK 조인으로 확인하며 API 헤더/Client 주장값은 사용하지 않는다.
+
+운영 User/API/Prisma/Nginx/Compose/실 데이터 **변경 및 활성화 0**; G1 이후 #104(최초 Admin), #105(Session), #106(RBAC/Audit), #107(경로), #108(실제 복구), #109(운영 Go/No-Go) 순서. [ADR-051-G1](Decisions.md), [Issue103](Issue103.md).
+
+
 ## Issue #102 / ADR-051-R1 — PROD Nginx·DEV Direct 경계 (2026-10-25)
 
 ```text

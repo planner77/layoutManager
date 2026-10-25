@@ -1,5 +1,24 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #103 / G1 — 격리 DB·원자성·복구 Test Matrix (2026-10-25)
+
+모든 TC는 기존 6개 CAD Migration의 실 SQL과 합성 Version/Current/SHA를 일회용 SQLite에 적용하고 **운영 연결 0**. 테스트 위치 \`src/tests/integration/auth-g1.test.ts\`. 미실행은 \`NOT RUN\`, PR CI 최신 HEAD 결과를 따로 검증하기 전 PASS 기록 금지.
+
+| Test ID | 검증 내용 | 근거 AC | 계획 상태 |
+| --- | --- | --- | --- |
+| TC-P4-G1-001 | Migration 장애 주입 rollback, 기존 CAD 스냅샷 불변, FK, 중복 DDL 거부·격리 경로 Guard | AC1/3/4 | NOT RUN |
+| TC-P4-G1-002 | User ID 불변/login unique(정규화), Role/Site/SpecialGrant FK·Unique·CHECK | AC1/2 | NOT RUN |
+| TC-P4-G1-003 | 8h·30m·3 active, 4번째 app/direct SQL 거부, 실패 주입 rollback, 원시 토큰 DB 없음 | AC2 | NOT RUN |
+| TC-P4-G1-004 | 두 SQLite writer/BEGIN IMMEDIATE lock 충돌이 fail closed | AC2 | NOT RUN |
+| TC-P4-G1-005 | Role/Site/SpecialGrant+Audit atomic commit/rollback, duplicate/권한 거부, Audit UPDATE/DELETE 거부 | AC2 | NOT RUN |
+| TC-P4-G1-006 | 실제 DB Version→Floor→Building→CadSite+Reader Site grant, Admin 무범위 거부 | AC1/2 | NOT RUN |
+| TC-P4-G1-007 | 비활성 계정+세션 회수+Audit 원자 처리, 실패 복원/재로그인 거부 | AC2 | NOT RUN |
+| TC-P4-G1-008 | nonce hash unique 1회, 암호 변경·세션 폐기·Audit rollback, 원문 미저장 | AC2 | NOT RUN |
+| TC-P4-G1-009 | 중단(quiesced)된 합성 DB/local/S3-mirror 일관 백업→격리 G1 dry-run→손상 주입→복원, 기존 Current/SHA/delete hash 불변 | AC3 | NOT RUN |
+
+추가 PR 정적 Diff 확인: \`src/prisma/schema.prisma\`, \`src/prisma/migrations/**\`, \`src/app/api/**\`, \`src/server/db.ts\`, Runtime/Compose/Nginx/실 CAD/S3 변경 0; 새 G1 파일은 tests/fixtures·tests/integration·docs에 한정. 실 운영 DB/CAD/원격 S3 복구·실 LAN E2E 및 Owner 운영 승인은 **#108/#109 NOT RUN**. 관련 [Issue103](Issue103.md), [TestReport](TestReport.md).
+
+
 ## Issue #102 / ADR-051-R1 — 보안 강화 비범위와 기능/운영 수용 시험 (2026-10-25)
 
 **정책:** HTTP와 계정/세션 탈취·공격 방어 관련 위험은 Owner가 `OWNER_ACCEPTED_SCOPE`로 결정했다. 이는 시험 성공이 아니라 해당 *공격 전용 대응/침투 실증을 완료 게이트에서 제외*한 기록이다. 기존 비활성 Auth helper 및 기존 작성된 단위테스트를 제거하는 지시가 아님. [Issue102](Issue102.md).

@@ -1,5 +1,14 @@
 # 상세 요구사항
 
+## Issue #103 / P4-D1 G1 — 격리 영속 DB 요구/추적 (2026-10-25)
+
+- **REQ-G1-01:** User(id 불변/loginName unique/passwordHash/status/mustChange), Session(tokenHash/8h/30m/3개), Role/Site/SpecialGrant(audit:read/logs:read 분리), Audit(append-only/365일 정책), RecoveryNonce(hash 1회) 제약/FK; TC-P4-G1-001/002/003/008.
+- **REQ-G1-02:** \`BEGIN IMMEDIATE\` writer serial, 세션 4번째 발급·시간 역행·만료 touch·중복 nonce 실패, 관리자 전용 Role/Site/SpecialGrant+Audit/비활성·회수·복구 원자 rollback; TC-P4-G1-003/004/005/007/008.
+- **REQ-G1-03:** 기존 CadSite 실 FK와 Version→CadLocation→Building→Site 관계 조회, Admin Site 자동 허용 없음, 원본 bytes/SHA/Current/delete password/5단계 CAD 불변; TC-P4-G1-001/006/009.
+- **REQ-G1-04:** **격리 Fixture SQL/Prisma 설계만** 적용. 운영 Prisma/schema/migrations/API/Runtime/Compose/GHCR 변경 금지. 실제 사내 DB/CAD/S3 일관 백업·복구 및 Owner G7 운영 승인은 별도; TC-P4-G1-001/009 및 정적 Diff·PR CI.
+- 선행 정책: #102 ADR-051-R1. 현행 API Current/삭제 권한, 초기 Admin 책임, 감사 365일 이후 파기, 실제 DEV/PROD 설정은 \`PENDING\`. 임의 Default 구현 금지. 상세 [Issue103](Issue103.md).
+
+
 ## Issue #102 G0 / ADR-051-R1 — Owner 경량 보안 범위 재정의 (2026-10-25)
 
 | 요구 ID | 수용할 결정·기능 | 상태/후속 |
