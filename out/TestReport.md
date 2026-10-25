@@ -1,5 +1,17 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE66-PR78-FAIL-20261025 — 첫 CI Unit 정적 계약 차단, Docker 실측 성공
+
+- [Run 40167191799](https://github.com/planner77/layoutManager/actions/runs/40167191799), `pull_request.synchronize`, HEAD `45389a4661d424e7ad6aa6ee66bcd643bbc6ad76`, **completed/failure**. Verify Job `121090554088`: TypeScript/ESLint/npm/Prisma success, Unit **187 passed/1 failed** (`TC-IMAGE-003`, `standalone.test.ts`). OCI parser, DXF source benchmark, Build, Chromium/E2E, Legacy **SKIPPED**. 기존 `CMD ["node", "scripts/run.mjs", "deploy"]` 정적 기대와 신규 `CMD ["./node_modules/.bin/tsx", "scripts/deploy.ts"]`의 불일치.
+- 독립 Docker Job `121090554257` **completed/success**, 이전 migrator **1,336,572,597 bytes** → 새 **578,862,325 bytes** (**56.69% 로컬 비압축 절감**), gzip tar proxy **462,720,650→212,574,989 bytes**. node_modules ~365MiB, native/Prisma/UID 검증, Compose 신규·재실행 마이그레이션+backfill 및 `/api/health` 200, invalid SQL P3018 및 read-only DB에 exit nonzero 성공. 이는 GitHub 레지스트리 OCI compressed layers나 현장 운영 데이터 보존 실측이 아님.
+- 수정: 기존 TC-IMAGE-003에 분리된 Docker stage와 새 migration CMD·Compose 성공 종속·web runtime 불변을 검사하고, 신규 `TC-IMG66-010`에 Prisma 종료 대기 후 Backfill 실행 순서 정적 회귀를 추가한다. 도메인/DB/Docker runtime 실제 구현 변경 없음. **새 HEAD CI 전 아직 NOT VERIFIED**; Docker 이전 성공을 변경 HEAD 성공으로 전용 금지. [FailureLedger](FailureLedger.md), [Issue66](Issue66.md), [TestPlan](TestPlan.md).
+
+## U-ISSUE66-DEV-20261025 — 전용 migrator 의존성 분리 / 검증 대기
+
+- 기준/변경: 선행 PR CI run `40154979531`의 local migrator 약 1.34GB, full `node_modules` 약 1.1GB는 **과거 비압축 추정 기준선**. 이번 `0.37.1` 변경 후의 동일 소스 이미지 차이·절감률은 **아직 측정되지 않았다**. GHCR OCI compressed bytes/고정 digest도 게시 전이다.
+- 구현: `migrator-dependencies` lock 기반 offline prune, 최소 TS source/Prisma/generated bundle 복사, UID 10001 Prisma CLI/tsx/native SQLite image sanity, Compose migrate 재사용. PR Docker baseline migrator 비교 및 invalid SQL fixture, OCI linux/amd64 manifest layer 합/중복 digest 수치, Node parser 테스트 추가.
+- **현재 상태:** GitHub 코드/워크플로 작성 완료. 로컬 Docker/Node install/npx Prisma/TS source E2E/실제 이미지 sizes/health/실행/운영 데이터 보존 실측 **NOT RUN**; PR CI 별도 실행 후 결과를 확인해야 PASS로 기록 가능. 최근 다른 Issue CI 성공은 #66의 증거가 아님.
+- 현장 보류: 기존 운영 DB/CAD/S3 동시점 백업·복구 시험, 실제 GHCR image tag 존재 및 manifest 검증, 실환경 CA/인증서·migration 차단 실증. [Issue66](Issue66.md), [TestPlan](TestPlan.md), [Operation](Operation.md).
 ## U-ISSUE51-PR77-FAIL-20261025 — 첫 CI Unit 차단과 P2 리뷰 보완
 
 - [PR #77](https://github.com/planner77/layoutManager/pull/77) 최초 HEAD `c84a04e61cbaa413ee166ff896dcb7c10f1ec04b`, [Run #40164835838](https://github.com/planner77/layoutManager/actions/runs/40164835838) **completed/failure**. Verify [Job #121083652315](https://github.com/planner77/layoutManager/actions/runs/40164835838/job/121083652315) npm ci/Prisma/TypeScript/ESLint PASS, Unit/Integration **186 PASS / 1 FAIL** (`tests/unit/viewer.test.ts:75`, TC-U6-UNIT-003, 기존 `selectSavedOutline('local-1')` 호출 기대와 `('local-1',false)` 실제 호출 불일치). Benchmark/Production Build/Chromium E2E/Legacy Migration SKIPPED, Artifact 업로드 성공. Docker [Job #121083652401](https://github.com/planner77/layoutManager/actions/runs/40164835838/job/121083652401) SUCCESS.

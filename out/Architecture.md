@@ -1,5 +1,29 @@
 # Architecture 초안
 
+## Issue #66 — Migrator runtime closure만 분리 (v0.37.1)
+
+```text
+src/package.json + src/package-lock.json
+        | (npm ci / Node 22.14.0 / Debian glibc)
+        +--> dependencies --> builder (generate + Next build) --> runtime (기존 standalone)
+        |
+        +--> migrator-dependencies
+             - prepare-migrator-package.mjs: locked direct runtime manifest 파생
+             - npm prune --omit=dev --offline --legacy-peer-deps
+             - Prisma CLI/tsx/@prisma client/native 및 웹·테스트 제외 검증
+                       |
+runtime-base (UID 10001, glibc, OpenSSL/CA, /data)
+        +--------------+----> migrator
+             - pruned modules + runtime manifest
+             - prisma config/schema/migrations/generated client
+             - deploy.ts/env.mjs/storage-config/backfill.ts
+             - server/db, backfill, password, logger, domain/cad
+             - tsx scripts/deploy.ts → prisma migrate deploy → backfill → exit
+```
+
+- 폐쇄망 런타임 이미지에는 `npm ci`/registry 접근이 없다. 전체 `npm ci`은 Build stage에서 기존과 동일하고 pruning은 설치된 lock graph를 **오프라인으로 축소**한다. Prisma CLI가 도구 내부에 포함하는 필수 @prisma 패키지는 유지하며, migration에 불필요한 React 등 peer 자동 설치는 억제하고 실제 Prisma/SQLite CLI 실행을 이미지에서 검증한다.
+- **변경 없음:** 웹 standalone/public/fonts/WASM, Prisma DB schema, API/Viewer, Compose `migrate -> app` 성공 종속, 공용 `/data`, UID 10001·CA/OpenSSL, tag/digest pair 및 후보 쌍 검증/승격. 의도적 불량 DB/SQL은 비정상 종료로 fail closed.
+- 관측 경계: PR CI의 `docker image inspect`는 local **uncompressed** 크기, `docker save|gzip`는 proxy. Main publish의 `imagetools inspect --raw`는 **linux/amd64 OCI layer compressed size**이며 중복 digest 공유량을 따로 계산. [Issue66](Issue66.md), [ADR-043](Decisions.md).
 ## Issue #51 / E1 — 통합 객체 선택의 책임과 참조 경계 (v0.37.0)
 
 - `CadViewer`는 UI 객체 모드·Origin별 카운트·read-only 안내만 관리하고 DXF file/Scene 직접 조작은 금지. `ViewerManager`는 `getCanvasObjectSelection/getCanvasEditCapability/getGeneratedObjects/clearCanvasObjectSelection`과 `setSelectionMode`를 전달한다.

@@ -68,6 +68,8 @@ jobs:
 
       - name: Unit 및 Integration 테스트
         run: npm test
+      - name: OCI manifest layer statistics unit tests
+        run: node --test scripts/measure-ghcr-pair.check.mjs
 
       # P5 source CPU evidence: actual 1k/10k/100k synthetic runs, not real DXF acceptance.
       # Private CAD inputs are never uploaded to GitHub CI.
@@ -129,6 +131,7 @@ jobs:
           if [ -z "$BASE_SHA" ]; then BASE_SHA="$(git rev-parse origin/main)"; fi
           git show "$BASE_SHA:src/Dockerfile" > "$RUNNER_TEMP/issue28-baseline.Dockerfile"
           docker buildx build --load --platform linux/amd64 -f "$RUNNER_TEMP/issue28-baseline.Dockerfile" -t cad-layout-viewer:baseline .
+          docker buildx build --load --platform linux/amd64 --target migrator -f "$RUNNER_TEMP/issue28-baseline.Dockerfile" -t cad-layout-viewer:baseline-migrate .
       - name: Build phase1, standalone app and migration targets
         shell: bash
         run: |
@@ -138,12 +141,51 @@ jobs:
           docker buildx build --load --platform linux/amd64 --target migrator -f src/Dockerfile -t cad-layout-viewer:ci-migrate .
       - name: Measure 3 image sizes, layers and directories
         run: bash src/scripts/measure-images.sh cad-layout-viewer:baseline cad-layout-viewer:phase1 cad-layout-viewer:ci "$GITHUB_STEP_SUMMARY"
+      - name: Measure migrator baseline vs dedicated dependency closure
+        run: bash src/scripts/measure-migrator.sh cad-layout-viewer:baseline-migrate cad-layout-viewer:ci-migrate "$GITHUB_STEP_SUMMARY"
+      - name: Verify migrator packaged files and native dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run --rm --entrypoint sh cad-layout-viewer:ci-migrate -c '
+            test "$(id -u)" = 10001
+            for f in node_modules/.bin/prisma node_modules/.bin/tsx generated/prisma/client.ts prisma.config.ts prisma/migrations server/db.ts scripts/deploy.ts; do
+              test -e "$f" || { echo "Missing required migrator file: $f"; exit 1; }
+            done
+            for f in .next public tests server/repositories node_modules/next node_modules/react node_modules/react-dom node_modules/eslint node_modules/vitest node_modules/@playwright/test node_modules/dxf-viewer node_modules/three-dxf-viewer; do
+              test ! -e "$f" || { echo "Unexpected migrator file: $f"; exit 1; }
+            done
+            node -e "const Db=require(\"better-sqlite3\");new Db(\":memory:\").close()"
+          '
+
       - name: Confirm failed migration is nonzero before app startup
         run: |
           if docker run --rm -e DATABASE_URL=file:/proc/cad.sqlite -e CAD_STORAGE_PATH=/data/cad cad-layout-viewer:ci-migrate; then
             echo "::error::Unwritable database path unexpectedly passed migration"
             exit 1
           fi
+      - name: Reject invalid migrations in a disposable database
+        shell: bash
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"
+          trap 'rm -rf "$tmp"' EXIT
+          mkdir -p "$tmp/migrations" "$tmp/data/db" "$tmp/data/cad"
+          cp -R src/prisma/migrations/. "$tmp/migrations/"
+          mkdir "$tmp/migrations/99999999999999_invalid_ci"
+          printf '%s\n' 'THIS IS NOT VALID SQL;' > "$tmp/migrations/99999999999999_invalid_ci/migration.sql"
+          chmod 755 "$tmp"
+          chmod -R a+rX "$tmp/migrations"
+          chmod -R a+rwX "$tmp/data"
+          if docker run --rm \
+            --mount "type=bind,source=$tmp/migrations,target=/app/src/prisma/migrations,readonly" \
+            --mount "type=bind,source=$tmp/data,target=/data" \
+            -e DATABASE_URL=file:/data/db/cad.sqlite \
+            cad-layout-viewer:ci-migrate; then
+            echo "::error::Deliberately invalid migration unexpectedly succeeded"
+            exit 1
+          fi
+          # Above uses a disposable CI directory; never a production DB/CAD volume.
       # A newly started Node server can reset a connection before its listener is ready.
       # curl --retry-connrefused alone does not retry exit 56; retry-all-errors covers it.
       - name: Compose fresh install, static assets, health and idempotent migration
