@@ -68,6 +68,16 @@ function validGeometry(g:GeoJSONOutline):boolean {
   // #43 bounds validator rejects malformed/nonfinite/degenerate inputs.
   return outlineGeometryBounds(g)!==null;
 }
+/** Translation starts on a confirmed object's *boundary*, not its interior.
+ * Interior clicks retain the normal area/multi-selection gesture. */
+export function geometryHitBoundary(g:GeoJSONOutline,p:XY,radius:number):boolean{
+  if(!validGeometry(g)||!p.every(Number.isFinite)||!Number.isFinite(radius)||radius<0)return false;
+  const b=outlineGeometryBounds(g)!;
+  if(p[0]<b.minX-radius||p[0]>b.maxX+radius||p[1]<b.minY-radius||p[1]>b.maxY+radius)return false;
+  return polygons(g).some(poly=>poly.some(ring=>
+    segments(ring).some(([a,b])=>distance(p,a,b)<=radius)));
+}
+
 export function geometryHitPoint(g:GeoJSONOutline,p:XY,radius:number):boolean{
   if(!validGeometry(g)||!p.every(Number.isFinite)||!Number.isFinite(radius)||radius<0)return false;
   const b=outlineGeometryBounds(g)!;

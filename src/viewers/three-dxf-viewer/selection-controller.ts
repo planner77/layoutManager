@@ -1,11 +1,19 @@
 import type {OutlineEntity,XY} from '../core/outline-geometry';
 import type {GeoJSONOutline} from '../core/outline-compute';
-import {geometryContainedInBox,geometryHitPoint,geometryIntersectsBox,type HitBox} from '../../domain/generated-hit-test';
+import {geometryContainedInBox,geometryHitBoundary,geometryHitPoint,geometryIntersectsBox,type HitBox} from '../../domain/generated-hit-test';
+import {TRANSLATE_DRAG_THRESHOLD_PX} from '../../domain/generated-translate';
 import {SelectionSpatialIndex} from './selection-spatial-index';
 
 /** 'select' is the #31/#40 SOURCE-only outline worker mode. */
 export type SelectionMode='pan'|'select'|'objects'|'generated';
 export type GeneratedSelectable=Readonly<{id:string;geometry:GeoJSONOutline}>;
+/** Adapter handles the document stage/ghost/commit; controller only owns gesture arbitration. */
+export type GeneratedDragHandlers=Readonly<{
+  begin:(ids:readonly string[])=>boolean;
+  move:(start:XY,current:XY)=>boolean;
+  end:(start:XY,current:XY)=>void;
+  cancel:()=>void;
+}>;
 const MIN_DRAG_PX=5,CLICK_PX=7;
 function distanceToSegment(p:XY,a:XY,b:XY){
  const dx=b[0]-a[0],dy=b[1]-a[1],denom=dx*dx+dy*dy;
@@ -52,7 +60,7 @@ export class SelectionController {
  get overflowEntities(){return this.spatial.overflowCount;}
  private mode:SelectionMode='pan';
  private visible=new Set<string>();
- private down?:{pointerId:number;x:number;y:number;mod:boolean};
+ private down?:{pointerId:number;x:number;y:number;mod:boolean;moveCandidate:boolean;moving:boolean;world:XY};
  private box:HTMLDivElement;
  private space=false;
  private previousPosition:string;
@@ -66,6 +74,7 @@ export class SelectionController {
    private onChange:(selected:OutlineEntity[])=>void,
    private onPanKey:(pan:boolean)=>void,
    private onObjectsChange?:(sources:OutlineEntity[],generatedIds:readonly string[])=>void,
+   private onGeneratedDrag?:GeneratedDragHandlers,
  ) {
    this.spatial=new SelectionSpatialIndex(entities);
    this.idToLayer=new Map(entities.map(e=>[e.id,e.layer]));
@@ -81,6 +90,8 @@ export class SelectionController {
    container.append(this.box);
    canvas.addEventListener('pointerdown',this.pointerDown);
    canvas.addEventListener('pointermove',this.pointerMove);
+   canvas.addEventListener('lostpointercapture',this.pointerCancel);
+   canvas.addEventListener('wheel',this.wheel,{passive:true});
    window.addEventListener('pointerup',this.pointerUp);
    window.addEventListener('pointercancel',this.pointerCancel);
    window.addEventListener('keydown',this.keyDown,true);
@@ -88,7 +99,7 @@ export class SelectionController {
    window.addEventListener('blur',this.blur);
  }
  setMode(mode:SelectionMode){
-   this.mode=mode;this.cancelDrag();
+   this.cancelDrag();this.mode=mode;
    this.canvas.style.cursor=mode==='pan'?this.previousCursor:'crosshair';
    this.onPanKey(mode==='pan'||this.space);
  }
@@ -105,7 +116,7 @@ export class SelectionController {
    this.generated=[...unique.values()];
    const before=this.generatedIds.size;
    this.generatedIds=new Set([...this.generatedIds].filter(id=>unique.has(id)));
-   if(before!==this.generatedIds.size)this.emit();
+   if(before!==this.generatedIds.size){this.cancelDrag();this.emit();}
  }
  getSelection(){return this.entities.filter(e=>this.ids.has(e.id));}
  getSelectedGeneratedIds(){return [...this.generatedIds];}
@@ -117,6 +128,19 @@ export class SelectionController {
    const radius=Math.hypot(near[0]-world[0],near[1]-world[1]);
    return this.generated.some(item=>this.generatedIds.has(item.id) &&
      geometryHitPoint(item.geometry,world,radius));
+ }
+ private hitSelectedBoundary(clientX:number,clientY:number):boolean{
+   if(!this.generatedIds.size)return false;
+   const [x,y]=this.position(clientX,clientY);
+   const p=this.screenToWorld(x,y),near=this.screenToWorld(x+CLICK_PX,y);
+   const radius=Math.hypot(near[0]-p[0],near[1]-p[1]);
+   return this.generated.some(item=>this.generatedIds.has(item.id)&&
+     geometryHitBoundary(item.geometry,p,radius));
+ }
+ /** Called for mode/visibility/zoom/undo/reload changes before staged commit. */
+ cancelGeneratedDrag():boolean{
+   if(!this.down?.moving)return false;
+   this.cancelDrag();return true;
  }
  selectGenerated(id:string,additive=false):boolean{
    if(!this.generated.some(item=>item.id===id))return false;
@@ -144,12 +168,28 @@ export class SelectionController {
    if(this.mode==='pan'||this.space||event.button!==0)return;
    const [x,y]=this.position(event.clientX,event.clientY);
    this.canvas.focus({preventScroll:true});
-   this.down={pointerId:event.pointerId,x,y,mod:event.ctrlKey||event.metaKey};
+   const mod=event.ctrlKey||event.metaKey;
+   const moveCandidate=this.mode==='generated'&&!mod&&!event.altKey&&!event.shiftKey&&
+     this.hitSelectedBoundary(event.clientX,event.clientY);
+   this.down={pointerId:event.pointerId,x,y,mod,moveCandidate,moving:false,
+     world:this.screenToWorld(x,y)};
  };
  private pointerMove=(event:PointerEvent)=>{
    if(!this.down||this.down.pointerId!==event.pointerId)return;
    const [x,y]=this.position(event.clientX,event.clientY),start=this.down;
-   if(Math.hypot(x-start.x,y-start.y)<MIN_DRAG_PX&&this.box.style.display==='none')return;
+   const distance=Math.hypot(x-start.x,y-start.y);
+   if(start.moveCandidate && distance>=TRANSLATE_DRAG_THRESHOLD_PX && !start.moving){
+     if(this.onGeneratedDrag?.begin(this.getSelectedGeneratedIds())){
+       start.moving=true;
+       this.box.style.display='none';
+       this.canvas.style.cursor='grabbing';
+     }else start.moveCandidate=false;
+   }
+   if(start.moving){
+     if(!this.onGeneratedDrag?.move(start.world,this.screenToWorld(x,y)))this.cancelDrag();
+     return;
+   }
+   if(distance<MIN_DRAG_PX&&this.box.style.display==='none')return;
    this.box.style.display='block';
    Object.assign(this.box.style,{
      left:Math.min(x,start.x)+'px',top:Math.min(y,start.y)+'px',
@@ -162,6 +202,13 @@ export class SelectionController {
    const start=this.down;
    if(!start||start.pointerId!==event.pointerId)return;
    const [x,y]=this.position(event.clientX,event.clientY);
+   if(start.moving){
+     this.down=undefined;
+     this.box.style.display='none';
+     this.canvas.style.cursor=this.mode==='pan'?this.previousCursor:'crosshair';
+     this.onGeneratedDrag?.end(start.world,this.screenToWorld(x,y));
+     return;
+   }
    const dragging=Math.hypot(x-start.x,y-start.y)>=MIN_DRAG_PX;
    this.cancelDrag();
    const includeSource=this.mode==='select'||this.mode==='objects';
@@ -208,6 +255,7 @@ export class SelectionController {
    this.emit();
  };
  private pointerCancel=()=>this.cancelDrag();
+ private wheel=()=>this.cancelGeneratedDrag();
  private keyDown=(event:KeyboardEvent)=>{
    // E3 overlays are siblings of the WebGL canvas inside the same workspace.
    // Their Escape closes only the top layer; it must not clear the underlying
@@ -216,9 +264,12 @@ export class SelectionController {
      this.container.parentElement?.querySelector('[data-canvas-edit-escape-layer]'))return;
    const el=event.target as HTMLElement|null;
    if(el?.closest('input,textarea,select,[contenteditable="true"]'))return;
+   if(event.key==='Escape' && this.down?.moving){
+     this.cancelDrag();event.preventDefault();event.stopImmediatePropagation();return;
+   }
    if(event.code==='Space'&&this.mode!=='pan'&&!event.repeat){
      const interactive=el?.closest('button,a[href],summary,[role="button"],[role="link"],[role="switch"],[role="checkbox"],[role="radio"],[role="tab"],[role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"],[role="treeitem"]');
-     if(!interactive){this.space=true;this.onPanKey(true);event.preventDefault();}
+     if(!interactive){this.cancelDrag();this.space=true;this.onPanKey(true);event.preventDefault();}
    }
    if(event.key==='Escape'&&(this.down||this.ids.size||this.generatedIds.size)){
      this.clearObjects();event.preventDefault();
@@ -228,10 +279,18 @@ export class SelectionController {
    if(event.code==='Space'&&this.space){this.space=false;this.onPanKey(this.mode==='pan');event.preventDefault();}
  };
  private blur=()=>{this.space=false;this.onPanKey(this.mode==='pan');this.cancelDrag();};
- private cancelDrag(){this.down=undefined;this.box.style.display='none';}
+ private cancelDrag(){
+   const moving=this.down?.moving;
+   this.down=undefined;this.box.style.display='none';
+   this.canvas.style.cursor=this.mode==='pan'?this.previousCursor:'crosshair';
+   if(moving)this.onGeneratedDrag?.cancel();
+ }
  dispose(){
+   this.cancelDrag();
    this.canvas.removeEventListener('pointerdown',this.pointerDown);
    this.canvas.removeEventListener('pointermove',this.pointerMove);
+   this.canvas.removeEventListener('lostpointercapture',this.pointerCancel);
+   this.canvas.removeEventListener('wheel',this.wheel);
    window.removeEventListener('pointerup',this.pointerUp);
    window.removeEventListener('pointercancel',this.pointerCancel);
    window.removeEventListener('keydown',this.keyDown,true);
