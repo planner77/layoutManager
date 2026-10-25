@@ -126,6 +126,7 @@ test('TC-P0P5-REAL-BROWSER: private real-DXF mapping and interaction samples',as
       page.off('pageerror',onError);
     }
   }
+  const p50=(values:number[])=>[...values].sort((a,b)=>a-b)[Math.floor((values.length-1)/2)];
   const p95=(values:number[])=>[...values].sort((a,b)=>a-b)[Math.ceil(values.length*0.95)-1];
   const report={
     schemaVersion:2,type:'private-browser-observation-not-operational-PASS',
@@ -136,7 +137,9 @@ test('TC-P0P5-REAL-BROWSER: private real-DXF mapping and interaction samples',as
       webgl, // GPU identity and frame pacing only; NOT GPU utilization or VRAM telemetry
     },
     samples:measurements,
+    loadP50Ms:p50(measurements.map(s=>s.loadMs)),
     loadP95Ms:p95(measurements.map(s=>s.loadMs)),
+    boxSelectionP50Ms:p50(measurements.map(s=>s.boxSelectionMs)),
     boxSelectionP95Ms:p95(measurements.map(s=>s.boxSelectionMs)),
     frameP95Ms:p95(measurements.map(s=>s.frameP95Ms)),
     limitations:[
