@@ -194,8 +194,9 @@ describe('Issue #104 G2 explicit one-shot Admin service (isolated database only)
     expect(snapshot).not.toContain('new-test-only-G2-password');
     await expect(executeAdminSetup(env, store, 'g2-replay', NOW + 30)).rejects.toThrow();
     expect(count('AdminRecoveryNonce')).toBe(1);
-    expect(db.prepare('SELECT password_hash FROM "User" WHERE id=?').get(adminId))
-      ?.password_hash).toEqual(after?.password_hash);
+    const replayHash = db.prepare('SELECT password_hash FROM "User" WHERE id=?')
+      .get(adminId)?.password_hash;
+    expect(replayHash).toEqual(after?.password_hash);
   });
 
   test('TC-P4-G2-008: interrupted recovery rolls back nonce, hash, revoke and audit', async () => {
@@ -209,8 +210,9 @@ describe('Issue #104 G2 explicit one-shot Admin service (isolated database only)
       injectRecoveryFailure: true,
     }), 'g2-recovery-fault', NOW + 20)).rejects.toThrow('G1_INJECTED_RECOVERY_FAILURE');
     expect(db.prepare('SELECT * FROM "User" WHERE id=?').get(adminId)).toEqual(beforeUser);
-    expect(db.prepare('SELECT revoked_at FROM "AuthSession" WHERE user_id=?').get(adminId)
-      ?.revoked_at).toBeNull();
+    const revokedAtBeforeRetry = db.prepare('SELECT revoked_at FROM "AuthSession" WHERE user_id=?')
+      .get(adminId)?.revoked_at;
+    expect(revokedAtBeforeRetry).toBeNull();
     expect(count('AdminRecoveryNonce')).toBe(0);
     expect(count('AuditEvent')).toBe(beforeAudit);
     await executeAdminSetup(env, createG2IsolatedStore(db), 'g2-recovery-retry', NOW + 30);
