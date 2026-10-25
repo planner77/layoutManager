@@ -1,5 +1,13 @@
 # PR/Main CI 실패 원장
 
+## Issue #52 / PR #79 — CI TypeScript 실패 및 P2 리뷰 3건 (2026-10-25 KST)
+
+- **최초 실패 원장:** [PR #79](https://github.com/planner77/layoutManager/pull/79), [Run 40168296155](https://github.com/planner77/layoutManager/actions/runs/40168296155) 최초 HEAD `40aba11f9bb8117149e8487c39d8cf72f9f384cd`, completed/**failure**. Verify [Job 121093743809](https://github.com/planner77/layoutManager/actions/runs/40168296155/job/121093743809): checkout/npm ci/Prisma PASS, TypeScript **FAIL** (`tests/e2e/issue52-generated-history.spec.ts:62` TS2339 `Event.key`·`Event.ctrlKey` 2건). ESLint, Unit, Benchmark, Build, Playwright, E2E, Legacy migration SKIPPED. Artifact upload Step 성공. 독립 Docker [Job 121093744225](https://github.com/planner77/layoutManager/actions/runs/40168296155/job/121093744225)는 SUCCESS.
+- **직접 원인/조치:** `querySelector`의 일반 `Element`→`Event` 타입 추론을 `querySelector<HTMLInputElement>`로 구체화해 키보드 접근 컴파일 오류를 차단. 기존 Ctrl+Z E2E 검증은 유지, skip/삭제 없음.
+- **별도 P2 리뷰 3건:** [#4369873353](https://github.com/planner77/layoutManager/pull/79#discussion_r4369873353), thread `PRRT_kwDOUQjDfc6v-6n7`: WCS (1e9,1e9) unit Polygon Shoelace cancellation → 링 원점 상대좌표 면적 검증 및 TC-E2-UNIT-006. [#4369873355](https://github.com/planner77/layoutManager/pull/79#discussion_r4369873355), thread `PRRT_kwDOUQjDfc6v-6n9`: Delete Undo + 새 append로 100k vertex/100 object 복원 초과 → Undo-restorable capacity 예약, 새 확정 시 호환불가 Undo 이력 무효화 및 TC-E2-UNIT-007. [#4369873358](https://github.com/planner77/layoutManager/pull/79#discussion_r4369873358), thread `PRRT_kwDOUQjDfc6v-6oA`: captured selection으로 stage commit이 SOURCE/혼합 또는 다른 ID 변경을 무시 → 현재 선택 재검증·선택/모드 변경 시 취소, TC-E2-UNIT-008.
+- **재검증 경계:** 기존 실패를 보존. 수정된 HEAD의 Typecheck/Lint/Unit/Build/E2E 및 실 CAD/GPU 결과는 아직 **NOT VERIFIED**. 새 PR CI 실행 시작과 성공은 별도, 원본 DXF/Worker/DB/서버 API/#31 P4 보안 정책 불변.
+
+
 ## Issue #51 / PR #77 — 최초 CI Unit 계약 오류 및 별도 P2 리뷰 (2026-10-25 KST)
 
 - **실패 보존:** [PR #77](https://github.com/planner77/layoutManager/pull/77), [Run 40164835838](https://github.com/planner77/layoutManager/actions/runs/40164835838), `pull_request.opened`, attempt 1, 검증 HEAD `c84a04e61cbaa413ee166ff896dcb7c10f1ec04b`, **completed/failure**. Verify [Job 121083652315](https://github.com/planner77/layoutManager/actions/runs/40164835838/job/121083652315): Checkout/npm ci/Prisma/TypeScript/ESLint **PASS**, Unit+Integration **186 PASS/1 FAIL** (38/39 test files PASS). Synthetic Benchmark/Production Build/Chromium 설치/E2E/Legacy Migration **SKIPPED**; 실패 Artifact 업로드 Step **SUCCESS**. 별도 Docker runtime [Job 121083652401](https://github.com/planner77/layoutManager/actions/runs/40164835838/job/121083652401) **SUCCESS**.

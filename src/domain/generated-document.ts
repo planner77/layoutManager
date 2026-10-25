@@ -71,10 +71,14 @@ function cloneGeometry(geometry:GeoJSONOutline):GeoJSONOutline{
       if(Math.hypot(vertices[0][0]-vertices[vertices.length-1][0],
                     vertices[0][1]-vertices[vertices.length-1][1])>1e-8)
         throw new Error('닫히지 않은 Ring입니다.');
-      const area=vertices.slice(0,-1).reduce((sum,p,i)=>{
-        const next=vertices[i+1];
-        return sum+p[0]*next[1]-next[0]*p[1];
-      },0);
+      // Relative coordinates avoid catastrophic cancellation at distant WCS origins.
+      const [originX,originY]=vertices[0];
+      let area=0;
+      for(let i=1;i<vertices.length-2;i++){
+        const a=vertices[i],b=vertices[i+1];
+        area+=(a[0]-originX)*(b[1]-originY)-
+          (a[1]-originY)*(b[0]-originX);
+      }
       if(!Number.isFinite(area)||Math.abs(area)<1e-15)
         throw new Error('면적이 없는 Ring입니다.');
       return Object.freeze(vertices) as unknown as XY[];
@@ -145,6 +149,19 @@ export class GeneratedDocument{
   history(){return {undo:this.undoEntries.length,redo:this.redoEntries.length,
     limit:GENERATED_HISTORY_LIMIT};}
   get hasPending(){return this.pending!==null;}
+  /** UUID cannot be issued again even after deletion or clear. */
+  hasIssuedId(id:string){return this.issued.has(id);}
+  /** Objects currently deleted but still restorable by Undo reserve capacity. */
+  private undoRestorableEntries():GeneratedEntry[]{
+    const live=new Set(this.objects.map(item=>item.ref.id));
+    const restorables=new Map<string,GeneratedEntry>();
+    for(const history of this.undoEntries){
+      if(history.type!=='Delete')continue;
+      for(const patch of history.patches)
+        if(!live.has(patch.id))restorables.set(patch.id,patch.before);
+    }
+    return [...restorables.values()];
+  }
   append(input:{
     id:string;savedOutlineId:string;createdAt:string;result:OutlineResult;
     name?:string;outlineTypeId?:string|null;outlineTypeName?:string|null;
@@ -156,9 +173,17 @@ export class GeneratedDocument{
        this.objects.some(item=>item.savedOutlineId===input.savedOutlineId))
       throw new Error('생성 ID 또는 기존 로컬 ID가 중복/비정상입니다.');
     const baseResult=freezeResult(input.result);
-    if(this.objects.reduce((n,o)=>n+pointsCount(o.baseGeometry),0)+
-        pointsCount(baseResult.geometry)>GENERATED_VERTEX_LIMIT)
+    const newVertexCount=pointsCount(baseResult.geometry);
+    const liveVertices=this.objects.reduce((n,o)=>n+pointsCount(o.baseGeometry),0);
+    if(liveVertices+newVertexCount>GENERATED_VERTEX_LIMIT)
       throw new Error('문서 꼭짓점 총량을 초과했습니다.');
+    // Keep Delete Undo only when restoring its object still fits after append.
+    // Otherwise invalidate incompatible Undo before accepting the new object.
+    const reserved=this.undoRestorableEntries();
+    const discardIncompatibleHistory=
+      this.objects.length+reserved.length+1>GENERATED_OBJECT_LIMIT ||
+      liveVertices+reserved.reduce((n,o)=>n+pointsCount(o.baseGeometry),0)+
+        newVertexCount>GENERATED_VERTEX_LIMIT;
     const entry=Object.freeze({
       ref:Object.freeze(canvasObjectRef('GENERATED',input.id,this.scope)),
       savedOutlineId:input.savedOutlineId,createdAt:input.createdAt,
@@ -167,6 +192,7 @@ export class GeneratedDocument{
       baseResult,baseGeometry:baseResult.geometry,transform:IDENTITY_2D,
       visible:true,edited:false,dirty:false,
     }) as GeneratedEntry;
+    if(discardIncompatibleHistory)this.undoEntries=[];
     this.objects=[...this.objects,entry];
     this.issued.add(input.id);this.redoEntries=[];
     this.pending=null;this.emit('append');return entry;
@@ -257,14 +283,23 @@ export class GeneratedDocument{
    * independently and commit only on pointerup or numeric confirmation. */
   stage(command:GeneratedCommand,selection:readonly CanvasObjectRef[]):void{
     this.build(command,selection);
-    this.pending={command:{...command,ids:[...command.ids]},selection:[...selection]};
+    const staged:GeneratedCommand=command.type==='Rotate'
+      ? {...command,ids:[...command.ids],pivot:[...command.pivot] as [number,number]}
+      : {...command,ids:[...command.ids]};
+    this.pending={command:staged,selection:selection.map(ref=>Object.freeze({...ref}))};
   }
-  commitPending():boolean{
+  commitPending(currentSelection:readonly CanvasObjectRef[]):boolean{
     this.assertLive();
     const pending=this.pending;
     if(!pending)return false;
     this.pending=null;
-    this.execute(pending.command,pending.selection);return true;
+    const capability=canvasEditCapability(currentSelection,this.scope);
+    const ids=new Set(currentSelection.map(ref=>ref.id));
+    if(!capability.canEdit || currentSelection.length!==pending.selection.length ||
+       pending.selection.some(ref=>!ids.has(ref.id)))
+      throw new Error('준비 이후 편집 대상 선택이 변경되었습니다.');
+    this.execute(pending.command,currentSelection);
+    return true;
   }
   cancelPending():boolean{
     if(!this.pending)return false;

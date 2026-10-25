@@ -1,5 +1,12 @@
 # 주요 기술 결정과 승인 기록
 
+### ADR-043 보완: CI 오류 및 P2 안전성 계약 (2026-10-25 / PR #79)
+
+- Polygon 면적 검증은 절대좌표 Shoelace의 부동소수점 상쇄 대신 첫 꼭짓점 대비 상대좌표 사용. 작은 외곽선이 큰 WCS 원점 근처에서 소멸하지 않아야 한다.
+- `Delete` Undo 가능 객체는 실재 객체와 별도로 **복원 용량 예약**. 새 객체 확정 후 100개/100k 정점 제한을 벗어나면 기존 불일치 Undo 이력을 무효화한 다음 append하여 항상 용량 불변식 유지. 이전 UUID는 재사용 불가.
+- `commitPending(currentSelection)`은 stage 시점 캡처 대상이 아니라 최신 selection의 전부 GENERATED/동일 Scope·ID를 재검증한다. 선택·모드 변경 시 준비 중 명령 취소. TC-E2-UNIT-006~008로 고정.
+
+
 ## ADR-043 — E2 생성 개체는 버전 스코프 메모리 Document/원자 Command/유한 history로 관리 (2026-10-25 / #52)
 
 - **Context:** #31 savedGroup/JSON local-N 과 E1 Generated UUID 인덱스를 각각 직접 수정하면 트리/선택/외곽선/내보내기가 불일치하고 Delete/Translate/Rotate Undo가 불안정해진다. Source DXF 편집 및 #31 P4 서버 영속은 Owner 보안 정책 미승인으로 제외된다.

@@ -242,6 +242,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     });
   }
   private selectionChanged=(selected:OutlineEntity[])=>{
+    this.document?.cancelPending();
     if(this.selectionGroup){this.scene.remove(this.selectionGroup);release(this.selectionGroup);}
     this.selectionGroup=this.createPathGroup(selected.flatMap(e=>e.paths),0xffd000);
     this.scene.add(this.selectionGroup);this.render();
@@ -253,6 +254,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
   };
   /** Canvas/tree/layer changes share the same selection set. */
   private objectSelectionChanged=(sources:OutlineEntity[],generated:readonly string[])=>{
+    this.document?.cancelPending();
     this.refreshSavedHighlight();
     if(!this.outline || !validCanvasScope(this.outline))return;
     this.outline.onObjectSelection?.([
@@ -340,7 +342,10 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
       warnings:[...(this.indexError?[this.indexError]:[]),
         ...(this.renderCoverage?.warnings??[]),...(this.index?.warnings??[])]};
   }
-  setSelectionMode(mode:SelectionMode){this.mode=mode;this.selector?.setMode(mode);}
+  setSelectionMode(mode:SelectionMode){
+    if(this.mode!==mode)this.document?.cancelPending();
+    this.mode=mode;this.selector?.setMode(mode);
+  }
   getOutlineSelection(){return this.selector?.getSelection()??[];}
   clearOutlineSelection(){this.selector?.clear();}
   getCanvasObjectSelection():CanvasObjectRef[]{
@@ -393,7 +398,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     let generatedId='';
     for(let i=0;i<4;i++){
       const candidate=createGeneratedId();
-      if(!this.document.getObjects().some(o=>o.ref.id===candidate)){generatedId=candidate;break;}
+      if(!this.document.hasIssuedId(candidate)){generatedId=candidate;break;}
     }
     if(!generatedId)throw new Error('유일한 생성 개체 ID를 발급할 수 없습니다.');
     const savedId='local-'+this.nextSavedId;
@@ -453,7 +458,9 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     if(!this.document)throw new Error('이 Renderer에서는 생성 개체 편집을 지원하지 않습니다.');
     this.document.stage(command,this.getCanvasObjectSelection());
   }
-  commitGeneratedCommand():boolean{return this.document?.commitPending()??false;}
+  commitGeneratedCommand():boolean{
+    return this.document?.commitPending(this.getCanvasObjectSelection())??false;
+  }
   cancelGeneratedCommand():boolean{return this.document?.cancelPending()??false;}
   undoGeneratedEdit():boolean{return this.document?.undo()??false;}
   redoGeneratedEdit():boolean{return this.document?.redo()??false;}

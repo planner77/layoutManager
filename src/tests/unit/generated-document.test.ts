@@ -143,9 +143,9 @@ describe('TC-E2-UNIT-003: bounded and isolated history + staged cancellation',()
     expect(doc.cancelPending()).toBe(true);
     expect(doc.hasPending).toBe(false);
     doc.stage(cmd,selection);
-    expect(doc.commitPending()).toBe(true);
+    expect(doc.commitPending(selection)).toBe(true);
     expect(doc.history().undo).toBe(1);
-    expect(doc.commitPending()).toBe(false);
+    expect(doc.commitPending(selection)).toBe(false);
     const previous=doc.history().undo;
     expect(doc.setVisible('local-1',false)).toBe(true);
     expect(doc.history().undo).toBe(previous);
@@ -167,5 +167,76 @@ describe('TC-E2-UNIT-003: bounded and isolated history + staged cancellation',()
     // First five entries have been evicted, not the immutable base.
     const reverted=generatedResult(doc.getObjects()[0]).geometry;
     expect(reverted.type==='Polygon' && reverted.coordinates[0][0][0]).toBe(5);
+  });
+});
+
+
+describe('TC-E2-UNIT-006: WCS ring area far from the origin',()=>{
+  it('confirms a valid unit square near (1e9,1e9)',()=>{
+    const x=1e9;
+    const far:GeoJSONOutline={type:'Polygon',coordinates:[[
+      [x,x],[x+1,x],[x+1,x+1],[x,x+1],[x,x],
+    ]]};
+    const doc=new GeneratedDocument(scope);
+    const item=doc.append({id:uuids[0],savedOutlineId:'local-1',
+      createdAt:'2026-10-25T00:00:00Z',result:result(far)});
+    expect(generatedResult(item).geometry).toEqual(far);
+  });
+});
+describe('TC-E2-UNIT-007: Undo deletion capacity reservation',()=>{
+  it('drops incompatible Undo before appending 60k+60k vertices',()=>{
+    const ring=Array.from({length:60_000},(_,i)=>{
+      const angle=i*2*Math.PI/60_000;
+      return [Math.cos(angle),Math.sin(angle)] as [number,number];
+    });
+    ring.push([...ring[0]]);
+    const shape:GeoJSONOutline={type:'Polygon',coordinates:[ring]};
+    const doc=new GeneratedDocument(scope);
+    const first=doc.append({id:uuids[0],savedOutlineId:'local-1',
+      createdAt:'2026-10-25T00:00:00Z',result:result(shape)});
+    doc.execute({type:'Delete',ids:[first.ref.id]},[first.ref]);
+    expect(doc.history().undo).toBe(1);
+    doc.append({id:uuids[1],savedOutlineId:'local-2',
+      createdAt:'2026-10-25T00:00:00Z',result:result(shape)});
+    expect(doc.history()).toMatchObject({undo:0,redo:0});
+    expect(doc.undo()).toBe(false);
+    expect(doc.getObjects()).toHaveLength(1);
+    expect(doc.hasIssuedId(first.ref.id)).toBe(true);
+    expect(()=>doc.append({id:first.ref.id,savedOutlineId:'local-3',
+      createdAt:'2026-10-25T00:00:00Z',result:result()})).toThrow();
+  });
+  it('does not restore a 101st object after a new append',()=>{
+    const doc=new GeneratedDocument(scope);
+    for(let i=0;i<100;i++)
+      doc.append({id:'123e4567-e89b-42d3-a456-'+i.toString(16).padStart(12,'0'),
+        savedOutlineId:'local-'+(i+1),
+        createdAt:'2026-10-25T00:00:00Z',result:result()});
+    const first=doc.getObjects()[0];
+    doc.execute({type:'Delete',ids:[first.ref.id]},[first.ref]);
+    doc.append({id:'123e4567-e89b-42d3-a456-000000000064',
+      savedOutlineId:'local-101',createdAt:'2026-10-25T00:00:00Z',result:result()});
+    expect(doc.getObjects()).toHaveLength(100);
+    expect(doc.history().undo).toBe(0);
+    expect(doc.undo()).toBe(false);
+  });
+});
+describe('TC-E2-UNIT-008: current-selection commit gate',()=>{
+  it('rejects different IDs and SOURCE mixed after staging, then accepts same refs',()=>{
+    const {doc,selection}=prepare();
+    const a=[selection[0]],b=[selection[1]];
+    const cmd=translate([a[0].id],2,3);
+    const before=doc.getObjects();
+    doc.stage(cmd,a);
+    expect(()=>doc.commitPending(b)).toThrow('선택');
+    expect(doc.hasPending).toBe(false);
+    expect(doc.getObjects()).toEqual(before);
+    expect(doc.history().undo).toBe(0);
+    doc.stage(cmd,a);
+    const source=canvasObjectRef('SOURCE','source:A1',scope);
+    expect(()=>doc.commitPending([source,...a])).toThrow('선택');
+    expect(doc.getObjects()).toEqual(before);
+    doc.stage(cmd,a);
+    expect(doc.commitPending(a)).toBe(true);
+    expect(doc.history().undo).toBe(1);
   });
 });

@@ -1,5 +1,11 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #52 / PR #79 — TypeScript 실패와 무결성 리뷰 보완 (2026-10-25)
+
+- 최초 [PR CI 40168296155](https://github.com/planner77/layoutManager/actions/runs/40168296155) HEAD `40aba11f`: E2E 테스트 `Event.key/ctrlKey` TS2339 2건으로 Typecheck FAIL, Lint/Unit/Build/E2E/Legacy SKIPPED, Docker 별도 SUCCESS. `querySelector<HTMLInputElement>`로 typecheck 오류 보완.
+- 별도 P2 리뷰 3건: 고 WCS 원점에서 먼 Polygon의 면적 상쇄→상대좌표, 삭제 복구 capacity 예약 초과→호환불가 Undo 이력 무효화, stale staged 선택 우회→현재 선택 비교/모드 변경 취소. TC-E2-UNIT-006~008 추가, 원본 Source/DB/API/P4 불변. 자세한 실패·P2 원장 [FailureLedger](out/FailureLedger.md)/[Issue52](out/Issue52.md). 새 HEAD 시험 전 PASS 금지.
+
+
 ## Issue #52 / E2 — 생성 개체 Document·Command·Undo/Redo 기반 (2026-10-25)
 
 - v0.38.0: E1 (#51) UUID 기반 Generated Ref를 재사용하며 브라우저 메모리의 `GeneratedDocument`를 유일한 생성 개체 상태로 사용한다. 기존 Scene `savedGroup`, #43 Tree, v1/v2 임시 JSON 내보내기는 Document 투영이며 원본 Source/Worker Preview는 **편집 불가·Document 미포함**.

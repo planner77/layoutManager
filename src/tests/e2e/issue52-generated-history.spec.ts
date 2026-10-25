@@ -55,7 +55,7 @@ test('TC-E2-E2E-001: history buttons and editable text keep native Ctrl+Z, reloa
   const input=page.getByTestId('outline-instance-name');
   await input.focus();
   await page.evaluate(()=>{
-    const input=document.querySelector('[data-testid="outline-instance-name"]');
+    const input=document.querySelector<HTMLInputElement>('[data-testid="outline-instance-name"]');
     if(!input)return;
     input.setAttribute('data-input-keydown','pending');
     input.addEventListener('keydown',event=>{

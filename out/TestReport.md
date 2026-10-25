@@ -1,5 +1,12 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issue #52 / PR #79 — 최초 TypeScript 실패·P2 3건 수정 (새 CI 전)
+
+- [Run 40168296155](https://github.com/planner77/layoutManager/actions/runs/40168296155) HEAD `40aba11f`: npm ci/Prisma PASS, Typecheck **FAIL** (E2E `Event.key`/`ctrlKey` TS2339 ×2); Lint/Unit/Benchmark/Build/Chromium E2E/Legacy SKIPPED, 별도 Docker SUCCESS.
+- 코드 보완: 타입 지정 input keydown, 먼 WCS 기준 Ring area, Undo 삭제 복구 capacity 예약/호환불가 history 무효화, stale selection staged commit 거부. 신규 Unit TC-E2-UNIT-006~008. 코드를 작성한 것과 실제 테스트 PASS를 구분한다.
+- 현재 세션 로컬 TypeScript/ESLint/Vitest/Build/Playwright/실 CAD·GPU **NOT RUN**. 새 PR CI는 시작 여부와 성공 여부를 별도 보고하며 병합/GHCR/Issue 종료 없음. [FailureLedger](FailureLedger.md).
+
+
 ## U-ISSUE52-20261025 — E2 GeneratedDocument/Command/Undo·Redo 작업 브랜치 (검증 전)
 
 - Branch `feat/issue-52-generated-command-history` / v0.38.0. E1 main 병합 기준 별도 작업, 루트 `DESIGN.md` 부재로 `out/Architecture.md`/ADR-043 사용.

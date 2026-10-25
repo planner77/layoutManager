@@ -1,5 +1,11 @@
 # ChangeLog
 
+### v0.38.0 / PR #79 Typecheck 차단·P2 무결성 보완 (2026-10-25)
+
+- 첫 CI `40168296155`의 E2E 테스트 Event TS2339 2건을 input keyboard type 좁히기로 보완. 뒤 Verify 단계 SKIPPED, 별도 Docker SUCCESS 보존.
+- 고 WCS 면적 계산, Undo 복원 용량 정책, staged command 최신 선택 검증 및 TC-E2-UNIT-006~008 추가. 새 CI/실도면 검증 전 성공 미주장.
+
+
 ## v0.38.0 — Issue #52 E2 생성 개체 Document/Undo·Redo 기반 (2026-10-25)
 
 - `GeneratedDocument`를 Version·SHA 기반 브라우저 메모리 단일 상태로 도입: E1 UUID, legacy local-N, 기준 WCS Geometry·provenance, transform/visible/edit flag 유지. Overlay Scene/Hit/Tree/기존 임시 JSON은 Document에서 투영하며 GPU 그룹 증분 갱신/dispose.

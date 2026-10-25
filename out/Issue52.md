@@ -1,5 +1,12 @@
 # Issue #52 — E2 GeneratedDocument / Command / Undo·Redo (v0.38.0)
 
+## 최초 PR CI 실패 및 P2 리뷰 대응 (2026-10-25)
+
+- [Run 40168296155](https://github.com/planner77/layoutManager/actions/runs/40168296155) HEAD `40aba11f`: E2E input `Event` 추론에 의한 TypeScript TS2339 2건, Typecheck FAIL. 나머지 Verify Lint/Unit/Build/E2E/Legacy SKIPPED, Docker 별도 SUCCESS.
+- 리뷰 #4369873353 큰 WCS 좌표 area floating-point cancellation→첫 정점 상대좌표; #4369873355 Delete Undo 복원 object/vertex 한도 초과→Undo 예약 또는 호환 불가 이력 무효화; #4369873358 staged selection 변경 뒤 잘못된 객체 commit→확정 시 현재 선택 재검증, mode/selection 변경 취소. 회귀 TC-E2-UNIT-006~008 추가.
+- 브라우저 텍스트 입력 단축키 E2E는 generic `HTMLInputElement`로 정상 컴파일되도록 수정. 실제 편집 UI(#53~#55), JSON import(#56), DB/P4 권한 구현 없음. 새 CI 결과는 확인 전 미검증. [FailureLedger](FailureLedger.md)/[TestPlan](TestPlan.md).
+
+
 - Issue: https://github.com/planner77/layoutManager/issues/52
 - Epic: #49 · 선행 E1 #51(이미 main 병합) · 후속 E3 삭제 #53 / E4 이동 #54 / E5 회전 #55 / E6 편집 JSON #56
 - 분석 기준: `AGENTS.md`, `out/Architecture.md`(루트 `DESIGN.md` 없음), `out/Requirements.md`, `out/Decisions.md` ADR-042/043, `out/Issue31.md`, `out/Issue51.md`, `out/TestPlan.md`.

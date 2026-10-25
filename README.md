@@ -1,5 +1,8 @@
 # CAD Web Viewer P.O.C.
 
+- Undo 한도: 삭제한 개체의 복원 가능 객체 수·정점도 100개/100k 용량으로 예약합니다. 삭제 이후 새 개체를 확정하여 그 예약을 넘으면 이전 호환 불가 Undo 이력은 초기화되며 새 객체가 우선 보존됩니다. 선택 대상이 바뀌면 확정 전 편집 명령은 취소됩니다.
+
+
 ## v0.38.0 — Issue #52 생성 개체 편집 기반과 Undo·Redo (E2)
 
 - DXF + **three-dxf-viewer**에서 임시 확정한 볼록/정밀 외곽선은 하나의 브라우저 전용 GeneratedDocument로 관리됩니다. E1의 원본 SOURCE와 생성 GENERATED 선택을 구분하며 SOURCE/혼합 선택은 **항상 읽기 전용**입니다. Tree/표시/선택/기존 JSON 다운로드는 한 Document를 참조합니다.
