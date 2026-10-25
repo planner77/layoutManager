@@ -1,5 +1,12 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issue #41 / PR #64 PR CI 첫 실패·수정 HEAD 검증 경계 (2026-10-25)
+
+- [Run 40153913566](https://github.com/planner77/layoutManager/actions/runs/40153913566) HEAD `d548df2`: Typecheck, lint, unit/integration(35 test files), synthetic benchmark, production build, Chromium install, Docker runtime **PASS**. E2E **55 PASS / 1 FAIL**: `TC-U4-E2E-PREVIEW-001` `getByRole('alert')` strict mode가 실제 중복 메시지와 Next.js route-announcer 두 요소를 선택. Legacy migration E2E **SKIPPED**. 단 하나의 E2E 실패가 PR Run 전체를 failure로 종료한 것이며, 해당 HEAD를 'PASS'로 분류하지 않음. [verify job](https://github.com/planner77/layoutManager/actions/runs/40153913566/job/121051041258) / [E2E artifact](https://github.com/planner77/layoutManager/actions/runs/40153913566/artifacts/12583742658).
+- 별도 [P2 review](https://github.com/planner77/layoutManager/pull/64#discussion_r4369348797): 사내 HTTP에서 `crypto.randomUUID` 부재로 생성 예외 위험. [fix `b389b66e`](https://github.com/planner77/layoutManager/commit/b389b66e11a34ad6fa737fc5ff760277d192797a)로 시안 범위 alert 및 getRandomValues 기반 v4 UUID fallback, UNIT-005/006, E2E-HTTP-003 추가. CSPRNG 부재 시 fail-closed. 상단 실관리 메뉴 disabled, API/DB/RBAC BLOCKED 유지.
+- **수정 후 테스트:** 이 문서 시점에는 로컬 패키지 기반 typecheck/lint/Vitest/Next Build/Chromium/Legacy/Docker 실제 실행 **NOT RUN**. 새 CI 시작만 요청받았으며 결과 모니터링 전 **NOT VERIFIED**; 원래 HEAD의 PASS를 새 HEAD에 전가하지 않음. [FailureLedger](FailureLedger.md)·[Issue41](Issue41.md).
+
+
 ## Issue #41 / U4 v0.34.0 — 안전 시안 검증 상태 (2026-10-25)
 
 - 범위: 관리자 업무 타입 도메인·UI 시안만, 실 RBAC/API/DB 없음. `src/tests/unit/outline-type.test.ts` TC-U4-UNIT-001~004 및 `src/tests/e2e/issue41-outline-type-preview.spec.ts` TC-U4-E2E-PREVIEW-001, TC-U4-E2E-GATE-002를 작성하였다.

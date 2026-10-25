@@ -1,5 +1,12 @@
 # 운영·환경설정 초안
 
+### Issue #41 / PR #64 — HTTP 접근 제한과 UUID 시안 보완
+
+- `/lab/outline-types`는 문서화된 `http://<server IP>:3000`에서도 사용자가 **메모리 타입 시안을 추가**할 수 있어야 한다. `crypto.randomUUID`는 HTTP insecure context에서 불가할 수 있어 `crypto.getRandomValues` UUIDv4 fallback을 추가한다. 실제 운영관리 등록/공유/DB/API/IdP 로그인은 **여전히 없다**.
+- Browser의 암호학적 난수 API도 없는 환경은 명확한 오류로 차단한다. `Math.random`·삭제 비밀번호·임의 X-User/X-Role로 우회하지 않는다. 인증·Site scope·감사 정책 승인 전 실 관리자 CRUD 접근을 활성화하지 않는다.
+- 회귀 `TC-U4-E2E-HTTP-003`는 randomUUID method 없는 브라우저를 **모의한 자동 시험**으로 현장 HTTP IP/Proxy 실제 확인과 별개. [Issue41](Issue41.md).
+
+
 ## Issue #41 / v0.34.0 — 관리자 타입 시안 운영 경계
 
 - 이 변경은 DB migration/API/파일 저장소/환경변수/인증 구성을 추가하지 않는다. `/lab/outline-types`는 메모리 **단일 탭 시안**이며 reload/닫기/재배포로 모두 소멸. 운영 기준정보로 Import/Export하거나 관리자 권한으로 안내하지 않는다.

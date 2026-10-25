@@ -1,5 +1,11 @@
 # CAD Web Viewer P.O.C.
 
+### Issue #41 / PR #64 비영속 타입 시안 HTTP 접속·CI 교정
+
+- 시안 URL `/lab/outline-types`는 `crypto.randomUUID`를 지원하지 않는 사내 `http://서버IP:3000` 브라우저에서도 `crypto.getRandomValues`를 사용해 임시 UUIDv4를 만듭니다. 브라우저 메모리 시안 외 영역에 저장하거나 관리자 권한으로 사용하지 않습니다. 암호학적 난수 API가 아예 없다면 안내 후 차단합니다.
+- 최초 [PR CI 40153913566](https://github.com/planner77/layoutManager/actions/runs/40153913566)은 Chromium E2E 55건 PASS/1건 FAIL(Next route-announcer와 검증 안내의 `role=alert` Locator 중복). 테스트 선택 범위와 HTTP 호환 문제를 보완하여 PR CI 재검증을 시작합니다. 재검증 완료 전 PASS는 아님. 실제 관리자 저장 API/DB는 보안 승인이 있기 전까지 계속 차단합니다. [Issue41](out/Issue41.md)·[FailureLedger](out/FailureLedger.md).
+
+
 ## v0.34.0 — Issue #41 최상위 외곽선 업무 타입 관리 설계 시안 (운영 차단)
 
 - 현재 상단 **외곽선 타입 관리** 메뉴는 관리자 인증·역할·scope·감사 정책 미승인으로 **비활성**입니다. 실제 등록·DB 영구 저장·공유 카탈로그 조회, 외곽선 typeId 지정 및 타입별 트리 기능은 제공하지 않습니다.

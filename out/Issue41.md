@@ -1,5 +1,14 @@
 # Issue #41 — 관리자 최상위 외곽선 업무 타입 (U4) / v0.34.0 안전 선행 시안
 
+## PR #64 첫 PR CI 실패 및 P2 리뷰 조치 (2026-10-25 KST)
+
+- [Run 40153913566](https://github.com/planner77/layoutManager/actions/runs/40153913566) (HEAD `d548df2b4bb183ff6a2df1c227124e93f40c4054`, completed/failure). [verify job 121051041258](https://github.com/planner77/layoutManager/actions/runs/40153913566/job/121051041258): TS/Lint/Unit/Integration/Benchmark/Build PASS → Chromium E2E **55/56 PASS, 1 FAIL** → Legacy migration E2E SKIPPED. [Docker job 121051041382](https://github.com/planner77/layoutManager/actions/runs/40153913566/job/121051041382) PASS. E2E 증거 [artifact 12583742658](https://github.com/planner77/layoutManager/actions/runs/40153913566/artifacts/12583742658).
+- **원인:** `TC-U4-E2E-PREVIEW-001`의 `page.getByRole('alert')`는 실제 validation error `<p role=alert>`와 Next.js 빈 `__next-route-announcer__` `<div role=alert>`를 동시에 찾아 Playwright strict-mode 위반. 실제 중복 이름 차단은 정상적으로 발생했고 제품 도메인 실패나 DB 오류 아님. 제품 로직/Next Route Announcer 제거 대신 `preview.getByRole('alert')`로 범위 제한.
+- **별도 P2 Review:** [4369348797](https://github.com/planner77/layoutManager/pull/64#discussion_r4369348797) — 사내 non-local HTTP에서 `crypto.randomUUID`는 secure-context-only, 타입 시안 추가 중 예외 발생. `preview-uuid.ts`에서 지원시 `crypto.randomUUID`, 미지원시 `crypto.getRandomValues`로 UUIDv4의 version/variant 비트를 설정한다. CSPRNG 자체가 없으면 안전하게 거부하며 `Math.random`은 사용하지 않는다. 이 ID는 **비영속 메모리 시안 전용**이며 서버·권한·영속 ID가 아니다.
+- **수정 코드:** [commit `b389b66e`](https://github.com/planner77/layoutManager/commit/b389b66e11a34ad6fa737fc5ff760277d192797a) — scoped locator + `TC-U4-UNIT-005~006`와 `TC-U4-E2E-HTTP-003`. 기존 `TC-U4-E2E-PREVIEW-001`는 이후 수정/비활성/복구/새로고침까지 확인하도록 유지. `TC-ISSUE14-001`의 HTTP method removal 패턴 재사용.
+- **검증 상태:** 원래 HEAD의 나머지 PASS는 수정 HEAD 통과 증거가 아니다. 새 unit/E2E/legacy/build/실 HTTP IP 운영 검증은 원격 재CI 완료 전 NOT VERIFIED; 운영 Admin CRUD 인증·migration/Scope/audit 여전히 BLOCKED. 문서 및 실패 원장 함께 commit한 뒤 branch ref를 **1회 fast-forward**하여 새 `pull_request.synchronize` CI를 시작, 모니터링/병합/Issue 종료하지 않음.
+
+
 - GitHub: https://github.com/planner77/layoutManager/issues/41
 - 기준 HEAD: `4818f666f2186c9209f91aa847bb8c53c8f62e11` (v0.33.0, #40 병합 후). 작업: `feat/issue-41-outline-type-safety-preview`.
 - Epic #37 / 선행 #38(앱 메뉴), #31 P4(인증·외곽선 영속화), 후속 #42(타입 지정), #43(업무 타입별 트리).

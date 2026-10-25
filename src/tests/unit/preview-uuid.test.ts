@@ -5,7 +5,8 @@ describe('Issue #41 disposable preview IDs', () => {
   it('TC-U4-UNIT-005: prefers randomUUID when available', () => {
     const source = {
       randomUUID: () => '11111111-1111-4111-8111-111111111111' as const,
-      getRandomValues: <T extends ArrayBufferView | null>(_array: T): T => {
+      getRandomValues: <T extends ArrayBufferView | null>(array: T): T => {
+        void array;
         throw new Error('getRandomValues must not run when randomUUID exists');
       },
     };

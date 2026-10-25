@@ -1,5 +1,12 @@
 # 주요 기술 결정과 승인 기록
 
+### ADR-037 보완 — 시안 UUID의 일반 HTTP 지원·테스트 Locator 범위 (2026-10-25 / PR #64)
+
+- **Decision:** 운영에서 문서화한 `http://<IP>:3000`는 secure context가 아니어서 Web Crypto `randomUUID`가 없을 수 있다. 비영속 U4 시안 UUID는 native randomUUID가 있을 때 사용하고, 없으면 `crypto.getRandomValues` 16 cryptographic bytes에 RFC 9562 v4/variant bits를 부여한다. 난수 API 전체 부재 시 명시적 오류 처리; `Math.random` 부정, Admin ID·server persisted FK/authorization과 무관.
+- **E2E scope:** Next.js 내장 `__next-route-announcer__`의 role=alert와 앱의 validation alert를 혼동하지 않도록 `outline-type-prototype` 범위 내 `role=alert`를 검사한다. Next 내장 접근성 announcer를 제거/변조하지 않음.
+- **Evidence:** [PR CI 실패 40153913566](https://github.com/planner77/layoutManager/actions/runs/40153913566), [review 4369348797](https://github.com/planner77/layoutManager/pull/64#discussion_r4369348797), [commit `b389b66e`](https://github.com/planner77/layoutManager/commit/b389b66e11a34ad6fa737fc5ff760277d192797a), [FailureLedger](FailureLedger.md). 새 CI 결과 검증 전 NOT VERIFIED.
+
+
 ## ADR-037 — #41 인증 없는 관리자 CRUD 대신 비영속 카탈로그 시안만 제공 (2026-10-25)
 
 - **Context:** #38 메뉴에 '외곽선 타입 관리' 진입점이 있으나 #31 P4의 IdP/Admin RBAC/Scope/감사 운영 정책은 승인되지 않음. 화면 숨김이나 deletePassword/X-User는 보안수단이 아니다.

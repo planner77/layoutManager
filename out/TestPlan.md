@@ -1,5 +1,18 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #41 / PR #64 E2E 및 HTTP 비보안 컨텍스트 회귀 보완 (2026-10-25)
+
+| TC | 검증 의도 | 관측/계획 | 
+| --- | --- | --- |
+| `TC-U4-E2E-PREVIEW-001` | 중복 타입 경고는 Next.js `__next-route-announcer__` 외 **prototype 내부** `role=alert` 만 검사하며 이후 수정/비활성/복구/refresh까지 검증 | [Run 40153913566](https://github.com/planner77/layoutManager/actions/runs/40153913566) 기존 Locator **FAIL**, 수정 HEAD 재CI 결과 미검증 |
+| `TC-U4-UNIT-005` | secure context의 native `randomUUID` 우선, getRandomValues 중복 호출 방지 | 신규 작성/재CI NOT VERIFIED |
+| `TC-U4-UNIT-006` | `randomUUID` 없음→CSPRNG `getRandomValues`로 RFC UUIDv4 format·version/variant, 암호학적 난수 API 전체 부재 시 fail-closed | 신규 작성/재CI NOT VERIFIED |
+| `TC-U4-E2E-HTTP-003` | `page.addInitScript`로 `crypto.randomUUID` 제거(기존 TC-ISSUE14-001과 동일) 후 메모리 시안 생성 정상·API 저장 없음·reload 삭제 | 신규 작성/재CI NOT VERIFIED |
+| 기존 회귀 | U4 API GET/POST/PATCH 404, #38 disabled 관리자 메뉴, #40 outline worker·#39 layer·#25 immersive, Legacy migration, Docker | 최초 Run에서 E2E 총 55 PASS/1 FAIL 및 Legacy SKIPPED, 수정 HEAD는 재검증 필요 |
+
+- 일반 `http://<server IP>:3000`에서 `randomUUID`는 없을 수 있으나 `getRandomValues`는 사용할 수 있다. 테스트의 method 제거는 **비보안 컨텍스트의 API 가용성을 모의**하며 실제 외부 HTTP 접속/현장 네트워크·권한 테스트 통과를 주장하지 않는다. 실서버 타입 저장/인증/RBAC/DB scope는 차단 유지. [FailureLedger](FailureLedger.md)·[Issue41](Issue41.md).
+
+
 ## Issue #41 / U4 v0.34.0 — 비영속 타입 시안과 Fail-Closed 테스트 (2026-10-25)
 
 | TC | 범위 | AC/상태 |

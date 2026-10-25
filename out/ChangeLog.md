@@ -1,5 +1,12 @@
 # ChangeLog
 
+### v0.34.0 / PR #64 — 첫 CI E2E 실패·HTTP UUID 리뷰 교정 (2026-10-25)
+
+- [Run 40153913566](https://github.com/planner77/layoutManager/actions/runs/40153913566) Chromium E2E **55 PASS/1 FAIL**(프로토타입 error alert + Next route announcer 중복 locator), Legacy migration SKIPPED; TypeScript/Lint/Unit/Benchmark/Build/Docker PASS. [FailureLedger](FailureLedger.md).
+- Corrected: `TC-U4-E2E-PREVIEW-001` alert locator를 prototype scope로 한정, 일반 사내 HTTP의 `crypto.randomUUID` 부재는 CSPRNG `getRandomValues`→UUIDv4 fallback으로 해결. [P2 review](https://github.com/planner77/layoutManager/pull/64#discussion_r4369348797) 및 `TC-U4-UNIT-005/006`, `TC-U4-E2E-HTTP-003` 신규 회귀. 코드 [`b389b66e`](https://github.com/planner77/layoutManager/commit/b389b66e11a34ad6fa737fc5ff760277d192797a).
+- No change: v0.34.0 버전, Renderer/Source/Viewer/DB/관리자 권한 게이트. 수정 HEAD의 새 PR CI **결과 확인 전 NOT VERIFIED**.
+
+
 ## 0.34.0 — 2026-10-25 / Issue #41 관리자 최상위 외곽선 타입 비영속 안전 시안
 
 - Added: 타입 계약 및 순수 NFC/trim·중복·길이·sortOrder·UUID·revision CAS 시뮬레이션·비활성/복구 도메인, `/lab/outline-types` **비영속 React UI 시안**, UNIT/E2E 회귀 스위트. 브라우저 reload 시 데이터 삭제.
