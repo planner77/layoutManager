@@ -1,5 +1,17 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #51 / PR #77 — Unit API 계약 실패 및 미세 WCS P2 (2026-10-25)
+
+- 첫 [PR CI 40164835838](https://github.com/planner77/layoutManager/actions/runs/40164835838): `TC-U6-UNIT-003` 실패(`focusSavedOutline` 기본 false 인수로 이전 단일 호출 계약 불일치), Unit 186 PASS/1 FAIL; TS/Lint PASS, Benchmark/Build/E2E/Legacy SKIPPED, Docker Job PASS. 기본 `selectSavedOutline(id)` 호출은 유지하고 E1 additive에서만 `(id,true)` 사용한다.
+- [P2 #4369760096](https://github.com/planner77/layoutManager/pull/77#discussion_r4369760096)는 CI 실패 별개: 0.001 WCS crossing window에서 고정 orientation product epsilon에 의한 false negative. orientation sign 직접 비교와 상대적 round-off bound, TC-E1-UNIT-004 적용. 증거·조치 [FailureLedger](out/FailureLedger.md), [Issue51](out/Issue51.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md). 변경 HEAD CI 성공 전 PASS 주장 금지.
+
+
+## Issue #51 / E1 — 통합 Canvas 선택·편집 경계 (2026-10-25)
+
+- v0.37.0: SOURCE는 #31 RenderCoverage에 의해 검증된 DXF Entity, GENERATED는 브라우저 확정 Polygon/MultiPolygon Overlay. SelectionController 하나로 Pan/U3 Source 선택/일반 통합/생성 전용 네 모드를 처리한다. 동일 Version/SHA/Origin을 갖는 Ref와 generated UUIDv4를 사용하며 기존 local-N JSON 스키마를 보존한다.
+- 편집 가능 표시는 *권한/명령 실행이 아니다*: SOURCE 및 혼합은 전체 거부, 생성만 향후 E2~E5 편집 대상으로 판정. 트리 다중 선택·레이어/Overlay 숨김·Zoom/ESC/Space·Reset과 동기화한다. #31 P4/#65 승인 전 서버 쓰기/관리 API 절대 구현 금지. [Issue51](out/Issue51.md), [ADR-042](out/Decisions.md), Unit/E2E(TestPlan/Report) 참조. 테스트 미실행·CI 시작은 PASS로 간주하지 않는다.
+
+
 ## Issue #74 — MAIN CI 실행명에 Squash Commit 본문 유입 방지 (2026-10-25)
 
 - [MAIN #34](https://github.com/planner77/layoutManager/actions/runs/40158498214)는 `MAIN CI | #68 | 요약` 정상; [#35](https://github.com/planner77/layoutManager/actions/runs/40159667229)·[#36](https://github.com/planner77/layoutManager/actions/runs/40162889687)은 긴 squash commit body 전체가 `github.event.head_commit.message`로 유입되었다.
@@ -209,6 +221,7 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 | [Issue10](out/Issue10.md) | GitHub #10 전체 화면 요구사항·설계·CI 근거 | Viewer 전체 화면, ESC/종료, 컨테이너 resize 또는 view state 보존 변경 시 |
 | [Issue38](out/Issue38.md) | Viewer 앱형 메뉴·도킹 셸/ESC 상태·후속 U2/U3/U6 계약 | Viewer shell·도킹·메뉴·검색/선택 ESC 변경 시 |
 | [Issue39](out/Issue39.md) | Viewer 메뉴와 레이어 패널 표시 상태 독립/접근성·포커스·회귀 근거 | 레이어 메뉴·도크 접기/Renderer·fullscreen 레이어 UX 변경 시 |
+| [Issue51](out/Issue51.md) | 원본/생성 객체 통합 선택·편집 가능 판정·트리/Canvas 동일 선택 집합 | 객체 선택·편집 권한/Geometry·Overlay·선택 모드 변경 시 |
 | [Issue42](out/Issue42.md) | U5 업무 타입 지정·이름 및 schemaVersion 2 JSON 계약·#65 보안 승인 경계 | Viewer 타입 선택·외곽선 임시 확정·JSON/Tree 연계 변경 시 |
 | [Issue40](out/Issue40.md) | U3 외곽선 ON/OFF·Worker 취소·임시 확정/JSON 보존 정책 및 AC 추적 | 외곽선 메뉴·객체 선택·취소·임시 Overlay/Renderer·ESC 변경 시 |
 | [FailureLedger](out/FailureLedger.md) | PR/Main CI 관측 실패·조치·재검증 누적 원장 | CI 실패·취소·재시작 시 |
