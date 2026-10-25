@@ -70,6 +70,8 @@ export function CadMemoOverlay({
   useEffect(() => {
     if (gesture.current) {
       gesture.current = null;
+      // Intentional rollback of a transient ghost after the parent changes tool/scope.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPreview(null);
       onGestureActive(false);
     }
