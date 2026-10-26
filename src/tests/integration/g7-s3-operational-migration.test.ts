@@ -111,6 +111,7 @@ describe('#109 S3-1 quarantine: formal Prisma migration and CAD invariants', () 
     expect(run.status, (run.stderr + run.stdout).slice(-1700)).toBe(0);
     const db = new Sqlite(filename);
     try {
+      db.exec('PRAGMA foreign_keys=ON');
       expect(Number(db.prepare('SELECT COUNT(*) AS n FROM "_prisma_migrations"').get()?.n))
         .toBe(7);
       expect(db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='AuditEvent'").get())
@@ -129,6 +130,7 @@ describe('#109 S3-1 quarantine: formal Prisma migration and CAD invariants', () 
     await migrate(filename);
     const db = new Sqlite(filename);
     try {
+      db.exec('PRAGMA foreign_keys=ON');
       seedCad(db);
       const before = snapshot(db);
       const rollback= db.transaction(() => {
