@@ -6,7 +6,6 @@
  */
 import { defineConfig } from 'prisma/config';
 import { lstatSync, readFileSync, realpathSync } from 'node:fs';
-import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { G7_S3_SCHEMA_ID } from '../../server/g7-operational/preflight';
 
@@ -24,7 +23,7 @@ function disposableDatabaseUrl(): string {
     throw new Error('G7_S3_DISPOSABLE_MIGRATION_ONLY');
   }
   const root = realpathSync(rootInput);
-  if (root !== path.join(realpathSync(tmpdir()), path.basename(rootInput))) {
+  if (root !== path.join(realpathSync('/tmp'), path.basename(rootInput))) {
     throw new Error('G7_S3_DISPOSABLE_MIGRATION_ONLY');
   }
   const stat = lstatSync(root);
