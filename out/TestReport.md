@@ -1,5 +1,13 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issue #106 / PR #120 — 최종 PR CI 성공·Main CI 인계 및 GHCR v0.41.1 후보 (2026-10-26)
+
+- **확인된 PR 성공:** HEAD `d4afaf0ae3cee51a172dad9305533d941daa5706`, [PR CI 40253887969](https://github.com/planner77/layoutManager/actions/runs/40253887969) attempt 1, `completed/success`; Verify Job `121351469940`(Typecheck/Lint/Vitest/Build/E2E/Legacy), Docker Job `121351469592`(이미지/Migration/Runtime) 각각 성공. 실패 Artifacts 업로드 등 조건부 skip는 기능 시험 실패가 아님. 이 결과는 기존 G4 코드 HEAD에만 해당.
+- **리뷰·병합:** 기존 P1 두 건 Site Unique와 Audit resolved Site 누락은 답변·Resolved, 미해결 0. `main` 대비 behind=0/mergeable=true 확인 후 [PR #120](https://github.com/planner77/layoutManager/pull/120) squash merge `0f59351ef160e3cc79681a78c34714db8d088ab9`. [Main CI 40254890094](https://github.com/planner77/layoutManager/actions/runs/40254890094) 해당 main HEAD에 대해 시작, 결과/패키지 게시 완료는 사용자 지시로 모니터링하지 않음.
+- **GHCR 별도 게이트:** `v0.41.0` 및 App/Migrator Pair 이미 존재. 신규 0.41.1 version-only 후보를 후속 PR에 추가하면 앞의 성공 CI는 버전 변경 후 HEAD의 통과 근거가 아니므로 별도 PR CI Verify+Docker를 거쳐야 한다. 이번 릴리스 PR 시작 자체는 GHCR `0.41.1` 게시 성공 아님.
+- **실운영 제외:** 기존 CAD 원본/Version/Current/삭제 비밀번호, 운영 Auth/Admin/API/Prisma/Compose/Nginx·실 DB/CAD/S3는 G7 Owner Go/No-Go 전 OFF. 실제 LAN/백업·복구 검증은 #108 G6의 후속 `NOT RUN` 유지.
+
+
 ## Issue #106 / PR #120 — 실패 Run 재현 원인 및 보완 검증 대기 (2026-10-26)
 
 - **확인된 구 HEAD:** `53b75ca17190cd101689a3f10877adcb737ff37c`. [PR CI 40252656906](https://github.com/planner77/layoutManager/actions/runs/40252656906) completed/failure. Verify Job `121347711873`의 Typecheck PASS, Lint PASS(기존 경고 2), Unit/Integration 53 files/288 tests PASS + G4 1 file/9 tests FAIL. 이 9건은 공통 `seedCad` `product_id,name` Unique 위반, `beforeEach` 중단. Build/E2E/Legacy E2E는 SKIPPED. Docker Job `121347711740` completed/success.
