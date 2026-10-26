@@ -21,8 +21,13 @@ function reply(status: number, code: string) {
 async function handle(request: Request, args: Args): Promise<Response> {
   const gate = resolveG7OperationGate(process.env);
   if (!gate) return reply(404, 'NOT_FOUND');
-  // Don't use untrusted X-User/Role/Forwarded claims as identity or origin.
-  if (new URL(request.url).origin !== gate.origin) return reply(404, 'NOT_FOUND');
+  // Next standalone can reconstruct request.url from 0.0.0.0:3000 behind
+  // Nginx; the reverse proxy forwards the browser's public Host. Compare
+  // that authority to the privately approved origin instead of bind origin.
+  // POST remains independently checked against the approved Origin+CSRF
+  // by G3/G4; X-Forwarded-User/Role/Site are never identity.
+  const publicHost = request.headers.get('host') ?? new URL(request.url).host;
+  if (publicHost !== new URL(gate.origin).host) return reply(404, 'NOT_FOUND');
   const parts = (await args.params).segments;
   if (!Array.isArray(parts) || parts.length !== 2 ||
       parts.some(part => !/^[a-z-]{1,28}$/.test(part))) return reply(404, 'NOT_FOUND');
