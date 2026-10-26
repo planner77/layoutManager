@@ -1,5 +1,17 @@
 # PR/Main CI 실패 원장
 
+## Issue #109 / PR #125 — 최초 CI PASS 보존·리뷰 및 GHCR 게시 차단 보완 (2026-10-26)
+
+- **관측 PR CI 성공(실패 아님):** [Run 40270394055](https://github.com/planner77/layoutManager/actions/runs/40270394055), HEAD `a82a04bb2412859e998616902e22f0efceab35c4`, Verify [Job 121401764981](https://github.com/planner77/layoutManager/actions/runs/40270394055/job/121401764981)와 Docker [Job 121401764781](https://github.com/planner77/layoutManager/actions/runs/40270394055/job/121401764781) 전부 `completed/success`. 이 단계에서 CI 실패/취소 관측 0. 변경 HEAD에 기존 성공 소급 금지.
+- **Codex 리뷰:** 구 HEAD 코드 리뷰 상태 `running`, 공식 Review/Thread 0. **리뷰 승인·완료로 오분류하지 않고** 최종 결과 및 보완 필요 여부 재확인; Main behind=0/mergeable은 최종 HEAD에서 재조회.
+- **운영 위험 및 조치(관측 CI 실패 아님):** Main 기본 workflow는 runtime 코드 diff를 자동 GHCR build/push 대상으로 판정한다. 사용자 `GHCR 미게시` 지시를 충족하도록 정확한 `#109 | S1 Staging-only integration [G7-S1-NO-GHCR]` 스쿼시 제목 + Stage/docs/해당 workflow 경로만 허용하는 예외를 추가. 예외 제목인데 다른 runtime 경로 포함시 **Main CI 실패(fail-closed)**, 일반 runtime 변경 및 tag push는 기존 게시 정책 유지. `g7-staging-ghcr-guard.test.ts`로 Bash 구문/정상 Stage skip/비허용 경로 거부/일반 runtime publish/docs-only 분기 시험 작성.
+- **작성 오류·교정(=CI 실패 아님):** workflow 최초 편집 commit `c75b112a`는 shell 문구 삽입 이상을 즉시 자체 검토로 발견, `f0923b8b`에서 기존 Main YAML로 안전 재생성 후 `1c3db369` 등으로 명세 정렬. GitHub Actions 실패라고 꾸미지 않으며 새 HEAD의 실제 CI 통과 전 조치 검증 완료 주장 금지.
+- **쿠키 격리:** Stage와 미래 운영이 동일 Host에 있으면 `cad_session`이 충돌 가능하므로 Stage 전용 `cad_staging_session`/Stage Path, G3/G4 내부 요청 매핑 및 Logout/동시 Cookie 테스트 수정; 기존 일반 Auth/CAD Route 변경 0. 최초 CI 이후 수정으로 신규 HEAD CI 필요.
+- **수용 범위의 한계:** Stage JSON/base64 DXF 미러는 운영 Multipart CAD API가 아니며 실 S3/이미지 digest·동일 snapshot 데이터 복원·Owner GO 증거가 없음. G6 #108 Owner 수용은 별도. 실 Audit purge/Outline/Memo/Type/Logs 영속 API OFF.
+- **필수 게이트:** 새 PR CI Verify/Docker 둘 다 성공, Codex 리뷰 완료 및 0 미해결 스레드, Main 정렬/mergeable, GHCR scope 정상 차단을 확인한 뒤에만 Squash 병합. 최신 Run/Job·시도/실패(관측 시에만)를 후속 원장에 추가. Main CI 시작·성공과 GHCR 실제 Job SKIPPED를 구분 기록.
+
+
+
 ## Issue #109 G7 S1 — Staging 단일 PR 최초 CI 전 위험/검증 분리 (2026-10-26)
 
 - **시작 기준:** #109 S0 문서 PR #123은 최종 [PR CI 40264751029](https://github.com/planner77/layoutManager/actions/runs/40264751029) 성공/병합 완료. 이번 S1은 단일 브랜치 `feat/issue-109-g7-staging-integration`, 별도 코드·검증 HEAD. **S1 PR CI 실패·취소는 이 기록 작성 시점 아직 관측되지 않았으므로 실패를 창작하지 않음.** 기존 누적 다른 이슈 실패는 보존.

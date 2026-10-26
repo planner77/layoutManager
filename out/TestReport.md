@@ -1,5 +1,15 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issue #109 PR #125 — S1 첫 CI 성공·검증 범위와 후속 보완 (2026-10-26)
+
+- **첫 CI 성공 확인:** 구 HEAD `a82a04bb2412859e998616902e22f0efceab35c4`의 [PR CI 40270394055](https://github.com/planner77/layoutManager/actions/runs/40270394055)는 `completed/success`. Verify [121401764981](https://github.com/planner77/layoutManager/actions/runs/40270394055/job/121401764981)(Typecheck/Lint/Unit·Integration/Build/Chromium E2E/Legacy Migration E2E), Docker [121401764781](https://github.com/planner77/layoutManager/actions/runs/40270394055/job/121401764781)(이미지·Migration·Runtime Smoke) 모두 성공. Vitest 설정은 `tests/**/*.test.ts`를 포함하므로 G7 Stage 테스트도 해당 실행 대상이다. 이 결과는 **구 HEAD 전용**이다.
+- **자동 시험의 실제 범위:** Linux 일회용 SQLite에 Staging 공식 Prisma Migration 7개 적용, Admin 초기 변경/login, Grant/Editor+Site, **JSON/base64 DXF** Stage 등록·Current·비밀번호 AND Delete, Audit·원본 SHA, SQLite snapshot backup/restore 및 Stage 게이트 OFF/오류 경로. **실 사내 PC/Proxy/S3·이미지 쌍·운영 API 전환 시험은 아님.**
+- **미확인/PENDING:** 실제 Staging Browser/Windows Nginx·서로 다른 PC·S3, 기존 운영 Multipart `POST /api/cad-files`/일반 Current·Delete API의 권한+Audit 같은 거래 Cutover, 운영 DB·CAD·S3 동일 snapshot 복원, 고정 OCI digest·서명/rollback 이미지 호환, Admin Secret/Audit 물리 purge SOP·Owner S2 별도 GO. #108 G6은 Owner 보고 수용이나 개별 비공개 시험 증거 ID/복원 checksum 미열람.
+- **구 CI 이후 보완(신 HEAD 재검증 필요):** 공유 hostname에서 일반 `cad_session`과 충돌하지 않도록 Stage 쿠키를 `cad_staging_session; Path=/api/g7-staging`으로 분리하고 내부 G3/G4 전달 시에만 변환·Logout/동시 Cookie 회귀 추가. 이번 S1 코드 Main 병합이 GHCR 게시를 일으키지 않도록 정확한 스쿼시 제목과 Stage 전용 경로 목록만 허용하는 GHCR 비게시 Main release-scope 차단·synthetic Bash 테스트 추가. 변경 HEAD 새 PR CI PASS 전 합격 금지.
+- **리뷰/운영 상태:** 확인 당시 Codex review summary `running`, review thread 0은 리뷰 완료를 증명하지 않음. 최신 CI·리뷰/충돌·GHCR skip 게이트 확인 전 병합 금지. #109/#96 OPEN/BLOCKED, 운영 기능 ON·GHCR 게시·실 배포 승인 없음.
+
+
+
 ## Issue #109 G7 S1 — Staging 통합 코드 작성 / 실행 증거 구분 (2026-10-26)
 
 - **구현:** 기존 G1~G4 계약을 staging-only port로 사용, 기본 OFF G7 dual gate/manifest/리눅스 disposable DB 경로, 전용 Prisma schema·7 migrations 및 명시 배포 config, /api/g7-staging/[...segments] 로그인/암호·세션·Grant·Audit·격리 CAD DXF JSON/base64 upload/current/delete mirror, Admin 단발 CLI·독립 fixture 준비, rollback 시험 시나리오 작성. 기존 운영 `src/prisma`/CAD REST routes/Nginx/Compose/.env/실 DB/CAD/S3/운영 GHCR 변경 0.

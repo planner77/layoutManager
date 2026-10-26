@@ -1,5 +1,14 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #109 / PR #125 — Staging CI 수용 범위·쿠키 격리·GHCR 미게시 계약 (2026-10-26)
+
+- 첫 S1 HEAD `a82a04bb` [PR CI 40270394055](https://github.com/planner77/layoutManager/actions/runs/40270394055) Verify·Docker 성공. 이후 코드/테스트 수정 HEAD는 별도 CI 필요. Codex review summary `running`은 스레드 0이어도 승인 아님. [TestReport](out/TestReport.md)·[FailureLedger](out/FailureLedger.md).
+- **운영과 Staging Cookie 분리:** stage 응답은 `cad_staging_session; Path=/api/g7-staging`만 설정·폐기하며 G3/G4 Service 내부의 `cad_session` 변환은 staging 어댑터 내부에서만 수행. 기존 운영 Cookie·인증/일반 CAD Route 수정 0. Stage 쿠키는 운영 승인/세션이 아니다.
+- **GHCR 게시 금지:** 기존 Main CI는 코드 변경이면 GHCR 게시 후보로 분류하므로 [docker-publish.yml](.github/workflows/docker-publish.yml)에 **정확한 squash commit 제목** `#109 | S1 Staging-only integration [G7-S1-NO-GHCR]`과 해당 Stage·문서·workflow allowlist를 함께 만족할 때만 `publish=false`로 설정. 예상외 경로는 release-scope Job 실패, 일반 runtime 코드/tag는 기존 게시 정책 그대로. 통합 PR에는 이 제목을 지정한 squash merge만 허용하며 merge 전 수동 변경 범위·PR CI 확인 필요. Main CI의 GHCR Job이 실제 SKIPPED인지 확인하기 전 **미게시 성공 주장 금지**.
+- **합격 경계:** Staging 공식 Prisma fixture·Stage-only JSON/base64 DXF 업로드/Current/DELETE·SQLite snapshot 테스트는 기존 Multipart CAD API/S3/실 PC/실 운영 Prisma Migration/동시 snapshot DB·CAD·S3 복구 수용이 아님. S2 Owner Go/No-Go 전 기존 앱/운영 데이터·Compose/Nginx/.env/GHCR/영속 API/물리 Audit purge OFF. #109/#96 OPEN/BLOCKED.
+
+
+
 ## Issue #109 G7 S1 — 단일 Staging 통합 구현 (2026-10-26)
 
 - #109는 **단일 브랜치/PR**에서 비운영 G1~G4 Auth/Session/Grant/Audit 서비스, 전용 Prisma 7 Schema/Migration, App Router 스테이징 API, Admin 1회 CLI, CAD 편집 모의경로·E2E를 통합한다. [Issue109](out/Issue109.md), [Operation](out/Operation.md) 기준.

@@ -1,5 +1,24 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #109 S1 / PR #125 — 실제 CI와 잔여 TC 분리 (2026-10-26)
+
+**근거:** 최초 HEAD `a82a04bb` [PR CI 40270394055](https://github.com/planner77/layoutManager/actions/runs/40270394055) Verify+Docker 성공. 이후 쿠키·Main release-scope guard 보완은 **수정 HEAD 재검증 PENDING**. S0의 TC-P4-G7-015 `문서-only` 조건은 실제 Stage 소스가 있는 S1에 그대로 적용 불가; **운영 Prisma/CAD API/Nginx/Compose 불변 + GHCR 제한 차단**으로 평가한다.
+
+| TC | 기존 자동 실행에서 확인 가능한 범위 | S1 운영 수용 미검증 |
+| --- | --- | --- |
+| G7-001~003 | Stage flag 기본 OFF·경로/manifest 분리·잘못된 구성 거부 | 실제 OCI digest 서명·Owner GO |
+| G7-004 | 합성 Stage CAD GET/원본 SHA 및 기존 전체 E2E 성공 | 실 현장 Viewer/DWG/전 버전 |
+| G7-005~006 | Stage Editor+Site 등록·Current, 삭제 비밀번호 거부/허용·Audit | 기존 Multipart/Current/Delete Route 변경+실 파일 큐/보상 |
+| G7-007~008 | Stage Admin 초기 변경/login/Grant와 기존 G2~G4 격리 TC | Stage 실제 Browser 8h/30m/3개/회수·Site 교차/비공개 감사 UI |
+| G7-009~011 | Staging 정식 Prisma 7개 migration/SQLite snapshot Restore·FK·SHA | 실 DB+CAD+S3 일관 복원·App/Migrator 호환 rollback |
+| G7-012 | #108 Owner 사내 수용 보고(원본 EV ID 미열람) | S1 Stage 신규 PC/Nginx/DEV 직접 E2E |
+| G7-013~014 | Stage-only Gate·금지된 API/Audit purge 미도입 | 운영 승인/SOP |
+| G7-015(S1) | 기존 운영 Source·Prisma·Compose·Nginx 불변 Git diff | Main CI GHCR Job SKIPPED 확인 전 미완 |
+
+신규 회귀: `g7-staging.test.ts`에 Stage 전용 쿠키 이름/Path·운영 쿠키 공존·Logout을 추가. `g7-staging-ghcr-guard.test.ts`는 Git 합성 diff로 Main release-scope Bash 구문·S1 only no-GHCR·예상외 경로 거부·정상 runtime publish·docs-only skip을 시험하도록 작성. 모든 결과는 해당 HEAD CI 성공 후 판정한다.
+
+
+
 ## Issue #109 G7 S1 — Staging 구현/자동시험 추적 (2026-10-26)
 
 - **TC-P4-G7-001~003/013~015:** `g7-staging-gate.test.ts`로 기본 OFF/오타 flag·staging-only release manifest·실 DB/Storage 경로·symlink 거부, 별도 CAD write gate를 검사. PR diff는 운영 `src/prisma/**`/기존 CAD API/Compose/Nginx/.env 변경 **0**을 확인해야 PASS.

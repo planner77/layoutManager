@@ -58,3 +58,26 @@ manifest. G7 flags are exactly `true` or OFF.
 The staging Prisma generator targets `src/generated/g7-staging`, while the
 existing operational generator remains `src/generated/prisma`. A staging
 candidate build is not itself GHCR release or deployment approval.
+
+## Cookie isolation and conditional Main CI
+
+Staging uses a dedicated `cad_staging_session` HttpOnly cookie with
+`Path=/api/g7-staging`. The routed adapter translates only this cookie to
+the original G3/G4 internal `cad_session` name; it does not overwrite or
+trust a production `cad_session` cookie. Logout expires only the stage cookie.
+
+The first PR CI success belongs to the original S1 HEAD only; new commits
+need fresh CI verification. The existing Main CI release-scope publishes
+GHCR for any runtime change by default. **This PR alone** has a narrow
+GHCR exclusion in `.github/workflows/docker-publish.yml`: a squash merge
+whose commit subject is exactly
+`#109 | S1 Staging-only integration [G7-S1-NO-GHCR]`,
+and whose diff contains only allowlisted G7 staging paths, Markdown and
+that workflow. An unexpected runtime path fails Main CI rather than
+publishing. The normal release scope stays unchanged for unrelated
+runtime changes and tags. Do not merge under any other subject while the
+user instruction forbids GHCR publication.
+
+A Main CI successful release-scope and skipped GHCR job must be
+separately verified. None of this grants S2 Owner operational approval.
+

@@ -1,5 +1,15 @@
 # Issue #109 — G7 운영 인증 활성화 설계 및 통제 배포·롤백 Runbook
 
+## #109 S1 PR #125 — 최초 CI 성공·Staging 수용 범위/배포 차단 (2026-10-26)
+
+- [PR CI 40270394055](https://github.com/planner77/layoutManager/actions/runs/40270394055) 구 HEAD `a82a04bb` Verify/Docker 성공은 **자동·격리 Staging**에만 해당. S1의 운영 Cutover·G7-AC1~4 완료 또는 Owner GO가 아니다.
+- **Staging과 운영 CAD 차이:** Stage `/api/g7-staging/cad/upload`는 최대 256 KiB DXF JSON/base64 미러, 운영 `POST /api/cad-files`는 Multipart·로컬/S3 Storage Backend 및 업로드 보상·관측; Stage Current/Delete는 Stage SQL+Audit 트랜잭션, 기존 `PUT /api/cad-locations/[locationId]/current`와 `DELETE /api/cad-files/[versionId]`는 **변경되지 않음**. Stage DELETE는 원본 파일을 cleanupPending으로 남기고 운영은 삭제 Job/실 파일 삭제·202 응답 가능. Stage 익명 GET은 별도 synthetic DB이므로 실제 Viewer/DWG·PC 2대 회귀의 대체가 아니다.
+- **후속 보완:** Staging 쿠키를 `cad_staging_session`/Stage Path로 분리하고 기존 G3/G4 내부 서비스만 어댑터로 재사용, 쿠키 공존·Logout 회귀 추가. GHCR 자동 게시 회피를 위해 Main workflow에 **단일 제목+allowlist** no-GHCR 예외와 Bash synthetic 검사 추가. 이 수정 HEAD CI/리뷰 완료는 아직 별도 증거 필요.
+- **S2 선행 미확정:** 실 staging PC/Proxy·S3 Backup/Restore, 운영 Multipart API의 권한/감사 Cutover, 앱+Migrator OCI digest 실제 검증 및 rollback, Admin Secret/Audit retention SOP와 Owner **별도 GO**. #108은 Owner 보고 수용됐지만 개별 비공개 증거 ID는 미열람.
+- **Issue 상태:** #109와 #96 OPEN/BLOCKED, GHCR 게시/실운영 Auth·Prisma/Nginx/Compose 활성화/이슈 종료 미승인. 병합은 리뷰 최종 완료·0 미해결·behind=0·최신 PR CI 통과·Main GHCR skip 게이트 확인 후에만.
+
+
+
 ## S1 Staging 통합 구현 — 단일 PR, 운영 NO-GO (2026-10-26)
 
 - 기존 #109 설계/Runbook S0 완료 이후 **동일 #109 작업**에서 G1~G4 Stage adapter, 공식 분리 Prisma Schema+CAD 6개/G7 1개 Migration, Admin 명시 1회 CLI, release+operation 이중 gate/기본 OFF, App Router `/api/g7-staging/[...segments]`, 세션/Grant/Audit·격리 DXF JSON/base64 upload/current/delete mirror와 테스트 코드를 작성했다. 하위 이슈나 별도 기능 PR로 분할하지 않는다.

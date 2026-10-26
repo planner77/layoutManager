@@ -1,5 +1,15 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-051-G7-S1-R1 — Stage 세션 쿠키 분리 및 단일 PR GHCR 미게시 (2026-10-26)
+
+**Decision: S1 Staging만 허용, 운영 Go/No-Go 승인 아님.** 동일 hostname 내 서로 다른 port는 브라우저 Cookie 범위를 격리하지 않으므로 Stage 응답 Cookie를 `cad_staging_session; Path=/api/g7-staging`으로 변경하고 Request 단계에서만 G3/G4 내부 `cad_session`으로 정규화한다. 운영 인증 서비스/Route와 기존 CAD 읽기·쓰기 API는 변경하지 않는다.
+
+사용자가 이번 S1 병합에 GHCR **미게시**를 명시했고 기존 [Main release-scope](../.github/workflows/docker-publish.yml)는 runtime source 변경에서 GHCR 게시 Job을 자동 실행한다. 이에 **정확한 squash 제목** `#109 | S1 Staging-only integration [G7-S1-NO-GHCR]`, `main` branch push, stage 코드/Stage Prisma·테스트 및 Markdown/해당 workflow **allowlist-only** 확인을 동시에 충족하는 경우에 한해 `publish=false`. 다른 runtime 경로가 포함되면 임의 게시 대신 Main CI 오류로 차단하며 일반 tag/다른 runtime 릴리스는 기존 원칙 유지한다. `g7-staging-ghcr-guard.test.ts` synthetic Git diff 테스트, CI 최신 HEAD 성공 및 Main GHCR Job SKIPPED 확인이 필수.
+
+이 결정을 정상적인 상시 release 변경에 재사용하거나 `src/prisma/migrations`/일반 CAD API/Nginx/Compose/실 DB/CAD/S3에 S1 Auth를 연결하는 근거로 사용하지 않는다. [Issue109](Issue109.md), [Operation](Operation.md).
+
+
+
 ## ADR-051-G7-S1 — 단일 Staging 통합·운영 분리 (2026-10-26)
 
 **결정:** #109 S1에 G1~G4의 서비스·DB 어댑터를 staging-only 서버 모듈로 이식하고 전용 Prisma Schema/Migration + `/api/g7-staging/[...segments]`를 구성한다. 단일 PR 내 구현하며 실 운영 Auth/Prisma/Compose/Proxy/CAD API는 그대로 유지한다. [Issue109](Issue109.md).

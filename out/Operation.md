@@ -1,5 +1,14 @@
 # 운영·환경설정 초안
 
+## Issue #109 PR #125 — 수용·쿠키 격리·GHCR 미게시 병합 Runbook (2026-10-26)
+
+- **Stage만:** 기존 `/api/cad-files` Multipart와 일반 Current/Delete API는 그대로. `/api/g7-staging/**` DXF JSON/base64 미러와 일회용 Prisma·SQLite/CAD 로컬 fixture는 실제 운영 DB/CAD/S3/Viewer 수용 근거 아님. `cad_staging_session`은 전용 Path로만 발급·회수; 같은 hostname의 `cad_session`은 stage에서 사용하지 않고 내부 G3/G4로 전달할 때만 적응 변환.
+- **수용 출처:** 첫 PR CI [40270394055](https://github.com/planner77/layoutManager/actions/runs/40270394055) HEAD `a82a04bb` Verify/Docker 성공. 이후 쿠키·GHCR skip 코드/테스트 수정이 있으면 신규 HEAD PR CI 성공/리뷰 완료/behind=0/무충돌 확인 전 병합 보류. Node/Vitest/Prisma 자동검증과 **실 PC·Nginx/원격 S3·복원 검증은 분리**.
+- **GHCR 없는 Main CI:** G7 S1에만 별도 Main release-scope 예외가 적용된다. **병합 시 squash commit_title을 정확히 `#109 | S1 Staging-only integration [G7-S1-NO-GHCR]`으로 지정**해야 하며, diff는 stage 경로·Docs·`docker-publish.yml`만 허용. 예상외 경로면 Main CI 중단(게시 불가), 일반 runtime/tag 릴리스에는 예외 금지. Main CI의 `Main CI - verify release scope` success 및 `Build and push to GHCR` SKIPPED를 실제 확인; Main CI 시작만으로 GHCR 미게시 성공 선언하지 않는다.
+- **추가 미해결:** Stage→운영 Multipart Cutover 동등성, 실제 App+Migrator immutable OCI 두 digest 검증, 동일 DB/CAD/S3 snapshot 복원, 관리자 Secret·Audit 365일 이후 purge/백업 세칙, #108 비공개 원본 EV ID 및 **별도 Owner S2 GO**. 이 게이트 완료 전 운영 .env/Compose/Nginx/Prisma/업무 API/데이터는 OFF·불변, #109/#96 OPEN/BLOCKED.
+
+
+
 ## Issue #109 G7 S1 — 오프라인 Staging 전용 실행·시험 절차 (2026-10-26)
 
 **운영 G7 AUTH/API/DDL/Compose/Nginx/.env·DB/CAD/S3 변경 금지, Owner 별도 Go/No-Go 전 운영 NO-GO.** [src/deploy/g7-staging/README](../src/deploy/g7-staging/README.md) 기준으로만 시연한다.
