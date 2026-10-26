@@ -94,7 +94,7 @@ test('TC-L1-002: only declared safe fields survive; base metadata and raw bytes 
     component: 'api', operation: 'cad_upload',
     timestamp: 'forged', level: 'info', event: 'forged', appVersion: 'canary',
     requestId: 'not-a-uuid', jobId: 'secrets',
-    route: '/api/cad-files/customer-private.dxf/content?token=secret',
+    route: '/api/cad-files/customer-private.dxf/content',
     locationPath: '/private/canary.dxf', locator: 's3://bucket/canary',
     fileBytes: Buffer.from('canary'), extra: cyc,
     error: { name: 'Error', code: 'EACCES', category: 'secret', message: 'Authorization=canary', stack: '/private/canary', cause: { name: 'Error', code: 'SQLITE_BUSY', message: 'canary' } },
@@ -109,7 +109,7 @@ test('TC-L1-002: only declared safe fields survive; base metadata and raw bytes 
   expect(event.requestId).toBeUndefined();
   expect(event.jobId).toBeUndefined();
   expect(event.error.stack).toBeUndefined();
-  expect(Object.keys(event)).not.toEqual(expect.arrayContaining(['locationPath', 'locator', 'fileBytes', 'extra']));
+  for (const key of ['locationPath', 'locator', 'fileBytes', 'extra']) expect(event).not.toHaveProperty(key);
   expect(output[0]).not.toMatch(/canary|Authorization|bucket|private|s3:\/\/|secret/);
   expect(output[0]).not.toContain('\n');
 });
@@ -124,9 +124,23 @@ test('TC-L1-003: unknown errors, circular causes, pretty format and debug severi
   expect(logged).toHaveLength(2);
   expect(logged.every(line => line.split('\n').length === 1)).toBe(true);
   expect(logged.every(line => !line.includes('canary') && !line.includes('not-a-id'))).toBe(true);
-  expect(logged[0]).toContain('DEBUG http_request_started');
+  expect(logged[0]).toContain('INFO http_request_started');
   expect(logged[1]).toContain('INFO http_request_completed');
   const fields = sanitizeLogFields({ nested: { password: 'secret', note: 'x'.repeat(500) } });
   expect(JSON.stringify(fields)).not.toContain('secret');
   expect((fields.nested as { note: string }).note.length).toBeLessThanOrEqual(256);
+});
+
+
+test('TC-L1-004: frequent successful health probes are debug-only, failures still error', () => {
+  process.env.LOG_LEVEL = 'info';
+  const info = vi.spyOn(console, 'log').mockImplementation(() => {});
+  const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+  const health = new RequestLogContext(new Request('http://localhost/api/health'), 'api', 'health');
+  health.completed(200);
+  expect(info).not.toHaveBeenCalled();
+  health.error('health_check_failed', new Error('/private/health'), { errorCode: 'HEALTH_UNAVAILABLE', outcome: 'failure' });
+  health.completed(503, 'failure');
+  expect(error).toHaveBeenCalledTimes(2);
+  expect(error.mock.calls.map(call => JSON.parse(String(call[0]))).every(e => e.requestId === health.requestId)).toBe(true);
 });
