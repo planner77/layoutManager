@@ -1,5 +1,14 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #106 G4 — 격리 Role/Site/Version·Grant·Audit (2026-10-26)
+
+- 기준: [Issue106](out/Issue106.md), #102 G0-BIZ-01~06, #103 G1/#104 G2/#105 G3, ADR-051-R1. DESIGN.md가 없어 Architecture/Database/Decisions를 설계 기준으로 사용.
+- 기존 공개 CAD 목록/Viewer/원본 GET는 익명 유지. CAD POST/Current = Editor 이상+DB 담당 Site, Version DELETE = 동일 조건 **AND 기존 삭제 비밀번호**. Admin Site 자동 허용 없음. 신규 영속 Outline/Memo/Type/Logs/Audit/Admin GET 익명 허용 금지.
+- G4는 src/domain/auth.ts, src/server/auth/g4-service.ts, src/tests/fixtures/auth-g4/store.ts, G1 fixture SQL, TC-P4-G4-001~009의 **격리 구현**. 현재 운영 App Router/Auth/Admin/API/Prisma/DDL/Compose/Nginx/.env/실 DB·CAD·S3/GHCR 및 기존 Viewer/Current/Delete 동작 변경 0. #109 G7 Owner Go/No-Go 전 운영 OFF.
+- 세션·계정·현재 Role/Site/SpecialGrant/Version→Site를 같은 BEGIN IMMEDIATE 거래에서 재확인, Grant·Account disable·ShadowOutline CAS·Audit 일괄 Commit. 401/403·Audit 장애 503 rollback, actor/affected/site/revision/outcome/UTC/requestId 안전 필드·append-only·365일 경계. 물리 purge는 SOP 추가 승인 전 금지. audit:read/logs:read 독립 Admin SpecialGrant.
+- TestReport에 실제 실행 증거 없이 소스/TC 작성만으로 PASS 표기 금지. FailureLedger는 관측 실패만 누적. 새 PR CI 시작 후 모니터링·병합·GHCR·실 배포는 본 요청 제외.
+
+
 ## Issue #104 / PR #118 — 이전 CI 통과 및 GHCR v0.40.5 신규 후보 (2026-10-26)
 
 - **이전 HEAD G2 CI:** [Run 40234510320](https://github.com/planner77/layoutManager/actions/runs/40234510320), HEAD `f5f7ea2e00a95b24e65f16c67fc8484d03031dce`는 Verify/Typecheck·Lint·Unit·E2E 및 Docker/Migration·Smoke Job 모두 completed/success. 미해결 리뷰 0, 당시 main behind=0/mergeable=true.
