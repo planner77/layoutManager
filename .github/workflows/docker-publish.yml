@@ -54,6 +54,7 @@ jobs:
         shell: bash
         env:
           EVENT_BEFORE: ${{ github.event.before }}
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
         run: |
           set -euo pipefail
           publish=true
@@ -89,6 +90,27 @@ jobs:
               exit 1
             fi
           fi
+          # #109 S1: exact first-line subject only; allow multiline squash body.
+          COMMIT_SUBJECT="$(sed -n '1p' <<< "$COMMIT_MESSAGE")"
+          if [[ "$GITHUB_REF" == "refs/heads/main" &&
+                "$COMMIT_SUBJECT" == "#109 | S1 Staging-only integration [G7-S1-NO-GHCR]" ]]; then
+            for file in "${changed[@]}"; do
+              case "$file" in
+                *.md|.github/workflows/docker-publish.yml|src/app/api/g7-staging/*|src/deploy/g7-staging/*|src/server/g7-staging/*|src/scripts/g7-staging-*.ts|src/tests/unit/g7-staging-*.test.ts|src/tests/integration/g7-staging.test.ts)
+                  ;;
+                *)
+                  echo "::error::G7-S1 GHCR exclusion disallowed path: $file" >&2
+                  exit 1
+                  ;;
+              esac
+            done
+            publish=false
+            reason="Explicit approved G7 S1 staging-only change: skip GHCR publishing"
+          elif [[ "$GITHUB_REF" == "refs/heads/main" &&
+                  "$COMMIT_SUBJECT" == "#109 | S1 Staging-only integration"* ]]; then
+            echo "::error::G7-S1 exact squash subject required" >&2
+            exit 1
+          fi
           echo "publish=$publish" >> "$GITHUB_OUTPUT"
           echo "Release scope: $reason"
           {
@@ -98,8 +120,8 @@ jobs:
             echo "- Ref: $GITHUB_REF"
           } >> "$GITHUB_STEP_SUMMARY"
           if [[ "$publish" == "false" ]]; then
-            # Scope-validated documentation-only main CI; functional tests
-            # remain in PR CI and must pass before merge.
+            # Scope-validated no-GHCR main CI: docs-only or #109 staging-only.
+            # Functional tests must pass on the final PR HEAD before merge.
             test -s .github/workflows/pr-ci.yml
             test -s .github/workflows/docker-publish.yml
             test -s AGENTS.md

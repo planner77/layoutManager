@@ -1,5 +1,31 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #109 / PR #125 — PR CI Unit 실패 및 P1 3건 수정, 운영 미활성 (2026-10-26)
+
+- **실패:** [PR CI Run 40275956996](https://github.com/planner77/layoutManager/actions/runs/40275956996), HEAD `818264afb8809ccf0a3e09262e1a09054fd43004`. Verify Job `121418632923` Unit/Integration 313 중 1 실패(59 파일 중 1), Docker `121418632714` 성공. Typecheck/Lint 성공, 이후 Build/E2E SKIPPED. 원인: GHCR 비허용 경로 거부는 exit 1인데 `echo`는 stdout, Unit은 stderr를 예상. [FailureLedger](out/FailureLedger.md) 보존, 새 HEAD CI 실행 전 재검증 미확인.
+- **P1 3건 교정:** (1) no-GHCR Main 예외는 `COMMIT_SUBJECT`를 첫 줄로 추출하여 정확히 `#109 | S1 Staging-only integration [G7-S1-NO-GHCR]`일 때만 허용. suffix/의사 승인 유사 제목은 fail-closed, 멀티라인 본문은 허용. (2) Stage `deploy/g7-staging/prisma.config.ts`가 CLI 로딩 시 `resolveG7StagingGate`를 통과하지 못하면 `G7_STAGING_PRISMA_TARGET_DENIED`로 Prisma SQL **사전** 종료, 기본 fallback DB 없음; Stage /tmp 실제 파일/UID/realpath/symlink/전용 CAD/manifest·URL/승인 조건을 요구. (3) 비허용 경로 진단을 stderr로 출력하여 Unit과 일치시킴. [PR #125 P1](https://github.com/planner77/layoutManager/pull/125), TestPlan/TestReport/원장 참조.
+- **실행 가이드 변경:** Stage CLI 실행 전 `G7_STAGING_ONLY=true`, `G7_RELEASE_CAPABILITY=G7-S1-STAGING-V1`, `G7_OPERATION_APPROVAL=S1-STAGING-ONLY`, 격리용 `G7_AUTH_ENABLED=true`, `G7_STAGING_ROOT`/`G7_STAGING_DATABASE_URL`=`DATABASE_URL`/`CAD_STORAGE_PATH`/`G7_STAGING_ORIGIN` 전부 설정. **운영 값/실 DB/실 CIDR·Secret 설정 금지**. 모든 flag 기본 OFF, 별도 Stage CAD Write Gate도 원칙상 false.
+- **사용자 업무 범위:** 새 HEAD PR CI **시작까지만**, CI 모니터링/병합/GHCR/운영 Auth·정식 Prisma Migration·Nginx/Compose/.env/실 DB/CAD/S3/이슈 종료 금지. #109·#96 OPEN/BLOCKED.
+
+
+## Issue #109 / PR #125 — Staging CI 수용 범위·쿠키 격리·GHCR 미게시 계약 (2026-10-26)
+
+- 첫 S1 HEAD `a82a04bb` [PR CI 40270394055](https://github.com/planner77/layoutManager/actions/runs/40270394055) Verify·Docker 성공. 이후 코드/테스트 수정 HEAD는 별도 CI 필요. Codex review summary `running`은 스레드 0이어도 승인 아님. [TestReport](out/TestReport.md)·[FailureLedger](out/FailureLedger.md).
+- **운영과 Staging Cookie 분리:** stage 응답은 `cad_staging_session; Path=/api/g7-staging`만 설정·폐기하며 G3/G4 Service 내부의 `cad_session` 변환은 staging 어댑터 내부에서만 수행. 기존 운영 Cookie·인증/일반 CAD Route 수정 0. Stage 쿠키는 운영 승인/세션이 아니다.
+- **GHCR 게시 금지:** 기존 Main CI는 코드 변경이면 GHCR 게시 후보로 분류하므로 [docker-publish.yml](.github/workflows/docker-publish.yml)에 **정확한 squash commit 제목** `#109 | S1 Staging-only integration [G7-S1-NO-GHCR]`과 해당 Stage·문서·workflow allowlist를 함께 만족할 때만 `publish=false`로 설정. 예상외 경로는 release-scope Job 실패, 일반 runtime 코드/tag는 기존 게시 정책 그대로. 통합 PR에는 이 제목을 지정한 squash merge만 허용하며 merge 전 수동 변경 범위·PR CI 확인 필요. Main CI의 GHCR Job이 실제 SKIPPED인지 확인하기 전 **미게시 성공 주장 금지**.
+- **합격 경계:** Staging 공식 Prisma fixture·Stage-only JSON/base64 DXF 업로드/Current/DELETE·SQLite snapshot 테스트는 기존 Multipart CAD API/S3/실 PC/실 운영 Prisma Migration/동시 snapshot DB·CAD·S3 복구 수용이 아님. S2 Owner Go/No-Go 전 기존 앱/운영 데이터·Compose/Nginx/.env/GHCR/영속 API/물리 Audit purge OFF. #109/#96 OPEN/BLOCKED.
+
+
+
+## Issue #109 G7 S1 — 단일 Staging 통합 구현 (2026-10-26)
+
+- #109는 **단일 브랜치/PR**에서 비운영 G1~G4 Auth/Session/Grant/Audit 서비스, 전용 Prisma 7 Schema/Migration, App Router 스테이징 API, Admin 1회 CLI, CAD 편집 모의경로·E2E를 통합한다. [Issue109](out/Issue109.md), [Operation](out/Operation.md) 기준.
+- **운영 안전 장벽:** 기존 `src/prisma/schema.prisma`/`src/prisma/migrations`/기본 `prisma.config.ts`, `src/docker-compose.yml`, 운영 Nginx/.env, 기존 CAD API GET/POST/PUT/DELETE/운영 DB/CAD/S3는 변경 0. `src/deploy/g7-staging/prisma.config.ts`와 별도 migration history를 **명시적으로 지정한 폐기 가능한 /tmp DB**에서만 실행. `/api/g7-staging/**`은 release/operation 승인과 정확한 staging 전용 경로를 모두 만족하지 않으면 404, CAD writes는 추가 flag 기본 OFF.
+- S1 Staging G7_AUTH_ENABLED/G7_CAD_WRITE_CUTOVER_ENABLED는 승인된 격리 시험에서만 true; 앱 배포/운영 인증·Audit purge 자동 ON 금지. `G7_OPERATION_APPROVAL=S1-STAGING-ONLY`는 Owner의 S2 운영 GO **아님**. 원본 CAD 익명 GET·Viewer 유지, 기존 쓰기 정책 변경 없음.
+- Staging POST는 **DXF 전용 제한된 JSON/base64 미러 API**이며 기존 Multipart `POST /api/cad-files`와 교체/완전 호환을 주장하지 않는다. G7 쓰기·감사 BEGIN IMMEDIATE 거래, Editor+Site·DELETE 레거시 암호 AND, 세션/권한 즉시 재검증; 별도 #98/#65/#83/#60 영속 API와 Audit 물리 purge 비공개 유지.
+- `src/tests/unit/g7-staging-gate.test.ts`, `src/tests/integration/g7-staging.test.ts` 작성. 실제 CI RUN/Job 확인 전 PASS 금지, 로컬 CLI/실 LAN/실 S3·배포는 NOT RUN. #108 Owner 수용은 확인됐지만 사내 원시 시험증거/복구 체크섬 미열람이며 #109/#96 OPEN/BLOCKED·운영 별도 GO 필요.
+
+
 ## Issue #109 G7 — 운영 활성화 설계 문서만 준비 (2026-10-26)
 
 - [Issue109](out/Issue109.md), [ADR-051-G7-PLAN](out/Decisions.md), [Operation](out/Operation.md), [TestPlan](out/TestPlan.md) 기준. G0~G5 #102~#107은 격리·Preview 범위에서 완료; G6 #108은 Owner의 직접 시험 정상 보고에 따라 **closed/completed**되었으며 공개 저장소에서 개별 현장 로그·비공개 증거 ID는 독립 확인되지 않았다. #109 및 #96은 **OPEN/BLOCKED**.

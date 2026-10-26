@@ -1,5 +1,32 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-051-G7-S1-R2 — 잘못된 제목·운영 DB Migration의 사전 차단 (2026-10-26)
+
+- [PR #125](https://github.com/planner77/layoutManager/pull/125) P1 #4374313158/3165/3173 교정: GHCR 건너뛰기는 커밋 메시지 **첫 줄의 정확한 승인 제목**에만 적용(본문 허용), 비슷한 제목은 Main CI 오류 종료. 비허용 변경 경로에서는 `echo >&2`/exit 1을 유지한다. Unit Test는 stdout/stderr와 부정 제목을 검증한다.
+- Staging 독립 Prisma config는 이제 `G7_STAGING_DATABASE_URL`을 그대로 믿지 않고 `resolveG7StagingGate` 전체 비운영 검증을 통과한 실제 파일만 datasource로 전달한다. 경로/소유권/심볼릭 링크/스테이징 manifest/Schema/Origin/Stage 승인/두 URL·저장소 불일치 또는 기본값 누락 시 SQL **실행 전 차단**. 이 결정은 운영 migration 시점을 앞당기지 않고, 서비스 운영 기능을 ON 하지 않는다.
+- 원래 G0~G6 Owner 업무/보안 범위와 #109의 S2 별도 Go/No-Go·S3 통제 단계 불변. 실패 Run과 리뷰 결함은 독립 실패 원장에 기록하며 새 CI 결과를 기다리지 않고 성공 판정하지 않는다.
+
+
+## ADR-051-G7-S1-R1 — Stage 세션 쿠키 분리 및 단일 PR GHCR 미게시 (2026-10-26)
+
+**Decision: S1 Staging만 허용, 운영 Go/No-Go 승인 아님.** 동일 hostname 내 서로 다른 port는 브라우저 Cookie 범위를 격리하지 않으므로 Stage 응답 Cookie를 `cad_staging_session; Path=/api/g7-staging`으로 변경하고 Request 단계에서만 G3/G4 내부 `cad_session`으로 정규화한다. 운영 인증 서비스/Route와 기존 CAD 읽기·쓰기 API는 변경하지 않는다.
+
+사용자가 이번 S1 병합에 GHCR **미게시**를 명시했고 기존 [Main release-scope](../.github/workflows/docker-publish.yml)는 runtime source 변경에서 GHCR 게시 Job을 자동 실행한다. 이에 **정확한 squash 제목** `#109 | S1 Staging-only integration [G7-S1-NO-GHCR]`, `main` branch push, stage 코드/Stage Prisma·테스트 및 Markdown/해당 workflow **allowlist-only** 확인을 동시에 충족하는 경우에 한해 `publish=false`. 다른 runtime 경로가 포함되면 임의 게시 대신 Main CI 오류로 차단하며 일반 tag/다른 runtime 릴리스는 기존 원칙 유지한다. `g7-staging-ghcr-guard.test.ts` synthetic Git diff 테스트, CI 최신 HEAD 성공 및 Main GHCR Job SKIPPED 확인이 필수.
+
+이 결정을 정상적인 상시 release 변경에 재사용하거나 `src/prisma/migrations`/일반 CAD API/Nginx/Compose/실 DB/CAD/S3에 S1 Auth를 연결하는 근거로 사용하지 않는다. [Issue109](Issue109.md), [Operation](Operation.md).
+
+
+
+## ADR-051-G7-S1 — 단일 Staging 통합·운영 분리 (2026-10-26)
+
+**결정:** #109 S1에 G1~G4의 서비스·DB 어댑터를 staging-only 서버 모듈로 이식하고 전용 Prisma Schema/Migration + `/api/g7-staging/[...segments]`를 구성한다. 단일 PR 내 구현하며 실 운영 Auth/Prisma/Compose/Proxy/CAD API는 그대로 유지한다. [Issue109](Issue109.md).
+
+- **Release/Operation 이중 게이트:** staging-capable 코드 `G7_RELEASE_CAPABILITY=G7-S1-STAGING-V1`, 격리 릴리스 매니페스트 App/Migrator sha256 식별자·고정 source commit/schema ID 및 `G7_OPERATION_APPROVAL=S1-STAGING-ONLY`, `G7_AUTH_ENABLED=true`; 지정 `/tmp/cad-g7-staging-*/fixture.sqlite`와 앱 DATABASE_URL 동일/별도 CAD 저장소 검증. 값 미설정/불일치=404/기능 OFF. `G7_CAD_WRITE_CUTOVER_ENABLED=true`는 전자 유효 시에만 격리 쓰기 활성. 이 매니페스트는 **참조값 일치 검사**이며 OCI 실제 서명·레지스트리 해시 검증이나 **운영 Owner GO가 아님**.
+- `src/deploy/g7-staging/prisma/migrations`는 기존 CAD 6개와 G1 확장 1개를 복제한 **독립 Prisma 히스토리**. 운영 migration 경로로 SQL 복사 금지, 운영 migrator 자동 적용 영향 0. G3 limiter, Account/Role/Site/SpecialGrant/Session/Audit/Nonce FK·Unique·append-only 및 Staging CAD 안전 Audit 포함. Admin 최초/복구는 별도 CLI 명시 호출만.
+- G3 로그인·초기 변경·암호 변경·로그아웃·세션과 G4 Grant·disable·audit/permit는 원래 검증된 도메인/서비스 계약을 재사용. 새 CAD stage mirror의 POST/Current/DELETE는 Session/Role/Site(Version→DB Site)와 업무 변경+Audit를 단일 BEGIN IMMEDIATE 안에서 검증, DELETE는 기존 삭제 암호 AND. **기존 운영 CAD 멀티파트 Route는 이번 S1에 연결하지 않음**, S2/S3 전 별도 비교 필요. 기존 익명 GET/Viewer 불변, 신규 Memo/Outline/Type/Logs 영속 API 공개 금지.
+- S2 Owner 운영 GO, 비공개 현장 증거 ID·관리자 Secret SOP·Audit 365일 이후 purge/백업·복구 세칙은 여전히 PENDING. STAGING 성공/PR CI/GHCR로 GO 자동 대체 금지.
+
+
 ## ADR-051-G7-PLAN — #109 기본 OFF·운영 승인·복구 설계 (2026-10-26)
 
 **설계 계약만 작성 / 실행 승인 아님.** #108 G6는 Owner의 현장 검증 정상 보고로 종료됐지만 개별 비공개 로그/증거 ID는 독립 확인되지 않았다. G7 운영 증거 패키지 확인 및 Owner **별도** Go/No-Go 없이는 G7 #109·상위 #96 BLOCKED. [Issue109](Issue109.md).

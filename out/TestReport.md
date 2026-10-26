@@ -1,5 +1,31 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issue #109 / PR #125 — 관측 PR CI 40275956996 실패 및 P1 보완 후 재검증 대기 (2026-10-26)
+
+- **실패 Run/HEAD:** [40275956996](https://github.com/planner77/layoutManager/actions/runs/40275956996), HEAD `818264afb8809ccf0a3e09262e1a09054fd43004`. Verify [121418632923](https://github.com/planner77/layoutManager/actions/runs/40275956996/job/121418632923) Unit/Integration `failure`(59 files 중 1 FAIL, 313 tests 중 1 FAIL), Docker [121418632714](https://github.com/planner77/layoutManager/actions/runs/40275956996/job/121418632714) `success`. Typecheck/Lint 성공, Verify 이후 Build/E2E는 skipped. 단 하나의 실패는 GHCR scope Test의 비허용 경로 출력 스트림 예상 불일치: 실제 `stdout` vs Assert `stderr`. 해당 Actions 로그·원인·교정 및 P1 리뷰 3개는 [FailureLedger](FailureLedger.md)에 분리 기록.
+- **보완 작성:** Main GHCR 게시 제외 조건을 Commit **첫 줄 정확 일치**(multiline body 허용·prefix 변형은 거부)로 변경하고 거부 메시지는 stderr로 출력. Stage 전용 Prisma config는 운영 DB URL/경로·승인 manifest·UID/symlink/realpath 등 전체 Stage Gate를 **Migration SQL 이전**에 검증하고 기본 fallback URL 제거. 추가 Unit(Test)으로 near-match/공백/본문, stdout-stderr, 잘못된 DB URL 및 센티널 원본 불변을 추적. Staging README/운영 지침은 모든 격리 환경변수를 **Prisma 실행 전** 지정하도록 교정.
+- **시험 상태:** 코딩/문서 보완은 실제 통과 근거가 아니다. 새 PR HEAD의 Typecheck/Lint/Unit/Vitest/Prisma/E2E/Docker/리뷰는 Run/Job 실제 확인 전 **PENDING/NOT VERIFIED**. 구 Run 40270394055 성공은 구 HEAD 전용으로 보존.
+- **운영/현장 예외:** 신규 S1 검증이 통과하더라도 합성 SQLite·DXF JSON/base64 미러 API이지 기존 Multipart CAD 경로/S3·사내 PC 2대·동일 snapshot 실복원/운영 이미지 서명·Owner S2 GO가 아니다. G7 AC1~4/이슈 #109·#96 OPEN/BLOCKED, Auth·정식 운영 Migration/Proxy/Compose/.env/실 자료·GHCR 미게시 상태 유지.
+
+
+## Issue #109 PR #125 — S1 첫 CI 성공·검증 범위와 후속 보완 (2026-10-26)
+
+- **첫 CI 성공 확인:** 구 HEAD `a82a04bb2412859e998616902e22f0efceab35c4`의 [PR CI 40270394055](https://github.com/planner77/layoutManager/actions/runs/40270394055)는 `completed/success`. Verify [121401764981](https://github.com/planner77/layoutManager/actions/runs/40270394055/job/121401764981)(Typecheck/Lint/Unit·Integration/Build/Chromium E2E/Legacy Migration E2E), Docker [121401764781](https://github.com/planner77/layoutManager/actions/runs/40270394055/job/121401764781)(이미지·Migration·Runtime Smoke) 모두 성공. Vitest 설정은 `tests/**/*.test.ts`를 포함하므로 G7 Stage 테스트도 해당 실행 대상이다. 이 결과는 **구 HEAD 전용**이다.
+- **자동 시험의 실제 범위:** Linux 일회용 SQLite에 Staging 공식 Prisma Migration 7개 적용, Admin 초기 변경/login, Grant/Editor+Site, **JSON/base64 DXF** Stage 등록·Current·비밀번호 AND Delete, Audit·원본 SHA, SQLite snapshot backup/restore 및 Stage 게이트 OFF/오류 경로. **실 사내 PC/Proxy/S3·이미지 쌍·운영 API 전환 시험은 아님.**
+- **미확인/PENDING:** 실제 Staging Browser/Windows Nginx·서로 다른 PC·S3, 기존 운영 Multipart `POST /api/cad-files`/일반 Current·Delete API의 권한+Audit 같은 거래 Cutover, 운영 DB·CAD·S3 동일 snapshot 복원, 고정 OCI digest·서명/rollback 이미지 호환, Admin Secret/Audit 물리 purge SOP·Owner S2 별도 GO. #108 G6은 Owner 보고 수용이나 개별 비공개 시험 증거 ID/복원 checksum 미열람.
+- **구 CI 이후 보완(신 HEAD 재검증 필요):** 공유 hostname에서 일반 `cad_session`과 충돌하지 않도록 Stage 쿠키를 `cad_staging_session; Path=/api/g7-staging`으로 분리하고 내부 G3/G4 전달 시에만 변환·Logout/동시 Cookie 회귀 추가. 이번 S1 코드 Main 병합이 GHCR 게시를 일으키지 않도록 정확한 스쿼시 제목과 Stage 전용 경로 목록만 허용하는 GHCR 비게시 Main release-scope 차단·synthetic Bash 테스트 추가. 변경 HEAD 새 PR CI PASS 전 합격 금지.
+- **리뷰/운영 상태:** 확인 당시 Codex review summary `running`, review thread 0은 리뷰 완료를 증명하지 않음. 최신 CI·리뷰/충돌·GHCR skip 게이트 확인 전 병합 금지. #109/#96 OPEN/BLOCKED, 운영 기능 ON·GHCR 게시·실 배포 승인 없음.
+
+
+
+## Issue #109 G7 S1 — Staging 통합 코드 작성 / 실행 증거 구분 (2026-10-26)
+
+- **구현:** 기존 G1~G4 계약을 staging-only port로 사용, 기본 OFF G7 dual gate/manifest/리눅스 disposable DB 경로, 전용 Prisma schema·7 migrations 및 명시 배포 config, /api/g7-staging/[...segments] 로그인/암호·세션·Grant·Audit·격리 CAD DXF JSON/base64 upload/current/delete mirror, Admin 단발 CLI·독립 fixture 준비, rollback 시험 시나리오 작성. 기존 운영 `src/prisma`/CAD REST routes/Nginx/Compose/.env/실 DB/CAD/S3/운영 GHCR 변경 0.
+- **테스트 작성 vs 실행:** `TC-P4-G7-001~015` 가운데 staging 자동시험용 Unit/Integration 코드는 추가했지만, GitHub connector를 통해 원격 소스를 편집하므로 로컬 node_modules/Prisma/Typecheck/Vitest/Playwright/실 LAN을 실행하지 못했다. **로컬 전부 NOT RUN**. PR 생성 후 최신 HEAD PR CI의 실제 Run/Job 결과를 확인하지 않으면 PASS로 쓰지 않는다. 현재 테스트는 Staging formal migration과 격리 API·snapshot copy restore를 검증할 **계획된 실행**이며, 실 운영 G7 cutover/multipart 호환성·실 S3 복원·실 Windows Nginx E2E는 포함하지 않는다.
+- **Owner 게이트:** #108은 Owner 현장 수용 CLOSED이나 개별 원본 증거 ID·restore checksum은 여기서 독립 확인 불가. 본 S1 결과가 S2 Owner 운영 GO를 대체하지 않는다. #109/#96 OPEN/BLOCKED, 운영 활성화·GHCR 게시·PR 병합/Issue 종료는 이번 요청에서 제외.
+- **실패 원장:** 관측된 새 CI 실패/취소는 현재 0(시작 이전), 코드 검토·Staging DB 연동 위험은 [FailureLedger](FailureLedger.md)에 추적. 시험 실행 후 실패시 RUN/Job/Attempt/Step 출처와 원인·수정 결과를 추가한다.
+
+
 ## Issue #109 — G7 운영 활성화 설계·절차 준비 / 실제 실행 구분 (2026-10-26)
 
 - [Issue109](Issue109.md), ADR-051-G7-PLAN/Architecture/Database/Requirements/Operation/TestPlan/AGENTS/Issue96를 **문서 전용**으로 정렬. release G7 capability+App/Migrator pair와 Owner GO·`G7_AUTH_ENABLED`의 이중 게이트, 별도 write flag·권한·DB/CAD/S3 백업/실복구·롤백 절차를 설계했다. **이 단계는 코드 구현/기능 또는 운영 활성화가 아님**.

@@ -1,5 +1,41 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #109 / PR #125 — P1 실패 재발 방지 및 Staging Prisma CLI 보호 TC (2026-10-26)
+
+- **TC-P4-G7-CI-001:** [실패 Run 40275956996](https://github.com/planner77/layoutManager/actions/runs/40275956996) Verify의 `tests/unit/g7-staging-ghcr-guard.test.ts` Assertion은 거부 진단 메시지를 stderr로 잘못 예상한 **단일 Test 실패**. GitHub Actions stdout/stderr 구분과 Bash exit 1을 일치시키고 재검증한다. Docker Job 성공, Verify 이후 E2E skipped는 독립 상태로 유지한다.
+- **TC-P4-G7-CI-002:** 승인된 squash 제목 `#109 | S1 Staging-only integration [G7-S1-NO-GHCR]`의 **첫 줄 정확 일치** + multiline body는 skip, `... NOT-APPROVED`/`-extra`/끝 공백은 fail-closed. 다른 일반 Runtime 변경/Tag 릴리스는 현행 게시 정책 유지. 변경된 Main release-scope Bash 추출·실행 기반 Unit으로 검증.
+- **TC-P4-G7-DB-001:** `npx prisma migrate deploy --config deploy/g7-staging/prisma.config.ts`는 Stage UID 임시 루트, 실제 `fixture.sqlite`, 전용 CAD Path, `DATABASE_URL=G7_STAGING_DATABASE_URL`, release manifest/schema, `G7_STAGING_ONLY`/`G7_AUTH_ENABLED`/Staging 승인 값 **전부 유효**해야 실행. 불일치/운영 DB·symlink 지정/기본값 누락시 `G7_STAGING_PRISMA_TARGET_DENIED`와 nonzero 종료, **SQL 사전 미실행/대상 파일 센티널 불변**. 정상 Stage 진입은 기존 Integration Prisma 7개 Migration 회귀.
+- **TC-P4-G7-REV-001:** P1 #125 [r4374313158](https://github.com/planner77/layoutManager/pull/125#discussion_r4374313158)/[r4374313165](https://github.com/planner77/layoutManager/pull/125#discussion_r4374313165)/[r4374313173](https://github.com/planner77/layoutManager/pull/125#discussion_r4374313173) 각각 코드·단위 시험·문서/원장 보완→댓글 답변·Resolved, Main behind 0/충돌 0, 수정 HEAD CI **시작**까지만 작업. 최신 CI 결과를 관측하지 않으면 PASS 주장 금지.
+- **기존 운영 구분:** 신규 Stage 전용 설정/테스트와 GitHub Workflow scope만 변경, `src/prisma/**`·운영 기존 CAD API/Compose/Nginx/.env/실 DB/CAD/S3·GHCR 게시·Account/Auth 활성화 변경 0. Staging synthetic DXF/SQLite 실증은 Owner S2 Go/No-Go 대체 불가.
+
+
+## Issue #109 S1 / PR #125 — 실제 CI와 잔여 TC 분리 (2026-10-26)
+
+**근거:** 최초 HEAD `a82a04bb` [PR CI 40270394055](https://github.com/planner77/layoutManager/actions/runs/40270394055) Verify+Docker 성공. 이후 쿠키·Main release-scope guard 보완은 **수정 HEAD 재검증 PENDING**. S0의 TC-P4-G7-015 `문서-only` 조건은 실제 Stage 소스가 있는 S1에 그대로 적용 불가; **운영 Prisma/CAD API/Nginx/Compose 불변 + GHCR 제한 차단**으로 평가한다.
+
+| TC | 기존 자동 실행에서 확인 가능한 범위 | S1 운영 수용 미검증 |
+| --- | --- | --- |
+| G7-001~003 | Stage flag 기본 OFF·경로/manifest 분리·잘못된 구성 거부 | 실제 OCI digest 서명·Owner GO |
+| G7-004 | 합성 Stage CAD GET/원본 SHA 및 기존 전체 E2E 성공 | 실 현장 Viewer/DWG/전 버전 |
+| G7-005~006 | Stage Editor+Site 등록·Current, 삭제 비밀번호 거부/허용·Audit | 기존 Multipart/Current/Delete Route 변경+실 파일 큐/보상 |
+| G7-007~008 | Stage Admin 초기 변경/login/Grant와 기존 G2~G4 격리 TC | Stage 실제 Browser 8h/30m/3개/회수·Site 교차/비공개 감사 UI |
+| G7-009~011 | Staging 정식 Prisma 7개 migration/SQLite snapshot Restore·FK·SHA | 실 DB+CAD+S3 일관 복원·App/Migrator 호환 rollback |
+| G7-012 | #108 Owner 사내 수용 보고(원본 EV ID 미열람) | S1 Stage 신규 PC/Nginx/DEV 직접 E2E |
+| G7-013~014 | Stage-only Gate·금지된 API/Audit purge 미도입 | 운영 승인/SOP |
+| G7-015(S1) | 기존 운영 Source·Prisma·Compose·Nginx 불변 Git diff | Main CI GHCR Job SKIPPED 확인 전 미완 |
+
+신규 회귀: `g7-staging.test.ts`에 Stage 전용 쿠키 이름/Path·운영 쿠키 공존·Logout을 추가. `g7-staging-ghcr-guard.test.ts`는 Git 합성 diff로 Main release-scope Bash 구문·S1 only no-GHCR·예상외 경로 거부·정상 runtime publish·docs-only skip을 시험하도록 작성. 모든 결과는 해당 HEAD CI 성공 후 판정한다.
+
+
+
+## Issue #109 G7 S1 — Staging 구현/자동시험 추적 (2026-10-26)
+
+- **TC-P4-G7-001~003/013~015:** `g7-staging-gate.test.ts`로 기본 OFF/오타 flag·staging-only release manifest·실 DB/Storage 경로·symlink 거부, 별도 CAD write gate를 검사. PR diff는 운영 `src/prisma/**`/기존 CAD API/Compose/Nginx/.env 변경 **0**을 확인해야 PASS.
+- **TC-P4-G7-004~011:** `g7-staging.test.ts`가 정식 Staging Prisma migrate deploy, 최초 Admin·비밀번호 변경/로그인 세션/Grant, Editor+Site DXF 업로드·익명 GET·Current·삭제 암호 AND, DB Audit 원자성/SQLite FK, backup/restore 후 bytes·SHA 동등성을 시험하도록 설계. Staging JSON/base64 DXF 미러 API는 기존 Multipart Upload와 다른 진입점이므로 실 업무/API cutover 동등성을 선언하지 않는다.
+- **TC-P4-G7-012:** 사내 PC 2대·PROD Nginx/DEV direct·실 S3/DB·CAD 및 원시 Restore 로그는 #108 Owner 보고 수용(세부 비공개 증거 ID 독립 미열람); 본 S1 CI의 synthetic staging 시험과 별개.
+- `src/deploy/g7-staging/prisma/schema.prisma`/7 migration을 현재 운영 DB에 적용하는 명령은 테스트에 포함시키지 않는다. Secret 파일, 실제 CAD/S3 URL·내용은 Git/CI 저장 금지. 실패는 Run/Job/HEAD/원인/조치로 [FailureLedger](FailureLedger.md)에 누적. 테스트 코드 작성만으로 PASS 불가.
+
+
 ## Issue #109 G7 — 기본 OFF·Owner GO·실복구 운영 검증 계획 (2026-10-26)
 
 **현재 TC-P4-G7-001~015 전부 G7 범위에서는 NOT RUN / #109 OPEN-BLOCKED.** #108 G6은 Owner 현장 시험 정상 보고로 CLOSED/COMPLETED이나 비공개 개별 시험 로그·증거 ID는 여기서 독립 확인되지 않았다. 본 G7 TC 목록의 별도 통합/운영 수용을 자동 PASS로 처리하지 않는다. 시험 작성과 실행은 구별한다. #108 G6 현장 evidence와 Owner 별도 승인 없이 운영 기능 활성화 테스트를 실 DB에서 수행하지 않는다.

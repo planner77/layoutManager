@@ -1,5 +1,30 @@
 # Issue #109 — G7 운영 인증 활성화 설계 및 통제 배포·롤백 Runbook
 
+## Issue #109 / PR #125 — Unit 실패/P1 3건 보완·Prisma CLI fail-closed·CI 재시작 (2026-10-26)
+
+- **실패 증거:** 구 HEAD `818264afb8809ccf0a3e09262e1a09054fd43004`의 [Run 40275956996](https://github.com/planner77/layoutManager/actions/runs/40275956996) `completed/failure`. Verify `Unit 및 Integration 테스트` 313개 중 1개 실패, Docker 성공. 실제 실패는 GHCR 경로차단 진단 출력의 stdout/stderr Assertion 불일치; 이후 Build/E2E는 SKIPPED. [FailureLedger](FailureLedger.md)/[TestReport](TestReport.md) 상세.
+- **P1 보완:** [GHCR 정확 제목](https://github.com/planner77/layoutManager/pull/125#discussion_r4374313158)은 커밋 첫 줄만 `sed`로 분리/정확 일치, 잘못된 유사 제목은 오류 종료. [Staging Prisma DB 검증](https://github.com/planner77/layoutManager/pull/125#discussion_r4374313165)은 CLI 설정이 운영 DB를 열기 **전에** 임시 DB/권한·매니페스트·URL/승인 조건을 검증하며 fallback 제거. [Output Stream](https://github.com/planner77/layoutManager/pull/125#discussion_r4374313173)은 실제 비허용 경로 진단을 stderr로 출력하고 거부 exit 1 보존. 정확제목·stdout/stderr·운영 경로 거부/원본 변경 0 Test 작성.
+- **운영 차단 불변:** 이 작업은 단일 PR #125의 Staging 전용 Source·테스트·가이드 보완이다. 기본 OFF/Owner S2 GO 미승인, 기존 공개 CAD GET·운영 Multipart POST/Current/Delete·Prisma/Compose/Nginx/.env·실 DB/CAD/S3·GHCR 게시·Audit purge 변화 0. G7 AC1~4 미수용, #109/#96 OPEN/BLOCKED. 수정 HEAD PR CI 시작 후 모니터링·병합·릴리스·이슈 종료 수행하지 않는다.
+
+
+## #109 S1 PR #125 — 최초 CI 성공·Staging 수용 범위/배포 차단 (2026-10-26)
+
+- [PR CI 40270394055](https://github.com/planner77/layoutManager/actions/runs/40270394055) 구 HEAD `a82a04bb` Verify/Docker 성공은 **자동·격리 Staging**에만 해당. S1의 운영 Cutover·G7-AC1~4 완료 또는 Owner GO가 아니다.
+- **Staging과 운영 CAD 차이:** Stage `/api/g7-staging/cad/upload`는 최대 256 KiB DXF JSON/base64 미러, 운영 `POST /api/cad-files`는 Multipart·로컬/S3 Storage Backend 및 업로드 보상·관측; Stage Current/Delete는 Stage SQL+Audit 트랜잭션, 기존 `PUT /api/cad-locations/[locationId]/current`와 `DELETE /api/cad-files/[versionId]`는 **변경되지 않음**. Stage DELETE는 원본 파일을 cleanupPending으로 남기고 운영은 삭제 Job/실 파일 삭제·202 응답 가능. Stage 익명 GET은 별도 synthetic DB이므로 실제 Viewer/DWG·PC 2대 회귀의 대체가 아니다.
+- **후속 보완:** Staging 쿠키를 `cad_staging_session`/Stage Path로 분리하고 기존 G3/G4 내부 서비스만 어댑터로 재사용, 쿠키 공존·Logout 회귀 추가. GHCR 자동 게시 회피를 위해 Main workflow에 **단일 제목+allowlist** no-GHCR 예외와 Bash synthetic 검사 추가. 이 수정 HEAD CI/리뷰 완료는 아직 별도 증거 필요.
+- **S2 선행 미확정:** 실 staging PC/Proxy·S3 Backup/Restore, 운영 Multipart API의 권한/감사 Cutover, 앱+Migrator OCI digest 실제 검증 및 rollback, Admin Secret/Audit retention SOP와 Owner **별도 GO**. #108은 Owner 보고 수용됐지만 개별 비공개 증거 ID는 미열람.
+- **Issue 상태:** #109와 #96 OPEN/BLOCKED, GHCR 게시/실운영 Auth·Prisma/Nginx/Compose 활성화/이슈 종료 미승인. 병합은 리뷰 최종 완료·0 미해결·behind=0·최신 PR CI 통과·Main GHCR skip 게이트 확인 후에만.
+
+
+
+## S1 Staging 통합 구현 — 단일 PR, 운영 NO-GO (2026-10-26)
+
+- 기존 #109 설계/Runbook S0 완료 이후 **동일 #109 작업**에서 G1~G4 Stage adapter, 공식 분리 Prisma Schema+CAD 6개/G7 1개 Migration, Admin 명시 1회 CLI, release+operation 이중 gate/기본 OFF, App Router `/api/g7-staging/[...segments]`, 세션/Grant/Audit·격리 DXF JSON/base64 upload/current/delete mirror와 테스트 코드를 작성했다. 하위 이슈나 별도 기능 PR로 분할하지 않는다.
+- **운영 경계:** 실제 `src/prisma/**`·기본 migrator·`src/app/api/cad-files/**`/cad-locations/current, 운영 Nginx/Compose/.env/DB/CAD/S3 변경·활성화 0. Staging gate는 UID 소유 `/tmp/cad-g7-staging-*/fixture.sqlite`·전용 CAD·매니페스트·승인된 staging 값 모두 일치하지 않으면 404. 별도 CAD write flag도 기본 OFF. 신규 영속 Outline/Memo/Type/Logs/Audit purge 미승인으로 미노출.
+- **제약·증거:** Stage JSON/base64 DXF 등록은 실제 기존 multipart 업로드 API의 정식 교체가 아니며, stage manifest digest는 증거용 참조이지 OCI 서명/Owner 운영 GO가 아니다. 관련 코드/Unit·통합 TC를 작성했지만 로컬 Prisma/Vitest/Playwright/사내 PC/S3는 NOT RUN; PR CI 실행 결과는 Run/HEAD로만 PASS 처리. #108 G6 Owner 수용 완료, 실 개별 증거 ID 독립 열람 못함. G7-AC1~4 미완, #109/#96 OPEN/BLOCKED.
+- **다음 게이트:** 단일 S1 PR HEAD CI → Stage QA/실행 출처 기록 → S2 비공개 증거/실 릴리스 digest·Schema·관리 SOP 확인 및 Owner **별도 Go/No-Go** → 승인된 경우에만 S3 운영 활성화/롤백. 이번 요청은 PR CI **시작**까지, 병합/GHCR/운영 ON/이슈 종료 없음.
+
+
 > **2026-10-26 / DESIGN ONLY / #109 OPEN-BLOCKED / 운영 NO-GO.** 본 문서는 실행 승인서가 아니다. G6 [#108](https://github.com/planner77/layoutManager/issues/108)은 Owner의 현장 시험 이상 없음 보고로 closed/completed 처리되었지만, 개별 실제 시험 로그·DB/CAD/S3 복원 원본 체크섬·비공개 증거 ID는 여기서 독립 확인되지 않았다. G7의 운영 증거 확인 및 Owner **별도 명시적 Go/No-Go** 이전에 운영 API·Auth·정식 Prisma/DDL·Nginx/Compose/.env·실 데이터 또는 기존 CAD 쓰기 권한을 전환하지 않는다.
 
 ## 1. 정책 기준과 현재 상태

@@ -1,5 +1,32 @@
 # 운영·환경설정 초안
 
+## Issue #109 / PR #125 P1 — Prisma 대상 보호 및 GHCR 정확 제목 운영 절차 갱신 (2026-10-26)
+
+- **Staging Prisma 실행 순서 변경:** 기존 Staging README의 "루트/URL만 먼저 설정하고 Migration 실행" 방식은 더 이상 허용하지 않는다. `g7-staging-prepare.ts`가 만든 전용 `/tmp/cad-g7-staging-*/fixture.sqlite`를 확인하고 `G7_STAGING_ROOT`, `DATABASE_URL`, `G7_STAGING_DATABASE_URL`, `CAD_STORAGE_PATH`, `G7_STAGING_ORIGIN`, `G7_STAGING_ONLY=true`, `G7_RELEASE_CAPABILITY=G7-S1-STAGING-V1`, `G7_OPERATION_APPROVAL=S1-STAGING-ONLY` 및 `G7_AUTH_ENABLED=true`(격리 Staging에서만)를 **Prisma CLI 시작 전에 함께 지정**해야 한다. 실제 명령: `npx prisma migrate deploy --config deploy/g7-staging/prisma.config.ts`. Gate 검증 실패면 `G7_STAGING_PRISMA_TARGET_DENIED`로 즉시 종료; 기본 fallback/운영 DB 접속 불가. `G7_CAD_WRITE_CUTOVER_ENABLED`는 별도 기본 OFF.
+- **GHCR 미게시 정책:** Main S1 예외는 Squash Commit **첫 줄**이 정확히 `#109 | S1 Staging-only integration [G7-S1-NO-GHCR]`일 때만 허용(본문 여러 줄 가능). 유사 제목/공백 suffix는 Main CI fail-closed. 승인된 Stage/docs/해당 workflow 경로 이외 변경이 있으면 error를 stderr로 출력·중단. 기존 코드 릴리스/tag 게시 정책은 변경하지 않는다. 본 요청은 실제 병합·Main CI·GHCR 게시 금지, 보완 후 새 PR CI **시작**까지만.
+- **시험 및 증거:** [Run 40275956996](https://github.com/planner77/layoutManager/actions/runs/40275956996) Unit 단계 stdout/stderr Assertion 실패 및 Codex P1 3건을 [FailureLedger](FailureLedger.md)에 별도로 누적. 새 HEAD Typecheck/Vitest/Prisma/후속 E2E는 결과 미확인/PENDING. 실제 사내 운영 Auth/Prisma/Compose/Nginx/.env/DB/CAD/S3와 미승인 Audit purge/영속 API는 OFF.
+
+
+## Issue #109 PR #125 — 수용·쿠키 격리·GHCR 미게시 병합 Runbook (2026-10-26)
+
+- **Stage만:** 기존 `/api/cad-files` Multipart와 일반 Current/Delete API는 그대로. `/api/g7-staging/**` DXF JSON/base64 미러와 일회용 Prisma·SQLite/CAD 로컬 fixture는 실제 운영 DB/CAD/S3/Viewer 수용 근거 아님. `cad_staging_session`은 전용 Path로만 발급·회수; 같은 hostname의 `cad_session`은 stage에서 사용하지 않고 내부 G3/G4로 전달할 때만 적응 변환.
+- **수용 출처:** 첫 PR CI [40270394055](https://github.com/planner77/layoutManager/actions/runs/40270394055) HEAD `a82a04bb` Verify/Docker 성공. 이후 쿠키·GHCR skip 코드/테스트 수정이 있으면 신규 HEAD PR CI 성공/리뷰 완료/behind=0/무충돌 확인 전 병합 보류. Node/Vitest/Prisma 자동검증과 **실 PC·Nginx/원격 S3·복원 검증은 분리**.
+- **GHCR 없는 Main CI:** G7 S1에만 별도 Main release-scope 예외가 적용된다. **병합 시 squash commit_title을 정확히 `#109 | S1 Staging-only integration [G7-S1-NO-GHCR]`으로 지정**해야 하며, diff는 stage 경로·Docs·`docker-publish.yml`만 허용. 예상외 경로면 Main CI 중단(게시 불가), 일반 runtime/tag 릴리스에는 예외 금지. Main CI의 `Main CI - verify release scope` success 및 `Build and push to GHCR` SKIPPED를 실제 확인; Main CI 시작만으로 GHCR 미게시 성공 선언하지 않는다.
+- **추가 미해결:** Stage→운영 Multipart Cutover 동등성, 실제 App+Migrator immutable OCI 두 digest 검증, 동일 DB/CAD/S3 snapshot 복원, 관리자 Secret·Audit 365일 이후 purge/백업 세칙, #108 비공개 원본 EV ID 및 **별도 Owner S2 GO**. 이 게이트 완료 전 운영 .env/Compose/Nginx/Prisma/업무 API/데이터는 OFF·불변, #109/#96 OPEN/BLOCKED.
+
+
+
+## Issue #109 G7 S1 — 오프라인 Staging 전용 실행·시험 절차 (2026-10-26)
+
+**운영 G7 AUTH/API/DDL/Compose/Nginx/.env·DB/CAD/S3 변경 금지, Owner 별도 Go/No-Go 전 운영 NO-GO.** [src/deploy/g7-staging/README](../src/deploy/g7-staging/README.md) 기준으로만 시연한다.
+
+1. `npx tsx scripts/g7-staging-prepare.ts --ack-disposable-only`는 오직 /tmp 새 DB/스토리지/비공개 release.json을 만든다. 검증된 staging candidate **참조 digest 두 개와 source commit**을 사전에 지정해야 한다. 이후 `G7_STAGING_DATABASE_URL=file:<temp>/fixture.sqlite npx prisma migrate deploy --config deploy/g7-staging/prisma.config.ts`로 **Staging Prisma 전용 7개 Migration**을 실행한다. 기본 `npm run db:deploy` 사용 금지.
+2. staging Next 앱의 `DATABASE_URL=G7_STAGING_DATABASE_URL`, `CAD_STORAGE_PATH=<temp>/cad`, `G7_STAGING_ROOT=<temp>`, 고정 `G7_STAGING_ORIGIN`을 지정. `G7_STAGING_ONLY=true`, `G7_RELEASE_CAPABILITY=G7-S1-STAGING-V1`, `G7_OPERATION_APPROVAL=S1-STAGING-ONLY` 및 `G7_AUTH_ENABLED=true`가 모두 있어야 /api/g7-staging 계층을 열 수 있다. `G7_CAD_WRITE_CUTOVER_ENABLED` 별도 기본 false. 모두 격리 테스트 값이지 Owner 운영 승인값이 아님.
+3. Admin 최초/복구는 승인된 0600 Secret과 `npx tsx scripts/g7-staging-admin.ts --ack-staging-only`로 **명시 1회만**. G3 login/initial-change/session/change/logout, G4 permit/grant/disable/audit 및 CAD Staging 전용 JSON/base64 DXF upload·current·version 기능 검증. **기존 운영 CAD multipart API와 동일한 endpoint/호환 완성 아님**. 기존 익명 GET·Viewer/Current/Version/SHA 불변 확인.
+4. G7 staging tests는 `tests/unit/g7-staging-gate.test.ts`, `tests/integration/g7-staging.test.ts`에서 격리 스키마 migration, 세션·권한·Audit/CAD·snapshot restore를 수행하도록 작성됨. 실제 사내 PC 2대/실 S3/운영 Restore·digest 서명 검증은 이 환경 테스트로 주장하지 않는다. 실행 못한 시험은 NOT RUN, PR CI 결과는 해당 HEAD Run/Job 확인으로만 PASS.
+5. 삭제는 Staging 버전 metadata와 tombstone만 바꾸고 파일 bytes는 복구 대비 격리 볼륨에 유지. Audit 365일 물리 purge는 실행하지 않는다. 실 사내 계정/Secret/URL·CAD 및 원시 로그 공개 Git/CI 포함 금지.
+
+
 ## Issue #109 — G7 승인 전 활성화·중단·롤백 Runbook (2026-10-26)
 
 **현 상태 S0 문서 준비만 가능 / 실제 운영 NO-GO.** 상세: [Issue109 S0~S4](Issue109.md). #108의 Owner 현장 시험 수용은 완료됐지만, G7 운영 증거의 비공개 식별자/릴리스·복구 계획 확인 및 별도 Owner GO 전에 운영 Auth/API·Prisma·Nginx/Compose/.env·CAD write 전환 금지.
