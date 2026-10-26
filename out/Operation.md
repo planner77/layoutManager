@@ -2,15 +2,22 @@
 
 ## Issue #109 — G7 승인 전 활성화·중단·롤백 Runbook (2026-10-26)
 
-**현 상태 S0 문서 준비만 가능 / 실제 운영 NO-GO.** 상세: [Issue109 S0~S4](Issue109.md). #108 사내 LAN PC 2대/PROD Nginx·DEV direct, 세션·권한·CAD E2E 및 동일 DB/CAD/S3 실 Restore 수용과 별도 Owner GO 전에 운영 Auth/API·Prisma·Nginx/Compose/.env·CAD write 전환 금지.
+**현 상태 S0 문서 준비만 가능 / 실제 운영 NO-GO.** 상세: [Issue109 S0~S4](Issue109.md). #108의 Owner 현장 시험 수용은 완료됐지만, G7 운영 증거의 비공개 식별자/릴리스·복구 계획 확인 및 별도 Owner GO 전에 운영 Auth/API·Prisma·Nginx/Compose/.env·CAD write 전환 금지.
 
 1. **S0 NOW:** 기본 OFF 이중 게이트·승인 패키지·스냅샷/복구 체크리스트 문서화. `G7_AUTH_ENABLED`와 `G7_CAD_WRITE_CUTOVER_ENABLED`는 **현재 미구현 설계용 이름**, env 설정/문서 PR로 Auth가 켜지지 않는다.
-2. **S1 ISOLATED:** 고정 소스 SHA/App·Migrator 두 digest, 정식 Schema·migration 격리 dry-run, 기존 GET/쓰기·Session/Role/Site/Audit 검증, 두 PC·실 backup+restore #108 evidence 확보. 실제 운영 데이터 변경 0.
+2. **S1 ISOLATED:** 고정 소스 SHA/App·Migrator 두 digest, 정식 Schema·migration 격리 dry-run, 기존 GET/쓰기·Session/Role/Site/Audit 검증, 두 PC·실 backup+restore #108 Owner 수용 결과의 비공개 증거 검토 및 G7 Staging 실증. 실제 운영 데이터 변경 0.
 3. **S2 GO/NO-GO:** 사내 승인 ID, Owner/운영자·대체자/QA·유효 창, 정확한 두 digest·Schema·migration, 같은 DB+CAD+S3 snapshot ID, Audit purge 세칙 또는 보류·잔여 위험·롤백 계획 확인. 불일치·미승인은 NO-GO.
 4. **S3 APPROVED ONLY:** 쓰기 중지→같은 snapshot 안전 backup+실 Restore 확인→쌍이 맞는 migrator→FK/Version/Current/원본 bytes/SHA 검사→App Auth OFF 시작/기존 익명 GET→단발 Admin→Auth ON→별도 CAD write cutover→Audit·현장 E2E/Owner 수용. 신규 메모/타입/외곽선/로그 API·Audit purge 별도 승인 전 OFF.
 5. **S4 ROLLBACK:** 쓰기 중지·세션 폐기·flag OFF→구 호환 App/Migrator pair+**같은 snapshot DB/CAD/S3** 함께 복원→원본·Version/Current·FK·객체 checksum 검증. 구 App만 신규 Schema에서 실행 금지, backup 이후 작업 손실/재처리 및 Owner 승인 전 재개 금지.
 
 공개 GitHub에 실제 URL/IP, Secret/사용자 비밀번호, 실 CAD·S3 key·원시 로그 기록 금지. 문서 작성/CI/GHCR 게시만으로 GO 또는 실복구 PASS 아님.
+
+
+## Issue #108 / G6 — 사내 전용 증거 평가 및 격리 복원 절차 (2026-10-26)
+
+- **비운영 실행:** src/tests/fixtures/g6/manifest.example.json은 전체 NOT_RUN 템플릿. 사내 접근제한·저장소 외부의 절대경로에 복사한 manifest만 `cd src && node scripts/g6-evidence.mjs /private/g6/evidence.json`으로 검증한다. 이 CLI는 정해진 코드/건수만 출력하고 실 호스트·S3·CAD·토큰/비밀번호/SHA/로그를 출력하지 않는다. 종료코드 0은 매니페스트 구조상 READY_FOR_OWNER_REVIEW, 3은 누락/차단, 2는 입력 거부. 실제 검사 실행/성공 및 Owner 수용과 분리.
+- **현장 Runbook:** 사내 지정 운영 담당자의 사전 승인과 업로드/삭제/스토리지 정리·DB 경쟁 작업 quiesce → 하나의 snapshotId로 SQLite online backup + PRAGMA quick_check/foreign_key_check 및 CadFileVersion·Current·sha256/size 동결 → 동일 시점 local CAD bytes 및 S3 실제 object version/bytes hash+size 보관 → 사내 격리 DB/스토리지로 복제해 **별도로 승인될 실제 운영 Prisma migration만** dry-run → FK/Unique/Current·Version·원본 SHA 불변 확인 → DB+CAD+S3 실제 restore/Viewer 및 기존 GET/Current 확인 → App/Migrator/DB 호환 롤백·실패 시 안전 정지·운영자/Owner 기록. S3 ETag만으로 SHA-256 검증 불가. Audit 365일 물리 purge는 세칙 미승인으로 금지.
+- 실제 사내 PC 2대의 PROD Nginx 및 DEV direct/서로 다른 DB/CAD·정상 Cookie/업무 쓰기 허용·거부는 **NOT RUN**; EV ID/실제 결과 확보 전 PASS 주장 금지. 현재 인증 쓰기 Route는 운영 연결되지 않아 기존 익명 API 테스트를 보호 E2E로 주장하지 않는다. 운영 DDL/Compose/Nginx/API/실 파일 수정은 G7 #109 별도 Owner Go/No-Go 전 금지. 상세 수용행렬 [Issue108](Issue108.md).
 
 
 ## Issue #106 G4 — 격리 운영 절차·배포 차단 (2026-10-26)

@@ -2,13 +2,20 @@
 
 ## ADR-051-G7-PLAN — #109 기본 OFF·운영 승인·복구 설계 (2026-10-26)
 
-**설계 계약만 작성 / 실행 승인 아님.** #108 실 사내 업무 E2E·DB/CAD/S3 동시 시점 실 Restore/rollback과 Owner **별도** Go/No-Go 없이는 G7 #109·상위 #96 BLOCKED. [Issue109](Issue109.md).
+**설계 계약만 작성 / 실행 승인 아님.** #108 G6는 Owner의 현장 검증 정상 보고로 종료됐지만 개별 비공개 로그/증거 ID는 독립 확인되지 않았다. G7 운영 증거 패키지 확인 및 Owner **별도** Go/No-Go 없이는 G7 #109·상위 #96 BLOCKED. [Issue109](Issue109.md).
 
 1. **이중 게이트:** G7-auth-capable 앱 코드와 source SHA/immutable App+Migrator OCI digest pair·정식 Schema 호환을 확인하는 release gate, 별도 Owner GO 승인 ID/범위/유효 시간·운영 manifest·`G7_AUTH_ENABLED`를 확인하는 operation gate. 미설정/false·부정확한 값은 OFF, 정확히 true라도 release/GO/Schema 불일치면 fail-closed. **현재 실제 런타임에는 이러한 flag·라우팅이 구현되지 않았으며 설계 이름만 정의**한다.
 2. **쓰기 별도 cutover:** `G7_CAD_WRITE_CUTOVER_ENABLED`는 기본 false·Auth OFF 시 강제 OFF. 기존 CAD GET/Viewer/원본 익명 유지. POST/Current는 인증 Editor 이상+담당 Site, DELETE는 추가 기존 삭제 비밀번호 AND, 서버 권위 Session/Role/Site/Version·업무 변경+Audit 원자성. 인증 오류에서 익명 write fallback 금지. Admin도 타 Site 자동 권한 없음.
 3. **독립 범위:** 신규 Outline/Memo/Type/Logs/Audit/Admin 영속 API는 각 개별 DB/권한·QA 승인이 있어야 운영 노출. `audit:read`와 `logs:read` 독립, Audit 365일 초과 purge는 주기·백업/복구·법적 예외 세칙 미승인으로 물리/자동 실행 금지.
 4. **승인 후 절차:** 운영 쓰기 정지→동일 snapshot ID의 SQLite 안전 backup+CAD local+S3 실 Restore 확인→고정 App/Migrator pair의 정식 migration→FK/Version/Current/Source SHA 불변 확인→기본 OFF 기동·익명 GET 점검→단발 Admin→Auth ON→별도 CAD write 전환·현장 E2E→Owner 운영 수용. 장애시 쓰기 중단·세션 폐기, 이전 호환 App/Migrator 쌍과 **동일 snapshot DB/CAD/S3 전체 복원**, 신/구 Schema 혼용 금지.
 5. ADR-051-R1의 HTTP 잔여 위험 `OWNER_ACCEPTED_SCOPE`는 안전성 PASS가 아님. TLS/MFA/침투·적대적 탈취시험을 추가 필수 게이트로 되살리지 않되 정상 업무/권한·복구·Owner GO는 필수. 지금은 **docs-only / 운영 실행 0**.
+
+
+## ADR-051-G6 — #108 실제 현장 증거와 합성 준비물 구분 (2026-10-26)
+
+- **결정:** G6 코드 범위는 비연결/offline 자체 기입 증거 상태 평가와 disposable SQLite+합성 CAD/mock-S3 백업·격리 migration·Restore 리허설로 한정. 실 사내 PC 2대 PROD Nginx/DEV 분리, G3 Cookie/G4 업무 Route 정상 E2E, 동일 시점 **실** DB/CAD/S3 bytes 보존·운영 Prisma dry-run·실 restore/rollback은 별도 Owner 비공개 증거 필요. 공개 Git에는 TC/AC/Run/HEAD·EV 증거 ID/상태만.
+- **금지:** 합성 테스트 PASS·manifest READY_FOR_OWNER_REVIEW·#107 GHCR SUCCESS를 #108 실 수용 또는 #109 Go/No-Go로 대체하지 않는다. 기존 익명 CAD GET/Viewer 보존, 미래 POST/Current Editor+Site, DELETE Editor+Site+기존 암호 AND. Audit 365일 자동/물리 purge SOP 미승인.
+- 신규 운영 Auth/Admin/Outline/Memo/Type/Logs/Audit API, Prisma/DDL/DB, Compose/Nginx/.env/실 CAD/S3/GHCR 변경·활성화 0. R1 OWNER_ACCEPTED_SCOPE는 공격·탈취 E2E 비범위이지 정합성/복구 시험 면제 아님. [Issue108](Issue108.md).
 
 
 ## ADR-051-G4-P1 — #106 Scoped Audit에 Authoritative Site 유지 (2026-10-26)

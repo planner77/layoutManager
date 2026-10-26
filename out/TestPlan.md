@@ -2,7 +2,7 @@
 
 ## Issue #109 G7 — 기본 OFF·Owner GO·실복구 운영 검증 계획 (2026-10-26)
 
-**현재 TC-P4-G7-001~015 전부 NOT RUN / #109 OPEN-BLOCKED.** 시험 작성과 실행은 구별한다. #108 G6 현장 evidence와 Owner 별도 승인 없이 운영 기능 활성화 테스트를 실 DB에서 수행하지 않는다.
+**현재 TC-P4-G7-001~015 전부 G7 범위에서는 NOT RUN / #109 OPEN-BLOCKED.** #108 G6은 Owner 현장 시험 정상 보고로 CLOSED/COMPLETED이나 비공개 개별 시험 로그·증거 ID는 여기서 독립 확인되지 않았다. 본 G7 TC 목록의 별도 통합/운영 수용을 자동 PASS로 처리하지 않는다. 시험 작성과 실행은 구별한다. #108 G6 현장 evidence와 Owner 별도 승인 없이 운영 기능 활성화 테스트를 실 DB에서 수행하지 않는다.
 
 | TC | 합격 기준 | 책임 |
 | --- | --- | --- |
@@ -23,6 +23,23 @@
 | TC-P4-G7-015 | 현재 문서 PR 변경 파일 Markdown 한정, `src/**`/Prisma/Nginx/Compose/.env/GHCR·실 데이터 변경 0 | PR diff |
 
 Owner R1에서 제외한 침투·적대적 공격/탈취 실증은 새 필수 게이트로 요구하지 않는다. 정상 로그인·권한/감사/업무 무결성·실복구는 필수. 모든 실제 시험은 HEAD/Run/Job/비공개 증거 ID와 [TestReport](TestReport.md)에서만 PASS 판정. [Issue109](Issue109.md).
+
+
+## Issue #108 / G6 — 자동 증거 점검과 현장 수용의 독립 TC (2026-10-26)
+
+| ID | 시험 및 합격 기준 | 검증 범위 |
+| --- | --- | --- |
+| TC-P4-G6-001 | G6 필수 19종 중 하나라도 NOT_RUN이면 PENDING, 허위 PASS 불허 | g6-evidence Unit |
+| TC-P4-G6-002 | G7 운영 기능 OFF 필수. READY_FOR_OWNER_REVIEW는 PASS/Owner 서명 아님 | g6-evidence Unit |
+| TC-P4-G6-003 | DB/local CAD/S3/dry-run/restore 동일 snapshotId, 각 PASS의 사내 EV ID 및 FK/Version/Current/SHA 불변 | g6-evidence Unit |
+| TC-P4-G6-004 | 실제 PROD PC 2대 상이한 clientId, DEV 분리 및 동일 App/Migrator SemVer. 현장 Viewer/Upload/Cookie/인가 시험은 별도 | g6-evidence Unit + 사내 NOT RUN |
+| TC-P4-G6-005 | FAIL/CANCELLED/임의 필드/비밀값이 PASS가 되지 않고 정해진 사유 코드만 출력 | g6-evidence Unit |
+| TC-P4-G6-006 | 사내 manifest는 저장소 밖 절대경로·정상 파일만 허용, symlink/checkout 경로 거부 | g6-evidence Unit |
+| TC-P4-G6-007 | CAD 여섯 기존 Migration→두 합성 Version/Current+local CAD/mock-S3 SHA→SQLite online backup/파일 복사→별도 G1 fixture migration·FK/CAD row 불변→손상 주입/실 복원·bytes 동일 | disposable Integration, 실제 S3/DB NOT RUN |
+| TC-P4-G6-LAN-001 | 사내 PC 2대 Nginx→App 실 Viewer/기존 익명 CAD GET·등록/Current/다운로드, DEV 직접/데이터 분리, 승인된 격리 Auth/Cookie/업무 Role/Scope와 호환 | 실 현장 NOT RUN |
+| TC-P4-G6-REC-001 | **실제** DB/CAD/S3 동일시점 snapshot·실 S3 bytes, 격리 Prisma dry-run/FK/Unique/Current, 실제 restore 및 이미지/DB rollback | 사내 별도 승인, NOT RUN |
+
+[TestReport](TestReport.md)는 코드 작성과 실제 Typecheck/Lint/Unit/E2E/Docker/현장 실행을 구분한다. 미관측 결과를 PASS로 표시하지 않고, #109 별도 Owner Go/No-Go 및 운영 OFF 유지. [Issue108](Issue108.md).
 
 
 ## Issue #106 / PR #120 — CI 최초 실패 및 Site Audit P1 회귀 확대 (2026-10-26)

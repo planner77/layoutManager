@@ -1,6 +1,6 @@
 # Issue #109 — G7 운영 인증 활성화 설계 및 통제 배포·롤백 Runbook
 
-> **2026-10-26 / DESIGN ONLY / #109 OPEN-BLOCKED / 운영 NO-GO.** 본 문서는 실행 승인서가 아니다. G6 [#108](https://github.com/planner77/layoutManager/issues/108)의 실제 사내 LAN 업무 E2E와 DB/CAD/S3 실복구 수용, Owner의 **별도 명시적 Go/No-Go** 이전에 운영 API·Auth·정식 Prisma/DDL·Nginx/Compose/.env·실 데이터 또는 기존 CAD 쓰기 권한을 전환하지 않는다.
+> **2026-10-26 / DESIGN ONLY / #109 OPEN-BLOCKED / 운영 NO-GO.** 본 문서는 실행 승인서가 아니다. G6 [#108](https://github.com/planner77/layoutManager/issues/108)은 Owner의 현장 시험 이상 없음 보고로 closed/completed 처리되었지만, 개별 실제 시험 로그·DB/CAD/S3 복원 원본 체크섬·비공개 증거 ID는 여기서 독립 확인되지 않았다. G7의 운영 증거 확인 및 Owner **별도 명시적 Go/No-Go** 이전에 운영 API·Auth·정식 Prisma/DDL·Nginx/Compose/.env·실 데이터 또는 기존 CAD 쓰기 권한을 전환하지 않는다.
 
 ## 1. 정책 기준과 현재 상태
 
@@ -52,7 +52,7 @@ Existing anonymous CAD GET stays separate and unchanged.
 | G3 #105 | 8h/30m/3개 세션 서비스; 실제 PROD Cookie/E2E는 G6 | CLOSED (격리) |
 | G4 #106 | Role/Site/Version·Audit 원자성 격리; 실제 Route·purge 미연결 | CLOSED (격리) |
 | G5 #107 | Nginx PROD/DEV direct Preview; 현장 두 PC 실측은 G6 | CLOSED (Preview) |
-| **G6 #108** | 실제 PC 2대+Nginx/DEV·업로드/Viewer/세션/권한 E2E 및 동시 DB/CAD/S3 실복구·롤백 | **OPEN / 현장 NOT RUN** |
+| **G6 #108** | PC 2대·Nginx/DEV·업무 E2E 및 DB/CAD/S3 복구·롤백: Owner가 수행·이상 없음 보고; 개별 사내 로그/증거 ID는 GitHub에서 독립 확인 불가 | **CLOSED / OWNER ACCEPTED (2026-10-26)** |
 | **G7 #109** | G0~G6 증거·정식 이미지·운영 SOP·Owner 별도 GO 및 승인된 배포/복구 실증 | **OPEN / BLOCKED** |
 
 CI와 GHCR 이미지 게시 성공은 운영 인증 활성화 승인도, 동일 시점 DB/CAD/S3 복구 성공도 아니다.
@@ -63,7 +63,7 @@ CI와 GHCR 이미지 게시 성공은 운영 인증 활성화 승인도, 동일 
 
 1. ADR-051-G7-PLAN·Architecture/Database/Requirements/Operation/TestPlan/TestReport를 본 Runbook과 정렬하고 **Markdown-only** PR을 생성한다. G7은 OPEN/BLOCKED 상태로 유지한다.
 2. 미래 G7 구현 단위를 분리해 명세한다: 릴리스 capability·엄격한 OFF flag, 정식 Prisma migration, 기존 G1~G4 Auth/Session/Grant/Audit 서비스와 App Router 연결, 로그인 UI/관리 API, 별도 CAD write cutover, 회귀·rollback 테스트. 운영 연결·Schema 적용은 지금 수행 금지.
-3. #108 G6의 사내 증거 수집: 실제 PC 2대, Windows Nginx PROD/DEV direct 정상 경로/쿠키·업로드·Viewer·권한, SQLite 안전 backup + 로컬 CAD + S3 같은 snapshot ID의 **실 Restore/롤백**. 테스트 fixture/합성 S3 PASS를 실 운영 복구 PASS로 대체하지 않는다.
+3. #108 G6의 Owner 현장 시험 정상 보고 및 이슈 종료는 확인됐다. G7 운영 승인 패키지에는 실제 PC 2대·Windows Nginx PROD/DEV direct·권한·Cookie·업무 E2E, 하나의 snapshot ID의 DB/CAD/S3 **실 Restore/롤백**에 해당하는 사내 비공개 원본 증거 ID·실행자/시각·복구 검증 결과를 **별도 대조**한다. 제출하지 않은 로그/체크섬을 만들어 적지 않으며, 합성 테스트의 PASS만으로 독립 실복구를 주장하지 않는다.
 4. 사내 비공개 SOP 미결정: Admin 담당·대체자/Secret 파일 취급·승인, Audit 만료 purge/백업본·복원 예외, 운영 배포 URL·업무 중단 창·변경 담당·승인, 실패 데이터 재처리 책임. 결정 누락시 S2 NO-GO.
 
 ### S1. 비운영 후보/검증 (운영 NO-GO 유지)
@@ -94,13 +94,13 @@ CI와 GHCR 이미지 게시 성공은 운영 인증 활성화 승인도, 동일 
 - 기존 이미지 하나만 새 Schema에 재기동하지 않는다. **구 호환 App+Migrator digest 쌍과 같은 snapshot ID의 DB/CAD(local)/S3를 함께 Restore**, FK/Current/Version/Source SHA·객체 checksum·Health/익명 GET 확인. 다운그레이드 migration 추측 실행 금지.
 - Backup 시점 이후 신규 쓰기 손실 가능성을 사내 사고 기록에서 확인하고 유실 데이터 대조·재처리/Owner 승인 전 정상 운영 재개 금지. 복원 실패 시 #109/#96 BLOCKED 유지, 공개 FailureLedger에는 비밀 없는 사건·증거 ID만 기록한다.
 
-## 5. 승인/수용 증거 템플릿 — 전부 PENDING
+## 5. 승인/수용 증거 템플릿 — G6 Owner 수용 / G7 GO PENDING
 
 | 증거 | 필요한 승인·식별자 | 상태 |
 | --- | --- | --- |
 | G0~G5/PR CI | 범위, commit/Run/Job, 격리와 실 운영 구분 | 격리만 완료 |
-| G6 LAN | 실제 PC 2대 PROD Nginx/DEV direct·계정/Role·업무 E2E 비공개 증거 ID | NOT RUN |
-| G6 실 Backup/Restore | 동시 snapshot ID, DB+CAD+S3 Restore·Rollback·불변 검증 | NOT RUN |
+| G6 LAN | Owner 수행·정상 보고 및 #108 CLOSED; 사내 PC 2대·PROD/DEV·권한 E2E 개별 근거 ID 대조 | OWNER ACCEPTED / 원본 증거 ID 미열람 |
+| G6 실 Backup/Restore | Owner 정상 수용; 같은 snapshot ID의 DB+CAD+S3 Restore/rollback·불변 체크섬 원본 확인 | OWNER ACCEPTED / 원본 증거 ID 미열람 |
 | 배포 Pair/Schema | App+Migrator 두 OCI digest·정식 migration·rollback pair | PENDING |
 | 운영 SOP/감사 | Admin 작업자·대리자·Secret 경로, Audit 365일 purge/backup/예외 승인 또는 보류 | PENDING |
 | Owner GO/NO-GO | 서명·승인 ID, 범위/기간·QA/위험수용·복원 및 사고 담당 | PENDING |
@@ -115,4 +115,4 @@ CI와 GHCR 이미지 게시 성공은 운영 인증 활성화 승인도, 동일 
 - **G7-AC3** 일치하는 App+Migrator digest·동일 시점 DB/CAD/S3 실 Restore·현장 E2E/Version·Current·Source 불변.
 - **G7-AC4** Owner 수용·작업/롤백 증거, 문제시 복구, 상위 #96 최종 판단.
 
-[TestPlan](TestPlan.md)의 TC-P4-G7-001~015는 이 문서 작성 시 **NOT RUN**. **다음 단계**는 #108 현장 수용 및 G7 통합 코드의 비운영 검증 → Owner 명시 GO → 승인된 G7 운영 전환/롤백 실증 → #109/#96 완료 판단이다. 이 Runbook의 PR 자체는 기능 구현 완료 또는 운영 배포 승인이 아니다.
+[TestPlan](TestPlan.md)의 TC-P4-G7-001~015는 이 문서 작성 시 **NOT RUN**. **다음 단계**는 #108 Owner 현장 수용의 사내 증거 ID 대조 및 G7 통합 코드의 비운영 검증 → Owner 명시 GO → 승인된 G7 운영 전환/롤백 실증 → #109/#96 완료 판단이다. 이 Runbook의 PR 자체는 기능 구현 완료 또는 운영 배포 승인이 아니다.

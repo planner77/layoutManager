@@ -3,9 +3,23 @@
 ## Issue #109 — G7 운영 활성화 설계·절차 준비 / 실제 실행 구분 (2026-10-26)
 
 - [Issue109](Issue109.md), ADR-051-G7-PLAN/Architecture/Database/Requirements/Operation/TestPlan/AGENTS/Issue96를 **문서 전용**으로 정렬. release G7 capability+App/Migrator pair와 Owner GO·`G7_AUTH_ENABLED`의 이중 게이트, 별도 write flag·권한·DB/CAD/S3 백업/실복구·롤백 절차를 설계했다. **이 단계는 코드 구현/기능 또는 운영 활성화가 아님**.
-- TC-P4-G7-001~014: 통합 Auth API/운영 Schema/G7 flag **미구현**, 사내 PC 2대·업무 E2E·DB/CAD/S3 실제 Backup/Restore 및 Owner GO/NO-GO **NOT RUN / BLOCKED**. 기존 G0~G5 격리·Preview CI 성공을 G7 운영 검증 PASS로 전용하지 않는다.
+- TC-P4-G7-001~014: 통합 Auth API/운영 Schema/G7 flag **미구현**, G7 별도 운영 통합·Staging E2E/배포 복구·Owner GO/NO-GO **NOT RUN / BLOCKED**; #108 현장 시험은 Owner 보고에 의해 수용되었고 개별 원본 로그는 여기서 독립 확인하지 못함. 기존 G0~G5 격리·Preview CI 성공을 G7 운영 검증 PASS로 전용하지 않는다.
 - TC-P4-G7-015: 문서 PR 실제 diff(`src/**`·Prisma/Nginx/Compose/.env/GHCR·운영 자료 변경 0)를 확인하고 해당 HEAD의 PR CI/리뷰 결과를 별도 기록한다. PR 생성/CI 시작은 PASS 아님. 새 CI/리뷰 실패·취소 관측시 기존 [FailureLedger](FailureLedger.md)에 Run/Job/HEAD·원인/재시도 누적.
 - 현재 #109 G7-AC1~4·상위 #96 **OPEN/BLOCKED**, G6 #108 현장 증거·Owner 별도 GO 미수용, 운영 변경·배포 실행 0. 실제 사내 IP/CIDR/Secret/CAD/원시 로그·S3 key는 공개하지 않는다.
+
+
+## Issue #108 / PR #122 — 기존 HEAD CI 성공과 P2 보완 HEAD 재검증 구분 (2026-10-26)
+
+- **기존 CI 실증:** PR #122 HEAD `9c8bfc1062b33964928b299ebc4cfe80e319378c`에서 [PR CI 40257054743](https://github.com/planner77/layoutManager/actions/runs/40257054743) `completed/success`: Verify [121361049386](https://github.com/planner77/layoutManager/actions/runs/40257054743/job/121361049386)와 Docker [121361049207](https://github.com/planner77/layoutManager/actions/runs/40257054743/job/121361049207) 모두 success. E2E 실패 결과 업로드는 failure() 조건 미충족에 따른 정상 SKIPPED.
+- **P2 보완:** [r4373409989](https://github.com/planner77/layoutManager/pull/122#discussion_r4373409989) 신규 `out/Issue108.md`의 AGENTS 필수 문서 참조 테이블 누락을 보완. 요구/AC·G6 현장 증거의 참조 경로만 정렬한 문서 변경이다. 리뷰 수정 후 HEAD의 Typecheck/Lint/Vitest/Build/Playwright E2E/Docker/CI는 **새 Run 결론 전 NOT VERIFIED**. 이전 성공을 소급 전용 금지.
+- **G6 실증 구분:** 별도 Windows Nginx/WSL2 사내 PC 2대, 실제 인증된 HTTP 쓰기·Cookie/Role·Site E2E, 실 SQLite·CAD·S3 동시 백업→정식 격리 Migration dry-run→실 Restore/rollback 및 Owner 현장 QA 수용 **NOT RUN**. 운영 인증/API/Prisma/Compose/Nginx/GHCR 자동 활성화 없음. #108 Open, #109 별도 Go/No-Go 전 OFF.
+
+## Issue #108 / G6 — 비운영 준비물 작성·실증 미확보 (2026-10-26)
+
+- **작성한 구현:** offline src/scripts/g6-evidence.mjs(19개 필수 항목·EV ID/동일 snapshot·PC 2대 분리·App/Migrator 일치/운영 OFF 검사·사유코드만 출력), Unit TC-P4-G6-001~006, disposable SQLite online backup+합성 2 Version·local CAD/mock-S3의 격리 DDL dry-run·손상 주입·실복원 Integration TC-P4-G6-007. 예제는 전부 NOT_RUN이며 실제 원격 S3·Nginx·운영 CAD/DB/API에 접속하지 않는다. [Issue108](Issue108.md).
+- **새 HEAD 실행 상태:** Typecheck/Lint/npm test/Build/Chromium E2E/Legacy E2E/Docker와 PR CI는 Run/Job 확인 전 **NOT RUN/PENDING**. 코드 작성 또는 이전 G1/G5 CI 성공을 G6 현재 HEAD 합격·현장 PASS로 전용 금지.
+- **G6-AC1~4 실 현장:** 사내 PC 2대/PROD Nginx/DEV direct/업로드·Cookie/인증된 보호 Route E2E, **실** DB+CAD+S3 일관 snapshot/운영 Prisma dry-run/실 restore·rollback은 전부 **NOT RUN**, 사내 EV ID/운영자·QA/Owner 증거 없음. G6-AC5는 Git diff상 운영 OFF 유지, 실제 운영 배치 상태 확인은 별도. #108 G6 실증과 #109 Owner Go/No-Go는 미완으로 BLOCKED.
+- 신규 PR CI **시작은 성공과 다르며** 요청대로 CI 결과 모니터링·병합·GHCR 게시·실 배포는 수행하지 않는다. 기존 Issue/실패 원장 이력은 보존.
 
 
 ## Issue #106 / PR #120 — 최종 PR CI 성공·Main CI 인계 및 GHCR v0.41.1 후보 (2026-10-26)
