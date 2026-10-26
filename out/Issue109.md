@@ -1,5 +1,12 @@
 # Issue #109 — G7 운영 인증 활성화 설계 및 통제 배포·롤백 Runbook
 
+## S2 내부 증거 비반출 준비 도구 — 사용자의 제약 반영 (2026-10-26)
+
+- Owner는 **내부 환경 시험 결과를 외부 제출할 수 없음**을 명시했다. 따라서 원본 로그/CAD/DB/S3/내부 IP/Secret/해시 목록을 GitHub에 요구하거나 업로드하지 않는다. 내부 절대경로의 원시 자료는 사내 담당자만 보관하고 공개 기록은 최소 식별자·PASS/FAIL/NOT_RUN·검증자 증빙 유무만 표시한다.
+- `out/Issue109-S2-Readiness.md`의 22개 필수 체크, `src/scripts/g7-s2-readiness.ts` 오프라인 CLI와 schema validator/Unit을 준비한다. `READY_FOR_OWNER_REVIEW`도 **실제 GO가 아니며** 자동 Activation 불가이다. 요청 이행은 S2 준비 도구 구현 범위이며 기존 CAD 업로드/Current/Delete Auth+Audit Cutover, 실 운영 Prisma Migration, 호환 이미지 쌍·Restore는 **별도 미구현**으로 유지한다.
+- #109/#96 OPEN/BLOCKED, 운영 App/DB/CAD/S3/Nginx/Compose/.env/OCI 태그 변경·운영 활성화 없음.
+
+
 ## Issue #109 / PR #125 — Unit 실패/P1 3건 보완·Prisma CLI fail-closed·CI 재시작 (2026-10-26)
 
 - **실패 증거:** 구 HEAD `818264afb8809ccf0a3e09262e1a09054fd43004`의 [Run 40275956996](https://github.com/planner77/layoutManager/actions/runs/40275956996) `completed/failure`. Verify `Unit 및 Integration 테스트` 313개 중 1개 실패, Docker 성공. 실제 실패는 GHCR 경로차단 진단 출력의 stdout/stderr Assertion 불일치; 이후 Build/E2E는 SKIPPED. [FailureLedger](FailureLedger.md)/[TestReport](TestReport.md) 상세.

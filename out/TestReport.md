@@ -1,5 +1,11 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## #109 S2 내부 증거 비반출 준비 — 검증 결과는 아직 미확인 (2026-10-26)
+
+- Owner의 S1 수용/S2 승인 의사 및 **내부 시험 원본 비반출** 조건을 적용했다. S2 readiness pure evaluator·오프라인 CLI·Unit/Runbook 초안을 작성했으나, 새 브랜치 CI 통과 확인 전 **테스트 PASS 아님**. 기존 운영 CAD API/Auth, 운영 Prisma/OCI pair/실 Restore는 구현 완료로 표시하지 않는다.
+- `READY_FOR_OWNER_REVIEW` 결과도 사람의 서명과 실 배포와 구별하며, 진짜 Go/No-Go 데이터/Secret/실 URL·원본 로그를 GitHub에 제출하지 않는다. 사내 원본을 못 보는 것은 미확인 상태로 보존한다.
+
+
 ## Issue #109 / PR #125 — 관측 PR CI 40275956996 실패 및 P1 보완 후 재검증 대기 (2026-10-26)
 
 - **실패 Run/HEAD:** [40275956996](https://github.com/planner77/layoutManager/actions/runs/40275956996), HEAD `818264afb8809ccf0a3e09262e1a09054fd43004`. Verify [121418632923](https://github.com/planner77/layoutManager/actions/runs/40275956996/job/121418632923) Unit/Integration `failure`(59 files 중 1 FAIL, 313 tests 중 1 FAIL), Docker [121418632714](https://github.com/planner77/layoutManager/actions/runs/40275956996/job/121418632714) `success`. Typecheck/Lint 성공, Verify 이후 Build/E2E는 skipped. 단 하나의 실패는 GHCR scope Test의 비허용 경로 출력 스트림 예상 불일치: 실제 `stdout` vs Assert `stderr`. 해당 Actions 로그·원인·교정 및 P1 리뷰 3개는 [FailureLedger](FailureLedger.md)에 분리 기록.

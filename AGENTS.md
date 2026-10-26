@@ -1,5 +1,12 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #109 S2 사내 비반출 증거 준비 — 운영 실행 HOLD (2026-10-26)
+
+- Owner는 S1 수용 및 S2 진행 승인 의사를 표시했으나, 내부 원본 시험 결과의 외부 제출은 불가하다. `out/Issue109-S2-Readiness.md`를 S2 필수 참조 문서로 사용한다.
+- `src/server/g7-staging/s2-readiness.ts`, `src/scripts/g7-s2-readiness.ts`, `src/tests/unit/g7-s2-readiness.test.ts`는 **오프라인 비반출 형식/누락/동일 Snapshot 검사**만 하며 실제 운영 승인/실복구·기능 검증을 대체하지 않는다.
+- S2 배포 차단 유지: 기존 CAD Multipart POST/Current PUT/Version DELETE 운영 Auth/Audit 연동, 정식 Prisma migration, 승인된 App+Migrator digest/rollback, 실 DB/CAD/S3 snapshot Restore가 아직 미완이다. `src/prisma/**`/기존 API/Compose/Nginx/.env/실 데이터 및 GHCR 변경 없음. 테스트 PASS만으로 S3 GO 금지.
+
+
 ## Issue #109 / PR #125 — PR CI Unit 실패 및 P1 3건 수정, 운영 미활성 (2026-10-26)
 
 - **실패:** [PR CI Run 40275956996](https://github.com/planner77/layoutManager/actions/runs/40275956996), HEAD `818264afb8809ccf0a3e09262e1a09054fd43004`. Verify Job `121418632923` Unit/Integration 313 중 1 실패(59 파일 중 1), Docker `121418632714` 성공. Typecheck/Lint 성공, 이후 Build/E2E SKIPPED. 원인: GHCR 비허용 경로 거부는 exit 1인데 `echo`는 stdout, Unit은 stderr를 예상. [FailureLedger](out/FailureLedger.md) 보존, 새 HEAD CI 실행 전 재검증 미확인.

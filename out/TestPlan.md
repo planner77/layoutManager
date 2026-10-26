@@ -1,5 +1,11 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## #109 S2 비반출 증거 계약 자동검증 (2026-10-26)
+
+- `src/tests/unit/g7-s2-readiness.test.ts`: 모든 필수 22개 증거 상태 및 참조 ID/시간 확인, 누락 시 PENDING/BLOCKED, NO_GO, Snapshot 불일치 차단, 임의 민감 필드 거부·출력 비노출, 모든 형식이 맞더라도 `operationalGo:false`를 검증.
+- 별도 사내 테스트 결과·실 S3 복구·운영/기존 Multipart CAD API 인가·Audit는 아직 자동 PASS 근거가 아니며, GitHub에는 실제 원본 증거를 제출하지 않아도 된다. 상태 전용 Owner 보고로 기록하되 S3 배포 전 Gate는 별도.
+
+
 ## Issue #109 / PR #125 — P1 실패 재발 방지 및 Staging Prisma CLI 보호 TC (2026-10-26)
 
 - **TC-P4-G7-CI-001:** [실패 Run 40275956996](https://github.com/planner77/layoutManager/actions/runs/40275956996) Verify의 `tests/unit/g7-staging-ghcr-guard.test.ts` Assertion은 거부 진단 메시지를 stderr로 잘못 예상한 **단일 Test 실패**. GitHub Actions stdout/stderr 구분과 Bash exit 1을 일치시키고 재검증한다. Docker Job 성공, Verify 이후 E2E skipped는 독립 상태로 유지한다.

@@ -1,5 +1,11 @@
 # PR/Main CI 실패 원장
 
+## #109 S2 준비 도구 — 미확인 사항 및 실패와의 구분 (2026-10-26)
+
+- Owner가 내부 시험 결과를 외부 제출할 수 없다고 통지함. **증거 없음 = 시험 FAIL로 단정하지 않으며, 외부에서 독립 검증하지 못한 경우 NOT VERIFIED**로 관리. CI/실험 실패는 관측한 Run·Job만 기록한다.
+- 위험: 기존 Legacy CAD Auth/Prisma/실 DB+CAD+S3 복구/이미지 pair는 여전히 미구현 또는 내부 근거 비가시. 사내 비반출 Manifest 평가/Runbook/Unit 작성만으로 해소되지 않는다. S3 자동 실행을 차단하고 #109·#96 OPEN/BLOCKED 유지.
+
+
 ## Issue #109 / PR #125 — PR CI 40275956996 Unit 실패·P1 리뷰 3건 누적 및 수정 HEAD 검증 게이트 (2026-10-26 KST)
 
 - **실제 CI 실패 원장:** [Run 40275956996](https://github.com/planner77/layoutManager/actions/runs/40275956996), attempt **1**, HEAD `818264afb8809ccf0a3e09262e1a09054fd43004`, `pull_request.synchronize`, `completed/failure`. **Verify [Job 121418632923](https://github.com/planner77/layoutManager/actions/runs/40275956996/job/121418632923) failure**, Docker [Job 121418632714](https://github.com/planner77/layoutManager/actions/runs/40275956996/job/121418632714) **success**. 출처: 해당 Job의 Actions 원본 로그·Step 목록. TypeScript·ESLint **PASS**, `Unit 및 Integration 테스트` **실패**; **59 Test Files = 58 PASS / 1 FAIL, 313 Tests = 312 PASS / 1 FAIL**. `tests/unit/g7-staging-ghcr-guard.test.ts:91:27`의 `expect(result.stderr).toContain('G7-S1 GHCR exclusion disallowed path')`에서 실제 stderr는 빈 문자열; GitHub Actions `echo` 메시지는 **stdout**으로 출력됐다. 잘못된 경로 차단 자체는 의도대로 **exit 1**이며 보안 우회/실제 GHCR 게시 실패가 아니다. Verify의 OCI layer Unit·DXF benchmark·Production Build·Chromium E2E·Legacy Migration E2E는 **SKIPPED**(PASS 아님). 조건부 E2E 실패 artifact 업로드 Step은 SUCCESS이나 수집 파일 없음; 자체 실패로 세지 않음.
