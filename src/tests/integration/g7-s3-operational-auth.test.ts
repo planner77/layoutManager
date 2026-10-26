@@ -150,11 +150,13 @@ describe('#109 S3-2 reserved Auth/Admin/Session/Role/Site API',()=>{
         kind:'role',operation:'grant',affectedUserId:editorId,value:'Editor',
       },admin.cookie,csrf);
       expect(beforeRole.status,await beforeRole.clone().text()).toBe(200);
-      const bu=randomUUID(),product=randomUUID(),site=randomUUID(),building=randomUUID(),floor=randomUUID();
+      const bu=randomUUID(),product=randomUUID(),site=randomUUID(),otherSite=randomUUID(),building=randomUUID(),floor=randomUUID();
       db.prepare('INSERT INTO "BusinessUnit"(id,name) VALUES(?,?)').run(bu,'S3-local');
       db.prepare('INSERT INTO "Product"(id,business_unit_id,name) VALUES(?,?,?)').run(product,bu,'S3-product');
       db.prepare('INSERT INTO "CadSite"(id,product_id,name,kind) VALUES(?,?,?,?)')
         .run(site,product,'S3-site','SITE');
+      db.prepare('INSERT INTO "CadSite"(id,product_id,name,kind) VALUES(?,?,?,?)')
+        .run(otherSite,product,'Unassigned Site','SITE');
       db.prepare('INSERT INTO "Building"(id,site_id,name) VALUES(?,?,?)')
         .run(building,site,'S3-building');
       db.prepare('INSERT INTO "CadLocation"(id,building_id,name) VALUES(?,?,?)')
@@ -176,7 +178,7 @@ describe('#109 S3-2 reserved Auth/Admin/Session/Role/Site API',()=>{
       },editor.cookie,editor.data.csrfToken);
       expect(own.status).toBe(200);
       const wrong=await send('POST','access/permit',{
-        action:'cad:current',resource:{kind:'site',siteId:'unassigned-site'},
+        action:'cad:current',resource:{kind:'site',siteId:otherSite},
       },editor.cookie,editor.data.csrfToken);
       expect(wrong.status).toBe(403);
       const adminNoSite=await send('POST','access/permit',{
