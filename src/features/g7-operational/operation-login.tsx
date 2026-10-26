@@ -25,6 +25,8 @@ export function G7OperationLogin() {
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState('');
   const [info,setInfo]=useState('');
+  const [createName,setCreateName]=useState('');
+  const [createSecret,setCreateSecret]=useState('');
   const [affected,setAffected]=useState('');
   const [grantKind,setGrantKind]=useState<'role'|'site'|'special'>('site');
   const [grantValue,setGrantValue]=useState('');
@@ -84,6 +86,22 @@ export function G7OperationLogin() {
     } catch(e){setError(e instanceof Error?e.message:'로그아웃 실패');}
     finally{setLoading(false);}
   }
+  async function provision(event:FormEvent<HTMLFormElement>) {
+    event.preventDefault();setLoading(true);setError('');setInfo('');
+    try {
+      const response=await fetch(base+'/access/create-user',{
+        method:'POST',credentials:'same-origin',
+        headers:{'content-type':'application/json','x-csrf-token':csrf},
+        body:JSON.stringify({loginName:createName,temporaryPassword:createSecret}),
+      });
+      const result=await response.json() as {id?:string;error?:{code?:string}};
+      if(!response.ok)throw new Error(errorMessage(result.error?.code));
+      if(!result.id)throw new Error('생성된 계정 식별자를 확인할 수 없습니다.');
+      setAffected(result.id);setCreateName('');setCreateSecret('');
+      setInfo('Reader 계정이 생성되었습니다. 최초 암호 변경 후 사용 가능하며 Site/Editor는 별도 부여하세요.');
+    }catch(e){setError(e instanceof Error?e.message:'계정 생성 실패');}
+    finally{setLoading(false);}
+  }
   async function submitGrant(event:FormEvent<HTMLFormElement>) {
     event.preventDefault();setLoading(true);setError('');setInfo('');
     try {
@@ -134,6 +152,21 @@ export function G7OperationLogin() {
         <button type="submit" disabled={loading} className="rounded bg-teal-700 px-3 py-2 text-white">
           {firstChange||change?'암호 변경':'로그인'}
         </button>
+      </form>}
+      {user?.roles.includes('Admin') && <form onSubmit={e=>void provision(e)}
+        className="space-y-2 border-t pt-3">
+        <p className="font-medium">신규 Reader 계정 생성</p>
+        <label className="block">로그인 ID
+          <input required value={createName} onChange={e=>setCreateName(e.target.value)}
+            minLength={3} className="mt-1 w-full border px-2 py-1"/>
+        </label>
+        <label className="block">최초 임시 암호
+          <input required type="password" autoComplete="new-password" minLength={8}
+            value={createSecret} onChange={e=>setCreateSecret(e.target.value)}
+            className="mt-1 w-full border px-2 py-1"/>
+        </label>
+        <button type="submit" disabled={loading}
+          className="rounded border px-2 py-2">계정 생성</button>
       </form>}
       {user?.roles.includes('Admin') && <form onSubmit={e=>void submitGrant(e)}
         className="space-y-2 border-t pt-3">
