@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "snapshotId": "",
+  "files": [
+    {
+      "kind": "SQLITE",
+      "snapshotId": "",
+      "source": "",
+      "restored": "",
+      "sha256": ""
+    },
+    {
+      "kind": "CAD_LOCAL",
+      "snapshotId": "",
+      "source": "",
+      "restored": "",
+      "sha256": ""
+    },
+    {
+      "kind": "S3_EXPORTED_BYTES",
+      "snapshotId": "",
+      "source": "",
+      "restored": "",
+      "sha256": ""
+    }
+  ]
+}

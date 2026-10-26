@@ -4,6 +4,7 @@ import { validateDeletePassword, validateId, CadError } from '@/domain/cad';
 import { revalidatePath } from 'next/cache';
 import { clearDeleteAttempts, reserveDeleteAttempt } from '@/server/delete-rate-limit';
 import { RequestLogContext } from '@/server/logger';
+import { prepareG7CadWrite } from '@/server/g7-operational/cad-guard';
 
 export const runtime = 'nodejs';
 
@@ -11,6 +12,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ v
   const requestLog = new RequestLogContext(request, 'api', 'cad_delete');
   try {
     requireSameOrigin(request);
+    const auth = prepareG7CadWrite(request, requestLog.requestId);
     const id = validateId((await params).versionId);
     if (Number(request.headers.get('content-length') ?? 0) > 1024) throw new CadError('INVALID_DELETE_PASSWORD', '요청이 너무 큽니다.');
     if (request.headers.get('content-type')?.split(';')[0].trim() !== 'application/json') throw new CadError('INVALID_DELETE_PASSWORD', 'JSON 비밀번호를 입력해주세요.');
@@ -24,7 +26,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ v
     const password = validateDeletePassword((body as { password?: unknown })?.password);
     reserveDeleteAttempt(id);
     const { repo, storage } = context();
-    const deleted = await repo.deleteVersion(id, password);
+    const deleted = await repo.deleteVersion(id, password, auth);
     clearDeleteAttempts(id);
     let cleanupPending = false;
     try {

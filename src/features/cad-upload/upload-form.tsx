@@ -21,6 +21,7 @@ import {
 } from "./diagnostics";
 import { exceedsUploadLimit, uploadLimitDiagnostic } from "./upload-limit";
 import { defaultDrawingName, type LocationInput } from "@/domain/cad";
+import { g7CadWriteHeaders } from "@/features/g7-operational/write-auth";
 
 type Floor = { id: string; name: string; active: boolean; buildingId: string };
 type Building = {
@@ -135,7 +136,9 @@ export function UploadForm({ today, maxMb }: { today: string; maxMb: number }) {
     try {
       await runWithLoading("도면을 등록하는 중입니다...", async () => {
         const interpreted = await interpretUploadResponse(
-          await fetch("/api/cad-files", { method: "POST", body: form }),
+          await fetch("/api/cad-files", {
+            method: "POST", body: form, headers: await g7CadWriteHeaders(),
+          }),
         );
         if ("diagnostic" in interpreted) {
           setError(interpreted.diagnostic);

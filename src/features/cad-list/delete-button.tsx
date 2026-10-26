@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Dialog } from 'radix-ui';
 import { Button } from '@/components/ui/button';
 import { useGlobalLoading } from '@/components/global-loading';
+import { g7CadWriteHeaders } from '@/features/g7-operational/write-auth';
 
 export function DeleteButton({ versionId, filename, version, location, isCurrent }: { versionId: string; filename: string; version: number; location: string; isCurrent: boolean }) {
   const router = useRouter();
@@ -47,7 +48,11 @@ export function DeleteButton({ versionId, filename, version, location, isCurrent
       await runWithLoading('도면을 삭제하는 중입니다...', async () => {
         let r: Response;
         try {
-          r = await fetch(`/api/cad-files/${versionId}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }) });
+          const headers = await g7CadWriteHeaders();
+          r = await fetch(`/api/cad-files/${versionId}`, {
+            method: 'DELETE', headers: { 'Content-Type': 'application/json', ...headers },
+            body: JSON.stringify({ password }),
+          });
         } catch {
           throw new Error('OUTCOME_UNKNOWN');
         }

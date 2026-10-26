@@ -1,0 +1,21 @@
+{
+  "scope": "G7_S3_RELEASE_SPECIFIC_GO",
+  "decision": "NO_GO",
+  "schemaId": "202610260001_g7_staging_auth",
+  "operationGoId": "",
+  "snapshotId": "",
+  "appDigest": "",
+  "migratorDigest": "",
+  "rollbackAppDigest": "",
+  "rollbackMigratorDigest": "",
+  "sourceCommit": "",
+  "origin": "",
+  "databaseUrl": "",
+  "cadStoragePath": "",
+  "evidenceIds": [],
+  "operatorId": "",
+  "rollbackOperatorId": "",
+  "ownerId": "",
+  "validFrom": "",
+  "validUntil": ""
+}

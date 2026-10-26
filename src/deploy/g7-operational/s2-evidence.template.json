@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "scope": "G7_S2_PRIVATE_ATTESTATION",
+  "sourceCommit": "",
+  "appDigest": "",
+  "migratorDigest": "",
+  "rollbackAppDigest": "",
+  "rollbackMigratorDigest": "",
+  "migrationId": "202610260001_g7_staging_auth",
+  "snapshotId": "",
+  "ownerApprovalId": "",
+  "operatorId": "",
+  "rollbackOperatorId": "",
+  "checks": {
+    "S1_OWNER_ACCEPTANCE": {
+      "status": "NOT_RUN"
+    },
+    "G6_PRIVATE_EVIDENCE_REVIEW": {
+      "status": "NOT_RUN"
+    },
+    "APP_MIGRATOR_REGISTRY_DIGEST": {
+      "status": "NOT_RUN"
+    },
+    "ROLLBACK_PAIR_COMPATIBLE": {
+      "status": "NOT_RUN"
+    },
+    "G7_SCHEMA_DRY_RUN": {
+      "status": "NOT_RUN"
+    },
+    "OPERATIONAL_CAD_AUTH_AND_AUDIT": {
+      "status": "NOT_RUN"
+    },
+    "PUBLIC_CAD_GET_AND_VIEWER": {
+      "status": "NOT_RUN"
+    },
+    "COOKIE_ROLE_SITE_VERSION": {
+      "status": "NOT_RUN"
+    },
+    "CAD_POST_MULTIPART": {
+      "status": "NOT_RUN"
+    },
+    "CAD_CURRENT": {
+      "status": "NOT_RUN"
+    },
+    "CAD_DELETE_PASSWORD": {
+      "status": "NOT_RUN"
+    },
+    "BACKUP_SQLITE": {
+      "status": "NOT_RUN"
+    },
+    "BACKUP_LOCAL_CAD": {
+      "status": "NOT_RUN"
+    },
+    "BACKUP_REAL_S3": {
+      "status": "NOT_RUN"
+    },
+    "RESTORE_DB_CAD_S3": {
+      "status": "NOT_RUN"
+    },
+    "ROLLBACK_APP_SCHEMA_PAIR": {
+      "status": "NOT_RUN"
+    },
+    "ADMIN_SECRET_RECOVERY_SOP": {
+      "status": "NOT_RUN"
+    },
+    "AUDIT_RETENTION_SOP": {
+      "status": "NOT_RUN"
+    },
+    "PROD_TWO_PC_PROVENANCE": {
+      "status": "NOT_RUN"
+    },
+    "OWNER_S3_RELEASE_DECISION": {
+      "status": "NOT_RUN"
+    }
+  }
+}
