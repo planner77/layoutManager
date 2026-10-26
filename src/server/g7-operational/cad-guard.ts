@@ -49,7 +49,10 @@ export async function requireG7CadPermission(
   resource: Resource, resolvedSiteId?: string | null,
 ): Promise<{ actorId: string; siteId: string }> {
   if (!proof) throw fail('G7_AUTH_CONTEXT_REQUIRED', 503);
-  const now = BigInt(proof.now);
+  // Upload parse/storage preparation and serialized writes can delay this
+  // transaction. Never reuse request-start time: role/session validity and
+  // lastSeenAt must be checked at the moment of the business transaction.
+  const now = BigInt(Date.now());
   // Schema absence or Audit unavailability must fail the transaction, never
   // fall back to ordinary legacy write.
   const session = await tx.authSession.findUnique({
@@ -105,6 +108,6 @@ export async function appendG7CadAudit(tx: Tx, proof: G7CadWrite,
     id: randomUUID(), actorUserId: actorId, affectedUserId: actorId, siteId,
     action, targetKind: 'VERSION', targetId: versionId, outcome: 'SUCCESS',
     beforeRevision: null, afterRevision: null,
-    timestampUtc: new Date(proof.now).toISOString(), requestId: proof.requestId,
+    timestampUtc: new Date().toISOString(), requestId: proof.requestId,
   } });
 }
