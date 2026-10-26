@@ -123,7 +123,7 @@ jobs:
             publish=false
             reason="Explicit approved G7 S2 private-evidence readiness only: skip GHCR publishing"
           elif [[ "$GITHUB_REF" == "refs/heads/main" &&
-                  "$COMMIT_SUBJECT" == "#109 | S2 private-evidence readiness"* ]]; then
+                  "$COMMIT_SUBJECT" == "#109 | S2 "* ]]; then
             echo "::error::G7-S2 exact squash subject required" >&2
             exit 1
           elif [[ "$GITHUB_REF" == "refs/heads/main" &&

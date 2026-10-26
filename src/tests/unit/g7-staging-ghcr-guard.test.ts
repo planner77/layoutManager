@@ -168,6 +168,7 @@ describe('#109 G7 S2 exact-title private-evidence-only Main CI gate', () => {
       s2 + ' NOT-APPROVED', s2 + '-extra', s2 + '  ',
       '#109 | S2 private-evidence readiness',
       '#109 | S2 private-evidence readiness [G7-S2-NO-GHCR',
+      '#109 | S2 unknown-release-subject',
     ]) {
       const result = runScope(['src/server/g7-staging/s2-readiness.ts'], subject);
       expect(result.status, `Subject should be blocked: ${subject}`).not.toBe(0);
