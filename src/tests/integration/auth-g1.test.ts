@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test } from 'vitest';
 import { createHash } from 'node:crypto';
 import { mkdtemp, rm, readFile, writeFile, copyFile } from 'node:fs/promises';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { migrate } from '../helpers/database';
@@ -77,7 +77,11 @@ describe('Issue #103 G1 isolated persistence contract', () => {
     }
     // The currently shipped Prisma schema must not be altered by G1.
     const current = readFileSync(new URL('../../prisma/schema.prisma', import.meta.url), 'utf8');
-    expect(current).not.toContain('model AuthSession {');
+    // G7 S2 includes client-only Auth model declarations, but the default
+    // operating migrator still must NOT carry the G7 physical DDL.
+    expect(current).toContain('model AuthSession {');
+    expect(readdirSync(new URL('../../prisma/migrations/', import.meta.url)))
+      .not.toContain('202610260001_g7_staging_auth');
   });
 
   test('TC-P4-G1-002: unique login, grant FK, role/special permission boundaries, immutable user ID', () => {
