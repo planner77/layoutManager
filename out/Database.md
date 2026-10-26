@@ -1,5 +1,12 @@
 # Database Schema — 단일 기준 문서
 
+## Issue #109 G7 — 정식 Migration, 동시점 백업·롤백 경계 (2026-10-26)
+
+- G1 `src/tests/fixtures/auth-g1/{migration.sql,schema.prisma}`는 **합성 DB 전용**, 운영 `src/prisma/schema.prisma`/정식 migrations에 아직 배선되지 않았다. G7 후속 코드 PR에서 정식 User/Session/Role/Site/SpecialGrant/Audit/Nonce + 기존 CAD 테이블 FK/Unique·Audit append-only·Version→Site 계약의 동등성을 검토·시험해야 한다. 현 문서 PR은 DDL/DB 변경 0.
+- 승인 후에만 운영 쓰기 정지 → **같은 snapshot ID**의 SQLite 안전 backup(단순 실행중 파일 복사 금지) + CAD local bytes + S3 object/version manifest·SHA → 격리 restore/migration dry-run → 승인된 App/Migrator 두 digest 및 정식 migration → FK/Unique·원본 bytes/SHA·Version/Current/delete hash 불변 확인. 무검증 fixture SQL 복사나 운영 `prisma db push` 금지.
+- 실패 시 구 App만 신규 Schema에서 가동하지 말고 **호환 구 App/Migrator pair 및 동일 snapshot DB+CAD+S3 전체** 복원·세션 폐기·유실 업무 재처리/Owner 확인 후 운영 재개. Audit 365일 초과 purge 주기/복구본/예외 세칙 미승인으로 실행 금지. [Issue109](Issue109.md), [Operation](Operation.md).
+
+
 ## Issue #106 / PR #120 P1 — G1 AuditEvent 안전 Site Scope 보완 (2026-10-26)
 
 G1 일회용 fixture Audit CHECK가 과거에는 `SITE_GRANTED`/`SITE_REVOKED` 외 사건의 `site_id`를 반드시 NULL로 강제하여, G4의 scoped permission/Outline Audit에서 **DB Version→Site 추적정보가 소실되는 결함**이 있었다. [PR #120 P1 r4373235027](https://github.com/planner77/layoutManager/pull/120#discussion_r4373235027).
