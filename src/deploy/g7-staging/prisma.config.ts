@@ -1,7 +1,19 @@
-/** #109 S1: standalone STAGING Prisma config; never imported by the operational migrator. */
+/**
+ * #109 S1 - an explicitly selected, disposable staging-only Prisma CLI target.
+ * This config is NOT the application's operational prisma.config.ts.
+ * Reject real DB paths BEFORE Prisma can apply any SQL migration.
+ */
 import { defineConfig } from 'prisma/config';
+import { resolveG7StagingGate } from '../../server/g7-staging/gate';
+
+// Reuse the same realpath, UID, symlink, manifest/schema, release/operation
+// checks as the staged App Router. No default/fallback datasource is safe.
+// The environment must be explicitly set for staging BEFORE migrate deploy.
+const target = resolveG7StagingGate(process.env);
+if (!target) throw new Error('G7_STAGING_PRISMA_TARGET_DENIED');
+
 export default defineConfig({
   schema: './prisma/schema.prisma',
   migrations: { path: './prisma/migrations' },
-  datasource: { url: process.env.G7_STAGING_DATABASE_URL ?? 'file:/tmp/cad-g7-staging-DISABLED/fixture.sqlite' },
+  datasource: { url: 'file:' + target.databasePath },
 });
