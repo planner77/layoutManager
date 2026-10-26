@@ -1,5 +1,14 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-054 — Issue #127 완료 후 Viewer 메뉴 확장/요구사항 수집 규약 (2026-10-27)
+
+- **맥락:** #127은 v0.42.0에서 그룹 명령 `도면/보기/작업`, 좌·우·하단 overlay Drawer 및 두 정보 Sticky 헤더로 완료됐다. 이후 #37/#49/#55/#56/#65/#71/#73/#81/#82/#85/#88/#90/#91 미완 작업이 각자 상단 버튼을 추가하면 메뉴 밀도 회귀와 지원 Renderer/권한/상태 불일치, Canvas 리로드 위험이 생긴다.
+- **결정:** Viewer 신규·변경 기능 요구를 분석할 때 **상단 메뉴 연계 필요성 판단은 필수**. 명령이 필요하면 기존 그룹 `도면`(도면·파일/입출력), `보기`(렌더·카메라·표시), `작업`(선택·외곽선·메모·Drawer)을 우선 재사용하고 실제 동작하는 하위 command만 배치한다. 세부 편집/설정은 Drawer/대화상자/컨텍스트 영역에 둔다. 이슈 본문에는 정확한 `그룹 > 항목`, action/check/radio/link, handler/패널, 지원/권한/disabled 사유 및 AC/TC를 기록한다. 불필요한 경우도 이유를 남긴다.
+- **메뉴 확장 승인:** `관리` 등 추가 그룹은 승인된 Admin 기능·권한·항목 수와 일관성·접근성을 검토한 별도 ADR/설계 변경이 있을 때만 가능하다. 현재 `작업 > 외곽선 타입 관리`의 미승인 disabled 경계를 유지. 기존 상위 단일 버튼 복제, 동작 없는 placeholder, Viewer와 별도 목록/전역 운영 내비게이션 혼합은 채택하지 않는다.
+- **후속 UI 경계:** #56 JSON과 #91 glTF export는 `도면`; #49/#55/#71/#73/#82/#85/#88/#90은 `작업`; #85 전체 Memo show/hide는 `보기`. Snap #84/일정 #86은 하단/우측 메모 편집기 상세 조작(상단 독립 항목 불필요). #85 Memo Tree는 기존 우측 Outline Tree와 Drawer tab/콘텐츠 교체 방식 우선 설계. #62 `운영 > 서버 로그`는 Viewer 메뉴가 아닌 전역 nav.
+- **안전성/검증:** UI 상태는 CadViewer command handler와 기존 Manager, reducer 경유; 메뉴·Drawer 개폐가 Source GET/Worker/Canvas DOM·Layer/Selection/Undo를 재생성·변경하지 않음. 실제 Renderer(fallback 포함)·모드·신뢰된 인증·Role/Scope로 enabled/checked/expanded 결정. 키보드·ESC 1계층·focus 복귀·desktop/mobile/native/CSS fullscreen 유지. 메뉴 노출로 서버 인가/영속 G7 GO를 대신할 수 없음.
+- **효력:** 본 ADR은 후속 요구·Issue·설계·테스트 작성 기준이다. #127 완료 사실/ADR-053·기존 Owner G7 NO-GO를 변경하거나 신규 기능을 즉시 개발·릴리스하라는 승인이 아니다. 구현·검증은 해당 개별 Issue의 선행/AC/CI 게이트를 따른다. [추적 매트릭스](Issues124-126-127.md), [Requirements](Requirements.md), [Architecture](Architecture.md), [TestPlan](TestPlan.md) 참조.
+
 ## ADR-053 — 홈 sticky·Three 단발 복구·Viewer overlay Drawer (2026-10-26)
 
 [Issues124-126-127](Issues124-126-127.md)의 Manager 설계를 채택한다. 기존 색/글꼴/업무 동작을 유지하고 홈 한정 density를 축소한다. Three 실제 로드 실패에만 dxf 자동 대체 최대 1회, source/abort는 제외. 정상 대형 실측이 없어 자동 timeout/MB 임계값은 도입하지 않고 loading 중 명시 중단·대체를 제공한다. Adapter copy 때문에 peak memory/OOM 복구 보장은 하지 않는다. #38의 공간 점유 dock을 가장자리 overlay Drawer로 대체하고 상태·Canvas·Source 수명은 유지한다. 생성 OFF 정책 ADR-036 및 한 Escape 한 계층 ADR-033을 유지·확장한다. 운영 Auth/DB/API 활성화 없음.
