@@ -72,6 +72,10 @@ describe('#109 G7 S2 existing CAD API transaction cutover',()=>{
     await db.userSiteGrant.create({data:{userId:reader.userId,siteId:chain.site.id,
       grantedAt:BigInt(NOW)}});
     const editor=await newActor('Editor');
+    // Even a wrong delete password on an unknown/foreign Version must not
+    // reveal password validity before the current Role/Site authorization.
+    await expect(repo.deleteVersion(randomUUID(),'wrong',reader.proof))
+      .rejects.toMatchObject({code:'ACCESS_DENIED'});
     const denied=repo.register(chain.input,sampleFile('bad.dxf'),undefined,reader.proof);
     await expect(denied).rejects.toMatchObject({code:'ACCESS_DENIED'});
     const wrongSite=repo.register(chain.input,sampleFile('wrongsite.dxf'),undefined,editor.proof);
