@@ -1,5 +1,12 @@
 # Issue #109 — G7 운영 인증 활성화 설계 및 통제 배포·롤백 Runbook
 
+## PR #131 S3-2 두 번째 CI Unit 1건 실패·Response 진단 헬퍼 교정 (2026-10-27 KST)
+
+- **관측 실패:** [PR CI 40394690714](https://github.com/planner77/layoutManager/actions/runs/40394690714), HEAD `0cab0f1449e0a7f8e41a1149a5e46b0aa0ef8a72`, Verify [121824493035](https://github.com/planner77/layoutManager/actions/runs/40394690714/job/121824493035) Unit/Integration 359/360 PASS·1 FAIL, Typecheck/Lint PASS; Docker [121824492537](https://github.com/planner77/layoutManager/actions/runs/40394690714/job/121824492537) PASS. 정확한 실패 `g7-s3-operational-auth.test.ts:127:57` = 로그인 Test 헬퍼에서 `r.json()`으로 원본 Body 사용 후 `admin.response.clone()` 시도한 TypeError. 이후 Build/E2E는 SKIPPED. 기존 40337811911 TS2540 실패 및 Codex GHCR P1 교정 기록 보존.
+- **수정:** 헬퍼에 `r.clone().json()` 사용 및 `bodyUsed=false` 명시 회귀. 이는 시험 헬퍼 수정이며 운영 Auth/DB·CAD Business logic 변경 없음. 로컬 Node Response 최소 검사는 통과했으나 최신 HEAD PR CI의 전체 PASS는 별도 검증 필요.
+- **게이트:** Latest Main `338e1097b81115f8309fc4fde98414407ab826d0`와 정렬·충돌 없음, Codex P1 resolved/미해결 0. 정확 `#109 | S3-2 Operational Auth/Admin API [G7-S3-2-NO-GHCR]` GHCR 허용 목록을 유지하고 새 HEAD CI 시작 후 모니터링/병합/실 GHCR/운영 Prisma/Compose/Nginx·실 DB/CAD/S3/Issue #109/#96 종료 금지. 상세 [FailureLedger](FailureLedger.md)/[TestPlan](TestPlan.md)/[TestReport](TestReport.md).
+
+
 ## S3-2 운영 Auth·관리 API 계약 통합 (프로덕션 OFF, 2026-10-26)
 
 - **계획/구현:** S3-1 운영 Prisma 모델·별도 Migration 후보에 G3/G4 Login/Session/Logout/InitialChange/Grant/Disable/Audit를 예약 `/api/g7-operational/**` App Router와 연결. Admin-only `users/create`는 CSRF·DB G4 users:manage 사전 인가+감사, 해시 생성 후 거래 내 Admin/Session 재검증과 User+Audit 원자 기록. G2 최초 Admin 생성·복구는 `scripts/g7-s3-admin.ts --ack-disposable-only`에서만, 앱 기동/배포 자동 실행 없음.

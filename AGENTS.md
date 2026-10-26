@@ -1,5 +1,12 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #109 / PR #131 — 두 번째 PR CI Unit/Integration 1건 실패·Response 소비 방지 (2026-10-27 KST)
+
+- **관측 실패:** [PR CI Run 40394690714](https://github.com/planner77/layoutManager/actions/runs/40394690714) attempt 1, HEAD `0cab0f1449e0a7f8e41a1149a5e46b0aa0ef8a72`, Verify [Job 121824493035](https://github.com/planner77/layoutManager/actions/runs/40394690714/job/121824493035) **Unit 및 Integration Step 9 실패**(64 파일=63 PASS/1 FAIL, 360 테스트=359 PASS/1 FAIL). Typecheck/ESLint **PASS**, Docker [Job 121824492537](https://github.com/planner77/layoutManager/actions/runs/40394690714/job/121824492537) SUCCESS. 오류: `tests/integration/g7-s3-operational-auth.test.ts:127:57`에서 `login()` 헬퍼가 `await r.json()`으로 본문을 먼저 소비하여 응답 진단 `admin.response.clone().text()` 실행 때 `TypeError: Response.clone: Body has already been consumed`. 인증 실패, 실 운영 장애, GHCR 오류로 판단하지 않는다.
+- **교정:** 로그인 헬퍼는 `await r.clone().json()`으로 **복제본만 소비**하고 원본 응답을 보존, 테스트에 `admin.response.bodyUsed===false` 회귀 추가. Node.js 표준 Response 단독 시험에서 클론 파싱 후 원본 clone 가능·bodyUsed false 확인, **전체 Vitest/Prisma/HTTP는 새 HEAD PR CI 전 PASS 아님**. 기존 #40337811911의 TS2540·Bash GHCR P1 조치 및 Codex Resolved 기록 유지. 자세한 경위는 [FailureLedger](out/FailureLedger.md)/[TestReport](out/TestReport.md).
+- **범위:** 최신 Main `338e1097b81115f8309fc4fde98414407ab826d0`에 이미 정렬(behind=0), Codex P1 답변·Resolved 및 미해결 리뷰 스레드 0건. S3-2 정확 제목·23개 파일 경로 GHCR 미게시 테스트는 이번 실패 Run에서 PASS하였으며 일반 이미지 게시 아님. 운영 Prisma/기존 CAD/Nginx/Compose/.env/실 DB/CAD/S3·GHCR/이슈 종료 금지, #109/#96 OPEN/BLOCKED. 문서 포함 최종 HEAD의 새 PR CI 결과 확인 전 성공 주장 금지.
+
+
 ## Issue #109 / PR #131 — 첫 CI TypeScript 실패·GHCR Case P1·Main 정렬 (2026-10-27)
 
 - **실제 실패:** [PR CI 40337811911](https://github.com/planner77/layoutManager/actions/runs/40337811911) 최초 HEAD `e31c69ccb096ffc34d16f91e8b9a33cb4f7d23f1`에서 Verify [Job 121624002318](https://github.com/planner77/layoutManager/actions/runs/40337811911/job/121624002318) **TypeScript 검사 실패**, Docker [Job 121624002854](https://github.com/planner77/layoutManager/actions/runs/40337811911/job/121624002854) **SUCCESS**. `tests/integration/g7-s3-operational-auth.test.ts`의 `process.env.NODE_ENV = ...` 2개 지점에서 TS2540(읽기 전용 속성) 발생. 이후 Lint/Unit/Build/E2E SKIPPED, PASS가 아님. `Object.assign(process.env,{ NODE_ENV: ... })` 방식으로 시험 전환·원상복구 교정.

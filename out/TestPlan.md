@@ -1,5 +1,11 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #109 S3-2 — HTTP Response Body 중복 소비 재발방지 TC (2026-10-27 KST)
+
+- **G7-S3-2-HTTP-010:** 인증 HTTP Fixture의 `login()`이 상태 코드·CSRF 파싱을 수행하더라도 반환되는 **원본 Response는 `bodyUsed=false`로 보존**되어야 하며 `response.clone().text()` 상태진단을 부작용 없이 수행할 수 있어야 한다. `r.clone().json()` 방식과 실제 Admin 로그인 E2E의 회귀 Assertion으로 검증한다.
+- **원장 연계:** [PR CI 40394690714](https://github.com/planner77/layoutManager/actions/runs/40394690714) 실패 재현은 `tests/integration/g7-s3-operational-auth.test.ts:127:57`의 `Response.clone` TypeError이며, Typecheck/Lint PASS·Docker PASS·Unit 359/360 PASS(나머지 1건 실패)와 E2E SKIPPED를 구별한다. 수정한 HEAD의 실제 PR CI 성공을 이전 Run 성공으로 소급하지 않는다.
+
+
 ## #109 S3-2 — 운영 Auth/Admin 예약 API 통합·프로덕션 OFF 검증 계획 (2026-10-26)
 
 | TC | 실제 실행 의도 | 합격 기준 |

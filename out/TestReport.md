@@ -1,5 +1,12 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issue #109 / PR #131 — 두 번째 PR CI의 실제 Unit 실패·수정 HEAD 재검증 대기 (2026-10-27 KST)
+
+- [Run 40394690714](https://github.com/planner77/layoutManager/actions/runs/40394690714), PR HEAD `0cab0f1449e0a7f8e41a1149a5e46b0aa0ef8a72` **completed/failure**. Verify [121824493035](https://github.com/planner77/layoutManager/actions/runs/40394690714/job/121824493035): Typecheck 및 ESLint 성공, Unit/Integration **64 files 중 1 FAIL / 360 tests 중 1 FAIL**. 실패는 `g7-s3-operational-auth.test.ts:127:57`의 `Response.clone: Body has already been consumed`; `login()`이 이미 `r.json()` 실행했는데 동일 원본 `Response`를 재복제하려 해 발생. 실패 후 Production Build/Chromium/Legacy Migration E2E는 SKIPPED. Docker [121824492537](https://github.com/planner77/layoutManager/actions/runs/40394690714/job/121824492537) SUCCESS. 해당 원본 로그 외 실제 HTTP 인증 실패 근거 없음.
+- **보완:** 로그인 헬퍼에서 `r.clone().json()`으로 진단용 원본을 보존하고 `admin.response.bodyUsed === false` 회귀 검사 추가. Node.js Response API 최소 확인만 수행(추가 실제 사내 시험/전체 Vitest는 NOT RUN). S3-2 GHCR 미게시 가드 Unit은 해당 실패 Run에서 22건 성공; Codex `[...segments]` Bash P1은 답변·Resolved 상태. 이전 TS2540 실패 이력은 [FailureLedger](FailureLedger.md)에 보존.
+- **신규 HEAD 현재 판정:** 수정 소스/문서는 최신 CI 시작 전 성공이라고 표시하지 않는다. 실 생산 Auth API 계속 404, 운영 Prisma Migration/Compose/Nginx/실 DB/CAD/S3 및 GHCR 게시 미실행, #109/#96 OPEN/BLOCKED.
+
+
 ## Issue #109 / PR #131 — 첫 PR CI 실패·Codex P1 교정, 최신 검증 대기 (2026-10-27)
 
 - [Run 40337811911](https://github.com/planner77/layoutManager/actions/runs/40337811911), HEAD `e31c69ccb096ffc34d16f91e8b9a33cb4f7d23f1`: Verify `121624002318` **failure**(TypeScript TS2540: `tests/integration/g7-s3-operational-auth.test.ts:32:87`, `:235:19`에서 읽기 전용 `process.env.NODE_ENV` 할당 2곳). Docker `121624002854` **success**. Verify 이후 Lint/Unit/Build/E2E **skipped**; 이를 PASS로 기록하지 않음. 상세 출처·수정 이력은 [FailureLedger](FailureLedger.md).
