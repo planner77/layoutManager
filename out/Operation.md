@@ -1,5 +1,12 @@
 # 운영·환경설정 초안
 
+## Issue #108 / G6 — 사내 전용 증거 평가 및 격리 복원 절차 (2026-10-26)
+
+- **비운영 실행:** src/tests/fixtures/g6/manifest.example.json은 전체 NOT_RUN 템플릿. 사내 접근제한·저장소 외부의 절대경로에 복사한 manifest만 `cd src && node scripts/g6-evidence.mjs /private/g6/evidence.json`으로 검증한다. 이 CLI는 정해진 코드/건수만 출력하고 실 호스트·S3·CAD·토큰/비밀번호/SHA/로그를 출력하지 않는다. 종료코드 0은 매니페스트 구조상 READY_FOR_OWNER_REVIEW, 3은 누락/차단, 2는 입력 거부. 실제 검사 실행/성공 및 Owner 수용과 분리.
+- **현장 Runbook:** 사내 지정 운영 담당자의 사전 승인과 업로드/삭제/스토리지 정리·DB 경쟁 작업 quiesce → 하나의 snapshotId로 SQLite online backup + PRAGMA quick_check/foreign_key_check 및 CadFileVersion·Current·sha256/size 동결 → 동일 시점 local CAD bytes 및 S3 실제 object version/bytes hash+size 보관 → 사내 격리 DB/스토리지로 복제해 **별도로 승인될 실제 운영 Prisma migration만** dry-run → FK/Unique/Current·Version·원본 SHA 불변 확인 → DB+CAD+S3 실제 restore/Viewer 및 기존 GET/Current 확인 → App/Migrator/DB 호환 롤백·실패 시 안전 정지·운영자/Owner 기록. S3 ETag만으로 SHA-256 검증 불가. Audit 365일 물리 purge는 세칙 미승인으로 금지.
+- 실제 사내 PC 2대의 PROD Nginx 및 DEV direct/서로 다른 DB/CAD·정상 Cookie/업무 쓰기 허용·거부는 **NOT RUN**; EV ID/실제 결과 확보 전 PASS 주장 금지. 현재 인증 쓰기 Route는 운영 연결되지 않아 기존 익명 API 테스트를 보호 E2E로 주장하지 않는다. 운영 DDL/Compose/Nginx/API/실 파일 수정은 G7 #109 별도 Owner Go/No-Go 전 금지. 상세 수용행렬 [Issue108](Issue108.md).
+
+
 ## Issue #106 G4 — 격리 운영 절차·배포 차단 (2026-10-26)
 
 G4는 테스트에서만 G1 guarded cad-auth-g1 임시 SQLite를 사용하는 비라우팅 서비스다. 실제 App Router, 운영 인증/관리/Outline/Type/Memo/Logs/Audit API, Prisma/DDL, Compose/Nginx/.env, 실 DB/CAD/S3/기존 CAD GET·Viewer 동작에 연결하지 않는다. #109 G7 Owner Go/No-Go까지 OFF.
