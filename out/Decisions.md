@@ -1,5 +1,13 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-051-G7-S3-2 — 예약 운영 API 계약의 프로덕션 강제 OFF 및 시험 격리 (2026-10-26)
+
+- **결정:** S3-2는 기존 G3/G4 Service와 SQLite 영속 adapter를 재사용하여 Login/Session/Logout·Role/Site/Grant·Account Disable/Audit 및 Admin-only User Create를 `/api/g7-operational/**`의 **예약 API**로 연결한다. 단순 `G7_AUTH_ENABLED=true`나 Owner S2 준비 승인은 운영 활성화를 허용하지 않는다. **`NODE_ENV=production`은 전체 응답 404로 고정**하며 테스트 비운영에서만 명시된 전용 임시 DB·loopback/추가 Preview flag·Auth OFF가 전부 만족할 경우 서비스가 열린다.
+- **거래/권한:** Session/Actor/Role/Site/Grant는 DB 권위, 쿠키는 기존 운영·Staging과 분리. G4 Permit·Grant·Disable/Audit BEGIN IMMEDIATE. Admin-only User Create는 권한 사전검사/감사 이후 KDF, transaction 내 Role/Session 재검증과 INSERT/Audit Commit을 하나로 처리하고 실패 시 rollback. 새 계정은 강제 암호 변경, Role/Scope 자동 부여 없음. G2 최초 생성/복구는 UI나 API 호출 없이 **별도 명시 승인된 일회용 CLI**에서만, Startup 자동 실행 금지.
+- **안전:** S3-1의 Release/Operation preflight가 아직 런타임 Verified Build/Registry 및 실제 DB 증거를 공급받지 않아 `runtimeActivated=false`이고, 기존 CAD API Auth/Audit 업무 Cutover도 S3-3 별도 단위다. S3-4 릴리스/복구 승인 전 프로덕션 NO-GO 유지. 새 Admin 영속 UI/관리 화면 미포함; API 계약만 구현.
+- **GHCR 예외:** 정확한 추후 squash 제목 `#109 | S3-2 Operational Auth/Admin API [G7-S3-2-NO-GHCR]` 및 23개 정확한 S3-2 파일만 제외, 예상 밖 활성 Migration/기존 CAD/Compose/runtime 파일은 CI fail-closed. 기존 S1/S2/S3-1 예외·일반 runtime/tag 게시 정책 불변, 이번 브랜치 CI까지만 진행.
+
+
 ## ADR-053 — 홈 sticky·Three 단발 복구·Viewer overlay Drawer (2026-10-26)
 
 [Issues124-126-127](Issues124-126-127.md)의 Manager 설계를 채택한다. 기존 색/글꼴/업무 동작을 유지하고 홈 한정 density를 축소한다. Three 실제 로드 실패에만 dxf 자동 대체 최대 1회, source/abort는 제외. 정상 대형 실측이 없어 자동 timeout/MB 임계값은 도입하지 않고 loading 중 명시 중단·대체를 제공한다. Adapter copy 때문에 peak memory/OOM 복구 보장은 하지 않는다. #38의 공간 점유 dock을 가장자리 overlay Drawer로 대체하고 상태·Canvas·Source 수명은 유지한다. 생성 OFF 정책 ADR-036 및 한 Escape 한 계층 ADR-033을 유지·확장한다. 운영 Auth/DB/API 활성화 없음.

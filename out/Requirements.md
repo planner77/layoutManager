@@ -1,5 +1,19 @@
 # 상세 요구사항
 
+## #109 S3-2 운영 Auth/Admin 예약 API 요구 추적 (2026-10-26)
+
+| ID | 계약 | 검증 |
+| --- | --- | --- |
+| FR-P4-G7-S3-2-01 | G3 Login/InitialChange/Session/Change/Logout API 및 독립 `cad_g7_s3_session` Cookie Path, 원래 `cad_session` 거부 | G7-S3-2-001/002 |
+| FR-P4-G7-S3-2-02 | G4 Role/Site/SpecialGrant grant/revoke/disable, 현재 Session/DB 권한·CSRF·Audit 및 제한적 감사 조회 | G7-S3-2-003~005 |
+| FR-P4-G7-S3-2-03 | 명시적 Admin Bootstrap/Recovery CLI에서 비밀번호 Secret/nonce/Session 회수+감사 원자성, 운영 startup 미호출 | G7-S3-2-006 |
+| FR-P4-G7-S3-2-04 | G4 Admin users:manage+Audit 선행 인가, 비밀번호 KDF 후 원자적 계정 생성+ACCOUNT_CREATED Audit; 새 계정 Role 0/mustChangePassword=true | G7-S3-2-007 |
+| FR-P4-G7-S3-2-05 | Live Operating DB 대신 G7-S3 disposable Prisma + UID/root/marker/URL/Schema/FK 검증, 데이터 오염 시 503 | G7-S3-2-008 |
+| NFR-P4-G7-S3-2-01 | 프로덕션 `NODE_ENV=production`에서는 env와 관계없이 404, nonproduction에서도 127.0.0.1·추가 test flag·Auth/Write OFF, 기존 CAD URL 무변경 | G7-S3-2-009 |
+| NFR-P4-G7-S3-2-02 | S3-4 실제 Release/Operation 승인 전 프로덕션 Route Auth/API/정식 Migration/Compose/Nginx/GHCR·실 DB/CAD/S3 변경/ON 없음 | S3 Runbook/PR scope |
+| NFR-P4-G7-S3-2-03 | 정확 Squash `#109 | S3-2 Operational Auth/Admin API [G7-S3-2-NO-GHCR]`·23개 파일 허용 시만 GHCR skip, 그 외 fail-closed | G7-S3-2-CI-001~004 |
+
+
 ## Issues #124/#126/#127 요구 (2026-10-26)
 
 FR-124-01 홈 전용 sticky+compact 및 기존 Current/검색/anchor 보존, FR-126-01 DXF Three 기본/explicit/DWG 호환, FR-126-02 source 실패와 분리한 단발 renderer fallback·수동 탈출·자원/임시작업 보호, FR-127-01 두 정보+접근 가능한 설명/그룹 명령, FR-127-02 상태 독립 overlay Drawer/ESC/focus/Canvas 보존. 세부 요구와 원격 AC 전체의 추적은 [Issues124-126-127](Issues124-126-127.md) 기준. G7·운영 DB/API·원본 불변.
