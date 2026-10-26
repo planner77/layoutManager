@@ -107,6 +107,26 @@ jobs:
             publish=false
             reason="Explicit approved G7 S1 staging-only change: skip GHCR publishing"
           elif [[ "$GITHUB_REF" == "refs/heads/main" &&
+                  "$COMMIT_SUBJECT" == "#109 | S2 private-evidence readiness [G7-S2-NO-GHCR]" ]]; then
+            # S2 is an OFFLINE evidence readiness tool, NOT operational CAD cutover.
+            # Explicit path allowlist: no wildcard staging/runtime or arbitrary docs.
+            for file in "${changed[@]}"; do
+              case "$file" in
+                .github/workflows/docker-publish.yml|AGENTS.md|out/FailureLedger.md|out/Issue109-S2-Readiness.md|out/Issue109.md|out/Operation.md|out/TestPlan.md|out/TestReport.md|src/scripts/g7-s2-readiness.ts|src/server/g7-staging/s2-readiness.ts|src/tests/unit/g7-s2-readiness.test.ts|src/tests/unit/g7-staging-ghcr-guard.test.ts)
+                  ;;
+                *)
+                  echo "::error::G7-S2 GHCR exclusion disallowed path: $file" >&2
+                  exit 1
+                  ;;
+              esac
+            done
+            publish=false
+            reason="Explicit approved G7 S2 private-evidence readiness only: skip GHCR publishing"
+          elif [[ "$GITHUB_REF" == "refs/heads/main" &&
+                  "$COMMIT_SUBJECT" == "#109 | S2 private-evidence readiness"* ]]; then
+            echo "::error::G7-S2 exact squash subject required" >&2
+            exit 1
+          elif [[ "$GITHUB_REF" == "refs/heads/main" &&
                   "$COMMIT_SUBJECT" == "#109 | S1 Staging-only integration"* ]]; then
             echo "::error::G7-S1 exact squash subject required" >&2
             exit 1
@@ -120,7 +140,7 @@ jobs:
             echo "- Ref: $GITHUB_REF"
           } >> "$GITHUB_STEP_SUMMARY"
           if [[ "$publish" == "false" ]]; then
-            # Scope-validated no-GHCR main CI: docs-only or #109 staging-only.
+            # Scope-validated no-GHCR: docs-only or exact #109 S1/S2 exception.
             # Functional tests must pass on the final PR HEAD before merge.
             test -s .github/workflows/pr-ci.yml
             test -s .github/workflows/docker-publish.yml
