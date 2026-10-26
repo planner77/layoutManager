@@ -116,8 +116,9 @@ jobs:
             echo "- Ref: $GITHUB_REF"
           } >> "$GITHUB_STEP_SUMMARY"
           if [[ "$publish" == "false" ]]; then
-            # Scope-validated documentation-only main CI; functional tests
-            # remain in PR CI and must pass before merge.
+            # Scope-validated non-publishing main CI: documentation-only OR
+            # the exact #109 staging-only exception. Functional tests belong
+            # to the passing PR CI HEAD and must be reviewed before merge.
             test -s .github/workflows/pr-ci.yml
             test -s .github/workflows/docker-publish.yml
             test -s AGENTS.md
