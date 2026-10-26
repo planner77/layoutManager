@@ -149,6 +149,13 @@ export class CadRepository {
     });
   }
   async deleteVersion(id: string, password: string, auth?: G7CadWrite) {
+    // A Reader without access cannot use the legacy delete-password check
+    // as an oracle for a Version in a different Site. Revalidate inside the
+    // final business+Audit transaction below after slow scrypt verification.
+    if (auth) await writeTransaction(this.db, async (tx) => {
+      await requireG7CadPermission(tx, auth, 'cad:delete',
+        { kind: 'version', versionId: id });
+    });
     const file = await this.db.cadFileVersion.findUnique({
       where: { id },
       select: {
