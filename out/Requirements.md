@@ -1,5 +1,16 @@
 # 상세 요구사항
 
+## Issue #109 G7 S2 — 증거 준비 GHCR 비게시 요구 (2026-10-26)
+
+| ID | 요구 및 검증 기준 | Test |
+| --- | --- | --- |
+| FR-P4-G7-S2-CI-01 | 정확한 `#109 | S2 private-evidence readiness [G7-S2-NO-GHCR]` Squash 첫 줄+S2 지정 파일 목록+Main 브랜치 push만 `publish=false`; 다중 줄 본문 허용 | G7-S2-CI-001 |
+| FR-P4-G7-S2-CI-02 | 운영 CAD/Prisma/Compose, S1 전용 파일, 임의 소스/Workflow가 하나라도 포함되면 `stderr` 오류와 nonzero 종료·GHCR 게시 방지 | G7-S2-CI-002 |
+| FR-P4-G7-S2-CI-03 | 접미 텍스트·오타·공백 변형의 유사 제목이 S2 GHCR 미게시 예외를 통과할 수 없음 | G7-S2-CI-003 |
+| NFR-P4-G7-S2-CI-01 | S1 예외 무회귀 및 다른 일반 runtime/tag 릴리스 정책 보존, 신 HEAD CI 검증 전 병합 금지 | G7-S2-CI-004~005 |
+| NFR-P4-G7-S2-CI-02 | 내부 원본 증거 비반출, 오프라인 검사 `operationalGo:false`, 실 운영/Auth/Prisma/Compose/Nginx/GHCR 변경 및 이슈 종료 없음 | S2 Runbook |
+
+
 ## Issue #109 G7 S1 — PR #125 P1 재발방지 추가 요구 (2026-10-26)
 
 | ID | 추가 필수 조건 | 증거 |

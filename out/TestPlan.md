@@ -1,5 +1,24 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #109 / PR #129 — S2 GHCR 비게시 P1 회귀 검증 계획 (2026-10-26)
+
+| TC | 테스트 입력 | 합격 기준 |
+| --- | --- | --- |
+| G7-S2-CI-001 | `#109 | S2 private-evidence readiness [G7-S2-NO-GHCR]` 정확 제목+멀티라인 본문 및 S2 전체 변경 파일(문서/스크립트/서버/Unit/Workflow) | 실제 Main release-scope Bash `publish=false`, 종료 0 |
+| G7-S2-CI-002 | 정확 제목이더라도 기존 `src/app/api/cad-files/**`, `src/prisma/schema.prisma`, `src/docker-compose.yml`, S1 전용 `g7-staging-admin.ts`/CAD service, 임의 Unit/다른 workflow 혼입 | `stderr`에 `G7-S2 GHCR exclusion disallowed path`, nonzero/결과 파일 없음 |
+| G7-S2-CI-003 | 정확 제목에 접미·후행 공백·일부 글자만 허용되는 경우 | `G7-S2 exact squash subject required`, nonzero |
+| G7-S2-CI-004 | 기존 S1 정확 제목+S1 테스트 파일 및 S1 제목으로 S2 파일 혼입 | 전자는 기존 `publish=false`, 후자는 S1 allowlist 거부 |
+| G7-S2-CI-005 | 일반 runtime PR 제목, tag push | 기존 `publish=true` 유지; S2 no-GHCR 예외 확장 금지 |
+
+`src/tests/unit/g7-staging-ghcr-guard.test.ts`에서 실제 workflow 스크립트를 synthetic Git diff와 실행해 검증한다. 기존 [Run 40313233131](https://github.com/planner77/layoutManager/actions/runs/40313233131) 성공은 지적 전 HEAD이며, **새 보완 HEAD의 Typecheck/Vitest/Build/E2E/Docker는 새 CI 성공 전 PENDING**. 실 사내 승인·보안 증거 원본을 공개 CI에 포함하지 않는다.
+
+
+## #109 S2 비반출 증거 계약 자동검증 (2026-10-26)
+
+- `src/tests/unit/g7-s2-readiness.test.ts`: 모든 필수 22개 증거 상태 및 참조 ID/시간 확인, 누락 시 PENDING/BLOCKED, NO_GO, Snapshot 불일치 차단, 임의 민감 필드 거부·출력 비노출, 모든 형식이 맞더라도 `operationalGo:false`를 검증.
+- 별도 사내 테스트 결과·실 S3 복구·운영/기존 Multipart CAD API 인가·Audit는 아직 자동 PASS 근거가 아니며, GitHub에는 실제 원본 증거를 제출하지 않아도 된다. 상태 전용 Owner 보고로 기록하되 S3 배포 전 Gate는 별도.
+
+
 ## Issue #109 / PR #125 — P1 실패 재발 방지 및 Staging Prisma CLI 보호 TC (2026-10-26)
 
 - **TC-P4-G7-CI-001:** [실패 Run 40275956996](https://github.com/planner77/layoutManager/actions/runs/40275956996) Verify의 `tests/unit/g7-staging-ghcr-guard.test.ts` Assertion은 거부 진단 메시지를 stderr로 잘못 예상한 **단일 Test 실패**. GitHub Actions stdout/stderr 구분과 Bash exit 1을 일치시키고 재검증한다. Docker Job 성공, Verify 이후 E2E skipped는 독립 상태로 유지한다.

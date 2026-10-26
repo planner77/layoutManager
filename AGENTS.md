@@ -1,5 +1,20 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #109 / PR #129 — S2 비반출 준비 전용 GHCR 미게시 게이트 (2026-10-26)
+
+- **Owner 지시:** S2 내부 평가 도구를 PR 병합·GHCR 게시 없이 준비하고 PR CI 시작까지만. 정확한 향후 Squash Commit **첫 줄**은 `#109 | S2 private-evidence readiness [G7-S2-NO-GHCR]`으로 고정한다. PR #129의 코드/테스트/문서/해당 workflow 등 **명시된 S2 파일만** 포함할 때 Main CI `publish=false`; 비인가 운영·Stage S1 파일 또는 GitHub workflow 혼입 시 `stderr + exit 1`로 fail-closed. 유사 제목·후행 공백/접미도 실패시키며, 여러 줄의 본문은 허용한다.
+- **S1 기존 계약 보존:** `#109 | S1 Staging-only integration [G7-S1-NO-GHCR]`의 독립 허용목록은 변경하지 않는다. S2 제목으로 S1 전용 Stage Auth/CAD·운영 CAD API/Prisma/Compose 파일을 포함할 수 없고 반대도 마찬가지다. 다른 일반 런타임 변경·태그 릴리스는 기존 게시 판정 유지.
+- **사유와 증거:** 기존 [PR CI 40313233131](https://github.com/planner77/layoutManager/actions/runs/40313233131) HEAD `29ed3028bf0f78ba37abba0ecde73a6483d0942f` Verify·Docker 성공, 그러나 [Codex P1 r4376591801](https://github.com/planner77/layoutManager/pull/129#discussion_r4376591801)은 기존 Main release-scope가 S2 소스를 런타임 변경으로 감지해 GHCR publish로 보낼 수 있다고 지적했다. 이는 **리뷰 지적·배포 위험**이며 관측 PR CI/GHCR 실패나 실제 게시가 아니다. 보완 HEAD의 성공은 새 CI 결과 전까지 미확인. [FailureLedger](out/FailureLedger.md), [TestPlan](out/TestPlan.md), [S2 Runbook](out/Issue109-S2-Readiness.md) 참조.
+- **운영 경계:** 현재 PR은 오프라인 사내 증거 형식/누락 검증 준비물이다. 운영 CAD POST/Current/Delete Auth·Audit Cutover, 정식 Prisma Migration, 실제 OCI pair·DB/CAD/S3 복구, SOP 및 S3 실행 GO는 **미구현 또는 원본 미검증**. 운영 API·Nginx/Compose/.env/실 데이터/GHCR·Issue #109/#96 종료 변경 금지.
+
+
+## Issue #109 S2 사내 비반출 증거 준비 — 운영 실행 HOLD (2026-10-26)
+
+- Owner는 S1 수용 및 S2 진행 승인 의사를 표시했으나, 내부 원본 시험 결과의 외부 제출은 불가하다. `out/Issue109-S2-Readiness.md`를 S2 필수 참조 문서로 사용한다.
+- `src/server/g7-staging/s2-readiness.ts`, `src/scripts/g7-s2-readiness.ts`, `src/tests/unit/g7-s2-readiness.test.ts`는 **오프라인 비반출 형식/누락/동일 Snapshot 검사**만 하며 실제 운영 승인/실복구·기능 검증을 대체하지 않는다.
+- S2 배포 차단 유지: 기존 CAD Multipart POST/Current PUT/Version DELETE 운영 Auth/Audit 연동, 정식 Prisma migration, 승인된 App+Migrator digest/rollback, 실 DB/CAD/S3 snapshot Restore가 아직 미완이다. `src/prisma/**`/기존 API/Compose/Nginx/.env/실 데이터 및 GHCR 변경 없음. 테스트 PASS만으로 S3 GO 금지.
+
+
 ## Issue #109 / PR #125 — PR CI Unit 실패 및 P1 3건 수정, 운영 미활성 (2026-10-26)
 
 - **실패:** [PR CI Run 40275956996](https://github.com/planner77/layoutManager/actions/runs/40275956996), HEAD `818264afb8809ccf0a3e09262e1a09054fd43004`. Verify Job `121418632923` Unit/Integration 313 중 1 실패(59 파일 중 1), Docker `121418632714` 성공. Typecheck/Lint 성공, 이후 Build/E2E SKIPPED. 원인: GHCR 비허용 경로 거부는 exit 1인데 `echo`는 stdout, Unit은 stderr를 예상. [FailureLedger](out/FailureLedger.md) 보존, 새 HEAD CI 실행 전 재검증 미확인.

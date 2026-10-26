@@ -1,5 +1,20 @@
 # PR/Main CI 실패 원장
 
+## Issue #109 / PR #129 — 기존 CI PASS·Codex P1 S2 GHCR 게시 위험 및 조치 (2026-10-26 KST)
+
+- **검증된 이전 결과(실패 아님):** [PR CI 40313233131](https://github.com/planner77/layoutManager/actions/runs/40313233131), 시도 1, HEAD `29ed3028bf0f78ba37abba0ecde73a6483d0942f`, `completed/success`. Verify [Job 121539323884](https://github.com/planner77/layoutManager/actions/runs/40313233131/job/121539323884)와 Docker [Job 121539323971](https://github.com/planner77/layoutManager/actions/runs/40313233131/job/121539323971) 각각 `success`. 이후 추가 수정 HEAD의 PASS는 별도 확인 필요.
+- **코드 리뷰 P1(실제 CI 실패/GHCR 게시와 구분):** [Codex #4376591801](https://github.com/planner77/layoutManager/pull/129#discussion_r4376591801), 파일 `src/scripts/g7-s2-readiness.ts`. 기존 `.github/workflows/docker-publish.yml`은 S2 스크립트·서버·테스트를 일반 runtime 변경으로 판단해 `publish=true`를 설정한다. S1 `G7-S1-NO-GHCR` 제목을 대신 쓰면 S2 경로 미허용으로 fail-closed하여 요구한 비게시 병합 경로를 충족하지 못한다. **실제 관측 GHCR 오류·새 이미지 게시 0**; 배포 전 정책 누락이다.
+- **원인:** S1 전용 정확 제목과 allowlist 정책은 별도 S2 오프라인 증거 평가 툴/새 Unit의 파일 이름을 포함하도록 설계되지 않았다. 첫 PR CI는 앱 로직 및 테스트 검증이지 Main GHCR 발행 판정이 아니다.
+- **교정:** S1 정책 그대로 유지하고 **별도** 정확 제목 `#109 | S2 private-evidence readiness [G7-S2-NO-GHCR]`과 **S2 개별 파일 allowlist**를 release-scope에 추가. S2 제목이지만 비허가 운영 경로/일반 소스/S1 Stage 파일/별도 workflow가 섞이면 `stderr` 거부 후 `exit 1`; 유사 제목·후행 공백·접미는 동일하게 오류 종료. 일반 runtime 변경 및 tag 릴리스는 원래 publish 판정 유지. Regression은 기존 `src/tests/unit/g7-staging-ghcr-guard.test.ts`에 정상 S2 전 파일·다중 본문, 비허가 여러 경로, 잘못된 제목, S1 역방향, 일반 런타임/태그 사례 추가.
+- **변경·검증 경계:** 추가 코드 및 문서 기록은 아직 신규 HEAD CI 성공 근거가 아니다. 변경 후 Main `behind=0`, 리뷰 댓글 회신·Resolved 및 신규 PR CI **시작까지만** 진행, 모니터링/PR 병합/실 GHCR 게시/운영 Auth·Migration/Nginx·Compose/실 데이터/이슈 종료 불가. 기존 다른 이슈 실패와 PR #125 실패 기록은 아래 그대로 유지.
+
+
+## #109 S2 준비 도구 — 미확인 사항 및 실패와의 구분 (2026-10-26)
+
+- Owner가 내부 시험 결과를 외부 제출할 수 없다고 통지함. **증거 없음 = 시험 FAIL로 단정하지 않으며, 외부에서 독립 검증하지 못한 경우 NOT VERIFIED**로 관리. CI/실험 실패는 관측한 Run·Job만 기록한다.
+- 위험: 기존 Legacy CAD Auth/Prisma/실 DB+CAD+S3 복구/이미지 pair는 여전히 미구현 또는 내부 근거 비가시. 사내 비반출 Manifest 평가/Runbook/Unit 작성만으로 해소되지 않는다. S3 자동 실행을 차단하고 #109·#96 OPEN/BLOCKED 유지.
+
+
 ## Issue #109 / PR #125 — PR CI 40275956996 Unit 실패·P1 리뷰 3건 누적 및 수정 HEAD 검증 게이트 (2026-10-26 KST)
 
 - **실제 CI 실패 원장:** [Run 40275956996](https://github.com/planner77/layoutManager/actions/runs/40275956996), attempt **1**, HEAD `818264afb8809ccf0a3e09262e1a09054fd43004`, `pull_request.synchronize`, `completed/failure`. **Verify [Job 121418632923](https://github.com/planner77/layoutManager/actions/runs/40275956996/job/121418632923) failure**, Docker [Job 121418632714](https://github.com/planner77/layoutManager/actions/runs/40275956996/job/121418632714) **success**. 출처: 해당 Job의 Actions 원본 로그·Step 목록. TypeScript·ESLint **PASS**, `Unit 및 Integration 테스트` **실패**; **59 Test Files = 58 PASS / 1 FAIL, 313 Tests = 312 PASS / 1 FAIL**. `tests/unit/g7-staging-ghcr-guard.test.ts:91:27`의 `expect(result.stderr).toContain('G7-S1 GHCR exclusion disallowed path')`에서 실제 stderr는 빈 문자열; GitHub Actions `echo` 메시지는 **stdout**으로 출력됐다. 잘못된 경로 차단 자체는 의도대로 **exit 1**이며 보안 우회/실제 GHCR 게시 실패가 아니다. Verify의 OCI layer Unit·DXF benchmark·Production Build·Chromium E2E·Legacy Migration E2E는 **SKIPPED**(PASS 아님). 조건부 E2E 실패 artifact 업로드 Step은 SUCCESS이나 수집 파일 없음; 자체 실패로 세지 않음.

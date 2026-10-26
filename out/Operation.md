@@ -1,5 +1,19 @@
 # 운영·환경설정 초안
 
+## Issue #109 S2 PR #129 — GHCR 게시 없이 준비 기능 병합하기 위한 운영 게이트 (2026-10-26)
+
+- **정확 Squash 제목:** `#109 | S2 private-evidence readiness [G7-S2-NO-GHCR]`. 반드시 **커밋 첫 줄이 완전 일치**해야 하며 본문은 여러 줄이어도 된다. 이 제목이 아닌 다른 접미/후행 공백이 있으면 S2 Main 예외가 적용되지 않고 fail-closed한다.
+- **허용 경로:** `.github/workflows/docker-publish.yml`, `AGENTS.md`, `out/{Decisions,FailureLedger,Issue109-S2-Readiness,Issue109,Operation,Requirements,TestPlan,TestReport}.md`, `src/scripts/g7-s2-readiness.ts`, `src/server/g7-staging/s2-readiness.ts`, `src/tests/unit/{g7-s2-readiness,g7-staging-ghcr-guard}.test.ts` **완전 일치 목록**. `*.md`나 `src/server/g7-staging/*` 같은 포괄적 예외는 사용하지 않는다.
+- **실패 시 동작:** 승인 제목인데 비허가 파일이 하나라도 있으면 release-scope가 `stderr` 오류를 기록하고 `exit 1`한다. S2 유사 제목도 오류 종료. 일반 runtime 변경·정상 tag push는 기존 GHCR 발행 정책을 그대로 유지한다. S1 별도 좁은 예외도 보존.
+- **현 요청 실행 범위:** 최신 PR CI 시작 후 CI 모니터링·Squash Merge·Main CI/GHCR 게시 실행 금지. 추후 명시 승인 시 release-scope SUCCESS와 Build/Push GHCR **SKIPPED** 실제 증거를 확인하고 PR #129와 #109/#96 운영/완료 상태를 분리한다. 실제 운영 계정/Prisma Migration·Compose/Nginx/.env·DB/CAD/S3는 이 브랜치에서 변경하지 않는다.
+
+
+## #109 S2 현장 증거 비반출 운영 절차 (2026-10-26)
+
+- 공개 리포지토리로 원본 시험자료를 제출할 필요가 없다. 사내 승인 담당자가 `out/Issue109-S2-Readiness.md`의 비밀/실 데이터 제외 Manifest JSON을 사내 전용 절대경로에 만들고 **사내에서만** `cd src && npx tsx scripts/g7-s2-readiness.ts /absolute/private/s2.json`을 실행한다.
+- 결과는 `BLOCKED`/`PENDING`/`READY_FOR_OWNER_REVIEW` 및 사유 코드·개수뿐이며 **모두 operationalGo=false**. 상태만 Issue #109에 적고 원본 로그·실 CAD/DB·객체 SHA·내부 URL/IP/Secret은 비공개로 보관한다. 형식 검사 성공≠실 시험 증빙 검증/실 운영 GO. 미완료 legacy Auth/Prisma/Restore·OCI pair와 배포 중단 기준은 별도 구현·검증해야 한다.
+
+
 ## Issue #109 / PR #125 P1 — Prisma 대상 보호 및 GHCR 정확 제목 운영 절차 갱신 (2026-10-26)
 
 - **Staging Prisma 실행 순서 변경:** 기존 Staging README의 "루트/URL만 먼저 설정하고 Migration 실행" 방식은 더 이상 허용하지 않는다. `g7-staging-prepare.ts`가 만든 전용 `/tmp/cad-g7-staging-*/fixture.sqlite`를 확인하고 `G7_STAGING_ROOT`, `DATABASE_URL`, `G7_STAGING_DATABASE_URL`, `CAD_STORAGE_PATH`, `G7_STAGING_ORIGIN`, `G7_STAGING_ONLY=true`, `G7_RELEASE_CAPABILITY=G7-S1-STAGING-V1`, `G7_OPERATION_APPROVAL=S1-STAGING-ONLY` 및 `G7_AUTH_ENABLED=true`(격리 Staging에서만)를 **Prisma CLI 시작 전에 함께 지정**해야 한다. 실제 명령: `npx prisma migrate deploy --config deploy/g7-staging/prisma.config.ts`. Gate 검증 실패면 `G7_STAGING_PRISMA_TARGET_DENIED`로 즉시 종료; 기본 fallback/운영 DB 접속 불가. `G7_CAD_WRITE_CUTOVER_ENABLED`는 별도 기본 OFF.
