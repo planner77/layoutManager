@@ -1,5 +1,10 @@
 # Issue #96 — 로컬 계정·세션·Role/Site·감사 공통 기반
 
+## G4 #106 — Role/Site/Version·Grant·Audit 격리 서비스 (2026-10-26)
+
+[Issue106](Issue106.md) 및 ADR-051-G4: G3 Session과 현재 G1 Role/Site/SpecialGrant·Version→Site 관계를 G4 transaction 안에서 검증하고, Admin Grant/계정 disable, Audit 성공·거부/Revision CAS 합성 모델을 구현했다. 운영 API/Prisma/실 CAD 경로 OFF, 기존 익명 CAD GET 유지, Version DELETE 레거시 비밀번호 AND 요구. Audit 365일 이후 실제 파기 자동화는 G6/G7 승인 전 금지. 테스트 작성과 실행 PASS는 별개다.
+
+
 ## G3 #105 — 격리 로그인/초기 변경/세션 구현 (2026-10-26)
 
 [Issue105](Issue105.md)에 Manager 요구·설계·AC/TC를 구현 전 기록했다. G1 must-change session 거부를 유지하고 credential 재입력으로 초기 변경 후 새 로그인한다. 32 byte/hash-only token, 8h/30m/원자 3개, logout/disable/password/recovery 회수, 현재 DB Actor와 정상 cookie/Origin/CSRF를 검증한다. 운영 Auth/API/Prisma/Compose·기존 CAD GET/Current/Delete는 G7 전 OFF/불변. 실제 코드·실행 및 역할 근거는 TestReport, G4 권한과 G6 실 LAN/복구는 별도 인계다.
