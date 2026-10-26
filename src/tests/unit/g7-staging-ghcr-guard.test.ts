@@ -192,3 +192,82 @@ describe('#109 G7 S2 exact-title private-evidence-only Main CI gate', () => {
     expect(tagged.values).toContain('publish=true');
   });
 });
+
+describe('#109 S3-1 schema/type-only no-GHCR Main scope', () => {
+  const exact = '#109 | S3-1 Operational schema and gates [G7-S3-1-NO-GHCR]';
+  test('all S3-1 schema, disposable migration candidate, tests, docs => skip GHCR', () => {
+    const files = [
+      '.github/workflows/docker-publish.yml', 'AGENTS.md',
+      'out/Architecture.md', 'out/Database.md', 'out/Decisions.md',
+      'out/FailureLedger.md', 'out/Issue109.md', 'out/Operation.md',
+      'out/Requirements.md', 'out/TestPlan.md', 'out/TestReport.md',
+      'src/prisma/schema.prisma',
+      'src/deploy/g7-s3/README.md', 'src/deploy/g7-s3/prisma.config.ts',
+      'src/deploy/g7-s3/prisma/migrations/migration_lock.toml',
+      ...[
+        '202609070001_locations', '202609090001_description',
+        '202609110001_delete_password', '202609110002_delete_invariants',
+        '202609110003_drawing_name', '202610150001_master_hierarchy',
+        '202610260002_g7_operational_auth',
+      ].map(name => 'src/deploy/g7-s3/prisma/migrations/' + name + '/migration.sql'),
+      'src/server/g7-operational/preflight.ts',
+      'src/tests/unit/g7-s3-operational-gate.test.ts',
+      'src/tests/integration/g7-s3-operational-migration.test.ts',
+      'src/tests/integration/auth-g1.test.ts',
+      'src/tests/integration/auth-g2.test.ts',
+      'src/tests/integration/auth-g3.test.ts',
+      'src/tests/unit/g7-staging-ghcr-guard.test.ts',
+    ];
+    const result = runScope(files, exact + '\n\nCandidate only; runtime OFF');
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.values).toContain('publish=false');
+    expect(result.values).not.toContain('publish=true');
+  });
+  test('same subject with active migration, auth routes or runtime deployment fails closed', () => {
+    for (const forbidden of [
+      'src/prisma/migrations/202610260002_g7_operational_auth/migration.sql',
+      'src/app/api/cad-files/route.ts',
+      'src/app/api/g7-operational/route.ts',
+      'src/scripts/deploy.ts',
+      'src/docker-compose.yml',
+      'src/server/g7-staging/cad-service.ts',
+      'src/tests/unit/unrelated.test.ts',
+      '.github/workflows/pr-ci.yml',
+    ]) {
+      const result = runScope(['src/prisma/schema.prisma', forbidden], exact);
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toContain('G7-S3-1 GHCR exclusion disallowed path: ' + forbidden);
+      expect(result.values).toBe('');
+    }
+  });
+  test('S3-1 similar or malformed subjects reject before any publishing decision', () => {
+    for (const subject of [
+      exact + ' NOT-APPROVED', exact + '-extra', exact + ' ',
+      '#109 | S3-1 Operational schema and gates',
+      '#109 | S3-1 [NO-GHCR]',
+    ]) {
+      const result = runScope(['src/prisma/schema.prisma'], subject);
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toContain('G7-S3-1 exact squash subject required');
+      expect(result.values).toBe('');
+    }
+  });
+  test('S1/S2 cannot be used to sneak in S3-1 production schema', () => {
+    for (const subject of [
+      '#109 | S1 Staging-only integration [G7-S1-NO-GHCR]',
+      '#109 | S2 private-evidence readiness [G7-S2-NO-GHCR]',
+    ]) {
+      const result = runScope(['src/prisma/schema.prisma'], subject);
+      expect(result.status).not.toBe(0);
+      expect(result.values).toBe('');
+    }
+  });
+  test('ordinary runtime and tags keep the original publishing policy', () => {
+    const runtime = runScope(['src/app/api/cad-files/route.ts'], '#555 | runtime fix');
+    expect(runtime.status).toBe(0);
+    expect(runtime.values).toContain('publish=true');
+    const tag = runScope(['src/prisma/schema.prisma'], exact, 'refs/tags/v0.99.1');
+    expect(tag.status).toBe(0);
+    expect(tag.values).toContain('publish=true');
+  });
+});
