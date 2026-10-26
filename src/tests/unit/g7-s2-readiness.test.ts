@@ -40,8 +40,10 @@ describe('#109 S2 offline attestation: never substitutes for operational release
     expect(assessS2Readiness(candidate).state).toBe('BLOCKED');
   });
   test('snapshot mismatch blocks, even with all self-attested PASS',()=>{
-    const candidate=structuredClone(complete());
-    candidate.checks.DB_CAD_S3_SAME_SNAPSHOT_RESTORE!.snapshotId='SNAP-other-snapshot';
+    const base=complete();
+    const candidate={...base,checks:{...base.checks,
+      DB_CAD_S3_SAME_SNAPSHOT_RESTORE:{...base.checks.DB_CAD_S3_SAME_SNAPSHOT_RESTORE,
+        snapshotId:'SNAP-other-snapshot'}}};
     expect(assessS2Readiness(candidate).reasons).toContain('SNAPSHOT_MISMATCH');
   });
   test('unknown input field cannot exfiltrate or be accepted',()=>{
@@ -51,8 +53,9 @@ describe('#109 S2 offline attestation: never substitutes for operational release
     expect(JSON.stringify(result)).not.toContain('PRIVATE_CANARY');
   });
   test('unknown status or missing evidence ID never counts',()=>{
-    const candidate=structuredClone(complete());
-    candidate.checks.STAGING_AUTH_SESSION!.evidenceId=undefined;
+    const base=complete();
+    const candidate={...base,checks:{...base.checks,
+      STAGING_AUTH_SESSION:{...base.checks.STAGING_AUTH_SESSION,evidenceId:undefined}}};
     expect(assessS2Readiness(candidate).reasons).toContain('UNVERIFIED_CHECK:STAGING_AUTH_SESSION');
   });
 });
