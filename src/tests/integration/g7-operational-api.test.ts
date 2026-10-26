@@ -142,5 +142,10 @@ describe('#109 S2 guarded real CAD Auth App Router contract (synthetic DB)',()=>
     expect((await database.auditEvent.findFirst({
       where:{action:'ACCOUNT_CREATED',affectedUserId:added.id},
     }))?.actorUserId).toBe(actorId);
+    const notYet=await POST(req('POST','auth/login',{
+      login:'stagingnewreader',password:'private-test-temp-password',
+    }),props('auth','login'));
+    expect(notYet.status).toBe(403);
+    expect((await notYet.json()).error.code).toBe('PASSWORD_CHANGE_REQUIRED');
   },60_000);
 });
