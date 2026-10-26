@@ -1,5 +1,7 @@
 # Issue #43 — U6 외곽선 목록·업무 타입별 트리 (v0.36.0)
 
+> 후속 #127: [Issues124-126-127](Issues124-126-127.md)/ADR-053의 작업 그룹 메뉴와 우 Drawer가 트리 dock을 대체한다. 타입/선택/Overlay visibility 및 임시 데이터 정책은 보존하며 #73 영속 수용을 대신하지 않는다. 아래는 U6 당시 설계/시험 기록이다.
+
 ## PR #72 리뷰/CI 및 운영 잔여 분리 (2026-10-25)
 
 - PR #72 최초 HEAD `5cd223cc2837fc5772154fd67138680263f159e4`의 [CI 40161078593](https://github.com/planner77/layoutManager/actions/runs/40161078593)은 Verify(+E2E/Legacy) 및 Docker Job `completed/success`.

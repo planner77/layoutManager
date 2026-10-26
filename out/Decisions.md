@@ -1,5 +1,10 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-053 — 홈 sticky·Three 단발 복구·Viewer overlay Drawer (2026-10-26)
+
+[Issues124-126-127](Issues124-126-127.md)의 Manager 설계를 채택한다. 기존 색/글꼴/업무 동작을 유지하고 홈 한정 density를 축소한다. Three 실제 로드 실패에만 dxf 자동 대체 최대 1회, source/abort는 제외. 정상 대형 실측이 없어 자동 timeout/MB 임계값은 도입하지 않고 loading 중 명시 중단·대체를 제공한다. Adapter copy 때문에 peak memory/OOM 복구 보장은 하지 않는다. #38의 공간 점유 dock을 가장자리 overlay Drawer로 대체하고 상태·Canvas·Source 수명은 유지한다. 생성 OFF 정책 ADR-036 및 한 Escape 한 계층 ADR-033을 유지·확장한다. 운영 Auth/DB/API 활성화 없음.
+
+
 ## ADR-051-G7-S3-1 — Auto-migrator 충돌 예방·운영 Schema 타입 선반영 (2026-10-26)
 
 - **결정:** 현재 `src/scripts/deploy.ts`는 기동 시 무조건 `prisma migrate deploy`를 실행한다. 이번 S3-1의 Auth DDL을 즉시 `src/prisma/migrations`에 넣으면 GHCR 게시 여부와 무관하게 **향후 일반 배포가 실 운영 DB에 미승인 Migration을 적용할 위험**이 있다. S3-1에서는 Prisma Client용 운영 `schema.prisma`에 G1~G4 모델을 반영하되 Auth DDL은 **Prisma 공식 candidate history** `src/deploy/g7-s3/prisma/migrations/202610260002_g7_operational_auth`로 분리한다. 활성 운영 migration history와 자동 migrator 그대로 두고, S3-4/5 별도 PR에서 Release/Owner GO 및 백업·실복구 완결 후 승격·적용을 재검토한다.

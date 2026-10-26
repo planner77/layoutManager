@@ -1,3 +1,4 @@
+import { clickViewerCommand, clickViewerTestCommand, openViewerMenu } from './viewer-menu-helper';
 import {expect,test,type APIRequestContext,type Page} from '@playwright/test';
 import {readFile} from 'node:fs/promises';
 import {masterFields} from './master-helper';
@@ -34,7 +35,7 @@ async function dragCanvas(page:Page,fromRight=false,ctrl=false){
   if(ctrl)await page.keyboard.up('Control');
 }
 async function createOutlines(page:Page){
-  await page.getByTestId('viewer-menu-outline-tool').click();
+  await clickViewerTestCommand(page, 'viewer-menu-outline-tool');
   await dragCanvas(page);
   const tools=page.getByTestId('cad-outline-tools');
   await expect(page.getByTestId('outline-selection-count')).toContainText('선택 1개');
@@ -44,7 +45,7 @@ async function createOutlines(page:Page){
     await tools.getByRole('button',{name:'임시 확정'}).click();
   }
   await expect(page.getByTestId('outline-saved-tools')).toHaveCount(0);
-  await page.getByTestId('viewer-menu-outline-tool').click();
+  await clickViewerTestCommand(page, 'viewer-menu-outline-tool');
   await expect(page.getByTestId('outline-saved-tools')).toContainText('2건');
 }
 
@@ -54,10 +55,10 @@ test('TC-E1-E2E-001: SOURCE + 2 GENERATED unified range, tree and readonly gate'
   page.on('request',req=>{if(new URL(req.url()).pathname==='/api/cad-files/'+file.id+'/content')downloads++;});
   await page.goto('/cad/versions/'+file.id+'/viewer?renderer=three-dxf-viewer');
   await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
+  await clickViewerTestCommand(page, 'viewer-menu-tools');
   await expect(page.getByTestId('canvas-mode-pan')).toHaveAttribute('aria-pressed','true');
   await createOutlines(page);
-  const treeMenu=page.getByTestId('viewer-menu-outline-tree');
-  await treeMenu.click();
+  await clickViewerTestCommand(page, 'viewer-menu-outline-tree');
   await expect(page.getByTestId('outline-tree-item')).toHaveCount(2);
   await page.getByTestId('canvas-mode-objects').click();
   await dragCanvas(page);
@@ -88,7 +89,7 @@ test('TC-E1-E2E-002: hidden overlays/source layers drop selection and reset on r
   await page.goto('/cad/versions/'+file.id+'/viewer?renderer=three-dxf-viewer');
   await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
   await createOutlines(page);
-  await page.getByTestId('viewer-menu-outline-tree').click();
+  await clickViewerTestCommand(page, 'viewer-menu-outline-tree');
   await page.getByTestId('canvas-mode-objects').click();
   await dragCanvas(page);
   await expect(page.getByTestId('canvas-selection-count')).toContainText('선택 3개');
@@ -106,10 +107,12 @@ test('TC-E1-E2E-002: hidden overlays/source layers drop selection and reset on r
   await page.keyboard.press('Escape');
   await expect(page.getByTestId('canvas-selection-count')).toContainText('선택 0개');
   await expect(page.getByTestId('cad-viewer-shell')).toHaveAttribute('data-fullscreen','true');
-  await page.getByRole('button',{name:'다시 불러오기'}).click();
+  page.once('dialog', async dialog => { expect(dialog.message()).toContain('임시 외곽선'); await dialog.accept(); });
+  await clickViewerCommand(page, 'drawing', '다시 불러오기');
   await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
+  await clickViewerTestCommand(page, 'viewer-menu-tools');
   await expect(page.getByTestId('canvas-selection-count')).toContainText('선택 0개');
-  await page.getByTestId('viewer-menu-outline-tree').click();
+  await clickViewerTestCommand(page, 'viewer-menu-outline-tree');
   await expect(page.getByTestId('outline-tree-item')).toHaveCount(0);
   await expect(page.getByTestId('canvas-mode-pan')).toHaveAttribute('aria-pressed','true');
 });
@@ -120,5 +123,6 @@ test('TC-E1-E2E-003: non-three renderer has no editable object modes',async({pag
   await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
   await expect(page.getByTestId('cad-object-selection-tools')).toHaveCount(0);
   await expect(page.getByTestId('canvas-mode-objects')).toHaveCount(0);
+  await openViewerMenu(page, 'work');
   await expect(page.getByTestId('viewer-menu-outline-tool')).toBeDisabled();
 });

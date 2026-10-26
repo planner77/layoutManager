@@ -1,3 +1,4 @@
+import { clickViewerCommand, openViewerMenu } from './viewer-menu-helper';
 import { expect, test } from "@playwright/test";
 import { masterFields, selectMasterChain } from "./master-helper";
 
@@ -69,7 +70,7 @@ test("TC-ISSUE9-001/002: upload blocks the screen, rejects duplicate submit and 
   );
 });
 
-test("TC-ISSUE9-003: viewer load keeps the global overlay until CAD content resolves", async ({
+test("TC-ISSUE9-003: viewer-local loader remains cancellable until CAD content resolves", async ({
   page,
   request,
 }) => {
@@ -107,10 +108,10 @@ test("TC-ISSUE9-003: viewer load keeps the global overlay until CAD content reso
   });
 
   await page.goto(`/cad/versions/${version.id}/viewer`);
-  const overlay = page.getByTestId("global-loading-overlay");
+  const overlay = page.getByTestId("viewer-loading-overlay");
   await expect(overlay).toBeVisible();
-  await expect(overlay).toContainText("도면을 여는 중입니다...");
-  await expect(page.locator("body")).toHaveAttribute("aria-busy", "true");
+  await expect(overlay).toContainText("도면을 여는 중입니다…");
+  await expect(overlay.getByRole('button', { name: '로딩 중단 후 dxf-viewer로 열기' })).toBeEnabled();
 
   release();
   await expect(overlay).toHaveCount(0);
@@ -167,12 +168,11 @@ test("TC-ISSUE14-001: viewer loads without crypto.randomUUID and both DXF render
   ).toBeVisible();
   await expect(page.getByTestId("global-loading-overlay")).toHaveCount(0);
 
-  await page
-    .getByRole("button", { name: "three-dxf-viewer", exact: true })
-    .click();
-  await expect(
-    page.getByRole("button", { name: "three-dxf-viewer", exact: true }),
-  ).toBeDisabled();
+  await clickViewerCommand(page, 'view', 'dxf-viewer');
+  await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
+  await clickViewerCommand(page, 'view', 'three-dxf-viewer');
+  await openViewerMenu(page, 'view');
+  await expect(page.getByRole('menuitemradio', { name: 'three-dxf-viewer' })).toHaveAttribute('aria-checked', 'true');
   await expect(
     page.getByRole("status").filter({ hasText: "도면 표시 완료" }),
   ).toBeVisible();

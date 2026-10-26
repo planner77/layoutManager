@@ -1,5 +1,44 @@
 # PR/Main CI 실패 원장
 
+## Issues #124/#126/#127 / PR #132 — 초기 CI 성공과 보충 DWG 진단·probe 실패 (2026-10-27 KST)
+
+- **CI 실패와 구별:** HEAD `fd9eeaf`의 [Run 40349738685](https://github.com/planner77/layoutManager/actions/runs/40349738685) completed/success, Verify 121666219572·Docker 121666218874 각각 success. 독립 full E2E 86/86, Unit 351/351, legacy 1/1도 PASS. 아래 실패는 default CI에 없는 추가 DWG probe에서 관측했으며 최초 CI 성공을 삭제하지 않는다.
+- **실제 추가 실패 2/4:** `/tmp/layoutManager-issues124-127-qa-final-dwg.log`. `dwg-viewer.probe.ts` TC-DWG-002/004에서 WASM 404 후 예상 고정 `WASM 초기화 실패` 대신 generic `adapter-load:LOAD`가 표시됐다(:256). 정상 load/메뉴/fullscreen은 별도 PASS. `dwg.probe.ts` TC-DWG-001/003/005는 `/lab/dwg`에 없는 Viewer 그룹 메뉴 helper를 기다려 120초 timeout; 제품 parse failure와 구별한다.
+- **조치:** DWG SIZE/HEADER/WASM_INIT/PARSE/EXTRACT/WORKER_INIT/TIMEOUT의 고정 message와 typed stage/code allowlist를 모두 검증하여 공개 진단만 유지한다. 임의 raw Error·위조 문구·잘못된 stage·미등록 code·DXF 오적용은 generic LOAD로 차단하는 Unit 추가. lab 시험은 기존 실제 확대 버튼으로 복원했다. 라이브러리·WASM·Geometry/DB 변경 없음.
+- **재검증:** Developer type/lint/build·Unit20/DWG4/focused13 PASS. 독립 post-fix type/lint·Unit20·DWG4 PASS(24.0s). 독립 focused13/13도 PASS(47.7s), Manager 로컬 수용. 새 HEAD PR CI 등 남은 결과는 후속 관측으로 기록하며 fd9 CI를 재사용하지 않는다.
+
+
+## Issues #124/#126/#127 — 키보드 최소 수정과 후보 재고정 (2026-10-27 KST)
+
+- 1차 독립 QA 85/86의 실패·trace는 아래 원본 항목에 보존한다. 메뉴 전환 후 `requestAnimationFrame`으로 지연한 포커스를 `useLayoutEffect`의 DOM commit 직후 처리로 바꾸고, trigger가 처리한 ArrowUp/ArrowDown/Enter/Space의 전파를 차단해 상위 메뉴에서 같은 키를 중복 처리하지 않도록 했다. 레이아웃·Adapter/DB/원본 변경 없음.
+- Developer Typecheck/Lint/Production Build, trigger keyboard 1/1 및 강화된 전체 focused 13/13 PASS를 Manager가 확인한 뒤 후보를 재고정했다. 해당 `/tmp/layoutManager-issues124-127-trigger-*` 로그는 로컬에 보존한다. 독립 QA 전체86·DWG4·legacy 및 최신 PR CI 결과는 아직 대기 중이며 이전 결과를 새 후보 전체 PASS로 전용하지 않는다.
+
+
+## Issues #124/#126/#127 — 초기 로컬 게이트 관측 (2026-10-26)
+
+- **환경 선행조건:** 격리 worktree의 첫 Typecheck는 설치 전 `tsc: not found`; npm ci 후 Prisma Client 생성 전에는 generated import 부재. `npm ci`와 `npm run db:generate` 후 Typecheck PASS. 원본 사용자 worktree와 운영 DB/환경은 변경하지 않았다.
+- **초기 targeted Unit 13/15:** `dwg-adapter.test.ts / TC-VIEW-001`은 DXF invalid query의 구 기본값 dxf-viewer, `viewer-app-state.test.ts / TC-U1-UNIT-001`은 신규 toolsOpen 없는 구 상태를 기대했다. 새 승인 계약에 맞춰 기대를 갱신한 targeted 18/18 PASS. DWG renderer 불변 검사는 유지.
+- **초기 전체 Unit 345/348:** `viewer-link.test.ts / TC-LINK-001` 2건이 구 DXF 기본값, `viewer.test.ts / TC-VIEW-003` 1건이 구조화 이전 raw parse error를 기대. 링크 기본값 및 adapter-load:LOAD 구조 assertion으로 갱신, 해당 focused 10/10 PASS. 전체 재실행 결과는 별도 TestReport에 기록한다.
+- **초기 신규 E2E 4/5:** source404 시험의 전역 `getByRole('alert')`가 Viewer 오류와 Next route-announcer를 동시에 선택했다. Viewer shell로 scope를 한정한 expanded focused 7/7 PASS. source 실패 자체를 renderer 성공으로 처리한 제품 결함은 관측되지 않았다.
+- **초기 전체 E2E 진단 중단:** 80개 중 실행 진행 18 시점에 중단. 구 직접 toolbar/menu locator와 Viewer의 구 전역 loading 기대가 새 그룹 메뉴/지역 loading 계약과 충돌하여 반복 timeout 발생. 전체 PASS나 완료18건으로 기록하지 않는다. 지정 두 번째 Developer가 기존 시나리오를 새 실제 메뉴/Drawer 흐름으로 이관하며 테스트 삭제/skip으로 대체하지 않는다.
+- **관측 로그:** 로컬 `/tmp/layoutManager-issues124-127-initial-failures.md`, `-focused-e2e.log`, `-legacy-e2e-first.log`, `-build.log`(동일 prefix). 로그/스크린샷/DB/CAD는 Git 제외. 실제 후속 실패·수정·QA 및 CI 상태는 누적 보존한다.
+
+## Issues #124/#126/#127 — 독립 QA 전체 E2E의 메뉴 키보드 실패 (2026-10-27 KST)
+
+- **환경/실행:** 격리 worktree `/home/planner/Dev/layoutManager-issues124-127`, candidate 0.42.0 frozen source, Node 22.14.0 / npm 11.10.0 / Playwright 1.63.0 / Chromium 1243 SwiftShader, isolated test DB/CAD; `PLAYWRIGHT_CHROMIUM_EXECUTABLE=/home/planner/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome CAD_E2E_PORT=3103 npm --prefix src run test:e2e -- --output=/tmp/layoutManager-issues124-127-qa-e2e-results`.
+- **관측:** full Playwright 86 tests, 1 worker, 6.5m: **85 passed / 1 failed**. Failure `TC-127-MENU: keyboard directions, Space link activation and focus return`, `src/tests/e2e/issues124-126-127.spec.ts:198`; at assertion line 210, after ArrowRight navigates from the last View menu command into Work and Escape is pressed, the Work trigger is `aria-expanded=true` but not focused. `toBeFocused()` timed out at 5s. Exact evidence: `/tmp/layoutManager-issues124-127-qa-e2e.log` and `/tmp/layoutManager-issues124-127-qa-e2e-results/issues124-126-127-TC-127-M-01130-activation-and-focus-return/{error-context.md,trace.zip}`.
+- **원인/후속:** primary Developer's read-only diagnosis is keyboard focus is moved with `requestAnimationFrame` after the Work menu render, allowing Escape before focus reaches its menu root. Manager approved a minimal synchronous post-commit keyboard focus fix using `useLayoutEffect`; no source/test edits occurred during this run. Full suite otherwise passed, but candidate acceptance remains pending the fix, focused regression, rebuilt candidate, independent full E2E, public four-probe DWG suite and legacy master-migration suite.
+- **Other local gates:** independent Typecheck PASS, ESLint PASS with 3 warnings, Vitest 351/351 PASS. No independent QA build/PR CI/Main CI/GHCR or real #113 CAD/GPU run is represented by these results.
+
+## Issues #124/#126/#127 — 중간 수정·재검증 관측 기록 (2026-10-26~27)
+
+- **Legacy UI 이관 중 관측:** 전체 mutable 진단은 `/tmp/layoutManager-issues124-127-legacy-fourth.log` 기준 **76/85 PASS, 9 FAIL**. 구 toolbar/menu locator·구 loading 기대 등 selector 계약이 새 UI와 맞지 않은 사례를 포함한다. 이관 후 `/tmp/layoutManager-issues124-127-legacy-targeted.log`의 affected subset **9/10 PASS**, 이어 `/tmp/layoutManager-issues124-127-issue43-rerun.log`의 남은 단일 케이스 **1/1 PASS**. 이 단계 결과는 최종 최신 source candidate 전체 legacy suite 통과 증거가 아니며 독립 재실행은 pending이다.
+- **Three font/Blob 종료 race:** 실제 브라우저에서 Three가 Korean font fetch를 기다리는 동안 renderer dispose 후 Blob fetch가 늦게 시작되어 `ERR_FILE_NOT_FOUND`가 발생했다. 진행 콜백에서 `disposed` 상태를 먼저 확인하여 늦은 fetch를 막고 object URL 즉시 revoke하도록 보완했다. >1s font 지연 후 전환 시험 및 legacy workflow console-clean 재검증은 통과했다; 최신 full candidate 독립 전체 E2E 결과와 분리한다.
+- **Lint/build 중간 발견:** 새 `setState-in-effect` lint 오류는 renderer-keyed fallback 상태 구조로 수정하여 ESLint를 통과시켰다. 이 항목은 별도 CI 실패가 아니며, 현재 독립 Lint의 남은 3 warnings는 TestReport에 열거했다.
+- **브라우저 실행 산출물 경합:** 병렬 Playwright 실행이 공용 `test-results` output을 공유하며 ENOENT를 냈다. 그 실행은 유효한 제품 실패로 세지 않았으며 이후 unique port/output을 사용했다. 최신 독립 E2E는 전용 `CAD_E2E_PORT=3103` 및 `/tmp/layoutManager-issues124-127-qa-e2e-results/`로 85/86 완료했다.
+- **정적 키보드/overlay 검토:** Escape 계층 처리, tooltip hover/focus/touch/scroll 접근, mobile modal Drawer focus trap·복귀와 삭제 확인 overlay 층의 정적/집중 재검토에서 수정이 이뤄졌다. 현 독립 full E2E가 별도로 확인한 메뉴 Escape focus-return 결함은 상단 섹션에 기록했으며 최종 재검증이 필요하다.
+
+
 ## Issue #109 S3-1 — 배포 시 자동 Prisma Migration 위험 및 정적 방지 조치 (2026-10-26)
 
 - **실제 CI/Job 실패 관측:** 신규 S3-1 PR CI는 이 문서 작성 시점 시작 전이므로 **신규 실패 0건(미관측)**. Test 및 Docker 성공을 추측하지 않는다. 아래 기존 PR #125/#129 실패·취소 및 리뷰 기록은 전부 보존한다.

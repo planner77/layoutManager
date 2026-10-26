@@ -1,3 +1,4 @@
+import { clickViewerCommand, clickViewerTestCommand, openViewerMenu } from './viewer-menu-helper';
 import { test, expect } from "@playwright/test";
 import { masterFields } from "./master-helper";
 
@@ -33,39 +34,46 @@ for (const renderer of ["dxf-viewer", "three-dxf-viewer"])
     const file = await response.json();
     await page.goto(`/?filename=viewer-lines-${renderer}.dxf`);
     await page.getByRole("link", { name: "도면 보기", exact: true }).click();
-    if (renderer === "three-dxf-viewer")
-      await page
-        .getByRole("button", { name: "three-dxf-viewer", exact: true })
-        .click();
     await expect(page.getByRole("status")).toHaveText("도면 표시 완료");
+    if (renderer === 'dxf-viewer') {
+      await clickViewerCommand(page, 'view', 'dxf-viewer');
+      await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
+    }
+    await expect(page.getByTestId('viewer-active-renderer')).toHaveText(renderer);
 
     // Historical normal-mode regression starts after leaving the new auto-immersive entry.
     await expect(page.getByTestId("cad-viewer-shell")).toHaveAttribute("data-fullscreen", "true");
-    await page.getByRole("button", { name: "전체 화면 종료", exact: true }).click();
+    await clickViewerCommand(page, 'view', '전체 화면 종료');
     const canvas = page.locator("canvas");
     await expect(canvas).toHaveCount(1);
+    const layerPanel = page.getByTestId('fullscreen-layer-panel');
+    if (renderer === 'three-dxf-viewer') {
+      await layerPanel.getByRole('button', { name: '레이어 패널 접기' }).click();
+    }
+    await canvas.evaluate(node => node.setAttribute('data-viewer-stable', 'yes'));
     const initial = await canvas.screenshot();
     if (renderer === "three-dxf-viewer") {
-      await page.getByRole("button", { name: /레이어 선택/ }).click();
-      const layer = page.getByRole("menuitemcheckbox", {
+      await clickViewerTestCommand(page, 'viewer-menu-layers');
+      const layer = layerPanel.getByRole('checkbox', {
         name: "0",
         exact: true,
       });
       await layer.uncheck();
-      await page.keyboard.press("Escape");
+      await layerPanel.getByRole('button', { name: '레이어 패널 접기' }).click();
       expect((await canvas.screenshot()).equals(initial)).toBe(false);
-      await page.getByRole("button", { name: /레이어 선택/ }).click();
+      await clickViewerTestCommand(page, 'viewer-menu-layers');
       await layer.check();
-      await page.keyboard.press("Escape");
+      await layerPanel.getByRole('button', { name: '레이어 패널 접기' }).click();
       await expect
         .poll(async () => (await canvas.screenshot()).equals(initial))
         .toBe(true);
+      await expect(canvas).toHaveAttribute('data-viewer-stable', 'yes');
     }
 
-    await page.getByRole("button", { name: "확대", exact: true }).click();
+    await clickViewerCommand(page, 'view', '확대');
     expect((await canvas.screenshot()).equals(initial)).toBe(false);
-    await page.getByRole("button", { name: "축소", exact: true }).click();
-    await page.getByRole("button", { name: "화면 맞춤" }).click();
+    await clickViewerCommand(page, 'view', '축소');
+    await clickViewerCommand(page, 'view', '화면 맞춤');
     const beforePan = await canvas.screenshot();
     const box = (await canvas.boundingBox())!;
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
@@ -94,10 +102,11 @@ for (const renderer of ["dxf-viewer", "three-dxf-viewer"])
 
     const shell = page.getByTestId("cad-viewer-shell");
     const viewBeforeFullscreen = await canvas.screenshot();
-    await page.getByRole("button", { name: "전체 화면", exact: true }).click();
+    await clickViewerCommand(page, 'view', '전체 화면');
     await expect(shell).toHaveAttribute("data-fullscreen", "true");
+    await openViewerMenu(page, 'view');
     await expect(
-      page.getByRole("button", { name: "전체 화면 종료", exact: true }),
+      page.getByRole('menuitem', { name: '전체 화면 종료', exact: true }),
     ).toBeVisible();
     await expect
       .poll(async () => {
@@ -122,9 +131,7 @@ for (const renderer of ["dxf-viewer", "three-dxf-viewer"])
       )
       .toBe(true);
 
-    await page
-      .getByRole("button", { name: "전체 화면 종료", exact: true })
-      .click();
+    await clickViewerCommand(page, 'view', '전체 화면 종료');
     await expect(shell).toHaveAttribute("data-fullscreen", "false");
     await expect
       .poll(async () =>
@@ -132,28 +139,22 @@ for (const renderer of ["dxf-viewer", "three-dxf-viewer"])
       )
       .toBe(true);
 
-    await page.getByRole("button", { name: "전체 화면", exact: true }).click();
+    await clickViewerCommand(page, 'view', '전체 화면');
     await expect(shell).toHaveAttribute("data-fullscreen", "true");
     const fullscreenBeforeZoom = await canvas.screenshot();
-    await page
-      .getByRole("button", { name: "전체 화면 확대", exact: true })
-      .click();
+    await clickViewerCommand(page, 'view', '확대');
     expect((await canvas.screenshot()).equals(fullscreenBeforeZoom)).toBe(
       false,
     );
-    await page
-      .getByRole("button", { name: "전체 화면 축소", exact: true })
-      .click();
-    await page
-      .getByRole("button", { name: "전체 화면 맞춤", exact: true })
-      .click();
+    await clickViewerCommand(page, 'view', '축소');
+    await clickViewerCommand(page, 'view', '화면 맞춤');
     await page.keyboard.press("Escape");
     await expect(shell).toHaveAttribute("data-fullscreen", "false");
 
-    await page.getByRole("button", { name: "다시 불러오기" }).click();
+    await clickViewerCommand(page, 'drawing', '다시 불러오기');
     await expect(page.getByRole("status")).toHaveText("도면 표시 완료");
     await expect(canvas).toHaveCount(1);
-    await page.getByRole("link", { name: "← 버전 목록" }).click();
+    await clickViewerCommand(page, 'drawing', '← 버전 목록');
     await expect(page.locator("canvas")).toHaveCount(0);
     await page.goto(`/cad/versions/${file.id}/viewer?renderer=${renderer}`);
     await expect(page.getByRole("status")).toHaveText("도면 표시 완료");
@@ -199,13 +200,13 @@ for (const renderer of ["dxf-viewer", "three-dxf-viewer"])
     await expect(page.getByRole("status")).toHaveText("도면 표시 완료");
     await expect(page.getByTestId("cad-viewer-shell")).toHaveAttribute("data-fullscreen", "true");
     // TC-FONT continues exercising normal Viewer controls after the default immersive entry.
-    await page.getByRole("button", { name: "전체 화면 종료", exact: true }).click();
+    await clickViewerCommand(page, 'view', '전체 화면 종료');
     const before = await page.locator("canvas").screenshot();
-    await page.getByRole("button", { name: "확대", exact: true }).click();
+    await clickViewerCommand(page, 'view', '확대');
     expect((await page.locator("canvas").screenshot()).equals(before)).toBe(
       false,
     );
-    await page.getByRole("button", { name: "화면 맞춤" }).click();
+    await clickViewerCommand(page, 'view', '화면 맞춤');
     await page.screenshot({
       path: `test-results/${renderer}-korean.png`,
       fullPage: true,
@@ -246,23 +247,24 @@ for (const renderer of ["dxf-viewer", "three-dxf-viewer"])
         await expect(page.getByRole("main").getByRole("alert")).toContainText(
           "실패",
         );
-        await expect(
-          page.getByRole("button", { name: "dxf-viewer", exact: true }),
-        ).toHaveCount(0);
-        await expect(
-          page.getByRole("button", { name: "three-dxf-viewer", exact: true }),
-        ).toHaveCount(0);
+        await openViewerMenu(page, 'view');
+        await expect(page.getByRole('menuitemradio', { name: 'dxf-viewer', exact: true })).toHaveCount(0);
+        await expect(page.getByRole('menuitemradio', { name: 'three-dxf-viewer', exact: true })).toHaveCount(0);
         await expect(page.locator("canvas")).toHaveCount(0);
       } else if (expected === "empty") {
         await expect(page.getByRole("status")).toContainText(
           "표시할 도형이 없습니다",
         );
       } else {
-        await expect(page.getByRole("main").getByRole("alert")).toContainText(
-          "DXF 처리에 실패",
-        );
-        await page.getByRole("button", { name: "다시 불러오기" }).click();
-        await expect(page.getByRole("main").getByRole("alert")).toBeVisible();
+        await expect(page.getByRole('status')).toContainText('실패');
+        await expect(page.getByRole('main').getByRole('alert')).toContainText('Viewer 도면 처리에 실패');
+        await expect(page.locator('canvas')).toHaveCount(0);
+        if (renderer === 'three-dxf-viewer') {
+          await expect(page.getByTestId('viewer-active-renderer')).toHaveText('dxf-viewer');
+          await expect(page.getByTestId('viewer-recovery-notice')).toContainText('three-dxf-viewer 처리 실패');
+        }
+        await clickViewerCommand(page, 'drawing', '다시 불러오기');
+        await expect(page.getByRole('main').getByRole('alert')).toContainText('Viewer 도면 처리에 실패');
       }
     }
   });

@@ -1,3 +1,4 @@
+import { clickViewerCommand } from './viewer-menu-helper';
 import { test, expect } from "@playwright/test";
 import { selectMasterChain } from "./master-helper";
 
@@ -119,10 +120,9 @@ test("TC-E2E-001: UI registration through current replacement and both DXF rende
     .filter({ hasText: "release-v1.dxf" })
     .getByRole("link", { name: "도면 보기", exact: true })
     .click();
-  await page.getByRole("button", { name: "전체 화면 종료", exact: true }).click();
+  await clickViewerCommand(page, 'view', '전체 화면 종료');
   for (const renderer of ["dxf-viewer", "three-dxf-viewer"]) {
-    if (renderer === "three-dxf-viewer")
-      await page.getByRole("button", { name: renderer, exact: true }).click();
+    await clickViewerCommand(page, 'view', renderer);
     await expect(page.getByRole("status")).toHaveText("도면 표시 완료");
     const metric = JSON.parse(
       (await page.getByTestId("viewer-metric").textContent())!,
@@ -134,9 +134,9 @@ test("TC-E2E-001: UI registration through current replacement and both DXF rende
     const canvas = page.locator("canvas");
     await expect(canvas).toHaveCount(1);
     const before = await canvas.screenshot();
-    await page.getByRole("button", { name: "확대", exact: true }).click();
+    await clickViewerCommand(page, 'view', '확대');
     expect((await canvas.screenshot()).equals(before)).toBe(false);
-    await page.getByRole("button", { name: "화면 맞춤" }).click();
+    await clickViewerCommand(page, 'view', '화면 맞춤');
   }
   const original = await request.get(`/api/cad-files/${files[0].id}/content`);
   expect(original.status()).toBe(200);

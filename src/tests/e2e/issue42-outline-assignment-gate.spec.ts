@@ -1,3 +1,4 @@
+import { clickViewerTestCommand, openViewerMenu } from './viewer-menu-helper';
 import { expect, test } from '@playwright/test';
 import { masterFields } from './master-helper';
 
@@ -21,7 +22,7 @@ test('TC-U5-E2E-GATE-001: server catalog absent; no forged type confirmation or 
   const file = (await created.json()) as { id: string };
   await page.goto('/cad/versions/' + file.id + '/viewer?renderer=three-dxf-viewer');
   await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
-  await page.getByTestId('viewer-menu-outline-tool').click();
+  await clickViewerTestCommand(page, 'viewer-menu-outline-tool');
   const tools = page.getByTestId('cad-outline-tools');
   await expect(tools).toBeVisible();
   await expect(page.getByTestId('outline-type-select')).toBeDisabled();
@@ -29,5 +30,6 @@ test('TC-U5-E2E-GATE-001: server catalog absent; no forged type confirmation or 
   await expect(page.getByTestId('outline-type-gate')).toContainText('#65');
   await page.getByTestId('outline-instance-name').fill('타입 없는 외곽선');
   await expect(page.getByTestId('outline-typed-confirm')).toBeDisabled();
+  await openViewerMenu(page, 'work');
   await expect(page.getByTestId('viewer-menu-outline-types')).toBeDisabled();
 });

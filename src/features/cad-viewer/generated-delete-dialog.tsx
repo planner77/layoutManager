@@ -21,7 +21,7 @@ export function GeneratedDeleteDialog({
     return ()=>{
       const target=previous instanceof HTMLElement && previous.isConnected
         ?previous:document.querySelector<HTMLElement>('[data-testid="cad-viewer-shell"]');
-      target?.focus({preventScroll:true});
+      requestAnimationFrame(()=>target?.focus({preventScroll:true}));
     };
   },[]);
   const onDialogKey=(event:KeyboardEvent)=>{

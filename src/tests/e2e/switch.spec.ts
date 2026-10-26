@@ -1,6 +1,7 @@
+import { clickViewerCommand, openViewerMenu } from './viewer-menu-helper';
 import { test, expect } from "@playwright/test";
 import { masterFields } from "./master-helper";
-test("TC-SWITCH-001/002: loading blocks renderer changes, shared bytes and twenty switches release resources", async ({
+test("TC-SWITCH-001/002: viewer-local loading, shared bytes and twenty switches release resources", async ({
   page,
   request,
 }) => {
@@ -89,15 +90,12 @@ test("TC-SWITCH-001/002: loading blocks renderer changes, shared bytes and twent
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto(`/cad/versions/${file.id}/viewer`);
   await expect.poll(() => downloads).toBe(1);
-  await expect(page.getByTestId("global-loading-overlay")).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "three-dxf-viewer", exact: true }),
-  ).toBeDisabled();
-  await expect(
-    page.getByRole("button", { name: "다시 불러오기" }),
-  ).toBeDisabled();
+  await expect(page.getByTestId('viewer-loading-overlay')).toBeVisible();
+  await expect(page.getByRole('button', { name: '로딩 중단 후 dxf-viewer로 열기' })).toBeEnabled();
+  await openViewerMenu(page, 'drawing');
+  await expect(page.getByRole('menuitem', { name: '다시 불러오기' })).toBeDisabled();
   release();
-  await expect(page.getByTestId("global-loading-overlay")).toHaveCount(0);
+  await expect(page.getByTestId('viewer-loading-overlay')).toHaveCount(0);
   await expect(page.getByRole("status")).toHaveText("도면 표시 완료");
   const marker = await page.evaluate(() => {
     const marker = crypto.randomUUID();
@@ -123,9 +121,9 @@ test("TC-SWITCH-001/002: loading blocks renderer changes, shared bytes and twent
       };
     });
   for (let i = 0; i < 20; i++) {
-    const renderer = i % 2 === 0 ? "three-dxf-viewer" : "dxf-viewer";
-    await page.getByRole("button", { name: renderer, exact: true }).click();
-    await expect(page.getByTestId("global-loading-overlay")).toHaveCount(0);
+    const renderer = i % 2 === 0 ? 'dxf-viewer' : 'three-dxf-viewer';
+    await clickViewerCommand(page, 'view', renderer);
+    await expect(page.getByTestId('viewer-loading-overlay')).toHaveCount(0);
     await expect(page.getByRole("status")).toHaveText("도면 표시 완료");
     await expect(page.locator("canvas")).toHaveCount(1);
     await expect.poll(resource).toEqual({ workers: 0, blobs: 0, active: 1 });
@@ -141,11 +139,11 @@ test("TC-SWITCH-001/002: loading blocks renderer changes, shared bytes and twent
   }
   expect(downloads).toBe(1);
   await expect(page.getByRole("heading")).toHaveText(file.displayName);
-  await page.getByRole("button", { name: "다시 불러오기" }).click();
-  await expect(page.getByTestId("global-loading-overlay")).toHaveCount(0);
+  await clickViewerCommand(page, 'drawing', '다시 불러오기');
+  await expect(page.getByTestId('viewer-loading-overlay')).toHaveCount(0);
   await expect(page.getByRole("status")).toHaveText("도면 표시 완료");
   expect(downloads).toBe(2);
-  await page.getByRole("link", { name: "← 버전 목록" }).click();
+  await clickViewerCommand(page, 'drawing', '← 버전 목록');
   await expect(page.locator("canvas")).toHaveCount(0);
   await expect.poll(resource).toEqual({ workers: 0, blobs: 0, active: 0 });
   expect(errors).toEqual([]);

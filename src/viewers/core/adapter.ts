@@ -17,6 +17,7 @@ export type GeneratedOutlineObject = Readonly<{
   sourceEntityIds:readonly string[];kind:OutlineKind;name:string;outlineTypeId:string|null;
 }>;
 import { ViewerSource } from './source';
+import { ViewerLoadError, isKnownSafeDwgAdapterLoadError, isViewerCancellation } from './viewer-load-error';
 import {heapBytes,observeFrame,type ViewerMetric} from './metrics';
 export interface CadViewerAdapter {
   load(source: ArrayBuffer): Promise<{ empty: boolean; entityCount?:number; warning?:string; metrics?: { initializeMs?: number; parseMs?: number } }>;
@@ -74,7 +75,9 @@ export class ViewerManager {
     const bytes = await this.source.read(url);
     metric.fileBytes=bytes.byteLength;metric.sourceWaitMs=performance.now()-started;
     if (generation !== this.generation) throw new DOMException('취소됨', 'AbortError');
-    const initializing=performance.now();const adapter = await this.factory();
+    const initializing=performance.now();let adapter:CadViewerAdapter;
+    try { adapter = await this.factory(); }
+    catch(error) { if(isViewerCancellation(error))throw error; throw new ViewerLoadError('adapter-init','INITIALIZE','Viewer 초기화에 실패했습니다.',error); }
     metric.initializeMs=performance.now()-initializing;
     if (generation !== this.generation) { adapter.dispose(); throw new DOMException('취소됨', 'AbortError'); }
     this.adapter = adapter;
@@ -92,10 +95,13 @@ export class ViewerManager {
       this.activeUrl=url;
       return result;
     }
-    catch(error) { if (this.adapter === adapter) { adapter.dispose(); this.adapter = undefined; } throw error; }
+    catch(error) { if (this.adapter === adapter) { adapter.dispose(); this.adapter = undefined; }
+      if(isViewerCancellation(error))throw error;
+      if(this.format==='DWG' && isKnownSafeDwgAdapterLoadError(error))throw error;
+      throw new ViewerLoadError('adapter-load','LOAD','Viewer 도면 처리에 실패했습니다.',error); }
     } catch(error) {
       metric.result=generation!==this.generation || (error instanceof DOMException&&error.name==='AbortError')?'cancelled':'error';
-      metric.error=metric.result==='cancelled'?'Load cancelled.':'Viewer load failed.';throw error;
+      metric.error=metric.result==='cancelled'?'Load cancelled.':error instanceof ViewerLoadError?`${error.stage}:${error.reasonCode}`:'Viewer load failed.';throw error;
     } finally {
       metric.totalMs=performance.now()-started;metric.jsHeapBytes=heapBytes();
       if(metric.jsHeapBytes!==null)metric.reasons.jsHeapBytes='Nonstandard browser JS heap snapshot; may be rounded and excludes GPU/WASM allocations.';

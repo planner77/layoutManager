@@ -1,5 +1,10 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issues #124/#126/#127 — 목록·DXF 복구·Viewer UX (설계 2026-10-26, 독립 QA 2026-10-27)
+
+- 구현 전 Manager 요구/설계/AC는 [Issues124-126-127](out/Issues124-126-127.md). 지정 Developer→독립 QA→Manager 수용→Root 릴리스 절차, 후보 0.42.0. #124 홈 한정 sticky, #126 Three 기본+실 renderer 실패 1회 대체, #127 그룹 메뉴·overlay Drawer. 2026-10-27 독립 Typecheck, Lint, Vitest는 통과했으나 frozen candidate 전체 Playwright는 85/86이며 TC-127-MENU focus-return 1건 실패해 Developer 재작업/최종 QA 대기. DWG probes/legacy suite, 최신 Build, PR/Main CI/GHCR는 아직 검증되지 않음. G7/DB/API/운영 설정 변경 없음; #113 실제 CAD/GPU 수용 별도.
+
+
 ## Issue #109 S3-1 — 운영 Prisma Schema·격리 후보 Migration·이중 게이트 (2026-10-26)
 
 - **이 단계의 구현 경계:** S3-1은 `src/prisma/schema.prisma`에 G1~G4 User/AuthSession/Role/Site/SpecialGrant/Audit/RecoveryNonce/G3LoginAttempt 모델을 포함해 Prisma Client 타입을 만들고, **7개 정식 Prisma 후보 Migration은 `src/deploy/g7-s3/prisma/migrations`에 격리**한다. 현재 `src/scripts/deploy.ts`가 운영 자동 `prisma migrate deploy`를 수행하므로 **신규 Auth Migration을 `src/prisma/migrations`에 넣으면 운영 DB에서 미승인 자동 적용될 수 있다.** 따라서 활성 운영 Migration 6개는 불변, 별도 S3 승인·롤아웃 PR 전 승격/복사 금지. 상세 [S3-1 Runbook](src/deploy/g7-s3/README.md), [Database](out/Database.md).
@@ -555,6 +560,7 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 | [Issue28](out/Issue28.md) | 운영 이미지 경량화·Migration 분리·측정/롤백 | Dockerfile, Standalone, Compose, GHCR 변경 시 |
 | [Issue24](out/Issue24.md) | 기준정보 계층·이관·층별 Current 요구/설계/AC | 기준정보·계층 등록·제품 조회·legacy 이관 변경 시 |
 | [Issue76](out/Issue76.md) | GitHub Squash 기본 메시지 관리자 설정·CI 진단·Main 실행명 확인 | 저장소 설정·PR/Main CI run-name 변경 시 |
+| [Issues124-126-127](out/Issues124-126-127.md) | 목록 고정/밀도·DXF fallback·Viewer 그룹 메뉴/Drawer 설계와 AC | 목록/Viewer UI·복구·새 릴리스 검증 시 |
 | [README](README.md) | 사용자/개발자 프로젝트 안내 | 기능·구조·설정·실행방법 변경 시 |
 
 추가 Markdown 문서가 필요하면 이 표에 목적과 필수 참조 시점을 등록한다. 상세정보를 여러 문서에 독립적으로 복제하지 않는다.

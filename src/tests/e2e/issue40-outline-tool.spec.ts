@@ -1,3 +1,4 @@
+import { clickViewerCommand, clickViewerTestCommand, openViewerMenu } from './viewer-menu-helper';
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import { masterFields } from './master-helper';
@@ -42,21 +43,26 @@ test('TC-U3-E2E-001: ON enables selection; OFF clears draft but preserves confir
   await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
   const toggle = page.getByTestId('viewer-menu-outline-tool');
   const canvas = page.getByTestId('cad-canvas').locator('canvas');
+  await openViewerMenu(page, 'work');
   await expect(toggle).toBeEnabled();
-  await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+  await expect(toggle).toHaveAttribute('aria-checked', 'false');
   await expect(page.getByTestId('cad-outline-tools')).toHaveCount(0);
   await canvas.evaluate(el => el.setAttribute('data-u3-stable', 'yes'));
 
   await toggle.focus();
   await page.keyboard.press('Enter');
-  await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+  await openViewerMenu(page, 'work');
+  await expect(toggle).toHaveAttribute('aria-checked', 'true');
   // P2 review: a focused toolbar button must consume Space as a native click
   // even while the SelectionController is active (not temporary canvas pan).
+  await toggle.focus();
   await page.keyboard.press('Space');
-  await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+  await openViewerMenu(page, 'work');
+  await expect(toggle).toHaveAttribute('aria-checked', 'false');
+  await toggle.focus();
   await page.keyboard.press('Space');
-  await expect(toggle).toHaveAttribute('aria-pressed', 'true');
-  await expect(toggle).toHaveAttribute('aria-controls', 'viewer-tools-dock');
+  await openViewerMenu(page, 'work');
+  await expect(toggle).toHaveAttribute('aria-checked', 'true');
   const tools = page.getByTestId('cad-outline-tools');
   await expect(tools).toBeVisible();
   await expect(canvas).toHaveAttribute('data-u3-stable', 'yes');
@@ -70,9 +76,9 @@ test('TC-U3-E2E-001: ON enables selection; OFF clears draft but preserves confir
   // A new unconfirmed preview must be cancelled on OFF; confirmed outlines remain.
   await tools.getByRole('button', { name: '볼록 외곽선 미리보기' }).click();
   await expect(page.getByTestId('outline-preview')).toContainText('볼록 경계');
-  await toggle.click();
-  await expect(toggle).toHaveAttribute('aria-pressed', 'false');
-  await expect(toggle).not.toHaveAttribute('aria-controls', 'viewer-tools-dock');
+  await clickViewerTestCommand(page, 'viewer-menu-outline-tool');
+  await openViewerMenu(page, 'work');
+  await expect(toggle).toHaveAttribute('aria-checked', 'false');
   await expect(page.getByTestId('cad-outline-tools')).toHaveCount(0);
   await expect(page.getByTestId('outline-tool-notice')).toContainText('비확정');
   await expect(page.getByTestId('outline-saved-tools')).toContainText('1건');
@@ -84,7 +90,7 @@ test('TC-U3-E2E-001: ON enables selection; OFF clears draft but preserves confir
   expect(exported.outlines).toHaveLength(1);
   expect(exported.outlines[0].result.kind).toBe('PRECISE');
 
-  await toggle.click();
+  await clickViewerTestCommand(page, 'viewer-menu-outline-tool');
   await expect(page.getByTestId('outline-selection-count')).toContainText('선택 0개');
   await expect(tools.getByRole('button', { name: '임시 확정' })).toBeDisabled();
   await expect(tools.getByRole('button', { name: /JSON 내보내기 \(1\)/ })).toBeEnabled();
@@ -97,17 +103,16 @@ test('TC-U3-E2E-002: repeated ON/OFF, layer-hidden safety and ESC scope', async 
   const file = await createDrawing(request, 'issue40-repeated');
   await page.goto(`/cad/versions/${file.id}/viewer?renderer=three-dxf-viewer`);
   await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
-  const toggle = page.getByTestId('viewer-menu-outline-tool');
   const tools = page.getByTestId('cad-outline-tools');
   for (let i = 0; i < 3; i++) {
-    await toggle.click();
+    await clickViewerTestCommand(page, 'viewer-menu-outline-tool');
     await expect(tools).toBeVisible();
-    await toggle.click();
+    await clickViewerTestCommand(page, 'viewer-menu-outline-tool');
     await expect(tools).toHaveCount(0);
   }
-  await toggle.click();
+  await clickViewerTestCommand(page, 'viewer-menu-outline-tool');
   // Keep Space+drag pan when no interactive control owns keyboard focus.
-  await toggle.evaluate(node => (node as HTMLButtonElement).blur());
+  await page.locator('[data-viewer-group="work"]').evaluate(node => (node as HTMLButtonElement).blur());
   const panCanvas = page.getByTestId('cad-canvas').locator('canvas');
   const panBox = (await panCanvas.boundingBox())!;
   await page.keyboard.down('Space');
@@ -117,7 +122,7 @@ test('TC-U3-E2E-002: repeated ON/OFF, layer-hidden safety and ESC scope', async 
   await page.mouse.up();
   await page.keyboard.up('Space');
   await expect(page.getByTestId('outline-selection-count')).toContainText('선택 0개');
-  await page.getByRole('button', { name: '전체 화면 맞춤' }).click();
+  await clickViewerCommand(page, 'view', '화면 맞춤');
   await selectSquare(page);
   await page.getByRole('complementary', { name: '전체 화면 레이어' })
     .getByRole('checkbox', { name: 'EQUIP' }).uncheck();
@@ -126,7 +131,7 @@ test('TC-U3-E2E-002: repeated ON/OFF, layer-hidden safety and ESC scope', async 
   await page.getByRole('complementary', { name: '전체 화면 레이어' })
     .getByRole('checkbox', { name: 'EQUIP' }).check();
   await selectSquare(page);
-  await page.getByRole('button', { name: '도면 내 텍스트 검색' }).click();
+  await clickViewerCommand(page, 'work', '도면 내 텍스트 검색');
   await expect(page.getByTestId('cad-text-search')).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(page.getByTestId('outline-selection-count')).toContainText('선택 0개');
@@ -155,30 +160,37 @@ test('TC-U3-E2E-003: unsupported renderer, no entities, reload and SHA-bound swi
   await page.goto(`/cad/versions/${file.id}/viewer?renderer=dxf-viewer`);
   await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
   const toggle = page.getByTestId('viewer-menu-outline-tool');
+  await openViewerMenu(page, 'work');
   await expect(toggle).toBeDisabled();
   await expect(page.getByTestId('outline-tool-unavailable')).toContainText('three-dxf-viewer');
   await expect(page.getByTestId('cad-outline-tools')).toHaveCount(0);
-  await page.getByRole('button', { name: 'three-dxf-viewer', exact: true }).click();
+  await clickViewerCommand(page, 'view', 'three-dxf-viewer');
   await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
+  await openViewerMenu(page, 'work');
   await expect(toggle).toBeEnabled();
-  await expect(toggle).toHaveAttribute('aria-pressed', 'false');
-  await toggle.click();
-  await expect(toggle).toHaveAttribute('aria-pressed', 'true');
-  await page.getByRole('button', { name: '다시 불러오기' }).click();
+  await expect(toggle).toHaveAttribute('aria-checked', 'false');
+  await clickViewerTestCommand(page, 'viewer-menu-outline-tool');
+  await openViewerMenu(page, 'work');
+  await expect(toggle).toHaveAttribute('aria-checked', 'true');
+  await clickViewerCommand(page, 'drawing', '다시 불러오기');
   await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
-  await expect(toggle).toHaveAttribute('aria-pressed', 'false');
-  await toggle.click();
-  await page.getByRole('button', { name: 'dxf-viewer', exact: true }).click();
+  await openViewerMenu(page, 'work');
+  await expect(toggle).toHaveAttribute('aria-checked', 'false');
+  await clickViewerTestCommand(page, 'viewer-menu-outline-tool');
+  await clickViewerCommand(page, 'view', 'dxf-viewer');
   await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
+  await openViewerMenu(page, 'work');
   await expect(toggle).toBeDisabled();
-  await expect(toggle).toHaveAttribute('aria-pressed', 'false');
-  await page.getByRole('button', { name: 'three-dxf-viewer', exact: true }).click();
+  await expect(toggle).toHaveAttribute('aria-checked', 'false');
+  await clickViewerCommand(page, 'view', 'three-dxf-viewer');
   await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
-  await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+  await openViewerMenu(page, 'work');
+  await expect(toggle).toHaveAttribute('aria-checked', 'false');
 
   const empty = await createDrawing(request, 'issue40-empty', Buffer.from('0\nSECTION\n2\nENTITIES\n0\nENDSEC\n0\nEOF\n'));
   await page.goto(`/cad/versions/${empty.id}/viewer?renderer=three-dxf-viewer`);
   await expect(page.getByRole('status')).not.toHaveText('도면 로딩 중…');
+  await openViewerMenu(page, 'work');
   await expect(toggle).toBeDisabled();
   await expect(page.getByTestId('cad-outline-tools')).toHaveCount(0);
 });

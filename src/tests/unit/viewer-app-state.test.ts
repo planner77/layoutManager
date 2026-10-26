@@ -7,6 +7,7 @@ describe('TC-U1-UNIT-001: viewer app docking state', () => {
       layerPanelOpen: true,
       outlineToolEnabled: false,
       outlineTreeOpen: false,
+      toolsOpen: false,
       compactPanel: 'layers',
     });
   });
@@ -41,6 +42,25 @@ describe('TC-U1-UNIT-001: viewer app docking state', () => {
     state = viewerAppReducer(state, { type: 'close-layers' });
     expect(viewerAppReducer(state, { type: 'close-layers' })).toBe(state);
     expect(viewerAppReducer(state, { type: 'reset' })).toEqual(initialViewerAppState);
+  });
+
+  it('keeps the bottom tool drawer independent of generation and other panels', () => {
+    const opened=viewerAppReducer(initialViewerAppState,{type:'toggle-tools'});
+    expect(opened).toMatchObject({toolsOpen:true,outlineToolEnabled:false,layerPanelOpen:true,compactPanel:'tools'});
+    const closed=viewerAppReducer(opened,{type:'close-tools'});
+    expect(closed).toEqual(initialViewerAppState);
+    expect(viewerAppReducer(closed,{type:'close-tools'})).toBe(closed);
+  });
+
+
+  it('uses one visible modal drawer on mobile without changing generation mode', () => {
+    let state=viewerAppReducer(initialViewerAppState,{type:'toggle-tools',exclusive:true});
+    expect(state).toMatchObject({layerPanelOpen:false,toolsOpen:true,outlineTreeOpen:false,compactPanel:'tools'});
+    state=viewerAppReducer(state,{type:'set-outline-tool',enabled:true});
+    state=viewerAppReducer(state,{type:'toggle-outline-tree',exclusive:true});
+    expect(state).toMatchObject({layerPanelOpen:false,toolsOpen:false,outlineTreeOpen:true,outlineToolEnabled:true,compactPanel:'outlines'});
+    const migrated=viewerAppReducer({ ...state,layerPanelOpen:true,toolsOpen:true },{type:'compact-exclusive'});
+    expect(migrated).toMatchObject({layerPanelOpen:false,toolsOpen:false,outlineTreeOpen:true,outlineToolEnabled:true});
   });
 
   it('is idempotent on internal panel close and restores the active compact dock on reopen', () => {
