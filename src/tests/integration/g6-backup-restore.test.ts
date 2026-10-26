@@ -93,7 +93,7 @@ describe('Issue #108 G6 disposable backup → isolated migration → restore', (
       await writeFile(path.join(objectMirror, 'version-2.dxf'), 'corrupt synthetic mirror');
       expect(rows(db)).not.toEqual(baseline);
       expect(digest(await readFile(path.join(local, 'version-1.dxf'))))
-        .not.toBe(bytesByVersion.length ? digest(bytesByVersion[0]) : '');
+        .not.toBe(digest(bytesByVersion[0]));
       db.close(); db = undefined; // emulate stopped application before restoring
       await copyFile(backup, filename);
       await rm(local, { recursive: true }); await rm(objectMirror, { recursive: true });
