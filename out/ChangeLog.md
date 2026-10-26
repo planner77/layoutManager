@@ -3,7 +3,7 @@
 ## v0.42.1 후보 — Issue #57 공통 Logger·UploadDiagnostics 단일화 (2026-10-27)
 
 - 기존 #18 구조화 Logger 재사용 및 업로드 별도 console JSON emitter 제거. Versioned Schema v1, 안전한 필드 allowlist/정적 Error code·category 재정제, `LOG_LEVEL`/`LOG_FORMAT` 단일 필터 적용. 공개 진단/첫 실패/요청 ID 계약 유지, 반복 성공 Health 200 debug-only.
-- 일부 수동 CLI의 원시 Error 메시지 출력 제거; 단위 회귀 테스트 및 운영/개발 가이드 동기화. 기존 API 응답/DB Migration·Viewer·G7 Auth 활성화 및 로그 보관/조회 API/UI는 변경/추가 없음.
+- 일부 수동 CLI의 원시 Error 메시지 출력 제거; 단위 회귀 테스트 및 운영/개발 가이드 동기화. 최초 PR CI의 Migrator Logger→Catalog 누락에 따른 Docker smoke 실패를 COPY closure/Node import 사전검사/TC-LOG-MIG-001로 보완했으며 수정 HEAD CI 결과는 미검증. 기존 API 응답/DB Migration·Viewer·G7 Auth 활성화 및 로그 보관/조회 API/UI는 변경/추가 없음.
 - 소스·PR CI 후보이며 CI PASS, GHCR 이미지 게시, 병합 또는 사내 운영 적용 완료가 아니다. [Issue57](Issue57.md), [TestReport](TestReport.md) 참고.
 
 

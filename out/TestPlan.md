@@ -9,7 +9,8 @@
 | TC-L1-003 | debug/info/pretty 한 줄·URL query 차단·복합 문자열 제한 | AC1/2/4 |
 | TC-L1-004 | Health 200 debug-only, 오류 503과 동일 요청 ID | AC2/5 |
 | TC-LOG-001~005, TC-OBS-001~007, TC-UP, DELETE/HEALTH | 기존 공개 DTO·X-Request-Id·업로드 first failure·compensation/cleanup·DB 기능 회귀 | AC1/4/5 |
-| PR CI Verify/Docker | node/npm ci/db:generate→Typecheck/ESLint/Unit+Integration/Build/E2E/legacy/Docker 검증 | AC5 |
+| TC-LOG-MIG-001 | Logger의 상대 import 목록과 축소 Migrator Docker COPY closure 일치, build·CI의 read-only Node+tsx 모듈 import 검사 | AC2/5 |
+| PR CI Verify/Docker | node/npm ci/db:generate→Typecheck/ESLint/Unit+Integration/Build/E2E/legacy; Migrator 파일·logger import 사전검증과 Compose 신규 설치/멱등 migration | AC5 |
 
 실행/증거가 없는 테스트는 `NOT RUN`으로 기록. 운영 DB/CAD/Secret/원격 S3/실 LAN 검증을 이 PR로 대체하거나 추정 PASS 처리하지 않는다. [Issue57](Issue57.md), [TestReport](TestReport.md).
 

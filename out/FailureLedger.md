@@ -1,5 +1,15 @@
 # PR/Main CI 실패 원장
 
+## Issue #57 / PR #134 — Run 40418875931 실패 및 P1 Migrator 의존성 복구 (2026-10-27 KST)
+
+- **실제 CI 실패:** [PR CI #40418875931](https://github.com/planner77/layoutManager/actions/runs/40418875931), attempt **1**, `pull_request`, HEAD `1a5c26526dc3ba90f12aa7e6f5f150a039180933`, `completed/failure`. Verify [Job 121907950137](https://github.com/planner77/layoutManager/actions/runs/40418875931/job/121907950137)는 Typecheck/ESLint/Unit·Integration/Build/Chromium E2E/Legacy 등 **success**, Docker [Job 121907948037](https://github.com/planner77/layoutManager/actions/runs/40418875931/job/121907948037)은 `Compose fresh install, static assets, health and idempotent migration` **step 16 failure**. 앞의 쓰기금지·의도적 잘못된 SQL 거부 테스트는 성공이며 원인으로 분류하지 않는다.
+- **로그 근거:** Docker diagnostics에 `migrate-1 | Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/app/src/server/upload-error-catalog' imported from /app/src/server/logger.ts`; 이어서 `backfill exited 1`. `scripts/deploy.ts`의 Prisma migration 후 `scripts/backfill-delete-passwords.ts`의 Logger 초기 import에서 중단; Compose `service_completed_successfully` 미충족으로 앱 기동 실패. DB Schema/업로드 DTO/Viewer/Unit 결함이나 GHCR 게시 실패가 아님.
+- **P1 리뷰:** [Codex review r4383549858](https://github.com/planner77/layoutManager/pull/134#discussion_r4383549858)는 Logger 신규 Catalog 직접 import와 Docker Migrator 명시적 COPY 누락을 독립 지적(초기 unresolved). 실제 Docker 실패와 동일 root cause.
+- **수정:** `src/Dockerfile` Migrator에 `server/upload-error-catalog.ts` 1개 COPY, build에서 `node --import tsx`의 Logger read-only import preflight, `.github/workflows/pr-ci.yml` image 필수 파일/실제 logger import smoke, `src/tests/unit/standalone.test.ts` `TC-LOG-MIG-001`(상대 import→COPY closure) 추가. Full server/Next/테스트 복사, Docker 권한/DB migration/G7 Auth 활성화 없음.
+- **재검증 추적:** 소스·검사 추가는 수정 HEAD CI 통과의 증거가 아니다. 이 세트의 로컬 Docker/Unit/E2E `NOT RUN`; 새 HEAD PR CI는 동기화로 **시작 요청**하되 결과 모니터링 생략, 완료 상태 `NOT VERIFIED`. 이전 HEAD의 Verify 성공도 수정 HEAD에 소급하지 않는다. Review reply/resolve, 최신 Main 비교는 별도 GitHub 기록으로 추적.
+
+
+
 ## Issue #57 — L1 정적 리뷰 위험·해결 기록 (2026-10-27)
 
 - **관측 분류:** 신규 PR/CI Job 실패 또는 취소 0건(이 항목 작성 시 PR CI 시작 전으로, 성공/실패 판단 불가). 아래는 **정적 코드 검토에서 확인한 결함/누출 위험**이며 CI 실패나 실제 보안 사고로 분류하지 않는다. 과거 다른 이슈의 CI 실패 원장은 그대로 보존.

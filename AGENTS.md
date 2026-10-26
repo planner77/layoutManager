@@ -1,5 +1,13 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #57 / PR #134 — 최초 CI Docker Migrator 누락 의존성 (2026-10-27)
+
+- **관측된 초기 실패:** [PR CI 40418875931](https://github.com/planner77/layoutManager/actions/runs/40418875931), attempt 1, HEAD `1a5c26526dc3ba90f12aa7e6f5f150a039180933`. Verify Job `121907950137` success, Docker Job `121907948037`의 Compose fresh/migration step 16 failure. `backfill-delete-passwords.ts`→`logger.ts`→`upload-error-catalog.ts`의 직접 의존성이 축소 Migrator Docker COPY에서 누락되어 `ERR_MODULE_NOT_FOUND`, `backfill exited 1`. PR [P1 리뷰](https://github.com/planner77/layoutManager/pull/134#discussion_r4383549858)도 같은 문제 지적.
+- **재발 방지 계약:** Logger의 상대 import를 변경할 때 `src/Dockerfile`의 Migrator 명시적 COPY 및 `src/tests/unit/standalone.test.ts` `TC-LOG-MIG-001`을 함께 점검한다. Migrator build의 Node+tsx import preflight와 PR CI의 파일 존재·logger import smoke는 **DB/Compose 실행 전 의존성 누락을 검출**한다. Next.js 웹 번들 빌드 성공은 축소 Migrator 런타임 성공의 증거가 아니다.
+- 실패·조치는 [FailureLedger](out/FailureLedger.md), 검증 경계는 [TestReport](out/TestReport.md)/[TestPlan](out/TestPlan.md), 설계는 [Issue57](out/Issue57.md)를 참조한다. 신규 HEAD 검증 이전 PASS 금지. 이번 범위는 리뷰/충돌 해결 및 새 PR CI 시작까지만이며 병합/Main CI/GHCR/운영 DB·G7 Auth/실 CAD/Issue 종료 금지.
+
+
+
 ## Issue #57 — 단일 app Logger와 업로드 진단 계약 (2026-10-27)
 
 - [Issue57](out/Issue57.md)·[ADR-054](out/Decisions.md)·[Logging](out/Logging.md): 기존 #18 `writeLog`가 유일 app-owned 구조화 emitter. `UploadDiagnostics` 별도 JSON/console 삭제·schemaVersion 1/엄격한 확장 allowlist/공통 LOG_LEVEL·LOG_FORMAT 적용. Error·stack/경로/Locator/토큰/bytes 원문 노출 금지.

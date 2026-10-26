@@ -138,3 +138,24 @@ test('TC-IMG67-001: standalone traced native SQLite has no second image COPY', (
   expect(workflow).toContain('smoke_web_runtime.py create');
   expect(workflow).toContain('smoke_web_runtime.py verify-delete');
 });
+
+test('TC-LOG-MIG-001: migrator includes logger direct imports and loads them before DB migration', () => {
+  const root = path.resolve(process.cwd(), '..');
+  const logger = readFileSync(path.join(root, 'src/server/logger.ts'), 'utf8');
+  const docker = readFileSync(path.join(root, 'src/Dockerfile'), 'utf8');
+  const ci = readFileSync(path.join(root, '.github/workflows/pr-ci.yml'), 'utf8');
+  const migrator = docker.split('FROM runtime-base AS migrator\n')[1]?.split('\nFROM runtime-base AS runtime')[0];
+  expect(migrator).toBeDefined();
+  // Password backfill imports logger via tsx; the minimal migrator isn't a Next.js trace.
+  const relativeImports = Array.from(logger.matchAll(/\bfrom\s+['"]\.\/([^'"]+)['"]/g), ([, specifier]) => specifier);
+  expect(relativeImports).toContain('upload-error-catalog');
+  for (const specifier of relativeImports) {
+    const file = specifier.endsWith('.ts') ? specifier : specifier + '.ts';
+    expect(migrator).toContain(
+      'COPY --from=builder /app/src/server/' + file + ' ./server/' + file,
+    );
+  }
+  expect(migrator).toContain('node --import tsx --input-type=module -e');
+  expect(ci).toContain('server/upload-error-catalog.ts');
+  expect(ci).toContain('node --import tsx --input-type=module -e');
+});

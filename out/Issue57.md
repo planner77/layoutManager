@@ -51,3 +51,9 @@
 | AC5 기능/DB 불변 | 기존 Unit/Integration/E2E·Typecheck/Lint/Build, changed paths review | DB migration/Viewer/G7 Auth 직접 변경 없음 |
 
 테스트와 PR CI 실행 여부/결과를 구분한다. Source 작성만으로 PASS가 아니다. 실패한 Run/Job 또는 실제 review/thread/충돌 해결 시 `out/FailureLedger.md` 누적 기록; 미관측 실패를 만들어 기록하지 않는다.
+
+## 4. PR #134 최초 Docker CI 실패·축소 Migrator 의존성 계약 (2026-10-27)
+
+- [Run 40418875931](https://github.com/planner77/layoutManager/actions/runs/40418875931), HEAD `1a5c265`: Verify success, Docker Step 16 failure. Prisma SQL은 실행됐지만 후속 `backfill-delete-passwords.ts`가 Logger import 도중 축소 이미지에서 `upload-error-catalog.ts`를 찾지 못해 `ERR_MODULE_NOT_FOUND`·backfill exit 1. [Codex P1](https://github.com/planner77/layoutManager/pull/134#discussion_r4383549858)은 같은 누락을 지적.
+- **배포 불변식:** `server/logger.ts`에서 상대 모듈 import 추가 시 `src/Dockerfile` Migrator stage에 해당 모듈을 명시적으로 COPY해야 한다. `TC-LOG-MIG-001` 정적 import closure와 Migrator build/PR CI 실제 Node+tsx import 사전검증을 통해 DB/Compose 이전에 누락을 차단한다. 전체 Server 복사·기존 migration 활성화·G7 운영 변경 없음.
+- 재시도 최신 HEAD의 CI 완료/성공은 별도 확인 전 `NOT VERIFIED`. 최초 실패 Run과 조치는 [FailureLedger](FailureLedger.md), 시험 매핑은 [TestPlan](TestPlan.md)를 따른다.
