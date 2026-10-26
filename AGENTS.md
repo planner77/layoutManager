@@ -1,5 +1,13 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #106 / PR #120 — 최초 CI 9개 실패 및 P1 감사 보완 (2026-10-26)
+
+- **실패 실증:** [PR CI 40252656906](https://github.com/planner77/layoutManager/actions/runs/40252656906) HEAD `53b75ca17190cd101689a3f10877adcb737ff37c`, Verify Job `121347711873` Unit/Integration **failure** (54 files: 53 passed/1 failed; 297 tests: 288 passed/9 failed). 기존 Typecheck/Lint 성공(경고 2개), Docker/Migration/Runtime Smoke Job `121347711740` success; Verify 이후 Build/E2E **SKIPPED**.
+- **원인/교정:** `tests/integration/auth-g4.test.ts:37`에서 동일 Product 아래 두 Site에 동일 name=`Site` → 실제 CAD `uq_site_parent_name` 위반, 모든 G4 Test `beforeEach` 중단. `Site-a`/`Site-b`로 구분하고 fixture 명칭/권한 검사 TC 보강.
+- **P1 리뷰 2건:** [4373235025](https://github.com/planner77/layoutManager/pull/120#discussion_r4373235025) (중복 Site)와 [4373235027](https://github.com/planner77/layoutManager/pull/120#discussion_r4373235027) (인가/Outline Audit의 `site_id` 누락). G4 Transaction에서 DB Version→Site를 재해석하여 허용·거부/Outline 사건에 site_id 보존; G1 disposable AuditEvent CHECK는 scoped 액션의 실제 Site ID를 허용하되 다른 action 임의 Site ID·Site Grant affected 사용자 미기록은 거부. TC-P4-G4-001/005/009를 확대.
+- **원장/인계:** [FailureLedger](out/FailureLedger.md), [TestReport](out/TestReport.md), [Issue106](out/Issue106.md). 수정 후 최신 HEAD Typecheck/Vitest/PR CI의 실제 결과 확인 전 **PASS 판정 금지**. 정상 Auth/API/Prisma/Compose/Nginx/기존 CAD GET/원본·실 DB/S3 및 G7 #109 운영 OFF 불변. 리뷰 답변/해결·main 정렬/새 PR CI 시작까지만 진행하고 모니터링 생략.
+
+
 ## Issue #106 G4 — 격리 Role/Site/Version·Grant·Audit (2026-10-26)
 
 - 기준: [Issue106](out/Issue106.md), #102 G0-BIZ-01~06, #103 G1/#104 G2/#105 G3, ADR-051-R1. DESIGN.md가 없어 Architecture/Database/Decisions를 설계 기준으로 사용.

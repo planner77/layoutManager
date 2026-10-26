@@ -1,5 +1,13 @@
 # Issue #106 — G4 서버 Role/Site/Version 권한·Grant·Audit 영속 계층
 
+## PR #120 최초 CI 실패·P1 리뷰 보완 (2026-10-26)
+
+- **초기 CI:** [Run 40252656906](https://github.com/planner77/layoutManager/actions/runs/40252656906), HEAD `53b75ca17190cd101689a3f10877adcb737ff37c`, Verify Job `121347711873` failed / Docker Job `121347711740` success. Typecheck·Lint passed, Unit/Integration 288 passed/9 failed; 9개 G4 TC는 전부 같은 fixture `seedCad:37` 중복 Site 명칭으로 beforeEach 중단. Build/E2E skipped.
+- **시정:** 동일 Product 아래 `Site-a`/`Site-b` 고유 이름으로 실 CAD Parent/Name Unique 제약 준수. P1 [r4373235025](https://github.com/planner77/layoutManager/pull/120#discussion_r4373235025) 지적 처리 및 Site 명칭 assertion 추가.
+- **감사 P1:** [r4373235027](https://github.com/planner77/layoutManager/pull/120#discussion_r4373235027)는 Permission 허용/거부 및 Outline Create/Edit/Delete Audit가 **resolved Site를 잃는 결함**을 지적. 같은 원자 거래에서 DB Version→Site를 해석해 Audit `site_id`에 저장하며 G1 disposable CHECK는 Site Grant affectedUser+Site 의무와 scoped authorization/Outline Site 허용을 함께 유지. Audit table FK/append-only/Revision/Actor 불변 유지. TC001/005/009 확대.
+- **테스트 증거:** 수정 HEAD PR CI 시작은 수용 완료와 다르다. 최신 Typecheck/Unit/Build/E2E 등 결과 모니터링 생략 시 `NOT VERIFIED`로 남기며, G4-AC 완료 체크/실 운영 활성화 판단은 별도. [TestReport](TestReport.md)·[FailureLedger](FailureLedger.md) 근거.
+
+
 작성: 2026-10-26. [Issue #106](https://github.com/planner77/layoutManager/issues/106), #102 Owner G0-BIZ-01~06, 선행 #103 G1 / #104 G2 / #105 G3, ADR-051-R1 참조. 저장소 DESIGN.md는 없으며 AGENTS.md·Architecture·Database·Decisions를 설계 기준으로 삼는다.
 
 ## 범위 및 운영 차단

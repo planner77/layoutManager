@@ -85,13 +85,14 @@ function decide(db: IsolatedDb, faults: Faults, tokenHash: string | null,
       'unauthenticated', context, 'DENIED');
     return { ok: false, status: 401 };
   }
+  const resolvedSiteId = scopeId(db, resource);
   try {
-    const { siteId } = requireResolvedPermission(actor, action, resource, scopeId(db, resource));
+    const { siteId } = requireResolvedPermission(actor, action, resource, resolvedSiteId);
     return { ok: true, actor, siteId };
   } catch (error) {
     if (!(error instanceof AuthorizationError)) throw error;
     append(db, faults, 'AUTHORIZATION_DENIED', actor.id, actor.id,
-      ref.kind, ref.id, context, 'DENIED');
+      ref.kind, ref.id, context, 'DENIED', resolvedSiteId);
     return { ok: false, status: 403 };
   }
 }
@@ -139,7 +140,7 @@ export function createG4IsolatedStore(db: IsolatedDb, faults: Faults = {}): G4St
       return guarded(db, faults, token, action, resource, context, (actor, siteId) => {
         const ref = target(resource);
         append(db, faults, 'AUTHORIZATION_GRANTED', actor.id, actor.id,
-          ref.kind, ref.id, context);
+          ref.kind, ref.id, context, 'SUCCESS', siteId);
         return { siteId };
       });
     },
@@ -206,13 +207,13 @@ export function createG4IsolatedStore(db: IsolatedDb, faults: Faults = {}): G4St
     },
     outline(token, change: G4OutlineChange, context) {
       return guarded(db, faults, token, 'outline:write',
-        { kind: 'version', versionId: change.versionId }, context, actor => {
+        { kind: 'version', versionId: change.versionId }, context, (actor, siteId) => {
           if (change.operation === 'create') {
             const id = randomUUID();
             db.prepare('INSERT INTO "G4ShadowOutline"(id,version_id,revision,state,created_by,updated_by) VALUES(?,?,1,\'ACTIVE\',?,?)')
               .run(id, change.versionId, actor.id, actor.id);
             append(db, faults, 'OUTLINE_CREATED', actor.id, actor.id, 'OUTLINE', id, context,
-              'SUCCESS', null, null, 1);
+              'SUCCESS', siteId, null, 1);
             return { id, revision: 1, deleted: false };
           }
           const row = db.prepare(
@@ -229,7 +230,7 @@ export function createG4IsolatedStore(db: IsolatedDb, faults: Faults = {}): G4St
           if (updated.changes !== 1) throw new G4Failure('CONFLICT', 409);
           append(db, faults, deleted ? 'OUTLINE_DELETED' : 'OUTLINE_EDITED',
             actor.id, actor.id, 'OUTLINE', change.outlineId!, context, 'SUCCESS',
-            null, Number(row.revision), next);
+            siteId, Number(row.revision), next);
           return { id: change.outlineId!, revision: next, deleted };
         });
     },

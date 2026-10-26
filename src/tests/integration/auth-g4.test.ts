@@ -34,7 +34,7 @@ function seedCad() {
     .run('product-a', 'bu-a', 'Product');
   for (const site of ['a', 'b']) {
     db.prepare('INSERT INTO "CadSite"(id,product_id,name,kind) VALUES(?,?,?,?)')
-      .run('site-' + site, 'product-a', 'Site', 'SITE');
+      .run('site-' + site, 'product-a', 'Site-' + site, 'SITE');
     db.prepare('INSERT INTO "Building"(id,site_id,name) VALUES(?,?,?)')
       .run('building-' + site, 'site-' + site, 'B');
     db.prepare('INSERT INTO "CadLocation"(id,building_id,name,next_version) VALUES(?,?,?,1)')
@@ -97,6 +97,9 @@ afterEach(async () => { db.close(); await rm(directory, { recursive: true, force
 describe('#106 G4 isolated authorization, grants and audit', () => {
   test('TC-P4-G4-001: Reader/Editor/Admin Site-Version matrix; no implicit Admin Site', () => {
     const source = cadRows();
+    // Distinct Site names under the same Product obey uq_site_parent_name.
+    expect(db.prepare('SELECT name FROM "CadSite" ORDER BY id').all())
+      .toEqual([{ name: 'Site-a' }, { name: 'Site-b' }]);
     expect(service.permit(tokens['reader-a'], 'outline:read', v('a'), ctx('r-a')))
       .toEqual({ siteId: 'site-a' });
     for (const action of ['cad:upload', 'cad:current', 'cad:delete', 'outline:write'] as const) {
@@ -115,6 +118,15 @@ describe('#106 G4 isolated authorization, grants and audit', () => {
       .toThrow(expect.objectContaining({ status: 403 }));
     expect(() => service.permit(null, 'grants:manage', global, ctx('anonymous')))
       .toThrow(expect.objectContaining({ status: 401 }));
+    // Scoped success/denial must retain the authoritative Version-to-Site mapping.
+    expect(db.prepare('SELECT site_id,target_kind,target_id FROM "AuditEvent" WHERE request_id=?')
+      .get('r-a')).toMatchObject({
+      site_id: 'site-a', target_kind: 'VERSION', target_id: 'version-a',
+    });
+    expect(db.prepare('SELECT site_id,target_kind,target_id FROM "AuditEvent" WHERE request_id=?')
+      .get('cross-site')).toMatchObject({
+      site_id: 'site-b', target_kind: 'VERSION', target_id: 'version-b',
+    });
     expect(cadRows()).toEqual(source);
   });
 
@@ -219,11 +231,11 @@ describe('#106 G4 isolated authorization, grants and audit', () => {
     expect(deleted).toEqual({ id: created.id, revision: 3, deleted: true });
     expect(db.prepare('SELECT created_by,revision,state FROM "G4ShadowOutline" WHERE id=?')
       .get(created.id)).toMatchObject({ created_by: 'editor-a', revision: 3, state: 'DELETED' });
-    expect(db.prepare('SELECT action,before_revision,after_revision FROM "AuditEvent" WHERE target_id=? ORDER BY rowid')
+    expect(db.prepare('SELECT action,site_id,before_revision,after_revision FROM "AuditEvent" WHERE target_id=? ORDER BY rowid')
       .all(created.id)).toEqual([
-      { action: 'OUTLINE_CREATED', before_revision: null, after_revision: 1 },
-      { action: 'OUTLINE_EDITED', before_revision: 1, after_revision: 2 },
-      { action: 'OUTLINE_DELETED', before_revision: 2, after_revision: 3 },
+      { action: 'OUTLINE_CREATED', site_id: 'site-a', before_revision: null, after_revision: 1 },
+      { action: 'OUTLINE_EDITED', site_id: 'site-a', before_revision: 1, after_revision: 2 },
+      { action: 'OUTLINE_DELETED', site_id: 'site-a', before_revision: 2, after_revision: 3 },
     ]);
     expect(cadRows()).toEqual(source);
   });
@@ -291,6 +303,17 @@ describe('#106 G4 isolated authorization, grants and audit', () => {
     expect(() => db.prepare("DELETE FROM \"AuditEvent\" WHERE request_id='utc-grant'").run())
       .toThrow('G1_AUDIT_APPEND_ONLY');
     expect(db.prepare('PRAGMA foreign_key_check').all()).toEqual([]);
+    // Scoped Audit requires a verifiable Site; unrelated events may not spoof it.
+    const invalid = db.prepare(
+      'INSERT INTO "AuditEvent"(id,action,target_kind,target_id,site_id,outcome,timestamp_utc,request_id)' +
+      ' VALUES(?,?,?,?,?,?,?,?)',
+    );
+    expect(() => invalid.run('bad-login-site', 'LOGIN_DENIED', 'ACCOUNT', 'reader-a',
+      'site-a', 'DENIED', new Date(NOW).toISOString(), 'invalid-site')).toThrow();
+    expect(() => invalid.run('bad-outline-site', 'OUTLINE_CREATED', 'OUTLINE', 'missing-outline',
+      null, 'SUCCESS', new Date(NOW).toISOString(), 'missing-site')).toThrow();
+    expect(() => invalid.run('bad-site-fk', 'AUTHORIZATION_GRANTED', 'VERSION', 'version-a',
+      'site-missing', 'SUCCESS', new Date(NOW).toISOString(), 'invalid-site-fk')).toThrow();
     const cutoff = auditRetentionCutoff(new Date(NOW));
     expect(cutoff.toISOString()).toBe(new Date(NOW - 365 * 86400_000).toISOString());
     expect(count('AuditEvent')).toBeGreaterThan(0);

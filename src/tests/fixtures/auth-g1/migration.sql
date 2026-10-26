@@ -101,9 +101,22 @@ CREATE TABLE "AuditEvent" (
   "outcome" TEXT NOT NULL CHECK("outcome" IN ('SUCCESS','DENIED','FAILED')),
   "timestamp_utc" TEXT NOT NULL,
   "request_id" TEXT NOT NULL CHECK(length("request_id") BETWEEN 1 AND 128),
+  -- G1 site grant/revoke always preserves the affected User and Site.
+  -- G4 scoped authorization and Outline events may preserve DB-resolved Site;
+  -- unrelated account/session/role actions must not invent a Site relation.
   CHECK(
-    ("action" IN ('SITE_GRANTED','SITE_REVOKED') AND "affected_user_id" IS NOT NULL AND "site_id" IS NOT NULL)
-    OR ("action" NOT IN ('SITE_GRANTED','SITE_REVOKED') AND "site_id" IS NULL)
+    ("action" IN ('SITE_GRANTED','SITE_REVOKED')
+      AND "affected_user_id" IS NOT NULL AND "site_id" IS NOT NULL)
+    OR ("action" NOT IN ('SITE_GRANTED','SITE_REVOKED') AND (
+      ("action" IN ('OUTLINE_CREATED','OUTLINE_EDITED','OUTLINE_DELETED')
+        AND "target_kind"='OUTLINE' AND "site_id" IS NOT NULL)
+      OR ("action" IN ('AUTHORIZATION_GRANTED','AUTHORIZATION_DENIED')
+        AND ("site_id" IS NULL OR "target_kind" IN ('SITE','VERSION','OUTLINE')))
+      OR ("action" NOT IN (
+        'OUTLINE_CREATED','OUTLINE_EDITED','OUTLINE_DELETED',
+        'AUTHORIZATION_GRANTED','AUTHORIZATION_DENIED')
+        AND "site_id" IS NULL)
+    ))
   ),
   FOREIGN KEY("actor_user_id") REFERENCES "User"("id") ON DELETE NO ACTION ON UPDATE NO ACTION,
   FOREIGN KEY("affected_user_id") REFERENCES "User"("id") ON DELETE NO ACTION ON UPDATE NO ACTION,
