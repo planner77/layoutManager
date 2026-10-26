@@ -37,7 +37,7 @@ export type S2Assessment = Readonly<{
 const IDs = /^(?:EV|SNAP|QA|CR|OWNER)-[A-Za-z0-9_-]{2,64}$/;
 const DIGEST = /^sha256:[0-9a-f]{64}$/;
 const COMMIT = /^[0-9a-f]{40}$/;
-const SCHEMA = /^[0-9]{14}_[a-z0-9_]{2,72}$/;
+const SCHEMA = /^[0-9]{12,14}_[a-z0-9_]{2,72}$/;
 const TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/;
 const plain = (x: unknown): x is Record<string, unknown> =>
   x !== null && typeof x === 'object' && !Array.isArray(x) &&
