@@ -106,6 +106,7 @@ export function g7OperationalWriteMode(env: Env): 'legacy' | 'blocked' | 'protec
   // to unauthenticated writes on bad flags, expired GO or DB failure.
   const attempted = [
     'G7_S3_GO','G7_OPERATION_GO_ID','G7_OPERATION_MANIFEST_PATH',
+    'G7_RELEASE_CAPABILITY','G7_OPERATION_ORIGIN',
     'G7_OPERATION_DATABASE_URL','G7_RUNNING_APP_DIGEST',
     'G7_RUNNING_MIGRATOR_DIGEST','G7_RUNNING_SOURCE_COMMIT',
   ].some(key => env[key] !== undefined && env[key] !== '') ||
