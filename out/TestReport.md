@@ -1,5 +1,13 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issue #108 / G6 — 비운영 준비물 작성·실증 미확보 (2026-10-26)
+
+- **작성한 구현:** offline src/scripts/g6-evidence.mjs(19개 필수 항목·EV ID/동일 snapshot·PC 2대 분리·App/Migrator 일치/운영 OFF 검사·사유코드만 출력), Unit TC-P4-G6-001~006, disposable SQLite online backup+합성 2 Version·local CAD/mock-S3의 격리 DDL dry-run·손상 주입·실복원 Integration TC-P4-G6-007. 예제는 전부 NOT_RUN이며 실제 원격 S3·Nginx·운영 CAD/DB/API에 접속하지 않는다. [Issue108](Issue108.md).
+- **새 HEAD 실행 상태:** Typecheck/Lint/npm test/Build/Chromium E2E/Legacy E2E/Docker와 PR CI는 Run/Job 확인 전 **NOT RUN/PENDING**. 코드 작성 또는 이전 G1/G5 CI 성공을 G6 현재 HEAD 합격·현장 PASS로 전용 금지.
+- **G6-AC1~4 실 현장:** 사내 PC 2대/PROD Nginx/DEV direct/업로드·Cookie/인증된 보호 Route E2E, **실** DB+CAD+S3 일관 snapshot/운영 Prisma dry-run/실 restore·rollback은 전부 **NOT RUN**, 사내 EV ID/운영자·QA/Owner 증거 없음. G6-AC5는 Git diff상 운영 OFF 유지, 실제 운영 배치 상태 확인은 별도. #108 G6 실증과 #109 Owner Go/No-Go는 미완으로 BLOCKED.
+- 신규 PR CI **시작은 성공과 다르며** 요청대로 CI 결과 모니터링·병합·GHCR 게시·실 배포는 수행하지 않는다. 기존 Issue/실패 원장 이력은 보존.
+
+
 ## Issue #106 / PR #120 — 실패 Run 재현 원인 및 보완 검증 대기 (2026-10-26)
 
 - **확인된 구 HEAD:** `53b75ca17190cd101689a3f10877adcb737ff37c`. [PR CI 40252656906](https://github.com/planner77/layoutManager/actions/runs/40252656906) completed/failure. Verify Job `121347711873`의 Typecheck PASS, Lint PASS(기존 경고 2), Unit/Integration 53 files/288 tests PASS + G4 1 file/9 tests FAIL. 이 9건은 공통 `seedCad` `product_id,name` Unique 위반, `beforeEach` 중단. Build/E2E/Legacy E2E는 SKIPPED. Docker Job `121347711740` completed/success.
