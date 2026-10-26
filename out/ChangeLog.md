@@ -1,5 +1,11 @@
 # ChangeLog
 
+## Unreleased — Issue #108 G6 증거 매트릭스·합성 복원 검증 준비 (2026-10-26)
+
+- Offline src/scripts/g6-evidence.mjs와 전체 NOT_RUN 예제, Unit TC-P4-G6-001~006 추가. 합성 SQLite(운영 CAD 기존 6개 schema migration)+local CAD/mock-S3 두 버전으로 backup→별도 G1 fixture migration dry-run→손상 주입→실복원 Integration TC-P4-G6-007 작성. 현장 Runbook/AC·TC/ADR/설계·시험 문서를 Issue108에 동기화.
+- 새 HEAD 자동 Test/PR CI 완료는 아직 확인 전 NOT VERIFIED. 사내 Windows/WSL2 Nginx·PC 2대 실 E2E·실 S3/DB/CAD Backup/Restore, Owner G6 수용과 별도 #109 G7 Go/No-Go는 **NOT RUN/PENDING**. 운영 Auth/API/Prisma/DDL/Compose/Nginx/.env/실 DB/CAD/S3/GHCR 변경 0, 기존 익명 CAD GET 유지. [Issue108](Issue108.md).
+
+
 ## 2026-10-26 — #106 G4 격리 Role/Site/Version·Grant·Audit
 
 G1~G3 기반 G4 비라우팅 서버 인가, Admin Grant/disable, 안전 append-only Audit, 테스트용 ShadowOutline CAS 및 TC-P4-G4-001~009 추가. 기존 익명 CAD GET/Viewer, 운영 Prisma/API·Compose/Nginx/원본·Version/Current·삭제 암호 및 GHCR 불변. 자동 시험 PASS/배포가 아니며 실제 운영 활성화 #109 G7 전 OFF. [Issue106](Issue106.md).
