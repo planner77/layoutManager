@@ -6,6 +6,7 @@ import { resolveG7OperationGate } from '@/server/g7-operational/gate';
 import { openG7OperationalAuthDb } from '@/server/g7-operational/sqlite';
 import { createG3IsolatedStore, createG3LoginLimiter } from '@/server/g7-staging/g3-store';
 import { createG4IsolatedStore } from '@/server/g7-staging/g4-store';
+import { handleG7CreateUser } from '@/server/g7-operational/provision';
 import { createLoginService } from '@/server/auth/login-service';
 import { handleG3Request, type G3Action } from '@/server/auth/g3-request';
 import { createG4Service, handleG4Request } from '@/server/auth/g4-service';
@@ -30,13 +31,15 @@ async function handle(request: Request, args: Args): Promise<Response> {
     ['login','initial-change','session','change','logout'].includes(command);
   const isG4 = domain === 'access' &&
     ['permit','grant','disable','audit'].includes(command);
-  if (!isG3 && !isG4) return reply(404, 'NOT_FOUND');
+  const isProvision = domain === 'access' && command === 'create-user';
+  if (!isG3 && !isG4 && !isProvision) return reply(404, 'NOT_FOUND');
   let db: ReturnType<typeof openG7OperationalAuthDb>;
   try { db = openG7OperationalAuthDb(gate); }
   catch { return reply(503, 'G7_AUTH_UNAVAILABLE'); }
   try {
     const context = { trustedOrigin: gate.origin, now: Date.now(),
       requestId: randomBytes(12).toString('base64url') };
+    if (isProvision) return await handleG7CreateUser(request,db,context);
     if (isG3) return await handleG3Request(command as G3Action, request,
       createLoginService(createG3IsolatedStore(db)), {
         ...context, peer: 'g7-trusted-operator', limiter: createG3LoginLimiter(db),
