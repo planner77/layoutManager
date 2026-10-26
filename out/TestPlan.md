@@ -1,5 +1,11 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #105 G3 — 로그인·만료·회수·Actor 검증 (2026-10-26)
+
+[Test Case/AC 단일 목록](Issue105.md)의 **TC-P4-G3-001~012**를 사용한다. AC1=로그인/초기 변경·401/403(001~003), AC2=hash·8h/30m·원자 3개(004~006), AC3=logout/password/disable/recovery(003,007~008), AC4=현재 DB Actor(009), AC5=정상 cookie/proxy/DEV/guard(010~011), AC6=격리·기존 CAD/API 회귀(012)다. 실제 두 SQLite 연결 경쟁·credential 검증 후 계정 변경·Audit 실패 rollback을 포함하며 단순 count 모의로 대체하지 않는다.
+
+환경은 기존 CAD migrations+G1 일회용 SQLite와 실제 G2 서비스, 합성 계정/도면이며 운영 데이터/Secret을 쓰지 않는다. 최신 Typecheck/Lint/Unit·Integration/Build/관련 E2E와 CI Docker/Migration을 확인한다. 로컬 실행·CI 시작·CI 성공·실 LAN/복구 증거를 구분하고 미실행은 NOT RUN으로 남긴다. 기존 CAD 익명 조회 및 Current/Version/SHA·삭제 비밀번호 회귀를 유지한다. 상세 실제 결과는 TestReport, 관측 CI 실패는 FailureLedger에 기록한다.
+
 ## Issue #104 G2 — Admin·Secret·Nonce 검증 계획 (2026-10-26)
 
 **테스트 환경:** 기존 CAD 6개 migration → disposable G1 `cad-auth-g1-*/fixture.sqlite` → #103 G1 SQL → #104 명시 서비스. 운영 Prisma/Runtime 연결 없음. 작성 시점 Typecheck/Vitest/Docker NOT RUN.

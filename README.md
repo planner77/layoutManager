@@ -1,5 +1,9 @@
 # CAD Web Viewer P.O.C.
 
+## Issue #105 — G3 격리 로그인·세션 (0.41.0 후보)
+
+로그인·초기 비밀번호 변경·로그아웃, 세션 8h/idle 30m/최대 3개와 계정 변경 시 회수, 서버 DB Actor 및 정상 HTTP cookie 흐름을 비운영 서비스와 fixture에 구현했습니다. 실제 검증 결과는 TestReport에서 확인합니다. 초기/복구 계정은 비밀번호 변경 후 다시 로그인하며 운영 로그인 API/UI는 아직 연결하지 않습니다. 기존 공개 CAD 익명 조회·Current·삭제와 운영 Prisma/Compose/DB는 그대로 유지합니다. [요구·설계·AC/TC](out/Issue105.md), [실제 시험 결과](out/TestReport.md)를 구분하며 #109 별도 Owner 승인 전 운영 인증 기능은 OFF입니다. 이번 작업은 PR CI 시작까지이며 병합·배포를 포함하지 않습니다.
+
 ## Issue #104 — v0.40.5 GHCR 신규 Pair 준비 (2026-10-26)
 
 이미 게시된 v0.40.4를 재사용하지 않고 사용자가 요청한 신규 GHCR App/Migrator 게시용으로 `src/package.json`과 `src/package-lock.json`의 루트 버전을 **0.40.5**로 정렬했습니다. 버전 변경 이전 G2 구현 HEAD `f5f7ea2e`은 [PR CI 40234510320](https://github.com/planner77/layoutManager/actions/runs/40234510320)에서 Verify/Docker 모두 성공했지만, **새 HEAD는 별도 PR CI 성공 후에만 병합/게시**합니다. G2 초기 관리자 서비스는 격리 CLI 전용이며 운영 Auth·Admin·Prisma/API·DB 기능은 #109 G7 승인 전 계속 OFF.

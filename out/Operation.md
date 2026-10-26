@@ -1,5 +1,11 @@
 # 운영·환경설정 초안
 
+## Issue #105 G3 — 운영 연결 없는 세션 검증 (2026-10-26)
+
+[Issue105](Issue105.md)의 로그인/암호 변경/세션 서비스는 disposable G1 SQLite를 사용하는 명시 격리 검증용이다. 운영 로그인 URL/UI·Admin API나 자동 migration을 추가하지 않으며 `.env`/Compose/Nginx 설정으로 활성화할 경로를 제공하지 않는다. 운영 연결은 #109 Owner Go/No-Go 이후 별도 작업이다.
+
+초기 및 복구 계정은 일반 session cookie가 발급되지 않는다. credential 재입력으로 초기 비밀번호를 변경하면 다시 로그인해야 하고, 일반 암호 변경/disable/recovery도 기존 세션을 모두 폐기한다. HTTP cookie의 HttpOnly/SameSite는 TLS 암호화를 뜻하지 않는다. 정상 proxy/direct 격리 시험과 실제 Windows Nginx·WSL2/사내 PC 2대의 동작은 구분하며 현장 cookie·DB/CAD/S3 backup/restore는 #108로 인계한다. 실제 실행 명령과 성공 여부는 TestReport를 기준으로 확인한다.
+
 ## Issue #104 — GHCR v0.40.5 신규 Pair 게시 절차 (2026-10-26)
 
 - G2 격리 서비스에 대한 GHCR 신규 게시 요청은 기존 v0.40.4 이미지·Git tag/digest를 이동하지 않는 새 PATCH 버전 **0.40.5** 준비로 처리한다. 신규 PR HEAD CI 검증·review 0·main 정렬 후 squash merge하면 Main push Workflow의 `release-scope`가 변경 경로를 확인하고 후보 App/Migrator 두 개를 빌드·digest 검증한 후 `:0.40.5`/`:0.40.5-migrate` 및 latest Pair를 승격하도록 설정되어 있다.

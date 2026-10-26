@@ -1,5 +1,11 @@
 # 상세 요구사항
 
+## Issue #105 G3 — 격리 세션 요구 (2026-10-26)
+
+[P4-G3-R01~06 요구·AC·TC](Issue105.md)를 이번 Unit 기준으로 추가한다. 유효 credential 로그인/초기 암호 변경·logout, 32 byte token/hash 저장, 절대 8h·idle 30m·원자 최대 3개, disable/password/recovery 회수, 서버 DB Actor와 정상 HTTP cookie/Origin/CSRF 계약을 구현한다. 초기 변경 계정에는 일반 세션을 발급하지 않고 credential 재입력 변경 후 새 로그인을 요구한다. 상세 응답 401/403/409/429 및 거래 경계는 Issue105가 기준이다.
+
+#102 Owner R1에 따라 추가 공격·탈취 강화는 비범위이며 기존 정상 guard는 유지한다. 기존 공개 CAD GET 익명, 미래 POST/Current Editor/Admin+Site 및 DELETE 추가 기존 비밀번호 AND 계약을 보존한다. G3는 비운영 서비스/fixture 검증만이며 Auth Route·운영 Prisma/Compose/DB·CAD 기능은 G7 전 OFF. 실제 구현/시험 상태는 TestReport를 따른다.
+
 ## Issue #104 G2 — 관리자 단발 생성/복구 요구사항 (2026-10-26)
 
 | 요구 ID | 기능·업무 기준 | 구현 및 Test |
