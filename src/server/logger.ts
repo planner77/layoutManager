@@ -21,7 +21,9 @@ const safeApplicationCodes = new Set([
   'DATABASE_CHECK_FAILED', 'DELETE_PASSWORD_BACKFILL_FAILED', 'DELETE_RATE_LIMITED',
   'INVALID_DELETE_PASSWORD', 'REQUEST_TOO_LARGE', 'IMMUTABLE_MASTER',
   'INVALID_MASTER_TYPE', 'INVALID_MASTER_NAME', 'INVALID_SITE_KIND', 'INVALID_PARENT',
-  'INVALID_ACTIVE',
+  'INVALID_ACTIVE', 'INVALID_LOCATION_CHAIN', 'INACTIVE_LOCATION_CHAIN',
+  'DUPLICATE_MASTER', 'MASTER_REFERENCED', 'MASTER_NOT_FOUND', 'UNCLASSIFIED_IMMUTABLE',
+  'RECLASSIFY_NOT_ALLOWED', 'INACTIVE_MASTER', 'RECLASSIFY_COLLISION', 'KDF_BUSY',
 ]);
 const knownErrorNames = new Set([
   'Error', 'CadError', 'TypeError', 'RangeError', 'SyntaxError', 'AbortError', 'TimeoutError',
@@ -218,7 +220,7 @@ export class RequestLogContext {
     requestId?: string,
   ) {
     this.requestId = requestId && uuid.test(requestId) ? requestId : randomUUID();
-    // Avoid two info logs for every successful read. The completion stays at info.
+    // Avoid high-frequency successful health logs while preserving start/end for other APIs.
     if (this.operation === 'health') this.debug('http_request_started', { outcome: 'started' });
     else this.info('http_request_started', { outcome: 'started' });
   }
