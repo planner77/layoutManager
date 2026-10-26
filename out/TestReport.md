@@ -1,5 +1,12 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issue #106 G4 — 구현과 CI 검증 증거 구분 (2026-10-26)
+
+- **작성 완료 범위:** src/domain/auth.ts, src/server/auth/{audit,g4-service}.ts, src/tests/fixtures/auth-g1/migration.sql, src/tests/fixtures/auth-g4/store.ts, src/tests/integration/auth-g4.test.ts 및 관련 설계. TC-P4-G4-001~009 코드 작성은 실행 PASS가 아님.
+- **직접 실행:** 본 GitHub 연결 작업 환경에서 Node/npm/TypeScript/Vitest/Playwright/Docker 직접 실행 **NOT RUN**. 신규 PR CI는 최신 HEAD에서 시작 확인 후 모니터링 생략, 결과 확인 전 **PENDING/NOT VERIFIED**. 선행 #105 CI 성공을 새 G4 HEAD 성공으로 재사용 금지.
+- **운영 경계:** 기존 공개 CAD GET/Viewer, 실제 Auth/Admin/API/Prisma/migration/Compose/Nginx/실 DB/CAD/S3/GHCR 변경 0; 실 LAN/백업·복구/DELETE 비밀번호 AND/Owner #109 운영 Go-Live = NOT RUN/BLOCKED. [Issue106](Issue106.md).
+
+
 ## Issue #105 / G3 — 독립 QA 결과 (2026-10-26)
 
 - **역할·범위:** Manager `gpt-6-astra`가 요구사항/설계/AC와 구현 검토를 완료하고 QA 가능 상태로 인계, Developer `gpt-6-sol` 구현·동결, QA `gpt-6-luna`가 독립 소스 검토·실행·기록. Root가 조정 및 최종 commit/push를 담당. 이번 QA는 #105 격리 구현이며 운영 Auth/API/Prisma/DDL/Compose/Nginx/.env 활성화나 CI·배포를 수행하지 않음.
