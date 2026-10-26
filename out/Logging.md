@@ -1,5 +1,13 @@
 # Structured Logging 운영 가이드
 
+## Issue #57 L1 — app 소유 Schema v1·단일 출력 (2026-10-27)
+
+- 기존 `src/server/logger.writeLog`만 구조화 JSON을 stdout/stderr로 출력한다. `UploadDiagnostics`도 `LOG_LEVEL`/`LOG_FORMAT`을 공유한다. `warn→console.warn`, `error→console.error`, `debug/info→console.log`; production은 `LOG_FORMAT=json` 한 줄 권장.
+- 필수: `timestamp`, `schemaVersion:1`, `level`, `event`, `component`, `operation`, `appVersion`. 선택: `requestId/jobId/outcome/elapsedMs/httpStatus/errorCode`; 선언 확장: `method/route/stage/backend/recoveryId/status/jobCount/error`. 동적 경로·파일명·Locator/stack/임의 Error message·credentials·CAD bytes는 emit하지 않는다.
+- 성공 Health 200의 start/end는 debug로 기록하여 `LOG_LEVEL=info`에서 억제하되 실패 503 error는 보존. 다른 API start/end와 업로드 stage·first failure는 동일 `X-Request-Id`로 상관 분석한다. Next.js/Prisma/Nginx/Docker/Browser/수동 CLI 출력은 별도 소스이고 v1 Schema 준수·웹 조회가 보장되지 않는다. 보관·조회와 권한은 후속 #59~#62.
+- 현행 발생 위치 목록, stage별 Event 및 Schema 버전 정책은 [Issue57](Issue57.md), [ADR-054](Decisions.md), [TestPlan](TestPlan.md) 참조.
+
+
 ## Issue #31 P4-D0 — 감사와 운영 로그의 책임 경계 (설계, 2026-10-25)
 
 - Owner는 앱 로컬 계정·서버 세션과 담당 Scope 공동 편집을 작업자 식별·변경 이력 목적으로 선택했다([ADR-048/049](Decisions.md)); 웹 인증/로그 조회 API는 아직 미구현. HTTP 사내 LAN의 전송 위협은 보안·감사 주체 신뢰 수준의 제한이며 앱 로그 자체가 전송 암호화를 제공하지 않는다.

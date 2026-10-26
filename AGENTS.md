@@ -1,5 +1,12 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #57 — 단일 app Logger와 업로드 진단 계약 (2026-10-27)
+
+- [Issue57](out/Issue57.md)·[ADR-054](out/Decisions.md)·[Logging](out/Logging.md): 기존 #18 `writeLog`가 유일 app-owned 구조화 emitter. `UploadDiagnostics` 별도 JSON/console 삭제·schemaVersion 1/엄격한 확장 allowlist/공통 LOG_LEVEL·LOG_FORMAT 적용. Error·stack/경로/Locator/토큰/bytes 원문 노출 금지.
+- `X-Request-Id` 및 업로드 공개 JSON, 단계/첫 실패 우선·복구 ID 유지, 성공 Health 200만 debug 필터. API/Viewer/DB/G7 Auth 운영 활성화·Migration 및 로그 보관/조회(#59~#62) 별도. 새로운 앱 이벤트/필드 추가 시 v1 계약·안전성 테스트 먼저 갱신.
+- 현재 범위는 구현·리뷰·충돌 해결·PR CI **시작**까지. 실행하지 않은 test/CI는 PASS 아님. 병합/GHCR/운영 적용/이슈 종료는 별도 지시 전 수행하지 않는다.
+
+
 ## Issues #124/#126/#127 — 0.42.0 완료 (2026-10-27)
 
 - 홈 Sticky/밀도·DXF Three 기본/실패 복구·Viewer 그룹 메뉴/Drawer를 구현하고 PR #132, 최신 PR/Main CI, GHCR App/Migrator 0.42.0 pair 및 세 이슈 종료를 확인했다. 요구/설계/AC는 [Issues124-126-127](out/Issues124-126-127.md), 실제 QA·실패·게시 근거는 [TestReport](out/TestReport.md)의 U-ISSUES124-126-127-20261027과 [FailureLedger](out/FailureLedger.md)를 따른다. Viewer/목록·렌더러 오류/키보드 변경 시 이 근거를 먼저 확인한다. 다음 별도 수용은 #113 실 CAD/GPU이며 운영 Auth/G7·배포 승인은 이 완료와 분리한다.
