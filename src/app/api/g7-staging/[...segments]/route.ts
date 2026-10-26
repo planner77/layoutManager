@@ -24,17 +24,42 @@ const failure = (error: unknown) => {
     return json(error.status, { error: { code: error.code } });
   return json(503, { error: { code: 'G7_STAGING_UNAVAILABLE' } });
 };
+// Stage cookies must not replace the operational cad_session cookie at a
+// shared HTTP hostname. The existing G3/G4 service keeps its internal token
+// name; requests/responses are adapted only at this staging-only boundary.
+const STAGE_COOKIE = 'cad_staging_session';
 function cookie(req: Request) {
+  const prefix = STAGE_COOKIE + '=';
   const matches = (req.headers.get('cookie') ?? '').split(';')
-    .map(x => x.trim()).filter(x => x.startsWith('cad_session='));
-  return matches.length === 1 ? matches[0].slice('cad_session='.length) : null;
+    .map(x => x.trim()).filter(x => x.startsWith(prefix));
+  return matches.length === 1 ? matches[0].slice(prefix.length) : null;
+}
+function normalizedAuthRequest(req: Request): Request {
+  const headers = new Headers(req.headers);
+  const rawToken = cookie(req);
+  headers.delete('cookie');
+  if (rawToken) headers.set('cookie', 'cad_session=' + rawToken);
+  return new Request(req, { headers });
+}
+function stagingCookieResponse(response: Response): Response {
+  const original = response.headers.get('set-cookie');
+  if (!original) return response;
+  if (!original.startsWith('cad_session=') || !original.includes('; Path=/;')) {
+    throw new G4Failure('G4_UNAVAILABLE', 503);
+  }
+  const headers = new Headers(response.headers);
+  headers.set('set-cookie', original.replace(/^cad_session=/, STAGE_COOKIE + '=')
+    .replace('; Path=/;', '; Path=/api/g7-staging;'));
+  return new Response(response.body, { status: response.status, headers });
 }
 async function input(req: Request) {
   if (req.headers.get('content-type')?.split(';')[0].trim() !== 'application/json')
     throw new G4Failure('BAD_INPUT', 400);
   const raw = await req.text();
   if (raw.length > 350000) throw new G4Failure('BAD_INPUT', 400);
-  const value: unknown = JSON.parse(raw);
+  let value: unknown;
+  try { value = JSON.parse(raw); }
+  catch { throw new G4Failure('BAD_INPUT', 400); }
   if (!value || Array.isArray(value) || typeof value !== 'object')
     throw new G4Failure('BAD_INPUT', 400);
   return value as Record<string, unknown>;
@@ -62,16 +87,17 @@ async function dispatch(req: Request, args: Params, db: IsolatedDb, gate: G7Stag
   if (segments[0] === 'auth' &&
       ['login', 'initial-change', 'session', 'change', 'logout'].includes(segments[1])) {
     const service = createLoginService(createG3IsolatedStore(db));
-    return handleG3Request(segments[1] as G3Action, req, service, {
+    const result = await handleG3Request(segments[1] as G3Action, normalizedAuthRequest(req), service, {
       trustedOrigin: gate.origin, peer: 'g7-staging-only', now: context.now,
       requestId, limiter: createG3LoginLimiter(db),
     });
+    return stagingCookieResponse(result);
   }
   if (segments[0] === 'access' &&
       ['permit', 'grant', 'disable', 'audit'].includes(segments[1])) {
     const service = createG4Service(createG4IsolatedStore(db));
     return handleG4Request(segments[1] as
-      'permit' | 'grant' | 'disable' | 'audit', req, service,
+      'permit' | 'grant' | 'disable' | 'audit', normalizedAuthRequest(req), service,
       { ...context, trustedOrigin: gate.origin });
   }
   if (segments[0] !== 'cad') return inactive();
