@@ -27,7 +27,7 @@ afterEach(() => { if (temp) rmSync(temp, { recursive: true, force: true }); temp
 describe('Issue #108 G6 evidence readiness (not field acceptance)', () => {
   test('TC-P4-G6-001: NOT_RUN must remain PENDING, never PASS', () => {
     const data = full();
-    data.checks.CAD_DELETE_EDITOR_SITE_PASSWORD = { status: 'NOT_RUN' };
+    (data.checks as Record<string, unknown>).CAD_DELETE_EDITOR_SITE_PASSWORD = { status: 'NOT_RUN' };
     const state = assessG6Evidence(data);
     expect(state.state).toBe('PENDING');
     expect(state.reasons).toContain('NOT_RUN:CAD_DELETE_EDITOR_SITE_PASSWORD');
@@ -48,9 +48,9 @@ describe('Issue #108 G6 evidence readiness (not field acceptance)', () => {
     data.checks.BACKUP_S3.snapshotId = 'SNAP-OTHER-002';
     expect(assessG6Evidence(data).reasons).toContain('BACKUP_CHECKPOINT_MISMATCH');
     data.checks.BACKUP_S3.snapshotId = 'SNAP-PRIVATE-001';
-    data.checks.RESTORE_DB_CAD_S3.invariants.s3BytesEqual = false;
+    data.checks.RESTORE_DB_CAD_S3.invariants!.s3BytesEqual = false;
     expect(assessG6Evidence(data).reasons).toContain('INTEGRITY_UNVERIFIED:RESTORE_DB_CAD_S3');
-    data.checks.RESTORE_DB_CAD_S3.invariants.s3BytesEqual = true;
+    data.checks.RESTORE_DB_CAD_S3.invariants!.s3BytesEqual = true;
     data.checks.BACKUP_SQLITE.evidenceId = '';
     expect(assessG6Evidence(data).reasons).toContain('INVALID_PASS_EVIDENCE:BACKUP_SQLITE');
   });
@@ -69,7 +69,7 @@ describe('Issue #108 G6 evidence readiness (not field acceptance)', () => {
     data.checks.AUTH_SESSION.status = 'FAIL';
     expect(assessG6Evidence(data).reasons).toContain('CHECK_FAILED:AUTH_SESSION');
     data.checks.AUTH_SESSION.status = 'PASS';
-    data.checks.AUTH_SESSION.rawToken = 'private-secret-never-emit';
+    Object.assign(data.checks.AUTH_SESSION, { rawToken: 'private-secret-never-emit' });
     const report = JSON.stringify(assessG6Evidence(data));
     expect(report).toContain('INVALID_CHECK:AUTH_SESSION');
     expect(report).not.toContain('private-secret-never-emit');
