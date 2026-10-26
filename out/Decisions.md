@@ -1,5 +1,16 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-051-G7-PLAN — #109 기본 OFF·운영 승인·복구 설계 (2026-10-26)
+
+**설계 계약만 작성 / 실행 승인 아님.** #108 실 사내 업무 E2E·DB/CAD/S3 동시 시점 실 Restore/rollback과 Owner **별도** Go/No-Go 없이는 G7 #109·상위 #96 BLOCKED. [Issue109](Issue109.md).
+
+1. **이중 게이트:** G7-auth-capable 앱 코드와 source SHA/immutable App+Migrator OCI digest pair·정식 Schema 호환을 확인하는 release gate, 별도 Owner GO 승인 ID/범위/유효 시간·운영 manifest·`G7_AUTH_ENABLED`를 확인하는 operation gate. 미설정/false·부정확한 값은 OFF, 정확히 true라도 release/GO/Schema 불일치면 fail-closed. **현재 실제 런타임에는 이러한 flag·라우팅이 구현되지 않았으며 설계 이름만 정의**한다.
+2. **쓰기 별도 cutover:** `G7_CAD_WRITE_CUTOVER_ENABLED`는 기본 false·Auth OFF 시 강제 OFF. 기존 CAD GET/Viewer/원본 익명 유지. POST/Current는 인증 Editor 이상+담당 Site, DELETE는 추가 기존 삭제 비밀번호 AND, 서버 권위 Session/Role/Site/Version·업무 변경+Audit 원자성. 인증 오류에서 익명 write fallback 금지. Admin도 타 Site 자동 권한 없음.
+3. **독립 범위:** 신규 Outline/Memo/Type/Logs/Audit/Admin 영속 API는 각 개별 DB/권한·QA 승인이 있어야 운영 노출. `audit:read`와 `logs:read` 독립, Audit 365일 초과 purge는 주기·백업/복구·법적 예외 세칙 미승인으로 물리/자동 실행 금지.
+4. **승인 후 절차:** 운영 쓰기 정지→동일 snapshot ID의 SQLite 안전 backup+CAD local+S3 실 Restore 확인→고정 App/Migrator pair의 정식 migration→FK/Version/Current/Source SHA 불변 확인→기본 OFF 기동·익명 GET 점검→단발 Admin→Auth ON→별도 CAD write 전환·현장 E2E→Owner 운영 수용. 장애시 쓰기 중단·세션 폐기, 이전 호환 App/Migrator 쌍과 **동일 snapshot DB/CAD/S3 전체 복원**, 신/구 Schema 혼용 금지.
+5. ADR-051-R1의 HTTP 잔여 위험 `OWNER_ACCEPTED_SCOPE`는 안전성 PASS가 아님. TLS/MFA/침투·적대적 탈취시험을 추가 필수 게이트로 되살리지 않되 정상 업무/권한·복구·Owner GO는 필수. 지금은 **docs-only / 운영 실행 0**.
+
+
 ## ADR-051-G4-P1 — #106 Scoped Audit에 Authoritative Site 유지 (2026-10-26)
 
 **P1 결정:** G4 인가 성공·거부/Outline Create·Edit·Delete 안전 감사는 반드시 같은 transaction에서 확인한 **DB Version→Site**를 `AuditEvent.site_id`로 보존한다. 글로벌 Auth/Grant Role/Session 사건은 Site를 임의 생성하지 않는다. G1 fixture CHECK는 Site Grant/Revoke에 영향 사용자+Site 필수, Outline 사건 Site 필수, Authorization 사건에는 SITE/VERSION/OUTLINE Scoped target의 non-null Site만 허용, 일반 Action은 Site NULL을 유지한다. `CadSite` FK/append-only trigger 유지. 구 HEAD `53b75ca`의 감사 Site NULL은 [r4373235027](https://github.com/planner77/layoutManager/pull/120#discussion_r4373235027)에서 발견된 결함으로 분류한다.
