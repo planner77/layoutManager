@@ -1,5 +1,18 @@
 # 상세 요구사항
 
+## Issue #108 / G6 — 현장 실증과 운영 승인 분리 (2026-10-26)
+
+| ID | 요구사항 | 수용 구분 |
+| --- | --- | --- |
+| P4-G6-R01 | G0~G5 정상 User/Session/Role/Site/Version/Audit, 익명 기존 GET, 향후 POST/Current Editor+Site/DELETE 추가 삭제 암호 AND | 기존 G1~G4 격리 시험 ≠ 실제 보호 Route E2E |
+| P4-G6-R02 | 사내 PROD Nginx 실 접속 PC 2대, Viewer·업무 호환 및 DEV direct 별도 DB/CAD, 비의도 Backend port 비노출 | G5 Preview ≠ 현장 EV 증거 |
+| P4-G6-R03 | 공통 snapshotId SQLite online backup/local CAD/**실 S3 bytes** → 격리 Prisma migration FK/Current/Version/SHA → 실 restore/이전 App+Migrator+DB rollback | mock S3 Integration ≠ 실 S3 Restore |
+| P4-G6-R04 | PASS/FAIL/CANCELLED/NOT_RUN, 각 Run/Job/HEAD 및 사내 EV ID와 운영자/QA/Owner 판정; 불투명 코드만 공개 | offline verifier는 자체 기입 형식 검사만 |
+| P4-G6-R05 | 운영 Auth/Admin/API/Prisma/Compose/Nginx/.env, 실 CAD/S3, Audit purge OFF | #109 별도 Owner Go/No-Go 필요 |
+
+[Issue108](Issue108.md), [TC-P4-G6-001~007](TestPlan.md), [TestReport](TestReport.md). OWNER_ACCEPTED_SCOPE는 기능/복구 요건을 해제하지 않는다.
+
+
 ## Issue #106 G4 — 인가·Grant·Audit 요구사항 (2026-10-26)
 
 | ID | 업무 계약 | TC |
