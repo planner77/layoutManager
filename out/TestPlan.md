@@ -1,5 +1,22 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #108 / G6 — 자동 증거 점검과 현장 수용의 독립 TC (2026-10-26)
+
+| ID | 시험 및 합격 기준 | 검증 범위 |
+| --- | --- | --- |
+| TC-P4-G6-001 | G6 필수 19종 중 하나라도 NOT_RUN이면 PENDING, 허위 PASS 불허 | g6-evidence Unit |
+| TC-P4-G6-002 | G7 운영 기능 OFF 필수. READY_FOR_OWNER_REVIEW는 PASS/Owner 서명 아님 | g6-evidence Unit |
+| TC-P4-G6-003 | DB/local CAD/S3/dry-run/restore 동일 snapshotId, 각 PASS의 사내 EV ID 및 FK/Version/Current/SHA 불변 | g6-evidence Unit |
+| TC-P4-G6-004 | 실제 PROD PC 2대 상이한 clientId, DEV 분리 및 동일 App/Migrator SemVer. 현장 Viewer/Upload/Cookie/인가 시험은 별도 | g6-evidence Unit + 사내 NOT RUN |
+| TC-P4-G6-005 | FAIL/CANCELLED/임의 필드/비밀값이 PASS가 되지 않고 정해진 사유 코드만 출력 | g6-evidence Unit |
+| TC-P4-G6-006 | 사내 manifest는 저장소 밖 절대경로·정상 파일만 허용, symlink/checkout 경로 거부 | g6-evidence Unit |
+| TC-P4-G6-007 | CAD 여섯 기존 Migration→두 합성 Version/Current+local CAD/mock-S3 SHA→SQLite online backup/파일 복사→별도 G1 fixture migration·FK/CAD row 불변→손상 주입/실 복원·bytes 동일 | disposable Integration, 실제 S3/DB NOT RUN |
+| TC-P4-G6-LAN-001 | 사내 PC 2대 Nginx→App 실 Viewer/기존 익명 CAD GET·등록/Current/다운로드, DEV 직접/데이터 분리, 승인된 격리 Auth/Cookie/업무 Role/Scope와 호환 | 실 현장 NOT RUN |
+| TC-P4-G6-REC-001 | **실제** DB/CAD/S3 동일시점 snapshot·실 S3 bytes, 격리 Prisma dry-run/FK/Unique/Current, 실제 restore 및 이미지/DB rollback | 사내 별도 승인, NOT RUN |
+
+[TestReport](TestReport.md)는 코드 작성과 실제 Typecheck/Lint/Unit/E2E/Docker/현장 실행을 구분한다. 미관측 결과를 PASS로 표시하지 않고, #109 별도 Owner Go/No-Go 및 운영 OFF 유지. [Issue108](Issue108.md).
+
+
 ## Issue #106 / PR #120 — CI 최초 실패 및 Site Audit P1 회귀 확대 (2026-10-26)
 
 - **TC-P4-G4-SETUP-001:** 기존 실제 CAD Migration `uq_site_parent_name(product_id,name)`과 합성 Site `Site-a`/`Site-b`의 동일 Product 독립 명칭이 충돌하지 않고 G4 `beforeEach`가 끝까지 실행되는지 확인. 성공은 CI에서 실제 재실행해야 판단.

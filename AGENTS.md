@@ -1,5 +1,13 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #108 G6 — 수용 증거·일회용 Backup/Restore 격리 (2026-10-26)
+
+- [Issue108](out/Issue108.md), #102 ADR-051-R1과 G1~G5 선행 참조. DESIGN.md 없음 → Architecture/Decisions/Database/Operation 기준. 기존 공개 CAD GET/Viewer/원본 익명; 미래 POST/Current Editor+담당 Site, DELETE 동일 조건+기존 삭제 비밀번호 AND. Admin도 Site 자동 허용 없음.
+- src/scripts/g6-evidence.mjs는 **사내 비공개 매니페스트 정합성만** 점검, 실제 주소/Cookie/Secret/CAD/SHA/S3/로그를 출력하지 않음. 저장소 밖 절대경로·비심볼릭 링크·크기 제한. READY_FOR_OWNER_REVIEW는 **실 시험 PASS/Owner 승인 아님**. 모든 항목 NOT_RUN 예제 별도.
+- src/tests/unit/g6-evidence.test.ts는 상태 누락/불일치/개인정보 출력 차단, src/tests/integration/g6-backup-restore.test.ts는 **기존 CAD 6개 마이그레이션 합성 SQLite·두 Version/Current·local CAD/mock-S3**의 백업→격리 G1 fixture migration→손상 주입→실 복원을 점검. 실 원격 S3·Windows Nginx/PC 2대·운영 Backup/Restore는 **NOT RUN**.
+- 운영 Auth/API·Prisma/Schema/Migration·Nginx/Compose/.env/실 DB/CAD/S3/GHCR, Audit 물리 파기 활성화 0. #109 G7 별도 Owner Go/No-Go 및 G6 현장 증거 전 #108 OPEN/BLOCKED. 이번 요청은 리뷰/충돌·원장 정리와 PR CI **시작까지**이며 CI 성공·병합·배포/이슈 종료 아님.
+
+
 ## Issue #106 G4 — PR #120 검증·병합 및 GHCR v0.41.1 후속 (2026-10-26)
 
 - **완료된 기능 PR:** [PR #120](https://github.com/planner77/layoutManager/pull/120), 최종 HEAD `d4afaf0ae3cee51a172dad9305533d941daa5706`의 [PR CI 40253887969](https://github.com/planner77/layoutManager/actions/runs/40253887969) Verify(E2E 포함)·Docker 각각 `completed/success`. 미해결 리뷰 스레드 0, main behind 0, mergeable true 확인 후 `squash` 병합 커밋 [0f59351e](https://github.com/planner77/layoutManager/commit/0f59351ef160e3cc79681a78c34714db8d088ab9). [Main CI 40254890094](https://github.com/planner77/layoutManager/actions/runs/40254890094) 시작 확인, 완료 결과/게시 성공 모니터링하지 않음.
@@ -481,6 +489,7 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 | [Issue103](out/Issue103.md) | G1 User/Session/Role·Site·SpecialGrant/Audit/RecoveryNonce 격리 SQL·Prisma 계약 및 원자성·복구 시험 | Auth DB/세션/권한/복구·백업 검토 및 #102 G0→G7 선행 조건 확인 시 |
 | [Issue102](out/Issue102.md) | G0 내부 LAN PROD Nginx/DEV App 직접 접속, Owner 경량 보안 범위·잔여 위험 수용·G0~G7 운영 게이트 | 운영/개발 배포 경로·Nginx/직접 포트, 인증·Site/Version 권한·기존 CAD API 전환, 위험 범위·운영 Go/No-Go/수용 기준 변경 시 |
 | [Issue107](out/Issue107.md) | G5 PROD Nginx/DEV 직결 격리 Preview, 테스트·실 LAN 인계 | Proxy/접속 경로·정상 Viewer/API/Upload/Health 검증, 운영 환경 변경 경계 |
+| [Issue108](out/Issue108.md) | G6 사내 PC 2대/Nginx·DEV 및 인증 업무 E2E·동일 시점 SQLite/CAD/S3 백업·격리 Migration·실 Restore·Rollback 수용, 오프라인 EV 증거 검사와 운영 OFF 범위 | G6 테스트 설계·실행·증거 판정, LAN/Viewer/기존 CAD 호환, DB/CAD/S3 복구·현장 QA, G7 #109 운영 Go/No-Go 선행 수용 확인 시 |
 | [Issue31](out/Issue31.md) | DXF 다중 선택·볼록/정밀 외곽선·실험 상태·P4 권한 보류 | Viewer 선택·외곽선/Worker/JSON 변경 시 |
 | [Issue26](out/Issue26.md) | DXF TEXT/MTEXT 색인·world 좌표 focus·검색 범위/검증 | Viewer 검색·Pan/Zoom·Worker·BLOCK/INSERT·DWG 텍스트 지원 검토 시 |
 | [Issue66](out/Issue66.md) | Migrator 최소 의존성·크기 측정/OCI manifest·복구 계약 | Docker migrator/CI/GHCR 및 버전·패키징 변경 시 |

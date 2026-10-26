@@ -1,5 +1,10 @@
 # Database Schema — 단일 기준 문서
 
+## Issue #108 / G6 — 합성 백업·복구 DB 불변식 (2026-10-26)
+
+G6 자동 검증은 별도 cad-auth-g1-*/fixture.sqlite에 **기존 여섯 CAD Schema Migration**을 재현하고 BusinessUnit/Product/CadSite/Building/CadLocation/CadFileVersion/CadDeletionJob의 전체 row, Version ID/순번/sha256/file_size/storage_path, Current 소속을 스냅샷 비교한다. 합성 local CAD와 mock-S3 mirror의 실제 바이트 SHA가 DB와 일치해야 한다. SQLite online backup을 별도 fixture로 복제해 G1 auth fixture migration.sql 적용 후 foreign_key_check=0·기존 CAD 행 불변을 확인한다. 손상 주입 후 DB와 두 파일 mirror를 복원해 원상/해시 동등성 확인. 이는 실제 원격 S3, 승인된 운영 Prisma dry-run/DB rollback의 증거가 아니며 실 Prisma/schema/migrations/원본 DB·CAD 불변. #109 전 Audit 물리 purge/운영 마이그레이션 금지. [Issue108](Issue108.md).
+
+
 ## Issue #106 / PR #120 P1 — G1 AuditEvent 안전 Site Scope 보완 (2026-10-26)
 
 G1 일회용 fixture Audit CHECK가 과거에는 `SITE_GRANTED`/`SITE_REVOKED` 외 사건의 `site_id`를 반드시 NULL로 강제하여, G4의 scoped permission/Outline Audit에서 **DB Version→Site 추적정보가 소실되는 결함**이 있었다. [PR #120 P1 r4373235027](https://github.com/planner77/layoutManager/pull/120#discussion_r4373235027).

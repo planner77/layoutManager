@@ -1,5 +1,11 @@
 # ChangeLog
 
+## Unreleased — Issue #108 G6 증거 매트릭스·합성 복원 검증 준비 (2026-10-26)
+
+- Offline src/scripts/g6-evidence.mjs와 전체 NOT_RUN 예제, Unit TC-P4-G6-001~006 추가. 합성 SQLite(운영 CAD 기존 6개 schema migration)+local CAD/mock-S3 두 버전으로 backup→별도 G1 fixture migration dry-run→손상 주입→실복원 Integration TC-P4-G6-007 작성. 현장 Runbook/AC·TC/ADR/설계·시험 문서를 Issue108에 동기화.
+- 새 HEAD 자동 Test/PR CI 완료는 아직 확인 전 NOT VERIFIED. 사내 Windows/WSL2 Nginx·PC 2대 실 E2E·실 S3/DB/CAD Backup/Restore, Owner G6 수용과 별도 #109 G7 Go/No-Go는 **NOT RUN/PENDING**. 운영 Auth/API/Prisma/DDL/Compose/Nginx/.env/실 DB/CAD/S3/GHCR 변경 0, 기존 익명 CAD GET 유지. [Issue108](Issue108.md).
+
+
 ## v0.41.1 후보 — Issue #106 G4 격리 Auth Grant/Audit Pair 이미지 (2026-10-26)
 
 - G4 코드/테스트는 [PR #120](https://github.com/planner77/layoutManager/pull/120) 최종 HEAD `d4afaf0ae3cee51a172dad9305533d941daa5706`의 [PR CI 40253887969](https://github.com/planner77/layoutManager/actions/runs/40253887969) Verify·Docker 2개 Job `completed/success`, P1 2건 답변·Resolved 및 behind=0 후 squash 병합됐다. [Main CI 40254890094](https://github.com/planner77/layoutManager/actions/runs/40254890094) **시작 확인**; GHCR 실제 게시 완료와 구분한다.

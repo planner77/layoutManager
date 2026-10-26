@@ -1,5 +1,12 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-051-G6 — #108 실제 현장 증거와 합성 준비물 구분 (2026-10-26)
+
+- **결정:** G6 코드 범위는 비연결/offline 자체 기입 증거 상태 평가와 disposable SQLite+합성 CAD/mock-S3 백업·격리 migration·Restore 리허설로 한정. 실 사내 PC 2대 PROD Nginx/DEV 분리, G3 Cookie/G4 업무 Route 정상 E2E, 동일 시점 **실** DB/CAD/S3 bytes 보존·운영 Prisma dry-run·실 restore/rollback은 별도 Owner 비공개 증거 필요. 공개 Git에는 TC/AC/Run/HEAD·EV 증거 ID/상태만.
+- **금지:** 합성 테스트 PASS·manifest READY_FOR_OWNER_REVIEW·#107 GHCR SUCCESS를 #108 실 수용 또는 #109 Go/No-Go로 대체하지 않는다. 기존 익명 CAD GET/Viewer 보존, 미래 POST/Current Editor+Site, DELETE Editor+Site+기존 암호 AND. Audit 365일 자동/물리 purge SOP 미승인.
+- 신규 운영 Auth/Admin/Outline/Memo/Type/Logs/Audit API, Prisma/DDL/DB, Compose/Nginx/.env/실 CAD/S3/GHCR 변경·활성화 0. R1 OWNER_ACCEPTED_SCOPE는 공격·탈취 E2E 비범위이지 정합성/복구 시험 면제 아님. [Issue108](Issue108.md).
+
+
 ## ADR-051-G4-P1 — #106 Scoped Audit에 Authoritative Site 유지 (2026-10-26)
 
 **P1 결정:** G4 인가 성공·거부/Outline Create·Edit·Delete 안전 감사는 반드시 같은 transaction에서 확인한 **DB Version→Site**를 `AuditEvent.site_id`로 보존한다. 글로벌 Auth/Grant Role/Session 사건은 Site를 임의 생성하지 않는다. G1 fixture CHECK는 Site Grant/Revoke에 영향 사용자+Site 필수, Outline 사건 Site 필수, Authorization 사건에는 SITE/VERSION/OUTLINE Scoped target의 non-null Site만 허용, 일반 Action은 Site NULL을 유지한다. `CadSite` FK/append-only trigger 유지. 구 HEAD `53b75ca`의 감사 Site NULL은 [r4373235027](https://github.com/planner77/layoutManager/pull/120#discussion_r4373235027)에서 발견된 결함으로 분류한다.
