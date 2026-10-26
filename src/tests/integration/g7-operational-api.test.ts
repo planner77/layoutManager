@@ -12,7 +12,7 @@ import { GET, POST } from '../../app/api/g7-operation/[...segments]/route';
 const Sqlite=createRequire(import.meta.url)('better-sqlite3') as new
  (file:string)=>{exec(sql:string):void;close():void};
 const sql=readFileSync(new URL('../../deploy/g7-operational/prisma/migrations/202610260001_g7_staging_auth/migration.sql',import.meta.url),'utf8');
-const URL='http://127.0.0.1:3317';
+const ORIGIN='http://127.0.0.1:3317';
 const PASSWORD='g7-synthetic-admin-password';
 const envKeys=[
   'G7_S3_GO','G7_AUTH_ENABLED','G7_RELEASE_CAPABILITY','G7_OPERATION_MANIFEST_PATH',
@@ -23,11 +23,11 @@ const envKeys=[
 let root='',database:Database,saved:Record<string,string|undefined>={};
 const props=(kind:string,command:string)=>({params:Promise.resolve({segments:[kind,command]})});
 function req(method:string,endpoint:string,body?:object,cookie?:string,csrf?:string) {
-  const headers=new Headers({origin:URL});
+  const headers=new Headers({origin:ORIGIN});
   if(body)headers.set('content-type','application/json');
   if(cookie)headers.set('cookie',cookie);
   if(csrf)headers.set('x-csrf-token',csrf);
-  return new Request(URL+'/api/g7-operation/'+endpoint,{
+  return new Request(ORIGIN+'/api/g7-operation/'+endpoint,{
     method,headers,body:body?JSON.stringify(body):undefined,
   });
 }
@@ -52,7 +52,7 @@ beforeEach(async()=>{
     rollbackAppDigest:'sha256:'+'c'.repeat(64),
     rollbackMigratorDigest:'sha256:'+'d'.repeat(64),
     sourceCommit:'e'.repeat(40),
-    origin:URL,databaseUrl:'file:'+file,cadStoragePath:path.join(root,'cad'),
+    origin:ORIGIN,databaseUrl:'file:'+file,cadStoragePath:path.join(root,'cad'),
     evidenceIds:['EV-01','EV-02','EV-03'],
     operatorId:'operator-local',rollbackOperatorId:'recovery-local',ownerId:'owner-local',
     validFrom:new Date(Date.now()-60000).toISOString(),
@@ -66,7 +66,7 @@ beforeEach(async()=>{
     G7_OPERATION_MANIFEST_PATH:manifestFile,
     G7_OPERATION_GO_ID:manifest.operationGoId,
     G7_OPERATION_DATABASE_URL:manifest.databaseUrl,
-    G7_OPERATION_ORIGIN:URL,
+    G7_OPERATION_ORIGIN:ORIGIN,
     G7_RUNNING_APP_DIGEST:manifest.appDigest,
     G7_RUNNING_MIGRATOR_DIGEST:manifest.migratorDigest,
     G7_RUNNING_SOURCE_COMMIT:manifest.sourceCommit,
