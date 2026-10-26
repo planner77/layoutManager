@@ -1,5 +1,13 @@
 # PR/Main CI 실패 원장
 
+## Issue #106 G4 — 신규 PR CI 전 위험/비실패 기준선 (2026-10-26)
+
+- 범위: feat/issue-106-g4-authorization-audit, main 선행 G1~G3 기반. #102 Owner G0 익명 기존 GET/Editor+Site POST·Current/Editor+Site+기존 삭제 암호 Delete 계약 유지.
+- 실패 상태: 작성 당시 #106 PR Run/Job/Attempt의 실패·취소는 아직 관찰되지 않음. 임의 Run/로그/실패를 기록하지 않으며 기존 누적 다른 이슈 실패와 취소 이력을 보존한다. 로컬 Typecheck/Vitest/Docker/E2E 실행 NOT RUN; 새 PR CI 시작/결과 PENDING은 PASS 아님.
+- 사전 기술 위험과 차단(확정 실패가 아님): Admin 무조건 Site 허용·익명 GET 전환·Client Header Actor 신뢰를 막도록 G4 비운영 Port+DB 재검증 분리. Grant/업무 변경과 Audit 부분 커밋 위험은 BEGIN IMMEDIATE 및 주입 rollback TC로 추적. 물리 Audit purge는 SOP 미승인으로 미구현. Version DELETE는 G4 permit만으로 완료되지 않으며 G7에서 레거시 비밀번호 AND/업무 Audit으로 보완 필수.
+- 추후 확인 시: 실제 실패 Run/Job/Step, HEAD, 로그 출처, 원인/조치/재시도 및 리뷰·main 충돌은 새로운 누적 항목으로 기록. [Issue106](Issue106.md).
+
+
 ## Issue #104 / PR #118 — 최초 TypeScript 실패 보존·수정 HEAD CI 성공·0.40.5 재검증 게이트 (2026-10-26)
 
 - **최초 실패는 보존:** [Run 40232479678](https://github.com/planner77/layoutManager/actions/runs/40232479678), HEAD `534de74c`; Verify `121286959176` TS1005/TS1128 실패, Docker `121286959564` 성공, Lint/Unit/E2E SKIPPED. 원인·수정 `ae002997`은 아래 원장에 상세 기록.
