@@ -141,7 +141,11 @@ describe('#109 S3-1 quarantine: formal Prisma migration and CAD invariants', () 
       db.exec(candidateSql);
       expect(snapshot(db)).toEqual(before);
       expect(db.prepare('PRAGMA foreign_key_check').all()).toHaveLength(0);
-      expect(() => db.prepare('UPDATE "AuditEvent" SET action=?').run('FORGED')).toThrow();
+      db.prepare('INSERT INTO "AuditEvent"(id,action,target_kind,target_id,outcome,timestamp_utc,request_id) VALUES(?,?,?,?,?,?,?)')
+        .run('audit-synthetic', 'LOGIN_DENIED', 'ACCOUNT', 'actor-unknown',
+          'DENIED', '2026-10-26T09:00:00Z', 'g7-s3-migration-test');
+      expect(() => db.prepare('UPDATE "AuditEvent" SET action=? WHERE id=?')
+        .run('FORGED', 'audit-synthetic')).toThrow('G1_AUDIT_APPEND_ONLY');
     } finally { db.close(); }
   });
   test('config blocks wrong/unapproved DB URLs BEFORE opening SQLite', () => {
