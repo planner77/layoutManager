@@ -73,7 +73,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     process.stdout.write(`${report}\n`);
     if (summary) appendFileSync(summary, `${report}\n`);
   } catch (error) {
-    console.error('OCI image layer measurement failed:', error.message);
+    console.error('OCI image layer measurement failed (details suppressed).');
     process.exitCode = 1;
   }
 }
