@@ -84,6 +84,17 @@ afterEach(async()=>{
   if(root)rmSync(root,{recursive:true,force:true});root='';
 });
 describe('#109 S2 guarded real CAD Auth App Router contract (synthetic DB)',()=>{
+  test('Nginx forwarding public Host works even if standalone Request.url is internal',async()=>{
+    const internal=new Request('http://0.0.0.0:3000/api/g7-operation/auth/session',{
+      headers:{host:new URL(ORIGIN).host},
+    });
+    const accepted=await GET(internal,props('auth','session'));
+    expect(accepted.status).toBe(401); // missing session, not host mismatch 404
+    const wrong=new Request('http://0.0.0.0:3000/api/g7-operation/auth/session',{
+      headers:{host:'unapproved.example'},
+    });
+    expect((await GET(wrong,props('auth','session'))).status).toBe(404);
+  });
   test('private GO absent: all Auth/Admin/Audit routes invisible, legacy GET unaffected',async()=>{
     process.env.G7_S3_GO='false';
     expect((await GET(req('GET','auth/session'),props('auth','session'))).status).toBe(404);
