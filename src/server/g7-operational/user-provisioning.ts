@@ -8,7 +8,8 @@ import { hashLocalPassword } from '../auth/password';
 import { csrfProof } from '../auth/login-service';
 import { digestSessionToken, SESSION_IDLE_MS } from '../auth/session';
 import { requireSessionCsrf } from '../auth/guards';
-import { G4Failure } from '../auth/g4-service';
+import { createG4Service, G4Failure } from '../auth/g4-service';
+import { createG4IsolatedStore } from '../g7-staging/g4-store';
 import { createAuditEvent } from '../auth/audit';
 import type { IsolatedDb } from '../g7-staging/g1-store';
 
@@ -50,6 +51,11 @@ export async function provisionG7PreviewUser(
   catch { throw new G4Failure('BAD_INPUT', 400); }
   if (typeof entry.initialPassword !== 'string' ||
       entry.initialPassword.toLowerCase() === login) throw new G4Failure('BAD_INPUT', 400);
+  // Check an actual DB-backed, audited Admin scope BEFORE allocating scrypt.
+  // The write transaction below revalidates it again (never trust this
+  // precheck as sufficient for account creation).
+  createG4Service(createG4IsolatedStore(db)).permit(raw, 'users:manage',
+    {kind:'global'}, {now, requestId});
   let passwordHash: string;
   try { passwordHash = await hashLocalPassword(entry.initialPassword); }
   catch { throw new G4Failure('BAD_INPUT', 400); }
