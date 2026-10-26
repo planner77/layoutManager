@@ -1,5 +1,14 @@
 # Issue #109 S2 — 사내망 비반출 증거 및 운영 전환 준비
 
+## PR #129 GHCR 미게시 범위 및 P1 보완 (2026-10-26)
+
+- 오프라인 증거 형식 평가 코드는 런타임 소스처럼 인식되므로 일반 Main 병합 시 GitHub Actions가 GHCR 후보를 게시할 위험이 있다. [Codex P1](https://github.com/planner77/layoutManager/pull/129#discussion_r4376591801)에 따라 **S2만 허용하는 별도의 조건부 `release-scope`**를 추가했다.
+- 정확한 Squash 제목은 `#109 | S2 private-evidence readiness [G7-S2-NO-GHCR]`. Main push + 첫 줄 정확 일치 + 명시된 S2 파일 **전부** 허용 목록 안에 있을 때만 `publish=false`; 나머지 S2 유사 제목과 허용목록 외 파일은 `stderr` + `exit 1`. S1 GHCR 제외 규칙은 그대로, 일반 런타임/태그 빌드 경로는 기존대로 둔다.
+- 허용 파일: `AGENTS.md`; `.github/workflows/docker-publish.yml`; `out/Decisions.md`, `out/FailureLedger.md`, `out/Issue109-S2-Readiness.md`, `out/Issue109.md`, `out/Operation.md`, `out/Requirements.md`, `out/TestPlan.md`, `out/TestReport.md`; `src/scripts/g7-s2-readiness.ts`; `src/server/g7-staging/s2-readiness.ts`; `src/tests/unit/g7-s2-readiness.test.ts` 및 `src/tests/unit/g7-staging-ghcr-guard.test.ts`.
+- 회귀 증거는 `g7-staging-ghcr-guard.test.ts`의 실제 Bash release-scope synthetic Git 실행으로 확보한다. 최초 [PR CI #40313233131](https://github.com/planner77/layoutManager/actions/runs/40313233131) 성공은 이전 HEAD만 검증; 수정 HEAD CI 합격 전 GHCR 제외 기능 PASS를 주장하지 않는다.
+- 모든 작업은 내부 시험 결과 비반출 정책을 준수하며, PR #129는 사내 오프라인 준비물일 뿐 운영 Auth·Prisma·CAD Cutover/실 복구 기능을 완료하지 않는다. 사용자의 지시에 따라 **이번 작업은 PR CI 시작까지**, 병합·GHCR 게시·S3 운영 전환·Issue #109/#96 종료 금지.
+
+
 ## 상태 및 분리 원칙
 
 - Owner의 S1 수용과 S2 승인 의사는 [Issue #109](https://github.com/planner77/layoutManager/issues/109)에 기록되어 있다.

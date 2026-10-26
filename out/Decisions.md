@@ -1,5 +1,14 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-051-G7-S2-NO-GHCR — 내부 증거 준비 전용 Main GHCR 발행 차단 (2026-10-26)
+
+- **정책:** S2 `g7-s2-readiness`는 운영 연동 코드가 아니라 사용자의 **사내 증거 비반출** 조건을 지키는 오프라인 점검 도구다. S1에서 이미 사용한 `G7-S1-NO-GHCR` 범위를 이 재사용 불가 작업에 억지로 확장하지 않는다. 별도의 정확한 squash 제목 `#109 | S2 private-evidence readiness [G7-S2-NO-GHCR]`을 사용한다.
+- **허용 변경:** `.github/workflows/docker-publish.yml`, `AGENTS.md`, `out/{Decisions,FailureLedger,Issue109-S2-Readiness,Issue109,Operation,Requirements,TestPlan,TestReport}.md`, `src/scripts/g7-s2-readiness.ts`, `src/server/g7-staging/s2-readiness.ts`, `src/tests/unit/{g7-s2-readiness,g7-staging-ghcr-guard}.test.ts` **각 명시 경로만**. 범용 `*.md`, `src/server/g7-staging/*`, `src/prisma/**`, `src/app/api/**` 등의 와일드카드를 S2 허용하지 않는다.
+- **Fail-closed:** Main branch에서 제목 첫 줄이 정확하게 일치하고 변경 파일 전체가 허용목록일 때만 `publish=false`. 제목 오타·후행 텍스트 또는 미승인 파일을 만날 경우 `stderr` 오류/exit 1, Main CI 전체 STOP하여 예기치 않은 GHCR 게시 회피. 정상 런타임/태그 릴리스 정책은 변경하지 않으며 S1 별도 룰 유지.
+- **검증:** 실제 Bash release-scope를 독립 Git fixture로 실행하는 Unit에 S2 본문 포함 정상, 유사 제목, 운영 CAD/Prisma/Compose 및 S1 전용 파일/다른 Workflow 거부, S1 역방향 거부, 정상 런타임/태그 유지 사례를 추가한다. **PR CI 성공·Codex 리뷰/스레드/최종 Main scope 확인 전 병합하지 않는다.**
+- **Owner 권한 경계:** S1 수용과 S2 준비 승인≠실 운영 Go-Live. OCI pair·사내 실복구 증거를 만들어내거나 GHCR 이미지·태그를 게시하지 않는다. #109/#96 OPEN/BLOCKED 유지.
+
+
 ## ADR-051-G7-S1-R2 — 잘못된 제목·운영 DB Migration의 사전 차단 (2026-10-26)
 
 - [PR #125](https://github.com/planner77/layoutManager/pull/125) P1 #4374313158/3165/3173 교정: GHCR 건너뛰기는 커밋 메시지 **첫 줄의 정확한 승인 제목**에만 적용(본문 허용), 비슷한 제목은 Main CI 오류 종료. 비허용 변경 경로에서는 `echo >&2`/exit 1을 유지한다. Unit Test는 stdout/stderr와 부정 제목을 검증한다.

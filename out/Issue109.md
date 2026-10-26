@@ -1,5 +1,12 @@
 # Issue #109 — G7 운영 인증 활성화 설계 및 통제 배포·롤백 Runbook
 
+## S2 PR #129 — Codex P1 GHCR 게시 분기 보완 및 배포 보류 (2026-10-26)
+
+- 구 HEAD `29ed3028bf0f78ba37abba0ecde73a6483d0942f`의 [PR CI 40313233131](https://github.com/planner77/layoutManager/actions/runs/40313233131)은 Verify/Docker 모두 성공이지만, [Codex P1](https://github.com/planner77/layoutManager/pull/129#discussion_r4376591801)은 Main의 Runtime 변경 범위 판정이 S2 Offline Readiness 소스를 GHCR 게시 대상으로 취급한다고 지적했다. 이는 **CI 실패가 아닌 병합·배포 정책 위험**이다.
+- S1의 `#109 | S1 Staging-only integration [G7-S1-NO-GHCR]` 예외는 그대로 유지. S2 준비 작업에만 정확한 `#109 | S2 private-evidence readiness [G7-S2-NO-GHCR]` squash commit 첫 줄·**S2 개별 파일 allowlist** 적용. 허용 외 운영 CAD/Prisma/Compose·다른 Workflow·일반 소스·S1 Stage runtime이 포함되면 GHCR 자동 게시 대신 Main CI를 fail-closed. S2 제목 접미·공백/유사 제목도 차단.
+- 테스트/문서/실패 원장 및 [S2 Readiness Runbook](Issue109-S2-Readiness.md) 동기화 후 **새 PR CI 시작까지만**, 성공 여부 확인 전 병합 및 Main CI 불가. 사용자 요청대로 GHCR 이미지·태그 게시와 운영 Auth/API/Prisma/Nginx·Compose/.env·DB/CAD/S3/Account 활성화, 이슈 #109/#96 종료 금지. S2 Owner 진행 승인과 실 운영 전환 실행 GO는 구분한다.
+
+
 ## S2 내부 증거 비반출 준비 도구 — 사용자의 제약 반영 (2026-10-26)
 
 - Owner는 **내부 환경 시험 결과를 외부 제출할 수 없음**을 명시했다. 따라서 원본 로그/CAD/DB/S3/내부 IP/Secret/해시 목록을 GitHub에 요구하거나 업로드하지 않는다. 내부 절대경로의 원시 자료는 사내 담당자만 보관하고 공개 기록은 최소 식별자·PASS/FAIL/NOT_RUN·검증자 증빙 유무만 표시한다.

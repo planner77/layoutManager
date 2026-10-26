@@ -1,5 +1,12 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issue #109 / PR #129 — S2 전용 GHCR 미게시 보완 전후 증거 구분 (2026-10-26)
+
+- **기존 자동 검증:** HEAD `29ed3028bf0f78ba37abba0ecde73a6483d0942f`의 [PR CI 40313233131](https://github.com/planner77/layoutManager/actions/runs/40313233131) `completed/success`: Verify [121539323884](https://github.com/planner77/layoutManager/actions/runs/40313233131/job/121539323884) 및 Docker [121539323971](https://github.com/planner77/layoutManager/actions/runs/40313233131/job/121539323971) 모두 성공. 신 HEAD GHCR 정책 Unit·Build/E2E는 별도 결과 전 **NOT VERIFIED**.
+- **추가 정책 테스트 준비:** [Codex P1 #4376591801](https://github.com/planner77/layoutManager/pull/129#discussion_r4376591801)에서 S2 파일 변경의 GHCR publish=true 위험을 지적했다. 이를 S2-only 정확 Squash 제목+개별 허용 파일, 미승인 운영/Stage 파일 거부, S1 무회귀·기존 일반 runtime/tag 동작 회귀로 교정했다. 이는 실제 코드 리뷰 발견이며 **PR CI 실패나 GHCR 이미지 게시를 관측한 것이 아니다**.
+- **진행 한계:** PR #129는 사내 원본 증거 비반출용 Offline Readiness 도구만 포함한다. 기존 CAD 쓰기 API의 Auth·Audit/운영 Prisma Cutover와 실 DB/CAD/S3 Restore·App/Migrator immutable OCI Pair는 이 테스트의 PASS로 간주하지 않는다. GHCR/실 운영 변경·배포·PR 병합·Issue 종료 전부 별도 사용자 지시 필요.
+
+
 ## #109 S2 내부 증거 비반출 준비 — 검증 결과는 아직 미확인 (2026-10-26)
 
 - Owner의 S1 수용/S2 승인 의사 및 **내부 시험 원본 비반출** 조건을 적용했다. S2 readiness pure evaluator·오프라인 CLI·Unit/Runbook 초안을 작성했으나, 새 브랜치 CI 통과 확인 전 **테스트 PASS 아님**. 기존 운영 CAD API/Auth, 운영 Prisma/OCI pair/실 Restore는 구현 완료로 표시하지 않는다.
