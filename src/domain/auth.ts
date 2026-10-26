@@ -7,7 +7,8 @@
 export type Role = 'Reader' | 'Editor' | 'Admin';
 export type SpecialGrant = 'audit:read' | 'logs:read';
 export type Action =
-  | 'cad:read' | 'outline:read' | 'outline:write'
+  | 'cad:read' | 'cad:upload' | 'cad:current' | 'cad:delete'
+  | 'outline:read' | 'outline:write'
   | 'outlineType:read' | 'outlineType:manage'
   | 'users:manage' | 'grants:manage'
   | SpecialGrant;
@@ -33,7 +34,7 @@ export class AuthorizationError extends Error {
   constructor() { super('접근 권한이 없습니다.'); this.name = 'AuthorizationError'; }
 }
 
-const SITE_ACTIONS: readonly Action[] = ['cad:read', 'outline:read', 'outline:write'];
+const SITE_ACTIONS: readonly Action[] = ['cad:read', 'cad:upload', 'cad:current', 'cad:delete', 'outline:read', 'outline:write'];
 const GLOBAL_ACTIONS: readonly Action[] = [
   'outlineType:read', 'outlineType:manage', 'users:manage', 'grants:manage',
   'audit:read', 'logs:read',
@@ -47,7 +48,8 @@ function eligible(user: UserAccess, action: Action) {
   if (action === 'cad:read' || action === 'outline:read' || action === 'outlineType:read') {
     return user.roles.some(role => role === 'Reader' || role === 'Editor' || role === 'Admin');
   }
-  if (action === 'outline:write') return hasRole(user.roles, 'Editor') || hasRole(user.roles, 'Admin');
+  if (action === 'outline:write' || action === 'cad:upload' ||
+      action === 'cad:current' || action === 'cad:delete') return hasRole(user.roles, 'Editor') || hasRole(user.roles, 'Admin');
   if (action === 'outlineType:manage' || action === 'users:manage' || action === 'grants:manage') {
     return hasRole(user.roles, 'Admin');
   }
@@ -55,6 +57,33 @@ function eligible(user: UserAccess, action: Action) {
     return hasRole(user.roles, 'Admin') && user.specialGrants.includes(action);
   }
   return false;
+}
+
+/**
+ * G4 transactional adapter: call only with a server-resolved Site (including
+ * Version -> Location -> Building -> Site), and a freshly loaded DB actor.
+ * The legacy public CAD GET bypass remains a separate API policy, NOT an
+ * implicit or anonymous UserAccess / SiteGrant.
+ */
+export function requireResolvedPermission(
+  user: UserAccess | null, action: Action, resource: Resource, resolvedSiteId: string | null,
+): { siteId: string | null } {
+  if (!user || typeof user.id !== 'string' || !user.id.trim() ||
+      user.status !== 'ACTIVE' || user.mustChangePassword || !eligible(user, action)) {
+    throw new AuthorizationError();
+  }
+  if (GLOBAL_ACTIONS.includes(action)) {
+    if (resource.kind !== 'global') throw new AuthorizationError();
+    return { siteId: null };
+  }
+  if (!SITE_ACTIONS.includes(action) || resource.kind === 'global') throw new AuthorizationError();
+  if (resource.kind === 'version' &&
+      (typeof resource.versionId !== 'string' || !resource.versionId.trim())) throw new AuthorizationError();
+  if (resource.kind === 'site' &&
+      (typeof resource.siteId !== 'string' || !resource.siteId.trim())) throw new AuthorizationError();
+  if (typeof resolvedSiteId !== 'string' || !resolvedSiteId.trim() ||
+      !user.siteGrants.includes(resolvedSiteId)) throw new AuthorizationError();
+  return { siteId: resolvedSiteId };
 }
 
 /**
