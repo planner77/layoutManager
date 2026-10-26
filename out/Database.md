@@ -1,5 +1,12 @@
 # Database Schema — 단일 기준 문서
 
+## #109 S3-2 — 영속 Auth/Admin 거래와 DB 출처 경계 (2026-10-26)
+
+- S3-1 정식 후보 `202610260002_g7_operational_auth`를 가진 **일회용 SQLite DB만** S3-2 preview open 가능. 공유 `disposable-target.ts`를 Prisma 설정과 HTTP/Admin CLI에서 같이 사용해 canonical `/tmp/cad-g7-s3-*/fixture.sqlite`·UID 0700/0600·marker/Nonce/Schema ID/양쪽 DB URL을 대조. `preview-db.ts`에서 `_prisma_migrations` 성공 행/8개 Auth 테이블·`PRAGMA foreign_key_check`를 확인하고 DB 연결 실패는 API 503(데이터 정보 비노출).
+- G3 로그인/세션·비밀번호 갱신, G4 Role/Site/SpecialGrant/Disable·권한/감사 adapter는 검증된 SQLite BEGIN IMMEDIATE 거래 사용. S3-2 Admin 계정 생성은 먼저 DB users:manage 권한검사+Audit를 수행하고, KDF 수행 후 **같은 거래에서 세션/역할 재검증과 User INSERT+ACCOUNT_CREATED Audit**. 최초 비밀번호 변경 필요·역할 자동부여 0. G2 초기 Admin·복구는 Secret 0600·명시 CLI, nonce 해시 1회와 session 회수·AdminRecovery Audit 원자성.
+- 운영 `src/prisma/migrations` 추가 SQL **0**, 운영 `scripts/deploy.ts`/`src/prisma.config.ts`/실 DB/CAD/S3 변경 0. 프로덕션 운영 DB에 User/Auth 테이블은 이번 PR로 추가되지 않는다. 운영 API 라우트도 프로덕션 OFF이며 실 Auth DB/Migrator 통합은 S3-4 릴리스별 승인까지 금지.
+
+
 ## Issue #109 S3-1 — 운영 Prisma 모델 통합 / 정식 후보 Migration 분리 (2026-10-26)
 
 - **모델:** `src/prisma/schema.prisma`에 `User`, `AuthSession`, `UserRoleGrant`, `UserSiteGrant`, `SpecialGrant`, `AuditEvent`, `AdminRecoveryNonce`, `G3LoginAttempt`를 G7 S1의 검증된 Prisma 계약에서 **운영 Client Schema로 통합**. 기존 CAD `BusinessUnit/Product/CadSite/Building/CadLocation/CadFileVersion/CadDeletionJob` 모델·관계·Current/Version/해시 계약 보존. `CadSite.siteGrants`/`auditEvents` 관계 추가. User/Site FK·역할/Scope 제한·세션 불변·append-only Audit/복구 nonce 제한은 격리 후보 SQL에 정의.

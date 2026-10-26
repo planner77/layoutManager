@@ -1,5 +1,13 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## #109 S3-2 — 운영 Auth/Admin API 사전 통합·현장 활성화 구분 (2026-10-26)
+
+- **작성한 변경:** 새 `/api/g7-operational/**` App Router, Auth(G3)/Management(G4)/Audit/일회성 G2 Admin CLI의 일회용 S3 SQLite preview 연결, Admin-only users/create(CSRF+사전 G4 인가/KDF/txn 재검증+User/Audit 원자), 독립 HttpOnly/Path Cookie, S3 후보 Prisma 공유 target guard, GHCR S3-2 정확 제목·경로 Allowlist 및 Unit/Integration.
+- **프로덕션 실행 결과:** 새 API는 `NODE_ENV=production` 전체 404로 강제, 운영 DB Migration/실 Auth/기존 CAD POST/Current/Delete Cutover·GHCR 발행·Nginx/Compose 변경은 수행하지 않았다. 운영 API 제공 준비 ≠ 운영 활성화. S3-1 `runtimeActivated=false` 불변, S3-4 release binding·S3-5 Owner 승인 전 실제 Auth 이용 불가.
+- **시험 실행 상태:** 코드/계획은 PR CI 실제 성공이 아니다. 새 PR HEAD의 Typecheck/Lint/Unit/Prisma Integration/Build/E2E/Docker 검증은 **Run 결과 확인 전 PENDING**. 실제 사내 2대 PC/Owner 무반출 원본·DB/CAD/S3 실복구는 별도 사내 증거이며 이번 CI 합성시험으로 대체 불가.
+- **후속:** S3-3 기존 CAD 쓰기/DELETE Auth+Audit 단일 업무 트랜잭션 및 S3-4 release/rollback/OCI 검증, S3-5 운영 GO는 미실행; 이슈 #109/#96 OPEN/BLOCKED 유지.
+
+
 ## Issue #109 S3-1 — 구현/작성된 시험과 실제 PASS 구분 (2026-10-26)
 
 - **작성:** 운영 Prisma Client Schema에 G1~G4 모델 추가·기존 CAD 관계 유지, 신규 S3 인증 후보 정식 SQL을 `deploy/g7-s3/prisma/migrations`(기존 CAD 6개 + 신규 1개)에 분리; 자동 `src/prisma/migrations` 이력·operational Migrator 변경 없음. Pure Release/Operation 사전 검사, 격리 Prisma config, Unit·Integration, G1~G3 기존 테스트의 Schema 가정 변경, GHCR 한정 제외 테스트.

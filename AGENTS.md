@@ -1,5 +1,14 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #109 S3-2 — Auth/Admin API 격리 통합·프로덕션 강제 OFF (2026-10-26)
+
+- **구현:** `src/app/api/g7-operational/[...segments]/route.ts`에 Auth(Login/최초 변경/Session/Change/Logout), G4 Role/Site/SpecialGrant·Disable·Audit 및 Admin-only User Create의 **운영 계약용 예약 API**를 연결한다. G1~G4에서 검증한 `createG3IsolatedStore`/`createG4IsolatedStore`/`createG2IsolatedStore` 어댑터를 **일회용 S3 후보 SQLite에서만** 재사용하며 기존 CAD POST/Current/Delete/익명 GET·Viewer는 변경하지 않는다.
+- **기본 OFF의 강제 경계:** `NODE_ENV=production`에서는 **모든 G7_* flag가 true여도 404**. 테스트용 ON은 nonproduction + `G7_S3_AUTH_API_PREVIEW_ONLY=true` + `G7_S3_MIGRATION_TEST_ONLY=true` + `G7_AUTH_ENABLED=false`/`G7_CAD_WRITE_CUTOVER_ENABLED=false` + UID 소유 전용 `/tmp/cad-g7-s3-*/fixture.sqlite`/manifest·정식 7개 migration·`127.0.0.1` Origin 일치인 경우에만 허용. S3-1 pure Release/Operation preflight는 여전히 `runtimeActivated=false`; 운영 OCI·DB·Owner 실증/GO를 synthetic 값으로 대체하거나 활성화하지 않는다.
+- **관리 및 보안:** `scripts/g7-s3-admin.ts --ack-disposable-only`는 명시 1회 관리자 생성·복구(Secret 0600, nonce 1회·전체 세션 회수+Audit)만 격리 DB에 실행, startup/운영 Migrator 자동 호출 없음. S3-2 `users/create`는 G4 DB Admin 사전인가를 감사한 후 재인가+User/ACCOUNT_CREATED Audit 단일 거래(신규 사용자 Role 미부여, 최초 암호 변경 필수). `cad_g7_s3_session` HttpOnly·Path 한정 Cookie는 기존 `cad_session`/`cad_staging_session`와 분리. Session 8h/idle 30m/3개, Origin/CSRF, Role/Site/Version Server DB 재조회 및 `audit:read` SpecialGrant 확인.
+- **실행·문서:** [S3-2 Runbook](src/deploy/g7-s3/S3-2.md), ADR/Architecture/Database/Requirements/Operation/TestPlan/TestReport/FailureLedger 참조. 허용된 일회용 DB의 정식 Migration 및 HTTP 통합 테스트/보안 거부 테스트를 CI에 추가했지만 실제 PASS는 새 PR HEAD CI 결과 전 미확인. 운영 DB Migration(활성 History 여전히 CAD 6개), 운영 인증·관리 실제 ON, 기존 CAD API/Audit Cutover, Compose/Nginx/.env, DB/CAD/S3, GHCR 이미지/태그, Issue #109/#96 종료 금지.
+- **GHCR 통제:** 추후 정확 Squash `#109 | S3-2 Operational Auth/Admin API [G7-S3-2-NO-GHCR]` + 23개 S3-2 파일만 Main `publish=false`; 다른 runtime·활성 Prisma History·운영 CAD API/Compose/다른 Workflow 혼입 시 stderr+nonzero fail-closed. 기존 S1/S2/S3-1 예외는 보존. 이번 요청은 새 PR CI 시작까지 진행, 모니터링/병합/배포하지 않는다.
+
+
 ## Issue #109 S3-1 — 운영 Prisma Schema·격리 후보 Migration·이중 게이트 (2026-10-26)
 
 - **이 단계의 구현 경계:** S3-1은 `src/prisma/schema.prisma`에 G1~G4 User/AuthSession/Role/Site/SpecialGrant/Audit/RecoveryNonce/G3LoginAttempt 모델을 포함해 Prisma Client 타입을 만들고, **7개 정식 Prisma 후보 Migration은 `src/deploy/g7-s3/prisma/migrations`에 격리**한다. 현재 `src/scripts/deploy.ts`가 운영 자동 `prisma migrate deploy`를 수행하므로 **신규 Auth Migration을 `src/prisma/migrations`에 넣으면 운영 DB에서 미승인 자동 적용될 수 있다.** 따라서 활성 운영 Migration 6개는 불변, 별도 S3 승인·롤아웃 PR 전 승격/복사 금지. 상세 [S3-1 Runbook](src/deploy/g7-s3/README.md), [Database](out/Database.md).

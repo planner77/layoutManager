@@ -1,5 +1,13 @@
 # 운영·환경설정 초안
 
+## #109 S3-2 — 운영 인증 라우트 기본 OFF / 분리된 Admin CLI (2026-10-26)
+
+- **운영 적용은 금지:** 신규 예약 `/api/g7-operational/**`는 코드가 존재하더라도 `NODE_ENV=production`에서 무조건 404이며, 운영 `G7_AUTH_ENABLED`/Owner ID만 설정해도 열리지 않는다. 기존 CAD 익명 GET/Viewer/POST·Current·DELETE, Nginx/Compose, 활성 `src/prisma/migrations`·운영 Admin/Account·Audit purge는 변경되지 않았다. S3-4 신뢰된 Release binding과 S3-5 실 Owner 릴리스 승인 전 운영 환경변수·배포를 변경하지 않는다.
+- **시험-only:** [S3-2 Runbook](../src/deploy/g7-s3/S3-2.md)의 UID 소유 /tmp 일회용 후보 DB와 `G7_S3_MIGRATION_TEST_ONLY=true`, `G7_S3_AUTH_API_PREVIEW_ONLY=true`, `G7_AUTH_ENABLED=false`/`G7_CAD_WRITE_CUTOVER_ENABLED=false`, 정확 loopback `G7_S3_TEST_ORIGIN`을 별도 nonproduction 프로세스에 설정한다. 운영 DB URL·실 Site/CAD/S3 값 지정 금지.
+- **Admin:** `npx tsx scripts/g7-s3-admin.ts --ack-disposable-only`를 최초 생성 또는 1회 복구 시에만 **명시적으로** 실행. 관리자 비밀번호/복구 nonce, 실 계정·증거 ID/원시 로그는 사내 원본 보존, Git/CI 공유 금지. API 통한 자동 bootstrap 없음. 테스트 종료 시 승인된 임시 DB·Secret만 폐기.
+- **검증:** Typecheck/Vitest/Build/E2E/Docker의 실제 PR CI HEAD Run을 확인하기 전 PASS 주장 금지. 기능 시나리오는 G7-S3-2-001~009; 기존 운영 인증 활성화/데이터를 이용한 E2E가 아님. 특정 실 리리스 App+Migrator Pair와 동일 Snapshot Restore·Owner Go/No-Go는 후속 S3-4~5.
+
+
 ## Issue #109 S3-1 — 운영 적용을 차단한 Prisma 후보/이중 Gate 작업 절차 (2026-10-26)
 
 - **운영 보안 경계:** `src/prisma/schema.prisma`에는 신규 User/AuthSession 등이 코드생성용으로 존재하나 현재 운영 DB는 여전히 CAD 6개 Migration만 적용. 운영 `scripts/deploy.ts`는 건드리지 않으며, **활성 `src/prisma/migrations`에 S3 Auth SQL 없음**. S3 후보에 실 운영 DB URL을 주입하거나 `prisma db push`·기본 `npm run db:deploy`로 새 모델을 적용하지 않는다.

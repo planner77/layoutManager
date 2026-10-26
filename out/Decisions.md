@@ -1,5 +1,13 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-051-G7-S3-2 — 예약 운영 API 계약의 프로덕션 강제 OFF 및 시험 격리 (2026-10-26)
+
+- **결정:** S3-2는 기존 G3/G4 Service와 SQLite 영속 adapter를 재사용하여 Login/Session/Logout·Role/Site/Grant·Account Disable/Audit 및 Admin-only User Create를 `/api/g7-operational/**`의 **예약 API**로 연결한다. 단순 `G7_AUTH_ENABLED=true`나 Owner S2 준비 승인은 운영 활성화를 허용하지 않는다. **`NODE_ENV=production`은 전체 응답 404로 고정**하며 테스트 비운영에서만 명시된 전용 임시 DB·loopback/추가 Preview flag·Auth OFF가 전부 만족할 경우 서비스가 열린다.
+- **거래/권한:** Session/Actor/Role/Site/Grant는 DB 권위, 쿠키는 기존 운영·Staging과 분리. G4 Permit·Grant·Disable/Audit BEGIN IMMEDIATE. Admin-only User Create는 권한 사전검사/감사 이후 KDF, transaction 내 Role/Session 재검증과 INSERT/Audit Commit을 하나로 처리하고 실패 시 rollback. 새 계정은 강제 암호 변경, Role/Scope 자동 부여 없음. G2 최초 생성/복구는 UI나 API 호출 없이 **별도 명시 승인된 일회용 CLI**에서만, Startup 자동 실행 금지.
+- **안전:** S3-1의 Release/Operation preflight가 아직 런타임 Verified Build/Registry 및 실제 DB 증거를 공급받지 않아 `runtimeActivated=false`이고, 기존 CAD API Auth/Audit 업무 Cutover도 S3-3 별도 단위다. S3-4 릴리스/복구 승인 전 프로덕션 NO-GO 유지. 새 Admin 영속 UI/관리 화면 미포함; API 계약만 구현.
+- **GHCR 예외:** 정확한 추후 squash 제목 `#109 | S3-2 Operational Auth/Admin API [G7-S3-2-NO-GHCR]` 및 23개 정확한 S3-2 파일만 제외, 예상 밖 활성 Migration/기존 CAD/Compose/runtime 파일은 CI fail-closed. 기존 S1/S2/S3-1 예외·일반 runtime/tag 게시 정책 불변, 이번 브랜치 CI까지만 진행.
+
+
 ## ADR-051-G7-S3-1 — Auto-migrator 충돌 예방·운영 Schema 타입 선반영 (2026-10-26)
 
 - **결정:** 현재 `src/scripts/deploy.ts`는 기동 시 무조건 `prisma migrate deploy`를 실행한다. 이번 S3-1의 Auth DDL을 즉시 `src/prisma/migrations`에 넣으면 GHCR 게시 여부와 무관하게 **향후 일반 배포가 실 운영 DB에 미승인 Migration을 적용할 위험**이 있다. S3-1에서는 Prisma Client용 운영 `schema.prisma`에 G1~G4 모델을 반영하되 Auth DDL은 **Prisma 공식 candidate history** `src/deploy/g7-s3/prisma/migrations/202610260002_g7_operational_auth`로 분리한다. 활성 운영 migration history와 자동 migrator 그대로 두고, S3-4/5 별도 PR에서 Release/Owner GO 및 백업·실복구 완결 후 승격·적용을 재검토한다.

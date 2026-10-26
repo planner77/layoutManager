@@ -1,5 +1,13 @@
 # Issue #109 — G7 운영 인증 활성화 설계 및 통제 배포·롤백 Runbook
 
+## S3-2 운영 Auth·관리 API 계약 통합 (프로덕션 OFF, 2026-10-26)
+
+- **계획/구현:** S3-1 운영 Prisma 모델·별도 Migration 후보에 G3/G4 Login/Session/Logout/InitialChange/Grant/Disable/Audit를 예약 `/api/g7-operational/**` App Router와 연결. Admin-only `users/create`는 CSRF·DB G4 users:manage 사전 인가+감사, 해시 생성 후 거래 내 Admin/Session 재검증과 User+Audit 원자 기록. G2 최초 Admin 생성·복구는 `scripts/g7-s3-admin.ts --ack-disposable-only`에서만, 앱 기동/배포 자동 실행 없음.
+- **운영 불활성화:** `NODE_ENV=production`은 404 강제, `G7_AUTH_ENABLED=true`/Owner S2 승인 의사만으로 Runtime 활성화되지 않음. 실제 API 기능 시험은 Linux canonical /tmp 일회용 정식 S3 후보 DB + 명시 Preview flag/Loopback Origin에 한정. S3-1 pure preflight는 `runtimeActivated=false`, 운영 Auth/Prisma Migration/기존 CAD Multipart POST·Current·DELETE, Compose/Nginx/.env/실 DB/CAD/S3/OCI 배포·Audit 물리 purge 변경 없음.
+- **후속 게이트:** S3-3 운영 CAD 쓰기 Auth+Audit transaction 통합, S3-4 실 OCI App/Migrator pair/DB-CAD-S3 동일 Snapshot 실복구 및 신뢰 가능한 release binder, S3-5 Owner 특정 릴리스 운영 GO. 사용자 사내 실제 시험 증거 외부 비반출 정책 준수. [S3-2 Runbook](../src/deploy/g7-s3/S3-2.md), ADR/Operation/TestPlan/TestReport/FailureLedger 참조.
+- **PR 릴리스 격리:** 정확 Squash 제목 `#109 | S3-2 Operational Auth/Admin API [G7-S3-2-NO-GHCR]`+S3-2 23개 파일 whitelist만 GHCR 게시 제외; 운영 활성 이력/기존 CAD/Compose·미승인 제목은 Main release-scope nonzero. 이번 요청은 구현·리뷰/충돌 해결·PR CI 시작까지이며 **병합·GHCR·운영 GO·Issue #109/#96 종료 제외**.
+
+
 ## S3-1 운영 Schema 타입·정식 Migration 후보·Release/Operation Gate 구현 (2026-10-26)
 
 - Owner가 S1 수용·S2 준비 승인을 선언했으나 실제 운영 릴리스별 GO 증거/내부 실 DB/CAD/S3 복구 로그는 외부 제출 불가이며 특정 서명/기간·OCI digest는 미확정. **운영 Cutover 실행은 승인하지 않는다**. 관련 Runbook [S3-1](../src/deploy/g7-s3/README.md), [ADR](Decisions.md), [TestPlan](TestPlan.md).
