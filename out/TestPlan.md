@@ -1,5 +1,14 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #109 / PR #125 — P1 실패 재발 방지 및 Staging Prisma CLI 보호 TC (2026-10-26)
+
+- **TC-P4-G7-CI-001:** [실패 Run 40275956996](https://github.com/planner77/layoutManager/actions/runs/40275956996) Verify의 `tests/unit/g7-staging-ghcr-guard.test.ts` Assertion은 거부 진단 메시지를 stderr로 잘못 예상한 **단일 Test 실패**. GitHub Actions stdout/stderr 구분과 Bash exit 1을 일치시키고 재검증한다. Docker Job 성공, Verify 이후 E2E skipped는 독립 상태로 유지한다.
+- **TC-P4-G7-CI-002:** 승인된 squash 제목 `#109 | S1 Staging-only integration [G7-S1-NO-GHCR]`의 **첫 줄 정확 일치** + multiline body는 skip, `... NOT-APPROVED`/`-extra`/끝 공백은 fail-closed. 다른 일반 Runtime 변경/Tag 릴리스는 현행 게시 정책 유지. 변경된 Main release-scope Bash 추출·실행 기반 Unit으로 검증.
+- **TC-P4-G7-DB-001:** `npx prisma migrate deploy --config deploy/g7-staging/prisma.config.ts`는 Stage UID 임시 루트, 실제 `fixture.sqlite`, 전용 CAD Path, `DATABASE_URL=G7_STAGING_DATABASE_URL`, release manifest/schema, `G7_STAGING_ONLY`/`G7_AUTH_ENABLED`/Staging 승인 값 **전부 유효**해야 실행. 불일치/운영 DB·symlink 지정/기본값 누락시 `G7_STAGING_PRISMA_TARGET_DENIED`와 nonzero 종료, **SQL 사전 미실행/대상 파일 센티널 불변**. 정상 Stage 진입은 기존 Integration Prisma 7개 Migration 회귀.
+- **TC-P4-G7-REV-001:** P1 #125 [r4374313158](https://github.com/planner77/layoutManager/pull/125#discussion_r4374313158)/[r4374313165](https://github.com/planner77/layoutManager/pull/125#discussion_r4374313165)/[r4374313173](https://github.com/planner77/layoutManager/pull/125#discussion_r4374313173) 각각 코드·단위 시험·문서/원장 보완→댓글 답변·Resolved, Main behind 0/충돌 0, 수정 HEAD CI **시작**까지만 작업. 최신 CI 결과를 관측하지 않으면 PASS 주장 금지.
+- **기존 운영 구분:** 신규 Stage 전용 설정/테스트와 GitHub Workflow scope만 변경, `src/prisma/**`·운영 기존 CAD API/Compose/Nginx/.env/실 DB/CAD/S3·GHCR 게시·Account/Auth 활성화 변경 0. Staging synthetic DXF/SQLite 실증은 Owner S2 Go/No-Go 대체 불가.
+
+
 ## Issue #109 S1 / PR #125 — 실제 CI와 잔여 TC 분리 (2026-10-26)
 
 **근거:** 최초 HEAD `a82a04bb` [PR CI 40270394055](https://github.com/planner77/layoutManager/actions/runs/40270394055) Verify+Docker 성공. 이후 쿠키·Main release-scope guard 보완은 **수정 HEAD 재검증 PENDING**. S0의 TC-P4-G7-015 `문서-only` 조건은 실제 Stage 소스가 있는 S1에 그대로 적용 불가; **운영 Prisma/CAD API/Nginx/Compose 불변 + GHCR 제한 차단**으로 평가한다.

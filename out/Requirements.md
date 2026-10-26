@@ -1,5 +1,14 @@
 # 상세 요구사항
 
+## Issue #109 G7 S1 — PR #125 P1 재발방지 추가 요구 (2026-10-26)
+
+| ID | 추가 필수 조건 | 증거 |
+| --- | --- | --- |
+| FR-P4-G7-S1-06 | Main GHCR skip은 승인 Squash `첫 줄 완전 일치` + Stage/docs allowlist 충족만, suffix/오타는 fail-closed, 거부 결과 stderr 명시 | TC-P4-G7-CI-001~002 |
+| FR-P4-G7-S1-07 | 명시 Stage Prisma CLI config는 디렉터리 realpath·UID·symlink, DB명·동일 URL/스토리지·manifest Schema·Stage 승인 검증 전후 **SQL 무실행**, 운영 파일 불변 | TC-P4-G7-DB-001 |
+| NFR-P4-G7-S1-02 | 수정 HEAD PR CI 이전 PASS 소급 금지·실 운영 API/Prisma/Compose·GHCR 및 Owner GO 분리 | CI 실패 원장/Issue109 |
+
+
 ## Issue #109 G7 S1 — Staging 구현 요구/검증 (2026-10-26)
 
 | ID | S1 구현 조건 | TC | 경계 |

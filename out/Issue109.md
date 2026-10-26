@@ -1,5 +1,12 @@
 # Issue #109 — G7 운영 인증 활성화 설계 및 통제 배포·롤백 Runbook
 
+## Issue #109 / PR #125 — Unit 실패/P1 3건 보완·Prisma CLI fail-closed·CI 재시작 (2026-10-26)
+
+- **실패 증거:** 구 HEAD `818264afb8809ccf0a3e09262e1a09054fd43004`의 [Run 40275956996](https://github.com/planner77/layoutManager/actions/runs/40275956996) `completed/failure`. Verify `Unit 및 Integration 테스트` 313개 중 1개 실패, Docker 성공. 실제 실패는 GHCR 경로차단 진단 출력의 stdout/stderr Assertion 불일치; 이후 Build/E2E는 SKIPPED. [FailureLedger](FailureLedger.md)/[TestReport](TestReport.md) 상세.
+- **P1 보완:** [GHCR 정확 제목](https://github.com/planner77/layoutManager/pull/125#discussion_r4374313158)은 커밋 첫 줄만 `sed`로 분리/정확 일치, 잘못된 유사 제목은 오류 종료. [Staging Prisma DB 검증](https://github.com/planner77/layoutManager/pull/125#discussion_r4374313165)은 CLI 설정이 운영 DB를 열기 **전에** 임시 DB/권한·매니페스트·URL/승인 조건을 검증하며 fallback 제거. [Output Stream](https://github.com/planner77/layoutManager/pull/125#discussion_r4374313173)은 실제 비허용 경로 진단을 stderr로 출력하고 거부 exit 1 보존. 정확제목·stdout/stderr·운영 경로 거부/원본 변경 0 Test 작성.
+- **운영 차단 불변:** 이 작업은 단일 PR #125의 Staging 전용 Source·테스트·가이드 보완이다. 기본 OFF/Owner S2 GO 미승인, 기존 공개 CAD GET·운영 Multipart POST/Current/Delete·Prisma/Compose/Nginx/.env·실 DB/CAD/S3·GHCR 게시·Audit purge 변화 0. G7 AC1~4 미수용, #109/#96 OPEN/BLOCKED. 수정 HEAD PR CI 시작 후 모니터링·병합·릴리스·이슈 종료 수행하지 않는다.
+
+
 ## #109 S1 PR #125 — 최초 CI 성공·Staging 수용 범위/배포 차단 (2026-10-26)
 
 - [PR CI 40270394055](https://github.com/planner77/layoutManager/actions/runs/40270394055) 구 HEAD `a82a04bb` Verify/Docker 성공은 **자동·격리 Staging**에만 해당. S1의 운영 Cutover·G7-AC1~4 완료 또는 Owner GO가 아니다.

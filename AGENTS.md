@@ -1,5 +1,13 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #109 / PR #125 — PR CI Unit 실패 및 P1 3건 수정, 운영 미활성 (2026-10-26)
+
+- **실패:** [PR CI Run 40275956996](https://github.com/planner77/layoutManager/actions/runs/40275956996), HEAD `818264afb8809ccf0a3e09262e1a09054fd43004`. Verify Job `121418632923` Unit/Integration 313 중 1 실패(59 파일 중 1), Docker `121418632714` 성공. Typecheck/Lint 성공, 이후 Build/E2E SKIPPED. 원인: GHCR 비허용 경로 거부는 exit 1인데 `echo`는 stdout, Unit은 stderr를 예상. [FailureLedger](out/FailureLedger.md) 보존, 새 HEAD CI 실행 전 재검증 미확인.
+- **P1 3건 교정:** (1) no-GHCR Main 예외는 `COMMIT_SUBJECT`를 첫 줄로 추출하여 정확히 `#109 | S1 Staging-only integration [G7-S1-NO-GHCR]`일 때만 허용. suffix/의사 승인 유사 제목은 fail-closed, 멀티라인 본문은 허용. (2) Stage `deploy/g7-staging/prisma.config.ts`가 CLI 로딩 시 `resolveG7StagingGate`를 통과하지 못하면 `G7_STAGING_PRISMA_TARGET_DENIED`로 Prisma SQL **사전** 종료, 기본 fallback DB 없음; Stage /tmp 실제 파일/UID/realpath/symlink/전용 CAD/manifest·URL/승인 조건을 요구. (3) 비허용 경로 진단을 stderr로 출력하여 Unit과 일치시킴. [PR #125 P1](https://github.com/planner77/layoutManager/pull/125), TestPlan/TestReport/원장 참조.
+- **실행 가이드 변경:** Stage CLI 실행 전 `G7_STAGING_ONLY=true`, `G7_RELEASE_CAPABILITY=G7-S1-STAGING-V1`, `G7_OPERATION_APPROVAL=S1-STAGING-ONLY`, 격리용 `G7_AUTH_ENABLED=true`, `G7_STAGING_ROOT`/`G7_STAGING_DATABASE_URL`=`DATABASE_URL`/`CAD_STORAGE_PATH`/`G7_STAGING_ORIGIN` 전부 설정. **운영 값/실 DB/실 CIDR·Secret 설정 금지**. 모든 flag 기본 OFF, 별도 Stage CAD Write Gate도 원칙상 false.
+- **사용자 업무 범위:** 새 HEAD PR CI **시작까지만**, CI 모니터링/병합/GHCR/운영 Auth·정식 Prisma Migration·Nginx/Compose/.env/실 DB/CAD/S3/이슈 종료 금지. #109·#96 OPEN/BLOCKED.
+
+
 ## Issue #109 / PR #125 — Staging CI 수용 범위·쿠키 격리·GHCR 미게시 계약 (2026-10-26)
 
 - 첫 S1 HEAD `a82a04bb` [PR CI 40270394055](https://github.com/planner77/layoutManager/actions/runs/40270394055) Verify·Docker 성공. 이후 코드/테스트 수정 HEAD는 별도 CI 필요. Codex review summary `running`은 스레드 0이어도 승인 아님. [TestReport](out/TestReport.md)·[FailureLedger](out/FailureLedger.md).

@@ -1,5 +1,12 @@
 # Database Schema — 단일 기준 문서
 
+## Issue #109 / PR #125 P1 — Staging Prisma CLI Migration 실행 전 대상 강제 검증 (2026-10-26)
+
+- **원인:** Staging 전용 `src/deploy/g7-staging/prisma.config.ts`가 기존에는 `G7_STAGING_DATABASE_URL`의 실제 경로·UID·symlink/manifest 정합성을 확인하지 않고 Prisma datasource로 전달했고 기본 fallback URL도 포함했다. 운영 DB 경로를 실수로 지정하면 G1 Auth Migration DDL이 사용자 DB에 적용될 위험(리뷰 [r4374313165](https://github.com/planner77/layoutManager/pull/125#discussion_r4374313165)).
+- **보완:** config import 즉시 `resolveG7StagingGate(process.env)`를 실행해 전용 `/tmp/cad-g7-staging-*/fixture.sqlite` realpath·UID·symlink·manifest Schema ID·고정 digest 형식·`DATABASE_URL`/`G7_STAGING_DATABASE_URL`/CAD 경로/Stage-only Operation Flag 전부 확인. 불일치 시 `G7_STAGING_PRISMA_TARGET_DENIED` 예외가 **Prisma Migration SQL 실행 전에 발생**하며 fallback은 없다. 정상 검증된 파일만 `datasource.url='file:'+target.databasePath`로 설정.
+- **운영 범위:** 기존 운영 `src/prisma/schema.prisma`·`src/prisma/migrations/**`·기본 `prisma.config.ts`/deployment migrator는 불변. 새 `g7-staging-prisma-config.test.ts`는 임의 DB sentinel 불변·nonzero를 검증하도록 작성했고, 공식 Staging migration E2E는 새 HEAD CI 결과로 별도 확인한다. 이 수리는 운영 DB Migration GO가 아니다.
+
+
 ## Issue #109 G7 S1 — Staging 전용 정식 Prisma 계층 (2026-10-26)
 
 - **정식 Staging Migration, 운영 OFF:** `src/deploy/g7-staging/prisma.config.ts`는 config 파일 기준 상대 경로의 Staging Schema·Migration만 사용한다(Prisma 7). 기존 CAD 6개 Migration의 동일 내용 및 `202610260001_g7_staging_auth`가 순서대로 적용될 일회용 SQLite에 별도 Prisma migration history 기록. **운영 `src/prisma/schema.prisma`/migrations와 운영 Migrator/실 DB 불변**.

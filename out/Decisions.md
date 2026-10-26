@@ -1,5 +1,12 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-051-G7-S1-R2 — 잘못된 제목·운영 DB Migration의 사전 차단 (2026-10-26)
+
+- [PR #125](https://github.com/planner77/layoutManager/pull/125) P1 #4374313158/3165/3173 교정: GHCR 건너뛰기는 커밋 메시지 **첫 줄의 정확한 승인 제목**에만 적용(본문 허용), 비슷한 제목은 Main CI 오류 종료. 비허용 변경 경로에서는 `echo >&2`/exit 1을 유지한다. Unit Test는 stdout/stderr와 부정 제목을 검증한다.
+- Staging 독립 Prisma config는 이제 `G7_STAGING_DATABASE_URL`을 그대로 믿지 않고 `resolveG7StagingGate` 전체 비운영 검증을 통과한 실제 파일만 datasource로 전달한다. 경로/소유권/심볼릭 링크/스테이징 manifest/Schema/Origin/Stage 승인/두 URL·저장소 불일치 또는 기본값 누락 시 SQL **실행 전 차단**. 이 결정은 운영 migration 시점을 앞당기지 않고, 서비스 운영 기능을 ON 하지 않는다.
+- 원래 G0~G6 Owner 업무/보안 범위와 #109의 S2 별도 Go/No-Go·S3 통제 단계 불변. 실패 Run과 리뷰 결함은 독립 실패 원장에 기록하며 새 CI 결과를 기다리지 않고 성공 판정하지 않는다.
+
+
 ## ADR-051-G7-S1-R1 — Stage 세션 쿠키 분리 및 단일 PR GHCR 미게시 (2026-10-26)
 
 **Decision: S1 Staging만 허용, 운영 Go/No-Go 승인 아님.** 동일 hostname 내 서로 다른 port는 브라우저 Cookie 범위를 격리하지 않으므로 Stage 응답 Cookie를 `cad_staging_session; Path=/api/g7-staging`으로 변경하고 Request 단계에서만 G3/G4 내부 `cad_session`으로 정규화한다. 운영 인증 서비스/Route와 기존 CAD 읽기·쓰기 API는 변경하지 않는다.

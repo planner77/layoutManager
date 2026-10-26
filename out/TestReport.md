@@ -1,5 +1,13 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issue #109 / PR #125 — 관측 PR CI 40275956996 실패 및 P1 보완 후 재검증 대기 (2026-10-26)
+
+- **실패 Run/HEAD:** [40275956996](https://github.com/planner77/layoutManager/actions/runs/40275956996), HEAD `818264afb8809ccf0a3e09262e1a09054fd43004`. Verify [121418632923](https://github.com/planner77/layoutManager/actions/runs/40275956996/job/121418632923) Unit/Integration `failure`(59 files 중 1 FAIL, 313 tests 중 1 FAIL), Docker [121418632714](https://github.com/planner77/layoutManager/actions/runs/40275956996/job/121418632714) `success`. Typecheck/Lint 성공, Verify 이후 Build/E2E는 skipped. 단 하나의 실패는 GHCR scope Test의 비허용 경로 출력 스트림 예상 불일치: 실제 `stdout` vs Assert `stderr`. 해당 Actions 로그·원인·교정 및 P1 리뷰 3개는 [FailureLedger](FailureLedger.md)에 분리 기록.
+- **보완 작성:** Main GHCR 게시 제외 조건을 Commit **첫 줄 정확 일치**(multiline body 허용·prefix 변형은 거부)로 변경하고 거부 메시지는 stderr로 출력. Stage 전용 Prisma config는 운영 DB URL/경로·승인 manifest·UID/symlink/realpath 등 전체 Stage Gate를 **Migration SQL 이전**에 검증하고 기본 fallback URL 제거. 추가 Unit(Test)으로 near-match/공백/본문, stdout-stderr, 잘못된 DB URL 및 센티널 원본 불변을 추적. Staging README/운영 지침은 모든 격리 환경변수를 **Prisma 실행 전** 지정하도록 교정.
+- **시험 상태:** 코딩/문서 보완은 실제 통과 근거가 아니다. 새 PR HEAD의 Typecheck/Lint/Unit/Vitest/Prisma/E2E/Docker/리뷰는 Run/Job 실제 확인 전 **PENDING/NOT VERIFIED**. 구 Run 40270394055 성공은 구 HEAD 전용으로 보존.
+- **운영/현장 예외:** 신규 S1 검증이 통과하더라도 합성 SQLite·DXF JSON/base64 미러 API이지 기존 Multipart CAD 경로/S3·사내 PC 2대·동일 snapshot 실복원/운영 이미지 서명·Owner S2 GO가 아니다. G7 AC1~4/이슈 #109·#96 OPEN/BLOCKED, Auth·정식 운영 Migration/Proxy/Compose/.env/실 자료·GHCR 미게시 상태 유지.
+
+
 ## Issue #109 PR #125 — S1 첫 CI 성공·검증 범위와 후속 보완 (2026-10-26)
 
 - **첫 CI 성공 확인:** 구 HEAD `a82a04bb2412859e998616902e22f0efceab35c4`의 [PR CI 40270394055](https://github.com/planner77/layoutManager/actions/runs/40270394055)는 `completed/success`. Verify [121401764981](https://github.com/planner77/layoutManager/actions/runs/40270394055/job/121401764981)(Typecheck/Lint/Unit·Integration/Build/Chromium E2E/Legacy Migration E2E), Docker [121401764781](https://github.com/planner77/layoutManager/actions/runs/40270394055/job/121401764781)(이미지·Migration·Runtime Smoke) 모두 성공. Vitest 설정은 `tests/**/*.test.ts`를 포함하므로 G7 Stage 테스트도 해당 실행 대상이다. 이 결과는 **구 HEAD 전용**이다.

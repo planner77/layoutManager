@@ -1,5 +1,12 @@
 # 운영·환경설정 초안
 
+## Issue #109 / PR #125 P1 — Prisma 대상 보호 및 GHCR 정확 제목 운영 절차 갱신 (2026-10-26)
+
+- **Staging Prisma 실행 순서 변경:** 기존 Staging README의 "루트/URL만 먼저 설정하고 Migration 실행" 방식은 더 이상 허용하지 않는다. `g7-staging-prepare.ts`가 만든 전용 `/tmp/cad-g7-staging-*/fixture.sqlite`를 확인하고 `G7_STAGING_ROOT`, `DATABASE_URL`, `G7_STAGING_DATABASE_URL`, `CAD_STORAGE_PATH`, `G7_STAGING_ORIGIN`, `G7_STAGING_ONLY=true`, `G7_RELEASE_CAPABILITY=G7-S1-STAGING-V1`, `G7_OPERATION_APPROVAL=S1-STAGING-ONLY` 및 `G7_AUTH_ENABLED=true`(격리 Staging에서만)를 **Prisma CLI 시작 전에 함께 지정**해야 한다. 실제 명령: `npx prisma migrate deploy --config deploy/g7-staging/prisma.config.ts`. Gate 검증 실패면 `G7_STAGING_PRISMA_TARGET_DENIED`로 즉시 종료; 기본 fallback/운영 DB 접속 불가. `G7_CAD_WRITE_CUTOVER_ENABLED`는 별도 기본 OFF.
+- **GHCR 미게시 정책:** Main S1 예외는 Squash Commit **첫 줄**이 정확히 `#109 | S1 Staging-only integration [G7-S1-NO-GHCR]`일 때만 허용(본문 여러 줄 가능). 유사 제목/공백 suffix는 Main CI fail-closed. 승인된 Stage/docs/해당 workflow 경로 이외 변경이 있으면 error를 stderr로 출력·중단. 기존 코드 릴리스/tag 게시 정책은 변경하지 않는다. 본 요청은 실제 병합·Main CI·GHCR 게시 금지, 보완 후 새 PR CI **시작**까지만.
+- **시험 및 증거:** [Run 40275956996](https://github.com/planner77/layoutManager/actions/runs/40275956996) Unit 단계 stdout/stderr Assertion 실패 및 Codex P1 3건을 [FailureLedger](FailureLedger.md)에 별도로 누적. 새 HEAD Typecheck/Vitest/Prisma/후속 E2E는 결과 미확인/PENDING. 실제 사내 운영 Auth/Prisma/Compose/Nginx/.env/DB/CAD/S3와 미승인 Audit purge/영속 API는 OFF.
+
+
 ## Issue #109 PR #125 — 수용·쿠키 격리·GHCR 미게시 병합 Runbook (2026-10-26)
 
 - **Stage만:** 기존 `/api/cad-files` Multipart와 일반 Current/Delete API는 그대로. `/api/g7-staging/**` DXF JSON/base64 미러와 일회용 Prisma·SQLite/CAD 로컬 fixture는 실제 운영 DB/CAD/S3/Viewer 수용 근거 아님. `cad_staging_session`은 전용 Path로만 발급·회수; 같은 hostname의 `cad_session`은 stage에서 사용하지 않고 내부 G3/G4로 전달할 때만 적응 변환.
