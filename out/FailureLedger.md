@@ -1,5 +1,12 @@
 # PR/Main CI 실패 원장
 
+## Issue #108 / PR #122 — P2 필수 문서 표 누락 보완·수정 HEAD 재검증 게이트 (2026-10-26 KST)
+
+- **관측 기존 성공:** [PR CI 40257054743](https://github.com/planner77/layoutManager/actions/runs/40257054743), 최초 PR HEAD `9c8bfc1062b33964928b299ebc4cfe80e319378c`에서 `completed/success`. Verify [Job 121361049386](https://github.com/planner77/layoutManager/actions/runs/40257054743/job/121361049386) SUCCESS(Typecheck/Lint/Unit·Integration/Build/Playwright E2E), Docker [Job 121361049207](https://github.com/planner77/layoutManager/actions/runs/40257054743/job/121361049207) SUCCESS; 실패 결과 Artifact 업로드 SKIPPED는 조건부 정상. **기존 CI 실패는 관측되지 않음.**
+- **P2 코드 리뷰(실패와 구분):** [r4373409989](https://github.com/planner77/layoutManager/pull/122#discussion_r4373409989) — 신규 `out/Issue108.md`가 AGENTS.md '상세 문서와 필수 참조 시점' 표에 미등록되어 향후 G6 복구·현장 증거 작업에서 필수 문서를 누락할 수 있음. **원인:** 상세 가이드는 신규 작성·본문 링크했으나 필수 참조 테이블 행 삽입을 놓침. **보완:** AGENTS.md 표에 G6 증거 검증·실 LAN PC 2대·SQLite/CAD/S3 실 Backup/Migration/Restore/QA·G7 Go/No-Go 선행 참조 조건을 명시.
+- **수정 HEAD 검증 및 병합 경계:** 문서 보완·이 원장/시험보고서 변경 후 PR CI `pull_request.synchronize`를 **다시 실행해야 함**. 이전 HEAD 40257054743 SUCCESS는 후속 HEAD의 성공 증거가 아님. 미해결 스레드 답변·Resolved, 최신 main behind 0/무충돌, 신규 HEAD Verify+Docker 성공 확인 전 병합 불가. 새로운 실패/취소가 발생하면 Run/Attempt/Job/Step·원인·조치·재시도 이력 추가하며 기존 기록 삭제 금지. 원격 GitHub 변경 수행 시 로컬 npm/Docker/Playwright 별도 실행 NOT RUN.
+- **업무·배포 경계:** 테스트/오프라인 도구+Markdown만 변경, `src/app/api/**`·운영 Prisma/Migration·Nginx/Compose/.env·실 DB/CAD/S3·기존 익명 CAD GET 변경 및 G7 Auth 활성화 0. 실 현장 PC 2대/로그인 HTTP E2E·실 Backup/Restore·Owner 증거 **NOT RUN**, #108 OPEN; #109 Owner Go/No-Go 전 운영 OFF. PR #122 병합은 현장 수용·이슈 종료와 별개. GHCR 신규 게시를 위해 버전 태그를 변경하지 않음.
+
 ## Issue #108 G6 — PR CI 시작 전 누적 원장·실증 미수행 기준선 (2026-10-26 KST)
 
 - **실패 관측:** Issue #108 신규 구현 브랜치 `feat/issue-108-g6-evidence-rehearsal`의 PR CI Run/Job 실패나 취소는 이 문서 작성 시점 **아직 관측되지 않음**. 원장의 기존 다른 이슈 실패·취소/재검증 기록은 아래 모두 보존한다. Run 출처 없는 실패를 창작하거나 기존 실패 기록을 성공으로 고쳐 쓰지 않는다.
