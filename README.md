@@ -1,6 +1,6 @@
 # CAD Web Viewer P.O.C.
 
-## Issue #57 — 서버 구조화 로그 단일화 (PR CI 검증 전)
+## Issue #57 — 서버 구조화 로그 단일화 (v0.42.1 PR 후보)
 
 기존 #18 공통 Logger를 재사용하여 업로드 단계 로그에도 동일한 JSON Schema v1, `LOG_LEVEL`/`LOG_FORMAT`, 안전 필드 allowlist를 적용합니다. 공개 API 응답·`X-Request-Id`·업로드 진단 첫 실패 원인은 유지됩니다. Server 로그 조회/보관은 별도 #59~#62로 미구현이며 Next/Nginx/브라우저 원시 로그도 자동 수집하지 않습니다. 상세 계약과 Docker 조회는 [Issue57](out/Issue57.md), [Logging](out/Logging.md) 참조. 현재 변경은 PR CI 시작 후보이며 배포 완료를 뜻하지 않습니다.
 
