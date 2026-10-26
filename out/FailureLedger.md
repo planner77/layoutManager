@@ -1,5 +1,16 @@
 # PR/Main CI 실패 원장
 
+## Issue #109 S3-1 — 배포 시 자동 Prisma Migration 위험 및 정적 방지 조치 (2026-10-26)
+
+- **실제 CI/Job 실패 관측:** 신규 S3-1 PR CI는 이 문서 작성 시점 시작 전이므로 **신규 실패 0건(미관측)**. Test 및 Docker 성공을 추측하지 않는다. 아래 기존 PR #125/#129 실패·취소 및 리뷰 기록은 전부 보존한다.
+- **위험 요인:** 운영 migrator `src/scripts/deploy.ts`는 기동 즉시 기본 `prisma migrate deploy`를 실행. S3 Auth/Session/Audit DDL을 현재 활성 `src/prisma/migrations`에 즉시 배치하면 향후 무관한 배포에서 무승인 운영 Migration이 자동 실행될 수 있다. 또한 신규 Prisma 모델만으로 실제 운영 DB가 준비됐다고 오판할 위험이 있다.
+- **대응:** 운영 `src/prisma/schema.prisma`는 코드생성용 모델만 확장, 신규 정식 형식 SQL은 격리 `src/deploy/g7-s3/prisma/migrations/202610260002_g7_operational_auth`에 두고 CAD 6개 동일 이력을 함께 보관. 기본 migrator/활성 SQL/Compose/.env/실 DB·CAD/S3는 수정하지 않음. 별도 Test Prisma config의 Linux canonical /tmp·UID·0700/0600·marker/URL/flag 검증 실패 시 SQL 시작 전 거부. 후보 SQL 적용/rollback/원본 무결성은 isolated Vitest/Prisma에서 검증되도록 작성.
+- **Gate/릴리스 위험:** Owner의 S2 일반 승인만으로 실제 후보 digest·Schema·Scope/기간/실복구 GO를 자동 수용할 수 없음. Pure preflight에서 App/Migrator version/SHA/OCI 증거/Owner GO mismatch는 eligible=false, runtimeActivated=false 유지. 실 OCI Registry/rollback 증거와 내부 시험 원본은 아직 제공되지 않으며 PASS 창작 금지.
+- **GHCR 예방:** 정확한 미래 squash `#109 | S3-1 Operational schema and gates [G7-S3-1-NO-GHCR]` + S3-1 경로 허용 목록만 Main `publish=false`. 금지된 활성 migration/기존 CAD API/Compose 및 제목 변형은 fail-closed하도록 synthetic Bash 회귀 작성. **본 PR 요청은 PR CI 시작까지만**; 병합/Main CI/GHCR 게시·운영 적용/이슈 종료 미수행.
+- **추적 규칙:** 신규 CI 실패/취소 발생 시 RUN/Attempt/Job/Step/log source+원인/수정/재시도 HEAD를 다음 원장 섹션에 **추가**하며 기존 실패를 덮어쓰지 않는다. 진행 상태: S3-1 schema/migration candidate 구현·시험 작성, 합격은 HEAD CI와 Codex Review 이후 확인.
+
+
+
 ## Issue #109 / PR #129 — 기존 CI PASS·Codex P1 S2 GHCR 게시 위험 및 조치 (2026-10-26 KST)
 
 - **검증된 이전 결과(실패 아님):** [PR CI 40313233131](https://github.com/planner77/layoutManager/actions/runs/40313233131), 시도 1, HEAD `29ed3028bf0f78ba37abba0ecde73a6483d0942f`, `completed/success`. Verify [Job 121539323884](https://github.com/planner77/layoutManager/actions/runs/40313233131/job/121539323884)와 Docker [Job 121539323971](https://github.com/planner77/layoutManager/actions/runs/40313233131/job/121539323971) 각각 `success`. 이후 추가 수정 HEAD의 PASS는 별도 확인 필요.

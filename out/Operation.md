@@ -1,5 +1,15 @@
 # 운영·환경설정 초안
 
+## Issue #109 S3-1 — 운영 적용을 차단한 Prisma 후보/이중 Gate 작업 절차 (2026-10-26)
+
+- **운영 보안 경계:** `src/prisma/schema.prisma`에는 신규 User/AuthSession 등이 코드생성용으로 존재하나 현재 운영 DB는 여전히 CAD 6개 Migration만 적용. 운영 `scripts/deploy.ts`는 건드리지 않으며, **활성 `src/prisma/migrations`에 S3 Auth SQL 없음**. S3 후보에 실 운영 DB URL을 주입하거나 `prisma db push`·기본 `npm run db:deploy`로 새 모델을 적용하지 않는다.
+- **허용된 격리 시험:** [`src/deploy/g7-s3/README.md`](../src/deploy/g7-s3/README.md)의 명시된 `/tmp/cad-g7-s3-XXXXXX/fixture.sqlite` 준비·0600 marker, `G7_S3_MIGRATION_TEST_ONLY=true`/`G7_S3_TEST_ROOT`/`G7_S3_TEST_DATABASE_URL` = `DATABASE_URL`, `G7_AUTH_ENABLED=false`/`G7_CAD_WRITE_CUTOVER_ENABLED=false`에서만 `npx prisma migrate deploy --config deploy/g7-s3/prisma.config.ts` 실행. 경로/마커/UID·모드 실패는 `G7_S3_DISPOSABLE_MIGRATION_ONLY`로 중단. 사내 실제 DB·CAD/S3 접근 명령 아님.
+- **Release/Operation 검증:** `src/server/g7-operational/preflight.ts`는 준비 상태만 반환하며 운영 라우트·실 서버 실행에는 연결되지 않음. 성공한 synthetic test는 실제 digest 서명/registry pair, Owner 사내 EV 승인, 실 동일 snapshot Restore가 아니다. S3-2/3/4에서 검증 출처 연결과 업무/API 통합 및 롤백 검증 완료 후 S3-5 Owner 실행 GO 필요.
+- **GHCR 미게시:** 이 PR은 `#109 | S3-1 Operational schema and gates [G7-S3-1-NO-GHCR]` 정확 제목과 한정된 S3-1 diff만 Main CI GHCR 게시 제외하도록 설계. 사용자 이번 요청에는 PR 생성 및 CI 시작만 포함, **병합/GHCR/운영 Auth·Prisma/Nginx·Compose/.env/실 데이터 변경 금지**.
+- **S3-1 완료 범위:** 공식 후보 Migration SQL/Prisma Client/Gate/격리 Unit·Integration 코드가 **신규 HEAD CI PASS까지 확인**되어야 개발 게이트 충족. 여전히 실제 운영 활성화/이슈 #109·#96 종료 불가.
+
+
+
 ## Issue #109 S2 PR #129 — GHCR 게시 없이 준비 기능 병합하기 위한 운영 게이트 (2026-10-26)
 
 - **정확 Squash 제목:** `#109 | S2 private-evidence readiness [G7-S2-NO-GHCR]`. 반드시 **커밋 첫 줄이 완전 일치**해야 하며 본문은 여러 줄이어도 된다. 이 제목이 아닌 다른 접미/후행 공백이 있으면 S2 Main 예외가 적용되지 않고 fail-closed한다.

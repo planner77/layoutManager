@@ -1,5 +1,14 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #109 S3-1 — 운영 Prisma Schema·격리 후보 Migration·이중 게이트 (2026-10-26)
+
+- **이 단계의 구현 경계:** S3-1은 `src/prisma/schema.prisma`에 G1~G4 User/AuthSession/Role/Site/SpecialGrant/Audit/RecoveryNonce/G3LoginAttempt 모델을 포함해 Prisma Client 타입을 만들고, **7개 정식 Prisma 후보 Migration은 `src/deploy/g7-s3/prisma/migrations`에 격리**한다. 현재 `src/scripts/deploy.ts`가 운영 자동 `prisma migrate deploy`를 수행하므로 **신규 Auth Migration을 `src/prisma/migrations`에 넣으면 운영 DB에서 미승인 자동 적용될 수 있다.** 따라서 활성 운영 Migration 6개는 불변, 별도 S3 승인·롤아웃 PR 전 승격/복사 금지. 상세 [S3-1 Runbook](src/deploy/g7-s3/README.md), [Database](out/Database.md).
+- **안전한 CI:** `src/deploy/g7-s3/prisma.config.ts`는 명시된 Linux UID 소유 `/tmp/cad-g7-s3-*/fixture.sqlite`·0700 root/0600 DB·0600 marker·두 DB URL 정확 일치·`G7_S3_MIGRATION_TEST_ONLY=true` 및 Auth/Write 플래그 OFF 조건이 아니면 Prisma SQL **이전**에 `G7_S3_DISPOSABLE_MIGRATION_ONLY` 거부. Unit/Integration은 실제 운영 경로 접근/변경 0. G1~G3 기존 시험의 “운영 Schema에 인증 모델 없음” 검사는 이제 **Client 모델 포함·활성 운영 SQL 여전히 여섯 개**로 변경. [TestPlan](out/TestPlan.md).
+- **Release/Operation 사전 검증:** `src/server/g7-operational/preflight.ts`는 `G7-S3-AUTH-V1`, App/Migrator 동일 버전·source SHA·immutable digest, 신규 Schema ID, 외부로부터 확인된 registry/DB/FK/rollback 증거, 특정 릴리스의 Owner GO·범위·유효 시각·Snapshot·승인 ID를 함께 요구한다. 기본 Auth/Write OFF, 오류 fail-closed. **순수 preflight일 뿐 라우트 미연결이며 반환은 항상 runtimeActivated=false**; 실제 image/DB 근거나 S3 운영 승인 합격을 의미하지 않는다.
+- **GHCR 게시 금지:** 이 PR의 향후 Squash 제목은 정확히 `#109 | S3-1 Operational schema and gates [G7-S3-1-NO-GHCR]`이며 Main release-scope에서 S3-1 파일의 열거형 allowlist만 `publish=false`. 운영 경로/활성 Migration/다른 workflow 포함, 잘못된 S3 제목은 `stderr`+비정상 종료. S1/S2 예외/일반 릴리스 정책 보존. 사용자 범위는 구현·리뷰/충돌 해결·PR CI 시작까지이며 **PR 병합/Main CI/GHCR/실운영 Auth·Prisma·Nginx/Compose/.env·실 DB/CAD/S3/이슈 종료 금지**. #109/#96 OPEN/BLOCKED.
+
+
+
 ## Issue #109 / PR #129 — S2 비반출 준비 전용 GHCR 미게시 게이트 (2026-10-26)
 
 - **Owner 지시:** S2 내부 평가 도구를 PR 병합·GHCR 게시 없이 준비하고 PR CI 시작까지만. 정확한 향후 Squash Commit **첫 줄**은 `#109 | S2 private-evidence readiness [G7-S2-NO-GHCR]`으로 고정한다. PR #129의 코드/테스트/문서/해당 workflow 등 **명시된 S2 파일만** 포함할 때 Main CI `publish=false`; 비인가 운영·Stage S1 파일 또는 GitHub workflow 혼입 시 `stderr + exit 1`로 fail-closed. 유사 제목·후행 공백/접미도 실패시키며, 여러 줄의 본문은 허용한다.

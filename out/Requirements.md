@@ -1,5 +1,19 @@
 # 상세 요구사항
 
+## Issue #109 S3-1 — 운영 인증 Schema·정식 Migration Candidate·이중 Gate 요구 (2026-10-26)
+
+| ID | 요구사항 | 검증 |
+| --- | --- | --- |
+| FR-P4-G7-S3-1-01 | 운영 Prisma Schema에 G1~G4 8개 모델/정확한 CAD FK·Index, 기존 CAD 모델/원본·Version·Current·SHA/삭제 hash 변경 없음 | G7-S3-001/003 |
+| FR-P4-G7-S3-1-02 | CAD 6개 원본 Migration과 바이트 동일한 이력 + 신규 additive S3 `202610260002_g7_operational_auth` 정식 SQL 후보. 기존 자동 운영 Migrator 이력에는 추가 금지 | G7-S3-001/002 |
+| FR-P4-G7-S3-1-03 | Prisma CLI는 테스트 전용 canonical/UID 소유 `/tmp` fixture·DB/marker/두 URL·명시 Test Flag·Auth OFF를 만족하지 않으면 SQL 이전 fail-closed | G7-S3-002/004 |
+| FR-P4-G7-S3-1-04 | App/Migrator 동일 버전+Source SHA·immutable digest pair·Capability·Schema ID·registry/DB/FK/rollback 증거 불충족 시 Release Gate 거부 | G7-S3-005/006 |
+| FR-P4-G7-S3-1-05 | 릴리스별 Owner GO ID·scope·기간·변경 ID·snapshot/rollback pair 불일치, Auth OFF/Write만 ON일 때 Operation/Write Gate 거부 | G7-S3-007/008 |
+| NFR-P4-G7-S3-1-01 | S3-1 런타임 기능 ON/영속 API/기존 CAD API 변경 없음, `runtimeActivated=false`, OCI/운영 DB/CAD/S3·GHCR·Compose/Nginx/.env 미변경 | Diff/Unit |
+| NFR-P4-G7-S3-1-02 | 정확한 S3-1 Squash 제목 `#109 | S3-1 Operational schema and gates [G7-S3-1-NO-GHCR]` 및 허용 파일만 GHCR 제외, 예상 외 경로·유사 제목 fail-closed | G7-S3-CI-001~003 |
+
+
+
 ## Issue #109 G7 S2 — 증거 준비 GHCR 비게시 요구 (2026-10-26)
 
 | ID | 요구 및 검증 기준 | Test |
