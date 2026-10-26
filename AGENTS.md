@@ -1,5 +1,13 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #109 G7 — 운영 활성화 설계 문서만 준비 (2026-10-26)
+
+- [Issue109](out/Issue109.md), [ADR-051-G7-PLAN](out/Decisions.md), [Operation](out/Operation.md), [TestPlan](out/TestPlan.md) 기준. G0~G5 #102~#107은 격리·Preview 범위에서 완료; G6 #108 사내 PC 2대/업무 E2E·동시 DB/CAD/S3 실 Restore 수용은 아직 **NOT RUN**. #109 및 #96은 **OPEN/BLOCKED**.
+- 미래 구현 계약: 검증된 G7-capable App/Migrator OCI digest pair·운영 Schema(**release gate**)와 별도 Owner GO·설정(**operation gate**)가 모두 필요. 설계상 `G7_AUTH_ENABLED`, `G7_CAD_WRITE_CUTOVER_ENABLED`는 기본 false, 정확히 true만 ON, 후자는 Auth OFF 시 강제 OFF. **현재 flag·운영 API는 미구현**이며 문서/`.env`·CI/GHCR로 자동 활성화 불가.
+- 기존 CAD GET/Viewer/원본 다운로드 익명 유지. POST/Current 인증 Editor 이상+담당 Site, Version DELETE 같은 조건 AND 레거시 삭제 비밀번호. Admin 다른 Site 자동 허용 금지. 신규 Outline/Memo/Type/Logs/Audit/Admin 영속 API 익명 금지; Audit 365일 이후 purge는 별도 SOP 승인 전 OFF.
+- 현재 PR은 Markdown-only; `src/**`·Prisma/DDL/Nginx/Compose/.env·실 운영 DB/CAD/S3/기존 API/버전·GHCR 변경·운영 활성화 0. 작성된 테스트/CI 시작은 PASS가 아니며 Owner 별도 GO와 실제 복구 증거가 필수. 실 사내 IP·Secret·DXF/객체 목록/원시 로그 GitHub 공개 금지.
+
+
 ## Issue #106 G4 — PR #120 검증·병합 및 GHCR v0.41.1 후속 (2026-10-26)
 
 - **완료된 기능 PR:** [PR #120](https://github.com/planner77/layoutManager/pull/120), 최종 HEAD `d4afaf0ae3cee51a172dad9305533d941daa5706`의 [PR CI 40253887969](https://github.com/planner77/layoutManager/actions/runs/40253887969) Verify(E2E 포함)·Docker 각각 `completed/success`. 미해결 리뷰 스레드 0, main behind 0, mergeable true 확인 후 `squash` 병합 커밋 [0f59351e](https://github.com/planner77/layoutManager/commit/0f59351ef160e3cc79681a78c34714db8d088ab9). [Main CI 40254890094](https://github.com/planner77/layoutManager/actions/runs/40254890094) 시작 확인, 완료 결과/게시 성공 모니터링하지 않음.
