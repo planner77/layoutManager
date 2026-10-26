@@ -1,3 +1,4 @@
+import { clickViewerCommand, clickViewerTestCommand, openViewerMenu } from './viewer-menu-helper';
 import { expect, test } from '@playwright/test';
 import { masterFields } from './master-helper';
 
@@ -27,10 +28,13 @@ for (const renderer of ['dxf-viewer', 'three-dxf-viewer'] as const) {
     await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
     await expect(menu).toBeVisible();
     await expect(page.getByRole('heading', { name: file.displayName })).toBeVisible();
-    await expect(page.getByRole('link', { name: '← 버전 목록' })).toBeVisible();
-    await expect(page.getByRole('link', { name: '원본 다운로드' })).toBeVisible();
-    await expect(page.getByRole('button', { name: '도면 링크 복사' })).toBeVisible();
-    await expect(page.getByRole('button', { name: '브라우저 전체 화면' })).toBeVisible();
+    await openViewerMenu(page, 'drawing');
+    await expect(page.getByRole('menuitem', { name: '버전 목록' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: '원본 다운로드' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: '도면 링크 복사' })).toBeVisible();
+    await openViewerMenu(page, 'view');
+    await expect(page.getByRole('menuitem', { name: '브라우저 전체 화면' })).toBeVisible();
+    await openViewerMenu(page, 'work');
     await expect(page.getByTestId('viewer-menu-outline-tool')).toBeDisabled();
     await expect(page.getByTestId('viewer-menu-outline-tree')).toBeDisabled();
     await expect(page.getByTestId('viewer-menu-outline-types')).toBeDisabled();
@@ -46,11 +50,12 @@ for (const renderer of ['dxf-viewer', 'three-dxf-viewer'] as const) {
       await equip.uncheck();
       const stable = 'issue38-no-recreate';
       await canvas.evaluate((element, marker) => element.setAttribute('data-stable', marker), stable);
-      await layerMenu.click();
+      await clickViewerTestCommand(page, 'viewer-menu-layers');
       await expect(panel).toHaveCount(0);
-      await expect(layerMenu).toHaveAttribute('aria-pressed', 'false');
+      await openViewerMenu(page, 'work');
+      await expect(layerMenu).toHaveAttribute('aria-checked', 'false');
       await expect(canvas).toHaveAttribute('data-stable', stable);
-      await layerMenu.click();
+      await clickViewerTestCommand(page, 'viewer-menu-layers');
       await expect(panel).toBeVisible();
       await expect(equip).not.toBeChecked();
       await expect(canvas).toHaveAttribute('data-stable', stable);
@@ -73,7 +78,7 @@ for (const renderer of ['dxf-viewer', 'three-dxf-viewer'] as const) {
       return Math.abs(c.width - box.width * devicePixelRatio) < 2 &&
         Math.abs(c.height - box.height * devicePixelRatio) < 2;
     })).toBe(true);
-    await page.getByRole('button', { name: '도면 내 텍스트 검색' }).click();
+    await clickViewerCommand(page, 'work', '도면 내 텍스트 검색');
     await expect(page.getByTestId('cad-text-search')).toBeVisible();
     await page.getByRole('searchbox', { name: '도면 텍스트 검색어' }).focus();
     await page.keyboard.press('Escape');
@@ -81,7 +86,7 @@ for (const renderer of ['dxf-viewer', 'three-dxf-viewer'] as const) {
     await expect(shell).toHaveAttribute('data-fullscreen', 'true');
     await page.keyboard.press('Escape');
     await expect(shell).toHaveAttribute('data-fullscreen', 'false');
-    await page.getByRole('button', { name: '전체 화면', exact: true }).click();
+    await clickViewerCommand(page, 'view', '전체 화면');
     await expect(shell).toHaveAttribute('data-fullscreen', 'true');
     expect(contentRequests).toBe(1);
     await page.reload();
@@ -104,14 +109,17 @@ test('TC-U1-E2E-002: DWG UI uses the app shell without offering DXF-only control
   await expect(page.getByTestId('cad-viewer-shell')).toHaveAttribute('data-fullscreen', 'true');
   await expect(page.getByTestId('viewer-menu-bar')).toBeVisible();
   await expect(page.getByText('libredwg-web', { exact: true })).toBeVisible();
+  await openViewerMenu(page, 'work');
   await expect(page.getByTestId('viewer-menu-layers')).toBeDisabled();
   await expect(page.getByTestId('viewer-menu-outline-tool')).toBeDisabled();
   await expect(page.getByTestId('viewer-menu-outline-tree')).toBeDisabled();
   await expect(page.getByTestId('viewer-menu-outline-types')).toBeDisabled();
-  await expect(page.getByRole('button', { name: 'dxf-viewer', exact: true })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'three-dxf-viewer', exact: true })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: '다시 불러오기' })).toBeVisible();
-  await expect(page.getByRole('link', { name: '원본 다운로드' })).toBeVisible();
-  await expect(page.getByRole('link', { name: '← 버전 목록' })).toBeVisible();
+  await openViewerMenu(page, 'view');
+  await expect(page.getByRole('menuitemradio', { name: 'dxf-viewer', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('menuitemradio', { name: 'three-dxf-viewer', exact: true })).toHaveCount(0);
+  await openViewerMenu(page, 'drawing');
+  await expect(page.getByRole('menuitem', { name: '다시 불러오기' })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: '원본 다운로드' })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: '버전 목록' })).toBeVisible();
   await expect(page.getByRole('status')).toContainText('실패');
 });

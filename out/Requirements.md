@@ -14,6 +14,11 @@
 | NFR-P4-G7-S3-2-03 | 정확 Squash `#109 | S3-2 Operational Auth/Admin API [G7-S3-2-NO-GHCR]`·23개 파일 허용 시만 GHCR skip, 그 외 fail-closed | G7-S3-2-CI-001~004 |
 
 
+## Issues #124/#126/#127 요구 (2026-10-26)
+
+FR-124-01 홈 전용 sticky+compact 및 기존 Current/검색/anchor 보존, FR-126-01 DXF Three 기본/explicit/DWG 호환, FR-126-02 source 실패와 분리한 단발 renderer fallback·수동 탈출·자원/임시작업 보호, FR-127-01 두 정보+접근 가능한 설명/그룹 명령, FR-127-02 상태 독립 overlay Drawer/ESC/focus/Canvas 보존. 세부 요구와 원격 AC 전체의 추적은 [Issues124-126-127](Issues124-126-127.md) 기준. G7·운영 DB/API·원본 불변.
+
+
 ## Issue #109 S3-1 — 운영 인증 Schema·정식 Migration Candidate·이중 Gate 요구 (2026-10-26)
 
 | ID | 요구사항 | 검증 |

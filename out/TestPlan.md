@@ -21,6 +21,11 @@
 - 시험 소스: `src/tests/integration/g7-s3-operational-auth.test.ts` 및 `src/tests/unit/g7-staging-ghcr-guard.test.ts`. 전부 **합성 일회용 SQLite와 Loopback API**. 실제 사내 PC·실 운영 Auth/DB/CAD/S3·OCI registry/복구 증거는 NOT RUN/미열람 상태를 유지하고 User의 비반출 지침을 준수한다. 신규 PR CI 실행/합격을 별도 HEAD/Run/Job 단위로 기록한다.
 
 
+## Issues #124/#126/#127 검증 계획 (2026-10-26)
+
+[Issues124-126-127](Issues124-126-127.md)의 AC→TC 표가 신규 검증 기준. 구현 전 동일 synthetic fixture의 baseline screenshot/1440×900 높이·Canvas 면적 확보, 이후 responsive·keyboard·sticky/Drawers·failure injection 및 기존 Current/list/Viewer/selection/JSON/Fullscreen 회귀. typecheck/lint/unit+integration/build/E2E/legacy·최신 PR CI와 실제 Main GHCR Pair는 각각 증거를 기록. 미실행은 NOT RUN, #113 실 CAD/GPU와 G7 운영 수용은 별도.
+
+
 ## Issue #109 S3-1 — Prisma Schema/격리 후보 Migration·Release/Operation 검증 계획 (2026-10-26)
 
 | TC | 실행 범위 및 입력 | 합격 기준 |

@@ -4,14 +4,16 @@ import { cadViewerUrl } from '../../viewers/core/link';
 describe('TC-LINK-001: canonical version viewer links', () => {
   test('uses only the current browser origin and an immutable encoded version path', () => {
     expect(cadViewerUrl('http://cad.internal:3100/untrusted?x=1#fragment', 'version /한글', 'DXF'))
-      .toBe('http://cad.internal:3100/cad/versions/version%20%2F%ED%95%9C%EA%B8%80/viewer?renderer=dxf-viewer');
+      .toBe('http://cad.internal:3100/cad/versions/version%20%2F%ED%95%9C%EA%B8%80/viewer?renderer=three-dxf-viewer');
   });
 
   test('preserves an allowed DXF renderer and canonicalizes invalid values', () => {
+    expect(cadViewerUrl('https://cad.example', 'v1', 'DXF', 'dxf-viewer'))
+      .toBe('https://cad.example/cad/versions/v1/viewer?renderer=dxf-viewer');
     expect(cadViewerUrl('https://cad.example', 'v1', 'DXF', 'three-dxf-viewer'))
       .toBe('https://cad.example/cad/versions/v1/viewer?renderer=three-dxf-viewer');
     expect(cadViewerUrl('https://cad.example', 'v1', 'DXF', 'evil&download=/secret'))
-      .toBe('https://cad.example/cad/versions/v1/viewer?renderer=dxf-viewer');
+      .toBe('https://cad.example/cad/versions/v1/viewer?renderer=three-dxf-viewer');
   });
 
   test('always selects the only valid DWG renderer', () => {

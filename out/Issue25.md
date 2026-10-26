@@ -1,5 +1,7 @@
 # GitHub Issue #25 — 도면 Viewer 기본 CSS 전체 뷰포트 진입
 
+> 후속 #127: [Issues124-126-127](Issues124-126-127.md)/ADR-053의 그룹 메뉴에서 CSS immersive/native fullscreen 명령을 제공한다. 기본 immersive·사용자 명시 native·단일 Viewer subtree·복귀 정책은 유지한다.
+
 ## Issue #38 후속 UI/ESC 계약 (2026-10-24, v0.30.0)
 
 - #25 기본 CSS immersive/수동 native fullscreen/같은 Version URL 진입 정책은 그대로 유지하며 #38은 도면 조작을 앱 메뉴바/중앙 캔버스/도킹 패널로 재배치한다.

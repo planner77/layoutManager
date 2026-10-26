@@ -1,5 +1,13 @@
 # ChangeLog
 
+## v0.42.0 — #124/#126/#127 목록 고정·DXF 복구·Viewer 메뉴/Drawer (2026-10-27)
+
+- 홈에만 앱 내비게이션·제목/작업·검색/Current·요약을 sticky로 적용하고 desktop 밀도·mobile 추가 필터와 동적 anchor/focus offset을 조정. 기존 #93 검색/URL/Current 의미 보존.
+- DXF 기본 renderer를 three-dxf-viewer로 정렬, 유효한 explicit dxf 및 DWG LibreDWG 유지. 실제 renderer init/load 오류만 자동 dxf 대체 최대 1회, source/취소 오류 구분, 지역 loading UI에서 수동 탈출·동일 bytes 재사용·임시 작업 손실 확인.
+- Viewer 두 정보 헤더·접근 가능한 설명, 도면/보기/작업 그룹 명령, Canvas와 독립적인 좌/우/하단 Drawer. 원본/Generated/Undo/레이어 상태와 수명주기 경계 보존.
+- Release: PR #132 Squash main `f2c04bf`·v0.42.0, 최신 PR CI 40352404675/전체 Unit352·E2E86·legacy1/Docker 및 Main CI 40354233607 PASS. GHCR 앱·migrator 0.42.0 pair 게시·registry inspect, #124/#126/#127 completed 종료. DWG 고정 진단/실험 probe 보완, 독립 DWG4·focused13 및 실제 브라우저 200% 확대 검증을 포함한다. 상세 수치/digest·초기 실패는 TestReport U-ISSUES124-126-127-20261027/FailureLedger, 설계는 [단위 가이드](Issues124-126-127.md)·ADR-053을 따른다. #113 현장 수용과 운영 배포는 별도.
+
+
 ## Unreleased — Issue #108 G6 증거 매트릭스·합성 복원 검증 준비 (2026-10-26)
 
 - Offline src/scripts/g6-evidence.mjs와 전체 NOT_RUN 예제, Unit TC-P4-G6-001~006 추가. 합성 SQLite(운영 CAD 기존 6개 schema migration)+local CAD/mock-S3 두 버전으로 backup→별도 G1 fixture migration dry-run→손상 주입→실복원 Integration TC-P4-G6-007 작성. 현장 Runbook/AC·TC/ADR/설계·시험 문서를 Issue108에 동기화.

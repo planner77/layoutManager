@@ -7,6 +7,11 @@
 - **NO-GO:** 운영 Prisma 활성 Migration 6개 유지; S3-1 후보기록을 실제 DB에 적용하는 경로 없음. 이 API는 S3-4 릴리스 검증·Owner GO로 프로덕션에 자동 전환되지 않으며, 향후 별도 Code PR에서 신뢰된 Release/Operation binding 및 생산 DB 접근 방식을 심사해야 한다. 기존 CAD REST/익명 GET·Viewer/쓰기, Nginx/Compose, 새 영속 Outline/Memo/Type/Logs, Audit purge 변경하지 않는다. [S3-2 Runbook](../src/deploy/g7-s3/S3-2.md).
 
 
+## Issues #124/#126/#127 구조 (2026-10-26)
+
+홈 sticky scope는 앱 nav의 실제 높이/목록 필터와 동기화하며 타 경로와 분리한다. Viewer 선택은 selectRenderer 단일 기본값, source 오류/renderer 오류 분리, 단발 fallback과 generation dispose를 CadViewer→Manager→Adapter 경계에서 처리한다. UI 그룹 메뉴·overlay Drawer 상태는 load effect에 포함하지 않으며 동일 Canvas DOM과 Source를 유지한다. [상세 설계](Issues124-126-127.md), ADR-053을 따른다.
+
+
 ## Issue #109 S3-1 — 운영 Schema 타입과 런타임 분리 설계 (2026-10-26)
 
 - S1은 격리 `/api/g7-staging/**`, S2는 비반출 증거 평가, **S3-1은 운영 Prisma Client의 인증 Schema 모델 + 비운영 대상 정식 Migration 후보 + 순수 Release/Operation Preflight**이다. 이 단계에서 실제 `src/app/api/cad-files/**`, Current/Delete·API Auth 라우트/DB Repository·운영 migrator·Docker/Nginx/Compose·영속 API/Audit purge는 연결하지 않는다.

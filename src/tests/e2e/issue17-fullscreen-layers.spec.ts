@@ -1,3 +1,4 @@
+import { clickViewerCommand, clickViewerTestCommand } from './viewer-menu-helper';
 import { test, expect } from "@playwright/test";
 import { masterFields } from "./master-helper";
 
@@ -71,16 +72,16 @@ test("TC-ISSUE17-001: fullscreen layer panel controls three-dxf-viewer without r
   await page.goto(`/cad/versions/${file.id}/viewer?renderer=three-dxf-viewer`);
   await expect(page.getByRole("status")).toHaveText("도면 표시 완료");
   expect(contentRequests).toBe(1);
-  await page.getByRole("button", { name: "전체 화면 종료", exact: true }).click();
+  await clickViewerCommand(page, 'view', '전체 화면 종료');
 
   const canvas = page.locator("canvas");
   await canvas.evaluate((element) =>
     element.setAttribute("data-issue17-canvas", "stable"),
   );
-  await page.getByRole("button", { name: "확대", exact: true }).click();
+  await clickViewerCommand(page, 'view', '확대');
   const zoomed = await canvas.screenshot();
 
-  await page.getByRole("button", { name: "전체 화면", exact: true }).click();
+  await clickViewerCommand(page, 'view', '전체 화면');
   const panel = page.getByRole("complementary", { name: "전체 화면 레이어" });
   await expect(panel).toBeVisible();
   const pipeLayer = panel.getByRole("checkbox", {
@@ -142,34 +143,24 @@ test("TC-ISSUE17-001: fullscreen layer panel controls three-dxf-viewer without r
     .getByRole("button", { name: "레이어 패널 접기", exact: true })
     .click();
   await expect(panel).toHaveCount(0);
-  await page
-    .getByRole("button", { name: "레이어 패널 펼치기", exact: true })
-    .click();
+  await clickViewerTestCommand(page, 'viewer-menu-layers');
   await expect(
     page.getByRole("complementary", { name: "전체 화면 레이어" }),
   ).toBeVisible();
 
-  await page
-    .getByRole("button", { name: "전체 화면 종료", exact: true })
-    .click();
+  await clickViewerCommand(page, 'view', '전체 화면 종료');
   await expect
     .poll(async () => (await canvas.screenshot()).equals(zoomed))
     .toBe(true);
   await expect(
     page.locator('canvas[data-issue17-canvas="stable"]'),
   ).toHaveCount(1);
-  await page.getByRole("button", { name: /레이어 선택/ }).click();
-  await expect(
-    page.getByRole("menuitemcheckbox", { name: "배관 A", exact: true }),
-  ).toBeChecked();
-  await expect(
-    page.getByRole("menuitemcheckbox", { name: "EQUIP 01", exact: true }),
-  ).toBeChecked();
-  await page.keyboard.press("Escape");
+  await expect(panel.getByRole('checkbox', { name: '배관 A', exact: true })).toBeChecked();
+  await expect(panel.getByRole('checkbox', { name: 'EQUIP 01', exact: true })).toBeChecked();
 
-  await page.getByRole("button", { name: "dxf-viewer", exact: true }).click();
+  await clickViewerCommand(page, 'view', 'dxf-viewer');
   await expect(page.getByRole("status")).toHaveText("도면 표시 완료");
-  await page.getByRole("button", { name: "전체 화면", exact: true }).click();
+  await clickViewerCommand(page, 'view', '전체 화면');
   await expect(
     page.getByRole("complementary", { name: "전체 화면 레이어" }),
   ).toHaveCount(0);

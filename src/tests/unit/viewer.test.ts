@@ -22,7 +22,7 @@ test('TC-VIEW-003: load failure cleans resources and controls delegate',async()=
   expect(a.zoomIn).toHaveBeenCalledOnce(); expect(a.zoomOut).toHaveBeenCalledOnce();expect(a.fitToView).toHaveBeenCalledOnce();
   manager.dispose();manager.dispose();expect(a.dispose).toHaveBeenCalledOnce();
   const bad = adapter(); vi.mocked(bad.load).mockRejectedValue(new Error('parse'));
-  await expect(new ViewerManager(async()=>bad).load('/file','DXF')).rejects.toThrow('parse');expect(bad.dispose).toHaveBeenCalledOnce();
+  await expect(new ViewerManager(async()=>bad).load('/file','DXF')).rejects.toMatchObject({stage:'adapter-load',reasonCode:'LOAD'});expect(bad.dispose).toHaveBeenCalledOnce();
 });
 
 test('TC-VIEW-003: completed stale load cannot replace the next result',async()=>{

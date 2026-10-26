@@ -1,3 +1,4 @@
+import { clickViewerCommand, openViewerMenu } from './viewer-menu-helper';
 import { test, expect } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
@@ -85,13 +86,14 @@ test("TC-E2E-002/DWG-001/003: registered DWG uses its own adapter, controls and 
   await directContext.close();
   await row.getByRole("link", { name: "도면 보기", exact: true }).click();
   await expect(page.getByRole("status")).toHaveText("도면 표시 완료");
+  await openViewerMenu(page, 'view');
   await expect(
-    page.getByRole("button", { name: "dxf-viewer", exact: true }),
+    page.getByRole('menuitemradio', { name: 'dxf-viewer', exact: true }),
   ).toHaveCount(0);
   await expect(
-    page.getByRole("button", { name: "three-dxf-viewer", exact: true }),
+    page.getByRole('menuitemradio', { name: 'three-dxf-viewer', exact: true }),
   ).toHaveCount(0);
-  await page.getByRole("button", { name: "전체 화면 종료", exact: true }).click();
+  await clickViewerCommand(page, 'view', '전체 화면 종료');
   let metric = JSON.parse(
     (await page.getByTestId("viewer-metric").textContent())!,
   );
@@ -105,10 +107,10 @@ test("TC-E2E-002/DWG-001/003: registered DWG uses its own adapter, controls and 
   expect(metric.parseMs).toBeGreaterThanOrEqual(0);
   const canvas = page.locator("canvas");
   const initial = await canvas.screenshot();
-  await page.getByRole("button", { name: "확대", exact: true }).click();
+  await clickViewerCommand(page, 'view', '확대');
   expect((await canvas.screenshot()).equals(initial)).toBe(false);
-  await page.getByRole("button", { name: "축소", exact: true }).click();
-  await page.getByRole("button", { name: "화면 맞춤" }).click();
+  await clickViewerCommand(page, 'view', '축소');
+  await clickViewerCommand(page, 'view', '화면 맞춤');
   expect((await canvas.screenshot()).equals(initial)).toBe(true);
   const box = (await canvas.boundingBox())!;
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
@@ -120,7 +122,7 @@ test("TC-E2E-002/DWG-001/003: registered DWG uses its own adapter, controls and 
   );
   await page.mouse.up();
   expect((await canvas.screenshot()).equals(initial)).toBe(false);
-  await page.getByRole("button", { name: "화면 맞춤" }).click();
+  await clickViewerCommand(page, 'view', '화면 맞춤');
   expect((await canvas.screenshot()).equals(initial)).toBe(true);
   await page.setViewportSize({ width: 1100, height: 800 });
   await expect
@@ -135,7 +137,7 @@ test("TC-E2E-002/DWG-001/003: registered DWG uses its own adapter, controls and 
     )
     .toBe(true);
   for (let i = 0; i < 3; i++) {
-    await page.getByRole("button", { name: "다시 불러오기" }).click();
+    await clickViewerCommand(page, 'drawing', '다시 불러오기');
     await expect(page.getByRole("status")).toHaveText("도면 표시 완료");
     await expect(canvas).toHaveCount(1);
     await expect
@@ -146,12 +148,12 @@ test("TC-E2E-002/DWG-001/003: registered DWG uses its own adapter, controls and 
       )
       .toBe(0);
   }
-  await page.getByRole("link", { name: "← 버전 목록" }).click();
+  await clickViewerCommand(page, 'drawing', '← 버전 목록');
   await expect(canvas).toHaveCount(0);
   // Forged query must not enter either DXF renderer.
   await page.goto(`/cad/versions/${file.id}/viewer?renderer=three-dxf-viewer`);
   await expect(page.getByRole("status")).toHaveText("도면 표시 완료");
-  await page.getByRole("button", { name: "전체 화면 종료", exact: true }).click();
+  await clickViewerCommand(page, 'view', '전체 화면 종료');
   metric = JSON.parse((await page.getByTestId("viewer-metric").textContent())!);
   expect(metric.renderer).toBe("libredwg-web");
   expect(
@@ -169,7 +171,7 @@ test("TC-E2E-002/DWG-001/003: registered DWG uses its own adapter, controls and 
     await gate;
     await route.abort();
   });
-  await page.getByRole("button", { name: "다시 불러오기" }).click();
+  await clickViewerCommand(page, 'drawing', '다시 불러오기');
   await expect
     .poll(() =>
       page.evaluate(
@@ -177,7 +179,7 @@ test("TC-E2E-002/DWG-001/003: registered DWG uses its own adapter, controls and 
       ),
     )
     .toBe(1);
-  await page.getByRole("link", { name: "← 버전 목록" }).click();
+  await clickViewerCommand(page, 'drawing', '← 버전 목록');
   await expect
     .poll(() =>
       page.evaluate(
@@ -224,7 +226,7 @@ test("TC-DWG-002/004: partial coverage, unsupported header, missing file/WASM an
     "표시할 도형이 없습니다",
   );
   await expect(page.getByTestId("viewer-coverage")).toContainText("CIRCLE");
-  await page.getByRole("button", { name: "전체 화면 종료", exact: true }).click();
+  await clickViewerCommand(page, 'view', '전체 화면 종료');
   expect(
     JSON.parse((await page.getByTestId("viewer-metric").textContent())!).result,
   ).toBe("partial");
@@ -250,11 +252,11 @@ test("TC-DWG-002/004: partial coverage, unsupported header, missing file/WASM an
   await page.route("**/libredwg/wasm/libredwg-web.wasm", (route) =>
     route.fulfill({ status: 404, body: "" }),
   );
-  await page.getByRole("button", { name: "다시 불러오기" }).click();
+  await clickViewerCommand(page, 'drawing', '다시 불러오기');
   await expect(page.getByRole("main").getByRole("alert")).toContainText(
     "WASM 초기화 실패",
   );
   await page.unroute("**/libredwg/wasm/libredwg-web.wasm");
-  await page.getByRole("button", { name: "다시 불러오기" }).click();
+  await clickViewerCommand(page, 'drawing', '다시 불러오기');
   await expect(page.getByRole("status")).toHaveText("도면 표시 완료");
 });

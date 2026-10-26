@@ -1,3 +1,4 @@
+import { clickViewerCommand, clickViewerTestCommand } from './viewer-menu-helper';
 import {test,expect,type APIRequestContext,type Page} from '@playwright/test';
 import {readFile} from 'node:fs/promises';
 import {masterFields} from './master-helper';
@@ -30,7 +31,7 @@ async function selectSource(page:Page){
   await page.mouse.up();
 }
 async function createGenerated(page:Page,count:number){
-  await page.getByTestId('viewer-menu-outline-tool').click();
+  await clickViewerTestCommand(page, 'viewer-menu-outline-tool');
   await selectSource(page);
   await expect(page.getByTestId('outline-selection-count')).toContainText('선택 1개');
   const tools=page.getByTestId('cad-outline-tools');
@@ -39,9 +40,9 @@ async function createGenerated(page:Page,count:number){
     await expect(page.getByTestId('outline-preview')).toBeVisible();
     await tools.getByRole('button',{name:'임시 확정'}).click();
   }
-  await page.getByTestId('viewer-menu-outline-tool').click();
+  await clickViewerTestCommand(page, 'viewer-menu-outline-tool');
   await page.getByTestId('canvas-mode-generated').click();
-  await page.getByTestId('viewer-menu-outline-tree').click();
+  await clickViewerTestCommand(page, 'viewer-menu-outline-tree');
   await expect(page.getByTestId('outline-tree-item')).toHaveCount(count);
 }
 test('TC-E3-E2E-001: tree single delete, Undo/Redo and exported JSON follow Document',async({page,request})=>{
@@ -77,14 +78,14 @@ test('TC-E3-E2E-001: tree single delete, Undo/Redo and exported JSON follow Docu
   await expect(panel.getByTestId('outline-tree-item')).toHaveCount(3);
   await page.getByTestId('generated-redo').click();
   await expect(panel.getByTestId('outline-tree-item')).toHaveCount(2);
-  await page.getByTestId('viewer-menu-outline-tool').click();
+  await clickViewerTestCommand(page, 'viewer-menu-outline-tool');
   await selectSource(page);
   await page.getByTestId('cad-outline-tools').getByRole('button',{name:'볼록 외곽선 미리보기'}).click();
   await expect(page.getByTestId('outline-preview')).toBeVisible();
   await page.getByTestId('cad-outline-tools').getByRole('button',{name:'임시 확정'}).click();
   await expect(panel.getByTestId('outline-tree-item')).toHaveCount(3);
   await expect(panel.getByTestId('outline-tree-item').last()).toContainText('외곽선 4');
-  await page.getByTestId('viewer-menu-outline-tool').click();
+  await clickViewerTestCommand(page, 'viewer-menu-outline-tool');
 });
 test('TC-E3-E2E-002: multi-select cancel/confirm, Canvas keyboard, Escape and native input isolation',async({page,request})=>{
   const file=await drawing(request,'issue53-multiple');
@@ -128,7 +129,7 @@ test('TC-E3-E2E-002: multi-select cancel/confirm, Canvas keyboard, Escape and na
   await expect(rows).toHaveCount(1);
 
   // Native form editing must not open a delete dialog.
-  await page.getByTestId('viewer-menu-outline-tool').click();
+  await clickViewerTestCommand(page, 'viewer-menu-outline-tool');
   const input=page.getByTestId('outline-instance-name');
   await input.fill('삭제 금지 입력');
   await input.focus();
@@ -173,11 +174,12 @@ test('TC-E3-E2E-003: SOURCE/mixed and pan fail closed, selected shape context an
   await expect(rows).toHaveCount(2);
   await page.getByTestId('canvas-mode-pan').click();
   await expect(page.getByTestId('generated-delete-selected')).toBeDisabled();
-  await page.getByRole('button',{name:'다시 불러오기'}).click();
+  page.once('dialog', async dialog => { expect(dialog.message()).toContain('임시 외곽선'); await dialog.accept(); });
+  await clickViewerCommand(page, 'drawing', '다시 불러오기');
   await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
-  await page.getByTestId('viewer-menu-outline-tree').click();
+  await clickViewerTestCommand(page, 'viewer-menu-outline-tree');
   await expect(page.getByTestId('outline-tree-item')).toHaveCount(0);
-  await page.getByRole('button',{name:'dxf-viewer',exact:true}).click();
+  await clickViewerCommand(page, 'view', 'dxf-viewer');
   await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
   await expect(page.getByTestId('generated-delete-selected')).toHaveCount(0);
 });

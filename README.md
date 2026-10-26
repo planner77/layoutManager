@@ -1,5 +1,14 @@
 # CAD Web Viewer P.O.C.
 
+## 0.42.0 — 목록·DXF 복구·Viewer 작업 공간
+
+[#124/#126/#127](https://github.com/planner77/layoutManager/pull/132) 구현·QA·PR CI·병합·Main CI·GHCR 게시 및 이슈 종료를 완료했습니다. 도면 목록의 메뉴·검색/Current·요약을 고정하고, DXF는 Three 기본과 단발 자동 대체·로딩 중 수동 전환을 제공합니다. Viewer의 두 정보 헤더·설명 접근, 도면/보기/작업 그룹 메뉴와 좌·우·하단 Drawer를 지원합니다. 임시 생성 개체가 있는 렌더러 전환/재로드는 확인 후 진행합니다.
+
+최신 PR CI에서 Unit 352/352·E2E 86/86·legacy migration 1/1·Docker 검증이 통과했습니다. 독립 DWG 4/4·기능 회귀 13/13 및 실제 Chromium 200% 확대도 확인했습니다. [Main CI/게시 근거](https://github.com/planner77/layoutManager/actions/runs/40354233607), 상세 시험·digest·제한은 [TestReport](out/TestReport.md), 초기 실패와 수정은 [FailureLedger](out/FailureLedger.md), 정책/AC는 [단위 가이드](out/Issues124-126-127.md)를 따릅니다. #113 실 CAD/GPU 수용과 실제 운영 배포는 별도입니다.
+
+현재 게시한 linux/amd64 이미지 쌍은 `ghcr.io/planner77/layoutmanager:0.42.0` 및 `ghcr.io/planner77/layoutmanager:0.42.0-migrate`입니다. 두 이미지는 동일 source `f2c04bf`로 게시했습니다. 실행/업그레이드는 [Operation](out/Operation.md)의 동일 버전 pair·백업·migration 절차를 따릅니다. 아래 과거 이슈/버전 기록과 구분합니다.
+
+
 ## Issue #108 — G6 수용 매트릭스·격리 백업/복원 리허설 준비
 
 [Issue108](out/Issue108.md): G0~G5 비운영 기능의 실제 LAN·DB/CAD/S3 수용을 위한 **사내 비공개 증거 상태 점검 도구**와 합성 SQLite/CAD/mock-S3 백업→격리 migration→Restore 테스트 추가. 사용: cd src && node scripts/g6-evidence.mjs /private/g6/evidence.json. CLI는 실제 시험을 수행하지 않고 자체 기입 증거의 누락·불일치만 검증하므로 READY_FOR_OWNER_REVIEW는 현장 PASS가 아니다. 예제 src/tests/fixtures/g6/manifest.example.json은 전부 NOT_RUN. 운영 인증/API/Prisma/Compose/Nginx와 실제 DB/CAD/S3 불변, 실제 사내 PC 2대/실 S3 Restore·G7 별도 Owner 승인 후속.

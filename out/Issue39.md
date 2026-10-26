@@ -1,5 +1,7 @@
 # Issue #39 — 상단 레이어 메뉴 / FullscreenLayerPanel 단일 상태 U2 (v0.32.0)
 
+> 후속 #127: [Issues124-126-127](Issues124-126-127.md)/ADR-053의 보기 그룹 메뉴와 좌 Drawer가 레이어 표시 UI를 대체한다. Drawer open과 실제 CAD Layer visibility는 계속 독립이다. 아래는 U2 당시 설계/시험 기록이며 신규 구현 검증은 TestReport의 #124/#126/#127 결과를 따른다.
+
 - 이슈: https://github.com/planner77/layoutManager/issues/39
 - 상위 Epic: #37. 선행 #38 (ViewerAppShell) 및 #17 (DXF 레이어 조작, 완료). 참고 #25(CSS/native fullscreen), #26(검색), #31(선택/외곽선).
 - 기준: main `0e11f957` (v0.31.0) → `feat/issue-39-layer-panel-toggle`.
