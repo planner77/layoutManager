@@ -1,5 +1,12 @@
 # ChangeLog
 
+## Unreleased — Issue #57 공통 Logger·UploadDiagnostics 단일화 (2026-10-27)
+
+- 기존 #18 구조화 Logger 재사용 및 업로드 별도 console JSON emitter 제거. Versioned Schema v1, 안전한 필드 allowlist/정적 Error code·category 재정제, `LOG_LEVEL`/`LOG_FORMAT` 단일 필터 적용. 공개 진단/첫 실패/요청 ID 계약 유지, 반복 성공 Health 200 debug-only.
+- 일부 수동 CLI의 원시 Error 메시지 출력 제거; 단위 회귀 테스트 및 운영/개발 가이드 동기화. 기존 API 응답/DB Migration·Viewer·G7 Auth 활성화 및 로그 보관/조회 API/UI는 변경/추가 없음.
+- 소스·PR CI 후보이며 CI PASS, GHCR 이미지 게시, 병합 또는 사내 운영 적용 완료가 아니다. [Issue57](Issue57.md), [TestReport](TestReport.md) 참고.
+
+
 ## v0.42.0 — #124/#126/#127 목록 고정·DXF 복구·Viewer 메뉴/Drawer (2026-10-27)
 
 - 홈에만 앱 내비게이션·제목/작업·검색/Current·요약을 sticky로 적용하고 desktop 밀도·mobile 추가 필터와 동적 anchor/focus offset을 조정. 기존 #93 검색/URL/Current 의미 보존.

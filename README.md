@@ -1,5 +1,10 @@
 # CAD Web Viewer P.O.C.
 
+## Issue #57 — 서버 구조화 로그 단일화 (PR CI 검증 전)
+
+기존 #18 공통 Logger를 재사용하여 업로드 단계 로그에도 동일한 JSON Schema v1, `LOG_LEVEL`/`LOG_FORMAT`, 안전 필드 allowlist를 적용합니다. 공개 API 응답·`X-Request-Id`·업로드 진단 첫 실패 원인은 유지됩니다. Server 로그 조회/보관은 별도 #59~#62로 미구현이며 Next/Nginx/브라우저 원시 로그도 자동 수집하지 않습니다. 상세 계약과 Docker 조회는 [Issue57](out/Issue57.md), [Logging](out/Logging.md) 참조. 현재 변경은 PR CI 시작 후보이며 배포 완료를 뜻하지 않습니다.
+
+
 ## 0.42.0 — 목록·DXF 복구·Viewer 작업 공간
 
 [#124/#126/#127](https://github.com/planner77/layoutManager/pull/132) 구현·QA·PR CI·병합·Main CI·GHCR 게시 및 이슈 종료를 완료했습니다. 도면 목록의 메뉴·검색/Current·요약을 고정하고, DXF는 Three 기본과 단발 자동 대체·로딩 중 수동 전환을 제공합니다. Viewer의 두 정보 헤더·설명 접근, 도면/보기/작업 그룹 메뉴와 좌·우·하단 Drawer를 지원합니다. 임시 생성 개체가 있는 렌더러 전환/재로드는 확인 후 진행합니다.
