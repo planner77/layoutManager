@@ -128,10 +128,12 @@ describe('#109 G7 S2 exact-title private-evidence-only Main CI gate', () => {
   test('all S2 PR files plus release workflow are non-publishing with exact subject', () => {
     const result = runScope([
       'AGENTS.md',
+      'out/Decisions.md',
       'out/FailureLedger.md',
       'out/Issue109-S2-Readiness.md',
       'out/Issue109.md',
       'out/Operation.md',
+      'out/Requirements.md',
       'out/TestPlan.md',
       'out/TestReport.md',
       'src/scripts/g7-s2-readiness.ts',
