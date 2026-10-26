@@ -1,5 +1,10 @@
 # ChangeLog
 
+## 2026-10-26 — #106 G4 격리 Role/Site/Version·Grant·Audit
+
+G1~G3 기반 G4 비라우팅 서버 인가, Admin Grant/disable, 안전 append-only Audit, 테스트용 ShadowOutline CAS 및 TC-P4-G4-001~009 추가. 기존 익명 CAD GET/Viewer, 운영 Prisma/API·Compose/Nginx/원본·Version/Current·삭제 암호 및 GHCR 불변. 자동 시험 PASS/배포가 아니며 실제 운영 활성화 #109 G7 전 OFF. [Issue106](Issue106.md).
+
+
 ## 0.41.0 — Issue #105 G3 격리 세션 (후보, 2026-10-26)
 
 - 비운영 로그인/초기 및 일반 암호 변경/logout, DB-backed 32 byte/hash-only 세션·8h/30m/최대 3개 원자 발급/회수, 현재 DB Actor와 정상 cookie/Origin/CSRF 검증을 추가했다. 상세 [Issue105](Issue105.md), 실제 구현·시험 상태는 TestReport를 기준으로 한다.
