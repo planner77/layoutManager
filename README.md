@@ -1,5 +1,10 @@
 # CAD Web Viewer P.O.C.
 
+## Issue #108 — G6 수용 매트릭스·격리 백업/복원 리허설 준비
+
+[Issue108](out/Issue108.md): G0~G5 비운영 기능의 실제 LAN·DB/CAD/S3 수용을 위한 **사내 비공개 증거 상태 점검 도구**와 합성 SQLite/CAD/mock-S3 백업→격리 migration→Restore 테스트 추가. 사용: cd src && node scripts/g6-evidence.mjs /private/g6/evidence.json. CLI는 실제 시험을 수행하지 않고 자체 기입 증거의 누락·불일치만 검증하므로 READY_FOR_OWNER_REVIEW는 현장 PASS가 아니다. 예제 src/tests/fixtures/g6/manifest.example.json은 전부 NOT_RUN. 운영 인증/API/Prisma/Compose/Nginx와 실제 DB/CAD/S3 불변, 실제 사내 PC 2대/실 S3 Restore·G7 별도 Owner 승인 후속.
+
+
 ## Issue #106 — G4 권한·감사 격리 서비스 (운영 OFF)
 
 G1~G3 DB·세션 계약 위에 Role/Site/Version 인가, Admin Grant·Account 상태, append-only Audit 및 ShadowOutline Revision CAS 시험 모듈을 추가했다. 요구·설계·시험은 [Issue106](out/Issue106.md). 기존 익명 CAD GET/Viewer·원본 다운로드는 변경하지 않으며 실제 로그인/관리/Outline/Logs/Audit API, 운영 Prisma/migration/Compose/Nginx/DB 연결은 #109 G7 승인 전 OFF. CAD POST/Current는 Editor+담당 Site, Version DELETE는 이에 기존 삭제 비밀번호 AND가 필수다. PR CI 시작은 검증 성공이 아니다.
