@@ -33,7 +33,7 @@ function write(root: string, filename: string, value: string) {
   mkdirSync(path.dirname(full), { recursive: true });
   writeFileSync(full, value);
 }
-function runScope(changes: string[], subject: string) {
+function runScope(changes: string[], subject: string, gitRef = 'refs/heads/main') {
   const root = mkdtempSync(path.join(tmpdir(), 'g7-scope-fixture-'));
   tmpRoots.push(root);
   git(root, 'init', '-q');
@@ -51,7 +51,7 @@ function runScope(changes: string[], subject: string) {
   const head = git(root, 'rev-parse', 'HEAD');
   const out = path.join(root, 'output.txt'), summary = path.join(root, 'summary.md');
   const response = command(root, 'bash', ['-c', releaseScopeScript()], {
-    ...process.env, GITHUB_REF: 'refs/heads/main', EVENT_BEFORE: before,
+    ...process.env, GITHUB_REF: gitRef, EVENT_BEFORE: before,
     GITHUB_SHA: head, COMMIT_MESSAGE: subject, RUNNER_TEMP: root,
     GITHUB_OUTPUT: out, GITHUB_STEP_SUMMARY: summary,
   });
@@ -120,5 +120,72 @@ describe('#109 G7 S1 narrow non-publishing Main CI gate', () => {
     const result = runScope(['out/Issue109.md'], '#109 | documentation');
     expect(result.status, result.stderr).toBe(0);
     expect(result.values).toContain('publish=false');
+  });
+});
+
+describe('#109 G7 S2 exact-title private-evidence-only Main CI gate', () => {
+  const s2 = '#109 | S2 private-evidence readiness [G7-S2-NO-GHCR]';
+  test('all S2 PR files plus release workflow are non-publishing with exact subject', () => {
+    const result = runScope([
+      'AGENTS.md',
+      'out/FailureLedger.md',
+      'out/Issue109-S2-Readiness.md',
+      'out/Issue109.md',
+      'out/Operation.md',
+      'out/TestPlan.md',
+      'out/TestReport.md',
+      'src/scripts/g7-s2-readiness.ts',
+      'src/server/g7-staging/s2-readiness.ts',
+      'src/tests/unit/g7-s2-readiness.test.ts',
+      'src/tests/unit/g7-staging-ghcr-guard.test.ts',
+      '.github/workflows/docker-publish.yml',
+    ], s2 + '\n\nS2 offline readiness only; operations OFF');
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.values).toContain('publish=false');
+    expect(result.values).not.toContain('publish=true');
+  });
+  test('S2 exact subject with operational or merely S1-only files fails closed', () => {
+    const forbiddenPaths = [
+      'src/app/api/cad-files/route.ts',
+      'src/prisma/schema.prisma',
+      'src/docker-compose.yml',
+      'src/server/g7-staging/cad-service.ts',
+      'src/scripts/g7-staging-admin.ts',
+      'src/tests/unit/unrelated.test.ts',
+      '.github/workflows/pr-ci.yml',
+    ];
+    for (const path of forbiddenPaths) {
+      const result = runScope(['src/server/g7-staging/s2-readiness.ts', path], s2);
+      expect(result.status, `Path must be blocked: ${path}`).not.toBe(0);
+      expect(result.stderr).toContain('G7-S2 GHCR exclusion disallowed path: ' + path);
+      expect(result.values).toBe('');
+    }
+  });
+  test('S2 near-matches and accidental subject suffix cannot publish or skip', () => {
+    for (const subject of [
+      s2 + ' NOT-APPROVED', s2 + '-extra', s2 + '  ',
+      '#109 | S2 private-evidence readiness',
+      '#109 | S2 private-evidence readiness [G7-S2-NO-GHCR',
+    ]) {
+      const result = runScope(['src/server/g7-staging/s2-readiness.ts'], subject);
+      expect(result.status, `Subject should be blocked: ${subject}`).not.toBe(0);
+      expect(result.stderr).toContain('G7-S2 exact squash subject required');
+      expect(result.values).toBe('');
+    }
+  });
+  test('S1 subject cannot bypass S2-only allowlist', () => {
+    const s1 = '#109 | S1 Staging-only integration [G7-S1-NO-GHCR]';
+    const result = runScope(['src/scripts/g7-s2-readiness.ts'], s1);
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain('G7-S1 GHCR exclusion disallowed path');
+    expect(result.values).toBe('');
+  });
+  test('unrelated production changes retain GHCR publication and tags are unchanged', () => {
+    const normal = runScope(['src/app/api/cad-files/route.ts'], '#555 | runtime feature');
+    expect(normal.status, normal.stderr).toBe(0);
+    expect(normal.values).toContain('publish=true');
+    const tagged = runScope(['src/server/g7-staging/s2-readiness.ts'], s2, 'refs/tags/v0.99.1');
+    expect(tagged.status, tagged.stderr).toBe(0);
+    expect(tagged.values).toContain('publish=true');
   });
 });
