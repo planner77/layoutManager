@@ -1,5 +1,25 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #109 S3-1 — Prisma Schema/격리 후보 Migration·Release/Operation 검증 계획 (2026-10-26)
+
+| TC | 실행 범위 및 입력 | 합격 기준 |
+| --- | --- | --- |
+| G7-S3-001 | 현재 활성 CAD 6개 SQL과 S3 후보 6개 SQL byte equality·운영 schema Prisma models | CAD 동일, 인증 8개 모델 존재, 신규 SQL은 활성 history에 없음 |
+| G7-S3-002 | Test-only Prisma CLI config로 `/tmp/cad-g7-s3-*/fixture.sqlite`에 공식 7개 migration | 성공·`_prisma_migrations` 7행, FK 0, User/Audit 표 생성 |
+| G7-S3-003 | 기존 6 CAD SQL→synthetic BU/Site/Floor/Version/Current/원본 SHA/삭제 hash→신규 DDL | CAD 행/Current/Source 필드 불변, FK/타 Site FK 거부, Audit append-only trigger |
+| G7-S3-004 | 신규 DDL 트랜잭션 중 오류 주입 및 잘못된 DATABASE_URL/Test flag/Auth ON 지정 | DDL Rollback과 CAD 스냅샷 복원, 잘못된 URL/설정은 Prisma SQL 사전 거부 |
+| G7-S3-005 | Release capability/source/version/App+Migrator digest/Schema mismatch | RELEASE_IDENTITY_MISMATCH·인증/쓰기 eligible false |
+| G7-S3-006 | Registry 검증/정식 Schema/FK 0/rollback pair/snapshot 실증 일부 미달 | RELEASE_EVIDENCE_MISSING·인증/쓰기 eligible false |
+| G7-S3-007 | Owner 미서명/다른 릴리스·scope/승인 ID, 시각 만료, snapshot 불일치 | OWNER_RELEASE_SPECIFIC_GO_REQUIRED, authEligible=false |
+| G7-S3-008 | flag unset/오타, Auth OFF+Write ON, 유효 가상 증거 입력 | 기본 OFF·별도 Write OFF, synthetic pass도 runtimeActivated=false |
+| G7-S3-CI-001 | S3-1 정확 Squash 제목 + 코드/테스트/문서/Workflow 파일 전체 목록 | 실제 Main release-scope Bash `publish=false` |
+| G7-S3-CI-002 | 활성 운영 migration/CAD Runtime/Compose/일반 Workflow 혼입, S3-1 제목 오타 | Main scope stderr 오류+nonzero, GHCR 미게시 정책 |
+| G7-S3-CI-003 | S1/S2 제목으로 S3 Schema 경로, 일반 runtime/tag release | S1/S2 거부, 일반 runtime/tag 기존 publish 정책 유지 |
+
+- **실행 범위:** CI의 Linux 일회용 DB만. 실제 운영 Schema 적용/DB/CAD/S3·서명된 OCI Registry/현장 PC·Nginx·Compose·운영 Auth 라우트 E2E는 NOT RUN, 다른 G6/S1 수용을 이번 증거로 소급 적용 불가. CI 시작=PASS 아님. 새 실패 시 실제 Run/Job/Step·HEAD/원인·조치를 [FailureLedger](FailureLedger.md)에 추가한다.
+
+
+
 ## Issue #109 / PR #129 — S2 GHCR 비게시 P1 회귀 검증 계획 (2026-10-26)
 
 | TC | 테스트 입력 | 합격 기준 |

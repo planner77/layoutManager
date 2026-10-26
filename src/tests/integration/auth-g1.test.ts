@@ -75,9 +75,9 @@ describe('Issue #103 G1 isolated persistence contract', () => {
     for (const model of ['User','AuthSession','UserRoleGrant','UserSiteGrant','SpecialGrant','AuditEvent','AdminRecoveryNonce']) {
       expect(contract).toContain('model ' + model + ' {');
     }
-    // The currently shipped Prisma schema must not be altered by G1.
+    // S3-1 adds production Prisma TYPES only; active SQL history stays at CAD six.
     const current = readFileSync(new URL('../../prisma/schema.prisma', import.meta.url), 'utf8');
-    expect(current).not.toContain('model AuthSession {');
+    expect(current).toContain('model AuthSession {');
   });
 
   test('TC-P4-G1-002: unique login, grant FK, role/special permission boundaries, immutable user ID', () => {

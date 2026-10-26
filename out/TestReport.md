@@ -1,5 +1,13 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issue #109 S3-1 — 구현/작성된 시험과 실제 PASS 구분 (2026-10-26)
+
+- **작성:** 운영 Prisma Client Schema에 G1~G4 모델 추가·기존 CAD 관계 유지, 신규 S3 인증 후보 정식 SQL을 `deploy/g7-s3/prisma/migrations`(기존 CAD 6개 + 신규 1개)에 분리; 자동 `src/prisma/migrations` 이력·operational Migrator 변경 없음. Pure Release/Operation 사전 검사, 격리 Prisma config, Unit·Integration, G1~G3 기존 테스트의 Schema 가정 변경, GHCR 한정 제외 테스트.
+- **실제 검증:** 새 HEAD PR CI가 시작되기 전에는 `npm test/typecheck/Build/E2E/Docker` PASS **미확인**. 작성 코드는 실행 근거 아님. 시험 계획은 [TestPlan](TestPlan.md) G7-S3-001~008·CI-001~003, 격리 Runbook은 [S3 README](../src/deploy/g7-s3/README.md). 리뷰·Main 충돌도 최신 PR 생성/CI 결과에 따라 추적.
+- **실 운영 제외:** 실제 운영 SQLite/Schema Migration·CAD 원본/Current/Version/S3 파일 접근·GHCR 게시/릴리스 서명·인증 라우팅·배포·Nginx/Compose/.env·Owner S3 실행 GO 전부 **NOT RUN / NOT ENABLED**. User 사내 증거 원본 비반출 조건 유지. #109/#96 OPEN/BLOCKED.
+
+
+
 ## Issue #109 / PR #129 — S2 전용 GHCR 미게시 보완 전후 증거 구분 (2026-10-26)
 
 - **기존 자동 검증:** HEAD `29ed3028bf0f78ba37abba0ecde73a6483d0942f`의 [PR CI 40313233131](https://github.com/planner77/layoutManager/actions/runs/40313233131) `completed/success`: Verify [121539323884](https://github.com/planner77/layoutManager/actions/runs/40313233131/job/121539323884) 및 Docker [121539323971](https://github.com/planner77/layoutManager/actions/runs/40313233131/job/121539323971) 모두 성공. 신 HEAD GHCR 정책 Unit·Build/E2E는 별도 결과 전 **NOT VERIFIED**.

@@ -1,5 +1,14 @@
 # Issue #109 — G7 운영 인증 활성화 설계 및 통제 배포·롤백 Runbook
 
+## S3-1 운영 Schema 타입·정식 Migration 후보·Release/Operation Gate 구현 (2026-10-26)
+
+- Owner가 S1 수용·S2 준비 승인을 선언했으나 실제 운영 릴리스별 GO 증거/내부 실 DB/CAD/S3 복구 로그는 외부 제출 불가이며 특정 서명/기간·OCI digest는 미확정. **운영 Cutover 실행은 승인하지 않는다**. 관련 Runbook [S3-1](../src/deploy/g7-s3/README.md), [ADR](Decisions.md), [TestPlan](TestPlan.md).
+- **S3-1 구현:** `src/prisma/schema.prisma`에 기존 G1~G4 User/Session/Role·Site/SpecialGrant/Audit/Recovery/G3 limiter 모델 및 CAD Site FK를 정식 운영 Client 모델로 통합. 후보 신규 Migration `202610260002_g7_operational_auth`와 기존 CAD 6개는 독립 `src/deploy/g7-s3/prisma/migrations` 이력에 등록, 테스트 전용 canonical /tmp config에 한해서 `prisma migrate deploy` 실행. 현재 운영 migrator는 자동 SQL 적용이므로 **신규 Auth Migration을 활성 `src/prisma/migrations`로 승격하지 않음**.
+- **이중 승인:** `G7-S3-AUTH-V1` capability/버전 동일 App+Migrator digest/Source SHA/Schema/registry·FK·rollback 확인과 릴리스별 Owner GO ID/기간/Scope/snapshot/변경 ID를 검증하는 preflight 추가. Auth 및 별도 Write flag OFF 기본, false/오타/불일치 fail-closed; 순수 모듈로 **운영 라우트에 미연결**·항상 runtimeActivated=false. 기존 CAD POST/Current/DELETE auth·Audit 연결은 **S3-3**, 실제 인증·관리 API는 **S3-2**, OCI/동일 Snapshot 실복구·SOP는 **S3-4**, 실 운영 활성화 Owner GO는 **S3-5** 후속.
+- **비게시/범위:** PR 제목(향후 정확한 squash) `#109 | S3-1 Operational schema and gates [G7-S3-1-NO-GHCR]`, S3-1 파일만 Main GHCR skip, 다른 운영파일/활성 Migration·타 workflow는 CI 거부. 사용자 요청대로 새 HEAD PR CI 시작까지만; **PR 병합·Main CI·GHCR 게시·실 운영 Auth/Prisma Migration·Nginx/Compose/.env·실 DB/CAD/S3·Audit purge·#109/#96 종료 금지**. G7 AC1~4/운영 NO-GO 유지.
+
+
+
 ## S2 PR #129 — Codex P1 GHCR 게시 분기 보완 및 배포 보류 (2026-10-26)
 
 - 구 HEAD `29ed3028bf0f78ba37abba0ecde73a6483d0942f`의 [PR CI 40313233131](https://github.com/planner77/layoutManager/actions/runs/40313233131)은 Verify/Docker 모두 성공이지만, [Codex P1](https://github.com/planner77/layoutManager/pull/129#discussion_r4376591801)은 Main의 Runtime 변경 범위 판정이 S2 Offline Readiness 소스를 GHCR 게시 대상으로 취급한다고 지적했다. 이는 **CI 실패가 아닌 병합·배포 정책 위험**이다.

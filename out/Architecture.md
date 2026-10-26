@@ -1,5 +1,14 @@
 # Architecture 초안
 
+## Issue #109 S3-1 — 운영 Schema 타입과 런타임 분리 설계 (2026-10-26)
+
+- S1은 격리 `/api/g7-staging/**`, S2는 비반출 증거 평가, **S3-1은 운영 Prisma Client의 인증 Schema 모델 + 비운영 대상 정식 Migration 후보 + 순수 Release/Operation Preflight**이다. 이 단계에서 실제 `src/app/api/cad-files/**`, Current/Delete·API Auth 라우트/DB Repository·운영 migrator·Docker/Nginx/Compose·영속 API/Audit purge는 연결하지 않는다.
+- **두 이력 분리:** 활성 `src/prisma/migrations`는 기존 CAD 6개만 유지. 별도 `src/deploy/g7-s3/prisma/migrations`에 기존 6개와 신규 `202610260002_g7_operational_auth`를 비운영 후보로 배치. 기존 migrator가 기동 시 자동 migration을 실행하므로 **안전한 롤아웃 승인 없이 신규 SQL을 운영 migrator history에 넣지 않는다**. Prisma Client 생성/패키징 시 새 모델이 보여도 실제 운영 테이블은 생성되지 않는다.
+- **이중 게이트:** `G7-S3-AUTH-V1` + App/Migrator source SHA·semantic version/digest/schema·실 FK/rollback 증거를 확인하는 Release Preflight와 릴리스별 Owner GO·기간·Scope·snapshot·approval ID를 비교하는 Operation Preflight, 별도의 CAD write 스위치가 필요. 검증 함수 자체는 라우트에 연결되지 않으며 성공도 `READY_FOR_RUNTIME_INTEGRATION`일 뿐 `runtimeActivated=false`. S3-2/3 인증 라우트·업무 트랜잭션, S3-4 OCI/복구, S3-5 실 GO 후에만 운영 전환.
+- 기존 익명 CAD 목록/원본 GET·Viewer 경로 불변, Editor+담당 Site POST/Current·DELETE 비밀번호 AND·Audit 원자성은 **후속 S3-3에서 구현·검증해야 하는 계약**이다. 사용자는 사내 증거 원본을 외부 제출할 수 없으므로 내부 보존 및 상태/비밀 없는 식별자만 공개 기록.
+
+
+
 ## Issue #109 G7 S1 — 비운영 App Router / DB·스토리지 경계 (2026-10-26)
 
 `/api/g7-staging/[...segments]` → staging release+operation gate → Linux UID 소유 `/tmp/cad-g7-staging-*/fixture.sqlite` + 별도 CAD → G3 Session/Login·G4 Role/Site/Grant/Audit 트랜잭션. 기본 404, 격리 CAD 쓰기는 별도 flag와 CSRF·JWT 없는 서버 세션 확인 후에만 작동. G2 Admin/복구는 별도 명시 CLI, 앱 부팅 자동 실행 없음.

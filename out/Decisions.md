@@ -1,5 +1,14 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-051-G7-S3-1 — Auto-migrator 충돌 예방·운영 Schema 타입 선반영 (2026-10-26)
+
+- **결정:** 현재 `src/scripts/deploy.ts`는 기동 시 무조건 `prisma migrate deploy`를 실행한다. 이번 S3-1의 Auth DDL을 즉시 `src/prisma/migrations`에 넣으면 GHCR 게시 여부와 무관하게 **향후 일반 배포가 실 운영 DB에 미승인 Migration을 적용할 위험**이 있다. S3-1에서는 Prisma Client용 운영 `schema.prisma`에 G1~G4 모델을 반영하되 Auth DDL은 **Prisma 공식 candidate history** `src/deploy/g7-s3/prisma/migrations/202610260002_g7_operational_auth`로 분리한다. 활성 운영 migration history와 자동 migrator 그대로 두고, S3-4/5 별도 PR에서 Release/Owner GO 및 백업·실복구 완결 후 승격·적용을 재검토한다.
+- **원본 동등성:** Candidate는 현재 CAD 6개 Migration을 바이트 단위 동일하게 복제한 후 G1/G4의 제약·감사 Site FK/append-only·User/AuthSession/Role/Site/SpecialGrant/RecoveryNonce·G3 제한을 신규 additive SQL로 담는다. 과거 CAD 테이블의 원본 행·Current/Version/SHA/Delete Hash/외래키를 변경하지 않으며, 진짜 Prisma migrate deploy는 UID 소유 `/tmp` fixture에서만 가능.
+- **이중 게이트:** `G7-S3-AUTH-V1` capability, App+Migrator 버전·Source SHA·실 검증된 immutable OCI digest pair·Schema/FK/rollback·snapshot 증거와 릴리스별 Owner GO ID/Scope/기간/변경 ID/rollback Pair를 모두 요구하는 순수 검증을 추가. Flag default OFF, CAD Write 별도 OFF; 실패 시 거부. **사내 제출할 수 없는 실제 증거를 창작하지 않고, preflight는 런타임 Auth 활성화로 배선하지 않는다**.
+- **비게시 병합:** 정확한 미래 Squash 제목 `#109 | S3-1 Operational schema and gates [G7-S3-1-NO-GHCR]`+S3-1 변경 경로 allowlist로만 Main GHCR Job을 SKIPPED; 다른 runtime/운영 Migration/Compose 경로는 fail-closed. S1·S2 기존 게시 예외를 확대하지 않는다. 이번 요청은 PR CI 시작까지만, S3 실제 배포/병합·GHCR/Issue 종료 제외.
+
+
+
 ## ADR-051-G7-S2-NO-GHCR — 내부 증거 준비 전용 Main GHCR 발행 차단 (2026-10-26)
 
 - **정책:** S2 `g7-s2-readiness`는 운영 연동 코드가 아니라 사용자의 **사내 증거 비반출** 조건을 지키는 오프라인 점검 도구다. S1에서 이미 사용한 `G7-S1-NO-GHCR` 범위를 이 재사용 불가 작업에 억지로 확장하지 않는다. 별도의 정확한 squash 제목 `#109 | S2 private-evidence readiness [G7-S2-NO-GHCR]`을 사용한다.

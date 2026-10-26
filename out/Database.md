@@ -1,5 +1,14 @@
 # Database Schema — 단일 기준 문서
 
+## Issue #109 S3-1 — 운영 Prisma 모델 통합 / 정식 후보 Migration 분리 (2026-10-26)
+
+- **모델:** `src/prisma/schema.prisma`에 `User`, `AuthSession`, `UserRoleGrant`, `UserSiteGrant`, `SpecialGrant`, `AuditEvent`, `AdminRecoveryNonce`, `G3LoginAttempt`를 G7 S1의 검증된 Prisma 계약에서 **운영 Client Schema로 통합**. 기존 CAD `BusinessUnit/Product/CadSite/Building/CadLocation/CadFileVersion/CadDeletionJob` 모델·관계·Current/Version/해시 계약 보존. `CadSite.siteGrants`/`auditEvents` 관계 추가. User/Site FK·역할/Scope 제한·세션 불변·append-only Audit/복구 nonce 제한은 격리 후보 SQL에 정의.
+- **Migration 경계:** 활성 운영 `src/prisma/migrations`에는 **CAD 6개만 유지**(`scripts/deploy.ts`가 배포 시 자동 prisma migrate deploy). 신규 후보 이력은 `src/deploy/g7-s3/prisma/migrations`에 기존 CAD 6개 **바이트 동등 복사** + `202610260002_g7_operational_auth/migration.sql` 총 7개로 작성. 이는 **실제 운영 승격 전 별도 승인 대기 중인 정식 형식의 Migration 후보**이며, S1 `202610260001_g7_staging_auth`·G1 fixture를 활성 운영으로 단순 복제한 것이 아님. 별도 승인 전 운영 SQL 적용 불가.
+- **겹침 위험 차단:** `src/deploy/g7-s3/prisma.config.ts`는 실 운영 기본 Prisma config를 사용하지 않고, `G7_S3_MIGRATION_TEST_ONLY=true`·Auth/Write OFF·UID 소유 canonical `/tmp/cad-g7-s3-*/fixture.sqlite`(0700 디렉터리/0600 SQLite/0600 유효 marker) 및 `DATABASE_URL=G7_S3_TEST_DATABASE_URL` 일치 검증 후에만 Prisma에 URL 전달. 불일치 시 `G7_S3_DISPOSABLE_MIGRATION_ONLY`를 throw하여 SQL 미실행. 테스트는 7개 공식 Prisma deploy + 기존 CAD SQL 행·Current·SHA·삭제 암호 hash 논리 스냅샷, FK/유니크/Audit/강제 실패 rollback을 별도로 확인.
+- **실 운영 적용 시 미충족:** 활성 migrator 이력 승격/과거 DB 보전, 스키마 적용 전·후 동일 snapshot DB/CAD/S3 복원 실증 및 rollback Pair 검증, 승인된 App/Migrator OCI 두 digest 필요. #109 S3-1 완료만으로 이 조건을 충족했다고 간주하지 않는다. [Runbook](../src/deploy/g7-s3/README.md).
+
+
+
 ## Issue #109 / PR #125 P1 — Staging Prisma CLI Migration 실행 전 대상 강제 검증 (2026-10-26)
 
 - **원인:** Staging 전용 `src/deploy/g7-staging/prisma.config.ts`가 기존에는 `G7_STAGING_DATABASE_URL`의 실제 경로·UID·symlink/manifest 정합성을 확인하지 않고 Prisma datasource로 전달했고 기본 fallback URL도 포함했다. 운영 DB 경로를 실수로 지정하면 G1 Auth Migration DDL이 사용자 DB에 적용될 위험(리뷰 [r4374313165](https://github.com/planner77/layoutManager/pull/125#discussion_r4374313165)).
