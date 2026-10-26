@@ -29,7 +29,7 @@ const KEYS=[
  'G7_OPERATION_APPROVAL_ID','G7_OPERATION_CHANGE_ID',
 ] as const;
 afterEach(()=>{
-  for(const k of KEYS){if(saved[k]===undefined)delete process.env[k];else process.env[k]=saved[k];}
+  for(const k of KEYS){if(saved[k]===undefined)delete process.env[k];else Object.assign(process.env,{[k]:saved[k]});}
   if(home)rmSync(home,{recursive:true,force:true});
   home=null;saved={};
 });
@@ -232,7 +232,7 @@ describe('#109 S3-2 reserved Auth/Admin/Session/Role/Site API',()=>{
       process.env.G7_S3_TEST_ORIGIN='http://0.0.0.0:3317';
       expect((await send('GET','auth/session')).status).toBe(404);
       process.env.G7_S3_TEST_ORIGIN=ORIGIN;
-      process.env.NODE_ENV='production';
+      Object.assign(process.env,{NODE_ENV:'production'});
       expect((await send('GET','auth/session')).status).toBe(404);
     }finally{db.close();}
   },100000);

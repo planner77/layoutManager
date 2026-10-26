@@ -297,6 +297,8 @@ describe('#109 S3-2 exact Auth/Admin preview-only GHCR exclusion',()=>{
     for(const forbidden of [
       'src/prisma/migrations/202610260002_g7_operational_auth/migration.sql',
       'src/prisma/schema.prisma',
+      'src/app/api/g7-operational/route.ts',
+      'src/app/api/g7-operational/z/route.ts',
       'src/app/api/cad-files/route.ts',
       'src/app/api/cad-locations/[locationId]/current/route.ts',
       'src/scripts/deploy.ts','src/docker-compose.yml',
