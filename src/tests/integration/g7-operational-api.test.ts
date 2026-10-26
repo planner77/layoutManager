@@ -118,5 +118,18 @@ describe('#109 S2 guarded real CAD Auth App Router contract (synthetic DB)',()=>
     expect(await database.userRoleGrant.count({where:{userId:affected}})).toBe(1);
     const audit=await database.auditEvent.findFirst({where:{action:'ROLE_GRANTED'}});
     expect(audit?.actorUserId).toBe(actorId);
+    const create=await POST(req('POST','access/create-user',{
+      loginName:'stagingnewreader',temporaryPassword:'private-test-temp-password',
+    },cookie,csrf),props('access','create-user'));
+    expect(create.status,await create.clone().text()).toBe(201);
+    const added=await create.json() as {id:string;mustChangePassword:boolean};
+    const created=await database.user.findUnique({where:{id:added.id}});
+    expect(created?.mustChangePassword).toBe(true);
+    expect(await database.userRoleGrant.findUnique({
+      where:{userId_role:{userId:added.id,role:'Reader'}},
+    })).toBeTruthy();
+    expect((await database.auditEvent.findFirst({
+      where:{action:'ACCOUNT_CREATED',affectedUserId:added.id},
+    }))?.actorUserId).toBe(actorId);
   },60_000);
 });
