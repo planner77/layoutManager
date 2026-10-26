@@ -1,5 +1,12 @@
 # Database Schema — 단일 기준 문서
 
+## Issue #109 G7 — 정식 Migration, 동시점 백업·롤백 경계 (2026-10-26)
+
+- G1 `src/tests/fixtures/auth-g1/{migration.sql,schema.prisma}`는 **합성 DB 전용**, 운영 `src/prisma/schema.prisma`/정식 migrations에 아직 배선되지 않았다. G7 후속 코드 PR에서 정식 User/Session/Role/Site/SpecialGrant/Audit/Nonce + 기존 CAD 테이블 FK/Unique·Audit append-only·Version→Site 계약의 동등성을 검토·시험해야 한다. 현 문서 PR은 DDL/DB 변경 0.
+- 승인 후에만 운영 쓰기 정지 → **같은 snapshot ID**의 SQLite 안전 backup(단순 실행중 파일 복사 금지) + CAD local bytes + S3 object/version manifest·SHA → 격리 restore/migration dry-run → 승인된 App/Migrator 두 digest 및 정식 migration → FK/Unique·원본 bytes/SHA·Version/Current/delete hash 불변 확인. 무검증 fixture SQL 복사나 운영 `prisma db push` 금지.
+- 실패 시 구 App만 신규 Schema에서 가동하지 말고 **호환 구 App/Migrator pair 및 동일 snapshot DB+CAD+S3 전체** 복원·세션 폐기·유실 업무 재처리/Owner 확인 후 운영 재개. Audit 365일 초과 purge 주기/복구본/예외 세칙 미승인으로 실행 금지. [Issue109](Issue109.md), [Operation](Operation.md).
+
+
 ## Issue #108 / G6 — 합성 백업·복구 DB 불변식 (2026-10-26)
 
 G6 자동 검증은 별도 cad-auth-g1-*/fixture.sqlite에 **기존 여섯 CAD Schema Migration**을 재현하고 BusinessUnit/Product/CadSite/Building/CadLocation/CadFileVersion/CadDeletionJob의 전체 row, Version ID/순번/sha256/file_size/storage_path, Current 소속을 스냅샷 비교한다. 합성 local CAD와 mock-S3 mirror의 실제 바이트 SHA가 DB와 일치해야 한다. SQLite online backup을 별도 fixture로 복제해 G1 auth fixture migration.sql 적용 후 foreign_key_check=0·기존 CAD 행 불변을 확인한다. 손상 주입 후 DB와 두 파일 mirror를 복원해 원상/해시 동등성 확인. 이는 실제 원격 S3, 승인된 운영 Prisma dry-run/DB rollback의 증거가 아니며 실 Prisma/schema/migrations/원본 DB·CAD 불변. #109 전 Audit 물리 purge/운영 마이그레이션 금지. [Issue108](Issue108.md).

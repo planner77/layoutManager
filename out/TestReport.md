@@ -1,5 +1,13 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issue #109 — G7 운영 활성화 설계·절차 준비 / 실제 실행 구분 (2026-10-26)
+
+- [Issue109](Issue109.md), ADR-051-G7-PLAN/Architecture/Database/Requirements/Operation/TestPlan/AGENTS/Issue96를 **문서 전용**으로 정렬. release G7 capability+App/Migrator pair와 Owner GO·`G7_AUTH_ENABLED`의 이중 게이트, 별도 write flag·권한·DB/CAD/S3 백업/실복구·롤백 절차를 설계했다. **이 단계는 코드 구현/기능 또는 운영 활성화가 아님**.
+- TC-P4-G7-001~014: 통합 Auth API/운영 Schema/G7 flag **미구현**, G7 별도 운영 통합·Staging E2E/배포 복구·Owner GO/NO-GO **NOT RUN / BLOCKED**; #108 현장 시험은 Owner 보고에 의해 수용되었고 개별 원본 로그는 여기서 독립 확인하지 못함. 기존 G0~G5 격리·Preview CI 성공을 G7 운영 검증 PASS로 전용하지 않는다.
+- TC-P4-G7-015: 문서 PR 실제 diff(`src/**`·Prisma/Nginx/Compose/.env/GHCR·운영 자료 변경 0)를 확인하고 해당 HEAD의 PR CI/리뷰 결과를 별도 기록한다. PR 생성/CI 시작은 PASS 아님. 새 CI/리뷰 실패·취소 관측시 기존 [FailureLedger](FailureLedger.md)에 Run/Job/HEAD·원인/재시도 누적.
+- 현재 #109 G7-AC1~4·상위 #96 **OPEN/BLOCKED**, G6 #108 현장 증거·Owner 별도 GO 미수용, 운영 변경·배포 실행 0. 실제 사내 IP/CIDR/Secret/CAD/원시 로그·S3 key는 공개하지 않는다.
+
+
 ## Issue #108 / PR #122 — 기존 HEAD CI 성공과 P2 보완 HEAD 재검증 구분 (2026-10-26)
 
 - **기존 CI 실증:** PR #122 HEAD `9c8bfc1062b33964928b299ebc4cfe80e319378c`에서 [PR CI 40257054743](https://github.com/planner77/layoutManager/actions/runs/40257054743) `completed/success`: Verify [121361049386](https://github.com/planner77/layoutManager/actions/runs/40257054743/job/121361049386)와 Docker [121361049207](https://github.com/planner77/layoutManager/actions/runs/40257054743/job/121361049207) 모두 success. E2E 실패 결과 업로드는 failure() 조건 미충족에 따른 정상 SKIPPED.

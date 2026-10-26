@@ -1,5 +1,12 @@
 # Architecture 초안
 
+## Issue #109 G7 — 이중 운영 게이트·점진 cutover 목표 구조 (2026-10-26)
+
+**현재는 미구현 설계**. [Issue109](Issue109.md)/ADR-051-G7-PLAN의 목표: 검증된 G7-capable App+Migrator immutable OCI digest pair 및 정식 Schema 호환(**release gate**) AND 사내 Owner 명시 GO·비공개 배포 설정·`G7_AUTH_ENABLED=true`(**operation gate**, 기본 false) → 신규 Auth/Session/Admin/Audit 경로 활성화. `G7_CAD_WRITE_CUTOVER_ENABLED=true`(기본 false)는 앞 단계 유효 시에만 CAD POST/Current Editor+Site 및 DELETE Editor+Site+레거시 삭제 비밀번호 AND의 원자 변경·감사 전환. 
+기존 CAD 목록·Viewer·원본 GET은 익명 경로로 독립 유지한다. release/approval/Schema 오류 및 DB/Audit 장애 시 미승인 API·보호 쓰기 fail-closed, 익명 write fallback 금지. Admin 다른 Site 자동 허용·`audit:read`와 `logs:read` 혼합 금지. #98/#83/#65/#60 영속 API 및 Audit 물리 purge 별도 승인 전 OFF.
+현재 `src/app/api`·`src/prisma`·실 Nginx/Compose/.env 변경 0. #108 Owner 현장수용은 완료됐으나 G7의 비공개 증거 ID·복구 적용 계획 확인과 #109 별도 Owner GO 전 운영 연동/배포 금지.
+
+
 ## Issue #108 / G6 — 운영 비연결 증거·격리 복구 경계 (2026-10-26)
 
 현장 PROD PC 최소 2대 → 기존 Nginx → 기존 App/공개 CAD GET, DEV PC → 별도 개발 App·DB/CAD. 현 G1~G4 서비스는 비라우팅 격리 fixture이며 Auth 쓰기 Route는 연결하지 않는다. 증거 파이프라인: 사내 접근제한 EV manifest → offline g6-evidence.mjs(Worktree 외부 canonical 경로 검증·정형 상태 검사) → 사유코드/READY_FOR_OWNER_REVIEW(Owner의 실제 증거 검토 별도). 테스트 파이프라인: 기존 CAD 여섯 migration → cad-auth-g1-*/fixture.sqlite 및 합성 두 Version/Current → SQLite online backup + local CAD/mock-S3 파일 mirror → 별도 fixture DB G1 migration dry-run → DB/bytes 실복원·동등성 assert. 이는 원격 S3·운영 Prisma migration·현장 네트워크 실증이 아니다. 실제 운영 API/Compose/Nginx/.env/Prisma/DB·원본 SHA 불변, G7 #109 운영 OFF. [Issue108](Issue108.md).

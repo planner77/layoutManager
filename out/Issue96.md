@@ -1,5 +1,11 @@
 # Issue #96 — 로컬 계정·세션·Role/Site·감사 공통 기반
 
+## G7 #109 — 기본 OFF·활성화·복구 절차 문서 준비 / 운영 BLOCKED (2026-10-26)
+
+[Issue109](Issue109.md) 및 ADR-051-G7-PLAN에서 검증된 G7-capable App/Migrator pair+Schema(**release gate**)와 별도 Owner GO·`G7_AUTH_ENABLED`(**operation gate**, 기본 OFF), 별도 `G7_CAD_WRITE_CUTOVER_ENABLED`(OFF), 기존 익명 CAD GET 유지/업무 write 인증, 동일 snapshot DB/CAD/S3 실복원·롤백·증거 양식/TC를 **문서 설계**했다. 지금 플래그·실 Auth Route/Prisma/Proxy/Compose는 **미구현/비활성**.
+#102~#107의 격리·Preview 완료와 #108 G6은 Owner가 현장 시험 이상 없음을 확인하여 CLOSED/COMPLETED(비공개 개별 원시 증거 ID는 현재 독립 열람되지 않음)됐지만 G7 실제 배포·복구 확인 및 Owner 별도 GO는 남았다. 따라서 #109와 상위 #96은 **OPEN/BLOCKED** 유지. 신규 영속 API 익명 확대 및 Audit 365일 이후 purge 실제 실행도 승인하지 않는다.
+
+
 ## G4 #106 — Role/Site/Version·Grant·Audit 격리 서비스 (2026-10-26)
 
 [Issue106](Issue106.md) 및 ADR-051-G4: G3 Session과 현재 G1 Role/Site/SpecialGrant·Version→Site 관계를 G4 transaction 안에서 검증하고, Admin Grant/계정 disable, Audit 성공·거부/Revision CAS 합성 모델을 구현했다. 운영 API/Prisma/실 CAD 경로 OFF, 기존 익명 CAD GET 유지, Version DELETE 레거시 비밀번호 AND 요구. Audit 365일 이후 실제 파기 자동화는 G6/G7 승인 전 금지. 테스트 작성과 실행 PASS는 별개다.
