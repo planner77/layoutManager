@@ -1,5 +1,12 @@
 # Issue #106 — G4 서버 Role/Site/Version 권한·Grant·Audit 영속 계층
 
+## Issue #106 코드 완료·GHCR v0.41.1 후속 릴리스 경계 (2026-10-26)
+
+- [PR #120](https://github.com/planner77/layoutManager/pull/120) 최종 HEAD `d4afaf0ae3cee51a172dad9305533d941daa5706`, [PR CI 40253887969](https://github.com/planner77/layoutManager/actions/runs/40253887969) Verify·Docker `completed/success`, P1 리뷰 2건 Resolved/미해결 0, main drift 0·mergeable true 후 squash [commit 0f59351e](https://github.com/planner77/layoutManager/commit/0f59351ef160e3cc79681a78c34714db8d088ab9). [Main CI 40254890094](https://github.com/planner77/layoutManager/actions/runs/40254890094)는 시작까지만 확인.
+- 현재 `v0.41.0` App/Migrator 릴리스 Pair는 이전 #105 Main CI에서 게시 완료. 새 #106 코드에 대응하는 `0.41.1` Pair는 기존 tag/digest를 이동하지 않는 별도 릴리스 PR의 `src/package.json`/lock 버전 정렬 및 새 PR CI 통과→Main CI 이후 게시될 수 있다. **0.41.1 GHCR 게시 확인 전에는 RELEASE PENDING**. 코드 단위 완료/Issue 행정 종료와 릴리스 게시 성공을 구분한다.
+- #109 G7 승인 전 운영 Auth/관리/API/Prisma/Migration/Nginx·Compose/실 CAD·S3 및 기존 익명 CAD GET/DELETE 권한 변경 없음. 현장 G6 #108 미실행.
+
+
 ## PR #120 최초 CI 실패·P1 리뷰 보완 (2026-10-26)
 
 - **초기 CI:** [Run 40252656906](https://github.com/planner77/layoutManager/actions/runs/40252656906), HEAD `53b75ca17190cd101689a3f10877adcb737ff37c`, Verify Job `121347711873` failed / Docker Job `121347711740` success. Typecheck·Lint passed, Unit/Integration 288 passed/9 failed; 9개 G4 TC는 전부 같은 fixture `seedCad:37` 중복 Site 명칭으로 beforeEach 중단. Build/E2E skipped.

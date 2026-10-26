@@ -7,6 +7,14 @@
 - **후속 처리:** 신규 PR 생성→리뷰 스레드·Main 충돌 확인→`pull_request.opened` PR CI 시작, Run/HEAD/attempt/Job을 관측할 때만 누적 기록 추가. Typecheck/Vitest/Build/E2E/Docker 테스트 PASS는 실행 증거 전 NOT VERIFIED. 사용자 요청에 따라 CI **시작 확인 후 모니터링 생략**, 병합·GHCR·운영 배포/이슈 종료 없음. 운영 API/Prisma/Compose/Nginx/.env·실 CAD/DB/S3/감사 물리 purge 변경 0, G7 #109 Owner Go/No-Go 전 OFF. [Issue108](Issue108.md).
 
 
+## Issue #106 / PR #120 — 실패 복구 최종 확인·후속 GHCR 0.41.1 신규 CI (2026-10-26)
+
+- 원장 아래에 기록된 첫 [Run 40252656906](https://github.com/planner77/layoutManager/actions/runs/40252656906) G4 9개 Unit/Integration 실패(Site 이름 Unique)와 별도 P1 Audit Scope 누락 기록은 변경·삭제하지 않는다.
+- 수정 HEAD `d4afaf0ae3cee51a172dad9305533d941daa5706`의 [PR CI 40253887969](https://github.com/planner77/layoutManager/actions/runs/40253887969) `completed/success`(Verify Job `121351469940`, Docker Job `121351469592`). P1 스레드 2건 Resolved, 0 미해결/behind=0/mergeable 확인 후 squash 병합 `0f59351ef160e3cc79681a78c34714db8d088ab9` 성공.
+- [Main CI 40254890094](https://github.com/planner77/layoutManager/actions/runs/40254890094)는 시작 확인 상태, 사용자 지시에 따라 결과 모니터링하지 않음. 기존 `v0.41.0` GHCR 이미 게시·태그 불변. 새 `0.41.1` App/Migrator Pair는 후속 릴리스 PR의 새로운 HEAD CI 성공이 전제이며 이미지 게시 성공 미확인. 실패/취소 관측 시 새 Run/Job/Step·로그 출처·재시도 기록을 추가하며 기존 첫 실패를 덮어쓰지 않음.
+- 기존 CAD 조회 익명 유지/운영 Auth·Admin/API/Prisma/G7 OFF 정책 불변. 버전 bump와 본문·로그·실 데이터 공개 범위 변경 없음.
+
+
 ## Issue #106 / PR #120 — 최초 PR CI Unit/Integration 실패 및 두 P1 리뷰 수정 (2026-10-26 KST)
 
 - **관측 Run:** [40252656906](https://github.com/planner77/layoutManager/actions/runs/40252656906), attempt `1`, PR `#120`, HEAD `53b75ca17190cd101689a3f10877adcb737ff37c`, event `pull_request.opened`, `completed/failure`. Verify [Job 121347711873](https://github.com/planner77/layoutManager/actions/runs/40252656906/job/121347711873) **failure**; Docker [Job 121347711740](https://github.com/planner77/layoutManager/actions/runs/40252656906/job/121347711740) **success**.

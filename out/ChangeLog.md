@@ -6,6 +6,13 @@
 - 새 HEAD 자동 Test/PR CI 완료는 아직 확인 전 NOT VERIFIED. 사내 Windows/WSL2 Nginx·PC 2대 실 E2E·실 S3/DB/CAD Backup/Restore, Owner G6 수용과 별도 #109 G7 Go/No-Go는 **NOT RUN/PENDING**. 운영 Auth/API/Prisma/DDL/Compose/Nginx/.env/실 DB/CAD/S3/GHCR 변경 0, 기존 익명 CAD GET 유지. [Issue108](Issue108.md).
 
 
+## v0.41.1 후보 — Issue #106 G4 격리 Auth Grant/Audit Pair 이미지 (2026-10-26)
+
+- G4 코드/테스트는 [PR #120](https://github.com/planner77/layoutManager/pull/120) 최종 HEAD `d4afaf0ae3cee51a172dad9305533d941daa5706`의 [PR CI 40253887969](https://github.com/planner77/layoutManager/actions/runs/40253887969) Verify·Docker 2개 Job `completed/success`, P1 2건 답변·Resolved 및 behind=0 후 squash 병합됐다. [Main CI 40254890094](https://github.com/planner77/layoutManager/actions/runs/40254890094) **시작 확인**; GHCR 실제 게시 완료와 구분한다.
+- 기존 `v0.41.0`와 `0.41.0`/`0.41.0-migrate` GHCR Pair는 이미 게시된 불변 릴리스다. 본 후속 릴리스 PR은 신규 `0.41.1` 버전을 `src/package.json`·lock root에 맞춘다. 새 PR CI 성공 및 승인 후 Main에서 App/Migrator candidate digest 검증·paired version/latest 승격이 수행되어야 실제 게시로 판정한다. 새 CI 시작 전후 이미지 게시 성공을 선행 주장하지 않는다.
+- 격리 Auth G4 외 운영 기능 활성화 0. 기존 익명 CAD GET/Viewer/파일·Current/Version/삭제 암호/실 DB·S3 불변, G7 #109 별도 Owner 승인 전 OFF. [Issue106](Issue106.md), [FailureLedger](FailureLedger.md).
+
+
 ## 2026-10-26 — #106 G4 격리 Role/Site/Version·Grant·Audit
 
 G1~G3 기반 G4 비라우팅 서버 인가, Admin Grant/disable, 안전 append-only Audit, 테스트용 ShadowOutline CAS 및 TC-P4-G4-001~009 추가. 기존 익명 CAD GET/Viewer, 운영 Prisma/API·Compose/Nginx/원본·Version/Current·삭제 암호 및 GHCR 불변. 자동 시험 PASS/배포가 아니며 실제 운영 활성화 #109 G7 전 OFF. [Issue106](Issue106.md).

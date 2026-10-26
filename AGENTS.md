@@ -8,6 +8,13 @@
 - 운영 Auth/API·Prisma/Schema/Migration·Nginx/Compose/.env/실 DB/CAD/S3/GHCR, Audit 물리 파기 활성화 0. #109 G7 별도 Owner Go/No-Go 및 G6 현장 증거 전 #108 OPEN/BLOCKED. 이번 요청은 리뷰/충돌·원장 정리와 PR CI **시작까지**이며 CI 성공·병합·배포/이슈 종료 아님.
 
 
+## Issue #106 G4 — PR #120 검증·병합 및 GHCR v0.41.1 후속 (2026-10-26)
+
+- **완료된 기능 PR:** [PR #120](https://github.com/planner77/layoutManager/pull/120), 최종 HEAD `d4afaf0ae3cee51a172dad9305533d941daa5706`의 [PR CI 40253887969](https://github.com/planner77/layoutManager/actions/runs/40253887969) Verify(E2E 포함)·Docker 각각 `completed/success`. 미해결 리뷰 스레드 0, main behind 0, mergeable true 확인 후 `squash` 병합 커밋 [0f59351e](https://github.com/planner77/layoutManager/commit/0f59351ef160e3cc79681a78c34714db8d088ab9). [Main CI 40254890094](https://github.com/planner77/layoutManager/actions/runs/40254890094) 시작 확인, 완료 결과/게시 성공 모니터링하지 않음.
+- **GHCR 신규 게시 필요:** #105의 [Main CI 40249052914](https://github.com/planner77/layoutManager/actions/runs/40249052914)는 기존 App/Migrator `0.41.0` Pair 게시 Job 성공, `v0.41.0` 태그 존재. #106에서 **기존 이미지/태그 이동 금지**. 새로운 `0.41.1` App·Migrator 후보로 `src/package.json`과 `src/package-lock.json` 루트 버전만 동기화하는 릴리스 PR을 작성한다. 새 릴리스 PR HEAD CI(Verify + Docker) 성공·리뷰 0·main 정렬 이후에만 squash merge/새 Main CI에서 후보 digest→paired promotion. **PR CI 시작은 GHCR 게시/버전 태그 생성 완료가 아니다.**
+- **G7 정책:** G4 구현 완료와 GHCR 패키징은 운영 Auth/Admin/API·실 Prisma Migration·Compose/Nginx/.env·실 DB/CAD/S3/기존 익명 GET·Current·삭제 암호 전환을 승인하지 않는다. 실제 운영은 #109 G7 별도 Owner Go/No-Go, G6 #108 현장·복원 증거 필수. G4 최초 실패 [40252656906](https://github.com/planner77/layoutManager/actions/runs/40252656906)와 P1 리뷰 2건은 [FailureLedger](out/FailureLedger.md)에 보존한다.
+
+
 ## Issue #106 / PR #120 — 최초 CI 9개 실패 및 P1 감사 보완 (2026-10-26)
 
 - **실패 실증:** [PR CI 40252656906](https://github.com/planner77/layoutManager/actions/runs/40252656906) HEAD `53b75ca17190cd101689a3f10877adcb737ff37c`, Verify Job `121347711873` Unit/Integration **failure** (54 files: 53 passed/1 failed; 297 tests: 288 passed/9 failed). 기존 Typecheck/Lint 성공(경고 2개), Docker/Migration/Runtime Smoke Job `121347711740` success; Verify 이후 Build/E2E **SKIPPED**.
