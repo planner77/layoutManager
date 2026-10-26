@@ -1,5 +1,13 @@
 # PR/Main CI 실패 원장
 
+## Issue #57 — L1 정적 리뷰 위험·해결 기록 (2026-10-27)
+
+- **관측 분류:** 신규 PR/CI Job 실패 또는 취소 0건(이 항목 작성 시 PR CI 시작 전으로, 성공/실패 판단 불가). 아래는 **정적 코드 검토에서 확인한 결함/누출 위험**이며 CI 실패나 실제 보안 사고로 분류하지 않는다. 과거 다른 이슈의 CI 실패 원장은 그대로 보존.
+- **원인 A/보완:** `src/server/upload-observability.ts`가 자체 `console.log/warn/error(JSON.stringify)`를 수행해 기존 공통 로거의 `LOG_LEVEL=warn`/LOG_FORMAT·필드 제한과 동기화되지 않았다. 기존 `writeLog` 재사용, 안전한 error catalog 공용화, Schema v1/단계·firstFailure·동일 requestId 보존, TC-L1-001/002/006 추가.
+- **원인 B/보완:** `src/server/logger.ts`는 caller가 준 예상 밖 확장 필드를 직렬화해 user path/Locator/data가 stdout/stderr로 유출될 수 있었고 metadata override를 허용했다. emitter 허용 필드만 노출, route 템플릿으로 동적 세그먼트 제거, raw error/cause/stack/message를 안전 code·category로 재정제, schema metadata 덮어쓰기 차단. `src/scripts/{run,g5-preview-smoke,measure-ghcr-pair}.mjs`의 원시 Error 메시지 출력도 고정 텍스트로 교정. TC-L1-002/005/006.
+- **검증 경계:** 이 항목은 정적 근거·보완 완료의 기록이지 실행 확인이 아니다. 타입 검사/ESLint/Vitest/Build/E2E/Docker/실 운영 및 PR CI Job 결과는 **NOT RUN/NOT VERIFIED**; 신규 PR 작성 시 검토 스레드/mergeability·trigger만 별도로 기록한다. 실패 발생 시 run/attempt/job/step/HEAD·원인/재시도 이력을 추가한다.
+
+
 ## Issues #124/#126/#127 / PR #132 — 최종 해결·게시 증거 확정 (2026-10-27 KST)
 
 - 아래 keyboard 85/86, DWG 2/4 및 초기 로컬 실패·중단 기록을 모두 보존한다. keyboard 최소 수정 후 독립 86/86, DWG 보완 후 독립 Unit20/DWG4/focused13 PASS로 원인을 검증했다. 최신 HEAD `5b3b717`의 [PR CI 40352404675](https://github.com/planner77/layoutManager/actions/runs/40352404675) Verify121675709873·Docker121675710616 success, 실제 전체 Unit352/E2E86/legacy1 PASS. 이전 fd9 Run40349738685 success는 별도 HEAD 근거이다.

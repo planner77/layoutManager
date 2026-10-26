@@ -144,3 +144,40 @@ test('TC-L1-004: frequent successful health probes are debug-only, failures stil
   expect(error).toHaveBeenCalledTimes(2);
   expect(error.mock.calls.map(call => JSON.parse(String(call[0]))).every(e => e.requestId === health.requestId)).toBe(true);
 });
+
+
+test('TC-L1-005: request lifecycle preserves a single requestId and fixed public failure code', () => {
+  process.env.LOG_LEVEL = 'info';
+  process.env.LOG_FORMAT = 'json';
+  const info = vi.spyOn(console, 'log').mockImplementation(() => {});
+  const failure = vi.spyOn(console, 'error').mockImplementation(() => {});
+  const scope = new RequestLogContext(new Request('http://localhost/api/cad-files?token=canary', { method: 'POST' }), 'api', 'cad_upload');
+  const error = Object.assign(new Error('secret/path: Authorization=canary'), { code: 'INVALID_LOCATION_CHAIN' });
+  scope.error('http_request_failed', error, { errorCode: error.code, httpStatus: 400, outcome: 'failure' });
+  scope.completed(400, 'failure');
+  const events = [info, failure].flatMap(spy => spy.mock.calls.map(call => JSON.parse(String(call[0]))));
+  expect(events).toHaveLength(3);
+  expect(events.map(event => event.event).sort()).toEqual(['http_request_completed', 'http_request_failed', 'http_request_started']);
+  expect(events.every(event => event.requestId === scope.requestId)).toBe(true);
+  expect(events.find(event => event.event === 'http_request_failed')).toMatchObject({ errorCode: 'INVALID_LOCATION_CHAIN', httpStatus: 400 });
+  expect(events.map(event => JSON.stringify(event)).join('\n')).not.toMatch(/canary|Authorization|secret\/path/);
+  expect(scope.responseHeaders().get('x-request-id')).toBe(scope.requestId);
+});
+
+test('TC-L1-006: forged event/schema and circular sanitized error are bounded at the emitter', () => {
+  const output: string[] = [];
+  vi.spyOn(console, 'error').mockImplementation(value => output.push(String(value)));
+  const cyclic: {name: string;code: string; cause?: unknown; stack: string } = { name: 'Error', code: 'EACCES', stack: '/private/secret.dxf' };
+  cyclic.cause = cyclic;
+  writeLog('error', 'private/path\nsecret', {
+    component: 'api', operation: 'cad_upload', schemaVersion: 900, timestamp: 'forged', level: 'info',
+    error: cyclic, unknown: { any: 'private' }, route: '/api/user-secret/path',
+  });
+  expect(output).toHaveLength(1);
+  const entry = JSON.parse(output[0]);
+  expect(entry).toMatchObject({schemaVersion: 1, level: 'error', event: 'unclassified_event', route: '/api/other'});
+  expect(entry.error).toMatchObject({name: 'Error', code: 'EACCES', cause: {name: 'CircularCause'}});
+  expect(entry).not.toHaveProperty('unknown');
+  expect(output[0]).not.toMatch(/private|secret|forged|900/);
+  expect(output[0]).not.toContain('\n');
+});
