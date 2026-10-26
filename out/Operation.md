@@ -1,5 +1,18 @@
 # 운영·환경설정 초안
 
+## Issue #109 — G7 승인 전 활성화·중단·롤백 Runbook (2026-10-26)
+
+**현 상태 S0 문서 준비만 가능 / 실제 운영 NO-GO.** 상세: [Issue109 S0~S4](Issue109.md). #108 사내 LAN PC 2대/PROD Nginx·DEV direct, 세션·권한·CAD E2E 및 동일 DB/CAD/S3 실 Restore 수용과 별도 Owner GO 전에 운영 Auth/API·Prisma·Nginx/Compose/.env·CAD write 전환 금지.
+
+1. **S0 NOW:** 기본 OFF 이중 게이트·승인 패키지·스냅샷/복구 체크리스트 문서화. `G7_AUTH_ENABLED`와 `G7_CAD_WRITE_CUTOVER_ENABLED`는 **현재 미구현 설계용 이름**, env 설정/문서 PR로 Auth가 켜지지 않는다.
+2. **S1 ISOLATED:** 고정 소스 SHA/App·Migrator 두 digest, 정식 Schema·migration 격리 dry-run, 기존 GET/쓰기·Session/Role/Site/Audit 검증, 두 PC·실 backup+restore #108 evidence 확보. 실제 운영 데이터 변경 0.
+3. **S2 GO/NO-GO:** 사내 승인 ID, Owner/운영자·대체자/QA·유효 창, 정확한 두 digest·Schema·migration, 같은 DB+CAD+S3 snapshot ID, Audit purge 세칙 또는 보류·잔여 위험·롤백 계획 확인. 불일치·미승인은 NO-GO.
+4. **S3 APPROVED ONLY:** 쓰기 중지→같은 snapshot 안전 backup+실 Restore 확인→쌍이 맞는 migrator→FK/Version/Current/원본 bytes/SHA 검사→App Auth OFF 시작/기존 익명 GET→단발 Admin→Auth ON→별도 CAD write cutover→Audit·현장 E2E/Owner 수용. 신규 메모/타입/외곽선/로그 API·Audit purge 별도 승인 전 OFF.
+5. **S4 ROLLBACK:** 쓰기 중지·세션 폐기·flag OFF→구 호환 App/Migrator pair+**같은 snapshot DB/CAD/S3** 함께 복원→원본·Version/Current·FK·객체 checksum 검증. 구 App만 신규 Schema에서 실행 금지, backup 이후 작업 손실/재처리 및 Owner 승인 전 재개 금지.
+
+공개 GitHub에 실제 URL/IP, Secret/사용자 비밀번호, 실 CAD·S3 key·원시 로그 기록 금지. 문서 작성/CI/GHCR 게시만으로 GO 또는 실복구 PASS 아님.
+
+
 ## Issue #106 G4 — 격리 운영 절차·배포 차단 (2026-10-26)
 
 G4는 테스트에서만 G1 guarded cad-auth-g1 임시 SQLite를 사용하는 비라우팅 서비스다. 실제 App Router, 운영 인증/관리/Outline/Type/Memo/Logs/Audit API, Prisma/DDL, Compose/Nginx/.env, 실 DB/CAD/S3/기존 CAD GET·Viewer 동작에 연결하지 않는다. #109 G7 Owner Go/No-Go까지 OFF.
