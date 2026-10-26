@@ -1,5 +1,5 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, test } from 'vitest';
-import { chmodSync, readFileSync, writeFileSync } from 'node:fs';
+import { chmodSync, readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -395,7 +395,11 @@ describe('#105 G3 isolated login and session', () => {
     service.logout(token, NOW + 2, 'cad-unchanged');
     expect(snapshot()).toEqual(before);
     const shipped = readFileSync(new URL('../../prisma/schema.prisma', import.meta.url), 'utf8');
-    expect(shipped).not.toContain('model AuthSession {');
+    // G7 S2 includes client-only Auth model declarations, but the default
+    // operating migrator still must NOT carry the G7 physical DDL.
+    expect(shipped).toContain('model AuthSession {');
+    expect(readdirSync(new URL('../../prisma/migrations/', import.meta.url)))
+      .not.toContain('202610260001_g7_staging_auth');
     expect(db.prepare('PRAGMA foreign_key_check').all()).toEqual([]);
   });
 });
