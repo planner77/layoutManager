@@ -112,7 +112,7 @@ jobs:
             # Explicit path allowlist: no wildcard staging/runtime or arbitrary docs.
             for file in "${changed[@]}"; do
               case "$file" in
-                .github/workflows/docker-publish.yml|AGENTS.md|out/FailureLedger.md|out/Issue109-S2-Readiness.md|out/Issue109.md|out/Operation.md|out/TestPlan.md|out/TestReport.md|src/scripts/g7-s2-readiness.ts|src/server/g7-staging/s2-readiness.ts|src/tests/unit/g7-s2-readiness.test.ts|src/tests/unit/g7-staging-ghcr-guard.test.ts)
+                .github/workflows/docker-publish.yml|AGENTS.md|out/Decisions.md|out/FailureLedger.md|out/Issue109-S2-Readiness.md|out/Issue109.md|out/Operation.md|out/Requirements.md|out/TestPlan.md|out/TestReport.md|src/scripts/g7-s2-readiness.ts|src/server/g7-staging/s2-readiness.ts|src/tests/unit/g7-s2-readiness.test.ts|src/tests/unit/g7-staging-ghcr-guard.test.ts)
                   ;;
                 *)
                   echo "::error::G7-S2 GHCR exclusion disallowed path: $file" >&2
