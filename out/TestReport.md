@@ -1,5 +1,20 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issue #106 / PR #120 — 실패 Run 재현 원인 및 보완 검증 대기 (2026-10-26)
+
+- **확인된 구 HEAD:** `53b75ca17190cd101689a3f10877adcb737ff37c`. [PR CI 40252656906](https://github.com/planner77/layoutManager/actions/runs/40252656906) completed/failure. Verify Job `121347711873`의 Typecheck PASS, Lint PASS(기존 경고 2), Unit/Integration 53 files/288 tests PASS + G4 1 file/9 tests FAIL. 이 9건은 공통 `seedCad` `product_id,name` Unique 위반, `beforeEach` 중단. Build/E2E/Legacy E2E는 SKIPPED. Docker Job `121347711740` completed/success.
+- **수정:** 동일 Product 아래 `Site-a`/`Site-b` 이름을 구분하여 fixture 경계 문제 수정. 리뷰 P1 [r4373235027](https://github.com/planner77/layoutManager/pull/120#discussion_r4373235027)에 따라 Server DB에서 확인한 Scope Site를 Authorization Success/Denied 및 ShadowOutline Create/Edit/Delete AuditEvent에 영속 기록하고, G1 fixture CHECK는 명시 Scoped action/target에만 nonnull Site를 허용한다. TC001 Site 명칭·권한 성공/거부 Site, TC005 Outline revision별 Site, TC009 비허용 Site 조합/FK 거부 회귀 추가.
+- **재검증 게이트:** 새 코드/문서 HEAD에 대해 Typecheck/Lint/Vitest/Next Build/Playwright/CI Docker Job 전부 재검증 필요. 신규 CI **시작만 확인**할 예정이며 결과 모니터링 생략. 변경 후 테스트 실행 근거는 아직 없으므로 모두 `PENDING/NOT VERIFIED`. 로컬 npm/Docker 직접 실행 NOT RUN. 실제 운영 G6/G7·현장 PC/Backup/Restore/Prisma/Auth Route/GHCR 변경 없음.
+- **증거 구분:** P1 Audit 누락은 코드 리뷰에서 발견된 독립 결함으로, 최초 Run에서 9개 테스트가 공통 fixture 준비 중 죽어 실제 Outline/Audit TC에 도달하지 못했다. 기존 실패·스킵 기록은 보존하며 신규 HEAD가 성공했다고 주장하지 않는다.
+
+
+## Issue #106 G4 — 구현과 CI 검증 증거 구분 (2026-10-26)
+
+- **작성 완료 범위:** src/domain/auth.ts, src/server/auth/{audit,g4-service}.ts, src/tests/fixtures/auth-g1/migration.sql, src/tests/fixtures/auth-g4/store.ts, src/tests/integration/auth-g4.test.ts 및 관련 설계. TC-P4-G4-001~009 코드 작성은 실행 PASS가 아님.
+- **직접 실행:** 본 GitHub 연결 작업 환경에서 Node/npm/TypeScript/Vitest/Playwright/Docker 직접 실행 **NOT RUN**. 신규 PR CI는 최신 HEAD에서 시작 확인 후 모니터링 생략, 결과 확인 전 **PENDING/NOT VERIFIED**. 선행 #105 CI 성공을 새 G4 HEAD 성공으로 재사용 금지.
+- **운영 경계:** 기존 공개 CAD GET/Viewer, 실제 Auth/Admin/API/Prisma/migration/Compose/Nginx/실 DB/CAD/S3/GHCR 변경 0; 실 LAN/백업·복구/DELETE 비밀번호 AND/Owner #109 운영 Go-Live = NOT RUN/BLOCKED. [Issue106](Issue106.md).
+
+
 ## Issue #105 / G3 — 독립 QA 결과 (2026-10-26)
 
 - **역할·범위:** Manager `gpt-6-astra`가 요구사항/설계/AC와 구현 검토를 완료하고 QA 가능 상태로 인계, Developer `gpt-6-sol` 구현·동결, QA `gpt-6-luna`가 독립 소스 검토·실행·기록. Root가 조정 및 최종 commit/push를 담당. 이번 QA는 #105 격리 구현이며 운영 Auth/API/Prisma/DDL/Compose/Nginx/.env 활성화나 CI·배포를 수행하지 않음.

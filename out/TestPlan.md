@@ -1,5 +1,20 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #106 / PR #120 — CI 최초 실패 및 Site Audit P1 회귀 확대 (2026-10-26)
+
+- **TC-P4-G4-SETUP-001:** 기존 실제 CAD Migration `uq_site_parent_name(product_id,name)`과 합성 Site `Site-a`/`Site-b`의 동일 Product 독립 명칭이 충돌하지 않고 G4 `beforeEach`가 끝까지 실행되는지 확인. 성공은 CI에서 실제 재실행해야 판단.
+- **TC-P4-G4-001 보강:** 인증된 Reader의 Version-a 허용 성공 Audit `site_id=site-a,target_kind=VERSION,target_id=version-a`, Editor의 Version-b 권한 거부 Audit `site_id=site-b`, 익명은 Actor를 생성하지 않는 401. Site가 Admin에게 자동 허용되지 않는지 유지.
+- **TC-P4-G4-005 보강:** Outline Create/Edit/Delete 안전 Audit는 각각 원천 Version→DB Site `site-a`, Revision `NULL→1→2→3`, immutable CreatedBy, 성공/거부/충돌의 원자성을 검증한다.
+- **TC-P4-G4-009 보강:** G1 AuditEvent SQL CHECK는 LOGIN_DENIED 같은 비-Scope action에 Site 강제 금지, Outline 사건 Site 누락 거부, DB에 없는 Site FK 거부; Site Grant affected_user_id 필수 및 append-only, UTC/365일 cutoff 유지.
+- **추적:** 최초 Run `40252656906` Verify 9개 실패/288개 PASS는 [FailureLedger](FailureLedger.md), 실제 결과는 [TestReport](TestReport.md). 수정 뒤 Typecheck/Vitest/Docker/E2E는 새로운 HEAD로 확인하기 전 PENDING. 실 LAN/G7 API 연결은 NOT RUN. 신규 운영 Prisma/DDL/Compose 활성화 금지.
+
+
+## Issue #106 G4 — 인가·Grant·Audit 격리 시험 (2026-10-26)
+
+TC-P4-G4-001: Reader/Editor/Admin Site/Version Matrix·없는 Version·익명 401/403. 002: Admin만 Grant 부여/회수, 동시 Role/Site·즉시 재검증. 003: Admin+audit:read 및 Admin+logs:read 분리. 004: 실제 SQLite 두 연결 BEGIN IMMEDIATE/BUSY/Unique. 005: 가상 ShadowOutline Create/Edit/Delete, Generated ID/Revision CAS/CreatedBy 불변·CAD snapshot. 006: 주입 Audit 장애 시 Grant/계정/Outline 원자 Rollback. 007: Account disable과 Session 전량 revoke·마지막 Admin 차단. 008: 정상 Origin/Session CSRF·Client Header/Actor claim 불신·민감정보 비로그. 009: Audit FK/append-only/UTC/365일 cutoff·운영 Prisma OFF.
+환경: 기존 CAD Migration을 재현한 G1 guarded disposable SQLite와 G4 Store. Typecheck/Lint/Vitest/Build 및 기존 CAD E2E/CI Docker는 실제 실행 증거가 있을 때만 PASS. 실제 업무 CAD POST/Current/Delete API 통합·삭제 암호 AND, #98 Outline CRUD, 실 LAN Nginx/PC·운영 DB/S3 복구는 G6/G7에서 별도 검증. [Issue106](Issue106.md).
+
+
 ## Issue #105 G3 — 로그인·만료·회수·Actor 검증 (2026-10-26)
 
 [Test Case/AC 단일 목록](Issue105.md)의 **TC-P4-G3-001~012**를 사용한다. AC1=로그인/초기 변경·401/403(001~003), AC2=hash·8h/30m·원자 3개(004~006), AC3=logout/password/disable/recovery(003,007~008), AC4=현재 DB Actor(009), AC5=정상 cookie/proxy/DEV/guard(010~011), AC6=격리·기존 CAD/API 회귀(012)다. 실제 두 SQLite 연결 경쟁·credential 검증 후 계정 변경·Audit 실패 rollback을 포함하며 단순 count 모의로 대체하지 않는다.

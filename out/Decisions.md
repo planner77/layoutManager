@@ -1,5 +1,19 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-051-G4-P1 — #106 Scoped Audit에 Authoritative Site 유지 (2026-10-26)
+
+**P1 결정:** G4 인가 성공·거부/Outline Create·Edit·Delete 안전 감사는 반드시 같은 transaction에서 확인한 **DB Version→Site**를 `AuditEvent.site_id`로 보존한다. 글로벌 Auth/Grant Role/Session 사건은 Site를 임의 생성하지 않는다. G1 fixture CHECK는 Site Grant/Revoke에 영향 사용자+Site 필수, Outline 사건 Site 필수, Authorization 사건에는 SITE/VERSION/OUTLINE Scoped target의 non-null Site만 허용, 일반 Action은 Site NULL을 유지한다. `CadSite` FK/append-only trigger 유지. 구 HEAD `53b75ca`의 감사 Site NULL은 [r4373235027](https://github.com/planner77/layoutManager/pull/120#discussion_r4373235027)에서 발견된 결함으로 분류한다.
+**동반 수정:** 구 HEAD `seedCad`의 동일 Product/동일 이름 `Site` 중복은 실 CAD `uq_site_parent_name` 위반으로 CI의 G4 9개 테스트가 공통 beforeEach에서 실패한 직접 원인. 각 Site 고유 이름과 Assertion으로 교정. 관측 실패와 코드 리뷰 추가 위험은 [FailureLedger](FailureLedger.md)에 구분 기록한다.
+**운영 승인 아님:** 실제 Prisma/Route/Origin/Compose/Nginx/DB/CAD/S3·익명 CAD GET 변경 및 Audit physical purge/배포 없음. G7 #109 별도 Owner Go/No-Go 전 OFF. [Issue106](Issue106.md).
+
+
+## ADR-051-G4 — #106 Role/Site/Version·Grant·Audit 트랜잭션 (2026-10-26)
+
+**결정:** #102 G0 업무 6개 정책과 G1/G2/G3를 재사용. G4 서버 Store는 G1 임시 DB의 BEGIN IMMEDIATE에서 G3 Session(유효성·8h/30m·회수)와 현재 DB User/Role/Site/SpecialGrant, Version→Location→Building→Site를 재조회한다. Admin만 Role/Site/Special Grant·계정 변경, Admin이어도 Site 자동 전체 권한 없음. Grant 철회 즉시 403, 세션 무효 401, Audit/DB 오류 503 fail-closed. Unique/FK 및 마지막 유효 Admin 보호. 권한 성공·거부/Grant·가상 ShadowOutline 변경과 Actor/affected/site/Revision/outcome/UTC/requestId 안전 Audit은 동일 transaction으로 commit/rollback한다. Audit는 append-only·365일 보존 경계만 명세; 실제 물리 정리/백업본 삭제 SOP 미승인으로 금지. audit:read와 logs:read는 별도의 Admin SpecialGrant다.
+
+기존 CAD GET/Viewer/원본은 익명 허용. POST/Current Editor 이상 + 실제 Site, Version DELETE는 이에 **기존 삭제 비밀번호 AND**. G4 cad:delete 허용은 역할·Site 필요조건 확인이며 삭제 비밀번호·최종 Version 삭제 승인 아님. 실제 운영 API/Prisma/migration/Compose/Nginx/실 DB/CAD/S3 **OFF**, #109 G7 Owner Go/No-Go와 G6 #108 현장·복구 승인 후 별도 연동. 실제 CadOutline은 #98, logs:read 소비자는 #60. [Issue106](Issue106.md).
+
+
 ## ADR-051-G3 — #105 격리 DB Session과 초기 변경 (2026-10-26)
 
 **Manager 설계 결정 / 운영 승인 아님.** [Issue105](Issue105.md), #102 Owner R1, 기존 G1/G2를 따른다.

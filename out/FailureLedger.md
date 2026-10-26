@@ -1,5 +1,24 @@
 # PR/Main CI 실패 원장
 
+## Issue #106 / PR #120 — 최초 PR CI Unit/Integration 실패 및 두 P1 리뷰 수정 (2026-10-26 KST)
+
+- **관측 Run:** [40252656906](https://github.com/planner77/layoutManager/actions/runs/40252656906), attempt `1`, PR `#120`, HEAD `53b75ca17190cd101689a3f10877adcb737ff37c`, event `pull_request.opened`, `completed/failure`. Verify [Job 121347711873](https://github.com/planner77/layoutManager/actions/runs/40252656906/job/121347711873) **failure**; Docker [Job 121347711740](https://github.com/planner77/layoutManager/actions/runs/40252656906/job/121347711740) **success**.
+- **원본 로그·단계:** Verify에서 npm ci, Prisma generate, `npm run typecheck` **PASS**, `npm run lint` **PASS(기존 warning 2개)**. `npm test`에서 **54 files = 53 PASS + 1 FAIL, 297 tests = 288 PASS + 9 FAIL**; `tests/integration/auth-g4.test.ts` TC-P4-G4-001~009 모두 실패. 공통 Stack `seedCad tests/integration/auth-g4.test.ts:37:8` → `beforeEach:81:3`, `SqliteError: UNIQUE constraint failed: CadSite.product_id, CadSite.name` (`SQLITE_CONSTRAINT_UNIQUE`), exit 1. OCI Unit/Benchmark/Production Build/Playwright E2E/Legacy Migration E2E는 **SKIPPED**(성공 아님). Docker Job의 내부 예상 migration 오류 주입은 최종 Job success와 구분하며 새로운 배포 실패로 기록하지 않음.
+- **독립 원인:** 같은 `product-a`에 `site-a`, `site-b`를 만들면서 공통 `name='Site'`를 지정, CAD 실제 스키마 `uq_site_parent_name(product_id,name)` 위반. G4 비즈니스 권한/감사 assertion에 도달하지 못한 fixture 준비 단계 문제이며 9개의 별개 프로덕션 결함으로 오분류하지 않는다.
+- **P1 리뷰(추가 미검증 결함):** [r4373235025](https://github.com/planner77/layoutManager/pull/120#discussion_r4373235025) 이름 중복 지적. [r4373235027](https://github.com/planner77/layoutManager/pull/120#discussion_r4373235027) G4 `permit`와 `outline` 안전 Audit가 DB-resolved `site_id`를 null로 기록하며 G1 Audit CHECK가 Site Grant/Revoke 외 non-null 값을 차단한다고 지적. 후자는 최초 CI의 위 seed 오류로 실행 도달 전이라 독립 Review P1로 구분; 실제 CI의 추가 실패로 꾸미지 않음.
+- **소스 보완:** Site 이름을 `Site-a`/`Site-b`로 구분하고 실제 이름 순서 Assert. G4 grant/permission resolve scope와 success·deny / outline create·edit·delete safe audit에 DB Site ID를 기록. G1 **비운영 fixture SQL만** CHECK를 최소 허용 목록으로 확장: Site Grant/Revoke = affected_user_id+site_id 의무, Outline Create/Edit/Delete = Outline target+site_id 의무, AUTHORIZATION_GRANTED/DENIED = Site/Version/Outline target에만 nonnull Site 가능, 무관 사건은 Site NULL 강제. Site FK/append-only trigger·기존 Session/G1~G3 계약 유지.
+- **회귀/재검증:** TC-P4-G4-001/005/009에 Success/Denied/Revision Site·Invalid action Site/없는 Site FK 거부 Assertion 추가. 수정 내용을 GitHub 브랜치로 Commit한 뒤 latest HEAD PR CI 재시작하며 **새 Typecheck/Unit/E2E 성공은 확인 전 NOT VERIFIED**. Root 로컬 npm/Vitest/Playwright/Docker 실행 NOT RUN. 과거 성공 Run과 이 실패 Run/리뷰 기록은 보존하고 대체 성공으로 수정하지 않음.
+- **Scope/후속:** 운영 App API/Prisma/migration/Compose/Nginx/.env/실 DB·CAD·S3/GHCR 변경 또는 활성화 없음, 기존 공개 CAD GET/Viewer 익명 유지, Version DELETE Editor+담당 Site+기존 암호 AND, Audit 365일 파기 미승인, G7 #109 Go/No-Go 후속. 사용자 지시상 최신 PR CI **시작까지**, 결과 모니터링 없음.
+
+
+## Issue #106 G4 — 신규 PR CI 전 위험/비실패 기준선 (2026-10-26)
+
+- 범위: feat/issue-106-g4-authorization-audit, main 선행 G1~G3 기반. #102 Owner G0 익명 기존 GET/Editor+Site POST·Current/Editor+Site+기존 삭제 암호 Delete 계약 유지.
+- 실패 상태: 작성 당시 #106 PR Run/Job/Attempt의 실패·취소는 아직 관찰되지 않음. 임의 Run/로그/실패를 기록하지 않으며 기존 누적 다른 이슈 실패와 취소 이력을 보존한다. 로컬 Typecheck/Vitest/Docker/E2E 실행 NOT RUN; 새 PR CI 시작/결과 PENDING은 PASS 아님.
+- 사전 기술 위험과 차단(확정 실패가 아님): Admin 무조건 Site 허용·익명 GET 전환·Client Header Actor 신뢰를 막도록 G4 비운영 Port+DB 재검증 분리. Grant/업무 변경과 Audit 부분 커밋 위험은 BEGIN IMMEDIATE 및 주입 rollback TC로 추적. 물리 Audit purge는 SOP 미승인으로 미구현. Version DELETE는 G4 permit만으로 완료되지 않으며 G7에서 레거시 비밀번호 AND/업무 Audit으로 보완 필수.
+- 추후 확인 시: 실제 실패 Run/Job/Step, HEAD, 로그 출처, 원인/조치/재시도 및 리뷰·main 충돌은 새로운 누적 항목으로 기록. [Issue106](Issue106.md).
+
+
 ## Issue #104 / PR #118 — 최초 TypeScript 실패 보존·수정 HEAD CI 성공·0.40.5 재검증 게이트 (2026-10-26)
 
 - **최초 실패는 보존:** [Run 40232479678](https://github.com/planner77/layoutManager/actions/runs/40232479678), HEAD `534de74c`; Verify `121286959176` TS1005/TS1128 실패, Docker `121286959564` 성공, Lint/Unit/E2E SKIPPED. 원인·수정 `ae002997`은 아래 원장에 상세 기록.

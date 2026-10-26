@@ -1,5 +1,10 @@
 # CAD Web Viewer P.O.C.
 
+## Issue #106 — G4 권한·감사 격리 서비스 (운영 OFF)
+
+G1~G3 DB·세션 계약 위에 Role/Site/Version 인가, Admin Grant·Account 상태, append-only Audit 및 ShadowOutline Revision CAS 시험 모듈을 추가했다. 요구·설계·시험은 [Issue106](out/Issue106.md). 기존 익명 CAD GET/Viewer·원본 다운로드는 변경하지 않으며 실제 로그인/관리/Outline/Logs/Audit API, 운영 Prisma/migration/Compose/Nginx/DB 연결은 #109 G7 승인 전 OFF. CAD POST/Current는 Editor+담당 Site, Version DELETE는 이에 기존 삭제 비밀번호 AND가 필수다. PR CI 시작은 검증 성공이 아니다.
+
+
 ## Issue #105 — G3 격리 로그인·세션 (0.41.0 후보)
 
 로그인·초기 비밀번호 변경·로그아웃, 세션 8h/idle 30m/최대 3개와 계정 변경 시 회수, 서버 DB Actor 및 정상 HTTP cookie 흐름을 비운영 서비스와 fixture에 구현했습니다. 실제 검증 결과는 TestReport에서 확인합니다. 초기/복구 계정은 비밀번호 변경 후 다시 로그인하며 운영 로그인 API/UI는 아직 연결하지 않습니다. 기존 공개 CAD 익명 조회·Current·삭제와 운영 Prisma/Compose/DB는 그대로 유지합니다. [요구·설계·AC/TC](out/Issue105.md), [실제 시험 결과](out/TestReport.md)를 구분하며 #109 별도 Owner 승인 전 운영 인증 기능은 OFF입니다. 이번 작업은 PR CI 시작까지이며 병합·배포를 포함하지 않습니다.

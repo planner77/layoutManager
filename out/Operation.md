@@ -1,5 +1,12 @@
 # 운영·환경설정 초안
 
+## Issue #106 G4 — 격리 운영 절차·배포 차단 (2026-10-26)
+
+G4는 테스트에서만 G1 guarded cad-auth-g1 임시 SQLite를 사용하는 비라우팅 서비스다. 실제 App Router, 운영 인증/관리/Outline/Type/Memo/Logs/Audit API, Prisma/DDL, Compose/Nginx/.env, 실 DB/CAD/S3/기존 CAD GET·Viewer 동작에 연결하지 않는다. #109 G7 Owner Go/No-Go까지 OFF.
+검증은 G1 CAD Migration으로 만든 합성 DB의 TC-P4-G4-001~009를 실행해 Admin/Role/Site/Version, revoke 재검증, 권한 부족·CSRF, 두 연결/Unique, 생성·수정·삭제와 Audit 원자성, 안전 필드/append-only/UTC, 기존 CAD 불변을 확인한다. 실제 실행/성공은 TestReport에만 기록. Audit 365일 만료 물리 삭제·백업본 복구/파기 세칙은 추가 승인 전 수동·자동 모두 실행 금지.
+향후 G7 적용 시 Version DELETE는 G4 Editor/Admin+담당 Site 사전 인가뿐 아니라 기존 삭제 비밀번호를 별도로 AND 검증하고 DB 업무 변경+감사를 한 거래로 commit해야 한다. 실 LAN Nginx/WSL2/PC 2대와 DB/CAD/S3 복구는 G6 #108 인계. 운영 Secret/비밀번호/실 로그/CAD Geometry는 공개 GitHub/CI에 기록 금지. [Issue106](Issue106.md).
+
+
 ## Issue #105 G3 — 운영 연결 없는 세션 검증 (2026-10-26)
 
 [Issue105](Issue105.md)의 로그인/암호 변경/세션 서비스는 disposable G1 SQLite를 사용하는 명시 격리 검증용이다. 운영 로그인 URL/UI·Admin API나 자동 migration을 추가하지 않으며 `.env`/Compose/Nginx 설정으로 활성화할 경로를 제공하지 않는다. 운영 연결은 #109 Owner Go/No-Go 이후 별도 작업이다.

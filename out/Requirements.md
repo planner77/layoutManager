@@ -1,5 +1,19 @@
 # 상세 요구사항
 
+## Issue #106 G4 — 인가·Grant·Audit 요구사항 (2026-10-26)
+
+| ID | 업무 계약 | TC |
+| --- | --- | --- |
+| P4-G4-R01 | 기존 익명 CAD GET 보존; POST/Current Editor+담당 Site, DELETE 추가 기존 비밀번호 AND | 001,008 |
+| P4-G4-R02 | 현재 G3 Session/계정/Role/Site/SpecialGrant/Version→Site를 같은 트랜잭션에서 확인, 401/403 및 Grant 회수 즉시 효력 | 001~004,007 |
+| P4-G4-R03 | Admin만 Grant/계정 disable, DB FK/Unique/직렬화 및 마지막 Admin 보호 | 002,004,006~007 |
+| P4-G4-R04 | 권한 성공·거부/Grant/Create/Edit/Delete Audit safe fields, Revision CAS, 실패 시 rollback/append-only | 002,005~009 |
+| P4-G4-R05 | audit:read와 logs:read는 서로 다른 Admin SpecialGrant; 신규 영속 API 익명 불가 | 003,008 |
+| P4-G4-R06 | 365일 cutoff·파기 미승인, 운영 Auth/API/Prisma/Compose·실 CAD OFF, #109 G7 승인 전 차단 | 005,009 |
+
+[Issue106](Issue106.md) 기준. 격리 TC 작성/PR CI 시작을 실제 운영 승인·실 LAN 검증 PASS로 기록 금지.
+
+
 ## Issue #105 G3 — 격리 세션 요구 (2026-10-26)
 
 [P4-G3-R01~06 요구·AC·TC](Issue105.md)를 이번 Unit 기준으로 추가한다. 유효 credential 로그인/초기 암호 변경·logout, 32 byte token/hash 저장, 절대 8h·idle 30m·원자 최대 3개, disable/password/recovery 회수, 서버 DB Actor와 정상 HTTP cookie/Origin/CSRF 계약을 구현한다. 초기 변경 계정에는 일반 세션을 발급하지 않고 credential 재입력 변경 후 새 로그인을 요구한다. 상세 응답 401/403/409/429 및 거래 경계는 Issue105가 기준이다.

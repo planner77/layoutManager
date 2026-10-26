@@ -1,5 +1,11 @@
 # Architecture 초안
 
+## Issue #106 G4 — 비라우팅 서버 권한·감사 계층 (2026-10-26)
+
+G3 신뢰된 Session Cookie → G4 Service Port → G1 guard 적용 disposable SQLite Adapter → 단일 BEGIN IMMEDIATE: Session/계정·현재 Role/Site/SpecialGrant 재검증 → Version→CadLocation→Building→CadSite → Role/Site/Version 허용·거부 → Grant/계정 disable/격리 ShadowOutline CAS → append-only AuditEvent → Commit. 신원은 SHA-256 Token hash로만 DB 조회하고 원시 Token/비밀번호/클라이언트 Header claims는 Actor가 아니다.
+G4 service는 App Router에 import하지 않으며 기존 익명 CAD GET·Viewer·원본 다운로드/운영 Current·Delete API, src/server/db.ts·src/prisma, Compose/Nginx/.env·실 DB/CAD/S3는 이 변경에서 불변. G7 #109에서 실제 Route와 삭제 비밀번호 AND 검증 및 업무 변경+Audit transaction을 함께 연결할지 승인한다. 실제 Outline CRUD #98과 Logs #60은 별도. [Issue106](Issue106.md).
+
+
 ## Issue #105 G3 — 비연결 Session 서비스 경계 (2026-10-26)
 
 `격리 요청 adapter → 명시 G3 서비스 → 주입 store → G1 disposable SQLite`로 로그인/초기 및 일반 암호 변경/logout/authenticate를 검증한다. App Router와 `server/db.ts`는 이 경로를 import하지 않는다. 서버 DB에서 User/Role/Site/SpecialGrant를 매 요청 조회해 G4용 Actor를 구성하며 클라이언트 claim을 병합하지 않는다. G4 업무 write는 같은 transaction에서 권한을 다시 검사해야 한다.
