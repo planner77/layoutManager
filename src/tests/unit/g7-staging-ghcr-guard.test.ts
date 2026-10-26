@@ -271,3 +271,73 @@ describe('#109 S3-1 schema/type-only no-GHCR Main scope', () => {
     expect(tag.values).toContain('publish=true');
   });
 });
+
+
+describe('#109 S3-2 exact Auth/Admin preview-only GHCR exclusion',()=>{
+  const title='#109 | S3-2 Operational Auth/Admin API [G7-S3-2-NO-GHCR]';
+  const paths=[
+    '.github/workflows/docker-publish.yml','AGENTS.md',
+    'out/Architecture.md','out/Database.md','out/Decisions.md','out/FailureLedger.md',
+    'out/Issue109.md','out/Operation.md','out/Requirements.md','out/TestPlan.md','out/TestReport.md',
+    'src/deploy/g7-s3/prisma.config.ts','src/deploy/g7-s3/README.md','src/deploy/g7-s3/S3-2.md',
+    'src/server/g7-operational/disposable-target.ts',
+    'src/server/g7-operational/preview-gate.ts','src/server/g7-operational/preview-db.ts',
+    'src/server/g7-operational/preview-handler.ts','src/server/g7-operational/user-provisioning.ts',
+    'src/app/api/g7-operational/[...segments]/route.ts',
+    'src/scripts/g7-s3-admin.ts',
+    'src/tests/integration/g7-s3-operational-auth.test.ts',
+    'src/tests/unit/g7-staging-ghcr-guard.test.ts',
+  ];
+  test('exact subject + exactly allowed S3-2 code/docs/runtime path => no GHCR',()=>{
+    const result=runScope(paths,title+'\n\nNonproduction API, operating auth OFF');
+    expect(result.status,result.stderr).toBe(0);
+    expect(result.values).toContain('publish=false');
+  });
+  test('existing CAD write, active Prisma migration, deploy or compose cannot be excluded',()=>{
+    for(const forbidden of [
+      'src/prisma/migrations/202610260002_g7_operational_auth/migration.sql',
+      'src/prisma/schema.prisma',
+      'src/app/api/cad-files/route.ts',
+      'src/app/api/cad-locations/[locationId]/current/route.ts',
+      'src/scripts/deploy.ts','src/docker-compose.yml',
+      'src/server/g7-operational/preflight.ts',
+      'src/tests/unit/not-allowlisted.test.ts',
+      '.github/workflows/pr-ci.yml',
+    ]){
+      const result=runScope(['src/server/g7-operational/preview-handler.ts',forbidden],title);
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toContain('G7-S3-2 GHCR exclusion disallowed path: '+forbidden);
+      expect(result.values).toBe('');
+    }
+  });
+  test('incorrect subject, even suffix/space, cannot pass or trigger GHCR',()=>{
+    for(const subject of [
+      title+' NOT-APPROVED',title+'-extra',title+' ',
+      '#109 | S3-2 Operational Auth/Admin API',
+      '#109 | S3-2 other change',
+    ]){
+      const result=runScope(['src/server/g7-operational/preview-handler.ts'],subject);
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toContain('G7-S3-2 exact squash subject required');
+      expect(result.values).toBe('');
+    }
+  });
+  test('existing S3-1/S2 title does not authorize S3-2 preview handler',()=>{
+    for(const subject of [
+      '#109 | S3-1 Operational schema and gates [G7-S3-1-NO-GHCR]',
+      '#109 | S2 private-evidence readiness [G7-S2-NO-GHCR]',
+    ]){
+      const result=runScope(['src/app/api/g7-operational/[...segments]/route.ts'],subject);
+      expect(result.status).not.toBe(0);
+      expect(result.values).toBe('');
+    }
+  });
+  test('normal runtime and version tags retain GHCR publish decision',()=>{
+    const normal=runScope(['src/app/api/cad-files/route.ts'],'#777 | regular feature');
+    expect(normal.status).toBe(0);
+    expect(normal.values).toContain('publish=true');
+    const tag=runScope(['src/server/g7-operational/preview-handler.ts'],title,'refs/tags/v0.99.1');
+    expect(tag.status).toBe(0);
+    expect(tag.values).toContain('publish=true');
+  });
+});
