@@ -36,6 +36,9 @@ function actorFromSession(db: IsolatedDb, tokenHash: string | null, now: number)
       session.must_change_password !== 0 || now < Number(session.issued_at) ||
       now < Number(session.last_seen_at) || now >= Number(session.expires_at) ||
       now - Number(session.last_seen_at) >= SESSION_IDLE_MS) return null;
+  const touched = db.prepare('UPDATE "AuthSession" SET last_seen_at=? WHERE token_hash=? AND revoked_at IS NULL AND last_seen_at<=?')
+    .run(now, tokenHash, now);
+  if (touched.changes !== 1) return null;
   const id = String(session.user_id);
   const roles = db.prepare('SELECT role FROM "UserRoleGrant" WHERE user_id=? ORDER BY role')
     .all(id).map(row => row.role as Role);
@@ -153,6 +156,13 @@ export function createG4IsolatedStore(db: IsolatedDb, faults: Faults = {}): G4St
           .get(change.affectedUserId, change.value));
         if (change.operation === 'grant' && exists ||
             change.operation === 'revoke' && !exists) throw new G4Failure('CONFLICT', 409);
+        if (change.kind === 'role' && change.operation === 'revoke' && change.value === 'Admin') {
+          const remaining = db.prepare(
+            "SELECT 1 FROM \"User\" u JOIN \"UserRoleGrant\" r ON r.user_id=u.id AND r.role='Admin' " +
+            "WHERE u.id<>? AND u.status='ACTIVE' AND u.must_change_password=0 LIMIT 1",
+          ).get(change.affectedUserId);
+          if (!remaining) throw new G4Failure('CONFLICT', 409);
+        }
         if (change.kind === 'site' &&
             !db.prepare('SELECT 1 FROM "CadSite" WHERE id=?').get(change.value)) {
           throw new G4Failure('ACCESS_DENIED', 403);
