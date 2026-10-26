@@ -1,5 +1,13 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #108 G6 — 수용 증거·일회용 Backup/Restore 격리 (2026-10-26)
+
+- [Issue108](out/Issue108.md), #102 ADR-051-R1과 G1~G5 선행 참조. DESIGN.md 없음 → Architecture/Decisions/Database/Operation 기준. 기존 공개 CAD GET/Viewer/원본 익명; 미래 POST/Current Editor+담당 Site, DELETE 동일 조건+기존 삭제 비밀번호 AND. Admin도 Site 자동 허용 없음.
+- src/scripts/g6-evidence.mjs는 **사내 비공개 매니페스트 정합성만** 점검, 실제 주소/Cookie/Secret/CAD/SHA/S3/로그를 출력하지 않음. 저장소 밖 절대경로·비심볼릭 링크·크기 제한. READY_FOR_OWNER_REVIEW는 **실 시험 PASS/Owner 승인 아님**. 모든 항목 NOT_RUN 예제 별도.
+- src/tests/unit/g6-evidence.test.ts는 상태 누락/불일치/개인정보 출력 차단, src/tests/integration/g6-backup-restore.test.ts는 **기존 CAD 6개 마이그레이션 합성 SQLite·두 Version/Current·local CAD/mock-S3**의 백업→격리 G1 fixture migration→손상 주입→실 복원을 점검. 실 원격 S3·Windows Nginx/PC 2대·운영 Backup/Restore는 **NOT RUN**.
+- 운영 Auth/API·Prisma/Schema/Migration·Nginx/Compose/.env/실 DB/CAD/S3/GHCR, Audit 물리 파기 활성화 0. #109 G7 별도 Owner Go/No-Go 및 G6 현장 증거 전 #108 OPEN/BLOCKED. 이번 요청은 리뷰/충돌·원장 정리와 PR CI **시작까지**이며 CI 성공·병합·배포/이슈 종료 아님.
+
+
 ## Issue #106 / PR #120 — 최초 CI 9개 실패 및 P1 감사 보완 (2026-10-26)
 
 - **실패 실증:** [PR CI 40252656906](https://github.com/planner77/layoutManager/actions/runs/40252656906) HEAD `53b75ca17190cd101689a3f10877adcb737ff37c`, Verify Job `121347711873` Unit/Integration **failure** (54 files: 53 passed/1 failed; 297 tests: 288 passed/9 failed). 기존 Typecheck/Lint 성공(경고 2개), Docker/Migration/Runtime Smoke Job `121347711740` success; Verify 이후 Build/E2E **SKIPPED**.
