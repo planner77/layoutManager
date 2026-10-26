@@ -1,5 +1,17 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## TC-MENU-EXT — #127 후속 요구·상단 메뉴 연계 회귀 계획 (2026-10-27, **미실행**)
+
+| TC | 검증 범위 | 합격 기준 |
+| --- | --- | --- |
+| TC-MENU-EXT-001 (요구 분석) | 새로운/변경된 Viewer 기능 Issue 샘플과 #37/#49/#55/#56/#65/#71/#73/#81/#82/#85/#88/#90/#91 추적 | 각 해당 이슈에 `상단 메뉴 연계`의 화면/정확한 그룹·아이템/실행·Drawer/상태·권한·disabled 사유/AC가 있고, 불필요한 상단 항목도 근거를 기록 |
+| TC-MENU-EXT-002 (그룹 명령) | Viewer `도면/보기/작업` 및 #56 JSON, #91 GLB/glTF, #65 Admin 항목 추가 시 | 상위는 메뉴를 실제 전개, item action/link/check/radio 동작, 빈/가짜 그룹·불필요한 상단 버튼 없음; 권한 이전 Admin Disabled/이유 |
+| TC-MENU-EXT-003 (Drawer·Canvas) | #49/#55 생성 회전, #71/#73 외곽선, #82/#85 메모 도구/트리, 우측 Memo/Outline Tree 전환 | 각 메뉴→올바른 Drawer·세부 조작, open/close 10회 후 canvas DOM identity/원본 GET/Worker/Manager lifecycle·Selection/Undo·visibility 불변; desktop/mobile/320px·200% 접근성 |
+| TC-MENU-EXT-004 (권한/렌더러) | Three↔dxf fallback·DWG, 미선택/대상 혼합, M2/G7/Type API 승인 전후, Session/Role 회수 | 실제 renderer/ready/capability와 checked·expanded·disabled 사유 일치; 미인가 API/직접 URL은 서버 거부, 임시 메모 공유/영속 Export 우회 없음 |
+| TC-MENU-EXT-005 (키보드/경계) | 그룹 Enter/Space/Arrow/Home/End/Esc/Tab, tooltip/메모 Search/복사 fallback/모달, CSS/native fullscreen | 한 Esc에 한 계층 닫힘, focus 복원/모달 trap, Canvas hit-test·도면/레이어/검색 회귀 0. #62 전역 운영 메뉴와 Viewer 그룹 혼동 없음 |
+
+**상태:** 위 항목은 **향후 해당 Issue 구현 PR에서 작성·실행할 Unit/Playwright/E2E 및 리뷰 체크리스트**이며 이 문서 변경만으로 테스트 실행/합격·현장 수용을 주장하지 않는다. #127 완료 당시의 실증 근거는 [TestReport](TestReport.md) U-ISSUES124-126-127-20261027, 후속 UI 정책은 [ADR-054](Decisions.md) 및 [Issues124-126-127](Issues124-126-127.md) 참조. 기존 자동 테스트를 삭제하거나 CI 미실행을 PASS로 대체 금지.
+
 ## Issues #124/#126/#127 검증 계획 (2026-10-26)
 
 [Issues124-126-127](Issues124-126-127.md)의 AC→TC 표가 신규 검증 기준. 구현 전 동일 synthetic fixture의 baseline screenshot/1440×900 높이·Canvas 면적 확보, 이후 responsive·keyboard·sticky/Drawers·failure injection 및 기존 Current/list/Viewer/selection/JSON/Fullscreen 회귀. typecheck/lint/unit+integration/build/E2E/legacy·최신 PR CI와 실제 Main GHCR Pair는 각각 증거를 기록. 미실행은 NOT RUN, #113 실 CAD/GPU와 G7 운영 수용은 별도.
