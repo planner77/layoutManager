@@ -1,5 +1,18 @@
 # 상세 요구사항
 
+## Issue #109 G7 S1 — Staging 구현 요구/검증 (2026-10-26)
+
+| ID | S1 구현 조건 | TC | 경계 |
+| --- | --- | --- | --- |
+| FR-P4-G7-S1-01 | Staging capability/운영 승인 ID·고정 digest/schema manifest·기본 OFF G7_AUTH_ENABLED, 별도 CAD_WRITE_CUTOVER gate·Linux tmp 경로 안전 검사 | TC-P4-G7-001~003,013~014 | 운영 route 불변 |
+| FR-P4-G7-S1-02 | G1~G4 세션·로그인/암호·Admin 단발 CLI, 8h/30m/3개 제한·revoke·Role/Site/Version/Grant/Audit 원자성 | TC-P4-G7-007~008 | Staging API만 |
+| FR-P4-G7-S1-03 | Staging 분리 DXF JSON/base64 Upload/Current/DELETE Editor+Site(삭제 기존 암호 AND); 서버 권위 Permission+DB 변경+Audit 단일 거래; GET 익명 | TC-P4-G7-004~006 | 기존 multipart API 교체 아님 |
+| FR-P4-G7-S1-04 | 독립 공식 Prisma Schema/Migration(CAD 6개+G7 1개)·FK/Unique, 같은 스냅샷 복구 E2E | TC-P4-G7-009~011 | 운영 migrator 불변 |
+| NFR-P4-G7-S1-01 | S1 테스트는 disposable DB/CAD만, #108 실 PC·S3 수용과 Owner GO별도; 신규 영속 API/Audit purge OFF | TC-P4-G7-012~015 | 운영 GO PENDING |
+
+[Issue109](Issue109.md), ADR-051-G7-S1. Staging 실행/CI 결과가 확인되기 전 PASS로 기록하지 않는다.
+
+
 ## Issue #109 G7 — 기본 OFF·승인·실복구 요구 추적 (2026-10-26)
 
 | ID | 목표 계약 | TestPlan TC | 현 단계 |

@@ -1,5 +1,13 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issue #109 G7 S1 — Staging 통합 코드 작성 / 실행 증거 구분 (2026-10-26)
+
+- **구현:** 기존 G1~G4 계약을 staging-only port로 사용, 기본 OFF G7 dual gate/manifest/리눅스 disposable DB 경로, 전용 Prisma schema·7 migrations 및 명시 배포 config, /api/g7-staging/[...segments] 로그인/암호·세션·Grant·Audit·격리 CAD DXF JSON/base64 upload/current/delete mirror, Admin 단발 CLI·독립 fixture 준비, rollback 시험 시나리오 작성. 기존 운영 `src/prisma`/CAD REST routes/Nginx/Compose/.env/실 DB/CAD/S3/운영 GHCR 변경 0.
+- **테스트 작성 vs 실행:** `TC-P4-G7-001~015` 가운데 staging 자동시험용 Unit/Integration 코드는 추가했지만, GitHub connector를 통해 원격 소스를 편집하므로 로컬 node_modules/Prisma/Typecheck/Vitest/Playwright/실 LAN을 실행하지 못했다. **로컬 전부 NOT RUN**. PR 생성 후 최신 HEAD PR CI의 실제 Run/Job 결과를 확인하지 않으면 PASS로 쓰지 않는다. 현재 테스트는 Staging formal migration과 격리 API·snapshot copy restore를 검증할 **계획된 실행**이며, 실 운영 G7 cutover/multipart 호환성·실 S3 복원·실 Windows Nginx E2E는 포함하지 않는다.
+- **Owner 게이트:** #108은 Owner 현장 수용 CLOSED이나 개별 원본 증거 ID·restore checksum은 여기서 독립 확인 불가. 본 S1 결과가 S2 Owner 운영 GO를 대체하지 않는다. #109/#96 OPEN/BLOCKED, 운영 활성화·GHCR 게시·PR 병합/Issue 종료는 이번 요청에서 제외.
+- **실패 원장:** 관측된 새 CI 실패/취소는 현재 0(시작 이전), 코드 검토·Staging DB 연동 위험은 [FailureLedger](FailureLedger.md)에 추적. 시험 실행 후 실패시 RUN/Job/Attempt/Step 출처와 원인·수정 결과를 추가한다.
+
+
 ## Issue #109 — G7 운영 활성화 설계·절차 준비 / 실제 실행 구분 (2026-10-26)
 
 - [Issue109](Issue109.md), ADR-051-G7-PLAN/Architecture/Database/Requirements/Operation/TestPlan/AGENTS/Issue96를 **문서 전용**으로 정렬. release G7 capability+App/Migrator pair와 Owner GO·`G7_AUTH_ENABLED`의 이중 게이트, 별도 write flag·권한·DB/CAD/S3 백업/실복구·롤백 절차를 설계했다. **이 단계는 코드 구현/기능 또는 운영 활성화가 아님**.

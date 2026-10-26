@@ -1,5 +1,14 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #109 G7 S1 — 단일 Staging 통합 구현 (2026-10-26)
+
+- #109는 **단일 브랜치/PR**에서 비운영 G1~G4 Auth/Session/Grant/Audit 서비스, 전용 Prisma 7 Schema/Migration, App Router 스테이징 API, Admin 1회 CLI, CAD 편집 모의경로·E2E를 통합한다. [Issue109](out/Issue109.md), [Operation](out/Operation.md) 기준.
+- **운영 안전 장벽:** 기존 `src/prisma/schema.prisma`/`src/prisma/migrations`/기본 `prisma.config.ts`, `src/docker-compose.yml`, 운영 Nginx/.env, 기존 CAD API GET/POST/PUT/DELETE/운영 DB/CAD/S3는 변경 0. `src/deploy/g7-staging/prisma.config.ts`와 별도 migration history를 **명시적으로 지정한 폐기 가능한 /tmp DB**에서만 실행. `/api/g7-staging/**`은 release/operation 승인과 정확한 staging 전용 경로를 모두 만족하지 않으면 404, CAD writes는 추가 flag 기본 OFF.
+- S1 Staging G7_AUTH_ENABLED/G7_CAD_WRITE_CUTOVER_ENABLED는 승인된 격리 시험에서만 true; 앱 배포/운영 인증·Audit purge 자동 ON 금지. `G7_OPERATION_APPROVAL=S1-STAGING-ONLY`는 Owner의 S2 운영 GO **아님**. 원본 CAD 익명 GET·Viewer 유지, 기존 쓰기 정책 변경 없음.
+- Staging POST는 **DXF 전용 제한된 JSON/base64 미러 API**이며 기존 Multipart `POST /api/cad-files`와 교체/완전 호환을 주장하지 않는다. G7 쓰기·감사 BEGIN IMMEDIATE 거래, Editor+Site·DELETE 레거시 암호 AND, 세션/권한 즉시 재검증; 별도 #98/#65/#83/#60 영속 API와 Audit 물리 purge 비공개 유지.
+- `src/tests/unit/g7-staging-gate.test.ts`, `src/tests/integration/g7-staging.test.ts` 작성. 실제 CI RUN/Job 확인 전 PASS 금지, 로컬 CLI/실 LAN/실 S3·배포는 NOT RUN. #108 Owner 수용은 확인됐지만 사내 원시 시험증거/복구 체크섬 미열람이며 #109/#96 OPEN/BLOCKED·운영 별도 GO 필요.
+
+
 ## Issue #109 G7 — 운영 활성화 설계 문서만 준비 (2026-10-26)
 
 - [Issue109](out/Issue109.md), [ADR-051-G7-PLAN](out/Decisions.md), [Operation](out/Operation.md), [TestPlan](out/TestPlan.md) 기준. G0~G5 #102~#107은 격리·Preview 범위에서 완료; G6 #108은 Owner의 직접 시험 정상 보고에 따라 **closed/completed**되었으며 공개 저장소에서 개별 현장 로그·비공개 증거 ID는 독립 확인되지 않았다. #109 및 #96은 **OPEN/BLOCKED**.

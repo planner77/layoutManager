@@ -1,5 +1,13 @@
 # Issue #109 — G7 운영 인증 활성화 설계 및 통제 배포·롤백 Runbook
 
+## S1 Staging 통합 구현 — 단일 PR, 운영 NO-GO (2026-10-26)
+
+- 기존 #109 설계/Runbook S0 완료 이후 **동일 #109 작업**에서 G1~G4 Stage adapter, 공식 분리 Prisma Schema+CAD 6개/G7 1개 Migration, Admin 명시 1회 CLI, release+operation 이중 gate/기본 OFF, App Router `/api/g7-staging/[...segments]`, 세션/Grant/Audit·격리 DXF JSON/base64 upload/current/delete mirror와 테스트 코드를 작성했다. 하위 이슈나 별도 기능 PR로 분할하지 않는다.
+- **운영 경계:** 실제 `src/prisma/**`·기본 migrator·`src/app/api/cad-files/**`/cad-locations/current, 운영 Nginx/Compose/.env/DB/CAD/S3 변경·활성화 0. Staging gate는 UID 소유 `/tmp/cad-g7-staging-*/fixture.sqlite`·전용 CAD·매니페스트·승인된 staging 값 모두 일치하지 않으면 404. 별도 CAD write flag도 기본 OFF. 신규 영속 Outline/Memo/Type/Logs/Audit purge 미승인으로 미노출.
+- **제약·증거:** Stage JSON/base64 DXF 등록은 실제 기존 multipart 업로드 API의 정식 교체가 아니며, stage manifest digest는 증거용 참조이지 OCI 서명/Owner 운영 GO가 아니다. 관련 코드/Unit·통합 TC를 작성했지만 로컬 Prisma/Vitest/Playwright/사내 PC/S3는 NOT RUN; PR CI 실행 결과는 Run/HEAD로만 PASS 처리. #108 G6 Owner 수용 완료, 실 개별 증거 ID 독립 열람 못함. G7-AC1~4 미완, #109/#96 OPEN/BLOCKED.
+- **다음 게이트:** 단일 S1 PR HEAD CI → Stage QA/실행 출처 기록 → S2 비공개 증거/실 릴리스 digest·Schema·관리 SOP 확인 및 Owner **별도 Go/No-Go** → 승인된 경우에만 S3 운영 활성화/롤백. 이번 요청은 PR CI **시작**까지, 병합/GHCR/운영 ON/이슈 종료 없음.
+
+
 > **2026-10-26 / DESIGN ONLY / #109 OPEN-BLOCKED / 운영 NO-GO.** 본 문서는 실행 승인서가 아니다. G6 [#108](https://github.com/planner77/layoutManager/issues/108)은 Owner의 현장 시험 이상 없음 보고로 closed/completed 처리되었지만, 개별 실제 시험 로그·DB/CAD/S3 복원 원본 체크섬·비공개 증거 ID는 여기서 독립 확인되지 않았다. G7의 운영 증거 확인 및 Owner **별도 명시적 Go/No-Go** 이전에 운영 API·Auth·정식 Prisma/DDL·Nginx/Compose/.env·실 데이터 또는 기존 CAD 쓰기 권한을 전환하지 않는다.
 
 ## 1. 정책 기준과 현재 상태

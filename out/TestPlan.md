@@ -1,5 +1,13 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #109 G7 S1 — Staging 구현/자동시험 추적 (2026-10-26)
+
+- **TC-P4-G7-001~003/013~015:** `g7-staging-gate.test.ts`로 기본 OFF/오타 flag·staging-only release manifest·실 DB/Storage 경로·symlink 거부, 별도 CAD write gate를 검사. PR diff는 운영 `src/prisma/**`/기존 CAD API/Compose/Nginx/.env 변경 **0**을 확인해야 PASS.
+- **TC-P4-G7-004~011:** `g7-staging.test.ts`가 정식 Staging Prisma migrate deploy, 최초 Admin·비밀번호 변경/로그인 세션/Grant, Editor+Site DXF 업로드·익명 GET·Current·삭제 암호 AND, DB Audit 원자성/SQLite FK, backup/restore 후 bytes·SHA 동등성을 시험하도록 설계. Staging JSON/base64 DXF 미러 API는 기존 Multipart Upload와 다른 진입점이므로 실 업무/API cutover 동등성을 선언하지 않는다.
+- **TC-P4-G7-012:** 사내 PC 2대·PROD Nginx/DEV direct·실 S3/DB·CAD 및 원시 Restore 로그는 #108 Owner 보고 수용(세부 비공개 증거 ID 독립 미열람); 본 S1 CI의 synthetic staging 시험과 별개.
+- `src/deploy/g7-staging/prisma/schema.prisma`/7 migration을 현재 운영 DB에 적용하는 명령은 테스트에 포함시키지 않는다. Secret 파일, 실제 CAD/S3 URL·내용은 Git/CI 저장 금지. 실패는 Run/Job/HEAD/원인/조치로 [FailureLedger](FailureLedger.md)에 누적. 테스트 코드 작성만으로 PASS 불가.
+
+
 ## Issue #109 G7 — 기본 OFF·Owner GO·실복구 운영 검증 계획 (2026-10-26)
 
 **현재 TC-P4-G7-001~015 전부 G7 범위에서는 NOT RUN / #109 OPEN-BLOCKED.** #108 G6은 Owner 현장 시험 정상 보고로 CLOSED/COMPLETED이나 비공개 개별 시험 로그·증거 ID는 여기서 독립 확인되지 않았다. 본 G7 TC 목록의 별도 통합/운영 수용을 자동 PASS로 처리하지 않는다. 시험 작성과 실행은 구별한다. #108 G6 현장 evidence와 Owner 별도 승인 없이 운영 기능 활성화 테스트를 실 DB에서 수행하지 않는다.

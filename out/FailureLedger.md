@@ -1,5 +1,12 @@
 # PR/Main CI 실패 원장
 
+## Issue #109 G7 S1 — Staging 단일 PR 최초 CI 전 위험/검증 분리 (2026-10-26)
+
+- **시작 기준:** #109 S0 문서 PR #123은 최종 [PR CI 40264751029](https://github.com/planner77/layoutManager/actions/runs/40264751029) 성공/병합 완료. 이번 S1은 단일 브랜치 `feat/issue-109-g7-staging-integration`, 별도 코드·검증 HEAD. **S1 PR CI 실패·취소는 이 기록 작성 시점 아직 관측되지 않았으므로 실패를 창작하지 않음.** 기존 누적 다른 이슈 실패는 보존.
+- **기술 위험/대응 (관측 실패 아님):** (1) 운영 migrator가 `src/prisma/migrations` 자동 적용 → Stage 전용 `src/deploy/g7-staging/prisma.config.ts`·독립 7 migrations로 차단, 운영 Schema/Compose 미수정. (2) G1~G4 fixture 테스트 전용 동작을 Stage에 이식 → Stage 서비스·원자 트랜잭션/세션/Grant·Audit·Admin 단발과 격리 Root 필수. (3) Release manifest의 두 digest는 Stage 후보 선언 참조일 뿐 실제 GHCR OCI 서명 검증 아님 → 운영 S2에서 독립 증빙 필요. (4) Staging JSON/base64 DXF 쓰기 미러가 운영 Multipart 라우트와 동일하지 않음 → 운영 Cutover PASS 주장 금지, S2/S3 별도 대조. (5) 스테이징 DB/파일과 운영 데이터 혼합 → UID/tmp prefix/realpath 및 DB URL·Storage 고정, 미일치 404/거부. (6) Audit 정리/실 CAD 파일 삭제 → 미승인 자동 purge/운영 API 연결 금지.
+- **재검증:** TC-P4-G7-001~015와 `prisma migrate deploy --config deploy/g7-staging/prisma.config.ts`는 disposable DB를 대상으로 CI에서 실행할 예정. 새 PR CI 시작만으로 합격 판정 금지. 실제 실패시 HEAD/Run/Attempt/Job/Step·로그 출처·시도/조치를 여기 추가한 뒤 후속 HEAD 재검증. 검증 성공 이후에도 실제 운영 GO 없이 병합·GHCR·Auth ON/Prisma/Nginx/Compose/실 DB 조작·Issue 종료 금지.
+
+
 ## Issue #109 / PR #123 — P1 필수 문서 인덱스 누락·#108 Main 선행 정렬 및 재검증 (2026-10-26 KST)
 
 - **최초 PR CI 실증(실패 아님):** [PR #123](https://github.com/planner77/layoutManager/pull/123) 구 HEAD `eb14fca4417658c6224c5d9c8ce59170f1cdb241`의 [Run 40258627540](https://github.com/planner77/layoutManager/actions/runs/40258627540) `completed/success`. Verify [Job 121365862902](https://github.com/planner77/layoutManager/actions/runs/40258627540/job/121365862902) 및 Docker [Job 121365863147](https://github.com/planner77/layoutManager/actions/runs/40258627540/job/121365863147) 모두 성공. 이 HEAD 성공은 이후 수정·정렬 HEAD에 소급 적용하지 않음. **이번 PR에서 CI 실패/취소는 현재 관측되지 않음.**

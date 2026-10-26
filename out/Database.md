@@ -1,5 +1,13 @@
 # Database Schema — 단일 기준 문서
 
+## Issue #109 G7 S1 — Staging 전용 정식 Prisma 계층 (2026-10-26)
+
+- **정식 Staging Migration, 운영 OFF:** `src/deploy/g7-staging/prisma.config.ts`는 config 파일 기준 상대 경로의 Staging Schema·Migration만 사용한다(Prisma 7). 기존 CAD 6개 Migration의 동일 내용 및 `202610260001_g7_staging_auth`가 순서대로 적용될 일회용 SQLite에 별도 Prisma migration history 기록. **운영 `src/prisma/schema.prisma`/migrations와 운영 Migrator/실 DB 불변**.
+- G1 User/Role·Site·SpecialGrant/Session/Audit/RecoveryNonce SQL, G3LoginAttempt, 감사 안전 Site FK/append-only, 3-session trigger, 365일 cutoff(실 purge 금지)를 Staging Schema에 투영. CAD_CHANGED/UPLOADED/DELETE Staging Audit action은 target_kind VERSION+DB Site 필수, 업무 변경+Audit는 BEGIN IMMEDIATE 내 일괄 commit/rollback. 삭제 암호 검사는 거래 직전 강도 높은 KDF 후 거래 내 해시·Session/Scope 재검증.
+- `G7_STAGING_ROOT`가 Linux uid 소유 `/tmp/cad-g7-staging-*/`이고 DB 이름 `fixture.sqlite`·`DATABASE_URL` 일치·CAD 별도 경로·Release manifest 일치인 경우만 API를 오픈한다. 운영 파일 복사/임의 fixture 마이그레이션 직접 실행 금지.
+- 신규 영속 Outline/Memo/Type/Logs나 Audit purge, 실제 운영 Migration·S3 접근·Origin/SHA 원본 변경 0. #109 Owner S2 운영 GO 이전 배포 불가. [Issue109](Issue109.md), [Operation](Operation.md).
+
+
 ## Issue #109 G7 — 정식 Migration, 동시점 백업·롤백 경계 (2026-10-26)
 
 - G1 `src/tests/fixtures/auth-g1/{migration.sql,schema.prisma}`는 **합성 DB 전용**, 운영 `src/prisma/schema.prisma`/정식 migrations에 아직 배선되지 않았다. G7 후속 코드 PR에서 정식 User/Session/Role/Site/SpecialGrant/Audit/Nonce + 기존 CAD 테이블 FK/Unique·Audit append-only·Version→Site 계약의 동등성을 검토·시험해야 한다. 현 문서 PR은 DDL/DB 변경 0.

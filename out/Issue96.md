@@ -1,5 +1,10 @@
 # Issue #96 — 로컬 계정·세션·Role/Site·감사 공통 기반
 
+## #109 S1 — 단일 Staging 통합 구현·운영 OFF (2026-10-26)
+
+#109에서 Staging 별도 Prisma schema/history·App Router 미러 API·G1~G4 로그인/Session/Role/Site/Grant/Audit/단발 Admin·동일 DB 거래 CAD DXF staging 쓰기 검증을 단일 PR로 작성한다. 운영 `src/prisma`/마이그레이터·CAD API·Nginx/Compose/.env/실 DB/CAD/S3는 **변경 0**, `G7_AUTH_ENABLED` 및 CAD write flag 기본 false, staging 격리 Root·manifest 승인 없이는 404. #108 Owner 수용과 G7 별도 GO는 다르며 S1 시험은 실제 운영 승인이나 #96 AC 완료가 아니다. #109 및 #96 OPEN/BLOCKED 유지.
+
+
 ## G7 #109 — 기본 OFF·활성화·복구 절차 문서 준비 / 운영 BLOCKED (2026-10-26)
 
 [Issue109](Issue109.md) 및 ADR-051-G7-PLAN에서 검증된 G7-capable App/Migrator pair+Schema(**release gate**)와 별도 Owner GO·`G7_AUTH_ENABLED`(**operation gate**, 기본 OFF), 별도 `G7_CAD_WRITE_CUTOVER_ENABLED`(OFF), 기존 익명 CAD GET 유지/업무 write 인증, 동일 snapshot DB/CAD/S3 실복원·롤백·증거 양식/TC를 **문서 설계**했다. 지금 플래그·실 Auth Route/Prisma/Proxy/Compose는 **미구현/비활성**.
