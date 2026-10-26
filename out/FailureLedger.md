@@ -1,5 +1,12 @@
 # PR/Main CI 실패 원장
 
+## Issue #108 G6 — PR CI 시작 전 누적 원장·실증 미수행 기준선 (2026-10-26 KST)
+
+- **실패 관측:** Issue #108 신규 구현 브랜치 `feat/issue-108-g6-evidence-rehearsal`의 PR CI Run/Job 실패나 취소는 이 문서 작성 시점 **아직 관측되지 않음**. 원장의 기존 다른 이슈 실패·취소/재검증 기록은 아래 모두 보존한다. Run 출처 없는 실패를 창작하거나 기존 실패 기록을 성공으로 고쳐 쓰지 않는다.
+- **구현/잠재 위험(실패와 구분):** G6 증거 완결성 도구, 일회용 실제 6 CAD Migration SQLite·합성 local CAD/mock-S3 백업→격리 G1 Fixture migration→복원 검증과 19개 NOT_RUN 템플릿. 실 S3/운영 복원·실 LAN PC 2대·보호 Auth Route E2E **NOT RUN**, 기존 #107 GHCR/Preview·G1/2/3/4 합성 검증을 현장 PASS로 전용하지 않음. 가짜 EV ID, snapshot 불일치, 앱/마이그레이터 버전 불일치, 비공개 데이터 출력, 운영 Auth/Prisma 활성화는 TC-P4-G6-001~007과 운영 OFF 계약으로 차단하도록 설계했으나 **신규 HEAD 실행 결과 미확인**.
+- **후속 처리:** 신규 PR 생성→리뷰 스레드·Main 충돌 확인→`pull_request.opened` PR CI 시작, Run/HEAD/attempt/Job을 관측할 때만 누적 기록 추가. Typecheck/Vitest/Build/E2E/Docker 테스트 PASS는 실행 증거 전 NOT VERIFIED. 사용자 요청에 따라 CI **시작 확인 후 모니터링 생략**, 병합·GHCR·운영 배포/이슈 종료 없음. 운영 API/Prisma/Compose/Nginx/.env·실 CAD/DB/S3/감사 물리 purge 변경 0, G7 #109 Owner Go/No-Go 전 OFF. [Issue108](Issue108.md).
+
+
 ## Issue #106 / PR #120 — 최초 PR CI Unit/Integration 실패 및 두 P1 리뷰 수정 (2026-10-26 KST)
 
 - **관측 Run:** [40252656906](https://github.com/planner77/layoutManager/actions/runs/40252656906), attempt `1`, PR `#120`, HEAD `53b75ca17190cd101689a3f10877adcb737ff37c`, event `pull_request.opened`, `completed/failure`. Verify [Job 121347711873](https://github.com/planner77/layoutManager/actions/runs/40252656906/job/121347711873) **failure**; Docker [Job 121347711740](https://github.com/planner77/layoutManager/actions/runs/40252656906/job/121347711740) **success**.
