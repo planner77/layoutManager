@@ -123,6 +123,26 @@ jobs:
             publish=false
             reason="Explicit approved G7 S2 private-evidence readiness only: skip GHCR publishing"
           elif [[ "$GITHUB_REF" == "refs/heads/main" &&
+                  "$COMMIT_SUBJECT" == "#109 | S3-1 Operational schema and gates [G7-S3-1-NO-GHCR]" ]]; then
+            # S3-1 prepares operational TYPES and a DISPOSABLE migration candidate.
+            # Explicit, reviewed paths only; production migration history remains unchanged.
+            for file in "${changed[@]}"; do
+              case "$file" in
+                .github/workflows/docker-publish.yml|AGENTS.md|out/Architecture.md|out/Database.md|out/Decisions.md|out/FailureLedger.md|out/Issue109.md|out/Operation.md|out/Requirements.md|out/TestPlan.md|out/TestReport.md|src/prisma/schema.prisma|src/deploy/g7-s3/README.md|src/deploy/g7-s3/prisma.config.ts|src/deploy/g7-s3/prisma/migrations/migration_lock.toml|src/deploy/g7-s3/prisma/migrations/202609070001_locations/migration.sql|src/deploy/g7-s3/prisma/migrations/202609090001_description/migration.sql|src/deploy/g7-s3/prisma/migrations/202609110001_delete_password/migration.sql|src/deploy/g7-s3/prisma/migrations/202609110002_delete_invariants/migration.sql|src/deploy/g7-s3/prisma/migrations/202609110003_drawing_name/migration.sql|src/deploy/g7-s3/prisma/migrations/202610150001_master_hierarchy/migration.sql|src/deploy/g7-s3/prisma/migrations/202610260002_g7_operational_auth/migration.sql|src/server/g7-operational/preflight.ts|src/tests/unit/g7-s3-operational-gate.test.ts|src/tests/integration/g7-s3-operational-migration.test.ts|src/tests/integration/auth-g1.test.ts|src/tests/integration/auth-g2.test.ts|src/tests/integration/auth-g3.test.ts|src/tests/unit/g7-staging-ghcr-guard.test.ts)
+                  ;;
+                *)
+                  echo "::error::G7-S3-1 GHCR exclusion disallowed path: $file" >&2
+                  exit 1
+                  ;;
+              esac
+            done
+            publish=false
+            reason="Approved G7 S3-1 schema/type and disposable migration candidate only: skip GHCR"
+          elif [[ "$GITHUB_REF" == "refs/heads/main" &&
+                  "$COMMIT_SUBJECT" == "#109 | S3-1"* ]]; then
+            echo "::error::G7-S3-1 exact squash subject required" >&2
+            exit 1
+          elif [[ "$GITHUB_REF" == "refs/heads/main" &&
                   "$COMMIT_SUBJECT" == "#109 | S2 "* ]]; then
             echo "::error::G7-S2 exact squash subject required" >&2
             exit 1
@@ -140,7 +160,7 @@ jobs:
             echo "- Ref: $GITHUB_REF"
           } >> "$GITHUB_STEP_SUMMARY"
           if [[ "$publish" == "false" ]]; then
-            # Scope-validated no-GHCR: docs-only or exact #109 S1/S2 exception.
+            # Scope-validated no-GHCR: docs-only or exact #109 S1/S2/S3-1 exception.
             # Functional tests must pass on the final PR HEAD before merge.
             test -s .github/workflows/pr-ci.yml
             test -s .github/workflows/docker-publish.yml
