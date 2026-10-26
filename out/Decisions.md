@@ -1,5 +1,14 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-051-G7-S2 — Owner 비반출 수용과 Release-specific S3 안전 경계 (2026-10-26)
+
+1. 사용자 환경 제약: **내부 시험 결과를 외부 제출할 수 없다.** Owner S1 수용·S2 준비 승인은 존중하되, 사내 실 DB/CAD/S3/네트워크 복구나 OCI digest를 공개 GitHub에 기재·추정·합성하지 않는다. 실행자 서명·증거 원본은 내부에 보존하고, 공개는 Owner 진술/비민감 상태만 허용. `G7_S2_PRIVATE_ATTESTATION` 오프라인 도구의 `READY_FOR_OWNER_REVIEW`는 실제 현장 PASS/실행 GO가 아니다.
+2. **정식 운영 CAD Cutover 후보:** 기존 Multipart·Current·DELETE API는 기본 OFF인 G7 three-state(legacy/blocked/protected)로 가드. Auth 요청 후 오류/권한/세션/Scope 불일치에서는 익명 쓰기로 fallback 금지, Reader·무Site Admin 쓰기 불가. 작업·감사 같은 Prisma 거래, 삭제 기존 암호 AND. 기존 익명 CAD GET/Viewer는 유지.
+3. **물리 스키마 변경 분리:** 클라이언트 Prisma schema에 G7 모델을 추가하되 기존 default migrations·migrator는 절대 자동 변경하지 않는다. G7 별도 formal migration은 disposable dry-run과 release-specific S3 Owner GO가 모두 검증된 explicit CLI에서만. `G7_S3_GO`/Owner GO manifest·출처/스키마/immutable digest pair/동일 snapshot 및 시간/작업자 불변 식별 없이는 운영 기능 404 또는 쓰기 blocked.
+4. **S3 미승인:** 현재 S2는 준비/코드 시험 단계. GHCR 이미지 게시, Source/DB·CAD·S3/Compose/Nginx/.env 실제 수정, 인증 활성화, 자동 Audit 파기 및 #109/#96 종료는 하지 않는다. 위험 수용/승인 범위를 S2 선언만으로 임의 확장하지 않는다.
+
+
+
 ## ADR-051-G7-S1-R2 — 잘못된 제목·운영 DB Migration의 사전 차단 (2026-10-26)
 
 - [PR #125](https://github.com/planner77/layoutManager/pull/125) P1 #4374313158/3165/3173 교정: GHCR 건너뛰기는 커밋 메시지 **첫 줄의 정확한 승인 제목**에만 적용(본문 허용), 비슷한 제목은 Main CI 오류 종료. 비허용 변경 경로에서는 `echo >&2`/exit 1을 유지한다. Unit Test는 stdout/stderr와 부정 제목을 검증한다.

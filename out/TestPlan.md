@@ -1,5 +1,17 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #109 S2 운영 전환 구현·프라이빗 릴리스 증거 계획 (2026-10-26)
+
+- **TC-G7-S2-01:** 기존 CAD Multipart `register`, Current, Version DELETE 기능은 `G7_OPERATION_S3_GO` 없음=legacy, 잘못된/만료·부분 승인=blocked, release-specific GO/Write flag/Auth+세션/CSRF/Editor+Site=protected. 기존 GET/Viewer/다운로드 익명. 기존 S1 staging JSON/base64 route와 별도.
+- **TC-G7-S2-02:** G7 Prisma TransactionClient에서 User ACTIVE·MustChange FALSE·발급/유휴/절대 Session·Role/SiteGrant/Version→Site 재조회; Change+Audit INSERT 둘 다 commit 또는 둘 다 rollback. Reader·타 Site·회수된 Token/무 Site Admin 거부, DELETE 기존 scrypt 비번 AND, StorageCompensation/DeletionJob 불변.
+- **TC-G7-S2-03:** `g7-operational-gate.test.ts`는 Private GO 0600/UID/유효시간·두 OCI digest/self-assert source/backup snapshot/승인 범위 미일치 거부·세 단계 mode 검증. `g7-operational-api.test.ts`는 사내 실 로그인 자료가 아닌 합성 DB에서 G3/G4 Cookie/CSRF·Admin Grant 확인. `g7-operational-browser-auth.test.ts`는 운영 스위치 OFF에서 요청 추가 0/ON 인증 우선.
+- **TC-G7-S2-04:** `g7-operational-cad.test.ts`는 합성 CAD와 Staging Auth DDL을 갖춘 **임시 SQLite**에서 기존 Prisma API Register/Current/DELETE의 Audit 성공, 무Role/무Site/세션회수 거부, Audit 트리거 실패 주입의 DB 변경/삭제 Job 롤백을 검증.
+- **TC-G7-S2-05:** `g7-s2-evidence.test.ts`는 PRIVATE 증거 원본 없음/FAIL/NOT_RUN/다른 Snapshot/임의 ID 차단. `g7-s2-restore-audit.test.ts`는 합성 SQLite online snapshot 형태·합성 CAD/S3추출 bytes의 동일 SHA 및 Current/Version과 오염·교차 snapshot 차단. `READY_FOR_OWNER_REVIEW`는 **실 복구 PASS나 S3 GO 아님**.
+- **TC-G7-S2-06:** G7 DDL은 **기존** `src/prisma/migrations`/기본 Migrator에 포함되지 않고 `deploy/g7-operational/prisma.config.ts` CLI에서만 경로 검사·명시 대상 선택. 기본 LIVE DB·Compose/Nginx/.env·GHCR 이미지/태그·Actual S3 접근/Physical Audit purge **변경 0**. 사내 실 PC·S3 provenance/복원·고정 릴리스 digest·Owner 구체화 Go/No-Go는 증거 제출 불가→코드 검증 결과와 독립으로 NOT VERIFIED 유지.
+- 새 PR HEAD의 Typecheck/Vitest/E2E/Docker 및 Codex 리뷰·충돌은 실제 Run/Job/코드리뷰 상태 확인 후 기록한다. 테스트 코드 존재를 성공 근거로 사용하지 않는다. Issue #109/#96 OPEN/BLOCKED, 운영 GO 미승인.
+
+
+
 ## Issue #109 / PR #125 — P1 실패 재발 방지 및 Staging Prisma CLI 보호 TC (2026-10-26)
 
 - **TC-P4-G7-CI-001:** [실패 Run 40275956996](https://github.com/planner77/layoutManager/actions/runs/40275956996) Verify의 `tests/unit/g7-staging-ghcr-guard.test.ts` Assertion은 거부 진단 메시지를 stderr로 잘못 예상한 **단일 Test 실패**. GitHub Actions stdout/stderr 구분과 Bash exit 1을 일치시키고 재검증한다. Docker Job 성공, Verify 이후 E2E skipped는 독립 상태로 유지한다.

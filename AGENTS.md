@@ -1,5 +1,16 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #109 / S2 — 운영 Cutover 후보 코드·사내 비반출 증거 도구 (2026-10-26)
+
+- **Owner 선언:** #109 S1 수용 / S2 준비 승인 의사는 접수됐으나 **S3 Release-specific GO·현장 실증 확인은 별개**. 사용자 사내 증거 외부 반출 불가. 사내 자료·실 IP/계정/Secret/DB/CAD/S3 객체/원본 로그를 GitHub/CI에 게시하지 않는다. 제출 불가한 증거를 임의 PASS/EV ID로 생성하지 않으며 사용자 자체 확인·사내 보관·비식별 상태만 기록.
+- **코드 후보:** `src/server/g7-operational/{gate,cad-guard,sqlite}.ts`, `src/app/api/g7-operation/[...segments]/route.ts`, `src/prisma/schema.prisma`의 Auth 클라이언트 모델, 기존 CAD POST/Current/DELETE의 Session+Editor/Site+Audit 동일 Prisma 거래, 헤더/login UI/CSRF 연결. 일반 CAD GET/Viewer는 익명 유지. 신규 Outline/Memo/Type/Logs/물리 Audit purge 영속 API는 비노출.
+- **운영 DDL 안전:** `src/prisma/migrations/**`에 인증 Migration **추가 금지**; 일반 `src/scripts/deploy.ts`/Compose는 기존 6개만 배포. 별도 `src/deploy/g7-operational/prisma.config.ts`와 이력은 `S2_DISPOSABLE_DRY_RUN` 시 G7 Stage temp gate, `S3_RELEASE_APPROVED` 시 Owner GO manifest+스냅샷/명시 ACK를 통과해야만 Prisma SQL 대상이 된다. `prisma db push` 및 실 운영 DB를 임의 시연에 사용 금지.
+- **운영 기본 게이트:** 유효한 사내 Owner GO manifest(UID 0600·GO ID/24h·source SHA/두 App+Migrator digest/rollback pair/원본 EV ID/snapshot/대상)와 `G7_S3_GO=true`·`G7_AUTH_ENABLED=true`·릴리스 capability가 모두 없으면 Auth API 404. 기존 CAD 쓰기는 G7 시도 **전** 기존 동작, 부분/만료/오설정 후에는 **Blocked**, 모든 유효 승인+독립 `G7_CAD_WRITE_CUTOVER_ENABLED=true`에서만 보호된 쓰기. 보안/정합성 실패시 기존 익명 쓰기로 fallback 금지. 실제 GO를 실행하거나 승인하지 않는다.
+- **롤백/증거:** `src/scripts/g7-s2-evidence.mjs`(사내만 보관하는 PASS/FAIL/NOT_RUN/EV/SNAPSHOT 검사, 결과 코드만 출력) 및 `g7-s2-restore-audit.mjs`(동일 시점 SQLite online backup·local CAD·사내 S3 추출 복원 bytes/Current/Version 비교, read-only). 합성/자체 진술은 실 복구나 출처 검증을 대체하지 않는다. `src/deploy/g7-operational/README.md`·G7 TestPlan 기준.
+- **배포 통제:** 본 작업은 #109 S2 **소스/검증/가이드 준비 PR**이며 원격 GHCR 게시·기존 버전/Latest 태그 이동·PR 병합·실 운영 Auth/Prisma/Compose/Nginx/.env/DB/CAD/S3 변경·#109/#96 종료 금지. PR CI 실패 시 FailureLedger 누적 및 재검증. 승인된 별도 S3 실행 패키지 전 운영 NO-GO.
+
+
+
 ## Issue #109 / PR #125 — PR CI Unit 실패 및 P1 3건 수정, 운영 미활성 (2026-10-26)
 
 - **실패:** [PR CI Run 40275956996](https://github.com/planner77/layoutManager/actions/runs/40275956996), HEAD `818264afb8809ccf0a3e09262e1a09054fd43004`. Verify Job `121418632923` Unit/Integration 313 중 1 실패(59 파일 중 1), Docker `121418632714` 성공. Typecheck/Lint 성공, 이후 Build/E2E SKIPPED. 원인: GHCR 비허용 경로 거부는 exit 1인데 `echo`는 stdout, Unit은 stderr를 예상. [FailureLedger](out/FailureLedger.md) 보존, 새 HEAD CI 실행 전 재검증 미확인.

@@ -1,5 +1,18 @@
 # 운영·환경설정 초안
 
+## #109 S2 운영 Cutover 소스 완성·비반출 증거 및 S3 실행 HOLD (2026-10-26)
+
+**지금은 실제 실행하지 않는다.** 사용자 사내 시험 결과는 외부 제출 불가. Owner S1 수용/S2 준비 승인 후 코드·문서·오프라인 검증 도구를 구현하되, **출처 특정 release-specific S3 Owner GO/실 복원 전 운영 스위치 ON·DB DDL·Compose/Nginx/.env·실 CAD/S3·GHCR 릴리스 작업을 금지**한다. 별도 [G7 운영 준비 README](../src/deploy/g7-operational/README.md)를 참조한다.
+
+1. **S2 격리 실습:** 일회용 `/tmp/cad-g7-staging-*/fixture.sqlite` 준비+고정 앱 후보 label과 Stage-only GO를 설정하고 `G7_MIGRATION_MODE=S2_DISPOSABLE_DRY_RUN npx prisma migrate deploy --config deploy/g7-operational/prisma.config.ts`로 G7 Auth SQL 7개 Migration을 **격리 DB**에만 적용한다. 기존 `npm run db:deploy`, 일반 `prisma migrate dev/db push`로 운영 DB를 만지지 않는다.
+2. **보호된 운영 코드 (비활성 상태):** `G7_S3_GO` 등 운영 Gate 미설정 시 신규 Auth/Admin/Grant/Audit Route는 404. `G7_AUTH_ENABLED`/cutover 불일치·GO 만료·잘못된 데이터베이스에서는 기존 Multipart/Current/DELETE 쓰기를 fail-closed. GO 시나리오와 별도 write flag 승인 후에만 서버 보존 Cookie·CSRF를 사용하고, DB 현재 Session/Role/Site/Version을 CAD 변경+Audit 동일 Prisma 트랜잭션에서 조회한다. 기존 익명 CAD GET/Viewer/원본 다운로드는 불변.
+3. **사내 비반출 증거:** `src/deploy/g7-operational/s2-evidence.template.json`를 사내 Git 외 0600 파일에 복사하고 항목별 PASS/FAIL/NOT_RUN/사내 실제 EV ID, Snapshot/Source·이미지 pair를 입력한다. `node src/scripts/g7-s2-evidence.mjs /absolute/private/manifest.json`은 개수/원인 코드만 출력한다. `s2-restore.template.json`은 operator가 실제 SQLite **online backup**/CAD/S3 추출 파일의 **같은 snapshot** 소스·복원 바이트를 사내에서 제공할 때 `g7-s2-restore-audit.mjs`로 로컬 read-only 비교한다. 결과 `READY_FOR_PRIVATE_OPERATOR_REVIEW`도 **원격 S3 복원 출처 증거가 아님**; 그 증거는 사내에 별도 보존, 외부 제출 필요 없음.
+4. **S2 승인 패키지 남은 외부 미확인:** 실제 App/Migrator 두 SHA256 OCI digest·source commit·rollback 호환 pair, 운영 정식 Migration+전후 FK/Current/Version/SHA, 동일 snapshot의 실제 DB/CAD/S3 Restore, 사내 PC 2대 Nginx/DEV E2E, Admin Secret(0600)·Audit retention/purge 보류 SOP·중단·복구 담당자/기간. 실제 완료를 확인하지 않은 것은 NOT VERIFIED, PASS/EV ID 창작 금지.
+5. **S3 정식 GO 이후의 미래 절차(지금 금지):** 공개 이슈/코드가 아닌 권한 있는 사내 UID 소유 0600 `G7_OPERATION_MANIFEST_PATH`에 **GO 결정·유효시간 최대 24h·snapshot/target DB/CAD·배포 pair/rollback pair·실 증거 ID 3개 이상·작업자/복구 담당·기준 Source**를 명시하고 별도 `G7_S3_GO`를 설정. 쓰기 정지→동일 snapshot 실제 백업/실복구 확인→`G7_MIGRATION_MODE=S3_RELEASE_APPROVED` + ACK + Snapshot ID 확인 후 독립 Prisma CLI→Auth ON(Write OFF) 검증→관리자 단발 초기화/복구→독립 Write ON→현장 사용자 수용. 실패 시 모든 쓰기 중지, GO 회수/세션 폐기, **이전 App+Migrator/DB/CAD/S3를 한 snapshot으로 함께 복원**, Source/SHA/Version/Current/삭제 비번 해시/원격 바이트 일치, Owner 재결정 전 정상 가동 금지. 구 App+신 Schema 혼용/자동 다운 Migration 금지.
+6. 본 작업은 코드·로컬 테스트 + 검증 방법까지만. 내부 시험 결과를 제출하지 않아도 사내 Owner가 원본을 보유·승인할 수 있지만 **그 사실을 실제 완료로 추측해 공개 이슈에 기록하면 안 된다**. 운영 GO/실행/이슈 종료와 독립.
+
+
+
 ## Issue #109 / PR #125 P1 — Prisma 대상 보호 및 GHCR 정확 제목 운영 절차 갱신 (2026-10-26)
 
 - **Staging Prisma 실행 순서 변경:** 기존 Staging README의 "루트/URL만 먼저 설정하고 Migration 실행" 방식은 더 이상 허용하지 않는다. `g7-staging-prepare.ts`가 만든 전용 `/tmp/cad-g7-staging-*/fixture.sqlite`를 확인하고 `G7_STAGING_ROOT`, `DATABASE_URL`, `G7_STAGING_DATABASE_URL`, `CAD_STORAGE_PATH`, `G7_STAGING_ORIGIN`, `G7_STAGING_ONLY=true`, `G7_RELEASE_CAPABILITY=G7-S1-STAGING-V1`, `G7_OPERATION_APPROVAL=S1-STAGING-ONLY` 및 `G7_AUTH_ENABLED=true`(격리 Staging에서만)를 **Prisma CLI 시작 전에 함께 지정**해야 한다. 실제 명령: `npx prisma migrate deploy --config deploy/g7-staging/prisma.config.ts`. Gate 검증 실패면 `G7_STAGING_PRISMA_TARGET_DENIED`로 즉시 종료; 기본 fallback/운영 DB 접속 불가. `G7_CAD_WRITE_CUTOVER_ENABLED`는 별도 기본 OFF.

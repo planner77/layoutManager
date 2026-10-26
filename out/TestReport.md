@@ -1,5 +1,15 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issue #109 S2 운영 후보 구현 / 사내 비반출 증거 결과 구분 (2026-10-26)
+
+- **대상 구현:** 기본 G7 S3 release-specific Owner GO (private manifest/고정 source·App/Migrator OCI reference + rollback pair + snapshot + 24h 승인 창)를 검증하는 server gate; `src/prisma/schema.prisma` Auth 모델 Client 투영(운영 default DDL 0); 별도 수동 Prisma Schema/Migration 경로; 실제 운영 CAD Multipart/Current/DELETE 트랜잭션 내 Role/Site/Session+Audit 원자성 및 Auth/Login/Grant/Audit API·브라우저 Login/CSRF 전송 UI; 내부만 접근하는 증거 검증/복원 체크 도구.
+- **수용 경계:** S1 Owner 수용 및 S2 준비 승인 사실은 [Issue109](Issue109.md)의 진술로 보존하되 사용자 환경에서는 **실 시험 결과 외부 제출 불가**. 새 사내 EV ID/실 PC·DB/CAD/S3 원본/이미지 digest는 미열람, 직접 수행·PASS 주장하지 않는다. 오프라인 도구가 `READY_FOR_OWNER_REVIEW`을 반환하더라도 실제 S3 GO/복구 증명이 아니다.
+- **검증 계획:** [TestPlan](TestPlan.md)의 TC-G7-S2-01~06 신규 합성 Unit/Integration/Prisma·Browser 경로 회귀를 추가. **현재 기록 시점 GitHub PR CI/로컬 실행 전 NOT RUN/NOT VERIFIED**. CI 실행에 따른 Run/Job/HEAD/실패 원인·조치는 누적 FailureLedger로 전이.
+- **사내 확인 유보:** 실제 App/Migrator OCI digest pair·운영 Schema 적합성, 호환 롤백 이미지 쌍, 실제 S3 추출 provenance 및 DB/CAD/S3 동일 시점 복원, 사내 두 PC Windows Nginx/DEV 직접 접속, 실제 업무 권한·로그/Secret 회수·Audit retention SOP는 사내만 확인 가능. **공개에 미제출된 자료를 합성하거나 완료로 전환하지 않음**.
+- **운영 상태:** 프로그램 코드·검증 도구 준비와 운영 배포 구분. G7 Auth flag / legacy 쓰기 Cutover **운영 OFF**, 별도 S3 대상 특정 Owner GO 없이는 새 Auth Route 404, G7 시도 후 무승인 writes blocked. 실제 Nginx/Compose/.env/DB/CAD/S3/GHCR 수정·Migration 실행/이슈 종료 **0**, #109/#96 OPEN/BLOCKED 유지.
+
+
+
 ## Issue #109 / PR #125 — 관측 PR CI 40275956996 실패 및 P1 보완 후 재검증 대기 (2026-10-26)
 
 - **실패 Run/HEAD:** [40275956996](https://github.com/planner77/layoutManager/actions/runs/40275956996), HEAD `818264afb8809ccf0a3e09262e1a09054fd43004`. Verify [121418632923](https://github.com/planner77/layoutManager/actions/runs/40275956996/job/121418632923) Unit/Integration `failure`(59 files 중 1 FAIL, 313 tests 중 1 FAIL), Docker [121418632714](https://github.com/planner77/layoutManager/actions/runs/40275956996/job/121418632714) `success`. Typecheck/Lint 성공, Verify 이후 Build/E2E는 skipped. 단 하나의 실패는 GHCR scope Test의 비허용 경로 출력 스트림 예상 불일치: 실제 `stdout` vs Assert `stderr`. 해당 Actions 로그·원인·교정 및 P1 리뷰 3개는 [FailureLedger](FailureLedger.md)에 분리 기록.

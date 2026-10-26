@@ -1,5 +1,13 @@
 # PR/Main CI 실패 원장
 
+## Issue #109 S2 운영 Cutover 후보 — 실패 아닌 위험 목록 및 새 CI 대기 (2026-10-26)
+
+- **전제:** 기존 #109 S1의 [PR #125](https://github.com/planner77/layoutManager/pull/125), [PR CI 40278581453](https://github.com/planner77/layoutManager/actions/runs/40278581453)·[Main CI 40300881592](https://github.com/planner77/layoutManager/actions/runs/40300881592) 성공/GHCR SKIPPED 이력과 과거 Unit/P1 실패 원장을 **삭제·수정하지 않음**. S2 신규 코드/합성 테스트 및 현장 시험은 새 Run/Job 없이 PASS로 판정하지 않는다.
+- **현장 증거 제약(실패 아님):** 사용자가 사내 시험 결과 외부 제출 불가를 직접 명시. 원본 증거 로그·실 DB/CAD/S3/이미지 pair SHA/사내 EV ID를 새로 확보하지 못했으며, 어떤 값을 임의로 생성하지도 않는다. 사내 실행자 내부 보관 + 오프라인 검증 결과의 비밀 없는 판정 코드만 허용. 데이터가 제출되지 않았다는 이유로 실제 현장 시험 실패를 창작하지 않는다.
+- **회귀 위험/방지 설계(검증 전):** (1) G7 Auth 클라이언트 모델을 운영 default Prisma schema에 반영하되 물리 DDL을 default migrations에 추가하면 미승인 배포 위험 → 별도 S2/S3 config+GO/ACK/snapshot. (2) 기존 CAD POST/Current/DELETE에 인증을 트랜잭션 외부에서만 판단하면 Grant 회수/Version Site 변경과 Audit 원자성 회귀 → DB session/roles/Version site 최신 transaction read+CAD/Audit 동일 commit. (3) 일부 G7 환경변수만 잘못 켜면 기존 익명 write fallback → three-state blocked/운영 Auth API 404, 사용자 인터페이스도 GO flag OFF 불변. (4) Snapshot DB/CAD/S3 불일치·실 S3 증거 누락 → 오프라인 local SHA/Current/Version·manifest scope/snapshot 검증, 실제 S3 provenance는 사내 추가 증거 필수. (5) GO 후보 digest/일자/실 계정/Secret 공개 → 사내 UID 0600 매니페스트·Git/CI 외 원본 보관.
+- **운영 경계:** `G7_S3_GO` release-specific 승인 없는 자동 활성화 0, 신규 이미지/기존 tag·실 원격 DB/CAD/S3/Compose/Nginx/.env 실제 조작 0, Outline/Memo/Type/Logs/물리 Audit purge 0. 새 PR CI 실패 발생 시 정확한 HEAD·Run ID/Attempt·Job/Step 원본 로그·원인/조치/재검증을 본 원장 상단에 누적한다.
+
+
 ## Issue #109 / PR #125 — PR CI 40275956996 Unit 실패·P1 리뷰 3건 누적 및 수정 HEAD 검증 게이트 (2026-10-26 KST)
 
 - **실제 CI 실패 원장:** [Run 40275956996](https://github.com/planner77/layoutManager/actions/runs/40275956996), attempt **1**, HEAD `818264afb8809ccf0a3e09262e1a09054fd43004`, `pull_request.synchronize`, `completed/failure`. **Verify [Job 121418632923](https://github.com/planner77/layoutManager/actions/runs/40275956996/job/121418632923) failure**, Docker [Job 121418632714](https://github.com/planner77/layoutManager/actions/runs/40275956996/job/121418632714) **success**. 출처: 해당 Job의 Actions 원본 로그·Step 목록. TypeScript·ESLint **PASS**, `Unit 및 Integration 테스트` **실패**; **59 Test Files = 58 PASS / 1 FAIL, 313 Tests = 312 PASS / 1 FAIL**. `tests/unit/g7-staging-ghcr-guard.test.ts:91:27`의 `expect(result.stderr).toContain('G7-S1 GHCR exclusion disallowed path')`에서 실제 stderr는 빈 문자열; GitHub Actions `echo` 메시지는 **stdout**으로 출력됐다. 잘못된 경로 차단 자체는 의도대로 **exit 1**이며 보안 우회/실제 GHCR 게시 실패가 아니다. Verify의 OCI layer Unit·DXF benchmark·Production Build·Chromium E2E·Legacy Migration E2E는 **SKIPPED**(PASS 아님). 조건부 E2E 실패 artifact 업로드 Step은 SUCCESS이나 수집 파일 없음; 자체 실패로 세지 않음.

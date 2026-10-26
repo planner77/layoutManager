@@ -1,5 +1,16 @@
 # Architecture 초안
 
+## Issue #109 S2 G7-operational 후보 아키텍처 — 기본 OFF/실 배포 미수행 (2026-10-26)
+
+`S2 승인`은 구현·준비를 허용하며 **S3 GO가 아니다**. `src/prisma/schema.prisma`에 User/Role/Site/SpecialGrant/AuthSession/Audit/Nonce/G3LoginAttempt Prisma Client 모델 선언(기본 운영 Migration 추가 없음). Auth DDL은 `deploy/g7-operational/prisma/migrations` 수동 7개 이력만. 운영 기본 `deploy.ts`/Compose/Nginx/GHCR 변경 0. 외부 사내 자료 반출 불가 정책은 코드/시험·증거 분리로 충족.
+
+- **Read:** 기존 CAD 목록·Viewer·원본 GET 익명 그대로(운영 G7 스위치 상태와 무관).
+- **Write:** 기존 Multipart 등록 + Current PUT + Version DELETE → `prepareG7CadWrite` (고정 release-specific GO·원본 Cookie/Origin·세션 CSRF) → `CadRepository.register/setCurrent/deleteVersion`의 **단일 Prisma $transaction**에서 AuthSession(유효·미회수)/User Role+SiteGrant/Version→Site 최신 DB 재조회 → CAD 원자 변경 및 `AuditEvent` append-only INSERT. Audit 오류는 CAD 트랜잭션 자동 rollback. DELETE 기존 scrypt 삭제 암호 AND, 기존 `CadDeletionJob` 정리/업로드 compensation 흐름 유지. 공개 user/role 헤더 신뢰 0.
+- **Mode:** `legacy`(운영 GO/변경 시도 자체 없음), `blocked`(부분/만료/불일치 GO나 write OFF, 익명 쓰기로 fallback 불가), `protected`(24h Owner GO+고정 App/Migrator digest·Schema·snapshot/롤백 쌍, Auth+별도 Write 플래그 true). Auth 관리 API는 `/api/g7-operation/{auth,access}/...`에서 유효 GO 없으면 404. 브라우저 Login과 세션 바인딩 CSRF는 GO일 때만 제공.
+- **S2 로컬 증거:** `g7-s2-evidence.mjs` 자체 진술 일관성·누락 검사 + `g7-s2-restore-audit.mjs` 동일 snapshot의 SQLite/CAD/S3 추출 bytes 비교(읽기 전용). 실제 사내 S3 provenance·복원·OCI registry digests는 실행자가 내부에서만 검증/보관, 코드/CI와 구별. S3 Owner 적용 승인 없으면 배포 금지.
+
+
+
 ## Issue #109 G7 S1 — 비운영 App Router / DB·스토리지 경계 (2026-10-26)
 
 `/api/g7-staging/[...segments]` → staging release+operation gate → Linux UID 소유 `/tmp/cad-g7-staging-*/fixture.sqlite` + 별도 CAD → G3 Session/Login·G4 Role/Site/Grant/Audit 트랜잭션. 기본 404, 격리 CAD 쓰기는 별도 flag와 CSRF·JWT 없는 서버 세션 확인 후에만 작동. G2 Admin/복구는 별도 명시 CLI, 앱 부팅 자동 실행 없음.

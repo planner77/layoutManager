@@ -1,5 +1,19 @@
 # 상세 요구사항
 
+## Issue #109 S2 — 실제 운영 API Cutover 후보 + 로컬 증거 도구 요구 (2026-10-26)
+
+| ID | 수용 기준 | 상태 판정 |
+| --- | --- | --- |
+| G7-S2-01 | 기존 `POST /api/cad-files`, Current PUT, Version DELETE를 GO+세션 Cookie/CSRF+Editor/Site/Version/삭제 암호로 제한, 같은 DB 트랜잭션의 CAD+Audit commit/rollback | 코딩 후보 / 새 HEAD CI 미확인 |
+| G7-S2-02 | G7 Auth/Session/Grant/Audit API와 로그인·암호 변경·관리자 권한 UI를 release-specific GO에서만 노출, OFF면 404 | 코딩 후보 / 운영 OFF |
+| G7-S2-03 | 기존 운영 `prisma migrate deploy` 자동 이력 불변·G7 model Client만 추가, 수동 G7 Migration은 disposable 또는 release-specific Owner GO/backup snapshot/명시 ACK로만 | 코딩 후보 / 실 DDL NOT RUN |
+| G7-S2-04 | 다른 G7 설정/권한/GO 실패 시 익명 CAD write fallback 금지, 기존 Anonymous GET/Viewer 정상 | 자동 회귀 추가 / 결과 미확인 |
+| G7-S2-05 | 사내 전용 manifest 상태 검사, 오프라인 SQLite/CAD/S3 추출 byte restore·Current/Version 무결성 검사·노출 없는 이유 코드 | 도구 작성 / 실 사내 근거 비반출 |
+| G7-S2-06 | App+Migrator 실제 immutable OCI digest 쌍, rollback pair, 실 DB/CAD/S3 동일 Snapshot 복구와 사내 SOP, Owner 별도 범위 특정 실행 GO 없이는 S3 전환 금지 | **BLOCKED**, 합성/Owner 일반 S2 승인으로 대체 불가 |
+| G7-S2-07 | 신규 Outline/Memo/Type/Logs 영속 API 및 Audit 자동/물리 purge가 별도 승인 전 노출되지 않아야 함 | 기본 OFF |
+
+
+
 ## Issue #109 G7 S1 — PR #125 P1 재발방지 추가 요구 (2026-10-26)
 
 | ID | 추가 필수 조건 | 증거 |

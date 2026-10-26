@@ -1,5 +1,14 @@
 # Database Schema — 단일 기준 문서
 
+## Issue #109 S2 운영 DB 계약·별도 수동 승인 Migration (2026-10-26)
+
+- **클라이언트 모델:** `src/prisma/schema.prisma`는 정식 운영 CAD 모델을 보존하고 G7 User/Role·Site·SpecialGrant/Session/Audit/Nonce·로그인 시도 모델을 추가한다. `prisma generate`는 Client Type만 갱신하며 DB 테이블을 생성하지 않는다. 기본 `src/prisma/migrations/**`에는 새 Auth DDL을 추가하지 않아 운영 자동 `src/scripts/deploy.ts` / Compose Migrator가 미승인 SQL을 실행하지 않는다.
+- **DDL 이력:** `src/deploy/g7-operational/prisma/migrations`는 기존 CAD 6개와 Auth `202610260001_g7_staging_auth` 1개(모델/제약/3-session limiter/append-only Audit 및 CAD UPSERT/CURRENT/DELETE Audit Action)를 보관. `prisma.config.ts`에서 S2 Stage disposable realpath·UID·manifest, 또는 S3 Release-Specific Owner GO+Snapshot/Operator/Migration 명시 ACK를 확인한 경우에만 Prisma CLI가 대상 DB를 열 수 있다. 누락/불일치/무승인 => SQL 실행 전 오류.
+- **실제 CAD 거래:** `CadRepository.register/setCurrent/deleteVersion`는 보호 모드에서 항상 `AuthSession`/User/Role/Site/Version→Site를 해당 `Prisma.TransactionClient`에서 재조회하고, 쓰기와 `AuditEvent`를 같은 Commit/Rollback으로 묶는다. DEL은 기존 scrypt 삭제 암호와 현재 Version DB 값 일치도 검사; Audit FK/check 오류시 Cad 변경·삭제 Job 롤백. Legacy 모드(설정 전)는 기존 로직 보존, Auth·Write Cutover 시도 후 오류/만료는 블로킹하고 익명 쓰기로 fallback 불가.
+- **실 운영 DB 검증 한계:** 현재 공개 CI는 격리 SQLite·합성 DXF·mock/로컬 스냅샷뿐이다. 실제 SQLite online backup + CAD(local)+실 S3 동일 Snapshot의 실 복구/직전·직후 FK/Current/Version/원본 SHA/기존 삭제 해시는 사내에서만 비교·보존, 제출하지 못해도 자동 PASS로 가정하지 않는다. Audit 만료 기록 물리 purge는 미구현/미승인·OFF.
+
+
+
 ## Issue #109 / PR #125 P1 — Staging Prisma CLI Migration 실행 전 대상 강제 검증 (2026-10-26)
 
 - **원인:** Staging 전용 `src/deploy/g7-staging/prisma.config.ts`가 기존에는 `G7_STAGING_DATABASE_URL`의 실제 경로·UID·symlink/manifest 정합성을 확인하지 않고 Prisma datasource로 전달했고 기본 fallback URL도 포함했다. 운영 DB 경로를 실수로 지정하면 G1 Auth Migration DDL이 사용자 DB에 적용될 위험(리뷰 [r4374313165](https://github.com/planner77/layoutManager/pull/125#discussion_r4374313165)).

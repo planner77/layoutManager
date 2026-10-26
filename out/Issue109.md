@@ -1,5 +1,15 @@
 # Issue #109 — G7 운영 인증 활성화 설계 및 통제 배포·롤백 Runbook
 
+## S2 Owner 승인 후 운영 준비 구현 — 비반출 증거 정책 / S3 미실행 (2026-10-26)
+
+- Owner의 **S1 수용·S2 준비 승인**은 유지한다. 단, 사내 환경에서 시험 결과를 외부 제출할 수 없다는 새로운 제약에 따라 공개 GitHub에는 실제 원본 DB/CAD/S3·Host/계정/로그·Secret/비공개 EV ID를 첨부하지 않는다. 내부에서 기록되는 결과는 직접 실행자가 보유하고, 공개 이슈에는 수용 의사/검증 가능한 CI 및 **미검증 상태**만 기재. 거짓 EV 번호·Source SHA·OCI digest/현장 PASS 생성 금지.
+- 후속 단일 S2 후보 브랜치는 기존 `src/app/api/cad-files` POST 및 Version DELETE, Current PUT에 `G7CadWrite`/세션 CSRF·Role/담당 Site·Version→DB Site 확인을 **기존 Prisma CAD 쓰기+Audit INSERT 동일 $transaction**에 적용하는 통합 계약을 구현한다. DELETE 기존 비밀번호 AND, 원본 파일 정리 Job/보상 및 익명 GET/Viewer 유지. 비운영 G3/G4 DB Store를 보호된 `g7-operation/**` Auth/Grant/Audit 라우트에 연결하고 화면 로그인/최초변경/권한/기존 쓰기 CSRF를 조건부 표시한다. 스키마 기본 파일엔 Client 모델만 선언, 자동 운영 DDL 없음.
+- **S2/S3 분리 DDL:** 별도 `src/deploy/g7-operational/prisma.config.ts`와 CAD baseline 6 + Auth 1 formal history. `S2_DISPOSABLE_DRY_RUN`에서는 Stage 격리 temp 환경에서만 실행. 운영은 **별도** `S3_RELEASE_APPROVED` + 비공개 Owner GO + `G7_S3_MIGRATION_ACK=APPLY_APPROVED_PAIR` + 승인 snapshot 일치 시에만 명시 실행 가능. 기존 `src/prisma/migrations`/startup Migrator는 변경하지 않는다.
+- **사내 비반출 증거/롤백:** `src/scripts/g7-s2-evidence.mjs`와 `g7-s2-restore-audit.mjs`는 온프레미스 0600 JSON과 격리 SQLite 온라인 백업/CAD/S3 다운로드 파일을 **읽기 전용**으로 검증하고 응답은 상태 코드/건수만 출력한다. S3 원격 객체 출처 확인·실 복구 실행·고정 registry OCI digest 점검·Owner 보증은 **현장 담당자가 별도 사내 수행/보관해야 할 미검증 항목**이다. `READY_FOR_OWNER_REVIEW`도 자동 S3 GO가 아니다.
+- **미완료/승인 조건:** S1 Owner Accepted, S2 preparation authorized, S3 NO-GO until 실제 배포 후보의 App/Migrator OCI digest와 rollback pair·Schema+Snapshot ID/운영 변경 시간·담당자·사내 실제 업무/복구 E2E·위험수용이 특정된 **release-specific OWNER_GO_ID**로 승인된다. 현재 실제 운영 Auth/Prisma/Proxy/Compose/.env/GHCR/실 CAD·DB·S3·Audit purge/영속 API 활성화 0; G7 AC1~4 증거 완료 전 #109/#96 OPEN/BLOCKED.
+
+
+
 ## Issue #109 / PR #125 — Unit 실패/P1 3건 보완·Prisma CLI fail-closed·CI 재시작 (2026-10-26)
 
 - **실패 증거:** 구 HEAD `818264afb8809ccf0a3e09262e1a09054fd43004`의 [Run 40275956996](https://github.com/planner77/layoutManager/actions/runs/40275956996) `completed/failure`. Verify `Unit 및 Integration 테스트` 313개 중 1개 실패, Docker 성공. 실제 실패는 GHCR 경로차단 진단 출력의 stdout/stderr Assertion 불일치; 이후 Build/E2E는 SKIPPED. [FailureLedger](FailureLedger.md)/[TestReport](TestReport.md) 상세.
