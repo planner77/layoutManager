@@ -1,5 +1,11 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issue #108 / PR #122 — 기존 HEAD CI 성공과 P2 보완 HEAD 재검증 구분 (2026-10-26)
+
+- **기존 CI 실증:** PR #122 HEAD `9c8bfc1062b33964928b299ebc4cfe80e319378c`에서 [PR CI 40257054743](https://github.com/planner77/layoutManager/actions/runs/40257054743) `completed/success`: Verify [121361049386](https://github.com/planner77/layoutManager/actions/runs/40257054743/job/121361049386)와 Docker [121361049207](https://github.com/planner77/layoutManager/actions/runs/40257054743/job/121361049207) 모두 success. E2E 실패 결과 업로드는 failure() 조건 미충족에 따른 정상 SKIPPED.
+- **P2 보완:** [r4373409989](https://github.com/planner77/layoutManager/pull/122#discussion_r4373409989) 신규 `out/Issue108.md`의 AGENTS 필수 문서 참조 테이블 누락을 보완. 요구/AC·G6 현장 증거의 참조 경로만 정렬한 문서 변경이다. 리뷰 수정 후 HEAD의 Typecheck/Lint/Vitest/Build/Playwright E2E/Docker/CI는 **새 Run 결론 전 NOT VERIFIED**. 이전 성공을 소급 전용 금지.
+- **G6 실증 구분:** 별도 Windows Nginx/WSL2 사내 PC 2대, 실제 인증된 HTTP 쓰기·Cookie/Role·Site E2E, 실 SQLite·CAD·S3 동시 백업→정식 격리 Migration dry-run→실 Restore/rollback 및 Owner 현장 QA 수용 **NOT RUN**. 운영 인증/API/Prisma/Compose/Nginx/GHCR 자동 활성화 없음. #108 Open, #109 별도 Go/No-Go 전 OFF.
+
 ## Issue #108 / G6 — 비운영 준비물 작성·실증 미확보 (2026-10-26)
 
 - **작성한 구현:** offline src/scripts/g6-evidence.mjs(19개 필수 항목·EV ID/동일 snapshot·PC 2대 분리·App/Migrator 일치/운영 OFF 검사·사유코드만 출력), Unit TC-P4-G6-001~006, disposable SQLite online backup+합성 2 Version·local CAD/mock-S3의 격리 DDL dry-run·손상 주입·실복원 Integration TC-P4-G6-007. 예제는 전부 NOT_RUN이며 실제 원격 S3·Nginx·운영 CAD/DB/API에 접속하지 않는다. [Issue108](Issue108.md).
