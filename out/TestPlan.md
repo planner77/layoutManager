@@ -1,5 +1,30 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #109 G7 — 기본 OFF·Owner GO·실복구 운영 검증 계획 (2026-10-26)
+
+**현재 TC-P4-G7-001~015 전부 NOT RUN / #109 OPEN-BLOCKED.** 시험 작성과 실행은 구별한다. #108 G6 현장 evidence와 Owner 별도 승인 없이 운영 기능 활성화 테스트를 실 DB에서 수행하지 않는다.
+
+| TC | 합격 기준 | 책임 |
+| --- | --- | --- |
+| TC-P4-G7-001 | G7 미탑재/flag 미설정/false/오타: 보호 API와 write cutover OFF·익명 CAD GET 유지 | G7 구현 CI |
+| TC-P4-G7-002 | Owner 승인/고정 App+Migrator digest/Schema 불일치라도 true flag는 fail-closed | G7 구현 CI |
+| TC-P4-G7-003 | 유효한 이중 게이트+`G7_AUTH_ENABLED`·별도 `G7_CAD_WRITE_CUTOVER_ENABLED` 모두 true에서만 각 단계 ON | G7 구현 CI |
+| TC-P4-G7-004 | 기존 사내 익명 목록·위치·Version·Current·Viewer·원본 GET/download 회귀 0 | G6/G7 E2E |
+| TC-P4-G7-005 | POST/Current 인증 Editor+Site 성공, 익명/Reader/타 Site/무Grant Admin 거부 | G6/G7 E2E |
+| TC-P4-G7-006 | Version DELETE Editor+Site AND 기존 비밀번호, 원본/Current·Audit 원자성 | G6/G7 E2E |
+| TC-P4-G7-007 | Admin 단발/복구, 8h 절대·30m idle·최대 3개 세션·disable/revoke·Cookie | G6/G7 E2E |
+| TC-P4-G7-008 | Role/Site/Version Grant 회수, Audit append-only/365일·`audit:read`/`logs:read` 분리·Secret 비로그 | G6/G7 DB |
+| TC-P4-G7-009 | 같은 snapshot ID SQLite 안전 backup+CAD local+S3 manifest, 정식 migration 격리 dry-run | G6 실복구 |
+| TC-P4-G7-010 | FK/Unique·원본 bytes/SHA/Version/Current/delete hash 불변, 장애 시 실행 중단 | G6/G7 DB |
+| TC-P4-G7-011 | 구 App·신 Schema 혼용 금지, 구 호환 pair+동일 DB/CAD/S3 실 Restore·쓰기 유실 처리 | G6/G7 rollback |
+| TC-P4-G7-012 | 사내 PC 2대 Windows/WSL2 Nginx PROD + DEV direct 업무 Viewer/업로드/세션 정상 | G6 현장 |
+| TC-P4-G7-013 | G0~G6 HEAD/Run/Job·사내 증거 ID+Owner GO/NO-GO·release digest/담당·범위 정합 | G7 운영 |
+| TC-P4-G7-014 | #98/#83/#65/#60 신규 영속 API 익명/자동 공개 0, Audit purge 미승인시 0 | G7 회귀 |
+| TC-P4-G7-015 | 현재 문서 PR 변경 파일 Markdown 한정, `src/**`/Prisma/Nginx/Compose/.env/GHCR·실 데이터 변경 0 | PR diff |
+
+Owner R1에서 제외한 침투·적대적 공격/탈취 실증은 새 필수 게이트로 요구하지 않는다. 정상 로그인·권한/감사/업무 무결성·실복구는 필수. 모든 실제 시험은 HEAD/Run/Job/비공개 증거 ID와 [TestReport](TestReport.md)에서만 PASS 판정. [Issue109](Issue109.md).
+
+
 ## Issue #106 / PR #120 — CI 최초 실패 및 Site Audit P1 회귀 확대 (2026-10-26)
 
 - **TC-P4-G4-SETUP-001:** 기존 실제 CAD Migration `uq_site_parent_name(product_id,name)`과 합성 Site `Site-a`/`Site-b`의 동일 Product 독립 명칭이 충돌하지 않고 G4 `beforeEach`가 끝까지 실행되는지 확인. 성공은 CI에서 실제 재실행해야 판단.
