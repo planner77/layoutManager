@@ -19,20 +19,28 @@ manifest. G7 flags are exactly `true` or OFF.
 2. From `src/`, run:
    `npx tsx scripts/g7-staging-prepare.ts --ack-disposable-only`.
    This creates an empty staging DB/manifest/root, **not** a production DB.
-3. Export printed `G7_STAGING_ROOT` and
-   `G7_STAGING_DATABASE_URL=file:<root>/fixture.sqlite`.
-   Run `G7_STAGING_DATABASE_URL=... npx prisma migrate deploy --config deploy/g7-staging/prisma.config.ts`.
-   The staging-only history contains the **six original CAD migrations plus
-   one G7 authentication migration**, and the G3 limiter and scoped Audit
-   constraints. Verify `PRAGMA foreign_key_check`/CAD invariants.
-4. Set `DATABASE_URL` **equal to the staging DB URL**,
+3. **BEFORE invoking Prisma**, export the printed `G7_STAGING_ROOT`
+   and `G7_STAGING_DATABASE_URL=file:<root>/fixture.sqlite`, and set
+   `DATABASE_URL` to that **same staging DB URL**,
    `CAD_STORAGE_PATH=<root>/cad`,
    `G7_STAGING_ORIGIN=http://127.0.0.1:<isolated staging port>`,
    `G7_STAGING_ONLY=true`, `G7_RELEASE_CAPABILITY=G7-S1-STAGING-V1`,
    `G7_OPERATION_APPROVAL=S1-STAGING-ONLY`, and
-   `G7_AUTH_ENABLED=true`. Only for isolated staging verification,
-   set `G7_CAD_WRITE_CUTOVER_ENABLED=true`. Both flags default OFF.
-   No operational Compose/Proxy/real database is touched.
+   `G7_AUTH_ENABLED=true` **only inside isolated staging**.
+   The latter does not activate production, and the separate CAD write flag
+   stays OFF until authorized staging verification.
+4. Run `npx prisma migrate deploy --config deploy/g7-staging/prisma.config.ts`
+   from `src/` with **all of the preceding staging environment**.
+   The config now invokes the **same release/operation gate and realpath/UID,
+   symlink/manifest/schema checks as the staging HTTP API BEFORE Prisma can
+   execute any SQL**. A missing/mismatched variable or an operating database
+   URL aborts with `G7_STAGING_PRISMA_TARGET_DENIED`. It has **no default
+   fallback URL**. Staging contains the original six CAD migrations and one G7
+   authentication migration plus G3 limiter and scoped Audit checks; inspect
+   `PRAGMA foreign_key_check`/CAD invariants after a successful deploy.
+   Only for isolated staging write tests, separately set
+   `G7_CAD_WRITE_CUTOVER_ENABLED=true`. Operational Compose/Proxy/DB remain
+   unchanged; never point Prisma at operating paths.
 5. With an approved 0600 secret file outside Git, explicitly run
    `npx tsx scripts/g7-staging-admin.ts --ack-staging-only` with G2
    `ADMIN_BOOTSTRAP_*` or one-shot `ADMIN_RECOVERY_*` environment.
