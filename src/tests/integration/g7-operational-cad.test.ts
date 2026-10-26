@@ -49,8 +49,11 @@ describe('#109 G7 S2 existing CAD API transaction cutover',()=>{
     const chain=await seedChain(db),actor=await newActor();
     await db.userSiteGrant.create({data:{userId:actor.userId,siteId:chain.site.id,
       grantedAt:BigInt(NOW)}});
+    // Multipart request preparation time may precede the actual write by seconds.
+    // Authorization samples time inside the DB transaction, not proof.now.
+    const stalePreparedProof={...actor.proof,now:NOW-1000};
     const base=await repo.register({...chain.input,makeCurrent:false},sampleFile('a.dxf'),
-      undefined,actor.proof);
+      undefined,stalePreparedProof);
     const newer=await repo.register({...chain.input,makeCurrent:false},sampleFile('b.dxf'),
       undefined,actor.proof);
     expect(await db.auditEvent.count({where:{action:'CAD_UPLOADED'}})).toBe(2);
