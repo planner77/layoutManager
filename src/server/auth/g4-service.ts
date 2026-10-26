@@ -167,7 +167,7 @@ export async function handleG4Request(
         ...service.permit(token, permission as Action, body.resource, context) });
     }
     if (action === 'grant') {
-      service.grant(token, body as G4Grant, context);
+      service.grant(token, body as unknown as G4Grant, context);
       return response(200, { ok: true });
     }
     if (action === 'disable') {
@@ -175,7 +175,7 @@ export async function handleG4Request(
       return response(200, { ok: true });
     }
     if (action === 'outline') {
-      const result = service.outline(token, body as G4OutlineChange, context);
+      const result = service.outline(token, body as unknown as G4OutlineChange, context);
       return response(200, { ok: true, ...result });
     }
     if (action === 'audit') {
