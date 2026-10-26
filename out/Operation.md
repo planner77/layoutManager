@@ -1,5 +1,10 @@
 # 운영·환경설정 초안
 
+## 0.42.0 게시된 앱·마이그레이터 쌍 (2026-10-27)
+
+현재 확인한 태그는 `ghcr.io/planner77/layoutmanager:0.42.0`과 `ghcr.io/planner77/layoutmanager:0.42.0-migrate`이며 둘 다 source `f2c04bf`로 게시했다. digest·Main CI·실제 시험은 [TestReport](TestReport.md) U-ISSUES124-126-127-20261027을 따른다. 아래 기존 pair 고정·같은 시점 백업·migration 성공 후 앱 기동 절차를 적용한다. 이 작업은 이미지 게시까지이며 실제 서버/.env/볼륨·Auth/G7 활성화는 실행하지 않았다. Viewer의 Three 기본/단발 대체 및 수동 전환, 미저장 작업 확인은 아래 운영 안내와 [단위 가이드](Issues124-126-127.md)를 참조한다.
+
+
 ## #124/#126/#127 Viewer 복구와 작업 공간 (0.42.0 후보)
 
 DXF 직접 링크에 renderer를 생략하면 Three를 사용합니다. 기존 ?renderer=dxf-viewer 링크는 그대로 열립니다. Three 초기화/도면 처리 실패에는 dxf-viewer를 한 번 대체 시도하며 원본 HTTP 오류는 대체하지 않습니다. 로딩이 응답하지 않을 때 지역 로딩 안내에서 반대 DXF 렌더러로 중단·전환하거나 명시 dxf 링크로 다시 엽니다. 수동 전환은 양방향이며 자동 대체는 Three 실패에서 dxf로 한 번만 수행합니다. 검증되지 않은 파일 크기/시간 임계값은 새로 도입하지 않습니다. JS 탭 종료·OOM 복구는 보장하지 않으며 Adapter의 bytes 사본으로 추가 메모리가 필요합니다.

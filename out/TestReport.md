@@ -1,5 +1,29 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUES124-126-127-20261027 — 0.42.0 구현·CI·GHCR 게시·이슈 종료 완료
+
+- **완료 판정:** Manager 로컬 구현 수용 후 Root가 최신 HEAD의 CI·리뷰/충돌·태그를 확인해 [PR #132](https://github.com/planner77/layoutManager/pull/132)을 Squash 병합했다. main source `f2c04bf6e3e0092bf44aba2618b7561a550e7540`, 태그 `v0.42.0`의 annotated target도 동일하다. [#124](https://github.com/planner77/layoutManager/issues/124), [#126](https://github.com/planner77/layoutManager/issues/126), [#127](https://github.com/planner77/layoutManager/issues/127)에 결과 댓글을 남기고 `closed/completed`를 재조회 확인했다. 이전 진행 중·실패 기록은 아래 당시 관측으로 보존한다.
+- **변경/추적:** #124 홈 한정 nav·검색/Current/요약 Sticky와 밀도/반응형; #126 Three 기본 DXF·실제 렌더러 실패 1회 대체·양방향 로딩 중 수동 전환·원본 오류/취소 구분·동일 bytes/URL/임시 작업 확인; #127 두 정보 헤더·설명 접근·실행형 그룹 메뉴·상태 독립 Drawer/중첩 창·Escape/포커스. 요구→구현→TC는 [단위 가이드](Issues124-126-127.md), 결정은 ADR-053을 따른다.
+- **실제 역할/게시:** gpt-6-astra Manager, gpt-6-sol 제품 및 별도 기존 E2E Developer, gpt-6-luna 독립 QA, Root 시각 측정·GitHub/릴리스. Root는 지정 저장소에 연결 GitHub Git Data API로 `fd9eeaf` 및 DWG 진단 보완 `5b3b71722e07d8517b329bbc19ced35f37197fe1`을 게시했다. 원격 tree와 staged tree 일치, 비강제 ref 갱신, fetch 후 ancestor/tree 확인으로 로컬 branch를 fast-forward했다. 기존 worktree의 사용자 변경은 보존했다. 게시 전 Secret/runtime/CAD/build 포함 검사 위반 0건, package/lock 0.42.0 일치.
+- **독립 QA 범위:** 기준 `fd9eeaf`의 Typecheck·Lint·Unit 351/351(63 files)·전체 E2E 86/86·legacy migration 1/1 PASS. 후속 DWG 고정 진단/실험 페이지 probe 보완은 독립 type/lint·관련 Unit 20/20·DWG 4/4(24.0s)·기능 E2E 13/13(47.7s) PASS. 후속 patch의 5파일 SHA-256 `efea53f9f9296333768d65013abb7c8f6f1fb801357efcbe2b366df173df167f` 일치를 확인했다. 독립 QA가 전체 352개를 실행한 것으로 확대하지 않는다. 상세 보고는 로컬 `/tmp/layoutManager-issues124-127-qa-final.md`.
+- **최신 PR CI:** [Run 40352404675](https://github.com/planner77/layoutManager/actions/runs/40352404675), HEAD `5b3b717`, completed/success. Verify [121675709873](https://github.com/planner77/layoutManager/actions/runs/40352404675/job/121675709873) 및 Docker [121675710616](https://github.com/planner77/layoutManager/actions/runs/40352404675/job/121675710616) success. 실제 로그: Unit/Integration **352/352·63 files**, Build/Typecheck/Lint PASS, E2E **86/86(5.2m)**, legacy **1/1(12.4s)**; Docker 패키징·native·migration 실패 차단/새 설치·CRUD smoke PASS. 기존 lint warning 3개는 아래 보고를 따른다. 최초 fd9 [Run 40349738685](https://github.com/planner77/layoutManager/actions/runs/40349738685) 성공은 별도 HEAD 근거로 보존한다.
+- **병합 전 확인:** 최신 PR HEAD와 검증 SHA 일치, main drift 0, mergeable=true, draft=false, 제출 review/미해결 thread 0, v0.42.0 태그 미존재, `.env` 지정 repo와 origin 일치. Squash title을 명시하고 본문을 비워 기존 #76 기본 설정과 무관하게 짧은 Main 실행명을 유지했다. auto-merge/force push/history rewrite/기존 branch 삭제는 수행하지 않았다.
+
+### Main CI와 GHCR App/Migrator Pair
+
+- [Main Run 40354233607](https://github.com/planner77/layoutManager/actions/runs/40354233607), source `f2c04bf`, completed/success. release-scope [121682247638](https://github.com/planner77/layoutManager/actions/runs/40354233607/job/121682247638), build/push [121682336818](https://github.com/planner77/layoutManager/actions/runs/40354233607/job/121682336818) 모두 success. App/Migrator 후보 두 digest registry inspect 후 `0.42.0`/`0.42.0-migrate` 및 `latest`/`latest-migrate`를 승격·inspect했고 게시 Pair의 linux/amd64 OCI 계측도 통과했다. 두 이미지 label은 version=0.42.0, revision=`f2c04bf6e3e0092bf44aba2618b7561a550e7540`으로 기록됐다.
+- 게시 workflow 보고 App digest: `sha256:525f30306b3c5bc7307b926334bb100858ddfb32f523280df43595e3536ec486`.
+- 게시 workflow 보고 Migrator digest: `sha256:14a31f469adbd681450427294a71ba3ea6c848e299c8aac7b6cdb8d385cb91fc`.
+- 게시 참조: `ghcr.io/planner77/layoutmanager:0.42.0`, `ghcr.io/planner77/layoutmanager:0.42.0-migrate`. 이는 workflow의 인증된 registry 검사 근거이며 Root의 별도 로컬 pull·운영 배포를 실행한 결과는 아니다.
+
+### 시각·실제 200% 브라우저 확대와 한계
+
+- 동일 합성 LINE2 / one Location / 30 Versions의 Root 기준 비교: 1440×900 목록 표 시작 **526→398px**, 완전 표시 **3→4행**, Viewer 헤더 **210→90px**. 불투명 기본 Drawer를 제외한 Canvas 기하 면적 **758,032→1,048,284px²(+38.29%)**, Drawer 모두 닫힘 **1,107,360px²(+46.08%)**. 375px 목록 3행, 320px 1행을 확인했다. 모바일 modal Drawer가 열린 동안 Canvas는 보이지만 입력은 차단한다.
+- 이전 720×450 검사는 CSS viewport 동등 조건으로 보존한다. 추가 Root 시험에서는 별도 일회성 Chromium persistent profile/확장의 실제 `chrome.tabs.setZoom(2)` 및 `getZoom=2`를 사용했고 device metrics override를 해제했다. **innerWidth 720/innerHeight 450, devicePixelRatio 2, visualViewport.scale 1**. Current 버튼 height 44px, 행 작업 top394/bottom418은 sticky bottom362 아래이며 viewport450 내에 있다. body scrollWidth720으로 가로 넘침 없음. Viewer modal 닫기·확대/맞춤 메뉴·Escape 포커스 복귀, 같은 Canvas host, native fullscreen `cad-viewer-shell`/true를 확인했고 캡처도 직접 검토했다. 테스트 후 native/zoom을 복구하고 임시 브라우저·서버를 종료했다.
+- 실제 확대 증거: `/tmp/layoutManager-ui-baseline-124-127/output/playwright/actual-zoom-200.json`, `actual-zoom-200-{list,viewer,native}.png`; 기존 비교는 같은 폴더의 `baseline-metrics.json`, `after-metrics.json`, `after-source.sha256`. 재현 API는 [Chrome Tabs](https://developer.chrome.com/docs/extensions/reference/api/tabs#method-setZoom), 환경은 [Playwright extensions](https://playwright.dev/docs/chrome-extensions)를 참조했다. 첫 임시 probe의 프레임 전 즉시 포커스 관측은 별도로 보존하고, 정상 포커스 복귀를 기다린 완료 시험과 구별한다.
+- Three 정상 크기 시험은 합성 LINE 100/10,000/100,000개 cold/warm 6 records에서 모두 success·fallback null·console/page errors 0이었다. 실 CAD/GPU/VRAM 성능이나 다른 Browser 수용을 의미하지 않는다. **다음 별도 수용은 #113 실 CAD/GPU**, 실제 운영 배포·DB/CAD/S3·Auth/G7 활성화는 이번 완료 범위 밖이다.
+
+
 ## Issues #124/#126/#127 — DWG 진단 보완 후보 (2026-10-27 KST, 0.42.0)
 
 - **이전 HEAD의 실증:** `fd9eeaf9b5997fcc167969a36d20d9d5ad3b1561`, [PR #132](https://github.com/planner77/layoutManager/pull/132), [PR CI 40349738685](https://github.com/planner77/layoutManager/actions/runs/40349738685) completed/success(Verify 121666219572, Docker 121666218874). 독립 전체 Unit 351/351·63 files, E2E 86/86(6.3m), legacy migration 1/1(11.2s) PASS. 이 결과를 아래 후속 수정 HEAD 전체 CI 성공으로 전용하지 않는다.

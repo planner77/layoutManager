@@ -1,5 +1,12 @@
 # PR/Main CI 실패 원장
 
+## Issues #124/#126/#127 / PR #132 — 최종 해결·게시 증거 확정 (2026-10-27 KST)
+
+- 아래 keyboard 85/86, DWG 2/4 및 초기 로컬 실패·중단 기록을 모두 보존한다. keyboard 최소 수정 후 독립 86/86, DWG 보완 후 독립 Unit20/DWG4/focused13 PASS로 원인을 검증했다. 최신 HEAD `5b3b717`의 [PR CI 40352404675](https://github.com/planner77/layoutManager/actions/runs/40352404675) Verify121675709873·Docker121675710616 success, 실제 전체 Unit352/E2E86/legacy1 PASS. 이전 fd9 Run40349738685 success는 별도 HEAD 근거이다.
+- Squash main `f2c04bf`의 [Main CI 40354233607](https://github.com/planner77/layoutManager/actions/runs/40354233607) scope121682247638·publish121682336818 success. v0.42.0과 동일 source App/Migrator 후보 digest 검증→버전/최신 pair 승격·registry inspect·OCI 계측 성공 뒤 #124/#126/#127을 completed 종료했다. 새 PR/Main CI 실패·취소는 관측되지 않았다.
+- Root의 추가 실제 200% 확대 시험에서 첫 임시 probe는 Escape 직후 rAF 포커스 복귀 전 즉시 값을 읽어 `Zoomed menu Escape lost focus`를 반환했다(`/tmp/layoutManager-actual-zoom200-initial-query.txt`). source 변경 없이 포커스 복귀 완료를 기다린 재검증이 통과했고 원본 관측을 보존했다. 제품 변경을 추가하거나 최초 시도를 PASS로 기록하지 않는다. 완료 관측·API 배율/화면값·캡처는 TestReport와 `actual-zoom-200.json`을 따른다.
+
+
 ## Issues #124/#126/#127 / PR #132 — 초기 CI 성공과 보충 DWG 진단·probe 실패 (2026-10-27 KST)
 
 - **CI 실패와 구별:** HEAD `fd9eeaf`의 [Run 40349738685](https://github.com/planner77/layoutManager/actions/runs/40349738685) completed/success, Verify 121666219572·Docker 121666218874 각각 success. 독립 full E2E 86/86, Unit 351/351, legacy 1/1도 PASS. 아래 실패는 default CI에 없는 추가 DWG probe에서 관측했으며 최초 CI 성공을 삭제하지 않는다.

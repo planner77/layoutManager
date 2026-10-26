@@ -1,8 +1,8 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
-## Issues #124/#126/#127 — 목록·DXF 복구·Viewer UX (설계 2026-10-26, 독립 QA 2026-10-27)
+## Issues #124/#126/#127 — 0.42.0 완료 (2026-10-27)
 
-- 구현 전 Manager 요구/설계/AC는 [Issues124-126-127](out/Issues124-126-127.md). 지정 Developer→독립 QA→Manager 수용→Root 릴리스 절차, 후보 0.42.0. #124 홈 한정 sticky, #126 Three 기본+실 renderer 실패 1회 대체, #127 그룹 메뉴·overlay Drawer. 2026-10-27 독립 Typecheck, Lint, Vitest는 통과했으나 frozen candidate 전체 Playwright는 85/86이며 TC-127-MENU focus-return 1건 실패해 Developer 재작업/최종 QA 대기. DWG probes/legacy suite, 최신 Build, PR/Main CI/GHCR는 아직 검증되지 않음. G7/DB/API/운영 설정 변경 없음; #113 실제 CAD/GPU 수용 별도.
+- 홈 Sticky/밀도·DXF Three 기본/실패 복구·Viewer 그룹 메뉴/Drawer를 구현하고 PR #132, 최신 PR/Main CI, GHCR App/Migrator 0.42.0 pair 및 세 이슈 종료를 확인했다. 요구/설계/AC는 [Issues124-126-127](out/Issues124-126-127.md), 실제 QA·실패·게시 근거는 [TestReport](out/TestReport.md)의 U-ISSUES124-126-127-20261027과 [FailureLedger](out/FailureLedger.md)를 따른다. Viewer/목록·렌더러 오류/키보드 변경 시 이 근거를 먼저 확인한다. 다음 별도 수용은 #113 실 CAD/GPU이며 운영 Auth/G7·배포 승인은 이 완료와 분리한다.
 
 
 ## Issue #109 S3-1 — 운영 Prisma Schema·격리 후보 Migration·이중 게이트 (2026-10-26)

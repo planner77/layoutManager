@@ -1,12 +1,12 @@
 # CAD Web Viewer P.O.C.
 
-## 0.42.0 후보 — 목록과 Viewer 작업 공간 (#124/#126/#127)
+## 0.42.0 — 목록·DXF 복구·Viewer 작업 공간
 
-도면 목록의 메뉴·검색·Current 표시·결과 요약을 고정하고 좁은 화면에서는 추가 필터를 접습니다. Viewer는 DXF 기본 Three, 실제 렌더러 로드 실패의 dxf-viewer 단발 대체 및 로딩 중 수동 전환을 제공합니다. 도면명·원본만 상시 표시하며 설명은 도면명에서 확인합니다. 도면/보기/작업 그룹 메뉴와 좌·우·하단 Drawer에서 기존 명령에 접근합니다.
+[#124/#126/#127](https://github.com/planner77/layoutManager/pull/132) 구현·QA·PR CI·병합·Main CI·GHCR 게시 및 이슈 종료를 완료했습니다. 도면 목록의 메뉴·검색/Current·요약을 고정하고, DXF는 Three 기본과 단발 자동 대체·로딩 중 수동 전환을 제공합니다. Viewer의 두 정보 헤더·설명 접근, 도면/보기/작업 그룹 메뉴와 좌·우·하단 Drawer를 지원합니다. 임시 생성 개체가 있는 렌더러 전환/재로드는 확인 후 진행합니다.
 
-미저장 브라우저 생성 개체는 렌더러 변경/재로드 시 폐기되므로 확인 후 전환합니다. 대체 렌더러의 Three 전용 기능은 지원하지 않으며 원본 다운로드·보기·검색 경로는 유지합니다. 실제 검증·미완 범위는 [TestReport](out/TestReport.md), 정책/AC는 [Issues124-126-127](out/Issues124-126-127.md)를 따릅니다. 이 절의 후보 안내는 CI/GHCR 게시 완료 증거가 아니며 #113 실 CAD/GPU 및 G7 운영 활성화와 분리됩니다.
+최신 PR CI에서 Unit 352/352·E2E 86/86·legacy migration 1/1·Docker 검증이 통과했습니다. 독립 DWG 4/4·기능 회귀 13/13 및 실제 Chromium 200% 확대도 확인했습니다. [Main CI/게시 근거](https://github.com/planner77/layoutManager/actions/runs/40354233607), 상세 시험·digest·제한은 [TestReport](out/TestReport.md), 초기 실패와 수정은 [FailureLedger](out/FailureLedger.md), 정책/AC는 [단위 가이드](out/Issues124-126-127.md)를 따릅니다. #113 실 CAD/GPU 수용과 실제 운영 배포는 별도입니다.
 
-독립 QA(2026-10-27): 초기 키보드 실패 수정 후 full E2E 86/86, Unit 351/351·legacy migration 1/1, 합성 Three 100/10k/100k cold·warm이 통과했습니다. 보충 DWG에서 발견한 진단 및 lab probe 2건은 최소 보완 후 독립 Unit 20/20·DWG 4/4·기능 회귀 13/13이 통과해 로컬 수용했습니다. 최신 PR CI·게시 결과는 확인 중입니다. 이전 HEAD의 [PR #132 CI](https://github.com/planner77/layoutManager/actions/runs/40349738685) 성공과 후속 수정 검증을 구분합니다. 최종 상태는 [TestReport](out/TestReport.md), 실패·조치는 [FailureLedger](out/FailureLedger.md)를 따릅니다.
+현재 게시한 linux/amd64 이미지 쌍은 `ghcr.io/planner77/layoutmanager:0.42.0` 및 `ghcr.io/planner77/layoutmanager:0.42.0-migrate`입니다. 두 이미지는 동일 source `f2c04bf`로 게시했습니다. 실행/업그레이드는 [Operation](out/Operation.md)의 동일 버전 pair·백업·migration 절차를 따릅니다. 아래 과거 이슈/버전 기록과 구분합니다.
 
 
 ## Issue #108 — G6 수용 매트릭스·격리 백업/복원 리허설 준비
