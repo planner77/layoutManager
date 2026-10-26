@@ -1,5 +1,13 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issues #124/#126/#127 — DWG 진단 보완 후보 (2026-10-27 KST, 0.42.0)
+
+- **이전 HEAD의 실증:** `fd9eeaf9b5997fcc167969a36d20d9d5ad3b1561`, [PR #132](https://github.com/planner77/layoutManager/pull/132), [PR CI 40349738685](https://github.com/planner77/layoutManager/actions/runs/40349738685) completed/success(Verify 121666219572, Docker 121666218874). 독립 전체 Unit 351/351·63 files, E2E 86/86(6.3m), legacy migration 1/1(11.2s) PASS. 이 결과를 아래 후속 수정 HEAD 전체 CI 성공으로 전용하지 않는다.
+- **추가 실제 크기 시험:** 기존 benchmark Three pair 1만 실행, 합성 LINE 100/10,000/100,000개 각 cold/warm 총 6개 record, 3/3 cases PASS(50.5s). 모두 renderer=three-dxf-viewer/result=success/entity count 일치/fallback=null/console·page errors 0, source cold=miss/warm=memory. 비공개 실 CAD·GPU 성능 수용은 #113 별도이다.
+- **보충 DWG 2/4 실패와 수정:** 정상 등록 DWG 메뉴/fullscreen/lifecycle 및 standalone 오류 시험은 통과했으나, WASM 404의 기존 고정 진단이 Manager의 generic LOAD로 가려졌고 `/lab/dwg` probe가 없는 그룹 메뉴를 기다렸다. 상세 실패는 FailureLedger와 `/tmp/layoutManager-issues124-127-qa-final.md`에 보존했다. 정해진 DWG stage/code/고정 문구가 모두 맞는 typed error만 보존하고 raw/위조/미등록 오류와 DXF는 기존 generic 처리를 유지한다. lab probe는 실제 확대 버튼으로 복원했다.
+- **수정 검증:** Developer Typecheck/Lint/Build, 관련 Unit 20/20·DWG 4/4·focused 13/13 PASS. 독립 post-fix Typecheck/Lint(기존 warning 3개), 관련 Unit 20/20 및 공개 pinned DWG 4/4(24.0s) PASS. 독립 focused 13/13(47.7s)도 PASS, Manager가 로컬 구현을 수용했다. 검증된 5개 소스/시험 diff SHA-256은 `efea53f9f9296333768d65013abb7c8f6f1fb801357efcbe2b366df173df167f`이다. 최신 HEAD PR CI·Main CI·GHCR·이슈 종료는 아직 확인 중이다. 최종 보고는 `/tmp/layoutManager-issues124-127-qa-final.md`에 추가하며 실제 release 기록으로 동기화한다.
+
+
 ## Issues #124/#126/#127 — 독립 QA 1차 결과와 수정 후보 재검증 (설계 2026-10-26, QA 2026-10-27, 후보 0.42.0)
 
 - **현재 후보 재고정(2026-10-27):** 아래 1차 QA의 keyboard focus race를 `useLayoutEffect`의 commit 직후 포커스와 trigger 처리 키의 `stopPropagation`으로 보완했다. Developer Typecheck/Lint/Production Build 및 강화된 focused E2E 13/13 PASS, Manager 최소 수정 검토 후 소스·문서를 재고정했다. 독립 QA 전체/DWG4/legacy 및 원격 PR/Main CI·GHCR는 재실행/확인 중이며 아직 완료 수용이 아니다. 아래 85/86 결과와 실패 원장은 당시 관측으로 보존한다. 최종 증거는 후속 release 기록에 추가한다.

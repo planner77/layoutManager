@@ -1,5 +1,13 @@
 # PR/Main CI 실패 원장
 
+## Issues #124/#126/#127 / PR #132 — 초기 CI 성공과 보충 DWG 진단·probe 실패 (2026-10-27 KST)
+
+- **CI 실패와 구별:** HEAD `fd9eeaf`의 [Run 40349738685](https://github.com/planner77/layoutManager/actions/runs/40349738685) completed/success, Verify 121666219572·Docker 121666218874 각각 success. 독립 full E2E 86/86, Unit 351/351, legacy 1/1도 PASS. 아래 실패는 default CI에 없는 추가 DWG probe에서 관측했으며 최초 CI 성공을 삭제하지 않는다.
+- **실제 추가 실패 2/4:** `/tmp/layoutManager-issues124-127-qa-final-dwg.log`. `dwg-viewer.probe.ts` TC-DWG-002/004에서 WASM 404 후 예상 고정 `WASM 초기화 실패` 대신 generic `adapter-load:LOAD`가 표시됐다(:256). 정상 load/메뉴/fullscreen은 별도 PASS. `dwg.probe.ts` TC-DWG-001/003/005는 `/lab/dwg`에 없는 Viewer 그룹 메뉴 helper를 기다려 120초 timeout; 제품 parse failure와 구별한다.
+- **조치:** DWG SIZE/HEADER/WASM_INIT/PARSE/EXTRACT/WORKER_INIT/TIMEOUT의 고정 message와 typed stage/code allowlist를 모두 검증하여 공개 진단만 유지한다. 임의 raw Error·위조 문구·잘못된 stage·미등록 code·DXF 오적용은 generic LOAD로 차단하는 Unit 추가. lab 시험은 기존 실제 확대 버튼으로 복원했다. 라이브러리·WASM·Geometry/DB 변경 없음.
+- **재검증:** Developer type/lint/build·Unit20/DWG4/focused13 PASS. 독립 post-fix type/lint·Unit20·DWG4 PASS(24.0s). 독립 focused13/13도 PASS(47.7s), Manager 로컬 수용. 새 HEAD PR CI 등 남은 결과는 후속 관측으로 기록하며 fd9 CI를 재사용하지 않는다.
+
+
 ## Issues #124/#126/#127 — 키보드 최소 수정과 후보 재고정 (2026-10-27 KST)
 
 - 1차 독립 QA 85/86의 실패·trace는 아래 원본 항목에 보존한다. 메뉴 전환 후 `requestAnimationFrame`으로 지연한 포커스를 `useLayoutEffect`의 DOM commit 직후 처리로 바꾸고, trigger가 처리한 ArrowUp/ArrowDown/Enter/Space의 전파를 차단해 상위 메뉴에서 같은 키를 중복 처리하지 않도록 했다. 레이아웃·Adapter/DB/원본 변경 없음.

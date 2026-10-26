@@ -1,6 +1,7 @@
 import { test,expect,vi,afterEach } from 'vitest';
 import { ViewerSource } from '../../viewers/core/source';
 import { ViewerManager,type CadViewerAdapter } from '../../viewers/core/adapter';
+import { DWG_ADAPTER_LOAD_MESSAGES, ViewerLoadError, dwgAdapterLoadError } from '../../viewers/core/viewer-load-error';
 afterEach(()=>vi.unstubAllGlobals());
 test('TC-SWITCH-001: managers share download but adapters cannot mutate cached bytes',async()=>{
   const fetcher=vi.fn(async()=>new Response(new Uint8Array([1,2,3])));vi.stubGlobal('fetch',fetcher);
@@ -79,6 +80,32 @@ test('TC-126-RECOVERY: source HTTP failure stays distinct from adapter failure',
   const failLoad=new ViewerManager(async()=>({load:async()=>{throw new Error('Worker failed');},dispose:vi.fn(),fitToView:vi.fn(),zoomIn:vi.fn(),zoomOut:vi.fn()}),source);
   await expect(failLoad.load('/same','DXF')).rejects.toMatchObject({stage:'adapter-load',reasonCode:'LOAD'});
   expect(source.state('/same')).toBe('memory');
+});
+
+test('TC-DWG-002: manager preserves only known safe typed DWG failures',async()=>{
+  vi.stubGlobal('fetch',vi.fn(async()=>new Response('AC1015')));
+  const report=vi.fn();
+  const loadError=async(error:Error,format:'DXF'|'DWG'='DWG')=>{
+    const adapter:CadViewerAdapter={load:async()=>{throw error;},dispose:vi.fn(),fitToView:vi.fn(),zoomIn:vi.fn(),zoomOut:vi.fn()};
+    const manager=new ViewerManager(async()=>adapter,undefined,{renderer:format==='DWG'?'libredwg-web':'three-dxf-viewer',versionId:'test',report},format);
+    return manager.load('/drawing',format).catch((failure:unknown)=>failure);
+  };
+  const safe=dwgAdapterLoadError('DWG_WASM_INIT',new Error('internal path'));
+  expect(await loadError(safe)).toBe(safe);
+  expect(report.mock.lastCall?.[0].error).toBe('adapter-load:DWG_WASM_INIT');
+  const failures=[
+    new Error('secret path'),
+    new ViewerLoadError('adapter-load','DWG_WASM_INIT','secret path'),
+    new ViewerLoadError('adapter-init','DWG_WASM_INIT',DWG_ADAPTER_LOAD_MESSAGES.DWG_WASM_INIT),
+    new ViewerLoadError('adapter-load','UNLISTED',DWG_ADAPTER_LOAD_MESSAGES.DWG_WASM_INIT),
+  ];
+  for(const failure of failures){
+    const wrapped=await loadError(failure);
+    expect(wrapped).toMatchObject({stage:'adapter-load',reasonCode:'LOAD',message:'Viewer 도면 처리에 실패했습니다.'});
+    expect(report.mock.lastCall?.[0].error).toBe('adapter-load:LOAD');
+  }
+  const dxfWrapped=await loadError(safe,'DXF');
+  expect(dxfWrapped).toMatchObject({stage:'adapter-load',reasonCode:'LOAD'});
 });
 
 test('TC-126-RECOVERY: disposed late factory cannot attach as active adapter',async()=>{

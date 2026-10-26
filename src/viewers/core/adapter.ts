@@ -17,7 +17,7 @@ export type GeneratedOutlineObject = Readonly<{
   sourceEntityIds:readonly string[];kind:OutlineKind;name:string;outlineTypeId:string|null;
 }>;
 import { ViewerSource } from './source';
-import { ViewerLoadError, isViewerCancellation } from './viewer-load-error';
+import { ViewerLoadError, isKnownSafeDwgAdapterLoadError, isViewerCancellation } from './viewer-load-error';
 import {heapBytes,observeFrame,type ViewerMetric} from './metrics';
 export interface CadViewerAdapter {
   load(source: ArrayBuffer): Promise<{ empty: boolean; entityCount?:number; warning?:string; metrics?: { initializeMs?: number; parseMs?: number } }>;
@@ -97,6 +97,7 @@ export class ViewerManager {
     }
     catch(error) { if (this.adapter === adapter) { adapter.dispose(); this.adapter = undefined; }
       if(isViewerCancellation(error))throw error;
+      if(this.format==='DWG' && isKnownSafeDwgAdapterLoadError(error))throw error;
       throw new ViewerLoadError('adapter-load','LOAD','Viewer 도면 처리에 실패했습니다.',error); }
     } catch(error) {
       metric.result=generation!==this.generation || (error instanceof DOMException&&error.name==='AbortError')?'cancelled':'error';

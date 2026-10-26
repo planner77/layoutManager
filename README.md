@@ -6,7 +6,7 @@
 
 미저장 브라우저 생성 개체는 렌더러 변경/재로드 시 폐기되므로 확인 후 전환합니다. 대체 렌더러의 Three 전용 기능은 지원하지 않으며 원본 다운로드·보기·검색 경로는 유지합니다. 실제 검증·미완 범위는 [TestReport](out/TestReport.md), 정책/AC는 [Issues124-126-127](out/Issues124-126-127.md)를 따릅니다. 이 절의 후보 안내는 CI/GHCR 게시 완료 증거가 아니며 #113 실 CAD/GPU 및 G7 운영 활성화와 분리됩니다.
 
-독립 QA 1차(2026-10-27): Typecheck·ESLint PASS(기존 warning 3개), Vitest 351/351 PASS, 전체 Playwright 85/86으로 메뉴 키보드 포커스 1건 실패를 기록했습니다. 최소 수정 후 Developer Build·Typecheck·Lint와 강화된 기능 시험 13/13이 통과했고 후보를 재고정했습니다. 독립 전체 QA·DWG·migration 재검증 및 PR/Main CI·GHCR는 진행 중입니다. 최종 상태는 [TestReport](out/TestReport.md), 보존된 실패·조치는 [FailureLedger](out/FailureLedger.md)를 따릅니다.
+독립 QA(2026-10-27): 초기 키보드 실패 수정 후 full E2E 86/86, Unit 351/351·legacy migration 1/1, 합성 Three 100/10k/100k cold·warm이 통과했습니다. 보충 DWG에서 발견한 진단 및 lab probe 2건은 최소 보완 후 독립 Unit 20/20·DWG 4/4·기능 회귀 13/13이 통과해 로컬 수용했습니다. 최신 PR CI·게시 결과는 확인 중입니다. 이전 HEAD의 [PR #132 CI](https://github.com/planner77/layoutManager/actions/runs/40349738685) 성공과 후속 수정 검증을 구분합니다. 최종 상태는 [TestReport](out/TestReport.md), 실패·조치는 [FailureLedger](out/FailureLedger.md)를 따릅니다.
 
 
 ## Issue #108 — G6 수용 매트릭스·격리 백업/복원 리허설 준비
