@@ -229,6 +229,6 @@ describe('Issue #104 G2 explicit one-shot Admin service (isolated database only)
       .get('table', 'CadFileVersion')).toBeDefined();
     expect(db.prepare('PRAGMA foreign_key_check').all()).toEqual([]);
     const shippedPrisma = readFileSync(new URL('../../prisma/schema.prisma', import.meta.url), 'utf8');
-    expect(shippedPrisma).not.toContain('model AuthSession {');
+    expect(shippedPrisma).toContain('model AuthSession {');
   });
 });

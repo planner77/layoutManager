@@ -395,7 +395,7 @@ describe('#105 G3 isolated login and session', () => {
     service.logout(token, NOW + 2, 'cad-unchanged');
     expect(snapshot()).toEqual(before);
     const shipped = readFileSync(new URL('../../prisma/schema.prisma', import.meta.url), 'utf8');
-    expect(shipped).not.toContain('model AuthSession {');
+    expect(shipped).toContain('model AuthSession {');
     expect(db.prepare('PRAGMA foreign_key_check').all()).toEqual([]);
   });
 });
