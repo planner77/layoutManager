@@ -1,5 +1,5 @@
 /**
- * #106 G4 isolated SQLite adapter. Only a guarded cad-auth-g1-*/fixture.sqlite
+ * #106 G4 isolated SQLite adapter. Only a guarded cad-auth-g1-<temp>/fixture.sqlite
  * from #103 may be supplied; no operating DB, routes or Prisma imports.
  */
 import { randomUUID } from 'node:crypto';
