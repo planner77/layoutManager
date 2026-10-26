@@ -126,11 +126,13 @@ describe('#109 G7 S1 isolated staging integration', () => {
     expect(adminLogin.status).toBe(200);
     const adminCookie = adminLogin.headers.get('set-cookie')?.split(';')[0];
     const adminCSRF = (await adminLogin.json()).csrfToken as string;
-    expect(adminCookie).toContain('cad_session=');
+    expect(adminCookie).toContain('cad_staging_session=');
+    expect(adminLogin.headers.get('set-cookie')).toContain('Path=/api/g7-staging;');
+    expect(adminLogin.headers.get('set-cookie')).not.toMatch(/^cad_session=/);
     expect(adminCSRF).toBeTruthy();
     const roleGrant = await POST(send('POST', 'access/grant', {
       kind: 'role', operation: 'grant', affectedUserId: editorId, value: 'Editor',
-    }, adminCookie, adminCSRF), callPath('access/grant'));
+    }, adminCookie + '; cad_session=production-isolated', adminCSRF), callPath('access/grant'));
     expect(roleGrant.status).toBe(200);
     const siteGrant = await POST(send('POST', 'access/grant', {
       kind: 'site', operation: 'grant', affectedUserId: editorId, value: siteId,
@@ -139,6 +141,7 @@ describe('#109 G7 S1 isolated staging integration', () => {
     const editorLogin = await POST(send('POST', 'auth/login',
       { login: 'stageeditor', password: userPassword }), callPath('auth/login'));
     expect(editorLogin.status).toBe(200);
+    expect(editorLogin.headers.get('set-cookie')).toContain('Path=/api/g7-staging;');
     const editorCookie = editorLogin.headers.get('set-cookie')?.split(';')[0];
     const editorCSRF = (await editorLogin.json()).csrfToken as string;
     const data = Buffer.from('0\nSECTION\n2\nHEADER\n0\nENDSEC\n0\nEOF\n');
@@ -178,6 +181,11 @@ describe('#109 G7 S1 isolated staging integration', () => {
     expect(Number(after.prepare('SELECT COUNT(*) n FROM "AuditEvent" WHERE action=?').get('CAD_VERSION_DELETED')?.n)).toBe(1);
     expect(after.prepare('PRAGMA foreign_key_check').all()).toHaveLength(0);
     after.close();
+    const logout = await POST(send('POST', 'auth/logout',
+      undefined, editorCookie, editorCSRF), callPath('auth/logout'));
+    expect(logout.status).toBe(200);
+    expect(logout.headers.get('set-cookie')).toContain(
+      'cad_staging_session=; Path=/api/g7-staging;');
     copyFileSync(snapshot, path.join(home!, 'fixture.sqlite'));
     const restored = openG7StagingDb(resolveG7StagingGate(process.env)!);
     expect(restored.prepare('SELECT sha256 FROM "CadFileVersion" WHERE id=?').get(created.id)?.sha256)
