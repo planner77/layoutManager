@@ -53,7 +53,9 @@ const send=(method:string,action:string,body?:object,cookie?:string,csrf?:string
 function uid(value:Response) {return value.headers.get('set-cookie')?.split(';')[0]??'';}
 async function login(name:string,password:string) {
   const r=await send('POST','auth/login',{login:name,password});
-  const data=await r.json() as {csrfToken?:string};
+  // Keep the original Response readable for status diagnostics and
+  // regressions; consuming r.json() before response.clone() throws.
+  const data=await r.clone().json() as {csrfToken?:string};
   return {response:r,data,cookie:uid(r)};
 }
 async function setup() {
@@ -124,6 +126,7 @@ describe('#109 S3-2 reserved Auth/Admin/Session/Role/Site API',()=>{
       });
       expect(change.status,await change.clone().text()).toBe(200);
       const admin=await login('previewadmin',PASS2);
+      expect(admin.response.bodyUsed).toBe(false); // regression: diagnostics can still clone.
       expect(admin.response.status,await admin.response.clone().text()).toBe(200);
       expect(admin.response.headers.get('set-cookie')).toContain('Path=/api/g7-operational;');
       expect(admin.cookie).toMatch(/^cad_g7_s3_session=/);
