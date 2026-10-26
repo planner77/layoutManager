@@ -1,5 +1,19 @@
 # 상세 요구사항
 
+## Issue #109 G7 — 기본 OFF·승인·실복구 요구 추적 (2026-10-26)
+
+| ID | 목표 계약 | TestPlan TC | 현 단계 |
+| --- | --- | --- | --- |
+| FR-P4-G7-01 | 검증된 G7-capable App/Migrator digest·정식 Schema+Owner GO·`G7_AUTH_ENABLED` 기본 false 이중 게이트, 불일치 fail-closed | G7-001~003,013 | 문서 설계 |
+| FR-P4-G7-02 | 기존 익명 CAD GET 유지, `G7_CAD_WRITE_CUTOVER_ENABLED` 기본 false; POST/Current Editor+Site, DELETE Editor+Site+기존 비밀번호 AND 및 Audit 원자성 | G7-004~006 | 미구현 |
+| FR-P4-G7-03 | 단발 Admin/Session 8h/30m/3개·revoke/Role·Site·Version·Audit 365일/별도 grants | G7-007~008 | 격리 구현·운영 미연결 |
+| FR-P4-G7-04 | 동일 snapshot DB/CAD/S3 안전 backup·정식 migration dry-run·실 Restore/rollback, 원본·Current·Version 불변/호환 App pair | G7-009~011 | #108 현장 미실행 |
+| FR-P4-G7-05 | 사내 두 PC PROD Nginx/DEV direct E2E와 G0~G6 HEAD/Run/사내 증거·Owner 별도 Go/No-Go | G7-012~013 | 승인 대기 |
+| NFR-P4-G7-01 | #98/#83/#65/#60 신규 API 및 Audit 물리 purge 별도 승인 전 OFF; docs-only PR 운영 변경 0 | G7-014~015 | 준비 중 |
+
+G7 설계 flag는 현재 실 운영 env/코드에서 작동하지 않는다. 상세 [Issue109](Issue109.md), [ADR-051-G7-PLAN](Decisions.md).
+
+
 ## Issue #106 G4 — 인가·Grant·Audit 요구사항 (2026-10-26)
 
 | ID | 업무 계약 | TC |
