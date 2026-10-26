@@ -54,6 +54,7 @@ describe('#109 S2/S3 operational GO gate', () => {
     expect(g7OperationalWriteMode({ G7_AUTH_ENABLED: 'true' })).toBe('blocked');
     expect(g7OperationalWriteMode({ G7_CAD_WRITE_CUTOVER_ENABLED: 'true' })).toBe('blocked');
     expect(g7OperationalWriteMode({ G7_S3_GO: 'false' })).toBe('blocked');
+    expect(g7OperationalWriteMode({ G7_RELEASE_CAPABILITY: 'G7-OPERATIONAL-V1' })).toBe('blocked');
   });
   test('private release-specific approved manifest allows Auth, write only on separate flag', () => {
     const now = Date.now(), { env } = fixture(now);
