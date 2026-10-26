@@ -1,6 +1,6 @@
 # ChangeLog
 
-## Unreleased — Issue #57 공통 Logger·UploadDiagnostics 단일화 (2026-10-27)
+## v0.42.1 후보 — Issue #57 공통 Logger·UploadDiagnostics 단일화 (2026-10-27)
 
 - 기존 #18 구조화 Logger 재사용 및 업로드 별도 console JSON emitter 제거. Versioned Schema v1, 안전한 필드 allowlist/정적 Error code·category 재정제, `LOG_LEVEL`/`LOG_FORMAT` 단일 필터 적용. 공개 진단/첫 실패/요청 ID 계약 유지, 반복 성공 Health 200 debug-only.
 - 일부 수동 CLI의 원시 Error 메시지 출력 제거; 단위 회귀 테스트 및 운영/개발 가이드 동기화. 기존 API 응답/DB Migration·Viewer·G7 Auth 활성화 및 로그 보관/조회 API/UI는 변경/추가 없음.
