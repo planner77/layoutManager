@@ -489,6 +489,7 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 | [Issue103](out/Issue103.md) | G1 User/Session/Role·Site·SpecialGrant/Audit/RecoveryNonce 격리 SQL·Prisma 계약 및 원자성·복구 시험 | Auth DB/세션/권한/복구·백업 검토 및 #102 G0→G7 선행 조건 확인 시 |
 | [Issue102](out/Issue102.md) | G0 내부 LAN PROD Nginx/DEV App 직접 접속, Owner 경량 보안 범위·잔여 위험 수용·G0~G7 운영 게이트 | 운영/개발 배포 경로·Nginx/직접 포트, 인증·Site/Version 권한·기존 CAD API 전환, 위험 범위·운영 Go/No-Go/수용 기준 변경 시 |
 | [Issue107](out/Issue107.md) | G5 PROD Nginx/DEV 직결 격리 Preview, 테스트·실 LAN 인계 | Proxy/접속 경로·정상 Viewer/API/Upload/Health 검증, 운영 환경 변경 경계 |
+| [Issue108](out/Issue108.md) | G6 사내 PC 2대/Nginx·DEV 및 인증 업무 E2E·동일 시점 SQLite/CAD/S3 백업·격리 Migration·실 Restore·Rollback 수용, 오프라인 EV 증거 검사와 운영 OFF 범위 | G6 테스트 설계·실행·증거 판정, LAN/Viewer/기존 CAD 호환, DB/CAD/S3 복구·현장 QA, G7 #109 운영 Go/No-Go 선행 수용 확인 시 |
 | [Issue31](out/Issue31.md) | DXF 다중 선택·볼록/정밀 외곽선·실험 상태·P4 권한 보류 | Viewer 선택·외곽선/Worker/JSON 변경 시 |
 | [Issue26](out/Issue26.md) | DXF TEXT/MTEXT 색인·world 좌표 focus·검색 범위/검증 | Viewer 검색·Pan/Zoom·Worker·BLOCK/INSERT·DWG 텍스트 지원 검토 시 |
 | [Issue66](out/Issue66.md) | Migrator 최소 의존성·크기 측정/OCI manifest·복구 계약 | Docker migrator/CI/GHCR 및 버전·패키징 변경 시 |
