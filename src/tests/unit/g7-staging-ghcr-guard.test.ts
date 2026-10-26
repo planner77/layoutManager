@@ -89,6 +89,26 @@ describe('#109 G7 S1 narrow non-publishing Main CI gate', () => {
     ], '#109 | S1 Staging-only integration [G7-S1-NO-GHCR]');
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain('G7-S1 GHCR exclusion disallowed path');
+    expect(result.stdout).not.toContain('G7-S1 GHCR exclusion disallowed path');
+  });
+  test('near-match or appended text never grants a GHCR skipping exception', () => {
+    const marker = '#109 | S1 Staging-only integration [G7-S1-NO-GHCR]';
+    for (const subject of [
+      marker + ' NOT-APPROVED',
+      marker + '-extra',
+      '#109 | S1 Staging-only integration [G7-S1-NO-GHCR]  ',
+    ]) {
+      const result = runScope(['src/server/g7-staging/gate.ts'], subject);
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toContain('G7-S1 exact squash subject required');
+      expect(result.values).toBe('');
+    }
+  });
+  test('exact first line with multiline commit body still skips publication', () => {
+    const marker = '#109 | S1 Staging-only integration [G7-S1-NO-GHCR]';
+    const result = runScope(['src/server/g7-staging/gate.ts'], marker + '\n\nApproved S1 changes');
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.values).toContain('publish=false');
   });
   test('normal runtime change without marker keeps normal publishing path', () => {
     const result = runScope(['src/app/api/cad-files/route.ts'],
