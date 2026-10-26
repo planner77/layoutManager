@@ -15,6 +15,14 @@ const stableEvent = /^[a-z][a-z0-9_]{0,63}$/;
 const machineCode = /^[A-Z][A-Z0-9_]{0,63}$/;
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const knownUploadCodes = new Set([...Object.keys(safeMessages), ...Object.keys(safeCadMessages), ...objectStorageCodes]);
+const safeApplicationCodes = new Set([
+  ...knownUploadCodes,
+  'SERVER_ERROR', 'HEALTH_UNAVAILABLE', 'STORAGE_CLEANUP_PENDING', 'STORAGE_CLEANUP_FAILED',
+  'DATABASE_CHECK_FAILED', 'DELETE_PASSWORD_BACKFILL_FAILED', 'DELETE_RATE_LIMITED',
+  'INVALID_DELETE_PASSWORD', 'REQUEST_TOO_LARGE', 'IMMUTABLE_MASTER',
+  'INVALID_MASTER_TYPE', 'INVALID_MASTER_NAME', 'INVALID_SITE_KIND', 'INVALID_PARENT',
+  'INVALID_ACTIVE',
+]);
 const knownErrorNames = new Set([
   'Error', 'CadError', 'TypeError', 'RangeError', 'SyntaxError', 'AbortError', 'TimeoutError',
   'S3ServiceException', 'PrismaClientKnownRequestError', 'PrismaClientInitializationError',
@@ -46,7 +54,7 @@ function safeErrorName(name: unknown): string {
 }
 
 function safeCode(value: unknown): string | undefined {
-  return typeof value === 'string' && machineCode.test(value) && !sensitiveKey.test(value)
+  return typeof value === 'string' && (safeApplicationCodes.has(value) || (machineCode.test(value) && /^(?:P[0-9]{4}|SQLITE_[A-Z0-9_]+)$/.test(value)))
     ? value : undefined;
 }
 
@@ -211,7 +219,8 @@ export class RequestLogContext {
   ) {
     this.requestId = requestId && uuid.test(requestId) ? requestId : randomUUID();
     // Avoid two info logs for every successful read. The completion stays at info.
-    this.debug('http_request_started', { outcome: 'started' });
+    if (this.operation === 'health') this.debug('http_request_started', { outcome: 'started' });
+    else this.info('http_request_started', { outcome: 'started' });
   }
 
   private base(extra: Record<string, unknown> = {}) {
@@ -236,7 +245,7 @@ export class RequestLogContext {
 
   completed(status: number, outcome: Exclude<LogOutcome, 'started'> = status >= 400 ? 'failure' : 'success') {
     const level: LogLevel = outcome === 'failure' ? 'error' : outcome === 'warning' ? 'warn' : 'info';
-    writeLog(level, 'http_request_completed', this.base({ httpStatus: status, outcome }));
+    writeLog(this.operation === 'health' && outcome === 'success' ? 'debug' : level, 'http_request_completed', this.base({ httpStatus: status, outcome }));
   }
 
   responseHeaders(extra?: HeadersInit) {
