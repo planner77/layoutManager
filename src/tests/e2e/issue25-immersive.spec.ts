@@ -1,3 +1,4 @@
+import { clickViewerCommand, openViewerMenu } from './viewer-menu-helper';
 import { expect, test } from '@playwright/test';
 import { masterFields } from './master-helper';
 
@@ -18,27 +19,29 @@ for (const renderer of ['dxf-viewer', 'three-dxf-viewer'] as const) {
     const file = await response.json();
     await page.goto(`/?filename=issue25-${renderer}.dxf`);
     await page.getByRole('link', { name: '도면 보기', exact: true }).click();
+    if (renderer === 'dxf-viewer') {
+      await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
+      await clickViewerCommand(page, 'view', 'dxf-viewer');
+    }
     const shell = page.getByTestId('cad-viewer-shell');
     await expect(shell).toHaveAttribute('data-fullscreen', 'true');
     await expect(shell).toHaveAttribute('data-native-fullscreen', 'false');
     await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
     await expect(page.getByRole('heading', { name: file.displayName })).toBeVisible();
-    await expect(page.getByRole('link', { name: '← 버전 목록' })).toBeVisible();
-    await expect(page.getByRole('button', { name: '다시 불러오기' })).toBeVisible();
-    await expect(page.getByRole('button', { name: '브라우저 전체 화면', exact: true })).toBeVisible();
-    await expect(page.getByRole('button', { name: '도면 링크 복사' })).toBeVisible();
-    await expect(page.getByRole('link', { name: '원본 다운로드' })).toBeVisible();
+    await openViewerMenu(page, 'drawing');
+    await expect(page.getByRole('menuitem', { name: '버전 목록' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: '다시 불러오기' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: '도면 링크 복사' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: '원본 다운로드' })).toBeVisible();
+    await openViewerMenu(page, 'view');
+    await expect(page.getByRole('menuitem', { name: '브라우저 전체 화면', exact: true })).toBeVisible();
     await expect.poll(() => shell.evaluate(element => {
       const bounds = element.getBoundingClientRect();
       return Math.abs(bounds.width - innerWidth) < 2 && Math.abs(bounds.height - innerHeight) < 2;
     })).toBe(true);
     await expect.poll(() => page.evaluate(() => getComputedStyle(document.documentElement).overflow)).toBe('hidden');
-    if (renderer === 'three-dxf-viewer') {
-      await page.getByRole('button', { name: renderer, exact: true }).click();
-      await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
-      await expect(shell).toHaveAttribute('data-fullscreen', 'true');
-      await expect(page.getByRole('complementary', { name: '전체 화면 레이어' })).toBeVisible();
-    }
+    await expect(page.getByTestId('viewer-active-renderer')).toHaveText(renderer);
+    if (renderer === 'three-dxf-viewer') await expect(page.getByRole('complementary', { name: '전체 화면 레이어' })).toBeVisible();
     const canvas = page.getByTestId('cad-canvas').locator('canvas');
     await expect(canvas).toHaveCount(1);
     await page.setViewportSize({ width: 360, height: 700 });
@@ -55,18 +58,25 @@ for (const renderer of ['dxf-viewer', 'three-dxf-viewer'] as const) {
     await shell.evaluate(element => Object.defineProperty(element, 'requestFullscreen', {
       configurable: true, value: () => Promise.reject(new Error('browser-policy-rejected')),
     }));
-    await page.getByRole('button', { name: '브라우저 전체 화면', exact: true }).click();
+    await clickViewerCommand(page, 'view', '브라우저 전체 화면');
     await expect(shell).toHaveAttribute('data-fullscreen', 'true');
     await expect(shell).toHaveAttribute('data-native-fullscreen', 'false');
 
     await page.reload();
     await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
     await expect(shell).toHaveAttribute('data-fullscreen', 'true');
+    if (renderer === 'three-dxf-viewer') {
+      await expect(page.getByRole('dialog', { name: '레이어' })).toBeVisible();
+      await page.keyboard.press('Escape');
+      await expect(page.getByRole('dialog', { name: '레이어' })).toHaveCount(0);
+      await expect(shell).toHaveAttribute('data-fullscreen', 'true');
+    }
     await page.keyboard.press('Escape');
     await expect(shell).toHaveAttribute('data-fullscreen', 'false');
     await expect.poll(() => page.evaluate(() => getComputedStyle(document.documentElement).overflow)).not.toBe('hidden');
-    await expect(page.getByRole('button', { name: '전체 화면', exact: true })).toBeVisible();
-    await page.getByRole('button', { name: '전체 화면', exact: true }).click();
+    await openViewerMenu(page, 'view');
+    await expect(page.getByRole('menuitem', { name: '전체 화면', exact: true })).toBeVisible();
+    await clickViewerCommand(page, 'view', '전체 화면');
     await expect(shell).toHaveAttribute('data-fullscreen', 'true');
 
     const directContext = await browser.newContext({ baseURL });
@@ -80,7 +90,7 @@ for (const renderer of ['dxf-viewer', 'three-dxf-viewer'] as const) {
       await directContext.close();
     }
 
-    await page.getByRole('link', { name: '← 버전 목록' }).click();
+    await clickViewerCommand(page, 'drawing', '← 버전 목록');
     await expect(page).toHaveURL(new RegExp(`/cad/locations/${file.locationId}`));
     await expect(page.getByTestId('cad-viewer-shell')).toHaveCount(0);
     await page.goBack();
@@ -120,17 +130,16 @@ test('TC-ISSUE25-002: native fullscreen has an in-shell blocking loading overlay
     await route.continue();
   });
   try {
-    await page.getByRole('button', { name: '다시 불러오기' }).click();
+    await clickViewerCommand(page, 'drawing', '다시 불러오기');
     await expect.poll(() => requests).toBe(1);
-    await expect(page.getByTestId('global-loading-overlay')).toBeVisible();
-    // A sibling provider overlay is NOT in the native browser fullscreen top layer;
-    // the in-shell copy remains visible above the drawing and prevents interaction.
-    await expect(shell.getByTestId('viewer-native-loading-overlay')).toBeVisible();
-    await expect(page.getByRole('button', { name: '다시 불러오기' })).toBeDisabled();
+    await expect(shell.getByTestId('viewer-loading-overlay')).toBeVisible();
+    await expect(shell.getByRole('button', { name: '로딩 중단 후 three-dxf-viewer로 열기' })).toBeEnabled();
+    await openViewerMenu(page, 'drawing');
+    await expect(page.getByRole('menuitem', { name: '다시 불러오기' })).toBeDisabled();
   } finally {
     release();
   }
-  await expect(shell.getByTestId('viewer-native-loading-overlay')).toHaveCount(0);
+  await expect(shell.getByTestId('viewer-loading-overlay')).toHaveCount(0);
   await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
   await shell.evaluate(() => {
     Reflect.deleteProperty(document, 'fullscreenElement');

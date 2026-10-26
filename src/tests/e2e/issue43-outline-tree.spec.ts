@@ -1,3 +1,4 @@
+import { clickViewerCommand, clickViewerTestCommand, openViewerMenu } from './viewer-menu-helper';
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import { masterFields } from './master-helper';
@@ -40,9 +41,12 @@ test('TC-U6-E2E-001: legacy tree, individual/group overlay visibility, focus and
   await page.goto('/cad/versions/'+file.id+'/viewer?renderer=three-dxf-viewer');
   await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
   const menu=page.getByTestId('viewer-menu-outline-tree');
+  await openViewerMenu(page, 'work');
   await expect(menu).toBeEnabled();
-  await expect(menu).toHaveAttribute('aria-pressed','false');
-  await menu.click();
+  await expect(menu).toHaveAttribute('aria-checked','false');
+  await clickViewerTestCommand(page, 'viewer-menu-outline-tree');
+  await openViewerMenu(page, 'work');
+  await expect(menu).toHaveAttribute('aria-checked','true');
   await expect(menu).toHaveAttribute('aria-expanded','true');
   await expect(menu).toHaveAttribute('aria-controls','viewer-outline-tree-dock');
   const panel=page.getByTestId('viewer-outline-tree');
@@ -51,7 +55,7 @@ test('TC-U6-E2E-001: legacy tree, individual/group overlay visibility, focus and
   await canvas.evaluate(element=>element.setAttribute('data-u6-stable','yes'));
 
   const toolMenu=page.getByTestId('viewer-menu-outline-tool');
-  await toolMenu.click();
+  await clickViewerTestCommand(page, 'viewer-menu-outline-tool');
   await selectSquare(page);
   const tools=page.getByTestId('cad-outline-tools');
   await tools.getByRole('button',{name:'볼록 외곽선 미리보기'}).click();
@@ -92,8 +96,9 @@ test('TC-U6-E2E-001: legacy tree, individual/group overlay visibility, focus and
   await expect(layer).toBeChecked();
   await expect(canvas).toHaveAttribute('data-u6-stable','yes');
 
-  await toolMenu.click();
-  await expect(toolMenu).toHaveAttribute('aria-pressed','false');
+  await clickViewerTestCommand(page, 'viewer-menu-outline-tool');
+  await openViewerMenu(page, 'work');
+  await expect(toolMenu).toHaveAttribute('aria-checked','false');
   await expect(panel.getByTestId('outline-tree-item')).toHaveCount(2);
   // E3: Outline tool OFF is not an edit mode. Confirmed objects become deletable
   // only after entering the independent generated edit/selection mode.
@@ -107,7 +112,13 @@ test('TC-U6-E2E-001: legacy tree, individual/group overlay visibility, focus and
   expect(downloaded.outlines).toHaveLength(2);
   expect(downloaded.outlines[0]).not.toHaveProperty('visible');
 
+  // Leave Tree as the only open Drawer before compact mode. The Canvas and
+  // generated selection remain intact while independent Drawers close.
+  await page.getByTestId('viewer-tools-dock').getByRole('button', { name: '도구 닫기' }).click();
+  await page.getByTestId('fullscreen-layer-panel').getByRole('button', { name: '레이어 패널 접기' }).click();
+  await expect(panel).toBeVisible();
   await page.setViewportSize({width:320,height:700});
+  await expect(page.getByRole('dialog', { name: '외곽선 목록' })).toBeVisible();
   await expect(panel).toBeVisible();
   const box=await canvas.boundingBox();
   expect(box?.height).toBeGreaterThan(50);
@@ -132,8 +143,11 @@ test('TC-U6-E2E-001: legacy tree, individual/group overlay visibility, focus and
   await page.keyboard.press('Home');
   await expect(group).toBeFocused();
   await panel.getByRole('button',{name:'외곽선 목록 닫기'}).click();
-  await expect(menu).toHaveAttribute('aria-pressed','false');
-  await expect(menu).toBeFocused();
+  await expect(page.locator('[data-viewer-group="work"]')).toBeFocused();
+  await openViewerMenu(page, 'work');
+  await expect(menu).toHaveAttribute('aria-checked','false');
+  await expect(menu).toHaveAttribute('aria-expanded','false');
+  await expect(menu).not.toHaveAttribute('aria-controls',/viewer-outline-tree-dock/);
   expect(contentRequests).toBe(1);
 });
 
@@ -143,26 +157,31 @@ test('TC-U6-E2E-002: unsupported renderer, reload and other Version fail closed'
   await page.goto('/cad/versions/'+first.id+'/viewer?renderer=dxf-viewer');
   await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
   const treeMenu=page.getByTestId('viewer-menu-outline-tree');
+  await openViewerMenu(page, 'work');
   await expect(treeMenu).toBeDisabled();
   await expect(treeMenu).not.toHaveAttribute('aria-controls',/viewer-outline-tree-dock/);
-  await page.getByRole('button',{name:'three-dxf-viewer',exact:true}).click();
+  await clickViewerCommand(page, 'view', 'three-dxf-viewer');
   await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
+  await openViewerMenu(page, 'work');
   await expect(treeMenu).toBeEnabled();
-  await page.getByTestId('viewer-menu-outline-tool').click();
+  await clickViewerTestCommand(page, 'viewer-menu-outline-tool');
   await selectSquare(page);
   await page.getByRole('button',{name:'볼록 외곽선 미리보기'}).click();
   await expect(page.getByTestId('outline-preview')).toBeVisible();
   await page.getByRole('button',{name:'임시 확정'}).click();
-  await treeMenu.click();
+  await clickViewerTestCommand(page, 'viewer-menu-outline-tree');
   await expect(page.getByTestId('outline-tree-item')).toHaveCount(1);
-  await page.getByRole('button',{name:'다시 불러오기'}).click();
+  page.once('dialog', async dialog => { expect(dialog.message()).toContain('임시 외곽선'); await dialog.accept(); });
+  await clickViewerCommand(page, 'drawing', '다시 불러오기');
   await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
-  await expect(treeMenu).toHaveAttribute('aria-pressed','false');
-  await treeMenu.click();
+  await openViewerMenu(page, 'work');
+  await expect(treeMenu).toHaveAttribute('aria-checked','false');
+  await expect(treeMenu).toHaveAttribute('aria-expanded','false');
+  await clickViewerTestCommand(page, 'viewer-menu-outline-tree');
   await expect(page.getByTestId('outline-tree-empty')).toBeVisible();
   await page.goto('/cad/versions/'+second.id+'/viewer?renderer=three-dxf-viewer');
   await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
-  await treeMenu.click();
+  await clickViewerTestCommand(page, 'viewer-menu-outline-tree');
   await expect(page.getByTestId('outline-tree-empty')).toBeVisible();
   await expect(page.getByTestId('outline-tree-item')).toHaveCount(0);
 });

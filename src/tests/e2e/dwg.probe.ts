@@ -1,3 +1,4 @@
+import { clickViewerCommand } from './viewer-menu-helper';
 import { test, expect } from '@playwright/test';
 import path from 'node:path';
 const sample = (name: string) => path.join(process.cwd(), 'node_modules/.cache/cad-dwg-samples', name);
@@ -28,7 +29,7 @@ test('TC-DWG-001/003/005: real DWG LINE, repeat free/unlink, direct drawing and 
     await expect.poll(() => page.evaluate(() => (window as unknown as { __dwgWorkers: number }).__dwgWorkers)).toBe(0);
     const canvas = page.locator('canvas'); await expect(canvas).toHaveCount(1);
     const before = await canvas.screenshot();
-    await page.getByRole('button', { name: '확대', exact: true }).click();
+    await clickViewerCommand(page, 'view', '확대');
     expect((await canvas.screenshot()).equals(before)).toBe(false);
   }
   const asset = await wasm; expect(asset.status()).toBe(200); expect(asset.headers()['content-type']).toContain('application/wasm');

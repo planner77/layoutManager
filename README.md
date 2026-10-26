@@ -1,5 +1,14 @@
 # CAD Web Viewer P.O.C.
 
+## 0.42.0 후보 — 목록과 Viewer 작업 공간 (#124/#126/#127)
+
+도면 목록의 메뉴·검색·Current 표시·결과 요약을 고정하고 좁은 화면에서는 추가 필터를 접습니다. Viewer는 DXF 기본 Three, 실제 렌더러 로드 실패의 dxf-viewer 단발 대체 및 로딩 중 수동 전환을 제공합니다. 도면명·원본만 상시 표시하며 설명은 도면명에서 확인합니다. 도면/보기/작업 그룹 메뉴와 좌·우·하단 Drawer에서 기존 명령에 접근합니다.
+
+미저장 브라우저 생성 개체는 렌더러 변경/재로드 시 폐기되므로 확인 후 전환합니다. 대체 렌더러의 Three 전용 기능은 지원하지 않으며 원본 다운로드·보기·검색 경로는 유지합니다. 실제 검증·미완 범위는 [TestReport](out/TestReport.md), 정책/AC는 [Issues124-126-127](out/Issues124-126-127.md)를 따릅니다. 이 절의 후보 안내는 CI/GHCR 게시 완료 증거가 아니며 #113 실 CAD/GPU 및 G7 운영 활성화와 분리됩니다.
+
+독립 QA 1차(2026-10-27): Typecheck·ESLint PASS(기존 warning 3개), Vitest 351/351 PASS, 전체 Playwright 85/86으로 메뉴 키보드 포커스 1건 실패를 기록했습니다. 최소 수정 후 Developer Build·Typecheck·Lint와 강화된 기능 시험 13/13이 통과했고 후보를 재고정했습니다. 독립 전체 QA·DWG·migration 재검증 및 PR/Main CI·GHCR는 진행 중입니다. 최종 상태는 [TestReport](out/TestReport.md), 보존된 실패·조치는 [FailureLedger](out/FailureLedger.md)를 따릅니다.
+
+
 ## Issue #108 — G6 수용 매트릭스·격리 백업/복원 리허설 준비
 
 [Issue108](out/Issue108.md): G0~G5 비운영 기능의 실제 LAN·DB/CAD/S3 수용을 위한 **사내 비공개 증거 상태 점검 도구**와 합성 SQLite/CAD/mock-S3 백업→격리 migration→Restore 테스트 추가. 사용: cd src && node scripts/g6-evidence.mjs /private/g6/evidence.json. CLI는 실제 시험을 수행하지 않고 자체 기입 증거의 누락·불일치만 검증하므로 READY_FOR_OWNER_REVIEW는 현장 PASS가 아니다. 예제 src/tests/fixtures/g6/manifest.example.json은 전부 NOT_RUN. 운영 인증/API/Prisma/Compose/Nginx와 실제 DB/CAD/S3 불변, 실제 사내 PC 2대/실 S3 Restore·G7 별도 Owner 승인 후속.

@@ -66,3 +66,65 @@ test('TC-TEXT-009: text index is cached by drawing URL and is removed on source 
   source.dispose();
   expect(source.getTextIndex('/second')).toBeUndefined();
 });
+
+test('TC-126-RECOVERY: source HTTP failure stays distinct from adapter failure',async()=>{
+  const factory=vi.fn(async():Promise<CadViewerAdapter>=>({load:vi.fn(),dispose:vi.fn(),fitToView:vi.fn(),zoomIn:vi.fn(),zoomOut:vi.fn()}));
+  vi.stubGlobal('fetch',vi.fn(async()=>new Response('',{status:404})));
+  const source=new ViewerSource();
+  await expect(new ViewerManager(factory,source).load('/missing','DXF')).rejects.toMatchObject({stage:'source',reasonCode:'HTTP_404'});
+  expect(factory).not.toHaveBeenCalled();
+  vi.stubGlobal('fetch',vi.fn(async()=>new Response('bytes')));
+  const failInit=new ViewerManager(async()=>{throw new Error('GPU unavailable');},source);
+  await expect(failInit.load('/same','DXF')).rejects.toMatchObject({stage:'adapter-init',reasonCode:'INITIALIZE'});
+  const failLoad=new ViewerManager(async()=>({load:async()=>{throw new Error('Worker failed');},dispose:vi.fn(),fitToView:vi.fn(),zoomIn:vi.fn(),zoomOut:vi.fn()}),source);
+  await expect(failLoad.load('/same','DXF')).rejects.toMatchObject({stage:'adapter-load',reasonCode:'LOAD'});
+  expect(source.state('/same')).toBe('memory');
+});
+
+test('TC-126-RECOVERY: disposed late factory cannot attach as active adapter',async()=>{
+  vi.stubGlobal('fetch',vi.fn(async()=>new Response('bytes')));
+  let release!:(adapter:CadViewerAdapter)=>void;
+  const late=new Promise<CadViewerAdapter>(resolve=>{release=resolve;});
+  const factory=vi.fn(()=>late);
+  const manager=new ViewerManager(factory);
+  const pending=manager.load('/one','DXF');
+  await vi.waitFor(()=>expect(factory).toHaveBeenCalledOnce());
+  manager.dispose();
+  const adapter:CadViewerAdapter={load:vi.fn(),dispose:vi.fn(),fitToView:vi.fn(),zoomIn:vi.fn(),zoomOut:vi.fn()};
+  release(adapter);
+  await expect(pending).rejects.toMatchObject({name:'AbortError'});
+  expect(adapter.dispose).toHaveBeenCalledOnce();
+  expect(adapter.load).not.toHaveBeenCalled();
+});
+
+test('TC-126-RECOVERY: abort while reading response body remains cancellation',async()=>{
+  let rejectBody!:(error:Error)=>void;
+  vi.stubGlobal('fetch',vi.fn(async()=>({ok:true,arrayBuffer:()=>new Promise<ArrayBuffer>((_,reject)=>{rejectBody=reject;})})));
+  const source=new ViewerSource();
+  const pending=source.read('/slow-body');
+  await vi.waitFor(()=>expect(rejectBody).toBeTypeOf('function'));
+  source.dispose();
+  rejectBody(new Error('body stream interrupted'));
+  await expect(pending).rejects.toMatchObject({name:'AbortError'});
+  expect(source.state('/slow-body')).toBe('miss');
+});
+
+test('TC-126-RECOVERY: every source transport/read failure is typed before adapter creation',async()=>{
+  const cases: {reasonCode:string;fetcher:()=>Promise<Response>}[]=[
+    {reasonCode:'NETWORK',fetcher:async()=>{throw new TypeError('offline');}},
+    {reasonCode:'HTTP_ERROR',fetcher:async()=>new Response('',{status:500})},
+    {reasonCode:'BODY_READ',fetcher:async()=>{
+      const response=new Response('bytes');
+      Object.defineProperty(response,'arrayBuffer',{value:async()=>{throw new Error('stream failed');}});
+      return response;
+    }},
+  ];
+  for(const item of cases){
+    vi.stubGlobal('fetch',vi.fn(item.fetcher));
+    const factory=vi.fn(async():Promise<CadViewerAdapter>=>({load:vi.fn(),dispose:vi.fn(),fitToView:vi.fn(),zoomIn:vi.fn(),zoomOut:vi.fn()}));
+    const source=new ViewerSource();
+    await expect(new ViewerManager(factory,source).load('/source','DXF')).rejects.toMatchObject({stage:'source',reasonCode:item.reasonCode});
+    expect(factory).not.toHaveBeenCalled();
+    expect(source.state('/source')).toBe('miss');
+  }
+});

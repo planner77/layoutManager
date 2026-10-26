@@ -1,15 +1,12 @@
 'use client';
 
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { GlobalLoadingOverlay, useGlobalLoading } from '@/components/global-loading';
-import { CopyCadLink } from '@/features/cad-link/copy-cad-link';
 import { FullscreenLayerPanel } from '@/features/cad-viewer/fullscreen-layer-panel';
 import { CadTextSearch } from '@/features/cad-viewer/cad-text-search';
-import { LayerDropdown } from '@/features/cad-viewer/layer-dropdown';
 import { ViewerAppShell } from '@/features/cad-viewer/viewer-app-shell';
 import { ViewerMenuBar } from '@/features/cad-viewer/viewer-menu-bar';
+import type { ViewerCommandGroup } from '@/features/cad-viewer/viewer-command-menu';
 import { OutlineTreePanel } from '@/features/cad-viewer/outline-tree-panel';
 import { GeneratedDeleteDialog } from '@/features/cad-viewer/generated-delete-dialog';
 import {parseWcsTranslation,selectedTranslationIds} from '@/domain/generated-translate';
@@ -28,11 +25,13 @@ import type {OutlineResult} from '@/viewers/core/outline-compute';
 import type { ViewerMetric } from '@/viewers/core/metrics';
 import { selectRenderer, type ViewerFormat, type ViewerRenderer } from '@/viewers/core/selection';
 import { ViewerSource } from '@/viewers/core/source';
+import { cadViewerUrl } from '@/viewers/core/link';
+import { ViewerLoadError, isViewerCancellation } from '@/viewers/core/viewer-load-error';
 
 export function CadViewer({
   versionId,
   sourceSha256 = '',
-  renderer: initialRenderer = 'dxf-viewer',
+  renderer: initialRenderer = 'three-dxf-viewer',
   format = 'DXF',
   displayName,
   originalFilename,
@@ -63,8 +62,6 @@ export function CadViewer({
   const [source] = useState(() => new ViewerSource());
   const container = useRef<HTMLDivElement>(null);
   const viewerShell = useRef<HTMLDivElement>(null);
-  const layerMenuButton = useRef<HTMLButtonElement>(null);
-  const outlineTreeMenuButton = useRef<HTMLButtonElement>(null);
   const manager = useRef<ViewerManager | null>(null);
   // Synchronously gate events before React's reducer has rendered the next frame.
   const outlineEnabledRef = useRef(false);
@@ -72,9 +69,26 @@ export function CadViewer({
   const getManager = useCallback(() => manager.current, []);
   const loadSequenceRef = useRef(0);
   const [isNativeFullscreen, setIsNativeFullscreen] = useState(false);
-  const { isLoading, beginLoading, endLoading } = useGlobalLoading();
   const [loading, setLoading] = useState(true);
+  const fallbackTried = useRef(false);
+  const fallbackReason = useRef<string | null>(null);
+  const [recoveryNotice, setRecoveryNotice] = useState<string | null>(null);
+  const [infoOpen,setInfoOpen]=useState(false);
+  const [nameTipOpen,setNameTipOpen]=useState(false);
+  const [nameTipPinned,setNameTipPinned]=useState(false);
+  const nameTipRef=useRef<HTMLDivElement>(null);
+  const nameButtonRef=useRef<HTMLButtonElement>(null);
+  const suppressNameFocus=useRef(false);
+  const [linkFallbackUrl,setLinkFallbackUrl]=useState<{renderer:ViewerRenderer;url:string}|null>(null);
   const [appState, dispatchApp] = useReducer(viewerAppReducer, initialViewerAppState);
+  const [isCompact,setIsCompact]=useState(false);
+  useEffect(()=>{
+    const media=window.matchMedia('(max-width: 767px)');
+    const update=()=>{setIsCompact(media.matches);if(media.matches)dispatchApp({type:'compact-exclusive'});};
+    media.addEventListener('change',update);
+    const frame=requestAnimationFrame(update);
+    return ()=>{cancelAnimationFrame(frame);media.removeEventListener('change',update);};
+  },[]);
   const [searchOpen, setSearchOpen] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [layers, setLayers] = useState<string[]>([]);
@@ -109,6 +123,16 @@ export function CadViewer({
   });
 
   useEffect(() => () => source.dispose(), [source, versionId]);
+  useEffect(()=>{
+    const url=new URL(window.location.href);
+    if(url.searchParams.get('renderer')!==renderer){url.searchParams.set('renderer',renderer);window.history.replaceState(null,'',url);}
+  },[renderer]);
+  useEffect(()=>{
+    if(!nameTipPinned)return;
+    const outside=(event:PointerEvent)=>{if(!nameTipRef.current?.contains(event.target as Node)){setNameTipPinned(false);setNameTipOpen(false);}};
+    document.addEventListener('pointerdown',outside,true);
+    return ()=>document.removeEventListener('pointerdown',outside,true);
+  },[nameTipPinned]);
 
   useEffect(() => {
     const shell = viewerShell.current;
@@ -267,6 +291,25 @@ export function CadViewer({
         event.preventDefault();event.stopImmediatePropagation();
         setContextMenu(null);return;
       }
+      if(event.key==='Escape' && viewerShell.current?.querySelector('[role=menu]'))return;
+      if(event.key==='Escape' && nameTipOpen){
+        event.preventDefault();event.stopImmediatePropagation();setNameTipOpen(false);setNameTipPinned(false);suppressNameFocus.current=true;requestAnimationFrame(()=>nameButtonRef.current?.focus({preventScroll:true}));return;
+      }
+      if(event.key==='Escape' && infoOpen){
+        event.preventDefault();event.stopImmediatePropagation();setInfoOpen(false);return;
+      }
+      const mobileDrawer=viewerShell.current?.querySelector<HTMLElement>('[role=dialog][data-drawer]');
+      const focusedDrawer=event.target instanceof HTMLElement ? event.target.closest<HTMLElement>('[data-drawer]') : null;
+      const drawer=mobileDrawer??focusedDrawer;
+      if(event.key==='Escape' && drawer){
+        event.preventDefault();event.stopImmediatePropagation();
+        const name=drawer.dataset.drawer;
+        if(name==='layers')dispatchApp({type:'close-layers'});
+        else if(name==='outlines')dispatchApp({type:'toggle-outline-tree'});
+        else if(name==='tools')dispatchApp({type:'close-tools'});
+        requestAnimationFrame(()=>viewerShell.current?.querySelector<HTMLButtonElement>('[data-viewer-group=work]')?.focus({preventScroll:true}));
+        return;
+      }
       if(event.key==='Escape' && manager.current?.cancelGeneratedCommand()){
         event.preventDefault();event.stopImmediatePropagation();return;
       }
@@ -291,7 +334,7 @@ export function CadViewer({
     // Capture ahead of native fullscreen/selection handling for staged edit ESC.
     window.addEventListener('keydown',handleKeyDown,true);
     return ()=>window.removeEventListener('keydown',handleKeyDown,true);
-  },[syncSavedOutlines,deleteRequest,contextMenu,state.ready,canvasMode,openDelete]);
+  },[syncSavedOutlines,deleteRequest,contextMenu,state.ready,canvasMode,openDelete,nameTipOpen,infoOpen]);
   const stopOutlineEditing = useCallback(() => {
     // Must cancel the Worker BEFORE clearing selection: selection callbacks can
     // otherwise enqueue a new compute job for the previous previewKind.
@@ -337,6 +380,7 @@ export function CadViewer({
       setOutlineNotice('외곽선 생성 OFF: 비확정 선택·미리보기 및 진행 중 계산이 취소되었습니다. 임시 확정 결과와 JSON 내보내기는 유지됩니다.');
     }
     dispatchApp({ type: 'set-outline-tool', enabled });
+    if(enabled && !appState.toolsOpen)dispatchApp({type:'toggle-tools',exclusive:isCompact});
   }
   /** General selection and generated-only targeting are independent of U3. */
   function changeCanvasMode(next:'pan'|'objects'|'generated') {
@@ -419,8 +463,21 @@ export function CadViewer({
     const anchor=document.createElement('a');anchor.href=url;anchor.download='cad-outlines-'+versionId.slice(0,8)+'.json';anchor.click();
     setTimeout(()=>URL.revokeObjectURL(url),0);
   }
+  const confirmDiscard = useCallback(() => {
+    const current=manager.current;
+    if (!current) return true;
+    const hasWork=current.getSavedOutlines().length>0 || current.getGeneratedHistory().undo>0 ||
+      current.getGeneratedHistory().redo>0 || current.getCanvasObjectSelection().length>0 ||
+      current.getOutlineSelection().length>0;
+    return !hasWork || window.confirm('임시 외곽선·실행 취소 이력·선택 상태가 사라집니다. 계속하시겠습니까?');
+  }, []);
   const choose = useCallback((value: typeof renderer) => {
-    if (loading || value === renderer) return;
+    if (value === renderer) return;
+    if (!confirmDiscard()) return;
+    loadSequenceRef.current++;
+    if (loading && source.state(`/api/cad-files/${versionId}/content`) === 'pending') source.dispose();
+    fallbackTried.current = false; fallbackReason.current = null; setRecoveryNotice(null); setLinkFallbackUrl(null);
+    manager.current?.dispose();
     setLoading(true);
     setState({ status: '도면 로딩 중…', ready: false });
     setMetric(null);
@@ -433,10 +490,13 @@ export function CadViewer({
     const url = new URL(window.location.href);
     url.searchParams.set('renderer', value);
     window.history.replaceState(null, '', url);
-  }, [loading, renderer, resetOutline]);
+  }, [loading, renderer, resetOutline, confirmDiscard, source, versionId]);
 
   function reload() {
-    if (loading) return;
+    if (loading || !confirmDiscard()) return;
+    loadSequenceRef.current++;
+    manager.current?.dispose();
+    fallbackTried.current=false; fallbackReason.current=null; setRecoveryNotice(null); setLinkFallbackUrl(null);
     setLoading(true);
     source.dispose();
     setMetric(null);
@@ -491,37 +551,36 @@ export function CadViewer({
   useEffect(() => {
     let active = true;
     const sequence = ++loadSequenceRef.current;
-    const loadingTaskId = beginLoading('도면을 여는 중입니다...');
     const instance = new ViewerManager(
       async () => {
         if (renderer === 'libredwg-web') {
           const { LibreDwgWebAdapter } = await import('@/viewers/libredwg-web/adapter');
-          if (!active || !container.current) throw new DOMException('취소됨', 'AbortError');
+          if (!active || loadSequenceRef.current!==sequence || !container.current) throw new DOMException('취소됨', 'AbortError');
           return new LibreDwgWebAdapter(container.current);
         }
         if (renderer === 'three-dxf-viewer') {
           const { ThreeDxfViewerAdapter } = await import('@/viewers/three-dxf-viewer/adapter');
-          if (!active || !container.current) throw new DOMException('취소됨', 'AbortError');
+          if (!active || loadSequenceRef.current!==sequence || !container.current) throw new DOMException('취소됨', 'AbortError');
           return new ThreeDxfViewerAdapter(container.current,{
             versionId,sourceSha256,
-            onSelection:value=>{if(active && outlineEnabledRef.current)setOutlineSelection(value);},
-            onObjectSelection:refs=>{if(active){setCanvasSelection(refs);syncSavedOutlines();}},
-            onPreview:(value,error)=>{if(active && outlineEnabledRef.current){setPreview(value);setPreviewError(error??null);}},
-            onSaved:count=>{if(active){setSavedCount(count);syncSavedOutlines();}},
-            onEditError:message=>{if(active)setTranslateError(message);},
+            onSelection:value=>{if(active && loadSequenceRef.current===sequence && outlineEnabledRef.current)setOutlineSelection(value);},
+            onObjectSelection:refs=>{if(active && loadSequenceRef.current===sequence){setCanvasSelection(refs);syncSavedOutlines();}},
+            onPreview:(value,error)=>{if(active && loadSequenceRef.current===sequence && outlineEnabledRef.current){setPreview(value);setPreviewError(error??null);}},
+            onSaved:count=>{if(active && loadSequenceRef.current===sequence){setSavedCount(count);syncSavedOutlines();}},
+            onEditError:message=>{if(active && loadSequenceRef.current===sequence)setTranslateError(message);},
           });
         }
         const { DxfViewerAdapter } = await import('@/viewers/dxf-viewer/adapter');
-        if (!active || !container.current) throw new DOMException('취소됨', 'AbortError');
+        if (!active || loadSequenceRef.current!==sequence || !container.current) throw new DOMException('취소됨', 'AbortError');
         return new DxfViewerAdapter(container.current);
       },
       source,
-      { renderer, versionId, report: value => { if (active) setMetric(value); } },
+      { renderer, versionId, report: value => { if (active && loadSequenceRef.current===sequence) setMetric({ ...value, fallback: fallbackReason.current ? { reasonCode: fallbackReason.current, attempt: 1 } : undefined }); } },
       format,
     );
     manager.current = instance;
     instance.load(`/api/cad-files/${versionId}/content`, format).then(result => {
-      if (active) {
+      if (active && loadSequenceRef.current===sequence) {
         const nextLayers = instance.getLayers();
         setOutlineInfo(instance.getOutlineInfo());
         setState({
@@ -531,9 +590,19 @@ export function CadViewer({
         });
         setLayers(nextLayers);
         setSelectedLayers(new Set(nextLayers));
+        if(fallbackReason.current && renderer==='dxf-viewer')setRecoveryNotice(`three-dxf-viewer 실패 (${fallbackReason.current}) 후 dxf-viewer로 표시했습니다. 일부 선택·외곽선 기능은 지원되지 않습니다.`);
       }
     }).catch(error => {
-      if (active) {
+      if (active && loadSequenceRef.current===sequence && renderer === 'three-dxf-viewer' && format === 'DXF' &&
+          error instanceof ViewerLoadError && error.stage !== 'source' && !fallbackTried.current) {
+        fallbackTried.current=true; fallbackReason.current=`${error.stage}:${error.reasonCode}`;
+        setRecoveryNotice(`three-dxf-viewer 처리 실패 (${fallbackReason.current}). dxf-viewer로 한 번 다시 엽니다.`);
+        setRenderer('dxf-viewer');
+        const url=new URL(window.location.href);url.searchParams.set('renderer','dxf-viewer');
+        window.history.replaceState(null,'',url);
+        return;
+      }
+      if (active && loadSequenceRef.current===sequence && !isViewerCancellation(error)) {
         setLayers([]);
         setSelectedLayers(new Set());
         resetOutline();
@@ -541,22 +610,20 @@ export function CadViewer({
         setState({
           status: '표시 실패',
           ready: false,
-          error: error instanceof Error ? error.message : 'Viewer 초기화에 실패했습니다.',
+          error: `${fallbackReason.current ? `첫 시도 ${fallbackReason.current}; ` : ''}${error instanceof ViewerLoadError ? `${error.stage}:${error.reasonCode} — ${error.message}` : 'Viewer 초기화에 실패했습니다.'}`,
         });
       }
     }).finally(() => {
-      endLoading(loadingTaskId);
-      if (loadSequenceRef.current === sequence) setLoading(false);
+      if (loadSequenceRef.current === sequence && active && (!fallbackTried.current || renderer === 'dxf-viewer')) setLoading(false);
     });
     return () => {
       active = false;
-      endLoading(loadingTaskId);
       instance.dispose();
       manager.current = null;
     };
-  }, [versionId, sourceSha256, attempt, renderer, source, format, beginLoading, endLoading, resetOutline, syncSavedOutlines]);
+  }, [versionId, sourceSha256, attempt, renderer, source, format, resetOutline, syncSavedOutlines]);
 
-  const layerAvailable = isFullscreen && renderer === 'three-dxf-viewer' && layers.length > 0 && state.ready;
+  const layerAvailable = renderer === 'three-dxf-viewer' && layers.length > 0 && state.ready;
   const outlineUnavailable = outlineToolUnavailableReason({
     renderer, format, loading, ready: state.ready,
     entityCount: outlineInfo?.entityCount, sourceSha256,
@@ -579,6 +646,35 @@ export function CadViewer({
   const deleteModeAvailable=outlineAvailable && !appState.outlineToolEnabled &&
     canvasMode!=='pan';
   const canDeleteSelection=deleteModeAvailable && editCapability.canEdit;
+  const closeMetadataOverlays=useCallback(()=>{setNameTipOpen(false);setNameTipPinned(false);setInfoOpen(false);},[]);
+  const commandGroups:ViewerCommandGroup[]=[
+    {id:'drawing',label:'도면',commands:[
+      {id:'info',label:'도면 정보',onSelect:()=>setInfoOpen(value=>!value)},
+      {id:'versions',label:'버전 목록',kind:'link',href:`/cad/locations/${locationId}`},
+      {id:'reload',label:'다시 불러오기',disabled:loading,reason:loading?'로딩이 끝난 뒤 다시 불러올 수 있습니다.':undefined,onSelect:reload},
+      {id:'download',label:'원본 다운로드',kind:'link',download:true,href:`/api/cad-files/${versionId}/content`},
+      {id:'copy',label:'도면 링크 복사',onSelect:()=>{const url=cadViewerUrl(window.location.origin,versionId,format,renderer);if(!navigator.clipboard?.writeText){setLinkFallbackUrl({renderer,url});return;}void navigator.clipboard.writeText(url).catch(()=>setLinkFallbackUrl({renderer,url}));}},
+    ]},
+    {id:'view',label:'보기',commands:[
+      ...(format==='DXF' ? [
+        {id:'three',label:'three-dxf-viewer',kind:'radio' as const,checked:renderer==='three-dxf-viewer',disabled:renderer==='three-dxf-viewer',onSelect:()=>choose('three-dxf-viewer')},
+        {id:'dxf',label:'dxf-viewer',kind:'radio' as const,checked:renderer==='dxf-viewer',disabled:renderer==='dxf-viewer',onSelect:()=>choose('dxf-viewer')},
+      ]:[]),
+      {id:'zoom-in',label:'확대',disabled:loading||!state.ready,onSelect:()=>manager.current?.zoomIn()},
+      {id:'zoom-out',label:'축소',disabled:loading||!state.ready,onSelect:()=>manager.current?.zoomOut()},
+      {id:'fit',label:'화면 맞춤',disabled:loading||!state.ready,onSelect:()=>manager.current?.fitToView()},
+      {id:'fullscreen',label:isFullscreen?'전체 화면 종료':'전체 화면',onSelect:isFullscreen?exitFullscreen:enterFullscreen},
+      {id:'native',label:isNativeFullscreen?'브라우저 전체 화면 해제':'브라우저 전체 화면',disabled:loading,onSelect:toggleNativeFullscreen},
+    ]},
+    {id:'work',label:'작업',commands:[
+      {id:'layers',label:'레이어 패널',testId:'viewer-menu-layers',kind:'checkbox',checked:appState.layerPanelOpen,expanded:layerAvailable&&appState.layerPanelOpen,controls:layerAvailable&&appState.layerPanelOpen?'viewer-layer-dock':undefined,disabled:!layerAvailable,reason:!layerAvailable?'레이어 패널은 로딩 완료된 three-dxf-viewer에서만 사용할 수 있습니다.':undefined,onSelect:()=>dispatchApp({type:'toggle-layers',exclusive:isCompact})},
+      {id:'tools',label:'선택·편집 도구',testId:'viewer-menu-tools',kind:'checkbox',checked:appState.toolsOpen,expanded:outlineAvailable&&appState.toolsOpen,controls:outlineAvailable&&appState.toolsOpen?'viewer-tools-dock':undefined,disabled:!outlineAvailable,reason:outlineUnavailable??undefined,onSelect:()=>dispatchApp({type:'toggle-tools',exclusive:isCompact})},
+      {id:'outline',label:'외곽선 생성',testId:'viewer-menu-outline-tool',kind:'checkbox',checked:appState.outlineToolEnabled,expanded:appState.outlineToolEnabled&&appState.toolsOpen,controls:appState.outlineToolEnabled&&appState.toolsOpen?'viewer-tools-dock':undefined,disabled:!outlineAvailable,reason:outlineUnavailable??undefined,onSelect:toggleOutlineTool},
+      {id:'tree',label:'외곽선 목록',testId:'viewer-menu-outline-tree',kind:'checkbox',checked:appState.outlineTreeOpen,expanded:treeAvailable&&appState.outlineTreeOpen,controls:treeAvailable&&appState.outlineTreeOpen?'viewer-outline-tree-dock':undefined,disabled:!treeAvailable,reason:treeUnavailable??undefined,onSelect:()=>dispatchApp({type:'toggle-outline-tree',exclusive:isCompact})},
+      {id:'search',label:'도면 내 텍스트 검색',kind:'checkbox',checked:searchOpen,disabled:format!=='DXF'||!state.ready,reason:format==='DWG'?'DWG 내부 텍스트 검색은 제공하지 않습니다.':!state.ready?'도면 표시 완료 후 검색할 수 있습니다.':undefined,onSelect:()=>setSearchOpen(value=>!value)},
+      {id:'types',label:'외곽선 타입 관리',testId:'viewer-menu-outline-types',disabled:true,reason:'관리자 인증·인가 및 업무 타입 정책 승인 전에는 등록 기능을 제공하지 않습니다.'},
+    ]},
+  ];
 
   return <div className="space-y-3">
     <ViewerAppShell
@@ -586,66 +682,22 @@ export function CadViewer({
       isFullscreen={isFullscreen}
       isNativeFullscreen={isNativeFullscreen}
       menuBar={
-        <ViewerMenuBar
-          layerAvailable={layerAvailable}
-          layerPanelOpen={appState.layerPanelOpen}
-          layerToggleRef={layerMenuButton}
-          onToggleLayerPanel={() => dispatchApp({ type: 'toggle-layers' })}
-          outlineAvailable={outlineAvailable}
-          outlineUnavailableReason={outlineUnavailable}
-          outlineToolEnabled={appState.outlineToolEnabled}
-          onToggleOutlineTool={toggleOutlineTool}
-          outlineTreeOpen={appState.outlineTreeOpen}
-          outlineTreeAvailable={treeAvailable}
-          outlineTreeUnavailableReason={treeUnavailable}
-          outlineTreeToggleRef={outlineTreeMenuButton}
-          onToggleOutlineTree={() => dispatchApp({ type: 'toggle-outline-tree' })}
-        />
+        <ViewerMenuBar commandGroups={commandGroups} onMenuOpen={closeMetadataOverlays} />
       }
       toolbar={
         <>
 
-      <div data-testid="viewer-toolbar" className="relative z-50 shrink-0 border-b border-slate-700 bg-slate-950 p-2 text-white sm:p-3">
+      <div data-testid="viewer-toolbar" className="relative z-40 shrink-0 border-b border-slate-700 bg-slate-950 p-2 text-white sm:p-3">
         <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
-          <h1 className="min-w-0 flex-1 break-all text-base font-bold line-clamp-2" title={displayName}>{displayName}</h1>
-          <span className="shrink-0 text-xs font-semibold">V{version}</span>
-          <Link href={`/cad/locations/${locationId}`} className="shrink-0 text-sm text-teal-200 underline">← 버전 목록</Link>
-        </div>
-        <p className="truncate text-xs text-slate-200" title={originalFilename}>원본: {originalFilename}</p>
-        {description && <p aria-label="도면 설명" className="mt-1 max-h-12 overflow-y-auto whitespace-pre-wrap break-all text-xs text-slate-200">{description}</p>}
-        <div role="toolbar" aria-label="도면 조작" className="mt-2 flex min-w-0 items-center gap-2 overflow-x-auto pb-1">
-          <span className="shrink-0 rounded bg-teal-50 px-2 py-1 text-xs text-teal-800">{renderer}</span>
-          {format === 'DXF' && <>
-            <Button size="sm" variant={renderer === 'dxf-viewer' ? 'default' : 'outline'}
-              aria-pressed={renderer === 'dxf-viewer'} disabled={loading || renderer === 'dxf-viewer'}
-              onClick={() => choose('dxf-viewer')}>dxf-viewer</Button>
-            <Button size="sm" variant={renderer === 'three-dxf-viewer' ? 'default' : 'outline'}
-              aria-pressed={renderer === 'three-dxf-viewer'} disabled={loading || renderer === 'three-dxf-viewer'}
-              onClick={() => choose('three-dxf-viewer')}>three-dxf-viewer</Button>
-          </>}
-          <Button size="sm" variant="outline" disabled={loading || !state.ready} onClick={() => manager.current?.zoomIn()}>{isFullscreen ? '전체 화면 확대' : '확대'}</Button>
-          <Button size="sm" variant="outline" disabled={loading || !state.ready} onClick={() => manager.current?.zoomOut()}>{isFullscreen ? '전체 화면 축소' : '축소'}</Button>
-          <Button size="sm" variant="outline" disabled={loading || !state.ready} onClick={() => manager.current?.fitToView()}>{isFullscreen ? '전체 화면 맞춤' : '화면 맞춤'}</Button>
-          {isFullscreen ? <>
-            <Button size="sm" variant="outline" disabled={loading} onClick={toggleNativeFullscreen}>{isNativeFullscreen ? '브라우저 전체 화면 해제' : '브라우저 전체 화면'}</Button>
-            <Button size="sm" onClick={exitFullscreen}>전체 화면 종료</Button>
-          </> : <Button size="sm" variant="outline" data-viewer-enter-fullscreen="true" onClick={enterFullscreen}>전체 화면</Button>}
-          <Button size="sm" variant="outline" disabled={loading} onClick={reload}>다시 불러오기</Button>
-          <a href={`/api/cad-files/${versionId}/content`} download className="shrink-0 rounded border border-white/50 px-3 py-1.5 text-xs text-white hover:bg-slate-700">원본 다운로드</a>
-          <div className="shrink-0 rounded bg-white p-1 text-slate-900">
-            <CopyCadLink key={`${versionId}-${renderer}`} versionId={versionId} format={format} renderer={renderer} />
+          <div ref={nameTipRef} className="relative min-w-0 flex-[1_1_45%]" onMouseEnter={()=>description&&setNameTipOpen(true)} onMouseLeave={()=>{if(!nameTipPinned && !nameTipRef.current?.contains(document.activeElement))setNameTipOpen(false);}}>
+            <h1><button ref={nameButtonRef} type="button" className="max-w-full truncate text-left text-base font-bold underline decoration-dotted underline-offset-4" title={displayName} aria-expanded={description?nameTipOpen:undefined} aria-describedby={nameTipOpen&&description?'viewer-name-description':undefined}
+              onFocus={()=>{if(suppressNameFocus.current){suppressNameFocus.current=false;return;}if(description)setNameTipOpen(true);}} onBlur={event=>{if(!nameTipPinned && !nameTipRef.current?.contains(event.relatedTarget as Node))setNameTipOpen(false);}} onClick={()=>{if(!description)return;setNameTipPinned(value=>!value);setNameTipOpen(!nameTipPinned);}}>{displayName}</button></h1>
+            {nameTipOpen && description && <div id="viewer-name-description" role="tooltip" data-canvas-edit-escape-layer="tooltip" tabIndex={0} onBlur={event=>{if(!nameTipPinned && !nameTipRef.current?.contains(event.relatedTarget as Node))setNameTipOpen(false);}} className="absolute left-0 top-full z-[130] max-h-[35dvh] w-[min(28rem,85vw)] overflow-auto rounded border border-slate-400 bg-white p-3 text-sm font-normal whitespace-pre-wrap break-words text-slate-900 shadow-xl">{description}</div>}
           </div>
+          <p className="min-w-0 flex-[1_1_45%] truncate text-xs text-slate-200" title={originalFilename}>원본: {originalFilename}</p>
         </div>
-        <details className="text-xs text-slate-200">
-          <summary className="cursor-pointer">도면 정보 · {locationDescription}</summary>
-          <div className="max-h-24 overflow-y-auto py-2">
-            <p>등록일: {registeredAt} · 크기: {(fileSize / 1024 / 1024).toFixed(2)} MB</p>
-            <p>기본 모드는 브라우저 전체 화면 API가 아닌 뷰포트 전체 사용입니다. &apos;브라우저 전체 화면&apos;은 직접 클릭해야 합니다.</p>
-          </div>
-        </details>
-        {!isFullscreen && renderer === 'three-dxf-viewer' && layers.length > 0 && state.ready && <div className="mt-2 rounded bg-white p-1 text-slate-900">
-          <LayerDropdown layers={layers} selected={selectedLayers} onLayerChange={setLayerVisibility} onAllChange={setAllLayersVisibility} />
-        </div>}
+
+        {infoOpen && <div role="region" aria-label="도면 정보" data-canvas-edit-escape-layer="info" className="absolute right-2 z-[120] max-h-[40dvh] max-w-[min(26rem,90vw)] overflow-auto rounded border border-slate-400 bg-white p-3 text-xs text-slate-900 shadow-xl"><p>Version {version} · {locationDescription}</p><p>등록일: {registeredAt} · 크기: {(fileSize / 1024 / 1024).toFixed(2)} MB</p><button type="button" className="mt-2 underline" onClick={()=>setInfoOpen(false)}>닫기</button></div>}
       </div>
 
         </>
@@ -659,7 +711,7 @@ export function CadViewer({
           onClose={() => {
             dispatchApp({ type: 'close-layers' });
             // The close button disappears: return keyboard focus to its persistent menu toggle.
-            layerMenuButton.current?.focus({ preventScroll: true });
+            requestAnimationFrame(()=>viewerShell.current?.querySelector<HTMLButtonElement>('[data-viewer-group=work]')?.focus({preventScroll:true}));
           }}
         />
       ) : null}
@@ -678,12 +730,18 @@ export function CadViewer({
           onDelete={id=>openDelete(id)}
           onClose={() => {
             dispatchApp({ type: 'toggle-outline-tree' });
-            outlineTreeMenuButton.current?.focus({ preventScroll: true });
+            requestAnimationFrame(()=>viewerShell.current?.querySelector<HTMLButtonElement>('[data-viewer-group=work]')?.focus({preventScroll:true}));
           }}
         />
       ) : null}
       outlineTreeOpen={treeAvailable && appState.outlineTreeOpen}
       compactPanel={appState.compactPanel}
+      toolsOpen={appState.toolsOpen}
+      onClosePanel={panel=>{
+        if(panel==='layers'){dispatchApp({type:'close-layers'});requestAnimationFrame(()=>viewerShell.current?.querySelector<HTMLButtonElement>('[data-viewer-group=work]')?.focus({preventScroll:true}));}
+        else if(panel==='outlines'){dispatchApp({type:'toggle-outline-tree'});requestAnimationFrame(()=>viewerShell.current?.querySelector<HTMLButtonElement>('[data-viewer-group=work]')?.focus({preventScroll:true}));}
+        else {dispatchApp({type:'close-tools'});requestAnimationFrame(()=>viewerShell.current?.querySelector<HTMLButtonElement>('[data-viewer-group=work]')?.focus({preventScroll:true}));}
+      }}
       canvas={
         <>
           <CadTextSearch key={versionId + ':' + renderer + ':' + attempt}
@@ -719,8 +777,6 @@ export function CadViewer({
             </button>
             {!canDeleteSelection && <p className="max-w-56 text-xs text-amber-800">{editCapability.reason}</p>}
           </div>}
-          {deleteRequest && <GeneratedDeleteDialog request={deleteRequest}
-            onCancel={()=>setDeleteRequest(null)} onConfirm={confirmDelete} />}
         </>
       }
       tools={
@@ -859,18 +915,20 @@ export function CadViewer({
       }
       status={
         <>
-          <p role="status" className="text-xs text-slate-700">{state.status}</p>
+          <div className="flex flex-wrap items-center gap-x-2"><p role="status" className="text-xs text-slate-700">{state.status}</p><span data-testid="viewer-active-renderer" className="text-xs text-slate-600">{renderer}</span></div>
           {state.warning && <p className="text-xs text-amber-800" data-testid="viewer-coverage">{state.warning}</p>}
-          {state.error && <p role="alert" className="text-xs text-red-700">{state.error}</p>}
+          {linkFallbackUrl?.renderer===renderer && <label className="block text-xs">현재 Viewer 링크<input readOnly aria-label="복사할 Viewer 주소" value={linkFallbackUrl.url} onFocus={event=>event.currentTarget.select()} /></label>}
+          {recoveryNotice && <p data-testid="viewer-recovery-notice" className="text-xs text-amber-800">{recoveryNotice}</p>}
+          {state.error && <p role="alert" className="text-xs text-red-700">{state.error} <button type="button" className="underline" onClick={reload}>다시 시도</button> <a className="underline" href={`/api/cad-files/${versionId}/content`} download>원본 다운로드</a> {format==='DXF' && <a className="underline" href={`/cad/versions/${versionId}/viewer?renderer=dxf-viewer`}>dxf-viewer 링크</a>}</p>}
           {outlineNotice && <p data-testid="outline-tool-notice" className="text-xs text-teal-800">{outlineNotice}</p>}
            {deleteError && <p data-testid="generated-delete-error" role="alert" className="text-xs text-red-700">{deleteError}</p>}
            {translateError && <p data-testid="generated-translate-error" role="alert" className="text-xs text-red-700">{translateError}</p>}
           {outlineUnavailable && <p data-testid="outline-tool-unavailable" className="text-xs text-slate-500">{outlineUnavailable}</p>}
         </>
       }
-      nativeLoadingOverlay={isNativeFullscreen && isLoading
-        ? <GlobalLoadingOverlay message="도면을 여는 중입니다..." testId="viewer-native-loading-overlay" />
-        : null}
+      modalOverlay={deleteRequest ? <GeneratedDeleteDialog request={deleteRequest}
+        onCancel={()=>setDeleteRequest(null)} onConfirm={confirmDelete} /> : null}
+      nativeLoadingOverlay={loading ? <div data-testid="viewer-loading-overlay" role="progressbar" aria-label="도면 로딩 중" className="pointer-events-none absolute inset-0 z-[65] flex items-center justify-center bg-slate-950/45"><div className="pointer-events-auto max-w-sm rounded-lg bg-white p-4 text-sm text-slate-900 shadow-xl"><p>도면을 여는 중입니다…</p>{format==='DXF' && <button type="button" className="mt-3 rounded bg-teal-700 px-3 py-2 text-white" onClick={()=>choose(renderer==='three-dxf-viewer'?'dxf-viewer':'three-dxf-viewer')}>로딩 중단 후 {renderer==='three-dxf-viewer'?'dxf-viewer':'three-dxf-viewer'}로 열기</button>}<a className="mt-2 block underline" href={`/api/cad-files/${versionId}/content`} download>원본 다운로드</a></div></div> : null}
     />
 
     {!isFullscreen && metric && <div className="rounded border border-slate-200 bg-white p-4 text-sm">

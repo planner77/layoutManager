@@ -1,3 +1,4 @@
+import { clickViewerCommand, clickViewerTestCommand } from './viewer-menu-helper';
 import {test,expect} from '@playwright/test';
 import {masterFields} from './master-helper';
 
@@ -18,10 +19,11 @@ test('TC-E2-E2E-001: history buttons and editable text keep native Ctrl+Z, reloa
   const version=(await response.json()) as {id:string};
   await page.goto('/cad/versions/'+version.id+'/viewer?renderer=three-dxf-viewer');
   await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
+  await clickViewerTestCommand(page, 'viewer-menu-tools');
   await expect(page.getByTestId('generated-undo')).toBeDisabled();
   await expect(page.getByTestId('generated-redo')).toBeDisabled();
   await expect(page.getByTestId('generated-history-status')).toContainText('최대 100단계');
-  await page.getByTestId('viewer-menu-outline-tool').click();
+  await clickViewerTestCommand(page, 'viewer-menu-outline-tool');
   const canvas=page.getByTestId('cad-canvas').locator('canvas');
   await canvas.scrollIntoViewIfNeeded();
   await expect(canvas).toBeInViewport({ratio:1});
@@ -36,12 +38,12 @@ test('TC-E2-E2E-001: history buttons and editable text keep native Ctrl+Z, reloa
   await tools.getByRole('button',{name:'볼록 외곽선 미리보기'}).click();
   await expect(page.getByTestId('outline-preview')).toBeVisible();
   await tools.getByRole('button',{name:'임시 확정'}).click();
-  await page.getByTestId('viewer-menu-outline-tool').click();
+  await clickViewerTestCommand(page, 'viewer-menu-outline-tool');
   await expect(page.getByTestId('outline-saved-tools')).toContainText('1건');
   await page.getByTestId('canvas-mode-generated').click();
   // Tool/zoom/selection are not editing commands and must not populate history.
-  await page.getByRole('button',{name:'전체 화면 확대'}).click();
-  await page.getByTestId('viewer-menu-outline-tree').click();
+  await clickViewerCommand(page, 'view', '확대');
+  await clickViewerTestCommand(page, 'viewer-menu-outline-tree');
   await page.getByTestId('outline-tree-item').click();
   await expect(page.getByTestId('canvas-edit-gate')).toHaveAttribute('data-edit-enabled','true');
   await expect(page.getByTestId('generated-undo')).toBeDisabled();
@@ -51,7 +53,7 @@ test('TC-E2-E2E-001: history buttons and editable text keep native Ctrl+Z, reloa
   await page.keyboard.press('Control+y');
   await expect(page.getByTestId('generated-undo')).toBeDisabled();
   await expect(page.getByTestId('outline-tree-item')).toHaveCount(1);
-  await page.getByTestId('viewer-menu-outline-tool').click();
+  await clickViewerTestCommand(page, 'viewer-menu-outline-tool');
   const input=page.getByTestId('outline-instance-name');
   await input.focus();
   await page.evaluate(()=>{
@@ -65,12 +67,14 @@ test('TC-E2-E2E-001: history buttons and editable text keep native Ctrl+Z, reloa
   });
   await page.keyboard.press('Control+z');
   await expect(input).toHaveAttribute('data-input-keydown','native');
-  await page.getByTestId('viewer-menu-outline-tool').click();
-  await page.getByRole('button',{name:'다시 불러오기'}).click();
+  await clickViewerTestCommand(page, 'viewer-menu-outline-tool');
+  page.once('dialog', async dialog => { expect(dialog.message()).toContain('임시 외곽선'); await dialog.accept(); });
+  await clickViewerCommand(page, 'drawing', '다시 불러오기');
   await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
+  await clickViewerTestCommand(page, 'viewer-menu-tools');
   await expect(page.getByTestId('generated-undo')).toBeDisabled();
   await expect(page.getByTestId('generated-redo')).toBeDisabled();
-  await page.getByTestId('viewer-menu-outline-tree').click();
+  await clickViewerTestCommand(page, 'viewer-menu-outline-tree');
   await expect(page.getByTestId('outline-tree-item')).toHaveCount(0);
 });
 

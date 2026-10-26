@@ -1,5 +1,6 @@
 import { expect, test, type APIRequestContext } from "@playwright/test";
 import { masterFields } from "./master-helper";
+import { clickViewerCommand, openViewerMenu } from './viewer-menu-helper';
 
 const drawing = Buffer.from(
   "0\nSECTION\n2\nENTITIES\n0\nLINE\n8\n0\n10\n0\n20\n0\n11\n100\n21\n100\n0\nENDSEC\n0\nEOF\n",
@@ -54,7 +55,7 @@ test("TC-LINK-001/002: list, location and viewer create pinned renderer-specific
   await row.getByRole("button", { name: /도면 링크 복사$/ }).click();
   const pinned = await page.evaluate(() => navigator.clipboard.readText());
   expect(pinned).toBe(
-    `${baseURL}/cad/versions/${first.id}/viewer?renderer=dxf-viewer`,
+    `${baseURL}/cad/versions/${first.id}/viewer?renderer=three-dxf-viewer`,
   );
   await expect(row.getByText("도면 링크를 복사했습니다.")).toBeVisible();
 
@@ -77,7 +78,7 @@ test("TC-LINK-001/002: list, location and viewer create pinned renderer-specific
   const direct = await fresh.newPage();
   await direct.goto(pinned);
   await expect(direct).toHaveURL(
-    new RegExp(`/cad/versions/${first.id}/viewer\\?renderer=dxf-viewer$`),
+    new RegExp(`/cad/versions/${first.id}/viewer\\?renderer=three-dxf-viewer$`),
   );
   await expect(direct.getByRole("status")).toHaveText("도면 표시 완료");
   await expect(direct.getByTestId("cad-viewer-shell")).toHaveAttribute("data-fullscreen", "true");
@@ -86,20 +87,19 @@ test("TC-LINK-001/002: list, location and viewer create pinned renderer-specific
   await expect(
     direct.getByRole("heading", { name: first.displayName }),
   ).toBeVisible();
-  await direct
-    .getByRole("button", { name: "three-dxf-viewer", exact: true })
-    .click();
-  await direct.getByRole("button", { name: "도면 링크 복사" }).click();
-  await expect(direct.getByText("도면 링크를 복사했습니다.")).toBeVisible();
-  const threeUrl = await direct.evaluate(() => navigator.clipboard.readText());
-  expect(threeUrl).toBe(
-    `${baseURL}/cad/versions/${first.id}/viewer?renderer=three-dxf-viewer`,
+  await clickViewerCommand(direct, 'view', 'dxf-viewer');
+  await expect(direct.getByRole('status')).toHaveText('도면 표시 완료');
+  await clickViewerCommand(direct, 'drawing', '도면 링크 복사');
+  const dxfUrl = await direct.evaluate(() => navigator.clipboard.readText());
+  expect(dxfUrl).toBe(
+    `${baseURL}/cad/versions/${first.id}/viewer?renderer=dxf-viewer`,
   );
   const freshThree = await browser.newContext({ baseURL });
   const directThree = await freshThree.newPage();
-  await directThree.goto(threeUrl);
+  await directThree.goto(dxfUrl);
+  await openViewerMenu(directThree, 'view');
   await expect(
-    directThree.getByRole("button", { name: "three-dxf-viewer", exact: true }),
+    directThree.getByRole('menuitemradio', { name: 'dxf-viewer', exact: true }),
   ).toBeDisabled();
   await expect(directThree.getByRole("status")).toHaveText("도면 표시 완료");
   await freshThree.close();
@@ -140,11 +140,12 @@ test("TC-LINK-002/003: DWG canonical renderer and clipboard failure fallback", a
     /\/cad\/versions\/[^/]+\/viewer\?renderer=libredwg-web$/,
   );
   await expect(page.getByText("libredwg-web", { exact: true })).toBeVisible();
+  await openViewerMenu(page, 'view');
   await expect(
-    page.getByRole("button", { name: "dxf-viewer", exact: true }),
+    page.getByRole('menuitemradio', { name: 'dxf-viewer', exact: true }),
   ).toHaveCount(0);
   await expect(
-    page.getByRole("button", { name: "three-dxf-viewer", exact: true }),
+    page.getByRole('menuitemradio', { name: 'three-dxf-viewer', exact: true }),
   ).toHaveCount(0);
 });
 
@@ -165,7 +166,7 @@ test("TC-LINK-003: unavailable clipboard exposes a manual link fallback", async 
   await row.getByRole("button", { name: /도면 링크 복사$/ }).click();
   const input = row.getByLabel("복사할 도면 링크");
   await expect(input).toHaveValue(
-    `${baseURL}/cad/versions/${file.id}/viewer?renderer=dxf-viewer`,
+    `${baseURL}/cad/versions/${file.id}/viewer?renderer=three-dxf-viewer`,
   );
   await expect(row.getByText("클립보드를 사용할 수 없습니다")).toBeVisible();
 });

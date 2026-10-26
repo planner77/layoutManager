@@ -7,18 +7,26 @@ export class DxfViewerAdapter implements CadViewerAdapter {
   private disposed = false;
   private cancel?: () => void;
   constructor(container: HTMLElement) {
-    this.viewer = new DxfViewer(container, { autoResize: true, antialias: true });
-    if (!this.viewer.HasRenderer()) throw new Error('WebGL Viewer 초기화에 실패했습니다. 브라우저의 하드웨어 가속을 확인해주세요.');
+    const existingCanvases=new Set(container.querySelectorAll('canvas'));
+    try {
+      this.viewer = new DxfViewer(container, { autoResize: true, antialias: true });
+      if (!this.viewer.HasRenderer()) throw new Error('WebGL Viewer 초기화에 실패했습니다. 브라우저의 하드웨어 가속을 확인해주세요.');
+    } catch(error) {
+      const viewer=(this as unknown as {viewer?:DxfViewer}).viewer;
+      try { viewer?.Destroy(); } catch { /* Construction may have stopped before renderer setup. */ }
+      for(const canvas of container.querySelectorAll('canvas')) if(!existingCanvases.has(canvas))canvas.remove();
+      throw error;
+    }
   }
   async load(source: ArrayBuffer) {
     const url = URL.createObjectURL(new Blob([source]));
-    let timer: ReturnType<typeof setTimeout> | undefined;
+    let operation:Promise<unknown>|null=null;
     try {
+      operation=this.viewer.Load({ url, fonts: [new URL('/fonts/NanumGothic-Regular.ttf', location.href).href], workerFactory: () => new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' }) });
       await Promise.race([
-        this.viewer.Load({ url, fonts: [new URL('/fonts/NanumGothic-Regular.ttf', location.href).href], workerFactory: () => new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' }) }),
+        operation,
         new Promise<never>((_, reject) => {
           this.cancel = () => reject(new DOMException('취소됨', 'AbortError'));
-          timer = setTimeout(() => reject(new Error('DXF 처리 시간이 초과되었습니다.')), 120_000);
         }),
       ]);
       if (this.disposed) throw new DOMException('취소됨', 'AbortError');
@@ -26,7 +34,7 @@ export class DxfViewerAdapter implements CadViewerAdapter {
     } catch(error) {
       if (error instanceof DOMException && error.name === 'AbortError') throw error;
       throw new Error('DXF 처리에 실패했습니다. 파일 손상, 미지원 형식 또는 Worker 로드를 확인해주세요.');
-    } finally { clearTimeout(timer); this.cancel = undefined; URL.revokeObjectURL(url); }
+    } finally { this.cancel = undefined; URL.revokeObjectURL(url); }
   }
   fitToView() {
     const b = this.viewer.GetBounds(), o = this.viewer.GetOrigin();
