@@ -1,5 +1,11 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issue #142 / PR #144 — TypeScript 검사 3건 실패·Fixture 타입 보완 (2026-10-27 KST)
+
+- [PR CI Run 40492242157](https://github.com/planner77/layoutManager/actions/runs/40492242157), attempt 1, HEAD `808f7b40de4dd2686888b17d7f010784a6e293c6` **completed/failure**. Verify [Job 122148776521](https://github.com/planner77/layoutManager/actions/runs/40492242157/job/122148776521) `npm run typecheck` 실패: `g7-s3-4-b2-capture.test.ts:83,88,96` TS2339(로컬 Version과 S3 Version이 서로 다른 Shape인데 Fixture `versions:[v1,v2]`가 Union Array로 추론됨). 이후 ESLint/Unit/Build/E2E **SKIPPED**; Docker/Migration/Smoke [Job 122148776302](https://github.com/planner77/layoutManager/actions/runs/40492242157/job/122148776302) **SUCCESS**.
+- **수정:** Fixture만 `const versions:[typeof v1,typeof v2]=[v1,v2]` 튜플로 정적 구분하고 기존 반환 객체는 `versions`를 사용한다. Test 데이터/런타임/신뢰 경계 동일. 최소 Tuple TypeScript 샘플 별도 컴파일 PASS이나 실제 프로젝트 Typecheck 및 전체 CI는 새 HEAD 결과 확인 전 `NOT VERIFIED`.
+- Main behind 0/mergeable true, Codex 이전 HEAD `808f7b4` Review completed/findings 0 및 기존 P2 스레드 2건 Resolved. 새 SHA의 재리뷰·CI는 별도 게이트. 실 사내 writer/DB/CAD/S3/Registry·Restore/Rollback·운영 Auth/Write/GHCR/GO는 **NOT RUN**, #142/#109/#96 OPEN/BLOCKED.
+
 ## #142 B2-2A 시작 — 새 HEAD PR CI 미관측 (2026-10-27)
 
 - B2-1 PR #143 Main `2d29b8572b02ccacf5e0032bf5432cb2f2b26ed6`, Main CI #40483297907 SUCCESS/GHCR SKIPPED. B2-2A 순수 Snapshot Barrier 주장 검증·합성 Unit 및 no-GHCR 15-path guard/Runbook 작성.

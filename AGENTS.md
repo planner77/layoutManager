@@ -1,5 +1,9 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #142 / PR #144 — 실패한 TypeScript Fixture Typecheck 보완 (2026-10-27 KST)
+
+- [PR CI #40492242157](https://github.com/planner77/layoutManager/actions/runs/40492242157) HEAD `808f7b4`, attempt=1 **FAILURE**: Verify Job 122148776521의 `tsc --noEmit`에서 [B2-2A synthetic Unit](src/tests/unit/g7-s3-4-b2-capture.test.ts) 83·88·96행 `TS2339` 3건. Local `v1`에는 `storageVersionId`가 없고 S3 `v2`에만 있어 일반 배열의 Union Type에서는 `versions[1]` 속성을 보장할 수 없음. Docker/Migration Job 122148776302는 SUCCESS, Typecheck 이후 검사들은 SKIPPED(미검증).
+- **보완 지침:** Fixture의 두 entry를 타입이 구분되는 `[typeof v1,typeof v2]` tuple로 선언해 `versions[1].storageVersionId`의 정적 타입을 보존. 데이터 구조/검증 로직 변경 없이 실패 원장·TestReport 동기화. 혼합 entry Fixture를 다루는 신규 Test는 TypeScript 검사를 먼저 통과시켜야 함. 최신 HEAD의 CI 결과는 관측 전 PASS가 아니며 기존 Codex P2 2개 Resolved/이전 SHA 무지적도 새 SHA의 리뷰 승인을 의미하지 않음. 운영 G7, GHCR, 실 DB/CAD/S3 접근 OFF.
 ## Issue #142 S3-4-B2-2A — 단일 Snapshot 쓰기 장벽 증거 계약 준비 (2026-10-27)
 
 - **선행:** [B2-1 PR #143](https://github.com/planner77/layoutManager/pull/143) no-GHCR Squash → Main `2d29b8572b02ccacf5e0032bf5432cb2f2b26ed6`. [Main CI #40483297907](https://github.com/planner77/layoutManager/actions/runs/40483297907) SUCCESS, release-scope SUCCESS / GHCR Build and push SKIPPED.

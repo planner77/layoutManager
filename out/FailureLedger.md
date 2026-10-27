@@ -1,5 +1,13 @@
 # PR/Main CI 실패 원장
 
+## Issue #142 / PR #144 — Typecheck TS2339 보완 (2026-10-27 KST)
+
+- **관측 CI 실패:** [PR CI #40492242157](https://github.com/planner77/layoutManager/actions/runs/40492242157), attempt=1, SHA `808f7b40de4dd2686888b17d7f010784a6e293c6` → `completed/failure`. Typecheck/Lint/Test/Build/E2E [Job 122148776521](https://github.com/planner77/layoutManager/actions/runs/40492242157/job/122148776521)에서 TypeScript 검사 `tsc --noEmit` 3건 **TS2339** (`src/tests/unit/g7-s3-4-b2-capture.test.ts:83,88,96`); 이후 ESLint/Unit/Build/E2E는 SKIPPED이므로 PASS가 아님. Docker/Migration/Smoke [Job 122148776302](https://github.com/planner77/layoutManager/actions/runs/40492242157/job/122148776302) SUCCESS.
+- **직접 원인/최소 보완:** 합성 Fixture `versions:[v1,v2]`는 local `v1`에 `storageVersionId`가 없어서 TypeScript가 배열 요소를 Union으로 추론하며 `versions[1].storageVersionId`에 접근할 수 없었음. `const versions:[typeof v1,typeof v2]=[v1,v2]`로 항목별 타입을 보존하고 반환 Fixture에 `versions`로 연결한다. DB/S3 payload 내용·보안 Validator·운영 코드·GHCR 미게시 15-path 정책 **변경 없음**.
+- **리뷰/충돌:** 이전 HEAD의 Codex 리뷰 `808f7b4` completed/findings=0, 과거 P2 [#4387342529](https://github.com/planner77/layoutManager/pull/144#discussion_r4387342529)·[#4387342538](https://github.com/planner77/layoutManager/pull/144#discussion_r4387342538) 모두 Resolved, 전체 Review thread 미해결=0. 수정 전 Main `2d29b8572b02ccacf5e0032bf5432cb2f2b26ed6` 대 PR `ahead=5, behind=0`, mergeable=true; Main 정렬·충돌 해결 불필요. 새 HEAD의 Codex 재리뷰는 **별도**.
+- **실패 원장 규칙:** CI Typecheck 실패와 과거 P2 리뷰는 독립 기록; 성공한 Docker Job과 미실행 후속 Step을 혼동하지 않음. 독립 최소 TypeScript tuple 예제 컴파일만 PASS(전체 프로젝트 Typecheck/ESLint/Vitest/Build/E2E는 **새 CI 성공 전 미검증**). 재발 방지: fixture의 이종 객체 배열은 인덱스별 제약을 tuple 또는 명시 타입으로 유지하며 신규 mutation Unit을 추가할 때 **typecheck를 먼저 수행**.
+- **범위 제한:** `AGENTS.md`, 실패 원장, TestReport 및 단위 테스트만 수정. 실제 현장 writer freeze/SQLite backup/CAD·S3 원본 검증/실복구/rollback, 운영 Auth/Write, active Prisma Migration, Dockerfile/Compose/Nginx/.env, GHCR 게시·이슈 종료는 수행하지 않음. #142/#109/#96 OPEN/BLOCKED 유지. 새 PR CI는 HEAD push로 시작, 결과 모니터링하지 않음.
+
 ## #142 / PR #144 — B2-2A Codex P2 2건 교정·새 PR CI 실행 요청 (2026-10-27 KST)
 
 - **관측(실패 아님):** 기존 HEAD `4fa951d2ccf09455225cd645045ab0cffa1a752b`의 [PR CI #40485053390](https://github.com/planner77/layoutManager/actions/runs/40485053390), attempt=1, `completed/success`; Typecheck/Lint/Test/Build/E2E [Job 122124654212](https://github.com/planner77/layoutManager/actions/runs/40485053390/job/122124654212) SUCCESS, Docker/Migration/Smoke [Job 122124654478](https://github.com/planner77/layoutManager/actions/runs/40485053390/job/122124654478) SUCCESS. **CI 실패 기록이 아닌 리뷰 품질 지적**이며 새 HEAD에 PASS를 이전하지 않음.

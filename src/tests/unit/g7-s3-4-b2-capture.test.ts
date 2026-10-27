@@ -8,6 +8,8 @@ function fixture(){
     bytes:10,sha256:'a'.repeat(64)};
   const v2={key:'V-s3item100',locationId:'L-zone100',version:2,storage:'s3',
     bytes:20,sha256:'b'.repeat(64),storageVersionId:'S3version00001'};
+  // A tuple keeps the S3-only version ID on index 1 when negative tests mutate it.
+  const versions:[typeof v1,typeof v2]=[v1,v2];
   return {scope:'G7-S3-4B2-CAPTURE',schemaVersion:1,snapshotId,
     operatorId:'OP-person001',changeRequestId:'CR-change001',
     barrier:{id:'BAR-holder001',quiescedUtc:'2026-10-27T10:00:00.000Z',
@@ -17,7 +19,7 @@ function fixture(){
       finishedUtc:'2026-10-27T10:00:02.000Z',backupSha256:'c'.repeat(64),
       quickCheck:'ok',foreignKeyViolations:0,currentOwnerViolations:0,
       auditInvariantViolations:0,locations:[{id:'L-zone100',
-        currentKey:'V-local100',nextVersion:3}],versions:[v1,v2]},
+        currentKey:'V-local100',nextVersion:3}],versions},
     local:{...base,startedUtc:'2026-10-27T10:00:02.000Z',
       finishedUtc:'2026-10-27T10:00:03.000Z',
       objects:[{key:v1.key,bytes:v1.bytes,sha256:v1.sha256}]},
