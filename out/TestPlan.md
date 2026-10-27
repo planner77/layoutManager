@@ -1,5 +1,12 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## #142 B2-2B — Buffer-only SQLite/CAD/S3 검증 Test Cases (2026-10-27)
+
+- TC-B2-2B-01: 정상 B2-2A 주장 Packet와 합성 실제 SQLite·Local CAD/S3 export·Marker bytes, 전체 Version/Location Current/FK/NextVersion·Hash·Size/VersionId Claim 교차대조 → `DISPOSABLE_BYTES_CONSISTENT_NOT_SITE_PROOF`. Source/site/writer/GO 검증 flags는 false.
+- TC-B2-2B-02: Writer Count≠0, Epoch·Marker SNAP/VersionId 불일치, SQLite byte 변조/Hash 조작/비SQLite, Local/S3 Buffer 변조, DB current/next_version/File Size 불일치 → reason code+BLOCKED.
+- TC-B2-2B-03: Version/Location private mapping 누락/중복·DB Ghost Row, FK 위반, Auth 후보 schema 혼입, 예상 밖 Secret/Path 필드 → BLOCKED. 응답에는 DB/Site ID·Byte/Path 누출 없음.
+- TC-B2-2B-04: 정확 B2-2B future Squash 제목+15개 허용 파일만 GHCR publish=false. 변형 제목/비허용 active Prisma·Route·Dockerfile·Compose·workflow는 차단하며 tag는 기존 릴리스 정책 유지. 신규 CI 전 Typecheck/Lint/Unit/Build/E2E PASS는 **NOT VERIFIED**; 실 Site writer freeze 및 동일 SNAP 원본 수용은 NOT RUN.
+
 ## #142 S3-4-B2-2A — Snapshot Barrier assertion TC (2026-10-27)
 
 - TC-B2-2A-01: 두 합성 CAD Version(Local/S3), 한 위치 Current/nextVersion, S3 versioned marker 및 하나의 `SNAP-*`/Epoch·시간 내 capture → `CAPTURE_CLAIMS_CONSISTENT_NOT_SOURCE_PROOF`, 실제 Writer/Snapshot/Bytes Verified 및 GO 0.

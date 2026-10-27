@@ -1,5 +1,10 @@
 # Issue #109 — G7 운영 인증 활성화 설계 및 통제 배포·롤백 Runbook
 
+## #142 B2-2B — 합성 바이트 대조 준비, G7 운영 활성화 여전히 BLOCKED (2026-10-27)
+
+- B2-2A PR #144 → Main `e043d56d43099034906cccf0bb1cc1c7a76bb11f`, Main CI #40496032085 SUCCESS/GHCR SKIPPED. B2-2B는 별도 공급된 **격리 합성 SQLite/Local CAD/S3 Export Byte**의 해시·FK/Version/Current·SNAP/Marker·DB mapping을 검증하는 개발 단계다. 그 Bytes가 실제 사내 원본인지, 동일 Writer Epoch에서 생성됐는지 입증하지 않는다.
+- 실제 Source writer-quiescence/SQLite online backup/원본 CAD와 versioned S3 GET/Marker/Audit, 후보 7 Migration/Restore/Rollback 및 S3-4-C binder/S3-5 Owner GO는 별도 승인·증거가 필요하다. 운영 DB/API/Nginx/Compose/GHCR와 이슈 #142/#109/#96 상태는 OPEN/BLOCKED로 유지. [B2-2B Runbook](../src/deploy/g7-s3/S3-4-B2-2B.md).
+
 ## #142 S3-4-B2-2A — writer barrier 주장과 실험 분리 (2026-10-27)
 
 - B2-1 PR #143 → Main `2d29b8572b02ccacf5e0032bf5432cb2f2b26ed6`; [Main CI #40483297907](https://github.com/planner77/layoutManager/actions/runs/40483297907) release-scope SUCCESS, GHCR SKIPPED. B2-2A는 Writer Quiescence·SQLite online backup·Local CAD/S3 버전 객체라는 **운영자 제공 메타데이터**의 시간·Epoch·Snapshot/Version·Hash 상호모순을 검사하는 순수 계약만 도입.

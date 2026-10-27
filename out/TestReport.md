@@ -1,5 +1,11 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## #142 B2-2B — 격리 합성 증거 도구 작성 / 신규 CI 미관측 (2026-10-27)
+
+- 선행 B2-2A [PR #144](https://github.com/planner77/layoutManager/pull/144) Main `e043d56d43099034906cccf0bb1cc1c7a76bb11f`, [Main CI #40496032085](https://github.com/planner77/layoutManager/actions/runs/40496032085) SUCCESS / release-scope SUCCESS / GHCR SKIPPED.
+- 새 `inspectS34B22BDisposableBytes`는 합성 SQLite Buffer/Local CAD/S3 export·Marker/VersionId/DB mapping의 내용 hash/Current/FK 음성 검증 테스트를 **작성**했다. 원본 Writer/Online Backup/S3 authoritative GET/실 Snapshot/Restore/Rollback **NOT RUN**, 긍정도 `DISPOSABLE_BYTES_CONSISTENT_NOT_SITE_PROOF`이다. Typecheck/Vitest/Lint/Build/E2E·PR CI는 실제 Run 관측 전 `NOT VERIFIED`.
+- #142/#109/#96 OPEN/BLOCKED, 운영 Auth/CAD Write·GHCR 게시/active migration OFF. [B2-2B Runbook](../src/deploy/g7-s3/S3-4-B2-2B.md).
+
 ## Issue #142 / PR #144 — TypeScript 검사 3건 실패·Fixture 타입 보완 (2026-10-27 KST)
 
 - [PR CI Run 40492242157](https://github.com/planner77/layoutManager/actions/runs/40492242157), attempt 1, HEAD `808f7b40de4dd2686888b17d7f010784a6e293c6` **completed/failure**. Verify [Job 122148776521](https://github.com/planner77/layoutManager/actions/runs/40492242157/job/122148776521) `npm run typecheck` 실패: `g7-s3-4-b2-capture.test.ts:83,88,96` TS2339(로컬 Version과 S3 Version이 서로 다른 Shape인데 Fixture `versions:[v1,v2]`가 Union Array로 추론됨). 이후 ESLint/Unit/Build/E2E **SKIPPED**; Docker/Migration/Smoke [Job 122148776302](https://github.com/planner77/layoutManager/actions/runs/40492242157/job/122148776302) **SUCCESS**.
