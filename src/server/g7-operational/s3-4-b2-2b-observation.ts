@@ -176,8 +176,16 @@ export function inspectS34B22BDisposableBytes(rawPacket:unknown,rawBundle:unknow
   const localClaims=new Map(packet.local.objects.map(v=>[v.key,v]));
   const s3Claims=new Map(packet.s3.objects.map(v=>[v.key,v]));
   const observed=new Map<string,ObservedObject>(),dbVersionIds=new Set<string>();
+  // CadFileVersion.storagePath is UNIQUE even when a disposable SQLite
+  // fixture or imported backup omitted the physical uq_storage_path index.
+  // Multiple DB Version UUIDs must never claim one physical S3 object.
+  const s3Locators=new Set<string>();
   let local=0,s3=0;
   for(const obj of bundle.objects){
+    if(obj.storage==='s3'&&obj.s3ObjectLocator!==undefined){
+      if(s3Locators.has(obj.s3ObjectLocator))errors.push('DUPLICATE_S3_LOCATOR');
+      s3Locators.add(obj.s3ObjectLocator);
+    }
     if(observed.has(obj.key)||dbVersionIds.has(obj.dbVersionId))
       errors.push('DUPLICATE_PRIVATE_VERSION_BINDING');
     observed.set(obj.key,obj);
