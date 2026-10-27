@@ -511,6 +511,38 @@ describe('#142 S3-4-B2-1 exact offline OCI GHCR no-publish scope',()=>{
   });
 });
 
+describe('#142 B2-2B exact no-GHCR disposable byte preflight',()=>{
+  const title='#142 | S3-4-B2-2B Isolated byte evidence preflight [G7-S3-4B2-2B-NO-GHCR]';
+  const paths=[".github/workflows/docker-publish.yml","AGENTS.md","out/Architecture.md","out/Database.md","out/Decisions.md","out/FailureLedger.md","out/Issue109.md","out/Operation.md","out/Requirements.md","out/TestPlan.md","out/TestReport.md","src/deploy/g7-s3/S3-4-B2-2B.md","src/server/g7-operational/s3-4-b2-2b-observation.ts","src/tests/unit/g7-s3-4-b2-2b-observation.test.ts","src/tests/unit/g7-staging-ghcr-guard.test.ts"];
+  test('exact B2-2B title and exactly fifteen reviewed paths skip GHCR',()=>{
+    const r=runScope(paths,title);
+    expect(r.status,r.stderr).toBe(0);
+    expect(r.values).toContain('publish=false');
+  });
+  test('operating paths and other Actions workflows deny no-GHCR scope',()=>{
+    for(const file of [
+      'src/Dockerfile','src/scripts/deploy.ts','src/prisma/migrations/x/migration.sql',
+      'src/docker-compose.yml','src/app/api/cad-files/route.ts',
+      'src/server/g7-operational/preview-handler.ts','.github/workflows/pr-ci.yml',
+      'src/deploy/g7-s3/prisma.config.ts',
+    ]){
+      const r=runScope([paths[12],file],title);
+      expect(r.status).not.toBe(0);
+      expect(r.stderr).toContain('G7-S3-4B2-2B GHCR exclusion disallowed path: '+file);
+    }
+  });
+  test('changed subject fails closed; release tag retains existing publish policy',()=>{
+    for(const malformed of [title+' ',title+'-fake','#142 | S3-4-B2-2B other']){
+      const r=runScope([paths[12]],malformed);
+      expect(r.status).not.toBe(0);
+      expect(r.stderr).toContain('G7-S3-4B2-2B exact squash subject required');
+    }
+    const tag=runScope([paths[12]],title,'refs/tags/v0.99.1');
+    expect(tag.status).toBe(0);
+    expect(tag.values).toContain('publish=true');
+  });
+});
+
 describe('#142 B2-2A exact capture claim GHCR exclusion',()=>{
   const title='#142 | S3-4-B2-2A Capture barrier packet contract [G7-S3-4B2-2A-NO-GHCR]';
   const paths=[".github/workflows/docker-publish.yml","AGENTS.md","out/Architecture.md","out/Database.md","out/Decisions.md","out/FailureLedger.md","out/Issue109.md","out/Operation.md","out/Requirements.md","out/TestPlan.md","out/TestReport.md","src/deploy/g7-s3/S3-4-B2-2.md","src/server/g7-operational/s3-4-b2-capture.ts","src/tests/unit/g7-s3-4-b2-capture.test.ts","src/tests/unit/g7-staging-ghcr-guard.test.ts"];

@@ -201,6 +201,26 @@ jobs:
             publish=false
             reason="Approved G7 S3-4-B1 isolated offline restore verifier only: skip GHCR"
           elif [[ "$GITHUB_REF" == "refs/heads/main" &&
+                   "$COMMIT_SUBJECT" == "#142 | S3-4-B2-2B Isolated byte evidence preflight [G7-S3-4B2-2B-NO-GHCR]" ]]; then
+            # B2-2B is a disposable in-memory byte verifier only.
+            # No operating writer freeze, DB/CAD/S3, OCI or active schema changes.
+            for file in "${changed[@]}"; do
+              case "$file" in
+                .github/workflows/docker-publish.yml|AGENTS.md|out/Architecture.md|out/Database.md|out/Decisions.md|out/FailureLedger.md|out/Issue109.md|out/Operation.md|out/Requirements.md|out/TestPlan.md|out/TestReport.md|src/deploy/g7-s3/S3-4-B2-2B.md|src/server/g7-operational/s3-4-b2-2b-observation.ts|src/tests/unit/g7-s3-4-b2-2b-observation.test.ts|src/tests/unit/g7-staging-ghcr-guard.test.ts)
+                  ;;
+                *)
+                  echo "::error::G7-S3-4B2-2B GHCR exclusion disallowed path: $file" >&2
+                  exit 1
+                  ;;
+              esac
+            done
+            publish=false
+            reason="Approved #142 B2-2B disposable byte evidence preflight: skip GHCR"
+          elif [[ "$GITHUB_REF" == "refs/heads/main" &&
+                   "$COMMIT_SUBJECT" == "#142 | S3-4-B2-2B"* ]]; then
+            echo "::error::G7-S3-4B2-2B exact squash subject required" >&2
+            exit 1
+          elif [[ "$GITHUB_REF" == "refs/heads/main" &&
                    "$COMMIT_SUBJECT" == "#142 | S3-4-B2-2A Capture barrier packet contract [G7-S3-4B2-2A-NO-GHCR]" ]]; then
             # B2-2A ONLY validates operator-supplied synthetic capture claims.
             # No actual source quiescence, DB/CAD/S3 reads, or production G7.
