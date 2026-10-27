@@ -1,5 +1,10 @@
 # Database Schema — 단일 기준 문서
 
+## #142 B2-3 P2 — Local CAD StoragePath/DB Owner 불변식 (2026-10-27)
+
+- `CadStorage.publish`는 실제 DB `CadFileVersion.location_id/id`에서 `<Location UUID>/<Version UUID>/original.(dxf|dwg)` Local `storage_path`를 구성한다. 기존 B2-3 Byte verifier의 정규식 모양 검사와 DB·Asset 제공 문자열의 동일성만으로는 잘못된 소속을 탐지하지 못한다. B2-3은 정규식 그룹을 DB `location_id`와 `id`에 직접 비교해 어긋남을 `LOCAL_LOCATOR_OWNER_INVALID/BLOCKED`로 차단한다.
+- before/after Snapshot 둘 모두 같은 잘못된 Local 경로라도 양성으로 보지 않는다. `S3ObjectStorage.prepare`의 S3 객체 UUID와 DB Version UUID는 별개이므로 동일성 강제 금지. 실제 Schema/active Prisma Migration/운영 DB 변경 없음.
+
 ## #142 B2-3 — 기존 CAD 6 + quarantined Auth 후보 1 (2026-10-27)
 
 - `src/prisma/migrations`의 활성 6개 CAD 이력과 후보 폴더 SQL 복사본의 동일성 검사, G7 격리 `202610260002_g7_operational_auth`는 `src/deploy/g7-s3/prisma/migrations`에만 유지. 기존 운영 Prisma History/DDL 무변경.

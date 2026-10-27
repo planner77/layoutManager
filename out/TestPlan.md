@@ -1,5 +1,11 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #142 B2-3 CI 복구 + Local Locator Owner 회귀 (2026-10-27)
+
+- TC-B2-3-05: `exact(unknown)`의 `null` 명시 제외 및 Record 타입 좁힘; 신규 HEAD `npm run typecheck`, Next.js Docker baseline Build 재수행으로 TS2769/TS2345 회귀 없음 확인. 최초 Run #40511480917 두 Job 실패는 같은 TS 원인임을 구분; 이후 스킵된 ESLint/Unit/Integration/Build/E2E/Smoke를 신규 CI에서 실제 실행해야 한다.
+- TC-B2-3-06: 동일 Local CAD `storage_path` 문자열을 가진 합성 **before/after SQLite**에서 첫 Segment가 다른 Location UUID이거나 두 번째가 다른 DB Version UUID인데 Asset Bytes·SHA·Claim locator는 동일하고 DB FK·Current/nextVersion 정상이어도 `LOCAL_LOCATOR_OWNER_INVALID/BLOCKED`. 정상 `<actualLocationId>/<actualVersionId>/original.ext` 허용, S3 객체 UUID↔DB Version UUID 독립성 유지.
+- TC-B2-3-07: 정확 no-GHCR 제목/15-file allowlist·실 운영 접근 금지 회귀, Main 정렬·Codex P2 스레드 처리와 최신 HEAD 재리뷰. 테스트 새 HEAD 결과는 관측 전 NOT VERIFIED.
+
 ## #142 B2-3 — 7 Migration·CAD 무결성·Fault Injection TC (2026-10-27)
 
 - TC-B2-3-01: 기존 활성 CAD 6 Migration SQL과 G7 quarantined 6 SQL byte 동등·후보 Auth 7번째가 활성 경로 밖임을 확인; UID/0700·0600 Guarded `prisma migrate deploy`가 별도 합성 DB에 Migration History 정확 7건 및 8 Auth Tables, SQLite Quick Check/FK=0. 이 CLI 시험과 seeded 데이터 시험은 분리.

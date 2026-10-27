@@ -1,5 +1,11 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issue #142 / PR #146 — 첫 PR CI Typecheck 실패 및 P2 보완, 신규 HEAD 미검증 (2026-10-27 KST)
+
+- [PR CI #40511480917](https://github.com/planner77/layoutManager/actions/runs/40511480917), attempt 1, HEAD `bafe74cceba07a789a328c2453ccd785f19b4597` `completed/failure`. Verify Job 122214239302 TypeScript `TS2769` line 62 / `TS2345` line 63; Docker Job 122214238943 baseline Next.js Build에도 동일 TS Error. ESLint/Unit/Integration/Production Build/E2E 및 Docker phase1/Runtime Smoke 이후 미실행. 두 실패의 직접 원인은 단일 `Boolean(v)` 비내로잉, `v!==null` 교정은 신규 HEAD 검증 전 `NOT VERIFIED`.
+- [Codex P2 #4389209602](https://github.com/planner77/layoutManager/pull/146#discussion_r4389209602): 실제 Local Storage Locator의 첫 UUID는 DB `location_id`, 두 번째 UUID는 `CadFileVersion.id`여야 함. 기존 string↔packet 동치만으로 허위 PASS 가능. Local 경로 두 Segment를 DB Row에 결합해 검사, before/after SQLite에 **동일하게 잘못된** Location·Version Locator를 심고 합성 Asset Path까지 일치시킨 음성 테스트를 **작성**. 실제 테스트를 돌린 것처럼 PASS라 쓰지 않음.
+- 수정 HEAD의 Typecheck/Lint/Vitest/Build/E2E/Prisma History 및 Docker Job 신규 결과는 새 CI 종료/실제 Run 관측 전 `NOT VERIFIED`. Source Site/WAL/실 S3 GET·Restore/Rollback·운영 Auth/Write/GHCR `NOT RUN`, Issue #142/#109/#96 OPEN/BLOCKED.
+
 ## #142 B2-3 — 합성 7 Migration 테스트 작성·실행 결과 미검증 (2026-10-27)
 
 - 선행 B2-2B PR #145 Main `d2b77dd6535503f2d980ac563cc195cc8b4c128e`, [Main CI #40506886341](https://github.com/planner77/layoutManager/actions/runs/40506886341) SUCCESS, release-scope SUCCESS/GHCR SKIPPED.

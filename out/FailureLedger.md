@@ -1,5 +1,14 @@
 # PR/Main CI 실패 원장
 
+## Issue #142 / PR #146 — CI TS2769/TS2345 공통 원인 + 별도 Codex P2 (2026-10-27 KST)
+
+- **관측 CI 실패:** [PR CI Run #40511480917](https://github.com/planner77/layoutManager/actions/runs/40511480917), HEAD `bafe74cceba07a789a328c2453ccd785f19b4597`, attempt=1, `completed/failure`. Verify Job [122214239302](https://github.com/planner77/layoutManager/actions/runs/40511480917/job/122214239302): `npm run typecheck` → `src/server/g7-operational/s3-4-b2-3.ts:62` **TS2769** (`Object.keys`에 `object|null`), `:63` **TS2345** (`Object.hasOwn`에 `object|null`), exit 2. ESLint·Unit/Integration·Build·E2E는 **SKIPPED/미검증**.
+- **Docker Job 별도 실패, 동일 근본 원인:** Docker/Migration/Smoke [Job 122214238943](https://github.com/planner77/layoutManager/actions/runs/40511480917/job/122214238943) `Build pre-change baseline (same source, original Dockerfile)` 에서 Next.js Typecheck 동일 `s3-4-b2-3.ts:62` Type Error로 Docker buildx exit 1. Build phase1/Size/Migration/Smoke 후속 단계 모두 **SKIPPED**. Dockerfile/Buildx/OCI의 독립 결함 또는 외부 Registry 실패가 아님. npm audit 의존성 경고도 직접 실패 원인 아님.
+- **공통 원인/최소 수정:** 신규 `exact(v:unknown)`에서 `Boolean(v)`가 TypeScript `null` 방어·타입 내로잉을 보장하지 않는다. `v!==null && typeof v==='object'`로 타입 좁힘을 명시해 `Object.keys/Object.hasOwn` 안전화. 기존 B2-3 운영/보안 경계 및 15-file no-GHCR allowlist 불변.
+- **CI와 독립된 리뷰 품질 지적:** 최신 Codex [P2 #4389209602](https://github.com/planner77/layoutManager/pull/146#discussion_r4389209602)는 Local CAD `storage_path`가 잘못된 DB Location/Version ID를 참조해도, before/after DB와 asset이 동일한 문자열이면 통과하는 위양성. Local path 정규식 `(locationUuid)/(versionUuid)/original.ext` 그룹을 실제 `CadFileVersion.location_id/id`와 검증하여 `LOCAL_LOCATOR_OWNER_INVALID/BLOCKED`. 정상 S3 Object UUID는 DB Version UUID와 독립 유지. 양쪽 합성 Snapshot에 똑같은 잘못된 Local Location/Version path를 저장한 음성 회귀 추가.
+- **누적 실패 관리:** 이전 PR #145 CI 성공/리뷰 P2 교정 및 #146 최초 실패의 근거 모두 유지. 신규 HEAD Typecheck/ESLint/Vitest/Prisma CLI/Docker/E2E/PR CI는 실행 후 결과 관측 전 `NOT VERIFIED`, 최신 Codex Review는 별도. Main behind=0/mergeable=true는 보완 전 관측이며 push 뒤 재확인. 이번 작업은 새 PR CI 시작까지만, CI 모니터링/병합/Main CI/GHCR 게시는 하지 않음.
+- **운영 NO-GO:** 원본 DB/CAD/S3·writer freeze·온라인 Snapshot·운영 Prisma Migration·Auth/CAD Write 활성화·Compose/Nginx/OCI/실 복원·Rollback·Owner GO `NOT RUN`; #142/#109/#96 OPEN/BLOCKED.
+
 ## #142 B2-3 — B2-2B Main CI 완료 인계 / 새 합성 구현 검증 전 (2026-10-27 KST)
 
 - **선행 성공·실패 아님:** [PR #145](https://github.com/planner77/layoutManager/pull/145) HEAD `5fc2e45da56993c4498c6db9dcd9112a6edacbc4`, [PR CI #40505100118](https://github.com/planner77/layoutManager/actions/runs/40505100118) SUCCESS 및 최신 Codex completed/findings 0/미해결 0; exact no-GHCR Squash Main `d2b77dd6535503f2d980ac563cc195cc8b4c128e`. [Main CI #40506886341](https://github.com/planner77/layoutManager/actions/runs/40506886341) completed/success, release-scope Job 122198352827 SUCCESS, GHCR Job 122198431912 SKIPPED.

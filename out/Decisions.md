@@ -1,5 +1,10 @@
 # 주요 기술 결정과 승인 기록
 
+## #142 B2-3 P2 결정 — 동일 주장 일치와 실제 Local Locator 소속 구분 (2026-10-27)
+
+- **Decision:** Synthetic snapshot 전후 Row 동일성만으로는 원래 존재하던 Local CAD Locator의 오류를 증명할 수 없으므로, `CadStorage.publish` 구현이 강제하는 `LocationId/VersionId/original.ext` 구조를 B2-3 Byte verifier에서 Row 소속에 직접 연결한다. S3 object-key UUID는 별도 생성되어 DB Version UUID와 독립적이라는 기존 ADR 유지.
+- **CI root cause:** `Boolean(v)`은 nullable unknown의 TypeScript 내로잉을 제공하지 않음. `v!==null` 명시 검사 추가가 최소 안전 수정이며 형식 검증/운영 경계는 그대로. 변경 사유와 Run/Job/SHA는 실패 원장에 보존.
+
 ## ADR-051-G7-B2-3 — 실제 Migration과 합성 데이터 보존 증거 분리 (2026-10-27)
 
 - **Decision:** S3-1에서 승인된 `requireG7S3DisposableTarget`가 격리한 CLI에서 정식 Prisma 7 Migration 적용 결과를 검증하고, 별도 새 테스트는 합성 CAD 6 SQL 위의 CAD 데이터를 7번째 후보 SQL 적용 전후 비교한다. 새 verifier는 메모리 Buffer만 수용하며 호스트 Path/Network/S3/운영 Writer/active migration을 열거나 변경하지 않는다.

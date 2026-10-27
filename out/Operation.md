@@ -1,5 +1,10 @@
 # 운영·환경설정 초안
 
+## #142 B2-3 CI 실패 대응·Local 경로 검증 한계 (2026-10-27)
+
+- 최초 [PR CI #40511480917](https://github.com/planner77/layoutManager/actions/runs/40511480917)의 Verify Typecheck 및 Docker baseline Build는 새 오프라인 검증기의 nullable `unknown` TypeScript 문제로 함께 실패; 운영 Dockerfile 자체 변경/빌드 이슈가 아님. 새 HEAD에서 Typecheck 및 전체 CI 재검증 필요, 실패 이후 SKIPPED 단계는 PASS로 기록 금지.
+- G7-S3 B2-3은 격리 합성 SQLite 안의 Local CAD 경로가 DB Location/Version ID에 연결되는지 판정하는 코드만 보완. 실제 Local 원본 Path read, DB/Prisma CLI 운영 접근, S3 API, 네트워크, Writer Stop 등 I/O 추가하지 않음. 불변식 위반 시 `LOCAL_LOCATOR_OWNER_INVALID`만 반환. 실 Site 기능/Owner GO false.
+
 ## #142 B2-3 — Disposable G7 Prisma 실행 SOP (2026-10-27)
 
 - 일회용 테스트는 UID-owned `/tmp/cad-g7-s3-*` (0700) 안에 `fixture.sqlite`·`s3-disposable.json` (0600), `G7_S3_MIGRATION_TEST_ONLY=true`·정확 DB URL 두 변수·`G7_AUTH_ENABLED=false`/`G7_CAD_WRITE_CUTOVER_ENABLED=false`를 설정한다. 기존 `requireG7S3DisposableTarget`이 Root/Owner/권한/Marker/환경을 사전 검사하므로 운영 경로에 자동 fallback 없다. CLI는 검증된 `src/deploy/g7-s3/prisma.config.ts`로만 호출하고 단일 합성 fixture만 변경한다.

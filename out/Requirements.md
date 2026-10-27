@@ -1,5 +1,10 @@
 # 상세 요구사항
 
+## #142 B2-3 P2 요구 — Local Locator 실 소속 확인 (2026-10-27)
+
+- FR-G7-B2-3-04: `CadFileVersion`의 Local `storage_path` 첫 UUID는 해당 DB Row의 `location_id`, 두 번째 UUID는 `id`와 일치해야 한다. 두 합성 DB before/after와 CAD Asset Claim에 동일한 잘못된 Locator가 있을 때도 `LOCAL_LOCATOR_OWNER_INVALID/BLOCKED`. S3 저장 Object UUID는 DB Version UUID와 독립이므로 동일성 강제는 금지.
+- FR-G7-B2-3-05: `exact(unknown)` 타입 가드에서 명시적으로 null을 제외하고 `Object.keys/hasOwn`를 호출하여 TypeScript Typecheck/Docker Build를 정상 처리. B2-3 스키마·운영 API·Migration/전환 기능 변경 없이 기존 15-path no-GHCR 범위만 사용.
+
 ## #142 B2-3 — 격리 7 Migration·검증·장애주입 요구 (2026-10-27)
 
 - FR-G7-B2-3-01: 활성 CAD 6개 원본 Migration SQL과 quarantined 6개 SQL 복사본의 동일성·7번째 Auth 후보의 운영 경로 부재 확인, gated Prisma CLI 일회용 DB에 정확 7개 Migration/완료 History·8 Auth Table 검증.

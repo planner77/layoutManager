@@ -1,5 +1,12 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #142 / PR #146 — Typecheck TS2769/TS2345 및 Local Locator P2 보완 (2026-10-27 KST)
+
+- **관측된 실패:** [PR CI #40511480917](https://github.com/planner77/layoutManager/actions/runs/40511480917) attempt=1 HEAD `bafe74cceba07a789a328c2453ccd785f19b4597` `completed/failure`. Verify Job 122214239302의 `npm run typecheck`에서 `s3-4-b2-3.ts:62` TS2769·`:63` TS2345 (`object | null`이 `Object.keys/hasOwn`에 전달될 가능성). Docker/Smoke Job 122214238943의 baseline Dockerfile 앱 Build도 **같은 TypeScript 오류**로 실패, 이후 ESLint/Unit/Build/E2E 및 Docker 후속 Steps는 SKIPPED. 두 Job 실패를 서로 다른 결함으로 중복 원인 계상하지 말 것.
+- **직접 원인·수정:** `exact(v:unknown)`의 `Boolean(v)`은 TypeScript에서 `null` 제외를 증명하지 못한다. 명시 `v!==null && typeof v==='object'`로 좁힌 후 `Object.keys/Object.hasOwn` 접근. 유효 Packet·런타임 의미 변경 없이 타이핑 회복.
+- **독립 Codex P2:** [Review #4389209602](https://github.com/planner77/layoutManager/pull/146#discussion_r4389209602) Local CAD는 `CadStorage.publish` 규약 `<locationId>/<dbVersionId>/original.(dxf|dwg)`으로 **실제 DB CadFileVersion.location_id와 id에 결합**돼야 한다. 기존 정규식 Shape + DB와 Claim Path 문자열 일치만으로는 before/after 양쪽에 동일한 잘못된 Local Locator가 있는 경우 허위 PASS 가능. Local UUID 두 Segment를 캡처해 DB Row의 Location·Version ID와 각각 비교, 부정확하면 `LOCAL_LOCATOR_OWNER_INVALID/BLOCKED`. S3 객체 UUID는 DB Version UUID와 독립이므로 S3 검증 방식 변경 금지. before/after 합성 SQLite 양쪽에 잘못된 Location/Version 경로를 동일하게 넣은 음성 회귀 추가.
+- **재검증:** 기존 성공 추정 금지. 새 HEAD는 Typecheck+Lint+Unit/Integration+Docker/Build+E2E, 동일 HEAD Codex 리뷰·Thread 0·Main 충돌 0을 다시 증명해야 한다. 실패 원장/Runbook/관련 설계/시험 문서 갱신, 운영 Writer/실 DB/CAD/S3/Prisma active migration·GHCR/Auth/Write OFF. #142/#109/#96 OPEN/BLOCKED.
+
 ## Issue #142 S3-4-B2-3 — 격리 7 Migration·CAD/Audit 불변식 실증 (2026-10-27 KST)
 
 - **선행:** B2-2B [PR #145](https://github.com/planner77/layoutManager/pull/145) no-GHCR Squash Main `d2b77dd6535503f2d980ac563cc195cc8b4c128e`, [Main CI #40506886341](https://github.com/planner77/layoutManager/actions/runs/40506886341) SUCCESS/release-scope SUCCESS/GHCR Build+Push SKIPPED. `DESIGN.md`는 부재하여 Architecture/Decisions/Database/Requirements/Operation으로 설계 확인.

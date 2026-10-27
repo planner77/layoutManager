@@ -1,5 +1,10 @@
 # Issue #109 — G7 운영 인증 활성화 설계 및 통제 배포·롤백 Runbook
 
+## #142 PR #146 — CI TS2769/TS2345 및 Local Storage P2 보완, 운영 NO-GO (2026-10-27)
+
+- 기존 `bafe74cceba07a789a328c2453ccd785f19b4597` PR CI #40511480917의 Verify/Docker 실패는 `s3-4-b2-3.ts` Boolean(v) Nullable Typecheck **단일 원인**으로, TypeScript `null` 명시 제외로 보완. [Codex P2 #4389209602](https://github.com/planner77/layoutManager/pull/146#discussion_r4389209602) Local CAD Locator의 Location/DB Version UUID가 Row 소속과 다를 때도 합성 증거 허위 PASS 가능성 → `LOCAL_LOCATOR_OWNER_INVALID/BLOCKED`로 개선.
+- 별도 테스트는 6 CAD SQL 기반 합성 before/after DB 모두가 같은 잘못된 Local Locator를 갖도록 하고 Asset Claim까지 일치시켜 검증기가 불변식 위반을 차단함을 확인한다. S3 UUID 독립성·8 Auth Tables·Audit 보존/장애주입 검증 유지, 현장 Source/운영 Writer/Prisma Migration/DB/CAD/S3/Restore/rollback/GO 미실시. #142/#109/#96 OPEN/BLOCKED.
+
 ## #142 B2-3 — 격리 7 Migration·합성 CAD/Audit 검증, 운영 NO-GO (2026-10-27)
 
 - 선행 B2-2B [PR #145](https://github.com/planner77/layoutManager/pull/145) → Main `d2b77dd6535503f2d980ac563cc195cc8b4c128e`, Main CI #40506886341 SUCCESS / GHCR SKIPPED. B2-3은 기존 G7 disposable Prisma CLI의 후보 7개 적용/History 및 별도 합성 6 CAD SQL→7번째 Auth SQL에서 CAD/Current/Version/FK/SHA·Auth 8 Table·Audit 불변성을 시험하는 준비 단위.
