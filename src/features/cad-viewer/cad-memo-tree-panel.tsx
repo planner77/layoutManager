@@ -31,6 +31,7 @@ export function CadMemoTreePanel({
   const [renameName, setRenameName] = useState('');
   const [collapsed, setCollapsed] = useState<string[]>([]);
   const [focusedKey, setFocusedKey] = useState<string | null>(null);
+  const [pendingFocusId, setPendingFocusId] = useState<string | null>(null);
   const refs = useRef<Map<string, HTMLDivElement>>(new Map());
   const term = query.normalize('NFC').trim();
   const textMatches = filterMemos(memos, term);
@@ -63,6 +64,16 @@ export function CadMemoTreePanel({
     if (term) return;
     setCollapsed(current => current.includes(key) ? current.filter(value => value !== key) : [...current, key]);
   };
+  const activateMemo = (id: string) => {
+    // #85: hidden (per-item, group, or global) must require a specific
+    // confirmation; a casual tree navigation cannot override visibility.
+    if (!allVisible || !isMemoVisible(tree,id)) {
+      setPendingFocusId(id);
+      return;
+    }
+    setPendingFocusId(null);
+    onSelect(id);
+  };
   const onTreeKeyDown = (event: KeyboardEvent<HTMLDivElement>,
     key: string, groupKey: string, memoId?: string) => {
     if (event.target !== event.currentTarget) return;
@@ -83,7 +94,7 @@ export function CadMemoTreePanel({
         break;
       case 'Enter':
       case ' ':
-        if (memoId) onSelect(memoId);
+        if (memoId) activateMemo(memoId);
         else toggleCollapse(groupKey.substring(6));
         break;
       default: return;
@@ -186,18 +197,28 @@ export function CadMemoTreePanel({
                 ref={node => setRef(key, node)}
                 onFocus={() => setFocusedKey(key)}
                 onKeyDown={event => onTreeKeyDown(event,key,group.key,memo.id)}
-                onClick={() => onSelect(memo.id)}
+                onClick={() => activateMemo(memo.id)}
                 className={'my-1 rounded p-1 focus-visible:outline-2 focus-visible:outline-teal-700 ' +
                   (selectedId===memo.id ? 'bg-teal-100' : 'hover:bg-slate-100')}>
                 <div className="flex items-center gap-1">
                   <span className="min-w-0 flex-1 break-words font-semibold">{memo.title}</span>
                   <button type="button" aria-label={memo.title + (visible ? ' 숨기기' : ' 표시')}
                     data-testid="cad-memo-tree-visibility" aria-pressed={visible}
-                    onClick={event => { event.stopPropagation(); onVisibility(memo.id, !visible); }}
+                    onClick={event => { event.stopPropagation(); setPendingFocusId(null); onVisibility(memo.id, !visible); }}
                     className="shrink-0 rounded border border-slate-400 px-1">{visible ? '숨김' : '표시'}</button>
                   <button type="button" onClick={event => { event.stopPropagation(); onEdit(memo.id); }}
                     className="shrink-0 rounded border border-slate-400 px-1">편집</button>
                 </div>
+                {pendingFocusId===memo.id && <div role="group" data-testid="cad-memo-tree-reveal-confirm"
+                  aria-label="숨김 메모 일시 표시 확인" className="my-1 rounded border border-amber-500 bg-amber-50 p-1 text-amber-950"
+                  onClick={event=>event.stopPropagation()}>
+                  <p>현재 숨긴 메모입니다. 공유 표시상태는 바꾸지 않고 이 메모만 임시 표시·이동할까요?</p>
+                  <button type="button" data-testid="cad-memo-tree-reveal-confirm-button"
+                    className="mr-2 mt-1 rounded bg-amber-600 px-2 py-1 text-white"
+                    onClick={()=>{setPendingFocusId(null);onSelect(memo.id);}}>임시 표시·이동</button>
+                  <button type="button" className="rounded border border-slate-500 px-2 py-1"
+                    onClick={()=>setPendingFocusId(null)}>취소</button>
+                </div>}
                 <p className="mt-1 line-clamp-2 whitespace-pre-wrap break-words text-slate-600">{memo.content}</p>
                 <p className="text-[10px] text-slate-500">
                   작성자 미확정 · 로컬 수정 {new Date(memo.updatedAt).toLocaleString('ko-KR')}
