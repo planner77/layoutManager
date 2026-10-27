@@ -1,5 +1,11 @@
 # Issue #109 — G7 운영 인증 활성화 설계 및 통제 배포·롤백 Runbook
 
+## #142 S3-4-B2-1 착수 — OCI 로컬 digest 대조·운영 NO-GO (2026-10-27)
+
+- B1 PR #141→Main `7469d016a5926aca07929bf3e95e869b46716bd1`; Main CI [40478523325](https://github.com/planner77/layoutManager/actions/runs/40478523325) release-scope SUCCESS/GHCR SKIPPED. #142는 순차 B2-1(OCI)→B2-2(Snapshot barrier)→B2-3(격리 7 Migration)→B2-4(restore/rollback)→B2-5(사내 evidence)로 분리.
+- 현재 B2-1은 운영자 제공 OCI manifest/config raw Bytes의 SHA-256, 사전 지정한 4개 역할 App/Migrator/Rollback Pair, Source SHA·Version·G7 Schema/Role 라벨을 **오프라인 순수 함수**로 검증. 실 Registry 진위, 이미지 publish, 서명, 롤백 호환성, 동일 Snapshot 실 복구는 확인하지 않았으며 모든 결과 `registryVerified:false`/`operationalGo:false`. [B2 Runbook](../src/deploy/g7-s3/S3-4-B2.md).
+- `src/Dockerfile`/정식 Migration/운영 배포 코드/Compose/실 CAD·DB·S3 변경 없음. B2의 나머지 실제 사내 시험은 명시적 별도 Owner 승인 전 NOT RUN. #109/#96 OPEN/BLOCKED 유지.
+
 ## #109 PR #141 — Unit 실패 및 P1/P2 보완 (2026-10-27)
 
 - [PR CI #40444154044](https://github.com/planner77/layoutManager/actions/runs/40444154044), HEAD `b5f340e69bd28aed939bb1c443df355c1652f5bf`: Unit/Integration 404 중 5 실패, Typecheck/ESLint·Docker PASS, Build/E2E SKIPPED. 5개 공통 직접 원인: 정상 Manifest Sorted Key 기대 순서 오타→`SNAPSHOT_MANIFEST_MISMATCH`.

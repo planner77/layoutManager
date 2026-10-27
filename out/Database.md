@@ -1,5 +1,10 @@
 # Database Schema — 단일 기준 문서
 
+## #142 S3-4-B2-1 — 운영 Schema/Prisma 불변 (2026-10-27)
+
+- 이 증분은 OCI byte-only source/Schema 계약 확인이다. `src/prisma/migrations/**` 활성 6개와 `src/scripts/deploy.ts` 자동 Migrator **불변**. 7번째 Auth 후보는 `src/deploy/g7-s3/prisma/migrations/202610260002_g7_operational_auth`에 격리됨.
+- OCI config의 `com.planner77.g7.schema-id` 라벨만 읽어 일치성을 평가할 수 있지만 실제 SQLite tables·Migration history·FK나 snapshot restore는 **입증하지 않는다**. B2-3/B2-4 실 복제본 시험·B2-5 내부 증거 필요.
+
 ## #109 PR #141 — Unit 실패 및 P1/P2 보완 (2026-10-27)
 
 - [PR CI #40444154044](https://github.com/planner77/layoutManager/actions/runs/40444154044), HEAD `b5f340e69bd28aed939bb1c443df355c1652f5bf`: Unit/Integration 404 중 5 실패, Typecheck/ESLint·Docker PASS, Build/E2E SKIPPED. 5개 공통 직접 원인: 정상 Manifest Sorted Key 기대 순서 오타→`SNAPSHOT_MANIFEST_MISMATCH`.

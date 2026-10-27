@@ -1,5 +1,11 @@
 # PR/Main CI 실패 원장
 
+## #142 S3-4-B2-1 진입 — #141 B1 Main 성공 인계 및 신규 검증 미실행 (2026-10-27 KST)
+
+- **선행 성공 (실패 아님):** [PR #141](https://github.com/planner77/layoutManager/pull/141) HEAD `24b9c340f18e257471fe02237e6ab8e1d8f543da`, [PR CI #40476745670](https://github.com/planner77/layoutManager/actions/runs/40476745670) success 및 최신 Codex 리뷰 completed/findings=0, 기존 P1/P2 4개 Resolved. 정확 S3-4-B1 no-GHCR Squash `7469d016a5926aca07929bf3e95e869b46716bd1`. [Main CI #40478523325](https://github.com/planner77/layoutManager/actions/runs/40478523325) completed/success: release-scope Job 122102656670 SUCCESS, GHCR Build+Push Job 122102702681 SKIPPED.
+- **B2-1 개발:** 로컬 OCI manifest/config Byte digest·Source/Version/Role/Schema 구조검증+음성 합성 Unit, 명시 GHCR no-publish workflow guard, Runbook/AGENTS/doc sync. **신규 HEAD PR CI/실 Registry 검사 = NOT VERIFIED / NOT RUN**. 실제 실패/취소 시 Run/Job/Attempt/HEAD/원인·조치를 분리 기록하며 synthetic success를 registry 검증/운영 GO로 혼동 금지.
+- **운영 경계:** B2-2..5 실 사내 OCI/Snapshot/7 Migration/Restore/Rollback과 C trusted binder/Owner GO 미실행. 운영 Auth/Write/Prisma 활성 SQL·Compose/Nginx/실 DB/CAD/S3·GHCR Publish/Issue #109/#96 종료 미수행.
+
 ## Issue #109 / PR #141 — 리뷰 P2 해결·최신 Main 무충돌 후속 확인 (2026-10-27 KST)
 
 - **해결 완료:** 신규 Codex P2 [r4386312087](https://github.com/planner77/layoutManager/pull/141#discussion_r4386312087) / `PRRT_kwDOUQjDfc6wl_yN`의 필수 Runbook 색인 누락을 `AGENTS.md`에 정확 한 행 추가하여 보완. [답변 r4386427333](https://github.com/planner77/layoutManager/pull/141#discussion_r4386427333) 등록 및 스레드 **Resolved** 처리. 기존 P1 1건·P2 2건도 유지해 전체 **4개 중 미해결 0개**.

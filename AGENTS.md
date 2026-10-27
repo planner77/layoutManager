@@ -1,5 +1,12 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #142 / S3-4-B2-1 — OCI offline digest 일치성 검증 착수, 운영 NO-GO (2026-10-27 KST)
+
+- **선행:** Issue #109 S3-4-B1 [PR #141](https://github.com/planner77/layoutManager/pull/141) 최신 HEAD `24b9c340f18e257471fe02237e6ab8e1d8f543da`, [PR CI #40476745670](https://github.com/planner77/layoutManager/actions/runs/40476745670) SUCCESS 및 동일 HEAD Codex Review completed/findings 0; 정확 no-GHCR Squash [Main `7469d016a5926aca07929bf3e95e869b46716bd1`](https://github.com/planner77/layoutManager/commit/7469d016a5926aca07929bf3e95e869b46716bd1). [Main CI #40478523325](https://github.com/planner77/layoutManager/actions/runs/40478523325) SUCCESS, release-scope Job SUCCESS / GHCR Build+Push SKIPPED.
+- **B2-1 구현 범위:** `src/server/g7-operational/s3-4-b2-oci.ts`의 **OCI 원본 바이트 digest/Config/Role/OS/SHA/Schema 일치성만 검사하는 순수 코드**와 합성 Unit·정확 GHCR no-publish allowlist, [B2 Runbook](src/deploy/g7-s3/S3-4-B2.md). 실제 Registry GET/서명/출처·실 배포 확인은 하지 않음. 로컬 바이트 합격도 `LOCAL_DIGESTS_MATCH_NOT_REGISTRY_PROOF`, `registryVerified:false`, `operationalGo:false`.
+- **미구현·금지:** 현재 Dockerfile에는 G7 이미지 provenance label이 없음; 이를 가짜로 채우거나 운영 이미지 자체를 생성·게시하지 않음. B2-2 실제 DB/CAD/S3 단일 Snapshot writer barrier, B2-3 복제본 격리 7 Migration, B2-4 restore/rollback, B2-5 내부 EV/QA/SNAP+S3-4-C 신뢰 binder 및 S3-5 Owner GO는 별도 게이트. 운영 Prisma History·Auth/Write·Nginx/Compose/.env·실 DB/CAD/S3·GHCR publish/Issue #109/#96 종료 변경 0.
+- **예정 PR Scope:** 정확 `#142 | S3-4-B2-1 Offline OCI digest preflight [G7-S3-4B2-1-NO-GHCR]`+15개 허용 파일만 GHCR SKIP. 새 PR CI·Codex의 실제 PASS는 최종 HEAD 검증 전 주장하지 않음.
+
 ## Issue #138 — Viewer 조회/작업 보조 창 이동 공통 지침 (2026-10-27)
 
 - **모든 신규 Viewer 조회/작업 창의 기본 정책:** #127의 상단 실행형 그룹 메뉴와 기존 좌/우/하단 Drawer 초기 배치는 유지하되, 데스크톱의 외곽선 목록·레이어 목록·TEXT 검색/결과·외곽선 생성/편집 도구 및 후속 Viewer Memo 트리·편집/검색 보조 창은 **제목 전용 이동 핸들 Drag & Drop으로 독립적으로 위치 변경**할 수 있도록 공통 Shell/Panel을 사용한다. 이전 Drawer와 floating panel의 **중복 마운트 금지**, 동일 세션 위치·창별 z-order 보존, 위치 초기화/닫기 제공.
@@ -647,6 +654,7 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 | [Issue108](out/Issue108.md) | G6 사내 PC 2대/Nginx·DEV 및 인증 업무 E2E·동일 시점 SQLite/CAD/S3 백업·격리 Migration·실 Restore·Rollback 수용, 오프라인 EV 증거 검사와 운영 OFF 범위 | G6 테스트 설계·실행·증거 판정, LAN/Viewer/기존 CAD 호환, DB/CAD/S3 복구·현장 QA, G7 #109 운영 Go/No-Go 선행 수용 확인 시 |
 | [Issue109](out/Issue109.md) | G7 운영 Auth·CAD 쓰기 단계별 활성화, 이중 승인 게이트/Owner Go/No-Go, 동일시점 DB·CAD·S3 백업·실복구·롤백 및 운영 NO-GO 계약 | 인증/인가·기존 CAD 쓰기 권한 전환, 정식 Prisma migration, 운영 Nginx/Compose/배포, 승인 증거 확인, 장애 중단·롤백 계획·수행 전 **반드시** 참조 |
 | [S3-4-B1 Runbook](src/deploy/g7-s3/S3-4-B.md) | #109 G7 격리 복원본의 UID/0700·0600·SQLite 메모리 복제/Version·Current/FK·CAD/S3-export SHA 검증, Snapshot 한계·B2 실제 OCI/복구/롤백 승인 경계 | S3-4-B1/B2 복제본 검사·실복구 계획·Snapshot/Schema/rollback 검토, 구현·리뷰·회귀 테스트·운영 Go/No-Go 전 반드시 참조 |
+| [S3-4-B2 Runbook](src/deploy/g7-s3/S3-4-B2.md) | #142 OCI 4개 App/Migrator/rollback raw bytes SHA·Source/Schema/Role 검증의 비인가 경계, 실제 Registry/동일 Snapshot/7 Migration/restore/rollback 후속 게이트 | S3-4-B2-1~B2-5 OCI 검증·복구 설계/코드/리뷰/테스트 및 S3-4-C 신뢰 바인딩·Owner GO 이전 반드시 참조 |
 | [Issue31](out/Issue31.md) | DXF 다중 선택·볼록/정밀 외곽선·실험 상태·P4 권한 보류 | Viewer 선택·외곽선/Worker/JSON 변경 시 |
 | [Issue26](out/Issue26.md) | DXF TEXT/MTEXT 색인·world 좌표 focus·검색 범위/검증 | Viewer 검색·Pan/Zoom·Worker·BLOCK/INSERT·DWG 텍스트 지원 검토 시 |
 | [Issue66](out/Issue66.md) | Migrator 최소 의존성·크기 측정/OCI manifest·복구 계약 | Docker migrator/CI/GHCR 및 버전·패키징 변경 시 |

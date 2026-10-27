@@ -1,5 +1,10 @@
 # 주요 기술 결정과 승인 기록
 
+## #142 S3-4-B2-1 — OCI digest 참조와 Trusted Registry 검증 분리 (2026-10-27)
+
+- **Decision:** OCI manifest/config raw Bytes를 content-addressed digest로 대조하는 미게시 오프라인 순수 단계부터 구현. 태그 전용 참조, 다른 Registry, 잘못된 digest/schema/Source/플랫폼/역할은 fail closed. 그러나 payload는 제삼자가 조작할 수 있어 SHA만 맞아도 `registryVerified=false`·`provenanceVerified=false`·`rollbackCompatible=false`·`operationalGo=false`.
+- **Risk:** 현재 Dockerfile에 G7 provenance/role label이 없어서 가짜 증거로 선행 단계 PASS하면 안 됨. Immutable registry image pair 발행/승인과 공인된 source binding은 후속 별도 Owner/보안 검증 절차가 필요. 외부 사내 인증서/Secret/원본 CAD 반출 금지.
+
 ## ADR-053-R1 — Viewer Drawer 보존 + 이동 가능한 보조 창 공통 정책 (#138, 2026-10-27)
 
 - **Context:** #127은 화면 점유를 줄이는 좌/우/하단 overlay Drawer와 실행형 그룹 메뉴를 완료했지만 사용자가 외곽선 목록·TEXT 검색·생성/편집 도구의 위치를 자유 배치할 수 없다. 별도 패널마다 개별 absolute drag를 구현하면 Canvas gesture·modal/keyboard·fullscreen/resize 정책이 어긋난다.
