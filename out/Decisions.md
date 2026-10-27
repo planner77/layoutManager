@@ -1,5 +1,20 @@
 # 주요 기술 결정과 승인 기록
 
+## #142 B2-3 P2 결정 — Audit 변경 불가 입증은 예외와 Row 보존이 모두 필요 (2026-10-28)
+
+- **Decision:** Audit append-only 시험에서 SQL Exception 2건만으로 통과시키지 않고, **동일한 메모리 복제본**의 전체 `AuditEvent` 최초 Row Snapshot이 UPDATE 시도 뒤에도 같고 DELETE 시도 뒤에도 같은지를 함께 검증한다. `RAISE(FAIL)`은 BEFORE/ABORT와 달리 AFTER Trigger에서 이미 수행한 행 변경을 되돌리지 않을 수 있다. 실패 시 `AUDIT_NOT_APPEND_ONLY`로 fail closed.
+- **Trust boundary:** 이미 제공된 synthetic Buffers만 메모리에서 연다. 운영 원본 DB/실 Audit 무결성, writer quiescence, private Source provenance/Owner GO는 증명하지 않음. 신규 테스트/최신 CI 검증과 리뷰 근거는 별도.
+
+## #142 B2-3 P2 결정 — 동일 주장 일치와 실제 Local Locator 소속 구분 (2026-10-27)
+
+- **Decision:** Synthetic snapshot 전후 Row 동일성만으로는 원래 존재하던 Local CAD Locator의 오류를 증명할 수 없으므로, `CadStorage.publish` 구현이 강제하는 `LocationId/VersionId/original.ext` 구조를 B2-3 Byte verifier에서 Row 소속에 직접 연결한다. S3 object-key UUID는 별도 생성되어 DB Version UUID와 독립적이라는 기존 ADR 유지.
+- **CI root cause:** `Boolean(v)`은 nullable unknown의 TypeScript 내로잉을 제공하지 않음. `v!==null` 명시 검사 추가가 최소 안전 수정이며 형식 검증/운영 경계는 그대로. 변경 사유와 Run/Job/SHA는 실패 원장에 보존.
+
+## ADR-051-G7-B2-3 — 실제 Migration과 합성 데이터 보존 증거 분리 (2026-10-27)
+
+- **Decision:** S3-1에서 승인된 `requireG7S3DisposableTarget`가 격리한 CLI에서 정식 Prisma 7 Migration 적용 결과를 검증하고, 별도 새 테스트는 합성 CAD 6 SQL 위의 CAD 데이터를 7번째 후보 SQL 적용 전후 비교한다. 새 verifier는 메모리 Buffer만 수용하며 호스트 Path/Network/S3/운영 Writer/active migration을 열거나 변경하지 않는다.
+- **Risk:** 빈 DB의 formal 7개 History PASS와 데이터가 있는 합성 DB의 후보 SQL 보존 PASS를 같은 물리 실증이라고 주장하면 안 된다. 실제 현장 원본 SNAP/Writer 중지/OCI pair·rollback compatible 및 B2-4/5 수용은 별도 Owner 변경승인·독립 QA 필요. 긍정도 `DISPOSABLE_SEVEN_SCHEMA_INVARIANTS_ONLY`, GO/Runtime false.
+
 ## #142 B2-2B P2 결정 — Object UUID 독립성과 Locator Unique를 동시 충족 (2026-10-27)
 
 - **Decision:** DB Version UUID ↔ S3 객체 UUID는 서로 독립이지만 `CadFileVersion.storagePath @unique`를 준수하도록, 모든 S3 Version의 정규화 Locator 중복을 코드의 전역 `Set<string>`에서 직접 거부한다. 다른 Version들의 SHA/Size/S3 VersionId 주장까지 동일해도 하나의 객체를 여러 Version으로 중복 계상하는 것은 BLOCKED.

@@ -1,5 +1,21 @@
 # Database Schema — 단일 기준 문서
 
+## #142 B2-3 — Audit AFTER Trigger 예외와 실제 행 불변식 분리 (2026-10-28)
+
+- 격리 Auth 후보 `AuditEvent`는 `g1_audit_no_update`, `g1_audit_no_delete` Trigger가 실제 행 UPDATE/DELETE를 허용하지 않아야 한다. **예외 발생 자체는 불변식 증명이 아님.** SQLite `RAISE(FAIL)`이 AFTER Trigger에서 발생해도 변경·삭제가 남을 수 있으므로 메모리 Clone의 `SELECT * ORDER BY id` 전체 Audit Row를 매 시도 직후 최초 Snapshot과 비교한다.
+- UPDATE/DELETE 각각에 대한 예외+행 동일성 조건을 모두 충족할 때만 `auditAppendOnlyChecked=true`, 어느 조건 실패라도 `AUDIT_NOT_APPEND_ONLY/BLOCKED`. 활성 Prisma Schema/실 DB·마이그레이션 SQL/운영 Trigger는 변경하지 않는다.
+
+## #142 B2-3 P2 — Local CAD StoragePath/DB Owner 불변식 (2026-10-27)
+
+- `CadStorage.publish`는 실제 DB `CadFileVersion.location_id/id`에서 `<Location UUID>/<Version UUID>/original.(dxf|dwg)` Local `storage_path`를 구성한다. 기존 B2-3 Byte verifier의 정규식 모양 검사와 DB·Asset 제공 문자열의 동일성만으로는 잘못된 소속을 탐지하지 못한다. B2-3은 정규식 그룹을 DB `location_id`와 `id`에 직접 비교해 어긋남을 `LOCAL_LOCATOR_OWNER_INVALID/BLOCKED`로 차단한다.
+- before/after Snapshot 둘 모두 같은 잘못된 Local 경로라도 양성으로 보지 않는다. `S3ObjectStorage.prepare`의 S3 객체 UUID와 DB Version UUID는 별개이므로 동일성 강제 금지. 실제 Schema/active Prisma Migration/운영 DB 변경 없음.
+
+## #142 B2-3 — 기존 CAD 6 + quarantined Auth 후보 1 (2026-10-27)
+
+- `src/prisma/migrations`의 활성 6개 CAD 이력과 후보 폴더 SQL 복사본의 동일성 검사, G7 격리 `202610260002_g7_operational_auth`는 `src/deploy/g7-s3/prisma/migrations`에만 유지. 기존 운영 Prisma History/DDL 무변경.
+- UID-owned Disposable CLI에서 `_prisma_migrations`의 성공 7건 및 8개 Auth Tables 확인. 합성 6→7 메모리 검사에서는 CAD 7 Tables 전체 Row/Current owner·nextVersion·Version/Storage Path/File Size/SHA/Local+S3 Byte 보존과 SQLite Quick Check/FK=0, Auth 8개, `g1_audit_no_update`·`g1_audit_no_delete` Trigger 실제 기능을 확인. CLI 결과와 seeded SQL 전후 결과는 별개의 증거.
+- 합성 후보 검사기는 실제 DB·CAD·S3 출처/Registry/Writer·Owner GO를 인증하지 않음. [Runbook](../src/deploy/g7-s3/S3-4-B2-3.md).
+
 ## #142 B2-2B P2 — CadFileVersion.storagePath Unique 무결성 (2026-10-27)
 
 - 공식 `src/prisma/schema.prisma`의 `CadFileVersion.storagePath String @unique(map: "uq_storage_path")`는 S3 Object Locator를 서로 다른 DB Version에서 중복 사용할 수 없도록 하는 **별개 Unique 제약**이다. `@@unique([locationId, version])`/DB Version ID/opaque V Key 중복 검사로 대체되지 않는다.

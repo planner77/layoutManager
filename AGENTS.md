@@ -1,5 +1,24 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #142 / PR #146 — Audit AFTER RAISE(FAIL) P2 행 보존 검증 (2026-10-28 KST)
+
+- **리뷰 P2:** [#4389353517](https://github.com/planner77/layoutManager/pull/146#discussion_r4389353517). 이전 [PR CI #40513422160](https://github.com/planner77/layoutManager/actions/runs/40513422160) HEAD `adf0e1aba89a9a5a3b8d7c33b85f5675f4201b71`는 Verify/Docker 두 Job SUCCESS이나 이후 Codex P2 발견: SQLite `AFTER UPDATE/DELETE` Trigger의 `RAISE(FAIL)`은 예외를 반환하면서 실제 AuditEvent 변경/삭제를 남길 수 있음. 기존 `auditMutationProbe`가 예외 두 번만 체크하면 잘못된 `auditAppendOnlyChecked=true`/합성 PASS를 인정. **이는 CI 실패가 아니라 별도 코드 리뷰 결함**.
+- **실제 행 보존 계약:** 격리 메모리 Clone에 합성 AuditEvent Row 삽입 후 전체 `SELECT * FROM "AuditEvent" ORDER BY "id"` Snapshot 생성. UPDATE 예외뿐 아니라 즉시 전체 Row 전후 동등성 확인, 통과한 경우에만 DELETE 시도, DELETE 예외와 최종 전체 Row 동등성을 다시 검사. 행 변경/삭제/우회가 발견되면 `AUDIT_NOT_APPEND_ONLY/BLOCKED`, `auditAppendOnlyChecked=false`. `BEFORE ... RAISE(ABORT)` 정상 합성 검증은 유지하고 **AFTER UPDATE/DELETE + RAISE(FAIL)** 악성 Trigger를 별개 합성 음성 회귀로 추가.
+- **검증·신뢰 경계:** 앞선 TypeScript 실패 #40511480917은 실패 원장에 보존; #40513422160 성공은 **이전 HEAD 한정**, 새 HEAD Typecheck/Vitest/Docker/E2E/Codex 최신 재검증 전 `NOT VERIFIED`. Audit 조작 시도는 읽기 전용 Source가 아닌 별도 메모리 복제본만 대상. 운영 SQLite/Prisma Migration·CAD/S3·Writer 정지/GHCR·Auth/CAD Write/Owner GO 미실행, #142/#109/#96 OPEN/BLOCKED. [B2-3 Runbook](src/deploy/g7-s3/S3-4-B2-3.md) 필수 참조.
+
+## Issue #142 / PR #146 — Typecheck TS2769/TS2345 및 Local Locator P2 보완 (2026-10-27 KST)
+
+- **관측된 실패:** [PR CI #40511480917](https://github.com/planner77/layoutManager/actions/runs/40511480917) attempt=1 HEAD `bafe74cceba07a789a328c2453ccd785f19b4597` `completed/failure`. Verify Job 122214239302의 `npm run typecheck`에서 `s3-4-b2-3.ts:62` TS2769·`:63` TS2345 (`object | null`이 `Object.keys/hasOwn`에 전달될 가능성). Docker/Smoke Job 122214238943의 baseline Dockerfile 앱 Build도 **같은 TypeScript 오류**로 실패, 이후 ESLint/Unit/Build/E2E 및 Docker 후속 Steps는 SKIPPED. 두 Job 실패를 서로 다른 결함으로 중복 원인 계상하지 말 것.
+- **직접 원인·수정:** `exact(v:unknown)`의 `Boolean(v)`은 TypeScript에서 `null` 제외를 증명하지 못한다. 명시 `v!==null && typeof v==='object'`로 좁힌 후 `Object.keys/Object.hasOwn` 접근. 유효 Packet·런타임 의미 변경 없이 타이핑 회복.
+- **독립 Codex P2:** [Review #4389209602](https://github.com/planner77/layoutManager/pull/146#discussion_r4389209602) Local CAD는 `CadStorage.publish` 규약 `<locationId>/<dbVersionId>/original.(dxf|dwg)`으로 **실제 DB CadFileVersion.location_id와 id에 결합**돼야 한다. 기존 정규식 Shape + DB와 Claim Path 문자열 일치만으로는 before/after 양쪽에 동일한 잘못된 Local Locator가 있는 경우 허위 PASS 가능. Local UUID 두 Segment를 캡처해 DB Row의 Location·Version ID와 각각 비교, 부정확하면 `LOCAL_LOCATOR_OWNER_INVALID/BLOCKED`. S3 객체 UUID는 DB Version UUID와 독립이므로 S3 검증 방식 변경 금지. before/after 합성 SQLite 양쪽에 잘못된 Location/Version 경로를 동일하게 넣은 음성 회귀 추가.
+- **재검증:** 기존 성공 추정 금지. 새 HEAD는 Typecheck+Lint+Unit/Integration+Docker/Build+E2E, 동일 HEAD Codex 리뷰·Thread 0·Main 충돌 0을 다시 증명해야 한다. 실패 원장/Runbook/관련 설계/시험 문서 갱신, 운영 Writer/실 DB/CAD/S3/Prisma active migration·GHCR/Auth/Write OFF. #142/#109/#96 OPEN/BLOCKED.
+
+## Issue #142 S3-4-B2-3 — 격리 7 Migration·CAD/Audit 불변식 실증 (2026-10-27 KST)
+
+- **선행:** B2-2B [PR #145](https://github.com/planner77/layoutManager/pull/145) no-GHCR Squash Main `d2b77dd6535503f2d980ac563cc195cc8b4c128e`, [Main CI #40506886341](https://github.com/planner77/layoutManager/actions/runs/40506886341) SUCCESS/release-scope SUCCESS/GHCR Build+Push SKIPPED. `DESIGN.md`는 부재하여 Architecture/Decisions/Database/Requirements/Operation으로 설계 확인.
+- **B2-3 신규:** [Runbook](src/deploy/g7-s3/S3-4-B2-3.md) 준수. 기존 격리 `prisma.config.ts`와 `requireG7S3DisposableTarget`에 의해 UID-owned `/tmp/cad-g7-s3-*` (0700), `fixture.sqlite`·Marker(0600)에서 formal `prisma migrate deploy` 7개 이력·Auth 8개 테이블을 시험. 별도 합성 인메모리 6 CAD SQL→Local/S3 Version 데이터→7번째 Auth SQL 과정의 전후 Buffer/실 CAD Byte SHA·FK·Current/Version·Audit 기능을 `assessS34B23DisposableMigration`로 검사. 두 검증의 출처와 역할을 구분하며 합성 Buffer 일치는 formal Prisma 이력이나 실제 Source 증거를 대체하지 않음.
+- **검증·안전:** 기존 운영 CAD 6 migration.sql 그대로, 7번째는 격리 후보 경로에만. before/after CAD 7 Tables 동일·Quick Check/FK=0·8 Auth Tables, append-only Audit UPDATE/DELETE 실제 거부, 누락/변조/FK 실패·Transaction ABORT 회귀. 양성은 `DISPOSABLE_SEVEN_SCHEMA_INVARIANTS_ONLY`뿐, 모든 실제 Site/GO false. 운영 Writer/온라인 백업/실 SQLite/CAD/S3/활성 Prisma History·Auth/CAD Write·GHCR/Compose/Nginx/.env/Owner GO 미실행. #142/#109/#96 OPEN/BLOCKED, 새 PR HEAD CI/리뷰 실제 결과 전 PASS 금지.
+
 ## Issue #142 / PR #145 — S3 Locator 중복 검출 Codex P2 보완 (2026-10-27 KST)
 
 - **근거:** [PR #145 P2 #4388575128](https://github.com/planner77/layoutManager/pull/145#discussion_r4388575128). 기존 [PR CI #40502175608](https://github.com/planner77/layoutManager/actions/runs/40502175608) HEAD `cddd2f20dc45c1f3d7edc42e15f0b914016a078d`는 Verify/Docker 2 Job SUCCESS였지만 Codex 최신 리뷰에서 **리뷰 결함** 발견. 이를 CI 실패로 잘못 기록하지 않는다.
@@ -686,6 +705,7 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 | [S3-4-B2 Runbook](src/deploy/g7-s3/S3-4-B2.md) | #142 OCI 4개 App/Migrator/rollback raw bytes SHA·Source/Schema/Role 검증의 비인가 경계, 실제 Registry/동일 Snapshot/7 Migration/restore/rollback 후속 게이트 | S3-4-B2-1~B2-5 OCI 검증·복구 설계/코드/리뷰/테스트 및 S3-4-C 신뢰 바인딩·Owner GO 이전 반드시 참조 |
 | [S3-4-B2-2 Runbook](src/deploy/g7-s3/S3-4-B2-2.md) | #142 단일 Snapshot writer barrier 주장 패킷의 순수 시간·Source Epoch·Version/Current·Local CAD/버전 S3 인벤토리 검사와 실제 현장 증거/신뢰 한계 | B2-2A~B2-5 기획·구현·리뷰/테스트, 현장 freeze·온라인 백업·복구/승인 판단 전 반드시 참조 |
 | [S3-4-B2-2B Runbook](src/deploy/g7-s3/S3-4-B2-2B.md) | #142 합성 격리 SQLite/CAD/S3 Buffer byte·FK·Version/Current·SNAP/Source 한계 및 현장 승인 게이트 | B2-2B 코드·리뷰/테스트, 실제 현장 Writer/Backup/Restore 승인 설계와 S3-4-C/Owner GO 전 반드시 참조 |
+| [S3-4-B2-3 Runbook](src/deploy/g7-s3/S3-4-B2-3.md) | #142 기존 CAD 6+격리 Auth 후보 1개의 일회용 Prisma History/합성 CAD 보존·Audit append-only 장애주입 검증, 실 Source 한계 | S3-4-B2-3 구현/테스트/리뷰, 실제 Site Clone/Restore 및 B2-4/B2-5 Owner 승인 검토 시 필수 참조 |
 | [Issue31](out/Issue31.md) | DXF 다중 선택·볼록/정밀 외곽선·실험 상태·P4 권한 보류 | Viewer 선택·외곽선/Worker/JSON 변경 시 |
 | [Issue26](out/Issue26.md) | DXF TEXT/MTEXT 색인·world 좌표 focus·검색 범위/검증 | Viewer 검색·Pan/Zoom·Worker·BLOCK/INSERT·DWG 텍스트 지원 검토 시 |
 | [Issue66](out/Issue66.md) | Migrator 최소 의존성·크기 측정/OCI manifest·복구 계약 | Docker migrator/CI/GHCR 및 버전·패키징 변경 시 |

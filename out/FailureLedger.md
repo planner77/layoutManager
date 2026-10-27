@@ -1,5 +1,27 @@
 # PR/Main CI 실패 원장
 
+## Issue #142 / PR #146 — 성공한 PR CI와 별개 Codex Audit AFTER FAIL P2 보완 (2026-10-28 KST)
+
+- **기존 CI 성공(실패 아님):** [PR CI #40513422160](https://github.com/planner77/layoutManager/actions/runs/40513422160), attempt=1, HEAD `adf0e1aba89a9a5a3b8d7c33b85f5675f4201b71`, `completed/success`. Verify Typecheck/Lint/Unit/Build/E2E [Job 122220852265](https://github.com/planner77/layoutManager/actions/runs/40513422160/job/122220852265) SUCCESS, Docker/Migration/Smoke [Job 122220852790](https://github.com/planner77/layoutManager/actions/runs/40513422160/job/122220852790) SUCCESS. 과거 PR CI #40511480917 TypeScript TS2769/TS2345 양쪽 Job 실패·조치 근거는 아래 원장에 그대로 보존.
+- **P2 리뷰 결함, CI 장애 아님:** [Codex #4389353517](https://github.com/planner77/layoutManager/pull/146#discussion_r4389353517) – `auditMutationProbe`가 SQLite `AFTER UPDATE/DELETE` Trigger에서 `RAISE(FAIL)` 예외만 감지해 변경이 실제로 유지된 Audit 행을 정상 보존으로 오판. SQLite `RAISE(FAIL)`은 Statement Error를 발생시켜도 선행 UPDATE/DELETE 효과를 되돌리지 않을 수 있음. 그러면 `auditAppendOnlyChecked:true`가 허위 양성.
+- **수정/재발방지:** 후보 SQLite는 이미 제공된 Bytes로 별도 메모리 Clone을 만들기 때문에 여기서만 합성 Audit Row를 INSERT하고 `ORDER BY id` 전체 AuditEvent Snapshot을 캡처. UPDATE 예외 **및 전체 내용 불변** 확인 → DELETE 예외 **및 전체 내용 불변** 확인. 어느 한 시점이라도 변경되면 `AUDIT_NOT_APPEND_ONLY/BLOCKED`, `auditAppendOnlyChecked:false`. BEFORE 정상 Trigger는 계속 통과; AFTER UPDATE+FAIL 및 AFTER DELETE+FAIL 각각 악성 Trigger를 새 합성 음성 회귀에 추가. 실제 현장 데이터/자격증명 사용 없음.
+- **새 HEAD 게이트:** 코드를 작성/커밋한 사실과 최신 HEAD PR CI Typecheck/Lint/Unit/Integration/Docker/Build/E2E 성공을 혼동하지 않음. 새 HEAD 성공은 **관측 전 NOT VERIFIED**; 최신 Codex 재리뷰/스레드·Main behind=0/충돌은 별도 재확인. 본 요청은 PR CI 재시작까지만, 모니터링·병합·GHCR 게시 없음. 현장 Snapshot/운영 Writer/DB/CAD/S3/운영 Prisma Migration/Restore/Rollback/Owner GO `NOT RUN`, #142/#109/#96 OPEN/BLOCKED.
+
+## Issue #142 / PR #146 — CI TS2769/TS2345 공통 원인 + 별도 Codex P2 (2026-10-27 KST)
+
+- **관측 CI 실패:** [PR CI Run #40511480917](https://github.com/planner77/layoutManager/actions/runs/40511480917), HEAD `bafe74cceba07a789a328c2453ccd785f19b4597`, attempt=1, `completed/failure`. Verify Job [122214239302](https://github.com/planner77/layoutManager/actions/runs/40511480917/job/122214239302): `npm run typecheck` → `src/server/g7-operational/s3-4-b2-3.ts:62` **TS2769** (`Object.keys`에 `object|null`), `:63` **TS2345** (`Object.hasOwn`에 `object|null`), exit 2. ESLint·Unit/Integration·Build·E2E는 **SKIPPED/미검증**.
+- **Docker Job 별도 실패, 동일 근본 원인:** Docker/Migration/Smoke [Job 122214238943](https://github.com/planner77/layoutManager/actions/runs/40511480917/job/122214238943) `Build pre-change baseline (same source, original Dockerfile)` 에서 Next.js Typecheck 동일 `s3-4-b2-3.ts:62` Type Error로 Docker buildx exit 1. Build phase1/Size/Migration/Smoke 후속 단계 모두 **SKIPPED**. Dockerfile/Buildx/OCI의 독립 결함 또는 외부 Registry 실패가 아님. npm audit 의존성 경고도 직접 실패 원인 아님.
+- **공통 원인/최소 수정:** 신규 `exact(v:unknown)`에서 `Boolean(v)`가 TypeScript `null` 방어·타입 내로잉을 보장하지 않는다. `v!==null && typeof v==='object'`로 타입 좁힘을 명시해 `Object.keys/Object.hasOwn` 안전화. 기존 B2-3 운영/보안 경계 및 15-file no-GHCR allowlist 불변.
+- **CI와 독립된 리뷰 품질 지적:** 최신 Codex [P2 #4389209602](https://github.com/planner77/layoutManager/pull/146#discussion_r4389209602)는 Local CAD `storage_path`가 잘못된 DB Location/Version ID를 참조해도, before/after DB와 asset이 동일한 문자열이면 통과하는 위양성. Local path 정규식 `(locationUuid)/(versionUuid)/original.ext` 그룹을 실제 `CadFileVersion.location_id/id`와 검증하여 `LOCAL_LOCATOR_OWNER_INVALID/BLOCKED`. 정상 S3 Object UUID는 DB Version UUID와 독립 유지. 양쪽 합성 Snapshot에 똑같은 잘못된 Local Location/Version path를 저장한 음성 회귀 추가.
+- **누적 실패 관리:** 이전 PR #145 CI 성공/리뷰 P2 교정 및 #146 최초 실패의 근거 모두 유지. 신규 HEAD Typecheck/ESLint/Vitest/Prisma CLI/Docker/E2E/PR CI는 실행 후 결과 관측 전 `NOT VERIFIED`, 최신 Codex Review는 별도. Main behind=0/mergeable=true는 보완 전 관측이며 push 뒤 재확인. 이번 작업은 새 PR CI 시작까지만, CI 모니터링/병합/Main CI/GHCR 게시는 하지 않음.
+- **운영 NO-GO:** 원본 DB/CAD/S3·writer freeze·온라인 Snapshot·운영 Prisma Migration·Auth/CAD Write 활성화·Compose/Nginx/OCI/실 복원·Rollback·Owner GO `NOT RUN`; #142/#109/#96 OPEN/BLOCKED.
+
+## #142 B2-3 — B2-2B Main CI 완료 인계 / 새 합성 구현 검증 전 (2026-10-27 KST)
+
+- **선행 성공·실패 아님:** [PR #145](https://github.com/planner77/layoutManager/pull/145) HEAD `5fc2e45da56993c4498c6db9dcd9112a6edacbc4`, [PR CI #40505100118](https://github.com/planner77/layoutManager/actions/runs/40505100118) SUCCESS 및 최신 Codex completed/findings 0/미해결 0; exact no-GHCR Squash Main `d2b77dd6535503f2d980ac563cc195cc8b4c128e`. [Main CI #40506886341](https://github.com/planner77/layoutManager/actions/runs/40506886341) completed/success, release-scope Job 122198352827 SUCCESS, GHCR Job 122198431912 SKIPPED.
+- **이번 구현·계획:** B2-3 후보 7 Migration guarded disposable Prisma CLI·seeded 합성 CAD 6→7 SQL 데이터 보존 검증, QuickCheck/FK/Current·Version/Local/S3 SHA 및 Auth/Audit·Fault Injection과 정확 B2-3 no-GHCR allowlist 테스트·문서 추가. 새 HEAD 결과는 CI Run/Job/Attempt 실제 확인 전 `NOT VERIFIED`; 테스트 작성만으로 실행 PASS/현장 복구 성공 주장 금지. CI 실패 발생 시 수정·누적 실패 원장 기록 후 재시작해야 함.
+- **지속 차단:** 운영 데이터/Writer freeze/SQLite Online Backup·사내 CAD/S3 원본 Versioned GET, active Prisma/배포 Auth/Write/Nginx/Compose/GHCR, 실 7 Migration/Restore/Rollback/Owner GO·이슈 종료 전부 `NOT RUN/OFF`. #142/#109/#96 OPEN/BLOCKED.
+
 ## Issue #142 / PR #145 — Codex P2 중복 S3 Locator 제약 누락 보완 (2026-10-27 KST)
 
 - **관측된 선행 CI 성공, 실패 아님:** [PR CI #40502175608](https://github.com/planner77/layoutManager/actions/runs/40502175608), attempt=1, HEAD `cddd2f20dc45c1f3d7edc42e15f0b914016a078d`, `completed/success`. Verify Typecheck/Lint/Test/Build/E2E Job 122182315944 SUCCESS, Docker/Migration/Smoke Job 122182315606 SUCCESS. 실제 Unit Fail이 아닌 **Codex P2**가 이후 발견되었음.
