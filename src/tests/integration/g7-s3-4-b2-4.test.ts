@@ -86,7 +86,7 @@ type ReplayObject={dbVersionId:string;storagePath:string;
   storage:'local'|'s3';bytes:Buffer;storageVersionId?:string};
 function fixture(modifyCandidate?:(db:SqliteDb)=>void){
   const db=new SQLite(':memory:');
-  let baseline:Buffer,candidate:Buffer;
+  let baseline=Buffer.alloc(0),candidate=Buffer.alloc(0);
   try{
     for(const migration of migrations)db.exec(sql(migration));
     seed(db);
@@ -146,6 +146,10 @@ describe('#142 B2-4 disposable same-SNAP restore/rollback replay: never field pr
         .run('unknown','s',0);
     }),'CANDIDATE_INVARIANTS_BLOCKED');
     blocked(fixture(db=>db.exec('DROP TABLE "G3LoginAttempt"')),
+      'CANDIDATE_INVARIANTS_BLOCKED');
+    blocked(fixture(db=>db.exec('DROP TRIGGER "g1_audit_no_update";'+
+      'CREATE TRIGGER "g1_audit_no_update" AFTER UPDATE ON "AuditEvent" '+
+      "BEGIN SELECT RAISE(FAIL,'SYNTHETIC_AFTER_UPDATE'); END;")),
       'CANDIDATE_INVARIANTS_BLOCKED');
   });
   test('candidate interrupted before seventh migration cannot count as restored',()=>{
