@@ -103,7 +103,7 @@ export class CadRepository {
         },
       });
       if (auth && allowed) await appendG7CadAudit(
-        tx, auth, allowed.actorId, allowed.siteId, 'CAD_UPLOADED', id);
+        tx, auth, allowed.actorId, allowed.siteId, 'CAD_UPLOADED', id, null, next);
       const names = locationDto(floor);
       return {
         id,
@@ -139,12 +139,17 @@ export class CadRepository {
         );
       const allowed = auth ? await requireG7CadPermission(
         tx, auth, 'cad:current', { kind: 'version', versionId }) : null;
+      const before = await tx.cadLocation.findUnique({
+        where: { id: locationId },
+        select: { currentVersion: { select: { version: true } } },
+      });
       const changed = await tx.cadLocation.update({
         where: { id: locationId },
         data: { currentVersionId: versionId },
       });
       if (auth && allowed) await appendG7CadAudit(
-        tx, auth, allowed.actorId, allowed.siteId, 'CAD_CURRENT_CHANGED', versionId);
+        tx, auth, allowed.actorId, allowed.siteId, 'CAD_CURRENT_CHANGED',
+        versionId, before?.currentVersion?.version ?? null, version.version);
       return changed;
     });
   }
@@ -185,6 +190,7 @@ export class CadRepository {
           locationId: true,
           storagePath: true,
           deletePasswordHash: true,
+          version: true,
         },
       });
       if (!current || current.deletePasswordHash !== file.deletePasswordHash)
@@ -208,7 +214,8 @@ export class CadRepository {
       });
       await tx.cadFileVersion.delete({ where: { id } });
       if (auth && allowed) await appendG7CadAudit(
-        tx, auth, allowed.actorId, allowed.siteId, 'CAD_VERSION_DELETED', id);
+        tx, auth, allowed.actorId, allowed.siteId, 'CAD_VERSION_DELETED',
+        id, current.version, null);
       return {
         id,
         locationId: current.locationId,

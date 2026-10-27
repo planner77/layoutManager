@@ -57,6 +57,7 @@ describe('#109 G7 S3-3 isolated CAD mutation and Audit',()=>{
     const newer=await repo.register({...chain.input,makeCurrent:false},sampleFile('b.dxf'),
       undefined,actor.proof);
     expect(await db.auditEvent.count({where:{action:'CAD_UPLOADED'}})).toBe(2);
+    expect((await db.auditEvent.findFirst({where:{action:'CAD_UPLOADED',targetId:newer.id}}))?.afterRevision).toBe(newer.version);
     await repo.setCurrent(chain.floor.id,newer.id,actor.proof);
     expect((await db.cadLocation.findUnique({where:{id:chain.floor.id}}))?.currentVersionId)
       .toBe(newer.id);
@@ -68,6 +69,7 @@ describe('#109 G7 S3-3 isolated CAD mutation and Audit',()=>{
     expect(await db.cadFileVersion.count()).toBe(1);
     expect(await db.auditEvent.count({where:{action:'CAD_VERSION_DELETED'}})).toBe(1);
     expect(await db.auditEvent.count({where:{action:'CAD_CURRENT_CHANGED'}})).toBe(1);
+    expect((await db.auditEvent.findFirst({where:{action:'CAD_CURRENT_CHANGED'}}))?.afterRevision).toBe(newer.version);
     expect(base.id).toBeTruthy();
   },60_000);
   test('Reader, unauthorized Site, revoked session cannot mutate CAD or add success Audit',async()=>{

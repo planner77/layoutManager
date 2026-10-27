@@ -112,12 +112,13 @@ export async function requireG7CadPermission(
 export async function appendG7CadAudit(tx: Tx, proof: G7CadWrite,
   actorId: string, siteId: string,
   action: 'CAD_UPLOADED' | 'CAD_CURRENT_CHANGED' | 'CAD_VERSION_DELETED',
-  versionId: string): Promise<void> {
+  versionId: string, beforeRevision: number | null,
+  afterRevision: number | null): Promise<void> {
   // If INSERT is rejected (Append-only/FK/DB busy), the CAD mutation MUST roll back.
   await tx.auditEvent.create({ data: {
     id: randomUUID(), actorUserId: actorId, affectedUserId: actorId, siteId,
     action, targetKind: 'VERSION', targetId: versionId, outcome: 'SUCCESS',
-    beforeRevision: null, afterRevision: null,
+    beforeRevision, afterRevision,
     timestampUtc: new Date().toISOString(), requestId: proof.requestId,
   } });
 }
