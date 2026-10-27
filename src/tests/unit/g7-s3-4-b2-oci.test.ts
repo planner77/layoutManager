@@ -30,6 +30,7 @@ function artifact(role:S34B2ImageRole):S34B2OfflineArtifact {
 function fixture(){return {sourceCommit:forward,version:'0.43.0',
   rollbackSourceCommit:rollback,rollbackVersion:'0.42.1',
   artifacts:roles.map(artifact)};}
+type SyntheticConfig={ architecture:string; os:string; config:{Labels:Record<string,string>} };
 describe('#142 B2-1 offline OCI content-address checking (never registry GO)',()=>{
   test('valid local bytes are only locally consistent, NEVER authoritative registry proof',()=>{
     const r=inspectS34B2OfflinePair(fixture());
@@ -66,13 +67,13 @@ describe('#142 B2-1 offline OCI content-address checking (never registry GO)',()
   });
   test('wrong source, architecture, schema, role labels and absent provenance never pass',()=>{
     for(const mutation of [
-      (x:Record<string,any>)=>{x.architecture='arm64';},
-      (x:Record<string,any>)=>{delete x.config.Labels['com.planner77.g7.schema-id'];},
-      (x:Record<string,any>)=>{x.config.Labels['org.opencontainers.image.revision']='c'.repeat(40);},
-      (x:Record<string,any>)=>{x.config.Labels['com.planner77.g7.image-role']='migrator';},
+      (x:SyntheticConfig)=>{x.architecture='arm64';},
+      (x:SyntheticConfig)=>{delete x.config.Labels['com.planner77.g7.schema-id'];},
+      (x:SyntheticConfig)=>{x.config.Labels['org.opencontainers.image.revision']='c'.repeat(40);},
+      (x:SyntheticConfig)=>{x.config.Labels['com.planner77.g7.image-role']='migrator';},
     ]){
       const f=fixture();
-      const original=JSON.parse(f.artifacts[0].configRaw.toString()) as Record<string,any>;
+      const original=JSON.parse(f.artifacts[0].configRaw.toString()) as SyntheticConfig;
       mutation(original);
       const configRaw=Buffer.from(JSON.stringify(original));
       const manifest=JSON.parse(f.artifacts[0].manifestRaw.toString());

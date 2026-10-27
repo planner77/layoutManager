@@ -469,3 +469,44 @@ describe('#109 S3-4-B1 local clone exact-title GHCR exclusion',()=>{
     expect(tagged.values).toContain('publish=true');
   });
 });
+
+describe('#142 S3-4-B2-1 exact offline OCI GHCR no-publish scope',()=>{
+  const title='#142 | S3-4-B2-1 Offline OCI digest preflight [G7-S3-4B2-1-NO-GHCR]';
+  const paths=[
+    '.github/workflows/docker-publish.yml','AGENTS.md',
+    'out/Architecture.md','out/Database.md','out/Decisions.md',
+    'out/FailureLedger.md','out/Issue109.md','out/Operation.md',
+    'out/Requirements.md','out/TestPlan.md','out/TestReport.md',
+    'src/deploy/g7-s3/S3-4-B2.md',
+    'src/server/g7-operational/s3-4-b2-oci.ts',
+    'src/tests/unit/g7-s3-4-b2-oci.test.ts',
+    'src/tests/unit/g7-staging-ghcr-guard.test.ts',
+  ];
+  test('exact B2-1 title and reviewed paths skip GHCR',()=>{
+    const x=runScope(paths,title+'\n\nOffline bytes-only test; production OFF');
+    expect(x.status,x.stderr).toBe(0);
+    expect(x.values).toContain('publish=false');
+  });
+  test('active migrations, Dockerfile, Compose, real runtime and other workflows fail closed',()=>{
+    for(const unsafe of [
+      'src/prisma/migrations/202610260002_g7_operational_auth/migration.sql',
+      'src/Dockerfile','src/docker-compose.yml','src/scripts/deploy.ts',
+      'src/app/api/cad-files/route.ts','.github/workflows/pr-ci.yml',
+      'src/server/g7-operational/preflight.ts',
+    ]){
+      const x=runScope([paths[12],unsafe],title);
+      expect(x.status).not.toBe(0);
+      expect(x.stderr).toContain('G7-S3-4B2-1 GHCR exclusion disallowed path: '+unsafe);
+    }
+  });
+  test('malformed B2-1 squash title is rejected; tag retains standard publish',()=>{
+    for(const name of [title+' ',title+'-extra','#142 | S3-4-B2-1 not-approved']){
+      const x=runScope([paths[12]],name);
+      expect(x.status).not.toBe(0);
+      expect(x.stderr).toContain('G7-S3-4B2-1 exact squash subject required');
+    }
+    const tagged=runScope([paths[12]],title,'refs/tags/v0.99.1');
+    expect(tagged.status).toBe(0);
+    expect(tagged.values).toContain('publish=true');
+  });
+});
