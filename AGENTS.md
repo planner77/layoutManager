@@ -8,6 +8,21 @@
 - 설계·AC/공통 적용 대상·테스트 체크리스트는 [ViewerPanelPolicy](out/ViewerPanelPolicy.md), [Issue #138](https://github.com/planner77/layoutManager/issues/138), [Requirements](out/Requirements.md), [Architecture](out/Architecture.md), [Decisions](out/Decisions.md), [TestPlan](out/TestPlan.md)을 기준으로 한다. #37/#49/#73/#82/#85/#90 관련 이슈에 참조한다. **본 기록은 지침 변경으로 기능 구현·테스트 PASS를 의미하지 않는다.**
 
 
+## #109 PR #141 — Unit 실패 및 P1/P2 보완 (2026-10-27)
+
+- [PR CI #40444154044](https://github.com/planner77/layoutManager/actions/runs/40444154044), HEAD `b5f340e69bd28aed939bb1c443df355c1652f5bf`: Unit/Integration 404 중 5 실패, Typecheck/ESLint·Docker PASS, Build/E2E SKIPPED. 5개 공통 직접 원인: 정상 Manifest Sorted Key 기대 순서 오타→`SNAPSHOT_MANIFEST_MISMATCH`.
+- [Codex P1 #4384813274](https://github.com/planner77/layoutManager/pull/141#discussion_r4384813274) key order 수정. [P2 #4384813277](https://github.com/planner77/layoutManager/pull/141#discussion_r4384813277) SQLite source path 재오픈 TOCTOU를 검증 Buffer→메모리 DB로 교정, [P2 #4384813278](https://github.com/planner77/layoutManager/pull/141#discussion_r4384813278) 8개 Auth table 완전/완전부재 검사로 수정. 관련 회귀 테스트·B1 Runbook 추가. **신규 HEAD CI 전 PASS 미확인**.
+- S3-4-B1은 격리 readonly/합성 clone 무결성 검사 준비이며 실제 운영 Snapshot 동시성·실 Registry OCI·실 Migration/Restore/rollback은 NOT RUN. Auth/Write/운영 SQL·Compose/Nginx·GHCR·실 DB/CAD/S3·Issue 종료 금지.
+
+
+## Issue #109 S3-4-A merged → S3-4-B1 isolated restore verifier (2026-10-27 KST)
+
+- S3-4-A [PR #136](https://github.com/planner77/layoutManager/pull/136) 최신 HEAD `d890f88b` PR CI `40440831020` SUCCESS, Codex 재리뷰 주요 지적 없음·기존 P2 2건 Resolved. 정확 Squash `#109 | S3-4-A Offline release evidence [G7-S3-4A-NO-GHCR]` → Main `1500eb699d5ef8d2045e951354838aa13ce24f92`. [Main CI #40443473912](https://github.com/planner77/layoutManager/actions/runs/40443473912) release-scope SUCCESS, GHCR Build and push SKIPPED.
+- S3-4-B1은 신규 `src/server/g7-operational/s3-4-b-clone.ts`로 **UID-owned /tmp/cad-g7-s3-b-* 0700 일회용 복제본만** 읽어 SQLite quick_check/FK, Version↔Current, nextVersion, CAD local+S3 export 바이트 길이/SHA, Schema 경계의 실제 무결성을 검증. Origin proof가 아님: SNAP ID 자체는 일관된 쓰기중지/원본 snapshot capture를 증명하지 않는다. `ISOLATED_INTEGRITY_ONLY`도 `operationalGo=false`, `runtimeActivated=false`.
+- B1 합성 테스트와 별도 [B1 Runbook](src/deploy/g7-s3/S3-4-B.md). 정확 future squash `#109 | S3-4-B1 Disposable restore integrity [G7-S3-4B1-NO-GHCR]`+명시 allowlist만 GHCR SKIP. 운영 Prisma Migration history·scripts/deploy.ts·운영 Auth/Write·Nginx/Compose/.env·DB/CAD/S3·실 GHCR/Image/Issue 종료 변경 0.
+- **남은 B2/C/Owner GO:** 사내 실제 Registry OCI App/Migrator immutable digest/source provenance, 승인된 쓰기중지·DB/CAD/S3 동일 Snapshot 실백업/복원, 7개 Migration 사본 적용·rollback 호환성 실증 후 신뢰 binding(S3-4-C) 및 Owner 릴리스별 GO(S3-5). B1 PR CI/코덱스 검증 이전 PASS 주장 금지.
+
+
 ## Issue #109 PR #136 — S3-4-A P2 보완 / 이전 CI 성공과 리뷰 지적 분리 (2026-10-27 KST)
 
 - 최초 S3-4-A PR HEAD `07a126afdba9135e031f348e6a2901ae6395fd79`의 [PR CI 40438604869](https://github.com/planner77/layoutManager/actions/runs/40438604869) `completed/success`. Codex [P2 r4384543606](https://github.com/planner77/layoutManager/pull/136#discussion_r4384543606): 사내 private JSON pathname과 열린 파일 객체의 TOCTOU. `O_NOFOLLOW|O_NONBLOCK`와 `fstatSync`, `lstat` dev/ino 동일성, UID·0600·정규파일·크기, 동일 fd 읽기 및 finally close로 교정.
@@ -631,6 +646,7 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 | [Issue107](out/Issue107.md) | G5 PROD Nginx/DEV 직결 격리 Preview, 테스트·실 LAN 인계 | Proxy/접속 경로·정상 Viewer/API/Upload/Health 검증, 운영 환경 변경 경계 |
 | [Issue108](out/Issue108.md) | G6 사내 PC 2대/Nginx·DEV 및 인증 업무 E2E·동일 시점 SQLite/CAD/S3 백업·격리 Migration·실 Restore·Rollback 수용, 오프라인 EV 증거 검사와 운영 OFF 범위 | G6 테스트 설계·실행·증거 판정, LAN/Viewer/기존 CAD 호환, DB/CAD/S3 복구·현장 QA, G7 #109 운영 Go/No-Go 선행 수용 확인 시 |
 | [Issue109](out/Issue109.md) | G7 운영 Auth·CAD 쓰기 단계별 활성화, 이중 승인 게이트/Owner Go/No-Go, 동일시점 DB·CAD·S3 백업·실복구·롤백 및 운영 NO-GO 계약 | 인증/인가·기존 CAD 쓰기 권한 전환, 정식 Prisma migration, 운영 Nginx/Compose/배포, 승인 증거 확인, 장애 중단·롤백 계획·수행 전 **반드시** 참조 |
+| [S3-4-B1 Runbook](src/deploy/g7-s3/S3-4-B.md) | #109 G7 격리 복원본의 UID/0700·0600·SQLite 메모리 복제/Version·Current/FK·CAD/S3-export SHA 검증, Snapshot 한계·B2 실제 OCI/복구/롤백 승인 경계 | S3-4-B1/B2 복제본 검사·실복구 계획·Snapshot/Schema/rollback 검토, 구현·리뷰·회귀 테스트·운영 Go/No-Go 전 반드시 참조 |
 | [Issue31](out/Issue31.md) | DXF 다중 선택·볼록/정밀 외곽선·실험 상태·P4 권한 보류 | Viewer 선택·외곽선/Worker/JSON 변경 시 |
 | [Issue26](out/Issue26.md) | DXF TEXT/MTEXT 색인·world 좌표 focus·검색 범위/검증 | Viewer 검색·Pan/Zoom·Worker·BLOCK/INSERT·DWG 텍스트 지원 검토 시 |
 | [Issue66](out/Issue66.md) | Migrator 최소 의존성·크기 측정/OCI manifest·복구 계약 | Docker migrator/CI/GHCR 및 버전·패키징 변경 시 |

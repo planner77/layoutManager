@@ -13,6 +13,14 @@
 [ViewerPanelPolicy](ViewerPanelPolicy.md), [#138](https://github.com/planner77/layoutManager/issues/138), ADR-053-R1 참조. 기존 #26/#40/#43/#127 완료 범위에 증분 적용할 별도 작업이며 이 문서 갱신은 기능 완료를 뜻하지 않음.
 
 
+## #109 S3-4-B1 격리 복원본 무결성 요구 (2026-10-27)
+
+- FR-G7-S3-4B1-01: 일회용 `/tmp/cad-g7-s3-b-*`만, UID/0700/0600·Symlink/FIFO 차단 및 local/S3-export 경로 traversal 불허. 운영 DB/CAD/S3 접근 경로 없음.
+- FR-G7-S3-4B1-02: readonly SQLite quick_check, FK 0, Current↔Version same owner, nextVersion, 실제 원본 bytes SHA/length; local+S3-export 두 종류 반드시 검증. Candidate Auth schema marker와 실제 table 경계 대조.
+- FR-G7-S3-4B1-03: 실패시 BLOCKED, 성공도 ISOLATED_INTEGRITY_ONLY/NO-GO 고정. Snapshot ID는 원본 단일 시점의 독립 증명이 아니며 실 증거·OCI B2 단계로 이관.
+- 새 운영 Migration/Compose/.env/GHCR 이미지 릴리스 변경 없음.
+
+
 ## #109 S3-4-A — 오프라인 증거 패킷 Requirements (2026-10-27)
 
 - FR-G7-S3-4A-01: App/Migrator/rollback OCI digest 형식뿐 아니라 동종 version/source·후보 schema ID·commit과의 모순을 fail-closed; `latest`는 digest가 아니다.
