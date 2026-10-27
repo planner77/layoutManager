@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { CadError, resolvedDrawingName, type Registration } from "@/domain/cad";
 import { type Database, writeTransaction } from "../db";
 import { hashDeletePassword, verifyDeletePassword } from "../password";
+import { appendG7CadAudit, requireG7CadPermission, type G7CadWrite } from "../g7-operational/cad-guard";
 export type FileRecord = {
   originalFilename: string;
   fileFormat: "DXF" | "DWG";
@@ -33,6 +34,7 @@ export class CadRepository {
     input: Registration,
     file: FileRecord,
     store?: (locationId: string, versionId: string) => Promise<string>,
+    auth?: G7CadWrite,
   ) {
     const deletePasswordHash = await hashDeletePassword(input.deletePassword);
     return writeTransaction(this.db, async (tx) => {
@@ -72,6 +74,8 @@ export class CadRepository {
           "비활성 기준정보에는 새 도면을 등록할 수 없습니다.",
           409,
         );
+      const allowed = auth ? await requireG7CadPermission(tx, auth,
+        'cad:upload', { kind: 'site', siteId: input.siteId }, floor.building.siteId) : null;
       const next = floor.nextVersion,
         id = randomUUID();
       const storagePath = store ? await store(floor.id, id) : file.storagePath;
@@ -98,6 +102,8 @@ export class CadRepository {
           ...(input.makeCurrent ? { currentVersionId: id } : {}),
         },
       });
+      if (auth && allowed) await appendG7CadAudit(
+        tx, auth, allowed.actorId, allowed.siteId, 'CAD_UPLOADED', id);
       const names = locationDto(floor);
       return {
         id,
@@ -114,7 +120,7 @@ export class CadRepository {
       };
     });
   }
-  async setCurrent(locationId: string, versionId: string) {
+  async setCurrent(locationId: string, versionId: string, auth?: G7CadWrite) {
     return writeTransaction(this.db, async (tx) => {
       const version = await tx.cadFileVersion.findUnique({
         where: { id: versionId },
@@ -131,13 +137,25 @@ export class CadRepository {
           "다른 위치의 버전은 지정할 수 없습니다.",
           409,
         );
-      return tx.cadLocation.update({
+      const allowed = auth ? await requireG7CadPermission(
+        tx, auth, 'cad:current', { kind: 'version', versionId }) : null;
+      const changed = await tx.cadLocation.update({
         where: { id: locationId },
         data: { currentVersionId: versionId },
       });
+      if (auth && allowed) await appendG7CadAudit(
+        tx, auth, allowed.actorId, allowed.siteId, 'CAD_CURRENT_CHANGED', versionId);
+      return changed;
     });
   }
-  async deleteVersion(id: string, password: string) {
+  async deleteVersion(id: string, password: string, auth?: G7CadWrite) {
+    // A Reader without access cannot use the legacy delete-password check
+    // as an oracle for a Version in a different Site. Revalidate inside the
+    // final business+Audit transaction below after slow scrypt verification.
+    if (auth) await writeTransaction(this.db, async (tx) => {
+      await requireG7CadPermission(tx, auth, 'cad:delete',
+        { kind: 'version', versionId: id });
+    });
     const file = await this.db.cadFileVersion.findUnique({
       where: { id },
       select: {
@@ -175,6 +193,8 @@ export class CadRepository {
           "도면 버전을 찾을 수 없습니다.",
           404,
         );
+      const allowed = auth ? await requireG7CadPermission(
+        tx, auth, 'cad:delete', { kind: 'version', versionId: id }) : null;
       const cleared = await tx.cadLocation.updateMany({
         where: { id: current.locationId, currentVersionId: id },
         data: { currentVersionId: null },
@@ -187,6 +207,8 @@ export class CadRepository {
         },
       });
       await tx.cadFileVersion.delete({ where: { id } });
+      if (auth && allowed) await appendG7CadAudit(
+        tx, auth, allowed.actorId, allowed.siteId, 'CAD_VERSION_DELETED', id);
       return {
         id,
         locationId: current.locationId,

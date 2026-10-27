@@ -1,9 +1,10 @@
-import { context } from '@/server/context';
+import { cadWriteContext } from '@/server/g7-operational/cad-preview-context';
 import { failure, requireSameOrigin } from '@/server/http';
 import { uploadCad } from '@/server/services/upload';
 import { revalidatePath } from 'next/cache';
 import { UploadDiagnostics, type UploadStage } from '@/server/upload-observability';
 import { RequestLogContext } from '@/server/logger';
+import { prepareG7CadWrite } from '@/server/g7-operational/cad-guard';
 
 export const runtime = 'nodejs';
 
@@ -24,13 +25,17 @@ export async function POST(request: Request) {
   let stage: UploadStage = 'origin_validation';
   try {
     requireSameOrigin(request);
+    // Deny unauthenticated requests before receiving a potentially large CAD body.
+    const auth = prepareG7CadWrite(request, requestLog.requestId);
     diagnostics.record('origin_validation', 'success');
     stage = 'context_initialization';
-    const { repo, storage } = context();
+    const cad = cadWriteContext(auth);
+    const { repo, storage } = cad;
+    try {
     diagnostics.setBackend(storage.backend);
     diagnostics.record('context_initialization', 'success');
     stage = 'upload_receive';
-    const result = await uploadCad(request, repo, storage, diagnostics);
+    const result = await uploadCad(request, repo, storage, diagnostics, auth);
     stage = 'response';
     try {
       revalidatePath('/');
@@ -46,6 +51,7 @@ export async function POST(request: Request) {
     diagnostics.finishSuccess();
     requestLog.completed(201);
     return response;
+    } finally { await cad.close(); }
   } catch (error) {
     return failure(error, { request: requestLog, diagnostics, stage });
   }
