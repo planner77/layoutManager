@@ -1,7 +1,8 @@
 import { validateId, CadError } from '@/domain/cad';
-import { context } from '@/server/context';
+import { cadWriteContext } from '@/server/g7-operational/cad-preview-context';
 import { failure, requireSameOrigin } from '@/server/http';
 import { RequestLogContext } from '@/server/logger';
+import { prepareG7CadWrite } from '@/server/g7-operational/cad-guard';
 import { revalidatePath } from 'next/cache';
 
 export const runtime = 'nodejs';
@@ -10,13 +11,19 @@ export async function PUT(request: Request, { params }: { params: Promise<{ loca
   const requestLog = new RequestLogContext(request, 'api', 'cad_set_current');
   try {
     requireSameOrigin(request);
+    const auth = prepareG7CadWrite(request, requestLog.requestId);
     let body: unknown;
     try { body = await request.json(); }
     catch { throw new CadError('INVALID_JSON','요청 내용을 확인해주세요.'); }
-    const result = await context().repo.setCurrent(
-      validateId((await params).locationId),
-      validateId(String((body as { versionId?: unknown })?.versionId ?? '')),
-    );
+    const cad = cadWriteContext(auth);
+    let result;
+    try {
+      result = await cad.repo.setCurrent(
+        validateId((await params).locationId),
+        validateId(String((body as { versionId?: unknown })?.versionId ?? '')),
+        auth,
+      );
+    } finally { await cad.close(); }
     for (const path of ['/', `/cad/locations/${result.id}`]) {
       try { revalidatePath(path); }
       catch (error) { requestLog.warn('cache_revalidation_failed', { outcome: 'warning', error }); }

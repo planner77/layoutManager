@@ -1,5 +1,35 @@
 # PR/Main CI 실패 원장
 
+## Issue #109 PR #135 — 최신 Main 정렬 후 리뷰·충돌 2차 게이트 (2026-10-27 KST)
+
+- **근거 HEAD:** Main `dc82e670073160ddac46a2f9e9489a738a19c033`; S3-3 Merge HEAD `ebc294fff35b005737cf89ebacb78420b209bd59` (parents `13fcea7fc69e844854470dbd9a180a6fc08920ae`, Main `dc82e670...`). GitHub 비교 `ahead=6, behind=0`, PR #135 `OPEN/mergeable=true`. Main #57 변경 파일 25개 의미적 보존(충돌 가능 7개 MD는 Main + S3-3 신규 항목 양쪽 유지), 원본 Main 기능 복원손실 없음.
+- **2차 리뷰:** GitHub GraphQL review thread `PRRT_kwDOUQjDfc6wgu00` P2 [4384076798](https://github.com/planner77/layoutManager/pull/135#discussion_r4384076798), 답변 [4384322812](https://github.com/planner77/layoutManager/pull/135#discussion_r4384322812), `is_resolved=true`; 1개 전체 thread 중 **미해결 0개**, 추가 미해결 없음. 변경전 초기 [PR CI 40429149135](https://github.com/planner77/layoutManager/actions/runs/40429149135) 성공, 재정렬 이후 최신 HEAD CI는 **미확인**. 리뷰 지적은 CI 실패 Run으로 중복계상하지 않는다.
+- **추가 Gate:** GHCR 정확 S3-3 allowlist에 순수 helper `cad-preview-storage.ts` 포함(범위 밖 운영 Prisma/Compose 금지), 같은 경로에 대한 Unit whitelist 회귀. 최신 HEAD의 실행결과는 새 PR CI가 생성·검증되어야만 판정한다. 실제 운영 DB/CAD/S3·Auth/Cutover/DDL·GHCR 게시·PR 병합·#109/#96 종료 진행 금지.
+
+
+## Issue #109 PR #135 — Main 동기화 전·후 리뷰/충돌 분리 기록 (2026-10-27 KST)
+
+- **동기화 전:** HEAD `13fcea7fc69e844854470dbd9a180a6fc08920ae`; 이전 PR CI 40429149135는 최초 HEAD 8a98e6a6에서 completed/success. Codex P2 [r4384076798](https://github.com/planner77/layoutManager/pull/135#discussion_r4384076798)는 `CAD_STORAGE_PATH` 불일치로 인한 Viewer 콘텐츠 조회 위험이며 **CI 실패가 아니다**. 코드·격리 테스트·Runbook 수정, 답변 [r4384322812](https://github.com/planner77/layoutManager/pull/135#discussion_r4384322812), 스레드 PRRT_kwDOUQjDfc6wgu00 Resolved. 미해결 스레드 0 관측.
+- **Main 선행:** 기존 base `9d70bd243fd0dbc27d4d897c1285c96dcc8a0c03`보다 Main `dc82e670073160ddac46a2f9e9489a738a19c033` 1커밋 앞섬. #57 로깅·관측/업로드, 신규 단위 테스트·workflow·Dockerfile/패키지/가이드 등 Main 변경을 전체 보존. Main과 #109 양쪽 변경된 7개 문서는 최신 Main 원문에 S3-3 후속 항목을 전방 삽입하는 의미적 병합. Git merge commit 두 부모 기록, 원본 Main 코드 파일을 재작성·롤백하지 않음.
+- **검증 상태:** 병합될 HEAD의 새 PR CI는 **미실행/미확인**; 이전 성공 Run을 최신 HEAD PASS로 재활용하지 않음. 후속 Codex 재검토와 충돌·스레드 재점검은 독립 게이트. 운영 Auth/CAD Write, 활성 Prisma, Nginx/Compose, 실 데이터 및 GHCR 게시/병합 #109/#96 종료 금지.
+
+
+## #109 PR #135 — CI SUCCESS / Codex P2 storage alignment correction before Main sync (2026-10-27 KST)
+
+- **Baseline:** PR HEAD `8a98e6a6b48a9e9d000f8d6a98c84dfbedfb4144`; [PR CI 40429149135](https://github.com/planner77/layoutManager/actions/runs/40429149135) `completed/success`. This is not a CI failure and no failed job is invented.
+- **Review gate:** Codex [P2 r4384076798](https://github.com/planner77/layoutManager/pull/135#discussion_r4384076798) (thread `PRRT_kwDOUQjDfc6wgu00`) exposed discrepancy: nonproduction writes used `<test-root>/cad` but anonymous Content GET relied on `context().storage` pointed by `CAD_STORAGE_PATH`. In a default separate process this could lead to `FILE_NOT_FOUND` after successful upload and broken Viewer. Review issue, not observed CI failure or production outage.
+- **Correction:** Require `CAD_STORAGE_PATH` to equal the exact UID-owned disposable `$G7_S3_TEST_ROOT/cad`, allow local backend only and reject any populated `CAD_S3_*` env. Both pre-upload request gate and the disposable context fail closed on mismatch, preventing upload and production fallback. Added storage contract unit and synthetic write→legacy `ConfiguredCadStorage.content` byte-equivalent read. S3-3 runbook describes isolated process and exact env. Existing anonymous GET/content route is not modified. Pure alignment helper moved to `cad-preview-storage.ts` so Vitest does not import the `server-only` production context.
+- **Validation state:** New HEAD Typecheck/Unit/E2E/CI **NOT YET VERIFIED**. Preserve previous failures in ledger. Production Auth/Write/Prisma/Nginx/Compose/GHCR/real DB/CAD/S3 unchanged; #109/#96 OPEN/BLOCKED.
+
+
+## Issue #109 S3-3 — CAD API 권한·Audit 원자성 준비, 운영 OFF (2026-10-27)
+
+- **기능:** 기존 CAD Multipart POST·Current PUT·Version DELETE에서 서버 DB의 최신 Session/Role/Site를 같은 Prisma Transaction 안에 재조회하고 승인된 Editor/Admin+Site만 쓰기 허용한다. DELETE는 기존 삭제 비밀번호도 요구하며, CAD DB 변경과 CAD_UPLOADED/CAD_CURRENT_CHANGED/CAD_VERSION_DELETED Audit INSERT 중 하나라도 실패하면 DB를 롤백한다. 기존 업로드 보상·삭제 Job, 익명 GET/Viewer·CAD 데이터 규약은 유지한다.
+- **운영 차단:** `NODE_ENV=production`에서는 S3-3 프리뷰 활성화 불가. 정확한 S3-2 disposable DB/marker/7 migration, loopback origin, `G7_S3_AUTH_API_PREVIEW_ONLY=true`, `G7_S3_CAD_PREVIEW_ONLY=true`, `G7_AUTH_ENABLED=false`, `G7_CAD_WRITE_CUTOVER_ENABLED=false` 조건만 격리 시험 허용. 별도 Prisma Client와 0700 root 하위 로컬 CAD 저장소 이용. 운영 Migration·실 DB/CAD/S3·Compose/Nginx/.env·GHCR 게시·인증/쓰기 활성화 없음.
+- **시험·잔여:** synthetic integration(Unit) 검증 코드 추가; 실제 PR CI는 시작 전이므로 결과 `NOT RUN`. 일회용 Preview Cookie의 Path는 `/api/g7-operational`이므로 다른 CAD 경로의 프로그램 시험에서는 테스트용 Cookie를 명시적으로 넘기며 운영 브라우저 인증이 활성된 상태는 아님. S3-4는 OCI/운영 Migration/실복구·신뢰 release binding, S3-5는 릴리스별 Owner GO 및 현장 수용. 기존 유사범위 PR #128은 미병합·충돌 상태이며 자동 병합하지 않는다. #109/#96 OPEN/BLOCKED.
+- **후속 정확 Squash:** `#109 | S3-3 Isolated CAD write and Audit [G7-S3-3-NO-GHCR]` 및 개별 파일 allowlist만 GHCR 미게시. 내부 로그/비밀번호/IP/실 도면 반출 금지. [S3-3 Runbook](../src/deploy/g7-s3/S3-3.md).
+
+
 ## Issue #109 / PR #131 — 재시도 PR CI 40394690714 Unit·Integration 실패 1건 / Response 이중 소비 (2026-10-27 KST)
 
 - **실패 Run (누적 2번째, Attempt 1):** [40394690714](https://github.com/planner77/layoutManager/actions/runs/40394690714), HEAD `0cab0f1449e0a7f8e41a1149a5e46b0aa0ef8a72`, `pull_request.synchronize`, `completed/failure`. Verify [Job 121824493035](https://github.com/planner77/layoutManager/actions/runs/40394690714/job/121824493035), `Unit 및 Integration 테스트` Step **9 FAILURE**. **64 Test Files = 63 PASS / 1 FAIL, 360 Tests = 359 PASS / 1 FAIL**. 실패 대상 `tests/integration/g7-s3-operational-auth.test.ts > disposable-only Admin CLI bootstrap/recovery, HTTP login, grants and Audit E2E`, 원본 로그 `tests/integration/g7-s3-operational-auth.test.ts:127:57`: `TypeError: Response.clone: Body has already been consumed.`

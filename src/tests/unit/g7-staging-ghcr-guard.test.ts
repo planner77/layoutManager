@@ -343,3 +343,45 @@ describe('#109 S3-2 exact Auth/Admin preview-only GHCR exclusion',()=>{
     expect(tag.values).toContain('publish=true');
   });
 });
+
+describe('#109 S3-3 isolated CAD transaction GHCR exclusion',()=>{
+  const title='#109 | S3-3 Isolated CAD write and Audit [G7-S3-3-NO-GHCR]';
+  test('exact subject and approved code/docs skip image publication',()=>{
+    const result=runScope([
+      '.github/workflows/docker-publish.yml','AGENTS.md','out/Issue109.md',
+      'out/FailureLedger.md','src/deploy/g7-s3/S3-3.md',
+      'src/server/auth/audit.ts','src/server/g7-operational/cad-guard.ts',
+      'src/server/g7-operational/cad-preview-context.ts',
+      'src/server/g7-operational/cad-preview-storage.ts',
+      'src/server/repositories/cad.ts','src/server/services/upload.ts',
+      'src/app/api/cad-files/route.ts','src/app/api/cad-files/[versionId]/route.ts',
+      'src/app/api/cad-locations/[locationId]/current/route.ts',
+      'src/tests/integration/g7-s3-cad-write.test.ts',
+      'src/tests/unit/g7-s3-cad-preview.test.ts',
+      'src/tests/unit/g7-staging-ghcr-guard.test.ts',
+    ], title+'\n\nSynthetic S3-3, operating OFF');
+    expect(result.status,result.stderr).toBe(0);
+    expect(result.values).toContain('publish=false');
+  });
+  test('active migrations and unrelated runtime files denied',()=>{
+    for(const p of [
+      'src/prisma/migrations/202610260002_g7_operational_auth/migration.sql',
+      'src/prisma/schema.prisma','src/app/api/health/route.ts',
+      '.github/workflows/pr-ci.yml','src/docker-compose.yml',
+    ]){
+      const result=runScope(['src/server/g7-operational/cad-guard.ts',p],title);
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toContain('G7-S3-3 GHCR exclusion disallowed path: '+p);
+    }
+  });
+  test('near-title and version tag do not grant no-GHCR',()=>{
+    for(const subject of [title+' ',title+'-fake','#109 | S3-3 unapproved']){
+      const result=runScope(['src/server/g7-operational/cad-guard.ts'],subject);
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toContain('G7-S3-3 exact squash subject required');
+    }
+    const tagged=runScope(['src/server/g7-operational/cad-guard.ts'],title,'refs/tags/v0.99.1');
+    expect(tagged.status).toBe(0);
+    expect(tagged.values).toContain('publish=true');
+  });
+});

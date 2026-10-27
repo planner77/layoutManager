@@ -1,5 +1,20 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #109 PR #135 — P2 처리·Main 정렬 후 리뷰/충돌 재확인 (2026-10-27 KST)
+
+- 최초 HEAD `8a98e6a6` [PR CI #40429149135](https://github.com/planner77/layoutManager/actions/runs/40429149135)는 `completed/success`. Codex [P2 r4384076798](https://github.com/planner77/layoutManager/pull/135#discussion_r4384076798)는 **CI 실패가 아닌** preview 로컬 저장소/기존 Content GET 불일치 위험이다.
+- 업로드 권한검증 전에 `CAD_STORAGE_PATH=$G7_S3_TEST_ROOT/cad`와 `CAD_STORAGE_BACKEND=local`, `CAD_S3_*` unset을 강제. 인증된 쓰기 Context도 동일 root·UID/permission 검증 및 마이그레이션 체크를 수행한다. `cad-preview-storage.ts`는 별도 순수 검증 함수여서 테스트가 `server-only` 모듈을 열지 않는다. 기존 익명 GET/Viewer 코드 변경 없음. Unit은 경로 불일치 거부와 로컬 업로드→기존 Content storage 조회를 검사한다.
+- P2 답변 [r4384322812](https://github.com/planner77/layoutManager/pull/135#discussion_r4384322812) 및 Thread Resolved; Main `dc82e670073160ddac46a2f9e9489a738a19c033` (#57 로깅/관측 포함)을 비강제 두-부모 Merge로 보존한 HEAD `ebc294fff35b005737cf89ebacb78420b209bd59`. Main behind=0/mergeable=true, 정렬 후 리뷰 스레드 1개 중 미해결 0개. 새 HEAD의 PR CI는 별도 관측 이전 PASS 미확인, GHCR/운영 활성화/Issue 종료 없음.
+
+
+## Issue #109 S3-3 — CAD API 권한·Audit 원자성 준비, 운영 OFF (2026-10-27)
+
+- **기능:** 기존 CAD Multipart POST·Current PUT·Version DELETE에서 서버 DB의 최신 Session/Role/Site를 같은 Prisma Transaction 안에 재조회하고 승인된 Editor/Admin+Site만 쓰기 허용한다. DELETE는 기존 삭제 비밀번호도 요구하며, CAD DB 변경과 CAD_UPLOADED/CAD_CURRENT_CHANGED/CAD_VERSION_DELETED Audit INSERT 중 하나라도 실패하면 DB를 롤백한다. 기존 업로드 보상·삭제 Job, 익명 GET/Viewer·CAD 데이터 규약은 유지한다.
+- **운영 차단:** `NODE_ENV=production`에서는 S3-3 프리뷰 활성화 불가. 정확한 S3-2 disposable DB/marker/7 migration, loopback origin, `G7_S3_AUTH_API_PREVIEW_ONLY=true`, `G7_S3_CAD_PREVIEW_ONLY=true`, `G7_AUTH_ENABLED=false`, `G7_CAD_WRITE_CUTOVER_ENABLED=false` 조건만 격리 시험 허용. 별도 Prisma Client와 0700 root 하위 로컬 CAD 저장소 이용. 운영 Migration·실 DB/CAD/S3·Compose/Nginx/.env·GHCR 게시·인증/쓰기 활성화 없음.
+- **시험·잔여:** synthetic integration(Unit) 검증 코드 추가; 실제 PR CI는 시작 전이므로 결과 `NOT RUN`. 일회용 Preview Cookie의 Path는 `/api/g7-operational`이므로 다른 CAD 경로의 프로그램 시험에서는 테스트용 Cookie를 명시적으로 넘기며 운영 브라우저 인증이 활성된 상태는 아님. S3-4는 OCI/운영 Migration/실복구·신뢰 release binding, S3-5는 릴리스별 Owner GO 및 현장 수용. 기존 유사범위 PR #128은 미병합·충돌 상태이며 자동 병합하지 않는다. #109/#96 OPEN/BLOCKED.
+- **후속 정확 Squash:** `#109 | S3-3 Isolated CAD write and Audit [G7-S3-3-NO-GHCR]` 및 개별 파일 allowlist만 GHCR 미게시. 내부 로그/비밀번호/IP/실 도면 반출 금지. [S3-3 Runbook](src/deploy/g7-s3/S3-3.md).
+
+
 ## Issue #109 / PR #131 — 두 번째 PR CI Unit/Integration 1건 실패·Response 소비 방지 (2026-10-27 KST)
 
 - **관측 실패:** [PR CI Run 40394690714](https://github.com/planner77/layoutManager/actions/runs/40394690714) attempt 1, HEAD `0cab0f1449e0a7f8e41a1149a5e46b0aa0ef8a72`, Verify [Job 121824493035](https://github.com/planner77/layoutManager/actions/runs/40394690714/job/121824493035) **Unit 및 Integration Step 9 실패**(64 파일=63 PASS/1 FAIL, 360 테스트=359 PASS/1 FAIL). Typecheck/ESLint **PASS**, Docker [Job 121824492537](https://github.com/planner77/layoutManager/actions/runs/40394690714/job/121824492537) SUCCESS. 오류: `tests/integration/g7-s3-operational-auth.test.ts:127:57`에서 `login()` 헬퍼가 `await r.json()`으로 본문을 먼저 소비하여 응답 진단 `admin.response.clone().text()` 실행 때 `TypeError: Response.clone: Body has already been consumed`. 인증 실패, 실 운영 장애, GHCR 오류로 판단하지 않는다.
