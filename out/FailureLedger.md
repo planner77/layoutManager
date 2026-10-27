@@ -8,6 +8,15 @@
 
 # PR/Main CI 실패 원장
 
+## Issue #82 / PR #111 — #127 Viewer 그룹 메뉴 E2E 1건 실패 / 보완 (2026-10-28 KST)
+
+- **원본 Run·검증 SHA:** [PR CI #40512645193](https://github.com/planner77/layoutManager/actions/runs/40512645193), attempt **1**, `completed/failure`, HEAD `89a72018403ebfca32e382e0f04511a95d1946ae` (Main d2b77dd 기준, App 0.42.1).
+- **실패 Job/Step:** [Verify Job 122218176649](https://github.com/planner77/layoutManager/actions/runs/40512645193/job/122218176649) **E2E 테스트 Step FAIL**: 92 tests / 91 PASS / 1 FAIL. `src/tests/e2e/issue38-app-shell.spec.ts:41:60` / `TC-U1-E2E-001: three-dxf-viewer CSS immersive/menu/resize/escape and dock state`; Playwright `toHaveAttribute('aria-disabled','false')` expected `"false"`, received missing attribute (`null` / empty display). **실패 Trace Artifact [12739315008](https://github.com/planner77/layoutManager/actions/runs/40512645193/artifacts/12739315008)**. Error context: `test-results/issue38-app-shell-TC-U1-E2-9a012-esize-escape-and-dock-state/error-context.md`.
+- **동일 Run 성공/미실행 분리:** Verify TypeScript·ESLint·Unit/Integration·OCI Unit·DXF synthetic source benchmark·Production Build 및 Chromium 설치 **SUCCESS**. Legacy Migration E2E는 실패 후 **SKIPPED**(PASS 아님), E2E Artifact 업로드 SUCCESS. [Docker Job 122218177009](https://github.com/planner77/layoutManager/actions/runs/40512645193/job/122218177009)은 이미지 빌드/크기·Migration·Runtime Smoke **SUCCESS**. 테스트 fixture의 의도된 API 4xx 로그는 실패 원인 아님.
+- **원인 확인:** #127 그룹 메뉴의 `viewer-command-menu.tsx`는 활성 버튼에 `aria-disabled={false || undefined}`를 전달해 속성을 생략하도록 설계. 실제 three-dxf-viewer M1은 enabled이고 Source Handle 없는 DXF에서도 정상 지원. 기존 U1 테스트만 '활성 상태에서 명시적 aria-disabled=false attribute가 존재한다'고 잘못 가정해 오탐. 제품의 disabled/Source/G7 정책 결함 아님.
+- **수정:** `src/tests/e2e/issue38-app-shell.spec.ts`의 해당 assertion을 `three-dxf-viewer -> toBeEnabled()`, `dxf-viewer -> toBeDisabled() + aria-disabled=true`로 변경. DWG 후속 검사/Canvas 수명주기·DXF load·Source fail-closed/Memo WCS E2E는 그대로. 앱 코드·권한·영속화/API/DB/Prisma·.env·GHCR/Release 변화 없음. `AGENTS.md`, `out/TestPlan.md`, `out/TestReport.md`, `out/Issue82.md`와 동기화.
+- **재검증/병합 경계:** 브랜치 메인 정렬 확인 시 behind=0/mergeable=true, 기존 Codex P1/P2 2개 모두 Resolved·미해결 0. 수정 HEAD의 PR CI는 자동 synchronize 시작 후 run/결과를 별도 확인해야 하며 이번 기록 시 PASS는 **NOT VERIFIED**; 실 CAD/GPU, #83 Memo 서버영속, 운영 G7/GHCR/Issue #82 종료는 수행하지 않음.
+
 ## Issue #142 / PR #145 — Codex P2 중복 S3 Locator 제약 누락 보완 (2026-10-27 KST)
 
 - **관측된 선행 CI 성공, 실패 아님:** [PR CI #40502175608](https://github.com/planner77/layoutManager/actions/runs/40502175608), attempt=1, HEAD `cddd2f20dc45c1f3d7edc42e15f0b914016a078d`, `completed/success`. Verify Typecheck/Lint/Test/Build/E2E Job 122182315944 SUCCESS, Docker/Migration/Smoke Job 122182315606 SUCCESS. 실제 Unit Fail이 아닌 **Codex P2**가 이후 발견되었음.

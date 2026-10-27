@@ -1,5 +1,11 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issue #82 / PR #111 — U1 E2E aria-disabled 속성 오탐 (2026-10-28 KST)
+
+- **관측:** [Run #40512645193](https://github.com/planner77/layoutManager/actions/runs/40512645193) HEAD `89a72018403ebfca32e382e0f04511a95d1946ae`, Verify Job 122218176649 FAILURE. Typecheck/Lint/Unit·Integration/OCI/Synthetic DXF Benchmark/Production Build PASS, Chromium E2E **91/92 PASS, 1 FAIL**, Legacy Migration E2E SKIPPED. Docker/Migration/Runtime Smoke Job 122218177009 SUCCESS. Trace Artifact 12739315008.
+- **실패/보완:** `TC-U1-E2E-001` three-dxf-viewer 메모 메뉴 enabled인데 `aria-disabled=false` 속성을 요구하여 FAILED (실제 속성 없음은 정상 `ViewerCommandMenus` 계약). Test assertion만 `toBeEnabled()` / 비지원 `toBeDisabled()` 및 명시적 `aria-disabled=true`로 보완. 앱/Renderer/도메인 코드 변경 0, U1·M1 E2E 수용 기준과 #127 메뉴 그룹 정책 보존.
+- **최신 HEAD 상태:** 이 변경 직후 전체 E2E/CI는 새 Run 완료 전 **NOT VERIFIED**. 운영 서버 기능·실 CAD/GPU·#138 panel 실제 drag·Memo M2 서버 영속·GHCR 게시/PR 병합은 NOT RUN. 원본 Run/Job/분석은 [FailureLedger](FailureLedger.md) 참조.
+
 ## #142 PR #145 — 신규 P2 중복 S3 Locator 회귀 작성 / 최종 CI 전 (2026-10-27)
 
 - [PR CI #40502175608](https://github.com/planner77/layoutManager/actions/runs/40502175608), attempt=1, HEAD `cddd2f20dc45c1f3d7edc42e15f0b914016a078d` SUCCESS (Verify Job 122182315944, Docker Job 122182315606). 이 **과거 SHA의 성공**과 [Codex P2 #4388575128](https://github.com/planner77/layoutManager/pull/145#discussion_r4388575128)은 구분한다.

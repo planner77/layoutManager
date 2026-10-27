@@ -1,5 +1,11 @@
 # Issue #82 — CAD Memo M1 / WCS 브라우저 세션 메모
 
+## PR #111 — Main 정렬 후 U1 그룹 메뉴 E2E ARIA 1건 수정 (2026-10-28 KST)
+
+- [CI 40512645193](https://github.com/planner77/layoutManager/actions/runs/40512645193), HEAD `89a72018403ebfca32e382e0f04511a95d1946ae`: Chromium E2E **91 PASS/1 FAIL**; Verify Job 122218176649 실패 단계 E2E, Typecheck/Lint/Unit·Integration/OCI/Benchmark/Build PASS, Legacy Migration E2E SKIPPED. Docker Job 122218177009 PASS. Trace 12739315008.
+- 실패 위치 `issue38-app-shell.spec.ts:41`: 정상 enabled `작업 > 메모 추가/편집`에서 `aria-disabled="false"` 속성이 없는 것을 장애로 오판. #127 `ViewerCommandMenus`의 `command.disabled || undefined` 정책에 맞춰 E2E를 `toBeEnabled()` 및 dxf-viewer `toBeDisabled()`로 최소 수정. M1 WCS 메모/Renderer 제품 코드·App 0.42.1 변경 없음.
+- 기존 P1/P2 리뷰 2건 Resolved, Main behind 0/mergeable true; 수정 HEAD의 CI/최신 Codex 리뷰 성공은 별도 관측 전 **NOT VERIFIED**. 메모 영속 M2 #83, 운영 G7·DB/API, GHCR 게시·Issue 종료 없음.
+
 ## 2026-10-27 — 최신 Main(0.42.1) 정렬, Issue #127/#138 통합
 
 - PR #111의 M1 WCS/임시 세션 로직을 보존하면서 Main `d2b77dd6535503f2d980ac563cc195cc8b4c128e`을 2-parent merge 방식으로 취합. 기존 README/AGENTS/실패 원장 최신 #142 및 #57 정책 유지.

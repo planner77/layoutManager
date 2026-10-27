@@ -1,5 +1,11 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #82 — TC-U1-E2E-001 / Viewer 그룹 메뉴 지원 상태 회귀 (2026-10-28)
+
+- **지원 렌더러:** three-dxf-viewer + DXF + valid Version/SHA + ready에서 `작업 > 메모 추가/편집`은 `toBeEnabled()`; `aria-disabled="false"`의 **속성 존재를 단정하지 않는다** (`ViewerCommandMenus`는 disabled=false 시 해당 속성 미렌더).
+- **미지원 렌더러:** dxf-viewer는 `toBeDisabled()`와 `aria-disabled="true"`, DWG도 disabled. Native HTML disabled 대신 ARIA disabled인 현재 그룹 메뉴의 실제 접근성 상태를 Playwright로 확인한다. 기존 U1 fullscreen/layers/Canvas DOM/GET 1회 및 M1 WCS 불변·Source fail-closed 검증은 계속 유지.
+- **재발 방지:** UI 속성 문자열 표현 방식이 아닌 ARIA/button 의미에 근거한 E2E assertion 선택. [Run #40512645193](https://github.com/planner77/layoutManager/actions/runs/40512645193) 91/92(FAIL)를 성공으로 재분류하지 않으며, 수정 HEAD CI는 **NOT VERIFIED**.
+
 ## #142 B2-2B — CadFileVersion.storagePath Unique P2 회귀 (2026-10-27)
 
 - TC-B2-2B-07: 합성 SQLite의 `UNIQUE(storage_path)`를 유지한 상태에서 Local 1개·S3 2개 Version(각 DB Version ID/S3 Object UUID 독립, S3 locator 2개 서로 다름)과 일치하는 B2-2A Packet·S3 export Buffers → `DISPOSABLE_BYTES_CONSISTENT_NOT_SITE_PROOF`, s3BytesCompared=2, DB Version 3, 모든 출처/GO false.

@@ -1,5 +1,12 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #82 / PR #111 — E2E 메뉴 활성화 ARIA 단정 실패 수정 (2026-10-28 KST)
+
+- **실제 실패:** [PR CI Run 40512645193](https://github.com/planner77/layoutManager/actions/runs/40512645193), attempt=1, HEAD `89a72018403ebfca32e382e0f04511a95d1946ae`, Verify [Job 122218176649](https://github.com/planner77/layoutManager/actions/runs/40512645193/job/122218176649) `completed/failure`. Chromium E2E **92개 중 91 PASS / 1 FAIL**; 다른 Typecheck/ESLint/Unit·Integration/OCI Unit/DXF benchmark/Build 성공, Legacy Migration E2E **SKIPPED**. Docker/Migration/Runtime Smoke [Job 122218177009](https://github.com/planner77/layoutManager/actions/runs/40512645193/job/122218177009) **SUCCESS**.
+- **직접 원인:** `src/tests/e2e/issue38-app-shell.spec.ts:41` / `TC-U1-E2E-001` three-dxf-viewer에서 `aria-disabled="false"`를 단정. #127 `ViewerCommandMenus`는 `aria-disabled={command.disabled || undefined}`이므로 활성 명령에는 속성 자체가 없으며 실제 버튼은 **enabled**. 이는 M1 지원 정책·렌더러 결함이 아닌 E2E assertion 계약 오류.
+- **교정:** 세 Renderer 지원 계약 유지: three-dxf-viewer에서는 `toBeEnabled()`, dxf-viewer에서는 `toBeDisabled()`와 `aria-disabled="true"`; DWG의 기존 disabled 검증 보존. 제품 Viewer/Menu/Overlay/Adapter/DB/API/Prisma/G7 코드 및 App/lock `0.42.1` 변경 없음. 근본 예방: 활성/비활성 여부는 접근성 의미 기준으로 검증하고 `aria-disabled=false` 속성 존재를 요구하지 않는다.
+- **안전 게이트:** 이전 Codex P1/P2 스레드 2건 Resolved(미해결 0), 검사 시 Main `d2b77dd6535503f2d980ac563cc195cc8b4c128e` 대비 behind=0 / mergeable=true. 새 HEAD의 Typecheck/E2E 및 Codex 재검토는 PR CI 결과 확인 전 **NOT VERIFIED**. 이번 범위는 PR CI 시작까지만이며 병합/GHCR/Issue 종료/실 CAD·GPU 시험/메모 서버 영속 활성화는 **NOT RUN**.
+
 ## Issue #142 / PR #145 — S3 Locator 중복 검출 Codex P2 보완 (2026-10-27 KST)
 
 - **근거:** [PR #145 P2 #4388575128](https://github.com/planner77/layoutManager/pull/145#discussion_r4388575128). 기존 [PR CI #40502175608](https://github.com/planner77/layoutManager/actions/runs/40502175608) HEAD `cddd2f20dc45c1f3d7edc42e15f0b914016a078d`는 Verify/Docker 2 Job SUCCESS였지만 Codex 최신 리뷰에서 **리뷰 결함** 발견. 이를 CI 실패로 잘못 기록하지 않는다.

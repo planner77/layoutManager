@@ -38,7 +38,15 @@ for (const renderer of ['dxf-viewer', 'three-dxf-viewer'] as const) {
     await expect(page.getByTestId('viewer-menu-outline-tool')).toBeDisabled();
     await expect(page.getByTestId('viewer-menu-outline-tree')).toBeDisabled();
     await expect(page.getByTestId('viewer-menu-outline-types')).toBeDisabled();
-    await expect(page.getByTestId('viewer-menu-memo-add')).toHaveAttribute('aria-disabled',renderer==='dxf-viewer'?'true':'false');
+    // ViewerCommandMenus omits aria-disabled for enabled commands.
+    // Verify the effective accessibility state, not a literal "false" attribute.
+    const memoCommand = page.getByTestId('viewer-menu-memo-add');
+    if (renderer === 'three-dxf-viewer') {
+      await expect(memoCommand).toBeEnabled();
+    } else {
+      await expect(memoCommand).toBeDisabled();
+      await expect(memoCommand).toHaveAttribute('aria-disabled', 'true');
+    }
     await expect(canvas).toHaveCount(1);
     expect(contentRequests).toBe(1);
 
