@@ -1,5 +1,12 @@
 # 상세 요구사항
 
+## #142 B2-4 — 격리 Restore/Rollback Byte Replay 요구사항 (2026-10-28)
+
+- FR-G7-B2-4-01: 정확 Scope/SNAP/Epoch를 가진 합성 `source/candidate/rollback` SQLite·Local CAD·S3 Export·Marker의 Byte Buffer 검증, 객체 개수/DB Version·Locator/S3 claimed VersionId 일대일 일치, Local·S3 백엔드 모두 포함, 수정/누락/중복/초과 바이트 fail closed. 복귀 DB는 Source SQLite 바이트와 `Buffer.equals` 일치 필수, Candidate는 7번째 Auth 후보가 적용된 CAD 보존·Auth/Audit 불변식을 기존 B2-3 검증기로 확인.
+- FR-G7-B2-4-02: 원본 App/Migrator 및 Rollback App/Migrator 4-role OCI locally digest-pinned manifest/config, Source/Version/Schema/Role/플랫폼 계약은 기존 B2-1 검사기로 비교. 태그만 있는 ref/역할 누락/잘못된 rollback schema/상반된 claim은 `OFFLINE_OCI_PAIR_BLOCKED`. Real Registry/Signer/실행/호환성 입증 `rollbackCompatible:false`.
+- FR-G7-B2-4-03: 임의 파일경로·실 CAD·DB/S3/OCI I/O, Writer stop, 온라인 backup, 운영 Prisma Migration/Restore·Rollback/OCI Pull/Compose/Nginx/실 RTO/RPO 측정 불허. 동일 `SNAP-*`는 주장형으로만 취급하여 `sameSnapshotRestored:false`, `restoreExecuted:false`, `rollbackExecuted:false`, `operationalGo:false`. #142/#109/#96 OPEN/BLOCKED.
+- NFR-G7-B2-4-01: 명시 15개 파일과 정확 `G7-S3-4B2-4-NO-GHCR` Squash 제목만 publish=false, 운영 Prisma/배포/서비스 변경은 예외 불허. 합성 테스트 완료 후 최신 PR HEAD Codex 리뷰/CI 게이트, Owner 별도 승인 전 병합·GHCR 금지.
+
 ## #142 B2-3 P2 — Audit 행 보존 강제 요구 (2026-10-28)
 
 - FR-G7-B2-3-06: Audit append-only 검사에서 UPDATE/DELETE 예외가 각각 발생하는지뿐 아니라 전체 `AuditEvent` Row가 변경 전과 동일한지 **각 시도 직후** 확인한다. 이미 변경된 행/삭제된 행/다른 행 부수 변경이 있으면 `AUDIT_NOT_APPEND_ONLY/BLOCKED`, `auditAppendOnlyChecked=false`.

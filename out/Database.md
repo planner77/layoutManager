@@ -1,5 +1,10 @@
 # Database Schema — 단일 기준 문서
 
+## #142 B2-4 — 합성 SQLite 복원 바이트 기준 및 Auth Candidate 분리 (2026-10-28)
+
+- Source/rollback은 CAD 6 Migration baseline SQLite Buffer, candidate는 격리된 G7 Auth 7번째 SQL 적용 Buffer라는 합성 세 단계. Rollback SQLite는 `Buffer.equals(source.sqliteBytes)` **전체 바이트** 일치 필수. 로컬/S3-export 오브젝트 Buffer도 DB Version/Locator/S3 VersionId claim(신뢰되지 않음)별 Source·Candidate·Rollback 모두 바이트 일치, 누락·중복/변조 차단.
+- 후보 SQLite는 기존 B2-3의 QuickCheck·FK·CAD hierarchy/Current/nextVersion/SHA·8 Auth Tables/Audit Event append-only(예외 + 실제 Row 불변) 검사 재사용. 실제 WAL-consistent SQLite online backup, 현장 Schema rollback, OCI 이전 이미지 호환성, ORM/운영 Prisma Migration·데이터 변경은 검증 또는 실행하지 않음.
+
 ## #142 B2-3 — Audit AFTER Trigger 예외와 실제 행 불변식 분리 (2026-10-28)
 
 - 격리 Auth 후보 `AuditEvent`는 `g1_audit_no_update`, `g1_audit_no_delete` Trigger가 실제 행 UPDATE/DELETE를 허용하지 않아야 한다. **예외 발생 자체는 불변식 증명이 아님.** SQLite `RAISE(FAIL)`이 AFTER Trigger에서 발생해도 변경·삭제가 남을 수 있으므로 메모리 Clone의 `SELECT * ORDER BY id` 전체 Audit Row를 매 시도 직후 최초 Snapshot과 비교한다.

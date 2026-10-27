@@ -1,5 +1,10 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-052-G7-B2-4 — 합성 Byte Replay와 실제 Restore/Rollback 실행 분리 (2026-10-28)
+
+- **결정:** B2-2B 현장 Source 증거/Owner 승인이 없는 동안 B2-4는 네트워크·파일/DB 경로·OCI 실행 없는 supplied-buffer verifier로 제한한다. B2-1의 4가지 immutable OCI image-label/manifest local consistency, B2-3의 CAD+Auth 7th migration byte audit invariant checker를 재사용하고, Source→Candidate→Rollback 동일 SNAP/Epoch/S3 marker, Local/S3 exports 및 rollback SQLite의 byte-perfect 일치를 별도로 검사한다.
+- **거절:** 합성 리플레이가 `sameSnapshotRestored`/`rollbackCompatible`/`restoreExecuted`/`rollbackExecuted` 또는 Source 인증을 true로 바꾸는 일. 출처/실 App·Migrator 실행/실 Restore·Rollback/RTO·RPO/Owner GO는 별도 Private Evidence 및 B2-5/S3-4-C/S3-5 승인. 새 코드의 양성은 `DISPOSABLE_REPLAY_MATCH_NOT_SITE_PROOF`이며 운영 기능 변경 없음.
+
 ## #142 B2-3 P2 결정 — Audit 변경 불가 입증은 예외와 Row 보존이 모두 필요 (2026-10-28)
 
 - **Decision:** Audit append-only 시험에서 SQL Exception 2건만으로 통과시키지 않고, **동일한 메모리 복제본**의 전체 `AuditEvent` 최초 Row Snapshot이 UPDATE 시도 뒤에도 같고 DELETE 시도 뒤에도 같은지를 함께 검증한다. `RAISE(FAIL)`은 BEFORE/ABORT와 달리 AFTER Trigger에서 이미 수행한 행 변경을 되돌리지 않을 수 있다. 실패 시 `AUDIT_NOT_APPEND_ONLY`로 fail closed.
