@@ -1,5 +1,13 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issue #85 — M4-A 단일 브랜치 세션 Memo Tree 구현 후보 (2026-10-28)
+
+- 구현 후보: src/domain/memo-tree.ts, src/features/cad-viewer/cad-memo-tree-panel.tsx, Viewer menu/reducer/shell/overlay, TypeScript/Vitest/Chromium 테스트 코드. 한 도면 WCS MemoSession 이외 DB/API·Auth·Prisma·GHCR/운영 파일 변경 0.
+- **테스트 상태:** 신규 Unit/Playwright 코드는 작성되었지만 실제 실행 전 NOT RUN. 이전 #82 CI 성공은 변경된 최신 #85 HEAD의 합격 근거가 아님. PR 생성·CI 실행 및 결과가 실제로 확인된 뒤 SHA/Run/Job에 기록한다.
+- **Acceptance:** #85 M4-AC1/3/4는 PARTIAL (#83 서버 계층/Reader, #138 DnD/native 현장), M4-AC2 자동화 회귀 후보, M4-AC5 BLOCKED by #83/#96/#109. Issue #85를 완료 처리하거나 독립 QA PASS를 허위 기재하지 않는다.
+- User 요청 batch GHCR 1회/일괄 종료는 선행·수용 게이트 이후로 보류. Owner Managed는 실제 증거 기반 검토 정책.
+
+
 ## #82 PR #111 — Mobile Drawer E2E 실패, 새 검증 필요 (2026-10-28)
 
 - [PR CI #40583276569](https://github.com/planner77/layoutManager/actions/runs/40583276569), attempt 1, HEAD `53b6909caaad4721c9050a6d26ec1da940176b05`: Verify [Job 122468046935](https://github.com/planner77/layoutManager/actions/runs/40583276569/job/122468046935) Chromium E2E 92건 중 **91 PASS/1 FAIL**, Legacy Migration E2E SKIPPED, Typecheck/Lint/Unit·Integration/OCI/DXF benchmark/Build SUCCESS. Docker/Migration/Runtime Smoke [Job 122468046482](https://github.com/planner77/layoutManager/actions/runs/40583276569/job/122468046482) SUCCESS. [Trace Artifact #12770224877](https://github.com/planner77/layoutManager/actions/runs/40583276569/artifacts/12770224877).
