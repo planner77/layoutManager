@@ -14,7 +14,7 @@ function fixture(): S34Packet {
       ...(key.includes('SNAPSHOT') || key.includes('RESTORE') ||
         key === 'CAD_LOCAL_RESTORE_SHA' || key === 'S3_OBJECT_RESTORE_SHA'
         ? { snapshotId } : {}),
-    }]));
+    }])) as S34Packet['checks'];
   return {
     schemaVersion: 1, scope: 'G7_S3_4_READINESS',
     capability: G7_S3_CAPABILITY, schemaId: G7_S3_SCHEMA_ID,
@@ -91,6 +91,30 @@ describe('#109 S3-4-A offline release evidence, no operating GO', () => {
         ...base.checks.REGISTRY_APP_DIGEST!,testedAtUtc:'2026-02-31T00:00:00Z'}}},
     ]) {
       expect(assessS34Readiness(pkt).state).toBe('BLOCKED');
+    }
+  });
+});
+
+import { loadPrivateS34Packet } from '../../scripts/g7-s3-4-readiness';
+import { chmodSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+
+describe('#109 S3-4-A private file boundary', () => {
+  test('only UID-owned private absolute evidence outside the repo is loaded', () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 's3-4-private-'));
+    const file = path.join(dir, 'operator.json');
+    try {
+      writeFileSync(file, JSON.stringify(fixture()), {mode: 0o600});
+      expect(assessS34Readiness(loadPrivateS34Packet(file)).state)
+        .toBe('EVIDENCE_PACKET_COMPLETE_NOT_GO');
+      chmodSync(file, 0o644);
+      expect(() => loadPrivateS34Packet(file)).toThrow('G7_S3_4_PRIVATE_FILE_DENIED');
+      chmodSync(file, 0o600);
+      expect(() => loadPrivateS34Packet('relative/operator.json'))
+        .toThrow('G7_S3_4_PRIVATE_ABSOLUTE_PATH_REQUIRED');
+    } finally {
+      rmSync(dir, {recursive:true,force:true});
     }
   });
 });
