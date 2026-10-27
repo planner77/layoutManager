@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { prepareG7CadWrite } from '../../server/g7-operational/cad-guard';
-import { requireG7S3CadStorageAlignment } from '../../server/g7-operational/cad-preview-context';
+import { requireG7S3CadStorageAlignment } from '../../server/g7-operational/cad-preview-storage';
 import { CadStorage } from '../../server/storage/cad-storage';
 import { ConfiguredCadStorage } from '../../server/storage/configured-storage';
 import { mkdtempSync, rmSync } from 'node:fs';
