@@ -22,6 +22,22 @@
 - **후속:** S3-3 기존 CAD 쓰기/DELETE Auth+Audit 단일 업무 트랜잭션 및 S3-4 release/rollback/OCI 검증, S3-5 운영 GO는 미실행; 이슈 #109/#96 OPEN/BLOCKED 유지.
 
 
+## U-ISSUE57-PR134-20261027 — 최초 CI Docker 실패와 수정 후보
+
+- 검증된 최초 PR HEAD `1a5c26526dc3ba90f12aa7e6f5f150a039180933`, [Run 40418875931](https://github.com/planner77/layoutManager/actions/runs/40418875931) attempt 1. Verify Job `121907950137`는 Typecheck/Lint/Unit·Integration/Build/E2E/Legacy **success**, Docker Job `121907948037`는 Compose fresh/health·migration Step 16 **failure**.
+- Docker migrate 로그: `ERR_MODULE_NOT_FOUND` for `/app/src/server/upload-error-catalog` imported by `/app/src/server/logger.ts`, 이후 backfill exit 1. 기존 초기 이슈 분석의 정적 위험과 달리 **실제 관측 CI 실패**이며 Reviewer P1 `r4383549858`와 원인이 일치한다. [FailureLedger](FailureLedger.md).
+- 보완: 축소 Migrator에 Logger 의존 Catalog COPY, 독립 `node --import tsx` 로드 테스트, PR CI packaged-file/import smoke, TC-LOG-MIG-001 Unit. 새 HEAD는 수행 결과 미확인(`NOT VERIFIED`); 로컬 Unit/Typecheck/E2E/Docker 및 실제 LAN·CAD/S3/운영 적용 `NOT RUN`. 메인 병합·GHCR 게시 없음.
+
+
+
+## U-ISSUE57-L1-20261027 — app Logger 단일화 (실행 전 기준선)
+
+- **구현 후보:** 기존 `server/logger.ts` schema v1/allowlist·category 재정제·Health 200 debug-only, `server/upload-observability.ts` 별도 emitter 제거, `server/upload-error-catalog.ts` 기존 안전 error catalog 공유, TC-L1-001~004 및 CLI raw Error suppression. 설계/발생 위치/AC는 [Issue57](Issue57.md)·[TestPlan](TestPlan.md) 기준.
+- **로컬 수행 근거:** connector 기반 원격 변경으로 로컬 npm 설치/Typecheck/ESLint/Vitest/Build/Playwright/Docker smoke를 실행하지 않음: 각각 `NOT RUN`. 실제 운영 CAD/GPU/S3, Windows Nginx·사내 PC 2대 연결, DB 복구: `NOT RUN`.
+- **CI 상태:** PR CI 시작은 실제 Run 등록/이벤트 trigger로만 판단하며 성공/실패는 최신 HEAD/Run·Job을 확인하기 전까지 `NOT VERIFIED`. 기존 #18/다른 PR CI 성공 기록을 신규 HEAD의 PASS로 재사용하지 않는다.
+- **영향 범위:** 기존 JSON 응답·`X-Request-Id`·마이그레이션/Viewer/G7 인증 활성화 코드 변경 없음; 코드 범위상 DB migration은 포함하지 않는다. 운영 실측 및 regression PASS는 별도 증거 확보 전 주장하지 않는다.
+
+
 ## U-ISSUES124-126-127-20261027 — 0.42.0 구현·CI·GHCR 게시·이슈 종료 완료
 
 - **완료 판정:** Manager 로컬 구현 수용 후 Root가 최신 HEAD의 CI·리뷰/충돌·태그를 확인해 [PR #132](https://github.com/planner77/layoutManager/pull/132)을 Squash 병합했다. main source `f2c04bf6e3e0092bf44aba2618b7561a550e7540`, 태그 `v0.42.0`의 annotated target도 동일하다. [#124](https://github.com/planner77/layoutManager/issues/124), [#126](https://github.com/planner77/layoutManager/issues/126), [#127](https://github.com/planner77/layoutManager/issues/127)에 결과 댓글을 남기고 `closed/completed`를 재조회 확인했다. 이전 진행 중·실패 기록은 아래 당시 관측으로 보존한다.

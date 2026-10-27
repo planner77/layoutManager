@@ -8,6 +8,13 @@
 - **GHCR 예외:** 정확한 추후 squash 제목 `#109 | S3-2 Operational Auth/Admin API [G7-S3-2-NO-GHCR]` 및 23개 정확한 S3-2 파일만 제외, 예상 밖 활성 Migration/기존 CAD/Compose/runtime 파일은 CI fail-closed. 기존 S1/S2/S3-1 예외·일반 runtime/tag 게시 정책 불변, 이번 브랜치 CI까지만 진행.
 
 
+## ADR-054 — #57 공통 Logger Schema v1/Emitter 단일화 (2026-10-27)
+
+- **결정:** 기존 #18 `writeLog/RequestLogContext`를 앱이 소유한 JSON 로그의 단일 emitter로 유지하고 업로드별 별도 console 출력을 제거한다. 업로드 오류의 안전한 code/category/message는 공통 정적 Catalog에서 **재정제**, 임의 값/stack/내부 path·Locator/bytes·메타데이터 override 차단.
+- **계약:** `timestamp/schemaVersion:1/level/event/component/operation/appVersion` 필수; `requestId/jobId/outcome/elapsedMs/httpStatus/errorCode` 선택, 확장은 `method/route/stage/backend/recoveryId/status/jobCount/error`로 제한. 공개 업로드 DTO·X-Request-Id·first failure 보존; 성공 Health 200만 debug, 다른 API 시작·종료 info 유지.
+- **향후:** Breaking 필드 타입·의미 변경 시 별도 Schema version. Next/Nginx/브라우저/운영자 CLI는 app emitter 밖. 영속 저장/조회/권한·G7 운영 Auth는 #59~#63과 승인 게이트 이전 OFF. 상세 [Issue57](Issue57.md).
+
+
 ## ADR-053 — 홈 sticky·Three 단발 복구·Viewer overlay Drawer (2026-10-26)
 
 [Issues124-126-127](Issues124-126-127.md)의 Manager 설계를 채택한다. 기존 색/글꼴/업무 동작을 유지하고 홈 한정 density를 축소한다. Three 실제 로드 실패에만 dxf 자동 대체 최대 1회, source/abort는 제외. 정상 대형 실측이 없어 자동 timeout/MB 임계값은 도입하지 않고 loading 중 명시 중단·대체를 제공한다. Adapter copy 때문에 peak memory/OOM 복구 보장은 하지 않는다. #38의 공간 점유 dock을 가장자리 overlay Drawer로 대체하고 상태·Canvas·Source 수명은 유지한다. 생성 OFF 정책 ADR-036 및 한 Escape 한 계층 ADR-033을 유지·확장한다. 운영 Auth/DB/API 활성화 없음.

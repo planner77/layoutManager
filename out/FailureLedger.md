@@ -28,6 +28,24 @@
 - **추적 방법:** CI 실패 발생 시 Run ID·Attempt·Job·Step·HEAD·실제 로그 경로/원인/조치/재시도 정보를 다음 섹션에 누적 기록, 취소 Job 보존. **아직 원인 없는 실패를 만들어 기록하지 않는다.** #109/#96 운영 BLOCKED/실 데이터·GHCR 변경 없음.
 
 
+## Issue #57 / PR #134 — Run 40418875931 실패 및 P1 Migrator 의존성 복구 (2026-10-27 KST)
+
+- **실제 CI 실패:** [PR CI #40418875931](https://github.com/planner77/layoutManager/actions/runs/40418875931), attempt **1**, `pull_request`, HEAD `1a5c26526dc3ba90f12aa7e6f5f150a039180933`, `completed/failure`. Verify [Job 121907950137](https://github.com/planner77/layoutManager/actions/runs/40418875931/job/121907950137)는 Typecheck/ESLint/Unit·Integration/Build/Chromium E2E/Legacy 등 **success**, Docker [Job 121907948037](https://github.com/planner77/layoutManager/actions/runs/40418875931/job/121907948037)은 `Compose fresh install, static assets, health and idempotent migration` **step 16 failure**. 앞의 쓰기금지·의도적 잘못된 SQL 거부 테스트는 성공이며 원인으로 분류하지 않는다.
+- **로그 근거:** Docker diagnostics에 `migrate-1 | Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/app/src/server/upload-error-catalog' imported from /app/src/server/logger.ts`; 이어서 `backfill exited 1`. `scripts/deploy.ts`의 Prisma migration 후 `scripts/backfill-delete-passwords.ts`의 Logger 초기 import에서 중단; Compose `service_completed_successfully` 미충족으로 앱 기동 실패. DB Schema/업로드 DTO/Viewer/Unit 결함이나 GHCR 게시 실패가 아님.
+- **P1 리뷰:** [Codex review r4383549858](https://github.com/planner77/layoutManager/pull/134#discussion_r4383549858)는 Logger 신규 Catalog 직접 import와 Docker Migrator 명시적 COPY 누락을 독립 지적(초기 unresolved). 실제 Docker 실패와 동일 root cause.
+- **수정:** `src/Dockerfile` Migrator에 `server/upload-error-catalog.ts` 1개 COPY, build에서 `node --import tsx`의 Logger read-only import preflight, `.github/workflows/pr-ci.yml` image 필수 파일/실제 logger import smoke, `src/tests/unit/standalone.test.ts` `TC-LOG-MIG-001`(상대 import→COPY closure) 추가. Full server/Next/테스트 복사, Docker 권한/DB migration/G7 Auth 활성화 없음.
+- **재검증 추적:** 소스·검사 추가는 수정 HEAD CI 통과의 증거가 아니다. 이 세트의 로컬 Docker/Unit/E2E `NOT RUN`; 새 HEAD PR CI는 동기화로 **시작 요청**하되 결과 모니터링 생략, 완료 상태 `NOT VERIFIED`. 이전 HEAD의 Verify 성공도 수정 HEAD에 소급하지 않는다. Review reply/resolve, 최신 Main 비교는 별도 GitHub 기록으로 추적.
+
+
+
+## Issue #57 — L1 정적 리뷰 위험·해결 기록 (2026-10-27)
+
+- **관측 분류:** 신규 PR/CI Job 실패 또는 취소 0건(이 항목 작성 시 PR CI 시작 전으로, 성공/실패 판단 불가). 아래는 **정적 코드 검토에서 확인한 결함/누출 위험**이며 CI 실패나 실제 보안 사고로 분류하지 않는다. 과거 다른 이슈의 CI 실패 원장은 그대로 보존.
+- **원인 A/보완:** `src/server/upload-observability.ts`가 자체 `console.log/warn/error(JSON.stringify)`를 수행해 기존 공통 로거의 `LOG_LEVEL=warn`/LOG_FORMAT·필드 제한과 동기화되지 않았다. 기존 `writeLog` 재사용, 안전한 error catalog 공용화, Schema v1/단계·firstFailure·동일 requestId 보존, TC-L1-001/002/006 추가.
+- **원인 B/보완:** `src/server/logger.ts`는 caller가 준 예상 밖 확장 필드를 직렬화해 user path/Locator/data가 stdout/stderr로 유출될 수 있었고 metadata override를 허용했다. emitter 허용 필드만 노출, route 템플릿으로 동적 세그먼트 제거, raw error/cause/stack/message를 안전 code·category로 재정제, schema metadata 덮어쓰기 차단. `src/scripts/{run,g5-preview-smoke,measure-ghcr-pair}.mjs`의 원시 Error 메시지 출력도 고정 텍스트로 교정. TC-L1-002/005/006.
+- **검증 경계:** 이 항목은 정적 근거·보완 완료의 기록이지 실행 확인이 아니다. 타입 검사/ESLint/Vitest/Build/E2E/Docker/실 운영 및 PR CI Job 결과는 **NOT RUN/NOT VERIFIED**; 신규 PR 작성 시 검토 스레드/mergeability·trigger만 별도로 기록한다. 실패 발생 시 run/attempt/job/step/HEAD·원인/재시도 이력을 추가한다.
+
+
 ## Issues #124/#126/#127 / PR #132 — 최종 해결·게시 증거 확정 (2026-10-27 KST)
 
 - 아래 keyboard 85/86, DWG 2/4 및 초기 로컬 실패·중단 기록을 모두 보존한다. keyboard 최소 수정 후 독립 86/86, DWG 보완 후 독립 Unit20/DWG4/focused13 PASS로 원인을 검증했다. 최신 HEAD `5b3b717`의 [PR CI 40352404675](https://github.com/planner77/layoutManager/actions/runs/40352404675) Verify121675709873·Docker121675710616 success, 실제 전체 Unit352/E2E86/legacy1 PASS. 이전 fd9 Run40349738685 success는 별도 HEAD 근거이다.
