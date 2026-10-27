@@ -1,5 +1,10 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-051-G7-B2-2B — 합성 Byte Consistency와 실제 Source Provenance 분리 (2026-10-27)
+
+- **Decision:** B2-2A 주장형 패킷 이후에는 read-only 메모리 SQLite와 별도 제공된 합성 CAD/S3 export/marker Buffer를 교차 비교해 바이트 변경·누락·객체 매핑·FK/Current 불일치를 탐지한다. 실 서비스 Writer/Network/Filesystem Path를 받는 자동 실행기보다 `Buffer-only` 안전 경계를 우선하며, 운영 경로에 연결하지 않는다.
+- **Trade-off/Owner gate:** 바이트 Bundle와 private mapping·S3 VersionId claim도 위조될 수 있으므로 긍정은 `DISPOSABLE_BYTES_CONSISTENT_NOT_SITE_PROOF`, `writerQuiescenceVerified/sameSnapshotVerified/sourceObjectVersionsVerified/operationalGo=false`. 사내 Change/Owner 승인·독립 Reviewer·authoritative Source GET/Writer trace/EV·QA·SNAP 증거는 별도. `DESIGN.md` 부재로 Architecture/Decisions/Database/Operation을 설계 기준으로 사용.
+
 ## #142 B2-2A — Writer Freeze 주장과 실제 검증 분리 (2026-10-27)
 
 - **Decision:** Main 선행 Gate 완료 후, 먼저 100% fail-closed인 순수 `SNAP-*` writer-barrier/DB-CAD-S3 inventory 계약과 음성 검증을 만든다. 단일 Epoch/시간/Local+버전 S3 marker·Hash·Current/Version·FK/Audit *자료 불일치*는 BLOCKED.

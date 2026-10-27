@@ -1,5 +1,10 @@
 # Database Schema — 단일 기준 문서
 
+## #142 B2-2B — 격리 SQLite Buffer 검사, 운영 Schema 불변 (2026-10-27)
+
+- B2-2A의 FK/QuickCheck/Current/Audit=0은 주장이다. B2-2B는 합성 `CAD_BASELINE` SQLite Buffer를 메모리에서만 열어 실제 `PRAGMA quick_check`·`foreign_key_check`, `CadLocation(id,current_version_id,next_version)`, `CadFileVersion(id,location_id,version,file_size,sha256,storage_path,file_format)` 전체 결과를 opaque V/L-key ↔ disposable UUID map과 대조한다. 재조회 pathname·DB Write/SQL DDL/운영 WAL 접근 없음.
+- Auth 후보 Table이 존재하면 본 B2-2B baseline 단계는 BLOCKED. 후보 7번째 Migration과 append-only Audit Trigger의 독립 실제 검증은 B2-3. `src/prisma/schema.prisma`·활성 `src/prisma/migrations/**`·`src/scripts/deploy.ts`와 운영 CAD Version/Current 변경 없음.
+
 ## #142 B2-2A — 원본 DB 데이터·스키마 불변 (2026-10-27)
 
 - 오프라인 패킷 검증은 별도 SQLite 연결이나 운영 DB Read를 실행하지 않으며, 임의의 FK=0/Current 정합성/Audit 정합성 **주장**을 검사할 뿐 진짜 SQLite의 무결성을 보증하지 않음. `src/prisma/migrations/**`, 운영 G7 7번째 격리 SQL, Auth Schema, `src/scripts/deploy.ts` 불변.

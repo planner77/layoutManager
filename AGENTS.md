@@ -1,5 +1,11 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #142 S3-4-B2-2B — 격리 Byte 대조 사전 검증 (2026-10-27 KST)
+
+- **선행:** #142 B2-2A [PR #144](https://github.com/planner77/layoutManager/pull/144) no-GHCR Squash Main `e043d56d43099034906cccf0bb1cc1c7a76bb11f`, [Main CI #40496032085](https://github.com/planner77/layoutManager/actions/runs/40496032085) SUCCESS, release-scope SUCCESS/GHCR Job SKIPPED. 별도 `DESIGN.md` 없음 → Architecture/Decisions/Database/Operation이 설계 기준.
+- **B2-2B 구현:** `inspectS34B22BDisposableBytes(packet,bundle)`는 B2-2A의 `SNAP-*`/epoch/zero-writer **주장형** 계약이 통과한 경우에 한해, 별도로 제공된 **합성 SQLite Buffer**의 SHA·quick_check·FK·DB Version/Current/nextVersion과 Local CAD·S3 export/marker Buffer SHA·길이·private mapping·locator를 대조한다. 임의 File 경로/S3/실 Site/Writer 정지/online backup·active migration·shell 실행 없음. 긍정 상태도 `DISPOSABLE_BYTES_CONSISTENT_NOT_SITE_PROOF`이고 실제 출처·Owner GO flags false.
+- **실제 현장 수용은 별도 Owner 승인 전 불가:** 독립 Reviewer, zero-writer Source Epoch·원본 SQLite online backup·Local CAD/S3 authoritative versioned HEAD/GET/marker·사내 EV/QA/SNAP 증거가 없으므로 현장 B2-2B는 `NOT RUN/BLOCKED`. [B2-2B Runbook](src/deploy/g7-s3/S3-4-B2-2B.md) 필수 참조. 운영 Auth/CAD Write·GHCR/Compose/Nginx/Prisma 활성화 금지, #142/#109/#96 OPEN/BLOCKED. 새 PR CI 성공은 실제 관측 전 `NOT VERIFIED`.
+
 ## Issue #142 / PR #144 — 실패한 TypeScript Fixture Typecheck 보완 (2026-10-27 KST)
 
 - [PR CI #40492242157](https://github.com/planner77/layoutManager/actions/runs/40492242157) HEAD `808f7b4`, attempt=1 **FAILURE**: Verify Job 122148776521의 `tsc --noEmit`에서 [B2-2A synthetic Unit](src/tests/unit/g7-s3-4-b2-capture.test.ts) 83·88·96행 `TS2339` 3건. Local `v1`에는 `storageVersionId`가 없고 S3 `v2`에만 있어 일반 배열의 Union Type에서는 `versions[1]` 속성을 보장할 수 없음. Docker/Migration Job 122148776302는 SUCCESS, Typecheck 이후 검사들은 SKIPPED(미검증).
@@ -667,6 +673,7 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 | [S3-4-B1 Runbook](src/deploy/g7-s3/S3-4-B.md) | #109 G7 격리 복원본의 UID/0700·0600·SQLite 메모리 복제/Version·Current/FK·CAD/S3-export SHA 검증, Snapshot 한계·B2 실제 OCI/복구/롤백 승인 경계 | S3-4-B1/B2 복제본 검사·실복구 계획·Snapshot/Schema/rollback 검토, 구현·리뷰·회귀 테스트·운영 Go/No-Go 전 반드시 참조 |
 | [S3-4-B2 Runbook](src/deploy/g7-s3/S3-4-B2.md) | #142 OCI 4개 App/Migrator/rollback raw bytes SHA·Source/Schema/Role 검증의 비인가 경계, 실제 Registry/동일 Snapshot/7 Migration/restore/rollback 후속 게이트 | S3-4-B2-1~B2-5 OCI 검증·복구 설계/코드/리뷰/테스트 및 S3-4-C 신뢰 바인딩·Owner GO 이전 반드시 참조 |
 | [S3-4-B2-2 Runbook](src/deploy/g7-s3/S3-4-B2-2.md) | #142 단일 Snapshot writer barrier 주장 패킷의 순수 시간·Source Epoch·Version/Current·Local CAD/버전 S3 인벤토리 검사와 실제 현장 증거/신뢰 한계 | B2-2A~B2-5 기획·구현·리뷰/테스트, 현장 freeze·온라인 백업·복구/승인 판단 전 반드시 참조 |
+| [S3-4-B2-2B Runbook](src/deploy/g7-s3/S3-4-B2-2B.md) | #142 합성 격리 SQLite/CAD/S3 Buffer byte·FK·Version/Current·SNAP/Source 한계 및 현장 승인 게이트 | B2-2B 코드·리뷰/테스트, 실제 현장 Writer/Backup/Restore 승인 설계와 S3-4-C/Owner GO 전 반드시 참조 |
 | [Issue31](out/Issue31.md) | DXF 다중 선택·볼록/정밀 외곽선·실험 상태·P4 권한 보류 | Viewer 선택·외곽선/Worker/JSON 변경 시 |
 | [Issue26](out/Issue26.md) | DXF TEXT/MTEXT 색인·world 좌표 focus·검색 범위/검증 | Viewer 검색·Pan/Zoom·Worker·BLOCK/INSERT·DWG 텍스트 지원 검토 시 |
 | [Issue66](out/Issue66.md) | Migrator 최소 의존성·크기 측정/OCI manifest·복구 계약 | Docker migrator/CI/GHCR 및 버전·패키징 변경 시 |

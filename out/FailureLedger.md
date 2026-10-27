@@ -1,5 +1,11 @@
 # PR/Main CI 실패 원장
 
+## #142 B2-2B 격리 검증 착수 — 선행 Main CI 성공, 새 PR 검증 이전 (2026-10-27 KST)
+
+- **선행 성공, 실패 아님:** B2-2A [PR #144](https://github.com/planner77/layoutManager/pull/144) final HEAD `f633bc8edf39b01ddfbbc8e34127f7b2be06879f`, [PR CI #40494040763](https://github.com/planner77/layoutManager/actions/runs/40494040763) SUCCESS, Codex findings 0/미해결 thread 0, exact no-GHCR Squash Main `e043d56d43099034906cccf0bb1cc1c7a76bb11f`. [Main CI #40496032085](https://github.com/planner77/layoutManager/actions/runs/40496032085) release-scope Job 122161584540 SUCCESS, GHCR Job 122161649150 SKIPPED.
+- **새 범위(작성, 실행 성공 아님):** SQLite/Local CAD/S3 export·marker Buffer를 별도로 대조하는 합성 preflight와 positive/negative Unit, G7 Runbook/설계·운영 문서 및 정확 15-path no-GHCR release 가드. 신규 Typecheck/Unit/PR CI 결과는 Run/Job/Attempt/HEAD 관측 전 `NOT VERIFIED`. 이전 [CI #40492242157](https://github.com/planner77/layoutManager/actions/runs/40492242157) TS2339 실패와 두 P2 리뷰 기록은 아래에 보존.
+- **금지:** 실제 Writer 동결, SQLite online backup, 원본 CAD·S3 Versioned HEAD/GET 및 Registry, 7 Migration, Restore/Rollback, 운영 Auth/CAD Write/Nginx/Compose·GHCR, #142/#109/#96 종료 모두 NOT RUN/OFF.
+
 ## Issue #142 / PR #144 — Typecheck TS2339 보완 (2026-10-27 KST)
 
 - **관측 CI 실패:** [PR CI #40492242157](https://github.com/planner77/layoutManager/actions/runs/40492242157), attempt=1, SHA `808f7b40de4dd2686888b17d7f010784a6e293c6` → `completed/failure`. Typecheck/Lint/Test/Build/E2E [Job 122148776521](https://github.com/planner77/layoutManager/actions/runs/40492242157/job/122148776521)에서 TypeScript 검사 `tsc --noEmit` 3건 **TS2339** (`src/tests/unit/g7-s3-4-b2-capture.test.ts:83,88,96`); 이후 ESLint/Unit/Build/E2E는 SKIPPED이므로 PASS가 아님. Docker/Migration/Smoke [Job 122148776302](https://github.com/planner77/layoutManager/actions/runs/40492242157/job/122148776302) SUCCESS.
