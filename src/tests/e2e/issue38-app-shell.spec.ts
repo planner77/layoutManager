@@ -38,6 +38,15 @@ for (const renderer of ['dxf-viewer', 'three-dxf-viewer'] as const) {
     await expect(page.getByTestId('viewer-menu-outline-tool')).toBeDisabled();
     await expect(page.getByTestId('viewer-menu-outline-tree')).toBeDisabled();
     await expect(page.getByTestId('viewer-menu-outline-types')).toBeDisabled();
+    // ViewerCommandMenus omits aria-disabled for enabled commands.
+    // Verify the effective accessibility state, not a literal "false" attribute.
+    const memoCommand = page.getByTestId('viewer-menu-memo-add');
+    if (renderer === 'three-dxf-viewer') {
+      await expect(memoCommand).toBeEnabled();
+    } else {
+      await expect(memoCommand).toBeDisabled();
+      await expect(memoCommand).toHaveAttribute('aria-disabled', 'true');
+    }
     await expect(canvas).toHaveCount(1);
     expect(contentRequests).toBe(1);
 
@@ -114,6 +123,7 @@ test('TC-U1-E2E-002: DWG UI uses the app shell without offering DXF-only control
   await expect(page.getByTestId('viewer-menu-outline-tool')).toBeDisabled();
   await expect(page.getByTestId('viewer-menu-outline-tree')).toBeDisabled();
   await expect(page.getByTestId('viewer-menu-outline-types')).toBeDisabled();
+  await expect(page.getByTestId('viewer-menu-memo-add')).toBeDisabled();
   await openViewerMenu(page, 'view');
   await expect(page.getByRole('menuitemradio', { name: 'dxf-viewer', exact: true })).toHaveCount(0);
   await expect(page.getByRole('menuitemradio', { name: 'three-dxf-viewer', exact: true })).toHaveCount(0);
@@ -122,4 +132,40 @@ test('TC-U1-E2E-002: DWG UI uses the app shell without offering DXF-only control
   await expect(page.getByRole('menuitem', { name: '원본 다운로드' })).toBeVisible();
   await expect(page.getByRole('menuitem', { name: '버전 목록' })).toBeVisible();
   await expect(page.getByRole('status')).toContainText('실패');
+});
+
+test('TC-M1-E2E-006: free-WCS memo remains available when DXF Source handles are unstable', async ({ page, request }) => {
+  const created = await request.post('/api/cad-files', {
+    multipart: {
+      file: { name: 'issue82-unmapped-source.dxf', mimeType: 'application/octet-stream', buffer: drawing },
+      ...(await masterFields(request, { businessUnit: 'Issue82-Unmapped-Source', site: 'memo', building: 'B', floor: '1' })),
+      registeredAt: '2026-10-25', makeCurrent: 'true', deletePassword: '1234',
+    },
+  });
+  expect(created.status()).toBe(201);
+  const version = (await created.json()) as { id: string };
+  await page.goto(`/cad/versions/${version.id}/viewer?renderer=three-dxf-viewer`);
+  await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
+  await openViewerMenu(page,'work');
+  await expect(page.getByTestId('viewer-menu-outline-tool')).toBeDisabled();
+  await expect(page.getByTestId('viewer-menu-memo-add')).toBeEnabled();
+  await expect(page.getByTestId('viewer-tools-dock')).toHaveCount(0);
+  await clickViewerTestCommand(page,'viewer-menu-memo-add');
+  await expect(page.getByTestId('viewer-tools-dock')).toBeVisible();
+  await expect(page.getByTestId('cad-object-selection-tools')).toHaveCount(0);
+  await page.getByTestId('cad-memo-title').fill('핸들 없는 DXF 메모');
+  await page.getByTestId('cad-memo-content').fill('SOURCE 선택 없이 WCS 배치');
+  await page.getByTestId('cad-memo-x').fill('10');
+  await page.getByTestId('cad-memo-y').fill('20');
+  await page.getByTestId('cad-memo-coordinate-place').click();
+  await page.getByTestId('cad-memo-create').click();
+  const pin = page.getByTestId('cad-memo-pin');
+  await expect(pin).toHaveCount(1);
+  await expect(pin).toHaveAttribute('data-memo-wcs-x','10');
+  await expect(pin).toHaveAttribute('data-memo-wcs-y','20');
+  await expect(page.getByTestId('cad-memo-status')).toContainText('1/100');
+  await clickViewerCommand(page,'view','확대');
+  await clickViewerCommand(page,'view','화면 맞춤');
+  await expect(pin).toHaveAttribute('data-memo-wcs-x','10');
+  await expect(pin).toHaveAttribute('data-memo-wcs-y','20');
 });

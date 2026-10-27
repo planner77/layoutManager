@@ -1,5 +1,19 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## #82 PR #111 — Mobile Drawer E2E 실패, 새 검증 필요 (2026-10-28)
+
+- [PR CI #40583276569](https://github.com/planner77/layoutManager/actions/runs/40583276569), attempt 1, HEAD `53b6909caaad4721c9050a6d26ec1da940176b05`: Verify [Job 122468046935](https://github.com/planner77/layoutManager/actions/runs/40583276569/job/122468046935) Chromium E2E 92건 중 **91 PASS/1 FAIL**, Legacy Migration E2E SKIPPED, Typecheck/Lint/Unit·Integration/OCI/DXF benchmark/Build SUCCESS. Docker/Migration/Runtime Smoke [Job 122468046482](https://github.com/planner77/layoutManager/actions/runs/40583276569/job/122468046482) SUCCESS. [Trace Artifact #12770224877](https://github.com/planner77/layoutManager/actions/runs/40583276569/artifacts/12770224877).
+- **분석:** `TC-M1-E2E-001` `src/tests/e2e/issue82-cad-memo.spec.ts:72`에서 viewport 390px 전환 직후 `clickViewerCommand(page,'view','화면 맞춤')`이 `viewer-menu-helper.ts:25`의 trigger click에서 30초 timeout. Playwright는 상단 `보기` 버튼 자체가 visible/enabled/stable이지만 **`cad-viewer-shell`이 pointer events를 intercept**했다고 보고. #127 모바일 Drawer의 modal 전환 시 `header.inert=true`는 정상; helper의 일회성 `isVisible()` 판정이 React `matchMedia`의 비동기 state 갱신보다 먼저 실행된 테스트 동기화 race. WCS/원본/Renderer/운영 장애의 증거는 아님.
+- **수정:** E2E만 수정: 390px 설정 이후 `viewer-tools-dock[role=dialog]` 출현·`header.inert=true` 확인 → 모달의 실제 `도구 닫기` 버튼 클릭 → Drawer 사라짐·`header.inert=false` 확인 → `보기 > 화면 맞춤` 실행. 이후 PIN WCS(10,20)→명시적 (13,15) 이동과 텍스트 편집/좌표 불변을 그대로 검증. `force click` 및 단순 Timeout 증가 금지. Viewer/Adapter/CAD·DB·API·Prisma/G7 및 package/lock 0.43.0은 변경하지 않음. #138 Movable Panel은 별도 미구현. 수정 HEAD PR CI PASS는 새 Run 완료 전 **NOT VERIFIED**, GHCR/병합/Main CI/Issue 종료·실 CAD/GPU 현장 시험은 미실행.
+- 이전 HEAD/CI 결과와 신규 코드의 검증 상태를 구분. 실제 현장 CAD/GPU·M2 서버 영속 및 운영 G7 GO는 NOT RUN.
+
+
+## Issue #82 — v0.43.0 신규 GHCR Pair 버전 정렬 / 재검증 대기 (2026-10-28)
+
+- 원 HEAD `4a4a8ffbb85340efef90b88546cc64815fdd4aa3`의 [PR CI 40580691233](https://github.com/planner77/layoutManager/actions/runs/40580691233) **completed/success**, Verify Job 122458944225 전체 Typecheck/Lint/Unit/E2E/Legacy 성공, Docker Job 122458943642 SUCCESS, 리뷰 2/2 Resolved, Main behind=0, mergeable=clean. 기존 실패 Run 40512645193의 91/92 E2E 및 교정 증거는 [FailureLedger](FailureLedger.md)에 유지.
+- `v0.42.1` 기존 태그 `23d7b74132dc56073656002750eeea550875e1a7` 확인(annotated object points to `dc82e670...`); 신규 UI에 기존 Version/tag/pair 재사용하지 않도록 `0.43.0` 앱/lock 메타데이터 정렬. `v0.43.0` ref 미존재는 조회 당시 사실이며 GHCR 신규 이미지 출판 증거는 아님.
+- 수정 후 HEAD PR CI/최신 리뷰/정식 Main CI/GHCR Pair 및 실제 현장 WCS·GPU·DB/S3는 **NOT VERIFIED/NOT RUN**. Github CI 성공 전 병합·GHCR 게시 성공·이슈 종료를 주장하지 않음. #83 Memo M2 및 G7 운영 OFF.
+
 ## #142 B2-3 / PR #146 — Audit's AFTER RAISE(FAIL) P2 보완·새 CI 미확인 (2026-10-28)
 
 - [PR CI #40513422160](https://github.com/planner77/layoutManager/actions/runs/40513422160) HEAD `adf0e1aba89a9a5a3b8d7c33b85f5675f4201b71`, attempt=1, `completed/success`. Verify Job 122220852265, Docker/Migration/Smoke Job 122220852790 두 건 성공. **이전 HEAD의 실행 근거**이고 새 변경의 합격 근거는 아님.
@@ -18,6 +32,12 @@
 - 선행 B2-2B PR #145 Main `d2b77dd6535503f2d980ac563cc195cc8b4c128e`, [Main CI #40506886341](https://github.com/planner77/layoutManager/actions/runs/40506886341) SUCCESS, release-scope SUCCESS/GHCR SKIPPED.
 - 신규 검증기 `assessS34B23DisposableMigration`는 합성 SQLite before/after Buffer의 전체 CAD 7 Table/Current/Version/nextVersion/FK/QuickCheck 및 Local/S3-export Bytes SHA/Size·8 Auth Table/Audit Trigger 기능 검사 코드를 **작성**. 새 Integration Test에 guarded formal Prisma 7 Migration History, seeded 6→7 SQL, 누락·변조·FK·가짜 Trigger·Transaction ABORT 음성 사례 **작성**. 실제 새 SHA의 Typecheck/Lint/Vitest/Prisma CLI/Build/E2E/PR CI 결과는 **아직 NOT VERIFIED**; 작성 사실을 PASS라고 표현하지 않는다.
 - 실 운영 Writer/SQLite Online Backup/CAD/S3 Versioned GET/OCI·복구/Rollback/Owner GO는 `NOT RUN`. 합성 `DISPOSABLE_SEVEN_SCHEMA_INVARIANTS_ONLY`가 Site Source Proof나 운영 Auth/CAD Write 수용은 아니다. #142/#109/#96 OPEN/BLOCKED. [Runbook](../src/deploy/g7-s3/S3-4-B2-3.md).
+
+## Issue #82 / PR #111 — U1 E2E aria-disabled 속성 오탐 (2026-10-28 KST)
+
+- **관측:** [Run #40512645193](https://github.com/planner77/layoutManager/actions/runs/40512645193) HEAD `89a72018403ebfca32e382e0f04511a95d1946ae`, Verify Job 122218176649 FAILURE. Typecheck/Lint/Unit·Integration/OCI/Synthetic DXF Benchmark/Production Build PASS, Chromium E2E **91/92 PASS, 1 FAIL**, Legacy Migration E2E SKIPPED. Docker/Migration/Runtime Smoke Job 122218177009 SUCCESS. Trace Artifact 12739315008.
+- **실패/보완:** `TC-U1-E2E-001` three-dxf-viewer 메모 메뉴 enabled인데 `aria-disabled=false` 속성을 요구하여 FAILED (실제 속성 없음은 정상 `ViewerCommandMenus` 계약). Test assertion만 `toBeEnabled()` / 비지원 `toBeDisabled()` 및 명시적 `aria-disabled=true`로 보완. 앱/Renderer/도메인 코드 변경 0, U1·M1 E2E 수용 기준과 #127 메뉴 그룹 정책 보존.
+- **최신 HEAD 상태:** 이 변경 직후 전체 E2E/CI는 새 Run 완료 전 **NOT VERIFIED**. 운영 서버 기능·실 CAD/GPU·#138 panel 실제 drag·Memo M2 서버 영속·GHCR 게시/PR 병합은 NOT RUN. 원본 Run/Job/분석은 [FailureLedger](FailureLedger.md) 참조.
 
 ## #142 PR #145 — 신규 P2 중복 S3 Locator 회귀 작성 / 최종 CI 전 (2026-10-27)
 
@@ -362,12 +382,42 @@
 - 참고: [Issue107](Issue107.md), [Issue102](Issue102.md), [TestPlan](TestPlan.md), [FailureLedger](FailureLedger.md).
 
 
+### PR #111 — 동시 main #99 통합 HEAD의 검증 경계 (2026-10-25)
+
+- 두 번째 CI [40198344153](https://github.com/planner77/layoutManager/actions/runs/40198344153) E2E 77/78은 #99 선행 병합 **전**의 HEAD `ac9226ff`에 대한 판정이다. #99에서 추가된 실DXF P0/P5 Evidence gate/CLI, Unit, package script를 통합한 새로운 HEAD는 Typecheck/ESLint/Vitest/Build/Chromium/Legacy/Docker 성공을 아직 확인하지 않았다.
+- ADR 중복은 #99의 **ADR-052**, #82 Memo의 **ADR-053**으로 분리. 0.41.0(app/lock)과 `verify:outline-acceptance` 보존. 실도면/GPU/Owner/P4 Auth·Memo 영속 활성화는 본 PR의 검증 결과가 아니다.
+
+
+## Issue #82 / PR #111 — 두 번째 CI: E2E 77/78 및 U1 공유 도크 기대 불일치 (2026-10-25)
+
+- [PR CI #40198344153](https://github.com/planner77/layoutManager/actions/runs/40198344153), HEAD `ac9226ff2e2c619bc009dd8bf293c3f26c22dc44`, synthetic merge `8445df4c361e469d68e161010a66869fdbb0bd75`, **completed/failure**. Verify [Job 121183959441](https://github.com/planner77/layoutManager/actions/runs/40198344153/job/121183959441): Typecheck·ESLint·Vitest (Memo Unit 6 포함)·OCI Unit·synthetic DXF Source benchmark·Production Build SUCCESS, Chromium E2E **77 PASS / 1 FAIL (78건)**, Legacy E2E SKIPPED. Docker [Job 121183959402](https://github.com/planner77/layoutManager/actions/runs/40198344153/job/121183959402) SUCCESS. trace artifact ID `12601805000`. 이 결과는 이전 HEAD 한정.
+- 실패 테스트 `src/tests/e2e/issue38-app-shell.spec.ts:58` `TC-U1-E2E-001`: 무Handle fixture의 옛 `viewer-tools-dock` 0 기대/실제 1. U3 Source 선택/Outline 도구는 fail-closed이나 #82 Memo는 독립 WCS 자유 배치 기능이므로 새로운 공유 Dock 자체는 올바르게 표시됨. 제품 코드 변경 없이 기능별 U1 기대값을 분리하고 `TC-M1-E2E-006`(무Handle DXF Memo WCS 배치) 추가.
+- 원본 U1/신규 M1 E2E를 skip하거나 기존 Source mapping 검증을 완화하지 않음. 새 수정 HEAD E2E·타 Gate는 **NOT VERIFIED**, 실 CAD/GPU/native·메모 100개 장기 성능은 **NOT RUN**. [FailureLedger](FailureLedger.md), [Issue82](Issue82.md), ADR-053. #96/#83 운영 auth/Memo CRUD 활성화 없음.
+
+
 ## Issue #102 — Owner 공격 대응 비범위 문서 정렬 (2026-10-25)
 
 - G0 #102 및 ADR-051-R1에서 보안 공격/자격증명·세션 탈취 대비 강화·침투시험은 Owner에 의해 비범위로 결정되었다. `OWNER_ACCEPTED_SCOPE`는 **정책상 위험 수용**이며 안전성/침투시험 PASS가 아니다. HTTP 비암호화 위험은 여전히 존재한다.
 - PROD 사용자 Nginx 경유 / DEV 개발 App 직접 접속 정책 및 G1~G7 기능·업무/DB 복구 운영 게이트는 유지. 본 문서 전용 변경은 운영 Auth/API/Prisma/Nginx/Docker/DB를 활성화하지 않는다.
 - **실행 상태:** 이 문서 작업 자체로 LAN E2E, 기능 E2E, Backup/Migration/Restore, Typecheck, Docker 등 새 실행 결과가 생기지 않는다. 해당 시험은 `NOT RUN` 또는 후속 증거 대기로 명시하며 기존 이력의 PASS를 새 HEAD의 PASS로 전용하지 않는다.
 - 근거: [Issue102](Issue102.md), [Issue96](Issue96.md), [ADR-051-R1](Decisions.md), [TestPlan](TestPlan.md). GitHub docs-only PR 생성/CI 시작은 PASS 및 운영 승인과 구별한다.
+
+
+## Issue #82 / PR #111 — 첫 PR CI 실패와 수정 HEAD 검증 경계 (2026-10-25)
+
+- [첫 Run 40196496297](https://github.com/planner77/layoutManager/actions/runs/40196496297) `1515eca9708258bc0f80c4480773f6d26d06aee7`, `completed/failure`: **TypeScript SUCCESS, ESLint FAILURE(2 errors/2 warnings), Docker Runtime/Migration Job SUCCESS**. ESLint 이후 Vitest/Build/E2E/Legacy **SKIPPED**. 실패 상세/미해결 리뷰는 [FailureLedger](FailureLedger.md) 참조.
+- 수정 내용: Overlay `react-hooks/refs` render 금지 제거, unused suppression 제거, E2E let→const. Review P1 `4370961641` 새 배치/기존 pin pointerdown·최근 목록의 독점 도구 전환 일원화, Review P2 `4370961642` 드래그 뒤 synthetic click/동일 memo 재선택에서 미저장 텍스트 덮어쓰기 차단. 신규 E2E `TC-M1-E2E-004/005` 작성.
+- 수정 HEAD의 로컬 npm ci/Typecheck/ESLint/Vitest/Build/Playwright/Legacy/Docker/현장 실DXF·GPU/native fullscreen **NOT RUN**. 원본 HEAD의 Typecheck·Docker 성공을 수정 HEAD로 전용하지 않으며 PR CI 새 트리거 이후 종료/성공을 확인할 때만 PASS 표기. 사용자의 요청상 CI 모니터링 생략. #83 서버 저장/인증 BLOCKED 유지.
+
+
+## U-ISSUE82-M1-20261025 — WCS 세션 메모 구현/시험 코드 작성, 실제 실행 대기
+
+- **범위/출처:** [Issue82](Issue82.md), 상위 #81, [ADR-053](Decisions.md), [Architecture](Architecture.md), [Requirements](Requirements.md). 구현 브랜치 `feat/82-cad-memo-m1`; 최초 main 기준 SHA `ab094a541b4db44c15598f40b0699f8e6214ecae`.
+- **코드:** `domain/cad-memo.ts`는 Preview UUIDv4/Version·SHA scope/finite WCS/길이·제어문자/100 memo session 문서. ViewerManager/three-dxf-viewer는 WCS ↔ CSS pixel 카메라 변환과 리프레시 notify. `CadMemoOverlay`는 pin 클릭/ghost drag, label plain-text 및 viewport render 동기화. `CadMemoEditor` 제목·본문/수치 위치를 독립 확정. 기존 UI Outline Tool과 상호 배타 제어.
+- **작성된 테스트:** Vitest 6(`TC-M1-UNIT-001~006`), Playwright synthetic DXF 3(`TC-M1-E2E-001~003`), 별도 opt-in Benchmark 2(`TC-M1-BENCH-1000/10000`, 합성 LINE 1k/10k DXF 로드·5 메모·Resize/Reload 계측, 실행 및 값 확인 전). 테스트 추가는 PASS 근거가 아님. 제한/버전·SHA/HTML 문자 표기/부정 입력·Cancel·Reload/Renderer/Mode/기존 Source hit 경계를 검증하도록 설계.
+- **실행 상태:** GitHub Connector 원격 브랜치 수정. 컨테이너 `git ls-remote`는 DNS `Could not resolve host: github.com`로 실패해 checkout 불가. `npm ci`/Typecheck/Lint/Unit/Build/Chromium E2E/Legacy migration/Docker/실 CAD·GPU/native fullscreen/100 memos 프레임 실측 **NOT RUN**, PASS·성능 수치·원본 Source 안전 확인 주장 금지. PR 생성에 의한 PR CI 시작/성공/현장 승인 구별.
+- **무변경:** `src/app/api`, Prisma/DDL/Migration, Auth/Session/Role/Scope/Audit 운영 기능, Docker/Compose/원본 bytes/SHA·Version/Current, Canvas Source Geometry/GeneratedDocument/Undo/JSON, 이전 #2 description. #83 영속 및 관련 보안 승인 BLOCKED.
+- **수용 잔여:** 최신 HEAD CI 모든 Job 실제 성공, 리뷰 미해결 0/Conflict 0 확인 후 후속 merge 판단. DXF 1k/10k/100k·실도면 GPU/Native/DPR/100 메모 성능은 현장별 별도 결과 필요. 실패 확인 전 FailureLedger에 허위 기록 없음.
 
 
 ## Issue #99 / PR #110 — 성공 HEAD와 #102 통합 HEAD 테스트 분리 (2026-10-25)

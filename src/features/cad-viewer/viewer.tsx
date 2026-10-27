@@ -9,6 +9,10 @@ import { ViewerMenuBar } from '@/features/cad-viewer/viewer-menu-bar';
 import type { ViewerCommandGroup } from '@/features/cad-viewer/viewer-command-menu';
 import { OutlineTreePanel } from '@/features/cad-viewer/outline-tree-panel';
 import { GeneratedDeleteDialog } from '@/features/cad-viewer/generated-delete-dialog';
+import { CadMemoOverlay } from '@/features/cad-viewer/cad-memo-overlay';
+import { CadMemoEditor, type MemoEditorFields } from '@/features/cad-viewer/cad-memo-editor';
+import { createPreviewUuid } from '@/features/cad-viewer/preview-uuid';
+import { MemoSession, parseMemoWcsXY, type MemoDraft, type MemoWcsXY } from '@/domain/cad-memo';
 import {parseWcsTranslation,selectedTranslationIds} from '@/domain/generated-translate';
 import { initialViewerAppState, viewerAppReducer } from '@/features/cad-viewer/viewer-app-state';
 import { isLiveOutlineRequest, outlineToolUnavailableReason } from '@/features/cad-viewer/outline-tool-policy';
@@ -63,6 +67,65 @@ export function CadViewer({
   const container = useRef<HTMLDivElement>(null);
   const viewerShell = useRef<HTMLDivElement>(null);
   const manager = useRef<ViewerManager | null>(null);
+  const memoSession = useRef<MemoSession | null>(null);
+  const memoDragActive = useRef(false);
+  const viewEpoch = useRef(0);
+  const viewFrame = useRef(0);
+  const [viewRevision, setViewRevision] = useState(0);
+  const [memoCancelSignal, setMemoCancelSignal] = useState(0);
+  const [memoLifecycleKey, setMemoLifecycleKey] = useState(() => versionId + ':' + sourceSha256);
+  const [memos, setMemos] = useState<MemoDraft[]>([]);
+  const [memoPlacing, setMemoPlacing] = useState(false);
+  const [memoCandidate, setMemoCandidate] = useState<MemoWcsXY | null>(null);
+  const [memoSelectedId, setMemoSelectedId] = useState<string | null>(null);
+  const [memoFields, setMemoFields] = useState<MemoEditorFields>({title:'',content:'',x:'0',y:'0'});
+  const [memoError, setMemoError] = useState<string|null>(null);
+  const [memoDeleteArmed, setMemoDeleteArmed] = useState(false);
+  const getViewEpoch = useCallback(() => viewEpoch.current, []);
+  const onMemoGestureActive = useCallback((active:boolean) => { memoDragActive.current = active; }, []);
+  const onAdapterViewChange = useCallback(() => {
+    viewEpoch.current++;
+    if (memoDragActive.current) {
+      memoDragActive.current = false;
+      setMemoCancelSignal(previous => previous + 1);
+    }
+    if (!viewFrame.current) {
+      viewFrame.current = requestAnimationFrame(() => {
+        viewFrame.current = 0;
+        setViewRevision(previous => previous + 1);
+      });
+    }
+  }, []);
+  useEffect(() => () => { if(viewFrame.current) cancelAnimationFrame(viewFrame.current); }, []);
+  const memoScope = { versionId, sourceSha256 };
+  // Fail closed *during render*, before cleanup effects run on a new Version/SHA.
+  const memoScoped = memoLifecycleKey === versionId + ':' + sourceSha256;
+  const scopedMemos = memoScoped ? memos : [];
+  const getMemoSession = () => {
+    if (!memoSession.current || !memoSession.current.matches(memoScope)) {
+      memoSession.current = new MemoSession(memoScope);
+    }
+    return memoSession.current;
+  };
+  const resetMemos = useCallback(() => {
+    memoSession.current?.clear();
+    memoSession.current = null;
+    setMemoLifecycleKey(versionId + ':' + sourceSha256);
+    memoDragActive.current = false;
+    setMemoCancelSignal(previous => previous + 1);
+    setMemos([]);
+    setMemoPlacing(false);
+    setMemoCandidate(null);
+    setMemoSelectedId(null);
+    setMemoFields({title:'',content:'',x:'0',y:'0'});
+    setMemoError(null);
+    setMemoDeleteArmed(false);
+  }, [versionId,sourceSha256]);
+  useEffect(() => {
+    // Version/SHA changes are an explicit destructive M1 session boundary.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    resetMemos();
+  }, [versionId, sourceSha256, resetMemos]);
   // Synchronously gate events before React's reducer has rendered the next frame.
   const outlineEnabledRef = useRef(false);
   const outlineRequestRevisionRef = useRef(0);
@@ -281,6 +344,15 @@ export function CadViewer({
     window.addEventListener('pointerdown',close,true);
     return ()=>window.removeEventListener('pointerdown',close,true);
   },[contextMenu]);
+  const closeMemoEditor = useCallback(() => {
+    memoDragActive.current = false;
+    setMemoCancelSignal(previous => previous + 1);
+    setMemoPlacing(false);
+    setMemoCandidate(null);
+    setMemoSelectedId(null);
+    setMemoDeleteArmed(false);
+    setMemoError(null);
+  }, []);
   useEffect(() => {
     const handleKeyDown = (event:KeyboardEvent) => {
       if(event.key==='Escape' && deleteRequest){
@@ -292,6 +364,16 @@ export function CadViewer({
         setContextMenu(null);return;
       }
       if(event.key==='Escape' && viewerShell.current?.querySelector('[role=menu]'))return;
+      if(event.key==='Escape' && memoDragActive.current){
+        event.preventDefault();event.stopImmediatePropagation();
+        memoDragActive.current=false;
+        setMemoCancelSignal(previous=>previous+1);
+        return;
+      }
+      if(event.key==='Escape' && (memoPlacing || memoCandidate || memoSelectedId)){
+        event.preventDefault();event.stopImmediatePropagation();
+        closeMemoEditor();return;
+      }
       if(event.key==='Escape' && nameTipOpen){
         event.preventDefault();event.stopImmediatePropagation();setNameTipOpen(false);setNameTipPinned(false);suppressNameFocus.current=true;requestAnimationFrame(()=>nameButtonRef.current?.focus({preventScroll:true}));return;
       }
@@ -334,7 +416,7 @@ export function CadViewer({
     // Capture ahead of native fullscreen/selection handling for staged edit ESC.
     window.addEventListener('keydown',handleKeyDown,true);
     return ()=>window.removeEventListener('keydown',handleKeyDown,true);
-  },[syncSavedOutlines,deleteRequest,contextMenu,state.ready,canvasMode,openDelete,nameTipOpen,infoOpen]);
+  },[syncSavedOutlines,deleteRequest,contextMenu,state.ready,canvasMode,openDelete,nameTipOpen,infoOpen,memoPlacing,memoCandidate,memoSelectedId,closeMemoEditor]);
   const stopOutlineEditing = useCallback(() => {
     // Must cancel the Worker BEFORE clearing selection: selection callbacks can
     // otherwise enqueue a new compute job for the previous previewKind.
@@ -363,8 +445,141 @@ export function CadViewer({
     setOutlineName('');
     setOutlineNotice(null);
   }, [stopOutlineEditing]);
+  /** One transition for new-memo placement, existing pin press, and recent-list selection.
+   * Cancel outline Worker before clearing Source selection, so stale previews cannot restart.
+   * Do not call this from render or synthesize an authorization/DB update. */
+  const beginMemoInteraction = useCallback((id?:string):boolean => {
+    if (!memoScoped || renderer!=='three-dxf-viewer' || format!=='DXF' ||
+        loading || !state.ready || !/^[a-f0-9]{64}$/i.test(sourceSha256)) return false;
+    if (id && (!memoSession.current?.matches({versionId,sourceSha256}) ||
+               !memoSession.current.get(id))) return false;
+    if (outlineEnabledRef.current) {
+      outlineEnabledRef.current=false;
+      stopOutlineEditing();
+      dispatchApp({type:'set-outline-tool',enabled:false});
+    }
+    manager.current?.cancelGeneratedCommand();
+    manager.current?.clearCanvasObjectSelection();
+    manager.current?.setSelectionMode('pan');
+    setCanvasMode('pan');
+    setDeleteRequest(null);
+    setContextMenu(null);
+    return true;
+  },[memoScoped,renderer,format,loading,state.ready,versionId,sourceSha256,stopOutlineEditing]);
+
+  const selectMemo = useCallback((id:string) => {
+    const item = memoSession.current?.matches({versionId,sourceSha256})
+      ? memoSession.current.get(id) : undefined;
+    if (!item || !beginMemoInteraction(id)) return;
+    setMemoPlacing(false);
+    setMemoCandidate(null);
+    setMemoSelectedId(id);
+    if (!appState.toolsOpen) dispatchApp({type:'toggle-tools',exclusive:isCompact});
+    setMemoDeleteArmed(false);
+    setMemoError(null);
+    // Re-selecting an already open memo is a focus action, not a discard-draft command.
+    if (memoSelectedId !== id) {
+      setMemoFields({
+        title:item.title,content:item.content,
+        x:String(item.anchorWcsXY.x),y:String(item.anchorWcsXY.y),
+      });
+    }
+  }, [beginMemoInteraction,memoSelectedId,versionId,sourceSha256,appState.toolsOpen,isCompact]);
+  const placeMemo = useCallback((point:MemoWcsXY) => {
+    setMemoCandidate(point);
+    setMemoPlacing(false);
+    setMemoDeleteArmed(false);
+    setMemoError(null);
+    setMemoFields(previous=>({...previous,x:String(point.x),y:String(point.y)}));
+  }, []);
+  const moveMemoFromCanvas = useCallback((id:string,point:MemoWcsXY) => {
+    try {
+      const document=getMemoSession();
+      const item=document.move(id,point,{versionId,sourceSha256});
+      setMemos(document.list());
+      setMemoError(null);
+      setMemoSelectedId(id);
+      setMemoFields(previous=>({
+        ...previous,
+        ...(id === memoSelectedId ? {} : {title:item.title,content:item.content}),
+        x:String(item.anchorWcsXY.x),y:String(item.anchorWcsXY.y),
+      }));
+    } catch(error) {
+      setMemoError(error instanceof Error?error.message:'메모 이동이 취소되었습니다.');
+    }
+  // Only a committed pointer-up invokes this callback.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [versionId,sourceSha256,memoSelectedId]);
+  function startMemoPlacement() {
+    if (!memoAvailable) return;
+    if (memoPlacing) { closeMemoEditor(); return; }
+    if (!beginMemoInteraction()) return;
+    if (!appState.toolsOpen) dispatchApp({type:'toggle-tools',exclusive:isCompact});
+    setMemoSelectedId(null);
+    setMemoCandidate(null);
+    setMemoFields({title:'',content:'',x:'0',y:'0'});
+    setMemoDeleteArmed(false);
+    setMemoError(null);
+    setMemoPlacing(true);
+  }
+  function placeMemoAtEnteredWcs() {
+    try { placeMemo(parseMemoWcsXY(memoFields.x,memoFields.y)); }
+    catch(error){ setMemoError(error instanceof Error?error.message:'WCS 좌표가 유효하지 않습니다.'); }
+  }
+  function createMemo() {
+    if (!memoCandidate || !memoAvailable) return;
+    try {
+      const doc=getMemoSession();
+      // Explicitly confirm the coordinate fields; changing them alone never moves a memo.
+      const location=parseMemoWcsXY(memoFields.x,memoFields.y);
+      const created=doc.create({id:createPreviewUuid(),anchorWcsXY:location,
+        title:memoFields.title,content:memoFields.content},{versionId,sourceSha256});
+      setMemos(doc.list());
+      selectMemo(created.id);
+      setMemoError(null);
+    } catch(error) {
+      setMemoError(error instanceof Error?error.message:'메모를 작성할 수 없습니다.');
+    }
+  }
+  function saveMemoText() {
+    if (!memoSelectedId || !memoAvailable) return;
+    try {
+      const doc=getMemoSession();
+      doc.editText(memoSelectedId,memoFields.title,memoFields.content,{versionId,sourceSha256});
+      setMemos(doc.list());
+      setMemoError(null);
+    } catch(error) {
+      setMemoError(error instanceof Error?error.message:'메모 텍스트를 저장할 수 없습니다.');
+    }
+  }
+  function moveMemoFromFields() {
+    if (!memoSelectedId || !memoAvailable) return;
+    try {
+      const doc=getMemoSession();
+      const item=doc.move(memoSelectedId,
+        parseMemoWcsXY(memoFields.x,memoFields.y),{versionId,sourceSha256});
+      setMemos(doc.list());
+      setMemoFields(previous=>({...previous,x:String(item.anchorWcsXY.x),
+        y:String(item.anchorWcsXY.y)}));
+      setMemoError(null);
+    } catch(error) {
+      setMemoError(error instanceof Error?error.message:'메모 좌표를 이동할 수 없습니다.');
+    }
+  }
+  function deleteMemo() {
+    if (!memoSelectedId || !memoDeleteArmed || !memoAvailable) return;
+    try {
+      const doc=getMemoSession();
+      doc.remove(memoSelectedId,{versionId,sourceSha256});
+      setMemos(doc.list());
+      closeMemoEditor();
+    } catch(error) {
+      setMemoError(error instanceof Error?error.message:'메모 삭제가 취소되었습니다.');
+    }
+  }
   function toggleOutlineTool() {
     if (!outlineAvailable) return;
+    closeMemoEditor();
     setDeleteRequest(null);setContextMenu(null);
     const enabled = !outlineEnabledRef.current;
     outlineEnabledRef.current = enabled;
@@ -385,6 +600,7 @@ export function CadViewer({
   /** General selection and generated-only targeting are independent of U3. */
   function changeCanvasMode(next:'pan'|'objects'|'generated') {
     if (!outlineAvailable) return;
+    closeMemoEditor();
     setDeleteRequest(null);setContextMenu(null);
     if (outlineEnabledRef.current) {
       outlineEnabledRef.current=false;
@@ -487,10 +703,11 @@ export function CadViewer({
     dispatchApp({ type: 'reset' });
     setSearchOpen(false);
     resetOutline();
+    resetMemos();
     const url = new URL(window.location.href);
     url.searchParams.set('renderer', value);
     window.history.replaceState(null, '', url);
-  }, [loading, renderer, resetOutline, confirmDiscard, source, versionId]);
+  }, [loading, renderer, resetOutline, confirmDiscard, source, versionId, resetMemos]);
 
   function reload() {
     if (loading || !confirmDiscard()) return;
@@ -506,6 +723,7 @@ export function CadViewer({
     dispatchApp({ type: 'reset' });
     setSearchOpen(false);
     resetOutline();
+    resetMemos();
     setAttempt(value => value + 1);
   }
 
@@ -568,6 +786,7 @@ export function CadViewer({
             onPreview:(value,error)=>{if(active && loadSequenceRef.current===sequence && outlineEnabledRef.current){setPreview(value);setPreviewError(error??null);}},
             onSaved:count=>{if(active && loadSequenceRef.current===sequence){setSavedCount(count);syncSavedOutlines();}},
             onEditError:message=>{if(active && loadSequenceRef.current===sequence)setTranslateError(message);},
+            onViewChange:()=>{if(active)onAdapterViewChange();},
           });
         }
         const { DxfViewerAdapter } = await import('@/viewers/dxf-viewer/adapter');
@@ -621,7 +840,7 @@ export function CadViewer({
       instance.dispose();
       manager.current = null;
     };
-  }, [versionId, sourceSha256, attempt, renderer, source, format, resetOutline, syncSavedOutlines]);
+  }, [versionId, sourceSha256, attempt, renderer, source, format, resetOutline, syncSavedOutlines, onAdapterViewChange]);
 
   const layerAvailable = renderer === 'three-dxf-viewer' && layers.length > 0 && state.ready;
   const outlineUnavailable = outlineToolUnavailableReason({
@@ -629,6 +848,16 @@ export function CadViewer({
     entityCount: outlineInfo?.entityCount, sourceSha256,
   });
   const outlineAvailable = outlineUnavailable === null;
+  const memoUnavailable =
+    format !== 'DXF' || renderer !== 'three-dxf-viewer'
+      ? '메모 M1은 현재 DXF three-dxf-viewer에서만 지원합니다.'
+      : loading || !state.ready
+        ? '도면 표시 완료 후 메모를 배치할 수 있습니다.'
+        : !/^[0-9a-f]{64}$/i.test(sourceSha256) ||
+          !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(versionId)
+          ? '검증된 도면 Version UUID와 원본 SHA-256이 필요합니다.'
+          : null;
+  const memoAvailable=memoUnavailable===null && memoScoped;
   const selectableTypes=selectableOutlineTypes(outlineTypeCatalog,versionId,sourceSha256);
   const typedConfirmAvailable=!!preview?.persistable && selectableTypes.some(item=>item.id===selectedOutlineTypeId);
   const treeUnavailable =
@@ -668,10 +897,11 @@ export function CadViewer({
     ]},
     {id:'work',label:'작업',commands:[
       {id:'layers',label:'레이어 패널',testId:'viewer-menu-layers',kind:'checkbox',checked:appState.layerPanelOpen,expanded:layerAvailable&&appState.layerPanelOpen,controls:layerAvailable&&appState.layerPanelOpen?'viewer-layer-dock':undefined,disabled:!layerAvailable,reason:!layerAvailable?'레이어 패널은 로딩 완료된 three-dxf-viewer에서만 사용할 수 있습니다.':undefined,onSelect:()=>dispatchApp({type:'toggle-layers',exclusive:isCompact})},
-      {id:'tools',label:'선택·편집 도구',testId:'viewer-menu-tools',kind:'checkbox',checked:appState.toolsOpen,expanded:outlineAvailable&&appState.toolsOpen,controls:outlineAvailable&&appState.toolsOpen?'viewer-tools-dock':undefined,disabled:!outlineAvailable,reason:outlineUnavailable??undefined,onSelect:()=>dispatchApp({type:'toggle-tools',exclusive:isCompact})},
+      {id:'tools',label:'선택·편집 도구',testId:'viewer-menu-tools',kind:'checkbox',checked:appState.toolsOpen,expanded:(outlineAvailable||memoAvailable)&&appState.toolsOpen,controls:(outlineAvailable||memoAvailable)&&appState.toolsOpen?'viewer-tools-dock':undefined,disabled:!(outlineAvailable||memoAvailable),reason:!(outlineAvailable||memoAvailable)?(outlineUnavailable??memoUnavailable??undefined):undefined,onSelect:()=>{if(appState.toolsOpen)closeMemoEditor();dispatchApp({type:'toggle-tools',exclusive:isCompact});}},
       {id:'outline',label:'외곽선 생성',testId:'viewer-menu-outline-tool',kind:'checkbox',checked:appState.outlineToolEnabled,expanded:appState.outlineToolEnabled&&appState.toolsOpen,controls:appState.outlineToolEnabled&&appState.toolsOpen?'viewer-tools-dock':undefined,disabled:!outlineAvailable,reason:outlineUnavailable??undefined,onSelect:toggleOutlineTool},
       {id:'tree',label:'외곽선 목록',testId:'viewer-menu-outline-tree',kind:'checkbox',checked:appState.outlineTreeOpen,expanded:treeAvailable&&appState.outlineTreeOpen,controls:treeAvailable&&appState.outlineTreeOpen?'viewer-outline-tree-dock':undefined,disabled:!treeAvailable,reason:treeUnavailable??undefined,onSelect:()=>dispatchApp({type:'toggle-outline-tree',exclusive:isCompact})},
       {id:'search',label:'도면 내 텍스트 검색',kind:'checkbox',checked:searchOpen,disabled:format!=='DXF'||!state.ready,reason:format==='DWG'?'DWG 내부 텍스트 검색은 제공하지 않습니다.':!state.ready?'도면 표시 완료 후 검색할 수 있습니다.':undefined,onSelect:()=>setSearchOpen(value=>!value)},
+      {id:'memo',label:'메모 추가/편집',testId:'viewer-menu-memo-add',kind:'checkbox' as const,checked:memoPlacing || !!memoSelectedId,expanded:appState.toolsOpen,controls:appState.toolsOpen?'viewer-tools-dock':undefined,disabled:!memoAvailable,reason:memoUnavailable??undefined,onSelect:startMemoPlacement},
       {id:'types',label:'외곽선 타입 관리',testId:'viewer-menu-outline-types',disabled:true,reason:'관리자 인증·인가 및 업무 타입 정책 승인 전에는 등록 기능을 제공하지 않습니다.'},
     ]},
   ];
@@ -740,7 +970,7 @@ export function CadViewer({
       onClosePanel={panel=>{
         if(panel==='layers'){dispatchApp({type:'close-layers'});requestAnimationFrame(()=>viewerShell.current?.querySelector<HTMLButtonElement>('[data-viewer-group=work]')?.focus({preventScroll:true}));}
         else if(panel==='outlines'){dispatchApp({type:'toggle-outline-tree'});requestAnimationFrame(()=>viewerShell.current?.querySelector<HTMLButtonElement>('[data-viewer-group=work]')?.focus({preventScroll:true}));}
-        else {dispatchApp({type:'close-tools'});requestAnimationFrame(()=>viewerShell.current?.querySelector<HTMLButtonElement>('[data-viewer-group=work]')?.focus({preventScroll:true}));}
+        else {closeMemoEditor();dispatchApp({type:'close-tools'});requestAnimationFrame(()=>viewerShell.current?.querySelector<HTMLButtonElement>('[data-viewer-group=work]')?.focus({preventScroll:true}));}
       }}
       canvas={
         <>
@@ -764,6 +994,21 @@ export function CadViewer({
               }
             }}
           />
+          {memoAvailable && <CadMemoOverlay
+            memos={scopedMemos}
+            selectedId={memoScoped?memoSelectedId:null}
+            placing={memoScoped && memoPlacing}
+            candidate={memoScoped?memoCandidate:null}
+            getManager={getManager}
+            viewRevision={viewRevision}
+            getViewEpoch={getViewEpoch}
+            cancelGestureSignal={memoCancelSignal}
+            onPlace={placeMemo}
+            onSelect={selectMemo}
+            onStartInteraction={id=>beginMemoInteraction(id)}
+            onMove={moveMemoFromCanvas}
+            onGestureActive={onMemoGestureActive}
+          />}
           {contextMenu && <div data-testid="generated-context-menu" data-canvas-edit-escape-layer="context" role="menu"
             aria-label="생성 개체 컨텍스트 작업"
             className="fixed z-[70] rounded border border-slate-300 bg-white p-2 text-slate-800 shadow-lg"
@@ -780,7 +1025,26 @@ export function CadViewer({
         </>
       }
       tools={
-        outlineAvailable || (renderer === 'three-dxf-viewer' && format === 'DXF' && state.ready && savedCount > 0) ? <>
+        outlineAvailable || memoAvailable || (renderer === 'three-dxf-viewer' && format === 'DXF' && state.ready && savedCount > 0) ? <>
+          {memoAvailable && <div data-testid="cad-memo-status"
+            className="flex flex-wrap items-center gap-2 border-b border-amber-200 bg-amber-50 px-3 py-1 text-xs text-slate-800">
+            <strong>CAD 메모 M1 · {scopedMemos.length}/100</strong>
+            <span>WCS 고정 · 임시 세션만 · Reload/Renderer/Version 변경 시 소실 · Snap/저장/작성자 미지원</span>
+            {scopedMemos.length>0 && <span data-testid="cad-memo-latest">
+              {scopedMemos.slice(-5).map(item=><button key={item.id} type="button"
+                className="mr-1 rounded border border-amber-500 bg-white px-1.5 py-0.5 hover:bg-amber-100"
+                onClick={()=>selectMemo(item.id)}>{item.title.slice(0,24)}</button>)}
+            </span>}
+          </div>}
+          {memoAvailable && (memoPlacing || memoCandidate || memoSelectedId) && <CadMemoEditor
+            fields={memoFields} onFieldsChange={setMemoFields}
+            placing={memoPlacing} newAnchor={memoCandidate} selectedId={memoSelectedId}
+            count={memos.length} error={memoError} confirmDelete={memoDeleteArmed}
+            onConfirmCoordinate={placeMemoAtEnteredWcs} onCreate={createMemo}
+            onSaveText={saveMemoText} onApplyPosition={moveMemoFromFields}
+            onArmDelete={()=>setMemoDeleteArmed(true)} onDelete={deleteMemo}
+            onCancel={closeMemoEditor}
+          />}
           {outlineAvailable && <div data-testid="cad-object-selection-tools"
             className="flex flex-wrap items-center gap-2 border-b border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-800">
             <strong>객체 선택 · 생성 개체 로컬 편집 (E3/E4)</strong>
@@ -923,6 +1187,8 @@ export function CadViewer({
           {outlineNotice && <p data-testid="outline-tool-notice" className="text-xs text-teal-800">{outlineNotice}</p>}
            {deleteError && <p data-testid="generated-delete-error" role="alert" className="text-xs text-red-700">{deleteError}</p>}
            {translateError && <p data-testid="generated-translate-error" role="alert" className="text-xs text-red-700">{translateError}</p>}
+          {memoError && !memoPlacing && !memoCandidate && !memoSelectedId &&
+            <p data-testid="cad-memo-status-error" role="alert" className="text-xs text-red-700">{memoError}</p>}
           {outlineUnavailable && <p data-testid="outline-tool-unavailable" className="text-xs text-slate-500">{outlineUnavailable}</p>}
         </>
       }
