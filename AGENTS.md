@@ -1,5 +1,13 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## #82 PR #111 — 반응형 모바일 Modal Drawer/메뉴 E2E race (2026-10-28 KST)
+
+- [PR CI #40583276569](https://github.com/planner77/layoutManager/actions/runs/40583276569), attempt 1, HEAD `53b6909caaad4721c9050a6d26ec1da940176b05`: Verify [Job 122468046935](https://github.com/planner77/layoutManager/actions/runs/40583276569/job/122468046935) Chromium E2E 92건 중 **91 PASS/1 FAIL**, Legacy Migration E2E SKIPPED, Typecheck/Lint/Unit·Integration/OCI/DXF benchmark/Build SUCCESS. Docker/Migration/Runtime Smoke [Job 122468046482](https://github.com/planner77/layoutManager/actions/runs/40583276569/job/122468046482) SUCCESS. [Trace Artifact #12770224877](https://github.com/planner77/layoutManager/actions/runs/40583276569/artifacts/12770224877).
+- **원인:** `TC-M1-E2E-001` `src/tests/e2e/issue82-cad-memo.spec.ts:72`에서 viewport 390px 전환 직후 `clickViewerCommand(page,'view','화면 맞춤')`이 `viewer-menu-helper.ts:25`의 trigger click에서 30초 timeout. Playwright는 상단 `보기` 버튼 자체가 visible/enabled/stable이지만 **`cad-viewer-shell`이 pointer events를 intercept**했다고 보고. #127 모바일 Drawer의 modal 전환 시 `header.inert=true`는 정상; helper의 일회성 `isVisible()` 판정이 React `matchMedia`의 비동기 state 갱신보다 먼저 실행된 테스트 동기화 race. WCS/원본/Renderer/운영 장애의 증거는 아님.
+- **재발 방지:** E2E만 수정: 390px 설정 이후 `viewer-tools-dock[role=dialog]` 출현·`header.inert=true` 확인 → 모달의 실제 `도구 닫기` 버튼 클릭 → Drawer 사라짐·`header.inert=false` 확인 → `보기 > 화면 맞춤` 실행. 이후 PIN WCS(10,20)→명시적 (13,15) 이동과 텍스트 편집/좌표 불변을 그대로 검증. `force click` 및 단순 Timeout 증가 금지. Viewer/Adapter/CAD·DB·API·Prisma/G7 및 package/lock 0.43.0은 변경하지 않음. #138 Movable Panel은 별도 미구현. 수정 HEAD PR CI PASS는 새 Run 완료 전 **NOT VERIFIED**, GHCR/병합/Main CI/Issue 종료·실 CAD/GPU 현장 시험은 미실행.
+- 상세 [FailureLedger](out/FailureLedger.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md), [Issue82](out/Issue82.md) 참조. 이전 Codex P1/P2 2개 Resolved, 최근 Main behind=0/mergeable=true; 수정 후 새 HEAD/리뷰/충돌 별도 재확인.
+
+
 ## Issue #82 / PR #111 — v0.43.0 M1 MINOR / GHCR 정식 Pair 게이트 (2026-10-28 KST)
 
 - **버전 결정:** #82 CAD 메모 M1은 DXF three-dxf-viewer에 신규 WCS 기반 사용자 기능을 추가하므로 AGENTS.md의 "기능 추가 MINOR" 정책 적용. 기존 `v0.42.1`은 Issue #57에서 **이미 발행된** annotated Git tag(대상 SHA `dc82e670073160ddac46a2f9e9489a738a19c033`)로서 변경·재사용 금지. GitHub 조회 당시 `v0.43.0`은 없었음. 신규 `src/package.json` 및 lockfile **최상위 2곳**을 모두 `0.43.0`으로 변경; dependency/DB/API/이미지 Workflow/운영 Auth 전환 없음.

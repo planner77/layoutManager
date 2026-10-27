@@ -1,5 +1,14 @@
 # PR/Main CI 실패 원장
 
+## #82 PR #111 — PR CI 40583276569 모바일 Drawer Race 실패 및 보완 (2026-10-28 KST)
+
+- **관측 실패:** [PR CI #40583276569](https://github.com/planner77/layoutManager/actions/runs/40583276569), attempt 1, HEAD `53b6909caaad4721c9050a6d26ec1da940176b05`: Verify [Job 122468046935](https://github.com/planner77/layoutManager/actions/runs/40583276569/job/122468046935) Chromium E2E 92건 중 **91 PASS/1 FAIL**, Legacy Migration E2E SKIPPED, Typecheck/Lint/Unit·Integration/OCI/DXF benchmark/Build SUCCESS. Docker/Migration/Runtime Smoke [Job 122468046482](https://github.com/planner77/layoutManager/actions/runs/40583276569/job/122468046482) SUCCESS. [Trace Artifact #12770224877](https://github.com/planner77/layoutManager/actions/runs/40583276569/artifacts/12770224877).
+- **실패 Step/로그:** Chromium E2E `TC-M1-E2E-001` (`issue82-cad-memo.spec.ts:39`, 실제 `:72`). `locator.click: Test timeout of 30000ms exceeded`, `[data-viewer-group="view"]` click에서 `cad-viewer-shell intercepts pointer events`. Trace 외 `test-results/issue82-cad-memo-TC-M1-E2E-10073-creen-and-text-only-changes/error-context.md` 제공. E2E Artifact upload SUCCESS; Legacy Migration E2E는 실패 후 **SKIPPED** (성공으로 계상하지 않음). 테스트 음성 Fixture의 의도된 API 4xx 출력은 실패 원인 아님.
+- **직접 원인:** `TC-M1-E2E-001` `src/tests/e2e/issue82-cad-memo.spec.ts:72`에서 viewport 390px 전환 직후 `clickViewerCommand(page,'view','화면 맞춤')`이 `viewer-menu-helper.ts:25`의 trigger click에서 30초 timeout. Playwright는 상단 `보기` 버튼 자체가 visible/enabled/stable이지만 **`cad-viewer-shell`이 pointer events를 intercept**했다고 보고. #127 모바일 Drawer의 modal 전환 시 `header.inert=true`는 정상; helper의 일회성 `isVisible()` 판정이 React `matchMedia`의 비동기 state 갱신보다 먼저 실행된 테스트 동기화 race. WCS/원본/Renderer/운영 장애의 증거는 아님.
+- **조치·예방:** E2E만 수정: 390px 설정 이후 `viewer-tools-dock[role=dialog]` 출현·`header.inert=true` 확인 → 모달의 실제 `도구 닫기` 버튼 클릭 → Drawer 사라짐·`header.inert=false` 확인 → `보기 > 화면 맞춤` 실행. 이후 PIN WCS(10,20)→명시적 (13,15) 이동과 텍스트 편집/좌표 불변을 그대로 검증. `force click` 및 단순 Timeout 증가 금지. Viewer/Adapter/CAD·DB·API·Prisma/G7 및 package/lock 0.43.0은 변경하지 않음. #138 Movable Panel은 별도 미구현. 수정 HEAD PR CI PASS는 새 Run 완료 전 **NOT VERIFIED**, GHCR/병합/Main CI/Issue 종료·실 CAD/GPU 현장 시험은 미실행.
+- **이력/게이트:** 과거 E2E 실패 Run 40512645193/40198344153, ESLint 40196496297 및 0.43.0 변경 전 성공 40580691233은 아래 누적 원장을 삭제하지 않고 각각 구분. 기존 리뷰 2건 Resolved(미해결 0), Main 7b784c2d 대비 behind=0/mergeable=true는 보완 전 관측; 새 HEAD CI·리뷰/충돌 확인 후에만 Squash 병합. #83 Memo 서버 영속, 운영 #109/#96 G7 GO는 이번 작업 제외.
+
+
 ## Issue #82 / PR #111 — 새 MINOR v0.43.0 GHCR Pair 사전조건 / 실패 없음 (2026-10-28 KST)
 
 - **리스크, CI 실패와 구분:** 기존 `v0.42.1` annotated tag는 이미 발행되어 있으며 Issue #57 코드의 `0.42.1` App/lock 버전으로 #82 런타임 변경을 Squash Main하면, `.github/workflows/docker-publish.yml`의 `create release tag`는 existing tag를 재사용하고 기존 App/Migrator pair가 이미 존재할 경우 GHCR 빌드를 **SKIPPED** 처리할 수 있다. 사용자 요청인 **신규 #82 GHCR 게시를 보장하지 못하는 버전/릴리스 게이트 위험**이지 새 CI 실패나 GHCR 게시 실패를 관측한 것은 아니다.

@@ -1,5 +1,13 @@
 # Issue #82 — CAD Memo M1 / WCS 브라우저 세션 메모
 
+## PR #111 — 0.43.0 Mobile Drawer/메뉴 상호작용 E2E 보완 (2026-10-28)
+
+- [PR CI #40583276569](https://github.com/planner77/layoutManager/actions/runs/40583276569), attempt 1, HEAD `53b6909caaad4721c9050a6d26ec1da940176b05`: Verify [Job 122468046935](https://github.com/planner77/layoutManager/actions/runs/40583276569/job/122468046935) Chromium E2E 92건 중 **91 PASS/1 FAIL**, Legacy Migration E2E SKIPPED, Typecheck/Lint/Unit·Integration/OCI/DXF benchmark/Build SUCCESS. Docker/Migration/Runtime Smoke [Job 122468046482](https://github.com/planner77/layoutManager/actions/runs/40583276569/job/122468046482) SUCCESS. [Trace Artifact #12770224877](https://github.com/planner77/layoutManager/actions/runs/40583276569/artifacts/12770224877).
+- **원인:** `TC-M1-E2E-001` `src/tests/e2e/issue82-cad-memo.spec.ts:72`에서 viewport 390px 전환 직후 `clickViewerCommand(page,'view','화면 맞춤')`이 `viewer-menu-helper.ts:25`의 trigger click에서 30초 timeout. Playwright는 상단 `보기` 버튼 자체가 visible/enabled/stable이지만 **`cad-viewer-shell`이 pointer events를 intercept**했다고 보고. #127 모바일 Drawer의 modal 전환 시 `header.inert=true`는 정상; helper의 일회성 `isVisible()` 판정이 React `matchMedia`의 비동기 state 갱신보다 먼저 실행된 테스트 동기화 race. WCS/원본/Renderer/운영 장애의 증거는 아님.
+- **수정/AC:** E2E만 수정: 390px 설정 이후 `viewer-tools-dock[role=dialog]` 출현·`header.inert=true` 확인 → 모달의 실제 `도구 닫기` 버튼 클릭 → Drawer 사라짐·`header.inert=false` 확인 → `보기 > 화면 맞춤` 실행. 이후 PIN WCS(10,20)→명시적 (13,15) 이동과 텍스트 편집/좌표 불변을 그대로 검증. `force click` 및 단순 Timeout 증가 금지. Viewer/Adapter/CAD·DB·API·Prisma/G7 및 package/lock 0.43.0은 변경하지 않음. #138 Movable Panel은 별도 미구현. 수정 HEAD PR CI PASS는 새 Run 완료 전 **NOT VERIFIED**, GHCR/병합/Main CI/Issue 종료·실 CAD/GPU 현장 시험은 미실행.
+- #127 메뉴/Drawer 계약·브라우저 임시 메모만 유지, #83 서버 저장 및 #109 운영 기능을 활성화하지 않음.
+
+
 ## M1 신규 릴리스 v0.43.0 사전 게이트 (2026-10-28)
 
 - #82는 `three-dxf-viewer` 사용자 기능(브라우저 세션 WCS 메모)를 추가하므로 MINOR 버전 `0.43.0`을 신규 App/Migrator GHCR Pair로 준비한다. 기존 `v0.42.1` Git Tag/이미지는 재사용·이동하지 않는다. 변경 파일은 package/lock root + 릴리스 메타데이터/문서만이며 새 기능 코드·서버 영속·DB/API/G7 운영 기능은 바꾸지 않음.

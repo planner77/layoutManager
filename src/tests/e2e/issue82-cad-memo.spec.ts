@@ -69,6 +69,17 @@ test('TC-M1-E2E-001: WCS memo survives zoom/pan/CSS fullscreen and text-only cha
   await expect(pin).toHaveAttribute('data-memo-wcs-y','20');
   await clickViewerCommand(page,'view','전체 화면');
   await page.setViewportSize({width:390,height:844});
+  // The work Drawer becomes modal on mobile and makes the header inert.
+  // Wait for the responsive transition, then close the real dialog before
+  // using the top-level View menu. Do not force a click through the modal.
+  const mobileTools=page.getByTestId('viewer-tools-dock');
+  await expect(mobileTools).toHaveAttribute('role','dialog');
+  await expect(mobileTools).toBeVisible();
+  const header=page.getByTestId('cad-viewer-shell').locator('header');
+  await expect(header).toHaveJSProperty('inert',true);
+  await mobileTools.getByRole('button',{name:'도구 닫기'}).click();
+  await expect(mobileTools).toHaveCount(0);
+  await expect(header).toHaveJSProperty('inert',false);
   await clickViewerCommand(page,'view','화면 맞춤');
   await expect(pin).toHaveAttribute('data-memo-wcs-x','10');
   await page.setViewportSize({width:1280,height:820});

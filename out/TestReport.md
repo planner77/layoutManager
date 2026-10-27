@@ -1,5 +1,13 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## #82 PR #111 — Mobile Drawer E2E 실패, 새 검증 필요 (2026-10-28)
+
+- [PR CI #40583276569](https://github.com/planner77/layoutManager/actions/runs/40583276569), attempt 1, HEAD `53b6909caaad4721c9050a6d26ec1da940176b05`: Verify [Job 122468046935](https://github.com/planner77/layoutManager/actions/runs/40583276569/job/122468046935) Chromium E2E 92건 중 **91 PASS/1 FAIL**, Legacy Migration E2E SKIPPED, Typecheck/Lint/Unit·Integration/OCI/DXF benchmark/Build SUCCESS. Docker/Migration/Runtime Smoke [Job 122468046482](https://github.com/planner77/layoutManager/actions/runs/40583276569/job/122468046482) SUCCESS. [Trace Artifact #12770224877](https://github.com/planner77/layoutManager/actions/runs/40583276569/artifacts/12770224877).
+- **분석:** `TC-M1-E2E-001` `src/tests/e2e/issue82-cad-memo.spec.ts:72`에서 viewport 390px 전환 직후 `clickViewerCommand(page,'view','화면 맞춤')`이 `viewer-menu-helper.ts:25`의 trigger click에서 30초 timeout. Playwright는 상단 `보기` 버튼 자체가 visible/enabled/stable이지만 **`cad-viewer-shell`이 pointer events를 intercept**했다고 보고. #127 모바일 Drawer의 modal 전환 시 `header.inert=true`는 정상; helper의 일회성 `isVisible()` 판정이 React `matchMedia`의 비동기 state 갱신보다 먼저 실행된 테스트 동기화 race. WCS/원본/Renderer/운영 장애의 증거는 아님.
+- **수정:** E2E만 수정: 390px 설정 이후 `viewer-tools-dock[role=dialog]` 출현·`header.inert=true` 확인 → 모달의 실제 `도구 닫기` 버튼 클릭 → Drawer 사라짐·`header.inert=false` 확인 → `보기 > 화면 맞춤` 실행. 이후 PIN WCS(10,20)→명시적 (13,15) 이동과 텍스트 편집/좌표 불변을 그대로 검증. `force click` 및 단순 Timeout 증가 금지. Viewer/Adapter/CAD·DB·API·Prisma/G7 및 package/lock 0.43.0은 변경하지 않음. #138 Movable Panel은 별도 미구현. 수정 HEAD PR CI PASS는 새 Run 완료 전 **NOT VERIFIED**, GHCR/병합/Main CI/Issue 종료·실 CAD/GPU 현장 시험은 미실행.
+- 이전 HEAD/CI 결과와 신규 코드의 검증 상태를 구분. 실제 현장 CAD/GPU·M2 서버 영속 및 운영 G7 GO는 NOT RUN.
+
+
 ## Issue #82 — v0.43.0 신규 GHCR Pair 버전 정렬 / 재검증 대기 (2026-10-28)
 
 - 원 HEAD `4a4a8ffbb85340efef90b88546cc64815fdd4aa3`의 [PR CI 40580691233](https://github.com/planner77/layoutManager/actions/runs/40580691233) **completed/success**, Verify Job 122458944225 전체 Typecheck/Lint/Unit/E2E/Legacy 성공, Docker Job 122458943642 SUCCESS, 리뷰 2/2 Resolved, Main behind=0, mergeable=clean. 기존 실패 Run 40512645193의 91/92 E2E 및 교정 증거는 [FailureLedger](FailureLedger.md)에 유지.

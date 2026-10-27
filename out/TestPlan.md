@@ -1,5 +1,12 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## TC-M1-E2E-001 — Desktop→390px Mobile Modal/메뉴 경계 (2026-10-28)
+
+- WCS(10,20) 임시 Memo와 텍스트만 변경/Zoom·Pan 후 CSS fullscreen에서 Viewport 390×844 적용. 모바일 `viewer-tools-dock[role=dialog]`가 열린 것을 대기하고 `header.inert===true` 확인; 이 상태에서 상단 메뉴 클릭을 강제하지 않는다.
+- 모바일 `도구 닫기`로 실제 Drawer 닫기, dialog unmount 및 `header.inert===false` 확인 후 `보기 > 화면 맞춤`을 정상 클릭한다. Desktop 1280×820 복귀, PIN 재선택, 좌표 (13,15) 명시 이동/텍스트 수정 이후 불변 확인. #127 Drawer 접근성, #138 향후 movable 정책과 기능 경계 분리.
+- 실패 증거 [Run 40583276569](https://github.com/planner77/layoutManager/actions/runs/40583276569) E2E 91/92·Timeout. 본 E2E 보완 및 전체 재검증 결과는 새 HEAD PR CI 완료 전 NOT VERIFIED. 타 Renderer/기존 CAD/영속 DB/G7 운영 변경 없음.
+
+
 ## TC-M1-REL-001~005 — Issue #82 v0.43.0 정식 이미지 Pair (2026-10-28)
 
 - TC-M1-REL-001: `src/package.json` 버전과 `src/package-lock.json` root+packages[""].version = **0.43.0**; 기존 dependencies/실 Prisma schema/운영 설정 불변. 기존 `v0.42.1`은 수정/태그 이동 금지.
