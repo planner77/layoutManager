@@ -1,5 +1,24 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## #142 B2-3 / PR #146 — Audit's AFTER RAISE(FAIL) P2 보완·새 CI 미확인 (2026-10-28)
+
+- [PR CI #40513422160](https://github.com/planner77/layoutManager/actions/runs/40513422160) HEAD `adf0e1aba89a9a5a3b8d7c33b85f5675f4201b71`, attempt=1, `completed/success`. Verify Job 122220852265, Docker/Migration/Smoke Job 122220852790 두 건 성공. **이전 HEAD의 실행 근거**이고 새 변경의 합격 근거는 아님.
+- [Codex P2 #4389353517](https://github.com/planner77/layoutManager/pull/146#discussion_r4389353517) 분석: SQLite `AFTER UPDATE/DELETE`의 `RAISE(FAIL)`은 예외로 표시돼도 AuditEvent 행 수정·삭제가 실제로 남을 수 있음. 기존 예외 카운트 기반 검증기의 `auditAppendOnlyChecked=true` 허위 PASS 가능성. 메모리 SQLite에서 UPDATE 예외 후 값이 변경되고 DELETE 예외 후 행이 삭제되는 동작을 별도 확인함.
+- **보완 구현·회귀 작성:** 합성 Audit Row 포함 **전체 AuditEvent ordered rows** 최초 Snapshot → UPDATE 예외·내용 불변 확인 → DELETE 예외·내용 불변 재확인. AFTER UPDATE+FAIL, AFTER DELETE+FAIL 각각의 별도 손상 합성 통합 테스트는 `AUDIT_NOT_APPEND_ONLY/BLOCKED`와 `auditAppendOnlyChecked=false`를 기대. 실제 새 HEAD Typecheck/Vitest/Prisma CLI/Docker/E2E/PR CI 결과는 **NOT VERIFIED**, 코드 작성과 CI 성공 구분.
+- 운영 DB/CAD/S3·Writer 정지·실 Audit/Restore/Rollback·Prisma 활성 Migration·GHCR/GO 미실행. #142/#109/#96 OPEN/BLOCKED. [Runbook](../src/deploy/g7-s3/S3-4-B2-3.md).
+
+## Issue #142 / PR #146 — 첫 PR CI Typecheck 실패 및 P2 보완, 신규 HEAD 미검증 (2026-10-27 KST)
+
+- [PR CI #40511480917](https://github.com/planner77/layoutManager/actions/runs/40511480917), attempt 1, HEAD `bafe74cceba07a789a328c2453ccd785f19b4597` `completed/failure`. Verify Job 122214239302 TypeScript `TS2769` line 62 / `TS2345` line 63; Docker Job 122214238943 baseline Next.js Build에도 동일 TS Error. ESLint/Unit/Integration/Production Build/E2E 및 Docker phase1/Runtime Smoke 이후 미실행. 두 실패의 직접 원인은 단일 `Boolean(v)` 비내로잉, `v!==null` 교정은 신규 HEAD 검증 전 `NOT VERIFIED`.
+- [Codex P2 #4389209602](https://github.com/planner77/layoutManager/pull/146#discussion_r4389209602): 실제 Local Storage Locator의 첫 UUID는 DB `location_id`, 두 번째 UUID는 `CadFileVersion.id`여야 함. 기존 string↔packet 동치만으로 허위 PASS 가능. Local 경로 두 Segment를 DB Row에 결합해 검사, before/after SQLite에 **동일하게 잘못된** Location·Version Locator를 심고 합성 Asset Path까지 일치시킨 음성 테스트를 **작성**. 실제 테스트를 돌린 것처럼 PASS라 쓰지 않음.
+- 수정 HEAD의 Typecheck/Lint/Vitest/Build/E2E/Prisma History 및 Docker Job 신규 결과는 새 CI 종료/실제 Run 관측 전 `NOT VERIFIED`. Source Site/WAL/실 S3 GET·Restore/Rollback·운영 Auth/Write/GHCR `NOT RUN`, Issue #142/#109/#96 OPEN/BLOCKED.
+
+## #142 B2-3 — 합성 7 Migration 테스트 작성·실행 결과 미검증 (2026-10-27)
+
+- 선행 B2-2B PR #145 Main `d2b77dd6535503f2d980ac563cc195cc8b4c128e`, [Main CI #40506886341](https://github.com/planner77/layoutManager/actions/runs/40506886341) SUCCESS, release-scope SUCCESS/GHCR SKIPPED.
+- 신규 검증기 `assessS34B23DisposableMigration`는 합성 SQLite before/after Buffer의 전체 CAD 7 Table/Current/Version/nextVersion/FK/QuickCheck 및 Local/S3-export Bytes SHA/Size·8 Auth Table/Audit Trigger 기능 검사 코드를 **작성**. 새 Integration Test에 guarded formal Prisma 7 Migration History, seeded 6→7 SQL, 누락·변조·FK·가짜 Trigger·Transaction ABORT 음성 사례 **작성**. 실제 새 SHA의 Typecheck/Lint/Vitest/Prisma CLI/Build/E2E/PR CI 결과는 **아직 NOT VERIFIED**; 작성 사실을 PASS라고 표현하지 않는다.
+- 실 운영 Writer/SQLite Online Backup/CAD/S3 Versioned GET/OCI·복구/Rollback/Owner GO는 `NOT RUN`. 합성 `DISPOSABLE_SEVEN_SCHEMA_INVARIANTS_ONLY`가 Site Source Proof나 운영 Auth/CAD Write 수용은 아니다. #142/#109/#96 OPEN/BLOCKED. [Runbook](../src/deploy/g7-s3/S3-4-B2-3.md).
+
 ## Issue #82 / PR #111 — U1 E2E aria-disabled 속성 오탐 (2026-10-28 KST)
 
 - **관측:** [Run #40512645193](https://github.com/planner77/layoutManager/actions/runs/40512645193) HEAD `89a72018403ebfca32e382e0f04511a95d1946ae`, Verify Job 122218176649 FAILURE. Typecheck/Lint/Unit·Integration/OCI/Synthetic DXF Benchmark/Production Build PASS, Chromium E2E **91/92 PASS, 1 FAIL**, Legacy Migration E2E SKIPPED. Docker/Migration/Runtime Smoke Job 122218177009 SUCCESS. Trace Artifact 12739315008.

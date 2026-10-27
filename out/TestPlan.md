@@ -1,5 +1,25 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## #142 B2-3 — SQLite AFTER Trigger RAISE(FAIL) Audit 원본 행 보존 P2 회귀 (2026-10-28)
+
+- TC-B2-3-08: 정상 `g1_audit_no_update`·`g1_audit_no_delete` BEFORE/ABORT Trigger의 명령 거부와 변경 전후 전체 AuditEvent 레코드 동등성을 메모리 복제본에서 확인 → 합성 일관성 상태 및 `auditAppendOnlyChecked=true`, site/GO=false.
+- TC-B2-3-09: 합성 후보 SQL에서 기존 UPDATE Trigger를 같은 이름의 `AFTER UPDATE ... RAISE(FAIL)`로 바꾸어 예외를 던지면서도 UPDATE가 반영되는 악성 상황 → 전체 행 변경 검출, `AUDIT_NOT_APPEND_ONLY/BLOCKED`, auditAppendOnlyChecked=false. 삭제 검사는 첫 불변 위반 뒤 추가로 진행하지 않아도 됨.
+- TC-B2-3-10: 기존 DELETE Trigger를 같은 이름의 `AFTER DELETE ... RAISE(FAIL)`로 바꾸어 UPDATE는 정상 BEFORE/ABORT로 거절되지만 DELETE 예외 후 행이 실제 없어지는 상황 → 전체 행 변경 검출, `AUDIT_NOT_APPEND_ONLY/BLOCKED`.
+- TC-B2-3-11: before/after 전체 행 비교는 다른 AuditEvent row에 대한 부수 변경도 검출하며 안전 Reason만 출력. 최신 HEAD PR CI/리뷰 0건 확인 전 PASS 미선언, 실제 Site Audit 증거·원본 DB/S3 검사 아님.
+
+## Issue #142 B2-3 CI 복구 + Local Locator Owner 회귀 (2026-10-27)
+
+- TC-B2-3-05: `exact(unknown)`의 `null` 명시 제외 및 Record 타입 좁힘; 신규 HEAD `npm run typecheck`, Next.js Docker baseline Build 재수행으로 TS2769/TS2345 회귀 없음 확인. 최초 Run #40511480917 두 Job 실패는 같은 TS 원인임을 구분; 이후 스킵된 ESLint/Unit/Integration/Build/E2E/Smoke를 신규 CI에서 실제 실행해야 한다.
+- TC-B2-3-06: 동일 Local CAD `storage_path` 문자열을 가진 합성 **before/after SQLite**에서 첫 Segment가 다른 Location UUID이거나 두 번째가 다른 DB Version UUID인데 Asset Bytes·SHA·Claim locator는 동일하고 DB FK·Current/nextVersion 정상이어도 `LOCAL_LOCATOR_OWNER_INVALID/BLOCKED`. 정상 `<actualLocationId>/<actualVersionId>/original.ext` 허용, S3 객체 UUID↔DB Version UUID 독립성 유지.
+- TC-B2-3-07: 정확 no-GHCR 제목/15-file allowlist·실 운영 접근 금지 회귀, Main 정렬·Codex P2 스레드 처리와 최신 HEAD 재리뷰. 테스트 새 HEAD 결과는 관측 전 NOT VERIFIED.
+
+## #142 B2-3 — 7 Migration·CAD 무결성·Fault Injection TC (2026-10-27)
+
+- TC-B2-3-01: 기존 활성 CAD 6 Migration SQL과 G7 quarantined 6 SQL byte 동등·후보 Auth 7번째가 활성 경로 밖임을 확인; UID/0700·0600 Guarded `prisma migrate deploy`가 별도 합성 DB에 Migration History 정확 7건 및 8 Auth Tables, SQLite Quick Check/FK=0. 이 CLI 시험과 seeded 데이터 시험은 분리.
+- TC-B2-3-02: 동일 6 CAD SQL 후 Local DXF/S3-export DWG 2개 CAD Version(Current/nextVersion/SHA/Storage Path)을 합성 SQLite에 삽입하고 후보 7번째 SQL 전후 모든 CAD 7 Tables Row/Byte Hash 비교, Auth 8 Table와 Audit append-only UPDATE/DELETE 실 차단. 양성 `DISPOSABLE_SEVEN_SCHEMA_INVARIANTS_ONLY`, 실제 Site/GO false.
+- TC-B2-3-03: CAD Version SHA·Current·nextVersion 수정, Local/S3 export Byte tamper, FK 위반, 누락 Auth Table/Trigger, Audit 이름만 같은 가짜 Trigger와 중간 Transaction throw·ROLLBACK → BLOCKED/ABORT. 입력에 운영 DB 경로 등 임의 필드 포함·Bytes 누락도 거부.
+- TC-B2-3-04: exact G7-B2-3 no-GHCR squash 제목+15개 파일만 `publish=false`; wrong title/active Prisma·Dockerfile/Compose/Nginx·runtime API·기타 workflow 차단, 태그 정상 게시 정책 유지. 새 HEAD PR CI·Codex 결과는 실관측 전 `NOT VERIFIED`. 현장 Snapshot/OCI/Restore/Owner 수용 `NOT RUN`.
+
 ## Issue #82 — TC-U1-E2E-001 / Viewer 그룹 메뉴 지원 상태 회귀 (2026-10-28)
 
 - **지원 렌더러:** three-dxf-viewer + DXF + valid Version/SHA + ready에서 `작업 > 메모 추가/편집`은 `toBeEnabled()`; `aria-disabled="false"`의 **속성 존재를 단정하지 않는다** (`ViewerCommandMenus`는 disabled=false 시 해당 속성 미렌더).
