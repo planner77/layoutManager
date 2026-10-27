@@ -1,5 +1,10 @@
 # Issue #109 — G7 운영 인증 활성화 설계 및 통제 배포·롤백 Runbook
 
+## #142 PR #146 — Audit AFTER RAISE(FAIL) 검증 보완, G7 운영 NO-GO (2026-10-28)
+
+- [Codex P2 #4389353517](https://github.com/planner77/layoutManager/pull/146#discussion_r4389353517): 합성 후보 Audit Trigger가 AFTER/RAISE(FAIL)일 때 예외는 발생해도 Row UPDATE/DELETE가 남을 수 있는 위양성을 `auditMutationProbe`의 **전체 AuditEvent 행 전후 내용 비교**로 보완. 각 예외 발생·수정 전과 내용 일치 모두 필요하며, 변경 발견 시 `AUDIT_NOT_APPEND_ONLY/BLOCKED`. AFTER UPDATE/DELETE 음성 회귀 추가.
+- 기존 PR CI #40513422160 SUCCESS는 이전 HEAD 결과, 최신 재검증 전 PASS 승계 불가. 실제 Site Writer/SQLite 백업·Auth/Write 운영 활성화, 정식 Migration, Local CAD/S3 및 OCI/Restore/Rollback/Owner GO는 미실행. #142/#109/#96 OPEN/BLOCKED 유지.
+
 ## #142 PR #146 — CI TS2769/TS2345 및 Local Storage P2 보완, 운영 NO-GO (2026-10-27)
 
 - 기존 `bafe74cceba07a789a328c2453ccd785f19b4597` PR CI #40511480917의 Verify/Docker 실패는 `s3-4-b2-3.ts` Boolean(v) Nullable Typecheck **단일 원인**으로, TypeScript `null` 명시 제외로 보완. [Codex P2 #4389209602](https://github.com/planner77/layoutManager/pull/146#discussion_r4389209602) Local CAD Locator의 Location/DB Version UUID가 Row 소속과 다를 때도 합성 증거 허위 PASS 가능성 → `LOCAL_LOCATOR_OWNER_INVALID/BLOCKED`로 개선.

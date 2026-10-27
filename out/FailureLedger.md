@@ -1,5 +1,12 @@
 # PR/Main CI 실패 원장
 
+## Issue #142 / PR #146 — 성공한 PR CI와 별개 Codex Audit AFTER FAIL P2 보완 (2026-10-28 KST)
+
+- **기존 CI 성공(실패 아님):** [PR CI #40513422160](https://github.com/planner77/layoutManager/actions/runs/40513422160), attempt=1, HEAD `adf0e1aba89a9a5a3b8d7c33b85f5675f4201b71`, `completed/success`. Verify Typecheck/Lint/Unit/Build/E2E [Job 122220852265](https://github.com/planner77/layoutManager/actions/runs/40513422160/job/122220852265) SUCCESS, Docker/Migration/Smoke [Job 122220852790](https://github.com/planner77/layoutManager/actions/runs/40513422160/job/122220852790) SUCCESS. 과거 PR CI #40511480917 TypeScript TS2769/TS2345 양쪽 Job 실패·조치 근거는 아래 원장에 그대로 보존.
+- **P2 리뷰 결함, CI 장애 아님:** [Codex #4389353517](https://github.com/planner77/layoutManager/pull/146#discussion_r4389353517) – `auditMutationProbe`가 SQLite `AFTER UPDATE/DELETE` Trigger에서 `RAISE(FAIL)` 예외만 감지해 변경이 실제로 유지된 Audit 행을 정상 보존으로 오판. SQLite `RAISE(FAIL)`은 Statement Error를 발생시켜도 선행 UPDATE/DELETE 효과를 되돌리지 않을 수 있음. 그러면 `auditAppendOnlyChecked:true`가 허위 양성.
+- **수정/재발방지:** 후보 SQLite는 이미 제공된 Bytes로 별도 메모리 Clone을 만들기 때문에 여기서만 합성 Audit Row를 INSERT하고 `ORDER BY id` 전체 AuditEvent Snapshot을 캡처. UPDATE 예외 **및 전체 내용 불변** 확인 → DELETE 예외 **및 전체 내용 불변** 확인. 어느 한 시점이라도 변경되면 `AUDIT_NOT_APPEND_ONLY/BLOCKED`, `auditAppendOnlyChecked:false`. BEFORE 정상 Trigger는 계속 통과; AFTER UPDATE+FAIL 및 AFTER DELETE+FAIL 각각 악성 Trigger를 새 합성 음성 회귀에 추가. 실제 현장 데이터/자격증명 사용 없음.
+- **새 HEAD 게이트:** 코드를 작성/커밋한 사실과 최신 HEAD PR CI Typecheck/Lint/Unit/Integration/Docker/Build/E2E 성공을 혼동하지 않음. 새 HEAD 성공은 **관측 전 NOT VERIFIED**; 최신 Codex 재리뷰/스레드·Main behind=0/충돌은 별도 재확인. 본 요청은 PR CI 재시작까지만, 모니터링·병합·GHCR 게시 없음. 현장 Snapshot/운영 Writer/DB/CAD/S3/운영 Prisma Migration/Restore/Rollback/Owner GO `NOT RUN`, #142/#109/#96 OPEN/BLOCKED.
+
 ## Issue #142 / PR #146 — CI TS2769/TS2345 공통 원인 + 별도 Codex P2 (2026-10-27 KST)
 
 - **관측 CI 실패:** [PR CI Run #40511480917](https://github.com/planner77/layoutManager/actions/runs/40511480917), HEAD `bafe74cceba07a789a328c2453ccd785f19b4597`, attempt=1, `completed/failure`. Verify Job [122214239302](https://github.com/planner77/layoutManager/actions/runs/40511480917/job/122214239302): `npm run typecheck` → `src/server/g7-operational/s3-4-b2-3.ts:62` **TS2769** (`Object.keys`에 `object|null`), `:63` **TS2345** (`Object.hasOwn`에 `object|null`), exit 2. ESLint·Unit/Integration·Build·E2E는 **SKIPPED/미검증**.

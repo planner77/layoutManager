@@ -1,5 +1,10 @@
 # 주요 기술 결정과 승인 기록
 
+## #142 B2-3 P2 결정 — Audit 변경 불가 입증은 예외와 Row 보존이 모두 필요 (2026-10-28)
+
+- **Decision:** Audit append-only 시험에서 SQL Exception 2건만으로 통과시키지 않고, **동일한 메모리 복제본**의 전체 `AuditEvent` 최초 Row Snapshot이 UPDATE 시도 뒤에도 같고 DELETE 시도 뒤에도 같은지를 함께 검증한다. `RAISE(FAIL)`은 BEFORE/ABORT와 달리 AFTER Trigger에서 이미 수행한 행 변경을 되돌리지 않을 수 있다. 실패 시 `AUDIT_NOT_APPEND_ONLY`로 fail closed.
+- **Trust boundary:** 이미 제공된 synthetic Buffers만 메모리에서 연다. 운영 원본 DB/실 Audit 무결성, writer quiescence, private Source provenance/Owner GO는 증명하지 않음. 신규 테스트/최신 CI 검증과 리뷰 근거는 별도.
+
 ## #142 B2-3 P2 결정 — 동일 주장 일치와 실제 Local Locator 소속 구분 (2026-10-27)
 
 - **Decision:** Synthetic snapshot 전후 Row 동일성만으로는 원래 존재하던 Local CAD Locator의 오류를 증명할 수 없으므로, `CadStorage.publish` 구현이 강제하는 `LocationId/VersionId/original.ext` 구조를 B2-3 Byte verifier에서 Row 소속에 직접 연결한다. S3 object-key UUID는 별도 생성되어 DB Version UUID와 독립적이라는 기존 ADR 유지.

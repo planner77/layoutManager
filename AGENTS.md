@@ -1,5 +1,11 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #142 / PR #146 — Audit AFTER RAISE(FAIL) P2 행 보존 검증 (2026-10-28 KST)
+
+- **리뷰 P2:** [#4389353517](https://github.com/planner77/layoutManager/pull/146#discussion_r4389353517). 이전 [PR CI #40513422160](https://github.com/planner77/layoutManager/actions/runs/40513422160) HEAD `adf0e1aba89a9a5a3b8d7c33b85f5675f4201b71`는 Verify/Docker 두 Job SUCCESS이나 이후 Codex P2 발견: SQLite `AFTER UPDATE/DELETE` Trigger의 `RAISE(FAIL)`은 예외를 반환하면서 실제 AuditEvent 변경/삭제를 남길 수 있음. 기존 `auditMutationProbe`가 예외 두 번만 체크하면 잘못된 `auditAppendOnlyChecked=true`/합성 PASS를 인정. **이는 CI 실패가 아니라 별도 코드 리뷰 결함**.
+- **실제 행 보존 계약:** 격리 메모리 Clone에 합성 AuditEvent Row 삽입 후 전체 `SELECT * FROM "AuditEvent" ORDER BY "id"` Snapshot 생성. UPDATE 예외뿐 아니라 즉시 전체 Row 전후 동등성 확인, 통과한 경우에만 DELETE 시도, DELETE 예외와 최종 전체 Row 동등성을 다시 검사. 행 변경/삭제/우회가 발견되면 `AUDIT_NOT_APPEND_ONLY/BLOCKED`, `auditAppendOnlyChecked=false`. `BEFORE ... RAISE(ABORT)` 정상 합성 검증은 유지하고 **AFTER UPDATE/DELETE + RAISE(FAIL)** 악성 Trigger를 별개 합성 음성 회귀로 추가.
+- **검증·신뢰 경계:** 앞선 TypeScript 실패 #40511480917은 실패 원장에 보존; #40513422160 성공은 **이전 HEAD 한정**, 새 HEAD Typecheck/Vitest/Docker/E2E/Codex 최신 재검증 전 `NOT VERIFIED`. Audit 조작 시도는 읽기 전용 Source가 아닌 별도 메모리 복제본만 대상. 운영 SQLite/Prisma Migration·CAD/S3·Writer 정지/GHCR·Auth/CAD Write/Owner GO 미실행, #142/#109/#96 OPEN/BLOCKED. [B2-3 Runbook](src/deploy/g7-s3/S3-4-B2-3.md) 필수 참조.
+
 ## Issue #142 / PR #146 — Typecheck TS2769/TS2345 및 Local Locator P2 보완 (2026-10-27 KST)
 
 - **관측된 실패:** [PR CI #40511480917](https://github.com/planner77/layoutManager/actions/runs/40511480917) attempt=1 HEAD `bafe74cceba07a789a328c2453ccd785f19b4597` `completed/failure`. Verify Job 122214239302의 `npm run typecheck`에서 `s3-4-b2-3.ts:62` TS2769·`:63` TS2345 (`object | null`이 `Object.keys/hasOwn`에 전달될 가능성). Docker/Smoke Job 122214238943의 baseline Dockerfile 앱 Build도 **같은 TypeScript 오류**로 실패, 이후 ESLint/Unit/Build/E2E 및 Docker 후속 Steps는 SKIPPED. 두 Job 실패를 서로 다른 결함으로 중복 원인 계상하지 말 것.

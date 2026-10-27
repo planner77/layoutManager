@@ -1,5 +1,12 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## #142 B2-3 — SQLite AFTER Trigger RAISE(FAIL) Audit 원본 행 보존 P2 회귀 (2026-10-28)
+
+- TC-B2-3-08: 정상 `g1_audit_no_update`·`g1_audit_no_delete` BEFORE/ABORT Trigger의 명령 거부와 변경 전후 전체 AuditEvent 레코드 동등성을 메모리 복제본에서 확인 → 합성 일관성 상태 및 `auditAppendOnlyChecked=true`, site/GO=false.
+- TC-B2-3-09: 합성 후보 SQL에서 기존 UPDATE Trigger를 같은 이름의 `AFTER UPDATE ... RAISE(FAIL)`로 바꾸어 예외를 던지면서도 UPDATE가 반영되는 악성 상황 → 전체 행 변경 검출, `AUDIT_NOT_APPEND_ONLY/BLOCKED`, auditAppendOnlyChecked=false. 삭제 검사는 첫 불변 위반 뒤 추가로 진행하지 않아도 됨.
+- TC-B2-3-10: 기존 DELETE Trigger를 같은 이름의 `AFTER DELETE ... RAISE(FAIL)`로 바꾸어 UPDATE는 정상 BEFORE/ABORT로 거절되지만 DELETE 예외 후 행이 실제 없어지는 상황 → 전체 행 변경 검출, `AUDIT_NOT_APPEND_ONLY/BLOCKED`.
+- TC-B2-3-11: before/after 전체 행 비교는 다른 AuditEvent row에 대한 부수 변경도 검출하며 안전 Reason만 출력. 최신 HEAD PR CI/리뷰 0건 확인 전 PASS 미선언, 실제 Site Audit 증거·원본 DB/S3 검사 아님.
+
 ## Issue #142 B2-3 CI 복구 + Local Locator Owner 회귀 (2026-10-27)
 
 - TC-B2-3-05: `exact(unknown)`의 `null` 명시 제외 및 Record 타입 좁힘; 신규 HEAD `npm run typecheck`, Next.js Docker baseline Build 재수행으로 TS2769/TS2345 회귀 없음 확인. 최초 Run #40511480917 두 Job 실패는 같은 TS 원인임을 구분; 이후 스킵된 ESLint/Unit/Integration/Build/E2E/Smoke를 신규 CI에서 실제 실행해야 한다.

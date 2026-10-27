@@ -1,5 +1,10 @@
 # 상세 요구사항
 
+## #142 B2-3 P2 — Audit 행 보존 강제 요구 (2026-10-28)
+
+- FR-G7-B2-3-06: Audit append-only 검사에서 UPDATE/DELETE 예외가 각각 발생하는지뿐 아니라 전체 `AuditEvent` Row가 변경 전과 동일한지 **각 시도 직후** 확인한다. 이미 변경된 행/삭제된 행/다른 행 부수 변경이 있으면 `AUDIT_NOT_APPEND_ONLY/BLOCKED`, `auditAppendOnlyChecked=false`.
+- FR-G7-B2-3-07: 같은 이름의 `AFTER UPDATE/DELETE + RAISE(FAIL)` 악성 Trigger를 각각 합성 후보 SQLite에 넣어 실제 변경이 남는 경우를 차단하는 음성 회귀 추가. 기존 정상 BEFORE/ABORT Audit append-only 양성 유지, 메모리 Clone 외 I/O/운영 Migration/Writer/GO 금지.
+
 ## #142 B2-3 P2 요구 — Local Locator 실 소속 확인 (2026-10-27)
 
 - FR-G7-B2-3-04: `CadFileVersion`의 Local `storage_path` 첫 UUID는 해당 DB Row의 `location_id`, 두 번째 UUID는 `id`와 일치해야 한다. 두 합성 DB before/after와 CAD Asset Claim에 동일한 잘못된 Locator가 있을 때도 `LOCAL_LOCATOR_OWNER_INVALID/BLOCKED`. S3 저장 Object UUID는 DB Version UUID와 독립이므로 동일성 강제는 금지.

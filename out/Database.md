@@ -1,5 +1,10 @@
 # Database Schema — 단일 기준 문서
 
+## #142 B2-3 — Audit AFTER Trigger 예외와 실제 행 불변식 분리 (2026-10-28)
+
+- 격리 Auth 후보 `AuditEvent`는 `g1_audit_no_update`, `g1_audit_no_delete` Trigger가 실제 행 UPDATE/DELETE를 허용하지 않아야 한다. **예외 발생 자체는 불변식 증명이 아님.** SQLite `RAISE(FAIL)`이 AFTER Trigger에서 발생해도 변경·삭제가 남을 수 있으므로 메모리 Clone의 `SELECT * ORDER BY id` 전체 Audit Row를 매 시도 직후 최초 Snapshot과 비교한다.
+- UPDATE/DELETE 각각에 대한 예외+행 동일성 조건을 모두 충족할 때만 `auditAppendOnlyChecked=true`, 어느 조건 실패라도 `AUDIT_NOT_APPEND_ONLY/BLOCKED`. 활성 Prisma Schema/실 DB·마이그레이션 SQL/운영 Trigger는 변경하지 않는다.
+
 ## #142 B2-3 P2 — Local CAD StoragePath/DB Owner 불변식 (2026-10-27)
 
 - `CadStorage.publish`는 실제 DB `CadFileVersion.location_id/id`에서 `<Location UUID>/<Version UUID>/original.(dxf|dwg)` Local `storage_path`를 구성한다. 기존 B2-3 Byte verifier의 정규식 모양 검사와 DB·Asset 제공 문자열의 동일성만으로는 잘못된 소속을 탐지하지 못한다. B2-3은 정규식 그룹을 DB `location_id`와 `id`에 직접 비교해 어긋남을 `LOCAL_LOCATOR_OWNER_INVALID/BLOCKED`로 차단한다.

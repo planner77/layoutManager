@@ -1,5 +1,10 @@
 # 운영·환경설정 초안
 
+## #142 B2-3 P2 — 합성 Audit 검증 운영 경계 (2026-10-28)
+
+- Audit UPDATE/DELETE Probes는 제공된 SQLite Bytes에서 독립 복제한 **메모리 DB에서만** 실행, 원본 Snapshot Buffer/실 DB/실 서비스에는 쓰지 않는다. 첫 합성 Row INSERT 후 전체 `AuditEvent` Table Snapshot을 보유하고 UPDATE 예외 + 동일 Row 여부, DELETE 예외 + 동일 Row 여부를 검사한다. `AFTER ... RAISE(FAIL)`로 예외가 발생해도 DB 변경이 남으면 `AUDIT_NOT_APPEND_ONLY`로 차단한다.
+- 실제 Writer 동결·현장 Audit/SQLite/Local CAD/S3 원본 수집, 활성 Prisma Migration, Auth/Write·GHCR/Nginx/Compose/G7 Owner GO는 승인 전 수행하지 않는다. GitHub/CI에는 안전 사유코드만 기록, 원본 행/경로·Secret은 출력하지 않는다.
+
 ## #142 B2-3 CI 실패 대응·Local 경로 검증 한계 (2026-10-27)
 
 - 최초 [PR CI #40511480917](https://github.com/planner77/layoutManager/actions/runs/40511480917)의 Verify Typecheck 및 Docker baseline Build는 새 오프라인 검증기의 nullable `unknown` TypeScript 문제로 함께 실패; 운영 Dockerfile 자체 변경/빌드 이슈가 아님. 새 HEAD에서 Typecheck 및 전체 CI 재검증 필요, 실패 이후 SKIPPED 단계는 PASS로 기록 금지.
