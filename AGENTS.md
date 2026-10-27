@@ -603,6 +603,7 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 | --- | --- | --- |
 | [Requirements](out/Requirements.md) | 상세 기능/비기능 요구사항, 범위 | 기능 추가·수정·삭제 전 |
 | [Architecture](out/Architecture.md) | 구조와 Component 책임 | 구조 변경, 신규 Module, Viewer 변경 시 |
+| [ViewerPanelPolicy](out/ViewerPanelPolicy.md) | #138 Viewer 조회·작업 보조 창의 공통 drag/Drawer·위치 복원·Canvas 입력 경계·반응형·수명주기 지침 | Viewer 내 검색·목록·트리·편집·도구 창의 요구사항 등록, 설계/구현, 코드 리뷰/수용 시험 시 (예외 사유도 기록) |
 | [Database](out/Database.md) | Schema 및 변경 이력 | Table/Column/Index/Constraint 변경 전후 |
 | [TestPlan](out/TestPlan.md) | Unit, Acceptance Criteria, Test Case | 구현 Unit 시작 전 |
 | [TestReport](out/TestReport.md) | 실제 테스트 및 Viewer 평가 | Unit 완료 및 Release 전 |
