@@ -1,5 +1,12 @@
 # Database Schema — 단일 기준 문서
 
+## #109 S3-4-A — Prisma Migration과 Snapshot 복원 범위 (2026-10-27)
+
+- 현재 운영 자동 `src/scripts/deploy.ts`는 `src/prisma/migrations/**`에 있는 CAD 6개만 자동 migrate deploy. 추가 Auth SQL은 `src/deploy/g7-s3/prisma/migrations/202610260002_g7_operational_auth/**`의 **격리 후보**이며 이번 S3-4-A에서 승격·실행 금지.
+- S3-4-A 패킷은 후보 이력 byte 동등/격리 여부, 사내 복제 DB Migration dry-run, FK=0·Version/Current·원본 SHA·삭제해시/감사 무결성, DB/CAD/S3 단일 Snapshot 복원과 rollback의 내부 증거 ID를 요구하지만 **직접 DB에 접속하지 않는다**. 후보 Migration CI Fixture PASS와 실 운영 Snapshot 복구를 혼동하지 않는다.
+- S3-4-B 별도 사내 복제 볼륨과 완전 복구 실증 전 운영 Migration **NO-GO**.
+
+
 ## Issue #109 S3-3 — CAD API 권한·Audit 원자성 준비, 운영 OFF (2026-10-27)
 
 - **기능:** 기존 CAD Multipart POST·Current PUT·Version DELETE에서 서버 DB의 최신 Session/Role/Site를 같은 Prisma Transaction 안에 재조회하고 승인된 Editor/Admin+Site만 쓰기 허용한다. DELETE는 기존 삭제 비밀번호도 요구하며, CAD DB 변경과 CAD_UPLOADED/CAD_CURRENT_CHANGED/CAD_VERSION_DELETED Audit INSERT 중 하나라도 실패하면 DB를 롤백한다. 기존 업로드 보상·삭제 Job, 익명 GET/Viewer·CAD 데이터 규약은 유지한다.

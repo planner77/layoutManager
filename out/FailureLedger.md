@@ -1,5 +1,20 @@
 # PR/Main CI 실패 원장
 
+## Issue #109 PR #136 — 이전 CI SUCCESS / Codex P2 2건 원인·보완 (2026-10-27 KST)
+
+- **관측 CI 성공 (실패 아님):** [PR CI #40438604869](https://github.com/planner77/layoutManager/actions/runs/40438604869), HEAD `07a126afdba9135e031f348e6a2901ae6395fd79`, attempt 1, `completed/success`. 이 Run의 성공은 이후 보완 HEAD가 합격했다는 뜻이 아니며 실패 Job을 임의 기록하지 않는다.
+- **Codex P2 #4384543606 (리뷰 보안 결함, CI 실패 아님):** pathname `lstat/realpath`와 `readFileSync(path)` 사이 파일 교체(TOCTOU) 시 다른 일반 파일·symlink/FIFO를 재검증 없이 열거나 FIFO에서 블록할 수 있음. 검증한 경로를 `O_NOFOLLOW|O_NONBLOCK|O_RDONLY`로 열고 같은 fd의 `fstatSync`에서 regular/UID/0600/크기 및 사전 `dev+ino` 일치 확인한 뒤 **동일 fd에서 읽고 finally close**하도록 교정. 회귀: symlink 교체, mode 0600 타 inode 교체, FIFO 교체, JSON 구문 오류/후속 읽기.
+- **Codex P2 #4384543609 (자료형 결함, CI 실패 아님):** `String(record.status)`가 배열 `['NOT_RUN']`을 문자열로 변환해 `PENDING`으로 분류. `typeof record.status === 'string'` 확인 후 허용값 비교, 배열/객체/숫자/boolean/null은 `INVALID_CHECK`·`BLOCKED`; 무실행 상태로 오분류 금지.
+- **검증 경계:** 변경된 테스트와 CI 결과는 신규 HEAD의 새 Run 전까지 `NOT VERIFIED`; 실제 OCI registry 확인 및 DB/CAD/S3 운영 복원은 여전히 `NOT RUN`. 운영 Auth/Write·실 Prisma Migration·GHCR/Compose/Nginx·실 데이터 변경 없음, #109/#96 OPEN/BLOCKED.
+
+
+## #109 S3-4-A 착수 — 이전 Main CI PASS 인계 / 신규 CI·실복구 미관측 (2026-10-27)
+
+- **선행 Run (성공·실패 원장과 분리):** #135 squash `dc20844be7525bd3367f38cc3080675efa4fa89c`, Main CI [40437054103](https://github.com/planner77/layoutManager/actions/runs/40437054103) SUCCESS 및 GHCR job SKIPPED. 새 구현에서 기존 S3-3 P2·CI 실패를 소거하거나 중복 실패로 적지 않는다.
+- **이번 작업:** S3-4-A 오프라인 OCI/schema/snapshot/rollback 증거형식 검증·CLI·Unit+GHCR exact allowlist·Runbook 추가. CI 실행 전 결과는 `NOT VERIFIED`, 사내 registry·실 DB/CAD/S3 복원/rollback은 `NOT RUN`; 장래 실패·Cancelled Job을 관측하면 정확 HEAD/Run/Job/Attempt/원인/보완을 추가.
+- **통제:** `src/prisma/migrations/**`, `src/scripts/deploy.ts`, Compose/Nginx, 실 DB/CAD/S3, 운영 Auth/Write, GHCR 이미지 게시/태그/Issue 종료 변경 없음. 사내 원시 증거/주소/토큰/이미지 민감정보 비반출. S3-4-B/C 및 S3-5 미승인.
+
+
 ## Issue #109 PR #135 — 최신 Main 정렬 후 리뷰·충돌 2차 게이트 (2026-10-27 KST)
 
 - **근거 HEAD:** Main `dc82e670073160ddac46a2f9e9489a738a19c033`; S3-3 Merge HEAD `ebc294fff35b005737cf89ebacb78420b209bd59` (parents `13fcea7fc69e844854470dbd9a180a6fc08920ae`, Main `dc82e670...`). GitHub 비교 `ahead=6, behind=0`, PR #135 `OPEN/mergeable=true`. Main #57 변경 파일 25개 의미적 보존(충돌 가능 7개 MD는 Main + S3-3 신규 항목 양쪽 유지), 원본 Main 기능 복원손실 없음.

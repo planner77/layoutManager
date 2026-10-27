@@ -385,3 +385,47 @@ describe('#109 S3-3 isolated CAD transaction GHCR exclusion',()=>{
     expect(tagged.values).toContain('publish=true');
   });
 });
+
+describe('#109 S3-4-A offline release evidence exact GHCR exclusion', () => {
+  const exact = '#109 | S3-4-A Offline release evidence [G7-S3-4A-NO-GHCR]';
+  const allowed = [
+    '.github/workflows/docker-publish.yml','AGENTS.md',
+    'out/Architecture.md','out/Database.md','out/Decisions.md',
+    'out/FailureLedger.md','out/Issue109.md','out/Operation.md',
+    'out/Requirements.md','out/TestPlan.md','out/TestReport.md',
+    'src/deploy/g7-s3/S3-4.md',
+    'src/server/g7-operational/s3-4-readiness.ts',
+    'src/scripts/g7-s3-4-readiness.ts',
+    'src/tests/unit/g7-s3-4-readiness.test.ts',
+    'src/tests/unit/g7-staging-ghcr-guard.test.ts',
+  ];
+  test('exact subject and only allowed offline sources => skip GHCR', () => {
+    const result = runScope(allowed, exact + '\n\nOperational auth remains OFF');
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.values).toContain('publish=false');
+  });
+  test('runtime routes, operational migrations, schema or deploy script fail closed', () => {
+    for (const unsafe of [
+      'src/app/api/cad-files/route.ts',
+      'src/app/api/g7-operational/[...segments]/route.ts',
+      'src/prisma/schema.prisma',
+      'src/prisma/migrations/202610260002_g7_operational_auth/migration.sql',
+      'src/scripts/deploy.ts','src/docker-compose.yml',
+      'src/server/g7-operational/preflight.ts','.github/workflows/pr-ci.yml',
+    ]) {
+      const result = runScope([allowed[12], unsafe], exact);
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toContain('G7-S3-4A GHCR exclusion disallowed path: '+unsafe);
+    }
+  });
+  test('wrong title/suffix fails; ordinary tagged publication unaffected', () => {
+    for (const subject of [exact+' ', exact+'-extra', '#109 | S3-4 candidate release']) {
+      const result = runScope([allowed[12]],subject);
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toContain('G7-S3-4A exact squash subject required');
+    }
+    const tagged = runScope([allowed[12]],exact,'refs/tags/v0.99.1');
+    expect(tagged.status).toBe(0);
+    expect(tagged.values).toContain('publish=true');
+  });
+});
