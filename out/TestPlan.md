@@ -1,5 +1,15 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## TC-VIEWER-138 — 조회/작업 창 이동과 CAD 입력 격리 (계획, 2026-10-27)
+
+- **UNIT-138-001:** Panel registry/edge→floating, 개별 위치/Top z-order, viewport clamp/reset/resize·ESC Cancel, 새 Version 기본 위치, drag handle 이외 이벤트 무시. 시작/끝 pointer capture 및 cleanup.
+- **E2E-138-001:** #26 TEXT Search 입력/결과 선택→focus/zoom을 유지한 채 검색 panel 이동; #43 Outline Tree 선택/show-hide, #40/#49 생성/편집 도구 패널 동시 열림+이동. 다른 창과 Canvas Pan/BoxSelect/Generated Translate/Undo/Layer visibility가 비의도적으로 바뀌는 경우 0.
+- **E2E-138-002:** 1440×900/1366×768 데스크톱 2~3개 panel move/overlap/close/reopen/reset, 375×812/320px 단일 Drawer·touch, keyboard-only/Shift+Arrow(지원 시), Esc 단일 단계, focus, 200% zoom/resize/CSS immersive/native fullscreen. Window clamp 및 Recovery.
+- **E2E-138-003:** panel 반복 이동·열림/닫힘 20회 후 `cad-canvas` DOM 및 ViewerManager identity 동일, CAD GET·parse·Worker·GPU 재생성 0, 검색 query/result/Outline Overlay/Generated history·selection/Zoom 유지. dxf-viewer/DWG capability gate 회귀.
+- **정책 시험:** 향후 Viewer 독립 보조 패널 등록 시 [ViewerPanelPolicy](ViewerPanelPolicy.md)의 적용/비적용 사유 및 메뉴·Drawer 연결·AC 증거가 포함되는지 문서 리뷰 확인. 관련 #26/#40/#43/#49/#73/#82/#85/#90 회귀.
+- **실행 상태:** NOT RUN — 이 계획/지침 자체가 구현·PR CI·현장 검증의 합격을 증명하지 않는다. [Issue #138](https://github.com/planner77/layoutManager/issues/138) 참조.
+
+
 ## #109 S3-4-A Codex P2 회귀 시험 (2026-10-27 KST)
 
 - **TC-S3-4A-P2-01:** lstat/realpath 이후 0600→0644 symlink 또는 inode 변경은 같은 fd의 `fstat`·사전 `dev/ino` 체크로 거부하고, `O_NOFOLLOW`를 사용한다.

@@ -1,5 +1,13 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #138 — Viewer 조회/작업 보조 창 이동 공통 지침 (2026-10-27)
+
+- **모든 신규 Viewer 조회/작업 창의 기본 정책:** #127의 상단 실행형 그룹 메뉴와 기존 좌/우/하단 Drawer 초기 배치는 유지하되, 데스크톱의 외곽선 목록·레이어 목록·TEXT 검색/결과·외곽선 생성/편집 도구 및 후속 Viewer Memo 트리·편집/검색 보조 창은 **제목 전용 이동 핸들 Drag & Drop으로 독립적으로 위치 변경**할 수 있도록 공통 Shell/Panel을 사용한다. 이전 Drawer와 floating panel의 **중복 마운트 금지**, 동일 세션 위치·창별 z-order 보존, 위치 초기화/닫기 제공.
+- **요구사항 접수/이슈/리뷰 필수 확인:** Viewer 내 추가 UI가 보조 창인지 판단해 적용을 이슈 본문·AC에 명시; 비적용(확인 모달, 일회성 메뉴/tooltip/toast, 앱 전체 독립 페이지 등)은 사유 기록. 신규 독립 상단 버튼을 무분별하게 늘리지 말고 #127 그룹 메뉴 실제 실행 항목과 연결한다. 전용 drag handle 이외에서는 이동 금지, 입력창/Tree/Canvas 드래그 선택·Pan·WCS GENERATED 이동/메모 anchor와 포인터 경계 분리, ESC 한 번에 최상위 한 단계·키보드·복원·포커스 보장.
+- **레이아웃/수명주기:** Viewer shell CSS viewport 기준 clamp·resize/200%/immersive/native fullscreen 재배치, 모바일은 기존 #127 단일 modal Drawer 유지. 창 이동/열고 닫기가 Canvas DOM·Manager/Adapter·원본 GET/Worker를 재생성하거나 Layer/검색 결과/선택/Undo·Zoom 상태를 바꾸지 않는다. 실제 CAD 작업 결과를 panel position에 영속 저장하지 않는다. DXF/DWG capability 및 운영 G7 승인 게이트는 그대로.
+- 설계·AC/공통 적용 대상·테스트 체크리스트는 [ViewerPanelPolicy](out/ViewerPanelPolicy.md), [Issue #138](https://github.com/planner77/layoutManager/issues/138), [Requirements](out/Requirements.md), [Architecture](out/Architecture.md), [Decisions](out/Decisions.md), [TestPlan](out/TestPlan.md)을 기준으로 한다. #37/#49/#73/#82/#85/#90 관련 이슈에 참조한다. **본 기록은 지침 변경으로 기능 구현·테스트 PASS를 의미하지 않는다.**
+
+
 ## Issue #109 PR #136 — S3-4-A P2 보완 / 이전 CI 성공과 리뷰 지적 분리 (2026-10-27 KST)
 
 - 최초 S3-4-A PR HEAD `07a126afdba9135e031f348e6a2901ae6395fd79`의 [PR CI 40438604869](https://github.com/planner77/layoutManager/actions/runs/40438604869) `completed/success`. Codex [P2 r4384543606](https://github.com/planner77/layoutManager/pull/136#discussion_r4384543606): 사내 private JSON pathname과 열린 파일 객체의 TOCTOU. `O_NOFOLLOW|O_NONBLOCK`와 `fstatSync`, `lstat` dev/ino 동일성, UID·0600·정규파일·크기, 동일 fd 읽기 및 finally close로 교정.
@@ -595,6 +603,7 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 | --- | --- | --- |
 | [Requirements](out/Requirements.md) | 상세 기능/비기능 요구사항, 범위 | 기능 추가·수정·삭제 전 |
 | [Architecture](out/Architecture.md) | 구조와 Component 책임 | 구조 변경, 신규 Module, Viewer 변경 시 |
+| [ViewerPanelPolicy](out/ViewerPanelPolicy.md) | #138 Viewer 조회·작업 보조 창의 공통 drag/Drawer·위치 복원·Canvas 입력 경계·반응형·수명주기 지침 | Viewer 내 검색·목록·트리·편집·도구 창의 요구사항 등록, 설계/구현, 코드 리뷰/수용 시험 시 (예외 사유도 기록) |
 | [Database](out/Database.md) | Schema 및 변경 이력 | Table/Column/Index/Constraint 변경 전후 |
 | [TestPlan](out/TestPlan.md) | Unit, Acceptance Criteria, Test Case | 구현 Unit 시작 전 |
 | [TestReport](out/TestReport.md) | 실제 테스트 및 Viewer 평가 | Unit 완료 및 Release 전 |

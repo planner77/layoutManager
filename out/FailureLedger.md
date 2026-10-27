@@ -1,5 +1,14 @@
 # PR/Main CI 실패 원장
 
+## Issue #138 / PR #140 — 리뷰 P1 문서 인덱스 누락·Main 문서 충돌 교정 (2026-10-27 KST)
+
+- **CI 실패가 아닌 이전 검증 성공:** 최초 docs-only PR HEAD `e5f27df68d0c98a1bc9fce18f64d632f0dd62acb`, [PR CI Run 40440709454](https://github.com/planner77/layoutManager/actions/runs/40440709454) `completed/success`, Verify [Job 121980119280](https://github.com/planner77/layoutManager/actions/runs/40440709454/job/121980119280)와 Docker [Job 121980119466](https://github.com/planner77/layoutManager/actions/runs/40440709454/job/121980119466) 성공. 기존 성공을 후속 수정 HEAD에 소급 적용하지 않는다.
+- **P1 리뷰:** [r4385582697](https://github.com/planner77/layoutManager/pull/140#discussion_r4385582697), thread `PRRT_kwDOUQjDfc6wkQRw`. 새 `out/ViewerPanelPolicy.md`를 AGENTS.md 서두에서 링크했으나 하단 **상세 문서와 필수 참조 시점** 중앙 색인 표에 등록하지 않아 신규 Markdown 문서 등록 정책 위반. **수정:** AGENTS 색인에 문서 목적과 Viewer 보조 창 요구·구현·리뷰 시 필수 참조 조건 행 추가. CI 실패·실 CAD 오작동으로 분류하지 않고 **리뷰 보완**으로 기록.
+- **Main 충돌:** 최초 PR은 main `dc20844be7525bd3367f38cc3080675efa4fa89c` 기준, 최신 main `1500eb699d5ef8d2045e951354838aa13ce24f92`의 #109 S3-4-A가 AGENTS/Architecture/Decisions/Requirements/TestPlan 상단을 추가하여 Draft 해제 시 GitHub `mergeable=false`. 최신 main 모든 원문·S3-4-A runtime/문서를 보존한 채 #138 삽입만 결합한 **비강제 두-부모 병합** `170f5bb6353b869273726506ddd98f0bc5a176f7`으로 정렬. 당시 Main behind 0, 충돌 없음; #109 운영 GO·GHCR 상태는 변경하지 않았다.
+- **새 HEAD 검증 경계:** Main 정렬 후 새 [PR CI 40458935010](https://github.com/planner77/layoutManager/actions/runs/40458935010)은 생성되었으나 확인 당시 `in_progress`; 이후 색인·원장 보완으로 HEAD가 한 번 더 바뀌므로 완료 결과는 **NOT VERIFIED**. 새 Codex 검토 및 unresolved thread 0 / Main mergeability를 최종 확인해야 병합 가능. 사용자 지시대로 CI 결과 자동 모니터링은 하지 않는다.
+- **릴리스 범위:** PR #140은 Markdown 전용(신규 공통 지침), Viewer MovablePanel 기능 소스 변경 **없음**. `.github/workflows/docker-publish.yml`의 docs-only 판정은 Main release-scope=SUCCESS, GHCR Build and push=SKIPPED 예상이며 **실제 GHCR 게시를 실행하거나 완료로 보고하지 않는다**. Issue #138 기능 AC는 미구현이므로 OPEN. 테스트·문서 가이드 합격을 DnD 구현 완료로 치환하지 않는다.
+
+
 ## Issue #109 PR #136 — 이전 CI SUCCESS / Codex P2 2건 원인·보완 (2026-10-27 KST)
 
 - **관측 CI 성공 (실패 아님):** [PR CI #40438604869](https://github.com/planner77/layoutManager/actions/runs/40438604869), HEAD `07a126afdba9135e031f348e6a2901ae6395fd79`, attempt 1, `completed/success`. 이 Run의 성공은 이후 보완 HEAD가 합격했다는 뜻이 아니며 실패 Job을 임의 기록하지 않는다.

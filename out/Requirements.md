@@ -1,5 +1,18 @@
 # 상세 요구사항
 
+## Issue #138 — 이동 가능한 Viewer 조회·작업 보조 창 공통 요구 (2026-10-27)
+
+| 요구 ID | 정책 / 검증 |
+| --- | --- |
+| FR-VIEWER-138-01 | 기존 #127 그룹 메뉴 및 좌/우/하단 Drawer 초깃값 유지. 데스크톱 Layer/Outline Tree/TEXT Search+결과/Outline 생성·편집 및 후속 Viewer Memo 보조 창을 **제목의 전용 drag handle**로 자유 이동. 창별 독립 floating position·z-order/닫기/기본위치 복원, 동일 세션 재열기 위치 유지. |
+| FR-VIEWER-138-02 | 본문 검색·Tree 선택·텍스트 입력·Canvas Pan/Zoom/영역선택/GENERATED WCS 이동·메모 drag와 패널 drag 분리. ESC 최상위 1단계, PointerCancel·unmount 정리 및 키보드/포커스 접근성. |
+| FR-VIEWER-138-03 | Shell CSS pixel 위치 clamp 및 resize·200%·CSS/native fullscreen 안전, 320/375px mobile은 #127 단일 modal Drawer. 창/메뉴/로딩/확인 z-index가 hit-test/포커스를 방해하지 않음. |
+| NFR-VIEWER-138-01 | 열림/이동/닫힘/복원이 Canvas DOM·Manager/Adapter·CAD GET·Worker·GPU 재생성 및 Layer/Selection/Undo/Search 상태 변경을 일으키지 않음. Renderer/DWG 기존 capability/운영 Auth·DB/API·원본 불변. |
+| PROC-VIEWER-138-01 | 향후 새로운 Viewer 조회/작업 창의 모든 이슈 본문과 AC에 공통 `ViewerPanelPolicy.md` 적용 여부·예외 사유·메뉴/초기 edge/모바일·Drag 충돌·ESC·수명주기·테스트를 명시. 확인 모달/독립 페이지/툴팁은 기본 예외. |
+
+[ViewerPanelPolicy](ViewerPanelPolicy.md), [#138](https://github.com/planner77/layoutManager/issues/138), ADR-053-R1 참조. 기존 #26/#40/#43/#127 완료 범위에 증분 적용할 별도 작업이며 이 문서 갱신은 기능 완료를 뜻하지 않음.
+
+
 ## #109 S3-4-A — 오프라인 증거 패킷 Requirements (2026-10-27)
 
 - FR-G7-S3-4A-01: App/Migrator/rollback OCI digest 형식뿐 아니라 동종 version/source·후보 schema ID·commit과의 모순을 fail-closed; `latest`는 digest가 아니다.
