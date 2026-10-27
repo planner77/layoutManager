@@ -1,5 +1,10 @@
 # 상세 요구사항
 
+## #142 B2-2B — S3 Locator Unique 보완 요구 (2026-10-27)
+
+- FR-G7-B2-2B-06: 정상 도면의 S3 object UUID와 DB Version UUID는 다를 수 있지만 모든 합성 S3 객체 Locator는 `CadFileVersion.storagePath` Unique와 일치해야 한다. 서로 다른 Version binding이 동일 S3 locator를 재사용하면 Byte/hash/VersionId 주장 및 DB ID가 달라도 `DUPLICATE_S3_LOCATOR/BLOCKED`.
+- FR-G7-B2-2B-07: SQLite 합성 복제본의 `uq_storage_path` Unique 인덱스가 없는 경우에도 코드 독립 검사로 재사용을 차단하고, 서로 다른 S3 Object Locator 2건의 정합성은 수용한다. 실 운영 Source VersionId 인증/Writer 정지/Owner GO는 포함하지 않는다.
+
 ## #142 PR #145 P2 보완 — S3 Object Locator 독립성 (2026-10-27)
 
 - FR-G7-B2-2B-04: S3 파일의 객체 경로 UUID와 DB Version ID의 동일성을 강제하지 않는다. 별도 합성 Object mapping의 `s3ObjectLocator`(정규형 `s3:bucket:cad/<object_uuid>/original.ext`)를 DB `CadFileVersion.storage_path`와 정확히 대조하고 파일 형식을 검증한다. 두 UUID가 달라도 올바른 바이트/위치/버전과 경로 매핑이면 합성 단계의 일관성 통과.

@@ -1,5 +1,10 @@
 # Issue #109 — G7 운영 인증 활성화 설계 및 통제 배포·롤백 Runbook
 
+## #142 PR #145 — B2-2B 중복 S3 Locator P2 보완, 운영 NO-GO (2026-10-27)
+
+- [Codex #4388575128](https://github.com/planner77/layoutManager/pull/145#discussion_r4388575128): S3 UUID와 DB Version UUID를 독립적으로 유지하는 변경 이후, 서로 다른 Version의 동일 S3 locator를 허용하던 문제를 `DUPLICATE_S3_LOCATOR/BLOCKED`로 수정. 실제 Prisma `uq_storage_path` 불변식 준수, 고의로 Unique Index를 생략한 합성 DB의 음성 회귀 추가. 과거 PR CI #40502175608 SUCCESS는 신규 HEAD 결과와 구분.
+- 이번 작업은 사내 실제 Writer 정지/SQLite online backup·CAD/S3 원본·GHCR/배포/7 Migration·Restore/Rollback·G7 Owner 승인과 분리한다. #142/#109/#96 OPEN/BLOCKED, 운영 Auth/CAD Write OFF.
+
 ## #142 PR #145 — B2-2B S3 UUID 매핑 P2 보완, 운영 NO-GO (2026-10-27)
 
 - S3ObjectStorage의 객체 UUID는 CadRepository의 DB Version UUID와 독립임을 검토하고 B2-2B 오프라인 합성 대조에서 `s3ObjectLocator` ↔ DB `storage_path`로 검증 기준을 정정. Codex P2 #4388372985는 이전 PR CI 성공과 구분 기록. 현장 S3 원본 객체/version GET 및 Writer freeze는 여전히 `NOT RUN`.

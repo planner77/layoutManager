@@ -1,5 +1,11 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #142 / PR #145 — S3 Locator 중복 검출 Codex P2 보완 (2026-10-27 KST)
+
+- **근거:** [PR #145 P2 #4388575128](https://github.com/planner77/layoutManager/pull/145#discussion_r4388575128). 기존 [PR CI #40502175608](https://github.com/planner77/layoutManager/actions/runs/40502175608) HEAD `cddd2f20dc45c1f3d7edc42e15f0b914016a078d`는 Verify/Docker 2 Job SUCCESS였지만 Codex 최신 리뷰에서 **리뷰 결함** 발견. 이를 CI 실패로 잘못 기록하지 않는다.
+- **정확한 DB 불변식:** `CadFileVersion.storagePath`는 Prisma `@unique(map: "uq_storage_path")`이므로 S3 object-key UUID는 DB Version UUID와 **독립**이어도 서로 다른 Version 두 개가 **동일한 S3 locator를 공유할 수 없다**. B2-2B 검증기는 SHA/크기 및 VersionId 주장 일치와 무관하게 전체 S3 mapping의 동일 Locator 중복을 `DUPLICATE_S3_LOCATOR/BLOCKED` 처리한다. 실 운영 Unique Index 유무에 기대지 않으며 누락된 격리 SQLite 인덱스에서도 fail-closed.
+- **회귀:** 정상 합성 SQLite의 `uq_storage_path`를 유지한 채 서로 다른 S3 object UUID 두 건을 통과시키고, 고의로 Unique 인덱스를 제거한 합성 SQLite에서 독립된 DB Version ID들이 동일 S3 locator/해시/S3 VersionId를 참조하도록 만든 오류를 거부. B2-2A 주장 패킷 자체는 정상으로 구성하여 B2-2B 검출을 분리 검증한다. [B2-2B Runbook](src/deploy/g7-s3/S3-4-B2-2B.md), TestPlan·TestReport·FailureLedger 필수 참조. 수정 HEAD PR CI/최신 Codex 결과는 새 Run 확인 전 `NOT VERIFIED`; 운영 Writer/DB/CAD/S3/실증·GHCR/Owner GO는 여전히 금지.
+
 ## Issue #142 / PR #145 — S3 Locator와 DB Version UUID 독립성 P2 보완 (2026-10-27 KST)
 
 - **근거:** [PR #145 Codex P2 #4388372985](https://github.com/planner77/layoutManager/pull/145#discussion_r4388372985). `S3ObjectStorage.prepare()`는 `cad/<S3-UUID>/original.ext`를 먼저 할당하고 `CadRepository.register()`는 별도 DB Version UUID를 생성한다. B2-2B에서 양자를 동일하다고 간주한 검사는 정상 S3 등록 도면에 `SQLITE_VERSION_OR_LOCATOR_MISMATCH` 오탐을 일으킬 수 있음.

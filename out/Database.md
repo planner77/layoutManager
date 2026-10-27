@@ -1,5 +1,10 @@
 # Database Schema — 단일 기준 문서
 
+## #142 B2-2B P2 — CadFileVersion.storagePath Unique 무결성 (2026-10-27)
+
+- 공식 `src/prisma/schema.prisma`의 `CadFileVersion.storagePath String @unique(map: "uq_storage_path")`는 S3 Object Locator를 서로 다른 DB Version에서 중복 사용할 수 없도록 하는 **별개 Unique 제약**이다. `@@unique([locationId, version])`/DB Version ID/opaque V Key 중복 검사로 대체되지 않는다.
+- B2-2B는 합성/격리 메모리 SQLite의 Unique 인덱스가 생략되거나 깨져도 중복 S3 locator를 `DUPLICATE_S3_LOCATOR`로 차단한다. 독립된 Object UUID와 DB Version UUID는 계속 허용한다. 회귀에는 고의로 Unique Index를 생략한 손상 모사와 인덱스가 있는 정상 3 Version 시나리오를 분리한다. 운영 Schema·Prisma Migration/DB 데이터 변경 없음.
+
 ## #142 B2-2B P2 — S3 storage_path 객체 UUID ≠ DB Version UUID (2026-10-27)
 
 - `CadFileVersion.id`는 `CadRepository.register()`에서 생성되지만 `CadFileVersion.storage_path`가 S3형이면 `S3ObjectStorage.prepare()`가 **사전에 독립 생성한 UUID**의 `s3:bucket:cad/<object_uuid>/original.(dxf|dwg)`가 저장된다. 두 UUID를 일치 제약으로 오해하면 정상 버전이 잘못 차단된다. B2-2B 합성 mapping은 DB Version ID와 분리된 `s3ObjectLocator`를 받아 DB의 실제 `storage_path`와 정확 대조한다.

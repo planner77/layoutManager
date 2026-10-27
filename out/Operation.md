@@ -1,5 +1,10 @@
 # 운영·환경설정 초안
 
+## #142 B2-2B P2 — 합성 S3 Locator 중복 오탐/위양성 운영 경계 (2026-10-27)
+
+- B2-2B 메모리 패킷 verifier는 DB Version UUID와 독립된 S3 Object UUID를 허용하되, 서로 다른 Version들이 동일한 객체 Locator를 재사용하면 `DUPLICATE_S3_LOCATOR`만 안전하게 기록하고 값을 출력하지 않는다. DB가 `uq_storage_path`를 강제하지 못하는 비표준 합성/손상 복제본도 거부한다.
+- 현장 원본 객체 VersionId/실 writer zero 조건·온라인 백업/정식 스키마·증거 서명과 무관한 비운영 검증이다. 현장 Change/Owner 승인 전 writer 정지, 외부 S3 API 및 운영 DB/CAD 접근 없음. 실 Bucket/Key/해시/바이트는 공개 저장소/CI/Chat 반출 금지.
+
 ## #142 B2-2B P2 — 오프라인 S3 Object Locator 입력·기밀 경계 (2026-10-27)
 
 - S3 export `ObservedObject.s3ObjectLocator`는 B2-2B **합성 격리 입력**의 정규화 S3 저장 위치 주장이며, DB Version UUID와 별개로 생성되는 객체 UUID·Bucket을 나타낸다. 메모리 SQLite의 `CadFileVersion.storage_path`와만 비교하며 외부 S3 API에 전달하거나 네트워크/Filesystem Path로 열지 않는다.

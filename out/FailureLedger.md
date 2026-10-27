@@ -1,5 +1,12 @@
 # PR/Main CI 실패 원장
 
+## Issue #142 / PR #145 — Codex P2 중복 S3 Locator 제약 누락 보완 (2026-10-27 KST)
+
+- **관측된 선행 CI 성공, 실패 아님:** [PR CI #40502175608](https://github.com/planner77/layoutManager/actions/runs/40502175608), attempt=1, HEAD `cddd2f20dc45c1f3d7edc42e15f0b914016a078d`, `completed/success`. Verify Typecheck/Lint/Test/Build/E2E Job 122182315944 SUCCESS, Docker/Migration/Smoke Job 122182315606 SUCCESS. 실제 Unit Fail이 아닌 **Codex P2**가 이후 발견되었음.
+- **검증되지 않았던 불변식:** [Codex P2 #4388575128](https://github.com/planner77/layoutManager/pull/145#discussion_r4388575128), 원래 B2-2B는 개별 `key`/`dbVersionId` 중복만 검사했으므로, 서로 다른 Version이 동일 `s3ObjectLocator`와 바이트/`storageVersionId`를 공유해도 `DISPOSABLE_BYTES_CONSISTENT_NOT_SITE_PROOF`를 반환 가능. 이는 [Prisma `CadFileVersion.storagePath @unique("uq_storage_path")`](https://github.com/planner77/layoutManager/blob/main/src/prisma/schema.prisma#L86)과 불일치. 이전 P2 독립 S3 객체 UUID 수정은 유지.
+- **보완·회귀:** 전체 S3 Version mapping의 Locator를 별도 `Set<string>`으로 추적해 중복을 `DUPLICATE_S3_LOCATOR/BLOCKED`로 fail-closed, 기존 S3 UUID≠DB UUID 허용과 Local locator 계약 보존. 정상 3 Version/서로 다른 S3 locator 합성 패킷→긍정, **Unique Index를 의도적으로 생략한** 격리 SQLite 3 Version/동일 S3 locator 두 건→B2-2A 주장 패킷은 정상이나 B2-2B만 `DUPLICATE_S3_LOCATOR`로 BLOCKED 회귀 추가. SHA·byte 길이·S3 VersionId도 유효하게 구성해 결함의 재발을 직접 검출한다.
+- **재검증 경계:** AGENTS·ADR/Architecture·Database·Requirements·Operation·TestPlan/TestReport·Runbook/Issue109 동기화. **새 HEAD** Typecheck/Unit/PR CI/Codex 리뷰 결과는 별도 관측 전 `NOT VERIFIED`, 이전 Run의 SUCCESS 재사용 금지. Main 정렬/미해결 리뷰/충돌은 신규 HEAD push 시 재점검; 실제 Writer freeze/SQLite online backup/원본 CAD/S3 Versioned GET·Migration·Restore/Rollback·GHCR/운영 Auth/CAD Write 및 Owner GO **NOT RUN**. Issue #142/#109/#96 OPEN/BLOCKED. 이번 요청 범위 PR CI 시작, 모니터링/병합 없음.
+
 ## #142 / PR #145 — Codex P2 S3 UUID 매핑 오탐 보완 (2026-10-27 KST)
 
 - **관측 CI 성공(실패 아님):** [PR CI #40499605822](https://github.com/planner77/layoutManager/actions/runs/40499605822), attempt 1, HEAD `0f0c6aaebf97636010ae6dfec91d436c1d329c37` `completed/success`, Typecheck/Lint/Test/Build/E2E [Job 122173675351](https://github.com/planner77/layoutManager/actions/runs/40499605822/job/122173675351) SUCCESS 및 Docker/Migration/Smoke [Job 122173675644](https://github.com/planner77/layoutManager/actions/runs/40499605822/job/122173675644) SUCCESS. PR OPEN, Main `e043d56d...` 대비 behind=0/충돌 없음.

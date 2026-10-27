@@ -1,5 +1,11 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## #142 PR #145 — 신규 P2 중복 S3 Locator 회귀 작성 / 최종 CI 전 (2026-10-27)
+
+- [PR CI #40502175608](https://github.com/planner77/layoutManager/actions/runs/40502175608), attempt=1, HEAD `cddd2f20dc45c1f3d7edc42e15f0b914016a078d` SUCCESS (Verify Job 122182315944, Docker Job 122182315606). 이 **과거 SHA의 성공**과 [Codex P2 #4388575128](https://github.com/planner77/layoutManager/pull/145#discussion_r4388575128)은 구분한다.
+- `DUPLICATE_S3_LOCATOR` 전역 검사 및 정상 독립 S3 객체 UUID/DB Version UUID/서로 다른 S3 locators 합성 양성 Fixture, DB Unique Index가 없는 격리 SQLite의 동일 locator 2-DB-Version 악성 Fixture를 추가 **작성**. B2-2A Packet은 정상으로 유지해 B2-2B의 Unique 검사 자체를 시험한다. 수정 HEAD Typecheck/Vitest/Lint/E2E/PR CI 결과는 실제 Run 확인 전 **NOT VERIFIED**, Site Writer/S3/원본 Snapshot 실제 시험은 **NOT RUN**.
+- DB/CAD/S3 원본·유효한 live Object VersionId/Owner GO 입증 없음. `DISPOSABLE_BYTES_CONSISTENT_NOT_SITE_PROOF` 외의 양성/운영 수용은 불가. #142/#109/#96 OPEN/BLOCKED.
+
 ## #142 PR #145 — P2 S3 객체/DB UUID 분리 수정 검증 대기 (2026-10-27)
 
 - 기존 [PR CI #40499605822](https://github.com/planner77/layoutManager/actions/runs/40499605822), HEAD `0f0c6aaebf97636010ae6dfec91d436c1d329c37` `completed/success`; Verify Job 122173675351, Docker Job 122173675644 모두 SUCCESS. **코드 리뷰 P2는 CI 실패가 아님.**
