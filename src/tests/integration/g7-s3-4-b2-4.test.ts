@@ -82,6 +82,8 @@ function images(){
     rollbackSourceCommit:commitRollback,rollbackVersion:'0.42.1',
     artifacts:roles.map(artifact)};
 }
+type ReplayObject={dbVersionId:string;storagePath:string;
+  storage:'local'|'s3';bytes:Buffer;storageVersionId?:string};
 function fixture(modifyCandidate?:(db:SqliteDb)=>void){
   const db=new SQLite(':memory:');
   let baseline:Buffer,candidate:Buffer;
@@ -93,7 +95,7 @@ function fixture(modifyCandidate?:(db:SqliteDb)=>void){
     modifyCandidate?.(db);
     candidate=db.serialize();
   }finally{db.close();}
-  const objects=()=>[
+  const objects=():ReplayObject[]=>[
     {dbVersionId:localId,storage:'local' as const,
       storagePath:loc+'/'+localId+'/original.dxf',bytes:Buffer.from(localBytes)},
     {dbVersionId:s3Id,storage:'s3' as const,
