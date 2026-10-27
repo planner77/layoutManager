@@ -180,7 +180,8 @@ export function assessS34B23DisposableMigration(raw:unknown):B23Result{
           if(!owner||String(owner.location_id)!==String(l.id))
             reasons.push('CURRENT_VERSION_OWNER_INVALID');
         }
-        if(!Number.isSafeInteger(l.next_version)||Number(l.next_version)<=(maxima.get(String(l.id))||0))
+        const next=Number(l.next_version);
+        if(!Number.isSafeInteger(next)||next<=(maxima.get(String(l.id))||0))
           reasons.push('CAD_VERSION_SEQUENCE_INVALID');
       }
     }
