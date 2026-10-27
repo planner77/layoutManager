@@ -1,5 +1,12 @@
 # 주요 기술 결정과 승인 기록
 
+## Issue #85 M4-A — 세션 Tree UI와 영속 모델의 격리 결정 (2026-10-28)
+
+- **Decision:** #82 M1 안전한 WCS 메모 세션을 재사용해 그룹 1계층/미분류, 임시 show/hide(개별·그룹·전역), 현재 도면 로컬 검색/포커스만 구현한다. 로컬 그룹의 임의 UUID는 영구 MemoGroup FK가 아니라 세션 ViewModel이고 서버 작성자/감사/공유 상태로 직렬화하지 않는다.
+- **UI:** #127 보기/작업 그룹 메뉴·기존 오른쪽 Outline Drawer와 상호 배타 Memo Drawer. #138 공통 위치 드래그는 추후 실제 구현 시 적용(이번 구현은 승인된 동작이라고 표시하지 않음).
+- **Security/Release:** #83 M2 저장/인증, #96/#109 G7 운영 GO, #98 Generated object 관계, #138 movable panel 선행 미충족. Issue #85 Open/Partial; Owner Managed는 현 PR 리뷰 처리 방식이며 CI·현장 검증을 대체하지 않음. Main 미병합 → GHCR/이슈 종료 금지.
+
+
 ## #142 B2-3 P2 결정 — Audit 변경 불가 입증은 예외와 Row 보존이 모두 필요 (2026-10-28)
 
 - **Decision:** Audit append-only 시험에서 SQL Exception 2건만으로 통과시키지 않고, **동일한 메모리 복제본**의 전체 `AuditEvent` 최초 Row Snapshot이 UPDATE 시도 뒤에도 같고 DELETE 시도 뒤에도 같은지를 함께 검증한다. `RAISE(FAIL)`은 BEFORE/ABORT와 달리 AFTER Trigger에서 이미 수행한 행 변경을 되돌리지 않을 수 있다. 실패 시 `AUDIT_NOT_APPEND_ONLY`로 fail closed.
