@@ -1,5 +1,11 @@
 # PR/Main CI 실패 원장
 
+## #142 B2-3 — B2-2B Main CI 완료 인계 / 새 합성 구현 검증 전 (2026-10-27 KST)
+
+- **선행 성공·실패 아님:** [PR #145](https://github.com/planner77/layoutManager/pull/145) HEAD `5fc2e45da56993c4498c6db9dcd9112a6edacbc4`, [PR CI #40505100118](https://github.com/planner77/layoutManager/actions/runs/40505100118) SUCCESS 및 최신 Codex completed/findings 0/미해결 0; exact no-GHCR Squash Main `d2b77dd6535503f2d980ac563cc195cc8b4c128e`. [Main CI #40506886341](https://github.com/planner77/layoutManager/actions/runs/40506886341) completed/success, release-scope Job 122198352827 SUCCESS, GHCR Job 122198431912 SKIPPED.
+- **이번 구현·계획:** B2-3 후보 7 Migration guarded disposable Prisma CLI·seeded 합성 CAD 6→7 SQL 데이터 보존 검증, QuickCheck/FK/Current·Version/Local/S3 SHA 및 Auth/Audit·Fault Injection과 정확 B2-3 no-GHCR allowlist 테스트·문서 추가. 새 HEAD 결과는 CI Run/Job/Attempt 실제 확인 전 `NOT VERIFIED`; 테스트 작성만으로 실행 PASS/현장 복구 성공 주장 금지. CI 실패 발생 시 수정·누적 실패 원장 기록 후 재시작해야 함.
+- **지속 차단:** 운영 데이터/Writer freeze/SQLite Online Backup·사내 CAD/S3 원본 Versioned GET, active Prisma/배포 Auth/Write/Nginx/Compose/GHCR, 실 7 Migration/Restore/Rollback/Owner GO·이슈 종료 전부 `NOT RUN/OFF`. #142/#109/#96 OPEN/BLOCKED.
+
 ## Issue #142 / PR #145 — Codex P2 중복 S3 Locator 제약 누락 보완 (2026-10-27 KST)
 
 - **관측된 선행 CI 성공, 실패 아님:** [PR CI #40502175608](https://github.com/planner77/layoutManager/actions/runs/40502175608), attempt=1, HEAD `cddd2f20dc45c1f3d7edc42e15f0b914016a078d`, `completed/success`. Verify Typecheck/Lint/Test/Build/E2E Job 122182315944 SUCCESS, Docker/Migration/Smoke Job 122182315606 SUCCESS. 실제 Unit Fail이 아닌 **Codex P2**가 이후 발견되었음.

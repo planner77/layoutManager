@@ -1,5 +1,12 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## #142 B2-3 — 7 Migration·CAD 무결성·Fault Injection TC (2026-10-27)
+
+- TC-B2-3-01: 기존 활성 CAD 6 Migration SQL과 G7 quarantined 6 SQL byte 동등·후보 Auth 7번째가 활성 경로 밖임을 확인; UID/0700·0600 Guarded `prisma migrate deploy`가 별도 합성 DB에 Migration History 정확 7건 및 8 Auth Tables, SQLite Quick Check/FK=0. 이 CLI 시험과 seeded 데이터 시험은 분리.
+- TC-B2-3-02: 동일 6 CAD SQL 후 Local DXF/S3-export DWG 2개 CAD Version(Current/nextVersion/SHA/Storage Path)을 합성 SQLite에 삽입하고 후보 7번째 SQL 전후 모든 CAD 7 Tables Row/Byte Hash 비교, Auth 8 Table와 Audit append-only UPDATE/DELETE 실 차단. 양성 `DISPOSABLE_SEVEN_SCHEMA_INVARIANTS_ONLY`, 실제 Site/GO false.
+- TC-B2-3-03: CAD Version SHA·Current·nextVersion 수정, Local/S3 export Byte tamper, FK 위반, 누락 Auth Table/Trigger, Audit 이름만 같은 가짜 Trigger와 중간 Transaction throw·ROLLBACK → BLOCKED/ABORT. 입력에 운영 DB 경로 등 임의 필드 포함·Bytes 누락도 거부.
+- TC-B2-3-04: exact G7-B2-3 no-GHCR squash 제목+15개 파일만 `publish=false`; wrong title/active Prisma·Dockerfile/Compose/Nginx·runtime API·기타 workflow 차단, 태그 정상 게시 정책 유지. 새 HEAD PR CI·Codex 결과는 실관측 전 `NOT VERIFIED`. 현장 Snapshot/OCI/Restore/Owner 수용 `NOT RUN`.
+
 ## #142 B2-2B — CadFileVersion.storagePath Unique P2 회귀 (2026-10-27)
 
 - TC-B2-2B-07: 합성 SQLite의 `UNIQUE(storage_path)`를 유지한 상태에서 Local 1개·S3 2개 Version(각 DB Version ID/S3 Object UUID 독립, S3 locator 2개 서로 다름)과 일치하는 B2-2A Packet·S3 export Buffers → `DISPOSABLE_BYTES_CONSISTENT_NOT_SITE_PROOF`, s3BytesCompared=2, DB Version 3, 모든 출처/GO false.

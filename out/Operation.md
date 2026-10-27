@@ -1,5 +1,11 @@
 # 운영·환경설정 초안
 
+## #142 B2-3 — Disposable G7 Prisma 실행 SOP (2026-10-27)
+
+- 일회용 테스트는 UID-owned `/tmp/cad-g7-s3-*` (0700) 안에 `fixture.sqlite`·`s3-disposable.json` (0600), `G7_S3_MIGRATION_TEST_ONLY=true`·정확 DB URL 두 변수·`G7_AUTH_ENABLED=false`/`G7_CAD_WRITE_CUTOVER_ENABLED=false`를 설정한다. 기존 `requireG7S3DisposableTarget`이 Root/Owner/권한/Marker/환경을 사전 검사하므로 운영 경로에 자동 fallback 없다. CLI는 검증된 `src/deploy/g7-s3/prisma.config.ts`로만 호출하고 단일 합성 fixture만 변경한다.
+- 별도 seeded before/after SQL 검증기는 이미 전달된 인메모리 SQLite·Local/S3-export Buffer만 조사하며 Audit UPDATE/DELETE 거부 Probe도 복제된 메모리 DB 안에서만 실행한다. 실제 Site Writer Freeze/DB online Backup/CAD/S3 GET·Auth/CAD Write/활성 Prisma Migration/Nginx/Compose/GHCR/실 Restore는 금지. 사내 원본·Credential·객체 Key/내부 파일 경로 GitHub/Actions/Chat 반출 금지.
+- 예외/장애주입은 합성 DB에서만 수행, 테스트 Root 임시 파일 삭제. [B2-3 Runbook](../src/deploy/g7-s3/S3-4-B2-3.md).
+
 ## #142 B2-2B P2 — 합성 S3 Locator 중복 오탐/위양성 운영 경계 (2026-10-27)
 
 - B2-2B 메모리 패킷 verifier는 DB Version UUID와 독립된 S3 Object UUID를 허용하되, 서로 다른 Version들이 동일한 객체 Locator를 재사용하면 `DUPLICATE_S3_LOCATOR`만 안전하게 기록하고 값을 출력하지 않는다. DB가 `uq_storage_path`를 강제하지 못하는 비표준 합성/손상 복제본도 거부한다.

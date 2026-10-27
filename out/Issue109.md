@@ -1,5 +1,10 @@
 # Issue #109 — G7 운영 인증 활성화 설계 및 통제 배포·롤백 Runbook
 
+## #142 B2-3 — 격리 7 Migration·합성 CAD/Audit 검증, 운영 NO-GO (2026-10-27)
+
+- 선행 B2-2B [PR #145](https://github.com/planner77/layoutManager/pull/145) → Main `d2b77dd6535503f2d980ac563cc195cc8b4c128e`, Main CI #40506886341 SUCCESS / GHCR SKIPPED. B2-3은 기존 G7 disposable Prisma CLI의 후보 7개 적용/History 및 별도 합성 6 CAD SQL→7번째 Auth SQL에서 CAD/Current/Version/FK/SHA·Auth 8 Table·Audit 불변성을 시험하는 준비 단위.
+- 실제 writer quiescence·source SQLite online backup·local CAD/S3 versioned objects/OCI provenance·B2-4 Restore/Rollback·B2-5 private evidence 및 S3-4-C/S3-5 Owner GO는 모두 별도 승인·증거 필요. 현장 B2-2B 아직 BLOCKED, #142/#109/#96 OPEN/BLOCKED, Auth/CAD Write/GHCR 미활성. [B2-3 Runbook](../src/deploy/g7-s3/S3-4-B2-3.md).
+
 ## #142 PR #145 — B2-2B 중복 S3 Locator P2 보완, 운영 NO-GO (2026-10-27)
 
 - [Codex #4388575128](https://github.com/planner77/layoutManager/pull/145#discussion_r4388575128): S3 UUID와 DB Version UUID를 독립적으로 유지하는 변경 이후, 서로 다른 Version의 동일 S3 locator를 허용하던 문제를 `DUPLICATE_S3_LOCATOR/BLOCKED`로 수정. 실제 Prisma `uq_storage_path` 불변식 준수, 고의로 Unique Index를 생략한 합성 DB의 음성 회귀 추가. 과거 PR CI #40502175608 SUCCESS는 신규 HEAD 결과와 구분.
