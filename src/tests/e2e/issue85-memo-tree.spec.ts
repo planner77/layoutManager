@@ -50,6 +50,8 @@ test('TC-M4-E2E-001: Tree local search, hidden selection/focus and no stored vis
   await tree.getByTestId('cad-memo-tree-search').fill('점검 내용');
   await expect(tree.getByTestId('cad-memo-tree-item')).toHaveCount(1);
   await first.click();
+  await expect(tree.getByTestId('cad-memo-tree-reveal-confirm')).toBeVisible();
+  await tree.getByTestId('cad-memo-tree-reveal-confirm-button').click();
   // Camera focus can cull other pins, but the selected hidden pin has exact WCS.
   await expect(page.locator('[data-testid="cad-memo-pin"][data-memo-wcs-x="10"][data-memo-wcs-y="20"]')).toBeVisible();
     await expect(tree.getByTestId('memo-tree-visibility-status')).toContainText('표시');
