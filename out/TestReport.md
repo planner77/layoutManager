@@ -1,5 +1,11 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issue #82 — v0.43.0 신규 GHCR Pair 버전 정렬 / 재검증 대기 (2026-10-28)
+
+- 원 HEAD `4a4a8ffbb85340efef90b88546cc64815fdd4aa3`의 [PR CI 40580691233](https://github.com/planner77/layoutManager/actions/runs/40580691233) **completed/success**, Verify Job 122458944225 전체 Typecheck/Lint/Unit/E2E/Legacy 성공, Docker Job 122458943642 SUCCESS, 리뷰 2/2 Resolved, Main behind=0, mergeable=clean. 기존 실패 Run 40512645193의 91/92 E2E 및 교정 증거는 [FailureLedger](FailureLedger.md)에 유지.
+- `v0.42.1` 기존 태그 `23d7b74132dc56073656002750eeea550875e1a7` 확인(annotated object points to `dc82e670...`); 신규 UI에 기존 Version/tag/pair 재사용하지 않도록 `0.43.0` 앱/lock 메타데이터 정렬. `v0.43.0` ref 미존재는 조회 당시 사실이며 GHCR 신규 이미지 출판 증거는 아님.
+- 수정 후 HEAD PR CI/최신 리뷰/정식 Main CI/GHCR Pair 및 실제 현장 WCS·GPU·DB/S3는 **NOT VERIFIED/NOT RUN**. Github CI 성공 전 병합·GHCR 게시 성공·이슈 종료를 주장하지 않음. #83 Memo M2 및 G7 운영 OFF.
+
 ## #142 B2-3 / PR #146 — Audit's AFTER RAISE(FAIL) P2 보완·새 CI 미확인 (2026-10-28)
 
 - [PR CI #40513422160](https://github.com/planner77/layoutManager/actions/runs/40513422160) HEAD `adf0e1aba89a9a5a3b8d7c33b85f5675f4201b71`, attempt=1, `completed/success`. Verify Job 122220852265, Docker/Migration/Smoke Job 122220852790 두 건 성공. **이전 HEAD의 실행 근거**이고 새 변경의 합격 근거는 아님.

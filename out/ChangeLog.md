@@ -1,5 +1,11 @@
 # ChangeLog
 
+## v0.43.0 후보 — Issue #82 세션 WCS 메모 및 Renderer UX (2026-10-28)
+
+- MINOR 신규 기능. `three-dxf-viewer`에 session-local MemoDraft WCS XY 앵커·핀·레이블, 위치 drag/좌표 명시 확정·텍스트만 저장/ESC rollback·Version/SHA 격리, Source/Generated Tool 상호배타와 비지원 Renderer fail-closed 적용. #127 `작업 > 메모 추가/편집`과 하단 Drawer 재사용. 메모 영속, 사용자인증 및 공유는 #83 등 후속 비범위.
+- `v0.42.1`은 기존 릴리스 태그이므로 앱/lock root를 `0.43.0`으로 정렬. 기존 App/Migrator Tag/Digest 이동 금지. Main CI를 통한 새로운 Pair digest·릴리스 게이트 및 실제 게시 결과 검증 필요.
+- 버전 정렬 전 [PR #111 CI 40580691233](https://github.com/planner77/layoutManager/actions/runs/40580691233) Verify/Chromium/Legacy/Docker SUCCESS. 정렬된 **최종 HEAD PR CI는 미실행/미검증**, 그 결과와 최신 리뷰·Main 충돌 확인 전 병합 금지. 현장 CAD/GPU/운영 DB·Prisma/G7 Auth/Writer/Owner GO OFF.
+
 ## v0.42.1 후보 — Issue #57 공통 Logger·UploadDiagnostics 단일화 (2026-10-27)
 
 - 기존 #18 구조화 Logger 재사용 및 업로드 별도 console JSON emitter 제거. Versioned Schema v1, 안전한 필드 allowlist/정적 Error code·category 재정제, `LOG_LEVEL`/`LOG_FORMAT` 단일 필터 적용. 공개 진단/첫 실패/요청 ID 계약 유지, 반복 성공 Health 200 debug-only.

@@ -1,5 +1,11 @@
 # CAD Web Viewer P.O.C.
 
+## v0.43.0 릴리스 후보 — CAD 메모 M1 (Issue #82)
+
+새 UI 기능이므로 이전 정식 `v0.42.1`을 재사용하지 않고 **MINOR 버전 0.43.0**을 신규 이미지 쌍으로 발행합니다. DXF `three-dxf-viewer`에서 `작업 > 메모 추가/편집` 메뉴로 아래 도구 Drawer를 열어 WCS XY 고정 임시 메모를 배치·편집·이동·삭제합니다. 메모 제목/본문을 수정해도 명시적 위치 이동 명령 없이는 앵커 좌표가 변하지 않습니다. 다른 Renderer(DWG, dxf-viewer)는 지원하지 않습니다.
+
+메모는 브라우저 세션만 유지되며 **재로드·Renderer 또는 버전 변경 시 소실**, 서버 저장·공유·작성자 인증은 #83 이후 별도입니다. Main #142의 비운영 격리 Auth/G7 서비스는 그대로 OFF. 이전 PR HEAD `4a4a8ff` CI [40580691233](https://github.com/planner77/layoutManager/actions/runs/40580691233) 성공은 **0.43.0으로 버전을 바꾼 새 HEAD의 CI 성공을 의미하지 않습니다**. 정식 GHCR App/Migrator pair 및 Main CI는 새 PR CI 통과 후 별도로 확인하며, 시작 사실만으로 게시 완료를 주장하지 않습니다. 상세 [Issue82](out/Issue82.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md), [FailureLedger](out/FailureLedger.md).
+
 ### #82 / #99 통합 참고 — 메모 ADR-053, 실DXF ADR-052 (2026-10-25)
 
 - WCS 메모 M1은 `ADR-053`(브라우저 임시 세션)이며 실도면 P0/P5 비공개 검증 정책은 #99의 `ADR-052`이다. 최신 #99의 `npm run verify:outline-acceptance` 명령을 보존하며 합성 E2E 통과는 운영 실 DXF/GPU 수용이 아니다.

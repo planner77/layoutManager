@@ -1,5 +1,11 @@
 # Issue #82 — CAD Memo M1 / WCS 브라우저 세션 메모
 
+## M1 신규 릴리스 v0.43.0 사전 게이트 (2026-10-28)
+
+- #82는 `three-dxf-viewer` 사용자 기능(브라우저 세션 WCS 메모)를 추가하므로 MINOR 버전 `0.43.0`을 신규 App/Migrator GHCR Pair로 준비한다. 기존 `v0.42.1` Git Tag/이미지는 재사용·이동하지 않는다. 변경 파일은 package/lock root + 릴리스 메타데이터/문서만이며 새 기능 코드·서버 영속·DB/API/G7 운영 기능은 바꾸지 않음.
+- 버전 변경 전 최종 PR HEAD `4a4a8ffbb85340efef90b88546cc64815fdd4aa3`의 [CI 40580691233](https://github.com/planner77/layoutManager/actions/runs/40580691233) 성공, 리뷰 P1/P2 2건 Resolved·main behind=0/clean. 버전 변경 후 새 HEAD PR CI 성공 확인 전 병합 금지; Main CI/GHCR 실제 게시 검증은 별도.
+- 수용: M1 세션 메모 UI/좌표/텍스트 편집·ESC·모드/Renderer 격리만 해당. 실 사내 DXF/GPU 수용은 #113 별도, 서버 Memo CRUD/Auth/공유는 #83 등 이후, G7 운영 전환 #109/#96 별도.
+
 ## PR #111 — Main 정렬 후 U1 그룹 메뉴 E2E ARIA 1건 수정 (2026-10-28 KST)
 
 - [CI 40512645193](https://github.com/planner77/layoutManager/actions/runs/40512645193), HEAD `89a72018403ebfca32e382e0f04511a95d1946ae`: Chromium E2E **91 PASS/1 FAIL**; Verify Job 122218176649 실패 단계 E2E, Typecheck/Lint/Unit·Integration/OCI/Benchmark/Build PASS, Legacy Migration E2E SKIPPED. Docker Job 122218177009 PASS. Trace 12739315008.

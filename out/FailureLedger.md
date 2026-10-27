@@ -1,5 +1,11 @@
 # PR/Main CI 실패 원장
 
+## Issue #82 / PR #111 — 새 MINOR v0.43.0 GHCR Pair 사전조건 / 실패 없음 (2026-10-28 KST)
+
+- **리스크, CI 실패와 구분:** 기존 `v0.42.1` annotated tag는 이미 발행되어 있으며 Issue #57 코드의 `0.42.1` App/lock 버전으로 #82 런타임 변경을 Squash Main하면, `.github/workflows/docker-publish.yml`의 `create release tag`는 existing tag를 재사용하고 기존 App/Migrator pair가 이미 존재할 경우 GHCR 빌드를 **SKIPPED** 처리할 수 있다. 사용자 요청인 **신규 #82 GHCR 게시를 보장하지 못하는 버전/릴리스 게이트 위험**이지 새 CI 실패나 GHCR 게시 실패를 관측한 것은 아니다.
+- **조치:** 신규 WCS 메모 UI이므로 AGENTS 정책("신규 기능 MINOR")에 따라 package/version 및 lock 루트 두 군데를 `0.43.0`으로 정렬. 기존 `v0.42.1`의 태그/이미지/OCI digest 불변, GHCR workflow/운영 DB/Source·S3 변경 없음. 이전 PR CI [40580691233](https://github.com/planner77/layoutManager/actions/runs/40580691233), HEAD `4a4a8ffbb85340efef90b88546cc64815fdd4aa3`의 Verify [122458944225](https://github.com/planner77/layoutManager/actions/runs/40580691233/job/122458944225)/Docker [122458943642](https://github.com/planner77/layoutManager/actions/runs/40580691233/job/122458943642) **SUCCESS**, 아래 Run 40512645193 등 과거 실패 모두 보존.
+- **예방 및 합격 조건:** 새 package+lock root 버전 일치, 새 HEAD Typecheck/Lint/Unit/Chromium/Legacy/Docker CI 실제 SUCCESS, review unresolved 0, behind=0/mergeable clean, 정확 Squash 제목. Main CI release-scope는 runtime path 수정 인지 → GHCR App/Migrator candidate 쌍 registry digest verified 후 version/latest 승격. 태그 존재 자체·CI START를 게시 합격으로 오판 금지; Main CI 시작 이후 최종 Run/Job/registry manifest 검증 필요. #83 Memo 서버 영속·운영 G7 OFF.
+
 ## Issue #82 / PR #111 — 최신 Main #142 S3-4-B2-3 정렬·검증 인계 (2026-10-28 KST)
 
 - **정렬 전 실제 증거:** PR #111 HEAD `5a1f0697cd68d75a46bcc6335ecbe8d94559892b`의 [PR CI Run 40571261780](https://github.com/planner77/layoutManager/actions/runs/40571261780)은 attempt=1, completed/success, Verify [Job 122425762004](https://github.com/planner77/layoutManager/actions/runs/40571261780/job/122425762004) 및 Docker/Migration/Smoke [Job 122425762291](https://github.com/planner77/layoutManager/actions/runs/40571261780/job/122425762291) **모두 성공**. 이는 아래 [Run 40512645193](https://github.com/planner77/layoutManager/actions/runs/40512645193)의 91/92 E2E FAIL 및 앞선 ESLint/E2E 실패 이력을 지우거나, 새 정렬 HEAD의 성공을 의미하지 않는다.

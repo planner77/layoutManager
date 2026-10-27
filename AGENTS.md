@@ -1,5 +1,12 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #82 / PR #111 — v0.43.0 M1 MINOR / GHCR 정식 Pair 게이트 (2026-10-28 KST)
+
+- **버전 결정:** #82 CAD 메모 M1은 DXF three-dxf-viewer에 신규 WCS 기반 사용자 기능을 추가하므로 AGENTS.md의 "기능 추가 MINOR" 정책 적용. 기존 `v0.42.1`은 Issue #57에서 **이미 발행된** annotated Git tag(대상 SHA `dc82e670073160ddac46a2f9e9489a738a19c033`)로서 변경·재사용 금지. GitHub 조회 당시 `v0.43.0`은 없었음. 신규 `src/package.json` 및 lockfile **최상위 2곳**을 모두 `0.43.0`으로 변경; dependency/DB/API/이미지 Workflow/운영 Auth 전환 없음.
+- **입증된 선행 상태:** PR #111 HEAD `4a4a8ffbb85340efef90b88546cc64815fdd4aa3`의 [CI 40580691233](https://github.com/planner77/layoutManager/actions/runs/40580691233)은 Verify/Chromium/Legacy/Docker 모두 completed/success, Main `7b784c2d62c0872909361e3514d437247d7ab662` 대비 behind=0/mergeable clean, 미해결 Codex review 0/2. **버전 변경 HEAD는 신규 CI PASS 전 병합 금지**.
+- **게시 정책:** 신규 CI 합격·최종 리뷰/충돌·Owner 요청 확인 후 `#82 | CAD WCS memo session overlay M1` Squash Main. Main CI `release-scope`에서 runtime change를 검출해 GHCR candidate App/Migrator를 각각 생성·digest 확인 → `ghcr.io/planner77/layoutmanager:0.43.0`, `:0.43.0-migrate`, `:latest`, `:latest-migrate` 순으로 승격. 실제 Run/Job 및 OCI Manifest/Digest 증거 전에는 "게시 성공"이라 말하지 않고, CI 시작과 게시 완료를 구분한다. 실 CAD/GPU 현장 수용은 #113 별도.
+- **NO-GO 경계:** 신규 메모는 브라우저 세션 임시 Overlay로 Reload/Renderer/Version 변경 시 소실, #83 서버 영속/인증/DB API/공유 기능 미포함. #109/#96 G7 운영 Auth/Write/Prisma Migration/현장 DB-CAD-S3/Owner GO는 본 릴리스로 승인·활성화하지 않는다. 기존 Main #142 격리 preflight 정책 및 `[G7-S3-4B2-3-NO-GHCR]` 가드 그대로 유지. 실패 이력/근거는 [FailureLedger](out/FailureLedger.md) 및 [TestReport](out/TestReport.md).
+
 ## Issue #82 / PR #111 — 최신 Main S3-4-B2-3 정렬 (2026-10-28 KST)
 
 - **선행 PR CI 확인:** [Run 40571261780](https://github.com/planner77/layoutManager/actions/runs/40571261780)는 HEAD `5a1f0697cd68d75a46bcc6335ecbe8d94559892b`에서 completed/success(Verify·Docker 성공)이나 최신 Main 정렬 전 SHA의 결과이므로 새 HEAD PASS로 재사용하지 않는다.

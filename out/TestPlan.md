@@ -1,5 +1,13 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## TC-M1-REL-001~005 — Issue #82 v0.43.0 정식 이미지 Pair (2026-10-28)
+
+- TC-M1-REL-001: `src/package.json` 버전과 `src/package-lock.json` root+packages[""].version = **0.43.0**; 기존 dependencies/실 Prisma schema/운영 설정 불변. 기존 `v0.42.1`은 수정/태그 이동 금지.
+- TC-M1-REL-002: 최신 버전 정렬 HEAD의 PR CI(Verify Typecheck/Lint/Unit/Chromium E2E/Legacy Migration E2E, Docker size/migration/runtime smoke) 성공 및 미해결 Review 0, Main 충돌 0. 기존 [40580691233](https://github.com/planner77/layoutManager/actions/runs/40580691233)은 정렬 전 HEAD 성공.
+- TC-M1-REL-003: Main Squash push의 release-scope `publish=true`, Main CI run 정합성, GHCR candidate App/Migrator 두 digest 독립 Registry inspect, 정확 `:0.43.0` / `:0.43.0-migrate` pair 및 `:latest` alias 승격 확인. 단순 Main CI 시작 또는 v0.43.0 Tag 존재만으로 게시 완료 아님.
+- TC-M1-REL-004: 합성 WCS 메모 TC-M1-UNIT-001~006, E2E-001~006, 기존 Viewer/Source/Outline/Generated/Fullscreen/Drawer/Escape 회귀 유지. 실 CAD/GPU/native 현장 시험은 #113·Owner 별도 증거.
+- TC-M1-REL-005: `#83` Memo server CRUD/Auth, `#109/#96` G7 Writer/Prisma/운영 DB·CAD·S3 활성화 0; 버전 릴리스가 운영 Go/No-Go를 뜻하지 않음.
+
 ## #142 B2-3 — SQLite AFTER Trigger RAISE(FAIL) Audit 원본 행 보존 P2 회귀 (2026-10-28)
 
 - TC-B2-3-08: 정상 `g1_audit_no_update`·`g1_audit_no_delete` BEFORE/ABORT Trigger의 명령 거부와 변경 전후 전체 AuditEvent 레코드 동등성을 메모리 복제본에서 확인 → 합성 일관성 상태 및 `auditAppendOnlyChecked=true`, site/GO=false.
