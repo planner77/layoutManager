@@ -22,6 +22,11 @@ const id=(v:unknown,prefix:string)=>typeof v==='string'&&ID.test(v)&&v.startsWit
 const hash=(v:unknown)=>typeof v==='string'&&HASH.test(v);
 const count=(v:unknown,min=0)=>typeof v==='number'&&Number.isSafeInteger(v)&&v>=min;
 const utc=(v:unknown):v is string=>typeof v==='string'&&UTC.test(v)&&Number.isFinite(Date.parse(v))&&new Date(v).toISOString()===v;
+// S3 Version IDs are opaque UTF-8 strings, at most 1,024 bytes.
+// The literal "null" indicates an unversioned object, not a versioned proof.
+const s3VersionId=(v:unknown):v is string=>typeof v==='string'&&v.length>0&&
+  v!=='null'&&Buffer.byteLength(v,'utf8')<=1024&&
+  Buffer.from(v,'utf8').toString('utf8')===v;
 function answer(errors:string[],vers=0,local=0,s3=0):S34B22Result{
   const reasons=[...new Set(errors)].sort();
   return {state:reasons.length?'BLOCKED':'CAPTURE_CLAIMS_CONSISTENT_NOT_SOURCE_PROOF',
@@ -33,7 +38,7 @@ type Entry={key:string;bytes:number;sha256:string;storageVersionId?:string};
 function entry(v:unknown,kind:'local'|'s3'):v is Entry{
   return shape(v,['key','bytes','sha256'],kind==='s3'?['storageVersionId']:[])&&
     id(v.key,'V')&&count(v.bytes,1)&&hash(v.sha256)&&
-    (kind==='s3'?typeof v.storageVersionId==='string'&&/^[A-Za-z0-9_-]{8,128}$/.test(v.storageVersionId):v.storageVersionId===undefined);
+    (kind==='s3'?s3VersionId(v.storageVersionId):v.storageVersionId===undefined);
 }
 function receipt(r:unknown,snap:string,epoch:string,from:number,to:number,kind:'sqlite'|'local'|'s3'):boolean{
   if(!obj(r)||r.snapshotId!==snap||r.sourceEpoch!==epoch||
@@ -46,7 +51,7 @@ function receipt(r:unknown,snap:string,epoch:string,from:number,to:number,kind:'
     r.currentOwnerViolations===0&&r.auditInvariantViolations===0;
   if(kind==='s3')return shape(r,['snapshotId','sourceEpoch','startedUtc','finishedUtc',
     'markerSnapshotId','markerVersionId','objects'])&&r.markerSnapshotId===snap&&
-    typeof r.markerVersionId==='string'&&/^[A-Za-z0-9_-]{8,128}$/.test(r.markerVersionId);
+    s3VersionId(r.markerVersionId);
   return shape(r,['snapshotId','sourceEpoch','startedUtc','finishedUtc','objects']);
 }
 export function assessS34B22CapturePacket(raw:unknown):S34B22Result{
@@ -76,6 +81,7 @@ export function assessS34B22CapturePacket(raw:unknown):S34B22Result{
      s3s.length<1||s3s.length>10000)return answer([...errors,'INVENTORY_BOUNDS']);
   const vm=new Map<string,Obj>(),lm=new Map<string,Obj>(),localMap=new Map<string,Entry>(),
     s3Map=new Map<string,Entry>();
+  const versionsByLocation=new Map<string,Set<number>>();
   for(const v of versions){
     if(!shape(v,['key','locationId','version','storage','bytes','sha256'],['storageVersionId'])||
        !id(v.key,'V')||!id(v.locationId,'L')||!count(v.version,1)||
@@ -84,6 +90,12 @@ export function assessS34B22CapturePacket(raw:unknown):S34B22Result{
          ...(v.storageVersionId===undefined?{}:{storageVersionId:v.storageVersionId}),
        },v.storage as 'local'|'s3')){errors.push('INVALID_DB_VERSION');continue;}
     if(vm.has(v.key as string))errors.push('DUPLICATE_VERSION');
+    // An opaque Version key does not replace the DB (locationId, version) constraint.
+    const locationId=v.locationId as string,version=v.version as number;
+    const seen=versionsByLocation.get(locationId)??new Set<number>();
+    if(seen.has(version))errors.push('DUPLICATE_LOCATION_VERSION');
+    seen.add(version);
+    versionsByLocation.set(locationId,seen);
     vm.set(v.key as string,v);
   }
   for(const l of locations){

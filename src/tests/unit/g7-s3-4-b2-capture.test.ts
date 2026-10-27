@@ -70,6 +70,39 @@ describe('#142 B2-2A supplied capture/barrier packet, never source proof',()=>{
     const q=fixture();q.sqlite.locations[0].currentKey='V-unknown99';
     expect(assessS34B22CapturePacket(q).reasons).toContain('CURRENT_OWNER_INVALID');
   });
+  test('different opaque keys cannot repeat a Version number in one location',()=>{
+    const p=fixture();p.sqlite.versions[1].version=1;
+    expect(assessS34B22CapturePacket(p).reasons).toContain('DUPLICATE_LOCATION_VERSION');
+    const q=fixture();q.sqlite.versions[1].locationId='L-other100';
+    q.sqlite.versions[1].version=1;
+    q.sqlite.locations.push({id:'L-other100',currentKey:'V-s3item100',nextVersion:2});
+    expect(assessS34B22CapturePacket(q).state).toBe('CAPTURE_CLAIMS_CONSISTENT_NOT_SOURCE_PROOF');
+  });
+  test('S3 object and marker Version IDs accept opaque UTF-8 up to 1024 bytes',()=>{
+    const p=fixture(),versionId='3/L4kqtJlcpXroDTDmJ+rmSpX=Id';
+    p.sqlite.versions[1].storageVersionId=versionId;
+    p.s3.objects[0].storageVersionId=versionId;
+    p.s3.markerVersionId='marker+/=id';
+    expect(assessS34B22CapturePacket(p).state).toBe('CAPTURE_CLAIMS_CONSISTENT_NOT_SOURCE_PROOF');
+    const boundary=fixture(),large='é'.repeat(512);
+    boundary.sqlite.versions[1].storageVersionId=large;
+    boundary.s3.objects[0].storageVersionId=large;
+    boundary.s3.markerVersionId=large;
+    expect(assessS34B22CapturePacket(boundary).state).toBe('CAPTURE_CLAIMS_CONSISTENT_NOT_SOURCE_PROOF');
+  });
+  test('S3 null, >1024-byte and invalid UTF-8 IDs BLOCK for marker and assets',()=>{
+    const marker=fixture();marker.s3.markerVersionId='null';
+    expect(assessS34B22CapturePacket(marker).reasons).toContain('SNAPSHOT_INTERVAL_OR_SOURCE_MISMATCH');
+    const item=fixture();item.sqlite.versions[1].storageVersionId='null';
+    item.s3.objects[0].storageVersionId='null';
+    expect(assessS34B22CapturePacket(item).reasons).toContain('INVALID_DB_VERSION');
+    const object=fixture();object.s3.objects[0].storageVersionId='a'.repeat(1025);
+    expect(assessS34B22CapturePacket(object).reasons).toContain('INVALID_OBJECT');
+    const longMarker=fixture();longMarker.s3.markerVersionId='a'.repeat(1025);
+    expect(assessS34B22CapturePacket(longMarker).reasons).toContain('SNAPSHOT_INTERVAL_OR_SOURCE_MISMATCH');
+    const malformed=fixture();malformed.s3.markerVersionId=String.fromCharCode(0xd800);
+    expect(assessS34B22CapturePacket(malformed).state).toBe('BLOCKED');
+  });
   test('foreign key and audit violations, incomplete inventory block',()=>{
     const p=fixture();p.sqlite.foreignKeyViolations=1;
     expect(assessS34B22CapturePacket(p).state).toBe('BLOCKED');

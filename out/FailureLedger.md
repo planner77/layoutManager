@@ -1,5 +1,13 @@
 # PR/Main CI 실패 원장
 
+## #142 / PR #144 — B2-2A Codex P2 2건 교정·새 PR CI 실행 요청 (2026-10-27 KST)
+
+- **관측(실패 아님):** 기존 HEAD `4fa951d2ccf09455225cd645045ab0cffa1a752b`의 [PR CI #40485053390](https://github.com/planner77/layoutManager/actions/runs/40485053390), attempt=1, `completed/success`; Typecheck/Lint/Test/Build/E2E [Job 122124654212](https://github.com/planner77/layoutManager/actions/runs/40485053390/job/122124654212) SUCCESS, Docker/Migration/Smoke [Job 122124654478](https://github.com/planner77/layoutManager/actions/runs/40485053390/job/122124654478) SUCCESS. **CI 실패 기록이 아닌 리뷰 품질 지적**이며 새 HEAD에 PASS를 이전하지 않음.
+- **P2 [#4387342529](https://github.com/planner77/layoutManager/pull/144#discussion_r4387342529):** 서로 다른 Version key에 같은 `(locationId, version)` 허용 → Prisma `@@unique([locationId, version])`과 모순. location별 Set으로 복합 키 중복을 `DUPLICATE_LOCATION_VERSION/BLOCKED`로 차단, 서로 다른 Location 간 동일 번호는 허용하는 회귀.
+- **P2 [#4387342538](https://github.com/planner77/layoutManager/pull/144#discussion_r4387342538):** 기존 `[A-Za-z0-9_-]{8,128}` 제약은 AWS S3의 `+`, `/` 및 128자 초과 유효 Version ID를 잘못 거부. UTF-8 1,024 bytes 상한의 공통 opaque Version ID 검사로 object/marker 교정; `null` sentinel·잘못된 UTF-8·초과 길이 거부. 회귀에 Unicode byte 경계와 정상 기호를 포함. 근거: https://docs.aws.amazon.com/AmazonS3/latest/userguide/versioning-workflows.html.
+- **충돌/수정 범위:** PR #144 기존 Main `2d29b8572b02ccacf5e0032bf5432cb2f2b26ed6`와 `behind=0/ahead=4`, `mergeable=true/clean`; 강제 push·Main rebase 불필요. 보완은 `s3-4-b2-capture.ts`, synthetic Unit, B2-2 Runbook, AGENTS, 실패 원장 5개뿐이며 **15-path no-GHCR allowlist 보존**.
+- **재검증 상태:** 새 HEAD로 push하면 PR CI가 자동 시작되며, 새로운 Run/Job/Attempt·결과와 최신 Codex 재리뷰는 **결과 관측 전 NOT VERIFIED**. 실 writer 중지·DB/CAD/S3 원본/Registry GET·Migration·Restore/rollback·GHCR 게시·실운영 Auth/Write·Owner GO는 NOT RUN/OFF; #142/#109/#96 OPEN/BLOCKED. 사용자 지시에 따라 CI 모니터링·병합·Main CI는 진행하지 않음.
+
 ## #142 S3-4-B2-2A 착수 — 선행 #143 Main CI 성공 / 새 PR 미검증 (2026-10-27)
 
 - **선행 성공, 실패 아님:** #143 B2-1 PR HEAD `f9545e26886a4f66f152beca21880d7a170764da` PR CI `40479785846` SUCCESS, Codex 최신 HEAD 완료/지적 없음; exact no-GHCR Squash `2d29b8572b02ccacf5e0032bf5432cb2f2b26ed6`. [Main CI #40483297907](https://github.com/planner77/layoutManager/actions/runs/40483297907) `completed/success`, release-scope [Job 122118716547](https://github.com/planner77/layoutManager/actions/runs/40483297907/job/122118716547) SUCCESS, GHCR [Job 122118771319](https://github.com/planner77/layoutManager/actions/runs/40483297907/job/122118771319) SKIPPED. 이미지/태그 게시 없음.
