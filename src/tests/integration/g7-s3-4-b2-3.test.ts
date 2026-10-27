@@ -76,11 +76,13 @@ function seedCad(db:SqliteDb){
   db.prepare('UPDATE "CadLocation" SET current_version_id=? WHERE id=?')
     .run(localId,loc);
 }
-function fixture(mutator?:(db:SqliteDb)=>void):Packet{
+function fixture(mutator?:(db:SqliteDb)=>void,
+  baselineMutator?:(db:SqliteDb)=>void):Packet{
   const db=new Sqlite(':memory:');
   try{
     for(const name of migrations)db.exec(sql(name));
     seedCad(db);
+    baselineMutator?.(db);
     const beforeBytes=db.serialize();
     db.exec(seventh);
     mutator?.(db);
@@ -149,6 +151,21 @@ describe('#142 B2-3 isolated seven migration + fault rehearsal (site NO-GO)',()=
       actualSourceSnapshotVerified:false,formalPrismaDeployVerified:false,
       provenanceVerified:false,operationalGo:false,runtimeActivated:false,
     });
+  });
+  test('invalid Local owner or Version path in BOTH snapshots is rejected',()=>{
+    for(const malformedPath of [
+      s3Id+'/'+localId+'/original.dxf', // wrong Location ID
+      loc+'/'+s3Id+'/original.dxf',      // wrong DB Version ID
+    ]){
+      const p=fixture(undefined,db=>{
+        db.prepare('UPDATE "CadFileVersion" SET storage_path=? WHERE id=?')
+          .run(malformedPath,localId);
+      });
+      // Every byte, hash, database row and file locator still agrees
+      // across before/after; shape-only checks would return false PASS.
+      p.assets[0].storagePath=malformedPath;
+      blocked(p,'LOCAL_LOCATOR_OWNER_INVALID');
+    }
   });
   test('wrong Local or S3 export bytes are not evidence',()=>{
     const a=fixture();a.assets[0].bytes=Buffer.from('tampered');

@@ -32,7 +32,7 @@ const AUDIT_TRIGGERS=['g1_audit_no_update','g1_audit_no_delete'] as const;
 const SHA=/^[a-f0-9]{64}$/;
 const SNAP=/^SNAP-[A-Za-z0-9_-]{2,64}$/;
 const UUID='[0-9a-f-]{36}';
-const LOCAL=new RegExp('^'+UUID+'/'+UUID+'/original\\.(dxf|dwg)$');
+const LOCAL=new RegExp('^('+UUID+')/('+UUID+')/original\\.(dxf|dwg)$');
 const S3=new RegExp('^s3:[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]:cad/'+UUID+'/original\\.(dxf|dwg)$');
 const MAX_DB_BYTES=128*1024*1024;
 const MAX_CAD_BYTES=110*1024*1024;
@@ -57,7 +57,9 @@ function answer(reasons:string[],versionCount=0,assetCount=0,auth=0,audit=false)
     provenanceVerified:false,operationalGo:false,runtimeActivated:false};
 }
 function exact(v:unknown,fields:readonly string[]):v is Record<string,unknown>{
-  return Boolean(v)&&typeof v==='object'&&!Array.isArray(v)&&
+  // Explicit null exclusion lets TypeScript narrow unknown to object;
+  // Boolean(v) alone does not establish Object.keys/Object.hasOwn safety.
+  return v!==null&&typeof v==='object'&&!Array.isArray(v)&&
     Object.getPrototypeOf(v)===Object.prototype &&
     Object.keys(v).length===fields.length &&
     fields.every(k=>Object.hasOwn(v,k));
@@ -168,6 +170,14 @@ export function assessS34B23DisposableMigration(raw:unknown):B23Result{
            !SHA.test(String(v.sha256))||v.sha256!==digest(a.bytes)||
            !ext||!a.storagePath.endsWith('/original.'+ext))
           reasons.push('CAD_BYTES_OR_LOCATOR_MISMATCH');
+        // CadStorage.publish() binds Local object path segments to the
+        // *actual* DB Location and Version IDs. Matching two independently
+        // supplied copies of a malformed path is never source integrity.
+        if(a.storage==='local'){
+          const m=LOCAL.exec(a.storagePath);
+          if(!v||!m||m[1]!==String(v.location_id)||m[2]!==String(v.id))
+            reasons.push('LOCAL_LOCATOR_OWNER_INVALID');
+        }
         if(a.storage==='local')seenLocal.add(a.dbVersionId);
         else seenS3.add(a.dbVersionId);
         assetCount++;
