@@ -31,6 +31,8 @@ export function prepareG7CadWrite(request: Request, requestId: string): G7CadWri
   const env = process.env;
   const attempted = env.G7_S3_CAD_PREVIEW_ONLY === 'true';
   if (!attempted) {
+    if (env.G7_S3_CAD_PREVIEW_ONLY && env.G7_S3_CAD_PREVIEW_ONLY !== 'false')
+      throw fail('G7_S3_CAD_PREVIEW_DENIED', 404);
     if (env.G7_AUTH_ENABLED === 'true' ||
         env.G7_CAD_WRITE_CUTOVER_ENABLED === 'true' ||
         env.G7_S3_GO === 'true' || env.G7_OPERATION_MANIFEST_PATH)

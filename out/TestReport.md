@@ -1,5 +1,13 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issue #109 S3-3 — CAD API 권한·Audit 원자성 준비, 운영 OFF (2026-10-27)
+
+- **기능:** 기존 CAD Multipart POST·Current PUT·Version DELETE에서 서버 DB의 최신 Session/Role/Site를 같은 Prisma Transaction 안에 재조회하고 승인된 Editor/Admin+Site만 쓰기 허용한다. DELETE는 기존 삭제 비밀번호도 요구하며, CAD DB 변경과 CAD_UPLOADED/CAD_CURRENT_CHANGED/CAD_VERSION_DELETED Audit INSERT 중 하나라도 실패하면 DB를 롤백한다. 기존 업로드 보상·삭제 Job, 익명 GET/Viewer·CAD 데이터 규약은 유지한다.
+- **운영 차단:** `NODE_ENV=production`에서는 S3-3 프리뷰 활성화 불가. 정확한 S3-2 disposable DB/marker/7 migration, loopback origin, `G7_S3_AUTH_API_PREVIEW_ONLY=true`, `G7_S3_CAD_PREVIEW_ONLY=true`, `G7_AUTH_ENABLED=false`, `G7_CAD_WRITE_CUTOVER_ENABLED=false` 조건만 격리 시험 허용. 별도 Prisma Client와 0700 root 하위 로컬 CAD 저장소 이용. 운영 Migration·실 DB/CAD/S3·Compose/Nginx/.env·GHCR 게시·인증/쓰기 활성화 없음.
+- **시험·잔여:** synthetic integration(Unit) 검증 코드 추가; 실제 PR CI는 시작 전이므로 결과 `NOT RUN`. 일회용 Preview Cookie의 Path는 `/api/g7-operational`이므로 다른 CAD 경로의 프로그램 시험에서는 테스트용 Cookie를 명시적으로 넘기며 운영 브라우저 인증이 활성된 상태는 아님. S3-4는 OCI/운영 Migration/실복구·신뢰 release binding, S3-5는 릴리스별 Owner GO 및 현장 수용. 기존 유사범위 PR #128은 미병합·충돌 상태이며 자동 병합하지 않는다. #109/#96 OPEN/BLOCKED.
+- **후속 정확 Squash:** `#109 | S3-3 Isolated CAD write and Audit [G7-S3-3-NO-GHCR]` 및 개별 파일 allowlist만 GHCR 미게시. 내부 로그/비밀번호/IP/실 도면 반출 금지. [S3-3 Runbook](../src/deploy/g7-s3/S3-3.md).
+
+
 ## Issue #109 / PR #131 — 두 번째 PR CI의 실제 Unit 실패·수정 HEAD 재검증 대기 (2026-10-27 KST)
 
 - [Run 40394690714](https://github.com/planner77/layoutManager/actions/runs/40394690714), PR HEAD `0cab0f1449e0a7f8e41a1149a5e46b0aa0ef8a72` **completed/failure**. Verify [121824493035](https://github.com/planner77/layoutManager/actions/runs/40394690714/job/121824493035): Typecheck 및 ESLint 성공, Unit/Integration **64 files 중 1 FAIL / 360 tests 중 1 FAIL**. 실패는 `g7-s3-operational-auth.test.ts:127:57`의 `Response.clone: Body has already been consumed`; `login()`이 이미 `r.json()` 실행했는데 동일 원본 `Response`를 재복제하려 해 발생. 실패 후 Production Build/Chromium/Legacy Migration E2E는 SKIPPED. Docker [121824492537](https://github.com/planner77/layoutManager/actions/runs/40394690714/job/121824492537) SUCCESS. 해당 원본 로그 외 실제 HTTP 인증 실패 근거 없음.
