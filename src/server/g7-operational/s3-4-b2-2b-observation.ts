@@ -28,6 +28,9 @@ type LocationBinding = { key: string; dbLocationId: string };
 type ObservedObject = {
   key: string; dbVersionId: string; locationKey: string;
   storage: 'local' | 's3'; bytes: Buffer; storageVersionId?: string;
+  // Unlike a local CAD locator, S3 object UUID is allocated independently
+  // of the CadFileVersion DB UUID. Only synthetic/disposable source claims.
+  s3ObjectLocator?: string;
 };
 type IsolatedBundle = {
   scope: 'G7-S3-4B2-B2B-DISPOSABLE-BYTES';
@@ -46,6 +49,13 @@ export type S34B22BResult = Readonly<{
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const OPAQUE = /^(?:L|V)-[A-Za-z0-9_-]{2,64}$/;
 const HASH = /^[0-9a-f]{64}$/;
+// Match S3ObjectStorage's stored locator grammar; no URLs, file paths or I/O.
+const S3_LOCATOR = /^s3:([a-z0-9][a-z0-9.-]{1,61}[a-z0-9]):cad\/([0-9a-f-]{36})\/original\.(dxf|dwg)$/;
+function validS3Locator(raw: unknown): raw is string {
+  if(typeof raw!=='string')return false;
+  const matched=S3_LOCATOR.exec(raw);
+  return Boolean(matched&&UUID.test(matched[2]));
+}
 const MAX_DB_BYTES = 128 * 1024 * 1024;
 const MAX_CAD_BYTES = 110 * 1024 * 1024;
 const MAX_TOTAL_BYTES = 512 * 1024 * 1024;
@@ -92,15 +102,18 @@ function validBundle(value: unknown): value is IsolatedBundle {
        typeof location.dbLocationId!=='string'||!UUID.test(location.dbLocationId))return false;
   }
   for(const object of value.objects){
-    if(!exact(object,['key','dbVersionId','locationKey','storage','bytes'],['storageVersionId'])||
+    if(!exact(object,['key','dbVersionId','locationKey','storage','bytes'],
+      ['storageVersionId','s3ObjectLocator'])||
       typeof object.key!=='string'||!OPAQUE.test(object.key)||!object.key.startsWith('V-')||
       typeof object.locationKey!=='string'||!OPAQUE.test(object.locationKey)||
       !object.locationKey.startsWith('L-')||
       typeof object.dbVersionId!=='string'||!UUID.test(object.dbVersionId)||
       (object.storage!=='local'&&object.storage!=='s3')||
       !verifiedBuffer(object.bytes,MAX_CAD_BYTES)||
-      (object.storage==='local' ? object.storageVersionId!==undefined :
-        typeof object.storageVersionId!=='string'))return false;
+      (object.storage==='local'
+        ? object.storageVersionId!==undefined||object.s3ObjectLocator!==undefined
+        : typeof object.storageVersionId!=='string'||
+          !validS3Locator(object.s3ObjectLocator)))return false;
     total+=object.bytes.length;
     if(total>MAX_TOTAL_BYTES)return false;
   }
@@ -115,13 +128,17 @@ function markerConsistent(marker: Buffer,snapshotId:string,epoch:string):boolean
   }catch{return false;}
 }
 function locatorMatches(raw: unknown, kind:'local'|'s3',locationId:string,
-  versionId:string,format:unknown):boolean {
+  versionId:string,format:unknown,s3ObjectLocator?:string):boolean {
   if(typeof raw!=='string'||typeof format!=='string')return false;
   const ext=format.toLowerCase();
   if(ext!=='dxf'&&ext!=='dwg')return false;
   if(kind==='local')return raw===locationId+'/'+versionId+'/original.'+ext;
-  const match=/^s3:[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]:cad\/([0-9a-f-]{36})\/original\.(dxf|dwg)$/.exec(raw);
-  return Boolean(match&&match[1]===versionId&&match[2]===ext);
+  const match=S3_LOCATOR.exec(raw);
+  // S3ObjectStorage.prepare() chooses its own UUID before DB registration
+  // assigns versionId. Compare with the independently supplied S3 locator,
+  // not with the unrelated CadFileVersion UUID.
+  return Boolean(match&&UUID.test(match[2])&&match[3]===ext&&
+    raw===s3ObjectLocator);
 }
 /**
  * Compare true in-memory SQLite/asset bytes against a separate B2-2A packet.
@@ -225,7 +242,7 @@ export function inspectS34B22BDisposableBytes(rawPacket:unknown,rawBundle:unknow
              row.version!==claim.version||row.file_size!==claim.bytes||
              row.sha256!==claim.sha256||
              !locatorMatches(row.storage_path,claim.storage,locationId,
-               item.dbVersionId,row.file_format))
+               item.dbVersionId,row.file_format,item.s3ObjectLocator))
             errors.push('SQLITE_VERSION_OR_LOCATOR_MISMATCH');
         }
         if([...locationsById.keys()].some(k=>!locationIds.has(k))||

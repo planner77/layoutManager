@@ -10,6 +10,8 @@ const digest=(b:Buffer)=>createHash('sha256').update(b).digest('hex');
 const loc='11111111-1111-4111-8111-111111111111';
 const localId='22222222-2222-4222-8222-222222222222';
 const s3Id='33333333-3333-4333-8333-333333333333';
+const s3ObjectId='66666666-6666-4666-8666-666666666666';
+const unrelatedS3ObjectId='77777777-7777-4777-8777-777777777777';
 const orphanId='44444444-4444-4444-8444-444444444444';
 const missingLocation='55555555-5555-4555-8555-555555555555';
 const snap='SNAP-b2b-synthetic',epoch='E-synthetic101';
@@ -18,7 +20,8 @@ const scope='G7-S3-4B2-B2B-DISPOSABLE-BYTES';
 type ClaimVersion={key:string;locationId:string;version:number;storage:'local'|'s3';
   bytes:number;sha256:string;storageVersionId?:string};
 type ObservedObject={key:string;dbVersionId:string;locationKey:string;
-  storage:'local'|'s3';bytes:Buffer;storageVersionId?:string};
+  storage:'local'|'s3';bytes:Buffer;storageVersionId?:string;
+  s3ObjectLocator?:string};
 
 function fixture(opts:{
   current?:'local'|'s3';nextVersion?:number;orphan?:boolean;
@@ -44,7 +47,7 @@ function fixture(opts:{
     insert.run(localId,loc,1,opts.wrongSize?local.length+1:local.length,
       digest(local),loc+'/'+localId+'/original.dxf','DXF');
     insert.run(s3Id,loc,2,s3.length,digest(s3),
-      's3:fixture-bucket:cad/'+s3Id+'/original.dwg','DWG');
+      's3:fixture-bucket:cad/'+s3ObjectId+'/original.dwg','DWG');
     if(opts.orphan){
       db.exec('PRAGMA foreign_keys=OFF');
       insert.run(orphanId,missingLocation,3,local.length,digest(local),
@@ -82,7 +85,8 @@ function fixture(opts:{
       {key:'V-local100',dbVersionId:localId,locationKey:'L-zone100',
         storage:'local',bytes:Buffer.from(local)},
       {key:'V-s3item100',dbVersionId:s3Id,locationKey:'L-zone100',
-        storage:'s3',bytes:Buffer.from(s3),storageVersionId:versionId},
+        storage:'s3',bytes:Buffer.from(s3),storageVersionId:versionId,
+        s3ObjectLocator:'s3:fixture-bucket:cad/'+s3ObjectId+'/original.dwg'},
     ];
     const observed={scope,snapshotId:snap,sourceEpoch:epoch,sqliteBytes,
       locations:[{key:'L-zone100',dbLocationId:loc}],objects,
@@ -110,6 +114,40 @@ describe('#142 B2-2B disposable byte-only preflight; not production site proof',
       sourceObjectVersionsVerified:false,provenanceVerified:false,
       operationalGo:false,runtimeActivated:false,
     });
+  });
+  test('S3 upload UUID differs from DB Version UUID and still matches its independent locator',()=>{
+    const {packet,observed}=fixture();
+    expect(s3ObjectId).not.toBe(s3Id);
+    expect(observed.objects[1].dbVersionId).toBe(s3Id);
+    expect(observed.objects[1].s3ObjectLocator)
+      .toBe('s3:fixture-bucket:cad/'+s3ObjectId+'/original.dwg');
+    expect(inspectS34B22BDisposableBytes(packet,observed)).toMatchObject({
+      state:'DISPOSABLE_BYTES_CONSISTENT_NOT_SITE_PROOF',reasons:[],
+      sourceObjectVersionsVerified:false,operationalGo:false,
+    });
+  });
+  test('wrong independently mapped S3 locator UUID or bucket is BLOCKED',()=>{
+    const wrongUuid=fixture();
+    wrongUuid.observed.objects[1].s3ObjectLocator=
+      's3:fixture-bucket:cad/'+unrelatedS3ObjectId+'/original.dwg';
+    blocked(wrongUuid.packet,wrongUuid.observed,'SQLITE_VERSION_OR_LOCATOR_MISMATCH');
+    const wrongBucket=fixture();
+    wrongBucket.observed.objects[1].s3ObjectLocator=
+      's3:other-bucket:cad/'+s3ObjectId+'/original.dwg';
+    blocked(wrongBucket.packet,wrongBucket.observed,'SQLITE_VERSION_OR_LOCATOR_MISMATCH');
+  });
+  test('missing, malformed, or local object S3 locator claims fail closed',()=>{
+    const missing=fixture();
+    missing.observed.objects[1].s3ObjectLocator=undefined;
+    blocked(missing.packet,missing.observed,'INVALID_DISPOSABLE_BUNDLE');
+    const malformed=fixture();
+    malformed.observed.objects[1].s3ObjectLocator=
+      'https://fixture-bucket.example/cad/'+s3ObjectId+'/original.dwg';
+    blocked(malformed.packet,malformed.observed,'INVALID_DISPOSABLE_BUNDLE');
+    const badLocal=fixture();
+    badLocal.observed.objects[0].s3ObjectLocator=
+      's3:fixture-bucket:cad/'+s3ObjectId+'/original.dwg';
+    blocked(badLocal.packet,badLocal.observed,'INVALID_DISPOSABLE_BUNDLE');
   });
   test('unproved writer-freeze claim cannot pass the B2-2A parent gate',()=>{
     const {packet,observed}=fixture();
