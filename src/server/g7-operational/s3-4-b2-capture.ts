@@ -62,9 +62,9 @@ export function assessS34B22CapturePacket(raw:unknown):S34B22Result{
     b.activeWriters!==0||b.writesDuringCapture!==0||b.leaseClaimed!==true)
     return answer(['BARRIER_NOT_PROVEN']);
   const errors:string[]=[],from=Date.parse(b.quiescedUtc),to=Date.parse(b.resumedUtc);
-  if(!receipt(raw.sqlite,raw.snapshotId,b.epochBefore,from,to,'sqlite')||
-     !receipt(raw.local,raw.snapshotId,b.epochBefore,from,to,'local')||
-     !receipt(raw.s3,raw.snapshotId,b.epochBefore,from,to,'s3'))errors.push('SNAPSHOT_INTERVAL_OR_SOURCE_MISMATCH');
+  if(!receipt(raw.sqlite,raw.snapshotId as string,b.epochBefore as string,from,to,'sqlite')||
+     !receipt(raw.local,raw.snapshotId as string,b.epochBefore as string,from,to,'local')||
+     !receipt(raw.s3,raw.snapshotId as string,b.epochBefore as string,from,to,'s3'))errors.push('SNAPSHOT_INTERVAL_OR_SOURCE_MISMATCH');
   if(!obj(raw.sqlite)||!obj(raw.local)||!obj(raw.s3)||
      !Array.isArray(raw.sqlite.versions)||!Array.isArray(raw.sqlite.locations)||
      !Array.isArray(raw.local.objects)||!Array.isArray(raw.s3.objects))
