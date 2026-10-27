@@ -1,5 +1,12 @@
 # PR/Main CI 실패 원장
 
+## #109 / PR #141 — #138 Main 문서 보존 정렬·Review/CI 재검증 인계 (2026-10-27 KST)
+
+- **정렬 기준:** 합병 전 S3-4-B1 PR HEAD `dc1e264a70aa5bdddf21654008fa6b5c91c23fcc`, #138 docs-only Main `4e9095106666aac4568bc4f636e4de8492bc0c86`. 6개 공통 Markdown의 Main **추가 문단만** 기존 #109 문서에 결합했고 `AGENTS.md` 하단 `ViewerPanelPolicy` 필수 참조 색인 행 및 신규 `out/ViewerPanelPolicy.md` 파일을 보존. S3-4-B1 runtime/DB/CI GHCR 허용목록과 기존 Fail Ledger 내용 삭제·덮어쓰기 없음.
+- **병합 방법:** `8980928f7fa86f1686a60780efd3d8af76e48aa6` (정렬 문서까지 반영한 B1 브랜치)과 Main `4e9095106666aac4568bc4f636e4de8492bc0c86`을 **두-부모 비강제 Merge**. 원본 Main/PR 계보를 둘 다 보존. Main #138은 정책 문서만, Viewer Drag & Drop 구현은 아직 미완. 코드 외 B1 구현/합성 테스트는 원본 브랜치 그대로 유지.
+- **새 검증:** 이 문서가 포함된 최종 Merge HEAD의 PR CI·Codex 리뷰는 이전 HEAD CI SUCCESS를 소급 재사용하지 않는다. 새 HEAD PR CI 시작 및 최신 Codex 리뷰 완료 확인 전 PASS/병합 승인 주장 금지. 기존 P1 1건·P2 2건 리뷰 3개 resolved, Main 정렬 후 신규 스레드/충돌 재확인 필요.
+- **안전 경계:** PR Squash Merge·Main CI·GHCR 이미지 게시/태그·운영 Auth/Write 활성화·실 Prisma Migration·Nginx/Compose·실 DB/CAD/S3 조작·Issue #109/#96 종료 미수행. 실패한 CI 관측 시 Run/Job/Attempt/HEAD/원인 기록.
+
 ## Issue #138 / PR #140 — 리뷰 P1 문서 인덱스 누락·Main 문서 충돌 교정 (2026-10-27 KST)
 
 - **CI 실패가 아닌 이전 검증 성공:** 최초 docs-only PR HEAD `e5f27df68d0c98a1bc9fce18f64d632f0dd62acb`, [PR CI Run 40440709454](https://github.com/planner77/layoutManager/actions/runs/40440709454) `completed/success`, Verify [Job 121980119280](https://github.com/planner77/layoutManager/actions/runs/40440709454/job/121980119280)와 Docker [Job 121980119466](https://github.com/planner77/layoutManager/actions/runs/40440709454/job/121980119466) 성공. 기존 성공을 후속 수정 HEAD에 소급 적용하지 않는다.
