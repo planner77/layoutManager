@@ -121,8 +121,8 @@ export function assessS34B23DisposableMigration(raw:unknown):B23Result{
   let before:Db|undefined,after:Db|undefined;
   let versionCount=0,assetCount=0,authCount=0,auditChecked=false;
   try{
-    before=openS34B1MemoryClone(raw.beforeBytes) as Db;
-    after=openS34B1MemoryClone(raw.afterBytes) as Db;
+    before=openS34B1MemoryClone(raw.beforeBytes) as unknown as Db;
+    after=openS34B1MemoryClone(raw.afterBytes) as unknown as Db;
     integrity(before,reasons,'BEFORE');
     integrity(after,reasons,'AFTER');
     const beforeTables=new Set(before.prepare("SELECT name FROM sqlite_master WHERE type='table'").all().map(r=>String(r.name)));
@@ -140,12 +140,22 @@ export function assessS34B23DisposableMigration(raw:unknown):B23Result{
         if(JSON.stringify(rows(before,table))!==JSON.stringify(rows(after,table)))
           reasons.push('CAD_ROWS_CHANGED');
       }
-      const vers=before.prepare('SELECT id,file_size,sha256,storage_path,file_format FROM "CadFileVersion"').all();
+      const vers=before.prepare('SELECT id,location_id,version,file_size,sha256,storage_path,file_format FROM "CadFileVersion"').all();
       const locs=before.prepare('SELECT id,current_version_id,next_version FROM "CadLocation"').all();
       versionCount=vers.length;
       if(vers.length<2||locs.length<1)reasons.push('CAD_FIXTURE_INCOMPLETE');
       const ids=new Set<string>(),locators=new Set<string>();
       const byId=new Map(vers.map(v=>[String(v.id),v]));
+      const maxima=new Map<string,number>(),sequence=new Set<string>();
+      const knownLocations=new Set(locs.map(l=>String(l.id)));
+      for(const version of vers){
+        const location=String(version.location_id),n=Number(version.version);
+        const seqKey=location+'/'+n;
+        if(!knownLocations.has(location)||!Number.isSafeInteger(n)||n<1||
+           sequence.has(seqKey))reasons.push('CAD_VERSION_SEQUENCE_INVALID');
+        sequence.add(seqKey);
+        maxima.set(location,Math.max(maxima.get(location)||0,n));
+      }
       const seenLocal=new Set<string>(),seenS3=new Set<string>();
       for(const a of raw.assets){
         if(ids.has(a.dbVersionId)||locators.has(a.storagePath)){
@@ -165,9 +175,13 @@ export function assessS34B23DisposableMigration(raw:unknown):B23Result{
       if(ids.size!==vers.length||seenLocal.size===0||seenS3.size===0)
         reasons.push('CAD_ASSET_COVERAGE_INCOMPLETE');
       for(const l of locs){
-        const owned=vers.filter(v=>String(v.id)===String(l.current_version_id));
-        if(l.current_version_id!==null&&owned.length!==1)
-          reasons.push('CURRENT_VERSION_MISSING');
+        if(l.current_version_id!==null){
+          const owner=byId.get(String(l.current_version_id));
+          if(!owner||String(owner.location_id)!==String(l.id))
+            reasons.push('CURRENT_VERSION_OWNER_INVALID');
+        }
+        if(!Number.isSafeInteger(l.next_version)||Number(l.next_version)<=(maxima.get(String(l.id))||0))
+          reasons.push('CAD_VERSION_SEQUENCE_INVALID');
       }
     }
     if(authCount===AUTH_TABLES.length){
