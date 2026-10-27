@@ -203,6 +203,22 @@ describe('#142 B2-3 isolated seven migration + fault rehearsal (site NO-GO)',()=
       'BEGIN SELECT 1; END;'));
     blocked(p,'AUDIT_NOT_APPEND_ONLY');
   });
+  test('AFTER UPDATE RAISE(FAIL) leaves modified Audit row and must BLOCK',()=>{
+    const p=fixture(db=>db.exec('DROP TRIGGER "g1_audit_no_update";'+
+      'CREATE TRIGGER "g1_audit_no_update" AFTER UPDATE ON "AuditEvent" '+
+      "BEGIN SELECT RAISE(FAIL,'SYNTHETIC_AFTER_UPDATE'); END;"));
+    const r=assessS34B23DisposableMigration(p);
+    expect(r).toMatchObject({state:'BLOCKED',reasons:['AUDIT_NOT_APPEND_ONLY'],
+      auditAppendOnlyChecked:false,operationalGo:false,runtimeActivated:false});
+  });
+  test('AFTER DELETE RAISE(FAIL) leaves deleted Audit row and must BLOCK',()=>{
+    const p=fixture(db=>db.exec('DROP TRIGGER "g1_audit_no_delete";'+
+      'CREATE TRIGGER "g1_audit_no_delete" AFTER DELETE ON "AuditEvent" '+
+      "BEGIN SELECT RAISE(FAIL,'SYNTHETIC_AFTER_DELETE'); END;"));
+    const r=assessS34B23DisposableMigration(p);
+    expect(r).toMatchObject({state:'BLOCKED',reasons:['AUDIT_NOT_APPEND_ONLY'],
+      auditAppendOnlyChecked:false,operationalGo:false,runtimeActivated:false});
+  });
   test('injected transaction failure in seventh SQL leaves baseline intact',()=>{
     const db=new Sqlite(':memory:');
     try{

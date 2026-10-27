@@ -105,17 +105,25 @@ function auditMutationProbe(db:Db):boolean{
   try{
     db.prepare('INSERT INTO "AuditEvent" (id,action,target_kind,target_id,outcome,timestamp_utc,request_id) VALUES (?,?,?,?,?,?,?)')
       .run(id,'LOGIN_DENIED','ACCOUNT','synthetic','DENIED','2026-10-27T00:00:00Z','B2-3-synthetic');
-    let updateRejected=false,deleteRejected=false;
+    // RAISE(FAIL) from an AFTER trigger throws even when SQLite retains
+    // the row update/deletion. Check actual data, not only the exception.
+    // The full inventory comparison also catches side effects on other rows.
+    const query=db.prepare('SELECT * FROM "AuditEvent" ORDER BY "id"');
+    const baseline=JSON.stringify(query.all());
+    let updateRejected=false;
     try{
       db.prepare('UPDATE "AuditEvent" SET "outcome"=? WHERE "id"=?')
         .run('SUCCESS',id);
     }catch{updateRejected=true;}
+    if(!updateRejected||JSON.stringify(query.all())!==baseline)return false;
+    let deleteRejected=false;
     try{
       db.prepare('DELETE FROM "AuditEvent" WHERE "id"=?').run(id);
     }catch{deleteRejected=true;}
-    return updateRejected&&deleteRejected;
+    return deleteRejected&&JSON.stringify(query.all())===baseline;
   }catch{return false;}
 }
+
 /** Discrete byte reconciliation, not a migration runner nor site capture proof. */
 export function assessS34B23DisposableMigration(raw:unknown):B23Result{
   if(!valid(raw))return answer(['INVALID_DISPOSABLE_PACKET']);
