@@ -1,5 +1,13 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-053-R1 — Viewer Drawer 보존 + 이동 가능한 보조 창 공통 정책 (#138, 2026-10-27)
+
+- **Context:** #127은 화면 점유를 줄이는 좌/우/하단 overlay Drawer와 실행형 그룹 메뉴를 완료했지만 사용자가 외곽선 목록·TEXT 검색·생성/편집 도구의 위치를 자유 배치할 수 없다. 별도 패널마다 개별 absolute drag를 구현하면 Canvas gesture·modal/keyboard·fullscreen/resize 정책이 어긋난다.
+- **Decision:** 기존 ADR-053의 #127 Drawer를 **초기 edge/모바일 modal**로 보존하고 데스크톱에서는 공통 movable panel의 header 전용 drag handle로 독립 floating 위치를 지정한다. 독립 열린 상태/position/z-order/Reset 및 안전 clamp, CSS/native fullscreen·320px 대응을 구현한다. Pointer/keyboard/ESC 및 Canvas 입력 경계를 공통으로 만들고 panel 이동과 Viewer render/Source lifecycle을 분리한다. 같은 Viewer 세션 내 위치 유지, 새 Version·탭·세션 기본 위치; 무단 localStorage/DB 영속화는 하지 않는다.
+- **Policy:** 향후 Viewer 내부 독립 조회·작업 창은 #127 그룹 메뉴/공용 `ViewerPanelPolicy`를 기본 적용. 확인 모달·툴팁·일회 메뉴·독립 페이지 등은 이유 기록 후 예외. #26/#40/#43 기능은 #138 범위에서 retrofit, #37/#49/#73/#82/#85/#90 후속 기능에 공통 적용을 이슈 AC로 명시한다.
+- **Consequences:** CAD 데이터/WCS selection/Undo, Layer visibility, 검색 Query/결과, Runtime Manager/Adapter, DXF source bytes/Version/Current 및 G7 API/Auth 불변. 기존 모바일 focus trap/한 ESC 한 단계/메뉴·modal 우선순위는 유지. 자세한 근거/시험 계약 [ViewerPanelPolicy](ViewerPanelPolicy.md), [#138](https://github.com/planner77/layoutManager/issues/138). **구현·E2E NOT RUN.**
+
+
 ## #109 S3-4-B1 — 복제본 무결성과 운영 Snapshot 복구 증거의 구분 (2026-10-27)
 
 - B1은 `ISOLATED_INTEGRITY_ONLY`로 **격리 파일 내용의 DB↔CAD↔S3 내보내기 일치**만 표시한다. `snapshotId`만 같다고 운영 원본의 쓰기 정지·실제 동일 시점 백업·Registry provenance를 입증하지 않는다. 따라서 결과 `operationalGo=false`/`runtimeActivated=false` 고정.
