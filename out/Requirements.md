@@ -1,5 +1,12 @@
 # 상세 요구사항
 
+## #142 B2-3 — 격리 7 Migration·검증·장애주입 요구 (2026-10-27)
+
+- FR-G7-B2-3-01: 활성 CAD 6개 원본 Migration SQL과 quarantined 6개 SQL 복사본의 동일성·7번째 Auth 후보의 운영 경로 부재 확인, gated Prisma CLI 일회용 DB에 정확 7개 Migration/완료 History·8 Auth Table 검증.
+- FR-G7-B2-3-02: 합성 CAD Local DXF/S3-export DWG 2개 Version/Current/nextVersion·SHA/Storage Path 및 CAD 기준정보 7 Tables의 6→7 SQL 전후 완전 보존, FK·Quick Check 0·8 Auth Tables와 Audit UPDATE/DELETE 차단 증명. `assessS34B23DisposableMigration` 상태 양성은 `DISPOSABLE_SEVEN_SCHEMA_INVARIANTS_ONLY` 및 모든 Site/운영 GO false.
+- FR-G7-B2-3-03: FK 위반·Version/Current/SHA 변경·Local/S3 Byte 손상·후보 Auth Table/Trigger 누락·가짜 Audit Trigger·7번째 SQL Transaction 실패, 미승인 입력/경로는 BLOCKED. 실제 DB/CAD/S3/Writer·운영 Prisma·GHCR·Nginx/Compose/배포/Auth/CAD Write 기능 건드리지 않음.
+- NFR-G7-B2-3-01: 정확 B2-3 no-GHCR Squash 제목과 15개 명시 파일 allowlist만 publish=false, 활성 migration·Dockerfile/Compose/운영 Route 및 비허용 파일/Workflow는 거부. #142/#109/#96 OPEN/BLOCKED와 현장 수용 보류.
+
 ## #142 B2-2B — S3 Locator Unique 보완 요구 (2026-10-27)
 
 - FR-G7-B2-2B-06: 정상 도면의 S3 object UUID와 DB Version UUID는 다를 수 있지만 모든 합성 S3 객체 Locator는 `CadFileVersion.storagePath` Unique와 일치해야 한다. 서로 다른 Version binding이 동일 S3 locator를 재사용하면 Byte/hash/VersionId 주장 및 DB ID가 달라도 `DUPLICATE_S3_LOCATOR/BLOCKED`.

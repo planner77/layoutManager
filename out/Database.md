@@ -1,5 +1,11 @@
 # Database Schema — 단일 기준 문서
 
+## #142 B2-3 — 기존 CAD 6 + quarantined Auth 후보 1 (2026-10-27)
+
+- `src/prisma/migrations`의 활성 6개 CAD 이력과 후보 폴더 SQL 복사본의 동일성 검사, G7 격리 `202610260002_g7_operational_auth`는 `src/deploy/g7-s3/prisma/migrations`에만 유지. 기존 운영 Prisma History/DDL 무변경.
+- UID-owned Disposable CLI에서 `_prisma_migrations`의 성공 7건 및 8개 Auth Tables 확인. 합성 6→7 메모리 검사에서는 CAD 7 Tables 전체 Row/Current owner·nextVersion·Version/Storage Path/File Size/SHA/Local+S3 Byte 보존과 SQLite Quick Check/FK=0, Auth 8개, `g1_audit_no_update`·`g1_audit_no_delete` Trigger 실제 기능을 확인. CLI 결과와 seeded SQL 전후 결과는 별개의 증거.
+- 합성 후보 검사기는 실제 DB·CAD·S3 출처/Registry/Writer·Owner GO를 인증하지 않음. [Runbook](../src/deploy/g7-s3/S3-4-B2-3.md).
+
 ## #142 B2-2B P2 — CadFileVersion.storagePath Unique 무결성 (2026-10-27)
 
 - 공식 `src/prisma/schema.prisma`의 `CadFileVersion.storagePath String @unique(map: "uq_storage_path")`는 S3 Object Locator를 서로 다른 DB Version에서 중복 사용할 수 없도록 하는 **별개 Unique 제약**이다. `@@unique([locationId, version])`/DB Version ID/opaque V Key 중복 검사로 대체되지 않는다.

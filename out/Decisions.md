@@ -1,5 +1,10 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-051-G7-B2-3 — 실제 Migration과 합성 데이터 보존 증거 분리 (2026-10-27)
+
+- **Decision:** S3-1에서 승인된 `requireG7S3DisposableTarget`가 격리한 CLI에서 정식 Prisma 7 Migration 적용 결과를 검증하고, 별도 새 테스트는 합성 CAD 6 SQL 위의 CAD 데이터를 7번째 후보 SQL 적용 전후 비교한다. 새 verifier는 메모리 Buffer만 수용하며 호스트 Path/Network/S3/운영 Writer/active migration을 열거나 변경하지 않는다.
+- **Risk:** 빈 DB의 formal 7개 History PASS와 데이터가 있는 합성 DB의 후보 SQL 보존 PASS를 같은 물리 실증이라고 주장하면 안 된다. 실제 현장 원본 SNAP/Writer 중지/OCI pair·rollback compatible 및 B2-4/5 수용은 별도 Owner 변경승인·독립 QA 필요. 긍정도 `DISPOSABLE_SEVEN_SCHEMA_INVARIANTS_ONLY`, GO/Runtime false.
+
 ## #142 B2-2B P2 결정 — Object UUID 독립성과 Locator Unique를 동시 충족 (2026-10-27)
 
 - **Decision:** DB Version UUID ↔ S3 객체 UUID는 서로 독립이지만 `CadFileVersion.storagePath @unique`를 준수하도록, 모든 S3 Version의 정규화 Locator 중복을 코드의 전역 `Set<string>`에서 직접 거부한다. 다른 Version들의 SHA/Size/S3 VersionId 주장까지 동일해도 하나의 객체를 여러 Version으로 중복 계상하는 것은 BLOCKED.
