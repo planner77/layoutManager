@@ -17,7 +17,19 @@ export type S34B1Result = Readonly<{
 type Row = Record<string, string | number | null>;
 type Db = {prepare(sql: string): {all(...v: (string|number)[]): Row[]; get(...v:(string|number)[]): Row | undefined}; close():void};
 const SQLite = createRequire(import.meta.url)('better-sqlite3') as
-  new(filename:string, options:{readonly:true;fileMustExist:true;timeout:number})=>Db;
+  new(serialized: Buffer)=>Db;
+/** Verified snapshot bytes become a private in-memory SQLite clone.
+ * SQL never re-opens an attacker-replaceable source pathname.
+ */
+export function openS34B1MemoryClone(bytes: Buffer): Db {
+  if(bytes.subarray(0,16).toString('binary')!=='SQLite format 3\0')
+    throw new Error('INVALID_SQLITE_SNAPSHOT');
+  return new SQLite(bytes);
+}
+const AUTH_TABLES=[
+  'User','UserRoleGrant','UserSiteGrant','SpecialGrant',
+  'AuthSession','AuditEvent','AdminRecoveryNonce','G3LoginAttempt',
+] as const;
 const key = /^([0-9a-f-]{36})\/([0-9a-f-]{36})\/original\.(dxf|dwg)$/;
 const s3key = /^s3:([a-z0-9][a-z0-9.-]{1,61}[a-z0-9]):(cad\/[0-9a-f-]{36}\/original\.(?:dxf|dwg))$/;
 const snapId = /^SNAP-[a-zA-Z0-9_-]{2,64}$/;
@@ -76,25 +88,25 @@ export function inspectS34B1Clone(root: string,
     const manifest=JSON.parse(ownedBytes(root,'snapshot.json').toString('utf8')) as unknown;
     if (!manifest || typeof manifest!=='object'||Array.isArray(manifest)) throw Error('MANIFEST');
     const m=manifest as Record<string,unknown>;
-    if(Object.keys(m).sort().join(',')!=='schema,schemaId,snapshotId,scope' ||
+    if(Object.keys(m).sort().join(',')!=='schema,schemaId,scope,snapshotId' ||
       m.scope!=='G7-S3-4B-DISPOSABLE-RESTORE'||
       m.snapshotId!==expected.snapshotId||m.schema!==expected.schema ||
       m.schemaId!==(expected.schema==='G7_CANDIDATE'?G7_S3_SCHEMA_ID:'CAD_BASELINE'))
       return result(['SNAPSHOT_MANIFEST_MISMATCH'],0,0,0);
-    const databaseFile=path.join(root,'snapshot.sqlite');
-    // Validate descriptor and physical ownership before better-sqlite3 opens.
-    const check=ownedBytes(root,'snapshot.sqlite');
-    if(check.subarray(0,16).toString('binary')!=='SQLite format 3\0')
-      return result(['INVALID_SQLITE_SNAPSHOT'],0,0,0);
-    const db=new SQLite(databaseFile,{readonly:true,fileMustExist:true,timeout:5000});
+    // SQL reads the exact authenticated buffer, not an unsafe second open.
+    const verifiedDatabaseBytes=ownedBytes(root,'snapshot.sqlite');
+    const db=openS34B1MemoryClone(verifiedDatabaseBytes);
     try {
       if(db.prepare('PRAGMA quick_check').all().some(row=>row.quick_check!=='ok') ||
          db.prepare('PRAGMA foreign_key_check').all().length)
         reasons.push('DB_INTEGRITY_OR_FK');
-      const hasAuth=!!db.prepare("SELECT 1 AS yes FROM sqlite_master WHERE type='table' AND name='AuditEvent'").get();
-      if((expected.schema==='G7_CANDIDATE')!==hasAuth)reasons.push('SCHEMA_BOUNDARY_MISMATCH');
-      if(hasAuth&&!(db.prepare("SELECT 1 AS yes FROM sqlite_master WHERE type='table' AND name='AuthSession'").get()))
-        reasons.push('AUTH_TABLES_INCOMPLETE');
+      const schemaTables=new Set(db.prepare(
+        "SELECT name FROM sqlite_master WHERE type='table'").all()
+          .map(row=>String(row.name)));
+      const present=AUTH_TABLES.filter(name=>schemaTables.has(name)).length;
+      if(expected.schema==='G7_CANDIDATE'){
+        if(present!==AUTH_TABLES.length)reasons.push('AUTH_TABLES_INCOMPLETE');
+      }else if(present!==0)reasons.push('SCHEMA_BOUNDARY_MISMATCH');
       const versions=db.prepare('SELECT id,location_id,version,file_format,file_size,sha256,storage_path FROM "CadFileVersion" ORDER BY id').all();
       const locations=db.prepare('SELECT id,current_version_id,next_version FROM "CadLocation"').all();
       total=versions.length;

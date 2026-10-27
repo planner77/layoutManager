@@ -1,12 +1,12 @@
 import { beforeEach, afterEach, describe, expect, test } from 'vitest';
 import { createHash, randomUUID } from 'node:crypto';
 import { createRequire } from 'node:module';
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, renameSync, symlinkSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { createDb, type Database } from '../../server/db';
 import { CadRepository } from '../../server/repositories/cad';
 import { migrate, seedChain } from '../helpers/database';
-import { inspectS34B1Clone } from '../../server/g7-operational/s3-4-b-clone';
+import { inspectS34B1Clone, openS34B1MemoryClone } from '../../server/g7-operational/s3-4-b-clone';
 
 type RawDb={exec(s:string):void;close():void};
 const SQLite=createRequire(import.meta.url)('better-sqlite3') as new(filename:string)=>RawDb;
@@ -87,6 +87,39 @@ describe('#109 S3-4-B1 offline disposable clone integrity',()=>{
     expect(inspectS34B1Clone('/var/lib/cad',{
       snapshotId:snap,schema:'CAD_BASELINE',
     }).reasons).toContain('G7_S3_4B_DISPOSABLE_ONLY');
+  });
+
+  test('partial AuthSession alone cannot masquerade as CAD baseline',async()=>{
+    await db.$disconnect();
+    const f=path.join(root,'snapshot.sqlite'),raw=new SQLite(f);
+    try{raw.exec('CREATE TABLE "AuthSession"("id" TEXT PRIMARY KEY)');}
+    finally{raw.close();}
+    db=createDb('file:'+f);
+    expect(assertResult('BLOCKED').reasons).toContain('SCHEMA_BOUNDARY_MISMATCH');
+  });
+  test('two placeholder Auth tables cannot masquerade as 8-table G7 candidate',async()=>{
+    await db.$disconnect();
+    const f=path.join(root,'snapshot.sqlite'),raw=new SQLite(f);
+    try{raw.exec('CREATE TABLE "AuditEvent"("id" TEXT PRIMARY KEY);CREATE TABLE "AuthSession"("id" TEXT PRIMARY KEY)');}
+    finally{raw.close();}
+    db=createDb('file:'+f);
+    ownedWrite('snapshot.json',JSON.stringify({scope:'G7-S3-4B-DISPOSABLE-RESTORE',
+      snapshotId:snap,schema:'G7_CANDIDATE',schemaId:'202610260002_g7_operational_auth'}));
+    expect(assertResult('BLOCKED','G7_CANDIDATE').reasons).toContain('AUTH_TABLES_INCOMPLETE');
+  });
+  test('verified SQLite Buffer is independent of later pathname replacement',async()=>{
+    await db.$disconnect();
+    const f=path.join(root,'snapshot.sqlite'),saved=path.join(root,'saved.sqlite');
+    const bytes=readFileSync(f);
+    renameSync(f,saved);
+    symlinkSync(saved,f);
+    const memory=openS34B1MemoryClone(bytes);
+    try{expect(memory.prepare('PRAGMA quick_check').all()).toEqual([{quick_check:'ok'}]);}
+    finally{memory.close();}
+    expect(assertResult('BLOCKED').reasons).toContain('ISOLATED_MIRROR_UNAVAILABLE');
+    rmSync(f);
+    renameSync(saved,f);
+    db=createDb('file:'+f);
   });
   test('candidate 7th schema is explicitly distinguished from baseline',async()=>{
     await db.$disconnect();
