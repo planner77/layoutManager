@@ -1,5 +1,14 @@
 # PR/Main CI 실패 원장
 
+## #109 / PR #141 — 최신 리뷰 스레드·Main 충돌 게이트 재검증 (2026-10-27 KST)
+
+- **참조:** [PR #141](https://github.com/planner77/layoutManager/pull/141), 검사 직전 HEAD `71913c0baa2b3f1e4ebc176afab36134ccae31d7`; Main `1500eb699d5ef8d2045e951354838aa13ce24f92`. `AGENTS.md` 및 이 원장의 기존 실패/조치·검증 경계를 기준으로 점검.
+- **리뷰 스레드:** GitHub Review Thread 전체 3개 `PRRT_kwDOUQjDfc6wib8d`(P1 Manifest 정렬), `PRRT_kwDOUQjDfc6wib8g`(P2 SQLite TOCTOU), `PRRT_kwDOUQjDfc6wib8h`(P2 8개 Auth tables) 모두 기존 코드 보완 및 답변 후 **is_resolved=true** / 현재 outdated=true. **미해결 0건**. 이번 확인에서 새로 해결할 스레드나 추가 코드 수정은 없으며, 과거 결함을 새 CI 실패로 중복 계상하지 않음.
+- **Main 충돌:** GitHub `compare(main, PR head)` = `ahead=6, behind=0, status=ahead`; PR `OPEN`, `mergeable=true`. Main과 같은 base여서 정렬·재기준화 및 충돌 보완 **불필요**. Main 소스·운영 코드 변경 없음.
+- **CI와 리뷰 게이트 구분:** 기존 [PR CI #40447864806](https://github.com/planner77/layoutManager/actions/runs/40447864806)은 원래 HEAD `71913c0...`에서 `completed/success`이며 앞선 실제 실패 [#40444154044](https://github.com/planner77/layoutManager/actions/runs/40444154044)의 5개 Unit/Integration FAIL 이력은 아래에서 보존. 최신 HEAD에 대한 Codex 재리뷰 요청은 [PR comment](https://github.com/planner77/layoutManager/pull/141#issuecomment-6434041527)로 제출됐으나 GitHub review summary가 `status=running`, commit_sha `71913c0...`, findings 미확정이므로 **최종 Codex 리뷰 완료/병합 승인으로 간주하지 않음**.
+- **처리 범위:** 상태 증거만 기록. 이 기록용 문서 커밋 이후 HEAD는 위 검사 SHA와 다르므로 후속 병합/CI 검증은 반드시 새 HEAD를 기준으로 재확인. PR 병합·GHCR 게시·Main CI/운영 Auth·Write/실 Prisma Migration·Nginx/Compose·실 DB/CAD/S3 조작·#109/#96 종료 모두 미수행.
+
+
 ## #109 PR #141 — CI #40444154044 Unit/Integration 5건 실패 및 P1/P2 3건 조치 (2026-10-27 KST)
 
 - **관측 실패 Run:** [PR CI #40444154044](https://github.com/planner77/layoutManager/actions/runs/40444154044), attempt 1, SHA `b5f340e69bd28aed939bb1c443df355c1652f5bf`, completed/failure. Verify [Job #121991282421](https://github.com/planner77/layoutManager/actions/runs/40444154044/job/121991282421) Unit/Integration Step 9 failure, **68 test files: 67 PASS/1 FAIL; 총 404 tests: 399 PASS/5 FAIL**. Typecheck+ESLint PASS, Production Build/Chromium E2E/Legacy Migration E2E **SKIPPED**. Docker [Job #121991282118](https://github.com/planner77/layoutManager/actions/runs/40444154044/job/121991282118) SUCCESS.
