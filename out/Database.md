@@ -1,5 +1,11 @@
 # Database Schema — 단일 기준 문서
 
+## #85 M4-A 메모 트리 DB 비변경 계약 (2026-10-28)
+
+- 신규 MemoTreeState/그룹/숨김은 현재 도면 Browser RAM 전용이며 SQLite/Prisma CadMemo·MemoGroup 테이블 또는 migration을 만들지 않는다. 그룹 UUID/작성자 미확정은 서버 식별자·감사 데이터가 아니다.
+- 기존 CAD Version/Current/SHA/Stored Original, StoragePath, API와 G7 격리/활성 Migration 불변. #83 서버 모델·Version/SHA FK/Role·CAS·Audit 및 #98 Generated Snap 연계 확정 전에 서버 활성 기능으로 노출하지 않음.
+
+
 ## #142 B2-3 — Audit AFTER Trigger 예외와 실제 행 불변식 분리 (2026-10-28)
 
 - 격리 Auth 후보 `AuditEvent`는 `g1_audit_no_update`, `g1_audit_no_delete` Trigger가 실제 행 UPDATE/DELETE를 허용하지 않아야 한다. **예외 발생 자체는 불변식 증명이 아님.** SQLite `RAISE(FAIL)`이 AFTER Trigger에서 발생해도 변경·삭제가 남을 수 있으므로 메모리 Clone의 `SELECT * ORDER BY id` 전체 Audit Row를 매 시도 직후 최초 Snapshot과 비교한다.
