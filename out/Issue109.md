@@ -1,5 +1,10 @@
 # Issue #109 — G7 운영 인증 활성화 설계 및 통제 배포·롤백 Runbook
 
+## #142 B2-4 — 합성 Snapshot Restore/Rollback 교차검증 준비, 운영 NO-GO (2026-10-28)
+
+- [B2-3 PR #146](https://github.com/planner77/layoutManager/pull/146) exact no-GHCR Squash Main `7b784c2d62c0872909361e3514d437247d7ab662`, Main CI #40575203195 SUCCESS/GHCR SKIPPED. 새 B2-4는 합성 Source→G7 Candidate→Rollback SQLite/Local CAD/S3-export 동등성 및 이전 App/Migrator pair 로컬 OCI Digest·Schema/Source 계약만 검증하는 순수 supplied-buffer replay. Restored/Rollback labels·신뢰되지 않은 S3 VersionId가 동일하더라도 **실 Restore/실 Rollback 실행 성공으로 증명하지 않음**.
+- 사내 실제 Source/Writer freeze·온라인 SQLite backup·Local CAD/S3 Versioned GET/Registry signed provenance·실 App/Migrator 실행·RTO/RPO·B2-5 Private EV/QA/SNAP 실증·S3-4-C/S3-5 Owner release-specific GO 별도. [B2-4 Runbook](../src/deploy/g7-s3/S3-4-B2-4.md) 준수, 운영 DB/Writer/Auth/CAD Write/Prisma Migration/GHCR OFF, #142/#109/#96 OPEN/BLOCKED.
+
 ## #142 PR #146 — Audit AFTER RAISE(FAIL) 검증 보완, G7 운영 NO-GO (2026-10-28)
 
 - [Codex P2 #4389353517](https://github.com/planner77/layoutManager/pull/146#discussion_r4389353517): 합성 후보 Audit Trigger가 AFTER/RAISE(FAIL)일 때 예외는 발생해도 Row UPDATE/DELETE가 남을 수 있는 위양성을 `auditMutationProbe`의 **전체 AuditEvent 행 전후 내용 비교**로 보완. 각 예외 발생·수정 전과 내용 일치 모두 필요하며, 변경 발견 시 `AUDIT_NOT_APPEND_ONLY/BLOCKED`. AFTER UPDATE/DELETE 음성 회귀 추가.
