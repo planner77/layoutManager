@@ -9,6 +9,21 @@
 - TC-B2-4-05: 정확 `#142 | S3-4-B2-4 Disposable rollback replay [G7-S3-4B2-4-NO-GHCR]` Main Squash Subject 및 15-file allowlist만 GHCR skip, 활성 Prisma/후보 SQL·Dockerfile/Compose/Nginx/서비스 API·다른 workflow Path/제목 근접값 fail-closed; 일반 release tag 정책 그대로.
 - TC-B2-4-06: 최신 HEAD Typecheck/Vitest/OCI/Docker/Build/E2E/PR CI·Codex 재리뷰/스레드·Main 정렬 확인 전 `NOT VERIFIED`. 실 Site Source/Writer/Restore/Rollback 및 RTO/RPO **NOT RUN**.
 
+## TC-M1-E2E-001 — Desktop→390px Mobile Modal/메뉴 경계 (2026-10-28)
+
+- WCS(10,20) 임시 Memo와 텍스트만 변경/Zoom·Pan 후 CSS fullscreen에서 Viewport 390×844 적용. 모바일 `viewer-tools-dock[role=dialog]`가 열린 것을 대기하고 `header.inert===true` 확인; 이 상태에서 상단 메뉴 클릭을 강제하지 않는다.
+- 모바일 `도구 닫기`로 실제 Drawer 닫기, dialog unmount 및 `header.inert===false` 확인 후 `보기 > 화면 맞춤`을 정상 클릭한다. Desktop 1280×820 복귀, PIN 재선택, 좌표 (13,15) 명시 이동/텍스트 수정 이후 불변 확인. #127 Drawer 접근성, #138 향후 movable 정책과 기능 경계 분리.
+- 실패 증거 [Run 40583276569](https://github.com/planner77/layoutManager/actions/runs/40583276569) E2E 91/92·Timeout. 본 E2E 보완 및 전체 재검증 결과는 새 HEAD PR CI 완료 전 NOT VERIFIED. 타 Renderer/기존 CAD/영속 DB/G7 운영 변경 없음.
+
+
+## TC-M1-REL-001~005 — Issue #82 v0.43.0 정식 이미지 Pair (2026-10-28)
+
+- TC-M1-REL-001: `src/package.json` 버전과 `src/package-lock.json` root+packages[""].version = **0.43.0**; 기존 dependencies/실 Prisma schema/운영 설정 불변. 기존 `v0.42.1`은 수정/태그 이동 금지.
+- TC-M1-REL-002: 최신 버전 정렬 HEAD의 PR CI(Verify Typecheck/Lint/Unit/Chromium E2E/Legacy Migration E2E, Docker size/migration/runtime smoke) 성공 및 미해결 Review 0, Main 충돌 0. 기존 [40580691233](https://github.com/planner77/layoutManager/actions/runs/40580691233)은 정렬 전 HEAD 성공.
+- TC-M1-REL-003: Main Squash push의 release-scope `publish=true`, Main CI run 정합성, GHCR candidate App/Migrator 두 digest 독립 Registry inspect, 정확 `:0.43.0` / `:0.43.0-migrate` pair 및 `:latest` alias 승격 확인. 단순 Main CI 시작 또는 v0.43.0 Tag 존재만으로 게시 완료 아님.
+- TC-M1-REL-004: 합성 WCS 메모 TC-M1-UNIT-001~006, E2E-001~006, 기존 Viewer/Source/Outline/Generated/Fullscreen/Drawer/Escape 회귀 유지. 실 CAD/GPU/native 현장 시험은 #113·Owner 별도 증거.
+- TC-M1-REL-005: `#83` Memo server CRUD/Auth, `#109/#96` G7 Writer/Prisma/운영 DB·CAD·S3 활성화 0; 버전 릴리스가 운영 Go/No-Go를 뜻하지 않음.
+
 ## #142 B2-3 — SQLite AFTER Trigger RAISE(FAIL) Audit 원본 행 보존 P2 회귀 (2026-10-28)
 
 - TC-B2-3-08: 정상 `g1_audit_no_update`·`g1_audit_no_delete` BEFORE/ABORT Trigger의 명령 거부와 변경 전후 전체 AuditEvent 레코드 동등성을 메모리 복제본에서 확인 → 합성 일관성 상태 및 `auditAppendOnlyChecked=true`, site/GO=false.
@@ -28,6 +43,12 @@
 - TC-B2-3-02: 동일 6 CAD SQL 후 Local DXF/S3-export DWG 2개 CAD Version(Current/nextVersion/SHA/Storage Path)을 합성 SQLite에 삽입하고 후보 7번째 SQL 전후 모든 CAD 7 Tables Row/Byte Hash 비교, Auth 8 Table와 Audit append-only UPDATE/DELETE 실 차단. 양성 `DISPOSABLE_SEVEN_SCHEMA_INVARIANTS_ONLY`, 실제 Site/GO false.
 - TC-B2-3-03: CAD Version SHA·Current·nextVersion 수정, Local/S3 export Byte tamper, FK 위반, 누락 Auth Table/Trigger, Audit 이름만 같은 가짜 Trigger와 중간 Transaction throw·ROLLBACK → BLOCKED/ABORT. 입력에 운영 DB 경로 등 임의 필드 포함·Bytes 누락도 거부.
 - TC-B2-3-04: exact G7-B2-3 no-GHCR squash 제목+15개 파일만 `publish=false`; wrong title/active Prisma·Dockerfile/Compose/Nginx·runtime API·기타 workflow 차단, 태그 정상 게시 정책 유지. 새 HEAD PR CI·Codex 결과는 실관측 전 `NOT VERIFIED`. 현장 Snapshot/OCI/Restore/Owner 수용 `NOT RUN`.
+
+## Issue #82 — TC-U1-E2E-001 / Viewer 그룹 메뉴 지원 상태 회귀 (2026-10-28)
+
+- **지원 렌더러:** three-dxf-viewer + DXF + valid Version/SHA + ready에서 `작업 > 메모 추가/편집`은 `toBeEnabled()`; `aria-disabled="false"`의 **속성 존재를 단정하지 않는다** (`ViewerCommandMenus`는 disabled=false 시 해당 속성 미렌더).
+- **미지원 렌더러:** dxf-viewer는 `toBeDisabled()`와 `aria-disabled="true"`, DWG도 disabled. Native HTML disabled 대신 ARIA disabled인 현재 그룹 메뉴의 실제 접근성 상태를 Playwright로 확인한다. 기존 U1 fullscreen/layers/Canvas DOM/GET 1회 및 M1 WCS 불변·Source fail-closed 검증은 계속 유지.
+- **재발 방지:** UI 속성 문자열 표현 방식이 아닌 ARIA/button 의미에 근거한 E2E assertion 선택. [Run #40512645193](https://github.com/planner77/layoutManager/actions/runs/40512645193) 91/92(FAIL)를 성공으로 재분류하지 않으며, 수정 HEAD CI는 **NOT VERIFIED**.
 
 ## #142 B2-2B — CadFileVersion.storagePath Unique P2 회귀 (2026-10-27)
 
@@ -404,6 +425,24 @@ PR 검증: 최신 HEAD typecheck/lint/unit/integration/build/E2E/Docker; 운영 
 - G5 결과는 #108 G6에 인계. #109 G7 Owner 별도 승인 전 운영 Auth/관리/영속 API/Prisma·Nginx·Compose 활성화 금지.
 
 
+### Issue #82 / #99 — 최신 Main 연계 추가 재검증 (2026-10-25)
+
+- #82 M1 E2E `TC-U1-E2E-001/002`, `TC-M1-E2E-001~006`와 #99 신규 `outline-acceptance-gate`·`private-acceptance-paths` Unit을 모두 새로운 통합 HEAD CI에서 검증한다. 공개 Synthetic DXF는 #99 실 CAD/GPU/Owner 현장 판정을 대체할 수 없으며 private DXF 업로드를 공개 CI artifact에 포함하지 않는다.
+- #99 ADR-052와 #82 Memo ADR-053 및 신규 npm `verify:outline-acceptance` script/0.41.0 package+lock 정합성 추가 점검. 최신 CI 시작과 전체 SUCCESS/현장 수용은 엄격히 구분.
+
+
+## Issue #82 / PR #111 — 2차 CI U1 Dock 공존 회귀 정렬 (2026-10-25)
+
+| TC | 원인·확장된 수용 기준 | 상태 |
+| --- | --- | --- |
+| TC-U1-E2E-001 (개정) | 무Handle three DXF에서 U3 Outline 버튼 disabled, Source/Generated selection 도구 및 Outline 실행 도크 미표시. 공통 `viewer-tools-dock`은 M1 Memo status 0/100을 표시할 수 있고 Memo 추가 버튼 enabled. dxf-viewer에서는 Memo disabled/status·dock 미표시. 기존 CSS fullscreen·Layer·DPR·ESC·reload·원본 GET 1회 회귀 유지 | 수정 코드 작성; 새 CI NOT VERIFIED |
+| TC-M1-E2E-006 | 안정 Source Handle이 없는 DXF LINE 2개 → Outline disabled/Source selection 도구 0 → Memo 직접 WCS(10,20) 생성→핀 WCS 불변·Zoom/Fit→Source 선택 도구 계속 0 | 신규 코드 작성; 새 CI NOT VERIFIED |
+| TC-U1-E2E-002 (확장) | 손상 DWG에서도 DXF·Outline·Memo 버튼 disabled, Memo status 0; 기존 오류 안내·링크·재로드 동작 불변 | 수정 코드 작성; 새 CI NOT VERIFIED |
+
+- [Run 40198344153](https://github.com/planner77/layoutManager/actions/runs/40198344153) 이전 HEAD ac9226ff: Typecheck/Lint/Unit/OCI/DXF source benchmark/Build/Docker PASS, Chromium **77 PASS/1 FAIL** (`TC-U1-E2E-001`, 58행 도크 기대 0 vs 실제 1), Legacy SKIPPED. 제품 버그와 이전 U1 test fixture의 범위 오류를 분리한다. 신규 수정 HEAD의 실행 결과가 나오기 전 PASS 금지.
+- Benchmark `TC-M1-BENCH-1000/10000`는 별도 opt-in이며 이 Run에서 자동으로 실행된 DXF **Source** 1k/10k/100k Benchmark와 구별한다. 실 DXF/GPU/native·100 memo FPS는 미검증.
+
+
 ## Issue #102 / ADR-051-R1 — 보안 강화 비범위와 기능/운영 수용 시험 (2026-10-25)
 
 **정책:** HTTP와 계정/세션 탈취·공격 방어 관련 위험은 Owner가 `OWNER_ACCEPTED_SCOPE`로 결정했다. 이는 시험 성공이 아니라 해당 *공격 전용 대응/침투 실증을 완료 게이트에서 제외*한 기록이다. 기존 비활성 Auth helper 및 기존 작성된 단위테스트를 제거하는 지시가 아님. [Issue102](Issue102.md).
@@ -420,6 +459,38 @@ PR 검증: 최신 HEAD typecheck/lint/unit/integration/build/E2E/Docker; 운영 
 
 **필수 게이트에서 제외:** TLS/MFA/SSO, 공격자 기반 Host/Origin/Forwarded 위조·브루트포스·CSRF 공격 모의, 패킷 도청/세션 탈취 시험, 취약점/침투 테스트, 별도 보안 위험 실증. 과거 `TC-P4-D1-014` 등의 목록에 포함된 공격 실증은 R1에서 요구하지 않으며 DB 원자성·업무 허용/거부·백업/복구 부분은 유지. 정상 Proxy/Origin/Cookie 호환과 기존 API 회귀는 필수.
 **상태 규칙:** 실행되지 않은 테스트를 PASS로 기록하지 않는다. 본 PR은 문서 전용이며 운영 서비스/Schema/로그인·관리 API는 OFF다.
+
+
+### Issue #82 / PR #111 — CI 실패/리뷰 회귀 추가 (2026-10-25)
+
+| TC | 조건 / 기대 | 상태 |
+| --- | --- | --- |
+| TC-M1-LINT-001 | `cad-memo-overlay.tsx` 렌더 중 ref read 없음/unused eslint-disable 없음, `issue82-cad-memo.spec.ts` let→const. 기존 Outline Tree ARIA warning과 ESLint errors 구분 | 정적 코드 수정, 수정 HEAD CI NOT RUN |
+| TC-M1-E2E-004 | 메모 생성 후 Outline ON→기존 최근 메모 선택 → Outline OFF/Pan·편집기 표시; 원본/생성 선택 모드→기존 PIN 클릭→Pan; Outline ON 상태 PIN **pointerdown**에서 즉시 OFF 후 Ghost Drag | CODED / NOT RUN |
+| TC-M1-E2E-005 | 같은 메모 제목·내용의 미저장 폼 변경 → PIN drag(5px+) pointerup·synthetic click → 초안 값 그대로, WCS만 갱신, 명시 텍스트 저장 때 label 변경 | CODED / NOT RUN |
+
+- 최초 `1515eca` [Run 40196496297](https://github.com/planner77/layoutManager/actions/runs/40196496297): Typecheck/Docker 성공, ESLint error 2(React ref/render, prefer-const)/warning 2, Unit/Build/E2E SKIPPED. 이 성공/실패는 해당 HEAD만의 결과. 수정 HEAD CI 미실행 시 NOT RUN, PR 열림 자체를 PASS로 오인 금지.
+
+
+## Issue #82 / M1 — Browser Memo WCS Session 테스트 계획 (2026-10-25)
+
+| TC | 절차/기대 | 현재 상태 |
+| --- | --- | --- |
+| TC-M1-UNIT-001 | 정확한 Version v4/SHA-256, UUIDv4 로컬 key·labelOffset/default, 인증된 creator 없음 | CODED / NOT RUN |
+| TC-M1-UNIT-002 | (10,20) create→HTML literal/멀티라인 text edit 좌표 (10,20)→명시 move (+3,-5)→(13,15)와 text 재수정 좌표 고정 | CODED / NOT RUN |
+| TC-M1-UNIT-003 | 숫자 finite/bounds/Infinity/NaN/빈 값/단위 포함/좌표 초과 거절; 부분 mutation 없음 | CODED / NOT RUN |
+| TC-M1-UNIT-004 | 다른 Version·원본 SHA의 read/write/patch/delete 거부, session.clear/reload 후 없음 | CODED / NOT RUN |
+| TC-M1-UNIT-005 | 제목/본문 빈 값(제목 필수), NFC, 길이, C0/C1, Markdown/HTML literal 출력 | CODED / NOT RUN |
+| TC-M1-UNIT-006 | 100 memo 허용, 101번째 거부, 삭제 후 추가, 다른 scope 격리 | CODED / NOT RUN |
+| TC-M1-E2E-001 | Synthetic DXF, (10,20) PIN과 text only→Zoom/fit/CSS fullscreen→WCS (13,15), XSS 무실행 | CODED / NOT RUN |
+| TC-M1-E2E-002 | PIN drag preview/Escape rollback, nonfinite 좌표/휠 중 drag 취소, 명시적 pointerup commit, reload clear/미지원 renderer disabled | CODED / NOT RUN |
+| TC-M1-E2E-003 | 외곽선 ON→메모 ON 시 독점, Escape placement cancel/Mode 전환, Version 바꿨다 돌아와도 없음 | CODED / NOT RUN |
+| TC-M1-BENCH-1000/10000 | **Opt-in** Playwright `test:benchmark`에서 합성 DXF LINE 1k/10k 로드·5 pin/zoom/fit/resize/reload·경과 ms 수집, 임계/SLA 단정 금지 | CODED / NOT RUN |
+| TC-M1-AC-NATIVE | 실제 Chrome native fullscreen+DPR/devicePixelRatio/Resize/Touch/ESC/blur/scroll + 100 memo frame budget 실측 | 현장 확인 / NOT RUN |
+| TC-M1-AC-REG | 전체 Typecheck/ESLint/Vitest/Build/Playwright DXF Viewer/Generated E1~E4/Search/Outlines/Layer/Upload/Legacy/Docker, 대형 DXF fixture·real CAD GPU | PR CI + 현장 / NOT RUN |
+
+- 기존 E2E fixtures는 ASCII DXF `LWPOLYLINE` group 90=4를 사용. 도면 업로드·등록·이미지·실측 데이터는 영속 메모 성능 기준이 아니다.
+- 원격 GitHub 수정 컨텍스트에서 로컬 Node/Browser/Prod build는 실제 실행하지 않음. PR CI **시작은 성공과 다름**, CI 모니터링은 사용자 범위 밖. 실제 실패 발생 시 FailureLedger에 Run ID/Job/HEAD·원인·조치 기록.
 
 
 ## Issue #99 / PR #110 — P1 Symlink 경로 회귀 및 GHCR 0.40.3 게이트 (2026-10-25)

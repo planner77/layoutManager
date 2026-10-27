@@ -1,5 +1,39 @@
 # CAD Web Viewer P.O.C.
 
+## v0.43.0 릴리스 후보 — CAD 메모 M1 (Issue #82)
+
+새 UI 기능이므로 이전 정식 `v0.42.1`을 재사용하지 않고 **MINOR 버전 0.43.0**을 신규 이미지 쌍으로 발행합니다. DXF `three-dxf-viewer`에서 `작업 > 메모 추가/편집` 메뉴로 아래 도구 Drawer를 열어 WCS XY 고정 임시 메모를 배치·편집·이동·삭제합니다. 메모 제목/본문을 수정해도 명시적 위치 이동 명령 없이는 앵커 좌표가 변하지 않습니다. 다른 Renderer(DWG, dxf-viewer)는 지원하지 않습니다.
+
+메모는 브라우저 세션만 유지되며 **재로드·Renderer 또는 버전 변경 시 소실**, 서버 저장·공유·작성자 인증은 #83 이후 별도입니다. Main #142의 비운영 격리 Auth/G7 서비스는 그대로 OFF. 이전 PR HEAD `4a4a8ff` CI [40580691233](https://github.com/planner77/layoutManager/actions/runs/40580691233) 성공은 **0.43.0으로 버전을 바꾼 새 HEAD의 CI 성공을 의미하지 않습니다**. 정식 GHCR App/Migrator pair 및 Main CI는 새 PR CI 통과 후 별도로 확인하며, 시작 사실만으로 게시 완료를 주장하지 않습니다. 상세 [Issue82](out/Issue82.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md), [FailureLedger](out/FailureLedger.md).
+
+### #82 / #99 통합 참고 — 메모 ADR-053, 실DXF ADR-052 (2026-10-25)
+
+- WCS 메모 M1은 `ADR-053`(브라우저 임시 세션)이며 실도면 P0/P5 비공개 검증 정책은 #99의 `ADR-052`이다. 최신 #99의 `npm run verify:outline-acceptance` 명령을 보존하며 합성 E2E 통과는 운영 실 DXF/GPU 수용이 아니다.
+- #99 후보 패치 0.40.3 이후 메모 M1 후보는 0.41.0으로 정렬한다. 서버 인증/영속화는 별도 #83/G7 Owner 승인이 없으므로 활성화하지 않는다.
+
+
+### Issue #82 / PR #111 — FREE 메모와 Source 외곽선 도구의 독립 범위
+
+- DXF three-dxf-viewer에서 원본의 안정 Handle/선택 가능한 외곽선 인덱스가 없는 경우에도 **자유 WCS 메모**를 배치할 수 있습니다. 이때 외곽선 생성/원본 객체 선택 기능은 기존대로 disabled이며 Memo status/추가 기능만 사용됩니다. `dxf-viewer`나 DWG에서는 메모가 비활성입니다.
+- 이 동작으로 기존 U1의 '외곽선 도구가 없으면 전체 도크 없음' 검사를 기능별 상태로 수정하고, 무Handle 합성 DXF 메모 배치 회귀를 추가했습니다. 실제 서버 메모 저장·작성자 인증/공유 기능은 아직 없으며 Reload/Version 변경 시 임시 메모는 소멸합니다. 자세한 시험 이력은 [FailureLedger](out/FailureLedger.md), [TestPlan](out/TestPlan.md) 참조.
+
+
+### Issue #82 / PR #111 — 메모/외곽선 편집 도구 독점 정책 보완
+
+- 이미 배치한 메모 핀을 클릭하거나 드래그 또는 하단 최근 메모 버튼으로 선택해도 **외곽선 생성·원본/생성 객체 선택이 자동 종료되고 탐색(Pan) 모드로 전환**됩니다. 메모 편집과 외곽선 생성은 동시에 활성화되지 않습니다.
+- 메모 제목·본문을 입력한 상태에서 PIN을 드래그하면 위치만 확정합니다. 드래그 직후 브라우저가 발생시키는 클릭은 저장 전 텍스트 초안을 초기화하지 않으며, **텍스트 저장**을 눌러야 본문/제목 변경이 확정됩니다. 서버 저장은 여전히 없는 M1 세션 시안입니다.
+- 최초 PR CI에서는 ESLint 오류로 이후 Unit/E2E가 실행되지 않았습니다. 수정 코드/신규 E2E 검증은 PR CI 결과 확인 전으로, 모든 시험이 성공했다고 표시하지 않습니다. [FailureLedger](out/FailureLedger.md), [TestReport](out/TestReport.md).
+
+
+## v0.41.0 — CAD 메모 M1 (Issue #82, 브라우저 세션 임시 기능)
+
+- DXF 도면을 **three-dxf-viewer**로 연 후 메뉴의 **메모 추가**를 눌러 Canvas 클릭 또는 `WCS X/Y` 숫자로 메모 위치를 지정하고 **메모 작성 확정**을 선택합니다. 제목(필수)·여러 줄 본문(일반 텍스트)을 입력할 수 있습니다. 메모의 핀과 미리보기 텍스트는 확대/축소/이동/화면 크기 변경 후에도 지정 WCS 도면 좌표에 위치하며, 핀 클릭으로 다시 편집합니다.
+- **텍스트 저장 (좌표 불변)**은 제목/내용만 수정합니다. 위치 변경은 `WCS X/Y` 수정 후 **위치 이동 적용** 또는 핀을 5px 이상 드래그해 놓는 것으로만 확정됩니다. ESC/취소·휠/화면 변동 중 드래그는 원래 위치를 유지합니다. 로컬 삭제는 별도 확인이 필요합니다. 제목/본문은 HTML/Markdown으로 실행하지 않습니다.
+- M1은 메모가 **브라우저 세션 임시**입니다. 저장 API/DB·작성자 식별/다른 사용자 공유 기능이 없으므로 **새로고침, Viewer 변경, Version 변경 시 모든 메모가 사라집니다**. 현재 100건 상한·제목 100자·본문 2000자, 표시 프리뷰 160자. 다른 Renderer/DWG/도면 실패에는 메모 버튼이 비활성입니다. #2 도면 등록 설명과 별도입니다.
+- 1k/10k Synthetic DXF opt-in 성능 회귀는 `cd src && npm run test:benchmark -- --grep TC-M1-BENCH` 명령으로 실행합니다. 실제 실행 값/현장 SLA는 아직 확보하지 않았습니다.
+- **후속:** #83 메모 영속/작성자/인증/감사, #84 객체 Snap, #85 메모 트리·표시, #86 일정, #88 Deep Link, #90 목록 검색. 관련 운영 인증 정책 미검증/미승인 상태에서는 서버 영속을 활성화하지 않습니다. 설계/검증은 [Issue82](out/Issue82.md), [ADR-053](out/Decisions.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md)를 참조. CI·실 도면/GPU/native 수용 미검증.
+
+
 ## Issue #57 — 서버 구조화 로그 단일화 (v0.42.1 PR 후보)
 
 기존 #18 공통 Logger를 재사용하여 업로드 단계 로그에도 동일한 JSON Schema v1, `LOG_LEVEL`/`LOG_FORMAT`, 안전 필드 allowlist를 적용합니다. 공개 API 응답·`X-Request-Id`·업로드 진단 첫 실패 원인은 유지됩니다. Server 로그 조회/보관은 별도 #59~#62로 미구현이며 Next/Nginx/브라우저 원시 로그도 자동 수집하지 않습니다. 상세 계약과 Docker 조회는 [Issue57](out/Issue57.md), [Logging](out/Logging.md) 참조. 현재 변경은 PR CI 시작 후보이며 배포 완료를 뜻하지 않습니다.

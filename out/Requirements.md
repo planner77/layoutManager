@@ -281,6 +281,19 @@ G7 설계 flag는 현재 실 운영 env/코드에서 작동하지 않는다. 상
 - 문서/구현·AC/TC 매핑: [Issue107](Issue107.md), [Architecture](Architecture.md), [TestPlan](TestPlan.md), [TestReport](TestReport.md). PR CI는 실제 사내 PC 2대·Host/WSL2 Port·업로드/Cookie를 대신하지 않는다.
 
 
+### #82 M1과 #99 Main 동시 요구 보존 (2026-10-25)
+
+- #82 Memo ADR-053은 Source Handle 0에도 자유 WCS 메모 생성 UI를 허용하면서 기존 Outline 도구를 fail-closed 유지한다. #99 ADR-052의 비공개 CAD/GPU P0/P5 Owner 판정·이행 게이트는 그대로, M1 공개 합성 E2E가 실도면 수용을 대체하지 않는다.
+- #99 신규 `verify:outline-acceptance` 실행 명령/검증 코드는 통합하고 app/lock root를 0.41.0 유지. #83 영속 Memo Auth/DB/API는 운영 게이트 미승인으로 비활성.
+
+
+### Issue #82 M1 요구 보완 — Stable Handle 없는 도면에서도 자유 WCS 메모 활성화
+
+- FR-M1-01/05 세부 계약: 도면 Renderer가 DXF three-dxf-viewer ready이고 Version/SHA 식별자가 유효하면 메모는 **Source 선택 가능한 Entity 수 0/안정 Handle 0에도** 자유 WCS XY 배치 가능. 기존 U3/U5 Source/Generated Selection Tool과 Outline 생성은 별도 RenderCoverage·Handle gate에 의해 계속 차단된다.
+- 공유 `viewer-tools-dock`의 존재 자체를 선택/외곽선 생성 활성화 판단으로 취급하지 않는다. `cad-object-selection-tools`/Outline panel/버튼 enabled 여부와 `cad-memo-status`를 독립 검사하고, 비지원 Renderer에서 Memo와 도크를 차단한다. TC-U1-E2E-001/002·TC-M1-E2E-006.
+- 실제 업무/운영 메모 서버 저장·작성자·RBAC/감사/Prisma는 미변경(#83). Run 40198344153 기존 HEAD E2E 실패 이후 **요구/테스트만 보완**, 기능 런타임 확장 없음.
+
+
 ## Issue #102 G0 / ADR-051-R1 — Owner 경량 보안 범위 재정의 (2026-10-25)
 
 | 요구 ID | 수용할 결정·기능 | 상태/후속 |
@@ -293,6 +306,29 @@ G7 설계 flag는 현재 실 운영 env/코드에서 작동하지 않는다. 상
 | NFR-P4-G0-R1-02 | 운영 인증/관리/영속 API, DB/Prisma Migration, Nginx/Compose/.env 활성화는 G7 별도 Owner 승인까지 OFF | BLOCKED |
 
 이 표는 이전 FR-P4-D1-06의 '보안 공격 차단/세부 CIDR·프록시 헤더 위조 실증'을 **필수 수용기준으로 요구하던 범위**를 대체한다. 기존 D1~D5의 비활성 기능 정책·테스트 및 기본 업무 권한 정합성은 유지한다. [Issue102](Issue102.md), [ADR-051-R1](Decisions.md), [Issue96](Issue96.md).
+
+
+### Issue #82 / PR #111 — M1 도구 독점·미저장 초안 보존 추가 수용 계약
+
+- FR-M1-05 보강: 새 메모 배치 뿐 아니라 기존 PIN **pointerdown 시점** 및 최근 메모 목록 클릭 모두 Outline/Generated 선택과 상호 배타적으로 전환하고 판정. 클릭이 완료될 때까지 다른 도구를 켜두는 구현 금지. TC-M1-E2E-004.
+- FR-M1-03 보강: PIN Drag(5px 이상) 후 pointerup에 따라 발생할 수 있는 click이 같은 memo의 편집 폼 `title/content` 미저장 변경분을 절대 초기화하지 않음. 동일 memo 재선택도 단순 focus, 키보드 click 허용. TC-M1-E2E-005.
+- CI 기록: 기존 HEAD ESLint 2 errors 실패, 수정 HEAD 실제 검증 전 수용 미완.
+
+
+## Issue #82 / M1 v0.41.0 — WCS 메모 배치·편집(임시 세션) 요구사항
+
+| ID | 요구사항 | 검증·후속 |
+| --- | --- | --- |
+| FR-M1-01 | 검증된 DXF+three-dxf-viewer ready, version UUIDv4 + SHA64 범위에서만 임시 메모 배치·조회·편집/삭제. 미지원 Renderer는 이유 포함 disabled | E2E-002/003, #83 |
+| FR-M1-02 | WCS XY anchor 정본/label CSS offset 분리. 클릭·좌표 입력 후 확정. Zoom×2/Pan/Resize/CSS/native fullscreen에서 명시적 이동 없는 한 anchor 불변 | UNIT-001/002, E2E-001, 실제 native 실증 미완 |
+| FR-M1-03 | 제목·다중행 본문 plain-text 수정을 수행해도 anchor 불변. 위치 이동은 별도 coordinate confirm 또는 5px 이상 pin drag pointerup만 적용 | UNIT-002/003, E2E-001/002 |
+| FR-M1-04 | Esc/blur/scroll/wheel/Resize/view epoch/모드·Version/Renderer/reload 전환, invalid/stale/NaN/Infinity 좌표는 pending drag/draft 취소, 기존 정본 불변 | UNIT-003/004, E2E-002/003 |
+| FR-M1-05 | 기존 DXF Source/Generated/Outline Tree·Layer·#40 Tool·#49 edit/Pan 이벤트와 격리. pin의 24px hit 외 text/leader pointer-through | E2E-003, Viewer 회귀 |
+| FR-M1-06 | 최대 100메모; 제목 1~100, 본문 0~2000, NFC, 제어문자 거부, ±1e12 finite WCS. React escaped text only; 본문 Label은 160자 프리뷰 | UNIT-005/006, 100 memo performance |
+| FR-M1-07 | M1은 인증된 작성자/수정자, 서버 Persistence/Scope/감사 아님. reload/renderer/version 변경 데이터 소멸·UI 명시, Version/SHA 교차표시 금지 | UNIT-001/004, E2E-002/003, #83 |
+
+- **비범위:** #83 영속 UUID·작성자·API/DB, #84 Source/Generated target snap/relative transform, #85 메모 Tree/show-hide, #86 schedule/done, #88 memo link, #90 목록 전역 검색. #2 도면 설명 그대로. 원본 bytes/SHA/Current/Layer 및 Auth/Prisma/API 기능 활성화 없음.
+- **실행 근거:** TC-M1-UNIT-001~006/E2E-001~003 작성 상태; CI/실 DXF/Native/GPU PASS 판단은 실제 실행 후 별도.
 
 
 ## Issue #99 — P0 정확도·P5 성능 현장 증거 요구 (2026-10-25)

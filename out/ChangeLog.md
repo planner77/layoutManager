@@ -1,5 +1,11 @@
 # ChangeLog
 
+## v0.43.0 후보 — Issue #82 세션 WCS 메모 및 Renderer UX (2026-10-28)
+
+- MINOR 신규 기능. `three-dxf-viewer`에 session-local MemoDraft WCS XY 앵커·핀·레이블, 위치 drag/좌표 명시 확정·텍스트만 저장/ESC rollback·Version/SHA 격리, Source/Generated Tool 상호배타와 비지원 Renderer fail-closed 적용. #127 `작업 > 메모 추가/편집`과 하단 Drawer 재사용. 메모 영속, 사용자인증 및 공유는 #83 등 후속 비범위.
+- `v0.42.1`은 기존 릴리스 태그이므로 앱/lock root를 `0.43.0`으로 정렬. 기존 App/Migrator Tag/Digest 이동 금지. Main CI를 통한 새로운 Pair digest·릴리스 게이트 및 실제 게시 결과 검증 필요.
+- 버전 정렬 전 [PR #111 CI 40580691233](https://github.com/planner77/layoutManager/actions/runs/40580691233) Verify/Chromium/Legacy/Docker SUCCESS. 정렬된 **최종 HEAD PR CI는 미실행/미검증**, 그 결과와 최신 리뷰·Main 충돌 확인 전 병합 금지. 현장 CAD/GPU/운영 DB·Prisma/G7 Auth/Writer/Owner GO OFF.
+
 ## v0.42.1 후보 — Issue #57 공통 Logger·UploadDiagnostics 단일화 (2026-10-27)
 
 - 기존 #18 구조화 Logger 재사용 및 업로드 별도 console JSON emitter 제거. Versioned Schema v1, 안전한 필드 allowlist/정적 Error code·category 재정제, `LOG_LEVEL`/`LOG_FORMAT` 단일 필터 적용. 공개 진단/첫 실패/요청 ID 계약 유지, 반복 성공 Health 200 debug-only.
@@ -54,6 +60,33 @@ G1~G3 기반 G4 비라우팅 서버 인가, Admin Grant/disable, 안전 append-o
 - PR #115 구 HEAD d771d553 CI 40201366001 Verify/Docker 성공 이후 Codex P2 리뷰 4371142398에 따라 관리 화면을 Viewer로 오인할 수 있는 검증을 실제 /cad/versions/ID/viewer 요청으로 교정하고 Unit TC-P4-G5-007 추가.
 - 기존 v0.40.3 GHCR pair를 재사용하지 않고 src/package.json/lock root 0.40.4로 정렬. 수정 HEAD PR CI [40224438075](https://github.com/planner77/layoutManager/actions/runs/40224438075), Main CI/GHCR App·Migrator Pair 게시 [40225537167](https://github.com/planner77/layoutManager/actions/runs/40225537167) 모두 성공, 태그 v0.40.4 확인. 실제 LAN 기능 E2E는 #108에서 NOT RUN.
 - 기존 운영 Nginx/Compose/Auth/API/Prisma/DB/CAD/S3/원본 SHA·Current 불변. G6 현장 수용과 G7 별도 Owner 운영 승인 유지.
+
+
+### #82 PR #111 — #99 Main 코드·정책 통합, ADR-053 재번호화 (2026-10-25)
+
+- #99 실 DXF Private evidence gate/CLI, symlink path 보호, 테스트와 npm `verify:outline-acceptance` script를 최신 main에서 모두 유지. #99 실DXF ADR-052는 불변, #82 WCS Memo ADR은 중복 방지 위해 ADR-053으로 이동. 0.41.0(app/lock root)과 현 0.40.3 main 패치 이력을 구분하며 재게시·태그 이동·GHCR 승격 없음.
+- 새 통합 HEAD CI에서 U1 shared Memo Dock 정정과 #99 Unit/Build/E2E 회귀를 다시 검증해야 한다. CI 시작은 PASS와 다름.
+
+
+### Issue #82 / PR #111 — 2차 CI 77/78 E2E 회귀 U1/M1 계약 수정 (2026-10-25)
+
+- 최초 lint 실패 교정 뒤 PR CI [40198344153](https://github.com/planner77/layoutManager/actions/runs/40198344153)에서 Typecheck/Lint/Unit/Benchmark/Build/Docker PASS, Chromium E2E 77 PASS/1 FAIL (U1 기존 dock 부재 assertion). Legacy SKIPPED.
+- Memo M1 FREE WCS가 Source stable Handle 없이도 지원되는 현행 설계를 유지하며, U1 test assertion을 Memo status Dock과 Source/Outline 도구 미노출 개별 검사로 전환. dxf-viewer·DWG에서는 Memo disabled 검증, 무Handle DXF의 WCS 메모 생성 신규 TC-M1-E2E-006 추가. 원본 U1 기능/스크롤·ESC·레이어 테스트 유지.
+- 제품 코드·앱 버전 0.41.0·API/DB/Prisma/Auth/원본 SHA/Current/GeneratedDocument/배포 정책 불변. 새 HEAD CI 미확인; 기존 실패 원장 보존.
+
+
+### Issue #82 / PR #111 — 최초 CI ESLint 차단 및 편집 리뷰 보완 (2026-10-25)
+
+- 기존 `1515eca` [Run 40196496297](https://github.com/planner77/layoutManager/actions/runs/40196496297) Verify Typecheck PASS/ESLint 2 errors FAIL, 나머지 Verify SKIPPED, Docker Job PASS. React ref/render 규칙 위반, E2E let→const, 불필요 lint suppression 제거.
+- [P1 4370961641](https://github.com/planner77/layoutManager/pull/111#discussion_r4370961641) 기존 memo pin/list 접근 도구 독점, [P2 4370961642](https://github.com/planner77/layoutManager/pull/111#discussion_r4370961642) Drag click이 편집 폼 미저장 텍스트를 덮어쓰는 결함 수정. `TC-M1-E2E-004/005` 추가, 실패 원장 누적. 최신 CI 결과 전 NOT VERIFIED, 버전 0.41.0 및 기존 Source/DB/Auth/Current 불변.
+
+
+## v0.41.0 — Issue #82 CAD 메모 M1 WCS 세션 Overlay (2026-10-25 / PR CI 검증 전)
+
+- `MemoSession` 도메인(Version UUIDv4+SHA64/UUIDv4 local, NFC 제목·본문 유효성, WCS finite ±1e12, 100건 상한), `CadMemoOverlay` WCS 고정 pin+plain-text label, 클릭 자유 배치/위치 드래그 Ghost 취소·확정, 수치 이동과 텍스트만 별도 수정/삭제.
+- `ViewerManager/ThreeDxfViewerAdapter` CSS px↔WCS Orthographic 변환과 카메라/Resize 갱신; M1 메뉴/툴을 Viewer shell에 연결하고 #40 Outline 생성/Generated 선택·Source hit-test와 분리. 메모는 Reload/Version/Renderer 전환에서 소멸하고 Auth/영속 저장이 없음을 명시.
+- Unit 6/E2E 3 및 opt-in Benchmark 2(1k/10k synthetic DXF) 작성, [Issue82](Issue82.md)/ADR-053·Requirements/Architecture/TestPlan/TestReport/README/AGENTS 동기화. Native/실 CAD/GPU/100 Memo 성능 미실측. Typecheck/Lint/Unit/E2E/Build/Docker/PR CI 결과 **NOT RUN/NOT VERIFIED**(실제 완료 뒤 판단).
+- `src/package.json`/`src/package-lock.json` root 0.41.0 정렬. DB/API/Prisma/Auth/Docker/Version·SHA/Current/원본·Generated edit·#2 설명 기능 불변, 영속 #83 별도 차단.
 
 
 ## Unreleased — Issue #99 PR #110 P1 보안 리뷰 보완 / GHCR v0.40.3 후보 (2026-10-25)

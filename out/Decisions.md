@@ -216,6 +216,19 @@
 - 격리 SQL 테스트 결과만 G1 증거. 실제 사내 CAD/DB/S3 백업·복구, 배포 인입 경로, 기존 API 인증 전환, Admin secret 절차는 #102/#104~#109 책임으로 유지. 상세 근거/롤백 [Issue103](Issue103.md) 및 [Operation](Operation.md).
 
 
+### ADR-053 재지정 — #82 Memo M1과 #99 ADR-052 충돌 해소 (2026-10-25)
+
+- 최신 main #99가 실 DXF P0/P5 현장 증거 정책을 **ADR-052**에 등록했으므로 #82의 WCS Memo 세션/텍스트·앵커·Tool 독점 정책은 **ADR-053**으로 재번호화한다. #99의 ADR-052 원문·수용 게이트·관련 Issue99 링크를 유지하고 #82 쪽 참조만 수정한다.
+- 통합 후보는 #99의 새로운 `verify:outline-acceptance` npm script와 DXF private evidence guard를 그대로 보존하며 app+lock root version은 #99 후보 0.40.3 이후 **0.41.0**. 운영 인증·서버 메모 API/Prisma·GHCR 공개 및 실 DXF/GPU 수용을 승인한 것이 아니다.
+
+
+### ADR-053 보완 — U1 공유 Tools Dock은 기능별 가용성으로 판정 (#82 PR #111, 2026-10-25)
+
+- **정책:** WCS FREE 메모 M1은 DXF three-dxf-viewer ready, Version UUID/SHA 형식 일치 시 활성이고 **원본 DXF Entity의 stable Handle 또는 Source↔Renderer 선택 매핑 1건 이상을 필수로 하지 않는다**. #31/#40 Source/Outline 생성은 계속 고유 Handle·검증된 RenderCoverage mapping이 없으면 fail-closed. 따라서 U1 Viewer shared tools dock의 존재 여부 1개만으로 Outline 기능 노출 여부를 판정하는 기존 테스트는 부정확.
+- **결정:** 기능별 검증으로 회귀를 강화한다(Outline 메뉴 disabled/Source·Generated 선택 도구 부재, 독립 Memo status·add enabled; dxf-viewer·DWG는 Memo disabled). 실제 Handle 없는 합성 DXF에 FREE Memo WCS(10,20) 배치·Zoom/Fit 회귀 추가. 기존 메모/Source Renderer/AppShell/DB/API 등 제품 코드와 지원 조건을 수정하지 않는다.
+- **근거:** [Run 40198344153](https://github.com/planner77/layoutManager/actions/runs/40198344153) Chromium E2E 77/78, 실패 TC-U1-E2E-001 `viewer-tools-dock 0 vs 1`. [Issue82](Issue82.md), [TestPlan](TestPlan.md), [FailureLedger](FailureLedger.md); 신규 CI에서 실행 확인 전 PASS 미주장.
+
+
 ## ADR-051-R1 — #102 내부망 경량 보안 범위 재결정 (2026-10-25)
 
 **Owner 결정 승인 / 운영 활성화 미승인.** 기존 ADR-048/049/051 및 #96 D1~D6 가운데 공격 방어·탈취 대비가 **G0~G7 진행을 차단하는 보안 게이트**였던 부분을 다음과 같이 개정한다. 상세 [Issue102](Issue102.md).
@@ -228,6 +241,22 @@
 6. **기존 API 전환:** 기존 공개 CAD 목록·Viewer·원본 GET는 **사내망 익명 허용**. 도면 등록 `POST /api/cad-files`·Current PUT는 **로그인 Editor 이상+담당 Site**, Version DELETE는 **Editor 이상+담당 Site+기존 삭제 비밀번호**(AND). G0-BIZ-01~06 Owner 정책 승인. 신규 Outline/Memo/Type/Logs/Audit 영속 GET 익명 개방은 미승인, G7 이전 기존 API 불변.
 
 **효력:** ADR-051-R1은 본 이슈의 이전 공격 중심 PENDING/개별 보안 실증 선행 게이트 서술보다 우선한다. 타 작업의 데이터 무결성·업무권한 검증 및 실 운영 배포 통제는 완화하지 않는다.
+
+
+### ADR-053 보완 — 기존 메모 진입도 동일 Tool 독점, Drag synthetic click 무시 (#82 PR #111 리뷰, 2026-10-25)
+
+- P1 #4370961641: 새 배치와 기존 PIN pointerdown/최근 목록 선택 모두 동일 `beginMemoInteraction` 경계를 호출한다. 먼저 진행 중 Outline Worker/미확정 선택과 Generated Command를 취소하고 `pan`으로 복귀한 뒤 메모 편집·드래그를 허용한다. ESC/View epoch 검증, 이미 확정된 Generated Overlay는 삭제하지 않는다.
+- P2 #4370961642: 5px 이상 drag의 위치 수정은 pointerup 1회, 뒤따르는 mouse click은 선택 재실행으로 해석하지 않는다. PIN 클릭과 키보드 선택은 유지하고, 같은 memo 재선택이 미저장 텍스트를 폐기하지 않도록 한다. 원본 WCS/Source Geometry/서버 인증·영속화는 변경하지 않는다.
+- 최초 PR CI는 lint 단계 실패(원본 `1515eca`); 새 수정 HEAD의 실제 CI 성공 전 수용 PASS 미주장. [FailureLedger](FailureLedger.md), [Issue82](Issue82.md), [TestPlan](TestPlan.md).
+
+
+## ADR-053 — #82 CAD 메모 M1은 WCS 정본/세션 Overlay와 독립 이동 명령 (2026-10-25)
+
+- **맥락:** 도면 버전별 텍스트 메모를 임시로 배치/수정해야 하지만 #83 영속 인증/RBAC/감사/DB 활성화는 #96/Owner 승인·운영 게이트 대기 중이다. #2 `CadFileVersion.description`와 별개. 기존 #51/#52/#54 GENERATED 객체 편집 및 #40/#43 Tool/Tree·Canvas hit와의 충돌 방지 필요.
+- **결정:** browser-only `MemoSession`의 `{id:UUIDv4,versionId,sourceSha256,anchorWcsXY,labelOffset,title,content,textFormat:'plain',createdAt,updatedAt}` 범위와 `create/editText/move/remove` 명령을 사용. 인증된 작성자/수정자 ID 표시·서버 저장을 금지. 도면 좌표는 항상 WCS이고 Label은 파생 CSS 좌표. 카메라 변경은 표시만 재계산하며 변경 확정은 별도 수치 입력 또는 5px 이상 드래그 pointerup뿐. 메모는 pin만 hit, 텍스트는 선택을 통과, 메모 추가 시 외곽선/Generated selection 모드를 끈다.
+- **보안/수명:** 입력 NFC/제어문자/글자 수와 finite/±1e12 좌표·최대 100개 강제; HTML/Markdown 실행 대신 React text. 임시 ID는 신뢰되지 않은 로컬 key. reload/Version/SHA/Renderer change는 모두 버림 및 안내. Source Geometry·Current·DB/REST·Auth·Prisma/GHCR 유지.
+- **기각 대안:** 메모를 화면 픽셀에 보관(Zoom에 떠다님), 텍스트 수정 시 마지막 클릭 좌표 자동 갱신(사용자 의도 파괴), memo pin을 Source spatial hit-test에 합침(레이어/Source 선택 충돌), LocalStorage를 영속이라고 표시(보안/버전 불일치), #96 승인 전 메모 서버 저장 기능 연결(운영 차단 위반).
+- **추적/제약:** [Issue82](Issue82.md), [Architecture](Architecture.md), TC-M1-UNIT-001~006 / E2E-001~003. native fullscreen/실 CAD/GPU/대형 DXF 현장 성능은 검증 전. #83 인증 영속, #84 Snap, #85 Tree, #86 일정, #88 Deep Link, #90 검색 별도.
 
 
 ## ADR-052 — #99 실 CAD P0/P5 수용 증거 분리·자동 게이트 fail-closed (2026-10-25)

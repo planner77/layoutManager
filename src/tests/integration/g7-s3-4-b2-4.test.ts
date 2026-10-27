@@ -86,7 +86,7 @@ type ReplayObject={dbVersionId:string;storagePath:string;
   storage:'local'|'s3';bytes:Buffer;storageVersionId?:string};
 function fixture(modifyCandidate?:(db:SqliteDb)=>void){
   const db=new SQLite(':memory:');
-  let baseline=Buffer.alloc(0),candidate=Buffer.alloc(0);
+  let baseline:Buffer=Buffer.alloc(0),candidate:Buffer=Buffer.alloc(0);
   try{
     for(const migration of migrations)db.exec(sql(migration));
     seed(db);
