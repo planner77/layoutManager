@@ -1,5 +1,12 @@
 # 상세 요구사항
 
+## #142 S3-4-B2-1 — OCI 증거 Bytes 기초 검증 요구 (2026-10-27)
+
+- FR-G7-B2-1-001: OCI App/Migrator/rollback App/Migrator 4개 manifest+config Byte digest, 선택된 Linux/amd64 단일 manifest, source/version/schema/role label이 사전 기대 identity와 맞는지 확인.
+- FR-G7-B2-1-002: `latest`/태그 전용·다른 Registry/Index 미해석·Config 변경·잘못된 Role·Rollback 동일 Source/Version·라벨 부재를 `BLOCKED` 처리.
+- FR-G7-B2-1-003: 로컬 bytes content-match는 Registry provenance·서명·rollback 호환성/실복구/Owner GO를 의미하지 않으며 6개 `false` gate 필드 고정. 사내 원본·접속 정보 비반출.
+- FR-G7-B2-1-004: 활동은 비운영 pure source/합성 tests/docs+GHCR exact allowlist에 제한. 활성 Migration, Dockerfile/Compose, 실 G7 Auth/CAD 운영 기능·실 DB/CAD/S3 무변경.
+
 ## Issue #138 — 이동 가능한 Viewer 조회·작업 보조 창 공통 요구 (2026-10-27)
 
 | 요구 ID | 정책 / 검증 |

@@ -1,5 +1,12 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## #142 S3-4-B2-1 — OCI content-addressed 검사 TC (2026-10-27)
+
+- G7-B2-1-001: 4개 합성 OCI single-platform Linux/amd64 manifest/config 원본 SHA-256 및 label/source/version/schema/role 일치 → `LOCAL_DIGESTS_MATCH_NOT_REGISTRY_PROOF`, 모든 GO/Registry/rollback 증명 필드 false.
+- G7-B2-1-002: mutable :latest/tag-only, 타 Registry, 64hex digest 불일치, OCI index/다중 플랫폼 해석 전, Raw bytes 손상·Schema/Role/아키텍처 label 변경·부분 Role 누락 → BLOCKED.
+- G7-B2-1-003: B2-1 정확 squash 제목+15 allowlist만 `publish=false`, 운영 Migration/Route/Compose/Dockerfile 등 경로 혼입, 유사 제목은 GHCR release scope `exit 1`, 버전 Tag는 일반 게시 정책 유지.
+- G7-B2-2~B2-5: 실제 Registry 인증/서명·동일 Snapshot writer freeze·7 Migration/restore/rollback 실증 사내 전용, **NOT RUN**. 신규 B2-1 테스트도 PR CI 전 PASS 주장 금지.
+
 ## TC-VIEWER-138 — 조회/작업 창 이동과 CAD 입력 격리 (계획, 2026-10-27)
 
 - **UNIT-138-001:** Panel registry/edge→floating, 개별 위치/Top z-order, viewport clamp/reset/resize·ESC Cancel, 새 Version 기본 위치, drag handle 이외 이벤트 무시. 시작/끝 pointer capture 및 cleanup.

@@ -1,5 +1,11 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## #142 S3-4-B2-1 착수 / PR CI 미관측 (2026-10-27)
+
+- 선행 #141 B1 Main `7469d016a5926aca07929bf3e95e869b46716bd1`, [Main CI #40478523325](https://github.com/planner77/layoutManager/actions/runs/40478523325) `completed/success`, release-scope SUCCESS, GHCR Build/Push SKIPPED.
+- OCI manifest/config SHA+Source+Version+Role consistency 순수 코드와 합성 실패 탐지 Unit, GHCR no-publish exact scope regression 작성. 새 PR CI/Typecheck/Unit 결과는 **아직 검증하지 않음**. 실제 Registry provenance/서명 및 B2-2~5 실행 없음. 합성 PASS를 실제 OCI/운영 GO로 표시하지 않음.
+- #109/#96 OPEN/BLOCKED, 운영 data/Auth/Write/Migration/GHCR/Compose/Nginx 변경 0.
+
 ## #109 PR #141 — Unit 실패 및 P1/P2 보완 (2026-10-27)
 
 - [PR CI #40444154044](https://github.com/planner77/layoutManager/actions/runs/40444154044), HEAD `b5f340e69bd28aed939bb1c443df355c1652f5bf`: Unit/Integration 404 중 5 실패, Typecheck/ESLint·Docker PASS, Build/E2E SKIPPED. 5개 공통 직접 원인: 정상 Manifest Sorted Key 기대 순서 오타→`SNAPSHOT_MANIFEST_MISMATCH`.

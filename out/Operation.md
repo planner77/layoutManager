@@ -1,5 +1,11 @@
 # 운영·환경설정 초안
 
+## #142 S3-4-B2-1 — OCI 원본 검증 준비 절차 (2026-10-27)
+
+- 운영자가 승인된 **사내 전용 경로**에 저장해 둔 4개 OCI manifest/config 원본을 외부 반출하지 않고 사내 오프라인 테스트 환경에서 Byte Buffer로 제공하면 순수 `inspectS34B2OfflinePair`가 digest/config Label의 로컬 일치성을 점검한다. 이번 PR은 실제 Registry API/Docker 접근·Publish·Credential 수집 명령 없음.
+- 전부 일치해도 `LOCAL_DIGESTS_MATCH_NOT_REGISTRY_PROOF`이며 **운영 GO가 아니다**. Registry 원본 진위·CA/서명·실 OCI 이미지의 G7 라벨/빌드 출처, rollback pair 실제 호환은 별도 B2 증빙 요구. 소스 Dockerfile은 변경하지 않으며 공개 Git/Actions에는 합성 fixture만.
+- 자세한 정합성 기준/실증 게이트: [S3-4-B2 Runbook](../src/deploy/g7-s3/S3-4-B2.md). #109/#96 운영 NO-GO 지속.
+
 ## #109 PR #141 — Unit 실패 및 P1/P2 보완 (2026-10-27)
 
 - [PR CI #40444154044](https://github.com/planner77/layoutManager/actions/runs/40444154044), HEAD `b5f340e69bd28aed939bb1c443df355c1652f5bf`: Unit/Integration 404 중 5 실패, Typecheck/ESLint·Docker PASS, Build/E2E SKIPPED. 5개 공통 직접 원인: 정상 Manifest Sorted Key 기대 순서 오타→`SNAPSHOT_MANIFEST_MISMATCH`.
