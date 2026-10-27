@@ -1,5 +1,13 @@
 # 상세 요구사항
 
+## Issue #85 M4-A 세션 메모 Tree 요구·범위 (2026-10-28)
+
+- FR-M4A-01: Current Version/SHA의 임시 메모는 Viewer Memo Tree의 미분류/그룹 1단 계층에 표시, 그룹 생성/이름/삭제(메모는 미분류 보존) 및 개별 그룹 이동; 입력 검증·기본 검색·키보드/ARIA.
+- FR-M4A-02: 개별/그룹/전체 표시 여부는 세션 Canvas 표시 필터이며 Tree 패널 Open/Close, CAD Layer, Outline Tree/Source 가시성/좌표·작성자와 분리; 숨긴 메모 검색/선택 시 Focus와 임시 강조만 수행. Reload/Version/Renderer 변경 후 보존 금지.
+- FR-M4A-03: 작업 > 메모 트리, 보기 > 메모 전체 표시, 공통 우측/모바일 Modal Drawer; 다른 Drawer와 충돌 금지, #138 이동 공통 기준 미구현 시 해당 AC는 미완료.
+- NFR-M4A-01: #83/#96/#109 운영 승인 전 서버 CadMemo GET/POST/Prisma/SessionAuth/외부 공유/전역 검색/일정/DeepLink/Snap 활성화 금지; 필드·작성자·공유 상태 허위 표시 금지.
+
+
 ## #142 B2-3 P2 — Audit 행 보존 강제 요구 (2026-10-28)
 
 - FR-G7-B2-3-06: Audit append-only 검사에서 UPDATE/DELETE 예외가 각각 발생하는지뿐 아니라 전체 `AuditEvent` Row가 변경 전과 동일한지 **각 시도 직후** 확인한다. 이미 변경된 행/삭제된 행/다른 행 부수 변경이 있으면 `AUDIT_NOT_APPEND_ONLY/BLOCKED`, `auditAppendOnlyChecked=false`.
