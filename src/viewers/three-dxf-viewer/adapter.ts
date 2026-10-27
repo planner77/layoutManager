@@ -81,6 +81,8 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     onEditError?:(message:string)=>void;
     onViewChange?:()=>void;
   }) {
+    const existingCanvases=new Set(container.querySelectorAll('canvas'));
+    try {
     if(outline && validCanvasScope(outline))
       this.document=new GeneratedDocument(outline,()=>this.documentChanged());
     this.renderer = new THREE.WebGLRenderer({antialias:true});
@@ -95,6 +97,16 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     this.controls.addEventListener('change',this.cameraChanged);
     this.resize = new ResizeObserver(this.size);
     this.resize.observe(container); this.size();
+    } catch(error) {
+      const partial=this as unknown as {resize?:ResizeObserver;controls?:OrbitControls;renderer?:THREE.WebGLRenderer};
+      partial.resize?.disconnect();
+      partial.controls?.dispose();
+      partial.renderer?.dispose();
+      partial.renderer?.forceContextLoss();
+      for(const canvas of container.querySelectorAll('canvas')) if(!existingCanvases.has(canvas))canvas.remove();
+      this.document?.dispose();this.document=undefined;
+      throw error;
+    }
   }
   private render = () => {
     if (!this.disposed) {
@@ -115,8 +127,13 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     const text=new TextDecoder().decode(source);
     if(!/(?:^|\n)\s*0\s*\r?\nSECTION\s*\r?\n/.test(text) || !/(?:^|\n)\s*0\s*\r?\nEOF\s*$/.test(text)) throw new Error('DXF 처리에 실패했습니다. 유효한 ASCII DXF인지 확인해주세요.');
     const url=URL.createObjectURL(new Blob([explicitElevation(text)]));
-    let timer: ReturnType<typeof setTimeout> | undefined;
     const viewer=new DXFViewer();viewer.useCache=false;
+    // The upstream loader reads the font before fetching this URL. Stop its
+    // progress chain after cancellation so a late font response cannot fetch
+    // an already revoked blob URL.
+    viewer.subscribe('progress',()=>{
+      if(this.disposed)throw new DOMException('취소됨','AbortError');
+    });
     try {
       const pending=viewer.getFromPath(url,'/fonts/CadKorean.typeface.json').then(object=>{
         if (this.disposed) { if(object) release(object); throw new DOMException('취소됨','AbortError'); }
@@ -124,7 +141,6 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
       });
       const object=await Promise.race([pending,new Promise<never>((_,reject)=>{
         this.cancel=()=>reject(new DOMException('취소됨','AbortError'));
-        timer=setTimeout(()=>reject(new Error('처리 시간 초과')),120000);
       })]);
       if(!object) throw new Error('도형 또는 글꼴 로드 실패');
       // Upstream caches materials globally. Own clones before applying background contrast.
@@ -170,11 +186,11 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
           this.indexError=error instanceof Error?error.message:'객체 선택 인덱스를 만들 수 없습니다.';
         }
       }
-      return {empty:this.bounds.isEmpty(),entityCount:viewer.lastDXF?.entities?.length};
+      return {empty:this.bounds.isEmpty(),entityCount:viewer.lastDXF?.entities?.length,warning:this.indexError?'도면은 표시되었지만 객체 선택 인덱스 생성에 실패했습니다. 레이어 확인·외곽선 작업은 제한됩니다.':undefined};
     } catch(error) {
       if(error instanceof DOMException && error.name==='AbortError') throw error;
       throw new Error('DXF 처리에 실패했습니다. 파일과 글꼴 로드를 확인해주세요.');
-    } finally {clearTimeout(timer);this.cancel=undefined;URL.revokeObjectURL(url);}
+    } finally {this.cancel=undefined;URL.revokeObjectURL(url);}
   }
   fitToView() {
     this.cancelGeneratedCommand();
@@ -271,9 +287,9 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
       const worker=new Worker(new URL('../core/outline-worker.ts',import.meta.url),{type:'module'});
       let settled=false;
       const finish=(error?:Error,result?:T)=>{
-        if(settled)return;settled=true;clearTimeout(timer);
+        if(settled)return;settled=true;
         if(this.activeWorkers[kind]?.worker===worker)delete this.activeWorkers[kind];
-        worker.terminate();if(error)reject(error);else resolve(result as T);
+        clearTimeout(timer);worker.terminate();if(error)reject(error);else resolve(result as T);
       };
       this.activeWorkers[kind]={worker,cancel:()=>finish(new DOMException('취소됨','AbortError'))};
       worker.onmessage=(event:MessageEvent)=>{

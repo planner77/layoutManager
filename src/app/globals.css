@@ -10,3 +10,51 @@ label > input, label > select { margin-top: 7px; }
 
 /* CSS immersive mode is independent of the user-activation-gated Fullscreen API. */
 html.cad-viewer-immersive, html.cad-viewer-immersive body { overflow: hidden; overscroll-behavior: none; }
+
+/* Only the drawing list keeps navigation and search controls in view. */
+[data-app-header][data-home-sticky='true'] { position: sticky; top: 0; z-index: 60; }
+.home-sticky-panel { position: sticky; top: var(--home-nav-height, 0px); z-index: 50; padding: 6px 0; background: #f5f7fa; }
+.home-title-row { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:8px; }
+html:has([data-home-sticky='true']) { scroll-padding-top: calc(var(--home-nav-height, 0px) + var(--home-panel-height, 0px)); }
+.home-list [id] { scroll-margin-top: 4px; }
+.home-filters label > input, .home-filters label > select { height:36px; margin-top:3px; }
+.home-advanced > summary { display:none; }
+.home-list :focus-visible, [data-app-header][data-home-sticky='true'] :focus-visible, [data-testid='cad-viewer-shell'] :focus-visible { outline:2px solid #0f766e; outline-offset:2px; }
+@media (max-width: 700px), (max-height: 650px) {
+  .home-title-row { align-items:flex-start; flex-wrap:wrap; }
+  .home-advanced > summary { display:list-item; cursor:pointer; padding:5px 0; font-weight:600; font-size:13px; }
+  .home-advanced:not([open]) > div { display:none; }
+  .home-filters label > input, .home-filters label > select { height:44px; }
+}
+.viewer-drawer { position:absolute; z-index:30; display:flex; flex-direction:column; overflow:auto; max-height:min(68dvh, 620px); background:white; color:#172b3a; box-shadow:0 8px 26px #0005; border:1px solid #dce2e8; }
+.viewer-drawer-layers { top:12px; left:12px; width:min(18rem, 28vw); }
+.viewer-drawer-outlines { top:12px; right:12px; width:min(20rem, 30vw); }
+.viewer-drawer-tools { bottom:12px; left:50%; transform:translateX(-50%); width:min(840px, calc(100% - 32px)); max-height:min(36dvh, 350px); }
+.viewer-drawer-hidden { display:none; }
+.viewer-drawer-backdrop { position:absolute; inset:0; z-index:29; background:#0009; }
+@media (max-width:767px) {
+  .viewer-drawer { z-index:35; top:auto; bottom:0; left:0; right:0; transform:none; width:100%; max-height:min(74dvh, 60%); border-radius:12px 12px 0 0; }
+  .viewer-drawer-hidden { display:none; }
+}
+
+@media (max-width:700px) {
+  [data-app-header][data-home-sticky='true'] { flex-wrap:nowrap; gap:6px; padding:5px 8px; }
+  [data-app-header][data-home-sticky='true'] > a { flex:none; gap:0; }
+  [data-app-header][data-home-sticky='true'] > a > span:last-child { display:none; }
+  [data-app-header][data-home-sticky='true'] nav { flex:1; min-width:0; flex-wrap:nowrap; gap:8px; overflow-x:auto; white-space:nowrap; }
+  [data-app-header][data-home-sticky='true'] nav a { flex:none; }
+  [data-app-header][data-home-sticky='true'] nav a svg { display:none; }
+  [data-app-header][data-home-sticky='true'] nav > span { display:none; }
+  .home-title-row { margin-bottom:4px; gap:4px; }
+  .home-title-row h1 { font-size:18px; }
+  .home-title-row > div:last-child { gap:4px; }
+  .home-title-row a { min-height:44px; padding:0 8px; font-size:12px; }
+  .home-filters { padding:8px; }
+  .home-filters form[aria-label='도면 검색'] > div:first-of-type { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; }
+  .home-filters form[aria-label='도면 검색'] > div:first-of-type label { min-width:0; }
+  .home-filters form[aria-label='도면 검색'] > div:first-of-type button, .home-filters form[aria-label='도면 검색'] > div:first-of-type a { width:100%; justify-content:center; }
+}
+
+@media (max-height:480px) { .home-sticky-panel { max-height:calc(100dvh - var(--home-nav-height, 0px) - 88px); overflow:auto; } }
+
+@media (max-width:767px) { .viewer-command-trigger,.viewer-command-item,.viewer-drawer button,.home-filters button,.home-advanced > summary { min-height:44px; } }

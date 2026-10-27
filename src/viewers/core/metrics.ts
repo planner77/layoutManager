@@ -5,6 +5,7 @@ export type ViewerMetric = {
   sourceWaitMs:number|null; initializeMs:number|null; adapterLoadMs:number|null; totalMs:number;
   firstDisplayMs:number|null; parseMs:number|null; jsHeapBytes:number|null;
   browser:string; reasons:Record<string,string>; error:string|null;
+  fallback?: {reasonCode:string;attempt:number};
 };
 export async function observeFrame():Promise<boolean> {
   if(typeof requestAnimationFrame==='undefined' || document.visibilityState!=='visible')return false;

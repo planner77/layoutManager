@@ -1,5 +1,380 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## #142 B2-2B — CadFileVersion.storagePath Unique P2 회귀 (2026-10-27)
+
+- TC-B2-2B-07: 합성 SQLite의 `UNIQUE(storage_path)`를 유지한 상태에서 Local 1개·S3 2개 Version(각 DB Version ID/S3 Object UUID 독립, S3 locator 2개 서로 다름)과 일치하는 B2-2A Packet·S3 export Buffers → `DISPOSABLE_BYTES_CONSISTENT_NOT_SITE_PROOF`, s3BytesCompared=2, DB Version 3, 모든 출처/GO false.
+- TC-B2-2B-08: 고의로 `UNIQUE(storage_path)`만 빠진 합성 SQLite의 DB Version 3개 중 S3 Version 2개가 동일 S3 locator/동일 Bytes/Hash/VersionId 사용. B2-2A Packet은 중복되지 않는 V key·Version number·객체 Claim으로 통과하지만 B2-2B는 `DUPLICATE_S3_LOCATOR/BLOCKED`, GO=false. 오류가 아닌 정상 Locator UUID 독립성은 계속 수용.
+- TC-B2-2B-09: 중복 Locator를 서술할 때 Bucket/실 도면 Key/원본 VersionId를 GitHub 로그/결과에 출력 금지. 새 HEAD Typecheck/Unit/E2E/PR CI 확인 전 `NOT VERIFIED`, 실제 Source/Site 시험 `NOT RUN`.
+
+## #142 B2-2B P2 보완 — S3 Locator 독립 매핑 회귀 (2026-10-27)
+
+- TC-B2-2B-05: S3ObjectStorage가 사용한 `S3 object UUID`와 CadRepository가 등록한 `DB Version UUID`가 **서로 다르면서** 정규화 `s3:bucket:cad/<object-uuid>/original.dwg` Locator, DB `storage_path` 및 합성 Bytes/Hash가 일치하면 `DISPOSABLE_BYTES_CONSISTENT_NOT_SITE_PROOF` (운영 GO=false). Local은 DB Location/Version UUID 구조를 그대로 유지.
+- TC-B2-2B-06: 올바른 형식이나 다른 S3 Object UUID/다른 Bucket로 잘못 매핑하면 `SQLITE_VERSION_OR_LOCATOR_MISMATCH`/BLOCKED; S3 locator 누락·미승인 URL/Local에 불필요한 S3 locator 삽입은 `INVALID_DISPOSABLE_BUNDLE`/BLOCKED. 실제 S3 GET/VersionId·Writer 정지는 시험에서 호출하지 않음.
+- 적용 후 최신 HEAD Typecheck/Lint/Vitest/PR CI와 Codex P2 Resolution 별도 확인 필수. 이전 성공 Run은 새 HEAD 합격 근거가 아님.
+
+## #142 B2-2B — Buffer-only SQLite/CAD/S3 검증 Test Cases (2026-10-27)
+
+- TC-B2-2B-01: 정상 B2-2A 주장 Packet와 합성 실제 SQLite·Local CAD/S3 export·Marker bytes, 전체 Version/Location Current/FK/NextVersion·Hash·Size/VersionId Claim 교차대조 → `DISPOSABLE_BYTES_CONSISTENT_NOT_SITE_PROOF`. Source/site/writer/GO 검증 flags는 false.
+- TC-B2-2B-02: Writer Count≠0, Epoch·Marker SNAP/VersionId 불일치, SQLite byte 변조/Hash 조작/비SQLite, Local/S3 Buffer 변조, DB current/next_version/File Size 불일치 → reason code+BLOCKED.
+- TC-B2-2B-03: Version/Location private mapping 누락/중복·DB Ghost Row, FK 위반, Auth 후보 schema 혼입, 예상 밖 Secret/Path 필드 → BLOCKED. 응답에는 DB/Site ID·Byte/Path 누출 없음.
+- TC-B2-2B-04: 정확 B2-2B future Squash 제목+15개 허용 파일만 GHCR publish=false. 변형 제목/비허용 active Prisma·Route·Dockerfile·Compose·workflow는 차단하며 tag는 기존 릴리스 정책 유지. 신규 CI 전 Typecheck/Lint/Unit/Build/E2E PASS는 **NOT VERIFIED**; 실 Site writer freeze 및 동일 SNAP 원본 수용은 NOT RUN.
+
+## #142 S3-4-B2-2A — Snapshot Barrier assertion TC (2026-10-27)
+
+- TC-B2-2A-01: 두 합성 CAD Version(Local/S3), 한 위치 Current/nextVersion, S3 versioned marker 및 하나의 `SNAP-*`/Epoch·시간 내 capture → `CAPTURE_CLAIMS_CONSISTENT_NOT_SOURCE_PROOF`, 실제 Writer/Snapshot/Bytes Verified 및 GO 0.
+- TC-B2-2A-02: writerCount>0, writesDuringCapture>0, lease 미표시, Source Epoch 변경, 캡처시간 범위 밖, Snapshot ID 불일치/빈 S3 marker Version → BLOCKED.
+- TC-B2-2A-03: Local/S3 SHA/size/S3 VersionId 불일치, 중복 또는 orphan object, FK/Audit claim 오류, Current Owner/nextVersion 비정상, 추가 미승인 필드 → BLOCKED.
+- TC-B2-2A-04: 정확 B2-2A Squash 제목+15 paths `publish=false`, 활성이관·App Route·Dockerfile/Compose/Nginx·타 Workflow 경로/제목은 차단, 릴리스 Tag는 정식 정책 유지. 새 PR CI 완료 전 PASS 미확인. 실 capture/restore E2E NOT RUN.
+
+## #142 S3-4-B2-1 — OCI content-addressed 검사 TC (2026-10-27)
+
+- G7-B2-1-001: 4개 합성 OCI single-platform Linux/amd64 manifest/config 원본 SHA-256 및 label/source/version/schema/role 일치 → `LOCAL_DIGESTS_MATCH_NOT_REGISTRY_PROOF`, 모든 GO/Registry/rollback 증명 필드 false.
+- G7-B2-1-002: mutable :latest/tag-only, 타 Registry, 64hex digest 불일치, OCI index/다중 플랫폼 해석 전, Raw bytes 손상·Schema/Role/아키텍처 label 변경·부분 Role 누락 → BLOCKED.
+- G7-B2-1-003: B2-1 정확 squash 제목+15 allowlist만 `publish=false`, 운영 Migration/Route/Compose/Dockerfile 등 경로 혼입, 유사 제목은 GHCR release scope `exit 1`, 버전 Tag는 일반 게시 정책 유지.
+- G7-B2-2~B2-5: 실제 Registry 인증/서명·동일 Snapshot writer freeze·7 Migration/restore/rollback 실증 사내 전용, **NOT RUN**. 신규 B2-1 테스트도 PR CI 전 PASS 주장 금지.
+
+## TC-VIEWER-138 — 조회/작업 창 이동과 CAD 입력 격리 (계획, 2026-10-27)
+
+- **UNIT-138-001:** Panel registry/edge→floating, 개별 위치/Top z-order, viewport clamp/reset/resize·ESC Cancel, 새 Version 기본 위치, drag handle 이외 이벤트 무시. 시작/끝 pointer capture 및 cleanup.
+- **E2E-138-001:** #26 TEXT Search 입력/결과 선택→focus/zoom을 유지한 채 검색 panel 이동; #43 Outline Tree 선택/show-hide, #40/#49 생성/편집 도구 패널 동시 열림+이동. 다른 창과 Canvas Pan/BoxSelect/Generated Translate/Undo/Layer visibility가 비의도적으로 바뀌는 경우 0.
+- **E2E-138-002:** 1440×900/1366×768 데스크톱 2~3개 panel move/overlap/close/reopen/reset, 375×812/320px 단일 Drawer·touch, keyboard-only/Shift+Arrow(지원 시), Esc 단일 단계, focus, 200% zoom/resize/CSS immersive/native fullscreen. Window clamp 및 Recovery.
+- **E2E-138-003:** panel 반복 이동·열림/닫힘 20회 후 `cad-canvas` DOM 및 ViewerManager identity 동일, CAD GET·parse·Worker·GPU 재생성 0, 검색 query/result/Outline Overlay/Generated history·selection/Zoom 유지. dxf-viewer/DWG capability gate 회귀.
+- **정책 시험:** 향후 Viewer 독립 보조 패널 등록 시 [ViewerPanelPolicy](ViewerPanelPolicy.md)의 적용/비적용 사유 및 메뉴·Drawer 연결·AC 증거가 포함되는지 문서 리뷰 확인. 관련 #26/#40/#43/#49/#73/#82/#85/#90 회귀.
+- **실행 상태:** NOT RUN — 이 계획/지침 자체가 구현·PR CI·현장 검증의 합격을 증명하지 않는다. [Issue #138](https://github.com/planner77/layoutManager/issues/138) 참조.
+
+
+## #109 PR #141 — Unit 실패 및 P1/P2 보완 (2026-10-27)
+
+- [PR CI #40444154044](https://github.com/planner77/layoutManager/actions/runs/40444154044), HEAD `b5f340e69bd28aed939bb1c443df355c1652f5bf`: Unit/Integration 404 중 5 실패, Typecheck/ESLint·Docker PASS, Build/E2E SKIPPED. 5개 공통 직접 원인: 정상 Manifest Sorted Key 기대 순서 오타→`SNAPSHOT_MANIFEST_MISMATCH`.
+- [Codex P1 #4384813274](https://github.com/planner77/layoutManager/pull/141#discussion_r4384813274) key order 수정. [P2 #4384813277](https://github.com/planner77/layoutManager/pull/141#discussion_r4384813277) SQLite source path 재오픈 TOCTOU를 검증 Buffer→메모리 DB로 교정, [P2 #4384813278](https://github.com/planner77/layoutManager/pull/141#discussion_r4384813278) 8개 Auth table 완전/완전부재 검사로 수정. 관련 회귀 테스트·B1 Runbook 추가. **신규 HEAD CI 전 PASS 미확인**.
+- S3-4-B1은 격리 readonly/합성 clone 무결성 검사 준비이며 실제 운영 Snapshot 동시성·실 Registry OCI·실 Migration/Restore/rollback은 NOT RUN. Auth/Write/운영 SQL·Compose/Nginx·GHCR·실 DB/CAD/S3·Issue 종료 금지.
+
+
+## #109 S3-4-B1 격리 복원 무결성 회귀 (2026-10-27)
+
+- TC-S3-4B1-001: 합성 6개 CAD Migration SQLite와 실제 local DXF+S3-export DWG 바이트 SHA/길이·Version/Current FK를 readonly 검증해 ISOLATED_INTEGRITY_ONLY, 운영 GO=false.
+- TC-S3-4B1-002: CAD/S3-export 파일 손상·누락·0644·symlink 등은 BLOCKED, 민감 경로/bytes 출력 금지.
+- TC-S3-4B1-003: SNAP marker ID/Schema 불일치, CAD 6개↔후보 Auth 7번째 테이블 상태 불일치 및 운영 /var/lib 경로 접근은 거부.
+- TC-S3-4B1-004: 정확 `G7-S3-4B1-NO-GHCR` squash subject와 15개 허용 경로만 GHCR SKIP. 운영 migration/route/Compose 및 유사 제목은 거부.
+- 실제 B2 OCI Registry, 원본 동일 Snapshot writer freeze/실 Restore·Rollback 및 후보 CLI migration은 **NOT RUN**, B1 신규 PR CI 결과 전 **PASS 미확인**.
+
+
+## #109 S3-4-A Codex P2 회귀 시험 (2026-10-27 KST)
+
+- **TC-S3-4A-P2-01:** lstat/realpath 이후 0600→0644 symlink 또는 inode 변경은 같은 fd의 `fstat`·사전 `dev/ino` 체크로 거부하고, `O_NOFOLLOW`를 사용한다.
+- **TC-S3-4A-P2-02:** 검사 후 pathname을 FIFO로 바꾸어도 `O_NONBLOCK`+nonregular 검증으로 CLI를 멈추지 않는다. 파싱 예외에도 descriptor를 닫는다.
+- **TC-S3-4A-P2-03:** `status=['NOT_RUN']`, `['PASS']`, 객체/숫자/boolean/null은 `INVALID_CHECK`, `BLOCKED`; 정상 문자열 `NOT_RUN`만 `PENDING`.
+- 이전 PR CI #40438604869 SUCCESS는 보완 전 SHA만 보증하며 새 HEAD 결과는 PENDING/NOT VERIFIED. 운영 실증 아님.
+
+
+## #109 S3-4-A — OCI/Backup/Restore 증거 계약 TC (2026-10-27)
+
+- G7-S3-4A-001: 17개 확인 항목 모두 사내 PASS 증빙 형식 완비 → `EVIDENCE_PACKET_COMPLETE_NOT_GO` + operating GO=false; **이는 실제 복구 PASS를 의미하지 않음**.
+- G7-S3-4A-002: 체크 누락/NOT_RUN → `PENDING`; FAIL/CANCELLED → `BLOCKED`, completed count 거짓 증가 금지.
+- G7-S3-4A-003: App/Migrator source/version/schema/digest 위조·불일치, rollback 쌍 변형·동일 forward 쌍, unknown 필드/GO 스위치 시도 → `BLOCKED`.
+- G7-S3-4A-004: Restore 항목 `SNAP` 불일치, PASS에 EV·QA·UTC 누락·부적절한 시간 → `BLOCKED`.
+- G7-S3-4A-005: 사내 JSON은 절대경로/UID/0600/비Symlink/저장소 외부 검증, 비공개 원문 출력 금지.
+- G7-S3-4A-006: GHCR 정확 제목+한정 allowlist는 publish=false, 활성 Prisma/운영 route/Compose 혼입 및 유사 제목은 fail-closed. Tag/일반 런타임 릴리스 정책 보존.
+- G7-S3-4B-001~: 실제 사내 OCI registry 조회, 후보 Migration clone FK/전후 무결성, DB/CAD/S3 같은 Snapshot 실 Restore 및 rollback App/Migrator 실증 **NOT RUN / 후속**. Unit 코드 작성 시점 CI 결과 `NOT VERIFIED`.
+
+
+## Issue #109 S3-3 P2/재정렬 검증 (2026-10-27 KST)
+
+- **G7-S3-3-STORAGE-001:** `CAD_STORAGE_PATH`가 격리 `/tmp/cad-g7-s3-*/cad`와 다르거나 S3 backend/credential이 있으면 CAD Preview 쓰기 거부; 운영 GET/Viewer는 기존 Context에서 유지. 순수 helper 검증.
+- **G7-S3-3-STORAGE-002:** 테스트 로컬 `CadStorage.publish`한 CAD 바이트가 동일 root의 기존 `ConfiguredCadStorage.content`에서 정확히 반환되는지 검증.
+- **G7-S3-3-SCOPE-003:** S3-3 정확 squash+허가된 `cad-preview-storage.ts` 포함 시만 GHCR SKIP, 활성 Prisma Migration·미승인 경로 및 제목 변형은 거부.
+- Main 정렬 `ebc294fff35b005737cf89ebacb78420b209bd59`, 리뷰 미해결 0/behind=0. 이 목록의 새로운 HEAD Typecheck·Unit·Integration·Playwright·Docker PR CI 결과는 **NOT VERIFIED**. CI 성공 전 PASS 주장 금지.
+
+
+## Issue #109 S3-3 — CAD API 권한·Audit 원자성 준비, 운영 OFF (2026-10-27)
+
+- **기능:** 기존 CAD Multipart POST·Current PUT·Version DELETE에서 서버 DB의 최신 Session/Role/Site를 같은 Prisma Transaction 안에 재조회하고 승인된 Editor/Admin+Site만 쓰기 허용한다. DELETE는 기존 삭제 비밀번호도 요구하며, CAD DB 변경과 CAD_UPLOADED/CAD_CURRENT_CHANGED/CAD_VERSION_DELETED Audit INSERT 중 하나라도 실패하면 DB를 롤백한다. 기존 업로드 보상·삭제 Job, 익명 GET/Viewer·CAD 데이터 규약은 유지한다.
+- **운영 차단:** `NODE_ENV=production`에서는 S3-3 프리뷰 활성화 불가. 정확한 S3-2 disposable DB/marker/7 migration, loopback origin, `G7_S3_AUTH_API_PREVIEW_ONLY=true`, `G7_S3_CAD_PREVIEW_ONLY=true`, `G7_AUTH_ENABLED=false`, `G7_CAD_WRITE_CUTOVER_ENABLED=false` 조건만 격리 시험 허용. 별도 Prisma Client와 0700 root 하위 로컬 CAD 저장소 이용. 운영 Migration·실 DB/CAD/S3·Compose/Nginx/.env·GHCR 게시·인증/쓰기 활성화 없음.
+- **시험·잔여:** synthetic integration(Unit) 검증 코드 추가; 실제 PR CI는 시작 전이므로 결과 `NOT RUN`. 일회용 Preview Cookie의 Path는 `/api/g7-operational`이므로 다른 CAD 경로의 프로그램 시험에서는 테스트용 Cookie를 명시적으로 넘기며 운영 브라우저 인증이 활성된 상태는 아님. S3-4는 OCI/운영 Migration/실복구·신뢰 release binding, S3-5는 릴리스별 Owner GO 및 현장 수용. 기존 유사범위 PR #128은 미병합·충돌 상태이며 자동 병합하지 않는다. #109/#96 OPEN/BLOCKED.
+- **후속 정확 Squash:** `#109 | S3-3 Isolated CAD write and Audit [G7-S3-3-NO-GHCR]` 및 개별 파일 allowlist만 GHCR 미게시. 내부 로그/비밀번호/IP/실 도면 반출 금지. [S3-3 Runbook](../src/deploy/g7-s3/S3-3.md).
+
+
+## Issue #109 S3-2 — HTTP Response Body 중복 소비 재발방지 TC (2026-10-27 KST)
+
+- **G7-S3-2-HTTP-010:** 인증 HTTP Fixture의 `login()`이 상태 코드·CSRF 파싱을 수행하더라도 반환되는 **원본 Response는 `bodyUsed=false`로 보존**되어야 하며 `response.clone().text()` 상태진단을 부작용 없이 수행할 수 있어야 한다. `r.clone().json()` 방식과 실제 Admin 로그인 E2E의 회귀 Assertion으로 검증한다.
+- **원장 연계:** [PR CI 40394690714](https://github.com/planner77/layoutManager/actions/runs/40394690714) 실패 재현은 `tests/integration/g7-s3-operational-auth.test.ts:127:57`의 `Response.clone` TypeError이며, Typecheck/Lint PASS·Docker PASS·Unit 359/360 PASS(나머지 1건 실패)와 E2E SKIPPED를 구별한다. 수정한 HEAD의 실제 PR CI 성공을 이전 Run 성공으로 소급하지 않는다.
+
+
+## #109 S3-2 — 운영 Auth/Admin 예약 API 통합·프로덕션 OFF 검증 계획 (2026-10-26)
+
+| TC | 실제 실행 의도 | 합격 기준 |
+| --- | --- | --- |
+| G7-S3-2-001 | 격리 S3 후보 Prisma 7개 + 명시 Admin 최초 생성·password mustChange | 초기 암호 로그인 거부→initial-change/login 정상 |
+| G7-S3-2-002 | Preview Cookie + 기존 `cad_session` 섞임·Session GET·CSRF | S3 Cookie 전용 Path, 기존 Cookie만으론 401, 정상 actor+CSRF 제공 |
+| G7-S3-2-003 | Admin Role/Site grants와 Editor 자신의 Site 권한 | Editor 담당 Site 허용, 타 Site/그랜트 없는 Admin 거부 |
+| G7-S3-2-004 | Admin Audit 조회와 `audit:read` 특별 Grant | 미부여 403, Grant 후 200·안전 필드/누락 Secret 확인 |
+| G7-S3-2-005 | Admin 계정 disable 및 Session revoke | Disabled User의 기존 세션 401, Audit/FK 무결 |
+| G7-S3-2-006 | Admin 복구 nonce 1회 재사용 차단, 이전 Session 폐기 | 복구 1회 성공/재사용 실패·Audit/G1 Session revoke |
+| G7-S3-2-007 | Admin users:manage/CSRF 후 Account Create | 201, MustChange=1·Role 미부여·User+Audit 원자, CSRF 미제출 403 |
+| G7-S3-2-008 | 실제 S3 Prisma candidate /tmp UID·marker/Schema·FK가 없는 경우 | 잘못된 DB·미마이그레이션/운영 경로 404 또는 503, SQL 실행 금지 |
+| G7-S3-2-009 | NODE_ENV=production, G7 flag true, 타 Origin/기존 CAD route | 임의 flag에도 새 모든 API 404, 타 Origin 거부; 기존 CAD 코드 diff 0 |
+| G7-S3-2-CI-001 | 정확 `#109 | S3-2 Operational Auth/Admin API [G7-S3-2-NO-GHCR]` 및 PR 변경 파일 | Main release-scope `publish=false` |
+| G7-S3-2-CI-002 | 같은 제목 + 활성 Migration/기존 CAD/Compose/Deploy 혼입 | stderr 비허용 경로 에러·exit nonzero |
+| G7-S3-2-CI-003 | S3-2 제목 변형 및 S1/S2/S3-1 제목 위장 | fail closed, 다른 GHCR 제외 우회 거부 |
+| G7-S3-2-CI-004 | 정상 runtime/title 및 tag push | 기존 `publish=true` 동작 보존 |
+
+- 시험 소스: `src/tests/integration/g7-s3-operational-auth.test.ts` 및 `src/tests/unit/g7-staging-ghcr-guard.test.ts`. 전부 **합성 일회용 SQLite와 Loopback API**. 실제 사내 PC·실 운영 Auth/DB/CAD/S3·OCI registry/복구 증거는 NOT RUN/미열람 상태를 유지하고 User의 비반출 지침을 준수한다. 신규 PR CI 실행/합격을 별도 HEAD/Run/Job 단위로 기록한다.
+
+
+## Issue #57 L1 — Logger 단일화 및 무회귀 검증 계획 (2026-10-27)
+
+| TC | 기대 | AC |
+| --- | --- | --- |
+| TC-L1-001 | UploadDiagnostics 동일 emitter, `LOG_LEVEL=warn` info 생략·warn/error 라우팅·requestId/schema v1/카테고리 | AC2/3 |
+| TC-L1-002 | 발신자가 만든 metadata override·무허가 필드·원본 Error/stack/bytes/Locator·URL 차단, route 템플릿 | AC3/4 |
+| TC-L1-003 | debug/info/pretty 한 줄·URL query 차단·복합 문자열 제한 | AC1/2/4 |
+| TC-L1-004 | Health 200 debug-only, 오류 503과 동일 요청 ID | AC2/5 |
+| TC-LOG-001~005, TC-OBS-001~007, TC-UP, DELETE/HEALTH | 기존 공개 DTO·X-Request-Id·업로드 first failure·compensation/cleanup·DB 기능 회귀 | AC1/4/5 |
+| TC-LOG-MIG-001 | Logger의 상대 import 목록과 축소 Migrator Docker COPY closure 일치, build·CI의 read-only Node+tsx 모듈 import 검사 | AC2/5 |
+| PR CI Verify/Docker | node/npm ci/db:generate→Typecheck/ESLint/Unit+Integration/Build/E2E/legacy; Migrator 파일·logger import 사전검증과 Compose 신규 설치/멱등 migration | AC5 |
+
+실행/증거가 없는 테스트는 `NOT RUN`으로 기록. 운영 DB/CAD/Secret/원격 S3/실 LAN 검증을 이 PR로 대체하거나 추정 PASS 처리하지 않는다. [Issue57](Issue57.md), [TestReport](TestReport.md).
+
+
+## Issues #124/#126/#127 검증 계획 (2026-10-26)
+
+[Issues124-126-127](Issues124-126-127.md)의 AC→TC 표가 신규 검증 기준. 구현 전 동일 synthetic fixture의 baseline screenshot/1440×900 높이·Canvas 면적 확보, 이후 responsive·keyboard·sticky/Drawers·failure injection 및 기존 Current/list/Viewer/selection/JSON/Fullscreen 회귀. typecheck/lint/unit+integration/build/E2E/legacy·최신 PR CI와 실제 Main GHCR Pair는 각각 증거를 기록. 미실행은 NOT RUN, #113 실 CAD/GPU와 G7 운영 수용은 별도.
+
+
+## Issue #109 S3-1 — Prisma Schema/격리 후보 Migration·Release/Operation 검증 계획 (2026-10-26)
+
+| TC | 실행 범위 및 입력 | 합격 기준 |
+| --- | --- | --- |
+| G7-S3-001 | 현재 활성 CAD 6개 SQL과 S3 후보 6개 SQL byte equality·운영 schema Prisma models | CAD 동일, 인증 8개 모델 존재, 신규 SQL은 활성 history에 없음 |
+| G7-S3-002 | Test-only Prisma CLI config로 `/tmp/cad-g7-s3-*/fixture.sqlite`에 공식 7개 migration | 성공·`_prisma_migrations` 7행, FK 0, User/Audit 표 생성 |
+| G7-S3-003 | 기존 6 CAD SQL→synthetic BU/Site/Floor/Version/Current/원본 SHA/삭제 hash→신규 DDL | CAD 행/Current/Source 필드 불변, FK/타 Site FK 거부, Audit append-only trigger |
+| G7-S3-004 | 신규 DDL 트랜잭션 중 오류 주입 및 잘못된 DATABASE_URL/Test flag/Auth ON 지정 | DDL Rollback과 CAD 스냅샷 복원, 잘못된 URL/설정은 Prisma SQL 사전 거부 |
+| G7-S3-005 | Release capability/source/version/App+Migrator digest/Schema mismatch | RELEASE_IDENTITY_MISMATCH·인증/쓰기 eligible false |
+| G7-S3-006 | Registry 검증/정식 Schema/FK 0/rollback pair/snapshot 실증 일부 미달 | RELEASE_EVIDENCE_MISSING·인증/쓰기 eligible false |
+| G7-S3-007 | Owner 미서명/다른 릴리스·scope/승인 ID, 시각 만료, snapshot 불일치 | OWNER_RELEASE_SPECIFIC_GO_REQUIRED, authEligible=false |
+| G7-S3-008 | flag unset/오타, Auth OFF+Write ON, 유효 가상 증거 입력 | 기본 OFF·별도 Write OFF, synthetic pass도 runtimeActivated=false |
+| G7-S3-CI-001 | S3-1 정확 Squash 제목 + 코드/테스트/문서/Workflow 파일 전체 목록 | 실제 Main release-scope Bash `publish=false` |
+| G7-S3-CI-002 | 활성 운영 migration/CAD Runtime/Compose/일반 Workflow 혼입, S3-1 제목 오타 | Main scope stderr 오류+nonzero, GHCR 미게시 정책 |
+| G7-S3-CI-003 | S1/S2 제목으로 S3 Schema 경로, 일반 runtime/tag release | S1/S2 거부, 일반 runtime/tag 기존 publish 정책 유지 |
+
+- **실행 범위:** CI의 Linux 일회용 DB만. 실제 운영 Schema 적용/DB/CAD/S3·서명된 OCI Registry/현장 PC·Nginx·Compose·운영 Auth 라우트 E2E는 NOT RUN, 다른 G6/S1 수용을 이번 증거로 소급 적용 불가. CI 시작=PASS 아님. 새 실패 시 실제 Run/Job/Step·HEAD/원인·조치를 [FailureLedger](FailureLedger.md)에 추가한다.
+
+
+
+## Issue #109 / PR #129 — S2 GHCR 비게시 P1 회귀 검증 계획 (2026-10-26)
+
+| TC | 테스트 입력 | 합격 기준 |
+| --- | --- | --- |
+| G7-S2-CI-001 | `#109 | S2 private-evidence readiness [G7-S2-NO-GHCR]` 정확 제목+멀티라인 본문 및 S2 전체 변경 파일(문서/스크립트/서버/Unit/Workflow) | 실제 Main release-scope Bash `publish=false`, 종료 0 |
+| G7-S2-CI-002 | 정확 제목이더라도 기존 `src/app/api/cad-files/**`, `src/prisma/schema.prisma`, `src/docker-compose.yml`, S1 전용 `g7-staging-admin.ts`/CAD service, 임의 Unit/다른 workflow 혼입 | `stderr`에 `G7-S2 GHCR exclusion disallowed path`, nonzero/결과 파일 없음 |
+| G7-S2-CI-003 | 정확 제목에 접미·후행 공백·일부 글자만 허용되는 경우 | `G7-S2 exact squash subject required`, nonzero |
+| G7-S2-CI-004 | 기존 S1 정확 제목+S1 테스트 파일 및 S1 제목으로 S2 파일 혼입 | 전자는 기존 `publish=false`, 후자는 S1 allowlist 거부 |
+| G7-S2-CI-005 | 일반 runtime PR 제목, tag push | 기존 `publish=true` 유지; S2 no-GHCR 예외 확장 금지 |
+
+`src/tests/unit/g7-staging-ghcr-guard.test.ts`에서 실제 workflow 스크립트를 synthetic Git diff와 실행해 검증한다. 기존 [Run 40313233131](https://github.com/planner77/layoutManager/actions/runs/40313233131) 성공은 지적 전 HEAD이며, **새 보완 HEAD의 Typecheck/Vitest/Build/E2E/Docker는 새 CI 성공 전 PENDING**. 실 사내 승인·보안 증거 원본을 공개 CI에 포함하지 않는다.
+
+
+## #109 S2 비반출 증거 계약 자동검증 (2026-10-26)
+
+- `src/tests/unit/g7-s2-readiness.test.ts`: 모든 필수 22개 증거 상태 및 참조 ID/시간 확인, 누락 시 PENDING/BLOCKED, NO_GO, Snapshot 불일치 차단, 임의 민감 필드 거부·출력 비노출, 모든 형식이 맞더라도 `operationalGo:false`를 검증.
+- 별도 사내 테스트 결과·실 S3 복구·운영/기존 Multipart CAD API 인가·Audit는 아직 자동 PASS 근거가 아니며, GitHub에는 실제 원본 증거를 제출하지 않아도 된다. 상태 전용 Owner 보고로 기록하되 S3 배포 전 Gate는 별도.
+
+
+## Issue #109 / PR #125 — P1 실패 재발 방지 및 Staging Prisma CLI 보호 TC (2026-10-26)
+
+- **TC-P4-G7-CI-001:** [실패 Run 40275956996](https://github.com/planner77/layoutManager/actions/runs/40275956996) Verify의 `tests/unit/g7-staging-ghcr-guard.test.ts` Assertion은 거부 진단 메시지를 stderr로 잘못 예상한 **단일 Test 실패**. GitHub Actions stdout/stderr 구분과 Bash exit 1을 일치시키고 재검증한다. Docker Job 성공, Verify 이후 E2E skipped는 독립 상태로 유지한다.
+- **TC-P4-G7-CI-002:** 승인된 squash 제목 `#109 | S1 Staging-only integration [G7-S1-NO-GHCR]`의 **첫 줄 정확 일치** + multiline body는 skip, `... NOT-APPROVED`/`-extra`/끝 공백은 fail-closed. 다른 일반 Runtime 변경/Tag 릴리스는 현행 게시 정책 유지. 변경된 Main release-scope Bash 추출·실행 기반 Unit으로 검증.
+- **TC-P4-G7-DB-001:** `npx prisma migrate deploy --config deploy/g7-staging/prisma.config.ts`는 Stage UID 임시 루트, 실제 `fixture.sqlite`, 전용 CAD Path, `DATABASE_URL=G7_STAGING_DATABASE_URL`, release manifest/schema, `G7_STAGING_ONLY`/`G7_AUTH_ENABLED`/Staging 승인 값 **전부 유효**해야 실행. 불일치/운영 DB·symlink 지정/기본값 누락시 `G7_STAGING_PRISMA_TARGET_DENIED`와 nonzero 종료, **SQL 사전 미실행/대상 파일 센티널 불변**. 정상 Stage 진입은 기존 Integration Prisma 7개 Migration 회귀.
+- **TC-P4-G7-REV-001:** P1 #125 [r4374313158](https://github.com/planner77/layoutManager/pull/125#discussion_r4374313158)/[r4374313165](https://github.com/planner77/layoutManager/pull/125#discussion_r4374313165)/[r4374313173](https://github.com/planner77/layoutManager/pull/125#discussion_r4374313173) 각각 코드·단위 시험·문서/원장 보완→댓글 답변·Resolved, Main behind 0/충돌 0, 수정 HEAD CI **시작**까지만 작업. 최신 CI 결과를 관측하지 않으면 PASS 주장 금지.
+- **기존 운영 구분:** 신규 Stage 전용 설정/테스트와 GitHub Workflow scope만 변경, `src/prisma/**`·운영 기존 CAD API/Compose/Nginx/.env/실 DB/CAD/S3·GHCR 게시·Account/Auth 활성화 변경 0. Staging synthetic DXF/SQLite 실증은 Owner S2 Go/No-Go 대체 불가.
+
+
+## Issue #109 S1 / PR #125 — 실제 CI와 잔여 TC 분리 (2026-10-26)
+
+**근거:** 최초 HEAD `a82a04bb` [PR CI 40270394055](https://github.com/planner77/layoutManager/actions/runs/40270394055) Verify+Docker 성공. 이후 쿠키·Main release-scope guard 보완은 **수정 HEAD 재검증 PENDING**. S0의 TC-P4-G7-015 `문서-only` 조건은 실제 Stage 소스가 있는 S1에 그대로 적용 불가; **운영 Prisma/CAD API/Nginx/Compose 불변 + GHCR 제한 차단**으로 평가한다.
+
+| TC | 기존 자동 실행에서 확인 가능한 범위 | S1 운영 수용 미검증 |
+| --- | --- | --- |
+| G7-001~003 | Stage flag 기본 OFF·경로/manifest 분리·잘못된 구성 거부 | 실제 OCI digest 서명·Owner GO |
+| G7-004 | 합성 Stage CAD GET/원본 SHA 및 기존 전체 E2E 성공 | 실 현장 Viewer/DWG/전 버전 |
+| G7-005~006 | Stage Editor+Site 등록·Current, 삭제 비밀번호 거부/허용·Audit | 기존 Multipart/Current/Delete Route 변경+실 파일 큐/보상 |
+| G7-007~008 | Stage Admin 초기 변경/login/Grant와 기존 G2~G4 격리 TC | Stage 실제 Browser 8h/30m/3개/회수·Site 교차/비공개 감사 UI |
+| G7-009~011 | Staging 정식 Prisma 7개 migration/SQLite snapshot Restore·FK·SHA | 실 DB+CAD+S3 일관 복원·App/Migrator 호환 rollback |
+| G7-012 | #108 Owner 사내 수용 보고(원본 EV ID 미열람) | S1 Stage 신규 PC/Nginx/DEV 직접 E2E |
+| G7-013~014 | Stage-only Gate·금지된 API/Audit purge 미도입 | 운영 승인/SOP |
+| G7-015(S1) | 기존 운영 Source·Prisma·Compose·Nginx 불변 Git diff | Main CI GHCR Job SKIPPED 확인 전 미완 |
+
+신규 회귀: `g7-staging.test.ts`에 Stage 전용 쿠키 이름/Path·운영 쿠키 공존·Logout을 추가. `g7-staging-ghcr-guard.test.ts`는 Git 합성 diff로 Main release-scope Bash 구문·S1 only no-GHCR·예상외 경로 거부·정상 runtime publish·docs-only skip을 시험하도록 작성. 모든 결과는 해당 HEAD CI 성공 후 판정한다.
+
+
+
+## Issue #109 G7 S1 — Staging 구현/자동시험 추적 (2026-10-26)
+
+- **TC-P4-G7-001~003/013~015:** `g7-staging-gate.test.ts`로 기본 OFF/오타 flag·staging-only release manifest·실 DB/Storage 경로·symlink 거부, 별도 CAD write gate를 검사. PR diff는 운영 `src/prisma/**`/기존 CAD API/Compose/Nginx/.env 변경 **0**을 확인해야 PASS.
+- **TC-P4-G7-004~011:** `g7-staging.test.ts`가 정식 Staging Prisma migrate deploy, 최초 Admin·비밀번호 변경/로그인 세션/Grant, Editor+Site DXF 업로드·익명 GET·Current·삭제 암호 AND, DB Audit 원자성/SQLite FK, backup/restore 후 bytes·SHA 동등성을 시험하도록 설계. Staging JSON/base64 DXF 미러 API는 기존 Multipart Upload와 다른 진입점이므로 실 업무/API cutover 동등성을 선언하지 않는다.
+- **TC-P4-G7-012:** 사내 PC 2대·PROD Nginx/DEV direct·실 S3/DB·CAD 및 원시 Restore 로그는 #108 Owner 보고 수용(세부 비공개 증거 ID 독립 미열람); 본 S1 CI의 synthetic staging 시험과 별개.
+- `src/deploy/g7-staging/prisma/schema.prisma`/7 migration을 현재 운영 DB에 적용하는 명령은 테스트에 포함시키지 않는다. Secret 파일, 실제 CAD/S3 URL·내용은 Git/CI 저장 금지. 실패는 Run/Job/HEAD/원인/조치로 [FailureLedger](FailureLedger.md)에 누적. 테스트 코드 작성만으로 PASS 불가.
+
+
+## Issue #109 G7 — 기본 OFF·Owner GO·실복구 운영 검증 계획 (2026-10-26)
+
+**현재 TC-P4-G7-001~015 전부 G7 범위에서는 NOT RUN / #109 OPEN-BLOCKED.** #108 G6은 Owner 현장 시험 정상 보고로 CLOSED/COMPLETED이나 비공개 개별 시험 로그·증거 ID는 여기서 독립 확인되지 않았다. 본 G7 TC 목록의 별도 통합/운영 수용을 자동 PASS로 처리하지 않는다. 시험 작성과 실행은 구별한다. #108 G6 현장 evidence와 Owner 별도 승인 없이 운영 기능 활성화 테스트를 실 DB에서 수행하지 않는다.
+
+| TC | 합격 기준 | 책임 |
+| --- | --- | --- |
+| TC-P4-G7-001 | G7 미탑재/flag 미설정/false/오타: 보호 API와 write cutover OFF·익명 CAD GET 유지 | G7 구현 CI |
+| TC-P4-G7-002 | Owner 승인/고정 App+Migrator digest/Schema 불일치라도 true flag는 fail-closed | G7 구현 CI |
+| TC-P4-G7-003 | 유효한 이중 게이트+`G7_AUTH_ENABLED`·별도 `G7_CAD_WRITE_CUTOVER_ENABLED` 모두 true에서만 각 단계 ON | G7 구현 CI |
+| TC-P4-G7-004 | 기존 사내 익명 목록·위치·Version·Current·Viewer·원본 GET/download 회귀 0 | G6/G7 E2E |
+| TC-P4-G7-005 | POST/Current 인증 Editor+Site 성공, 익명/Reader/타 Site/무Grant Admin 거부 | G6/G7 E2E |
+| TC-P4-G7-006 | Version DELETE Editor+Site AND 기존 비밀번호, 원본/Current·Audit 원자성 | G6/G7 E2E |
+| TC-P4-G7-007 | Admin 단발/복구, 8h 절대·30m idle·최대 3개 세션·disable/revoke·Cookie | G6/G7 E2E |
+| TC-P4-G7-008 | Role/Site/Version Grant 회수, Audit append-only/365일·`audit:read`/`logs:read` 분리·Secret 비로그 | G6/G7 DB |
+| TC-P4-G7-009 | 같은 snapshot ID SQLite 안전 backup+CAD local+S3 manifest, 정식 migration 격리 dry-run | G6 실복구 |
+| TC-P4-G7-010 | FK/Unique·원본 bytes/SHA/Version/Current/delete hash 불변, 장애 시 실행 중단 | G6/G7 DB |
+| TC-P4-G7-011 | 구 App·신 Schema 혼용 금지, 구 호환 pair+동일 DB/CAD/S3 실 Restore·쓰기 유실 처리 | G6/G7 rollback |
+| TC-P4-G7-012 | 사내 PC 2대 Windows/WSL2 Nginx PROD + DEV direct 업무 Viewer/업로드/세션 정상 | G6 현장 |
+| TC-P4-G7-013 | G0~G6 HEAD/Run/Job·사내 증거 ID+Owner GO/NO-GO·release digest/담당·범위 정합 | G7 운영 |
+| TC-P4-G7-014 | #98/#83/#65/#60 신규 영속 API 익명/자동 공개 0, Audit purge 미승인시 0 | G7 회귀 |
+| TC-P4-G7-015 | 현재 문서 PR 변경 파일 Markdown 한정, `src/**`/Prisma/Nginx/Compose/.env/GHCR·실 데이터 변경 0 | PR diff |
+
+Owner R1에서 제외한 침투·적대적 공격/탈취 실증은 새 필수 게이트로 요구하지 않는다. 정상 로그인·권한/감사/업무 무결성·실복구는 필수. 모든 실제 시험은 HEAD/Run/Job/비공개 증거 ID와 [TestReport](TestReport.md)에서만 PASS 판정. [Issue109](Issue109.md).
+
+
+## Issue #108 / G6 — 자동 증거 점검과 현장 수용의 독립 TC (2026-10-26)
+
+| ID | 시험 및 합격 기준 | 검증 범위 |
+| --- | --- | --- |
+| TC-P4-G6-001 | G6 필수 19종 중 하나라도 NOT_RUN이면 PENDING, 허위 PASS 불허 | g6-evidence Unit |
+| TC-P4-G6-002 | G7 운영 기능 OFF 필수. READY_FOR_OWNER_REVIEW는 PASS/Owner 서명 아님 | g6-evidence Unit |
+| TC-P4-G6-003 | DB/local CAD/S3/dry-run/restore 동일 snapshotId, 각 PASS의 사내 EV ID 및 FK/Version/Current/SHA 불변 | g6-evidence Unit |
+| TC-P4-G6-004 | 실제 PROD PC 2대 상이한 clientId, DEV 분리 및 동일 App/Migrator SemVer. 현장 Viewer/Upload/Cookie/인가 시험은 별도 | g6-evidence Unit + 사내 NOT RUN |
+| TC-P4-G6-005 | FAIL/CANCELLED/임의 필드/비밀값이 PASS가 되지 않고 정해진 사유 코드만 출력 | g6-evidence Unit |
+| TC-P4-G6-006 | 사내 manifest는 저장소 밖 절대경로·정상 파일만 허용, symlink/checkout 경로 거부 | g6-evidence Unit |
+| TC-P4-G6-007 | CAD 여섯 기존 Migration→두 합성 Version/Current+local CAD/mock-S3 SHA→SQLite online backup/파일 복사→별도 G1 fixture migration·FK/CAD row 불변→손상 주입/실 복원·bytes 동일 | disposable Integration, 실제 S3/DB NOT RUN |
+| TC-P4-G6-LAN-001 | 사내 PC 2대 Nginx→App 실 Viewer/기존 익명 CAD GET·등록/Current/다운로드, DEV 직접/데이터 분리, 승인된 격리 Auth/Cookie/업무 Role/Scope와 호환 | 실 현장 NOT RUN |
+| TC-P4-G6-REC-001 | **실제** DB/CAD/S3 동일시점 snapshot·실 S3 bytes, 격리 Prisma dry-run/FK/Unique/Current, 실제 restore 및 이미지/DB rollback | 사내 별도 승인, NOT RUN |
+
+[TestReport](TestReport.md)는 코드 작성과 실제 Typecheck/Lint/Unit/E2E/Docker/현장 실행을 구분한다. 미관측 결과를 PASS로 표시하지 않고, #109 별도 Owner Go/No-Go 및 운영 OFF 유지. [Issue108](Issue108.md).
+
+
+## Issue #106 / PR #120 — CI 최초 실패 및 Site Audit P1 회귀 확대 (2026-10-26)
+
+- **TC-P4-G4-SETUP-001:** 기존 실제 CAD Migration `uq_site_parent_name(product_id,name)`과 합성 Site `Site-a`/`Site-b`의 동일 Product 독립 명칭이 충돌하지 않고 G4 `beforeEach`가 끝까지 실행되는지 확인. 성공은 CI에서 실제 재실행해야 판단.
+- **TC-P4-G4-001 보강:** 인증된 Reader의 Version-a 허용 성공 Audit `site_id=site-a,target_kind=VERSION,target_id=version-a`, Editor의 Version-b 권한 거부 Audit `site_id=site-b`, 익명은 Actor를 생성하지 않는 401. Site가 Admin에게 자동 허용되지 않는지 유지.
+- **TC-P4-G4-005 보강:** Outline Create/Edit/Delete 안전 Audit는 각각 원천 Version→DB Site `site-a`, Revision `NULL→1→2→3`, immutable CreatedBy, 성공/거부/충돌의 원자성을 검증한다.
+- **TC-P4-G4-009 보강:** G1 AuditEvent SQL CHECK는 LOGIN_DENIED 같은 비-Scope action에 Site 강제 금지, Outline 사건 Site 누락 거부, DB에 없는 Site FK 거부; Site Grant affected_user_id 필수 및 append-only, UTC/365일 cutoff 유지.
+- **추적:** 최초 Run `40252656906` Verify 9개 실패/288개 PASS는 [FailureLedger](FailureLedger.md), 실제 결과는 [TestReport](TestReport.md). 수정 뒤 Typecheck/Vitest/Docker/E2E는 새로운 HEAD로 확인하기 전 PENDING. 실 LAN/G7 API 연결은 NOT RUN. 신규 운영 Prisma/DDL/Compose 활성화 금지.
+
+
+## Issue #106 G4 — 인가·Grant·Audit 격리 시험 (2026-10-26)
+
+TC-P4-G4-001: Reader/Editor/Admin Site/Version Matrix·없는 Version·익명 401/403. 002: Admin만 Grant 부여/회수, 동시 Role/Site·즉시 재검증. 003: Admin+audit:read 및 Admin+logs:read 분리. 004: 실제 SQLite 두 연결 BEGIN IMMEDIATE/BUSY/Unique. 005: 가상 ShadowOutline Create/Edit/Delete, Generated ID/Revision CAS/CreatedBy 불변·CAD snapshot. 006: 주입 Audit 장애 시 Grant/계정/Outline 원자 Rollback. 007: Account disable과 Session 전량 revoke·마지막 Admin 차단. 008: 정상 Origin/Session CSRF·Client Header/Actor claim 불신·민감정보 비로그. 009: Audit FK/append-only/UTC/365일 cutoff·운영 Prisma OFF.
+환경: 기존 CAD Migration을 재현한 G1 guarded disposable SQLite와 G4 Store. Typecheck/Lint/Vitest/Build 및 기존 CAD E2E/CI Docker는 실제 실행 증거가 있을 때만 PASS. 실제 업무 CAD POST/Current/Delete API 통합·삭제 암호 AND, #98 Outline CRUD, 실 LAN Nginx/PC·운영 DB/S3 복구는 G6/G7에서 별도 검증. [Issue106](Issue106.md).
+
+
+## Issue #105 G3 — 로그인·만료·회수·Actor 검증 (2026-10-26)
+
+[Test Case/AC 단일 목록](Issue105.md)의 **TC-P4-G3-001~012**를 사용한다. AC1=로그인/초기 변경·401/403(001~003), AC2=hash·8h/30m·원자 3개(004~006), AC3=logout/password/disable/recovery(003,007~008), AC4=현재 DB Actor(009), AC5=정상 cookie/proxy/DEV/guard(010~011), AC6=격리·기존 CAD/API 회귀(012)다. 실제 두 SQLite 연결 경쟁·credential 검증 후 계정 변경·Audit 실패 rollback을 포함하며 단순 count 모의로 대체하지 않는다.
+
+환경은 기존 CAD migrations+G1 일회용 SQLite와 실제 G2 서비스, 합성 계정/도면이며 운영 데이터/Secret을 쓰지 않는다. 최신 Typecheck/Lint/Unit·Integration/Build/관련 E2E와 CI Docker/Migration을 확인한다. 로컬 실행·CI 시작·CI 성공·실 LAN/복구 증거를 구분하고 미실행은 NOT RUN으로 남긴다. 기존 CAD 익명 조회 및 Current/Version/SHA·삭제 비밀번호 회귀를 유지한다. 상세 실제 결과는 TestReport, 관측 CI 실패는 FailureLedger에 기록한다.
+
+## Issue #104 G2 — Admin·Secret·Nonce 검증 계획 (2026-10-26)
+
+**테스트 환경:** 기존 CAD 6개 migration → disposable G1 `cad-auth-g1-*/fixture.sqlite` → #103 G1 SQL → #104 명시 서비스. 운영 Prisma/Runtime 연결 없음. 작성 시점 Typecheck/Vitest/Docker NOT RUN.
+
+| TC | AC | 검증 범위 |
+| --- | --- | --- |
+| TC-P4-G2-001 | AC1/4 | OFF 상태 implicit 생성/Secret 접근/Audit 없음 |
+| TC-P4-G2-002 | AC1 | 두 flag 동시 ON, 잘못된 username/경로/requestId 거부 |
+| TC-P4-G2-003 | AC1 | missing·0644·symlink·CRLF·짧은 Secret 실패/원문 로그 0 |
+| TC-P4-G2-004 | AC1/2 | User/Admin Role/Audit, scrypt/must-change·재기동 ID/Hash/Role 불변 |
+| TC-P4-G2-005 | AC2 | 동시 최초 생성 2건 중 단 1회만 commit |
+| TC-P4-G2-006 | AC2/4 | 첫 생성 중 장애 롤백 후 재시도 정상 |
+| TC-P4-G2-007 | AC3 | ACTIVE Admin 단발 nonce·세션 revoke·Audit, replay 거부 |
+| TC-P4-G2-008 | AC3/4 | 복구 중 장애 nonce/hash/session/audit rollback |
+| TC-P4-G2-009 | AC2/4 | 기존 일반 User 승격 금지, CAD baseline FK/운영 Prisma 불변 |
+
+PR 검증: 최신 HEAD typecheck/lint/unit/integration/build/E2E/Docker; 운영 `src/app/api/**`/`src/prisma/**`/`src/server/db.ts`, Compose/Nginx/.env/CAD/Viewer/GHCR diff 0. 미실행은 PASS 금지; 현장 Backup/Restore는 #108, Owner 운영 승인은 #109. [Issue104](Issue104.md).
+
+**TC-P4-G2-SYNTAX-001 (CI 실패 재발 방지):** G2 recovery/replay 테스트의 `.get(adminId)?.password_hash` 및 `.get(adminId)?.revoked_at` optional chaining 표현식은 올바른 구문이어야 하며 PR CI `npm run typecheck`를 첫 게이트로 확인한다. Typecheck 실패 시 하위 Lint/Unit/Integration/E2E를 `SKIPPED`로 기록한다. 최초 CI 실패 및 후속 HEAD 재검증은 [FailureLedger](FailureLedger.md) 참조.
+
+## Issue #102 G0 — Owner 6개 업무 정책/후속 게이트 검증 (2026-10-25)
+
+[Issue102](Issue102.md)/ADR-051-R1은 사내망 **기존 공개 CAD 익명 GET 허용**, `Current PUT=Editor 이상+담당 Site`, `Version DELETE=Editor 이상+담당 Site+기존 비밀번호`를 승인했다. 관리자 담당자/Owner 역할 분리, Audit 만료 후 정리 원칙은 승인하되 백업/물리 정리 SOP는 후속 확정, 등록 POST 권한은 Editor 이상+담당 Site Owner 승인. **현재 배포에서 로그인/권한 기능이 활성화되었다는 뜻이 아니다.**
+
+| TC ID | 확인 내용 | 실행 단계/현재 상태 |
+| --- | --- | --- |
+| TC-P4-G0-BIZ-001 | 승인 정책 표·AGENTS·ADR-051-R1·Issue102·#96~#109 정합성. 공개 CAD GET만 익명, 신규 영속/로그/감사 API 익명 확장 0 | G0 문서 정적 검토 / NOT RUN |
+| TC-P4-G0-BIZ-002 | 기존 목록·위치·Current/Version·Viewer·원본 GET/다운로드를 **익명으로** 정상 조회, Reader/SiteGrant가 불필요하며 익명 Actor 위조/신규 영속 익명 조회 없음 | G5/G6 / NOT RUN |
+| TC-P4-G0-BIZ-003 | **G7 이후 목표:** Current 변경은 Editor/Admin+담당 Site 허용, 익명·Reader·타 Site/권한 없는 Admin 거부, Current 0~1개 유지 | G4/G6 / NOT RUN |
+| TC-P4-G0-BIZ-004 | **G7 이후 목표:** 삭제는 Editor/Admin+담당 Site+기존 삭제 비밀번호 AND. 암호만/범위만/인증만/타 Site 각각 실패, 승인된 삭제 성공 및 Actor/Audit·Current·SHA 회귀 | G4/G6 / NOT RUN |
+| TC-P4-G0-BIZ-005 | 지정 운영 담당자의 Admin 단발 초기화/복구·재기동 불변, Owner 책임/SOP 기록, Secret 미출력 | G2/G6 / NOT RUN |
+| TC-P4-G0-BIZ-006 | Audit 365일 경계, 미만 보존·이후 정리 대상 분류. Backup/Restore 후 만료 기록·예외 처리 정책 승인 전 **purge 미실행** | G4/G6/G7 / NOT RUN |
+| TC-P4-G0-BIZ-007 | **G7 목표:** `POST /api/cad-files`는 인증 Editor/Admin+담당 Site 성공, 익명·Reader·타 Site 거부, Actor/Audit·원본/Current·기존 API 동작 보존 | #106/#108 / NOT RUN |
+| TC-P4-G0-BIZ-008 | **문서 전용 변경**(AGENTS/ADR/Issue102 등), Source/API/Prisma/Compose/Nginx/.env/운영 볼륨 변경 0, 동일 HEAD CI·미해결 리뷰·충돌 확인 | PR diff/CI / NOT RUN |
+
+**수용 구분:** G0 AC1은 5개 Owner 정책 명세와 후속 위임이 문서화됐는지 평가, AC2는 앞서 승인된 HTTP 위험 범위 결정(보안 시험 PASS 아님), AC3은 docs-only/OFF, AC4는 최신 HEAD PR CI·리뷰·병합 근거 필요. G0 문서 승인 자체는 G2~G7 실제 업무 E2E/배포 PASS를 의미하지 않는다.
+
+
+## Issue #107 G5 — 최종 자동 테스트 수용·현장 인계 (2026-10-26)
+
+| 시험 | 최종 실행 판정 |
+| --- | --- |
+| TC-P4-G5-001/002 | PROD Nginx/DEV direct 정적 설정·볼륨 분리, PR #115 HEAD `44132fcaa31a` [CI #40224438075](https://github.com/planner77/layoutManager/actions/runs/40224438075) SUCCESS |
+| TC-P4-G5-003/004/007 | Health·목록·실제 Version Viewer URL 정규 요청/거부 경계 Unit, 동일 CI SUCCESS |
+| TC-P4-G5-005/006 | PR diff 및 Owner R1 문서·운영 OFF 검증 완료; GHCR `v0.40.4` App/Migrator [Main CI #40225537167](https://github.com/planner77/layoutManager/actions/runs/40225537167) 게시 Step SUCCESS |
+| TC-P4-G5-LAN-001 | **NOT RUN**. Windows Nginx/WSL2, 사내 PC 2대, 실 업무 Viewer·Upload·Download·Cookie는 G6 #108 현장 검증으로 인계 |
+
+- 이전에 작성된 원 계획표의 `NOT RUN/CI 대기`는 해당 작성 시점의 역사적 기록이며 위 최종 실행 결과로 판정한다. Main CI/GHCR 성공이 실제 운영 인증 활성화 또는 Backup/Restore 수용은 아니다.
+
+
+## Issue #103 — 최초 실패 재발 방지와 P1 추적 (2026-10-26)
+
+- `TC-P4-G1-SYNTAX-001`: PR Verify `npm run typecheck` 및 Docker baseline Next build의 **동일 HEAD** 성공 필요. 최초 실패 `store.ts:134 TS1002` 후속 TS1005/TS1128 재발 없어야 함. 수정 후 아직 **NOT RUN**.
+- `TC-P4-G1-005` 강화: Site grant/revoke Audit에 `actor_user_id`(관리자), `affected_user_id`(대상 사용자), `site_id`(업무 Site), action/requestId가 보존돼야 한다. **서로 다른 사용자에게 동일 Site를 부여·철회한 후 grant 행이 없어져도** 누가 영향받았는지 추적 가능해야 하며 `affected_user_id/site_id` 누락 SQL INSERT는 실패해야 함. FK·append-only 원자성 보존.
+- 미실행 단계(Unit·Integration·Build/E2E/Docker smoke)는 첫 CI 실패의 `SKIPPED`를 그대로 기록하며 수정 HEAD의 실행 확인 이후에만 PASS 가능. 운영 `src/prisma/schema.prisma`/migrations·API 변경 0 유지.
+
+
+
+## Issue #103 / G1 — 격리 DB·원자성·복구 Test Matrix (2026-10-25)
+
+모든 TC는 기존 6개 CAD Migration의 실 SQL과 합성 Version/Current/SHA를 일회용 SQLite에 적용하고 **운영 연결 0**. 테스트 위치 `src/tests/integration/auth-g1.test.ts`. 미실행은 `NOT RUN`, PR CI 최신 HEAD 결과를 따로 검증하기 전 PASS 기록 금지.
+
+| Test ID | 검증 내용 | 근거 AC | 계획 상태 |
+| --- | --- | --- | --- |
+| TC-P4-G1-001 | Migration 장애 주입 rollback, 기존 CAD 스냅샷 불변, FK, 중복 DDL 거부·격리 경로 Guard | AC1/3/4 | NOT RUN |
+| TC-P4-G1-002 | User ID 불변/login unique(정규화), Role/Site/SpecialGrant FK·Unique·CHECK | AC1/2 | NOT RUN |
+| TC-P4-G1-003 | 8h·30m·3 active, 4번째 app/direct SQL 거부, 실패 주입 rollback, 원시 토큰 DB 없음 | AC2 | NOT RUN |
+| TC-P4-G1-004 | 두 SQLite writer/BEGIN IMMEDIATE lock 충돌이 fail closed | AC2 | NOT RUN |
+| TC-P4-G1-005 | Role/Site/SpecialGrant+Audit atomic commit/rollback, duplicate/권한 거부, Audit UPDATE/DELETE 거부 | AC2 | NOT RUN |
+| TC-P4-G1-006 | 실제 DB Version→Floor→Building→CadSite+Reader Site grant, Admin 무범위 거부 | AC1/2 | NOT RUN |
+| TC-P4-G1-007 | 비활성 계정+세션 회수+Audit 원자 처리, 실패 복원/재로그인 거부 | AC2 | NOT RUN |
+| TC-P4-G1-008 | nonce hash unique 1회, 암호 변경·세션 폐기·Audit rollback, 원문 미저장 | AC2 | NOT RUN |
+| TC-P4-G1-009 | 중단(quiesced)된 합성 DB/local/S3-mirror 일관 백업→격리 G1 dry-run→손상 주입→복원, 기존 Current/SHA/delete hash 불변 | AC3 | NOT RUN |
+
+추가 PR 정적 Diff 확인: `src/prisma/schema.prisma`, `src/prisma/migrations/**`, `src/app/api/**`, `src/server/db.ts`, Runtime/Compose/Nginx/실 CAD/S3 변경 0; 새 G1 파일은 tests/fixtures·tests/integration·docs에 한정. 실 운영 DB/CAD/원격 S3 복구·실 LAN E2E 및 Owner 운영 승인은 **#108/#109 NOT RUN**. 관련 [Issue103](Issue103.md), [TestReport](TestReport.md).
+
+
+## Issue #107 / G5 — 비운영 PROD Nginx·DEV Direct 시험 계획 (2026-10-25)
+
+**Owner R1 우선:** 정상 연결·업무 기능 검증만 G5 필수; TLS/WAF/CIDR·CSRF/Host/Forwarded 공격 우회·탈취/침투 실증은 비범위. 보안 기능 PASS 주장 없음. [Issue107](Issue107.md).
+
+| TC | 점검 내용 | 방법/상태 |
+| --- | --- | --- |
+| TC-P4-G5-001 | PROD Nginx만 host publish, Proxy Upstream/Host·body limit 전달 | Vitest 정적 계약 + CI Docker Compose config; 새 HEAD 결과 전 NOT RUN |
+| TC-P4-G5-002 | DEV 직접 host port와 PROD/DEV 데이터 볼륨·net 독립, 운영 volume 재사용 0 | Vitest 정적 계약 + CI Compose config; 결과 전 NOT RUN |
+| TC-P4-G5-003 | Health 200/status ok, Home HTML, CAD list JSON, font 200, 선택적 Viewer/content 경로 | Mock Vitest + 실제 Preview CLI; 원 HEAD CI SUCCESS, 리뷰 보완 HEAD 결과 대기 |
+| TC-P4-G5-004 | Health 503·비정상 응답을 성공으로 보지 않음 | Mock Vitest; 결과 전 NOT RUN |
+| TC-P4-G5-007 | --version-id에서 실제 /cad/versions/:versionId/viewer 검증, 관리 화면 false PASS 방지, 명시 ID 불일치 시 네트워크 전 거부 | Unit 보강 / 수정 HEAD CI 미확인 |
+| TC-P4-G5-005 | src/docker-compose.yml/.env·Prisma·API·운영 Nginx·원본 데이터 변경 0 | GitHub PR changed-file diff 검사 예정 |
+| TC-P4-G5-006 | Owner R1/익명 CAD GET 최신 업무 정책, 미실행 현장·Cookie·업로드 E2E 기록 | docs+Issue cross-check; G3/G6 실증 NOT RUN |
+| TC-P4-G5-LAN-001 | 조직 내 PC 2대 PROD Nginx→App, Viewer·등록/다운로드/Current·Cookie(후속 G3), DEV 분리 확인 | **G6 사내 현장/일회용 데이터에서만** 수동 시험, NOT RUN |
+
+- CI 검증은 Docker Compose **config-only**(profiles g5-prod/g5-dev)와 Vitest Mock이다. Docker Preview 실제 실행/Upload/Windows Nginx·WSL2/실 PC 연결·DB/CAD/S3 복구 수용을 자동으로 PASS 표시하지 않는다.
+- G5 결과는 #108 G6에 인계. #109 G7 Owner 별도 승인 전 운영 Auth/관리/영속 API/Prisma·Nginx·Compose 활성화 금지.
+
+
 ### Issue #82 / #99 — 최신 Main 연계 추가 재검증 (2026-10-25)
 
 - #82 M1 E2E `TC-U1-E2E-001/002`, `TC-M1-E2E-001~006`와 #99 신규 `outline-acceptance-gate`·`private-acceptance-paths` Unit을 모두 새로운 통합 HEAD CI에서 검증한다. 공개 Synthetic DXF는 #99 실 CAD/GPU/Owner 현장 판정을 대체할 수 없으며 private DXF 업로드를 공개 CI artifact에 포함하지 않는다.

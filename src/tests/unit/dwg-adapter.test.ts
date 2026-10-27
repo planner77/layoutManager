@@ -5,7 +5,10 @@ import { startDwgProbe } from '@/viewers/libredwg-web/probe';
 afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 test('TC-VIEW-001: DWG never selects DXF even with a forged renderer query', () => {
   for (const renderer of ['dxf-viewer', 'three-dxf-viewer', 'libredwg-web', undefined]) expect(selectRenderer('DWG', renderer)).toBe('libredwg-web');
-  expect(selectRenderer('DXF', 'libredwg-web')).toBe('dxf-viewer');
+  expect(selectRenderer('DXF', 'libredwg-web')).toBe('three-dxf-viewer');
+  expect(selectRenderer('DXF', undefined)).toBe('three-dxf-viewer');
+  expect(selectRenderer('DXF', '')).toBe('three-dxf-viewer');
+  expect(selectRenderer('DXF', 'dxf-viewer')).toBe('dxf-viewer');
   expect(selectRenderer('DXF', 'three-dxf-viewer')).toBe('three-dxf-viewer');
 });
 test('TC-DWG-003: cancelled/timeout worker terminates once and rejects instead of hanging', async () => {

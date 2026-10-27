@@ -1,5 +1,13 @@
 # Issue #82 — CAD Memo M1 / WCS 브라우저 세션 메모
 
+## 2026-10-27 — 최신 Main(0.42.1) 정렬, Issue #127/#138 통합
+
+- PR #111의 M1 WCS/임시 세션 로직을 보존하면서 Main `d2b77dd6535503f2d980ac563cc195cc8b4c128e`을 2-parent merge 방식으로 취합. 기존 README/AGENTS/실패 원장 최신 #142 및 #57 정책 유지.
+- #127 UI: 독립 상단 '메모 추가' 버튼 대신 `작업 > 메모 추가/편집` 명령이 도구 Drawer를 열도록 통합. 메모 핀은 캔버스에 유지되며 Editor는 사용자가 열고 닫을 수 있는 Drawer 내부에서만 표시한다. #138 ViewerPanelPolicy의 실제 floating drag는 별도 구현 전으로 표기.
+- 기존 Codex P1/P2 2건 Resolved(재정렬 후 새 HEAD 리뷰 승인은 아님). 과거 PR CI 실패 Run 40196496297·40198344153 이력은 FailureLedger에 누적, 새 HEAD는 PR CI `NOT VERIFIED`.
+- 이 통합은 서버 `CadMemo` API/Prisma/Auth, 실 CAD·S3, G7 Owner GO, GHCR, 본 이슈 종료를 포함하지 않는다.
+
+
 ## #99 최신 main 통합과 ADR 재번호화 (2026-10-25)
 
 - #99 main d85b86ab의 비공개 실 DXF evidence 게이트/검증 CLI·private acceptance Browser/Unit 및 신규 `verify:outline-acceptance` package script는 보존한다. #99 실DXF 의사결정이 ADR-052를 소유하므로 이 Issue #82 메모 M1의 설계 ADR만 **ADR-053**으로 변경한다.

@@ -1,5 +1,7 @@
 # Issue #38 — 앱형 CAD Viewer Shell / U1 (v0.30.0)
 
+> 후속 #127: [Issues124-126-127](Issues124-126-127.md)/ADR-053에서 공간을 점유하는 dock을 Canvas와 독립된 overlay Drawer로 전환한다. 실제 grouped command 메뉴와 두 정보 헤더를 사용하며 Canvas/Manager/Source 수명·선택·ESC 단일 계층 계약은 보존한다. 아래는 U1 당시 설계/시험 기록이다.
+
 - 이슈: https://github.com/planner77/layoutManager/issues/38
 - 상위 Epic: #37; 후속: #39(U2), #40(U3), #41(U4, 보안 승인 대기), #42(U5), #43(U6)
 - 소스 기준: main `d22b4575`(0.29.0) → `feat/issue-38-viewer-app-shell`

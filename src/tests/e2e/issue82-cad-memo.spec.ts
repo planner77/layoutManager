@@ -1,5 +1,6 @@
 import { test, expect, type APIRequestContext, type Page } from '@playwright/test';
 import { masterFields } from './master-helper';
+import { clickViewerCommand, clickViewerTestCommand, openViewerMenu } from './viewer-menu-helper';
 
 const dxf=Buffer.from([
   '0','SECTION','2','HEADER','9','$INSUNITS','70','4','0','ENDSEC',
@@ -21,10 +22,11 @@ async function drawing(request:APIRequestContext,tag:string){
 async function openThree(page:Page,id:string){
   await page.goto('/cad/versions/'+id+'/viewer?renderer=three-dxf-viewer');
   await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
+  await openViewerMenu(page,'work');
   await expect(page.getByTestId('viewer-menu-memo-add')).toBeEnabled();
 }
 async function createAt(page:Page,x:string,y:string,title='메모1',content='첫 줄\n두번째'){
-  await page.getByTestId('viewer-menu-memo-add').click();
+  await clickViewerTestCommand(page,'viewer-menu-memo-add');
   await page.getByTestId('cad-memo-title').fill(title);
   await page.getByTestId('cad-memo-content').fill(content);
   await page.getByTestId('cad-memo-x').fill(x);
@@ -50,8 +52,8 @@ test('TC-M1-E2E-001: WCS memo survives zoom/pan/CSS fullscreen and text-only cha
   await expect(pin).toHaveAttribute('data-memo-wcs-x','10');
   await expect(pin).toHaveAttribute('data-memo-wcs-y','20');
   expect(await page.locator('img[src="x"]').count()).toBe(0);
-  await page.getByRole('button',{name:'전체 화면 확대'}).click();
-  await page.getByRole('button',{name:'전체 화면 확대'}).click();
+  await clickViewerCommand(page,'view','확대');
+  await clickViewerCommand(page,'view','확대');
   // Pan with the actual OrbitControls canvas (not the memo pin) while zoomed.
   const canvas=page.getByTestId('cad-canvas').locator('canvas');
   const rect=await canvas.boundingBox();
@@ -61,15 +63,18 @@ test('TC-M1-E2E-001: WCS memo survives zoom/pan/CSS fullscreen and text-only cha
   await page.mouse.move(rect!.x+rect!.width/2+30,rect!.y+rect!.height/2-20,{steps:5});
   await page.mouse.up();
   // Pins outside the viewport may be culled; fit restores them without changing WCS.
-  await page.getByRole('button',{name:'전체 화면 맞춤'}).click();
+  await clickViewerCommand(page,'view','화면 맞춤');
   await expect(pin).toHaveAttribute('data-memo-wcs-x','10');
-  await page.getByRole('button',{name:'전체 화면 종료'}).click();
+  await clickViewerCommand(page,'view','전체 화면 종료');
   await expect(pin).toHaveAttribute('data-memo-wcs-y','20');
-  await page.getByRole('button',{name:'전체 화면',exact:true}).click();
+  await clickViewerCommand(page,'view','전체 화면');
   await page.setViewportSize({width:390,height:844});
-  await page.getByRole('button',{name:'전체 화면 맞춤'}).click();
+  await clickViewerCommand(page,'view','화면 맞춤');
   await expect(pin).toHaveAttribute('data-memo-wcs-x','10');
   await page.setViewportSize({width:1280,height:820});
+  // The mobile modal Drawer may close the edit pane; reselect its session pin.
+  await pin.click();
+  await expect(page.getByTestId('cad-memo-editor')).toBeVisible();
   await page.getByTestId('cad-memo-x').fill('13');
   await page.getByTestId('cad-memo-y').fill('15');
   await page.getByTestId('cad-memo-apply-position').click();
@@ -113,7 +118,7 @@ test('TC-M1-E2E-002: drag cancellation, invalid coordinates, explicit release an
   await page.mouse.move(bounds!.x+40,bounds!.y+12,{steps:5});
   await page.mouse.up();
   await expect(pin).toHaveAttribute('data-memo-wcs-x','50');
-  await page.getByRole('button',{name:'전체 화면 맞춤'}).click();
+  await clickViewerCommand(page,'view','화면 맞춤');
 
   bounds=await pin.boundingBox();
   expect(bounds).not.toBeNull();
@@ -122,23 +127,30 @@ test('TC-M1-E2E-002: drag cancellation, invalid coordinates, explicit release an
   await page.mouse.move(bounds!.x+40,bounds!.y+12,{steps:5});
   await page.mouse.up();
   await expect(pin).not.toHaveAttribute('data-memo-wcs-x','50');
-  await page.getByRole('button',{name:'다시 불러오기'}).click();
+  await clickViewerCommand(page,'drawing','다시 불러오기');
   await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
+  // Reload intentionally closes the Drawer; explicitly reopen it for the empty-session status.
+  await clickViewerTestCommand(page,'viewer-menu-tools');
   await expect(page.getByTestId('cad-memo-status')).toContainText('0/100');
   await expect(page.getByTestId('cad-memo-pin')).toHaveCount(0);
   // A different renderer must explain why M1 is unavailable.
-  await page.getByRole('button',{name:'dxf-viewer',exact:true}).click();
+  await clickViewerCommand(page,'view','dxf-viewer');
   await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
+  await openViewerMenu(page,'work');
   await expect(page.getByTestId('viewer-menu-memo-add')).toBeDisabled();
 });
 test('TC-M1-E2E-003: placement cancels, Source/Outline modes remain exclusive, Version stays isolated',async({page,request})=>{
   const first=await drawing(request,'issue82-modes1');
   const second=await drawing(request,'issue82-modes2');
   await openThree(page,first.id);
-  await page.getByTestId('viewer-menu-outline-tool').click();
-  await expect(page.getByTestId('viewer-menu-outline-tool')).toHaveAttribute('aria-pressed','true');
-  await page.getByTestId('viewer-menu-memo-add').click();
-  await expect(page.getByTestId('viewer-menu-outline-tool')).toHaveAttribute('aria-pressed','false');
+  await clickViewerTestCommand(page,'viewer-menu-outline-tool');
+  await openViewerMenu(page,'work');
+  await expect(page.getByTestId('viewer-menu-outline-tool')).toHaveAttribute('aria-checked','true');
+  await clickViewerTestCommand(page,'viewer-menu-memo-add');
+  await openViewerMenu(page,'work');
+  await expect(page.getByTestId('viewer-menu-outline-tool')).toHaveAttribute('aria-checked','false');
+  // First Escape closes the work menu, second cancels placement (one overlay layer per key).
+  await page.keyboard.press('Escape');
   await expect(page.getByTestId('cad-memo-placement-plane')).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(page.getByTestId('cad-memo-placement-plane')).toHaveCount(0);
@@ -149,8 +161,9 @@ test('TC-M1-E2E-003: placement cancels, Source/Outline modes remain exclusive, V
   await expect(page.getByTestId('cad-memo-pin')).toHaveCount(1);
   await page.goto('/cad/versions/'+second.id+'/viewer?renderer=three-dxf-viewer');
   await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
-  await expect(page.getByTestId('cad-memo-status')).toContainText('0/100');
   await expect(page.getByTestId('cad-memo-pin')).toHaveCount(0);
+  await openViewerMenu(page,'work');
+  await expect(page.getByTestId('viewer-menu-memo-add')).toBeEnabled();
   await page.goto('/cad/versions/'+first.id+'/viewer?renderer=three-dxf-viewer');
   await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
   await expect(page.getByTestId('cad-memo-pin')).toHaveCount(0);
@@ -163,10 +176,12 @@ test('TC-M1-E2E-004: existing memo pin/list interactions cancel outline and obje
   const pin=page.getByTestId('cad-memo-pin');
   const outlineTool=page.getByTestId('viewer-menu-outline-tool');
 
-  await outlineTool.click();
-  await expect(outlineTool).toHaveAttribute('aria-pressed','true');
+  await clickViewerTestCommand(page,'viewer-menu-outline-tool');
+  await openViewerMenu(page,'work');
+  await expect(outlineTool).toHaveAttribute('aria-checked','true');
   await page.getByTestId('cad-memo-latest').getByRole('button',{name:'기존 메모'}).click();
-  await expect(outlineTool).toHaveAttribute('aria-pressed','false');
+  await openViewerMenu(page,'work');
+  await expect(outlineTool).toHaveAttribute('aria-checked','false');
   await expect(page.getByTestId('canvas-mode-pan')).toHaveAttribute('aria-pressed','true');
   await expect(page.getByTestId('cad-memo-editor')).toBeVisible();
 
@@ -177,20 +192,25 @@ test('TC-M1-E2E-004: existing memo pin/list interactions cancel outline and obje
   await expect(page.getByTestId('cad-memo-editor')).toBeVisible();
 
   // Tool exclusivity is established on pointer-down, not at pointer-up/click.
-  await outlineTool.click();
-  await expect(outlineTool).toHaveAttribute('aria-pressed','true');
+  await clickViewerTestCommand(page,'viewer-menu-outline-tool');
+  await openViewerMenu(page,'work');
+  await expect(outlineTool).toHaveAttribute('aria-checked','true');
+  await page.keyboard.press('Escape');
   await pin.scrollIntoViewIfNeeded();
   const bounds=await pin.boundingBox();
   expect(bounds).not.toBeNull();
   const x=bounds!.x+bounds!.width/2,y=bounds!.y+bounds!.height/2;
   await page.mouse.move(x,y);
   await page.mouse.down();
-  await expect(outlineTool).toHaveAttribute('aria-pressed','false');
+  // Pin pointerdown must exit outline selection without opening a menu during the gesture.
+  await expect(page.getByTestId('cad-outline-tools')).toHaveCount(0);
   await expect(page.getByTestId('canvas-mode-pan')).toHaveAttribute('aria-pressed','true');
   await page.mouse.move(x+24,y+8,{steps:5});
   await expect(pin).toHaveAttribute('data-memo-preview','true');
   await page.mouse.up();
   await expect(page.getByTestId('cad-memo-pin')).toHaveCount(1);
+  await openViewerMenu(page,'work');
+  await expect(outlineTool).toHaveAttribute('aria-checked','false');
 });
 
 test('TC-M1-E2E-005: dragging selected memo retains unsaved text draft after synthetic click',async({page,request})=>{

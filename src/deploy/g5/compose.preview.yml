@@ -1,0 +1,109 @@
+# Issue #107 G5: ISOLATED test-only topology. Never merge into production Compose or reuse production volumes.
+# PROD preview: browser -> nginx -> app (no host-published app port).
+# DEV preview: developer -> separate app directly (separate DB/CAD volume).
+name: ${G5_PREVIEW_PROJECT:-layoutmanager-g5-preview}
+
+services:
+  g5-prod-migrate:
+    profiles: [g5-prod]
+    image: ${G5_MIGRATION_IMAGE:-cad-layout-viewer:g5-migrate}
+    restart: "no"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: file:/data/db/cad.sqlite
+      CAD_STORAGE_PATH: /data/cad
+      CAD_STORAGE_BACKEND: local
+    volumes:
+      - g5-prod-data:/data
+    networks:
+      - g5-prod-net
+
+  g5-prod-app:
+    profiles: [g5-prod]
+    image: ${G5_APP_IMAGE:-cad-layout-viewer:g5-web}
+    depends_on:
+      g5-prod-migrate:
+        condition: service_completed_successfully
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: file:/data/db/cad.sqlite
+      CAD_STORAGE_PATH: /data/cad
+      CAD_STORAGE_BACKEND: local
+      MAX_UPLOAD_SIZE_MB: "100"
+    volumes:
+      - g5-prod-data:/data
+    networks:
+      - g5-prod-net
+    expose:
+      - "3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  g5-prod-nginx:
+    profiles: [g5-prod]
+    image: ${G5_NGINX_IMAGE:-nginx:stable-alpine}
+    depends_on:
+      g5-prod-app:
+        condition: service_healthy
+    ports:
+      - target: 80
+        published: "${G5_PROD_PORT:-3302}"
+        host_ip: "${G5_PROD_BIND_IP:-127.0.0.1}"
+        protocol: tcp
+    volumes:
+      - type: bind
+        source: ./nginx.preview.conf
+        target: /etc/nginx/conf.d/default.conf
+        read_only: true
+    networks:
+      - g5-prod-net
+
+  g5-dev-migrate:
+    profiles: [g5-dev]
+    image: ${G5_MIGRATION_IMAGE:-cad-layout-viewer:g5-migrate}
+    restart: "no"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: file:/data/db/cad.sqlite
+      CAD_STORAGE_PATH: /data/cad
+      CAD_STORAGE_BACKEND: local
+    volumes:
+      - g5-dev-data:/data
+    networks:
+      - g5-dev-net
+
+  g5-dev-app:
+    profiles: [g5-dev]
+    image: ${G5_APP_IMAGE:-cad-layout-viewer:g5-web}
+    depends_on:
+      g5-dev-migrate:
+        condition: service_completed_successfully
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: file:/data/db/cad.sqlite
+      CAD_STORAGE_PATH: /data/cad
+      CAD_STORAGE_BACKEND: local
+      MAX_UPLOAD_SIZE_MB: "100"
+    volumes:
+      - g5-dev-data:/data
+    networks:
+      - g5-dev-net
+    ports:
+      - target: 3000
+        published: "${G5_DEV_PORT:-3301}"
+        host_ip: "${G5_DEV_BIND_IP:-127.0.0.1}"
+        protocol: tcp
+
+volumes:
+  g5-prod-data:
+  g5-dev-data:
+
+networks:
+  g5-prod-net:
+    driver: bridge
+  g5-dev-net:
+    driver: bridge

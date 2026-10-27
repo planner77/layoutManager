@@ -1,5 +1,201 @@
 # 주요 기술 결정과 승인 기록
 
+## #142 B2-2B P2 결정 — Object UUID 독립성과 Locator Unique를 동시 충족 (2026-10-27)
+
+- **Decision:** DB Version UUID ↔ S3 객체 UUID는 서로 독립이지만 `CadFileVersion.storagePath @unique`를 준수하도록, 모든 S3 Version의 정규화 Locator 중복을 코드의 전역 `Set<string>`에서 직접 거부한다. 다른 Version들의 SHA/Size/S3 VersionId 주장까지 동일해도 하나의 객체를 여러 Version으로 중복 계상하는 것은 BLOCKED.
+- **Why:** 물리 DB Unique Index를 갖지 못한 합성/복구 자료에서도 의미론적 Unique 제약을 검증해 위양성을 방지한다. 정상 각기 다른 S3 locator/독립 UUID는 통과한다. 출처·실 Site Snapshot/운영 GO 판단 근거는 아님.
+
+## #142 B2-2B P2 결정 — 별도 S3 Object Locator를 명시적으로 검사 (2026-10-27)
+
+- **Decision:** `S3ObjectStorage.prepare()`에서 생성되는 S3 객체 UUID와 `CadRepository.register()`의 DB Version UUID는 독립. B2-2B에 합성 입력 `s3ObjectLocator`를 추가하고 DB `storage_path`와 바이트열 단위로 일치 검증하며, S3 정규형·파일 확장자·Bucket/Object UUID 매핑 오류를 차단한다. Local-only mapping에는 S3 locator를 허용하지 않는다.
+- **Reason/limits:** 실제 동작을 모사하면서 기존 통합 검증의 false BLOCKED를 제거한다. 제공된 S3 Locator가 진짜 원격 저장 객체를 가리키는지는 증명하지 못한다. 온라인 S3 VersionId/Writer freeze/Backup·Owner GO는 별도 승인 전까지 불가.
+
+## ADR-051-G7-B2-2B — 합성 Byte Consistency와 실제 Source Provenance 분리 (2026-10-27)
+
+- **Decision:** B2-2A 주장형 패킷 이후에는 read-only 메모리 SQLite와 별도 제공된 합성 CAD/S3 export/marker Buffer를 교차 비교해 바이트 변경·누락·객체 매핑·FK/Current 불일치를 탐지한다. 실 서비스 Writer/Network/Filesystem Path를 받는 자동 실행기보다 `Buffer-only` 안전 경계를 우선하며, 운영 경로에 연결하지 않는다.
+- **Trade-off/Owner gate:** 바이트 Bundle와 private mapping·S3 VersionId claim도 위조될 수 있으므로 긍정은 `DISPOSABLE_BYTES_CONSISTENT_NOT_SITE_PROOF`, `writerQuiescenceVerified/sameSnapshotVerified/sourceObjectVersionsVerified/operationalGo=false`. 사내 Change/Owner 승인·독립 Reviewer·authoritative Source GET/Writer trace/EV·QA·SNAP 증거는 별도. `DESIGN.md` 부재로 Architecture/Decisions/Database/Operation을 설계 기준으로 사용.
+
+## #142 B2-2A — Writer Freeze 주장과 실제 검증 분리 (2026-10-27)
+
+- **Decision:** Main 선행 Gate 완료 후, 먼저 100% fail-closed인 순수 `SNAP-*` writer-barrier/DB-CAD-S3 inventory 계약과 음성 검증을 만든다. 단일 Epoch/시간/Local+버전 S3 marker·Hash·Current/Version·FK/Audit *자료 불일치*는 BLOCKED.
+- **Trust limitation:** 일치하는 기록을 실제 락, 독립 SQL 확인, Versioned S3 객체 byte hashing, Reviewer 승인으로 오인 금지. 모든 readiness/GO/Restore 입증 플래그 false; 실제 writer freeze·online backup·S3 version read는 추후 사내 Owner 변경승인 후.
+
+## #142 S3-4-B2-1 — OCI digest 참조와 Trusted Registry 검증 분리 (2026-10-27)
+
+- **Decision:** OCI manifest/config raw Bytes를 content-addressed digest로 대조하는 미게시 오프라인 순수 단계부터 구현. 태그 전용 참조, 다른 Registry, 잘못된 digest/schema/Source/플랫폼/역할은 fail closed. 그러나 payload는 제삼자가 조작할 수 있어 SHA만 맞아도 `registryVerified=false`·`provenanceVerified=false`·`rollbackCompatible=false`·`operationalGo=false`.
+- **Risk:** 현재 Dockerfile에 G7 provenance/role label이 없어서 가짜 증거로 선행 단계 PASS하면 안 됨. Immutable registry image pair 발행/승인과 공인된 source binding은 후속 별도 Owner/보안 검증 절차가 필요. 외부 사내 인증서/Secret/원본 CAD 반출 금지.
+
+## ADR-053-R1 — Viewer Drawer 보존 + 이동 가능한 보조 창 공통 정책 (#138, 2026-10-27)
+
+- **Context:** #127은 화면 점유를 줄이는 좌/우/하단 overlay Drawer와 실행형 그룹 메뉴를 완료했지만 사용자가 외곽선 목록·TEXT 검색·생성/편집 도구의 위치를 자유 배치할 수 없다. 별도 패널마다 개별 absolute drag를 구현하면 Canvas gesture·modal/keyboard·fullscreen/resize 정책이 어긋난다.
+- **Decision:** 기존 ADR-053의 #127 Drawer를 **초기 edge/모바일 modal**로 보존하고 데스크톱에서는 공통 movable panel의 header 전용 drag handle로 독립 floating 위치를 지정한다. 독립 열린 상태/position/z-order/Reset 및 안전 clamp, CSS/native fullscreen·320px 대응을 구현한다. Pointer/keyboard/ESC 및 Canvas 입력 경계를 공통으로 만들고 panel 이동과 Viewer render/Source lifecycle을 분리한다. 같은 Viewer 세션 내 위치 유지, 새 Version·탭·세션 기본 위치; 무단 localStorage/DB 영속화는 하지 않는다.
+- **Policy:** 향후 Viewer 내부 독립 조회·작업 창은 #127 그룹 메뉴/공용 `ViewerPanelPolicy`를 기본 적용. 확인 모달·툴팁·일회 메뉴·독립 페이지 등은 이유 기록 후 예외. #26/#40/#43 기능은 #138 범위에서 retrofit, #37/#49/#73/#82/#85/#90 후속 기능에 공통 적용을 이슈 AC로 명시한다.
+- **Consequences:** CAD 데이터/WCS selection/Undo, Layer visibility, 검색 Query/결과, Runtime Manager/Adapter, DXF source bytes/Version/Current 및 G7 API/Auth 불변. 기존 모바일 focus trap/한 ESC 한 단계/메뉴·modal 우선순위는 유지. 자세한 근거/시험 계약 [ViewerPanelPolicy](ViewerPanelPolicy.md), [#138](https://github.com/planner77/layoutManager/issues/138). **구현·E2E NOT RUN.**
+
+
+## #109 S3-4-B1 — 복제본 무결성과 운영 Snapshot 복구 증거의 구분 (2026-10-27)
+
+- B1은 `ISOLATED_INTEGRITY_ONLY`로 **격리 파일 내용의 DB↔CAD↔S3 내보내기 일치**만 표시한다. `snapshotId`만 같다고 운영 원본의 쓰기 정지·실제 동일 시점 백업·Registry provenance를 입증하지 않는다. 따라서 결과 `operationalGo=false`/`runtimeActivated=false` 고정.
+- B2 원본 사내 실제 복구/OCI 확인과 C 신뢰 binder/Owner GO는 별도 승인/입증 필수, 실행 없이 완료로 표기 금지.
+
+
+## #109 S3-4-A — 운영 승인과 오프라인 증거형식 검증 분리 (2026-10-27)
+
+- 기존 G7 이중 Release/Operation 게이트 유지. S3-4-A 오프라인 증거 패킷이 완전해도 Owner GO·실 이미지 digest 검증·실 DB/CAD/S3 복구는 자동 승인하지 않는다. 도구 출력은 `operationalGo=false`/`runtimeActivated=false`만 가능하다.
+- 17개 검증 항목의 승인 근거는 사내 EV/QA/SNAP 식별자로만 공개하고 원본 CIDR·Secret·도면·로그·Object 목록은 비반출. 부적합/취소/미실행은 fail-closed, 만료 Audit purge SOP 전 물리 삭제 금지.
+- S3-4-B/C와 최종 S3-5 Owner 릴리스별 GO는 독립 후속 게이트. 정식 Migration 운영 승격·GHCR 배포는 이 PR 범위 밖.
+
+
+## ADR-051-G7-S3-2 — 예약 운영 API 계약의 프로덕션 강제 OFF 및 시험 격리 (2026-10-26)
+
+- **결정:** S3-2는 기존 G3/G4 Service와 SQLite 영속 adapter를 재사용하여 Login/Session/Logout·Role/Site/Grant·Account Disable/Audit 및 Admin-only User Create를 `/api/g7-operational/**`의 **예약 API**로 연결한다. 단순 `G7_AUTH_ENABLED=true`나 Owner S2 준비 승인은 운영 활성화를 허용하지 않는다. **`NODE_ENV=production`은 전체 응답 404로 고정**하며 테스트 비운영에서만 명시된 전용 임시 DB·loopback/추가 Preview flag·Auth OFF가 전부 만족할 경우 서비스가 열린다.
+- **거래/권한:** Session/Actor/Role/Site/Grant는 DB 권위, 쿠키는 기존 운영·Staging과 분리. G4 Permit·Grant·Disable/Audit BEGIN IMMEDIATE. Admin-only User Create는 권한 사전검사/감사 이후 KDF, transaction 내 Role/Session 재검증과 INSERT/Audit Commit을 하나로 처리하고 실패 시 rollback. 새 계정은 강제 암호 변경, Role/Scope 자동 부여 없음. G2 최초 생성/복구는 UI나 API 호출 없이 **별도 명시 승인된 일회용 CLI**에서만, Startup 자동 실행 금지.
+- **안전:** S3-1의 Release/Operation preflight가 아직 런타임 Verified Build/Registry 및 실제 DB 증거를 공급받지 않아 `runtimeActivated=false`이고, 기존 CAD API Auth/Audit 업무 Cutover도 S3-3 별도 단위다. S3-4 릴리스/복구 승인 전 프로덕션 NO-GO 유지. 새 Admin 영속 UI/관리 화면 미포함; API 계약만 구현.
+- **GHCR 예외:** 정확한 추후 squash 제목 `#109 | S3-2 Operational Auth/Admin API [G7-S3-2-NO-GHCR]` 및 23개 정확한 S3-2 파일만 제외, 예상 밖 활성 Migration/기존 CAD/Compose/runtime 파일은 CI fail-closed. 기존 S1/S2/S3-1 예외·일반 runtime/tag 게시 정책 불변, 이번 브랜치 CI까지만 진행.
+
+
+## ADR-054 — #57 공통 Logger Schema v1/Emitter 단일화 (2026-10-27)
+
+- **결정:** 기존 #18 `writeLog/RequestLogContext`를 앱이 소유한 JSON 로그의 단일 emitter로 유지하고 업로드별 별도 console 출력을 제거한다. 업로드 오류의 안전한 code/category/message는 공통 정적 Catalog에서 **재정제**, 임의 값/stack/내부 path·Locator/bytes·메타데이터 override 차단.
+- **계약:** `timestamp/schemaVersion:1/level/event/component/operation/appVersion` 필수; `requestId/jobId/outcome/elapsedMs/httpStatus/errorCode` 선택, 확장은 `method/route/stage/backend/recoveryId/status/jobCount/error`로 제한. 공개 업로드 DTO·X-Request-Id·first failure 보존; 성공 Health 200만 debug, 다른 API 시작·종료 info 유지.
+- **향후:** Breaking 필드 타입·의미 변경 시 별도 Schema version. Next/Nginx/브라우저/운영자 CLI는 app emitter 밖. 영속 저장/조회/권한·G7 운영 Auth는 #59~#63과 승인 게이트 이전 OFF. 상세 [Issue57](Issue57.md).
+
+
+## ADR-053 — 홈 sticky·Three 단발 복구·Viewer overlay Drawer (2026-10-26)
+
+[Issues124-126-127](Issues124-126-127.md)의 Manager 설계를 채택한다. 기존 색/글꼴/업무 동작을 유지하고 홈 한정 density를 축소한다. Three 실제 로드 실패에만 dxf 자동 대체 최대 1회, source/abort는 제외. 정상 대형 실측이 없어 자동 timeout/MB 임계값은 도입하지 않고 loading 중 명시 중단·대체를 제공한다. Adapter copy 때문에 peak memory/OOM 복구 보장은 하지 않는다. #38의 공간 점유 dock을 가장자리 overlay Drawer로 대체하고 상태·Canvas·Source 수명은 유지한다. 생성 OFF 정책 ADR-036 및 한 Escape 한 계층 ADR-033을 유지·확장한다. 운영 Auth/DB/API 활성화 없음.
+
+
+## ADR-051-G7-S3-1 — Auto-migrator 충돌 예방·운영 Schema 타입 선반영 (2026-10-26)
+
+- **결정:** 현재 `src/scripts/deploy.ts`는 기동 시 무조건 `prisma migrate deploy`를 실행한다. 이번 S3-1의 Auth DDL을 즉시 `src/prisma/migrations`에 넣으면 GHCR 게시 여부와 무관하게 **향후 일반 배포가 실 운영 DB에 미승인 Migration을 적용할 위험**이 있다. S3-1에서는 Prisma Client용 운영 `schema.prisma`에 G1~G4 모델을 반영하되 Auth DDL은 **Prisma 공식 candidate history** `src/deploy/g7-s3/prisma/migrations/202610260002_g7_operational_auth`로 분리한다. 활성 운영 migration history와 자동 migrator 그대로 두고, S3-4/5 별도 PR에서 Release/Owner GO 및 백업·실복구 완결 후 승격·적용을 재검토한다.
+- **원본 동등성:** Candidate는 현재 CAD 6개 Migration을 바이트 단위 동일하게 복제한 후 G1/G4의 제약·감사 Site FK/append-only·User/AuthSession/Role/Site/SpecialGrant/RecoveryNonce·G3 제한을 신규 additive SQL로 담는다. 과거 CAD 테이블의 원본 행·Current/Version/SHA/Delete Hash/외래키를 변경하지 않으며, 진짜 Prisma migrate deploy는 UID 소유 `/tmp` fixture에서만 가능.
+- **이중 게이트:** `G7-S3-AUTH-V1` capability, App+Migrator 버전·Source SHA·실 검증된 immutable OCI digest pair·Schema/FK/rollback·snapshot 증거와 릴리스별 Owner GO ID/Scope/기간/변경 ID/rollback Pair를 모두 요구하는 순수 검증을 추가. Flag default OFF, CAD Write 별도 OFF; 실패 시 거부. **사내 제출할 수 없는 실제 증거를 창작하지 않고, preflight는 런타임 Auth 활성화로 배선하지 않는다**.
+- **비게시 병합:** 정확한 미래 Squash 제목 `#109 | S3-1 Operational schema and gates [G7-S3-1-NO-GHCR]`+S3-1 변경 경로 allowlist로만 Main GHCR Job을 SKIPPED; 다른 runtime/운영 Migration/Compose 경로는 fail-closed. S1·S2 기존 게시 예외를 확대하지 않는다. 이번 요청은 PR CI 시작까지만, S3 실제 배포/병합·GHCR/Issue 종료 제외.
+
+
+
+## ADR-051-G7-S2-NO-GHCR — 내부 증거 준비 전용 Main GHCR 발행 차단 (2026-10-26)
+
+- **정책:** S2 `g7-s2-readiness`는 운영 연동 코드가 아니라 사용자의 **사내 증거 비반출** 조건을 지키는 오프라인 점검 도구다. S1에서 이미 사용한 `G7-S1-NO-GHCR` 범위를 이 재사용 불가 작업에 억지로 확장하지 않는다. 별도의 정확한 squash 제목 `#109 | S2 private-evidence readiness [G7-S2-NO-GHCR]`을 사용한다.
+- **허용 변경:** `.github/workflows/docker-publish.yml`, `AGENTS.md`, `out/{Decisions,FailureLedger,Issue109-S2-Readiness,Issue109,Operation,Requirements,TestPlan,TestReport}.md`, `src/scripts/g7-s2-readiness.ts`, `src/server/g7-staging/s2-readiness.ts`, `src/tests/unit/{g7-s2-readiness,g7-staging-ghcr-guard}.test.ts` **각 명시 경로만**. 범용 `*.md`, `src/server/g7-staging/*`, `src/prisma/**`, `src/app/api/**` 등의 와일드카드를 S2 허용하지 않는다.
+- **Fail-closed:** Main branch에서 제목 첫 줄이 정확하게 일치하고 변경 파일 전체가 허용목록일 때만 `publish=false`. 제목 오타·후행 텍스트 또는 미승인 파일을 만날 경우 `stderr` 오류/exit 1, Main CI 전체 STOP하여 예기치 않은 GHCR 게시 회피. 정상 런타임/태그 릴리스 정책은 변경하지 않으며 S1 별도 룰 유지.
+- **검증:** 실제 Bash release-scope를 독립 Git fixture로 실행하는 Unit에 S2 본문 포함 정상, 유사 제목, 운영 CAD/Prisma/Compose 및 S1 전용 파일/다른 Workflow 거부, S1 역방향 거부, 정상 런타임/태그 유지 사례를 추가한다. **PR CI 성공·Codex 리뷰/스레드/최종 Main scope 확인 전 병합하지 않는다.**
+- **Owner 권한 경계:** S1 수용과 S2 준비 승인≠실 운영 Go-Live. OCI pair·사내 실복구 증거를 만들어내거나 GHCR 이미지·태그를 게시하지 않는다. #109/#96 OPEN/BLOCKED 유지.
+
+
+## ADR-051-G7-S1-R2 — 잘못된 제목·운영 DB Migration의 사전 차단 (2026-10-26)
+
+- [PR #125](https://github.com/planner77/layoutManager/pull/125) P1 #4374313158/3165/3173 교정: GHCR 건너뛰기는 커밋 메시지 **첫 줄의 정확한 승인 제목**에만 적용(본문 허용), 비슷한 제목은 Main CI 오류 종료. 비허용 변경 경로에서는 `echo >&2`/exit 1을 유지한다. Unit Test는 stdout/stderr와 부정 제목을 검증한다.
+- Staging 독립 Prisma config는 이제 `G7_STAGING_DATABASE_URL`을 그대로 믿지 않고 `resolveG7StagingGate` 전체 비운영 검증을 통과한 실제 파일만 datasource로 전달한다. 경로/소유권/심볼릭 링크/스테이징 manifest/Schema/Origin/Stage 승인/두 URL·저장소 불일치 또는 기본값 누락 시 SQL **실행 전 차단**. 이 결정은 운영 migration 시점을 앞당기지 않고, 서비스 운영 기능을 ON 하지 않는다.
+- 원래 G0~G6 Owner 업무/보안 범위와 #109의 S2 별도 Go/No-Go·S3 통제 단계 불변. 실패 Run과 리뷰 결함은 독립 실패 원장에 기록하며 새 CI 결과를 기다리지 않고 성공 판정하지 않는다.
+
+
+## ADR-051-G7-S1-R1 — Stage 세션 쿠키 분리 및 단일 PR GHCR 미게시 (2026-10-26)
+
+**Decision: S1 Staging만 허용, 운영 Go/No-Go 승인 아님.** 동일 hostname 내 서로 다른 port는 브라우저 Cookie 범위를 격리하지 않으므로 Stage 응답 Cookie를 `cad_staging_session; Path=/api/g7-staging`으로 변경하고 Request 단계에서만 G3/G4 내부 `cad_session`으로 정규화한다. 운영 인증 서비스/Route와 기존 CAD 읽기·쓰기 API는 변경하지 않는다.
+
+사용자가 이번 S1 병합에 GHCR **미게시**를 명시했고 기존 [Main release-scope](../.github/workflows/docker-publish.yml)는 runtime source 변경에서 GHCR 게시 Job을 자동 실행한다. 이에 **정확한 squash 제목** `#109 | S1 Staging-only integration [G7-S1-NO-GHCR]`, `main` branch push, stage 코드/Stage Prisma·테스트 및 Markdown/해당 workflow **allowlist-only** 확인을 동시에 충족하는 경우에 한해 `publish=false`. 다른 runtime 경로가 포함되면 임의 게시 대신 Main CI 오류로 차단하며 일반 tag/다른 runtime 릴리스는 기존 원칙 유지한다. `g7-staging-ghcr-guard.test.ts` synthetic Git diff 테스트, CI 최신 HEAD 성공 및 Main GHCR Job SKIPPED 확인이 필수.
+
+이 결정을 정상적인 상시 release 변경에 재사용하거나 `src/prisma/migrations`/일반 CAD API/Nginx/Compose/실 DB/CAD/S3에 S1 Auth를 연결하는 근거로 사용하지 않는다. [Issue109](Issue109.md), [Operation](Operation.md).
+
+
+
+## ADR-051-G7-S1 — 단일 Staging 통합·운영 분리 (2026-10-26)
+
+**결정:** #109 S1에 G1~G4의 서비스·DB 어댑터를 staging-only 서버 모듈로 이식하고 전용 Prisma Schema/Migration + `/api/g7-staging/[...segments]`를 구성한다. 단일 PR 내 구현하며 실 운영 Auth/Prisma/Compose/Proxy/CAD API는 그대로 유지한다. [Issue109](Issue109.md).
+
+- **Release/Operation 이중 게이트:** staging-capable 코드 `G7_RELEASE_CAPABILITY=G7-S1-STAGING-V1`, 격리 릴리스 매니페스트 App/Migrator sha256 식별자·고정 source commit/schema ID 및 `G7_OPERATION_APPROVAL=S1-STAGING-ONLY`, `G7_AUTH_ENABLED=true`; 지정 `/tmp/cad-g7-staging-*/fixture.sqlite`와 앱 DATABASE_URL 동일/별도 CAD 저장소 검증. 값 미설정/불일치=404/기능 OFF. `G7_CAD_WRITE_CUTOVER_ENABLED=true`는 전자 유효 시에만 격리 쓰기 활성. 이 매니페스트는 **참조값 일치 검사**이며 OCI 실제 서명·레지스트리 해시 검증이나 **운영 Owner GO가 아님**.
+- `src/deploy/g7-staging/prisma/migrations`는 기존 CAD 6개와 G1 확장 1개를 복제한 **독립 Prisma 히스토리**. 운영 migration 경로로 SQL 복사 금지, 운영 migrator 자동 적용 영향 0. G3 limiter, Account/Role/Site/SpecialGrant/Session/Audit/Nonce FK·Unique·append-only 및 Staging CAD 안전 Audit 포함. Admin 최초/복구는 별도 CLI 명시 호출만.
+- G3 로그인·초기 변경·암호 변경·로그아웃·세션과 G4 Grant·disable·audit/permit는 원래 검증된 도메인/서비스 계약을 재사용. 새 CAD stage mirror의 POST/Current/DELETE는 Session/Role/Site(Version→DB Site)와 업무 변경+Audit를 단일 BEGIN IMMEDIATE 안에서 검증, DELETE는 기존 삭제 암호 AND. **기존 운영 CAD 멀티파트 Route는 이번 S1에 연결하지 않음**, S2/S3 전 별도 비교 필요. 기존 익명 GET/Viewer 불변, 신규 Memo/Outline/Type/Logs 영속 API 공개 금지.
+- S2 Owner 운영 GO, 비공개 현장 증거 ID·관리자 Secret SOP·Audit 365일 이후 purge/백업·복구 세칙은 여전히 PENDING. STAGING 성공/PR CI/GHCR로 GO 자동 대체 금지.
+
+
+## ADR-051-G7-PLAN — #109 기본 OFF·운영 승인·복구 설계 (2026-10-26)
+
+**설계 계약만 작성 / 실행 승인 아님.** #108 G6는 Owner의 현장 검증 정상 보고로 종료됐지만 개별 비공개 로그/증거 ID는 독립 확인되지 않았다. G7 운영 증거 패키지 확인 및 Owner **별도** Go/No-Go 없이는 G7 #109·상위 #96 BLOCKED. [Issue109](Issue109.md).
+
+1. **이중 게이트:** G7-auth-capable 앱 코드와 source SHA/immutable App+Migrator OCI digest pair·정식 Schema 호환을 확인하는 release gate, 별도 Owner GO 승인 ID/범위/유효 시간·운영 manifest·`G7_AUTH_ENABLED`를 확인하는 operation gate. 미설정/false·부정확한 값은 OFF, 정확히 true라도 release/GO/Schema 불일치면 fail-closed. **현재 실제 런타임에는 이러한 flag·라우팅이 구현되지 않았으며 설계 이름만 정의**한다.
+2. **쓰기 별도 cutover:** `G7_CAD_WRITE_CUTOVER_ENABLED`는 기본 false·Auth OFF 시 강제 OFF. 기존 CAD GET/Viewer/원본 익명 유지. POST/Current는 인증 Editor 이상+담당 Site, DELETE는 추가 기존 삭제 비밀번호 AND, 서버 권위 Session/Role/Site/Version·업무 변경+Audit 원자성. 인증 오류에서 익명 write fallback 금지. Admin도 타 Site 자동 권한 없음.
+3. **독립 범위:** 신규 Outline/Memo/Type/Logs/Audit/Admin 영속 API는 각 개별 DB/권한·QA 승인이 있어야 운영 노출. `audit:read`와 `logs:read` 독립, Audit 365일 초과 purge는 주기·백업/복구·법적 예외 세칙 미승인으로 물리/자동 실행 금지.
+4. **승인 후 절차:** 운영 쓰기 정지→동일 snapshot ID의 SQLite 안전 backup+CAD local+S3 실 Restore 확인→고정 App/Migrator pair의 정식 migration→FK/Version/Current/Source SHA 불변 확인→기본 OFF 기동·익명 GET 점검→단발 Admin→Auth ON→별도 CAD write 전환·현장 E2E→Owner 운영 수용. 장애시 쓰기 중단·세션 폐기, 이전 호환 App/Migrator 쌍과 **동일 snapshot DB/CAD/S3 전체 복원**, 신/구 Schema 혼용 금지.
+5. ADR-051-R1의 HTTP 잔여 위험 `OWNER_ACCEPTED_SCOPE`는 안전성 PASS가 아님. TLS/MFA/침투·적대적 탈취시험을 추가 필수 게이트로 되살리지 않되 정상 업무/권한·복구·Owner GO는 필수. 지금은 **docs-only / 운영 실행 0**.
+
+
+## ADR-051-G6 — #108 실제 현장 증거와 합성 준비물 구분 (2026-10-26)
+
+- **결정:** G6 코드 범위는 비연결/offline 자체 기입 증거 상태 평가와 disposable SQLite+합성 CAD/mock-S3 백업·격리 migration·Restore 리허설로 한정. 실 사내 PC 2대 PROD Nginx/DEV 분리, G3 Cookie/G4 업무 Route 정상 E2E, 동일 시점 **실** DB/CAD/S3 bytes 보존·운영 Prisma dry-run·실 restore/rollback은 별도 Owner 비공개 증거 필요. 공개 Git에는 TC/AC/Run/HEAD·EV 증거 ID/상태만.
+- **금지:** 합성 테스트 PASS·manifest READY_FOR_OWNER_REVIEW·#107 GHCR SUCCESS를 #108 실 수용 또는 #109 Go/No-Go로 대체하지 않는다. 기존 익명 CAD GET/Viewer 보존, 미래 POST/Current Editor+Site, DELETE Editor+Site+기존 암호 AND. Audit 365일 자동/물리 purge SOP 미승인.
+- 신규 운영 Auth/Admin/Outline/Memo/Type/Logs/Audit API, Prisma/DDL/DB, Compose/Nginx/.env/실 CAD/S3/GHCR 변경·활성화 0. R1 OWNER_ACCEPTED_SCOPE는 공격·탈취 E2E 비범위이지 정합성/복구 시험 면제 아님. [Issue108](Issue108.md).
+
+
+## ADR-051-G4-P1 — #106 Scoped Audit에 Authoritative Site 유지 (2026-10-26)
+
+**P1 결정:** G4 인가 성공·거부/Outline Create·Edit·Delete 안전 감사는 반드시 같은 transaction에서 확인한 **DB Version→Site**를 `AuditEvent.site_id`로 보존한다. 글로벌 Auth/Grant Role/Session 사건은 Site를 임의 생성하지 않는다. G1 fixture CHECK는 Site Grant/Revoke에 영향 사용자+Site 필수, Outline 사건 Site 필수, Authorization 사건에는 SITE/VERSION/OUTLINE Scoped target의 non-null Site만 허용, 일반 Action은 Site NULL을 유지한다. `CadSite` FK/append-only trigger 유지. 구 HEAD `53b75ca`의 감사 Site NULL은 [r4373235027](https://github.com/planner77/layoutManager/pull/120#discussion_r4373235027)에서 발견된 결함으로 분류한다.
+**동반 수정:** 구 HEAD `seedCad`의 동일 Product/동일 이름 `Site` 중복은 실 CAD `uq_site_parent_name` 위반으로 CI의 G4 9개 테스트가 공통 beforeEach에서 실패한 직접 원인. 각 Site 고유 이름과 Assertion으로 교정. 관측 실패와 코드 리뷰 추가 위험은 [FailureLedger](FailureLedger.md)에 구분 기록한다.
+**운영 승인 아님:** 실제 Prisma/Route/Origin/Compose/Nginx/DB/CAD/S3·익명 CAD GET 변경 및 Audit physical purge/배포 없음. G7 #109 별도 Owner Go/No-Go 전 OFF. [Issue106](Issue106.md).
+
+
+## ADR-051-G4 — #106 Role/Site/Version·Grant·Audit 트랜잭션 (2026-10-26)
+
+**결정:** #102 G0 업무 6개 정책과 G1/G2/G3를 재사용. G4 서버 Store는 G1 임시 DB의 BEGIN IMMEDIATE에서 G3 Session(유효성·8h/30m·회수)와 현재 DB User/Role/Site/SpecialGrant, Version→Location→Building→Site를 재조회한다. Admin만 Role/Site/Special Grant·계정 변경, Admin이어도 Site 자동 전체 권한 없음. Grant 철회 즉시 403, 세션 무효 401, Audit/DB 오류 503 fail-closed. Unique/FK 및 마지막 유효 Admin 보호. 권한 성공·거부/Grant·가상 ShadowOutline 변경과 Actor/affected/site/Revision/outcome/UTC/requestId 안전 Audit은 동일 transaction으로 commit/rollback한다. Audit는 append-only·365일 보존 경계만 명세; 실제 물리 정리/백업본 삭제 SOP 미승인으로 금지. audit:read와 logs:read는 별도의 Admin SpecialGrant다.
+
+기존 CAD GET/Viewer/원본은 익명 허용. POST/Current Editor 이상 + 실제 Site, Version DELETE는 이에 **기존 삭제 비밀번호 AND**. G4 cad:delete 허용은 역할·Site 필요조건 확인이며 삭제 비밀번호·최종 Version 삭제 승인 아님. 실제 운영 API/Prisma/migration/Compose/Nginx/실 DB/CAD/S3 **OFF**, #109 G7 Owner Go/No-Go와 G6 #108 현장·복구 승인 후 별도 연동. 실제 CadOutline은 #98, logs:read 소비자는 #60. [Issue106](Issue106.md).
+
+
+## ADR-051-G3 — #105 격리 DB Session과 초기 변경 (2026-10-26)
+
+**Manager 설계 결정 / 운영 승인 아님.** [Issue105](Issue105.md), #102 Owner R1, 기존 G1/G2를 따른다.
+
+- G1이 must-change 계정의 일반 세션 발급을 거부하므로 초기/복구 로그인은 403 PASSWORD_CHANGE_REQUIRED만 반환한다. 현재 credential 재입력→암호·flag·전체 revoke·Audit 원자 변경→fresh login을 선택한다. provisional session/schema 없이 기존 DB 제약을 보존한다.
+- 로그인 발급은 scrypt 검증 이후 transaction 안에서 같은 passwordHash/현재 계정 상태를 재검증하고 count/insert/Audit을 묶는다. 과거 credential 확인 후 동시 recovery/disable이 있었는데도 새 세션을 발급하는 경쟁을 허용하지 않는다.
+- Actor는 유효 session과 현재 DB grants의 결과만 사용한다. 기존 공개 CAD GET에 인증을 붙이지 않으며 G4의 미래 업무 권한 판정과 분리한다. G4 write는 거래 안에서 권한을 다시 확인한다.
+- 기존 HTTP cookie/Origin/CSRF/limiter의 정상 흐름을 유지하고 Owner가 제외한 공격 대응/침투시험을 새 완료조건으로 추가하지 않는다. 실제 LAN E2E는 G6, 운영 Auth/API/Prisma/Compose 연결은 G7 후속이다.
+- 이번 전달 범위는 구현·검증·문서 및 PR 리뷰/충돌 조치·CI 시작까지다. CI 모니터링/병합/Issue 종료/GHCR 게시/배포는 수행하지 않는다.
+
+## ADR-051-G2 — #104 단발 Admin 생성·복구, Secret 보호 (2026-10-26)
+
+**범위:** G2 격리 구현 결정/운영 승인 아님. #102 지정 운영 담당자 실행·Owner 책임, #103 G1 SQLite 계약 준수. [Issue104](Issue104.md).
+- `executeAdminSetup`는 명시 호출만, Linux/WSL2 실행 UID 소유 absolute Secret regular file(0400/0600, O_NOFOLLOW, 유효 UTF-8·NUL/CRLF 거부)에서만 비밀번호 취득·scrypt(local-v1) 사용. 0444 Compose Secret 기본 마운트/Windows 직접은 fail closed; JS 문자열 완전 zeroize는 보장하지 않음.
+- 최초 생성: 인증 관련 전 테이블 공백 확인을 `BEGIN IMMEDIATE` 안에서 재검증해 User UUID/Admin RoleGrant/`ADMIN_BOOTSTRAP` Audit 한 거래, username ASCII lowercase·must-change. 동시성·기존 사용자 승격/재기동 Hash/Role/ID 변경 차단.
+- 복구: 기존 ACTIVE Admin + SHA-256 nonce Unique/append-only, password hash/필수 변경/모든 세션 revoke/`ADMIN_RECOVERY` Audit 한 거래, 실패·replay 전체 rollback. Auth되지 않은 운영자 실행이므로 Audit actor=null/affected_user_id=대상 Admin; requestId를 사내 비공개 운영자 수행 기록과 연계.
+- `--ack-isolated` 임시 G1 SQLite 전용 CLI 이외 App Runtime/운영 Prisma/Auth Route/Compose/DDL 연결 0. G7 #109 별도 Owner Go/No-Go 전 OFF, G6 백업·실복구 선행. Owner R1 공격/탈취 강화는 비범위지만 Secret 비로그/데이터 무결성 필수. #102 PR #114 main 병합 및 POST 업로드 Editor/Admin+담당 Site 업무 정책 승인 완료. G0 이슈 #102과 Audit 파기·백업 세칙은 후속.
+
+## ADR-051-R1 / #102 G0 Owner 업무 정책 5개 승인 (2026-10-25)
+
+**정책 확정 / 구현·운영 활성화 미승인.** 아래 여섯 개 Owner 명시 결정은 ADR-051-R1 및 이전 ADR-048/049/051 중 상충하는 권장/미확정 표현보다 **최우선**으로 적용한다. [Issue102](Issue102.md) 참조.
+
+| ID | Owner 승인 | 경계와 후속 |
+| --- | --- | --- |
+| G0-BIZ-01 | **사내망 익명 CAD 조회 허용** | 기존 공개 CAD 목록·검색, 위치·버전·Current 메타데이터, Viewer, 원본 DXF/DWG GET/다운로드는 **로그인·SiteGrant 없이** 유지. 익명 Actor/Reader를 만들지 않고, 공개 도면에 Site별 기밀성 필터를 주장하지 않는다. 신규 Outline/Memo/Type 영속 GET, 로그·Audit·관리 UI는 이 승인에서 제외 |
+| G0-BIZ-02 | **Current 지정은 Editor 이상 + 담당 Site** | 등록된 계정/세션으로 확인된 Editor·Admin 및 서버가 확인한 Site/Version Grant. Admin도 다른 Site 자동 접근 불가. 기존 PUT 경로는 G7 전에 변경 없음 |
+| G0-BIZ-03 | **Version 삭제는 Editor 이상 + 담당 Site + 기존 삭제 비밀번호 유지** | 로그인·업무 Grant·기존 비밀번호의 **논리 AND**. 삭제 암호만 있거나 다른 Site면 거부. 삭제 감사 Actor/Revision 불변식 및 원본/Current 보존. 현재 DELETE 구현은 G7 전 그대로 |
+| G0-BIZ-04 | **최초 Admin/복구는 지정 운영 담당자가 실행, Owner가 운영 책임** | 실제 담당자/Secret file/SOP와 단발 복구 절차는 #104·사내 운영 기록에서 구체화. 자동 재시작 재설정 불허 |
+| G0-BIZ-05 | **Audit 365일 보존 후 만료 기록 정리** | 365일 이내 append-only. 365일 경과 기록 정리 **방향만 승인**, 실제 실행 주기·물리/자동 파기 방법·백업 사본 보존/복원·예외는 #106/#108/#109 세칙 승인 전 **보류** |
+| G0-BIZ-06 | **도면 등록 POST = 로그인 Editor 이상 + 담당 Site** | 기존 CAD 익명 조회 범위 밖; 등록 시 Actor·Site/Version·Audit 확인. 운영 기능 G7 승인 전 OFF |
+
+**Owner 승인:** 기존 `POST /api/cad-files`의 Editor+담당 Site 등록 권한 추가 확정(G0-BIZ-06). **미승인:** 신규 영속 API 익명 READ 확장. PROD Nginx/DEV 직접 접속 실배치·실명 담당자/비밀 경로·백업 세칙은 후속 게이트에서 확정한다. 현재 공개 CAD 조회·등록·Current·삭제 API의 실제 동작, 원본 DXF bytes/SHA, CadFileVersion/Current, 삭제 비밀번호는 **변경 0**.
+
+**G0 재평가:** AC1 = Owner 업무 정책 6개 확정 및 운영 세칙 후속 인계, AC2 = HTTP 공격·탈취 대응 비범위 Owner 수용(안전성 PASS 아님), AC3 = 배포/기능 OFF, AC4 = 이 문서의 PR CI/리뷰/병합 근거 필요. G0 설계 계약 확정과 **G7 운영 활성화는 별개 승인**이다.
+
+
+## ADR-051-G1-R2 — SiteGrant 감사 피감사 사용자 추적 및 검증 게이트 (2026-10-26)
+
+- [PR #116 리뷰 P1](https://github.com/planner77/layoutManager/pull/116#discussion_r4371167619): 관리자 actor + Site ID만 기록하면 동일 Site 여러 사용자에 대한 Grant 철회가 발생했을 때 대상 사용자를 복구할 수 없다. **결정:** `AuditEvent.affected_user_id` (User FK) 및 `site_id` (CadSite FK)를 각각 둬서 Site grant/revoke 이벤트에 필수로 기록하고 원장 UPDATE/DELETE 금지·Grant/Audit 원자성을 유지한다.
+- 적용은 G1 격리 Fixture SQL·Prisma 참조 투영·Integration Test에 한정. G0의 기존 CAD 익명 GET 승인 및 운영 G7 별도 승인 경계는 유지. 첫 CI TS 구문 실패를 정상 컴파일/테스트 PASS로 오인하지 않고 신규 HEAD CI로 재검증한다.
+
+
+
+## ADR-051-G1 — Issue #103 비운영 SQLite·Prisma 계약과 원자성 구현 결정 (2026-10-25)
+
+**상태: 격리 구현·검증용 기술 결정 / 운영 배포 승인 아님.** [#103](Issue103.md)은 [ADR-051-R1](Issue102.md)의 사내 LAN 경량 보안 범위와 D1~D5 업무 무결성을 따른다. 2026-10-25 #102 Owner 5개 승인: 기존 CAD 목록/Viewer/다운로드 익명 GET 유지, Current=Editor/Admin+담당 Site, Version 삭제=Editor/Admin+담당 Site+기존 삭제 비밀번호, 최초 Admin/복구=지정 사내 운영 담당자(Owner 책임), Audit 365일 경과 이력 정리 원칙. 관련 문서 PR #114는 병합·CI 완료 미확인. POST 업로드 권한, Secret/실 담당자, Audit 물리 정리·백업 복원 세칙, 실제 배포는 PENDING; #103 G1 운영 활성화 승인 아님.
+
+- `src/tests/fixtures/auth-g1/schema.prisma`는 User/Session/Role/Site/Special/Audit/Nonce **물리 모델 참조**이며 기존 `CadSite`를 부분 투영한다. 실제 적용 가능한 SQL은 동일 fixture `migration.sql`; 이 Prisma 투영으로 `prisma migrate`/push를 돌리는 것은 **금지**. 실행 Fixture는 기존 6개 CAD Migration을 우선 적용한 `cad-auth-g1-*/fixture.sqlite` 일회용 사본만 허용하며 G7 승인 전 정식 `src/prisma/` 경로에 반영하지 않는다.
+- SQLite 쓰기 직렬화 `BEGIN IMMEDIATE` + DB 트리거로 8h 절대/30m idle/3개 active 동시 세션을 확인하며, 재활성화/clock rollback/4번째 원시 SQL INSERT도 기본 거부. 비밀번호/원시 Session 토큰/복구 nonce 원문/전체 CAD Geometry는 이벤트·DB에 저장하지 않는다. 계정 ID 불변, Role·Site·Special FK/Unique/값 범위, 명시적 Site 소유권 확인.
+- Admin만 Grant 변경. 각 Role/Site/Special 변경+안전 Audit는 원자 commit/rollback. 비활성/관리자 복구는 세션 회수와 함께 수행. nonce hash insert(unique)+passwordHash 갱신+세션 폐기+Audit는 단일 트랜잭션. Audit/소비 nonce는 append-only; Audit 365일 경과 이력 정리 원칙은 Owner 승인됐지만, 실제 자동/물리 파기·백업/복원 SOP는 후속 결정·검증 전까지 금지.
+- 격리 SQL 테스트 결과만 G1 증거. 실제 사내 CAD/DB/S3 백업·복구, 배포 인입 경로, 기존 API 인증 전환, Admin secret 절차는 #102/#104~#109 책임으로 유지. 상세 근거/롤백 [Issue103](Issue103.md) 및 [Operation](Operation.md).
+
+
 ### ADR-053 재지정 — #82 Memo M1과 #99 ADR-052 충돌 해소 (2026-10-25)
 
 - 최신 main #99가 실 DXF P0/P5 현장 증거 정책을 **ADR-052**에 등록했으므로 #82의 WCS Memo 세션/텍스트·앵커·Tool 독점 정책은 **ADR-053**으로 재번호화한다. #99의 ADR-052 원문·수용 게이트·관련 Issue99 링크를 유지하고 #82 쪽 참조만 수정한다.
@@ -22,7 +218,7 @@
 3. **위험 지위:** Owner는 HTTP 평문 비밀번호/세션 도청·변조, 탈취·재생, 최소 8자 비밀번호와 관련된 위험이 **여전히 존재함을 인지한 채 추가 보호를 범위 밖으로 수용**한다(`OWNER_ACCEPTED_SCOPE`). 이는 안전하다는 주장이나 기술 검증 PASS가 아니며 공격방어 보완을 실행했다는 의미도 아니다. 업무/운영 미확정은 여전히 PENDING이다.
 4. **유지하는 기능:** 이전 승인 D1~D5의 로컬 계정/1회 bootstrap·복구, 최소 8자+scrypt, 8h 절대·30m idle·최대 3개 세션 및 회수, Reader/Editor/Admin·Site/Version Scope, 365일 Audit·별도 열람 권한, DB/Grant/Session 원자성·업무 정합성·비밀 로그 제외·백업/복구/원본 DXF·Current/SHA 불변. 기존 비활성 Origin/CSRF/Session helper를 자동 삭제/무력화하지 않는다.
 5. **릴리스 게이트:** G0 #102은 접속·업무 범위/잔여 운영 결정을 정리, G5 #107은 PROD Nginx/DEV direct **정상 연결/배포 경로**, G6 #108은 **기능 E2E·DB/CAD/S3 Backup/Migration dry-run/Restore**, G7 #109는 **Owner 별도 Go/No-Go**로 역할 축소. 인증/관리/영속 API 및 운영 Prisma·Nginx·Compose 실제 변경은 G7 승인 전 OFF.
-6. **기존 API 전환:** GET/다운로드 Reader, POST Editor, Current Editor, 삭제 Admin+Site 등은 아직 **제안/미확정**이며 현재 공개 CAD API 동작을 변경하지 않는다. 별도 기능별 API 승인 유지.
+6. **기존 API 전환:** 기존 공개 CAD 목록·Viewer·원본 GET는 **사내망 익명 허용**. 도면 등록 `POST /api/cad-files`·Current PUT는 **로그인 Editor 이상+담당 Site**, Version DELETE는 **Editor 이상+담당 Site+기존 삭제 비밀번호**(AND). G0-BIZ-01~06 Owner 정책 승인. 신규 Outline/Memo/Type/Logs/Audit 영속 GET 익명 개방은 미승인, G7 이전 기존 API 불변.
 
 **효력:** ADR-051-R1은 본 이슈의 이전 공격 중심 PENDING/개별 보안 실증 선행 게이트 서술보다 우선한다. 타 작업의 데이터 무결성·업무권한 검증 및 실 운영 배포 통제는 완화하지 않는다.
 

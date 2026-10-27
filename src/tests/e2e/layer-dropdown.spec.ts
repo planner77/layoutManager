@@ -1,3 +1,4 @@
+import { clickViewerCommand } from './viewer-menu-helper';
 import { expect, test, type APIRequestContext } from "@playwright/test";
 import { masterFields } from "./master-helper";
 
@@ -43,35 +44,28 @@ test("TC-LAYER001: individual multi-select and all controls alter the existing c
   });
   await page.goto(`/cad/versions/${file.id}/viewer?renderer=three-dxf-viewer`);
   await expect(page.getByRole("status")).toHaveText("도면 표시 완료");
-  await page.getByRole("button", { name: "전체 화면 종료", exact: true }).click();
-  const trigger = page.getByTestId("layer-dropdown-trigger");
+  await clickViewerCommand(page, 'view', '전체 화면 종료');
+  const panel = page.getByTestId('fullscreen-layer-panel');
   const canvas = page.locator("canvas");
   await canvas.evaluate((node) => {
     node.dataset.layerTestCanvas = "same";
   });
   const initial = await canvas.screenshot();
-  await trigger.click();
+  await expect(panel).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("layer-menu-normal.png") });
-  await page.getByRole("menuitemcheckbox", { name: "전기" }).click();
-  await expect(page.getByRole("menu")).toBeVisible();
-  await page.keyboard.press("Escape");
+  await panel.getByRole('checkbox', { name: '전기' }).uncheck();
+  await expect(panel).toBeVisible();
   const oneHidden = await canvas.screenshot();
   expect(oneHidden.equals(initial)).toBe(false);
-  await trigger.click();
-  await page.getByRole("menuitemcheckbox", { name: "배관" }).click();
-  await page.keyboard.press("Escape");
+  await panel.getByRole('checkbox', { name: '배관' }).uncheck();
   const twoHidden = await canvas.screenshot();
   expect(twoHidden.equals(oneHidden)).toBe(false);
-  await trigger.click();
-  await page.getByRole("menuitem", { name: "전체 해제" }).click();
-  await expect(trigger).toContainText("레이어 0/3");
-  await page.keyboard.press("Escape");
+  await panel.getByRole('button', { name: '전체 해제' }).click();
+  await expect(panel).toContainText("레이어 0/3");
   const none = await canvas.screenshot();
   expect(none.equals(initial)).toBe(false);
   expect(none.equals(twoHidden)).toBe(false);
-  await trigger.click();
-  await page.getByRole("menuitem", { name: "전체 선택" }).click();
-  await page.keyboard.press("Escape");
+  await panel.getByRole('button', { name: '전체 선택' }).click();
   await expect
     .poll(async () => (await canvas.screenshot()).equals(initial))
     .toBe(true);
@@ -92,41 +86,36 @@ test("TC-LAYER002: selection resets across reload, renderer switch, and version 
   });
   await page.goto(`/cad/versions/${first.id}/viewer?renderer=three-dxf-viewer`);
   await expect(page.getByRole("status")).toHaveText("도면 표시 완료");
-  await page.getByRole("button", { name: "전체 화면 종료", exact: true }).click();
-  const trigger = page.getByTestId("layer-dropdown-trigger");
-  await trigger.click();
-  await page.getByRole("menuitemcheckbox", { name: "A-one" }).click();
-  await page.keyboard.press("Escape");
-  await expect(trigger).toContainText("레이어 1/2");
-  await page.getByRole("button", { name: "다시 불러오기" }).click();
-  await expect(trigger).toHaveCount(0);
+  await clickViewerCommand(page, 'view', '전체 화면 종료');
+  const panel = page.getByTestId('fullscreen-layer-panel');
+  await panel.getByRole('checkbox', { name: 'A-one' }).uncheck();
+  await expect(panel).toContainText("레이어 1/2");
+  await clickViewerCommand(page, 'drawing', '다시 불러오기');
+  await expect(panel).toHaveCount(0);
   await expect(page.getByRole("status")).toHaveText("도면 표시 완료");
-  await expect(trigger).toContainText("레이어 2/2");
-  await page.getByRole("button", { name: "dxf-viewer", exact: true }).click();
+  await expect(panel).toContainText("레이어 2/2");
+  await clickViewerCommand(page, 'view', 'dxf-viewer');
   await expect(page.getByRole("status")).toHaveText("도면 표시 완료");
-  await expect(trigger).toHaveCount(0);
-  await page
-    .getByRole("button", { name: "three-dxf-viewer", exact: true })
-    .click();
+  await expect(panel).toHaveCount(0);
+  await clickViewerCommand(page, 'view', 'three-dxf-viewer');
   await expect(page.getByRole("status")).toHaveText("도면 표시 완료");
-  await expect(trigger).toContainText("레이어 2/2");
+  await expect(panel).toContainText("레이어 2/2");
   expect(downloads).toBe(2);
   await page.goto(
     `/cad/versions/${second.id}/viewer?renderer=three-dxf-viewer`,
   );
   await expect(page.getByRole("status")).toHaveText("도면 표시 완료");
-  await page.getByRole("button", { name: "전체 화면 종료", exact: true }).click();
-  await expect(trigger).toContainText("레이어 1/1");
-  await trigger.click();
+  await clickViewerCommand(page, 'view', '전체 화면 종료');
+  await expect(panel).toContainText("레이어 1/1");
   await expect(
-    page.getByRole("menuitemcheckbox", { name: "B-only" }),
+    panel.getByRole('checkbox', { name: 'B-only' }),
   ).toBeChecked();
   await expect(
-    page.getByRole("menuitemcheckbox", { name: "A-one" }),
+    panel.getByRole('checkbox', { name: 'A-one' }),
   ).toHaveCount(0);
 });
 
-test("TC-LAYER003: many long layers fit a narrow viewport and support keyboard actions", async ({
+test("TC-LAYER003: many long layers fit a narrow Drawer and support keyboard actions", async ({
   page,
   request,
 }, testInfo) => {
@@ -142,42 +131,34 @@ test("TC-LAYER003: many long layers fit a narrow viewport and support keyboard a
   await page.setViewportSize({ width: 360, height: 480 });
   await page.goto(`/cad/versions/${file.id}/viewer?renderer=three-dxf-viewer`);
   await expect(page.getByRole("status")).toHaveText("도면 표시 완료");
-  await page.getByRole("button", { name: "전체 화면 종료", exact: true }).click();
-  const trigger = page.getByTestId("layer-dropdown-trigger");
-  await trigger.focus();
-  await page.keyboard.press("Enter");
-  const menu = page.getByRole("menu", { name: "레이어 선택" });
+  const menu = page.getByRole('dialog', { name: '레이어' });
+  await expect(menu).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("layer-menu-narrow.png") });
   const box = await menu.boundingBox();
   expect(box).not.toBeNull();
-  expect(box!.x).toBeGreaterThanOrEqual(16);
-  expect(box!.x + box!.width).toBeLessThanOrEqual(344);
-  expect(box!.y + box!.height).toBeLessThanOrEqual(464);
+  expect(box!.x).toBeGreaterThanOrEqual(0);
+  expect(box!.x + box!.width).toBeLessThanOrEqual(361);
+  expect(box!.y + box!.height).toBeLessThanOrEqual(481);
   expect(
-    await menu.evaluate((node) => node.scrollHeight > node.clientHeight),
+    await menu.locator('aside > div').last().evaluate((node) => node.scrollHeight > node.clientHeight),
   ).toBe(true);
   expect(
     await menu.evaluate((node) => node.scrollWidth <= node.clientWidth),
   ).toBe(true);
-  const clearAll = page.getByRole("menuitem", { name: "전체 해제" });
+  const clearAll = menu.getByRole('button', { name: '전체 해제' });
   await clearAll.focus();
-  await page.keyboard.press("ArrowDown");
-  await expect(
-    page.getByRole("menuitemcheckbox", { name: "0", exact: true }),
-  ).toBeFocused();
-  await page.keyboard.press("ArrowUp");
-  await expect(clearAll).toBeFocused();
-  await page.keyboard.press("Enter");
-  await expect(trigger).toContainText(`레이어 0/${layers.length}`);
+  await page.keyboard.press('Enter');
+  await expect(menu).toContainText(`레이어 0/${layers.length}`);
   await expect(menu).toBeVisible();
-  const longLayer = page.getByRole("menuitemcheckbox", { name: layers[1] });
+  const longLayer = menu.getByRole('checkbox', { name: layers[1] });
   expect(
     await longLayer.evaluate((node) => node.scrollWidth <= node.clientWidth),
   ).toBe(true);
   await longLayer.focus();
   await page.keyboard.press("Space");
   await expect(longLayer).toBeChecked();
-  await expect(trigger).toContainText(`레이어 1/${layers.length}`);
+  await expect(menu).toContainText(`레이어 1/${layers.length}`);
   await page.keyboard.press("Escape");
-  await expect(trigger).toBeFocused();
+  await expect(menu).toHaveCount(0);
+  await expect(page.locator('[data-viewer-group="work"]')).toBeFocused();
 });

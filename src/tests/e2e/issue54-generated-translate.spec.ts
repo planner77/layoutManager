@@ -1,3 +1,4 @@
+import { clickViewerCommand, clickViewerTestCommand } from './viewer-menu-helper';
 import {test,expect,type APIRequestContext,type Page} from '@playwright/test';
 import {readFile} from 'node:fs/promises';
 import {masterFields} from './master-helper';
@@ -32,7 +33,7 @@ async function selectSource(page:Page){
   await page.mouse.up();
 }
 async function createGenerated(page:Page,count=2){
-  await page.getByTestId('viewer-menu-outline-tool').click();
+  await clickViewerTestCommand(page, 'viewer-menu-outline-tool');
   await selectSource(page);
   await expect(page.getByTestId('outline-selection-count')).toContainText('선택 1개');
   const tools=page.getByTestId('cad-outline-tools');
@@ -41,9 +42,9 @@ async function createGenerated(page:Page,count=2){
     await expect(page.getByTestId('outline-preview')).toBeVisible();
     await tools.getByRole('button',{name:'임시 확정'}).click();
   }
-  await page.getByTestId('viewer-menu-outline-tool').click();
+  await clickViewerTestCommand(page, 'viewer-menu-outline-tool');
   await page.getByTestId('canvas-mode-generated').click();
-  await page.getByTestId('viewer-menu-outline-tree').click();
+  await clickViewerTestCommand(page, 'viewer-menu-outline-tree');
   await expect(page.getByTestId('outline-tree-item')).toHaveCount(count);
 }
 async function exportGeometry(page:Page):Promise<ExportData>{
@@ -113,10 +114,12 @@ test('TC-E4-E2E-002: invalid numeric and SOURCE/mixed/Pan refuse to change group
   await page.getByTestId('canvas-mode-pan').click();
   await expect(page.getByTestId('generated-translate-apply')).toBeDisabled();
   expect((await exportGeometry(page)).outlines).toEqual(base.outlines);
-  await page.getByRole('button',{name:'다시 불러오기'}).click();
+  page.once('dialog', async dialog => { expect(dialog.message()).toContain('임시 외곽선'); await dialog.accept(); });
+  await clickViewerCommand(page, 'drawing', '다시 불러오기');
   await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
+  await clickViewerTestCommand(page, 'viewer-menu-tools');
   await expect(page.getByTestId('generated-translate-apply')).toBeDisabled();
-  await page.getByRole('button',{name:'dxf-viewer',exact:true}).click();
+  await clickViewerCommand(page, 'view', 'dxf-viewer');
   await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
   await expect(page.getByTestId('generated-translate-form')).toHaveCount(0);
 });
@@ -193,7 +196,7 @@ test('TC-E4-E2E-004: pre-threshold boundary press cancels on wheel and resize wi
   await expect(page.getByTestId('canvas-selection-count')).toContainText('선택 1개 · 원본 0개 · 생성 1개');
 
   // A genuine canvas Resize must discard another pre-threshold boundary press.
-  await page.getByRole('button',{name:'전체 화면 맞춤'}).click();
+  await clickViewerCommand(page, 'view', '화면 맞춤');
   const resized=await boundary();
   await page.mouse.move(resized.x,resized.y);
   await page.mouse.down();

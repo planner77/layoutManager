@@ -28,6 +28,57 @@
 - **후속:** #83 메모 영속/작성자/인증/감사, #84 객체 Snap, #85 메모 트리·표시, #86 일정, #88 Deep Link, #90 목록 검색. 관련 운영 인증 정책 미검증/미승인 상태에서는 서버 영속을 활성화하지 않습니다. 설계/검증은 [Issue82](out/Issue82.md), [ADR-053](out/Decisions.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md)를 참조. CI·실 도면/GPU/native 수용 미검증.
 
 
+## Issue #57 — 서버 구조화 로그 단일화 (v0.42.1 PR 후보)
+
+기존 #18 공통 Logger를 재사용하여 업로드 단계 로그에도 동일한 JSON Schema v1, `LOG_LEVEL`/`LOG_FORMAT`, 안전 필드 allowlist를 적용합니다. 공개 API 응답·`X-Request-Id`·업로드 진단 첫 실패 원인은 유지됩니다. Server 로그 조회/보관은 별도 #59~#62로 미구현이며 Next/Nginx/브라우저 원시 로그도 자동 수집하지 않습니다. 상세 계약과 Docker 조회는 [Issue57](out/Issue57.md), [Logging](out/Logging.md) 참조. 현재 변경은 PR CI 시작 후보이며 배포 완료를 뜻하지 않습니다.
+
+
+## 0.42.0 — 목록·DXF 복구·Viewer 작업 공간
+
+[#124/#126/#127](https://github.com/planner77/layoutManager/pull/132) 구현·QA·PR CI·병합·Main CI·GHCR 게시 및 이슈 종료를 완료했습니다. 도면 목록의 메뉴·검색/Current·요약을 고정하고, DXF는 Three 기본과 단발 자동 대체·로딩 중 수동 전환을 제공합니다. Viewer의 두 정보 헤더·설명 접근, 도면/보기/작업 그룹 메뉴와 좌·우·하단 Drawer를 지원합니다. 임시 생성 개체가 있는 렌더러 전환/재로드는 확인 후 진행합니다.
+
+최신 PR CI에서 Unit 352/352·E2E 86/86·legacy migration 1/1·Docker 검증이 통과했습니다. 독립 DWG 4/4·기능 회귀 13/13 및 실제 Chromium 200% 확대도 확인했습니다. [Main CI/게시 근거](https://github.com/planner77/layoutManager/actions/runs/40354233607), 상세 시험·digest·제한은 [TestReport](out/TestReport.md), 초기 실패와 수정은 [FailureLedger](out/FailureLedger.md), 정책/AC는 [단위 가이드](out/Issues124-126-127.md)를 따릅니다. #113 실 CAD/GPU 수용과 실제 운영 배포는 별도입니다.
+
+현재 게시한 linux/amd64 이미지 쌍은 `ghcr.io/planner77/layoutmanager:0.42.0` 및 `ghcr.io/planner77/layoutmanager:0.42.0-migrate`입니다. 두 이미지는 동일 source `f2c04bf`로 게시했습니다. 실행/업그레이드는 [Operation](out/Operation.md)의 동일 버전 pair·백업·migration 절차를 따릅니다. 아래 과거 이슈/버전 기록과 구분합니다.
+
+
+## Issue #108 — G6 수용 매트릭스·격리 백업/복원 리허설 준비
+
+[Issue108](out/Issue108.md): G0~G5 비운영 기능의 실제 LAN·DB/CAD/S3 수용을 위한 **사내 비공개 증거 상태 점검 도구**와 합성 SQLite/CAD/mock-S3 백업→격리 migration→Restore 테스트 추가. 사용: cd src && node scripts/g6-evidence.mjs /private/g6/evidence.json. CLI는 실제 시험을 수행하지 않고 자체 기입 증거의 누락·불일치만 검증하므로 READY_FOR_OWNER_REVIEW는 현장 PASS가 아니다. 예제 src/tests/fixtures/g6/manifest.example.json은 전부 NOT_RUN. 운영 인증/API/Prisma/Compose/Nginx와 실제 DB/CAD/S3 불변, 실제 사내 PC 2대/실 S3 Restore·G7 별도 Owner 승인 후속.
+
+
+## Issue #106 — G4 권한·감사 격리 서비스 (운영 OFF)
+
+G1~G3 DB·세션 계약 위에 Role/Site/Version 인가, Admin Grant·Account 상태, append-only Audit 및 ShadowOutline Revision CAS 시험 모듈을 추가했다. 요구·설계·시험은 [Issue106](out/Issue106.md). 기존 익명 CAD GET/Viewer·원본 다운로드는 변경하지 않으며 실제 로그인/관리/Outline/Logs/Audit API, 운영 Prisma/migration/Compose/Nginx/DB 연결은 #109 G7 승인 전 OFF. CAD POST/Current는 Editor+담당 Site, Version DELETE는 이에 기존 삭제 비밀번호 AND가 필수다. PR CI 시작은 검증 성공이 아니다.
+
+
+## Issue #105 — G3 격리 로그인·세션 (0.41.0 후보)
+
+로그인·초기 비밀번호 변경·로그아웃, 세션 8h/idle 30m/최대 3개와 계정 변경 시 회수, 서버 DB Actor 및 정상 HTTP cookie 흐름을 비운영 서비스와 fixture에 구현했습니다. 실제 검증 결과는 TestReport에서 확인합니다. 초기/복구 계정은 비밀번호 변경 후 다시 로그인하며 운영 로그인 API/UI는 아직 연결하지 않습니다. 기존 공개 CAD 익명 조회·Current·삭제와 운영 Prisma/Compose/DB는 그대로 유지합니다. [요구·설계·AC/TC](out/Issue105.md), [실제 시험 결과](out/TestReport.md)를 구분하며 #109 별도 Owner 승인 전 운영 인증 기능은 OFF입니다. 이번 작업은 PR CI 시작까지이며 병합·배포를 포함하지 않습니다.
+
+## Issue #104 — v0.40.5 GHCR 신규 Pair 준비 (2026-10-26)
+
+이미 게시된 v0.40.4를 재사용하지 않고 사용자가 요청한 신규 GHCR App/Migrator 게시용으로 `src/package.json`과 `src/package-lock.json`의 루트 버전을 **0.40.5**로 정렬했습니다. 버전 변경 이전 G2 구현 HEAD `f5f7ea2e`은 [PR CI 40234510320](https://github.com/planner77/layoutManager/actions/runs/40234510320)에서 Verify/Docker 모두 성공했지만, **새 HEAD는 별도 PR CI 성공 후에만 병합/게시**합니다. G2 초기 관리자 서비스는 격리 CLI 전용이며 운영 Auth·Admin·Prisma/API·DB 기능은 #109 G7 승인 전 계속 OFF.
+
+## Issue #104 — G2 격리 Admin 최초 생성·복구 (운영 OFF)
+
+#102 Owner 정책(지정 운영 담당자 실행/Owner 책임)과 #103 G1 계약을 따른 명시 `server/auth/admin-setup.ts` 서비스, 실행 UID 제한 Secret 파일, 최초 User/Role/Audit·복구 nonce/Session 원자성 및 `scripts/auth-g2-isolated.ts` 임시 DB CLI를 작성했습니다. 실제 App 시작/관리·로그인 API/운영 Prisma migration/기존 익명 CAD 조회·Current·삭제 비밀번호에 **연결하지 않습니다**. 요구/AC/TC와 사내 운영자 비공개 SOP 템플릿은 [Issue104](out/Issue104.md)/[Operation](out/Operation.md)/[TestPlan](out/TestPlan.md). #109 Owner Go/No-Go 전 운영 OFF, 실행 안 된 시험은 PASS가 아닙니다.
+
+
+## Issue #103 — G1 User/Session/Grant/Audit 격리 DB (운영 OFF)
+
+- [Issue103](out/Issue103.md) / [ADR-051-G1](out/Decisions.md): 기존 CAD SQL 6개를 적용한 disposable SQLite 사본에 User/AuthSession/3종 Grant/Audit/RecoveryNonce DB 계약, 동시 세션 3개/nonce·감사 원자성, 합성 local CAD/S3 mirror 백업·복구 Fixture와 TC-P4-G1-001~009를 추가했습니다.
+- 런타임·운영 Prisma/migrations·기존 API·Compose/Nginx·실 CAD/S3는 변경하지 않습니다. 실행 전 테스트는 NOT RUN이고 정식 운영 활성화는 G7 별도 Owner 승인이 필요합니다.
+- 2026-10-25 #102 Owner 5개 승인: 기존 CAD 목록/Viewer/다운로드 익명 GET 유지, Current=Editor/Admin+담당 Site, Version 삭제=Editor/Admin+담당 Site+기존 삭제 비밀번호, 최초 Admin/복구=지정 사내 운영 담당자(Owner 책임), Audit 365일 경과 이력 정리 원칙. 관련 문서 PR #114는 병합·CI 완료 미확인. POST 업로드 권한, Secret/실 담당자, Audit 물리 정리·백업 복원 세칙, 실제 배포는 PENDING; #103 G1 운영 활성화 승인 아님.
+
+
+## Issue #107 — PROD Nginx / DEV 직접 접속의 비운영 Preview
+
+- 조직 내부 소수 사용자가 사용하는 HTTP 환경에서 **보안 침투·탈취 대응 강화 없이** 정상 배포 경로만 검증합니다. 운영 Nginx/Compose는 변경하지 않습니다.
+- 독립 Compose `src/deploy/g5/compose.preview.yml`: PROD Preview 127.0.0.1:3302 → Nginx → App(직접 host port 없음), DEV Preview 127.0.0.1:3301 → 개발 App 직접 접속. 두 환경은 별도 테스트 DB/CAD 볼륨입니다.
+- 격리 실행/철거와 Health·목록·Viewer/다운로드 확인 절차는 [Issue107](out/Issue107.md), [Operation](out/Operation.md)을 참고하세요. Preview 도면의 `--version-id ID`는 실제 `/cad/versions/ID/viewer` 및 content를 검증합니다. GHCR v0.40.4 App·Migrator Pair 게시가 Main CI #40225537167에서 성공했으며 운영 Nginx/Compose 변경은 없습니다. 실제 내부 PC 업로드·Cookie·운영 연결과 G7 승인 전의 운영 기능 활성화는 미수행입니다.
+
+
 ## Issue #99 — 실제 DXF 비공개 P0/P5 수용 (현장 전용)
 
 **Issue #99 P1 비공개 파일 경로 제한:** 내부 DXF 경로와 보고서 출력 경로는 절대 경로뿐 아니라 심볼릭 링크를 해석한 최종 실제 경로까지 Git checkout 밖이어야 합니다. 보고서 출력 디렉터리는 시험 전에 별도로 만들고 쓰기 권한을 제한하세요. 재실행 시에는 새 JSON 보고서 파일명을 사용하세요(기존 파일 덮어쓰기 금지). 수정 HEAD `0.40.3`은 신규 GHCR 쌍 후보이며 CI/최종 릴리스·실 CAD 수용 완료를 의미하지 않습니다.

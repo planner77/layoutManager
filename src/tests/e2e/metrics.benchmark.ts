@@ -1,3 +1,4 @@
+import { clickViewerCommand, openViewerMenu } from './viewer-menu-helper';
 import { test, expect } from "@playwright/test";
 import { appendFileSync, mkdirSync } from "node:fs";
 import { createHash } from "node:crypto";
@@ -49,23 +50,15 @@ for (const count of [100, 10000, 100000])
         });
         page.on("pageerror", () => pageErrors++);
         await page.goto(`/cad/versions/${file.id}/viewer?renderer=${renderer}`);
-        await page.getByRole("button", { name: "전체 화면 종료", exact: true }).click();
+        await clickViewerCommand(page, 'view', '전체 화면 종료');
         for (const mode of ["cold", "warm"]) {
           if (mode === "warm") {
-            await page
-              .getByRole("button", {
-                name:
-                  renderer === "dxf-viewer" ? "three-dxf-viewer" : "dxf-viewer",
-                exact: true,
-              })
-              .click();
+            await clickViewerCommand(page, 'view', renderer === 'dxf-viewer' ? 'three-dxf-viewer' : 'dxf-viewer');
             await expect(page.getByRole("status")).toHaveText(
               "도면 표시 완료",
               { timeout: 120000 },
             );
-            await page
-              .getByRole("button", { name: renderer, exact: true })
-              .click();
+            await clickViewerCommand(page, 'view', renderer);
           }
           await expect(page.getByTestId("viewer-metric")).toBeAttached({
             timeout: 120000,
@@ -75,15 +68,15 @@ for (const count of [100, 10000, 100000])
           );
           const zoomFrameMs =
             metric.result === "success"
-              ? await page.evaluate(async () => {
-                  const button = [...document.querySelectorAll("button")].find(
+              ? (await openViewerMenu(page, 'view'), await page.evaluate(async () => {
+                  const button = [...document.querySelectorAll<HTMLButtonElement>('[role="menuitem"]')].find(
                     (b) => b.textContent === "확대",
                   )!;
                   const start = performance.now();
                   button.click();
                   await new Promise(requestAnimationFrame);
                   return performance.now() - start;
-                })
+                }))
               : null;
           mkdirSync("benchmark-results", { recursive: true });
           appendFileSync(

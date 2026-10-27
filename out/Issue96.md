@@ -1,5 +1,42 @@
 # Issue #96 — 로컬 계정·세션·Role/Site·감사 공통 기반
 
+## #109 S1 — 단일 Staging 통합 구현·운영 OFF (2026-10-26)
+
+#109에서 Staging 별도 Prisma schema/history·App Router 미러 API·G1~G4 로그인/Session/Role/Site/Grant/Audit/단발 Admin·동일 DB 거래 CAD DXF staging 쓰기 검증을 단일 PR로 작성한다. 운영 `src/prisma`/마이그레이터·CAD API·Nginx/Compose/.env/실 DB/CAD/S3는 **변경 0**, `G7_AUTH_ENABLED` 및 CAD write flag 기본 false, staging 격리 Root·manifest 승인 없이는 404. #108 Owner 수용과 G7 별도 GO는 다르며 S1 시험은 실제 운영 승인이나 #96 AC 완료가 아니다. #109 및 #96 OPEN/BLOCKED 유지.
+
+
+## G7 #109 — 기본 OFF·활성화·복구 절차 문서 준비 / 운영 BLOCKED (2026-10-26)
+
+[Issue109](Issue109.md) 및 ADR-051-G7-PLAN에서 검증된 G7-capable App/Migrator pair+Schema(**release gate**)와 별도 Owner GO·`G7_AUTH_ENABLED`(**operation gate**, 기본 OFF), 별도 `G7_CAD_WRITE_CUTOVER_ENABLED`(OFF), 기존 익명 CAD GET 유지/업무 write 인증, 동일 snapshot DB/CAD/S3 실복원·롤백·증거 양식/TC를 **문서 설계**했다. 지금 플래그·실 Auth Route/Prisma/Proxy/Compose는 **미구현/비활성**.
+#102~#107의 격리·Preview 완료와 #108 G6은 Owner가 현장 시험 이상 없음을 확인하여 CLOSED/COMPLETED(비공개 개별 원시 증거 ID는 현재 독립 열람되지 않음)됐지만 G7 실제 배포·복구 확인 및 Owner 별도 GO는 남았다. 따라서 #109와 상위 #96은 **OPEN/BLOCKED** 유지. 신규 영속 API 익명 확대 및 Audit 365일 이후 purge 실제 실행도 승인하지 않는다.
+
+
+## G4 #106 — Role/Site/Version·Grant·Audit 격리 서비스 (2026-10-26)
+
+[Issue106](Issue106.md) 및 ADR-051-G4: G3 Session과 현재 G1 Role/Site/SpecialGrant·Version→Site 관계를 G4 transaction 안에서 검증하고, Admin Grant/계정 disable, Audit 성공·거부/Revision CAS 합성 모델을 구현했다. 운영 API/Prisma/실 CAD 경로 OFF, 기존 익명 CAD GET 유지, Version DELETE 레거시 비밀번호 AND 요구. Audit 365일 이후 실제 파기 자동화는 G6/G7 승인 전 금지. 테스트 작성과 실행 PASS는 별개다.
+
+
+## G3 #105 — 격리 로그인/초기 변경/세션 구현 (2026-10-26)
+
+[Issue105](Issue105.md)에 Manager 요구·설계·AC/TC를 구현 전 기록했다. G1 must-change session 거부를 유지하고 credential 재입력으로 초기 변경 후 새 로그인한다. 32 byte/hash-only token, 8h/30m/원자 3개, logout/disable/password/recovery 회수, 현재 DB Actor와 정상 cookie/Origin/CSRF를 검증한다. 운영 Auth/API/Prisma/Compose·기존 CAD GET/Current/Delete는 G7 전 OFF/불변. 실제 코드·실행 및 역할 근거는 TestReport, G4 권한과 G6 실 LAN/복구는 별도 인계다.
+
+## G2 #104 — 단발 Admin/Secret 격리 구현 (2026-10-26)
+
+#103 G1 User/Role/Audit/Nonce DB와 #102 Owner R1 기준으로 #104 명시 executor, 실행 UID 0400/0600 Secret, 최초 User/Admin Role/Audit 한 거래, 복구 nonce SHA unique·Session revoke/Audit, 9개 통합 TC 작성. [Issue104](Issue104.md)/[ADR-051-G2](Decisions.md). 실제 수행자·승인/Secret 경로는 사내 비공개 SOP. **운영 Auth/Admin/Prisma/API/Compose/Nginx·실 DB/CAD/S3 기능 OFF**, #96/#109 BLOCKED. 테스트 코드 작성은 PASS 아님; 새 HEAD CI 결과 전 G2-AC1~4 수용 보류. #105 G3/#106 G4/#108 G6 후속. G0 #102 PR #114 main 병합·POST 업로드 Editor/Admin+담당 Site 정책 승인 완료. 사내 담당자/감사 파기·백업 세칙은 G2/G4/G6/G7 후속이며 G7 전 운영 OFF.
+
+## G0 #102 Owner 5개 업무 정책 승인 — 최우선 경계 (2026-10-25)
+
+[Issue102](Issue102.md) / [ADR-051-R1](Decisions.md): 사내망의 **기존 공개 도면 GET/Viewer/원본 다운로드는 익명 허용**하며 해당 경로에는 UserSiteGrant로 Site 읽기 기밀성을 주장하지 않는다. **Current 지정은 로그인한 Editor 이상 + 담당 Site, 기존 도면 Version 삭제는 로그인한 Editor 이상 + 담당 Site + 기존 삭제 비밀번호**(AND)로 G7 이후 적용할 정책이 승인됐다. Admin도 Site 자동 전체 접근 없음.
+최초 Admin 생성·단발 복구 실행은 **지정 사내 운영 담당자**, 운영 책임은 Owner. Audit 365일 유지 후 만료 기록 정리 원칙만 승인; **자동 파기·백업본 세칙은 후속 #106/#108/#109**에서 확정 후 구현. 도면 `POST` 등록은 **Editor 이상+담당 Site**로 G0-BIZ-06 Owner 추가 승인.
+이 결정은 기존 #96 D1~D5 인증/업무 Role/Scope/Audit의 **쓰기 및 미래 영속 API**에 적용하는 것이며, 기존 익명 CAD 읽기까지 인증 강제하는 기존 제안은 명시적으로 대체한다. 신규 Outline/Memo/Type/Logs GET/관리 API의 익명 허용 또는 운영 기능 활성화를 승인하지 않는다. G0 정책/문서 PR과 G7 운영 Go/No-Go 별개, 현재 API·Schema·Nginx/Compose·DB 및 운영 기능 OFF 상태 불변.
+
+
+## G1 #103 — 격리 User/Session/Grant/Audit 물리 모델 및 원자성 (2026-10-25)
+
+- [Issue #103](https://github.com/planner77/layoutManager/issues/103)에서 User/AuthSession/Role·Site·Special Grant/AuditEvent/RecoveryNonce의 **비운영 SQLite DDL, Prisma 참조 투영, Lock/Transaction 원자성 Fixture 및 9개 Integration 테스트**를 구현했다. 상세 [Issue103](Issue103.md), [ADR-051-G1](Decisions.md).
+- **운영 승인 아님:** `src/tests/fixtures/auth-g1/**`·Integration/문서만 변경, `src/prisma/schema.prisma`와 자동 migrations, 실제 API/Runtime/DB/로그인·관리·Audit 활성화는 0. #102 Owner 5개 업무 승인 기록은 적용하되 POST/Secret/Audit 파기 세칙과 #104~#109 선행/운영 게이트는 그대로 남고 #96 OPEN/BLOCKED. 실행 확인 전 G1 AC PASS 기록 금지.
+
+
 ## G0 #102 — Owner 경량 보안 범위 결정 R1 (2026-10-25)
 
 - **최신 기준:** [Issue102](Issue102.md) 및 [ADR-051-R1](Decisions.md). 공개망 인바운드가 제한된 사내 업무망에서 **운영 사용자 PC는 Nginx 경유**, 개발자는 **별도 개발 App 직접 접속**. 공격 대응·자격증명/세션 탈취 방어·침투시험 및 상세 보안 수용 실증은 **비범위**로 Owner가 결정했다. HTTP 평문 위험은 여전히 존재하며 정책상 `OWNER_ACCEPTED_SCOPE`로 기록하되 안전성 PASS로 쓰지 않는다.

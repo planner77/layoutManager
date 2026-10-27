@@ -1,5 +1,7 @@
 # Issue #93 — 도면 목록 Current 기본 유지 및 이전 버전 표시·검색 복원
 
+> 후속 #124: [Issues124-126-127](Issues124-126-127.md)/ADR-053에서 홈의 내비게이션·제목/작업·검색·토글·결과 요약을 고정·컴팩트화한다. 여기의 Current/전체 URL·두 GET form·DB/API 조회 정책은 변경하지 않는다.
+
 - 요청/이슈: https://github.com/planner77/layoutManager/issues/93
 - 기준일: 2026-10-25 / 대상 버전 `0.40.1` (기존 기능 회귀 수정/PATCH)
 - 작업 기준: `main 14111b45a36907245342751d9d1a139b5215474d` → `fix/issue-93-drawing-history-search`

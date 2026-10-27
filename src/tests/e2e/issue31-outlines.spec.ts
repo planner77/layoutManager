@@ -1,3 +1,4 @@
+import { clickViewerCommand, clickViewerTestCommand, openViewerMenu } from './viewer-menu-helper';
 import {test,expect,type Page} from '@playwright/test';
 import {masterFields} from './master-helper';
 import {readFile} from 'node:fs/promises';
@@ -42,11 +43,13 @@ test('TC-OUT-E2E-001: selection and convex/precise preview, non-destructive JSON
  const file=await created.json();
  await page.goto('/cad/versions/'+file.id+'/viewer?renderer=three-dxf-viewer');
  await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
- await page.getByRole('button',{name:'전체 화면 종료',exact:true}).click();
+ await clickViewerCommand(page, 'view', '전체 화면 종료');
  const outlineToggle=page.getByTestId('viewer-menu-outline-tool');
- await expect(outlineToggle).toHaveAttribute('aria-pressed','false');
- await outlineToggle.click();
- await expect(outlineToggle).toHaveAttribute('aria-pressed','true');
+ await openViewerMenu(page, 'work');
+ await expect(outlineToggle).toHaveAttribute('aria-checked','false');
+ await clickViewerTestCommand(page, 'viewer-menu-outline-tool');
+ await openViewerMenu(page, 'work');
+ await expect(outlineToggle).toHaveAttribute('aria-checked','true');
  const tools=page.getByTestId('cad-outline-tools');
  await expect(tools).toBeVisible();
  await expect(page.getByTestId('outline-render-mapping')).toContainText('매핑 제외 0개');
@@ -92,23 +95,22 @@ test('TC-OUT-E2E-001: selection and convex/precise preview, non-destructive JSON
    return sum+p[0]*next[1]-next[0]*p[1];
  },0)/2);
  expect(polygonArea).toBeCloseTo(10000,2);
- await page.getByRole('button',{name:'전체 화면',exact:true}).click();
+ await clickViewerCommand(page, 'view', '전체 화면');
  await expect(page.getByTestId('cad-viewer-shell')).toHaveAttribute('data-fullscreen','true');
  await expect(page.getByTestId('outline-selection-count')).toContainText('선택 1개');
- await page.getByRole('button',{name:'전체 화면 종료',exact:true}).click();
+ await clickViewerCommand(page, 'view', '전체 화면 종료');
  // Force CSS fallback and verify Escape prioritizes selection before fullscreen.
  await page.getByTestId('cad-viewer-shell').evaluate(shell=>{
    Object.defineProperty(shell,'requestFullscreen',{configurable:true,
       value:()=>Promise.reject(new Error('test CSS fallback'))});
  });
- await page.getByRole('button',{name:'전체 화면',exact:true}).click();
+ await clickViewerCommand(page, 'view', '전체 화면');
  await expect(page.getByTestId('cad-viewer-shell')).toHaveAttribute('data-fullscreen','true');
  // P1 review regression: while search toggle (button) is focused, SelectionController
  // consumes the first Escape during capture. Search must remain open until next Escape.
- const searchToggle=page.getByRole('button',{name:'도면 내 텍스트 검색'});
- await searchToggle.click();
+ await clickViewerCommand(page, 'work', '도면 내 텍스트 검색');
  await expect(page.getByTestId('cad-text-search')).toBeVisible();
- await expect(searchToggle).toBeFocused();
+ await expect(page.locator('[data-viewer-group="work"]')).toBeFocused();
  await page.keyboard.press('Escape');
  await expect(page.getByTestId('outline-selection-count')).toContainText('선택 0개');
  await expect(page.getByTestId('cad-text-search')).toBeVisible();
@@ -119,12 +121,15 @@ test('TC-OUT-E2E-001: selection and convex/precise preview, non-destructive JSON
  await page.keyboard.press('Escape');
  await expect(page.getByTestId('cad-viewer-shell')).toHaveAttribute('data-fullscreen','false');
  await tools.getByRole('button',{name:'탐색 모드'}).click();
- await page.getByRole('button',{name:'다시 불러오기'}).click();
+ page.once('dialog', async dialog => { expect(dialog.message()).toContain('선택 상태가 사라집니다'); await dialog.accept(); });
+ await clickViewerCommand(page, 'drawing', '다시 불러오기');
  await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
  // U3 reload resets the tool to OFF; selection controls do not exist until ON.
- await expect(outlineToggle).toHaveAttribute('aria-pressed','false');
+ await openViewerMenu(page, 'work');
+ await expect(outlineToggle).toHaveAttribute('aria-checked','false');
  await expect(tools).toHaveCount(0);
- await outlineToggle.click();
- await expect(outlineToggle).toHaveAttribute('aria-pressed','true');
+ await clickViewerTestCommand(page, 'viewer-menu-outline-tool');
+ await openViewerMenu(page, 'work');
+ await expect(outlineToggle).toHaveAttribute('aria-checked','true');
  await expect(page.getByTestId('outline-selection-count')).toContainText('선택 0개');
 });

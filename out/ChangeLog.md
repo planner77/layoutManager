@@ -1,5 +1,61 @@
 # ChangeLog
 
+## v0.42.1 후보 — Issue #57 공통 Logger·UploadDiagnostics 단일화 (2026-10-27)
+
+- 기존 #18 구조화 Logger 재사용 및 업로드 별도 console JSON emitter 제거. Versioned Schema v1, 안전한 필드 allowlist/정적 Error code·category 재정제, `LOG_LEVEL`/`LOG_FORMAT` 단일 필터 적용. 공개 진단/첫 실패/요청 ID 계약 유지, 반복 성공 Health 200 debug-only.
+- 일부 수동 CLI의 원시 Error 메시지 출력 제거; 단위 회귀 테스트 및 운영/개발 가이드 동기화. 최초 PR CI의 Migrator Logger→Catalog 누락에 따른 Docker smoke 실패를 COPY closure/Node import 사전검사/TC-LOG-MIG-001로 보완했으며 수정 HEAD CI 결과는 미검증. 기존 API 응답/DB Migration·Viewer·G7 Auth 활성화 및 로그 보관/조회 API/UI는 변경/추가 없음.
+- 소스·PR CI 후보이며 CI PASS, GHCR 이미지 게시, 병합 또는 사내 운영 적용 완료가 아니다. [Issue57](Issue57.md), [TestReport](TestReport.md) 참고.
+
+
+## v0.42.0 — #124/#126/#127 목록 고정·DXF 복구·Viewer 메뉴/Drawer (2026-10-27)
+
+- 홈에만 앱 내비게이션·제목/작업·검색/Current·요약을 sticky로 적용하고 desktop 밀도·mobile 추가 필터와 동적 anchor/focus offset을 조정. 기존 #93 검색/URL/Current 의미 보존.
+- DXF 기본 renderer를 three-dxf-viewer로 정렬, 유효한 explicit dxf 및 DWG LibreDWG 유지. 실제 renderer init/load 오류만 자동 dxf 대체 최대 1회, source/취소 오류 구분, 지역 loading UI에서 수동 탈출·동일 bytes 재사용·임시 작업 손실 확인.
+- Viewer 두 정보 헤더·접근 가능한 설명, 도면/보기/작업 그룹 명령, Canvas와 독립적인 좌/우/하단 Drawer. 원본/Generated/Undo/레이어 상태와 수명주기 경계 보존.
+- Release: PR #132 Squash main `f2c04bf`·v0.42.0, 최신 PR CI 40352404675/전체 Unit352·E2E86·legacy1/Docker 및 Main CI 40354233607 PASS. GHCR 앱·migrator 0.42.0 pair 게시·registry inspect, #124/#126/#127 completed 종료. DWG 고정 진단/실험 probe 보완, 독립 DWG4·focused13 및 실제 브라우저 200% 확대 검증을 포함한다. 상세 수치/digest·초기 실패는 TestReport U-ISSUES124-126-127-20261027/FailureLedger, 설계는 [단위 가이드](Issues124-126-127.md)·ADR-053을 따른다. #113 현장 수용과 운영 배포는 별도.
+
+
+## Unreleased — Issue #108 G6 증거 매트릭스·합성 복원 검증 준비 (2026-10-26)
+
+- Offline src/scripts/g6-evidence.mjs와 전체 NOT_RUN 예제, Unit TC-P4-G6-001~006 추가. 합성 SQLite(운영 CAD 기존 6개 schema migration)+local CAD/mock-S3 두 버전으로 backup→별도 G1 fixture migration dry-run→손상 주입→실복원 Integration TC-P4-G6-007 작성. 현장 Runbook/AC·TC/ADR/설계·시험 문서를 Issue108에 동기화.
+- 새 HEAD 자동 Test/PR CI 완료는 아직 확인 전 NOT VERIFIED. 사내 Windows/WSL2 Nginx·PC 2대 실 E2E·실 S3/DB/CAD Backup/Restore, Owner G6 수용과 별도 #109 G7 Go/No-Go는 **NOT RUN/PENDING**. 운영 Auth/API/Prisma/DDL/Compose/Nginx/.env/실 DB/CAD/S3/GHCR 변경 0, 기존 익명 CAD GET 유지. [Issue108](Issue108.md).
+
+
+## v0.41.1 후보 — Issue #106 G4 격리 Auth Grant/Audit Pair 이미지 (2026-10-26)
+
+- G4 코드/테스트는 [PR #120](https://github.com/planner77/layoutManager/pull/120) 최종 HEAD `d4afaf0ae3cee51a172dad9305533d941daa5706`의 [PR CI 40253887969](https://github.com/planner77/layoutManager/actions/runs/40253887969) Verify·Docker 2개 Job `completed/success`, P1 2건 답변·Resolved 및 behind=0 후 squash 병합됐다. [Main CI 40254890094](https://github.com/planner77/layoutManager/actions/runs/40254890094) **시작 확인**; GHCR 실제 게시 완료와 구분한다.
+- 기존 `v0.41.0`와 `0.41.0`/`0.41.0-migrate` GHCR Pair는 이미 게시된 불변 릴리스다. 본 후속 릴리스 PR은 신규 `0.41.1` 버전을 `src/package.json`·lock root에 맞춘다. 새 PR CI 성공 및 승인 후 Main에서 App/Migrator candidate digest 검증·paired version/latest 승격이 수행되어야 실제 게시로 판정한다. 새 CI 시작 전후 이미지 게시 성공을 선행 주장하지 않는다.
+- 격리 Auth G4 외 운영 기능 활성화 0. 기존 익명 CAD GET/Viewer/파일·Current/Version/삭제 암호/실 DB·S3 불변, G7 #109 별도 Owner 승인 전 OFF. [Issue106](Issue106.md), [FailureLedger](FailureLedger.md).
+
+
+## 2026-10-26 — #106 G4 격리 Role/Site/Version·Grant·Audit
+
+G1~G3 기반 G4 비라우팅 서버 인가, Admin Grant/disable, 안전 append-only Audit, 테스트용 ShadowOutline CAS 및 TC-P4-G4-001~009 추가. 기존 익명 CAD GET/Viewer, 운영 Prisma/API·Compose/Nginx/원본·Version/Current·삭제 암호 및 GHCR 불변. 자동 시험 PASS/배포가 아니며 실제 운영 활성화 #109 G7 전 OFF. [Issue106](Issue106.md).
+
+
+## 0.41.0 — Issue #105 G3 격리 세션 (후보, 2026-10-26)
+
+- 비운영 로그인/초기 및 일반 암호 변경/logout, DB-backed 32 byte/hash-only 세션·8h/30m/최대 3개 원자 발급/회수, 현재 DB Actor와 정상 cookie/Origin/CSRF 검증을 추가했다. 상세 [Issue105](Issue105.md), 실제 구현·시험 상태는 TestReport를 기준으로 한다.
+- 기존 G1/G2 fixture 계약을 재사용하며 운영 Auth Route/UI·Prisma/migrations/Compose/Nginx/DB·CAD 원본/Current/삭제 비밀번호 변경·활성화 없음. 기존 CAD GET는 익명 유지한다.
+- 내부 기능 추가 MINOR 후보로 package/lock/README 버전을 정렬한다. PR CI 시작은 성공/병합/게시가 아니며 이번 요청에서 GHCR 게시·배포를 수행하지 않는다.
+
+## v0.40.5 후보 — #104 G2 격리 Admin 최초 생성·복구 (2026-10-26)
+
+- 이전 G2 코드 HEAD `f5f7ea2e`의 [PR CI 40234510320](https://github.com/planner77/layoutManager/actions/runs/40234510320) Verify·Docker Job 모두 **completed/success**. 이 성공은 아래 버전 정렬 전 HEAD의 증거일 뿐 새 HEAD의 PR CI 통과가 아니다.
+- GHCR App/Migrator Pair는 기존 `v0.40.4` tag·digest를 재사용하지 않는다. 신규 `src/package.json`과 lockfile 루트 버전을 **0.40.5**로 정렬하여 새 Pair를 정식 Main CI가 게시하도록 준비한다. 격리 G2 서비스는 운영 Route에 연결하지 않았으므로 PATCH 릴리스 후보로 간주하고 **실 운영 인증/Admin/Prisma 활성화는 G7 #109 승인 전 OFF**.
+- 새 HEAD PR CI Verify·Docker 성공/리뷰 0/main 무충돌 후 squash merge→Main CI의 `release-scope`와 candidate digest·Pair 승격이 시작된다. GHCR 배포/실제 게시 성공은 Main CI 시작만으로 보장되지 않는다. 승인된 현장 G6·G7 이후 운영 활성화 별도.
+
+#103 G1 일회용 SQLite 계약을 활용한 명시 최초 Admin 단발 생성·복구/nonce·Session revoke, Linux Secret 권한 검증, 9개 Integration TC와 지정 운영 담당자용 비공개 SOP 템플릿 추가. **운영 API/Prisma/Compose의 인증 기능 활성화 없음.** 신규 GHCR v0.40.5 후보 package/lock 변경 외 운영 설정은 불변. 실제 GHCR 공개 게시 여부는 Main CI 결과 확인 전까지 NOT VERIFIED. [Issue104](Issue104.md).
+
+
+## v0.40.4 — Issue #107 G5 경량 Preview 및 Viewer 정합성 (2026-10-26)
+
+- PROD Nginx→App/DEV App 직결 **비운영** Preview, 독립 SQLite/CAD·네트워크, 정상 Health/CAD 목록·Viewer/content Read-Only Smoke 및 Unit·CI Compose config-only 검증 추가. 추가 침입·탈취 방어는 Owner 정책상 비범위.
+- PR #115 구 HEAD d771d553 CI 40201366001 Verify/Docker 성공 이후 Codex P2 리뷰 4371142398에 따라 관리 화면을 Viewer로 오인할 수 있는 검증을 실제 /cad/versions/ID/viewer 요청으로 교정하고 Unit TC-P4-G5-007 추가.
+- 기존 v0.40.3 GHCR pair를 재사용하지 않고 src/package.json/lock root 0.40.4로 정렬. 수정 HEAD PR CI [40224438075](https://github.com/planner77/layoutManager/actions/runs/40224438075), Main CI/GHCR App·Migrator Pair 게시 [40225537167](https://github.com/planner77/layoutManager/actions/runs/40225537167) 모두 성공, 태그 v0.40.4 확인. 실제 LAN 기능 E2E는 #108에서 NOT RUN.
+- 기존 운영 Nginx/Compose/Auth/API/Prisma/DB/CAD/S3/원본 SHA·Current 불변. G6 현장 수용과 G7 별도 Owner 운영 승인 유지.
+
+
 ### #82 PR #111 — #99 Main 코드·정책 통합, ADR-053 재번호화 (2026-10-25)
 
 - #99 실 DXF Private evidence gate/CLI, symlink path 보호, 테스트와 npm `verify:outline-acceptance` script를 최신 main에서 모두 유지. #99 실DXF ADR-052는 불변, #82 WCS Memo ADR은 중복 방지 위해 ADR-053으로 이동. 0.41.0(app/lock root)과 현 0.40.3 main 패치 이력을 구분하며 재게시·태그 이동·GHCR 승격 없음.

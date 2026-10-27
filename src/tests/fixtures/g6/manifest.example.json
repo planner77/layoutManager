@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "scope": "G6_PREACTIVATION",
+  "operationalFeaturesOff": true,
+  "checks": {
+    "AUTH_SESSION": {
+      "status": "NOT_RUN"
+    },
+    "ROLE_SITE_VERSION": {
+      "status": "NOT_RUN"
+    },
+    "ADMIN_RECOVERY": {
+      "status": "NOT_RUN"
+    },
+    "PUBLIC_CAD_ANONYMOUS_GET": {
+      "status": "NOT_RUN"
+    },
+    "CAD_POST_EDITOR_SITE": {
+      "status": "NOT_RUN"
+    },
+    "CAD_CURRENT_EDITOR_SITE": {
+      "status": "NOT_RUN"
+    },
+    "CAD_DELETE_EDITOR_SITE_PASSWORD": {
+      "status": "NOT_RUN"
+    },
+    "AUDIT_365_DAYS": {
+      "status": "NOT_RUN"
+    },
+    "PROD_PC_1_NGINX": {
+      "status": "NOT_RUN"
+    },
+    "PROD_PC_2_NGINX": {
+      "status": "NOT_RUN"
+    },
+    "DEV_DIRECT_ISOLATED": {
+      "status": "NOT_RUN"
+    },
+    "BACKUP_SQLITE": {
+      "status": "NOT_RUN"
+    },
+    "BACKUP_LOCAL_CAD": {
+      "status": "NOT_RUN"
+    },
+    "BACKUP_S3": {
+      "status": "NOT_RUN"
+    },
+    "MIGRATION_DRY_RUN": {
+      "status": "NOT_RUN"
+    },
+    "RESTORE_DB_CAD_S3": {
+      "status": "NOT_RUN"
+    },
+    "ROLLBACK_IMAGE_DB": {
+      "status": "NOT_RUN"
+    },
+    "APP_MIGRATOR_PAIR": {
+      "status": "NOT_RUN"
+    },
+    "PR_CI_VERIFY_DOCKER": {
+      "status": "NOT_RUN"
+    }
+  }
+}

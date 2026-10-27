@@ -1,3 +1,4 @@
+import { clickViewerCommand } from './viewer-menu-helper';
 import { test, expect } from "@playwright/test";
 import { masterFields } from "./master-helper";
 test("TC-MET-001: measurement export matches displayed renderer and empty state", async ({
@@ -23,9 +24,9 @@ test("TC-MET-001: measurement export matches displayed renderer and empty state"
     },
   });
   const file = await response.json();
-  await page.goto(`/cad/versions/${file.id}/viewer`);
+  await page.goto(`/cad/versions/${file.id}/viewer?renderer=dxf-viewer`);
   await expect(page.getByRole("status")).toContainText("표시할 도형");
-  await page.getByRole("button", { name: "전체 화면 종료", exact: true }).click();
+  await clickViewerCommand(page, 'view', '전체 화면 종료');
   const metric = JSON.parse(
     (await page.getByTestId("viewer-metric").textContent())!,
   );
@@ -40,9 +41,7 @@ test("TC-MET-001: measurement export matches displayed renderer and empty state"
   const chunks: Buffer[] = [];
   for await (const chunk of stream!) chunks.push(chunk);
   expect(JSON.parse(Buffer.concat(chunks).toString())).toEqual(metric);
-  await page
-    .getByRole("button", { name: "three-dxf-viewer", exact: true })
-    .click();
+  await clickViewerCommand(page, 'view', 'three-dxf-viewer');
   await expect(page.getByRole("status")).toContainText("표시할 도형");
   const switched = JSON.parse(
     (await page.getByTestId("viewer-metric").textContent())!,

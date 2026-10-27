@@ -502,10 +502,13 @@ test("TC-DESC-005: description registration, literal search and viewer display",
     .filter({ hasText: "description-only.dxf" })
     .getByRole("link", { name: "도면 보기", exact: true })
     .click();
-  await expect(page.getByLabel("도면 설명")).toHaveText(description);
-  await expect(page.getByLabel("도면 설명")).toBeVisible();
+  const name = page.getByRole('heading', { level: 1 }).getByRole('button');
+  await name.focus();
+  await expect(page.getByRole('tooltip')).toHaveText(description);
+  await expect(page.getByRole('tooltip')).toBeVisible();
   await page.reload();
-  await expect(page.getByLabel("도면 설명")).toHaveText(description);
-  await expect(page.getByLabel("도면 설명")).toBeVisible();
-  expect(await page.getByLabel("도면 설명").textContent()).toBe(description);
+  await name.focus();
+  await expect(page.getByRole('tooltip')).toHaveText(description);
+  await expect(page.getByRole('tooltip')).toBeVisible();
+  expect(await page.getByRole('tooltip').textContent()).toBe(description);
 });

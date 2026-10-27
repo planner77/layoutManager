@@ -1,5 +1,10 @@
 # Issue #31 — DXF 복수 선택과 볼록·정밀 외곽선 (0.27.0)
 
+## 최신 G0 #102 Owner 5개 정책 우선 — 역사적 D0 조회·삭제 제안 대체 (2026-10-25)
+
+본 문서 과거 D0의 OIDC 우선·GET Reader+Site 인증·삭제 Admin 전용 등 **과거 제안**은 최신 [Issue102](Issue102.md)/[ADR-051-R1](Decisions.md)의 후속 Owner 결정으로 대체한다. 사내망 **기존 공개 CAD GET/Viewer/다운로드 익명 허용**, **Current Editor 이상+담당 Site**, **Version 삭제 Editor 이상+담당 Site+기존 삭제 비밀번호 유지**. 지정 운영 담당자가 Admin 단발 초기화·복구를 수행하고 Owner가 운영 책임. Audit **365일 이후 만료 기록 정리 원칙** 승인, 자동/물리 삭제 및 백업/복구 세칙 후속(#106/#108/#109) 승인 전 보류. **업로드 POST는 Owner 승인 Editor 이상+담당 Site(G0-BIZ-06)**, 신규 영속 Outline/Memo/Type/Logs GET 익명 개방 아님. 실제 운영 인증·Prisma/Route/Proxy 변경은 G7 별도 Owner 승인 전 금지.
+
+
 ## 2026-10-25 상태 갱신 — #96 세부정책 확정
 
 - #31은 P4 작업을 #96~#99로 분할하여 not_planned로 종료하였고 기능 전체 완료를 의미하지 않음. 이 아래 D0의 '#31 OPEN' 및 계정/TTL/감사 기간 미정 문장은 당시 기록.

@@ -1,5 +1,262 @@
 # 상세 요구사항
 
+## #142 B2-2B — S3 Locator Unique 보완 요구 (2026-10-27)
+
+- FR-G7-B2-2B-06: 정상 도면의 S3 object UUID와 DB Version UUID는 다를 수 있지만 모든 합성 S3 객체 Locator는 `CadFileVersion.storagePath` Unique와 일치해야 한다. 서로 다른 Version binding이 동일 S3 locator를 재사용하면 Byte/hash/VersionId 주장 및 DB ID가 달라도 `DUPLICATE_S3_LOCATOR/BLOCKED`.
+- FR-G7-B2-2B-07: SQLite 합성 복제본의 `uq_storage_path` Unique 인덱스가 없는 경우에도 코드 독립 검사로 재사용을 차단하고, 서로 다른 S3 Object Locator 2건의 정합성은 수용한다. 실 운영 Source VersionId 인증/Writer 정지/Owner GO는 포함하지 않는다.
+
+## #142 PR #145 P2 보완 — S3 Object Locator 독립성 (2026-10-27)
+
+- FR-G7-B2-2B-04: S3 파일의 객체 경로 UUID와 DB Version ID의 동일성을 강제하지 않는다. 별도 합성 Object mapping의 `s3ObjectLocator`(정규형 `s3:bucket:cad/<object_uuid>/original.ext`)를 DB `CadFileVersion.storage_path`와 정확히 대조하고 파일 형식을 검증한다. 두 UUID가 달라도 올바른 바이트/위치/버전과 경로 매핑이면 합성 단계의 일관성 통과.
+- FR-G7-B2-2B-05: S3 locator 누락·형식 오염·잘못된 Bucket/Object UUID 또는 Local object에 S3 locator 포함 시 fail-closed. 반환값에 실제 Bucket/Path/ID를 포함하지 않으며, DB/영속 Migration/실 S3 접근·운영 인증/쓰기와 분리. 실제 현장 입증 없이 운영 수용/GO 불가.
+
+## #142 S3-4-B2-2B — Disposable Bytes 사전 검증 요구 (2026-10-27)
+
+- FR-G7-B2-2B-01: B2-2A에서 BLOCKED인 writer/Source Epoch/SNAP 패킷은 다음 단계에서 수용하지 않는다. 새 입력은 별도 공급한 합성 SQLite·Local CAD/S3 export/marker Buffer와 1:1 opaque L/V key ↔ disposable DB UUID mapping으로 제한하고 임의 파일 경로·site credential·S3 network 요청 금지.
+- FR-G7-B2-2B-02: SQLite Buffer SHA·실 quick_check/FK·전체 Location/Version/Current/next_version/locator, Local/S3 Bytes SHA/length·Marker SNAP/Epoch/VersionId **주장** 사이의 불일치·누락/중복·추가 private binding·지원하지 않는 Auth Schema를 안전 reason code/`BLOCKED`로 처리. 반환값에는 데이터·원본 경로·객체 Key를 포함하지 않는다.
+- FR-G7-B2-2B-03: 모든 긍정 결과를 `DISPOSABLE_BYTES_CONSISTENT_NOT_SITE_PROOF`로 제한하고 `writerQuiescenceVerified/sameSnapshotVerified/sourceObjectVersionsVerified/provenanceVerified/operationalGo/runtimeActivated=false` 고정. 실제 현장 Source 입증 및 Owner GO는 별도 CR과 독립 원본 검증 후에만 가능.
+- NFR-G7-B2-2B-01: 별도 Main 기반 Branch/PR, B2-2B 정확 no-GHCR Squash 제목·15개 명시 허용경로만 publish=false; Dockerfile/active Prisma/Route/Compose/Nginx/다른 Workflow 경로 fail-closed. PR 최신 HEAD CI/리뷰 확인 전 병합·GHCR/Issue 종료 금지.
+
+## #142 S3-4-B2-2A — Writer Barrier 패킷 일관성 검증 요구 (2026-10-27)
+
+- FR-G7-B2-2A-01: 동일 `SNAP-*`/Source Epoch/승인된 형식의 `OP-*`·`CR-*`·`BAR-*`, 시작·종료 UTC 및 `activeWriters=0/writesDuringCapture=0` 주장 불일치/캡처기간 초과 BLOCKED.
+- FR-G7-B2-2A-02: SQLite backup hash 주장, FK/Current/Audit 무결성 0, DB Version/Location nextVersion, Local CAD/S3 **버전 지정** 객체 Key/hash/byte-count의 1:1 일치와 S3 Snapshot marker version 필요. 중복/누락/역할 혼동/미승인 필드는 거부.
+- FR-G7-B2-2A-03: 패킷 형식만 검증하며 실제 원본 Reader·중지 임대·Snapshot/SQL·S3 API verification은 수행하지 않는다. 모든 검증/GO 필드 false, 현장 실증 없는 GO/운영 Auth/Write 금지.
+
+## #142 S3-4-B2-1 — OCI 증거 Bytes 기초 검증 요구 (2026-10-27)
+
+- FR-G7-B2-1-001: OCI App/Migrator/rollback App/Migrator 4개 manifest+config Byte digest, 선택된 Linux/amd64 단일 manifest, source/version/schema/role label이 사전 기대 identity와 맞는지 확인.
+- FR-G7-B2-1-002: `latest`/태그 전용·다른 Registry/Index 미해석·Config 변경·잘못된 Role·Rollback 동일 Source/Version·라벨 부재를 `BLOCKED` 처리.
+- FR-G7-B2-1-003: 로컬 bytes content-match는 Registry provenance·서명·rollback 호환성/실복구/Owner GO를 의미하지 않으며 6개 `false` gate 필드 고정. 사내 원본·접속 정보 비반출.
+- FR-G7-B2-1-004: 활동은 비운영 pure source/합성 tests/docs+GHCR exact allowlist에 제한. 활성 Migration, Dockerfile/Compose, 실 G7 Auth/CAD 운영 기능·실 DB/CAD/S3 무변경.
+
+## Issue #138 — 이동 가능한 Viewer 조회·작업 보조 창 공통 요구 (2026-10-27)
+
+| 요구 ID | 정책 / 검증 |
+| --- | --- |
+| FR-VIEWER-138-01 | 기존 #127 그룹 메뉴 및 좌/우/하단 Drawer 초깃값 유지. 데스크톱 Layer/Outline Tree/TEXT Search+결과/Outline 생성·편집 및 후속 Viewer Memo 보조 창을 **제목의 전용 drag handle**로 자유 이동. 창별 독립 floating position·z-order/닫기/기본위치 복원, 동일 세션 재열기 위치 유지. |
+| FR-VIEWER-138-02 | 본문 검색·Tree 선택·텍스트 입력·Canvas Pan/Zoom/영역선택/GENERATED WCS 이동·메모 drag와 패널 drag 분리. ESC 최상위 1단계, PointerCancel·unmount 정리 및 키보드/포커스 접근성. |
+| FR-VIEWER-138-03 | Shell CSS pixel 위치 clamp 및 resize·200%·CSS/native fullscreen 안전, 320/375px mobile은 #127 단일 modal Drawer. 창/메뉴/로딩/확인 z-index가 hit-test/포커스를 방해하지 않음. |
+| NFR-VIEWER-138-01 | 열림/이동/닫힘/복원이 Canvas DOM·Manager/Adapter·CAD GET·Worker·GPU 재생성 및 Layer/Selection/Undo/Search 상태 변경을 일으키지 않음. Renderer/DWG 기존 capability/운영 Auth·DB/API·원본 불변. |
+| PROC-VIEWER-138-01 | 향후 새로운 Viewer 조회/작업 창의 모든 이슈 본문과 AC에 공통 `ViewerPanelPolicy.md` 적용 여부·예외 사유·메뉴/초기 edge/모바일·Drag 충돌·ESC·수명주기·테스트를 명시. 확인 모달/독립 페이지/툴팁은 기본 예외. |
+
+[ViewerPanelPolicy](ViewerPanelPolicy.md), [#138](https://github.com/planner77/layoutManager/issues/138), ADR-053-R1 참조. 기존 #26/#40/#43/#127 완료 범위에 증분 적용할 별도 작업이며 이 문서 갱신은 기능 완료를 뜻하지 않음.
+
+
+## #109 S3-4-B1 격리 복원본 무결성 요구 (2026-10-27)
+
+- FR-G7-S3-4B1-01: 일회용 `/tmp/cad-g7-s3-b-*`만, UID/0700/0600·Symlink/FIFO 차단 및 local/S3-export 경로 traversal 불허. 운영 DB/CAD/S3 접근 경로 없음.
+- FR-G7-S3-4B1-02: readonly SQLite quick_check, FK 0, Current↔Version same owner, nextVersion, 실제 원본 bytes SHA/length; local+S3-export 두 종류 반드시 검증. Candidate Auth schema marker와 실제 table 경계 대조.
+- FR-G7-S3-4B1-03: 실패시 BLOCKED, 성공도 ISOLATED_INTEGRITY_ONLY/NO-GO 고정. Snapshot ID는 원본 단일 시점의 독립 증명이 아니며 실 증거·OCI B2 단계로 이관.
+- 새 운영 Migration/Compose/.env/GHCR 이미지 릴리스 변경 없음.
+
+
+## #109 S3-4-A — 오프라인 증거 패킷 Requirements (2026-10-27)
+
+- FR-G7-S3-4A-01: App/Migrator/rollback OCI digest 형식뿐 아니라 동종 version/source·후보 schema ID·commit과의 모순을 fail-closed; `latest`는 digest가 아니다.
+- FR-G7-S3-4A-02: 17개 검증 결과 Status(FAIL/CANCELLED/NOT_RUN/PASS)와 사내 `EV/QA` 식별자 및 UTC 테스트 시간; DB/CAD/S3 복원 관련 체크는 같은 `SNAP`를 필수로 확인. 빈값·불일치·unknown field 거부.
+- FR-G7-S3-4A-03: 입력 원본은 repo 밖 UID 소유 0600 절대경로, 결과는 상태·카운트·사유 코드만. 원문 도면/사내 로그/주소/Secret 반출 없음.
+- FR-G7-S3-4A-04: 완성된 패킷도 Owner GO가 아니며 `operationalGo=false`/`runtimeActivated=false` 고정. 실제 Registry/복구 실증은 B/C, 현장 활성화는 S3-5.
+- 운영 Migration·Auth/Write/Compose·Nginx/실 DB·CAD·S3·GHCR 이미지 신규 게시 0.
+
+
+## Issue #109 S3-3 — CAD API 권한·Audit 원자성 준비, 운영 OFF (2026-10-27)
+
+- **기능:** 기존 CAD Multipart POST·Current PUT·Version DELETE에서 서버 DB의 최신 Session/Role/Site를 같은 Prisma Transaction 안에 재조회하고 승인된 Editor/Admin+Site만 쓰기 허용한다. DELETE는 기존 삭제 비밀번호도 요구하며, CAD DB 변경과 CAD_UPLOADED/CAD_CURRENT_CHANGED/CAD_VERSION_DELETED Audit INSERT 중 하나라도 실패하면 DB를 롤백한다. 기존 업로드 보상·삭제 Job, 익명 GET/Viewer·CAD 데이터 규약은 유지한다.
+- **운영 차단:** `NODE_ENV=production`에서는 S3-3 프리뷰 활성화 불가. 정확한 S3-2 disposable DB/marker/7 migration, loopback origin, `G7_S3_AUTH_API_PREVIEW_ONLY=true`, `G7_S3_CAD_PREVIEW_ONLY=true`, `G7_AUTH_ENABLED=false`, `G7_CAD_WRITE_CUTOVER_ENABLED=false` 조건만 격리 시험 허용. 별도 Prisma Client와 0700 root 하위 로컬 CAD 저장소 이용. 운영 Migration·실 DB/CAD/S3·Compose/Nginx/.env·GHCR 게시·인증/쓰기 활성화 없음.
+- **시험·잔여:** synthetic integration(Unit) 검증 코드 추가; 실제 PR CI는 시작 전이므로 결과 `NOT RUN`. 일회용 Preview Cookie의 Path는 `/api/g7-operational`이므로 다른 CAD 경로의 프로그램 시험에서는 테스트용 Cookie를 명시적으로 넘기며 운영 브라우저 인증이 활성된 상태는 아님. S3-4는 OCI/운영 Migration/실복구·신뢰 release binding, S3-5는 릴리스별 Owner GO 및 현장 수용. 기존 유사범위 PR #128은 미병합·충돌 상태이며 자동 병합하지 않는다. #109/#96 OPEN/BLOCKED.
+- **후속 정확 Squash:** `#109 | S3-3 Isolated CAD write and Audit [G7-S3-3-NO-GHCR]` 및 개별 파일 allowlist만 GHCR 미게시. 내부 로그/비밀번호/IP/실 도면 반출 금지. [S3-3 Runbook](../src/deploy/g7-s3/S3-3.md).
+
+
+## #109 S3-2 운영 Auth/Admin 예약 API 요구 추적 (2026-10-26)
+
+| ID | 계약 | 검증 |
+| --- | --- | --- |
+| FR-P4-G7-S3-2-01 | G3 Login/InitialChange/Session/Change/Logout API 및 독립 `cad_g7_s3_session` Cookie Path, 원래 `cad_session` 거부 | G7-S3-2-001/002 |
+| FR-P4-G7-S3-2-02 | G4 Role/Site/SpecialGrant grant/revoke/disable, 현재 Session/DB 권한·CSRF·Audit 및 제한적 감사 조회 | G7-S3-2-003~005 |
+| FR-P4-G7-S3-2-03 | 명시적 Admin Bootstrap/Recovery CLI에서 비밀번호 Secret/nonce/Session 회수+감사 원자성, 운영 startup 미호출 | G7-S3-2-006 |
+| FR-P4-G7-S3-2-04 | G4 Admin users:manage+Audit 선행 인가, 비밀번호 KDF 후 원자적 계정 생성+ACCOUNT_CREATED Audit; 새 계정 Role 0/mustChangePassword=true | G7-S3-2-007 |
+| FR-P4-G7-S3-2-05 | Live Operating DB 대신 G7-S3 disposable Prisma + UID/root/marker/URL/Schema/FK 검증, 데이터 오염 시 503 | G7-S3-2-008 |
+| NFR-P4-G7-S3-2-01 | 프로덕션 `NODE_ENV=production`에서는 env와 관계없이 404, nonproduction에서도 127.0.0.1·추가 test flag·Auth/Write OFF, 기존 CAD URL 무변경 | G7-S3-2-009 |
+| NFR-P4-G7-S3-2-02 | S3-4 실제 Release/Operation 승인 전 프로덕션 Route Auth/API/정식 Migration/Compose/Nginx/GHCR·실 DB/CAD/S3 변경/ON 없음 | S3 Runbook/PR scope |
+| NFR-P4-G7-S3-2-03 | 정확 Squash `#109 | S3-2 Operational Auth/Admin API [G7-S3-2-NO-GHCR]`·23개 파일 허용 시만 GHCR skip, 그 외 fail-closed | G7-S3-2-CI-001~004 |
+
+
+## Issue #57 — L1 구조화 로깅 요구 및 근거 (2026-10-27)
+
+| ID | 기준 | 테스트 |
+| --- | --- | --- |
+| FR-57-01 | 기존 writeLog 단일 emitter, 업로드 stage/첫 실패/requestId/공개 JSON·HTTP header 보존 | TC-OBS-001~007, TC-LOG-004 |
+| FR-57-02 | Schema v1/안전 확장 field allowlist, LOG_LEVEL/FORMAT·warn/error 동일 라우팅 | TC-L1-001/002/003 |
+| FR-57-03 | 임의 Error/stack·CRLF·Secret·path/Locator/CAD bytes stdout/stderr 미노출 | TC-LOG-003/005, TC-L1-002 |
+| FR-57-04 | Health 200 debug-only/503 error, app·framework·CLI 출처 명확히 구분 | TC-L1-004, Issue57 inventory |
+| FR-57-05 | 기존 업무 API/DB/Viewer/Prisma/G7 Auth 불변, 영속 로그/조회 권한 후속 분리 | 기존 Unit/Integration/E2E, diff |
+
+
+## Issues #124/#126/#127 요구 (2026-10-26)
+
+FR-124-01 홈 전용 sticky+compact 및 기존 Current/검색/anchor 보존, FR-126-01 DXF Three 기본/explicit/DWG 호환, FR-126-02 source 실패와 분리한 단발 renderer fallback·수동 탈출·자원/임시작업 보호, FR-127-01 두 정보+접근 가능한 설명/그룹 명령, FR-127-02 상태 독립 overlay Drawer/ESC/focus/Canvas 보존. 세부 요구와 원격 AC 전체의 추적은 [Issues124-126-127](Issues124-126-127.md) 기준. G7·운영 DB/API·원본 불변.
+
+
+## Issue #109 S3-1 — 운영 인증 Schema·정식 Migration Candidate·이중 Gate 요구 (2026-10-26)
+
+| ID | 요구사항 | 검증 |
+| --- | --- | --- |
+| FR-P4-G7-S3-1-01 | 운영 Prisma Schema에 G1~G4 8개 모델/정확한 CAD FK·Index, 기존 CAD 모델/원본·Version·Current·SHA/삭제 hash 변경 없음 | G7-S3-001/003 |
+| FR-P4-G7-S3-1-02 | CAD 6개 원본 Migration과 바이트 동일한 이력 + 신규 additive S3 `202610260002_g7_operational_auth` 정식 SQL 후보. 기존 자동 운영 Migrator 이력에는 추가 금지 | G7-S3-001/002 |
+| FR-P4-G7-S3-1-03 | Prisma CLI는 테스트 전용 canonical/UID 소유 `/tmp` fixture·DB/marker/두 URL·명시 Test Flag·Auth OFF를 만족하지 않으면 SQL 이전 fail-closed | G7-S3-002/004 |
+| FR-P4-G7-S3-1-04 | App/Migrator 동일 버전+Source SHA·immutable digest pair·Capability·Schema ID·registry/DB/FK/rollback 증거 불충족 시 Release Gate 거부 | G7-S3-005/006 |
+| FR-P4-G7-S3-1-05 | 릴리스별 Owner GO ID·scope·기간·변경 ID·snapshot/rollback pair 불일치, Auth OFF/Write만 ON일 때 Operation/Write Gate 거부 | G7-S3-007/008 |
+| NFR-P4-G7-S3-1-01 | S3-1 런타임 기능 ON/영속 API/기존 CAD API 변경 없음, `runtimeActivated=false`, OCI/운영 DB/CAD/S3·GHCR·Compose/Nginx/.env 미변경 | Diff/Unit |
+| NFR-P4-G7-S3-1-02 | 정확한 S3-1 Squash 제목 `#109 | S3-1 Operational schema and gates [G7-S3-1-NO-GHCR]` 및 허용 파일만 GHCR 제외, 예상 외 경로·유사 제목 fail-closed | G7-S3-CI-001~003 |
+
+
+
+## Issue #109 G7 S2 — 증거 준비 GHCR 비게시 요구 (2026-10-26)
+
+| ID | 요구 및 검증 기준 | Test |
+| --- | --- | --- |
+| FR-P4-G7-S2-CI-01 | 정확한 `#109 | S2 private-evidence readiness [G7-S2-NO-GHCR]` Squash 첫 줄+S2 지정 파일 목록+Main 브랜치 push만 `publish=false`; 다중 줄 본문 허용 | G7-S2-CI-001 |
+| FR-P4-G7-S2-CI-02 | 운영 CAD/Prisma/Compose, S1 전용 파일, 임의 소스/Workflow가 하나라도 포함되면 `stderr` 오류와 nonzero 종료·GHCR 게시 방지 | G7-S2-CI-002 |
+| FR-P4-G7-S2-CI-03 | 접미 텍스트·오타·공백 변형의 유사 제목이 S2 GHCR 미게시 예외를 통과할 수 없음 | G7-S2-CI-003 |
+| NFR-P4-G7-S2-CI-01 | S1 예외 무회귀 및 다른 일반 runtime/tag 릴리스 정책 보존, 신 HEAD CI 검증 전 병합 금지 | G7-S2-CI-004~005 |
+| NFR-P4-G7-S2-CI-02 | 내부 원본 증거 비반출, 오프라인 검사 `operationalGo:false`, 실 운영/Auth/Prisma/Compose/Nginx/GHCR 변경 및 이슈 종료 없음 | S2 Runbook |
+
+
+## Issue #109 G7 S1 — PR #125 P1 재발방지 추가 요구 (2026-10-26)
+
+| ID | 추가 필수 조건 | 증거 |
+| --- | --- | --- |
+| FR-P4-G7-S1-06 | Main GHCR skip은 승인 Squash `첫 줄 완전 일치` + Stage/docs allowlist 충족만, suffix/오타는 fail-closed, 거부 결과 stderr 명시 | TC-P4-G7-CI-001~002 |
+| FR-P4-G7-S1-07 | 명시 Stage Prisma CLI config는 디렉터리 realpath·UID·symlink, DB명·동일 URL/스토리지·manifest Schema·Stage 승인 검증 전후 **SQL 무실행**, 운영 파일 불변 | TC-P4-G7-DB-001 |
+| NFR-P4-G7-S1-02 | 수정 HEAD PR CI 이전 PASS 소급 금지·실 운영 API/Prisma/Compose·GHCR 및 Owner GO 분리 | CI 실패 원장/Issue109 |
+
+
+## Issue #109 G7 S1 — Staging 구현 요구/검증 (2026-10-26)
+
+| ID | S1 구현 조건 | TC | 경계 |
+| --- | --- | --- | --- |
+| FR-P4-G7-S1-01 | Staging capability/운영 승인 ID·고정 digest/schema manifest·기본 OFF G7_AUTH_ENABLED, 별도 CAD_WRITE_CUTOVER gate·Linux tmp 경로 안전 검사 | TC-P4-G7-001~003,013~014 | 운영 route 불변 |
+| FR-P4-G7-S1-02 | G1~G4 세션·로그인/암호·Admin 단발 CLI, 8h/30m/3개 제한·revoke·Role/Site/Version/Grant/Audit 원자성 | TC-P4-G7-007~008 | Staging API만 |
+| FR-P4-G7-S1-03 | Staging 분리 DXF JSON/base64 Upload/Current/DELETE Editor+Site(삭제 기존 암호 AND); 서버 권위 Permission+DB 변경+Audit 단일 거래; GET 익명 | TC-P4-G7-004~006 | 기존 multipart API 교체 아님 |
+| FR-P4-G7-S1-04 | 독립 공식 Prisma Schema/Migration(CAD 6개+G7 1개)·FK/Unique, 같은 스냅샷 복구 E2E | TC-P4-G7-009~011 | 운영 migrator 불변 |
+| NFR-P4-G7-S1-01 | S1 테스트는 disposable DB/CAD만, #108 실 PC·S3 수용과 Owner GO별도; 신규 영속 API/Audit purge OFF | TC-P4-G7-012~015 | 운영 GO PENDING |
+
+[Issue109](Issue109.md), ADR-051-G7-S1. Staging 실행/CI 결과가 확인되기 전 PASS로 기록하지 않는다.
+
+
+## Issue #109 G7 — 기본 OFF·승인·실복구 요구 추적 (2026-10-26)
+
+| ID | 목표 계약 | TestPlan TC | 현 단계 |
+| --- | --- | --- | --- |
+| FR-P4-G7-01 | 검증된 G7-capable App/Migrator digest·정식 Schema+Owner GO·`G7_AUTH_ENABLED` 기본 false 이중 게이트, 불일치 fail-closed | G7-001~003,013 | 문서 설계 |
+| FR-P4-G7-02 | 기존 익명 CAD GET 유지, `G7_CAD_WRITE_CUTOVER_ENABLED` 기본 false; POST/Current Editor+Site, DELETE Editor+Site+기존 비밀번호 AND 및 Audit 원자성 | G7-004~006 | 미구현 |
+| FR-P4-G7-03 | 단발 Admin/Session 8h/30m/3개·revoke/Role·Site·Version·Audit 365일/별도 grants | G7-007~008 | 격리 구현·운영 미연결 |
+| FR-P4-G7-04 | 동일 snapshot DB/CAD/S3 안전 backup·정식 migration dry-run·실 Restore/rollback, 원본·Current·Version 불변/호환 App pair | G7-009~011 | #108 Owner 수용 / 개별 원본 증거 ID 검토 필요 |
+| FR-P4-G7-05 | 사내 두 PC PROD Nginx/DEV direct E2E와 G0~G6 HEAD/Run/사내 증거·Owner 별도 Go/No-Go | G7-012~013 | 승인 대기 |
+| NFR-P4-G7-01 | #98/#83/#65/#60 신규 API 및 Audit 물리 purge 별도 승인 전 OFF; docs-only PR 운영 변경 0 | G7-014~015 | 준비 중 |
+
+G7 설계 flag는 현재 실 운영 env/코드에서 작동하지 않는다. 상세 [Issue109](Issue109.md), [ADR-051-G7-PLAN](Decisions.md).
+
+
+## Issue #108 / G6 — 현장 실증과 운영 승인 분리 (2026-10-26)
+
+| ID | 요구사항 | 수용 구분 |
+| --- | --- | --- |
+| P4-G6-R01 | G0~G5 정상 User/Session/Role/Site/Version/Audit, 익명 기존 GET, 향후 POST/Current Editor+Site/DELETE 추가 삭제 암호 AND | 기존 G1~G4 격리 시험 ≠ 실제 보호 Route E2E |
+| P4-G6-R02 | 사내 PROD Nginx 실 접속 PC 2대, Viewer·업무 호환 및 DEV direct 별도 DB/CAD, 비의도 Backend port 비노출 | G5 Preview ≠ 현장 EV 증거 |
+| P4-G6-R03 | 공통 snapshotId SQLite online backup/local CAD/**실 S3 bytes** → 격리 Prisma migration FK/Current/Version/SHA → 실 restore/이전 App+Migrator+DB rollback | mock S3 Integration ≠ 실 S3 Restore |
+| P4-G6-R04 | PASS/FAIL/CANCELLED/NOT_RUN, 각 Run/Job/HEAD 및 사내 EV ID와 운영자/QA/Owner 판정; 불투명 코드만 공개 | offline verifier는 자체 기입 형식 검사만 |
+| P4-G6-R05 | 운영 Auth/Admin/API/Prisma/Compose/Nginx/.env, 실 CAD/S3, Audit purge OFF | #109 별도 Owner Go/No-Go 필요 |
+
+[Issue108](Issue108.md), [TC-P4-G6-001~007](TestPlan.md), [TestReport](TestReport.md). OWNER_ACCEPTED_SCOPE는 기능/복구 요건을 해제하지 않는다.
+
+
+## Issue #106 G4 — 인가·Grant·Audit 요구사항 (2026-10-26)
+
+| ID | 업무 계약 | TC |
+| --- | --- | --- |
+| P4-G4-R01 | 기존 익명 CAD GET 보존; POST/Current Editor+담당 Site, DELETE 추가 기존 비밀번호 AND | 001,008 |
+| P4-G4-R02 | 현재 G3 Session/계정/Role/Site/SpecialGrant/Version→Site를 같은 트랜잭션에서 확인, 401/403 및 Grant 회수 즉시 효력 | 001~004,007 |
+| P4-G4-R03 | Admin만 Grant/계정 disable, DB FK/Unique/직렬화 및 마지막 Admin 보호 | 002,004,006~007 |
+| P4-G4-R04 | 권한 성공·거부/Grant/Create/Edit/Delete Audit safe fields, Revision CAS, 실패 시 rollback/append-only | 002,005~009 |
+| P4-G4-R05 | audit:read와 logs:read는 서로 다른 Admin SpecialGrant; 신규 영속 API 익명 불가 | 003,008 |
+| P4-G4-R06 | 365일 cutoff·파기 미승인, 운영 Auth/API/Prisma/Compose·실 CAD OFF, #109 G7 승인 전 차단 | 005,009 |
+
+[Issue106](Issue106.md) 기준. 격리 TC 작성/PR CI 시작을 실제 운영 승인·실 LAN 검증 PASS로 기록 금지.
+
+
+## Issue #105 G3 — 격리 세션 요구 (2026-10-26)
+
+[P4-G3-R01~06 요구·AC·TC](Issue105.md)를 이번 Unit 기준으로 추가한다. 유효 credential 로그인/초기 암호 변경·logout, 32 byte token/hash 저장, 절대 8h·idle 30m·원자 최대 3개, disable/password/recovery 회수, 서버 DB Actor와 정상 HTTP cookie/Origin/CSRF 계약을 구현한다. 초기 변경 계정에는 일반 세션을 발급하지 않고 credential 재입력 변경 후 새 로그인을 요구한다. 상세 응답 401/403/409/429 및 거래 경계는 Issue105가 기준이다.
+
+#102 Owner R1에 따라 추가 공격·탈취 강화는 비범위이며 기존 정상 guard는 유지한다. 기존 공개 CAD GET 익명, 미래 POST/Current Editor/Admin+Site 및 DELETE 추가 기존 비밀번호 AND 계약을 보존한다. G3는 비운영 서비스/fixture 검증만이며 Auth Route·운영 Prisma/Compose/DB·CAD 기능은 G7 전 OFF. 실제 구현/시험 상태는 TestReport를 따른다.
+
+## Issue #104 G2 — 관리자 단발 생성/복구 요구사항 (2026-10-26)
+
+| 요구 ID | 기능·업무 기준 | 구현 및 Test |
+| --- | --- | --- |
+| P4-G2-R01 | 최초/복구 .env Flag 기본 OFF·동시 ON 거부/명시 실행만, 실패 기본 거부 | `bootstrap.ts`/`admin-setup.ts`; TC-P4-G2-001~002 |
+| P4-G2-R02 | 실행 UID 0400/0600 regular 절대 Secret, symlink/invalid bytes 거부, 최소 8자+scrypt/원문 로그 0 | `password.ts`/`admin-setup.ts`; TC-P4-G2-003~004 |
+| P4-G2-R03 | 미초기화 DB 최초 Admin UUID/Role/Audit 원자 생성, 동시 실행 1회·재시작/기존 User 비승격 | `auth-g2/store.ts`; TC-P4-G2-004~006,009 |
+| P4-G2-R04 | 기존 ACTIVE Admin nonce 1회·세션 전량 폐기/비밀번호·Audit 원자성, 실패 rollback | G1/G2 adapter; TC-P4-G2-007~008 |
+| P4-G2-R05 | 지정 사내 운영자 실행·Owner 책임·실 명칭/Secret SOP 비공개, 실 운영 Auth/API/Prisma G7 전 OFF | `auth-g2-isolated.ts`/문서; AC4/PR diff |
+
+공격·탈취 대응 강화는 Owner #102 범위 밖이나 Secret 비로그·기능 원자성 유지. 기존 CAD GET은 익명 유지; G3 #105, G4 #106, G6 #108, G7 #109 후속. [Issue104](Issue104.md).
+
+## Issue #102 G0 — 6개 Owner 업무 정책 승인 / 요구 추적 (2026-10-25)
+
+**최신 승인 우선:** 아래 과거 `FR-P4-G0-R1-04`의 Reader 익명 조회 금지·삭제 Admin-only 등 **권장/미확정 값은 이 요구표로 대체**한다. [Issue102](Issue102.md), ADR-051-R1.
+
+| 요구 ID | 승인 범위 및 수용 기준 | 후속 확인 |
+| --- | --- | --- |
+| FR-P4-G0-BIZ-01 | 공개망 인바운드 제한 사내 LAN의 **기존 공개 CAD 목록·검색/위치·Version·Current·Viewer·DXF/DWG 다운로드는 익명 조회**. 로그인·Reader·SiteGrant 없이 작동, 익명 User/Actor를 위장하지 않음. 신규 영속 메모·외곽선·타입, 감사·로그·관리 GET는 예외 | Owner 승인 / G5·G6 정상 GET E2E |
+| FR-P4-G0-BIZ-02 | `PUT /api/cad-locations/:id/current`: **로그인된 Editor/Admin + 담당 Site/Version**. Admin 무범위 자동 전체 접근 불가, 동일 Location Current 0~1개 유지 | Owner 승인 / G4·G6 |
+| FR-P4-G0-BIZ-03 | `DELETE /api/cad-files/:versionId`: **로그인된 Editor/Admin + 담당 Site/Version + 기존 삭제 비밀번호** 세 조건 모두 만족. Actor/Revision 감사 및 Current/원본 무결성, 비밀번호 단독 인가 금지 | Owner 승인 / G4·G6 |
+| FR-P4-G0-BIZ-04 | 최초 Admin 생성·단발 복구 **실행 = 지정 사내 운영 담당자, 운영 책임 = Owner**. 재시작 자동 재설정 금지 | Owner 승인 / 실제 담당·Secret SOP는 G2 |
+| FR-P4-G0-BIZ-05 | **Audit 365일 이내 보존, 이후 만료 기록 정리**. 정리 실행/주기/방법·Backup/Restore/예외 세칙 승인 전에 물리·자동 파기 금지 | Owner 원칙 승인 / SOP G4·G6·G7 |
+| FR-P4-G0-BIZ-06 | **Owner 승인:** `POST /api/cad-files`는 로그인 Editor 이상+담당 Site, 익명 CAD GET와 달리 등록 Actor/Site 검증·Audit 필요, 현재 운영 Route 미변경 | #106/#108 기능 시험 · #109 Go/No-Go |
+| NFR-P4-G0-BIZ-01 | G0 PR은 Markdown-only, 실 Auth/관리/영속 API/Prisma/DDL/Nginx/Compose/.env/운영 DB·CAD·S3 변화 0. G7 별도 Go/No-Go 전 운영 OFF | G0 정적 diff / G7 |
+
+공개 CAD GET는 누구나 볼 수 있으므로 **Site/Version 읽기 기밀성을 제공하지 않는다**. Role+SiteGrant는 승인된 쓰기 및 별도 보호 리소스에만 필수. HTTP 공격/탈취 대응 비범위 결정은 그대로다. 업무용 Reader Role을 없애거나 임의 관리자/로그 API 익명 공개를 뜻하지 않는다.
+
+
+## Issue #107 G5 — 요구사항별 최종 구현 상태 (2026-10-26)
+
+- FR-P4-G5-01/02: 독립 PROD Nginx→App 및 DEV 직접 연결용 Preview Compose·데이터 분리 구현, [PR CI #40224438075](https://github.com/planner77/layoutManager/actions/runs/40224438075) 두 Job success. 구현 완료/현장 접속 실측 미수행.
+- NFR-P4-G5-01: 실제 Version Viewer 경로 ` /cad/versions/ID/viewer `·목록·Health/정적 리소스·원본 GET 정상 경로 검증 도구와 Unit 성공. 실제 사내 업로드·다운로드·Cookie 및 사용자 PC E2E는 #108로 인계(`NOT RUN`).
+- NFR-P4-G5-02: Owner R1에 따라 침투·탈취 방어 강화는 비범위; 운영 Nginx/Compose/인증 API/Prisma는 별도 #109 승인 전 미활성.
+- 본 섹션이 아래 2026-10-25 작성 당시의 `PR CI 미확인` 상태보다 최신 증거다. 새 기능 요구는 발견되지 않아 재구현하지 않는다.
+
+
+## Issue #103 / G1 P1 감사 추적 상세화 (2026-10-26)
+
+- **REQ-G1-AUD-01:** Site 권한 부여/회수 Audit 이벤트는 행위 관리자(actor), 영향받은 사용자(affectedUser), 대상 Site 및 action/requestId를 **서버 DB FK 기준으로 분리 보존**한다. Revocation 뒤 Grant 행이 삭제되어도 두 사용자의 동일 Site 변경 이력을 혼동하지 않을 것. Fixture `AuditEvent`의 Site action은 affectedUser/site NOT NULL 검사, Actor·Site·User FK/변경 불가 Trigger 유지; `TC-P4-G1-005`.
+- **REQ-G1-QA-01:** 최초 CI에서 `store.ts:134 TS1002`로 실패한 Typecheck·Docker baseline TypeScript를 새 HEAD에서 재검증한다. 이전 SKIPPED 단계를 PASS로 대체하지 않는다. 운영 DB/API/migration G7 전 OFF.
+
+
+
+## Issue #103 / P4-D1 G1 — 격리 영속 DB 요구/추적 (2026-10-25)
+
+- **REQ-G1-01:** User(id 불변/loginName unique/passwordHash/status/mustChange), Session(tokenHash/8h/30m/3개), Role/Site/SpecialGrant(audit:read/logs:read 분리), Audit(append-only/365일 정책), RecoveryNonce(hash 1회) 제약/FK; TC-P4-G1-001/002/003/008.
+- **REQ-G1-02:** `BEGIN IMMEDIATE` writer serial, 세션 4번째 발급·시간 역행·만료 touch·중복 nonce 실패, 관리자 전용 Role/Site/SpecialGrant+Audit/비활성·회수·복구 원자 rollback; TC-P4-G1-003/004/005/007/008.
+- **REQ-G1-03:** 기존 CadSite 실 FK와 Version→CadLocation→Building→Site 관계 조회, Admin Site 자동 허용 없음, 원본 bytes/SHA/Current/delete password/5단계 CAD 불변; TC-P4-G1-001/006/009.
+- **REQ-G1-04:** **격리 Fixture SQL/Prisma 설계만** 적용. 운영 Prisma/schema/migrations/API/Runtime/Compose/GHCR 변경 금지. 실제 사내 DB/CAD/S3 일관 백업·복구 및 Owner G7 운영 승인은 별도; TC-P4-G1-001/009 및 정적 Diff·PR CI.
+- 선행 정책: #102 ADR-051-R1. 2026-10-25 #102 Owner 5개 승인: 기존 CAD 목록/Viewer/다운로드 익명 GET 유지, Current=Editor/Admin+담당 Site, Version 삭제=Editor/Admin+담당 Site+기존 삭제 비밀번호, 최초 Admin/복구=지정 사내 운영 담당자(Owner 책임), Audit 365일 경과 이력 정리 원칙. 관련 문서 PR #114는 병합·CI 완료 미확인. POST 업로드 권한, Secret/실 담당자, Audit 물리 정리·백업 복원 세칙, 실제 배포는 PENDING; #103 G1 운영 활성화 승인 아님. 상세 [Issue103](Issue103.md).
+
+
+## Issue #107 / G5 — 내부망 간소 PROD/DEV 정상 연결 (2026-10-25)
+
+| ID | 요구사항 | 수용 상태 |
+| --- | --- | --- |
+| FR-P4-G5-01 | 격리 PROD Nginx 경유 Viewer·API·Health, App 직접 host publish 없는 Preview; 실제 운영 구성 변경 없음 | 구현 코드 작성, PR CI/현장 미확인 |
+| FR-P4-G5-02 | DEV App direct Preview·PROD/DEV DB/CAD 볼륨·네트워크 독립 | 구현 코드 작성, PR CI/현장 미확인 |
+| NFR-P4-G5-01 | 기존 Origin 정상 업로드/조회·원본 다운로드, 향후 G3 Cookie 정상 전달; 운영 API/Prisma/인증 미활성 유지 | 정상 경로 수동/후속 G3·G6 실증 필요 |
+| NFR-P4-G5-02 | 내부 소수 사용자·외부망 인바운드 제한: 공격/탈취·침투 대응은 비범위(Owner R1). 운영 실제 적용은 G7 별도 승인 | OWNER_ACCEPTED_SCOPE, 운영 미승인 |
+
+- 문서/구현·AC/TC 매핑: [Issue107](Issue107.md), [Architecture](Architecture.md), [TestPlan](TestPlan.md), [TestReport](TestReport.md). PR CI는 실제 사내 PC 2대·Host/WSL2 Port·업로드/Cookie를 대신하지 않는다.
+
+
 ### #82 M1과 #99 Main 동시 요구 보존 (2026-10-25)
 
 - #82 Memo ADR-053은 Source Handle 0에도 자유 WCS 메모 생성 UI를 허용하면서 기존 Outline 도구를 fail-closed 유지한다. #99 ADR-052의 비공개 CAD/GPU P0/P5 Owner 판정·이행 게이트는 그대로, M1 공개 합성 E2E가 실도면 수용을 대체하지 않는다.

@@ -9,6 +9,7 @@ import {resolve} from 'node:path';
 import {validatePrivateAcceptancePaths,writePrivateAcceptanceReport} from '../benchmark/private-acceptance-paths';
 import {createHash} from 'node:crypto';
 import {masterFields} from './master-helper';
+import {clickViewerTestCommand,openViewerMenu} from './viewer-menu-helper';
 
 type Sample={loadMs:number;sourceIndexMs:number|null;renderAuditMs:number|null;
  spatialIndexMs:number|null;boxSelectionMs:number;frameP95Ms:number;
@@ -55,8 +56,9 @@ test('TC-P0P5-REAL-BROWSER: private real-DXF mapping and interaction samples',as
       await expect(page.getByRole('status')).toContainText(/도면 표시 완료|도면 일부 표시 완료/,{timeout:120000});
       const loadMs=performance.now()-started;
       const menu=page.getByTestId('viewer-menu-outline-tool');
+      await openViewerMenu(page, 'work');
       await expect(menu).toBeEnabled({timeout:120000});
-      await menu.click();
+      await clickViewerTestCommand(page, 'viewer-menu-outline-tool');
       const tools=page.getByTestId('cad-outline-tools');
       await expect(tools).toBeVisible({timeout:120000});
       const state=await page.getByTestId('outline-render-mapping').textContent()??'';
