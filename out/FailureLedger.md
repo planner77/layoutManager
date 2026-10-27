@@ -1,5 +1,11 @@
 # PR/Main CI 실패 원장
 
+## Issue #109 / PR #141 — 리뷰 P2 해결·최신 Main 무충돌 후속 확인 (2026-10-27 KST)
+
+- **해결 완료:** 신규 Codex P2 [r4386312087](https://github.com/planner77/layoutManager/pull/141#discussion_r4386312087) / `PRRT_kwDOUQjDfc6wl_yN`의 필수 Runbook 색인 누락을 `AGENTS.md`에 정확 한 행 추가하여 보완. [답변 r4386427333](https://github.com/planner77/layoutManager/pull/141#discussion_r4386427333) 등록 및 스레드 **Resolved** 처리. 기존 P1 1건·P2 2건도 유지해 전체 **4개 중 미해결 0개**.
+- **검증 직전 HEAD:** `504b5d0ef97bcbc0399b1d560661cf9c72ec5587` 기준 [PR #141](https://github.com/planner77/layoutManager/pull/141) `OPEN/mergeable=true`, Main `4e9095106666aac4568bc4f636e4de8492bc0c86`와 `behind=0`, Compare `ahead=12`; PR에는 코드·운영 변경이 아닌 Markdown 2개(`AGENTS.md`, `out/FailureLedger.md`)만 추가 변경. Main 정렬 필요·충돌 **없음**.
+- **검증 범위:** 최초 이 문서 수정 HEAD에서 PR CI [40473275744](https://github.com/planner77/layoutManager/actions/runs/40473275744) 실행이 시작된 것만 관측. 결과는 확인되지 않음. 본 후속 기록 커밋으로 HEAD가 또 바뀌므로 이후 병합/새 Codex 리뷰/PR CI는 **최종 새 SHA**를 기준으로만 검증. 리뷰 결함은 CI 실패로 중복 기록하지 않으며 실제 운영 DB/CAD/S3·Auth/Write·Prisma/Nginx·Compose·GHCR·#109/#96에는 변경 없음.
+
 ## Issue #109 / PR #141 — Codex P2 Runbook 중앙 색인 누락 보완 및 충돌 재점검 (2026-10-27 KST)
 
 - **기준:** [PR #141](https://github.com/planner77/layoutManager/pull/141) 검토 HEAD `202cd976e5961fe5876e1d775eb5cdd6053eed76`, [PR CI #40470720374](https://github.com/planner77/layoutManager/actions/runs/40470720374) `completed/success` (기존 HEAD만 검증). Typecheck/Lint/Unit/Integration/Build/E2E·Docker CI 실패가 아니라 **Codex Review P2** 문서 품질 지적이다.
