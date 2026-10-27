@@ -1,5 +1,32 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #109 S3-2 — HTTP Response Body 중복 소비 재발방지 TC (2026-10-27 KST)
+
+- **G7-S3-2-HTTP-010:** 인증 HTTP Fixture의 `login()`이 상태 코드·CSRF 파싱을 수행하더라도 반환되는 **원본 Response는 `bodyUsed=false`로 보존**되어야 하며 `response.clone().text()` 상태진단을 부작용 없이 수행할 수 있어야 한다. `r.clone().json()` 방식과 실제 Admin 로그인 E2E의 회귀 Assertion으로 검증한다.
+- **원장 연계:** [PR CI 40394690714](https://github.com/planner77/layoutManager/actions/runs/40394690714) 실패 재현은 `tests/integration/g7-s3-operational-auth.test.ts:127:57`의 `Response.clone` TypeError이며, Typecheck/Lint PASS·Docker PASS·Unit 359/360 PASS(나머지 1건 실패)와 E2E SKIPPED를 구별한다. 수정한 HEAD의 실제 PR CI 성공을 이전 Run 성공으로 소급하지 않는다.
+
+
+## #109 S3-2 — 운영 Auth/Admin 예약 API 통합·프로덕션 OFF 검증 계획 (2026-10-26)
+
+| TC | 실제 실행 의도 | 합격 기준 |
+| --- | --- | --- |
+| G7-S3-2-001 | 격리 S3 후보 Prisma 7개 + 명시 Admin 최초 생성·password mustChange | 초기 암호 로그인 거부→initial-change/login 정상 |
+| G7-S3-2-002 | Preview Cookie + 기존 `cad_session` 섞임·Session GET·CSRF | S3 Cookie 전용 Path, 기존 Cookie만으론 401, 정상 actor+CSRF 제공 |
+| G7-S3-2-003 | Admin Role/Site grants와 Editor 자신의 Site 권한 | Editor 담당 Site 허용, 타 Site/그랜트 없는 Admin 거부 |
+| G7-S3-2-004 | Admin Audit 조회와 `audit:read` 특별 Grant | 미부여 403, Grant 후 200·안전 필드/누락 Secret 확인 |
+| G7-S3-2-005 | Admin 계정 disable 및 Session revoke | Disabled User의 기존 세션 401, Audit/FK 무결 |
+| G7-S3-2-006 | Admin 복구 nonce 1회 재사용 차단, 이전 Session 폐기 | 복구 1회 성공/재사용 실패·Audit/G1 Session revoke |
+| G7-S3-2-007 | Admin users:manage/CSRF 후 Account Create | 201, MustChange=1·Role 미부여·User+Audit 원자, CSRF 미제출 403 |
+| G7-S3-2-008 | 실제 S3 Prisma candidate /tmp UID·marker/Schema·FK가 없는 경우 | 잘못된 DB·미마이그레이션/운영 경로 404 또는 503, SQL 실행 금지 |
+| G7-S3-2-009 | NODE_ENV=production, G7 flag true, 타 Origin/기존 CAD route | 임의 flag에도 새 모든 API 404, 타 Origin 거부; 기존 CAD 코드 diff 0 |
+| G7-S3-2-CI-001 | 정확 `#109 | S3-2 Operational Auth/Admin API [G7-S3-2-NO-GHCR]` 및 PR 변경 파일 | Main release-scope `publish=false` |
+| G7-S3-2-CI-002 | 같은 제목 + 활성 Migration/기존 CAD/Compose/Deploy 혼입 | stderr 비허용 경로 에러·exit nonzero |
+| G7-S3-2-CI-003 | S3-2 제목 변형 및 S1/S2/S3-1 제목 위장 | fail closed, 다른 GHCR 제외 우회 거부 |
+| G7-S3-2-CI-004 | 정상 runtime/title 및 tag push | 기존 `publish=true` 동작 보존 |
+
+- 시험 소스: `src/tests/integration/g7-s3-operational-auth.test.ts` 및 `src/tests/unit/g7-staging-ghcr-guard.test.ts`. 전부 **합성 일회용 SQLite와 Loopback API**. 실제 사내 PC·실 운영 Auth/DB/CAD/S3·OCI registry/복구 증거는 NOT RUN/미열람 상태를 유지하고 User의 비반출 지침을 준수한다. 신규 PR CI 실행/합격을 별도 HEAD/Run/Job 단위로 기록한다.
+
+
 ## Issue #57 L1 — Logger 단일화 및 무회귀 검증 계획 (2026-10-27)
 
 | TC | 기대 | AC |

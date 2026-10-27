@@ -139,6 +139,25 @@ jobs:
             publish=false
             reason="Approved G7 S3-1 schema/type and disposable migration candidate only: skip GHCR"
           elif [[ "$GITHUB_REF" == "refs/heads/main" &&
+                  "$COMMIT_SUBJECT" == "#109 | S3-2 Operational Auth/Admin API [G7-S3-2-NO-GHCR]" ]]; then
+            # S3-2 Auth API preview is hard-OFF in production; exact scope ONLY.
+            for file in "${changed[@]}"; do
+              case "$file" in
+                .github/workflows/docker-publish.yml|AGENTS.md|out/Architecture.md|out/Database.md|out/Decisions.md|out/FailureLedger.md|out/Issue109.md|out/Operation.md|out/Requirements.md|out/TestPlan.md|out/TestReport.md|src/deploy/g7-s3/prisma.config.ts|src/deploy/g7-s3/README.md|src/deploy/g7-s3/S3-2.md|src/server/g7-operational/disposable-target.ts|src/server/g7-operational/preview-gate.ts|src/server/g7-operational/preview-db.ts|src/server/g7-operational/preview-handler.ts|src/server/g7-operational/user-provisioning.ts|'src/app/api/g7-operational/[...segments]/route.ts'|src/scripts/g7-s3-admin.ts|src/tests/integration/g7-s3-operational-auth.test.ts|src/tests/unit/g7-staging-ghcr-guard.test.ts)
+                  ;;
+                *)
+                  echo "::error::G7-S3-2 GHCR exclusion disallowed path: $file" >&2
+                  exit 1
+                  ;;
+              esac
+            done
+            publish=false
+            reason="Approved G7 S3-2 nonproduction Auth API preview only: skip GHCR"
+          elif [[ "$GITHUB_REF" == "refs/heads/main" &&
+                  "$COMMIT_SUBJECT" == "#109 | S3-2"* ]]; then
+            echo "::error::G7-S3-2 exact squash subject required" >&2
+            exit 1
+          elif [[ "$GITHUB_REF" == "refs/heads/main" &&
                   "$COMMIT_SUBJECT" == "#109 | S3-1"* ]]; then
             echo "::error::G7-S3-1 exact squash subject required" >&2
             exit 1
@@ -160,7 +179,7 @@ jobs:
             echo "- Ref: $GITHUB_REF"
           } >> "$GITHUB_STEP_SUMMARY"
           if [[ "$publish" == "false" ]]; then
-            # Scope-validated no-GHCR: docs-only or exact #109 S1/S2/S3-1 exception.
+            # Scope-validated no-GHCR: docs-only or exact #109 S1/S2/S3-1/S3-2 exception.
             # Functional tests must pass on the final PR HEAD before merge.
             test -s .github/workflows/pr-ci.yml
             test -s .github/workflows/docker-publish.yml

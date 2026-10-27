@@ -1,5 +1,27 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issue #109 / PR #131 — 두 번째 PR CI의 실제 Unit 실패·수정 HEAD 재검증 대기 (2026-10-27 KST)
+
+- [Run 40394690714](https://github.com/planner77/layoutManager/actions/runs/40394690714), PR HEAD `0cab0f1449e0a7f8e41a1149a5e46b0aa0ef8a72` **completed/failure**. Verify [121824493035](https://github.com/planner77/layoutManager/actions/runs/40394690714/job/121824493035): Typecheck 및 ESLint 성공, Unit/Integration **64 files 중 1 FAIL / 360 tests 중 1 FAIL**. 실패는 `g7-s3-operational-auth.test.ts:127:57`의 `Response.clone: Body has already been consumed`; `login()`이 이미 `r.json()` 실행했는데 동일 원본 `Response`를 재복제하려 해 발생. 실패 후 Production Build/Chromium/Legacy Migration E2E는 SKIPPED. Docker [121824492537](https://github.com/planner77/layoutManager/actions/runs/40394690714/job/121824492537) SUCCESS. 해당 원본 로그 외 실제 HTTP 인증 실패 근거 없음.
+- **보완:** 로그인 헬퍼에서 `r.clone().json()`으로 진단용 원본을 보존하고 `admin.response.bodyUsed === false` 회귀 검사 추가. Node.js Response API 최소 확인만 수행(추가 실제 사내 시험/전체 Vitest는 NOT RUN). S3-2 GHCR 미게시 가드 Unit은 해당 실패 Run에서 22건 성공; Codex `[...segments]` Bash P1은 답변·Resolved 상태. 이전 TS2540 실패 이력은 [FailureLedger](FailureLedger.md)에 보존.
+- **신규 HEAD 현재 판정:** 수정 소스/문서는 최신 CI 시작 전 성공이라고 표시하지 않는다. 실 생산 Auth API 계속 404, 운영 Prisma Migration/Compose/Nginx/실 DB/CAD/S3 및 GHCR 게시 미실행, #109/#96 OPEN/BLOCKED.
+
+
+## Issue #109 / PR #131 — 첫 PR CI 실패·Codex P1 교정, 최신 검증 대기 (2026-10-27)
+
+- [Run 40337811911](https://github.com/planner77/layoutManager/actions/runs/40337811911), HEAD `e31c69ccb096ffc34d16f91e8b9a33cb4f7d23f1`: Verify `121624002318` **failure**(TypeScript TS2540: `tests/integration/g7-s3-operational-auth.test.ts:32:87`, `:235:19`에서 읽기 전용 `process.env.NODE_ENV` 할당 2곳). Docker `121624002854` **success**. Verify 이후 Lint/Unit/Build/E2E **skipped**; 이를 PASS로 기록하지 않음. 상세 출처·수정 이력은 [FailureLedger](FailureLedger.md).
+- [Codex P1 r4378255007](https://github.com/planner77/layoutManager/pull/131#discussion_r4378255007): Bash `case`가 S3-2 `[...segments]` 허용 파일을 문자 클래스로 해석, 실제 허용 경로를 잘못 거부. 단일 인용부호로 리터럴 경로 허용 및 인접 route 변형 거부 회귀 추가. 기존 PR HEAD의 성공은 이전 변경을 검증하지 못하므로 **수정 최신 HEAD PR CI 재실행 전 Typecheck/Unit/Integration/Build/E2E 미확인**.
+- Main `338e1097` (#124/#126/#127 기타 작업) 정렬 시 문서·패키지/Viewer 변경을 보존한다. S3-2는 일회용 DB/loopback 비운영 API·운영 프로덕션 404 유지, GHCR 게시·실 DB/CAD/S3/운영 Prisma 활성화/Compose/Nginx·PR 병합 없음.
+
+
+## #109 S3-2 — 운영 Auth/Admin API 사전 통합·현장 활성화 구분 (2026-10-26)
+
+- **작성한 변경:** 새 `/api/g7-operational/**` App Router, Auth(G3)/Management(G4)/Audit/일회성 G2 Admin CLI의 일회용 S3 SQLite preview 연결, Admin-only users/create(CSRF+사전 G4 인가/KDF/txn 재검증+User/Audit 원자), 독립 HttpOnly/Path Cookie, S3 후보 Prisma 공유 target guard, GHCR S3-2 정확 제목·경로 Allowlist 및 Unit/Integration.
+- **프로덕션 실행 결과:** 새 API는 `NODE_ENV=production` 전체 404로 강제, 운영 DB Migration/실 Auth/기존 CAD POST/Current/Delete Cutover·GHCR 발행·Nginx/Compose 변경은 수행하지 않았다. 운영 API 제공 준비 ≠ 운영 활성화. S3-1 `runtimeActivated=false` 불변, S3-4 release binding·S3-5 Owner 승인 전 실제 Auth 이용 불가.
+- **시험 실행 상태:** 코드/계획은 PR CI 실제 성공이 아니다. 새 PR HEAD의 Typecheck/Lint/Unit/Prisma Integration/Build/E2E/Docker 검증은 **Run 결과 확인 전 PENDING**. 실제 사내 2대 PC/Owner 무반출 원본·DB/CAD/S3 실복구는 별도 사내 증거이며 이번 CI 합성시험으로 대체 불가.
+- **후속:** S3-3 기존 CAD 쓰기/DELETE Auth+Audit 단일 업무 트랜잭션 및 S3-4 release/rollback/OCI 검증, S3-5 운영 GO는 미실행; 이슈 #109/#96 OPEN/BLOCKED 유지.
+
+
 ## U-ISSUE57-PR134-20261027 — 최초 CI Docker 실패와 수정 후보
 
 - 검증된 최초 PR HEAD `1a5c26526dc3ba90f12aa7e6f5f150a039180933`, [Run 40418875931](https://github.com/planner77/layoutManager/actions/runs/40418875931) attempt 1. Verify Job `121907950137`는 Typecheck/Lint/Unit·Integration/Build/E2E/Legacy **success**, Docker Job `121907948037`는 Compose fresh/health·migration Step 16 **failure**.

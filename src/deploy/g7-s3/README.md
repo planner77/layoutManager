@@ -1,5 +1,10 @@
 # Issue #109 S3-1 — Operational Prisma contract, quarantined Migration and dual-gate preflight
 
+
+## S3-2 Auth/Admin integration (operating OFF)
+
+The new reserved HTTP Login/Session/Admin/Role/Site/Audit contract and explicit disposable-only Admin CLI are documented in [S3-2](S3-2.md). Production NODE_ENV=production always returns 404; the API is limited to a loopback, owned disposable migrated SQLite. Existing automatic migrator, operating CAD APIs and GHCR releases are unchanged. A separate S3-4 release binding is required before any operating activation.
+
 ## Status / safety boundary
 
 This stage **does not migrate an operating database** and does not activate Auth.

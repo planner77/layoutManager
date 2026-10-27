@@ -1,5 +1,20 @@
 # Issue #109 — G7 운영 인증 활성화 설계 및 통제 배포·롤백 Runbook
 
+## PR #131 S3-2 두 번째 CI Unit 1건 실패·Response 진단 헬퍼 교정 (2026-10-27 KST)
+
+- **관측 실패:** [PR CI 40394690714](https://github.com/planner77/layoutManager/actions/runs/40394690714), HEAD `0cab0f1449e0a7f8e41a1149a5e46b0aa0ef8a72`, Verify [121824493035](https://github.com/planner77/layoutManager/actions/runs/40394690714/job/121824493035) Unit/Integration 359/360 PASS·1 FAIL, Typecheck/Lint PASS; Docker [121824492537](https://github.com/planner77/layoutManager/actions/runs/40394690714/job/121824492537) PASS. 정확한 실패 `g7-s3-operational-auth.test.ts:127:57` = 로그인 Test 헬퍼에서 `r.json()`으로 원본 Body 사용 후 `admin.response.clone()` 시도한 TypeError. 이후 Build/E2E는 SKIPPED. 기존 40337811911 TS2540 실패 및 Codex GHCR P1 교정 기록 보존.
+- **수정:** 헬퍼에 `r.clone().json()` 사용 및 `bodyUsed=false` 명시 회귀. 이는 시험 헬퍼 수정이며 운영 Auth/DB·CAD Business logic 변경 없음. 로컬 Node Response 최소 검사는 통과했으나 최신 HEAD PR CI의 전체 PASS는 별도 검증 필요.
+- **게이트:** Latest Main `338e1097b81115f8309fc4fde98414407ab826d0`와 정렬·충돌 없음, Codex P1 resolved/미해결 0. 정확 `#109 | S3-2 Operational Auth/Admin API [G7-S3-2-NO-GHCR]` GHCR 허용 목록을 유지하고 새 HEAD CI 시작 후 모니터링/병합/실 GHCR/운영 Prisma/Compose/Nginx·실 DB/CAD/S3/Issue #109/#96 종료 금지. 상세 [FailureLedger](FailureLedger.md)/[TestPlan](TestPlan.md)/[TestReport](TestReport.md).
+
+
+## S3-2 운영 Auth·관리 API 계약 통합 (프로덕션 OFF, 2026-10-26)
+
+- **계획/구현:** S3-1 운영 Prisma 모델·별도 Migration 후보에 G3/G4 Login/Session/Logout/InitialChange/Grant/Disable/Audit를 예약 `/api/g7-operational/**` App Router와 연결. Admin-only `users/create`는 CSRF·DB G4 users:manage 사전 인가+감사, 해시 생성 후 거래 내 Admin/Session 재검증과 User+Audit 원자 기록. G2 최초 Admin 생성·복구는 `scripts/g7-s3-admin.ts --ack-disposable-only`에서만, 앱 기동/배포 자동 실행 없음.
+- **운영 불활성화:** `NODE_ENV=production`은 404 강제, `G7_AUTH_ENABLED=true`/Owner S2 승인 의사만으로 Runtime 활성화되지 않음. 실제 API 기능 시험은 Linux canonical /tmp 일회용 정식 S3 후보 DB + 명시 Preview flag/Loopback Origin에 한정. S3-1 pure preflight는 `runtimeActivated=false`, 운영 Auth/Prisma Migration/기존 CAD Multipart POST·Current·DELETE, Compose/Nginx/.env/실 DB/CAD/S3/OCI 배포·Audit 물리 purge 변경 없음.
+- **후속 게이트:** S3-3 운영 CAD 쓰기 Auth+Audit transaction 통합, S3-4 실 OCI App/Migrator pair/DB-CAD-S3 동일 Snapshot 실복구 및 신뢰 가능한 release binder, S3-5 Owner 특정 릴리스 운영 GO. 사용자 사내 실제 시험 증거 외부 비반출 정책 준수. [S3-2 Runbook](../src/deploy/g7-s3/S3-2.md), ADR/Operation/TestPlan/TestReport/FailureLedger 참조.
+- **PR 릴리스 격리:** 정확 Squash 제목 `#109 | S3-2 Operational Auth/Admin API [G7-S3-2-NO-GHCR]`+S3-2 23개 파일 whitelist만 GHCR 게시 제외; 운영 활성 이력/기존 CAD/Compose·미승인 제목은 Main release-scope nonzero. 이번 요청은 구현·리뷰/충돌 해결·PR CI 시작까지이며 **병합·GHCR·운영 GO·Issue #109/#96 종료 제외**.
+
+
 ## S3-1 운영 Schema 타입·정식 Migration 후보·Release/Operation Gate 구현 (2026-10-26)
 
 - Owner가 S1 수용·S2 준비 승인을 선언했으나 실제 운영 릴리스별 GO 증거/내부 실 DB/CAD/S3 복구 로그는 외부 제출 불가이며 특정 서명/기간·OCI digest는 미확정. **운영 Cutover 실행은 승인하지 않는다**. 관련 Runbook [S3-1](../src/deploy/g7-s3/README.md), [ADR](Decisions.md), [TestPlan](TestPlan.md).
