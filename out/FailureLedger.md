@@ -1,5 +1,11 @@
 # PR/Main CI 실패 원장
 
+## #142 S3-4-B2-2A 착수 — 선행 #143 Main CI 성공 / 새 PR 미검증 (2026-10-27)
+
+- **선행 성공, 실패 아님:** #143 B2-1 PR HEAD `f9545e26886a4f66f152beca21880d7a170764da` PR CI `40479785846` SUCCESS, Codex 최신 HEAD 완료/지적 없음; exact no-GHCR Squash `2d29b8572b02ccacf5e0032bf5432cb2f2b26ed6`. [Main CI #40483297907](https://github.com/planner77/layoutManager/actions/runs/40483297907) `completed/success`, release-scope [Job 122118716547](https://github.com/planner77/layoutManager/actions/runs/40483297907/job/122118716547) SUCCESS, GHCR [Job 122118771319](https://github.com/planner77/layoutManager/actions/runs/40483297907/job/122118771319) SKIPPED. 이미지/태그 게시 없음.
+- **B2-2A:** writer-barrier, SQLite/Local/S3 원본 Versioned Snapshot의 단일 SNAP 주장 계약·negative synthetic Unit·고정 15-path GHCR 제외 + Runbook/AGENTS/docs 구현. 실제 현장 동결/온라인 백업/원본 SHA 재계산을 하지 않은 순수 검증이므로 결과는 `CAPTURE_CLAIMS_CONSISTENT_NOT_SOURCE_PROOF`, verified/GO 플래그 false. 새 PR CI/리뷰는 관측 전 `NOT VERIFIED`; 실패하면 SHA/Run/Job/Attempt/원인/보완 기록.
+- **금지:** 운영 Auth/Write/Prisma/Compose/Nginx/DB/CAD/S3/GHCR, #109/#96 종료 미수행.
+
 ## #142 S3-4-B2-1 진입 — #141 B1 Main 성공 인계 및 신규 검증 미실행 (2026-10-27 KST)
 
 - **선행 성공 (실패 아님):** [PR #141](https://github.com/planner77/layoutManager/pull/141) HEAD `24b9c340f18e257471fe02237e6ab8e1d8f543da`, [PR CI #40476745670](https://github.com/planner77/layoutManager/actions/runs/40476745670) success 및 최신 Codex 리뷰 completed/findings=0, 기존 P1/P2 4개 Resolved. 정확 S3-4-B1 no-GHCR Squash `7469d016a5926aca07929bf3e95e869b46716bd1`. [Main CI #40478523325](https://github.com/planner77/layoutManager/actions/runs/40478523325) completed/success: release-scope Job 122102656670 SUCCESS, GHCR Build+Push Job 122102702681 SKIPPED.

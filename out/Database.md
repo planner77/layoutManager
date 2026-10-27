@@ -1,5 +1,10 @@
 # Database Schema — 단일 기준 문서
 
+## #142 B2-2A — 원본 DB 데이터·스키마 불변 (2026-10-27)
+
+- 오프라인 패킷 검증은 별도 SQLite 연결이나 운영 DB Read를 실행하지 않으며, 임의의 FK=0/Current 정합성/Audit 정합성 **주장**을 검사할 뿐 진짜 SQLite의 무결성을 보증하지 않음. `src/prisma/migrations/**`, 운영 G7 7번째 격리 SQL, Auth Schema, `src/scripts/deploy.ts` 불변.
+- S3 `storageVersionId`는 별도 승인된 오퍼레이터가 사내 S3 버전 객체로 확인해야 하는 캡처 증거 항목이며 현재 CAD DB 컬럼에서 자동 추출됐다고 가정하지 않음.
+
 ## #142 S3-4-B2-1 — 운영 Schema/Prisma 불변 (2026-10-27)
 
 - 이 증분은 OCI byte-only source/Schema 계약 확인이다. `src/prisma/migrations/**` 활성 6개와 `src/scripts/deploy.ts` 자동 Migrator **불변**. 7번째 Auth 후보는 `src/deploy/g7-s3/prisma/migrations/202610260002_g7_operational_auth`에 격리됨.

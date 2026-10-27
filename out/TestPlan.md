@@ -1,5 +1,12 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## #142 S3-4-B2-2A — Snapshot Barrier assertion TC (2026-10-27)
+
+- TC-B2-2A-01: 두 합성 CAD Version(Local/S3), 한 위치 Current/nextVersion, S3 versioned marker 및 하나의 `SNAP-*`/Epoch·시간 내 capture → `CAPTURE_CLAIMS_CONSISTENT_NOT_SOURCE_PROOF`, 실제 Writer/Snapshot/Bytes Verified 및 GO 0.
+- TC-B2-2A-02: writerCount>0, writesDuringCapture>0, lease 미표시, Source Epoch 변경, 캡처시간 범위 밖, Snapshot ID 불일치/빈 S3 marker Version → BLOCKED.
+- TC-B2-2A-03: Local/S3 SHA/size/S3 VersionId 불일치, 중복 또는 orphan object, FK/Audit claim 오류, Current Owner/nextVersion 비정상, 추가 미승인 필드 → BLOCKED.
+- TC-B2-2A-04: 정확 B2-2A Squash 제목+15 paths `publish=false`, 활성이관·App Route·Dockerfile/Compose/Nginx·타 Workflow 경로/제목은 차단, 릴리스 Tag는 정식 정책 유지. 새 PR CI 완료 전 PASS 미확인. 실 capture/restore E2E NOT RUN.
+
 ## #142 S3-4-B2-1 — OCI content-addressed 검사 TC (2026-10-27)
 
 - G7-B2-1-001: 4개 합성 OCI single-platform Linux/amd64 manifest/config 원본 SHA-256 및 label/source/version/schema/role 일치 → `LOCAL_DIGESTS_MATCH_NOT_REGISTRY_PROOF`, 모든 GO/Registry/rollback 증명 필드 false.

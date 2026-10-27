@@ -1,5 +1,10 @@
 # 운영·환경설정 초안
 
+## #142 B2-2A — Snapshot 주장 패킷 사내 검토 가이드 (2026-10-27)
+
+- 신청된 작업번호 `CR-*`, 운영자 식별 `OP-*`, 장벽 `BAR-*`, 원본 Epoch `E-*`, 단일 `SNAP-*`과 writer=0/쓰기변경 0 주장, DB backup/Local/S3 캡처시간·S3 marker VersionId, opaque 파일 Version Key에 대해 `assessS34B22CapturePacket` 검사. 양성도 실제 Writer 중단/SQL Quick Check/원본 byte 검증 아닌 자료형식 완결만 확인.
+- 실운영 freeze/원본 DB/CAD/S3/Versioned S3/지연작업 차단은 별도 사내 변경승인·현장 독립 검증 후 진행해야 하며, 이 PR은 그런 동작을 수행하지 않음. Secret/원본 도면/객체키·실 사용자ID GitHub 반출 금지. [B2-2 Runbook](../src/deploy/g7-s3/S3-4-B2-2.md) 참고.
+
 ## #142 S3-4-B2-1 — OCI 원본 검증 준비 절차 (2026-10-27)
 
 - 운영자가 승인된 **사내 전용 경로**에 저장해 둔 4개 OCI manifest/config 원본을 외부 반출하지 않고 사내 오프라인 테스트 환경에서 Byte Buffer로 제공하면 순수 `inspectS34B2OfflinePair`가 digest/config Label의 로컬 일치성을 점검한다. 이번 PR은 실제 Registry API/Docker 접근·Publish·Credential 수집 명령 없음.

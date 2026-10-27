@@ -1,5 +1,10 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## #142 B2-2A 시작 — 새 HEAD PR CI 미관측 (2026-10-27)
+
+- B2-1 PR #143 Main `2d29b8572b02ccacf5e0032bf5432cb2f2b26ed6`, Main CI #40483297907 SUCCESS/GHCR SKIPPED. B2-2A 순수 Snapshot Barrier 주장 검증·합성 Unit 및 no-GHCR 15-path guard/Runbook 작성.
+- 현재 단계에서 실제 Writer quiescence, SQLite 온라인 일관 백업, 원본 CAD byte hash, versioned S3 marker/objects 독립 관측/실복구/rollback **전부 NOT RUN**. 패킷 검사 성공도 Source Verified 아님. 새 PR CI 결과 확인 전 `NOT VERIFIED`, #109/#96 운영 OPEN/BLOCKED.
+
 ## #142 S3-4-B2-1 착수 / PR CI 미관측 (2026-10-27)
 
 - 선행 #141 B1 Main `7469d016a5926aca07929bf3e95e869b46716bd1`, [Main CI #40478523325](https://github.com/planner77/layoutManager/actions/runs/40478523325) `completed/success`, release-scope SUCCESS, GHCR Build/Push SKIPPED.
