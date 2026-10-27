@@ -16,6 +16,13 @@
 - **검증:** Typecheck/Vitest/Build/E2E/Docker의 실제 PR CI HEAD Run을 확인하기 전 PASS 주장 금지. 기능 시나리오는 G7-S3-2-001~009; 기존 운영 인증 활성화/데이터를 이용한 E2E가 아님. 특정 실 리리스 App+Migrator Pair와 동일 Snapshot Restore·Owner Go/No-Go는 후속 S3-4~5.
 
 
+## Issue #57 L1 — structured app log 운영 계약 (2026-10-27)
+
+- `LOG_FORMAT=json`에서 모든 app-owned runtime 구조화 이벤트는 `schemaVersion:1`의 한 줄 JSON. `LOG_LEVEL=warn`에서 업로드 포함 `debug/info` 단계 출력은 필터되며 `warn/error`만 남는다. `LOG_LEVEL=info`에서도 Health 성공 200은 debug-only로 억제하지만 Health 장애 503은 error 출력된다.
+- `X-Request-Id`(업로드 성공 JSON `requestId` 동일)로 HTTP lifecycle과 stage를 연결한다. stage/최초 실패/복구 ID는 [Logging](Logging.md) 및 [Issue57](Issue57.md) 표 참고.
+- Docker `local` 보존·rotation과 수동 `docker compose logs app` 조회 절차는 기존대로. L3 영속 저장, L5 조회 API, L6 운영자 UI와 logs:read 인증·감사는 아직 구현 전. 임의 Error/Stack/경로/Locator/비밀번호/세션·S3 credential/파일 bytes/원시 로그를 이슈·PR·CI artifact에 게시 금지. Next/Prisma/Nginx/브라우저/수동 CLI 출력은 앱 JSON Schema 대상이 아님.
+
+
 ## 0.42.0 게시된 앱·마이그레이터 쌍 (2026-10-27)
 
 현재 확인한 태그는 `ghcr.io/planner77/layoutmanager:0.42.0`과 `ghcr.io/planner77/layoutmanager:0.42.0-migrate`이며 둘 다 source `f2c04bf`로 게시했다. digest·Main CI·실제 시험은 [TestReport](TestReport.md) U-ISSUES124-126-127-20261027을 따른다. 아래 기존 pair 고정·같은 시점 백업·migration 성공 후 앱 기동 절차를 적용한다. 이 작업은 이미지 게시까지이며 실제 서버/.env/볼륨·Auth/G7 활성화는 실행하지 않았다. Viewer의 Three 기본/단발 대체 및 수동 전환, 미저장 작업 확인은 아래 운영 안내와 [단위 가이드](Issues124-126-127.md)를 참조한다.

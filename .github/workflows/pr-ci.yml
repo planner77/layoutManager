@@ -188,13 +188,14 @@ jobs:
           set -euo pipefail
           docker run --rm --entrypoint sh cad-layout-viewer:ci-migrate -c '
             test "$(id -u)" = 10001
-            for f in node_modules/.bin/prisma node_modules/.bin/tsx generated/prisma/client.ts prisma.config.ts prisma/migrations server/db.ts scripts/deploy.ts; do
+            for f in node_modules/.bin/prisma node_modules/.bin/tsx generated/prisma/client.ts prisma.config.ts prisma/migrations server/db.ts scripts/deploy.ts server/logger.ts server/upload-error-catalog.ts; do
               test -e "$f" || { echo "Missing required migrator file: $f"; exit 1; }
             done
             for f in .next public tests server/repositories node_modules/next node_modules/react node_modules/react-dom node_modules/eslint node_modules/vitest node_modules/@playwright/test node_modules/dxf-viewer node_modules/three-dxf-viewer; do
               test ! -e "$f" || { echo "Unexpected migrator file: $f"; exit 1; }
             done
             node -e "const Db=require(\"better-sqlite3\");new Db(\":memory:\").close()"
+            node --import tsx --input-type=module -e "import { writeLog } from \"./server/logger.ts\"; if (typeof writeLog !== \"function\") process.exit(1)"
           '
 
       - name: Validate nonroot web native SQLite and packaged Prisma client (#67)

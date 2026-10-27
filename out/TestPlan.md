@@ -35,6 +35,21 @@
 - 시험 소스: `src/tests/integration/g7-s3-operational-auth.test.ts` 및 `src/tests/unit/g7-staging-ghcr-guard.test.ts`. 전부 **합성 일회용 SQLite와 Loopback API**. 실제 사내 PC·실 운영 Auth/DB/CAD/S3·OCI registry/복구 증거는 NOT RUN/미열람 상태를 유지하고 User의 비반출 지침을 준수한다. 신규 PR CI 실행/합격을 별도 HEAD/Run/Job 단위로 기록한다.
 
 
+## Issue #57 L1 — Logger 단일화 및 무회귀 검증 계획 (2026-10-27)
+
+| TC | 기대 | AC |
+| --- | --- | --- |
+| TC-L1-001 | UploadDiagnostics 동일 emitter, `LOG_LEVEL=warn` info 생략·warn/error 라우팅·requestId/schema v1/카테고리 | AC2/3 |
+| TC-L1-002 | 발신자가 만든 metadata override·무허가 필드·원본 Error/stack/bytes/Locator·URL 차단, route 템플릿 | AC3/4 |
+| TC-L1-003 | debug/info/pretty 한 줄·URL query 차단·복합 문자열 제한 | AC1/2/4 |
+| TC-L1-004 | Health 200 debug-only, 오류 503과 동일 요청 ID | AC2/5 |
+| TC-LOG-001~005, TC-OBS-001~007, TC-UP, DELETE/HEALTH | 기존 공개 DTO·X-Request-Id·업로드 first failure·compensation/cleanup·DB 기능 회귀 | AC1/4/5 |
+| TC-LOG-MIG-001 | Logger의 상대 import 목록과 축소 Migrator Docker COPY closure 일치, build·CI의 read-only Node+tsx 모듈 import 검사 | AC2/5 |
+| PR CI Verify/Docker | node/npm ci/db:generate→Typecheck/ESLint/Unit+Integration/Build/E2E/legacy; Migrator 파일·logger import 사전검증과 Compose 신규 설치/멱등 migration | AC5 |
+
+실행/증거가 없는 테스트는 `NOT RUN`으로 기록. 운영 DB/CAD/Secret/원격 S3/실 LAN 검증을 이 PR로 대체하거나 추정 PASS 처리하지 않는다. [Issue57](Issue57.md), [TestReport](TestReport.md).
+
+
 ## Issues #124/#126/#127 검증 계획 (2026-10-26)
 
 [Issues124-126-127](Issues124-126-127.md)의 AC→TC 표가 신규 검증 기준. 구현 전 동일 synthetic fixture의 baseline screenshot/1440×900 높이·Canvas 면적 확보, 이후 responsive·keyboard·sticky/Drawers·failure injection 및 기존 Current/list/Viewer/selection/JSON/Fullscreen 회귀. typecheck/lint/unit+integration/build/E2E/legacy·최신 PR CI와 실제 Main GHCR Pair는 각각 증거를 기록. 미실행은 NOT RUN, #113 실 CAD/GPU와 G7 운영 수용은 별도.

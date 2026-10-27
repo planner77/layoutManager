@@ -57,7 +57,7 @@ child.on('close', code => {
       return;
     }
     try { prepareStandaloneAssets(project); }
-    catch (error) { console.error('Standalone packaging failed', error); process.exitCode = 1; return; }
+    catch { console.error('Standalone packaging failed (details suppressed).'); process.exitCode = 1; return; }
   }
   process.exitCode = code ?? 1;
 });

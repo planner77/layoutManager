@@ -22,6 +22,17 @@
 | NFR-P4-G7-S3-2-03 | 정확 Squash `#109 | S3-2 Operational Auth/Admin API [G7-S3-2-NO-GHCR]`·23개 파일 허용 시만 GHCR skip, 그 외 fail-closed | G7-S3-2-CI-001~004 |
 
 
+## Issue #57 — L1 구조화 로깅 요구 및 근거 (2026-10-27)
+
+| ID | 기준 | 테스트 |
+| --- | --- | --- |
+| FR-57-01 | 기존 writeLog 단일 emitter, 업로드 stage/첫 실패/requestId/공개 JSON·HTTP header 보존 | TC-OBS-001~007, TC-LOG-004 |
+| FR-57-02 | Schema v1/안전 확장 field allowlist, LOG_LEVEL/FORMAT·warn/error 동일 라우팅 | TC-L1-001/002/003 |
+| FR-57-03 | 임의 Error/stack·CRLF·Secret·path/Locator/CAD bytes stdout/stderr 미노출 | TC-LOG-003/005, TC-L1-002 |
+| FR-57-04 | Health 200 debug-only/503 error, app·framework·CLI 출처 명확히 구분 | TC-L1-004, Issue57 inventory |
+| FR-57-05 | 기존 업무 API/DB/Viewer/Prisma/G7 Auth 불변, 영속 로그/조회 권한 후속 분리 | 기존 Unit/Integration/E2E, diff |
+
+
 ## Issues #124/#126/#127 요구 (2026-10-26)
 
 FR-124-01 홈 전용 sticky+compact 및 기존 Current/검색/anchor 보존, FR-126-01 DXF Three 기본/explicit/DWG 호환, FR-126-02 source 실패와 분리한 단발 renderer fallback·수동 탈출·자원/임시작업 보호, FR-127-01 두 정보+접근 가능한 설명/그룹 명령, FR-127-02 상태 독립 overlay Drawer/ESC/focus/Canvas 보존. 세부 요구와 원격 AC 전체의 추적은 [Issues124-126-127](Issues124-126-127.md) 기준. G7·운영 DB/API·원본 불변.
