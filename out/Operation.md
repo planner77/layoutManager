@@ -1,5 +1,11 @@
 # 운영·환경설정 초안
 
+## #109 S3-4-A private 증거 CLI P2 보안 강화 (2026-10-27)
+
+- 사내 비공개 0600 JSON 파일은 경로 검사만으로 신뢰하지 않는다. `O_NOFOLLOW|O_NONBLOCK` FD open, `fstat`(소유자/regular/0600/size/dev+ino), **동일 fd 읽기** 및 `finally` close로 경로 교체·FIFO·symlink 노출 차단. 잘못된 파일은 민감 경로·내용을 출력하지 않고 `G7_S3_4_PRIVATE_PACKET_REJECTED`로 fail closed.
+- Check `status`는 JSON 문자열 이외 값을 즉시 `INVALID_CHECK/BLOCKED`로 처리. 증거 구조 결과는 실제 OCI/복구 완료 및 운영 GO가 아님.
+
+
 ## #109 S3-4-A — 사내 오프라인 릴리스 증거 평가 절차 (2026-10-27)
 
 - 사내 Linux/WSL2에서만 사유 코드로 평가: `cd src && npx tsx scripts/g7-s3-4-readiness.ts /absolute/private/s3-4-attestation.json`. 파일은 repo 외 UID 소유 mode 0600, canonical absolute/non-symlink. 결과는 `BLOCKED`(exit 2), `PENDING`(exit 3), `EVIDENCE_PACKET_COMPLETE_NOT_GO`(exit 0). **어느 경우든 operating GO=false, runtimeActivated=false.**

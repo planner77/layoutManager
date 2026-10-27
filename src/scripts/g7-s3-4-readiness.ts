@@ -2,12 +2,41 @@
  * Does not connect to OCI registry, invoke Docker/Prisma, access real DB/CAD/S3,
  * activate any service, or interpret an attested PASS as verified restoration.
  */
-import { lstatSync, readFileSync, realpathSync } from 'node:fs';
+import {
+  closeSync, constants, fstatSync, lstatSync, openSync,
+  readFileSync, realpathSync, type Stats,
+} from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { assessS34Readiness } from '../server/g7-operational/s3-4-readiness';
 
 const repoRoot = realpathSync(fileURLToPath(new URL('../../', import.meta.url)));
+/**
+ * Must validate the OPENED descriptor, not just path metadata. O_NOFOLLOW
+ * refuses a swapped symlink; O_NONBLOCK prevents opening a swapped FIFO
+ * from hanging before fstat can reject it.
+ *
+ * The lstat dev/ino match also rejects a replacement with a *different*
+ * correctly-permissioned regular file between validation and opening.
+ */
+export function readVerifiedS34Descriptor(filename: string, expected: Stats): unknown {
+  const flags = constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK;
+  const descriptor = openSync(filename, flags);
+  try {
+    const actual = fstatSync(descriptor);
+    if (!actual.isFile() || !expected.isFile() ||
+        actual.dev !== expected.dev || actual.ino !== expected.ino ||
+        actual.uid !== process.getuid?.() || expected.uid !== process.getuid?.() ||
+        (actual.mode & 0o077) !== 0 ||
+        actual.size < 2 || actual.size > 131072 ||
+        actual.size !== expected.size)
+      throw new Error('G7_S3_4_PRIVATE_FILE_DENIED');
+    // readFileSync(fd) reads exactly this descriptor. It NEVER reopens filename.
+    return JSON.parse(readFileSync(descriptor, {encoding:'utf8'})) as unknown;
+  } finally {
+    closeSync(descriptor);
+  }
+}
 export function loadPrivateS34Packet(filename: string): unknown {
   if (process.platform === 'win32' || typeof process.getuid !== 'function' ||
       !path.isAbsolute(filename) || path.normalize(filename) !== filename)
@@ -20,7 +49,7 @@ export function loadPrivateS34Packet(filename: string): unknown {
   if (real !== filename || real === repoRoot ||
       real.startsWith(repoRoot + path.sep))
     throw new Error('G7_S3_4_REPOSITORY_PATH_DENIED');
-  return JSON.parse(readFileSync(real, 'utf8')) as unknown;
+  return readVerifiedS34Descriptor(filename, stat);
 }
 function main(): void {
   try {

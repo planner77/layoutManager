@@ -1,5 +1,12 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #109 PR #136 — S3-4-A P2 보완 / 이전 CI 성공과 리뷰 지적 분리 (2026-10-27 KST)
+
+- 최초 S3-4-A PR HEAD `07a126afdba9135e031f348e6a2901ae6395fd79`의 [PR CI 40438604869](https://github.com/planner77/layoutManager/actions/runs/40438604869) `completed/success`. Codex [P2 r4384543606](https://github.com/planner77/layoutManager/pull/136#discussion_r4384543606): 사내 private JSON pathname과 열린 파일 객체의 TOCTOU. `O_NOFOLLOW|O_NONBLOCK`와 `fstatSync`, `lstat` dev/ino 동일성, UID·0600·정규파일·크기, 동일 fd 읽기 및 finally close로 교정.
+- [P2 r4384543609](https://github.com/planner77/layoutManager/pull/136#discussion_r4384543609): `String(['NOT_RUN'])` 자료형 오판을 `typeof status === 'string'` 선검사로 차단. 비문자열 상태는 `BLOCKED/INVALID_CHECK`이며 올바른 `NOT_RUN`만 `PENDING`. Symlink/FIFO/inode 교체 및 자료형 회귀 추가. 실제 최신 HEAD CI·새 Codex 검토는 별도 확인 전 PASS 아님.
+- 이번 수정은 S3-4-A 오프라인 증거 도구·시험·문서만 변경하며 운영 Auth/Write/Prisma Migrator, Compose/Nginx/DB/CAD/S3/GHCR/Issue 종료 금지 유지.
+
+
 ## Issue #109 S3-4-A — 오프라인 릴리스·복구 증거 게이트 착수 (2026-10-27 KST)
 
 - **선행 확인:** S3-3 PR #135 → Main `dc20844be7525bd3367f38cc3080675efa4fa89c`, [Main CI #40437054103](https://github.com/planner77/layoutManager/actions/runs/40437054103) SUCCESS, release-scope SUCCESS 및 GHCR job SKIPPED. S3-4 출발점은 해당 Main이며 Owner의 **실운영 GO는 없음**.

@@ -1,5 +1,13 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## #109 S3-4-A Codex P2 회귀 시험 (2026-10-27 KST)
+
+- **TC-S3-4A-P2-01:** lstat/realpath 이후 0600→0644 symlink 또는 inode 변경은 같은 fd의 `fstat`·사전 `dev/ino` 체크로 거부하고, `O_NOFOLLOW`를 사용한다.
+- **TC-S3-4A-P2-02:** 검사 후 pathname을 FIFO로 바꾸어도 `O_NONBLOCK`+nonregular 검증으로 CLI를 멈추지 않는다. 파싱 예외에도 descriptor를 닫는다.
+- **TC-S3-4A-P2-03:** `status=['NOT_RUN']`, `['PASS']`, 객체/숫자/boolean/null은 `INVALID_CHECK`, `BLOCKED`; 정상 문자열 `NOT_RUN`만 `PENDING`.
+- 이전 PR CI #40438604869 SUCCESS는 보완 전 SHA만 보증하며 새 HEAD 결과는 PENDING/NOT VERIFIED. 운영 실증 아님.
+
+
 ## #109 S3-4-A — OCI/Backup/Restore 증거 계약 TC (2026-10-27)
 
 - G7-S3-4A-001: 17개 확인 항목 모두 사내 PASS 증빙 형식 완비 → `EVIDENCE_PACKET_COMPLETE_NOT_GO` + operating GO=false; **이는 실제 복구 PASS를 의미하지 않음**.

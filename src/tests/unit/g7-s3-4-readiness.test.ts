@@ -95,8 +95,12 @@ describe('#109 S3-4-A offline release evidence, no operating GO', () => {
   });
 });
 
-import { loadPrivateS34Packet } from '../../scripts/g7-s3-4-readiness';
-import { chmodSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { loadPrivateS34Packet, readVerifiedS34Descriptor } from '../../scripts/g7-s3-4-readiness';
+import {
+  chmodSync, lstatSync, mkdtempSync, renameSync, rmSync,
+  symlinkSync, writeFileSync,
+} from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
@@ -116,5 +120,78 @@ describe('#109 S3-4-A private file boundary', () => {
     } finally {
       rmSync(dir, {recursive:true,force:true});
     }
+  });
+});
+
+describe('#109 S3-4-A Codex P2 security regression', () => {
+  test('non-string statuses cannot be coerced to NOT_RUN/PASS or return PENDING', () => {
+    const sourcePacket = fixture();
+    for (const status of [
+      ['NOT_RUN'], ['PASS'], {status: 'NOT_RUN'}, 0, true, null,
+      ['FAIL'], ['CANCELLED'],
+    ]) {
+      const check = {status, evidenceId: 'EV-test', reviewerId: 'QA-test',
+        testedAtUtc:'2026-10-27T00:00:00Z'};
+      const altered = {...sourcePacket, checks:{...sourcePacket.checks,
+        REGISTRY_APP_DIGEST: check}};
+      const result = assessS34Readiness(altered);
+      expect(result.state).toBe('BLOCKED');
+      expect(result.reasons).toContain('INVALID_CHECK:REGISTRY_APP_DIGEST');
+      expect(result.reasons).not.toContain('NOT_RUN:REGISTRY_APP_DIGEST');
+      expect(result.operationalGo).toBe(false);
+    }
+  });
+  test('same descriptor rejects symlink swapped after pathname lstat', () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 's34-swap-link-'));
+    const file = path.join(dir, 'operator.json'), original = path.join(dir,'old.json');
+    const unsafe = path.join(dir,'public.json');
+    try {
+      writeFileSync(file, JSON.stringify(fixture()), {mode:0o600});
+      writeFileSync(unsafe, JSON.stringify(fixture()), {mode:0o644});
+      const inspected = lstatSync(file);
+      renameSync(file,original);
+      symlinkSync(unsafe,file);
+      expect(() => readVerifiedS34Descriptor(file, inspected)).toThrow();
+      expect(() => loadPrivateS34Packet(file)).toThrow('G7_S3_4_PRIVATE_FILE_DENIED');
+    } finally { rmSync(dir,{recursive:true,force:true}); }
+  });
+  test('same descriptor rejects inode replacement even with private 0600 mode', () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 's34-swap-inode-'));
+    const file = path.join(dir, 'operator.json'), original = path.join(dir,'old.json');
+    try {
+      writeFileSync(file, JSON.stringify(fixture()), {mode:0o600});
+      const inspected = lstatSync(file);
+      renameSync(file,original);
+      writeFileSync(file, JSON.stringify(fixture()), {mode:0o600});
+      expect(() => readVerifiedS34Descriptor(file, inspected))
+        .toThrow('G7_S3_4_PRIVATE_FILE_DENIED');
+    } finally { rmSync(dir,{recursive:true,force:true}); }
+  });
+  test('O_NONBLOCK prevents an attacker-swapped FIFO from hanging', () => {
+    if (process.platform === 'win32') return;
+    const dir = mkdtempSync(path.join(tmpdir(), 's34-swap-fifo-'));
+    const file = path.join(dir,'operator.json'), original = path.join(dir,'old.json');
+    const pipe = path.join(dir,'pipe');
+    try {
+      writeFileSync(file, JSON.stringify(fixture()), {mode:0o600});
+      const inspected = lstatSync(file);
+      execFileSync('mkfifo',[pipe]);
+      renameSync(file,original);
+      renameSync(pipe,file);
+      expect(() => readVerifiedS34Descriptor(file, inspected))
+        .toThrow('G7_S3_4_PRIVATE_FILE_DENIED');
+    } finally { rmSync(dir,{recursive:true,force:true}); }
+  });
+  test('opened descriptor is closed on a malformed JSON parse failure', () => {
+    const dir = mkdtempSync(path.join(tmpdir(),'s34-parse-'));
+    const file = path.join(dir,'operator.json');
+    try {
+      writeFileSync(file,'not-json', {mode:0o600});
+      expect(() => readVerifiedS34Descriptor(file, lstatSync(file))).toThrow(SyntaxError);
+      // A valid replacement can then be read without reusing a stale descriptor.
+      writeFileSync(file,JSON.stringify(fixture()), {mode:0o600});
+      expect(assessS34Readiness(loadPrivateS34Packet(file)).state)
+        .toBe('EVIDENCE_PACKET_COMPLETE_NOT_GO');
+    } finally { rmSync(dir,{recursive:true,force:true}); }
   });
 });

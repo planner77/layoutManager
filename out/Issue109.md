@@ -1,5 +1,11 @@
 # Issue #109 — G7 운영 인증 활성화 설계 및 통제 배포·롤백 Runbook
 
+## PR #136 S3-4-A P2 보완 — 비공개 파일 교체·Status 엄격 자료형 (2026-10-27)
+
+- [PR CI #40438604869](https://github.com/planner77/layoutManager/actions/runs/40438604869) 이전 HEAD 성공. 리뷰 [#4384543606](https://github.com/planner77/layoutManager/pull/136#discussion_r4384543606) 비공개 파일 TOCTOU, [#4384543609](https://github.com/planner77/layoutManager/pull/136#discussion_r4384543609) 배열 `NOT_RUN` 오분류는 CI 실패와 구분한다. `open O_NOFOLLOW/O_NONBLOCK` + 같은 descriptor의 `fstat`·inode/UID/permission 검사와 동일 fd 읽기, strict string 상태 검사 및 회귀 시험으로 보완.
+- 이전 CI PASS는 새로운 코드를 검증하지 않음. S3-4-B 사내 OCI/실 복구·C trusted binder·S3-5 Owner GO 모두 NO-GO. #109/#96 OPEN/BLOCKED.
+
+
 ## S3-4-A 오프라인 OCI·Migration·Rollback 증거 패킷 검증 착수 (2026-10-27)
 
 - S3-3 PR #135 `dc20844be7525bd3367f38cc3080675efa4fa89c` 및 Main CI [40437054103](https://github.com/planner77/layoutManager/actions/runs/40437054103) 성공·GHCR SKIPPED 근거 다음 단계. S3-4를 **A(오프라인 증거 구조검증) → B(사내 OCI/실 Snapshot 복구·rollback 검증) → C(신뢰된 Release/Operation binder) → S3-5 Owner 실운영 GO**로 분리한다.

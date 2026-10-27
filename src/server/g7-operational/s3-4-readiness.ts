@@ -125,7 +125,8 @@ export function assessS34Readiness(value: unknown): S34Assessment {
     if (record === undefined) { reasons.push('NOT_RUN:' + key); continue; }
     if (!plain(record) ||
         !fieldsOnly(record, ['status', 'evidenceId', 'reviewerId', 'testedAtUtc', 'snapshotId']) ||
-        !['PASS', 'FAIL', 'NOT_RUN', 'CANCELLED'].includes(String(record.status))) {
+        typeof record.status !== 'string' ||
+        !['PASS', 'FAIL', 'NOT_RUN', 'CANCELLED'].includes(record.status)) {
       reasons.push('INVALID_CHECK:' + key); continue;
     }
     if (record.snapshotId !== undefined &&

@@ -1,5 +1,13 @@
 # PR/Main CI 실패 원장
 
+## Issue #109 PR #136 — 이전 CI SUCCESS / Codex P2 2건 원인·보완 (2026-10-27 KST)
+
+- **관측 CI 성공 (실패 아님):** [PR CI #40438604869](https://github.com/planner77/layoutManager/actions/runs/40438604869), HEAD `07a126afdba9135e031f348e6a2901ae6395fd79`, attempt 1, `completed/success`. 이 Run의 성공은 이후 보완 HEAD가 합격했다는 뜻이 아니며 실패 Job을 임의 기록하지 않는다.
+- **Codex P2 #4384543606 (리뷰 보안 결함, CI 실패 아님):** pathname `lstat/realpath`와 `readFileSync(path)` 사이 파일 교체(TOCTOU) 시 다른 일반 파일·symlink/FIFO를 재검증 없이 열거나 FIFO에서 블록할 수 있음. 검증한 경로를 `O_NOFOLLOW|O_NONBLOCK|O_RDONLY`로 열고 같은 fd의 `fstatSync`에서 regular/UID/0600/크기 및 사전 `dev+ino` 일치 확인한 뒤 **동일 fd에서 읽고 finally close**하도록 교정. 회귀: symlink 교체, mode 0600 타 inode 교체, FIFO 교체, JSON 구문 오류/후속 읽기.
+- **Codex P2 #4384543609 (자료형 결함, CI 실패 아님):** `String(record.status)`가 배열 `['NOT_RUN']`을 문자열로 변환해 `PENDING`으로 분류. `typeof record.status === 'string'` 확인 후 허용값 비교, 배열/객체/숫자/boolean/null은 `INVALID_CHECK`·`BLOCKED`; 무실행 상태로 오분류 금지.
+- **검증 경계:** 변경된 테스트와 CI 결과는 신규 HEAD의 새 Run 전까지 `NOT VERIFIED`; 실제 OCI registry 확인 및 DB/CAD/S3 운영 복원은 여전히 `NOT RUN`. 운영 Auth/Write·실 Prisma Migration·GHCR/Compose/Nginx·실 데이터 변경 없음, #109/#96 OPEN/BLOCKED.
+
+
 ## #109 S3-4-A 착수 — 이전 Main CI PASS 인계 / 신규 CI·실복구 미관측 (2026-10-27)
 
 - **선행 Run (성공·실패 원장과 분리):** #135 squash `dc20844be7525bd3367f38cc3080675efa4fa89c`, Main CI [40437054103](https://github.com/planner77/layoutManager/actions/runs/40437054103) SUCCESS 및 GHCR job SKIPPED. 새 구현에서 기존 S3-3 P2·CI 실패를 소거하거나 중복 실패로 적지 않는다.

@@ -1,5 +1,11 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## #109 S3-4-A P2 보완 및 이전 HEAD CI SUCCESS 구분 (2026-10-27)
+
+- [PR CI #40438604869](https://github.com/planner77/layoutManager/actions/runs/40438604869) HEAD `07a126afdba9135e031f348e6a2901ae6395fd79` `completed/success`. Codex P2 [r4384543606](https://github.com/planner77/layoutManager/pull/136#discussion_r4384543606), [r4384543609](https://github.com/planner77/layoutManager/pull/136#discussion_r4384543609)는 코드 리뷰 지적 2건이지 관측 CI 실패가 아니다.
+- TOCTOU용 `O_NOFOLLOW/O_NONBLOCK/fstat/dev+ino/fd-read/finally-close`, Status 문자열 엄격 검사 및 symlink/FIFO/inode/혼동 상태 회귀 코드 작성. **새 HEAD의 Unit/Typecheck/E2E/CI는 미확인**, 원격 Registry·실 DB/CAD/S3 복원 증거는 NOT RUN, GO=false.
+
+
 ## #109 S3-4-A — 구현 진입 / 검증 결과 미관측 (2026-10-27)
 
 - Baseline: #135 S3-3 squash Main `dc20844be7525bd3367f38cc3080675efa4fa89c`, [Main CI 40437054103](https://github.com/planner77/layoutManager/actions/runs/40437054103) completed/success, release-scope PASS, GHCR Build/Push SKIPPED.
