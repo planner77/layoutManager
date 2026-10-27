@@ -10,6 +10,25 @@
 - **실행 상태:** NOT RUN — 이 계획/지침 자체가 구현·PR CI·현장 검증의 합격을 증명하지 않는다. [Issue #138](https://github.com/planner77/layoutManager/issues/138) 참조.
 
 
+## #109 S3-4-A Codex P2 회귀 시험 (2026-10-27 KST)
+
+- **TC-S3-4A-P2-01:** lstat/realpath 이후 0600→0644 symlink 또는 inode 변경은 같은 fd의 `fstat`·사전 `dev/ino` 체크로 거부하고, `O_NOFOLLOW`를 사용한다.
+- **TC-S3-4A-P2-02:** 검사 후 pathname을 FIFO로 바꾸어도 `O_NONBLOCK`+nonregular 검증으로 CLI를 멈추지 않는다. 파싱 예외에도 descriptor를 닫는다.
+- **TC-S3-4A-P2-03:** `status=['NOT_RUN']`, `['PASS']`, 객체/숫자/boolean/null은 `INVALID_CHECK`, `BLOCKED`; 정상 문자열 `NOT_RUN`만 `PENDING`.
+- 이전 PR CI #40438604869 SUCCESS는 보완 전 SHA만 보증하며 새 HEAD 결과는 PENDING/NOT VERIFIED. 운영 실증 아님.
+
+
+## #109 S3-4-A — OCI/Backup/Restore 증거 계약 TC (2026-10-27)
+
+- G7-S3-4A-001: 17개 확인 항목 모두 사내 PASS 증빙 형식 완비 → `EVIDENCE_PACKET_COMPLETE_NOT_GO` + operating GO=false; **이는 실제 복구 PASS를 의미하지 않음**.
+- G7-S3-4A-002: 체크 누락/NOT_RUN → `PENDING`; FAIL/CANCELLED → `BLOCKED`, completed count 거짓 증가 금지.
+- G7-S3-4A-003: App/Migrator source/version/schema/digest 위조·불일치, rollback 쌍 변형·동일 forward 쌍, unknown 필드/GO 스위치 시도 → `BLOCKED`.
+- G7-S3-4A-004: Restore 항목 `SNAP` 불일치, PASS에 EV·QA·UTC 누락·부적절한 시간 → `BLOCKED`.
+- G7-S3-4A-005: 사내 JSON은 절대경로/UID/0600/비Symlink/저장소 외부 검증, 비공개 원문 출력 금지.
+- G7-S3-4A-006: GHCR 정확 제목+한정 allowlist는 publish=false, 활성 Prisma/운영 route/Compose 혼입 및 유사 제목은 fail-closed. Tag/일반 런타임 릴리스 정책 보존.
+- G7-S3-4B-001~: 실제 사내 OCI registry 조회, 후보 Migration clone FK/전후 무결성, DB/CAD/S3 같은 Snapshot 실 Restore 및 rollback App/Migrator 실증 **NOT RUN / 후속**. Unit 코드 작성 시점 CI 결과 `NOT VERIFIED`.
+
+
 ## Issue #109 S3-3 P2/재정렬 검증 (2026-10-27 KST)
 
 - **G7-S3-3-STORAGE-001:** `CAD_STORAGE_PATH`가 격리 `/tmp/cad-g7-s3-*/cad`와 다르거나 S3 backend/credential이 있으면 CAD Preview 쓰기 거부; 운영 GET/Viewer는 기존 Context에서 유지. 순수 helper 검증.

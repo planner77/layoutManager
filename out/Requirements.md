@@ -13,6 +13,15 @@
 [ViewerPanelPolicy](ViewerPanelPolicy.md), [#138](https://github.com/planner77/layoutManager/issues/138), ADR-053-R1 참조. 기존 #26/#40/#43/#127 완료 범위에 증분 적용할 별도 작업이며 이 문서 갱신은 기능 완료를 뜻하지 않음.
 
 
+## #109 S3-4-A — 오프라인 증거 패킷 Requirements (2026-10-27)
+
+- FR-G7-S3-4A-01: App/Migrator/rollback OCI digest 형식뿐 아니라 동종 version/source·후보 schema ID·commit과의 모순을 fail-closed; `latest`는 digest가 아니다.
+- FR-G7-S3-4A-02: 17개 검증 결과 Status(FAIL/CANCELLED/NOT_RUN/PASS)와 사내 `EV/QA` 식별자 및 UTC 테스트 시간; DB/CAD/S3 복원 관련 체크는 같은 `SNAP`를 필수로 확인. 빈값·불일치·unknown field 거부.
+- FR-G7-S3-4A-03: 입력 원본은 repo 밖 UID 소유 0600 절대경로, 결과는 상태·카운트·사유 코드만. 원문 도면/사내 로그/주소/Secret 반출 없음.
+- FR-G7-S3-4A-04: 완성된 패킷도 Owner GO가 아니며 `operationalGo=false`/`runtimeActivated=false` 고정. 실제 Registry/복구 실증은 B/C, 현장 활성화는 S3-5.
+- 운영 Migration·Auth/Write/Compose·Nginx/실 DB·CAD·S3·GHCR 이미지 신규 게시 0.
+
+
 ## Issue #109 S3-3 — CAD API 권한·Audit 원자성 준비, 운영 OFF (2026-10-27)
 
 - **기능:** 기존 CAD Multipart POST·Current PUT·Version DELETE에서 서버 DB의 최신 Session/Role/Site를 같은 Prisma Transaction 안에 재조회하고 승인된 Editor/Admin+Site만 쓰기 허용한다. DELETE는 기존 삭제 비밀번호도 요구하며, CAD DB 변경과 CAD_UPLOADED/CAD_CURRENT_CHANGED/CAD_VERSION_DELETED Audit INSERT 중 하나라도 실패하면 DB를 롤백한다. 기존 업로드 보상·삭제 Job, 익명 GET/Viewer·CAD 데이터 규약은 유지한다.

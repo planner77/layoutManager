@@ -169,6 +169,26 @@ jobs:
             publish=false
             reason="Approved G7 S3-3 disposable CAD integration only: skip GHCR"
           elif [[ "$GITHUB_REF" == "refs/heads/main" &&
+                   "$COMMIT_SUBJECT" == "#109 | S3-4-A Offline release evidence [G7-S3-4A-NO-GHCR]" ]]; then
+            # S3-4-A is evidence shape/readiness validation only. No live release,
+            # no registry network, no active Prisma migrations or operational route.
+            for file in "${changed[@]}"; do
+              case "$file" in
+                .github/workflows/docker-publish.yml|AGENTS.md|out/Architecture.md|out/Database.md|out/Decisions.md|out/FailureLedger.md|out/Issue109.md|out/Operation.md|out/Requirements.md|out/TestPlan.md|out/TestReport.md|src/deploy/g7-s3/S3-4.md|src/server/g7-operational/s3-4-readiness.ts|src/scripts/g7-s3-4-readiness.ts|src/tests/unit/g7-s3-4-readiness.test.ts|src/tests/unit/g7-staging-ghcr-guard.test.ts)
+                  ;;
+                *)
+                  echo "::error::G7-S3-4A GHCR exclusion disallowed path: $file" >&2
+                  exit 1
+                  ;;
+              esac
+            done
+            publish=false
+            reason="Approved G7 S3-4A offline evidence validation only: skip GHCR"
+          elif [[ "$GITHUB_REF" == "refs/heads/main" &&
+                   "$COMMIT_SUBJECT" == "#109 | S3-4"* ]]; then
+            echo "::error::G7-S3-4A exact squash subject required" >&2
+            exit 1
+          elif [[ "$GITHUB_REF" == "refs/heads/main" &&
                    "$COMMIT_SUBJECT" == "#109 | S3-3"* ]]; then
             echo "::error::G7-S3-3 exact squash subject required" >&2
             exit 1
@@ -198,7 +218,7 @@ jobs:
             echo "- Ref: $GITHUB_REF"
           } >> "$GITHUB_STEP_SUMMARY"
           if [[ "$publish" == "false" ]]; then
-            # Scope-validated no-GHCR: docs-only or exact #109 S1/S2/S3-1/S3-2/S3-3 exception.
+            # Scope-validated no-GHCR: docs-only or exact #109 S1/S2/S3-1/S3-2/S3-3/S3-4A exception.
             # Functional tests must pass on the final PR HEAD before merge.
             test -s .github/workflows/pr-ci.yml
             test -s .github/workflows/docker-publish.yml

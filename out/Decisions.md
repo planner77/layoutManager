@@ -8,6 +8,13 @@
 - **Consequences:** CAD 데이터/WCS selection/Undo, Layer visibility, 검색 Query/결과, Runtime Manager/Adapter, DXF source bytes/Version/Current 및 G7 API/Auth 불변. 기존 모바일 focus trap/한 ESC 한 단계/메뉴·modal 우선순위는 유지. 자세한 근거/시험 계약 [ViewerPanelPolicy](ViewerPanelPolicy.md), [#138](https://github.com/planner77/layoutManager/issues/138). **구현·E2E NOT RUN.**
 
 
+## #109 S3-4-A — 운영 승인과 오프라인 증거형식 검증 분리 (2026-10-27)
+
+- 기존 G7 이중 Release/Operation 게이트 유지. S3-4-A 오프라인 증거 패킷이 완전해도 Owner GO·실 이미지 digest 검증·실 DB/CAD/S3 복구는 자동 승인하지 않는다. 도구 출력은 `operationalGo=false`/`runtimeActivated=false`만 가능하다.
+- 17개 검증 항목의 승인 근거는 사내 EV/QA/SNAP 식별자로만 공개하고 원본 CIDR·Secret·도면·로그·Object 목록은 비반출. 부적합/취소/미실행은 fail-closed, 만료 Audit purge SOP 전 물리 삭제 금지.
+- S3-4-B/C와 최종 S3-5 Owner 릴리스별 GO는 독립 후속 게이트. 정식 Migration 운영 승격·GHCR 배포는 이 PR 범위 밖.
+
+
 ## ADR-051-G7-S3-2 — 예약 운영 API 계약의 프로덕션 강제 OFF 및 시험 격리 (2026-10-26)
 
 - **결정:** S3-2는 기존 G3/G4 Service와 SQLite 영속 adapter를 재사용하여 Login/Session/Logout·Role/Site/Grant·Account Disable/Audit 및 Admin-only User Create를 `/api/g7-operational/**`의 **예약 API**로 연결한다. 단순 `G7_AUTH_ENABLED=true`나 Owner S2 준비 승인은 운영 활성화를 허용하지 않는다. **`NODE_ENV=production`은 전체 응답 404로 고정**하며 테스트 비운영에서만 명시된 전용 임시 DB·loopback/추가 Preview flag·Auth OFF가 전부 만족할 경우 서비스가 열린다.
