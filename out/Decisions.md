@@ -1,5 +1,10 @@
 # 주요 기술 결정과 승인 기록
 
+## #142 B2-2A — Writer Freeze 주장과 실제 검증 분리 (2026-10-27)
+
+- **Decision:** Main 선행 Gate 완료 후, 먼저 100% fail-closed인 순수 `SNAP-*` writer-barrier/DB-CAD-S3 inventory 계약과 음성 검증을 만든다. 단일 Epoch/시간/Local+버전 S3 marker·Hash·Current/Version·FK/Audit *자료 불일치*는 BLOCKED.
+- **Trust limitation:** 일치하는 기록을 실제 락, 독립 SQL 확인, Versioned S3 객체 byte hashing, Reviewer 승인으로 오인 금지. 모든 readiness/GO/Restore 입증 플래그 false; 실제 writer freeze·online backup·S3 version read는 추후 사내 Owner 변경승인 후.
+
 ## #142 S3-4-B2-1 — OCI digest 참조와 Trusted Registry 검증 분리 (2026-10-27)
 
 - **Decision:** OCI manifest/config raw Bytes를 content-addressed digest로 대조하는 미게시 오프라인 순수 단계부터 구현. 태그 전용 참조, 다른 Registry, 잘못된 digest/schema/Source/플랫폼/역할은 fail closed. 그러나 payload는 제삼자가 조작할 수 있어 SHA만 맞아도 `registryVerified=false`·`provenanceVerified=false`·`rollbackCompatible=false`·`operationalGo=false`.

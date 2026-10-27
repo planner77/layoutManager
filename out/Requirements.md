@@ -1,5 +1,11 @@
 # 상세 요구사항
 
+## #142 S3-4-B2-2A — Writer Barrier 패킷 일관성 검증 요구 (2026-10-27)
+
+- FR-G7-B2-2A-01: 동일 `SNAP-*`/Source Epoch/승인된 형식의 `OP-*`·`CR-*`·`BAR-*`, 시작·종료 UTC 및 `activeWriters=0/writesDuringCapture=0` 주장 불일치/캡처기간 초과 BLOCKED.
+- FR-G7-B2-2A-02: SQLite backup hash 주장, FK/Current/Audit 무결성 0, DB Version/Location nextVersion, Local CAD/S3 **버전 지정** 객체 Key/hash/byte-count의 1:1 일치와 S3 Snapshot marker version 필요. 중복/누락/역할 혼동/미승인 필드는 거부.
+- FR-G7-B2-2A-03: 패킷 형식만 검증하며 실제 원본 Reader·중지 임대·Snapshot/SQL·S3 API verification은 수행하지 않는다. 모든 검증/GO 필드 false, 현장 실증 없는 GO/운영 Auth/Write 금지.
+
 ## #142 S3-4-B2-1 — OCI 증거 Bytes 기초 검증 요구 (2026-10-27)
 
 - FR-G7-B2-1-001: OCI App/Migrator/rollback App/Migrator 4개 manifest+config Byte digest, 선택된 Linux/amd64 단일 manifest, source/version/schema/role label이 사전 기대 identity와 맞는지 확인.

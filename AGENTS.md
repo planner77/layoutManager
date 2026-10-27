@@ -1,5 +1,16 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #142 / PR #144 — 실패한 TypeScript Fixture Typecheck 보완 (2026-10-27 KST)
+
+- [PR CI #40492242157](https://github.com/planner77/layoutManager/actions/runs/40492242157) HEAD `808f7b4`, attempt=1 **FAILURE**: Verify Job 122148776521의 `tsc --noEmit`에서 [B2-2A synthetic Unit](src/tests/unit/g7-s3-4-b2-capture.test.ts) 83·88·96행 `TS2339` 3건. Local `v1`에는 `storageVersionId`가 없고 S3 `v2`에만 있어 일반 배열의 Union Type에서는 `versions[1]` 속성을 보장할 수 없음. Docker/Migration Job 122148776302는 SUCCESS, Typecheck 이후 검사들은 SKIPPED(미검증).
+- **보완 지침:** Fixture의 두 entry를 타입이 구분되는 `[typeof v1,typeof v2]` tuple로 선언해 `versions[1].storageVersionId`의 정적 타입을 보존. 데이터 구조/검증 로직 변경 없이 실패 원장·TestReport 동기화. 혼합 entry Fixture를 다루는 신규 Test는 TypeScript 검사를 먼저 통과시켜야 함. 최신 HEAD의 CI 결과는 관측 전 PASS가 아니며 기존 Codex P2 2개 Resolved/이전 SHA 무지적도 새 SHA의 리뷰 승인을 의미하지 않음. 운영 G7, GHCR, 실 DB/CAD/S3 접근 OFF.
+## Issue #142 S3-4-B2-2A — 단일 Snapshot 쓰기 장벽 증거 계약 준비 (2026-10-27)
+
+- **선행:** [B2-1 PR #143](https://github.com/planner77/layoutManager/pull/143) no-GHCR Squash → Main `2d29b8572b02ccacf5e0032bf5432cb2f2b26ed6`. [Main CI #40483297907](https://github.com/planner77/layoutManager/actions/runs/40483297907) SUCCESS, release-scope SUCCESS / GHCR Build and push SKIPPED.
+- **B2-2A 신규:** `src/server/g7-operational/s3-4-b2-capture.ts`는 사용자 제공 **주장 패킷** 내 writer-barrier 시작·종료, 원본 epoch 불변, SQLite/Local CAD/S3 versioned marker의 단일 SNAP·기간·객체 인벤토리/Version·Current/FK/Audit 요약 일관성만 정적 검증. `CAPTURE_CLAIMS_CONSISTENT_NOT_SOURCE_PROOF`는 실제 백업·기록된 파일 SHA·S3 객체 원본·운영자 권한의 인증이 아님. `writerQuiescenceVerified/sameSnapshotVerified/bytesVerified/provenanceVerified/operationalGo/runtimeActivated=false` 고정.
+- **PR #144 P2 후속:** 최초 [PR CI #40485053390](https://github.com/planner77/layoutManager/actions/runs/40485053390) HEAD `4fa951d2`는 SUCCESS이나 Codex [P2 location/version 중복](https://github.com/planner77/layoutManager/pull/144#discussion_r4387342529)·[P2 S3 Version ID 형식](https://github.com/planner77/layoutManager/pull/144#discussion_r4387342538)은 미충족. `@@unique([locationId, version])`의 복합 제약을 opaque key와 별도로 확인, S3 object/marker에 AWS 규약 UTF-8 최대 1,024 **bytes**(`+`/`/`/Unicode 허용, unversioned `null` 거부)를 공통 적용하며 synthetic 음성·경계 회귀와 [Runbook](src/deploy/g7-s3/S3-4-B2-2.md)을 갱신한다. 새 HEAD PR CI 결과는 **관측 전 NOT VERIFIED**, 실 S3/provenance/운영 검증 아님.
+- **금지·후속:** 운영 writer 정지/실 SQLite online backup/실 CAD/S3 API·파일 접근, Auth/Write 활성화, 운영 Prisma Migration, GHCR/Dockerfile/Compose/Nginx 변경 없음. B2-2B 사내 실제 Barrier/일관 Snapshot 독립 실증, B2-3~5 복제본 Migration/Restore/Rollback·EV/QA, C binder 및 S3-5 Owner GO 별도 승인 필수. [B2-2 Runbook](src/deploy/g7-s3/S3-4-B2-2.md) 참고. B2-2A PR CI는 새 HEAD 실행 전 PASS 아님, #109/#96 OPEN/BLOCKED.
+
 ## Issue #142 / S3-4-B2-1 — OCI offline digest 일치성 검증 착수, 운영 NO-GO (2026-10-27 KST)
 
 - **선행:** Issue #109 S3-4-B1 [PR #141](https://github.com/planner77/layoutManager/pull/141) 최신 HEAD `24b9c340f18e257471fe02237e6ab8e1d8f543da`, [PR CI #40476745670](https://github.com/planner77/layoutManager/actions/runs/40476745670) SUCCESS 및 동일 HEAD Codex Review completed/findings 0; 정확 no-GHCR Squash [Main `7469d016a5926aca07929bf3e95e869b46716bd1`](https://github.com/planner77/layoutManager/commit/7469d016a5926aca07929bf3e95e869b46716bd1). [Main CI #40478523325](https://github.com/planner77/layoutManager/actions/runs/40478523325) SUCCESS, release-scope Job SUCCESS / GHCR Build+Push SKIPPED.
@@ -655,6 +666,7 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 | [Issue109](out/Issue109.md) | G7 운영 Auth·CAD 쓰기 단계별 활성화, 이중 승인 게이트/Owner Go/No-Go, 동일시점 DB·CAD·S3 백업·실복구·롤백 및 운영 NO-GO 계약 | 인증/인가·기존 CAD 쓰기 권한 전환, 정식 Prisma migration, 운영 Nginx/Compose/배포, 승인 증거 확인, 장애 중단·롤백 계획·수행 전 **반드시** 참조 |
 | [S3-4-B1 Runbook](src/deploy/g7-s3/S3-4-B.md) | #109 G7 격리 복원본의 UID/0700·0600·SQLite 메모리 복제/Version·Current/FK·CAD/S3-export SHA 검증, Snapshot 한계·B2 실제 OCI/복구/롤백 승인 경계 | S3-4-B1/B2 복제본 검사·실복구 계획·Snapshot/Schema/rollback 검토, 구현·리뷰·회귀 테스트·운영 Go/No-Go 전 반드시 참조 |
 | [S3-4-B2 Runbook](src/deploy/g7-s3/S3-4-B2.md) | #142 OCI 4개 App/Migrator/rollback raw bytes SHA·Source/Schema/Role 검증의 비인가 경계, 실제 Registry/동일 Snapshot/7 Migration/restore/rollback 후속 게이트 | S3-4-B2-1~B2-5 OCI 검증·복구 설계/코드/리뷰/테스트 및 S3-4-C 신뢰 바인딩·Owner GO 이전 반드시 참조 |
+| [S3-4-B2-2 Runbook](src/deploy/g7-s3/S3-4-B2-2.md) | #142 단일 Snapshot writer barrier 주장 패킷의 순수 시간·Source Epoch·Version/Current·Local CAD/버전 S3 인벤토리 검사와 실제 현장 증거/신뢰 한계 | B2-2A~B2-5 기획·구현·리뷰/테스트, 현장 freeze·온라인 백업·복구/승인 판단 전 반드시 참조 |
 | [Issue31](out/Issue31.md) | DXF 다중 선택·볼록/정밀 외곽선·실험 상태·P4 권한 보류 | Viewer 선택·외곽선/Worker/JSON 변경 시 |
 | [Issue26](out/Issue26.md) | DXF TEXT/MTEXT 색인·world 좌표 focus·검색 범위/검증 | Viewer 검색·Pan/Zoom·Worker·BLOCK/INSERT·DWG 텍스트 지원 검토 시 |
 | [Issue66](out/Issue66.md) | Migrator 최소 의존성·크기 측정/OCI manifest·복구 계약 | Docker migrator/CI/GHCR 및 버전·패키징 변경 시 |

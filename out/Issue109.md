@@ -1,5 +1,10 @@
 # Issue #109 — G7 운영 인증 활성화 설계 및 통제 배포·롤백 Runbook
 
+## #142 S3-4-B2-2A — writer barrier 주장과 실험 분리 (2026-10-27)
+
+- B2-1 PR #143 → Main `2d29b8572b02ccacf5e0032bf5432cb2f2b26ed6`; [Main CI #40483297907](https://github.com/planner77/layoutManager/actions/runs/40483297907) release-scope SUCCESS, GHCR SKIPPED. B2-2A는 Writer Quiescence·SQLite online backup·Local CAD/S3 버전 객체라는 **운영자 제공 메타데이터**의 시간·Epoch·Snapshot/Version·Hash 상호모순을 검사하는 순수 계약만 도입.
+- 실제 freeze, 참조된 원본 Snapshot의 독립 SHA/SQL·S3 버전 검증, B2-3 이관 7개 Migration, B2-4 restore/rollback, B2-5 증거 검증 등 실증은 NOT RUN. [B2-2 Runbook](../src/deploy/g7-s3/S3-4-B2-2.md) 경계 준수. #109/#96 OPEN/BLOCKED, 런타임 GO/OFF 스위치 변경 없음.
+
 ## #142 S3-4-B2-1 착수 — OCI 로컬 digest 대조·운영 NO-GO (2026-10-27)
 
 - B1 PR #141→Main `7469d016a5926aca07929bf3e95e869b46716bd1`; Main CI [40478523325](https://github.com/planner77/layoutManager/actions/runs/40478523325) release-scope SUCCESS/GHCR SKIPPED. #142는 순차 B2-1(OCI)→B2-2(Snapshot barrier)→B2-3(격리 7 Migration)→B2-4(restore/rollback)→B2-5(사내 evidence)로 분리.
