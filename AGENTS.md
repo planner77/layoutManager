@@ -1,5 +1,11 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #142 / PR #145 — S3 Locator와 DB Version UUID 독립성 P2 보완 (2026-10-27 KST)
+
+- **근거:** [PR #145 Codex P2 #4388372985](https://github.com/planner77/layoutManager/pull/145#discussion_r4388372985). `S3ObjectStorage.prepare()`는 `cad/<S3-UUID>/original.ext`를 먼저 할당하고 `CadRepository.register()`는 별도 DB Version UUID를 생성한다. B2-2B에서 양자를 동일하다고 간주한 검사는 정상 S3 등록 도면에 `SQLITE_VERSION_OR_LOCATOR_MISMATCH` 오탐을 일으킬 수 있음.
+- **보완 계약:** `ObservedObject.s3ObjectLocator`에 합성/격리 export의 독립된 정규화 S3 locator를 명시적으로 넣고 DB `storage_path`와 정확히 비교한다. S3 locator는 허용된 `s3:bucket:cad/<UUID>/original.(dxf|dwg)` 형식·확장자를 검증하고 잘못된 Bucket/Object UUID/형식·누락을 BLOCKED 처리. Local CAD는 위치·DB Version UUID 구조를 유지하며 S3 locator 필드 금지. **S3 Object UUID와 DB Version UUID는 같을 필요 없음**. Locator·Bucket·실 CAD/S3 비밀 자료는 반환/로그/Git에 기록하지 않는다.
+- 기존 PR CI [#40499605822](https://github.com/planner77/layoutManager/actions/runs/40499605822) HEAD `0f0c6aae` SUCCESS(두 Job 모두 성공), P2는 **CI 실패가 아닌 리뷰 결함**. 관련 합성 양성/불일치/누락/형식거부 회귀 추가 및 [B2-2B Runbook](src/deploy/g7-s3/S3-4-B2-2B.md), 실패 원장·TC 동기화. 수정 HEAD의 새 CI/최신 Codex 결과는 별도 검증 전 `NOT VERIFIED`. 운영 Writer 정지·실 SQLite Online Backup·원본 CAD/S3 GET·Owner GO 여전히 금지.
+
 ## Issue #142 S3-4-B2-2B — 격리 Byte 대조 사전 검증 (2026-10-27 KST)
 
 - **선행:** #142 B2-2A [PR #144](https://github.com/planner77/layoutManager/pull/144) no-GHCR Squash Main `e043d56d43099034906cccf0bb1cc1c7a76bb11f`, [Main CI #40496032085](https://github.com/planner77/layoutManager/actions/runs/40496032085) SUCCESS, release-scope SUCCESS/GHCR Job SKIPPED. 별도 `DESIGN.md` 없음 → Architecture/Decisions/Database/Operation이 설계 기준.

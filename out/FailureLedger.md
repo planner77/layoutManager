@@ -1,5 +1,12 @@
 # PR/Main CI 실패 원장
 
+## #142 / PR #145 — Codex P2 S3 UUID 매핑 오탐 보완 (2026-10-27 KST)
+
+- **관측 CI 성공(실패 아님):** [PR CI #40499605822](https://github.com/planner77/layoutManager/actions/runs/40499605822), attempt 1, HEAD `0f0c6aaebf97636010ae6dfec91d436c1d329c37` `completed/success`, Typecheck/Lint/Test/Build/E2E [Job 122173675351](https://github.com/planner77/layoutManager/actions/runs/40499605822/job/122173675351) SUCCESS 및 Docker/Migration/Smoke [Job 122173675644](https://github.com/planner77/layoutManager/actions/runs/40499605822/job/122173675644) SUCCESS. PR OPEN, Main `e043d56d...` 대비 behind=0/충돌 없음.
+- **P2 리뷰 지적 (CI 실패와 별개):** [Codex #4388372985](https://github.com/planner77/layoutManager/pull/145#discussion_r4388372985): `S3ObjectStorage.prepare()`의 독립 Object UUID와 `CadRepository.register()`의 DB Version UUID가 같다고 가정하여 유효한 `storage_path`를 `SQLITE_VERSION_OR_LOCATOR_MISMATCH`로 오차단. 기존 합성 양성 시험은 우연히 동일 UUID를 사용해 실제 런타임 경로를 재현하지 못함.
+- **수정:** 독립 `s3ObjectLocator`를 합성 private 객체 매핑에 필수로 도입, 실제 DB `storage_path`와 정확 비교 및 S3 bucket/object UUID/형식 fail-closed 확인. Local `<location>/<db-version>/original.ext` 계약 불변. 서로 다른 두 UUID의 합성 양성 시험, 다른 객체 UUID·bucket, 누락/URL/s3Locator-in-local에 대한 BLOCKED 회귀 추가. AGENTS/Architecture/Database/Decisions/Requirements/Operation/TestPlan/TestReport/B2-2B Runbook/Issue109 문서 동기화.
+- **경계 및 재검증:** 신규 HEAD의 Typecheck/Lint/Unit/Build/E2E/CI·Codex 재리뷰는 확인 전 `NOT VERIFIED`. 이전 SHA의 CI 성공을 신규 HEAD로 승계하지 않음. 실제 운영 Writer freeze/SQLite online backup·CAD/S3 versioned 원본·DB·Auth/Write/GHCR/배포·마이그레이션·실증/Owner GO **NOT RUN**; #142/#109/#96 OPEN/BLOCKED. 이번 단계는 PR CI 시작까지만이며 병합·GHCR 게시 없음.
+
 ## #142 B2-2B 격리 검증 착수 — 선행 Main CI 성공, 새 PR 검증 이전 (2026-10-27 KST)
 
 - **선행 성공, 실패 아님:** B2-2A [PR #144](https://github.com/planner77/layoutManager/pull/144) final HEAD `f633bc8edf39b01ddfbbc8e34127f7b2be06879f`, [PR CI #40494040763](https://github.com/planner77/layoutManager/actions/runs/40494040763) SUCCESS, Codex findings 0/미해결 thread 0, exact no-GHCR Squash Main `e043d56d43099034906cccf0bb1cc1c7a76bb11f`. [Main CI #40496032085](https://github.com/planner77/layoutManager/actions/runs/40496032085) release-scope Job 122161584540 SUCCESS, GHCR Job 122161649150 SKIPPED.

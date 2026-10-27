@@ -1,5 +1,11 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## #142 PR #145 — P2 S3 객체/DB UUID 분리 수정 검증 대기 (2026-10-27)
+
+- 기존 [PR CI #40499605822](https://github.com/planner77/layoutManager/actions/runs/40499605822), HEAD `0f0c6aaebf97636010ae6dfec91d436c1d329c37` `completed/success`; Verify Job 122173675351, Docker Job 122173675644 모두 SUCCESS. **코드 리뷰 P2는 CI 실패가 아님.**
+- [Codex P2 #4388372985](https://github.com/planner77/layoutManager/pull/145#discussion_r4388372985)는 S3 Object UUID와 DB Version UUID 독립 생성 사실을 지적. `ObservedObject.s3ObjectLocator` 매핑으로 DB `storage_path`와 비교하도록 수정, 올바른 독립 UUID 양성 Fixture 및 Bucket/UUID 오배정·필드 누락·비인가 URI·Local S3 locator 오염을 검출하는 합성 테스트를 **추가 작성**. 실제 수정 HEAD의 Typecheck/Vitest/E2E/PR CI 결과는 새 Run 관측 전 `NOT VERIFIED`.
+- 합성 성공도 `DISPOSABLE_BYTES_CONSISTENT_NOT_SITE_PROOF`; 실제 Site Writer lock·SQLite online backup·S3 versioned 원본 인증·영속 DB/CAD·B2-3~5/G7 Owner GO는 여전히 `NOT RUN/BLOCKED`.
+
 ## #142 B2-2B — 격리 합성 증거 도구 작성 / 신규 CI 미관측 (2026-10-27)
 
 - 선행 B2-2A [PR #144](https://github.com/planner77/layoutManager/pull/144) Main `e043d56d43099034906cccf0bb1cc1c7a76bb11f`, [Main CI #40496032085](https://github.com/planner77/layoutManager/actions/runs/40496032085) SUCCESS / release-scope SUCCESS / GHCR SKIPPED.

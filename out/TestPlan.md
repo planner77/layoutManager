@@ -1,5 +1,11 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## #142 B2-2B P2 보완 — S3 Locator 독립 매핑 회귀 (2026-10-27)
+
+- TC-B2-2B-05: S3ObjectStorage가 사용한 `S3 object UUID`와 CadRepository가 등록한 `DB Version UUID`가 **서로 다르면서** 정규화 `s3:bucket:cad/<object-uuid>/original.dwg` Locator, DB `storage_path` 및 합성 Bytes/Hash가 일치하면 `DISPOSABLE_BYTES_CONSISTENT_NOT_SITE_PROOF` (운영 GO=false). Local은 DB Location/Version UUID 구조를 그대로 유지.
+- TC-B2-2B-06: 올바른 형식이나 다른 S3 Object UUID/다른 Bucket로 잘못 매핑하면 `SQLITE_VERSION_OR_LOCATOR_MISMATCH`/BLOCKED; S3 locator 누락·미승인 URL/Local에 불필요한 S3 locator 삽입은 `INVALID_DISPOSABLE_BUNDLE`/BLOCKED. 실제 S3 GET/VersionId·Writer 정지는 시험에서 호출하지 않음.
+- 적용 후 최신 HEAD Typecheck/Lint/Vitest/PR CI와 Codex P2 Resolution 별도 확인 필수. 이전 성공 Run은 새 HEAD 합격 근거가 아님.
+
 ## #142 B2-2B — Buffer-only SQLite/CAD/S3 검증 Test Cases (2026-10-27)
 
 - TC-B2-2B-01: 정상 B2-2A 주장 Packet와 합성 실제 SQLite·Local CAD/S3 export·Marker bytes, 전체 Version/Location Current/FK/NextVersion·Hash·Size/VersionId Claim 교차대조 → `DISPOSABLE_BYTES_CONSISTENT_NOT_SITE_PROOF`. Source/site/writer/GO 검증 flags는 false.

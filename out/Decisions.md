@@ -1,5 +1,10 @@
 # 주요 기술 결정과 승인 기록
 
+## #142 B2-2B P2 결정 — 별도 S3 Object Locator를 명시적으로 검사 (2026-10-27)
+
+- **Decision:** `S3ObjectStorage.prepare()`에서 생성되는 S3 객체 UUID와 `CadRepository.register()`의 DB Version UUID는 독립. B2-2B에 합성 입력 `s3ObjectLocator`를 추가하고 DB `storage_path`와 바이트열 단위로 일치 검증하며, S3 정규형·파일 확장자·Bucket/Object UUID 매핑 오류를 차단한다. Local-only mapping에는 S3 locator를 허용하지 않는다.
+- **Reason/limits:** 실제 동작을 모사하면서 기존 통합 검증의 false BLOCKED를 제거한다. 제공된 S3 Locator가 진짜 원격 저장 객체를 가리키는지는 증명하지 못한다. 온라인 S3 VersionId/Writer freeze/Backup·Owner GO는 별도 승인 전까지 불가.
+
 ## ADR-051-G7-B2-2B — 합성 Byte Consistency와 실제 Source Provenance 분리 (2026-10-27)
 
 - **Decision:** B2-2A 주장형 패킷 이후에는 read-only 메모리 SQLite와 별도 제공된 합성 CAD/S3 export/marker Buffer를 교차 비교해 바이트 변경·누락·객체 매핑·FK/Current 불일치를 탐지한다. 실 서비스 Writer/Network/Filesystem Path를 받는 자동 실행기보다 `Buffer-only` 안전 경계를 우선하며, 운영 경로에 연결하지 않는다.

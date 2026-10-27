@@ -1,5 +1,10 @@
 # Database Schema — 단일 기준 문서
 
+## #142 B2-2B P2 — S3 storage_path 객체 UUID ≠ DB Version UUID (2026-10-27)
+
+- `CadFileVersion.id`는 `CadRepository.register()`에서 생성되지만 `CadFileVersion.storage_path`가 S3형이면 `S3ObjectStorage.prepare()`가 **사전에 독립 생성한 UUID**의 `s3:bucket:cad/<object_uuid>/original.(dxf|dwg)`가 저장된다. 두 UUID를 일치 제약으로 오해하면 정상 버전이 잘못 차단된다. B2-2B 합성 mapping은 DB Version ID와 분리된 `s3ObjectLocator`를 받아 DB의 실제 `storage_path`와 정확 대조한다.
+- Local 저장 경로 `<locationId>/<dbVersionId>/original.ext` 계약은 기존 그대로이며, 스키마/마이그레이션·실 운영 DB 변경은 발생하지 않는다. 객체 Locator 값과 버킷·원본 경로는 사내 자료로 취급하고 공개 리포트/로그에 출력하지 않는다.
+
 ## #142 B2-2B — 격리 SQLite Buffer 검사, 운영 Schema 불변 (2026-10-27)
 
 - B2-2A의 FK/QuickCheck/Current/Audit=0은 주장이다. B2-2B는 합성 `CAD_BASELINE` SQLite Buffer를 메모리에서만 열어 실제 `PRAGMA quick_check`·`foreign_key_check`, `CadLocation(id,current_version_id,next_version)`, `CadFileVersion(id,location_id,version,file_size,sha256,storage_path,file_format)` 전체 결과를 opaque V/L-key ↔ disposable UUID map과 대조한다. 재조회 pathname·DB Write/SQL DDL/운영 WAL 접근 없음.

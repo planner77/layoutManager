@@ -1,5 +1,10 @@
 # Issue #109 — G7 운영 인증 활성화 설계 및 통제 배포·롤백 Runbook
 
+## #142 PR #145 — B2-2B S3 UUID 매핑 P2 보완, 운영 NO-GO (2026-10-27)
+
+- S3ObjectStorage의 객체 UUID는 CadRepository의 DB Version UUID와 독립임을 검토하고 B2-2B 오프라인 합성 대조에서 `s3ObjectLocator` ↔ DB `storage_path`로 검증 기준을 정정. Codex P2 #4388372985는 이전 PR CI 성공과 구분 기록. 현장 S3 원본 객체/version GET 및 Writer freeze는 여전히 `NOT RUN`.
+- #142/#109/#96 OPEN/BLOCKED, 운영 Auth/CAD Write/활성 Prisma/Compose/Nginx/GHCR 미실행 유지. 현장 Source 확인·실 복원/rollback은 별도 CR/Owner 승인과 독립 증거 이후에만 추진한다.
+
 ## #142 B2-2B — 합성 바이트 대조 준비, G7 운영 활성화 여전히 BLOCKED (2026-10-27)
 
 - B2-2A PR #144 → Main `e043d56d43099034906cccf0bb1cc1c7a76bb11f`, Main CI #40496032085 SUCCESS/GHCR SKIPPED. B2-2B는 별도 공급된 **격리 합성 SQLite/Local CAD/S3 Export Byte**의 해시·FK/Version/Current·SNAP/Marker·DB mapping을 검증하는 개발 단계다. 그 Bytes가 실제 사내 원본인지, 동일 Writer Epoch에서 생성됐는지 입증하지 않는다.

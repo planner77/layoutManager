@@ -1,5 +1,10 @@
 # 상세 요구사항
 
+## #142 PR #145 P2 보완 — S3 Object Locator 독립성 (2026-10-27)
+
+- FR-G7-B2-2B-04: S3 파일의 객체 경로 UUID와 DB Version ID의 동일성을 강제하지 않는다. 별도 합성 Object mapping의 `s3ObjectLocator`(정규형 `s3:bucket:cad/<object_uuid>/original.ext`)를 DB `CadFileVersion.storage_path`와 정확히 대조하고 파일 형식을 검증한다. 두 UUID가 달라도 올바른 바이트/위치/버전과 경로 매핑이면 합성 단계의 일관성 통과.
+- FR-G7-B2-2B-05: S3 locator 누락·형식 오염·잘못된 Bucket/Object UUID 또는 Local object에 S3 locator 포함 시 fail-closed. 반환값에 실제 Bucket/Path/ID를 포함하지 않으며, DB/영속 Migration/실 S3 접근·운영 인증/쓰기와 분리. 실제 현장 입증 없이 운영 수용/GO 불가.
+
 ## #142 S3-4-B2-2B — Disposable Bytes 사전 검증 요구 (2026-10-27)
 
 - FR-G7-B2-2B-01: B2-2A에서 BLOCKED인 writer/Source Epoch/SNAP 패킷은 다음 단계에서 수용하지 않는다. 새 입력은 별도 공급한 합성 SQLite·Local CAD/S3 export/marker Buffer와 1:1 opaque L/V key ↔ disposable DB UUID mapping으로 제한하고 임의 파일 경로·site credential·S3 network 요청 금지.
