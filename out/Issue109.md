@@ -1,5 +1,20 @@
 # Issue #109 — G7 운영 인증 활성화 설계 및 통제 배포·롤백 Runbook
 
+## #142 PR #145 — B2-2B 중복 S3 Locator P2 보완, 운영 NO-GO (2026-10-27)
+
+- [Codex #4388575128](https://github.com/planner77/layoutManager/pull/145#discussion_r4388575128): S3 UUID와 DB Version UUID를 독립적으로 유지하는 변경 이후, 서로 다른 Version의 동일 S3 locator를 허용하던 문제를 `DUPLICATE_S3_LOCATOR/BLOCKED`로 수정. 실제 Prisma `uq_storage_path` 불변식 준수, 고의로 Unique Index를 생략한 합성 DB의 음성 회귀 추가. 과거 PR CI #40502175608 SUCCESS는 신규 HEAD 결과와 구분.
+- 이번 작업은 사내 실제 Writer 정지/SQLite online backup·CAD/S3 원본·GHCR/배포/7 Migration·Restore/Rollback·G7 Owner 승인과 분리한다. #142/#109/#96 OPEN/BLOCKED, 운영 Auth/CAD Write OFF.
+
+## #142 PR #145 — B2-2B S3 UUID 매핑 P2 보완, 운영 NO-GO (2026-10-27)
+
+- S3ObjectStorage의 객체 UUID는 CadRepository의 DB Version UUID와 독립임을 검토하고 B2-2B 오프라인 합성 대조에서 `s3ObjectLocator` ↔ DB `storage_path`로 검증 기준을 정정. Codex P2 #4388372985는 이전 PR CI 성공과 구분 기록. 현장 S3 원본 객체/version GET 및 Writer freeze는 여전히 `NOT RUN`.
+- #142/#109/#96 OPEN/BLOCKED, 운영 Auth/CAD Write/활성 Prisma/Compose/Nginx/GHCR 미실행 유지. 현장 Source 확인·실 복원/rollback은 별도 CR/Owner 승인과 독립 증거 이후에만 추진한다.
+
+## #142 B2-2B — 합성 바이트 대조 준비, G7 운영 활성화 여전히 BLOCKED (2026-10-27)
+
+- B2-2A PR #144 → Main `e043d56d43099034906cccf0bb1cc1c7a76bb11f`, Main CI #40496032085 SUCCESS/GHCR SKIPPED. B2-2B는 별도 공급된 **격리 합성 SQLite/Local CAD/S3 Export Byte**의 해시·FK/Version/Current·SNAP/Marker·DB mapping을 검증하는 개발 단계다. 그 Bytes가 실제 사내 원본인지, 동일 Writer Epoch에서 생성됐는지 입증하지 않는다.
+- 실제 Source writer-quiescence/SQLite online backup/원본 CAD와 versioned S3 GET/Marker/Audit, 후보 7 Migration/Restore/Rollback 및 S3-4-C binder/S3-5 Owner GO는 별도 승인·증거가 필요하다. 운영 DB/API/Nginx/Compose/GHCR와 이슈 #142/#109/#96 상태는 OPEN/BLOCKED로 유지. [B2-2B Runbook](../src/deploy/g7-s3/S3-4-B2-2B.md).
+
 ## #142 S3-4-B2-2A — writer barrier 주장과 실험 분리 (2026-10-27)
 
 - B2-1 PR #143 → Main `2d29b8572b02ccacf5e0032bf5432cb2f2b26ed6`; [Main CI #40483297907](https://github.com/planner77/layoutManager/actions/runs/40483297907) release-scope SUCCESS, GHCR SKIPPED. B2-2A는 Writer Quiescence·SQLite online backup·Local CAD/S3 버전 객체라는 **운영자 제공 메타데이터**의 시간·Epoch·Snapshot/Version·Hash 상호모순을 검사하는 순수 계약만 도입.

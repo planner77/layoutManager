@@ -1,5 +1,25 @@
 # PR/Main CI 실패 원장
 
+## Issue #142 / PR #145 — Codex P2 중복 S3 Locator 제약 누락 보완 (2026-10-27 KST)
+
+- **관측된 선행 CI 성공, 실패 아님:** [PR CI #40502175608](https://github.com/planner77/layoutManager/actions/runs/40502175608), attempt=1, HEAD `cddd2f20dc45c1f3d7edc42e15f0b914016a078d`, `completed/success`. Verify Typecheck/Lint/Test/Build/E2E Job 122182315944 SUCCESS, Docker/Migration/Smoke Job 122182315606 SUCCESS. 실제 Unit Fail이 아닌 **Codex P2**가 이후 발견되었음.
+- **검증되지 않았던 불변식:** [Codex P2 #4388575128](https://github.com/planner77/layoutManager/pull/145#discussion_r4388575128), 원래 B2-2B는 개별 `key`/`dbVersionId` 중복만 검사했으므로, 서로 다른 Version이 동일 `s3ObjectLocator`와 바이트/`storageVersionId`를 공유해도 `DISPOSABLE_BYTES_CONSISTENT_NOT_SITE_PROOF`를 반환 가능. 이는 [Prisma `CadFileVersion.storagePath @unique("uq_storage_path")`](https://github.com/planner77/layoutManager/blob/main/src/prisma/schema.prisma#L86)과 불일치. 이전 P2 독립 S3 객체 UUID 수정은 유지.
+- **보완·회귀:** 전체 S3 Version mapping의 Locator를 별도 `Set<string>`으로 추적해 중복을 `DUPLICATE_S3_LOCATOR/BLOCKED`로 fail-closed, 기존 S3 UUID≠DB UUID 허용과 Local locator 계약 보존. 정상 3 Version/서로 다른 S3 locator 합성 패킷→긍정, **Unique Index를 의도적으로 생략한** 격리 SQLite 3 Version/동일 S3 locator 두 건→B2-2A 주장 패킷은 정상이나 B2-2B만 `DUPLICATE_S3_LOCATOR`로 BLOCKED 회귀 추가. SHA·byte 길이·S3 VersionId도 유효하게 구성해 결함의 재발을 직접 검출한다.
+- **재검증 경계:** AGENTS·ADR/Architecture·Database·Requirements·Operation·TestPlan/TestReport·Runbook/Issue109 동기화. **새 HEAD** Typecheck/Unit/PR CI/Codex 리뷰 결과는 별도 관측 전 `NOT VERIFIED`, 이전 Run의 SUCCESS 재사용 금지. Main 정렬/미해결 리뷰/충돌은 신규 HEAD push 시 재점검; 실제 Writer freeze/SQLite online backup/원본 CAD/S3 Versioned GET·Migration·Restore/Rollback·GHCR/운영 Auth/CAD Write 및 Owner GO **NOT RUN**. Issue #142/#109/#96 OPEN/BLOCKED. 이번 요청 범위 PR CI 시작, 모니터링/병합 없음.
+
+## #142 / PR #145 — Codex P2 S3 UUID 매핑 오탐 보완 (2026-10-27 KST)
+
+- **관측 CI 성공(실패 아님):** [PR CI #40499605822](https://github.com/planner77/layoutManager/actions/runs/40499605822), attempt 1, HEAD `0f0c6aaebf97636010ae6dfec91d436c1d329c37` `completed/success`, Typecheck/Lint/Test/Build/E2E [Job 122173675351](https://github.com/planner77/layoutManager/actions/runs/40499605822/job/122173675351) SUCCESS 및 Docker/Migration/Smoke [Job 122173675644](https://github.com/planner77/layoutManager/actions/runs/40499605822/job/122173675644) SUCCESS. PR OPEN, Main `e043d56d...` 대비 behind=0/충돌 없음.
+- **P2 리뷰 지적 (CI 실패와 별개):** [Codex #4388372985](https://github.com/planner77/layoutManager/pull/145#discussion_r4388372985): `S3ObjectStorage.prepare()`의 독립 Object UUID와 `CadRepository.register()`의 DB Version UUID가 같다고 가정하여 유효한 `storage_path`를 `SQLITE_VERSION_OR_LOCATOR_MISMATCH`로 오차단. 기존 합성 양성 시험은 우연히 동일 UUID를 사용해 실제 런타임 경로를 재현하지 못함.
+- **수정:** 독립 `s3ObjectLocator`를 합성 private 객체 매핑에 필수로 도입, 실제 DB `storage_path`와 정확 비교 및 S3 bucket/object UUID/형식 fail-closed 확인. Local `<location>/<db-version>/original.ext` 계약 불변. 서로 다른 두 UUID의 합성 양성 시험, 다른 객체 UUID·bucket, 누락/URL/s3Locator-in-local에 대한 BLOCKED 회귀 추가. AGENTS/Architecture/Database/Decisions/Requirements/Operation/TestPlan/TestReport/B2-2B Runbook/Issue109 문서 동기화.
+- **경계 및 재검증:** 신규 HEAD의 Typecheck/Lint/Unit/Build/E2E/CI·Codex 재리뷰는 확인 전 `NOT VERIFIED`. 이전 SHA의 CI 성공을 신규 HEAD로 승계하지 않음. 실제 운영 Writer freeze/SQLite online backup·CAD/S3 versioned 원본·DB·Auth/Write/GHCR/배포·마이그레이션·실증/Owner GO **NOT RUN**; #142/#109/#96 OPEN/BLOCKED. 이번 단계는 PR CI 시작까지만이며 병합·GHCR 게시 없음.
+
+## #142 B2-2B 격리 검증 착수 — 선행 Main CI 성공, 새 PR 검증 이전 (2026-10-27 KST)
+
+- **선행 성공, 실패 아님:** B2-2A [PR #144](https://github.com/planner77/layoutManager/pull/144) final HEAD `f633bc8edf39b01ddfbbc8e34127f7b2be06879f`, [PR CI #40494040763](https://github.com/planner77/layoutManager/actions/runs/40494040763) SUCCESS, Codex findings 0/미해결 thread 0, exact no-GHCR Squash Main `e043d56d43099034906cccf0bb1cc1c7a76bb11f`. [Main CI #40496032085](https://github.com/planner77/layoutManager/actions/runs/40496032085) release-scope Job 122161584540 SUCCESS, GHCR Job 122161649150 SKIPPED.
+- **새 범위(작성, 실행 성공 아님):** SQLite/Local CAD/S3 export·marker Buffer를 별도로 대조하는 합성 preflight와 positive/negative Unit, G7 Runbook/설계·운영 문서 및 정확 15-path no-GHCR release 가드. 신규 Typecheck/Unit/PR CI 결과는 Run/Job/Attempt/HEAD 관측 전 `NOT VERIFIED`. 이전 [CI #40492242157](https://github.com/planner77/layoutManager/actions/runs/40492242157) TS2339 실패와 두 P2 리뷰 기록은 아래에 보존.
+- **금지:** 실제 Writer 동결, SQLite online backup, 원본 CAD·S3 Versioned HEAD/GET 및 Registry, 7 Migration, Restore/Rollback, 운영 Auth/CAD Write/Nginx/Compose·GHCR, #142/#109/#96 종료 모두 NOT RUN/OFF.
+
 ## Issue #142 / PR #144 — Typecheck TS2339 보완 (2026-10-27 KST)
 
 - **관측 CI 실패:** [PR CI #40492242157](https://github.com/planner77/layoutManager/actions/runs/40492242157), attempt=1, SHA `808f7b40de4dd2686888b17d7f010784a6e293c6` → `completed/failure`. Typecheck/Lint/Test/Build/E2E [Job 122148776521](https://github.com/planner77/layoutManager/actions/runs/40492242157/job/122148776521)에서 TypeScript 검사 `tsc --noEmit` 3건 **TS2339** (`src/tests/unit/g7-s3-4-b2-capture.test.ts:83,88,96`); 이후 ESLint/Unit/Build/E2E는 SKIPPED이므로 PASS가 아님. Docker/Migration/Smoke [Job 122148776302](https://github.com/planner77/layoutManager/actions/runs/40492242157/job/122148776302) SUCCESS.

@@ -1,5 +1,23 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## #142 PR #145 — 신규 P2 중복 S3 Locator 회귀 작성 / 최종 CI 전 (2026-10-27)
+
+- [PR CI #40502175608](https://github.com/planner77/layoutManager/actions/runs/40502175608), attempt=1, HEAD `cddd2f20dc45c1f3d7edc42e15f0b914016a078d` SUCCESS (Verify Job 122182315944, Docker Job 122182315606). 이 **과거 SHA의 성공**과 [Codex P2 #4388575128](https://github.com/planner77/layoutManager/pull/145#discussion_r4388575128)은 구분한다.
+- `DUPLICATE_S3_LOCATOR` 전역 검사 및 정상 독립 S3 객체 UUID/DB Version UUID/서로 다른 S3 locators 합성 양성 Fixture, DB Unique Index가 없는 격리 SQLite의 동일 locator 2-DB-Version 악성 Fixture를 추가 **작성**. B2-2A Packet은 정상으로 유지해 B2-2B의 Unique 검사 자체를 시험한다. 수정 HEAD Typecheck/Vitest/Lint/E2E/PR CI 결과는 실제 Run 확인 전 **NOT VERIFIED**, Site Writer/S3/원본 Snapshot 실제 시험은 **NOT RUN**.
+- DB/CAD/S3 원본·유효한 live Object VersionId/Owner GO 입증 없음. `DISPOSABLE_BYTES_CONSISTENT_NOT_SITE_PROOF` 외의 양성/운영 수용은 불가. #142/#109/#96 OPEN/BLOCKED.
+
+## #142 PR #145 — P2 S3 객체/DB UUID 분리 수정 검증 대기 (2026-10-27)
+
+- 기존 [PR CI #40499605822](https://github.com/planner77/layoutManager/actions/runs/40499605822), HEAD `0f0c6aaebf97636010ae6dfec91d436c1d329c37` `completed/success`; Verify Job 122173675351, Docker Job 122173675644 모두 SUCCESS. **코드 리뷰 P2는 CI 실패가 아님.**
+- [Codex P2 #4388372985](https://github.com/planner77/layoutManager/pull/145#discussion_r4388372985)는 S3 Object UUID와 DB Version UUID 독립 생성 사실을 지적. `ObservedObject.s3ObjectLocator` 매핑으로 DB `storage_path`와 비교하도록 수정, 올바른 독립 UUID 양성 Fixture 및 Bucket/UUID 오배정·필드 누락·비인가 URI·Local S3 locator 오염을 검출하는 합성 테스트를 **추가 작성**. 실제 수정 HEAD의 Typecheck/Vitest/E2E/PR CI 결과는 새 Run 관측 전 `NOT VERIFIED`.
+- 합성 성공도 `DISPOSABLE_BYTES_CONSISTENT_NOT_SITE_PROOF`; 실제 Site Writer lock·SQLite online backup·S3 versioned 원본 인증·영속 DB/CAD·B2-3~5/G7 Owner GO는 여전히 `NOT RUN/BLOCKED`.
+
+## #142 B2-2B — 격리 합성 증거 도구 작성 / 신규 CI 미관측 (2026-10-27)
+
+- 선행 B2-2A [PR #144](https://github.com/planner77/layoutManager/pull/144) Main `e043d56d43099034906cccf0bb1cc1c7a76bb11f`, [Main CI #40496032085](https://github.com/planner77/layoutManager/actions/runs/40496032085) SUCCESS / release-scope SUCCESS / GHCR SKIPPED.
+- 새 `inspectS34B22BDisposableBytes`는 합성 SQLite Buffer/Local CAD/S3 export·Marker/VersionId/DB mapping의 내용 hash/Current/FK 음성 검증 테스트를 **작성**했다. 원본 Writer/Online Backup/S3 authoritative GET/실 Snapshot/Restore/Rollback **NOT RUN**, 긍정도 `DISPOSABLE_BYTES_CONSISTENT_NOT_SITE_PROOF`이다. Typecheck/Vitest/Lint/Build/E2E·PR CI는 실제 Run 관측 전 `NOT VERIFIED`.
+- #142/#109/#96 OPEN/BLOCKED, 운영 Auth/CAD Write·GHCR 게시/active migration OFF. [B2-2B Runbook](../src/deploy/g7-s3/S3-4-B2-2B.md).
+
 ## Issue #142 / PR #144 — TypeScript 검사 3건 실패·Fixture 타입 보완 (2026-10-27 KST)
 
 - [PR CI Run 40492242157](https://github.com/planner77/layoutManager/actions/runs/40492242157), attempt 1, HEAD `808f7b40de4dd2686888b17d7f010784a6e293c6` **completed/failure**. Verify [Job 122148776521](https://github.com/planner77/layoutManager/actions/runs/40492242157/job/122148776521) `npm run typecheck` 실패: `g7-s3-4-b2-capture.test.ts:83,88,96` TS2339(로컬 Version과 S3 Version이 서로 다른 Shape인데 Fixture `versions:[v1,v2]`가 Union Array로 추론됨). 이후 ESLint/Unit/Build/E2E **SKIPPED**; Docker/Migration/Smoke [Job 122148776302](https://github.com/planner77/layoutManager/actions/runs/40492242157/job/122148776302) **SUCCESS**.

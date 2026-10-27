@@ -1,5 +1,20 @@
 # Database Schema — 단일 기준 문서
 
+## #142 B2-2B P2 — CadFileVersion.storagePath Unique 무결성 (2026-10-27)
+
+- 공식 `src/prisma/schema.prisma`의 `CadFileVersion.storagePath String @unique(map: "uq_storage_path")`는 S3 Object Locator를 서로 다른 DB Version에서 중복 사용할 수 없도록 하는 **별개 Unique 제약**이다. `@@unique([locationId, version])`/DB Version ID/opaque V Key 중복 검사로 대체되지 않는다.
+- B2-2B는 합성/격리 메모리 SQLite의 Unique 인덱스가 생략되거나 깨져도 중복 S3 locator를 `DUPLICATE_S3_LOCATOR`로 차단한다. 독립된 Object UUID와 DB Version UUID는 계속 허용한다. 회귀에는 고의로 Unique Index를 생략한 손상 모사와 인덱스가 있는 정상 3 Version 시나리오를 분리한다. 운영 Schema·Prisma Migration/DB 데이터 변경 없음.
+
+## #142 B2-2B P2 — S3 storage_path 객체 UUID ≠ DB Version UUID (2026-10-27)
+
+- `CadFileVersion.id`는 `CadRepository.register()`에서 생성되지만 `CadFileVersion.storage_path`가 S3형이면 `S3ObjectStorage.prepare()`가 **사전에 독립 생성한 UUID**의 `s3:bucket:cad/<object_uuid>/original.(dxf|dwg)`가 저장된다. 두 UUID를 일치 제약으로 오해하면 정상 버전이 잘못 차단된다. B2-2B 합성 mapping은 DB Version ID와 분리된 `s3ObjectLocator`를 받아 DB의 실제 `storage_path`와 정확 대조한다.
+- Local 저장 경로 `<locationId>/<dbVersionId>/original.ext` 계약은 기존 그대로이며, 스키마/마이그레이션·실 운영 DB 변경은 발생하지 않는다. 객체 Locator 값과 버킷·원본 경로는 사내 자료로 취급하고 공개 리포트/로그에 출력하지 않는다.
+
+## #142 B2-2B — 격리 SQLite Buffer 검사, 운영 Schema 불변 (2026-10-27)
+
+- B2-2A의 FK/QuickCheck/Current/Audit=0은 주장이다. B2-2B는 합성 `CAD_BASELINE` SQLite Buffer를 메모리에서만 열어 실제 `PRAGMA quick_check`·`foreign_key_check`, `CadLocation(id,current_version_id,next_version)`, `CadFileVersion(id,location_id,version,file_size,sha256,storage_path,file_format)` 전체 결과를 opaque V/L-key ↔ disposable UUID map과 대조한다. 재조회 pathname·DB Write/SQL DDL/운영 WAL 접근 없음.
+- Auth 후보 Table이 존재하면 본 B2-2B baseline 단계는 BLOCKED. 후보 7번째 Migration과 append-only Audit Trigger의 독립 실제 검증은 B2-3. `src/prisma/schema.prisma`·활성 `src/prisma/migrations/**`·`src/scripts/deploy.ts`와 운영 CAD Version/Current 변경 없음.
+
 ## #142 B2-2A — 원본 DB 데이터·스키마 불변 (2026-10-27)
 
 - 오프라인 패킷 검증은 별도 SQLite 연결이나 운영 DB Read를 실행하지 않으며, 임의의 FK=0/Current 정합성/Audit 정합성 **주장**을 검사할 뿐 진짜 SQLite의 무결성을 보증하지 않음. `src/prisma/migrations/**`, 운영 G7 7번째 격리 SQL, Auth Schema, `src/scripts/deploy.ts` 불변.

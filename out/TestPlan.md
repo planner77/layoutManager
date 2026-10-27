@@ -1,5 +1,24 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## #142 B2-2B — CadFileVersion.storagePath Unique P2 회귀 (2026-10-27)
+
+- TC-B2-2B-07: 합성 SQLite의 `UNIQUE(storage_path)`를 유지한 상태에서 Local 1개·S3 2개 Version(각 DB Version ID/S3 Object UUID 독립, S3 locator 2개 서로 다름)과 일치하는 B2-2A Packet·S3 export Buffers → `DISPOSABLE_BYTES_CONSISTENT_NOT_SITE_PROOF`, s3BytesCompared=2, DB Version 3, 모든 출처/GO false.
+- TC-B2-2B-08: 고의로 `UNIQUE(storage_path)`만 빠진 합성 SQLite의 DB Version 3개 중 S3 Version 2개가 동일 S3 locator/동일 Bytes/Hash/VersionId 사용. B2-2A Packet은 중복되지 않는 V key·Version number·객체 Claim으로 통과하지만 B2-2B는 `DUPLICATE_S3_LOCATOR/BLOCKED`, GO=false. 오류가 아닌 정상 Locator UUID 독립성은 계속 수용.
+- TC-B2-2B-09: 중복 Locator를 서술할 때 Bucket/실 도면 Key/원본 VersionId를 GitHub 로그/결과에 출력 금지. 새 HEAD Typecheck/Unit/E2E/PR CI 확인 전 `NOT VERIFIED`, 실제 Source/Site 시험 `NOT RUN`.
+
+## #142 B2-2B P2 보완 — S3 Locator 독립 매핑 회귀 (2026-10-27)
+
+- TC-B2-2B-05: S3ObjectStorage가 사용한 `S3 object UUID`와 CadRepository가 등록한 `DB Version UUID`가 **서로 다르면서** 정규화 `s3:bucket:cad/<object-uuid>/original.dwg` Locator, DB `storage_path` 및 합성 Bytes/Hash가 일치하면 `DISPOSABLE_BYTES_CONSISTENT_NOT_SITE_PROOF` (운영 GO=false). Local은 DB Location/Version UUID 구조를 그대로 유지.
+- TC-B2-2B-06: 올바른 형식이나 다른 S3 Object UUID/다른 Bucket로 잘못 매핑하면 `SQLITE_VERSION_OR_LOCATOR_MISMATCH`/BLOCKED; S3 locator 누락·미승인 URL/Local에 불필요한 S3 locator 삽입은 `INVALID_DISPOSABLE_BUNDLE`/BLOCKED. 실제 S3 GET/VersionId·Writer 정지는 시험에서 호출하지 않음.
+- 적용 후 최신 HEAD Typecheck/Lint/Vitest/PR CI와 Codex P2 Resolution 별도 확인 필수. 이전 성공 Run은 새 HEAD 합격 근거가 아님.
+
+## #142 B2-2B — Buffer-only SQLite/CAD/S3 검증 Test Cases (2026-10-27)
+
+- TC-B2-2B-01: 정상 B2-2A 주장 Packet와 합성 실제 SQLite·Local CAD/S3 export·Marker bytes, 전체 Version/Location Current/FK/NextVersion·Hash·Size/VersionId Claim 교차대조 → `DISPOSABLE_BYTES_CONSISTENT_NOT_SITE_PROOF`. Source/site/writer/GO 검증 flags는 false.
+- TC-B2-2B-02: Writer Count≠0, Epoch·Marker SNAP/VersionId 불일치, SQLite byte 변조/Hash 조작/비SQLite, Local/S3 Buffer 변조, DB current/next_version/File Size 불일치 → reason code+BLOCKED.
+- TC-B2-2B-03: Version/Location private mapping 누락/중복·DB Ghost Row, FK 위반, Auth 후보 schema 혼입, 예상 밖 Secret/Path 필드 → BLOCKED. 응답에는 DB/Site ID·Byte/Path 누출 없음.
+- TC-B2-2B-04: 정확 B2-2B future Squash 제목+15개 허용 파일만 GHCR publish=false. 변형 제목/비허용 active Prisma·Route·Dockerfile·Compose·workflow는 차단하며 tag는 기존 릴리스 정책 유지. 신규 CI 전 Typecheck/Lint/Unit/Build/E2E PASS는 **NOT VERIFIED**; 실 Site writer freeze 및 동일 SNAP 원본 수용은 NOT RUN.
+
 ## #142 S3-4-B2-2A — Snapshot Barrier assertion TC (2026-10-27)
 
 - TC-B2-2A-01: 두 합성 CAD Version(Local/S3), 한 위치 Current/nextVersion, S3 versioned marker 및 하나의 `SNAP-*`/Epoch·시간 내 capture → `CAPTURE_CLAIMS_CONSISTENT_NOT_SOURCE_PROOF`, 실제 Writer/Snapshot/Bytes Verified 및 GO 0.

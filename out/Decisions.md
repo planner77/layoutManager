@@ -1,5 +1,20 @@
 # 주요 기술 결정과 승인 기록
 
+## #142 B2-2B P2 결정 — Object UUID 독립성과 Locator Unique를 동시 충족 (2026-10-27)
+
+- **Decision:** DB Version UUID ↔ S3 객체 UUID는 서로 독립이지만 `CadFileVersion.storagePath @unique`를 준수하도록, 모든 S3 Version의 정규화 Locator 중복을 코드의 전역 `Set<string>`에서 직접 거부한다. 다른 Version들의 SHA/Size/S3 VersionId 주장까지 동일해도 하나의 객체를 여러 Version으로 중복 계상하는 것은 BLOCKED.
+- **Why:** 물리 DB Unique Index를 갖지 못한 합성/복구 자료에서도 의미론적 Unique 제약을 검증해 위양성을 방지한다. 정상 각기 다른 S3 locator/독립 UUID는 통과한다. 출처·실 Site Snapshot/운영 GO 판단 근거는 아님.
+
+## #142 B2-2B P2 결정 — 별도 S3 Object Locator를 명시적으로 검사 (2026-10-27)
+
+- **Decision:** `S3ObjectStorage.prepare()`에서 생성되는 S3 객체 UUID와 `CadRepository.register()`의 DB Version UUID는 독립. B2-2B에 합성 입력 `s3ObjectLocator`를 추가하고 DB `storage_path`와 바이트열 단위로 일치 검증하며, S3 정규형·파일 확장자·Bucket/Object UUID 매핑 오류를 차단한다. Local-only mapping에는 S3 locator를 허용하지 않는다.
+- **Reason/limits:** 실제 동작을 모사하면서 기존 통합 검증의 false BLOCKED를 제거한다. 제공된 S3 Locator가 진짜 원격 저장 객체를 가리키는지는 증명하지 못한다. 온라인 S3 VersionId/Writer freeze/Backup·Owner GO는 별도 승인 전까지 불가.
+
+## ADR-051-G7-B2-2B — 합성 Byte Consistency와 실제 Source Provenance 분리 (2026-10-27)
+
+- **Decision:** B2-2A 주장형 패킷 이후에는 read-only 메모리 SQLite와 별도 제공된 합성 CAD/S3 export/marker Buffer를 교차 비교해 바이트 변경·누락·객체 매핑·FK/Current 불일치를 탐지한다. 실 서비스 Writer/Network/Filesystem Path를 받는 자동 실행기보다 `Buffer-only` 안전 경계를 우선하며, 운영 경로에 연결하지 않는다.
+- **Trade-off/Owner gate:** 바이트 Bundle와 private mapping·S3 VersionId claim도 위조될 수 있으므로 긍정은 `DISPOSABLE_BYTES_CONSISTENT_NOT_SITE_PROOF`, `writerQuiescenceVerified/sameSnapshotVerified/sourceObjectVersionsVerified/operationalGo=false`. 사내 Change/Owner 승인·독립 Reviewer·authoritative Source GET/Writer trace/EV·QA·SNAP 증거는 별도. `DESIGN.md` 부재로 Architecture/Decisions/Database/Operation을 설계 기준으로 사용.
+
 ## #142 B2-2A — Writer Freeze 주장과 실제 검증 분리 (2026-10-27)
 
 - **Decision:** Main 선행 Gate 완료 후, 먼저 100% fail-closed인 순수 `SNAP-*` writer-barrier/DB-CAD-S3 inventory 계약과 음성 검증을 만든다. 단일 Epoch/시간/Local+버전 S3 marker·Hash·Current/Version·FK/Audit *자료 불일치*는 BLOCKED.

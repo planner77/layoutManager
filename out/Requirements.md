@@ -1,5 +1,22 @@
 # 상세 요구사항
 
+## #142 B2-2B — S3 Locator Unique 보완 요구 (2026-10-27)
+
+- FR-G7-B2-2B-06: 정상 도면의 S3 object UUID와 DB Version UUID는 다를 수 있지만 모든 합성 S3 객체 Locator는 `CadFileVersion.storagePath` Unique와 일치해야 한다. 서로 다른 Version binding이 동일 S3 locator를 재사용하면 Byte/hash/VersionId 주장 및 DB ID가 달라도 `DUPLICATE_S3_LOCATOR/BLOCKED`.
+- FR-G7-B2-2B-07: SQLite 합성 복제본의 `uq_storage_path` Unique 인덱스가 없는 경우에도 코드 독립 검사로 재사용을 차단하고, 서로 다른 S3 Object Locator 2건의 정합성은 수용한다. 실 운영 Source VersionId 인증/Writer 정지/Owner GO는 포함하지 않는다.
+
+## #142 PR #145 P2 보완 — S3 Object Locator 독립성 (2026-10-27)
+
+- FR-G7-B2-2B-04: S3 파일의 객체 경로 UUID와 DB Version ID의 동일성을 강제하지 않는다. 별도 합성 Object mapping의 `s3ObjectLocator`(정규형 `s3:bucket:cad/<object_uuid>/original.ext`)를 DB `CadFileVersion.storage_path`와 정확히 대조하고 파일 형식을 검증한다. 두 UUID가 달라도 올바른 바이트/위치/버전과 경로 매핑이면 합성 단계의 일관성 통과.
+- FR-G7-B2-2B-05: S3 locator 누락·형식 오염·잘못된 Bucket/Object UUID 또는 Local object에 S3 locator 포함 시 fail-closed. 반환값에 실제 Bucket/Path/ID를 포함하지 않으며, DB/영속 Migration/실 S3 접근·운영 인증/쓰기와 분리. 실제 현장 입증 없이 운영 수용/GO 불가.
+
+## #142 S3-4-B2-2B — Disposable Bytes 사전 검증 요구 (2026-10-27)
+
+- FR-G7-B2-2B-01: B2-2A에서 BLOCKED인 writer/Source Epoch/SNAP 패킷은 다음 단계에서 수용하지 않는다. 새 입력은 별도 공급한 합성 SQLite·Local CAD/S3 export/marker Buffer와 1:1 opaque L/V key ↔ disposable DB UUID mapping으로 제한하고 임의 파일 경로·site credential·S3 network 요청 금지.
+- FR-G7-B2-2B-02: SQLite Buffer SHA·실 quick_check/FK·전체 Location/Version/Current/next_version/locator, Local/S3 Bytes SHA/length·Marker SNAP/Epoch/VersionId **주장** 사이의 불일치·누락/중복·추가 private binding·지원하지 않는 Auth Schema를 안전 reason code/`BLOCKED`로 처리. 반환값에는 데이터·원본 경로·객체 Key를 포함하지 않는다.
+- FR-G7-B2-2B-03: 모든 긍정 결과를 `DISPOSABLE_BYTES_CONSISTENT_NOT_SITE_PROOF`로 제한하고 `writerQuiescenceVerified/sameSnapshotVerified/sourceObjectVersionsVerified/provenanceVerified/operationalGo/runtimeActivated=false` 고정. 실제 현장 Source 입증 및 Owner GO는 별도 CR과 독립 원본 검증 후에만 가능.
+- NFR-G7-B2-2B-01: 별도 Main 기반 Branch/PR, B2-2B 정확 no-GHCR Squash 제목·15개 명시 허용경로만 publish=false; Dockerfile/active Prisma/Route/Compose/Nginx/다른 Workflow 경로 fail-closed. PR 최신 HEAD CI/리뷰 확인 전 병합·GHCR/Issue 종료 금지.
+
 ## #142 S3-4-B2-2A — Writer Barrier 패킷 일관성 검증 요구 (2026-10-27)
 
 - FR-G7-B2-2A-01: 동일 `SNAP-*`/Source Epoch/승인된 형식의 `OP-*`·`CR-*`·`BAR-*`, 시작·종료 UTC 및 `activeWriters=0/writesDuringCapture=0` 주장 불일치/캡처기간 초과 BLOCKED.

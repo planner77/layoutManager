@@ -1,5 +1,20 @@
 # 운영·환경설정 초안
 
+## #142 B2-2B P2 — 합성 S3 Locator 중복 오탐/위양성 운영 경계 (2026-10-27)
+
+- B2-2B 메모리 패킷 verifier는 DB Version UUID와 독립된 S3 Object UUID를 허용하되, 서로 다른 Version들이 동일한 객체 Locator를 재사용하면 `DUPLICATE_S3_LOCATOR`만 안전하게 기록하고 값을 출력하지 않는다. DB가 `uq_storage_path`를 강제하지 못하는 비표준 합성/손상 복제본도 거부한다.
+- 현장 원본 객체 VersionId/실 writer zero 조건·온라인 백업/정식 스키마·증거 서명과 무관한 비운영 검증이다. 현장 Change/Owner 승인 전 writer 정지, 외부 S3 API 및 운영 DB/CAD 접근 없음. 실 Bucket/Key/해시/바이트는 공개 저장소/CI/Chat 반출 금지.
+
+## #142 B2-2B P2 — 오프라인 S3 Object Locator 입력·기밀 경계 (2026-10-27)
+
+- S3 export `ObservedObject.s3ObjectLocator`는 B2-2B **합성 격리 입력**의 정규화 S3 저장 위치 주장이며, DB Version UUID와 별개로 생성되는 객체 UUID·Bucket을 나타낸다. 메모리 SQLite의 `CadFileVersion.storage_path`와만 비교하며 외부 S3 API에 전달하거나 네트워크/Filesystem Path로 열지 않는다.
+- 사내 실제 객체명·Bucket·UUID/VersionId/파일 이름·경로, 자격증명은 공개 Git/Issues/Actions/로그/채팅 반출 금지. 결과에는 오류 reason code만 유지. 실제 출처 검증·Writer 정지/온라인 백업은 별도 Owner 승인 후 사내 비공개 SOP 진행.
+
+## #142 B2-2B — 합성 Byte verifier 운영 격리·비반출 정책 (2026-10-27)
+
+- `inspectS34B22BDisposableBytes(packet,bundle)`는 테스트용 메모리 SQLite·Local CAD/S3 export·Snapshot marker Buffers만 직접 읽는다. 임의 경로/원격 S3/자격증명/서비스 Writer 중지/영속 API·자동 Scheduler 연결은 존재하지 않는다. Return에는 값·경로·개인 식별/원본 바이트 대신 안전한 reason code와 건수·항상 false인 운영 GO flags만 포함한다.
+- 실제 현장 시험은 사내 CR/Owner·독립 QA, 0-writer 관측, SQLite online backup/WAL, Versioned S3 authoritative HEAD/GET/marker, 재개/ABORT/rollback 계획을 **비공개** SOP로 승인 후만 실시한다. 원본 CAD/SQLite/S3/Secret은 Git/CI/Chat에 업로드 금지. [B2-2B Runbook](../src/deploy/g7-s3/S3-4-B2-2B.md).
+
 ## #142 B2-2A — Snapshot 주장 패킷 사내 검토 가이드 (2026-10-27)
 
 - 신청된 작업번호 `CR-*`, 운영자 식별 `OP-*`, 장벽 `BAR-*`, 원본 Epoch `E-*`, 단일 `SNAP-*`과 writer=0/쓰기변경 0 주장, DB backup/Local/S3 캡처시간·S3 marker VersionId, opaque 파일 Version Key에 대해 `assessS34B22CapturePacket` 검사. 양성도 실제 Writer 중단/SQL Quick Check/원본 byte 검증 아닌 자료형식 완결만 확인.
