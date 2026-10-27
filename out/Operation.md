@@ -1,5 +1,11 @@
 # 운영·환경설정 초안
 
+## #109 S3-4-B1 격리 복원 검증 운영 경계 (2026-10-27)
+
+- 독립 Linux 사내 시험 환경에서만 UID-owned `/tmp/cad-g7-s3-b-*` root(0700), `snapshot.sqlite`·`snapshot.json`·local CAD/S3-export 파일(0600), 중간 디렉터리(0700)를 구성해 `inspectS34B1Clone(root,{snapshotId,schema})` 실행. `ISOLATED_INTEGRITY_ONLY`도 운영 GO가 아니라 클론 무결성 확인에 불과하다.
+- 실 OCI Registry/digest·원본 writer freeze/동일 Snapshot 캡처·실 DB/CAD/S3 Restore·실 rollback·Auth/Write cutover 금지. 상세 [B1 Runbook](../src/deploy/g7-s3/S3-4-B.md).
+
+
 ## #109 S3-4-A private 증거 CLI P2 보안 강화 (2026-10-27)
 
 - 사내 비공개 0600 JSON 파일은 경로 검사만으로 신뢰하지 않는다. `O_NOFOLLOW|O_NONBLOCK` FD open, `fstat`(소유자/regular/0600/size/dev+ino), **동일 fd 읽기** 및 `finally` close로 경로 교체·FIFO·symlink 노출 차단. 잘못된 파일은 민감 경로·내용을 출력하지 않고 `G7_S3_4_PRIVATE_PACKET_REJECTED`로 fail closed.

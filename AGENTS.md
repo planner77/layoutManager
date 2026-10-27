@@ -1,5 +1,13 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #109 S3-4-A merged → S3-4-B1 isolated restore verifier (2026-10-27 KST)
+
+- S3-4-A [PR #136](https://github.com/planner77/layoutManager/pull/136) 최신 HEAD `d890f88b` PR CI `40440831020` SUCCESS, Codex 재리뷰 주요 지적 없음·기존 P2 2건 Resolved. 정확 Squash `#109 | S3-4-A Offline release evidence [G7-S3-4A-NO-GHCR]` → Main `1500eb699d5ef8d2045e951354838aa13ce24f92`. [Main CI #40443473912](https://github.com/planner77/layoutManager/actions/runs/40443473912) release-scope SUCCESS, GHCR Build and push SKIPPED.
+- S3-4-B1은 신규 `src/server/g7-operational/s3-4-b-clone.ts`로 **UID-owned /tmp/cad-g7-s3-b-* 0700 일회용 복제본만** 읽어 SQLite quick_check/FK, Version↔Current, nextVersion, CAD local+S3 export 바이트 길이/SHA, Schema 경계의 실제 무결성을 검증. Origin proof가 아님: SNAP ID 자체는 일관된 쓰기중지/원본 snapshot capture를 증명하지 않는다. `ISOLATED_INTEGRITY_ONLY`도 `operationalGo=false`, `runtimeActivated=false`.
+- B1 합성 테스트와 별도 [B1 Runbook](src/deploy/g7-s3/S3-4-B.md). 정확 future squash `#109 | S3-4-B1 Disposable restore integrity [G7-S3-4B1-NO-GHCR]`+명시 allowlist만 GHCR SKIP. 운영 Prisma Migration history·scripts/deploy.ts·운영 Auth/Write·Nginx/Compose/.env·DB/CAD/S3·실 GHCR/Image/Issue 종료 변경 0.
+- **남은 B2/C/Owner GO:** 사내 실제 Registry OCI App/Migrator immutable digest/source provenance, 승인된 쓰기중지·DB/CAD/S3 동일 Snapshot 실백업/복원, 7개 Migration 사본 적용·rollback 호환성 실증 후 신뢰 binding(S3-4-C) 및 Owner 릴리스별 GO(S3-5). B1 PR CI/코덱스 검증 이전 PASS 주장 금지.
+
+
 ## Issue #109 PR #136 — S3-4-A P2 보완 / 이전 CI 성공과 리뷰 지적 분리 (2026-10-27 KST)
 
 - 최초 S3-4-A PR HEAD `07a126afdba9135e031f348e6a2901ae6395fd79`의 [PR CI 40438604869](https://github.com/planner77/layoutManager/actions/runs/40438604869) `completed/success`. Codex [P2 r4384543606](https://github.com/planner77/layoutManager/pull/136#discussion_r4384543606): 사내 private JSON pathname과 열린 파일 객체의 TOCTOU. `O_NOFOLLOW|O_NONBLOCK`와 `fstatSync`, `lstat` dev/ino 동일성, UID·0600·정규파일·크기, 동일 fd 읽기 및 finally close로 교정.

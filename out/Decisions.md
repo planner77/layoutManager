@@ -1,5 +1,11 @@
 # 주요 기술 결정과 승인 기록
 
+## #109 S3-4-B1 — 복제본 무결성과 운영 Snapshot 복구 증거의 구분 (2026-10-27)
+
+- B1은 `ISOLATED_INTEGRITY_ONLY`로 **격리 파일 내용의 DB↔CAD↔S3 내보내기 일치**만 표시한다. `snapshotId`만 같다고 운영 원본의 쓰기 정지·실제 동일 시점 백업·Registry provenance를 입증하지 않는다. 따라서 결과 `operationalGo=false`/`runtimeActivated=false` 고정.
+- B2 원본 사내 실제 복구/OCI 확인과 C 신뢰 binder/Owner GO는 별도 승인/입증 필수, 실행 없이 완료로 표기 금지.
+
+
 ## #109 S3-4-A — 운영 승인과 오프라인 증거형식 검증 분리 (2026-10-27)
 
 - 기존 G7 이중 Release/Operation 게이트 유지. S3-4-A 오프라인 증거 패킷이 완전해도 Owner GO·실 이미지 digest 검증·실 DB/CAD/S3 복구는 자동 승인하지 않는다. 도구 출력은 `operationalGo=false`/`runtimeActivated=false`만 가능하다.

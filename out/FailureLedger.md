@@ -1,5 +1,12 @@
 # PR/Main CI 실패 원장
 
+## #109 S3-4-A Main CI 성공 인계 / S3-4-B1 최초 작업·실 복구 미실행 (2026-10-27)
+
+- **S3-4-A 성공 인계 (실패 아님):** PR #136 `d890f88bb598c215d12597157725a2435da28dec` PR CI #40440831020 SUCCESS, Codex 최신 재리뷰 major 없음·P2 두 스레드 Resolved → Squash `1500eb699d5ef8d2045e951354838aa13ce24f92`. [Main CI #40443473912](https://github.com/planner77/layoutManager/actions/runs/40443473912) SUCCESS, release-scope Job SUCCESS, Build and push GHCR Job SKIPPED.
+- **S3-4-B1:** readonly 일회용 SQLite/실 로컬 CAD/S3-export 바이트 무결성 검증과 합성 테스트 작성. 새로운 CI Run 성공 전 `NOT VERIFIED`. B2 사내 원본 Snapshot/OCI provenance/실 Migration·복구/rollback **NOT RUN**, 실패로 오기록 금지. 관측 실패·취소가 생기면 Run/Job/Attempt/SHA/원인/보완 누적 기록.
+- **경계:** 실제 operating DB/CAD/S3, Auth/Write, Prisma 자동 migration, GHCR publish/태그, Compose/Nginx/.env, Issue #109/#96 종료 변경 없음.
+
+
 ## Issue #109 PR #136 — 이전 CI SUCCESS / Codex P2 2건 원인·보완 (2026-10-27 KST)
 
 - **관측 CI 성공 (실패 아님):** [PR CI #40438604869](https://github.com/planner77/layoutManager/actions/runs/40438604869), HEAD `07a126afdba9135e031f348e6a2901ae6395fd79`, attempt 1, `completed/success`. 이 Run의 성공은 이후 보완 HEAD가 합격했다는 뜻이 아니며 실패 Job을 임의 기록하지 않는다.

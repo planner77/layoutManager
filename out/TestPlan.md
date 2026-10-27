@@ -1,5 +1,14 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## #109 S3-4-B1 격리 복원 무결성 회귀 (2026-10-27)
+
+- TC-S3-4B1-001: 합성 6개 CAD Migration SQLite와 실제 local DXF+S3-export DWG 바이트 SHA/길이·Version/Current FK를 readonly 검증해 ISOLATED_INTEGRITY_ONLY, 운영 GO=false.
+- TC-S3-4B1-002: CAD/S3-export 파일 손상·누락·0644·symlink 등은 BLOCKED, 민감 경로/bytes 출력 금지.
+- TC-S3-4B1-003: SNAP marker ID/Schema 불일치, CAD 6개↔후보 Auth 7번째 테이블 상태 불일치 및 운영 /var/lib 경로 접근은 거부.
+- TC-S3-4B1-004: 정확 `G7-S3-4B1-NO-GHCR` squash subject와 15개 허용 경로만 GHCR SKIP. 운영 migration/route/Compose 및 유사 제목은 거부.
+- 실제 B2 OCI Registry, 원본 동일 Snapshot writer freeze/실 Restore·Rollback 및 후보 CLI migration은 **NOT RUN**, B1 신규 PR CI 결과 전 **PASS 미확인**.
+
+
 ## #109 S3-4-A Codex P2 회귀 시험 (2026-10-27 KST)
 
 - **TC-S3-4A-P2-01:** lstat/realpath 이후 0600→0644 symlink 또는 inode 변경은 같은 fd의 `fstat`·사전 `dev/ino` 체크로 거부하고, `O_NOFOLLOW`를 사용한다.

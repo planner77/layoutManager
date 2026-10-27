@@ -1,5 +1,12 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## #109 S3-4-B1 착수 / 신규 CI 결과 미확인 (2026-10-27)
+
+- Baseline S3-4-A PR #136 merge `1500eb699d5ef8d2045e951354838aa13ce24f92`, Main CI #40443473912 SUCCESS / release-scope SUCCESS / GHCR SKIPPED.
+- S3-4-B1 `inspectS34B1Clone` 및 합성 clone + local CAD/S3-export 바이트/SQLite 회귀 코드 작성. **현재 작성만 했으므로 Typecheck/Unit/Integration/Build/E2E/CI PASS 아님.** 실제 사내 OCI/DB/CAD/S3/rollback·Same Snapshot 실증은 NOT RUN. 운영 GO=false.
+- #109/#96 OPEN/BLOCKED, 운영 auth/write/Prisma/Compose/Nginx/GHCR 이미지 조작 없음.
+
+
 ## #109 S3-4-A P2 보완 및 이전 HEAD CI SUCCESS 구분 (2026-10-27)
 
 - [PR CI #40438604869](https://github.com/planner77/layoutManager/actions/runs/40438604869) HEAD `07a126afdba9135e031f348e6a2901ae6395fd79` `completed/success`. Codex P2 [r4384543606](https://github.com/planner77/layoutManager/pull/136#discussion_r4384543606), [r4384543609](https://github.com/planner77/layoutManager/pull/136#discussion_r4384543609)는 코드 리뷰 지적 2건이지 관측 CI 실패가 아니다.

@@ -1,5 +1,11 @@
 # Database Schema — 단일 기준 문서
 
+## #109 S3-4-B1 — read-only restored clone boundary (2026-10-27)
+
+- 운영 `src/prisma/migrations/**` 6개 CAD 이력 불변, 후보 Auth SQL은 `src/deploy/g7-s3/prisma/migrations/**` 격리 유지. B1은 자체 migration 명령 없이 **격리 복원 DB에 대한 읽기 전용** `PRAGMA quick_check`/FK 및 Version/Current/nextVersion·SHA 대조만 수행한다.
+- 7번째 후보 테이블 존재 상태는 B1 `G7_CANDIDATE` marker와 맞아야 하며, marker만의 진위/운영 Schema 적용 근거는 불충분. 별도 B2 private Prisma migrate deploy+DB/CAD/S3 restore/rollback 실증 필요.
+
+
 ## #109 S3-4-A — Prisma Migration과 Snapshot 복원 범위 (2026-10-27)
 
 - 현재 운영 자동 `src/scripts/deploy.ts`는 `src/prisma/migrations/**`에 있는 CAD 6개만 자동 migrate deploy. 추가 Auth SQL은 `src/deploy/g7-s3/prisma/migrations/202610260002_g7_operational_auth/**`의 **격리 후보**이며 이번 S3-4-A에서 승격·실행 금지.

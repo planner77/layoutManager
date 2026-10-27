@@ -1,5 +1,13 @@
 # Issue #109 — G7 운영 인증 활성화 설계 및 통제 배포·롤백 Runbook
 
+## S3-4-B1 격리 복원 검증기 착수 — B2 실환경 증거 미제출 (2026-10-27)
+
+- S3-4-A PR #136 → Main `1500eb699d5ef8d2045e951354838aa13ce24f92`, Main CI #40443473912 SUCCESS, release-scope SUCCESS, GHCR Build/Push SKIPPED. B1은 해당 Main에서 독립 구현.
+- 격리 복원본 `/tmp/cad-g7-s3-b-*/snapshot.sqlite`를 **readonly**로 열고 FK/Integrity, CAD Location/Version/Current/nextVersion, 실제 local CAD/S3 export 파일 byte 길이·sha256와 Snapshot marker/schema boundary를 대조한다. symlink/FIFO/타 UID/부적절한 권한/파손/누락은 실패. 실제 OCI/사내 원본 Snapshot 시점 동일성 입증은 구현하지 않음.
+- B1 판정 `BLOCKED` 또는 `ISOLATED_INTEGRITY_ONLY`; 양쪽 모두 `operationalGo:false`/`runtimeActivated:false`. 로컬/S3 원본 바이트·경로/해시를 출력하거나 외부 반출하지 않음. [B1 Runbook](../src/deploy/g7-s3/S3-4-B.md).
+- B2(사내 실제 OCI 고정 digest 출처 검증·실 동일 Snapshot 백업/복원·격리 Migration/rollback), C(trusted release binding), S3-5 Owner GO는 후속. 운영 Auth/Write/Schema/Compose/Nginx/GHCR/실 DB/CAD/S3 변경 없이 #109/#96 OPEN/BLOCKED.
+
+
 ## PR #136 S3-4-A P2 보완 — 비공개 파일 교체·Status 엄격 자료형 (2026-10-27)
 
 - [PR CI #40438604869](https://github.com/planner77/layoutManager/actions/runs/40438604869) 이전 HEAD 성공. 리뷰 [#4384543606](https://github.com/planner77/layoutManager/pull/136#discussion_r4384543606) 비공개 파일 TOCTOU, [#4384543609](https://github.com/planner77/layoutManager/pull/136#discussion_r4384543609) 배열 `NOT_RUN` 오분류는 CI 실패와 구분한다. `open O_NOFOLLOW/O_NONBLOCK` + 같은 descriptor의 `fstat`·inode/UID/permission 검사와 동일 fd 읽기, strict string 상태 검사 및 회귀 시험으로 보완.
