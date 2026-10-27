@@ -1,5 +1,12 @@
 # PR/Main CI 실패 원장
 
+## Issue #109 / PR #141 — Codex P2 Runbook 중앙 색인 누락 보완 및 충돌 재점검 (2026-10-27 KST)
+
+- **기준:** [PR #141](https://github.com/planner77/layoutManager/pull/141) 검토 HEAD `202cd976e5961fe5876e1d775eb5cdd6053eed76`, [PR CI #40470720374](https://github.com/planner77/layoutManager/actions/runs/40470720374) `completed/success` (기존 HEAD만 검증). Typecheck/Lint/Unit/Integration/Build/E2E·Docker CI 실패가 아니라 **Codex Review P2** 문서 품질 지적이다.
+- **Codex P2 [#4386312087](https://github.com/planner77/layoutManager/pull/141#discussion_r4386312087)** / 스레드 `PRRT_kwDOUQjDfc6wl_yN`: 신규 `src/deploy/g7-s3/S3-4-B.md`가 `AGENTS.md` 상단 이력 링크로만 연결돼, 필수 「상세 문서와 필수 참조 시점」 중앙 표에는 빠짐. 향후 S3-4-B1 격리·B2 OCI/실복구/rollback 검증 시 지침 미발견 위험. `AGENTS.md`의 `Issue109` 문서 행 다음에 **S3-4-B1 Runbook** 행을 추가하여 문서 목적·S3-4-B1/B2 구현/리뷰/시험 및 Owner Go/No-Go 전 필수 참조 시점을 명시했다. 신규 소스·마이그레이션/DB 변경 없음.
+- **기존 리뷰·Main:** Codex 기존 P1 1건·P2 2건 3개 스레드 이미 Resolved. Main `4e9095106666aac4568bc4f636e4de8492bc0c86`과 기존 PR HEAD 비교 `behind=0`, `mergeable=true`, #138 ViewerPanelPolicy 및 #109 S3-4-B1 변경 모두 보존. 이번 문서 보완 이후 Review thread 최종 해결·Main 정렬/PR CI/리뷰 게이트는 **새 HEAD에 대해** 확인 필요.
+- **새 HEAD 검증 경계:** 이 기록 커밋으로 HEAD가 달라지므로 이전 CI `40470720374` 성공을 새 HEAD의 PASS로 재사용하거나 아직 완료되지 않은 새 Codex 검토를 승인 완료로 기록하지 않는다. 추가 실패·취소가 없으면 실패 원장에 가짜 실패를 추가하지 않는다. PR 병합/Main CI/GHCR 게시/태그, 운영 Auth/Write, 운영 Prisma Migration, Nginx/Compose/.env, 실 DB/CAD/S3, #109/#96 종료 미수행.
+
 ## #109 / PR #141 — #138 Main 문서 보존 정렬·Review/CI 재검증 인계 (2026-10-27 KST)
 
 - **정렬 기준:** 합병 전 S3-4-B1 PR HEAD `dc1e264a70aa5bdddf21654008fa6b5c91c23fcc`, #138 docs-only Main `4e9095106666aac4568bc4f636e4de8492bc0c86`. 6개 공통 Markdown의 Main **추가 문단만** 기존 #109 문서에 결합했고 `AGENTS.md` 하단 `ViewerPanelPolicy` 필수 참조 색인 행 및 신규 `out/ViewerPanelPolicy.md` 파일을 보존. S3-4-B1 runtime/DB/CI GHCR 허용목록과 기존 Fail Ledger 내용 삭제·덮어쓰기 없음.
