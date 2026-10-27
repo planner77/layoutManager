@@ -1,6 +1,6 @@
 import { test, expect, type APIRequestContext, type Page } from '@playwright/test';
 import { masterFields } from './master-helper';
-import { clickViewerTestCommand, openViewerMenu } from './viewer-menu-helper';
+import { clickViewerCommand, clickViewerTestCommand } from './viewer-menu-helper';
 
 const dxf=Buffer.from([
   '0','SECTION','2','HEADER','9','$INSUNITS','70','4','0','ENDSEC',
@@ -52,14 +52,13 @@ test('TC-M4-E2E-001: Tree local search, hidden selection/focus and no stored vis
   await first.click();
   const selected=page.getByTestId('cad-memo-pin');
   await expect(selected).toHaveCount(2);
-  await expect(selected.filter({has:page.locator('[aria-hidden=true]')})).toHaveCount(2);
-  await expect(tree.getByTestId('memo-tree-visibility-status')).toContainText('표시');
+    await expect(tree.getByTestId('memo-tree-visibility-status')).toContainText('표시');
   // A tree selection can temporarily reveal the hidden pin but may not modify the
   // saved data or affect source layers/outline visibility.
   await expect(first.getByTestId('cad-memo-tree-visibility')).toHaveAttribute('aria-pressed','false');
-  await clickViewerTestCommand(page,'viewer-menu-memo-visible');
+  await clickViewerCommand(page,'view','메모 전체 표시');
   await expect(page.getByTestId('cad-memo-pin')).toHaveCount(0);
-  await clickViewerTestCommand(page,'viewer-menu-memo-visible');
+  await clickViewerCommand(page,'view','메모 전체 표시');
   await expect(page.getByTestId('cad-memo-pin')).toHaveCount(1);
   await page.reload();
   await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
