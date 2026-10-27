@@ -29,6 +29,7 @@ html:has([data-home-sticky='true']) { scroll-padding-top: calc(var(--home-nav-he
 .viewer-drawer { position:absolute; z-index:30; display:flex; flex-direction:column; overflow:auto; max-height:min(68dvh, 620px); background:white; color:#172b3a; box-shadow:0 8px 26px #0005; border:1px solid #dce2e8; }
 .viewer-drawer-layers { top:12px; left:12px; width:min(18rem, 28vw); }
 .viewer-drawer-outlines { top:12px; right:12px; width:min(20rem, 30vw); }
+.viewer-drawer-memos { top:12px; right:12px; width:min(22rem, 34vw); }
 .viewer-drawer-tools { bottom:12px; left:50%; transform:translateX(-50%); width:min(840px, calc(100% - 32px)); max-height:min(36dvh, 350px); }
 .viewer-drawer-hidden { display:none; }
 .viewer-drawer-backdrop { position:absolute; inset:0; z-index:29; background:#0009; }
