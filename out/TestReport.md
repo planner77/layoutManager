@@ -1,5 +1,12 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## Issue #109 PR #135 P2·Main 정렬 확인 / 새 HEAD 시험 대기 (2026-10-27 KST)
+
+- Initial `8a98e6a6`: [PR CI 40429149135](https://github.com/planner77/layoutManager/actions/runs/40429149135) `completed/success`.
+- [Codex P2](https://github.com/planner77/layoutManager/pull/135#discussion_r4384076798): 격리 등록/기존 익명 Content GET의 서로 다른 저장소로 Viewer 404 가능. 코드/Runbook/Unit 수정 및 리뷰 답변·Resolved 확인. 본 P2는 실제 테스트 실패·운영 장애 증거가 아님.
+- Latest aligned `ebc294fff35b005737cf89ebacb78420b209bd59`: GitHub `mergeable=true`, Main behind=0, unresolved thread=0. 새 HEAD 전체 CI·실 사내 PC/DB/CAD/S3 시험 결과는 **NOT RUN/NOT VERIFIED**. #109/#96 OPEN/BLOCKED.
+
+
 ## Issue #109 S3-3 — CAD API 권한·Audit 원자성 준비, 운영 OFF (2026-10-27)
 
 - **기능:** 기존 CAD Multipart POST·Current PUT·Version DELETE에서 서버 DB의 최신 Session/Role/Site를 같은 Prisma Transaction 안에 재조회하고 승인된 Editor/Admin+Site만 쓰기 허용한다. DELETE는 기존 삭제 비밀번호도 요구하며, CAD DB 변경과 CAD_UPLOADED/CAD_CURRENT_CHANGED/CAD_VERSION_DELETED Audit INSERT 중 하나라도 실패하면 DB를 롤백한다. 기존 업로드 보상·삭제 Job, 익명 GET/Viewer·CAD 데이터 규약은 유지한다.

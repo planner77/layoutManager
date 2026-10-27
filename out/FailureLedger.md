@@ -1,5 +1,12 @@
 # PR/Main CI 실패 원장
 
+## Issue #109 PR #135 — 최신 Main 정렬 후 리뷰·충돌 2차 게이트 (2026-10-27 KST)
+
+- **근거 HEAD:** Main `dc82e670073160ddac46a2f9e9489a738a19c033`; S3-3 Merge HEAD `ebc294fff35b005737cf89ebacb78420b209bd59` (parents `13fcea7fc69e844854470dbd9a180a6fc08920ae`, Main `dc82e670...`). GitHub 비교 `ahead=6, behind=0`, PR #135 `OPEN/mergeable=true`. Main #57 변경 파일 25개 의미적 보존(충돌 가능 7개 MD는 Main + S3-3 신규 항목 양쪽 유지), 원본 Main 기능 복원손실 없음.
+- **2차 리뷰:** GitHub GraphQL review thread `PRRT_kwDOUQjDfc6wgu00` P2 [4384076798](https://github.com/planner77/layoutManager/pull/135#discussion_r4384076798), 답변 [4384322812](https://github.com/planner77/layoutManager/pull/135#discussion_r4384322812), `is_resolved=true`; 1개 전체 thread 중 **미해결 0개**, 추가 미해결 없음. 변경전 초기 [PR CI 40429149135](https://github.com/planner77/layoutManager/actions/runs/40429149135) 성공, 재정렬 이후 최신 HEAD CI는 **미확인**. 리뷰 지적은 CI 실패 Run으로 중복계상하지 않는다.
+- **추가 Gate:** GHCR 정확 S3-3 allowlist에 순수 helper `cad-preview-storage.ts` 포함(범위 밖 운영 Prisma/Compose 금지), 같은 경로에 대한 Unit whitelist 회귀. 최신 HEAD의 실행결과는 새 PR CI가 생성·검증되어야만 판정한다. 실제 운영 DB/CAD/S3·Auth/Cutover/DDL·GHCR 게시·PR 병합·#109/#96 종료 진행 금지.
+
+
 ## Issue #109 PR #135 — Main 동기화 전·후 리뷰/충돌 분리 기록 (2026-10-27 KST)
 
 - **동기화 전:** HEAD `13fcea7fc69e844854470dbd9a180a6fc08920ae`; 이전 PR CI 40429149135는 최초 HEAD 8a98e6a6에서 completed/success. Codex P2 [r4384076798](https://github.com/planner77/layoutManager/pull/135#discussion_r4384076798)는 `CAD_STORAGE_PATH` 불일치로 인한 Viewer 콘텐츠 조회 위험이며 **CI 실패가 아니다**. 코드·격리 테스트·Runbook 수정, 답변 [r4384322812](https://github.com/planner77/layoutManager/pull/135#discussion_r4384322812), 스레드 PRRT_kwDOUQjDfc6wgu00 Resolved. 미해결 스레드 0 관측.

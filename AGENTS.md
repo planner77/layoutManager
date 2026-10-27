@@ -1,5 +1,12 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #109 PR #135 — P2 처리·Main 정렬 후 리뷰/충돌 재확인 (2026-10-27 KST)
+
+- 최초 HEAD `8a98e6a6` [PR CI #40429149135](https://github.com/planner77/layoutManager/actions/runs/40429149135)는 `completed/success`. Codex [P2 r4384076798](https://github.com/planner77/layoutManager/pull/135#discussion_r4384076798)는 **CI 실패가 아닌** preview 로컬 저장소/기존 Content GET 불일치 위험이다.
+- 업로드 권한검증 전에 `CAD_STORAGE_PATH=$G7_S3_TEST_ROOT/cad`와 `CAD_STORAGE_BACKEND=local`, `CAD_S3_*` unset을 강제. 인증된 쓰기 Context도 동일 root·UID/permission 검증 및 마이그레이션 체크를 수행한다. `cad-preview-storage.ts`는 별도 순수 검증 함수여서 테스트가 `server-only` 모듈을 열지 않는다. 기존 익명 GET/Viewer 코드 변경 없음. Unit은 경로 불일치 거부와 로컬 업로드→기존 Content storage 조회를 검사한다.
+- P2 답변 [r4384322812](https://github.com/planner77/layoutManager/pull/135#discussion_r4384322812) 및 Thread Resolved; Main `dc82e670073160ddac46a2f9e9489a738a19c033` (#57 로깅/관측 포함)을 비강제 두-부모 Merge로 보존한 HEAD `ebc294fff35b005737cf89ebacb78420b209bd59`. Main behind=0/mergeable=true, 정렬 후 리뷰 스레드 1개 중 미해결 0개. 새 HEAD의 PR CI는 별도 관측 이전 PASS 미확인, GHCR/운영 활성화/Issue 종료 없음.
+
+
 ## Issue #109 S3-3 — CAD API 권한·Audit 원자성 준비, 운영 OFF (2026-10-27)
 
 - **기능:** 기존 CAD Multipart POST·Current PUT·Version DELETE에서 서버 DB의 최신 Session/Role/Site를 같은 Prisma Transaction 안에 재조회하고 승인된 Editor/Admin+Site만 쓰기 허용한다. DELETE는 기존 삭제 비밀번호도 요구하며, CAD DB 변경과 CAD_UPLOADED/CAD_CURRENT_CHANGED/CAD_VERSION_DELETED Audit INSERT 중 하나라도 실패하면 DB를 롤백한다. 기존 업로드 보상·삭제 Job, 익명 GET/Viewer·CAD 데이터 규약은 유지한다.

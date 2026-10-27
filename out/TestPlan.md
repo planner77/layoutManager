@@ -1,5 +1,13 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #109 S3-3 P2/재정렬 검증 (2026-10-27 KST)
+
+- **G7-S3-3-STORAGE-001:** `CAD_STORAGE_PATH`가 격리 `/tmp/cad-g7-s3-*/cad`와 다르거나 S3 backend/credential이 있으면 CAD Preview 쓰기 거부; 운영 GET/Viewer는 기존 Context에서 유지. 순수 helper 검증.
+- **G7-S3-3-STORAGE-002:** 테스트 로컬 `CadStorage.publish`한 CAD 바이트가 동일 root의 기존 `ConfiguredCadStorage.content`에서 정확히 반환되는지 검증.
+- **G7-S3-3-SCOPE-003:** S3-3 정확 squash+허가된 `cad-preview-storage.ts` 포함 시만 GHCR SKIP, 활성 Prisma Migration·미승인 경로 및 제목 변형은 거부.
+- Main 정렬 `ebc294fff35b005737cf89ebacb78420b209bd59`, 리뷰 미해결 0/behind=0. 이 목록의 새로운 HEAD Typecheck·Unit·Integration·Playwright·Docker PR CI 결과는 **NOT VERIFIED**. CI 성공 전 PASS 주장 금지.
+
+
 ## Issue #109 S3-3 — CAD API 권한·Audit 원자성 준비, 운영 OFF (2026-10-27)
 
 - **기능:** 기존 CAD Multipart POST·Current PUT·Version DELETE에서 서버 DB의 최신 Session/Role/Site를 같은 Prisma Transaction 안에 재조회하고 승인된 Editor/Admin+Site만 쓰기 허용한다. DELETE는 기존 삭제 비밀번호도 요구하며, CAD DB 변경과 CAD_UPLOADED/CAD_CURRENT_CHANGED/CAD_VERSION_DELETED Audit INSERT 중 하나라도 실패하면 DB를 롤백한다. 기존 업로드 보상·삭제 Job, 익명 GET/Viewer·CAD 데이터 규약은 유지한다.

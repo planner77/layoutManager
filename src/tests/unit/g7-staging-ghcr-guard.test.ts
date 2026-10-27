@@ -352,6 +352,7 @@ describe('#109 S3-3 isolated CAD transaction GHCR exclusion',()=>{
       'out/FailureLedger.md','src/deploy/g7-s3/S3-3.md',
       'src/server/auth/audit.ts','src/server/g7-operational/cad-guard.ts',
       'src/server/g7-operational/cad-preview-context.ts',
+      'src/server/g7-operational/cad-preview-storage.ts',
       'src/server/repositories/cad.ts','src/server/services/upload.ts',
       'src/app/api/cad-files/route.ts','src/app/api/cad-files/[versionId]/route.ts',
       'src/app/api/cad-locations/[locationId]/current/route.ts',

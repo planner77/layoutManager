@@ -1,5 +1,11 @@
 # 운영·환경설정 초안
 
+## #109 S3-3 P2: 격리 CAD 저장소·기존 Content/Viewer 동일 root 강제 (2026-10-27)
+
+- S3-3 프리뷰는 `CAD_STORAGE_PATH`가 정확한 `$G7_S3_TEST_ROOT/cad`이고 backend가 local(`CAD_STORAGE_BACKEND=local`), `CAD_S3_*` 환경변수가 전부 unset일 때만 허용. 익명 `/api/cad-files/[versionId]/content`은 `context().storage`를 사용하므로 같은 경로가 아니면 쓰기 자체를 먼저 차단한다. 운영 경로/S3/기존 익명 GET 코드는 변경하지 않는다.
+- `context().storage` 캐시 경계 때문에 전용 loopback disposable 프로세스에서만 시작해야 하며 운영 인스턴스의 env를 수정해 시험하지 않는다. `NODE_ENV=production`은 강제 OFF. Main `dc82e670` 정렬 이후 최신 PR CI는 재검증 필요.
+
+
 ## Issue #109 S3-3 — CAD API 권한·Audit 원자성 준비, 운영 OFF (2026-10-27)
 
 - **기능:** 기존 CAD Multipart POST·Current PUT·Version DELETE에서 서버 DB의 최신 Session/Role/Site를 같은 Prisma Transaction 안에 재조회하고 승인된 Editor/Admin+Site만 쓰기 허용한다. DELETE는 기존 삭제 비밀번호도 요구하며, CAD DB 변경과 CAD_UPLOADED/CAD_CURRENT_CHANGED/CAD_VERSION_DELETED Audit INSERT 중 하나라도 실패하면 DB를 롤백한다. 기존 업로드 보상·삭제 Job, 익명 GET/Viewer·CAD 데이터 규약은 유지한다.
