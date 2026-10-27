@@ -1,5 +1,12 @@
 # Architecture 초안
 
+## #85 M4-A — 브라우저 임시 메모 Tree 및 격리 (2026-10-28)
+
+- MemoSession(Version UUID + Source SHA) > MemoTreeState(groups/map/hidden IDs) > CadMemoTreePanel(우측 Outline 공용 위치)/CadMemoOverlay(Canvas Pin). DB/Prisma/SessionAuth/API/File Storage/Generated Transform와 참조·호출 없음.
+- Memo Tree 메뉴 보기/작업과 responsive ViewerAppShell Dock에서 실제 구현; 독립 Memo/Outline Drawer 우측 동시 표시 금지, 모바일 단일 dialog/inert/ESC. Tree 검색은 현재 메모 제목·본문/그룹명을 클라이언트에서만 처리해 #90 서버 검색을 구현했다고 오인하지 않음.
+- Canvas Filter = globalVisible AND perMemoVisible; 선택 숨김 메모에만 transientFocusId를 허용해 WCS Focus/핀 강조하고 shared visibility나 좌표는 불변. Version/Renderer/Reload가 바뀌면 Tree/Filter/Local ID 전부 초기화. #83/#138 실 기능·운영 승인 전 release closure 불가.
+
+
 ## #142 B2-3 P2 — Audit append-only를 예외·실제 Row 상태로 이중 검증 (2026-10-28)
 
 - 이미 복사된 SQLite 메모리 Clone에서만 합성 `AuditEvent` Row를 넣고, 후보 Trigger 이름 `g1_audit_no_update/no_delete` 확인 외에 **전체 Audit Table Content Snapshot**을 UPDATE 전 캡처한다. UPDATE/DELETE 각각의 예외와 실행 후 전체 Snapshot 완전 동등성이 모두 있어야만 Audit append-only 검사 양성; 중간 변경 시 즉시 FAIL/CLOSED.
