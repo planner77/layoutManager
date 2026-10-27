@@ -13,6 +13,7 @@ import { digestSessionToken, SESSION_IDLE_MS } from '@/server/auth/session';
 import { csrfProof } from '@/server/auth/login-service';
 import { requireSessionCsrf } from '@/server/auth/guards';
 import { resolveG7S3PreviewGate } from './preview-gate';
+import path from 'node:path';
 
 type Tx = Prisma.TransactionClient;
 const TOKEN = /^[a-zA-Z0-9_-]{43}$/;
@@ -43,6 +44,13 @@ export function prepareG7CadWrite(request: Request, requestId: string): G7CadWri
   if (!gate || env.NODE_ENV === 'production' ||
       new URL(request.url).origin !== gate.origin)
     throw fail('G7_S3_CAD_PREVIEW_DENIED', 404);
+  // Deny mismatched read/write storage BEFORE parsing a multipart body and
+  // before cookie checks. Same directory must serve anonymous content GET.
+  const expected = path.join(gate.root, 'cad');
+  if (env.CAD_STORAGE_PATH !== expected ||
+      (env.CAD_STORAGE_BACKEND && env.CAD_STORAGE_BACKEND !== 'local') ||
+      Object.entries(env).some(([key, value]) => key.startsWith('CAD_S3_') && !!value))
+    throw fail('G7_S3_CAD_STORAGE_ALIGNMENT_DENIED', 503);
   const raw = cookieToken(request);
   if (!raw || !TOKEN.test(raw) || Buffer.from(raw, 'base64url').length !== 32 ||
       Buffer.from(raw, 'base64url').toString('base64url') !== raw)

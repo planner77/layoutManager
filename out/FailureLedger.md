@@ -1,5 +1,13 @@
 # PR/Main CI 실패 원장
 
+## #109 PR #135 — CI SUCCESS / Codex P2 storage alignment correction before Main sync (2026-10-27 KST)
+
+- **Baseline:** PR HEAD `8a98e6a6b48a9e9d000f8d6a98c84dfbedfb4144`; [PR CI 40429149135](https://github.com/planner77/layoutManager/actions/runs/40429149135) `completed/success`. This is not a CI failure and no failed job is invented.
+- **Review gate:** Codex [P2 r4384076798](https://github.com/planner77/layoutManager/pull/135#discussion_r4384076798) (thread `PRRT_kwDOUQjDfc6wgu00`) exposed discrepancy: nonproduction writes used `<test-root>/cad` but anonymous Content GET relied on `context().storage` pointed by `CAD_STORAGE_PATH`. In a default separate process this could lead to `FILE_NOT_FOUND` after successful upload and broken Viewer. Review issue, not observed CI failure or production outage.
+- **Correction:** Require `CAD_STORAGE_PATH` to equal the exact UID-owned disposable `$G7_S3_TEST_ROOT/cad`, allow local backend only and reject any populated `CAD_S3_*` env. Both pre-upload request gate and the disposable context fail closed on mismatch, preventing upload and production fallback. Added storage contract unit and synthetic write→legacy `ConfiguredCadStorage.content` byte-equivalent read. S3-3 runbook describes isolated process and exact env. Existing anonymous GET/content route is not modified.
+- **Validation state:** New HEAD Typecheck/Unit/E2E/CI **NOT YET VERIFIED**. Preserve previous failures in ledger. Production Auth/Write/Prisma/Nginx/Compose/GHCR/real DB/CAD/S3 unchanged; #109/#96 OPEN/BLOCKED.
+
+
 ## Issue #109 S3-3 — CAD API 권한·Audit 원자성 준비, 운영 OFF (2026-10-27)
 
 - **기능:** 기존 CAD Multipart POST·Current PUT·Version DELETE에서 서버 DB의 최신 Session/Role/Site를 같은 Prisma Transaction 안에 재조회하고 승인된 Editor/Admin+Site만 쓰기 허용한다. DELETE는 기존 삭제 비밀번호도 요구하며, CAD DB 변경과 CAD_UPLOADED/CAD_CURRENT_CHANGED/CAD_VERSION_DELETED Audit INSERT 중 하나라도 실패하면 DB를 롤백한다. 기존 업로드 보상·삭제 Job, 익명 GET/Viewer·CAD 데이터 규약은 유지한다.
