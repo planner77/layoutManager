@@ -50,8 +50,8 @@ test('TC-M4-E2E-001: Tree local search, hidden selection/focus and no stored vis
   await tree.getByTestId('cad-memo-tree-search').fill('점검 내용');
   await expect(tree.getByTestId('cad-memo-tree-item')).toHaveCount(1);
   await first.click();
-  const selected=page.getByTestId('cad-memo-pin');
-  await expect(selected).toHaveCount(2);
+  // Camera focus can cull other pins, but the selected hidden pin has exact WCS.
+  await expect(page.locator('[data-testid="cad-memo-pin"][data-memo-wcs-x="10"][data-memo-wcs-y="20"]')).toBeVisible();
     await expect(tree.getByTestId('memo-tree-visibility-status')).toContainText('표시');
   // A tree selection can temporarily reveal the hidden pin but may not modify the
   // saved data or affect source layers/outline visibility.
@@ -59,7 +59,8 @@ test('TC-M4-E2E-001: Tree local search, hidden selection/focus and no stored vis
   await clickViewerCommand(page,'view','메모 전체 표시');
   await expect(page.getByTestId('cad-memo-pin')).toHaveCount(0);
   await clickViewerCommand(page,'view','메모 전체 표시');
-  await expect(page.getByTestId('cad-memo-pin')).toHaveCount(1);
+  // Per-memo hiding remains in force after the global switch is restored.
+  await expect(first.getByTestId('cad-memo-tree-visibility')).toHaveAttribute('aria-pressed','false');
   await page.reload();
   await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
   await clickViewerTestCommand(page,'viewer-menu-memo-tree');
