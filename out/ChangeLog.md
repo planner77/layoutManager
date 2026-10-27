@@ -1,5 +1,11 @@
 # ChangeLog
 
+## Unreleased — Issue #85 M4-A 세션 Memo Tree 부분 구현 (2026-10-28)
+
+- #82 브라우저 세션 WCS 메모를 그룹/미분류 Tree에서 검색·선택·임시 Show/Hide. 보기 > 메모 전체 표시, 작업 > 메모 트리, 반응형 오른쪽 단일 Drawer 및 WCS Focus/임시 강조 구현 후보.
+- **출시 아님:** 기존 0.43.0 버전/tag/GHCR 재사용·변경하지 않음. #83 영속/작성자·#84 Snap·#86 일정·#88 링크·#90 전체 검색 미포함. #138 공통 DnD와 M4 영속 AC 잔여. PR CI/리뷰/현장 테스트 및 1회 통합 GHCR 릴리스 전 NOT VERIFIED, Issue OPEN.
+
+
 ## v0.43.0 후보 — Issue #82 세션 WCS 메모 및 Renderer UX (2026-10-28)
 
 - MINOR 신규 기능. `three-dxf-viewer`에 session-local MemoDraft WCS XY 앵커·핀·레이블, 위치 drag/좌표 명시 확정·텍스트만 저장/ESC rollback·Version/SHA 격리, Source/Generated Tool 상호배타와 비지원 Renderer fail-closed 적용. #127 `작업 > 메모 추가/편집`과 하단 Drawer 재사용. 메모 영속, 사용자인증 및 공유는 #83 등 후속 비범위.

@@ -14,7 +14,8 @@ export async function openViewerMenu(page: Page, group: Group) {
     if (await page.evaluate(() => matchMedia('(max-width: 767px)').matches)) {
       const panel = await mobileDrawer.getAttribute('data-drawer');
       const closeName = panel === 'layers' ? '레이어 패널 접기' :
-        panel === 'outlines' ? '외곽선 목록 닫기' : '도구 닫기';
+        panel === 'outlines' ? '외곽선 목록 닫기' :
+        panel === 'memos' ? '메모 트리 닫기' : '도구 닫기';
       await mobileDrawer.getByRole('button', { name: closeName }).click();
     } else {
       // matchMedia's React effect may still be settling after a viewport resize.

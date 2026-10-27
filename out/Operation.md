@@ -1,5 +1,12 @@
 # 운영·환경설정 초안
 
+## Issue #85 M4-A — 운영 적용·마이그레이션 경계 (2026-10-28)
+
+- Browser-only session Memo Tree: 도면 Version/SHA·Renderer/Reload 변경 시 그룹/검색/visibility/메모가 소멸. 여러 PC·Reader/Editor 사이 공유되지 않으며 백업/Restore 대상도 아니다.
+- 서버 CadMemo 테이블·인증 API/Prisma migration·G7 Auth/Write Cutover/Compose/Nginx/Live CAD/S3/운영 계정은 변경·활성화하지 않음. 운영 M2 영속 전환은 #83 + #109/#96의 별도 Owner GO·사내 복구/rollback 증거와 함께 승인 필요.
+- 0.43.0 기발행 App+Migrator 쌍을 수정·재게시하지 않음. 이 임시 작업을 단독 Main 병합하면 자동 Main CI/GHCR 게시 조건과 사용자 단일 배포 목표가 충돌하므로 안전 게이트 충족 전 병합 유보.
+
+
 ## #142 B2-3 P2 — 합성 Audit 검증 운영 경계 (2026-10-28)
 
 - Audit UPDATE/DELETE Probes는 제공된 SQLite Bytes에서 독립 복제한 **메모리 DB에서만** 실행, 원본 Snapshot Buffer/실 DB/실 서비스에는 쓰지 않는다. 첫 합성 Row INSERT 후 전체 `AuditEvent` Table Snapshot을 보유하고 UPDATE 예외 + 동일 Row 여부, DELETE 예외 + 동일 Row 여부를 검사한다. `AFTER ... RAISE(FAIL)`로 예외가 발생해도 DB 변경이 남으면 `AUDIT_NOT_APPEND_ONLY`로 차단한다.

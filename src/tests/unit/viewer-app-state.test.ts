@@ -7,6 +7,7 @@ describe('TC-U1-UNIT-001: viewer app docking state', () => {
       layerPanelOpen: true,
       outlineToolEnabled: false,
       outlineTreeOpen: false,
+      memoTreeOpen: false,
       toolsOpen: false,
       compactPanel: 'layers',
     });
@@ -88,5 +89,25 @@ describe('TC-U3-UNIT-001: outline tool state machine', () => {
   it('clears the enabled bit on renderer switch/reload (reset)', () => {
     const active = viewerAppReducer(initialViewerAppState, { type: 'set-outline-tool', enabled: true });
     expect(viewerAppReducer(active, { type: 'reset' })).toEqual(initialViewerAppState);
+  });
+});
+
+describe('TC-M4-UNIT-001: Memo Tree and existing Outline Tree share a right dock', () => {
+  it('switches between the two trees without changing local canvas commands or visibility', () => {
+    let state=viewerAppReducer(initialViewerAppState,{type:'toggle-outline-tree'});
+    expect(state).toMatchObject({outlineTreeOpen:true,memoTreeOpen:false});
+    state=viewerAppReducer(state,{type:'toggle-memo-tree'});
+    expect(state).toMatchObject({outlineTreeOpen:false,memoTreeOpen:true,layerPanelOpen:true});
+    state=viewerAppReducer(state,{type:'toggle-outline-tree'});
+    expect(state).toMatchObject({outlineTreeOpen:true,memoTreeOpen:false});
+    expect(viewerAppReducer(state,{type:'reset'})).toEqual(initialViewerAppState);
+  });
+  it('uses exactly one modal panel in compact mode', () => {
+    let state=viewerAppReducer(initialViewerAppState,{type:'toggle-memo-tree',exclusive:true});
+    expect(state).toMatchObject({memoTreeOpen:true,outlineTreeOpen:false,layerPanelOpen:false,toolsOpen:false,compactPanel:'memos'});
+    state=viewerAppReducer({...state,toolsOpen:true},{type:'compact-exclusive'});
+    expect(state).toMatchObject({memoTreeOpen:true,toolsOpen:false,layerPanelOpen:false,outlineTreeOpen:false});
+    state=viewerAppReducer(state,{type:'toggle-tools',exclusive:true});
+    expect(state).toMatchObject({memoTreeOpen:false,toolsOpen:true});
   });
 });

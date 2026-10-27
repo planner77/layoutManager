@@ -1,5 +1,13 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## #85 M4-A — 세션 메모 Tree 부분 구현 (2026-10-28 KST)
+
+- **적용 범위:** #82 M1의 메모가 존재하는 현재 Version/SHA의 클라이언트에서만 그룹(1수준)/미분류·검색·Tree·개별/그룹/전역 Show/Hide 및 WCS Focus를 제공한다. 사용자·서버 작성자·Role·Scope·Audit·지속 visibility/계층은 **구현하거나 가장하지 않는다**. Renderer/Version/Reload 전환 시 해제, 기존 Layer/Outline/Canvas/Source 불변.
+- 메뉴는 #127 그룹 기준으로 보기 > 메모 전체 표시, 작업 > 메모 트리. Outline Tree와 동시 우측 Drawer 겹침 금지, 모바일은 단일 modal; #138 공통 DnD는 미구현이므로 별도 게이트 유지.
+- **Release/QA:** 선행 #83/#96/#109 영속 Auth 승인 및 #138 실 구현 전에 Issue #85 완료/종료 금지. #83/#84/#86/#88/#90도 OPEN. Owner Managed는 실제 리뷰 증거와 테스트를 대체하지 않는다. 변경은 새 기능 MINOR 후속 후보이나 0.43.0 M1 기존 태그/이미지 재사용 금지; **기존 Main GHCR 게시 1회 조건을 침해하는 부분 병합 금지**. 현재 PR/CI 검증 전이며 병합·GHCR/운영 이행 아님.
+- 상세: [Issue85](out/Issue85.md), [ADR #85](out/Decisions.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md).
+
+
 ## #82 PR #111 — 반응형 모바일 Modal Drawer/메뉴 E2E race (2026-10-28 KST)
 
 - [PR CI #40583276569](https://github.com/planner77/layoutManager/actions/runs/40583276569), attempt 1, HEAD `53b6909caaad4721c9050a6d26ec1da940176b05`: Verify [Job 122468046935](https://github.com/planner77/layoutManager/actions/runs/40583276569/job/122468046935) Chromium E2E 92건 중 **91 PASS/1 FAIL**, Legacy Migration E2E SKIPPED, Typecheck/Lint/Unit·Integration/OCI/DXF benchmark/Build SUCCESS. Docker/Migration/Runtime Smoke [Job 122468046482](https://github.com/planner77/layoutManager/actions/runs/40583276569/job/122468046482) SUCCESS. [Trace Artifact #12770224877](https://github.com/planner77/layoutManager/actions/runs/40583276569/artifacts/12770224877).

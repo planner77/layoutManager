@@ -4,13 +4,14 @@ import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'rea
 import type { ViewerCompactPanel } from './viewer-app-state';
 
 export function ViewerAppShell({ shellRef, isFullscreen, isNativeFullscreen, menuBar, toolbar,
-  layerPanel, layerPanelOpen, outlineTreePanel, outlineTreeOpen, compactPanel,
+  layerPanel, layerPanelOpen, outlineTreePanel, outlineTreeOpen, memoTreePanel, memoTreeOpen, compactPanel,
   canvas, tools, toolsOpen, onClosePanel, status, modalOverlay, nativeLoadingOverlay }: {
   shellRef: RefObject<HTMLDivElement | null>;
   isFullscreen: boolean; isNativeFullscreen: boolean;
   menuBar: ReactNode; toolbar: ReactNode;
   layerPanel?: ReactNode; layerPanelOpen: boolean;
   outlineTreePanel?: ReactNode; outlineTreeOpen: boolean;
+  memoTreePanel?: ReactNode; memoTreeOpen: boolean;
   compactPanel: ViewerCompactPanel;
   canvas: ReactNode; tools?: ReactNode; toolsOpen: boolean;
   onClosePanel: (panel: Exclude<ViewerCompactPanel, null>) => void;
@@ -20,6 +21,7 @@ export function ViewerAppShell({ shellRef, isFullscreen, isNativeFullscreen, men
   const modalOpen=!!modalOverlay;
   const active = mobile ? (compactPanel==='layers' && layerPanelOpen && layerPanel ? 'layers' :
     compactPanel==='outlines' && outlineTreeOpen && outlineTreePanel ? 'outlines' :
+    compactPanel==='memos' && memoTreeOpen && memoTreePanel ? 'memos' :
     compactPanel==='tools' && toolsOpen && tools ? 'tools' : null) : null;
   const dialog = useRef<HTMLDivElement>(null);
   const headerRef=useRef<HTMLElement>(null);
@@ -66,7 +68,7 @@ export function ViewerAppShell({ shellRef, isFullscreen, isNativeFullscreen, men
   const drawer = (name: Exclude<ViewerCompactPanel,null>, open:boolean, content:ReactNode, id:string) =>
     open && content && (!mobile || active===name) ? <div key={name} id={id} ref={active===name?dialog:undefined}
       role={mobile ? 'dialog' : 'region'} aria-modal={mobile && active===name && !modalOpen ? true : undefined}
-      aria-label={name==='layers'?'레이어':name==='outlines'?'외곽선 목록':'선택 및 외곽선 도구'}
+      aria-label={name==='layers'?'레이어':name==='outlines'?'외곽선 목록':name==='memos'?'메모 트리':'선택 및 외곽선 도구'}
       data-testid={id} data-drawer={name} data-canvas-edit-escape-layer={mobile && active===name ? 'drawer' : undefined} onKeyDown={trapTab}
       className={`viewer-drawer viewer-drawer-${name} ${mobile && active!==name?'viewer-drawer-hidden':''}`}>
       {name==='tools' && <button type="button" className="sticky top-0 z-10 float-right rounded bg-white px-2 py-1 text-sm text-slate-800" onClick={()=>onClosePanel('tools')}>도구 닫기</button>}
@@ -81,6 +83,7 @@ export function ViewerAppShell({ shellRef, isFullscreen, isNativeFullscreen, men
       {mobile && active && <button type="button" className="viewer-drawer-backdrop" aria-label="패널 닫기" onClick={()=>onClosePanel(active)} />}
       {drawer('layers',layerPanelOpen,layerPanel,'viewer-layer-dock')}
       {drawer('outlines',outlineTreeOpen,outlineTreePanel,'viewer-outline-tree-dock')}
+      {drawer('memos',memoTreeOpen,memoTreePanel,'viewer-memo-tree-dock')}
       {drawer('tools',toolsOpen,tools,'viewer-tools-dock')}
     </div>
     <footer ref={footerRef} className="relative z-20 shrink-0 border-t border-slate-200 bg-white px-3 py-1 text-slate-700">{status}</footer>

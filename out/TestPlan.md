@@ -1,5 +1,13 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## Issue #85 M4-A — 세션 트리 검증 계획 (2026-10-28)
+
+- TC-M4-UNIT-001~003: src/tests/unit/memo-tree.test.ts 그룹 1수준/UUID/중복/유효성/미분류 재배치, hidden 개별/그룹 상태와 WCS 불변, NFC·영문 대소문자/본문 검색. src/tests/unit/viewer-app-state.test.ts 오른쪽 Outline↔Memo Tree 독점, compact modal과 reset.
+- TC-M4-E2E-001: src/tests/e2e/issue85-memo-tree.spec.ts 합성 DXF + M1 신규/편집 두 메모 → 임시 숨김 검색/선택 Focus → 전체 hide/show (개별 숨김 보존) → Reload 그룹·메모/visibility 소멸.
+- TC-M4-E2E-002: 그룹 생성/할당/키보드 roving focus/그룹 숨김, 오른쪽 Outline Tree 교체, 모바일 390px Dialog/inert/닫기 focus. 회귀 #82/#43/#127; 비지원 Renderer/Source SHA/Version/Native Fullscreen은 검증 필요.
+- 실행 전 = NOT RUN, PR CI 최신 SHA 성공/실제 Docker/Chromium 전 합격 금지. M4-AC5 서버 저장·Reader/Site/Auth·#138 DnD 미실행 BLOCKED, 운영 DB/Real CAD/GHCR 변경 금지.
+
+
 ## TC-M1-E2E-001 — Desktop→390px Mobile Modal/메뉴 경계 (2026-10-28)
 
 - WCS(10,20) 임시 Memo와 텍스트만 변경/Zoom·Pan 후 CSS fullscreen에서 Viewport 390×844 적용. 모바일 `viewer-tools-dock[role=dialog]`가 열린 것을 대기하고 `header.inert===true` 확인; 이 상태에서 상단 메뉴 클릭을 강제하지 않는다.
