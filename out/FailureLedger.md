@@ -1,5 +1,15 @@
 # PR/Main CI 실패 원장
 
+## #109 PR #141 — CI #40444154044 Unit/Integration 5건 실패 및 P1/P2 3건 조치 (2026-10-27 KST)
+
+- **관측 실패 Run:** [PR CI #40444154044](https://github.com/planner77/layoutManager/actions/runs/40444154044), attempt 1, SHA `b5f340e69bd28aed939bb1c443df355c1652f5bf`, completed/failure. Verify [Job #121991282421](https://github.com/planner77/layoutManager/actions/runs/40444154044/job/121991282421) Unit/Integration Step 9 failure, **68 test files: 67 PASS/1 FAIL; 총 404 tests: 399 PASS/5 FAIL**. Typecheck+ESLint PASS, Production Build/Chromium E2E/Legacy Migration E2E **SKIPPED**. Docker [Job #121991282118](https://github.com/planner77/layoutManager/actions/runs/40444154044/job/121991282118) SUCCESS.
+- **원인 및 증거:** 실패 5개 모두 `tests/integration/g7-s3-4-b-clone.test.ts`에서 검증기의 예상 sorted key 순서가 틀려 `SNAPSHOT_MANIFEST_MISMATCH`를 먼저 반환하는 하나의 직접 원인. 정상 Manifest 거부로 positive 1, corrupted/missing/permission/schema negative 기대치 4개가 파생 실패함. DB 손상/운영 장애나 서로 독립적인 결함 5건으로 오판하지 않는다.
+- **Codex P1 [r4384813274](https://github.com/planner77/layoutManager/pull/141#discussion_r4384813274):** `Object.keys(m).sort().join(',')` 기대값이 `schema,schemaId,snapshotId,scope`로 잘못됨. 실제 정렬값 `schema,schemaId,scope,snapshotId`로 교정.
+- **Codex P2 [r4384813277](https://github.com/planner77/layoutManager/pull/141#discussion_r4384813277):** 원본 DB 파일은 `ownedBytes()`가 FD 보안검사 후 닫았지만 SQLite에서 `new SQLite(path)`로 다시 열어 pathname/symlink/inode 교체 가능. 검증한 Buffer를 직접 `new SQLite(bytes)`의 **메모리 복제 DB**로 열도록 보완. Source 경로 교체 후에도 같은 검증된 Buffer를 검사하는 회귀 추가(원본 path symlink 자체는 거부).
+- **Codex P2 [r4384813278](https://github.com/planner77/layoutManager/pull/141#discussion_r4384813278):** AuditEvent/AuthSession 두 테이블만 검사하던 후보 Schema 불완전성. G7 `User,UserRoleGrant,UserSiteGrant,SpecialGrant,AuthSession,AuditEvent,AdminRecoveryNonce,G3LoginAttempt` **8개 전체 존재** 필요; CAD baseline에는 8개 중 하나라도 있으면 거부. 부분 Auth 테이블 음성시험 추가.
+- **재검증:** 변경된 HEAD `5d17b9f76352bc2852ee3235498f3d2fb87a9933`의 CI는 기록 시점 **미관측/NOT VERIFIED**, 향후 새 PR CI/코덱스/충돌 증거 분리 기록. 실 OCI·DB/CAD/S3 복구/rollback **NOT RUN**, 운영 데이터 변경 0. GHCR/Prisma 활성 Migration/Compose/Nginx/Auth/Write/Issue #109/#96 종료 미수행.
+
+
 ## #109 S3-4-A Main CI 성공 인계 / S3-4-B1 최초 작업·실 복구 미실행 (2026-10-27)
 
 - **S3-4-A 성공 인계 (실패 아님):** PR #136 `d890f88bb598c215d12597157725a2435da28dec` PR CI #40440831020 SUCCESS, Codex 최신 재리뷰 major 없음·P2 두 스레드 Resolved → Squash `1500eb699d5ef8d2045e951354838aa13ce24f92`. [Main CI #40443473912](https://github.com/planner77/layoutManager/actions/runs/40443473912) SUCCESS, release-scope Job SUCCESS, Build and push GHCR Job SKIPPED.
