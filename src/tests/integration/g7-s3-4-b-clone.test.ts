@@ -55,7 +55,7 @@ beforeEach(async()=>{
   });
   expect(version1.id).toBeTruthy();
   ownedWrite('snapshot.json',JSON.stringify({
-    scope:'G7-S3-4B-DISPOSABLE-RESTORE',snapshotId:snap,schema:'CAD_BASELINE',
+    scope:'G7-S3-4B-DISPOSABLE-RESTORE',snapshotId:snap,schema:'CAD_BASELINE',schemaId:'CAD_BASELINE',
   }));
 });
 afterEach(async()=>{
@@ -99,6 +99,7 @@ describe('#109 S3-4-B1 offline disposable clone integrity',()=>{
     expect(assertResult('BLOCKED').reasons).toContain('SCHEMA_BOUNDARY_MISMATCH');
     ownedWrite('snapshot.json',JSON.stringify({
       scope:'G7-S3-4B-DISPOSABLE-RESTORE',snapshotId:snap,schema:'G7_CANDIDATE',
+      schemaId:'202610260002_g7_operational_auth',
     }));
     assertResult('ISOLATED_INTEGRITY_ONLY','G7_CANDIDATE');
   });

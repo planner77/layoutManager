@@ -76,9 +76,10 @@ export function inspectS34B1Clone(root: string,
     const manifest=JSON.parse(ownedBytes(root,'snapshot.json').toString('utf8')) as unknown;
     if (!manifest || typeof manifest!=='object'||Array.isArray(manifest)) throw Error('MANIFEST');
     const m=manifest as Record<string,unknown>;
-    if(Object.keys(m).sort().join(',')!=='schema,snapshotId,scope' ||
+    if(Object.keys(m).sort().join(',')!=='schema,schemaId,snapshotId,scope' ||
       m.scope!=='G7-S3-4B-DISPOSABLE-RESTORE'||
-      m.snapshotId!==expected.snapshotId||m.schema!==expected.schema)
+      m.snapshotId!==expected.snapshotId||m.schema!==expected.schema ||
+      m.schemaId!==(expected.schema==='G7_CANDIDATE'?G7_S3_SCHEMA_ID:'CAD_BASELINE'))
       return result(['SNAPSHOT_MANIFEST_MISMATCH'],0,0,0);
     const databaseFile=path.join(root,'snapshot.sqlite');
     // Validate descriptor and physical ownership before better-sqlite3 opens.

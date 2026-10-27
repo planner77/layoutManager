@@ -429,3 +429,43 @@ describe('#109 S3-4-A offline release evidence exact GHCR exclusion', () => {
     expect(tagged.values).toContain('publish=true');
   });
 });
+
+describe('#109 S3-4-B1 local clone exact-title GHCR exclusion',()=>{
+  const exact='#109 | S3-4-B1 Disposable restore integrity [G7-S3-4B1-NO-GHCR]';
+  const files=[
+    '.github/workflows/docker-publish.yml','AGENTS.md','out/Architecture.md',
+    'out/Database.md','out/Decisions.md','out/FailureLedger.md','out/Issue109.md',
+    'out/Operation.md','out/Requirements.md','out/TestPlan.md','out/TestReport.md',
+    'src/deploy/g7-s3/S3-4-B.md',
+    'src/server/g7-operational/s3-4-b-clone.ts',
+    'src/tests/integration/g7-s3-4-b-clone.test.ts',
+    'src/tests/unit/g7-staging-ghcr-guard.test.ts',
+  ];
+  test('only reviewed B1 files with exact title skip GHCR',()=>{
+    const result=runScope(files,exact+'\n\nDisposable clone only');
+    expect(result.status,result.stderr).toBe(0);
+    expect(result.values).toContain('publish=false');
+  });
+  test('real operating migrations, deployment and routes cannot hide behind B1 title',()=>{
+    for(const unsafe of [
+      'src/prisma/migrations/202610260002_g7_operational_auth/migration.sql',
+      'src/scripts/deploy.ts','src/docker-compose.yml',
+      'src/app/api/cad-files/route.ts','src/server/g7-operational/preflight.ts',
+      '.github/workflows/pr-ci.yml',
+    ]){
+      const r=runScope([files[12],unsafe],exact);
+      expect(r.status).not.toBe(0);
+      expect(r.stderr).toContain('G7-S3-4B1 GHCR exclusion disallowed path: '+unsafe);
+    }
+  });
+  test('near-match subject and tagged push cannot suppress normal release',()=>{
+    for(const subject of [exact+' ',exact+'-fake','#109 | S3-4-B1 other']){
+      const r=runScope([files[12]],subject);
+      expect(r.status).not.toBe(0);
+      expect(r.stderr).toContain('G7-S3-4A exact squash subject required');
+    }
+    const tagged=runScope([files[12]],exact,'refs/tags/v0.99.1');
+    expect(tagged.status).toBe(0);
+    expect(tagged.values).toContain('publish=true');
+  });
+});
