@@ -1,5 +1,13 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #109 S3-4-A — 오프라인 릴리스·복구 증거 게이트 착수 (2026-10-27 KST)
+
+- **선행 확인:** S3-3 PR #135 → Main `dc20844be7525bd3367f38cc3080675efa4fa89c`, [Main CI #40437054103](https://github.com/planner77/layoutManager/actions/runs/40437054103) SUCCESS, release-scope SUCCESS 및 GHCR job SKIPPED. S3-4 출발점은 해당 Main이며 Owner의 **실운영 GO는 없음**.
+- **S3-4-A 구현:** `src/server/g7-operational/s3-4-readiness.ts` 순수 자료 검증, `src/scripts/g7-s3-4-readiness.ts` 사내 0600 절대경로 JSON 검증 CLI, Unit/Fault 회귀, [S3-4 Runbook](src/deploy/g7-s3/S3-4.md). OCI App/Migrator·rollback 쌍의 source/version/digest, 7개 후보 Migration·운영 활성 History 미변경, DB/CAD/S3 단일 Snapshot/복구, FK/원본 SHA/Current/Version·SOP 검증 상태·사내 증거 참조의 누락·모순을 fail-closed 한다.
+- **실증 경계:** 도구가 확인하는 것은 **운영자 증거 패킷의 형식·상호 일치성**이며 GHCR registry 검증/현장 복구·OCI 서명 검증을 직접 수행한 것이 아니다. `EVIDENCE_PACKET_COMPLETE_NOT_GO`도 운영 GO 아님. 모든 결과 `operationalGo=false`/`runtimeActivated=false` 고정. S3-4-B는 사내 실제 OCI/격리 Migration/DB-CAD-S3 동일 Snapshot 복구·롤백, S3-4-C는 신뢰된 Release binder/승인 전 확인, S3-5는 릴리스별 Owner 실행 GO.
+- **비변경:** 활성 `src/prisma/migrations/**`·`src/scripts/deploy.ts`, 실제 운영 Auth/Write, Docker Compose/Nginx/.env, 운영 DB/CAD/S3, GHCR 이미지/태그 및 Issue #109/#96 종료 0. 정확 제목+파일 allowlist `#109 | S3-4-A Offline release evidence [G7-S3-4A-NO-GHCR]`만 Main GHCR 게시 SKIP. PR CI 실행 전 테스트 결과는 NOT VERIFIED.
+
+
 ## Issue #109 PR #135 — P2 처리·Main 정렬 후 리뷰/충돌 재확인 (2026-10-27 KST)
 
 - 최초 HEAD `8a98e6a6` [PR CI #40429149135](https://github.com/planner77/layoutManager/actions/runs/40429149135)는 `completed/success`. Codex [P2 r4384076798](https://github.com/planner77/layoutManager/pull/135#discussion_r4384076798)는 **CI 실패가 아닌** preview 로컬 저장소/기존 Content GET 불일치 위험이다.

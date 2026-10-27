@@ -1,5 +1,12 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## #109 S3-4-A — 구현 진입 / 검증 결과 미관측 (2026-10-27)
+
+- Baseline: #135 S3-3 squash Main `dc20844be7525bd3367f38cc3080675efa4fa89c`, [Main CI 40437054103](https://github.com/planner77/layoutManager/actions/runs/40437054103) completed/success, release-scope PASS, GHCR Build/Push SKIPPED.
+- S3-4-A 증거 패킷 pure module, 사내 오프라인 CLI, 단위시험·GHCR 범위 테스트 작성. 최신 PR CI의 Typecheck/Vitest/Build/E2E·Docker PASS는 **아직 관측하지 않음**. S3-4-B 실 OCI registry/사내 실제 복구·rollback, S3-4-C binding, S3-5 Owner GO **NOT RUN**.
+- 사내 운영 자료/실 시험 기록 미열람; 형식상 PASS claims는 실제 검증 PASS로 계상하지 않음. 운영 Auth/Write/Migration/GHCR OFF, #109/#96 OPEN/BLOCKED.
+
+
 ## Issue #109 PR #135 P2·Main 정렬 확인 / 새 HEAD 시험 대기 (2026-10-27 KST)
 
 - Initial `8a98e6a6`: [PR CI 40429149135](https://github.com/planner77/layoutManager/actions/runs/40429149135) `completed/success`.

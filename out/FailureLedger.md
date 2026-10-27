@@ -1,5 +1,12 @@
 # PR/Main CI 실패 원장
 
+## #109 S3-4-A 착수 — 이전 Main CI PASS 인계 / 신규 CI·실복구 미관측 (2026-10-27)
+
+- **선행 Run (성공·실패 원장과 분리):** #135 squash `dc20844be7525bd3367f38cc3080675efa4fa89c`, Main CI [40437054103](https://github.com/planner77/layoutManager/actions/runs/40437054103) SUCCESS 및 GHCR job SKIPPED. 새 구현에서 기존 S3-3 P2·CI 실패를 소거하거나 중복 실패로 적지 않는다.
+- **이번 작업:** S3-4-A 오프라인 OCI/schema/snapshot/rollback 증거형식 검증·CLI·Unit+GHCR exact allowlist·Runbook 추가. CI 실행 전 결과는 `NOT VERIFIED`, 사내 registry·실 DB/CAD/S3 복원/rollback은 `NOT RUN`; 장래 실패·Cancelled Job을 관측하면 정확 HEAD/Run/Job/Attempt/원인/보완을 추가.
+- **통제:** `src/prisma/migrations/**`, `src/scripts/deploy.ts`, Compose/Nginx, 실 DB/CAD/S3, 운영 Auth/Write, GHCR 이미지 게시/태그/Issue 종료 변경 없음. 사내 원시 증거/주소/토큰/이미지 민감정보 비반출. S3-4-B/C 및 S3-5 미승인.
+
+
 ## Issue #109 PR #135 — 최신 Main 정렬 후 리뷰·충돌 2차 게이트 (2026-10-27 KST)
 
 - **근거 HEAD:** Main `dc82e670073160ddac46a2f9e9489a738a19c033`; S3-3 Merge HEAD `ebc294fff35b005737cf89ebacb78420b209bd59` (parents `13fcea7fc69e844854470dbd9a180a6fc08920ae`, Main `dc82e670...`). GitHub 비교 `ahead=6, behind=0`, PR #135 `OPEN/mergeable=true`. Main #57 변경 파일 25개 의미적 보존(충돌 가능 7개 MD는 Main + S3-3 신규 항목 양쪽 유지), 원본 Main 기능 복원손실 없음.

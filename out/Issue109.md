@@ -1,5 +1,13 @@
 # Issue #109 — G7 운영 인증 활성화 설계 및 통제 배포·롤백 Runbook
 
+## S3-4-A 오프라인 OCI·Migration·Rollback 증거 패킷 검증 착수 (2026-10-27)
+
+- S3-3 PR #135 `dc20844be7525bd3367f38cc3080675efa4fa89c` 및 Main CI [40437054103](https://github.com/planner77/layoutManager/actions/runs/40437054103) 성공·GHCR SKIPPED 근거 다음 단계. S3-4를 **A(오프라인 증거 구조검증) → B(사내 OCI/실 Snapshot 복구·rollback 검증) → C(신뢰된 Release/Operation binder) → S3-5 Owner 실운영 GO**로 분리한다.
+- **이번 구현 A:** Source SHA, 7th `202610260002_g7_operational_auth` 후보 Schema, 정확 App+Migrator OCI digest·version/source pairing, rollback pair, 17개 필수 증거(check별 PASS/FAIL/NOT_RUN/CANCELLED·사내 EV/QA/timestamp·SNAP id) 검증. 사내 0600 JSON/절대경로만 열어 결과 상태/사유 코드만 출력. PASS는 운영자 주장으로 간주하므로 실제 Registry/DB/CAD/S3 검증했다고 **주장하지 않는다**.
+- 모든 반환에 `operationalGo=false`/`runtimeActivated=false` 하드코딩, Auth/Write default OFF, 활성 Migration 및 자동 Migrator/Compose/실 데이터 변경 없음. S3-4-B/C·특정 릴리스 Owner 승인까지 **NO-GO**. 근거: [S3-4 Runbook](../src/deploy/g7-s3/S3-4.md), [Operation](Operation.md), [TestPlan](TestPlan.md), [FailureLedger](FailureLedger.md). #109/#96 OPEN/BLOCKED.
+- 정확 Squash 예정 `#109 | S3-4-A Offline release evidence [G7-S3-4A-NO-GHCR]`, 명시 파일 allowlist 외 런타임/운영 SQL/Compose 변경 시 실패; 새 코드/시험은 CI 전 미검증.
+
+
 ## Issue #109 S3-3 — CAD API 권한·Audit 원자성 준비, 운영 OFF (2026-10-27)
 
 - **기능:** 기존 CAD Multipart POST·Current PUT·Version DELETE에서 서버 DB의 최신 Session/Role/Site를 같은 Prisma Transaction 안에 재조회하고 승인된 Editor/Admin+Site만 쓰기 허용한다. DELETE는 기존 삭제 비밀번호도 요구하며, CAD DB 변경과 CAD_UPLOADED/CAD_CURRENT_CHANGED/CAD_VERSION_DELETED Audit INSERT 중 하나라도 실패하면 DB를 롤백한다. 기존 업로드 보상·삭제 Job, 익명 GET/Viewer·CAD 데이터 규약은 유지한다.
