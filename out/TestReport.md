@@ -1,5 +1,11 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## #142 B2-4 Main CI 최종 검증 및 B2-5 시험 작성 (2026-10-28)
+
+- B2-4: 최신 PR #147 HEAD a59d18b10a103fe863752d460dff216b62b5fe43, PR CI #40604028179 SUCCESS(Verify 및 Docker), reviewer Codex quota 실패/Owner Managed 사용자 승인; unresolved=0. Squash Main 81fd00ba9a7463f0b1817d83ca78fe9cc31f5b4d, Main CI #40610619799 SUCCESS, Release-scope #122560987574 SUCCESS, GHCR Build/push #122561027937 SKIPPED. 신규 이미지 게시 없음.
+- B2-5 합성 검증기/Unit 및 GHCR guard Test 작성. 완전 합성 EV/QA/SNAP·OCI 릴리스 참조 정합성 성공도 현장 인증 실패 플래그 false, 누락·중복·불일치·실패/취소·NOT_RUN·Secret 유출 차단·15-Path 검사 설계. 신규 CI 실행 결과 확인 전 PASS 주장 불가.
+- 실제 Site Writer/DB/CAD/S3/OCI 출처/물리 Restore·Rollback/RTO/RPO 및 Owner·독립 QA는 NOT RUN; #142/#109/#96 BLOCKED.
+
 ## #142 B2-4 PR #147 — 초기 Typecheck 실패 및 Main #82 재정렬 (2026-10-28)
 
 - [PR CI #40579106887](https://github.com/planner77/layoutManager/actions/runs/40579106887), HEAD `5d7055c8c72d800005509557ee137c76a9d87aad`: Verify Job 122453396943 **FAILED** (`tests/integration/g7-s3-4-b2-4.test.ts:93,96` TS2322 `Buffer<ArrayBufferLike>` vs `Buffer<ArrayBuffer>`), Docker Job 122453396404 SUCCESS. Typecheck 이후 Lint/Unit/Integration/Build/E2E 검증 **SKIPPED**, B2-4 synthetic PASS 아직 CI로 입증되지 않음.

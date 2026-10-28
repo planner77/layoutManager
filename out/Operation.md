@@ -1,5 +1,11 @@
 # 운영·환경설정 초안
 
+## #142 B2-5 — 합성 Private Evidence 참조 검증 Runbook 및 운영 NO-GO (2026-10-28)
+
+- src/deploy/g7-s3/S3-4-B2-5.md 필수: 17 S3-4-A 필수 체크마다 입력 QA Ledger의 EV/QA/SNAP·UTC·Source/Schema/4 OCI 역할 참조를 fail-closed 대조한다. 모든 참조는 미신뢰, 검증 성공조차 실제 Reviewer 인증·Registry 서명·Site Restore가 아니다. 사이트 원본/인증정보는 공개 Git/CI에 올리지 않는다.
+- 현장 수용은 별도 변경 승인 후 독립 QA·Owner 감독 아래 실제 Writer zero, WAL-consistent SQLite backup, Local CAD/S3 Versioned GET, 7 Migration 사본 적용, 물리 Restore/Rollback 및 RTO/RPO 측정과 비공개 EV/QA/SNAP 증거 제출 필요. 이번 코드·PR CI로 수행할 수 없다.
+- B2-4 Main CI 40610619799 성공과 GHCR SKIPPED 확인. 운영 Auth/CAD Write OFF, #142/#109/#96 OPEN/BLOCKED.
+
 ## #142 B2-4 — 합성 Replay/실 운영 Restore 구분 (2026-10-28)
 
 - 오프라인 `inspectS34B24DisposableReplay`는 호출자가 제공한 세 SQLite Buffer, Local/S3 export Buffer, S3 Marker, OCI manifest/config Buffer만 읽고 SHA/Byte/DB 스키마/Version/Current/FK·Audit 불변성·Rollback 바이트를 대조한다. 이 함수는 Source Filesystem Path·SQLite 운영 DB·S3/OCI 네트워크 요청/Writer freeze·Prisma CLI/Container 실행/복원 출력 파일을 만들지 않는다. 입력 Path를 통한 I/O 요청은 허용되지 않으며 Blob/Key/Secret 값은 결과에 출력하지 않는다.

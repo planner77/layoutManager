@@ -639,3 +639,56 @@ describe('#142 B2-2A exact capture claim GHCR exclusion',()=>{
     expect(tag.values).toContain('publish=true');
   });
 });
+
+describe('#142 B2-5 disposable private evidence GHCR exclusion',()=>{
+  const title='#142 | S3-4-B2-5 Disposable private evidence reconciliation [G7-S3-4B2-5-NO-GHCR]';
+  const files=[
+    '.github/workflows/docker-publish.yml','AGENTS.md',
+    'out/Architecture.md','out/Database.md','out/Decisions.md',
+    'out/FailureLedger.md','out/Issue109.md','out/Operation.md',
+    'out/Requirements.md','out/TestPlan.md','out/TestReport.md',
+    'src/deploy/g7-s3/S3-4-B2-5.md',
+    'src/server/g7-operational/s3-4-b2-5.ts',
+    'src/tests/unit/g7-s3-4-b2-5.test.ts',
+    'src/tests/unit/g7-staging-ghcr-guard.test.ts',
+  ];
+  test('only exact B2-5 squash subject plus fifteen approved paths skip GHCR',()=>{
+    const r=runScope(files,title+'\n\nUntrusted packet correlation only; no site proof');
+    expect(r.status,r.stderr).toBe(0);
+    expect(r.values).toContain('publish=false');
+    expect(r.values).not.toContain('publish=true');
+  });
+  test('production path, active migration, image build and unrelated CI workflow refuse exclusion',()=>{
+    for(const forbidden of [
+      'src/prisma/schema.prisma',
+      'src/prisma/migrations/202610260002_g7_operational_auth/migration.sql',
+      'src/deploy/g7-s3/prisma/migrations/202610260002_g7_operational_auth/migration.sql',
+      'src/deploy/g7-s3/prisma.config.ts',
+      'src/Dockerfile','src/docker-compose.yml','src/scripts/deploy.ts',
+      'src/app/api/cad-files/route.ts',
+      'src/app/api/g7-operational/[...segments]/route.ts',
+      'src/server/g7-operational/preflight.ts',
+      'src/tests/unit/unauthorized.test.ts','.github/workflows/pr-ci.yml',
+    ]){
+      const r=runScope([files[12],forbidden],title);
+      expect(r.status).not.toBe(0);
+      expect(r.stderr).toContain('G7-S3-4B2-5 GHCR exclusion disallowed path: '+forbidden);
+      expect(r.values).toBe('');
+    }
+  });
+  test('near misses fail closed; other B2 subject and tag never bypass release',()=>{
+    for(const malformed of [title+' ',title+'-extra',
+      '#142 | S3-4-B2-5 other', '#142 | S3-4-B2-5',
+    ]){
+      const r=runScope([files[12]],malformed);
+      expect(r.status).not.toBe(0);
+      expect(r.stderr).toContain('G7-S3-4B2-5 exact squash subject required');
+    }
+    const old=runScope([files[12]],
+      '#142 | S3-4-B2-4 Disposable rollback replay [G7-S3-4B2-4-NO-GHCR]');
+    expect(old.status).not.toBe(0);
+    const tagged=runScope([files[12]],title,'refs/tags/v0.99.1');
+    expect(tagged.status).toBe(0);
+    expect(tagged.values).toContain('publish=true');
+  });
+});

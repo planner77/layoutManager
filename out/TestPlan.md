@@ -1,5 +1,12 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## #142 TC-B2-5 — 합성 EV/QA/SNAP 교차대조 및 GHCR fail-closed (2026-10-28)
+
+- 양성 Fixture: 17 S3-4-A 체크 PASS+EV/QA/SNAP, 네 OCI immutable digest/Source/Schema, UTC 순서가 모두 일치해도 실제 증명·GO 플래그는 false. Check 배열의 순서만 바꾼 경우 정확 name 기반 통과.
+- 음성 Fixture: 검증 항목 누락/중복/미승인 Key, EV 재사용/교환, QA/SNAP/Source/Schema/OCI digest 불일치, ISO 날짜 무효·역행, readiness PASS 위조, FAIL/CANCELLED, NOT_RUN, 비밀·원본 CAD/S3 경로 포함. Result reasons는 상수 코드만 출력.
+- GHCR Guard: 정확 B2-5 Squash Title+15-file allowlist만 Main publish=false, 운영 SQL/App/Deploy/Compose/Nginx/다른 workflow 및 유사 Title은 fail-closed, version tag는 정상 정책. Typecheck/Lint/Unit/Build/E2E/Docker/Smoke 최신 PR HEAD 검증 필요; 결과 관측 전 NOT VERIFIED.
+- 운영 현장 검증은 이 테스트가 대신할 수 없으며 Owner 별도 승인 전 NOT RUN.
+
 ## #142 B2-4 — 동일 SNAP 합성 Restore/Rollback Replay 및 Failure Injection (2026-10-28)
 
 - TC-B2-4-01: 격리 in-memory SQLite CAD 6 baseline에 Local DXF/S3 DWG 두 Version과 Current/nextVersion/SHA를 합성 등록, 격리 G7 Auth 7th 후보 SQL을 별도 Candidate Buffer로 적용 후 baseline 복사본을 Rollback Buffer로 사용. Source→Candidate→Rollback 전 단계 `SNAP-*`/`E-*` 및 Marker bytes·S3 Marker VersionId, Local/S3 모든 오브젝트 ID/Locator/VersionId/Bytes 일치, B2-3 CAD/QuickCheck/FK/Audit 8 Tables 검사. 기대 `DISPOSABLE_REPLAY_MATCH_NOT_SITE_PROOF`, registry/site/restore/rollbackExecuted/GO false.

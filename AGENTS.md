@@ -1,5 +1,12 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## #142 B2-4 Owner Managed 병합 완료 → B2-5 격리 증거 검증 구현 (2026-10-28 KST)
+
+- B2-4 PR #147: 사용자 Owner Managed 리뷰 승인에 따라 최신 Codex 리뷰 **사용량 한도 실패를 성공으로 오인하지 않고** 결정을 기록. PR CI #40604028179 SUCCESS, unresolved threads 0, exact no-GHCR Squash Main 81fd00ba9a7463f0b1817d83ca78fe9cc31f5b4d. Main CI #40610619799 SUCCESS, Release Scope SUCCESS, GHCR Build/push SKIPPED. 기존 TS2322 실패 #40579106887과 보완 이력은 FailureLedger에 보존.
+- B2-5 Runbook src/deploy/g7-s3/S3-4-B2-5.md 필수. 신규 순수 assessS34B25DisposableEvidence는 두 미신뢰 합성 Packet 간 S3-4-A 필수 17개 체크, EV/QA/SNAP, UTC, Source/Schema/4 OCI Digests 정합성만 검사한다. 합성 양성도 DISPOSABLE_EVIDENCE_RECONCILED_NOT_SITE_PROOF이며 실제 검증·승인 아님.
+- 실제 현장 Writer/SQLite/CAD/S3/OCI Registry, 운영 Prisma Migration, Docker/Restore/Rollback, Auth/CAD Write, GHCR/Compose/Nginx, Owner GO 모두 NOT RUN/OFF. #142/#109/#96 OPEN/BLOCKED; 실 QA/동일 Snapshot 인증·S3-4-C/S3-5 별도.
+- B2-5 exact no-GHCR title: #142 | S3-4-B2-5 Disposable private evidence reconciliation [G7-S3-4B2-5-NO-GHCR]. 15개 변경 경로만 허용; 본 작업은 B2-5 개발·PR CI까지, 병합/GHCR 게시는 미승인.
+
 ## Issue #142 / PR #147 — Main #82 정렬 및 TypeScript TS2322 실패 보완 (2026-10-28 KST)
 
 - **실패 원장 참조:** [PR CI #40579106887](https://github.com/planner77/layoutManager/actions/runs/40579106887) attempt 1, HEAD `5d7055c8c72d800005509557ee137c76a9d87aad` completed/**failure**. Verify Job `122453396943`의 `src/tests/integration/g7-s3-4-b2-4.test.ts:93,96` TypeScript **TS2322** 두 건: `Buffer<ArrayBufferLike>`(SQLite serialize)을 `Buffer<ArrayBuffer>`로 추론된 `Buffer.alloc(0)` 변수에 할당. Docker/Migration/Smoke Job `122453396404`은 SUCCESS이나 Lint/Unit/Build/E2E는 Typecheck 후 SKIPPED. 별도 Docker 결함은 아님.

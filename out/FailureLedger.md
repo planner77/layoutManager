@@ -1,5 +1,13 @@
 # PR/Main CI 실패 원장
 
+## #142 B2-4 Owner Managed merge + B2-5 합성 증거 검증 착수 (2026-10-28 KST)
+
+- 선행 실패 보존: PR #147 HEAD 5d7055c8 CI #40579106887 Verify Job 122453396943의 TS2322(2건) 실패, Docker Job 성공과 나머지 테스트 SKIPPED를 삭제/성공으로 재해석하지 않는다. 수정 HEAD a59d18b10a103fe863752d460dff216b62b5fe43 PR CI #40604028179 attempt 1 Verify 및 Docker Job 모두 SUCCESS.
+- 리뷰 예외 정확 기록: 최신 HEAD Codex 리뷰는 사용량 한도 초과로 FAILED/NOT VERIFIED, P1/P2 통과라고 기록하지 않음. 사용자 Owner Managed 리뷰 경로 승인, 미해결 리뷰 스레드 0, behind 0, 정확 15개 경로를 확인하고 별도 Owner Managed 결정을 PR #147에 기록.
+- Squash Main 81fd00ba9a7463f0b1817d83ca78fe9cc31f5b4d, 제목 #142 | S3-4-B2-4 Disposable rollback replay [G7-S3-4B2-4-NO-GHCR]. Main CI #40610619799 attempt 1 completed SUCCESS; release-scope Job 122560987574 SUCCESS, GHCR Job 122561027937 SKIPPED. GHCR 이미지/태그 게시 0.
+- 새 B2-5 브랜치 최신 Main에서 독립 생성: 합성 S3-4-A readiness와 별도 미신뢰 QA Ledger의 EV/QA/SNAP/17 체크/4 OCI digest 주장 정합성 검사, 실패·누락·중복·시간 순서 음성 회귀, 정확 15-path GHCR 미게시 가드. 신규 B2-5 HEAD CI/리뷰 결과는 실제 확인 전 NOT VERIFIED이며 실 Site PASS·Owner GO가 아니다.
+- 운영 금지: 실제 Registry/Writer/SQLite/CAD/S3, online backup, 실 Migration/Restore/Rollback, 현장 QA 인증, Auth/CAD Write, GHCR/Compose/Nginx, S3-4-C/S3-5 GO 모두 NOT RUN. #142/#109/#96 OPEN/BLOCKED 유지.
+
 ## #142 B2-4 PR #147 — TypeScript Buffer TS2322 두 건 + #82 Main 정렬 (2026-10-28 KST)
 
 - **관측된 PR CI 실패:** [Run #40579106887](https://github.com/planner77/layoutManager/actions/runs/40579106887), attempt 1, HEAD `5d7055c8c72d800005509557ee137c76a9d87aad`, `completed/failure`. Verify [Job #122453396943](https://github.com/planner77/layoutManager/actions/runs/40579106887/job/122453396943) `tsc --noEmit`에서 `src/tests/integration/g7-s3-4-b2-4.test.ts(93,5)`, `(96,5)` **TS2322**: `Buffer<ArrayBufferLike>` cannot be assigned to inferred `Buffer<ArrayBuffer>`; `SharedArrayBuffer`는 `ArrayBuffer`의 resize/transfer 메서드를 제공하지 않음. 타입 검사가 exit code 2이므로 ESLint/Unit·Integration/Build/Chromium E2E/Legacy Migration 등 후속 Step은 **SKIPPED/미검증**.
