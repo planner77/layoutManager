@@ -1,5 +1,11 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## #142 B2-5 첫 PR CI #40612247712 — Docker layer 감사 실패, 후속 검증 대기 (2026-10-28)
+
+- PR #149 첫 HEAD 12eac574b5e940dbaaea53e292c463b6e191283e, 최초 CI Run 40612247712의 Docker Job 122566350868: Verify web layer SHA 단계에서 src/scripts/audit_standalone_layers.py의 nested Docker TAR tarfile.ReadError invalid header 발생. 기존 Issue #67 감사 도구의 실제 실패이며 B2-5 합성 Unit 실패라고 해석하지 않는다. 첫 Verify Job의 최종 결과는 관측 전 NOT VERIFIED.
+- 증거 참조: 실패 원장에 초기 Run/Job/HEAD/오류 근거 보존. 소스 Epoch/CR ID도 17개 PASS 증거와 정확 연결하도록 수정한 신규 HEAD의 Typecheck/Lint/Unit/Build/E2E/Docker/Main 비게시 여부는 새로운 CI 후 판단.
+- 실 Site Source/OCI/QA/동일 SNAP/물리 Restore-Rollback/운영 GO 전부 미검증. #142/#109/#96 BLOCKED.
+
 ## #142 B2-4 Main CI 최종 검증 및 B2-5 시험 작성 (2026-10-28)
 
 - B2-4: 최신 PR #147 HEAD a59d18b10a103fe863752d460dff216b62b5fe43, PR CI #40604028179 SUCCESS(Verify 및 Docker), reviewer Codex quota 실패/Owner Managed 사용자 승인; unresolved=0. Squash Main 81fd00ba9a7463f0b1817d83ca78fe9cc31f5b4d, Main CI #40610619799 SUCCESS, Release-scope #122560987574 SUCCESS, GHCR Build/push #122561027937 SKIPPED. 신규 이미지 게시 없음.

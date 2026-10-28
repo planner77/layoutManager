@@ -36,7 +36,8 @@ function fixture() {
     name, status: 'PASS' as const,
     evidenceId: 'EV-disposable-' + (i + 1),
     reviewerId: 'QA-synthetic', observedAtUtc: timestamp,
-    snapshotId: snap, sourceCommit: source, schemaId: G7_S3_SCHEMA_ID,
+    snapshotId: snap, sourceEpoch: 'E-disposable-only',
+    changeRequestId: 'CR-fixture', sourceCommit: source, schemaId: G7_S3_SCHEMA_ID,
   }));
   return {
     scope: S34_B25_SCOPE, schemaVersion: 1,
@@ -47,6 +48,7 @@ function fixture() {
     readiness,
     binding: {
       sourceCommit: source, rollbackSourceCommit: rollbackSource,
+      sourceEpoch: 'E-disposable-only', changeRequestId: 'CR-fixture',
       schemaId: G7_S3_SCHEMA_ID, snapshotId: snap,
       appDigest: readiness.app.digest, migratorDigest: readiness.migrator.digest,
       rollbackAppDigest: readiness.rollbackApp.digest,
@@ -114,6 +116,8 @@ describe('#142 S3-4-B2-5 supplied private evidence-reference binder', () => {
       [{...f.records[0],reviewerId:'QA-other'},...f.records.slice(1)],
       [{...f.records[0],snapshotId:'SNAP-other'},...f.records.slice(1)],
       [{...f.records[0],sourceCommit:rollbackSource},...f.records.slice(1)],
+      [{...f.records[0],sourceEpoch:'E-wrong'},...f.records.slice(1)],
+      [{...f.records[0],changeRequestId:'CR-wrong'},...f.records.slice(1)],
       [{...f.records[0],schemaId:'CAD_BASELINE'},...f.records.slice(1)],
     ]){
       expect(judge({...f,records}).state).toBe('BLOCKED');
@@ -125,6 +129,8 @@ describe('#142 S3-4-B2-5 supplied private evidence-reference binder', () => {
       {...f,binding:{...f.binding,appDigest:f.binding.rollbackAppDigest}},
       {...f,binding:{...f.binding,rollbackMigratorDigest:f.binding.appDigest}},
       {...f,binding:{...f.binding,rollbackSourceCommit:source}},
+      {...f,binding:{...f.binding,sourceEpoch:'E-wrong'}},
+      {...f,binding:{...f.binding,changeRequestId:'CR-wrong'}},
       {...f,binding:{...f.binding,schemaId:'CAD_BASELINE'}},
       {...f,binding:{...f.binding,snapshotId:'SNAP-another'}},
       {...f,snapshotId:'SNAP-another'},

@@ -15,6 +15,7 @@ export const S34_B25_SCOPE = 'G7-S3-4B2-5-DISPOSABLE-EVIDENCE' as const;
 
 type ImageBinding = Readonly<{
   sourceCommit: string; rollbackSourceCommit: string;
+  sourceEpoch: string; changeRequestId: string;
   schemaId: string; snapshotId: string;
   appDigest: string; migratorDigest: string;
   rollbackAppDigest: string; rollbackMigratorDigest: string;
@@ -22,7 +23,8 @@ type ImageBinding = Readonly<{
 type EvidenceRecord = Readonly<{
   name: S34Check; status: S34Status;
   evidenceId?: string; reviewerId?: string; observedAtUtc?: string;
-  snapshotId?: string; sourceCommit?: string; schemaId?: string;
+  snapshotId?: string; sourceEpoch?: string; changeRequestId?: string;
+  sourceCommit?: string; schemaId?: string;
 }>;
 type EvidencePacket = Readonly<{
   scope: typeof S34_B25_SCOPE; schemaVersion: 1;
@@ -87,15 +89,19 @@ function answer(reasons: string[], pending: boolean, count: number,
     operationalGo: false, runtimeActivated: false,
   };
 }
-function bindingMatches(binding: unknown, readiness: S34Packet): boolean {
+function bindingMatches(binding: unknown, readiness: S34Packet,
+                        sourceEpoch: string, changeRequestId: string): boolean {
   const keys = [
-    'sourceCommit', 'rollbackSourceCommit', 'schemaId', 'snapshotId',
+    'sourceCommit', 'rollbackSourceCommit', 'sourceEpoch', 'changeRequestId',
+    'schemaId', 'snapshotId',
     'appDigest', 'migratorDigest', 'rollbackAppDigest', 'rollbackMigratorDigest',
   ];
   if (!exact(binding, keys) ||
       typeof binding.sourceCommit !== 'string' || !SHA.test(binding.sourceCommit) ||
       typeof binding.rollbackSourceCommit !== 'string' ||
       !SHA.test(binding.rollbackSourceCommit) ||
+      typeof binding.sourceEpoch !== 'string' || !EPOCH.test(binding.sourceEpoch) ||
+      typeof binding.changeRequestId !== 'string' || !CHANGE.test(binding.changeRequestId) ||
       typeof binding.schemaId !== 'string' || binding.schemaId !== G7_S3_SCHEMA_ID ||
       typeof binding.snapshotId !== 'string' || !SNAP.test(binding.snapshotId)) return false;
   const digests = [
@@ -104,7 +110,9 @@ function bindingMatches(binding: unknown, readiness: S34Packet): boolean {
   ];
   if (!digests.every(d => typeof d === 'string' && DIGEST.test(d)) ||
       new Set(digests).size !== 4) return false;
-  return binding.sourceCommit === readiness.sourceCommit &&
+  return binding.sourceEpoch === sourceEpoch &&
+    binding.changeRequestId === changeRequestId &&
+    binding.sourceCommit === readiness.sourceCommit &&
     binding.rollbackSourceCommit === readiness.rollbackApp.sourceCommit &&
     binding.rollbackSourceCommit === readiness.rollbackMigrator.sourceCommit &&
     binding.schemaId === readiness.schemaId &&
@@ -119,11 +127,14 @@ function recordValid(raw: unknown): raw is EvidenceRecord {
       typeof raw.status !== 'string') return false;
   if (raw.status === 'PASS') {
     return exact(raw, ['name', 'status', 'evidenceId', 'reviewerId',
-      'observedAtUtc', 'snapshotId', 'sourceCommit', 'schemaId']) &&
+      'observedAtUtc', 'snapshotId', 'sourceEpoch', 'changeRequestId',
+      'sourceCommit', 'schemaId']) &&
       typeof raw.evidenceId === 'string' && EV.test(raw.evidenceId) &&
       typeof raw.reviewerId === 'string' && QA.test(raw.reviewerId) &&
       time(raw.observedAtUtc) &&
       typeof raw.snapshotId === 'string' && SNAP.test(raw.snapshotId) &&
+      typeof raw.sourceEpoch === 'string' && EPOCH.test(raw.sourceEpoch) &&
+      typeof raw.changeRequestId === 'string' && CHANGE.test(raw.changeRequestId) &&
       typeof raw.sourceCommit === 'string' && SHA.test(raw.sourceCommit) &&
       raw.schemaId === G7_S3_SCHEMA_ID;
   }
@@ -165,7 +176,7 @@ export function assessS34B25DisposableEvidence(raw: unknown): S34B25Result {
   }
   const readiness = raw.readiness as S34Packet;
   if (raw.snapshotId !== readiness.snapshotId ||
-      !bindingMatches(raw.binding, readiness)) {
+      !bindingMatches(raw.binding, readiness, raw.sourceEpoch, raw.changeRequestId)) {
     return answer(['RELEASE_OR_SNAPSHOT_BINDING_MISMATCH'], false, 0, 0, false);
   }
 
@@ -203,6 +214,8 @@ export function assessS34B25DisposableEvidence(raw: unknown): S34B25Result {
     // PASS is a pair of untrusted claims; it must never set a trust/GO flag.
     if (record.reviewerId !== raw.reviewerId ||
         record.snapshotId !== raw.snapshotId ||
+        record.sourceEpoch !== raw.sourceEpoch ||
+        record.changeRequestId !== raw.changeRequestId ||
         record.sourceCommit !== readiness.sourceCommit ||
         record.schemaId !== readiness.schemaId ||
         record.evidenceId !== declared.evidenceId ||
