@@ -6,6 +6,8 @@
 
 현재는 구현 후보이며 실제 운영 활성화·정식 이미지/태그·병합·배포를 수행하지 않습니다. [운영 선행조건](out/Operation.md), [실제 시험 결과](out/TestReport.md), [실패 원장](out/FailureLedger.md)을 확인하세요. 아래 버전별 기록은 당시 실행 범위를 보존합니다.
 
+승인된 사업장 비활성화는 해당 사업장의 CAD 쓰기를 제한합니다. 다른 활성 사업장과 관리자 기능은 계속 사용할 수 있으며 기준정보에서 다시 활성화할 수 있습니다. PR #156의 강제 종료 Migration 복구·회귀 검증은 [TestReport](out/TestReport.md)와 [실행 Runbook](src/deploy/g7-runtime/README.md)을 참조하세요.
+
 ## v0.43.0 릴리스 후보 — CAD 메모 M1 (Issue #82)
 
 새 UI 기능이므로 이전 정식 `v0.42.1`을 재사용하지 않고 **MINOR 버전 0.43.0**을 신규 이미지 쌍으로 발행합니다. DXF `three-dxf-viewer`에서 `작업 > 메모 추가/편집` 메뉴로 아래 도구 Drawer를 열어 WCS XY 고정 임시 메모를 배치·편집·이동·삭제합니다. 메모 제목/본문을 수정해도 명시적 위치 이동 명령 없이는 앵커 좌표가 변하지 않습니다. 다른 Renderer(DWG, dxf-viewer)는 지원하지 않습니다.

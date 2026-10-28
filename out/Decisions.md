@@ -8,6 +8,8 @@
 - 복구: 자동 운영 Migration에 7번째 SQL을 추가하지 않는다. Clone-only 실행기에서 실제 Migration/Restore와 실패 HOLD를 시험한다. 실제 운영 전환 및 이전 OCI 이미지 쌍 실행은 현장 선행조건이며 이번 코드/합성 검증으로 PASS 처리하지 않는다.
 - 버전: 신규 운영 통합 기능으로 0.44.0 후보. 기존 태그는 유지하고 이번에는 정식 GHCR/태그/병합/배포를 실행하지 않는다.
 
+- PR #156 P2 결정: Site 업무 active를 Runtime 승인 유효성과 분리하고 CAD 거래·Runtime permit에서만 활성 여부를 재검사한다. Migration은 기존 better-sqlite3를 사용한 persistent inode/OS 수명 lock으로 변경해 의존성·Docker 범위를 늘리지 않는다. 원자 HOLD와 동일 승인/SNAP/Epoch 기반 중단 복구를 추가한다. 기존 Prisma 자식 종료 및 구형 marker 전환 조건은 Runbook에서 명시한다. 미릴리스0.44.0 후보를 유지하며 실제 SIGKILL·회귀 결과는 TestReport로 추적한다.
+
 ## ADR-056 — #154 S3-5-R0 Owner Field Acceptance와 별도 Release GO/NO-GO 분리 (2026-10-28)
 
 - **사용자 보고:** #142/#151 S3-4-B2/C 현장 Owner Managed 수용 완료. 실 현장 원본·키/서명/Hash·개인/내부 식별자는 반출 금지. `OWNER_ATTESTED_FIELD_ACCEPTANCE_COMPLETE`를 공식 사용자 선언으로 기록하되 외부 독립 검증 사실(`NOT_EXTERNALLY_VERIFIED`)과 다르게 취급한다.

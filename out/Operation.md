@@ -20,6 +20,8 @@
 
 CAD 등록/Current는 Editor/Admin+담당 Site+Runtime Write Scope, DELETE는 이에 기존 삭제 비밀번호도 요구한다. 기준정보 변경과 층 재분류도 Admin 및 영향받는 모든 Site를 검증한다. 새 Site 생성은 서명 Scope 확장 없이 허용하지 않으며 사전 구성·Scope 갱신이 필요하다. 익명 CAD GET/Viewer/원본 다운로드는 유지한다. 업무 변경과 Audit가 함께 commit되고 실패/거부도 민감정보 없이 기록한다. Audit는 append-only·365일 보존하며 물리 purge는 별도 SOP 이전 계속 비노출이다.
 
+승인된 Site를 기준정보에서 비활성화해도 로그인·계정/권한/감사 관리와 다른 활성 승인 Site 업무는 계속 동작한다. 비활성 Site의 CAD 등록·Current 변경·삭제는 거부하며 Admin이 기존 기준정보 경로에서 재활성화할 수 있다. 누락된 승인 Site나 미승인 Site는 여전히 차단한다.
+
 ### Migration·Restore 및 실제 전환 선행조건
 
 [격리/승인 실행 Runbook](../src/deploy/g7-runtime/README.md)은 실제 실행 코드의 명령·ACK·대상 검증·Snapshot/HOLD와 복구를 설명한다. 기존 자동 운영 이력은 6개로 유지하며 별도 signed MIGRATION Scope의 guarded entrypoint만 정확한 7번째 SQL을 적용할 수 있다. 이번 개발 검증은 합성 임시 Clone에서만 실행한다. Runtime은 이력/checksum/전체 Schema/FK/승인 Site를 확인한 후 7개가 완전할 때만 열린다.

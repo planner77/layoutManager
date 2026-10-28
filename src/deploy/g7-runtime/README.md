@@ -37,11 +37,17 @@
 - DB에 있는 모든 Site가 승인 Scope에 포함된다. 공유 DB의 무관 Site를 단일 Site 승인으로 Migration하지 않는다.
 - 현장에서는 실행 전에 모든 애플리케이션·배치·Local CAD·S3 writer가 멈춰 있음을 확인하고 보관한다. 이 도구가 Writer를 정지하지 않는다. SQLite `BEGIN EXCLUSIVE`는 DB writer를 직렬화하지만 다른 프로세스의 원격 S3 변경을 막는 증거가 아니다.
 
-도구는 DB 옆 `g7-runtime-hold.json`을 먼저 생성하고 별도 실행 lock과 SQLite exclusive transaction을 잡는다. 서명에 명시한 SNAP 디렉터리에 WAL을 포함한 일관 SQLite serialization과 실제 Local CAD/S3 export 바이트를 저장하고 파일·Snapshot 디렉터리를 fsync한다. 원본 파일을 다시 해시하여 capture 중 변화를 거부한다. 정확한 일곱 번째 SQL과 Prisma-compatible 성공 history row를 같은 SQLite transaction에서 적용하고 FK/Schema/CAD/Audit와 최신 승인 상태를 재확인한 뒤 commit한다. 이후 HOLD만 해제하며 Auth/CAD Write를 활성화하지 않는다.
+도구는 별도 실행 lock을 잡고 DB 옆 `g7-runtime-hold.json`을 원자 기록한 뒤 대상 SQLite exclusive transaction을 잡는다. 서명에 명시한 SNAP 디렉터리에 WAL을 포함한 일관 SQLite serialization과 실제 Local CAD/S3 export 바이트를 저장하고 파일·Snapshot 디렉터리를 fsync한다. 원본 파일을 다시 해시하여 capture 중 변화를 거부한다. 정확한 일곱 번째 SQL과 Prisma-compatible 성공 history row를 같은 SQLite transaction에서 적용하고 FK/Schema/CAD/Audit와 최신 승인 상태를 재확인한 뒤 commit한다. 이후 HOLD만 해제하며 Auth/CAD Write를 활성화하지 않는다.
+
+실행 lock은 0600 regular single-link `g7-rehearsal.lock` 파일의 SQLite `BEGIN EXCLUSIVE`로 잡는다. 파일은 영속 inode로 남기고 정상 종료 시에도 삭제하지 않는다. 살아 있는 실행의 동시 진입은 즉시 차단하며, 새 구현의 프로세스가 SIGKILL되거나 호스트가 재시작되면 OS 잠금이 해제되어 같은 파일로 다시 진입한다. PID/mtime 추정이나 lock 파일 강제 삭제를 복구 수단으로 사용하지 않는다. HOLD는 private 임시 파일 fsync→rename→디렉터리 fsync로 원자 교체한다.
+
+격리 Prisma `migrate deploy`는 별도 엔진 프로세스를 실행한다. 부모의 SQLite 실행 lock은 자식에게 승계되지 않으므로, 격리 복원 전 기존 Writer Zero 조건에는 남아 있는 Prisma/엔진도 완전히 종료·완료했는지 확인하는 작업이 포함된다. 서명된 `apply-approved` 경로와 동기 Restore에는 별도 엔진이 없다. SIGKILL 합성 시험은 이 직접 경로의 복구를 검증하며 모든 자식 프로세스의 자동 정지를 증명하지 않는다.
+
+이전 wx 구현의 `G7-DISPOSABLE-LOCK` 문자열 파일은 소유 PID/수명 정보가 없어 새 코드도 자동 삭제하거나 만료로 추정하지 않는다. 이 구형 artifact를 만났다면 업그레이드 유지보수 중 구버전 도구·Prisma/Writer가 모두 정지한 상태를 확인하고 실패 상태/파일을 보존한 뒤 기존 marker를 별도로 퇴역시킨다. 이는 구버전 lock 형식 전환 절차이며 새 lifetime lock의 정상 재개에는 필요하지 않다.
 
 여섯 SQL은 기존 Prisma에서 적용하며, 이 운영 진입점은 **일곱 번째 SQL만 직접 원자 적용**한다. 이력에는 원래 SQL의 SHA256, UUID, UTC 시작/완료, applied_steps_count=1이 들어간다. 합성 시험은 이 이력과 실제 Schema를 확인한다. 격리 진입점은 별도로 실제 Prisma engine 일곱 Migration 및 재실행을 시험한다.
 
-운영 실행 중 오류는 Schema/history transaction을 rollback하고 HOLD와 원본 Snapshot을 보존한다. 재실행은 기본 차단한다. 원인이 제거된 뒤 같은 유효 승인·SNAP/Epoch에서 `G7_RUNTIME_MIGRATION_ACK=RESUME_APPROVED_G7_SCHEMA`로 명시 재개할 수 있다. 이 경우 보관 Snapshot의 DB/CAD/export와 현재 모든 CAD 행·바이트가 일치하고 Schema가 정확히 여섯 또는 일곱이며, 새 Audit가 없는 전환 직후 상태인지 확인한다. 상태가 불확실하거나 데이터가 달라졌으면 재개하지 않고 복구 절차로 전환한다.
+운영 실행 중 오류는 Schema/history transaction을 rollback하고 HOLD와 원본 Snapshot을 보존한다. 재실행은 기본 차단한다. 원인이 제거된 뒤 같은 유효 승인·SNAP/Epoch에서 `G7_RUNTIME_MIGRATION_ACK=RESUME_APPROVED_G7_SCHEMA`로 명시 재개할 수 있다. 이 경우 보관 Snapshot의 DB/CAD/export와 현재 모든 CAD 행·바이트가 일치하고 Schema가 정확히 여섯 또는 일곱이며, 새 Audit가 없는 전환 직후 상태인지 확인한다. 완성 Snapshot이 생기기 전에 중단됐다면 원자 HOLD의 approvalId/SNAP/Epoch가 같은 유효 승인과 일치하고 현재 DB가 정확한 여섯 Schema일 때만 보존된 시도 identity로 Snapshot capture를 다시 수행한다. 이전 미완성 임시 Snapshot은 복구 근거로 사용하지 않는다. 완성 Snapshot이 없는데 identity가 없거나 다르거나 DB가 이미 일곱 Schema라면 차단한다. 상태가 불확실하거나 데이터가 달라졌으면 재개하지 않고 복구 절차로 전환한다.
 
 ## 운영 복원·서비스 Rollback 절차
 

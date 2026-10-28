@@ -2,6 +2,9 @@
 
 ## TC-G7-153 — 운영 통합 회귀 계획 (2026-10-29)
 
+- TC-153-P2-SITE: 실제 Admin 기준정보 비활성화→새 로그인/기존 세션·관리 API 정상→다른 승인 활성 Site CAD 쓰기 성공·비활성 Site 쓰기 거부→같은 UI/API 경로 재활성화·쓰기 복구. 미승인/누락 Site 거부 보존.
+- TC-153-P2-LOCK: 자식 프로세스가 실제 Migration/Restore lock을 보유하는 동안 동시 실행 거부→SIGKILL/exit 확인→새 프로세스의 명시 RESUME 및 동일 Snapshot Restore 성공, DB/CAD/S3 export/Audit 불변 확인. 예외 finally만으로 중단을 모사하지 않는다. 잘못된 lock 경로·권한·symlink/hardlink는 fail-closed.
+
 1. AUTH: 실제 Runtime Route 로그인/초기 변경/로그아웃/Session 조회, 만료·회수·비활성화·실패 제한, Cookie·Origin/CSRF·위조 사용자/역할 Header, 공개 Host/내부 bind 주소 분리.
 2. RBAC: Reader/Editor/Admin, 명시 Site·교차 Version, Grant/회수 즉시 반영, 기준정보/재분류를 통한 권한 우회 차단, 관리자 초기/복구 CLI.
 3. CAD/Audit: 익명 GET 및 기존 Multipart 등록/Current/DELETE 암호·원본 SHA 보존, Session을 거래 시각에 검사, 변경+Audit 실패 원자 rollback와 안전한 거부 감사.

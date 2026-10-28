@@ -2,6 +2,9 @@
 
 ## FR-G7-153 — 실제 운영 경로 통합 요구사항 (2026-10-29)
 
+- FR-153-P2-SITE: 승인 Site의 업무 active 상태와 Runtime 신뢰 유효성을 분리한다. Admin의 정상 비활성화 후에도 로그인·관리·재활성화 및 다른 활성 승인 Site의 CAD 쓰기가 동작해야 한다. 비활성 Site 쓰기와 누락/미승인 Site는 계속 거부한다.
+- FR-153-P2-LOCK: Migration/Restore 실행 프로세스 SIGKILL·재시작 후 문서화된 명시 복구가 lock 잔재 때문에 막히지 않아야 한다. 살아 있는 동시 실행은 계속 차단하며 HOLD·동일 Snapshot·서명/Scope/Schema/CAD/Audit 검증은 보존한다.
+
 - FR-153-A: 기존 G2/G3 Auth/Session과 G4 Role/Site/Audit를 실제 별도 Runtime API와 로그인·운영 화면에 연결한다. 초기/복구 계정은 명시 CLI, 8h/30m/3개 Session, 만료·강제 회수·비활성화·초기 변경·HttpOnly/SameSite·Origin/CSRF·실패 제한을 보존한다.
 - FR-153-B: 기존 CAD 익명 GET과 Viewer를 보존한다. Runtime CAD 등록/Current/DELETE는 현재 DB Session·Editor/Admin·명시 Site·Version 소속 및 별도 Write Scope를 검증하며 DELETE 암호도 유지한다. 기준정보·재분류 변경을 통한 Site 우회도 차단한다.
 - FR-153-C: 변경과 안전한 UTC Actor/Action/Target/Revision/Request ID Audit를 같은 거래에 저장한다. 거부/실패도 기록하며, Audit 장애로 업무 변경이 남아서는 안 된다. Append-only·365일 보존·민감정보 미기록, 자동 purge 미노출을 유지한다.

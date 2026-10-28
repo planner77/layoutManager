@@ -1,5 +1,29 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## PR #156 — 두 P2 수정·강제 종료 회귀 (2026-10-29)
+
+- 기준 HEAD `523801a4da8850d579009efa92e3f1c76a746ece`, Main `a7af4aa0c106b5149043196a3567cf7bdc1b08a9`. 선행 [PR CI #40775288415](https://github.com/planner77/layoutManager/actions/runs/40775288415) completed/success는 직접 확인한 기존 결과이며 새 수정의 CI 결과로 재사용하지 않는다.
+- 실제 역할: root가 격리 worktree·문서·전체 검증·원격 반영을 담당, `/root/manager` gpt-6-astra가 AC/설계·Developer 결과 검토, `/root/developer` gpt-6-sol이 구현·RED→GREEN, `/root/qa` gpt-6-luna가 독립 diff/회귀 검증을 수행한다. 인간 QA 승인으로 기록하지 않는다.
+- FR-153-P2-SITE → Runtime DB의 승인 Site 존재 검사/거래별 active 확인 → TC-153-P2-SITE. 실제 Admin PATCH 비활성화·재활성화, 새 로그인·Session·관리 API 유지, 다른 승인 Site 쓰기 성공, 대상 Site upload/Current/DELETE 거부와 재활성화 후 쓰기 복구를 시험한다. 누락/미승인 Site·기존 Preview 계약은 보존한다.
+- FR-153-P2-LOCK → persistent SQLite OS lock/원자 HOLD/동일 승인·SNAP·Epoch 재개 → TC-153-P2-LOCK. 실제 자식 lock 보유 중 contender 거부와 SIGKILL 종료를 확인한 뒤 새 실행의 pre-Snapshot recapture, SQL 적용 후 rollback·재개, commit 직후 재개, Restore 재시도를 시험한다. CAD/Version/Current·Local/S3 export·Audit·Schema/이력 검사와 음성 identity·경로 테스트를 유지한다.
+
+| 검증 | 이번 수정의 실제 결과 |
+| --- | --- |
+| 정확 lockfile 설치·Prisma 생성 | PASS (`npm ci --no-audit --no-fund`, `npm run db:generate`), 원본 workspace 의존성/설정은 보존 |
+| Production Build | PASS (`npm run build`), 실제 제품 코드 최종본의 standalone 패키징 포함 |
+| 최종 Typecheck·Lint | PASS (`npm run typecheck`, `npm run lint`), 오류0/기존 경고6 |
+| Developer 집중 회귀 | 최종 4개 Runtime 파일59/59 PASS, 106.95초. 실제 SIGKILL4개 포함 |
+| root 전체 Vitest | PASS 82파일590/590, 319.11초 (`npm test`), Skip/Assertion 완화 없음 |
+| 독립 QA | PASS, 동일 Runtime 4파일59/59, 105.41초. 전체 변경 검토·diff check 통과, 차단 사항 없음 |
+| Runtime ON Chromium | PASS 1/1, 12.4초. 서명 합성 승인에서 로그인·계정/권한/Audit·등록/익명 원본/Current/기존 비밀번호 DELETE/Logout UI |
+| Runtime OFF·기존 CAD Chromium | PASS 11/11, 37.0초. g7-runtime-off/master/upload: 비활성 기준정보·이력/재분류·등록·검색·Current·원본/진단 호환 |
+| 새 HEAD PR CI | 최종 기존 PR 브랜치의 synchronize 이벤트로 시작. 최신 HEAD/Run은 완료 보고 참조. 종료 결과 모니터링 생략·NOT VERIFIED |
+
+최종 제품5·회귀4·문서10의19개 수정은 기존 PR64경로 안에 있다. Main a7af4aa 재조회/behind0·병합 충돌0, staged scope/Secret·런타임 산출물 제외 검토를 수행했다. [코드 commit eea01548](https://github.com/planner77/layoutManager/commit/eea01548b75d5d38db1cfa14029115f7d6a07881)를 근거로 두 P2 [Site 답변](https://github.com/planner77/layoutManager/pull/156#discussion_r4407021095)·[Lock 답변](https://github.com/planner77/layoutManager/pull/156#discussion_r4407022868)을 기록하고 resolved를 확인했다. Manager는 실제 독립 QA 및 전체 회귀 근거로 ACCEPT했다. 최종 체크포인트까지 포함한 Build→Typecheck 순차 재실행도 PASS다. 최종 문서 commit과 함께 기존 branch를 fast-forward 갱신해 새 CI를 시작하며, HEAD/Run URL은 완료 보고에 기록한다. 별도 문서 push로 추가 CI를 만들거나 종료 결과를 모니터링하지 않는다.
+
+중간 RED·fixture 기대 코드/타입·의존성 누락·root 설치/시험 간섭은 [FailureLedger](FailureLedger.md)에 보존한다. 이번 변경은 미릴리스0.44.0 후보 내 보완이다. 새로운 의존성/자동 Migration/Schema/운영 설정/원본·이미지·Tag·배포·병합·별도 Issue/PR은 추가하지 않는다. 실제 호스트 reboot/현장 SQLite·CAD·원격S3/이전 OCI pair는 NOT TESTED다. SQLite lock 해제는 실제 SIGKILL 시험으로 검증하며, 구형 wx marker 전환·남은 Prisma 자식의 Writer Zero 조건은 [Runbook](../src/deploy/g7-runtime/README.md)의 운영 제한으로 명시한다.
+
+
 ## #153 — 실제 G7 운영 통합 로컬·격리 검증 (2026-10-29)
 
 범위는 `feat/issue-153-g7-runtime`, 후보0.44.0의 실제 소스 구현·로컬/격리 시험·PR CI 시작까지다. 기존 main `a7af4aa`를 기준으로 구현했으며 실제 운영 데이터/설정/기능 활성화·정식 게시·Tag·병합·배포는 수행하지 않았다. GitHub PR 최신 HEAD CI의 시작은 결과 SUCCESS가 아니다.

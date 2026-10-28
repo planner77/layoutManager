@@ -1,5 +1,19 @@
 # PR/Main CI 실패 원장
 
+## PR #156 — P2 Site 비활성화 격리·강제 종료 Migration 복구 (2026-10-29)
+
+- **선행 성공 보존:** HEAD `523801a4da8850d579009efa92e3f1c76a746ece`, [PR CI #40775288415](https://github.com/planner77/layoutManager/actions/runs/40775288415) `completed/success`를 직접 확인했다. 아래 결함은 해당 CI 실패가 아니라 [Site P2](https://github.com/planner77/layoutManager/pull/156#discussion_r4406464951) 및 [Stale Lock P2](https://github.com/planner77/layoutManager/pull/156#discussion_r4406464961)의 추가 회귀다. 기존 실패/취소/미확정 기록은 보존한다.
+- **RED Site:** `npx vitest run tests/integration/g7-runtime-cad.test.ts tests/integration/g7-runtime-auth.test.ts tests/integration/g7-runtime-gate.test.ts -t 'approved inactive Site|Admin can deactivate|missing approved site' --reporter=dot`에서 2 FAIL. 비활성화 후 로그인503(expected200), Runtime BLOCKED(expectedACTIVE). 승인 ID 존재/무결성과 업무 active 상태를 혼합한 전역 검사가 원인이다. 전역 active 검사를 분리할 때 비활성 Site의 Current/DELETE가 허용되지 않도록 거래 안의 대상별 검사도 필요하다.
+- **RED Lock:** `npx vitest run tests/integration/g7-runtime-migration.test.ts -t SIGKILL --reporter=dot`에서 2 FAIL. 실제 자식의 lock 보유→SIGKILL·종료 확인 후 새 프로세스의 승인 Migration 재개·동일 Snapshot Restore가 `g7-rehearsal.lock` EEXIST로 중단했다. wx 생성 파일과 finally 삭제는 프로세스 강제 종료에서 실행 잠금 수명을 보장하지 못한다. 기존 throw-fault 테스트는 finally를 실행하므로 이 결함을 포착하지 못했다.
+- **중간 로컬 검증 보존:** 첫 수정 후 집중 실행55 PASS/1 FAIL(56개)은 비활성 등록의 기존 `INACTIVE_LOCATION_CHAIN`을 새 테스트가 `ACCESS_DENIED`로 기대한 오류였다. 실제 거부 동작을 유지하고 기대 코드만 정정했다. 이후 원본의 구버전 node_modules 복사에서 기존 의존 `polygon-clipping` 누락으로 Typecheck가 중단되었다. Root가 정확 lockfile의 격리 `npm ci`를 집중 테스트 종료 전에 시작하여 진행 중 worker의 `vitest/suppress-warnings.cjs`·`tsx/index.js` 모듈 소실과 Auth 실패1/worker 오류를 유발했다. 이는 시험 환경 간섭이며 제품 실패나 PASS로 기록하지 않고 설치 완료 후 재실행한다. 실제 PATCH Route를 Vitest에서 import한 뒤 `server-only` guard에 걸린 fixture 문제도 테스트에서 적절한 server-only mock으로 보완한다.
+- **새 fixture Typecheck:** 빌드 후 순차 `npm run typecheck`에서 `g7-runtime-migration.test.ts:146` TS2345를 관측했다. 서로 다른 음성 fixture 객체 배열의 env optional 추론 때문에 `Options.env`에 undefined 가능성이 남은 테스트 타입 오류이며 명시 타입/분기 보완 후 재검증한다. 제품 Schema·검증 규칙은 완화하지 않는다.
+- **GREEN:** 최종 Developer Runtime4파일59/59 PASS(106.95초), 독립 QA 동일59/59 PASS(105.41초), root 전체 Vitest82파일590/590 PASS(319.11초). 실제 SIGKILL4개·살아 있는 RESUME contender 거부와 path/HOLD identity 음성시험을 포함한다. Typecheck·Lint 오류0/기존경고6·Production Build PASS, 서명 Runtime ON Chromium1/1(12.4초), 기본 OFF/master/upload Chromium11/11(37.0초) PASS. 기존 사업장/등록/검색/Current/이력·원본·삭제암호·계정/권한/Audit 흐름을 재검증했다. 실제 reboot/현장 OCI·원격S3·Writer Zero/배포는 NOT TESTED다.
+- **리뷰/변경 근거:** [수정 commit eea01548](https://github.com/planner77/layoutManager/commit/eea01548b75d5d38db1cfa14029115f7d6a07881), [Site 답변](https://github.com/planner77/layoutManager/pull/156#discussion_r4407021095)·[Lock 답변](https://github.com/planner77/layoutManager/pull/156#discussion_r4407022868)을 기록하고 두 thread를 실제 resolved 처리했다. gpt-6-astra Manager가 독립 QA와 전체590/590·브라우저12/12 근거로 ACCEPT, 재작업 불필요 판정. 마지막 checkpoint까지 포함한 최종 Build→Typecheck 재실행도 exit0이다.
+- **Main/범위:** Main `a7af4aa0c106b5149043196a3567cf7bdc1b08a9` 재조회, behind0·merge-tree 충돌0. 이번 보완은 기존 PR의19경로(제품5·회귀4·문서10)에 한정, PR 전체64경로 밖 추가 없음. Schema/활성6 SQL·의존성/package·Docker/Compose·Viewer 수정 없음. staged diff·credential-pattern/산출물 제외 검사 통과. `.env` 지정 원격과 origin 일치 확인 후 연결 GitHub 도구로 기존 PR branch만 non-force fast-forward 반영한다.
+- **신규 CI 구분:** 기존 성공 Run40775288415는 원래 HEAD의 결과로 보존한다. 수정+이 기록의 최종 HEAD를 기존 PR branch에 한 번 반영하여 `pull_request.synchronize` 새 PR CI를 시작한다. 새 Run은 시작 확인까지만 수행하며 종료 판정은 NOT VERIFIED·모니터링 생략이다. 정확 최신 HEAD/Run URL은 완료 보고에 남긴다. 이 문서 갱신을 위해 별도 후속 push/추가 CI를 만들지 않는다.
+- **작업 경계:** 별도 worktree에서 기존 원본 worktree의 두 변경을 보존했다. 신규 Issue/PR·운영 설정/원본·GHCR/Tag·병합/배포 없이 기존 PR만 갱신한다. 후보0.44.0은 미릴리스 기능 PR 내 보완으로 유지한다. 로컬 결과·리뷰 해결·Main/범위·신규 CI 정책은 위 기록을 기준으로 하며, 최신 HEAD/Run 링크는 완료 보고에서 확인한다.
+
+
 ## #153 — 운영 통합 중 로컬 발견·보완 누적 (2026-10-29)
 
 실제 운영 장애나 원격 CI 실패로 혼동하지 않는다. 아래는 `feat/issue-153-g7-runtime` 작업트리의 로컬 실행/코드 검토이며 기존 원장은 그대로 보존한다.
