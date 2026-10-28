@@ -1,5 +1,12 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## #142 / PR #149 — #67 Docker 레이어 감사 Attempts 1~3 및 독립 호환성 보완 (2026-10-28)
+
+- **관측 실패:** Run [40613450861](https://github.com/planner77/layoutManager/actions/runs/40613450861), HEAD `915b1509a82ad1af6d723ed42cc8a3c733fc72b5`, attempts 1/2/3 모두 Docker [122570517278](https://github.com/planner77/layoutManager/actions/runs/40613450861/job/122570517278)/[122601918388](https://github.com/planner77/layoutManager/actions/runs/40613450861/job/122601918388)/[122607804124](https://github.com/planner77/layoutManager/actions/runs/40613450861/job/122607804124) FAIL: `Verify web layer SHA, native and transition-only size saving`의 `tarfile.ReadError: invalid header` at `src/scripts/audit_standalone_layers.py:29`. 세 Verify Job Typecheck/Lint/Unit·Integration/Build/E2E SUCCESS; Docker 후속 Native/Migrator/Compose Smoke는 SKIPPED, 실제 SHA 감사 검증 미완료.
+- 실패 Runner Ubuntu 26.04, Docker 29.4.2, Python 3.14; 이전 성공 Ubuntu 24.04, Docker 28.0.4. 원인 후보는 비압축 `r|` 파서와 변경된 Docker image-store export 레이어의 압축 불일치. 현장 Layer Header 부재이므로 압축으로 **확정하지 않음**.
+- **합성 회귀 구현, CI 결과 미확인:** `r|*`로 Python 지원 포맷 자동 감지, 압축 Nested gzip/bzip2/xz 및 조건부 zstd SHA/중복 검사, 손상된 Layer 거부 회귀 추가; Docker 없이 한정 fixture 검증만 수행한 단계. PR CI 결과가 확인되기 전에는 성공 기록 금지. `compare_inventories`와 Native SHA/중복/Size Gate는 변경하지 않음.
+- **승인 경계:** 실제 B2-5 PR #149의 15-path no-GHCR 보호 유지. 별도 8-path CI-only PR에서만 수정하고 Main/PR #149 재정렬은 이후 분리된 승인 게이트. 운영 CAD/DB/S3/OCI/Prisma/Migration/Restore·Rollback/GHCR/Auth/CAD Write/Owner GO NOT RUN, #142/#109/#96 OPEN/BLOCKED.
+
 ## #142 B2-4 PR #147 — 초기 Typecheck 실패 및 Main #82 재정렬 (2026-10-28)
 
 - [PR CI #40579106887](https://github.com/planner77/layoutManager/actions/runs/40579106887), HEAD `5d7055c8c72d800005509557ee137c76a9d87aad`: Verify Job 122453396943 **FAILED** (`tests/integration/g7-s3-4-b2-4.test.ts:93,96` TS2322 `Buffer<ArrayBufferLike>` vs `Buffer<ArrayBuffer>`), Docker Job 122453396404 SUCCESS. Typecheck 이후 Lint/Unit/Integration/Build/E2E 검증 **SKIPPED**, B2-4 synthetic PASS 아직 CI로 입증되지 않음.

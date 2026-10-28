@@ -1,5 +1,12 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## #142 / PR #149 — Issue #67 Docker 29 TAR 레이어 감사 독립 보완 (2026-10-28 KST)
+
+- **관측된 재현:** [PR #149](https://github.com/planner77/layoutManager/pull/149)의 [PR CI #40613450861](https://github.com/planner77/layoutManager/actions/runs/40613450861), HEAD `915b1509a82ad1af6d723ed42cc8a3c733fc72b5`는 attempts 1/2/3 모두 `completed/failure`. Docker Jobs `122570517278`, `122601918388`, `122607804124`의 Issue #67 `Verify web layer SHA, native and transition-only size saving`에서 `src/scripts/audit_standalone_layers.py:29`의 `tarfile.open(...,mode="r|")`가 `tarfile.ReadError: invalid header`로 중단(exit 1). 각 Attempt의 Verify(Typecheck/Lint/Unit·Integration/Build/E2E)는 SUCCESS. 동일 HEAD의 반복 실패를 새로운 B2-5 업무 로직 실패로 기록하지 않음.
+- **가능성/검증 경계:** Docker 이미지 baseline/runtime 빌드는 성공. 성공 Runner Ubuntu 24.04/Docker 28.x 대비 실패 Runner Ubuntu 26.04/Python 3.14/Docker 29.4.2(containerd overlayfs) 환경 차이가 있음. TAR 레이어 실제 매직 바이트는 확보하지 못하여 압축인지 손상인지 단정 불가. Python 공식 tarfile 계약에서 `r|`는 비압축 전용, `r|*`는 지원 압축 포맷 자동 감지. `r|*` 교정·gzip/bz2/xz 및 Python 3.14 zstd 합성·무효 TAR 거부 테스트로 정상/비정상 경계를 확인. SHA/파일 목록/네이티브 `.node`/중복·크기 임계 검사 완화 금지.
+- **작업 분리:** B2-5 [PR #149](https://github.com/planner77/layoutManager/pull/149)는 승인된 15-path no-GHCR allowlist 고정이며 Audit 스크립트/PR Workflow를 끼워넣지 않음. Main 기준 **독립 #142/#67 CI 보완 PR**에서 정확 `#142 | #67 Docker layer archive compatibility [CI-142-LAYER-NO-GHCR]` 제목 및 8개 경로(`docker-publish.yml`, AGENTS, FailureLedger, TestPlan, TestReport, 감사 Python 2개, GHCR guard Unit)만 허용하는 fail-closed 미게시 예외와 부정/정상 회귀 검사. 사용자 승인 없는 지원 PR 자동 병합/메인 CI/GHCR 게시 없음.
+- **재진행 게이트:** 독립 PR의 최신 HEAD PR CI·Codex 리뷰·미해결 스레드·충돌 검증 후 병합은 별도 승인. 이후 PR #149를 새 Main에 정렬해 B2-5 CI를 재시작해야 함; 독립 PR 성공만으로 B2-5 PASS 주장 금지. 실 운영 Writer/SQLite/CAD/S3/OCI Registry/Prisma/Restore/Rollback/Auth/CAD Write/Owner GO는 NOT RUN/OFF. #142/#109/#96 OPEN/BLOCKED.
+
 ## Issue #142 / PR #147 — Main #82 정렬 및 TypeScript TS2322 실패 보완 (2026-10-28 KST)
 
 - **실패 원장 참조:** [PR CI #40579106887](https://github.com/planner77/layoutManager/actions/runs/40579106887) attempt 1, HEAD `5d7055c8c72d800005509557ee137c76a9d87aad` completed/**failure**. Verify Job `122453396943`의 `src/tests/integration/g7-s3-4-b2-4.test.ts:93,96` TypeScript **TS2322** 두 건: `Buffer<ArrayBufferLike>`(SQLite serialize)을 `Buffer<ArrayBuffer>`로 추론된 `Buffer.alloc(0)` 변수에 할당. Docker/Migration/Smoke Job `122453396404`은 SUCCESS이나 Lint/Unit/Build/E2E는 Typecheck 후 SKIPPED. 별도 Docker 결함은 아님.
