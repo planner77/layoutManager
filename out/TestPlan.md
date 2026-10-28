@@ -1,5 +1,13 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## TC-S35-R0 — #154 Owner 릴리스별 GO/NO_GO 오프라인 사전검증 (2026-10-28)
+
+- TC-R0-01: 합성 17개 C0 Receipt+SHA·Owner/QA Ed25519 서명, 올바른 Site Trusted Release/Scope, 릴리스별 Owner 서명·Source/Schema/4 Digest/SNAP/Epoch/CR/Version, Owner ID·Operator ≠ Rollback Operator 및 승인시간/24h 이내 유효기간 일치 시 `LOCAL_RELEASE_DECISION_CONSISTENT_NOT_ACTIVATED`; 실제 실 운영 모든 불변 플래그 false.
+- TC-R0-02: Owner `NO_GO`, 무서명/잘못된 키/동일 키·C0 변조, Source/Schema/OCI 역할/Scope/SNAP·Epoch/CR/Version mismatch, 현장 별도 Trusted Release 제공 누락/위조 필드, 만료/미래/24h 초과/잘못된 UTC/작업자 동일/미승인 window -> `BLOCKED`. C0 미실시 `PENDING`은 GO가 아니다.
+- TC-R0-03: 결과에 실 Site 원본/권한·서명/Hash/Key·EV/QA/SNAP/CR/내부 Registry/Path 등 Echo 0; 임의 Secret 포함 Unknown Fields 거부. 합성 only, 실제 현장 원본/OCI/Writer/Snapshot/Restore·Rollback 테스트 GitHub CI 금지.
+- TC-R0-04: GHCR 정확 제목 `#154 | S3-5-R0 Offline release decision preflight [G7-S3-5R0-NO-GHCR]` + 정확 15-path만 publish=false, production Prisma/preflight/runtime/API/other Workflow/Compose/Dockerfile/private 증거 추가 시 fail-closed, 제목 근접/일반 Tag 정책 유지.
+- TC-R0-05: 최신 Main 기반 PR CI Typecheck/Lint/Vitest/Build/E2E/Docker/Migrator/Smoke 및 리뷰 스레드 확인; CI 실행 전 통과 주장 불가. B2/C 실 Owner 보고와 R0 합성 결과는 #153 운영 GO와 무관.
+
 ## TC-126-RECOVERY / #151 PR #152 — 한 번의 성공 GET과 허용 가능한 Abort 분리 (2026-10-28)
 
 - 선행 Run `40638297319` HEAD `c31036cd94b81118f8064591c9b8b74c7cd5e246` Chromium E2E 91/92 PASS, TC-126 `expect(gets).toBe(1)`이 2회 개시 GET으로 실패. 실제 두 GET이 완료됐는지는 로그로 확정되지 않음. Docker, Typecheck/Lint/Unit/Build 성공과 별개로 E2E FAIL, Legacy Migration SKIPPED를 유지.

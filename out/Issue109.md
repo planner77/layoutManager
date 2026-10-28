@@ -1,5 +1,11 @@
 # Issue #109 — G7 운영 인증 활성화 설계 및 통제 배포·롤백 Runbook
 
+## #154 — 현장 Owner 수용 완료 보고를 S3-5 릴리스별 Owner GO 절차로 인계 (2026-10-28)
+
+- User가 #142 B2 및 #151 C 실제 현장 Owner Managed 수용 완료 선언, 상세 원본/Hash/키/서명/식별자는 비반출. GitHub에는 `OWNER_ATTESTED_FIELD_ACCEPTANCE_COMPLETE`로 기록하고 외부 독립 확인은 `NOT_EXTERNALLY_VERIFIED`로 구별한다. 실제 Site 수용 완료는 아직 S3-5의 **릴리스별 운영 GO**가 아니다.
+- 선행 C0 [Main `013effd65a68879d94d18c4928db8c600e8e9589`](https://github.com/planner77/layoutManager/commit/013effd65a68879d94d18c4928db8c600e8e9589)/CI #40641999215 SUCCESS·GHCR SKIPPED. 후속 [#153](https://github.com/planner77/layoutManager/issues/153) 내 [#154 S3-5-R0](https://github.com/planner77/layoutManager/issues/154)는 인메모리 C0 서명/신뢰된 별도 Release Identity/Owner의 릴리스별 서명 및 Scope·24h Window·rollback Operator만 검사, 운영 Auth/CAD Write/실 Prisma/Compose/Nginx/GHCR/실 데이터에 접근하지 않는다.
+- 실제 안전한 전환은 별도 특정 릴리스·Owner 승인과 사내 신뢰/복구 증거 확인 이후 구현·배포가 필요, R0 출력은 `LOCAL_RELEASE_DECISION_CONSISTENT_NOT_ACTIVATED`라도 `operationalGo=false`. #153/#109/#96 OPEN/BLOCKED 및 기존 CAD 바이트/Version/Current/Audit 불변 유지.
+
 ## #151 PR #152 CI #126 E2E 제한적 Owner Managed 리스크 수용 (2026-10-28)
 
 - CI #40638297319 HEAD `c31036cd94b81118f8064591c9b8b74c7cd5e246` Verify Job의 Chromium 91/92 성공·`TC-126-RECOVERY` 원본 GET 시작 2회/기대 1회 불일치, Docker/Unit/Build 성공, Legacy Migration E2E 미실행. 실제 2회 모두 성공인지 하나 취소인지는 미확인. 이전 실패 원장 보존.

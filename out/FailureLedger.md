@@ -1,5 +1,11 @@
 # PR/Main CI 실패 원장
 
+## #154 S3-5-R0 — 선행 Main CI/실 현장 Owner 보고 인계 및 신규 PR 검증 경계 (2026-10-28)
+
+- **선행 코드 CI:** C0 [PR #152](https://github.com/planner77/layoutManager/pull/152) Main `013effd65a68879d94d18c4928db8c600e8e9589`, [Main CI #40641999215](https://github.com/planner77/layoutManager/actions/runs/40641999215) SUCCESS / Release Scope SUCCESS / GHCR Build+Push SKIPPED. 이전 PR #152 CI #40638297319 TC-126 E2E 1건 FAIL + Legacy E2E SKIPPED 및 보완 이후 #40640589443 SUCCESS 이력은 아래 원장에 보존, 실패를 성공으로 다시 쓰지 않는다.
+- **현장 수용 상태:** 사용자 Owner Managed 현장 수용 완료 보고를 **OWNER_ATTESTED_FIELD_ACCEPTANCE_COMPLETE**로만 기록. 실제 OCI Registry/Writer/SQLite/CAD/S3/7 Migration/Restore·Rollback/Owner·QA 원본 검증 결과는 외부로 반출되지 않아 **NOT_EXTERNALLY_VERIFIED**. 내부 PASS/FAIL을 새로 만들지 않는다. S3-5 별도 릴리스 GO **NOT ISSUED**.
+- **R0 독립 작업:** [Issue #154](https://github.com/planner77/layoutManager/issues/154) S3-5 Owner Signed Release Decision pure verifier/합성 Unit/Runbook/정확 15-path no-GHCR guard. 이 새 PR에 대한 CI·리뷰·병합·GHCR 결과는 실제 관측 전 `NOT VERIFIED`; 코드 작성/PR 시작이 곧 PASS가 아니다. #153/#109/#96 운영 BLOCKED, 합성 테스트는 진짜 Site Evidence가 아니다.
+
 ## #151 / PR #152 — TC-126 Renderer 전환 E2E GET 카운트 실패 및 Owner Managed 제한적 교정 (2026-10-28 KST)
 
 - **Run/Job/HEAD:** [Run #40638297319](https://github.com/planner77/layoutManager/actions/runs/40638297319), attempt 1, HEAD `c31036cd94b81118f8064591c9b8b74c7cd5e246`, `completed/failure`. Verify [Job #122650294939](https://github.com/planner77/layoutManager/actions/runs/40638297319/job/122650294939) E2E 92개 중 **91 PASS/1 FAIL**; `tests/e2e/issues124-126-127.spec.ts:132`의 `TC-126-RECOVERY: stalled Three load has an immediate manual escape and ignores late failure` → `:150` `expect(gets).toBe(1)` **Expected 1, Received 2**. [Docker/Migration/Runtime Job #122650294554](https://github.com/planner77/layoutManager/actions/runs/40638297319/job/122650294554) **SUCCESS**. Verify Job의 Typecheck/Lint/Unit·Integration(신규 C0 포함), OCI/DXF, Production Build는 SUCCESS; **Legacy Migration E2E SKIPPED**. Playwright trace Artifact로 남아 있으나 바이너리 추적 내용을 직접 확인하지 못해 요청 2건의 완료/취소 분류는 **NOT VERIFIED**.

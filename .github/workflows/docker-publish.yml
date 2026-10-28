@@ -201,6 +201,26 @@ jobs:
             publish=false
             reason="Approved G7 S3-4-B1 isolated offline restore verifier only: skip GHCR"
           elif [[ "$GITHUB_REF" == "refs/heads/main" &&
+                   "$COMMIT_SUBJECT" == "#154 | S3-5-R0 Offline release decision preflight [G7-S3-5R0-NO-GHCR]" ]]; then
+            # Pure release-specific Owner *claim/signature* consistency only.
+            # No operational GO, deployment or actual site evidence is authenticated.
+            for file in "${changed[@]}"; do
+              case "$file" in
+                .github/workflows/docker-publish.yml|AGENTS.md|out/Architecture.md|out/Database.md|out/Decisions.md|out/FailureLedger.md|out/Issue109.md|out/Operation.md|out/Requirements.md|out/TestPlan.md|out/TestReport.md|src/deploy/g7-s3/S3-5.md|src/server/g7-operational/s3-5-owner-decision.ts|src/tests/unit/g7-s3-5-owner-decision.test.ts|src/tests/unit/g7-staging-ghcr-guard.test.ts)
+                  ;;
+                *)
+                  echo "::error::G7-S3-5R0 GHCR exclusion disallowed path: $file" >&2
+                  exit 1
+                  ;;
+              esac
+            done
+            publish=false
+            reason="Approved #154 S3-5-R0 pure offline decision format only: skip GHCR"
+          elif [[ "$GITHUB_REF" == "refs/heads/main" &&
+                   "$COMMIT_SUBJECT" == "#154 | S3-5-R0"* ]]; then
+            echo "::error::G7-S3-5R0 exact squash subject required" >&2
+            exit 1
+          elif [[ "$GITHUB_REF" == "refs/heads/main" &&
                    "$COMMIT_SUBJECT" == "#151 | S3-4-C0 Owner Managed offline trust binding [G7-S3-4C0-NO-GHCR]" ]]; then
             # S3-4-C0 is local-only receipt/signature shape verification.
             # This is NOT authentication of field records or release/GO authority.

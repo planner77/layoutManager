@@ -782,3 +782,57 @@ describe('#151 S3-4-C0 Owner Managed local-only signed receipt no-GHCR boundary'
     expect(tag.values).toContain('publish=true');
   });
 });
+
+
+describe('#154 S3-5-R0 release-specific Owner decision NO-GHCR allowlist', () => {
+  const subject='#154 | S3-5-R0 Offline release decision preflight [G7-S3-5R0-NO-GHCR]';
+  const allowed=[
+    '.github/workflows/docker-publish.yml','AGENTS.md',
+    'out/Architecture.md','out/Database.md','out/Decisions.md',
+    'out/FailureLedger.md','out/Issue109.md','out/Operation.md',
+    'out/Requirements.md','out/TestPlan.md','out/TestReport.md',
+    'src/deploy/g7-s3/S3-5.md',
+    'src/server/g7-operational/s3-5-owner-decision.ts',
+    'src/tests/unit/g7-s3-5-owner-decision.test.ts',
+    'src/tests/unit/g7-staging-ghcr-guard.test.ts',
+  ];
+  test('the exact S3-5-R0 squash and exactly fifteen offline paths skip GHCR',()=>{
+    const actual=runScope(allowed,subject+'\n\nNo site or runtime GO');
+    expect(allowed).toHaveLength(15);
+    expect(actual.status,actual.stderr).toBe(0);
+    expect(actual.values).toContain('publish=false');
+    expect(actual.values).not.toContain('publish=true');
+  });
+  test('any production route, active migration, Docker/build, other workflow or real evidence disallows skip',()=>{
+    for(const forbidden of [
+      'src/prisma/schema.prisma',
+      'src/prisma/migrations/20261029_auth/migration.sql',
+      'src/server/g7-operational/preflight.ts',
+      'src/server/g7-operational/s3-4-c.ts',
+      'src/app/api/cad-files/route.ts',
+      'src/scripts/deploy.ts','src/Dockerfile',
+      'src/docker-compose.yml','.github/workflows/pr-ci.yml',
+      'src/deploy/g7-s3/private-evidence.json',
+    ]){
+      const r=runScope([allowed[12],forbidden],subject);
+      expect(r.status).not.toBe(0);
+      expect(r.stderr).toContain('G7-S3-5R0 GHCR exclusion disallowed path: '+forbidden);
+    }
+  });
+  test('near-match or different scope fails closed; release tags are not muted',()=>{
+    for(const bad of [
+      subject+' ',subject+'-extra',
+      '#154 | S3-5-R0', '#154 | S3-5-R0 production activation',
+    ]){
+      const r=runScope([allowed[12]],bad);
+      expect(r.status).not.toBe(0);
+      expect(r.stderr).toContain('G7-S3-5R0 exact squash subject required');
+    }
+    const c0=runScope([allowed[12]],
+      '#151 | S3-4-C0 Owner Managed offline trust binding [G7-S3-4C0-NO-GHCR]');
+    expect(c0.status).not.toBe(0);
+    const tag=runScope([allowed[12]],subject,'refs/tags/v0.99.1');
+    expect(tag.status).toBe(0);
+    expect(tag.values).toContain('publish=true');
+  });
+});
