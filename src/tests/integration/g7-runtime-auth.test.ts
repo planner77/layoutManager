@@ -66,6 +66,22 @@ function seed() {
 }
 
 describe('#153 operating Auth/Admin route integration', () => {
+  test('approved inactive Site does not block login, session, management and later reactivation', async () => {
+    setup(); const db=seed();
+    try {
+      const before=await login(); expect(before.response.status).toBe(200);
+      db.prepare('UPDATE "CadSite" SET active=0 WHERE id=?').run('site-a');
+      const fresh=await login(); expect(fresh.response.status).toBe(200);
+      expect((await send('GET','auth/session',undefined,before.cookie)).status).toBe(200);
+      expect((await send('GET','users/list',undefined,fresh.cookie)).status).toBe(200);
+      const permit=(cookie:string|undefined,csrf:string|undefined)=>send('POST','access/permit',
+        {action:'cad:current',resource:{kind:'site',siteId:'site-a'}},cookie,csrf);
+      expect((await permit(fresh.cookie,fresh.csrf)).status).toBe(403);
+      db.prepare('UPDATE "CadSite" SET active=1 WHERE id=?').run('site-a');
+      expect((await send('GET','auth/session',undefined,fresh.cookie)).status).toBe(200);
+      expect((await permit(fresh.cookie,fresh.csrf)).status).toBe(200);
+    } finally {db.close();}
+  });
   test('default OFF, malformed enablement BLOCKED, and no preview-cookie fallback', async () => {
     const f = setup();
     process.env.G7_AUTH_ENABLED = 'false'; process.env.G7_CAD_WRITE_CUTOVER_ENABLED = 'false';

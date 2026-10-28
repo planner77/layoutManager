@@ -67,7 +67,7 @@ export function openG7RuntimeDb(
     db.exec('PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;');
     assertG7RuntimeSchema(db);
     for (const siteId of gate.siteIds ?? []) {
-      if (!db.prepare('SELECT 1 FROM "CadSite" WHERE id=? AND active=1').get(siteId))
+      if (!db.prepare('SELECT 1 FROM "CadSite" WHERE id=?').get(siteId))
         throw new Error('G7_RUNTIME_SITE_SCOPE');
     }
     return db;

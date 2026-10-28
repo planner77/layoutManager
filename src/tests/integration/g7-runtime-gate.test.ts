@@ -78,8 +78,8 @@ describe('#153 signed Owner Managed runtime gate',()=>{
  test('missing/failed/forged history and weakened audit triggers rejected',()=>{
   for(const sql of ["DELETE FROM _prisma_migrations WHERE migration_name='202610260002_g7_operational_auth'","UPDATE _prisma_migrations SET finished_at=NULL WHERE migration_name='202610260002_g7_operational_auth'","UPDATE _prisma_migrations SET checksum='forged' WHERE migration_name='202610260002_g7_operational_auth'",'DROP TRIGGER g1_audit_no_delete','DROP TRIGGER g1_audit_no_update;CREATE TRIGGER g1_audit_no_update BEFORE UPDATE ON AuditEvent BEGIN SELECT 1;END']){const f=fixture(),db=f.openDb();db.exec(sql);db.close();blocked(f);}
  });
- test('inactive site, preview runtime conflict and auth switch-down fail closed',()=>{
-  const f=fixture(),db=f.openDb();db.exec("UPDATE CadSite SET active=0 WHERE id='site-a'");db.close();blocked(f);
+ test('missing approved site, preview runtime conflict and auth switch-down fail closed',()=>{
+  const f=fixture(),db=f.openDb();db.exec("DELETE FROM CadSite WHERE id='site-a'");db.close();blocked(f);
   const g=fixture();g.env.G7_S3_AUTH_API_PREVIEW_ONLY='true';blocked(g);g.env.G7_S3_AUTH_API_PREVIEW_ONLY='false';g.env.G7_STAGING_ONLY='true';blocked(g);g.env.G7_STAGING_ONLY='false';g.env.G7_AUTH_ENABLED='false';blocked(g);
  });
 });

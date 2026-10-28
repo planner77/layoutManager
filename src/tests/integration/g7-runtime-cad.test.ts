@@ -14,7 +14,11 @@ import { createG3IsolatedStore } from '../../server/g7-staging/g3-store';
 import { digestSessionToken } from '../../server/auth/session';
 import { createG2IsolatedStore } from '../../server/g7-staging/g2-store';
 import { CadError } from '../../domain/cad';
+import { resolveG7RuntimeGate } from '../../server/g7-operational/runtime-gate';
 import type { Registration } from '../../domain/cad';
+vi.mock('@/server/context',()=>({context:()=>{throw new Error('unexpected legacy context');}}));
+vi.mock('next/cache',()=>({revalidatePath:()=>{}}));
+import { PATCH as patchMaster } from '../../app/api/masters/[type]/[id]/route';
 
 let f:ReturnType<typeof makeG7RuntimeFixture>,db:Database,repo:CadRepository,masters:MasterRepository;
 beforeEach(()=>{
@@ -203,6 +207,49 @@ describe('#153 signed runtime CAD writes',()=>{
 });
 
 describe('#153 canonical hierarchy mutations cannot bypass CAD Site authorization',()=>{
+ test('signed Admin PATCH sites API can disable and reactivate one Site without blocking another',async()=>{
+  const siteId=randomUUID();
+  await db.cadSite.create({data:{id:siteId,productId:'product',name:'Second approved Site'}});
+  const siteIds=[siteId,'site-a'].sort();
+  f.writeTrust({...f.trust,siteIds});f.writeApproval({siteIds});
+  const admin=await actor('Admin',[siteId]);
+  const editor=await actor('Editor',['site-a']);
+  const input=await floor('site-a');
+  const patch=(active:boolean)=>patchMaster(new Request('http://0.0.0.0:3000/api/masters/sites/'+siteId,{
+    method:'PATCH',headers:{host:'cad.example.test',origin:f.trust.origin,cookie:'cad_session='+admin.token,
+      'x-csrf-token':csrfProof(admin.token),'content-type':'application/json'},body:JSON.stringify({active})}),
+    {params:Promise.resolve({type:'sites',id:siteId})});
+  expect((await patch(false)).status).toBe(200);
+  expect((await db.cadSite.findUnique({where:{id:siteId}}))?.active).toBe(false);
+  await expect(repo.register(input,file('unaffected.dxf'),undefined,proof(editor.token)))
+    .resolves.toMatchObject({id:expect.any(String)});
+  expect((await patch(true)).status).toBe(200);
+  expect((await db.cadSite.findUnique({where:{id:siteId}}))?.active).toBe(true);
+ });
+ test('Admin can deactivate and reactivate an approved Site while other Site CAD writes continue',async()=>{
+  f.writeTrust({...f.trust,siteIds:['site-a','site-b']});
+  f.writeApproval({siteIds:['site-a','site-b']});
+  const admin=await actor('Admin',['site-a','site-b']);
+  const inactiveEditor=await actor('Editor',['site-a']);
+  const activeEditor=await actor('Editor',['site-b']);
+  const inactiveFloor=await floor('site-a'),activeFloor=await floor('site-b');
+  const first=await repo.register(inactiveFloor,file('before.dxf'),undefined,proof(inactiveEditor.token));
+  await masters.update('sites','site-a',{active:false},proof(admin.token));
+  expect(resolveG7RuntimeGate(process.env).state).toBe('ACTIVE');
+  expect(proof(admin.token).runtime?.siteIds).toEqual(['site-a','site-b']);
+  await expect(repo.register(inactiveFloor,file('denied.dxf'),undefined,proof(inactiveEditor.token)))
+    .rejects.toMatchObject({code:'INACTIVE_LOCATION_CHAIN'});
+  await expect(repo.setCurrent(inactiveFloor.floorId,first.id,proof(inactiveEditor.token)))
+    .rejects.toMatchObject({code:'ACCESS_DENIED'});
+  await expect(repo.deleteVersion(first.id,'1234',proof(inactiveEditor.token)))
+    .rejects.toMatchObject({code:'ACCESS_DENIED'});
+  await expect(repo.register(activeFloor,file('other.dxf'),undefined,proof(activeEditor.token)))
+    .resolves.toMatchObject({id:expect.any(String)});
+  await masters.update('sites','site-a',{active:true},proof(admin.token));
+  await expect(repo.register(inactiveFloor,file('reactivated.dxf'),undefined,proof(inactiveEditor.token)))
+    .resolves.toMatchObject({id:expect.any(String)});
+  expect(await db.cadFileVersion.count()).toBe(3);
+ });
  test('Editor denied; scoped Admin manages local floors/buildings with atomic Audit and cannot extend Site scope',async()=>{
   const input=await floor(),editor=await actor(),admin=await actor('Admin');
   await expect(masters.update('floors',input.floorId,{name:'Denied'},proof(editor.token))).rejects.toMatchObject({code:'ACCESS_DENIED'});

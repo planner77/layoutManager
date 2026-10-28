@@ -1,10 +1,10 @@
 import {afterEach,describe,expect,test} from 'vitest';
 import {createRequire} from 'node:module';
 import {createHash,randomBytes} from 'node:crypto';
-import {chmodSync,existsSync,mkdirSync,mkdtempSync,readFileSync,renameSync,rmSync,symlinkSync,writeFileSync} from 'node:fs';
+import {chmodSync,existsSync,linkSync,mkdirSync,mkdtempSync,readFileSync,renameSync,rmSync,symlinkSync,writeFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
-import {spawnSync} from 'node:child_process';
+import {spawn,spawnSync} from 'node:child_process';
 import {
   captureG7DisposableSnapshot,migrateG7DisposableClone,
   restoreG7DisposableSnapshot,verifyG7DisposableRollback,
@@ -66,8 +66,103 @@ function operatingOptions(f:ReturnType<typeof fixture>,scopes:('AUTH'|'CAD_WRITE
   return {env:{...auth.env,DATABASE_URL:'file:'+f.file,G7_AUTH_ENABLED:'false',G7_CAD_WRITE_CUTOVER_ENABLED:'false',
     G7_RUNTIME_MIGRATION_ACK:'APPLY_APPROVED_G7_SCHEMA',G7_RUNTIME_MIGRATION_EPOCH:'E-synthetic',CAD_STORAGE_PATH:path.join(f.root,'cad')}};
 }
+async function killWhileHoldingMigrationLock(env:Record<string,string|undefined>,operation:'approved'|'restore',
+  snapshotId?:string,phase:'fault-read'|'hold-written'|'committed'='fault-read'){
+  const marker=path.join(env.G7_S3_TEST_ROOT??path.dirname(env.DATABASE_URL!.slice(5)),'child-lock-ready');
+  const script=`import {writeFileSync} from 'node:fs';
+    import {migrateG7ApprovedDatabase,restoreG7DisposableSnapshot} from './server/g7-operational/runtime-migration.ts';
+    const pause=()=>{writeFileSync(process.env.G7_KILL_READY,'ready',{mode:0o600});
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0);};
+    const options={env:process.env,get fault(){if(process.env.G7_KILL_PHASE==='fault-read')pause();
+      return undefined;},onCheckpoint(point){if(process.env.G7_KILL_PHASE==='hold-written'&&
+      point==='approved-hold-written'||process.env.G7_KILL_PHASE==='committed'&&
+      point==='approved-committed')pause();}};
+    if(process.env.G7_KILL_OPERATION==='approved')migrateG7ApprovedDatabase(options);
+    else restoreG7DisposableSnapshot(options,process.env.G7_KILL_SNAPSHOT);`;
+  const child=spawn(process.execPath,['--import','tsx','--input-type=module','-e',script],
+    {cwd:process.cwd(),env:{...process.env,...env,G7_KILL_READY:marker,G7_KILL_OPERATION:operation,
+      G7_KILL_SNAPSHOT:snapshotId??'',G7_KILL_PHASE:phase},stdio:'ignore'});
+  const exited=new Promise<{code:number|null;signal:NodeJS.Signals|null}>(resolve=>
+    child.once('exit',(code,signal)=>resolve({code,signal})));
+  try {
+    const deadline=Date.now()+10000;
+    while(!existsSync(marker)&&Date.now()<deadline){
+      if(child.exitCode!==null)throw new Error('child exited before lock checkpoint');
+      await new Promise(resolve=>setTimeout(resolve,20));
+    }
+    expect(existsSync(marker)).toBe(true);
+    return {kill:async()=>{child.kill('SIGKILL');expect((await exited).signal).toBe('SIGKILL');}};
+  } catch(error){child.kill('SIGKILL');await exited;throw error;}
+}
 
 describe('#153 executable disposable migration and same-snapshot restore',()=>{
+  test('unsafe lock symlink, hardlink, mode and legacy wx marker fail closed',()=>{
+    const f=fixture(),lock=path.join(f.root,'g7-rehearsal.lock');
+    symlinkSync(f.file,lock);expect(()=>captureG7DisposableSnapshot(f.options,'SNAP-lock','E-synthetic')).toThrow();rmSync(lock);
+    linkSync(f.file,lock);expect(()=>captureG7DisposableSnapshot(f.options,'SNAP-lock','E-synthetic')).toThrow();rmSync(lock);
+    writeFileSync(lock,'G7-DISPOSABLE-LOCK',{mode:0o600});
+    expect(()=>captureG7DisposableSnapshot(f.options,'SNAP-lock','E-synthetic')).toThrow();rmSync(lock);
+    writeFileSync(lock,'',{mode:0o644});
+    expect(()=>captureG7DisposableSnapshot(f.options,'SNAP-lock','E-synthetic')).toThrow();
+  },100000);
+  test('SIGKILL during approved migration releases exclusive lock for explicit same-snapshot resume',async()=>{
+    const f=fixture(),options=operatingOptions(f);
+    const child=await killWhileHoldingMigrationLock(options.env,'approved');
+    try{expect(()=>migrateG7ApprovedDatabase(options)).toThrow();}finally{await child.kill();}
+    expect(existsSync(path.join(f.root,'g7-runtime-hold.json'))).toBe(true);
+    const resume={env:{...options.env,G7_RUNTIME_MIGRATION_ACK:'RESUME_APPROVED_G7_SCHEMA'}};
+    expect(migrateG7ApprovedDatabase(resume)).toMatchObject({state:'MIGRATED',migrationCount:7});
+    expect(existsSync(path.join(f.root,'g7-runtime-hold.json'))).toBe(false);
+    expect(readFileSync(f.local)).toEqual(localBytes);expect(readFileSync(f.exported)).toEqual(s3Bytes);
+  },100000);
+  test('SIGKILL after approved commit but before HOLD removal resumes verified seven-schema state',async()=>{
+    const f=fixture(),options=operatingOptions(f);
+    const child=await killWhileHoldingMigrationLock(options.env,'approved',undefined,'committed');
+    const resume={env:{...options.env,G7_RUNTIME_MIGRATION_ACK:'RESUME_APPROVED_G7_SCHEMA'}};
+    try{expect(()=>migrateG7ApprovedDatabase(resume)).toThrow();}finally{await child.kill();}
+    expect(existsSync(path.join(f.root,'g7-runtime-hold.json'))).toBe(true);
+    expect(migrateG7ApprovedDatabase(resume)).toMatchObject({state:'MIGRATED',migrationCount:7});
+    expect(existsSync(path.join(f.root,'g7-runtime-hold.json'))).toBe(false);
+    expect(readFileSync(f.local)).toEqual(localBytes);expect(readFileSync(f.exported)).toEqual(s3Bytes);
+  },100000);
+  test('SIGKILL during restore keeps HOLD and a fresh call restores the same snapshot',async()=>{
+    const f=fixture();captureG7DisposableSnapshot(f.options,'SNAP-killed','E-synthetic');migrateG7DisposableClone(f.options);
+    const child=await killWhileHoldingMigrationLock(f.env,'restore','SNAP-killed');
+    try{expect(()=>restoreG7DisposableSnapshot(f.options,'SNAP-killed')).toThrow();}finally{await child.kill();}
+    expect(existsSync(path.join(f.root,'g7-runtime-hold.json'))).toBe(true);
+    expect(restoreG7DisposableSnapshot(f.options,'SNAP-killed')).toMatchObject({state:'RESTORED',migrationCount:6});
+    expect(readFileSync(f.local)).toEqual(localBytes);expect(readFileSync(f.exported)).toEqual(s3Bytes);
+  },100000);
+  test('SIGKILL after approved HOLD but before snapshot permits explicit validated recapture',async()=>{
+    const f=fixture(),options=operatingOptions(f);
+    const child=await killWhileHoldingMigrationLock(options.env,'approved',undefined,'hold-written');
+    const resume={env:{...options.env,G7_RUNTIME_MIGRATION_ACK:'RESUME_APPROVED_G7_SCHEMA'}};
+    try{
+      expect(existsSync(path.join(f.root,'snapshots/SNAP-operating-path'))).toBe(false);
+      // RESUME is otherwise valid at this point, so this denial proves the
+      // live child's lifetime lock rather than the ordinary APPLY/HOLD gate.
+      expect(()=>migrateG7ApprovedDatabase(resume)).toThrow();
+    }finally{await child.kill();}
+    const holdFile=path.join(f.root,'g7-runtime-hold.json');
+    const original=JSON.parse(readFileSync(holdFile,'utf8')) as Record<string,string>;
+    expect(()=>migrateG7ApprovedDatabase({env:{...resume.env,G7_RUNTIME_MIGRATION_EPOCH:'E-different'}})).toThrow();
+    expect(existsSync(path.join(f.root,'snapshots/SNAP-operating-path'))).toBe(false);
+    for(const altered of [
+      {...original,approvalId:'OWNER-different'},
+      {...original,snapshotId:'SNAP-different'},
+      {...original,sourceEpoch:'E-different'},
+      {...original,approvalId:undefined},
+      {scope:'G7-RUNTIME-HOLD',reason:'APPROVED_MIGRATION_IN_PROGRESS'},
+    ]){
+      writeFileSync(holdFile,JSON.stringify(altered));
+      expect(()=>migrateG7ApprovedDatabase(resume)).toThrow();
+      expect(existsSync(path.join(f.root,'snapshots/SNAP-operating-path'))).toBe(false);
+    }
+    writeFileSync(holdFile,JSON.stringify(original));
+    expect(migrateG7ApprovedDatabase(resume)).toMatchObject({state:'MIGRATED',migrationCount:7});
+    expect(existsSync(path.join(f.root,'snapshots/SNAP-operating-path/manifest.json'))).toBe(true);
+    expect(readFileSync(f.local)).toEqual(localBytes);expect(readFileSync(f.exported)).toEqual(s3Bytes);
+  },100000);
   test('populated six-history clone -> real seventh Prisma deployment -> idempotent rerun -> exact restore -> old six-history deploy',()=>{
     const f=fixture();
     expect(captureG7DisposableSnapshot(f.options,'SNAP-before','E-synthetic')).toMatchObject({state:'SNAPSHOT_CAPTURED',migrationCount:6,versionsChecked:2});

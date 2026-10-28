@@ -5,8 +5,8 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { createRequire } from 'node:module';
 import {
-  chmodSync, closeSync, constants, existsSync, fstatSync, fsyncSync, ftruncateSync,
-  lstatSync, mkdirSync, openSync, readFileSync, realpathSync,
+  chmodSync, closeSync, constants, existsSync, fstatSync, fsyncSync,
+  lstatSync, mkdirSync, openSync, readFileSync, readSync, realpathSync,
   readdirSync, renameSync, rmSync, writeFileSync,
 } from 'node:fs';
 import path from 'node:path';
@@ -44,6 +44,8 @@ type Options = {
   env: Readonly<Record<string, string | undefined>>;
   /** Deliberate interruption of a marked disposable clone, for recovery drills. */
   fault?: 'after-migration' | 'after-assets-restored';
+  /** Deterministic process-kill checkpoint for isolated integration tests only. */
+  onCheckpoint?: (point: 'approved-hold-written' | 'approved-committed') => void;
 };
 export type RehearsalResult = Readonly<{
   state: 'SNAPSHOT_CAPTURED' | 'MIGRATED' | 'RESTORED' | 'ROLLBACK_SCHEMA_COMPATIBLE';
@@ -61,13 +63,21 @@ function durableDirectory(directory:string):void {
 }
 function writePrivateMutable(root:string,relative:string,value:string):void {
   const filename=path.join(root,relative);
-  const fd=openSync(filename,constants.O_WRONLY|constants.O_CREAT|constants.O_NOFOLLOW|constants.O_NONBLOCK,0o600);
+  let before:ReturnType<typeof lstatSync>|undefined;
   try{
-    const stat=fstatSync(fd);
-    if(!stat.isFile()||stat.uid!==process.getuid?.()||(stat.mode&0o077)!==0||stat.nlink!==1)fail();
-    ftruncateSync(fd,0);writeFileSync(fd,value);fsyncSync(fd);
-  }finally{closeSync(fd);}
-  durableDirectory(root);
+    before=lstatSync(filename);
+    if(!before.isFile()||before.isSymbolicLink()||before.uid!==process.getuid?.()||
+       (before.mode&0o077)!==0||before.nlink!==1||realpathSync(filename)!==filename)fail();
+  }catch(error){if((error as NodeJS.ErrnoException).code!=='ENOENT')throw error;}
+  const pending=path.join(root,'.g7-write-'+randomUUID());
+  durableWrite(pending,value);
+  try{
+    let current:ReturnType<typeof lstatSync>|undefined;
+    try{current=lstatSync(filename);}catch(error){if((error as NodeJS.ErrnoException).code!=='ENOENT')throw error;}
+    if(current?.dev!==before?.dev||current?.ino!==before?.ino)fail();
+    renameSync(pending,filename);
+    durableDirectory(root);
+  }finally{rmSync(pending,{force:true});}
 }
 function privatePath(root: string, relative: string, directory = false): string {
   if (!relative || path.isAbsolute(relative) || relative.split('/').some(v => !v || v === '.' || v === '..')) fail();
@@ -171,13 +181,40 @@ function result(state: RehearsalResult['state'], count: number, versions: number
   return {state,migrationCount:count,versionsChecked:versions,auditPreserved:preserved,
     executionTarget,runtimeActivated:false,ociImagesExecuted:false};
 }
-function hold(t: G7S3TestTarget, reason: string) {
-  writePrivateMutable(t.root,HOLD,JSON.stringify({scope:'G7-RUNTIME-HOLD',reason}));
+type HoldIdentity = Readonly<{approvalId:string;snapshotId:string;sourceEpoch:string}>;
+function hold(t: G7S3TestTarget, reason: string, identity?: HoldIdentity) {
+  writePrivateMutable(t.root,HOLD,JSON.stringify({scope:'G7-RUNTIME-HOLD',reason,...identity}));
 }
 function withLock<T>(t: G7S3TestTarget, run: () => T): T {
   const file = path.join(t.root,'g7-rehearsal.lock');
-  writeFileSync(file,'G7-DISPOSABLE-LOCK',{mode:0o600,flag:'wx'});
-  try { return run(); } finally { rmSync(file); }
+  // The persistent private SQLite file is a lock inode, not a marker to unlink.
+  // SQLite's OS lock is released on process death, including SIGKILL/reboot.
+  // Keeping the inode avoids the unlink/recreate race between contenders.
+  const fd=openSync(file,constants.O_RDWR|constants.O_CREAT|constants.O_NOFOLLOW|constants.O_NONBLOCK,0o600);
+  try {
+    const opened=fstatSync(fd),named=lstatSync(file);
+    if(!opened.isFile()||opened.uid!==process.getuid?.()||(opened.mode&0o077)!==0||
+      opened.nlink!==1||opened.dev!==named.dev||opened.ino!==named.ino||opened.size>MAX_FILE)fail();
+    // A lock written by the old wx implementation has no process-lifetime
+    // ownership proof. It must remain fail-closed until the old tool is stopped
+    // and an operator has explicitly handled that legacy artifact.
+    if(opened.size){
+      const prefix=Buffer.alloc(18);
+      if(readSync(fd,prefix,0,prefix.length,0)===prefix.length&&
+        prefix.toString('utf8')==='G7-DISPOSABLE-LOCK')fail();
+    }
+    const lock=new Sqlite(file,{fileMustExist:true});
+    try {
+      lock.exec('PRAGMA busy_timeout=0; BEGIN EXCLUSIVE');
+      const current=lstatSync(file);
+      if(current.dev!==opened.dev||current.ino!==opened.ino||current.nlink!==1||
+        (current.mode&0o077)!==0)fail();
+      return run();
+    } finally {
+      try{lock.exec('ROLLBACK');}catch{/* A failed acquire has no transaction. */}
+      lock.close();
+    }
+  }finally{closeSync(fd);}
 }
 function deploy(options: Options, rollback = false): void {
   const run = spawnSync(process.execPath,[path.join(APP,'node_modules/prisma/build/index.js'),
@@ -368,8 +405,23 @@ export function migrateG7ApprovedDatabase(options: Options): RehearsalResult {
   const epoch=options.env.G7_RUNTIME_MIGRATION_EPOCH;
   if(!epoch||!/^E-[A-Za-z0-9_-]{2,64}$/.test(epoch))fail();
   return withLock(t,()=>{
-    if(existsSync(path.join(root,HOLD))&&!resume)fail();
-    hold(t,'APPROVED_MIGRATION_IN_PROGRESS');
+    const hasHold=existsSync(path.join(root,HOLD));
+    if(hasHold&&!resume||resume&&!hasHold)fail();
+    const identity:HoldIdentity={approvalId:authority.approvalId,snapshotId:authority.snapshotId,sourceEpoch:epoch};
+    if(hasHold){
+      const prior=JSON.parse(readFileSync(privatePath(root,HOLD),'utf8')) as Partial<HoldIdentity>&{scope?:string};
+      if(prior.scope!=='G7-RUNTIME-HOLD')fail();
+      const fields=[prior.approvalId,prior.snapshotId,prior.sourceEpoch];
+      const hasIdentity=fields.every(value=>typeof value==='string');
+      if(fields.some(value=>value!==undefined)&&!hasIdentity)fail();
+      if(hasIdentity && (prior.approvalId!==identity.approvalId||
+        prior.snapshotId!==identity.snapshotId||prior.sourceEpoch!==identity.sourceEpoch))fail();
+      // Before a completed snapshot, there is no retained source image to
+      // compare. Only a matching durable attempt marker permits recapture.
+      if(!existsSync(path.join(root,'snapshots',authority.snapshotId))&&!hasIdentity)fail();
+    }
+    hold(t,'APPROVED_MIGRATION_IN_PROGRESS',identity);
+    options.onCheckpoint?.('approved-hold-written');
     const db=open(t.databasePath);
     let transaction=false;
     try{
@@ -394,7 +446,7 @@ export function migrateG7ApprovedDatabase(options: Options): RehearsalResult {
           if(sha(value)!==manifest.assets[i].sha256||value.length!==manifest.assets[i].size)fail();
         }
       }else{
-        if(resume||count!==6)fail();
+        if(count!==6)fail();
         const pending=path.join(root,'snapshots','.pending-'+randomUUID());
         mkdirSync(pending,{mode:0o700});
         try{
@@ -431,11 +483,12 @@ export function migrateG7ApprovedDatabase(options: Options): RehearsalResult {
         current.snapshotId!==authority.snapshotId||current.changeRequestId!==authority.changeRequestId||
         current.databasePath!==authority.databasePath||current.cadStoragePath!==authority.cadStoragePath||current.expiresAt!==authority.expiresAt)fail();
       db.exec('COMMIT');transaction=false;
+      options.onCheckpoint?.('approved-committed');
       rmSync(path.join(root,HOLD));
       return result('MIGRATED',7,assets.length,true,'APPROVED_DATABASE');
     }catch{
       if(transaction){try{db.exec('ROLLBACK');}catch{/* HOLD survives an uncertain database failure. */}}
-      hold(t,'APPROVED_MIGRATION_FAILED_RECOVERY_REQUIRED');fail();
+      hold(t,'APPROVED_MIGRATION_FAILED_RECOVERY_REQUIRED',identity);fail();
     }finally{db.close();}
   });
 }

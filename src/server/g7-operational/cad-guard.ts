@@ -170,6 +170,10 @@ export async function requireG7CadPermission(
     if (gate && (!siteId || !gate.siteIds.includes(siteId))) throw new AuthorizationError();
     const result = requireResolvedPermission(user, action, resource, siteId);
     if (!result.siteId) throw new AuthorizationError();
+    // Signed Site membership is release authority; business active is checked
+    // at each CAD transaction and again before its final Audit insert.
+    if (gate && !(await tx.cadSite.findFirst({where:{id:result.siteId,active:true},select:{id:true}})))
+      throw new AuthorizationError();
     approvedSiteId = result.siteId;
   } catch (error) {
     if (!(error instanceof AuthorizationError)) throw error;

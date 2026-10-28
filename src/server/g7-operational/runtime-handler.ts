@@ -115,7 +115,7 @@ export async function handleG7RuntimeApi(request: Request, segments: readonly st
       }
     } else if (kind === 'access' && action !== 'sites') {
       const service = createG4Service(createG4IsolatedStore(db, {}, {
-        siteIds: gate.siteIds, assertCurrent: check, now: Date.now,
+        siteIds: gate.siteIds, assertCurrent: check, now: Date.now, requireActiveCadSite: true,
       }));
       response = await handleG4Request(action as 'permit' | 'grant' | 'disable' | 'audit',
         request, service, { ...context, trustedOrigin: gate.origin });

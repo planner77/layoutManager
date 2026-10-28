@@ -149,6 +149,7 @@ export type G4StoreScope = Readonly<{
   siteIds: readonly string[];
   assertCurrent?: () => void;
   now?: () => number;
+  requireActiveCadSite?: boolean;
 }>;
 /** Global account changes cannot affect an account assigned outside this release scope. */
 export function requireG4UserScope(db: IsolatedDb, userId: string, siteIds: readonly string[]): void {
@@ -161,7 +162,9 @@ export function createG4IsolatedStore(db: IsolatedDb, faults: Faults = {}, scope
   function scoped<T>(token: string | null, action: Action, resource: Resource,
     context: G4Context, work: (actor: UserAccess, siteId: string | null, context: G4Context) => T): T {
     return guarded(db, faults, token, action, resource, context, (actor, siteId, current) => {
-      if (scope && siteId !== null && !scope.siteIds.includes(siteId)) {
+      if (scope && siteId !== null && (!scope.siteIds.includes(siteId) ||
+          (scope.requireActiveCadSite && action.startsWith('cad:') &&
+           !db.prepare('SELECT 1 FROM "CadSite" WHERE id=? AND active=1').get(siteId)))) {
         throw new G4Failure('ACCESS_DENIED', 403);
       }
       return work(actor, siteId, current);
