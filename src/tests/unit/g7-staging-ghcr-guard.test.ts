@@ -730,3 +730,50 @@ describe('#142/#67 Docker layer compressed TAR audit exact no-GHCR gate', () => 
   });
 });
 
+
+describe('#151 S3-4-C0 Owner Managed local-only signed receipt no-GHCR boundary', () => {
+  const title='#151 | S3-4-C0 Owner Managed offline trust binding [G7-S3-4C0-NO-GHCR]';
+  const paths=[
+    '.github/workflows/docker-publish.yml','AGENTS.md',
+    'out/Architecture.md','out/Database.md','out/Decisions.md',
+    'out/FailureLedger.md','out/Issue109.md','out/Operation.md',
+    'out/Requirements.md','out/TestPlan.md','out/TestReport.md',
+    'src/deploy/g7-s3/S3-4-C.md',
+    'src/server/g7-operational/s3-4-c.ts',
+    'src/tests/unit/g7-s3-4-c.test.ts',
+    'src/tests/unit/g7-staging-ghcr-guard.test.ts',
+  ];
+  test('only exact S3-4-C0 subject and fifteen approved paths can skip GHCR',()=>{
+    const actual=runScope(paths,title+'\n\nOffline code; on-site evidence remains private');
+    expect(actual.status,actual.stderr).toBe(0);
+    expect(actual.values).toContain('publish=false');
+    expect(actual.values).not.toContain('publish=true');
+  });
+  test('production, deploy, runtime, private evidence file and any other workflow are blocked',()=>{
+    for(const forbidden of [
+      'src/prisma/schema.prisma','src/prisma/migrations/20261028_unauthorized/migration.sql',
+      'src/Dockerfile','src/docker-compose.yml',
+      'src/server/g7-operational/preflight.ts','src/app/api/cad-files/route.ts',
+      'src/scripts/deploy.ts','src/scripts/g7-s3-4-readiness.ts',
+      '.github/workflows/pr-ci.yml','src/deploy/g7-s3/private-site.json',
+    ]){
+      const actual=runScope([paths[12],forbidden],title);
+      expect(actual.status).not.toBe(0);
+      expect(actual.stderr).toContain('G7-S3-4C0 GHCR exclusion disallowed path: '+forbidden);
+    }
+  });
+  test('near-miss subject cannot bypass guard and release tags stay normal',()=>{
+    for(const subject of [title+' ',title+'-extra',
+      '#151 | S3-4-C0', '#151 | S3-4-C0 unsafe production']){
+      const actual=runScope([paths[12]],subject);
+      expect(actual.status).not.toBe(0);
+      expect(actual.stderr).toContain('G7-S3-4C0 exact squash subject required');
+    }
+    const older=runScope([paths[12]],
+      '#142 | S3-4-B2-5 Disposable private evidence reconciliation [G7-S3-4B2-5-NO-GHCR]');
+    expect(older.status).not.toBe(0);
+    const tag=runScope([paths[12]],title,'refs/tags/v0.99.1');
+    expect(tag.status).toBe(0);
+    expect(tag.values).toContain('publish=true');
+  });
+});

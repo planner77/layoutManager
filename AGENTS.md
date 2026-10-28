@@ -1,5 +1,13 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #151 — S3-4-C0 Owner Managed 현장 내부 신뢰 바인딩 / 증거 비반출 (2026-10-28 KST)
+
+- **사용자 승인:** 실제 S3-4-B2 현장 증거는 현장 **반입은 가능·반출은 불가**. QA Review/수용 책임은 **Owner Managed**로 수행하되, 현장 안에서 원본 OCI/SQLite/CAD/S3·Writer Zero/SNAP/7 Migration/Restore/Rollback/EV/QA를 실제로 관측·검증·보관해야 한다. 증거가 없어 공개 환경에서 확인 불가능하면 `NOT_VERIFIED`이지 PASS 아님. Owner Managed는 절차 담당자 변경이지 실제 검증·복원·기술 증거의 면제가 아니다.
+- **데이터 경계:** 승인된 Program/Runbook·합성 Fixture/공개 상태 코드는 Site로 반입만 가능; 실제 증거 원문·실 EV/QA/SNAP/CR ID·내부 Path/Host·이미지 Registry Digest/서명/개인 식별·S3 키·SQLite/CAD 바이트·실 SHA·Secret·Private Public-key Trust Roots, QA 서명은 GitHub/Actions/ChatGPT/외부 로그에 기록·반출 금지. Owner가 사이트 전용 증거 보존/권한/폐기·오프라인 서명 키 관리를 담당한다.
+- **선행 합성 CI:** #142 B2-5 [PR #149](https://github.com/planner77/layoutManager/pull/149) 정확 15-path 미게시 Squash Main `8ea0a3088e3dc10ae340cf5a095375f626519e1e`, [Main CI #40636610114](https://github.com/planner77/layoutManager/actions/runs/40636610114) SUCCESS/release-scope SUCCESS/GHCR SKIPPED. 합성/격리 코드 증명일 뿐 현장 Source/Epoch/실 복원/QA 인증 아님. #142/#109/#96 OPEN/BLOCKED 유지.
+- **신규 준비:** [Issue #151](https://github.com/planner77/layoutManager/issues/151), [S3-4-C Runbook](src/deploy/g7-s3/S3-4-C.md) 필수. `src/server/g7-operational/s3-4-c.ts` 순수 Owner Managed 사내 사용 receipt binder는 B2-5 17개 주장과 별도의 실제 영수증 Bytes/SHA를 교차대조하고, **외부 입력이 아닌 별도 현장 신뢰 구성**에서 주입받은 서로 다른 Ed25519 Owner/QA Public Keys로 두 서명을 검사한다. 성공도 `LOCAL_SIGNED_RECEIPTS_CONSISTENT_NOT_SITE_GO`일 뿐 독립 QA/실 Registry/물리 Restore·Rollback·운영 GO 증명 아님. 진짜 Source/Trust Anchor 진위·실 증거 독립 확인은 Owner의 사내 책임.
+- **금지 및 게이트:** 신규 코드는 파일/네트워크/Prisma/Docker/서비스/Auth/CAD Write/OCI publish/운영 GO 실행·연결 없이 순수 Byte 검증 및 합성 Unit만. 정확 `#151 | S3-4-C0 Owner Managed offline trust binding [G7-S3-4C0-NO-GHCR]` 및 15경로 no-GHCR 가드. S3-4-C0 준비 PR CI/리뷰 통과 전 병합 금지, 이후에도 Site 실제 S3-4-C 수용과 S3-5 별도 Owner GO 전까지 모든 G7 활성화 OFF.
+
 ## #142 B2-5 PR #149 — #150 Main 정렬 및 Owner Managed QA 경로 (2026-10-28 KST)
 
 - **선행 게이트:** [PR #150](https://github.com/planner77/layoutManager/pull/150) 8경로 전용 `CI-142-LAYER-NO-GHCR` 정확 Squash Main `dec723ca6512488d7d45148762fbe1e6395790a6`, [Main CI #40631046297](https://github.com/planner77/layoutManager/actions/runs/40631046297) attempt 1 `completed/success`, release-scope Job `122627234234` SUCCESS, GHCR Build/push Job `122627277997` SKIPPED. 이 결과는 B2-5 PR 자체의 CI PASS 또는 현장 QA/GO가 아님.
@@ -801,6 +809,7 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 | [S3-4-B2-3 Runbook](src/deploy/g7-s3/S3-4-B2-3.md) | #142 기존 CAD 6+격리 Auth 후보 1개의 일회용 Prisma History/합성 CAD 보존·Audit append-only 장애주입 검증, 실 Source 한계 | S3-4-B2-3 구현/테스트/리뷰, 실제 Site Clone/Restore 및 B2-4/B2-5 Owner 승인 검토 시 필수 참조 |
 | [S3-4-B2-4 Runbook](src/deploy/g7-s3/S3-4-B2-4.md) | #142 합성 동일 SNAP의 Source→G7 후보→Rollback SQLite/Local CAD/S3 Export Byte, 4 OCI Role 로컬 계약, 장애 주입·실 복원 NO-GO | B2-4 구현/테스트·B2-5 현장 증거 인수·Owner 실제 Restoring 승인 검토 시 필수 참조 |
 | [S3-4-B2-5 Runbook](src/deploy/g7-s3/S3-4-B2-5.md) | #142 합성 readiness/EV·QA·SNAP 17항목/OCI 4 Role·Source Epoch·CR ID 참조 대조, 실 현장 증명 불가·Owner NO-GO | B2-5 구현·리뷰·Unit/CI, 사내 QA/Source Snapshot 증거 검토 및 S3-4-C/S3-5 승인 판단 전 반드시 참조 |
+| [S3-4-C Runbook](src/deploy/g7-s3/S3-4-C.md) | #151 현장 반입만·원본 증거 반출 금지·Owner Managed QA/내부 receipt SHA+Ed25519 2-key 검증 및 현장 NO-GO, 독립 Trust Anchor/Source 진위 검증은 별도 | S3-4-C0 설계·Unit·PR 리뷰, 현장 실제 B2 증거 수용·서명·S3-5 릴리스별 Owner GO 검토 전 반드시 참조 |
 | [Issue31](out/Issue31.md) | DXF 다중 선택·볼록/정밀 외곽선·실험 상태·P4 권한 보류 | Viewer 선택·외곽선/Worker/JSON 변경 시 |
 | [Issue26](out/Issue26.md) | DXF TEXT/MTEXT 색인·world 좌표 focus·검색 범위/검증 | Viewer 검색·Pan/Zoom·Worker·BLOCK/INSERT·DWG 텍스트 지원 검토 시 |
 | [Issue66](out/Issue66.md) | Migrator 최소 의존성·크기 측정/OCI manifest·복구 계약 | Docker migrator/CI/GHCR 및 버전·패키징 변경 시 |

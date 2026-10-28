@@ -1,5 +1,13 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## TC-C0 — #151 Owner Managed 비반출 S3-4-C0 신뢰 영수증·서명 검증 (2026-10-28)
+
+- TC-C0-01: 기존 S3-4-A + B2-5 합성 Packet의 17 체크 PASS/EV·QA·SNAP/Epoch·CR/Source·Schema/OCI 역할 4 Digest가 정상이고 17개 별도 작은 Receipt Bytes/SHA가 일치한 경우 현장 별도 Owner/QA 2개 Ed25519 서명과 유효한 시간 Window이면 `LOCAL_SIGNED_RECEIPTS_CONSISTENT_NOT_SITE_GO`. 어떤 경우에도 `operationalGo=false`, `runtimeActivated=false`, 실제 Source/Registry/Writer/Restore·Rollback/독립 QA 검증 Flag false.
+- TC-C0-02: Raw Receipt Bytes 변조/해시 변조, 누락·중복·가짜 체크/EV ID·Size 한도, Packet Snapshot/Source/4 OCI Digest/Schema/Epoch/CR 변조·서명 재사용은 모두 `BLOCKED`; 단독 입력 키·틀린 공개키·동일 Key/개인키·잘못된 서명과 악의적 공개키 대체도 차단.
+- TC-C0-03: 서명시간/미래/만료(24h 초과)/Invalid UTC/Owner/QA 불일치, `NOT_RUN`은 `PENDING`, `FAIL/CANCELLED`·변조된 Packet은 `BLOCKED`; 반환된 결과 JSON에 실제 증거 Bytes/Key/Path/ID/Hash·Secret을 절대 반사하지 않는다.
+- TC-C0-04: GHCR 정확 `#151 | S3-4-C0 Owner Managed offline trust binding [G7-S3-4C0-NO-GHCR]` Squash+15개 명시 파일만 skip. 유사 제목·유사 파일, 운영 Prisma/서비스/기존 CAD API/Dockerfile/Compose/Nginx/타 Workflow·Secret/실 증거 경로는 fail-closed, 정식 Tag 정책 유지. 이전 #142 B2-5, #67 및 기타 GHCR 예외 회귀 무변경.
+- TC-C0-05: Main CI 40636610114 SUCCESS/release-scope SUCCESS/GHCR SKIPPED는 B2-5 선행 완료만. 신규 HEAD PR CI Typecheck/Lint/Unit·Integration/Build/E2E/Docker/Smoke 및 최신 리뷰/스레드 결과는 실제 관측 전 `NOT VERIFIED`. 이 시험은 합성 코드 검증이므로 **실 현장 OCI 출처/Writer Zero·Backup/Restore/Rollback/사내 Owner Managed 수용은 별도 실제 실행 확인 전 NOT RUN**.
+
 ## #142 B2-5 — 최신 Main(#150) 정렬 및 Owner Managed QA 경로 검증 (2026-10-28)
 
 - TC-B2-5-CI-01: PR #150 Main `dec723ca6512488d7d45148762fbe1e6395790a6`, Main CI [40631046297](https://github.com/planner77/layoutManager/actions/runs/40631046297)의 release-scope SUCCESS/GHCR Job SKIPPED를 선행 증거로 확인. #67 압축 TAR 패치와 B2-5 신규 검증기를 함께 보존하되 어느 한쪽의 CI 성공을 신규 HEAD 성공으로 전가하지 않음.

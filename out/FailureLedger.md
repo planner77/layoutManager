@@ -1,5 +1,12 @@
 # PR/Main CI 실패 원장
 
+## #151 S3-4-C0 — Owner Managed 비반출 준비/CI 기록 규칙 (2026-10-28 KST)
+
+- **실패 발생 사실 없음 (본 변경 작성 기준):** 선행 B2-5 [PR #149](https://github.com/planner77/layoutManager/pull/149) Main `8ea0a3088e3dc10ae340cf5a095375f626519e1e`, [Main CI #40636610114](https://github.com/planner77/layoutManager/actions/runs/40636610114) completed SUCCESS, Release Scope Job `122644923176` SUCCESS, GHCR Build/push Job `122644968384` SKIPPED. 기존 PR #149 Run `40613450861` attempts 1/2/3 Docker TAR 실패·Run #40612247712/#40613005532 취소 기록은 아래 원장과 함께 계속 보존; 새로운 실패로 중복 계상하지 않는다.
+- **사용자 현장 정책:** 현장 프로그램/합성 자료 반입 가능, 실제 EV/QA/SNAP/OCI/SQLite/CAD/S3·해시·서명·Trust Anchors/사내 URL·ID/실 로그 반출 금지. Owner Managed 현장 검토/보관 처리 요청은 절차적 승인일 뿐 실제 Writer Zero, OCI 출처, 실 Restore/Rollback, 독립 QA 또는 Owner 운영 GO를 수행했다고 주장하지 않는다. 외부에서 증거를 확인하지 못한 항목은 `NOT_VERIFIED`로 기록하며 FAIL로 추정하지 않는다.
+- **새 독립 작업:** [Issue #151](https://github.com/planner77/layoutManager/issues/151) 및 [S3-4-C Runbook](../src/deploy/g7-s3/S3-4-C.md). 순수 서명 영수증 Byte·Ed25519 2 Anchor·17 체크 합성 Validator, 정상/손상/위조·만료 회귀, 정확 15-path `[G7-S3-4C0-NO-GHCR]` GHCR guard 준비. 새로운 HEAD PR CI/리뷰 결과와 실패 Run/Job/Attempt는 실제 관측되기 전 `NOT VERIFIED`. 코드 작성은 TEST PASS가 아니다.
+- **차단:** 실행 결과도 `LOCAL_SIGNED_RECEIPTS_CONSISTENT_NOT_SITE_GO`로 제한, 실제 사이트 복원/출처 입증/운영 활성화 아님. PR 병합/Main CI/GHCR 게시/Issue #142·#109·#96·#151 종료 및 Auth/CAD Write ON 자동 수행 금지.
+
 ## #142 B2-5 PR #149 — #150 Main 성공 후 재정렬/Owner Managed QA (2026-10-28 KST)
 
 - **선행 수정 성공(실패를 성공으로 재해석하지 않음):** [PR #150](https://github.com/planner77/layoutManager/pull/150) HEAD `104efdc359675496601a522c8698b7b56aa5370d` [PR CI #40626414866](https://github.com/planner77/layoutManager/actions/runs/40626414866) Verify/Docker SUCCESS, Codex 최신 리뷰는 quota FAILED/NOT VERIFIED, 별도 Owner Managed 승인 근거로 정확 Squash Main `dec723ca6512488d7d45148762fbe1e6395790a6`. [Main CI #40631046297](https://github.com/planner77/layoutManager/actions/runs/40631046297) attempt 1 `completed/success`, Release Scope Job `122627234234` SUCCESS, GHCR Build and push Job `122627277997` SKIPPED. 실제 이미지/태그 게시 0.

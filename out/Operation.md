@@ -1,5 +1,12 @@
 # 운영·환경설정 초안
 
+## #151 S3-4-C Owner Managed 비반출 현장 수용 절차 (2026-10-28)
+
+- **현장 격리/반입만 허용:** 승인된 순수 Module, Runbook, 합성 Template·테스트만 현장 내부로 반입한다. 실제 DB/CAD/S3·OCI Raw/Manifest/Signer Key·Root, Source/SNAP/EV/QA/CR 상세 ID, Digest/Hash/Version/복구 Logs/원본은 현장 밖 GitHub/CI/외부 Chat/첨부로 반출하지 않는다. 출력은 공개해도 무해한 `BLOCKED/PENDING/LOCAL_SIGNED_RECEIPTS_CONSISTENT_NOT_SITE_GO` 및 고정 Reason 정도만; 상세 증거에 대한 원본 승인/보존/접근 통제/폐기/인증은 Owner의 **사내** 관리 책임.
+- **검증 순서:** Owner의 사내 Change 승인→OCI Registry 실 출처/4 immutable App·Migrator 및 rollback pair 확인(현재 Dockerfile G7 provenance label 부재는 미해결)→기록된 Writer Zero/SNAP Epoch·WAL-consistent SQLite+Local CAD+Versioned S3 단일 Snapshot→승인된 격리 Clone에 CAD 6+Auth 후보 7 Migration/FK·Audit/무결성/실패주입→**동일 SNAP 실제 Restore 및 이전 쌍 물리 Rollback**/RTO·RPO 측정→17개 현장 내부 EV/QA/SNAP 증거 Owner Managed 검토→별도 local trust roots로 SHA+Owner/QA Ed25519 receipts 서명/검증. **실제 증거 접근은 사내 담당자가 수행해야 하며 이 외부 개발 PR이 대신하지 않는다.**
+- **Trust limit:** `s34CSigningBytes`는 사내 영수증 서명 문장을 만들며 `assessS34COwnerManagedBinding`은 Caller 메모리의 Bytes/SHA·신뢰 PublicKey에 대한 서명 일치만 검증; 키가 실제 승인된 것인지/사람이 독립 검토했는지/실 OCI registry 또는 DB/CAD/S3가 일치했는지는 외부에서 결정 불가. 만료/키 교환/손상/실패/미실시/보안 경계 위반 시 HOLD, 운영 활성화 금지. 내부 기록이 없어 외부에서 검증 불가능하면 `NOT_VERIFIED`.
+- **운영 NO-GO:** #151 C0 코드 성공은 실제 S3-4-C Trusted Release binding이나 S3-5 GO가 아님. 실 운영 시스템 Writer Stop, Prisma migration, Auth/CAD Write ON, Docker pull/Push/GHCR, Compose/Nginx 변경/배포·실 Backup/Restore 수행하지 않는다. #142/#109/#96 OPEN/BLOCKED 유지. Runbook `src/deploy/g7-s3/S3-4-C.md` 및 Issue #151 필수.
+
 ## #142 B2-5 — 합성 Private Evidence 참조 검증 Runbook 및 운영 NO-GO (2026-10-28)
 
 - src/deploy/g7-s3/S3-4-B2-5.md 필수: 17 S3-4-A 필수 체크마다 입력 QA Ledger의 EV/QA/SNAP·UTC·Source/Schema/4 OCI 역할 참조를 fail-closed 대조한다. 모든 참조는 미신뢰, 검증 성공조차 실제 Reviewer 인증·Registry 서명·Site Restore가 아니다. 사이트 원본/인증정보는 공개 Git/CI에 올리지 않는다.
