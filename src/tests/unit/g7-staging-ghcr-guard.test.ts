@@ -742,12 +742,17 @@ describe('#151 S3-4-C0 Owner Managed local-only signed receipt no-GHCR boundary'
     'src/server/g7-operational/s3-4-c.ts',
     'src/tests/unit/g7-s3-4-c.test.ts',
     'src/tests/unit/g7-staging-ghcr-guard.test.ts',
+    'src/tests/e2e/issues124-126-127.spec.ts',
   ];
-  test('only exact S3-4-C0 subject and fifteen approved paths can skip GHCR',()=>{
+  test('only exact S3-4-C0 subject and sixteen approved paths can skip GHCR',()=>{
     const actual=runScope(paths,title+'\n\nOffline code; on-site evidence remains private');
     expect(actual.status,actual.stderr).toBe(0);
     expect(actual.values).toContain('publish=false');
     expect(actual.values).not.toContain('publish=true');
+    expect(paths).toHaveLength(16);
+    const e2eOnly=runScope(['src/tests/e2e/issues124-126-127.spec.ts'],title);
+    expect(e2eOnly.status,e2eOnly.stderr).toBe(0);
+    expect(e2eOnly.values).toContain('publish=false');
   });
   test('production, deploy, runtime, private evidence file and any other workflow are blocked',()=>{
     for(const forbidden of [

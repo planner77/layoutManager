@@ -6,7 +6,7 @@
 - FR-C0-002: 기존 B2-5 `DISPOSABLE_EVIDENCE_RECONCILED_NOT_SITE_PROOF` 미신뢰 Packet 17개 체크가 완결되어야 하고, Check/EV 매칭 17개 영수증의 bytes(Uint8Array 1~65536 B)와 선언된 SHA-256을 직접 비교한다. Source/Schema/SNAP/Epoch/CR/OCI 4 역할 Digest 바인딩 변경, 원본 누락/중복/위조는 BLOCKED.
 - FR-C0-003: 출처가 외부 입력에 포함되지 않은 별도 승인된 현장 Ed25519 Owner/QA 신뢰 공개키 2개로 Canonical 서명문을 검증. 잘못된 키·동일 키·누락·바꿔치기·기한/UTC/서명 변경/손상은 BLOCKED. 현장 시각은 사이트의 신뢰 가능한 시계를 호출자가 제공; Code 자체가 인가자·신뢰루트를 판별하거나 실제 인간 독립 QA를 입증하지 못하는 한계를 명시한다.
 - FR-C0-004: 형식 미완료 `PENDING`, 결함 `BLOCKED`, 일치 `LOCAL_SIGNED_RECEIPTS_CONSISTENT_NOT_SITE_GO`만 출력. 임의 원본 Bytes/사용자·EV/QA ID/Hash/Key/Signature/Path를 Reason이나 Response로 반사하지 않고 실제 Source/Registry/Restore/운영·Auth/CAD Write GO 플래그는 항상 false.
-- NFR-C0-01: 순수 Unit·문서·정확 GHCR 미게시 15개 Path 범위만 변경. `src/prisma/**`, 운영 API/Compose/Nginx/Dockerfile/기존 CAD 쓰기, 실제 Site Data/Registry 접근/GHCR Publish/Owner GO 전부 금지. S3-5 별도 릴리스별 Owner 승인 전 개발 코드 병합만으로 활성화 금지.
+- NFR-C0-01: 순수 Unit·문서 및 Owner Managed CI 보완으로 기존 15개에 `src/tests/e2e/issues124-126-127.spec.ts` 1개를 더한 정확 GHCR 미게시 16개 Path 범위만 변경. `src/prisma/**`, 운영 API/Compose/Nginx/Dockerfile/기존 CAD 쓰기, 실제 Site Data/Registry 접근/GHCR Publish/Owner GO 전부 금지. S3-5 별도 릴리스별 Owner 승인 전 개발 코드 병합만으로 활성화 금지.
 - FR-C0-005: 실제 B2 현장 QA/Writer/Snapshot/복구·Rollback 실증 및 현장 증거 승인 여부는 **별도 수행해야 하는 운영 AC**. 이 PR의 서명 테스트/합성 CI 성공으로 B2 실제 수용을 대체하지 않는다.
 
 ## #142 S3-4-B2-5 — 합성 증거 참조 검증 요구사항 (2026-10-28)

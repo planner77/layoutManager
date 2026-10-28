@@ -1,5 +1,11 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## #151 / PR #152 — E2E 1건 실패 분석 및 재검증 준비 (2026-10-28)
+
+- [PR CI #40638297319](https://github.com/planner77/layoutManager/actions/runs/40638297319) exact HEAD `c31036cd94b81118f8064591c9b8b74c7cd5e246`, attempt 1 `completed/failure`: Verify Job `122650294939` Typecheck/Lint/Unit·Integration(C0 합성 10건 포함)/OCI/DXF/Production Build SUCCESS, Playwright Chromium **91 passed / 1 failed** at `src/tests/e2e/issues124-126-127.spec.ts:150` `TC-126-RECOVERY`: `Expected:1, Received:2` source GET 시작 횟수; Legacy Migration E2E SKIPPED. Docker/Migration/Smoke Job `122650294554` SUCCESS. 실제 GET 2건 완료/abort 여부는 Log만으로 판정 불가.
+- 보완은 기존 E2E 한 곳의 완료/취소/시작 Network 이벤트 정확 계측: 성공 원본 완료 다운로드 **정확 1개**, 이전 요청 취소 최대 1개(Abort error reason), 진행 중 미종료/진짜 2 Completed GET/렌더러 오류는 실패 유지. S3-4-C0 source/auth/site code 변경 없음. 정확 no-GHCR 16-path = 기존 15개 + `src/tests/e2e/issues124-126-127.spec.ts`; GHCR Unit negative/positive 재검증.
+- **아직 새 HEAD CI 전:** 이 수정의 Typecheck/Lint/Unit/E2E/Docker/Build 결과는 실제 Run 완료 전 `NOT VERIFIED`, 과거 실패를 PASS로 재해석하지 않음. User Owner Managed risk acceptance는 Test assertion 계측·미게시 좁은 경로에만 한정. 실제 사이트 B2 증거/현장 Independent QA/실 Restore/Rollback/S3-4-C trust/운영 GO 미확인, 모든 활성 플래그 false.
+
 ## #151 S3-4-C0 — 현장 Owner Managed 비반출 정책 수용·합성 코드 준비 (2026-10-28)
 
 - **확인된 선행 CI:** #142 S3-4-B2-5 [PR #149](https://github.com/planner77/layoutManager/pull/149) 최종 Squash Main `8ea0a3088e3dc10ae340cf5a095375f626519e1e`, [Main CI #40636610114](https://github.com/planner77/layoutManager/actions/runs/40636610114) completed SUCCESS, Release-scope Job `122644923176` SUCCESS, GHCR Build/push Job `122644968384` SKIPPED. 기존 PR #149 Run 40613450861 Attempts 1/2/3 Docker TAR 오류/후속 SKIPPED는 FailureLedger에 계속 보존.

@@ -1,5 +1,11 @@
 # Issue #109 — G7 운영 인증 활성화 설계 및 통제 배포·롤백 Runbook
 
+## #151 PR #152 CI #126 E2E 제한적 Owner Managed 리스크 수용 (2026-10-28)
+
+- CI #40638297319 HEAD `c31036cd94b81118f8064591c9b8b74c7cd5e246` Verify Job의 Chromium 91/92 성공·`TC-126-RECOVERY` 원본 GET 시작 2회/기대 1회 불일치, Docker/Unit/Build 성공, Legacy Migration E2E 미실행. 실제 2회 모두 성공인지 하나 취소인지는 미확인. 이전 실패 원장 보존.
+- 기존 Viewer Renderer 수동 전환 E2E의 다운로드 완료/Abort 이벤트를 분리 계측하여 **성공 완료 GET 1개**를 필수화, 1건 취소만 허용. 두 완료 또는 비정상 오류는 계속 FAIL. Owner Managed 조건에 따라 기존 S3-4-C0 15경로+이 E2E 1경로만 정확 16-path GHCR Skip, 운영 API/Schema/Writer/Source Cache/배포/실 데이터 무변경. 신규 PR CI 완료 전 PASS 아님.
+- 실제 사내 B2/S3-4-C 증거 진위·Owner GO/운영 활성화는 독립 검증 미수행; #142/#109/#96/#151/#153 OPEN/BLOCKED.
+
 ## #151 S3-4-C0 — 현장 Owner Managed 증거 비반출/신뢰 바인딩 준비 (2026-10-28)
 
 - **사용자 승인:** 실제 B2-1~5 사내 원본·증거·해시·서명·실 EV/QA/SNAP·내부 키는 외부 반출 불가. 검증 프로그램과 합성 Template만 현장 반입, 실제 리뷰/수용·Owner Managed QA는 현장 안에서 실시하며 결과 근거/Trust Anchors는 사내 Owner 통제에 보존한다. 공개 GitHub에는 정형 상태·이유 코드만 기록한다.

@@ -204,9 +204,11 @@ jobs:
                    "$COMMIT_SUBJECT" == "#151 | S3-4-C0 Owner Managed offline trust binding [G7-S3-4C0-NO-GHCR]" ]]; then
             # S3-4-C0 is local-only receipt/signature shape verification.
             # This is NOT authentication of field records or release/GO authority.
+            # Owner Managed exception: one existing TC-126 E2E-only abort/completion
+            # assertion regression. No runtime, workflows or real evidence paths.
             for file in "${changed[@]}"; do
               case "$file" in
-                .github/workflows/docker-publish.yml|AGENTS.md|out/Architecture.md|out/Database.md|out/Decisions.md|out/FailureLedger.md|out/Issue109.md|out/Operation.md|out/Requirements.md|out/TestPlan.md|out/TestReport.md|src/deploy/g7-s3/S3-4-C.md|src/server/g7-operational/s3-4-c.ts|src/tests/unit/g7-s3-4-c.test.ts|src/tests/unit/g7-staging-ghcr-guard.test.ts)
+                .github/workflows/docker-publish.yml|AGENTS.md|out/Architecture.md|out/Database.md|out/Decisions.md|out/FailureLedger.md|out/Issue109.md|out/Operation.md|out/Requirements.md|out/TestPlan.md|out/TestReport.md|src/deploy/g7-s3/S3-4-C.md|src/server/g7-operational/s3-4-c.ts|src/tests/unit/g7-s3-4-c.test.ts|src/tests/unit/g7-staging-ghcr-guard.test.ts|src/tests/e2e/issues124-126-127.spec.ts)
                   ;;
                 *)
                   echo "::error::G7-S3-4C0 GHCR exclusion disallowed path: $file" >&2
@@ -215,7 +217,7 @@ jobs:
               esac
             done
             publish=false
-            reason="Approved #151 S3-4-C0 Owner Managed local-only binder scaffolding: skip GHCR"
+            reason="Approved #151 S3-4-C0 16-path synthetic plus TC-126 E2E-only fix: skip GHCR"
           elif [[ "$GITHUB_REF" == "refs/heads/main" &&
                    "$COMMIT_SUBJECT" == "#151 | S3-4-C0"* ]]; then
             echo "::error::G7-S3-4C0 exact squash subject required" >&2

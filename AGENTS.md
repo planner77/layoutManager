@@ -1,5 +1,13 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## #151 PR #152 — TC-126 E2E 원본 GET 재시도 계측 보완 / Owner Managed 위험 수용 (2026-10-28 KST)
+
+- **확인된 실패:** [PR CI #40638297319](https://github.com/planner77/layoutManager/actions/runs/40638297319), HEAD `c31036cd94b81118f8064591c9b8b74c7cd5e246`, attempt 1 `completed/failure`. Docker/Migration/Runtime Smoke Job `122650294554` **SUCCESS**. Verify Job `122650294939`의 Typecheck, Lint, Unit/Integration(신규 S3-4-C0 합성 10개 포함), OCI/DXF, Production Build SUCCESS; Chromium E2E 92 중 **91 PASS/1 FAIL**. 실패: `src/tests/e2e/issues124-126-127.spec.ts:150` `TC-126-RECOVERY`에서 수동 Three→dxf fallback 후 **GET requests 2 vs expected 1**. Legacy Migration E2E는 해당 실패로 SKIPPED. 해당 이전 Run 및 후속 skipped를 성공으로 고쳐 쓰지 않는다.
+- **분석/확인 한계:** 테스트가 **시작한 GET 총수**만 센다. 최초 Three 로드 중 원본 요청이 취소되고 fallback에서 성공 GET을 새로 받는 정상적인 브라우저 abort 사례와 동일 원본의 실제 성공 중복 GET을 구분하지 못한다. 기존 실패 로그만으로 두 GET이 각각 성공/취소인지 확정할 수 없다. unrelated Issue #126 viewer behavior 검증으로 S3-4-C0 pure binder의 결함 근거는 아니다.
+- **보완:** TC-126 해당 1개 Playwright 테스트에 `requestfinished`/`requestfailed` 계측 추가, 로드 후 pending 요청의 settle을 기다리고 `completed === 1`, `gets <= 2`, 초과 1건은 **취소/abort 실패**인 경우만 허용한다. 2개의 완료된 다운로드, 재시도 미종료, 미분류 네트워크 오류, 2 Canvas/늦은 오류 등은 계속 FAIL. 91개 성공 기존 시나리오 및 runtime/cache 정책은 변경 없음. 단순 assert 삭제·E2E Skip·타임아웃 상향/CI 완화가 아님.
+- **Owner Managed Risk:** 사용자 요청으로 합성/테스트 QA 위험 수용. #151 순수 S3-4-C0 PR의 기존 15경로에 **오직 `src/tests/e2e/issues124-126-127.spec.ts` 하나**를 추가해 정확 16-path no-GHCR 예외로 갱신한다. 정확 Squash Subject `#151 | S3-4-C0 Owner Managed offline trust binding [G7-S3-4C0-NO-GHCR]` 및 타 경로 차단/near-miss/tag 불변 유지. 공개 GitHub에 실제 현장 evidence/Secret/서명/해시/Private trust root 반출 금지. Codex quota 실패는 리뷰 성공 아님, 미해결 스레드·Main·PR CI 각 별도 확인.
+- **다음 게이트:** 새 HEAD PR CI를 시작하며 결과는 관측 전 `NOT VERIFIED`. 이 위험 수용은 PR Merge, GHCR Publish, 실제 S3-4-B2 원본 수용, Auth/CAD Write, 운영 Prisma/Writer/S3/복구 및 S3-5 Owner GO를 허가하지 않는다. #151/#153/#142/#109/#96 OPEN/BLOCKED 유지.
+
 ## Issue #151 — S3-4-C0 Owner Managed 현장 내부 신뢰 바인딩 / 증거 비반출 (2026-10-28 KST)
 
 - **사용자 승인:** 실제 S3-4-B2 현장 증거는 현장 **반입은 가능·반출은 불가**. QA Review/수용 책임은 **Owner Managed**로 수행하되, 현장 안에서 원본 OCI/SQLite/CAD/S3·Writer Zero/SNAP/7 Migration/Restore/Rollback/EV/QA를 실제로 관측·검증·보관해야 한다. 증거가 없어 공개 환경에서 확인 불가능하면 `NOT_VERIFIED`이지 PASS 아님. Owner Managed는 절차 담당자 변경이지 실제 검증·복원·기술 증거의 면제가 아니다.

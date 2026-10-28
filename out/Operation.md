@@ -1,5 +1,10 @@
 # 운영·환경설정 초안
 
+## #151 / #126 E2E CI 보완의 운영 경계 (2026-10-28)
+
+- S3-4-C0 준비용 PR #152의 E2E `TC-126-RECOVERY`는 DXF 브라우저 수동 Renderer 전환 중 **요청 시작 2회**를 측정해 실패했다. 신규 회귀는 원본 완료 GET 1개와 브라우저 취소 1개를 구분하며 두 번의 성공 다운로드를 허용하지 않는다. 실패는 시험 계측 문제의 유력 후보지만 실제 2건 완료는 증거 부족으로 미확정. 운영 Renderer/SourceCache·CAD bytes/DB·API·Prisma/Dockerfile 변경 0.
+- Owner Managed 위험 수용에 따라 이번 테스트 파일 하나만 16-path 정확 GHCR 미게시 경계에 추가, 기타 Release/Prod/정식 운영 모듈 또는 Private Evidence 파일 반입 불가. CI 재실행 전 성공 주장 금지, 사내 실제 현장 B2/S3-4-C/S3-5 확인/운영 활성화와 무관.
+
 ## #151 S3-4-C Owner Managed 비반출 현장 수용 절차 (2026-10-28)
 
 - **현장 격리/반입만 허용:** 승인된 순수 Module, Runbook, 합성 Template·테스트만 현장 내부로 반입한다. 실제 DB/CAD/S3·OCI Raw/Manifest/Signer Key·Root, Source/SNAP/EV/QA/CR 상세 ID, Digest/Hash/Version/복구 Logs/원본은 현장 밖 GitHub/CI/외부 Chat/첨부로 반출하지 않는다. 출력은 공개해도 무해한 `BLOCKED/PENDING/LOCAL_SIGNED_RECEIPTS_CONSISTENT_NOT_SITE_GO` 및 고정 Reason 정도만; 상세 증거에 대한 원본 승인/보존/접근 통제/폐기/인증은 Owner의 **사내** 관리 책임.
