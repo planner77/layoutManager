@@ -1,5 +1,13 @@
 # PR/Main CI 실패 원장
 
+## #154 PR #155 first CI failure / P1 review correction (2026-10-28 KST)
+
+- Original HEAD `29f67d1cb2b045f37e93ba603f4caa0a66aa0ac2`, [PR CI #40648586533](https://github.com/planner77/layoutManager/actions/runs/40648586533), attempt 1: Docker image size/migration/runtime smoke job `122683088359` SUCCESS. Verify job `122683088747` FAILED at Unit/Integration: 524 passed, 1 failed / 77 files (76 passed, 1 failed). Typecheck and ESLint SUCCESS; OCI/DXF, Build, Chromium E2E, Legacy E2E SKIPPED, not PASS.
+- Exact failure: `src/tests/unit/g7-s3-5-owner-decision.test.ts:157` expected BLOCKED but observed `LOCAL_RELEASE_DECISION_CONSISTENT_NOT_ACTIVATED`; Codex [P1 review](https://github.com/planner77/layoutManager/pull/155) identified the synthetic `siteScope:'SCOPE-other'` case passing `altered` as both the Owner-signed packet release and independently trusted release. The test was self-authorizing the changed scope, not demonstrating rejected scope tampering. No production validator defect established by this test.
+- Correction: retain original independently trusted `f.release` in every re-signed release-tamper assertion; preserve all five negative cases and fail-closed assertions. Changed test only; no production release, migration, runtime, private site evidence, keys, activation or GHCR modification. Review thread resolution requires verifying the correction. New HEAD PR CI outcome remains NOT VERIFIED until independently observed.
+- Preserve first-run FAIL and all skipped-step status permanently; #153/#109/#96 remain OPEN/BLOCKED. S3-5 operating Owner GO NOT ISSUED.
+
+
 ## #154 S3-5-R0 — 선행 Main CI/실 현장 Owner 보고 인계 및 신규 PR 검증 경계 (2026-10-28)
 
 - **선행 코드 CI:** C0 [PR #152](https://github.com/planner77/layoutManager/pull/152) Main `013effd65a68879d94d18c4928db8c600e8e9589`, [Main CI #40641999215](https://github.com/planner77/layoutManager/actions/runs/40641999215) SUCCESS / Release Scope SUCCESS / GHCR Build+Push SKIPPED. 이전 PR #152 CI #40638297319 TC-126 E2E 1건 FAIL + Legacy E2E SKIPPED 및 보완 이후 #40640589443 SUCCESS 이력은 아래 원장에 보존, 실패를 성공으로 다시 쓰지 않는다.
