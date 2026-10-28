@@ -1,5 +1,14 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## #142 B2-4 — 동일 SNAP 합성 Restore/Rollback Replay 및 Failure Injection (2026-10-28)
+
+- TC-B2-4-01: 격리 in-memory SQLite CAD 6 baseline에 Local DXF/S3 DWG 두 Version과 Current/nextVersion/SHA를 합성 등록, 격리 G7 Auth 7th 후보 SQL을 별도 Candidate Buffer로 적용 후 baseline 복사본을 Rollback Buffer로 사용. Source→Candidate→Rollback 전 단계 `SNAP-*`/`E-*` 및 Marker bytes·S3 Marker VersionId, Local/S3 모든 오브젝트 ID/Locator/VersionId/Bytes 일치, B2-3 CAD/QuickCheck/FK/Audit 8 Tables 검사. 기대 `DISPOSABLE_REPLAY_MATCH_NOT_SITE_PROOF`, registry/site/restore/rollbackExecuted/GO false.
+- TC-B2-4-02: B2-1 합성 4 OCI manifest/config Role(app,migrator,rollbackApp,rollbackMigrator) Digest, Source Revision/SemVer, Schema/Capability 및 distinct rollback pair 로컬 유효 계약; mutable tag/Role 누락/rollback source mismatch/label wrong -> `OFFLINE_OCI_PAIR_BLOCKED`. 양성도 `rollbackCompatible=false`이며 실제 OCI 실행/Registry 인증 아님.
+- TC-B2-4-03: 원본/Candidate/Rollback 다른 SNAP/Epoch/S3 Marker bytes/version claim, Local/S3 Export 버퍼 손상·누락·중복 Version mapping, S3 Version claim swap, Rollback SQLite 바이트 변조 또는 G7 Candidate를 Rollback으로 잘못 사용 → 각각 `SNAPSHOT_EPOCH_MISMATCH`/`S3_MARKER_MISMATCH`/`CANDIDATE_OBJECT_MISMATCH`/`ROLLBACK_OBJECT_MISMATCH`/`ROLLBACK_SQLITE_BYTES_MISMATCH` / BLOCKED.
+- TC-B2-4-04: 후보 7th 적용 중단·기존 CAD Version SHA/Current/FK 또는 8 Auth Schema 손상 시 B2-3 검사 실패 인계 `CANDIDATE_INVARIANTS_BLOCKED`; 임의 운영 Path 주입/invalid Bytes 거부. Restore/rollback RTO/RPO·실 Side Effect/Owner signature 가짜 생성 금지.
+- TC-B2-4-05: 정확 `#142 | S3-4-B2-4 Disposable rollback replay [G7-S3-4B2-4-NO-GHCR]` Main Squash Subject 및 15-file allowlist만 GHCR skip, 활성 Prisma/후보 SQL·Dockerfile/Compose/Nginx/서비스 API·다른 workflow Path/제목 근접값 fail-closed; 일반 release tag 정책 그대로.
+- TC-B2-4-06: 최신 HEAD Typecheck/Vitest/OCI/Docker/Build/E2E/PR CI·Codex 재리뷰/스레드·Main 정렬 확인 전 `NOT VERIFIED`. 실 Site Source/Writer/Restore/Rollback 및 RTO/RPO **NOT RUN**.
+
 ## TC-M1-E2E-001 — Desktop→390px Mobile Modal/메뉴 경계 (2026-10-28)
 
 - WCS(10,20) 임시 Memo와 텍스트만 변경/Zoom·Pan 후 CSS fullscreen에서 Viewport 390×844 적용. 모바일 `viewer-tools-dock[role=dialog]`가 열린 것을 대기하고 `header.inert===true` 확인; 이 상태에서 상단 메뉴 클릭을 강제하지 않는다.

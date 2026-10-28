@@ -511,6 +511,40 @@ describe('#142 S3-4-B2-1 exact offline OCI GHCR no-publish scope',()=>{
   });
 });
 
+describe('#142 B2-4 exact synthetic rollback replay no-GHCR exception',()=>{
+  const title='#142 | S3-4-B2-4 Disposable rollback replay [G7-S3-4B2-4-NO-GHCR]';
+  const paths=[".github/workflows/docker-publish.yml","AGENTS.md","out/Architecture.md","out/Database.md","out/Decisions.md","out/FailureLedger.md","out/Issue109.md","out/Operation.md","out/Requirements.md","out/TestPlan.md","out/TestReport.md","src/deploy/g7-s3/S3-4-B2-4.md","src/server/g7-operational/s3-4-b2-4.ts","src/tests/integration/g7-s3-4-b2-4.test.ts","src/tests/unit/g7-staging-ghcr-guard.test.ts"];
+  test('exact approved squash subject and fifteen reviewed files publish=false',()=>{
+    const r=runScope(paths,title);
+    expect(r.status,r.stderr).toBe(0);
+    expect(r.values).toContain('publish=false');
+  });
+  test('active migration, OCI publish, deployment, runtime and workflow files fail closed',()=>{
+    for(const file of [
+      'src/prisma/migrations/202610260002_g7_operational_auth/migration.sql',
+      'src/deploy/g7-s3/prisma/migrations/202610260002_g7_operational_auth/migration.sql',
+      'src/deploy/g7-s3/prisma.config.ts','src/scripts/deploy.ts',
+      'src/Dockerfile','src/docker-compose.yml',
+      'src/app/api/cad-files/route.ts','src/server/g7-operational/preview-handler.ts',
+      '.github/workflows/pr-ci.yml',
+    ]){
+      const result=runScope([paths[12],file],title);
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toContain('G7-S3-4B2-4 GHCR exclusion disallowed path: '+file);
+    }
+  });
+  test('near-miss titles block, release tag retains normal publication policy',()=>{
+    for(const subject of [title+' ',title+'-other','#142 | S3-4-B2-4 unsafe']){
+      const result=runScope([paths[12]],subject);
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toContain('G7-S3-4B2-4 exact squash subject required');
+    }
+    const tag=runScope([paths[12]],title,'refs/tags/v0.99.1');
+    expect(tag.status).toBe(0);
+    expect(tag.values).toContain('publish=true');
+  });
+});
+
 describe('#142 B2-3 exact seven migration no-GHCR exclusion',()=>{
   const title='#142 | S3-4-B2-3 Isolated seven migration rehearsal [G7-S3-4B2-3-NO-GHCR]';
   const paths=[".github/workflows/docker-publish.yml","AGENTS.md","out/Architecture.md","out/Database.md","out/Decisions.md","out/FailureLedger.md","out/Issue109.md","out/Operation.md","out/Requirements.md","out/TestPlan.md","out/TestReport.md","src/deploy/g7-s3/S3-4-B2-3.md","src/server/g7-operational/s3-4-b2-3.ts","src/tests/integration/g7-s3-4-b2-3.test.ts","src/tests/unit/g7-staging-ghcr-guard.test.ts"];

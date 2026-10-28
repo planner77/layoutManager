@@ -1,5 +1,17 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## #142 B2-4 PR #147 — 초기 Typecheck 실패 및 Main #82 재정렬 (2026-10-28)
+
+- [PR CI #40579106887](https://github.com/planner77/layoutManager/actions/runs/40579106887), HEAD `5d7055c8c72d800005509557ee137c76a9d87aad`: Verify Job 122453396943 **FAILED** (`tests/integration/g7-s3-4-b2-4.test.ts:93,96` TS2322 `Buffer<ArrayBufferLike>` vs `Buffer<ArrayBuffer>`), Docker Job 122453396404 SUCCESS. Typecheck 이후 Lint/Unit/Integration/Build/E2E 검증 **SKIPPED**, B2-4 synthetic PASS 아직 CI로 입증되지 않음.
+- Fixture `baseline/candidate` 변수 타입을 `Buffer`로 명시하여 serialize 결과와 호환되도록 수정; 신뢰 플래그나 바이트/SQL 변경 없음. Issue #82 Main `dbe55c87`의 Memo/0.43.0/문서/시험 내역을 보존하고 B2-4 15-path만 PR에 유지. 새 PR CI는 시작 후 **NOT VERIFIED**, 최신 Codex/충돌/스레드/behind 별도 판정.
+- 실제 Source same-SNAP, OCI Registry provenance, App/Migrator 실행, 물리적 Restore/Rollback, RTO/RPO, 현장 Writer·DB·CAD·S3/운영 Auth·CAD Write/Owner GO는 `NOT RUN`; #142/#109/#96 BLOCKED.
+
+## #142 B2-4 — 합성 Restore/Rollback Replay 테스트 작성·실행 미확인 (2026-10-28)
+
+- **선행 완료 증거:** B2-3 [PR #146](https://github.com/planner77/layoutManager/pull/146) Main `7b784c2d62c0872909361e3514d437247d7ab662`, [Main CI #40575203195](https://github.com/planner77/layoutManager/actions/runs/40575203195) completed/success, release-scope SUCCESS/GHCR Build/push SKIPPED.
+- 신규 `inspectS34B24DisposableReplay` 소스는 제공된 Synthetic OCI 4-role manifests/configs, SNAP/Epoch/S3 Marker claims, Source/7th Auth Candidate/Rollback 세 SQLite Buffer와 Local CAD/S3 Export Buffer를 대조하는 논리를 **작성**. 기존 B2-1·B2-3 verifier 결과를 재사용하고 Rollback SQLite Byte=Source Byte, Local/S3 Version/Locator/S3Version/Byte 일치, 8 Auth/Audit·FK·Current·SHA 등 불변식. test `g7-s3-4-b2-4.test.ts`는 정상 합성·S3 marker/OCI labels·중단 후보·부분 복원·Local/S3 손상·롤백 SQLite 불일치·객체 누락/중복·Snapshot 오류 음성 케이스를 **작성**. 새 HEAD Typecheck/Vitest/Prisma CLI/Docker/Build/E2E/PR CI 성적은 실행을 확인하기 전 `NOT VERIFIED`, 코드 작성은 PASS가 아님.
+- **출처/운영 NO-GO:** 이 검증기는 실제 restore/rollback 이미지 실행이나 S3/DB 원본 캡처를 하지 않으며 `rollbackCompatible/sameSnapshotRestored/restoreExecuted/rollbackExecuted/operationalGo/runtimeActivated=false`. 현장 RTO/RPO, QA 서명, EV-ID/Source Provenance 주장 금지; 운영 DB/CAD/S3/Writer·Prisma·GHCR/배포 `NOT RUN`. #142/#109/#96 OPEN/BLOCKED. [B2-4 Runbook](../src/deploy/g7-s3/S3-4-B2-4.md).
+
 ## #82 PR #111 — Mobile Drawer E2E 실패, 새 검증 필요 (2026-10-28)
 
 - [PR CI #40583276569](https://github.com/planner77/layoutManager/actions/runs/40583276569), attempt 1, HEAD `53b6909caaad4721c9050a6d26ec1da940176b05`: Verify [Job 122468046935](https://github.com/planner77/layoutManager/actions/runs/40583276569/job/122468046935) Chromium E2E 92건 중 **91 PASS/1 FAIL**, Legacy Migration E2E SKIPPED, Typecheck/Lint/Unit·Integration/OCI/DXF benchmark/Build SUCCESS. Docker/Migration/Runtime Smoke [Job 122468046482](https://github.com/planner77/layoutManager/actions/runs/40583276569/job/122468046482) SUCCESS. [Trace Artifact #12770224877](https://github.com/planner77/layoutManager/actions/runs/40583276569/artifacts/12770224877).

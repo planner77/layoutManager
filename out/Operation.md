@@ -1,5 +1,10 @@
 # 운영·환경설정 초안
 
+## #142 B2-4 — 합성 Replay/실 운영 Restore 구분 (2026-10-28)
+
+- 오프라인 `inspectS34B24DisposableReplay`는 호출자가 제공한 세 SQLite Buffer, Local/S3 export Buffer, S3 Marker, OCI manifest/config Buffer만 읽고 SHA/Byte/DB 스키마/Version/Current/FK·Audit 불변성·Rollback 바이트를 대조한다. 이 함수는 Source Filesystem Path·SQLite 운영 DB·S3/OCI 네트워크 요청/Writer freeze·Prisma CLI/Container 실행/복원 출력 파일을 만들지 않는다. 입력 Path를 통한 I/O 요청은 허용되지 않으며 Blob/Key/Secret 값은 결과에 출력하지 않는다.
+- 진짜 B2-4는 Source SNAP을 Owner 승인 아래 현장 zero-writer Epoch·WAL-consistent SQLite·Local CAD·Versioned S3로 **독립 증명**한 후 내부 격리 0700/0600 복제 환경과 4개 OCI 이미지(승인된 Registry Signature/Source/Version)로 실제 복원과 이전 쌍 Rollback을 관측·기록해야 한다. Rollback 전용 Img Manifest가 같아도 실행 가능·호환성을 자동 입증하는 것은 아니다. 승인 전 RTO/RPO 생성/추정 불가. 현 단계는 합성 결과 `DISPOSABLE_REPLAY_MATCH_NOT_SITE_PROOF`만 가능, #142/#109/#96 및 운영 Auth/CAD Write 계속 BLOCKED.
+
 ## #142 B2-3 P2 — 합성 Audit 검증 운영 경계 (2026-10-28)
 
 - Audit UPDATE/DELETE Probes는 제공된 SQLite Bytes에서 독립 복제한 **메모리 DB에서만** 실행, 원본 Snapshot Buffer/실 DB/실 서비스에는 쓰지 않는다. 첫 합성 Row INSERT 후 전체 `AuditEvent` Table Snapshot을 보유하고 UPDATE 예외 + 동일 Row 여부, DELETE 예외 + 동일 Row 여부를 검사한다. `AFTER ... RAISE(FAIL)`로 예외가 발생해도 DB 변경이 남으면 `AUDIT_NOT_APPEND_ONLY`로 차단한다.

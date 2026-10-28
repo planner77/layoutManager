@@ -1,5 +1,20 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #142 / PR #147 — Main #82 정렬 및 TypeScript TS2322 실패 보완 (2026-10-28 KST)
+
+- **실패 원장 참조:** [PR CI #40579106887](https://github.com/planner77/layoutManager/actions/runs/40579106887) attempt 1, HEAD `5d7055c8c72d800005509557ee137c76a9d87aad` completed/**failure**. Verify Job `122453396943`의 `src/tests/integration/g7-s3-4-b2-4.test.ts:93,96` TypeScript **TS2322** 두 건: `Buffer<ArrayBufferLike>`(SQLite serialize)을 `Buffer<ArrayBuffer>`로 추론된 `Buffer.alloc(0)` 변수에 할당. Docker/Migration/Smoke Job `122453396404`은 SUCCESS이나 Lint/Unit/Build/E2E는 Typecheck 후 SKIPPED. 별도 Docker 결함은 아님.
+- **보완:** 합성 fixture의 `baseline/candidate`를 기본 `Buffer`(ArrayBufferLike 호환)로 명시 선언; Snapshot 바이트/불변식·runtime 로직 불변. 실패 Run은 삭제·성공 재해석하지 않고 [FailureLedger](out/FailureLedger.md)와 [TestReport](out/TestReport.md)에 누적.
+- **Main 정렬:** #82 M1 Main `dbe55c8719e9a9e3aee79fb83e32ec6ce3fc1f8d`의 WCS Memo UI/Tests, v0.43.0 package/lock, AGENTS·설계·시험·실패 원장 변경을 그대로 보존하며 #142 B2-4의 독립 합성 verifier·15-path GHCR no-publish allowlist를 함께 유지. 충돌 구간은 양쪽 추가 섹션 모두 병합. 선행 #142 B2-3 Main `7b784c2d62c0872909361e3514d437247d7ab662` 보존.
+- **검증 게이트:** 구 HEAD Codex Review findings=0/미해결 thread=0이 새 HEAD 검증을 대체하지 않음. Merge 후 최신 HEAD Codex 재리뷰 요청, 미해결 스레드·Main behind·충돌 재확인 및 PR CI 시작까지만 수행. 신규 CI 결과는 관측 전 `NOT VERIFIED`. GHCR 게시/PR 병합/Main CI 미수행.
+- **운영 NO-GO:** `DISPOSABLE_REPLAY_MATCH_NOT_SITE_PROOF`는 실 복원/롤백·OCI Registry 신뢰·원본 Source 증거·RTO/RPO가 아님. 운영 Writer/DB/CAD/S3·Prisma Migration/Compose/Nginx/Auth·CAD Write·GHCR·Owner GO 모두 금지, #142/#109/#96 OPEN/BLOCKED 유지.
+
+## Issue #142 S3-4-B2-4 — 합성 동일 SNAP Restore/Rollback Replay (2026-10-28 KST)
+
+- **선행:** B2-3 [PR #146](https://github.com/planner77/layoutManager/pull/146) 정확 no-GHCR Squash Main `7b784c2d62c0872909361e3514d437247d7ab662`, [Main CI #40575203195](https://github.com/planner77/layoutManager/actions/runs/40575203195) `completed/success`, release-scope Job 122439659423 SUCCESS, GHCR Job 122439731551 SKIPPED. `DESIGN.md` 부재이므로 Architecture/Decisions/Database/Requirements/Operation 및 B2-1~B2-3 Runbook 기준.
+- **신규 구현:** [B2-4 Runbook](src/deploy/g7-s3/S3-4-B2-4.md) 필수 참조. `inspectS34B24DisposableReplay`는 이미 제공된 합성 `source/candidate/rollback` SQLite·Local CAD·S3 Export/Marker Buffers와 불변 `SNAP-*`/`E-*` 클레임만 사용. B2-1 `inspectS34B2OfflinePair`로 App/Migrator/rollbackApp/rollbackMigrator 4개 OCI Digest·Label/Role **로컬** 정합성 검사(Registry/실 rollback 호환 인증 불가), B2-3 `assessS34B23DisposableMigration`로 7 Auth 후보 CAD/Current/Version/FK/Audit 불변식 확인. 동일 Snapshot/Epoch/Marker/S3 Version claims, Local/S3 원본·Candidate·Rollback 객체의 **실제 바이트 동등**, Rollback SQLite 원본과 **바이트 완전 일치** 검사.
+- **안전 경계:** 결과 양성도 `DISPOSABLE_REPLAY_MATCH_NOT_SITE_PROOF`뿐이며 `registryVerified/provenanceVerified/rollbackCompatible/writerQuiescenceVerified/sourceSnapshotVerified/sameSnapshotRestored/restoreExecuted/rollbackExecuted/operationalGo/runtimeActivated=false`. 입력 바이트 비교이지 실제 Restore/Rollback 실행 아님; RTO/RPO·운영 원본/OCI 인증·독립 Writer Zero 증거 없음. 합성 SQL Failure/Version·Current/FK/Audit 손상, Marker/SNAP mismatch, rollback DB·CAD/S3 손상·OCI mismatched pair를 BLOCKED 처리.
+- **금지:** 실제 DB/CAD/S3/Writer 정지·온라인 Backup/원본 OCI image 실행·운영 Prisma Migration·Auth/CAD Write·GHCR/Compose/Nginx/배포·Owner Go 전부 미실행. 새로운 PR만 열고 PR CI 시작, 결과는 모니터링하지 않음. #142/#109/#96 OPEN/BLOCKED, 현장 B2-2B/B2-4 여전히 BLOCKED. 활성 Prisma SQL/서비스/런타임/배포 수정 금지; 정확 15 path allowlist와 no-GHCR title만 허용.
+
 ## #82 PR #111 — 반응형 모바일 Modal Drawer/메뉴 E2E race (2026-10-28 KST)
 
 - [PR CI #40583276569](https://github.com/planner77/layoutManager/actions/runs/40583276569), attempt 1, HEAD `53b6909caaad4721c9050a6d26ec1da940176b05`: Verify [Job 122468046935](https://github.com/planner77/layoutManager/actions/runs/40583276569/job/122468046935) Chromium E2E 92건 중 **91 PASS/1 FAIL**, Legacy Migration E2E SKIPPED, Typecheck/Lint/Unit·Integration/OCI/DXF benchmark/Build SUCCESS. Docker/Migration/Runtime Smoke [Job 122468046482](https://github.com/planner77/layoutManager/actions/runs/40583276569/job/122468046482) SUCCESS. [Trace Artifact #12770224877](https://github.com/planner77/layoutManager/actions/runs/40583276569/artifacts/12770224877).
@@ -762,6 +777,7 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 | [S3-4-B2-2 Runbook](src/deploy/g7-s3/S3-4-B2-2.md) | #142 단일 Snapshot writer barrier 주장 패킷의 순수 시간·Source Epoch·Version/Current·Local CAD/버전 S3 인벤토리 검사와 실제 현장 증거/신뢰 한계 | B2-2A~B2-5 기획·구현·리뷰/테스트, 현장 freeze·온라인 백업·복구/승인 판단 전 반드시 참조 |
 | [S3-4-B2-2B Runbook](src/deploy/g7-s3/S3-4-B2-2B.md) | #142 합성 격리 SQLite/CAD/S3 Buffer byte·FK·Version/Current·SNAP/Source 한계 및 현장 승인 게이트 | B2-2B 코드·리뷰/테스트, 실제 현장 Writer/Backup/Restore 승인 설계와 S3-4-C/Owner GO 전 반드시 참조 |
 | [S3-4-B2-3 Runbook](src/deploy/g7-s3/S3-4-B2-3.md) | #142 기존 CAD 6+격리 Auth 후보 1개의 일회용 Prisma History/합성 CAD 보존·Audit append-only 장애주입 검증, 실 Source 한계 | S3-4-B2-3 구현/테스트/리뷰, 실제 Site Clone/Restore 및 B2-4/B2-5 Owner 승인 검토 시 필수 참조 |
+| [S3-4-B2-4 Runbook](src/deploy/g7-s3/S3-4-B2-4.md) | #142 합성 동일 SNAP의 Source→G7 후보→Rollback SQLite/Local CAD/S3 Export Byte, 4 OCI Role 로컬 계약, 장애 주입·실 복원 NO-GO | B2-4 구현/테스트·B2-5 현장 증거 인수·Owner 실제 Restoring 승인 검토 시 필수 참조 |
 | [Issue31](out/Issue31.md) | DXF 다중 선택·볼록/정밀 외곽선·실험 상태·P4 권한 보류 | Viewer 선택·외곽선/Worker/JSON 변경 시 |
 | [Issue26](out/Issue26.md) | DXF TEXT/MTEXT 색인·world 좌표 focus·검색 범위/검증 | Viewer 검색·Pan/Zoom·Worker·BLOCK/INSERT·DWG 텍스트 지원 검토 시 |
 | [Issue66](out/Issue66.md) | Migrator 최소 의존성·크기 측정/OCI manifest·복구 계약 | Docker migrator/CI/GHCR 및 버전·패키징 변경 시 |
