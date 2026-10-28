@@ -154,7 +154,7 @@ describe('#154 S3-5-R0 local signed release-specific Owner decision, never opera
       const signature=s35OwnerDecisionSigningBytes(changed);
       if(signature){
         const reSigned=f.signed(changed);
-        expect(judge(reSigned,f.trusted,altered).state).toBe('BLOCKED');
+        expect(judge(reSigned,f.trusted,f.release).state).toBe('BLOCKED');
       }else expect(judge(changed,f.trusted,f.release).state).toBe('BLOCKED');
     }
   });
