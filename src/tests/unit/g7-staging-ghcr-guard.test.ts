@@ -692,3 +692,41 @@ describe('#142 B2-5 disposable private evidence GHCR exclusion',()=>{
     expect(tagged.values).toContain('publish=true');
   });
 });
+
+describe('#142/#67 Docker layer compressed TAR audit exact no-GHCR gate', () => {
+  const exact = '#142 | #67 Docker layer archive compatibility [CI-142-LAYER-NO-GHCR]';
+  const allowed = [
+    '.github/workflows/docker-publish.yml', 'AGENTS.md',
+    'out/FailureLedger.md', 'out/TestPlan.md', 'out/TestReport.md',
+    'src/scripts/audit_standalone_layers.py',
+    'src/scripts/test_audit_standalone_layers.py',
+    'src/tests/unit/g7-staging-ghcr-guard.test.ts',
+  ];
+  test('exact title and exactly eight CI-only paths skip GHCR', () => {
+    const result = runScope(allowed, exact);
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.values).toContain('publish=false');
+  });
+  test('runtime, active Prisma, Dockerfile, deployment and other workflow fail closed', () => {
+    for (const file of [
+      'src/Dockerfile', 'src/server/repositories/cad.ts',
+      'src/prisma/migrations/20261028_unauthorized/migration.sql',
+      '.github/workflows/pr-ci.yml', 'src/scripts/measure-images.sh',
+    ]) {
+      const result = runScope([allowed[5], file], exact);
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toContain('CI-142-LAYER GHCR exclusion disallowed path: ' + file);
+    }
+  });
+  test('near-match squash subject rejected; release tag unaffected', () => {
+    for (const subject of [exact + ' ', exact + '-other', '#142 | #67 Docker layer unsafe']) {
+      const r = runScope([allowed[5]], subject);
+      expect(r.status).not.toBe(0);
+      expect(r.stderr).toContain('CI-142-LAYER exact squash subject required');
+    }
+    const tagged = runScope([allowed[5]], exact, 'refs/tags/v0.99.1');
+    expect(tagged.status).toBe(0);
+    expect(tagged.values).toContain('publish=true');
+  });
+});
+

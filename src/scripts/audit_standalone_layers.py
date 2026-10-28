@@ -26,7 +26,9 @@ def inventory(archive):
             stream = docker.extractfile(layer_name)
             if stream is None:
                 raise ValueError("Layer missing: " + layer_name)
-            with tarfile.open(fileobj=stream, mode="r|") as layer:
+            # Docker 29/containerd exports may supply compressed inner layers.
+            # Preserve full SHA/duplicate audit; reject unsupported or corrupt TAR.
+            with tarfile.open(fileobj=stream, mode="r|*") as layer:
                 for item in layer:
                     name = item.name
                     while name.startswith("./"):

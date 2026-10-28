@@ -1,11 +1,27 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## #142 B2-5 — 최신 Main(#150) 정렬 및 Owner Managed QA 경로 검증 (2026-10-28)
+
+- TC-B2-5-CI-01: PR #150 Main `dec723ca6512488d7d45148762fbe1e6395790a6`, Main CI [40631046297](https://github.com/planner77/layoutManager/actions/runs/40631046297)의 release-scope SUCCESS/GHCR Job SKIPPED를 선행 증거로 확인. #67 압축 TAR 패치와 B2-5 신규 검증기를 함께 보존하되 어느 한쪽의 CI 성공을 신규 HEAD 성공으로 전가하지 않음.
+- TC-B2-5-CI-02: GHCR exact title `#142 | S3-4-B2-5 Disposable private evidence reconciliation [G7-S3-4B2-5-NO-GHCR]`/15-file allowlist 및 별도 #67 CI exact title/8-file allowlist를 모두 통과, 제목 근접·운영 Prisma/Dockerfile/타 workflow/런타임 파일 변경은 fail-closed 거부. 기존 B2-4 미게시 테스트도 유지.
+- TC-B2-5-CI-03: Owner Managed QA 경로 승인(자동 Codex quota 실패=승인 아님), 불변식 17 check/EV·QA·SNAP/OCI 4 digest의 합성 양성·오류·결함 주입, Typecheck/Lint/Unit/Integration/Build/E2E/Docker/Migration/Smoke 및 최신 HEAD 변경 파일/충돌/Review thread 검증. 새 PR CI 성공은 실제 결과 확인 전 NOT VERIFIED.
+- TC-B2-5-CI-04: 사내 실 Writer/SQLite/CAD/S3/OCI 원본·7 Migration/실 복구·Rollback·RTO/RPO/독립 QA·Owner GO·Auth/CAD Write는 별도 운영 승인 전 NOT RUN. #142/#109/#96 OPEN/BLOCKED.
+
 ## #142 TC-B2-5 — 합성 EV/QA/SNAP 교차대조 및 GHCR fail-closed (2026-10-28)
 
 - 양성 Fixture: 17 S3-4-A 체크 PASS+EV/QA/SNAP, 네 OCI immutable digest/Source/Schema, UTC 순서가 모두 일치해도 실제 증명·GO 플래그는 false. Check 배열의 순서만 바꾼 경우 정확 name 기반 통과.
 - 음성 Fixture: 검증 항목 누락/중복/미승인 Key, EV 재사용/교환, QA/SNAP/Source/Schema/OCI digest 불일치, ISO 날짜 무효·역행, readiness PASS 위조, FAIL/CANCELLED, NOT_RUN, 비밀·원본 CAD/S3 경로 포함. Result reasons는 상수 코드만 출력.
 - GHCR Guard: 정확 B2-5 Squash Title+15-file allowlist만 Main publish=false, 운영 SQL/App/Deploy/Compose/Nginx/다른 workflow 및 유사 Title은 fail-closed, version tag는 정상 정책. Typecheck/Lint/Unit/Build/E2E/Docker/Smoke 최신 PR HEAD 검증 필요; 결과 관측 전 NOT VERIFIED.
 - 운영 현장 검증은 이 테스트가 대신할 수 없으며 Owner 별도 승인 전 NOT RUN.
+
+## TC-CI67-D29 — Docker 29 image-layer TAR 자동압축 지원과 fail-closed 회귀 (2026-10-28)
+
+- 배경: Issue #142 PR #149 Run #40613450861 attempts 1/2/3 Docker layer audit는 Python `r|`(비압축 전용)의 `tarfile.ReadError: invalid header`에서 중단. 실제 압축 포맷은 현장 레이어 Header 미확보로 미확정; Python 3.14 `r|*`의 지원 압축 자동 검출을 적용.
+- TC-CI67-D29-01: 기존 RAW Nested TAR baseline 중복 2회/Optimized 1회에서 동일 Node.js native `.node` 및 JS Package SHA/중복 byte/레이어 수를 정상 집계; 기존 시험 그대로 유지.
+- TC-CI67-D29-02: gzip·bz2·xz Nested TAR를 `layer.tar`라는 이름으로 docker-save outer TAR에 구성; 중복/최종 SHA가 불변이고 optimized 중복 0을 입증. Python 3.14 `compression.zstd` 가용 Runner에서는 zstd도 동일 Member 인벤토리 검사.
+- TC-CI67-D29-03: 손상된 비압축 TAR와 gzip에 담긴 무효 TAR를 각각 ReadError/TarError로 거부, 빈/누락 Native·원본/최적화 SHA 불일치·중복 재도입·transition size 미절감은 기존대로 실패 처리. 절대 Skip/Audit Success 강제/Assertion 약화 금지.
+- TC-CI67-D29-04: 별도 `#142 | #67 Docker layer archive compatibility [CI-142-LAYER-NO-GHCR]` 정확 Squash와 지정 8 파일만 GHCR Skip. 운영 SQL/API/Dockerfile/Compose/타 Workflow/타 Script/유사 제목 차단, tag 발행은 일반 정책 유지.
+- TC-CI67-D29-05: 새 CI에 `python3 -m py_compile`, Python 단위, PR Typecheck/Lint/Unit/E2E, Docker build/Layer audit/Migrator/Smoke 및 GHCR Guard unit 모두 요구. 최초 Run 시작과 SUCCESS를 구분; Code/Runner 환경 오류 원인 분리, 실 Registry/현장 Writer/DB/CAD/S3/Restore/GO 금지. 지원 PR 병합 전 기존 B2-5 PR #149는 계속 미검증.
 
 ## #142 B2-4 — 동일 SNAP 합성 Restore/Rollback Replay 및 Failure Injection (2026-10-28)
 
