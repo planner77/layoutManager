@@ -785,6 +785,7 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 | [S3-4-B2-2B Runbook](src/deploy/g7-s3/S3-4-B2-2B.md) | #142 합성 격리 SQLite/CAD/S3 Buffer byte·FK·Version/Current·SNAP/Source 한계 및 현장 승인 게이트 | B2-2B 코드·리뷰/테스트, 실제 현장 Writer/Backup/Restore 승인 설계와 S3-4-C/Owner GO 전 반드시 참조 |
 | [S3-4-B2-3 Runbook](src/deploy/g7-s3/S3-4-B2-3.md) | #142 기존 CAD 6+격리 Auth 후보 1개의 일회용 Prisma History/합성 CAD 보존·Audit append-only 장애주입 검증, 실 Source 한계 | S3-4-B2-3 구현/테스트/리뷰, 실제 Site Clone/Restore 및 B2-4/B2-5 Owner 승인 검토 시 필수 참조 |
 | [S3-4-B2-4 Runbook](src/deploy/g7-s3/S3-4-B2-4.md) | #142 합성 동일 SNAP의 Source→G7 후보→Rollback SQLite/Local CAD/S3 Export Byte, 4 OCI Role 로컬 계약, 장애 주입·실 복원 NO-GO | B2-4 구현/테스트·B2-5 현장 증거 인수·Owner 실제 Restoring 승인 검토 시 필수 참조 |
+| [S3-4-B2-5 Runbook](src/deploy/g7-s3/S3-4-B2-5.md) | #142 합성 readiness/EV·QA·SNAP 17항목/OCI 4 Role·Source Epoch·CR ID 참조 대조, 실 현장 증명 불가·Owner NO-GO | B2-5 구현·리뷰·Unit/CI, 사내 QA/Source Snapshot 증거 검토 및 S3-4-C/S3-5 승인 판단 전 반드시 참조 |
 | [Issue31](out/Issue31.md) | DXF 다중 선택·볼록/정밀 외곽선·실험 상태·P4 권한 보류 | Viewer 선택·외곽선/Worker/JSON 변경 시 |
 | [Issue26](out/Issue26.md) | DXF TEXT/MTEXT 색인·world 좌표 focus·검색 범위/검증 | Viewer 검색·Pan/Zoom·Worker·BLOCK/INSERT·DWG 텍스트 지원 검토 시 |
 | [Issue66](out/Issue66.md) | Migrator 최소 의존성·크기 측정/OCI manifest·복구 계약 | Docker migrator/CI/GHCR 및 버전·패키징 변경 시 |

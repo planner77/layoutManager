@@ -2,6 +2,8 @@
 
 ## #142 / PR #149 첫 CI Docker TAR layer audit 실패와 교정 분리 (2026-10-28 KST)
 
+- **첫 Run 최종 상태:** #40612247712는 후속 HEAD push 후 completed/**CANCELLED**. Verify Job 122566350524는 Typecheck/Lint/Unit·Integration/Production Build SUCCESS였으나 Chromium E2E CANCELLED(성공 아님). Docker Job 122566350868은 #67 layer inventory에서 독립 실패. 정확한 Run/Job/HEAD와 다음 CI를 분리해 추적.
+
 - 관측: HEAD 12eac574b5e940dbaaea53e292c463b6e191283e, PR CI #40612247712 attempt 1의 Docker Job 122566350868에서 기존 Issue #67 단계 Verify web layer SHA, native and transition-only size saving 실패. src/scripts/audit_standalone_layers.py:29 nested docker-save layer tarfile.open(fileobj=stream,mode=r|) 중 Python 3.14 tarfile.ReadError: invalid header, exit 1. Docker baseline/phase1 Build 자체의 명시적 실패 및 B2-5 TypeScript 오류로 추정하거나 기존 성공으로 덮지 않는다. Verify Job 122566350524 별도 실행 중이며 최종 결과 관측 전 미확인.
 - 범위: B2-5는 pure supplied-evidence packet 코드·Unit·Runbook·문서 15-path 예외만 허용, Issue #67 기존 운영 Docker layer 검사 스크립트, Dockerfile, PR CI Workflow 수정 금지. 기존 B2-4 PR #147 Verify+Docker SUCCESS와 달리 이번 runner에서 Docker 저장 Layer TAR가 읽히지 않은 원인은 현재 단일 실행만으로 일시적 아카이브 문제인지 이미지/runner 포맷 변화인지 확정할 수 없음.
 - 대응: B2-5 합성 Packet의 Source Epoch·Change Request 참조를 Binding/각 PASS reviewer ledger에 추가해 잘못된 Epoch/Change ID도 BLOCKED 처리하고 신규 HEAD PR CI를 별도 재시작. 기존 실패 Run/Job/attempt/HEAD 보존. 새 동일 오류 재발 시 기존 Issue #67 감사 스크립트/runner Docker 저장 포맷을 선행 독립 이슈로 조사해야 하며 실패 단정을 완화하거나 경로 가드를 우회하지 않는다.
