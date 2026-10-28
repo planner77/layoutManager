@@ -17,6 +17,9 @@ const knownErrors: Record<string, string> = {
   INVALID_UPLOAD: '파일 또는 입력 항목을 확인해주세요.', FILE_TOO_LARGE: '업로드 제한 크기를 초과했습니다.',
   EMPTY_FILE: '내용이 있는 파일을 선택해주세요.', UNSUPPORTED_FILE: 'DXF 또는 DWG 파일만 등록할 수 있습니다.',
   INVALID_METADATA: '도면 위치, 등록일, 이름 또는 설명을 확인해주세요.', STORAGE_UNAVAILABLE: '도면 저장소를 사용할 수 없습니다.',
+  UNAUTHENTICATED: '로그인이 필요하거나 세션이 만료되었습니다. 계정 / 로그인에서 다시 로그인하세요.',
+  ACCESS_DENIED: '도면 변경에 필요한 역할 또는 담당 사업장 권한이 없습니다.',
+  G7_RUNTIME_WRITE_DISABLED: '현재 도면 변경 기능이 비활성화되어 있습니다.',
   SERVER_ERROR: '서버가 업로드 요청을 처리하지 못했습니다.',
 };
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;

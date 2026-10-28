@@ -1,5 +1,11 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #153 — G7 운영 통합 구현 (2026-10-29)
+
+최신 Owner Managed 정책으로 실제 Auth/Admin UI·API, CAD 권한/Audit 및 별도 Runtime Gate를 통합한다. 기존 R0/preflight의 `runtimeActivated=false` 계약과 격리 Preview는 유지한다. 운영 기능은 기본 OFF이며 환경변수만으로 활성화할 수 없다. Runtime 신뢰 파일·Owner 서명·릴리스·Site Scope·실제 7-Migration Schema가 일치해야 한다. 기술적 권한·무결성·복구 실패를 승인 완화로 우회하지 않는다.
+
+#153 구현·검증 또는 운영 전환 계획 시 [운영 절차](out/Operation.md)의 #153 절과 [격리 실행 Runbook](src/deploy/g7-runtime/README.md)을 읽는다. 실제 운영 DB/CAD/S3·Writer·Compose/Nginx/.env·Auth/CAD Write 활성화·GHCR/Tag·병합·배포는 이번 구현 범위 밖이다. 과거의 별도 인간/반복 승인 절차는 이번 Owner Managed 구현에 강제하지 않는다. 기존 기록은 역사적 실행 범위로 보존한다.
+
 ## Issue #154 S3-5-R0 — Owner Managed 현장 수용 보고 → 릴리스별 GO/NO-GO 오프라인 사전검증 (2026-10-28 KST)
 
 - **보고된 선행 상태:** 사용자가 S3-4-B2/C의 현장 수용 완료를 명시. [#142](https://github.com/planner77/layoutManager/issues/142#issuecomment-6462863976)/[#151](https://github.com/planner77/layoutManager/issues/151#issuecomment-6462865418)의 **OWNER_ATTESTED_FIELD_ACCEPTANCE_COMPLETE**를 인정하되 외부 원본 열람·독립 재검증은 `NOT_EXTERNALLY_VERIFIED`. 사내 OCI/DB/CAD/S3 실 증거·키·Hash/서명·EV/QA/SNAP/CR/실 경로·운영자 상세는 GitHub/CI/채팅으로 반출하지 않는다.
@@ -795,6 +801,7 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 | [TestPlan](out/TestPlan.md) | Unit, Acceptance Criteria, Test Case | 구현 Unit 시작 전 |
 | [TestReport](out/TestReport.md) | 실제 테스트 및 Viewer 평가 | Unit 완료 및 Release 전 |
 | [Operation](out/Operation.md) | 설정·Build·실행·장애 대응 | 환경 또는 실행 방법 변경 시 |
+| [G7 Runtime Runbook](src/deploy/g7-runtime/README.md) | 서명된 운영 Gate, 격리·승인 Migration, 동일 Snapshot Restore와 HOLD 복구 | Runtime/Auth/CAD 권한 연결, Migration·Restore·Rollback 구현·시험·운영 전환 검토 시 |
 | [Decisions](out/Decisions.md) | 주요 판단, 승인 상태, Trade-off | 중요한 선택 또는 기존 결정 변경 시 |
 | [ChangeLog](out/ChangeLog.md) | 버전별 변경사항 | Version 변경 또는 Release 시 |
 | [Issue8](out/Issue8.md) | GitHub #8 요구사항·구현·CI 수용 근거 | Issue #8 변경 추적 또는 유사 목록 필터 변경 시 |

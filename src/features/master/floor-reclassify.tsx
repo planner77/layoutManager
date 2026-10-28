@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { runtimeCadHeaders } from "@/features/g7-runtime/client";
 import { Button } from "@/components/ui/button";
 import { useGlobalLoading } from "@/components/global-loading";
 type Building = { id: string; name: string };
@@ -63,7 +64,7 @@ export function FloorReclassify({ locationId }: { locationId: string }) {
         `/api/cad-locations/${locationId}/reclassify`,
         {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
+          headers: await runtimeCadHeaders({ "Content-Type": "application/json" }),
           body: JSON.stringify({ buildingId: ids.building }),
         },
       );

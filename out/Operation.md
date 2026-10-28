@@ -1,5 +1,31 @@
 # 운영·환경설정 초안
 
+## #153 — 실제 Runtime 운영 연결 및 별도 전환 절차 (2026-10-29)
+
+후보 버전은 0.44.0이다. `/g7-runtime`의 로그인·계정/권한/세션 회수·감사 화면과 `/api/g7-runtime/**`를 기존 G2/G3/G4 서비스에 연결한다. 기존 Preview/Staging 경로는 비운영 상태로 분리하며 그 쿠키로 운영 권한을 얻을 수 없다. 현재 작업에서는 실제 운영 설정/데이터/이미지를 변경하지 않는다.
+
+### Runtime 신뢰 구성
+
+기본 `G7_AUTH_ENABLED`와 `G7_CAD_WRITE_CUTOVER_ENABLED`는 OFF다. 단순 true는 활성화 근거가 아니다. 현장 Owner가 실제 고정 App/Migrator 및 rollback pair·Source/Schema/Capability·백업/복구를 확인하고, 앱 UID 소유 private 디렉터리(0700)에 별도 Trust/승인 JSON 두 개(0600, regular single-link, symlink/FIFO 불허)를 배치해야 한다. 정확 형식은 `runtime-gate.ts`의 `G7RuntimeTrust`/`G7RuntimeApproval`, 서명 바이트는 `g7RuntimeApprovalSigningBytes`를 따른다. 키는 승인 Packet에서 신뢰하지 않으며, 독립 Trust의 Owner Ed25519 키로만 검사한다. 실제 키·서명·경로·Digest·현장 증거는 외부에 제출하지 않는다.
+
+- `G7_RUNTIME_TRUST_PATH`, `G7_RUNTIME_APPROVAL_PATH`: 독립 로컬 Trust와 서명된 승인. Release 4 digest·source/rollback source·버전·Schema, 공개 origin·DB/CAD 경로·정렬된 Site 목록을 정확히 바인딩한다.
+- `G7_RELEASE_CAPABILITY`, `G7_RELEASE_SCHEMA_ID`, `G7_RELEASE_SOURCE_COMMIT`, `G7_RELEASE_VERSION`, `G7_RELEASE_APP_DIGEST`, `G7_RELEASE_MIGRATOR_DIGEST`: 설치 버전 및 별도 검증 Release와 일치해야 한다. 이 값의 자기기입은 OCI 출처 증명이 아니다. 현재 코드가 실제 실행 중인 OCI digest를 독립 조회하는 기능은 없다.
+- 서명 Scope는 `AUTH`와 선택적 `CAD_WRITE`, 별도 operator `MIGRATION`이다. 승인 UTC는 밀리초 ISO, 발급 시각부터 최대 24시간이며 종료 시각은 미포함이다. 승인 취소/만료/위조/릴리스·Schema·경로·Site 불일치는 BLOCKED다.
+- HTTPS Cookie는 HttpOnly/SameSite/Path=/ 및 Secure, 내부 HTTP는 별도 `G7_RUNTIME_ALLOW_HTTP=true`와 승인된 HTTP origin이 필요하다. 프록시 Host는 정확한 승인 공개 authority여야 하며 내부 Next bind URL과 동일할 필요는 없다. 사용자/역할/Forwarded 헤더는 권한 근거가 아니다.
+- `G7_RUNTIME_RECOVERY_MODE=true` 또는 DB 옆 `g7-runtime-hold.json`은 쓰기를 차단한다. 장애 복구 시 권한 설정을 지워 익명 쓰기로 되돌리지 않고 HOLD를 유지한다. HOLD 삭제는 복원/정합성 검사 성공 후 해당 도구가 처리하며 임의 삭제로 우회하지 않는다.
+
+### 계정과 CAD 업무
+
+최초 관리자는 앱 시작/HTTP에서 자동 생성하지 않는다. 승인된 7-Migration DB에서 기존 G2 Secret-file 정책과 ADMIN_BOOTSTRAP_* 또는 ADMIN_RECOVERY_* 설정을 별도 단발 operator 환경에 주입하고 `node --import tsx scripts/g7-runtime-admin.ts --ack-runtime-admin`를 명시 실행한다. Migrator 이미지에 이 CLI를 포함하되 기본 CMD는 여전히 기존 CAD 6개만 적용한다. 최초 로그인 전에 초기 비밀번호를 변경하고, Admin도 담당 Site를 명시 부여받아야 CAD를 변경한다. Secret/nonce는 출력하지 않는다. 계정 비활성화·Session 회수 및 권한 회수는 즉시 서버 DB에서 반영한다. 현재 Schema에 계정 재활성화 action이 없으므로 enable API는 제공하지 않는다.
+
+CAD 등록/Current는 Editor/Admin+담당 Site+Runtime Write Scope, DELETE는 이에 기존 삭제 비밀번호도 요구한다. 기준정보 변경과 층 재분류도 Admin 및 영향받는 모든 Site를 검증한다. 새 Site 생성은 서명 Scope 확장 없이 허용하지 않으며 사전 구성·Scope 갱신이 필요하다. 익명 CAD GET/Viewer/원본 다운로드는 유지한다. 업무 변경과 Audit가 함께 commit되고 실패/거부도 민감정보 없이 기록한다. Audit는 append-only·365일 보존하며 물리 purge는 별도 SOP 이전 계속 비노출이다.
+
+### Migration·Restore 및 실제 전환 선행조건
+
+[격리/승인 실행 Runbook](../src/deploy/g7-runtime/README.md)은 실제 실행 코드의 명령·ACK·대상 검증·Snapshot/HOLD와 복구를 설명한다. 기존 자동 운영 이력은 6개로 유지하며 별도 signed MIGRATION Scope의 guarded entrypoint만 정확한 7번째 SQL을 적용할 수 있다. 이번 개발 검증은 합성 임시 Clone에서만 실행한다. Runtime은 이력/checksum/전체 Schema/FK/승인 Site를 확인한 후 7개가 완전할 때만 열린다.
+
+실제 운영 전환에는 검증된 immutable App/Migrator+rollback pair, 실제 동일 SQLite/Local CAD/versioned S3 Snapshot 및 복원 리허설, 운영 Writer 차단·권한/복구 책임자와 현장 수용이 필요하다. 현재 시험은 로컬 S3-export 바이트를 사용하며 실제 Registry 출처·원격 S3 Version 복원·이전 OCI 이미지 쌍 실행·현장 LAN 수용은 대체하지 않는다. 정식 GHCR/Tag·Compose/Nginx/.env·운영 Migration/활성화·병합·서비스 전환은 이번 작업에서 하지 않는다.
+
 ## #154 S3-5-R0 — Owner Managed 현장 수용 완료 보고 이후 릴리스별 GO 사전검증 (2026-10-28)
 
 - **현장 상태 보고:** Owner는 B2/C 수용 완료를 보고. 외부 원본 검증 불가이므로 공식 공개 기록은 `OWNER_ATTESTED_FIELD_ACCEPTANCE_COMPLETE`/외부 `NOT_EXTERNALLY_VERIFIED`만. 사이트 원본·서명·OCI/DB/CAD/S3 바이트·Hash/EV/QA/SNAP·Trust Keys/실 내부 경로·신원은 GitHub/CI/Chat 반출 금지.

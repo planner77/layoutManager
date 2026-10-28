@@ -1,5 +1,16 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## TC-G7-153 — 운영 통합 회귀 계획 (2026-10-29)
+
+1. AUTH: 실제 Runtime Route 로그인/초기 변경/로그아웃/Session 조회, 만료·회수·비활성화·실패 제한, Cookie·Origin/CSRF·위조 사용자/역할 Header, 공개 Host/내부 bind 주소 분리.
+2. RBAC: Reader/Editor/Admin, 명시 Site·교차 Version, Grant/회수 즉시 반영, 기준정보/재분류를 통한 권한 우회 차단, 관리자 초기/복구 CLI.
+3. CAD/Audit: 익명 GET 및 기존 Multipart 등록/Current/DELETE 암호·원본 SHA 보존, Session을 거래 시각에 검사, 변경+Audit 실패 원자 rollback와 안전한 거부 감사.
+4. GATE: 기본 OFF/정상 Auth-only/Write Scope, 단순 true 거부, 서명·독립 Trust·릴리스/Schema·4 digest·Site·만료·복구 HOLD·Preview 충돌 및 손상 Schema 거부.
+5. MIGRATION: 임시 0700/0600 Clone의 실제 6→7 적용·재실행·실패/부분 적용 HOLD, Local CAD/versioned S3-export 동일 Snapshot 전체 복원, FK/Version/Current/SHA/Audit 및 구 6-Migration 호환성.
+6. REGRESSION: Typecheck/Lint/전체 Unit·Integration/Production Build, 주요 Viewer·업무 E2E·Legacy Migration, Docker 빌드/native SQLite/DB·CAD persistence 검증. 실제 OCI 이전 이미지와 실제 Site S3·LAN 수용은 별도 NOT TESTED.
+
+기존 핵심 Assertion/실패 기록을 보존한다. 최신 HEAD PR CI는 시작 사실만 기록하며 결과를 관측하지 않았으면 SUCCESS로 표시하지 않는다.
+
 ## TC-S35-R0 — #154 Owner 릴리스별 GO/NO_GO 오프라인 사전검증 (2026-10-28)
 
 - TC-R0-01: 합성 17개 C0 Receipt+SHA·Owner/QA Ed25519 서명, 올바른 Site Trusted Release/Scope, 릴리스별 Owner 서명·Source/Schema/4 Digest/SNAP/Epoch/CR/Version, Owner ID·Operator ≠ Rollback Operator 및 승인시간/24h 이내 유효기간 일치 시 `LOCAL_RELEASE_DECISION_CONSISTENT_NOT_ACTIVATED`; 실제 실 운영 모든 불변 플래그 false.

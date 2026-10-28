@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { runtimeCadHeaders } from "@/features/g7-runtime/client";
 import { Button } from "@/components/ui/button";
 import { useGlobalLoading } from "@/components/global-loading";
 type Node = {
@@ -99,7 +100,7 @@ export function MasterManager() {
       if (index === 2) body.kind = form.get("kind") ?? undefined;
       const r = await fetch("/api/masters", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: await runtimeCadHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify(body),
       });
       if (!r.ok) throw new Error(await responseError(r));
@@ -116,7 +117,7 @@ export function MasterManager() {
       await mutate("기준정보를 변경하는 중입니다...", async () => {
         const r = await fetch(`/api/masters/${levels[index].type}/${node.id}`, {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          headers: await runtimeCadHeaders({ "Content-Type": "application/json" }),
           body: JSON.stringify(data),
         });
         if (!r.ok) throw new Error(await responseError(r));
@@ -132,6 +133,7 @@ export function MasterManager() {
     await mutate("기준정보를 삭제하는 중입니다...", async () => {
       const r = await fetch(`/api/masters/${levels[index].type}/${node.id}`, {
         method: "DELETE",
+        headers: await runtimeCadHeaders(),
       });
       if (!r.ok) throw new Error(await responseError(r));
       setSelected((s) => s.map((id) => (id === node.id ? "" : id)));

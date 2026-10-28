@@ -1,5 +1,11 @@
 # Database Schema — 단일 기준 문서
 
+## #153 — Runtime Schema 수용 경계 (2026-10-29)
+
+기존 활성 CAD Migration 6개와 격리 `202610260002_g7_operational_auth` 7번째 SQL을 재사용하며 신규 Table/Column이나 활성 이력의 자동 승격은 없다. Runtime은 정확한 완료 이력·SQL 체크섬·전체 Schema fingerprint·8개 Auth Table·FK·append-only trigger와 승인 Site 존재를 검증한 DB만 연다. 부분 적용·이력/Schema drift는 기능 활성화를 차단한다.
+
+CAD 거래와 Audit는 동일 Prisma transaction, 계정/Grant 변경과 Audit는 기존 G4 SQLite transaction을 사용한다. 365일 보존 방향을 유지하며 자동 삭제 API는 노출하지 않는다. 이전 6개 Schema로의 복귀는 역방향 DDL 추측 적용 대신 같은 Snapshot의 DB+Local CAD+versioned S3-export 전체 복원으로 시험한다. 실제 운영 DB에는 적용하지 않는다.
+
 ## #154 S3-5-R0 — DB/Schema/운영 원본 불변 (2026-10-28)
 
 - Site Owner는 B2/C 수용 완료를 보고했으나 DB/원본 서명·현장 위치/OCI Digest·private SNAP은 반출 불가, GitHub에는 `OWNER_ATTESTED_FIELD_ACCEPTANCE_COMPLETE`만 기록. PR Unit 합성 fixture는 실 현장 데이터가 아니다.

@@ -50,7 +50,7 @@ function readRestrictedPassword(file: string): string {
         typeof constants.O_NOFOLLOW !== 'number') {
       throw new Error('G2_SECRET_PLATFORM_UNSUPPORTED');
     }
-    fd = openSync(file, constants.O_RDONLY | constants.O_NOFOLLOW);
+    fd = openSync(file, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
     const stat = fstatSync(fd);
     if (!stat.isFile() || stat.size < 8 || stat.size > 1024 ||
         (stat.mode & 0o077) !== 0 || stat.uid !== process.getuid()) {
