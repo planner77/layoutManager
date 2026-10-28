@@ -1,5 +1,10 @@
 # Database Schema — 단일 기준 문서
 
+## #142 B2-5 — 실제 DB/Schema 변경 0건 (2026-10-28)
+
+- B2-5는 읽기 전용 합성 증거 참조 교차검증으로 SQL/Schema/Prisma Migration, 운영 CAD/DB/Current/Version/Local·S3 Bytes 변경 없음. S3-4-A 체크의 FK/Audit/Current/SHA/Restore 증거 ID·스냅샷 연결만 교차 대조하며 실제 DB/S3 원본은 읽지 않는다.
+- 운영 WAL-consistent SQLite 백업/Versioned S3/실 Restore와 Auth/CAD Write 활성화는 여전히 별도 승인 단계. Runbook: src/deploy/g7-s3/S3-4-B2-5.md.
+
 ## #142 B2-4 — 합성 SQLite 복원 바이트 기준 및 Auth Candidate 분리 (2026-10-28)
 
 - Source/rollback은 CAD 6 Migration baseline SQLite Buffer, candidate는 격리된 G7 Auth 7번째 SQL 적용 Buffer라는 합성 세 단계. Rollback SQLite는 `Buffer.equals(source.sqliteBytes)` **전체 바이트** 일치 필수. 로컬/S3-export 오브젝트 Buffer도 DB Version/Locator/S3 VersionId claim(신뢰되지 않음)별 Source·Candidate·Rollback 모두 바이트 일치, 누락·중복/변조 차단.

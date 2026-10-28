@@ -1,5 +1,10 @@
 # 주요 기술 결정과 승인 기록
 
+## #142 B2-5 — 증거 주장 정합성과 실제 출처 인증의 분리 (2026-10-28)
+
+- 결정: S3-4-B2-5는 합성 readiness/QA Packet의 정확한 17개 체크, 유일 EV ID, QA/SNAP/Source/Schema/OCI role digest·UTC 시간을 fail-closed로 대조할 뿐이다. 양성은 DISPOSABLE_EVIDENCE_RECONCILED_NOT_SITE_PROOF이며 authentic PASS/운영 GO가 아니다. 실패·취소는 BLOCKED, 명시 NOT_RUN은 PENDING.
+- 이유: 두 Packet은 동일하게 위조될 수 있으므로 독립 QA, Registry/Source 증빙이 없으면 실제 성공 판정 불가. 사내 Trust Binder S3-4-C 및 S3-5 Owner 승인과 엄격 분리한다. GHCR 정확 15-path 예외, #142/#109/#96 OPEN/BLOCKED 유지.
+
 ## ADR-052-G7-B2-4 — 합성 Byte Replay와 실제 Restore/Rollback 실행 분리 (2026-10-28)
 
 - **결정:** B2-2B 현장 Source 증거/Owner 승인이 없는 동안 B2-4는 네트워크·파일/DB 경로·OCI 실행 없는 supplied-buffer verifier로 제한한다. B2-1의 4가지 immutable OCI image-label/manifest local consistency, B2-3의 CAD+Auth 7th migration byte audit invariant checker를 재사용하고, Source→Candidate→Rollback 동일 SNAP/Epoch/S3 marker, Local/S3 exports 및 rollback SQLite의 byte-perfect 일치를 별도로 검사한다.

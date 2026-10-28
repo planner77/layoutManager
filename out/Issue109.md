@@ -1,5 +1,11 @@
 # Issue #109 — G7 운영 인증 활성화 설계 및 통제 배포·롤백 Runbook
 
+## #142 B2-4 Main CI 완료 및 B2-5 합성 증거 대조 구현 (2026-10-28)
+
+- #142 B2-4 PR #147 최신 HEAD a59d18b PR CI #40604028179 SUCCESS. Codex 최신 재리뷰는 사용량 한도 실패(코드 무결성 통과로 간주 금지), 사용자가 Owner Managed 리뷰 승인하여 기록. 정확 no-GHCR Squash Main 81fd00ba9a7463f0b1817d83ca78fe9cc31f5b4d; Main CI #40610619799 SUCCESS/release-scope SUCCESS/GHCR SKIPPED.
+- 다음 B2-5는 합성 readiness와 QA Ledger의 EV/QA/SNAP, 17 체크 상태, OCI 4개 Digest/Schema/Source 정합성만 비교. 일치 상태 DISPOSABLE_EVIDENCE_RECONCILED_NOT_SITE_PROOF는 실제 site source/QA/restore 증명 아님. 현장 B2-1~5, S3-4-C binder, S3-5 Owner GO 별도.
+- G7 운영 Auth/CAD Write, 실제 Writer/SQLite/CAD/S3/OCI, 활성 Prisma Migration/Compose/Nginx/GHCR 게시 전부 미실행. #142/#109/#96 OPEN/BLOCKED.
+
 ## #142 B2-4 — 합성 Snapshot Restore/Rollback 교차검증 준비, 운영 NO-GO (2026-10-28)
 
 - [B2-3 PR #146](https://github.com/planner77/layoutManager/pull/146) exact no-GHCR Squash Main `7b784c2d62c0872909361e3514d437247d7ab662`, Main CI #40575203195 SUCCESS/GHCR SKIPPED. 새 B2-4는 합성 Source→G7 Candidate→Rollback SQLite/Local CAD/S3-export 동등성 및 이전 App/Migrator pair 로컬 OCI Digest·Schema/Source 계약만 검증하는 순수 supplied-buffer replay. Restored/Rollback labels·신뢰되지 않은 S3 VersionId가 동일하더라도 **실 Restore/실 Rollback 실행 성공으로 증명하지 않음**.

@@ -1,5 +1,29 @@
 # PR/Main CI 실패 원장
 
+## #142 B2-5 PR #149 — #150 Main 성공 후 재정렬/Owner Managed QA (2026-10-28 KST)
+
+- **선행 수정 성공(실패를 성공으로 재해석하지 않음):** [PR #150](https://github.com/planner77/layoutManager/pull/150) HEAD `104efdc359675496601a522c8698b7b56aa5370d` [PR CI #40626414866](https://github.com/planner77/layoutManager/actions/runs/40626414866) Verify/Docker SUCCESS, Codex 최신 리뷰는 quota FAILED/NOT VERIFIED, 별도 Owner Managed 승인 근거로 정확 Squash Main `dec723ca6512488d7d45148762fbe1e6395790a6`. [Main CI #40631046297](https://github.com/planner77/layoutManager/actions/runs/40631046297) attempt 1 `completed/success`, Release Scope Job `122627234234` SUCCESS, GHCR Build and push Job `122627277997` SKIPPED. 실제 이미지/태그 게시 0.
+- **PR #149 실패 누적 보존:** 구 HEAD `915b1509a82ad1af6d723ed42cc8a3c733fc72b5`, [Run #40613450861](https://github.com/planner77/layoutManager/actions/runs/40613450861) attempts 1/2/3 모두 Docker #67 TAR `invalid header` FAILURE; Docker Jobs `122570517278`, `122601918388`, `122607804124`. Verify Jobs 각 SUCCESS, 미실행 후속 Docker migrator/Smoke는 SKIPPED. 이전 Run #40612247712·#40613005532는 CANCELLED. 본 원장 아래 기존 시점 기록은 그대로 보존한다.
+- **Main 정렬/충돌 해결:** PR #149 B2-5 계약 검증 소스·Runbook·Tests 및 정확 15-path/no-GHCR 제목 가드와 #150 CI Docker 감사 패치·정확 8-path 가드를 동시에 유지. AGENTS, FailureLedger, TestPlan, TestReport, GHCR workflow, guard Unit의 동일 위치 추가 구간을 내용 보존 방식으로 병합, 관련 나머지 9개 B2-5 파일은 그대로 유지. 새 HEAD CI 결과는 실제 관측 전 `NOT VERIFIED`.
+- **Owner Managed QA/Review:** 사용자 정책에 따라 PR #149의 QA Review는 Owner Managed 경로. 과거 Codex quota 실패를 승인으로 기록하지 않는다. 최신 HEAD의 정적 범위·합성 AC·리뷰 스레드·CI 및 최종 QA 수용 여부는 별도 근거로 기록해야 하며, 이 단계는 PR CI 시작까지만 허용. PR #149 미병합, Main CI/GHCR 미실행; #142/#109/#96 OPEN/BLOCKED 및 실 운영 Writer/DB/CAD/S3/OCI/Prisma/복구·Auth/GO NOT RUN.
+
+## #142 / PR #149 첫 CI Docker TAR layer audit 실패와 교정 분리 (2026-10-28 KST)
+
+- **첫 Run 최종 상태:** #40612247712는 후속 HEAD push 후 completed/**CANCELLED**. Verify Job 122566350524는 Typecheck/Lint/Unit·Integration/Production Build SUCCESS였으나 Chromium E2E CANCELLED(성공 아님). Docker Job 122566350868은 #67 layer inventory에서 독립 실패. 정확한 Run/Job/HEAD와 다음 CI를 분리해 추적.
+
+- 관측: HEAD 12eac574b5e940dbaaea53e292c463b6e191283e, PR CI #40612247712 attempt 1의 Docker Job 122566350868에서 기존 Issue #67 단계 Verify web layer SHA, native and transition-only size saving 실패. src/scripts/audit_standalone_layers.py:29 nested docker-save layer tarfile.open(fileobj=stream,mode=r|) 중 Python 3.14 tarfile.ReadError: invalid header, exit 1. Docker baseline/phase1 Build 자체의 명시적 실패 및 B2-5 TypeScript 오류로 추정하거나 기존 성공으로 덮지 않는다. Verify Job 122566350524 별도 실행 중이며 최종 결과 관측 전 미확인.
+- 범위: B2-5는 pure supplied-evidence packet 코드·Unit·Runbook·문서 15-path 예외만 허용, Issue #67 기존 운영 Docker layer 검사 스크립트, Dockerfile, PR CI Workflow 수정 금지. 기존 B2-4 PR #147 Verify+Docker SUCCESS와 달리 이번 runner에서 Docker 저장 Layer TAR가 읽히지 않은 원인은 현재 단일 실행만으로 일시적 아카이브 문제인지 이미지/runner 포맷 변화인지 확정할 수 없음.
+- 대응: B2-5 합성 Packet의 Source Epoch·Change Request 참조를 Binding/각 PASS reviewer ledger에 추가해 잘못된 Epoch/Change ID도 BLOCKED 처리하고 신규 HEAD PR CI를 별도 재시작. 기존 실패 Run/Job/attempt/HEAD 보존. 새 동일 오류 재발 시 기존 Issue #67 감사 스크립트/runner Docker 저장 포맷을 선행 독립 이슈로 조사해야 하며 실패 단정을 완화하거나 경로 가드를 우회하지 않는다.
+- 실 Registry/Writer/Snapshot/DB/CAD/S3/Migration/Restore/Rollback·GHCR/Owner GO는 여전히 NOT RUN. #142/#109/#96 OPEN/BLOCKED.
+
+## #142 B2-4 Owner Managed merge + B2-5 합성 증거 검증 착수 (2026-10-28 KST)
+
+- 선행 실패 보존: PR #147 HEAD 5d7055c8 CI #40579106887 Verify Job 122453396943의 TS2322(2건) 실패, Docker Job 성공과 나머지 테스트 SKIPPED를 삭제/성공으로 재해석하지 않는다. 수정 HEAD a59d18b10a103fe863752d460dff216b62b5fe43 PR CI #40604028179 attempt 1 Verify 및 Docker Job 모두 SUCCESS.
+- 리뷰 예외 정확 기록: 최신 HEAD Codex 리뷰는 사용량 한도 초과로 FAILED/NOT VERIFIED, P1/P2 통과라고 기록하지 않음. 사용자 Owner Managed 리뷰 경로 승인, 미해결 리뷰 스레드 0, behind 0, 정확 15개 경로를 확인하고 별도 Owner Managed 결정을 PR #147에 기록.
+- Squash Main 81fd00ba9a7463f0b1817d83ca78fe9cc31f5b4d, 제목 #142 | S3-4-B2-4 Disposable rollback replay [G7-S3-4B2-4-NO-GHCR]. Main CI #40610619799 attempt 1 completed SUCCESS; release-scope Job 122560987574 SUCCESS, GHCR Job 122561027937 SKIPPED. GHCR 이미지/태그 게시 0.
+- 새 B2-5 브랜치 최신 Main에서 독립 생성: 합성 S3-4-A readiness와 별도 미신뢰 QA Ledger의 EV/QA/SNAP/17 체크/4 OCI digest 주장 정합성 검사, 실패·누락·중복·시간 순서 음성 회귀, 정확 15-path GHCR 미게시 가드. 신규 B2-5 HEAD CI/리뷰 결과는 실제 확인 전 NOT VERIFIED이며 실 Site PASS·Owner GO가 아니다.
+- 운영 금지: 실제 Registry/Writer/SQLite/CAD/S3, online backup, 실 Migration/Restore/Rollback, 현장 QA 인증, Auth/CAD Write, GHCR/Compose/Nginx, S3-4-C/S3-5 GO 모두 NOT RUN. #142/#109/#96 OPEN/BLOCKED 유지.
+
 ## #142 / PR #149 — #67 TAR 파싱 연속 실패 Attempts 1·2·3 및 독립 보완 (2026-10-28 KST)
 
 - **동일 HEAD 세 차례 실패:** [Run 40613450861](https://github.com/planner77/layoutManager/actions/runs/40613450861) `915b1509a82ad1af6d723ed42cc8a3c733fc72b5` attempt 1 `completed/failure`: Docker Job [122570517278](https://github.com/planner77/layoutManager/actions/runs/40613450861/job/122570517278) 실패. attempt 2 `completed/failure`: Docker Job [122601918388](https://github.com/planner77/layoutManager/actions/runs/40613450861/job/122601918388) 실패. attempt 3 `completed/failure`: Docker Job [122607804124](https://github.com/planner77/layoutManager/actions/runs/40613450861/job/122607804124) 실패. 모두 `Verify web layer SHA, native and transition-only size saving (#67)`에서 `src/scripts/audit_standalone_layers.py:29`의 내부 TAR `tarfile.open(fileobj=stream,mode="r|")` → Python 3.14 `tarfile.ReadError: invalid header` (exit 1). 최초 실패/재실행은 서로 다른 Run이 아닌 **한 Run의 attempt 이력**으로 보존.

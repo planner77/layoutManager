@@ -1,5 +1,11 @@
 # 상세 요구사항
 
+## #142 S3-4-B2-5 — 합성 증거 참조 검증 요구사항 (2026-10-28)
+
+- 정확한 17 S3-4-A 체크의 PASS/FAIL/NOT_RUN/CANCELLED와 별도 untrusted Ledger의 EV/QA/SNAP/Source Epoch/Schema/4 OCI Digest/UTC 바인딩을 대조한다. 모든 이름·상태·식별자와 필드를 엄격 검사; 중복, 누락, 위조, 교환, 순서 오류, 비정상 Status, 비밀/경로 입력 시 BLOCKED. NOT_RUN은 PENDING, 성공도 DISPOSABLE_EVIDENCE_RECONCILED_NOT_SITE_PROOF만 반환한다.
+- 어떤 결과에서도 실 QA·Registry·Snapshot·Migration·Restore/Rollback·Owner GO/runtimeActivated 플래그는 false. 실제 사내 출처 증명과 B2-5 현장 수용, S3-4-C/S3-5/운영 Auth 활성화는 완전히 별도이며 Owner 승인 필요.
+- B2-5 개발 PR 변경은 Runbook 포함 승인된 15개 Path로만 제한, 활성 SQL/배포·이미지 게시 금지.
+
 ## #142 B2-4 — 격리 Restore/Rollback Byte Replay 요구사항 (2026-10-28)
 
 - FR-G7-B2-4-01: 정확 Scope/SNAP/Epoch를 가진 합성 `source/candidate/rollback` SQLite·Local CAD·S3 Export·Marker의 Byte Buffer 검증, 객체 개수/DB Version·Locator/S3 claimed VersionId 일대일 일치, Local·S3 백엔드 모두 포함, 수정/누락/중복/초과 바이트 fail closed. 복귀 DB는 Source SQLite 바이트와 `Buffer.equals` 일치 필수, Candidate는 7번째 Auth 후보가 적용된 CAD 보존·Auth/Audit 불변식을 기존 B2-3 검증기로 확인.

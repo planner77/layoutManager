@@ -1,5 +1,20 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## #142 B2-5 PR #149 — #150 Main 정렬 및 Owner Managed QA 경로 (2026-10-28 KST)
+
+- **선행 게이트:** [PR #150](https://github.com/planner77/layoutManager/pull/150) 8경로 전용 `CI-142-LAYER-NO-GHCR` 정확 Squash Main `dec723ca6512488d7d45148762fbe1e6395790a6`, [Main CI #40631046297](https://github.com/planner77/layoutManager/actions/runs/40631046297) attempt 1 `completed/success`, release-scope Job `122627234234` SUCCESS, GHCR Build/push Job `122627277997` SKIPPED. 이 결과는 B2-5 PR 자체의 CI PASS 또는 현장 QA/GO가 아님.
+- **Main 정렬:** PR #149 구 HEAD `915b1509a82ad1af6d723ed42cc8a3c733fc72b5`가 Main 대비 behind 1. 기존 #142 B2-5 15-path 합성 EV/QA/SNAP, 17개 항목·G7 OCI 출처 주장 검증기·Runbook 및 GHCR 정확 제목/15-path no-publish와 #150의 독립 #67 `r|*` + 8-path GHCR Guard 및 누적 실패 원장을 모두 보존해 두 부모 병합. 활성 서비스/운영 DB·CAD·S3/Dockerfile/Compose/Prisma SQL/배포 변경 금지.
+- **Owner Managed QA 정책:** 사용자가 **PR #149의 QA Review 등 Owner Managed 절차를 명시 승인**. 자동 Codex review는 앞선 사용량 한도로 `FAILED/NOT REVIEWED`였으며 성공/지적 0으로 바꾸지 않는다. 새 HEAD Owner Managed 검토·합성 테스트 및 리뷰 스레드/충돌/범위 판정은 정확하게 기록; Owner Managed 경로 승인만으로 독립 현장 QA·릴리스 Owner GO·PR Merge를 승인하지 않는다.
+- **실패 원장:** 이전 [Run #40613450861](https://github.com/planner77/layoutManager/actions/runs/40613450861) attempt 1/2/3의 `tarfile.ReadError: invalid header` Docker Job 실패·후속 미실행, Verify Job SUCCESS 및 취소된 Run은 하위 기록대로 보존. #150 Main CI 성공이 과거 실패를 삭제하거나 구 HEAD를 성공으로 만드는 것은 아님. 재정렬된 PR #149 HEAD 신규 PR CI는 실제 결과 확인 전 `NOT VERIFIED`; 요청대로 시작 후 모니터링 불필요.
+- **운영 NO-GO:** `DISPOSABLE_EVIDENCE_RECONCILED_NOT_SITE_PROOF`는 사이트 출처/QA 서명·실 동일 Snapshot·복원/롤백 인증 아님. #142/#109/#96 OPEN/BLOCKED, 실제 Writer/SQLite/CAD/S3/OCI Registry·운영 Prisma/Restore/Rollback/Activation/GHCR 게시/Owner GO 미실행.
+
+## #142 B2-4 Owner Managed 병합 완료 → B2-5 격리 증거 검증 구현 (2026-10-28 KST)
+
+- B2-4 PR #147: 사용자 Owner Managed 리뷰 승인에 따라 최신 Codex 리뷰 **사용량 한도 실패를 성공으로 오인하지 않고** 결정을 기록. PR CI #40604028179 SUCCESS, unresolved threads 0, exact no-GHCR Squash Main 81fd00ba9a7463f0b1817d83ca78fe9cc31f5b4d. Main CI #40610619799 SUCCESS, Release Scope SUCCESS, GHCR Build/push SKIPPED. 기존 TS2322 실패 #40579106887과 보완 이력은 FailureLedger에 보존.
+- B2-5 Runbook src/deploy/g7-s3/S3-4-B2-5.md 필수. 신규 순수 assessS34B25DisposableEvidence는 두 미신뢰 합성 Packet 간 S3-4-A 필수 17개 체크, EV/QA/SNAP, UTC, Source/Schema/4 OCI Digests 정합성만 검사한다. 합성 양성도 DISPOSABLE_EVIDENCE_RECONCILED_NOT_SITE_PROOF이며 실제 검증·승인 아님.
+- 실제 현장 Writer/SQLite/CAD/S3/OCI Registry, 운영 Prisma Migration, Docker/Restore/Rollback, Auth/CAD Write, GHCR/Compose/Nginx, Owner GO 모두 NOT RUN/OFF. #142/#109/#96 OPEN/BLOCKED; 실 QA/동일 Snapshot 인증·S3-4-C/S3-5 별도.
+- B2-5 exact no-GHCR title: #142 | S3-4-B2-5 Disposable private evidence reconciliation [G7-S3-4B2-5-NO-GHCR]. 15개 변경 경로만 허용; 본 작업은 B2-5 개발·PR CI까지, 병합/GHCR 게시는 미승인.
+
 ## #142 / PR #149 — Issue #67 Docker 29 TAR 레이어 감사 독립 보완 (2026-10-28 KST)
 
 - **관측된 재현:** [PR #149](https://github.com/planner77/layoutManager/pull/149)의 [PR CI #40613450861](https://github.com/planner77/layoutManager/actions/runs/40613450861), HEAD `915b1509a82ad1af6d723ed42cc8a3c733fc72b5`는 attempts 1/2/3 모두 `completed/failure`. Docker Jobs `122570517278`, `122601918388`, `122607804124`의 Issue #67 `Verify web layer SHA, native and transition-only size saving`에서 `src/scripts/audit_standalone_layers.py:29`의 `tarfile.open(...,mode="r|")`가 `tarfile.ReadError: invalid header`로 중단(exit 1). 각 Attempt의 Verify(Typecheck/Lint/Unit·Integration/Build/E2E)는 SUCCESS. 동일 HEAD의 반복 실패를 새로운 B2-5 업무 로직 실패로 기록하지 않음.
@@ -785,6 +800,7 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 | [S3-4-B2-2B Runbook](src/deploy/g7-s3/S3-4-B2-2B.md) | #142 합성 격리 SQLite/CAD/S3 Buffer byte·FK·Version/Current·SNAP/Source 한계 및 현장 승인 게이트 | B2-2B 코드·리뷰/테스트, 실제 현장 Writer/Backup/Restore 승인 설계와 S3-4-C/Owner GO 전 반드시 참조 |
 | [S3-4-B2-3 Runbook](src/deploy/g7-s3/S3-4-B2-3.md) | #142 기존 CAD 6+격리 Auth 후보 1개의 일회용 Prisma History/합성 CAD 보존·Audit append-only 장애주입 검증, 실 Source 한계 | S3-4-B2-3 구현/테스트/리뷰, 실제 Site Clone/Restore 및 B2-4/B2-5 Owner 승인 검토 시 필수 참조 |
 | [S3-4-B2-4 Runbook](src/deploy/g7-s3/S3-4-B2-4.md) | #142 합성 동일 SNAP의 Source→G7 후보→Rollback SQLite/Local CAD/S3 Export Byte, 4 OCI Role 로컬 계약, 장애 주입·실 복원 NO-GO | B2-4 구현/테스트·B2-5 현장 증거 인수·Owner 실제 Restoring 승인 검토 시 필수 참조 |
+| [S3-4-B2-5 Runbook](src/deploy/g7-s3/S3-4-B2-5.md) | #142 합성 readiness/EV·QA·SNAP 17항목/OCI 4 Role·Source Epoch·CR ID 참조 대조, 실 현장 증명 불가·Owner NO-GO | B2-5 구현·리뷰·Unit/CI, 사내 QA/Source Snapshot 증거 검토 및 S3-4-C/S3-5 승인 판단 전 반드시 참조 |
 | [Issue31](out/Issue31.md) | DXF 다중 선택·볼록/정밀 외곽선·실험 상태·P4 권한 보류 | Viewer 선택·외곽선/Worker/JSON 변경 시 |
 | [Issue26](out/Issue26.md) | DXF TEXT/MTEXT 색인·world 좌표 focus·검색 범위/검증 | Viewer 검색·Pan/Zoom·Worker·BLOCK/INSERT·DWG 텍스트 지원 검토 시 |
 | [Issue66](out/Issue66.md) | Migrator 최소 의존성·크기 측정/OCI manifest·복구 계약 | Docker migrator/CI/GHCR 및 버전·패키징 변경 시 |
