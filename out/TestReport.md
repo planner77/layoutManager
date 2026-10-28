@@ -1,5 +1,18 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## #151 / PR #152 — E2E 1건 실패 분석 및 재검증 준비 (2026-10-28)
+
+- [PR CI #40638297319](https://github.com/planner77/layoutManager/actions/runs/40638297319) exact HEAD `c31036cd94b81118f8064591c9b8b74c7cd5e246`, attempt 1 `completed/failure`: Verify Job `122650294939` Typecheck/Lint/Unit·Integration(C0 합성 10건 포함)/OCI/DXF/Production Build SUCCESS, Playwright Chromium **91 passed / 1 failed** at `src/tests/e2e/issues124-126-127.spec.ts:150` `TC-126-RECOVERY`: `Expected:1, Received:2` source GET 시작 횟수; Legacy Migration E2E SKIPPED. Docker/Migration/Smoke Job `122650294554` SUCCESS. 실제 GET 2건 완료/abort 여부는 Log만으로 판정 불가.
+- 보완은 기존 E2E 한 곳의 완료/취소/시작 Network 이벤트 정확 계측: 성공 원본 완료 다운로드 **정확 1개**, 이전 요청 취소 최대 1개(Abort error reason), 진행 중 미종료/진짜 2 Completed GET/렌더러 오류는 실패 유지. S3-4-C0 source/auth/site code 변경 없음. 정확 no-GHCR 16-path = 기존 15개 + `src/tests/e2e/issues124-126-127.spec.ts`; GHCR Unit negative/positive 재검증.
+- **아직 새 HEAD CI 전:** 이 수정의 Typecheck/Lint/Unit/E2E/Docker/Build 결과는 실제 Run 완료 전 `NOT VERIFIED`, 과거 실패를 PASS로 재해석하지 않음. User Owner Managed risk acceptance는 Test assertion 계측·미게시 좁은 경로에만 한정. 실제 사이트 B2 증거/현장 Independent QA/실 Restore/Rollback/S3-4-C trust/운영 GO 미확인, 모든 활성 플래그 false.
+
+## #151 S3-4-C0 — 현장 Owner Managed 비반출 정책 수용·합성 코드 준비 (2026-10-28)
+
+- **확인된 선행 CI:** #142 S3-4-B2-5 [PR #149](https://github.com/planner77/layoutManager/pull/149) 최종 Squash Main `8ea0a3088e3dc10ae340cf5a095375f626519e1e`, [Main CI #40636610114](https://github.com/planner77/layoutManager/actions/runs/40636610114) completed SUCCESS, Release-scope Job `122644923176` SUCCESS, GHCR Build/push Job `122644968384` SKIPPED. 기존 PR #149 Run 40613450861 Attempts 1/2/3 Docker TAR 오류/후속 SKIPPED는 FailureLedger에 계속 보존.
+- **사용자 현장 정책/허용 범위:** 시험 프로그램/Runbook·합성 검증 자료는 사내 현장 반입 가능, 실 증거 원본·해시·실 EV/QA/SNAP/CR·OCI manifest/키/서명/경로 등 현장 밖 반출 금지, Owner Managed 내부 증거 수용. 사내 실제 원본·서명·증거를 본 Assistant는 확인하지 못했으므로 **현장 증거 인증/물리 Restore·Rollback PASS/운영 GO는 NOT VERIFIED/NOT RUN**.
+- **새 S3-4-C0 준비(현재 실제 CI 전):** `src/server/g7-operational/s3-4-c.ts` 순수 내부 사용 17 Receipt SHA + 별도 Owner/QA Ed25519 public trust keys + release/snapshot binding 서명 검증 모듈과 합성 Vitest 10개 사례·Runbook/15-path GHCR 가드 작성. 코드 작성만으로 Unit PASS를 주장하지 않으며 최신 PR HEAD CI는 새 Run 실행 후 검증 필요.
+- **결과의 의미:** 잠재적 합성 양성도 `LOCAL_SIGNED_RECEIPTS_CONSISTENT_NOT_SITE_GO`; Source/Registry 실제 출처·독립 서명자 신원·현장 실 7 migration/Restore/Rollback·Owner GO=false. #151 및 #142/#109/#96 OPEN/BLOCKED, 운영 Auth/CAD Write OFF, GHCR/Prisma/Compose/Nginx/실 데이터 접근 없음.
+
 ## #142 PR #149 — #150 Main CI 선행 완료·B2-5 새 HEAD 검증 예정 (2026-10-28)
 
 - [PR #150](https://github.com/planner77/layoutManager/pull/150) Main `dec723ca6512488d7d45148762fbe1e6395790a6`, [Main CI #40631046297](https://github.com/planner77/layoutManager/actions/runs/40631046297): attempt 1 `completed/success`, Release scope Job `122627234234` SUCCESS, GHCR Job `122627277997` SKIPPED. #67 Docker layer parser `r|*` 및 합성 손상·압축 Layer 검증이 선행 보완되었으나 이것이 B2-5 최종 통과는 아님.

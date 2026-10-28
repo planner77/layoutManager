@@ -131,7 +131,14 @@ test('TC-124-LAYOUT: home controls stay available after scrolling, mobile advanc
 
 test('TC-126-RECOVERY: stalled Three load has an immediate manual escape and ignores late failure',async({page,request})=>{
   const file=await createDrawing(request,'stall-'+Date.now());
-  let gets=0;page.on('request',r=>{if(r.url().includes(`/api/cad-files/${file.id}/content`))gets++;});
+  const sourceUrl=`/api/cad-files/${file.id}/content`;
+  let gets=0,completed=0;
+  const failedReasons:string[]=[];
+  page.on('request',r=>{if(r.url().includes(sourceUrl))gets++;});
+  page.on('requestfinished',r=>{if(r.url().includes(sourceUrl))completed++;});
+  page.on('requestfailed',r=>{
+    if(r.url().includes(sourceUrl))failedReasons.push(r.failure()?.errorText ?? 'UNKNOWN_FAILURE');
+  });
   const blobErrors:string[]=[];
   page.on('console',message=>{if(message.type()==='error'&&message.text().includes('ERR_FILE_NOT_FOUND'))blobErrors.push(message.text());});
   let release! : () => void;
@@ -147,7 +154,15 @@ test('TC-126-RECOVERY: stalled Three load has an immediate manual escape and ign
   await page.waitForTimeout(300);
   await expect(page.getByTestId('viewer-recovery-notice')).toHaveCount(0);
   await expect(page.getByTestId('cad-canvas').locator('canvas')).toHaveCount(1);
-  expect(gets).toBe(1);
+  // The initial source request may be aborted while a Three font is held.
+  // Switching must still produce exactly ONE completed content download.
+  // Never relax this to a mere 'at most two requests': two completed GETs
+  // would be a real source-cache regression, not an expected abort.
+  await expect.poll(()=>gets-completed-failedReasons.length).toBe(0);
+  expect(completed).toBe(1);
+  expect(gets).toBeLessThanOrEqual(2);
+  expect(failedReasons).toHaveLength(gets-completed);
+  expect(failedReasons.every(reason=>/ERR_ABORTED|cancelled|canceled/i.test(reason))).toBe(true);
   expect(blobErrors).toEqual([]);
 });
 

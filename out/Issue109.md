@@ -1,5 +1,18 @@
 # Issue #109 — G7 운영 인증 활성화 설계 및 통제 배포·롤백 Runbook
 
+## #151 PR #152 CI #126 E2E 제한적 Owner Managed 리스크 수용 (2026-10-28)
+
+- CI #40638297319 HEAD `c31036cd94b81118f8064591c9b8b74c7cd5e246` Verify Job의 Chromium 91/92 성공·`TC-126-RECOVERY` 원본 GET 시작 2회/기대 1회 불일치, Docker/Unit/Build 성공, Legacy Migration E2E 미실행. 실제 2회 모두 성공인지 하나 취소인지는 미확인. 이전 실패 원장 보존.
+- 기존 Viewer Renderer 수동 전환 E2E의 다운로드 완료/Abort 이벤트를 분리 계측하여 **성공 완료 GET 1개**를 필수화, 1건 취소만 허용. 두 완료 또는 비정상 오류는 계속 FAIL. Owner Managed 조건에 따라 기존 S3-4-C0 15경로+이 E2E 1경로만 정확 16-path GHCR Skip, 운영 API/Schema/Writer/Source Cache/배포/실 데이터 무변경. 신규 PR CI 완료 전 PASS 아님.
+- 실제 사내 B2/S3-4-C 증거 진위·Owner GO/운영 활성화는 독립 검증 미수행; #142/#109/#96/#151/#153 OPEN/BLOCKED.
+
+## #151 S3-4-C0 — 현장 Owner Managed 증거 비반출/신뢰 바인딩 준비 (2026-10-28)
+
+- **사용자 승인:** 실제 B2-1~5 사내 원본·증거·해시·서명·실 EV/QA/SNAP·내부 키는 외부 반출 불가. 검증 프로그램과 합성 Template만 현장 반입, 실제 리뷰/수용·Owner Managed QA는 현장 안에서 실시하며 결과 근거/Trust Anchors는 사내 Owner 통제에 보존한다. 공개 GitHub에는 정형 상태·이유 코드만 기록한다.
+- **의존:** #142 B2-5 순수 합성 오프라인 검증기 [Main `8ea0a3088e3d`](https://github.com/planner77/layoutManager/commit/8ea0a3088e3dc10ae340cf5a095375f626519e1e)·Main CI #40636610114 SUCCESS/GHCR SKIPPED; 이것은 사내 실제 Writer, 단일 Snapshot, OCI 신뢰, 복원/롤백 성공이 아니다.
+- **S3-4-C0 설계/코드:** 현장 내부 영수증 17건의 실제 Byte SHA와 별도 Owner/QA Ed25519 로컬 신뢰 앵커로 서명한 Release+SNAP/Schema/Source/4 Digest·Epoch/CR 참조만 교차검증. 자동 네트워크/파일/운영 Prisma·App 라우트 연결 0. `LOCAL_SIGNED_RECEIPTS_CONSISTENT_NOT_SITE_GO`는 신뢰된 실제 Source 인증이나 운영 GO가 아니다. [Issue #151](https://github.com/planner77/layoutManager/issues/151), [Runbook](../src/deploy/g7-s3/S3-4-C.md) 필수.
+- **S3-5 후속:** 실제 Site B2-1 OCI 명세·출처/서명, B2-2 Writer Zero+SQLite/CAD/S3 same SNAP, B2-3 격리 Migration/Audit/FK, B2-4 실제 물리 Restore+Rollback/RTO·RPO, B2-5 Owner Managed QA 현장 수용이 사내 별도 확인되지 않으면 BLOCKED. S3-4-C 신뢰 바인딩 후에도 S3-5 릴리스/변경 단위 Owner GO ID·24시간 이하 Window·복구 담당자 별도. 운영 Auth/CAD Write/Compose/Nginx/GHCR/Ops SQL OFF, #142/#109/#96 OPEN/BLOCKED.
+
 ## #142 B2-4 Main CI 완료 및 B2-5 합성 증거 대조 구현 (2026-10-28)
 
 - #142 B2-4 PR #147 최신 HEAD a59d18b PR CI #40604028179 SUCCESS. Codex 최신 재리뷰는 사용량 한도 실패(코드 무결성 통과로 간주 금지), 사용자가 Owner Managed 리뷰 승인하여 기록. 정확 no-GHCR Squash Main 81fd00ba9a7463f0b1817d83ca78fe9cc31f5b4d; Main CI #40610619799 SUCCESS/release-scope SUCCESS/GHCR SKIPPED.

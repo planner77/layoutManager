@@ -1,5 +1,11 @@
 # Database Schema — 단일 기준 문서
 
+## #151 S3-4-C0 — 영수증·신뢰 키는 현장 내 보유, DB 무변경 (2026-10-28)
+
+- S3-4-C0 준비 코드/합성 테스트는 기존 앱 DB·Prisma `src/prisma/**`, Auth 7th candidate SQL, CAD Version/Current, SQLite/S3 백업·원본·Audit 행에 접근하거나 변경하지 않는다. `src/server/g7-operational/s3-4-c.ts`는 호출자가 사내 메모리로 제공하는 작은 Receipt Bytes만 해시/검증한다.
+- 실 현장 `SNAP-*`, OCI Digest/Manifest, Source Revision, SQLite/CAD/S3 원본 SHA/Version, QA/Owner 신원·서명과 별도 사내 Trust Anchor는 비반출/비공개. 공개 GitHub에는 상태·고정 Reason만 남긴다. 실제 DB·S3 물리 Restore/복구·정식 Migration은 미실시·미확인.
+- 서명된 로컬 Receipt 무결성이 확인되어도 `privateSourceAuthenticated=false`, `sameSnapshotRestored=false`, `operationalGo=false`. 실제 Source/Backup/Restore의 독립 수용과 DB/Schema cutover는 #142/#109/#96 및 S3-5 별도 승인 전 차단.
+
 ## #142 B2-5 — 실제 DB/Schema 변경 0건 (2026-10-28)
 
 - B2-5는 읽기 전용 합성 증거 참조 교차검증으로 SQL/Schema/Prisma Migration, 운영 CAD/DB/Current/Version/Local·S3 Bytes 변경 없음. S3-4-A 체크의 FK/Audit/Current/SHA/Restore 증거 ID·스냅샷 연결만 교차 대조하며 실제 DB/S3 원본은 읽지 않는다.

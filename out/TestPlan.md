@@ -1,5 +1,21 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## TC-126-RECOVERY / #151 PR #152 — 한 번의 성공 GET과 허용 가능한 Abort 분리 (2026-10-28)
+
+- 선행 Run `40638297319` HEAD `c31036cd94b81118f8064591c9b8b74c7cd5e246` Chromium E2E 91/92 PASS, TC-126 `expect(gets).toBe(1)`이 2회 개시 GET으로 실패. 실제 두 GET이 완료됐는지는 로그로 확정되지 않음. Docker, Typecheck/Lint/Unit/Build 성공과 별개로 E2E FAIL, Legacy Migration SKIPPED를 유지.
+- TC-126-ABORT-01: Three font stalled → 수동 dxf 전환 성공, 초기 in-flight GET abort 발생 가능. **성공한 원본 완료 GET 반드시 1개**, 초기 취소 최대 1개, Network failed reason은 `ERR_ABORTED/cancelled/canceled`만. 시작된 모든 요청은 settled, `gets<=2`; 두 개 완료/실패 원인 미분류/재시도 미종결이면 FAIL. renderer `dxf-viewer`, 완료 상태, Overlay·Notice·Canvas 1개/Blob 오류 0 불변. 단순 count/Assertion 제거 금지.
+- TC-126-ABORT-02: 기존 source-failure 404는 fallback 성공 간주 금지; 기존 자동 fallback·수동 Three/dxf 및 완료 GET 계측 회귀 유지. 실제 소스 다운로드 캐시 버그를 테스트에서 은폐하지 않는다.
+- TC-C0-SCOPE-16: Owner Managed 조건의 정확 Squash `#151 | S3-4-C0 Owner Managed offline trust binding [G7-S3-4C0-NO-GHCR]` + **기존 15개 + E2E Test path 하나**만 GHCR SKIP. 그 외 runtime/Prisma/other workflow/Docker/Compose/원본 사내 evidence 경로는 차단. 근접 제목/태그 조건 기존 유지.
+- TC-C0-GATE: 새 HEAD Typecheck/Lint/Unit·Integration/Build/E2E/Legacy/Docker/Smoke/Guard를 실 CI에서 재검증, 이전 Run 실패·skip 보존. 새 Run 시작은 결과 성공 아님. 실제 현장 Owner Managed evidence/OCI/Restore/Rollback/S3-5는 별도 NOT VERIFIED/BLOCKED.
+
+## TC-C0 — #151 Owner Managed 비반출 S3-4-C0 신뢰 영수증·서명 검증 (2026-10-28)
+
+- TC-C0-01: 기존 S3-4-A + B2-5 합성 Packet의 17 체크 PASS/EV·QA·SNAP/Epoch·CR/Source·Schema/OCI 역할 4 Digest가 정상이고 17개 별도 작은 Receipt Bytes/SHA가 일치한 경우 현장 별도 Owner/QA 2개 Ed25519 서명과 유효한 시간 Window이면 `LOCAL_SIGNED_RECEIPTS_CONSISTENT_NOT_SITE_GO`. 어떤 경우에도 `operationalGo=false`, `runtimeActivated=false`, 실제 Source/Registry/Writer/Restore·Rollback/독립 QA 검증 Flag false.
+- TC-C0-02: Raw Receipt Bytes 변조/해시 변조, 누락·중복·가짜 체크/EV ID·Size 한도, Packet Snapshot/Source/4 OCI Digest/Schema/Epoch/CR 변조·서명 재사용은 모두 `BLOCKED`; 단독 입력 키·틀린 공개키·동일 Key/개인키·잘못된 서명과 악의적 공개키 대체도 차단.
+- TC-C0-03: 서명시간/미래/만료(24h 초과)/Invalid UTC/Owner/QA 불일치, `NOT_RUN`은 `PENDING`, `FAIL/CANCELLED`·변조된 Packet은 `BLOCKED`; 반환된 결과 JSON에 실제 증거 Bytes/Key/Path/ID/Hash·Secret을 절대 반사하지 않는다.
+- TC-C0-04: GHCR 정확 `#151 | S3-4-C0 Owner Managed offline trust binding [G7-S3-4C0-NO-GHCR]` Squash+15개 명시 파일만 skip. 유사 제목·유사 파일, 운영 Prisma/서비스/기존 CAD API/Dockerfile/Compose/Nginx/타 Workflow·Secret/실 증거 경로는 fail-closed, 정식 Tag 정책 유지. 이전 #142 B2-5, #67 및 기타 GHCR 예외 회귀 무변경.
+- TC-C0-05: Main CI 40636610114 SUCCESS/release-scope SUCCESS/GHCR SKIPPED는 B2-5 선행 완료만. 신규 HEAD PR CI Typecheck/Lint/Unit·Integration/Build/E2E/Docker/Smoke 및 최신 리뷰/스레드 결과는 실제 관측 전 `NOT VERIFIED`. 이 시험은 합성 코드 검증이므로 **실 현장 OCI 출처/Writer Zero·Backup/Restore/Rollback/사내 Owner Managed 수용은 별도 실제 실행 확인 전 NOT RUN**.
+
 ## #142 B2-5 — 최신 Main(#150) 정렬 및 Owner Managed QA 경로 검증 (2026-10-28)
 
 - TC-B2-5-CI-01: PR #150 Main `dec723ca6512488d7d45148762fbe1e6395790a6`, Main CI [40631046297](https://github.com/planner77/layoutManager/actions/runs/40631046297)의 release-scope SUCCESS/GHCR Job SKIPPED를 선행 증거로 확인. #67 압축 TAR 패치와 B2-5 신규 검증기를 함께 보존하되 어느 한쪽의 CI 성공을 신규 HEAD 성공으로 전가하지 않음.

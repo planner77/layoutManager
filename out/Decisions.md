@@ -1,5 +1,18 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-055 — #151 CI / #126 E2E 수동 fallback GET 계측과 좁은 Owner Managed 위험 수용 (2026-10-28)
+
+- **관측:** PR #152 HEAD `c31036cd94b81118f8064591c9b8b74c7cd5e246`의 PR CI `40638297319` E2E `TC-126-RECOVERY`에서 `gets=2`인데 기존 `gets=1` 기대 → 91/92 PASS, Verify Job FAILURE; Docker SUCCESS. 시작된 요청 2건이 모두 완료인지/하나 취소인지는 로그만으로 판단 불가. 기존 #126 AC는 캐시된 bytes를 재사용 가능한 경우 **불필요한 중복 완료 GET 금지**, in-flight abort 후 재요청 자체를 무조건 금지하지 않는다.
+- **선택:** `requestfinished`/`requestfailed` 계측으로 **완료 GET 1개만** 허용, 다른 1개가 있다면 명시적 취소 Error여야 하며 `gets<=2`·모든 요청 종료를 요구. 두 완료 GET/미종결/진짜 네트워크 오류는 FAIL. 기존 Loading UI·Canvas·성공 상태/Blob 오류 검증 유지, Runtime Source Caching/Adapter/Renderer 변경 없음.
+- **Owner Managed Risk 수용:** #151 합성 S3-4-C0 개발 PR의 no-GHCR exception path를 15→16개로, **오직 E2E spec 단일 파일**만 추가하는 최소 허용 범위. 기존 15개 경로·정확 제목의 fail-closed, 정상 태그/런타임 발행 정책 및 이전 B2/#67 예외 유지; 다른 코드·운영 경로 허용 금지. 사용자 Owner Managed 위험 감수는 이 설계·QA 범위에만 적용하며 사내 원본/복원/승인 결과를 증명하거나 운영 Auth/CAD Write/GHCR 게시를 허가하지 않는다.
+
+## ADR-054 — #151 현장 반입만 허용/증거 비반출 Owner Managed와 Trust Binder/GO 분리 (2026-10-28)
+
+- **승인된 운영 제약:** Owner가 실제 B2 증거는 사내 현장으로 반입 가능하나 외부 반출 불가라고 명시. Owner Managed는 리뷰/검증·내부 보존·위험 수용 책임을 맡는 절차적 방식이며 **미확인 현장 결과를 PASS로 간주하거나 증거 진위 검증을 면제하는 승인 아님**. 실제 서명·파일·경로/ID·해시는 공개 GitHub/CI/Chat으로 내보내지 않는다.
+- **설계:** S3-4-C0은 B2-5 미신뢰 17-check Packet에 현장 영수증 Byte SHA와 사전 승인된 별도 Ed25519 Owner·QA 공개키 2개를 엮는 **순수 오프라인 서명 바인더**. 서명 문장은 Version/Source/Epoch/CR/SNAP/Schema/4 OCI Role Digests·QA/Owner 서명시간·만료·모든 [check,EV,ReceiptSHA]를 고정 순서로 포함한다. 입력에서 키를 가져오거나 외부 Key Registry/OCI/S3/Prisma/Docker/Runtime API를 호출하지 않는다.
+- **거절:** 영수증 서명 정합성 `LOCAL_SIGNED_RECEIPTS_CONSISTENT_NOT_SITE_GO`를 `privateSourceAuthenticated`, `independentReviewerVerified`, 실제 OCI Signature/물리 Restore·Rollback/Owner 운영 GO로 승격하거나 런타임 Auth/CAD Write ON 하는 것. 별도 현장 실제 증거/사전 신뢰 키 등록·독립 QA 절차는 현장 Owner 책임이며 검증 미실시 시 NOT VERIFIED. S3-4-C0 합성 CI 및 향후 S3-4-C 실 수용/S3-5 GO는 다른 게이트.
+- B2-5 [PR #149](https://github.com/planner77/layoutManager/pull/149) Main CI #40636610114 성공·GHCR SKIPPED만 확정, 운영 장벽은 지속. [Issue #151](https://github.com/planner77/layoutManager/issues/151) 및 [S3-4-C Runbook](../src/deploy/g7-s3/S3-4-C.md).
+
 ## #142 B2-5 — 증거 주장 정합성과 실제 출처 인증의 분리 (2026-10-28)
 
 - 결정: S3-4-B2-5는 합성 readiness/QA Packet의 정확한 17개 체크, 유일 EV ID, QA/SNAP/Source/Schema/OCI role digest·UTC 시간을 fail-closed로 대조할 뿐이다. 양성은 DISPOSABLE_EVIDENCE_RECONCILED_NOT_SITE_PROOF이며 authentic PASS/운영 GO가 아니다. 실패·취소는 BLOCKED, 명시 NOT_RUN은 PENDING.
