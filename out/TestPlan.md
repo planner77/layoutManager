@@ -1,5 +1,14 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## TC-CI67-D29 — Docker 29 image-layer TAR 자동압축 지원과 fail-closed 회귀 (2026-10-28)
+
+- 배경: Issue #142 PR #149 Run #40613450861 attempts 1/2/3 Docker layer audit는 Python `r|`(비압축 전용)의 `tarfile.ReadError: invalid header`에서 중단. 실제 압축 포맷은 현장 레이어 Header 미확보로 미확정; Python 3.14 `r|*`의 지원 압축 자동 검출을 적용.
+- TC-CI67-D29-01: 기존 RAW Nested TAR baseline 중복 2회/Optimized 1회에서 동일 Node.js native `.node` 및 JS Package SHA/중복 byte/레이어 수를 정상 집계; 기존 시험 그대로 유지.
+- TC-CI67-D29-02: gzip·bz2·xz Nested TAR를 `layer.tar`라는 이름으로 docker-save outer TAR에 구성; 중복/최종 SHA가 불변이고 optimized 중복 0을 입증. Python 3.14 `compression.zstd` 가용 Runner에서는 zstd도 동일 Member 인벤토리 검사.
+- TC-CI67-D29-03: 손상된 비압축 TAR와 gzip에 담긴 무효 TAR를 각각 ReadError/TarError로 거부, 빈/누락 Native·원본/최적화 SHA 불일치·중복 재도입·transition size 미절감은 기존대로 실패 처리. 절대 Skip/Audit Success 강제/Assertion 약화 금지.
+- TC-CI67-D29-04: 별도 `#142 | #67 Docker layer archive compatibility [CI-142-LAYER-NO-GHCR]` 정확 Squash와 지정 8 파일만 GHCR Skip. 운영 SQL/API/Dockerfile/Compose/타 Workflow/타 Script/유사 제목 차단, tag 발행은 일반 정책 유지.
+- TC-CI67-D29-05: 새 CI에 `python3 -m py_compile`, Python 단위, PR Typecheck/Lint/Unit/E2E, Docker build/Layer audit/Migrator/Smoke 및 GHCR Guard unit 모두 요구. 최초 Run 시작과 SUCCESS를 구분; Code/Runner 환경 오류 원인 분리, 실 Registry/현장 Writer/DB/CAD/S3/Restore/GO 금지. 지원 PR 병합 전 기존 B2-5 PR #149는 계속 미검증.
+
 ## #142 B2-4 — 동일 SNAP 합성 Restore/Rollback Replay 및 Failure Injection (2026-10-28)
 
 - TC-B2-4-01: 격리 in-memory SQLite CAD 6 baseline에 Local DXF/S3 DWG 두 Version과 Current/nextVersion/SHA를 합성 등록, 격리 G7 Auth 7th 후보 SQL을 별도 Candidate Buffer로 적용 후 baseline 복사본을 Rollback Buffer로 사용. Source→Candidate→Rollback 전 단계 `SNAP-*`/`E-*` 및 Marker bytes·S3 Marker VersionId, Local/S3 모든 오브젝트 ID/Locator/VersionId/Bytes 일치, B2-3 CAD/QuickCheck/FK/Audit 8 Tables 검사. 기대 `DISPOSABLE_REPLAY_MATCH_NOT_SITE_PROOF`, registry/site/restore/rollbackExecuted/GO false.
