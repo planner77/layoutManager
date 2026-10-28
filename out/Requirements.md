@@ -1,5 +1,14 @@
 # 상세 요구사항
 
+## FR-G7-S3-5R0 — Owner Managed 릴리스별 오프라인 승인 형식 검사 (2026-10-28)
+
+- FR-R0-001: #142/#151 현장 Owner 수용 완료 보고는 공개에 `OWNER_ATTESTED_FIELD_ACCEPTANCE_COMPLETE`, 외부 독립 재검증 `NOT_EXTERNALLY_VERIFIED`; 실 증거·키·Digest/Hash/ID/경로·개인정보의 외부 반출 금지. 일반 수용이 릴리스별 운영 GO가 되지 않도록 구분한다.
+- FR-R0-002: S3-5 릴리스별 `decision`, Scope/Schema/Source+Rollback Source, App/Migrator+Rollback 4개 distinct OCI digests/버전, SNAP/Epoch/CR, Owner 승인ID, Operator 및 다른 Rollback Operator, 승인/유효 UTC·24h 이내 window를 필수화. 매칭할 C0의 이전 서명/17 Receipt 및 별도로 신뢰된 현장 Release Identity·Scope를 요구한다.
+- FR-R0-003: 외부 Packet의 Key 신뢰 금지. 현장 별도 승인된 Ed25519 Owner/QA Roots로 C0 영수증과 새로운 Owner Release-Specific Signature를 검증; Release·Scope·Window·Owner 서명 변조/미완료 C0/NO_GO/실제 운영 승인없는 경우 `BLOCKED/PENDING`.
+- FR-R0-004: 합성 긍정도 `LOCAL_RELEASE_DECISION_CONSISTENT_NOT_ACTIVATED`, `operationalGo/authEligible/writeEligible/runtimeActivated=false` 등 운영 허가 Bool 불변. 결과는 고정 Reason/상태만, 민감 입력 Echo/로그 금지.
+- NFR-R0-001: 순수 신규 모듈/합성 Unit/문서/오직 정확 미게시 15개 Path·Squash Title, CI + Owner Review 게이트. `src/prisma/**`, `preflight.ts`, 기존 API/Runtime Route, Dockerfile/Compose/Nginx/.env, 원본 증거, GHCR/운영 실행에 변경 0.
+- FR-R0-005: 별도 #153 실제 S3-5 릴리스별 Owner GO·이미지/DB/보안 Rollback 검증 이전 운영 Auth/CAD Write·Prisma·배포 금지.
+
 ## FR-G7-S3-4C0 — Owner Managed 현장 비반출 영수증 Trust Binder 준비 (2026-10-28)
 
 - FR-C0-001: 프로그램/합성 템플릿만 승인된 방법으로 현장 반입. 실제 OCI/SQLite/CAD/S3 증거·Registry/Source/해시·실 EV/QA/SNAP/CR·서명·Trust Anchors·신원/URL/Path/Secret은 GitHub/CI/채팅 반출 금지; 현장 Owner가 내부 보존·권한·폐기·검증을 관리한다.

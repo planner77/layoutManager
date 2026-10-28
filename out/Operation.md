@@ -1,5 +1,11 @@
 # 운영·환경설정 초안
 
+## #154 S3-5-R0 — Owner Managed 현장 수용 완료 보고 이후 릴리스별 GO 사전검증 (2026-10-28)
+
+- **현장 상태 보고:** Owner는 B2/C 수용 완료를 보고. 외부 원본 검증 불가이므로 공식 공개 기록은 `OWNER_ATTESTED_FIELD_ACCEPTANCE_COMPLETE`/외부 `NOT_EXTERNALLY_VERIFIED`만. 사이트 원본·서명·OCI/DB/CAD/S3 바이트·Hash/EV/QA/SNAP·Trust Keys/실 내부 경로·신원은 GitHub/CI/Chat 반출 금지.
+- **S3-5-R0 오프라인 준비:** 현장에서 승인된 별도 Owner/QA Public Keys 및 권한 통제된 Release Identity와 Scope를 코드 외부의 사내 신뢰 저장소에서 주입. C0 17개 Receipt signed packet/S3-5 Release Owner 서명을 SHA-256+Ed25519로 교차검증, App/Migrator/Rollback 4 immutable Digests, Source/Schema/SNAP/Epoch/CR/Version 및 구분된 작업자·롤백 작업자, 승인 시각/운영 Window<=24h를 확인한다. 이 코드의 결과는 운영 GO를 반환하지 않고 파일·네트워크/Registry/DB/API를 열지 않는다.
+- **실 운영 승인·실행 별도:** Issue #153에 특정 Release Owner GO/NO_GO·정확 Scope/Window/Recovery·Rollback Operator 내부 서명 없으면 Auth/CAD Write OFF, 정식 Prisma Migration/OCI 이미지 게시/배포·Proxy/Compose/Nginx 변경 금지. R0 합성 Unit PASS/Owner field acceptance 보고/사전 `GO` 형식 검증 어느 것도 Runtime activation을 자동 시작하지 못함. [Runbook](../src/deploy/g7-s3/S3-5.md) 필수.
+
 ## #151 / #126 E2E CI 보완의 운영 경계 (2026-10-28)
 
 - S3-4-C0 준비용 PR #152의 E2E `TC-126-RECOVERY`는 DXF 브라우저 수동 Renderer 전환 중 **요청 시작 2회**를 측정해 실패했다. 신규 회귀는 원본 완료 GET 1개와 브라우저 취소 1개를 구분하며 두 번의 성공 다운로드를 허용하지 않는다. 실패는 시험 계측 문제의 유력 후보지만 실제 2건 완료는 증거 부족으로 미확정. 운영 Renderer/SourceCache·CAD bytes/DB·API·Prisma/Dockerfile 변경 0.

@@ -1,5 +1,12 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-056 — #154 S3-5-R0 Owner Field Acceptance와 별도 Release GO/NO-GO 분리 (2026-10-28)
+
+- **사용자 보고:** #142/#151 S3-4-B2/C 현장 Owner Managed 수용 완료. 실 현장 원본·키/서명/Hash·개인/내부 식별자는 반출 금지. `OWNER_ATTESTED_FIELD_ACCEPTANCE_COMPLETE`를 공식 사용자 선언으로 기록하되 외부 독립 검증 사실(`NOT_EXTERNALLY_VERIFIED`)과 다르게 취급한다.
+- **GO는 별개:** 현장 수용은 특정 Release의 App+Migrator/Rollback 네 Digest, Source/Schema/CR/SNAP/Site Scope/24h 이하 유효 Window/rollback Operator에 대한 **운영 발급·배포 승인**을 대신하지 않는다. S3-5-R0은 현재 승인된 내부 Trust Root로 C0 Owner·QA/릴리스 Owner 서명을 Byte-Exact 검사하고 별도 승인된 Release Identity와 1:1 결합하는 순수 코드만. 서명된 `decision:'GO'`도 허가를 반환하지 않고 `LOCAL_RELEASE_DECISION_CONSISTENT_NOT_ACTIVATED`와 모든 GO/Runtime False를 유지.
+- **Fail closed:** 미완료 C0/다른 Source·OCI Role·rollback pair/다른 Scope·SNAP·CR, Owner NO_GO, 위조/만료/미래/24h 초과, 승인 Owner·Operator/rollback Operator 충돌, 잘못된 별도 사내 Key 모두 BLOCKED/PENDING. 기존 S3-1 `evaluateG7S3Preflight`의 구조적 `READY_FOR_RUNTIME_INTEGRATION`도 실제 운영 activation과 분리한다.
+- **거절:** 현장 수용 완료 보고만으로 Auth/CAD Write ON, 신규 GHCR 이미지 태그, active Prisma, Compose/Nginx, 실 OCI/SQLite/CAD/S3/Writer·복구 수행, #153 종료. R0 exact 제목/15 path GHCR 불게시+합성 Unit/Runbook 개발만. Owner separate release-specific GO는 앞으로 별도 지시 필요.
+
 ## ADR-055 — #151 CI / #126 E2E 수동 fallback GET 계측과 좁은 Owner Managed 위험 수용 (2026-10-28)
 
 - **관측:** PR #152 HEAD `c31036cd94b81118f8064591c9b8b74c7cd5e246`의 PR CI `40638297319` E2E `TC-126-RECOVERY`에서 `gets=2`인데 기존 `gets=1` 기대 → 91/92 PASS, Verify Job FAILURE; Docker SUCCESS. 시작된 요청 2건이 모두 완료인지/하나 취소인지는 로그만으로 판단 불가. 기존 #126 AC는 캐시된 bytes를 재사용 가능한 경우 **불필요한 중복 완료 GET 금지**, in-flight abort 후 재요청 자체를 무조건 금지하지 않는다.

@@ -1,5 +1,12 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #154 S3-5-R0 — Owner Managed 현장 수용 보고 → 릴리스별 GO/NO-GO 오프라인 사전검증 (2026-10-28 KST)
+
+- **보고된 선행 상태:** 사용자가 S3-4-B2/C의 현장 수용 완료를 명시. [#142](https://github.com/planner77/layoutManager/issues/142#issuecomment-6462863976)/[#151](https://github.com/planner77/layoutManager/issues/151#issuecomment-6462865418)의 **OWNER_ATTESTED_FIELD_ACCEPTANCE_COMPLETE**를 인정하되 외부 원본 열람·독립 재검증은 `NOT_EXTERNALLY_VERIFIED`. 사내 OCI/DB/CAD/S3 실 증거·키·Hash/서명·EV/QA/SNAP/CR/실 경로·운영자 상세는 GitHub/CI/채팅으로 반출하지 않는다.
+- **실제 GO 분리:** 현장 수용 완료는 S3-5 릴리스별 Owner GO 발급이 **아님**. [Issue #153](https://github.com/planner77/layoutManager/issues/153)에서 정확 Release/Schema/Source/App·Migrator·Rollback OCI pair, 단일 SNAP/Epoch/CR, Scope, 24h 이하 Window, Owner와 별도 Rollback Operator 및 정식 배포·활성화 승인 전까지 AUTH/CAD Write OFF·정식 Prisma/Docker/Compose/Nginx/Registry Publish·원본 조작 금지.
+- **R0 준비:** [Issue #154](https://github.com/planner77/layoutManager/issues/154), [S3-5 Runbook](src/deploy/g7-s3/S3-5.md). `src/server/g7-operational/s3-5-owner-decision.ts`는 **현장 내부에서만** 사전 승인된 Owner/QA Public Keys, C0의 17개 영수증 Signed Packet, 별도로 신뢰된 정확 Release Identity 및 릴리스별 Owner 서명을 교차검증하는 **순수 in-memory 코드**. 유효한 주장도 `LOCAL_RELEASE_DECISION_CONSISTENT_NOT_ACTIVATED`이며 `operationalGo/authEligible/writeEligible/runtimeActivated=false` 고정, 정상 GO 승계·운영 전환을 자동 처리하지 않는다.
+- **검증/미게시:** 새 R0 합성 Unit·Fault Test 및 기존 무결성 회귀, GitHub exact `#154 | S3-5-R0 Offline release decision preflight [G7-S3-5R0-NO-GHCR]`+오직 15개 사전 승인 path만 GHCR SKIPPED. C0/B2/#67 예외·일반 Tag/Image 게시 정책 유지. 사내 원본 테스트·PR 병합/메인 CI/GHCR 게시/GO는 **별도 승인**. #153/#109/#96 OPEN/BLOCKED, Owner 보고를 근거 없이 외부 검증 PASS로 승격하지 않는다.
+
 ## #151 PR #152 — TC-126 E2E 원본 GET 재시도 계측 보완 / Owner Managed 위험 수용 (2026-10-28 KST)
 
 - **확인된 실패:** [PR CI #40638297319](https://github.com/planner77/layoutManager/actions/runs/40638297319), HEAD `c31036cd94b81118f8064591c9b8b74c7cd5e246`, attempt 1 `completed/failure`. Docker/Migration/Runtime Smoke Job `122650294554` **SUCCESS**. Verify Job `122650294939`의 Typecheck, Lint, Unit/Integration(신규 S3-4-C0 합성 10개 포함), OCI/DXF, Production Build SUCCESS; Chromium E2E 92 중 **91 PASS/1 FAIL**. 실패: `src/tests/e2e/issues124-126-127.spec.ts:150` `TC-126-RECOVERY`에서 수동 Three→dxf fallback 후 **GET requests 2 vs expected 1**. Legacy Migration E2E는 해당 실패로 SKIPPED. 해당 이전 Run 및 후속 skipped를 성공으로 고쳐 쓰지 않는다.
@@ -818,6 +825,7 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 | [S3-4-B2-4 Runbook](src/deploy/g7-s3/S3-4-B2-4.md) | #142 합성 동일 SNAP의 Source→G7 후보→Rollback SQLite/Local CAD/S3 Export Byte, 4 OCI Role 로컬 계약, 장애 주입·실 복원 NO-GO | B2-4 구현/테스트·B2-5 현장 증거 인수·Owner 실제 Restoring 승인 검토 시 필수 참조 |
 | [S3-4-B2-5 Runbook](src/deploy/g7-s3/S3-4-B2-5.md) | #142 합성 readiness/EV·QA·SNAP 17항목/OCI 4 Role·Source Epoch·CR ID 참조 대조, 실 현장 증명 불가·Owner NO-GO | B2-5 구현·리뷰·Unit/CI, 사내 QA/Source Snapshot 증거 검토 및 S3-4-C/S3-5 승인 판단 전 반드시 참조 |
 | [S3-4-C Runbook](src/deploy/g7-s3/S3-4-C.md) | #151 현장 반입만·원본 증거 반출 금지·Owner Managed QA/내부 receipt SHA+Ed25519 2-key 검증 및 현장 NO-GO, 독립 Trust Anchor/Source 진위 검증은 별도 | S3-4-C0 설계·Unit·PR 리뷰, 현장 실제 B2 증거 수용·서명·S3-5 릴리스별 Owner GO 검토 전 반드시 참조 |
+| [S3-5 Runbook](src/deploy/g7-s3/S3-5.md) | #154 Owner Managed 현장 수용 보고 후 S3-5 릴리스별 GO/NO-GO *오프라인* 서명·C0 영수증/Release Scope·24h Window 검사 및 운영 NO-GO | S3-5-R0 설계/Unit/PR 리뷰와 #153 실제 운영 릴리스별 Owner GO/롤백/컷오버 승인 전 반드시 참조 |
 | [Issue31](out/Issue31.md) | DXF 다중 선택·볼록/정밀 외곽선·실험 상태·P4 권한 보류 | Viewer 선택·외곽선/Worker/JSON 변경 시 |
 | [Issue26](out/Issue26.md) | DXF TEXT/MTEXT 색인·world 좌표 focus·검색 범위/검증 | Viewer 검색·Pan/Zoom·Worker·BLOCK/INSERT·DWG 텍스트 지원 검토 시 |
 | [Issue66](out/Issue66.md) | Migrator 최소 의존성·크기 측정/OCI manifest·복구 계약 | Docker migrator/CI/GHCR 및 버전·패키징 변경 시 |

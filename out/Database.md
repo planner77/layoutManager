@@ -1,5 +1,11 @@
 # Database Schema — 단일 기준 문서
 
+## #154 S3-5-R0 — DB/Schema/운영 원본 불변 (2026-10-28)
+
+- Site Owner는 B2/C 수용 완료를 보고했으나 DB/원본 서명·현장 위치/OCI Digest·private SNAP은 반출 불가, GitHub에는 `OWNER_ATTESTED_FIELD_ACCEPTANCE_COMPLETE`만 기록. PR Unit 합성 fixture는 실 현장 데이터가 아니다.
+- S3-5-R0의 Release Identity/Source/Schema/SNAP 바인딩은 **인메모리** 검사일 뿐 실제 운영 SQLite/CAD/S3/Prisma Schema·Migration History·Audit·Current/Version/Rollback 데이터의 조회·수정/실행을 수행하지 않는다. 신규 7th Auth SQL은 그대로 격리, 운영 DDL 자동 승격 금지.
+- S3-5별 별도 승인·정식 Migration/릴리스 롤백 준비/배포는 Issue #153 및 #109/#96의 후속 범위. C0/R0 합성 긍정으로 `operationalGo=false/runtimeActivated=false`.
+
 ## #151 S3-4-C0 — 영수증·신뢰 키는 현장 내 보유, DB 무변경 (2026-10-28)
 
 - S3-4-C0 준비 코드/합성 테스트는 기존 앱 DB·Prisma `src/prisma/**`, Auth 7th candidate SQL, CAD Version/Current, SQLite/S3 백업·원본·Audit 행에 접근하거나 변경하지 않는다. `src/server/g7-operational/s3-4-c.ts`는 호출자가 사내 메모리로 제공하는 작은 Receipt Bytes만 해시/검증한다.

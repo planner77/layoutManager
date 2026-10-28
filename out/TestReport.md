@@ -1,5 +1,12 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## #154 S3-5-R0 — Owner 현장 완료 보고·합성 릴리스 서명 검사 준비 (2026-10-28)
+
+- **관측 선행:** #151 C0 [Main SHA `013effd65a68879d94d18c4928db8c600e8e9589`](https://github.com/planner77/layoutManager/commit/013effd65a68879d94d18c4928db8c600e8e9589), [Main CI #40641999215](https://github.com/planner77/layoutManager/actions/runs/40641999215) completed SUCCESS, release-scope SUCCESS, GHCR Build/Push SKIPPED. #152 최초 E2E 실패와 보완 이력은 `out/FailureLedger.md`에 보존.
+- **현장:** 사용자가 B2/C Owner Managed 수용 완료 보고, 외부에서 기술 증거를 열람/수집하지 않았으므로 `OWNER_ATTESTED_FIELD_ACCEPTANCE_COMPLETE`와 `NOT_EXTERNALLY_VERIFIED`를 함께 기재. 개별 OCI/source/SNAP/Restore/QA 원본·서명을 요청하거나 가짜 PASS로 표시하지 않는다.
+- **신규 작업:** [Issue #154](https://github.com/planner77/layoutManager/issues/154) 단일 릴리스 Owner Decision Offline Pure Verifier + 합성/악성 Vitest·Runbook/정확 15-path GHCR gate 개발. 소스 작성/Commit/PR 자체는 Typecheck/Test/CI 성공 근거가 아님. 신규 HEAD CI/리뷰 결과는 실제 관측 전 `NOT VERIFIED`.
+- 실제 S3-5 GO 발급, 운영 인증/쓰기/정식 Migration/배포/OCI 이미지 게시·Site data access 모두 **NOT RUN**, #153/#109/#96 OPEN/BLOCKED.
+
 ## #151 / PR #152 — E2E 1건 실패 분석 및 재검증 준비 (2026-10-28)
 
 - [PR CI #40638297319](https://github.com/planner77/layoutManager/actions/runs/40638297319) exact HEAD `c31036cd94b81118f8064591c9b8b74c7cd5e246`, attempt 1 `completed/failure`: Verify Job `122650294939` Typecheck/Lint/Unit·Integration(C0 합성 10건 포함)/OCI/DXF/Production Build SUCCESS, Playwright Chromium **91 passed / 1 failed** at `src/tests/e2e/issues124-126-127.spec.ts:150` `TC-126-RECOVERY`: `Expected:1, Received:2` source GET 시작 횟수; Legacy Migration E2E SKIPPED. Docker/Migration/Smoke Job `122650294554` SUCCESS. 실제 GET 2건 완료/abort 여부는 Log만으로 판정 불가.
