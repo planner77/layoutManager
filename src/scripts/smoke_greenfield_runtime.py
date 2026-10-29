@@ -100,10 +100,14 @@ def create(base, filename):
         status, row, _ = cli.json("POST", "/api/masters", payload)
         assert status == 201 and row.get("id"), (name, status, row)
         parent = ids[name] = row["id"]
-    status, granted, _ = cli.json("POST", "/api/g7-runtime/access/grant",
-                                 {"kind": "site", "operation": "grant",
-                                  "affectedUserId": actor, "value": ids["sites"]})
-    assert status == 200, (status, granted)
+        # New Admin has zero Site grants. Grant the newly created Site while
+        # it is the leaf, BEFORE creating its building and floor. This keeps
+        # the explicit Site-ownership policy intact (no implicit Admin grant).
+        if name == "sites":
+            status, granted, _ = cli.json("POST", "/api/g7-runtime/access/grant",
+                                         {"kind": "site", "operation": "grant",
+                                          "affectedUserId": actor, "value": ids["sites"]})
+            assert status == 200, (status, granted)
     name = "ci109-" + tag + ".dxf"
     fields = {"businessUnitId": ids["business-units"], "productId": ids["products"],
               "siteId": ids["sites"], "buildingId": ids["buildings"], "floorId": ids["floors"],
