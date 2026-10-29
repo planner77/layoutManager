@@ -1,5 +1,19 @@
 # CAD Web Viewer P.O.C.
 
+## 0.44.2 신규 설치 — Issue #109 (2026-10-30, PR 후보)
+
+기본 `src/docker-compose.yml`는 이제 **G7 Greenfield 신규 설치**를 위한 진입점입니다. `docker compose --env-file .env -f src/docker-compose.yml up -d --pull always`로 빈 독립 볼륨에 최종 Schema를 설치하고 기본 포트 **3000**에서 접속합니다. 기존 DB/계정/도면·기존 Migration/백업/HOLD/Owner 서명은 자동 이관·삭제·참조하지 않습니다. **이전 데이터가 필요한 경우 별도 경로를 사용해야 하며, 신규 설치 명령으로 구 DB를 복구할 수 없습니다.**
+
+- `.env`에는 같은 릴리스의 App/Migrator 이미지(또는 digest), `G7_RUNTIME_ORIGIN`(접속하는 브라우저의 정확한 공개 Origin), 새 `CAD_DATA_VOLUME_NAME`을 설정합니다. 인증 없는 HTTP를 쓰는 경우 내부 방화벽으로 접근을 제한합니다.
+- 첫 접속은 `/g7-runtime/setup`으로 안내됩니다. Docker 호스트 소유자가 `/data/db/first-admin.code`를 확인해 웹에서 최초 관리자/초기 비밀번호를 설정합니다. 코드는 생성 후 1시간만 유효하며, 사용자 생성 뒤 재사용할 수 없습니다.
+- 초기 비밀번호를 변경해 로그인하고 사업부→제품→사업장을 추가합니다. 사용자/권한 관리에서 Admin 자신에게 해당 Site를 명시 부여한 뒤 동→층을 추가하고 DXF를 등록합니다. 재시작해도 볼륨의 DB/CAD/Audit는 유지됩니다. Owner 서명의 24시간 갱신은 신규 Self-hosted 흐름에 필요 없습니다.
+- 부적합하거나 이미 데이터가 있는 볼륨, 승인하지 않은 릴리스 교체, 보안 파일/스키마 손상은 자동 복구하지 않고 시작을 차단합니다. 이전 #153 수동/서명 Greenfield Runbook은 **기존 Expert 경로**로만 유지됩니다.
+
+상세: [#109 신규 설치 운영 절차](out/Operation.md), [설계](out/Architecture.md), [원장](out/FailureLedger.md). **현재 0.44.2는 구현/PR CI 후보**이며 실제 GHCR 발행 또는 운영 설치를 의미하지 않습니다.
+
+---
+
+
 > **신규 설치(Greenfield, Issue #153):** 이전 DB나 Migration/HOLD/복구 데이터를 사용하지 않고, 별도 보관 DXF만 신규 등록합니다. [신규 설치 Runbook](src/deploy/g7-greenfield/README.md) 및 [독립 Docker Compose](src/docker-compose.greenfield.yml)를 사용하세요. 기존 기본 Compose는 이 신규 설치 절차가 아닙니다.
 
 

@@ -10,7 +10,6 @@ import { createRequire } from 'node:module';
 import { closeSync, constants, existsSync, fstatSync, lstatSync,
   openSync, readFileSync, readdirSync, realpathSync } from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import type { IsolatedDb } from '../g7-staging/g1-store';
 import { G7_GREENFIELD_BASELINE, G7_GREENFIELD_BASELINE_CHECKSUM,
   G7_DELETE_PASSWORD_TRIGGERS, assertG7GreenfieldSchema } from './greenfield-schema';
@@ -19,7 +18,10 @@ type Db = IsolatedDb & { close(): void };
 const Sqlite = createRequire(import.meta.url)('better-sqlite3') as new (
   filename: string, options?: {fileMustExist?: boolean; readonly?: boolean},
 ) => Db;
-const APP = fileURLToPath(new URL('../../',import.meta.url));
+// The migrator runs with WORKDIR /app/src; path-based resolution avoids
+// webpack treating new URL('../../', import.meta.url) as a server asset.
+// This module is invoked only by the dedicated one-shot CLI, not by HTTP.
+const APP = path.resolve(process.cwd());
 const MIGRATIONS = [
   '202609070001_locations','202609090001_description',
   '202609110001_delete_password','202609110002_delete_invariants',

@@ -1,3 +1,17 @@
+## #109 표준 신규 설치 운영 절차 (2026-10-30, 0.44.2 PR 후보)
+
+최신 일반 Compose 설치는 `src/deploy/g7-greenfield/README.md` **최상단의 Issue #109 절차**가 정본이다. #153의 `docker-compose.greenfield.yml`/포트 3001/서명 Owner·Site Seed 단계는 과거 Expert 설치 자료이며 현행 기본 `docker-compose.yml`/포트 3000에 적용하지 않는다.
+
+1. 같은 0.44.2 App/Migrator GHCR image pair(가능하면 OCI digest pin)와 정확 `G7_RUNTIME_ORIGIN`, 새 `CAD_DATA_VOLUME_NAME`을 `.env`에 설정하고 현장 LAN/HTTPS 접근을 통제한다. 기존 Docker 볼륨·DB·CAD는 선택하지 않는다.
+2. `docker compose --env-file .env -f src/docker-compose.yml up -d --pull always` 한 번으로 one-shot migrator 신규 DB final baseline, 0600 code/marker를 작성하고 App 기동. 기존/부분설치/Schema drift·릴리스 불일치 시 fail-closed. Migration replays 및 자동 데이터 삭제/이관 금지.
+3. `/g7-runtime/setup`에 Docker 호스트에서만 확인 가능한 `/data/db/first-admin.code`(최초 발급 1h, 256-bit)을 입력해 User+Role+Audit 최초 1회 생성. 암호·코드를 GHCR/GitHub/로그/브라우저 API에 반환하지 않는다. 유실 시 User0 조건에서만 `docker compose --env-file .env -f src/docker-compose.yml run --rm migrate setup-renew`으로 명시 코드 재발급.
+4. G3 초기 비밀번호 변경 후 로그인. Site0에서 Admin은 사업부→제품→사업장을 생성하고 사용자/권한 관리에서 자신에게 해당 Site Grant를 명시 부여한 뒤 동→층을 생성하고 DXF를 신규 등록한다. Admin Role만으로 Site CAD 쓰기 허용하지 않는다. 일반 운영에 매일 Owner 서명 갱신은 필요 없다.
+5. 같은 Image ref/Version/Schema+볼륨 재시작 시 DB/CAD/Audit 보존. 업데이트로 marker가 변경되면 자동 upgrade가 아니라 차단이며, 별도 Owner 변경/백업/검증 및 릴리스 절차가 필요하다. 현장 실제 2PC·DXF·OCI 이미지 진위 수용은 **NOT VERIFIED**.
+
+본 PR은 실제 운영 Compose/.env/Volume/Writer/배포 데이터를 변경하거나 GHCR 게시를 수행하지 않는다. 설정상 HTTP 허용은 내부 방화벽이 강제된 LAN에 한정하고 TLS 가능 시 HTTPS로 전환한다.
+
+---
+
 ## #153 Greenfield 설치 운영 절차 (2026-10-29, 최신)
 
 [Greenfield Runbook](../src/deploy/g7-greenfield/README.md)에 따라 새 볼륨 → 빈 DB Schema → 최초 Site seed → Owner 신규 이미지/Origin/Site/Auth/CAD Write 서명 → 최초 Admin → 비밀번호 변경 및 Site Grant → App 가동 → DXF 수동 등록 → LAN 2PC 권한/Audit/Viewer 시험. 이전 DB/HOLD/Snapshot/데이터 복구·rollback image 요구는 전부 제외. 구 환경과의 호환성 검증도 하지 않는다. 기존 운영 데이터에 대한 변경이나 삭제는 수행하지 않는다. 본 문서는 실행 가이드이며 실제 배포 완료를 뜻하지 않는다.

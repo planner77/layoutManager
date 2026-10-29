@@ -1,4 +1,7 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import { resolveG7RuntimeGate } from '@/server/g7-operational/runtime-gate';
+import { openG7RuntimeDb } from '@/server/g7-operational/runtime-db';
 import { FolderOpen, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CadError } from '@/domain/cad';
@@ -12,6 +15,14 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 export default async function Page({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const gate = resolveG7RuntimeGate();
+  if (gate.state === 'ACTIVE' && gate.operationMode === 'SELF_HOSTED') {
+    const db = openG7RuntimeDb(gate, true);
+    try {
+      if (Number(db.prepare('SELECT COUNT(*) AS n FROM "User"').get()?.n) === 0)
+        redirect('/g7-runtime/setup');
+    } finally { db.close(); }
+  }
   const params = new URLSearchParams();
   for (const [key, values] of Object.entries(await searchParams)) for (const value of Array.isArray(values) ? values : values === undefined ? [] : [values]) params.append(key, value);
   let scoped;

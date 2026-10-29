@@ -1,3 +1,32 @@
+## #109 PR #159 — 독립 QA 재개 및 완료 (2026-10-30 KST, 0.44.2 후보)
+
+- **역할/이력:** 최초 요구·AC 기록·RED 재현·Build는 `/root` Codex가 Manager 역할로 수행했고, 지정 gpt-6-astra는 별도 `/root/manager_review`와 재개 후 `/root/manager_resume`에서 구현 검토·최종 수용을 담당한다. 제공 모델 목록에 과거 지정 gpt-5.6-sol/luna가 없어 개발은 gpt-6-sol이 Developer gpt-5.6-sol을 대행했다. 독립 QA는 gpt-6-luna가 과거 지정 gpt-5.6-luna를 대행했다. 앞선 QA 프로세스는 daemon 재시작으로 중단되었고 이번 작업은 `/root/qa_resume`의 gpt-6-luna가 복구했다. 최종 gpt-6-astra Manager는 실제 QA 결과·보고 정합성 검토 후 **ACCEPT / 재작업 불필요**로 판정했다. 수용 범위는 본 보완과 PR CI 재시작이며 현장 릴리스 수용이 아니다.
+- **재개 전 근거(재실행하지 않음):** Typecheck PASS, ESLint 오류0/경고6, Vitest 84파일/598 PASS(244.92초), 집중 Unit 9 PASS(264ms), root `npm ci`/Prisma generate/Production Build PASS. OCI 합성 3 PASS, outline 합성 1k/10k/100k PASS, Python audit 10 PASS(Python 3.14 전용 zstd 하위시험은 실행 환경상 SKIPPED). 위 집중 Unit은 Developer의 standalone 계약 테스트이며, QA Greenfield UI 1 PASS(5.3초) 및 signed Runtime UI 1 PASS(9.9초). 이 결과는 이전 수행자의 기록이며 이번 재개에서 다시 실행하지 않았다.
+- **재개 전 중단 이력:** 앞선 일반 Playwright 93개 실행은 daemon 재시작 때 완료 전에 종료되었다. 그 시점까지 알려진 22개 PASS만 보존하고 전체 성공으로 간주하지 않는다. 이번에는 동일 일반 E2E와 별도 Legacy Migration E2E를 서로 다른 임시 DB/CAD/output 경로, 포트 3101/3104에서 다시 끝까지 실행했다. Legacy 하네스는 임시 디렉터리 미생성과 migration fixture가 요구하는 `/tmp/cad-master-migration-*` prefix 불일치 때문에 각각 테스트 시작 전에 종료했고, 올바른 격리 디렉터리로 다시 시작했다. 이는 애플리케이션 테스트 실패로 집계하지 않는다.
+- **재개 QA 실제 실행:** `npm run typecheck` PASS(exit 0). 일반 Chromium `npx playwright test --config playwright.config.ts --output=/tmp/issue109-general-resume/results` **93/93 PASS, 0 FAIL, 5.9분**, 포트 3101 및 독립 DB/CAD 사용. Legacy `npx playwright test --config playwright.master-migration.config.ts --output=/tmp/issue109-legacy-resume/results` **1/1 PASS, 15.4초**(`TC-MASTER-005`, legacy DB의 browser 사용/재분류), 포트 3104 및 독립 fixture 사용. 전체 원문 로그는 `/tmp/issue109-general-resume.log`, `/tmp/issue109-legacy-resume.log`에 보존.
+- **변경·범위 검토:** diff는 AGENTS/README/Operation/Requirements/Runbook의 사업장 생성 → 본인 명시 Site Grant → 동·층 순서 정정, TestPlan·FailureLedger·ChangeLog 보완, standalone CI order contract 및 Greenfield Setup alert locator 회귀 보완으로 한정된다. Runtime, Workflow, Schema, 의존성, 버전은 변경하지 않았다(후보 0.44.2 유지). Site authorization을 완화하지 않았고 두 기존 테스트의 assertion/coverage를 보존했다. 경로·역할을 이 보고서와 구분해 기록하며 테스트 준비 오류를 제품 FAIL로 취급하지 않는다.
+- **커밋/최종 게이트:** 코드 [1daf5faa](https://github.com/planner77/layoutManager/commit/1daf5faa08fb8691228e86bacbef0edb27580f6d). 미해결 리뷰 스레드 0건(기존 2건 모두 resolved), main `993a2d68` 대비 behind0·충돌 없음, 실제 .env Secret 값과 PR Secret 패턴/런타임 산출물 제외 및 diff check PASS. 원장·운영 문서 커밋을 포함한 단일 non-force 브랜치 갱신으로 PR CI를 시작한다. 후보 버전 0.44.2 유지, 원본 작업 폴더의 기존 변경 2건 보존.
+- **인증 전송 보완:** Git push 인증 2회 거부 후 인증된 GitHub 연결 도구로 반영한다. 코드 tree가 실제 검증한 로컬 tree와 동일함을 확인하고 기대 HEAD 검사 및 `force=false`로 ref를 갱신한다. 기존 로컬 커밋은 보존하며 Secret·인증 URL을 기록하지 않는다.
+- **CI/운영 경계:** 기존 Run #40946304142는 구 HEAD `b5883922`에서 Unit 1 FAIL / Docker Job SUCCESS이며 새 HEAD의 CI 성공 증거가 아니다. 위 로컬 결과로 CI 재실행 상태를 추정하지 않는다. PR CI 새 Run은 최종 코드·문서의 브랜치 갱신으로 시작한 뒤 결과를 관측하지 않으면 `NOT VERIFIED`로 유지한다. 실제 운영 DB/CAD/볼륨, GHCR 게시, Main CI, 현장 2PC/DXF/OCI 수용은 실행하지 않았다.
+
+---
+
+## #109 PR #159 최초 실패 Run 확인 및 보완 (2026-10-30)
+
+- Run #40943801670 / HEAD `ba49e5062c33a4f61990a4f458a264e3781a817e` **completed/failure**. Verify #123693738568은 TypeScript `closeSync` import TS2304 한 건, Docker #123693739084는 `greenfield-install.ts` Webpack `new URL('../../',import.meta.url)`로 baseline build 실패. 자세한 원장: [FailureLedger](FailureLedger.md).
+- 기존 플로우의 Typecheck 외 Lint/Unit/Integration/Build/E2E 및 Docker 기준 이미지 이후의 이미지 빌드/합성 인증 CRUD/restart 검증은 **SKIPPED**. 리뷰 P2 두 건은 실행 실패가 아니라 코드 검토 단계에서 발견, Test PASS 아님.
+- 보완: 누락 import 복구, Next.js에서 실행 경로에 있는 코드의 module-relative URL 정적 해석 제거, Site 생성 직후 Admin의 명시 Site Grant로 Smoke 순서 수정, Playwright Runner/Worker 공유 GREENFIELD_E2E_ROOT 적용. 새 HEAD 전체 CI 성공/현장 수용 여부는 **NOT VERIFIED**.
+
+---
+
+## #109 0.44.2 신규 Compose/웹 관리자 PR 후보 (2026-10-30; 실행 결과 아님)
+
+- 작성된 후보 코드: `greenfield-auto.ts`, `greenfield-first-setup.ts`, 신규 관리 UI/Route, 기본 Compose/Greenfield one-shot migrator, Site0 지원, release marker. 작성된 후보 테스트: `g7-greenfield-auto.test.ts`, `first-install.spec.ts`, Docker `smoke_greenfield_runtime.py` 및 PR CI job 변경.
+- **검증 상태:** 코드/테스트 추가는 PASS 증거가 아니다. 최신 HEAD의 Typecheck/Lint/Unit/Integration/Production Build/Playwright/Docker는 PR CI 결과를 조회하기 전까지 `NOT VERIFIED`. 실 Docker 2PC 접속/DXF 현장 시험/OCI 독립검증 및 실제 GHCR 게시 역시 `NOT VERIFIED`.
+- 기존 #153 CI 실패 14+8개 TS 오류 및 P2 schema drift 반례를 #109 새 테스트에서도 참조한다. SKIPPED 테스트를 PASS로 해석하지 않으며 새 PR 실패 시 실패 원장의 이전 원인까지 대조해 수정한다.
+
+---
+
 ## #153 PR #158 — 두 번째 CI 실패 및 보완 (2026-10-29)
 
 - Run #40890727134 `completed/failure`: Verify Job 123507859408에서 Typecheck 오류 8건, Docker Job 123507859697에서 동일 TypeScript 오류로 baseline Docker 빌드 실패. 세부 오류/원인은 [FailureLedger](FailureLedger.md) 참고.

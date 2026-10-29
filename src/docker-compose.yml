@@ -1,34 +1,41 @@
-# Root 실행 예: docker compose --env-file .env -f src/docker-compose.yml up -d
-# Compose 파일은 src에 있지만 build context는 Root다. Root .dockerignore가 비밀정보와 CAD/DB를 차단한다.
+# Issue #109: ONE ordinary Compose command installs an empty G7 database.
+# An existing/legacy volume is NEVER deleted, migrated, adopted or backfilled.
+# docker compose --env-file .env -f src/docker-compose.yml up -d --pull always
 name: cad-layout-viewer
+
+x-g7-identity: &g7-identity
+  G7_GREENFIELD_MODE: "true"
+  G7_GREENFIELD_AUTOMATED: "true"
+  DATABASE_URL: file:/data/db/cad.sqlite
+  CAD_STORAGE_PATH: /data/cad
+  CAD_STORAGE_BACKEND: local
+  G7_DEPLOY_APP_IMAGE: "${GHCR_IMAGE:-cad-layout-viewer:local}"
+  G7_DEPLOY_MIGRATOR_IMAGE: "${GHCR_MIGRATION_IMAGE:-cad-layout-viewer:local-migrate}"
+  G7_RELEASE_SOURCE_COMMIT: "${G7_RELEASE_SOURCE_COMMIT:-}"
 
 services:
   migrate:
-    # For tagged GHCR_IMAGE, :version-migrate is derived by Compose.
-    # For TAGLESS references use scripts/compose.sh (normalizes :latest),
-    # or set GHCR_MIGRATION_IMAGE explicitly with raw docker compose.
-    # Digest-pinned deployments MUST set GHCR_MIGRATION_IMAGE explicitly.
-    image: ${GHCR_MIGRATION_IMAGE:-${GHCR_IMAGE:-cad-layout-viewer:local}-migrate}
+    image: "${GHCR_MIGRATION_IMAGE:-cad-layout-viewer:local-migrate}"
     build:
       context: ..
       dockerfile: src/Dockerfile
       target: migrator
     restart: "no"
+    entrypoint: [node, --import, tsx, scripts/g7-greenfield.ts]
+    command: [auto]
     environment:
+      <<: *g7-identity
       NODE_ENV: production
-      DATABASE_URL: file:/data/db/cad.sqlite
-      CAD_STORAGE_PATH: /data/cad
-      CAD_STORAGE_BACKEND: local
-      LOG_LEVEL: "${LOG_LEVEL:-info}"
-      LOG_FORMAT: "${LOG_FORMAT:-json}"
+      G7_AUTH_ENABLED: "false"
+      G7_CAD_WRITE_CUTOVER_ENABLED: "false"
+      G7_GREENFIELD_INSTALL_ACK: CREATE_EMPTY_G7_DATABASE
     volumes:
       - type: volume
         source: cad-layout-viewer-data
         target: /data
 
   app:
-    # GHCR_IMAGE를 지정하면 게시 이미지를 pull하고, 없으면 같은 설정으로 로컬 build도 가능하다.
-    image: ${GHCR_IMAGE:-cad-layout-viewer:local}
+    image: "${GHCR_IMAGE:-cad-layout-viewer:local}"
     build:
       context: ..
       dockerfile: src/Dockerfile
@@ -39,30 +46,23 @@ services:
     container_name: cad-layout-viewer-app
     restart: unless-stopped
     ports:
-      # 0.0.0.0 publish로 localhost와 같은 네트워크의 host IP에서 모두 접근한다.
       - target: 3000
         published: "${CAD_HOST_PORT:-3000}"
         host_ip: 0.0.0.0
         protocol: tcp
         name: http
     environment:
-      # 앱이 사용하는 값만 명시적으로 전달한다. Git/GitHub credential은 전달하지 않는다.
+      <<: *g7-identity
       NODE_ENV: production
-      DATABASE_URL: file:/data/db/cad.sqlite
-      CAD_STORAGE_PATH: /data/cad
+      G7_AUTH_ENABLED: "true"
+      G7_CAD_WRITE_CUTOVER_ENABLED: "true"
+      G7_RUNTIME_ORIGIN: "${G7_RUNTIME_ORIGIN:-http://localhost:3000}"
+      # HTTP is permitted only on an Owner-approved, firewalled internal LAN.
+      # Set G7_RUNTIME_ALLOW_HTTP=false when using HTTPS.
+      G7_RUNTIME_ALLOW_HTTP: "${G7_RUNTIME_ALLOW_HTTP:-true}"
       MAX_UPLOAD_SIZE_MB: "${MAX_UPLOAD_SIZE_MB:-100}"
       LOG_LEVEL: "${LOG_LEVEL:-info}"
       LOG_FORMAT: "${LOG_FORMAT:-json}"
-      CAD_STORAGE_BACKEND: "${CAD_STORAGE_BACKEND:-local}"
-      # S3 모드에서만 아래 값을 채운다. credential은 image build argument가 아닌 runtime env다.
-      CAD_S3_ENDPOINT: "${CAD_S3_ENDPOINT:-}"
-      CAD_S3_BUCKET: "${CAD_S3_BUCKET:-}"
-      CAD_S3_REGION: "${CAD_S3_REGION:-us-east-1}"
-      CAD_S3_ACCESS_KEY_ID: "${CAD_S3_ACCESS_KEY_ID:-}"
-      CAD_S3_SECRET_ACCESS_KEY: "${CAD_S3_SECRET_ACCESS_KEY:-}"
-      CAD_S3_SESSION_TOKEN: "${CAD_S3_SESSION_TOKEN:-}"
-      CAD_S3_FORCE_PATH_STYLE: "${CAD_S3_FORCE_PATH_STYLE:-true}"
-      CAD_S3_TIMEOUT_MS: "${CAD_S3_TIMEOUT_MS:-60000}"
     volumes:
       - type: volume
         source: cad-layout-viewer-data
@@ -76,7 +76,6 @@ services:
       start_period: 20s
       retries: 3
     logging:
-      # stdout/stderr의 한 줄 JSON을 Docker local driver가 보존하며 중앙 수집기 추가 시 그대로 전달할 수 있다.
       driver: local
       options:
         max-size: "10m"
@@ -84,7 +83,9 @@ services:
 
 volumes:
   cad-layout-viewer-data:
-    name: cad-layout-viewer-data
+    # Deliberately different from pre-#109's old cad-layout-viewer-data.
+    # A named volume is persistent. Use a NEW unused name for each fresh site.
+    name: "${CAD_DATA_VOLUME_NAME:-cad-layout-viewer-greenfield-install-v1}"
 
 networks:
   cad-layout-viewer-network:

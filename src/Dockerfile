@@ -96,6 +96,7 @@ COPY --from=builder /app/src/server/g7-staging/g2-store.ts ./server/g7-staging/g
 COPY --from=builder /app/src/server/g7-staging/g4-store.ts ./server/g7-staging/g4-store.ts
 COPY --from=builder /app/src/server/g7-operational/greenfield-schema.ts ./server/g7-operational/greenfield-schema.ts
 COPY --from=builder /app/src/server/g7-operational/greenfield-install.ts ./server/g7-operational/greenfield-install.ts
+COPY --from=builder /app/src/server/g7-operational/greenfield-auto.ts ./server/g7-operational/greenfield-auto.ts
 COPY --from=builder /app/src/server/g7-operational/greenfield-gate.ts ./server/g7-operational/greenfield-gate.ts
 COPY --from=builder /app/src/server/g7-operational/greenfield-authority.ts ./server/g7-operational/greenfield-authority.ts
 COPY --from=builder /app/src/server/g7-operational/runtime-admin.ts ./server/g7-operational/runtime-admin.ts

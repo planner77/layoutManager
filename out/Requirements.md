@@ -1,3 +1,15 @@
+## Issue #109 현행 신규 설치 요구사항 (2026-10-30; #153 이후 개정)
+
+- FR-109-01: **기존 기본** `src/docker-compose.yml`과 HTTP 포트 3000, `docker compose --env-file .env -f src/docker-compose.yml up -d --pull always` 명령으로 별도 사전 수동 SQL/Seed/24시간 서명 작업 없이 새 볼륨에 신규 설치.
+- FR-109-02: 데이터 원본/구 이력 0, final CAD/G7 Auth Schema 단일 baseline. Docker 재시작에 DB/CAD/Role/Site/Audit 유지. 다른 내용이 있는 볼륨·marker 없는 DB·부분 설치·Schema drift·이미지 정합성 위반은 fail-closed; 구 DB 삭제·업그레이드 금지.
+- FR-109-03: 최초 실행에서 `/g7-runtime/setup`으로 이동, 웹 최초 관리자 설정. UID 소유 0600 host setup-code 1시간, Origin/Host/CSRF·재시도 제한, Admin 단일 생성·Role+Audit atomic, 재사용 불가, 초기 비밀번호 강제변경.
+- FR-109-04: 초기 Site 0개 상태에서도 Admin 글로벌 관리 기능으로 사업부→제품→사업장/법인을 생성한다. Admin 본인에게 해당 Site Grant를 명시 부여한 뒤 동→층을 생성한다. User Site Grant는 사용자별 명시 설정이며 미할당 Site의 기준정보·CAD 쓰기는 거부한다.
+- FR-109-05: Viewer 익명 읽기·CAD 등록/Current/삭제 password·기존 Session(8h/30m/3개)·Role/Site/CSRF·감사 원자성·부정 접근 차단을 유지. Owner 24h 서명 갱신 없이 일반 계정 사용; 설치/Schema/릴리스 일관성은 매 요청 확인.
+- FR-109-06: 버전 0.44.2 신규 릴리스 후보와 App/Migrator 이미지 쌍 식별. 실제 OCI Digest/Source 독립 검증 및 LAN 2PC/DXF 수용은 Owner 현장 업무이며 CI 성공으로 대체 불가.
+- AC: Unit/Integration/Playwright 신규설치 UI + Docker App/Migrator 최초 설치/재시작·CRUD·실패 주입, Typecheck/Lint/Build/E2E가 PR CI에서 실행. 필수 테스트를 생략하거나 과거 실패를 성공 처리하지 않는다. Issue #109은 실제 수용 전 OPEN.
+
+---
+
 ## #153 Greenfield 요구사항 (2026-10-29)
 
 - FR-GF-001: 기존 저장된 데이터 입력 0; 새 독립 DB/CAD 볼륨에 현재 기능만 설치.

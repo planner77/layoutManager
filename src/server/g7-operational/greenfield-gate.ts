@@ -6,6 +6,7 @@ import { constants, openSync, closeSync, fstatSync, lstatSync, readFileSync, rea
 import path from 'node:path';
 import { createPublicKey, verify } from 'node:crypto';
 import packageInfo from '../../package.json' with {type:'json'};
+import { resolveAutomatedGreenfieldGate } from './greenfield-auto';
 import { G7_GREENFIELD_CAPABILITY, G7_GREENFIELD_SCHEMA_ID, assertG7GreenfieldSchema } from './greenfield-schema';
 import { openG7RuntimeDb } from './runtime-db';
 import type { G7RuntimeGate } from './runtime-gate';
@@ -78,6 +79,7 @@ export function resolveG7GreenfieldGate(
   env:Readonly<Record<string,string|undefined>>,now=Date.now(),
 ):G7RuntimeGate {
   if(env.G7_GREENFIELD_MODE!=='true')return denied('GREENFIELD_MODE_REQUIRED');
+  if(env.G7_GREENFIELD_AUTOMATED==='true')return resolveAutomatedGreenfieldGate(env,now);
   for(const k of ['G7_AUTH_ENABLED','G7_CAD_WRITE_CUTOVER_ENABLED','G7_RUNTIME_ALLOW_HTTP',
     'G7_RUNTIME_RECOVERY_MODE']) {
     if(env[k]!==undefined&&env[k]!=='true'&&env[k]!=='false')return denied('INVALID_RUNTIME_SWITCH');

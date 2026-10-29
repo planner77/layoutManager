@@ -1,3 +1,13 @@
+## #109 초기 DB 계약 — 일반 Docker Compose (2026-10-30)
+
+- 새 **빈** `/data/db/cad.sqlite`에 `G7-GREENFIELD-20261029-1` final schema를 최초 1회 생성하고 `_prisma_migrations`에는 `202610290001_greenfield_baseline` **한 건만** 저장한다. 구 6/7 Migration 기록을 합성하지 않는다.
+- 삭제 암호 INSERT/UPDATE 트리거 둘, G7 Auth/Session/Grant/Audit, G3LoginAttempt 등의 보안 제약, sqlite_master DDL fingerprint, `PRAGMA quick_check` 및 `foreign_key_check`를 검사한다.
+- `/data/db/g7-install.json`(0600)은 App/Migrator reference/version/Schema/Source 설정+설치 ID를 보유하는 **신규 설치 식별자**다. `/data/db/first-admin.code`(0600)은 브라우저에 노출되지 않는 최초 관리자 256-bit 임시 코드다. 둘 다 앱 UID 소유. 설치 완료 marker는 Code와 Schema를 만든 후 마지막으로 작성한다.
+- 초기 데이터: `BusinessUnit/Product/CadSite/Building/CadLocation/CadFileVersion/User/AuditEvent` 모두 **0건**. 첫 Admin은 DB 원자 거래로 User/Role/Audit를 만들되 Site Grant는 0건. Site는 인증된 Admin이 웹 기준정보로 만든 후 별도 Grant한다.
+- 기존 DB, 손상·불일치 Schema, marker 누락·오염/파일 권한 이상, 다른 이미지 쌍을 만나면 DDL·UPDATE·DELETE·RESEED를 하지 않고 차단한다. 정상 restart도 기존 SQLite·CAD·Audit 데이터를 변경하지 않는다.
+
+---
+
 ## #153 Greenfield DB 최초 Schema 계약 (2026-10-29)
 
 빈 독립 SQLite 파일에 CAD/Auth 현재 기능의 DDL을 처음부터 만든다. 과거 6→7 이관/이력 복제는 수행하지 않는다. 설치 기록은 단일 `202610290001_greenfield_baseline`과 고정 checksum. Auth/User/Role/SiteGrant/Session/Audit 및 CAD 관련 Table/Index/Trigger/ForeignKey를 엄격히 검증하고 `cad_version_delete_password_insert/update`를 최종 Schema에 포함한다. 이미 초기화된 DB나 비어 있지 않은 저장소에는 재설치 거부. 새 BusinessUnit/Product/Site/Building/Location과 이후 수동 DXF 업로드로만 데이터를 생성한다.

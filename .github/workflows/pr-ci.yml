@@ -118,6 +118,9 @@ jobs:
       - name: G7 서명 Runtime 로그인·관리·CAD 권한 E2E
         run: npx playwright test --config playwright.g7-runtime.config.ts
 
+      - name: G7 신규설치 최초 관리자 웹 UI E2E (#109)
+        run: npx playwright test --config playwright.g7-greenfield.config.ts
+
       - name: Legacy migration E2E 테스트
         run: npm run test:master-migration
 
@@ -158,7 +161,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 -m py_compile src/scripts/audit_standalone_layers.py src/scripts/test_audit_standalone_layers.py src/scripts/smoke_web_runtime.py
+          python3 -m py_compile src/scripts/audit_standalone_layers.py src/scripts/test_audit_standalone_layers.py src/scripts/smoke_web_runtime.py src/scripts/smoke_greenfield_runtime.py
           python3 src/scripts/test_audit_standalone_layers.py
       - name: Build pre-change baseline (same source, original Dockerfile)
         shell: bash
@@ -249,25 +252,32 @@ jobs:
           docker compose -f src/deploy/g5/compose.preview.yml --profile g5-prod config --quiet
           docker compose -f src/deploy/g5/compose.preview.yml --profile g5-dev config --quiet
 
-      - name: Compose fresh install, static assets, health and idempotent migration
+      - name: Compose Greenfield first run, Admin, CAD, restart persistence
         shell: bash
-        env:
-          GHCR_IMAGE: cad-layout-viewer:ci
-          GHCR_MIGRATION_IMAGE: cad-layout-viewer:ci-migrate
         run: |
           set -euo pipefail
+          VERSION="$(python3 -c 'import json;print(json.load(open("src/package.json"))["version"])')"
+          export GHCR_IMAGE="cad-layout-viewer:${VERSION}"
+          export GHCR_MIGRATION_IMAGE="cad-layout-viewer:${VERSION}-migrate"
+          export CAD_DATA_VOLUME_NAME="cad-layout-viewer-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          echo "CAD_DATA_VOLUME_NAME=$CAD_DATA_VOLUME_NAME" >> "$GITHUB_ENV"
+          docker tag cad-layout-viewer:ci "$GHCR_IMAGE"
+          docker tag cad-layout-viewer:ci-migrate "$GHCR_MIGRATION_IMAGE"
           docker compose --env-file .env.example -f src/docker-compose.yml config --quiet
           docker compose --env-file .env.example -f src/docker-compose.yml up -d --no-build app
-          curl --fail --silent --show-error --retry 40 --retry-delay 3 --retry-connrefused --retry-all-errors --connect-timeout 3 --max-time 10 http://127.0.0.1:3000/api/health
-          python3 src/scripts/smoke_web_runtime.py create http://127.0.0.1:3000 "$RUNNER_TEMP/issue67-crud.json"
-          curl --fail http://127.0.0.1:3000/fonts/NanumGothic-Regular.ttf --output /dev/null
-          curl --fail http://127.0.0.1:3000/fonts/CadKorean.typeface.json --output /dev/null
-          curl --fail http://127.0.0.1:3000/libredwg/wasm/libredwg-web.wasm --output /dev/null
+          curl --fail --silent --show-error --retry 40 --retry-delay 3 --retry-connrefused --retry-all-errors --connect-timeout 3 --max-time 10 http://localhost:3000/api/health
+          # The one-time code is synthetic; never print it in Actions output.
+          CODE="$(docker compose --env-file .env.example -f src/docker-compose.yml exec -T app cat /data/db/first-admin.code)"
+          G7_CI_FIRST_SETUP_CODE="$CODE" python3 src/scripts/smoke_greenfield_runtime.py create http://localhost:3000 "$RUNNER_TEMP/issue109-crud.json"
+          unset CODE
+          curl --fail http://localhost:3000/fonts/NanumGothic-Regular.ttf --output /dev/null
+          curl --fail http://localhost:3000/fonts/CadKorean.typeface.json --output /dev/null
+          curl --fail http://localhost:3000/libredwg/wasm/libredwg-web.wasm --output /dev/null
           docker compose --env-file .env.example -f src/docker-compose.yml stop app
           docker compose --env-file .env.example -f src/docker-compose.yml up --no-build --force-recreate migrate
           docker compose --env-file .env.example -f src/docker-compose.yml up -d --no-build app
-          curl --fail --silent --show-error --retry 40 --retry-delay 3 --retry-connrefused --retry-all-errors --connect-timeout 3 --max-time 10 http://127.0.0.1:3000/api/health
-          python3 src/scripts/smoke_web_runtime.py verify-delete http://127.0.0.1:3000 "$RUNNER_TEMP/issue67-crud.json"
+          curl --fail --silent --show-error --retry 40 --retry-delay 3 --retry-connrefused --retry-all-errors --connect-timeout 3 --max-time 10 http://localhost:3000/api/health
+          python3 src/scripts/smoke_greenfield_runtime.py verify http://localhost:3000 "$RUNNER_TEMP/issue109-crud.json"
       - name: Dump Docker diagnostics and stop without deleting volume
         if: always()
         shell: bash

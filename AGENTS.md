@@ -1,3 +1,26 @@
+## #109 PR #159 — CI 실패/리뷰 재발 방지 (2026-10-30)
+
+- 기존 CLI/SQLite 모듈을 Next App Router API가 import하면 빌드 컨텍스트가 변한다. Typecheck 외 **Next webpack Production Build**를 반드시 검증하고, CLI 전용 `new URL('../../',import.meta.url)` 같은 상대 URL의 번들러 자산 분석을 주의한다. 빌드 실패를 단순 Docker 일시 문제로 오판하지 않는다.
+- 파일 보안 helper/FD teardown 리팩터링 시 `closeSync` 등 `node:fs` import 제거 여부와 strict TS를 확인하며 O_NOFOLLOW, UID/0600/0700/Schema guard를 완화해 통과시키지 않는다.
+- 신규 Site 수동 생성 흐름은 **Site 생성 → 명시적 Site Grant → Building/Floor 생성**. 최초 Admin이 Admin Role만으로 임의 Site 쓰기를 할 수 있게 우회하지 않는다. Docker Smoke와 실제 UI 순서는 정책과 동등해야 한다.
+- Playwright Web Server/Worker가 Config를 중복 로드할 수 있으므로 `G7_GREENFIELD_E2E_ROOT`는 환경변수로 전달·공유하고 기존 fixture를 다시 생성·삭제하지 않는다. 구 Run #40943801670의 1차 실패와 P2 2건은 `out/FailureLedger.md`에서 추적하고 새 HEAD PR CI 결과 미확인 상태를 PASS로 승격하지 않는다.
+
+---
+
+## Issue #109 — 일반 Compose 기반 G7 신규 설치 최우선 지침 (2026-10-30, 0.44.2 후보)
+
+> **현행 우선순위:** Issue #109의 최신 Owner 요구는 2026-10-29 Issue #153의 *별도 greenfield compose / 수동 Site seed / 24시간 Owner 서명* 운영 단계보다 우선한다. 과거 자료·시험 이력은 삭제하지 않고 역사로 유지한다. 루트 DESIGN.md가 없으므로 out/Architecture.md와 out/Decisions.md가 설계 기준이다.
+
+- 기본 배포 진입점은 **src/docker-compose.yml**, 기존 3000 포트와 `docker compose --env-file .env -f src/docker-compose.yml up -d --pull always` 명령. 기존 운영 볼륨을 자동으로 Mount/Adopt/Update/Migrate/Erase하면 안 된다. 신규 `CAD_DATA_VOLUME_NAME`을 지정하고 빈 DB/CAD 상태만 설치한다.
+- Migrator의 `g7-greenfield.ts auto`는 #153의 final DDL만 새 SQLite에 **1개 Greenfield baseline + 2개 삭제 비밀번호 트리거**로 생성한다. 중도 실패·스키마 drift·marker 없는 기존 DB·권한 오류·잘못된 App/Migrator release pair는 무조건 차단한다. 정상 재시작에는 재설치/초기화가 없다.
+- 설치 완료 표식은 schema와 host-only code 작성 뒤에 마지막으로 기록한다. 256-bit 최초 관리자 설정 코드는 UID=10001 소유 0600 파일에만 보관, 브라우저·CI·GitHub 로그에 값 노출 금지. `/g7-runtime/setup`는 서버 상태, Host/Origin/CSRF, 1시간 유효 코드, 영속 실패 제한, G2 단일 트랜잭션의 최초 Admin+역할+Audit로 보호한다. 관리자 1명 생성 후 절대 다시 열지 않는다.
+- 최초 Admin은 **명시 Site Grant 없이** 생성하고 강제 비밀번호 변경한다. 이후 사업부→제품→사업장 생성 → Admin 본인에게 해당 Site 명시 Grant → 동→층 생성 → CAD 등록 순서를 따른다. 동·층과 CAD 쓰기는 기존 G3 세션/G4 Site 권한 및 Prisma 거래·Audit로 처리한다. Site 목록이 비어 있어도 Admin 글로벌 계정 관리가 가능하되 CAD 쓰기는 불가능하다.
+- Self-hosted Greenfield 런타임은 일일 24h Owner 서명 재발급에 의존하지 않는다. 대신 설치 marker·실행 버전/이미지 쌍/설정·최종 스키마 fingerprint/파일 UID·권한/복구 HOLD를 매 요청 재검증하고, Session/Grant/Origin/CSRF/Audit·CAD 삭제 비밀번호는 완화하지 않는다. `G7_GREENFIELD_AUTOMATED=true`가 아닌 기존 signed Expert 모드 로직은 역사적 호환 계약으로 분리한다.
+- 테스트: 합성 0→1 Admin, UI E2E, Site0→정상 생성·Grant, CAD Current/삭제/Audit, Docker 재시작 persistence, old/partial/foreign volume 거부, 위변조·허위 이미지 쌍, Typecheck/Lint/Unit/Integration/E2E/Docker. 기존 실패 원장의 누적 회귀를 보존한다.
+- **현재 저장소 코드는 PR 후보일 뿐**. PR CI 실제 결과/현장 2대 PC·DXF/OCI 배포·GitHub GHCR·Main CI는 완료 전 PASS 표시 금지. 작업자는 새 PR을 기반으로 리뷰·충돌 해결하고 실패 원장 기록 후 PR CI만 시작한다. #109은 Owner가 현장 수용하기 전 OPEN으로 유지한다.
+
+---
+
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
 ## Issue #153 — Greenfield 최우선 개발 지침 (Owner, 2026-10-29)

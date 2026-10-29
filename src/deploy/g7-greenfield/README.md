@@ -1,3 +1,71 @@
+# Issue #109 — 표준 Docker Compose G7 신규 설치 Runbook (0.44.2 PR 후보)
+
+> **최신 표준 설치 경로:** 이 문서의 아래 절차가 이전 #153 수동 서명·Site Seed / 포트 3001 예시를 **대체**합니다. 이 하단의 #153 내용은 역사적 Expert 설치 경로로만 남기며 기본 명령에 적용하지 않습니다. 실제 운영 이미지 게시·현장 배포·2PC 수용은 별도 승인/검증이 필요합니다.
+
+## 준비 조건
+
+1. **새 이름의 완전히 비어 있는 Docker named volume**을 준비합니다. 구 `cad-layout-viewer-data`와 구 `cad-layout-viewer-greenfield-data` 및 실운영 CAD/SQLite/HOLD는 지정하지 않습니다. 빈 볼륨만 설치하므로 기존 DB·CAD·Audit는 이관하지 않습니다. 기존 자료를 지우지 않으며, 별도로 보관된 DXF만 새 시스템에서 수동 등록합니다.
+2. 운영자가 검증한 동 버전 **App/Migrator 이미지 쌍**을 준비합니다. 이미지 태그를 쓰는 경우 `0.44.2`와 `0.44.2-migrate`처럼 앱 패키지 버전과 동일해야 합니다. 가능하면 레지스트리에서 실제 두 OCI Digest를 조회해 **각각** `@sha256:...` 참조로 고정합니다. 런타임은 이미지 문자열과 앱 버전의 정합성을 확인하지만 컨테이너의 실제 OCI provenance를 독립적으로 증명하지는 못합니다.
+3. 저장소 루트에 서버 전용 `.env` 파일을 두고 다음 항목을 설정합니다. 정식 이미지/사내 origin/볼륨명은 각 운영 환경 값으로 교체하세요.
+
+```env
+GHCR_IMAGE=ghcr.io/planner77/layoutmanager:0.44.2
+GHCR_MIGRATION_IMAGE=ghcr.io/planner77/layoutmanager:0.44.2-migrate
+CAD_DATA_VOLUME_NAME=cad-layout-viewer-my-new-site-20261030
+CAD_HOST_PORT=3000
+G7_RUNTIME_ORIGIN=http://192.0.2.10:3000
+G7_RUNTIME_ALLOW_HTTP=true
+```
+
+`192.0.2.10`은 문서용 예시 IP이며 실 주소가 아닙니다. 내부 LAN에서 HTTP를 써야 한다면 방화벽/접속 제어로 신뢰 IP만 허용하고 자격증명을 외부 네트워크에 노출하지 않습니다. HTTPS 사용 시 `G7_RUNTIME_ALLOW_HTTP=false`로 설정하고 공개 URL과 리버스 프록시 Host가 정확히 일치해야 합니다. 실제 비밀번호/일회용 코드는 `.env`에 넣지 않습니다. 기존 환경에서 3000 포트가 점유되어 있으면 **기존 컨테이너를 삭제하지 말고** 기동 전 정책을 별도 확인합니다.
+
+## 1. 설치 및 시작 (한 명령)
+
+```sh
+docker compose --env-file .env -f src/docker-compose.yml up -d --pull always
+```
+
+One-shot migrator가 `/data/db/cad.sqlite`와 `/data/cad`의 신규 상태를 확인한 후 G7 최종 Schema·한 개의 Greenfield baseline·삭제 비밀번호 보호 트리거를 설치하고 /data/db/first-admin.code를 생성합니다. 마지막에 배포 identity `/data/db/g7-install.json`을 기록합니다. App은 migrator **성공 이후에만** 포트 3000으로 시작합니다. `migrate`가 실패하면 웹 App을 무리하게 시작하지 말고 원인을 확인하세요.
+
+```sh
+docker compose --env-file .env -f src/docker-compose.yml ps
+docker compose --env-file .env -f src/docker-compose.yml logs --tail 80 migrate
+```
+
+성공 여부는 상태/Health/실제 사용자 및 권한 시험으로 확인해야 합니다. 기존 데이터가 들어 있는 볼륨은 **자동 정리/업그레이드하지 않고 차단**합니다. 재시작해도 기존 설치 ID·DB·CAD·감사 데이터는 초기화하지 않습니다. 릴리스 이미지 버전/Tag/Digest가 바뀌면 기존 marker와 달라 차단되며, 자동 무승인 인플레이스 업그레이드를 수행하지 않습니다.
+
+## 2. 최초 관리자 설정 (일회성)
+
+브라우저에서 `http://[실 운영 IP]:3000/`으로 접속하면 관리자 0건인 경우 `/g7-runtime/setup`으로 안내됩니다. 아래 명령을 **Docker 호스트의 안전한 로컬 터미널**에서만 실행하여 최초 관리자 코드를 확인합니다.
+
+```sh
+docker compose --env-file .env -f src/docker-compose.yml exec -T app cat /data/db/first-admin.code
+```
+
+코드는 256-bit 난수, UID10001 소유 0600 파일, 1시간 유효입니다. 화면에 코드/최초 로그인 이름/초기 비밀번호를 입력합니다. 브라우저는 코드 자체를 발급/조회할 수 없으며 HTTP 요청에는 Host·Origin·CSRF cookie/헤더와 실패 횟수 제한을 적용합니다. DB에서 User+Admin Role+Audit가 원자적으로 생성되면 **해당 화면/코드는 영구 무효**이며 초기 Admin은 어떤 Site에도 자동 할당되지 않습니다.
+
+코드가 만료/유실되었고 **아직 User가 0명**이면 호스트 운영자가 한 번 명시 실행합니다. 이 명령은 DB·Admin을 삭제/재생성하지 않습니다.
+
+```sh
+docker compose --env-file .env -f src/docker-compose.yml run --rm migrate setup-renew
+```
+
+코드와 임시 비밀번호는 로그/Issues/메신저/스크린샷에 게시하지 않습니다. 관리자 생성 후 코드 파일은 계정 추가에 사용할 수 없습니다. 코드가 유출되었거나 이미 사용자/감사가 존재하는 경우 설치를 리셋하는 대신 사고 대응 절차를 따릅니다.
+
+## 3. 계정·Site/도면 활성화
+
+`/g7-runtime`의 '초기 비밀번호 변경'에서 임시 암호를 변경한 뒤 새 암호로 로그인합니다. Admin은 `/masters`에서 **사업부 → 제품 → 사업장/법인**을 생성합니다. 이어 `/g7-runtime` 사용자/권한 관리에서 **Admin 자신에게 해당 사업장 Site Grant**를 명시 부여한 뒤 `/masters`에서 **동 → 층**을 생성합니다. 동·층 작성도 Site 권한이 필요하므로 이 순서를 지킵니다. Admin Role만으로 CAD 등록/Current/삭제를 할 수 없습니다. 다른 계정에는 Reader/Editor/Admin을 명시 부여합니다. 인증된 Editor/Admin과 해당 Site Grant가 있어야 수정되고, 기존 CAD 삭제 암호 검증 및 Audit가 적용됩니다. 신규 DXF는 시스템에서 새로 업로드합니다.
+
+## 4. 장애·변경 및 현장 수용
+
+- **재시작:** 같은 이미지 참조·설치 marker·볼륨인 경우 `docker compose ... up -d`가 DB/CAD/Audit를 유지합니다. 자동 Migration replay·code 재생성·Admin 초기화 없음.
+- **중도 실패:** marker 없는 비빈 DB·불완전 Schema·누락/잘못된 권한 코드 파일은 fail-closed. 자동 SQL 복구·DB 삭제/볼륨 삭제를 실행하지 않습니다. 필요 시 새로운 빈 볼륨으로 **신규 설치**를 별도 승인합니다.
+- **버전 업그레이드:** 이미지/Source를 교체하면 설치 marker와 불일치로 차단합니다. 현 시점 무인 DB schema upgrade는 지원하지 않으므로 Owner의 별도 백업·검증/승인된 업그레이드 설계가 필요합니다. 이 명령은 기존 DB 자동 이관 수단이 아닙니다.
+- **운영 승인:** 새 Self-hosted mode는 예전 24h Owner Ed25519 서명 갱신이 필요하지 않습니다. 그러나 CI/컨테이너 화면 검증은 실 운영 이미지 출처, 네트워크 차단, 역할별 접근, 최소 2대 PC의 세션/권한/Viewer/실 DXF 수용을 대신하지 않습니다.
+- **검증:** `/api/health`가 200, 최초 Admin 1회/초기 비밀번호 변경, Site0→생성/명시 Grant, CAD 업로드·Current/삭제비밀번호, Audit, 컨테이너 restart 후 변경 사항 유지, 미승인/Reader 차단을 확인합니다.
+
+---
+
 # Issue #153 — 완전 신규 설치 (Greenfield)
 
 이 경로는 과거 DB/HOLD/Snapshot/기존 CAD 데이터와 무관하다. **Owner가 별도 보관한 DXF 파일만 신규 업로드**한다.
