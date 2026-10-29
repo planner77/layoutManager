@@ -1,0 +1,135 @@
+# Issue #153: entirely new data, no legacy SQLite, HOLD, snapshot or downgrade.
+# Run only with a dedicated env file; NEVER combine this with docker-compose.yml.
+name: cad-layout-viewer-greenfield
+
+x-greenfield-env: &greenfield-env
+  NODE_ENV: production
+  G7_GREENFIELD_MODE: "true"
+  DATABASE_URL: file:/data/db/cad.sqlite
+  CAD_STORAGE_PATH: /data/cad
+  CAD_STORAGE_BACKEND: local
+  G7_AUTH_ENABLED: "false"
+  G7_CAD_WRITE_CUTOVER_ENABLED: "false"
+
+x-greenfield-release: &greenfield-release
+  G7_RELEASE_VERSION: "${G7_RELEASE_VERSION:-}"
+  G7_RELEASE_CAPABILITY: G7-GREENFIELD-AUTH-V1
+  G7_RELEASE_SCHEMA_ID: G7-GREENFIELD-20261029-1
+  G7_RELEASE_SOURCE_COMMIT: "${G7_RELEASE_SOURCE_COMMIT:-}"
+  G7_RELEASE_APP_DIGEST: "${G7_RELEASE_APP_DIGEST:-}"
+  G7_RELEASE_MIGRATOR_DIGEST: "${G7_RELEASE_MIGRATOR_DIGEST:-}"
+  G7_RUNTIME_TRUST_PATH: /run/g7/runtime-trust.json
+  G7_RUNTIME_APPROVAL_PATH: /run/g7/runtime-approval.json
+  G7_RUNTIME_ALLOW_HTTP: "${G7_RUNTIME_ALLOW_HTTP:-false}"
+
+services:
+  init:
+    profiles: [setup]
+    image: "${GHCR_MIGRATION_IMAGE:?Pin a tested version+digest migrator image}"
+    restart: "no"
+    entrypoint: [node, --import, tsx, scripts/g7-greenfield.ts]
+    command: [init, --ack-empty-db]
+    environment:
+      <<: *greenfield-env
+      G7_GREENFIELD_INSTALL_ACK: CREATE_EMPTY_G7_DATABASE
+    volumes:
+      - greenfield-data:/data
+
+  seed-sites:
+    profiles: [setup]
+    image: "${GHCR_MIGRATION_IMAGE:?Pin migrator}"
+    restart: "no"
+    entrypoint: [node, --import, tsx, scripts/g7-greenfield.ts]
+    command: [seed-sites, --ack-empty-site-master]
+    environment:
+      <<: *greenfield-env
+      G7_GREENFIELD_SEED_ACK: SEED_EMPTY_GREENFIELD
+      G7_GREENFIELD_SEED_FILE: /run/seed/seed.json
+    volumes:
+      - greenfield-data:/data
+      - type: bind
+        source: "${G7_SITE_SEED_DIR:?Create private UID10001 0700 seed directory}"
+        target: /run/seed
+        read_only: true
+
+  owner-sign:
+    profiles: [setup]
+    image: "${GHCR_MIGRATION_IMAGE:?Pin migrator}"
+    restart: "no"
+    entrypoint: [node, --import, tsx, scripts/g7-greenfield-authority.ts]
+    command: [init, /run/operator/release-input.json, /run/g7, /run/owner-key/owner-private.pem]
+    environment:
+      <<: *greenfield-env
+    volumes:
+      - greenfield-data:/data:ro
+      - type: bind
+        source: "${G7_SITE_OPERATOR_DIR:?Create private operator input directory}"
+        target: /run/operator
+        read_only: true
+      - type: bind
+        source: "${G7_OWNER_KEY_DIR:?Mount Owner signing key only into one-shot signer}"
+        target: /run/owner-key
+        read_only: true
+      - type: bind
+        source: "${G7_RUNTIME_DIR:?Create UID10001 0700 runtime authority directory}"
+        target: /run/g7
+
+  admin-bootstrap:
+    profiles: [setup]
+    image: "${GHCR_MIGRATION_IMAGE:?Pin migrator}"
+    restart: "no"
+    entrypoint: [node, --import, tsx, scripts/g7-runtime-admin.ts]
+    command: [--ack-runtime-admin]
+    environment:
+      <<: [*greenfield-release, *greenfield-env]
+      G7_AUTH_ENABLED: "true"
+      G7_CAD_WRITE_CUTOVER_ENABLED: "false"
+      ADMIN_BOOTSTRAP_ENABLED: "true"
+      ADMIN_BOOTSTRAP_USERNAME: "${G7_INITIAL_ADMIN_USERNAME:-admin}"
+      ADMIN_BOOTSTRAP_PASSWORD_FILE: /run/secret/admin.password
+    volumes:
+      - greenfield-data:/data
+      - type: bind
+        source: "${G7_RUNTIME_DIR:?runtime authority}"
+        target: /run/g7
+        read_only: true
+      - type: bind
+        source: "${G7_ADMIN_SECRET_DIR:?private initial Admin password directory}"
+        target: /run/secret
+        read_only: true
+
+  app:
+    image: "${GHCR_IMAGE:?Pin tested version+digest runtime app image}"
+    container_name: cad-layout-viewer-greenfield-app
+    restart: unless-stopped
+    ports:
+      - target: 3000
+        published: "${CAD_GREENFIELD_HOST_PORT:-3001}"
+        host_ip: 0.0.0.0
+        protocol: tcp
+    environment:
+      <<: [*greenfield-release, *greenfield-env]
+      G7_AUTH_ENABLED: "${G7_AUTH_ENABLED:-false}"
+      G7_CAD_WRITE_CUTOVER_ENABLED: "${G7_CAD_WRITE_CUTOVER_ENABLED:-false}"
+      MAX_UPLOAD_SIZE_MB: "${MAX_UPLOAD_SIZE_MB:-100}"
+      LOG_LEVEL: "${LOG_LEVEL:-info}"
+      LOG_FORMAT: "${LOG_FORMAT:-json}"
+    volumes:
+      - greenfield-data:/data
+      - type: bind
+        source: "${G7_RUNTIME_DIR:?runtime authority}"
+        target: /run/g7
+        read_only: true
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+    logging:
+      driver: local
+      options: {max-size: "10m", max-file: "5"}
+
+volumes:
+  greenfield-data:
+    name: cad-layout-viewer-greenfield-data
