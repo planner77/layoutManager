@@ -123,20 +123,23 @@ function seedInput(raw:unknown):Seed {
   const title=(x:unknown):x is string =>
     typeof x==='string' && x.length>0 && x.length<=100 && x.trim()===x &&
     !/[\x00-\x1f]/.test(x);
-  const sites=v.sites;
-  if (!title(v.businessUnit) || !title(v.product) ||
-      !Array.isArray(sites) || !sites.length || sites.length>100) blocked();
+  if (!title(v.businessUnit) || !title(v.product)) blocked();
+  // Explicitly turn untrusted JSON into an array before reading its items.
+  const sites:unknown[]=Array.isArray(v.sites) ? v.sites : blocked();
+  if (!sites.length || sites.length>100) blocked();
   const names=new Set<string>();
+  const checkedSites:Seed['sites']=[];
   for(const item of sites){
-    if (!item || typeof item!=='object' || Array.isArray(item) ||
-        Object.keys(item).sort().join()!=='building,floor,name') blocked();
+    if (!item || typeof item!=='object' || Array.isArray(item)) blocked();
     const x=item as Record<string,unknown>;
-    const name=x.name;
-    if(!title(name)||!title(x.building)||!title(x.floor)) blocked();
+    if(Object.keys(x).sort().join()!=='building,floor,name') blocked();
+    const name=x.name,building=x.building,floor=x.floor;
+    if(!title(name)||!title(building)||!title(floor)) blocked();
     if(names.has(name)) blocked();
     names.add(name);
+    checkedSites.push({name,building,floor});
   }
-  return v as Seed;
+  return {businessUnit:v.businessUnit,product:v.product,sites:checkedSites};
 }
 /** Seed initial hierarchy *once*, before signed Auth and first Admin creation.
  * Subsequent master changes go through the authenticated API.
