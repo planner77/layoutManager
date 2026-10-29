@@ -14,7 +14,7 @@ import { G7_GREENFIELD_BASELINE } from '../../server/g7-operational/greenfield-s
 
 const Sqlite=createRequire(import.meta.url)('better-sqlite3') as new(
   file:string,options?:{readonly?:boolean;fileMustExist?:boolean}
-)=>{prepare:(sql:string)=>{all:()=>Record<string,unknown>[];get:()=>Record<string,unknown>};
+)=>{prepare:(sql:string)=>{all:()=>Record<string,unknown>[];get:()=>Record<string,unknown>;run:(...args:unknown[])=>unknown};
   exec:(sql:string)=>void;close:()=>void};
 const roots:string[]=[];
 afterEach(()=>{for(const p of roots.splice(0))rmSync(p,{recursive:true,force:true});});
