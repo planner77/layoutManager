@@ -1,3 +1,9 @@
+## #153 Greenfield 구현 후보 검증 상태 (2026-10-29)
+
+- 구현 후보: Greenfield 초기 Schema·Site seed·Owner 서명 Gate·일회성 Admin 및 신규 독립 Compose·합성 회귀.
+- 현재 **NOT VERIFIED**: 최신 HEAD Typecheck/Lint/Unit/Integration/E2E/Docker, PR CI, Main CI, GHCR 및 현장 새 설치/DXF 수동 등록·2PC 수용. 테스트 작성만으로 PASS를 주장하지 않음.
+- 이전 운영 6→7/HOLD 실패는 원장에 과거 증거로 유지하되 이번 신규 DB 설치의 AC가 아님.
+
 # 실제 검증 결과 및 Viewer 평가
 
 ## PR #156 — 두 P2 수정·강제 종료 회귀 (2026-10-29)
