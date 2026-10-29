@@ -4,6 +4,7 @@ import { assertG7GreenfieldSchema, G7_GREENFIELD_BASELINE } from './greenfield-s
 import { createRequire } from 'node:module';
 import { lstatSync, realpathSync } from 'node:fs';
 import path from 'node:path';
+import { assertG7GreenfieldSchema } from './greenfield-schema';
 import type { IsolatedDb } from '../g7-staging/g1-store';
 
 const Sqlite = createRequire(import.meta.url)('better-sqlite3') as
@@ -49,7 +50,7 @@ export function assertG7RuntimeSchema(db: IsolatedDb): void {
     throw new Error('G7_RUNTIME_DATABASE_INTEGRITY');
 }
 export function openG7RuntimeDb(
-  gate: Readonly<{databasePath: string; siteIds?: readonly string[]}>,
+  gate: Readonly<{databasePath: string; siteIds?: readonly string[]; schemaMode?: 'GREENFIELD'}>,
   readonly = false,
 ): IsolatedDb {
   const filename = gate.databasePath;
@@ -72,7 +73,11 @@ export function openG7RuntimeDb(
         parentAfter.dev !== parent.dev || parentAfter.ino !== parent.ino || parentAfter.mode !== parent.mode ||
         parentAfter.uid !== parent.uid) throw new Error('G7_RUNTIME_DATABASE_CHANGED');
     db.exec('PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;');
-    assertG7RuntimeSchema(db);
+    // Keep this enforcement inside every DB open, including post-approval
+    // transactions. A stale/replaced legacy seven-schema file must never be
+    // accepted by a signed Greenfield authority.
+    if(gate.schemaMode==='GREENFIELD') assertG7GreenfieldSchema(db);
+    else assertG7RuntimeSchema(db);
     for (const siteId of gate.siteIds ?? []) {
       if (!db.prepare('SELECT 1 FROM "CadSite" WHERE id=?').get(siteId))
         throw new Error('G7_RUNTIME_SITE_SCOPE');
