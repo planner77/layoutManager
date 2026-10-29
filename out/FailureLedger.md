@@ -1,3 +1,13 @@
+## #153 PR #158 — PR CI #40888739457 실패 전수 분석·보완 (2026-10-29)
+
+- **관측 원장:** [PR #158](https://github.com/planner77/layoutManager/pull/158) 초기 HEAD `eb2fe9193e086fb1f01daf183d3b5f551444a8e0`, [Run #40888739457](https://github.com/planner77/layoutManager/actions/runs/40888739457) `completed/failure`.
+  - Verify [Job #123499430711](https://github.com/planner77/layoutManager/actions/runs/40888739457/job/123499430711) TypeScript TS18048/TS2322/TS2345/TS18046/TS2769 **14개**: `greenfield-authority.ts` 4, `greenfield-gate.ts` 1, `greenfield-install.ts` 9. nullable env, unknown JSON 입력과 Ed25519 서명 Buffer null, callback 내부 unknown release narrowing. Typecheck exit2; Lint·Unit/Integration·Build/E2E 등 후속은 **SKIPPED**, 성공으로 간주하지 않음.
+  - Docker [Job #123499430329](https://github.com/planner77/layoutManager/actions/runs/40888739457/job/123499430329) baseline Docker build의 Next.js TypeScript 단계에 동일 `greenfield-authority.ts:93` TS18048 발생; webpack compile PASS였으나 final typecheck 실패, 이후 이미지/마이그레이션/스모크 단계 **SKIPPED**. 별도 Docker 기능 결함이라는 근거 없음.
+- **제품 수정:** `greenfield-authority.ts`의 local databaseUrl/cadPath 선행 검증과 null 서명 Buffer 명시 차단, `greenfield-gate.ts` 독립적으로 검증한 release 객체의 local binding, `greenfield-install.ts` required string helper 및 배열/이름 정규화 검증으로 14개 컴파일 오류의 원인 제거. 타입 단언을 늘려 우회하거나 검사/Site 계약을 완화하지 않음.
+- **PR Codex P2 별도 발견:** [리뷰](https://github.com/planner77/layoutManager/pull/158#discussion_r4413472885) `Greenfield Gate`의 공통 `assertG7RuntimeSchema` legacy fallback 우회 위험. `schemaMode:'GREENFIELD'`로 승인 타입 명시, `openG7RuntimeDb` 모든 트랜잭션에서 `assertG7GreenfieldSchema` 강제 및 Gate 독립 검증 재확인. 구 7-Migration history + 정확 Site로 치환하더라도 BLOCKED인 음성 통합 회귀 추가. [리뷰 답변](https://github.com/planner77/layoutManager/pull/158#discussion_r4413509119), Thread `PRRT_kwDOUQjDfc6xl6yn` **Resolved**. 실제 새 HEAD Codex 재리뷰 미완료면 미검증으로 구분.
+- **Main/보안 경계:** 새 설치만 허용, 이전 DB 6→7/HOLD/Snapshot/rollback 데이터·기능 재도입 없음. 기존 #157 닫힌 PR은 미병합 보존. 신규 패키지 버전0.44.1, Owner 서명·Scope/Origin/FK/Password guard/Fail-closed 유지. CI 실제 성공은 새 Run 확인 전 `NOT VERIFIED`; 로컬 전체 Vitest/Docker 결과를 창작하지 않음.
+- **작업 흐름:** 최신 main behind·Mergeable, 미해결 Review thread를 확인한 뒤 이 원장을 포함한 최종 브랜치 push로 새 PR CI 시작. 사용자 요청대로 시작만 확인하고 모니터링하지 않음. 병합·Main CI·GHCR 게시·운영 설치 금지.
+
 ## #153 Greenfield 계획 변경 및 실행 전 위험 기록 (2026-10-29)
 
 - User는 기존 데이터 사용·Migration·HOLD 복구·same-snapshot 증거 요구 전면 폐기를 확정. 별도 보관 DXF만 Greenfield DB에 새로 등록.
