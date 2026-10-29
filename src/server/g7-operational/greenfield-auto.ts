@@ -43,8 +43,11 @@ function identity(env:Readonly<Record<string,string|undefined>>):Identity {
 }
 function target(env:Readonly<Record<string,string|undefined>>) {
   const dbUrl=env.DATABASE_URL,cad=env.CAD_STORAGE_PATH;
-  if(!dbUrl?.startsWith('file:/')||!cad||!path.isAbsolute(cad))
-    blocked('G7_AUTO_STORAGE_INVALID');
+  // A direct throw is intentional: strict TS control flow must narrow these
+  // values before slice()/path calls (same failure class as #153 ledger).
+  if(typeof dbUrl!=='string'||!dbUrl.startsWith('file:/')||
+     typeof cad!=='string'||!path.isAbsolute(cad))
+    throw new Error('G7_AUTO_STORAGE_INVALID');
   const dbPath=dbUrl.slice(5), dbDir=path.dirname(dbPath);
   if(!path.isAbsolute(dbPath)||dbDir===cad||dbPath.startsWith(cad+path.sep)||
      cad.startsWith(dbDir+path.sep))blocked('G7_AUTO_STORAGE_INVALID');
