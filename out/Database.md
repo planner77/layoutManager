@@ -1,3 +1,7 @@
+## #153 Greenfield DB 최초 Schema 계약 (2026-10-29)
+
+빈 독립 SQLite 파일에 CAD/Auth 현재 기능의 DDL을 처음부터 만든다. 과거 6→7 이관/이력 복제는 수행하지 않는다. 설치 기록은 단일 \`202610290001_greenfield_baseline\`과 고정 checksum. Auth/User/Role/SiteGrant/Session/Audit 및 CAD 관련 Table/Index/Trigger/ForeignKey를 엄격히 검증하고 \`cad_version_delete_password_insert/update\`를 최종 Schema에 포함한다. 이미 초기화된 DB나 비어 있지 않은 저장소에는 재설치 거부. 새 BusinessUnit/Product/Site/Building/Location과 이후 수동 DXF 업로드로만 데이터를 생성한다.
+
 # Database Schema — 단일 기준 문서
 
 ## #153 — Runtime Schema 수용 경계 (2026-10-29)
