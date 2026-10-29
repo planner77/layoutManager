@@ -8,7 +8,7 @@ import packageInfo from '../../package.json' with {type:'json'};
 import { initializeGreenfield, seedGreenfieldSites } from '../../server/g7-operational/greenfield-install';
 import { issueGreenfieldAuthority } from '../../server/g7-operational/greenfield-authority';
 import { resolveG7RuntimeGate, resolveG7RuntimeMigrationAuthority } from '../../server/g7-operational/runtime-gate';
-import { assertG7RuntimeSchema } from '../../server/g7-operational/runtime-db';
+import { assertG7RuntimeSchema, G7_RUNTIME_MIGRATION_CHECKSUMS } from '../../server/g7-operational/runtime-db';
 import { executeG7RuntimeAdmin } from '../../server/g7-operational/runtime-admin';
 import { G7_GREENFIELD_BASELINE } from '../../server/g7-operational/greenfield-schema';
 
@@ -98,6 +98,27 @@ describe('#153 empty Greenfield installation without prior data or migration rep
     const db=new Sqlite(f.dbfile);
     try{db.exec('DROP TRIGGER cad_version_delete_password_insert');}finally{db.close();}
     expect(resolveG7RuntimeGate(x.env).state).toBe('BLOCKED');
+  });
+
+  test('signed Greenfield release rejects an otherwise valid legacy seven-history database',()=>{
+    const f=fresh();
+    initializeGreenfield(f.env);
+    const sites=seed(f).siteIds;
+    const x=owner(f,sites);
+    const db=new Sqlite(f.dbfile);
+    try{
+      db.exec('DROP TRIGGER "cad_version_delete_password_insert"; DROP TRIGGER "cad_version_delete_password_update"');
+      db.exec('DELETE FROM "_prisma_migrations"');
+      const add=db.prepare('INSERT INTO "_prisma_migrations"(id,checksum,finished_at,migration_name,logs,rolled_back_at,started_at,applied_steps_count) VALUES(?,?,?,?,NULL,NULL,?,1)');
+      for(const [name,checksum] of Object.entries(G7_RUNTIME_MIGRATION_CHECKSUMS)){
+        const now=new Date().toISOString();
+        add.run(name,checksum,now,name,now);
+      }
+      // This demonstrates why the separate Greenfield mode cannot fall
+      // through to the pre-existing seven-history compatibility validator.
+      expect(()=>assertG7RuntimeSchema(db as never)).not.toThrow();
+    }finally{db.close();}
+    expect(resolveG7RuntimeGate(x.env)).toMatchObject({state:'BLOCKED'});
   });
 
   test('first Admin setup is one-shot; approval renewal is signed and independent of any snapshot',async()=>{
