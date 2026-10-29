@@ -109,8 +109,8 @@ services:
         protocol: tcp
     environment:
       <<: [*greenfield-release, *greenfield-env]
-      G7_AUTH_ENABLED: "${G7_AUTH_ENABLED:-false}"
-      G7_CAD_WRITE_CUTOVER_ENABLED: "${G7_CAD_WRITE_CUTOVER_ENABLED:-false}"
+      G7_AUTH_ENABLED: "${G7_AUTH_ENABLED:-true}"
+      G7_CAD_WRITE_CUTOVER_ENABLED: "${G7_CAD_WRITE_CUTOVER_ENABLED:-true}"
       MAX_UPLOAD_SIZE_MB: "${MAX_UPLOAD_SIZE_MB:-100}"
       LOG_LEVEL: "${LOG_LEVEL:-info}"
       LOG_FORMAT: "${LOG_FORMAT:-json}"
