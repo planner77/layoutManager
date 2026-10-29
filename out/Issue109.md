@@ -1,3 +1,12 @@
+## #109 최신 개정 — 일반 Compose 표준 Greenfield 설치 (2026-10-30)
+
+- 과거 #109 S1/S2/S3 readiness 및 #153 새 3001 포트 Expert 설치를 표준 배포 경로로 사용하지 않는다. 기본 `src/docker-compose.yml`로 **3000** 포트, 새 빈 볼륨, 자동 final DDL, 원샷 관리자 웹 setup, 관리 화면 기준정보/Grant/신규 DXF를 연결한다. Issue #109의 2026-10-30 본문이 정책 원본이다.
+- 설계 ADR-058, `src/server/g7-operational/greenfield-auto.ts`와 `greenfield-first-setup.ts`, `src/deploy/g7-greenfield/README.md` 새 표준 절차 참조. 기존 영수증/Snapshot/rollback/legacy migrations는 신규 설치 요구사항이 아니고 기존 데이터를 수정하지 않는다.
+- 운영 Owner의 일일 서명 갱신 없이 Local 설치 Identity/Schema/Site 동적 재검사 및 G3/G4 session/RBAC/Audit. Site0 Admin + 최초 Site 생성, 정상 재시작 보존, old/partial volume 차단을 AC로 유지한다.
+- 실행 상태는 실제 CI Run/현장 수용 증거로 갱신한다. 코드와 테스트 작성만으로 CI PASS·실 설치·이슈 종료를 주장하지 않는다.
+
+---
+
 # Issue #109 — G7 운영 인증 활성화 설계 및 통제 배포·롤백 Runbook
 
 ## #153 통합 구현 범위 갱신 (2026-10-29)
