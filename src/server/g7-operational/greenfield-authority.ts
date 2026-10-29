@@ -84,13 +84,16 @@ export function issueGreenfieldAuthority(
   mode:'init'|'renew',inputPath:string,outputDir:string,keyPath:string,
   env:Readonly<Record<string,string|undefined>>,
 ):{state:'G7_GREENFIELD_OWNER_SIGNATURE_VERIFIED';mode:string;expiresAtUtc:string}{
-  if(env.G7_GREENFIELD_MODE!=='true'||!env.DATABASE_URL?.startsWith('file:')||
-     !env.CAD_STORAGE_PATH||!path.isAbsolute(outputDir))blocked();
+  const databaseUrl=env.DATABASE_URL;
+  const cadPath=env.CAD_STORAGE_PATH;
+  if(env.G7_GREENFIELD_MODE!=='true'||typeof databaseUrl!=='string'||
+     !databaseUrl.startsWith('file:')||typeof cadPath!=='string'||
+     !cadPath||!path.isAbsolute(outputDir))blocked();
   const spec=input(JSON.parse(privateRead(inputPath).toString('utf8')));
   const key=createPrivateKey(privateRead(keyPath).toString('utf8'));
   if(key.asymmetricKeyType!=='ed25519')blocked();
   const publicKey=createPublicKey(key).export({format:'pem',type:'spki'}).toString();
-  const dbPath=env.DATABASE_URL.slice(5),cadPath=env.CAD_STORAGE_PATH;
+  const dbPath=databaseUrl.slice(5);
   const db=new Sqlite(dbPath,{readonly:true,fileMustExist:true});
   let sites:string[];
   try {
@@ -118,7 +121,7 @@ export function issueGreenfieldAuthority(
     scopes:spec.scopes,approvalId:spec.approvalId,changeRequestId:spec.changeRequestId,
     approvedAtUtc:now.toISOString(),notBeforeUtc:now.toISOString(),expiresAtUtc:expires.toISOString(),signature:''};
   const bytes=greenfieldApprovalSigningBytes(approval);
-  if(!bytes)blocked();
+  if(bytes===null)throw new Error('G7_GREENFIELD_OWNER_INVALID_APPROVAL');
   approval={...approval,signature:sign(null,bytes,key).toString('base64')};
   if(!greenfieldApprovalSigningBytes(approval))blocked();
   if(mode==='init')writePrivate(trustFile,JSON.stringify(trust),false);
