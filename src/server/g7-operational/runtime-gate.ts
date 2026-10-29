@@ -8,6 +8,7 @@ import { createPublicKey, verify } from 'node:crypto';
 import packageInfo from '../../package.json' with {type:'json'};
 import { G7_S3_CAPABILITY, G7_S3_SCHEMA_ID } from './preflight';
 import { openG7RuntimeDb } from './runtime-db';
+import { resolveG7GreenfieldGate } from './greenfield-gate';
 
 const appVersion = packageInfo.version;
 export const G7_RUNTIME_SCOPE = 'G7-OWNER-MANAGED-RUNTIME-V1' as const;
@@ -188,11 +189,17 @@ function resolveAuthority(
 
 export function resolveG7RuntimeGate(
   env: Readonly<Record<string, string | undefined>> = process.env, now = Date.now(),
-): G7RuntimeGate { return resolveAuthority(env,now,'AUTH'); }
+): G7RuntimeGate {
+  return env.G7_GREENFIELD_MODE === 'true'
+    ? resolveG7GreenfieldGate(env,now) : resolveAuthority(env,now,'AUTH');
+}
 /** CLI-only migration authority validates the same signed exact operation but
  * requires MIGRATION scope and both runtime switches OFF. The CLI separately
  * checks the six-migration baseline, writer lock, snapshot and seven-schema
  * postcondition; HTTP routes never use this function. */
 export function resolveG7RuntimeMigrationAuthority(
   env: Readonly<Record<string, string | undefined>> = process.env, now = Date.now(),
-): G7RuntimeGate { return resolveAuthority(env,now,'MIGRATION'); }
+): G7RuntimeGate {
+  return env.G7_GREENFIELD_MODE === 'true'
+    ? blocked('GREENFIELD_NO_LEGACY_MIGRATION') : resolveAuthority(env,now,'MIGRATION');
+}
