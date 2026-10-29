@@ -1,3 +1,12 @@
+## #109 PR #159 — CI 실패/리뷰 재발 방지 (2026-10-30)
+
+- 기존 CLI/SQLite 모듈을 Next App Router API가 import하면 빌드 컨텍스트가 변한다. Typecheck 외 **Next webpack Production Build**를 반드시 검증하고, CLI 전용 `new URL('../../',import.meta.url)` 같은 상대 URL의 번들러 자산 분석을 주의한다. 빌드 실패를 단순 Docker 일시 문제로 오판하지 않는다.
+- 파일 보안 helper/FD teardown 리팩터링 시 `closeSync` 등 `node:fs` import 제거 여부와 strict TS를 확인하며 O_NOFOLLOW, UID/0600/0700/Schema guard를 완화해 통과시키지 않는다.
+- 신규 Site 수동 생성 흐름은 **Site 생성 → 명시적 Site Grant → Building/Floor 생성**. 최초 Admin이 Admin Role만으로 임의 Site 쓰기를 할 수 있게 우회하지 않는다. Docker Smoke와 실제 UI 순서는 정책과 동등해야 한다.
+- Playwright Web Server/Worker가 Config를 중복 로드할 수 있으므로 `G7_GREENFIELD_E2E_ROOT`는 환경변수로 전달·공유하고 기존 fixture를 다시 생성·삭제하지 않는다. 구 Run #40943801670의 1차 실패와 P2 2건은 `out/FailureLedger.md`에서 추적하고 새 HEAD PR CI 결과 미확인 상태를 PASS로 승격하지 않는다.
+
+---
+
 ## Issue #109 — 일반 Compose 기반 G7 신규 설치 최우선 지침 (2026-10-30, 0.44.2 후보)
 
 > **현행 우선순위:** Issue #109의 최신 Owner 요구는 2026-10-29 Issue #153의 *별도 greenfield compose / 수동 Site seed / 24시간 Owner 서명* 운영 단계보다 우선한다. 과거 자료·시험 이력은 삭제하지 않고 역사로 유지한다. 루트 DESIGN.md가 없으므로 out/Architecture.md와 out/Decisions.md가 설계 기준이다.
