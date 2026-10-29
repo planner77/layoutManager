@@ -1,5 +1,8 @@
 # CAD Web Viewer P.O.C.
 
+> **신규 설치(Greenfield, Issue #153):** 이전 DB나 Migration/HOLD/복구 데이터를 사용하지 않고, 별도 보관 DXF만 신규 등록합니다. [신규 설치 Runbook](src/deploy/g7-greenfield/README.md) 및 [독립 Docker Compose](src/docker-compose.greenfield.yml)를 사용하세요. 기존 기본 Compose는 이 신규 설치 절차가 아닙니다.
+
+
 ## 0.44.0 후보 — G7 운영 통합 (Issue #153)
 
 기존 Auth/Session/Role/Site/Audit를 실제 로그인·운영 화면과 CAD 거래에 연결합니다. 기본 OFF이며 독립 로컬 Trust, Owner 서명, 정확한 릴리스·Schema·Site Scope가 일치해야 `/g7-runtime`과 보호된 변경 기능을 사용할 수 있습니다. 기존 익명 CAD 읽기·Viewer·원본과 삭제 비밀번호는 유지합니다. 계정 초기/복구 CLI, 격리 Migration/동일 Snapshot Restore와 실패 HOLD를 제공합니다.

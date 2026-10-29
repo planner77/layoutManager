@@ -1,3 +1,30 @@
+## #153 PR #158 — 2차 PR CI 실패·누적 타입오류 수정 (2026-10-29 KST)
+
+- **실패 Run:** [PR CI #40890727134](https://github.com/planner77/layoutManager/actions/runs/40890727134), HEAD `6b308615cf0ec9dae52b7e5072195c17c5eff30b`, `completed/failure`. 최초 Run #40888739457의 14개 TS 오류 수정 이후의 **독립 2차 실패**이며, 이전 기록과 합치거나 성공으로 바꾸지 않는다.
+- **Verify [Job #123507859408](https://github.com/planner77/layoutManager/actions/runs/40890727134/job/123507859408):** `npm ci`/Prisma generate SUCCESS, `tsc --noEmit` exit2. **TS 오류 8건 전수:** `greenfield-authority.ts` (96,106,120: TS18048/TS2322 3건), `greenfield-install.ts` (130,136,137: TS18046/TS2345 3건), `runtime-db.ts` (3,7: TS2300 중복 import 2건). Lint/Unit/Integration/Build/E2E는 선행 Typecheck 실패로 SKIPPED; 성공 판정 금지.
+- **Docker [Job #123507859697](https://github.com/planner77/layoutManager/actions/runs/40890727134/job/123507859697):** pre-change baseline build 단계 Next Typecheck에서 같은 오류로 중단. 후속 Phase1/standalone/migrator/Size/Compose Smoke는 SKIPPED. 별도 Docker 빌드 시스템 문제로 간주하지 않음.
+- **실제 원인:** 이전 수정의 `const blocked=():never=>{throw ...}` 호출을 조합 조건의 후속 타입 축소 증거로 사용했지만, strict TS의 control-flow가 해당 표현식을 통과해 `string|undefined` 및 `unknown`을 좁히지 못함. `runtime-db.ts`에는 독립 보안 P2 수정 중 동일 심볼 import가 중복 추가됨. 이전 14개 TS 오류 중 일부가 잔존했고 두 건은 회귀성 중복 import임.
+- **이번 보완:** `requiredGreenfieldEnv()`를 검증 실패 시 **직접 throw하고 string 반환**하도록, `seedInput()`는 `validatedTitle(unknown):string`으로 각 필드 정제 후 명시적으로 `Seed` 구성하도록 변경. 구/신 Schema 검증 import 중복 제거. 검증 실패를 단언·skip·느슨한 타입으로 우회하지 않음. 단일 모듈 타입 축소 재현은 로컬 독립 `tsc --strict --noEmit`의 축소 시험에서 exit0이나 전체 repo Typecheck PASS는 **아직 확인되지 않음**.
+- **기존 P2:** PR #158의 Greenfield Schema 강제 리뷰 스레드 `PRRT_kwDOUQjDfc6xl6yn`은 코드 보완 후 Resolved 이력 보존. 새 리뷰 발생 시 다시 확인. 원본 DB 이관/HOLD/기존 데이터 복구는 최신 Greenfield 구현 범위 밖. 현재 실제 운영 Docker·DXF 자료는 미변경.
+- **재개 조건:** 현재 main과 branch behind/mergeable·미해결 리뷰 스레드를 재확인하고, 이 원장과 시험 상태를 포함한 최신 PR HEAD의 새 `pull_request.synchronize` CI 시작. 요청에 따라 시작만 확인/모니터링 없음; 새 CI 결과는 `NOT VERIFIED`. 병합/GHCR/운영 배포는 수행하지 않음.
+
+## #153 PR #158 — PR CI #40888739457 실패 전수 분석·보완 (2026-10-29)
+
+- **관측 원장:** [PR #158](https://github.com/planner77/layoutManager/pull/158) 초기 HEAD `eb2fe9193e086fb1f01daf183d3b5f551444a8e0`, [Run #40888739457](https://github.com/planner77/layoutManager/actions/runs/40888739457) `completed/failure`.
+  - Verify [Job #123499430711](https://github.com/planner77/layoutManager/actions/runs/40888739457/job/123499430711) TypeScript TS18048/TS2322/TS2345/TS18046/TS2769 **14개**: `greenfield-authority.ts` 4, `greenfield-gate.ts` 1, `greenfield-install.ts` 9. nullable env, unknown JSON 입력과 Ed25519 서명 Buffer null, callback 내부 unknown release narrowing. Typecheck exit2; Lint·Unit/Integration·Build/E2E 등 후속은 **SKIPPED**, 성공으로 간주하지 않음.
+  - Docker [Job #123499430329](https://github.com/planner77/layoutManager/actions/runs/40888739457/job/123499430329) baseline Docker build의 Next.js TypeScript 단계에 동일 `greenfield-authority.ts:93` TS18048 발생; webpack compile PASS였으나 final typecheck 실패, 이후 이미지/마이그레이션/스모크 단계 **SKIPPED**. 별도 Docker 기능 결함이라는 근거 없음.
+- **제품 수정:** `greenfield-authority.ts`의 local databaseUrl/cadPath 선행 검증과 null 서명 Buffer 명시 차단, `greenfield-gate.ts` 독립적으로 검증한 release 객체의 local binding, `greenfield-install.ts` required string helper 및 배열/이름 정규화 검증으로 14개 컴파일 오류의 원인 제거. 타입 단언을 늘려 우회하거나 검사/Site 계약을 완화하지 않음.
+- **PR Codex P2 별도 발견:** [리뷰](https://github.com/planner77/layoutManager/pull/158#discussion_r4413472885) `Greenfield Gate`의 공통 `assertG7RuntimeSchema` legacy fallback 우회 위험. `schemaMode:'GREENFIELD'`로 승인 타입 명시, `openG7RuntimeDb` 모든 트랜잭션에서 `assertG7GreenfieldSchema` 강제 및 Gate 독립 검증 재확인. 구 7-Migration history + 정확 Site로 치환하더라도 BLOCKED인 음성 통합 회귀 추가. [리뷰 답변](https://github.com/planner77/layoutManager/pull/158#discussion_r4413509119), Thread `PRRT_kwDOUQjDfc6xl6yn` **Resolved**. 실제 새 HEAD Codex 재리뷰 미완료면 미검증으로 구분.
+- **Main/보안 경계:** 새 설치만 허용, 이전 DB 6→7/HOLD/Snapshot/rollback 데이터·기능 재도입 없음. 기존 #157 닫힌 PR은 미병합 보존. 신규 패키지 버전0.44.1, Owner 서명·Scope/Origin/FK/Password guard/Fail-closed 유지. CI 실제 성공은 새 Run 확인 전 `NOT VERIFIED`; 로컬 전체 Vitest/Docker 결과를 창작하지 않음.
+- **작업 흐름:** 최신 main behind·Mergeable, 미해결 Review thread를 확인한 뒤 이 원장을 포함한 최종 브랜치 push로 새 PR CI 시작. 사용자 요청대로 시작만 확인하고 모니터링하지 않음. 병합·Main CI·GHCR 게시·운영 설치 금지.
+
+## #153 Greenfield 계획 변경 및 실행 전 위험 기록 (2026-10-29)
+
+- User는 기존 데이터 사용·Migration·HOLD 복구·same-snapshot 증거 요구 전면 폐기를 확정. 별도 보관 DXF만 Greenfield DB에 새로 등록.
+- 기존 운영 Schema/HOLD 복구용 PR #157은 변경된 Scope와 맞지 않아 **CLOSED, unmerged**. 해당 리뷰/CI/실패 이력은 역사적 원장에서 삭제하거나 PASS로 바꾸지 않는다. 최신 Main 독립 브랜치 `feat/issue-153-greenfield-install`에서 신규 경로 개발.
+- 현재 검증 필요 위험: 신규 Schema DDL replay의 SQL canonicalization, 단발 Site/Owner/Admin 초기화 순서, 관리자 Site Grant, 정확한 릴리스·Origin 바인딩, 별도 Docker 볼륨과 Auth fail-closed. 소스 변경·테스트 작성은 PASS 아님.
+- 신규 PR CI는 PR 생성/워크플로 시작 확인 이전에는 `NOT STARTED`; 로컬 실행·실제 Docker/현장 신규 설치는 `NOT RUN`. 사용자 요청에 따라 PR CI 시작 후 모니터링 생략.
+
 # PR/Main CI 실패 원장
 
 ## PR #156 — P2 Site 비활성화 격리·강제 종료 Migration 복구 (2026-10-29)
@@ -355,7 +382,7 @@
 - **관측된 신규 CI 실패:** 이번 S3-2 HEAD의 PR CI는 아직 시작 전이며 실제 Run/Job 실패/취소 기록 **0건(미관측)**. 테스트 작성·브랜치 커밋은 성공 근거가 아님. 기존 S1/S2/S3-1 실패 원장은 아래 보존.
 - **운영 위험:** 신규 Auth/Admin API 코드가 운영 DB Migration 미승격(현재 CAD 여섯 개) 상태에서 활성화되면 503·부분 권한 사고 가능. 또한 잘못된 `G7_AUTH_ENABLED=true`나 내부 비공개 증거 없는 Owner GO만으로 사용자 계정/권한 DB에 접근하는 것은 금지. **대응:** 프로덕션 `NODE_ENV`에서 HTTP 예약 API 전부 404, 개발자 loopback+추가 테스트 Flag+UID 전용 후보 SQLite/정식 일회용 Prisma Schema 확인 필요; 운영 `src/prisma/migrations`·Migrator·기존 CAD API/Compose/Nginx 변경 0.
 - **권한·감사 위험:** 관리자 단발 bootstrap/recovery Secret·nonce 재사용, 위조 X-Role/Session Cookie/CSRF·Site 우회, Account 생성 KDF DoS/TOCTOU. **대응:** CLI 명시 `--ack-disposable-only`·Secret 0600·Nonce 1회/Session 전량 회수/원자 Audit, 새 쿠키 Path 독립, G4 Admin users:manage DB 사전 인가+감사 후 KDF, User+Audit 거래 내 Role/Session 재검증, 기본 Role 미부여/처음 변경 강제. 잔여 실 운영 보안/동시성/복구는 S3-4 이후 사내 수용 필요.
-- **GHCR 미게시 위험:** 새 Next Route/Server 코드는 일반 Main push에서 GHCR 게시로 분류됨. \`.github/workflows/docker-publish.yml\`에 정확한 Squash 제목 `#109 | S3-2 Operational Auth/Admin API [G7-S3-2-NO-GHCR]`와 S3-2 23개 파일만 허용하는 별도 예외 및 부정 제목/활성 운영 Migration·실 CAD/API·Compose 변경 fail-closed, Bash synthetic 회귀 추가. 새 HEAD PR CI·최신 Codex 리뷰 합격 전 병합하지 않으며 이번 요청 범위는 PR CI **시작까지만**.
+- **GHCR 미게시 위험:** 새 Next Route/Server 코드는 일반 Main push에서 GHCR 게시로 분류됨. `.github/workflows/docker-publish.yml`에 정확한 Squash 제목 `#109 | S3-2 Operational Auth/Admin API [G7-S3-2-NO-GHCR]`와 S3-2 23개 파일만 허용하는 별도 예외 및 부정 제목/활성 운영 Migration·실 CAD/API·Compose 변경 fail-closed, Bash synthetic 회귀 추가. 새 HEAD PR CI·최신 Codex 리뷰 합격 전 병합하지 않으며 이번 요청 범위는 PR CI **시작까지만**.
 - **추적 방법:** CI 실패 발생 시 Run ID·Attempt·Job·Step·HEAD·실제 로그 경로/원인/조치/재시도 정보를 다음 섹션에 누적 기록, 취소 Job 보존. **아직 원인 없는 실패를 만들어 기록하지 않는다.** #109/#96 운영 BLOCKED/실 데이터·GHCR 변경 없음.
 
 

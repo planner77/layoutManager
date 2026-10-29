@@ -1,5 +1,6 @@
 /** Live schema validation for #153. No DDL or repair is performed here. */
 import { createHash } from 'node:crypto';
+import { assertG7GreenfieldSchema, G7_GREENFIELD_BASELINE } from './greenfield-schema';
 import { createRequire } from 'node:module';
 import { lstatSync, realpathSync } from 'node:fs';
 import path from 'node:path';
@@ -22,6 +23,12 @@ export const G7_RUNTIME_MIGRATION_CHECKSUMS: Readonly<Record<string, string>> = 
 const SCHEMA_FINGERPRINT = 'a937cf58b78710e8b501f7ec3211494c78316080b5c16732f9bf37e66765de6a';
 export function assertG7RuntimeSchema(db: IsolatedDb): void {
   const rows = db.prepare('SELECT migration_name,checksum,finished_at,rolled_back_at FROM "_prisma_migrations"').all();
+  // A new installation has one explicit final-schema baseline marker, never a
+  // fabricated history of six legacy CAD upgrades plus the old Auth cutover.
+  if (rows.length === 1 && rows[0].migration_name === G7_GREENFIELD_BASELINE) {
+    assertG7GreenfieldSchema(db);
+    return;
+  }
   const completed = new Set<string>();
   for (const row of rows) {
     const name = String(row.migration_name);
@@ -42,7 +49,7 @@ export function assertG7RuntimeSchema(db: IsolatedDb): void {
     throw new Error('G7_RUNTIME_DATABASE_INTEGRITY');
 }
 export function openG7RuntimeDb(
-  gate: Readonly<{databasePath: string; siteIds?: readonly string[]}>,
+  gate: Readonly<{databasePath: string; siteIds?: readonly string[]; schemaMode?: 'GREENFIELD'}>,
   readonly = false,
 ): IsolatedDb {
   const filename = gate.databasePath;
@@ -65,7 +72,11 @@ export function openG7RuntimeDb(
         parentAfter.dev !== parent.dev || parentAfter.ino !== parent.ino || parentAfter.mode !== parent.mode ||
         parentAfter.uid !== parent.uid) throw new Error('G7_RUNTIME_DATABASE_CHANGED');
     db.exec('PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;');
-    assertG7RuntimeSchema(db);
+    // Keep this enforcement inside every DB open, including post-approval
+    // transactions. A stale/replaced legacy seven-schema file must never be
+    // accepted by a signed Greenfield authority.
+    if(gate.schemaMode==='GREENFIELD') assertG7GreenfieldSchema(db);
+    else assertG7RuntimeSchema(db);
     for (const siteId of gate.siteIds ?? []) {
       if (!db.prepare('SELECT 1 FROM "CadSite" WHERE id=?').get(siteId))
         throw new Error('G7_RUNTIME_SITE_SCOPE');

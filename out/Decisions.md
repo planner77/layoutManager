@@ -1,3 +1,9 @@
+## ADR-057 — #153 완전 신규 설치 (2026-10-29)
+
+**결정:** 옛 DB 데이터, 계정, 도면 이력, 원본 백업, HOLD, 동일 Snapshot 및 구 OCI rollback 쌍을 신규 배포 요구사항에서 전면 제외한다. 사용자가 별도 보관 중인 DXF만 새 시스템에 직접 업로드한다. 이전 데이터를 보존/비교해야 하는 개발·인수조건도 요구하지 않는다.
+
+**설계:** 새 빈 DB를 위한 최종 CAD/Auth DDL과 단일 Greenfield baseline, 삭제비밀번호 두 트리거·정확 DB Schema/FK 검사. 일회성 Site seed→Owner Ed25519 신규 릴리스 승인→초기 Admin→Role/Site Grant. 기존 Auth/인가/감사/세션/CSRF/Origin 검증은 유지하되 구 DB Migration 승인/SNAP/HOLD는 전용 모드에서 사용 금지. 코드/문서 변경은 운영 설치 또는 CI PASS 증거가 아니다.
+
 # 주요 기술 결정과 승인 기록
 
 ## ADR-G7-153 — Owner Managed Runtime 연결과 격리 복구 (2026-10-29)

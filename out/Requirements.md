@@ -1,3 +1,12 @@
+## #153 Greenfield 요구사항 (2026-10-29)
+
+- FR-GF-001: 기존 저장된 데이터 입력 0; 새 독립 DB/CAD 볼륨에 현재 기능만 설치.
+- FR-GF-002: 최종 CAD/Auth 초기 Schema·필수 보안 트리거/FK·무결성 검증, 이미 초기화된 DB 재설치 거부.
+- FR-GF-003: 일회성 Admin 생성·초기 비밀번호 변경·Site/Role Grant·Session·Origin/CSRF·Audit.
+- FR-GF-004: 별도 보관 DXF 수동 업로드 및 신규 Version/Current/삭제 비밀번호/Viewer 동작 확인.
+- FR-GF-005: 신규 Owner 서명에 현재 Release App/Migrator Digest·Site·Origin·유효기한/Scope만 필수; 과거 DB Migration/HOLD/Snapshot/rollback pair는 필요 없음.
+- AC: 신규 빈 DB + 합성 DXF + LAN 수용으로 검증하며 기존 DB·데이터 호환 테스트는 제외한다.
+
 # 상세 요구사항
 
 ## FR-G7-153 — 실제 운영 경로 통합 요구사항 (2026-10-29)

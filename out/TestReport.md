@@ -1,3 +1,22 @@
+## #153 PR #158 — 두 번째 CI 실패 및 보완 (2026-10-29)
+
+- Run #40890727134 `completed/failure`: Verify Job 123507859408에서 Typecheck 오류 8건, Docker Job 123507859697에서 동일 TypeScript 오류로 baseline Docker 빌드 실패. 세부 오류/원인은 [FailureLedger](FailureLedger.md) 참고.
+- 보완: 검증된 `string` 반환 Helper, `unknown` Site 입력 검증·명시 Schema 조립, `runtime-db.ts` Greenfield import 중복 제거. 타입 단언/보안/기능 검증 완화 없음.
+- `tsc --strict --noEmit` 독립 좁히기 예제 exit0. **전체 프로젝트 Typecheck/Unit/Integration/Docker/E2E 결과는 최신 CI 수행 전 NOT VERIFIED**. 과거 Run의 SKIPPED를 PASS로 변경하지 않음.
+
+## #153 PR #158 — 초기 PR CI 실패와 보완 (2026-10-29)
+
+- [PR CI #40888739457](https://github.com/planner77/layoutManager/actions/runs/40888739457), initial HEAD `eb2fe9193e086fb1f01daf183d3b5f551444a8e0`, completed/failure. Verify Job 123499430711 Typecheck TS18048/TS2322/TS2345/TS18046/TS2769 총 14건. Docker Job 123499430329 baseline image Next.js build 도중 **동일 TypeScript 오류**로 실패. npm ci/Prisma generate와 Next webpack compile은 성공, Lint/Unit/Integration/E2E 및 Docker 후속 단계 SKIPPED. 두 개의 독립적인 제품 오류로 중복 집계하지 않음.
+- **제품 보완:** Greenfield Authority/Installer의 환경변수·JSON Site 입력·sign buffer를 명시적 narrowing으로 처리, Gate의 검증된 Release 필드를 callback 전에 불변 로컬 변수로 분리. 사용자 입력 또는 null을 타입 단언만으로 우회하지 않음.
+- **추가 Codex P2:** legacy 7-schema fallback을 새 Signed Greenfield Gate가 허용할 수 있다는 지적을 Gate와 `openG7RuntimeDb`의 mode-discriminated 검증으로 수정. 7개 legacy history + 동일 Site라도 신설 전용 모드는 차단하는 회귀 테스트 추가; review thread 답변 후 Resolved.
+- **최신 HEAD 새 CI 검증 전 상태:** 수정 코드만 기록, 실제 Typecheck/Unit/Docker/E2E 합격은 `NOT VERIFIED`. 사용자 요청대로 새 PR CI 시작 이후 모니터링 없음. 현장 DB/CAD/HOLD·배포·운영 이관 실행하지 않음.
+
+## #153 Greenfield 구현 후보 검증 상태 (2026-10-29)
+
+- 구현 후보: Greenfield 초기 Schema·Site seed·Owner 서명 Gate·일회성 Admin 및 신규 독립 Compose·합성 회귀.
+- 현재 **NOT VERIFIED**: 최신 HEAD Typecheck/Lint/Unit/Integration/E2E/Docker, PR CI, Main CI, GHCR 및 현장 새 설치/DXF 수동 등록·2PC 수용. 테스트 작성만으로 PASS를 주장하지 않음.
+- 이전 운영 6→7/HOLD 실패는 원장에 과거 증거로 유지하되 이번 신규 DB 설치의 AC가 아님.
+
 # 실제 검증 결과 및 Viewer 평가
 
 ## PR #156 — 두 P2 수정·강제 종료 회귀 (2026-10-29)

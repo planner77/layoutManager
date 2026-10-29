@@ -1,5 +1,14 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #153 — Greenfield 최우선 개발 지침 (Owner, 2026-10-29)
+
+이전 SQLite/계정/Site/CAD/메모/Audit 데이터는 사용하지 않는다. 기존 DB 6→7 Migration·HOLD/lock·Snapshot·Restore/rollback·구 OCI 쌍 증거는 **새 설치의 전제조건이 아니다**. 별도로 보관된 DXF만 새로 업로드한다. 기존 DB를 수정·삭제하거나 옛 DB를 신규 컨테이너에 mount하지 않는다.
+
+필수 문서: Issue #153, [Greenfield Runbook](src/deploy/g7-greenfield/README.md), [Compose](src/docker-compose.greenfield.yml), out/{Architecture,Decisions,Database,Operation,Requirements,TestPlan,TestReport,FailureLedger}.md. DESIGN.md가 없으므로 Architecture/Decisions를 설계 원본으로 본다. 이전 본문 중 구 DB Migration/HOLD 요구는 현재 #153 신규 설치에 적용하지 않는다.
+
+새 설치: 빈 독립 Volume → 최종 Schema 단일 baseline → 최초 Site seed → 신규 Owner Ed25519 릴리스/Scope 서명 → 최초 Admin bootstrap → 비밀번호 변경·Site Grant → DXF 수동 등록. App은 부정확한 Site/릴리스/Origin/서명·Schema에서 fail-closed. 구 DB rollback 증거 불필요하지만 신규 Auth/CAD 권한·Audit/CSRF·Origin 검사는 완화 금지. 기존 실패 원장·과거 커밋은 역사 자료로 보존. 새 CI/GHCR/현장 수용은 실제 수행 전 성공 주장하지 않는다.
+
+
 ## Issue #153 — G7 운영 통합 구현 (2026-10-29)
 
 최신 Owner Managed 정책으로 실제 Auth/Admin UI·API, CAD 권한/Audit 및 별도 Runtime Gate를 통합한다. 기존 R0/preflight의 `runtimeActivated=false` 계약과 격리 Preview는 유지한다. 운영 기능은 기본 OFF이며 환경변수만으로 활성화할 수 없다. Runtime 신뢰 파일·Owner 서명·릴리스·Site Scope·실제 7-Migration Schema가 일치해야 한다. 기술적 권한·무결성·복구 실패를 승인 완화로 우회하지 않는다.
