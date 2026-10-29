@@ -120,10 +120,14 @@ function seedInput(raw:unknown):Seed {
   if (!raw || typeof raw!=='object' || Array.isArray(raw) ||
       Object.keys(raw).sort().join()!=='businessUnit,product,sites') blocked();
   const v=raw as Record<string,unknown>;
-  const title=(x:unknown):x is string =>
-    typeof x==='string' && x.length>0 && x.length<=100 && x.trim()===x &&
-    !/[\x00-\x1f]/.test(x);
-  if (!title(v.businessUnit) || !title(v.product)) blocked();
+  function validatedTitle(value:unknown):string {
+    if(typeof value!=='string' || value.length===0 || value.length>100 ||
+       value.trim()!==value || /[\x00-\x1f]/.test(value))
+      throw new Error('G7_GREENFIELD_SETUP_BLOCKED');
+    return value;
+  }
+  const businessUnit=validatedTitle(v.businessUnit);
+  const product=validatedTitle(v.product);
   // Explicitly turn untrusted JSON into an array before reading its items.
   const sites:unknown[]=Array.isArray(v.sites) ? v.sites : blocked();
   if (!sites.length || sites.length>100) blocked();
@@ -133,13 +137,14 @@ function seedInput(raw:unknown):Seed {
     if (!item || typeof item!=='object' || Array.isArray(item)) blocked();
     const x=item as Record<string,unknown>;
     if(Object.keys(x).sort().join()!=='building,floor,name') blocked();
-    const name=x.name,building=x.building,floor=x.floor;
-    if(!title(name)||!title(building)||!title(floor)) blocked();
+    const name=validatedTitle(x.name);
+    const building=validatedTitle(x.building);
+    const floor=validatedTitle(x.floor);
     if(names.has(name)) blocked();
     names.add(name);
     checkedSites.push({name,building,floor});
   }
-  return {businessUnit:v.businessUnit,product:v.product,sites:checkedSites};
+  return {businessUnit,product,sites:checkedSites};
 }
 /** Seed initial hierarchy *once*, before signed Auth and first Admin creation.
  * Subsequent master changes go through the authenticated API.
