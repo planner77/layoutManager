@@ -4,7 +4,7 @@ import { CadError } from "@/domain/cad";
 import type { MasterType } from "@/domain/master";
 import { masterName } from "@/domain/master";
 import { type Database, writeTransaction } from "../db";
-import { requireG7MasterPermission, appendG7MasterAudit, type G7CadWrite } from '../g7-operational/cad-guard';
+import { requireG7MasterPermission, requireG7RuntimeWrite, appendG7MasterAudit, type G7CadWrite } from '../g7-operational/cad-guard';
 
 type Tx = Prisma.TransactionClient;
 async function masterSites(tx: Tx, type: MasterType, id: string): Promise<string[]> {
@@ -108,7 +108,7 @@ export class MasterRepository {
   ) {
     input = { ...input, name: masterName(input.name) };
     return writeTransaction(this.db, async (tx) => {
-      if (auth && type === 'sites') throw new CadError('G7_SCOPE_EXTENSION_REQUIRED',
+      if (auth && type === 'sites' && requireG7RuntimeWrite(auth)?.operationMode !== 'SELF_HOSTED') throw new CadError('G7_SCOPE_EXTENSION_REQUIRED',
         '새 사업장은 운영 승인 범위를 갱신하기 전에 등록할 수 없습니다.',409);
       const sites = auth && input.parentId && (type === 'buildings' || type === 'floors')
         ? await masterSites(tx,type === 'buildings' ? 'sites' : 'buildings',input.parentId) : [];
