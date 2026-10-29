@@ -1,5 +1,6 @@
 /** Live schema validation for #153. No DDL or repair is performed here. */
 import { createHash } from 'node:crypto';
+import { assertG7GreenfieldSchema, G7_GREENFIELD_BASELINE } from './greenfield-schema';
 import { createRequire } from 'node:module';
 import { lstatSync, realpathSync } from 'node:fs';
 import path from 'node:path';
@@ -22,6 +23,12 @@ export const G7_RUNTIME_MIGRATION_CHECKSUMS: Readonly<Record<string, string>> = 
 const SCHEMA_FINGERPRINT = 'a937cf58b78710e8b501f7ec3211494c78316080b5c16732f9bf37e66765de6a';
 export function assertG7RuntimeSchema(db: IsolatedDb): void {
   const rows = db.prepare('SELECT migration_name,checksum,finished_at,rolled_back_at FROM "_prisma_migrations"').all();
+  // A new installation has one explicit final-schema baseline marker, never a
+  // fabricated history of six legacy CAD upgrades plus the old Auth cutover.
+  if (rows.length === 1 && rows[0].migration_name === G7_GREENFIELD_BASELINE) {
+    assertG7GreenfieldSchema(db);
+    return;
+  }
   const completed = new Set<string>();
   for (const row of rows) {
     const name = String(row.migration_name);
