@@ -1,3 +1,13 @@
+## #109 PR #159 CI 실패 재발 검증 보강 (2026-10-30)
+
+- GF-109-TSC: `greenfield-auto.ts`의 FD `closeSync`가 import되어 strict TypeScript 및 finally cleanup 수행, 보안 검사 우회 금지.
+- GF-109-WEBPACK: CLI의 `greenfield-install.ts`를 Web Runtime Route import graph에 포함한 상태에서 Next Production webpack/기준·신규 Docker 이미지 Build 성공; `new URL('../../',import.meta.url)`의 모듈/자산 해석 실패 재발 금지.
+- GF-109-GRANT: 최초 Admin Site0→BU/Product/Site 생성→**해당 새 Site 본인 명시 Grant**→Building/Floor, Grant 전에 site-scoped 작성 거부, 이후 CAD upload/Current/DELETE와 Audit·restart 검증.
+- GF-109-E2E-ROOT: Playwright CLI Runner와 Worker는 `G7_GREENFIELD_E2E_ROOT`를 동일하게 사용; 초기설정 code를 다른 DB/디렉터리에서 읽지 않도록 첫 Admin 웹 설정과 User1 이후 재진입 차단까지 실제 브라우저에서 확인.
+- 직전 Run의 선행 실패로 SKIPPED된 Lint·Unit·통합·브라우저·Docker는 새 PR CI의 실제 결과를 확인 전까지 PASS로 인정하지 않는다.
+
+---
+
 ## #109 최신 합성·컨테이너 검증 계획 (2026-10-30)
 
 1. **Final Schema:** 완전 빈 named volume에서 단일 baseline/FK/checksum, CAD 암호 트리거 2개, User/Site/CAD/Audit 0건. 동일 Compose `migrate` 재실행 및 App 재시작에서 byte-preserving 유지.
