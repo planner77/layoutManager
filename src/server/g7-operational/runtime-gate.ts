@@ -31,6 +31,8 @@ export type G7RuntimeActiveGate = Readonly<{
   state: 'ACTIVE'; authEnabled: true; cadWriteEnabled: boolean;
   /** Dedicated fresh-install schema discriminator; never inferred from history. */
   schemaMode?: 'GREENFIELD';
+  /** #109 unattended host-owned Greenfield, not an expired Owner release decision. */
+  operationMode?: 'SELF_HOSTED';
   origin: string; databasePath: string; cadStoragePath: string; siteIds: readonly string[];
   expiresAt: number; approvalId: string; snapshotId: string; changeRequestId: string;
   scopes: readonly ('AUTH' | 'CAD_WRITE' | 'MIGRATION')[];
