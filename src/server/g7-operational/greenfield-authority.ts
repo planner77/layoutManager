@@ -16,7 +16,10 @@ const Sqlite=createRequire(import.meta.url)('better-sqlite3') as new (
 )=>{prepare:(sql:string)=>{all:()=>unknown[]};close:()=>void};
 const blocked=():never=>{throw new Error('G7_GREENFIELD_OWNER_BLOCKED');};
 function requiredGreenfieldEnv(value:string|undefined):string {
-  if(typeof value!=='string' || value.length===0)blocked();
+  // An inline throw (rather than a const arrow returning never) ensures
+  // strict TS control-flow proves that the returned value is a string.
+  if(typeof value!=='string' || value.length===0)
+    throw new Error('G7_GREENFIELD_OWNER_BLOCKED');
   return value;
 }
 function ownedParent(filename:string):void {
