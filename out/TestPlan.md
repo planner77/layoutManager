@@ -1,3 +1,14 @@
+## #109 최신 합성·컨테이너 검증 계획 (2026-10-30)
+
+1. **Final Schema:** 완전 빈 named volume에서 단일 baseline/FK/checksum, CAD 암호 트리거 2개, User/Site/CAD/Audit 0건. 동일 Compose `migrate` 재실행 및 App 재시작에서 byte-preserving 유지.
+2. **Fail-closed:** 기존 SQLite 파일, CAD 파일, 이전 서명 mode DB, 중간 실패로 marker 누락, 0600/UID 위반, schema fingerprint·트리거 손상, 소스/이미지 태그 불일치, Recovery HOLD 시 시작/쓰기 차단. 오류 시 삭제/수정 0건.
+3. **First Admin:** GET 웹 CSRF+HttpOnly, 원본 코드 미노출, 잘못된 Origin/Host/CSRF/code/만료/5회 초과 거부, 최초 User+Admin Role+Audit atomic, 강제 초기 PW 변경 및 duplicate bootstrap/복구 코드 재사용 차단.
+4. **Site0→관리:** Admin with no Site grants creates BU→Product→Site→Building→Floor, Site Grant 명시 전 CAD 쓰기 403, After Grant Editor/Admin only; 다른 Site·Reader 차단. 브라우저 Playwright 화면과 REST 양쪽에서 확인.
+5. **CAD/Session/Audit:** 합성 DXF 등록/Current/실물 content hash, deletePassword 요구 및 DELETE, DB Audit commit/rollback, 8h/30m/3 session, invalidate, CSRF, 사용자/Grant 회수.
+6. **CI/Docker:** Typecheck, ESLint, Vitest, 기존 E2E+분리 신규 Greenfield E2E, Build, 신규 0.44.2 App/Migrator Docker Smoke, 컨테이너 강제 재생성 후 로그인/도면 유지, 구 익명 CI Smoke를 대체한 엄격 G7 경로. 실제 LAN PC 2대/실 DXF/OCI registry provenance는 Owner 완료 전 **NOT VERIFIED**.
+
+---
+
 ## #153 Greenfield 회귀 테스트 계획 (2026-10-29)
 
 1. 빈 DB에서 단일 최종 Schema, 삭제비밀번호 두 트리거·FK/Schema fingerprint·설치 baseline 1건 검증.
