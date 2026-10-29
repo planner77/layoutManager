@@ -35,11 +35,15 @@ function ownedDirectory(directory: string): void {
   if (!s.isDirectory() || s.isSymbolicLink() || s.uid !== process.getuid?.() ||
       (s.mode & 0o022) !== 0) blocked();
 }
+function required(value:string|undefined):string {
+  if (typeof value!=='string' || !value) throw new Error('G7_GREENFIELD_SETUP_BLOCKED');
+  return value;
+}
 function target(env: Readonly<Record<string,string|undefined>>) {
-  const url = env.DATABASE_URL, cadPath = env.CAD_STORAGE_PATH;
+  const url=required(env.DATABASE_URL),cadPath=required(env.CAD_STORAGE_PATH);
   if (env.G7_GREENFIELD_MODE !== 'true' ||
       env.G7_AUTH_ENABLED === 'true' || env.G7_CAD_WRITE_CUTOVER_ENABLED === 'true' ||
-      env.CAD_STORAGE_BACKEND !== 'local' || !url?.startsWith('file:') || !cadPath) blocked();
+      env.CAD_STORAGE_BACKEND !== 'local' || !url.startsWith('file:')) blocked();
   const dbPath = url.slice(5);
   const dbParent = path.dirname(dbPath);
   if (!path.isAbsolute(dbPath) || !path.isAbsolute(cadPath) ||
@@ -119,15 +123,18 @@ function seedInput(raw:unknown):Seed {
   const title=(x:unknown):x is string =>
     typeof x==='string' && x.length>0 && x.length<=100 && x.trim()===x &&
     !/[\x00-\x1f]/.test(x);
+  const sites=v.sites;
   if (!title(v.businessUnit) || !title(v.product) ||
-      !Array.isArray(v.sites) || !v.sites.length || v.sites.length>100) blocked();
+      !Array.isArray(sites) || !sites.length || sites.length>100) blocked();
   const names=new Set<string>();
-  for(const item of v.sites){
+  for(const item of sites){
     if (!item || typeof item!=='object' || Array.isArray(item) ||
         Object.keys(item).sort().join()!=='building,floor,name') blocked();
     const x=item as Record<string,unknown>;
-    if(!title(x.name)||!title(x.building)||!title(x.floor)||names.has(x.name)) blocked();
-    names.add(x.name);
+    const name=x.name;
+    if(!title(name)||!title(x.building)||!title(x.floor)) blocked();
+    if(names.has(name)) blocked();
+    names.add(name);
   }
   return v as Seed;
 }
@@ -135,10 +142,10 @@ function seedInput(raw:unknown):Seed {
  * Subsequent master changes go through the authenticated API.
  */
 export function seedGreenfieldSites(env:Readonly<Record<string,string|undefined>>) {
-  if (env.G7_GREENFIELD_SEED_ACK!=='SEED_EMPTY_GREENFIELD' ||
-      !env.G7_GREENFIELD_SEED_FILE) blocked();
+  if (env.G7_GREENFIELD_SEED_ACK!=='SEED_EMPTY_GREENFIELD') blocked();
+  const seedFile=required(env.G7_GREENFIELD_SEED_FILE);
   const t=target(env);
-  const input=seedInput(readPrivateJson(env.G7_GREENFIELD_SEED_FILE));
+  const input=seedInput(readPrivateJson(seedFile));
   const db=new Sqlite(t.dbPath,{fileMustExist:true});
   try {
     assertG7GreenfieldSchema(db);
