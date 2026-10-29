@@ -1,3 +1,11 @@
+## #109 PR #159 최초 실패 Run 확인 및 보완 (2026-10-30)
+
+- Run #40943801670 / HEAD `ba49e5062c33a4f61990a4f458a264e3781a817e` **completed/failure**. Verify #123693738568은 TypeScript `closeSync` import TS2304 한 건, Docker #123693739084는 `greenfield-install.ts` Webpack `new URL('../../',import.meta.url)`로 baseline build 실패. 자세한 원장: [FailureLedger](FailureLedger.md).
+- 기존 플로우의 Typecheck 외 Lint/Unit/Integration/Build/E2E 및 Docker 기준 이미지 이후의 이미지 빌드/합성 인증 CRUD/restart 검증은 **SKIPPED**. 리뷰 P2 두 건은 실행 실패가 아니라 코드 검토 단계에서 발견, Test PASS 아님.
+- 보완: 누락 import 복구, Next.js에서 실행 경로에 있는 코드의 module-relative URL 정적 해석 제거, Site 생성 직후 Admin의 명시 Site Grant로 Smoke 순서 수정, Playwright Runner/Worker 공유 GREENFIELD_E2E_ROOT 적용. 새 HEAD 전체 CI 성공/현장 수용 여부는 **NOT VERIFIED**.
+
+---
+
 ## #109 0.44.2 신규 Compose/웹 관리자 PR 후보 (2026-10-30; 실행 결과 아님)
 
 - 작성된 후보 코드: `greenfield-auto.ts`, `greenfield-first-setup.ts`, 신규 관리 UI/Route, 기본 Compose/Greenfield one-shot migrator, Site0 지원, release marker. 작성된 후보 테스트: `g7-greenfield-auto.test.ts`, `first-install.spec.ts`, Docker `smoke_greenfield_runtime.py` 및 PR CI job 변경.
