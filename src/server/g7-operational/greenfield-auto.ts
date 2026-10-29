@@ -3,7 +3,7 @@
  * Legacy signed authority remains a separate, opt-in expert mode.
  */
 import { randomBytes, randomUUID } from 'node:crypto';
-import { constants, existsSync, fstatSync, lstatSync,
+import { closeSync, constants, existsSync, fstatSync, lstatSync,
   openSync, readFileSync, realpathSync, renameSync, readdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import packageInfo from '../../package.json' with {type:'json'};
