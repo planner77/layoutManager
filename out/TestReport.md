@@ -1,3 +1,9 @@
+## #153 PR #158 — 두 번째 CI 실패 및 보완 (2026-10-29)
+
+- Run #40890727134 `completed/failure`: Verify Job 123507859408에서 Typecheck 오류 8건, Docker Job 123507859697에서 동일 TypeScript 오류로 baseline Docker 빌드 실패. 세부 오류/원인은 [FailureLedger](FailureLedger.md) 참고.
+- 보완: 검증된 `string` 반환 Helper, `unknown` Site 입력 검증·명시 Schema 조립, `runtime-db.ts` Greenfield import 중복 제거. 타입 단언/보안/기능 검증 완화 없음.
+- `tsc --strict --noEmit` 독립 좁히기 예제 exit0. **전체 프로젝트 Typecheck/Unit/Integration/Docker/E2E 결과는 최신 CI 수행 전 NOT VERIFIED**. 과거 Run의 SKIPPED를 PASS로 변경하지 않음.
+
 ## #153 PR #158 — 초기 PR CI 실패와 보완 (2026-10-29)
 
 - [PR CI #40888739457](https://github.com/planner77/layoutManager/actions/runs/40888739457), initial HEAD `eb2fe9193e086fb1f01daf183d3b5f551444a8e0`, completed/failure. Verify Job 123499430711 Typecheck TS18048/TS2322/TS2345/TS18046/TS2769 총 14건. Docker Job 123499430329 baseline image Next.js build 도중 **동일 TypeScript 오류**로 실패. npm ci/Prisma generate와 Next webpack compile은 성공, Lint/Unit/Integration/E2E 및 Docker 후속 단계 SKIPPED. 두 개의 독립적인 제품 오류로 중복 집계하지 않음.
