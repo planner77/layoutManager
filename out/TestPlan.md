@@ -1,3 +1,13 @@
+## #109 PR #159 — 2차 CI 계약 정합성 보완 AC (2026-10-30)
+
+- 근거: Run `40946304142`, HEAD `b5883922`, Unit 596 PASS / 1 FAIL (`TC-IMG67-001`); Docker Greenfield 설치/CAD/restart smoke SUCCESS. `npx vitest run tests/unit/standalone.test.ts --reporter=dot` 로컬 RED: 7 PASS / 1 FAIL, 591ms.
+- GF-109-CI-CONTRACT: 기존 native SQLite 단일 COPY/레이어 감사 검증을 보존하고, 현재 인증 Greenfield smoke의 create → App 중지 → migrator 재실행 → App 재기동 → verify 순서 및 최초 호스트 코드 전달을 검사한다. 폐기된 익명 CRUD 명령을 복원하거나 테스트 skip으로 우회하지 않는다.
+- AC: focused RED→GREEN, Typecheck/Lint/전체 Unit·Integration/Build 및 신규 Greenfield UI 검증. 실패 원장에 Run·Job·FAIL/SKIPPED와 실제 로컬 결과를 구분해 기록. main behind/충돌·미해결 스레드를 재확인한 뒤 PR 브랜치 non-force 갱신으로 새 CI 시작, 결과 모니터링 생략.
+- GF-109-SETUP-ALERT: 최초 웹 Setup의 잘못된 코드 제출은 `g7-first-setup` 내부 `role=alert`에서 `SETUP_DENIED`를 검증한다. Next 경로 announcer와 혼동하지 않고 올바른 코드·비밀번호 변경·로그인·Setup 영구 폐쇄 검증을 계속 수행한다. 전역 alert의 로컬 strict-mode 실패를 RED 근거로 보존한다.
+- 범위: 테스트 계약·검증 문서 보완. Runtime/Schema/보안 정책 변경 없음, 미릴리스 0.44.2 후보 유지. 현장 AC8은 별도 미검증.
+
+---
+
 ## #109 PR #159 CI 실패 재발 검증 보강 (2026-10-30)
 
 - GF-109-TSC: `greenfield-auto.ts`의 FD `closeSync`가 import되어 strict TypeScript 및 finally cleanup 수행, 보안 검사 우회 금지.
@@ -13,7 +23,7 @@
 1. **Final Schema:** 완전 빈 named volume에서 단일 baseline/FK/checksum, CAD 암호 트리거 2개, User/Site/CAD/Audit 0건. 동일 Compose `migrate` 재실행 및 App 재시작에서 byte-preserving 유지.
 2. **Fail-closed:** 기존 SQLite 파일, CAD 파일, 이전 서명 mode DB, 중간 실패로 marker 누락, 0600/UID 위반, schema fingerprint·트리거 손상, 소스/이미지 태그 불일치, Recovery HOLD 시 시작/쓰기 차단. 오류 시 삭제/수정 0건.
 3. **First Admin:** GET 웹 CSRF+HttpOnly, 원본 코드 미노출, 잘못된 Origin/Host/CSRF/code/만료/5회 초과 거부, 최초 User+Admin Role+Audit atomic, 강제 초기 PW 변경 및 duplicate bootstrap/복구 코드 재사용 차단.
-4. **Site0→관리:** Admin with no Site grants creates BU→Product→Site→Building→Floor, Site Grant 명시 전 CAD 쓰기 403, After Grant Editor/Admin only; 다른 Site·Reader 차단. 브라우저 Playwright 화면과 REST 양쪽에서 확인.
+4. **Site0→관리:** Admin with no Site grants creates BU→Product→Site→명시 Site Grant→Building→Floor, Grant 전 Site 범위 기준정보/CAD 쓰기 403, After Grant Editor/Admin only; 다른 Site·Reader 차단. 브라우저 Playwright 화면과 REST 양쪽에서 확인.
 5. **CAD/Session/Audit:** 합성 DXF 등록/Current/실물 content hash, deletePassword 요구 및 DELETE, DB Audit commit/rollback, 8h/30m/3 session, invalidate, CSRF, 사용자/Grant 회수.
 6. **CI/Docker:** Typecheck, ESLint, Vitest, 기존 E2E+분리 신규 Greenfield E2E, Build, 신규 0.44.2 App/Migrator Docker Smoke, 컨테이너 강제 재생성 후 로그인/도면 유지, 구 익명 CI Smoke를 대체한 엄격 G7 경로. 실제 LAN PC 2대/실 DXF/OCI registry provenance는 Owner 완료 전 **NOT VERIFIED**.
 

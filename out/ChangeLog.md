@@ -1,3 +1,12 @@
+## 0.44.2 후보 — #109 표준 Compose 신규 설치 및 최초 관리자 웹 설정
+
+- 일반 Compose의 빈 볼륨에 최종 Schema를 생성하고 호스트 일회용 코드로 웹 최초 Admin 설정; 기존 권한·세션·감사를 유지하는 신규 설치 후보. 기존 DB 자동 삭제/이관은 하지 않는다.
+- PR #159의 2차 CI 실패(`40946304142`): 익명 CRUD smoke를 기대하던 테스트를 현행 인증 Greenfield 설치/CAD/재시작 계약에 맞췄다. Native SQLite·레이어 감사 검증은 보존했다.
+- 독립 로컬 QA에서 발견한 최초 Setup E2E의 전역 alert 모호성을 설정 폼 범위로 제한해 검증한다. API·보안 정책은 변경하지 않는다.
+- 설치·개발 문서의 순서를 사업장 생성 → 본인 명시 Site Grant → 동·층 생성으로 정정했다. 상세 실제 검증은 [TestReport](TestReport.md), 누적 실패는 [FailureLedger](FailureLedger.md) 참조. PR 후보 유지; GHCR 게시·병합·현장 수용 완료 기록이 아니다.
+
+---
+
 ## 0.44.1 후보 — #153 Greenfield 신규 설치
 
 - 빈 독립 DB/새 CAD 볼륨에 최종 Schema와 G7 Auth/Role/Site/Audit 기능 구축, 예전 DB 데이터·HOLD·Migration 사용 안 함.

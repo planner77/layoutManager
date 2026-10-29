@@ -54,7 +54,7 @@ docker compose --env-file .env -f src/docker-compose.yml run --rm migrate setup-
 
 ## 3. 계정·Site/도면 활성화
 
-`/g7-runtime`의 '초기 비밀번호 변경'에서 임시 암호를 변경한 뒤 새 암호로 로그인합니다. Admin은 `/masters`에서 **사업부 → 제품 → 사업장/법인 → 동 → 층** 순서로 원하는 Site 계층을 생성합니다. 별도 `/g7-runtime` 사용자/권한 관리에서 **Admin 자신에도 담당 사업장 Site Grant**를 부여합니다. Admin Role만으로 CAD 등록/Current/삭제를 할 수 없습니다. 다른 계정에는 Reader/Editor/Admin을 명시 부여합니다. 인증된 Editor/Admin과 해당 Site Grant가 있어야 수정되고, 기존 CAD 삭제 암호 검증 및 Audit가 적용됩니다. 신규 DXF는 시스템에서 새로 업로드합니다.
+`/g7-runtime`의 '초기 비밀번호 변경'에서 임시 암호를 변경한 뒤 새 암호로 로그인합니다. Admin은 `/masters`에서 **사업부 → 제품 → 사업장/법인**을 생성합니다. 이어 `/g7-runtime` 사용자/권한 관리에서 **Admin 자신에게 해당 사업장 Site Grant**를 명시 부여한 뒤 `/masters`에서 **동 → 층**을 생성합니다. 동·층 작성도 Site 권한이 필요하므로 이 순서를 지킵니다. Admin Role만으로 CAD 등록/Current/삭제를 할 수 없습니다. 다른 계정에는 Reader/Editor/Admin을 명시 부여합니다. 인증된 Editor/Admin과 해당 Site Grant가 있어야 수정되고, 기존 CAD 삭제 암호 검증 및 Audit가 적용됩니다. 신규 DXF는 시스템에서 새로 업로드합니다.
 
 ## 4. 장애·변경 및 현장 수용
 
