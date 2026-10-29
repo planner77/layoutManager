@@ -1,3 +1,12 @@
+## #153 Greenfield 회귀 테스트 계획 (2026-10-29)
+
+1. 빈 DB에서 단일 최종 Schema, 삭제비밀번호 두 트리거·FK/Schema fingerprint·설치 baseline 1건 검증.
+2. 비어 있지 않은 DB, 경로·권한·UID 문제, 재실행·구 migrator CMD, 명시 ACK 누락 거부.
+3. 새 Site만 단발 seed, 새로운 UUID 및 중복 시드 거부.
+4. Owner 서명/Scope/Origin/만료/Current App+Migrator Digest 변조 차단, 서명 갱신 확인.
+5. Admin 일회성/초기 변경, 사용자·Site 권한, CSRF/Origin, 세션·Audit·CAD 작업 및 신규 DXF 수동 업로드.
+6. Typecheck/Lint/Unit/Integration/Docker/E2E; 실사용 DXF/PC2대 수용. 구 DB Migration/복구/Snapshot/기존 데이터 비교는 테스트 대상 아님.
+
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
 ## TC-G7-153 — 운영 통합 회귀 계획 (2026-10-29)
