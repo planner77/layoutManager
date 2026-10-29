@@ -1,3 +1,9 @@
+## 0.44.1 후보 — #153 Greenfield 신규 설치
+
+- 빈 독립 DB/새 CAD 볼륨에 최종 Schema와 G7 Auth/Role/Site/Audit 기능 구축, 예전 DB 데이터·HOLD·Migration 사용 안 함.
+- 단발 Site seed/Owner 신규 서명/초기 Admin, 별도 보관 DXF를 수동 업로드.
+- PR 후보 상태; CI·GHCR·현장 설치 완료 주장이 아님.
+
 # ChangeLog
 
 ## 0.44.0 후보 — Issue #153 G7 운영 통합
