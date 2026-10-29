@@ -1,0 +1,11 @@
+{
+  "businessUnit": "Factory Group",
+  "product": "Product A",
+  "sites": [
+    {
+      "name": "New Site 1",
+      "building": "Building A",
+      "floor": "1F"
+    }
+  ]
+}
