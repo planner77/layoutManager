@@ -3,20 +3,15 @@
  * Legacy signed authority remains a separate, opt-in expert mode.
  */
 import { randomBytes, randomUUID } from 'node:crypto';
-import { createRequire } from 'node:module';
-import { closeSync, constants, existsSync, fstatSync, lstatSync, mkdirSync,
+import { constants, existsSync, fstatSync, lstatSync,
   openSync, readFileSync, realpathSync, renameSync, readdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import packageInfo from '../../package.json' with {type:'json'};
-import type { IsolatedDb } from '../g7-staging/g1-store';
 import type { G7RuntimeGate } from './runtime-gate';
 import { initializeGreenfield } from './greenfield-install';
 import { G7_GREENFIELD_SCHEMA_ID } from './greenfield-schema';
 import { openG7RuntimeDb } from './runtime-db';
 
-const Sqlite=createRequire(import.meta.url)('better-sqlite3') as new (
-  filename:string,options?:{fileMustExist?:boolean;readonly?:boolean}
-)=>IsolatedDb & {close():void};
 const INSTALL_FILE='g7-install.json';
 const SETUP_FILE='first-admin.code';
 export const G7_SETUP_TTL_MS=60*60*1000;
@@ -99,7 +94,8 @@ function writeSecret(filename:string) {
 export function ensureAutomatedGreenfield(env:Readonly<Record<string,string|undefined>>) {
   const release=identity(env),t=target(env);
   if(existsSync(t.manifest)) {
-    verifyInstallation(env,t);
+    const users=verifyInstallation(env,t);
+    if(users===0)privateFile(t.code,128); // Missing or unsafe code is an incomplete installation.
     return {state:'G7_GREENFIELD_READY' as const,mode:'RESTART' as const};
   }
   // A DB without our marker, even a valid old #153 Greenfield database, is not
@@ -108,17 +104,20 @@ export function ensureAutomatedGreenfield(env:Readonly<Record<string,string|unde
     blocked('G7_AUTO_NONEMPTY_VOLUME_USE_NEW_EMPTY_VOLUME');
   initializeGreenfield({...env,G7_AUTH_ENABLED:'false',G7_CAD_WRITE_CUTOVER_ENABLED:'false',
     G7_GREENFIELD_INSTALL_ACK:'CREATE_EMPTY_G7_DATABASE'});
+  // The marker is the LAST step. If interrupted, a DB or code without a marker
+  // is refused on restart rather than silently adopted or reset.
+  writeSecret(t.code);
   const manifest:Installation={...release,installId:randomUUID()};
   writeFileSync(t.manifest,JSON.stringify(manifest),{flag:'wx',mode:0o600});
-  writeSecret(t.code);
   return {state:'G7_GREENFIELD_READY' as const,mode:'NEW_INSTALL' as const};
 }
 /** Operator-only recovery of an expired setup code; it never resets users/data. */
 export function rotateAutomatedSetupCode(env:Readonly<Record<string,string|undefined>>) {
   const t=target(env);
   if(verifyInstallation(env,t)!==0)blocked('G7_AUTO_SETUP_ALREADY_COMPLETE');
-  if(!existsSync(t.code))blocked('G7_AUTO_SETUP_CODE_MISSING');
-  privateFile(t.code,128);
+  // Explicit host-operated code recovery is safe only while User/Audit are
+  // pristine. A missing code does not justify deleting or recreating SQLite.
+  if(existsSync(t.code))privateFile(t.code,128);
   const next=t.code+'.pending-'+process.pid;
   writeSecret(next);
   renameSync(next,t.code);
