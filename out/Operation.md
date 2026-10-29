@@ -1,3 +1,7 @@
+## #153 Greenfield 설치 운영 절차 (2026-10-29, 최신)
+
+[Greenfield Runbook](../src/deploy/g7-greenfield/README.md)에 따라 새 볼륨 → 빈 DB Schema → 최초 Site seed → Owner 신규 이미지/Origin/Site/Auth/CAD Write 서명 → 최초 Admin → 비밀번호 변경 및 Site Grant → App 가동 → DXF 수동 등록 → LAN 2PC 권한/Audit/Viewer 시험. 이전 DB/HOLD/Snapshot/데이터 복구·rollback image 요구는 전부 제외. 구 환경과의 호환성 검증도 하지 않는다. 기존 운영 데이터에 대한 변경이나 삭제는 수행하지 않는다. 본 문서는 실행 가이드이며 실제 배포 완료를 뜻하지 않는다.
+
 # 운영·환경설정 초안
 
 ## #153 — 실제 Runtime 운영 연결 및 별도 전환 절차 (2026-10-29)
