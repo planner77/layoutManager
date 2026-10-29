@@ -128,7 +128,7 @@ export function readAutomatedSetupCode(env:Readonly<Record<string,string|undefin
   const t=target(env);
   if(verifyInstallation(env,t)!==0)blocked('G7_AUTO_SETUP_ALREADY_COMPLETE');
   const value=privateFile(t.code,128);
-  if(!/^[A-Za-z0-9_-]{43}$/.test(value.text)||now<value.modified||
+  if(!/^[A-Za-z0-9_-]{43}$/.test(value.text)||now-value.modified < -1000 ||
     now-value.modified>=G7_SETUP_TTL_MS)blocked('G7_AUTO_SETUP_EXPIRED');
   return value.text;
 }
