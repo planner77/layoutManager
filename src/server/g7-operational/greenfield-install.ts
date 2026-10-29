@@ -7,8 +7,8 @@
  */
 import { randomUUID } from 'node:crypto';
 import { createRequire } from 'node:module';
-import { closeSync, constants, existsSync, fstatSync, lstatSync, mkdirSync,
-  openSync, readFileSync, readdirSync, realpathSync, statSync } from 'node:fs';
+import { closeSync, constants, existsSync, fstatSync, lstatSync,
+  openSync, readFileSync, readdirSync, realpathSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { IsolatedDb } from '../g7-staging/g1-store';
