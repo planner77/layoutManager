@@ -1,5 +1,9 @@
 # Issue #109 — G7 운영 인증 활성화 설계 및 통제 배포·롤백 Runbook
 
+## #153 v0.44.1 운영 Schema·HOLD 복구 패치 (2026-10-29)
+
+기존 #153에서 정상 Backfill 보안 트리거 누락에 의한 G7 차단과 Snapshot 전 실패 HOLD의 서명 인계 경로를 보완한다. 현장 보고·합성 재현·시험은 [FailureLedger](FailureLedger.md)와 [TestReport](TestReport.md), 명시 인계/재개 및 만료·새 릴리스 처리는 [Runtime Runbook](../src/deploy/g7-runtime/README.md)을 따른다. SQL/Checksum과 현장 자료를 보존하며 실제 운영 Migration/HOLD 해제/서비스 전환/Auth·CAD Write 활성화·배포는 미수행이다. #153/#109/#96은 현장 수용 전 OPEN으로 유지한다.
+
 ## #153 통합 구현 범위 갱신 (2026-10-29)
 
 최신 Owner 지시로 G7 잔여 운영 연결을 #153 단일 PR에 통합한다. Auth/Admin 실제 Route/UI, 기존 CAD 쓰기 권한·Audit, 별도 서명 Runtime Gate, 실제 격리 Migration/Restore 실행을 구현한다. 별도 인간/반복 승인 절차는 Owner Managed로 간소화하되 기술 무결성·권한·복구를 유지한다. 아래 과거 DESIGN ONLY/미구현 문구는 당시 단계의 기록이며 현재 요구사항은 [FR-G7-153](Requirements.md)을 따른다.

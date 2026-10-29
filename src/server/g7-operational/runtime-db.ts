@@ -4,6 +4,7 @@ import { createRequire } from 'node:module';
 import { lstatSync, realpathSync } from 'node:fs';
 import path from 'node:path';
 import type { IsolatedDb } from '../g7-staging/g1-store';
+import { assertDeletePasswordTriggers } from '../delete-password-triggers';
 
 const Sqlite = createRequire(import.meta.url)('better-sqlite3') as
   new (filename: string, options: {fileMustExist: boolean; readonly?: boolean}) => IsolatedDb;
@@ -19,7 +20,7 @@ export const G7_RUNTIME_MIGRATION_CHECKSUMS: Readonly<Record<string, string>> = 
 // Hash of sorted [type,name,whitespace-normalized sqlite_master.sql] after the
 // reviewed seven SQL migrations. This also detects weakened CHECKs/triggers;
 // merely finding the expected table/trigger names would not be sufficient.
-const SCHEMA_FINGERPRINT = 'a937cf58b78710e8b501f7ec3211494c78316080b5c16732f9bf37e66765de6a';
+const SCHEMA_FINGERPRINT = '37b024062bc562111b2882f2d89370fd564bf8143ecce140d91d87a3f36ea3f9';
 export function assertG7RuntimeSchema(db: IsolatedDb): void {
   const rows = db.prepare('SELECT migration_name,checksum,finished_at,rolled_back_at FROM "_prisma_migrations"').all();
   const completed = new Set<string>();
@@ -36,6 +37,7 @@ export function assertG7RuntimeSchema(db: IsolatedDb): void {
     .all().map(row => [row.type, row.name, String(row.sql).replace(/\s+/g, ' ').trim()]);
   if (createHash('sha256').update(JSON.stringify(schema)).digest('hex') !== SCHEMA_FINGERPRINT)
     throw new Error('G7_RUNTIME_SCHEMA_DRIFT');
+  assertDeletePasswordTriggers(db);
   const check = db.prepare('PRAGMA quick_check').all();
   if (check.length !== 1 || Object.values(check[0])[0] !== 'ok' ||
       db.prepare('PRAGMA foreign_key_check').all().length !== 0)

@@ -1,5 +1,22 @@
 # PR/Main CI 실패 원장
 
+## #153 — v0.44.0 현장 정상 Backfill Schema 거부·pre-Snapshot HOLD (2026-10-29)
+
+- **현장 보고(비반출):** 기존 CAD Migration 6개 완료·SQL Checksum MATCH·quick_check OK·FK 0, Auth 7번째 미적용, 실패 HOLD 존재·G7 Snapshot 없음. 기준 29개 대비 실제 31개 Schema 객체이며 추가 둘은 정상 기존 Migrator의 `cad_version_delete_password_insert/update`. 실제 DB/CAD/서명/Digest/내부 식별자는 수집·게시하지 않았다. 현장 상태는 사용자 보고이며 외부에서 DB를 열어 확인한 것으로 표시하지 않는다.
+- **원인:** `scripts/deploy.ts`의 여섯 Prisma SQL→`scripts/backfill-delete-passwords.ts` 순서가 만드는 보안 트리거를 G7 SQL-only reference와 Runtime 7-Schema fingerprint가 누락했다. 정상 운영 Schema를 임의 추가 객체로 판단해 Snapshot 전 fail-closed했다. 기존 이력/Checksum 손상이라는 근거는 없다.
+- **영향:** 7번째 Migration과 Runtime 검증이 차단되고, 구 승인이 만료되거나 패치 릴리스 Source/Digest가 바뀌면 동일 승인 RESUME만으로는 회복할 수 없다. 자동 HOLD 삭제나 검증 없는 새 승인 교체는 허용되지 않는다.
+- **합성 RED:** 최신 main 기준 합성 여섯 CAD Prisma deploy→실제 삭제 비밀번호 Backfill→두 트리거 확인→서명된 apply-approved가 `G7_DISPOSABLE_REHEARSAL_BLOCKED`로 실패했다. Developer의 해당 단일 선택 시험 1 FAIL. 선택되지 않은 기존 시험은 실행하지 않았으며 PASS로 집계하지 않는다.
+- **해결·재발 방지(검증 전):** 트리거 SQL 단일 정의를 Backfill·Migration reference가 공유하고 운영 7-Schema fingerprint도 동일 기준으로 고정한다. 누락/위조/변조/임의 객체·이력/Checksum/FK/Audit 거부를 유지한다. 새 Owner 서명 pre-Snapshot HOLD 인계와 실패 원본 보존·경합/재실행 차단을 추가한다. 기존 7 SQL은 수정하지 않으며 PATCH0.44.1을 사용한다. Docker COPY/import closure와 실제 Migrator 순서 회귀를 추가한다.
+- **실행 경계:** 실제 운영 Migration/HOLD 변경/서비스 전환/Auth·CAD Write ON·현장 수용·GHCR/Tag/병합은 NOT RUN. Developer 집중39/39 및 후반 추가1/1 GREEN, root 최종82파일601/601·Build/Typecheck/Lint·Chromium93+Runtime1+Legacy1+DWG4·Docker 합성 전환/재시작 PASS다. 독립 QA2파일40/40·74.96초 PASS와 Manager 로컬 구현/PR 준비 ACCEPT를 TestReport에 기록했다. #153/#109/#96 OPEN.
+
+### 패치 검토·로컬 검증 중 발견 및 보존
+
+- SQLite는 `CREATE TRIGGER IF NOT EXISTS`를 sqlite_master에 저장할 때 `IF NOT EXISTS` 접두부를 제거한다. root/Manager의 합성 SQLite 원문 probe로 확인하여 공유 검증의 예상 원문에서 해당 접두부만 맞추고 나머지 SQL/문자열은 정확 비교했다. 문자열 전체 whitespace 정규화로 의미 변조를 숨기지 않는다.
+- 코드 검토로 History 테이블에 붙인 임의 Index/Trigger가 기존 tbl_name 제외식에 가려지는 경계, 재개 시 signed Epoch/evidence 재검사, archive fsync 후 최종 서명/Window 재검사, 모든 RESUME 후 완료 HOLD 유지 등을 보완했다. 정상 Backfill만 수용하고 기존 거부 조건을 완화하지 않는다.
+- **후반 무결성 RED→GREEN:** Manager가 postcommit 중단(count7)의 현재 CAD와 retained source6 Snapshot이 함께 변조되면 mutable Snapshot 비교만으로 통과할 수 있음을 발견했다. retained source6 전체 Schema/History/CAD/Asset evidence를 최초 Owner 서명과 대조한다. Developer가 해당 비교를 잠시 제거한 통제 재현에서 새 시험이 `expected [Function] to throw`로 RED, 비교 복구 후1/1 GREEN임을 확인했다. 원래 현장 Trigger RED와 별도 합성 발견이며 실제 현장 침해/변조 보고가 아니다.
+- root 첫 전체 Vitest는 후반 보완으로 총계 출력 전에 의도적으로 SIGINT(exit130) 중단했다. **미완료/NOT PASS**로 보존하고 최종 수정에서 전체를 새로 시작한다. 종전 결과를 최종 HEAD PASS로 재사용하지 않는다.
+- root의 첫 독립 DWG Chromium4건은 공개 sample 준비 누락으로 `node_modules/.cache/cad-dwg-samples`의 Line/circle 파일 ENOENT에서4 FAIL했다. 제품 렌더링 결함 근거가 아니며 source/Assertion/timeout을 바꾸지 않았다. 기존 `prepare:dwg-samples`의 고정 upstream revision/원래 SHA 검증으로 공개 sample을 준비하고 같은4건을 재실행한다. 현장 CAD는 사용하지 않았으며 원본4 FAIL을 삭제하지 않는다. 최종 재실행 결과는 TestReport를 따른다.
+
 ## PR #156 — P2 Site 비활성화 격리·강제 종료 Migration 복구 (2026-10-29)
 
 - **선행 성공 보존:** HEAD `523801a4da8850d579009efa92e3f1c76a746ece`, [PR CI #40775288415](https://github.com/planner77/layoutManager/actions/runs/40775288415) `completed/success`를 직접 확인했다. 아래 결함은 해당 CI 실패가 아니라 [Site P2](https://github.com/planner77/layoutManager/pull/156#discussion_r4406464951) 및 [Stale Lock P2](https://github.com/planner77/layoutManager/pull/156#discussion_r4406464961)의 추가 회귀다. 기존 실패/취소/미확정 기록은 보존한다.

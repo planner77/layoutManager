@@ -1,5 +1,13 @@
 # Architecture 초안
 
+## #153 — Backfill 정규 Schema와 HOLD 인계 경계 (2026-10-29)
+
+기존 삭제 암호 Trigger 두 DDL을 공통 모듈로 추출하여 실제 backfill, 6/7 Schema reference, Runtime fingerprint에 함께 사용한다. 전체 객체/본문 검사를 유지하며 Trigger SQL 원문까지 검사해 문자열 literal 의미를 약화하지 않는다. 현장 DB 자동 DDL repair는 하지 않는다.
+
+pre-Snapshot 복구는 기존 apply/완성 Snapshot 동일 승인 RESUME와 별도의 명시 CLI handover다. FAILED뿐 아니라 IN_PROGRESS 강제 종료도 fresh signed handover가 필수다. current 독립 Owner Trust와 fresh signed MIGRATION 승인을 정상 검사하고, domain-separated Owner 인계 서명으로 raw old HOLD digest/reason/approval/SNAP/Epoch, 검증된 old signed approval/release, new approval/release/SNAP/Epoch, 동일 target/Scope, 정확6 Schema/CAD evidence, fresh Writer Zero 선언 및 최대5분 인계 Window(현재 MIGRATION 승인 최대24h 안)를 바인딩한다. 과거 승인은 서명·형식·당시 Window 적법성을 검증하되 현재 expiry와 이전 실행 version 차이를 역사 증거에서만 허용한다. 일반 Runtime/Migration resolver를 완화하지 않으며 unsigned Trust 교환으로 인계를 대신하지 않는다.
+
+기존 persistent SQLite 실행 lock+대상 DB exclusive lock 안에서 old HOLD 원본·old/new 승인·signed handover를 private immutable archive로 보존하고 새 HOLD에 archive/소비 identity를 원자 연결한다. 현재 old HOLD digest+immutable 소비 이력이 replay를 차단한다. 검증 실패는 old HOLD/data 무변경, archive 후 중단은 old HOLD 또는 검증 가능한 새 HOLD 및 이력으로 복구한다. 인계 직전 trust/승인/HOLD/evidence를 재확인한다. 새 HOLD 후 별도 RESUME가 새 Snapshot/7번째 Migration을 수행한다. 모든 명시 RESUME 성공에도 recovery-complete HOLD를 보존하여 App의 Auth/Write 환경변수만으로 열리지 않게 한다. 이후 별도 정상 활성화는 이번 범위 밖이다. 인계 서명/Writer Zero 관측의 5분 Window는 인계 소비 시 검증하며, 이미 소비한 인계의 RESUME에는 현재 MIGRATION 승인 유효기간과 보관된 signed evidence 재대조를 적용한다. 이미7 Schema로 commit된 중단 복구도 보관 source6 Snapshot의 Schema/history/inventory/assets를 원래 서명 evidence와 비교하여 현재 DB와 Snapshot을 함께 바꿔치기한 정합성만으로 승인하지 않는다. 인계부터 RESUME까지 모든 Writer 중지의 연속 유지가 현장 전제다. 중간에 Writer를 재시작했다면 HOLD를 보존하고 별도 격리 재전환 계획으로 돌아가며 자동 재서명으로 우회하지 않는다. 실제 Writer Zero/원격 S3 provenance는 Owner 현장 검증이며 합성 시험은 현장 PASS가 아니다.
+
 ## #153 — Runtime 신뢰 경계와 기존 서비스 통합 (2026-10-29)
 
 `runtime-gate.ts`는 로컬 독립 Trust 파일과 Owner Ed25519 서명 승인, 설치 버전/Release Identity, 실제 7개 Migration 및 Schema를 검증한다. pure `preflight.ts`/`s3-5-owner-decision.ts`의 비활성 결과는 그대로 보존한다. Runtime API는 별도 `/api/g7-runtime/**`, 기존 Preview/Staging 쿠키·경로와 분리하며 G2/G3/G4 서비스·SQLite 저장소를 재사용한다. 프록시 내부 bind URL 대신 승인된 공개 Host를 검증한다.

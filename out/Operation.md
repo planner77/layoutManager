@@ -1,5 +1,13 @@
 # 운영·환경설정 초안
 
+## #153 v0.44.1 — 정상 운영 Schema와 Snapshot 전 실패 HOLD
+
+현장 v0.44.0의 여섯 Migration·정상 Backfill은 보안 트리거 두 개까지 포함한 운영 Schema다. G7 reference/fingerprint에서 이를 누락하여 발생한 pre-Snapshot 차단을 패치한다. 기존 SQL/Checksum 보존, 정확한 두 정의와 전체 객체 비교, History/FK/CAD/Audit 검사는 유지한다. 신규 패치 Pair는 0.44.1 후보이며 실제 게시/배포 완료와 구분한다.
+
+기존 실패 HOLD에 Snapshot이 없으면 HOLD 삭제나 승인 ID 교체를 하지 않고 [Runtime Runbook의 Owner 서명 인계](../src/deploy/g7-runtime/README.md)를 따른다. 새 릴리스/승인과 구 HOLD·서명 승인의 연속성, 정확6 Schema/원본 SHA/Version/Current·Writer Zero를 검사하고 기존 실행 자료를 보존한다. 만료된 구 승인은 역사 증거일 뿐 새 실행권이 아니다. 인계와 재개는 별도 명시 실행이며 모든 명시 RESUME 성공 후에도 Auth/CAD Write는 완료 HOLD로 차단한다.
+
+이번 개발 범위에서 실제 운영 DB/CAD/S3 조회·Migration/HOLD 변경/Writer 정지/서비스 전환/활성화는 NOT RUN. 현장 자료·서명·Digest·식별자는 사내 보존하며 공개에는 안전한 상태 코드만 남긴다. #153/#109/#96은 현장 수용 전 OPEN이다.
+
 ## #153 — 실제 Runtime 운영 연결 및 별도 전환 절차 (2026-10-29)
 
 후보 버전은 0.44.0이다. `/g7-runtime`의 로그인·계정/권한/세션 회수·감사 화면과 `/api/g7-runtime/**`를 기존 G2/G3/G4 서비스에 연결한다. 기존 Preview/Staging 경로는 비운영 상태로 분리하며 그 쿠키로 운영 권한을 얻을 수 없다. 현재 작업에서는 실제 운영 설정/데이터/이미지를 변경하지 않는다.

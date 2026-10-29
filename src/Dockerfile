@@ -80,6 +80,7 @@ COPY --from=builder /app/src/scripts/env.mjs ./scripts/env.mjs
 COPY --from=builder /app/src/scripts/storage-config.mjs ./scripts/storage-config.mjs
 COPY --from=builder /app/src/server/db.ts ./server/db.ts
 COPY --from=builder /app/src/server/backfill-delete-passwords.ts ./server/backfill-delete-passwords.ts
+COPY --from=builder /app/src/server/delete-password-triggers.ts ./server/delete-password-triggers.ts
 COPY --from=builder /app/src/server/password.ts ./server/password.ts
 COPY --from=builder /app/src/server/logger.ts ./server/logger.ts
 COPY --from=builder /app/src/server/upload-error-catalog.ts ./server/upload-error-catalog.ts
@@ -88,6 +89,7 @@ COPY --from=builder /app/src/domain/cad.ts ./domain/cad.ts
 # migrations. Signed Runtime authority is required before G2 writes anything.
 COPY --from=builder /app/src/scripts/g7-runtime-admin.ts ./scripts/g7-runtime-admin.ts
 COPY --from=builder /app/src/scripts/g7-runtime-rehearsal.ts ./scripts/g7-runtime-rehearsal.ts
+COPY --from=builder /app/src/scripts/g7-runtime-hold-handover.ts ./scripts/g7-runtime-hold-handover.ts
 COPY --from=builder /app/src/server/auth ./server/auth
 COPY --from=builder /app/src/server/g7-staging/g1-store.ts ./server/g7-staging/g1-store.ts
 COPY --from=builder /app/src/server/g7-staging/g2-store.ts ./server/g7-staging/g2-store.ts
@@ -105,7 +107,7 @@ USER cad
 RUN ./node_modules/.bin/prisma --version >/dev/null \
     && ./node_modules/.bin/tsx --version >/dev/null \
     && node -e "const Database=require('better-sqlite3'); new Database(':memory:').close()" \
-    && node --import tsx --input-type=module -e 'import { writeLog } from "./server/logger.ts"; if (typeof writeLog !== "function") process.exit(1);'
+    && node --import tsx --input-type=module -e 'import { writeLog } from "./server/logger.ts"; import { backfillDeletePasswords } from "./server/backfill-delete-passwords.ts"; import { migrateG7ApprovedDatabase } from "./server/g7-operational/runtime-migration.ts"; if ([writeLog, backfillDeletePasswords, migrateG7ApprovedDatabase].some(value => typeof value !== "function")) process.exit(1);'
 CMD ["./node_modules/.bin/tsx", "scripts/deploy.ts"]
 
 # Default production image: Next.js standalone traced dependencies and static assets only.

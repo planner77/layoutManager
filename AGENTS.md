@@ -1,5 +1,11 @@
 # CAD Web Viewer P.O.C. — 개발 진입 문서
 
+## Issue #153 — v0.44.1 운영 Schema·pre-Snapshot HOLD 복구 패치 (2026-10-29)
+
+G7 Migration/Runtime Schema 또는 HOLD 복구를 수정·검증할 때 [Runtime Runbook](src/deploy/g7-runtime/README.md)의 패치 복구 절차, [운영 문서](out/Operation.md), [실패 원장](out/FailureLedger.md)의 현장 장애 기록과 ADR-051-G7-153-HOLD를 먼저 읽는다. 정상 Migrator의 삭제 비밀번호 Backfill 트리거 두 개를 운영 Schema 기준에 포함한다. 기존 일곱 Migration SQL/Checksum을 보존하며 임의 Schema 예외는 허용하지 않는다. 실패 HOLD·구 승인 이력은 보존하고 새 Owner 서명으로 연속성이 확인된 명시 인계만 허용한다.
+
+작업 범위는 최신 main의 합성 재현·구현·Owner Managed QA·단일 PR CI 시작까지다. 현장 원본/서명/Digest/식별자 반출, 실제 운영 Migration/HOLD 해제/서비스 전환/Auth·CAD Write 활성화, GHCR 게시/Tag/병합은 수행하지 않는다. #153/#109/#96은 현장 수용 전 OPEN. 0.44.0은 이미 게시된 버전이며 패치는 0.44.1을 사용한다.
+
 ## Issue #153 — G7 운영 통합 구현 (2026-10-29)
 
 최신 Owner Managed 정책으로 실제 Auth/Admin UI·API, CAD 권한/Audit 및 별도 Runtime Gate를 통합한다. 기존 R0/preflight의 `runtimeActivated=false` 계약과 격리 Preview는 유지한다. 운영 기능은 기본 OFF이며 환경변수만으로 활성화할 수 없다. Runtime 신뢰 파일·Owner 서명·릴리스·Site Scope·실제 7-Migration Schema가 일치해야 한다. 기술적 권한·무결성·복구 실패를 승인 완화로 우회하지 않는다.

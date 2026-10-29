@@ -78,6 +78,25 @@ describe('#153 signed Owner Managed runtime gate',()=>{
  test('missing/failed/forged history and weakened audit triggers rejected',()=>{
   for(const sql of ["DELETE FROM _prisma_migrations WHERE migration_name='202610260002_g7_operational_auth'","UPDATE _prisma_migrations SET finished_at=NULL WHERE migration_name='202610260002_g7_operational_auth'","UPDATE _prisma_migrations SET checksum='forged' WHERE migration_name='202610260002_g7_operational_auth'",'DROP TRIGGER g1_audit_no_delete','DROP TRIGGER g1_audit_no_update;CREATE TRIGGER g1_audit_no_update BEFORE UPDATE ON AuditEvent BEGIN SELECT 1;END']){const f=fixture(),db=f.openDb();db.exec(sql);db.close();blocked(f);}
  });
+ test('runtime schema requires the two exact delete-password backfill triggers',()=>{
+  for(const sql of [
+    'DROP TRIGGER cad_version_delete_password_insert',
+    'DROP TRIGGER cad_version_delete_password_update',
+    'DROP TRIGGER cad_version_delete_password_insert; CREATE TRIGGER cad_version_delete_password_insert BEFORE INSERT ON CadFileVersion BEGIN SELECT 1; END',
+    'DROP TRIGGER cad_version_delete_password_update; CREATE TRIGGER cad_version_delete_password_update BEFORE UPDATE OF delete_password_hash ON CadFileVersion BEGIN SELECT 1; END',
+  ]){
+    const f=fixture(),db=f.openDb();db.exec(sql);db.close();blocked(f);
+  }
+ });
+ test('runtime schema rejects extra table, index and trigger including on migration history',()=>{
+  for(const sql of [
+    'CREATE TABLE unexpected_schema(id TEXT)',
+    'CREATE INDEX unexpected_history_index ON _prisma_migrations(checksum)',
+    'CREATE TRIGGER unexpected_history_trigger BEFORE UPDATE ON _prisma_migrations BEGIN SELECT 1; END',
+  ]){
+    const f=fixture(),db=f.openDb();db.exec(sql);db.close();blocked(f);
+  }
+ });
  test('missing approved site, preview runtime conflict and auth switch-down fail closed',()=>{
   const f=fixture(),db=f.openDb();db.exec("DELETE FROM CadSite WHERE id='site-a'");db.close();blocked(f);
   const g=fixture();g.env.G7_S3_AUTH_API_PREVIEW_ONLY='true';blocked(g);g.env.G7_S3_AUTH_API_PREVIEW_ONLY='false';g.env.G7_STAGING_ONLY='true';blocked(g);g.env.G7_STAGING_ONLY='false';g.env.G7_AUTH_ENABLED='false';blocked(g);

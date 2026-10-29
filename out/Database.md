@@ -1,5 +1,13 @@
 # Database Schema — 단일 기준 문서
 
+## #153 v0.44.1 — 정상 Backfill 보안 트리거를 포함한 운영 Schema
+
+운영 Schema 기준은 기존 CAD Migration 여섯 SQL과 **그 뒤 정상 Backfill이 생성한 두 삭제 비밀번호 트리거**의 합이다. Auth 후보 일곱 번째 SQL 적용 후에도 두 트리거는 존재해야 한다. SQL 정의의 단일 기준은 `src/server/delete-password-triggers.ts`이며 Backfill과 G7 검증이 이를 참조한다. Migration SQL에 트리거를 새로 삽입하거나 기존 SQL의 이력/Checksum을 바꾸지 않는다.
+
+`cad_version_delete_password_insert`는 CadFileVersion INSERT, `cad_version_delete_password_update`는 delete_password_hash UPDATE에서 NULL/빈 문자열을 ABORT한다. 이름만 존재하는 위조·누락·다른 SQL·임의 추가 Table/Index/Trigger는 거부한다. G7 Runtime7 fingerprint는 실제 운영 순서로 만든 Schema를 기준으로 보완하며 History/Checksum/quick_check/FK/Audit 무결성 검증을 유지한다. 기존 Prisma Table/Column/Index 계약을 변경하는 새 Migration은 없다.
+
+pre-Snapshot HOLD 인계 자료는 DB 업무 테이블/Audit를 수정하지 않는 private 실행 메타데이터다. 구 HOLD·승인과 신규 Owner 서명 연속성·관측 CAD/Version/Current·원본 SHA를 검증하고 보존하는 절차는 [Runtime Runbook](../src/deploy/g7-runtime/README.md)을 따른다. 현장 자료는 저장소 밖 사내에서만 보관한다.
+
 ## #153 — Runtime Schema 수용 경계 (2026-10-29)
 
 기존 활성 CAD Migration 6개와 격리 `202610260002_g7_operational_auth` 7번째 SQL을 재사용하며 신규 Table/Column이나 활성 이력의 자동 승격은 없다. Runtime은 정확한 완료 이력·SQL 체크섬·전체 Schema fingerprint·8개 Auth Table·FK·append-only trigger와 승인 Site 존재를 검증한 DB만 연다. 부분 적용·이력/Schema drift는 기능 활성화를 차단한다.

@@ -1,5 +1,12 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-051-G7-153-HOLD — 정규 Backfill Trigger와 명시 Owner 인계 (2026-10-29)
+
+- 구현 전 Manager 채택: 6/7 Schema 기준에 실제 backfill의 두 삭제암호 Trigger를 공유 DDL로 포함한다. Migration SQL/checksum 변경 또는 Trigger 검사 제외는 거부한다.
+- Snapshot 없는 실패 HOLD의 만료/릴리스 변경은 별도 fresh Owner signed handover로 old HOLD/서명 승인/Release→new signed MIGRATION 승인/Release를 연결한다. old 승인 expiry/version 예외는 역사 증거 전용이며 새 실행은 현재 정상 resolver가 결정한다.
+- 정확6 Schema/이력/checksum/quick/FK/CAD SHA/Version/Current/Scope 및 signed Writer Zero/evidence 확인 후 공유 lock 안에서 immutable archive+원자 HOLD 인계한다. 성공도 HOLD/Auth·Write OFF, 별도 RESUME로 새 Snapshot/7번째 SQL. 모든 명시 RESUME 성공 후 recovery-complete HOLD를 남겨 자동 활성화를 막는다. 과거 실패·데이터·이력은 삭제하지 않는다. fresh Writer Zero/인계5분 Window는 인계 소비 시점에 적용하며 이후 RESUME는 Writer 중지의 연속 유지+현재 MIGRATION 승인 유효기간+signed evidence 재대조를 요구한다. 이미 소비된5분 Window 만료만으로 정상 재개를 막지는 않는다. 중지 연속성이 끊기면 HOLD 유지·별도 격리 재전환 계획이 필요하다.
+- 범위는 사용자 요청의 로컬 구현·합성 검증·문서·단일 PR/CI 시작이다. 실제 운영/Trust 발급/배포/병합/게시·#153/#109/#96 종료는 미수행. Developer 구현 검토와 독립 QA 후 수용하며 이 결정은 PASS 주장이 아니다.
+
 ## ADR-G7-153 — Owner Managed Runtime 연결과 격리 복구 (2026-10-29)
 
 - 결정: 최신 #153 사용자 지시로 절차 위주 준비 단계에서 실제 운영 API/UI·CAD 거래 연결을 구현한다. 별도 인간 Reviewer/반복 승인은 요구하지 않고 Owner Managed 검증을 적용한다. 권한 우회·데이터 손실·복구 불가능 상태는 완화 대상이 아니다.

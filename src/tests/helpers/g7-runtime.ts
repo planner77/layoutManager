@@ -10,6 +10,7 @@ import { G7_S3_CAPABILITY, G7_S3_SCHEMA_ID } from '../../server/g7-operational/p
 import { G7_RUNTIME_MIGRATION_CHECKSUMS } from '../../server/g7-operational/runtime-db';
 import { G7_RUNTIME_SCOPE, g7RuntimeApprovalSigningBytes,
   type G7RuntimeApproval, type G7RuntimeTrust } from '../../server/g7-operational/runtime-gate';
+import { DELETE_PASSWORD_TRIGGER_SQL } from '../../server/delete-password-triggers';
 import type { IsolatedDb } from '../../server/g7-staging/g1-store';
 const Sqlite = createRequire(import.meta.url)('better-sqlite3') as new (filename:string) => IsolatedDb & {serialize():Buffer};
 export function makeG7RuntimeFixture(now = Date.now()) {
@@ -26,6 +27,7 @@ export function makeG7RuntimeFixture(now = Date.now()) {
       const sql = readFileSync(new URL('../../deploy/g7-s3/prisma/migrations/'+name+'/migration.sql',import.meta.url));db.exec(sql.toString('utf8'));
       db.prepare('INSERT INTO "_prisma_migrations" VALUES(?,?,?,?,NULL)').run(randomUUID(),name,createHash('sha256').update(sql).digest('hex'),now);
     }
+    for (const statement of DELETE_PASSWORD_TRIGGER_SQL) db.exec(statement);
     db.prepare('INSERT INTO "BusinessUnit"(id,name) VALUES(?,?)').run('bu','Synthetic');
     db.prepare('INSERT INTO "Product"(id,business_unit_id,name) VALUES(?,?,?)').run('product','bu','Product');
     for (const site of ['site-a','site-b']) db.prepare('INSERT INTO "CadSite"(id,product_id,name) VALUES(?,?,?)').run(site,'product',site);

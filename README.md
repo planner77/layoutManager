@@ -1,6 +1,8 @@
 # CAD Web Viewer P.O.C.
 
-## 0.44.0 후보 — G7 운영 통합 (Issue #153)
+#153 Schema·HOLD 복구 패치 후보 **0.44.1**: 기존 Migrator가 생성하는 삭제 비밀번호 보안 트리거를 엄격한 G7 Schema 기준에 포함하고, Snapshot 생성 전 실패 HOLD에 대한 새 Owner 서명 인계 절차를 제공한다. 명령과 사내 보존 자료는 [Runtime Runbook](src/deploy/g7-runtime/README.md), 실제 검증과 한계는 [TestReport](out/TestReport.md)를 따른다. 실제 현장 복구·기능 활성화·이미지 게시 완료를 의미하지 않는다.
+
+## 0.44.1 후보 — G7 운영 통합 (Issue #153)
 
 기존 Auth/Session/Role/Site/Audit를 실제 로그인·운영 화면과 CAD 거래에 연결합니다. 기본 OFF이며 독립 로컬 Trust, Owner 서명, 정확한 릴리스·Schema·Site Scope가 일치해야 `/g7-runtime`과 보호된 변경 기능을 사용할 수 있습니다. 기존 익명 CAD 읽기·Viewer·원본과 삭제 비밀번호는 유지합니다. 계정 초기/복구 CLI, 격리 Migration/동일 Snapshot Restore와 실패 HOLD를 제공합니다.
 

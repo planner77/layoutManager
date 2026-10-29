@@ -83,7 +83,7 @@ export function g7RuntimeApprovalSigningBytes(value: unknown): Buffer | null {
     releaseKeys.map(key => value.release[key]),value.origin,value.databasePath,value.cadStoragePath,value.siteIds,value.scopes,
     value.approvalId,value.snapshotId,value.changeRequestId,value.approvedAtUtc,value.notBeforeUtc,value.expiresAtUtc]));
 }
-function readPrivateJson(filename: string | undefined): unknown {
+export function readG7RuntimePrivateFile(filename: string | undefined): Buffer {
   if (!filename || !path.isAbsolute(filename) || realpathSync(filename) !== filename) throw new Error();
   const parent = lstatSync(path.dirname(filename));
   if (!parent.isDirectory() || parent.isSymbolicLink() || parent.uid !== process.getuid?.() ||
@@ -95,8 +95,30 @@ function readPrivateJson(filename: string | undefined): unknown {
         stat.nlink !== 1 || stat.size < 2 || stat.size > 32768) throw new Error();
     const bytes = readFileSync(fd);
     if (bytes.length !== stat.size) throw new Error();
-    return JSON.parse(bytes.toString('utf8'));
+    return bytes;
   } finally { closeSync(fd); }
+}
+function readPrivateJson(filename: string | undefined): unknown {
+  return JSON.parse(readG7RuntimePrivateFile(filename).toString('utf8'));
+}
+/** CLI-only historical signature check. Expiry and current release binding are
+ * deliberately excluded, while the original signed operation contract stays exact.
+ */
+export function verifyG7HistoricalMigrationApproval(value: unknown, ownerPublicKeyPem: string): value is G7RuntimeApproval {
+  if (!approval(value) || value.decision !== 'GO' || !value.scopes.includes('MIGRATION')) return false;
+  const approved = Date.parse(value.approvedAtUtc), start = Date.parse(value.notBeforeUtc), end = Date.parse(value.expiresAtUtc);
+  if (approved > start || start >= end || end - approved > DAY) return false;
+  try {
+    const key = createPublicKey(ownerPublicKeyPem), bytes = g7RuntimeApprovalSigningBytes(value);
+    return key.asymmetricKeyType === 'ed25519' && !!bytes &&
+      /^[A-Za-z0-9+/]{86}==$/.test(value.signature) &&
+      Buffer.from(value.signature,'base64').toString('base64') === value.signature &&
+      verify(null,bytes,key,Buffer.from(value.signature,'base64'));
+  } catch { return false; }
+}
+/** Use the same ownership, parent-mode, symlink and size policy as runtime gate. */
+export function readG7RuntimePrivateJson(filename: string | undefined): unknown {
+  return readPrivateJson(filename);
 }
 function blocked(reason: string): G7RuntimeGate {
   return {state:'BLOCKED',authEnabled:false,cadWriteEnabled:false,reasons:[reason]};

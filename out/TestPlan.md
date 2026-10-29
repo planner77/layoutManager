@@ -1,5 +1,19 @@
 # 구현 Unit·Acceptance Criteria·테스트 계획
 
+## TC-153-SCHEMA-HOLD — Backfill Schema·만료/변경 릴리스 인계 (2026-10-29)
+
+| ID | 실행 및 수용 기준 |
+| --- | --- |
+| TC-153-SCHEMA-01 | 실제6 Migration→실제 backfill 두 Trigger→signed apply→7 Schema/Runtime 검사 통과; backfill idempotency·CAD/Version/Current/SHA 보존 |
+| TC-153-SCHEMA-02 | 각 Trigger 누락/동일 이름 약화 body/추가 객체/이력 checksum·미완료·추가 Migration 거부; SQL 원문 의미/원 checksum 보존 |
+| TC-153-HOLD-01 | Snapshot 전 old HOLD→old 승인 만료+release 변경→fresh signed handover→old bytes/reason/identity archive·new HOLD 연결→명시 RESUME 새 SNAP/7 성공; recovery-complete HOLD와 Runtime Auth/Write OFF 유지 |
+| TC-153-HOLD-02 | 무서명/다른 key/변조/만료·미래·과도 Window/old HOLD reason·approval·SNAP·Epoch·release/new approval·release·target·Scope 불일치/unsigned swap/Writer Zero 없음/evidence mismatch는 old HOLD+data bytes 무변경 거부 |
+| TC-153-HOLD-02B | 아직 유효한 old 승인에서도 모든 pre-Snapshot HOLD 직접 RESUME 거부; IN_PROGRESS SIGKILL 후에도 fresh signed handover→RESUME. 완성 Snapshot 동일 승인 RESUME 검증은 유지하며 모든 RESUME 성공 후 complete HOLD와 Runtime OFF를 확인 |
+| TC-153-HOLD-02C | recovered RESUME의 commit 직후 중단된7 DB와 보관6 Snapshot을 같은 새 inventory로 변경하고 manifest DB hash까지 갱신해도 원래 Owner-signed evidence와 불일치하면 거부. 보관 source6 Schema/history/inventory/assets evidence를 재검증하고 linked HOLD 유지 |
+| TC-153-HOLD-03 | 완성 old Snapshot/7·부분 Schema/손상 이력/checksum/quick/FK/CAD SHA/Version/Current/새 SNAP 충돌/불안전 path·권한/symlink/hardlink/replay 거부; 민감 입력 echo 금지 |
+| TC-153-HOLD-04 | 살아 있는 동시 실행 거부; 검증/보존/원자 전환 경계 fault와 실제 SIGKILL 후 old HOLD 또는 archive-linked new HOLD·이력 유지, data 불변·재시도/replay 안전; 기존 SIGKILL RESUME/Restore 회귀 |
+| TC-153-HOLD-05 | Typecheck/Lint/전체 Unit·Integration/Build·관련 Runtime/기본OFF E2E 및 Docker 공통모듈 packaging 검사/가능한 smoke. 실제 운영은 NOT RUN. 최종 PR CI 한 번 시작, 미관측 결과 NOT VERIFIED |
+
 ## TC-G7-153 — 운영 통합 회귀 계획 (2026-10-29)
 
 - TC-153-P2-SITE: 실제 Admin 기준정보 비활성화→새 로그인/기존 세션·관리 API 정상→다른 승인 활성 Site CAD 쓰기 성공·비활성 Site 쓰기 거부→같은 UI/API 경로 재활성화·쓰기 복구. 미승인/누락 Site 거부 보존.

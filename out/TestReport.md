@@ -1,5 +1,42 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## U-ISSUE153-SCHEMA-HOLD-20261029 — v0.44.1 패치 후보
+
+기준은 최신 main `881a704`이며 기존 로컬 변경 두 개를 보존한 별도 worktree에서 수행했다. 공개 현장 정보는 사용자 보고만 사용했고 실제 DB/CAD/서명/Digest/내부 식별자는 반출·시험 입력으로 사용하지 않았다. 본 단위는 패치 구현·합성 검증·단일 PR CI 시작까지이며 실제 현장 수용/배포는 별도다.
+
+### 실제 역할·추적
+
+root가 패치 통합·전체 회귀·Docker·문서·게시를 담당한다. `/root/manager` gpt-6-astra가 구현 전 Requirements/Architecture/ADR-051-G7-153-HOLD/TestPlan을 기록하고 Developer 지시·결과 검토를 수행했다. `/root/developer` gpt-6-sol이 합성 RED→GREEN·구현·집중 회귀를 수행했다. 제공된 실행 모델에는 이전 진입 문서의 gpt-5.6-sol/luna가 없어 최신 main AGENTS의 gpt-6-sol/luna 매핑으로 실행했으며, 독립 `/root/manager/qa` gpt-6-luna가 diff 검토와 집중 검증을 수행한다. 인간 QA 승인이나 현장 증거 외부 검증으로 기록하지 않는다.
+
+- FR-153-SCHEMA-01 → 공유 `delete-password-triggers.ts`/Backfill/reference/Runtime7 → TC-153-SCHEMA-01/02: 실제 여섯 Prisma deploy→실제 Backfill→두 보안 Trigger→서명 apply7, Runtime Schema/FK0/Version/Current/원본 SHA·삭제암호 보존. SQL 원문·문자열 의미 검사와 임의 Table/Index/Trigger(History 테이블 대상 포함), History/Checksum/FK/Audit 거부 유지.
+- FR-153-HOLD-01~03 → private Inspector/Owner 인계 서명/불변 archive·소비 기록/명시 RESUME → TC-153-HOLD-01~05: 만료된 구 릴리스 계약·정확6·Snapshot 없음·실패 reason, 새 Owner 서명 승인과 연속성, Writer Zero 선언, 원본/이력 보존 및 replay/경합/실제 SIGKILL. 모든 명시 RESUME 완료 후 `RECOVERED_MIGRATION_COMPLETE`로 Auth/CAD Write 차단.
+
+후반 live7+sourceSnapshot6 동시 변조 시험은 signed source evidence 비교 제거 시 RED(`expected [Function] to throw`), 복구 후1/1 GREEN이다. 첫 전체 batch는 해당 보완으로 총계 전 SIGINT exit130 중단/NOT PASS, 위601/601은 보완 후 새로 실행한 결과다.
+
+구 v0.44.0 수용 Fixture는 현재 코드의 합성 pre-Snapshot 실패 뒤 동일 시험 Owner 키로 구 버전/릴리스/만료 Window의 서명 승인을 재구성한다. 과거 승인 검증·새 릴리스 연속성을 입증하며 **실제 v0.44.0 프로세스/OCI 실행 또는 출처를 검증한 시험은 아니다**. Writer Zero는 서명된 Owner 주장과 SQLite 배제 잠금/자료 재검사이며 실제 원격 Writer 정지·S3 provenance 증명은 아니다.
+
+| 검증 | 실제 결과 |
+| --- | --- |
+| 설치/Prisma 생성 | PASS, 정확 lockfile `npm ci --no-audit --no-fund`, `npm run db:generate` |
+| 현장 순서 합성 RED | 수정 전 실제6 Prisma+실제 Backfill 후 서명 apply가 `G7_DISPOSABLE_REHEARSAL_BLOCKED`로 1 FAIL; 선택되지 않은 시험은 실행하지 않음 |
+| Developer 집중 회귀 | Migration+Gate 최종39/39 PASS, 잘못된 old Epoch 추가 선택 시험 PASS; Typecheck/Lint 오류0·기존 경고6·diff check PASS |
+| root 첫 Build/Typecheck/Lint | PASS, Production Build·Typecheck exit0, Lint 오류0/기존 경고6 |
+| root 최종 전체 Vitest/정적·Build | PASS82파일601/601,292.65초. 최종 Production Build→Typecheck→Lint 순차 exit0, 오류0/기존 경고6 |
+| Runtime ON Chromium | PASS 1/1,9.7초. 로그인/계정·Site Grant/Audit/회수·실제 CAD UI 등록/익명 원본/Current/삭제 암호/Logout |
+| 기존 전체 Chromium | PASS93/93,5.1분. CAD/기준정보/삭제 비밀번호·익명 GET·양 DXF Viewer/레이어·메뉴·작업·메모·원본/Current/Version 및 기본 OFF 포함 |
+| Legacy Migration Chromium | PASS1/1,9.7초. 실제 pre-0.25 Schema→기존 Migrator→브라우저 재분류/전체 이력 |
+| Docker App/Migrator/실행 | 최종 두 이미지 build PASS. 고유 disposable volume의 실제6/backfill→CAD등록→Migrator 재실행→서명7/Runtime Schema·FK0·CAD SHA/Current/Version 보존→App 재시작·익명 GET·비밀번호 DELETE PASS. 볼륨/컨테이너 정리 완료 |
+| 패키징 검증 | Migrator UID10001/native SQLite·공유 모듈 포함 6개 파일의 최종 소스 SHA 일치 PASS; 패키징된 인계 CLI 무승인 실행 exit1/고정 거부 코드 PASS |
+| DWG Chromium | 공개 고정 revision/SHA sample 준비 후4/4 PASS,22.6초. 최초4 FAIL(샘플 ENOENT)은 실패 원장에 보존 |
+| 독립 QA | gpt-6-luna read-only 검토/diff check PASS; 최종 Migration+Gate 2파일40/40 PASS,74.96초, exit0 |
+| PR CI | 시작 전 NOT RUN. 최종 HEAD/PR/Run은 완료 보고·PR 메타데이터에 기록, 시작 후 모니터링 생략 |
+
+Manager가 위 독립 QA·전체 회귀·정적/Build·브라우저·Docker 근거로 **로컬 구현/PR 준비 ACCEPT**했다. 기존 #156 리뷰2개는 이미 resolved였고, 후속 수정이 main에 병합된 근거 및 현재 회귀를 확인하여 오래된 #128의 P1/P2 스레드2개도 이번 요청에 따라 resolved 처리했다. 과거 코멘트/실패·브랜치 내용은 보존했다. 최신 main 재조회에서 behind0, 최종27개 변경의 Secret/현장 증거/런타임 DB·CAD/빌드 산출물/신규 Skip·Only 제외 검사와 frozen 제품 SHA 일치 PASS다.
+
+Git push dry-run은 인증 거부되어 credential 출력 없이 기록했다. 연결된 GitHub API로 Conventional Commit/동일 검증 트리 게시와 단일 PR CI 시작을 진행하며 최종 원격 Commit/Tree 일치·PR/Run URL은 완료 보고에서 확인한다. Force push/history rewrite/기존 branch 삭제는 하지 않는다. CI 시작은 성공 판정이 아니며 모니터링하지 않는다.
+
+기존 CAD6 + 격리 SQL6복사본/Auth1의13개 파일을 main과 바이트 비교해 동일함을 확인했다. Scope/기존 원본/동작을 보존하며 테스트 Skip·보안 Assertion 완화는 추가하지 않는다. 실제 현장 DB/HOLD 변경·운영 Writer 정지/서비스 전환/Auth/CAD Write ON·실 원격 S3/이전 OCI 실행·현장 RTO/RPO/정식 GHCR·Tag/병합/배포는 NOT RUN. #153/#109/#96은 현장 수용 전 OPEN.
+
 ## PR #156 — 두 P2 수정·강제 종료 회귀 (2026-10-29)
 
 - 기준 HEAD `523801a4da8850d579009efa92e3f1c76a746ece`, Main `a7af4aa0c106b5149043196a3567cf7bdc1b08a9`. 선행 [PR CI #40775288415](https://github.com/planner77/layoutManager/actions/runs/40775288415) completed/success는 직접 확인한 기존 결과이며 새 수정의 CI 결과로 재사용하지 않는다.

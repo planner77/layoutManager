@@ -1,5 +1,47 @@
 # #153 G7 운영 Migration·Snapshot·복구 실행 경계
 
+## v0.44.1 패치: Snapshot 없는 HOLD의 Owner 서명 인계
+
+이번 문서는 현장 Operator가 별도 승인 후 수행할 절차다. 개발 작업에서는 합성 `/tmp` DB만 사용하며 실제 운영 HOLD를 변경하지 않는다. `v0.44.0` 정상 자동 Migrator는 여섯 CAD Migration 다음 삭제 비밀번호 Backfill을 실행한다. 이때 생성된 두 보안 트리거는 운영 Schema의 필수 요소다. 패치는 공유 정의 `server/delete-password-triggers.ts`를 Backfill·G7 기준 생성·Runtime 검증에서 사용한다. 트리거를 삭제하여 구 기준에 맞추거나 일곱 SQL/Checksum을 수정하지 않는다. App/Migrator는 동일 신규 PATCH Pair로 준비하고 기존 릴리스 태그/Digest를 재사용하지 않는다.
+
+### 대상과 사내 보존 자료
+
+대상은 정확한 여섯 Migration DB, G7 실패/중단 HOLD에 완전한 approvalId/Snapshot/Epoch가 있으며 **완성 G7 Snapshot이 없는 상태**다. 일곱째 일부 적용·History/FK 오류·원본 변경·식별자 누락·완성 Snapshot 존재는 이 인계의 대상이 아니다. 해당 경우 실패 자료를 보존하고 아래 동일 Snapshot 격리 복원/재전환 절차로 판단한다.
+
+1. Owner/Operator는 기존 실행과 App·Migrator·Prisma 자식·Local CAD/S3 Writer가 모두 중지되었음을 현장 안에서 확인한다. 기존 HOLD, 실패 DB/WAL, CAD/S3 버전 자료, 실행 로그와 원래 서명 승인을 사내 보존한다. 도구는 Writer를 자동 정지하지 않는다.
+2. 패치 App/Migrator 및 rollback Pair의 정확 Source/Schema/Capability/4 불변 Digest를 현장에서 확인하고 독립 Trust에 등록한다. 구 승인과 실패 HOLD 원문은 보존한다. 구 승인 만료는 과거 실행 증거로 검증할 때만 허용하며 새 실행권으로 사용하지 않는다. 신뢰 Owner Key가 바뀐 경우 자동 승계하지 않고 별도 검증된 복구 계획이 필요하다.
+3. 새 릴리스의 유효한 Owner 서명 MIGRATION 승인과 별도의 fresh Owner 인계 서명을 만든다. 인계는 구 HOLD 바이트 SHA·reason·승인/Snapshot/Epoch, 구/신규 승인 서명문·릴리스, 동일 DB/CAD/Site Scope, 정확한 여섯 Schema와 CAD/Version/Current/원본 SHA 관측, 새 Writer Zero 확인 및 24시간 이하 UTC Window를 연결한다. **새 Approval ID만 바꾸는 것은 인계가 아니다.** 서명/관측값/키/경로/ID/Digest는 사내에서만 취급한다.
+4. 명시 handover 실행은 정상 새 Migration authority, 구 승인 서명, HOLD와 관측 증거, sidecar 실행 lock 및 대상 SQLite exclusive lock을 검사한다. 원본 HOLD·구/신규 승인·인계 서명은 private 불변 archive로 보존한 뒤 새 HOLD를 원자 기록한다. SQL/원본 CAD는 바꾸지 않는다. 중복 소비·다른 HOLD·경합은 거부하며 실패 시 기존 HOLD와 데이터를 보존한다.
+5. 인계 성공 후 별도로 `RESUME_APPROVED_G7_SCHEMA`를 실행하면 새 승인의 동일 Snapshot/Epoch에서 캡처·일곱째 Migration·무결성 검증을 수행한다. 인계된 복구뿐 아니라 모든 명시 RESUME는 완료 후에도 `RECOVERED_MIGRATION_COMPLETE` HOLD를 남긴다. 이는 Auth/CAD Write 활성화가 아니며 환경변수만 바꾸어 활성화할 수 없다. 완료 HOLD 해제·정상 활성화는 별도 Owner 승인된 후속 절차로 남긴다.
+
+### 명시 CLI와 서명 자료 작성
+
+사내 독립 Trust와 새 MIGRATION 승인 파일을 먼저 준비하고 `G7_RUNTIME_TRUST_PATH`, `G7_RUNTIME_APPROVAL_PATH`, `DATABASE_URL`, `CAD_STORAGE_PATH` 및 정확한 신규 Release 변수를 지정한다. 양쪽 Runtime 스위치는 `false`, `G7_RUNTIME_MIGRATION_EPOCH`는 **새 Epoch**로 설정한다. 기존 approval/Snapshot/Epoch는 archive에 남기고 새 승인 ID/Snapshot/Epoch를 별도로 사용한다. 같은 릴리스도 새 Owner 서명이 필요하다.
+
+다음 명령은 `src/`에서 실행하며 실제 경로·자료는 사내에서만 설정한다. `G7_PRIVATE_EVIDENCE_PATH`는 사내 private 자료 저장 경로다. INSPECT 결과 네 해시는 내부 자료이므로 stdout을 공개 로그로 보내지 않는다.
+
+```bash
+umask 077
+G7_RUNTIME_HOLD_ACTION=INSPECT ./node_modules/.bin/tsx scripts/g7-runtime-hold-handover.ts > "$G7_PRIVATE_EVIDENCE_PATH"
+
+# 별도 오프라인 Owner 서명 후에만 HANDOVER 실행
+G7_RUNTIME_HOLD_ACTION=HANDOVER \
+G7_RUNTIME_MIGRATION_ACK=HANDOVER_APPROVED_G7_HOLD \
+./node_modules/.bin/tsx scripts/g7-runtime-hold-handover.ts
+
+# HANDOVER 성공을 확인한 뒤 별도 재개
+G7_RUNTIME_MIGRATION_ACK=RESUME_APPROVED_G7_SCHEMA \
+./node_modules/.bin/tsx scripts/g7-runtime-rehearsal.ts apply-approved
+```
+
+`G7_RUNTIME_OLD_APPROVAL_PATH`는 보존한 구 서명 승인, `G7_RUNTIME_HANDOVER_PATH`는 새 Owner 인계 서명 JSON이다. JSON 계약의 단일 기준은 `runtime-migration.ts`의 `G7MigrationHoldHandover`, 서명문은 `g7MigrationHoldHandoverSigningBytes`다. 구 HOLD/구·신규 승인 **원문 파일 bytes의 SHA256**, old/new Release 전체, old/new 승인·Snapshot·Epoch, 동일 DB/CAD/정렬 Site, INSPECT의 네 `evidence` 해시와 `writerZero` 다섯 항목/UTC 관측시각을 채운 뒤 사내 Owner Ed25519 키로 서명한다. JSON만 편집하거나 CLI ACK를 지정하는 것은 서명이 아니다. 실제 packet 예시 대신 합성 시험의 생성 코드를 참조한다.
+
+신규 Migration 승인은 기존 최대24h Window 규칙을 따른다. 인계 자체는 Writer Zero 관측 후 **5분 이내**의 fresh 서명과 최대5분 유효기간을 요구하며 새 Migration 승인 Window 안에 있어야 한다. 인계 성공 이후에도 재개·검증 완료까지 모든 Writer 정지를 연속 유지한다. 소비된 인계의 5분은 인계 실행 시각을 제한하며 재개는 새 Migration 승인 Window 및 보존 evidence/epoch로 다시 검증한다. Writer 정지가 끊기거나 새 승인도 만료되었다면 linked HOLD를 임의 교체하지 않고 사내 자료를 보존한 격리 복원·재전환 계획으로 전환한다.
+
+HANDOVER의 `HOLD_HANDOVER_READY`는 SQL 미실행·HOLD 유지다. 모든 명시 재개의 `MIGRATED`는 완료 HOLD가 남아 Auth/CAD Write가 차단된다. 최초의 정상 APPLY와 명시 RESUME의 완료 상태를 구분한다. 완료 HOLD는 이 CLI로 재인계/삭제할 수 없다. 실행 archive와 소비 기록은 private 파일로 보존하고 lock/archive/HOLD 파일을 수동 삭제하지 않는다.
+
+실제 Writer Zero와 원격 S3 Version의 진위는 Owner 현장 확인이다. 서명된 선언과 SQLite lock은 확인 책임/동시 DB 쓰기 배제를 제공하지만 모든 원격 Writer 정지를 자동 증명하지 않는다. 공개 가능한 실행 결과는 안전한 상태/건수뿐이며 private INSPECT 해시·실패 원문·민감 자료를 외부로 복사하지 않는다.
+
 이 경로는 기본 OFF인 G7 기능을 위한 명시 실행 도구다. App 시작, HTTP 요청, 기존 자동 Migrator가 이 도구를 호출하지 않는다. 이번 구현·시험에서는 합성 `/tmp` 복제본만 사용한다. 실제 운영 DB/CAD/S3, Writer, Compose/Nginx/.env, OCI Registry·Tag 및 서비스 전환은 변경하지 않는다.
 
 ## 기존 Migration과의 관계
@@ -47,7 +89,7 @@
 
 여섯 SQL은 기존 Prisma에서 적용하며, 이 운영 진입점은 **일곱 번째 SQL만 직접 원자 적용**한다. 이력에는 원래 SQL의 SHA256, UUID, UTC 시작/완료, applied_steps_count=1이 들어간다. 합성 시험은 이 이력과 실제 Schema를 확인한다. 격리 진입점은 별도로 실제 Prisma engine 일곱 Migration 및 재실행을 시험한다.
 
-운영 실행 중 오류는 Schema/history transaction을 rollback하고 HOLD와 원본 Snapshot을 보존한다. 재실행은 기본 차단한다. 원인이 제거된 뒤 같은 유효 승인·SNAP/Epoch에서 `G7_RUNTIME_MIGRATION_ACK=RESUME_APPROVED_G7_SCHEMA`로 명시 재개할 수 있다. 이 경우 보관 Snapshot의 DB/CAD/export와 현재 모든 CAD 행·바이트가 일치하고 Schema가 정확히 여섯 또는 일곱이며, 새 Audit가 없는 전환 직후 상태인지 확인한다. 완성 Snapshot이 생기기 전에 중단됐다면 원자 HOLD의 approvalId/SNAP/Epoch가 같은 유효 승인과 일치하고 현재 DB가 정확한 여섯 Schema일 때만 보존된 시도 identity로 Snapshot capture를 다시 수행한다. 이전 미완성 임시 Snapshot은 복구 근거로 사용하지 않는다. 완성 Snapshot이 없는데 identity가 없거나 다르거나 DB가 이미 일곱 Schema라면 차단한다. 상태가 불확실하거나 데이터가 달라졌으면 재개하지 않고 복구 절차로 전환한다.
+운영 실행 중 오류는 Schema/history transaction을 rollback하고 HOLD와 원본 Snapshot을 보존한다. 재실행은 기본 차단한다. 원인이 제거된 뒤 같은 유효 승인·SNAP/Epoch에서 `G7_RUNTIME_MIGRATION_ACK=RESUME_APPROVED_G7_SCHEMA`로 명시 재개할 수 있다. 이 경우 보관 Snapshot의 DB/CAD/export와 현재 모든 CAD 행·바이트가 일치하고 Schema가 정확히 여섯 또는 일곱이며, 새 Audit가 없는 전환 직후 상태인지 확인한다. 완성 Snapshot이 생기기 전에 중단됐다면 같은 유효 승인이라도 직접 RESUME로 HOLD를 변경하지 않는다. 위 v0.44.1 Owner 서명 인계로 구 HOLD/승인과 새 승인의 연속성을 검증한 뒤에만 재캡처한다. 이전 미완성 임시 Snapshot은 복구 근거로 사용하지 않는다. 완성 Snapshot이 없는데 identity가 없거나 다르거나 DB가 이미 일곱 Schema라면 인계도 차단한다. 상태가 불확실하거나 데이터가 달라졌으면 재개하지 않고 복구 절차로 전환한다.
 
 ## 운영 복원·서비스 Rollback 절차
 
@@ -64,4 +106,4 @@
 
 ## 시험과 증거 수준
 
-`tests/integration/g7-runtime-migration.test.ts`는 합성 DB·Local CAD·버전 S3 export에 대해 실제 Prisma 일곱 적용·재실행, 직접 원자 운영 진입점, 중단 fault/HOLD/재개, 같은 Snapshot의 실제 파일/DB 복원, Audit 행 보존, 이전 여섯 Schema deploy, 손상·체크섬·경로·서명 Scope 거부를 시험한다. 출력은 상태·건수만이며 내부 ID/경로/원본/비밀번호/키를 출력하지 않는다. 실제 OCI 이전 pair 실행·현장 Writer Zero·실 원격 S3·운영 RTO/RPO·서비스 전환은 별도 `NOT TESTED`다.
+`tests/integration/g7-runtime-migration.test.ts`는 합성 DB·Local CAD·버전 S3 export에 대해 실제 Prisma 일곱 적용·재실행, 직접 원자 운영 진입점, 중단 fault/HOLD/재개, 같은 Snapshot의 실제 파일/DB 복원, Audit 행 보존, 이전 여섯 Schema deploy, 손상·체크섬·경로·서명 Scope 거부를 시험한다. 공개 가능한 실행 결과는 상태·건수만이며 내부 ID/경로/원본/비밀번호/키를 출력하지 않는다. 별도 INSPECT 명령의 네 evidence 해시는 사내 private 파일로만 수신하며 공개 출력/로그/CI에 반출하지 않는다. 실제 OCI 이전 pair 실행·현장 Writer Zero·실 원격 S3·운영 RTO/RPO·서비스 전환은 별도 `NOT TESTED`다.

@@ -1,5 +1,9 @@
 # Issue #96 — 로컬 계정·세션·Role/Site·감사 공통 기반
 
+## #153 v0.44.1 운영 Schema·HOLD 복구 패치 (2026-10-29)
+
+기존 #153에서 정상 Backfill 보안 트리거 누락에 의한 G7 차단과 Snapshot 전 실패 HOLD의 서명 인계 경로를 보완한다. 현장 보고·합성 재현·시험은 [FailureLedger](FailureLedger.md)와 [TestReport](TestReport.md), 명시 인계/재개 및 만료·새 릴리스 처리는 [Runtime Runbook](../src/deploy/g7-runtime/README.md)을 따른다. SQL/Checksum과 현장 자료를 보존하며 실제 운영 Migration/HOLD 해제/서비스 전환/Auth·CAD Write 활성화·배포는 미수행이다. #153/#109/#96은 현장 수용 전 OPEN으로 유지한다.
+
 ## #153 G7 실제 운영 연결 구현 (2026-10-29)
 
 기존 G2/G3/G4 공통 기반을 재사용해 #153에서 실제 Runtime API/UI·CAD 권한·Audit·격리 Migration/복구를 통합한다. 최신 Owner Managed 정책과 구현 범위는 [Requirements](Requirements.md)의 FR-G7-153, 운영 선행조건은 [Operation](Operation.md)을 따른다. 구현·합성 검증은 실제 운영 활성화/전환 수용이 아니며 상위 Issue를 자동 종료하지 않는다.

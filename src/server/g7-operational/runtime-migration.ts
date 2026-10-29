@@ -2,7 +2,7 @@
  * This task executes synthetic clones only. No S3 network operation, writer
  * stop, service deployment or runtime activation is performed by this module.
  */
-import { createHash, randomUUID } from 'node:crypto';
+import { createHash, createPublicKey, randomUUID, verify } from 'node:crypto';
 import { createRequire } from 'node:module';
 import {
   chmodSync, closeSync, constants, existsSync, fstatSync, fsyncSync,
@@ -15,7 +15,12 @@ import { spawnSync } from 'node:child_process';
 import { requireG7S3DisposableTarget, type G7S3TestTarget } from './disposable-target';
 import { G7_S3_SCHEMA_ID } from './preflight';
 import type { IsolatedDb } from '../g7-staging/g1-store';
-import { resolveG7RuntimeMigrationAuthority } from './runtime-gate';
+import {
+  readG7RuntimePrivateFile, resolveG7RuntimeMigrationAuthority,
+  verifyG7HistoricalMigrationApproval, type G7RuntimeApproval,
+  type G7RuntimeActiveGate, type G7RuntimeRelease, type G7RuntimeTrust,
+} from './runtime-gate';
+import { DELETE_PASSWORD_TRIGGER_SQL, assertDeletePasswordTriggers } from '../delete-password-triggers';
 
 type Db = IsolatedDb & { serialize(): Buffer };
 const Sqlite = createRequire(import.meta.url)('better-sqlite3') as
@@ -45,10 +50,11 @@ type Options = {
   /** Deliberate interruption of a marked disposable clone, for recovery drills. */
   fault?: 'after-migration' | 'after-assets-restored';
   /** Deterministic process-kill checkpoint for isolated integration tests only. */
-  onCheckpoint?: (point: 'approved-hold-written' | 'approved-committed') => void;
+  onCheckpoint?: (point: 'approved-hold-written' | 'approved-committed' |
+    'handover-archived' | 'handover-hold-written') => void;
 };
 export type RehearsalResult = Readonly<{
-  state: 'SNAPSHOT_CAPTURED' | 'MIGRATED' | 'RESTORED' | 'ROLLBACK_SCHEMA_COMPATIBLE';
+  state: 'SNAPSHOT_CAPTURED' | 'MIGRATED' | 'RESTORED' | 'ROLLBACK_SCHEMA_COMPATIBLE' | 'HOLD_HANDOVER_READY';
   migrationCount: number; versionsChecked: number; auditPreserved: boolean;
   executionTarget: 'DISPOSABLE_CLONE' | 'APPROVED_DATABASE';
   runtimeActivated: false; ociImagesExecuted: false;
@@ -93,6 +99,10 @@ function privatePath(root: string, relative: string, directory = false): string 
   if (directory ? !st.isDirectory() : !st.isFile() || st.nlink !== 1 || st.size > MAX_FILE) fail();
   return full;
 }
+function absent(filename:string):boolean {
+  try{lstatSync(filename);return false;}
+  catch(error){if((error as NodeJS.ErrnoException).code==='ENOENT')return true;throw error;}
+}
 function target(options: Options): G7S3TestTarget {
   if(['G7_S3_AUTH_API_PREVIEW_ONLY','G7_S3_CAD_PREVIEW_ONLY','G7_STAGING_ENABLED']
     .some(key=>options.env[key]==='true'))fail();
@@ -117,10 +127,12 @@ function schema(db: Db, count?: number): number {
     const row = history.find(r => r.migration_name === name);
     if (!row || row.finished_at == null || row.rolled_back_at !== null || row.checksum !== sha(sql(name))) fail();
   }
+  assertDeletePasswordTriggers(db);
   const reference = new Sqlite(':memory:');
   try {
     for (const name of ALL_MIGRATIONS.slice(0,n)) reference.exec(sql(name));
-    const query = 'SELECT type,name,tbl_name,sql FROM sqlite_master WHERE name NOT LIKE \'sqlite_%\' AND tbl_name != \'_prisma_migrations\' ORDER BY type,name';
+    for (const statement of DELETE_PASSWORD_TRIGGER_SQL) reference.exec(statement);
+    const query = 'SELECT type,name,tbl_name,sql FROM sqlite_master WHERE name NOT LIKE \'sqlite_%\' AND name != \'_prisma_migrations\' ORDER BY type,name';
     if (JSON.stringify(db.prepare(query).all()) !== JSON.stringify(reference.prepare(query).all())) fail();
   } finally { reference.close(); }
   return n;
@@ -181,7 +193,7 @@ function result(state: RehearsalResult['state'], count: number, versions: number
   return {state,migrationCount:count,versionsChecked:versions,auditPreserved:preserved,
     executionTarget,runtimeActivated:false,ociImagesExecuted:false};
 }
-type HoldIdentity = Readonly<{approvalId:string;snapshotId:string;sourceEpoch:string}>;
+type HoldIdentity = Readonly<{approvalId:string;snapshotId:string;sourceEpoch:string;recovery?:RecoveryLink}>;
 function hold(t: G7S3TestTarget, reason: string, identity?: HoldIdentity) {
   writePrivateMutable(t.root,HOLD,JSON.stringify({scope:'G7-RUNTIME-HOLD',reason,...identity}));
 }
@@ -384,6 +396,291 @@ export function g7DisposableSnapshotNames(options: Options): string[] {
   return readdirSync(privatePath(t.root,'snapshots',true)).filter(v=>/^SNAP-[A-Za-z0-9_-]{2,64}$/.test(v)).sort();
 }
 
+type HandoverEvidence = Readonly<{
+  schemaSha256: string; historySha256: string; inventorySha256: string; assetsSha256: string;
+}>;
+type WriterZero = Readonly<{
+  app: true; batch: true; prisma: true; local: true; s3: true; observedAtUtc: string;
+}>;
+export type G7MigrationHoldHandover = Readonly<{
+  scope: 'G7-MIGRATION-HOLD-HANDOVER-V1'; schemaVersion: 1;
+  oldHoldSha256: string; oldReason: string; oldApprovalSha256: string; oldApprovalId: string;
+  oldSnapshotId: string; oldSourceEpoch: string; oldRelease: G7RuntimeRelease;
+  newApprovalSha256: string; newApprovalId: string; newSnapshotId: string;
+  newSourceEpoch: string; newRelease: G7RuntimeRelease;
+  databasePath: string; cadStoragePath: string; siteIds: readonly string[];
+  evidence: HandoverEvidence; writerZero: WriterZero;
+  approvedAtUtc: string; expiresAtUtc: string; signature: string;
+}>;
+type RecoveryLink = Readonly<{archive: string; archiveSha256: string; handoverSha256: string}>;
+const HANDOVER_KEYS = ['scope','schemaVersion','oldHoldSha256','oldReason','oldApprovalSha256','oldApprovalId',
+  'oldSnapshotId','oldSourceEpoch','oldRelease','newApprovalSha256','newApprovalId','newSnapshotId',
+  'newSourceEpoch','newRelease','databasePath','cadStoragePath','siteIds','evidence','writerZero',
+  'approvedAtUtc','expiresAtUtc','signature'] as const;
+const EVIDENCE_KEYS = ['schemaSha256','historySha256','inventorySha256','assetsSha256'] as const;
+const WRITER_KEYS = ['app','batch','prisma','local','s3','observedAtUtc'] as const;
+const RELEASE_KEYS = ['capability','schemaId','sourceCommit','version','appDigest','migratorDigest',
+  'rollbackSourceCommit','rollbackAppDigest','rollbackMigratorDigest'] as const;
+const HEX = /^[a-f0-9]{64}$/;
+function exact(value: unknown, keys: readonly string[]): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value) &&
+    Object.keys(value).length === keys.length && keys.every(key => Object.hasOwn(value,key));
+}
+function releaseEqual(a: G7RuntimeRelease,b: G7RuntimeRelease): boolean {
+  return RELEASE_KEYS.every(key => a[key] === b[key]);
+}
+function handoverShape(raw: unknown): raw is G7MigrationHoldHandover {
+  if (!exact(raw,HANDOVER_KEYS) || raw.scope !== 'G7-MIGRATION-HOLD-HANDOVER-V1' || raw.schemaVersion !== 1 ||
+      !exact(raw.evidence,EVIDENCE_KEYS) || !exact(raw.writerZero,WRITER_KEYS) ||
+      !exact(raw.oldRelease,RELEASE_KEYS) || !exact(raw.newRelease,RELEASE_KEYS) ||
+      !Array.isArray(raw.siteIds) || !raw.siteIds.every(x=>typeof x==='string')) return false;
+  const hashes = [raw.oldHoldSha256,raw.oldApprovalSha256,raw.newApprovalSha256,
+    ...EVIDENCE_KEYS.map(key=> (raw.evidence as Record<string,unknown>)[key])];
+  return hashes.every(x => typeof x === 'string' && HEX.test(x)) &&
+    ['APPROVED_MIGRATION_IN_PROGRESS','APPROVED_MIGRATION_FAILED_RECOVERY_REQUIRED'].includes(String(raw.oldReason)) &&
+    ['oldApprovalId','oldSnapshotId','oldSourceEpoch','newApprovalId','newSnapshotId','newSourceEpoch',
+      'databasePath','cadStoragePath','approvedAtUtc','expiresAtUtc','signature'].every(key=>typeof raw[key]==='string') &&
+    ['app','batch','prisma','local','s3'].every(key=>(raw.writerZero as Record<string,unknown>)[key]===true) &&
+    typeof raw.writerZero.observedAtUtc==='string';
+}
+/** Offline Owner signature input. No formatting or CLI option issues authority. */
+export function g7MigrationHoldHandoverSigningBytes(raw: unknown): Buffer | null {
+  if (!handoverShape(raw)) return null;
+  return Buffer.from(JSON.stringify(['G7-MIGRATION-HOLD-HANDOVER-V1',1,
+    raw.oldHoldSha256,raw.oldReason,raw.oldApprovalSha256,raw.oldApprovalId,raw.oldSnapshotId,raw.oldSourceEpoch,
+    RELEASE_KEYS.map(key=>raw.oldRelease[key]),raw.newApprovalSha256,raw.newApprovalId,
+    raw.newSnapshotId,raw.newSourceEpoch,RELEASE_KEYS.map(key=>raw.newRelease[key]),
+    raw.databasePath,raw.cadStoragePath,raw.siteIds,
+    EVIDENCE_KEYS.map(key=>raw.evidence[key]),WRITER_KEYS.map(key=>raw.writerZero[key]),
+    raw.approvedAtUtc,raw.expiresAtUtc]));
+}
+function handoverEvidence(db: Db, root: string, cadRoot: string): HandoverEvidence {
+  schema(db,6);
+  const schemaRows=db.prepare("SELECT type,name,tbl_name,sql FROM sqlite_master WHERE name NOT LIKE 'sqlite_%' AND name != '_prisma_migrations' ORDER BY type,name").all();
+  const history=db.prepare('SELECT * FROM "_prisma_migrations" ORDER BY migration_name,id').all();
+  const assets=inspectAssets(root,db,cadRoot);
+  return {schemaSha256:sha(JSON.stringify(schemaRows)),historySha256:sha(JSON.stringify(history)),
+    inventorySha256:sha(inventory(db)),assetsSha256:sha(JSON.stringify(assets))};
+}
+function approvedTarget(options: Options, authority: G7RuntimeActiveGate): G7S3TestTarget {
+  const root=path.dirname(authority.databasePath),base=path.basename(authority.databasePath);
+  if([HOLD,'g7-rehearsal.lock','s3-exports.json','snapshots'].includes(base))fail();
+  const rootStat=lstatSync(root);
+  if(!rootStat.isDirectory()||rootStat.isSymbolicLink()||realpathSync(root)!==root||
+    rootStat.uid!==process.getuid?.()||(rootStat.mode&0o022)!==0||
+    options.env.CAD_STORAGE_PATH!==authority.cadStoragePath)fail();
+  privatePath(root,base);
+  return {root,databasePath:authority.databasePath};
+}
+/** Read-only evidence for a separately signed handover packet. The operator
+ * supplies Writer Zero independently; this function does not claim it.
+ */
+export function inspectG7ApprovedHoldEvidence(options: Options): HandoverEvidence {
+  const authority=resolveG7RuntimeMigrationAuthority(options.env);
+  if(authority.state!=='ACTIVE')fail();
+  const t=approvedTarget(options,authority);
+  return withLock(t,()=>{
+    privatePath(t.root,HOLD);
+    const db=open(t.databasePath,true);
+    try {db.exec('BEGIN EXCLUSIVE');return handoverEvidence(db,t.root,authority.cadStoragePath);}
+    finally {try{db.exec('ROLLBACK');}catch{/* no write */}db.close();}
+  });
+}
+function validUtc(value:string): number {
+  if(!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(value)||
+    !Number.isFinite(Date.parse(value))||new Date(value).toISOString()!==value)fail();
+  return Date.parse(value);
+}
+function assertHandoverWindowContract(handover:G7MigrationHoldHandover,currentApproval:G7RuntimeApproval):void {
+  const observed=validUtc(handover.writerZero.observedAtUtc),
+    approved=validUtc(handover.approvedAtUtc),expires=validUtc(handover.expiresAtUtc);
+  if(observed>approved||approved>=expires||expires-approved>300000||
+    observed<Date.parse(currentApproval.notBeforeUtc)||
+    expires>Date.parse(currentApproval.expiresAtUtc))fail();
+}
+function readCurrentDocuments(env: Options['env']): {trust:G7RuntimeTrust;approval:G7RuntimeApproval;approvalBytes:Buffer} {
+  const trust=JSON.parse(readG7RuntimePrivateFile(env.G7_RUNTIME_TRUST_PATH).toString('utf8')) as G7RuntimeTrust;
+  const approvalBytes=readG7RuntimePrivateFile(env.G7_RUNTIME_APPROVAL_PATH);
+  const approval=JSON.parse(approvalBytes.toString('utf8')) as G7RuntimeApproval;
+  return {trust,approval,approvalBytes};
+}
+function validateHandoverArchive(root:string, link:RecoveryLink, authority:G7RuntimeActiveGate,
+  env:Options['env'],sourceEpoch:string):HandoverEvidence {
+  if(!exact(link,['archive','archiveSha256','handoverSha256']) ||
+    typeof link.archive!=='string'||!/^g7-handover-[a-f0-9]{64}\.json$/.test(link.archive)||
+    typeof link.archiveSha256!=='string'||!HEX.test(link.archiveSha256)||
+    typeof link.handoverSha256!=='string'||!HEX.test(link.handoverSha256))fail();
+  const bytes=readFileSync(privatePath(root,link.archive));
+  if(sha(bytes)!==link.archiveSha256)fail();
+  const consumed='g7-handover-consumed-'+link.handoverSha256+'.json';
+  const consumedRaw=JSON.parse(readFileSync(privatePath(root,consumed),'utf8')) as Record<string,unknown>;
+  if(!exact(consumedRaw,['scope','handoverSha256','oldHoldSha256','oldHoldDev','oldHoldIno','oldHoldCtimeMs'])||
+    consumedRaw.scope!=='G7-HANDOVER-CONSUMED-V1'||
+    consumedRaw.handoverSha256!==link.handoverSha256)fail();
+  const archive=JSON.parse(bytes.toString('utf8')) as Record<string,unknown>;
+  if(!exact(archive,['scope','oldHoldRaw','oldApprovalRaw','newApprovalRaw','handoverRaw'])||
+    archive.scope!=='G7-HANDOVER-ARCHIVE-V1'||
+    ['oldHoldRaw','oldApprovalRaw','newApprovalRaw','handoverRaw'].some(key=>typeof archive[key]!=='string')||
+    sha(archive.handoverRaw as string)!==link.handoverSha256)fail();
+  const handover=JSON.parse(archive.handoverRaw as string) as G7MigrationHoldHandover;
+  const oldApproval=JSON.parse(archive.oldApprovalRaw as string) as G7RuntimeApproval;
+  const oldHold=JSON.parse(archive.oldHoldRaw as string) as Record<string,unknown>;
+  const current=readCurrentDocuments(env);
+  if(!handoverShape(handover)||
+    !exact(oldHold,['scope','reason','approvalId','snapshotId','sourceEpoch'])||
+    oldHold.scope!=='G7-RUNTIME-HOLD'||
+    !['APPROVED_MIGRATION_IN_PROGRESS','APPROVED_MIGRATION_FAILED_RECOVERY_REQUIRED'].includes(String(oldHold.reason))||
+    oldHold.reason!==handover.oldReason||
+    oldHold.approvalId!==handover.oldApprovalId||oldHold.snapshotId!==handover.oldSnapshotId||
+    oldHold.sourceEpoch!==handover.oldSourceEpoch||
+    typeof oldHold.sourceEpoch!=='string'||!/^E-[A-Za-z0-9_-]{2,64}$/.test(oldHold.sourceEpoch)||
+    !verifyG7HistoricalMigrationApproval(oldApproval,current.trust.ownerPublicKeyPem)||
+    oldApproval.approvalId!==handover.oldApprovalId||oldApproval.snapshotId!==handover.oldSnapshotId||
+    oldApproval.databasePath!==authority.databasePath||oldApproval.cadStoragePath!==authority.cadStoragePath||
+    oldApproval.origin!==current.approval.origin||
+    JSON.stringify(oldApproval.siteIds)!==JSON.stringify(authority.siteIds)||
+    oldApproval.approvalId===authority.approvalId||oldApproval.snapshotId===authority.snapshotId||
+    oldHold.sourceEpoch===sourceEpoch||
+    !absent(path.join(root,'snapshots',String(oldHold.snapshotId)))||
+    sha(archive.oldApprovalRaw as string)!==handover.oldApprovalSha256||
+    sha(archive.oldHoldRaw as string)!==handover.oldHoldSha256||
+    consumedRaw.oldHoldSha256!==handover.oldHoldSha256||
+    sha(current.approvalBytes)!==handover.newApprovalSha256||
+    archive.newApprovalRaw!==current.approvalBytes.toString('utf8')||
+    handover.newApprovalId!==authority.approvalId||handover.newSnapshotId!==authority.snapshotId||
+    handover.newSourceEpoch!==sourceEpoch||
+    handover.databasePath!==authority.databasePath||handover.cadStoragePath!==authority.cadStoragePath||
+    !releaseEqual(handover.oldRelease,oldApproval.release)||
+    !releaseEqual(handover.newRelease,current.approval.release)||
+    JSON.stringify(handover.siteIds)!==JSON.stringify(authority.siteIds))fail();
+  const signing=g7MigrationHoldHandoverSigningBytes(handover);
+  if(!signing||!/^[A-Za-z0-9+/]{86}==$/.test(handover.signature)||
+    Buffer.from(handover.signature,'base64').toString('base64')!==handover.signature||
+    !verify(null,signing,createPublicKey(current.trust.ownerPublicKeyPem),Buffer.from(handover.signature,'base64')))fail();
+  assertHandoverWindowContract(handover,current.approval);
+  return handover.evidence;
+}
+function assertHandoverTime(handover:G7MigrationHoldHandover,currentApproval:G7RuntimeApproval):void {
+  assertHandoverWindowContract(handover,currentApproval);
+  const now=Date.now(),observed=validUtc(handover.writerZero.observedAtUtc),
+    approved=validUtc(handover.approvedAtUtc),expires=validUtc(handover.expiresAtUtc);
+  if(observed<now-300000||observed>now||approved>now||expires<=now)fail();
+}
+
+/** Explicit CLI-only transfer of an incomplete pre-snapshot HOLD to a fresh
+ * signed Owner approval. The original HOLD and DB remain untouched on denial.
+ */
+export function handoverG7ApprovedMigrationHold(
+  options:Options,historicalApprovalPath:string,handoverPath:string,
+): RehearsalResult {
+  const authority=resolveG7RuntimeMigrationAuthority(options.env);
+  if(authority.state!=='ACTIVE'||options.env.G7_RUNTIME_MIGRATION_ACK!=='HANDOVER_APPROVED_G7_HOLD')fail();
+  const t=approvedTarget(options,authority),epoch=options.env.G7_RUNTIME_MIGRATION_EPOCH;
+  if(!epoch||!/^E-[A-Za-z0-9_-]{2,64}$/.test(epoch))fail();
+  return withLock(t,()=>{
+    const oldHoldRaw=readFileSync(privatePath(t.root,HOLD)).toString('utf8');
+    const oldHold=JSON.parse(oldHoldRaw) as Record<string,unknown>;
+    if(!exact(oldHold,['scope','reason','approvalId','snapshotId','sourceEpoch'])||
+      oldHold.scope!=='G7-RUNTIME-HOLD'||
+      !['APPROVED_MIGRATION_IN_PROGRESS','APPROVED_MIGRATION_FAILED_RECOVERY_REQUIRED'].includes(String(oldHold.reason))||
+      ![oldHold.approvalId,oldHold.snapshotId,oldHold.sourceEpoch].every(x=>typeof x==='string')||
+      !/^E-[A-Za-z0-9_-]{2,64}$/.test(String(oldHold.sourceEpoch))||
+      !absent(path.join(t.root,'snapshots',String(oldHold.snapshotId)))||
+      !absent(path.join(t.root,'snapshots',authority.snapshotId)))fail();
+    const oldApprovalBytes=readG7RuntimePrivateFile(historicalApprovalPath),
+      handoverBytes=readG7RuntimePrivateFile(handoverPath);
+    const oldApproval=JSON.parse(oldApprovalBytes.toString('utf8')) as G7RuntimeApproval;
+    const handover=JSON.parse(handoverBytes.toString('utf8')) as G7MigrationHoldHandover;
+    const current=readCurrentDocuments(options.env);
+    if(!verifyG7HistoricalMigrationApproval(oldApproval,current.trust.ownerPublicKeyPem)||
+      !handoverShape(handover)||
+      oldApproval.approvalId!==oldHold.approvalId||oldApproval.snapshotId!==oldHold.snapshotId||
+      oldApproval.databasePath!==authority.databasePath||oldApproval.cadStoragePath!==authority.cadStoragePath||
+      oldApproval.origin!==current.approval.origin||
+      JSON.stringify(oldApproval.siteIds)!==JSON.stringify(authority.siteIds)||
+      !releaseEqual(current.approval.release,handover.newRelease)||
+      !releaseEqual(oldApproval.release,handover.oldRelease)||
+      oldApproval.approvalId===authority.approvalId||oldApproval.snapshotId===authority.snapshotId||
+      oldHold.sourceEpoch===epoch||
+      handover.oldHoldSha256!==sha(oldHoldRaw)||handover.oldReason!==oldHold.reason||
+      handover.oldApprovalSha256!==sha(oldApprovalBytes)||
+      handover.oldApprovalId!==oldHold.approvalId||handover.oldSnapshotId!==oldHold.snapshotId||
+      handover.oldSourceEpoch!==oldHold.sourceEpoch||
+      handover.newApprovalSha256!==sha(current.approvalBytes)||
+      handover.newApprovalId!==authority.approvalId||handover.newSnapshotId!==authority.snapshotId||
+      handover.newSourceEpoch!==epoch||handover.databasePath!==authority.databasePath||
+      handover.cadStoragePath!==authority.cadStoragePath||
+      JSON.stringify(handover.siteIds)!==JSON.stringify(authority.siteIds))fail();
+    assertHandoverTime(handover,current.approval);
+    const signing=g7MigrationHoldHandoverSigningBytes(handover);
+    if(!signing||!/^[A-Za-z0-9+/]{86}==$/.test(handover.signature)||
+      Buffer.from(handover.signature,'base64').toString('base64')!==handover.signature||
+      !verify(null,signing,createPublicKey(current.trust.ownerPublicKeyPem),Buffer.from(handover.signature,'base64')))fail();
+    const handoverSha=sha(handoverBytes);
+    const archiveName='g7-handover-'+handoverSha+'.json';
+    const consumedName='g7-handover-consumed-'+handoverSha+'.json';
+    const holdStat=lstatSync(path.join(t.root,HOLD));
+    const holdInode={oldHoldDev:holdStat.dev,oldHoldIno:holdStat.ino,oldHoldCtimeMs:holdStat.ctimeMs};
+    if(!absent(path.join(t.root,consumedName))){
+      const record=JSON.parse(readFileSync(privatePath(t.root,consumedName),'utf8')) as Record<string,unknown>;
+      if(!exact(record,['scope','handoverSha256','oldHoldSha256','oldHoldDev','oldHoldIno','oldHoldCtimeMs'])||
+        record.scope!=='G7-HANDOVER-CONSUMED-V1'||record.handoverSha256!==handoverSha||
+        record.oldHoldSha256!==sha(oldHoldRaw)||
+        record.oldHoldDev!==holdInode.oldHoldDev||record.oldHoldIno!==holdInode.oldHoldIno||
+        record.oldHoldCtimeMs!==holdInode.oldHoldCtimeMs)fail();
+    }
+    const db=open(t.databasePath);
+    let begun=false;
+    try{
+      db.exec('BEGIN EXCLUSIVE');begun=true;
+      const evidence=handoverEvidence(db,t.root,authority.cadStoragePath);
+      if(JSON.stringify(evidence)!==JSON.stringify(handover.evidence)||
+        db.prepare('SELECT id FROM "CadSite" ORDER BY id').all().some(row=>!authority.siteIds.includes(String(row.id))))fail();
+      const final=resolveG7RuntimeMigrationAuthority(options.env),
+        latest=readCurrentDocuments(options.env);
+      if(final.state!=='ACTIVE'||final.approvalId!==authority.approvalId||
+        final.snapshotId!==authority.snapshotId||final.expiresAt!==authority.expiresAt||
+        sha(latest.approvalBytes)!==handover.newApprovalSha256||
+        readFileSync(privatePath(t.root,HOLD)).toString('utf8')!==oldHoldRaw||
+        !readG7RuntimePrivateFile(historicalApprovalPath).equals(oldApprovalBytes)||
+        !readG7RuntimePrivateFile(handoverPath).equals(handoverBytes)||
+        JSON.stringify(handoverEvidence(db,t.root,authority.cadStoragePath))!==JSON.stringify(evidence))fail();
+      assertHandoverTime(handover,latest.approval);
+      const archive=JSON.stringify({scope:'G7-HANDOVER-ARCHIVE-V1',oldHoldRaw,
+        oldApprovalRaw:oldApprovalBytes.toString('utf8'),newApprovalRaw:current.approvalBytes.toString('utf8'),
+        handoverRaw:handoverBytes.toString('utf8')});
+      if(absent(path.join(t.root,archiveName))){
+        durableWrite(path.join(t.root,archiveName),archive);
+        durableDirectory(t.root);
+      }else if(readFileSync(privatePath(t.root,archiveName),'utf8')!==archive)fail();
+      options.onCheckpoint?.('handover-archived');
+      const afterArchive=resolveG7RuntimeMigrationAuthority(options.env);
+      if(afterArchive.state!=='ACTIVE'||afterArchive.approvalId!==authority.approvalId||
+        afterArchive.snapshotId!==authority.snapshotId||afterArchive.expiresAt!==authority.expiresAt||
+        sha(readCurrentDocuments(options.env).approvalBytes)!==handover.newApprovalSha256||
+        readFileSync(privatePath(t.root,HOLD)).toString('utf8')!==oldHoldRaw||
+        !readG7RuntimePrivateFile(historicalApprovalPath).equals(oldApprovalBytes)||
+        !readG7RuntimePrivateFile(handoverPath).equals(handoverBytes)||
+        readFileSync(privatePath(t.root,archiveName),'utf8')!==archive||
+        JSON.stringify(handoverEvidence(db,t.root,authority.cadStoragePath))!==JSON.stringify(evidence))fail();
+      assertHandoverTime(handover,current.approval);
+      if(absent(path.join(t.root,consumedName))){
+        durableWrite(path.join(t.root,consumedName),JSON.stringify({scope:'G7-HANDOVER-CONSUMED-V1',
+          handoverSha256:handoverSha,oldHoldSha256:sha(oldHoldRaw),...holdInode}));
+        durableDirectory(t.root);
+      }
+      const recovery:RecoveryLink={archive:archiveName,archiveSha256:sha(archive),handoverSha256:handoverSha};
+      hold(t,'APPROVED_MIGRATION_HANDOVER_READY',{
+        approvalId:authority.approvalId,snapshotId:authority.snapshotId,sourceEpoch:epoch,recovery,
+      });
+      options.onCheckpoint?.('handover-hold-written');
+      db.exec('ROLLBACK');begun=false;
+      const versions=Number(db.prepare('SELECT count(*) AS n FROM "CadFileVersion"').get()?.n);
+      return result('HOLD_HANDOVER_READY',6,versions,true,'APPROVED_DATABASE');
+    }finally{if(begun)try{db.exec('ROLLBACK');}catch{/* HOLD remains */}db.close();}
+  });
+}
+
 /** Future explicitly authorized operating entrypoint. This is not called by app
  * startup, HTTP or the automatic migrator. Tests exercise this same code only
  * on synthetic clones. A signed MIGRATION scope is distinct from runtime GO.
@@ -407,18 +704,28 @@ export function migrateG7ApprovedDatabase(options: Options): RehearsalResult {
   return withLock(t,()=>{
     const hasHold=existsSync(path.join(root,HOLD));
     if(hasHold&&!resume||resume&&!hasHold)fail();
-    const identity:HoldIdentity={approvalId:authority.approvalId,snapshotId:authority.snapshotId,sourceEpoch:epoch};
+    let identity:HoldIdentity={approvalId:authority.approvalId,snapshotId:authority.snapshotId,sourceEpoch:epoch};
+    let recoveredEvidence:HandoverEvidence|undefined;
     if(hasHold){
-      const prior=JSON.parse(readFileSync(privatePath(root,HOLD),'utf8')) as Partial<HoldIdentity>&{scope?:string};
-      if(prior.scope!=='G7-RUNTIME-HOLD')fail();
+      const prior=JSON.parse(readFileSync(privatePath(root,HOLD),'utf8')) as Partial<HoldIdentity>&{scope?:string;reason?:string};
+      if(!exact(prior,prior.recovery===undefined?['scope','reason','approvalId','snapshotId','sourceEpoch']:
+        ['scope','reason','approvalId','snapshotId','sourceEpoch','recovery'])||
+        prior.scope!=='G7-RUNTIME-HOLD'||
+        !['APPROVED_MIGRATION_IN_PROGRESS','APPROVED_MIGRATION_FAILED_RECOVERY_REQUIRED',
+          'APPROVED_MIGRATION_HANDOVER_READY'].includes(String(prior.reason)))fail();
       const fields=[prior.approvalId,prior.snapshotId,prior.sourceEpoch];
       const hasIdentity=fields.every(value=>typeof value==='string');
       if(fields.some(value=>value!==undefined)&&!hasIdentity)fail();
       if(hasIdentity && (prior.approvalId!==identity.approvalId||
         prior.snapshotId!==identity.snapshotId||prior.sourceEpoch!==identity.sourceEpoch))fail();
-      // Before a completed snapshot, there is no retained source image to
-      // compare. Only a matching durable attempt marker permits recapture.
-      if(!existsSync(path.join(root,'snapshots',authority.snapshotId))&&!hasIdentity)fail();
+      // Before a completed snapshot, an unsigned attempt marker alone cannot
+      // authorize changing the HOLD. A fresh signed handover is required.
+      if(prior.recovery!==undefined){
+        recoveredEvidence=validateHandoverArchive(root,prior.recovery,authority,options.env,epoch);
+        identity={...identity,recovery:prior.recovery};
+      }
+      if(prior.reason==='APPROVED_MIGRATION_HANDOVER_READY'&&prior.recovery===undefined)fail();
+      if(!existsSync(path.join(root,'snapshots',authority.snapshotId))&&prior.recovery===undefined)fail();
     }
     hold(t,'APPROVED_MIGRATION_IN_PROGRESS',identity);
     options.onCheckpoint?.('approved-hold-written');
@@ -427,6 +734,8 @@ export function migrateG7ApprovedDatabase(options: Options): RehearsalResult {
     try{
       db.exec('BEGIN EXCLUSIVE');transaction=true;
       const count=schema(db),before=inventory(db),assets=inspectAssets(root,db,authority.cadStoragePath),beforeAudit=audit(db,count);
+      if(recoveredEvidence&&count===6&&
+        JSON.stringify(handoverEvidence(db,root,authority.cadStoragePath))!==JSON.stringify(recoveredEvidence))fail();
       const siteRows=db.prepare('SELECT id FROM "CadSite" ORDER BY id').all();
       if(siteRows.some(row=>!authority.siteIds.includes(String(row.id))))fail();
       const relative='snapshots/'+authority.snapshotId;
@@ -439,7 +748,12 @@ export function migrateG7ApprovedDatabase(options: Options): RehearsalResult {
           manifest.sourceEpoch!==epoch||manifest.migrationCount!==6||manifest.databaseSha256!==sha(bytes)||
           JSON.stringify(manifest.assets)!==JSON.stringify(assets))fail();
         const source=new Sqlite(bytes);
-        try{schema(source,6);if(inventory(source)!==before)fail();}finally{source.close();}
+        try{
+          schema(source,6);
+          if(inventory(source)!==before||
+            (recoveredEvidence&&JSON.stringify(handoverEvidence(source,root,authority.cadStoragePath))!==
+              JSON.stringify(recoveredEvidence)))fail();
+        }finally{source.close();}
         if(count===7&&db.prepare('SELECT COUNT(*) AS n FROM "AuditEvent"').get()?.n!==0)fail();
         for(let i=0;i<manifest.assets.length;i++){
           const value=readFileSync(privatePath(root,relative+'/'+i+'.asset'));
@@ -482,9 +796,11 @@ export function migrateG7ApprovedDatabase(options: Options): RehearsalResult {
       if(current.state!=='ACTIVE'||current.approvalId!==authority.approvalId||
         current.snapshotId!==authority.snapshotId||current.changeRequestId!==authority.changeRequestId||
         current.databasePath!==authority.databasePath||current.cadStoragePath!==authority.cadStoragePath||current.expiresAt!==authority.expiresAt)fail();
+      if(identity.recovery)validateHandoverArchive(root,identity.recovery,authority,options.env,epoch);
       db.exec('COMMIT');transaction=false;
       options.onCheckpoint?.('approved-committed');
-      rmSync(path.join(root,HOLD));
+      if(resume||identity.recovery)hold(t,'RECOVERED_MIGRATION_COMPLETE',identity);
+      else rmSync(path.join(root,HOLD));
       return result('MIGRATED',7,assets.length,true,'APPROVED_DATABASE');
     }catch{
       if(transaction){try{db.exec('ROLLBACK');}catch{/* HOLD survives an uncertain database failure. */}}

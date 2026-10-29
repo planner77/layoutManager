@@ -1,5 +1,14 @@
 # 상세 요구사항
 
+## FR-153-SCHEMA-HOLD — Backfill Schema와 서명된 pre-Snapshot 인계 (2026-10-29)
+
+- FR-153-SCHEMA-01: 실제 기존 6 Migration 뒤 `backfillDeletePasswords`가 설치하는 `cad_version_delete_password_insert/update` 두 Trigger를 정규 Schema의 필수 요소로 포함한다. backfill·Migration reference·Runtime7 검사가 동일 SQL 정의를 공유하며 기존 Migration SQL/checksum 및 NULL/빈값 거부 의미를 바꾸지 않는다. 누락/동일 이름 약화/추가 객체/이력 손상을 거부한다.
+- FR-153-HOLD-01: 완성 Snapshot 전 실패한 원본 HOLD bytes·reason·approvalId/SNAP/Epoch 및 과거 서명 승인을 보존한다. 만료/이전 릴리스 승인은 실행 권한이 아니다. 현재 독립 Trust+fresh signed MIGRATION 승인과 별도 유효한 Owner 인계 서명이 정확한 old HOLD/승인/Release→new 승인/Release를 묶어야 명시 재시도를 준비한다. unsigned 교체·HOLD 삭제·Snapshot 이름 바꾸기로 우회하지 않는다.
+- FR-153-HOLD-02: 인계 전 실제 DB의 정확6 이력/checksum/전체 Schema/quick_check/FK, CAD SHA·크기/Version/Current 및 Site 범위를 확인한다. fresh 제한 Window의 Writer Zero 선언(앱/배치/Prisma/Local/S3)과 대상·현재 evidence를 인계 서명에 포함하고 재대조한다. DB exclusive lock만으로 외부 Writer Zero를 인증하지 않는다.
+- FR-153-HOLD-02B: 모든 pre-Snapshot HOLD(FAILED/IN_PROGRESS)는 이전 승인이 아직 유효해도 직접 RESUME로 변경/해제하지 않고 fresh signed handover를 요구한다. 프로세스 강제 종료의 IN_PROGRESS도 인계를 거치며, 완성 Snapshot 동일 승인 RESUME는 별도 기존 계약으로 유지한다.
+- FR-153-HOLD-03: 공유 실행 lock+DB exclusive transaction 아래 검증·immutable 원본 archive·원자 새 HOLD 연결을 수행한다. 실패는 old HOLD/data 보존, 성공도 이력 보존 및 Auth/CAD Write OFF다. replay/동시성/다른 identity/완성 old Snapshot/새 SNAP 충돌/7·부분 Schema/증거 손상은 거부한다. 새 HOLD 후 명시 RESUME가 새 Snapshot+7번째 Migration을 수행하며 모든 명시 RESUME 성공 후에는 recovery-complete HOLD를 유지해 기존 App 설정으로 자동 활성화하지 않는다.
+- AC/범위: 실제6+backfill→7→정상 Runtime 검사와 만료+릴리스 변경+Snapshot 없음의 인계·음성·중단·동시성 회귀를 통과한다. 기존 Snapshot Restore/SIGKILL/익명 CAD 계약 보존. 운영 DB/CAD/S3/설정·병합/GHCR/Tag/배포 미실행, #153/#109/#96 OPEN. 단일 PR 최종 HEAD CI 한 번 시작, 결과 모니터링 생략.
+
 ## FR-G7-153 — 실제 운영 경로 통합 요구사항 (2026-10-29)
 
 - FR-153-P2-SITE: 승인 Site의 업무 active 상태와 Runtime 신뢰 유효성을 분리한다. Admin의 정상 비활성화 후에도 로그인·관리·재활성화 및 다른 활성 승인 Site의 CAD 쓰기가 동작해야 한다. 비활성 Site 쓰기와 누락/미승인 Site는 계속 거부한다.

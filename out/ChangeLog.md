@@ -1,5 +1,11 @@
 # ChangeLog
 
+## v0.44.1 후보 — #153 G7 운영 Schema·pre-Snapshot HOLD 복구 (2026-10-29)
+
+- 정상 여섯 CAD Migration→삭제 비밀번호 Backfill이 만드는 두 보안 트리거를 G7 기준 Schema와 Runtime fingerprint에 포함한다. 공통 SQL 정의를 사용하며 누락/위조/변조/임의 객체는 계속 거부한다. 기존 일곱 Migration SQL/Checksum은 보존한다.
+- Snapshot 전 실패 HOLD의 구 승인과 새 패치 릴리스 승인을 새 Owner 서명으로 연결하는 명시 복구 경로를 제공한다. 기존 실패 기록·데이터를 보존하고 재실행/경합 및 자동 Auth/CAD Write 활성화를 차단한다. 운영 명령은 Runtime Runbook 참조.
+- 실제 Migrator 순서와 HOLD/승인 만료/릴리스 전환 합성 회귀 및 Docker import closure 검증을 추가한다. 실제 결과는 TestReport를 따른다. 이미 게시된 v0.44.0을 재사용하지 않으며 현장 복구·정식 게시·병합·배포는 이번 범위 밖이다. #153/#109/#96 OPEN.
+
 ## 0.44.0 후보 — Issue #153 G7 운영 통합
 
 기존 Auth/Session/Role/Site/Audit를 실제 Runtime API·관리 UI·CAD 거래에 연결하고 별도 서명 Runtime Gate와 격리 Migration/Restore 실행 경로를 추가한다. 실제 운영 활성화·정식 이미지/태그·병합·배포는 이번 작업에서 수행하지 않는다. 검증 결과는 TestReport의 #153 절을 따른다.
