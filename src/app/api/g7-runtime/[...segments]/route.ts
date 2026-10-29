@@ -1,3 +1,4 @@
+import { handleGreenfieldFirstSetup } from '@/server/g7-operational/greenfield-first-setup';
 import { resolveG7RuntimeGate } from '@/server/g7-operational/runtime-gate';
 import { handleG7RuntimeApi, runtimeReply } from '@/server/g7-operational/runtime-handler';
 
@@ -16,6 +17,8 @@ async function execute(request: Request, args: Args) {
     return runtimeReply(gate.state === 'OFF' ? 404 : 503,
       { error: { code: gate.state === 'OFF' ? 'NOT_FOUND' : 'G7_RUNTIME_BLOCKED' } });
   }
+  if (segments.length === 1 && segments[0] === 'setup')
+    return handleGreenfieldFirstSetup(request, gate);
   return handleG7RuntimeApi(request, segments, gate);
 }
 
