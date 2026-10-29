@@ -1,3 +1,10 @@
+## #153 Greenfield 계획 변경 및 실행 전 위험 기록 (2026-10-29)
+
+- User는 기존 데이터 사용·Migration·HOLD 복구·same-snapshot 증거 요구 전면 폐기를 확정. 별도 보관 DXF만 Greenfield DB에 새로 등록.
+- 기존 운영 Schema/HOLD 복구용 PR #157은 변경된 Scope와 맞지 않아 **CLOSED, unmerged**. 해당 리뷰/CI/실패 이력은 역사적 원장에서 삭제하거나 PASS로 바꾸지 않는다. 최신 Main 독립 브랜치 \`feat/issue-153-greenfield-install\`에서 신규 경로 개발.
+- 현재 검증 필요 위험: 신규 Schema DDL replay의 SQL canonicalization, 단발 Site/Owner/Admin 초기화 순서, 관리자 Site Grant, 정확한 릴리스·Origin 바인딩, 별도 Docker 볼륨과 Auth fail-closed. 소스 변경·테스트 작성은 PASS 아님.
+- 신규 PR CI는 PR 생성/워크플로 시작 확인 이전에는 \`NOT STARTED\`; 로컬 실행·실제 Docker/현장 신규 설치는 \`NOT RUN\`. 사용자 요청에 따라 PR CI 시작 후 모니터링 생략.
+
 # PR/Main CI 실패 원장
 
 ## PR #156 — P2 Site 비활성화 격리·강제 종료 Migration 복구 (2026-10-29)
