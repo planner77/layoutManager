@@ -29,6 +29,8 @@ export type G7RuntimeApproval = Readonly<{
 }>;
 export type G7RuntimeActiveGate = Readonly<{
   state: 'ACTIVE'; authEnabled: true; cadWriteEnabled: boolean;
+  /** Dedicated fresh-install schema discriminator; never inferred from history. */
+  schemaMode?: 'GREENFIELD';
   origin: string; databasePath: string; cadStoragePath: string; siteIds: readonly string[];
   expiresAt: number; approvalId: string; snapshotId: string; changeRequestId: string;
   scopes: readonly ('AUTH' | 'CAD_WRITE' | 'MIGRATION')[];
