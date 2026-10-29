@@ -118,6 +118,9 @@ jobs:
       - name: G7 서명 Runtime 로그인·관리·CAD 권한 E2E
         run: npx playwright test --config playwright.g7-runtime.config.ts
 
+      - name: G7 신규설치 최초 관리자 웹 UI E2E (#109)
+        run: npx playwright test --config playwright.g7-greenfield.config.ts
+
       - name: Legacy migration E2E 테스트
         run: npm run test:master-migration
 
