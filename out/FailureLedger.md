@@ -1,5 +1,13 @@
 # PR/Main CI 실패 원장
 
+## PR #157 — Codex P2: 서명된 HOLD 증거 속성 순서 (2026-10-29)
+
+- **선행 CI 성공:** HEAD `7ca8f0eb5671eb8760a774b3ad5d7d8691cf7f20`에 대한 [PR CI #40870964580](https://github.com/planner77/layoutManager/actions/runs/40870964580)은 Docker/Migration/Runtime Smoke 및 Verify 모두 `completed/success`. 아래 추가 보완의 최신 HEAD 검증으로 재사용하지 않는다.
+- **추가 리뷰 P2:** [Codex discussion #4412138381](https://github.com/planner77/layoutManager/pull/157#discussion_r4412138381) — `g7MigrationHoldHandoverSigningBytes`는 `EVIDENCE_KEYS`의 고정 순서로 서명하지만 HANDOVER 및 RESUME의 일부 비교가 `JSON.stringify(object)`를 사용하여 네 해시가 같아도 JSON 키 순서만 바뀌면 HOLD 복구가 차단될 수 있다. 실제 현장 오류 관측이 아닌 코드 리뷰 지적이다.
+- **보완:** 네 필드 `schemaSha256/historySha256/inventorySha256/assetsSha256`를 `EVIDENCE_KEYS`에 따라 값으로 비교하는 단일 helper를 도입. 인계 최초·재검사, Archive 이후 및 RESUME 현재6/보존 Snapshot6 검사에 동일 적용. `handoverShape` 정확 키 집합·Ed25519·원본 SHA/Schema/History/Version/Current/Asset/Writer Zero/승인 Window/소비 방지와 완료 HOLD는 유지한다.
+- **격리 회귀:** 순서를 섞은 동일 해시 packet의 canonical 서명 동일, fresh Owner 재서명 HANDOVER→RESUME 성공 및 완료 HOLD, 값이 다른 재서명 packet은 원본 HOLD를 바꾸지 않고 거부. 신규 HEAD CI 성공 전 `NOT VERIFIED`; 기존601/601 및 PR CI 성공을 새 테스트 PASS로 재해석하지 않는다.
+- **운영 경계:** 실제 DB/HOLD·신뢰키·OCI·원격 S3·Writer·Auth/CAD Write 활성화/배포는 실행하지 않는다. 현장 수용과 릴리스별 Owner GO 없이 #153/#109/#96 운영 AC를 완료 처리하지 않는다.
+
 ## #153 — v0.44.0 현장 정상 Backfill Schema 거부·pre-Snapshot HOLD (2026-10-29)
 
 - **현장 보고(비반출):** 기존 CAD Migration 6개 완료·SQL Checksum MATCH·quick_check OK·FK 0, Auth 7번째 미적용, 실패 HOLD 존재·G7 Snapshot 없음. 기준 29개 대비 실제 31개 Schema 객체이며 추가 둘은 정상 기존 Migrator의 `cad_version_delete_password_insert/update`. 실제 DB/CAD/서명/Digest/내부 식별자는 수집·게시하지 않았다. 현장 상태는 사용자 보고이며 외부에서 DB를 열어 확인한 것으로 표시하지 않는다.

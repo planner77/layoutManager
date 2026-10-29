@@ -418,6 +418,11 @@ const HANDOVER_KEYS = ['scope','schemaVersion','oldHoldSha256','oldReason','oldA
   'newSourceEpoch','newRelease','databasePath','cadStoragePath','siteIds','evidence','writerZero',
   'approvedAtUtc','expiresAtUtc','signature'] as const;
 const EVIDENCE_KEYS = ['schemaSha256','historySha256','inventorySha256','assetsSha256'] as const;
+// Packet signing canonicalizes these four fields. Object serialization order
+// must not change the decision to accept or reject equivalent signed evidence.
+function handoverEvidenceEqual(a: HandoverEvidence, b: HandoverEvidence): boolean {
+  return EVIDENCE_KEYS.every(key => a[key] === b[key]);
+}
 const WRITER_KEYS = ['app','batch','prisma','local','s3','observedAtUtc'] as const;
 const RELEASE_KEYS = ['capability','schemaId','sourceCommit','version','appDigest','migratorDigest',
   'rollbackSourceCommit','rollbackAppDigest','rollbackMigratorDigest'] as const;
@@ -634,7 +639,7 @@ export function handoverG7ApprovedMigrationHold(
     try{
       db.exec('BEGIN EXCLUSIVE');begun=true;
       const evidence=handoverEvidence(db,t.root,authority.cadStoragePath);
-      if(JSON.stringify(evidence)!==JSON.stringify(handover.evidence)||
+      if(!handoverEvidenceEqual(evidence,handover.evidence)||
         db.prepare('SELECT id FROM "CadSite" ORDER BY id').all().some(row=>!authority.siteIds.includes(String(row.id))))fail();
       const final=resolveG7RuntimeMigrationAuthority(options.env),
         latest=readCurrentDocuments(options.env);
@@ -644,7 +649,7 @@ export function handoverG7ApprovedMigrationHold(
         readFileSync(privatePath(t.root,HOLD)).toString('utf8')!==oldHoldRaw||
         !readG7RuntimePrivateFile(historicalApprovalPath).equals(oldApprovalBytes)||
         !readG7RuntimePrivateFile(handoverPath).equals(handoverBytes)||
-        JSON.stringify(handoverEvidence(db,t.root,authority.cadStoragePath))!==JSON.stringify(evidence))fail();
+        !handoverEvidenceEqual(handoverEvidence(db,t.root,authority.cadStoragePath),evidence))fail();
       assertHandoverTime(handover,latest.approval);
       const archive=JSON.stringify({scope:'G7-HANDOVER-ARCHIVE-V1',oldHoldRaw,
         oldApprovalRaw:oldApprovalBytes.toString('utf8'),newApprovalRaw:current.approvalBytes.toString('utf8'),
@@ -662,7 +667,7 @@ export function handoverG7ApprovedMigrationHold(
         !readG7RuntimePrivateFile(historicalApprovalPath).equals(oldApprovalBytes)||
         !readG7RuntimePrivateFile(handoverPath).equals(handoverBytes)||
         readFileSync(privatePath(t.root,archiveName),'utf8')!==archive||
-        JSON.stringify(handoverEvidence(db,t.root,authority.cadStoragePath))!==JSON.stringify(evidence))fail();
+        !handoverEvidenceEqual(handoverEvidence(db,t.root,authority.cadStoragePath),evidence))fail();
       assertHandoverTime(handover,current.approval);
       if(absent(path.join(t.root,consumedName))){
         durableWrite(path.join(t.root,consumedName),JSON.stringify({scope:'G7-HANDOVER-CONSUMED-V1',
@@ -735,7 +740,7 @@ export function migrateG7ApprovedDatabase(options: Options): RehearsalResult {
       db.exec('BEGIN EXCLUSIVE');transaction=true;
       const count=schema(db),before=inventory(db),assets=inspectAssets(root,db,authority.cadStoragePath),beforeAudit=audit(db,count);
       if(recoveredEvidence&&count===6&&
-        JSON.stringify(handoverEvidence(db,root,authority.cadStoragePath))!==JSON.stringify(recoveredEvidence))fail();
+        !handoverEvidenceEqual(handoverEvidence(db,root,authority.cadStoragePath),recoveredEvidence))fail();
       const siteRows=db.prepare('SELECT id FROM "CadSite" ORDER BY id').all();
       if(siteRows.some(row=>!authority.siteIds.includes(String(row.id))))fail();
       const relative='snapshots/'+authority.snapshotId;
@@ -751,8 +756,7 @@ export function migrateG7ApprovedDatabase(options: Options): RehearsalResult {
         try{
           schema(source,6);
           if(inventory(source)!==before||
-            (recoveredEvidence&&JSON.stringify(handoverEvidence(source,root,authority.cadStoragePath))!==
-              JSON.stringify(recoveredEvidence)))fail();
+            (recoveredEvidence&&!handoverEvidenceEqual(handoverEvidence(source,root,authority.cadStoragePath),recoveredEvidence)))fail();
         }finally{source.close();}
         if(count===7&&db.prepare('SELECT COUNT(*) AS n FROM "AuditEvent"').get()?.n!==0)fail();
         for(let i=0;i<manifest.assets.length;i++){

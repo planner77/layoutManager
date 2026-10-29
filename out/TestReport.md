@@ -1,5 +1,12 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## PR #157 — 서명 증거 JSON 순서 독립 비교 회귀 (2026-10-29)
+
+- 선행 [PR CI #40870964580](https://github.com/planner77/layoutManager/actions/runs/40870964580) HEAD `7ca8f0e` `completed/success`, Docker 및 Verify 두 Job 성공. 이후 발견한 [Codex P2](https://github.com/planner77/layoutManager/pull/157#discussion_r4412138381) 반영 전 결과다.
+- 변경: `handoverEvidenceEqual`로 4 SHA 값 비교를 통일하고 HANDOVER/RESUME의 정상 JSON 재정렬을 수용한다. 값 불일치·Schema/History/FK/Audit/Asset·Owner 서명·Window·완료 HOLD 검증은 유지한다.
+- 신규 TC-153-HOLD-ORDER: 합성 pre-Snapshot HOLD → 동등 evidence 키 재정렬과 canonical 서명 → HANDOVER→RESUME/완료 HOLD; 서명된 다른 `historySha256`는 archive/HOLD 변경 없이 거부. 새 HEAD Typecheck/전체 Vitest/Chromium/Docker는 **CI 결과 전 NOT VERIFIED**.
+- 리뷰 답변·thread resolved, Main 정렬 및 병합은 후속 검증이며 실제 현장 수용/운영 GO를 합성 시험 PASS로 대체하지 않는다.
+
 ## U-ISSUE153-SCHEMA-HOLD-20261029 — v0.44.1 패치 후보
 
 기준은 최신 main `881a704`이며 기존 로컬 변경 두 개를 보존한 별도 worktree에서 수행했다. 공개 현장 정보는 사용자 보고만 사용했고 실제 DB/CAD/서명/Digest/내부 식별자는 반출·시험 입력으로 사용하지 않았다. 본 단위는 패치 구현·합성 검증·단일 PR CI 시작까지이며 실제 현장 수용/배포는 별도다.

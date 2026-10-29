@@ -297,6 +297,38 @@ describe('#153 executable disposable migration and same-snapshot restore',()=>{
       expect(JSON.parse(readFileSync(holdFile,'utf8')).reason).toBe('RECOVERED_MIGRATION_COMPLETE');
     }
   },100000);
+  test('signed HOLD handover and RESUME accept reordered evidence keys but reject changed hashes',()=>{
+    const f=fixture(),options=operatingOptions(f);
+    expect(()=>migrateG7ApprovedDatabase({...options,onCheckpoint(point){
+      if(point==='approved-hold-written')throw new Error('synthetic stop before snapshot');
+    }})).toThrow();
+    const transfer=prepareHandover(f,options);
+    const holdFile=path.join(f.root,'g7-runtime-hold.json');
+    const originalHold=readFileSync(holdFile);
+    const reordered=structuredClone(transfer.packet);
+    const e=reordered.evidence;
+    reordered.evidence={assetsSha256:e.assetsSha256,inventorySha256:e.inventorySha256,
+      historySha256:e.historySha256,schemaSha256:e.schemaSha256};
+    const signing=g7MigrationHoldHandoverSigningBytes(reordered);
+    expect(signing).toEqual(g7MigrationHoldHandoverSigningBytes(transfer.packet));
+    reordered.signature=sign(null,signing!,options.auth.keys.privateKey).toString('base64');
+
+    const changed=structuredClone(reordered);
+    changed.evidence.historySha256='f'.repeat(64);
+    changed.signature=sign(null,g7MigrationHoldHandoverSigningBytes(changed)!,
+      options.auth.keys.privateKey).toString('base64');
+    writeFileSync(transfer.handoverPath,JSON.stringify(changed));
+    expect(()=>handoverG7ApprovedMigrationHold({env:transfer.env},transfer.historicalApprovalPath,
+      transfer.handoverPath)).toThrow();
+    expect(readFileSync(holdFile)).toEqual(originalHold);
+
+    writeFileSync(transfer.handoverPath,JSON.stringify(reordered));
+    expect(handoverG7ApprovedMigrationHold({env:transfer.env},transfer.historicalApprovalPath,
+      transfer.handoverPath)).toMatchObject({state:'HOLD_HANDOVER_READY',migrationCount:6});
+    const resume={env:{...transfer.env,G7_RUNTIME_MIGRATION_ACK:'RESUME_APPROVED_G7_SCHEMA'}};
+    expect(migrateG7ApprovedDatabase(resume)).toMatchObject({state:'MIGRATED',migrationCount:7});
+    expect(JSON.parse(readFileSync(holdFile,'utf8')).reason).toBe('RECOVERED_MIGRATION_COMPLETE');
+  },100000);
   test('handover rejects unsigned and signed mismatches without changing old HOLD or protected rows',()=>{
     const f=fixture(),options=operatingOptions(f);
     expect(()=>migrateG7ApprovedDatabase({...options,onCheckpoint(point){

@@ -34,7 +34,7 @@ G7_RUNTIME_MIGRATION_ACK=RESUME_APPROVED_G7_SCHEMA \
 ./node_modules/.bin/tsx scripts/g7-runtime-rehearsal.ts apply-approved
 ```
 
-`G7_RUNTIME_OLD_APPROVAL_PATH`는 보존한 구 서명 승인, `G7_RUNTIME_HANDOVER_PATH`는 새 Owner 인계 서명 JSON이다. JSON 계약의 단일 기준은 `runtime-migration.ts`의 `G7MigrationHoldHandover`, 서명문은 `g7MigrationHoldHandoverSigningBytes`다. 구 HOLD/구·신규 승인 **원문 파일 bytes의 SHA256**, old/new Release 전체, old/new 승인·Snapshot·Epoch, 동일 DB/CAD/정렬 Site, INSPECT의 네 `evidence` 해시와 `writerZero` 다섯 항목/UTC 관측시각을 채운 뒤 사내 Owner Ed25519 키로 서명한다. JSON만 편집하거나 CLI ACK를 지정하는 것은 서명이 아니다. 실제 packet 예시 대신 합성 시험의 생성 코드를 참조한다.
+`G7_RUNTIME_OLD_APPROVAL_PATH`는 보존한 구 서명 승인, `G7_RUNTIME_HANDOVER_PATH`는 새 Owner 인계 서명 JSON이다. JSON 계약의 단일 기준은 `runtime-migration.ts`의 `G7MigrationHoldHandover`, 서명문은 `g7MigrationHoldHandoverSigningBytes`다. 구 HOLD/구·신규 승인 **원문 파일 bytes의 SHA256**, old/new Release 전체, old/new 승인·Snapshot·Epoch, 동일 DB/CAD/정렬 Site, INSPECT의 네 `evidence` 해시와 `writerZero` 다섯 항목/UTC 관측시각을 채운 뒤 사내 Owner Ed25519 키로 서명한다. JSON의 `evidence` 키 순서는 서명문이 `EVIDENCE_KEYS`로 정규화하므로 의미가 없지만, 네 SHA256 값 각각의 정합성은 HANDOVER와 RESUME에서 필수 검증한다. JSON만 편집하거나 CLI ACK를 지정하는 것은 서명이 아니다. 실제 packet 예시 대신 합성 시험의 생성 코드를 참조한다.
 
 신규 Migration 승인은 기존 최대24h Window 규칙을 따른다. 인계 자체는 Writer Zero 관측 후 **5분 이내**의 fresh 서명과 최대5분 유효기간을 요구하며 새 Migration 승인 Window 안에 있어야 한다. 인계 성공 이후에도 재개·검증 완료까지 모든 Writer 정지를 연속 유지한다. 소비된 인계의 5분은 인계 실행 시각을 제한하며 재개는 새 Migration 승인 Window 및 보존 evidence/epoch로 다시 검증한다. Writer 정지가 끊기거나 새 승인도 만료되었다면 linked HOLD를 임의 교체하지 않고 사내 자료를 보존한 격리 복원·재전환 계획으로 전환한다.
 
