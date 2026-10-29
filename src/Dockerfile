@@ -86,12 +86,18 @@ COPY --from=builder /app/src/server/upload-error-catalog.ts ./server/upload-erro
 COPY --from=builder /app/src/domain/cad.ts ./domain/cad.ts
 # #153 explicit operator entrypoint only; default CMD still applies six CAD
 # migrations. Signed Runtime authority is required before G2 writes anything.
+COPY --from=builder /app/src/scripts/g7-greenfield.ts ./scripts/g7-greenfield.ts
+COPY --from=builder /app/src/scripts/g7-greenfield-authority.ts ./scripts/g7-greenfield-authority.ts
 COPY --from=builder /app/src/scripts/g7-runtime-admin.ts ./scripts/g7-runtime-admin.ts
 COPY --from=builder /app/src/scripts/g7-runtime-rehearsal.ts ./scripts/g7-runtime-rehearsal.ts
 COPY --from=builder /app/src/server/auth ./server/auth
 COPY --from=builder /app/src/server/g7-staging/g1-store.ts ./server/g7-staging/g1-store.ts
 COPY --from=builder /app/src/server/g7-staging/g2-store.ts ./server/g7-staging/g2-store.ts
 COPY --from=builder /app/src/server/g7-staging/g4-store.ts ./server/g7-staging/g4-store.ts
+COPY --from=builder /app/src/server/g7-operational/greenfield-schema.ts ./server/g7-operational/greenfield-schema.ts
+COPY --from=builder /app/src/server/g7-operational/greenfield-install.ts ./server/g7-operational/greenfield-install.ts
+COPY --from=builder /app/src/server/g7-operational/greenfield-gate.ts ./server/g7-operational/greenfield-gate.ts
+COPY --from=builder /app/src/server/g7-operational/greenfield-authority.ts ./server/g7-operational/greenfield-authority.ts
 COPY --from=builder /app/src/server/g7-operational/runtime-admin.ts ./server/g7-operational/runtime-admin.ts
 COPY --from=builder /app/src/server/g7-operational/runtime-gate.ts ./server/g7-operational/runtime-gate.ts
 COPY --from=builder /app/src/server/g7-operational/runtime-db.ts ./server/g7-operational/runtime-db.ts
