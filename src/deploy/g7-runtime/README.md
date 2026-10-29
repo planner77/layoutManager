@@ -1,3 +1,5 @@
+> **HISTORICAL — LEGACY MIGRATION ONLY.** Issue #153은 기존 데이터 미사용 Greenfield 설치로 변경되었습니다. 아래의 구 DB 6→7 Migration/HOLD/동일 Snapshot/rollback 절차는 **현재 신규 설치에 적용하지 마세요**. [현재 Runbook](../g7-greenfield/README.md)을 사용합니다. 과거 기록은 재현·실패 원장 맥락으로만 유지합니다.
+
 # #153 G7 운영 Migration·Snapshot·복구 실행 경계
 
 이 경로는 기본 OFF인 G7 기능을 위한 명시 실행 도구다. App 시작, HTTP 요청, 기존 자동 Migrator가 이 도구를 호출하지 않는다. 이번 구현·시험에서는 합성 `/tmp` 복제본만 사용한다. 실제 운영 DB/CAD/S3, Writer, Compose/Nginx/.env, OCI Registry·Tag 및 서비스 전환은 변경하지 않는다.
