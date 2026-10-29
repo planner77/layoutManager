@@ -1,3 +1,14 @@
+## #109 일반 Compose G7 신규 설치 — 누적 위험/사전 보완 원장 (2026-10-30 KST)
+
+- **기준:** main `993a2d6872c58039b79ec09c4796032b362ef2a6` (#153 0.44.1)에서 신규 `feat/issue-109-compose-first-run` 분기. #109 최신 요구: 일반 Compose/3000/빈 DB final Schema, Host code+웹 최초 Admin, 서명 24h 갱신 제거. #153 이전 Greenfield 수동/서명 도구는 Expert 이력으로 보존. 미병합 **PR #128은 과거 S2/NO-GO**와 관련되며 최신 main과 충돌; 새 PR에서 코드 병합하지 않는다.
+- **선행 실패 재발 방지:** #153 원장 기록의 TypeScript 오류 14+8건(미검증 nullable env/unknown fields 및 중복 import)과 legacy 7-schema를 Greenfield로 인정하는 P2, restart lock/HOLD 부정 상태를 참조. 새 설계는 현행 Verified final DDL/2 triggers/fingerprint를 그대로 사용하고 원치 않는 구 DB 이관/Schema fallback을 허용하지 않는다.
+- **위험 GF-AUTO-01:** 최초 DDL 설치 후 코드/marker 작성 중 종료 시 부분 설치. 최초 구현에서 marker→code 순서로 기록하는 결함을 사전 발견하여 **code→marker 마지막 기록**으로 보완. Marker 없고 기존 DB/파일 있으면 중단, marker 있는데 User0에 코드가 누락되거나 파일 metadata가 잘못되면 재시작 차단, user0 때 운영자만 `setup-renew` 할 수 있도록 복구 분리. 이 보완은 합성 검증 전 **CODE-REVIEW ONLY**, 시험 PASS 아님.
+- **위험 GF-AUTO-02:** 기존 Docker CI의 익명 CAD CRUD smoke는 G7 기본 인증과 충돌. 새 Docker CI는 설정 코드+CSRF 최초 Admin→PW 초기변경→Site 계층/Grant→인증 CAD 업로드→Migrator 재실행/App 재시작→원본 content 및 password 삭제 검증으로 전환. 독립 브라우저 E2E 추가. 이전 Legacy CI/이력은 보존.
+- **위험 GF-AUTO-03:** Site0에서 기존 `MasterRepository`의 모든 새 Site 생성을 막는 서명 approval list 확장 제한. **Self-hosted mode에서만** new Site 허용, Signed Expert mode 제한 유지. Admin Site grant는 명시적으로 분리.
+- **상태:** 새 PR 및 CI가 실제 수행될 때 Run/Head/스레드 결과를 추가한다. 현 시점 실행 결과 추정 금지. 구 현장 DB/CAD/DXF/Secrets/HOLD/운영 이미지는 조회·변경·삭제·공개하지 않았다.
+
+---
+
 ## #153 PR #158 — 2차 PR CI 실패·누적 타입오류 수정 (2026-10-29 KST)
 
 - **실패 Run:** [PR CI #40890727134](https://github.com/planner77/layoutManager/actions/runs/40890727134), HEAD `6b308615cf0ec9dae52b7e5072195c17c5eff30b`, `completed/failure`. 최초 Run #40888739457의 14개 TS 오류 수정 이후의 **독립 2차 실패**이며, 이전 기록과 합치거나 성공으로 바꾸지 않는다.
