@@ -1,3 +1,11 @@
+## #109 0.44.2 신규 Compose/웹 관리자 PR 후보 (2026-10-30; 실행 결과 아님)
+
+- 작성된 후보 코드: `greenfield-auto.ts`, `greenfield-first-setup.ts`, 신규 관리 UI/Route, 기본 Compose/Greenfield one-shot migrator, Site0 지원, release marker. 작성된 후보 테스트: `g7-greenfield-auto.test.ts`, `first-install.spec.ts`, Docker `smoke_greenfield_runtime.py` 및 PR CI job 변경.
+- **검증 상태:** 코드/테스트 추가는 PASS 증거가 아니다. 최신 HEAD의 Typecheck/Lint/Unit/Integration/Production Build/Playwright/Docker는 PR CI 결과를 조회하기 전까지 `NOT VERIFIED`. 실 Docker 2PC 접속/DXF 현장 시험/OCI 독립검증 및 실제 GHCR 게시 역시 `NOT VERIFIED`.
+- 기존 #153 CI 실패 14+8개 TS 오류 및 P2 schema drift 반례를 #109 새 테스트에서도 참조한다. SKIPPED 테스트를 PASS로 해석하지 않으며 새 PR 실패 시 실패 원장의 이전 원인까지 대조해 수정한다.
+
+---
+
 ## #153 PR #158 — 두 번째 CI 실패 및 보완 (2026-10-29)
 
 - Run #40890727134 `completed/failure`: Verify Job 123507859408에서 Typecheck 오류 8건, Docker Job 123507859697에서 동일 TypeScript 오류로 baseline Docker 빌드 실패. 세부 오류/원인은 [FailureLedger](FailureLedger.md) 참고.
