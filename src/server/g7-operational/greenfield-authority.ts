@@ -15,6 +15,10 @@ const Sqlite=createRequire(import.meta.url)('better-sqlite3') as new (
   filename:string,options?:{readonly?:boolean;fileMustExist?:boolean}
 )=>{prepare:(sql:string)=>{all:()=>unknown[]};close:()=>void};
 const blocked=():never=>{throw new Error('G7_GREENFIELD_OWNER_BLOCKED');};
+function requiredGreenfieldEnv(value:string|undefined):string {
+  if(typeof value!=='string' || value.length===0)blocked();
+  return value;
+}
 function ownedParent(filename:string):void {
   if(!path.isAbsolute(filename))blocked();
   const dir=path.dirname(filename),s=lstatSync(dir);
@@ -84,11 +88,12 @@ export function issueGreenfieldAuthority(
   mode:'init'|'renew',inputPath:string,outputDir:string,keyPath:string,
   env:Readonly<Record<string,string|undefined>>,
 ):{state:'G7_GREENFIELD_OWNER_SIGNATURE_VERIFIED';mode:string;expiresAtUtc:string}{
-  const databaseUrl=env.DATABASE_URL;
-  const cadPath=env.CAD_STORAGE_PATH;
-  if(env.G7_GREENFIELD_MODE!=='true'||typeof databaseUrl!=='string'||
-     !databaseUrl.startsWith('file:')||typeof cadPath!=='string'||
-     !cadPath||!path.isAbsolute(outputDir))blocked();
+  if (env.G7_GREENFIELD_MODE!=='true' || !path.isAbsolute(outputDir)) blocked();
+  // Return concrete strings only after validation; cross-statement narrowing
+  // of Record<string,string|undefined> was not preserved by TypeScript CI.
+  const databaseUrl=requiredGreenfieldEnv(env.DATABASE_URL);
+  const cadPath=requiredGreenfieldEnv(env.CAD_STORAGE_PATH);
+  if(!databaseUrl.startsWith('file:'))blocked();
   const spec=input(JSON.parse(privateRead(inputPath).toString('utf8')));
   const key=createPrivateKey(privateRead(keyPath).toString('utf8'));
   if(key.asymmetricKeyType!=='ed25519')blocked();
