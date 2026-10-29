@@ -3,7 +3,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import type { UserAccess, Role, SpecialGrant } from '../../domain/auth';
 import { createAuditEvent, type AuditAction, type AuditTarget } from '../auth/audit';
 import { failure, type AuthStore, type Credential } from '../auth/login-service';
-import { SESSION_IDLE_MS, type AuthSession } from '../auth/session';
+import { SESSION_IDLE_MS, SESSION_ABSOLUTE_MS, type AuthSession } from '../auth/session';
 import type { IsolatedDb, SqlRow } from './g1-store';
 
 type Faults = Readonly<{ audit?: boolean; change?: boolean; revoke?: boolean }>;
@@ -38,14 +38,18 @@ function currentActor(db: IsolatedDb, id: string): UserAccess {
     .map(row => row.permission as SpecialGrant);
   return { id, status: 'ACTIVE', mustChangePassword: false, roles, siteGrants, specialGrants };
 }
-export function createG3IsolatedStore(db: IsolatedDb, faults: Faults = {}): AuthStore {
+export type G3RuntimeContext = Readonly<{ assertCurrent(): void; now(): number }>;
+export function createG3IsolatedStore(db: IsolatedDb, faults: Faults = {}, runtime?: G3RuntimeContext): AuthStore {
   const select = 'SELECT id,password_hash,status,must_change_password FROM "User"';
   return {
     credential(login) { return credential(db.prepare(select + ' WHERE login_name=?').get(login)); },
     credentialById(id) { return credential(db.prepare(select + ' WHERE id=?').get(id)); },
     issue(userId, expectedHash, candidate: AuthSession, requestId) {
       atomic(db, () => {
-        const now = candidate.issuedAt;
+        runtime?.assertCurrent();
+        const now = runtime?.now() ?? candidate.issuedAt;
+        if (runtime) candidate = { ...candidate, issuedAt: now, lastSeenAt: now,
+          expiresAt: now + SESSION_ABSOLUTE_MS };
         if (!integer(now) || !/^[0-9a-f]{64}$/.test(candidate.tokenHash)) throw failure('BAD_INPUT', 400);
         const user = credential(db.prepare(select + ' WHERE id=?').get(userId));
         if (!user || user.passwordHash !== expectedHash) throw failure('UNAUTHENTICATED', 401);
@@ -66,6 +70,8 @@ export function createG3IsolatedStore(db: IsolatedDb, faults: Faults = {}): Auth
     },
     change(userId, expectedHash, requiredMustChange, newHash, now, requestId, tokenHash) {
       atomic(db, () => {
+        runtime?.assertCurrent();
+        now = runtime?.now() ?? now;
         if (!integer(now) || !newHash.startsWith('scrypt$local-v1$')) throw failure('BAD_INPUT', 400);
         const user = credential(db.prepare(select + ' WHERE id=?').get(userId));
         if (!user || user.passwordHash !== expectedHash) throw failure('UNAUTHENTICATED', 401);
@@ -97,6 +103,8 @@ export function createG3IsolatedStore(db: IsolatedDb, faults: Faults = {}): Auth
     },
     authenticate(tokenHash, now) {
       return atomic(db, () => {
+        runtime?.assertCurrent();
+        now = runtime?.now() ?? now;
         if (!integer(now)) throw failure('UNAUTHENTICATED', 401);
         const row = db.prepare('SELECT s.id,s.user_id,s.issued_at,s.last_seen_at,s.expires_at,s.revoked_at,u.status,u.must_change_password FROM "AuthSession" s JOIN "User" u ON u.id=s.user_id WHERE s.token_hash=?').get(tokenHash);
         if (!row || row.revoked_at !== null || now < Number(row.issued_at) ||
@@ -112,6 +120,8 @@ export function createG3IsolatedStore(db: IsolatedDb, faults: Faults = {}): Auth
     },
     revoke(tokenHash, now, requestId) {
       atomic(db, () => {
+        runtime?.assertCurrent();
+        now = runtime?.now() ?? now;
         const row = db.prepare('SELECT id,user_id,issued_at,revoked_at FROM "AuthSession" WHERE token_hash=?').get(tokenHash);
         if (!row || row.revoked_at !== null) return;
         if (now < Number(row.issued_at)) throw failure('UNAUTHENTICATED', 401);
@@ -123,8 +133,8 @@ export function createG3IsolatedStore(db: IsolatedDb, faults: Faults = {}): Auth
       });
     },
     denied(userId, now, requestId) {
-      atomic(db, () => audit(db, 'LOGIN_DENIED', null, userId,
-        userId ?? 'unknown_account', now, requestId, faults, 'DENIED'));
+      atomic(db, () => { runtime?.assertCurrent(); audit(db, 'LOGIN_DENIED', null, userId,
+        userId ?? 'unknown_account', runtime?.now() ?? now, requestId, faults, 'DENIED'); });
     },
   };
 }

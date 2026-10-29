@@ -1,5 +1,7 @@
 /** S3-2: open only an independently verified disposable S3 migration DB. */
 import { createRequire } from 'node:module';
+import { lstatSync } from 'node:fs';
+import path from 'node:path';
 import type { IsolatedDb } from '../g7-staging/g1-store';
 import type { G7S3TestTarget } from './disposable-target';
 import { G7_S3_SCHEMA_ID } from './preflight';
@@ -12,6 +14,15 @@ const REQUIRED = [
 ] as const;
 
 export function openG7S3PreviewDb(target: G7S3TestTarget): IsolatedDb {
+  try {
+    // A dangling symlink also constitutes a HOLD. Preview cannot bypass a
+    // migration/restore barrier shared with the actual runtime and CAD API.
+    lstatSync(path.join(path.dirname(target.databasePath),'g7-runtime-hold.json'));
+    throw new Error('G7_S3_PREVIEW_DATABASE_UNAVAILABLE');
+  } catch(error) {
+    if((error as NodeJS.ErrnoException).code!=='ENOENT')
+      throw new Error('G7_S3_PREVIEW_DATABASE_UNAVAILABLE');
+  }
   const db = new Sqlite(target.databasePath, {fileMustExist: true});
   try {
     db.exec('PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;');

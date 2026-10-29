@@ -4,6 +4,31 @@ import { CadError } from "@/domain/cad";
 import type { MasterType } from "@/domain/master";
 import { masterName } from "@/domain/master";
 import { type Database, writeTransaction } from "../db";
+import { requireG7MasterPermission, appendG7MasterAudit, type G7CadWrite } from '../g7-operational/cad-guard';
+
+type Tx = Prisma.TransactionClient;
+async function masterSites(tx: Tx, type: MasterType, id: string): Promise<string[]> {
+  if (type === 'business-units' || type === 'products') {
+    const rows = await tx.cadSite.findMany({where:type === 'products'
+      ? {productId:id} : {product:{businessUnitId:id}},select:{id:true}});
+    return rows.map(row=>row.id);
+  }
+  if (type === 'sites') {
+    const site = await tx.cadSite.findUnique({where:{id},select:{id:true}});
+    return site ? [site.id] : [];
+  }
+  if (type === 'buildings') {
+    const building = await tx.building.findUnique({where:{id},select:{siteId:true}});
+    return building ? [building.siteId] : [];
+  }
+  const floor = await tx.cadLocation.findUnique({where:{id},select:{building:{select:{siteId:true}}}});
+  return floor ? [floor.building.siteId] : [];
+}
+async function auditMaster(tx: Tx, proof: G7CadWrite, actor: string,
+  sites: readonly string[], target: string): Promise<void> {
+  if (!sites.length) await appendG7MasterAudit(tx,proof,actor,target);
+  for (const site of new Set(sites)) await appendG7MasterAudit(tx,proof,actor,site,site);
+}
 function duplicate(error: unknown): never {
   if (
     error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -79,9 +104,16 @@ export class MasterRepository {
   async create(
     type: MasterType,
     input: { name: string; parentId?: string; kind?: "SITE" | "LEGAL_ENTITY" },
+    auth?: G7CadWrite,
   ) {
     input = { ...input, name: masterName(input.name) };
     return writeTransaction(this.db, async (tx) => {
+      if (auth && type === 'sites') throw new CadError('G7_SCOPE_EXTENSION_REQUIRED',
+        '새 사업장은 운영 승인 범위를 갱신하기 전에 등록할 수 없습니다.',409);
+      const sites = auth && input.parentId && (type === 'buildings' || type === 'floors')
+        ? await masterSites(tx,type === 'buildings' ? 'sites' : 'buildings',input.parentId) : [];
+      const actor = auth ? await requireG7MasterPermission(tx,auth,sites) : null;
+      const perform = async () => {
       try {
         switch (type) {
           case "business-units":
@@ -134,16 +166,24 @@ export class MasterRepository {
         "상위 기준정보를 찾을 수 없습니다.",
         409,
       );
+      };
+      const result = await perform();
+      if (auth && actor) await auditMaster(tx,auth,actor,sites,result?.id ?? 'MASTER_CREATE');
+      return result;
     });
   }
   async update(
     type: MasterType,
     id: string,
     input: { name?: string; kind?: "SITE" | "LEGAL_ENTITY"; active?: boolean },
+    auth?: G7CadWrite,
   ) {
     if (input.name !== undefined)
       input = { ...input, name: masterName(input.name) };
     return writeTransaction(this.db, async (tx) => {
+      const sites = auth ? await masterSites(tx,type,id) : [];
+      const actor = auth ? await requireG7MasterPermission(tx,auth,sites) : null;
+      const perform = async () => {
       const data = {
         ...(input.name === undefined ? {} : { name: input.name }),
         ...(input.active === undefined ? {} : { active: input.active }),
@@ -197,10 +237,17 @@ export class MasterRepository {
           );
         duplicate(error);
       }
+      };
+      const result = await perform();
+      if (auth && actor) await auditMaster(tx,auth,actor,sites,id);
+      return result;
     });
   }
-  async remove(type: MasterType, id: string) {
+  async remove(type: MasterType, id: string, auth?: G7CadWrite) {
     return writeTransaction(this.db, async (tx) => {
+      const sites = auth ? await masterSites(tx,type,id) : [];
+      const actor = auth ? await requireG7MasterPermission(tx,auth,sites) : null;
+      const perform = async () => {
       try {
         switch (type) {
           case "business-units":
@@ -232,9 +279,13 @@ export class MasterRepository {
           );
         referenced(error);
       }
+      };
+      const result = await perform();
+      if (auth && actor) await auditMaster(tx,auth,actor,sites,id);
+      return result;
     });
   }
-  async reclassifyFloor(id: string, buildingId: string) {
+  async reclassifyFloor(id: string, buildingId: string, auth?: G7CadWrite) {
     return writeTransaction(this.db, async (tx) => {
       const [floor, target] = await Promise.all([
         tx.cadLocation.findUnique({
@@ -271,6 +322,8 @@ export class MasterRepository {
           "활성 상태인 실제 제품의 전체 계층을 선택해주세요.",
           409,
         );
+      const sites = [floor.building.siteId,target.siteId];
+      const actor = auth ? await requireG7MasterPermission(tx,auth,sites) : null;
       const collision = await tx.cadLocation.findUnique({
         where: { buildingId_name: { buildingId, name: floor.name } },
       });
@@ -280,7 +333,9 @@ export class MasterRepository {
           "대상 동에 같은 이름의 층이 있어 재분류할 수 없습니다.",
           409,
         );
-      return tx.cadLocation.update({ where: { id }, data: { buildingId } });
+      const result = await tx.cadLocation.update({ where: { id }, data: { buildingId } });
+      if (auth && actor) await auditMaster(tx,auth,actor,sites,id);
+      return result;
     });
   }
 }

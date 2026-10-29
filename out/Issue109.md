@@ -1,5 +1,11 @@
 # Issue #109 — G7 운영 인증 활성화 설계 및 통제 배포·롤백 Runbook
 
+## #153 통합 구현 범위 갱신 (2026-10-29)
+
+최신 Owner 지시로 G7 잔여 운영 연결을 #153 단일 PR에 통합한다. Auth/Admin 실제 Route/UI, 기존 CAD 쓰기 권한·Audit, 별도 서명 Runtime Gate, 실제 격리 Migration/Restore 실행을 구현한다. 별도 인간/반복 승인 절차는 Owner Managed로 간소화하되 기술 무결성·권한·복구를 유지한다. 아래 과거 DESIGN ONLY/미구현 문구는 당시 단계의 기록이며 현재 요구사항은 [FR-G7-153](Requirements.md)을 따른다.
+
+이번 완료 범위는 로컬·격리 검증과 최신 HEAD PR CI 시작까지다. 실제 운영 Auth/Write/DB/CAD/S3·Writer·Compose/Nginx/.env·GHCR/Tag/병합/배포는 하지 않는다. #109/#96/#153의 실제 운영 AC와 현장 증거는 이 구현으로 자동 완료하지 않는다.
+
 ## #154 — 현장 Owner 수용 완료 보고를 S3-5 릴리스별 Owner GO 절차로 인계 (2026-10-28)
 
 - User가 #142 B2 및 #151 C 실제 현장 Owner Managed 수용 완료 선언, 상세 원본/Hash/키/서명/식별자는 비반출. GitHub에는 `OWNER_ATTESTED_FIELD_ACCEPTANCE_COMPLETE`로 기록하고 외부 독립 확인은 `NOT_EXTERNALLY_VERIFIED`로 구별한다. 실제 Site 수용 완료는 아직 S3-5의 **릴리스별 운영 GO**가 아니다.

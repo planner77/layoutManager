@@ -1,5 +1,15 @@
 # 주요 기술 결정과 승인 기록
 
+## ADR-G7-153 — Owner Managed Runtime 연결과 격리 복구 (2026-10-29)
+
+- 결정: 최신 #153 사용자 지시로 절차 위주 준비 단계에서 실제 운영 API/UI·CAD 거래 연결을 구현한다. 별도 인간 Reviewer/반복 승인은 요구하지 않고 Owner Managed 검증을 적용한다. 권한 우회·데이터 손실·복구 불가능 상태는 완화 대상이 아니다.
+- 신뢰 경계: 기존 R0 `runtimeActivated=false`를 바꾸지 않고 별도 Runtime Gate를 만든다. 로컬 독립 Trust+Owner 단일 Ed25519 서명과 정확 Release/Schema/Site/Window를 검사하며 Auth/Write Scope를 분리한다. 기존 C0/R0 두 키 계약은 과거 검사 도구의 계약으로 보존하고 새 Runtime 권한의 필수 절차로 복제하지 않는다.
+- 재사용: G2 관리자 초기화/복구, G3 Session/CSRF/limiter, G4 권한/Audit 저장소, S3-3 실제 CAD 거래, 격리 7-Migration 및 B2 불변식 검사를 재사용한다. 새로운 인증·RBAC 체계를 병행하지 않는다.
+- 복구: 자동 운영 Migration에 7번째 SQL을 추가하지 않는다. Clone-only 실행기에서 실제 Migration/Restore와 실패 HOLD를 시험한다. 실제 운영 전환 및 이전 OCI 이미지 쌍 실행은 현장 선행조건이며 이번 코드/합성 검증으로 PASS 처리하지 않는다.
+- 버전: 신규 운영 통합 기능으로 0.44.0 후보. 기존 태그는 유지하고 이번에는 정식 GHCR/태그/병합/배포를 실행하지 않는다.
+
+- PR #156 P2 결정: Site 업무 active를 Runtime 승인 유효성과 분리하고 CAD 거래·Runtime permit에서만 활성 여부를 재검사한다. Migration은 기존 better-sqlite3를 사용한 persistent inode/OS 수명 lock으로 변경해 의존성·Docker 범위를 늘리지 않는다. 원자 HOLD와 동일 승인/SNAP/Epoch 기반 중단 복구를 추가한다. 기존 Prisma 자식 종료 및 구형 marker 전환 조건은 Runbook에서 명시한다. 미릴리스0.44.0 후보를 유지하며 실제 SIGKILL·회귀 결과는 TestReport로 추적한다.
+
 ## ADR-056 — #154 S3-5-R0 Owner Field Acceptance와 별도 Release GO/NO-GO 분리 (2026-10-28)
 
 - **사용자 보고:** #142/#151 S3-4-B2/C 현장 Owner Managed 수용 완료. 실 현장 원본·키/서명/Hash·개인/내부 식별자는 반출 금지. `OWNER_ATTESTED_FIELD_ACCEPTANCE_COMPLETE`를 공식 사용자 선언으로 기록하되 외부 독립 검증 사실(`NOT_EXTERNALLY_VERIFIED`)과 다르게 취급한다.

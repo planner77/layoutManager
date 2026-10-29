@@ -1,3 +1,5 @@
+import { prepareG7CadWrite, recordG7WriteFailure } from '@/server/g7-operational/cad-guard';
+import { cadWriteContext } from '@/server/g7-operational/cad-preview-context';
 import { context } from "@/server/context";
 import { boundedJson, failure, requireSameOrigin } from "@/server/http";
 import { RequestLogContext } from "@/server/logger";
@@ -27,15 +29,18 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const log = new RequestLogContext(request, "api", "master_create");
   try {
-    requireSameOrigin(request);
+    const auth = prepareG7CadWrite(request,log.requestId);
+    if (!auth?.runtime) requireSameOrigin(request);
     const body = await boundedJson(request),
       type = masterType(String(body.type ?? ""));
-    const result = await context().masters.create(type, {
+    const cad = cadWriteContext(auth);
+    let result;
+    try { result = await cad.masters.create(type, {
       name: masterName(body.name),
       parentId:
         type === "business-units" ? undefined : optionalParentId(body.parentId),
       kind: type === "sites" ? siteKind(body.kind) : undefined,
-    });
+    },auth); } finally { await cad.close(); }
     try {
       revalidatePath("/", "layout");
     } catch (error) {
@@ -47,6 +52,8 @@ export async function POST(request: Request) {
       headers: log.responseHeaders(),
     });
   } catch (error) {
+    try { await recordG7WriteFailure(request,log.requestId,'ROLE','MASTER_CREATE',error); }
+    catch (auditError) { return failure(auditError,{request:log}); }
     return failure(error, { request: log });
   }
 }

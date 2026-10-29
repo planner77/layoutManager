@@ -1,5 +1,11 @@
 # ChangeLog
 
+## 0.44.0 후보 — Issue #153 G7 운영 통합
+
+기존 Auth/Session/Role/Site/Audit를 실제 Runtime API·관리 UI·CAD 거래에 연결하고 별도 서명 Runtime Gate와 격리 Migration/Restore 실행 경로를 추가한다. 실제 운영 활성화·정식 이미지/태그·병합·배포는 이번 작업에서 수행하지 않는다. 검증 결과는 TestReport의 #153 절을 따른다.
+
+- PR #156 P2 보완: Site 비활성화의 영향을 해당 Site CAD 쓰기로 한정하고 다른 Site·로그인·Admin 재활성화 경로를 유지한다. Migration/Restore 강제 종료 후 실행 잠금과 HOLD를 통한 명시 복구 회귀를 추가한다. 미릴리스 0.44.0 후보 내 보완이며 실제 결과는 TestReport의 PR #156 절을 따른다.
+
 ## v0.43.0 후보 — Issue #82 세션 WCS 메모 및 Renderer UX (2026-10-28)
 
 - MINOR 신규 기능. `three-dxf-viewer`에 session-local MemoDraft WCS XY 앵커·핀·레이블, 위치 drag/좌표 명시 확정·텍스트만 저장/ESC rollback·Version/SHA 격리, Source/Generated Tool 상호배타와 비지원 Renderer fail-closed 적용. #127 `작업 > 메모 추가/편집`과 하단 Drawer 재사용. 메모 영속, 사용자인증 및 공유는 #83 등 후속 비범위.

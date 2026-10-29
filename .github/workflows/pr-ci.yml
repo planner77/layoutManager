@@ -115,6 +115,9 @@ jobs:
       - name: E2E 테스트
         run: npm run test:e2e
 
+      - name: G7 서명 Runtime 로그인·관리·CAD 권한 E2E
+        run: npx playwright test --config playwright.g7-runtime.config.ts
+
       - name: Legacy migration E2E 테스트
         run: npm run test:master-migration
 

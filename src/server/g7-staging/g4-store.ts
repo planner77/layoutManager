@@ -96,13 +96,27 @@ function decide(db: IsolatedDb, faults: Faults, tokenHash: string | null,
 /** Decide, modify and append Audit under one BEGIN IMMEDIATE transaction. */
 function guarded<T>(db: IsolatedDb, faults: Faults, token: string | null,
   action: Action, resource: Resource, context: G4Context,
-  work: (actor: UserAccess, siteId: string | null) => T): T {
+  work: (actor: UserAccess, siteId: string | null, context: G4Context) => T, auditForbidden = false, runtime?: G4StoreScope): T {
   let result: { ok: false; status: 401 | 403 } | { ok: true; value: T };
   try {
     result = atomic(db, () => {
+      runtime?.assertCurrent?.();
+      if (runtime?.now) context = { ...context, now: runtime.now() };
       const decision = decide(db, faults, token, action, resource, context);
       if (!decision.ok) return { ok: false as const, status: decision.status };
-      return { ok: true as const, value: work(decision.actor, decision.siteId) };
+      if (auditForbidden) db.exec('SAVEPOINT g4_runtime_work');
+      try {
+        const value = work(decision.actor, decision.siteId, context);
+        if (auditForbidden) db.exec('RELEASE g4_runtime_work');
+        return { ok: true as const, value };
+      } catch (error) {
+        if (!auditForbidden || !(error instanceof G4Failure) || error.status !== 403) throw error;
+        db.exec('ROLLBACK TO g4_runtime_work; RELEASE g4_runtime_work;');
+        const ref = target(resource);
+        append(db, faults, 'AUTHORIZATION_DENIED', decision.actor.id, decision.actor.id,
+          ref.kind, ref.id, context, 'DENIED', decision.siteId);
+        return { ok: false as const, status: 403 as const };
+      }
     });
   } catch (error) {
     if (error instanceof G4Failure) throw error;
@@ -131,10 +145,34 @@ export function applyG4Fixture(db: IsolatedDb): void {
     'FOREIGN KEY(created_by) REFERENCES "User"(id) ON DELETE NO ACTION,' +
     'FOREIGN KEY(updated_by) REFERENCES "User"(id) ON DELETE NO ACTION)');
 }
-export function createG4IsolatedStore(db: IsolatedDb, faults: Faults = {}): G4Store {
+export type G4StoreScope = Readonly<{
+  siteIds: readonly string[];
+  assertCurrent?: () => void;
+  now?: () => number;
+  requireActiveCadSite?: boolean;
+}>;
+/** Global account changes cannot affect an account assigned outside this release scope. */
+export function requireG4UserScope(db: IsolatedDb, userId: string, siteIds: readonly string[]): void {
+  const grants = db.prepare('SELECT site_id FROM "UserSiteGrant" WHERE user_id=?').all(userId);
+  if (grants.some(row => !siteIds.includes(String(row.site_id)))) {
+    throw new G4Failure('ACCESS_DENIED', 403);
+  }
+}
+export function createG4IsolatedStore(db: IsolatedDb, faults: Faults = {}, scope?: G4StoreScope): G4Store {
+  function scoped<T>(token: string | null, action: Action, resource: Resource,
+    context: G4Context, work: (actor: UserAccess, siteId: string | null, context: G4Context) => T): T {
+    return guarded(db, faults, token, action, resource, context, (actor, siteId, current) => {
+      if (scope && siteId !== null && (!scope.siteIds.includes(siteId) ||
+          (scope.requireActiveCadSite && action.startsWith('cad:') &&
+           !db.prepare('SELECT 1 FROM "CadSite" WHERE id=? AND active=1').get(siteId)))) {
+        throw new G4Failure('ACCESS_DENIED', 403);
+      }
+      return work(actor, siteId, current);
+    }, scope !== undefined, scope);
+  }
   return {
     permit(token, action, resource, context) {
-      return guarded(db, faults, token, action, resource, context, (actor, siteId) => {
+      return scoped(token, action, resource, context, (actor, siteId, context) => {
         const ref = target(resource);
         append(db, faults, 'AUTHORIZATION_GRANTED', actor.id, actor.id,
           ref.kind, ref.id, context, 'SUCCESS', siteId);
@@ -142,8 +180,14 @@ export function createG4IsolatedStore(db: IsolatedDb, faults: Faults = {}): G4St
       });
     },
     grant(token, change: G4Grant, context) {
-      guarded(db, faults, token, 'grants:manage', { kind: 'global' }, context, actor => {
+      scoped(token, 'grants:manage', { kind: 'global' }, context, (actor, _siteId, context) => {
         if (!targetExists(db, change.affectedUserId)) throw new G4Failure('ACCESS_DENIED', 403);
+        if (scope) {
+          requireG4UserScope(db, change.affectedUserId, scope.siteIds);
+          if (change.kind === 'site' && !scope.siteIds.includes(change.value)) {
+            throw new G4Failure('ACCESS_DENIED', 403);
+          }
+        }
         const columns = change.kind === 'role' ?
           { table: 'UserRoleGrant', key: 'role' } :
           change.kind === 'site' ? { table: 'UserSiteGrant', key: 'site_id' } :
@@ -182,7 +226,8 @@ export function createG4IsolatedStore(db: IsolatedDb, faults: Faults = {}): G4St
       });
     },
     disable(token, affectedUserId, context) {
-      guarded(db, faults, token, 'users:manage', { kind: 'global' }, context, actor => {
+      scoped(token, 'users:manage', { kind: 'global' }, context, (actor, _siteId, context) => {
+        if (scope) requireG4UserScope(db, affectedUserId, scope.siteIds);
         const user = db.prepare('SELECT status FROM "User" WHERE id=?').get(affectedUserId);
         if (!user || user.status !== 'ACTIVE') throw new G4Failure('CONFLICT', 409);
         const admin = db.prepare("SELECT 1 FROM \"UserRoleGrant\" WHERE user_id=? AND role='Admin'")
@@ -203,8 +248,8 @@ export function createG4IsolatedStore(db: IsolatedDb, faults: Faults = {}): G4St
       });
     },
     outline(token, change: G4OutlineChange, context) {
-      return guarded(db, faults, token, 'outline:write',
-        { kind: 'version', versionId: change.versionId }, context, (actor, siteId) => {
+      return scoped(token, 'outline:write',
+        { kind: 'version', versionId: change.versionId }, context, (actor, siteId, context) => {
           if (change.operation === 'create') {
             const id = randomUUID();
             db.prepare('INSERT INTO "G4ShadowOutline"(id,version_id,revision,state,created_by,updated_by) VALUES(?,?,1,\'ACTIVE\',?,?)')
@@ -232,15 +277,19 @@ export function createG4IsolatedStore(db: IsolatedDb, faults: Faults = {}): G4St
         });
     },
     audit(token, limit, context): G4AuditRecord[] {
-      return guarded(db, faults, token, 'audit:read', { kind: 'global' }, context, actor => {
+      return scoped(token, 'audit:read', { kind: 'global' }, context, (actor, _siteId, context) => {
         append(db, faults, 'AUTHORIZATION_GRANTED', actor.id, actor.id,
           'ROLE', 'audit_read', context);
         // Explicit projection: never fetch raw secrets or arbitrary business data.
         return db.prepare(
           'SELECT actor_user_id,affected_user_id,site_id,action,target_kind,target_id,' +
           'before_revision,after_revision,outcome,timestamp_utc,request_id ' +
-          'FROM "AuditEvent" ORDER BY timestamp_utc DESC,id DESC LIMIT ?',
-        ).all(limit).map(row => ({
+           'FROM "AuditEvent" e ' + (scope ?
+            'WHERE (e.site_id IS NULL OR e.site_id IN (' + scope.siteIds.map(() => '?').join(',') + ')) ' +
+            'AND NOT EXISTS (SELECT 1 FROM "UserSiteGrant" g WHERE g.user_id=e.affected_user_id AND g.site_id NOT IN (' +
+              scope.siteIds.map(() => '?').join(',') + ')) ' : '') +
+          'ORDER BY timestamp_utc DESC,id DESC LIMIT ?',
+        ).all(...(scope ? [...scope.siteIds, ...scope.siteIds] : []), limit).map(row => ({
           actor_user_id: row.actor_user_id as string | null,
           affected_user_id: row.affected_user_id as string | null,
           site_id: row.site_id as string | null,
@@ -262,7 +311,8 @@ export function createG4IsolatedStore(db: IsolatedDb, faults: Faults = {}): G4St
 export function g7GuardedMutation<T>(
   db: IsolatedDb, tokenHash: string | null, action: Action,
   resource: Resource, context: G4Context,
-  work: (actor: UserAccess, siteId: string | null) => T,
+  work: (actor: UserAccess, siteId: string | null, context: G4Context) => T,
+  runtime?: G4StoreScope,
 ): T {
-  return guarded(db, {}, tokenHash, action, resource, context, work);
+  return guarded(db, {}, tokenHash, action, resource, context, work, runtime !== undefined, runtime);
 }

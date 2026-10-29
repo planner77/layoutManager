@@ -84,6 +84,23 @@ COPY --from=builder /app/src/server/password.ts ./server/password.ts
 COPY --from=builder /app/src/server/logger.ts ./server/logger.ts
 COPY --from=builder /app/src/server/upload-error-catalog.ts ./server/upload-error-catalog.ts
 COPY --from=builder /app/src/domain/cad.ts ./domain/cad.ts
+# #153 explicit operator entrypoint only; default CMD still applies six CAD
+# migrations. Signed Runtime authority is required before G2 writes anything.
+COPY --from=builder /app/src/scripts/g7-runtime-admin.ts ./scripts/g7-runtime-admin.ts
+COPY --from=builder /app/src/scripts/g7-runtime-rehearsal.ts ./scripts/g7-runtime-rehearsal.ts
+COPY --from=builder /app/src/server/auth ./server/auth
+COPY --from=builder /app/src/server/g7-staging/g1-store.ts ./server/g7-staging/g1-store.ts
+COPY --from=builder /app/src/server/g7-staging/g2-store.ts ./server/g7-staging/g2-store.ts
+COPY --from=builder /app/src/server/g7-staging/g4-store.ts ./server/g7-staging/g4-store.ts
+COPY --from=builder /app/src/server/g7-operational/runtime-admin.ts ./server/g7-operational/runtime-admin.ts
+COPY --from=builder /app/src/server/g7-operational/runtime-gate.ts ./server/g7-operational/runtime-gate.ts
+COPY --from=builder /app/src/server/g7-operational/runtime-db.ts ./server/g7-operational/runtime-db.ts
+COPY --from=builder /app/src/server/g7-operational/runtime-migration.ts ./server/g7-operational/runtime-migration.ts
+COPY --from=builder /app/src/server/g7-operational/disposable-target.ts ./server/g7-operational/disposable-target.ts
+COPY --from=builder /app/src/server/g7-operational/preflight.ts ./server/g7-operational/preflight.ts
+COPY --from=builder /app/src/deploy/g7-s3 ./deploy/g7-s3
+COPY --from=builder /app/src/deploy/g7-runtime ./deploy/g7-runtime
+COPY --from=builder /app/src/domain/auth.ts ./domain/auth.ts
 USER cad
 RUN ./node_modules/.bin/prisma --version >/dev/null \
     && ./node_modules/.bin/tsx --version >/dev/null \

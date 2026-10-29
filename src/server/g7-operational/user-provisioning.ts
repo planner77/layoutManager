@@ -27,6 +27,7 @@ function token(raw: string | null): string {
 export async function provisionG7PreviewUser(
   db: IsolatedDb, req: Request, rawToken: string | null,
   trustedOrigin: string, now: number, requestId: string,
+  runtime?: Readonly<{ assertCurrent(): void; now(): number }>,
 ): Promise<{id: string}> {
   if (req.method !== 'POST' || req.headers.get('content-type')?.split(';')[0].trim() !== 'application/json' ||
       !Number.isSafeInteger(now) || now < 0 || !requestIdPattern.test(requestId)) {
@@ -60,9 +61,15 @@ export async function provisionG7PreviewUser(
   try { passwordHash = await hashLocalPassword(entry.initialPassword); }
   catch { throw new G4Failure('BAD_INPUT', 400); }
 
+  // Operating KDF work may outlive approval/session validity. Preview callers
+  // keep their deterministic clock; runtime callers sample the commit clock.
+  if (runtime) { now = runtime.now(); runtime.assertCurrent(); }
+
   let decision: {id:string} | {denied:401|403};
   db.exec('BEGIN IMMEDIATE');
   try {
+    runtime?.assertCurrent();
+    if (runtime) now = runtime.now();
     const session = db.prepare(
       'SELECT s.id,s.user_id,s.issued_at,s.last_seen_at,s.expires_at,s.revoked_at,'+
       'u.status,u.must_change_password FROM "AuthSession" s '+

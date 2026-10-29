@@ -1,5 +1,53 @@
 # PR/Main CI 실패 원장
 
+## PR #156 — P2 Site 비활성화 격리·강제 종료 Migration 복구 (2026-10-29)
+
+- **선행 성공 보존:** HEAD `523801a4da8850d579009efa92e3f1c76a746ece`, [PR CI #40775288415](https://github.com/planner77/layoutManager/actions/runs/40775288415) `completed/success`를 직접 확인했다. 아래 결함은 해당 CI 실패가 아니라 [Site P2](https://github.com/planner77/layoutManager/pull/156#discussion_r4406464951) 및 [Stale Lock P2](https://github.com/planner77/layoutManager/pull/156#discussion_r4406464961)의 추가 회귀다. 기존 실패/취소/미확정 기록은 보존한다.
+- **RED Site:** `npx vitest run tests/integration/g7-runtime-cad.test.ts tests/integration/g7-runtime-auth.test.ts tests/integration/g7-runtime-gate.test.ts -t 'approved inactive Site|Admin can deactivate|missing approved site' --reporter=dot`에서 2 FAIL. 비활성화 후 로그인503(expected200), Runtime BLOCKED(expectedACTIVE). 승인 ID 존재/무결성과 업무 active 상태를 혼합한 전역 검사가 원인이다. 전역 active 검사를 분리할 때 비활성 Site의 Current/DELETE가 허용되지 않도록 거래 안의 대상별 검사도 필요하다.
+- **RED Lock:** `npx vitest run tests/integration/g7-runtime-migration.test.ts -t SIGKILL --reporter=dot`에서 2 FAIL. 실제 자식의 lock 보유→SIGKILL·종료 확인 후 새 프로세스의 승인 Migration 재개·동일 Snapshot Restore가 `g7-rehearsal.lock` EEXIST로 중단했다. wx 생성 파일과 finally 삭제는 프로세스 강제 종료에서 실행 잠금 수명을 보장하지 못한다. 기존 throw-fault 테스트는 finally를 실행하므로 이 결함을 포착하지 못했다.
+- **중간 로컬 검증 보존:** 첫 수정 후 집중 실행55 PASS/1 FAIL(56개)은 비활성 등록의 기존 `INACTIVE_LOCATION_CHAIN`을 새 테스트가 `ACCESS_DENIED`로 기대한 오류였다. 실제 거부 동작을 유지하고 기대 코드만 정정했다. 이후 원본의 구버전 node_modules 복사에서 기존 의존 `polygon-clipping` 누락으로 Typecheck가 중단되었다. Root가 정확 lockfile의 격리 `npm ci`를 집중 테스트 종료 전에 시작하여 진행 중 worker의 `vitest/suppress-warnings.cjs`·`tsx/index.js` 모듈 소실과 Auth 실패1/worker 오류를 유발했다. 이는 시험 환경 간섭이며 제품 실패나 PASS로 기록하지 않고 설치 완료 후 재실행한다. 실제 PATCH Route를 Vitest에서 import한 뒤 `server-only` guard에 걸린 fixture 문제도 테스트에서 적절한 server-only mock으로 보완한다.
+- **새 fixture Typecheck:** 빌드 후 순차 `npm run typecheck`에서 `g7-runtime-migration.test.ts:146` TS2345를 관측했다. 서로 다른 음성 fixture 객체 배열의 env optional 추론 때문에 `Options.env`에 undefined 가능성이 남은 테스트 타입 오류이며 명시 타입/분기 보완 후 재검증한다. 제품 Schema·검증 규칙은 완화하지 않는다.
+- **GREEN:** 최종 Developer Runtime4파일59/59 PASS(106.95초), 독립 QA 동일59/59 PASS(105.41초), root 전체 Vitest82파일590/590 PASS(319.11초). 실제 SIGKILL4개·살아 있는 RESUME contender 거부와 path/HOLD identity 음성시험을 포함한다. Typecheck·Lint 오류0/기존경고6·Production Build PASS, 서명 Runtime ON Chromium1/1(12.4초), 기본 OFF/master/upload Chromium11/11(37.0초) PASS. 기존 사업장/등록/검색/Current/이력·원본·삭제암호·계정/권한/Audit 흐름을 재검증했다. 실제 reboot/현장 OCI·원격S3·Writer Zero/배포는 NOT TESTED다.
+- **리뷰/변경 근거:** [수정 commit eea01548](https://github.com/planner77/layoutManager/commit/eea01548b75d5d38db1cfa14029115f7d6a07881), [Site 답변](https://github.com/planner77/layoutManager/pull/156#discussion_r4407021095)·[Lock 답변](https://github.com/planner77/layoutManager/pull/156#discussion_r4407022868)을 기록하고 두 thread를 실제 resolved 처리했다. gpt-6-astra Manager가 독립 QA와 전체590/590·브라우저12/12 근거로 ACCEPT, 재작업 불필요 판정. 마지막 checkpoint까지 포함한 최종 Build→Typecheck 재실행도 exit0이다.
+- **Main/범위:** Main `a7af4aa0c106b5149043196a3567cf7bdc1b08a9` 재조회, behind0·merge-tree 충돌0. 이번 보완은 기존 PR의19경로(제품5·회귀4·문서10)에 한정, PR 전체64경로 밖 추가 없음. Schema/활성6 SQL·의존성/package·Docker/Compose·Viewer 수정 없음. staged diff·credential-pattern/산출물 제외 검사 통과. `.env` 지정 원격과 origin 일치 확인 후 연결 GitHub 도구로 기존 PR branch만 non-force fast-forward 반영한다.
+- **신규 CI 구분:** 기존 성공 Run40775288415는 원래 HEAD의 결과로 보존한다. 수정+이 기록의 최종 HEAD를 기존 PR branch에 한 번 반영하여 `pull_request.synchronize` 새 PR CI를 시작한다. 새 Run은 시작 확인까지만 수행하며 종료 판정은 NOT VERIFIED·모니터링 생략이다. 정확 최신 HEAD/Run URL은 완료 보고에 남긴다. 이 문서 갱신을 위해 별도 후속 push/추가 CI를 만들지 않는다.
+- **작업 경계:** 별도 worktree에서 기존 원본 worktree의 두 변경을 보존했다. 신규 Issue/PR·운영 설정/원본·GHCR/Tag·병합/배포 없이 기존 PR만 갱신한다. 후보0.44.0은 미릴리스 기능 PR 내 보완으로 유지한다. 로컬 결과·리뷰 해결·Main/범위·신규 CI 정책은 위 기록을 기준으로 하며, 최신 HEAD/Run 링크는 완료 보고에서 확인한다.
+
+
+## #153 — 운영 통합 중 로컬 발견·보완 누적 (2026-10-29)
+
+실제 운영 장애나 원격 CI 실패로 혼동하지 않는다. 아래는 `feat/issue-153-g7-runtime` 작업트리의 로컬 실행/코드 검토이며 기존 원장은 그대로 보존한다.
+
+| 발견 | 원인·수정 | 검증 범위 |
+| --- | --- | --- |
+| 첫 Production Build FAIL | G3 거래 hook 편집 중 limiter에 선언되지 않은 runtime 참조(TS2304), 해당 stray 참조 제거. JSON named import 경고도 default import로 변경 | 후속 Typecheck/Production Build PASS; 최종 집계는 TestReport |
+| 첫 Runtime ON E2E 시작 전 FAIL | Native Node22 ESM이 JSON import attribute를 요구(`ERR_IMPORT_ATTRIBUTE_MISSING`); Next/Vitest 변환만으로는 발견되지 않음 | Gate/fixture default JSON import에 `with {type:'json'}`, 실제 Node22 signed resolver smoke PASS; 브라우저 결과 별도 |
+| 최초 Admin 초기화 차단 P1 | User=0에서 거부 Audit가 들어가 기존 G2 pristine 조건을 깨뜨릴 수 있음 | Runtime auth/CAD 초기화 전 BOOTSTRAP_REQUIRED503, Audit/limiter 무변경, 거부 후 실제 G2 bootstrap 회귀 |
+| DB 잠금·장시간 업로드 P2 | 거래 이전 시각/승인을 재사용하면 대기 중 만료 또는 권한 회수 반영 누락 가능 | G2/G3/G4 BEGIN 이후 시각/승인 hook, CAD 거래와 파일 publish 이후 최종 재검사; 만료·회수 rollback 회귀 |
+| 기존 DB/CAD 경로 호환 P1 | 승인 Migration이 DB dirname/cad만 허용하여 기존 /data/db + /data/cad를 거부 | 별도 signed cadStoragePath 및 독립 경로 지원, 기존 배포 형태 합성 회귀; 경로 이동 없음 |
+| 기본 OFF 브라우저 호환 | session404 사전조회가 기존 정상 업무 console 검사에 오류를 추가할 수 있음 | status200에서 OFF/ACTIVE/BLOCKED를 먼저 구분, ACTIVE API 실패는 익명 fallback 불허 |
+| 신뢰 파일·Schema 재발 방지 | 과거 FIFO 대기/경로 reopen TOCTOU, 약화된 append-only trigger, 자체 변경 trust로 음성시험 통과 위험 | nofollow/nonblock private FD, UID/parent/inode 검증, 실제7 이력/checksum/전체Schema/FK, 독립 Trust 고정 음성시험 |
+| 합성 테스트 fixture FAIL | readonly origin 대입/Asset.kind 추론/헤더 union 타입, FK가 켜진 DB에 손상행 INSERT, immutable issuedAt UPDATE, 비정규 base64url 토큰, 테스트용 trigger가 엄격 Schema 검사에 걸림 | 타입/fixture·주입 seam을 수정. 실제 Schema/세션/Audit Assertion과 불변식을 제거하거나 Skip하지 않음 |
+
+추가 실행·리뷰 기록:
+
+- 첫 전체 Vitest: **82파일/578개 중577 PASS·1 FAIL**, 새 users/create503 vs201. 동시 구현 중 로드된10-test 버전이며 최신11개 Auth 및 해당 시나리오 독립 재실행 PASS. 최초503의 세부 원인은 해당 출력만으로 확정하지 않으며 최종 전체 재실행과 분리한다.
+- 실제 ON 브라우저 DELETE401: 비동기 Prisma Session 조회 중 실제 별도 SQLite 연결의 G3 refresh가 last_seen_at를 전진시켰다. 조회 전 now와 비교하여 정상 세션을 거부하는 실제 경합을 DB 두 연결로 RED 재현했다. 조회 후 Gate/현재시각을 다시 검사해 GREEN. 미래 시각/유휴·절대 만료·publish 후 재검사 Assertion은 유지했다. 시각 장애 주입은 Prisma 자체10초 transaction timer와 분리해 권한 시간만 전진시킨다.
+- 첫 ON E2E의 CAD 등록400은 합성 Site 계층이 UUID가 아닌 fixture 결함으로, 실제 UUID 체인과 재서명 Scope로 수정했다. 기존 validateId는 유지했다.
+- Runtime gate 반복 fixture 생성의 수백 DDL fsync가 병렬 빌드 중15초 timeout2건을 유발했다. fixture를 메모리에서 실제7SQL 적용 후 한 번 serialize해 실제 private DB를 생성하도록 변경,12개 전체 PASS. Assertion·timeout 변경 없음.
+- 기존 Chromium 첫92개 실행은91 PASS·1 FAIL. 동시 Playwright가 같은 test-results trace 디렉터리를 정리해 TC-ISSUE9-003 종료 시 ENOENT가 발생했다. 이후 실행은 분리된 출력 경로·순차 실행으로 검증한다. 제품 Assertion 실패로 단정하거나 최초 실행을 PASS로 바꾸지 않는다.
+- Typecheck/Next build를 동시에 실행하여 .next/types 재생성 중 TS6053가 발생했다. 빌드 완료 후 순차 Typecheck로 재검증한다. TypeScript include/검사 규칙을 완화하지 않는다.
+- 검토 P2: 기존0755 CAD 하위 디렉터리를 no022-write 소유권 검사로 수용, S3 VersionId는 UTF8 byte/roundtrip 검사. dangling HOLD/export-manifest symlink의 외부 생성 위험은 nofollow/nonblock FD+fstat+truncate/fsync와 외부 생성0 회귀로 차단했다.
+- 모바일 Audit 표의 과도한 행 높이는 표 최소폭+표 내부 focusable 스크롤로 수정하고390/768/1024/1440/1920px 문서 overflow·열 정렬·행 높이 회귀를 추가했다. Runtime Runbook 중앙 AGENTS 인덱스 누락도 등록했다.
+
+최종 추가 기록:
+
+- QA 독립 선택 실행(06:35:31 KST)의 DELETE race 시험에서 race 실행 전 초기 CAD 등록이 G7_RUNTIME_BLOCKED로1회 FAIL했다. 원인은 미확정이다. 별도 안전 사유코드만 수집한 새 Fixture 진단21회 및 임시 진단 제거 후 CAD 전체16개에서는 재현되지 않았으며, 최종 전체582개도 PASS했다. 최초 실패를 지우거나 특정 원인을 확정하지 않는다. 의도된 fail-closed 때문에 실패한 요청은 CAD 변경을 commit하지 않는다.
+- OFF E2E가 계정 페이지 HTTP404만 요구해 실패했다. 설치된 Next16 not-found 문서는 streamed notFound 응답200과 non-streamed404를 명시한다. 실제404 UI/noindex/운영 UI·폼·메뉴 부재와 API404를 검사하도록 바꾸었다. noindex meta 중복 개수 및 별도 실행 포트 충돌도 fixture/실행 조건으로 기록하며, 기존 Runtime/API 보호 Assertion은 유지했다.
+- 최종 Chromium 재검증은 서로 다른 서버 포트와 출력 디렉터리로 실행해 trace 삭제 경합을 제거했다. 전체 최초91/92 실패와 최신 주요 회귀 결과는 TestReport에서 분리한다.
+
+오래된 PR #128 미해결 지적은 공개 Host와 내부 Next bind origin 분리 P1, CAD 거래 시각 Session 검증 P2이다. 이번 실제 Runtime 연결에서 해당 경로·회귀를 검토하며, 과거 PR CI 성공을 새 HEAD 증거로 재사용하지 않는다. Auth/CAD/Runtime/Migration의 최신 실제 시험 결과와 PR/CI 식별자는 TestReport의 #153 절에 기록한다. 실제 Site/OCI/S3·운영 전환은 NOT TESTED다.
+
 ## #154 PR #155 first CI failure / P1 review correction (2026-10-28 KST)
 
 - Original HEAD `29f67d1cb2b045f37e93ba603f4caa0a66aa0ac2`, [PR CI #40648586533](https://github.com/planner77/layoutManager/actions/runs/40648586533), attempt 1: Docker image size/migration/runtime smoke job `122683088359` SUCCESS. Verify job `122683088747` FAILED at Unit/Integration: 524 passed, 1 failed / 77 files (76 passed, 1 failed). Typecheck and ESLint SUCCESS; OCI/DXF, Build, Chromium E2E, Legacy E2E SKIPPED, not PASS.

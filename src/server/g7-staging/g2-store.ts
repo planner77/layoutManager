@@ -6,6 +6,8 @@ import type {
 } from '../auth/admin-setup';
 import { consumeG1Recovery, type IsolatedDb } from './g1-store';
 
+export type G2RuntimeContext = Readonly<{ assertCurrent(): void; now(): number; assertTarget?(id: string): void }>;
+
 type Faults = Readonly<{
   injectBootstrapFailure?: boolean;
   injectRecoveryFailure?: boolean;
@@ -33,9 +35,11 @@ function insertBootstrapAudit(db: IsolatedDb, userId: string, now: number, reque
  * No administrator can be created over an existing or partially initialized
  * identity DB. Read checks outside this BEGIN IMMEDIATE are never sufficient.
  */
-function insertFirstAdmin(db: IsolatedDb, command: AdminBootstrapCommand, faults: Faults): string {
+function insertFirstAdmin(db: IsolatedDb, command: AdminBootstrapCommand, faults: Faults, runtime?: G2RuntimeContext): string {
   db.exec('BEGIN IMMEDIATE');
   try {
+    runtime?.assertCurrent();
+    if (runtime) command = { ...command, now: runtime.now() };
     const tables = ['User', 'UserRoleGrant', 'UserSiteGrant', 'SpecialGrant',
       'AuthSession', 'AuditEvent', 'AdminRecoveryNonce'] as const;
     if (tables.some(table => count(db, table) !== 0)) {
@@ -60,7 +64,7 @@ function insertFirstAdmin(db: IsolatedDb, command: AdminBootstrapCommand, faults
   }
 }
 
-export function createG2IsolatedStore(db: IsolatedDb, faults: Faults = {}): AdminSetupStore {
+export function createG2IsolatedStore(db: IsolatedDb, faults: Faults = {}, runtime?: G2RuntimeContext): AdminSetupStore {
   return {
     snapshot(recoveryNonce: string | undefined) {
       const adminIds = db.prepare(
@@ -77,7 +81,7 @@ export function createG2IsolatedStore(db: IsolatedDb, faults: Faults = {}): Admi
       };
     },
     bootstrap(command: AdminBootstrapCommand) {
-      return insertFirstAdmin(db, command, faults);
+      return insertFirstAdmin(db, command, faults, runtime);
     },
     recover(command: AdminRecoveryCommand) {
       // Recover a current ACTIVE Admin only. Do not silently re-enable a
@@ -87,7 +91,7 @@ export function createG2IsolatedStore(db: IsolatedDb, faults: Faults = {}): Admi
       ).get(command.targetId, 'ACTIVE', 'Admin');
       if (!existing) throw new Error('G2_RECOVERY_TARGET_INELIGIBLE');
       consumeG1Recovery(db, command.targetId, command.nonce, command.passwordHash,
-        command.now, command.requestId, faults.injectRecoveryFailure);
+        command.now, command.requestId, faults.injectRecoveryFailure, runtime);
     },
   };
 }
