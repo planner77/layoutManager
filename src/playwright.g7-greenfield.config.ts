@@ -4,9 +4,14 @@ import { chmodSync, mkdirSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 const port=process.env.G7_GREENFIELD_E2E_PORT ?? '3321';
-const root=mkdtempSync(path.join(tmpdir(),'g7-first-run-ui-'));
-chmodSync(root,0o700);
-for(const folder of ['db','cad'])mkdirSync(path.join(root,folder),{mode:0o700});
+// The config is evaluated by the Playwright runner AND its test workers.
+// Reuse the parent's fixture root; a new worker-local directory loses the
+// active server's first-admin.code and makes the UI E2E fail with ENOENT.
+const root=process.env.G7_GREENFIELD_E2E_ROOT ?? mkdtempSync(path.join(tmpdir(),'g7-first-run-ui-'));
+if(!process.env.G7_GREENFIELD_E2E_ROOT){
+  chmodSync(root,0o700);
+  for(const folder of ['db','cad'])mkdirSync(path.join(root,folder),{mode:0o700});
+}
 process.env.G7_GREENFIELD_E2E_ROOT=root;
 const origin='http://127.0.0.1:'+port;
 export default defineConfig({
