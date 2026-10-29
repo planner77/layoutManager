@@ -1,3 +1,10 @@
+## #153 PR #158 — 초기 PR CI 실패와 보완 (2026-10-29)
+
+- [PR CI #40888739457](https://github.com/planner77/layoutManager/actions/runs/40888739457), initial HEAD `eb2fe9193e086fb1f01daf183d3b5f551444a8e0`, completed/failure. Verify Job 123499430711 Typecheck TS18048/TS2322/TS2345/TS18046/TS2769 총 14건. Docker Job 123499430329 baseline image Next.js build 도중 **동일 TypeScript 오류**로 실패. npm ci/Prisma generate와 Next webpack compile은 성공, Lint/Unit/Integration/E2E 및 Docker 후속 단계 SKIPPED. 두 개의 독립적인 제품 오류로 중복 집계하지 않음.
+- **제품 보완:** Greenfield Authority/Installer의 환경변수·JSON Site 입력·sign buffer를 명시적 narrowing으로 처리, Gate의 검증된 Release 필드를 callback 전에 불변 로컬 변수로 분리. 사용자 입력 또는 null을 타입 단언만으로 우회하지 않음.
+- **추가 Codex P2:** legacy 7-schema fallback을 새 Signed Greenfield Gate가 허용할 수 있다는 지적을 Gate와 `openG7RuntimeDb`의 mode-discriminated 검증으로 수정. 7개 legacy history + 동일 Site라도 신설 전용 모드는 차단하는 회귀 테스트 추가; review thread 답변 후 Resolved.
+- **최신 HEAD 새 CI 검증 전 상태:** 수정 코드만 기록, 실제 Typecheck/Unit/Docker/E2E 합격은 `NOT VERIFIED`. 사용자 요청대로 새 PR CI 시작 이후 모니터링 없음. 현장 DB/CAD/HOLD·배포·운영 이관 실행하지 않음.
+
 ## #153 Greenfield 구현 후보 검증 상태 (2026-10-29)
 
 - 구현 후보: Greenfield 초기 Schema·Site seed·Owner 서명 Gate·일회성 Admin 및 신규 독립 Compose·합성 회귀.
