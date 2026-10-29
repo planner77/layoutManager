@@ -1,3 +1,13 @@
+## #153 PR #158 — 2차 PR CI 실패·누적 타입오류 수정 (2026-10-29 KST)
+
+- **실패 Run:** [PR CI #40890727134](https://github.com/planner77/layoutManager/actions/runs/40890727134), HEAD `6b308615cf0ec9dae52b7e5072195c17c5eff30b`, `completed/failure`. 최초 Run #40888739457의 14개 TS 오류 수정 이후의 **독립 2차 실패**이며, 이전 기록과 합치거나 성공으로 바꾸지 않는다.
+- **Verify [Job #123507859408](https://github.com/planner77/layoutManager/actions/runs/40890727134/job/123507859408):** `npm ci`/Prisma generate SUCCESS, `tsc --noEmit` exit2. **TS 오류 8건 전수:** `greenfield-authority.ts` (96,106,120: TS18048/TS2322 3건), `greenfield-install.ts` (130,136,137: TS18046/TS2345 3건), `runtime-db.ts` (3,7: TS2300 중복 import 2건). Lint/Unit/Integration/Build/E2E는 선행 Typecheck 실패로 SKIPPED; 성공 판정 금지.
+- **Docker [Job #123507859697](https://github.com/planner77/layoutManager/actions/runs/40890727134/job/123507859697):** pre-change baseline build 단계 Next Typecheck에서 같은 오류로 중단. 후속 Phase1/standalone/migrator/Size/Compose Smoke는 SKIPPED. 별도 Docker 빌드 시스템 문제로 간주하지 않음.
+- **실제 원인:** 이전 수정의 `const blocked=():never=>{throw ...}` 호출을 조합 조건의 후속 타입 축소 증거로 사용했지만, strict TS의 control-flow가 해당 표현식을 통과해 `string|undefined` 및 `unknown`을 좁히지 못함. `runtime-db.ts`에는 독립 보안 P2 수정 중 동일 심볼 import가 중복 추가됨. 이전 14개 TS 오류 중 일부가 잔존했고 두 건은 회귀성 중복 import임.
+- **이번 보완:** `requiredGreenfieldEnv()`를 검증 실패 시 **직접 throw하고 string 반환**하도록, `seedInput()`는 `validatedTitle(unknown):string`으로 각 필드 정제 후 명시적으로 `Seed` 구성하도록 변경. 구/신 Schema 검증 import 중복 제거. 검증 실패를 단언·skip·느슨한 타입으로 우회하지 않음. 단일 모듈 타입 축소 재현은 로컬 독립 `tsc --strict --noEmit`의 축소 시험에서 exit0이나 전체 repo Typecheck PASS는 **아직 확인되지 않음**.
+- **기존 P2:** PR #158의 Greenfield Schema 강제 리뷰 스레드 `PRRT_kwDOUQjDfc6xl6yn`은 코드 보완 후 Resolved 이력 보존. 새 리뷰 발생 시 다시 확인. 원본 DB 이관/HOLD/기존 데이터 복구는 최신 Greenfield 구현 범위 밖. 현재 실제 운영 Docker·DXF 자료는 미변경.
+- **재개 조건:** 현재 main과 branch behind/mergeable·미해결 리뷰 스레드를 재확인하고, 이 원장과 시험 상태를 포함한 최신 PR HEAD의 새 `pull_request.synchronize` CI 시작. 요청에 따라 시작만 확인/모니터링 없음; 새 CI 결과는 `NOT VERIFIED`. 병합/GHCR/운영 배포는 수행하지 않음.
+
 ## #153 PR #158 — PR CI #40888739457 실패 전수 분석·보완 (2026-10-29)
 
 - **관측 원장:** [PR #158](https://github.com/planner77/layoutManager/pull/158) 초기 HEAD `eb2fe9193e086fb1f01daf183d3b5f551444a8e0`, [Run #40888739457](https://github.com/planner77/layoutManager/actions/runs/40888739457) `completed/failure`.
