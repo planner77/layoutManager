@@ -4,7 +4,6 @@ import { assertG7GreenfieldSchema, G7_GREENFIELD_BASELINE } from './greenfield-s
 import { createRequire } from 'node:module';
 import { lstatSync, realpathSync } from 'node:fs';
 import path from 'node:path';
-import { assertG7GreenfieldSchema } from './greenfield-schema';
 import type { IsolatedDb } from '../g7-staging/g1-store';
 
 const Sqlite = createRequire(import.meta.url)('better-sqlite3') as
