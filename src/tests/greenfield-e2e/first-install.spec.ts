@@ -16,7 +16,7 @@ test('#109 initial browser Admin setup requires host code, then redirects to acc
   await username.fill('admin');
   await password.fill('synthetic-first-password');
   await page.getByRole('button',{name:'최초 관리자 등록'}).click();
-  await expect(page.getByRole('alert')).toContainText('SETUP_DENIED');
+  await expect(page.getByTestId('g7-first-setup').getByRole('alert')).toContainText('SETUP_DENIED');
   const code=readFileSync(path.join(root,'db','first-admin.code'),'utf8');
   await input.fill(code);
   await page.getByRole('button',{name:'최초 관리자 등록'}).click();

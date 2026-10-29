@@ -135,8 +135,30 @@ test('TC-IMG67-001: standalone traced native SQLite has no second image COPY', (
   const workflow = readFileSync(path.join(root, '.github/workflows/pr-ci.yml'), 'utf8');
   expect(workflow).toContain('test_audit_standalone_layers.py');
   expect(workflow).toContain('audit_standalone_layers.py');
-  expect(workflow).toContain('smoke_web_runtime.py create');
-  expect(workflow).toContain('smoke_web_runtime.py verify-delete');
+});
+
+test('GF-109-CI-CONTRACT: Greenfield Docker smoke passes setup code and checks restart persistence', () => {
+  const root = path.resolve(process.cwd(), '..');
+  const workflow = readFileSync(path.join(root, '.github/workflows/pr-ci.yml'), 'utf8');
+  const step = workflow.split('      - name: Compose Greenfield first run, Admin, CAD, restart persistence\n')[1]
+    ?.split('\n      - name: ')[0];
+  expect(step).toBeDefined();
+  expect(step).toContain('exec -T app cat /data/db/first-admin.code');
+
+  let cursor = 0;
+  for (const command of [
+    'up -d --no-build app',
+    'cat /data/db/first-admin.code',
+    'G7_CI_FIRST_SETUP_CODE="$CODE" python3 src/scripts/smoke_greenfield_runtime.py create',
+    'stop app',
+    'up --no-build --force-recreate migrate',
+    'up -d --no-build app',
+    'python3 src/scripts/smoke_greenfield_runtime.py verify',
+  ]) {
+    const index = step?.indexOf(command, cursor) ?? -1;
+    expect(index).toBeGreaterThanOrEqual(0);
+    cursor = index + command.length;
+  }
 });
 
 test('TC-LOG-MIG-001: migrator includes logger direct imports and loads them before DB migration', () => {
