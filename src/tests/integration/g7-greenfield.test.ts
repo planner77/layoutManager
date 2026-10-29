@@ -86,7 +86,9 @@ describe('#153 empty Greenfield installation without prior data or migration rep
     initializeGreenfield(f.env);
     const sites=seed(f).siteIds;
     expect(sites).toHaveLength(2);
-    expect(()=>seed(f)).toThrow();
+    const seedFile=path.join(f.root,'seed','seed.json');
+    expect(()=>seedGreenfieldSites({...f.env,G7_GREENFIELD_SEED_ACK:'SEED_EMPTY_GREENFIELD',
+      G7_GREENFIELD_SEED_FILE:seedFile})).toThrow();
     const x=owner(f,sites);
     expect(resolveG7RuntimeGate(x.env)).toMatchObject({state:'ACTIVE',authEnabled:true,cadWriteEnabled:true});
     expect(resolveG7RuntimeMigrationAuthority(x.env)).toMatchObject({state:'BLOCKED'});
@@ -108,7 +110,7 @@ describe('#153 empty Greenfield installation without prior data or migration rep
     const bootstrap={...x.env,ADMIN_BOOTSTRAP_ENABLED:'true',
       ADMIN_BOOTSTRAP_USERNAME:'admin',ADMIN_BOOTSTRAP_PASSWORD_FILE:secret};
     expect(await executeG7RuntimeAdmin(bootstrap)).toBe('bootstrap');
-    await expect(executeG7RuntimeAdmin(bootstrap)).rejects.toThrow();
+    expect(await executeG7RuntimeAdmin(bootstrap)).toBe('disabled');
     const db=new Sqlite(f.dbfile);
     try {
       expect(db.prepare('SELECT COUNT(*) AS n FROM "User"').get()?.n).toBe(1);
