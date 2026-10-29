@@ -6,7 +6,7 @@ import { constants, openSync, closeSync, fstatSync, lstatSync, readFileSync, rea
 import path from 'node:path';
 import { createPublicKey, verify } from 'node:crypto';
 import packageInfo from '../../package.json' with {type:'json'};
-import { G7_GREENFIELD_CAPABILITY, G7_GREENFIELD_SCHEMA_ID } from './greenfield-schema';
+import { G7_GREENFIELD_CAPABILITY, G7_GREENFIELD_SCHEMA_ID, assertG7GreenfieldSchema } from './greenfield-schema';
 import { openG7RuntimeDb } from './runtime-db';
 import type { G7RuntimeGate } from './runtime-gate';
 
@@ -146,11 +146,15 @@ export function resolveG7GreenfieldGate(
     if(!raw.scopes.includes('AUTH')||(write&&!raw.scopes.includes('CAD_WRITE')))
       return denied('GREENFIELD_SCOPE_DENIED');
     const gate={state:'ACTIVE' as const,authEnabled:true as const,cadWriteEnabled:write,
+      schemaMode:'GREENFIELD' as const,
       origin:trust.origin,databasePath:trust.databasePath,cadStoragePath:trust.cadStoragePath,
       siteIds:[...trust.siteIds],expiresAt:end,approvalId:raw.approvalId,snapshotId:'',
       changeRequestId:raw.changeRequestId,scopes:[...raw.scopes]};
     const opened=openG7RuntimeDb(gate,true);
     try{
+      // The common runtime used to accept legacy 7-migration Schema. This
+      // authority MUST never validate against the legacy branch.
+      assertG7GreenfieldSchema(opened);
       const extra=opened.prepare('SELECT id FROM "CadSite" ORDER BY id').all() as {id:string}[];
       if(extra.length!==gate.siteIds.length ||
           JSON.stringify(extra.map(x=>x.id))!==JSON.stringify(gate.siteIds))
