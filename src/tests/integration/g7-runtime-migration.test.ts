@@ -314,7 +314,9 @@ describe('#153 executable disposable migration and same-snapshot restore',()=>{
     reordered.signature=sign(null,signing!,options.auth.keys.privateKey).toString('base64');
 
     const changed=structuredClone(reordered);
-    changed.evidence.historySha256='f'.repeat(64);
+    // HandoverEvidence fields are readonly: replace the synthetic evidence
+    // object rather than mutating a signed packet's hash property in-place.
+    changed.evidence={...changed.evidence,historySha256:'f'.repeat(64)};
     changed.signature=sign(null,g7MigrationHoldHandoverSigningBytes(changed)!,
       options.auth.keys.privateKey).toString('base64');
     writeFileSync(transfer.handoverPath,JSON.stringify(changed));

@@ -1,5 +1,11 @@
 # 실제 검증 결과 및 Viewer 평가
 
+## PR #157 — PR CI TS2540(합성 HOLD 시험) 보완 (2026-10-29)
+
+- 관측: [Run #40873385549](https://github.com/planner77/layoutManager/actions/runs/40873385549) attempt1, HEAD `dec130799988` `completed/failure`. Docker/Migration/Runtime smoke `123445913731` SUCCESS, Verify `123445913386` Typecheck 실패(`g7-runtime-migration.test.ts:317`, TS2540); 뒤따른 Lint/Unit/Build/E2E SKIPPED.
+- 변경: 새 음성 fixture의 `readonly` SHA 필드 직접 대입을 불변 객체 재할당으로 교정. 제품 G7 서명/Schema/History/HOLD 로직 및 다른 시험 범위는 그대로 둔다. 최소 TypeScript 5.8.3 strict fixture 재현은 PASS이나 전체 프로젝트 Typecheck·Vitest·E2E·Docker 신규 HEAD 결과를 대신하지 않는다.
+- 신규 CI 이전 판정: `NOT VERIFIED`. 과거 [Run #40870964580](https://github.com/planner77/layoutManager/actions/runs/40870964580)의 기존 HEAD 성공은 보존하고, 실패 Run을 PASS로 고쳐 쓰지 않는다.
+
 ## PR #157 — 서명 증거 JSON 순서 독립 비교 회귀 (2026-10-29)
 
 - 선행 [PR CI #40870964580](https://github.com/planner77/layoutManager/actions/runs/40870964580) HEAD `7ca8f0e` `completed/success`, Docker 및 Verify 두 Job 성공. 이후 발견한 [Codex P2](https://github.com/planner77/layoutManager/pull/157#discussion_r4412138381) 반영 전 결과다.

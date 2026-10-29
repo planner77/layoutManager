@@ -1,5 +1,14 @@
 # PR/Main CI 실패 원장
 
+## PR #157 — 신규 HOLD 회귀의 TypeScript TS2540 (2026-10-29)
+
+- **확인된 실패:** [PR CI #40873385549](https://github.com/planner77/layoutManager/actions/runs/40873385549), attempt 1, HEAD `dec1307999888c28cac71cb9856e85e6aa5bcf27`, `completed/failure`. Docker image size/migration/runtime smoke Job [123445913731](https://github.com/planner77/layoutManager/actions/runs/40873385549/job/123445913731) **SUCCESS**. Verify Job [123445913386](https://github.com/planner77/layoutManager/actions/runs/40873385549/job/123445913386) **FAILED** at TypeScript 검사: `tests/integration/g7-runtime-migration.test.ts(317,22): error TS2540: Cannot assign to 'historySha256' because it is a read-only property`. Node 설치·Prisma Client 생성까지 정상, ESLint/Unit·Integration/OCI·DXF/Build/Chromium·Runtime ON/Legacy E2E는 **SKIPPED(미실행)**. 전체 Run 실패를 Docker 성공으로 바꾸거나 미실행 테스트를 PASS로 집계하지 않는다.
+- **원인:** PR #157의 Codex P2 대응으로 추가한 `signed HOLD handover and RESUME accept reordered evidence keys but reject changed hashes` 합성 음성 시험에서 `changed.evidence.historySha256='f'.repeat(64)`로 `Readonly<HandoverEvidence>`의 필드에 직접 대입했다. 타입 오류는 새 시험 fixture에 한정되며 로그만으로 제품 Migration의 실행 결함이나 테스트 논리의 성공/실패를 확인할 수 없다. 과거 P2 수정의 제품 `handoverEvidenceEqual`은 이번 오류 대상이 아니다.
+- **교정:** `changed.evidence={...changed.evidence,historySha256:'f'.repeat(64)}` copy-on-write 대입으로 교체. 테스트의 재서명·변조 해시 거부·기존 HOLD 바이트 불변 및 정상 재정렬 HANDOVER→RESUME·완료 HOLD Assertion 유지. 제품 코드/SQL/Owner 서명·Schema/운영 설정·테스트 timeout/skip/검증 조건 변경 없음.
+- **제한된 로컬 확인:** TypeScript 5.8.3의 별도 `Readonly` 최소 재현에서 객체 재구성 `tsc --noEmit --strict` PASS. 이 확인은 실제 저장소의 전체 Typecheck/Vitest/E2E가 아니며 CI 성공으로 주장하지 않는다. 최신 PR HEAD의 전체 CI는 새 `pull_request.synchronize` Run에서 검증; 결과 확인 전 `NOT VERIFIED`.
+- **리뷰·Main:** 이전 [Codex P2 thread](https://github.com/planner77/layoutManager/pull/157#discussion_r4412138381) 답변 후 resolved, 이 단계 조회 시 미해결 0. `main` HEAD `881a704da45e108ebb8f4641b6a1061b4ea557cb`, behind 0, PR mergeable=true. 새 HEAD 업로드 이후 재확인해야 한다.
+- **안전:** 실패 원장/시험 보고 보존, 실제 현장 SQLite/CAD/S3/HOLD/OCI·Writer·운영 Prisma·Auth/CAD Write·배포/GHCR·Merge·Issue 종료 미수행. #153/#109/#96 운영 상태 유지.
+
 ## PR #157 — Codex P2: 서명된 HOLD 증거 속성 순서 (2026-10-29)
 
 - **선행 CI 성공:** HEAD `7ca8f0eb5671eb8760a774b3ad5d7d8691cf7f20`에 대한 [PR CI #40870964580](https://github.com/planner77/layoutManager/actions/runs/40870964580)은 Docker/Migration/Runtime Smoke 및 Verify 모두 `completed/success`. 아래 추가 보완의 최신 HEAD 검증으로 재사용하지 않는다.
