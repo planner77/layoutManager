@@ -100,14 +100,18 @@ export function resolveG7GreenfieldGate(
        typeof trust.origin!=='string'||typeof trust.databasePath!=='string'||
        typeof trust.cadStoragePath!=='string'||!approval(raw))
       return denied('GREENFIELD_CONTRACT_INVALID');
-    if(trust.release.version!==packageInfo.version ||
-      env.G7_RELEASE_VERSION!==trust.release.version ||
-      env.G7_RELEASE_CAPABILITY!==trust.release.capability ||
-      env.G7_RELEASE_SCHEMA_ID!==trust.release.schemaId ||
-      env.G7_RELEASE_SOURCE_COMMIT!==trust.release.sourceCommit ||
-      env.G7_RELEASE_APP_DIGEST!==trust.release.appDigest ||
-      env.G7_RELEASE_MIGRATOR_DIGEST!==trust.release.migratorDigest ||
-      releaseKeys.some(k=>trust.release[k]!==raw.release[k]) ||
+    // Narrow the independently validated release objects before a callback
+    // iterates their keys. Keep signed/trusted fields byte-exact.
+    const trustedRelease=trust.release;
+    const signedRelease=raw.release;
+    if(trustedRelease.version!==packageInfo.version ||
+      env.G7_RELEASE_VERSION!==trustedRelease.version ||
+      env.G7_RELEASE_CAPABILITY!==trustedRelease.capability ||
+      env.G7_RELEASE_SCHEMA_ID!==trustedRelease.schemaId ||
+      env.G7_RELEASE_SOURCE_COMMIT!==trustedRelease.sourceCommit ||
+      env.G7_RELEASE_APP_DIGEST!==trustedRelease.appDigest ||
+      env.G7_RELEASE_MIGRATOR_DIGEST!==trustedRelease.migratorDigest ||
+      releaseKeys.some(k=>trustedRelease[k]!==signedRelease[k]) ||
       raw.origin!==trust.origin||raw.databasePath!==trust.databasePath||
       raw.cadStoragePath!==trust.cadStoragePath||
       JSON.stringify(raw.siteIds)!==JSON.stringify(trust.siteIds)||
