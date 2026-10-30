@@ -1,3 +1,13 @@
+## #98/#83 PR #171 CI #311 실패 재발 방지 회귀 (2026-10-30)
+
+- **RE-CI-01:** `npm run db:generate && npm run typecheck && npm run lint`; 신규 `businessSchema/validation` strict unknown narrowing, `BusinessRepository.list('memo'|'outline')` 호출 타입, `null` Version/actor에 모두 타입 오류 0.
+- **RE-CI-02:** `npm run build` + Docker pre-change baseline/new migrator target. `src/Dockerfile`에서 새 business DDL 모듈 COPY, image 내부 `node --import tsx` 로딩 및 최초 Greenfield Compose 통과.
+- **RE-CI-03:** 메모 PATCH `operation:'delete'`→400 + 저장/DELETE Audit 미변경; DELETE만 soft delete/DELETE Audit/삭제 응답.
+- **RE-CI-04:** 원본 정확 외곽선 임시 Translate+Rotate→`buildServerSourceOutlineExport` immutable base + exact command ops→#97 server attestation 합성 정상, 편집 이력 누락/위조 거부, Undo/Redo 이력 정확 복원. Source SHA/Handle 미검증 우회 금지.
+- **RE-CI-05:** Latest HEAD 리뷰 스레드 0·Main conflict 0·fresh PR CI 시작을 관측하고, CI 결과는 사용자 요청대로 모니터링 생략. 실패였던 Run #41056355838은 역사 보존.
+
+---
+
 ## #98/#83 — Business CRUD/CAS/Origin 합성 수용 계획 (2026-10-30)
 
 | TC | 검증 내용 | 기대 결과 |

@@ -1,3 +1,12 @@
+## #98/#83 PR #171 Run #41056355838 / workflow #311 — 실제 CI 실패 (2026-10-30)
+
+- Verify job `124064761375` Typecheck `failure`: 새 입력 validators, business CRUD, detail route 33 strict TS 오류. Prisma Generate 성공 이후 Lint/Unit/Build/E2E는 SKIPPED.
+- Docker job `124064760825` `failure`: baseline image builder의 Next TS18048 오류, migrator/Compose smoke 미실행. PR Codex는 별도로 Migrator DDL module COPY 누락 P1을 확인했으나 이번 Docker 로그에서 module import failure 직접 재현되지는 않았다.
+- Codex P1/P2 세 건 보완 HEAD `275fd74b6a893b181d34cff0dd3dce5cb18e7d75`; 댓글 근거·3/3 resolved, Main behind0·mergeable true. 엄격한 입력 거부와 Source 변형 이력 수명·Docker package closure 보존.
+- 새 신규 Unit 회귀 `source-outline-persistence.test.ts` 및 `cad-business-contract.test.ts` 추가. **작성 시점 로컬 직접 실행 NOT RUN**, 새 HEAD CI 결과는 관측 전 **NOT VERIFIED**이며 과거 Run #311 실패를 대체하지 않는다. 현장·GHCR·병합·운영 수용은 요청 범위 밖.
+
+---
+
 ## #98/#83 — 신규 영속 API/Viewer 후보 검증 상태 (2026-10-30)
 
 - 구현 파일: 별도 Greenfield-only DDL/Prisma, G7 인증·Site CRUD API, object revision CAS 및 성공 원자 Audit, immutable original SOURCE 검증/APP_CREATED 독립 WCS, Memo ACTIVE 재접속 hydrate와 OFF 임시 세션, Outline 명시 서버 저장 및 재조회 Overlay.

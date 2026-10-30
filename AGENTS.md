@@ -1,3 +1,12 @@
+## #98/#83 CI #311 재발 방지 — strict TS·Migrator·Source 이력 (2026-10-30)
+
+- [실패 원장](out/FailureLedger.md)의 PR #171 / [Run #41056355838](https://github.com/planner77/layoutManager/actions/runs/41056355838)을 먼저 확인한다. `tsc --noEmit` strict nullable/unknown은 항상 타입 가드가 인식하는 `function ...():never` 선언 또는 명시적으로 narrowing된 반환을 사용하고, Kind별 리스트 반환은 overload 또는 discriminated union으로 호출처까지 보존한다. Docker baseline Next Build 실패가 동일 TS 오류라면 독립 Migrator 결함과 구분한다.
+- 신규 **Migrator에 import되는** TS 파일은 `src/Dockerfile` migrator explicit COPY runtime closure 및 실제 `node --import tsx` load smoke 둘 다 연결한다. App/Builder에만 있는 파일은 Compose auto init에서 사용할 수 없다.
+- Memo 삭제는 반드시 `DELETE` method에만 결속한다. PATCH `operation=delete`가 soft-delete 실행 뒤 Audit EDIT로 남지 않도록 `text|move`와 `DELETE`를 별도 검증. SOURCE_CANONICAL 변형은 브라우저 변형 결과만 보내지 말고 `baseGeometry` + 실제 `Translate/Rotate` history를 전송해 서버 원본 DXF SHA/Handle canonical 검증을 거친다. Undo/Redo와 변형 이력은 함께 복원.
+- 새 PR CI 성공·검증된 최신 SHA 이전에는 review Resolved와 Code 변경만으로 PASS·GHCR·업무 수용을 주장하지 않는다. 이번 요청은 CI 재시작까지로 제한.
+
+---
+
 ## #98/#83 업무 외곽선·메모 영속 PR 후보 (2026-10-30)
 
 [독립 설계](out/Issues98-83.md)와 신규 #98/#83 구현은 #166 세션 한정 완료 선언 이후의 독립 범위이다. 신규 비즈니스 GET/쓰기 모두 G7 ACTIVE/Auth/Site Grant 필수; Memo 작성자만 수정·삭제, Outline은 Site Editor 협업. Source Canonical은 서버 DXF SHA/Handle 검증, APP_CREATED는 독립 WCS 검증, SceneRevision 불일치는 CAS 409. 새 빈 Greenfield 스키마에만 업무 3개 테이블 및 감사·불변 트리거 추가하고 이전 볼륨은 마이그레이션/삭제하지 않는다. #65/#84 및 데이터 보존/교차 편집 정책 미승인은 차단. PR CI 미확인 결과를 성공으로 기록하거나 본 PR에서 병합·GHCR·배포하지 않는다.
