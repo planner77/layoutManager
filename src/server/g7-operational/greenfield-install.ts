@@ -27,6 +27,7 @@ const MIGRATIONS = [
   '202609110001_delete_password','202609110002_delete_invariants',
   '202609110003_drawing_name','202610150001_master_hierarchy',
   '202610260002_g7_operational_auth',
+  '202610300001_scene_asset',
 ] as const;
 const SCHEMA_QUERY = "SELECT type,name,sql FROM sqlite_master WHERE sql IS NOT NULL AND name NOT LIKE 'sqlite_%' AND name<>'_prisma_migrations' ORDER BY type,name";
 const blocked = (): never => {throw new Error('G7_GREENFIELD_SETUP_BLOCKED');};
@@ -58,7 +59,11 @@ function target(env: Readonly<Record<string,string|undefined>>) {
   return {dbPath,dbParent,cadPath};
 }
 function schemaSql(name:string): string {
-  const filename = path.join(APP,'deploy/g7-s3/prisma/migrations',name,'migration.sql');
+  // The Scene candidate is intentionally outside the seven-history Prisma
+  // migration root. Only a fresh one-row Greenfield baseline consumes it.
+  const filename = name === '202610300001_scene_asset'
+    ? path.join(APP,'deploy/scene-assets/migration.sql')
+    : path.join(APP,'deploy/g7-s3/prisma/migrations',name,'migration.sql');
   return readFileSync(filename,'utf8');
 }
 function referenceDdl(): {type:string;name:string;sql:string}[] {

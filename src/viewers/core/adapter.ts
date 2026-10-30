@@ -17,10 +17,17 @@ export type GeneratedOutlineObject = Readonly<{
   sourceEntityIds:readonly string[];kind:OutlineKind;name:string;outlineTypeId:string|null;
 }>;
 import { ViewerSource } from './source';
+import type {ReadyScene} from './source';
+import type {SceneManifest} from '../../domain/cad-scene';
+export type SceneArtifact=Readonly<{bytes:Uint8Array;manifest:SceneManifest}>;
+export type SceneLoadPolicy=Readonly<{versionId:string;sourceSha256:string;mode:'scene-first'|'build'}>;
 import { ViewerLoadError, isKnownSafeDwgAdapterLoadError, isViewerCancellation } from './viewer-load-error';
 import {heapBytes,observeFrame,type ViewerMetric} from './metrics';
 export interface CadViewerAdapter {
   load(source: ArrayBuffer): Promise<{ empty: boolean; entityCount?:number; warning?:string; metrics?: { initializeMs?: number; parseMs?: number } }>;
+  loadScene?(source:ReadyScene):ReturnType<CadViewerAdapter['load']>;
+  getSceneArtifact?():SceneArtifact|undefined;
+  getSceneTextIndex?():CadTextIndex;
   fitToView(): void;
   zoomIn(): void;
   zoomOut(): void;
@@ -67,7 +74,10 @@ export class ViewerManager {
   private activeUrl?: string;
   private pendingIndex?: Promise<CadTextIndex>;
   private cancelIndex?: () => void;
-  constructor(private factory: ViewerFactory, source?: ViewerSource, private measurement?:{renderer:string;versionId:string;report:(metric:ViewerMetric)=>void}, private format:ViewerFormat = 'DXF') {this.source=source??new ViewerSource();this.ownsSource=!source;}
+  private sceneAbort?:AbortController;
+  private readyScene?:ReadyScene;
+  private loadedStrategy:'READY_SCENE'|'LEGACY_DXF'|'DWG'='LEGACY_DXF';
+  constructor(private factory: ViewerFactory, source?: ViewerSource, private measurement?:{renderer:string;versionId:string;report:(metric:ViewerMetric)=>void}, private format:ViewerFormat = 'DXF',private scenePolicy?:SceneLoadPolicy) {this.source=source??new ViewerSource();this.ownsSource=!source;}
   async load(url: string, format: string) {
     this.dispose();
     const generation = this.generation;
@@ -75,17 +85,26 @@ export class ViewerManager {
     const metric:ViewerMetric={schemaVersion:1,renderer:this.measurement?.renderer??'unknown',versionId:this.measurement?.versionId??'',timestamp:new Date().toISOString(),result:'error',sourceMode:this.source.state(url),fileBytes:null,entityCount:null,sourceWaitMs:null,initializeMs:null,adapterLoadMs:null,totalMs:0,firstDisplayMs:null,parseMs:null,jsHeapBytes:null,browser:typeof navigator==='undefined'?'unknown':navigator.userAgent,reasons:{parseMs:'Library load combines parsing, preparation and font work; no isolated parse measurement.',entityCount:'Adapter does not expose a retained parsed entity count.',firstDisplayMs:'No non-empty successful draw/frame observed.',jsHeapBytes:'Browser API unavailable; GPU/WASM memory is not measured.'},error:null};
     try {
     if (format !== this.format) throw new Error('이 형식의 Viewer는 아직 제공하지 않습니다.');
-    const bytes = await this.source.read(url);
+    const abort=this.sceneAbort=new AbortController();
+    const scene=this.scenePolicy?.mode==='scene-first'&&format==='DXF'
+      ?await this.source.readScene(this.scenePolicy.versionId,this.scenePolicy.sourceSha256,abort.signal):null;
+    const bytes=scene?scene.bytes.buffer as ArrayBuffer:await this.source.read(url);
+    this.readyScene=scene??undefined;
+    this.loadedStrategy=scene?'READY_SCENE':format==='DWG'?'DWG':'LEGACY_DXF';
+    metric.loadStrategy=this.loadedStrategy;
     metric.fileBytes=bytes.byteLength;metric.sourceWaitMs=performance.now()-started;
     if (generation !== this.generation) throw new DOMException('취소됨', 'AbortError');
     const initializing=performance.now();let adapter:CadViewerAdapter;
     try { adapter = await this.factory(); }
-    catch(error) { if(isViewerCancellation(error))throw error; throw new ViewerLoadError('adapter-init','INITIALIZE','Viewer 초기화에 실패했습니다.',error); }
+    catch(error) { if(isViewerCancellation(error))throw error;if(scene)throw new ViewerLoadError('scene','RENDERER_UNAVAILABLE','Scene Renderer를 초기화하지 못했습니다. 원본 DXF 대체 조회는 직접 선택하세요.',error); throw new ViewerLoadError('adapter-init','INITIALIZE','Viewer 초기화에 실패했습니다.',error); }
     metric.initializeMs=performance.now()-initializing;
     if (generation !== this.generation) { adapter.dispose(); throw new DOMException('취소됨', 'AbortError'); }
     this.adapter = adapter;
     try {
-      const loading=performance.now();const result = await adapter.load(bytes.slice(0));
+      const loading=performance.now();
+      if(scene&&!adapter.loadScene)throw new ViewerLoadError('scene','UNSUPPORTED','이 Renderer는 저장된 Scene Asset을 지원하지 않습니다.');
+      const result = scene?await adapter.loadScene!(scene):await adapter.load(bytes.slice(0));
+      if(scene){metric.parseMs=0;metric.reasons.parseMs='READY_SCENE restores validated buffers without DXF parsing.';}
       metric.adapterLoadMs=performance.now()-loading;
       if (result.metrics?.initializeMs !== undefined) { metric.initializeMs=result.metrics.initializeMs; delete metric.reasons.initializeMs; }
       if (result.metrics?.parseMs !== undefined) { metric.parseMs=result.metrics.parseMs; delete metric.reasons.parseMs; }
@@ -100,7 +119,9 @@ export class ViewerManager {
     }
     catch(error) { if (this.adapter === adapter) { adapter.dispose(); this.adapter = undefined; }
       if(isViewerCancellation(error))throw error;
+      if(error instanceof ViewerLoadError&&error.stage==='scene')throw error;
       if(this.format==='DWG' && isKnownSafeDwgAdapterLoadError(error))throw error;
+      if(scene)throw new ViewerLoadError('scene','REBUILD_REQUIRED','저장된 Scene을 복원하지 못했습니다. 자동 원본 재변환은 실행하지 않습니다.',error);
       throw new ViewerLoadError('adapter-load','LOAD','Viewer 도면 처리에 실패했습니다.',error); }
     } catch(error) {
       metric.result=generation!==this.generation || (error instanceof DOMException&&error.name==='AbortError')?'cancelled':'error';
@@ -119,6 +140,10 @@ export class ViewerManager {
     if (this.format !== 'DXF') throw new Error('DWG 내부 텍스트 검색은 현재 지원하지 않습니다.');
     const url = this.activeUrl;
     if (!url || !this.adapter) throw new Error('도면 표시가 완료된 뒤 검색할 수 있습니다.');
+    if(this.readyScene){
+      if(!this.adapter.getSceneTextIndex)throw new Error('이 Scene에는 문자 검색 자료가 없습니다. 명시적으로 다시 변환하세요.');
+      return this.adapter.getSceneTextIndex();
+    }
     const cached = this.source.getTextIndex(url);
     if (cached) return cached;
     if (this.pendingIndex) return this.pendingIndex;
@@ -166,6 +191,9 @@ export class ViewerManager {
     return true;
   }
   fitToView() { this.adapter?.fitToView(); }
+  getLoadStrategy(){return this.loadedStrategy;}
+  getSceneArtifact(){return this.adapter?.getSceneArtifact?.();}
+  getSceneRevision(){return this.readyScene?.revision??null;}
   zoomIn() { this.adapter?.zoomIn(); }
   zoomOut() { this.adapter?.zoomOut(); }
   getLayers() { return this.adapter?.getLayers?.() ?? []; }
@@ -224,5 +252,5 @@ export class ViewerManager {
     return this.focusBounds(bounds);
   }
   clearSavedOutlines() { this.adapter?.clearSavedOutlines?.(); }
-  dispose() { this.generation++; this.cancelIndex?.(); this.cancelIndex=undefined; this.pendingIndex=undefined; this.activeUrl=undefined; if(this.ownsSource)this.source.dispose(); this.adapter?.dispose(); this.adapter = undefined; }
+  dispose() { this.generation++;this.sceneAbort?.abort();this.sceneAbort=undefined;this.readyScene=undefined; this.cancelIndex?.(); this.cancelIndex=undefined; this.pendingIndex=undefined; this.activeUrl=undefined; if(this.ownsSource)this.source.dispose(); this.adapter?.dispose(); this.adapter = undefined; }
 }

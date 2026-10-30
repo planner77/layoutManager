@@ -212,6 +212,18 @@ export class CadRepository {
           storagePath: current.storagePath,
         },
       });
+      const sceneTables=await tx.$queryRawUnsafe<{name:string}[]>(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='SceneAsset'");
+      if(sceneTables.length){
+        const assets=await tx.sceneAsset.findMany({where:{versionId:id},
+          select:{id:true,storageLocator:true}});
+        await tx.currentScene.deleteMany({where:{versionId:id}});
+        for(const asset of assets){
+          await tx.sceneOrphanJob.create({data:{id:randomUUID(),assetId:asset.id,
+            storageLocator:asset.storageLocator,state:'CLEANUP'}});
+        }
+        await tx.sceneAsset.deleteMany({where:{versionId:id}});
+      }
       await tx.cadFileVersion.delete({ where: { id } });
       if (auth && allowed) await appendG7CadAudit(
         tx, auth, allowed.actorId, allowed.siteId, 'CAD_VERSION_DELETED',

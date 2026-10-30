@@ -1,3 +1,18 @@
+## ADR-060 — #164/#165 CUSTOM_DTO 영속 Scene와 명시 생성·Scene-first 로더 (2026-10-30)
+
+**결정/상태:** 단일 PR에서 S3 저장→S4 loader를 구현한다. #168의 typed-array 보존 custom DTO를 재사용하며 sidecar metadata도 blob digest/allowlist 검증에 포함한다. 실도면 전체 충실도/운영 포맷 장기 호환이 수용됐다고 주장하지 않는다. 이전 ADR-059/059A의 S2-only 범위는 과거 기록이며 이번에 검증된 지원 subset만 영속 경로에 채택한다.
+
+- Three JSON은 ShapeGeometry 재생성에 따른 buffer 변화, GLB는 hierarchy/material 표현 변화가 관측되어 이번 영속 포맷으로 선택하지 않는다. custom DTO의 unsupported type은 명시 거절하며 legacy 타입 정보 누락도 자동 추정하지 않는다.
+- 최초/명시 재생성은 browser converter, READY 재접속은 bytes restore. CPU-only 지원은 S2에서 입증되지 않았으므로 서버 converter를 새로 우회 구현하지 않는다. browser 제출물은 원본 SHA에 결속된 미신뢰 파생물이고 원본 동등성 증명이 아니다.
+- SQLite transaction과 원격 PUT의 분산 원자성은 주장하지 않는다. immutable bytes readback 검증 뒤 pointer+Audit CAS만 원자 확정한다. 불확실 완료는 보존·추적하며 old READY를 지우지 않는다.
+- Scene 쓰기에 기존 #96 active G7/Auth/Site/CSRF/Audit를 필수로 재사용한다. AUTH 활성 read는 Site 권한을 검사하고 기존 AUTH OFF 공개 CAD read는 유지한다. #98/#83 업무 CRUD는 중복 구현하지 않으므로 독립 APP_CREATED/Memo 영속 연계 AC는 미완료로 남긴다.
+- 신규 exact baseline과 기존 exact baseline을 구분하여 Greenfield schema 확장을 시험한다. 기존 DB를 자동 migrate/adopt하거나 fingerprint를 임의 extra table 허용으로 완화하지 않는다.
+- root가 실제 구현 조정 및 Viewer를 맡고 지정 Developer가 서버/Schema를 맡는 분업은 허용한다. Manager의 문서/AC 선행→실제 Developer 완료보고 검토→독립 QA→판정 순서를 유지하며 사용 모델/실제 대행자를 TestReport에 기록한다.
+
+수용 범위는 개발·합성 검증·단일 PR·CI 시작이다. CI 성공 전 AC 완료 체크/전체 ACCEPT 금지. 병합/GHCR/실 DB·S3·migration 활성화/이슈 종료는 이번 요청의 범위가 아니다.
+
+---
+
 ## ADR-059A — Custom DTO 정규화 버퍼의 저장 타입 보존 (2026-10-30)
 
 - **배경:** #168 P2에서 정규화된 정수 원시값을 Float32로 복원하면 Three BufferAttribute의 `getX/Y/Z` 실효 값이 달라짐. BufferAttribute의 원시 typed array와 normalized flag는 함께 의미를 가진다.

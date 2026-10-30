@@ -1,3 +1,19 @@
+## #164/#165 Scene Asset 사용·운영 경계 (0.46.0 후보, 2026-10-30)
+
+새 Scene Schema의 three-dxf-viewer 정상 조회는 서버 Scene 상태를 먼저 확인합니다. READY이면 immutable Scene bytes/manifest를 검증하여 복원하고 원본 DXF는 요청하지 않습니다. MISSING은 아직 게시된 Scene 없음, REBUILD_REQUIRED는 호환성/무결성 확인 필요, UNAVAILABLE은 접근/전송 장애입니다. 어떤 상태도 사용자 동의 없이 원본을 자동 재파싱하지 않습니다. 기존 Schema의 LEGACY_DISABLED는 별도 레거시 원본 조회 호환 경로입니다.
+
+1. 최초 DXF 등록 후 또는 **도면 → 원본 DXF로 Scene 생성/재생성**에서 원본을 명시적으로 변환합니다. 생성만으로 기존 READY가 바뀌지는 않습니다.
+2. **도면 → Scene Asset 저장**을 선택합니다. 기존 G7 활성 gate와 로그인·Editor 이상·해당 사업장 권한·Origin/CSRF가 필요합니다. 비활성 gate에서 신규 Scene 쓰기를 허용하지 않습니다.
+3. 저장 성공 뒤 재접속/다시 불러오기는 READY를 복원합니다. 동시 변경으로 409가 발생하면 기존 Scene을 유지하며 최신 상태를 다시 조회합니다. 불확실 저장 응답을 이유로 원본/업무자료를 지우지 않습니다.
+
+APP_CREATED 생성 외곽선/메모는 현재 기존 세션 정책을 따르며 #98/#83 독립 서버 영속 연계는 미구현입니다. Scene 저장 성공은 이 업무 객체 저장을 뜻하지 않습니다. 사용자 명시 dxf-viewer 전환은 원본 GET/파싱을 사용하는 레거시 조회입니다. 정확한 원본 추적/서버 canonical attestation은 Scene geometry만으로 승인하지 않습니다.
+
+Scene 최대 bytes는 32 MiB이며 base64 요청과 manifest를 별도 제한·검증합니다. Local은 CAD 저장 루트 아래 `scenes/<server-asset-id>.json`, S3는 서버 설정의 별도 `scene/<server-asset-id>.json` namespace를 사용합니다. Browser는 ID-only API만 사용하고 locator/credential을 받지 않습니다. PUT/readback 후 DB pointer·Audit CAS를 확정하며 불확실 후보는 SceneOrphanJob에 남깁니다. 자동 sweep/실제 S3 정리는 이번 작업에서 실행하지 않습니다.
+
+Schema 정본과 격리 migration 경로는 [Database](Database.md)를 따릅니다. 기존 운영 DB/marker/볼륨을 자동 adopt/migrate하지 않으며 신규 설치 후보의 실제 배포는 이번 범위가 아닙니다. 합성 검증은 임시 SQLite/Local/Mock S3와 독립 BrowserContext를 사용하고, 실 DXF·사내 S3·2대 PC는 #113 후속입니다. 아래 #161~#163 S2-only 설명은 당시 실험 기록으로 보존합니다.
+
+---
+
 ## #161–#163 Scene 합성 실험 실행 (0.45.0 후보, 2026-10-30)
 
 기존 Viewer를 그대로 실행하면 `three-dxf-viewer`의 변환 결과에 Origin/앱 ID가 붙으며 생성 외곽선의 기존 사용법은 같습니다. Scene Asset 저장/재접속/reset API나 메뉴는 아직 없습니다. 업로드 원본·운영 DB·S3 저장소를 별도 생성/이동하지 않습니다.
