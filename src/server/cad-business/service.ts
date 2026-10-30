@@ -2,13 +2,14 @@
 import { randomUUID } from 'node:crypto';
 import {anchorDto,hasAnchorSchema,reconcileOutlineAnchors} from './anchor-service';
 import type {MemoAnchorState} from '@/domain/cad-memo-anchor';
+import {EMPTY_MEMO_SETTINGS,normalizeMemoSettings,type MemoSettings} from '@/domain/memo-schedule';
 import type { Database } from '@/server/db';
 import { writeTransaction } from '@/server/db';
 import { CadError } from '@/domain/cad';
 import { prepareG7CadWrite, requireG7CadPermission, type G7CadWrite } from '@/server/g7-operational/cad-guard';
 import { cadWriteContext } from '@/server/g7-operational/cad-preview-context';
 import { attestTransformedOutlineDraftAgainstImmutableDxf } from '@/server/outline/transform-attestation';
-import { geometry,keys,memoEditOperation,memoText,name,operations,point,provenance,revision,sourceSha,transformed,ID } from './validation';
+import { geometry,keys,memoEditOperation,memoGroupId,memoGroupName,memoText,name,operations,point,provenance,revision,sourceSha,transformed,ID } from './validation';
 import type { GeoJSONOutline } from '@/viewers/core/outline-compute';
 function bad(code:string,status:number):never {throw new CadError(code,'업무 객체를 확인하거나 수정할 수 없습니다.',status);}
 function cas():never {return bad('BUSINESS_REVISION_CONFLICT',409);}
@@ -24,6 +25,14 @@ export async function businessSchema(db:Database):Promise<void>{
   "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('CadOutline','CadMemo','CadBusinessAudit') ORDER BY name");
  if(rows.map(x=>x.name).join(',')!=='CadBusinessAudit,CadMemo,CadOutline')
   bad('BUSINESS_SCHEMA_UNAVAILABLE',503);
+}
+/** Older volumes may be read, but M4/M5 writes require an intact sidecar pair. */
+export async function memoFeatureSchema(db:Database):Promise<boolean>{
+ const rows=await db.$queryRawUnsafe<{name:string}[]>(
+  "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('CadMemoFeature','CadMemoGroup') ORDER BY name");
+ if(rows.length===0)return false;
+ if(rows.map(x=>x.name).join(',')!=='CadMemoFeature,CadMemoGroup')bad('MEMO_FEATURE_SCHEMA_PARTIAL',503);
+ return true;
 }
 async function version(tx:Database | Parameters<Parameters<typeof writeTransaction>[1]>[0],id:string,sha:string){
  const v=await tx.cadFileVersion.findUnique({where:{id},select:{id:true,sha256:true,fileFormat:true}});
@@ -46,15 +55,27 @@ async function audit(tx:Parameters<Parameters<typeof writeTransaction>[1]>[0], p
   versionId:vId,targetKind:kind,targetId:objectId,action,beforeRevision:before,
   afterRevision:after,outcome:'SUCCESS',requestId:proof.requestId,timestampUtc:new Date().toISOString()}});
 }
+type MemoFeatureLike={
+ groupId:string|null;visible:boolean;scheduleEnabled:boolean;startDate:string|null;dueDate:string|null;
+ completionEnabled:boolean;isCompleted:boolean;completedAt:string|null
+};
+const memoFeatureDefault:MemoFeatureLike={groupId:null,visible:true,...EMPTY_MEMO_SETTINGS};
+export const memoGroupDto=(g:{id:string;versionId:string;sourceSha256:string;name:string;
+ sortOrder:number;revision:number;createdById:string;updatedById:string;createdAt:string;updatedAt:string})=>({
+ id:g.id,versionId:g.versionId,sourceSha256:g.sourceSha256,name:g.name,
+ sortOrder:g.sortOrder,revision:g.revision,createdById:g.createdById,updatedById:g.updatedById,
+ createdAt:g.createdAt,updatedAt:g.updatedAt
+});
 export const memoDto=(v:{
  id:string;versionId:string;sourceSha256:string;title:string;content:string;
  anchorX:number;anchorY:number;offsetX:number;offsetY:number;
  createdById:string;updatedById:string;createdAt:string;updatedAt:string;revision:number
-},anchor:MemoAnchorState={mode:'FREE'})=>({
+},anchor:MemoAnchorState={mode:'FREE'},meta:MemoFeatureLike|null=null)=>({
  anchor,id:v.id,versionId:v.versionId,sourceSha256:v.sourceSha256,title:v.title,content:v.content,
  anchorWcsXY:{x:v.anchorX,y:v.anchorY},labelOffset:{x:v.offsetX,y:v.offsetY},
  createdById:v.createdById,updatedById:v.updatedById,createdAt:v.createdAt,
- updatedAt:v.updatedAt,revision:v.revision,textFormat:'plain' as const,persisted:true as const
+ updatedAt:v.updatedAt,revision:v.revision,textFormat:'plain' as const,persisted:true as const,
+ ...(meta??memoFeatureDefault)
 });
 const outlineDto=(v:{
  id:string;versionId:string;sourceSha256:string;sceneRevision:number;origin:string;
@@ -71,7 +92,7 @@ const outlineDto=(v:{
 });
 export class BusinessRepository {
  constructor(readonly db:Database){}
- async list(kind:'memo',versionId:string):Promise<{memos:ReturnType<typeof memoDto>[] }>;
+ async list(kind:'memo',versionId:string):Promise<{memos:ReturnType<typeof memoDto>[];groups:ReturnType<typeof memoGroupDto>[];featuresAvailable:boolean}>;
  async list(kind:'outline',versionId:string):Promise<{outlines:ReturnType<typeof outlineDto>[] }>;
  async list(kind:Kind,versionId:string){
   await businessSchema(this.db);
@@ -83,7 +104,14 @@ export class BusinessRepository {
    const bound=await hasAnchorSchema(this.db)
      ?await this.db.cadMemoAnchor.findMany({where:{versionId,memoId:{in:rows.map(x=>x.id)}}}):[];
    const byId=new Map(bound.map(x=>[x.memoId,x]));
-   return {memos:rows.map(x=>memoDto(x,anchorDto(byId.get(x.id)??null)))};
+   const featuresAvailable=await memoFeatureSchema(this.db);
+   const extra=featuresAvailable?await this.db.cadMemoFeature.findMany({
+    where:{versionId,memoId:{in:rows.map(x=>x.id)}}}):[];
+   const byMemo=new Map(extra.map(x=>[x.memoId,x]));
+   const groups=featuresAvailable?await this.db.cadMemoGroup.findMany({
+    where:{versionId,deletedAt:null},orderBy:[{sortOrder:'asc'},{createdAt:'asc'}],take:21}):[];
+   return {memos:rows.map(x=>memoDto(x,anchorDto(byId.get(x.id)??null),byMemo.get(x.id)??null)),
+    groups:groups.map(memoGroupDto),featuresAvailable};
   }
   return {outlines:(await this.db.cadOutline.findMany({where:{versionId,deletedAt:null},orderBy:{createdAt:'asc'},take:101})).map(outlineDto)};
  }
@@ -92,6 +120,7 @@ export class BusinessRepository {
   const sha=sourceSha(b.sourceSha256),txt=memoText(b.title,b.content);
   const at=point(b.anchorWcsXY),offset=b.labelOffset===undefined?{x:14,y:-12}:point(b.labelOffset);
   await businessSchema(this.db);
+  const featureAvailable=await memoFeatureSchema(this.db);
   return writeTransaction(this.db,async tx=>{
    const allowed=await requireG7CadPermission(tx,proof,'memo:write',{kind:'version',versionId});
    await version(tx,versionId,sha);
@@ -102,8 +131,12 @@ export class BusinessRepository {
     anchorX:at.x,anchorY:at.y,offsetX:offset.x,offsetY:offset.y,
     revision:0,createdById:allowed.actorId,updatedById:allowed.actorId,createdAt:now,updatedAt:now
    }});
+   if(featureAvailable)await tx.cadMemoFeature.create({data:{
+    memoId:id,versionId,sourceSha256:sha,groupId:null,visible:true,
+    scheduleEnabled:false,startDate:null,dueDate:null,completionEnabled:false,isCompleted:false,completedAt:null
+   }});
    await audit(tx,proof,allowed.actorId,allowed.siteId,'MEMO',id,'CREATE',versionId,null,0);
-   return memoDto(v);
+   return memoDto(v,{mode:'FREE'},memoFeatureDefault);
   });
  }
  async editMemo(versionId:string,id:string,body:unknown,proof:G7CadWrite,remove=false){
