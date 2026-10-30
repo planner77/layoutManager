@@ -1,3 +1,13 @@
+## #84/#167 단일 PR 후보 — 신규 Greenfield 앵커와 Origin 초기화 구현 (2026-10-31)
+
+- Main 기준 `34e3a362e9a9d01579d4a61b81b26f4ee935c87b`. #84 우선으로 신규 `CadMemoAnchor` FK·불변 CHECK/trigger/Prisma DTO, verified target의 attach/detach와 CadOutline 변화에 의존 Memo WCS/Revision/Audit 동일 거래를 구현. #167은 SOURCE_ONLY SceneWork 초기화와 ALL의 전체 목록 CAS, soft delete/Audit DB 단일 트랜잭션 및 Viewer 작업 메뉴/확인 UI를 구현. [세부 설계](Issues84-167.md).
+- `src/tests/unit/memo-anchor-origin-reset.test.ts`에 WCS 회전/평행이동 역변환, SceneWork reset, 정확 스냅샷·중복/오류 차단, SQLite 앵커 FK·immutable/연결 해제 회귀를 작성. G7 Greenfield 신규 테이블 생성 검증도 추가.
+- 기존 `CadMemo` 데이터 컬럼은 변경하지 않고, 신규 빈 스키마만 `202610310001_greenfield_anchor_baseline`; 이전 marker를 인식하지만 자동 업그레이드는 없음. `0.47.2` package/lock 동기화.
+- 로컬 Node/Prisma/Typecheck/ESLint/Unit/Integration/Production Build/Playwright/OCI **NOT RUN**; GitHub 최신 HEAD의 PR CI 검증 전 PASS로 간주하지 않는다. 실 CAD/2PC/현장 권한/Volume/S3/DRM H0-H3 및 GHCR/병합/운영 변경 **NOT RUN**.
+- 잔여 #84: 임시 Generated 객체의 자동 Snap 후보 검색, renderer-only 원본 변환의 server persistence, Owner #172 공동 편집 정책 및 실제 사용자/현장 수용은 별도. 임의 삭제/권한 우회로 대체하지 않는다.
+
+---
+
 ## #98/#83 Release 0.47.1 — 확정 Main CI 및 GHCR 쌍 결과 (2026-10-30)
 
 - [PR #171](https://github.com/planner77/layoutManager/pull/171) 최종 검증 SHA `d74d1f312386b020175035d5aa1aaf3066bc144e`, [PR CI #316](https://github.com/planner77/layoutManager/actions/runs/41062911805) `completed/success`, Verify `124086863559`·Docker `124086863008` 모두 SUCCESS. 새 빈 Greenfield 및 자동 E2E 범위; 실 현장/기존 Volume/실 CAD 수용은 아님.
