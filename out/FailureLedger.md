@@ -1,3 +1,12 @@
+## PR #169 — CI 성공 후 Codex P2 2건 보완 및 새 HEAD 게이트 (2026-10-30 KST)
+
+- **기존 성공은 보존:** [PR CI #41000086668](https://github.com/planner77/layoutManager/actions/runs/41000086668)는 HEAD `92d4909233296f9e25a51321df8bf9a1ed52dd21`에서 Verify와 Docker 2개 Job 모두 completed/SUCCESS. 이는 *리뷰 지적 보완 이전* 코드에 대한 성공으로, 새 커밋의 CI PASS를 의미하지 않는다.
+- **사후 Codex P2 ①:** `scene-context.ts`의 `requireSceneRead()`는 Session/Role/Site와 유휴 30분 제한을 검사하지만 정상 Scene status/content GET 후 `lastSeenAt`를 갱신하지 않았다. 장시간 읽기 전용 Viewer 사용자의 유휴 만료 문제가 생길 수 있다. 권한 확인 이후에만 조건부 DB touch를 수행하고 만료/폐기/비활성/사이트 거부에서는 세션을 연장하지 않도록 보완. 통합 회귀는 status + content의 연장 및 401/403 무갱신.
+- **사후 Codex P2 ②:** `viewer.tsx`에서 legacy `?renderer=dxf-viewer`로 열린 상태의 명시 Scene 생성은 state만 three로 바꾸고 URL 변경을 직접 보장하지 않았다. 명시 build 시 `history.replaceState`로 `renderer=three-dxf-viewer`를 동기화하고, legacy → 명시 DXF 변환 → 재접속 시 READY Scene/원본 미재파싱 브라우저 회귀를 추가.
+- **게이트:** 신규 코드/테스트/문서 HEAD의 Typecheck·Lint·전체 Unit/E2E/Docker는 새 PR CI 전 **NOT VERIFIED**. Codex 스레드 `PRRT_kwDOUQjDfc6x1zzg`, `PRRT_kwDOUQjDfc6x1zzl`은 근거 회신 및 resolution 별도 확인 필요. Main behind/mergeable·latest HEAD CI 실제 SUCCESS 후에만 Squash Merge, Main CI, GHCR 게시/이슈 종료 허용. 실제 운영 DB/Scene storage/Prisma/Nginx/서명 변경 금지.
+
+---
+
 ## #164/#165 0.46.0 개발 중 관측 실패 (2026-10-30)
 
 이번 원장은 Root의 실제 실행 보고를 기록하며 Manager가 해당 명령을 재실행한 결과가 아니다. 아래 실패를 최종 재검증 성공으로 소급 삭제하지 않는다. PR CI 실패가 아니라 로컬 구현·회귀 실행 이력이다.

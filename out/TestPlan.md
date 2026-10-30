@@ -1,3 +1,11 @@
+## PR #169 Codex P2 회귀 추가 계획 (2026-10-30)
+
+- `SC-12-SESSION-READ`: 승인된 Scene status GET 및 blob GET 각각 직전 유효 Session `lastSeenAt`를 갱신하되 Site grant 미존재(403), idle-expired/revoked(401)에서는 변경하지 않는다. 테스트 파일 `src/tests/integration/scene-persistence.test.ts`.
+- `SC-17-RENDERER-URL`: `?renderer=dxf-viewer` 경로에서 명시 Scene 생성 후 URL과 mounted renderer가 Three로 함께 전환되고, 재접속 시 이미 게시된 Scene을 사용하므로 원본 DXF GET가 증가하지 않는다. 테스트 `src/tests/greenfield-e2e/first-install.spec.ts`.
+- 기존 PR CI 성공(구 HEAD)과 새 HEAD CI 성공을 구분한다. CI 미실행/실패를 PASS로 기재하지 않는다.
+
+---
+
 ## #164/#165 Scene S3/S4 통합 Test Case (2026-10-30, 실행 전)
 
 모든 시험은 합성 DXF/임시 DB/임시 Local 또는 Mock S3만 사용한다. 병렬 브라우저 실행은 고유 port/output/DB 경로를 사용한다. 아래 계획은 PASS 기록이 아니며 최종 CI 성공 전 Issue AC를 완료로 체크하지 않는다.

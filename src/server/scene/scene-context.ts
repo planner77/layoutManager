@@ -58,4 +58,14 @@ export async function requireSceneRead(request:Request,db:Database,versionId:str
     if(!gate.siteIds.includes(siteId))throw new Error();
     requireResolvedPermission(actor,'cad:read',{kind:'version',versionId},siteId);
   }catch{throw deny('ACCESS_DENIED',403);}
+  // A scope-authorized Scene read is G3 session activity. Fail closed if the
+  // account/session was revoked, disabled or expired during authorization.
+  const touched=await db.authSession.updateMany({
+    where:{id:session.id,revokedAt:null,issuedAt:{lte:now},
+      expiresAt:{gt:now},
+      lastSeenAt:{gt:now-BigInt(SESSION_IDLE_MS),lte:now},
+      user:{is:{status:'ACTIVE',mustChangePassword:false}}},
+    data:{lastSeenAt:now},
+  });
+  if(touched.count!==1)throw deny('UNAUTHENTICATED',401);
 }

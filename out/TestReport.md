@@ -1,3 +1,10 @@
+## PR #169 사후 리뷰 P2 보완 — 재검증 대기 (2026-10-30)
+
+- PR CI [#41000086668](https://github.com/planner77/layoutManager/actions/runs/41000086668)는 원 HEAD `92d4909`의 Verify·Docker Job 모두 SUCCESS. 이후 Codex 리뷰는 **2 P2 unresolved**: 읽기 전용 Scene 조회 활동 시간 미갱신 및 legacy renderer URL 미동기화.
+- 패치 후보: `requireSceneRead`의 승인 완료 후 세션 conditional touch, `buildScene` renderer URL 동기화. 신규 통합/브라우저 회귀를 별도로 추가함. **패치 적용 이후 CI, 재리뷰, 실제 현장, GHCR 상태는 관측 전 NOT VERIFIED**. 이전 로컬 수용을 변경된 코드의 CI 성공으로 전용하지 않는다.
+
+---
+
 ## #164/#165 0.46.0 Scene S3/S4 로컬 구현·QA 수용 (2026-10-30)
 
 - **기준/역할:** Main `0e6e91c`, `feat/issues-164-165-scene-assets`. gpt-6-astra Manager `/root/scene_design`가 Requirements/Architecture/ADR-060/Database/TestPlan을 구현 전에 기록했다. 실제 구현 조정과 Viewer/serializer/UI는 Root(GPT-6), 서버/Schema는 지정 gpt-6-sol Developer `/root/scene_server`가 담당한다. Developer 완료보고와 Manager 소스 검토 뒤 독립 QA `/root/scene_qa`가 집중 검증을 수행했다. 실제 QA 모델은 gpt-6-luna이며 최종 판정은 아래 집중 결과와 Root 전체 회귀를 구분한다.

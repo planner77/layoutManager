@@ -744,6 +744,11 @@ export function CadViewer({
     sceneRequest.current?.abort();
     loadSequenceRef.current++;manager.current?.dispose();source.dispose();
     fallbackTried.current=false;fallbackReason.current=null;
+    // Keep direct/reopened links Scene-first even when conversion starts in
+    // the legacy ?renderer=dxf-viewer mode.
+    const url=new URL(window.location.href);
+    url.searchParams.set('renderer','three-dxf-viewer');
+    window.history.replaceState(null,'',url);
     setRenderer('three-dxf-viewer');setSceneMode('build');setSceneCandidate(false);setSceneNotice(null);
     setLoading(true);setState({status:'원본 DXF 최초 변환·Scene 생성 중…',ready:false});
     resetOutline();resetMemos();setAttempt(value=>value+1);

@@ -11,7 +11,7 @@ import { G7_GREENFIELD_CAPABILITY,G7_GREENFIELD_SCHEMA_ID } from '../../server/g
 import { createDb, type Database } from '../../server/db';
 import { prepareG7CadWrite } from '../../server/g7-operational/cad-guard';
 import { csrfProof } from '../../server/auth/login-service';
-import { newSessionCandidate } from '../../server/auth/session';
+import { newSessionCandidate, SESSION_IDLE_MS } from '../../server/auth/session';
 import { SceneBlobStorage } from '../../server/storage/scene-storage';
 import { SceneRepository, cleanupSceneOrphans } from '../../server/scene/scene-repository';
 import { CadRepository } from '../../server/repositories/cad';
@@ -155,6 +155,42 @@ describe('#164 Scene S3 immutable persistence',()=>{
     expect(response.status).toBe(200);expect(Buffer.from(await response.arrayBuffer())).toEqual(value.bytes);
     expect((await callContent('cad_session='+f.session.rawToken,randomUUID())).status).toBe(404);
     expect(await f.db.sceneAsset.count()).toBe(1);
+  });
+  test('authorized status and content GET refresh idle activity; denied, expired and revoked reads never touch',async()=>{
+    const f=await setup(),value=payload(f.versionId,f.sha);
+    const ready=await f.repo.publish(f.versionId,value.manifest,value.bytes,null,f.proof);
+    const url='https://cad.example.test/api/cad-files/'+f.versionId+'/scene';
+    const read=()=>getScene(new Request(url,{headers:{host:'cad.example.test',
+      cookie:'cad_session='+f.session.rawToken}}),{params:Promise.resolve({versionId:f.versionId})});
+    const readContent=()=>getSceneContent(new Request(url+'/content?assetId='+ready.assetId,{
+      headers:{host:'cad.example.test',cookie:'cad_session='+f.session.rawToken}}),
+      {params:Promise.resolve({versionId:f.versionId})});
+    const old=BigInt(Date.now()-SESSION_IDLE_MS+60_000);
+    const sessionId=f.session.session.id;
+    const record=()=>f.db.authSession.findUniqueOrThrow({where:{id:sessionId}});
+    await f.db.authSession.update({where:{id:sessionId},data:{issuedAt:old,lastSeenAt:old}});
+    expect((await read()).status).toBe(200);
+    expect((await record()).lastSeenAt).toBeGreaterThan(old);
+
+    await f.db.authSession.update({where:{id:sessionId},data:{lastSeenAt:old}});
+    expect((await readContent()).status).toBe(200);
+    expect((await record()).lastSeenAt).toBeGreaterThan(old);
+
+    await f.db.userSiteGrant.delete({where:{userId_siteId:{userId:f.userId,siteId:f.siteId}}});
+    await f.db.authSession.update({where:{id:sessionId},data:{lastSeenAt:old}});
+    expect((await read()).status).toBe(403);
+    expect((await record()).lastSeenAt).toBe(old);
+    await f.db.userSiteGrant.create({data:{userId:f.userId,siteId:f.siteId,grantedAt:BigInt(Date.now())}});
+
+    const idle=BigInt(Date.now()-SESSION_IDLE_MS-1000);
+    await f.db.authSession.update({where:{id:sessionId},data:{lastSeenAt:idle}});
+    expect((await read()).status).toBe(401);
+    expect((await record()).lastSeenAt).toBe(idle);
+
+    await f.db.authSession.update({where:{id:sessionId},data:{
+      lastSeenAt:old,revokedAt:BigInt(Date.now())}});
+    expect((await read()).status).toBe(401);
+    expect((await record()).lastSeenAt).toBe(old);
   });
   test('publish, reopen, idempotent retry, replacement CAS and old immutable content',async()=>{
     const f=await setup(),first=payload(f.versionId,f.sha);

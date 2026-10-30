@@ -159,5 +159,22 @@ test('SC-14–17 authenticated conversion → persisted Scene → independent br
   await expect(fresh.getByTestId('cad-canvas').locator('canvas')).toHaveCount(1);
   expect(gets).toBe(1);
   expect(await fresh.evaluate(()=>(window as unknown as {sceneLoadCounters:{liveWorkers:number}}).sceneLoadCounters.liveWorkers)).toBe(0);
+  // P2 regression: explicit build from the legacy URL must persist the
+  // Three renderer in the URL so a reload uses the saved Scene, not DXF.
+  await fresh.getByRole('button',{name:'보기',exact:true}).click();
+  await fresh.getByRole('menuitemradio',{name:'dxf-viewer',exact:true}).click();
+  await expect(fresh.getByTestId('viewer-active-renderer')).toHaveText('dxf-viewer');
+  await expect(fresh.getByRole('status')).toHaveText('도면 표시 완료');
+  expect(new URL(fresh.url()).searchParams.get('renderer')).toBe('dxf-viewer');
+  await fresh.getByRole('button',{name:'도면',exact:true}).click();
+  await fresh.getByRole('menuitem',{name:'원본 DXF로 Scene 생성/재생성'}).click();
+  expect(new URL(fresh.url()).searchParams.get('renderer')).toBe('three-dxf-viewer');
+  await expect(fresh.getByTestId('viewer-active-renderer')).toHaveText('three-dxf-viewer');
+  await expect(fresh.getByRole('status')).toHaveText('도면 표시 완료',{timeout:30_000});
+  const getsBeforeReload=gets;
+  await fresh.reload();
+  await expect(fresh.getByTestId('scene-status')).toContainText('저장된 Scene Asset 복원');
+  expect(new URL(fresh.url()).searchParams.get('renderer')).toBe('three-dxf-viewer');
+  expect(gets).toBe(getsBeforeReload);
   await consumer.close();
 });
