@@ -1,3 +1,12 @@
+## ADR-062-R1 — #84 브라우저 스냅은 영속 서버 검증과 분리 (2026-10-31)
+
+- 초기 PR #173의 범위 축소를 복구하여 임시 GENERATED 및 DXF_IMPORTED 세션 내부 객체에도 자동 Endpoint/Vertex/Center 후보 탐색을 허용한다. 12 CSS px tolerance와 점수/Scope/finite/visible/원본 소속 검증을 사용하고, 후보는 SceneWork·GeneratedDocument의 살아있는 객체에서만 추출한다.
+- LOCAL WCS는 불변으로 두고 객체의 최신 WCS Affine을 적용해 WORLD 표시한다. Undo/Redo/삭제·동일 ID 복구 동기화하고, SOURCE_ONLY reset은 일시적 RENDER 관계를 BROKEN 상태로 남긴다. 기존 FREE CadMemo server row/타 작성자 권한은 바꾸지 않는다.
+- 영속 서버 의존 객체는 서버에서 검증한 UUID 또는 canonical Source Ref만 허용. 브라우저 임시 ref/Transform은 저장되지 않아 재접속 시 따라오지 않으며 강제로 영속 저장하는 방식은 차단한다. '세션 연결' UI에 이 제한을 명시하고 명시적 위치 저장만 owner/CAS를 통과시킨다.
+- Codex P1 삭제된 Memo에 남는 연결이 뒤따르는 Outline의 롤백을 유발하므로 각 Memo soft-delete·S6 ALL reset에서 같은 거래로 Anchor cleanup을 강제한다. 실 DXF 현장 수용/기존 볼륨 이관/GHCR 비범위.
+
+---
+
 ## ADR-062 — #84 M3 Anchor + #167 S6 Safe Reset (2026-10-31)
 
 - v0.47.1 CadMemo 열 수정 없이 CadMemoAnchor 새 테이블을 신규 Greenfield에서만 설치. 기존 DB baseline/SQL 지문은 독립적으로 검증하고 후행 설치 시 무단 자동 migration/Adopt 금지.

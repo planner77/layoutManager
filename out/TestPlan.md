@@ -1,3 +1,14 @@
+## #84 PR #173 추가 M3 세션 Snap 및 Codex P1 회귀 (2026-10-31)
+
+- TC-M3-SESSION-01: 정확 Version/SHA 및 visible WCS 2D Polygon/Line의 Endpoint/Vertex/Center만 포함. 12px 이내 최근접, 동일 지점 ENDPOINT 우선, 20k 후보 제한, 다른 Version/SHA·숨김·비가역/NaN 변환 거절. DXF Source Handle claim 없이 일반 Render Scene에서 스냅 가능해야 한다.
+- TC-M3-SESSION-02: GeneratedDocument 기반 메모 local=WCS(2,1)에서 Translate(+3,-5), Rotate(90°,origin), Undo/Redo, Delete→BROKEN(last WCS), 동일 ID Undo→ATTACHED; 임의 새 ID로 재연결 금지. MemoSession의 canonically saved WCS/Server DTO에 session target ID가 나타나지 않아야 한다.
+- TC-M3-SESSION-03: SceneWorkDocument DXF_IMPORTED 이동/회전·Undo/Redo에 동일 local anchor 적용; SOURCE_ONLY 이후 LAST-WCS 유지 + RENDER 바인딩 강제 BROKEN. Reload/Renderer/Version의 Session Store 삭제. 세션 현재 WCS 명시 해제는 성공한 server PATCH 이후 관계 정리; PATCH 실패 시 유지.
+- TC-M3-E2E-01: 합성 DXF Viewer에서 WCS(0,0) 메모 배치→ENDPOINT/Vertex 스냅 후보 확인→세션 전용 앵커 상태 표시→세션 연결 해제 후 WCS 보존. 기존 issue82 M1 Zoom/Drag/CSS fullscreen/UI 수용 회귀.
+- TC-M3-P1-01: Memo soft DELETE와 S6 ALL reset에서 종속 CadMemoAnchor를 같은 transaction에 제거, 삭제된 Memo의 dangling ATTACHED 관계 때문에 이후 Outline Move/Delete 또는 SOURCE_ONLY Reset이 실패하지 않음. Audited soft-delete와 원자성 위반 시 전체 rollback.
+- 최신 PR HEAD Typecheck/Lint/Unit/Integration/Next Build/Playwright/Docker Smoke 실행 필요. 이전 Run #318 성공과 중간 취소된 신규 runs는 이 후속 구현의 PASS 증거가 아니다.
+
+---
+
 ## #84 M3 + #167 S6 합성 회귀 계획 (2026-10-31)
 
 - M3-U1: WCS local (2,1), world(12,21)→Translate(3,-5)→(15,16), Rotate 90°, inverse/round-trip, 범위 초과/특이 행렬 거부.

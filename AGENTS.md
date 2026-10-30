@@ -1,3 +1,12 @@
+## #84 PR #173 세션 Snap 누락 기능 보완 (2026-10-31)
+
+- 최신 [M3/S6 설계](out/Issues84-167.md)의 **새 세션 스냅 계약**을 따른다. VERIFIED server CadMemoAnchor와 별도로 Renderer/GeneratedDocument의 임시 WCS 후보(Endpoint/Vertex/Center)를 12 CSS px 안에서만 검색한다. 불변 Version/SHA/Renderer ID와 current Affine을 사용해 Memo local→world를 재투영하며 Translate/Rotate/Undo/Redo/DELETE·SOURCE_ONLY의 기존 데이터/마지막 WCS를 보호한다.
+- 임시 Generated UUID와 DXF_IMPORTED renderer ID는 **브라우저 Session 전용**이다. 이 값을 영속 DTO/API/SQLite/SceneAsset에 sourceRef로 보내거나 사용자 입력만으로 증명하는 것 금지. 서버에 남는 임시 스냅 결과는 합법적인 FREE WCS뿐이며, 연결은 Reload/Renderer/Version 변경 시 사라진다는 안내가 필요하다. 임시 속성의 영구 복원을 CI 성공으로 주장 금지.
+- Codex P1 #173: 삭제된 Memo의 CadMemoAnchor를 함께 정리하지 않으면 그 후 Outline Edit/Reset이 `MEMO_ANCHOR_INTEGRITY`를 발생시키므로 Memo 개별 DELETE와 S6 ALL reset 모두 *같은 SQLite transaction에서* anchor cleanup 후 soft delete+audit를 수행한다. 모든 리뷰 지적은 답변·원장·회귀테스트를 수반한다.
+- 새 PR CI 실행은 **최신 HEAD**에서만 유효하다. 이전 #318 PASS는 새 구현 결과를 검증하지 않았으며, 취소된 중간 #319+ 실행을 PASS로 전용하지 않는다. 병합/GHCR·Issue 종료는 별도 사용자 승인 전 미실행.
+
+---
+
 ## #84/#167 단일 PR 신규 Greenfield M3/S6 계약 (2026-10-31)
 
 - [설계](out/Issues84-167.md)·[원장](out/FailureLedger.md) 참조. 루트 DESIGN.md는 없고 Architecture/Decisions가 기준이다. 한 PR에서 #84 Memo Anchor → #167 Scene Origin reset 순으로 구현. 이번 사용자 범위는 PR CI 시작까지이며 모니터링/병합/GHCR/이슈 종료는 별도 지시 전 금지.

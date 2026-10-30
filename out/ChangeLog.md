@@ -1,3 +1,11 @@
+## v0.47.2 PR #173 M3 추가 보완 (2026-10-31)
+
+- #84 임시 GENERATED / DXF_IMPORTED WCS 후보 ENDPOINT·VERTEX·CENTER 12px 자동 스냅을 구현하고, 브라우저 세션의 Target local anchor와 생성·렌더 Transform/Undo/Redo를 연결. Delete→BROKEN_ANCHOR(last WCS)·동일 ID Undo→복귀, SOURCE_ONLY 강제 해제, 명시적 WCS 확정, 임시 관계 저장/공유 불가 안내.
+- #84/#167 Codex P1 수정: 개별 Memo DELETE 및 전체 초기화 시 dependent Anchor cleanup을 동일 SQLite transaction 내에서 실행해 이후 Outline/CAD 작업 불필요한 충돌 차단.
+- 신규 Unit/Chromium E2E 작성; 실제 최신 HEAD CI 성공은 실행 결과 확인 전 보장하지 않음. 운영 DB/Volume Migration, 서버에 저장되지 않은 SceneWork 영속 전환, Field Approval은 제외.
+
+---
+
 ## v0.47.2 구현 후보 — Issue #84 M3 / #167 S6 (2026-10-31)
 
 - 업무 메모 FREE/ATTACHED/BROKEN_ANCHOR, 서버 영속 APP_CREATED UUID 및 인증된 SOURCE Ref 연결; Outline move/rotate/delete 시 종속 Memo world WCS/revision/audit 동기화.

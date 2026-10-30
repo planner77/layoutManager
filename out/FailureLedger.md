@@ -1,3 +1,14 @@
+## #84 / PR #173 — 세션 스냅 누락 보완·Codex P1 리뷰 및 CI 중간 실행 (2026-10-31 KST)
+
+- **근거:** 사용자가 PR #173의 원래 #84 AC 중 임시 Generated 자동 스냅·이동/회전/Undo/Redo 및 서버에 영속되지 않은 DXF_IMPORTED SceneWork 연계를 복구하도록 지시. 이전 구현은 서버 CadMemoAnchor만 구현하여 이를 제한한 것을 수정한다. 설계 [out/Issues84-167.md](Issues84-167.md)와 원래 [#84](https://github.com/planner77/layoutManager/issues/84)의 M3-AC1~05 참조.
+- **이전 검증과 한계:** 최초 [PR CI #318 / Run #41123776757](https://github.com/planner77/layoutManager/actions/runs/41123776757) `completed/success` Verify+Docker 두 Job이 통과한 것은 **보완 전** HEAD `ee4311946b5185c3d2c5c4c830996d38829599f9`에 한정. 이어진 #319~#329 중간 PR CI는 연속 브랜치 업데이트로 `cancelled` 관측, 새 코드의 테스트 PASS로 간주하지 않는다. 코드 갱신 중 Run #330 `41126777239`는 실행 중 관측됐으나 문서/코드 최종 HEAD와 다르면 최종 검증 근거로 사용하지 않는다.
+- **Codex P1 실제 리뷰:** [#4428206096](https://github.com/planner77/layoutManager/pull/173#discussion_r4428206096) `BusinessRepository.editMemo(remove)`가 soft-deleted Memo의 CadMemoAnchor를 남기는 P1. 이후 Outline move/delete의 `reconcileOutlineAnchors`가 live Memo 부재로 `MEMO_ANCHOR_INTEGRITY`를 발생시켜 해당 Outline 작업 전체 rollback. SOURCE_ONLY reset의 `RESET_ANCHOR_INTEGRITY` 경로도 위험. **수정:** `editMemo`에서 `(operation==='move'||remove)&&anchorAvailable`로 같은 DB 거래의 dependent link delete, `reset-service.ts` ALL의 사전 `cadMemoAnchor.deleteMany` 같은 tx. 리뷰 comment `4428381918` 답변 및 스레드 Resolved 확인. `tests/unit/memo-anchor-origin-reset.test.ts`에 삭제 경로 코드 회귀 가드 추가.
+- **보완 코드:** 브라우저 전용 `MemoSessionSnapStore`(Version/SHA 및 Viewer 세션 한정, 서버 DTO/DB 저장 없음), `ThreeDxfViewerAdapter.getMemoSnapTargets`의 현재 2D 생성 Polygon 정점·중심 및 지원 렌더 Endpoint/Vertex/Center, 12 CSS px 최근접·20k 포인트·visible/finite/Scope 필터. `CadViewer`의 좌표 배치·포인터 drag·WCS 이동 완료 시 최신 스냅 검증 후 local 좌표 연결; 객체 Translate/Rotate·Undo/Redo에서 현재 transform으로 재투영, Delete 후 마지막 WCS/BROKEN, 동일 object ID Undo 재연결. SOURCE_ONLY는 RENDER session 참조를 강제 BROKEN; ALL은 모든 임시 참조 삭제. 명시 해제는 작성자-only 서버 PATCH move CAS 또는 M1 로컬 move 성공 뒤 관계 삭제; 단순 변경 미검증 객체 ID를 서버 CadMemoAnchor로 전달하지 않음.
+- **신규 시험:** `tests/unit/memo-session-snap.test.ts`는 GENERATED/RENDER transform 90°·삭제/Undo/S6·스코프/visibility/20k 상한 및 server DTO 비변경을 테스트. `tests/e2e/issue82-cad-memo.spec.ts` M3 별도 케이스는 합성 DXF WCS(0,0) auto snap→UI 세션 표시→명시 해제/좌표 보존을 검증. App/Server/Unit/TestPlan/Report/Architecture/ADR 설계 갱신. 로컬 환경은 GitHub clone DNS 접근 불가였으므로 npm/TS/Lint/Vitest/Playwright/OCI 로컬 실험은 **NOT RUN**.
+- **불변 안전 경계:** 임시 UUID와 RENDER 작업 delta는 영속 객체/Source Canonical Ref의 신뢰증거가 될 수 없음. Server G7/Site/Owner/Revision·감사 계약은 유지하며 화면에서 임시로 움직인 좌표는 명시 서버 저장 전 재접속/타 PC에 보존되지 않는다. 현장 CAD/GPU·2PC/실 DB·기존 볼륨 Migration/GHCR/병합/Issue 종료 미실행. **최종 HEAD의 리뷰·충돌·PR CI 기동은 GitHub 실제 조회 후 별도 기록**, CI 시작 ≠ SUCCESS. 중간 취소 run이나 이 기록 자체를 새 HEAD PASS로 전용하지 않는다.
+
+---
+
 ## #84/#167 PR #173 — 초기 리뷰/충돌·CI 실행 증거 (2026-10-31)
 
 - **PR:** [#173](https://github.com/planner77/layoutManager/pull/173), `#167 | Origin-aware Scene reset and persistent Memo anchors (#84)` / 한 PR / 순서 #84→#167. 검증 전 HEAD `81c6077248b41f0e1d79a1332bdd58891ef9ddbd`.

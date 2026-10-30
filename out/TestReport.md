@@ -1,3 +1,12 @@
+## #84 PR #173 M3 세션 스냅 누락 보완 — 검증 인계 (2026-10-31)
+
+- 구현: 임시 Generated·DXF_IMPORTED WCS Endpoint/Vertex/Center 12 CSS px 후보, scoped MemoSessionSnapStore, session-only WCS/transform reconciliation, Undo/Redo/삭제 후 BROKEN·동일 ID Undo 복원, SOURCE_ONLY 강제 해제, 명시적 최신 WCS 서버 PATCH/로컬 M1 연결 해제. Reader/Writer/Site/Revision server permission 정책 변경 없음.
+- 해결한 리뷰: [PR #173 Codex P1](https://github.com/planner77/layoutManager/pull/173#discussion_r4428206096), Memo 개별 soft delete 또는 S6 전체 reset 직후 남은 ATTACHED anchor 때문에 이후 Outline Edit를 차단하는 문제. 모두 삭제 전 동일 transaction에서 anchor cleanup으로 보완, 리뷰에 답변·Resolved 기록.
+- 검사: `tests/unit/memo-session-snap.test.ts` 및 `tests/e2e/issue82-cad-memo.spec.ts` M3 스냅 E2E, `tests/unit/memo-anchor-origin-reset.test.ts` P1 가드 추가. 현재 GitHub 커밋마다 진행된 #319~#329 CI는 연속 push에 의해 취소된 것으로 관측, 기존 Run #318은 수정 전 HEAD 성공. **새 최신 HEAD 최종 PASS는 아직 확인되지 않았다.**
+- Local npm/Typecheck/Unit/Playwright/Docker 등 연결된 로컬 저장소 접근 불가로 실행하지 못했고, CI 요청은 최신 PR HEAD 실행 시작까지만; 신규 현장 2PC·실 CAD/DRM/DB 기존 볼륨·GHCR 운영 릴리스 불변.
+
+---
+
 ## #84/#167 단일 PR 후보 — 신규 Greenfield 앵커와 Origin 초기화 구현 (2026-10-31)
 
 - Main 기준 `34e3a362e9a9d01579d4a61b81b26f4ee935c87b`. #84 우선으로 신규 `CadMemoAnchor` FK·불변 CHECK/trigger/Prisma DTO, verified target의 attach/detach와 CadOutline 변화에 의존 Memo WCS/Revision/Audit 동일 거래를 구현. #167은 SOURCE_ONLY SceneWork 초기화와 ALL의 전체 목록 CAS, soft delete/Audit DB 단일 트랜잭션 및 Viewer 작업 메뉴/확인 UI를 구현. [세부 설계](Issues84-167.md).
