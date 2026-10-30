@@ -5,6 +5,7 @@
 export type MemoWcsXY = Readonly<{ x: number; y: number }>;
 export type MemoScope = Readonly<{ versionId: string; sourceSha256: string }>;
 import type {MemoAnchorState} from './cad-memo-anchor';
+import {dateOnly,EMPTY_MEMO_SETTINGS,normalizeMemoSettings,type MemoSettings,type MemoSettingsInput} from './memo-schedule';
 export type MemoDraft = Readonly<{
   id: string;
   versionId: string;
@@ -23,6 +24,11 @@ export type MemoDraft = Readonly<{
   createdById?: string;
   updatedById?: string;
   anchor?: MemoAnchorState;
+  /** #85/#86: only server-returned persisted settings authorize shared visibility. */
+  groupId?:string|null;
+  visible?:boolean;
+  scheduleEnabled?:boolean;startDate?:string|null;dueDate?:string|null;
+  completionEnabled?:boolean;isCompleted?:boolean;completedAt?:string|null;
 }>;
 export type PersistedMemoDraft=MemoDraft & Readonly<{
  revision:number;persisted:true;createdById:string;updatedById:string;
@@ -111,8 +117,22 @@ export class MemoSession {
     const txt=normalizeMemoText(record.title,record.content);
     if(record.anchor && !['FREE','ATTACHED','BROKEN_ANCHOR'].includes(record.anchor.mode))
       throw new Error('서버 앵커 상태가 유효하지 않습니다.');
+    const scheduleEnabled=record.scheduleEnabled??false,completionEnabled=record.completionEnabled??false;
+    const startDate=dateOnly(record.startDate??null),dueDate=dateOnly(record.dueDate??null);
+    if(typeof scheduleEnabled!=='boolean'||typeof completionEnabled!=='boolean'||
+       typeof (record.isCompleted??false)!=='boolean'||typeof (record.visible??true)!=='boolean'||
+       (record.groupId!=null&&!uuidV4.test(record.groupId))||
+       (!scheduleEnabled&&(startDate!==null||dueDate!==null))||
+       (startDate&&dueDate&&startDate>dueDate)||
+       (!completionEnabled&&Boolean(record.isCompleted))||
+       (Boolean(record.isCompleted)!==Boolean(record.completedAt))||
+       (record.completedAt&&!Number.isFinite(Date.parse(record.completedAt))))
+      throw new Error('서버 메모 일정·완료 정보가 유효하지 않습니다.');
     const safe:PersistedMemoDraft={...record,...txt,anchorWcsXY:assertMemoWcsXY(record.anchorWcsXY),
-      labelOffset:assertMemoWcsXY(record.labelOffset)};
+      labelOffset:assertMemoWcsXY(record.labelOffset),
+      groupId:record.groupId??null,visible:record.visible??true,
+      scheduleEnabled,startDate,dueDate,completionEnabled,isCompleted:record.isCompleted??false,
+      completedAt:record.completedAt??null};
     this.records.set(record.id,safe);
     return safe;
   }
@@ -127,7 +147,8 @@ export class MemoSession {
     const timestamp = new Date().toISOString();
     const memo: MemoDraft = {
       id: input.id, ...this.scope, anchorWcsXY, labelOffset: { ...defaultLabelOffset },
-      ...text, textFormat: 'plain', createdAt: timestamp, updatedAt: timestamp,
+      ...text, ...EMPTY_MEMO_SETTINGS, groupId:null, visible:true,
+      textFormat: 'plain', createdAt: timestamp, updatedAt: timestamp,
     };
     this.records.set(memo.id, memo);
     return memo;
@@ -148,6 +169,20 @@ export class MemoSession {
     const updated = { ...current, anchorWcsXY: next, updatedAt: new Date().toISOString() };
     this.records.set(id, updated);
     return updated;
+  }
+  /** Session-only metadata update. The server path must use Revision CAS instead. */
+  updateMetadata(id:string,meta:{groupId:string|null;visible:boolean;settings:MemoSettingsInput},scope:MemoScope):MemoDraft{
+    const current=this.requireMemo(id,scope);
+    if(meta.groupId!==null&&!uuidV4.test(meta.groupId))throw new Error('그룹 ID가 유효하지 않습니다.');
+    if(typeof meta.visible!=='boolean')throw new Error('메모 표시 설정이 유효하지 않습니다.');
+    const previous:MemoSettings={
+      scheduleEnabled:current.scheduleEnabled??false,startDate:current.startDate??null,
+      dueDate:current.dueDate??null,completionEnabled:current.completionEnabled??false,
+      isCompleted:current.isCompleted??false,completedAt:current.completedAt??null};
+    const settings=normalizeMemoSettings(meta.settings,previous);
+    const next={...current,groupId:meta.groupId,visible:meta.visible,...settings,updatedAt:new Date().toISOString()};
+    this.records.set(id,next);
+    return next;
   }
   remove(id: string, scope: MemoScope): void {
     this.requireMemo(id, scope);
