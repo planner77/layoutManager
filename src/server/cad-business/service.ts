@@ -142,6 +142,14 @@ export class BusinessRepository {
   }else if(b.mode==='SOURCE_CANONICAL'){
    if(b.geometry!==undefined||b.derivedFrom!==undefined||b.sourceExport===undefined)bad('OUTLINE_SOURCE_MODE_INVALID',400);
    validationMode='SOURCE_CANONICAL';
+   // The read/CPU-heavy immutable DXF attestation must never start
+   // until Version -> Site write scope is checked against the live session.
+   // Recheck inside the final CAS+Audit transaction to close the TOCTOU window.
+   await writeTransaction(this.db,async tx=>{
+    await requireG7CadPermission(tx,proof,'outline:write',{kind:'version',versionId});
+    await version(tx,versionId,sha);
+    await scene(tx,versionId,srev);
+   });
    // Server-held immutable bytes and #97 handle/canonical attestation; never trust browser source claims.
    const cad=cadWriteContext(proof);
    try{
