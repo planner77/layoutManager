@@ -1,3 +1,9 @@
+## ADR-062 — #98/#83 독립 업무 영속·감사 정책 (2026-10-30)
+
+SceneAsset은 불변 렌더 산출물이고 CadOutline/CadMemo는 별도 Revision·출처 불변·업무 감사 데이터다. 새 empty Greenfield 3개 테이블만, 기존 DB 마이그레이션 금지. 익명 CAD 조회와 업무 읽기 분리, Site-Scoped Reader/Editor 및 Memo 작성자-only 변경. APP_CREATED WCS와 SOURCE_CANONICAL 서버 SHA/Handle 검증을 분리. CAS/논리 삭제/append-only audit 실패 시 전체 rollback. Show/Hide 비영속; Scene 변경 시 기존 앵커 강제 재배치 금지. #65/#84·타 Editor·물리 삭제는 승인 이전 기본 거부. [설계](Issues98-83.md).
+
+---
+
 ## ADR-061 — #166 렌더 객체 일반 작업, 원본 정밀 모드, 불변 Scene 차분 (2026-10-30)
 
 **결정:** 지원되는 정상 Three Scene은 Handle/원본 Worker의 성공과 무관하게 일반 업무 작업을 허용한다. S4에서 렌더 projection 수를 mappedSource로 표시한 것은 정밀 출처 보증이 아니므로 별도 수치와 모드로 교정한다. 기존 SOURCE/GENERATED 호환을 위해 RENDER ref를 추가하고 DXF_IMPORTED/APP_CREATED 도메인 Origin은 그대로 유지한다.

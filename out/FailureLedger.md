@@ -1,3 +1,46 @@
+## #98/#83 PR #171 — 최신 성공 CI·GHCR 릴리스 버전 충돌 예방 (2026-10-30 KST)
+
+- **검증 완료:** [PR CI #315 / Run 41059992557](https://github.com/planner77/layoutManager/actions/runs/41059992557) 최종 HEAD `8af8b65d016865498a67f6ee4cf70184a0ad22c4`, `completed/success`. Verify Job 124077023981(Prisma/Typecheck/Lint/Unit+Integration/Next Production Build/Chromium E2E/G7 Runtime·Greenfield·Legacy E2E)와 Docker Job 124077024801(기본/standalone/App+Migrator/Migration/Compose Greenfield Admin CAD restart smoke) 각각 SUCCESS. 이전 #311/#314 실패 기록은 아래 역사 보존. 실제 현장 DXF/보존 데이터/다중 에디터/실 운영 전환 검증 증거는 아님.
+- **리뷰·충돌 검사:** [PR #171](https://github.com/planner77/layoutManager/pull/171) Codex P1 1건/P2 2건 답변 후 3/3 Resolved, 미해결 0, main `db2f47f8f4a85c12d6651a8b000a5755ea507926` 대비 behind=0, GitHub `mergeable=true`. Owner Managed 진행 요청은 과거 실험 결과를 실제 현장 PASS로 승격하지 않는 범위.
+- **GHCR 릴리스 게이트:** [이전 Main CI 41050349517](https://github.com/planner77/layoutManager/actions/runs/41050349517) 완료 SUCCESS, App `ghcr.io/planner77/layoutmanager:0.47.0` sha256:b43dcb20c50f8de378595d5add0263bb062df350a3b75d0a28c87c1216df8be4 및 Migrator `:0.47.0-migrate` sha256:075f32ed56ea4e52d1966ba2e716c0e26d97039d23f41f1bfc282be25130e6c2 **게시 완료 확인**; Git tag `v0.47.0` 존재. 현행 `.github/workflows/docker-publish.yml` main 의 `release_tag.created=false` + version image pair 존재 시 재빌드/정식 태그 갱신을 생략하므로 이번 변경을 버전 `0.47.0`에 병합할 경우 GHCR 게시되지 않음.
+- **보완책:** 기존 `v0.47.0` 절대 재이동하지 않음. `src/package.json` + lock 일치 `0.47.1`로 승격(`v0.47.1` 태그 사전 조회 NOT_FOUND); 업무 DDL/App·Migrator는 같은 검증 코드 브랜치로 구성. 새 버전 변경 후 **다시 PR CI 검증 필수**: 기존 Run #315 성공을 `0.47.1` 새 커밋에 소급 금지. 통과한 최신 HEAD에서만 Squash Merge 후 Main release-scope/build-and-push 두 단계 통해 candidate digest 검증 후 `:0.47.1[-migrate]`와 `:latest[-migrate]` 승격한다. Main CI 시작을 GHCR 게시 성공이라 기록하지 않음.
+- **미충족 AC 별도 처리:** #98 Global Type(#65), #83 작성자 외 Editor 수정 정책/현장 타 PC 동시성, #84 GENERATED-linked BROKEN_ANCHOR, 기존 DB 자동 이관(Owner 폐기), 실제 물리 Backup/Restore와 현장 수용은 여기서 완료 주장 금지. Owner의 이슈 종료 지시를 이행할 때 별도 후속 이슈/기존 #65/#84로 책임 이관 후 명시적으로 부분 수용 범위를 기록하며 runtime Auth·Writer 활성화/현장 데이터 접근은 하지 않음.
+
+---
+
+## #98/#83 PR #171 — PR CI #314 신규 Unit Suite server-only import 실패 (2026-10-30 KST)
+
+- **실패 확인:** [Run #41058299070](https://github.com/planner77/layoutManager/actions/runs/41058299070), workflow **#314**, attempt 1, 정확 HEAD `839fcf87fe1154aa2a4d542b2e78d9ff1be19acd`, `completed/failure`. Docker Image Size/Migration/Runtime Smoke Job [124072053492](https://github.com/planner77/layoutManager/actions/runs/41058299070/job/124072053492) **SUCCESS**. Verify Job [124072054040](https://github.com/planner77/layoutManager/actions/runs/41058299070/job/124072054040) **FAILURE**, 실패 단계는 **Unit 및 Integration 테스트**. Typecheck, ESLint 앞선 두 단계는 SUCCESS. Unit 전체 **95개 파일 중 94 PASS / 1 FAIL**, 실행된 **646 tests PASS**, 문제 suite는 평가 전 import 실패로 테스트 케이스 실행 0. Production Build/E2E는 실행되지 않았으므로 PASS 주장 금지.
+- **정확한 스택/원인:** `tests/unit/cad-business-contract.test.ts`가 `BusinessRepository`를 `../../server/cad-business/service`에서 직접 **value import**. 이 경로가 인증·서버 DB 모듈의 `server-only`를 전이 import해 일반 Vitest worker의 `node_modules/server-only/index.js:1:7`에서 **`Error: This module cannot be imported from a Client Component module. It should only be used from a Server Component.`** 발생. 이는 운영 서버가 클라이언트로 누출된다는 관측이 아니며, 신규 테스트의 **환경 경계 위반**. G7 `server-only` 보호/런타임 권한 정책을 우회하여 해결하지 않는다.
+- **수정:** `src/server/cad-business/validation.ts`에 server-independent pure `memoEditOperation(raw,remove)` 추가. `remove=false`는 `text|move`만 수용하고 `delete` 등은 `BUSINESS_OPERATION_INVALID 400`; `remove=true`인 DELETE에서만 `delete` 반환. `service.ts`는 직접 분기 대신 이 함수 사용하므로 HTTP method 기반 삭제/감사 응답 의미 유지. 단위 테스트는 `BusinessRepository`, `Database`, `G7CadWrite` server-only import 제거, 순수 검증 함수의 허용/거부/DELETE 테스트와 서비스의 DELETE 감사 분기 정적 연결 증거로 변경; 기존 Schema DDL, WCS·Memo Session, source transform tests 유지.
+- **재발 방지:** Vitest의 일반 worker에서 서버 전용 Repository를 직접 로드하지 말고 불변 입력 정책은 순수 모듈로 분리해 검증. 통합 실제 DB/Auth는 별도 승인된 실행 환경에서 수행하고, 테스트 통과를 실 운영/현장 수용으로 간주하지 않음. `server-only` 패키지 mock/빌드 조건 해제 금지. 이전 CI #311의 TypeScript 33 오류는 새 #314의 Typecheck SUCCESS와 구분해 역사 보존.
+- **리뷰/충돌 당시 증거:** PR #171 리뷰 P1 1건/P2 2건 3/3 Resolved, 현재 미해결 0; Main `db2f47f8f4a85c12d6651a8b000a5755ea507926` 대비 behind=0, mergeable=true, 충돌 없음. 보완 이후 최신 PR CI 결과는 실행 전에 **NOT VERIFIED**. 요청 범위는 새 PR CI 시작까지로, 모니터링·병합·Main CI·GHCR·Issue 종료 미실행.
+
+---
+
+## #98/#83 PR #171 — PR CI #311 실패 원인·보완·리뷰/충돌 원장 (2026-10-30 KST)
+
+- **실제 실패 증거:** [Run #41056355838](https://github.com/planner77/layoutManager/actions/runs/41056355838) attempt=1, workflow run number **311**, HEAD `b7e499dbd8726d4ad002a9679ab297423d5c2374`, `completed/failure`. Verify Job [124064761375](https://github.com/planner77/layoutManager/actions/runs/41056355838/job/124064761375) `failure`, Docker image size/migration/runtime smoke Job [124064760825](https://github.com/planner77/layoutManager/actions/runs/41056355838/job/124064760825) `failure`. 이 Run이 새 HEAD를 검증했다는 주장은 금지.
+- **Verify 직접 원인:** `npm run db:generate` SUCCESS 뒤 TypeScript 검사 `tsc --noEmit`에 **33개의 strict TS 오류** (TS18048, TS18047, TS18046, TS2719, TS2322, TS7006, TS2339). 신규 `validation.ts`의 arrow `never` 처리 분기 후 타입 축소 미인식, `service.ts`의 nullable Version/Memo/Proof와 `kind` 값 반환, 개별 GET의 `data.memos/outlines` union 타입 미좁힘이 직접 원인. ESLint/Unit/Next Build/Playwright/Greenfield Browser는 **SKIPPED**로 별도 기록하며 PASS 아님.
+- **Docker Job 직접 실패:** `Build pre-change baseline (same source, original Dockerfile)`가 Next Production Build의 동일 `app/api/.../memos/[memoId]/route.ts:37` **TS18048**에서 중단. 따라서 Docker/migrator smoke는 이후 단계 **SKIPPED**이며, 이번 Docker 실패를 독립 이미지 크기/일시적 레지스트리 오류라고 단정하지 않는다.
+- **Codex P1 (runtime closure):** [#4423677090](https://github.com/planner77/layoutManager/pull/171#discussion_r4423677090) Migrator의 explicit `COPY` 목록에서 신규 `server/cad-business/schema-ddl.ts` 빠져 `g7-greenfield.ts auto` 모듈 import 실패 가능. `src/Dockerfile`에 COPY + 런타임 `CAD_BUSINESS_DDL.length === 11` 로딩 검사, `cad-business-contract.test.ts` static regression 추가. Run #311은 Docker build가 앞서 실패했으므로 이 모듈 오류를 **실제로 관측한 것 아님**.
+- **Codex P2 (Memo DELETE):** [#4423677104](https://github.com/planner77/layoutManager/pull/171#discussion_r4423677104) PATCH `operation:delete`를 허용하면서 soft-delete를 실행하나 Audit EDIT/일반 DTO를 반환하던 동작 발견. PATCH는 `text|move`만 허용, DELETE method만 `remove=true` 분기로 실제 삭제·DELETE Audit·삭제 응답을 함께 수행. 음성 테스트 추가.
+- **Codex P2 (Source transform):** [#4423677117](https://github.com/planner77/layoutManager/pull/171#discussion_r4423677117) 기존 임시 GENERATED translate/rotate 후 v1/v2 내보내기에는 원본 base 및 실제 `transformOperations`가 없어 #97 canonical 재검증이 `OUTLINE_GEOMETRY_MISMATCH`로 거절됨. GeneratedDocument에서 allowed operation history를 객체별로 불변 보존하고 Undo/Redo로 함께 복원, Adapter→`buildServerSourceOutlineExport`에서 base + 실제 ops를 전달. 원본 SHA/Handle/canonical, 임의 raw affine 거절 유지. `source-outline-persistence.test.ts`에 translate→rotate→serialize→D2 검증/undo-redo/위조 차단 추가.
+- **보완된 코드:** 신규 서비스 `bad/invalid`를 함수 선언 `never`로 변경해 정적 타입 축소를 명시하고 `BusinessRepository.list`에 discriminated overload를 추가함. 직접 수정 대상: `src/server/cad-business/{validation,service}.ts`, `src/app/api/.../[memoId],[outlineId]/route.ts`는 기존 코드에 overload 적용, `src/Dockerfile`, `src/domain/{generated-document,outline-draft}.ts`, `src/viewers/{core,three-dxf-viewer}/adapter.ts`, `src/features/cad-viewer/viewer.tsx`, 신규 Unit 테스트 2건.
+- **리뷰 완료:** P1 1건/P2 2건 각각 코드·검증 근거 회신 후 **3/3 Resolved**, 미해결 0([PR #171](https://github.com/planner77/layoutManager/pull/171)); 보완 코드 HEAD `275fd74b6a893b181d34cff0dd3dce5cb18e7d75`. 병합 게이트: 검사 당시 Main `db2f47f8f4a85c12d6651a8b000a5755ea507926` 대비 `behind=0`, PR `mergeable=true`, 충돌 없음.
+- **검증 한계:** CI #311 실패 결과는 보존하며 새 보완 HEAD의 Unit/Typecheck/Docker/Next/E2E는 최종 CI 전 **NOT VERIFIED**. 외부 실제 현장 CAD·GPU·S3·운영 DB/Volume/Compose·Greenfield 기존 데이터 이관/물리 삭제, GHCR 게시·병합·Issue 종료 **NOT RUN**. 사용자가 요청한 것은 새 PR CI 시작까지만이며 모니터링은 생략한다.
+
+---
+
+## #98/#83 신규 PR 후보 — 구현 시점 실패·리뷰/충돌 원장 (2026-10-30)
+
+- 신규 후보 CI/유닛/도커 실험 오류 관측: **없음** — 현재 증거 상태는 실행 전 **NOT RUN**이지 PASS가 아님. 역사적 실패는 아래 그대로 보존.
+- 위험 예방: 기존 G7/Scene baseline DB를 업무 테이블로 무단 변경하지 않고 신규 exact business baseline으로 분리. 업무 CRUD는 schema/ACTIVE Auth/Site/FK/CSRF/CAS 미충족 시 거절; 삭제는 논리적으로 수행; 감사 실패와 메모 타 작성자 수정은 전체 거절.
+- 리뷰 스레드: 이 브랜치로 신규 PR 생성 예정으로 생성 전 자체 스레드 없음. 생성 후 미해결 threads, base 충돌을 별도 확인. #65/#84/Old volume 이전/retention/Memo Owner 정책은 잔여 게이트로 보존.
+- 정적 테스트 소스 작성. Typecheck/Lint/Unit/Integration/Next Build/E2E/OCI/현장/운영 migration/GHCR는 **NOT RUN/NOT VERIFIED**. 실제 CI 시작·결과·리뷰 조치는 후속 기록. 코드 작성만으로 Issue AC 완료 처리 안 함.
+
+---
+
 ## #166 PR #170 — 최종 CI 성공·Owner Managed Squash·Main GHCR 게시 시작·Issue 완료 (2026-10-30 KST)
 
 - **최종 검증 HEAD:** [PR #170](https://github.com/planner77/layoutManager/pull/170) `e9af3d192cb513d4182037f0431d5db5f14a4181`, [PR CI #41047867574](https://github.com/planner77/layoutManager/actions/runs/41047867574) `completed/success`, Verify `124036411468`와 Docker image/migration/runtime smoke `124036411148` 두 Job 모두 SUCCESS. 구 HEAD `1b78b89`의 Run #41047100655는 취소 이력이며 최종 PASS로 전용하지 않는다.

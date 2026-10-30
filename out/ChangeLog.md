@@ -1,3 +1,21 @@
+## 0.47.1 — #98/#83 CadOutline·CadMemo 별도 업무 영속 Release 후보 (2026-10-30)
+
+- 기존 0.47.0 GHCR App/Migrator 정식 쌍을 덮어쓰지 않도록 `src/package.json`과 lockfile을 함께 0.47.1로 승격.
+- 신규 빈 Greenfield에 CadOutline, CadMemo 및 불변 감사 테이블. 사이트/세션 검증, WCS 좌표, SOURCE SHA/Handle 확인, Revision CAS, 논리 삭제, 별도 영속 Overlay 및 메모 재접속 복원.
+- PR #171 Codex P1/P2 세 건 보완, #311 strict TypeScript·#314 Vitest server-only import 실패 회귀를 보완하고 #315 두 Job 성공 확인. 버전 bump 이후 최신 CI 성공/병합/Main CI/GHCR 게시 사실은 각각 실제 관측하기 전 미확인.
+- #65, #84, Editor 공동 편집 및 실 현장 이전/수용은 별도이며 운영 데이터/볼륨/DRM/S3 무단 변경 없음.
+
+---
+
+## #98/#83 업무 외곽선·메모 별도 영속 PR 후보 (2026-10-30)
+
+- 신규 빈 Greenfield DDL에 CadOutline/CadMemo/CadBusinessAudit, 불변·append-only SQLite trigger와 Prisma 모델 추가. 기존 Scene·구 baseline fingerprint·서버 G7 인증 정책 유지.
+- G7 ACTIVE Version-Site 읽기/쓰기, Memo 작성자-only 수정/삭제, Outline Site Editor 협업, Revision CAS/Soft Delete/감사. APP_CREATED 독립 WCS 기하와 서버 소유 SOURCE SHA/Handle canonical 검증을 분리.
+- Memo Viewer: ACTIVE 재접속 서버 복원과 분리된 text/move 작업; OFF 기존 임시 M1 동작. Outline Viewer: 명시적 서버 저장, 개별 WCS Overlay, 이름/위치/회전/논리 삭제와 세션 Show/Hide.
+- 타입 #65, 연결 Memo #84, 기존 볼륨 전환, QA/CI 결과 확인, 병합/GHCR/배포/이슈 종료는 별도.
+
+---
+
 ## 0.47.0 후보 — #166 Scene S5 일반 객체 작업
 
 - 원본 Handle 매핑과 독립적인 Three.js Stable ObjectRef 선택, 지원 WCS 2D 렌더 기하의 임시 APP_CREATED 외곽선 생성 및 기존 목록·편집·메모 소비 경로를 연결한다.

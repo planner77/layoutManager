@@ -1,3 +1,36 @@
+## #98/#83 PR #171 성공 검증과 릴리스 버전 변경 후 재검증 구분 (2026-10-30)
+
+- [PR CI #315](https://github.com/planner77/layoutManager/actions/runs/41059992557) HEAD `8af8b65d016865498a67f6ee4cf70184a0ad22c4`, completed/success. Verify 124077023981·Docker 124077024801 모두 SUCCESS; 변경 전 Run #311/#314 실패는 역사 보존. 본 CI는 증분 소스·합성 Greenfield 범위의 자동 검증이고 기존 볼륨/실 CAD 현장 수용은 수행하지 않음.
+- GHCR workflow는 이미 존재하는 버전 `0.47.0`의 App·Migrator 쌍을 둘 다 발견하면 건너뛰므로 `src/package.json`과 lock을 새 `0.47.1`로 동기화. 버전 증가에 따른 변경 커밋은 **새 PR CI를 따로 통과해야 검증된 릴리스 후보**. v0.47.1 존재 여부 사전 GitHub refs 조회 NOT_FOUND. 실제 OCI publish/서명/배포 및 Main CI 상태는 이후 별도 확인.
+
+---
+
+## #98/#83 PR #171 CI #314 테스트 결과/수정 (2026-10-30 KST)
+
+- [Run #41058299070](https://github.com/planner77/layoutManager/actions/runs/41058299070) (workflow #314) `completed/failure`; Docker image/migration/runtime job `124072053492` SUCCESS, Verify `124072054040` Unit/Integration 실패. Typecheck/Lint 성공, **646 tests PASS**, 95 files 중 **94 PASS / 1 FAIL**. 문제 suite `cad-business-contract.test.ts` 로딩 단계의 Next `server-only` import exception. Build/E2E NOT RUN.
+- 신규 Test suite를 서버 저장소 직접 import 없는 `memoEditOperation` 순수 함수 부정/긍정 회귀로 수정했으며, Docker COPY/DDL/SQLite Audit/메모 Session 테스트는 유지. 최신 수정 코드의 Unit/Next/E2E 성공은 신규 CI 결과 전 **NOT VERIFIED**.
+- 과거 #311 strict TS 실패와 #314 Unit import 경계 오류는 독립 사고; 현장 CAD/실 운영 DB·Volume/Auth·GHCR/릴리스 수용은 해당 CI의 검증 범위 밖.
+
+---
+
+## #98/#83 PR #171 Run #41056355838 / workflow #311 — 실제 CI 실패 (2026-10-30)
+
+- Verify job `124064761375` Typecheck `failure`: 새 입력 validators, business CRUD, detail route 33 strict TS 오류. Prisma Generate 성공 이후 Lint/Unit/Build/E2E는 SKIPPED.
+- Docker job `124064760825` `failure`: baseline image builder의 Next TS18048 오류, migrator/Compose smoke 미실행. PR Codex는 별도로 Migrator DDL module COPY 누락 P1을 확인했으나 이번 Docker 로그에서 module import failure 직접 재현되지는 않았다.
+- Codex P1/P2 세 건 보완 HEAD `275fd74b6a893b181d34cff0dd3dce5cb18e7d75`; 댓글 근거·3/3 resolved, Main behind0·mergeable true. 엄격한 입력 거부와 Source 변형 이력 수명·Docker package closure 보존.
+- 새 신규 Unit 회귀 `source-outline-persistence.test.ts` 및 `cad-business-contract.test.ts` 추가. **작성 시점 로컬 직접 실행 NOT RUN**, 새 HEAD CI 결과는 관측 전 **NOT VERIFIED**이며 과거 Run #311 실패를 대체하지 않는다. 현장·GHCR·병합·운영 수용은 요청 범위 밖.
+
+---
+
+## #98/#83 — 신규 영속 API/Viewer 후보 검증 상태 (2026-10-30)
+
+- 구현 파일: 별도 Greenfield-only DDL/Prisma, G7 인증·Site CRUD API, object revision CAS 및 성공 원자 Audit, immutable original SOURCE 검증/APP_CREATED 독립 WCS, Memo ACTIVE 재접속 hydrate와 OFF 임시 세션, Outline 명시 서버 저장 및 재조회 Overlay.
+- 구현 기준: [#98/#83 설계와 미결정 게이트](Issues98-83.md), `src/tests/unit/cad-business-contract.test.ts` 테스트 코드. 이 문서 작성 시 실제 로컬 **Prisma generate/typecheck/lint/test/build/Docker/Chromium 미실행 (NOT RUN)**.
+- PR 생성과 CI 시작은 요청 범위이나 CI 완료/성공을 선제 주장하지 않습니다. G7 실제 Site/2PC·실 도면/DXF/S3·운영 새 볼륨 설치/전환/기존 DB 이관·Auth on/Owner acceptance·GHCR/병합은 **NOT VERIFIED/NOT RUN**.
+- 미결정: #65 타입 관리, #84 연결 앵커, Memo 교차 Editor 권한, 오래된 DB/물리 삭제 보존 방식. 기존 성공한 #166 CI는 본 변경의 검증 근거가 아닙니다.
+
+---
+
 ## #166 — 최종 PR CI/병합·릴리스 인계 (2026-10-30 KST)
 
 - 변경 코드 최종 검증 HEAD `e9af3d192cb513d4182037f0431d5db5f14a4181`, [PR CI #41047867574](https://github.com/planner77/layoutManager/actions/runs/41047867574): Verify `124036411468` + Docker/Migration/Runtime `124036411148` **both completed/success**.

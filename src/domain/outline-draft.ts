@@ -4,7 +4,7 @@
  * server-owned DXF bytes, never trust client-supplied geometry/handles. */
 import type {OutlineKind,XY} from '../viewers/core/outline-geometry';
 import type {GeoJSONOutline} from '../viewers/core/outline-compute';
-import type {SavedOutline} from '../viewers/core/adapter';
+import type {SavedOutline,GeneratedOutlineObject} from '../viewers/core/adapter';
 import {parseOutlineAssignmentMetadata} from './outline-assignment';
 import {sceneScope,validSceneRef,sceneIdentity,type CadSceneObjectRef} from './cad-scene';
 export type OutlineDraft={
@@ -202,4 +202,26 @@ export function buildOutlineExport(
       outlineTypeName:assignment?.outlineTypeName??null,name:assignment?.name??null};
   });
   return {schemaVersion:2 as const,...shared,outlines:typed};
+}
+
+/** #98 P2: package the immutable Source base and exact allowlisted edit
+ * history for #97's independent server DXF canonical re-attestation.
+ * An affine matrix alone is never a source-authorization proof.
+ */
+export function buildServerSourceOutlineExport(
+ versionId:string,sourceSha256:string,unitCode:number|null,
+ saved:SavedOutline,generated:GeneratedOutlineObject|undefined,
+){
+ const draft=buildOutlineExport(versionId,sourceSha256,unitCode,[saved]);
+ if(draft.schemaVersion===3 || saved.result.geometryBasis==='RENDER_WCS_2D')
+  throw new Error('렌더 WCS 외곽선은 원본 인증 JSON으로 저장할 수 없습니다.');
+ if(!generated || generated.savedOutlineId!==saved.id ||
+    !generated.transformOperations || generated.transformOperations.length>64 ||
+    generated.edited && generated.transformOperations.length===0)
+  throw new Error('원본 외곽선의 편집 이력을 확인할 수 없습니다.');
+ return {...draft,outlines:[{...draft.outlines[0],result:{
+  ...draft.outlines[0].result,baseGeometry:generated.baseGeometry,
+  transformOperations:generated.transformOperations.map(op=>op.type==='Translate'
+    ? {...op} : {...op,pivot:[...op.pivot]}),
+ }}]};
 }

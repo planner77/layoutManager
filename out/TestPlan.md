@@ -1,3 +1,41 @@
+## #98/#83 CI #314 server-only 단위 테스트 import 재발 방지 (2026-10-30)
+
+- **TC-PR171-R314-001:** `tests/unit/cad-business-contract.test.ts`는 `BusinessRepository` 및 `server-only` 직접/전이 value import 하지 않고 Vitest 수집/실행 가능. `memoEditOperation`은 PATCH `text|move` 수용, `delete/DELETE/rename/undefined/null` 400 거부; DELETE route-only `remove=true`는 delete 반환; 서비스 호출/감사 응답 결속 검사.
+- **TC-PR171-R314-002:** 업무 Schema DDL 불변/감사 append-only, Memo WCS/Session hydration, #97 source rigid-transform attestation, Docker Migrator schema-DDL closure 모든 기존 회귀 유지.
+- **TC-PR171-R314-003:** 최신 HEAD의 `npm run db:generate`, `npm run typecheck`, `npm run lint`, Unit/Integration, Next Production Build, Docker smoke, Playwright 자동 CI 실행. 이전 #314 Docker SUCCESS/Typecheck PASS를 최신 HEAD의 PASS로 소급하지 않는다.
+- **TC-PR171-R314-004:** 미해결 review threads 0, main behind=0 및 mergeable=true 확인 뒤 push-triggered PR CI 시작만 확인. 요청상 CI 결과 모니터링은 생략.
+
+---
+
+## #98/#83 PR #171 CI #311 실패 재발 방지 회귀 (2026-10-30)
+
+- **RE-CI-01:** `npm run db:generate && npm run typecheck && npm run lint`; 신규 `businessSchema/validation` strict unknown narrowing, `BusinessRepository.list('memo'|'outline')` 호출 타입, `null` Version/actor에 모두 타입 오류 0.
+- **RE-CI-02:** `npm run build` + Docker pre-change baseline/new migrator target. `src/Dockerfile`에서 새 business DDL 모듈 COPY, image 내부 `node --import tsx` 로딩 및 최초 Greenfield Compose 통과.
+- **RE-CI-03:** 메모 PATCH `operation:'delete'`→400 + 저장/DELETE Audit 미변경; DELETE만 soft delete/DELETE Audit/삭제 응답.
+- **RE-CI-04:** 원본 정확 외곽선 임시 Translate+Rotate→`buildServerSourceOutlineExport` immutable base + exact command ops→#97 server attestation 합성 정상, 편집 이력 누락/위조 거부, Undo/Redo 이력 정확 복원. Source SHA/Handle 미검증 우회 금지.
+- **RE-CI-05:** Latest HEAD 리뷰 스레드 0·Main conflict 0·fresh PR CI 시작을 관측하고, CI 결과는 사용자 요청대로 모니터링 생략. 실패였던 Run #41056355838은 역사 보존.
+
+---
+
+## #98/#83 — Business CRUD/CAS/Origin 합성 수용 계획 (2026-10-30)
+
+| TC | 검증 내용 | 기대 결과 |
+| --- | --- | --- |
+| P98-01 | APP_CREATED 순수 WCS 렌더 기하, Source mapping 0, 변조된 polygon/hole/finite/좌표·정점 제한 | 정상 저장, 위조·한도 초과 거절 |
+| P98-02 | SOURCE_CANONICAL immutable DXF SHA·Handle·attestation, forged source claim·raw affine | 동일 원본만 허용, 위조 409/422 |
+| P98-03 | SceneRevision 변경 뒤 외곽선 이동/삭제, object revision 동시 PATCH | 409, 기존 객체·Audit 불변 |
+| P98-04 | Reader/Site Editor/타 Site/CSRF/세션 만료/권한 회수/익명 GET·write | 실제 허용 권한만 통과 |
+| P83-01 | Memo POST→reload GET, Version/SHA 분리, author/createdAt/offset 보존 | 동일 ID·WCS로 재접속 복원 |
+| P83-02 | Memo text patch와 move patch를 구분, stale CAS·타 작성자 수정·삭제 | Text WCS 불변, 409/403, Audit 원자성 |
+| P83-03 | Soft DELETE 뒤 목록 제외, append-only Audit, ACTIVE/OFF/서버 장애 | 삭제 이력 보존, OFF 임시/ACTIVE 차단 |
+| PDB-01 | 새 Greenfield exact schema/fingerprint, 이전 baseline 호환, 임의 객체·트리거 변조 | 새 스키마 검증, 역사적 DB 무변경/변조 차단 |
+| PDB-02 | Version hard delete와 업무 row 보존, 중도 트랜잭션/Audit 실패 | 전체 rollback, 물리 데이터 보존 |
+| PPR-01 | Prisma generate, typecheck, lint, Vitest, Next production build, G7/Scene Browser E2E | 실제 CI 기록으로만 판정 |
+
+`src/tests/unit/cad-business-contract.test.ts`를 추가했으나 작성 시점 로컬 명령 및 E2E는 **NOT RUN**, PR CI는 **NOT VERIFIED**입니다. 기존 #166 합성 CI 통과와 별도입니다.
+
+---
+
 ## #166 Scene S5 — 구현 전 AC/TC (2026-10-30)
 
 Manager 설계 선행 → Developer 구현 보고 → Manager 검토 → 동결한 구현의 독립 QA → 수용/재작업 → root PR/CI 시작 순서. 합성 fixture만 사용하며 표는 실행 계획이다.

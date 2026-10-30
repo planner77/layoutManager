@@ -224,6 +224,13 @@ export class CadRepository {
         }
         await tx.sceneAsset.deleteMany({where:{versionId:id}});
       }
+      // #98/#83: no unapproved physical cascade of business/audit history.
+      const businessTables=await tx.$queryRawUnsafe<{name:string}[]>(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('CadOutline','CadMemo')");
+      if (businessTables.length===1) throw new CadError('CAD_BUSINESS_SCHEMA_DRIFT','업무 데이터 테이블이 불완전합니다.',503);
+      if (businessTables.length===2 && ((await tx.cadOutline.count({where:{versionId:id}}))>0 ||
+          (await tx.cadMemo.count({where:{versionId:id}}))>0))
+        throw new CadError('CAD_BUSINESS_DATA_EXISTS','연결된 외곽선·메모의 감사/보존 정책 확정 전에는 이 버전을 삭제할 수 없습니다.',409);
       await tx.cadFileVersion.delete({ where: { id } });
       if (auth && allowed) await appendG7CadAudit(
         tx, auth, allowed.actorId, allowed.siteId, 'CAD_VERSION_DELETED',

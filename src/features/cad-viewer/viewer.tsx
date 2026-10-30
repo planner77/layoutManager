@@ -12,12 +12,15 @@ import { GeneratedDeleteDialog } from '@/features/cad-viewer/generated-delete-di
 import { CadMemoOverlay } from '@/features/cad-viewer/cad-memo-overlay';
 import { CadMemoEditor, type MemoEditorFields } from '@/features/cad-viewer/cad-memo-editor';
 import { createPreviewUuid } from '@/features/cad-viewer/preview-uuid';
-import { MemoSession, parseMemoWcsXY, type MemoDraft, type MemoWcsXY } from '@/domain/cad-memo';
+import { MemoSession, parseMemoWcsXY, type MemoDraft, type MemoWcsXY, type PersistedMemoDraft } from '@/domain/cad-memo';
+import { readPersistedMemos, mutatePersistedMemo, type MemoServerMode } from './cad-business-client';
+import { loadStoredOutlines, mutateStoredOutline, type StoredOutline } from './persisted-outline-client';
+import { PersistedOutlineOverlay } from './persisted-outline-overlay';
 import {parseWcsTranslation,selectedTranslationIds} from '@/domain/generated-translate';
 import { initialViewerAppState, viewerAppReducer } from '@/features/cad-viewer/viewer-app-state';
 import { isLiveOutlineRequest, outlineToolUnavailableReason, effectiveOutlineBasis } from '@/features/cad-viewer/outline-tool-policy';
 import { ViewerManager, type OutlineInfo, type SavedOutline, type SavedOutlineOverlayState } from '@/viewers/core/adapter';
-import {buildOutlineExport} from '@/domain/outline-draft';
+import {buildOutlineExport,buildServerSourceOutlineExport} from '@/domain/outline-draft';
 import {canvasEditCapability,type CanvasObjectRef} from '@/domain/canvas-object-selection';
 import {getGeneratedDeleteShortcut,getGeneratedHistoryShortcut} from '@/domain/generated-keyboard';
 import {
@@ -93,6 +96,9 @@ export function CadViewer({
   const [memoFields, setMemoFields] = useState<MemoEditorFields>({title:'',content:'',x:'0',y:'0'});
   const [memoError, setMemoError] = useState<string|null>(null);
   const [memoDeleteArmed, setMemoDeleteArmed] = useState(false);
+  const [memoServerMode,setMemoServerMode]=useState<MemoServerMode>('checking');
+  const [memoBusy,setMemoBusy]=useState(false);
+  const memoSavingRef=useRef(false);
   const getViewEpoch = useCallback(() => viewEpoch.current, []);
   const onMemoGestureActive = useCallback((active:boolean) => { memoDragActive.current = active; }, []);
   const onAdapterViewChange = useCallback(() => {
@@ -126,6 +132,7 @@ export function CadViewer({
     memoDragActive.current = false;
     setMemoCancelSignal(previous => previous + 1);
     setMemos([]);
+    setMemoServerMode('checking');
     setMemoPlacing(false);
     setMemoCandidate(null);
     setMemoSelectedId(null);
@@ -166,6 +173,30 @@ export function CadViewer({
   },[]);
   const [searchOpen, setSearchOpen] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  // No server/anonymous fallback: OFF keeps #82 session-only; ACTIVE reloads #83 persisted data.
+  useEffect(()=>{
+    if(format!=='DXF'||renderer!=='three-dxf-viewer'||!/^[a-f0-9]{64}$/i.test(sourceSha256))return;
+    const controller=new AbortController();
+    void readPersistedMemos(versionId,controller.signal).then(result=>{
+      if(controller.signal.aborted)return;
+      if(result.mode==='active'){
+        const session=new MemoSession({versionId,sourceSha256});
+        for(const item of result.memos)session.acceptPersisted(item,{versionId,sourceSha256});
+        memoSession.current=session;
+        setMemoLifecycleKey(versionId+':'+sourceSha256);
+        setMemos(session.list());
+      }
+      setMemoServerMode(result.mode);
+      setMemoError(null);
+    }).catch(error=>{
+      if(controller.signal.aborted)return;
+      memoSession.current=null;setMemos([]);
+      setMemoServerMode('unavailable');
+      setMemoError(error instanceof Error?error.message:'메모 목록을 읽지 못했습니다.');
+    });
+    return ()=>controller.abort();
+  },[versionId,sourceSha256,renderer,format,attempt]);
+
   const [layers, setLayers] = useState<string[]>([]);
   const [selectedLayers, setSelectedLayers] = useState<Set<string>>(() => new Set());
   const [metric, setMetric] = useState<ViewerMetric | null>(null);
@@ -195,6 +226,29 @@ export function CadViewer({
   const [selectedOutlineTypeId,setSelectedOutlineTypeId]=useState('');
   const [outlineName,setOutlineName]=useState('');
   const [outlineNotice,setOutlineNotice]=useState<string|null>(null);
+  const [storedOutlines,setStoredOutlines]=useState<StoredOutline[]>([]);
+  const [storedSceneRevision,setStoredSceneRevision]=useState<number|null>(null);
+  const [storedOutlineHidden,setStoredOutlineHidden]=useState<ReadonlySet<string>>(()=>new Set());
+  const [storedOutlineBusy,setStoredOutlineBusy]=useState(false);
+  const [storedOutlineError,setStoredOutlineError]=useState<string|null>(null);
+  const [savedServerIds,setSavedServerIds]=useState<ReadonlySet<string>>(()=>new Set());
+  useEffect(()=>{
+    if(memoServerMode!=='active'||format!=='DXF'||renderer!=='three-dxf-viewer')return;
+    const controller=new AbortController();
+    void loadStoredOutlines(versionId,controller.signal).then(result=>{
+      if(controller.signal.aborted)return;
+      setStoredOutlines(result.outlines.filter(x=>x.versionId===versionId&&x.sourceSha256===sourceSha256));
+      setStoredSceneRevision(result.sceneRevision);
+      setStoredOutlineHidden(new Set());
+      setStoredOutlineError(null);
+    }).catch(error=>{
+      if(controller.signal.aborted)return;
+      setStoredOutlines([]);setStoredSceneRevision(null);
+      setStoredOutlineError(error instanceof Error?error.message:'서버 외곽선을 불러오지 못했습니다.');
+    });
+    return ()=>controller.abort();
+  },[memoServerMode,versionId,sourceSha256,renderer,format,attempt]);
+
   const [state, setState] = useState<{ status: string; ready: boolean; error?: string; warning?: string }>({
     status: '도면 로딩 중…',
     ready: false,
@@ -511,23 +565,32 @@ export function CadViewer({
     setMemoFields(previous=>({...previous,x:String(point.x),y:String(point.y)}));
   }, []);
   const moveMemoFromCanvas = useCallback((id:string,point:MemoWcsXY) => {
-    try {
-      const document=getMemoSession();
-      const item=document.move(id,point,{versionId,sourceSha256});
-      setMemos(document.list());
-      setMemoError(null);
-      setMemoSelectedId(id);
-      setMemoFields(previous=>({
-        ...previous,
-        ...(id === memoSelectedId ? {} : {title:item.title,content:item.content}),
-        x:String(item.anchorWcsXY.x),y:String(item.anchorWcsXY.y),
-      }));
-    } catch(error) {
-      setMemoError(error instanceof Error?error.message:'메모 이동이 취소되었습니다.');
-    }
+    if(memoSavingRef.current)return;
+    void (async()=>{
+      memoSavingRef.current=true;setMemoBusy(true);
+      try {
+        const doc=getMemoSession();
+        const old=doc.get(id);
+        if(!old)throw new Error('메모를 찾을 수 없습니다.');
+        let item:MemoDraft;
+        if(memoServerMode==='active'){
+          if(!old.persisted||old.revision===undefined)throw new Error('저장된 메모의 revision이 없습니다.');
+          item=doc.acceptPersisted(await mutatePersistedMemo('PATCH',versionId,{
+            expectedRevision:old.revision,operation:'move',anchorWcsXY:point
+          },id) as PersistedMemoDraft,{versionId,sourceSha256});
+        }else if(memoServerMode==='off'){
+          item=doc.move(id,point,{versionId,sourceSha256});
+        }else throw new Error('메모 서버 확인이 완료되지 않았습니다.');
+        setMemos(doc.list());setMemoError(null);setMemoSelectedId(id);
+        setMemoFields(previous=>({...previous,
+          ...(id===memoSelectedId?{}:{title:item.title,content:item.content}),
+          x:String(item.anchorWcsXY.x),y:String(item.anchorWcsXY.y)}));
+      }catch(error){setMemoError(error instanceof Error?error.message:'메모 이동이 취소되었습니다.');}
+      finally{memoSavingRef.current=false;setMemoBusy(false);}
+    })();
   // Only a committed pointer-up invokes this callback.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [versionId,sourceSha256,memoSelectedId]);
+  },[versionId,sourceSha256,memoSelectedId,memoServerMode]);
   function startMemoPlacement() {
     if (!memoAvailable) return;
     if (memoPlacing) { closeMemoEditor(); return; }
@@ -544,56 +607,79 @@ export function CadViewer({
     try { placeMemo(parseMemoWcsXY(memoFields.x,memoFields.y)); }
     catch(error){ setMemoError(error instanceof Error?error.message:'WCS 좌표가 유효하지 않습니다.'); }
   }
-  function createMemo() {
-    if (!memoCandidate || !memoAvailable) return;
-    try {
+  async function createMemo() {
+    if(!memoCandidate||!memoAvailable||memoSavingRef.current)return;
+    memoSavingRef.current=true;setMemoBusy(true);
+    try{
       const doc=getMemoSession();
-      // Explicitly confirm the coordinate fields; changing them alone never moves a memo.
       const location=parseMemoWcsXY(memoFields.x,memoFields.y);
-      const created=doc.create({id:createPreviewUuid(),anchorWcsXY:location,
-        title:memoFields.title,content:memoFields.content},{versionId,sourceSha256});
-      setMemos(doc.list());
-      selectMemo(created.id);
-      setMemoError(null);
-    } catch(error) {
-      setMemoError(error instanceof Error?error.message:'메모를 작성할 수 없습니다.');
-    }
+      let created:MemoDraft;
+      if(memoServerMode==='active'){
+        created=doc.acceptPersisted(await mutatePersistedMemo('POST',versionId,{
+          sourceSha256,title:memoFields.title,content:memoFields.content,anchorWcsXY:location
+        }) as PersistedMemoDraft,{versionId,sourceSha256});
+      }else if(memoServerMode==='off'){
+        created=doc.create({id:createPreviewUuid(),anchorWcsXY:location,
+          title:memoFields.title,content:memoFields.content},{versionId,sourceSha256});
+      }else throw new Error('메모 저장 서버 확인이 필요합니다.');
+      setMemos(doc.list());selectMemo(created.id);setMemoError(null);
+    }catch(error){setMemoError(error instanceof Error?error.message:'메모를 작성할 수 없습니다.');}
+    finally{memoSavingRef.current=false;setMemoBusy(false);}
   }
-  function saveMemoText() {
-    if (!memoSelectedId || !memoAvailable) return;
-    try {
+  async function saveMemoText() {
+    if(!memoSelectedId||!memoAvailable||memoSavingRef.current)return;
+    memoSavingRef.current=true;setMemoBusy(true);
+    try{
       const doc=getMemoSession();
-      doc.editText(memoSelectedId,memoFields.title,memoFields.content,{versionId,sourceSha256});
-      setMemos(doc.list());
-      setMemoError(null);
-    } catch(error) {
-      setMemoError(error instanceof Error?error.message:'메모 텍스트를 저장할 수 없습니다.');
-    }
+      if(memoServerMode==='active'){
+        const old=doc.get(memoSelectedId);
+        if(!old?.persisted||old.revision===undefined)throw new Error('메모 revision이 없습니다.');
+        doc.acceptPersisted(await mutatePersistedMemo('PATCH',versionId,{
+          expectedRevision:old.revision,operation:'text',
+          title:memoFields.title,content:memoFields.content
+        },memoSelectedId) as PersistedMemoDraft,{versionId,sourceSha256});
+      }else if(memoServerMode==='off'){
+        doc.editText(memoSelectedId,memoFields.title,memoFields.content,{versionId,sourceSha256});
+      }else throw new Error('메모 저장 서버 확인이 필요합니다.');
+      setMemos(doc.list());setMemoError(null);
+    }catch(error){setMemoError(error instanceof Error?error.message:'메모 텍스트를 저장할 수 없습니다.');}
+    finally{memoSavingRef.current=false;setMemoBusy(false);}
   }
-  function moveMemoFromFields() {
-    if (!memoSelectedId || !memoAvailable) return;
-    try {
-      const doc=getMemoSession();
-      const item=doc.move(memoSelectedId,
-        parseMemoWcsXY(memoFields.x,memoFields.y),{versionId,sourceSha256});
+  async function moveMemoFromFields() {
+    if(!memoSelectedId||!memoAvailable||memoSavingRef.current)return;
+    memoSavingRef.current=true;setMemoBusy(true);
+    try{
+      const doc=getMemoSession(),to=parseMemoWcsXY(memoFields.x,memoFields.y);
+      let item:MemoDraft;
+      if(memoServerMode==='active'){
+        const old=doc.get(memoSelectedId);
+        if(!old?.persisted||old.revision===undefined)throw new Error('메모 revision이 없습니다.');
+        item=doc.acceptPersisted(await mutatePersistedMemo('PATCH',versionId,{
+          expectedRevision:old.revision,operation:'move',anchorWcsXY:to
+        },memoSelectedId) as PersistedMemoDraft,{versionId,sourceSha256});
+      }else if(memoServerMode==='off'){
+        item=doc.move(memoSelectedId,to,{versionId,sourceSha256});
+      }else throw new Error('메모 저장 서버 확인이 필요합니다.');
       setMemos(doc.list());
-      setMemoFields(previous=>({...previous,x:String(item.anchorWcsXY.x),
-        y:String(item.anchorWcsXY.y)}));
+      setMemoFields(previous=>({...previous,x:String(item.anchorWcsXY.x),y:String(item.anchorWcsXY.y)}));
       setMemoError(null);
-    } catch(error) {
-      setMemoError(error instanceof Error?error.message:'메모 좌표를 이동할 수 없습니다.');
-    }
+    }catch(error){setMemoError(error instanceof Error?error.message:'메모 좌표를 이동할 수 없습니다.');}
+    finally{memoSavingRef.current=false;setMemoBusy(false);}
   }
-  function deleteMemo() {
-    if (!memoSelectedId || !memoDeleteArmed || !memoAvailable) return;
-    try {
+  async function deleteMemo() {
+    if(!memoSelectedId||!memoDeleteArmed||!memoAvailable||memoSavingRef.current)return;
+    memoSavingRef.current=true;setMemoBusy(true);
+    try{
       const doc=getMemoSession();
+      if(memoServerMode==='active'){
+        const old=doc.get(memoSelectedId);
+        if(!old?.persisted||old.revision===undefined)throw new Error('메모 revision이 없습니다.');
+        await mutatePersistedMemo('DELETE',versionId,{expectedRevision:old.revision},memoSelectedId);
+      }else if(memoServerMode!=='off')throw new Error('메모 저장 서버 확인이 필요합니다.');
       doc.remove(memoSelectedId,{versionId,sourceSha256});
-      setMemos(doc.list());
-      closeMemoEditor();
-    } catch(error) {
-      setMemoError(error instanceof Error?error.message:'메모 삭제가 취소되었습니다.');
-    }
+      setMemos(doc.list());closeMemoEditor();
+    }catch(error){setMemoError(error instanceof Error?error.message:'메모 삭제가 취소되었습니다.');}
+    finally{memoSavingRef.current=false;setMemoBusy(false);}
   }
   function toggleOutlineTool() {
     if (!outlineAvailable) return;
@@ -724,6 +810,74 @@ export function CadViewer({
     if (!outlineEnabledRef.current || !outlineAvailable) return;
     outlineRequestRevisionRef.current++;
     manager.current?.cancelOutlinePreview();
+  }
+  async function saveSelectedOutline(savedId:string){
+    if(memoServerMode!=='active'||storedOutlineBusy)return;
+    setStoredOutlineBusy(true);setStoredOutlineError(null);
+    try{
+      const item=manager.current?.getSavedOutlines().find(x=>x.id===savedId);
+      if(!item)throw new Error('선택한 임시 외곽선이 없습니다.');
+      if(item.outlineTypeId)throw new Error('업무 타입 연계는 #65 승인 전까지 서버에 저장할 수 없습니다.');
+      // Fresh Scene GET: do not reuse a stale revision from a previous viewing session.
+      const sceneResponse=await fetch('/api/cad-files/'+versionId+'/scene',{credentials:'same-origin',cache:'no-store'});
+      const sceneData=await sceneResponse.json();
+      if(!sceneResponse.ok||!Number.isSafeInteger(sceneData.revision))
+        throw new Error('서버 Scene READY가 필요합니다. 먼저 Scene을 생성·저장하세요.');
+      const exportOne=buildOutlineExport(versionId,sourceSha256,outlineInfo?.unitCode??null,[item]);
+      const source=exportOne.schemaVersion===1||exportOne.schemaVersion===2;
+      const payload:Record<string,unknown>={
+        mode:source?'SOURCE_CANONICAL':'APP_CREATED',
+        sourceSha256,expectedSceneRevision:sceneData.revision,
+        kind:item.result.kind,name:item.name?.trim()||'외곽선 '+(savedServerIds.size+1),
+        outlineTypeId:null,
+        ...(source?{sourceExport:buildServerSourceOutlineExport(
+          versionId,sourceSha256,outlineInfo?.unitCode??null,item,
+          manager.current?.getGeneratedObjects().find(o=>o.savedOutlineId===savedId)
+        )}:{geometry:item.result.geometry,derivedFrom:item.result.derivedFrom??[]}),
+      };
+      const created=await mutateStoredOutline('POST',versionId,payload);
+      if('deleted' in created)throw new Error('외곽선 저장 결과가 유효하지 않습니다.');
+      setStoredOutlines(list=>[...list,created]);
+      setStoredSceneRevision(sceneData.revision);
+      setSavedServerIds(previous=>new Set(previous).add(savedId));
+      setOutlineNotice('외곽선 영속 저장 완료 · '+created.id.slice(0,8));
+    }catch(error){setStoredOutlineError(error instanceof Error?error.message:'외곽선을 저장하지 못했습니다.');}
+    finally{setStoredOutlineBusy(false);}
+  }
+  async function updateStoredOutline(item:StoredOutline,operation:'rename'|'delete'|'move'|'rotate'){
+    if(memoServerMode!=='active'||storedOutlineBusy)return;
+    let payload:Record<string,unknown>={expectedRevision:item.revision};
+    if(operation==='rename'){
+      const changed=window.prompt('외곽선 새 이름 (1~100자)',item.name);
+      if(changed===null)return;
+      payload={...payload,operation:'rename',name:changed};
+    }else if(operation==='delete'){
+      if(!window.confirm(item.name+' 외곽선을 목록에서 삭제 처리할까요?'))return;
+    }else{
+      const typed=window.prompt(operation==='move'?'이동할 WCS X,Y (예: 10,20)':'회전 각도(도, 원점 중심)',operation==='move'?'0,0':'0');
+      if(typed===null)return;
+      const numbers=typed.split(',').map(v=>Number(v.trim()));
+      if(!numbers.length||numbers.some(x=>!Number.isFinite(x)))return setStoredOutlineError('숫자 좌표/각도를 확인하세요.');
+      if(operation==='move'&&numbers.length!==2||operation==='rotate'&&numbers.length!==1)
+        return setStoredOutlineError('입력값 형식을 확인하세요.');
+      const next=operation==='move'?{type:'Translate',dx:numbers[0],dy:numbers[1]}:
+       {type:'Rotate',angleDegrees:numbers[0],pivot:[0,0]};
+      payload={...payload,operation:'transform',operations:[...item.operations,next]};
+    }
+    setStoredOutlineBusy(true);setStoredOutlineError(null);
+    try{
+      const result=await mutateStoredOutline(operation==='delete'?'DELETE':'PATCH',versionId,payload,item.id);
+      if('deleted' in result){
+        setStoredOutlines(rows=>rows.filter(r=>r.id!==item.id));
+        setStoredOutlineHidden(previous=>{const updated=new Set(previous);updated.delete(item.id);return updated;});
+      }else setStoredOutlines(rows=>rows.map(r=>r.id===item.id?result:r));
+    }catch(error){setStoredOutlineError(error instanceof Error?error.message:'외곽선 변경이 거부되었습니다.');}
+    finally{setStoredOutlineBusy(false);}
+  }
+  function toggleStoredOutline(id:string){
+    setStoredOutlineHidden(previous=>{
+      const updated=new Set(previous);if(updated.has(id))updated.delete(id);else updated.add(id);return updated;
+    });
   }
   function exportOutlines() {
     const outlines=manager.current?.getSavedOutlines()??[];
@@ -968,7 +1122,7 @@ export function CadViewer({
           !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(versionId)
           ? '검증된 도면 Version UUID와 원본 SHA-256이 필요합니다.'
           : null;
-  const memoAvailable=memoUnavailable===null && memoScoped;
+  const memoAvailable=memoUnavailable===null && memoScoped && (memoServerMode==='off'||memoServerMode==='active');
   const selectableTypes=selectableOutlineTypes(outlineTypeCatalog,versionId,sourceSha256);
   const typedConfirmAvailable=!!preview?.persistable && selectableTypes.some(item=>item.id===selectedOutlineTypeId);
   const treeUnavailable =
@@ -1108,6 +1262,9 @@ export function CadViewer({
               }
             }}
           />
+          {memoServerMode==='active' && storedSceneRevision!==null && <PersistedOutlineOverlay
+            outlines={storedOutlines.filter(o=>o.sceneRevision===storedSceneRevision)}
+            hidden={storedOutlineHidden} getManager={getManager} viewRevision={viewRevision} />}
           {memoAvailable && <CadMemoOverlay
             memos={scopedMemos}
             selectedId={memoScoped?memoSelectedId:null}
@@ -1142,8 +1299,8 @@ export function CadViewer({
         outlineAvailable || memoAvailable || (renderer === 'three-dxf-viewer' && format === 'DXF' && state.ready && savedCount > 0) ? <>
           {memoAvailable && <div data-testid="cad-memo-status"
             className="flex flex-wrap items-center gap-2 border-b border-amber-200 bg-amber-50 px-3 py-1 text-xs text-slate-800">
-            <strong>CAD 메모 M1 · {scopedMemos.length}/100</strong>
-            <span>WCS 고정 · 임시 세션만 · Reload/Renderer/Version 변경 시 소실 · Snap/저장/작성자 미지원</span>
+            <strong>CAD 메모 {memoServerMode==='active'?'M2 영속':'M1 임시'} · {scopedMemos.length}/100</strong>
+            <span>{memoServerMode==='active'?'WCS 고정 · 서버 저장/다시 열기 · 작성자/Revision/CAS/감사 · 명시적 좌표 이동':'WCS 고정 · 임시 세션만 · Reload/Renderer/Version 변경 시 소실'}</span>
             {scopedMemos.length>0 && <span data-testid="cad-memo-latest">
               {scopedMemos.slice(-5).map(item=><button key={item.id} type="button"
                 className="mr-1 rounded border border-amber-500 bg-white px-1.5 py-0.5 hover:bg-amber-100"
@@ -1154,11 +1311,41 @@ export function CadViewer({
             fields={memoFields} onFieldsChange={setMemoFields}
             placing={memoPlacing} newAnchor={memoCandidate} selectedId={memoSelectedId}
             count={memos.length} error={memoError} confirmDelete={memoDeleteArmed}
+            persistent={memoServerMode==='active'} busy={memoBusy}
             onConfirmCoordinate={placeMemoAtEnteredWcs} onCreate={createMemo}
             onSaveText={saveMemoText} onApplyPosition={moveMemoFromFields}
             onArmDelete={()=>setMemoDeleteArmed(true)} onDelete={deleteMemo}
             onCancel={closeMemoEditor}
           />}
+          {outlineAvailable&&memoServerMode==='active'&&<section data-testid="cad-stored-outline-tools"
+            className="border-b border-cyan-200 bg-slate-50 px-3 py-2 text-xs text-slate-800">
+            <strong>영속 외곽선 {storedOutlines.length}개 (서버 조회/수정·CAS)</strong>
+            {savedOutlines.length>0&&<div className="mt-1 flex flex-wrap gap-1">
+              {savedOutlines.map(item=><button key={item.id} type="button"
+                className="rounded border border-cyan-600 bg-white px-2 py-1 disabled:opacity-50"
+                disabled={storedOutlineBusy||savedServerIds.has(item.id)}
+                onClick={()=>{void saveSelectedOutline(item.id);}}>
+                {item.name||item.id.slice(0,8)} · {savedServerIds.has(item.id)?'저장됨':'서버 저장'}
+              </button>)}
+            </div>}
+            {storedOutlines.map(item=><div key={item.id} className="mt-1 flex flex-wrap items-center gap-1">
+              <span title={item.id}>{item.name} (r{item.revision})</span>
+              {item.sceneRevision!==storedSceneRevision&&<span className="text-red-800">Scene 변경·앵커 검토 필요</span>}
+              <button type="button" className="rounded border px-2 py-1" onClick={()=>toggleStoredOutline(item.id)}>
+                {storedOutlineHidden.has(item.id)?'보기':'숨기기'}</button>
+              <button type="button" disabled={storedOutlineBusy} className="rounded border px-2 py-1"
+                onClick={()=>{void updateStoredOutline(item,'rename');}}>이름</button>
+              <button type="button" disabled={storedOutlineBusy||item.sceneRevision!==storedSceneRevision}
+                className="rounded border px-2 py-1" onClick={()=>{void updateStoredOutline(item,'move');}}>이동</button>
+              <button type="button" disabled={storedOutlineBusy||item.sceneRevision!==storedSceneRevision}
+                className="rounded border px-2 py-1" onClick={()=>{void updateStoredOutline(item,'rotate');}}>회전</button>
+              <button type="button" disabled={storedOutlineBusy||item.sceneRevision!==storedSceneRevision}
+                className="rounded border border-red-500 px-2 py-1 text-red-800"
+                onClick={()=>{void updateStoredOutline(item,'delete');}}>논리 삭제</button>
+            </div>)}
+            {storedOutlineError&&<p role="alert" className="mt-1 text-red-800">{storedOutlineError}</p>}
+            <p className="text-slate-500">Show/Hide는 세션 한정 · 업무 타입 미승인 · Scene 변경 시 기존 앵커 자동 이동 금지</p>
+          </section>}
           {treeAvailable && <div data-testid="cad-object-selection-tools"
             className="flex flex-wrap items-center gap-2 border-b border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-800">
             <strong>객체 선택 · 생성 개체 로컬 편집 (E3/E4)</strong>
@@ -1285,11 +1472,11 @@ export function CadViewer({
           <Button size="sm" variant="outline" disabled={!savedCount} onClick={exportOutlines}>JSON 내보내기 ({savedCount})</Button>
           <Button size="sm" variant="outline" disabled={!savedCount} onClick={()=>manager.current?.clearSavedOutlines()}>임시 결과 삭제</Button>
         </div>
-        {!selectableTypes.length && <p data-testid="outline-type-gate" className="mb-1 text-amber-800">서버에서 제공하는 활성·해당 Scope 업무 타입이 없습니다. 관리자 등록 및 보안 선행 이슈 #65 완료 전에는 타입 지정 확정을 사용할 수 없습니다. 기존 미분류 임시 확정은 서버에 저장되지 않습니다.</p>}
+        {!selectableTypes.length && <p data-testid="outline-type-gate" className="mb-1 text-amber-800">서버에서 제공하는 활성·해당 Scope 업무 타입이 없습니다. #65 승인 전 타입 지정 저장은 차단되며 미분류 외곽선만 영속 저장할 수 있습니다.</p>}
         {outlineInfo.sourceUnavailableReason && <p data-testid="exact-source-unavailable" className="text-amber-800">정밀 원본: {outlineInfo.sourceUnavailableReason} · 일반 렌더 작업과 독립 메모는 사용 가능합니다.</p>}
         {outlineBasis==='render' && <p className="text-slate-600">화면에 표시된 지원 geometry의 WCS XY 기하를 사용합니다. 볼록 경계는 근사 포락선이며 폐영역 검증은 화면 기하 기준입니다. 원본 CAD 정밀성·서버 canonical 검증을 의미하지 않습니다.</p>}
         <p className="text-slate-600">선택 모드: 클릭 한 개, Ctrl/⌘+클릭 토글, 좌→우 완전 포함, 우→좌 교차 선택 · Space+드래그 이동 · 휠 확대 · Esc 선택 취소.</p>
-        <p className="mt-1 text-slate-600">좌표: WCS XY · 도면 단위: {outlineInfo.unitCode===4?'mm':outlineInfo.unitCode===1?'inch':outlineInfo.unitCode===6?'m':outlineInfo.unitCode===5?'cm':outlineInfo.unitCode===0||outlineInfo.unitCode===null?'미상':'INSUNITS '+outlineInfo.unitCode} · 서버 저장/다시 불러오기 미지원 (권한 정책 결정 전)</p>
+        <p className="mt-1 text-slate-600">좌표: WCS XY · 도면 단위: {outlineInfo.unitCode===4?'mm':outlineInfo.unitCode===1?'inch':outlineInfo.unitCode===6?'m':outlineInfo.unitCode===5?'cm':outlineInfo.unitCode===0||outlineInfo.unitCode===null?'미상':'INSUNITS '+outlineInfo.unitCode} · 서버 저장은 아래 영속 외곽선 패널을 사용</p>
         {preview && <p data-testid="outline-preview" className="mt-1 text-cyan-800">{preview.kind==='CONVEX'?'볼록 경계':'실제 폐곡선 Union'} · {preview.geometry.type} · {preview.durationMs.toFixed(1)}ms · {preview.persistable?'안정적 Handle':'임시 참조 포함'}</p>}
         {preview?.warnings.map((message,i)=><p key={i} className="text-amber-800">{message}</p>)}
         {previewError && <p role="alert" className="text-red-700">{previewError}</p>}
@@ -1308,6 +1495,7 @@ export function CadViewer({
       }
       status={
         <>
+          {memoServerMode==='unavailable'&&<p role="alert" className="text-xs text-red-800">메모 서버에 연결할 수 없어 메모 변경을 차단했습니다. {memoError}</p>}
           <div className="flex flex-wrap items-center gap-x-2"><p role="status" className="text-xs text-slate-700">{state.status}</p><span data-testid="viewer-active-renderer" className="text-xs text-slate-600">{renderer}</span></div>
           {state.warning && <p className="text-xs text-amber-800" data-testid="viewer-coverage">{state.warning}</p>}
           {linkFallbackUrl?.renderer===renderer && <label className="block text-xs">현재 Viewer 링크<input readOnly aria-label="복사할 Viewer 주소" value={linkFallbackUrl.url} onFocus={event=>event.currentTarget.select()} /></label>}
