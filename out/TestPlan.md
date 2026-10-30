@@ -1,3 +1,9 @@
+## #85/#86 Memo M4/M5 PR CI plan (2026-10-31)
+
+M4: CRUD, owner/Version/SHA and stale CAS, atomically reassign deleted-group members, local vs saved visibility, hidden confirmation/WCS, ARIA keyboard/mobile, original Outline/Layer unaffected. M5: nullable Gregorian YYYY-MM-DD/leap/range, enable/disable confirmation, server UTC timestamp first-save/preserve/clear, client completedAt forgery rejected, Tree status filter. DB: new empty baseline exact DDL/FK/trigger/CHECK, historical signatures, G7 audit and denied writers. Regression: existing M1/M2/M3 and S6. PR CI Typecheck/Lint/Tests/Build/Docker NOT VERIFIED yet. [Spec](Issues85-86.md).
+
+---
+
 ## #84 PR #173 추가 M3 세션 Snap 및 Codex P1 회귀 (2026-10-31)
 
 - TC-M3-SESSION-01: 정확 Version/SHA 및 visible WCS 2D Polygon/Line의 Endpoint/Vertex/Center만 포함. 12px 이내 최근접, 동일 지점 ENDPOINT 우선, 20k 후보 제한, 다른 Version/SHA·숨김·비가역/NaN 변환 거절. DXF Source Handle claim 없이 일반 Render Scene에서 스냅 가능해야 한다.

@@ -1,3 +1,9 @@
+## #85/#86 new EMPTY G7 Memo sidecars (2026-10-31)
+
+G7-GREENFIELD-MEMO-M45-20261031-1 / 202610310002_greenfield_memo_m45_baseline adds CadMemoGroup (UUID, Version/SHA, owner, Revision, soft delete), CadMemoFeature (Memo UUID PK/FK, group FK, visible, schedule flags/date-only, completion status/server UTC), indexes and immutable triggers. Historical Business/Anchor SQL fingerprints remain intact; no legacy ALTER/adoption. [Spec](Issues85-86.md).
+
+---
+
 ## #84 M3 + #167 S6 신규 영속 스키마 (2026-10-31)
 
 - 새 Greenfield baseline `202610310001_greenfield_anchor_baseline`, ID `G7-GREENFIELD-ANCHOR-20261031-1`. 이전 `202610300002_greenfield_business_baseline` 및 Scene/old exact SQL fingerprint는 보존. 신규 `CadMemoAnchor`(memo_id FK/PK, version_id, source_sha256, status ATTACHED/BROKEN_ANCHOR, target_origin/target_id, local_x/y, timestamps), target index, immutable trigger. 구 설치에 자동 추가/이관하지 않음.
