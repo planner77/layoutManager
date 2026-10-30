@@ -20,7 +20,7 @@ import {parseWcsTranslation,selectedTranslationIds} from '@/domain/generated-tra
 import { initialViewerAppState, viewerAppReducer } from '@/features/cad-viewer/viewer-app-state';
 import { isLiveOutlineRequest, outlineToolUnavailableReason, effectiveOutlineBasis } from '@/features/cad-viewer/outline-tool-policy';
 import { ViewerManager, type OutlineInfo, type SavedOutline, type SavedOutlineOverlayState } from '@/viewers/core/adapter';
-import {buildOutlineExport} from '@/domain/outline-draft';
+import {buildOutlineExport,buildServerSourceOutlineExport} from '@/domain/outline-draft';
 import {canvasEditCapability,type CanvasObjectRef} from '@/domain/canvas-object-selection';
 import {getGeneratedDeleteShortcut,getGeneratedHistoryShortcut} from '@/domain/generated-keyboard';
 import {
@@ -830,8 +830,10 @@ export function CadViewer({
         sourceSha256,expectedSceneRevision:sceneData.revision,
         kind:item.result.kind,name:item.name?.trim()||'외곽선 '+(savedServerIds.size+1),
         outlineTypeId:null,
-        ...(source?{sourceExport:exportOne}:{geometry:item.result.geometry,
-          derivedFrom:item.result.derivedFrom??[]}),
+        ...(source?{sourceExport:buildServerSourceOutlineExport(
+          versionId,sourceSha256,outlineInfo?.unitCode??null,item,
+          manager.current?.getGeneratedObjects().find(o=>o.savedOutlineId===savedId)
+        )}:{geometry:item.result.geometry,derivedFrom:item.result.derivedFrom??[]}),
       };
       const created=await mutateStoredOutline('POST',versionId,payload);
       if('deleted' in created)throw new Error('외곽선 저장 결과가 유효하지 않습니다.');

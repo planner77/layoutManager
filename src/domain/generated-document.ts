@@ -22,6 +22,9 @@ export type GeneratedCommand =
   | Readonly<{type:'Delete';ids:readonly string[]}>
   | Readonly<{type:'Translate';ids:readonly string[];dx:number;dy:number}>
   | Readonly<{type:'Rotate';ids:readonly string[];angleDegrees:number;pivot:readonly [number,number]}>;
+export type GeneratedRigidOperation =
+ | Readonly<{type:'Translate';dx:number;dy:number}>
+ | Readonly<{type:'Rotate';angleDegrees:number;pivot:readonly [number,number]}>;
 export type GeneratedEntry=Readonly<{
   ref:CanvasObjectRef;
   sceneRef:CadSceneObjectRef;
@@ -35,6 +38,7 @@ export type GeneratedEntry=Readonly<{
   baseResult:Readonly<OutlineResult>;
   baseGeometry:GeoJSONOutline;
   transform:Affine2D;
+  transformOperations:readonly GeneratedRigidOperation[];
   visible:boolean;
   edited:boolean;
   dirty:boolean;
@@ -205,6 +209,7 @@ export class GeneratedDocument{
       editedAt:null,name:input.name??'',outlineTypeId:input.outlineTypeId??null,
       outlineTypeName:input.outlineTypeName??null,kind:baseResult.kind,
       baseResult,baseGeometry:baseResult.geometry,transform:IDENTITY_2D,
+      transformOperations:Object.freeze([]) as readonly GeneratedRigidOperation[],
       visible:true,edited:false,dirty:false,
     }) as GeneratedEntry;
     if(discardIncompatibleHistory)this.undoEntries=[];
@@ -263,9 +268,17 @@ export class GeneratedDocument{
     const patches:Patch[]=rows.map(row=>{
       if(command.type==='Delete')return {id:row.id,index:row.index,before:row.entry};
       const next=composeAffine(transform,row.entry.transform);
+      // Preserve the exact allowlisted operations, not an untrusted affine
+      // reconstructed by the browser at the #97 server provenance boundary.
+      const operation:GeneratedRigidOperation=command.type==='Translate'
+        ? Object.freeze({type:'Translate',dx:command.dx,dy:command.dy})
+        : Object.freeze({type:'Rotate',angleDegrees:command.angleDegrees,
+            pivot:Object.freeze([...command.pivot]) as readonly [number,number]});
+      const transformOperations=Object.freeze([...row.entry.transformOperations,operation]);
       // Validate EVERY geometry before committing ANY; base geometry never changes.
       applyAffine(row.entry.baseGeometry,next);
-      const after=Object.freeze({...row.entry,transform:next,edited:true,dirty:true,editedAt:now});
+      const after=Object.freeze({...row.entry,transform:next,transformOperations,
+        edited:true,dirty:true,editedAt:now});
       return {id:row.id,index:row.index,before:row.entry,after};
     });
     const size=64+patches.reduce((n,p)=>n+160+
@@ -336,7 +349,7 @@ export class GeneratedDocument{
         const reference=reverse?patch.before:patch.after!;
         // Visibility is independent of editing history; never undo a Tree toggle.
         return Object.freeze({...o,transform:reference.transform,
-          edited:reference.edited,editedAt:reference.editedAt,
+          transformOperations:reference.transformOperations,edited:reference.edited,editedAt:reference.editedAt,
           dirty:reference.dirty || o.visible!==patch.before.visible});
       });
     }

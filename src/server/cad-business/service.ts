@@ -8,8 +8,8 @@ import { cadWriteContext } from '@/server/g7-operational/cad-preview-context';
 import { attestTransformedOutlineDraftAgainstImmutableDxf } from '@/server/outline/transform-attestation';
 import { geometry,keys,memoText,name,operations,point,provenance,revision,sourceSha,transformed,ID } from './validation';
 import type { GeoJSONOutline } from '@/viewers/core/outline-compute';
-const bad=(code:string,status:number):never=>{throw new CadError(code,'업무 객체를 확인하거나 수정할 수 없습니다.',status);};
-const cas=():never=>bad('BUSINESS_REVISION_CONFLICT',409);
+function bad(code:string,status:number):never {throw new CadError(code,'업무 객체를 확인하거나 수정할 수 없습니다.',status);}
+function cas():never {return bad('BUSINESS_REVISION_CONFLICT',409);}
 type Kind='outline'|'memo';
 type AuditAction='CREATE'|'EDIT'|'DELETE';
 export function requireBusinessWrite(request:Request,requestId:string):G7CadWrite{
@@ -69,6 +69,8 @@ const outlineDto=(v:{
 });
 export class BusinessRepository {
  constructor(readonly db:Database){}
+ async list(kind:'memo',versionId:string):Promise<{memos:ReturnType<typeof memoDto>[] }>;
+ async list(kind:'outline',versionId:string):Promise<{outlines:ReturnType<typeof outlineDto>[] }>;
  async list(kind:Kind,versionId:string){
   await businessSchema(this.db);
   const v=await this.db.cadFileVersion.findUnique({where:{id:versionId},select:{id:true}});
@@ -100,7 +102,7 @@ export class BusinessRepository {
   const expected=revision(b.expectedRevision);
   if(!ID.test(id))bad('BUSINESS_ID_INVALID',400);
   const operation=remove?'delete':b.operation;
-  if(!['delete','text','move'].includes(String(operation)))bad('BUSINESS_OPERATION_INVALID',400);
+  if(remove ? operation!=='delete' : operation!=='text'&&operation!=='move')bad('BUSINESS_OPERATION_INVALID',400);
   if(operation==='text')keys(b,['expectedRevision','operation','title','content']);
   if(operation==='move')keys(b,['expectedRevision','operation','anchorWcsXY']);
   const data=operation==='text'?memoText(b.title,b.content):

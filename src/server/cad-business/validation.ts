@@ -5,7 +5,7 @@ import { applyAffine, composeAffine, type Affine2D } from '@/domain/generated-do
 import type { GeoJSONOutline } from '@/viewers/core/outline-compute';
 export const ID=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 export const SHA=/^[a-f0-9]{64}$/i;
-const invalid=(code='BUSINESS_INVALID',status=422):never=>{throw new CadError(code,'유효하지 않은 업무 데이터입니다.',status);};
+function invalid(code='BUSINESS_INVALID',status=422):never {throw new CadError(code,'유효하지 않은 업무 데이터입니다.',status);}
 const object=(v:unknown):v is Record<string,unknown>=>!!v&&typeof v==='object'&&!Array.isArray(v);
 export function keys(raw:unknown, required:string[], optional:string[]=[]):Record<string,unknown>{
  if(!object(raw)||required.some(k=>!Object.hasOwn(raw,k))||

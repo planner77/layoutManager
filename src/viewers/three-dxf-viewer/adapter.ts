@@ -725,7 +725,9 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     return (this.document?.getObjects()??[]).map(item=>({
       ref:item.ref,savedOutlineId:item.savedOutlineId,visible:item.visible,
       geometry:generatedResult(item).geometry,baseGeometry:item.baseGeometry,
-      transform:item.transform,edited:item.edited,dirty:item.dirty,
+      transform:item.transform,transformOperations:item.transformOperations.map(op=>
+         op.type==='Translate'?{...op}:{...op,pivot:[...op.pivot] as [number,number]}),
+       edited:item.edited,dirty:item.dirty,
       sourceEntityIds:[...item.baseResult.sourceEntityIds],kind:item.kind,
       name:item.name||'외곽선 '+item.savedOutlineId.replace(/^local-/,''),outlineTypeId:item.outlineTypeId,
     }));
