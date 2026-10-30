@@ -1,3 +1,4 @@
+import type { Action } from '@/domain/auth';
 import { CadError } from '@/domain/cad';
 import { requireResolvedPermission, type Role, type SpecialGrant, type UserAccess } from '@/domain/auth';
 import { digestSessionToken, SESSION_IDLE_MS } from '@/server/auth/session';
@@ -34,7 +35,7 @@ export function sceneReadContext(request:Request){
   const storage=new SceneBlobStorage(process.env.CAD_STORAGE_PATH,process.env);
   return {gate,repo:new SceneRepository(db,storage),close:async()=>storage.close()};
 }
-export async function requireSceneRead(request:Request,db:Database,versionId:string,gate:G7RuntimeGate):Promise<void>{
+export async function requireSceneRead(request:Request,db:Database,versionId:string,gate:G7RuntimeGate,action:Action='cad:read'):Promise<void>{
   if(gate.state==='OFF')return; // Preserve existing public CAD read mode only.
   if(gate.state!=='ACTIVE')throw deny('G7_RUNTIME_BLOCKED',503);
   const raw=cookie(request);
@@ -56,7 +57,7 @@ export async function requireSceneRead(request:Request,db:Database,versionId:str
     specialGrants:session.user.specials.map(x=>x.permission as SpecialGrant)};
   try{
     if(!gate.siteIds.includes(siteId))throw new Error();
-    requireResolvedPermission(actor,'cad:read',{kind:'version',versionId},siteId);
+    requireResolvedPermission(actor,action,{kind:'version',versionId},siteId);
   }catch{throw deny('ACCESS_DENIED',403);}
   // A scope-authorized Scene read is G3 session activity. Fail closed if the
   // account/session was revoked, disabled or expired during authorization.
