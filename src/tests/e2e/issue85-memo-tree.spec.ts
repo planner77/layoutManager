@@ -99,3 +99,84 @@ test('TC-M4-E2E-002: group reassignment, tree keyboard, shared right dock and mo
   await expect(page.getByTestId('viewer-memo-tree-dock')).toHaveCount(0);
   await expect(page.getByTestId('cad-viewer-shell').locator('header')).toHaveJSProperty('inert',false);
 });
+
+test('TC-M4-P1: dedicated desktop handle floats, reopens, keyboard positions and resets without remounting canvas',async({page,request})=>{
+  await page.setViewportSize({width:1366,height:900});
+  const version=await drawing(request,'m4-movable');
+  await openThree(page,version.id);
+  await createAt(page,'20','30','창 이동 회귀','원본 좌표 불변');
+  await clickViewerTestCommand(page,'viewer-menu-memo-tree');
+  const dock=page.getByTestId('viewer-memo-tree-dock');
+  const handle=page.getByTestId('viewer-memo-panel-drag-handle');
+  await expect(dock).toHaveAttribute('data-viewer-panel-mode','edge');
+  await page.evaluate(()=>{
+    (window as Window & {__testMemoCanvas?:Element|null}).__testMemoCanvas=
+      document.querySelector('[data-testid="cad-canvas"]');
+  });
+  const previous=await dock.boundingBox(), h=await handle.boundingBox();
+  expect(previous).not.toBeNull();expect(h).not.toBeNull();
+  await page.mouse.move(h!.x+h!.width/2,h!.y+h!.height/2);
+  await page.mouse.down();
+  await page.mouse.move(h!.x+h!.width/2-75,h!.y+h!.height/2+55,{steps:7});
+  await page.mouse.up();
+  await expect(dock).toHaveAttribute('data-viewer-panel-mode','floating');
+  const moved=await dock.boundingBox();
+  expect(moved!.x).toBeLessThan(previous!.x-35);
+  expect(moved!.y).toBeGreaterThan(previous!.y+20);
+  expect(await page.evaluate(()=>
+    (window as Window & {__testMemoCanvas?:Element|null}).__testMemoCanvas===
+    document.querySelector('[data-testid="cad-canvas"]'))).toBe(true);
+  await dock.getByTestId('viewer-memo-panel-close').click();
+  await expect(dock).toHaveCount(0);
+  await clickViewerTestCommand(page,'viewer-menu-memo-tree');
+  await expect(dock).toHaveAttribute('data-viewer-panel-mode','floating');
+  await handle.focus();
+  await page.keyboard.press('ArrowLeft');
+  await expect(dock).toHaveAttribute('data-viewer-panel-mode','floating');
+  await page.setViewportSize({width:1000,height:680});
+  await expect.poll(async()=>{
+    const box=await dock.boundingBox(),workspace=await page.getByTestId('viewer-workspace').boundingBox();
+    return Boolean(box&&workspace&&box.x>=workspace.x-1&&box.y>=workspace.y-1&&
+      box.x+box.width<=workspace.x+workspace.width+1&&box.y+box.height<=workspace.y+workspace.height+1);
+  }).toBe(true);
+  await dock.getByTestId('viewer-memo-panel-reset').click();
+  await expect(dock).toHaveAttribute('data-viewer-panel-mode','edge');
+  await page.setViewportSize({width:390,height:844});
+  await expect(dock).toHaveAttribute('role','dialog');
+  await expect(handle).toHaveCount(0);
+  await expect(page.getByTestId('cad-memo-pin')).toHaveCount(1);
+});
+
+test('TC-M4-P2/M5: local group survives schedule save and group-name search respects completion filter',async({page,request})=>{
+  const version=await drawing(request,'m4-status-filter');
+  await openThree(page,version.id);
+  await createAt(page,'15','20','첫 점검','기록 A');
+  await createAt(page,'35','40','두 번째 점검','기록 B');
+  await clickViewerTestCommand(page,'viewer-menu-memo-tree');
+  const tree=page.getByTestId('cad-memo-tree');
+  await tree.getByTestId('cad-memo-tree-group-name').fill('스테이션 그룹');
+  await tree.getByTestId('cad-memo-tree-add-group').click();
+  await expect(tree.getByTestId('cad-memo-tree-group')).toHaveCount(2);
+  const first=tree.getByTestId('cad-memo-tree-item').filter({hasText:'첫 점검'});
+  const second=tree.getByTestId('cad-memo-tree-item').filter({hasText:'두 번째 점검'});
+  await first.getByTestId('cad-memo-tree-assign-group').selectOption({label:'스테이션 그룹'});
+  await second.getByTestId('cad-memo-tree-assign-group').selectOption({label:'스테이션 그룹'});
+  const group=tree.getByTestId('cad-memo-tree-group').filter({hasText:'스테이션 그룹'});
+  await expect(group.getByTestId('cad-memo-tree-item')).toHaveCount(2);
+  await group.getByTestId('cad-memo-tree-item').filter({hasText:'첫 점검'})
+    .getByRole('button',{name:'편집'}).click();
+  const settings=page.getByTestId('cad-memo-settings');
+  await settings.getByTestId('cad-memo-completion-enabled').check();
+  await settings.getByTestId('cad-memo-is-completed').check();
+  await settings.getByTestId('cad-memo-save-settings').click();
+  await expect(group.getByTestId('cad-memo-tree-item')).toHaveCount(2);
+  await tree.getByTestId('cad-memo-tree-search').fill('스테이션 그룹');
+  await tree.getByTestId('cad-memo-tree-status-filter').selectOption('completed');
+  await expect(group.getByTestId('cad-memo-tree-item')).toHaveCount(1);
+  await expect(group.getByTestId('cad-memo-tree-item').first()).toContainText('첫 점검');
+  await tree.getByTestId('cad-memo-tree-status-filter').selectOption('progress');
+  await expect(group.getByTestId('cad-memo-tree-item')).toHaveCount(0);
+  await tree.getByTestId('cad-memo-tree-status-filter').selectOption('registered');
+  await expect(group.getByTestId('cad-memo-tree-item')).toHaveCount(1);
+  await expect(group.getByTestId('cad-memo-tree-item').first()).toContainText('두 번째 점검');
+});
