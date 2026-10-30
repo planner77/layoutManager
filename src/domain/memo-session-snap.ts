@@ -100,6 +100,7 @@ export class MemoSessionSnapStore {
   for(const [id,entry] of this.connections)if(entry.ref.origin===origin)
    this.connections.set(id,{...entry,forcedBreak:true});
  }
+ hasBindings():boolean{return this.connections.size>0;}
  detach(memoId:string):void{this.connections.delete(memoId);}
  get(memoId:string):SessionSnapProjection|null{
   const b=this.connections.get(memoId);
