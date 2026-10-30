@@ -1,3 +1,13 @@
+## #166 PR #170 — PR CI 성공 후 Codex P2 보완·신규 검증 대기 (2026-10-30 KST)
+
+- **검증된 이전 HEAD:** `33e560393527312e0388560bd0d13e62b5124e31`의 [PR CI #41036925858](https://github.com/planner77/layoutManager/actions/runs/41036925858)은 `completed/success`, Verify Job `124000125159`·Docker Job `124000125416` 모두 SUCCESS. Main `bdde565` 대비 behind=0/ahead=2, PR mergeable=true. 성공은 아래 리뷰 보완 **이전** HEAD에만 유효하다.
+- **미해결 Codex P2 2건:** [레이어 표시 결함](https://github.com/planner77/layoutManager/pull/170#discussion_r4422422029)은 `sceneObjects`(선택 가능한 평면 geometry)만 visibility 갱신하여 Points·비평면·다중 material 등 display-only Scene node가 Layer off/hide all을 무시하는 실제 회귀이다. [UI 스레드 계산](https://github.com/planner77/layoutManager/pull/170#discussion_r4422422039)은 `computeRenderOutline`를 브라우저 main thread에서 동기 계산하여 최대 100k geometry/다수 미연결 segment에서 입력·취소가 멈출 수 있는 실제 성능 결함이다.
+- **보완 내용:** imported Scene 전체에 대한 최초 intrinsic visibility 스냅샷을 유지하고 모든 node에 `baseline AND layer AND scene-work` 가시성을 적용한다(부모 가시성 자연 전파, 세션 Undo/Redo 유지). 렌더 외곽선 작업도 원래 `outline-worker`의 `compute-render` task로 보내며 기존 terminate/cancel/30초 timeout을 그대로 적용한다. SOURCE 정밀 모드와 strict provenance/canonical 정책은 불변.
+- **추가 회귀:** Unit의 display-only Points/선택 Mesh/숨겨진 부모·레이어 복원, 복원 Mesh Adapter Browser의 실제 worker 요청 및 display-only Layer off/on 검사. Synthetic scene/기존 기능 계약을 사용하며 실 CAD·운영 데이터 노출 없음.
+- **검증 및 게이트:** 본 패치 커밋 작성 시 별도 로컬 Typecheck/Build/Browser 실행은 **NOT RUN**. 새 HEAD PR CI의 완료 결과·Codex 최신 재리뷰는 **NOT VERIFIED**이며, 이전 성공 #41036925858을 새 HEAD 성공으로 대체하지 않는다. 새 push의 `pull_request.synchronize`로 PR CI를 시작하되 모니터링 생략. 리뷰 답변/해결 및 Main 충돌 재확인 필요. 새 HEAD 성공 전 Squash Merge·Main CI·GHCR 게시·#166 종료 불가. 사내 운영 저장소·Compose·원본 데이터·배포 변경 없음.
+
+---
+
 ## #166 PR #170 — 로컬 수용·리뷰/충돌 확인 후 최종 PR CI 인계 (2026-10-30 KST)
 
 - **구현 게시:** [PR #170](https://github.com/planner77/layoutManager/pull/170), branch `feat/issue-166-scene-work`, 최초 구현 Commit `89cb95e1be4e3b665e31ce7c5ad0c5f229d35288` (`feat(viewer): enable scene object work independently of source mapping`), 앱 **0.47.0 후보**. `.env` 지정 remote와 동일한 저장소의 GitHub 연결 도구로 Tree/Commit/Branch를 게시했다. 로컬 staged tree와 원격 Tree의 SHA가 정확히 일치함을 확인한 뒤 로컬 branch를 같은 Commit으로 fast-forward 했다. CLI 401을 CLI Push 성공으로 기록하지 않는다.

@@ -18,7 +18,8 @@ import {ViewerLoadError} from '../core/viewer-load-error';
 import {SelectionController,type SelectionMode} from './selection-controller';
 import {reconcileRenderCoverage,type RenderObservation,type RenderCoverage} from './render-coverage';
 import type {DxfOutlineIndex,OutlineEntity,OutlineKind,OutlinePath} from '../core/outline-geometry';
-import {computeRenderOutline,type OutlineResult} from '../core/outline-compute';
+import type {OutlineResult} from '../core/outline-compute';
+import {captureSceneVisibility,applySceneVisibility} from './scene-layer-visibility';
 import type {OutlineInfo,SavedOutline,SavedOutlineOverlayState} from '../core/adapter';
 import type {OutlineAssignment} from '../../domain/outline-assignment';
 import {parseOutlineAssignmentMetadata} from '../../domain/outline-assignment';
@@ -60,6 +61,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
   private renderIndex?:DxfOutlineIndex;
   private sceneWork?:SceneWorkDocument;
   private sceneObjects=new Map<string,{object:THREE.Object3D;baseLocal:THREE.Matrix4;baseWorld:THREE.Matrix4;intrinsicVisible:boolean;layer:string}>();
+  private intrinsicSceneVisibility=new Map<THREE.Object3D,boolean>();
   private rendererIds=new Map<string,string>();
   private indexError?: string;
   private renderCoverage?: RenderCoverage;
@@ -272,6 +274,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
   private initializeRenderWork(scope:SceneScope){
     if(!this.object)return;
     this.sceneWork?.dispose();this.sceneObjects.clear();this.rendererIds.clear();
+    this.intrinsicSceneVisibility=captureSceneVisibility(this.object);
     this.renderIndex=sceneOutlineProjection(this.object,scope);
     const accepted=new Set(this.renderIndex.entities.map(e=>e.id));
     this.object.updateWorldMatrix(true,true);
@@ -326,8 +329,13 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
       const parentWorld=row.object.parent?.matrixWorld??new THREE.Matrix4();
       const local=parentWorld.clone().invert().multiply(wcs).multiply(row.baseWorld);
       row.object.matrixAutoUpdate=false;row.object.matrix.copy(local);
-      row.object.visible=row.intrinsicVisible&&delta.visible&&this.visibleLayers.has(row.layer);
     }
+    // Reconcile ALL imported nodes, including display-only Points/nonplanar/multi-material geometry.
+    // Visibility is baseline AND own layer AND work delta; parent visibility propagates normally.
+    applySceneVisibility(this.object,this.intrinsicSceneVisibility,this.visibleLayers,object=>{
+      const id=this.rendererIds.get(object.uuid);
+      return id?this.sceneWork!.get(id).visible:true;
+    });
     this.object.updateWorldMatrix(true,true);
     this.renderIndex=sceneOutlineProjection(this.object,this.sceneWork.scope);
     this.selector?.setRenderEntities(this.renderIndex.entities.filter(e=>this.effectivelyVisible(e.id)));
@@ -416,7 +424,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     const task=this.activeWorkers[kind];delete this.activeWorkers[kind];
     task?.worker.terminate();task?.cancel();
   }
-  private runOutlineWorker<T>(kind:'index'|'compute',payload:Record<string,unknown>):Promise<T>{
+  private runOutlineWorker<T>(kind:'index'|'compute',payload:Record<string,unknown>,renderBasis=false):Promise<T>{
     this.terminateWorker(kind);
     if(this.disposed)return Promise.reject(new DOMException('취소됨','AbortError'));
     return new Promise<T>((resolve,reject)=>{
@@ -435,7 +443,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
       };
       worker.onerror=()=>finish(new Error('외곽선 Worker를 실행할 수 없습니다.'));
       const timer=setTimeout(()=>finish(new Error('외곽선 계산 제한 시간(30초) 초과')),30000);
-      worker.postMessage({task:kind,...payload});
+      worker.postMessage({task:kind==='compute'&&renderBasis?'compute-render':kind,...payload});
     });
   }
   private selectionChanged=(selected:OutlineEntity[])=>{
@@ -652,9 +660,9 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     this.previewKind=kind;
     const sequence=++this.computeSequence;
     try {
-      const result=this.mode==='select'
-        ? await this.runOutlineWorker<OutlineResult>('compute',{kind,entities:selected,tolerance:0.02})
-        : computeRenderOutline(kind,selected,0.02);
+      // Both SOURCE and RENDER share Worker termination, Escape cancellation and the 30s timeout.
+      const result=await this.runOutlineWorker<OutlineResult>('compute',
+        {kind,entities:selected,tolerance:0.02},this.mode!=='select');
       if(this.disposed||sequence!==this.computeSequence)throw new DOMException('취소됨','AbortError');
       this.preview=result;
       if(this.previewGroup){this.scene.remove(this.previewGroup);release(this.previewGroup);}
@@ -768,6 +776,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     for(const group of [this.selectionGroup,this.previewGroup,this.savedGroup,this.selectedSavedGroup])if(group)release(group);
     this.savedGroups.clear();this.renderedTransforms.clear();this.document?.dispose();this.document=undefined;
     this.sceneWork?.dispose();this.sceneWork=undefined;this.sceneObjects.clear();this.rendererIds.clear();
+    this.intrinsicSceneVisibility.clear();
     this.controls.removeEventListener('change',this.cameraChanged);
     this.sceneArtifact=undefined;this.sceneTextIndex=undefined;
     this.controls.dispose();if(this.object)release(this.object);this.scene.clear();

@@ -1,3 +1,12 @@
+## PR #170 — CI 성공 후 Codex P2 보완 회귀 추가 (2026-10-30)
+
+- 기존 HEAD `33e560393527312e0388560bd0d13e62b5124e31`의 PR CI #41036925858 Verify/Docker는 SUCCESS. 두 P2 수정 전 성공이므로 후속 HEAD에 재사용하지 않는다.
+- 신규 Unit: `scene-s5.test.ts`에서 선택 불가 Points의 Layer off/on, 선택 가능 Mesh의 작업 숨김 유지, intrinsic hidden 부모 보존을 검증하도록 추가.
+- 신규 Browser: `scene-s5-adapter.spec.ts`에서 실제 `compute-render` Worker fetch와 display-only Points의 Layer off/on 복원을 검증하도록 추가. esbuild harness를 ESM module로 제공해 Worker URL을 올바르게 해석한다.
+- 이 패치는 소스 및 회귀 **작성만 완료**, 별도 로컬 실행은 NOT RUN. 신규 PR CI/재리뷰·실 CAD/GPU 성능/운영 수용은 결과 관측 전 NOT VERIFIED. 기존 91 files/639 PASS·S5 3/3 PASS 등은 수정 전 시험으로 역사 보존한다.
+
+---
+
 ## #166 Scene S5 — 0.47.0 로컬 구현·검증 (2026-10-30)
 
 - **기준과 역할:** Main `bdde565`, 격리 worktree `layoutManager-issue166` / `feat/issue-166-scene-work`. 지정 gpt-6-astra Manager `/root/s5_manager`가 구현 전에 Requirements/Architecture/ADR-061/TestPlan을 기록했고, gpt-6-sol Developer `/root/s5_manager/s5_developer`가 domain·Three Adapter·Controller·projection·Unit을 구현했다. Root(Codex)가 UI/Manager facade·브라우저 테스트·문서/버전 및 발견된 통합 결함을 보완했다. Manager가 Developer 보고를 검토한 후 gpt-6-luna 독립 QA `/root/s5_manager/s5_qa`를 실행했다. 역할을 대행했다고 허위 기록하지 않으며 Root 실행과 독립 QA 보고를 아래에서 구분한다.

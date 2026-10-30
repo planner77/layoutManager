@@ -7,21 +7,32 @@ async function clickWcs(page:Page,x:number,y:number){
   const canvas=(await page.locator('canvas').boundingBox())!;await page.mouse.click(canvas.x+p!.x,canvas.y+p!.y);
 }
 test('S5 actual restored Mesh adapter: interior click, work/layer/ancestor visibility, WCS transforms and immutable baseline',async({page})=>{
-  const bundle=await build({entryPoints:['tests/e2e/scene-s5-browser.ts'],bundle:true,platform:'browser',format:'iife',write:false,logLevel:'silent'});
+  const [bundle,workerBundle]=await Promise.all([
+    build({entryPoints:['tests/e2e/scene-s5-browser.ts'],bundle:true,platform:'browser',format:'esm',write:false,logLevel:'silent'}),
+    build({entryPoints:['viewers/core/outline-worker.ts'],bundle:true,platform:'browser',format:'esm',write:false,logLevel:'silent'}),
+  ]);
+  await page.route('**/core/outline-worker.ts',r=>r.fulfill({contentType:'application/javascript',body:workerBundle.outputFiles[0].text}));
   await page.route('**/__s5-adapter.js',r=>r.fulfill({contentType:'application/javascript',body:bundle.outputFiles[0].text}));
-  await page.route('**/__s5-adapter',r=>r.fulfill({contentType:'text/html',body:'<body><script src="/__s5-adapter.js"></script></body>'}));
+  await page.route('**/__s5-adapter',r=>r.fulfill({contentType:'text/html',body:'<body><script type="module" src="/__s5-adapter.js"></script></body>'}));
   await page.goto('/__s5-adapter');await page.evaluate(()=>window.s5Ready);
   await clickWcs(page,2,2);
   const selected=await page.evaluate(()=>window.s5Adapter.selected());expect(selected).toHaveLength(1);expect(selected[0].origin).toBe('RENDER');
   const id=selected[0].id;
   await page.evaluate(id=>window.s5Adapter.command({type:'Translate',ids:[id],dx:3,dy:4}),id);
   expect(await page.evaluate(()=>window.s5Adapter.selected())).toEqual(selected);
+  const workerRequest=page.waitForRequest('**/core/outline-worker.ts');
   const moved=await page.evaluate(()=>window.s5Adapter.preview());
+  await workerRequest;
   expect(moved.geometry).toEqual({type:'Polygon',coordinates:[[[3,4],[13,4],[3,14],[3,4]]]});
   await page.evaluate(()=>window.s5Adapter.clear());await clickWcs(page,5,6);
   expect(await page.evaluate(()=>window.s5Adapter.selected())).toEqual(selected);
   await page.evaluate(id=>window.s5Adapter.command({type:'Visibility',ids:[id],visible:false}),id);
   expect(await page.evaluate(()=>window.s5Adapter.selected())).toEqual([]);
+  expect(await page.evaluate(()=>window.s5Adapter.displayVisible())).toBe(true);
+  await page.evaluate(()=>window.s5Adapter.displayLayer(false));
+  expect(await page.evaluate(()=>window.s5Adapter.displayVisible())).toBe(false);
+  await page.evaluate(()=>window.s5Adapter.displayLayer(true));
+  expect(await page.evaluate(()=>window.s5Adapter.displayVisible())).toBe(true);
   await page.evaluate(()=>window.s5Adapter.layer(false));
   await page.evaluate(id=>window.s5Adapter.command({type:'Visibility',ids:[id],visible:true}),id);
   await clickWcs(page,5,6);expect(await page.evaluate(()=>window.s5Adapter.selected())).toEqual([]);

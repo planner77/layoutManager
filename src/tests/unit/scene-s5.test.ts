@@ -2,6 +2,7 @@ import {describe,it,expect} from 'vitest';
 import * as THREE from 'three';
 import {sceneScope,tagImportedTree} from '../../viewers/three-dxf-viewer/scene-tags';
 import {sceneOutlineProjection} from '../../viewers/three-dxf-viewer/scene-projection';
+import {captureSceneVisibility,applySceneVisibility} from '../../viewers/three-dxf-viewer/scene-layer-visibility';
 import {SelectionSpatialIndex} from '../../viewers/three-dxf-viewer/selection-spatial-index';
 import {SceneWorkDocument} from '../../domain/scene-work';
 import {computeRenderOutline} from '../../viewers/core/outline-compute';
@@ -57,6 +58,31 @@ describe('S5 render identity, projection, work, provenance',()=>{
   expect(doc.redo()).toBe(true);expect(doc.getState().objects[0].visible).toBe(true);
   expect(JSON.stringify(asset)).toBe(before);expect(Array.from(mesh.geometry.getAttribute('position').array)).toEqual(vertices);
   expect(root.children[0].position.x).toBe(100);
+ });
+ it('toggles display-only geometry without overriding intrinsic or session work visibility',()=>{
+  const root=new THREE.Group(),selectable=new THREE.Mesh(geometry());
+  selectable.userData.cadLayer='WORK';root.add(selectable);
+  const points=new THREE.Points(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(50,0,0)]),
+    new THREE.PointsMaterial());
+  points.userData.cadLayer='DISPLAY';root.add(points);
+  const hiddenParent=new THREE.Group();hiddenParent.visible=false;hiddenParent.userData.cadLayer='DISPLAY';
+  root.add(hiddenParent);
+  const child=new THREE.Line(new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(0,0,0),new THREE.Vector3(1,1,0)]));
+  child.userData.cadLayer='WORK';hiddenParent.add(child);
+  tagImportedTree(root,scope);
+  expect(sceneOutlineProjection(root,scope).entities.some(e=>e.layer==='DISPLAY')).toBe(false);
+  const baseline=captureSceneVisibility(root),layers=new Set(['WORK','DISPLAY']);
+  applySceneVisibility(root,baseline,layers,object=>object!==selectable);
+  expect(points.visible).toBe(true);expect(selectable.visible).toBe(false);
+  expect(hiddenParent.visible).toBe(false);
+  layers.delete('DISPLAY');
+  applySceneVisibility(root,baseline,layers,()=>true);
+  expect(points.visible).toBe(false);expect(selectable.visible).toBe(true);
+  layers.add('DISPLAY');
+  applySceneVisibility(root,baseline,layers,object=>object!==selectable);
+  expect(points.visible).toBe(true);expect(selectable.visible).toBe(false);
+  expect(hiddenParent.visible).toBe(false);expect(child.visible).toBe(true);
  });
  it('creates browser-only render result without source handles and strict parser rejects its JSON',()=>{
   const {root}=fixture();const entity=sceneOutlineProjection(root,scope).entities[0];
