@@ -1,3 +1,11 @@
+## v0.47.1 공식 GHCR 발행 — Issue #98/#83 (2026-10-30)
+
+- 최종 PR #171 CI #316 SUCCESS, Squash Main [e1984e26](https://github.com/planner77/layoutManager/commit/e1984e26a8649f0ac2bce3b0cb74ce69b163441e); [Main CI #93](https://github.com/planner77/layoutManager/actions/runs/41064962451) SUCCESS.
+- 신규 `v0.47.1` 및 `ghcr.io/planner77/layoutmanager:0.47.1`+`:0.47.1-migrate`·latest pair 게시 성공. 정확 SHA-256은 [FailureLedger](FailureLedger.md)에서 확인. 기존 `v0.47.0` 유지.
+- Issue #98/#83 코어 구현 종료, #172·#65/#71/#73·#84·#96/#109/#113 후속 수용 별도. 현장 설치·기존 볼륨 이전·복구·Auth 활성화 미실행.
+
+---
+
 ## 0.47.1 — #98/#83 CadOutline·CadMemo 별도 업무 영속 Release 후보 (2026-10-30)
 
 - 기존 0.47.0 GHCR App/Migrator 정식 쌍을 덮어쓰지 않도록 `src/package.json`과 lockfile을 함께 0.47.1로 승격.

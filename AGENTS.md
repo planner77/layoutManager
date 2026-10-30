@@ -1,3 +1,10 @@
+## #98/#83 PR #171 v0.47.1 합성 릴리스 완료 및 후속 구분 (2026-10-30)
+
+- [원장](out/FailureLedger.md) 최상단의 PR #316 SUCCESS / Main CI #93 SUCCESS / `v0.47.1` App·Migrator paired digest 실제 GHCR 게시 증거를 기준으로 한다. 병합/Main 릴리스 `e1984e26a8649f0ac2bce3b0cb74ce69b163441e`는 보존하고, 이 결과를 **문서 전용 후속 커밋**으로 기록한다. Docs-only Main push는 release-scope에서 GHCR SKIPPED 조건이어야 하며 새 릴리스 SHA와 동일하다고 주장 금지.
+- #98/#83 코어 영속 코드 구현 및 합성 CI 완료로 이슈 종료, **실 현장 수용이나 원문 AC 전체 통과는 아님**. 공동 편집 #172, 업무 타입 #65/#71/#73, 연결 메모 #84, 사내 Auth/현장 #96/#109/#113은 OPEN. 신규 Greenfield만 지원하며 이전 Volume 자동 이관/파괴·사내 원본 공개·Auth/Writer 임의 활성화는 금지.
+
+---
+
 ## #98/#83 PR #171 정식 GHCR 릴리스 버전 보호 (2026-10-30)
 
 - [실패 원장](out/FailureLedger.md)의 #315 `8af8b65d` PR SUCCESS와 이전 Main `v0.47.0` App/Migrator 쌍 게시 증거를 구분한다. `.github/workflows/docker-publish.yml`는 **버전 태그가 이미 있고 두 버전 이미지가 존재하면 GHCR 빌드/게시를 생략**한다. 새 런타임 배포에는 기존 버전 태그를 강제 이동하거나 `:latest`만 교체하지 말고 `src/package.json`과 lock을 `0.47.1`로 함께 갱신하고 **그 새 HEAD의 PR CI SUCCESS 후** Squash Merge한다.

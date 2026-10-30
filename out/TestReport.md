@@ -1,3 +1,12 @@
+## #98/#83 Release 0.47.1 — 확정 Main CI 및 GHCR 쌍 결과 (2026-10-30)
+
+- [PR #171](https://github.com/planner77/layoutManager/pull/171) 최종 검증 SHA `d74d1f312386b020175035d5aa1aaf3066bc144e`, [PR CI #316](https://github.com/planner77/layoutManager/actions/runs/41062911805) `completed/success`, Verify `124086863559`·Docker `124086863008` 모두 SUCCESS. 새 빈 Greenfield 및 자동 E2E 범위; 실 현장/기존 Volume/실 CAD 수용은 아님.
+- [Main Squash commit](https://github.com/planner77/layoutManager/commit/e1984e26a8649f0ac2bce3b0cb74ce69b163441e) `e1984e26a8649f0ac2bce3b0cb74ce69b163441e`; [Main CI #93](https://github.com/planner77/layoutManager/actions/runs/41064962451) `completed/success`, release-scope `124093785009` SUCCESS, GHCR Build/push `124093830002` SUCCESS, `v0.47.1` 태그 생성·App/Migrator 두 후보 검증·정식 태그 쌍 승격·OCI layer 측정 모두 SUCCESS.
+- OCI Digest: App `sha256:85c00935aa11d397150344a54acf0d1123c6c3cd1f6beef74b426a837e0c15d4`, Migrator `sha256:82861f95380d9837ad83a8dc13d49f33b09df767145e35d2f5591b67c38944ae`; `:0.47.1[-migrate]`, `:latest[-migrate]` 4태그 승격 성공.
+- #98/#83 코어 코드/합성 시험 종료, #172 Editor 공동편집·현장 수용, #65/#71/#73 타입/트리, #84 연결 메모, #96/#109/#113 실제 권한/현장 인증 별도 OPEN; `Owner Accepted Site`/실 운영 초기화·이관·복원/롤백 주장 금지.
+
+---
+
 ## #98/#83 PR #171 성공 검증과 릴리스 버전 변경 후 재검증 구분 (2026-10-30)
 
 - [PR CI #315](https://github.com/planner77/layoutManager/actions/runs/41059992557) HEAD `8af8b65d016865498a67f6ee4cf70184a0ad22c4`, completed/success. Verify 124077023981·Docker 124077024801 모두 SUCCESS; 변경 전 Run #311/#314 실패는 역사 보존. 본 CI는 증분 소스·합성 Greenfield 범위의 자동 검증이고 기존 볼륨/실 CAD 현장 수용은 수행하지 않음.
