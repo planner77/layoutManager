@@ -37,6 +37,8 @@ import { ViewerLoadError, isViewerCancellation } from '@/viewers/core/viewer-loa
 import {runtimeCadHeaders} from '@/features/g7-runtime/client';
 import type {SceneWorkCommand,SceneWorkState} from '@/domain/scene-work';
 import type {ResetMode} from '@/domain/cad-reset';
+import {MemoSessionSnapStore,nearestMemoSnap,
+  type MemoSnapCandidate,type SessionSnapProjection} from '@/domain/memo-session-snap';
 import {SceneWorkTools} from './scene-work-tools';
 
 export function CadViewer({
@@ -85,6 +87,10 @@ export function CadViewer({
   const viewerShell = useRef<HTMLDivElement>(null);
   const manager = useRef<ViewerManager | null>(null);
   const memoSession = useRef<MemoSession | null>(null);
+  // Browser-only associations. No localStorage, server DTO or unsaved target UUID promotion.
+  const sessionSnaps=useRef<MemoSessionSnapStore|null>(null);
+  const [sessionSnapProjection,setSessionSnapProjection]=useState<Record<string,SessionSnapProjection>>({});
+  const [pendingSnap,setPendingSnap]=useState<MemoSnapCandidate|null>(null);
   const memoDragActive = useRef(false);
   const viewEpoch = useRef(0);
   const viewFrame = useRef(0);
@@ -119,9 +125,29 @@ export function CadViewer({
   }, []);
   useEffect(() => () => { if(viewFrame.current) cancelAnimationFrame(viewFrame.current); }, []);
   const memoScope = { versionId, sourceSha256 };
-  // Fail closed *during render*, before cleanup effects run on a new Version/SHA.
+  // Only a visual projection. Persisted MemoDraft remains server-owned and unchanged.
+  // Session snapshots disappear on renderer/Version reload.
   const memoScoped = memoLifecycleKey === versionId + ':' + sourceSha256;
-  const scopedMemos = memoScoped ? memos : [];
+  const scopedMemos = memoScoped ? memos.map(m=>{
+    const projection=sessionSnapProjection[m.id];
+    return projection?{...m,anchorWcsXY:projection.world}:m;
+  }) : [];
+  const getSessionSnapStore=useCallback(()=>{
+    if(!sessionSnaps.current||!sessionSnaps.current.matches({versionId,sourceSha256}))
+      sessionSnaps.current=new MemoSessionSnapStore({versionId,sourceSha256});
+    return sessionSnaps.current;
+  },[versionId,sourceSha256]);
+  const syncSessionSnaps=useCallback(()=>{
+    const store=sessionSnaps.current;
+    if(store?.matches({versionId,sourceSha256}))
+      setSessionSnapProjection(store.reconcile(manager.current?.getMemoSnapTargets()??[]));
+  },[versionId,sourceSha256]);
+  const nearestSessionSnap=useCallback((point:MemoWcsXY):MemoSnapCandidate|null=>{
+    const current=manager.current;
+    if(!current||renderer!=='three-dxf-viewer'||format!=='DXF')return null;
+    return nearestMemoSnap({versionId,sourceSha256},point,current.getMemoSnapTargets(true),
+      p=>current.projectWcsToCanvas(p),12);
+  },[versionId,sourceSha256,renderer,format]);
   const getMemoSession = () => {
     if (!memoSession.current || !memoSession.current.matches(memoScope)) {
       memoSession.current = new MemoSession(memoScope);
@@ -131,6 +157,8 @@ export function CadViewer({
   const resetMemos = useCallback(() => {
     memoSession.current?.clear();
     memoSession.current = null;
+    sessionSnaps.current?.clear();sessionSnaps.current=null;
+    setSessionSnapProjection({});setPendingSnap(null);
     setMemoLifecycleKey(versionId + ':' + sourceSha256);
     memoDragActive.current = false;
     setMemoCancelSignal(previous => previous + 1);
@@ -347,7 +375,8 @@ export function CadViewer({
     setSavedOverlayStates(manager.current?.getSavedOutlineStates() ?? []);
     setGeneratedHistory(manager.current?.getGeneratedHistory() ?? {undo:0,redo:0,limit:100});
     setSceneWork(manager.current?.getSceneWorkState() ?? {objects:[],undo:0,redo:0,limit:100});
-  }, []);
+    syncSessionSnaps();
+  }, [syncSessionSnaps]);
   /** Snapshot intent before confirmation, revalidate against the live Version on commit. */
   const openDelete = useCallback((savedOutlineId?:string) => {
     const current=manager.current;
