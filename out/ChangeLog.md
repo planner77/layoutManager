@@ -1,3 +1,11 @@
+## 0.47.3 PR #175 corrective changes (2026-10-31)
+
+- Correct strict TypeScript TS18047 x5 from first PR CI #41137913177 (and dependent Docker Next baseline failure); shared desktop movable Memo Tree with pointer/keyboard/reset and modal fallback (#138 P1).
+- Fix local group assignment/deletion synchronization with MemoSession and search completion filtering (Codex P2 x2). Preserve old v0.47.2 one-row Anchor baseline for read-only runtime compatibility while maintaining exact schema checks.
+- Three review threads replied/resolved; Unit/E2E/Greenfield compatibility tests and failure ledger updated. New PR CI will run on final HEAD; no GHCR or issue closure.
+
+---
+
 ## v0.47.2 정식 GHCR Release 발행 확인 (2026-10-31)
 
 - [#173](https://github.com/planner77/layoutManager/pull/173) Issue #84 Memo M3 자동 Session Snap·서버 영속 Attachment, #167 SOURCE_ONLY/ALL Origin Reset 코어 구현. [PR CI #332](https://github.com/planner77/layoutManager/actions/runs/41127321736) SUCCESS 및 [Main `59068a62ad8bb4e90b9d016ed0ddc0e6ae639ab7`](https://github.com/planner77/layoutManager/commit/59068a62ad8bb4e90b9d016ed0ddc0e6ae639ab7) Squash 완료.

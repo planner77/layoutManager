@@ -1,3 +1,11 @@
+## 2026-10-31 PR #175 failure and review repairs
+
+First PR CI [#41137913177](https://github.com/planner77/layoutManager/actions/runs/41137913177) at `f9fbef1099`: TS18047 nullable Version/group in MemoGroupRepository caused Verify Typecheck (5 diagnostics) and dependent Docker Next baseline build failure. Unit/E2E/Compose runtime were skipped. Both guards now explicitly terminate with `return blocked`.
+Codex findings P1 draggable desktop Memo Tree (#138) and P2 canonical session-group synchronization/status filter have corresponding code and tests. Floating component uses one mounted right-side drawer, panel-scope reset and CSS workspace bounds, not CAD WCS; 320/390 mobile stays modal. Previous v0.47.2 Anchor baseline is still read as one-row recognized schema without automatic migration.
+Three Codex threads [r4429007637](https://github.com/planner77/layoutManager/pull/175#discussion_r4429007637), [r4429007642](https://github.com/planner77/layoutManager/pull/175#discussion_r4429007642), [r4429007644](https://github.com/planner77/layoutManager/pull/175#discussion_r4429007644) replied and resolved. Tests and new PR CI result are pending, no PASS claim.
+
+---
+
 # Issues #85/#86 — M4 Memo Tree and M5 Schedule (2026-10-31)
 
 ## Sources and dependencies

@@ -133,6 +133,18 @@ test('TC-M4-P1: dedicated desktop handle floats, reopens, keyboard positions and
   await handle.focus();
   await page.keyboard.press('ArrowLeft');
   await expect(dock).toHaveAttribute('data-viewer-panel-mode','floating');
+  // ESC cancels just the active panel gesture and restores the saved floating position.
+  const beforeCancel=await dock.boundingBox(), handleBox=await handle.boundingBox();
+  expect(beforeCancel).not.toBeNull();expect(handleBox).not.toBeNull();
+  await page.mouse.move(handleBox!.x+handleBox!.width/2,handleBox!.y+handleBox!.height/2);
+  await page.mouse.down();
+  await page.mouse.move(handleBox!.x+handleBox!.width/2-40,handleBox!.y+handleBox!.height/2+30,{steps:5});
+  await page.keyboard.press('Escape');
+  await page.mouse.up();
+  await expect(dock).toHaveAttribute('data-viewer-panel-dragging','false');
+  const afterCancel=await dock.boundingBox();
+  expect(Math.abs(afterCancel!.x-beforeCancel!.x)).toBeLessThan(3);
+  expect(Math.abs(afterCancel!.y-beforeCancel!.y)).toBeLessThan(3);
   await page.setViewportSize({width:1000,height:680});
   await expect.poll(async()=>{
     const box=await dock.boundingBox(),workspace=await page.getByTestId('viewer-workspace').boundingBox();

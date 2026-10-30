@@ -1,3 +1,12 @@
+## #85/#86 PR #175 initial CI failure evidence (2026-10-31)
+
+- PR CI [41137913177](https://github.com/planner77/layoutManager/actions/runs/41137913177), HEAD `f9fbef10997e912c50080c7bd7dc6fe7b96b603a`: Verify Job 124344823034 FAILED (TS18047 nullable Version/Group five diagnostics). Docker Job 124344822694 FAILED (same TS diagnostic while building baseline from new source).
+- Subsequent Unit/Integration/E2E/G7 first-install/Next production Docker runtime tests **NOT RUN (SKIPPED)**. This is not evidence of passing or failing those checks.
+- P1 Movable Memo Tree and two P2 session group/status filters addressed in code; 3 GitHub review threads replied/resolved. Synthetic tests added for floating CSS position, pointer/keyboard, group+M5, and previous G7 Anchor baseline.
+- Full post-remediation PR CI, human field UX, actual 2-PC CAD, historical volume migration and GHCR are **NOT VERIFIED / NOT PERFORMED**.
+
+---
+
 ## #84/#167 v0.47.2 — GHCR Release pair 실증 및 문서-only CI (2026-10-31)
 
 - **Release:** [Main CI #95 / Run 41131717206](https://github.com/planner77/layoutManager/actions/runs/41131717206) `completed/success` 정확 HEAD [`59068a62ad8bb4e90b9d016ed0ddc0e6ae639ab7`](https://github.com/planner77/layoutManager/commit/59068a62ad8bb4e90b9d016ed0ddc0e6ae639ab7), release-scope Job `124324008108` SUCCESS 및 GHCR Build/push Job `124324087630` SUCCESS. GHCR Log: `Publish version image: true`; `Published version pair: ghcr.io/planner77/layoutmanager:0.47.2 and ghcr.io/planner77/layoutmanager:0.47.2-migrate`. App `:0.47.2` `sha256:45d6df2cdb2100d2cf6b20264f0a39bc407938902b1490492c4c5a29036a5c06`, Migrator `:0.47.2-migrate` `sha256:77841b57e0e44b80b914beacedb02e4ce81bef2d0acb4524c545a19d6e47d6ad` (OCI SHA-256). `Promote paired release images after both candidates succeed` 단계에서 `:latest`/`:latest-migrate` alias 함께 정식 승격, published layer measurement 성공. Annotated Git tag `v0.47.2` 대상 `59068a62ad8bb4e90b9d016ed0ddc0e6ae639ab7` 정확 일치.

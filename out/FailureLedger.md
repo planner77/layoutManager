@@ -1,3 +1,26 @@
+## #85/#86 PR #175 — CI #41137913177 FAILURE + Codex P1/P2 remediation (2026-10-31)
+
+### Exact failed evidence
+- [PR CI Run 41137913177](https://github.com/planner77/layoutManager/actions/runs/41137913177), attempt 1, PR HEAD `f9fbef10997e912c50080c7bd7dc6fe7b96b603a`, `completed/failure`.
+- Verify Job `124344823034` **FAILURE** at `TypeScript 검사`: TS18047 `src/server/cad-business/memo-groups.ts` lines 15-16 (`v` nullable) and 58-60 (`group` nullable); 5 errors. Cause: the `blocked():never` call was not structurally expressed as terminating the guarded branch for TS narrowing. Fix: explicit `return blocked(...)` under both `!v` / `!group` checks. Do not use unsafe non-null assertions. Lint, Unit/Integration, Build, Playwright were **SKIPPED**, not SUCCESS.
+- Docker Job `124344822694` **FAILURE** in `Build pre-change baseline (same source, original Dockerfile)`: Next production build runs TS check on new HEAD code and encountered **same nullable `v` TypeScript error**. Docker Base Image/Compose resolution/setup succeeded. Remaining Docker size, migrator smoke and Greenfield tests **SKIPPED**. No independent Docker/migration bug evidenced by this run.
+
+### Codex review findings (all were initially unresolved)
+- P1 [r4429007637](https://github.com/planner77/layoutManager/pull/175#discussion_r4429007637): Memo Tree fixed drawer violated #138 `ViewerPanelPolicy` movable handle/reset/session placement. Added generic `movable-viewer-panel.tsx` + pure `viewer-panel-position.ts`, desktop pointer threshold/capture/cancel, keyboard Arrow/Shift, reset/close, ResizeObserver viewport clamp, z-order, CSS/native fullscreen-compatible local workspace positions; same component stays mounted between close/open; scope-key resets across Version/Renderer/reload; compact modal behavior unchanged. Added clamp Unit and pointer/keyboard/resize/close E2E. Other #138 panels not declared complete.
+- P2 [r4429007642](https://github.com/planner77/layoutManager/pull/175#discussion_r4429007642): on G7 OFF group assignment/return-to-unclassified only mutated Tree, but saved M5 schedule read `MemoSession.groupId=null` and reverted Tree assignment. Now validates Tree assignment, then updates canonical MemoSession metadata via `changeMemoMeta`; local group deletion also synchronizes MemoSession members while preserving schedule/visibility. Added E2E group assignment→completion save→group retained.
+- P2 [r4429007644](https://github.com/planner77/layoutManager/pull/175#discussion_r4429007644): group-name search coupled with memo-text predicate when status filter not default. Changed to `statusMatch && (groupNameMatch || memoTextMatch)`; E2E covers complete/incomplete/unmanaged group-name filtering.
+- Three inline review threads received replies (reply IDs 4429067656, 4429068070, 4429068372) and GitHub GraphQL state **RESOLVED**. Codex new-head review not yet claimed PASS.
+
+### Additional preventive regression
+- `src/server/g7-operational/runtime-db.ts`: old `202610310001_greenfield_anchor_baseline` was supported by `assertG7GreenfieldSchema` but absent from the high-level `assertG7RuntimeSchema` recognized one-row baselines after replacing current baseline with M4/M5. Added the exact previous Anchor marker and a synthetic former-baseline acceptance/drift rejection integration test. Does **not** migrate or weaken SQL fingerprint, FK or auth.
+- Updated `viewer-app-state.test.ts` default state to explicitly include `memoTreeOpen:false` plus compact/exclusive right-drawer regression (previous expected object was stale and would otherwise fail once Typecheck passed).
+- Local full Node/Prisma/Vitest/Playwright/Docker execution **NOT RUN** in GitHub-connector-only environment. Unit/E2E tests committed; new HEAD PR CI is the next evidence. No GHCR/operational database access or image action.
+
+### Gate
+Latest Main initially `870d3cf0a4f8e42d2e5c4132076d3b7ab9c52089`; confirmed PR branch behind=0, mergeable=true, 3/3 review threads resolved after corrections. New PR CI to be started against *final documented HEAD*, without follow-up monitoring per Owner. Issue #85/#86 OPEN, Main merge/GHCR publishing deferred.
+
+---
+
 ## #85/#86 M4/M5 — pre-PR-CI failure ledger (2026-10-31)
 
 - Existing open Draft PR #148 only implemented session M4 over old M1. Rebase/merge onto latest M2/M3 would overwrite newer server persistence, anchors or Viewer. Corrective action: clean branch from Main `870d3cf0a4f8e42d2e5c4132076d3b7ab9c52089`, selectively port domain/Tree/reducer/shell/tests; old PR #148 had zero unresolved review threads when checked.

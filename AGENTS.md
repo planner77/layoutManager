@@ -1,3 +1,12 @@
+## #85/#86 PR #175 initial CI failure / Codex P1-P2 correction (2026-10-31)
+
+- [PR CI #41137913177](https://github.com/planner77/layoutManager/actions/runs/41137913177) (HEAD `f9fbef10997e912c50080c7bd7dc6fe7b96b603a`) **failure**: Verify `TypeScript 검사` TS18047 five times, `src/server/cad-business/memo-groups.ts` nullable Version/group guard; Docker baseline build also failed when the **same TypeScript error** reached Next.js build. Both jobs failed; subsequent lint/unit/E2E/build targets were skipped. Do not present a Docker engine/migration failure as the root cause.
+- [Three Codex review threads](https://github.com/planner77/layoutManager/pull/175): P1 movable Memo Tree panel required by #138; P2 OFF MemoSession group lost when saving M5 schedule; P2 group-name search erroneously intersects memo-text match under M5 status filter. Fixed with shared `MovableViewerPanel` and Viewer CSS-viewport clamp, Meta session synchronization, status filter predicate, and focused Unit/Playwright coverage. Replies and resolved thread state recorded in [FailureLedger](out/FailureLedger.md).
+- Compatibility repair: runtime schema validator must recognize **previous one-row Anchor baseline** before treating a valid v0.47.2 installation as generic 7-history legacy; strict SQL fingerprint/check remains enforced. This is read compatibility, never an unauthorized upgrade of existing volumes.
+- New candidate HEAD must receive fresh PR CI. No assumption that previous failure is resolved by prior green runs. Owner requested **no CI monitoring**, and no Main merge/GHCR/Issue closure or operational Auth/Writer GO here.
+
+---
+
 ## #85/#86 M4/M5 integration (2026-10-31) — PR CI pending
 
 - M4 Tree ported from old partial #148 onto latest M2/M3. New empty Greenfield-only CadMemoGroup/CadMemoFeature. Group/member/visibility/settings writes G7 Site+Memo Owner+Revision CAS+Audit; Reader hide session only. Historical installed DB must not auto ALTER/adopt.

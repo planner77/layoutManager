@@ -1,3 +1,14 @@
+## #85/#86 PR #175 failure regression test matrix (2026-10-31)
+
+- TC-M4-P1: desktop Memo Tree dedicated handle drag beyond 5px -> floating, no canvas DOM remount, close/reopen retains position, keyboard Arrow/Shift placement, ResizeObserver viewport clamp, reset to original right edge. Desktop ESC cancel, drag/tree/canvas gesture isolation; 390px compact modal remains single.
+- TC-M4-P2: on OFF, local group assign -> saved M5 completion or date retains group; local group delete -> unclassified without erasing unrelated schedule settings.
+- TC-M4-M5-FILTER: group-name search combined with completed/in-progress/unmanaged filter is evaluated with independent status predicate, including memos whose own text does not match group name.
+- TC-G7-COMPAT-ANCHOR: v0.47.2 single-row Anchor baseline recognized through runtime-db without silent modification. Inserting only one new feature table with old marker must be rejected as drift.
+- TC-TS18047: strict TypeScript compile of memo-groups nullable Version/group branches; source-mode Docker Next baseline must not repeat same diagnostic.
+- First PR CI #41137913177 FAILED before tests; new HEAD Typecheck/Lint/Unit/E2E/Docker evidence remains **NOT VERIFIED** until distinct run. Owner requested no monitoring.
+
+---
+
 ## #85/#86 Memo M4/M5 PR CI plan (2026-10-31)
 
 M4: CRUD, owner/Version/SHA and stale CAS, atomically reassign deleted-group members, local vs saved visibility, hidden confirmation/WCS, ARIA keyboard/mobile, original Outline/Layer unaffected. M5: nullable Gregorian YYYY-MM-DD/leap/range, enable/disable confirmation, server UTC timestamp first-save/preserve/clear, client completedAt forgery rejected, Tree status filter. DB: new empty baseline exact DDL/FK/trigger/CHECK, historical signatures, G7 audit and denied writers. Regression: existing M1/M2/M3 and S6. PR CI Typecheck/Lint/Tests/Build/Docker NOT VERIFIED yet. [Spec](Issues85-86.md).

@@ -1,3 +1,11 @@
+## #85/#138 — Memo Tree uses shared floating Viewer-panel contract (2026-10-31)
+
+**Decision:** implement a reusable `MovableViewerPanel` from #138 and use it in #85's Memo Tree. The initially right-docked tree becomes floating only after title-handle pointer movement beyond 5 CSS px or keyboard arrows. Position is in Viewer workspace CSS coordinates and clamped to its measured viewport/panel sizes on resize/fullscreen/zoom, not in CAD WCS. Single DOM mount per panel preserves position on close/open; a keyed Version/SHA/Renderer/reload boundary resets it. A dedicated Reset and Close are available; mobile uses the existing #127 single modal and focus trap. ESC cancels only an active panel gesture, not Memo anchor interaction, and panel z-order stays below app menus and dialogs. No localStorage/server position persistence, canvas reload or DXF Source modification.
+
+**Scope:** this is the reusable helper and Memo Tree adoption, not a claim that all existing #138 Layer/Outline/Search/Tool panels have been migrated. Codex P1 #4429007637 required the change. [ViewerPanelPolicy](ViewerPanelPolicy.md), [Review Ledger](FailureLedger.md).
+
+---
+
 ## ADR-062-R1 — #84 브라우저 스냅은 영속 서버 검증과 분리 (2026-10-31)
 
 - 초기 PR #173의 범위 축소를 복구하여 임시 GENERATED 및 DXF_IMPORTED 세션 내부 객체에도 자동 Endpoint/Vertex/Center 후보 탐색을 허용한다. 12 CSS px tolerance와 점수/Scope/finite/visible/원본 소속 검증을 사용하고, 후보는 SceneWork·GeneratedDocument의 살아있는 객체에서만 추출한다.
