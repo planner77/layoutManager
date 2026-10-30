@@ -1,3 +1,13 @@
+## #166 PR #170 — 로컬 수용·리뷰/충돌 확인 후 최종 PR CI 인계 (2026-10-30 KST)
+
+- **구현 게시:** [PR #170](https://github.com/planner77/layoutManager/pull/170), branch `feat/issue-166-scene-work`, 최초 구현 Commit `89cb95e1be4e3b665e31ce7c5ad0c5f229d35288` (`feat(viewer): enable scene object work independently of source mapping`), 앱 **0.47.0 후보**. `.env` 지정 remote와 동일한 저장소의 GitHub 연결 도구로 Tree/Commit/Branch를 게시했다. 로컬 staged tree와 원격 Tree의 SHA가 정확히 일치함을 확인한 뒤 로컬 branch를 같은 Commit으로 fast-forward 했다. CLI 401을 CLI Push 성공으로 기록하지 않는다.
+- **리뷰/충돌:** 실제 PR 조회 `mergeable=true`, Main `bdde56504283f6c9695722829c839a93ac58876b`, 비교 `behind=0/ahead=1`, unmerged path 없음. review threads 조회 **미해결 0건**(새 PR에는 thread 자체 0건). 해결할 기존 원격 thread/충돌이 없었다. 지정 Manager/Developer/독립 QA의 로컬 검토와 GitHub 자동 리뷰 성공은 구분하며, 아직 없는 자동 리뷰 결과를 PASS로 표시하지 않는다.
+- **로컬 게이트:** 아래 누적 실패/정책 재시험 및 TestReport의 실제 실행을 유지한다. 최종 Build·Typecheck·Lint(기존 6 warnings) PASS와 최종 Build S5 Browser **3/3 PASS, 21.9초**, 전체 Unit **639 PASS** + 추가 **3 PASS** 별도. 일반 Browser **95 PASS/2 과거 정책 기대 FAIL → 해당 파일 4/4 재시험 PASS**이며 과거 실패를 삭제하지 않는다. Manager **ACCEPT LOCAL SCOPED**.
+- **CI 시작 범위:** PR 생성의 `opened`와 이 원장/보고서 후속 커밋의 `synchronize`가 기존 PR CI를 요청한다. **최종 HEAD 실행 시작 여부/Run URL은 원격 게시 후 PR 본문 인계와 최종 응답에서 확인**, 완료 모니터링은 요청대로 생략하며 CI 최종 결과는 **NOT VERIFIED**다. 이 기록의 커밋으로 전체 suite를 다시 로컬 실행하지 않는다(문서만 변경).
+- **유지:** #166/#160 및 영속 의존 이슈는 OPEN, 병합·태그·GHCR·운영 DB/Storage/볼륨·배포·실 CAD/2PC/DRM 전용 분석 미실행. 다음 구현은 별도 요청/승인 범위의 #167이며 이번 요청의 종료점은 PR CI 시작이다.
+
+---
+
 ## #166 S5 — 초기 로컬 실행·원격 접근 이력 (2026-10-30 KST)
 
 - **기존 작업 보존:** 원래 checkout `main`은 오래된 `7076efe`이며 `src/docker-compose.yml`, `src/next-env.d.ts` 사용자 변경 2개를 그대로 보존했다. 지정 remote와 `.env` 저장소 주소 정합성을 비밀 출력 없이 확인하고 최신 Main `bdde565`의 새 worktree/branch에서 구현한다.

@@ -37,7 +37,7 @@ APP_CREATED/메모 서버 CRUD·재접속 복원·typed catalog·영속 Tree·�
 
 **최종 빌드 재확인:** 최종 지원 안내/진단 및 코드 동결 뒤 Build·Typecheck PASS, Lint 기존 6 warnings/0 errors. 같은 최종 Build에서 신규 S5 Browser **3/3 PASS, 21.9초**, `/tmp/lm166-final-build-e2e.log`. Manager의 **ACCEPT LOCAL SCOPED** 판정은 ADR-061을 따른다.
 
-**원격 상태:** PR 게시·최신 리뷰/충돌·PR CI 시작은 실제 실행 후 기록한다. CI 성공, 이슈 전체 완료·병합·GHCR·배포는 이 로컬 검증의 PASS가 아니다.
+**원격 인계:** [PR #170](https://github.com/planner77/layoutManager/pull/170), 최초 Commit `89cb95e` 게시. 실제 review threads 0/미해결 0, Main behind 0/unmerged path 0/`mergeable=true` 확인. 이번 원장·보고서 문서 커밋을 동기화해 최종 HEAD PR CI를 시작하며 실제 Run URL/시작 확인은 PR 본문과 최종 응답을 따른다. 완료 모니터링을 하지 않아 최신 CI 결과는 NOT VERIFIED다. CI 성공, 이슈 전체 완료·병합·GHCR·배포는 로컬 검증의 PASS가 아니다.
 
 ---
 
