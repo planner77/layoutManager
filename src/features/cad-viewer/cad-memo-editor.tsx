@@ -1,6 +1,7 @@
 'use client';
 
 import type { MemoWcsXY } from '@/domain/cad-memo';
+import type {MemoAnchorState} from '@/domain/cad-memo-anchor';
 
 export type MemoEditorFields = { title: string; content: string; x: string; y: string };
 
@@ -8,6 +9,7 @@ export function CadMemoEditor({
   fields, onFieldsChange, placing, newAnchor, selectedId, count, error, confirmDelete,
   onConfirmCoordinate, onCreate, onSaveText, onApplyPosition, onArmDelete,
   onDelete, onCancel, persistent, busy,
+  anchor, anchorOptions, anchorTarget, onAnchorTargetChange, onAttach, onDetach,
 }: {
   fields: MemoEditorFields;
   onFieldsChange: (fields: MemoEditorFields) => void;
@@ -17,6 +19,12 @@ export function CadMemoEditor({
   count: number;
   persistent:boolean;
   busy:boolean;
+  anchor?:MemoAnchorState;
+  anchorOptions?:readonly {value:string;label:string}[];
+  anchorTarget?:string;
+  onAnchorTargetChange?:(next:string)=>void;
+  onAttach?:()=>void;
+  onDetach?:()=>void;
   error: string | null;
   confirmDelete: boolean;
   onConfirmCoordinate: () => void;
@@ -87,6 +95,24 @@ export function CadMemoEditor({
           className="rounded border border-slate-500 bg-white px-2 py-1.5">취소/닫기</button>
       </div>
     </div>
+    {persistent&&selectedId&&!creating&&<div data-testid="cad-memo-anchor-tools"
+      className="mt-2 flex flex-wrap items-center gap-2 rounded border border-amber-300 bg-white p-2">
+      <span data-testid="cad-memo-anchor-status">앵커: {anchor?.mode==='ATTACHED'
+        ?'객체 연결 · '+anchor.targetRef?.origin:anchor?.mode==='BROKEN_ANCHOR'
+        ?'연결 해제됨 (마지막 WCS 보존)':'자유 WCS'}</span>
+      <label htmlFor="cad-memo-anchor-target">대상
+        <select id="cad-memo-anchor-target" value={anchorTarget??''}
+          onChange={event=>onAnchorTargetChange?.(event.target.value)}
+          className="ml-1 max-w-64 rounded border border-slate-400 p-1">
+          <option value="">연결할 객체 선택</option>
+          {(anchorOptions??[]).map(o=><option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+      </label>
+      <button type="button" onClick={onAttach} disabled={busy||!anchorTarget}
+        data-testid="cad-memo-anchor-attach" className="rounded border border-teal-700 px-2 py-1">스냅 연결</button>
+      <button type="button" onClick={onDetach} disabled={busy||anchor?.mode==='FREE'}
+        data-testid="cad-memo-anchor-detach" className="rounded border px-2 py-1">연결 해제</button>
+    </div>}
     {confirmDelete && <p className="mt-1 text-red-800">선택한 메모를 삭제 처리합니다. 취소 시 데이터는 유지됩니다.</p>}
     {error && <p data-testid="cad-memo-error" role="alert" className="mt-1 text-red-800">{error}</p>}
     <p className="mt-1 text-slate-600">
