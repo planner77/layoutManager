@@ -10,10 +10,15 @@ import type { ViewerCommandGroup } from '@/features/cad-viewer/viewer-command-me
 import { OutlineTreePanel } from '@/features/cad-viewer/outline-tree-panel';
 import { GeneratedDeleteDialog } from '@/features/cad-viewer/generated-delete-dialog';
 import { CadMemoOverlay } from '@/features/cad-viewer/cad-memo-overlay';
+import { CadMemoTreePanel } from '@/features/cad-viewer/cad-memo-tree-panel';
+import {CadMemoSettingsEditor} from '@/features/cad-viewer/cad-memo-settings-editor';
+import {assignMemoToGroup,createMemoGroup,emptyMemoTreeState,isMemoVisible,removeMemoGroup,removeMemoTreeEntry,
+ renameMemoGroup,setMemoGroupVisible,setMemoVisible,type MemoTreeState} from '@/domain/memo-tree';
+import type {MemoSettingsInput} from '@/domain/memo-schedule';
 import { CadMemoEditor, type MemoEditorFields } from '@/features/cad-viewer/cad-memo-editor';
 import { createPreviewUuid } from '@/features/cad-viewer/preview-uuid';
 import { MemoSession, parseMemoWcsXY, type MemoDraft, type MemoWcsXY, type PersistedMemoDraft } from '@/domain/cad-memo';
-import { readPersistedMemos, mutatePersistedMemo,mutatePersistedMemoAnchor,resetPersistedBusiness,type MemoServerMode } from './cad-business-client';
+import { readPersistedMemos, mutatePersistedMemo,mutatePersistedMemoGroup,mutatePersistedMemoAnchor,resetPersistedBusiness,type MemoServerMode,type PersistedMemoGroup } from './cad-business-client';
 import { loadStoredOutlines, mutateStoredOutline, type StoredOutline } from './persisted-outline-client';
 import { PersistedOutlineOverlay } from './persisted-outline-overlay';
 import {parseWcsTranslation,selectedTranslationIds} from '@/domain/generated-translate';
@@ -98,6 +103,12 @@ export function CadViewer({
   const [memoCancelSignal, setMemoCancelSignal] = useState(0);
   const [memoLifecycleKey, setMemoLifecycleKey] = useState(() => versionId + ':' + sourceSha256);
   const [memos, setMemos] = useState<MemoDraft[]>([]);
+  const [memoTree,setMemoTree]=useState<MemoTreeState>(emptyMemoTreeState);
+  const [memoGroupRecords,setMemoGroupRecords]=useState<PersistedMemoGroup[]>([]);
+  const [memoFeaturesAvailable,setMemoFeaturesAvailable]=useState(false);
+  const [memoAllVisible,setMemoAllVisible]=useState(true);
+  const [memoTransientFocusId,setMemoTransientFocusId]=useState<string|null>(null);
+  const [memoTreeError,setMemoTreeError]=useState<string|null>(null);
   const [memoPlacing, setMemoPlacing] = useState(false);
   const [memoCandidate, setMemoCandidate] = useState<MemoWcsXY | null>(null);
   const [memoSelectedId, setMemoSelectedId] = useState<string | null>(null);
@@ -132,6 +143,9 @@ export function CadViewer({
     const projection=sessionSnapProjection[m.id];
     return projection?{...m,anchorWcsXY:projection.world}:m;
   }) : [];
+  const canvasMemos=scopedMemos.filter(m=>
+    (memoAllVisible&&m.visible!==false&&isMemoVisible(memoTree,m.id))||
+    memoTransientFocusId===m.id);
   const getSessionSnapStore=useCallback(()=>{
     if(!sessionSnaps.current||!sessionSnaps.current.matches({versionId,sourceSha256}))
       sessionSnaps.current=new MemoSessionSnapStore({versionId,sourceSha256});
@@ -163,6 +177,12 @@ export function CadViewer({
     memoDragActive.current = false;
     setMemoCancelSignal(previous => previous + 1);
     setMemos([]);
+    setMemoTree(emptyMemoTreeState);
+    setMemoGroupRecords([]);
+    setMemoFeaturesAvailable(false);
+    setMemoAllVisible(true);
+    setMemoTransientFocusId(null);
+    setMemoTreeError(null);
     setMemoServerMode('checking');
     setMemoPlacing(false);
     setMemoCandidate(null);
@@ -217,12 +237,19 @@ export function CadViewer({
         memoSession.current=session;
         setMemoLifecycleKey(versionId+':'+sourceSha256);
         setMemos(session.list());
+        setMemoGroupRecords(result.groups);
+        setMemoFeaturesAvailable(result.featuresAvailable);
+        setMemoTree({...emptyMemoTreeState,
+          groups:result.groups.map(g=>({id:g.id,name:g.name})),
+          groupByMemo:Object.fromEntries(result.memos.filter(m=>m.groupId).map(m=>[m.id,m.groupId!]))});
+      }else{
+        setMemoFeaturesAvailable(false);setMemoGroupRecords([]);
       }
       setMemoServerMode(result.mode);
       setMemoError(null);
     }).catch(error=>{
       if(controller.signal.aborted)return;
-      memoSession.current=null;setMemos([]);
+      memoSession.current=null;setMemos([]);setMemoGroupRecords([]);setMemoFeaturesAvailable(false);
       setMemoServerMode('unavailable');
       setMemoError(error instanceof Error?error.message:'메모 목록을 읽지 못했습니다.');
     });
@@ -492,6 +519,7 @@ export function CadViewer({
         const name=drawer.dataset.drawer;
         if(name==='layers')dispatchApp({type:'close-layers'});
         else if(name==='outlines')dispatchApp({type:'toggle-outline-tree'});
+        else if(name==='memos')dispatchApp({type:'toggle-memo-tree'});
         else if(name==='tools')dispatchApp({type:'close-tools'});
         requestAnimationFrame(()=>viewerShell.current?.querySelector<HTMLButtonElement>('[data-viewer-group=work]')?.focus({preventScroll:true}));
         return;
@@ -735,6 +763,8 @@ export function CadViewer({
         await mutatePersistedMemo('DELETE',versionId,{expectedRevision:old.revision},memoSelectedId);
       }else if(memoServerMode!=='off')throw new Error('메모 저장 서버 확인이 필요합니다.');
       doc.remove(memoSelectedId,{versionId,sourceSha256});
+      setMemoTree(current=>removeMemoTreeEntry(current,memoSelectedId));
+      setMemoTransientFocusId(null);
       sessionSnaps.current?.detach(memoSelectedId);syncSessionSnaps();
       setMemos(doc.list());closeMemoEditor();
     }catch(error){setMemoError(error instanceof Error?error.message:'메모 삭제가 취소되었습니다.');}
