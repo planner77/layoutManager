@@ -1,3 +1,12 @@
+## #98/#83 — 신규 영속 API/Viewer 후보 검증 상태 (2026-10-30)
+
+- 구현 파일: 별도 Greenfield-only DDL/Prisma, G7 인증·Site CRUD API, object revision CAS 및 성공 원자 Audit, immutable original SOURCE 검증/APP_CREATED 독립 WCS, Memo ACTIVE 재접속 hydrate와 OFF 임시 세션, Outline 명시 서버 저장 및 재조회 Overlay.
+- 구현 기준: [#98/#83 설계와 미결정 게이트](Issues98-83.md), `src/tests/unit/cad-business-contract.test.ts` 테스트 코드. 이 문서 작성 시 실제 로컬 **Prisma generate/typecheck/lint/test/build/Docker/Chromium 미실행 (NOT RUN)**.
+- PR 생성과 CI 시작은 요청 범위이나 CI 완료/성공을 선제 주장하지 않습니다. G7 실제 Site/2PC·실 도면/DXF/S3·운영 새 볼륨 설치/전환/기존 DB 이관·Auth on/Owner acceptance·GHCR/병합은 **NOT VERIFIED/NOT RUN**.
+- 미결정: #65 타입 관리, #84 연결 앵커, Memo 교차 Editor 권한, 오래된 DB/물리 삭제 보존 방식. 기존 성공한 #166 CI는 본 변경의 검증 근거가 아닙니다.
+
+---
+
 ## #166 — 최종 PR CI/병합·릴리스 인계 (2026-10-30 KST)
 
 - 변경 코드 최종 검증 HEAD `e9af3d192cb513d4182037f0431d5db5f14a4181`, [PR CI #41047867574](https://github.com/planner77/layoutManager/actions/runs/41047867574): Verify `124036411468` + Docker/Migration/Runtime `124036411148` **both completed/success**.
