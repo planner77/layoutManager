@@ -1,3 +1,24 @@
+## ADR-059 — #161–#163 Scene 계약 및 포맷 평가 (2026-10-30)
+
+**결정:** 최신 Owner #160에 따라 렌더링 Scene 객체의 앱 관리 ID와 생성 Origin을 정밀 DXF Handle 추적에서 분리한다. 기존 Source mapping은 조건부 정밀 기능에 유지하고 일반 객체 작업의 전면 선행조건으로 복원하지 않는다. 이번 단일 PR은 S0/S1/S2만 구현하며 S3 저장/S4 로더/S5 선택/S6 reset 실행은 후속이다. DRM H0~H3 및 실DXF는 이 개발의 선행 게이트가 아니다.
+
+| 후보 | 평가할 장점 | 반드시 실측할 손실/비용 |
+| --- | --- | --- |
+| Three Object JSON | ObjectLoader와 native geometry/material/hierarchy/userData 호환 | JSON 및 압축 크기, 버전 결합, userData 원본 메타데이터 정제, 대형 parse/peak memory |
+| GLB/glTF | 표준 binary, buffer 구조·외부 생태계 | line/linewidth/dash/material/text/각도·extras 보존, exporter 경고, 정밀도, Object ID 재검증 |
+| 전용 Scene DTO | 명시 schema/allowlist/ID/WCS, 부분 로드 확장 가능 | geometry/material/문자 재구현 비용, 지원 type 제한·명시 거부, 압축·복원 비용 |
+
+최종 후보는 동일 합성 DXF의 실제 parse/serialize/restore/render·byte/gzip 측정과 fidelity 결과로 선택한다. 기준은 형상·문자·계층·layer/visibility·색/선·메타데이터/선택 trace·large WCS·호환성 검증이며 벤치마크 수치는 성능 SLA가 아니다. Browser 변환은 기존 라이브러리의 DOM/font/WebGL 제약을 따르며 서버는 결과 bytes의 무결성·scope·schema를 독립 검증해야 한다. CPU-only 서버 생성 여부는 Node 실험 결과와 구분한다. 운영 임의 GLB export(#91)는 별도이다.
+
+재빌드 조건은 schema/builder/renderer/frame 불일치 또는 손상, 사용자 요청이다. READY asset TTL/부분 로드/압축/cache budget는 S3 검증 뒤 정하며 자동 원본 재파싱이나 업무 삭제로 회피하지 않는다. 현행 AGENTS.md 팀 매핑에 따라 gpt-6-astra Manager, gpt-6-sol Developer, gpt-6-luna QA의 실제 수행 증거를 TestReport에 남긴다.
+
+**S2 실험 판정 보충:** 합성 fixture에서 custom DTO는 원본 Three render 버퍼의 1,894 vertex/재구성 좌표를 정확히 보존했고, Three JSON ObjectLoader는 ShapeGeometry를 재생성해 일부 내부 vertex-index 배열이 달라졌다(실제 형상 손상 증명은 아님). GLB는 자산 크기는 작지만 추가 root/Group→Object3D·LineDashedMaterial 표현 차이와 별도 검증 envelope 비용이 있다. 따라서 S3 연구 후보는 **명시 custom DTO**이나, 실도면/다양한 upstream geometry·font·성능/압축·장기 schema migration 수용 전 운영 포맷 확정은 아니다. 근거는 TestReport의 SC-05~07 측정이다. GLB는 원시 upstream extras 포함, JSON/custom은 canonical metadata 정제라는 조건 차이가 있어 byte 크기만으로 우열을 판정하지 않는다. Builder ID에는 `explicitElevation-v1`과 `cad-scene-1`을 포함하며 변환 파이프라인 변경 시 새 identity를 요구한다.
+
+
+**S3 초기 성능/자원 예산 제안(미구현·미수용):** 대표 합성/현장 corpus별 fresh-load 복원 p95 ≤2초, main-thread 연속 작업 ≤100ms를 목표로 분할 실행/worker 가능성을 평가한다. 첫 bounded prototype의 압축 asset ≤64MiB·복원 peak heap ≤256MiB를 임시 시험 상한으로 제안하되 현재 소형 fixture만으로 충족을 주장하지 않는다. 초과는 측정·명시 실패/사용자 통제 재빌드 대상으로 기록하고 원본/APP_CREATED/Memo 삭제로 해결하지 않는다. 타입·geometry·material allowlist, manifest 기대치와 reference closure를 유지하고 서버 생성 경로/partial load/TTL/압축 도입 후 예산과 corpus를 확정한다. 이번 S2는 timing 단일 샘플이며 p95·heap·대형 asset 성능은 NOT MEASURED이다.
+
+---
+
 ## ADR-058 — #109 표준 Compose 무인 신규 설치 + 웹 최초 관리자 (2026-10-30)
 
 - **결정:** #153의 독립 수동 설치와 릴리스별 24h Owner Ed25519 GO는 현행 #109 일반 설치 과정에서 필수가 아니다. #109는 기본 `src/docker-compose.yml`/3000 포트의 Self-hosted 신규 설치로 구현한다. 기존 24h 서명 경로 코드는 수정/삭제하지 않고 분리 보존하며 0.44.2 새 릴리스 후보로 구분한다.

@@ -1,6 +1,6 @@
 {
   "name": "cad-layout-viewer",
-  "version": "0.44.2",
+  "version": "0.45.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -40,14 +40,14 @@
     "dxf-viewer": "1.0.48",
     "lucide-react": "1.41.0",
     "next": "16.3.4",
+    "polygon-clipping": "0.15.7",
     "radix-ui": "1.6.7",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "server-only": "0.0.1",
     "tailwind-merge": "3.6.0",
     "three": "0.171.0",
-    "three-dxf-viewer": "1.0.44",
-    "polygon-clipping": "0.15.7"
+    "three-dxf-viewer": "1.0.44"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",
@@ -57,6 +57,7 @@
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.7",
     "@types/three": "0.171.0",
+    "esbuild": "0.28.2",
     "eslint": "9.39.4",
     "eslint-config-next": "16.3.4",
     "prisma": "7.10.0",

@@ -43,6 +43,9 @@ describe('TC-E2-UNIT-001: immutable WCS document and lossless history',()=>{
     const {doc,selection}=prepare();
     const original=doc.getObjects();
     const ids=selection.map(r=>r.id);
+    const sceneRefs=original.map(item=>item.sceneRef);
+    expect(sceneRefs.map(ref=>ref.origin)).toEqual(['APP_CREATED','APP_CREATED']);
+    expect(sceneRefs.map(ref=>ref.id)).toEqual(ids);
     const base=JSON.stringify(original.map(item=>item.baseGeometry));
     doc.execute(translate(ids),selection);
     doc.execute({type:'Rotate',ids,angleDegrees:90,pivot:[0,0]},selection);
@@ -67,6 +70,9 @@ describe('TC-E2-UNIT-001: immutable WCS document and lossless history',()=>{
       .toEqual(edited.map(generatedResult).map(item=>item.geometry));
     expect(doc.getObjects().map(item=>item.transform)).toEqual(edited.map(item=>item.transform));
     expect(doc.getObjects().map(item=>item.savedOutlineId)).toEqual(['local-1','local-2']);
+    expect(doc.getObjects().map(item=>item.sceneRef)).toEqual(sceneRefs);
+    expect(doc.setVisible('local-1',false)).toBe(true);
+    expect(doc.getObjects()[0].sceneRef).toBe(sceneRefs[0]);
   });
   it('detaches and freezes the external geometry; never mutates original DXF state',()=>{
     const external=result();

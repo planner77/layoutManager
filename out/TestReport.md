@@ -1,3 +1,47 @@
+## #161–#163 Scene S0/S1/S2 독립 QA (2026-10-30)
+
+- **역할/기준:** 현행 AGENTS.md 매핑의 gpt-6-astra Manager `/root/scene_manager`가 요구사항·설계·AC를 먼저 기록하고, gpt-6-sol Developer `/root/scene_manager/developer`가 구현, 완료보고 검토 후 gpt-6-luna 독립 QA `/root/scene_manager/qa`가 검토·시험했다. Root는 전체 회귀·빌드 및 최종 Git/PR 작업을 담당한다. 브랜치 `feat/issues-161-163-scene`, 기반 `a208cf0`. 최종 소스 freeze 이후 QA가 수행한 시험과 Developer/Root의 선행 결과를 구분한다.
+- **최종 소스 QA 실행:** `npx vitest run tests/unit/cad-scene.test.ts tests/unit/generated-document.test.ts tests/unit/canvas-object-selection.test.ts tests/unit/cad-memo.test.ts tests/unit/three-dxf-viewer-scene-serialization.test.ts`는 Vitest가 실제 발견한 4개 파일 **26/26 PASS**(1.12초; serialization test 경로는 존재하지 않아 실행되지 않음). 별도 focused 실행 `cad-scene`, `generated-document`, `canvas-object-selection`은 **3 files/20 tests PASS**. 따라서 실제 serializer 검증은 다음 Browser PoC에서 수행했다. GeneratedDocument Undo/Redo/visibility ID·Origin, Canvas SOURCE/GENERATED 및 memo/selection 호환 회귀를 포함한다.
+- **독립 Browser PoC:** `PLAYWRIGHT_CHROMIUM_EXECUTABLE=/home/planner/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome npx playwright test --config playwright.scene-poc.config.ts`, Playwright **1/1 PASS, 44.1초**, synthetic-only route, WebGL SwiftShader, producer와 별도 새 BrowserContext restore. fixture는 nested/repeated mixed INSERT, LINE/CIRCLE/ARC/LWPOLYLINE, TEXT/MTEXT, handleless entity, hidden/style probe 및 large WCS다. Three JSON semantic negatives 23, custom DTO negatives 6, manifest field negatives 11 및 byte corruption 확인. 원본 DXF/DB/GHCR/PR CI/실도면은 시험하지 않았다.
+- **포맷 관측:** 최종 QA 실행에서 Three JSON 186,303 B / gzip 23,379 B, custom DTO 194,752 B / gzip 29,816 B, GLB 140,932 B / gzip 19,311 B. Custom DTO는 1,894 vertices/26 nodes 및 비교 geometry scalar 전부 동일. Three JSON에서 ShapeGeometry 재생성 뒤 같은 vertex index의 393 scalar 값이 달랐고 최대 차이는 62.865였다. 이는 버퍼 표현/정점 순서 차이이며 동일 bbox·개수만으로 실제 형상 손상이나 완전 동등성을 판정할 수 없다. GLB는 ID 정렬 vertex sample 변화 0이나 root Group→Object3D 포함 27 nodes로 바뀌고, hierarchy/material semantics 제한이 관측됨. 대형 WCS 끝점은 converter 입력 100000100/100000010에서 100000096/100000008로 이미 반올림됐다. 이는 합성 결과이며 실제 DXF 허용오차/도면 수용 근거가 아니다. Converter에 Helvetica font를 공급했으므로 한글 렌더 결과 검증 아님.
+- **도메인/구현 검토:** domain 모듈은 Three/DOM/DB import 없이 SceneAsset/SceneObject/AppObject 및 ref를 검증한다. manifest expected scope/format/length/digest 대조와 READY asset revision 대 manifest revision 확인을 복원 시 수행하고 non-string asset state를 거부한다. Tree occurrence ID는 Version/source SHA/schema/builder/renderer/frame/unit과 경로 기반이며 Object3D.uuid와 분리. actual adapter converter 직후 tag, GeneratedDocument에서 APP_CREATED stable ref 유지, SOURCE/GENERATED compatibility bridge 확인. `src/prisma`, API, migration, 정상 loader/cache cutover, S5 selection/edit gate, S3 persistence/CAS 및 S6 reset 실행 추가 없음. DB/기존 Version/Auth/Site/Audit 불변은 source diff 확인 범위이며 실제 운영 DB 시험은 안 했다.
+- **실패·한계 이력:** 상세한 순차 구현/시험 실패와 보완은 [FailureLedger](FailureLedger.md)에 기록한다. Root의 선행 일반 E2E 88 PASS/6 FAIL은 병행 Developer isolated run이 공유 `src/test-results` artifacts를 삭제해 `context.close/dispose` ENOENT로 실패했으며 입증된 제품 실패는 아니다. Root가 unique output으로 재실행 중이므로 전체 E2E 상태는 **미확정**. Node CPU-only converter probe는 ProgressEvent 부재 및 browser 전역 의존으로 성공하지 못했으므로 CPU 지원 주장은 하지 않는다.
+- **판정/게이트:** S0/S1 및 synthetic S2 POC 로컬 검증은 통과. custom DTO는 포맷 평가 후보일 뿐 채택/운영 저장/cache 아님. Build2/전체 601 unit 및 signed Runtime UI 1건·Greenfield 최초 Admin UI 1건·Legacy migration UI 1건은 Root 선행 PASS 보고로만 기록하며 본 QA가 재실행하지 않았다. CI/PR, 전체 E2E 재실행, 실제 DXF·한글 font, 성능 예산, deployment/GHCR 및 운영 S3/DB는 NOT VERIFIED. DRM H0~H3는 최신 Owner 정책상 NOT REQUIRED이며 개발 미완료 게이트가 아니다. Root가 최종 보고·commit/push/PR을 담당한다.
+
+### Root 최종 회귀·Manager 수용 (2026-10-30)
+
+- 최종 일반 Playwright는 고유 output을 사용해 **94/94 PASS, 6.5분, exit 0**. 명령: `PLAYWRIGHT_CHROMIUM_EXECUTABLE=<설치 Chromium> CAD_E2E_PORT=3198 npm run test:e2e -- --output /tmp/layoutmanager-scene-full-e2e-final-results`; 로그 `/tmp/layoutmanager-scene-e2e-final.log`. 새 Scene PoC 36.2초 및 기존 93개 회귀를 포함한다. 앞선 88 PASS/6 FAIL은 실행 이력으로 보존한다.
+- Root 전체 Vitest **85 files/601 PASS, 262.32초** 및 Production Build 2회 PASS. 이후 동결 소스의 추가 계약/생성/선택/메모 변경은 위 독립 QA 집중 시험으로 확인했다. 최종 `npm run typecheck`와 `npm run lint` PASS(오류 0/기존 경고 6).
+- 격리 signed Runtime UI **1/1 PASS, 15.3초**, Greenfield 최초 Admin UI **1/1 PASS, 10.3초**, Legacy migration UI **1/1 PASS, 20.2초**. 각기 다른 임시 DB·포트·output이며 실제 운영 DB/계정/도면을 사용하지 않았다.
+- gpt-6-astra Manager는 실제 Developer/독립 QA 및 위 최종 회귀 결과를 검토해 **ACCEPT / 재작업 불필요**로 판정했다. 수용은 S0/S1 및 합성 S2 로컬 개발 범위이며 실도면·픽셀/선택 hit·CPU 서버·영속 API/DB·GHCR·배포 수용과 구분한다.
+- Git main `a208cf0` 대비 behind 0, staged 23파일의 diff/실제 Secret·credential pattern·CAD/DB/산출물 제외 검사 PASS. 원본 작업 폴더의 기존 수정 2개를 보존했다. 로컬 gh 인증 만료로 GitHub 연결 도구를 사용해 검증한 tree를 게시한다. PR 최신 HEAD의 리뷰/충돌 및 CI 시작은 후속 Git 기록으로 남기며 CI 결과는 모니터링하지 않는다.
+
+### SC-05~07 충실도 및 계측 해석
+
+| 비교 항목 | Three JSON | 전용 DTO | GLB/glTF binary |
+| --- | --- | --- | --- |
+| Geometry buffers | 1,894 vertices 유지, index 기준 393 scalar 차이; ShapeGeometry 재생성 | 측정한 position scalar/정점 순서 정확 일치 | stable ID 정렬 후 position scalar 차이 0; 추가 root 때문에 순회 순서 비교만 하면 오판 |
+| 계층·가시성 | 26 nodes/kind/visible 배열 일치 | 동일 | 27 nodes, Group→Object3D; `onlyVisible:false`로 숨긴 개체 포함 |
+| 레이어·ID·bbox | 원본 layer 분포 및 26개 앱 ID, bbox 일치 | 동일 | 기존 ID/레이어 분포 유지하나 추가 root는 UNSPECIFIED; bbox 일치 |
+| 색·선 스타일 | 테스트 material type/color/opacity/linewidth/dashSize/gapSize 배열 일치 | 동일 | material type 및 dashed/linewidth 의미 차이 관측 |
+| TEXT/MTEXT | 생성 mesh 개수 유지, 위 buffer 차이 포함 | 생성된 문자 mesh position 보존 | ID별 mesh position 보존 |
+| 문자 의미·자원 | raw parser entity/string을 canonical metadata에서 제거; 문자 검색용 semantic text 보존은 미구현 | 동일 | upstream JSON userData가 extras에 포함; 사용자 export/API로 제공하지 않음 |
+| WCS·단위 | INSUNITS=4/WCS XY와 이미 양자화된 bbox 유지 | 동일 | 같은 bbox; 별도 검증 envelope는 미구현 |
+
+하나의 LINE을 변환 후 hidden + 색 `0x12abef`·linewidth 3·dashSize 2/gapSize 1로 바꾼 **serializer style probe**가 포함된다. 이 실험은 DXF의 lineweight/linetype import 지원 증거가 아니며, 숨긴 선의 실제 dash/두께 픽셀 출력이나 스크린샷 동일성은 검증하지 않았다. WebGL draw 호출·좌표/속성 비교를 수행했지만 text 모양·픽셀/선택 hit 동등성은 전체 수용하지 않는다. 15개 container/병합 node는 원래 layer가 없으므로 UNSPECIFIED이며 임의 원본 layer/Handle을 만들지 않았다. viewport 회전이 있는 다른 도면의 canonical WCS 대응은 이번 fixture 밖이다.
+
+Developer의 **최종 source** 별도 실행 로그 `/tmp/scene-poc-post-scrub.log`(1/1 PASS, 34.8초)의 단일 샘플은 아래와 같다. QA 위 수치와 별도 실행이며 CPU/GPU 장비 성능 SLA 또는 p95가 아니다. DXF/font fetch를 포함한 getFromPath 생성 시간은 공통 **75.7ms**이고 render/frame 시간·peak heap은 미계측이다.
+
+| 포맷 | bytes | gzip bytes | 직렬화 ms | 복원 ms |
+| --- | ---: | ---: | ---: | ---: |
+| Three JSON | 186,303 | 23,350 | 21.9 | 12.4 |
+| 전용 DTO | 194,752 | 29,816 | 15.9 | 6.2 |
+| GLB | 140,932 | 19,304 | 31.1 | 6.8 |
+
+gzip 차이는 매 실행 생성되는 renderer UUID와 압축 내용의 영향을 받는다. GLB는 raw upstream extras도 포함하고 JSON/custom은 canonical ID/layer로 정제하므로 크기는 동일 metadata envelope의 압축 효율 순위가 아니다. 초기 개발 GLB 90,944B 측정은 외부에서 userData를 먼저 정제했던 구 하네스 결과로 보존하며 최종 140,932B 결과와 혼합하지 않는다. CPU-only Node probe는 native ProgressEvent 부재, 임시 호환 shim 뒤 WMFJS의 비동기 window 접근 실패를 관측했으므로 서버 생성 성공으로 승격하지 않는다.
+
+---
+
 ## #109 PR #159 — 독립 QA 재개 및 완료 (2026-10-30 KST, 0.44.2 후보)
 
 - **역할/이력:** 최초 요구·AC 기록·RED 재현·Build는 `/root` Codex가 Manager 역할로 수행했고, 지정 gpt-6-astra는 별도 `/root/manager_review`와 재개 후 `/root/manager_resume`에서 구현 검토·최종 수용을 담당한다. 제공 모델 목록에 과거 지정 gpt-5.6-sol/luna가 없어 개발은 gpt-6-sol이 Developer gpt-5.6-sol을 대행했다. 독립 QA는 gpt-6-luna가 과거 지정 gpt-5.6-luna를 대행했다. 앞선 QA 프로세스는 daemon 재시작으로 중단되었고 이번 작업은 `/root/qa_resume`의 gpt-6-luna가 복구했다. 최종 gpt-6-astra Manager는 실제 QA 결과·보고 정합성 검토 후 **ACCEPT / 재작업 불필요**로 판정했다. 수용 범위는 본 보완과 PR CI 재시작이며 현장 릴리스 수용이 아니다.
@@ -47,6 +91,7 @@
 - 이전 운영 6→7/HOLD 실패는 원장에 과거 증거로 유지하되 이번 신규 DB 설치의 AC가 아님.
 
 # 실제 검증 결과 및 Viewer 평가
+
 
 ## PR #156 — 두 P2 수정·강제 종료 회귀 (2026-10-29)
 

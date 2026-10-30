@@ -1,3 +1,13 @@
+## #161–#163 Scene S0 계약만 추가 (2026-10-30)
+
+**DDL/Prisma/기존 DB 변경 없음.** SceneAsset(Version ID, sourceSha256, asset byteDigest/byteLength, format, builderVersion, rendererVersion, sceneSchemaVersion, coordinateFrame, state), SceneObject(immutable scoped app ID/Origin, optional sourceRef/derivedFrom, working transform/visibility/revision), AppObject(별도 ID/WCS geometry/revision/업무 연계)는 순수 도메인 계약이다. source byte SHA와 derivative byte SHA는 서로 다른 identity이다.
+
+S3의 영속 모델은 #98 Outline/#83 Memo 및 #96 Site/Auth/Audit와 통합하여 별도 결정한다. immutable Asset 게시 + manifest pointer CAS + 관련 업무 변경은 같은 논리 거래로 처리; 저장 blob 검증 완료 전 READY 금지. source 삭제·asset TTL·업무 soft-delete는 자동 cascade로 합치지 않는다. reset A/B, BROKEN_ANCHOR, Undo 수명은 [Architecture](Architecture.md)의 Scene 절이 정본이다.
+#161–#163 구현 결과: DB Table/Column/Index/Migration 변경 0. SceneAsset/Manifest/WorkingRevision은 순수 Domain/테스트 메모리 계약이며 S3에서 별도 DB 설계·CAS·업무 소유권을 재검토한다.
+
+
+---
+
 ## #109 초기 DB 계약 — 일반 Docker Compose (2026-10-30)
 
 - 새 **빈** `/data/db/cad.sqlite`에 `G7-GREENFIELD-20261029-1` final schema를 최초 1회 생성하고 `_prisma_migrations`에는 `202610290001_greenfield_baseline` **한 건만** 저장한다. 구 6/7 Migration 기록을 합성하지 않는다.

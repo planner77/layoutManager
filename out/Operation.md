@@ -1,3 +1,21 @@
+## #161–#163 Scene 합성 실험 실행 (0.45.0 후보, 2026-10-30)
+
+기존 Viewer를 그대로 실행하면 `three-dxf-viewer`의 변환 결과에 Origin/앱 ID가 붙으며 생성 외곽선의 기존 사용법은 같습니다. Scene Asset 저장/재접속/reset API나 메뉴는 아직 없습니다. 업로드 원본·운영 DB·S3 저장소를 별도 생성/이동하지 않습니다.
+
+합성 실험만 단독 실행하려면 의존성 설치 후 프로젝트 Root에서 아래 명령을 사용합니다. Chromium이 필요하며 기존 설치는 `PLAYWRIGHT_CHROMIUM_EXECUTABLE`로 지정합니다. 별도 config는 실제 서버/DB 없이 localhost URL을 Playwright route로 가로채서 테스트 전용 HTML/JS/font를 제공합니다.
+
+```bash
+cd src
+npx vitest run tests/unit/cad-scene.test.ts tests/unit/generated-document.test.ts tests/unit/canvas-object-selection.test.ts tests/unit/cad-memo.test.ts
+npx playwright test --config playwright.scene-poc.config.ts --output="/tmp/cad-scene-poc-$(date +%Y%m%d-%H%M%S)-$$"
+```
+
+Vitest 명령은 도메인 회귀이며 Browser PoC는 `SCENE_POC` 계측/손실/음성시험 결과를 출력합니다. 동일 `scene-poc.spec.ts`는 기본 `npm run test:e2e`에도 포함돼 PR CI에서 자동 실행됩니다. 합성 fixture의 공개 가능한 좌표/해시만 사용하며 사내 원본·Handle·해시를 넣지 않습니다. 시험 글꼴은 설치된 Helvetica typeface이며 실제 앱의 한글 typeface 품질 수용을 대신하지 않습니다. 실제 소스 SHA는 정규화 전 DXF bytes이고 `explicitElevation`은 builder의 derivative input입니다. derivative byte SHA는 다른 identity입니다. 병렬 Playwright 실행은 각기 다른 `--output` 경로를 사용해야 하며 공유 기본 디렉터리 정리로 trace ENOENT가 발생한 이력을 [FailureLedger](FailureLedger.md)에 보존합니다. 라이브러리 `getFromPath` 계측에는 font·fetch·scene 생성이 포함되므로 순수 parser 시간으로 해석하지 않습니다.
+
+검증된 bytes/manifest의 `READY`는 PoC의 생성 완료 상태입니다. 서버 저장·Auth/Site/Audit·CAS를 통과한 게시 상태가 아니며 운영 cache로 직접 반입하지 않습니다. 다음 S3는 요청별 권한과 크기/schema/builder/frame/source binding을 검증한 뒤 immutable bytes와 manifest pointer를 원자 게시해야 합니다. 구 asset의 TTL·재생성은 APP_CREATED/메모 삭제 사유가 아닙니다. 실제 포맷 제한·CPU 실험과 성능 예산은 [TestReport](TestReport.md)/[Decisions](Decisions.md)를 참조합니다.
+
+---
+
 ## #109 표준 신규 설치 운영 절차 (2026-10-30, 0.44.2 PR 후보)
 
 최신 일반 Compose 설치는 `src/deploy/g7-greenfield/README.md` **최상단의 Issue #109 절차**가 정본이다. #153의 `docker-compose.greenfield.yml`/포트 3001/서명 Owner·Site Seed 단계는 과거 Expert 설치 자료이며 현행 기본 `docker-compose.yml`/포트 3000에 적용하지 않는다.

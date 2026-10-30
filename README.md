@@ -1,5 +1,13 @@
 # CAD Web Viewer P.O.C.
 
+## 0.45.0 후보 — CAD Scene 계약·Origin 및 직렬화 실험 (#161–#163)
+
+DXF 변환 직후 실제 Three 렌더 트리에 `DXF_IMPORTED`와 앱 관리 ID를 부여하고, 생성 외곽선은 기존 `GENERATED` 선택 계약을 유지하면서 `APP_CREATED` 참조를 갖습니다. ID는 renderer UUID와 분리하며 같은 Version/source·변환기·schema·tree 경로에서 재현됩니다. 원본 Handle이 없는 개체도 ID를 얻지만 정밀 Entity 연결을 임의로 만들지 않습니다.
+
+별도 합성 Browser 시험에서 Three JSON·GLB·전용 DTO의 직렬화와 새 컨텍스트 복원을 비교합니다. 새 UI 메뉴나 서버 Scene 저장 기능은 추가하지 않았습니다. 원본 DXF·DB/API·기존 선택/편집 정책은 유지하며, 영속화(S3)·Scene 로더(S4)·일반 렌더 개체 선택(S5)·초기화 실행(S6)은 후속입니다. 포맷별 손실·실제 측정/검증 상태는 [TestReport](out/TestReport.md), 실행은 [Operation](out/Operation.md), 설계는 [Architecture](out/Architecture.md)의 #161–#163 절을 따릅니다. PR CI·GHCR·배포·실DXF 현장 수용 완료를 뜻하지 않습니다.
+
+---
+
 ## 0.44.2 신규 설치 — Issue #109 (2026-10-30, PR 후보)
 
 기본 `src/docker-compose.yml`는 이제 **G7 Greenfield 신규 설치**를 위한 진입점입니다. `docker compose --env-file .env -f src/docker-compose.yml up -d --pull always`로 빈 독립 볼륨에 최종 Schema를 설치하고 기본 포트 **3000**에서 접속합니다. 기존 DB/계정/도면·기존 Migration/백업/HOLD/Owner 서명은 자동 이관·삭제·참조하지 않습니다. **이전 데이터가 필요한 경우 별도 경로를 사용해야 하며, 신규 설치 명령으로 구 DB를 복구할 수 없습니다.**
