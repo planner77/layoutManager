@@ -601,7 +601,7 @@ export function CadViewer({
     return true;
   },[memoScoped,renderer,format,loading,state.ready,versionId,sourceSha256,stopOutlineEditing]);
 
-  const selectMemo = useCallback((id:string) => {
+  const selectMemo = useCallback((id:string,fromTree=false) => {
     const item = memoSession.current?.matches({versionId,sourceSha256})
       ? memoSession.current.get(id) : undefined;
     if (!item || !beginMemoInteraction(id)) return;
@@ -610,7 +610,7 @@ export function CadViewer({
     setMemoSelectedId(id);
     setMemoAnchorTarget(item.anchor?.mode==='ATTACHED'&&item.anchor.targetRef
       ?item.anchor.targetRef.origin+':'+item.anchor.targetRef.id:'');
-    if (!appState.toolsOpen) dispatchApp({type:'toggle-tools',exclusive:isCompact});
+    if (!fromTree && !appState.toolsOpen) dispatchApp({type:'toggle-tools',exclusive:isCompact});
     setMemoDeleteArmed(false);
     setMemoError(null);
     // Re-selecting an already open memo is a focus action, not a discard-draft command.
@@ -629,7 +629,7 @@ export function CadViewer({
   const focusMemoFromTree=(id:string)=>{
     const m=scopedMemos.find(x=>x.id===id);
     if(!m)return;
-    selectMemo(id);
+    selectMemo(id,true);
     setMemoTransientFocusId((!memoAllVisible||m.visible===false||!isMemoVisible(memoTree,id))?id:null);
     if(!manager.current?.focusBounds({minX:m.anchorWcsXY.x-3,maxX:m.anchorWcsXY.x+3,
       minY:m.anchorWcsXY.y-3,maxY:m.anchorWcsXY.y+3}))
@@ -1678,7 +1678,7 @@ export function CadViewer({
             <CadMemoSettingsEditor key={m.id+':'+(m.revision??m.updatedAt)}
               memo={m} busy={memoBusy}
               enabled={memoServerMode==='off'||(memoServerMode==='active'&&memoFeaturesAvailable)}
-              onSave={settings=>{void changeMemoMeta(m.id,{settings});}} />)}}
+              onSave={settings=>{void changeMemoMeta(m.id,{settings});}} />)}
           {outlineAvailable&&memoServerMode==='active'&&<section data-testid="cad-stored-outline-tools"
             className="border-b border-cyan-200 bg-slate-50 px-3 py-2 text-xs text-slate-800">
             <strong>영속 외곽선 {storedOutlines.length}개 (서버 조회/수정·CAS)</strong>

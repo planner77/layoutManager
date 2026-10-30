@@ -105,7 +105,7 @@ export function CadMemoTreePanel({
     event.stopPropagation();
     if (next) focusKey(next);
   };
-  return <aside data-testid="cad-memo-tree" aria-label="세션 메모 트리"
+  return <aside data-testid="cad-memo-tree" aria-label={persistent?'서버 메모 트리':'세션 메모 트리'}
     className="flex h-full min-h-0 min-w-0 flex-col text-xs text-slate-800"
     data-canvas-edit-escape-layer="memo-tree">
     <div className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-200 px-3 py-2">
@@ -122,7 +122,7 @@ export function CadMemoTreePanel({
         <input data-testid="cad-memo-tree-search" type="search" value={query} maxLength={100}
           onChange={event => setQuery(event.target.value)}
           className="mt-1 w-full rounded border border-slate-400 bg-white px-2 py-1.5"
-          placeholder="현재 도면의 세션 메모만 검색" />
+          placeholder="현재 도면 Version의 메모 검색" />
       </label>
       <p data-testid="memo-tree-visibility-status" className="text-slate-600">
         Canvas 전체: {allVisible ? '표시' : '숨김'} · 숨김 메모도 목록/검색 가능
