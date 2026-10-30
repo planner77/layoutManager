@@ -248,3 +248,22 @@ test('TC-M1-E2E-005: dragging selected memo retains unsaved text draft after syn
   await page.getByTestId('cad-memo-save-text').click();
   await expect(pin).toContainText('미저장 변경 제목');
 });
+
+test('TC-M3-E2E-001: visible DXF WCS endpoint auto-snaps only for this Viewer session',async({page,request})=>{
+  const version=await drawing(request,'issue84-render-snap');
+  await openThree(page,version.id);
+  await clickViewerTestCommand(page,'viewer-menu-memo-add');
+  await page.getByTestId('cad-memo-title').fill('Renderer session snap');
+  await page.getByTestId('cad-memo-content').fill('WCS vertex bound only in memory');
+  await page.getByTestId('cad-memo-x').fill('0');
+  await page.getByTestId('cad-memo-y').fill('0');
+  await page.getByTestId('cad-memo-coordinate-place').click();
+  await expect(page.getByTestId('cad-memo-snap-candidate')).toBeVisible();
+  await page.getByTestId('cad-memo-create').click();
+  await expect(page.getByTestId('cad-memo-session-snap')).toContainText('세션 스냅 연결');
+  await expect(page.getByTestId('cad-memo-session-snap')).toContainText('재접속 시 해제');
+  await expect(page.getByTestId('cad-memo-pin')).toHaveAttribute('data-memo-wcs-x','0');
+  await page.getByTestId('cad-memo-session-detach').click();
+  await expect(page.getByTestId('cad-memo-session-snap')).toHaveCount(0);
+  await expect(page.getByTestId('cad-memo-pin')).toHaveAttribute('data-memo-wcs-x','0');
+});

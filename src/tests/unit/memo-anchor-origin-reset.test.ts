@@ -1,5 +1,6 @@
 import {describe,it,expect} from 'vitest';
 import {createRequire} from 'node:module';
+import {readFileSync} from 'node:fs';
 import {sceneScope,createSceneRef,importedId} from '../../domain/cad-scene';
 import {SceneWorkDocument} from '../../domain/scene-work';
 import {IDENTITY_2D} from '../../domain/generated-document';
@@ -13,6 +14,14 @@ const Sqlite=createRequire(import.meta.url)('better-sqlite3') as new (path:strin
  prepare:(sql:string)=>{get:()=>Record<string,unknown>};close:()=>void};
 const uuid=(n:number)=>'197e1526-12a8-49c7-8187-'+n.toString(16).padStart(12,'0');
 describe('#84 M3 immutable WCS origin and #167 S6 reset',()=>{
+ it('Codex P1: memo soft delete and ALL reset drop bindings before later Outline edits',()=>{
+  const service=readFileSync(new URL('../../server/cad-business/service.ts',import.meta.url),'utf8');
+  const reset=readFileSync(new URL('../../server/cad-business/reset-service.ts',import.meta.url),'utf8');
+  expect(service).toContain("(operation==='move'||remove)&&anchorAvailable");
+  expect(reset).toContain("if(hasAnchors)await tx.cadMemoAnchor.deleteMany(");
+  expect(reset).toContain("memoId:{in:activeMemos.map(m=>m.id)}");
+ });
+
  it('source-only reset clears ALL DXF_IMPORTED changes/undo but keeps baseline refs',()=>{
   const scope=sceneScope(v,sha);
   const ref=createSceneRef(scope,'DXF_IMPORTED',importedId(scope,[0]),{treePath:[0]});
