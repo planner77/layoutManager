@@ -58,3 +58,6 @@ html:has([data-home-sticky='true']) { scroll-padding-top: calc(var(--home-nav-he
 @media (max-height:480px) { .home-sticky-panel { max-height:calc(100dvh - var(--home-nav-height, 0px) - 88px); overflow:auto; } }
 
 @media (max-width:767px) { .viewer-command-trigger,.viewer-command-item,.viewer-drawer button,.home-filters button,.home-advanced > summary { min-height:44px; } }
+
+/* #85: mutually exclusive right-side Memo/Outline drawer, mobile modal shares shell policy. */
+.viewer-drawer-memos { top:12px; right:12px; width:min(22rem,34vw); }
