@@ -1,3 +1,21 @@
+## #161–#163 CAD Scene S0/S1/S2 — 구현 전 요구·AC (2026-10-30)
+
+최신 Owner #160 정책과 이번 사용자의 **단일 PR** 지시가 과거 독립 PR/전면 Source mapping gate보다 우선한다. S0→S1→S2 순서를 같은 PR 안에서 지킨다. 원본 특정 Entity 재계산에 필요한 검증만 조건부로 유지하며 S5 일반 선택 UI 구현은 후속이다.
+
+| 요구 | 구현/수용 기준 | 시험 |
+| --- | --- | --- |
+| SC-S0-01 | 순수 SceneAsset/SceneObject/AppObject/CadSceneObjectRef 계약; DXF_IMPORTED/APP_CREATED 불변 생성 Origin, optional sourceRef/derivedFrom, Version/source SHA/Scene schema/builder/WorkingRevision/상태 검증; renderer uuid는 관계키 금지 | SC-01 valid/invalid/중복/위조/타 Scope |
+| SC-S0-02 | 원본·immutable 기준 Scene·working delta·APP_CREATED·Memo 독립 수명, Reset/CAS/Auth/CRUD 소유권 및 포맷 후보 ADR | SC-02 문서/도메인 계약 |
+| SC-S1-01 | 실제 Three adapter 변환 직후 render tree와 GeneratedDocument에 새 계약 적용. 동일 source/builder/schema에서 재현 가능한 app ID; handle 없는 개체/반복 INSERT/병합 BLOCK에서도 ID를 생성하며 source 연결은 확인 가능할 때만 부여 | SC-03 실제 tree/경로 ID + SC-04 Generated 이력 |
+| SC-S1-02 | SOURCE↔DXF_IMPORTED, GENERATED↔APP_CREATED 명시 호환; 생성·복제·계산 결과는 APP_CREATED, 편집/Undo/Redo/show-hide 뒤 Origin/ID 보존. 기존 읽기 전용 SOURCE/혼합 edit 정책 유지 | 기존 selection/generated/memo/JSON 회귀 |
+| SC-S2-01 | 실제 three-dxf-viewer@1.0.44 getFromPath synthetic DXF → bytes → 새 Browser/Three context 복원. Three JSON/GLB/glTF/전용 포맷 실제 비교, geometry/material/text/layer/hierarchy/selection trace/WCS 한계 공개 | SC-05 Browser PoC |
+| SC-S2-02 | asset bytes SHA/길이와 trusted 기대 Version/source/builder/renderer/schema/frame 검증 후 복원. 잘못된 format/손상/중복 Origin-ID/앱 overlay 혼입·외부 자원 로딩 차단 | SC-06 음성 시험 |
+| SC-S2-03 | LINE/CIRCLE/ARC/LWPOLYLINE/nested·repeated mixed BLOCK/TEXT/MTEXT/large WCS fixture의 충실도·크기·압축·시간 및 실패를 기록. S3 manifest/CAS/rebuild/성능 예산을 제안하되 운영 활성화하지 않음 | SC-07 계측표 |
+
+범위 제외: 신규 DB/Prisma/API, 정상 로더의 Scene cache cutover(S3/S4), S5 편집/선택 gate 변경, S6 reset 실행 UI, 사용자 GLB export(#91), 실제 DXF/DRM H0~H3, 배포/GHCR. 기존 Auth/Site/Audit 및 원본 DXF bytes/Current/Version을 변경하지 않는다. 합성 PASS와 CI/현장 수용은 별도 상태이다.
+
+---
+
 ## Issue #109 현행 신규 설치 요구사항 (2026-10-30; #153 이후 개정)
 
 - FR-109-01: **기존 기본** `src/docker-compose.yml`과 HTTP 포트 3000, `docker compose --env-file .env -f src/docker-compose.yml up -d --pull always` 명령으로 별도 사전 수동 SQL/Seed/24시간 서명 작업 없이 새 볼륨에 신규 설치.

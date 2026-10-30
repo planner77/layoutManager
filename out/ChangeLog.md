@@ -1,3 +1,18 @@
+## 0.45.0 후보 — PR #168 Codex P2 Custom DTO 복원 보완
+
+- `scene-custom-dto.ts`에서 정규화된 정수형 BufferAttribute의 원시 저장 타입과 normalized flag를 보존하고 타입·범위·오버플로·지원되지 않는 특수 Attribute를 명시 거부하도록 변경했다. 미기재 type의 구 PoC Custom DTO는 잘못된 결과를 만들지 않고 거부한다.
+- `SC-08` Vitest 정상/음성 회귀와 TestPlan/TestReport/Decisions/FailureLedger를 갱신했다. 이전 PR CI 성공과 수정 HEAD CI 미검증 상태를 구분한다. 운영 API/DB·CAD·GHCR/배포는 변경하지 않는다.
+
+---
+
+## 0.45.0 후보 — #161–#163 CAD Scene S0/S1/S2
+
+- 순수 SceneAsset/SceneObject/AppObject·manifest 계약과 검증기를 추가하고 Version/source SHA·schema/builder/renderer/frame·불변 생성 Origin/ID를 구분했다. 실제 adapter 렌더 트리와 GeneratedDocument에 연결하며 기존 SOURCE/GENERATED·Undo/Redo·메모/JSON 동작을 유지한다.
+- 실제 `three-dxf-viewer@1.0.44` 합성 DXF에서 Three JSON·GLB·전용 DTO bytes를 생성하고 새 Browser 컨텍스트에서 복원하는 기본 Playwright 실험을 추가했다. 손상·scope·metadata·format·외부 자원·overlay 혼입 검증과 포맷별 충실도/크기/시간을 기록한다.
+- 신규 DB/API·Scene 저장/cutover·S5 선택/편집 활성화·원본 변경·배포는 포함하지 않는다. 실제 시험과 실패/수정 이력은 [TestReport](TestReport.md), [FailureLedger](FailureLedger.md)를 기준으로 한다. 현재 PR 후보이며 CI/GHCR/현장 수용 완료 기록이 아니다.
+
+---
+
 ## 0.44.2 후보 — #109 표준 Compose 신규 설치 및 최초 관리자 웹 설정
 
 - 일반 Compose의 빈 볼륨에 최종 Schema를 생성하고 호스트 일회용 코드로 웹 최초 Admin 설정; 기존 권한·세션·감사를 유지하는 신규 설치 후보. 기존 DB 자동 삭제/이관은 하지 않는다.

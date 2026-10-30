@@ -1,3 +1,13 @@
+## PR #168 — Codex P2 Custom DTO 정규화·복원 충실도 보완 (2026-10-30 KST)
+
+- **선행 CI 근거:** PR HEAD `3be07597a17fc3109ec94d334163e9f79adf64d8`, [PR CI #40987779057](https://github.com/planner77/layoutManager/actions/runs/40987779057) completed/**success**. 이 성공은 신규 Codex 리뷰가 제기한 의미적 복원 결함의 부재를 보장하지 않는다.
+- **신규 리뷰 결함 (CI 실패 아님):** PR #168 `scene-custom-dto.ts:52` Codex **P2**, unresolved thread `PRRT_kwDOUQjDfc6x0axA`. 작성기는 `Uint16Array([65535])` + `normalized=true` 원시값을 보존하지만 DTO에 배열 타입을 기록하지 않고 복원기는 무조건 `Float32BufferAttribute`를 만들어 `getX(): 1 → 65535`로 의미를 바꾼다. sha256/identity 검증이 통과해도 손실이 발생한다.
+- **보완:** 타입 allowlist(Int8/Uint8/Uint8Clamped/Int16/Uint16/Int32/Uint32/Float32/Float64)을 DTO `arrayType`으로 기록·동일 typed array로 복원하고 `normalized`을 유지. 정수 범위/소수 입력·타입 위조·Float32 overflow·미기재 타입을 명시 거부하며 specialized Float16/InstancedBufferAttribute는 미지원으로 거부한다. 기존 DTO schema=1 중 `arrayType`이 없는 이전 실험 payload는 안전한 복원 근거가 없어 fail-closed한다(S3 운영 저장 전 PoC 포맷). 
+- **회귀 보완:** `SC-08` 새 Vitest에서 정규화 UInt16 위치/UInt8 색/Int16 UV 및 Float64 정밀도·원시 버퍼 타입·실효 `getX/getY/getZ` 값과 악성 DTO를 검증한다. 기존 SC-05~07 브라우저 PoC, 전체 Vitest, Typecheck/Lint/Production Build, Viewer/권한 관련 E2E의 **최신 HEAD 결과는 새 CI 전까지 NOT VERIFIED**. 기존 실패 이력/기존 Run 결과는 수정하지 않는다.
+- **경계/게이트:** main behind/실제 충돌·리뷰 회신·스레드 resolution을 커밋 후 재조회한다. GHCR·Runtime/Prisma/DB/CAD/운영 배포·실DXF/DRM 검증은 범위 밖. 새 HEAD PR CI 시작은 별도 확인하고 결과 모니터링하지 않는다. 성공이 확인되지 않은 상태에서 병합·이슈 종료 금지.
+
+---
+
 ## #109 PR #159 — 2차 PR CI #40946304142 Unit 계약 불일치 (2026-10-30 KST)
 
 - **원본 실패:** [Run 40946304142](https://github.com/planner77/layoutManager/actions/runs/40946304142), attempt 1, HEAD `b5883922b5313cec123b7dcdcf30bdc39cd61216`, completed/**failure**. 1차 Run `40943801670`의 TS2304/webpack 실패·P2 두 건 기록은 아래에 보존한다.
@@ -924,3 +934,19 @@
 - **기존 성공**: [PR CI #40077595050](https://github.com/planner77/layoutManager/actions/runs/40077595050), head `a2b8bbdf5ca8ed422e934907087cf919a0e4a783`, 2026-10-24 완료: `success`.
 - **실패 원인으로 오기하지 말 것**: [P1 review #4366517148](https://github.com/planner77/layoutManager/pull/44#discussion_r4366517148)은 CI 실패가 아닌 키보드 이벤트 중복 소비 논리 버그 보고. `SelectionController` capture에서 `event.preventDefault()`된 ESC를 `CadTextSearch`가 다시 처리해 검색을 닫음.
 - **보완**: `CadTextSearch` root/input ESC 분기에 `!event.defaultPrevented` 조건을 추가하고 `TC-OUT-E2E-001`로 선택/검색/CSS 각 1회 소비를 검증. 새 HEAD 재검증 전에는 성공 판정 금지.
+
+## #161–#163 Scene S0/S1/S2 구현·QA 중 관측된 실패 (2026-10-30)
+
+- **시험 이력 및 원칙:** 아래는 구현 중 관측 후 수정된 harness/fixture/코드 문제와 실제 최종 POC 결과를 나눠 기록한다. 이 항목들은 최종 소스 상태의 실패로 남아 있다는 뜻이 아니며, 최초 실패를 성공으로 덮어쓰지 않는다. PR CI/전체 E2E/실도면 검증 완료를 의미하지 않는다.
+- **독립 구현 시험 중 순차 실패/보완 보고:** (1) 기본 Playwright config가 `.next/standalone` 미생성으로 시작 실패 → 독립 no-server `playwright.scene-poc.config.ts` 사용. (2) synthetic DXF의 Z 누락으로 converter 비유한 matrix/geometry → `explicitElevation` 전처리 fixture. (3) 임의 HTTP origin에서 WebCrypto 미지원 → localhost origin. (4) converter의 별도 Three 사본 때문에 `instanceof BufferGeometry` 실패 → `isBufferGeometry` 검사. (5) double sanitization에서 `cadLayer` 손실 → serializer가 tagged converter userData를 일시 sanitize 후 복원하는 방식. (6) strict geometry assertion이 Three JSON ShapeGeometry 재생성 후 vertex-index 버퍼 표현 차이를 탐지 → custom DTO의 exact buffer 보존을 후보 근거로 평가. index 차이만으로 실제 도형 손상을 단정하지 않으며 JSON 관측치는 유지 기록. (7) synthetic style fixture가 기존 30초 timeout 초과 → POC에 90초 timeout. (8) 전체 lint에서 PoC 테스트 `no-explicit-any` 20건 → typed Window/unknown helpers. (9) Node CPU probe가 `ProgressEvent` 부재로 중단; shim 후 WMFJS의 `window` 참조로 비동기 crash. CPU-only getFromPath 지원은 입증되지 않음.
+- **Root 일반 E2E 병행 실행 실패:** Root가 전체 Playwright를 실행했을 때 88 PASS/6 FAIL, 7분. 실패는 `issues41`, `issues52`, `issues54`, `issues124`, `scene`, `workflow` 각 테스트 종료의 `context.close/dispose`에서 shared `src/test-results/.playwright-artifacts-*` trace ENOENT. Developer isolated POC가 같은 기본 output에서 artifact를 정리한 실행 충돌로 확인되어 제품 결함으로 분류하지 않는다. Root는 unique output `/tmp/layoutmanager-scene-full-e2e-final-results`로 재실행 중; 결과 관측 전 전체 E2E는 NOT VERIFIED. 로그 `/tmp/layoutmanager-scene-e2e.log`.
+- **독립 QA 최종 소스 재실행:** source freeze 후 QA isolated POC는 1/1 PASS(44.1초). 이 QA 실행은 기본 output 경로로 시작했지만 Root의 새 재실행은 unique `/tmp` output을 사용하므로 서로 충돌하지 않았다. final measurements/limitations는 TestReport #161–#163 항목 참조. Developer가 별도 final-source PoC PASS(1/1, 34.8초)를 보고했으나 그 수치는 QA 재실행 결과와 혼합하지 않는다.
+
+- **Manager/Root 코드 검토 발견·보완(실행 실패와 별도):** 초기 AppObject WCS nesting 검증이 정상 Polygon의 깊이를 잘못 세던 문제, derivedFrom prefix-only/길이 및 standalone Ref path 검증, non-string state 수용, manifest/asset revision 미결합, domain→adapter factory 의존과 초기 source unit 전달 누락, Three JSON의 geometry/material 참조·ShaderMaterial/external resource 허용 위험을 보완했다. 독립 QA의 최종 frozen source 집중 Unit/Browser 음성시험을 근거로 해결 여부를 확인하며 과거 초안을 실행 PASS로 소급하지 않는다.
+- **재발 원인:** 공유 Playwright output 경합은 위 #153 로컬 E2E 원장에도 있었던 실행 격리 문제의 재발이다. 포트/DB만 분리하면 충분하지 않으며 각 병렬 실행에 고유 `--output`이 필요하다. Operation의 단독 PoC 명령도 고유 경로를 기본으로 안내한다.
+
+- **Root 최종 재검증/수용:** 고유 output의 전체 일반 E2E **94/94 PASS, 6.5분, exit 0**(`/tmp/layoutmanager-scene-e2e-final.log`), 이 중 새 Scene PoC 36.2초. 앞선 88/6 실행 실패를 성공으로 소급 변경하지 않는다. 전체 Vitest 601 PASS·Build 2회 PASS·동결 소스 Typecheck/Lint PASS(기존 경고 6), 별도 signed Runtime/Greenfield/Legacy UI 각 1 PASS 및 독립 QA를 근거로 Manager가 로컬 S0/S1/합성 S2 ACCEPT했다.
+- **게시 도구 상태:** read-only `gh auth status`에서 로컬 저장 인증 만료를 확인했다. Secret을 출력하거나 앱에 주입하지 않고 작동하는 GitHub 연결 도구로 staged tree와 동일한 객체를 게시한다. remote는 `.env` 지정 저장소와 일치한다. PR CI/현장/배포 성공으로 해석하지 않는다.
+
+- **PR/리뷰·충돌 실제 확인:** 단일 [PR #168](https://github.com/planner77/layoutManager/pull/168), 코드 commit `f907c75409c033b21f8a7231d36d1c46f72171c8`. GitHub tree `d86b42a7e0c7907b9d064d4645201ce7535af9cf`가 로컬 검증 staged tree와 정확히 같음을 확인했다. GitHub 조회의 미해결 리뷰 스레드 **0건**, `mergeable=true`; main `a208cf0623166f5b7a5280e731ae164143f0dc91` 대비 behind **0**, 해결할 충돌 없음. 이는 외부 리뷰 승인이나 CI 성공을 뜻하지 않는다.
+- **최신 HEAD CI 시작 경계:** 이 확인 기록을 포함한 후속 docs commit을 기대 원격 HEAD 검사 및 `force=false`로 전진시키면 `pull_request.synchronize` PR CI가 시작된다. Run 링크/최신 HEAD는 최종 대화 및 PR 본문에 남기고 결과 모니터링은 하지 않는다. CI 결과 **NOT VERIFIED**; 병합·태그·GHCR·운영 DB/API/배포·이슈 종료 미실행.

@@ -1,3 +1,29 @@
+## PR #168 P2 — SC-08 Custom DTO BufferAttribute 정규화 회귀 (2026-10-30)
+
+- **정상:** `Uint16Array` + normalized=true의 raw 65535 → `BufferAttribute.getY(0)=1`; `Uint8Array` 정규화 색(128/255), `Int16Array` signed 최소값(-1), `Float64Array` 정밀도를 JSON 직렬화→DTO 복원 후 원시 typed array / normalized flag / 실효 accessor 값까지 일치시킨다.
+- **음성:** `arrayType` 누락(legacy PoC), 위조/미지원 타입, normalized 문자열, 정수 타입의 소수/범위 초과, Float32 cast overflow, 특수 Float16BufferAttribute를 거부한다. 원래 검증된 digest만으로 의미적 무결성을 주장하지 않는다.
+- **회귀:** SC-01~07 및 기존 default Vitest/브라우저 Scene PoC, 전체 Typecheck/Lint/Next Production Build, 기존 Viewer/메모/권한 회귀와 신규 코드의 fail-closed를 최신 HEAD에서 확인한다. 현재 **실행 결과 미확인**이며 CI 실행 전 PASS로 표시하지 않는다.
+
+---
+
+## #161–#163 Scene S0/S1/S2 시험 계획 (2026-10-30, 구현 전)
+
+Manager 요구·설계/AC 기록 → gpt-6-sol Developer 구현 → gpt-6-luna 독립 QA → Manager 수용 → root commit/push/단일 PR/CI 시작 순서. CI는 시작까지만 확인하며 결과 모니터링하지 않는다.
+
+| TC | 기대 결과 |
+| --- | --- |
+| SC-01 | 유효 SceneAsset/Object/AppObject 및 invalid ID/Origin/scope/SHA/schema/state/revision/NaN/중복/derived reference 거부; origin mutation 거부 |
+| SC-02 | lifetimes/reset A·B/CAS·Undo/권한/API 소유권 문서 및 도메인 계약 일치, 신규 DB/API 없음 |
+| SC-03 | 실제 adapter render tree tagging, no handle/merged block/repeated INSERT 별개 ID, fresh renderer UUID에서도 stable ID 대응 및 optional sourceRef |
+| SC-04 | GeneratedDocument 생성/편집/Undo/Redo/visibility의 APP_CREATED/ID 불변; SOURCE/GENERATED 선택·JSON·메모 회귀 |
+| SC-05 | 실제 getFromPath 합성 DXF→asset bytes→생성 context 종료→새 Browser context에서 loader 재구축/렌더·bbox/geometry/layer/text/ID 비교 |
+| SC-06 | digest/길이/format/schema/builder/renderer/source/Version 위변조·중복 IDs/Origin·외부 자원·overlay 혼입 fail closed; 이전 데이터 불변 |
+| SC-07 | LINE/CIRCLE/ARC/LWPOLYLINE/nested repeated mixed BLOCK/TEXT/MTEXT/large WCS + Three JSON/GLB/custom 각 size/gzip/parse/serialize/restore·fidelity·unsupported 경고 기록 |
+
+새 unit은 기본 Vitest에, Browser PoC는 기본 Playwright 회귀에 포함한다. 전체 Typecheck/Lint/Unit/Next production build 및 관련 E2E를 실행한다. 환경 준비 오류·실패·수정·재시험은 FailureLedger에 누적하고 SKIPPED/NOT RUN을 PASS로 바꾸지 않는다. 실제 DXF·GPU/2PC·운영 CPU 서비스·DB/S3 영속·GHCR·배포 수용은 별도이다.
+
+---
+
 ## #109 PR #159 — 2차 CI 계약 정합성 보완 AC (2026-10-30)
 
 - 근거: Run `40946304142`, HEAD `b5883922`, Unit 596 PASS / 1 FAIL (`TC-IMG67-001`); Docker Greenfield 설치/CAD/restart smoke SUCCESS. `npx vitest run tests/unit/standalone.test.ts --reporter=dot` 로컬 RED: 7 PASS / 1 FAIL, 591ms.

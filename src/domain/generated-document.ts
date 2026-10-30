@@ -9,6 +9,7 @@ import {
   type CanvasObjectRef,type CanvasObjectScope,
 } from './canvas-object-selection';
 import type {OutlineResult,GeoJSONOutline} from '../viewers/core/outline-compute';
+import {createSceneRef,sceneScope,type CadSceneObjectRef} from './cad-scene';
 import type {OutlineKind,XY} from '../viewers/core/outline-geometry';
 
 export const GENERATED_HISTORY_LIMIT=100;
@@ -23,6 +24,7 @@ export type GeneratedCommand =
   | Readonly<{type:'Rotate';ids:readonly string[];angleDegrees:number;pivot:readonly [number,number]}>;
 export type GeneratedEntry=Readonly<{
   ref:CanvasObjectRef;
+  sceneRef:CadSceneObjectRef;
   savedOutlineId:string;
   createdAt:string;
   editedAt:string|null;
@@ -137,6 +139,13 @@ export class GeneratedDocument{
   private pending:Pending|null=null;
   private disposed=false;
   private issued=new Set<string>();
+  private sourceUnit='UNSPECIFIED';
+  setSourceUnit(unit:string){
+    this.assertLive();
+    if(this.objects.length||this.issued.size)throw new Error('생성 개체 Scene Scope를 변경할 수 없습니다.');
+    sceneScope(this.scope.versionId,this.scope.sourceSha256,unit);
+    this.sourceUnit=unit;
+  }
   constructor(
     readonly scope:CanvasObjectScope,
     private readonly onChange?:(event:GeneratedDocumentEvent)=>void,
@@ -186,6 +195,7 @@ export class GeneratedDocument{
         newVertexCount>GENERATED_VERTEX_LIMIT;
     const entry=Object.freeze({
       ref:Object.freeze(canvasObjectRef('GENERATED',input.id,this.scope)),
+      sceneRef:createSceneRef(sceneScope(this.scope.versionId,this.scope.sourceSha256,this.sourceUnit),'APP_CREATED',input.id),
       savedOutlineId:input.savedOutlineId,createdAt:input.createdAt,
       editedAt:null,name:input.name??'',outlineTypeId:input.outlineTypeId??null,
       outlineTypeName:input.outlineTypeName??null,kind:baseResult.kind,

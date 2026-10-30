@@ -4,6 +4,8 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { DXFViewer } from 'three-dxf-viewer';
 import type { CadViewerAdapter } from '../core/adapter';
 import { explicitElevation } from './normalize';
+import {sceneScope,sourceUnitFromDxf,tagImportedTree,tagAppTree} from './scene-tags';
+import type {SceneAsset} from '../../domain/cad-scene';
 import {SelectionController,type SelectionMode} from './selection-controller';
 import {reconcileRenderCoverage,type RenderObservation,type RenderCoverage} from './render-coverage';
 import type {DxfOutlineIndex,OutlineEntity,OutlineKind,OutlinePath} from '../core/outline-geometry';
@@ -38,6 +40,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
   private controls: OrbitControls;
   private resize: ResizeObserver;
   private object?: THREE.Group;
+  private sceneAsset?:SceneAsset;
   private disposed = false;
   private cancel?: () => void;
   private bounds = new THREE.Box3();
@@ -154,6 +157,10 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
         return owned.get(original)!;
       };
       object.traverse(o=>{const mesh=o as THREE.Mesh;if(mesh.material)mesh.material=Array.isArray(mesh.material)?mesh.material.map(clone):clone(mesh.material);});
+      if(this.outline && validCanvasScope(this.outline))
+        this.document?.setSourceUnit(sourceUnitFromDxf(text));
+      if(this.outline && validCanvasScope(this.outline))
+        this.sceneAsset=tagImportedTree(object,sceneScope(this.outline.versionId,this.outline.sourceSha256,sourceUnitFromDxf(text)));
       this.object=object;this.scene.add(object);this.bounds.setFromObject(object);
       if(!this.bounds.isEmpty() && ![...this.bounds.min.toArray(),...this.bounds.max.toArray()].every(Number.isFinite)) throw new Error('유효하지 않은 도형 좌표');
       this.fitToView();this.render();
@@ -345,6 +352,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
       if(!group || this.renderedTransforms.get(id)!==item.transform){
         if(group){this.savedGroup.remove(group);release(group);}
         group=this.renderGeometry(generatedResult(item),0xff8c00);
+        tagAppTree(group,item.sceneRef);
         this.savedGroups.set(id,group);this.savedGroup.add(group);
         this.renderedTransforms.set(id,item.transform);
       }
