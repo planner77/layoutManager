@@ -40,6 +40,7 @@ model CadSite {
   buildings Building[]
   siteGrants UserSiteGrant[]
   auditEvents AuditEvent[]
+  businessAudits CadBusinessAudit[]
   @@unique([productId, name], map: "uq_site_parent_name")
   @@index([productId], map: "ix_site_product")
 }
@@ -91,6 +92,8 @@ model CadFileVersion {
   currentFor CadLocation? @relation("CurrentVersion")
   sceneAssets SceneAsset[]
   currentScene CurrentScene?
+  outlines CadOutline[]
+  memos CadMemo[]
   @@unique([locationId, version], map: "uq_version_sequence")
   @@unique([locationId, id], map: "uq_version_owner_id")
   @@index([registeredAt(sort: Desc), createdAt(sort: Desc), id], map: "ix_version_registered")
@@ -166,6 +169,13 @@ model User {
   events             AuditEvent[] @relation("AuditActor")
   eventsAffected     AuditEvent[] @relation("AuditAffected")
   recoveryNonces     AdminRecoveryNonce[]
+  outlinesCreated CadOutline[] @relation("OutlineCreated")
+  outlinesUpdated CadOutline[] @relation("OutlineUpdated")
+  outlinesDeleted CadOutline[] @relation("OutlineDeleted")
+  memosCreated CadMemo[] @relation("MemoCreated")
+  memosUpdated CadMemo[] @relation("MemoUpdated")
+  memosDeleted CadMemo[] @relation("MemoDeleted")
+  businessAudits CadBusinessAudit[]
   @@map("User")
 }
 model UserRoleGrant {
@@ -247,4 +257,76 @@ model G3LoginAttempt {
   count Int
   untilAt BigInt @map("until_at")
   @@map("G3LoginAttempt")
+}
+
+ 
+// #98: APP_CREATED always; SOURCE_CANONICAL describes verification mode, NOT Origin.
+model CadOutline {
+  id String @id
+  versionId String @map("version_id")
+  sourceSha256 String @map("source_sha256")
+  sceneRevision Int @map("scene_revision")
+  origin String
+  validationMode String @map("validation_mode")
+  kind String
+  name String
+  baseGeometryJson String @map("base_geometry_json")
+  geometryJson String @map("geometry_json")
+  sourceRefsJson String @map("source_refs_json")
+  derivedFromJson String @map("derived_from_json")
+  transformJson String @map("transform_json")
+  outlineTypeId String? @map("outline_type_id")
+  revision Int @default(0)
+  createdById String @map("created_by_id")
+  updatedById String @map("updated_by_id")
+  deletedById String? @map("deleted_by_id")
+  createdAt String @map("created_at")
+  updatedAt String @map("updated_at")
+  deletedAt String? @map("deleted_at")
+  version CadFileVersion @relation(fields:[versionId], references:[id], onDelete:NoAction, onUpdate:NoAction)
+  createdBy User @relation("OutlineCreated",fields:[createdById], references:[id], onDelete:NoAction, onUpdate:NoAction)
+  updatedBy User @relation("OutlineUpdated",fields:[updatedById], references:[id], onDelete:NoAction, onUpdate:NoAction)
+  deletedBy User? @relation("OutlineDeleted",fields:[deletedById], references:[id], onDelete:NoAction, onUpdate:NoAction)
+  @@index([versionId,deletedAt],map:"ix_cad_outline_version_live")
+}
+model CadMemo {
+  id String @id
+  versionId String @map("version_id")
+  sourceSha256 String @map("source_sha256")
+  title String
+  content String
+  anchorX Float @map("anchor_x")
+  anchorY Float @map("anchor_y")
+  offsetX Float @map("offset_x")
+  offsetY Float @map("offset_y")
+  revision Int @default(0)
+  createdById String @map("created_by_id")
+  updatedById String @map("updated_by_id")
+  deletedById String? @map("deleted_by_id")
+  createdAt String @map("created_at")
+  updatedAt String @map("updated_at")
+  deletedAt String? @map("deleted_at")
+  version CadFileVersion @relation(fields:[versionId], references:[id], onDelete:NoAction, onUpdate:NoAction)
+  createdBy User @relation("MemoCreated",fields:[createdById], references:[id], onDelete:NoAction, onUpdate:NoAction)
+  updatedBy User @relation("MemoUpdated",fields:[updatedById], references:[id], onDelete:NoAction, onUpdate:NoAction)
+  deletedBy User? @relation("MemoDeleted",fields:[deletedById], references:[id], onDelete:NoAction, onUpdate:NoAction)
+  @@index([versionId,deletedAt],map:"ix_cad_memo_version_live")
+}
+model CadBusinessAudit {
+  id String @id
+  actorUserId String @map("actor_user_id")
+  siteId String @map("site_id")
+  versionId String @map("version_id")
+  targetKind String @map("target_kind")
+  targetId String @map("target_id")
+  action String
+  beforeRevision Int? @map("before_revision")
+  afterRevision Int? @map("after_revision")
+  outcome String
+  requestId String @map("request_id")
+  timestampUtc String @map("timestamp_utc")
+  actor User @relation(fields:[actorUserId],references:[id],onDelete:NoAction,onUpdate:NoAction)
+  site CadSite @relation(fields:[siteId],references:[id],onDelete:NoAction,onUpdate:NoAction)
+  @@index([versionId,timestampUtc],map:"ix_cad_business_audit_version_time")
+  @@index([actorUserId,timestampUtc],map:"ix_cad_business_audit_actor_time")
 }
