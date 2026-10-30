@@ -1,3 +1,14 @@
+## PR #168 — P2 최종 해결·PR CI 검증·Squash Main·GHCR 게시 실행 추적 (2026-10-30 KST)
+
+- **최신 Owner 변경:** 앞선 #161~#163 S0~S2 `NO GHCR` 개발 단계 지침에서, 2026-10-30 최신 사용자 요청으로 Main 병합 후 정식 GHCR 게시 **실행을 승인**했다. 이 지시는 Docker Compose 운영 배포/원본 CAD/SQLite Schema·Writer/개인 비공개 현장 데이터 변경이나 DRM H0~H3 검증을 승인하지 않는다.
+- **CI gate:** [PR #168](https://github.com/planner77/layoutManager/pull/168) 최종 HEAD `51ea31d9d9dac7fd8cbdf5e70063664e3e8ca1bb`의 [PR CI #40990751466](https://github.com/planner77/layoutManager/actions/runs/40990751466) completed/**SUCCESS** (Verify: typecheck/lint/unit/integration/build/E2E와 Docker smoke 두 Job SUCCESS). 선행 [#40987779057](https://github.com/planner77/layoutManager/actions/runs/40987779057) 성공은 수정 이전 HEAD `3be07597`의 결과로 별도 보존한다.
+- **Codex P2:** typed-array storage/normalized 복원 누락 원인과 SC-08 보완은 아래 기존 원장에 보존. 리뷰 스레드 `PRRT_kwDOUQjDfc6x0axA`에 답변, `is_resolved=true`, 최종 미해결 **0건**, GitHub `mergeable_state=clean`, main behind **0**. 별도 신원 미검증 QA를 인간 승인으로 주장하지 않음; Owner Managed.
+- **병합:** 정확 Squash subject `#161 | CAD Scene S0-S2 contracts, origin and serialization PoC`. [Main `8e410e90d61dea64a3086cae763c7c9a9788e193`](https://github.com/planner77/layoutManager/commit/8e410e90d61dea64a3086cae763c7c9a9788e193), [Main CI #40992423174](https://github.com/planner77/layoutManager/actions/runs/40992423174) push 시작 확인. `release-scope` SUCCESS, GHCR `Build and push` 최초 관측 `in_progress`. `v0.45.0` Annotated Tag GitHub ref 확인. GHCR 이미지/릴리스 전체 SUCCESS·digest 확인은 별도 완료 결과 전까지 **NOT VERIFIED**.
+- **이슈:** #161 S0, #162 S1, #163 S2 각각 AC 5/5 checked 후 CLOSED(completed), Epic #160 상단 S0~S2 진행 체크 및 Main/릴리스 추적 갱신, Epic 계속 OPEN. #164 S3 지속 Scene 영속화를 다음으로 하고 #165~#167 및 #113 현장/S7은 아직 미완료. 실DXF의 픽셀/텍스트 정확도, CPU-only 변환, 운영 Scene Loader/CAS/Reset·실 사내 데이터/DRM은 PASS로 대체하지 않음.
+- **원장 사후 기록 방식:** 검증된 PR HEAD를 바꿔 PR CI를 무효화하지 않으려고 **Squash 후 main에 문서 전용 커밋**으로 기록한다. 이 커밋은 기능/앱 버전/마이그레이터 코드에 영향을 주지 않고 문서만 변경하므로 Github Main CI의 release-scope에서 GHCR publish=SKIPPED 예상. Main 첫 릴리스 run의 source/tag는 앞선 Squash SHA로 고정; 두 번째 문서 CI 성공/게시 상태를 첫 릴리스의 성공이라고 혼동하지 않는다.
+
+---
+
 ## PR #168 — Codex P2 Custom DTO 정규화·복원 충실도 보완 (2026-10-30 KST)
 
 - **선행 CI 근거:** PR HEAD `3be07597a17fc3109ec94d334163e9f79adf64d8`, [PR CI #40987779057](https://github.com/planner77/layoutManager/actions/runs/40987779057) completed/**success**. 이 성공은 신규 Codex 리뷰가 제기한 의미적 복원 결함의 부재를 보장하지 않는다.
