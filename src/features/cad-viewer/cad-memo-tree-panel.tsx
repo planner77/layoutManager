@@ -37,18 +37,22 @@ export function CadMemoTreePanel({
   const [pendingFocusId, setPendingFocusId] = useState<string | null>(null);
   const refs = useRef<Map<string, HTMLDivElement>>(new Map());
   const term = query.normalize('NFC').trim();
-  const textMatches = filterMemos(memos, term).filter(memo=>{
+  const matchesStatus=(memo:MemoDraft)=>{
     if(statusFilter==='all')return true;
     if(statusFilter==='registered')return !memo.completionEnabled;
-    if(statusFilter==='completed')return memo.completionEnabled&&memo.isCompleted;
-    return memo.completionEnabled&&!memo.isCompleted;
-  });
+    if(statusFilter==='completed')return Boolean(memo.completionEnabled&&memo.isCompleted);
+    return Boolean(memo.completionEnabled&&!memo.isCompleted);
+  };
+  const textMatches = filterMemos(memos, term).filter(matchesStatus);
   const groups = [{ id: null, name: '미분류' }, ...tree.groups];
   const rows = groups.map(group => {
     const members = memos.filter(memo => (tree.groupByMemo[memo.id] ?? null) === group.id);
-    const items = term && group.name.normalize('NFC').toLocaleLowerCase().includes(term.toLocaleLowerCase())
-      ? members.filter(item=>statusFilter==='all'||textMatches.some(m=>m.id===item.id))
-      : members.filter(item => textMatches.some(memo => memo.id === item.id));
+    // Group-name match is an alternative to memo-text match, not a second mandatory match.
+    // Completion status is always applied separately to candidate group members.
+    const groupNameMatch=Boolean(term)&&group.name.normalize('NFC').toLocaleLowerCase()
+      .includes(term.toLocaleLowerCase());
+    const items = members.filter(item=>matchesStatus(item) &&
+      (groupNameMatch||textMatches.some(memo=>memo.id===item.id)));
     const expanded = Boolean(term) || !collapsed.includes(group.id ?? 'root');
     return { ...group, members, items, expanded, key: 'group:' + (group.id ?? 'root') };
   }).filter(group => (!term&&statusFilter==='all') || group.items.length > 0);

@@ -700,7 +700,19 @@ export function CadViewer({
     return true;
   };
   const deleteTreeGroup=(id:string)=>{
-    if(memoServerMode!=='active'){localTree(()=>removeMemoGroup(memoTree,id));return;}
+    if(memoServerMode==='off'){
+      if(!localTree(()=>removeMemoGroup(memoTree,id)))return;
+      // M1 session tree and canonical MemoSession metadata must agree when
+      // schedule/completion is subsequently saved (Codex P2 #4429007642).
+      const doc=getMemoSession();
+      for(const memo of doc.list().filter(m=>memoTree.groupByMemo[m.id]===id)){
+        doc.updateMetadata(memo.id,{groupId:null,visible:memo.visible??true,
+          settings:settingsFrom(memo)},{versionId,sourceSha256});
+      }
+      setMemos(doc.list());
+      return;
+    }
+    if(memoServerMode!=='active')return;
     const old=memoGroupRecords.find(g=>g.id===id);
     if(!old||!window.confirm('그룹을 삭제하고 메모를 미분류로 이동할까요?'))return;
     void mutatePersistedMemoGroup('DELETE',versionId,{expectedRevision:old.revision},id)
@@ -708,7 +720,10 @@ export function CadViewer({
       .catch(e=>setMemoTreeError(e instanceof Error?e.message:'그룹 삭제 실패'));
   };
   const assignTreeGroup=(id:string,groupId:string|null)=>{
-    if(memoServerMode!=='active'){localTree(()=>assignMemoToGroup(memoTree,id,groupId,scopedMemos));return;}
+    if(memoServerMode==='off'&&!localTree(()=>
+      assignMemoToGroup(memoTree,id,groupId,scopedMemos)))return;
+    if(memoServerMode!=='off'&&memoServerMode!=='active')return;
+    // Persisted path is CAS; M1 path updates MemoSession, not merely Tree UI.
     void changeMemoMeta(id,{groupId});
   };
   const placeMemo = useCallback((point:MemoWcsXY) => {

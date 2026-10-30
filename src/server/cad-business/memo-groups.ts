@@ -11,7 +11,7 @@ const cas=():never=>blocked('BUSINESS_REVISION_CONFLICT',409);
 type Tx=Parameters<Parameters<typeof writeTransaction>[1]>[0];
 async function scope(tx:Tx,versionId:string,sha:string){
  const v=await tx.cadFileVersion.findUnique({where:{id:versionId},select:{sha256:true,fileFormat:true}});
- if(!v)blocked('BUSINESS_VERSION_NOT_FOUND',404);
+ if(!v)return blocked('BUSINESS_VERSION_NOT_FOUND',404);
  if(v.fileFormat!=='DXF')blocked('BUSINESS_DXF_ONLY',415);
  if(v.sha256.toLowerCase()!==sha)blocked('BUSINESS_SOURCE_CHANGED',409);
 }
@@ -54,7 +54,7 @@ export class MemoGroupRepository{
   return writeTransaction(this.db,async tx=>{
    const allowed=await requireG7CadPermission(tx,proof,'memo:write',{kind:'version',versionId});
    const group=await tx.cadMemoGroup.findFirst({where:{id,versionId,deletedAt:null}});
-   if(!group)blocked('MEMO_GROUP_NOT_FOUND',404);
+   if(!group)return blocked('MEMO_GROUP_NOT_FOUND',404);
    await scope(tx,versionId,group.sourceSha256);
    if(group.createdById!==allowed.actorId)blocked('BUSINESS_OWNER_REQUIRED',403);
    if(group.revision!==expected)cas();
