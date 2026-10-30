@@ -1,3 +1,11 @@
+## v0.47.3 (#85/#86) Main/GHCR handoff — Owner Managed (2026-10-31)
+
+- [PR #175](https://github.com/planner77/layoutManager/pull/175) exact green CI HEAD `a6d3bdef1cc3e8a12ca95e918b5a2d49fad83d50` Squash Main `c3e55a95ed2c7a61413e5b0577004252994fe988`. [Main CI 41145893248](https://github.com/planner77/layoutManager/actions/runs/41145893248) was started for v0.47.3 paired GHCR App/Migrator publish (release outcome **PENDING/NOT VERIFIED**; no image digest recorded).
+- Source app/migrator tags after **verified successful publication only**: `ghcr.io/planner77/layoutmanager:0.47.3`, `ghcr.io/planner77/layoutmanager:0.47.3-migrate`. Do not deploy `:latest` alone without checking pair/version and digest, do not treat automatic CI initiation as actual GHCR publication.
+- v0.47.3 M4/M5 persistence is a **fresh EMPTY Greenfield install only**, *not* a migration path from deployed v0.47.2 data. Earlier installed schema retains read support but metadata/group writes are unavailable. No operating volume/DB/CAD/S3 restore/migration or Auth/Writer runtime enablement was authorized by GHCR release or code Issue closure. 2-PC real DXF/Renderer/GPU acceptance remains separate.
+
+---
+
 ## #85/#86 Greenfield operational boundary (2026-10-31)
 
 New Memo M4/M5 tables are provisioned only on explicitly fresh empty G7 installations with version-matched App/Migrator. Prior installed volume retains M2 read, but persisted M4/M5 mutations fail closed 503. Do not upgrade existing DB/volume, activate Writer, publish GHCR, merge Main or claim field acceptance as part of this PR CI-only request. [Spec](Issues85-86.md).

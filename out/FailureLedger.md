@@ -1,3 +1,23 @@
+## #85/#86 PR #175 — PR CI #341 SUCCESS, Owner Managed Squash + Main CI/GHCR launch (2026-10-31 KST)
+
+### Verified, exact-source PR CI
+- [PR #175](https://github.com/planner77/layoutManager/pull/175): latest verified HEAD `a6d3bdef1cc3e8a12ca95e918b5a2d49fad83d50`, [PR CI #341 / Run 41142161238](https://github.com/planner77/layoutManager/actions/runs/41142161238) `completed/success`. Verify Job `124359139129` SUCCESS (TypeScript, ESLint, Unit, Integration, production Next build and Playwright E2E); Docker Job `124359139260` SUCCESS (baseline and candidate image build, migrator and disposable Greenfield first-run/runtime smoke).
+- Historic failed PR CIs below retain their distinct causes: [Run 41137913177](https://github.com/planner77/layoutManager/actions/runs/41137913177) had TypeScript TS18047 x5 and dependent Docker Build failure, remedied by explicit terminating group/version null guards; [Run 41139632431](https://github.com/planner77/layoutManager/actions/runs/41139632431) had 101 E2E PASS + 2 screenshot exact-PNG byte mismatches after canvas resize/fullscreen, remedied by bounded normalized CAD stroke similarity checks. The newer successful run validates the **post-repair HEAD**, not the old failed HEADs.
+- GitHub review threads 3 total (Codex P1 movable Memo Tree #4429007637, P2 session group synchronization #4429007642, P2 independent status/group search #4429007644), all replied and resolved. At merge gate: unresolved 0, Main `870d3cf0a4f8e42d2e5c4132076d3b7ab9c52089` vs PR behind=0, `mergeable=true`, conflict 0. Owner explicitly accepted Owner Managed QA scope; independent site acceptance not asserted.
+
+### Merge, Issue close and GHCR workflow start
+- [Final gate PR comment #6535841930](https://github.com/planner77/layoutManager/pull/175#issuecomment-6535841930) created **before merge** to preserve exact passing PR HEAD and avoid post-CI code or docs edits on the PR.
+- **Squash Merge confirmed** to [Main `c3e55a95ed2c7a61413e5b0577004252994fe988`](https://github.com/planner77/layoutManager/commit/c3e55a95ed2c7a61413e5b0577004252994fe988), subject exactly `#85 | Memo Tree and optional schedule/completion (#86)`. `PR #175 merged=true/closed` verified.
+- [Issue #85](https://github.com/planner77/layoutManager/issues/85) and [Issue #86](https://github.com/planner77/layoutManager/issues/86) **closed/completed**, with explicit scope+limitations documented in [#85 comment #6535849033](https://github.com/planner77/layoutManager/issues/85#issuecomment-6535849033) and [#86 comment #6535849746](https://github.com/planner77/layoutManager/issues/86#issuecomment-6535849746). Initial M4 one-level user groups; optional memo-parent hierarchy and full site acceptance NOT CLAIMED.
+- [Main CI Run 41145893248](https://github.com/planner77/layoutManager/actions/runs/41145893248) event `push`, HEAD **merge commit `c3e55a95ed2c7a61413e5b0577004252994fe988`**, at first check `in_progress`, conclusion null. `src/package.json` + lock are `0.47.3`; `v0.47.3` tag absent **before merge**. Main runtime-code diff ordinarily triggers `release-scope` publish=true followed by `build-and-push`, App+Migrator image candidate/digest verification and planned `ghcr.io/planner77/layoutmanager:0.47.3` + `:0.47.3-migrate` (then latest aliases).
+- **Main CI SUCCESS, version tag creation, GHCR actual publication/digests are NOT VERIFIED**. Owner expressly requested **no CI monitoring**. Workflow started ≠ published images. If CI fails, resolve the failing release step from logs before claiming GHCR available; never force-move existing version tag. Do not claim PR candidate images were reused in absence of matching digest evidence.
+
+### Documentation-only evidence sync and deployment boundary
+- This is an **after-merge docs-only Main commit**, not a changed implementation HEAD, so the exact green PR CI and release-trigger merge SHA remain unchanged. The additional docs-only Main push will invoke a separate release-scope CI expected to classify *.md-only diff as **GHCR SKIPPED**, serialized behind the real release workflow via `docker-publish-release` concurrency (`cancel-in-progress:false`). Do not represent the docs-only SHA as GHCR image source. Its future CI outcome is also NOT VERIFIED.
+- No actual site Docker/SQLite/CAD/S3 access, existing volume migration, silent sidecar schema ALTER, G7 Auth/CAD Writer activation or 2-PC real CAD/GPU acceptance. New `CadMemoGroup/CadMemoFeature` persistence remains empty-Greenfield-only; old M2 read compatible, old schema M4/M5 write unavailable by design. #172 collaborative edit and #96/#113 live acceptance separate.
+
+---
+
 ## #85/#86 PR #175 — CI #41139632431: WebGL 레이어 복원 E2E 2건 실패 (2026-10-31)
 
 ### 정확한 실패 증거

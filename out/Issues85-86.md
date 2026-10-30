@@ -1,3 +1,12 @@
+## PR #175 Owner Managed implementation close-out (2026-10-31)
+
+- Final [PR CI #341](https://github.com/planner77/layoutManager/actions/runs/41142161238) **completed/success** at exact `a6d3bdef1cc3e8a12ca95e918b5a2d49fad83d50`: Verify/Docker two jobs SUCCESS. Earlier TS18047 + Docker build and WebGL screenshot exact-byte E2E issues resolved. 3 Codex inline review threads all resolved, Main behind=0 and mergeable=true.
+- Squash Main source `c3e55a95ed2c7a61413e5b0577004252994fe988`, subject `#85 | Memo Tree and optional schedule/completion (#86)`. [Issue #85](https://github.com/planner77/layoutManager/issues/85) and [#86](https://github.com/planner77/layoutManager/issues/86) completed per Owner instruction and closure comments.
+- Scope accepted for implementation: one-level Memo group/unclassified tree, temporary and persistent visibility, WCS focus, desktop movable+mobile modal Tree, independent optional date-only schedule and completion with UTC/CAS/audit. Optional nested memo-parent hierarchy, cross-owner edit (#172), legacy volume schema upgrade, real-site acceptance (#96/#113) **NOT** part of completed scope.
+- Main [GHCR release workflow Run #41145893248](https://github.com/planner77/layoutManager/actions/runs/41145893248) **started** on the Squash commit, expected app `0.47.3` and migrator `0.47.3-migrate` paired publication. Actual release success/digests remain **NOT VERIFIED** without monitoring. This report is docs-only after merge; release images must identify the merge commit, not the metadata commit.
+
+---
+
 ## #175 PR CI Run #41139632431 — 합성 Viewer Layer 복원 회귀 (2026-10-31)
 
 - Docker/Typecheck/Lint/Unit·Integration/Build 성공, 101 Playwright 합격·2개 기존 Layer restore E2E 실패. Artifact Trace에서 Layer 체크/시각적 선은 복원됐으나 초기/마지막 화면의 작은 raster 크기 변화 때문에 PNG Buffer 동일성 검증이 timeout. 중앙 Source 획의 크기 정규화 및 근접 일치, 빈 Canvas 실패를 유지하는 테스트 helper로 변경. Canvas/Renderer/Layer 제품 코드 불변.

@@ -1,3 +1,12 @@
+## #85/#86 PR #175 final synthesis CI and Main release handoff (2026-10-31)
+
+- PR CI [#341 Run 41142161238](https://github.com/planner77/layoutManager/actions/runs/41142161238), exact HEAD `a6d3bdef1cc3e8a12ca95e918b5a2d49fad83d50` => `completed/success`. Verify Job `124359139129` **SUCCESS**: TypeScript, lint, Unit/Integration, Next production build, Playwright Chromium. Docker Job `124359139260` **SUCCESS**: build, migrator, disposable first-run + CAD runtime smoke. Previous E2E failure 2 of 103 tests in Run 41139632431 is repaired by the final successful run; exact job evidence is authoritative, not a screenshot estimate.
+- P1/P2/P2 Codex threads 3/3 resolved, 0 unresolved, no merge conflict; Squash Main `c3e55a95ed2c7a61413e5b0577004252994fe988` under Owner Managed. #85/#86 code implementation issues closed, with optional memo parent hierarchy / site acceptance excluded.
+- [Main CI Run 41145893248](https://github.com/planner77/layoutManager/actions/runs/41145893248) started on merge SHA; GHCR v0.47.3 app/migrator pair publication **PENDING/NOT VERIFIED**, no digest or successful tag asserted. Subsequent documentation-only Main CI does not substitute for runtime release CI.
+- Real 2-PC/CAD/GPU, previous-volume migration/restore, operational G7 Auth/Writer activation and production database changes **NOT RUN**.
+
+---
+
 ## PR #175 2차 PR CI #41139632431 실패와 증거 범위 (2026-10-31)
 
 - Run `41139632431` / HEAD `8df9f656c2c4e9e06e9e3c8552be246e01de4caa`: Docker Job `124351064253` SUCCESS, Verify Job `124351064417`에서 Typecheck/Lint/Unit/Integration/Production Build SUCCESS 및 E2E 101 PASS/2 FAIL.

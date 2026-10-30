@@ -1,3 +1,11 @@
+## 0.47.3 — PR #175 merged Owner Managed, GHCR release pending (2026-10-31)
+
+- [PR #175](https://github.com/planner77/layoutManager/pull/175) #85 M4 Memo Tree + #86 M5 optional schedule/completion merged from successful [PR CI #341](https://github.com/planner77/layoutManager/actions/runs/41142161238) (two successful jobs, exact head a6d3bdef). The earlier TS18047 and WebGL PNG exact-match regressions are repaired and documented in FailureLedger.
+- Main Squash `c3e55a95ed2c7a61413e5b0577004252994fe988`; both implementation issues closed Owner Managed with deferred memo-parent hierarchy, existing-volume migration and site acceptance explicitly excluded.
+- [Main CI #41145893248](https://github.com/planner77/layoutManager/actions/runs/41145893248) initiated expected App/Migrator v0.47.3 paired GHCR publication. Images/digests and CI success NOT YET VERIFIED; a later docs-only Main push does not change the runtime release SHA.
+
+---
+
 ## 0.47.3 PR #175 — E2E WebGL layer restoration regression correction (2026-10-31)
 
 - 2차 PR CI #41139632431: Docker/TypeScript/Lint/Unit/Next Build success, Playwright 101 passed / 2 failed due byte-exact Canvas PNG comparison after layer/fullscreen restoration. Added test-only normalized source-stroke similarity helper, retaining CSS fullscreen/Layer selection/Canvas identity/source request invariants. Related AGENTS, Decisions, TestPlan/TestReport and FailureLedger updated. New HEAD CI not yet verified; Main merge/GHCR/Issue close not done.

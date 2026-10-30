@@ -1,3 +1,13 @@
+## #85/#86 PR #175 final Owner Managed merge and release launch (2026-10-31)
+
+- [PR CI #341 / Run 41142161238](https://github.com/planner77/layoutManager/actions/runs/41142161238), exact source HEAD `a6d3bdef1cc3e8a12ca95e918b5a2d49fad83d50`, completed **SUCCESS**, Verify Job `124359139129` and Docker Job `124359139260` both **SUCCESS**. Initial TypeScript and later pixel-exact WebGL E2E regressions were fixed and retested; history preserved in [FailureLedger](out/FailureLedger.md).
+- Codex inline P1+P2+P2 resolved 3/3; Main `870d3cf0` behind=0, mergeable=true, no conflict at gate. Owner explicitly approved GHCR and Issue closure, Owner Managed QA acceptance recorded [PR #175 comment](https://github.com/planner77/layoutManager/pull/175#issuecomment-6535841930).
+- One-line Squash `#85 | Memo Tree and optional schedule/completion (#86)` merged to Main `c3e55a95ed2c7a61413e5b0577004252994fe988`; [#85](https://github.com/planner77/layoutManager/issues/85) and [#86](https://github.com/planner77/layoutManager/issues/86) `closed/completed` with initial-vs-deferred scope documented in closure comments.
+- Main [CI Run 41145893248](https://github.com/planner77/layoutManager/actions/runs/41145893248) launched on merge source SHA with GHCR conditional App/Migrator `0.47.3` publish path. Run status initially `in_progress`; **Main CI SUCCESS / actual paired GHCR release / digests NOT YET VERIFIED**, no monitoring by Owner request. v0.47.3 new empty Greenfield only. No physical database migration, prior volume reuse, G7 Writer enablement or live field acceptance.
+- Final verification ledger saved in this **docs-only post-merge Main commit** rather than editing the already green PR HEAD; docs-only follow-up Main CI is a separate queued metadata run and must skip GHCR. Do not alter previously verified GHCR labels/digests; inspect release workflow before declaring published.
+
+---
+
 ## PR #175 #85/#86 — E2E 2건 실패 원인 및 캔버스 복원 검증 보완 (2026-10-31)
 
 - [PR CI #41139632431](https://github.com/planner77/layoutManager/actions/runs/41139632431) 정확 HEAD `8df9f656c2c4e9e06e9e3c8552be246e01de4caa` `completed/failure`. Docker Job `124351064253` **SUCCESS**(baseline/app/migrator/Greenfield Compose 포함), Verify Job `124351064417` TypeScript·ESLint·Unit/Integration·Production Build **SUCCESS**, Playwright E2E **101 PASS/2 FAIL**. 실패: `TC-ISSUE17-001` 및 `TC-LAYER001`의 복원 뒤 `canvas.screenshot().equals(initial)` 5초 timeout. [실패 원장](out/FailureLedger.md) 참조.
