@@ -15,7 +15,7 @@ import { createPreviewUuid } from '@/features/cad-viewer/preview-uuid';
 import { MemoSession, parseMemoWcsXY, type MemoDraft, type MemoWcsXY } from '@/domain/cad-memo';
 import {parseWcsTranslation,selectedTranslationIds} from '@/domain/generated-translate';
 import { initialViewerAppState, viewerAppReducer } from '@/features/cad-viewer/viewer-app-state';
-import { isLiveOutlineRequest, outlineToolUnavailableReason } from '@/features/cad-viewer/outline-tool-policy';
+import { isLiveOutlineRequest, outlineToolUnavailableReason, effectiveOutlineBasis } from '@/features/cad-viewer/outline-tool-policy';
 import { ViewerManager, type OutlineInfo, type SavedOutline, type SavedOutlineOverlayState } from '@/viewers/core/adapter';
 import {buildOutlineExport} from '@/domain/outline-draft';
 import {canvasEditCapability,type CanvasObjectRef} from '@/domain/canvas-object-selection';
@@ -597,18 +597,38 @@ export function CadViewer({
   }
   function toggleOutlineTool() {
     if (!outlineAvailable) return;
-    closeMemoEditor();
-    setDeleteRequest(null);setContextMenu(null);
     const enabled = !outlineEnabledRef.current;
-    outlineEnabledRef.current = enabled;
     if (enabled) {
+      const current=manager.current;
+      if(!current)return;
+      // Exact SOURCE may become unavailable after a render edit; use the live
+      // adapter gate, not the previously saved React outlineBasis snapshot.
+      const liveInfo=current.getOutlineInfo();
+      const nextBasis=effectiveOutlineBasis(outlineBasis,liveInfo);
+      try {
+        // Select the mode before publishing enabled=true so a rejected
+        // transition cannot leave the panel closed with a stale enabled ref.
+        current.setSelectionMode(nextBasis==='source'?'select':'render');
+      }catch(error){
+        setOutlineNotice(error instanceof Error?error.message:'외곽선 선택 모드를 열 수 없습니다.');
+        return;
+      }
+      closeMemoEditor();
+      setDeleteRequest(null);setContextMenu(null);
       outlineRequestRevisionRef.current++;
-      manager.current?.clearCanvasObjectSelection();
+      current.clearCanvasObjectSelection();
+      outlineEnabledRef.current=true;
       setCanvasMode('pan');
-      manager.current?.setSelectionMode(outlineBasis==='source'?'select':'render');
+      setOutlineBasis(nextBasis);
+      setOutlineInfo(liveInfo);
       setOutlineMode('select');
-      setOutlineNotice(null);
+      setOutlineNotice(nextBasis!==outlineBasis
+        ? '원본 정밀 선택을 사용할 수 없어 렌더 형상 기준으로 전환했습니다. 원본 작업 차분을 되돌리기 전에는 정밀 모드를 사용할 수 없습니다.'
+        : null);
     } else {
+      outlineEnabledRef.current=false;
+      closeMemoEditor();
+      setDeleteRequest(null);setContextMenu(null);
       stopOutlineEditing();
       setOutlineNotice('외곽선 생성 OFF: 비확정 선택·미리보기 및 진행 중 계산이 취소되었습니다. 임시 확정 결과와 JSON 내보내기는 유지됩니다.');
     }

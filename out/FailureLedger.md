@@ -1,3 +1,13 @@
+## #166 PR #170 — CI 성공 후 신규 Codex P2 발견·보완, 최신 검증 대기 (2026-10-30 KST)
+
+- **정확한 성공 대상:** [PR CI #41040094443](https://github.com/planner77/layoutManager/actions/runs/41040094443)는 HEAD `04e44d390e21fc7bcea4b96f5c538ad74ad15f9a`의 `completed/success`; Verify Job `124010487329`와 Docker Job `124010487646` 두 건 SUCCESS. 이 결과는 후속 수정 커밋의 검증으로 **전용하지 않는다**.
+- **후행 최신 Codex P2:** [PR review #4422634421](https://github.com/planner77/layoutManager/pull/170#discussion_r4422634421), `src/features/cad-viewer/viewer.tsx`: 원본 정밀 basis를 선택한 뒤 일반 렌더 선택/Translate·Rotate·숨김을 하면 `sourceWorkChanged()`로 정확 SOURCE가 차단되지만 React `outlineBasis='source'`가 남는다. OFF→ON 시 이전 basis로 `setSelectionMode('select')`가 예외를 던지고, 이미 `outlineEnabledRef=true`인데 panel reducer dispatch 전 중단돼 토글과 도구 내부 상태가 불일치한다. 기존 Codex P2 두 건은 해결·Resolved, 새 세 번째 P2는 수정 전 미해결.
+- **보완:** 사용자 표시 상태가 아니라 adapter의 실시간 `getOutlineInfo().entityCount/sourceUnavailableReason`으로 SOURCE 가용성을 재검증하고, 무효이면 `render`로 자동 전환 + 알림한다. Adapter 모드 전환 성공 후에만 `outlineEnabledRef=true` 설정·상태 dispatch하며, 예외 시 ref를 바꾸지 않는다. 원본 exact fail-closed 및 기준 Scene·DXF bytes 불변.
+- **추가 회귀:** `outline-tool-policy.test.ts`의 live basis 검증, `issue31-outlines.spec.ts`의 실제 DXF source→일반 객체 선택→SceneWork Translate→외곽선 OFF 상태에서 재열기/render fallback/UI checked 회귀. 합성 자료 사용, 실제 CAD·운영 저장소 접근 없음.
+- **새 게이트:** 본 신규 코드/시험은 GitHub source patch이며 독립 로컬 실행 **NOT RUN**. 새로운 HEAD의 PR CI/최신 리뷰/충돌 재검증 전 병합·Main CI·GHCR·#166 종료는 PENDING. 실패 원장 내 이전 95 PASS/2 FAIL 및 후속 P2와 CI 결과를 이력 그대로 보존한다.
+
+---
+
 ## #166 PR #170 — PR CI 성공 후 Codex P2 보완·신규 검증 대기 (2026-10-30 KST)
 
 - **검증된 이전 HEAD:** `33e560393527312e0388560bd0d13e62b5124e31`의 [PR CI #41036925858](https://github.com/planner77/layoutManager/actions/runs/41036925858)은 `completed/success`, Verify Job `124000125159`·Docker Job `124000125416` 모두 SUCCESS. Main `bdde565` 대비 behind=0/ahead=2, PR mergeable=true. 성공은 아래 리뷰 보완 **이전** HEAD에만 유효하다.

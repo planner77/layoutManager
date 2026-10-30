@@ -1,3 +1,11 @@
+## #166 — 최신 Codex UI P2 재현 방지 시험 추가 (2026-10-30)
+
+- 신규 `TC-S5-UI-009`: SOURCE 저장 선택을 현재 SceneWork 정밀 원본 조건과 재검증하고, 무효이면 RENDER로 fallback, enabled ref 변경은 Adapter mode 승인 뒤에만 수행. Exact SHA/Handle/canonical 검증 완화 없음.
+- 신규 `TC-S5-E2E-009`: 기존 합성 1A Handle 정사각 도면에서 precise SOURCE 선택→일반 Renderer 작업 Translate→외곽선 도구 재활성화→`outline-basis=render`, 정상 도구 표시 및 checkbox checked 확인. 기존 Scene/DXF 기준 및 업무 API 변경 없음.
+- 작성 시점 신규 Unit/E2E/CI 실행은 **NOT RUN/NOT VERIFIED**. 위에 기록된 과거 성공은 해당 이전 SHA 범위의 증거이다.
+
+---
+
 ## PR #170 — CI 성공 후 Codex P2 보완 회귀 추가 (2026-10-30)
 
 - 기존 HEAD `33e560393527312e0388560bd0d13e62b5124e31`의 PR CI #41036925858 Verify/Docker는 SUCCESS. 두 P2 수정 전 성공이므로 후속 HEAD에 재사용하지 않는다.

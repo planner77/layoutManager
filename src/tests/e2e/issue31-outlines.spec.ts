@@ -135,3 +135,39 @@ test('TC-OUT-E2E-001: selection and convex/precise preview, non-destructive JSON
  await expect(outlineToggle).toHaveAttribute('aria-checked','true');
  await expect(page.getByTestId('outline-selection-count')).toContainText('선택 0개');
 });
+
+// Codex P2: selected SOURCE basis must not strand the OFF outline tool
+// when SceneWork invalidates original-source geometry after general selection.
+test('TC-S5-E2E-009: reopen outline in render mode after source basis becomes stale',async({page,request})=>{
+ const created=await request.post('/api/cad-files',{multipart:{
+   file:{name:'issue166-stale-source-basis.dxf',mimeType:'application/octet-stream',buffer:Buffer.from(drawing)},
+   ...(await masterFields(request,{businessUnit:'S5 source-to-render',site:'outline',building:'A',floor:'1'})),
+   registeredAt:'2026-10-30',makeCurrent:'true',deletePassword:'1234',
+ }});
+ expect(created.status()).toBe(201);const file=await created.json();
+ await page.goto('/cad/versions/'+file.id+'/viewer?renderer=three-dxf-viewer');
+ await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
+ await clickViewerCommand(page,'view','전체 화면 종료');
+ await clickViewerTestCommand(page,'viewer-menu-outline-tool');
+ const basis=page.getByTestId('outline-basis');
+ await expect(basis.locator('option[value="source"]')).toBeEnabled();
+ await basis.selectOption('source');
+ await page.getByTestId('canvas-mode-objects').click();
+ await expect(page.getByTestId('cad-outline-tools')).toHaveCount(0);
+ const canvas=page.getByTestId('cad-canvas').locator('canvas');
+ await canvas.scrollIntoViewIfNeeded();
+ const box=(await canvas.boundingBox())!;
+ await page.mouse.move(box.x+5,box.y+5);await page.mouse.down();
+ await page.mouse.move(box.x+box.width-5,box.y+box.height-5,{steps:8});await page.mouse.up();
+ await expect(page.getByTestId('canvas-selection-count')).toContainText('선택 1개');
+ await page.locator('#scene-work-dx').fill('5');
+ await page.getByTestId('scene-work-translate').click();
+ await expect(page.getByTestId('scene-work-undo')).toContainText('(1)');
+ await clickViewerTestCommand(page,'viewer-menu-outline-tool');
+ await expect(page.getByTestId('cad-outline-tools')).toBeVisible();
+ await expect(basis).toHaveValue('render');
+ await expect(page.getByTestId('outline-tool-notice')).toContainText('렌더 형상 기준');
+ await expect(page.getByTestId('exact-source-unavailable')).toBeVisible();
+ await openViewerMenu(page,'work');
+ await expect(page.getByTestId('viewer-menu-outline-tool')).toHaveAttribute('aria-checked','true');
+});

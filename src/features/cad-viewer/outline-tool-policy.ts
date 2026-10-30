@@ -39,3 +39,14 @@ export function isLiveOutlineRequest(
   return toolEnabled && requestRevision === currentRevision &&
     !(error instanceof Error && error.name === 'AbortError');
 }
+
+/** A saved exact-source choice is only reusable while the LIVE adapter still
+ * provides verified source entities. Render edits invalidate exact coordinates
+ * without disabling supported render outlines. */
+export function effectiveOutlineBasis(
+  saved:'render'|'source',
+  live:{entityCount:number;sourceUnavailableReason?:string}|null,
+):'render'|'source'{
+  if(saved==='source'&&(!live||live.entityCount<=0||!!live.sourceUnavailableReason))return 'render';
+  return saved;
+}
