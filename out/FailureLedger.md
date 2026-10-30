@@ -1,3 +1,14 @@
+## #84/#167 단일 PR — CI 실행 전 원장 및 위험 등록 (2026-10-31)
+
+- Main 근거 `34e3a362e9a9d01579d4a61b81b26f4ee935c87b`; 사용자 요청 #84→#167 분석·설계·구현·PR CI만. [설계](Issues84-167.md), AGENTS, Architecture/Decisions/Database 검토. 루트 DESIGN.md 실제 없음.
+- **사전 위험, 실제 CI 실패 아님:** v0.47.1 CadMemo 직렬 컬럼 추가 시 구 DB Prisma P2022와 runtime Gate 충돌 위험 → 별도 CadMemoAnchor 테이블과 새로운 exact Greenfield baseline으로 격리. 기존 business/Scene/old marker 보존, 구 DB 자동 업그레이드/삭제 없음. SQLITE CHECK의 NULL 참을 명시 NOT NULL targetOrigin으로 차단; immutable trigger·FK·bounds 검증. 일반 Vitest에서 server-only 저장소 value import 금지(이전 #314 재발방지).
+- M3: Owner/Site/Revision 검증, Source는 서버에서 이미 canonical attested된 saved sourceRefs만, APP_CREATED는 서버 UUID. Outline transform/delete와 Memo World WCS/BROKEN_AUDIT를 원자적 거래. #172 공동 편집 정책 미확정은 확대하지 않음.
+- S6: 원본 Scene Asset/Current/DXF 불변, Source-only SessionWork 원상복구 + SOURCE linked Memo 해제, All은 server exact full-set revision + Session/Site/Owner 권한 + Soft Delete/Audit 단일 거래. SQLite/Browser 분산 atomic claim 금지.
+- **실행 상태:** 소스 코드와 합성 테스트 작성, npm/Prisma/TS/Lint/Unit/E2E/Docker/현장 수용은 로컬에서 **NOT RUN**. 기존 #311/#314 실패/CI #316 성공은 이 신규 HEAD를 검증하지 않는다. PR 생성 후 최신 리뷰/충돌·새 CI 실행 결과를 실제 근거로 기록. CI 감시 생략; 병합·GHCR·운영·이슈 종료 미실행.
+- Known limits: auto snap nearest vertex, 임시 Generated 편집의 완전한 영속 Anchor 동기화, SOURCE renderer 세션 이동의 저장, 기존 설치 스키마 채택 및 실 DXF Owner 수용은 이 PR에서 입증하지 않는다. #96/#113/#172 별도 OPEN.
+
+---
+
 ## #98/#83 PR #171 — Owner Managed 최종 Squash·Main CI/GHCR 게시 완료·Issue 분할 종료 (2026-10-30 KST)
 
 - **정확 최신 PR CI:** [#316](https://github.com/planner77/layoutManager/actions/runs/41062911805), HEAD `d74d1f312386b020175035d5aa1aaf3066bc144e` `completed/success`. Verify Job `124086863559` SUCCESS(Typecheck/Lint/Unit·Integration/Production Build/Playwright·G7·Legacy E2E) 및 Docker Job `124086863008` SUCCESS(Migrator/DB/Greenfield Compose/Admin/CAD restart). 기존 실패 PR #311 `b7e499d` 및 #314 `839fcf8`와 변경 전 성공 #315 `8af8b65`는 아래 원장에 역사 그대로 보존.
