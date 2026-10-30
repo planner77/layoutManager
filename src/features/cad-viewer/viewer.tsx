@@ -622,6 +622,95 @@ export function CadViewer({
       });
     }
   }, [beginMemoInteraction,memoSelectedId,versionId,sourceSha256,appState.toolsOpen,isCompact,sessionSnapProjection]);
+  const settingsFrom=(m:MemoDraft):MemoSettingsInput=>({
+    scheduleEnabled:m.scheduleEnabled??false,startDate:m.startDate??null,dueDate:m.dueDate??null,
+    completionEnabled:m.completionEnabled??false,isCompleted:m.isCompleted??false
+  });
+  const focusMemoFromTree=(id:string)=>{
+    const m=scopedMemos.find(x=>x.id===id);
+    if(!m)return;
+    selectMemo(id);
+    setMemoTransientFocusId((!memoAllVisible||m.visible===false||!isMemoVisible(memoTree,id))?id:null);
+    if(!manager.current?.focusBounds({minX:m.anchorWcsXY.x-3,maxX:m.anchorWcsXY.x+3,
+      minY:m.anchorWcsXY.y-3,maxY:m.anchorWcsXY.y+3}))
+      setMemoTreeError('메모 WCS로 이동할 수 없습니다.');
+  };
+  async function changeMemoMeta(id:string,update:{groupId?:string|null;visible?:boolean;settings?:MemoSettingsInput}){
+    if(memoSavingRef.current)return;
+    memoSavingRef.current=true;setMemoBusy(true);
+    try{
+      const doc=getMemoSession(),old=doc.get(id);
+      if(!old)throw new Error('메모가 없습니다.');
+      const groupId=update.groupId===undefined?(old.groupId??null):update.groupId;
+      const visible=update.visible??old.visible??true;
+      const settings=update.settings??settingsFrom(old);
+      if(memoServerMode==='active'){
+        if(!memoFeaturesAvailable)throw new Error('기존 설치에서는 M4/M5 영속 메타데이터를 쓸 수 없습니다. 신규 설치가 필요합니다.');
+        if(old.revision===undefined)throw new Error('Revision을 확인할 수 없습니다.');
+        doc.acceptPersisted(await mutatePersistedMemo('PATCH',versionId,{
+          expectedRevision:old.revision,operation:'metadata',groupId,visible,...settings
+        },id) as PersistedMemoDraft,{versionId,sourceSha256});
+      }else if(memoServerMode==='off'){
+        doc.updateMetadata(id,{groupId,visible,settings},{versionId,sourceSha256});
+      }else throw new Error('서버가 준비되지 않았습니다.');
+      setMemos(doc.list());
+      setMemoTree(current=>{
+        const groupByMemo={...current.groupByMemo};
+        if(groupId===null)delete groupByMemo[id];else groupByMemo[id]=groupId;
+        return {...current,groupByMemo};
+      });
+      setMemoTreeError(null);setMemoError(null);
+    }catch(error){const msg=error instanceof Error?error.message:'메모 속성 변경 실패';
+      setMemoTreeError(msg);setMemoError(msg);
+    }finally{memoSavingRef.current=false;setMemoBusy(false);}
+  }
+  const localTree=(fn:()=>MemoTreeState):boolean=>{
+    try{setMemoTree(fn());setMemoTreeError(null);return true;}
+    catch(error){setMemoTreeError(error instanceof Error?error.message:'그룹 작업 오류');return false;}
+  };
+  const reloadMemoGroups=async()=>{
+    const result=await readPersistedMemos(versionId,new AbortController().signal);
+    if(result.mode!=='active')throw new Error('메모 조회를 완료하지 못했습니다.');
+    const doc=new MemoSession({versionId,sourceSha256});
+    for(const m of result.memos)doc.acceptPersisted(m,{versionId,sourceSha256});
+    memoSession.current=doc;setMemos(doc.list());
+    setMemoGroupRecords(result.groups);setMemoFeaturesAvailable(result.featuresAvailable);
+    setMemoTree({...emptyMemoTreeState,groups:result.groups.map(g=>({id:g.id,name:g.name})),
+      groupByMemo:Object.fromEntries(result.memos.filter(m=>m.groupId).map(m=>[m.id,m.groupId!]))});
+    setMemoTransientFocusId(null);
+  };
+  const createTreeGroup=(name:string):boolean=>{
+    if(memoServerMode!=='active')return localTree(()=>createMemoGroup(memoTree,createPreviewUuid(),name));
+    if(!memoFeaturesAvailable){setMemoTreeError('신규 Greenfield 설치에서만 메모 그룹을 저장할 수 있습니다.');return false;}
+    void mutatePersistedMemoGroup('POST',versionId,{sourceSha256,name})
+      .then(g=>{if('deleted' in g)throw new Error('그룹 생성 응답 오류');
+        setMemoGroupRecords(a=>[...a,g]);setMemoTree(a=>({...a,groups:[...a.groups,{id:g.id,name:g.name}]}));})
+      .catch(e=>setMemoTreeError(e instanceof Error?e.message:'그룹 생성 실패'));
+    return true;
+  };
+  const renameTreeGroup=(id:string,name:string):boolean=>{
+    if(memoServerMode!=='active')return localTree(()=>renameMemoGroup(memoTree,id,name));
+    const old=memoGroupRecords.find(g=>g.id===id);
+    if(!old)return false;
+    void mutatePersistedMemoGroup('PATCH',versionId,{expectedRevision:old.revision,operation:'rename',name},id)
+      .then(g=>{if('deleted' in g)throw new Error('그룹 변경 응답 오류');
+        setMemoGroupRecords(a=>a.map(x=>x.id===id?g:x));
+        setMemoTree(a=>renameMemoGroup(a,id,g.name));})
+      .catch(e=>setMemoTreeError(e instanceof Error?e.message:'그룹 이름 변경 실패'));
+    return true;
+  };
+  const deleteTreeGroup=(id:string)=>{
+    if(memoServerMode!=='active'){localTree(()=>removeMemoGroup(memoTree,id));return;}
+    const old=memoGroupRecords.find(g=>g.id===id);
+    if(!old||!window.confirm('그룹을 삭제하고 메모를 미분류로 이동할까요?'))return;
+    void mutatePersistedMemoGroup('DELETE',versionId,{expectedRevision:old.revision},id)
+      .then(()=>reloadMemoGroups())
+      .catch(e=>setMemoTreeError(e instanceof Error?e.message:'그룹 삭제 실패'));
+  };
+  const assignTreeGroup=(id:string,groupId:string|null)=>{
+    if(memoServerMode!=='active'){localTree(()=>assignMemoToGroup(memoTree,id,groupId,scopedMemos));return;}
+    void changeMemoMeta(id,{groupId});
+  };
   const placeMemo = useCallback((point:MemoWcsXY) => {
     // 12 CSS px threshold; closed polygon vertices and visible 2D render
     // endpoints/centers only. Never promotes the session target to a DB ref.
