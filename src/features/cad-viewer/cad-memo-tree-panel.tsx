@@ -28,6 +28,7 @@ export function CadMemoTreePanel({
   onGroupVisibility, onCreateGroup, onRenameGroup, onDeleteGroup, onAssignGroup, onClose,
 }: Props) {
   const [query, setQuery] = useState('');
+  const [statusFilter,setStatusFilter]=useState<'all'|'registered'|'progress'|'completed'>('all');
   const [groupName, setGroupName] = useState('');
   const [editingGroup, setEditingGroup] = useState<string | null>(null);
   const [renameName, setRenameName] = useState('');
@@ -36,15 +37,21 @@ export function CadMemoTreePanel({
   const [pendingFocusId, setPendingFocusId] = useState<string | null>(null);
   const refs = useRef<Map<string, HTMLDivElement>>(new Map());
   const term = query.normalize('NFC').trim();
-  const textMatches = filterMemos(memos, term);
+  const textMatches = filterMemos(memos, term).filter(memo=>{
+    if(statusFilter==='all')return true;
+    if(statusFilter==='registered')return !memo.completionEnabled;
+    if(statusFilter==='completed')return memo.completionEnabled&&memo.isCompleted;
+    return memo.completionEnabled&&!memo.isCompleted;
+  });
   const groups = [{ id: null, name: '미분류' }, ...tree.groups];
   const rows = groups.map(group => {
     const members = memos.filter(memo => (tree.groupByMemo[memo.id] ?? null) === group.id);
     const items = term && group.name.normalize('NFC').toLocaleLowerCase().includes(term.toLocaleLowerCase())
-      ? members : members.filter(item => textMatches.some(memo => memo.id === item.id));
+      ? members.filter(item=>statusFilter==='all'||textMatches.some(m=>m.id===item.id))
+      : members.filter(item => textMatches.some(memo => memo.id === item.id));
     const expanded = Boolean(term) || !collapsed.includes(group.id ?? 'root');
     return { ...group, members, items, expanded, key: 'group:' + (group.id ?? 'root') };
-  }).filter(group => !term || group.items.length > 0);
+  }).filter(group => (!term&&statusFilter==='all') || group.items.length > 0);
   const visibleKeys = rows.flatMap(group => [
     group.key, ...(group.expanded ? group.items.map(item => 'memo:' + item.id) : []),
   ]);
@@ -123,6 +130,13 @@ export function CadMemoTreePanel({
           onChange={event => setQuery(event.target.value)}
           className="mt-1 w-full rounded border border-slate-400 bg-white px-2 py-1.5"
           placeholder="현재 도면 Version의 메모 검색" />
+      </label>
+      <label>완료 상태 필터
+        <select data-testid="cad-memo-tree-status-filter" value={statusFilter}
+          onChange={e=>setStatusFilter(e.target.value as typeof statusFilter)}>
+          <option value="all">전체</option><option value="registered">미관리</option>
+          <option value="progress">진행 중</option><option value="completed">완료</option>
+        </select>
       </label>
       <p data-testid="memo-tree-visibility-status" className="text-slate-600">
         Canvas 전체: {allVisible ? '표시' : '숨김'} · 숨김 메모도 목록/검색 가능
