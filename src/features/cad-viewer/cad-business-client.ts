@@ -32,3 +32,23 @@ export async function mutatePersistedMemo(method:'POST'|'PATCH'|'DELETE',version
   cache:'no-store',body:JSON.stringify(payload)});
  return json(response);
 }
+
+/** #84: direct business-anchor route; accepts neither client actor nor arbitrary affine. */
+export async function mutatePersistedMemoAnchor(versionId:string,memoId:string,payload:{
+ expectedRevision:number;operation:'attach'|'detach';targetOrigin?:'APP_CREATED'|'DXF_IMPORTED';targetId?:string;
+}):Promise<{revision:number;anchor:import('@/domain/cad-memo-anchor').MemoAnchorState}>{
+ const headers=await runtimeCadHeaders({'Content-Type':'application/json'});
+ const response=await fetch(url(versionId,memoId)+'/anchor',{
+  method:'PATCH',headers,credentials:'same-origin',cache:'no-store',body:JSON.stringify(payload)});
+ return await json(response) as {revision:number;anchor:import('@/domain/cad-memo-anchor').MemoAnchorState};
+}
+/** #167: one idempotent conflict-checked transaction, not repeated DELETE requests. */
+export async function resetPersistedBusiness(versionId:string,payload:{
+ mode:'SOURCE_ONLY'|'ALL';sourceSha256:string;expectedSceneRevision:number;
+ outlines:readonly {id:string;revision:number}[];memos:readonly {id:string;revision:number}[];
+}):Promise<{mode:'SOURCE_ONLY'|'ALL';broken:number;deletedOutlines:number;deletedMemos:number}>{
+ const headers=await runtimeCadHeaders({'Content-Type':'application/json'});
+ const response=await fetch('/api/cad-files/'+encodeURIComponent(versionId)+'/reset',{
+  method:'POST',headers,credentials:'same-origin',cache:'no-store',body:JSON.stringify(payload)});
+ return await json(response) as {mode:'SOURCE_ONLY'|'ALL';broken:number;deletedOutlines:number;deletedMemos:number};
+}

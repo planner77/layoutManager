@@ -375,6 +375,11 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
   }
   undoSceneWork():boolean{const changed=this.sceneWork?.undo()??false;if(changed)this.applySceneWork();return changed;}
   redoSceneWork():boolean{const changed=this.sceneWork?.redo()??false;if(changed)this.applySceneWork();return changed;}
+  resetSceneWork():void{
+    if(!this.sceneWork||!this.object)throw new Error('기준 Scene이 준비되지 않았습니다.');
+    this.cancelGeneratedCommand();this.cancelOutlinePreview();
+    this.selector?.clearObjects();this.sceneWork.reset();this.applySceneWork();
+  }
 
   /** Reconcile only by top-level DXF handles, not screen bounds or mesh order.
    * Both handle and WCS bounds must agree. Missing/merged/unsupported content

@@ -4,6 +4,7 @@
  */
 export type MemoWcsXY = Readonly<{ x: number; y: number }>;
 export type MemoScope = Readonly<{ versionId: string; sourceSha256: string }>;
+import type {MemoAnchorState} from './cad-memo-anchor';
 export type MemoDraft = Readonly<{
   id: string;
   versionId: string;
@@ -21,6 +22,7 @@ export type MemoDraft = Readonly<{
   persisted?: true;
   createdById?: string;
   updatedById?: string;
+  anchor?: MemoAnchorState;
 }>;
 export type PersistedMemoDraft=MemoDraft & Readonly<{
  revision:number;persisted:true;createdById:string;updatedById:string;
@@ -107,6 +109,8 @@ export class MemoSession {
     if(!this.records.has(record.id) && this.records.size>=MEMO_MAX_COUNT)
       throw new Error('저장된 메모 수가 100개를 초과했습니다.');
     const txt=normalizeMemoText(record.title,record.content);
+    if(record.anchor && !['FREE','ATTACHED','BROKEN_ANCHOR'].includes(record.anchor.mode))
+      throw new Error('서버 앵커 상태가 유효하지 않습니다.');
     const safe:PersistedMemoDraft={...record,...txt,anchorWcsXY:assertMemoWcsXY(record.anchorWcsXY),
       labelOffset:assertMemoWcsXY(record.labelOffset)};
     this.records.set(record.id,safe);

@@ -53,6 +53,7 @@ export interface CadViewerAdapter {
   executeSceneWorkCommand?(command:SceneWorkCommand):void;
   undoSceneWork?():boolean;
   redoSceneWork?():boolean;
+  resetSceneWork?():void;
   /** Browser-only command entry point, with E2 scope and selection validation. */
   getGeneratedHistory?():{undo:number;redo:number;limit:number};
   executeGeneratedCommand?(command:GeneratedCommand):void;
@@ -228,6 +229,7 @@ export class ViewerManager {
   }
   undoSceneWork(){return this.adapter?.undoSceneWork?.()??false;}
   redoSceneWork(){return this.adapter?.redoSceneWork?.()??false;}
+  resetSceneWork():void{if(!this.adapter?.resetSceneWork)throw new Error('이 Renderer에서는 원본 기준 초기화가 불가능합니다.');this.adapter.resetSceneWork();}
   executeGeneratedCommand(command:GeneratedCommand):void{
     if(!this.adapter?.executeGeneratedCommand)throw new Error('생성 객체 편집이 지원되지 않습니다.');
     this.adapter.executeGeneratedCommand(command);

@@ -77,5 +77,7 @@ export class SceneWorkDocument {
     for(const patch of patches)this.deltas.set(patch.id,patch.before);this.redoStack.push(patches);return true;}
   redo():boolean{this.live();const patches=this.redoStack.pop();if(!patches)return false;
     for(const patch of patches)this.deltas.set(patch.id,patch.after);this.undoStack.push(patches);return true;}
+  /** S6-A: reset ONLY session DXF_IMPORTED deltas, never immutable Scene bytes. */
+  reset():void{this.live();this.deltas.clear();this.undoStack=[];this.redoStack=[];}
   dispose(){this.disposed=true;this.refs.clear();this.deltas.clear();this.undoStack=[];this.redoStack=[];}
 }
