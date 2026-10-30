@@ -1,11 +1,8 @@
 import { createRequire } from 'node:module';
 import {readFileSync} from 'node:fs';
-import {BusinessRepository} from '../../server/cad-business/service';
-import type {Database} from '../../server/db';
-import type {G7CadWrite} from '../../server/g7-operational/cad-guard';
 import { afterEach,describe,expect,test } from 'vitest';
 import { CAD_BUSINESS_DDL } from '../../server/cad-business/schema-ddl';
-import { geometry,operations,point,transformed,provenance,revision,keys } from '../../server/cad-business/validation';
+import { geometry,operations,point,transformed,provenance,revision,keys,memoEditOperation } from '../../server/cad-business/validation';
 import { MemoSession, type PersistedMemoDraft } from '../../domain/cad-memo';
 const require=createRequire(import.meta.url);
 const Sqlite=require('better-sqlite3') as new (path:string)=>{exec:(sql:string)=>void;prepare:(sql:string)=>{get:(...args:unknown[])=>Record<string,unknown>;run:(...args:unknown[])=>unknown};close:()=>void};
@@ -67,11 +64,24 @@ describe('#98/#83 new empty-schema DDL invariants',()=>{
 });
 
 describe('#83 Codex P2 / #98 migrator P1 prevention',()=>{
- test('PATCH operation=delete cannot bypass DELETE audit/response semantics',async()=>{
-  const repo=new BusinessRepository({} as Database);
-  await expect(repo.editMemo(v,'197e1526-12a8-49c7-8187-fb6c5c58f20a',
-   {expectedRevision:0,operation:'delete'},{} as G7CadWrite))
-   .rejects.toMatchObject({code:'BUSINESS_OPERATION_INVALID',status:400});
+ test('PATCH edit policy rejects delete (400) and only DELETE route enables deletion',()=>{
+  expect(memoEditOperation('text',false)).toBe('text');
+  expect(memoEditOperation('move',false)).toBe('move');
+  for(const raw of ['delete','DELETE',null,undefined,'rename']) {
+   try {
+    memoEditOperation(raw,false);
+    throw new Error('PATCH must reject unsafe operation');
+   } catch(error) {
+    expect(error).toMatchObject({code:'BUSINESS_OPERATION_INVALID',status:400});
+   }
+  }
+  expect(memoEditOperation(undefined,true)).toBe('delete');
+  // Server repository is intentionally not imported: it is a Next server-only
+  // module that cannot be evaluated inside this generic Vitest worker.
+  const service=readFileSync(new URL('../../server/cad-business/service.ts',import.meta.url),'utf8');
+  expect(service).toContain('const operation=memoEditOperation(b.operation,remove)');
+  expect(service).toContain("remove?'DELETE':'EDIT'");
+  expect(service).toContain('if(remove)return {deleted:true,revision:expected+1}');
  });
  test('migrator Docker closure explicitly includes the new required DDL module',()=>{
   const docker=readFileSync(new URL('../../Dockerfile',import.meta.url),'utf8');

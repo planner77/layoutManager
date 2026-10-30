@@ -6,7 +6,7 @@ import { CadError } from '@/domain/cad';
 import { prepareG7CadWrite, requireG7CadPermission, type G7CadWrite } from '@/server/g7-operational/cad-guard';
 import { cadWriteContext } from '@/server/g7-operational/cad-preview-context';
 import { attestTransformedOutlineDraftAgainstImmutableDxf } from '@/server/outline/transform-attestation';
-import { geometry,keys,memoText,name,operations,point,provenance,revision,sourceSha,transformed,ID } from './validation';
+import { geometry,keys,memoEditOperation,memoText,name,operations,point,provenance,revision,sourceSha,transformed,ID } from './validation';
 import type { GeoJSONOutline } from '@/viewers/core/outline-compute';
 function bad(code:string,status:number):never {throw new CadError(code,'업무 객체를 확인하거나 수정할 수 없습니다.',status);}
 function cas():never {return bad('BUSINESS_REVISION_CONFLICT',409);}
@@ -101,8 +101,8 @@ export class BusinessRepository {
   const b=remove?keys(body,['expectedRevision']):keys(body,['expectedRevision','operation'],['title','content','anchorWcsXY']);
   const expected=revision(b.expectedRevision);
   if(!ID.test(id))bad('BUSINESS_ID_INVALID',400);
-  const operation=remove?'delete':b.operation;
-  if(remove ? operation!=='delete' : operation!=='text'&&operation!=='move')bad('BUSINESS_OPERATION_INVALID',400);
+  // PATCH never elevates to DELETE; route method owns the delete branch.
+  const operation=memoEditOperation(b.operation,remove);
   if(operation==='text')keys(b,['expectedRevision','operation','title','content']);
   if(operation==='move')keys(b,['expectedRevision','operation','anchorWcsXY']);
   const data=operation==='text'?memoText(b.title,b.content):

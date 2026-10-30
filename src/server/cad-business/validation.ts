@@ -64,6 +64,14 @@ export function geometry(raw:unknown):GeoJSONOutline{
  });
  return raw.type==='Polygon'?{type:'Polygon',coordinates:result[0]}:{type:'MultiPolygon',coordinates:result};
 }
+/** HTTP method is the source of delete authority: PATCH may only edit or move.
+ * Pure policy can be tested without importing the authenticated server-only repository. */
+export type MemoEditOperation='text'|'move'|'delete';
+export function memoEditOperation(raw:unknown,remove:boolean):MemoEditOperation{
+ if(remove)return 'delete';
+ if(raw==='text'||raw==='move')return raw;
+ return invalid('BUSINESS_OPERATION_INVALID',400);
+}
 export type Operation={type:'Translate';dx:number;dy:number}|{type:'Rotate';angleDegrees:number;pivot:[number,number]};
 export function operations(input:unknown):Operation[]{
  if(!Array.isArray(input)||input.length>64)invalid('OUTLINE_TRANSFORM_INVALID');

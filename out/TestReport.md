@@ -1,3 +1,11 @@
+## #98/#83 PR #171 CI #314 테스트 결과/수정 (2026-10-30 KST)
+
+- [Run #41058299070](https://github.com/planner77/layoutManager/actions/runs/41058299070) (workflow #314) `completed/failure`; Docker image/migration/runtime job `124072053492` SUCCESS, Verify `124072054040` Unit/Integration 실패. Typecheck/Lint 성공, **646 tests PASS**, 95 files 중 **94 PASS / 1 FAIL**. 문제 suite `cad-business-contract.test.ts` 로딩 단계의 Next `server-only` import exception. Build/E2E NOT RUN.
+- 신규 Test suite를 서버 저장소 직접 import 없는 `memoEditOperation` 순수 함수 부정/긍정 회귀로 수정했으며, Docker COPY/DDL/SQLite Audit/메모 Session 테스트는 유지. 최신 수정 코드의 Unit/Next/E2E 성공은 신규 CI 결과 전 **NOT VERIFIED**.
+- 과거 #311 strict TS 실패와 #314 Unit import 경계 오류는 독립 사고; 현장 CAD/실 운영 DB·Volume/Auth·GHCR/릴리스 수용은 해당 CI의 검증 범위 밖.
+
+---
+
 ## #98/#83 PR #171 Run #41056355838 / workflow #311 — 실제 CI 실패 (2026-10-30)
 
 - Verify job `124064761375` Typecheck `failure`: 새 입력 validators, business CRUD, detail route 33 strict TS 오류. Prisma Generate 성공 이후 Lint/Unit/Build/E2E는 SKIPPED.

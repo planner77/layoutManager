@@ -1,3 +1,11 @@
+## #98/#83 PR CI #314 Vitest server-only import 재발 방지 (2026-10-30)
+
+- [실패 원장](out/FailureLedger.md)의 [PR CI #314](https://github.com/planner77/layoutManager/actions/runs/41058299070)을 참조한다. 일반 `tests/**/*.test.ts` Vitest worker는 Next server-only Repository 직접 value import를 허용하지 않으며 `node_modules/server-only/index.js`의 의도된 예외로 테스트 파일 전체가 FAIL 할 수 있다. Production Runtime의 `server-only` 보호를 mock/비활성화하여 PASS를 만들지 않는다.
+- DB·G7 접근이 필요한 HTTP operation validation은 실수 없이 pure `server/cad-business/validation.ts::memoEditOperation`으로 분리해 Unit 테스트한다. `BusinessRepository.editMemo`의 DELETE는 오직 HTTP DELETE method/route의 `remove=true`에서만 유효하고 PATCH의 `delete`는 400으로 거부하며 감사 `DELETE`와 삭제 응답은 동일 조건을 따른다.
+- Docker Smoke 성공과 Typecheck/Lint 성공을 실패 Unit으로 덮어쓰지 말며, 오류 종류와 **실행되지 않은** Next build/Playwright를 분리 기록한다. 최신 PR CI의 CI 성공·리뷰 게이트 확인 전 merge/GHCR/Issue 종료는 금지.
+
+---
+
 ## #98/#83 CI #311 재발 방지 — strict TS·Migrator·Source 이력 (2026-10-30)
 
 - [실패 원장](out/FailureLedger.md)의 PR #171 / [Run #41056355838](https://github.com/planner77/layoutManager/actions/runs/41056355838)을 먼저 확인한다. `tsc --noEmit` strict nullable/unknown은 항상 타입 가드가 인식하는 `function ...():never` 선언 또는 명시적으로 narrowing된 반환을 사용하고, Kind별 리스트 반환은 overload 또는 discriminated union으로 호출처까지 보존한다. Docker baseline Next Build 실패가 동일 TS 오류라면 독립 Migrator 결함과 구분한다.

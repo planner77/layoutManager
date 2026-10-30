@@ -1,3 +1,12 @@
+## #98/#83 CI #314 server-only 단위 테스트 import 재발 방지 (2026-10-30)
+
+- **TC-PR171-R314-001:** `tests/unit/cad-business-contract.test.ts`는 `BusinessRepository` 및 `server-only` 직접/전이 value import 하지 않고 Vitest 수집/실행 가능. `memoEditOperation`은 PATCH `text|move` 수용, `delete/DELETE/rename/undefined/null` 400 거부; DELETE route-only `remove=true`는 delete 반환; 서비스 호출/감사 응답 결속 검사.
+- **TC-PR171-R314-002:** 업무 Schema DDL 불변/감사 append-only, Memo WCS/Session hydration, #97 source rigid-transform attestation, Docker Migrator schema-DDL closure 모든 기존 회귀 유지.
+- **TC-PR171-R314-003:** 최신 HEAD의 `npm run db:generate`, `npm run typecheck`, `npm run lint`, Unit/Integration, Next Production Build, Docker smoke, Playwright 자동 CI 실행. 이전 #314 Docker SUCCESS/Typecheck PASS를 최신 HEAD의 PASS로 소급하지 않는다.
+- **TC-PR171-R314-004:** 미해결 review threads 0, main behind=0 및 mergeable=true 확인 뒤 push-triggered PR CI 시작만 확인. 요청상 CI 결과 모니터링은 생략.
+
+---
+
 ## #98/#83 PR #171 CI #311 실패 재발 방지 회귀 (2026-10-30)
 
 - **RE-CI-01:** `npm run db:generate && npm run typecheck && npm run lint`; 신규 `businessSchema/validation` strict unknown narrowing, `BusinessRepository.list('memo'|'outline')` 호출 타입, `null` Version/actor에 모두 타입 오류 0.
