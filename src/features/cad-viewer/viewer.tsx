@@ -955,6 +955,16 @@ export function CadViewer({
         setStoredOutlines(rows=>rows.filter(r=>r.id!==item.id));
         setStoredOutlineHidden(previous=>{const updated=new Set(previous);updated.delete(item.id);return updated;});
       }else setStoredOutlines(rows=>rows.map(r=>r.id===item.id?result:r));
+      // #84: the same server CAS transaction also updates affected memo WCS/revisions.
+      // Refresh these immediately; retaining stale draft revisions can silently break later edits.
+      if(operation==='move'||operation==='rotate'||operation==='delete'){
+        const loaded=await readPersistedMemos(versionId,new AbortController().signal);
+        if(loaded.mode==='active'){
+          const doc=new MemoSession({versionId,sourceSha256});
+          for(const memo of loaded.memos)doc.acceptPersisted(memo,{versionId,sourceSha256});
+          memoSession.current=doc;setMemos(doc.list());
+        }
+      }
     }catch(error){setStoredOutlineError(error instanceof Error?error.message:'외곽선 변경이 거부되었습니다.');}
     finally{setStoredOutlineBusy(false);}
   }

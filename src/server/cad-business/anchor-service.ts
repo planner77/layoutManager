@@ -11,7 +11,7 @@ import {geometry,keys,operations,revision,transformed,ID} from './validation';
 import type {Prisma} from '@/generated/prisma/client';
 
 type Tx=Prisma.TransactionClient;
-const fail=(code:string,status=409):never=>{throw new CadError(code,'메모 앵커가 현재 도면과 일치하지 않습니다.',status);};
+function fail(code:string,status=409):never {throw new CadError(code,'메모 앵커가 현재 도면과 일치하지 않습니다.',status);}
 export async function hasAnchorSchema(db:Database):Promise<boolean>{
  const rows=await db.$queryRawUnsafe<{name:string}[]>(
   "SELECT name FROM sqlite_master WHERE type='table' AND name='CadMemoAnchor'");

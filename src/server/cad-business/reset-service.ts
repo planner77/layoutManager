@@ -9,7 +9,7 @@ import {requireG7CadPermission,type G7CadWrite} from '@/server/g7-operational/ca
 import {businessSchema} from './service';
 import {hasAnchorSchema} from './anchor-service';
 import {keys,revision,sourceSha} from './validation';
-const reject=(code:string,status=409):never=>{throw new CadError(code,'현재 도면의 업무 객체가 변경되었습니다. 다시 조회한 후 확인하세요.',status);};
+function reject(code:string,status=409):never {throw new CadError(code,'현재 도면의 업무 객체가 변경되었습니다. 다시 조회한 후 확인하세요.',status);}
 export async function resetBusinessVersion(db:Database,versionId:string,raw:unknown,proof:G7CadWrite){
  const b=keys(raw,['mode','sourceSha256','expectedSceneRevision','outlines','memos']);
  if(b.mode!=='SOURCE_ONLY'&&b.mode!=='ALL')reject('RESET_MODE_INVALID',400);
