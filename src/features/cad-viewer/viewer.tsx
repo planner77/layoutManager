@@ -760,8 +760,38 @@ export function CadViewer({
         credentials:'same-origin',cache:'no-store'});
       if(!response.ok)throw new Error('변경된 메모 재조회가 필요합니다.');
       doc.acceptPersisted(await response.json() as PersistedMemoDraft,{versionId,sourceSha256});
+      // Explicit server link always supersedes a temporary viewer-only binding.
+      sessionSnaps.current?.detach(memoSelectedId);syncSessionSnaps();
       setMemos(doc.list());setMemoError(null);
     }catch(error){setMemoError(error instanceof Error?error.message:'메모 연결을 변경할 수 없습니다. 재조회하세요.');}
+    finally{memoSavingRef.current=false;setMemoBusy(false);}
+  }
+  /** Explicitly commit the last displayed WCS on disconnect.
+   * For a persisted Memo, this is an authenticated PATCH (and detaches any
+   * persisted anchor); the transient relationship itself is never persisted.
+   */
+  async function detachSessionSnap(){
+    if(!memoSelectedId||memoSavingRef.current)return;
+    const currentProjection=sessionSnapProjection[memoSelectedId];
+    if(!currentProjection)return;
+    memoSavingRef.current=true;setMemoBusy(true);
+    try{
+      const doc=getMemoSession(),old=doc.get(memoSelectedId);
+      if(!old)throw new Error('메모가 현재 Version에 없습니다.');
+      let updated:MemoDraft;
+      if(memoServerMode==='active'){
+        if(!old.persisted||old.revision===undefined)throw new Error('메모 revision이 없습니다.');
+        updated=doc.acceptPersisted(await mutatePersistedMemo('PATCH',versionId,{
+          expectedRevision:old.revision,operation:'move',anchorWcsXY:currentProjection.world,
+        },memoSelectedId) as PersistedMemoDraft,{versionId,sourceSha256});
+      }else if(memoServerMode==='off'){
+        updated=doc.move(memoSelectedId,currentProjection.world,{versionId,sourceSha256});
+      }else throw new Error('메모 저장 상태를 확인할 수 없습니다.');
+      sessionSnaps.current?.detach(memoSelectedId);syncSessionSnaps();
+      setMemoFields(previous=>({...previous,
+        x:String(updated.anchorWcsXY.x),y:String(updated.anchorWcsXY.y)}));
+      setMemos(doc.list());setMemoError(null);
+    }catch(error){setMemoError(error instanceof Error?error.message:'임시 연결 해제 및 좌표 확정이 실패했습니다.');}
     finally{memoSavingRef.current=false;setMemoBusy(false);}
   }
   /** #167: server CAS + soft-delete audit before any session SceneWork reset. */
@@ -799,17 +829,24 @@ export function CadViewer({
       current.cancelGeneratedCommand();current.cancelOutlinePreview();
       current.resetSceneWork();
       if(mode==='ALL'){
+        sessionSnaps.current?.clear();setSessionSnapProjection({});
         current.clearSavedOutlines();
         memoSession.current?.clear();setMemos([]);
         setStoredOutlines([]);setSavedServerIds(new Set());setStoredOutlineHidden(new Set());
         closeMemoEditor();
       }else if(memoServerMode==='active'){
+        // S6-A must preserve the *last* transient world WCS and break the
+        // imported target, not jump the memo to an uncommitted new position.
+        sessionSnaps.current?.breakOrigin('RENDER');syncSessionSnaps();
         const loaded=await readPersistedMemos(versionId,new AbortController().signal);
         if(loaded.mode==='active'){
           const doc=new MemoSession({versionId,sourceSha256});
           for(const memo of loaded.memos)doc.acceptPersisted(memo,{versionId,sourceSha256});
           memoSession.current=doc;setMemos(doc.list());setMemoSelectedId(null);
         }
+      }
+      if(mode==='SOURCE_ONLY'&&memoServerMode==='off'){
+        sessionSnaps.current?.breakOrigin('RENDER');syncSessionSnaps();
       }
       current.clearCanvasObjectSelection();setCanvasSelection([]);
       setDeleteRequest(null);setContextMenu(null);
@@ -1037,7 +1074,8 @@ export function CadViewer({
   const confirmDiscard = useCallback(() => {
     const current=manager.current;
     if (!current) return true;
-    const hasWork=current.getSavedOutlines().length>0 || current.getGeneratedHistory().undo>0 ||
+    const hasWork=(sessionSnaps.current?.hasBindings()??false) ||
+      current.getSavedOutlines().length>0 || current.getGeneratedHistory().undo>0 ||
       current.getSceneWorkState().undo>0 || current.getSceneWorkState().redo>0 ||
       current.getGeneratedHistory().redo>0 || current.getCanvasObjectSelection().length>0 ||
       current.getOutlineSelection().length>0;
@@ -1480,6 +1518,9 @@ export function CadViewer({
             anchorTarget={memoAnchorTarget} onAnchorTargetChange={setMemoAnchorTarget}
             onAttach={()=>{void changeMemoAnchor('attach');}}
             onDetach={()=>{void changeMemoAnchor('detach');}}
+            pendingSnapKind={pendingSnap?.kind}
+            sessionSnap={memoSelectedId?sessionSnapProjection[memoSelectedId]:undefined}
+            onSessionDetach={()=>{void detachSessionSnap();}}
           />}
           {outlineAvailable&&memoServerMode==='active'&&<section data-testid="cad-stored-outline-tools"
             className="border-b border-cyan-200 bg-slate-50 px-3 py-2 text-xs text-slate-800">
