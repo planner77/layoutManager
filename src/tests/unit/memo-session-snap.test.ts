@@ -3,13 +3,14 @@ import {GeneratedDocument,generatedResult,type GeneratedEntry} from '../../domai
 import {sceneScope,createSceneRef,importedId} from '../../domain/cad-scene';
 import {SceneWorkDocument} from '../../domain/scene-work';
 import {MemoSession} from '../../domain/cad-memo';
+import type {OutlineResult} from '../../viewers/core/outline-compute';
 import {MemoSessionSnapStore,nearestMemoSnap,type MemoSnapTarget} from '../../domain/memo-session-snap';
 import {readFileSync} from 'node:fs';
 
 const scope={versionId:'123e4567-e89b-42d3-a456-426614174000',sourceSha256:'f'.repeat(64)};
 const memoId='123e4567-e89b-42d3-a456-426614174019';
 const outlineId='123e4567-e89b-42d3-a456-426614174011';
-const outline={
+const outline:OutlineResult={
   kind:'PRECISE' as const,algorithm:'polygon-clipping-union-v1',
   geometry:{type:'Polygon' as const,coordinates:[[[0,0],[2,0],[2,1],[0,1],[0,0]]]},
   tolerance:0.02,sourceEntityIds:['source:A1'],persistable:true,
