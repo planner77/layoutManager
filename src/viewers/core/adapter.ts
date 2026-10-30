@@ -5,6 +5,7 @@ import type {OutlineResult,GeoJSONOutline} from './outline-compute';
 import {type CanvasObjectRef,type CanvasEditCapability,type CanvasSelectionMode} from '../../domain/canvas-object-selection';
 import type {GeneratedCommand,Affine2D,GeneratedRigidOperation} from '../../domain/generated-document';
 import type {SceneWorkCommand,SceneWorkState} from '../../domain/scene-work';
+import type {MemoSnapTarget} from '../../domain/memo-session-snap';
 import type {OutlineAssignment} from '../../domain/outline-assignment';
 import {outlineGeometryBounds} from '../../domain/outline-tree';
 export type SavedOutlineOverlayState = {id:string;visible:boolean;selected:boolean};
@@ -48,6 +49,8 @@ export interface CadViewerAdapter {
   clearCanvasObjectSelection?():void;
   isSelectedGeneratedAt?(clientX:number,clientY:number):boolean;
   getGeneratedObjects?():GeneratedOutlineObject[];
+  /** #84: scope-validated, screen-snap capable temporary targets. No persistence. */
+  getMemoSnapTargets?(withPoints?:boolean):MemoSnapTarget[];
   getCanvasEditCapability?():CanvasEditCapability;
   getSceneWorkState?():SceneWorkState;
   executeSceneWorkCommand?(command:SceneWorkCommand):void;
@@ -214,6 +217,7 @@ export class ViewerManager {
   setSelectionMode(mode:CanvasSelectionMode) { this.adapter?.setSelectionMode?.(mode); }
   getCanvasObjectSelection(){return this.adapter?.getCanvasObjectSelection?.()??[];}
   getGeneratedObjects(){return this.adapter?.getGeneratedObjects?.()??[];}
+  getMemoSnapTargets(withPoints=false):MemoSnapTarget[]{return this.adapter?.getMemoSnapTargets?.(withPoints)??[];}
   clearCanvasObjectSelection(){this.adapter?.clearCanvasObjectSelection?.();}
   isSelectedGeneratedAt(clientX:number,clientY:number){return this.adapter?.isSelectedGeneratedAt?.(clientX,clientY)??false;}
   getCanvasEditCapability():CanvasEditCapability{
