@@ -17,7 +17,7 @@ import {assignMemoToGroup,createMemoGroup,emptyMemoTreeState,isMemoVisible,remov
 import type {MemoSettingsInput} from '@/domain/memo-schedule';
 import { CadMemoEditor, type MemoEditorFields } from '@/features/cad-viewer/cad-memo-editor';
 import { createPreviewUuid } from '@/features/cad-viewer/preview-uuid';
-import { MemoSession, parseMemoWcsXY, type MemoDraft, type MemoWcsXY, type PersistedMemoDraft } from '@/domain/cad-memo';
+import { MemoSession, parseMemoWcsXY, assertMemoWcsXY, type MemoDraft, type MemoWcsXY, type PersistedMemoDraft } from '@/domain/cad-memo';
 import { readPersistedMemos, mutatePersistedMemo,mutatePersistedMemoGroup,mutatePersistedMemoAnchor,resetPersistedBusiness,type MemoServerMode,type PersistedMemoGroup } from './cad-business-client';
 import { loadStoredOutlines, mutateStoredOutline, type StoredOutline } from './persisted-outline-client';
 import { PersistedOutlineOverlay } from './persisted-outline-overlay';
@@ -37,7 +37,7 @@ import type {OutlineResult} from '@/viewers/core/outline-compute';
 import type { ViewerMetric } from '@/viewers/core/metrics';
 import { selectRenderer, type ViewerFormat, type ViewerRenderer } from '@/viewers/core/selection';
 import { ViewerSource } from '@/viewers/core/source';
-import { cadViewerUrl } from '@/viewers/core/link';
+import { cadViewerUrl, cadMemoViewerUrl } from '@/viewers/core/link';
 import { ViewerLoadError, isViewerCancellation } from '@/viewers/core/viewer-load-error';
 import {runtimeCadHeaders} from '@/features/g7-runtime/client';
 import type {SceneWorkCommand,SceneWorkState} from '@/domain/scene-work';
@@ -61,6 +61,8 @@ export function CadViewer({
   description,
   outlineTypeCatalog = null,
   sourceMode = 'scene-first',
+  requestedMemoId = null,
+  memoLinkInvalid = false,
 }: {
   versionId: string;
   sourceSha256?: string;
@@ -77,6 +79,8 @@ export function CadViewer({
   /** Must be loaded only through #65's verified session/server scope; no browser lab fallback. */
   outlineTypeCatalog?: ScopedOutlineCatalog | null;
   sourceMode?:'scene-first'|'build';
+  requestedMemoId?:string|null;
+  memoLinkInvalid?:boolean;
 }) {
   const [renderer, setRenderer] = useState(selectRenderer(format, initialRenderer));
   const [source] = useState(() => new ViewerSource());
@@ -117,6 +121,8 @@ export function CadViewer({
   const [memoError, setMemoError] = useState<string|null>(null);
   const [memoDeleteArmed, setMemoDeleteArmed] = useState(false);
   const [memoServerMode,setMemoServerMode]=useState<MemoServerMode>('checking');
+  const memoDeepLinkApplied=useRef<string|null>(null);
+  const [memoLinkNotice,setMemoLinkNotice]=useState<string|null>(null);
   const [memoBusy,setMemoBusy]=useState(false);
   const memoSavingRef=useRef(false);
   const getViewEpoch = useCallback(() => viewEpoch.current, []);
@@ -637,6 +643,79 @@ export function CadViewer({
       minY:m.anchorWcsXY.y-3,maxY:m.anchorWcsXY.y+3}))
       setMemoTreeError('메모 WCS로 이동할 수 없습니다.');
   };
+  // #88: revalidate the exact memo through the authenticated per-Version GET.
+  // G7 scope, deleted status and revocation are checked at request time; no
+  // local/session memo may be promoted into a shareable link.
+  useEffect(()=>{
+    if(!requestedMemoId){
+      if(memoLinkInvalid)setMemoLinkNotice('메모 링크 형식이 올바르지 않습니다. 일반 도면 보기만 가능합니다.');
+      return;
+    }
+    const key=[versionId,sourceSha256,renderer,attempt,requestedMemoId].join(':');
+    if(memoDeepLinkApplied.current===key)return;
+    if(format!=='DXF'||renderer!=='three-dxf-viewer'){
+      setMemoLinkNotice('이 렌더러에서는 메모 위치 이동을 지원하지 않습니다. three-dxf-viewer로 열어주세요.');
+      return;
+    }
+    if(memoServerMode==='off'||memoServerMode==='unavailable'){
+      setMemoLinkNotice('영속 메모를 조회할 수 없습니다. 로그인 및 메모 읽기 권한을 확인하세요.');
+      return;
+    }
+    if(loading||!state.ready||memoServerMode!=='active')return;
+    const controller=new AbortController();
+    const url='/api/cad-files/'+encodeURIComponent(versionId)+'/memos/'+encodeURIComponent(requestedMemoId);
+    void fetch(url,{credentials:'same-origin',cache:'no-store',signal:controller.signal}).then(async response=>{
+      if(!response.ok)throw new Error(response.status===401?'로그인이 필요합니다.':
+        response.status===403?'메모 조회 권한이 없습니다.':
+        response.status===404?'메모가 삭제되었거나 해당 Version에 존재하지 않습니다.':
+        '메모 조회에 실패했습니다 ('+response.status+').');
+      return await response.json() as PersistedMemoDraft;
+    }).then(item=>{
+      if(controller.signal.aborted||memoDeepLinkApplied.current===key)return;
+      if(item.id!==requestedMemoId||item.versionId!==versionId||
+         item.sourceSha256.toLowerCase()!==sourceSha256.toLowerCase()||!item.persisted)
+        throw new Error('메모의 Version 또는 원본 SHA가 일치하지 않습니다.');
+      const point=assertMemoWcsXY(item.anchorWcsXY);
+      const doc=memoSession.current;
+      if(!doc?.matches({versionId,sourceSha256}))throw new Error('다른 도면의 메모를 표시할 수 없습니다.');
+      doc.acceptPersisted(item,{versionId,sourceSha256});
+      if(!manager.current?.focusBounds({minX:point.x-3,maxX:point.x+3,
+        minY:point.y-3,maxY:point.y+3}))
+        throw new Error('메모 좌표를 표시할 수 없습니다. CAD 로딩 상태를 확인하세요.');
+      memoDeepLinkApplied.current=key;
+      setMemos(doc.list());
+      selectMemo(item.id,true);
+      setMemoTransientFocusId((!memoAllVisible||item.visible===false||
+        !isMemoVisible(memoTree,item.id))?item.id:null);
+      if(!appState.memoTreeOpen)dispatchApp({type:'toggle-memo-tree',exclusive:isCompact});
+      setMemoLinkNotice('공유된 메모 위치로 이동했습니다. 숨김 상태는 서버에 변경하지 않았습니다.');
+    }).catch(error=>{
+      if(controller.signal.aborted)return;
+      setMemoLinkNotice(error instanceof Error?error.message:'메모 위치 이동에 실패했습니다.');
+    });
+    return ()=>controller.abort();
+  },[requestedMemoId,memoLinkInvalid,versionId,sourceSha256,renderer,format,
+    attempt,memoServerMode,loading,state.ready,selectMemo,memoAllVisible,memoTree,
+    appState.memoTreeOpen,isCompact]);
+
+  function copyMemoLink(id:string){
+    const item=memoSession.current?.matches({versionId,sourceSha256})
+      ?memoSession.current.get(id):undefined;
+    if(memoServerMode!=='active'||!item?.persisted||!memoAvailable)return;
+    const url=cadMemoViewerUrl(window.location.origin,versionId,item.id);
+    if(!navigator.clipboard?.writeText){
+      setLinkFallbackUrl({renderer,url});
+      setMemoLinkNotice('클립보드를 사용할 수 없습니다. 아래 메모 링크를 직접 복사하세요.');
+      return;
+    }
+    void navigator.clipboard.writeText(url).then(()=>{
+      setLinkFallbackUrl(null);
+      setMemoLinkNotice('메모 링크를 복사했습니다.');
+    }).catch(()=>{
+      setLinkFallbackUrl({renderer,url});
+      setMemoLinkNotice('메모 링크를 복사하지 못했습니다. 아래 링크를 직접 복사하세요.');
+    });
+  }
   async function changeMemoMeta(id:string,update:{groupId?:string|null;visible?:boolean;settings?:MemoSettingsInput}){
     if(memoSavingRef.current)return;
     memoSavingRef.current=true;setMemoBusy(true);
@@ -1463,6 +1542,7 @@ export function CadViewer({
     canvasMode!=='pan';
   const canDeleteSelection=deleteModeAvailable && editCapability.canEdit;
   const closeMetadataOverlays=useCallback(()=>{setNameTipOpen(false);setNameTipPinned(false);setInfoOpen(false);},[]);
+  const selectedPersistedMemo=memoServerMode==='active'&&scopedMemos.find(m=>m.id===memoSelectedId)?.persisted===true;
   const commandGroups:ViewerCommandGroup[]=[
     {id:'drawing',label:'도면',commands:[
       {id:'info',label:'도면 정보',onSelect:()=>setInfoOpen(value=>!value)},
@@ -1497,6 +1577,15 @@ export function CadViewer({
        controls:memoAvailable&&appState.memoTreeOpen?'viewer-memo-tree-dock':undefined,
        disabled:!memoAvailable,reason:memoUnavailable??undefined,
        onSelect:()=>dispatchApp({type:'toggle-memo-tree',exclusive:isCompact})},
+      {id:'memo-search',label:'메모 검색',testId:'viewer-menu-memo-search',
+       disabled:!memoAvailable,reason:memoUnavailable??'로그인 및 영속 메모 조회 후 이용할 수 있습니다.',
+       onSelect:()=>{
+         if(!appState.memoTreeOpen)dispatchApp({type:'toggle-memo-tree',exclusive:isCompact});
+         requestAnimationFrame(()=>viewerShell.current?.querySelector<HTMLInputElement>('[data-testid="cad-memo-tree-search"]')?.focus());
+       }},
+      {id:'memo-copy',label:'선택 메모 링크 복사',testId:'viewer-menu-memo-copy',
+       disabled:!selectedPersistedMemo,reason:'영속 저장된 단일 메모 선택 및 인증된 조회 권한이 필요합니다.',
+       onSelect:()=>{if(memoSelectedId)copyMemoLink(memoSelectedId);}},
       {id:'search',label:'도면 내 텍스트 검색',kind:'checkbox',checked:searchOpen,disabled:format!=='DXF'||!state.ready,reason:format==='DWG'?'DWG 내부 텍스트 검색은 제공하지 않습니다.':!state.ready?'도면 표시 완료 후 검색할 수 있습니다.':undefined,onSelect:()=>setSearchOpen(value=>!value)},
       {id:'memo',label:'메모 추가/편집',testId:'viewer-menu-memo-add',kind:'checkbox' as const,checked:memoPlacing || !!memoSelectedId,expanded:appState.toolsOpen,controls:appState.toolsOpen?'viewer-tools-dock':undefined,disabled:!memoAvailable,reason:memoUnavailable??undefined,onSelect:startMemoPlacement},
       {id:'reset-source',label:'DXF 기반 객체만 초기화 (자체 생성 유지)',
@@ -1579,6 +1668,7 @@ export function CadViewer({
           onPersistVisibility={memoServerMode==='active'&&memoFeaturesAvailable?
             (id,visible)=>{void changeMemoMeta(id,{visible});}:undefined}
           onSelect={focusMemoFromTree} onEdit={id=>selectMemo(id)}
+          onCopyLink={memoServerMode==='active'?copyMemoLink:undefined}
           onVisibility={(id,visible)=>{
             if(!scopedMemos.some(m=>m.id===id))return;
             setMemoTree(current=>setMemoVisible(current,id,visible));
@@ -1876,9 +1966,10 @@ export function CadViewer({
       status={
         <>
           {memoServerMode==='unavailable'&&<p role="alert" className="text-xs text-red-800">메모 서버에 연결할 수 없어 메모 변경을 차단했습니다. {memoError}</p>}
+          {memoLinkNotice&&<p data-testid="memo-link-notice" role="status" className="text-xs text-amber-700">{memoLinkNotice} <button type="button" className="underline" onClick={()=>setAttempt(n=>n+1)}>다시 시도</button></p>}
           <div className="flex flex-wrap items-center gap-x-2"><p role="status" className="text-xs text-slate-700">{state.status}</p><span data-testid="viewer-active-renderer" className="text-xs text-slate-600">{renderer}</span></div>
           {state.warning && <p className="text-xs text-amber-800" data-testid="viewer-coverage">{state.warning}</p>}
-          {linkFallbackUrl?.renderer===renderer && <label className="block text-xs">현재 Viewer 링크<input readOnly aria-label="복사할 Viewer 주소" value={linkFallbackUrl.url} onFocus={event=>event.currentTarget.select()} /></label>}
+          {linkFallbackUrl?.renderer===renderer && <label className="block text-xs">{linkFallbackUrl.url.includes('&memo=')?'메모 링크':'현재 Viewer 링크'}<input readOnly aria-label={linkFallbackUrl.url.includes('&memo=')?'복사할 메모 링크':'복사할 Viewer 주소'} value={linkFallbackUrl.url} onFocus={event=>event.currentTarget.select()} /></label>}
           {recoveryNotice && <p data-testid="viewer-recovery-notice" className="text-xs text-amber-800">{recoveryNotice}</p>}
           {sceneNotice&&<p aria-live="polite" data-testid="scene-status" className="text-xs text-slate-700">{sceneNotice}</p>}
           {state.error && <p role="alert" className="text-xs text-red-700">{state.error} <button type="button" className="underline" onClick={reload}>다시 시도</button> <a className="underline" href={`/api/cad-files/${versionId}/content`} download>원본 다운로드</a> {format==='DXF' && <a className="underline" href={`/cad/versions/${versionId}/viewer?renderer=dxf-viewer`}>dxf-viewer 링크 (원본 사용)</a>}</p>}
