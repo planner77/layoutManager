@@ -1,5 +1,7 @@
 /** #98/#83 authenticated, revision-CAS business persistence. No legacy/anonymous fallback. */
 import { randomUUID } from 'node:crypto';
+import {anchorDto,hasAnchorSchema,reconcileOutlineAnchors} from './anchor-service';
+import type {MemoAnchorState} from '@/domain/cad-memo-anchor';
 import type { Database } from '@/server/db';
 import { writeTransaction } from '@/server/db';
 import { CadError } from '@/domain/cad';
@@ -48,8 +50,8 @@ export const memoDto=(v:{
  id:string;versionId:string;sourceSha256:string;title:string;content:string;
  anchorX:number;anchorY:number;offsetX:number;offsetY:number;
  createdById:string;updatedById:string;createdAt:string;updatedAt:string;revision:number
-})=>({
- id:v.id,versionId:v.versionId,sourceSha256:v.sourceSha256,title:v.title,content:v.content,
+},anchor:MemoAnchorState={mode:'FREE'})=>({
+ anchor,id:v.id,versionId:v.versionId,sourceSha256:v.sourceSha256,title:v.title,content:v.content,
  anchorWcsXY:{x:v.anchorX,y:v.anchorY},labelOffset:{x:v.offsetX,y:v.offsetY},
  createdById:v.createdById,updatedById:v.updatedById,createdAt:v.createdAt,
  updatedAt:v.updatedAt,revision:v.revision,textFormat:'plain' as const,persisted:true as const
@@ -75,7 +77,14 @@ export class BusinessRepository {
   await businessSchema(this.db);
   const v=await this.db.cadFileVersion.findUnique({where:{id:versionId},select:{id:true}});
   if(!v)bad('BUSINESS_VERSION_NOT_FOUND',404);
-  if(kind==='memo')return {memos:(await this.db.cadMemo.findMany({where:{versionId,deletedAt:null},orderBy:{createdAt:'asc'},take:101})).map(memoDto)};
+  if(kind==='memo'){
+   const rows=await this.db.cadMemo.findMany({where:{versionId,deletedAt:null},
+     orderBy:{createdAt:'asc'},take:101});
+   const bound=await hasAnchorSchema(this.db)
+     ?await this.db.cadMemoAnchor.findMany({where:{versionId,memoId:{in:rows.map(x=>x.id)}}}):[];
+   const byId=new Map(bound.map(x=>[x.memoId,x]));
+   return {memos:rows.map(x=>memoDto(x,anchorDto(byId.get(x.id)??null)))};
+  }
   return {outlines:(await this.db.cadOutline.findMany({where:{versionId,deletedAt:null},orderBy:{createdAt:'asc'},take:101})).map(outlineDto)};
  }
  async createMemo(versionId:string,body:unknown,proof:G7CadWrite){
@@ -108,6 +117,7 @@ export class BusinessRepository {
   const data=operation==='text'?memoText(b.title,b.content):
    operation==='move'?{anchorWcsXY:point(b.anchorWcsXY)}:null;
   await businessSchema(this.db);
+  const anchorAvailable=await hasAnchorSchema(this.db);
   return writeTransaction(this.db,async tx=>{
    const allowed=await requireG7CadPermission(tx,proof,'memo:write',{kind:'version',versionId});
    const old=await tx.cadMemo.findFirst({where:{id,versionId,deletedAt:null}});
@@ -120,12 +130,15 @@ export class BusinessRepository {
       operation==='text'?data as {title:string;content:string}:
       {anchorX:(data as {anchorWcsXY:{x:number;y:number}}).anchorWcsXY.x,
        anchorY:(data as {anchorWcsXY:{x:number;y:number}}).anchorWcsXY.y};
+   // An explicit free WCS move detaches the old object binding in the SAME CAS transaction.
+   if((operation==='move'||remove)&&anchorAvailable)await tx.cadMemoAnchor.deleteMany({where:{memoId:id,versionId}});
    const casResult=await tx.cadMemo.updateMany({where:{id,versionId,revision:expected,deletedAt:null},
     data:{...update,revision:expected+1,updatedById:allowed.actorId,updatedAt:new Date().toISOString()}});
    if(casResult.count!==1)cas();
    await audit(tx,proof,allowed.actorId,allowed.siteId,'MEMO',id,remove?'DELETE':'EDIT',versionId,expected,expected+1);
    if(remove)return {deleted:true,revision:expected+1};
-   return memoDto((await tx.cadMemo.findUniqueOrThrow({where:{id}})));
+   return memoDto((await tx.cadMemo.findUniqueOrThrow({where:{id}})),
+    anchorDto(anchorAvailable?await tx.cadMemoAnchor.findUnique({where:{memoId:id}}):null));
   });
  }
  async createOutline(versionId:string,raw:unknown,proof:G7CadWrite){
@@ -196,6 +209,7 @@ export class BusinessRepository {
   const rename=!remove&&b.operation==='rename'?name(b.name):null;
   const ops=!remove&&b.operation==='transform'?operations(b.operations):null;
   await businessSchema(this.db);
+  const anchorAvailable=await hasAnchorSchema(this.db);
   return writeTransaction(this.db,async tx=>{
    const allowed=await requireG7CadPermission(tx,proof,'outline:write',{kind:'version',versionId});
    const old=await tx.cadOutline.findFirst({where:{id,versionId,deletedAt:null}});
@@ -210,6 +224,10 @@ export class BusinessRepository {
    const casResult=await tx.cadOutline.updateMany({where:{id,versionId,revision:expected,deletedAt:null},
     data:{...update,revision:expected+1,updatedById:allowed.actorId,updatedAt:new Date().toISOString()}});
    if(casResult.count!==1)cas();
+   if(anchorAvailable&&(remove||ops!==null)){
+    const matrix=ops!==null?transformed(geometry(JSON.parse(old.baseGeometryJson)),ops).transform:undefined;
+    await reconcileOutlineAnchors(tx,proof,allowed,versionId,id,remove?'delete':'transform',matrix);
+   }
    await audit(tx,proof,allowed.actorId,allowed.siteId,'OUTLINE',id,remove?'DELETE':'EDIT',versionId,expected,expected+1);
    return remove?{deleted:true,revision:expected+1}:outlineDto(await tx.cadOutline.findUniqueOrThrow({where:{id}}));
   });

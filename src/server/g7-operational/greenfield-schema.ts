@@ -4,15 +4,18 @@
  */
 import { createHash } from 'node:crypto';
 import { CAD_BUSINESS_DDL, CAD_BUSINESS_OBJECT_NAMES } from '../cad-business/schema-ddl';
+import { CAD_ANCHOR_DDL, CAD_ANCHOR_OBJECT_NAMES } from '../cad-business/anchor-ddl';
 import type { IsolatedDb } from '../g7-staging/g1-store';
 
 export const G7_GREENFIELD_CAPABILITY = 'G7-GREENFIELD-AUTH-V1' as const;
-export const G7_GREENFIELD_SCHEMA_ID = 'G7-GREENFIELD-BUSINESS-20261030-1' as const;
-export const G7_GREENFIELD_BASELINE = '202610300002_greenfield_business_baseline' as const;
+export const G7_GREENFIELD_SCHEMA_ID = 'G7-GREENFIELD-ANCHOR-20261031-1' as const;
+export const G7_GREENFIELD_BASELINE = '202610310001_greenfield_anchor_baseline' as const;
+export const G7_PREVIOUS_BUSINESS_BASELINE='202610300002_greenfield_business_baseline' as const;
+export const G7_PREVIOUS_BUSINESS_CHECKSUM=createHash('sha256').update('layoutManager:G7-GREENFIELD-BUSINESS-20261030-1:baseline').digest('hex');
 export const G7_SCENE_GREENFIELD_BASELINE = '202610300001_greenfield_scene_baseline' as const;
 export const G7_SCENE_GREENFIELD_BASELINE_CHECKSUM = createHash('sha256').update('layoutManager:G7-GREENFIELD-SCENE-20261030-1:baseline').digest('hex');
 export const G7_GREENFIELD_BASELINE_CHECKSUM =
-  createHash('sha256').update('layoutManager:G7-GREENFIELD-BUSINESS-20261030-1:baseline').digest('hex');
+  createHash('sha256').update('layoutManager:G7-GREENFIELD-ANCHOR-20261031-1:baseline').digest('hex');
 export const G7_OLD_GREENFIELD_BASELINE = '202610290001_greenfield_baseline' as const;
 export const G7_OLD_GREENFIELD_BASELINE_CHECKSUM =
   createHash('sha256').update('layoutManager:G7-GREENFIELD-20261029-1:baseline').digest('hex');
@@ -35,9 +38,10 @@ export function assertG7GreenfieldSchema(db: IsolatedDb): void {
   const history = db.prepare('SELECT migration_name,checksum,finished_at,rolled_back_at FROM "_prisma_migrations"').all();
   const old=history.length===1&&history[0].migration_name===G7_OLD_GREENFIELD_BASELINE;
   const scene=history.length===1&&history[0].migration_name===G7_SCENE_GREENFIELD_BASELINE;
+  const business=history.length===1&&history[0].migration_name===G7_PREVIOUS_BUSINESS_BASELINE;
   const next=history.length===1&&history[0].migration_name===G7_GREENFIELD_BASELINE;
-  if ((!old&&!scene&&!next) ||
-      history[0].checksum !== (old?G7_OLD_GREENFIELD_BASELINE_CHECKSUM:scene?G7_SCENE_GREENFIELD_BASELINE_CHECKSUM:G7_GREENFIELD_BASELINE_CHECKSUM) ||
+  if ((!old&&!scene&&!business&&!next) ||
+      history[0].checksum !== (old?G7_OLD_GREENFIELD_BASELINE_CHECKSUM:scene?G7_SCENE_GREENFIELD_BASELINE_CHECKSUM:business?G7_PREVIOUS_BUSINESS_CHECKSUM:G7_GREENFIELD_BASELINE_CHECKSUM) ||
       history[0].finished_at == null || history[0].rolled_back_at != null)
     throw new Error('G7_GREENFIELD_INSTALL_HISTORY');
 
@@ -47,15 +51,21 @@ export function assertG7GreenfieldSchema(db: IsolatedDb): void {
       normalize(row.sql) === normalize(sql))))
     throw new Error('G7_GREENFIELD_DELETE_PASSWORD_GUARD');
 
-  const normal = rows.filter(row => !guards.includes(row) && !CAD_BUSINESS_OBJECT_NAMES.has(row.name)).map(row =>
+  const normal = rows.filter(row => !guards.includes(row) && !CAD_BUSINESS_OBJECT_NAMES.has(row.name) && !CAD_ANCHOR_OBJECT_NAMES.has(row.name)).map(row =>
     [row.type,row.name,normalize(row.sql)]);
   if (createHash('sha256').update(JSON.stringify(normal)).digest('hex') !== (old?G7_BASE_DDL_SHA256:G7_SCENE_DDL_SHA256))
     throw new Error('G7_GREENFIELD_SCHEMA_DRIFT');
   const extra = rows.filter(row => CAD_BUSINESS_OBJECT_NAMES.has(row.name)).map(row =>
     [row.type,row.name,normalize(row.sql)].join('|')).sort();
-  const expected = next ? CAD_BUSINESS_DDL.map(row =>
+  const expected = (business || next) ? CAD_BUSINESS_DDL.map(row =>
     [row.type,row.name,normalize(row.sql)].join('|')).sort() : [];
   if (JSON.stringify(extra)!==JSON.stringify(expected)) throw new Error('G7_GREENFIELD_BUSINESS_SCHEMA_DRIFT');
+  const anchors=rows.filter(row=>CAD_ANCHOR_OBJECT_NAMES.has(row.name)).map(row=>
+    [row.type,row.name,normalize(row.sql)].join('|')).sort();
+  const expectedAnchors=next?CAD_ANCHOR_DDL.map(row=>
+    [row.type,row.name,normalize(row.sql)].join('|')).sort():[];
+  if(JSON.stringify(anchors)!==JSON.stringify(expectedAnchors))
+    throw new Error('G7_GREENFIELD_ANCHOR_SCHEMA_DRIFT');
 
   const check = db.prepare('PRAGMA quick_check').all();
   if (check.length !== 1 || Object.values(check[0])[0] !== 'ok' ||

@@ -1,3 +1,12 @@
+## #84/#167 v0.47.2 후보 — 신규 설치와 Reset 운영 경계 (2026-10-31)
+
+- 최신 기능은 신규 EMPTY Greenfield `202610310001_greenfield_anchor_baseline`에만 `CadMemoAnchor` 관계를 생성한다. 기존 v0.47.1 DB·CAD/Volume/HOLD를 자동 채택/ALTER/삭제하지 않는다. 운영자가 신규 볼륨을 명시하고 App/Migrator 동일 검증 릴리스 쌍으로 설치해야 한다.
+- Source-only는 승인된 로그인/Scope의 SOURCE 연결 메모만 BROKEN_ANCHOR/마지막 WCS 유지 후 브라우저 DXF_IMPORTED 작업을 초기화한다. ALL은 현재 Version 전체 live IDs+revisions/Scene Revision을 확인하고 한 거래에서 Memo/Outline soft delete 및 Audit. 작성자가 다른 Memo가 있으면 전체 거절(#172 Owner 결정 대기).
+- 무단 원본 DXF/immutable Scene Asset/Current Version 변경 불가; 실패한 서버 요청 시 브라우저 작업 상태 유지 및 사용자가 재조회·확인 후 재시도. 브라우저 재시작/서버 권한 인증이 완료되기 전 자동 재시도 금지.
+- 본 PR 단계에서는 현장 Compose 실행/DB 마이그레이션/DRM 진단/GHCR·이슈 종료 미실행. [전체 설계](Issues84-167.md), [FailureLedger](FailureLedger.md) 참조.
+
+---
+
 ## #98/#83 — 외곽선·메모 신규 서버 영속 기능 운영 경계 (2026-10-30 PR 후보)
 
 - 이 변경은 **신규 빈 Greenfield 설치에서만** 비즈니스 테이블 3개를 생성합니다. 기존 운영 DB/볼륨은 자동 Migration·수정·삭제하지 않습니다. 기존 Volume에서 새 업무 API는 의도적으로 503을 반환하며 수동 SQL로 보완하지 않습니다. 정확한 설치 및 수용은 [통합 설계](Issues98-83.md) 참조.

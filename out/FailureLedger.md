@@ -1,3 +1,34 @@
+## #84 / PR #173 — 세션 스냅 누락 보완·Codex P1 리뷰 및 CI 중간 실행 (2026-10-31 KST)
+
+- **근거:** 사용자가 PR #173의 원래 #84 AC 중 임시 Generated 자동 스냅·이동/회전/Undo/Redo 및 서버에 영속되지 않은 DXF_IMPORTED SceneWork 연계를 복구하도록 지시. 이전 구현은 서버 CadMemoAnchor만 구현하여 이를 제한한 것을 수정한다. 설계 [out/Issues84-167.md](Issues84-167.md)와 원래 [#84](https://github.com/planner77/layoutManager/issues/84)의 M3-AC1~05 참조.
+- **이전 검증과 한계:** 최초 [PR CI #318 / Run #41123776757](https://github.com/planner77/layoutManager/actions/runs/41123776757) `completed/success` Verify+Docker 두 Job이 통과한 것은 **보완 전** HEAD `ee4311946b5185c3d2c5c4c830996d38829599f9`에 한정. 이어진 #319~#329 중간 PR CI는 연속 브랜치 업데이트로 `cancelled` 관측, 새 코드의 테스트 PASS로 간주하지 않는다. 코드 갱신 중 Run #330 `41126777239`는 실행 중 관측됐으나 문서/코드 최종 HEAD와 다르면 최종 검증 근거로 사용하지 않는다.
+- **Codex P1 실제 리뷰:** [#4428206096](https://github.com/planner77/layoutManager/pull/173#discussion_r4428206096) `BusinessRepository.editMemo(remove)`가 soft-deleted Memo의 CadMemoAnchor를 남기는 P1. 이후 Outline move/delete의 `reconcileOutlineAnchors`가 live Memo 부재로 `MEMO_ANCHOR_INTEGRITY`를 발생시켜 해당 Outline 작업 전체 rollback. SOURCE_ONLY reset의 `RESET_ANCHOR_INTEGRITY` 경로도 위험. **수정:** `editMemo`에서 `(operation==='move'||remove)&&anchorAvailable`로 같은 DB 거래의 dependent link delete, `reset-service.ts` ALL의 사전 `cadMemoAnchor.deleteMany` 같은 tx. 리뷰 comment `4428381918` 답변 및 스레드 Resolved 확인. `tests/unit/memo-anchor-origin-reset.test.ts`에 삭제 경로 코드 회귀 가드 추가.
+- **보완 코드:** 브라우저 전용 `MemoSessionSnapStore`(Version/SHA 및 Viewer 세션 한정, 서버 DTO/DB 저장 없음), `ThreeDxfViewerAdapter.getMemoSnapTargets`의 현재 2D 생성 Polygon 정점·중심 및 지원 렌더 Endpoint/Vertex/Center, 12 CSS px 최근접·20k 포인트·visible/finite/Scope 필터. `CadViewer`의 좌표 배치·포인터 drag·WCS 이동 완료 시 최신 스냅 검증 후 local 좌표 연결; 객체 Translate/Rotate·Undo/Redo에서 현재 transform으로 재투영, Delete 후 마지막 WCS/BROKEN, 동일 object ID Undo 재연결. SOURCE_ONLY는 RENDER session 참조를 강제 BROKEN; ALL은 모든 임시 참조 삭제. 명시 해제는 작성자-only 서버 PATCH move CAS 또는 M1 로컬 move 성공 뒤 관계 삭제; 단순 변경 미검증 객체 ID를 서버 CadMemoAnchor로 전달하지 않음.
+- **신규 시험:** `tests/unit/memo-session-snap.test.ts`는 GENERATED/RENDER transform 90°·삭제/Undo/S6·스코프/visibility/20k 상한 및 server DTO 비변경을 테스트. `tests/e2e/issue82-cad-memo.spec.ts` M3 별도 케이스는 합성 DXF WCS(0,0) auto snap→UI 세션 표시→명시 해제/좌표 보존을 검증. App/Server/Unit/TestPlan/Report/Architecture/ADR 설계 갱신. 로컬 환경은 GitHub clone DNS 접근 불가였으므로 npm/TS/Lint/Vitest/Playwright/OCI 로컬 실험은 **NOT RUN**.
+- **불변 안전 경계:** 임시 UUID와 RENDER 작업 delta는 영속 객체/Source Canonical Ref의 신뢰증거가 될 수 없음. Server G7/Site/Owner/Revision·감사 계약은 유지하며 화면에서 임시로 움직인 좌표는 명시 서버 저장 전 재접속/타 PC에 보존되지 않는다. 현장 CAD/GPU·2PC/실 DB·기존 볼륨 Migration/GHCR/병합/Issue 종료 미실행. **최종 HEAD의 리뷰·충돌·PR CI 기동은 GitHub 실제 조회 후 별도 기록**, CI 시작 ≠ SUCCESS. 중간 취소 run이나 이 기록 자체를 새 HEAD PASS로 전용하지 않는다.
+
+---
+
+## #84/#167 PR #173 — 초기 리뷰/충돌·CI 실행 증거 (2026-10-31)
+
+- **PR:** [#173](https://github.com/planner77/layoutManager/pull/173), `#167 | Origin-aware Scene reset and persistent Memo anchors (#84)` / 한 PR / 순서 #84→#167. 검증 전 HEAD `81c6077248b41f0e1d79a1332bdd58891ef9ddbd`.
+- **실제 GitHub 상태:** `get_pr_info` 재조회에서 `mergeable=true`; 최신 Main `34e3a362e9a9d01579d4a61b81b26f4ee935c87b` 대비 `behind=0,ahead=22`, 충돌 없음. PR 초기 응답의 `mergeable=false`는 GitHub가 계산한 최종 결과가 아니었으며, 재조회 후 true로 확인. Inline review threads 총 0, 미해결 0 (조회 시점; 이후 생기는 자동 Codex 지적은 별도 검토 필요).
+- **PR CI 최초 실행 시작 근거:** [Run #41123679311](https://github.com/planner77/layoutManager/actions/runs/41123679311) workflow `#317`, 초기 HEAD `81c6077248b41f0e1d79a1332bdd58891ef9ddbd`, 조회 시 `in_progress`/conclusion null. 이 원장 기록 후 브랜치 HEAD를 갱신할 경우 이전 Run을 새 HEAD 검증 근거로 사용하지 말고 **최신 HEAD에서 자동 시작한 새 PR CI run만** 인계해야 한다. 사용자 지시로 CI 결과 모니터링 생략, PASS 주장 금지.
+- 신규 코드/합성 Unit을 작성했으나 GitHub CI 결과·실 운영 현장·승인된 DB/Compose/GHCR 작업은 **NOT VERIFIED/NOT RUN**. Reviewer P1/P2 새 지적이 추후 나타나면 코드/회귀/원장 보완 전 Resolved나 Gate PASS를 선언하지 않는다. Issue #84/#167은 OPEN, GHCR/병합/이슈 종료 미실행.
+
+---
+
+## #84/#167 단일 PR — CI 실행 전 원장 및 위험 등록 (2026-10-31)
+
+- Main 근거 `34e3a362e9a9d01579d4a61b81b26f4ee935c87b`; 사용자 요청 #84→#167 분석·설계·구현·PR CI만. [설계](Issues84-167.md), AGENTS, Architecture/Decisions/Database 검토. 루트 DESIGN.md 실제 없음.
+- **사전 위험, 실제 CI 실패 아님:** v0.47.1 CadMemo 직렬 컬럼 추가 시 구 DB Prisma P2022와 runtime Gate 충돌 위험 → 별도 CadMemoAnchor 테이블과 새로운 exact Greenfield baseline으로 격리. 기존 business/Scene/old marker 보존, 구 DB 자동 업그레이드/삭제 없음. SQLITE CHECK의 NULL 참을 명시 NOT NULL targetOrigin으로 차단; immutable trigger·FK·bounds 검증. 일반 Vitest에서 server-only 저장소 value import 금지(이전 #314 재발방지).
+- M3: Owner/Site/Revision 검증, Source는 서버에서 이미 canonical attested된 saved sourceRefs만, APP_CREATED는 서버 UUID. Outline transform/delete와 Memo World WCS/BROKEN_AUDIT를 원자적 거래. #172 공동 편집 정책 미확정은 확대하지 않음.
+- S6: 원본 Scene Asset/Current/DXF 불변, Source-only SessionWork 원상복구 + SOURCE linked Memo 해제, All은 server exact full-set revision + Session/Site/Owner 권한 + Soft Delete/Audit 단일 거래. SQLite/Browser 분산 atomic claim 금지.
+- **실행 상태:** 소스 코드와 합성 테스트 작성, npm/Prisma/TS/Lint/Unit/E2E/Docker/현장 수용은 로컬에서 **NOT RUN**. 기존 #311/#314 실패/CI #316 성공은 이 신규 HEAD를 검증하지 않는다. PR 생성 후 최신 리뷰/충돌·새 CI 실행 결과를 실제 근거로 기록. CI 감시 생략; 병합·GHCR·운영·이슈 종료 미실행.
+- Known limits: auto snap nearest vertex, 임시 Generated 편집의 완전한 영속 Anchor 동기화, SOURCE renderer 세션 이동의 저장, 기존 설치 스키마 채택 및 실 DXF Owner 수용은 이 PR에서 입증하지 않는다. #96/#113/#172 별도 OPEN.
+
+---
+
 ## #98/#83 PR #171 — Owner Managed 최종 Squash·Main CI/GHCR 게시 완료·Issue 분할 종료 (2026-10-30 KST)
 
 - **정확 최신 PR CI:** [#316](https://github.com/planner77/layoutManager/actions/runs/41062911805), HEAD `d74d1f312386b020175035d5aa1aaf3066bc144e` `completed/success`. Verify Job `124086863559` SUCCESS(Typecheck/Lint/Unit·Integration/Production Build/Playwright·G7·Legacy E2E) 및 Docker Job `124086863008` SUCCESS(Migrator/DB/Greenfield Compose/Admin/CAD restart). 기존 실패 PR #311 `b7e499d` 및 #314 `839fcf8`와 변경 전 성공 #315 `8af8b65`는 아래 원장에 역사 그대로 보존.

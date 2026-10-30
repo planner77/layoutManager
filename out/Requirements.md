@@ -1,3 +1,11 @@
+## #84 M3 + #167 S6 Origin-aware CAD Memo/Reset (2026-10-31)
+
+- #84: Version/SHA Scope 내 서버 영속 APP_CREATED 객체 또는 canonical 검증 SOURCE handle에 FREE 메모를 명시적으로 연결한다. local/WCS 두 좌표를 분리해 이동·회전 시 World를 서버에서 재산출하고, 대상 삭제는 마지막 World WCS를 유지하며 BROKEN_ANCHOR로 표시한다. 작성자-only Memo 변경·G7 Site Grant·CSRF/Origin·CAS/Audit 불변.
+- #167: Viewer 작업 메뉴(#127)의 DXF 기반 객체만 초기화와 전체 초기화 두 명령은 각각 데이터 범위·개수·현재 Version 설명/확인을 제공한다. SOURCE_ONLY는 원본 Scene 작업 상태만 복귀시키고 APP_CREATED/FREE Memo를 보존한다. ALL은 서버에서 현재 Version 대상 전체 live IDs/Revision snapshot을 검증한 후 모든 Memo/Outline을 soft delete+감사 한 거래에 반영한다. 타 Version·원본 DXF·Current·immutable READY Scene·기준 정보 변경 절대 금지.
+- 새 빈 Greenfield baseline/Prisma 관계/거부 테스트, 기존 설치 자동 DB 갱신 없음. #172 Memo Editor 공동 수정 정책/실 CAD·현장 #96/#113 미완료를 합성 CI로 우회하지 않는다. 상세 [Issues84-167](Issues84-167.md).
+
+---
+
 ## #166 Scene S5 — 구현 전 요구사항·수용 경계 (2026-10-30)
 
 기준 Main `bdde565`의 S0~S4를 소비한다. 최신 #160/#166 Owner 정책이 과거 일반 작업의 `mappedSource > 0` 전면 게이트보다 우선한다. 아래는 구현 지시이며 PASS 기록이 아니다.

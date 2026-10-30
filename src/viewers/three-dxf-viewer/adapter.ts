@@ -31,6 +31,7 @@ import {
   type GeneratedCommand,type Affine2D,
 } from '../../domain/generated-document';
 import {SceneWorkDocument,type SceneWorkCommand,type SceneWorkState} from '../../domain/scene-work';
+import type {MemoSnapTarget,SnapPoint} from '../../domain/memo-session-snap';
 
 function release(group: THREE.Object3D) {
   const geometries = new Set<THREE.BufferGeometry>(), materials = new Set<THREE.Material>(), textures = new Set<THREE.Texture>();
@@ -375,6 +376,11 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
   }
   undoSceneWork():boolean{const changed=this.sceneWork?.undo()??false;if(changed)this.applySceneWork();return changed;}
   redoSceneWork():boolean{const changed=this.sceneWork?.redo()??false;if(changed)this.applySceneWork();return changed;}
+  resetSceneWork():void{
+    if(!this.sceneWork||!this.object)throw new Error('기준 Scene이 준비되지 않았습니다.');
+    this.cancelGeneratedCommand();this.cancelOutlinePreview();
+    this.selector?.clearObjects();this.sceneWork.reset();this.applySceneWork();
+  }
 
   /** Reconcile only by top-level DXF handles, not screen bounds or mesh order.
    * Both handle and WCS bounds must agree. Missing/merged/unsupported content
@@ -721,6 +727,64 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     }));
   }
   /** No mirrored saved array: Manager, Tree, v1/v2 export and Scene share Document. */
+  /** #84: read-only geometry projections, never a server Source/Handle claim.
+   * RENDER paths are already in WCS (including SceneWork deltas); GENERATED
+   * polygons are projected from the immutable base + session affine matrix.
+   * Rendering state is not mutated and no DXF parse is performed.
+   */
+  getMemoSnapTargets(withPoints=false):MemoSnapTarget[]{
+    if(!this.outline||!validCanvasScope(this.outline))return [];
+    const scope={versionId:this.outline.versionId,sourceSha256:this.outline.sourceSha256};
+    const result:MemoSnapTarget[]=[];
+    let budget=20000;
+    for(const item of this.document?.getObjects()??[]){
+      const points:SnapPoint[]=[];
+      if(withPoints&&item.visible&&budget>0){
+        const geo=generatedResult(item).geometry;
+        const polygons=geo.type==='Polygon'?[geo.coordinates]:geo.coordinates;
+        for(const polygon of polygons)for(const ring of polygon){
+          for(let i=0;i<ring.length-1&&budget>0;i++,budget--){
+            const [x,y]=ring[i];
+            points.push({kind:'VERTEX',world:{x,y}});
+          }
+        }
+        const xs=points.map(p=>p.world.x),ys=points.map(p=>p.world.y);
+        if(xs.length&&budget>0){
+          points.push({kind:'CENTER',world:{x:(Math.min(...xs)+Math.max(...xs))/2,
+            y:(Math.min(...ys)+Math.max(...ys))/2}});
+          budget--;
+        }
+      }
+      result.push({ref:{...scope,origin:'GENERATED',id:item.ref.id},
+        transform:item.transform,visible:item.visible,points});
+    }
+    for(const item of this.renderIndex?.entities??[]){
+      const delta=this.sceneWork?.get(item.id);
+      if(!delta)continue;
+      const points:SnapPoint[]=[];
+      const visible=this.effectivelyVisible(item.id);
+      if(withPoints&&visible&&budget>0){
+        for(const path of item.paths){
+          const pathCount=path.points.length;
+          const length=path.closed && pathCount>1 &&
+           path.points[0][0]===path.points[pathCount-1][0] &&
+           path.points[0][1]===path.points[pathCount-1][1] ?pathCount-1:pathCount;
+          for(let i=0;i<length&&budget>0;i++,budget--){
+            const [x,y]=path.points[i];
+            points.push({kind:!path.closed&&(i===0||i===length-1)?'ENDPOINT':'VERTEX',
+              world:{x,y}});
+          }
+        }
+        const [minX,minY,maxX,maxY]=item.bounds;
+        if(budget>0&&[minX,minY,maxX,maxY].every(Number.isFinite)){
+          points.push({kind:'CENTER',world:{x:(minX+maxX)/2,y:(minY+maxY)/2}});budget--;
+        }
+      }
+      result.push({ref:{...scope,origin:'RENDER',id:item.id},
+        transform:delta.transform,visible,points});
+    }
+    return result;
+  }
   getGeneratedObjects(){
     return (this.document?.getObjects()??[]).map(item=>({
       ref:item.ref,savedOutlineId:item.savedOutlineId,visible:item.visible,

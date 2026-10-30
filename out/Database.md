@@ -1,3 +1,11 @@
+## #84 M3 + #167 S6 신규 영속 스키마 (2026-10-31)
+
+- 새 Greenfield baseline `202610310001_greenfield_anchor_baseline`, ID `G7-GREENFIELD-ANCHOR-20261031-1`. 이전 `202610300002_greenfield_business_baseline` 및 Scene/old exact SQL fingerprint는 보존. 신규 `CadMemoAnchor`(memo_id FK/PK, version_id, source_sha256, status ATTACHED/BROKEN_ANCHOR, target_origin/target_id, local_x/y, timestamps), target index, immutable trigger. 구 설치에 자동 추가/이관하지 않음.
+- Memo world `anchorX/Y`는 final resolved WCS, local anchor는 target inverse 변환 기준. TARGET soft delete 시 anchor row는 BROKEN/target=NULL, Memo 좌표는 보존. 대상 변형의 Memo Revision+Audit와 기존 CadOutline CAS는 동일 writeTransaction.
+- S6 ALL은 CAD Version별 정확 live Memo/Outline snapshot과 G7 권한·Memo author 검사 후 각각 deletedAt/deletedById/revision 업데이트 + append-only Audit. Raw DB DELETE 및 원본 DXF/SceneAsset/Current 변경은 수행하지 않음. 최신 설계 [Issues84-167](Issues84-167.md).
+
+---
+
 ## #98/#83 업무 영속 신규 empty Greenfield DDL (2026-10-30)
 
 Schema ID G7-GREENFIELD-BUSINESS-20261030-1, baseline 202610300002_greenfield_business_baseline. DDL source: src/server/cad-business/schema-ddl.ts, Prisma model src/prisma/schema.prisma. CadOutline: server UUID, immutable Version/FK·SHA·author·createdAt, scene_revision, origin APP_CREATED, independent WCS base/effective geometry, derivation/source refs, transform operations, revision CAS, logical deletedAt/by; OutlineType null until #65. CadMemo: Version/FK·SHA, title/content plain, WCS anchor+offset, author, revision CAS, soft delete. CadBusinessAudit: actor/site FK, version text, target, action, before/after revision, requestId, UTC time, UPDATE/DELETE blocked by triggers. Version hard delete linked rows 409. Existing Scene checksum, password triggers and old baseline markers immutable; business rows only present in new-empty install. [상세](Issues98-83.md).

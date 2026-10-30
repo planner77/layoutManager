@@ -1,3 +1,21 @@
+## #84 PR #173 세션 Snap 누락 기능 보완 (2026-10-31)
+
+- 최신 [M3/S6 설계](out/Issues84-167.md)의 **새 세션 스냅 계약**을 따른다. VERIFIED server CadMemoAnchor와 별도로 Renderer/GeneratedDocument의 임시 WCS 후보(Endpoint/Vertex/Center)를 12 CSS px 안에서만 검색한다. 불변 Version/SHA/Renderer ID와 current Affine을 사용해 Memo local→world를 재투영하며 Translate/Rotate/Undo/Redo/DELETE·SOURCE_ONLY의 기존 데이터/마지막 WCS를 보호한다.
+- 임시 Generated UUID와 DXF_IMPORTED renderer ID는 **브라우저 Session 전용**이다. 이 값을 영속 DTO/API/SQLite/SceneAsset에 sourceRef로 보내거나 사용자 입력만으로 증명하는 것 금지. 서버에 남는 임시 스냅 결과는 합법적인 FREE WCS뿐이며, 연결은 Reload/Renderer/Version 변경 시 사라진다는 안내가 필요하다. 임시 속성의 영구 복원을 CI 성공으로 주장 금지.
+- Codex P1 #173: 삭제된 Memo의 CadMemoAnchor를 함께 정리하지 않으면 그 후 Outline Edit/Reset이 `MEMO_ANCHOR_INTEGRITY`를 발생시키므로 Memo 개별 DELETE와 S6 ALL reset 모두 *같은 SQLite transaction에서* anchor cleanup 후 soft delete+audit를 수행한다. 모든 리뷰 지적은 답변·원장·회귀테스트를 수반한다.
+- 새 PR CI 실행은 **최신 HEAD**에서만 유효하다. 이전 #318 PASS는 새 구현 결과를 검증하지 않았으며, 취소된 중간 #319+ 실행을 PASS로 전용하지 않는다. 병합/GHCR·Issue 종료는 별도 사용자 승인 전 미실행.
+
+---
+
+## #84/#167 단일 PR 신규 Greenfield M3/S6 계약 (2026-10-31)
+
+- [설계](out/Issues84-167.md)·[원장](out/FailureLedger.md) 참조. 루트 DESIGN.md는 없고 Architecture/Decisions가 기준이다. 한 PR에서 #84 Memo Anchor → #167 Scene Origin reset 순으로 구현. 이번 사용자 범위는 PR CI 시작까지이며 모니터링/병합/GHCR/이슈 종료는 별도 지시 전 금지.
+- 서버 영속 앵커는 FREE/ATTACHED/BROKEN_ANCHOR, 같은 Version/SHA와 영속 APP_CREATED UUID 또는 검증된 SOURCE_CANONICAL 참조만 허용. 기존 Memo 작성자-only 정책(#172)을 임의 해제하지 않으며 target move/delete 후 세계 좌표 및 Audit는 동일 DB 거래에서 동기화.
+- Source-only reset은 DXF_IMPORTED session SceneWork만 기준 상태로 복귀하고 APP_CREATED 및 FREE Memo를 보존. All reset은 Version별 정확 live IDs/revisions, 현재 Scene revision, G7 Site Scope/Memo Owner 확인 후 전부 soft-delete + append-only Audit, 단 하나의 transaction. Immutable DXF/SceneAsset/Current는 수정 금지.
+- 신규 `0.47.2` 후보에서 anchor table은 **신규 빈 Greenfield**에만 생성하고, 기존 `0.47.1` 볼륨 자동 ALTER·Adopt·Erase는 금지. DRM H0~H3 비필수. 합성 CI 성공과 사내 현장 2PC/실도면 수용은 구분.
+
+---
+
 ## #98/#83 PR #171 v0.47.1 합성 릴리스 완료 및 후속 구분 (2026-10-30)
 
 - [원장](out/FailureLedger.md) 최상단의 PR #316 SUCCESS / Main CI #93 SUCCESS / `v0.47.1` App·Migrator paired digest 실제 GHCR 게시 증거를 기준으로 한다. 병합/Main 릴리스 `e1984e26a8649f0ac2bce3b0cb74ce69b163441e`는 보존하고, 이 결과를 **문서 전용 후속 커밋**으로 기록한다. Docs-only Main push는 release-scope에서 GHCR SKIPPED 조건이어야 하며 새 릴리스 SHA와 동일하다고 주장 금지.

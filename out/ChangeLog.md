@@ -1,3 +1,19 @@
+## v0.47.2 PR #173 M3 추가 보완 (2026-10-31)
+
+- #84 임시 GENERATED / DXF_IMPORTED WCS 후보 ENDPOINT·VERTEX·CENTER 12px 자동 스냅을 구현하고, 브라우저 세션의 Target local anchor와 생성·렌더 Transform/Undo/Redo를 연결. Delete→BROKEN_ANCHOR(last WCS)·동일 ID Undo→복귀, SOURCE_ONLY 강제 해제, 명시적 WCS 확정, 임시 관계 저장/공유 불가 안내.
+- #84/#167 Codex P1 수정: 개별 Memo DELETE 및 전체 초기화 시 dependent Anchor cleanup을 동일 SQLite transaction 내에서 실행해 이후 Outline/CAD 작업 불필요한 충돌 차단.
+- 신규 Unit/Chromium E2E 작성; 실제 최신 HEAD CI 성공은 실행 결과 확인 전 보장하지 않음. 운영 DB/Volume Migration, 서버에 저장되지 않은 SceneWork 영속 전환, Field Approval은 제외.
+
+---
+
+## v0.47.2 구현 후보 — Issue #84 M3 / #167 S6 (2026-10-31)
+
+- 업무 메모 FREE/ATTACHED/BROKEN_ANCHOR, 서버 영속 APP_CREATED UUID 및 인증된 SOURCE Ref 연결; Outline move/rotate/delete 시 종속 Memo world WCS/revision/audit 동기화.
+- DXF_IMPORTED 기준 SceneWork만 복구하는 SOURCE_ONLY와 명시 확인 후 Current Version의 APP_CREATED/Memo를 한 서버 거래에서 soft delete 하는 ALL 초기화. 임시/영속 객체의 범위 분리, 원본 Scene/DXF/Current 불변.
+- 별도 CadMemoAnchor 스키마 + 새 빈 Greenfield marker, 이전 business baseline 보존, 0.47.2 package/lock. 실제 CI/GHCR/현장 acceptance는 미확인. #172 타 작성자 Memo 편집 정책 미변경.
+
+---
+
 ## v0.47.1 공식 GHCR 발행 — Issue #98/#83 (2026-10-30)
 
 - 최종 PR #171 CI #316 SUCCESS, Squash Main [e1984e26](https://github.com/planner77/layoutManager/commit/e1984e26a8649f0ac2bce3b0cb74ce69b163441e); [Main CI #93](https://github.com/planner77/layoutManager/actions/runs/41064962451) SUCCESS.

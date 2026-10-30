@@ -72,6 +72,8 @@ describe('#153 empty Greenfield installation without prior data or migration rep
       assertG7RuntimeSchema(db as never);
       const history=db.prepare('SELECT migration_name FROM "_prisma_migrations"').all();
       expect(history).toEqual([{migration_name:G7_GREENFIELD_BASELINE}]);
+       expect(db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='CadMemoAnchor'").all())
+         .toEqual([{name:'CadMemoAnchor'}]);
       const names=db.prepare("SELECT name FROM sqlite_master WHERE type='trigger' AND name LIKE 'cad_version_delete_password_%' ORDER BY name").all();
       expect(names).toEqual([{name:'cad_version_delete_password_insert'},
         {name:'cad_version_delete_password_update'}]);
