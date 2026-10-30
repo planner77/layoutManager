@@ -1,3 +1,10 @@
+## #166 — Scene 초기화 O(N²) 조회 제거 (2026-10-30)
+
+- 새 Codex P2 #4423072162: render work initialize의 Scene leaf당 `entities.find`를 사전 `layerById` Map과 O(1) 조회로 대체해 전체 매핑 O(N)으로 축소.
+- 기존 S5 Browser/Unit 및 PR CI 회귀는 변경 HEAD 별도로 실행해야 하며, 새 성능 수용 데이터는 미측정. 구현 범위만 반영했고 현장 대형 DXF/GPU/실 운영 배포는 NOT RUN.
+
+---
+
 ## #166 — 최신 Codex UI P2 재현 방지 시험 추가 (2026-10-30)
 
 - 신규 `TC-S5-UI-009`: SOURCE 저장 선택을 현재 SceneWork 정밀 원본 조건과 재검증하고, 무효이면 RENDER로 fallback, enabled ref 변경은 Adapter mode 승인 뒤에만 수행. Exact SHA/Handle/canonical 검증 완화 없음.

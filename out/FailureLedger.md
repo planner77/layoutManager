@@ -1,3 +1,12 @@
+## #166 PR #170 — 후속 Codex P2 초기 Scene 인덱스 성능 수정 (2026-10-30 KST)
+
+- **새 리뷰:** [PR P2 #4423072162](https://github.com/planner77/layoutManager/pull/170#discussion_r4423072162) — `initializeRenderWork()`에서 Projection의 적합 ID Set만 선형으로 만들고 실제 layer 검색은 `renderIndex.entities.find()`로 Scene leaf마다 수행. 선택 가능 객체 N개에서 O(N²), 3만 객체급 READY/DXF 복원 시 UI 스레드 장시간 블로킹 가능. 이는 이전 P2 #4422634421 Source-basis 복구와 별개이며, CI 성공/실패로 혼동하지 않는다.
+- **보완:** `new Map(renderIndex.entities.map(({id,layer})=>[id,layer]))`를 1회 만들고 Scene traverse 안에서는 `layerById.get(ref.id)`로 조회. 적합 ID / Origin/Scope 검증은 `validSceneRef`와 `layer!==undefined` 경계를 유지. Renderer 전체 방문 O(N)+projection 비용이며 DB·원본 SHA/Handle/canonical/권한 변경 없음.
+- **검증 기준:** 기존 HEAD `1b78b891fe57bcd48770d3590d0ee8e8df68185e` 신규 [PR CI #41047100655](https://github.com/planner77/layoutManager/actions/runs/41047100655)는 본 최적화 커밋 **이전** 실행이며 마지막 확인 시 `in_progress`. 새 HEAD에서 CI 재요청 후 최종 확인 전 PASS 주장 금지. 새 코드에 대한 실 DXF·30k 현장 성능/브라우저 벤치마크는 NOT RUN. 현재 독립 단위·복원 Browser 회귀는 새 CI에서 검증 예정, 미완료면 NOT VERIFIED.
+- **게이트:** 해당 리뷰 스레드에 코드 근거 답변 후 Resolved, 최신 모든 Thread=0·Main behind=0/mergeable·신규 최종 HEAD PR CI SUCCESS 확인 전 병합·GHCR·이슈 완료 불가. 역사적 실패와 리뷰는 원장에서 삭제하지 않는다.
+
+---
+
 ## #166 PR #170 — CI 성공 후 신규 Codex P2 발견·보완, 최신 검증 대기 (2026-10-30 KST)
 
 - **정확한 성공 대상:** [PR CI #41040094443](https://github.com/planner77/layoutManager/actions/runs/41040094443)는 HEAD `04e44d390e21fc7bcea4b96f5c538ad74ad15f9a`의 `completed/success`; Verify Job `124010487329`와 Docker Job `124010487646` 두 건 SUCCESS. 이 결과는 후속 수정 커밋의 검증으로 **전용하지 않는다**.

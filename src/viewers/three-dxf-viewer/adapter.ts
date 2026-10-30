@@ -276,12 +276,15 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     this.sceneWork?.dispose();this.sceneObjects.clear();this.rendererIds.clear();
     this.intrinsicSceneVisibility=captureSceneVisibility(this.object);
     this.renderIndex=sceneOutlineProjection(this.object,scope);
-    const accepted=new Set(this.renderIndex.entities.map(e=>e.id));
+    // Flat O(n) index: never scan all render entities for each Scene leaf.
+    // Large DXF/READY Scenes can have tens of thousands of imported objects.
+    const layerById=new Map(this.renderIndex.entities.map(entity=>[entity.id,entity.layer] as const));
     this.object.updateWorldMatrix(true,true);
     this.object.traverse(object=>{
       const ref:unknown=object.userData.cadSceneRef;
-      if(!validSceneRef(ref,scope)||ref.origin!=='DXF_IMPORTED'||!accepted.has(ref.id))return;
-      const layer=this.renderIndex!.entities.find(e=>e.id===ref.id)!.layer;
+      if(!validSceneRef(ref,scope)||ref.origin!=='DXF_IMPORTED')return;
+      const layer=layerById.get(ref.id);
+      if(layer===undefined)return;
       this.sceneObjects.set(ref.id,{object,baseLocal:object.matrix.clone(),
         baseWorld:object.matrixWorld.clone(),intrinsicVisible:object.visible,layer});
       this.rendererIds.set(object.uuid,ref.id);
