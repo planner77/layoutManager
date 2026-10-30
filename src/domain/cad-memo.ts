@@ -16,6 +16,14 @@ export type MemoDraft = Readonly<{
   textFormat: 'plain';
   createdAt: string;
   updatedAt: string;
+  /** Present only for server-committed records, never a trusted client authorization. */
+  revision?: number;
+  persisted?: true;
+  createdById?: string;
+  updatedById?: string;
+}>;
+export type PersistedMemoDraft=MemoDraft & Readonly<{
+ revision:number;persisted:true;createdById:string;updatedById:string;
 }>;
 
 export const MEMO_MAX_COUNT = 100;
@@ -84,6 +92,25 @@ export class MemoSession {
   }
   get(id: string): MemoDraft | undefined {
     return this.records.get(id);
+  }
+  /** Server response hydration; never called on untrusted browser draft input. */
+  acceptPersisted(record: PersistedMemoDraft, scope: MemoScope): PersistedMemoDraft {
+    this.requireScope(scope);
+    if (!uuidV4.test(record.id) || !this.matches(record) || !record.persisted ||
+        !Number.isSafeInteger(record.revision) || record.revision < 0 ||
+        typeof record.createdById !== 'string' || !record.createdById ||
+        typeof record.updatedById !== 'string' || !record.updatedById ||
+        record.textFormat !== 'plain' || !Number.isFinite(Date.parse(record.createdAt)) ||
+        !Number.isFinite(Date.parse(record.updatedAt))) {
+      throw new Error('서버 메모 데이터가 유효하지 않습니다.');
+    }
+    if(!this.records.has(record.id) && this.records.size>=MEMO_MAX_COUNT)
+      throw new Error('저장된 메모 수가 100개를 초과했습니다.');
+    const txt=normalizeMemoText(record.title,record.content);
+    const safe:PersistedMemoDraft={...record,...txt,anchorWcsXY:assertMemoWcsXY(record.anchorWcsXY),
+      labelOffset:assertMemoWcsXY(record.labelOffset)};
+    this.records.set(record.id,safe);
+    return safe;
   }
   create(input: { id: string; anchorWcsXY: MemoWcsXY; title: string; content: string }, scope: MemoScope): MemoDraft {
     this.requireScope(scope);
