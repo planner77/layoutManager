@@ -1,3 +1,10 @@
+## #85/#86 M4/M5 integration (2026-10-31) — PR CI pending
+
+- M4 Tree ported from old partial #148 onto latest M2/M3. New empty Greenfield-only CadMemoGroup/CadMemoFeature. Group/member/visibility/settings writes G7 Site+Memo Owner+Revision CAS+Audit; Reader hide session only. Historical installed DB must not auto ALTER/adopt.
+- [Issue #85/#86 design](out/Issues85-86.md); old PR #148 does not supersede M2/M3. PR CI launch only; no CI monitoring, Main merge, GHCR, issue close or runtime Writer GO.
+
+---
+
 ## #84/#167 PR #173 정식 v0.47.2 Release 증거 및 후속 경계 (2026-10-31)
 
 - 최신 [FailureLedger](out/FailureLedger.md) `v0.47.2 Pair GHCR 최종 게시 SUCCESS`와 [Main CI #95](https://github.com/planner77/layoutManager/actions/runs/41131717206) 두 Job SUCCESS·tag `v0.47.2` commit `59068a62ad8bb4e90b9d016ed0ddc0e6ae639ab7`·App `sha256:45d6df2cdb2100d2cf6b20264f0a39bc407938902b1490492c4c5a29036a5c06`/Migrator `sha256:77841b57e0e44b80b914beacedb02e4ce81bef2d0acb4524c545a19d6e47d6ad`가 실제 배포 이미지 쌍의 식별자다. 기존 `:0.47.1` tag/digest는 절대 이동하지 않고 새 `:latest[-migrate]`만 워크플로의 성공한 pair promotion에서 승격한다.

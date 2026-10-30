@@ -1,3 +1,11 @@
+## #85/#86 M4/M5 — pre-PR-CI failure ledger (2026-10-31)
+
+- Existing open Draft PR #148 only implemented session M4 over old M1. Rebase/merge onto latest M2/M3 would overwrite newer server persistence, anchors or Viewer. Corrective action: clean branch from Main `870d3cf0a4f8e42d2e5c4132076d3b7ab9c52089`, selectively port domain/Tree/reducer/shell/tests; old PR #148 had zero unresolved review threads when checked.
+- Historic CAD_BUSINESS_DDL/CAD_ANCHOR_DDL/schema fingerprints kept unchanged; new empty G7-only M4/M5 sidecars. Old M2 readable, unsupported M4/M5 write explicit 503. No operational volume modification.
+- Preliminary GitHub Git-object scripts rejected ambiguous code replacements before remote commit, corrected and safely committed. This was not a PR CI failure. Local Typecheck/Prisma/Next/E2E/Docker jobs not run in connector-only session. PR CI result **NOT VERIFIED** and not to be claimed SUCCESS. See [Design](Issues85-86.md).
+
+---
+
 ## #84/#167 PR #173 — v0.47.2 App/Migrator Pair GHCR 최종 게시 SUCCESS (2026-10-31 KST)
 
 - **릴리스/이미지 최신 실증:** [Main CI #95 / Run 41131717206](https://github.com/planner77/layoutManager/actions/runs/41131717206) `completed/success` 정확 HEAD [`59068a62ad8bb4e90b9d016ed0ddc0e6ae639ab7`](https://github.com/planner77/layoutManager/commit/59068a62ad8bb4e90b9d016ed0ddc0e6ae639ab7), release-scope Job `124324008108` SUCCESS 및 GHCR Build/push Job `124324087630` SUCCESS. GHCR Log: `Publish version image: true`; `Published version pair: ghcr.io/planner77/layoutmanager:0.47.2 and ghcr.io/planner77/layoutmanager:0.47.2-migrate`. App `:0.47.2` `sha256:45d6df2cdb2100d2cf6b20264f0a39bc407938902b1490492c4c5a29036a5c06`, Migrator `:0.47.2-migrate` `sha256:77841b57e0e44b80b914beacedb02e4ce81bef2d0acb4524c545a19d6e47d6ad` (OCI SHA-256). `Promote paired release images after both candidates succeed` 단계에서 `:latest`/`:latest-migrate` alias 함께 정식 승격, published layer measurement 성공. Annotated Git tag `v0.47.2` 대상 `59068a62ad8bb4e90b9d016ed0ddc0e6ae639ab7` 정확 일치.
