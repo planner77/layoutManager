@@ -130,6 +130,7 @@ export function CadViewer({
     memoDragActive.current = false;
     setMemoCancelSignal(previous => previous + 1);
     setMemos([]);
+    setMemoServerMode('checking');
     setMemoPlacing(false);
     setMemoCandidate(null);
     setMemoSelectedId(null);
