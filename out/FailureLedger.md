@@ -991,3 +991,8 @@
 ## #164/#165 Root 최종 시험 보완 (2026-10-30)
 
 - 신규 프로세스 복원 test-only subprocess env에서 Next의 ProcessEnv 필수 `NODE_ENV` 누락으로 Typecheck TS2769가 발생했다. 명시적인 `NODE_ENV=test`를 추가하고 최소 합성 환경변수만 전달했다. 후속 Typecheck PASS, ESLint PASS(기존 6 warnings); 전체 631 PASS 뒤 추가한 테스트의 별도 10 PASS와 구분한다.
+
+
+## #164/#165 Git 게시 인증 경로 (2026-10-30)
+
+- Root 일반 `git push`가 저장 인증 오류로 거부되었다. Token·credential URL은 출력하지 않았으며 `.env` 지정 remote와 연결 도구의 대상 저장소가 일치함을 확인했다. 연결된 GitHub Git-object API로 검증 tree를 게시하고 원격 tree SHA를 로컬과 대조하는 경로를 사용한다. 이 인증 오류는 코드/PR CI 실패가 아니며 PR CI는 결과 확인 전 NOT VERIFIED다.
