@@ -8,19 +8,19 @@ import { BusinessRepository, requireBusinessWrite } from '@/server/cad-business/
 export const runtime='nodejs';
 type Params={params:Promise<{versionId:string}>};
 export async function GET(request:Request,{params}:Params){
- const log=new RequestLogContext(request,'api','business_KIND_list');
+ const log=new RequestLogContext(request,'api','business_memo_list');
  let ctx:ReturnType<typeof sceneReadContext>|undefined;
  try{
   const id=validateId((await params).versionId);
   ctx=sceneReadContext(request);
   if(ctx.gate.state!=='ACTIVE')throw new CadError('BUSINESS_AUTH_REQUIRED','로그인이 필요합니다.',401);
-  await requireSceneRead(request,ctx.repo.db,id,ctx.gate,'ACTION');
-  const result=await new BusinessRepository(ctx.repo.db).list('KIND',id);
+  await requireSceneRead(request,ctx.repo.db,id,ctx.gate,'memo:read');
+  const result=await new BusinessRepository(ctx.repo.db).list('memo',id);
   log.completed(200);return Response.json(result,{headers:log.responseHeaders({'Cache-Control':'private, no-store'})});
  }catch(error){return failure(error,{request:log});}finally{await ctx?.close();}
 }
 export async function POST(request:Request,{params}:Params){
- const log=new RequestLogContext(request,'api','business_KIND_create');
+ const log=new RequestLogContext(request,'api','business_memo_create');
  const id=(await params).versionId;
  let ctx:ReturnType<typeof cadWriteContext>|undefined;
  try{
@@ -29,7 +29,7 @@ export async function POST(request:Request,{params}:Params){
   const body=await boundedJson(request,524288);
   ctx=cadWriteContext(proof);
   const repo=new BusinessRepository(ctx.repo.db);
-  const result=await repo.CREATE(id,body,proof);
+  const result=await repo.createMemo(id,body,proof);
   log.completed(201);return Response.json(result,{status:201,headers:log.responseHeaders({'Cache-Control':'private, no-store'})});
  }catch(error){
   try{await recordG7WriteFailure(request,log.requestId,'VERSION',id,error);}
