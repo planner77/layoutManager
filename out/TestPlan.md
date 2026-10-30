@@ -1,3 +1,15 @@
+## #84 M3 + #167 S6 합성 회귀 계획 (2026-10-31)
+
+- M3-U1: WCS local (2,1), world(12,21)→Translate(3,-5)→(15,16), Rotate 90°, inverse/round-trip, 범위 초과/특이 행렬 거부.
+- M3-I1: 신규 Greenfield CadMemoAnchor FK·불변 Version/SHA/PK·NULL origin 차단/BROKEN one-way trigger. 구 business baseline hash 유지, 이전 설치 자동 Migration 차단.
+- M3-I2: Owner/Site/Version/SHA/SceneRevision CAS, 유효 server UUID/CANONICAL refs만 attach; 다른 작성자/Reader/위조 target/다른 Version/CSRF 차단. Outline Move/Rotate/Delete→종속 Memo WCS/revision/BROKEN/append-only Audit 한 transaction, 감사 실패 rollback.
+- S6-U1: SceneWork.reset 시 immutable imported ref, 변경된 transform/visibility/Undo/Redo 복원, APP_CREATED Document/Memo 보존.
+- S6-I1: SOURCE_ONLY vs ALL 구분, 정확 Live IDs+revision snapshot, 100개 상한/중복/누락/stale/다른 Version에 400/409; 전체 Owner 검증 실패 시 **0행 변경**, 모든 행 soft delete+Audit 원자 거래. Source-only SOURCE Memo만 BROKEN/last WCS 유지.
+- S6-E2E: 작업 메뉴 두 실제 명령/Version·수량 확인/취소/Enter/Esc, 기존 Render/Generated selection 및 Scene load 회귀. 신규 테스트 `tests/unit/memo-anchor-origin-reset.test.ts`, `tests/integration/g7-greenfield.test.ts`.
+- 실제 실행 전 PASS 주장 금지; PR CI는 Typecheck/Lint/Unit/Integration/Production Build/Chromium/Docker Compose Smoke. 실 CAD·2PC·Owner Field Acceptance #113/#96 별도.
+
+---
+
 ## #98/#83 CI #314 server-only 단위 테스트 import 재발 방지 (2026-10-30)
 
 - **TC-PR171-R314-001:** `tests/unit/cad-business-contract.test.ts`는 `BusinessRepository` 및 `server-only` 직접/전이 value import 하지 않고 Vitest 수집/실행 가능. `memoEditOperation`은 PATCH `text|move` 수용, `delete/DELETE/rename/undefined/null` 400 거부; DELETE route-only `remove=true`는 delete 반환; 서비스 호출/감사 응답 결속 검사.
