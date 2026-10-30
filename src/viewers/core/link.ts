@@ -23,10 +23,14 @@ export function parseMemoLinkId(value:unknown):string|null {
     throw new TypeError('메모 링크 ID가 올바르지 않습니다.');
   return value.toLowerCase();
 }
+export function cadMemoViewerPath(versionId:string,memoId:string):string{
+  if(!MEMO_LINK_UUID.test(versionId)||!MEMO_LINK_UUID.test(memoId))
+    throw new TypeError('영속 Version/메모 UUID가 필요합니다.');
+  return '/cad/versions/'+encodeURIComponent(versionId)+'/viewer?renderer=three-dxf-viewer&memo='+encodeURIComponent(memoId.toLowerCase());
+}
 export function cadMemoViewerUrl(origin:string,versionId:string,memoId:string):string{
   if(!MEMO_LINK_UUID.test(versionId)||!MEMO_LINK_UUID.test(memoId))
     throw new TypeError('영속 Version/메모 UUID가 필요합니다.');
-  const url=new URL(cadViewerUrl(origin,versionId,'DXF','three-dxf-viewer'));
-  url.searchParams.set('memo',memoId.toLowerCase());
+  const url=new URL(cadMemoViewerPath(versionId,memoId),new URL(cadViewerUrl(origin,versionId,'DXF','three-dxf-viewer')).origin);
   return url.toString();
 }

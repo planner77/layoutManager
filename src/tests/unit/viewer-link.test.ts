@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { cadViewerUrl, cadMemoViewerUrl, parseMemoLinkId } from '../../viewers/core/link';
+import { cadViewerUrl, cadMemoViewerUrl, cadMemoViewerPath, parseMemoLinkId } from '../../viewers/core/link';
 
 describe('TC-LINK-001: canonical version viewer links', () => {
   test('uses only the current browser origin and an immutable encoded version path', () => {
@@ -34,6 +34,7 @@ describe('#88 M6: immutable, allowlisted memo links',()=>{
     expect(cadMemoViewerUrl('http://cad.example/bad?token=abc',version,memo))
       .toBe('http://cad.example/cad/versions/'+version+'/viewer?renderer=three-dxf-viewer&memo='+memo);
     expect(parseMemoLinkId(memo.toUpperCase())).toBe(memo);
+    expect(cadMemoViewerPath(version,memo)).toBe('/cad/versions/'+version+'/viewer?renderer=three-dxf-viewer&memo='+memo);
   });
   test('rejects draft, repeated, malformed and path-injection values',()=>{
     expect(parseMemoLinkId(undefined)).toBeNull();
