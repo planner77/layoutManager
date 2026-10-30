@@ -1,3 +1,14 @@
+## PR #169 — 2차 PR CI #41002720029 Unit/Integration 실패 및 세션 테스트 수정 (2026-10-30 KST)
+
+- **실패 Run:** [PR CI #41002720029](https://github.com/planner77/layoutManager/actions/runs/41002720029), PR HEAD `76af1d3587442b5f7a85c621e3bc024c9e8c00ae`, `completed/failure`. Verify [Job #123890589503](https://github.com/planner77/layoutManager/actions/runs/41002720029/job/123890589503)에서 TypeScript·ESLint **SUCCESS**, Unit/Integration **90 files 중 89 PASS/1 FAIL, 633 tests 중 632 PASS/1 FAIL**. 실패 테스트 `src/tests/integration/scene-persistence.test.ts:171`, `authorized status and content GET refresh idle activity; denied, expired and revoked reads never touch`: 직접 `authSession.update({issuedAt:old,lastSeenAt:old})` 호출이 Prisma `P2003` / SQLite Trigger `G1_SESSION_IMMUTABLE_OR_EXPIRED`로 거부됨. 이후 OCI/DXF Benchmark, Production Build 및 모든 E2E는 **SKIPPED**, PASS가 아님.
+- **독립 Docker [Job #123890589276](https://github.com/planner77/layoutManager/actions/runs/41002720029/job/123890589276): SUCCESS**. Baseline/후보 이미지 빌드·패키징·Greenfield Compose 첫 설치·Admin·CAD 및 재시작 smoke 통과. Docker의 성공을 Verify/E2E 성공으로 확대 해석하지 않음.
+- **직접 원인:** 최신 P2 'Scene 읽기가 idle 활동을 연장해야 함'을 보완하며 추가한 **테스트 준비 코드**가 G1 Session의 보안 불변식과 충돌. 발급 시각/만료시각은 immutable, `lastSeenAt`은 뒤로 이동하거나 idle 유효기간 이상 앞으로 점프할 수 없으며 이것이 정상 DB 정책. Scene 제품 API/저장 실패로 단정할 증거 없음.
+- **보완:** G1 Trigger/Schema·세션 유휴/폐기·권한 규칙은 **일절 완화하지 않음**. 실제 승인된 Editor 세션으로 기존 Scene을 게시한 뒤, 별도의 Reader 사용자/사이트 권한 및 각기 독립적인 `newSessionCandidate(userId,issuedAt)`를 생성해 **발급 시각부터** '유휴 직전/만료' fixture를 준비. 정상 Scene status/content GET은 `lastSeenAt` 증가 및 `issuedAt` 불변을 확인하고, Site 거부·idle 만료·revoked는 403/401 및 `lastSeenAt` 무변경을 검증. 기존 session row의 `issuedAt` 변조·`lastSeenAt` 역행 UPDATE를 제거하고 각 시나리오를 독립 세션으로 분리, 원본 Actor/Scope/감사 정책은 유지.
+- **리뷰/메인 충돌:** [PR #169](https://github.com/planner77/layoutManager/pull/169) Codex P2 Session refresh 및 legacy Renderer URL 관련 스레드 `PRRT_kwDOUQjDfc6x1zzg`, `PRRT_kwDOUQjDfc6x1zzl`은 두 건 모두 실제 조회에서 **Resolved**, 미해결 **0**. PR `mergeable=true`; Main `0e6e91c00a90041f39034788dbd7cb6d770af8aa`은 기존 PR HEAD의 공통 조상이며 비교 `behind=0/ahead=3`; 현재 **충돌/미반영 Main 변경 없음**. 불필요한 force/rebase 없이 현재 PR branch에 단일 정상 커밋 추가.
+- **검증 구분:** 아래 수정 커밋 전 현재 대화에서는 저장소 전체 npm/Prisma/Typecheck/Lint/Vitest/Browser를 로컬 실행한 증거가 없음. 새로운 PR synchronize CI가 실제 시작된 뒤에도 결과 모니터링은 사용자 요청에 따라 하지 않고 **NOT VERIFIED**로 유지. 첫 CI #41000086668의 구 HEAD 성공, 이번 실패 #41002720029와 새로운 HEAD의 결과를 혼동하거나 과거 실패를 삭제하지 않음. Main 병합/GHCR/이슈 종료/운영 DB·CAD·Scene Storage 작업은 수행하지 않음.
+
+---
+
 ## PR #169 — CI 성공 후 Codex P2 2건 보완 및 새 HEAD 게이트 (2026-10-30 KST)
 
 - **기존 성공은 보존:** [PR CI #41000086668](https://github.com/planner77/layoutManager/actions/runs/41000086668)는 HEAD `92d4909233296f9e25a51321df8bf9a1ed52dd21`에서 Verify와 Docker 2개 Job 모두 completed/SUCCESS. 이는 *리뷰 지적 보완 이전* 코드에 대한 성공으로, 새 커밋의 CI PASS를 의미하지 않는다.

@@ -93,6 +93,24 @@ function payload(versionId:string,sha:string,sourceUnit='UNSPECIFIED'){
   return {bytes,manifest};
 }
 
+/**
+ * Create independent, timestamped synthetic sessions without rewriting an
+ * existing G1 AuthSession. Its trigger forbids changing issuedAt or rolling
+ * lastSeenAt backwards, even when the attempted change is test-only.
+ */
+async function sceneReaderAt(f:Awaited<ReturnType<typeof setup>>,issuedAt:number){
+  const userId=randomUUID(),session=newSessionCandidate(userId,issuedAt);
+  await f.db.user.create({data:{id:userId,loginName:'scene-reader-'+userId,
+    passwordHash:'test-hash',status:'ACTIVE',mustChangePassword:false,
+    createdAt:BigInt(issuedAt),updatedAt:BigInt(issuedAt)}});
+  await f.db.userRoleGrant.create({data:{userId,role:'Reader',grantedAt:BigInt(issuedAt)}});
+  await f.db.userSiteGrant.create({data:{userId,siteId:f.siteId,grantedAt:BigInt(issuedAt)}});
+  await f.db.authSession.create({data:{id:session.session.id,userId,
+    tokenHash:session.session.tokenHash,issuedAt:BigInt(issuedAt),
+    lastSeenAt:BigInt(issuedAt),expiresAt:BigInt(session.session.expiresAt)}});
+  return {id:session.session.id,userId,token:session.rawToken,issuedAt:BigInt(issuedAt)};
+}
+
 describe('#164 Scene S3 immutable persistence',()=>{
   test('route rejects OFF writes, Reader and missing Site; active read uses session without write CSRF',async()=>{
     const f=await setup(),value=payload(f.versionId,f.sha);
@@ -160,37 +178,41 @@ describe('#164 Scene S3 immutable persistence',()=>{
     const f=await setup(),value=payload(f.versionId,f.sha);
     const ready=await f.repo.publish(f.versionId,value.manifest,value.bytes,null,f.proof);
     const url='https://cad.example.test/api/cad-files/'+f.versionId+'/scene';
-    const read=()=>getScene(new Request(url,{headers:{host:'cad.example.test',
-      cookie:'cad_session='+f.session.rawToken}}),{params:Promise.resolve({versionId:f.versionId})});
-    const readContent=()=>getSceneContent(new Request(url+'/content?assetId='+ready.assetId,{
-      headers:{host:'cad.example.test',cookie:'cad_session='+f.session.rawToken}}),
+    type Reader=Awaited<ReturnType<typeof sceneReaderAt>>;
+    const status=(reader:Reader)=>getScene(new Request(url,{headers:{host:'cad.example.test',
+      cookie:'cad_session='+reader.token}}),{params:Promise.resolve({versionId:f.versionId})});
+    const content=(reader:Reader)=>getSceneContent(new Request(url+'/content?assetId='+ready.assetId,{
+      headers:{host:'cad.example.test',cookie:'cad_session='+reader.token}}),
       {params:Promise.resolve({versionId:f.versionId})});
-    const old=BigInt(Date.now()-SESSION_IDLE_MS+60_000);
-    const sessionId=f.session.session.id;
-    const record=()=>f.db.authSession.findUniqueOrThrow({where:{id:sessionId}});
-    await f.db.authSession.update({where:{id:sessionId},data:{issuedAt:old,lastSeenAt:old}});
-    expect((await read()).status).toBe(200);
-    expect((await record()).lastSeenAt).toBeGreaterThan(old);
+    const record=(reader:Reader)=>f.db.authSession.findUniqueOrThrow({where:{id:reader.id}});
+    // Create each session with its intended age. G1 correctly forbids both
+    // changing issuedAt and moving lastSeenAt backwards on an existing row.
+    const nearIdle=()=>sceneReaderAt(f,Date.now()-SESSION_IDLE_MS+120_000);
 
-    await f.db.authSession.update({where:{id:sessionId},data:{lastSeenAt:old}});
-    expect((await readContent()).status).toBe(200);
-    expect((await record()).lastSeenAt).toBeGreaterThan(old);
+    const forStatus=await nearIdle();
+    expect((await status(forStatus)).status).toBe(200);
+    expect((await record(forStatus)).lastSeenAt).toBeGreaterThan(forStatus.issuedAt);
+    expect((await record(forStatus)).issuedAt).toBe(forStatus.issuedAt);
 
-    await f.db.userSiteGrant.delete({where:{userId_siteId:{userId:f.userId,siteId:f.siteId}}});
-    await f.db.authSession.update({where:{id:sessionId},data:{lastSeenAt:old}});
-    expect((await read()).status).toBe(403);
-    expect((await record()).lastSeenAt).toBe(old);
-    await f.db.userSiteGrant.create({data:{userId:f.userId,siteId:f.siteId,grantedAt:BigInt(Date.now())}});
+    const forContent=await nearIdle();
+    const response=await content(forContent);
+    expect(response.status).toBe(200);
+    expect(Buffer.from(await response.arrayBuffer())).toEqual(value.bytes);
+    expect((await record(forContent)).lastSeenAt).toBeGreaterThan(forContent.issuedAt);
 
-    const idle=BigInt(Date.now()-SESSION_IDLE_MS-1000);
-    await f.db.authSession.update({where:{id:sessionId},data:{lastSeenAt:idle}});
-    expect((await read()).status).toBe(401);
-    expect((await record()).lastSeenAt).toBe(idle);
+    const denied=await nearIdle();
+    await f.db.userSiteGrant.delete({where:{userId_siteId:{userId:denied.userId,siteId:f.siteId}}});
+    expect((await status(denied)).status).toBe(403);
+    expect((await record(denied)).lastSeenAt).toBe(denied.issuedAt);
 
-    await f.db.authSession.update({where:{id:sessionId},data:{
-      lastSeenAt:old,revokedAt:BigInt(Date.now())}});
-    expect((await read()).status).toBe(401);
-    expect((await record()).lastSeenAt).toBe(old);
+    const idleExpired=await sceneReaderAt(f,Date.now()-SESSION_IDLE_MS-1_000);
+    expect((await status(idleExpired)).status).toBe(401);
+    expect((await record(idleExpired)).lastSeenAt).toBe(idleExpired.issuedAt);
+
+    const revoked=await nearIdle();
+    await f.db.authSession.update({where:{id:revoked.id},data:{revokedAt:BigInt(Date.now())}});
+    expect((await status(revoked)).status).toBe(401);
+    expect((await record(revoked)).lastSeenAt).toBe(revoked.issuedAt);
   });
   test('publish, reopen, idempotent retry, replacement CAS and old immutable content',async()=>{
     const f=await setup(),first=payload(f.versionId,f.sha);
