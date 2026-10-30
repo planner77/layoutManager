@@ -1,5 +1,15 @@
 # CAD Web Viewer P.O.C.
 
+## 0.46.0 후보 — Scene Asset 저장과 Scene 우선 조회 (#164/#165)
+
+DXF를 명시적으로 변환한 뒤 **도면 → Scene Asset 저장**으로 파생 Scene을 게시합니다. 신규 Scene Schema에서 저장된 READY 도면을 다시 열면 원본 DXF를 다운로드하거나 파싱하지 않고 검증된 Scene과 문자 검색 정보를 복원합니다. 저장 Scene이 없거나 손상·비호환이면 상태를 표시하고, **도면 → 원본 DXF로 Scene 생성/재생성**을 선택한 경우에만 원본을 변환합니다. 기존 dxf-viewer 조회는 원본을 사용하는 레거시 경로입니다.
+
+저장은 기존 로그인·사업장 쓰기 권한·G7 승인 및 revision 검사를 따릅니다. Scene bytes는 Local 또는 설정된 S3에 immutable로 보관하며 검증 후 현재 Scene pointer와 Audit을 함께 확정합니다. APP_CREATED 외곽선과 메모의 별도 서버 저장/재접속 복원은 #98/#83 후속이며 현재 세션 편집 결과가 Scene Asset에 함께 저장되지는 않습니다.
+
+신규 Schema는 빈 Greenfield 설치용 후보이고 기존 운영 DB를 자동으로 변경하지 않습니다. 현재 개발 검증·PR 후보이며 CI/현장 수용·배포 완료를 뜻하지 않습니다. 실제 시험/한계는 [TestReport](out/TestReport.md), 사용·상태·저장소 경계는 [Operation](out/Operation.md), DB 기준은 [Database](out/Database.md)를 따릅니다.
+
+---
+
 ## 0.45.0 후보 — CAD Scene 계약·Origin 및 직렬화 실험 (#161–#163)
 
 DXF 변환 직후 실제 Three 렌더 트리에 `DXF_IMPORTED`와 앱 관리 ID를 부여하고, 생성 외곽선은 기존 `GENERATED` 선택 계약을 유지하면서 `APP_CREATED` 참조를 갖습니다. ID는 renderer UUID와 분리하며 같은 Version/source·변환기·schema·tree 경로에서 재현됩니다. 원본 Handle이 없는 개체도 ID를 얻지만 정밀 Entity 연결을 임의로 만들지 않습니다.

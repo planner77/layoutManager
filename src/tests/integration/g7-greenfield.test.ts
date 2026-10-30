@@ -10,7 +10,9 @@ import { issueGreenfieldAuthority } from '../../server/g7-operational/greenfield
 import { resolveG7RuntimeGate, resolveG7RuntimeMigrationAuthority } from '../../server/g7-operational/runtime-gate';
 import { assertG7RuntimeSchema, G7_RUNTIME_MIGRATION_CHECKSUMS } from '../../server/g7-operational/runtime-db';
 import { executeG7RuntimeAdmin } from '../../server/g7-operational/runtime-admin';
-import { G7_GREENFIELD_BASELINE } from '../../server/g7-operational/greenfield-schema';
+import { G7_GREENFIELD_BASELINE, G7_GREENFIELD_SCHEMA_ID,
+  G7_OLD_GREENFIELD_BASELINE, G7_OLD_GREENFIELD_BASELINE_CHECKSUM,
+  G7_DELETE_PASSWORD_TRIGGERS,assertG7GreenfieldSchema } from '../../server/g7-operational/greenfield-schema';
 
 const Sqlite=createRequire(import.meta.url)('better-sqlite3') as new(
   file:string,options?:{readonly?:boolean;fileMustExist?:boolean}
@@ -56,7 +58,7 @@ function owner(f:ReturnType<typeof fresh>,sites:readonly string[]) {
     G7_RUNTIME_APPROVAL_PATH:path.join(out,'runtime-approval.json'),
     G7_RELEASE_VERSION:packageInfo.version,G7_RELEASE_SOURCE_COMMIT:release.sourceCommit,
     G7_RELEASE_CAPABILITY:'G7-GREENFIELD-AUTH-V1',
-    G7_RELEASE_SCHEMA_ID:'G7-GREENFIELD-20261029-1',
+    G7_RELEASE_SCHEMA_ID:G7_GREENFIELD_SCHEMA_ID,
     G7_RELEASE_APP_DIGEST:release.appDigest,G7_RELEASE_MIGRATOR_DIGEST:release.migratorDigest};
   return {env,input,out,key,config,sites};
 }
@@ -116,9 +118,29 @@ describe('#153 empty Greenfield installation without prior data or migration rep
       }
       // This demonstrates why the separate Greenfield mode cannot fall
       // through to the pre-existing seven-history compatibility validator.
-      expect(()=>assertG7RuntimeSchema(db as never)).not.toThrow();
+      expect(()=>assertG7RuntimeSchema(db as never)).toThrow('G7_RUNTIME_SCHEMA_DRIFT');
     }finally{db.close();}
     expect(resolveG7RuntimeGate(x.env)).toMatchObject({state:'BLOCKED'});
+  });
+
+  test('old exact one-row baseline remains accepted separately, but cannot claim Scene tables',()=>{
+    const f=fresh();
+    const db=new Sqlite(f.dbfile);
+    try{
+      for(const name of Object.keys(G7_RUNTIME_MIGRATION_CHECKSUMS)){
+        const sql=readFileSync(new URL('../../deploy/g7-s3/prisma/migrations/'+name+'/migration.sql',import.meta.url),'utf8');
+        db.exec(sql);
+      }
+      for(const sql of G7_DELETE_PASSWORD_TRIGGERS)db.exec(sql);
+      db.exec('CREATE TABLE "_prisma_migrations"("id" TEXT NOT NULL PRIMARY KEY,"checksum" TEXT NOT NULL,"finished_at" TEXT,"migration_name" TEXT NOT NULL,"logs" TEXT,"rolled_back_at" TEXT,"started_at" TEXT NOT NULL,"applied_steps_count" INTEGER NOT NULL DEFAULT 0)');
+      const now=new Date().toISOString();
+      db.prepare('INSERT INTO "_prisma_migrations"(id,checksum,finished_at,migration_name,logs,rolled_back_at,started_at,applied_steps_count) VALUES(?,?,?,?,NULL,NULL,?,1)')
+        .run('old',G7_OLD_GREENFIELD_BASELINE_CHECKSUM,now,G7_OLD_GREENFIELD_BASELINE,now);
+      expect(()=>assertG7GreenfieldSchema(db as never)).not.toThrow();
+      expect(()=>assertG7RuntimeSchema(db as never)).not.toThrow();
+      db.exec('CREATE TABLE "UnknownScene" (id TEXT)');
+      expect(()=>assertG7GreenfieldSchema(db as never)).toThrow('G7_GREENFIELD_SCHEMA_DRIFT');
+    }finally{db.close();}
   });
 
   test('first Admin setup is one-shot; approval renewal is signed and independent of any snapshot',async()=>{

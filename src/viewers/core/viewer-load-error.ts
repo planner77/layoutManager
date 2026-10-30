@@ -1,4 +1,4 @@
-export type ViewerLoadStage = 'source' | 'adapter-init' | 'adapter-load';
+export type ViewerLoadStage = 'source' | 'scene' | 'adapter-init' | 'adapter-load';
 export const DWG_ADAPTER_LOAD_MESSAGES = {
   DWG_SIZE: 'DWG Viewer는 현재 0보다 크고 20 MiB 이하인 파일만 처리합니다.',
   DWG_HEADER: '지원하지 않거나 손상된 DWG 헤더입니다.',

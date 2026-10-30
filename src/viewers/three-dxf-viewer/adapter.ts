@@ -6,6 +6,13 @@ import type { CadViewerAdapter } from '../core/adapter';
 import { explicitElevation } from './normalize';
 import {sceneScope,sourceUnitFromDxf,tagImportedTree,tagAppTree} from './scene-tags';
 import type {SceneAsset} from '../../domain/cad-scene';
+import type {ReadyScene} from '../core/source';
+import type {SceneArtifact} from '../core/adapter';
+import {serializeSourceScene,restoreSourceScene,storedSceneViewerData} from './scene-serialization';
+import {extractDxfText,type CadTextIndex} from '../core/text-index';
+import {sceneOutlineProjection} from './scene-projection';
+import {sceneSha256} from '../../domain/scene-digest';
+import {ViewerLoadError} from '../core/viewer-load-error';
 import {SelectionController,type SelectionMode} from './selection-controller';
 import {reconcileRenderCoverage,type RenderObservation,type RenderCoverage} from './render-coverage';
 import type {DxfOutlineIndex,OutlineEntity,OutlineKind,OutlinePath} from '../core/outline-geometry';
@@ -41,6 +48,8 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
   private resize: ResizeObserver;
   private object?: THREE.Group;
   private sceneAsset?:SceneAsset;
+  private sceneArtifact?:SceneArtifact;
+  private sceneTextIndex?:CadTextIndex;
   private disposed = false;
   private cancel?: () => void;
   private bounds = new THREE.Box3();
@@ -77,6 +86,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
   private computeSequence=0;
   constructor(private container: HTMLElement, private outline?:{
     versionId:string;sourceSha256:string;
+    prepareScene?:boolean;
     onSelection?:(entities:OutlineEntity[])=>void;
     onObjectSelection?:(refs:CanvasObjectRef[])=>void;
     onPreview?:(result:OutlineResult|null,error?:string)=>void;
@@ -127,6 +137,8 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     this.camera.updateProjectionMatrix();this.render();
   };
   async load(source: ArrayBuffer) {
+    if(this.outline?.prepareScene&&sceneSha256(new Uint8Array(source))!==this.outline.sourceSha256)
+      throw new ViewerLoadError('scene','SOURCE_DIGEST_MISMATCH','수신한 DXF 바이트와 Version 체크섬이 다릅니다. Scene 생성을 중단했습니다.');
     const text=new TextDecoder().decode(source);
     if(!/(?:^|\n)\s*0\s*\r?\nSECTION\s*\r?\n/.test(text) || !/(?:^|\n)\s*0\s*\r?\nEOF\s*$/.test(text)) throw new Error('DXF 처리에 실패했습니다. 유효한 ASCII DXF인지 확인해주세요.');
     const url=URL.createObjectURL(new Blob([explicitElevation(text)]));
@@ -193,11 +205,42 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
           this.indexError=error instanceof Error?error.message:'객체 선택 인덱스를 만들 수 없습니다.';
         }
       }
+      if(this.outline?.prepareScene&&this.sceneAsset){
+        this.sceneArtifact=await serializeSourceScene(object,this.sceneAsset,'CUSTOM_DTO',{textIndex:extractDxfText(source)});
+        if(this.disposed)throw new DOMException('취소됨','AbortError');
+      }
       return {empty:this.bounds.isEmpty(),entityCount:viewer.lastDXF?.entities?.length,warning:this.indexError?'도면은 표시되었지만 객체 선택 인덱스 생성에 실패했습니다. 레이어 확인·외곽선 작업은 제한됩니다.':undefined};
     } catch(error) {
       if(error instanceof DOMException && error.name==='AbortError') throw error;
       throw new Error('DXF 처리에 실패했습니다. 파일과 글꼴 로드를 확인해주세요.');
     } finally {this.cancel=undefined;URL.revokeObjectURL(url);}
+  }
+  async loadScene(source:ReadyScene){
+    const object=await restoreSourceScene(source.bytes,source.manifest,source.manifest);
+    if(this.disposed){release(object);throw new DOMException('취소됨','AbortError');}
+    this.object=object as THREE.Group;
+    this.scene.add(object);this.bounds.setFromObject(object);
+    if(!this.bounds.isEmpty()&&![...this.bounds.min.toArray(),...this.bounds.max.toArray()].every(Number.isFinite))throw new Error('SCENE_BOUNDS_INVALID');
+    this.sceneTextIndex=storedSceneViewerData(source.bytes)?.textIndex;
+    this.document?.setSourceUnit(source.manifest.scope.sourceUnit);
+    this.index=sceneOutlineProjection(object,source.manifest.scope);
+    this.renderCoverage={selectable:this.index.entities,mappedSource:this.index.entities.length,renderedObjects:this.index.entities.length,unmappedSource:0,boundsMismatch:0,warnings:[]};
+    this.visibleLayers=new Set(this.getLayers());
+    this.selector=new SelectionController(this.renderer.domElement,this.container,this.index.entities,
+      (x,y)=>this.screenToWorld(x,y),this.selectionChanged,
+      pan=>{this.controls.mouseButtons.LEFT=pan?THREE.MOUSE.PAN:THREE.MOUSE.ROTATE;},
+      this.objectSelectionChanged,{
+        begin:ids=>this.beginGeneratedDrag(ids),move:(start,current)=>this.moveGeneratedDrag(start,current),
+        end:(start,current)=>this.endGeneratedDrag(start,current),cancel:()=>this.dropTranslationPreview(),
+      });
+    this.selector.setMode(this.mode);
+    this.fitToView();this.render();
+    return {empty:this.bounds.isEmpty(),entityCount:this.index.entities.length,metrics:{parseMs:0}};
+  }
+  getSceneArtifact(){return this.sceneArtifact;}
+  getSceneTextIndex(){
+    if(!this.sceneTextIndex)throw new Error('이 Scene에 문자 검색 자료가 없습니다. 도면 메뉴에서 명시적으로 재변환하세요.');
+    return this.sceneTextIndex;
   }
   fitToView() {
     this.cancelGeneratedCommand();
@@ -227,11 +270,11 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
   zoomIn() {this.cancelGeneratedCommand();this.camera.zoom=Math.min(1e8,this.camera.zoom*1.25);this.camera.updateProjectionMatrix();this.render();}
   zoomOut() {this.cancelGeneratedCommand();this.camera.zoom=Math.max(1e-8,this.camera.zoom/1.25);this.camera.updateProjectionMatrix();this.render();}
   getLayers() {
-    const names=new Set<string>();this.object?.traverse(o=>{if(typeof o.userData.entity?.layer==='string') names.add(o.userData.entity.layer);});
+    const names=new Set<string>();this.object?.traverse(o=>{const layer=o.userData.cadLayer??o.userData.entity?.layer;if(typeof layer==='string') names.add(layer);});
     return [...names].sort();
   }
   showLayer(name:string,visible:boolean) {
-    this.object?.traverse(o=>{if(o.userData.entity?.layer===name)o.visible=visible;});
+    this.object?.traverse(o=>{if((o.userData.cadLayer??o.userData.entity?.layer)===name)o.visible=visible;});
     if(visible)this.visibleLayers.add(name);else this.visibleLayers.delete(name);
     this.selector?.setVisibleLayers(this.visibleLayers);this.render();
   }
@@ -626,6 +669,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     for(const group of [this.selectionGroup,this.previewGroup,this.savedGroup,this.selectedSavedGroup])if(group)release(group);
     this.savedGroups.clear();this.renderedTransforms.clear();this.document?.dispose();this.document=undefined;
     this.controls.removeEventListener('change',this.cameraChanged);
+    this.sceneArtifact=undefined;this.sceneTextIndex=undefined;
     this.controls.dispose();if(this.object)release(this.object);this.scene.clear();
     this.renderer.dispose();this.renderer.forceContextLoss();this.renderer.domElement.remove();
   }

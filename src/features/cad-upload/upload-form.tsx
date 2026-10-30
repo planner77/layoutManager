@@ -503,6 +503,10 @@ export function UploadForm({ today, maxMb }: { today: string; maxMb: number }) {
             <p className="mt-2">
               등록 ID: <span className="font-mono text-xs">{result.id}</span>
             </p>
+            <Link className="mt-3 mr-4 inline-block underline"
+              href={`/cad/versions/${result.id}/viewer${result.originalFilename.toLowerCase().endsWith('.dxf')?'?source=build':''}`}>
+              {result.originalFilename.toLowerCase().endsWith('.dxf')?'DXF 최초 변환·Scene 생성':'도면 보기'}
+            </Link>
             <a
               className="mt-3 inline-block underline"
               href={`/api/cad-files/${result.id}/content`}

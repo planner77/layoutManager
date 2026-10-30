@@ -1,3 +1,12 @@
+## 0.46.0 후보 — #164/#165 Scene Asset 영속화·Scene-first Viewer
+
+- #168 Scene domain/custom DTO를 재사용하고, typed array·geometry·Origin/ID·Version/source SHA·문자 검색 sidecar를 서버/브라우저에서 검증한다. Local/S3 immutable bytes와 SQLite SceneAsset/CurrentScene CAS·Audit, 실패 후보 추적을 추가한다.
+- 신규 Greenfield exact baseline과 별도 격리 SQL 후보를 추가한다. 기존 7-migration 경로 및 기존 exact baseline은 유지하며 실제 운영 DB에 적용하지 않는다.
+- READY 재진입은 저장 Scene을 복원하고 원본 GET/converter/outline parser를 시작하지 않는다. 명시 변환·저장은 기존 도면 메뉴에 연결하고 missing/corrupt/incompatible 및 기존 레거시 경로를 구분한다.
+- 기존 G7 권한·Site·CSRF·Audit를 재사용한다. APP_CREATED/#98/#83 독립 영속 API, S6 reset, 현장/운영 수용은 포함하지 않는다. 실제 실행 결과·실패 이력은 [TestReport](TestReport.md)/[FailureLedger](FailureLedger.md)를 기준으로 하며 CI 성공 관측 전 AC 완료 처리하지 않는다.
+
+---
+
 ## 0.45.0 후보 — PR #168 Codex P2 Custom DTO 복원 보완
 
 - `scene-custom-dto.ts`에서 정규화된 정수형 BufferAttribute의 원시 저장 타입과 normalized flag를 보존하고 타입·범위·오버플로·지원되지 않는 특수 Attribute를 명시 거부하도록 변경했다. 미기재 type의 구 PoC Custom DTO는 잘못된 결과를 만들지 않고 거부한다.

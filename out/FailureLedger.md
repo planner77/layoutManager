@@ -1,3 +1,28 @@
+## #164/#165 0.46.0 개발 중 관측 실패 (2026-10-30)
+
+이번 원장은 Root의 실제 실행 보고를 기록하며 Manager가 해당 명령을 재실행한 결과가 아니다. 아래 실패를 최종 재검증 성공으로 소급 삭제하지 않는다. PR CI 실패가 아니라 로컬 구현·회귀 실행 이력이다.
+
+1. **TypeScript 제어 흐름:** 신규 pure payload validator에서 `fail():never`를 const arrow로 선언한 뒤 unknown narrowing이 적용되지 않아 최초 Typecheck가 실패했다. function declaration으로 교정했고 Root의 후속 Typecheck **PASS**, Lint **PASS(기존 경고 6개)** 보고를 받았다. 이 결과는 후속 변경 전체 동결 소스의 최종 검증과 별개다.
+2. **실제 S2 Browser PoC:** `SCENE_PAYLOAD_INVALID` groups 검사에서 실패. upstream single-material TEXT ShapeGeometry는 glyph별 materialIndex 1..8을 가지고 있으나 material은 하나이며 Three renderer는 이 경우 groups를 재료 선택에 사용하지 않는다. validator가 모든 mesh에서 `materialIndex < materials.length`를 강제해 지원 가능한 결과를 거부했다. single-material에서 무시되는 index만 허용하도록 교정하고 multi-material index 범위 및 start/count 검사는 유지했다. 합성 debug로 원인을 확인했으며 **실제 PoC 재실행 결과는 보고 전 NOT VERIFIED**.
+3. **기존 7-migration 회귀:** Root 전체 `npm test` 로그 `/tmp/lm-scene-tests.log`에서 `g7-runtime-migration.test.ts` **17개 중 7개 실패**를 보고했다. 신규 Scene SQL을 기존 `deploy/g7-s3/prisma/migrations`에 두어 기존 정확 7개 rehearsal이 8개를 적용한 것이 원인이다. Developer에 candidate SQL을 `deploy/scene-assets`로 격리하고 신규 빈 baseline에서만 명시 load하도록 요청했다. 기존 exact-7 검사를 완화하지 않는다. **수정 후 해당 회귀·전체 시험 재검증 PENDING**.
+
+4. **이동 중 소스의 전체 회귀:** 위 Root 전체 실행은 최종 **20 FAIL / 601 PASS / 88 files**로 끝났다(`/tmp/lm-scene-tests.log`). 실행 중 SQL 경로/테스트가 수정된 snapshot이므로 동결 최종 소스 결과로 사용하지 않는다. 실패 결과 자체는 보존하며 전체 frozen run 재실행이 필요하다.
+5. **후속 확인:** single-material group 교정 후 실제 S2 Scene PoC **1/1 PASS, 41.8초**(Root 보고). 후보 SQL 격리 후 Developer의 Scene/Greenfield **15/15 PASS**, 정확 7-migration/Greenfield/Scene **27/27 PASS**, Typecheck/집중 ESLint PASS 보고를 받았다. Root 후속 집중 **3 files/24 PASS**, 초기 Production Build PASS는 최종 validator 교정 이전 결과다. 최종 전체 Unit/Integration/Build/E2E는 아직 별도이며 앞선 실패를 삭제하지 않는다.
+
+6. **독립 QA 검증 범위 지적:** 최초 QA focused **4 files/22 PASS** 뒤 실제 Audit INSERT failure, HTTP 다른 Version/Site·Origin/CSRF/content authorization, Version 삭제 cleanup의 직접 근거가 부족함을 보고했다. 후속 **3 files/23 PASS**도 최종 전체 수용으로 승격하지 않았다. QA는 처음에 requestId 129자 시험이 `createAuditEvent()`에서 선행 거절된다고 보고했으나, Manager가 실제 호출 경로를 대조한 결과 `appendG7CadAudit`는 `tx.auditEvent.create`를 직접 호출했다. QA는 **선행 거절 진단을 철회**했다. 기존 시험은 SQL CHECK 거절 가능성이 있으며 실패 위치를 확정하지 않았던 것으로 정정한다. 이후 SQLite BEFORE INSERT trigger를 명시 주입하는 더 직접적인 rollback 시험으로 보완했다.
+7. **S3 응답 제한:** Manager/QA가 ContentLength 확인 뒤 unbounded `transformToByteArray()` 호출을 지적했다. Developer는 실제 stream의 byte 수 상한과 oversized 응답 음성 시험을 추가했다. 이것은 검토 단계 발견이며 실 S3 메모리 장애를 관측했다는 뜻이 아니다.
+8. **Migrator 패키징 누락:** SQL을 기존 7-migration 디렉터리 밖으로 격리한 뒤 migrator image에 `deploy/scene-assets`가 COPY되지 않는 것을 Root가 소스 검토로 발견했다. Dockerfile COPY를 추가하고 packaging contract assertion을 보완한다. 실제 image startup 실패로 관측한 것은 아니며 Docker/CI 실행 전 이미지 검증 PASS를 주장하지 않는다.
+
+9. **후속 실행 스냅샷:** Developer 보고로 Root 전체 실행 중 **629 PASS/1 FAIL**은 수정 전 다른-Site fixture를 읽은 실행이다. 이후 잘못된 fixture를 교정한 집중 시험 **14/14 PASS** 및 Typecheck PASS를 보고했다. 이 기록은 최종 전체 재검증 판정을 대신하지 않는다.
+
+10. **Legacy E2E 실행 준비 오타:** 존재하지 않는 `playwright.legacy.config`를 지정한 최초 명령은 테스트 시작 전에 종료됐다. 실제 `playwright.master-migration.config`로 교정한 후 **1/1 PASS, 14.4초**. 제품 assertion 실패가 아니며 미실행을 PASS로 합산하지 않는다.
+
+11. **최종 로컬 재검증:** Root 동결 전체 **90 files/631 PASS, 299.79초**, Production Build **PASS(exit 0)**, Typecheck/Lint PASS(기존 6 warnings), 일반 E2E **94 PASS**, signed Runtime **1 PASS**, Legacy **1 PASS**, 신규 Greenfield **2 PASS**. 이후 test-only 신규 Node process restore를 추가한 집중 **1 file/10 PASS, 5.47초**는 별도 결과다. 독립 QA 최종 **6 files/32 PASS + packaging 9 PASS**를 검토하여 Manager는 **ACCEPT LOCAL SCOPED**로 판정했다. 과거 실패는 보존하며 CI 성공/Issue AC 완료/실 현장 수용/배포 승인으로 승격하지 않는다.
+
+기존 #168 실패/수정·CI·병합 이력은 아래에 보존한다. 이번 #164/#165의 CI/실 DXF/현장/GHCR/운영 migration은 별도이며 미실행을 PASS로 기록하지 않는다.
+
+---
+
 ## PR #168 — P2 최종 해결·PR CI 검증·Squash Main·GHCR 게시 실행 추적 (2026-10-30 KST)
 
 - **최신 Owner 변경:** 앞선 #161~#163 S0~S2 `NO GHCR` 개발 단계 지침에서, 2026-10-30 최신 사용자 요청으로 Main 병합 후 정식 GHCR 게시 **실행을 승인**했다. 이 지시는 Docker Compose 운영 배포/원본 CAD/SQLite Schema·Writer/개인 비공개 현장 데이터 변경이나 DRM H0~H3 검증을 승인하지 않는다.
@@ -961,3 +986,8 @@
 
 - **PR/리뷰·충돌 실제 확인:** 단일 [PR #168](https://github.com/planner77/layoutManager/pull/168), 코드 commit `f907c75409c033b21f8a7231d36d1c46f72171c8`. GitHub tree `d86b42a7e0c7907b9d064d4645201ce7535af9cf`가 로컬 검증 staged tree와 정확히 같음을 확인했다. GitHub 조회의 미해결 리뷰 스레드 **0건**, `mergeable=true`; main `a208cf0623166f5b7a5280e731ae164143f0dc91` 대비 behind **0**, 해결할 충돌 없음. 이는 외부 리뷰 승인이나 CI 성공을 뜻하지 않는다.
 - **최신 HEAD CI 시작 경계:** 이 확인 기록을 포함한 후속 docs commit을 기대 원격 HEAD 검사 및 `force=false`로 전진시키면 `pull_request.synchronize` PR CI가 시작된다. Run 링크/최신 HEAD는 최종 대화 및 PR 본문에 남기고 결과 모니터링은 하지 않는다. CI 결과 **NOT VERIFIED**; 병합·태그·GHCR·운영 DB/API/배포·이슈 종료 미실행.
+
+
+## #164/#165 Root 최종 시험 보완 (2026-10-30)
+
+- 신규 프로세스 복원 test-only subprocess env에서 Next의 ProcessEnv 필수 `NODE_ENV` 누락으로 Typecheck TS2769가 발생했다. 명시적인 `NODE_ENV=test`를 추가하고 최소 합성 환경변수만 전달했다. 후속 Typecheck PASS, ESLint PASS(기존 6 warnings); 전체 631 PASS 뒤 추가한 테스트의 별도 10 PASS와 구분한다.

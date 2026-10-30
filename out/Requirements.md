@@ -1,3 +1,24 @@
+## #164/#165 통합 Scene S3/S4 — 구현 전 요구·수용 게이트 (2026-10-30)
+
+기준 Main `0e6e91c`의 #168 S0/S1/S2 계약을 재사용하여 단일 PR에서 파생 Scene 영속화 후 Scene-first Viewer를 연결한다. 다음 표는 구현 지시이며 실행 결과가 아니다. **CI 성공 관측 전 AC 완료 체크 금지**. #98 CadOutline/#83 Memo 독립 API 구현과 APP_CREATED 영속 복원 통합은 PENDING이며 본 PR이 이를 대신 완료하지 않는다.
+
+| 요구/Issue AC | 이번 구현·수용 범위 | Test Case |
+| --- | --- | --- |
+| SC-S3-01 / AC-S3-01,03 | 기존 Scene scope/Stable ID/Origin 및 CUSTOM_DTO 검증 재사용. Version의 실제 source SHA와 builder/renderer/schema/frame 결속, immutable bytes+manifest·CurrentScene revision CAS, READY 게시 | SC-09,10 |
+| SC-S3-02 / AC-S3-02,05 | Local/Mock S3 prepare→readback verify→DB pointer/audit commit. 실패·stale·중복·동시성에 기존 READY와 원본/업무정보 보존. orphan 추적·유예 GC 계약 및 재시도 | SC-10,11 |
+| SC-S3-03 / AC-S3-04 | 신규 쓰기는 기존 #96 G7 gate/Session/Role/실 Version Site/Origin/CSRF/Audit 재사용. gate OFF에서 익명 쓰기 금지; 잘못된 Scope·권한·byte/schema 입력 거절. APP_CREATED/Memo CRUD 중복 금지 | SC-12 |
+| SC-S3-04 / AC-S3-06 | 신규 Greenfield baseline과 격리 migration/기동 계약. 현행 정확 baseline 호환 분리, 임의 schema drift 허용 금지. 실제 DB에 적용하지 않음 | SC-13 |
+| SC-S4-01 / AC-S4-01,02 | READY Scene 전송·검증·복원 후 Layer/WCS/Fit/Zoom/문자 검색. 새 context/reload에서 original GET=0, converter 호출=0, parseDxfOutlineIndex=0을 각각 관측. renderer UUID 대신 domain ID 사용 | SC-14,15 |
+| SC-S4-02 / AC-S4-03 | missing/corrupt/incompatible/unavailable 상태와 명시 생성·재생성 안내. 자동 원본 다운로드·재파싱·업무정보 삭제 금지. 기존 dxf-viewer의 사용자 명시 fallback 보존 | SC-16 |
+| SC-S4-03 / AC-S4-04,05 | Version/renderer/reload/abort/resize/fullscreen 및 cleanup 회귀; #126/#127/#138 UI 규약. 미지원 source 진단/정밀 선택 기능은 구체적 disabled 사유. APP_CREATED·메모 연결은 기존 책임과 미구현 범위를 표시 | SC-15,16,17 |
+| SC-S4-04 / AC-S4-06 | Typecheck/Lint/Unit/Integration/Build/E2E와 실제 역할/실패 기록 후 단일 PR·CI 시작. 현장 2PC·실 DXF/DRM·배포와 합성 Browser 2context를 구분 | SC-18 |
+
+일반 Scene 읽기는 기존 공개 CAD 정책을 유지하되 G7 AUTH가 활성화된 경우 요청별 Session/Version Site 읽기 권한을 확인한다. 읽기에 쓰기 전용 CSRF·Editor 권한을 강제하지 않는다. 최초 변환/재생성은 명시적 작업이며 client bytes는 미신뢰 입력이다. Manifest SHA 일치는 DXF 기하 동등성·서버 canonical attestation 증명이 아니다.
+
+제외: S5 일반 선택/편집 gate 전환, S6 reset, #98/#83 CRUD/DDL, 병합·GHCR·배포·실 DB/storage/migration 활성화·이슈 종료. #164/#165 전체 AC에서 독립 업무 영속 의존 부분은 잔여로 남긴다.
+
+---
+
 ## #161–#163 CAD Scene S0/S1/S2 — 구현 전 요구·AC (2026-10-30)
 
 최신 Owner #160 정책과 이번 사용자의 **단일 PR** 지시가 과거 독립 PR/전면 Source mapping gate보다 우선한다. S0→S1→S2 순서를 같은 PR 안에서 지킨다. 원본 특정 Entity 재계산에 필요한 검증만 조건부로 유지하며 S5 일반 선택 UI 구현은 후속이다.

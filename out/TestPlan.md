@@ -1,3 +1,24 @@
+## #164/#165 Scene S3/S4 통합 Test Case (2026-10-30, 실행 전)
+
+모든 시험은 합성 DXF/임시 DB/임시 Local 또는 Mock S3만 사용한다. 병렬 브라우저 실행은 고유 port/output/DB 경로를 사용한다. 아래 계획은 PASS 기록이 아니며 최종 CI 성공 전 Issue AC를 완료로 체크하지 않는다.
+
+| TC | 검증과 실패 판정 | 연결 |
+| --- | --- | --- |
+| SC-09 | 기존 SC-01~08 custom DTO/typed array/Origin/ID 회귀; 서버 미신뢰 bytes shape/size/depth/외부 URL/finite geometry/duplicate/ref/Scope 및 sidecar 위조 거부 | AC-S3-01,03,05 |
+| SC-10 | Local 실제 immutable write/readback와 SQLite CAS; 신규 READY/reopen/동일 retry/stale revision/병렬 게시 한 승자; source SHA/Version mismatch 거부 | AC-S3-01,02 |
+| SC-11 | Mock S3 conditional PUT/readback; partial/timeout/hash mismatch/DB commit/Audit failure 주입; 이전 pointer·원본·업무 sentinel 보존, 불확실 후보 추적 및 재시도 계약 | AC-S3-02,06 |
+| SC-12 | Gate OFF/세션 없음/Viewer write/타 Site/타 Version/CSRF·Origin/비활성 actor 거부; 정상 Editor+Site publish; transaction audit와 revision 검사; AUTH active Site read, inactive legacy public read | AC-S3-04 |
+| SC-13 | 합성 기존 exact baseline·신규 Greenfield final baseline·격리 migration 적용/재시작·drift 거부; 실제 runtime DB 미사용; 원본 Current/삭제·audit invariants 회귀 | AC-S3-06 |
+| SC-14 | 실제 합성 DXF를 명시 생성·게시→독립 새 browser context/reload READY 복원; route 관측 content GET=0와 converter/outline parser 호출=0 각각 assertion; cache 우연한 hit 금지 | AC-S4-01 |
+| SC-15 | ID/Origin/WCS/layer/visible/text search/Fit/Zoom·기존 Generated/Memo overlay 계약; renderer UUID 교체 후 stable refs; 2 context 및 Version/renderer 전환, cancellation late result 차단 | AC-S4-02,04 |
+| SC-16 | missing/corrupt/schema/builder mismatch/network unavailable의 명시 안내 및 자동 content GET/parse=0, 명시 dxf-viewer fallback만 원본 허용; failed restore의 GPU/listener/Worker cleanup | AC-S4-03,04 |
+| SC-17 | #126 fallback/#127 메뉴/#138 panel·resize/fullscreen/accessibility 회귀; source 정밀 기능·독립 업무 영속 미지원 사유를 UI/문서와 일치 | AC-S4-05 |
+| SC-18 | 전체 Typecheck/Lint/Unit/Integration/Production Build/일반 E2E 및 관련 Runtime/Greenfield 회귀; 실제 실행 수·실패·생략·환경 한계 기록, PR CI 시작 후 미관측은 NOT VERIFIED | AC-S4-06 |
+
+APP_CREATED 서버 복원·독립 Memo 저장/복원·실 현장 2PC/실 DXF·GPU 픽셀 동등성은 후속 #98/#83/#113이며 합성 2 BrowserContext 성공으로 대체하지 않는다. Scene 상태가 실패해도 기존 업무 데이터를 삭제하지 않았다는 시험과, 아직 구현하지 않은 영속 업무 복원 성공은 구분한다.
+
+---
+
 ## PR #168 P2 — SC-08 Custom DTO BufferAttribute 정규화 회귀 (2026-10-30)
 
 - **정상:** `Uint16Array` + normalized=true의 raw 65535 → `BufferAttribute.getY(0)=1`; `Uint8Array` 정규화 색(128/255), `Int16Array` signed 최소값(-1), `Float64Array` 정밀도를 JSON 직렬화→DTO 복원 후 원시 typed array / normalized flag / 실효 accessor 값까지 일치시킨다.

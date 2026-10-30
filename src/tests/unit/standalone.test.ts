@@ -45,6 +45,9 @@ test('TC-IMAGE-003: release images separate the one-shot migrator from web start
   expect(migrator).not.toContain('COPY --from=dependencies /app/src/node_modules ./node_modules');
   expect(migrator).not.toContain('COPY --from=builder /app/src/node_modules');
   expect(migrator).toContain('USER cad');
+  // Fresh Greenfield DDL reads this isolated SQL at runtime. Keep it outside
+  // the old seven-migration Prisma history but inside the migrator closure.
+  expect(migrator).toContain('COPY --from=builder /app/src/deploy/scene-assets ./deploy/scene-assets');
 
   // Check the *migrator stage*, not an obsolete image-wide CMD string.
   const migratorCmd = migrator?.split('\n').find(line => line.trim().startsWith('CMD ['));

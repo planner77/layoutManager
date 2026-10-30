@@ -89,11 +89,55 @@ model CadFileVersion {
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
   location CadLocation @relation("OwnedVersions", fields: [locationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   currentFor CadLocation? @relation("CurrentVersion")
+  sceneAssets SceneAsset[]
+  currentScene CurrentScene?
   @@unique([locationId, version], map: "uq_version_sequence")
   @@unique([locationId, id], map: "uq_version_owner_id")
   @@index([registeredAt(sort: Desc), createdAt(sort: Desc), id], map: "ix_version_registered")
   @@index([fileFormat, registeredAt(sort: Desc)], map: "ix_version_format_registered")
   @@index([sha256], map: "ix_version_sha256")
+}
+
+// #164 immutable derivative bytes are stored outside SQLite; only a verified
+// asset can be selected by the version-owned, revisioned pointer.
+model SceneAsset {
+  id String @id
+  versionId String @map("version_id")
+  sourceSha256 String @map("source_sha256")
+  manifestJson String @map("manifest_json")
+  digest String
+  byteLength Int @map("byte_length")
+  format String
+  storageLocator String @unique(map:"uq_scene_storage_locator") @map("storage_locator")
+  createdAt DateTime @default(now()) @map("created_at")
+  version CadFileVersion @relation(fields:[versionId], references:[id], onDelete:NoAction, onUpdate:NoAction)
+  currentFor CurrentScene? @relation("CurrentSceneAsset")
+  @@unique([versionId,id],map:"uq_scene_asset_version_id")
+  @@index([versionId,createdAt],map:"ix_scene_asset_version_created")
+}
+
+model CurrentScene {
+  versionId String @id @map("version_id")
+  assetId String @map("asset_id")
+  revision Int
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  version CadFileVersion @relation(fields:[versionId], references:[id], onDelete:NoAction, onUpdate:NoAction)
+  asset SceneAsset @relation("CurrentSceneAsset",fields:[versionId,assetId],references:[versionId,id],onDelete:NoAction,onUpdate:NoAction)
+  @@unique([versionId,assetId],map:"uq_current_scene_version_asset")
+  @@index([assetId],map:"ix_current_scene_asset")
+}
+
+// The job is independent of Version so a deleted Version still has a durable
+// cleanup record. An uncertain remote PUT is never treated as safe to delete.
+model SceneOrphanJob {
+  id String @id
+  assetId String @unique(map:"uq_scene_orphan_asset") @map("asset_id")
+  storageLocator String @unique(map:"uq_scene_orphan_locator") @map("storage_locator")
+  state String
+  attempts Int @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  @@index([state,createdAt],map:"ix_scene_orphan_state_created")
 }
 model CadDeletionJob {
   id String @id

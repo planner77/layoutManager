@@ -1,3 +1,18 @@
+## #164/#165 Scene 영속화와 정상 로더 통합 설계 (2026-10-30, 구현 전)
+
+1. **생성 경계:** 최초/명시 재생성에서만 브라우저 Three converter를 실행한다. #168의 custom DTO와 Scene identity/tag를 재사용하고 문자 검색·레이어·표시용 메타데이터는 같은 digest로 보호되는 allowlist sidecar에 저장한다. 원본 DXF text/parser 객체·외부 URL·APP_CREATED/Memo/선택 overlay를 기준 blob에 넣지 않는다. 정확 Handle 매핑 없는 sidecar는 정밀 source attestation으로 사용하지 않는다.
+2. **검증 경계:** 서버는 payload 크기·JSON depth/shape·수치·attribute typed array·domain ID/Origin·중복·참조·scope/format/schema/builder/renderer/frame을 검증한다. 실제 Version의 source SHA를 DB에서 읽어 비교하며 클라이언트 manifest를 trusted expectation으로 쓰지 않는다. browser restore도 independently expected manifest/bytes를 대조한다. 서버에서 DOM/WebGL converter를 실행하지 않는다.
+3. **영속 경계:** 파일 bytes는 exclusive immutable local object 또는 conditional S3 object, metadata/current pointer는 SQLite로 분리한다. prepare 및 readback digest/size verify는 writer transaction 전에 수행한다. transaction에서 최신 권한·Version/source·expected revision을 재검증하고 Asset metadata+pointer CAS+SCENE_PUBLISHED Audit을 함께 commit한다. 이전 READY를 BUILDING으로 덮지 않는다. 동일 retry는 정의된 identity/revision에 한해 멱등, stale 경쟁자는 409. 불확실 commit/PUT 실패 후 기존 blob이나 새 참조 가능 blob을 추측 삭제하지 않는다.
+4. **실패와 수명:** 참조 없는 후보 blob은 실패 코드/재시도 추적 대상으로 남기며 GC는 reference 재확인+유예를 요구한다. 본 PR은 자동 sweep/기존 원본 삭제를 하지 않는다. 새 asset 실패는 APP_CREATED/Memo에 쓰기를 하지 않는다. 버전 삭제와 asset cleanup 관계는 Database에서 명시하며 임의 cascade 업무 삭제 금지.
+5. **권한:** 신규 Scene 쓰기는 기존 G7 proof가 반드시 존재해야 하며 cad:upload 권한을 실제 Version Site에 적용한다. Audit은 기존 append-only 경로의 명시 SCENE_PUBLISHED action으로 원자 기록한다. AUTH 활성 읽기는 기존 Session+cad:read/Version Site 정책, 비활성 읽기는 현행 공개 CAD read 정책을 따른다. 비활성 쓰기를 기존 익명 업로드 호환 경로로 우회하지 않는다.
+6. **Viewer:** ViewerSource/Manager가 READY_SCENE과 명시 원본 생성·legacy 전략을 구분한다. READY는 Scene manifest/blob만 요청하고 converter와 outline DXF Worker를 시작하지 않는다. restore 후 Layer/Camera/Text/Scene ID를 초기화한다. Source parser 기반 기능은 S5/명시 진단 전 구체적 미지원 이유를 반환한다. missing/손상/비호환에서 자동 fallback하지 않으며 사용자가 dxf-viewer를 선택하면 기존 원본 경로를 사용할 수 있음을 표시한다.
+7. **업무 객체:** GeneratedDocument/메모의 기존 독립 세션 및 domain refs는 보존한다. #98/#83 영속 API는 이번 구현에 추가하지 않으며 APP_CREATED 재접속 복원은 PENDING이다. future provider seam은 Scene blob과 분리하며 빈 서버 목록을 영속화 성공으로 주장하지 않는다.
+8. **Schema/기동:** 신규 정확 Greenfield baseline은 별도 version/fingerprint로 식별한다. 구 정확 baseline은 별도 호환 판정하며 Scene schema 부재를 명시 상태로 다룬다. 알려지지 않은 테이블을 허용해 fingerprint를 완화하지 않는다. migration과 신규 빈 DB 설치는 격리 임시 DB만 시험; 라이브 marker/DB 변경·운영 활성화 없음.
+
+기존 S0/S1 계약은 그대로이며 아래 S3 후속 문단의 구현 순서 중 Scene 저장/로더 부분을 이번 PR로 진행한다. DB 필드·제약의 단일 기준은 [Database](Database.md), 실행 결과는 [TestReport](TestReport.md)이다.
+
+---
+
 ## #161–#163 Scene 도메인 및 격리 직렬화 설계 (2026-10-30, 구현 전)
 
 현행 흐름은 CadFileVersion(ID+원본 byte SHA) → ViewerManager → ThreeDxfViewerAdapter.getFromPath → Three object이며, GeneratedDocument는 별도 UUID·WCS geometry/affine/Undo를 소유한다. MemoSession은 별도 WCS 메모 세션이다. 새 도메인은 브라우저/Three import가 없는 순수 모듈로 둔다. Adapter wrapper만 Three tree를 도메인 Ref로 연결하고, renderer 자체는 수정하지 않는다.

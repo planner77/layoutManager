@@ -1,3 +1,56 @@
+## #164/#165 0.46.0 Scene S3/S4 로컬 구현·QA 수용 (2026-10-30)
+
+- **기준/역할:** Main `0e6e91c`, `feat/issues-164-165-scene-assets`. gpt-6-astra Manager `/root/scene_design`가 Requirements/Architecture/ADR-060/Database/TestPlan을 구현 전에 기록했다. 실제 구현 조정과 Viewer/serializer/UI는 Root(GPT-6), 서버/Schema는 지정 gpt-6-sol Developer `/root/scene_server`가 담당한다. Developer 완료보고와 Manager 소스 검토 뒤 독립 QA `/root/scene_qa`가 집중 검증을 수행했다. 실제 QA 모델은 gpt-6-luna이며 최종 판정은 아래 집중 결과와 Root 전체 회귀를 구분한다.
+- **Root 선행 보고:** focused 4 files/25 tests PASS(신규 scene-loader 10개 포함). Typecheck PASS와 Lint PASS(기존 경고 6개)는 해당 실행 시점 결과이며 최종 소스 전체 수용이 아니다. TypeScript narrowing, S2 single-material group 검사, 기존 exact-7 migration 회귀 실패는 [FailureLedger](FailureLedger.md)에 별도 기록한다.
+- **현재 판정:** 아래 최종 결과를 근거로 **ACCEPT LOCAL SCOPED — 로컬 Scene 구현·QA 및 PR/CI 인계 수용**. 독립 QA와 전체 Unit/Integration/Build/E2E는 통과했으며 최신 PR CI는 미확인이다. APP_CREATED/#98/#83 독립 영속 연계·실 DXF/현장 2PC는 PENDING이다. 최종 CI 성공 관측 전 #164/#165 AC 완료 체크/이슈 종료를 하지 않는다.
+- **범위:** 이번 요청은 단일 PR과 CI 시작까지이며 병합/GHCR/배포/실 DB·storage·migration 활성화는 실행하지 않는다. 버전은 기능 MINOR **0.46.0 후보**다.
+
+### Manager 구현 검토 및 QA 진입 (최종 수용 아님)
+
+Manager는 Developer의 서버 코드 동결 보고 후 실제 Scene Repository/status/content/POST, 읽기 권한, Local/S3, CAS+Audit transaction, SQL/Greenfield fingerprint, Version 삭제 cleanup 및 Root pure validator/READY 로더를 검토했다. 구조 재설계가 필요한 결함은 발견하지 않아 **독립 QA 시작 허용**으로 판정했다. 최종 ACCEPT/Issue AC 완료 판정은 아니다.
+
+집중 보완/QA 항목은 실제 HTTP 401/403/OFF/CSRF/다른 Site·Version, Audit INSERT 실패 rollback(권한 회수 시험과 구분), Version 삭제 cleanup, S3 응답 실제 byte cap 및 Browser corrupt/missing/abort이다. S3 ContentLength만 검사하고 전체 body를 버퍼링하는 경로는 실제 읽기 상한도 적용하도록 Developer에 보완 요청했다. 기존 exact baseline 허용은 schema 검증 호환이며 구 릴리스 marker를 새 0.46.0 런타임에 무단 승계한다는 뜻이 아니다.
+
+Developer가 보고한 집중 Scene/Greenfield 15/15 및 runtime migration/Greenfield/Scene 27/27 PASS, Root Scene PoC 1/1 PASS(41.8초), 집중 3 files/24 PASS는 각각 실행 시점 결과다. Root 전체 moving-source 실행 20 FAIL/601 PASS와 초기 Build PASS는 [FailureLedger](FailureLedger.md)에 보존하며 당시 frozen 전체 실행이 필요했으며 최종 결과는 아래에 기록한다.
+
+### 독립 QA 진행 및 Root 실제 브라우저 근거
+
+- QA 최초 focused Scene loader/input/persistence/S3 **4 files/22 PASS, 6.77초**, 보완 뒤 **3 files/23 PASS** 보고. 실제 Audit INSERT/HTTP scope/delete cleanup 근거 부족과 S3 response cap을 지적했고 재작업 중이다. requestId 시험의 실패 위치에 대한 QA 최초 진단은 실제 direct DB 호출 대조 후 철회되었고, 명시 BEFORE INSERT trigger로 더 직접적인 rollback 시험을 추가했다. 정정 이력은 원장에 보존한다.
+- Root Greenfield E2E **2/2 PASS, 18초**, `/tmp/lm-scene-greenfield-e2e.log`. 최초 관리자 설정과 실제 인증 업로드→명시 변환→Scene 저장→별도 새 로그인 BrowserContext/reload를 검증했다. READY 원본 GET 0, Layer/문자 검색·native fullscreen/resize, missing/unsupported builder/corrupt에서 자동 원본 GET 0, 명시 dxf fallback 1 GET 뒤 Scene 복귀의 추가 원본 GET 0, canvas 1개/live Worker 0을 보고했다. 이는 합성 2 BrowserContext이며 실제 2대 PC/사내 DXF 수용이 아니다.
+- 당시 Root 최종 전체 Vitest와 일반 E2E는 진행 중이었다. 최종 완료 결과는 아래에 기록한다. migrator COPY 보완은 packaging 검토 결과이며 실제 Docker image 실행 여부는 별도로 기록한다.
+
+### 독립 QA 최종 집중 검증 및 AC 추적
+
+독립 gpt-6-luna QA가 최종 Scene 소스의 **6 files/32 PASS, 10.83초**, 별도 Docker packaging contract **1 file/9 PASS**를 보고했다. 실제 HTTP 다른 Site/Version read/write와 content 권한, Origin/CSRF, BEFORE INSERT Audit trigger 실패의 pointer/asset rollback·cleanup 보존, Version 삭제 후 cleanup, S3 실제 stream 크기 초과 취소를 확인했다. 발견한 집중 결함/검증 공백은 해결되었고 **현재 scoped blocker 없음**이다. 이는 실제 Docker image 실행·현장 저장소 시험을 대신하지 않는다.
+
+| Issue AC | 로컬 개발 근거 | 잔여/완료 상태 |
+| --- | --- | --- |
+| AC-S3-01 | Local/SQLite 및 Mock S3 digest/manifest·READY·immutable old bytes·멱등/CAS/경쟁·Scope 음성 시험 | 로컬 지원, 최신 PR CI 미확인으로 미완료 |
+| AC-S3-02 | PUT/권한 회수/실제 Audit INSERT 실패·cleanup/재시도·이전 pointer/원본 sentinel 유지 | 로컬 Scene 범위 지원; APP_CREATED/Memo 실제 영속 자료 통합은 #98/#83 PENDING |
+| AC-S3-03 | #168 Stable ID/Origin/scope 계약과 새 payload validator/복원 테스트 | 로컬 지원, 최신 PR CI 미확인 |
+| AC-S3-04 | G7 OFF/Reader/다른 Site·Version/Auth/Origin/CSRF 거절과 append-only Audit/CAS | Scene 권한 로컬 지원; #98/#83 API·SoftDelete 통합은 PENDING |
+| AC-S3-05 | bytes 손상·builder/Scope mismatch 및 REBUILD_REQUIRED, 자동 source GET 금지 | 로컬 Scene 범위 지원; 업무 영속 보존 수용은 의존 이슈 후속 |
+| AC-S3-06 | 임시 SQLite/fresh exact baseline/기존 exact-7 회귀·Local/Mock S3·packaging 계약 | 전체 로컬 통과, PR CI 미확인으로 미완료; 실 운영 migration/GHCR 미실행 |
+| AC-S4-01 | 인증 업로드→변환→게시→독립 로그인 context/reload에서 원본 GET 0·converter Blob URL 0·DXF Index Worker 0 | Scene 경로 로컬 지원; 별도 AppObject/Memo API 복원은 PENDING |
+| AC-S4-02 | domain ID/WCS/layer/text restore와 renderer 재생성, 기존 Generated/Memo 회귀 | APP_CREATED/Memo의 영속 재접속·Tree 연계는 #98/#83/#73 PENDING |
+| AC-S4-03 | missing/builder mismatch/corrupt와 자동 원본 조회 0, 명시 생성 안내 | 로컬 Scene 범위 지원, CI 미확인 |
+| AC-S4-04 | 새 context/reload·명시 dxf fallback/Scene 복귀·abort·resize/native fullscreen·1 canvas/live Worker 0 | 합성 browser 근거; 실제 2PC/장기 GPU memory 수용은 #113 미검증 |
+| AC-S4-05 | 기존 그룹 메뉴와 미지원/세션 임시 안내, 선택 projection은 canonical source 검증으로 승격하지 않음 | 일반 E2E 최종 결과 대기; 독립 업무 API·고급 S5 작업은 후속 |
+| AC-S4-06 | 독립 QA·Root 로컬/CI/현장 상태 분리와 누적 실패 원장 | PR CI 시작/성공은 실제 원격 상태로 후속 기록 |
+
+모든 AC는 **완료 체크하지 않는다**. Manager의 로컬 범위 수용은 아래 Root 최종 결과에 근거하며 Issue 전체 완료·CI 성공·실 DXF/현장 수용과 동일하지 않다.
+
+### Root 동결 회귀 결과 및 최종 로컬 판정
+
+- 일반 E2E **94/94 PASS, 7.0분**, `/tmp/lm-scene-all-e2e.log`. 기존 Viewer/선택/외곽선/메모/트리/그룹 메뉴/fallback/한글 회귀와 Scene PoC(42.6초)를 포함한다.
+- 별도 signed Runtime UI **1/1 PASS, 11.3초**, Legacy master-migration UI **1/1 PASS, 14.4초**. 신규 Greenfield UI 및 Scene 전체 흐름은 앞선 **2/2 PASS, 18초**다. 따라서 보고된 브라우저 총합은 일반 94 + Runtime 1 + Legacy 1 + Greenfield 2 = **98 PASS**이며 합성/격리 환경 결과다.
+- 최신 Typecheck **PASS**, Lint **PASS(기존 경고 6개)**. 최종 frozen 전체 Vitest는 **90 files/631 PASS, 299.79초**다. Manager가 `/tmp/lm-scene-frozen-tests.log` 완료 summary를 직접 확인했다. 공유 서버 종료 뒤 Production Build `/tmp/lm-scene-final-build.log`는 **PASS(exit 0)**이며 Root 실행 결과와 완료 route summary를 확인했다.
+- 전체 631 PASS 뒤 test-only 신규 프로세스 복원 계약을 추가했다. 별도 `scene-persistence.test.ts` **1 file/10 PASS, 5.47초**, `/tmp/lm-scene-restart-contract.log`를 Manager가 직접 확인했다. producer Prisma/storage를 닫은 뒤 새 Node subprocess에서 같은 임시 DB/Local blob을 열어 READY/asset ID/revision/length/digest를 검증한다. 실제 HTTP 인증·컨테이너 재시작을 대체하는 시험이 아니며 전체 suite 632 PASS로 합산하지 않는다.
+- 최종 Production Build 후 Greenfield E2E 재확인은 **2/2 PASS, 14.4초**, `/tmp/lm-scene-final-greenfield-e2e.log`이며 원본 GET/Blob/인덱스 Worker 모두 0이다. test-only subprocess 환경 보완 후 Typecheck/Lint도 PASS(기존 6 warnings).
+- gpt-6-astra Manager는 실제 Developer 완료보고·독립 gpt-6-luna QA·Root 최종 Typecheck/Lint/Unit/Integration/Build/E2E를 검토해 **ACCEPT LOCAL SCOPED / 추가 재작업 불필요**로 판정했다. 최종 Build 뒤 Greenfield 추가 확인도 위와 같이 통과했다. CI/Issue 전체 AC·APP_CREATED 의존·실 현장 수용은 계속 미완료다.
+
+---
+
 ## PR #168 Codex P2 보완 — Custom DTO Attribute 타입 보존 (2026-10-30)
 
 - **선행 확정:** 이전 HEAD `3be07597`의 [PR CI 40987779057](https://github.com/planner77/layoutManager/actions/runs/40987779057)는 SUCCESS. 그 후 새로 열린 Codex P2 리뷰를 신규 결함으로 인정한다. 이전 CI 성공은 정규화 정수 버퍼 round-trip의 증거가 아니었다.

@@ -6,6 +6,7 @@ export type ViewerMetric = {
   firstDisplayMs:number|null; parseMs:number|null; jsHeapBytes:number|null;
   browser:string; reasons:Record<string,string>; error:string|null;
   fallback?: {reasonCode:string;attempt:number};
+  loadStrategy?:'READY_SCENE'|'LEGACY_DXF'|'DWG';
 };
 export async function observeFrame():Promise<boolean> {
   if(typeof requestAnimationFrame==='undefined' || document.visibilityState!=='visible')return false;

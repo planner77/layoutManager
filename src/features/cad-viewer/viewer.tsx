@@ -31,6 +31,7 @@ import { selectRenderer, type ViewerFormat, type ViewerRenderer } from '@/viewer
 import { ViewerSource } from '@/viewers/core/source';
 import { cadViewerUrl } from '@/viewers/core/link';
 import { ViewerLoadError, isViewerCancellation } from '@/viewers/core/viewer-load-error';
+import {runtimeCadHeaders} from '@/features/g7-runtime/client';
 
 export function CadViewer({
   versionId,
@@ -46,6 +47,7 @@ export function CadViewer({
   fileSize,
   description,
   outlineTypeCatalog = null,
+  sourceMode = 'scene-first',
 }: {
   versionId: string;
   sourceSha256?: string;
@@ -61,9 +63,17 @@ export function CadViewer({
   description?: string | null;
   /** Must be loaded only through #65's verified session/server scope; no browser lab fallback. */
   outlineTypeCatalog?: ScopedOutlineCatalog | null;
+  sourceMode?:'scene-first'|'build';
 }) {
   const [renderer, setRenderer] = useState(selectRenderer(format, initialRenderer));
   const [source] = useState(() => new ViewerSource());
+  const [sceneMode,setSceneMode]=useState(sourceMode);
+  const [sceneCandidate,setSceneCandidate]=useState(false);
+  const [sceneBusy,setSceneBusy]=useState(false);
+  const [sceneNotice,setSceneNotice]=useState<string|null>(null);
+  const expectedSceneRevision=useRef<number|null>(null);
+  const sceneRequest=useRef<AbortController|null>(null);
+  useEffect(()=>()=>sceneRequest.current?.abort(),[]);
   const container = useRef<HTMLDivElement>(null);
   const viewerShell = useRef<HTMLDivElement>(null);
   const manager = useRef<ViewerManager | null>(null);
@@ -691,6 +701,7 @@ export function CadViewer({
     if (value === renderer) return;
     if (!confirmDiscard()) return;
     loadSequenceRef.current++;
+    sceneRequest.current?.abort();setSceneBusy(false);setSceneCandidate(false);setSceneMode('scene-first');
     if (loading && source.state(`/api/cad-files/${versionId}/content`) === 'pending') source.dispose();
     fallbackTried.current = false; fallbackReason.current = null; setRecoveryNotice(null); setLinkFallbackUrl(null);
     manager.current?.dispose();
@@ -712,6 +723,7 @@ export function CadViewer({
   function reload() {
     if (loading || !confirmDiscard()) return;
     loadSequenceRef.current++;
+    sceneRequest.current?.abort();setSceneBusy(false);setSceneCandidate(false);setSceneMode('scene-first');
     manager.current?.dispose();
     fallbackTried.current=false; fallbackReason.current=null; setRecoveryNotice(null); setLinkFallbackUrl(null);
     setLoading(true);
@@ -725,6 +737,35 @@ export function CadViewer({
     resetOutline();
     resetMemos();
     setAttempt(value => value + 1);
+  }
+
+  function buildScene() {
+    if(loading||sceneBusy||!confirmDiscard())return;
+    sceneRequest.current?.abort();
+    loadSequenceRef.current++;manager.current?.dispose();source.dispose();
+    fallbackTried.current=false;fallbackReason.current=null;
+    setRenderer('three-dxf-viewer');setSceneMode('build');setSceneCandidate(false);setSceneNotice(null);
+    setLoading(true);setState({status:'원본 DXF 최초 변환·Scene 생성 중…',ready:false});
+    resetOutline();resetMemos();setAttempt(value=>value+1);
+  }
+  async function saveScene() {
+    const artifact=manager.current?.getSceneArtifact();if(!artifact||sceneBusy)return;
+    const request=new AbortController();sceneRequest.current?.abort();sceneRequest.current=request;
+    const sequence=loadSequenceRef.current;
+    setSceneBusy(true);setSceneNotice('Scene Asset 저장·검증 중…');
+    try{
+      const headers=await runtimeCadHeaders({'Content-Type':'application/json'});
+      if(request.signal.aborted)throw new DOMException('취소됨','AbortError');
+      // Chunk conversion avoids argument-count limits on large assets.
+      let binary='';for(let i=0;i<artifact.bytes.length;i+=8192)binary+=String.fromCharCode(...artifact.bytes.subarray(i,i+8192));
+      const response=await fetch(`/api/cad-files/${versionId}/scene`,{method:'POST',headers,credentials:'same-origin',cache:'no-store',signal:request.signal,
+        body:JSON.stringify({manifest:artifact.manifest,bytesBase64:btoa(binary),expectedRevision:expectedSceneRevision.current})});
+      const result=await response.json();
+      if(!response.ok)throw new Error(result?.error?.code==='SCENE_REVISION_CONFLICT'?'다른 저장과 충돌했습니다. 기존 Scene은 유지됩니다. 다시 조회하세요.':`Scene 저장 실패 (${response.status}). 로그인·사업장 권한·승인된 저장 기능을 확인하세요.`);
+      if(result.status!=='READY'||!Number.isSafeInteger(result.revision))throw new Error('Scene 저장 응답을 확인하지 못했습니다. 다시 조회하여 상태를 확인하세요.');
+      if(sequence===loadSequenceRef.current){expectedSceneRevision.current=result.revision;setSceneNotice('Scene Asset 저장 완료. 다시 불러오기 또는 재접속하면 원본 DXF 없이 복원합니다.');setSceneCandidate(false);}
+    }catch(error){if(!request.signal.aborted&&sequence===loadSequenceRef.current)setSceneNotice(error instanceof Error?error.message:'Scene Asset 저장에 실패했습니다.');}
+    finally{if(sceneRequest.current===request){sceneRequest.current=null;setSceneBusy(false);}}
   }
 
   function setLayerVisibility(name: string, visible: boolean) {
@@ -768,6 +809,7 @@ export function CadViewer({
 
   useEffect(() => {
     let active = true;
+    const sceneController=new AbortController();
     const sequence = ++loadSequenceRef.current;
     const instance = new ViewerManager(
       async () => {
@@ -780,7 +822,7 @@ export function CadViewer({
           const { ThreeDxfViewerAdapter } = await import('@/viewers/three-dxf-viewer/adapter');
           if (!active || loadSequenceRef.current!==sequence || !container.current) throw new DOMException('취소됨', 'AbortError');
           return new ThreeDxfViewerAdapter(container.current,{
-            versionId,sourceSha256,
+            versionId,sourceSha256,prepareScene:sceneMode==='build',
             onSelection:value=>{if(active && loadSequenceRef.current===sequence && outlineEnabledRef.current)setOutlineSelection(value);},
             onObjectSelection:refs=>{if(active && loadSequenceRef.current===sequence){setCanvasSelection(refs);syncSavedOutlines();}},
             onPreview:(value,error)=>{if(active && loadSequenceRef.current===sequence && outlineEnabledRef.current){setPreview(value);setPreviewError(error??null);}},
@@ -796,9 +838,20 @@ export function CadViewer({
       source,
       { renderer, versionId, report: value => { if (active && loadSequenceRef.current===sequence) setMetric({ ...value, fallback: fallbackReason.current ? { reasonCode: fallbackReason.current, attempt: 1 } : undefined }); } },
       format,
+      format==='DXF'&&renderer==='three-dxf-viewer'?{versionId,sourceSha256,mode:sceneMode}:undefined,
     );
     manager.current = instance;
-    instance.load(`/api/cad-files/${versionId}/content`, format).then(result => {
+    const run=async()=>{
+      if(sceneMode==='build'&&renderer==='three-dxf-viewer'){
+        const response=await fetch(`/api/cad-files/${versionId}/scene`,{credentials:'same-origin',cache:'no-store',signal:sceneController.signal});
+        if(!response.ok)throw new ViewerLoadError('scene','UNAVAILABLE','Scene 생성 전 Version·권한 상태를 확인하지 못했습니다.');
+        const value=await response.json();
+        expectedSceneRevision.current=Number.isSafeInteger(value.revision)?value.revision:null;
+      }
+      if(!active)throw new DOMException('취소됨','AbortError');
+      return instance.load(`/api/cad-files/${versionId}/content`,format);
+    };
+    run().then(result => {
       if (active && loadSequenceRef.current===sequence) {
         const nextLayers = instance.getLayers();
         setOutlineInfo(instance.getOutlineInfo());
@@ -809,11 +862,16 @@ export function CadViewer({
         });
         setLayers(nextLayers);
         setSelectedLayers(new Set(nextLayers));
+        setSceneCandidate(!!instance.getSceneArtifact());
+        if(sceneMode==='build'){
+          const url=new URL(window.location.href);url.searchParams.delete('source');window.history.replaceState(null,'',url);
+        }
+        if(format==='DXF')setSceneNotice(instance.getLoadStrategy()==='READY_SCENE'?'저장된 Scene Asset 복원 · DXF 원본 조회·재파싱 없음':sceneMode==='build'?'원본 DXF 변환 완료. Scene Asset 저장은 로그인·권한·서버 승인 후 가능합니다.':'레거시 DXF 로딩 · 원본을 사용합니다.');
         if(fallbackReason.current && renderer==='dxf-viewer')setRecoveryNotice(`three-dxf-viewer 실패 (${fallbackReason.current}) 후 dxf-viewer로 표시했습니다. 일부 선택·외곽선 기능은 지원되지 않습니다.`);
       }
     }).catch(error => {
       if (active && loadSequenceRef.current===sequence && renderer === 'three-dxf-viewer' && format === 'DXF' &&
-          error instanceof ViewerLoadError && error.stage !== 'source' && !fallbackTried.current) {
+          error instanceof ViewerLoadError && error.stage !== 'source' && error.stage!=='scene' && !fallbackTried.current) {
         fallbackTried.current=true; fallbackReason.current=`${error.stage}:${error.reasonCode}`;
         setRecoveryNotice(`three-dxf-viewer 처리 실패 (${fallbackReason.current}). dxf-viewer로 한 번 다시 엽니다.`);
         setRenderer('dxf-viewer');
@@ -837,10 +895,11 @@ export function CadViewer({
     });
     return () => {
       active = false;
+      sceneController.abort();
       instance.dispose();
       manager.current = null;
     };
-  }, [versionId, sourceSha256, attempt, renderer, source, format, resetOutline, syncSavedOutlines, onAdapterViewChange]);
+  }, [versionId, sourceSha256, attempt, renderer, source, format, sceneMode, resetOutline, syncSavedOutlines, onAdapterViewChange]);
 
   const layerAvailable = renderer === 'three-dxf-viewer' && layers.length > 0 && state.ready;
   const outlineUnavailable = outlineToolUnavailableReason({
@@ -881,6 +940,8 @@ export function CadViewer({
       {id:'info',label:'도면 정보',onSelect:()=>setInfoOpen(value=>!value)},
       {id:'versions',label:'버전 목록',kind:'link',href:`/cad/locations/${locationId}`},
       {id:'reload',label:'다시 불러오기',disabled:loading,reason:loading?'로딩이 끝난 뒤 다시 불러올 수 있습니다.':undefined,onSelect:reload},
+      ...(format==='DXF'?[{id:'build-scene',label:'원본 DXF로 Scene 생성/재생성',disabled:loading||sceneBusy,reason:'명시적으로 원본을 읽고 변환합니다. 기존 저장 Scene은 저장 성공 전 유지됩니다.',onSelect:buildScene},
+        {id:'save-scene',label:'Scene Asset 저장',disabled:!sceneCandidate||sceneBusy||loading,reason:'명시 변환 완료 후 승인된 로그인·사업장 쓰기 권한으로 저장합니다.',onSelect:()=>void saveScene()}]:[]),
       {id:'download',label:'원본 다운로드',kind:'link',download:true,href:`/api/cad-files/${versionId}/content`},
       {id:'copy',label:'도면 링크 복사',onSelect:()=>{const url=cadViewerUrl(window.location.origin,versionId,format,renderer);if(!navigator.clipboard?.writeText){setLinkFallbackUrl({renderer,url});return;}void navigator.clipboard.writeText(url).catch(()=>setLinkFallbackUrl({renderer,url}));}},
     ]},
@@ -1183,7 +1244,8 @@ export function CadViewer({
           {state.warning && <p className="text-xs text-amber-800" data-testid="viewer-coverage">{state.warning}</p>}
           {linkFallbackUrl?.renderer===renderer && <label className="block text-xs">현재 Viewer 링크<input readOnly aria-label="복사할 Viewer 주소" value={linkFallbackUrl.url} onFocus={event=>event.currentTarget.select()} /></label>}
           {recoveryNotice && <p data-testid="viewer-recovery-notice" className="text-xs text-amber-800">{recoveryNotice}</p>}
-          {state.error && <p role="alert" className="text-xs text-red-700">{state.error} <button type="button" className="underline" onClick={reload}>다시 시도</button> <a className="underline" href={`/api/cad-files/${versionId}/content`} download>원본 다운로드</a> {format==='DXF' && <a className="underline" href={`/cad/versions/${versionId}/viewer?renderer=dxf-viewer`}>dxf-viewer 링크</a>}</p>}
+          {sceneNotice&&<p aria-live="polite" data-testid="scene-status" className="text-xs text-slate-700">{sceneNotice}</p>}
+          {state.error && <p role="alert" className="text-xs text-red-700">{state.error} <button type="button" className="underline" onClick={reload}>다시 시도</button> <a className="underline" href={`/api/cad-files/${versionId}/content`} download>원본 다운로드</a> {format==='DXF' && <a className="underline" href={`/cad/versions/${versionId}/viewer?renderer=dxf-viewer`}>dxf-viewer 링크 (원본 사용)</a>}</p>}
           {outlineNotice && <p data-testid="outline-tool-notice" className="text-xs text-teal-800">{outlineNotice}</p>}
            {deleteError && <p data-testid="generated-delete-error" role="alert" className="text-xs text-red-700">{deleteError}</p>}
            {translateError && <p data-testid="generated-translate-error" role="alert" className="text-xs text-red-700">{translateError}</p>}

@@ -4,8 +4,8 @@ import { context } from '@/server/context';
 import { selectRenderer } from '@/viewers/core/selection';
 import { CadViewer } from '@/features/cad-viewer/viewer';
 export const dynamic = 'force-dynamic';
-export default async function Page({ params, searchParams }: {params: Promise<{versionId:string}>;searchParams:Promise<{renderer?:string}>}) {
-  const requested=(await searchParams).renderer;
+export default async function Page({ params, searchParams }: {params: Promise<{versionId:string}>;searchParams:Promise<{renderer?:string;source?:string}>}) {
+  const query=await searchParams;const requested=query.renderer;
   const {versionId} = await params;
   let file;
   try { file = await context().list.version(versionId); }
@@ -14,7 +14,7 @@ export default async function Page({ params, searchParams }: {params: Promise<{v
   if (format !== 'DXF' && format !== 'DWG') notFound();
   const l = file.location;
   return <CadViewer key={file.id} versionId={file.id} sourceSha256={file.sha256}
-    format={format} renderer={selectRenderer(format, requested)}
+    format={format} renderer={selectRenderer(format, requested)} sourceMode={query.source==='build'?'build':'scene-first'}
     displayName={file.displayName} originalFilename={file.originalFilename}
     version={file.version} registeredAt={file.registeredAt} fileSize={file.fileSize}
     description={file.description} locationId={l.id}

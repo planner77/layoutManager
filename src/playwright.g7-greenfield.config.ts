@@ -17,7 +17,7 @@ const origin='http://127.0.0.1:'+port;
 export default defineConfig({
   testDir:'./tests/greenfield-e2e',workers:1,fullyParallel:false,
   use:{baseURL:origin,viewport:{width:1440,height:1000},trace:'retain-on-failure',
-    launchOptions:{executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,args:['--no-sandbox']}},
+    launchOptions:{executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,args:['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader']}},
   webServer:{
     command:`node --import tsx scripts/g7-greenfield.ts auto && npm run start -- --port ${port}`,
     url:origin+'/api/health',

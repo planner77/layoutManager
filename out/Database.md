@@ -1,3 +1,27 @@
+## #164/#165 Scene metadata/CurrentScene 설계 계약 (2026-10-30, 구현 전)
+
+본 절은 신규 Schema 구현 지시이며 실제 DB 적용 기록이 아니다. 구현 후 정확한 Prisma/SQL 필드·제약을 대조하여 보충한다. #168 순수 도메인을 재사용하고 대용량 Scene bytes는 DB에 넣지 않는다.
+
+- **Immutable SceneAsset:** 서버 발급 asset ID, 소유 Version ID/source SHA, derivative digest/byte length, format/schema/builder/renderer/frame, manifest, 서버 전용 storage locator, createdAt. DB identity에 Object3D.uuid를 사용하지 않는다. 게시된 blob/manifest는 수정하지 않고 새 Asset으로 교체한다.
+- **CurrentScene:** Version별 pointer 최대 1개, Asset 소유권을 Version에 결속하고 revision은 단조 증가한다. 최초 expectedRevision=null과 갱신 expectedRevision=N을 구분하며 CAS 경쟁은 409다. 기존 CAD Current/Version 선택과 독립한다.
+- **Transaction:** 최신 Version/source와 권한을 재확인하고 Asset metadata·CurrentScene pointer/revision·SCENE_PUBLISHED Audit을 같은 거래로 갱신한다. Storage prepare/readback은 거래 밖에서 실행한다. 실패하면 기존 READY pointer를 변경하지 않는다.
+- **수명:** Scene은 파생 데이터이며 기존 원본 삭제/cleanup 계약을 보존한다. Version 소유 관계와 DB 삭제 처리를 구현에서 명시하고 orphan blob은 참조 재확인·유예 없이 지우지 않는다. APP_CREATED/#98 CadOutline 및 #83 Memo의 독립 테이블/API를 여기서 추가하지 않는다.
+- **Greenfield:** 신규 exact baseline/schema identity와 기존 exact baseline을 구분한다. 기존 marker를 수정하거나 미지 DDL drift를 허용하지 않는다. 기존 baseline Scene API는 LEGACY_DISABLED로 구분하며 일반 MISSING과 혼동하지 않는다. 신규 빈 DB와 격리 migration만 시험하며 실 DB 자동 이관/activation은 하지 않는다.
+
+API 계약: `POST scene {manifest,bytesBase64,expectedRevision:null|number}`, `GET scene {status:LEGACY_DISABLED|MISSING|READY|REBUILD_REQUIRED,manifest?,assetId?,revision?,contentUrl?}`. contentUrl은 Version/immutable assetId의 ID-only API이고 locator/endpoint/credential을 노출하지 않는다. UNAVAILABLE은 fetch/network 장애의 Viewer 표시로 구분한다.
+
+### 구현 필드 대조 (개발 중, 운영 적용 아님)
+
+| 모델 | 필드/제약 |
+| --- | --- |
+| SceneAsset | `id`, `version_id` FK, `source_sha256`, `manifest_json`, `digest`, `byte_length>0`, `format=CUSTOM_DTO`, unique `storage_locator`, `created_at`; `(version_id,id)` unique |
+| CurrentScene | `version_id` PK/FK, `asset_id`, `revision>=0`, `updated_at`; `(version_id,asset_id)` composite FK로 타 Version Asset 연결 차단 |
+| SceneOrphanJob | `id`, unique `asset_id`, unique `storage_locator`, `state=PREPARING/VERIFIED/UNCERTAIN/CLEANUP`, `attempts>=0`, 생성/갱신 시각. Version 삭제 뒤에도 cleanup 추적을 유지하도록 Version FK 없음 |
+
+schema/builder/renderer/frame 및 stable Scene ID는 검증된 `manifest_json`에 보존한다. SQL 후보는 `src/deploy/scene-assets/migration.sql`이며 기존 정확 7개 migration history 밖에 둔다. 신규 Greenfield installer가 명시적으로 포함하는 baseline ID는 `202610300001_greenfield_scene_baseline`, 기존 `202610290001_greenfield_baseline`은 별도 exact hash로 검증한다. AuditEvent CHECK에 `SCENE_PUBLISHED`만 추가하기 위한 table 재구성은 기존 행을 그대로 복사하고 append-only UPDATE/DELETE trigger와 기존 제약을 재설치한다. Version 삭제는 기존 암호·권한·Audit 거래 안에서 CurrentScene을 분리하고 각 SceneAsset의 CLEANUP job을 기록한 뒤 metadata와 Version을 삭제한다. blob은 유예 cleanup까지 보존한다. 실제 해당 삭제 회귀는 TestReport에 기록한다. 이 SQL의 운영 적용은 이번 범위가 아니다.
+
+---
+
 ## #161–#163 Scene S0 계약만 추가 (2026-10-30)
 
 **DDL/Prisma/기존 DB 변경 없음.** SceneAsset(Version ID, sourceSha256, asset byteDigest/byteLength, format, builderVersion, rendererVersion, sceneSchemaVersion, coordinateFrame, state), SceneObject(immutable scoped app ID/Origin, optional sourceRef/derivedFrom, working transform/visibility/revision), AppObject(별도 ID/WCS geometry/revision/업무 연계)는 순수 도메인 계약이다. source byte SHA와 derivative byte SHA는 서로 다른 identity이다.

@@ -106,6 +106,7 @@ COPY --from=builder /app/src/server/g7-operational/runtime-migration.ts ./server
 COPY --from=builder /app/src/server/g7-operational/disposable-target.ts ./server/g7-operational/disposable-target.ts
 COPY --from=builder /app/src/server/g7-operational/preflight.ts ./server/g7-operational/preflight.ts
 COPY --from=builder /app/src/deploy/g7-s3 ./deploy/g7-s3
+COPY --from=builder /app/src/deploy/scene-assets ./deploy/scene-assets
 COPY --from=builder /app/src/deploy/g7-runtime ./deploy/g7-runtime
 COPY --from=builder /app/src/domain/auth.ts ./domain/auth.ts
 USER cad

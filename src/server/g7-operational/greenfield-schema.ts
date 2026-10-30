@@ -6,9 +6,12 @@ import { createHash } from 'node:crypto';
 import type { IsolatedDb } from '../g7-staging/g1-store';
 
 export const G7_GREENFIELD_CAPABILITY = 'G7-GREENFIELD-AUTH-V1' as const;
-export const G7_GREENFIELD_SCHEMA_ID = 'G7-GREENFIELD-20261029-1' as const;
-export const G7_GREENFIELD_BASELINE = '202610290001_greenfield_baseline' as const;
+export const G7_GREENFIELD_SCHEMA_ID = 'G7-GREENFIELD-SCENE-20261030-1' as const;
+export const G7_GREENFIELD_BASELINE = '202610300001_greenfield_scene_baseline' as const;
 export const G7_GREENFIELD_BASELINE_CHECKSUM =
+  createHash('sha256').update('layoutManager:G7-GREENFIELD-SCENE-20261030-1:baseline').digest('hex');
+export const G7_OLD_GREENFIELD_BASELINE = '202610290001_greenfield_baseline' as const;
+export const G7_OLD_GREENFIELD_BASELINE_CHECKSUM =
   createHash('sha256').update('layoutManager:G7-GREENFIELD-20261029-1:baseline').digest('hex');
 
 // The production CAD backfill defines exactly these two independent guards.
@@ -21,13 +24,16 @@ export const G7_DELETE_PASSWORD_TRIGGERS = [
 // Reviewed G7 final schema fingerprint before the two ordinary CAD guards.
 // Used only to verify the fresh baseline's fixed DDL, never a legacy DB.
 const G7_BASE_DDL_SHA256 = 'a937cf58b78710e8b501f7ec3211494c78316080b5c16732f9bf37e66765de6a';
+const G7_SCENE_DDL_SHA256 = '65651b4a199780ccb2357a5bb9d4ccf4b28b056bc701938299a5740642195151';
 const normalize = (s: string) => s.replace(/\s+/g, ' ').trim();
 const schemaQuery = "SELECT type,name,sql FROM sqlite_master WHERE sql IS NOT NULL AND name NOT LIKE 'sqlite_%' AND name<>'_prisma_migrations' ORDER BY type,name";
 
 export function assertG7GreenfieldSchema(db: IsolatedDb): void {
   const history = db.prepare('SELECT migration_name,checksum,finished_at,rolled_back_at FROM "_prisma_migrations"').all();
-  if (history.length !== 1 || history[0].migration_name !== G7_GREENFIELD_BASELINE ||
-      history[0].checksum !== G7_GREENFIELD_BASELINE_CHECKSUM ||
+  const old=history.length===1&&history[0].migration_name===G7_OLD_GREENFIELD_BASELINE;
+  const next=history.length===1&&history[0].migration_name===G7_GREENFIELD_BASELINE;
+  if ((!old&&!next) ||
+      history[0].checksum !== (old?G7_OLD_GREENFIELD_BASELINE_CHECKSUM:G7_GREENFIELD_BASELINE_CHECKSUM) ||
       history[0].finished_at == null || history[0].rolled_back_at != null)
     throw new Error('G7_GREENFIELD_INSTALL_HISTORY');
 
@@ -39,7 +45,7 @@ export function assertG7GreenfieldSchema(db: IsolatedDb): void {
 
   const normal = rows.filter(row => !guards.includes(row)).map(row =>
     [row.type,row.name,normalize(row.sql)]);
-  if (createHash('sha256').update(JSON.stringify(normal)).digest('hex') !== G7_BASE_DDL_SHA256)
+  if (createHash('sha256').update(JSON.stringify(normal)).digest('hex') !== (old?G7_BASE_DDL_SHA256:G7_SCENE_DDL_SHA256))
     throw new Error('G7_GREENFIELD_SCHEMA_DRIFT');
 
   const check = db.prepare('PRAGMA quick_check').all();

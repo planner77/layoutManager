@@ -2,9 +2,12 @@
 import * as THREE from 'three';
 import {toCustomDto,fromCustomDto,type CustomSceneDto} from './scene-custom-dto';
 import {validateSceneAsset,validateSceneManifest,validSceneRef,type SceneAsset,type SceneScope,type SceneManifest,type SceneFormat} from '../../domain/cad-scene';
+import {sceneSha256} from '../../domain/scene-digest';
+import {validateSceneViewerData,type SceneViewerData} from '../../domain/scene-viewer-data';
+import {validateStoredScenePayload} from '../../domain/scene-payload';
 export type {SceneFormat,SceneManifest} from '../../domain/cad-scene';
 const enc=new TextEncoder(),dec=new TextDecoder('utf-8',{fatal:true});
-const digest=async(b:Uint8Array)=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',b as BufferSource)),v=>v.toString(16).padStart(2,'0')).join('');
+const digest=async(b:Uint8Array)=>sceneSha256(b);
 const rec=(v:unknown):v is Record<string,unknown>=>!!v&&typeof v==='object'&&!Array.isArray(v);
 const types=new Set(['Group','Object3D','Line','LineSegments','LineLoop','Mesh','Points','Sprite']);
 const forbidden=new Set(['url','src','uri','image','images','texture','textures','video','audio','script','scripts','callback','onload','onerror']);
@@ -55,7 +58,7 @@ function inspect(tree:unknown,asset:SceneAsset):void{
  };
  walk(tree.object,[]);if(actual.length!==asset.objects.length)throw new Error('SCENE_NODE_COUNT_INVALID');
 }
-export async function serializeSourceScene(root:THREE.Object3D,asset:SceneAsset,format:SceneFormat):Promise<{bytes:Uint8Array;manifest:SceneManifest}>{
+export async function serializeSourceScene(root:THREE.Object3D,asset:SceneAsset,format:SceneFormat,viewerData?:SceneViewerData):Promise<{bytes:Uint8Array;manifest:SceneManifest}>{
  validateSceneAsset(asset);if(asset.state!=='BUILDING')throw new Error('SCENE_NOT_BUILDING');
  const readyAsset:SceneAsset={...asset,state:'READY'};
  // Upstream userData contains parser internals (including BLOCK references). Keep only
@@ -69,7 +72,9 @@ export async function serializeSourceScene(root:THREE.Object3D,asset:SceneAsset,
   });
   const tree=sanitizeTree(root.toJSON());inspect(tree,readyAsset);
   if(format!=='THREE_JSON'&&format!=='CUSTOM_DTO')throw new Error('SCENE_FORMAT_INVALID');
-  bytes=enc.encode(JSON.stringify(format==='CUSTOM_DTO'?toCustomDto(root,readyAsset):{asset:readyAsset,tree}));
+  if(viewerData)validateSceneViewerData(viewerData);
+  const payload=format==='CUSTOM_DTO'?toCustomDto(root,readyAsset):{asset:readyAsset,tree};
+  bytes=enc.encode(JSON.stringify({...payload,...(viewerData?{viewerData}:{})}));
  }finally{for(const [node,data] of backup)node.userData=data;}
  return {bytes,manifest:{scope:asset.scope,sceneId:asset.sceneId,format,state:'READY',revision:asset.revision,byteLength:bytes.length,sha256:await digest(bytes)}};
 }
@@ -82,8 +87,13 @@ export async function restoreSourceScene(bytes:Uint8Array,manifest:SceneManifest
  if(asset.state!=='READY'||asset.revision!==manifest.revision||JSON.stringify(asset.scope)!==JSON.stringify(expected.scope)||asset.sceneId!==manifest.sceneId)throw new Error('SCENE_ASSET_MISMATCH');
  if(expected.format==='CUSTOM_DTO'){
   if(parsed.schema!==1||!rec(parsed.root))throw new Error('SCENE_CUSTOM_SCHEMA_INVALID');
+  validateStoredScenePayload(bytes,manifest);
   safe(parsed);return fromCustomDto(parsed as CustomSceneDto);
  }
  inspect(parsed.tree,asset);
  return new THREE.ObjectLoader().parse(parsed.tree as THREE.Object3DJSON);
+}
+export function storedSceneViewerData(bytes:Uint8Array):SceneViewerData|undefined{
+ const parsed=JSON.parse(dec.decode(bytes)) as Record<string,unknown>;
+ return parsed.viewerData===undefined?undefined:validateSceneViewerData(parsed.viewerData);
 }
