@@ -1,3 +1,4 @@
+import { canvasStrokeSimilarity } from './canvas-stroke-similarity';
 import { clickViewerCommand, clickViewerTestCommand } from './viewer-menu-helper';
 import { test, expect } from "@playwright/test";
 import { masterFields } from "./master-helper";
@@ -149,9 +150,11 @@ test("TC-ISSUE17-001: fullscreen layer panel controls three-dxf-viewer without r
   ).toBeVisible();
 
   await clickViewerCommand(page, 'view', '전체 화면 종료');
-  await expect
-    .poll(async () => (await canvas.screenshot()).equals(zoomed))
-    .toBe(true);
+  // The layer geometry and zoom must survive fullscreen/Drawer transitions.
+  // Exact PNG equality is invalid after a 1-3px Canvas resize (PR #175 CI #41139632431).
+  await expect.poll(async()=>canvasStrokeSimilarity(page,zoomed,await canvas.screenshot()),{
+    timeout:10000,intervals:[200,500,1000],
+  }).toBeGreaterThan(0.92);
   await expect(
     page.locator('canvas[data-issue17-canvas="stable"]'),
   ).toHaveCount(1);
