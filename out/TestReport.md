@@ -1,3 +1,12 @@
+## #166 — 최종 PR CI/병합·릴리스 인계 (2026-10-30 KST)
+
+- 변경 코드 최종 검증 HEAD `e9af3d192cb513d4182037f0431d5db5f14a4181`, [PR CI #41047867574](https://github.com/planner77/layoutManager/actions/runs/41047867574): Verify `124036411468` + Docker/Migration/Runtime `124036411148` **both completed/success**.
+- 리뷰 P2 네 건 모두 답변·Resolved(미해결 0), Main behind=0/mergeable=true 확인 뒤 [PR #170](https://github.com/planner77/layoutManager/pull/170) Squash, Main `83ce0417224813574ef45a859460d95c4345cf68`. 소스 HEAD는 추가 변경 없이 병합. #166 AC-S5-01~06 Owner Managed 합성 CI 수용으로 CLOSED/completed.
+- [Main CI #41050349517](https://github.com/planner77/layoutManager/actions/runs/41050349517) 시작, release-scope Job `124044552980` SUCCESS, GHCR Job `124044605339` 최초 관측 `in_progress`. 목표 App/Migrator 버전 `0.47.0/-migrate`와 latest alias의 **게시 완료·digest/최종 Main CI 결과는 NOT VERIFIED**.
+- 본 TestReport 및 FailureLedger 기록은 코드 병합 후 문서만 갱신; 과거 S5 로컬/CI 기록은 원래 SHA와 검증 범위 유지. 실제 CAD/GPU 2PC·현장 수용, APP_CREATED/Memo/업무 트리의 서버 영속 기능, S6 Reset는 후행이며 S5 완료로 소급하지 않음.
+
+---
+
 ## #166 — Scene 초기화 O(N²) 조회 제거 (2026-10-30)
 
 - 새 Codex P2 #4423072162: render work initialize의 Scene leaf당 `entities.find`를 사전 `layerById` Map과 O(1) 조회로 대체해 전체 매핑 O(N)으로 축소.
