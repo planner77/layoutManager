@@ -1,3 +1,12 @@
+## PR #168 Codex P2 보완 — Custom DTO Attribute 타입 보존 (2026-10-30)
+
+- **선행 확정:** 이전 HEAD `3be07597`의 [PR CI 40987779057](https://github.com/planner77/layoutManager/actions/runs/40987779057)는 SUCCESS. 그 후 새로 열린 Codex P2 리뷰를 신규 결함으로 인정한다. 이전 CI 성공은 정규화 정수 버퍼 round-trip의 증거가 아니었다.
+- **분석:** 기존 `CUSTOM_DTO`는 `normalized=true`와 원시 정수 배열을 저장하지만 타입 정보 없이 Float32로 복원하여 WebGL 및 BufferAttribute accessor에서 기하·색상·UV 의미가 변할 수 있다. 데이터 해시·origin 검증을 우회한 것이 아니라 schema 누락 문제다.
+- **변경:** 원본 typed array 종류를 명시 allowlist로 저장하고 복원, 정수 범위/위조/overflow 거부. 새 유닛 `src/tests/unit/scene-custom-dto.test.ts`에 정상/음성 사례 추가. 이전 schema 1/arrayType 누락 샘플은 에러로 거부하여 모호한 변환을 방지한다. 특수 Float16은 현재 미지원으로 명시 거절.
+- **검증 상태:** 이 보완의 실제 Vitest/Typecheck/Lint/Build/새 PR CI 및 Scene PoC E2E는 새 HEAD 결과 확인 전 **NOT VERIFIED**. 코드 변경/테스트 추가는 실행 PASS와 구분하며 새 CI 결과를 모니터링하지 않는다. 실DXF·GPU/2PC·CPU-only 생성/영속 DB/S3/운영 이미지/현장/DRM도 NOT RUN. 기존 SC-05~07 수치와 실패 원장은 당시 관측으로 유지한다.
+
+---
+
 ## #161–#163 Scene S0/S1/S2 독립 QA (2026-10-30)
 
 - **역할/기준:** 현행 AGENTS.md 매핑의 gpt-6-astra Manager `/root/scene_manager`가 요구사항·설계·AC를 먼저 기록하고, gpt-6-sol Developer `/root/scene_manager/developer`가 구현, 완료보고 검토 후 gpt-6-luna 독립 QA `/root/scene_manager/qa`가 검토·시험했다. Root는 전체 회귀·빌드 및 최종 Git/PR 작업을 담당한다. 브랜치 `feat/issues-161-163-scene`, 기반 `a208cf0`. 최종 소스 freeze 이후 QA가 수행한 시험과 Developer/Root의 선행 결과를 구분한다.

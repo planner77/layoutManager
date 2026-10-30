@@ -1,3 +1,10 @@
+## 0.45.0 후보 — PR #168 Codex P2 Custom DTO 복원 보완
+
+- `scene-custom-dto.ts`에서 정규화된 정수형 BufferAttribute의 원시 저장 타입과 normalized flag를 보존하고 타입·범위·오버플로·지원되지 않는 특수 Attribute를 명시 거부하도록 변경했다. 미기재 type의 구 PoC Custom DTO는 잘못된 결과를 만들지 않고 거부한다.
+- `SC-08` Vitest 정상/음성 회귀와 TestPlan/TestReport/Decisions/FailureLedger를 갱신했다. 이전 PR CI 성공과 수정 HEAD CI 미검증 상태를 구분한다. 운영 API/DB·CAD·GHCR/배포는 변경하지 않는다.
+
+---
+
 ## 0.45.0 후보 — #161–#163 CAD Scene S0/S1/S2
 
 - 순수 SceneAsset/SceneObject/AppObject·manifest 계약과 검증기를 추가하고 Version/source SHA·schema/builder/renderer/frame·불변 생성 Origin/ID를 구분했다. 실제 adapter 렌더 트리와 GeneratedDocument에 연결하며 기존 SOURCE/GENERATED·Undo/Redo·메모/JSON 동작을 유지한다.

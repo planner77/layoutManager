@@ -1,3 +1,13 @@
+## PR #168 — Codex P2 Custom DTO 정규화·복원 충실도 보완 (2026-10-30 KST)
+
+- **선행 CI 근거:** PR HEAD `3be07597a17fc3109ec94d334163e9f79adf64d8`, [PR CI #40987779057](https://github.com/planner77/layoutManager/actions/runs/40987779057) completed/**success**. 이 성공은 신규 Codex 리뷰가 제기한 의미적 복원 결함의 부재를 보장하지 않는다.
+- **신규 리뷰 결함 (CI 실패 아님):** PR #168 `scene-custom-dto.ts:52` Codex **P2**, unresolved thread `PRRT_kwDOUQjDfc6x0axA`. 작성기는 `Uint16Array([65535])` + `normalized=true` 원시값을 보존하지만 DTO에 배열 타입을 기록하지 않고 복원기는 무조건 `Float32BufferAttribute`를 만들어 `getX(): 1 → 65535`로 의미를 바꾼다. sha256/identity 검증이 통과해도 손실이 발생한다.
+- **보완:** 타입 allowlist(Int8/Uint8/Uint8Clamped/Int16/Uint16/Int32/Uint32/Float32/Float64)을 DTO `arrayType`으로 기록·동일 typed array로 복원하고 `normalized`을 유지. 정수 범위/소수 입력·타입 위조·Float32 overflow·미기재 타입을 명시 거부하며 specialized Float16/InstancedBufferAttribute는 미지원으로 거부한다. 기존 DTO schema=1 중 `arrayType`이 없는 이전 실험 payload는 안전한 복원 근거가 없어 fail-closed한다(S3 운영 저장 전 PoC 포맷). 
+- **회귀 보완:** `SC-08` 새 Vitest에서 정규화 UInt16 위치/UInt8 색/Int16 UV 및 Float64 정밀도·원시 버퍼 타입·실효 `getX/getY/getZ` 값과 악성 DTO를 검증한다. 기존 SC-05~07 브라우저 PoC, 전체 Vitest, Typecheck/Lint/Production Build, Viewer/권한 관련 E2E의 **최신 HEAD 결과는 새 CI 전까지 NOT VERIFIED**. 기존 실패 이력/기존 Run 결과는 수정하지 않는다.
+- **경계/게이트:** main behind/실제 충돌·리뷰 회신·스레드 resolution을 커밋 후 재조회한다. GHCR·Runtime/Prisma/DB/CAD/운영 배포·실DXF/DRM 검증은 범위 밖. 새 HEAD PR CI 시작은 별도 확인하고 결과 모니터링하지 않는다. 성공이 확인되지 않은 상태에서 병합·이슈 종료 금지.
+
+---
+
 ## #109 PR #159 — 2차 PR CI #40946304142 Unit 계약 불일치 (2026-10-30 KST)
 
 - **원본 실패:** [Run 40946304142](https://github.com/planner77/layoutManager/actions/runs/40946304142), attempt 1, HEAD `b5883922b5313cec123b7dcdcf30bdc39cd61216`, completed/**failure**. 1차 Run `40943801670`의 TS2304/webpack 실패·P2 두 건 기록은 아래에 보존한다.

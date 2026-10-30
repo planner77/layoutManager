@@ -1,3 +1,11 @@
+## PR #168 P2 — SC-08 Custom DTO BufferAttribute 정규화 회귀 (2026-10-30)
+
+- **정상:** `Uint16Array` + normalized=true의 raw 65535 → `BufferAttribute.getY(0)=1`; `Uint8Array` 정규화 색(128/255), `Int16Array` signed 최소값(-1), `Float64Array` 정밀도를 JSON 직렬화→DTO 복원 후 원시 typed array / normalized flag / 실효 accessor 값까지 일치시킨다.
+- **음성:** `arrayType` 누락(legacy PoC), 위조/미지원 타입, normalized 문자열, 정수 타입의 소수/범위 초과, Float32 cast overflow, 특수 Float16BufferAttribute를 거부한다. 원래 검증된 digest만으로 의미적 무결성을 주장하지 않는다.
+- **회귀:** SC-01~07 및 기존 default Vitest/브라우저 Scene PoC, 전체 Typecheck/Lint/Next Production Build, 기존 Viewer/메모/권한 회귀와 신규 코드의 fail-closed를 최신 HEAD에서 확인한다. 현재 **실행 결과 미확인**이며 CI 실행 전 PASS로 표시하지 않는다.
+
+---
+
 ## #161–#163 Scene S0/S1/S2 시험 계획 (2026-10-30, 구현 전)
 
 Manager 요구·설계/AC 기록 → gpt-6-sol Developer 구현 → gpt-6-luna 독립 QA → Manager 수용 → root commit/push/단일 PR/CI 시작 순서. CI는 시작까지만 확인하며 결과 모니터링하지 않는다.

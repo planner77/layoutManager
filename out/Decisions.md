@@ -1,3 +1,11 @@
+## ADR-059A — Custom DTO 정규화 버퍼의 저장 타입 보존 (2026-10-30)
+
+- **배경:** #168 P2에서 정규화된 정수 원시값을 Float32로 복원하면 Three BufferAttribute의 `getX/Y/Z` 실효 값이 달라짐. BufferAttribute의 원시 typed array와 normalized flag는 함께 의미를 가진다.
+- **선택:** SC-08용 custom DTO Attribute에 `arrayType`을 명시하고 허용 typed array별 생성자로 동일 타입을 복원한다. 정수 타입 원시 범위/정수성, 유한 값, Float32 변환 overflow 검사를 적용한다. 미지원 half-float/instanced Attribute 및 type이 없는 이전 PoC payload는 fail-closed. DTO는 S2 실험 포맷이며 S3 영속 적용 전에 legacy/schema version 처리 규약을 별도 확정한다.
+- **비범위:** 원본 DXF/실 운영 Scene Asset/API/DB 전환, GLB·Three JSON 동작과 DRM 특화 검증은 변경하지 않는다. 해시 통과는 별도의 의미적 버퍼 검증을 대체하지 못한다.
+
+---
+
 ## ADR-059 — #161–#163 Scene 계약 및 포맷 평가 (2026-10-30)
 
 **결정:** 최신 Owner #160에 따라 렌더링 Scene 객체의 앱 관리 ID와 생성 Origin을 정밀 DXF Handle 추적에서 분리한다. 기존 Source mapping은 조건부 정밀 기능에 유지하고 일반 객체 작업의 전면 선행조건으로 복원하지 않는다. 이번 단일 PR은 S0/S1/S2만 구현하며 S3 저장/S4 로더/S5 선택/S6 reset 실행은 후속이다. DRM H0~H3 및 실DXF는 이 개발의 선행 게이트가 아니다.
