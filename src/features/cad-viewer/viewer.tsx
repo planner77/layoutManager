@@ -614,15 +614,19 @@ export function CadViewer({
         const doc=getMemoSession();
         const old=doc.get(id);
         if(!old)throw new Error('메모를 찾을 수 없습니다.');
+        const snap=nearestSessionSnap(point),to=snap?.world??point;
         let item:MemoDraft;
         if(memoServerMode==='active'){
           if(!old.persisted||old.revision===undefined)throw new Error('저장된 메모의 revision이 없습니다.');
           item=doc.acceptPersisted(await mutatePersistedMemo('PATCH',versionId,{
-            expectedRevision:old.revision,operation:'move',anchorWcsXY:point
+            expectedRevision:old.revision,operation:'move',anchorWcsXY:to
           },id) as PersistedMemoDraft,{versionId,sourceSha256});
         }else if(memoServerMode==='off'){
-          item=doc.move(id,point,{versionId,sourceSha256});
+          item=doc.move(id,to,{versionId,sourceSha256});
         }else throw new Error('메모 서버 확인이 완료되지 않았습니다.');
+        if(snap)getSessionSnapStore().attach(id,snap);
+        else sessionSnaps.current?.detach(id);
+        syncSessionSnaps();
         setMemos(doc.list());setMemoError(null);setMemoSelectedId(id);
         setMemoFields(previous=>({...previous,
           ...(id===memoSelectedId?{}:{title:item.title,content:item.content}),
@@ -631,8 +635,9 @@ export function CadViewer({
       finally{memoSavingRef.current=false;setMemoBusy(false);}
     })();
   // Only a committed pointer-up invokes this callback.
+  // The session binding stays private; the server receives only a free WCS coordinate.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[versionId,sourceSha256,memoSelectedId,memoServerMode]);
+  },[versionId,sourceSha256,memoSelectedId,memoServerMode,nearestSessionSnap,getSessionSnapStore,syncSessionSnaps]);
   function startMemoPlacement() {
     if (!memoAvailable) return;
     if (memoPlacing) { closeMemoEditor(); return; }
