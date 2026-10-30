@@ -495,6 +495,8 @@ export function CadViewer({
         setContextMenu(null);return;
       }
       if(event.key==='Escape' && viewerShell.current?.querySelector('[role=menu]'))return;
+      // A floating Viewer panel drag owns ESC before memo/canvas/fullscreen layers.
+      if(event.key==='Escape' && viewerShell.current?.querySelector('[data-viewer-panel-dragging="true"]'))return;
       if(event.key==='Escape' && memoDragActive.current){
         event.preventDefault();event.stopImmediatePropagation();
         memoDragActive.current=false;
@@ -1512,6 +1514,7 @@ export function CadViewer({
   return <div className="space-y-3">
     <ViewerAppShell
       shellRef={viewerShell}
+      panelScopeKey={versionId+':'+sourceSha256+':'+renderer+':'+attempt}
       isFullscreen={isFullscreen}
       isNativeFullscreen={isNativeFullscreen}
       menuBar={

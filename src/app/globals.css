@@ -59,5 +59,7 @@ html:has([data-home-sticky='true']) { scroll-padding-top: calc(var(--home-nav-he
 
 @media (max-width:767px) { .viewer-command-trigger,.viewer-command-item,.viewer-drawer button,.home-filters button,.home-advanced > summary { min-height:44px; } }
 
-/* #85: mutually exclusive right-side Memo/Outline drawer, mobile modal shares shell policy. */
-.viewer-drawer-memos { top:12px; right:12px; width:min(22rem,34vw); }
+/* #85/#138: the right-hand Tree mounts once; floating placement is scoped to the Viewer session. */
+.viewer-drawer-memos { top:12px; right:12px; width:min(22rem,34vw); height:min(68dvh,620px); }
+.viewer-drawer-grab { touch-action:none; user-select:none; cursor:grab; }
+[data-viewer-panel-dragging="true"] .viewer-drawer-grab { cursor:grabbing; }
