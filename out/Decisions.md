@@ -1,3 +1,12 @@
+## ADR-062 — #84 M3 Anchor + #167 S6 Safe Reset (2026-10-31)
+
+- v0.47.1 CadMemo 열 수정 없이 CadMemoAnchor 새 테이블을 신규 Greenfield에서만 설치. 기존 DB baseline/SQL 지문은 독립적으로 검증하고 후행 설치 시 무단 자동 migration/Adopt 금지.
+- Memo Anchor는 FREE/ATTACHED/BROKEN, APP_CREATED는 영속 UUID, SOURCE는 과거 서버 canonical 검증을 통과한 sourceRef만. Derived movement sync와 BROKEN 처리만 CAD Outline writer에게 허용, 다른 Editor의 Memo 원문 수정/삭제 정책은 #172 결정 전 작성자-only.
+- Source-only reset은 SceneWork가 immutable Scene baseline으로 돌아가고 업무 데이터를 보존한다. ALL은 같은 Version의 live ID/Revision 전체 스냅샷·작성자 권한·Audit 원자 Soft Delete; 부분적 실패 409/전부 롤백. SceneAsset/Current/DXF 변경 금지, 화면/DB 분산 atomic 보증 주장 금지.
+- User 요청은 PR CI 시작까지. 실제 2PC/GPU/현장 검증·GHCR/운영 전환·DRM H0~H3 비범위. [설계](Issues84-167.md).
+
+---
+
 ## ADR-062 — #98/#83 독립 업무 영속·감사 정책 (2026-10-30)
 
 SceneAsset은 불변 렌더 산출물이고 CadOutline/CadMemo는 별도 Revision·출처 불변·업무 감사 데이터다. 새 empty Greenfield 3개 테이블만, 기존 DB 마이그레이션 금지. 익명 CAD 조회와 업무 읽기 분리, Site-Scoped Reader/Editor 및 Memo 작성자-only 변경. APP_CREATED WCS와 SOURCE_CANONICAL 서버 SHA/Handle 검증을 분리. CAS/논리 삭제/append-only audit 실패 시 전체 rollback. Show/Hide 비영속; Scene 변경 시 기존 앵커 강제 재배치 금지. #65/#84·타 Editor·물리 삭제는 승인 이전 기본 거부. [설계](Issues98-83.md).
