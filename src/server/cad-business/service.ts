@@ -131,7 +131,7 @@ export class BusinessRepository {
       {anchorX:(data as {anchorWcsXY:{x:number;y:number}}).anchorWcsXY.x,
        anchorY:(data as {anchorWcsXY:{x:number;y:number}}).anchorWcsXY.y};
    // An explicit free WCS move detaches the old object binding in the SAME CAS transaction.
-   if(operation==='move'&&anchorAvailable)await tx.cadMemoAnchor.deleteMany({where:{memoId:id,versionId}});
+   if((operation==='move'||remove)&&anchorAvailable)await tx.cadMemoAnchor.deleteMany({where:{memoId:id,versionId}});
    const casResult=await tx.cadMemo.updateMany({where:{id,versionId,revision:expected,deletedAt:null},
     data:{...update,revision:expected+1,updatedById:allowed.actorId,updatedAt:new Date().toISOString()}});
    if(casResult.count!==1)cas();

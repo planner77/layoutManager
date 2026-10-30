@@ -67,6 +67,9 @@ export async function resetBusinessVersion(db:Database,versionId:string,raw:unkn
   }else{
    // Privileged Outline writers cannot use this to delete other authors' Memos.
    if(activeMemos.some(m=>m.createdById!==memoActor.actorId))reject('RESET_MEMO_OWNER_REQUIRED',403);
+   // Delete dependent links first (same transaction), otherwise a later Outline move
+   // would select a dangling ATTACHED anchor and fail with MEMO_ANCHOR_INTEGRITY.
+   if(hasAnchors)await tx.cadMemoAnchor.deleteMany({where:{versionId,memoId:{in:activeMemos.map(m=>m.id)}}});
    for(const m of activeMemos){
     const changed=await tx.cadMemo.updateMany({
      where:{id:m.id,versionId,revision:m.revision,deletedAt:null},
