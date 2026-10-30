@@ -1,3 +1,11 @@
+## 0.47.0 후보 — #166 Scene S5 일반 객체 작업
+
+- 원본 Handle 매핑과 독립적인 Three.js Stable ObjectRef 선택, 지원 WCS 2D 렌더 기하의 임시 APP_CREATED 외곽선 생성 및 기존 목록·편집·메모 소비 경로를 연결한다.
+- DXF_IMPORTED 이동·회전·표시 차분과 전용 Undo/Redo를 immutable 기준 Scene·원본 DXF에서 분리한다. 혼합 Origin 변경은 전체 거절한다. 정밀 원본 SHA/Handle/canonical 검증은 명시 모드에서 유지한다.
+- 렌더 기반 외곽선 provenance는 선택적이며 strict 원본 JSON 계약과 구분한다. 새로운 DB/서버 업무 API·운영 migration·배포는 없다. 실제 검증과 미실행 범위는 TestReport, 누적 실패는 FailureLedger를 따른다. PR CI 결과 확인 전 릴리스/수용 완료를 주장하지 않는다.
+
+---
+
 ## 0.46.0 후보 — #164/#165 Scene Asset 영속화·Scene-first Viewer
 
 - #168 Scene domain/custom DTO를 재사용하고, typed array·geometry·Origin/ID·Version/source SHA·문자 검색 sidecar를 서버/브라우저에서 검증한다. Local/S3 immutable bytes와 SQLite SceneAsset/CurrentScene CAS·Audit, 실패 후보 추적을 추가한다.

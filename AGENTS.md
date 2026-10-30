@@ -1,3 +1,11 @@
+## Issue #166 — Scene 일반 작업과 정밀 원본 검증 분리 (0.47.0 후보)
+
+Scene 선택·외곽선·작업 차분 또는 JSON provenance를 변경할 때 [Architecture](out/Architecture.md)의 S5 절과 ADR-061, [TestPlan](out/TestPlan.md)의 S5-01~08을 먼저 읽는다. `RENDER`는 검증된 Scene Stable ID의 `DXF_IMPORTED` Object3D 전체이며 정밀 `SOURCE` Handle과 구분한다. 일반 작업·APP_CREATED 목록·WCS 메모의 게이트는 원본 매핑 수가 아니다. 정밀 원본 작업은 명시 모드에서 기존 SHA/Handle/canonical 검증을 수행한다.
+
+DXF_IMPORTED 변형은 세션 작업 차분, APP_CREATED는 GeneratedDocument로 관리한다. 기준 Scene Artifact·DXF bytes·Origin은 보존하며 혼합 Origin 명령을 일부만 적용하지 않는다. 렌더 파생 JSON과 strict 원본 parser는 별도 계약이다. 실제 검증·실패·후행 영속 기능 상태는 [TestReport](out/TestReport.md)/[FailureLedger](out/FailureLedger.md)를 따른다. PR CI 시작은 성공 판정이 아니며 이번 범위는 병합·GHCR·배포를 포함하지 않는다.
+
+---
+
 ## #109 PR #159 — CI 실패/리뷰 재발 방지 (2026-10-30)
 
 - 기존 CLI/SQLite 모듈을 Next App Router API가 import하면 빌드 컨텍스트가 변한다. Typecheck 외 **Next webpack Production Build**를 반드시 검증하고, CLI 전용 `new URL('../../',import.meta.url)` 같은 상대 URL의 번들러 자산 분석을 주의한다. 빌드 실패를 단순 Docker 일시 문제로 오판하지 않는다.

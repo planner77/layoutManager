@@ -1,17 +1,18 @@
 import type { ViewerFormat, ViewerRenderer } from '@/viewers/core/selection';
 
 /**
- * U3 fail-closed preconditions. Source/renderer identity is checked by #31's
- * mapping audit; this UI only enables the tool when mapped entities exist.
+ * S5: supported render geometry and exact DXF source have separate gates.
+ * An absent render count preserves the legacy exact-source caller contract.
  */
 export function outlineToolUnavailableReason({
-  renderer, format, loading, ready, entityCount, sourceSha256,
+  renderer, format, loading, ready, entityCount, renderEntityCount, sourceSha256,
 }: {
   renderer: ViewerRenderer;
   format: ViewerFormat;
   loading: boolean;
   ready: boolean;
   entityCount: number | undefined;
+  renderEntityCount?: number;
   sourceSha256: string;
 }): string | null {
   if (format !== 'DXF' || renderer !== 'three-dxf-viewer') {
@@ -22,8 +23,11 @@ export function outlineToolUnavailableReason({
   if (!/^[a-f0-9]{64}$/i.test(sourceSha256)) {
     return '원본 도면의 SHA-256을 검증할 수 없어 외곽선 생성을 차단했습니다.';
   }
-  if (!Number.isInteger(entityCount) || (entityCount ?? 0) <= 0) {
-    return '원본과 렌더러의 대응이 검증된 선택 가능 객체가 없습니다.';
+  const count=renderEntityCount===undefined?entityCount:Math.max(renderEntityCount,entityCount??0);
+  if (!Number.isInteger(count) || (count ?? 0) <= 0) {
+    return renderEntityCount===undefined
+      ? '원본과 렌더러의 대응이 검증된 선택 가능 객체가 없습니다.'
+      : '지원 가능한 WCS 2D 렌더 객체가 없습니다. 외곽선 목록과 독립 메모는 별도로 사용할 수 있습니다.';
   }
   return null;
 }

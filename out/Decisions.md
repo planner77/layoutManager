@@ -1,3 +1,19 @@
+## ADR-061 — #166 렌더 객체 일반 작업, 원본 정밀 모드, 불변 Scene 차분 (2026-10-30)
+
+**결정:** 지원되는 정상 Three Scene은 Handle/원본 Worker의 성공과 무관하게 일반 업무 작업을 허용한다. S4에서 렌더 projection 수를 mappedSource로 표시한 것은 정밀 출처 보증이 아니므로 별도 수치와 모드로 교정한다. 기존 SOURCE/GENERATED 호환을 위해 RENDER ref를 추가하고 DXF_IMPORTED/APP_CREATED 도메인 Origin은 그대로 유지한다.
+
+1. 일반 선택은 렌더 Object 전체를 단위로 한다. renderer 합병을 임의 분해해 CAD Entity Handle 선택으로 표시하지 않는다. 안정 식별자는 기존 Scene scope/tree path ID이며 renderer UUID는 lifetime lookup에만 쓴다.
+2. DXF_IMPORTED 작업은 메모리 delta/history로 제한하고 기준 Scene snapshot/원본 byte를 유지한다. APP_CREATED 편집은 기존 GeneratedDocument 명령을 사용한다. mixed mutation은 원자 거절, imported 삭제는 미지원이며 숨김으로 대체한다. 두 history는 UI에서 명시적으로 분리한다.
+3. Scene geometry 기반 결과는 APP_CREATED, browser-only, optional provenance이다. sourceEntityIds가 없는 정상 결과를 허용하되 Stable ID를 Handle로 채우거나 서버 canonical attestable로 승격하지 않는다. JSON 별도 render-basis 판별자를 사용하고 legacy strict source 검증은 유지한다.
+4. 원본 Worker/정밀 Handle mapping이 실패해도 render 작업/Tree/Memo는 유지한다. 정밀 원본 모드에서는 기존 fail-closed와 구체적 이유를 유지한다. Layer hide/Tool OFF/전환 중 뒤늦은 callback은 새 작업을 변경하지 않는다.
+5. #55/#56/#65/#71/#73/#83/#84의 독립 기능·영속 책임은 후행이다. 신규 DB/Prisma/Auth/서버 CAS·Audit 우회 없음. 자유 WCS Memo 지원을 연결 anchor/재접속 영속 지원으로 표현하지 않는다.
+
+이 결정은 개발·합성 시험·PR CI 시작까지의 승인 범위를 따른다. CI 결과는 모니터링하지 않고 NOT VERIFIED로 남기며 병합/GHCR/배포/이슈 종료를 수행하지 않는다.
+
+**구현 검토·로컬 수용 판정:** 지정 Developer 구현 보고를 검토한 뒤 지정 독립 QA의 집중 재검증 및 root의 실제 브라우저/저장 Scene/최종 Production Build·Typecheck 결과를 근거로 Manager가 S5의 로컬 개발 범위를 수용한다. 선택기 초기 레이어·converter layer metadata, optional provenance/JSON 단위, Ctrl 박스와 OrbitControls Pan 충돌 등 발견된 문제는 수정·재시험했고 실패 이력은 보존한다. 일반 E2E의 **95 PASS/2 과거 정책 기대 실패**와 수정된 해당 파일 **4/4 재시험 PASS**는 서로 다른 실행이며 전체 새 실행 97/97 PASS로 합치지 않는다. 수치·명령·실행 snapshot·최종 Lint 결과의 단일 기준은 [TestReport](TestReport.md), 실패·재작업 근거는 [FailureLedger](FailureLedger.md)이다. 추가 구현 재작업은 요청하지 않으며, root의 최종 staging/Secret 점검·PR/CI 시작은 계속한다. 이 판정은 원격 CI 성공·리뷰 완료·실 CAD/현장 수용·후행 영속 기능 완료·병합/배포 승인이 아니다.
+
+---
+
 ## ADR-060 — #164/#165 CUSTOM_DTO 영속 Scene와 명시 생성·Scene-first 로더 (2026-10-30)
 
 **결정/상태:** 단일 PR에서 S3 저장→S4 loader를 구현한다. #168의 typed-array 보존 custom DTO를 재사용하며 sidecar metadata도 blob digest/allowlist 검증에 포함한다. 실도면 전체 충실도/운영 포맷 장기 호환이 수용됐다고 주장하지 않는다. 이전 ADR-059/059A의 S2-only 범위는 과거 기록이며 이번에 검증된 지원 subset만 영속 경로에 채택한다.

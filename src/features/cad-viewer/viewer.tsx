@@ -32,6 +32,8 @@ import { ViewerSource } from '@/viewers/core/source';
 import { cadViewerUrl } from '@/viewers/core/link';
 import { ViewerLoadError, isViewerCancellation } from '@/viewers/core/viewer-load-error';
 import {runtimeCadHeaders} from '@/features/g7-runtime/client';
+import type {SceneWorkCommand,SceneWorkState} from '@/domain/scene-work';
+import {SceneWorkTools} from './scene-work-tools';
 
 export function CadViewer({
   versionId,
@@ -172,6 +174,7 @@ export function CadViewer({
   const [isFullscreen, setIsFullscreen] = useState(true);
   const [outlineInfo,setOutlineInfo]=useState<OutlineInfo|null>(null);
   const [outlineMode,setOutlineMode]=useState<'pan'|'select'>('pan');
+  const [outlineBasis,setOutlineBasis]=useState<'render'|'source'>('render');
   const [outlineSelection,setOutlineSelection]=useState<OutlineEntity[]>([]);
   const [canvasMode,setCanvasMode]=useState<'pan'|'objects'|'generated'>('pan');
   const [canvasSelection,setCanvasSelection]=useState<CanvasObjectRef[]>([]);
@@ -181,6 +184,8 @@ export function CadViewer({
   const [savedOutlines,setSavedOutlines]=useState<SavedOutline[]>([]);
   const [savedOverlayStates,setSavedOverlayStates]=useState<SavedOutlineOverlayState[]>([]);
   const [generatedHistory,setGeneratedHistory]=useState({undo:0,redo:0,limit:100});
+  const [sceneWork,setSceneWork]=useState<SceneWorkState>({objects:[],undo:0,redo:0,limit:100});
+  const [sceneWorkError,setSceneWorkError]=useState<string|null>(null);
   const [deleteRequest,setDeleteRequest]=useState<GeneratedDeleteRequest|null>(null);
   const [deleteError,setDeleteError]=useState<string|null>(null);
   const [translateX,setTranslateX]=useState('0');
@@ -283,6 +288,7 @@ export function CadViewer({
     setSavedOutlines(manager.current?.getSavedOutlines() ?? []);
     setSavedOverlayStates(manager.current?.getSavedOutlineStates() ?? []);
     setGeneratedHistory(manager.current?.getGeneratedHistory() ?? {undo:0,redo:0,limit:100});
+    setSceneWork(manager.current?.getSceneWorkState() ?? {objects:[],undo:0,redo:0,limit:100});
   }, []);
   /** Snapshot intent before confirmation, revalidate against the live Version on commit. */
   const openDelete = useCallback((savedOutlineId?:string) => {
@@ -295,7 +301,7 @@ export function CadViewer({
     try {
       // A Tree action must never strip SOURCE silently from a mixed selection.
       if(savedOutlineId){
-        if(current.getCanvasObjectSelection().some(ref=>ref.origin==='SOURCE'))
+        if(current.getCanvasObjectSelection().some(ref=>ref.origin!=='GENERATED'))
           throw new Error('SOURCE/혼합 선택은 읽기 전용입니다. 생성 개체만 다시 선택하세요.');
         if(!current.selectSavedOutline(savedOutlineId))
           throw new Error('삭제할 생성 개체가 없거나 숨김 상태입니다.');
@@ -447,6 +453,8 @@ export function CadViewer({
     setSavedOutlines([]);
     setSavedOverlayStates([]);
     setGeneratedHistory({undo:0,redo:0,limit:100});
+    setSceneWork({objects:[],undo:0,redo:0,limit:100});setSceneWorkError(null);
+    setOutlineBasis('render');
     setDeleteRequest(null);setDeleteError(null);setContextMenu(null);
     setTranslateX('0');setTranslateY('0');setTranslateError(null);
     setCanvasMode('pan');
@@ -597,7 +605,7 @@ export function CadViewer({
       outlineRequestRevisionRef.current++;
       manager.current?.clearCanvasObjectSelection();
       setCanvasMode('pan');
-      manager.current?.setSelectionMode('select');
+      manager.current?.setSelectionMode(outlineBasis==='source'?'select':'render');
       setOutlineMode('select');
       setOutlineNotice(null);
     } else {
@@ -609,7 +617,7 @@ export function CadViewer({
   }
   /** General selection and generated-only targeting are independent of U3. */
   function changeCanvasMode(next:'pan'|'objects'|'generated') {
-    if (!outlineAvailable) return;
+    if (!treeAvailable) return;
     closeMemoEditor();
     setDeleteRequest(null);setContextMenu(null);
     if (outlineEnabledRef.current) {
@@ -623,7 +631,23 @@ export function CadViewer({
   }
   function selectionMode(value:'pan'|'select') {
     if (!outlineEnabledRef.current || !outlineAvailable) return;
-    manager.current?.setSelectionMode(value);setOutlineMode(value);
+    manager.current?.setSelectionMode(value==='select'&&outlineBasis==='render'?'render':value);setOutlineMode(value);
+  }
+  function changeOutlineBasis(value:'render'|'source') {
+    if(value==='source'&&(!outlineInfo?.entityCount||outlineInfo.sourceUnavailableReason))return;
+    outlineRequestRevisionRef.current++;
+    manager.current?.cancelOutlinePreview();
+    manager.current?.clearCanvasObjectSelection();
+    setOutlineSelection([]);setPreview(null);setPreviewError(null);
+    setOutlineBasis(value);
+    if(outlineEnabledRef.current){manager.current?.setSelectionMode(value==='render'?'render':'select');setOutlineMode('select');}
+  }
+  function runSceneWork(command:SceneWorkCommand) {
+    try {
+      manager.current?.executeSceneWorkCommand(command);
+      setSceneWorkError(null);syncSavedOutlines();
+      setOutlineInfo(manager.current?.getOutlineInfo()??null);
+    }catch(error){setSceneWorkError(error instanceof Error?error.message:'Scene 작업을 적용하지 못했습니다.');}
   }
   function requestOutline(kind:OutlineKind) {
     if (!outlineEnabledRef.current || !outlineAvailable || !outlineSelection.length) return;
@@ -693,6 +717,7 @@ export function CadViewer({
     const current=manager.current;
     if (!current) return true;
     const hasWork=current.getSavedOutlines().length>0 || current.getGeneratedHistory().undo>0 ||
+      current.getSceneWorkState().undo>0 || current.getSceneWorkState().redo>0 ||
       current.getGeneratedHistory().redo>0 || current.getCanvasObjectSelection().length>0 ||
       current.getOutlineSelection().length>0;
     return !hasWork || window.confirm('임시 외곽선·실행 취소 이력·선택 상태가 사라집니다. 계속하시겠습니까?');
@@ -868,6 +893,7 @@ export function CadViewer({
         setLayers(nextLayers);
         setSelectedLayers(new Set(nextLayers));
         setSceneCandidate(!!instance.getSceneArtifact());
+        syncSavedOutlines();
         if(sceneMode==='build'){
           const url=new URL(window.location.href);url.searchParams.delete('source');window.history.replaceState(null,'',url);
         }
@@ -910,6 +936,7 @@ export function CadViewer({
   const outlineUnavailable = outlineToolUnavailableReason({
     renderer, format, loading, ready: state.ready,
     entityCount: outlineInfo?.entityCount, sourceSha256,
+    renderEntityCount:outlineInfo?.renderEntityCount,
   });
   const outlineAvailable = outlineUnavailable === null;
   const memoUnavailable =
@@ -929,14 +956,15 @@ export function CadViewer({
       ? '외곽선 목록은 DXF의 three-dxf-viewer에서만 사용할 수 있습니다.'
       : loading || !state.ready
         ? '도면 로딩이 완료된 뒤 외곽선 목록을 볼 수 있습니다.'
-        : !/^[a-f0-9]{64}$/i.test(sourceSha256) || !outlineInfo || !outlineInfo.entityCount
-          ? '검증된 원본 SHA-256 및 선택 가능한 외곽선 인덱스가 필요합니다.'
+        : !/^[a-f0-9]{64}$/i.test(sourceSha256)
+          ? '검증된 도면 Version/SHA 범위가 필요합니다.'
           : null;
   const treeAvailable=treeUnavailable===null;
   const editCapability=canvasEditCapability(canvasSelection,{versionId,sourceSha256});
-  const sourceCount=canvasSelection.filter(ref=>ref.origin==='SOURCE').length;
-  const generatedCount=canvasSelection.length-sourceCount;
-  const deleteModeAvailable=outlineAvailable && !appState.outlineToolEnabled &&
+  const sourceCount=canvasSelection.filter(ref=>ref.origin!=='GENERATED').length;
+  const generatedCount=canvasSelection.filter(ref=>ref.origin==='GENERATED').length;
+  const renderCount=canvasSelection.filter(ref=>ref.origin==='RENDER').length;
+  const deleteModeAvailable=treeAvailable && !appState.outlineToolEnabled &&
     canvasMode!=='pan';
   const canDeleteSelection=deleteModeAvailable && editCapability.canEdit;
   const closeMetadataOverlays=useCallback(()=>{setNameTipOpen(false);setNameTipPinned(false);setInfoOpen(false);},[]);
@@ -1111,7 +1139,7 @@ export function CadViewer({
             onArmDelete={()=>setMemoDeleteArmed(true)} onDelete={deleteMemo}
             onCancel={closeMemoEditor}
           />}
-          {outlineAvailable && <div data-testid="cad-object-selection-tools"
+          {treeAvailable && <div data-testid="cad-object-selection-tools"
             className="flex flex-wrap items-center gap-2 border-b border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-800">
             <strong>객체 선택 · 생성 개체 로컬 편집 (E3/E4)</strong>
             <Button size="sm" variant={canvasMode==='pan'&&!appState.outlineToolEnabled?'default':'outline'}
@@ -1119,7 +1147,7 @@ export function CadViewer({
               onClick={()=>changeCanvasMode('pan')}>탐색 (Pan)</Button>
             <Button size="sm" variant={canvasMode==='objects'&&!appState.outlineToolEnabled?'default':'outline'}
               data-testid="canvas-mode-objects" aria-pressed={canvasMode==='objects'&&!appState.outlineToolEnabled}
-              onClick={()=>changeCanvasMode('objects')}>원본·생성 선택</Button>
+              onClick={()=>changeCanvasMode('objects')}>렌더·생성 선택</Button>
             <Button size="sm" variant={canvasMode==='generated'&&!appState.outlineToolEnabled?'default':'outline'}
               data-testid="canvas-mode-generated" aria-pressed={canvasMode==='generated'&&!appState.outlineToolEnabled}
               onClick={()=>changeCanvasMode('generated')}>생성 개체만 선택</Button>
@@ -1170,17 +1198,23 @@ export function CadViewer({
             </span>
             <span data-testid="canvas-edit-gate" data-edit-enabled={editCapability.canEdit ? 'true' : 'false'}
               className={editCapability.canEdit?'font-medium text-teal-800':'font-medium text-amber-800'}>
-              {editCapability.canEdit?'생성 개체 편집 대상':'편집 불가 · 읽기 전용'} — {editCapability.reason}
+              {editCapability.canEdit?'APP_CREATED 편집 대상':'APP_CREATED 변경 불가'} — {editCapability.reason}
             </span>
             {canvasSelection.length>0 && <details>
               <summary>통합 선택 참조 ({canvasSelection.length}건)</summary>
               <ul className="max-h-24 overflow-y-auto pl-2">
                 {canvasSelection.slice(0,25).map(ref=><li key={ref.origin+':'+ref.id}>
-                  {ref.origin==='SOURCE'?'SOURCE · 원본 (읽기 전용)':'GENERATED · 생성 (로컬 편집 대상)'}
-                  {' · '}{ref.id.slice(0,64)}
+                  {ref.origin==='SOURCE'?'SOURCE · 정밀 원본 (읽기 전용)':ref.origin==='RENDER'?'RENDER · DXF_IMPORTED (세션 작업 차분)':'GENERATED · APP_CREATED (로컬 편집 대상)'}
+                  {' · '}<span title={ref.id}>{ref.origin==='RENDER'?ref.id.slice(-48):ref.id.slice(0,64)}</span>
                 </li>)}
               </ul>
             </details>}
+            <p className="w-full text-slate-600" data-testid="render-selection-scope">렌더 선택 단위: Object3D 전체. 평면 선과 단일 재질의 삼각형 표면을 지원합니다. 비평면·점·다중 재질·중첩 상위 기하는 표시만 합니다. 병합 BLOCK·Mesh·LineSegments의 개별 CAD Entity/Handle 선택을 보장하지 않습니다. 원본 {sourceCount}개 중 렌더 {renderCount}개.</p>
+            <SceneWorkTools state={sceneWork} selection={canvasSelection}
+              enabled={!appState.outlineToolEnabled&&canvasMode!=='pan'} error={sceneWorkError}
+              onCommand={runSceneWork}
+              onUndo={()=>{manager.current?.undoSceneWork();syncSavedOutlines();setOutlineInfo(manager.current?.getOutlineInfo()??null);}}
+              onRedo={()=>{manager.current?.redoSceneWork();syncSavedOutlines();setOutlineInfo(manager.current?.getOutlineInfo()??null);}} />
           </div>}
           {appState.outlineToolEnabled && outlineAvailable && outlineInfo ? <div
         data-testid="cad-outline-tools"
@@ -1188,11 +1222,18 @@ export function CadViewer({
       >
         <div className="mb-2 flex flex-wrap items-center gap-2">
           <strong>객체 선택 · 외곽선</strong>
+          <label htmlFor="outline-basis">기하 기준</label>
+          <select id="outline-basis" data-testid="outline-basis" value={outlineBasis}
+            className="rounded border border-slate-400 bg-white p-1 text-slate-900"
+            onChange={event=>changeOutlineBasis(event.target.value as 'render'|'source')}>
+            <option value="render">렌더 WCS 2D · APP_CREATED</option>
+            <option value="source" disabled={!outlineInfo.entityCount||!!outlineInfo.sourceUnavailableReason}>정밀 원본 · 검증된 DXF Entity</option>
+          </select>
           <Button size="sm" variant={outlineMode==='pan'?'default':'outline'} aria-pressed={outlineMode==='pan'} onClick={()=>selectionMode('pan')}>탐색 모드</Button>
-          <Button size="sm" variant={outlineMode==='select'?'default':'outline'} aria-pressed={outlineMode==='select'} disabled={!outlineInfo.entityCount} onClick={()=>selectionMode('select')}>선택 모드</Button>
+          <Button size="sm" variant={outlineMode==='select'?'default':'outline'} aria-pressed={outlineMode==='select'} disabled={outlineBasis==='source'?(!outlineInfo.entityCount||!!outlineInfo.sourceUnavailableReason):!outlineInfo.renderEntityCount} onClick={()=>selectionMode('select')}>선택 모드</Button>
           <Button size="sm" variant="outline" disabled={!outlineSelection.length} onClick={()=>manager.current?.clearOutlineSelection()}>선택 해제</Button>
-          <span data-testid="outline-selection-count">선택 {outlineSelection.length}개 / 분석 {outlineInfo.entityCount}개</span>
-          <span data-testid="outline-render-mapping">렌더 관측 {outlineInfo.renderedObjectCount??'—'}개 · 매핑 제외 {outlineInfo.excludedEntityCount??0}개 · 원본 인덱스 {outlineInfo.sourceIndexMs?.toFixed(1)??'—'} ms · 렌더 대조 {outlineInfo.renderAuditMs?.toFixed(1)??'—'} ms · 공간 인덱스 {outlineInfo.spatialIndexMs?.toFixed(1)??'—'} ms</span>
+          <span data-testid="outline-selection-count">선택 {outlineSelection.length}개 / 분석 {outlineBasis==='source'?outlineInfo.entityCount:outlineInfo.renderEntityCount??0}개</span>
+          <span data-testid="outline-render-mapping">렌더 대상 {outlineInfo.renderEntityCount??0}개 · 정밀 원본 매핑 {outlineInfo.entityCount}개 · 렌더 관측 {outlineInfo.renderedObjectCount??'—'}개 · 매핑 제외 {outlineInfo.excludedEntityCount??0}개</span>
           {outlineSelection.length>0 && <details>
             <summary>선택 객체 정보 ({outlineSelection.length}건)</summary>
             <ul className="max-h-24 overflow-y-auto pl-2">
@@ -1203,7 +1244,7 @@ export function CadViewer({
         <div className="mb-2 flex flex-wrap items-center gap-2">
           <Button size="sm" variant="outline" disabled={!outlineSelection.length} onClick={()=>requestOutline('CONVEX')}>볼록 외곽선 미리보기</Button>
           <Button size="sm" variant="outline" disabled={!outlineSelection.length} onClick={()=>requestOutline('PRECISE')}>정밀 외곽선 미리보기</Button>
-          <Button size="sm" disabled={!preview} title="기존 U3 미분류 브라우저 임시 확정 (schemaVersion 1 호환)" onClick={confirmOutline}>임시 확정</Button>
+          <Button size="sm" disabled={!preview} title="현재 기하 기준의 APP_CREATED 외곽선을 브라우저 세션에 확정합니다." onClick={confirmOutline}>임시 확정</Button>
           <label htmlFor="outline-type-select" className="font-medium">업무 타입</label>
           <select id="outline-type-select" data-testid="outline-type-select"
             className="max-w-48 rounded border border-slate-400 bg-white p-1 text-slate-900"
@@ -1225,6 +1266,8 @@ export function CadViewer({
           <Button size="sm" variant="outline" disabled={!savedCount} onClick={()=>manager.current?.clearSavedOutlines()}>임시 결과 삭제</Button>
         </div>
         {!selectableTypes.length && <p data-testid="outline-type-gate" className="mb-1 text-amber-800">서버에서 제공하는 활성·해당 Scope 업무 타입이 없습니다. 관리자 등록 및 보안 선행 이슈 #65 완료 전에는 타입 지정 확정을 사용할 수 없습니다. 기존 미분류 임시 확정은 서버에 저장되지 않습니다.</p>}
+        {outlineInfo.sourceUnavailableReason && <p data-testid="exact-source-unavailable" className="text-amber-800">정밀 원본: {outlineInfo.sourceUnavailableReason} · 일반 렌더 작업과 독립 메모는 사용 가능합니다.</p>}
+        {outlineBasis==='render' && <p className="text-slate-600">화면에 표시된 지원 geometry의 WCS XY 기하를 사용합니다. 볼록 경계는 근사 포락선이며 폐영역 검증은 화면 기하 기준입니다. 원본 CAD 정밀성·서버 canonical 검증을 의미하지 않습니다.</p>}
         <p className="text-slate-600">선택 모드: 클릭 한 개, Ctrl/⌘+클릭 토글, 좌→우 완전 포함, 우→좌 교차 선택 · Space+드래그 이동 · 휠 확대 · Esc 선택 취소.</p>
         <p className="mt-1 text-slate-600">좌표: WCS XY · 도면 단위: {outlineInfo.unitCode===4?'mm':outlineInfo.unitCode===1?'inch':outlineInfo.unitCode===6?'m':outlineInfo.unitCode===5?'cm':outlineInfo.unitCode===0||outlineInfo.unitCode===null?'미상':'INSUNITS '+outlineInfo.unitCode} · 서버 저장/다시 불러오기 미지원 (권한 정책 결정 전)</p>
         {preview && <p data-testid="outline-preview" className="mt-1 text-cyan-800">{preview.kind==='CONVEX'?'볼록 경계':'실제 폐곡선 Union'} · {preview.geometry.type} · {preview.durationMs.toFixed(1)}ms · {preview.persistable?'안정적 Handle':'임시 참조 포함'}</p>}

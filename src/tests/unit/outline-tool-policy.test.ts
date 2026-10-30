@@ -22,6 +22,13 @@ describe('TC-U3-UNIT-002: outline tool availability is fail-closed', () => {
     expect(outlineToolUnavailableReason({ ...supported, entityCount: 0 })).toMatch(/검증된 선택 가능 객체/);
     expect(outlineToolUnavailableReason({ ...supported, entityCount: undefined })).toMatch(/검증된 선택 가능 객체/);
   });
+  it('S5 keeps render work independent from exact-source mappings and Worker failure',()=>{
+    expect(outlineToolUnavailableReason({...supported,entityCount:0,renderEntityCount:2})).toBeNull();
+    expect(outlineToolUnavailableReason({...supported,entityCount:9,renderEntityCount:0})).toBeNull();
+    expect(outlineToolUnavailableReason({...supported,entityCount:0,renderEntityCount:0})).toMatch(/WCS 2D/);
+    expect(outlineToolUnavailableReason({...supported,entityCount:0})).toMatch(/검증된 선택/);
+    expect(outlineToolUnavailableReason({...supported,renderEntityCount:2,sourceSha256:''})).toMatch(/SHA-256/);
+  });
 });
 
 describe('TC-U3-UNIT-003: ignore late Worker failures after OFF or replacement', () => {

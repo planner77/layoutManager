@@ -1,3 +1,13 @@
+## 0.47.0 후보 — Three.js 객체 작업 (#166)
+
+`작업 → 외곽선 생성`의 기본 기하 기준은 **렌더 WCS 2D**입니다. 원본 Handle 매핑이 없거나 원본 분석 Worker가 실패해도 지원하는 Three.js 객체를 선택해 임시 APP_CREATED 외곽선을 만들 수 있습니다. 선택 단위는 Object3D 전체이며 병합 BLOCK/Mesh/LineSegments의 개별 CAD Entity 선택을 보장하지 않습니다. 정밀 원본 모드는 별도로 선택하며 기존 원본 검증을 유지합니다.
+
+`작업 → 선택·편집 도구`에서 렌더·생성 객체를 선택합니다. DXF_IMPORTED만 선택하면 세션 작업 차분으로 이동·회전·숨김/복원·실행 취소/다시 실행을 사용할 수 있습니다. 생성 객체는 기존 이동·삭제·Undo/Redo 및 외곽선 목록을 사용합니다. 혼합 선택의 변형은 전체 거절됩니다. 원본 DXF와 저장된 기준 Scene은 보존됩니다.
+
+새 외곽선·작업 차분·독립 WCS 메모는 현재 브라우저 세션에만 있으며 다시 불러오기/Renderer/Version 전환 시 소실됩니다. Scene Asset 저장에는 업무 편집 결과가 포함되지 않습니다. 렌더 파생 JSON은 원본 canonical 검증 자료가 아니며 정밀 원본 JSON과 구분됩니다. 영속 CRUD/트리/연결 앵커는 #98/#73/#83/#84 후속입니다. 최신 시험·PR CI 상태는 [TestReport](out/TestReport.md)를 따릅니다.
+
+---
+
 # CAD Web Viewer P.O.C.
 
 ## 0.46.0 후보 — Scene Asset 저장과 Scene 우선 조회 (#164/#165)

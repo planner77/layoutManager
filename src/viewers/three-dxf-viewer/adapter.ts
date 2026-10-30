@@ -6,6 +6,8 @@ import type { CadViewerAdapter } from '../core/adapter';
 import { explicitElevation } from './normalize';
 import {sceneScope,sourceUnitFromDxf,tagImportedTree,tagAppTree} from './scene-tags';
 import type {SceneAsset} from '../../domain/cad-scene';
+import type {SceneScope,CadSceneObjectRef} from '../../domain/cad-scene';
+import {validSceneRef} from '../../domain/cad-scene';
 import type {ReadyScene} from '../core/source';
 import type {SceneArtifact} from '../core/adapter';
 import {serializeSourceScene,restoreSourceScene,storedSceneViewerData} from './scene-serialization';
@@ -16,7 +18,7 @@ import {ViewerLoadError} from '../core/viewer-load-error';
 import {SelectionController,type SelectionMode} from './selection-controller';
 import {reconcileRenderCoverage,type RenderObservation,type RenderCoverage} from './render-coverage';
 import type {DxfOutlineIndex,OutlineEntity,OutlineKind,OutlinePath} from '../core/outline-geometry';
-import type {OutlineResult} from '../core/outline-compute';
+import {computeRenderOutline,type OutlineResult} from '../core/outline-compute';
 import type {OutlineInfo,SavedOutline,SavedOutlineOverlayState} from '../core/adapter';
 import type {OutlineAssignment} from '../../domain/outline-assignment';
 import {parseOutlineAssignmentMetadata} from '../../domain/outline-assignment';
@@ -24,9 +26,10 @@ import {outlineGeometryBounds} from '../../domain/outline-tree';
 import {selectedTranslationIds,validTranslationPreview} from '../../domain/generated-translate';
 import {canvasEditCapability,canvasObjectRef,createGeneratedId,validCanvasScope,type CanvasObjectRef} from '../../domain/canvas-object-selection';
 import {
-  GeneratedDocument,generatedResult,
+  GeneratedDocument,generatedResult,IDENTITY_2D,
   type GeneratedCommand,type Affine2D,
 } from '../../domain/generated-document';
+import {SceneWorkDocument,type SceneWorkCommand,type SceneWorkState} from '../../domain/scene-work';
 
 function release(group: THREE.Object3D) {
   const geometries = new Set<THREE.BufferGeometry>(), materials = new Set<THREE.Material>(), textures = new Set<THREE.Texture>();
@@ -54,6 +57,10 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
   private cancel?: () => void;
   private bounds = new THREE.Box3();
   private index?: DxfOutlineIndex;
+  private renderIndex?:DxfOutlineIndex;
+  private sceneWork?:SceneWorkDocument;
+  private sceneObjects=new Map<string,{object:THREE.Object3D;baseLocal:THREE.Matrix4;baseWorld:THREE.Matrix4;intrinsicVisible:boolean;layer:string}>();
+  private rendererIds=new Map<string,string>();
   private indexError?: string;
   private renderCoverage?: RenderCoverage;
   private spatialIndexMs?:number;
@@ -176,6 +183,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
       this.object=object;this.scene.add(object);this.bounds.setFromObject(object);
       if(!this.bounds.isEmpty() && ![...this.bounds.min.toArray(),...this.bounds.max.toArray()].every(Number.isFinite)) throw new Error('유효하지 않은 도형 좌표');
       this.fitToView();this.render();
+      if(this.outline&&this.sceneAsset)this.initializeRenderWork(this.sceneAsset.scope);
       if(this.outline && !this.bounds.isEmpty()) {
         try {
           const indexStarted=performance.now();
@@ -187,19 +195,9 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
           const auditStarted=performance.now();
           this.renderCoverage=this.auditRenderedObjects(this.index.entities);
           this.renderAuditMs=performance.now()-auditStarted;
-          this.visibleLayers=new Set(this.getLayers());
           const selectable=this.renderCoverage.selectable.filter(e=>this.visibleLayers.has(e.layer));
-          this.selector=new SelectionController(this.renderer.domElement,this.container,selectable,
-            (x,y)=>this.screenToWorld(x,y),this.selectionChanged,
-            pan=>{this.controls.mouseButtons.LEFT=pan?THREE.MOUSE.PAN:THREE.MOUSE.ROTATE;},
-            this.objectSelectionChanged,{
-              begin:ids=>this.beginGeneratedDrag(ids),
-              move:(start,current)=>this.moveGeneratedDrag(start,current),
-              end:(start,current)=>this.endGeneratedDrag(start,current),
-              cancel:()=>this.dropTranslationPreview(),
-            });
-          this.spatialIndexMs=this.selector.indexBuildMs;
-          this.selector.setMode(this.mode);
+          this.selector?.setSourceEntities(selectable);
+          this.spatialIndexMs=this.selector?.indexBuildMs;
         }catch(error) {
           if(this.disposed)throw error;
           this.indexError=error instanceof Error?error.message:'객체 선택 인덱스를 만들 수 없습니다.';
@@ -209,7 +207,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
         this.sceneArtifact=await serializeSourceScene(object,this.sceneAsset,'CUSTOM_DTO',{textIndex:extractDxfText(source)});
         if(this.disposed)throw new DOMException('취소됨','AbortError');
       }
-      return {empty:this.bounds.isEmpty(),entityCount:viewer.lastDXF?.entities?.length,warning:this.indexError?'도면은 표시되었지만 객체 선택 인덱스 생성에 실패했습니다. 레이어 확인·외곽선 작업은 제한됩니다.':undefined};
+      return {empty:this.bounds.isEmpty(),entityCount:viewer.lastDXF?.entities?.length,warning:this.indexError?'원본 정밀 선택 자료를 만들 수 없습니다. 렌더 객체 작업은 계속 사용할 수 있습니다.':undefined};
     } catch(error) {
       if(error instanceof DOMException && error.name==='AbortError') throw error;
       throw new Error('DXF 처리에 실패했습니다. 파일과 글꼴 로드를 확인해주세요.');
@@ -223,19 +221,10 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     if(!this.bounds.isEmpty()&&![...this.bounds.min.toArray(),...this.bounds.max.toArray()].every(Number.isFinite))throw new Error('SCENE_BOUNDS_INVALID');
     this.sceneTextIndex=storedSceneViewerData(source.bytes)?.textIndex;
     this.document?.setSourceUnit(source.manifest.scope.sourceUnit);
-    this.index=sceneOutlineProjection(object,source.manifest.scope);
-    this.renderCoverage={selectable:this.index.entities,mappedSource:this.index.entities.length,renderedObjects:this.index.entities.length,unmappedSource:0,boundsMismatch:0,warnings:[]};
-    this.visibleLayers=new Set(this.getLayers());
-    this.selector=new SelectionController(this.renderer.domElement,this.container,this.index.entities,
-      (x,y)=>this.screenToWorld(x,y),this.selectionChanged,
-      pan=>{this.controls.mouseButtons.LEFT=pan?THREE.MOUSE.PAN:THREE.MOUSE.ROTATE;},
-      this.objectSelectionChanged,{
-        begin:ids=>this.beginGeneratedDrag(ids),move:(start,current)=>this.moveGeneratedDrag(start,current),
-        end:(start,current)=>this.endGeneratedDrag(start,current),cancel:()=>this.dropTranslationPreview(),
-      });
-    this.selector.setMode(this.mode);
+    this.initializeRenderWork(source.manifest.scope);
+    this.indexError='READY Scene에는 검증된 원본 Entity 인덱스가 없습니다.';
     this.fitToView();this.render();
-    return {empty:this.bounds.isEmpty(),entityCount:this.index.entities.length,metrics:{parseMs:0}};
+    return {empty:this.bounds.isEmpty(),entityCount:this.renderIndex?.entities.length??0,metrics:{parseMs:0}};
   }
   getSceneArtifact(){return this.sceneArtifact;}
   getSceneTextIndex(){
@@ -274,10 +263,107 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     return [...names].sort();
   }
   showLayer(name:string,visible:boolean) {
-    this.object?.traverse(o=>{if((o.userData.cadLayer??o.userData.entity?.layer)===name)o.visible=visible;});
     if(visible)this.visibleLayers.add(name);else this.visibleLayers.delete(name);
+    if(this.sceneWork)this.applySceneWork();
+    else this.object?.traverse(o=>{if((o.userData.cadLayer??o.userData.entity?.layer)===name)o.visible=visible;});
     this.selector?.setVisibleLayers(this.visibleLayers);this.render();
   }
+
+  private initializeRenderWork(scope:SceneScope){
+    if(!this.object)return;
+    this.sceneWork?.dispose();this.sceneObjects.clear();this.rendererIds.clear();
+    this.renderIndex=sceneOutlineProjection(this.object,scope);
+    const accepted=new Set(this.renderIndex.entities.map(e=>e.id));
+    this.object.updateWorldMatrix(true,true);
+    this.object.traverse(object=>{
+      const ref:unknown=object.userData.cadSceneRef;
+      if(!validSceneRef(ref,scope)||ref.origin!=='DXF_IMPORTED'||!accepted.has(ref.id))return;
+      const layer=this.renderIndex!.entities.find(e=>e.id===ref.id)!.layer;
+      this.sceneObjects.set(ref.id,{object,baseLocal:object.matrix.clone(),
+        baseWorld:object.matrixWorld.clone(),intrinsicVisible:object.visible,layer});
+      this.rendererIds.set(object.uuid,ref.id);
+    });
+    this.sceneWork=new SceneWorkDocument(scope,[...this.sceneObjects.keys()].map(id=>
+      this.sceneObjects.get(id)!.object.userData.cadSceneRef as CadSceneObjectRef));
+    this.visibleLayers=new Set(this.getLayers());
+    this.selector?.dispose();
+    this.selector=new SelectionController(this.renderer.domElement,this.container,[],
+      (x,y)=>this.screenToWorld(x,y),this.selectionChanged,
+      pan=>{
+        // OrbitControls maps Ctrl/Meta+ROTATE to PAN even with rotation disabled.
+        // Selection modifiers must remain owned by the selection controller.
+        this.controls.enablePan=pan;
+        this.controls.mouseButtons.LEFT=pan?THREE.MOUSE.PAN:THREE.MOUSE.ROTATE;
+      },
+      this.objectSelectionChanged,{
+        begin:ids=>this.beginGeneratedDrag(ids),move:(start,current)=>this.moveGeneratedDrag(start,current),
+        end:(start,current)=>this.endGeneratedDrag(start,current),cancel:()=>this.dropTranslationPreview(),
+      });
+    this.selector.setVisibleLayers(this.visibleLayers);
+    this.selector.setRenderEntities(this.renderIndex.entities.filter(e=>this.effectivelyVisible(e.id)));
+    this.selector.setMode(this.mode);
+    this.updateGeneratedCandidates();
+  }
+  private effectivelyVisible(id:string):boolean{
+    const row=this.sceneObjects.get(id);
+    if(!row||!this.sceneWork?.get(id).visible||!this.visibleLayers.has(row.layer))return false;
+    for(let node:THREE.Object3D|null=row.object;node;node=node.parent){
+      if(node===row.object){if(!row.intrinsicVisible)return false;}
+      else if(!node.visible)return false;
+    }
+    return true;
+  }
+  private sourceWorkChanged():boolean{
+    return this.sceneWork?.getState().objects.some(o=>!o.visible||
+      o.transform.some((n,i)=>n!==IDENTITY_2D[i]))??false;
+  }
+  private applySceneWork(){
+    if(!this.sceneWork||!this.object)return;
+    // All selectable render primitives are leaves. Parent world remains the immutable baseline.
+    for(const [id,row] of this.sceneObjects){
+      const delta=this.sceneWork.get(id),[a,b,c,d,e,f]=delta.transform;
+      const wcs=new THREE.Matrix4().set(a,c,0,e,b,d,0,f,0,0,1,0,0,0,0,1);
+      const parentWorld=row.object.parent?.matrixWorld??new THREE.Matrix4();
+      const local=parentWorld.clone().invert().multiply(wcs).multiply(row.baseWorld);
+      row.object.matrixAutoUpdate=false;row.object.matrix.copy(local);
+      row.object.visible=row.intrinsicVisible&&delta.visible&&this.visibleLayers.has(row.layer);
+    }
+    this.object.updateWorldMatrix(true,true);
+    this.renderIndex=sceneOutlineProjection(this.object,this.sceneWork.scope);
+    this.selector?.setRenderEntities(this.renderIndex.entities.filter(e=>this.effectivelyVisible(e.id)));
+    if(this.sourceWorkChanged()){
+      if(this.mode==='select')this.selector?.clearObjects();
+    }
+    this.render();
+  }
+  getSceneWorkState():SceneWorkState{
+    return this.sceneWork?.getState()??{objects:[],undo:0,redo:0,limit:100};
+  }
+  executeSceneWorkCommand(command:SceneWorkCommand):void{
+    if(!this.sceneWork)throw new Error('렌더 Scene 작업이 준비되지 않았습니다.');
+    const selection=this.getCanvasObjectSelection();
+    if(command.type!=='Visibility'||!command.visible){
+      if(this.mode!=='render'&&this.mode!=='objects')throw new Error('렌더 선택 모드에서만 작업할 수 있습니다.');
+    }
+    // Validate all transformed WCS bounds before any delta is committed.
+    if(command.type!=='Visibility')for(const id of command.ids){
+      const row=this.sceneObjects.get(id),entity=this.renderIndex?.entities.find(e=>e.id===id);
+      if(!row||!entity)throw new Error('현재 Scene 객체를 찾을 수 없습니다.');
+      const [x0,y0,x1,y1]=entity.bounds;
+      const theta=command.type==='Rotate'?command.angleDegrees*Math.PI/180:0;
+      for(const [x,y] of [[x0,y0],[x0,y1],[x1,y0],[x1,y1]]){
+        const nx=command.type==='Translate'?x+command.dx:
+          command.pivot[0]+Math.cos(theta)*(x-command.pivot[0])-Math.sin(theta)*(y-command.pivot[1]);
+        const ny=command.type==='Translate'?y+command.dy:
+          command.pivot[1]+Math.sin(theta)*(x-command.pivot[0])+Math.cos(theta)*(y-command.pivot[1]);
+        if(!Number.isFinite(nx)||!Number.isFinite(ny)||Math.abs(nx)>1e12||Math.abs(ny)>1e12)
+          throw new Error('작업 결과 WCS 좌표가 유효 범위를 벗어났습니다.');
+      }
+    }
+    this.sceneWork.execute(command,selection);this.applySceneWork();this.cancelOutlinePreview();
+  }
+  undoSceneWork():boolean{const changed=this.sceneWork?.undo()??false;if(changed)this.applySceneWork();return changed;}
+  redoSceneWork():boolean{const changed=this.sceneWork?.redo()??false;if(changed)this.applySceneWork();return changed;}
 
   /** Reconcile only by top-level DXF handles, not screen bounds or mesh order.
    * Both handle and WCS bounds must agree. Missing/merged/unsupported content
@@ -369,7 +455,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     this.refreshSavedHighlight();
     if(!this.outline || !validCanvasScope(this.outline))return;
     this.outline.onObjectSelection?.([
-      ...sources.map(e=>canvasObjectRef('SOURCE',e.id,this.outline!)),
+      ...sources.map(e=>canvasObjectRef(this.mode==='select'?'SOURCE':'RENDER',e.id,this.outline!)),
       ...generated.map(id=>canvasObjectRef('GENERATED',id,this.outline!)),
     ]);
   };
@@ -520,24 +606,32 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
   }
   getOutlineInfo():OutlineInfo|null {
     if(!this.outline)return null;
-    if(!this.index && !this.indexError)return null;
-    return {entityCount:this.renderCoverage?.mappedSource??0,unitCode:this.index?.unitCode??null,
+    if(!this.index && !this.indexError && !this.renderIndex)return null;
+    const changed=this.sourceWorkChanged();
+    const unavailable=changed?'렌더 객체 작업으로 원본 정밀 선택 상태가 달라졌습니다. Scene 작업을 되돌리세요.':
+      this.indexError??(!this.renderCoverage?.mappedSource?'원본과 렌더러의 대응이 검증된 DXF Entity가 없습니다.':undefined);
+    return {entityCount:changed?0:this.renderCoverage?.mappedSource??0,unitCode:this.index?.unitCode??this.renderIndex?.unitCode??null,
+      renderEntityCount:this.renderIndex?.entities.length??0,
+      exactSourceEntityCount:changed?0:this.renderCoverage?.mappedSource??0,
+      sourceUnavailableReason:unavailable,
       renderedObjectCount:this.renderCoverage?.renderedObjects??0,
       excludedEntityCount:(this.renderCoverage?.unmappedSource??0)+(this.renderCoverage?.boundsMismatch??0),
       spatialIndexMs:this.spatialIndexMs,
       sourceIndexMs:this.sourceIndexMs,renderAuditMs:this.renderAuditMs,
       warnings:[...(this.indexError?[this.indexError]:[]),
-        ...(this.renderCoverage?.warnings??[]),...(this.index?.warnings??[])]};
+        ...(this.renderCoverage?.warnings??[]),...(this.index?.warnings??[]),...(this.renderIndex?.warnings??[])]};
   }
   setSelectionMode(mode:SelectionMode){
     this.cancelGeneratedCommand();
+    if(mode==='select'&&this.sourceWorkChanged())
+      throw new Error('렌더 객체 변경 중에는 원본 정밀 선택을 사용할 수 없습니다.');
     this.mode=mode;this.selector?.setMode(mode);
   }
   getOutlineSelection(){return this.selector?.getSelection()??[];}
   clearOutlineSelection(){this.selector?.clear();}
   getCanvasObjectSelection():CanvasObjectRef[]{
     if(!this.selector||!this.outline||!validCanvasScope(this.outline))return [];
-    return [...this.selector.getSelection().map(e=>canvasObjectRef('SOURCE',e.id,this.outline!)),
+    return [...this.selector.getSelection().map(e=>canvasObjectRef(this.mode==='select'?'SOURCE':'RENDER',e.id,this.outline!)),
       ...this.selector.getSelectedGeneratedIds().map(id=>canvasObjectRef('GENERATED',id,this.outline!))];
   }
   clearCanvasObjectSelection(){this.cancelGeneratedCommand();this.selector?.clearObjects();}
@@ -548,7 +642,9 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     return canvasEditCapability(this.getCanvasObjectSelection(),this.outline??{versionId:'',sourceSha256:''});
   }
   async previewOutline(kind:OutlineKind):Promise<OutlineResult> {
-    if(!this.index||!this.selector)throw new Error(this.indexError??'DXF 객체 인덱스가 준비되지 않았습니다.');
+    if(!this.selector)throw new Error('객체 선택이 준비되지 않았습니다.');
+    if(this.mode==='select'&&!this.index)throw new Error(this.indexError??'DXF 객체 인덱스가 준비되지 않았습니다.');
+    if(this.mode!=='select'&&this.mode!=='render'&&this.mode!=='objects')throw new Error('선택 모드에서 외곽선을 만드세요.');
     const selected=this.selector.getSelection();
     if(!selected.length)throw new Error('외곽선을 만들 객체를 먼저 선택하세요.');
     // Invalidate the old selection's preview before a new worker can finish.
@@ -556,7 +652,9 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     this.previewKind=kind;
     const sequence=++this.computeSequence;
     try {
-      const result=await this.runOutlineWorker<OutlineResult>('compute',{kind,entities:selected,tolerance:0.02});
+      const result=this.mode==='select'
+        ? await this.runOutlineWorker<OutlineResult>('compute',{kind,entities:selected,tolerance:0.02})
+        : computeRenderOutline(kind,selected,0.02);
       if(this.disposed||sequence!==this.computeSequence)throw new DOMException('취소됨','AbortError');
       this.preview=result;
       if(this.previewGroup){this.scene.remove(this.previewGroup);release(this.previewGroup);}
@@ -579,7 +677,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
   }
   confirmOutline(assignment?:OutlineAssignment):SavedOutline {
     if(!this.preview)throw new Error('미리보기를 먼저 생성해야 합니다.');
-    if(assignment && !this.preview.persistable)throw new Error('불안정한 Entity 참조는 타입 지정 확정이 불가합니다.');
+    if(assignment && !this.preview.persistable)throw new Error('원본 정밀 근거가 없는 렌더 결과에는 업무 타입을 지정할 수 없습니다.');
     const typed=assignment?parseOutlineAssignmentMetadata(assignment):null;
     if(!this.document)throw new Error('검증된 Version/SHA 범위가 없습니다.');
     const count=this.document.getObjects().length;
@@ -605,6 +703,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
   getSavedOutlines():SavedOutline[]{
     return (this.document?.getObjects()??[]).map(item=>({
       id:item.savedOutlineId,createdAt:item.createdAt,
+      sceneRef:item.sceneRef,
       result:generatedResult(item),
       ...(item.outlineTypeId?{outlineTypeId:item.outlineTypeId,
         outlineTypeName:item.outlineTypeName??undefined,name:item.name}:{}),
@@ -668,6 +767,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     this.dropTranslationPreview();
     for(const group of [this.selectionGroup,this.previewGroup,this.savedGroup,this.selectedSavedGroup])if(group)release(group);
     this.savedGroups.clear();this.renderedTransforms.clear();this.document?.dispose();this.document=undefined;
+    this.sceneWork?.dispose();this.sceneWork=undefined;this.sceneObjects.clear();this.rendererIds.clear();
     this.controls.removeEventListener('change',this.cameraChanged);
     this.sceneArtifact=undefined;this.sceneTextIndex=undefined;
     this.controls.dispose();if(this.object)release(this.object);this.scene.clear();
