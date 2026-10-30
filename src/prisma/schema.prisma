@@ -290,6 +290,7 @@ model CadOutline {
   @@index([versionId,deletedAt],map:"ix_cad_outline_version_live")
 }
 model CadMemo {
+  anchor CadMemoAnchor?
   id String @id
   versionId String @map("version_id")
   sourceSha256 String @map("source_sha256")
@@ -329,4 +330,20 @@ model CadBusinessAudit {
   site CadSite @relation(fields:[siteId],references:[id],onDelete:NoAction,onUpdate:NoAction)
   @@index([versionId,timestampUtc],map:"ix_cad_business_audit_version_time")
   @@index([actorUserId,timestampUtc],map:"ix_cad_business_audit_actor_time")
+}
+
+/** #84: optional M3 binding. Legacy v0.47.1 CadMemo columns remain unchanged. */
+model CadMemoAnchor {
+ memoId String @id @map("memo_id")
+ versionId String @map("version_id")
+ sourceSha256 String @map("source_sha256")
+ status String
+ targetOrigin String? @map("target_origin")
+ targetId String? @map("target_id")
+ localX Float? @map("local_x")
+ localY Float? @map("local_y")
+ createdAt String @map("created_at")
+ updatedAt String @map("updated_at")
+ memo CadMemo @relation(fields:[memoId],references:[id],onDelete:NoAction,onUpdate:NoAction)
+ @@index([versionId,targetOrigin,targetId,status],map:"ix_cad_memo_anchor_target")
 }

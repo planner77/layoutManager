@@ -12,6 +12,7 @@ import { closeSync, constants, existsSync, fstatSync, lstatSync,
 import path from 'node:path';
 import type { IsolatedDb } from '../g7-staging/g1-store';
 import { CAD_BUSINESS_DDL } from '../cad-business/schema-ddl';
+import { CAD_ANCHOR_DDL } from '../cad-business/anchor-ddl';
 import { G7_GREENFIELD_BASELINE, G7_GREENFIELD_BASELINE_CHECKSUM,
   G7_DELETE_PASSWORD_TRIGGERS, assertG7GreenfieldSchema } from './greenfield-schema';
 
@@ -73,6 +74,7 @@ function referenceDdl(): {type:string;name:string;sql:string}[] {
     for (const name of MIGRATIONS) db.exec(schemaSql(name));
     // #98/#83: only incorporated in newly created, empty Greenfield baseline.
     for (const row of CAD_BUSINESS_DDL) db.exec(row.sql);
+    for (const row of CAD_ANCHOR_DDL) db.exec(row.sql);
     for (const sql of G7_DELETE_PASSWORD_TRIGGERS) db.exec(sql);
     const rows = db.prepare(SCHEMA_QUERY).all() as {type:string;name:string;sql:string}[];
     if (!rows.length || rows.filter(r=>r.type==='trigger' &&
