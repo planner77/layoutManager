@@ -1,3 +1,12 @@
+## 0.47.2 — PR #173 M3/S6 (2026-10-31)
+
+- [PR #173](https://github.com/planner77/layoutManager/pull/173)에서 #84 Memo WCS 자동 Endpoint/Vertex/Center 12px 스냅, 임시 GENERATED/RENDER 세션 변환·Undo/Redo/삭제 복원, 영속 CadMemoAnchor 생성·권한·CAS·감사, 삭제된 Memo의 dangling Anchor 회귀 보완을 구현.
+- #167 Source-only·ALL 초기화 메뉴/명시 확인 및 현재 Version 정확 ID·Revision 검증·단일 거래 soft delete+Audit, 원본 DXF/READY Scene/Current 불변. 신규 Greenfield `G7-GREENFIELD-ANCHOR-20261031-1` 별도 초기 스키마. 패키지·lock `0.47.2`.
+- [PR CI #332](https://github.com/planner77/layoutManager/actions/runs/41127321736) 성공·Squash [`59068a62ad8bb4e90b9d016ed0ddc0e6ae639ab7`](https://github.com/planner77/layoutManager/commit/59068a62ad8bb4e90b9d016ed0ddc0e6ae639ab7). [Main CI #95](https://github.com/planner77/layoutManager/actions/runs/41131717206) release-scope Job `124324008108` SUCCESS, GHCR Build/push Job `124324087630` **in_progress/PENDING**. 릴리스 태그 `v0.47.2`는 merge commit `59068a62ad8bb4e90b9d016ed0ddc0e6ae639ab7`에 생성 확인. App/Migrator 실제 pair 게시 성공/OCI Digest는 이 문서 기록 당시 **NOT VERIFIED**, 이후 실제 CI/Registry 로그 확인 전 SUCCESS라고 주장하지 않는다.
+- 잔여 #174 UI·성능, #172 Memo 작성자 정책, #96/#113 현장, #160 S7 별도. 기존 DB 이관 및 실제 운영 배포 미실시.
+
+---
+
 ## v0.47.2 PR #173 M3 추가 보완 (2026-10-31)
 
 - #84 임시 GENERATED / DXF_IMPORTED WCS 후보 ENDPOINT·VERTEX·CENTER 12px 자동 스냅을 구현하고, 브라우저 세션의 Target local anchor와 생성·렌더 Transform/Undo/Redo를 연결. Delete→BROKEN_ANCHOR(last WCS)·동일 ID Undo→복귀, SOURCE_ONLY 강제 해제, 명시적 WCS 확정, 임시 관계 저장/공유 불가 안내.

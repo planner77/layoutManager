@@ -1,3 +1,12 @@
+## #84/#167 PR #173 — Owner Managed Merge 및 v0.47.2 CI Release 증거 (2026-10-31)
+
+- `out/FailureLedger.md`의 최신 #332·Squash `59068a62ad8bb4e90b9d016ed0ddc0e6ae639ab7`·Main CI #95 릴리스 기록을 따른다. [PR CI #332](https://github.com/planner77/layoutManager/actions/runs/41127321736) 두 Job SUCCESS/정확 검증 HEAD `00c0cefa1daa8b75e3ba157ecbdcf264816e31b9`에서 PR 리뷰 1건 P1 코드 보완·Resolved 및 Main behind0/충돌 없음 확인 후 Squash. 동일 코드에서 `0.47.2` App/Migrator 릴리스 워크플로를 시작하며 기존 `0.47.1` 태그를 변경하지 않는다.
+- GHCR 상태는 증거 우선: [Main CI #95](https://github.com/planner77/layoutManager/actions/runs/41131717206) release-scope Job `124324008108` SUCCESS, GHCR Build/push Job `124324087630` **in_progress/PENDING**. 릴리스 태그 `v0.47.2`는 merge commit `59068a62ad8bb4e90b9d016ed0ddc0e6ae639ab7`에 생성 확인. App/Migrator 실제 pair 게시 성공/OCI Digest는 이 문서 기록 당시 **NOT VERIFIED**, 이후 실제 CI/Registry 로그 확인 전 SUCCESS라고 주장하지 않는다.
+- 이슈 #84/#167 코어 코드·합성 CI 닫힘 = 전체 실 CAD/Owner 수용 PASS 아님. 다중 후보 명시 UI/앵커 유지 이동은 #174, Memo 공동편집 정책 #172, 새 설치 인증/실현장 #96/#113, 상위 Epic S7 #160 OPEN 유지. 기존 Volume 자동 Migration·업무 객체 무단 삭제·Auth/Writer 활성화·사내 원본 외부 노출 금지.
+- 이 문서의 변경은 docs-only Main post-merge 기록이며 source-release tag를 이동하거나 이미 검증된 OCI digest를 교체하지 않는다. Docs-only Main push의 Build/push는 release-scope 검사 후 SKIPPED가 정상이다.
+
+---
+
 ## #84 PR #173 세션 Snap 누락 기능 보완 (2026-10-31)
 
 - 최신 [M3/S6 설계](out/Issues84-167.md)의 **새 세션 스냅 계약**을 따른다. VERIFIED server CadMemoAnchor와 별도로 Renderer/GeneratedDocument의 임시 WCS 후보(Endpoint/Vertex/Center)를 12 CSS px 안에서만 검색한다. 불변 Version/SHA/Renderer ID와 current Affine을 사용해 Memo local→world를 재투영하며 Translate/Rotate/Undo/Redo/DELETE·SOURCE_ONLY의 기존 데이터/마지막 WCS를 보호한다.

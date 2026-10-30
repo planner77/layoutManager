@@ -1,3 +1,12 @@
+## #84 M3 / #167 S6 PR #173 코드 합성 검증 및 Main v0.47.2 릴리스 (2026-10-31)
+
+- [PR CI #332](https://github.com/planner77/layoutManager/actions/runs/41127321736) latest HEAD `00c0cefa1daa8b75e3ba157ecbdcf264816e31b9` completed/success. Verify `124309598067` 및 Docker `124309597751` 두 Job 모두 SUCCESS. 테스트 포함: Generated/RENDER 최근접 스냅·2D WCS Forward/Inverse·Translate/Rotate/Undo/Redo/Orphan, Greenfield Anchor FK/불변·Scene Origin reset/DB soft-delete/CAS·React/Chromium 회귀. 이 결과는 실제 현장 CAD 검증이 아님.
+- Codex P1 `4428206096` dangling CadMemoAnchor 지적 및 삭제/ALL reset 동일 SQLite transaction cleanup 보완, 답변·스레드 Resolved. Main behind=0, mergeable=true에서 Squash `59068a62ad8bb4e90b9d016ed0ddc0e6ae639ab7`.
+- **릴리스 현황:** [Main CI #95](https://github.com/planner77/layoutManager/actions/runs/41131717206) release-scope Job `124324008108` SUCCESS, GHCR Build/push Job `124324087630` **in_progress/PENDING**. 릴리스 태그 `v0.47.2`는 merge commit `59068a62ad8bb4e90b9d016ed0ddc0e6ae639ab7`에 생성 확인. App/Migrator 실제 pair 게시 성공/OCI Digest는 이 문서 기록 당시 **NOT VERIFIED**, 이후 실제 CI/Registry 로그 확인 전 SUCCESS라고 주장하지 않는다.
+- #84/#167 코어 코드/합성 CI 행정 종료. #174 다중 후보 선택·앵커 유지 이동·성능·현장, #172 Editor 권한, #96/#113 실설치·DXF/GPU, #160 S7 OPEN; 실제 DB/Volume 마이그레이션, 2PC Owner Acceptance, 사내 원본 사용/DRM 시험 NOT RUN.
+
+---
+
 ## #84 PR #173 M3 세션 스냅 누락 보완 — 검증 인계 (2026-10-31)
 
 - 구현: 임시 Generated·DXF_IMPORTED WCS Endpoint/Vertex/Center 12 CSS px 후보, scoped MemoSessionSnapStore, session-only WCS/transform reconciliation, Undo/Redo/삭제 후 BROKEN·동일 ID Undo 복원, SOURCE_ONLY 강제 해제, 명시적 최신 WCS 서버 PATCH/로컬 M1 연결 해제. Reader/Writer/Site/Revision server permission 정책 변경 없음.
