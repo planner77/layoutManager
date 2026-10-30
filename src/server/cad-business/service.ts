@@ -140,17 +140,22 @@ export class BusinessRepository {
   });
  }
  async editMemo(versionId:string,id:string,body:unknown,proof:G7CadWrite,remove=false){
-  const b=remove?keys(body,['expectedRevision']):keys(body,['expectedRevision','operation'],['title','content','anchorWcsXY']);
+  const b=remove?keys(body,['expectedRevision']):keys(body,['expectedRevision','operation'],
+   ['title','content','anchorWcsXY','groupId','visible','scheduleEnabled','startDate','dueDate','completionEnabled','isCompleted']);
   const expected=revision(b.expectedRevision);
   if(!ID.test(id))bad('BUSINESS_ID_INVALID',400);
   // PATCH never elevates to DELETE; route method owns the delete branch.
   const operation=memoEditOperation(b.operation,remove);
   if(operation==='text')keys(b,['expectedRevision','operation','title','content']);
   if(operation==='move')keys(b,['expectedRevision','operation','anchorWcsXY']);
+  if(operation==='metadata')keys(b,['expectedRevision','operation','groupId','visible',
+    'scheduleEnabled','startDate','dueDate','completionEnabled','isCompleted']);
   const data=operation==='text'?memoText(b.title,b.content):
    operation==='move'?{anchorWcsXY:point(b.anchorWcsXY)}:null;
   await businessSchema(this.db);
   const anchorAvailable=await hasAnchorSchema(this.db);
+  const featureAvailable=await memoFeatureSchema(this.db);
+  if(operation==='metadata'&&!featureAvailable)bad('MEMO_FEATURE_SCHEMA_UNAVAILABLE',503);
   return writeTransaction(this.db,async tx=>{
    const allowed=await requireG7CadPermission(tx,proof,'memo:write',{kind:'version',versionId});
    const old=await tx.cadMemo.findFirst({where:{id,versionId,deletedAt:null}});
@@ -159,10 +164,31 @@ export class BusinessRepository {
    // M2 Owner has NOT approved cross-Editor Memo collaboration: owner-only.
    if(old.createdById!==allowed.actorId)bad('BUSINESS_OWNER_REQUIRED',403);
    if(old.revision!==expected)cas();
+   if(operation==='metadata'){
+    if(typeof b.visible!=='boolean')bad('MEMO_VISIBILITY_INVALID',422);
+    const groupId=memoGroupId(b.groupId);
+    if(groupId!==null&&!await tx.cadMemoGroup.findFirst({where:{
+      id:groupId,versionId,sourceSha256:old.sourceSha256,deletedAt:null}}))
+      bad('MEMO_GROUP_SCOPE_INVALID',409);
+    const existing=await tx.cadMemoFeature.findUnique({where:{memoId:id}});
+    const previous:MemoSettings=existing?{
+      scheduleEnabled:existing.scheduleEnabled,startDate:existing.startDate,dueDate:existing.dueDate,
+      completionEnabled:existing.completionEnabled,isCompleted:existing.isCompleted,
+      completedAt:existing.completedAt}:EMPTY_MEMO_SETTINGS;
+    let settings:MemoSettings;
+    try{settings=normalizeMemoSettings({
+      scheduleEnabled:b.scheduleEnabled,startDate:b.startDate,dueDate:b.dueDate,
+      completionEnabled:b.completionEnabled,isCompleted:b.isCompleted},previous);}
+    catch{return bad('MEMO_SETTINGS_INVALID',422);}
+    await tx.cadMemoFeature.upsert({where:{memoId:id},
+      create:{memoId:id,versionId,sourceSha256:old.sourceSha256,groupId,visible:b.visible,...settings},
+      update:{groupId,visible:b.visible,...settings}});
+   }
+   if(remove&&featureAvailable)await tx.cadMemoFeature.updateMany({where:{memoId:id},data:{groupId:null}});
    const update=operation==='delete'?{deletedAt:new Date().toISOString(),deletedById:allowed.actorId}:
-      operation==='text'?data as {title:string;content:string}:
-      {anchorX:(data as {anchorWcsXY:{x:number;y:number}}).anchorWcsXY.x,
-       anchorY:(data as {anchorWcsXY:{x:number;y:number}}).anchorWcsXY.y};
+       operation==='text'?data as {title:string;content:string}:
+       operation==='move'?{anchorX:(data as {anchorWcsXY:{x:number;y:number}}).anchorWcsXY.x,
+        anchorY:(data as {anchorWcsXY:{x:number;y:number}}).anchorWcsXY.y}:{};
    // An explicit free WCS move detaches the old object binding in the SAME CAS transaction.
    if((operation==='move'||remove)&&anchorAvailable)await tx.cadMemoAnchor.deleteMany({where:{memoId:id,versionId}});
    const casResult=await tx.cadMemo.updateMany({where:{id,versionId,revision:expected,deletedAt:null},
@@ -171,7 +197,8 @@ export class BusinessRepository {
    await audit(tx,proof,allowed.actorId,allowed.siteId,'MEMO',id,remove?'DELETE':'EDIT',versionId,expected,expected+1);
    if(remove)return {deleted:true,revision:expected+1};
    return memoDto((await tx.cadMemo.findUniqueOrThrow({where:{id}})),
-    anchorDto(anchorAvailable?await tx.cadMemoAnchor.findUnique({where:{memoId:id}}):null));
+    anchorDto(anchorAvailable?await tx.cadMemoAnchor.findUnique({where:{memoId:id}}):null),
+    featureAvailable?await tx.cadMemoFeature.findUnique({where:{memoId:id}}):null);
   });
  }
  async createOutline(versionId:string,raw:unknown,proof:G7CadWrite){
