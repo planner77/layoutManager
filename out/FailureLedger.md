@@ -1,3 +1,12 @@
+## #84/#167 PR #173 — 초기 리뷰/충돌·CI 실행 증거 (2026-10-31)
+
+- **PR:** [#173](https://github.com/planner77/layoutManager/pull/173), `#167 | Origin-aware Scene reset and persistent Memo anchors (#84)` / 한 PR / 순서 #84→#167. 검증 전 HEAD `81c6077248b41f0e1d79a1332bdd58891ef9ddbd`.
+- **실제 GitHub 상태:** `get_pr_info` 재조회에서 `mergeable=true`; 최신 Main `34e3a362e9a9d01579d4a61b81b26f4ee935c87b` 대비 `behind=0,ahead=22`, 충돌 없음. PR 초기 응답의 `mergeable=false`는 GitHub가 계산한 최종 결과가 아니었으며, 재조회 후 true로 확인. Inline review threads 총 0, 미해결 0 (조회 시점; 이후 생기는 자동 Codex 지적은 별도 검토 필요).
+- **PR CI 최초 실행 시작 근거:** [Run #41123679311](https://github.com/planner77/layoutManager/actions/runs/41123679311) workflow `#317`, 초기 HEAD `81c6077248b41f0e1d79a1332bdd58891ef9ddbd`, 조회 시 `in_progress`/conclusion null. 이 원장 기록 후 브랜치 HEAD를 갱신할 경우 이전 Run을 새 HEAD 검증 근거로 사용하지 말고 **최신 HEAD에서 자동 시작한 새 PR CI run만** 인계해야 한다. 사용자 지시로 CI 결과 모니터링 생략, PASS 주장 금지.
+- 신규 코드/합성 Unit을 작성했으나 GitHub CI 결과·실 운영 현장·승인된 DB/Compose/GHCR 작업은 **NOT VERIFIED/NOT RUN**. Reviewer P1/P2 새 지적이 추후 나타나면 코드/회귀/원장 보완 전 Resolved나 Gate PASS를 선언하지 않는다. Issue #84/#167은 OPEN, GHCR/병합/이슈 종료 미실행.
+
+---
+
 ## #84/#167 단일 PR — CI 실행 전 원장 및 위험 등록 (2026-10-31)
 
 - Main 근거 `34e3a362e9a9d01579d4a61b81b26f4ee935c87b`; 사용자 요청 #84→#167 분석·설계·구현·PR CI만. [설계](Issues84-167.md), AGENTS, Architecture/Decisions/Database 검토. 루트 DESIGN.md 실제 없음.
