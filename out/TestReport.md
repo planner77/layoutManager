@@ -1,3 +1,10 @@
+## #98/#83 PR #171 성공 검증과 릴리스 버전 변경 후 재검증 구분 (2026-10-30)
+
+- [PR CI #315](https://github.com/planner77/layoutManager/actions/runs/41059992557) HEAD `8af8b65d016865498a67f6ee4cf70184a0ad22c4`, completed/success. Verify 124077023981·Docker 124077024801 모두 SUCCESS; 변경 전 Run #311/#314 실패는 역사 보존. 본 CI는 증분 소스·합성 Greenfield 범위의 자동 검증이고 기존 볼륨/실 CAD 현장 수용은 수행하지 않음.
+- GHCR workflow는 이미 존재하는 버전 `0.47.0`의 App·Migrator 쌍을 둘 다 발견하면 건너뛰므로 `src/package.json`과 lock을 새 `0.47.1`로 동기화. 버전 증가에 따른 변경 커밋은 **새 PR CI를 따로 통과해야 검증된 릴리스 후보**. v0.47.1 존재 여부 사전 GitHub refs 조회 NOT_FOUND. 실제 OCI publish/서명/배포 및 Main CI 상태는 이후 별도 확인.
+
+---
+
 ## #98/#83 PR #171 CI #314 테스트 결과/수정 (2026-10-30 KST)
 
 - [Run #41058299070](https://github.com/planner77/layoutManager/actions/runs/41058299070) (workflow #314) `completed/failure`; Docker image/migration/runtime job `124072053492` SUCCESS, Verify `124072054040` Unit/Integration 실패. Typecheck/Lint 성공, **646 tests PASS**, 95 files 중 **94 PASS / 1 FAIL**. 문제 suite `cad-business-contract.test.ts` 로딩 단계의 Next `server-only` import exception. Build/E2E NOT RUN.

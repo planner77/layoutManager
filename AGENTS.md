@@ -1,3 +1,10 @@
+## #98/#83 PR #171 정식 GHCR 릴리스 버전 보호 (2026-10-30)
+
+- [실패 원장](out/FailureLedger.md)의 #315 `8af8b65d` PR SUCCESS와 이전 Main `v0.47.0` App/Migrator 쌍 게시 증거를 구분한다. `.github/workflows/docker-publish.yml`는 **버전 태그가 이미 있고 두 버전 이미지가 존재하면 GHCR 빌드/게시를 생략**한다. 새 런타임 배포에는 기존 버전 태그를 강제 이동하거나 `:latest`만 교체하지 말고 `src/package.json`과 lock을 `0.47.1`로 함께 갱신하고 **그 새 HEAD의 PR CI SUCCESS 후** Squash Merge한다.
+- Main push 뒤 `release-scope`와 `build-and-push` 경로를 구분하고, 새 버전 태그 생성·App+Migrator 두 candidate digest 및 정식 alias 승격은 실제 Job 로그로 확인한 것만 게시 성공이라 기록한다. 환경에서 기존 데이터 자동 마이그레이션/파괴를 수행하지 않는다. #65/#84/Editor 정책 및 Owner 현장 수용 미완료를 CI PASS로 완료시키지 않는다.
+
+---
+
 ## #98/#83 PR CI #314 Vitest server-only import 재발 방지 (2026-10-30)
 
 - [실패 원장](out/FailureLedger.md)의 [PR CI #314](https://github.com/planner77/layoutManager/actions/runs/41058299070)을 참조한다. 일반 `tests/**/*.test.ts` Vitest worker는 Next server-only Repository 직접 value import를 허용하지 않으며 `node_modules/server-only/index.js`의 의도된 예외로 테스트 파일 전체가 FAIL 할 수 있다. Production Runtime의 `server-only` 보호를 mock/비활성화하여 PASS를 만들지 않는다.

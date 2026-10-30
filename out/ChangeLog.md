@@ -1,3 +1,12 @@
+## 0.47.1 — #98/#83 CadOutline·CadMemo 별도 업무 영속 Release 후보 (2026-10-30)
+
+- 기존 0.47.0 GHCR App/Migrator 정식 쌍을 덮어쓰지 않도록 `src/package.json`과 lockfile을 함께 0.47.1로 승격.
+- 신규 빈 Greenfield에 CadOutline, CadMemo 및 불변 감사 테이블. 사이트/세션 검증, WCS 좌표, SOURCE SHA/Handle 확인, Revision CAS, 논리 삭제, 별도 영속 Overlay 및 메모 재접속 복원.
+- PR #171 Codex P1/P2 세 건 보완, #311 strict TypeScript·#314 Vitest server-only import 실패 회귀를 보완하고 #315 두 Job 성공 확인. 버전 bump 이후 최신 CI 성공/병합/Main CI/GHCR 게시 사실은 각각 실제 관측하기 전 미확인.
+- #65, #84, Editor 공동 편집 및 실 현장 이전/수용은 별도이며 운영 데이터/볼륨/DRM/S3 무단 변경 없음.
+
+---
+
 ## #98/#83 업무 외곽선·메모 별도 영속 PR 후보 (2026-10-30)
 
 - 신규 빈 Greenfield DDL에 CadOutline/CadMemo/CadBusinessAudit, 불변·append-only SQLite trigger와 Prisma 모델 추가. 기존 Scene·구 baseline fingerprint·서버 G7 인증 정책 유지.
