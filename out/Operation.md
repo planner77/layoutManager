@@ -1,3 +1,12 @@
+## v0.47.2 공식 App/Migrator paired release — 신규 Greenfield 전용 (2026-10-31)
+
+- 확인된 GHCR Version tag: `ghcr.io/planner77/layoutmanager:0.47.2` App sha256:45d6df2cdb2100d2cf6b20264f0a39bc407938902b1490492c4c5a29036a5c06; `ghcr.io/planner77/layoutmanager:0.47.2-migrate` Migrator sha256:77841b57e0e44b80b914beacedb02e4ce81bef2d0acb4524c545a19d6e47d6ad; `v0.47.2` Git tag와 검증된 Main `59068a62ad8bb4e90b9d016ed0ddc0e6ae639ab7` 일치. [Main CI #95](https://github.com/planner77/layoutManager/actions/runs/41131717206) SUCCESS.
+- 신규 `G7-GREENFIELD-ANCHOR-20261031-1` 스키마에만 CadMemoAnchor 포함. **기존 v0.47.1 운영 SQLite/CAD/Volume을 자동 adopt·ALTER·삭제하지 말 것**. 새 빈 설치·Owner 승인·Site 권한·실 사용자 수용 전에는 앱 이미지 교체 또는 Auth/Writer 자동 활성화 금지.
+- 메모 세션 GENERATED/RENDER auto-snap은 영속 관계가 아니며 새로고침 시 소실될 수 있고 영속 Marker는 권한/CAS/Source Canonical 검증 요구. S6 ALL Reset은 사용자가 명시 확인한 Version 데이터에 soft delete/Audit를 수행하므로 운영 초기화 전 백업·권한·실 장비 수용 별도 점검. 이번 ChatGPT 작업에서는 실제 운영 DB/CAD/S3/Compose 접근·개입 없음.
+- v0.47.2 GHCR 게시 성공과 실제 사내 운영 배포/2PC 합격은 별개의 사건. 후속 #174/#172/#96/#113/#160 S7을 참조.
+
+---
+
 ## #84/#167 v0.47.2 후보 — 신규 설치와 Reset 운영 경계 (2026-10-31)
 
 - 최신 기능은 신규 EMPTY Greenfield `202610310001_greenfield_anchor_baseline`에만 `CadMemoAnchor` 관계를 생성한다. 기존 v0.47.1 DB·CAD/Volume/HOLD를 자동 채택/ALTER/삭제하지 않는다. 운영자가 신규 볼륨을 명시하고 App/Migrator 동일 검증 릴리스 쌍으로 설치해야 한다.

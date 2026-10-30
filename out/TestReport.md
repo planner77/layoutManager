@@ -1,3 +1,12 @@
+## #84/#167 v0.47.2 — GHCR Release pair 실증 및 문서-only CI (2026-10-31)
+
+- **Release:** [Main CI #95 / Run 41131717206](https://github.com/planner77/layoutManager/actions/runs/41131717206) `completed/success` 정확 HEAD [`59068a62ad8bb4e90b9d016ed0ddc0e6ae639ab7`](https://github.com/planner77/layoutManager/commit/59068a62ad8bb4e90b9d016ed0ddc0e6ae639ab7), release-scope Job `124324008108` SUCCESS 및 GHCR Build/push Job `124324087630` SUCCESS. GHCR Log: `Publish version image: true`; `Published version pair: ghcr.io/planner77/layoutmanager:0.47.2 and ghcr.io/planner77/layoutmanager:0.47.2-migrate`. App `:0.47.2` `sha256:45d6df2cdb2100d2cf6b20264f0a39bc407938902b1490492c4c5a29036a5c06`, Migrator `:0.47.2-migrate` `sha256:77841b57e0e44b80b914beacedb02e4ce81bef2d0acb4524c545a19d6e47d6ad` (OCI SHA-256). `Promote paired release images after both candidates succeed` 단계에서 `:latest`/`:latest-migrate` alias 함께 정식 승격, published layer measurement 성공. Annotated Git tag `v0.47.2` 대상 `59068a62ad8bb4e90b9d016ed0ddc0e6ae639ab7` 정확 일치.
+- **Verified PR:** [#332](https://github.com/planner77/layoutManager/actions/runs/41127321736), HEAD `00c0cefa1daa8b75e3ba157ecbdcf264816e31b9` Verify+Docker 두 Job SUCCESS, P1 리뷰 1/1 Resolved, Main Squash `59068a62ad8bb4e90b9d016ed0ddc0e6ae639ab7`.
+- **Docs-only 후속:** [Main CI #96](https://github.com/planner77/layoutManager/actions/runs/41132397577) SUCCESS, release-scope SUCCESS, GHCR Job SKIPPED (릴리스 이미지 불변).
+- **관측 경계:** CI·GHCR SUCCESS는 실 장비 DXF/GPU/2PC 현장 수용 또는 기존 Volume Schema Migration 완료가 아니다. #174/#172/#96/#113/#160 S7 OPEN. 이전 "게시 PENDING" 행은 당시 추적 기록으로 보존.
+
+---
+
 ## #84 M3 / #167 S6 PR #173 코드 합성 검증 및 Main v0.47.2 릴리스 (2026-10-31)
 
 - [PR CI #332](https://github.com/planner77/layoutManager/actions/runs/41127321736) latest HEAD `00c0cefa1daa8b75e3ba157ecbdcf264816e31b9` completed/success. Verify `124309598067` 및 Docker `124309597751` 두 Job 모두 SUCCESS. 테스트 포함: Generated/RENDER 최근접 스냅·2D WCS Forward/Inverse·Translate/Rotate/Undo/Redo/Orphan, Greenfield Anchor FK/불변·Scene Origin reset/DB soft-delete/CAS·React/Chromium 회귀. 이 결과는 실제 현장 CAD 검증이 아님.

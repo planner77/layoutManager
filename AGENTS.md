@@ -1,3 +1,11 @@
+## #84/#167 PR #173 정식 v0.47.2 Release 증거 및 후속 경계 (2026-10-31)
+
+- 최신 [FailureLedger](out/FailureLedger.md) `v0.47.2 Pair GHCR 최종 게시 SUCCESS`와 [Main CI #95](https://github.com/planner77/layoutManager/actions/runs/41131717206) 두 Job SUCCESS·tag `v0.47.2` commit `59068a62ad8bb4e90b9d016ed0ddc0e6ae639ab7`·App `sha256:45d6df2cdb2100d2cf6b20264f0a39bc407938902b1490492c4c5a29036a5c06`/Migrator `sha256:77841b57e0e44b80b914beacedb02e4ce81bef2d0acb4524c545a19d6e47d6ad`가 실제 배포 이미지 쌍의 식별자다. 기존 `:0.47.1` tag/digest는 절대 이동하지 않고 새 `:latest[-migrate]`만 워크플로의 성공한 pair promotion에서 승격한다.
+- [Main CI #96](https://github.com/planner77/layoutManager/actions/runs/41132397577) 문서-only SUCCESS / GHCR SKIPPED이므로 docs-only 커밋을 새로운 릴리스 이미지로 오해하지 않는다.
+- #84/#167 구현·합성 검증 행정 종료, #174(메모 수동 다중 후보·연결 유지 이동), #172(Memo 공동편집), #96/#113(실 신규설치·현장 DXF), #160 S7(통합 수용) OPEN. GHCR 발행을 Owner의 실제 운영 Auth/Writer GO·DB migration·2PC 수용 승인으로 취급하면 안 된다.
+
+---
+
 ## #84/#167 PR #173 — Owner Managed Merge 및 v0.47.2 CI Release 증거 (2026-10-31)
 
 - `out/FailureLedger.md`의 최신 #332·Squash `59068a62ad8bb4e90b9d016ed0ddc0e6ae639ab7`·Main CI #95 릴리스 기록을 따른다. [PR CI #332](https://github.com/planner77/layoutManager/actions/runs/41127321736) 두 Job SUCCESS/정확 검증 HEAD `00c0cefa1daa8b75e3ba157ecbdcf264816e31b9`에서 PR 리뷰 1건 P1 코드 보완·Resolved 및 Main behind0/충돌 없음 확인 후 Squash. 동일 코드에서 `0.47.2` App/Migrator 릴리스 워크플로를 시작하며 기존 `0.47.1` 태그를 변경하지 않는다.

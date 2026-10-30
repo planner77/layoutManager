@@ -1,3 +1,11 @@
+## v0.47.2 정식 GHCR Release 발행 확인 (2026-10-31)
+
+- [#173](https://github.com/planner77/layoutManager/pull/173) Issue #84 Memo M3 자동 Session Snap·서버 영속 Attachment, #167 SOURCE_ONLY/ALL Origin Reset 코어 구현. [PR CI #332](https://github.com/planner77/layoutManager/actions/runs/41127321736) SUCCESS 및 [Main `59068a62ad8bb4e90b9d016ed0ddc0e6ae639ab7`](https://github.com/planner77/layoutManager/commit/59068a62ad8bb4e90b9d016ed0ddc0e6ae639ab7) Squash 완료.
+- `v0.47.2` 태그 및 App `ghcr.io/planner77/layoutmanager:0.47.2`/`:latest` `sha256:45d6df2cdb2100d2cf6b20264f0a39bc407938902b1490492c4c5a29036a5c06`, Migrator `:0.47.2-migrate`/`:latest-migrate` `sha256:77841b57e0e44b80b914beacedb02e4ce81bef2d0acb4524c545a19d6e47d6ad` 동시 후보 검증·정식 pair promotion SUCCESS. [Main CI #95](https://github.com/planner77/layoutManager/actions/runs/41131717206) 최종 SUCCESS, [docs-only Main CI #96](https://github.com/planner77/layoutManager/actions/runs/41132397577) SUCCESS/GHCR SKIPPED.
+- Issue #84/#167 코어 코드/합성 CI 종료, 잔여 UI/성능 #174, 정책 #172, Site/Auth/DXF/2PC #96/#113, Epic #160 S7 OPEN. 기존 운영 DB/Volume 이관 또는 실 CAD 현장 수용 미진행.
+
+---
+
 ## 0.47.2 — PR #173 M3/S6 (2026-10-31)
 
 - [PR #173](https://github.com/planner77/layoutManager/pull/173)에서 #84 Memo WCS 자동 Endpoint/Vertex/Center 12px 스냅, 임시 GENERATED/RENDER 세션 변환·Undo/Redo/삭제 복원, 영속 CadMemoAnchor 생성·권한·CAS·감사, 삭제된 Memo의 dangling Anchor 회귀 보완을 구현.
