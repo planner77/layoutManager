@@ -30,6 +30,17 @@ export function name(raw:unknown):string{
  if(x.length<1||x.length>100||/[\x00-\x1f\x7f]/.test(x))invalid('BUSINESS_NAME_INVALID');
  return x;
 }
+export function memoGroupName(value:unknown):string{
+ if(typeof value!=='string')invalid('MEMO_GROUP_NAME_INVALID',422);
+ const x=value.normalize('NFC').trim();
+ if(!x||x.length>80||/[\x00-\x1f\x7f-\x9f]/.test(x))invalid('MEMO_GROUP_NAME_INVALID',422);
+ return x;
+}
+export function memoGroupId(value:unknown):string|null{
+ if(value===null)return null;
+ if(typeof value!=='string'||!ID.test(value))invalid('MEMO_GROUP_ID_INVALID',422);
+ return value;
+}
 export function memoText(title:unknown,content:unknown):{title:string;content:string}{
  try{return normalizeMemoText(title as string,content as string);}
  catch{return invalid('BUSINESS_MEMO_TEXT_INVALID');}
@@ -66,10 +77,10 @@ export function geometry(raw:unknown):GeoJSONOutline{
 }
 /** HTTP method is the source of delete authority: PATCH may only edit or move.
  * Pure policy can be tested without importing the authenticated server-only repository. */
-export type MemoEditOperation='text'|'move'|'delete';
+export type MemoEditOperation='text'|'move'|'metadata'|'delete';
 export function memoEditOperation(raw:unknown,remove:boolean):MemoEditOperation{
  if(remove)return 'delete';
- if(raw==='text'||raw==='move')return raw;
+ if(raw==='text'||raw==='move'||raw==='metadata')return raw;
  return invalid('BUSINESS_OPERATION_INVALID',400);
 }
 export type Operation={type:'Translate';dx:number;dy:number}|{type:'Rotate';angleDegrees:number;pivot:[number,number]};

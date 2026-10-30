@@ -1,3 +1,27 @@
+## PR #175 #85/#86 — E2E 2건 실패 원인 및 캔버스 복원 검증 보완 (2026-10-31)
+
+- [PR CI #41139632431](https://github.com/planner77/layoutManager/actions/runs/41139632431) 정확 HEAD `8df9f656c2c4e9e06e9e3c8552be246e01de4caa` `completed/failure`. Docker Job `124351064253` **SUCCESS**(baseline/app/migrator/Greenfield Compose 포함), Verify Job `124351064417` TypeScript·ESLint·Unit/Integration·Production Build **SUCCESS**, Playwright E2E **101 PASS/2 FAIL**. 실패: `TC-ISSUE17-001` 및 `TC-LAYER001`의 복원 뒤 `canvas.screenshot().equals(initial)` 5초 timeout. [실패 원장](out/FailureLedger.md) 참조.
+- [Playwright artifact #13017814221](https://github.com/planner77/layoutManager/actions/runs/41139632431/artifacts/13017814221)의 화면 추적에서 모두 Layer 선택은 전체 복원됐고 CAD 선이 다시 표시됨. Canvas 촬영 viewport에 800x378↔798x378 정도의 크기 차이가 관측되므로 원본 PNG **완전 바이트 일치**는 적절한 복원 불변조건이 아니다. 실제 Source 선이 누락되는 경우를 놓치지 않도록 좌/상단 패널을 제외한 CAD raster를 동일 512×256으로 정규화, 2px 이내 획 근접 일치율 92% 초과로 검증하는 테스트 전용 helper 추가. 빈 화면은 0점 처리하며 기존 Layer 상태, Canvas identity, 원본 GET 1회 검증은 유지한다. 제품 Renderer/Layer/DB/API 변경 없음.
+- PR #175 기존 Codex 3개 스레드 모두 답변·Resolved 유지. 최신 Main과 충돌/behind 여부를 새 HEAD 기준으로 재검증하며, 원장 기록 후 **새 PR CI 기동만** 확인. 새 CI의 결과를 모니터링하거나 성공으로 간주하지 않음. Main merge/GHCR/Issue 종료·기존 운영 볼륨 변경 금지.
+
+---
+
+## #85/#86 PR #175 initial CI failure / Codex P1-P2 correction (2026-10-31)
+
+- [PR CI #41137913177](https://github.com/planner77/layoutManager/actions/runs/41137913177) (HEAD `f9fbef10997e912c50080c7bd7dc6fe7b96b603a`) **failure**: Verify `TypeScript 검사` TS18047 five times, `src/server/cad-business/memo-groups.ts` nullable Version/group guard; Docker baseline build also failed when the **same TypeScript error** reached Next.js build. Both jobs failed; subsequent lint/unit/E2E/build targets were skipped. Do not present a Docker engine/migration failure as the root cause.
+- [Three Codex review threads](https://github.com/planner77/layoutManager/pull/175): P1 movable Memo Tree panel required by #138; P2 OFF MemoSession group lost when saving M5 schedule; P2 group-name search erroneously intersects memo-text match under M5 status filter. Fixed with shared `MovableViewerPanel` and Viewer CSS-viewport clamp, Meta session synchronization, status filter predicate, and focused Unit/Playwright coverage. Replies and resolved thread state recorded in [FailureLedger](out/FailureLedger.md).
+- Compatibility repair: runtime schema validator must recognize **previous one-row Anchor baseline** before treating a valid v0.47.2 installation as generic 7-history legacy; strict SQL fingerprint/check remains enforced. This is read compatibility, never an unauthorized upgrade of existing volumes.
+- New candidate HEAD must receive fresh PR CI. No assumption that previous failure is resolved by prior green runs. Owner requested **no CI monitoring**, and no Main merge/GHCR/Issue closure or operational Auth/Writer GO here.
+
+---
+
+## #85/#86 M4/M5 integration (2026-10-31) — PR CI pending
+
+- M4 Tree ported from old partial #148 onto latest M2/M3. New empty Greenfield-only CadMemoGroup/CadMemoFeature. Group/member/visibility/settings writes G7 Site+Memo Owner+Revision CAS+Audit; Reader hide session only. Historical installed DB must not auto ALTER/adopt.
+- [Issue #85/#86 design](out/Issues85-86.md); old PR #148 does not supersede M2/M3. PR CI launch only; no CI monitoring, Main merge, GHCR, issue close or runtime Writer GO.
+
+---
+
 ## #84/#167 PR #173 정식 v0.47.2 Release 증거 및 후속 경계 (2026-10-31)
 
 - 최신 [FailureLedger](out/FailureLedger.md) `v0.47.2 Pair GHCR 최종 게시 SUCCESS`와 [Main CI #95](https://github.com/planner77/layoutManager/actions/runs/41131717206) 두 Job SUCCESS·tag `v0.47.2` commit `59068a62ad8bb4e90b9d016ed0ddc0e6ae639ab7`·App `sha256:45d6df2cdb2100d2cf6b20264f0a39bc407938902b1490492c4c5a29036a5c06`/Migrator `sha256:77841b57e0e44b80b914beacedb02e4ce81bef2d0acb4524c545a19d6e47d6ad`가 실제 배포 이미지 쌍의 식별자다. 기존 `:0.47.1` tag/digest는 절대 이동하지 않고 새 `:latest[-migrate]`만 워크플로의 성공한 pair promotion에서 승격한다.

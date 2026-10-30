@@ -10,10 +10,15 @@ import type { ViewerCommandGroup } from '@/features/cad-viewer/viewer-command-me
 import { OutlineTreePanel } from '@/features/cad-viewer/outline-tree-panel';
 import { GeneratedDeleteDialog } from '@/features/cad-viewer/generated-delete-dialog';
 import { CadMemoOverlay } from '@/features/cad-viewer/cad-memo-overlay';
+import { CadMemoTreePanel } from '@/features/cad-viewer/cad-memo-tree-panel';
+import {CadMemoSettingsEditor} from '@/features/cad-viewer/cad-memo-settings-editor';
+import {assignMemoToGroup,createMemoGroup,emptyMemoTreeState,isMemoVisible,removeMemoGroup,removeMemoTreeEntry,
+ renameMemoGroup,setMemoGroupVisible,setMemoVisible,type MemoTreeState} from '@/domain/memo-tree';
+import type {MemoSettingsInput} from '@/domain/memo-schedule';
 import { CadMemoEditor, type MemoEditorFields } from '@/features/cad-viewer/cad-memo-editor';
 import { createPreviewUuid } from '@/features/cad-viewer/preview-uuid';
 import { MemoSession, parseMemoWcsXY, type MemoDraft, type MemoWcsXY, type PersistedMemoDraft } from '@/domain/cad-memo';
-import { readPersistedMemos, mutatePersistedMemo,mutatePersistedMemoAnchor,resetPersistedBusiness,type MemoServerMode } from './cad-business-client';
+import { readPersistedMemos, mutatePersistedMemo,mutatePersistedMemoGroup,mutatePersistedMemoAnchor,resetPersistedBusiness,type MemoServerMode,type PersistedMemoGroup } from './cad-business-client';
 import { loadStoredOutlines, mutateStoredOutline, type StoredOutline } from './persisted-outline-client';
 import { PersistedOutlineOverlay } from './persisted-outline-overlay';
 import {parseWcsTranslation,selectedTranslationIds} from '@/domain/generated-translate';
@@ -98,6 +103,12 @@ export function CadViewer({
   const [memoCancelSignal, setMemoCancelSignal] = useState(0);
   const [memoLifecycleKey, setMemoLifecycleKey] = useState(() => versionId + ':' + sourceSha256);
   const [memos, setMemos] = useState<MemoDraft[]>([]);
+  const [memoTree,setMemoTree]=useState<MemoTreeState>(emptyMemoTreeState);
+  const [memoGroupRecords,setMemoGroupRecords]=useState<PersistedMemoGroup[]>([]);
+  const [memoFeaturesAvailable,setMemoFeaturesAvailable]=useState(false);
+  const [memoAllVisible,setMemoAllVisible]=useState(true);
+  const [memoTransientFocusId,setMemoTransientFocusId]=useState<string|null>(null);
+  const [memoTreeError,setMemoTreeError]=useState<string|null>(null);
   const [memoPlacing, setMemoPlacing] = useState(false);
   const [memoCandidate, setMemoCandidate] = useState<MemoWcsXY | null>(null);
   const [memoSelectedId, setMemoSelectedId] = useState<string | null>(null);
@@ -132,6 +143,9 @@ export function CadViewer({
     const projection=sessionSnapProjection[m.id];
     return projection?{...m,anchorWcsXY:projection.world}:m;
   }) : [];
+  const canvasMemos=scopedMemos.filter(m=>
+    (memoAllVisible&&m.visible!==false&&isMemoVisible(memoTree,m.id))||
+    memoTransientFocusId===m.id);
   const getSessionSnapStore=useCallback(()=>{
     if(!sessionSnaps.current||!sessionSnaps.current.matches({versionId,sourceSha256}))
       sessionSnaps.current=new MemoSessionSnapStore({versionId,sourceSha256});
@@ -163,6 +177,12 @@ export function CadViewer({
     memoDragActive.current = false;
     setMemoCancelSignal(previous => previous + 1);
     setMemos([]);
+    setMemoTree(emptyMemoTreeState);
+    setMemoGroupRecords([]);
+    setMemoFeaturesAvailable(false);
+    setMemoAllVisible(true);
+    setMemoTransientFocusId(null);
+    setMemoTreeError(null);
     setMemoServerMode('checking');
     setMemoPlacing(false);
     setMemoCandidate(null);
@@ -217,12 +237,19 @@ export function CadViewer({
         memoSession.current=session;
         setMemoLifecycleKey(versionId+':'+sourceSha256);
         setMemos(session.list());
+        setMemoGroupRecords(result.groups);
+        setMemoFeaturesAvailable(result.featuresAvailable);
+        setMemoTree({...emptyMemoTreeState,
+          groups:result.groups.map(g=>({id:g.id,name:g.name})),
+          groupByMemo:Object.fromEntries(result.memos.filter(m=>m.groupId).map(m=>[m.id,m.groupId!]))});
+      }else{
+        setMemoFeaturesAvailable(false);setMemoGroupRecords([]);
       }
       setMemoServerMode(result.mode);
       setMemoError(null);
     }).catch(error=>{
       if(controller.signal.aborted)return;
-      memoSession.current=null;setMemos([]);
+      memoSession.current=null;setMemos([]);setMemoGroupRecords([]);setMemoFeaturesAvailable(false);
       setMemoServerMode('unavailable');
       setMemoError(error instanceof Error?error.message:'메모 목록을 읽지 못했습니다.');
     });
@@ -468,6 +495,8 @@ export function CadViewer({
         setContextMenu(null);return;
       }
       if(event.key==='Escape' && viewerShell.current?.querySelector('[role=menu]'))return;
+      // A floating Viewer panel drag owns ESC before memo/canvas/fullscreen layers.
+      if(event.key==='Escape' && viewerShell.current?.querySelector('[data-viewer-panel-dragging="true"]'))return;
       if(event.key==='Escape' && memoDragActive.current){
         event.preventDefault();event.stopImmediatePropagation();
         memoDragActive.current=false;
@@ -492,6 +521,7 @@ export function CadViewer({
         const name=drawer.dataset.drawer;
         if(name==='layers')dispatchApp({type:'close-layers'});
         else if(name==='outlines')dispatchApp({type:'toggle-outline-tree'});
+        else if(name==='memos')dispatchApp({type:'toggle-memo-tree'});
         else if(name==='tools')dispatchApp({type:'close-tools'});
         requestAnimationFrame(()=>viewerShell.current?.querySelector<HTMLButtonElement>('[data-viewer-group=work]')?.focus({preventScroll:true}));
         return;
@@ -573,7 +603,7 @@ export function CadViewer({
     return true;
   },[memoScoped,renderer,format,loading,state.ready,versionId,sourceSha256,stopOutlineEditing]);
 
-  const selectMemo = useCallback((id:string) => {
+  const selectMemo = useCallback((id:string,fromTree=false) => {
     const item = memoSession.current?.matches({versionId,sourceSha256})
       ? memoSession.current.get(id) : undefined;
     if (!item || !beginMemoInteraction(id)) return;
@@ -582,7 +612,7 @@ export function CadViewer({
     setMemoSelectedId(id);
     setMemoAnchorTarget(item.anchor?.mode==='ATTACHED'&&item.anchor.targetRef
       ?item.anchor.targetRef.origin+':'+item.anchor.targetRef.id:'');
-    if (!appState.toolsOpen) dispatchApp({type:'toggle-tools',exclusive:isCompact});
+    if (!fromTree && !appState.toolsOpen) dispatchApp({type:'toggle-tools',exclusive:isCompact});
     setMemoDeleteArmed(false);
     setMemoError(null);
     // Re-selecting an already open memo is a focus action, not a discard-draft command.
@@ -594,6 +624,110 @@ export function CadViewer({
       });
     }
   }, [beginMemoInteraction,memoSelectedId,versionId,sourceSha256,appState.toolsOpen,isCompact,sessionSnapProjection]);
+  const settingsFrom=(m:MemoDraft):MemoSettingsInput=>({
+    scheduleEnabled:m.scheduleEnabled??false,startDate:m.startDate??null,dueDate:m.dueDate??null,
+    completionEnabled:m.completionEnabled??false,isCompleted:m.isCompleted??false
+  });
+  const focusMemoFromTree=(id:string)=>{
+    const m=scopedMemos.find(x=>x.id===id);
+    if(!m)return;
+    selectMemo(id,true);
+    setMemoTransientFocusId((!memoAllVisible||m.visible===false||!isMemoVisible(memoTree,id))?id:null);
+    if(!manager.current?.focusBounds({minX:m.anchorWcsXY.x-3,maxX:m.anchorWcsXY.x+3,
+      minY:m.anchorWcsXY.y-3,maxY:m.anchorWcsXY.y+3}))
+      setMemoTreeError('메모 WCS로 이동할 수 없습니다.');
+  };
+  async function changeMemoMeta(id:string,update:{groupId?:string|null;visible?:boolean;settings?:MemoSettingsInput}){
+    if(memoSavingRef.current)return;
+    memoSavingRef.current=true;setMemoBusy(true);
+    try{
+      const doc=getMemoSession(),old=doc.get(id);
+      if(!old)throw new Error('메모가 없습니다.');
+      const groupId=update.groupId===undefined?(old.groupId??null):update.groupId;
+      const visible=update.visible??old.visible??true;
+      const settings=update.settings??settingsFrom(old);
+      if(memoServerMode==='active'){
+        if(!memoFeaturesAvailable)throw new Error('기존 설치에서는 M4/M5 영속 메타데이터를 쓸 수 없습니다. 신규 설치가 필요합니다.');
+        if(old.revision===undefined)throw new Error('Revision을 확인할 수 없습니다.');
+        doc.acceptPersisted(await mutatePersistedMemo('PATCH',versionId,{
+          expectedRevision:old.revision,operation:'metadata',groupId,visible,...settings
+        },id) as PersistedMemoDraft,{versionId,sourceSha256});
+      }else if(memoServerMode==='off'){
+        doc.updateMetadata(id,{groupId,visible,settings},{versionId,sourceSha256});
+      }else throw new Error('서버가 준비되지 않았습니다.');
+      setMemos(doc.list());
+      setMemoTree(current=>{
+        const groupByMemo={...current.groupByMemo};
+        if(groupId===null)delete groupByMemo[id];else groupByMemo[id]=groupId;
+        return {...current,groupByMemo};
+      });
+      setMemoTreeError(null);setMemoError(null);
+    }catch(error){const msg=error instanceof Error?error.message:'메모 속성 변경 실패';
+      setMemoTreeError(msg);setMemoError(msg);
+    }finally{memoSavingRef.current=false;setMemoBusy(false);}
+  }
+  const localTree=(fn:()=>MemoTreeState):boolean=>{
+    try{setMemoTree(fn());setMemoTreeError(null);return true;}
+    catch(error){setMemoTreeError(error instanceof Error?error.message:'그룹 작업 오류');return false;}
+  };
+  const reloadMemoGroups=async()=>{
+    const result=await readPersistedMemos(versionId,new AbortController().signal);
+    if(result.mode!=='active')throw new Error('메모 조회를 완료하지 못했습니다.');
+    const doc=new MemoSession({versionId,sourceSha256});
+    for(const m of result.memos)doc.acceptPersisted(m,{versionId,sourceSha256});
+    memoSession.current=doc;setMemos(doc.list());
+    setMemoGroupRecords(result.groups);setMemoFeaturesAvailable(result.featuresAvailable);
+    setMemoTree({...emptyMemoTreeState,groups:result.groups.map(g=>({id:g.id,name:g.name})),
+      groupByMemo:Object.fromEntries(result.memos.filter(m=>m.groupId).map(m=>[m.id,m.groupId!]))});
+    setMemoTransientFocusId(null);
+  };
+  const createTreeGroup=(name:string):boolean=>{
+    if(memoServerMode!=='active')return localTree(()=>createMemoGroup(memoTree,createPreviewUuid(),name));
+    if(!memoFeaturesAvailable){setMemoTreeError('신규 Greenfield 설치에서만 메모 그룹을 저장할 수 있습니다.');return false;}
+    void mutatePersistedMemoGroup('POST',versionId,{sourceSha256,name})
+      .then(g=>{if('deleted' in g)throw new Error('그룹 생성 응답 오류');
+        setMemoGroupRecords(a=>[...a,g]);setMemoTree(a=>({...a,groups:[...a.groups,{id:g.id,name:g.name}]}));})
+      .catch(e=>setMemoTreeError(e instanceof Error?e.message:'그룹 생성 실패'));
+    return true;
+  };
+  const renameTreeGroup=(id:string,name:string):boolean=>{
+    if(memoServerMode!=='active')return localTree(()=>renameMemoGroup(memoTree,id,name));
+    const old=memoGroupRecords.find(g=>g.id===id);
+    if(!old)return false;
+    void mutatePersistedMemoGroup('PATCH',versionId,{expectedRevision:old.revision,operation:'rename',name},id)
+      .then(g=>{if('deleted' in g)throw new Error('그룹 변경 응답 오류');
+        setMemoGroupRecords(a=>a.map(x=>x.id===id?g:x));
+        setMemoTree(a=>renameMemoGroup(a,id,g.name));})
+      .catch(e=>setMemoTreeError(e instanceof Error?e.message:'그룹 이름 변경 실패'));
+    return true;
+  };
+  const deleteTreeGroup=(id:string)=>{
+    if(memoServerMode==='off'){
+      if(!localTree(()=>removeMemoGroup(memoTree,id)))return;
+      // M1 session tree and canonical MemoSession metadata must agree when
+      // schedule/completion is subsequently saved (Codex P2 #4429007642).
+      const doc=getMemoSession();
+      for(const memo of doc.list().filter(m=>memoTree.groupByMemo[m.id]===id)){
+        doc.updateMetadata(memo.id,{groupId:null,visible:memo.visible??true,
+          settings:settingsFrom(memo)},{versionId,sourceSha256});
+      }
+      setMemos(doc.list());
+      return;
+    }
+    if(memoServerMode!=='active')return;
+    const old=memoGroupRecords.find(g=>g.id===id);
+    if(!old||!window.confirm('그룹을 삭제하고 메모를 미분류로 이동할까요?'))return;
+    void mutatePersistedMemoGroup('DELETE',versionId,{expectedRevision:old.revision},id)
+      .then(()=>reloadMemoGroups())
+      .catch(e=>setMemoTreeError(e instanceof Error?e.message:'그룹 삭제 실패'));
+  };
+  const assignTreeGroup=(id:string,groupId:string|null)=>{
+    if(memoServerMode==='off'&&!localTree(()=>
+      assignMemoToGroup(memoTree,id,groupId,scopedMemos)))return;
+    if(memoServerMode!=='off'&&memoServerMode!=='active')return;
+    // Persisted path is CAS; M1 path updates MemoSession, not merely Tree UI.
+    void changeMemoMeta(id,{groupId});
+  };
   const placeMemo = useCallback((point:MemoWcsXY) => {
     // 12 CSS px threshold; closed polygon vertices and visible 2D render
     // endpoints/centers only. Never promotes the session target to a DB ref.
@@ -735,6 +869,8 @@ export function CadViewer({
         await mutatePersistedMemo('DELETE',versionId,{expectedRevision:old.revision},memoSelectedId);
       }else if(memoServerMode!=='off')throw new Error('메모 저장 서버 확인이 필요합니다.');
       doc.remove(memoSelectedId,{versionId,sourceSha256});
+      setMemoTree(current=>removeMemoTreeEntry(current,memoSelectedId));
+      setMemoTransientFocusId(null);
       sessionSnaps.current?.detach(memoSelectedId);syncSessionSnaps();
       setMemos(doc.list());closeMemoEditor();
     }catch(error){setMemoError(error instanceof Error?error.message:'메모 삭제가 취소되었습니다.');}
@@ -1345,6 +1481,9 @@ export function CadViewer({
       {id:'zoom-in',label:'확대',disabled:loading||!state.ready,onSelect:()=>manager.current?.zoomIn()},
       {id:'zoom-out',label:'축소',disabled:loading||!state.ready,onSelect:()=>manager.current?.zoomOut()},
       {id:'fit',label:'화면 맞춤',disabled:loading||!state.ready,onSelect:()=>manager.current?.fitToView()},
+      {id:'memo-visible',label:'메모 전체 표시',testId:'viewer-menu-memo-visible',kind:'checkbox',
+       checked:memoAllVisible,disabled:!memoAvailable,reason:memoUnavailable??undefined,
+       onSelect:()=>{setMemoAllVisible(v=>!v);setMemoTransientFocusId(null);}},
       {id:'fullscreen',label:isFullscreen?'전체 화면 종료':'전체 화면',onSelect:isFullscreen?exitFullscreen:enterFullscreen},
       {id:'native',label:isNativeFullscreen?'브라우저 전체 화면 해제':'브라우저 전체 화면',disabled:loading,onSelect:toggleNativeFullscreen},
     ]},
@@ -1353,6 +1492,11 @@ export function CadViewer({
       {id:'tools',label:'선택·편집 도구',testId:'viewer-menu-tools',kind:'checkbox',checked:appState.toolsOpen,expanded:(outlineAvailable||memoAvailable)&&appState.toolsOpen,controls:(outlineAvailable||memoAvailable)&&appState.toolsOpen?'viewer-tools-dock':undefined,disabled:!(outlineAvailable||memoAvailable),reason:!(outlineAvailable||memoAvailable)?(outlineUnavailable??memoUnavailable??undefined):undefined,onSelect:()=>{if(appState.toolsOpen)closeMemoEditor();dispatchApp({type:'toggle-tools',exclusive:isCompact});}},
       {id:'outline',label:'외곽선 생성',testId:'viewer-menu-outline-tool',kind:'checkbox',checked:appState.outlineToolEnabled,expanded:appState.outlineToolEnabled&&appState.toolsOpen,controls:appState.outlineToolEnabled&&appState.toolsOpen?'viewer-tools-dock':undefined,disabled:!outlineAvailable,reason:outlineUnavailable??undefined,onSelect:toggleOutlineTool},
       {id:'tree',label:'외곽선 목록',testId:'viewer-menu-outline-tree',kind:'checkbox',checked:appState.outlineTreeOpen,expanded:treeAvailable&&appState.outlineTreeOpen,controls:treeAvailable&&appState.outlineTreeOpen?'viewer-outline-tree-dock':undefined,disabled:!treeAvailable,reason:treeUnavailable??undefined,onSelect:()=>dispatchApp({type:'toggle-outline-tree',exclusive:isCompact})},
+      {id:'memo-tree',label:'메모 트리',testId:'viewer-menu-memo-tree',kind:'checkbox',
+       checked:appState.memoTreeOpen,expanded:memoAvailable&&appState.memoTreeOpen,
+       controls:memoAvailable&&appState.memoTreeOpen?'viewer-memo-tree-dock':undefined,
+       disabled:!memoAvailable,reason:memoUnavailable??undefined,
+       onSelect:()=>dispatchApp({type:'toggle-memo-tree',exclusive:isCompact})},
       {id:'search',label:'도면 내 텍스트 검색',kind:'checkbox',checked:searchOpen,disabled:format!=='DXF'||!state.ready,reason:format==='DWG'?'DWG 내부 텍스트 검색은 제공하지 않습니다.':!state.ready?'도면 표시 완료 후 검색할 수 있습니다.':undefined,onSelect:()=>setSearchOpen(value=>!value)},
       {id:'memo',label:'메모 추가/편집',testId:'viewer-menu-memo-add',kind:'checkbox' as const,checked:memoPlacing || !!memoSelectedId,expanded:appState.toolsOpen,controls:appState.toolsOpen?'viewer-tools-dock':undefined,disabled:!memoAvailable,reason:memoUnavailable??undefined,onSelect:startMemoPlacement},
       {id:'reset-source',label:'DXF 기반 객체만 초기화 (자체 생성 유지)',
@@ -1370,6 +1514,7 @@ export function CadViewer({
   return <div className="space-y-3">
     <ViewerAppShell
       shellRef={viewerShell}
+      panelScopeKey={versionId+':'+sourceSha256+':'+renderer+':'+attempt}
       isFullscreen={isFullscreen}
       isNativeFullscreen={isNativeFullscreen}
       menuBar={
@@ -1426,11 +1571,36 @@ export function CadViewer({
         />
       ) : null}
       outlineTreeOpen={treeAvailable && appState.outlineTreeOpen}
+      memoTreePanel={memoAvailable ? <div className="flex h-full min-h-0 flex-col">
+        <CadMemoTreePanel
+          memos={scopedMemos} tree={memoTree} selectedId={memoSelectedId}
+          allVisible={memoAllVisible} transientFocusId={memoTransientFocusId}
+          persistent={memoServerMode==='active'&&memoFeaturesAvailable}
+          onPersistVisibility={memoServerMode==='active'&&memoFeaturesAvailable?
+            (id,visible)=>{void changeMemoMeta(id,{visible});}:undefined}
+          onSelect={focusMemoFromTree} onEdit={id=>selectMemo(id)}
+          onVisibility={(id,visible)=>{
+            if(!scopedMemos.some(m=>m.id===id))return;
+            setMemoTree(current=>setMemoVisible(current,id,visible));
+            setMemoTransientFocusId(null);
+          }}
+          onGroupVisibility={(id,visible)=>setMemoTree(current=>setMemoGroupVisible(current,id,visible,scopedMemos))}
+          onCreateGroup={createTreeGroup}
+          onRenameGroup={renameTreeGroup}
+          onDeleteGroup={deleteTreeGroup}
+          onAssignGroup={assignTreeGroup}
+          onClose={()=>dispatchApp({type:'toggle-memo-tree'})}
+        />
+        {memoTreeError&&<p role="alert" data-testid="memo-tree-error"
+          className="border-t border-red-300 bg-red-50 p-2 text-xs text-red-800">{memoTreeError}</p>}
+      </div> : null}
+      memoTreeOpen={memoAvailable&&appState.memoTreeOpen}
       compactPanel={appState.compactPanel}
       toolsOpen={appState.toolsOpen}
       onClosePanel={panel=>{
         if(panel==='layers'){dispatchApp({type:'close-layers'});requestAnimationFrame(()=>viewerShell.current?.querySelector<HTMLButtonElement>('[data-viewer-group=work]')?.focus({preventScroll:true}));}
         else if(panel==='outlines'){dispatchApp({type:'toggle-outline-tree'});requestAnimationFrame(()=>viewerShell.current?.querySelector<HTMLButtonElement>('[data-viewer-group=work]')?.focus({preventScroll:true}));}
+        else if(panel==='memos'){dispatchApp({type:'toggle-memo-tree'});requestAnimationFrame(()=>viewerShell.current?.querySelector<HTMLButtonElement>('[data-viewer-group=work]')?.focus({preventScroll:true}));}
         else {closeMemoEditor();dispatchApp({type:'close-tools'});requestAnimationFrame(()=>viewerShell.current?.querySelector<HTMLButtonElement>('[data-viewer-group=work]')?.focus({preventScroll:true}));}
       }}
       canvas={
@@ -1459,7 +1629,7 @@ export function CadViewer({
             outlines={storedOutlines.filter(o=>o.sceneRevision===storedSceneRevision)}
             hidden={storedOutlineHidden} getManager={getManager} viewRevision={viewRevision} />}
           {memoAvailable && <CadMemoOverlay
-            memos={scopedMemos}
+            memos={canvasMemos}
             selectedId={memoScoped?memoSelectedId:null}
             placing={memoScoped && memoPlacing}
             candidate={memoScoped?memoCandidate:null}
@@ -1522,6 +1692,11 @@ export function CadViewer({
             sessionSnap={memoSelectedId?sessionSnapProjection[memoSelectedId]:undefined}
             onSessionDetach={()=>{void detachSessionSnap();}}
           />}
+          {memoAvailable&&memoSelectedId&&scopedMemos.filter(m=>m.id===memoSelectedId).map(m=>
+            <CadMemoSettingsEditor key={m.id+':'+(m.revision??m.updatedAt)}
+              memo={m} busy={memoBusy}
+              enabled={memoServerMode==='off'||(memoServerMode==='active'&&memoFeaturesAvailable)}
+              onSave={settings=>{void changeMemoMeta(m.id,{settings});}} />)}
           {outlineAvailable&&memoServerMode==='active'&&<section data-testid="cad-stored-outline-tools"
             className="border-b border-cyan-200 bg-slate-50 px-3 py-2 text-xs text-slate-800">
             <strong>영속 외곽선 {storedOutlines.length}개 (서버 조회/수정·CAS)</strong>

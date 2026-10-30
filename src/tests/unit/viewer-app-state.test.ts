@@ -7,6 +7,7 @@ describe('TC-U1-UNIT-001: viewer app docking state', () => {
       layerPanelOpen: true,
       outlineToolEnabled: false,
       outlineTreeOpen: false,
+      memoTreeOpen: false,
       toolsOpen: false,
       compactPanel: 'layers',
     });
@@ -89,4 +90,17 @@ describe('TC-U3-UNIT-001: outline tool state machine', () => {
     const active = viewerAppReducer(initialViewerAppState, { type: 'set-outline-tool', enabled: true });
     expect(viewerAppReducer(active, { type: 'reset' })).toEqual(initialViewerAppState);
   });
+});
+
+
+describe('#85 M4 compact Memo Tree state regression',()=>{
+ it('retains exclusive Outline/Memo right dock and never alters layer visibility',()=>{
+  const withMemo=viewerAppReducer(initialViewerAppState,{type:'toggle-memo-tree'});
+  expect(withMemo).toMatchObject({memoTreeOpen:true,outlineTreeOpen:false,layerPanelOpen:true});
+  const withOutline=viewerAppReducer(withMemo,{type:'toggle-outline-tree'});
+  expect(withOutline).toMatchObject({memoTreeOpen:false,outlineTreeOpen:true,layerPanelOpen:true});
+  const compact=viewerAppReducer(withOutline,{type:'toggle-memo-tree',exclusive:true});
+  expect(compact).toMatchObject({memoTreeOpen:true,outlineTreeOpen:false,layerPanelOpen:false,toolsOpen:false,compactPanel:'memos'});
+  expect(viewerAppReducer(compact,{type:'reset'})).toEqual(initialViewerAppState);
+ });
 });

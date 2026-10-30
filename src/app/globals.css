@@ -58,3 +58,10 @@ html:has([data-home-sticky='true']) { scroll-padding-top: calc(var(--home-nav-he
 @media (max-height:480px) { .home-sticky-panel { max-height:calc(100dvh - var(--home-nav-height, 0px) - 88px); overflow:auto; } }
 
 @media (max-width:767px) { .viewer-command-trigger,.viewer-command-item,.viewer-drawer button,.home-filters button,.home-advanced > summary { min-height:44px; } }
+
+/* #85/#138: the right-hand Tree mounts once; floating placement is scoped to the Viewer session. */
+.viewer-drawer-memos { top:12px; right:12px; width:min(22rem,34vw); height:min(68dvh,620px,calc(100% - 24px)); max-height:min(68dvh,620px,calc(100% - 24px)); }
+.viewer-drawer-grab { touch-action:none; user-select:none; cursor:grab; }
+[data-viewer-panel-dragging="true"] .viewer-drawer-grab { cursor:grabbing; }
+
+@media (max-width:767px) { .viewer-drawer-memos { height:auto; max-height:min(74dvh,60%); } }

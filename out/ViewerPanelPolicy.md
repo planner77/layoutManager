@@ -1,3 +1,9 @@
+## #85 PR #175 M4 partial realization (2026-10-31)
+
+The common `MovableViewerPanel` and pure CSS workspace clamp are now introduced for Memo Tree only, addressing Codex P1 on [PR #175](https://github.com/planner77/layoutManager/pull/175). Dedicated title drag handle, keyboard arrows, position reset, close/reopen preservation, independent canvas state and compact single modal are implemented with new Unit/Playwright tests; execution not yet verified. #138's remaining layer/outline/text-search/tool movable panels and full acceptance are **NOT COMPLETE**. This common policy still applies to later panels.
+
+---
+
 # Viewer 보조 창 이동·배치 공통 지침 (#138)
 
 > **상태:** 2026-10-27 Owner UX 요구에 따른 설계/지침. **구현 전·시험 NOT RUN.** #127의 기존 Drawer, 메뉴 및 관련 도메인 경계 유지. 관련 [Issue #138](https://github.com/planner77/layoutManager/issues/138).

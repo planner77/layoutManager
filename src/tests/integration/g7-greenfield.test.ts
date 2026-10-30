@@ -12,6 +12,7 @@ import { assertG7RuntimeSchema, G7_RUNTIME_MIGRATION_CHECKSUMS } from '../../ser
 import { executeG7RuntimeAdmin } from '../../server/g7-operational/runtime-admin';
 import { G7_GREENFIELD_BASELINE, G7_GREENFIELD_SCHEMA_ID,
   G7_OLD_GREENFIELD_BASELINE, G7_OLD_GREENFIELD_BASELINE_CHECKSUM,
+  G7_PREVIOUS_ANCHOR_BASELINE,G7_PREVIOUS_ANCHOR_CHECKSUM,
   G7_DELETE_PASSWORD_TRIGGERS,assertG7GreenfieldSchema } from '../../server/g7-operational/greenfield-schema';
 
 const Sqlite=createRequire(import.meta.url)('better-sqlite3') as new(
@@ -123,6 +124,24 @@ describe('#153 empty Greenfield installation without prior data or migration rep
       expect(()=>assertG7RuntimeSchema(db as never)).toThrow('G7_RUNTIME_SCHEMA_DRIFT');
     }finally{db.close();}
     expect(resolveG7RuntimeGate(x.env)).toMatchObject({state:'BLOCKED'});
+  });
+
+  test('v0.47.2 one-row Anchor baseline remains accepted for read-only compatibility',()=>{
+    const f=fresh();
+    initializeGreenfield(f.env);
+    const db=new Sqlite(f.dbfile);
+    try{
+      // Synthetic historical DB: remove only the M4/M5 add-on objects from the
+      // fresh baseline, then stamp the exact old Anchor one-row history marker.
+      db.exec('DROP TABLE "CadMemoFeature"; DROP TABLE "CadMemoGroup"');
+      db.prepare('UPDATE "_prisma_migrations" SET migration_name=?,checksum=?')
+        .run(G7_PREVIOUS_ANCHOR_BASELINE,G7_PREVIOUS_ANCHOR_CHECKSUM);
+      expect(()=>assertG7GreenfieldSchema(db as never)).not.toThrow();
+      expect(()=>assertG7RuntimeSchema(db as never)).not.toThrow();
+      // A mixed old marker and new M4/M5 table must not be silently accepted.
+      db.exec('CREATE TABLE "CadMemoFeature"(memo_id TEXT PRIMARY KEY)');
+      expect(()=>assertG7GreenfieldSchema(db as never)).toThrow('G7_GREENFIELD_MEMO_FEATURE_SCHEMA_DRIFT');
+    }finally{db.close();}
   });
 
   test('old exact one-row baseline remains accepted separately, but cannot claim Scene tables',()=>{

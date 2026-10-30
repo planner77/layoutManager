@@ -94,6 +94,7 @@ model CadFileVersion {
   currentScene CurrentScene?
   outlines CadOutline[]
   memos CadMemo[]
+  memoGroups CadMemoGroup[]
   @@unique([locationId, version], map: "uq_version_sequence")
   @@unique([locationId, id], map: "uq_version_owner_id")
   @@index([registeredAt(sort: Desc), createdAt(sort: Desc), id], map: "ix_version_registered")
@@ -175,6 +176,9 @@ model User {
   memosCreated CadMemo[] @relation("MemoCreated")
   memosUpdated CadMemo[] @relation("MemoUpdated")
   memosDeleted CadMemo[] @relation("MemoDeleted")
+  memoGroupsCreated CadMemoGroup[] @relation("MemoGroupCreated")
+  memoGroupsUpdated CadMemoGroup[] @relation("MemoGroupUpdated")
+  memoGroupsDeleted CadMemoGroup[] @relation("MemoGroupDeleted")
   businessAudits CadBusinessAudit[]
   @@map("User")
 }
@@ -291,6 +295,7 @@ model CadOutline {
 }
 model CadMemo {
   anchor CadMemoAnchor?
+  feature CadMemoFeature?
   id String @id
   versionId String @map("version_id")
   sourceSha256 String @map("source_sha256")
@@ -346,4 +351,42 @@ model CadMemoAnchor {
  updatedAt String @map("updated_at")
  memo CadMemo @relation(fields:[memoId],references:[id],onDelete:NoAction,onUpdate:NoAction)
  @@index([versionId,targetOrigin,targetId,status],map:"ix_cad_memo_anchor_target")
+}
+
+/** #85/#86: optional sidecar in freshly installed Greenfield. No historical schema rewrite. */
+model CadMemoGroup {
+ id String @id
+ versionId String @map("version_id")
+ sourceSha256 String @map("source_sha256")
+ name String
+ sortOrder Int @map("sort_order")
+ revision Int @default(0)
+ createdById String @map("created_by_id")
+ updatedById String @map("updated_by_id")
+ deletedById String? @map("deleted_by_id")
+ createdAt String @map("created_at")
+ updatedAt String @map("updated_at")
+ deletedAt String? @map("deleted_at")
+ version CadFileVersion @relation(fields:[versionId],references:[id],onDelete:NoAction,onUpdate:NoAction)
+ createdBy User @relation("MemoGroupCreated",fields:[createdById],references:[id],onDelete:NoAction,onUpdate:NoAction)
+ updatedBy User @relation("MemoGroupUpdated",fields:[updatedById],references:[id],onDelete:NoAction,onUpdate:NoAction)
+ deletedBy User? @relation("MemoGroupDeleted",fields:[deletedById],references:[id],onDelete:NoAction,onUpdate:NoAction)
+ members CadMemoFeature[]
+ @@index([versionId,deletedAt,sortOrder],map:"ix_cad_memo_group_version_live")
+}
+model CadMemoFeature {
+ memoId String @id @map("memo_id")
+ versionId String @map("version_id")
+ sourceSha256 String @map("source_sha256")
+ groupId String? @map("group_id")
+ visible Boolean @default(true)
+ scheduleEnabled Boolean @default(false) @map("schedule_enabled")
+ startDate String? @map("start_date")
+ dueDate String? @map("due_date")
+ completionEnabled Boolean @default(false) @map("completion_enabled")
+ isCompleted Boolean @default(false) @map("is_completed")
+ completedAt String? @map("completed_at")
+ memo CadMemo @relation(fields:[memoId],references:[id],onDelete:NoAction,onUpdate:NoAction)
+ group CadMemoGroup? @relation(fields:[groupId],references:[id],onDelete:NoAction,onUpdate:NoAction)
+ @@index([versionId,groupId],map:"ix_cad_memo_feature_version_group")
 }

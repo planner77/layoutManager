@@ -1,3 +1,20 @@
+## PR #175 2차 PR CI #41139632431 실패와 증거 범위 (2026-10-31)
+
+- Run `41139632431` / HEAD `8df9f656c2c4e9e06e9e3c8552be246e01de4caa`: Docker Job `124351064253` SUCCESS, Verify Job `124351064417`에서 Typecheck/Lint/Unit/Integration/Production Build SUCCESS 및 E2E 101 PASS/2 FAIL.
+- TC-ISSUE17-001 / TC-LAYER001에서 마지막 Canvas PNG `Buffer.equals` 기준 5s timeout. [Artifact](https://github.com/planner77/layoutManager/actions/runs/41139632431/artifacts/13017814221) 화면에서는 Layer 체크가 2/2·3/3 복원되고 선이 나타나지만 Canvas clip 폭 800→798 px 차이도 관측됨. WebGL 렌더 결함을 입증한 실패가 아니라 **복원 비교 기준에 픽셀 크기 의존성이 존재**함이 확인됨.
+- PNG를 동일 그리드로 정규화하고 원본 CAD 획 근접 매칭 검증을 추가한 코드 보완은 **새 CI 실행 전** 상태. Source Layer/Renderer/운영 DB/원본 파일은 변경하지 않았음. 신규 HEAD E2E/현장 수용 PASS를 주장하지 않음.
+
+---
+
+## #85/#86 PR #175 initial CI failure evidence (2026-10-31)
+
+- PR CI [41137913177](https://github.com/planner77/layoutManager/actions/runs/41137913177), HEAD `f9fbef10997e912c50080c7bd7dc6fe7b96b603a`: Verify Job 124344823034 FAILED (TS18047 nullable Version/Group five diagnostics). Docker Job 124344822694 FAILED (same TS diagnostic while building baseline from new source).
+- Subsequent Unit/Integration/E2E/G7 first-install/Next production Docker runtime tests **NOT RUN (SKIPPED)**. This is not evidence of passing or failing those checks.
+- P1 Movable Memo Tree and two P2 session group/status filters addressed in code; 3 GitHub review threads replied/resolved. Synthetic tests added for floating CSS position, pointer/keyboard, group+M5, and previous G7 Anchor baseline.
+- Full post-remediation PR CI, human field UX, actual 2-PC CAD, historical volume migration and GHCR are **NOT VERIFIED / NOT PERFORMED**.
+
+---
+
 ## #84/#167 v0.47.2 — GHCR Release pair 실증 및 문서-only CI (2026-10-31)
 
 - **Release:** [Main CI #95 / Run 41131717206](https://github.com/planner77/layoutManager/actions/runs/41131717206) `completed/success` 정확 HEAD [`59068a62ad8bb4e90b9d016ed0ddc0e6ae639ab7`](https://github.com/planner77/layoutManager/commit/59068a62ad8bb4e90b9d016ed0ddc0e6ae639ab7), release-scope Job `124324008108` SUCCESS 및 GHCR Build/push Job `124324087630` SUCCESS. GHCR Log: `Publish version image: true`; `Published version pair: ghcr.io/planner77/layoutmanager:0.47.2 and ghcr.io/planner77/layoutmanager:0.47.2-migrate`. App `:0.47.2` `sha256:45d6df2cdb2100d2cf6b20264f0a39bc407938902b1490492c4c5a29036a5c06`, Migrator `:0.47.2-migrate` `sha256:77841b57e0e44b80b914beacedb02e4ce81bef2d0acb4524c545a19d6e47d6ad` (OCI SHA-256). `Promote paired release images after both candidates succeed` 단계에서 `:latest`/`:latest-migrate` alias 함께 정식 승격, published layer measurement 성공. Annotated Git tag `v0.47.2` 대상 `59068a62ad8bb4e90b9d016ed0ddc0e6ae639ab7` 정확 일치.

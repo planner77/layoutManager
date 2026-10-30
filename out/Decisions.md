@@ -1,3 +1,19 @@
+## ADR — #85/#86 WebGL Canvas 레이어 복원 E2E의 비교 기준 (2026-10-31)
+
+- 배경: PR #175 CI #41139632431에서는 Layer/UI와 원본 선이 정상 복원된 Trace에도 Canvas PNG 전체 바이트 `Buffer.equals`가 2건 실패했다. CSS fullscreen/Drawer/페이지 스크롤에 따른 1~3 px 크기 차이나 WebGL AA 변화는 소스 Layer 불변을 위반하지 않는다.
+- 결정: GPU raster screenshot의 완전 바이트 일치 대신 검증 대상을 **CAD 내용의 획 복원**으로 정의한다. 서로 다른 크기의 PNG를 512×256에 정규화하고, UI Overlay를 배제한 중앙 렌더 영역의 선을 ±2px 형태 근접성으로 양방향 비교한다. 작은 변화는 허용하지만 완전 빈 Canvas와 유의미한 선 누락은 불합격, 92% overlap 요구. 교차 Layer CHECK/Source GET/canvas element identity 및 E2E trace도 함께 본다.
+- 비범위: ViewerManager/Adapter/render pipeline의 실제 회귀를 테스트 임계값으로 무시하지 않는다. 임계값/영역은 합성 도면 특성에 한정되며 새 CI 실패 시 원본 컨텐츠와 비교해야 한다. 현장 실 DXF 및 GPU 수용은 #113.
+
+---
+
+## #85/#138 — Memo Tree uses shared floating Viewer-panel contract (2026-10-31)
+
+**Decision:** implement a reusable `MovableViewerPanel` from #138 and use it in #85's Memo Tree. The initially right-docked tree becomes floating only after title-handle pointer movement beyond 5 CSS px or keyboard arrows. Position is in Viewer workspace CSS coordinates and clamped to its measured viewport/panel sizes on resize/fullscreen/zoom, not in CAD WCS. Single DOM mount per panel preserves position on close/open; a keyed Version/SHA/Renderer/reload boundary resets it. A dedicated Reset and Close are available; mobile uses the existing #127 single modal and focus trap. ESC cancels only an active panel gesture, not Memo anchor interaction, and panel z-order stays below app menus and dialogs. No localStorage/server position persistence, canvas reload or DXF Source modification.
+
+**Scope:** this is the reusable helper and Memo Tree adoption, not a claim that all existing #138 Layer/Outline/Search/Tool panels have been migrated. Codex P1 #4429007637 required the change. [ViewerPanelPolicy](ViewerPanelPolicy.md), [Review Ledger](FailureLedger.md).
+
+---
+
 ## ADR-062-R1 — #84 브라우저 스냅은 영속 서버 검증과 분리 (2026-10-31)
 
 - 초기 PR #173의 범위 축소를 복구하여 임시 GENERATED 및 DXF_IMPORTED 세션 내부 객체에도 자동 Endpoint/Vertex/Center 후보 탐색을 허용한다. 12 CSS px tolerance와 점수/Scope/finite/visible/원본 소속 검증을 사용하고, 후보는 SceneWork·GeneratedDocument의 살아있는 객체에서만 추출한다.

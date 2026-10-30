@@ -1,3 +1,53 @@
+## #85/#86 PR #175 — CI #41139632431: WebGL 레이어 복원 E2E 2건 실패 (2026-10-31)
+
+### 정확한 실패 증거
+- [PR CI Run 41139632431](https://github.com/planner77/layoutManager/actions/runs/41139632431), attempt 1, HEAD `8df9f656c2c4e9e06e9e3c8552be246e01de4caa`, `completed/failure`.
+- Docker Job `124351064253` **SUCCESS**: 기존 Dockerfile baseline/후보 app+migrator 이미지 빌드 및 Greenfield Compose smoke 포함. Verify Job `124351064417`: TypeScript, ESLint, Unit/Integration, Next Production Build 모두 **SUCCESS**. Playwright E2E만 **101 PASS, 2 FAIL**. 이전 Run #41137913177의 TS18047 실패와 혼동하지 않는다.
+- E2E `src/tests/e2e/issue17-fullscreen-layers.spec.ts:154` TC-ISSUE17-001, `src/tests/e2e/layer-dropdown.spec.ts:71` TC-LAYER001가 `expect.poll(() => canvas.screenshot().equals(savedPng)).toBe(true)`에서 각 5초 타임아웃. Playwright 화면 snapshot은 각각 Layer 2/2, 3/3 **전체 체크** 및 Canvas에 원본 선 복원. [실패 Artifact 13017814221](https://github.com/planner77/layoutManager/actions/runs/41139632431/artifacts/13017814221) Trace 영상의 비교 시 초기 Canvas 프레임 800×378과 복원 이후 798×378 등의 크기 편차가 관측된다. 두 실패가 공통 `PNG Buffer 완전 일치` 검증이어서 레이어/Zoom 불변 위반을 단정할 수 없음.
+
+### 원인 분리 및 보완
+- 확인된 직접 실패는 screenshot PNG 바이트 동일성 가정이다. CSS fullscreen/패널 전환 및 scrollbar/resize에 따른 미세 raster 크기 변화와 WebGL antialiasing이 있을 때 기능적으로 동등한 렌더도 PNG Buffer는 다를 수 있다. 새 이미지가 전체 빈 화면이거나 누락된 CAD 획이 있으면 거절해야 하므로 단순 무조건 통과/비교 삭제 금지.
+- `src/tests/e2e/canvas-stroke-similarity.ts` 도입: Playwright PNG 둘을 브라우저 imageBitmap으로 디코딩하여 공통 512×256 이미지로 크기 정규화. Layer Drawer 및 top-right TEXT 검색 버튼이 덮는 영역은 제외하고 Source Canvas 중앙에 밝은 선 마스크를 생성, ±2 정규화 픽셀 내 양방향 가까운 획 비율 측정. 초기/복원 시 밝은 획 20개 미만이면 0점(무조건 실패), 결과 92% 이상인 경우에만 복원 성공으로 판단. Trace JPEG 진단에서는 정상 복원 경로가 약 1.0, 부분 Layer 숨김이 약 0.76 overlap 예시를 보였으나 실제 새 CI의 PNG 검증 결과를 PASS로 소급하지 않는다.
+- TC-ISSUE17-001 / TC-LAYER001 두 복원 단계에서 `canvasStrokeSimilarity` 기반 10초 poll로 대체. 기존 Layer 개별/전체 상태 체크, 숨김 시 시각적 변경, Canvas DOM 식별자 보존, 원본 content GET 1회 및 Renderer fallback 가드는 그대로 둔다. 제품 `showLayer`·`fitToView`·WebGL Renderer/캔버스·CSS 동작은 변경하지 않음.
+- 이 테스트 수정은 엄격한 바이트 동일성 조건을 **시각적 원본 CAD 획 복원 조건으로 치환**한 것이며 Renderer 동작 자체를 성공 입증한 것은 새 CI 통과 이후다. 실제 현장 GPU/2PC 수용과 별개.
+
+### 리뷰/충돌/운영 게이트
+- 기존 Codex P1/P2 리뷰 스레드 3개는 회신 후 모두 Resolved. 최신 스레드와 Main behind/mergeable을 PR CI 시작 전 다시 확인한다. 새 Codex 지적은 최신 HEAD 확인 전 임의 Resolved 금지.
+- 실제 운영 SQLite/CAD/S3, G7 Auth/Writer, Schema migration, GHCR, Main merge, 이슈 종료는 이번 작업 비범위. 새 HEAD의 CI 시작 확인만 하고 모니터링 생략. 본 기록 시점 새 HEAD의 모든 CI 결과는 NOT VERIFIED.
+
+---
+
+## #85/#86 PR #175 — CI #41137913177 FAILURE + Codex P1/P2 remediation (2026-10-31)
+
+### Exact failed evidence
+- [PR CI Run 41137913177](https://github.com/planner77/layoutManager/actions/runs/41137913177), attempt 1, PR HEAD `f9fbef10997e912c50080c7bd7dc6fe7b96b603a`, `completed/failure`.
+- Verify Job `124344823034` **FAILURE** at `TypeScript 검사`: TS18047 `src/server/cad-business/memo-groups.ts` lines 15-16 (`v` nullable) and 58-60 (`group` nullable); 5 errors. Cause: the `blocked():never` call was not structurally expressed as terminating the guarded branch for TS narrowing. Fix: explicit `return blocked(...)` under both `!v` / `!group` checks. Do not use unsafe non-null assertions. Lint, Unit/Integration, Build, Playwright were **SKIPPED**, not SUCCESS.
+- Docker Job `124344822694` **FAILURE** in `Build pre-change baseline (same source, original Dockerfile)`: Next production build runs TS check on new HEAD code and encountered **same nullable `v` TypeScript error**. Docker Base Image/Compose resolution/setup succeeded. Remaining Docker size, migrator smoke and Greenfield tests **SKIPPED**. No independent Docker/migration bug evidenced by this run.
+
+### Codex review findings (all were initially unresolved)
+- P1 [r4429007637](https://github.com/planner77/layoutManager/pull/175#discussion_r4429007637): Memo Tree fixed drawer violated #138 `ViewerPanelPolicy` movable handle/reset/session placement. Added generic `movable-viewer-panel.tsx` + pure `viewer-panel-position.ts`, desktop pointer threshold/capture/cancel, keyboard Arrow/Shift, reset/close, ResizeObserver viewport clamp, z-order, CSS/native fullscreen-compatible local workspace positions; same component stays mounted between close/open; scope-key resets across Version/Renderer/reload; compact modal behavior unchanged. Added clamp Unit and pointer/keyboard/resize/close E2E. Other #138 panels not declared complete.
+- P2 [r4429007642](https://github.com/planner77/layoutManager/pull/175#discussion_r4429007642): on G7 OFF group assignment/return-to-unclassified only mutated Tree, but saved M5 schedule read `MemoSession.groupId=null` and reverted Tree assignment. Now validates Tree assignment, then updates canonical MemoSession metadata via `changeMemoMeta`; local group deletion also synchronizes MemoSession members while preserving schedule/visibility. Added E2E group assignment→completion save→group retained.
+- P2 [r4429007644](https://github.com/planner77/layoutManager/pull/175#discussion_r4429007644): group-name search coupled with memo-text predicate when status filter not default. Changed to `statusMatch && (groupNameMatch || memoTextMatch)`; E2E covers complete/incomplete/unmanaged group-name filtering.
+- Three inline review threads received replies (reply IDs 4429067656, 4429068070, 4429068372) and GitHub GraphQL state **RESOLVED**. Codex new-head review not yet claimed PASS.
+
+### Additional preventive regression
+- `src/server/g7-operational/runtime-db.ts`: old `202610310001_greenfield_anchor_baseline` was supported by `assertG7GreenfieldSchema` but absent from the high-level `assertG7RuntimeSchema` recognized one-row baselines after replacing current baseline with M4/M5. Added the exact previous Anchor marker and a synthetic former-baseline acceptance/drift rejection integration test. Does **not** migrate or weaken SQL fingerprint, FK or auth.
+- Updated `viewer-app-state.test.ts` default state to explicitly include `memoTreeOpen:false` plus compact/exclusive right-drawer regression (previous expected object was stale and would otherwise fail once Typecheck passed).
+- Local full Node/Prisma/Vitest/Playwright/Docker execution **NOT RUN** in GitHub-connector-only environment. Unit/E2E tests committed; new HEAD PR CI is the next evidence. No GHCR/operational database access or image action.
+
+### Gate
+Latest Main initially `870d3cf0a4f8e42d2e5c4132076d3b7ab9c52089`; confirmed PR branch behind=0, mergeable=true, 3/3 review threads resolved after corrections. New PR CI to be started against *final documented HEAD*, without follow-up monitoring per Owner. Issue #85/#86 OPEN, Main merge/GHCR publishing deferred.
+
+---
+
+## #85/#86 M4/M5 — pre-PR-CI failure ledger (2026-10-31)
+
+- Existing open Draft PR #148 only implemented session M4 over old M1. Rebase/merge onto latest M2/M3 would overwrite newer server persistence, anchors or Viewer. Corrective action: clean branch from Main `870d3cf0a4f8e42d2e5c4132076d3b7ab9c52089`, selectively port domain/Tree/reducer/shell/tests; old PR #148 had zero unresolved review threads when checked.
+- Historic CAD_BUSINESS_DDL/CAD_ANCHOR_DDL/schema fingerprints kept unchanged; new empty G7-only M4/M5 sidecars. Old M2 readable, unsupported M4/M5 write explicit 503. No operational volume modification.
+- Preliminary GitHub Git-object scripts rejected ambiguous code replacements before remote commit, corrected and safely committed. This was not a PR CI failure. Local Typecheck/Prisma/Next/E2E/Docker jobs not run in connector-only session. PR CI result **NOT VERIFIED** and not to be claimed SUCCESS. See [Design](Issues85-86.md).
+
+---
+
 ## #84/#167 PR #173 — v0.47.2 App/Migrator Pair GHCR 최종 게시 SUCCESS (2026-10-31 KST)
 
 - **릴리스/이미지 최신 실증:** [Main CI #95 / Run 41131717206](https://github.com/planner77/layoutManager/actions/runs/41131717206) `completed/success` 정확 HEAD [`59068a62ad8bb4e90b9d016ed0ddc0e6ae639ab7`](https://github.com/planner77/layoutManager/commit/59068a62ad8bb4e90b9d016ed0ddc0e6ae639ab7), release-scope Job `124324008108` SUCCESS 및 GHCR Build/push Job `124324087630` SUCCESS. GHCR Log: `Publish version image: true`; `Published version pair: ghcr.io/planner77/layoutmanager:0.47.2 and ghcr.io/planner77/layoutmanager:0.47.2-migrate`. App `:0.47.2` `sha256:45d6df2cdb2100d2cf6b20264f0a39bc407938902b1490492c4c5a29036a5c06`, Migrator `:0.47.2-migrate` `sha256:77841b57e0e44b80b914beacedb02e4ce81bef2d0acb4524c545a19d6e47d6ad` (OCI SHA-256). `Promote paired release images after both candidates succeed` 단계에서 `:latest`/`:latest-migrate` alias 함께 정식 승격, published layer measurement 성공. Annotated Git tag `v0.47.2` 대상 `59068a62ad8bb4e90b9d016ed0ddc0e6ae639ab7` 정확 일치.

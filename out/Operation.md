@@ -1,3 +1,9 @@
+## #85/#86 Greenfield operational boundary (2026-10-31)
+
+New Memo M4/M5 tables are provisioned only on explicitly fresh empty G7 installations with version-matched App/Migrator. Prior installed volume retains M2 read, but persisted M4/M5 mutations fail closed 503. Do not upgrade existing DB/volume, activate Writer, publish GHCR, merge Main or claim field acceptance as part of this PR CI-only request. [Spec](Issues85-86.md).
+
+---
+
 ## v0.47.2 공식 App/Migrator paired release — 신규 Greenfield 전용 (2026-10-31)
 
 - 확인된 GHCR Version tag: `ghcr.io/planner77/layoutmanager:0.47.2` App sha256:45d6df2cdb2100d2cf6b20264f0a39bc407938902b1490492c4c5a29036a5c06; `ghcr.io/planner77/layoutmanager:0.47.2-migrate` Migrator sha256:77841b57e0e44b80b914beacedb02e4ce81bef2d0acb4524c545a19d6e47d6ad; `v0.47.2` Git tag와 검증된 Main `59068a62ad8bb4e90b9d016ed0ddc0e6ae639ab7` 일치. [Main CI #95](https://github.com/planner77/layoutManager/actions/runs/41131717206) SUCCESS.
