@@ -1,3 +1,12 @@
+## #98/#83 신규 PR 후보 — 구현 시점 실패·리뷰/충돌 원장 (2026-10-30)
+
+- 신규 후보 CI/유닛/도커 실험 오류 관측: **없음** — 현재 증거 상태는 실행 전 **NOT RUN**이지 PASS가 아님. 역사적 실패는 아래 그대로 보존.
+- 위험 예방: 기존 G7/Scene baseline DB를 업무 테이블로 무단 변경하지 않고 신규 exact business baseline으로 분리. 업무 CRUD는 schema/ACTIVE Auth/Site/FK/CSRF/CAS 미충족 시 거절; 삭제는 논리적으로 수행; 감사 실패와 메모 타 작성자 수정은 전체 거절.
+- 리뷰 스레드: 이 브랜치로 신규 PR 생성 예정으로 생성 전 자체 스레드 없음. 생성 후 미해결 threads, base 충돌을 별도 확인. #65/#84/Old volume 이전/retention/Memo Owner 정책은 잔여 게이트로 보존.
+- 정적 테스트 소스 작성. Typecheck/Lint/Unit/Integration/Next Build/E2E/OCI/현장/운영 migration/GHCR는 **NOT RUN/NOT VERIFIED**. 실제 CI 시작·결과·리뷰 조치는 후속 기록. 코드 작성만으로 Issue AC 완료 처리 안 함.
+
+---
+
 ## #166 PR #170 — 최종 CI 성공·Owner Managed Squash·Main GHCR 게시 시작·Issue 완료 (2026-10-30 KST)
 
 - **최종 검증 HEAD:** [PR #170](https://github.com/planner77/layoutManager/pull/170) `e9af3d192cb513d4182037f0431d5db5f14a4181`, [PR CI #41047867574](https://github.com/planner77/layoutManager/actions/runs/41047867574) `completed/success`, Verify `124036411468`와 Docker image/migration/runtime smoke `124036411148` 두 Job 모두 SUCCESS. 구 HEAD `1b78b89`의 Run #41047100655는 취소 이력이며 최종 PASS로 전용하지 않는다.

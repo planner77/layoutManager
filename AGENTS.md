@@ -1,3 +1,9 @@
+## #98/#83 업무 외곽선·메모 영속 PR 후보 (2026-10-30)
+
+[독립 설계](out/Issues98-83.md)와 신규 #98/#83 구현은 #166 세션 한정 완료 선언 이후의 독립 범위이다. 신규 비즈니스 GET/쓰기 모두 G7 ACTIVE/Auth/Site Grant 필수; Memo 작성자만 수정·삭제, Outline은 Site Editor 협업. Source Canonical은 서버 DXF SHA/Handle 검증, APP_CREATED는 독립 WCS 검증, SceneRevision 불일치는 CAS 409. 새 빈 Greenfield 스키마에만 업무 3개 테이블 및 감사·불변 트리거 추가하고 이전 볼륨은 마이그레이션/삭제하지 않는다. #65/#84 및 데이터 보존/교차 편집 정책 미승인은 차단. PR CI 미확인 결과를 성공으로 기록하거나 본 PR에서 병합·GHCR·배포하지 않는다.
+
+---
+
 ## Issue #166 — Scene 일반 작업과 정밀 원본 검증 분리 (0.47.0 후보)
 
 Scene 선택·외곽선·작업 차분 또는 JSON provenance를 변경할 때 [Architecture](out/Architecture.md)의 S5 절과 ADR-061, [TestPlan](out/TestPlan.md)의 S5-01~08을 먼저 읽는다. `RENDER`는 검증된 Scene Stable ID의 `DXF_IMPORTED` Object3D 전체이며 정밀 `SOURCE` Handle과 구분한다. 일반 작업·APP_CREATED 목록·WCS 메모의 게이트는 원본 매핑 수가 아니다. 정밀 원본 작업은 명시 모드에서 기존 SHA/Handle/canonical 검증을 수행한다.

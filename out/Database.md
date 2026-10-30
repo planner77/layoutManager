@@ -1,3 +1,9 @@
+## #98/#83 업무 영속 신규 empty Greenfield DDL (2026-10-30)
+
+Schema ID G7-GREENFIELD-BUSINESS-20261030-1, baseline 202610300002_greenfield_business_baseline. DDL source: src/server/cad-business/schema-ddl.ts, Prisma model src/prisma/schema.prisma. CadOutline: server UUID, immutable Version/FK·SHA·author·createdAt, scene_revision, origin APP_CREATED, independent WCS base/effective geometry, derivation/source refs, transform operations, revision CAS, logical deletedAt/by; OutlineType null until #65. CadMemo: Version/FK·SHA, title/content plain, WCS anchor+offset, author, revision CAS, soft delete. CadBusinessAudit: actor/site FK, version text, target, action, before/after revision, requestId, UTC time, UPDATE/DELETE blocked by triggers. Version hard delete linked rows 409. Existing Scene checksum, password triggers and old baseline markers immutable; business rows only present in new-empty install. [상세](Issues98-83.md).
+
+---
+
 ## #166 S5 (0.47.0 후보) — DB 변경 없음
 
 일반 Render ObjectRef·DXF_IMPORTED 작업 차분·APP_CREATED 외곽선/독립 WCS 메모 연계는 브라우저 세션 상태이다. Table/Column/Index/Constraint·SceneAsset/CurrentScene CAS·CAD Current·Session/Grant/Audit 정책과 원본 저장 locator는 변경하지 않는다. 새 DB migration/영속 업무 API를 도입하지 않는다. #98/#83/#73/#84의 서버 업무 CRUD/앵커/트리·복원은 해당 이슈 후속이며 S5 성공으로 소급 완료하지 않는다.
