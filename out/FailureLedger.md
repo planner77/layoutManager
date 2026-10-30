@@ -937,3 +937,6 @@
 
 - **Root 최종 재검증/수용:** 고유 output의 전체 일반 E2E **94/94 PASS, 6.5분, exit 0**(`/tmp/layoutmanager-scene-e2e-final.log`), 이 중 새 Scene PoC 36.2초. 앞선 88/6 실행 실패를 성공으로 소급 변경하지 않는다. 전체 Vitest 601 PASS·Build 2회 PASS·동결 소스 Typecheck/Lint PASS(기존 경고 6), 별도 signed Runtime/Greenfield/Legacy UI 각 1 PASS 및 독립 QA를 근거로 Manager가 로컬 S0/S1/합성 S2 ACCEPT했다.
 - **게시 도구 상태:** read-only `gh auth status`에서 로컬 저장 인증 만료를 확인했다. Secret을 출력하거나 앱에 주입하지 않고 작동하는 GitHub 연결 도구로 staged tree와 동일한 객체를 게시한다. remote는 `.env` 지정 저장소와 일치한다. PR CI/현장/배포 성공으로 해석하지 않는다.
+
+- **PR/리뷰·충돌 실제 확인:** 단일 [PR #168](https://github.com/planner77/layoutManager/pull/168), 코드 commit `f907c75409c033b21f8a7231d36d1c46f72171c8`. GitHub tree `d86b42a7e0c7907b9d064d4645201ce7535af9cf`가 로컬 검증 staged tree와 정확히 같음을 확인했다. GitHub 조회의 미해결 리뷰 스레드 **0건**, `mergeable=true`; main `a208cf0623166f5b7a5280e731ae164143f0dc91` 대비 behind **0**, 해결할 충돌 없음. 이는 외부 리뷰 승인이나 CI 성공을 뜻하지 않는다.
+- **최신 HEAD CI 시작 경계:** 이 확인 기록을 포함한 후속 docs commit을 기대 원격 HEAD 검사 및 `force=false`로 전진시키면 `pull_request.synchronize` PR CI가 시작된다. Run 링크/최신 HEAD는 최종 대화 및 PR 본문에 남기고 결과 모니터링은 하지 않는다. CI 결과 **NOT VERIFIED**; 병합·태그·GHCR·운영 DB/API/배포·이슈 종료 미실행.

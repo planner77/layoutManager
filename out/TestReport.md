@@ -16,6 +16,10 @@
 - gpt-6-astra Manager는 실제 Developer/독립 QA 및 위 최종 회귀 결과를 검토해 **ACCEPT / 재작업 불필요**로 판정했다. 수용은 S0/S1 및 합성 S2 로컬 개발 범위이며 실도면·픽셀/선택 hit·CPU 서버·영속 API/DB·GHCR·배포 수용과 구분한다.
 - Git main `a208cf0` 대비 behind 0, staged 23파일의 diff/실제 Secret·credential pattern·CAD/DB/산출물 제외 검사 PASS. 원본 작업 폴더의 기존 수정 2개를 보존했다. 로컬 gh 인증 만료로 GitHub 연결 도구를 사용해 검증한 tree를 게시한다. PR 최신 HEAD의 리뷰/충돌 및 CI 시작은 후속 Git 기록으로 남기며 CI 결과는 모니터링하지 않는다.
 
+### 단일 PR 게시 및 최종 CI 인계
+
+[PR #168](https://github.com/planner77/layoutManager/pull/168)에 #161/#162/#163을 통합했다. 코드 commit `f907c75409c033b21f8a7231d36d1c46f72171c8`, 원격 tree와 로컬 검증 tree 일치. 원격 실제 조회에서 미해결 리뷰 0건·mergeable=true, main 대비 behind 0이다. 이 원장/보고 기록을 포함한 후속 commit의 non-force 브랜치 갱신으로 최신 PR CI를 시작하고 결과를 모니터링하지 않는다. 최종 HEAD/Run은 PR 본문·완료 보고에서 식별하며, PR CI/현장/운영 수용은 NOT VERIFIED다. 다음 구현은 #164 S3이며 이번에는 병합·배포·이슈 종료하지 않았다.
+
 ### SC-05~07 충실도 및 계측 해석
 
 | 비교 항목 | Three JSON | 전용 DTO | GLB/glTF binary |
