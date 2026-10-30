@@ -1,4 +1,8 @@
 import { createRequire } from 'node:module';
+import {readFileSync} from 'node:fs';
+import {BusinessRepository} from '../../server/cad-business/service';
+import type {Database} from '../../server/db';
+import type {G7CadWrite} from '../../server/g7-operational/cad-guard';
 import { afterEach,describe,expect,test } from 'vitest';
 import { CAD_BUSINESS_DDL } from '../../server/cad-business/schema-ddl';
 import { geometry,operations,point,transformed,provenance,revision,keys } from '../../server/cad-business/validation';
@@ -59,5 +63,19 @@ describe('#98/#83 new empty-schema DDL invariants',()=>{
   expect(()=>db.exec("UPDATE CadBusinessAudit SET outcome='SUCCESS'")).toThrow('CAD_BUSINESS_AUDIT_APPEND_ONLY');
   expect(()=>db.exec("UPDATE CadMemo SET deleted_at='2026-10-30',deleted_by_id='editor' WHERE id='m'")).not.toThrow();
   expect(()=>db.exec("UPDATE CadMemo SET title='back' WHERE id='m'")).toThrow('CAD_MEMO_IMMUTABLE');
+ });
+});
+
+describe('#83 Codex P2 / #98 migrator P1 prevention',()=>{
+ test('PATCH operation=delete cannot bypass DELETE audit/response semantics',async()=>{
+  const repo=new BusinessRepository({} as Database);
+  await expect(repo.editMemo(v,'197e1526-12a8-49c7-8187-fb6c5c58f20a',
+   {expectedRevision:0,operation:'delete'},{} as G7CadWrite))
+   .rejects.toMatchObject({code:'BUSINESS_OPERATION_INVALID',status:400});
+ });
+ test('migrator Docker closure explicitly includes the new required DDL module',()=>{
+  const docker=readFileSync(new URL('../../Dockerfile',import.meta.url),'utf8');
+  expect(docker).toContain('COPY --from=builder /app/src/server/cad-business/schema-ddl.ts ./server/cad-business/schema-ddl.ts');
+  expect(docker).toContain('CAD_BUSINESS_DDL.length !== 11');
  });
 });
