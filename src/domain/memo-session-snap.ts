@@ -23,7 +23,7 @@ export type SessionSnapProjection=Readonly<{
  /** UI flag: never a server-persisted CadMemoAnchor. */
  persistence:'SESSION_ONLY';
 }>;
-type Binding={ref:SnapRef;kind:SnapKind;local:MemoWcsXY;lastWorld:MemoWcsXY};
+type Binding={ref:SnapRef;kind:SnapKind;local:MemoWcsXY;lastWorld:MemoWcsXY;forcedBreak?:boolean};
 const LIMIT=1e12;
 const validRef=(ref:SnapRef,scope:MemoScope)=>
  ref.versionId===scope.versionId&&
@@ -95,6 +95,11 @@ export class MemoSessionSnapStore {
   return {mode:'ATTACHED',ref:candidate.ref,kind:candidate.kind,local,world:point(candidate.world),
    persistence:'SESSION_ONLY'};
  }
+ /** S6 SOURCE_ONLY invalidates only DXF_IMPORTED session bindings, not APP_CREATED. */
+ breakOrigin(origin:SessionSnapOrigin):void{
+  for(const [id,entry] of this.connections)if(entry.ref.origin===origin)
+   this.connections.set(id,{...entry,forcedBreak:true});
+ }
  detach(memoId:string):void{this.connections.delete(memoId);}
  get(memoId:string):SessionSnapProjection|null{
   const b=this.connections.get(memoId);
@@ -108,7 +113,7 @@ export class MemoSessionSnapStore {
   for(const [memoId,b] of this.connections){
    const target=live.get(b.ref.origin+':'+b.ref.id);
    let mode:SessionSnapProjection['mode']='BROKEN_ANCHOR',world=b.lastWorld;
-   if(target){
+   if(target&&!b.forcedBreak){
     try{world=projectAffine(target.transform,b.local);mode='ATTACHED';}
     catch{/* keep last resolved world and never auto-snap to another target */}
    }
