@@ -97,6 +97,7 @@ COPY --from=builder /app/src/server/g7-staging/g4-store.ts ./server/g7-staging/g
 # #98/#83: exact Greenfield business DDL belongs to the migrator's runtime closure.
 COPY --from=builder /app/src/server/cad-business/schema-ddl.ts ./server/cad-business/schema-ddl.ts
 COPY --from=builder /app/src/server/cad-business/anchor-ddl.ts ./server/cad-business/anchor-ddl.ts
+COPY --from=builder /app/src/server/cad-business/memo-feature-ddl.ts ./server/cad-business/memo-feature-ddl.ts
 COPY --from=builder /app/src/server/g7-operational/greenfield-schema.ts ./server/g7-operational/greenfield-schema.ts
 COPY --from=builder /app/src/server/g7-operational/greenfield-install.ts ./server/g7-operational/greenfield-install.ts
 COPY --from=builder /app/src/server/g7-operational/greenfield-auto.ts ./server/g7-operational/greenfield-auto.ts
@@ -118,7 +119,8 @@ RUN ./node_modules/.bin/prisma --version >/dev/null \
     && node -e "const Database=require('better-sqlite3'); new Database(':memory:').close()" \
     && node --import tsx --input-type=module -e 'import { writeLog } from "./server/logger.ts"; if (typeof writeLog !== "function") process.exit(1);' \
     && node --import tsx --input-type=module -e 'import { CAD_BUSINESS_DDL } from "./server/cad-business/schema-ddl.ts"; if (CAD_BUSINESS_DDL.length !== 11) process.exit(1);' \
-    && node --import tsx --input-type=module -e 'import { CAD_ANCHOR_DDL } from "./server/cad-business/anchor-ddl.ts"; if (CAD_ANCHOR_DDL.length !== 3) process.exit(1);'
+    && node --import tsx --input-type=module -e 'import { CAD_ANCHOR_DDL } from "./server/cad-business/anchor-ddl.ts"; if (CAD_ANCHOR_DDL.length !== 3) process.exit(1);' \
+    && node --import tsx --input-type=module -e 'import { CAD_MEMO_FEATURE_DDL } from "./server/cad-business/memo-feature-ddl.ts"; if (CAD_MEMO_FEATURE_DDL.length !== 6) process.exit(1);'
 CMD ["./node_modules/.bin/tsx", "scripts/deploy.ts"]
 
 # Default production image: Next.js standalone traced dependencies and static assets only.
