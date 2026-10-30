@@ -452,6 +452,7 @@ export function CadViewer({
     setMemoCancelSignal(previous => previous + 1);
     setMemoPlacing(false);
     setMemoCandidate(null);
+    setPendingSnap(null);
     setMemoSelectedId(null);
     setMemoDeleteArmed(false);
     setMemoError(null);
@@ -588,17 +589,23 @@ export function CadViewer({
     if (memoSelectedId !== id) {
       setMemoFields({
         title:item.title,content:item.content,
-        x:String(item.anchorWcsXY.x),y:String(item.anchorWcsXY.y),
+        x:String(sessionSnapProjection[id]?.world.x??item.anchorWcsXY.x),
+        y:String(sessionSnapProjection[id]?.world.y??item.anchorWcsXY.y),
       });
     }
-  }, [beginMemoInteraction,memoSelectedId,versionId,sourceSha256,appState.toolsOpen,isCompact]);
+  }, [beginMemoInteraction,memoSelectedId,versionId,sourceSha256,appState.toolsOpen,isCompact,sessionSnapProjection]);
   const placeMemo = useCallback((point:MemoWcsXY) => {
-    setMemoCandidate(point);
+    // 12 CSS px threshold; closed polygon vertices and visible 2D render
+    // endpoints/centers only. Never promotes the session target to a DB ref.
+    const candidate=nearestSessionSnap(point);
+    const snapped=candidate?.world??point;
+    setPendingSnap(candidate);
+    setMemoCandidate(snapped);
     setMemoPlacing(false);
     setMemoDeleteArmed(false);
     setMemoError(null);
-    setMemoFields(previous=>({...previous,x:String(point.x),y:String(point.y)}));
-  }, []);
+    setMemoFields(previous=>({...previous,x:String(snapped.x),y:String(snapped.y)}));
+  }, [nearestSessionSnap]);
   const moveMemoFromCanvas = useCallback((id:string,point:MemoWcsXY) => {
     if(memoSavingRef.current)return;
     void (async()=>{
@@ -633,6 +640,7 @@ export function CadViewer({
     if (!appState.toolsOpen) dispatchApp({type:'toggle-tools',exclusive:isCompact});
     setMemoSelectedId(null);
     setMemoCandidate(null);
+    setPendingSnap(null);
     setMemoFields({title:'',content:'',x:'0',y:'0'});
     setMemoDeleteArmed(false);
     setMemoError(null);
@@ -647,7 +655,11 @@ export function CadViewer({
     memoSavingRef.current=true;setMemoBusy(true);
     try{
       const doc=getMemoSession();
-      const location=parseMemoWcsXY(memoFields.x,memoFields.y);
+      const requested=parseMemoWcsXY(memoFields.x,memoFields.y);
+      // Revalidate against live geometry at commit: an old candidate is never
+      // authoritative after a camera or target transform change.
+      const candidate=nearestSessionSnap(requested);
+      const location=candidate?.world??requested;
       let created:MemoDraft;
       if(memoServerMode==='active'){
         created=doc.acceptPersisted(await mutatePersistedMemo('POST',versionId,{
@@ -657,6 +669,8 @@ export function CadViewer({
         created=doc.create({id:createPreviewUuid(),anchorWcsXY:location,
           title:memoFields.title,content:memoFields.content},{versionId,sourceSha256});
       }else throw new Error('메모 저장 서버 확인이 필요합니다.');
+      if(candidate){getSessionSnapStore().attach(created.id,candidate);syncSessionSnaps();}
+      setPendingSnap(null);
       setMemos(doc.list());selectMemo(created.id);setMemoError(null);
     }catch(error){setMemoError(error instanceof Error?error.message:'메모를 작성할 수 없습니다.');}
     finally{memoSavingRef.current=false;setMemoBusy(false);}
@@ -684,7 +698,8 @@ export function CadViewer({
     if(!memoSelectedId||!memoAvailable||memoSavingRef.current)return;
     memoSavingRef.current=true;setMemoBusy(true);
     try{
-      const doc=getMemoSession(),to=parseMemoWcsXY(memoFields.x,memoFields.y);
+      const doc=getMemoSession(),requested=parseMemoWcsXY(memoFields.x,memoFields.y);
+      const snap=nearestSessionSnap(requested),to=snap?.world??requested;
       let item:MemoDraft;
       if(memoServerMode==='active'){
         const old=doc.get(memoSelectedId);
@@ -695,6 +710,9 @@ export function CadViewer({
       }else if(memoServerMode==='off'){
         item=doc.move(memoSelectedId,to,{versionId,sourceSha256});
       }else throw new Error('메모 저장 서버 확인이 필요합니다.');
+      if(snap)getSessionSnapStore().attach(item.id,snap);
+      else sessionSnaps.current?.detach(item.id);
+      syncSessionSnaps();
       setMemos(doc.list());
       setMemoFields(previous=>({...previous,x:String(item.anchorWcsXY.x),y:String(item.anchorWcsXY.y)}));
       setMemoError(null);
@@ -712,6 +730,7 @@ export function CadViewer({
         await mutatePersistedMemo('DELETE',versionId,{expectedRevision:old.revision},memoSelectedId);
       }else if(memoServerMode!=='off')throw new Error('메모 저장 서버 확인이 필요합니다.');
       doc.remove(memoSelectedId,{versionId,sourceSha256});
+      sessionSnaps.current?.detach(memoSelectedId);syncSessionSnaps();
       setMemos(doc.list());closeMemoEditor();
     }catch(error){setMemoError(error instanceof Error?error.message:'메모 삭제가 취소되었습니다.');}
     finally{memoSavingRef.current=false;setMemoBusy(false);}
