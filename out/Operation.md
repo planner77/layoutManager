@@ -1,3 +1,13 @@
+## #166 S5 — 세션 Scene 작업 사용과 진단 (0.47.0 후보)
+
+- 정상 READY Scene은 원본 GET/재파싱 없이 일반 객체 작업을 사용한다. `작업 → 외곽선 생성`의 **렌더 WCS 2D**가 기본이며 `기하 기준 → 정밀 원본`은 실제 원본 index·Handle 매핑이 있는 경우에만 선택 가능하다. 원본 Worker 실패/매핑 0건의 안내는 렌더 작업 및 외곽선 목록·독립 WCS 메모를 차단하지 않는다.
+- `작업 → 선택·편집 도구`에서 일반 렌더·생성 선택 또는 생성 객체만 선택한다. Ctrl/⌘ toggle·방향별 Box·Space Pan·ESC 및 기존 레이어 메뉴를 사용한다. 병합 렌더 객체는 전체 Object3D 단위다. 렌더 차분 이동·회전 후 정밀 원본 index가 화면 상태와 불일치할 때 정밀 모드를 거절한다.
+- **DXF_IMPORTED · 세션 작업 차분**에서 WCS 수치를 입력해 이동·회전하거나 선택 렌더 숨김/숨긴 렌더 복원·전용 Undo/Redo를 실행한다. APP_CREATED의 기존 명령 이력과 분리된다. 혼합 Origin은 전체 거절된다. Layer visibility와 작업 visibility는 서로 덮어쓰지 않는다.
+- 브라우저 Reload/Renderer/Version 변경 시 모든 임시 결과·차분·메모가 소실된다. 저장된 Scene Asset을 재작성하거나 원본 DXF를 수정하지 않으며 새 서버 쓰기 API/Schema가 없다. 자유 WCS 메모는 객체 변형을 자동 추적하지 않는다. #84 연결 앵커/영속화 수용은 후속이다.
+- 렌더에서 생성한 외곽선의 JSON은 `APP_CREATED` 및 렌더 기하 기준을 명시한다. 원본 Handle 증명이나 서버 저장 입력으로 사용하지 않는다. 기존 원본 검증 parser/canonical 경로의 거절을 완화하지 않는다. 실 CAD/GPU·2PC·외부 업무 영속 수용은 별도이며 공개 시험에는 합성 자료만 사용한다.
+
+---
+
 ## #164/#165 Scene Asset 사용·운영 경계 (0.46.0 후보, 2026-10-30)
 
 새 Scene Schema의 three-dxf-viewer 정상 조회는 서버 Scene 상태를 먼저 확인합니다. READY이면 immutable Scene bytes/manifest를 검증하여 복원하고 원본 DXF는 요청하지 않습니다. MISSING은 아직 게시된 Scene 없음, REBUILD_REQUIRED는 호환성/무결성 확인 필요, UNAVAILABLE은 접근/전송 장애입니다. 어떤 상태도 사용자 동의 없이 원본을 자동 재파싱하지 않습니다. 기존 Schema의 LEGACY_DISABLED는 별도 레거시 원본 조회 호환 경로입니다.

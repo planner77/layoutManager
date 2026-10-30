@@ -6,6 +6,7 @@ import type {OutlineKind,XY} from '../viewers/core/outline-geometry';
 import type {GeoJSONOutline} from '../viewers/core/outline-compute';
 import type {SavedOutline} from '../viewers/core/adapter';
 import {parseOutlineAssignmentMetadata} from './outline-assignment';
+import {sceneScope,validSceneRef,sceneIdentity,type CadSceneObjectRef} from './cad-scene';
 export type OutlineDraft={
   id:string;kind:OutlineKind;algorithm:string;
   sourceEntityIds:string[];geometry:GeoJSONOutline;
@@ -16,6 +17,10 @@ export type ParsedOutlineExport={
   schemaVersion:1|2;versionId:string;sourceSha256:string;
   coordinateSystem:'DXF_WCS_XY';unitCode:number|null;outlines:OutlineDraft[];
 };
+export type ParsedAppOutlineExport=Readonly<{
+  schemaVersion:3;versionId:string;sourceSha256:string;
+  outlines:readonly {id:string;sceneRef:CadSceneObjectRef;geometry:GeoJSONOutline;geometryBasis:'RENDER_WCS_2D'|'SOURCE_DXF'}[];
+}>;
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const sha=/^[0-9a-f]{64}$/i,handle=/^[0-9a-f]+$/i;
 const MAX_OUTLINES=100,MAX_RINGS=2000,MAX_COORDINATES=100000;
@@ -117,6 +122,53 @@ export function parseOutlineExport(
     coordinateSystem:'DXF_WCS_XY',unitCode:root.unitCode as number|null,outlines:drafts};
 }
 
+/** Browser-only APP_CREATED envelope. Never accepted by the strict source parser/server gate. */
+export function parseAppOutlineExport(input:unknown,expectedVersionId:string,expectedSourceSha256:string):ParsedAppOutlineExport{
+  if(!uuid.test(expectedVersionId)||!sha.test(expectedSourceSha256))throw new Error('Version/SHA 범위가 유효하지 않습니다.');
+  const root=obj(input,'APP_CREATED JSON 객체가 필요합니다.');
+  if(root.schemaVersion!==3||root.geometryBasis!=='RENDER_WCS_2D'||root.sourceAttestable!==false||
+     root.persistence!=='BROWSER_EXPORT_ONLY'||root.coordinateSystem!=='DXF_WCS_XY'||
+     root.versionId!==expectedVersionId||root.sourceSha256!==expectedSourceSha256||
+     !Array.isArray(root.outlines)||root.outlines.length<1||root.outlines.length>MAX_OUTLINES)
+    throw new Error('APP_CREATED 렌더 JSON 스키마 또는 범위가 유효하지 않습니다.');
+  if(root.unitCode!==null&&(!Number.isInteger(root.unitCode)||typeof root.unitCode!=='number'||
+     root.unitCode<0||root.unitCode>24))throw new Error('APP_CREATED INSUNITS 값이 유효하지 않습니다.');
+  const envelopeScope=sceneScope(expectedVersionId,expectedSourceSha256,
+    root.unitCode===null?'UNSPECIFIED':'DXF_INSUNITS_'+root.unitCode);
+  const ids=new Set<string>(),sceneIds=new Set<string>();
+  const outlines=root.outlines.map(raw=>{
+    const row=obj(raw,'APP_CREATED 행이 유효하지 않습니다.');
+    const ref=obj(row.sceneRef,'APP_CREATED Scene ref가 없습니다.');
+    const scope=envelopeScope;
+    if(!validSceneRef(ref,scope)||ref.origin!=='APP_CREATED'||row.origin!=='APP_CREATED'||
+       !uuid.test(String(ref.id))||ref.id!==row.objectId||
+       typeof row.id!=='string'||!/^local-[1-9]\d*$/.test(row.id)||ids.has(row.id)||sceneIds.has(String(ref.id)))
+      throw new Error('APP_CREATED ID/Origin이 유효하지 않습니다.');
+    ids.add(row.id);sceneIds.add(String(ref.id));
+    const result=obj(row.result,'APP_CREATED geometry가 없습니다.');
+    const basis:'RENDER_WCS_2D'|'SOURCE_DXF'|null=result.geometryBasis==='RENDER_WCS_2D'?'RENDER_WCS_2D':
+      result.geometryBasis===undefined?'SOURCE_DXF':null;
+    if(!basis||result.persistable!==(basis==='SOURCE_DXF')||!Array.isArray(result.sourceEntityIds)||
+       (basis==='RENDER_WCS_2D'&&result.sourceEntityIds.length!==0))
+      throw new Error('렌더 결과를 원본 출처로 승격할 수 없습니다.');
+    if(basis==='RENDER_WCS_2D'){
+      if(result.derivedFrom!==undefined&&(!Array.isArray(result.derivedFrom)||result.derivedFrom.length>10000||
+         result.derivedFrom.some(id=>typeof id!=='string'||!validSceneRef({
+           ...scope,sceneId:sceneIdentity(scope),origin:'DXF_IMPORTED',id,
+         },scope))))throw new Error('렌더 파생 Scene 참조가 유효하지 않습니다.');
+    }else{
+      const prefix=expectedVersionId+':'+expectedSourceSha256+':';
+      if(!result.sourceEntityIds.length||result.sourceEntityIds.length>10000||
+         result.sourceEntityIds.some(id=>typeof id!=='string'||!id.startsWith(prefix)||
+           !handle.test(id.slice(prefix.length))||id.slice(prefix.length)!==id.slice(prefix.length).toUpperCase())||
+         new Set(result.sourceEntityIds).size!==result.sourceEntityIds.length)
+        throw new Error('원본 Handle 출처가 유효하지 않습니다.');
+    }
+    return {id:row.id,sceneRef:ref as CadSceneObjectRef,geometry:parseGeometry(result.geometry),geometryBasis:basis};
+  });
+  return {schemaVersion:3,versionId:expectedVersionId,sourceSha256:expectedSourceSha256,outlines};
+}
+
 
 /**
  * U5: preserve U3's untyped v1 export byte shape. Mixed/typed local sessions
@@ -130,13 +182,23 @@ export function buildOutlineExport(
     throw new Error('검증된 Version/SHA 정보가 없어 JSON을 내보낼 수 없습니다.');
   const shared={versionId,sourceSha256,
     coordinateSystem:'DXF_WCS_XY' as const,unitCode,persistence:'BROWSER_EXPORT_ONLY' as const};
+  if(outlines.some(o=>o.result.geometryBasis==='RENDER_WCS_2D')){
+    return {schemaVersion:3 as const,...shared,geometryBasis:'RENDER_WCS_2D' as const,
+      sourceAttestable:false as const,outlines:outlines.map(o=>{
+        if(!o.sceneRef||o.sceneRef.origin!=='APP_CREATED'||o.sceneRef.versionId!==versionId||
+           o.sceneRef.sourceSha256!==sourceSha256)
+          throw new Error('APP_CREATED Scene 참조가 없는 결과는 내보낼 수 없습니다.');
+        return {...o,origin:'APP_CREATED' as const,objectId:o.sceneRef.id};
+      })};
+  }
   if(!outlines.some(o=>o.outlineTypeId!==undefined))
-    return {schemaVersion:1 as const,...shared,outlines:[...outlines]};
+    return {schemaVersion:1 as const,...shared,outlines:outlines.map(({sceneRef,...o})=>{void sceneRef;return o;})};
   const typed=outlines.map(o=>{
     const assignment=parseOutlineAssignmentMetadata({
       outlineTypeId:o.outlineTypeId??null,outlineTypeName:o.outlineTypeName??null,name:o.name??null,
     });
-    return {...o,outlineTypeId:assignment?.outlineTypeId??null,
+    const {sceneRef,...legacy}=o;void sceneRef;
+    return {...legacy,outlineTypeId:assignment?.outlineTypeId??null,
       outlineTypeName:assignment?.outlineTypeName??null,name:assignment?.name??null};
   });
   return {schemaVersion:2 as const,...shared,outlines:typed};

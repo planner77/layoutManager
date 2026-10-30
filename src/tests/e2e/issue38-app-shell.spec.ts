@@ -35,8 +35,14 @@ for (const renderer of ['dxf-viewer', 'three-dxf-viewer'] as const) {
     await openViewerMenu(page, 'view');
     await expect(page.getByRole('menuitem', { name: '브라우저 전체 화면' })).toBeVisible();
     await openViewerMenu(page, 'work');
-    await expect(page.getByTestId('viewer-menu-outline-tool')).toBeDisabled();
-    await expect(page.getByTestId('viewer-menu-outline-tree')).toBeDisabled();
+    if(renderer==='three-dxf-viewer'){
+      // S5 normal render work and APP_CREATED lists do not require DXF Handles.
+      await expect(page.getByTestId('viewer-menu-outline-tool')).toBeEnabled();
+      await expect(page.getByTestId('viewer-menu-outline-tree')).toBeEnabled();
+    }else{
+      await expect(page.getByTestId('viewer-menu-outline-tool')).toBeDisabled();
+      await expect(page.getByTestId('viewer-menu-outline-tree')).toBeDisabled();
+    }
     await expect(page.getByTestId('viewer-menu-outline-types')).toBeDisabled();
     // ViewerCommandMenus omits aria-disabled for enabled commands.
     // Verify the effective accessibility state, not a literal "false" attribute.
@@ -68,7 +74,7 @@ for (const renderer of ['dxf-viewer', 'three-dxf-viewer'] as const) {
       await expect(panel).toBeVisible();
       await expect(equip).not.toBeChecked();
       await expect(canvas).toHaveAttribute('data-stable', stable);
-      // No stable source Handle is present in this fixture: U3 must fail closed.
+      // Tools remain closed until requested, independently from source Handles.
       await expect(page.getByTestId('viewer-tools-dock')).toHaveCount(0);
       expect(contentRequests).toBe(1);
     } else {
@@ -147,12 +153,16 @@ test('TC-M1-E2E-006: free-WCS memo remains available when DXF Source handles are
   await page.goto(`/cad/versions/${version.id}/viewer?renderer=three-dxf-viewer`);
   await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
   await openViewerMenu(page,'work');
-  await expect(page.getByTestId('viewer-menu-outline-tool')).toBeDisabled();
+  // S5 permits normal render work, while exact Handle tracking stays unavailable.
+  await expect(page.getByTestId('viewer-menu-outline-tool')).toBeEnabled();
   await expect(page.getByTestId('viewer-menu-memo-add')).toBeEnabled();
   await expect(page.getByTestId('viewer-tools-dock')).toHaveCount(0);
+  await clickViewerTestCommand(page,'viewer-menu-outline-tool');
+  await expect(page.getByTestId('outline-basis').locator('option[value="source"]')).toBeDisabled();
+  await clickViewerTestCommand(page,'viewer-menu-outline-tool');
   await clickViewerTestCommand(page,'viewer-menu-memo-add');
   await expect(page.getByTestId('viewer-tools-dock')).toBeVisible();
-  await expect(page.getByTestId('cad-object-selection-tools')).toHaveCount(0);
+  await expect(page.getByTestId('cad-object-selection-tools')).toBeVisible();
   await page.getByTestId('cad-memo-title').fill('핸들 없는 DXF 메모');
   await page.getByTestId('cad-memo-content').fill('SOURCE 선택 없이 WCS 배치');
   await page.getByTestId('cad-memo-x').fill('10');

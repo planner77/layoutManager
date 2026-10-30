@@ -4,11 +4,13 @@ import type {OutlineEntity,OutlineKind} from './outline-geometry';
 import type {OutlineResult,GeoJSONOutline} from './outline-compute';
 import {type CanvasObjectRef,type CanvasEditCapability,type CanvasSelectionMode} from '../../domain/canvas-object-selection';
 import type {GeneratedCommand,Affine2D} from '../../domain/generated-document';
+import type {SceneWorkCommand,SceneWorkState} from '../../domain/scene-work';
 import type {OutlineAssignment} from '../../domain/outline-assignment';
 import {outlineGeometryBounds} from '../../domain/outline-tree';
 export type SavedOutlineOverlayState = {id:string;visible:boolean;selected:boolean};
-export type OutlineInfo = {entityCount:number;unitCode:number|null;warnings:string[];renderedObjectCount?:number;excludedEntityCount?:number;spatialIndexMs?:number;sourceIndexMs?:number;renderAuditMs?:number};
+export type OutlineInfo = {entityCount:number;renderEntityCount?:number;exactSourceEntityCount?:number;sourceUnavailableReason?:string;unitCode:number|null;warnings:string[];renderedObjectCount?:number;excludedEntityCount?:number;spatialIndexMs?:number;sourceIndexMs?:number;renderAuditMs?:number};
 export type SavedOutline = {id:string;createdAt:string;result:OutlineResult;
+  sceneRef?:import('../../domain/cad-scene').CadSceneObjectRef;
   outlineTypeId?:string;outlineTypeName?:string;name?:string};
 /** Independent E1 edit-model exposure: not a serialized v1/v2 SavedOutline. */
 export type GeneratedOutlineObject = Readonly<{
@@ -44,6 +46,10 @@ export interface CadViewerAdapter {
   isSelectedGeneratedAt?(clientX:number,clientY:number):boolean;
   getGeneratedObjects?():GeneratedOutlineObject[];
   getCanvasEditCapability?():CanvasEditCapability;
+  getSceneWorkState?():SceneWorkState;
+  executeSceneWorkCommand?(command:SceneWorkCommand):void;
+  undoSceneWork?():boolean;
+  redoSceneWork?():boolean;
   /** Browser-only command entry point, with E2 scope and selection validation. */
   getGeneratedHistory?():{undo:number;redo:number;limit:number};
   executeGeneratedCommand?(command:GeneratedCommand):void;
@@ -210,6 +216,15 @@ export class ViewerManager {
     return this.adapter?.getCanvasEditCapability?.()??{canSelect:false,canEdit:false,reason:'이 Renderer는 통합 객체 선택을 지원하지 않습니다.'};
   }
   getGeneratedHistory(){return this.adapter?.getGeneratedHistory?.()??{undo:0,redo:0,limit:100};}
+  getSceneWorkState():SceneWorkState {
+    return this.adapter?.getSceneWorkState?.()??{objects:[],undo:0,redo:0,limit:100};
+  }
+  executeSceneWorkCommand(command:SceneWorkCommand):void {
+    if(!this.adapter?.executeSceneWorkCommand)throw new Error('이 Renderer는 Scene 작업 차분을 지원하지 않습니다.');
+    this.adapter.executeSceneWorkCommand(command);
+  }
+  undoSceneWork(){return this.adapter?.undoSceneWork?.()??false;}
+  redoSceneWork(){return this.adapter?.redoSceneWork?.()??false;}
   executeGeneratedCommand(command:GeneratedCommand):void{
     if(!this.adapter?.executeGeneratedCommand)throw new Error('생성 객체 편집이 지원되지 않습니다.');
     this.adapter.executeGeneratedCommand(command);

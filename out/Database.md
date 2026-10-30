@@ -1,3 +1,9 @@
+## #166 S5 (0.47.0 후보) — DB 변경 없음
+
+일반 Render ObjectRef·DXF_IMPORTED 작업 차분·APP_CREATED 외곽선/독립 WCS 메모 연계는 브라우저 세션 상태이다. Table/Column/Index/Constraint·SceneAsset/CurrentScene CAS·CAD Current·Session/Grant/Audit 정책과 원본 저장 locator는 변경하지 않는다. 새 DB migration/영속 업무 API를 도입하지 않는다. #98/#83/#73/#84의 서버 업무 CRUD/앵커/트리·복원은 해당 이슈 후속이며 S5 성공으로 소급 완료하지 않는다.
+
+---
+
 ## #164/#165 Scene metadata/CurrentScene 설계 계약 (2026-10-30, 구현 전)
 
 본 절은 신규 Schema 구현 지시이며 실제 DB 적용 기록이 아니다. 구현 후 정확한 Prisma/SQL 필드·제약을 대조하여 보충한다. #168 순수 도메인을 재사용하고 대용량 Scene bytes는 DB에 넣지 않는다.

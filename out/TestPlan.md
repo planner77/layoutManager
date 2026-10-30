@@ -1,3 +1,22 @@
+## #166 Scene S5 — 구현 전 AC/TC (2026-10-30)
+
+Manager 설계 선행 → Developer 구현 보고 → Manager 검토 → 동결한 구현의 독립 QA → 수용/재작업 → root PR/CI 시작 순서. 합성 fixture만 사용하며 표는 실행 계획이다.
+
+| TC | 검증·실패 기준 | AC |
+| --- | --- | --- |
+| S5-01 | Render stable ref/Origin, restored UUID 변경, Click/Ctrl/Meta/Box 및 Mesh 내부 hit, merged geometry 전체 단위; wrong Version/Scene/ref 거절 | 01,02 |
+| S5-02 | Handle 없는 Scene/mappedSource=0 및 source Worker 오류 주입에서 render 선택·outline·목록·memo 유지; exact source는 disabled 사유, mappedSource 허위 증가 금지 | 02,05 |
+| S5-03 | Indexed/drawRange/world transform/Layer 투영; finite WCS 평면 정상, 비평면·Points·불량 index/degenerate 한도 거절. CONVEX·PRECISE 닫힘/0.02 tolerance/holes/self-intersection 회귀 | 03 |
+| S5-04 | Render 결과 optional sourceEntityIds·APP_CREATED/derivedFrom/Version 일치, 생성→이동/삭제→Undo/Redo→Tree/JSON 투영. render JSON은 source attestation 거절, 출처 없는 APP_CREATED 허용·있을 때 Scope 검사, envelope unitCode와 모든 Scene ref 단위 일치, 기존 source JSON 정상·위조 거절 유지 | 03,05 |
+| S5-05 | Imported Translate/Rotate/Visibility/Undo/Redo 후 baseline matrix/geometry/asset bytes/source bytes 불변. Layer AND work visibility, hidden 복원, mixed mutation 전체 거절, invalid scope/nonfinite 거절; 변환/작업 숨김 중 exact source 차단 및 Undo baseline 복귀 | 01,04 |
+| S5-06 | exact mode의 SHA/Handle/canonical negative·서버 source attestation 전체 회귀. 메모 FREE WCS와 Scene/APP scope, target anchor 미구현은 NOT IMPLEMENTED, 서버 저장/감사 수용으로 오인 금지 | 05,06 |
+| S5-07 | #40/#43/#51~54/#82/#126/#127/#138 UI 회귀; Tool OFF=Pan, 선택 모드 Ctrl/Meta 박스와 OrbitControls Pan의 독점·Space 탐색 복원, raw converter entity.layer/READY cadLayer 일치·초기 선택기 visible set, Layer hide 선택 제거, ESC/cancel/resize/reload/renderer·Version 전환/late Worker cleanup, 1 Canvas | 01,06 |
+| S5-08 | 전체 Typecheck/Lint/Unit·Integration/Next Production Build, 관련 Chromium E2E·Greenfield Scene 및 실행 가능한 기존 suite. 합성 결과/CI 미관측/실자료 미실행을 분리 기록 | 06 |
+
+실 CAD/DRM/실 GPU 성능·PR CI 완료·병합/배포는 이 로컬 시험의 PASS로 대체하지 않는다. 로컬 실패와 수정·재시험은 FailureLedger에 보존하며 #55/#56/#65/#71/#73/#83/#84 후행 범위를 완료했다고 기록하지 않는다.
+
+---
+
 ## PR #169 Codex P2 회귀 추가 계획 (2026-10-30)
 
 - `SC-12-SESSION-READ`: 승인된 Scene status GET 및 blob GET 각각 직전 유효 Session `lastSeenAt`를 갱신하되 Site grant 미존재(403), idle-expired/revoked(401)에서는 변경하지 않는다. 테스트 파일 `src/tests/integration/scene-persistence.test.ts`.

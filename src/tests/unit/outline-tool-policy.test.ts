@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isLiveOutlineRequest, outlineToolUnavailableReason } from '../../features/cad-viewer/outline-tool-policy';
+import { isLiveOutlineRequest, outlineToolUnavailableReason, effectiveOutlineBasis } from '../../features/cad-viewer/outline-tool-policy';
 
 const supported = {
   renderer: 'three-dxf-viewer' as const,
@@ -22,6 +22,13 @@ describe('TC-U3-UNIT-002: outline tool availability is fail-closed', () => {
     expect(outlineToolUnavailableReason({ ...supported, entityCount: 0 })).toMatch(/검증된 선택 가능 객체/);
     expect(outlineToolUnavailableReason({ ...supported, entityCount: undefined })).toMatch(/검증된 선택 가능 객체/);
   });
+  it('S5 keeps render work independent from exact-source mappings and Worker failure',()=>{
+    expect(outlineToolUnavailableReason({...supported,entityCount:0,renderEntityCount:2})).toBeNull();
+    expect(outlineToolUnavailableReason({...supported,entityCount:9,renderEntityCount:0})).toBeNull();
+    expect(outlineToolUnavailableReason({...supported,entityCount:0,renderEntityCount:0})).toMatch(/WCS 2D/);
+    expect(outlineToolUnavailableReason({...supported,entityCount:0})).toMatch(/검증된 선택/);
+    expect(outlineToolUnavailableReason({...supported,renderEntityCount:2,sourceSha256:''})).toMatch(/SHA-256/);
+  });
 });
 
 describe('TC-U3-UNIT-003: ignore late Worker failures after OFF or replacement', () => {
@@ -33,5 +40,15 @@ describe('TC-U3-UNIT-003: ignore late Worker failures after OFF or replacement',
     expect(isLiveOutlineRequest(3, 3, true, new Error('worker failed'))).toBe(true);
     // OFF invalidates epoch 4; a new ON cannot accept its prior completion.
     expect(isLiveOutlineRequest(4, 6, true)).toBe(false);
+  });
+});
+
+describe('TC-S5-UI-009: reopening outline after render edits',()=>{
+  it('revalidates the saved source basis using live adapter eligibility',()=>{
+    expect(effectiveOutlineBasis('source',{entityCount:1})).toBe('source');
+    expect(effectiveOutlineBasis('source',{entityCount:1,sourceUnavailableReason:'작업 차분'})).toBe('render');
+    expect(effectiveOutlineBasis('source',{entityCount:0,sourceUnavailableReason:'원본 매핑 없음'})).toBe('render');
+    expect(effectiveOutlineBasis('source',null)).toBe('render');
+    expect(effectiveOutlineBasis('render',null)).toBe('render');
   });
 });

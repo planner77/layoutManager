@@ -1,3 +1,58 @@
+## #166 PR #170 — 후속 Codex P2 초기 Scene 인덱스 성능 수정 (2026-10-30 KST)
+
+- **새 리뷰:** [PR P2 #4423072162](https://github.com/planner77/layoutManager/pull/170#discussion_r4423072162) — `initializeRenderWork()`에서 Projection의 적합 ID Set만 선형으로 만들고 실제 layer 검색은 `renderIndex.entities.find()`로 Scene leaf마다 수행. 선택 가능 객체 N개에서 O(N²), 3만 객체급 READY/DXF 복원 시 UI 스레드 장시간 블로킹 가능. 이는 이전 P2 #4422634421 Source-basis 복구와 별개이며, CI 성공/실패로 혼동하지 않는다.
+- **보완:** `new Map(renderIndex.entities.map(({id,layer})=>[id,layer]))`를 1회 만들고 Scene traverse 안에서는 `layerById.get(ref.id)`로 조회. 적합 ID / Origin/Scope 검증은 `validSceneRef`와 `layer!==undefined` 경계를 유지. Renderer 전체 방문 O(N)+projection 비용이며 DB·원본 SHA/Handle/canonical/권한 변경 없음.
+- **검증 기준:** 기존 HEAD `1b78b891fe57bcd48770d3590d0ee8e8df68185e` 신규 [PR CI #41047100655](https://github.com/planner77/layoutManager/actions/runs/41047100655)는 본 최적화 커밋 **이전** 실행이며 마지막 확인 시 `in_progress`. 새 HEAD에서 CI 재요청 후 최종 확인 전 PASS 주장 금지. 새 코드에 대한 실 DXF·30k 현장 성능/브라우저 벤치마크는 NOT RUN. 현재 독립 단위·복원 Browser 회귀는 새 CI에서 검증 예정, 미완료면 NOT VERIFIED.
+- **게이트:** 해당 리뷰 스레드에 코드 근거 답변 후 Resolved, 최신 모든 Thread=0·Main behind=0/mergeable·신규 최종 HEAD PR CI SUCCESS 확인 전 병합·GHCR·이슈 완료 불가. 역사적 실패와 리뷰는 원장에서 삭제하지 않는다.
+
+---
+
+## #166 PR #170 — CI 성공 후 신규 Codex P2 발견·보완, 최신 검증 대기 (2026-10-30 KST)
+
+- **정확한 성공 대상:** [PR CI #41040094443](https://github.com/planner77/layoutManager/actions/runs/41040094443)는 HEAD `04e44d390e21fc7bcea4b96f5c538ad74ad15f9a`의 `completed/success`; Verify Job `124010487329`와 Docker Job `124010487646` 두 건 SUCCESS. 이 결과는 후속 수정 커밋의 검증으로 **전용하지 않는다**.
+- **후행 최신 Codex P2:** [PR review #4422634421](https://github.com/planner77/layoutManager/pull/170#discussion_r4422634421), `src/features/cad-viewer/viewer.tsx`: 원본 정밀 basis를 선택한 뒤 일반 렌더 선택/Translate·Rotate·숨김을 하면 `sourceWorkChanged()`로 정확 SOURCE가 차단되지만 React `outlineBasis='source'`가 남는다. OFF→ON 시 이전 basis로 `setSelectionMode('select')`가 예외를 던지고, 이미 `outlineEnabledRef=true`인데 panel reducer dispatch 전 중단돼 토글과 도구 내부 상태가 불일치한다. 기존 Codex P2 두 건은 해결·Resolved, 새 세 번째 P2는 수정 전 미해결.
+- **보완:** 사용자 표시 상태가 아니라 adapter의 실시간 `getOutlineInfo().entityCount/sourceUnavailableReason`으로 SOURCE 가용성을 재검증하고, 무효이면 `render`로 자동 전환 + 알림한다. Adapter 모드 전환 성공 후에만 `outlineEnabledRef=true` 설정·상태 dispatch하며, 예외 시 ref를 바꾸지 않는다. 원본 exact fail-closed 및 기준 Scene·DXF bytes 불변.
+- **추가 회귀:** `outline-tool-policy.test.ts`의 live basis 검증, `issue31-outlines.spec.ts`의 실제 DXF source→일반 객체 선택→SceneWork Translate→외곽선 OFF 상태에서 재열기/render fallback/UI checked 회귀. 합성 자료 사용, 실제 CAD·운영 저장소 접근 없음.
+- **새 게이트:** 본 신규 코드/시험은 GitHub source patch이며 독립 로컬 실행 **NOT RUN**. 새로운 HEAD의 PR CI/최신 리뷰/충돌 재검증 전 병합·Main CI·GHCR·#166 종료는 PENDING. 실패 원장 내 이전 95 PASS/2 FAIL 및 후속 P2와 CI 결과를 이력 그대로 보존한다.
+
+---
+
+## #166 PR #170 — PR CI 성공 후 Codex P2 보완·신규 검증 대기 (2026-10-30 KST)
+
+- **검증된 이전 HEAD:** `33e560393527312e0388560bd0d13e62b5124e31`의 [PR CI #41036925858](https://github.com/planner77/layoutManager/actions/runs/41036925858)은 `completed/success`, Verify Job `124000125159`·Docker Job `124000125416` 모두 SUCCESS. Main `bdde565` 대비 behind=0/ahead=2, PR mergeable=true. 성공은 아래 리뷰 보완 **이전** HEAD에만 유효하다.
+- **미해결 Codex P2 2건:** [레이어 표시 결함](https://github.com/planner77/layoutManager/pull/170#discussion_r4422422029)은 `sceneObjects`(선택 가능한 평면 geometry)만 visibility 갱신하여 Points·비평면·다중 material 등 display-only Scene node가 Layer off/hide all을 무시하는 실제 회귀이다. [UI 스레드 계산](https://github.com/planner77/layoutManager/pull/170#discussion_r4422422039)은 `computeRenderOutline`를 브라우저 main thread에서 동기 계산하여 최대 100k geometry/다수 미연결 segment에서 입력·취소가 멈출 수 있는 실제 성능 결함이다.
+- **보완 내용:** imported Scene 전체에 대한 최초 intrinsic visibility 스냅샷을 유지하고 모든 node에 `baseline AND layer AND scene-work` 가시성을 적용한다(부모 가시성 자연 전파, 세션 Undo/Redo 유지). 렌더 외곽선 작업도 원래 `outline-worker`의 `compute-render` task로 보내며 기존 terminate/cancel/30초 timeout을 그대로 적용한다. SOURCE 정밀 모드와 strict provenance/canonical 정책은 불변.
+- **추가 회귀:** Unit의 display-only Points/선택 Mesh/숨겨진 부모·레이어 복원, 복원 Mesh Adapter Browser의 실제 worker 요청 및 display-only Layer off/on 검사. Synthetic scene/기존 기능 계약을 사용하며 실 CAD·운영 데이터 노출 없음.
+- **검증 및 게이트:** 본 패치 커밋 작성 시 별도 로컬 Typecheck/Build/Browser 실행은 **NOT RUN**. 새 HEAD PR CI의 완료 결과·Codex 최신 재리뷰는 **NOT VERIFIED**이며, 이전 성공 #41036925858을 새 HEAD 성공으로 대체하지 않는다. 새 push의 `pull_request.synchronize`로 PR CI를 시작하되 모니터링 생략. 리뷰 답변/해결 및 Main 충돌 재확인 필요. 새 HEAD 성공 전 Squash Merge·Main CI·GHCR 게시·#166 종료 불가. 사내 운영 저장소·Compose·원본 데이터·배포 변경 없음.
+
+---
+
+## #166 PR #170 — 로컬 수용·리뷰/충돌 확인 후 최종 PR CI 인계 (2026-10-30 KST)
+
+- **구현 게시:** [PR #170](https://github.com/planner77/layoutManager/pull/170), branch `feat/issue-166-scene-work`, 최초 구현 Commit `89cb95e1be4e3b665e31ce7c5ad0c5f229d35288` (`feat(viewer): enable scene object work independently of source mapping`), 앱 **0.47.0 후보**. `.env` 지정 remote와 동일한 저장소의 GitHub 연결 도구로 Tree/Commit/Branch를 게시했다. 로컬 staged tree와 원격 Tree의 SHA가 정확히 일치함을 확인한 뒤 로컬 branch를 같은 Commit으로 fast-forward 했다. CLI 401을 CLI Push 성공으로 기록하지 않는다.
+- **리뷰/충돌:** 실제 PR 조회 `mergeable=true`, Main `bdde56504283f6c9695722829c839a93ac58876b`, 비교 `behind=0/ahead=1`, unmerged path 없음. review threads 조회 **미해결 0건**(새 PR에는 thread 자체 0건). 해결할 기존 원격 thread/충돌이 없었다. 지정 Manager/Developer/독립 QA의 로컬 검토와 GitHub 자동 리뷰 성공은 구분하며, 아직 없는 자동 리뷰 결과를 PASS로 표시하지 않는다.
+- **로컬 게이트:** 아래 누적 실패/정책 재시험 및 TestReport의 실제 실행을 유지한다. 최종 Build·Typecheck·Lint(기존 6 warnings) PASS와 최종 Build S5 Browser **3/3 PASS, 21.9초**, 전체 Unit **639 PASS** + 추가 **3 PASS** 별도. 일반 Browser **95 PASS/2 과거 정책 기대 FAIL → 해당 파일 4/4 재시험 PASS**이며 과거 실패를 삭제하지 않는다. Manager **ACCEPT LOCAL SCOPED**.
+- **CI 시작 범위:** PR 생성의 `opened`와 이 원장/보고서 후속 커밋의 `synchronize`가 기존 PR CI를 요청한다. **최종 HEAD 실행 시작 여부/Run URL은 원격 게시 후 PR 본문 인계와 최종 응답에서 확인**, 완료 모니터링은 요청대로 생략하며 CI 최종 결과는 **NOT VERIFIED**다. 이 기록의 커밋으로 전체 suite를 다시 로컬 실행하지 않는다(문서만 변경).
+- **유지:** #166/#160 및 영속 의존 이슈는 OPEN, 병합·태그·GHCR·운영 DB/Storage/볼륨·배포·실 CAD/2PC/DRM 전용 분석 미실행. 다음 구현은 별도 요청/승인 범위의 #167이며 이번 요청의 종료점은 PR CI 시작이다.
+
+---
+
+## #166 S5 — 초기 로컬 실행·원격 접근 이력 (2026-10-30 KST)
+
+- **기존 작업 보존:** 원래 checkout `main`은 오래된 `7076efe`이며 `src/docker-compose.yml`, `src/next-env.d.ts` 사용자 변경 2개를 그대로 보존했다. 지정 remote와 `.env` 저장소 주소 정합성을 비밀 출력 없이 확인하고 최신 Main `bdde565`의 새 worktree/branch에서 구현한다.
+- **원격 접근:** 기본 gh CLI 및 `.env` token을 프로세스 환경에만 넣은 gh 재시도에서 HTTP 401을 관측했다. 인증 값/헤더/credential URL은 출력하지 않았다. GitHub 연결 도구의 Issue/Main 조회는 성공했으며 기능 분석을 계속했다. 원격 게시 방식·실제 Push/PR/CI 시작은 수행 후 별도 기록한다. API 도구의 초회 매개변수 검증 오류는 키 이름을 교정해 조회했다.
+- **초기 Typecheck:** 새 worktree에 `src/generated/prisma`가 없어 타입 검사 실패(Prisma import 누락 및 파생 implicit-any). `npm --prefix src run db:generate` exit 0으로 Client를 생성했다. DB migration/실 운영 DB를 실행한 것이 아니다. 직후 재검사는 Developer가 adapter 메서드를 구현 중인 snapshot에서 `initializeRenderWork` 미정의 등의 오류를 관측했으며 최종 동결 소스 결과로 사용하지 않는다. 최종 Typecheck/회귀는 별도 수행한다.
+- **구현 검토 중 보완(실제 장애/CI 실패와 구분):** Manager/Root가 원본·렌더 수 혼용, 변형·숨김 뒤 stale 정밀 index, parent WCS 변환/중첩 drawable·fractional drawRange·다중 material, 선택 refresh 후 ID 소실, source provenance를 derivedFrom 필수로 옮긴 문제를 발견해 Developer에 재작업했다. Root/Manager가 빈 SelectionController 초기 레이어 집합과 실제 converter의 `entity.layer` 대 `cadLayer` 불일치를 발견해 선택 0건 경로를 교정했다. 이는 기존 31개 집중 Unit과 초기 Build PASS가 실제 adapter 구성 전체를 보증하지 못했던 검증 공백이다. 독립 QA는 schema3 row의 unit/SceneIdentity를 envelope와 교차검사하지 않는 공백을 지적해 별도 수정/음성 회귀를 요구했다. 최종 증거는 아래 TestReport 실행 기록과 구분한다.
+- **첫 전체 Unit 결과:** `npm --prefix src test` 91 files 중 90 PASS/1 FAIL, 총 639 tests 중 **638 PASS/1 FAIL**(273.72초). `generated-translate.test.ts` TC-E4-UNIT-003이 기존 `/읽기 전용/` 오류 메시지 계약과 새 혼합 선택 안내 문구가 달라 실패했다. Guard를 완화하지 않고 문구를 호환되게 수정했으며 focused 3 files/16 PASS를 확인했다. 최종 전체 재검사는 별도다.
+- **첫 브라우저 집중 실행:** 6개 중 **4 PASS/2 FAIL**(50초). 신규 S5 두 경우가 Ctrl Box 이후 렌더 선택이 유지되지 않아 이동 버튼 disabled에서 실패했다. 설치된 Three 0.171 OrbitControls의 Ctrl/Meta/Shift+ROTATE가 `enableRotate=false`와 무관하게 PAN을 시작하는 분기를 확인했다. 선택 모드 `enablePan=false`, Space/탐색에서만 true로 교정했다. 기존 4개 원본/통합 선택 회귀의 PASS와 신규 2개 실패를 구분해 유지한다. 재실행 성공 여부는 후속 기록을 따른다.
+- **브라우저 실행 구성 오류:** Root가 일반 집중/Greenfield Playwright를 같은 `src/test-results`로 병렬 실행해 trace 임시파일 정리가 충돌했다. Greenfield는 1 PASS/1 FAIL(24초), Scene 업무 흐름 이후 `consumer.close()`에서 trace ENOENT가 발생했다. 제품 성공으로 덮지 않고 두 실행의 `--output`을 각각 `test-results/s5-focused`, `test-results/s5-greenfield`로 격리해 재검증한다.
+- **최종 로컬 재검증:** 전체 Unit/Integration **91 files/639 PASS, 346.64초**. 추가 Controller/Mesh topology **2 files/3 PASS**는 별도이며 기존 639에 소급 합산하지 않는다. S5 집중 Browser **3/3 PASS, 36.8초**로 Ctrl Box/명령 및 실제 Mesh WCS/가시성·immutable bytes를 검증했다. Greenfield **2/2 PASS, 42.3초**로 trace 출력 디렉터리 격리 후 ENOENT도 재발하지 않았다. Runtime **1/1 PASS, 14.1초**, Legacy migration **1/1 PASS, 19.9초**.
+- **기존 정책 시험 수정:** 일반 Browser 97개 실행은 **95 PASS/2 FAIL, 8.0분**. 두 실패는 `issue38-app-shell.spec.ts`의 Source Handle 부재 시 일반 도구/목록 비활성 및 객체 도구 비노출 기대였다. #166의 명시 Owner 정책으로 이 기대가 폐기된 것이며, 보안 검사를 제거한 것이 아니다. 일반 렌더/APP 목록은 enabled, exact source는 disabled 및 WCS 메모 유지로 고쳐 **해당 파일 전체 4/4 PASS, 19.8초**를 확인했다. 95/2 원결과는 보존하고 97/97로 표시하지 않는다. 신규 S5 Browser에는 handleless/Worker 실패에서 독립 WCS 메모 작성 확인도 포함했다.
+- **최종 동결 재확인:** 최종 Production Build·Typecheck PASS, Lint는 기존 6 warnings/0 errors. 최종 Build의 S5 Browser도 **3/3 PASS, 21.9초**이며 Manager가 로컬 범위를 수용했다. 최종 Main fetch는 `bdde565`, `behind=0`/base 동일이고 로컬 unmerged path가 없다. 원격 리뷰/CI는 PR 게시 후 별도 기록한다.
+- **범위/판정:** 코드 작성과 초기 집중 policy test는 S5 전체 수용/PR CI/리뷰 성공이 아니다. 병합·GHCR·현장/운영 데이터·배포는 수행하지 않는다. 기존 모든 실패/성공 원장은 아래 그대로 보존한다.
+
+---
+
 ## PR #169 — PR CI 최종 성공·Owner Managed Squash/Main CI·GHCR 게시 시작 인계 (2026-10-30 KST)
 
 - **최신 검증 HEAD:** PR [#169](https://github.com/planner77/layoutManager/pull/169), `a46a3c28c71d8103780cdd028677ba4ea50ad40f`, [PR CI #41011540441](https://github.com/planner77/layoutManager/actions/runs/41011540441) `completed/success` (Verify `123918307809` 및 Docker `123918308216` 두 Job SUCCESS). 이전 Run `41002720029`의 1 FAIL/632 PASS·E2E SKIPPED/독립 Docker SUCCESS 및 G1 Session Trigger 원인은 **하위 원장 그대로 유지**. 수정은 기존 임의 세션 timestamp UPDATE를 삭제하고 G1 발급 당시의 새 독립 테스트 세션으로 대체했으며 계정/Session 트리거·제품 인증/Schema는 완화하지 않았다.

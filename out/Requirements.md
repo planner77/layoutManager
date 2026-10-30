@@ -1,3 +1,19 @@
+## #166 Scene S5 — 구현 전 요구사항·수용 경계 (2026-10-30)
+
+기준 Main `bdde565`의 S0~S4를 소비한다. 최신 #160/#166 Owner 정책이 과거 일반 작업의 `mappedSource > 0` 전면 게이트보다 우선한다. 아래는 구현 지시이며 PASS 기록이 아니다.
+
+| 요구 | 구체적 수용 기준 | 시험 |
+| --- | --- | --- |
+| SC-S5-01 / AC-S5-01,02 | 일반 Click/Modifier/Box는 검증된 Scene Stable ID/Origin을 사용한다. Canvas RENDER는 DXF_IMPORTED 렌더 객체 단위이며 SOURCE(정밀 Handle)/GENERATED(APP_CREATED)와 구분한다. 병합 Mesh/LineSegments/BLOCK은 표시된 렌더 객체 전체가 단위이고 개별 원본 Entity 선택을 주장하지 않는다. Layer/Undo/전환/dispose에서 stale 선택 제거 | S5-01,02,07 |
+| SC-S5-02 / AC-S5-02,05 | 원본 Worker 실패·Handle 부재·mappedSource=0·READY Scene에서도 지원 렌더 객체 선택/생성/목록/자유 WCS 메모 가능. 정밀 원본 모드는 별도 명시 진입이며 SHA/Handle/mapping/canonical 기존 검증을 보존한다. 렌더 수를 mappedSource로 보고하지 않는다 | S5-02,06,07 |
+| SC-S5-03 / AC-S5-03 | 지원되는 유한 WCS XY 평면 Line/LineLoop/LineSegments 및 평면 triangle Mesh에서 APP_CREATED 생성. drawRange/index/world matrix 반영, 비평면/Points/불량 index/퇴화/자기교차를 허용 범위에 따라 거절한다. CONVEX와 PRECISE의 폐영역·hole·0.02 WCS tolerance 계약을 구분하고 렌더 기하 결과를 원본 CAD 정확성으로 주장하지 않는다 | S5-03,04 |
+| SC-S5-04 / AC-S5-03,04 | DXF_IMPORTED 표시/숨김·Translate·Rotate는 immutable 기준 Scene에 대한 별도 브라우저 명령/Undo 차분이다. 기준 bytes/Scene Artifact 및 원본 DXF/Current 불변. APP_CREATED는 기존 GeneratedDocument 생성·삭제·이동·회전 명령을 재사용한다. 혼합 Origin 변형/삭제는 전체 거절하고 일부만 실행하지 않는다 | S5-05 |
+| SC-S5-05 / AC-S5-03,06 | APP_CREATED provenance는 선택적이며 render Stable ID를 sourceEntityIds Handle로 위장하지 않는다. 기존 Tree/세션 Memo/JSON 소비 경로에 Geometry·Version·Origin을 일치시킨다. Scene-derived JSON은 별도 명시 browser-only 경계, 기존 strict 원본 export parser/서버 attestation을 완화하지 않는다 | S5-04,06,07 |
+
+권한/서버 Scope·CAS·Audit는 현행 그대로. S5 세션 편집에 신규 DB/API가 없으므로 서버 영속화·감사를 수행했다고 주장하지 않는다. #55 회전 UX/#56 JSON 편집 import/#65 타입/#71 확정/#73 영속 트리/#83 메모 저장/#84 연결 앵커는 중복 구현하지 않는다. 자유 WCS 메모가 기본이며 미래 anchor의 불일치/대상 삭제는 마지막 WCS 보존+BROKEN_ANCHOR, 임의 재연결 금지 계약을 유지한다. S6 reset·병합·GHCR·배포·실자료 사용은 제외한다. 구현·로컬 수용과 PR CI/현장 수용은 별도 상태이다.
+
+---
+
 ## #164/#165 통합 Scene S3/S4 — 구현 전 요구·수용 게이트 (2026-10-30)
 
 기준 Main `0e6e91c`의 #168 S0/S1/S2 계약을 재사용하여 단일 PR에서 파생 Scene 영속화 후 Scene-first Viewer를 연결한다. 다음 표는 구현 지시이며 실행 결과가 아니다. **CI 성공 관측 전 AC 완료 체크 금지**. #98 CadOutline/#83 Memo 독립 API 구현과 APP_CREATED 영속 복원 통합은 PENDING이며 본 PR이 이를 대신 완료하지 않는다.

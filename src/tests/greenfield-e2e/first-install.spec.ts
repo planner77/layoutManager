@@ -133,6 +133,33 @@ test('SC-14–17 authenticated conversion → persisted Scene → independent br
   expect(gets).toBe(0);expect(sceneGets).toBeGreaterThanOrEqual(4);
   expect(await fresh.evaluate(()=>({...(window as unknown as {sceneLoadCounters:object}).sceneLoadCounters}))).toEqual({workers:0,blobs:0,liveWorkers:0});
   console.log('SCENE_RECONNECT',JSON.stringify({originalGets:gets,dxFConverterBlobUrls:0,dxFIndexWorkers:0,sceneGets,browserContexts:2}));
+  // S5: READY Scene work stays independent of DXF Handle mapping and original GET.
+  await fresh.getByRole('button',{name:'작업',exact:true}).click();
+  await fresh.getByTestId('viewer-menu-layers').click();
+  await fresh.getByRole('button',{name:'작업',exact:true}).click();
+  await fresh.getByTestId('viewer-menu-outline-tool').click();
+  await expect(fresh.getByTestId('outline-basis')).toHaveValue('render');
+  await expect(fresh.getByTestId('outline-render-mapping')).toContainText('정밀 원본 매핑 0개');
+  const s5Canvas=fresh.getByTestId('cad-canvas').locator('canvas');
+  const s5Box=(await s5Canvas.boundingBox())!;
+  await fresh.mouse.move(s5Box.x+10,s5Box.y+10);await fresh.mouse.down();
+  await fresh.mouse.move(s5Box.x+s5Box.width-10,s5Box.y+s5Box.height-10,{steps:8});await fresh.mouse.up();
+  await expect(fresh.getByTestId('outline-selection-count')).not.toContainText('선택 0개');
+  await fresh.getByRole('button',{name:'볼록 외곽선 미리보기',exact:true}).click();
+  await expect(fresh.getByTestId('outline-preview')).toContainText('Polygon');
+  await fresh.getByRole('button',{name:'임시 확정',exact:true}).click();
+  await fresh.getByRole('button',{name:'작업',exact:true}).click();
+  await fresh.getByTestId('viewer-menu-outline-tool').click();
+  await fresh.getByRole('button',{name:'작업',exact:true}).click();
+  await fresh.getByTestId('viewer-menu-outline-tree').click();
+  await expect(fresh.getByTestId('outline-tree-item')).toHaveCount(1);
+  await expect(fresh.getByTestId('outline-saved-tools')).toContainText('1건');
+  expect(await (await fresh.request.get(status.contentUrl)).json()).toEqual(stored);
+  expect((await (await fresh.request.get(`/api/cad-files/${version.id}/scene`)).json()).revision).toBe(status.revision);
+  expect(gets).toBe(0);
+  await fresh.reload();
+  await expect(fresh.getByTestId('scene-status')).toContainText('저장된 Scene Asset 복원');
+
   const endpoint=`**/api/cad-files/${version.id}/scene`;
   for(const metadata of [{status:'MISSING'},{...status,manifest:{...status.manifest,scope:{...status.manifest.scope,builder:'unsupported'}}}]){
     await fresh.route(endpoint,route=>route.fulfill({json:metadata}));

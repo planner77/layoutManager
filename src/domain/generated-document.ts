@@ -99,12 +99,17 @@ function freezeResult(result:OutlineResult):Readonly<OutlineResult>{
   if(result.kind!=='CONVEX'&&result.kind!=='PRECISE')throw new Error('지원하지 않는 외곽선 종류입니다.');
   if(typeof result.algorithm!=='string'||!result.algorithm ||
     !Number.isFinite(result.tolerance)||result.tolerance<=0 ||
-    !Array.isArray(result.sourceEntityIds)||!result.sourceEntityIds.length||
+    !Array.isArray(result.sourceEntityIds)||
+    (result.geometryBasis==='RENDER_WCS_2D' ?
+      result.persistable!==false || result.sourceEntityIds.length!==0 ||
+      (result.derivedFrom!==undefined&&(!Array.isArray(result.derivedFrom)||result.derivedFrom.some(id=>typeof id!=='string'||!id))) :
+      !result.sourceEntityIds.length)||
     !result.sourceEntityIds.every(id=>typeof id==='string'&&id.length>0))
       throw new Error('생성 근거가 유효하지 않습니다.');
   const geometry=cloneGeometry(result.geometry);
   return Object.freeze({...result,geometry,
     sourceEntityIds:Object.freeze([...result.sourceEntityIds]) as unknown as string[],
+    ...(result.derivedFrom?{derivedFrom:Object.freeze([...result.derivedFrom]) as unknown as string[]}:{}),
     warnings:Object.freeze([...result.warnings]) as unknown as string[]});
 }
 /** x'=a*x+c*y+e, y'=b*x+d*y+f. left multiplication for WCS operations. */

@@ -1,3 +1,70 @@
+## #166 — Scene 초기화 O(N²) 조회 제거 (2026-10-30)
+
+- 새 Codex P2 #4423072162: render work initialize의 Scene leaf당 `entities.find`를 사전 `layerById` Map과 O(1) 조회로 대체해 전체 매핑 O(N)으로 축소.
+- 기존 S5 Browser/Unit 및 PR CI 회귀는 변경 HEAD 별도로 실행해야 하며, 새 성능 수용 데이터는 미측정. 구현 범위만 반영했고 현장 대형 DXF/GPU/실 운영 배포는 NOT RUN.
+
+---
+
+## #166 — 최신 Codex UI P2 재현 방지 시험 추가 (2026-10-30)
+
+- 신규 `TC-S5-UI-009`: SOURCE 저장 선택을 현재 SceneWork 정밀 원본 조건과 재검증하고, 무효이면 RENDER로 fallback, enabled ref 변경은 Adapter mode 승인 뒤에만 수행. Exact SHA/Handle/canonical 검증 완화 없음.
+- 신규 `TC-S5-E2E-009`: 기존 합성 1A Handle 정사각 도면에서 precise SOURCE 선택→일반 Renderer 작업 Translate→외곽선 도구 재활성화→`outline-basis=render`, 정상 도구 표시 및 checkbox checked 확인. 기존 Scene/DXF 기준 및 업무 API 변경 없음.
+- 작성 시점 신규 Unit/E2E/CI 실행은 **NOT RUN/NOT VERIFIED**. 위에 기록된 과거 성공은 해당 이전 SHA 범위의 증거이다.
+
+---
+
+## PR #170 — CI 성공 후 Codex P2 보완 회귀 추가 (2026-10-30)
+
+- 기존 HEAD `33e560393527312e0388560bd0d13e62b5124e31`의 PR CI #41036925858 Verify/Docker는 SUCCESS. 두 P2 수정 전 성공이므로 후속 HEAD에 재사용하지 않는다.
+- 신규 Unit: `scene-s5.test.ts`에서 선택 불가 Points의 Layer off/on, 선택 가능 Mesh의 작업 숨김 유지, intrinsic hidden 부모 보존을 검증하도록 추가.
+- 신규 Browser: `scene-s5-adapter.spec.ts`에서 실제 `compute-render` Worker fetch와 display-only Points의 Layer off/on 복원을 검증하도록 추가. esbuild harness를 ESM module로 제공해 Worker URL을 올바르게 해석한다.
+- 이 패치는 소스 및 회귀 **작성만 완료**, 별도 로컬 실행은 NOT RUN. 신규 PR CI/재리뷰·실 CAD/GPU 성능/운영 수용은 결과 관측 전 NOT VERIFIED. 기존 91 files/639 PASS·S5 3/3 PASS 등은 수정 전 시험으로 역사 보존한다.
+
+---
+
+## #166 Scene S5 — 0.47.0 로컬 구현·검증 (2026-10-30)
+
+- **기준과 역할:** Main `bdde565`, 격리 worktree `layoutManager-issue166` / `feat/issue-166-scene-work`. 지정 gpt-6-astra Manager `/root/s5_manager`가 구현 전에 Requirements/Architecture/ADR-061/TestPlan을 기록했고, gpt-6-sol Developer `/root/s5_manager/s5_developer`가 domain·Three Adapter·Controller·projection·Unit을 구현했다. Root(Codex)가 UI/Manager facade·브라우저 테스트·문서/버전 및 발견된 통합 결함을 보완했다. Manager가 Developer 보고를 검토한 후 gpt-6-luna 독립 QA `/root/s5_manager/s5_qa`를 실행했다. 역할을 대행했다고 허위 기록하지 않으며 Root 실행과 독립 QA 보고를 아래에서 구분한다.
+- **기능 범위:** 일반 RENDER ObjectRef/Origin 선택과 APP_CREATED 외곽선/기존 세션 편집·트리·메모를 source Handle 게이트에서 분리한다. DXF_IMPORTED 이동·회전·숨김은 세션 차분과 전용 Undo/Redo다. 단위는 지원되는 실제 Object3D 전체이며 병합 객체 하위 Handle 선택/원본 CAD 정밀성은 주장하지 않는다. Source exact SHA/Handle/서버 canonical 거절은 유지한다. Schema3 browser export는 APP_CREATED identity·Scene unit과 geometry basis를 명시하고 source parser는 계속 거절한다.
+- **실행 환경:** Node 22.14.0, npm lock 고정 의존성, Linux/Chromium 1243 headless SwiftShader. 모든 CAD·SQLite·계정/키·Scope는 합성/일회용 fixture이며 실제 운영 DB/CAD/볼륨·사내 SHA·DRM 자료는 사용하지 않았다. 원래 checkout 사용자 변경 2개를 보존했다. 새로운 DB/API/migration/권한 정책 변경은 없다.
+
+### 실제 검증 근거
+
+| 실행 | 실제 결과/범위 |
+| --- | --- |
+| Prisma Client 생성 | PASS, 새 worktree `db:generate`; 운영 DB 적용 아님 |
+| Developer 최초 집중 | Typecheck/Lint/diff PASS, 6 files/31 Unit PASS; 이후 리뷰 보완 전 snapshot |
+| 독립 QA 전체 집중 | 6 files/41 tests PASS. Scene loader, strict source draft, generated document, Canvas scope·S5 projection/provenance/policy 검토 |
+| 독립 QA 최종 집중 | Controller 실제 EventTarget pointer/Box/Mesh 내부/Ctrl·Layer·stable refresh 및 scene S5 **2 files/6 PASS**, diff-check PASS. WebGL 결과와 구분 |
+| Root 전체 Vitest 재시험 | **91 files/639 tests PASS, 346.64초**, `/tmp/lm166-all-tests-final.log`. 이전 638 PASS/1 FAIL은 FailureLedger에 보존 |
+| 후속 추가 Unit | 실제 triangulated Mesh hole 보존·자기교차/퇴화 거절 2개 + Controller 1개, **2 files/3 PASS**, `/tmp/lm166-added-tests.log`. 전체 suite 숫자에 소급 합산하지 않음 |
+| Typecheck/Lint | PASS, Lint는 기존 6 warnings/0 errors. 신규 unused warnings는 정리함. `/tmp/lm166-final-typecheck.log`, `/tmp/lm166-final-lint.log` |
+| Production Build | PASS. 원본 SHA/서버 canonical·DB 정책의 완화 없이 webpack compile/TypeScript/route generation 완료. 최종 UI 지원 안내/진단 변경 후 `npm run build`도 PASS, `/tmp/lm166-release-build.log` |
+| 신규 S5 Browser | **3/3 PASS, 36.8초**, `/tmp/lm166-s5-e2e.log`. Handle 없음·source Worker error의 일반 선택/외곽선/JSON·APP 편집/혼합 거절·click/Ctrl Box·Translate/Rotate·hide/show/Undo/Redo. 실제 복원 Mesh Adapter는 내부 click·변형 후 WCS Polygon·레이어 AND work/intrinsic/ancestor visibility·baseline artifact bytes 불변·dispose Canvas 0 검증 |
+| 인증 Greenfield/저장 Scene | **2/2 PASS, 42.3초**, `/tmp/lm166-greenfield-final.log`. 최초 Admin, 인증 변환·저장 후 별도 로그인 컨텍스트/Reload에서 원본 GET 0·DXF index Worker/변환 Blob 0; Scene에서 APP_CREATED 생성·Tree와 저장 bytes/revision 불변, 명시 legacy fallback/Scene 복귀 |
+| signed Runtime Auth UI | **1/1 PASS, 14.1초**, `/tmp/lm166-runtime-e2e.log` |
+| 기존 master migration UI | **1/1 PASS, 19.9초**, `/tmp/lm166-migration-e2e.log` (일회용 pre-0.25 fixture만) |
+| 전체 일반 Chromium E2E | **95 PASS/2 FAIL, 8.0분**, `/tmp/lm166-all-e2e.log`. 두 실패는 `issue38-app-shell.spec.ts`의 이전 handleless 도구/목록 비활성 정책 기대였다. #166 계약에 맞게 정상 렌더·목록 활성/정밀 원본 비활성·메모 WCS 유지로 갱신한 뒤 **파일 전체 4/4 PASS, 19.8초**, `/tmp/lm166-policy-e2e-final.log`. 이전 실패를 97/97로 소급 변경하지 않음 |
+
+### AC 추적과 한계
+
+| AC | 구현·실행 증거 | 상태 |
+| --- | --- | --- |
+| AC-S5-01 | stable Render/Scene Ref·Controller/Mesh click/Ctrl/Box·Layer·history 및 기존 Renderer/Version 수명주기 회귀 | 로컬 PASS; 최신 PR CI/현장 수용은 별도 |
+| AC-S5-02 | handleless·source Worker error 2개 Browser 및 READY Scene 원본 GET0 | 로컬 PASS; 실제 사내 도면은 미검증 |
+| AC-S5-03 | render WCS2D/CONVEX/PRECISE·Mesh triangle union/hole·degenerate/self-cross·APP command/Tree·schema3+optional provenance·envelope unit/Scope 음성 시험 | 로컬 PASS; #55 회전 UX/#56 편집 Import/#65/#71/#73/#83/#84 영속 기능은 후속 |
+| AC-S5-04 | session-only SceneWorkDocument와 실제 Adapter 이동·회전/숨김·기준 bytes/원본 불변, mixed atomic rejection, 기존 서버 CAS/Audit/권한 suite | 로컬 PASS; 새 서버 작업 경로를 만들지 않음 |
+| AC-S5-05 | explicit exact source gate와 strict source JSON/canonical 회귀, render result sourceEntityIds=[]/sourceAttestable=false | 로컬 PASS; source Worker 실패를 canonical 성공으로 해석하지 않음 |
+| AC-S5-06 | 독립 QA·Root 전체 Unit·Build 및 관련 Browser/legacy/runtime·FailureLedger | 로컬 회귀 통과(이전 정책 기대 2건 수정/재시험), Manager 판정은 ADR-061; 최신 PR CI는 별도 |
+
+APP_CREATED/메모 서버 CRUD·재접속 복원·typed catalog·영속 Tree·연결 앵커/S6 reset는 해당 후행 이슈 범위이며 미구현/미검증을 완료로 표시하지 않는다. 독립 WCS 메모는 객체 변경을 자동 추적하지 않으며 현재 #84 연결 앵커가 없어 BROKEN_ANCHOR 런타임을 구현했다고 주장하지 않는다. 렌더 선택은 평면 Line/LineLoop/LineSegments 및 단일 material의 leaf triangle Mesh를 지원한다. Points/비평면/다중 material/중첩 상위 drawable/한도 초과는 표시만 하며 허위 primitive 정확성을 약속하지 않는다. 실 CAD/2PC/실 GPU·대형 현장 성능·DRM 특화 분석은 NOT RUN, S8은 비필수 최후순위다.
+
+**최종 빌드 재확인:** 최종 지원 안내/진단 및 코드 동결 뒤 Build·Typecheck PASS, Lint 기존 6 warnings/0 errors. 같은 최종 Build에서 신규 S5 Browser **3/3 PASS, 21.9초**, `/tmp/lm166-final-build-e2e.log`. Manager의 **ACCEPT LOCAL SCOPED** 판정은 ADR-061을 따른다.
+
+**원격 인계:** [PR #170](https://github.com/planner77/layoutManager/pull/170), 최초 Commit `89cb95e` 게시. 실제 review threads 0/미해결 0, Main behind 0/unmerged path 0/`mergeable=true` 확인. 이번 원장·보고서 문서 커밋을 동기화해 최종 HEAD PR CI를 시작하며 실제 Run URL/시작 확인은 PR 본문과 최종 응답을 따른다. 완료 모니터링을 하지 않아 최신 CI 결과는 NOT VERIFIED다. CI 성공, 이슈 전체 완료·병합·GHCR·배포는 로컬 검증의 PASS가 아니다.
+
+---
+
 ## PR #169 사후 리뷰 P2 보완 — 재검증 대기 (2026-10-30)
 
 - PR CI [#41000086668](https://github.com/planner77/layoutManager/actions/runs/41000086668)는 원 HEAD `92d4909`의 Verify·Docker Job 모두 SUCCESS. 이후 Codex 리뷰는 **2 P2 unresolved**: 읽기 전용 Scene 조회 활동 시간 미갱신 및 legacy renderer URL 미동기화.
