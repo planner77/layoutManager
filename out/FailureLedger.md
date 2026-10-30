@@ -1,3 +1,22 @@
+## #85/#86 PR #175 — CI #41139632431: WebGL 레이어 복원 E2E 2건 실패 (2026-10-31)
+
+### 정확한 실패 증거
+- [PR CI Run 41139632431](https://github.com/planner77/layoutManager/actions/runs/41139632431), attempt 1, HEAD `8df9f656c2c4e9e06e9e3c8552be246e01de4caa`, `completed/failure`.
+- Docker Job `124351064253` **SUCCESS**: 기존 Dockerfile baseline/후보 app+migrator 이미지 빌드 및 Greenfield Compose smoke 포함. Verify Job `124351064417`: TypeScript, ESLint, Unit/Integration, Next Production Build 모두 **SUCCESS**. Playwright E2E만 **101 PASS, 2 FAIL**. 이전 Run #41137913177의 TS18047 실패와 혼동하지 않는다.
+- E2E `src/tests/e2e/issue17-fullscreen-layers.spec.ts:154` TC-ISSUE17-001, `src/tests/e2e/layer-dropdown.spec.ts:71` TC-LAYER001가 `expect.poll(() => canvas.screenshot().equals(savedPng)).toBe(true)`에서 각 5초 타임아웃. Playwright 화면 snapshot은 각각 Layer 2/2, 3/3 **전체 체크** 및 Canvas에 원본 선 복원. [실패 Artifact 13017814221](https://github.com/planner77/layoutManager/actions/runs/41139632431/artifacts/13017814221) Trace 영상의 비교 시 초기 Canvas 프레임 800×378과 복원 이후 798×378 등의 크기 편차가 관측된다. 두 실패가 공통 `PNG Buffer 완전 일치` 검증이어서 레이어/Zoom 불변 위반을 단정할 수 없음.
+
+### 원인 분리 및 보완
+- 확인된 직접 실패는 screenshot PNG 바이트 동일성 가정이다. CSS fullscreen/패널 전환 및 scrollbar/resize에 따른 미세 raster 크기 변화와 WebGL antialiasing이 있을 때 기능적으로 동등한 렌더도 PNG Buffer는 다를 수 있다. 새 이미지가 전체 빈 화면이거나 누락된 CAD 획이 있으면 거절해야 하므로 단순 무조건 통과/비교 삭제 금지.
+- `src/tests/e2e/canvas-stroke-similarity.ts` 도입: Playwright PNG 둘을 브라우저 imageBitmap으로 디코딩하여 공통 512×256 이미지로 크기 정규화. Layer Drawer 및 top-right TEXT 검색 버튼이 덮는 영역은 제외하고 Source Canvas 중앙에 밝은 선 마스크를 생성, ±2 정규화 픽셀 내 양방향 가까운 획 비율 측정. 초기/복원 시 밝은 획 20개 미만이면 0점(무조건 실패), 결과 92% 이상인 경우에만 복원 성공으로 판단. Trace JPEG 진단에서는 정상 복원 경로가 약 1.0, 부분 Layer 숨김이 약 0.76 overlap 예시를 보였으나 실제 새 CI의 PNG 검증 결과를 PASS로 소급하지 않는다.
+- TC-ISSUE17-001 / TC-LAYER001 두 복원 단계에서 `canvasStrokeSimilarity` 기반 10초 poll로 대체. 기존 Layer 개별/전체 상태 체크, 숨김 시 시각적 변경, Canvas DOM 식별자 보존, 원본 content GET 1회 및 Renderer fallback 가드는 그대로 둔다. 제품 `showLayer`·`fitToView`·WebGL Renderer/캔버스·CSS 동작은 변경하지 않음.
+- 이 테스트 수정은 엄격한 바이트 동일성 조건을 **시각적 원본 CAD 획 복원 조건으로 치환**한 것이며 Renderer 동작 자체를 성공 입증한 것은 새 CI 통과 이후다. 실제 현장 GPU/2PC 수용과 별개.
+
+### 리뷰/충돌/운영 게이트
+- 기존 Codex P1/P2 리뷰 스레드 3개는 회신 후 모두 Resolved. 최신 스레드와 Main behind/mergeable을 PR CI 시작 전 다시 확인한다. 새 Codex 지적은 최신 HEAD 확인 전 임의 Resolved 금지.
+- 실제 운영 SQLite/CAD/S3, G7 Auth/Writer, Schema migration, GHCR, Main merge, 이슈 종료는 이번 작업 비범위. 새 HEAD의 CI 시작 확인만 하고 모니터링 생략. 본 기록 시점 새 HEAD의 모든 CI 결과는 NOT VERIFIED.
+
+---
+
 ## #85/#86 PR #175 — CI #41137913177 FAILURE + Codex P1/P2 remediation (2026-10-31)
 
 ### Exact failed evidence

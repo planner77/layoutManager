@@ -1,3 +1,11 @@
+## #85/#86 — Issue17 및 LayerDropdown WebGL E2E 복원 검증 회귀 (2026-10-31)
+
+- TC-LAYER001 / TC-ISSUE17-001: 기존 `canvas.screenshot().equals(initial)`은 CSS fullscreen/scrollbar/Canvas resize 2px 편차에서도 반드시 false가 될 수 있으므로 복원 조건으로 사용하지 않는다. 정규화 CAD 획 근접 비교를 사용한다. Canvas 중앙에 복원 선 20px 미만은 0점, 512×256/±2px 근접 선 match 92% 초과, Layer 전체 선택/개별 상태·Canvas DOM 유지·원본 재다운로드 0·Zoom 보존을 동시에 검증한다.
+- 실제 Layer OFF/전체 해제 시 Canvas의 선이 사라지고 복원 ON 시 나타나는지 Trace/스크린샷 포함 검증한다. 단순 체크박스 복원이나 빈 화면은 PASS로 취급하지 않는다. 기존 수행되는 E2E는 101 PASS/2 FAIL이었고 수정 HEAD 재실행은 NOT VERIFIED.
+- #85/#86 M4/M5 경로와 다른 DXF Renderer, G7 Greenfield, Unit/Integration, Docker 빌드는 코드 변경 없이 동일 CI에서 다시 회귀 확인한다.
+
+---
+
 ## #85/#86 PR #175 failure regression test matrix (2026-10-31)
 
 - TC-M4-P1: desktop Memo Tree dedicated handle drag beyond 5px -> floating, no canvas DOM remount, close/reopen retains position, keyboard Arrow/Shift placement, ResizeObserver viewport clamp, reset to original right edge. Desktop ESC cancel, drag/tree/canvas gesture isolation; 390px compact modal remains single.

@@ -1,3 +1,10 @@
+## #175 PR CI Run #41139632431 — 합성 Viewer Layer 복원 회귀 (2026-10-31)
+
+- Docker/Typecheck/Lint/Unit·Integration/Build 성공, 101 Playwright 합격·2개 기존 Layer restore E2E 실패. Artifact Trace에서 Layer 체크/시각적 선은 복원됐으나 초기/마지막 화면의 작은 raster 크기 변화 때문에 PNG Buffer 동일성 검증이 timeout. 중앙 Source 획의 크기 정규화 및 근접 일치, 빈 Canvas 실패를 유지하는 테스트 helper로 변경. Canvas/Renderer/Layer 제품 코드 불변.
+- 새 PR CI 결과는 별도 확인 전 NOT VERIFIED. 기존 #175 Codex 3개 리뷰 Resolved는 유지; Main 충돌 및 신규 코멘트는 최종 HEAD 기준 재조회. [FailureLedger](FailureLedger.md).
+
+---
+
 ## 2026-10-31 PR #175 failure and review repairs
 
 First PR CI [#41137913177](https://github.com/planner77/layoutManager/actions/runs/41137913177) at `f9fbef1099`: TS18047 nullable Version/group in MemoGroupRepository caused Verify Typecheck (5 diagnostics) and dependent Docker Next baseline build failure. Unit/E2E/Compose runtime were skipped. Both guards now explicitly terminate with `return blocked`.

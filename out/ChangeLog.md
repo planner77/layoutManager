@@ -1,3 +1,9 @@
+## 0.47.3 PR #175 — E2E WebGL layer restoration regression correction (2026-10-31)
+
+- 2차 PR CI #41139632431: Docker/TypeScript/Lint/Unit/Next Build success, Playwright 101 passed / 2 failed due byte-exact Canvas PNG comparison after layer/fullscreen restoration. Added test-only normalized source-stroke similarity helper, retaining CSS fullscreen/Layer selection/Canvas identity/source request invariants. Related AGENTS, Decisions, TestPlan/TestReport and FailureLedger updated. New HEAD CI not yet verified; Main merge/GHCR/Issue close not done.
+
+---
+
 ## 0.47.3 PR #175 corrective changes (2026-10-31)
 
 - Correct strict TypeScript TS18047 x5 from first PR CI #41137913177 (and dependent Docker Next baseline failure); shared desktop movable Memo Tree with pointer/keyboard/reset and modal fallback (#138 P1).

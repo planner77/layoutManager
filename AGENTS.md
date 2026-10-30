@@ -1,3 +1,11 @@
+## PR #175 #85/#86 — E2E 2건 실패 원인 및 캔버스 복원 검증 보완 (2026-10-31)
+
+- [PR CI #41139632431](https://github.com/planner77/layoutManager/actions/runs/41139632431) 정확 HEAD `8df9f656c2c4e9e06e9e3c8552be246e01de4caa` `completed/failure`. Docker Job `124351064253` **SUCCESS**(baseline/app/migrator/Greenfield Compose 포함), Verify Job `124351064417` TypeScript·ESLint·Unit/Integration·Production Build **SUCCESS**, Playwright E2E **101 PASS/2 FAIL**. 실패: `TC-ISSUE17-001` 및 `TC-LAYER001`의 복원 뒤 `canvas.screenshot().equals(initial)` 5초 timeout. [실패 원장](out/FailureLedger.md) 참조.
+- [Playwright artifact #13017814221](https://github.com/planner77/layoutManager/actions/runs/41139632431/artifacts/13017814221)의 화면 추적에서 모두 Layer 선택은 전체 복원됐고 CAD 선이 다시 표시됨. Canvas 촬영 viewport에 800x378↔798x378 정도의 크기 차이가 관측되므로 원본 PNG **완전 바이트 일치**는 적절한 복원 불변조건이 아니다. 실제 Source 선이 누락되는 경우를 놓치지 않도록 좌/상단 패널을 제외한 CAD raster를 동일 512×256으로 정규화, 2px 이내 획 근접 일치율 92% 초과로 검증하는 테스트 전용 helper 추가. 빈 화면은 0점 처리하며 기존 Layer 상태, Canvas identity, 원본 GET 1회 검증은 유지한다. 제품 Renderer/Layer/DB/API 변경 없음.
+- PR #175 기존 Codex 3개 스레드 모두 답변·Resolved 유지. 최신 Main과 충돌/behind 여부를 새 HEAD 기준으로 재검증하며, 원장 기록 후 **새 PR CI 기동만** 확인. 새 CI의 결과를 모니터링하거나 성공으로 간주하지 않음. Main merge/GHCR/Issue 종료·기존 운영 볼륨 변경 금지.
+
+---
+
 ## #85/#86 PR #175 initial CI failure / Codex P1-P2 correction (2026-10-31)
 
 - [PR CI #41137913177](https://github.com/planner77/layoutManager/actions/runs/41137913177) (HEAD `f9fbef10997e912c50080c7bd7dc6fe7b96b603a`) **failure**: Verify `TypeScript 검사` TS18047 five times, `src/server/cad-business/memo-groups.ts` nullable Version/group guard; Docker baseline build also failed when the **same TypeScript error** reached Next.js build. Both jobs failed; subsequent lint/unit/E2E/build targets were skipped. Do not present a Docker engine/migration failure as the root cause.
