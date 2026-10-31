@@ -1,3 +1,9 @@
+## #88/#90 Viewer Memo 검색 UI 적용 (2026-10-31)
+
+Viewer `작업 > 메모 검색`은 #85 기존 Tree/MovableViewerPanel을 열고 해당 검색 Input으로 포커스한다. 독립 검색 모달이나 별도 드래그 핸들을 생성하지 않는다. Drawer/compact 정책 및 캔버스 생명주기, #138 Title Handle/position preservation은 현재 M4 구현을 재사용한다. 홈 `/?target=memos`는 Viewer 보조 패널 범위 밖의 독립 검색 화면이다. 설계와 미실행 수용 [Issues88-90](Issues88-90.md).
+
+---
+
 ## #85 PR #175 M4 partial realization (2026-10-31)
 
 The common `MovableViewerPanel` and pure CSS workspace clamp are now introduced for Memo Tree only, addressing Codex P1 on [PR #175](https://github.com/planner77/layoutManager/pull/175). Dedicated title drag handle, keyboard arrows, position reset, close/reopen preservation, independent canvas state and compact single modal are implemented with new Unit/Playwright tests; execution not yet verified. #138's remaining layer/outline/text-search/tool movable panels and full acceptance are **NOT COMPLETE**. This common policy still applies to later panels.
