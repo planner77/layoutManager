@@ -1,6 +1,6 @@
 import { afterEach, expect, test } from 'vitest';
 import { randomUUID } from 'node:crypto';
-import { appendFile, lstat, mkdtemp, readdir, rm, symlink, unlink, utimes, writeFile, mkdir } from 'node:fs/promises';
+import { appendFile, lstat, mkdtemp, readdir, rm, symlink, utimes, writeFile, mkdir } from 'node:fs/promises';
 import type { FileHandle } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
