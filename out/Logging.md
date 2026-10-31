@@ -1,5 +1,10 @@
 # Structured Logging 운영 가이드
 
+## #58/#59 L2 phase diagnostics and L3 private store (2026-10-31)
+
+The L1 emitter is still the single output owner. New http_request_stage and maintenance_job_* events correlate safe stage/outcome/elapsedMs with server-issued requestId/jobId. Health failure is sampled and recovery recorded once. Only verified 40-hex release commit can be logged as buildRevision. Optional private /data/logs JSONL (Compose enabled) is independent of Docker logs; file 4 MiB, total 64 MiB, 7 days, queue 1 MiB by default; UID10001, directory 0700 and file 0600. The sink drops on IO failure rather than interrupting CAD/DB business processing. No HTTP log-reading API or automatic raw Next/Docker collection. Cross-process aggregate budget is best-effort. Details: [Issues58-59](Issues58-59.md).
+
+
 ## Issue #57 L1 — app 소유 Schema v1·단일 출력 (2026-10-27)
 
 - 기존 `src/server/logger.writeLog`만 구조화 JSON을 stdout/stderr로 출력한다. `UploadDiagnostics`도 `LOG_LEVEL`/`LOG_FORMAT`을 공유한다. `warn→console.warn`, `error→console.error`, `debug/info→console.log`; production은 `LOG_FORMAT=json` 한 줄 권장.
