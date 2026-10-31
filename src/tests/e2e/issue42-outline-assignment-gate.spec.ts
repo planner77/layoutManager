@@ -10,9 +10,10 @@ const drawing = Buffer.from([
   '0','ENDSEC','0','EOF','',
 ].join('\n'));
 
-test('TC-U5-E2E-GATE-001: server catalog absent; no forged type confirmation or operational API', async ({ page, request }) => {
+test('TC-U5-E2E-GATE-001: runtime OFF catalogue and pending typed confirmation remain blocked', async ({ page, request }) => {
   const read = await request.get('/api/outline-types');
-  expect(read.status()).toBe(404);
+  expect(read.status()).toBe(503);
+  expect((await read.json()).error.code).toBe('G7_RUNTIME_UNAVAILABLE');
   const created = await request.post('/api/cad-files', { multipart: {
     file: { name: 'issue42-gate.dxf', mimeType: 'application/octet-stream', buffer: drawing },
     ...(await masterFields(request, { businessUnit: 'issue42-gate', site: 'u5', building: 'A', floor: '1' })),
@@ -27,7 +28,7 @@ test('TC-U5-E2E-GATE-001: server catalog absent; no forged type confirmation or 
   await expect(tools).toBeVisible();
   await expect(page.getByTestId('outline-type-select')).toBeDisabled();
   await expect(page.getByTestId('outline-typed-confirm')).toBeDisabled();
-  await expect(page.getByTestId('outline-type-gate')).toContainText('#65');
+  await expect(page.getByTestId('outline-type-gate')).toContainText('업무 타입을 지정하는 기능은 준비 중');
   await page.getByTestId('outline-instance-name').fill('타입 없는 외곽선');
   await expect(page.getByTestId('outline-typed-confirm')).toBeDisabled();
   await openViewerMenu(page, 'work');

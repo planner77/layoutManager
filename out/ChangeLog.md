@@ -1,3 +1,9 @@
+## 0.50.0 후보 — #65 전역 외곽선 타입 관리 (2026-11-01)
+
+- Added: Global OutlineType 목록·등록·수정·비활성화·복구 API와 기존 Viewer 이동 패널을 재사용하는 관리 화면. 서버 Admin/CSRF/활성 쓰기 권한, Unicode 이름 key·Unique, revision CAS 및 전용 append-only 감사를 적용한다.
+- Schema: 빈 Greenfield 신규 baseline에 OutlineType/OutlineTypeAudit와 실제 CadOutline 타입 FK를 추가한다. 과거 baseline/DDL/운영 볼륨은 보존하며 자동 migration은 제공하지 않는다. 타입 확정·영속 트리 사용은 #71/#73 후속이다.
+- Validation: 전체 Vitest114files/760tests PASS, Production Build/Typecheck/Lint PASS(기존 경고11개), Greenfield 브라우저4/4 및 수정한 기존 Gate2files/4tests PASS. 일반 CAD 초기115PASS/2FAIL의 구404기대 수정 이력은 보존하며 별도 실행을 새 전체117PASS로 합산하지 않는다. 독립 QA26PASS와 실제 Migrator build·tmpfs 신규설치/재시작/FK PASS. 원격 CI·현장·배포는 별도이며 역할별 근거는 TestReport/FailureLedger를 따른다.
+
 ## 0.49.0 후보 — #60/#61/#62 운영 로그 조회 (2026-10-31)
 
 - Added: 기존 G7 세션·Admin+logs:read·감사를 재사용하는 전역 로그 읽기 인가, 고정 private JSONL 조건 조회 API, bounded snapshot cursor와 정제 DTO.
