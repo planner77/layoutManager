@@ -1,3 +1,12 @@
+## #88/#90 M6/M7 — pre-PR CI implementation, review and conflict ledger (2026-10-31 KST)
+
+- **Scope and order:** dependencies #83/#84/#85/#86 closed. Root DESIGN.md absent, so AGENTS.md + out/Architecture.md/Decisions.md/Issues88-90.md are design authority. #88 authenticated UUID Version+Memo URL and renderer-ready WCS focus first; #90 G7 Site-scoped DB search and home UI second. Code/test/docs committed on `feat/issues-88-90-memo-link-search-20261031`.
+- **Main alignment verified before PR:** Main `7058ec393aad10ebbf22bec6dda70d961cb9b483`, branch initial development head `89867a685c0748035254524950fa19775adae1a7`, compare GitHub returned `status=ahead, ahead_by=10, behind_by=0`, 27 changed files. No divergent Main commits/conflict at this checkpoint. Actual PR mergeable/review threads will be checked after PR creation. Do not infer future no-conflict automatically.
+- **Synthetic tests added, execution status:** Unit `viewer-link`/`cad-memo-search`, SQLite Integration `memo-search-sql`, G7 signed session `memo-search-auth`, Playwright entry cases `issues88-90-memo-search`. This connected Git-object-only environment cannot execute workspace TypeScript/Vitest/Browser locally. **NOT RUN**; PR CI Typecheck/Lint/Vitest/Playwright/Build/Docker outcomes **NOT VERIFIED**. Real signed cross-session Memo focus and 1k/10k/100k search performance **NOT VERIFIED**; no invented SLA or PASS.
+- **Safety/release:** No auth scope weakening, legacy DB adoption/migration, Version/Current/Scene mutation, origin DXF parsing for search, operation switch, GHCR push or Issue closure. OFF runtime keeps persistent search inaccessible. PR CI trigger planned after this failure ledger commit; monitoring intentionally omitted per Owner instruction. If CI fails, append exact Run, root cause, patch evidence and new HEAD, then restart. No prior failure is suppressed or retroactively marked success.
+
+---
+
 ## #85/#86 PR #175 — PR CI #341 SUCCESS, Owner Managed Squash + Main CI/GHCR launch (2026-10-31 KST)
 
 ### Verified, exact-source PR CI
