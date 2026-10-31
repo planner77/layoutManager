@@ -1,3 +1,11 @@
+## PR #178 — 첫 PR CI 실패와 수정 후보 검증 기록 (2026-10-31)
+
+- 실행 증거: [PR CI 41170053430](https://github.com/planner77/layoutManager/actions/runs/41170053430) HEAD `a5bbcf7a57f9a96b9cae236089e2709e1e47418c`, Verify Job `124445860365` **TypeScript TS1005 FAIL** (`viewer.tsx:2146`), Docker Job `124445860543` **Next build Syntax FAIL** (동일 JSX). ESLint/Unit/Integration/Chromium/E2E·후속 Docker는 전부 SKIPPED, 새 E5/E6 회귀 테스트의 실행/통과 근거는 없음.
+- 별개 Codex P1 [#4430584078](https://github.com/planner77/layoutManager/pull/178#discussion_r4430584078): `GeneratedDocument.replaceFromImport`의 `local-N` ID 정규식 이중 백슬래시가 비어 있지 않은 v2/v1 가져오기를 거절. 기존 `generated-transfer.test.ts`의 E6-AC1/AC2는 정상 local-1 복원까지 검증해야 하며 새 CI 실행 이후 결과 판정.
+- 수정 후보: 조건부 JSX 종료 `}`, 타입 명시 및 `local-N` 정규식 단일 digit escape. Root `DESIGN.md` 없음. 변경 범위는 Viewer UI와 Browser Document ID validator, Ledger/가이드/테스트 기록만; API/DB/Source/G7·GHCR 운영 변경 없음. 로컬 Typecheck/Lint/Vitest/Playwright/Docker/실도면/GPU **NOT RUN**. 새 정확 HEAD CI 완료 전 검증 성공 선언 금지.
+
+---
+
 ## #55/#56 E5/E6 검증 추적 — 2026-10-31 (구현 브랜치 후보 / 미검증)
 
 - 기준 Main: `116d04046f75d2bae9fdeeefde7ead0edc011a4f`, Branch: `feat/issues-55-56-generated-rotate-json`, v0.48.0 후보. 루트 `DESIGN.md` 미존재로 `AGENTS.md`, `out/Architecture.md`, `out/Decisions.md`, `out/Issues55-56.md`를 설계 권위로 사용한다.

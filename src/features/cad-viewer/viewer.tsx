@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useReducer, useRef, useState, type ChangeEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { FullscreenLayerPanel } from '@/features/cad-viewer/fullscreen-layer-panel';
 import { ViewerAppShell } from '@/features/cad-viewer/viewer-app-shell';
@@ -514,7 +514,7 @@ export function CadViewer({
       setGeneratedJsonMessage({error:true,text:error instanceof Error?error.message:'JSON 내보내기에 실패했습니다.'});
     }
   }
-  async function importGeneratedJson(event:React.ChangeEvent<HTMLInputElement>){
+  async function importGeneratedJson(event:ChangeEvent<HTMLInputElement>){
     const file=event.currentTarget.files?.[0];
     // Re-selecting the same file must be possible after validation failure.
     event.currentTarget.value='';
@@ -2142,7 +2142,7 @@ export function CadViewer({
            {rotateError && <p data-testid="generated-rotate-error" role="alert" className="text-xs text-red-700">{rotateError}</p>}
            {generatedJsonMessage && <p data-testid="generated-json-message"
              role={generatedJsonMessage.error?'alert':'status'}
-             className={generatedJsonMessage.error?'text-xs text-red-700':'text-xs text-teal-800'}>{generatedJsonMessage.text}</p>
+             className={generatedJsonMessage.error?'text-xs text-red-700':'text-xs text-teal-800'}>{generatedJsonMessage.text}</p>}
           {memoError && !memoPlacing && !memoCandidate && !memoSelectedId &&
             <p data-testid="cad-memo-status-error" role="alert" className="text-xs text-red-700">{memoError}</p>}
           {outlineUnavailable && <p data-testid="outline-tool-unavailable" className="text-xs text-slate-500">{outlineUnavailable}</p>}

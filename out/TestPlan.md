@@ -1,3 +1,11 @@
+## PR #178 재검증 중점 — v2/v1 local-N ID와 JSX 파서 회귀 (2026-10-31)
+
+- 실패 Run `41170053430`: 먼저 `npm run typecheck`의 `viewer.tsx:2146` 조건부 JSX 문법 복구. Docker baseline Next build 동일 오류이므로 CI·Docker 게이트/Skip 수정 금지.
+- Codex P1 `4430584078`: `replaceFromImport`는 `/^local-[1-9]\d{0,12}$/` 단일 digit escape만 허용. `generated-transfer.test.ts`의 `E6-AC1` 생성 3→편집·삭제→JSON v2의 2건 복원, `E6-AC2` Legacy v1 `local-1` 복원, `E6-AC4` 오류 시 기존 Document·Undo 유지 등에서 실검증. 빈 Import만 통과해도 승인하지 않는다.
+- 새 정확 HEAD의 Typecheck, ESLint, Unit+Integration, production Build, Chromium E2E, OCI/Docker/Greenfield/Legacy 필수 게이트를 기존 워크플로대로 확인하며, 실행 완료 전 PASS 표기 금지.
+
+---
+
 ## Issue #55/#56 E5/E6 통합 테스트 계획 (2026-10-31, v0.48.0 후보)
 
 | Case | 단계 | AC |

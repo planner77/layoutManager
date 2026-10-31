@@ -396,7 +396,7 @@ export class GeneratedDocument{
     let vertexTotal=0;
     const entries=inputs.map(input=>{
       if(!UUID.test(input.id)||ids.has(input.id)||
-         !/^local-[1-9]\\d{0,12}$/.test(input.savedOutlineId)||
+         !/^local-[1-9]\d{0,12}$/.test(input.savedOutlineId)||
          ordinals.has(input.savedOutlineId))
         throw new Error('가져올 UUID/로컬 ID가 유효하지 않거나 중복입니다.');
       ids.add(input.id);ordinals.add(input.savedOutlineId);

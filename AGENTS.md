@@ -1,3 +1,10 @@
+## PR #178 E5/E6 CI 실패 및 리뷰 수정 기준 (2026-10-31)
+
+- [PR CI Run 41170053430](https://github.com/planner77/layoutManager/actions/runs/41170053430) Verify(124445860365) / Docker(124445860543) 모두 동일 `viewer.tsx:2146` JSX `}` 누락으로 최초 TS/Next Build 실패. ESLint/Unit/E2E/후속 Docker는 SKIPPED.
+- [Codex P1 #4430584078](https://github.com/planner77/layoutManager/pull/178#discussion_r4430584078)은 별도 데이터 복원 오류: `replaceFromImport`의 `\\d`를 digit `\d`로 정정. 정상 `local-1` v1/v2 복원, Version/SHA/Provenance/Affine/Atomicity, 100-step Undo 보존이 수용 기준. 수정 HEAD 새로운 CI 성공 전 PASS 주장 불가. 상세 [FailureLedger](out/FailureLedger.md).
+
+---
+
 ## #55/#56 GENERATED Rotate / JSON v2 공통 구현 지침 (2026-10-31)
 
 - Root `DESIGN.md`는 현재 트리에 없다. 설계 권위는 `out/Architecture.md`, `out/Decisions.md` 및 `out/Issues55-56.md`다. #51~#54/#160/#166/#127/#138의 최신 선택·Scene·패널 계약을 함께 준수한다.

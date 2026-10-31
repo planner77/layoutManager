@@ -1,3 +1,18 @@
+## PR #178 / #55+#56 — 최초 PR CI 실패: JSX Syntax + JSON Import ID P1 (2026-10-31 KST)
+
+### 정확한 실패 증거 (HEAD `a5bbcf7a57f9a96b9cae236089e2709e1e47418c`)
+- [PR CI Run 41170053430](https://github.com/planner77/layoutManager/actions/runs/41170053430) `completed/failure`. Verify Job [124445860365](https://github.com/planner77/layoutManager/actions/runs/41170053430/job/124445860365): checkout, Node, npm ci, Prisma generate **SUCCESS**; `npm run typecheck`에서 `src/features/cad-viewer/viewer.tsx(2146,11): error TS1005: '}' expected`로 실패. ESLint/Unit/Integration/OCI synthetic/benchmark/Production Build/Chromium/G7/Greenfield/Legacy E2E는 **SKIPPED** (PASS 아님). 실패 원인은 `{generatedJsonMessage && <p>...</p>`의 마지막 조건 표현식 닫기 `}` 누락.
+- Docker Job [124445860543](https://github.com/planner77/layoutManager/actions/runs/41170053430/job/124445860543): 전처리 Compose images·Python audit 유닛 **SUCCESS**; `Build pre-change baseline (same source, original Dockerfile)`의 Next Build에서 동일 JSX `Expected '</', got '{'` (`viewer.tsx:2146`)로 실패. 후속 Docker build/size/SQLite/migration/Greenfield smoke는 **SKIPPED**. Docker 자체 용량·DB·OCI 문제로 오진하지 않는다.
+- Codex P1 리뷰 [#4430584078](https://github.com/planner77/layoutManager/pull/178#discussion_r4430584078) / thread `PRRT_kwDOUQjDfc6yOC0e` (`src/domain/generated-document.ts:399`): `replaceFromImport` 정규식 `\\d` 이중 백슬래시가 정상 `local-1`을 모두 거부하는 실제 기능 결함. `parseGeneratedTransfer`는 이미 `\d`를 사용하고 있었으며 두 검증기의 계약 불일치가 원인. 복원이 비어 있지 않은 경우 v2/v1 양쪽에 영향. CI는 해당 테스트까지 도달하지 못했으므로 리뷰 지적과 CI 관측 실패는 구분한다.
+
+### 원인·수정 및 검증 게이트
+- `viewer.tsx`: 조건부 JSX를 `{generatedJsonMessage && <p>...</p>}`로 닫아 TS 파서 복구. `React.ChangeEvent`는 명시 `ChangeEvent` type import로 정리한다.
+- `generated-document.ts`: `local-[1-9]\d{0,12}`을 실제 digit escape 단일 백슬래시로 통일한다. 입력 크기/UUID/Source/Version/SHA/Affine/원자성 검사 및 E2 기존 Undo 상한은 낮추지 않는다. 기존 `generated-transfer.test.ts` E6-AC1(비어 있지 않은 v2 2개), E6-AC2(v1 local-1 legacy), E6-AC4(기존 상태 실패 시 무변경)와 E5 tests가 회귀 증거가 되어야 한다. Parser/Codex 수정 뒤 정확 HEAD CI가 성공할 때만 PASS 판정한다.
+- Main 기준 HEAD `116d04046f75d2bae9fdeeefde7ead0edc011a4f` / PR #178은 최초 실패 당시 `behind=0`, `mergeable=true`, P1 미해결 1건. 코드 보완 후 리뷰 스레드 답변·Resolved, Main 비교·병합가능성 재검증과 신규 정확 HEAD CI 시작을 별도로 기록한다.
+- 새 PR CI의 성공/실패 및 GHCR 게시·병합·이슈 완료는 아직 **NOT VERIFIED / NOT DONE**. GitHub Connector를 통한 수정이며 로컬 npm/Node/Browser/실 CAD GPU 실행은 하지 않았으므로 CI 및 현장 수용 주장 금지. Owner 지시대로 새 Run 시작 이후 모니터링하지 않는다.
+
+---
+
 ## Issue #55/#56 — PR CI 시작 전 실패 원장 및 Gate (2026-10-31 KST)
 
 - 기본 근거: 최신 Main `116d04046f75d2bae9fdeeefde7ead0edc011a4f`; Branch `feat/issues-55-56-generated-rotate-json`; E5/E6 단일 PR. Root `DESIGN.md`는 없으므로 AGENTS/Architecture/Decisions/Issues55-56를 검토했다.
