@@ -1,3 +1,11 @@
+## PR #177 E2E TC-127-DRAWER 회귀 재검증 (2026-10-31)
+
+- 최초 Lint 실패와 구별: 두 번째 Run 41163195588의 Chromium 113 PASS/1 FAIL. 실패는 src/tests/e2e/issues124-126-127.spec.ts:381, mobile Tools drawer가 Delete alertdialog 아래에서 inert=true인데 aria-modal=true로 남음.
+- 신규 계약: modalOverlay가 없으면 active mobile drawer/dialog는 aria-modal=true. Delete confirmation / 상위 alertdialog가 나타나면 background drawer(레이어/외곽선/메모/도구/텍스트 검색 공통 패널)는 inert=true이며 aria-modal 존재하지 않아야 함. Escape 혹은 삭제 취소 후 inert=false, aria-modal=true 복원. 실제 Confirm focus/Tab loop 우선순위, 단일 ESC 단계, Canvas DOM/생성 선택/Undo 유지. Desktop drawer aria-modal 미지정.
+- E2E 기존 TC-127-DRAWER에서 두 경로의 복원 assertion 추가. TC-138-02 모바일 검색 단독 dialog, #85 Memo Tree, #39/43 레이어·트리 등 기존 공통 래퍼 테스트와 함께 전체 Chromium 실행. 최초 113 PASS가 최신 HEAD의 PASS를 의미하지 않음. G7/Greenfield/Legacy migration은 이전 Run에서 미실행; 새로운 정확 HEAD CI 결과 필요.
+
+---
+
 ## PR #177 첫 실패 및 P1 보완 재검증 계획 (2026-10-31)
 
 - 최초 Run 41162108326 Typecheck PASS, ESLint 2 ERROR + 10 WARNING, Verify 후속 SKIPPED, Docker PASS. 재실행 HEAD에서 React react-hooks/refs (render callback 대신 JSX)와 Next.js internal Link Lint를 실제 확인한다. Lint 비활성화/Skip 없음.

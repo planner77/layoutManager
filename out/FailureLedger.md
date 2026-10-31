@@ -1,3 +1,18 @@
+## PR #177 — 두 번째 PR CI / #127 nested modal regression 보완 (2026-10-31 KST)
+
+### 검증된 실패 (첫 회차와 별개)
+- [Run 41163195588](https://github.com/planner77/layoutManager/actions/runs/41163195588), 정확 HEAD d706fac0702acd49b0c38efbaf8b2ed5e256b5a6, completed/failure. Docker image/migration/runtime smoke Job [124425180875](https://github.com/planner77/layoutManager/actions/runs/41163195588/job/124425180875) SUCCESS. Verify [Job 124425181116](https://github.com/planner77/layoutManager/actions/runs/41163195588/job/124425181116): npm/Prisma/TypeScript/ESLint/Unit+Integration/OCI manifest tests/DXF 1k·10k·100k benchmark/Next Production Build/Playwright Chromium 설치 SUCCESS; Chromium E2E **113 PASS / 1 FAIL**, 이후 G7 signed runtime, G7 Greenfield 및 Legacy migration E2E **SKIPPED**. 이 실패는 이전 Run 41162108326의 ESLint 2개 오류와 다른 결함이다.
+- 실패 테스트: src/tests/e2e/issues124-126-127.spec.ts:335, TC-127-DRAWER “mobile generated-delete confirmation remains interactive above its Drawer”, 실패 Assertion line 381. 생성 개체 삭제 확인 alertdialog 표시 중 background Tools Drawer는 inert=true가 되었으나 aria-modal="true"가 그대로 남아 expect(not aria-modal=true) 실패. 로그는 14회 polling에서 같은 속성을 관찰. Playwright 실패 trace artifact [13028975356](https://github.com/planner77/layoutManager/actions/runs/41163195588/artifacts/13028975356). 실제 삭제 로직/DB·G7 장애를 입증한 로그가 아니다.
+- 원인: #138의 기존 #127 drawer → MovableViewerPanel 공통화 중 조건식 ‘mobile AND active AND !modalOverlay’가 ‘mobile’로 축소되어 상위 delete confirmation이 떠도 둘 다 modal로 선언하는 접근성 회귀. Shell의 기존 modalOverlay inert effect는 정상 동작해 아래 Drawer가 inert 처리되는 것과 별개의 문제. 기존 #127 접근성/ESC·focus trap 계약이 우선이다.
+
+### 변경 및 회귀 방지
+- 수정 [commit 38db1af524e12e63e33c9064bc2d6ad13ffb02c6](https://github.com/planner77/layoutManager/commit/38db1af524e12e63e33c9064bc2d6ad13ffb02c6): MovableViewerPanel 공통 modalBlocked prop (default false), aria-modal only when mobile AND active AND !modalBlocked. ViewerAppShell의 modalOpen(!!modalOverlay)을 Layer/Outline/Memo/Tools/Search 5개에 전달, CadTextSearch도 속성 전달. 별도 원본 Layer·Canvas·Manager/Worker·Source GET/Undo/삭제 거래 변경 없음.
+- E2E 기존 TC-127-DRAWER를 확장하여 Delete confirm에서 Drawer inert=true & aria-modal 없음, Escape/취소·버튼 취소 후 inert 해제 및 aria-modal=true 복원을 모두 검사. 모든 공통 패널에 동일 컴포넌트 조건을 적용; 기존 TC-138-02 검색 modal standalone true도 보존.
+- 이전 Codex P1 3개 review thread는 답변·Resolved(3/3), 신규 미해결 스레드 0. Main 1a974448dc5fef5539e6d246cbd1ad30c6f46f73 기준 코드 수정 직후 behind=0, ahead=12, PR mergeable=true. 문서 커밋 후 다시 확인.
+- 정확 최신 HEAD의 새로운 PR CI는 시작만 확인하고 모니터링 생략. 새 테스트 결과 확인 전 PASS 주장 금지. 현장 비공개 DXF/실 PC·GPU/Owner GO, GHCR, 운영 Auth/Writer/DB 변경, Main 병합, 이슈 종료 없음.
+
+---
+
 ## PR #177 — #139/#138/#137 최초 PR CI 실패 및 P1 3건 보완 (2026-10-31 KST)
 
 ### 정확한 실패 증거

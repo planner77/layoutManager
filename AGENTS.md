@@ -1,3 +1,11 @@
+## PR #177 — #127 모바일 nested-modal 회귀 수정 (2026-10-31)
+
+- [두 번째 PR CI Run 41163195588](https://github.com/planner77/layoutManager/actions/runs/41163195588) 정확 HEAD d706fac0702acd49b0c38efbaf8b2ed5e256b5a6: Docker Job 124425180875 SUCCESS; Verify Job 124425181116는 TypeScript·ESLint·Unit/Integration·OCI 검사·DXF benchmark·Build까지 SUCCESS, Chromium E2E 113 PASS/1 FAIL; 이후 G7/Greenfield/Legacy Migration E2E SKIPPED.
+- 실패 TC-127-DRAWER: 모바일 Generated Delete alertdialog가 나타나도 뒤쪽 Tools Drawer가 aria-modal=true 유지. #138 MovableViewerPanel 공통화 시 기존 !modalOverlay 조건 누락. 해결: 모든 Layer/Outline/Memo/Tools/Search에 Shell modalOpen을 modalBlocked로 전파, top-level confirm 활성 중 Drawer aria-modal 제거, inert/background focus/ESC 계층 유지. Test 335의 Confirm 후 취소/복원 경계 E2E 보강. Lint/CI Skip 정책 변경 금지.
+- [FailureLedger](out/FailureLedger.md), [TestPlan](out/TestPlan.md), [ViewerPanelPolicy](out/ViewerPanelPolicy.md)에 실제 오류와 수정/수용 경계 기록. 루트 DESIGN.md는 없음; Architecture/Decisions 참조. 수정 HEAD CI의 결과는 별도로 확인 전 NOT VERIFIED. Main behind 0, 미해결 리뷰 thread 0, mergeable=true 확인 후 새 CI만 시작; CI 모니터링, 병합, GHCR, Issue 종료, 실 운영 Auth/DB 또는 현장 수용은 수행하지 않는다.
+
+---
+
 ## PR #177 — Lint 오류·Codex P1 3건 조치 (2026-10-31)
 
 - 첫 PR CI [Run 41162108326](https://github.com/planner77/layoutManager/actions/runs/41162108326), HEAD 74be95eb: Verify Job 124421702132 Typecheck SUCCESS / ESLint 2 ERROR + 10 WARNING으로 FAILURE; Unit/Build/E2E SKIPPED, Docker Job 124421702420 SUCCESS. 실패 원인은 ViewerAppShell의 React ref를 render-prop에 넘기는 react-hooks/refs 및 ViewerMenuBar의 raw '/' anchor를 Next Link로 대체해야 하는 @next/next/no-html-link-for-pages.

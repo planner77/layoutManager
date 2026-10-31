@@ -1,3 +1,10 @@
+## #138 공통 Panel nested modal 우선순위 — PR #177 회귀 보완 (2026-10-31)
+
+- #127의 최상위 alertdialog는 모바일 Drawer와 동시 aria-modal=true로 선언할 수 없다. 앱 Shell의 modalOverlay 존재 여부를 modalBlocked로 전달하며, Layer/Outline/Memo/Tools/Text Search 공통 MovableViewerPanel의 aria-modal은 mobile && active && !modalBlocked 일 때만 true. 상위 confirmation 중 Drawer는 inert=true, 모바일 focus trap과 ESC는 상위 modal이 우선. 닫힌 뒤 Drawer의 inert 및 aria-modal을 원상 복원한다.
+- Run 41163195588 (Verify Chromium 113 PASS/1 FAIL, TC-127-DRAWER)에서 드러난 #138 공통화 회귀를 수정한 것으로, TypeScript/ESLint/Unit/Build PASS와는 별개. 회귀 테스트의 취소/복원 assertion 확장. 최신 HEAD CI/실 모바일·현장 수용은 아직 미검증이다.
+
+---
+
 ## #138 통합 구현 후보 (2026-10-31, v0.47.5)
 
 이전 2026-10-27 문서-only 및 #85 Memo 전용 구현 기록은 역사적 단계이다. 현재 후보는 단일 MovableViewerPanel을 layers/outlines/memos/tools/search에 적용한다. 제목 Drag Handle+CSS px Clamp+Reset+키보드/ESC, 각 Drawer의 초기 edge/독립 z-order·동일 세션 위치, 320px 모바일 단일 Modal, Canvas DOM/Source lifetime 불변을 유지한다. Text Search는 workspace sibling이고 내부 query/결과/카메라 상태를 닫기·재열기 동안 유지한다. 별도 Renderer·Auth/DB 기능은 변경하지 않는다. 상세 [Issues137-139](Issues137-139.md). PR CI/실 현장 시험은 미완료.

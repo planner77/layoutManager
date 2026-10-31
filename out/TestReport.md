@@ -1,3 +1,11 @@
+## PR #177 — Run 41163195588 E2E 한 건 실패 분석 및 보완 (2026-10-31)
+
+- Source SHA d706fac0702acd49b0c38efbaf8b2ed5e256b5a6, [PR CI 41163195588](https://github.com/planner77/layoutManager/actions/runs/41163195588) FAILURE: Docker Job 124425180875 SUCCESS; Verify Job 124425181116 Typecheck/Lint/Unit/Integration/OCI/DXF benchmark/Build PASS, Chromium 113 PASS/1 FAIL, G7 signed/Greenfield/Legacy migration SKIPPED.
+- Fail TC-127-DRAWER line 381: alertdialog active + background tools dialog inert, but aria-modal=true remains. No evidence that backend Delete or Drawer data changed. Fix 38db1af524e12e63e33c9064bc2d6ad13ffb02c6: shared modalBlocked across five Viewer panels and restore aria-modal after alertdialog close; original test adds two reactivation assertions.
+- Latest source CI PASS NOT VERIFIED, field DXF/GPU/2-PC remains NOT RUN. Do not merge/publish/close issues based on the old 113 passing tests. Detailed evidence: [FailureLedger](FailureLedger.md).
+
+---
+
 ## PR #177 첫 PR CI 실패 후 보완 후보 상태 (2026-10-31)
 
 - [Run 41162108326](https://github.com/planner77/layoutManager/actions/runs/41162108326), HEAD 74be95eb77a3077c0b052ac8be53f19974b2dde4: Verify Job 124421702132 Typecheck SUCCESS, ESLint 2 blocking errors + 10 warnings FAILURE, Unit/Integration/Build/Chromium/G7 E2E SKIPPED. Docker Job 124421702420 SUCCESS.
