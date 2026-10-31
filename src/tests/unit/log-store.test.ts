@@ -78,7 +78,10 @@ test('TC-L3-004: symlink directory, ENOSPC and read cursor reject unsafe input w
   const root = await tmp();
   const actual = join(root, 'private');
   const fake = join(root, 'link');
-  await mkdir(actual);
+  // mkdir's usual 0755 under umask 0022 is deliberately unsafe for the store:
+  // use a private directory so the injected ENOSPC seam is actually reached.
+  await mkdir(actual, { mode: 0o700 });
+  expect((await lstat(actual)).mode & 0o777).toBe(0o700);
   await symlink(actual, fake);
   const linkWriter = new StructuredLogStore(opts(fake));
   expect(linkWriter.enqueue(entry(0))).toBe(true);
