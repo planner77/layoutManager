@@ -1,3 +1,18 @@
+## R2 #65 — Global OutlineType / 최신 Greenfield FK 설계 (구현 전, 2026-10-31)
+
+이 절이 새 schema의 단일 기준이다. 새 `G7-GREENFIELD-OUTLINE-TYPES-20261031-1` / `202610310003_greenfield_outline_types_baseline` 및 그 전용 checksum을 정의한다. 기존 `202610310002_greenfield_memo_m45_baseline`은 previous memo baseline 상수로 보존한다. 이전 old/scene/business/anchor/memo baseline 검증은 종전 exact DDL을 사용한다. 설치 함수는 빈 DB에만 아래 최신 variant를 생성하며 기존 runtime DB에 ALTER/migrate/rewrite하지 않는다. 과거 DDL 검증 호환은 기존 설치의 release identity/schemaId/version/image 승인 호환을 뜻하지 않는다. 새 릴리스가 과거 volume을 자동 활성화하도록 greenfield-auto/서명 gate의 identity 검사를 완화하지 않는다.
+
+| 객체 | 필드·제약 |
+| --- | --- |
+| OutlineType | id UUID PK; name TEXT 1..100, name_key TEXT UNIQUE BINARY NOT NULL; description nullable 최대500; active INTEGER CHECK0/1 default1; sort_order INTEGER CHECK0..9999; revision INTEGER CHECK>=1 default1; created_by_id/updated_by_id User FK NO ACTION; created_at/updated_at UTC text. Global 고정이므로 Site/scope 컬럼 없음. name_key는 서버가 trim/NFC 이름에 toLowerCase/NFC를 적용해 계산한다. SQLite가 Unicode NFC/full-fold를 계산한다고 주장하지 않는다. |
+| OutlineTypeAudit | id UUID PK; actor_user_id User FK, outline_type_id OutlineType FK; action CREATE/UPDATE/DEACTIVATE/REACTIVATE; before_revision nullable/after_revision>=1; outcome SUCCESS; timestamp_utc, request_id. 이름/설명 전문·세션·비밀번호 미포함. 변경과 같은 transaction으로 append. |
+| CadOutline 최신 CREATE variant | 기존 모든 컬럼/CHECK/FK/trigger 의미 보존, nullable outline_type_id에 FOREIGN KEY REFERENCES OutlineType(id) ON DELETE NO ACTION ON UPDATE NO ACTION 추가. 과거 CAD_BUSINESS_DDL의 CadOutline 문자열은 변경하지 않는다. FK 목록/위반 실제 시험 필수이며 단순 application lookup/trigger만으로 FK를 대체하지 않는다. |
+| Index/Trigger | OutlineType 전역 name_key Unique 및 목록용 sort_order/name_key/id index; id/created_at/created_by_id 불변 및 물리 DELETE 금지 trigger. OutlineTypeAudit type/time index 및 UPDATE/DELETE 차단 trigger. 기존 CadOutline immutable/삭제/Anchor/Memo guard는 유지. |
+
+변경·비활성/복구는 typeId를 유지하므로 기존 외곽선 FK가 남는다. 비활성 타입은 새 할당에서 제외하지만 기존 참조를 지우지 않는다(실제 신규 할당은 #71). 타입 Audit는 기존365일 보존 원칙을 따르되 승인되지 않은 자동/물리 purge를 구현하지 않는다. 인가 실패는 공통 G4 AuditEvent로 남기고 성공한 타입 변경의 구체적 action/revision은 OutlineTypeAudit에 보존한다. 기존 AuditEvent enum/DDL을 변경하지 않는다.
+
+Prisma는 새 OutlineType/OutlineTypeAudit 및 CadOutline optional relation을 표현하되 과거 nullable scalar 조회와 호환되어야 한다. installer, assertG7GreenfieldSchema, assertG7RuntimeSchema, schema ID/baseline 판별·authority 검증, 테스트 fixture 및 Migrator 명시 COPY/실행 smoke를 함께 갱신한다. historical marker의 동일 checksum과 DDL이 계속 통과하고 변조된 새/과거 schema는 계속 거절해야 한다. 복구 시험은 새 private 일회용 DB의 동일 snapshot backup/restore이며 기존 볼륨 rollback/데이터 이관 증거로 주장하지 않는다.
+
 ## #88/#90 M6/M7 DB 불변성 (2026-10-31)
 
 신규 DB 객체/Prisma 마이그레이션/Greenfield baseline/트리거 변경 **없음**. 기존 live CadMemo+Version의 동일 SHA, Location/Building/Site/Product/BusinessUnit 및 User, optional M4/M5 Feature/Group JOIN. 동일 signed Site 조건에서 Count+Page를 트랜잭션 조회하며 Page25/50/100; soft delete, inactive Site, 기타 Site 누출 금지. 기존 `ix_cad_memo_version_live` 포함 인덱스 활용, 100k 검색 성능 측정 전 신규 FTS 없음. [Issues88-90](Issues88-90.md).

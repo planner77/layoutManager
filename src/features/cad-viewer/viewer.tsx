@@ -4,6 +4,8 @@ import { useCallback, useEffect, useReducer, useRef, useState, type ChangeEvent 
 import { Button } from '@/components/ui/button';
 import { FullscreenLayerPanel } from '@/features/cad-viewer/fullscreen-layer-panel';
 import { ViewerAppShell } from '@/features/cad-viewer/viewer-app-shell';
+import { OutlineTypeManager } from '@/features/cad-viewer/outline-type-manager';
+import { useOutlineTypeAccess } from '@/features/cad-viewer/outline-type-client';
 import { ViewerMenuBar } from '@/features/cad-viewer/viewer-menu-bar';
 import type { ViewerCommandGroup } from '@/features/cad-viewer/viewer-command-menu';
 import { OutlineTreePanel } from '@/features/cad-viewer/outline-tree-panel';
@@ -237,6 +239,9 @@ export function CadViewer({
   },[]);
   const [searchOpen, setSearchOpen] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const [typeManagerOpen, setTypeManagerOpen] = useState(false);
+  const typeAccess = useOutlineTypeAccess(versionId+':'+sourceSha256+':'+renderer+':'+attempt);
+  useEffect(() => () => setTypeManagerOpen(false), [versionId, sourceSha256, renderer, attempt]);
   // No server/anonymous fallback: OFF keeps #82 session-only; ACTIVE reloads #83 persisted data.
   useEffect(()=>{
     if(format!=='DXF'||renderer!=='three-dxf-viewer'||!/^[a-f0-9]{64}$/i.test(sourceSha256))return;
@@ -592,7 +597,7 @@ export function CadViewer({
         setMemoCancelSignal(previous=>previous+1);
         return;
       }
-      if(event.key==='Escape' && (memoPlacing || memoCandidate || memoSelectedId)){
+      if(event.key==='Escape' && !typeManagerOpen && (memoPlacing || memoCandidate || memoSelectedId)){
         event.preventDefault();event.stopImmediatePropagation();
         closeMemoEditor();return;
       }
@@ -616,7 +621,7 @@ export function CadViewer({
         if(name==='layers')dispatchApp({type:'close-layers'});
         else if(name==='outlines')dispatchApp({type:'toggle-outline-tree'});
         else if(name==='memos')dispatchApp({type:'toggle-memo-tree'});
-        else if(name==='tools')dispatchApp({type:'close-tools'});
+        else if(name==='tools'){setTypeManagerOpen(false);dispatchApp({type:'close-tools'});}
         requestAnimationFrame(()=>viewerShell.current?.querySelector<HTMLButtonElement>('[data-viewer-group=work]')?.focus({preventScroll:true}));
         return;
       }
@@ -644,7 +649,7 @@ export function CadViewer({
     // Capture ahead of native fullscreen/selection handling for staged edit ESC.
     window.addEventListener('keydown',handleKeyDown,true);
     return ()=>window.removeEventListener('keydown',handleKeyDown,true);
-  },[syncSavedOutlines,deleteRequest,contextMenu,state.ready,canvasMode,openDelete,nameTipOpen,infoOpen,memoPlacing,memoCandidate,memoSelectedId,closeMemoEditor]);
+  },[syncSavedOutlines,deleteRequest,contextMenu,state.ready,canvasMode,openDelete,nameTipOpen,infoOpen,memoPlacing,memoCandidate,memoSelectedId,closeMemoEditor,typeManagerOpen]);
   const stopOutlineEditing = useCallback(() => {
     // Must cancel the Worker BEFORE clearing selection: selection callbacks can
     // otherwise enqueue a new compute job for the previous previewKind.
@@ -658,6 +663,7 @@ export function CadViewer({
     setPreviewError(null);
   }, []);
   const resetOutline = useCallback(() => {
+    setTypeManagerOpen(false);
     outlineEnabledRef.current = false;
     stopOutlineEditing();
     setOutlineInfo(null);
@@ -700,6 +706,7 @@ export function CadViewer({
   },[memoScoped,renderer,format,loading,state.ready,versionId,sourceSha256,stopOutlineEditing]);
 
   const selectMemo = useCallback((id:string,fromTree=false) => {
+    setTypeManagerOpen(false);
     const item = memoSession.current?.matches({versionId,sourceSha256})
       ? memoSession.current.get(id) : undefined;
     if (!item || !beginMemoInteraction(id)) return;
@@ -944,6 +951,7 @@ export function CadViewer({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[versionId,sourceSha256,memoSelectedId,memoServerMode,nearestSessionSnap,getSessionSnapStore,syncSessionSnaps]);
   function startMemoPlacement() {
+    setTypeManagerOpen(false);
     if (!memoAvailable) return;
     if (memoPlacing) { closeMemoEditor(); return; }
     if (!beginMemoInteraction()) return;
@@ -1298,7 +1306,7 @@ export function CadViewer({
     try{
       const item=manager.current?.getSavedOutlines().find(x=>x.id===savedId);
       if(!item)throw new Error('선택한 임시 외곽선이 없습니다.');
-      if(item.outlineTypeId)throw new Error('업무 타입 연계는 #65 승인 전까지 서버에 저장할 수 없습니다.');
+      if(item.outlineTypeId)throw new Error('업무 타입 지정 저장은 아직 지원하지 않습니다.');
       // Fresh Scene GET: do not reuse a stale revision from a previous viewing session.
       const sceneResponse=await fetch('/api/cad-files/'+versionId+'/scene',{credentials:'same-origin',cache:'no-store'});
       const sceneData=await sceneResponse.json();
@@ -1693,8 +1701,8 @@ export function CadViewer({
     ]},
     {id:'work',label:'작업',commands:[
       {id:'layers',label:'레이어 패널',testId:'viewer-menu-layers',kind:'checkbox',checked:appState.layerPanelOpen,expanded:layerAvailable&&appState.layerPanelOpen,controls:layerAvailable&&appState.layerPanelOpen?'viewer-layer-dock':undefined,disabled:!layerAvailable,reason:!layerAvailable?'레이어 패널은 로딩 완료된 three-dxf-viewer에서만 사용할 수 있습니다.':undefined,onSelect:()=>dispatchApp({type:'toggle-layers',exclusive:isCompact})},
-      {id:'tools',label:'선택·편집 도구',testId:'viewer-menu-tools',kind:'checkbox',checked:appState.toolsOpen,expanded:(outlineAvailable||memoAvailable)&&appState.toolsOpen,controls:(outlineAvailable||memoAvailable)&&appState.toolsOpen?'viewer-tools-dock':undefined,disabled:!(outlineAvailable||memoAvailable),reason:!(outlineAvailable||memoAvailable)?(outlineUnavailable??memoUnavailable??undefined):undefined,onSelect:()=>{if(appState.toolsOpen)closeMemoEditor();dispatchApp({type:'toggle-tools',exclusive:isCompact});}},
-      {id:'outline',label:'외곽선 생성',testId:'viewer-menu-outline-tool',kind:'checkbox',checked:appState.outlineToolEnabled,expanded:appState.outlineToolEnabled&&appState.toolsOpen,controls:appState.outlineToolEnabled&&appState.toolsOpen?'viewer-tools-dock':undefined,disabled:!outlineAvailable,reason:outlineUnavailable??undefined,onSelect:toggleOutlineTool},
+      {id:'tools',label:'선택·편집 도구',testId:'viewer-menu-tools',kind:'checkbox',checked:appState.toolsOpen&&!typeManagerOpen,expanded:(outlineAvailable||memoAvailable)&&appState.toolsOpen&&!typeManagerOpen,controls:(outlineAvailable||memoAvailable)&&appState.toolsOpen?'viewer-tools-dock':undefined,disabled:!(outlineAvailable||memoAvailable),reason:!(outlineAvailable||memoAvailable)?(outlineUnavailable??memoUnavailable??undefined):undefined,onSelect:()=>{if(typeManagerOpen){setTypeManagerOpen(false);return;}if(appState.toolsOpen)closeMemoEditor();dispatchApp({type:'toggle-tools',exclusive:isCompact});}},
+      {id:'outline',label:'외곽선 생성',testId:'viewer-menu-outline-tool',kind:'checkbox',checked:appState.outlineToolEnabled,expanded:appState.outlineToolEnabled&&appState.toolsOpen,controls:appState.outlineToolEnabled&&appState.toolsOpen?'viewer-tools-dock':undefined,disabled:!outlineAvailable,reason:outlineUnavailable??undefined,onSelect:()=>{setTypeManagerOpen(false);toggleOutlineTool();}},
       {id:'tree',label:'외곽선 목록',testId:'viewer-menu-outline-tree',kind:'checkbox',checked:appState.outlineTreeOpen,expanded:treeAvailable&&appState.outlineTreeOpen,controls:treeAvailable&&appState.outlineTreeOpen?'viewer-outline-tree-dock':undefined,disabled:!treeAvailable,reason:treeUnavailable??undefined,onSelect:()=>dispatchApp({type:'toggle-outline-tree',exclusive:isCompact})},
       {id:'memo-tree',label:'메모 트리',testId:'viewer-menu-memo-tree',kind:'checkbox',
        checked:appState.memoTreeOpen,expanded:memoAvailable&&appState.memoTreeOpen,
@@ -1720,7 +1728,15 @@ export function CadViewer({
         testId:'viewer-menu-reset-all',disabled:!treeAvailable||resetBusy||sceneBusy||memoServerMode==='checking',
         reason:'확인 후 해당 Version의 영속 외곽선·메모를 하나의 거래에서 논리 삭제합니다.',
         onSelect:()=>{void resetOrigin('ALL');}},
-      {id:'types',label:'외곽선 타입 관리',testId:'viewer-menu-outline-types',disabled:true,reason:'관리자 인증·인가 및 업무 타입 정책 승인 전에는 등록 기능을 제공하지 않습니다.'},
+      {id:'types',label:'외곽선 타입 관리',testId:'viewer-menu-outline-types',
+        checked:typeManagerOpen&&appState.toolsOpen,expanded:typeManagerOpen&&appState.toolsOpen,
+        controls:typeManagerOpen&&appState.toolsOpen?'viewer-tools-dock':undefined,
+        disabled:!typeAccess.access?.canManage||!typeAccess.access.writeEnabled,reason:typeAccess.reason||undefined,
+        onSelect:()=>{
+          if(typeManagerOpen){setTypeManagerOpen(false);dispatchApp({type:'close-tools'});return;}
+          setTypeManagerOpen(true);
+          if(!appState.toolsOpen)dispatchApp({type:'toggle-tools',exclusive:isCompact});
+        }},
     ]},
   ];
 
@@ -1814,11 +1830,12 @@ export function CadViewer({
       memoTreeOpen={memoAvailable&&appState.memoTreeOpen}
       compactPanel={appState.compactPanel}
       toolsOpen={appState.toolsOpen}
+      toolsTitle={typeManagerOpen?'외곽선 타입 관리':undefined}
       onClosePanel={panel=>{
         if(panel==='layers'){dispatchApp({type:'close-layers'});requestAnimationFrame(()=>viewerShell.current?.querySelector<HTMLButtonElement>('[data-viewer-group=work]')?.focus({preventScroll:true}));}
         else if(panel==='outlines'){dispatchApp({type:'toggle-outline-tree'});requestAnimationFrame(()=>viewerShell.current?.querySelector<HTMLButtonElement>('[data-viewer-group=work]')?.focus({preventScroll:true}));}
         else if(panel==='memos'){dispatchApp({type:'toggle-memo-tree'});requestAnimationFrame(()=>viewerShell.current?.querySelector<HTMLButtonElement>('[data-viewer-group=work]')?.focus({preventScroll:true}));}
-        else {closeMemoEditor();dispatchApp({type:'close-tools'});requestAnimationFrame(()=>viewerShell.current?.querySelector<HTMLButtonElement>('[data-viewer-group=work]')?.focus({preventScroll:true}));}
+        else {if(!typeManagerOpen)closeMemoEditor();setTypeManagerOpen(false);dispatchApp({type:'close-tools'});requestAnimationFrame(()=>viewerShell.current?.querySelector<HTMLButtonElement>('[data-viewer-group=work]')?.focus({preventScroll:true}));}
       }}
       textSearchOpen={searchOpen}
       onCloseTextSearch={()=>{setSearchOpen(false);requestAnimationFrame(()=>viewerShell.current?.querySelector<HTMLButtonElement>('[data-testid="cad-text-search-trigger"]')?.focus({preventScroll:true}));}}
@@ -1876,6 +1893,7 @@ export function CadViewer({
         </>
       }
       tools={
+        typeManagerOpen ? <OutlineTypeManager access={typeAccess.access} refreshAccess={typeAccess.refresh}/> :
         outlineAvailable || memoAvailable || (renderer === 'three-dxf-viewer' && format === 'DXF' && state.ready && savedCount > 0) ? <>
           {memoAvailable && <div data-testid="cad-memo-status"
             className="flex flex-wrap items-center gap-2 border-b border-amber-200 bg-amber-50 px-3 py-1 text-xs text-slate-800">
@@ -2096,7 +2114,7 @@ export function CadViewer({
           <Button size="sm" variant="outline" disabled={!savedCount} onClick={exportOutlines}>JSON 내보내기 ({savedCount})</Button>
           <Button size="sm" variant="outline" disabled={!savedCount} onClick={()=>manager.current?.clearSavedOutlines()}>임시 결과 삭제</Button>
         </div>
-        {!selectableTypes.length && <p data-testid="outline-type-gate" className="mb-1 text-amber-800">서버에서 제공하는 활성·해당 Scope 업무 타입이 없습니다. #65 승인 전 타입 지정 저장은 차단되며 미분류 외곽선만 영속 저장할 수 있습니다.</p>}
+        {!selectableTypes.length && <p data-testid="outline-type-gate" className="mb-1 text-amber-800">외곽선에 업무 타입을 지정하는 기능은 준비 중입니다. 미분류 외곽선만 영속 저장할 수 있습니다.</p>}
         {outlineInfo.sourceUnavailableReason && <p data-testid="exact-source-unavailable" className="text-amber-800">정밀 원본: {outlineInfo.sourceUnavailableReason} · 일반 렌더 작업과 독립 메모는 사용 가능합니다.</p>}
         {outlineBasis==='render' && <p className="text-slate-600">화면에 표시된 지원 geometry의 WCS XY 기하를 사용합니다. 볼록 경계는 근사 포락선이며 폐영역 검증은 화면 기하 기준입니다. 원본 CAD 정밀성·서버 canonical 검증을 의미하지 않습니다.</p>}
         <p className="text-slate-600">선택 모드: 클릭 한 개, Ctrl/⌘+클릭 토글, 좌→우 완전 포함, 우→좌 교차 선택 · Space+드래그 이동 · 휠 확대 · Esc 선택 취소.</p>

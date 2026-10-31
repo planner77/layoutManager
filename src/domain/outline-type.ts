@@ -1,9 +1,8 @@
 /**
- * Issue #41 / U4: design-only model for a future authorized OutlineType catalog.
- *
- * DO NOT connect this prototype to Prisma, an API route, or real CAD outlines.
- * Admin RBAC, scope, audit retention and persistent writes require Owner approval.
- * CONVEX/PRECISE are geometric algorithms, NOT business classification types.
+ * Issue #41 / U4 browser-memory preview model. The #65 server catalogue reuses
+ * only the name normalizer and key policy below; it has its own DTO, DB schema,
+ * authorization and audit. Preview scopeKey and commands are not persisted.
+ * CONVEX/PRECISE are geometric algorithms, not business classification types.
  */
 export type OutlineType = Readonly<{
   id: string;
@@ -31,8 +30,8 @@ const MAX_NAME_LENGTH = 100;
 const MAX_DESCRIPTION_LENGTH = 500;
 const MAX_SORT_ORDER = 9999;
 
-/** Policy proposed for review: Unicode NFC + locale-independent lowercasing.
- * The final DB collation/uniqueness key is deliberately NOT decided here. */
+/** Approved #65 key policy: Unicode NFC + locale-independent lowercase + NFC.
+ * The server stores this key with a SQLite BINARY Unique constraint. */
 export function outlineTypeNameKey(name: string): string {
   return name.normalize('NFC').toLowerCase().normalize('NFC');
 }

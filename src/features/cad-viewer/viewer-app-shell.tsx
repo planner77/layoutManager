@@ -12,7 +12,7 @@ type TextSearchProps=Omit<ComponentProps<typeof CadTextSearch>,
 
 export function ViewerAppShell({ shellRef, panelScopeKey, isFullscreen, isNativeFullscreen, menuBar, toolbar,
   layerPanel, layerPanelOpen, outlineTreePanel, outlineTreeOpen, memoTreePanel, memoTreeOpen, compactPanel,
-  canvas, tools, toolsOpen, textSearch, textSearchOpen, onCloseTextSearch, onClosePanel, status, modalOverlay, nativeLoadingOverlay }: {
+  canvas, tools, toolsOpen, toolsTitle = '선택 및 외곽선 도구', textSearch, textSearchOpen, onCloseTextSearch, onClosePanel, status, modalOverlay, nativeLoadingOverlay }: {
   shellRef: RefObject<HTMLDivElement | null>;
   panelScopeKey:string;
   isFullscreen: boolean; isNativeFullscreen: boolean;
@@ -21,7 +21,7 @@ export function ViewerAppShell({ shellRef, panelScopeKey, isFullscreen, isNative
   outlineTreePanel?: ReactNode; outlineTreeOpen: boolean;
   memoTreePanel?: ReactNode; memoTreeOpen: boolean;
   compactPanel: ViewerCompactPanel;
-  canvas: ReactNode; tools?: ReactNode; toolsOpen: boolean;
+  canvas: ReactNode; tools?: ReactNode; toolsOpen: boolean; toolsTitle?: string;
   textSearch?: TextSearchProps; textSearchOpen:boolean; onCloseTextSearch:()=>void;
   onClosePanel: (panel: Exclude<ViewerCompactPanel, null>) => void;
   status: ReactNode; modalOverlay?: ReactNode; nativeLoadingOverlay?: ReactNode;
@@ -104,7 +104,7 @@ export function ViewerAppShell({ shellRef, panelScopeKey, isFullscreen, isNative
         onRaise={()=>setTopDrawer('memos')} onClose={()=>onClosePanel('memos')} onKeyDown={trapTab}>
         {memoTreePanel}
       </MovableViewerPanel>
-      <MovableViewerPanel key={panelScopeKey+':tools'} kind="tools" id="viewer-tools-dock" name="선택 및 외곽선 도구"
+      <MovableViewerPanel key={panelScopeKey+':tools'} kind="tools" id="viewer-tools-dock" name={toolsTitle}
         workspaceRef={workspaceRef} dialogRef={dialog} open={toolsOpen&&!!tools}
         mobile={mobile} modalBlocked={modalOpen} active={!mobile||active==='tools'} raised={topDrawer==='tools'}
         onRaise={()=>setTopDrawer('tools')} onClose={()=>onClosePanel('tools')} onKeyDown={trapTab}>

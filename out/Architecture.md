@@ -1,3 +1,21 @@
+## R2 #65 — Global Type 서비스/API/Viewer 설계 (구현 전, 2026-10-31)
+
+서버 catalogue service는 `resolveG7RuntimeGate`/정확 public Host, `openG7RuntimeDb`, 기존 `g7GuardedMutation`을 재사용한다. 이 primitive는 현재 runtime-user-management에서도 사용하며 BEGIN IMMEDIATE 안에서 DB-owned Session/User/Role을 조회하고 domain `outlineType:read|manage` global 권한을 검사한다. Site 한정 CAD helper를 global catalogue에 재사용하지 않는다. 초기 User0에서는 bootstrap503을 먼저 반환하여 anonymous capability가 최초 설치에 Audit를 만들지 않는다. request body 수신 뒤 실제 transaction에서 현재 gate/session/role을 재검사하고 mutation 마지막에 gate를 다시 확인한다. POST/PATCH는 기존 csrfProof/requireSessionCsrf 및 G7 writer 활성 조건을 추가한다. 서버 Session/Role 모델을 새로 만들지 않는다.
+
+타입 변경·CAS·OutlineTypeAudit를 같은 동기 SQLite transaction에서 처리한다. authorization denial은 기존 G4 감사, 성공한 CREATE/UPDATE/DEACTIVATE/REACTIVATE는 새 append-only Audit에 actor/typeId/전후 revision/time/requestId만 기록한다. 임의 actor/scope·nameKey는 입력받지 않는다. immutable DB trigger/Unique/FK는 [Database](Database.md)의 latest-only DDL에서 보장한다. 이전 catalogue 없는 baseline은 기능503이며 runtime auto-DDL은 금지다. 글로벌 읽기/관리 권한은 Viewer의 Version/Site 접근권한을 대체하지 않는다.
+
+**공유 DTO/API 계약:** `GlobalOutlineTypeDto`는 `id,name,description,active,sortOrder,revision,createdAt,updatedAt,createdById,updatedById,scope:'GLOBAL'`이다. prototype scopeKey=null과 구분한다. 기존 pure normalization을 공유/명확히 분리하되 preview CRUD 연결은 금지한다.
+
+- GET `/api/outline-types/access`: `{canRead:true,canManage:boolean,writeEnabled:boolean,scope:'GLOBAL'}`. 인증/role/schema 확인 후 metadata만 반환한다. Viewer는 canManage && writeEnabled일 때만 관리 명령을 활성화한다.
+- GET `/api/outline-types`: active만 기본; `includeInactive=true`는 Admin 전용. `q`(trim/NFC/lowercase 이름 부분 문자열, 최대100), `offset`(기본0/정수0..100000), `limit`(기본50/1..100). 불필요/중복 query는400. 정렬 sort_order,name_key,id를 server SQL로 고정하고 SQL parameter로 검색한다. 응답 `{items:GlobalOutlineTypeDto[],total:number,offset:number,limit:number}`. 변경 후 UI는 첫 페이지 재검색한다. list snapshot의 grant 검사를 transaction에서 수행한다.
+- POST `/api/outline-types`: `{name,description?:string|null,sortOrder:number}` →201 `{item:GlobalOutlineTypeDto}`.
+- PATCH `/api/outline-types/[typeId]`: `{expectedRevision:number,name?,description?,sortOrder?,active?}`(변경 필드1개 이상) →200 `{item:GlobalOutlineTypeDto}`. 활성 변경시 DEACTIVATE/REACTIVATE, 나머지는 UPDATE audit. stale revision409, duplicate409, not-found404. DELETE 없음.
+- 오류 `{error:{code,message},requestId}`는 고정 안전 message만. 모든 응답 X-Request-Id/private,no-store/Vary Cookie. 입력 body는 기존 boundedJson 상한 또는 더 작은16KiB, ID UUID 및 unknown keys 거부. 민감 입력·SQL·원시 Error를 logger/응답에 넣지 않는다. RequestLogContext를 사용할 때 새 outline_type_list/create/update/access operation 및 필요한 고정 errorCode를 R1 로그 DTO catalog와 일치시켜 안전한 신규 이벤트가 누락되지 않게 한다.
+
+Viewer는 관리 전용 client component를 tools content override로 사용한다. 기존 tools MovableViewerPanel title/내용만 전환하고 같은 canvas/window lifecycle을 유지한다. capability와 catalogue 요청은 AbortController 및 stale-response guard, 관리 open 시/브라우저 focus 시 재확인한다. 401/403/503 후 관리 쓰기를 disabled/내용 clear하고 사유 표시한다. 관리 close/reload/Renderer·Version 변경 또는 일반 tools command는 override 해제. 타입 입력에는 plain text/labels, 수정/비활성/복구에는 현재 revision,409에는 재조회 안내를 사용한다. Admin 목록은 includeInactive=true로 이름·상태·revision을 보여주며 변경 후 현재 결과를 재조회한다. typed confirm/tree catalogue 소비는 R3로 남긴다.
+
+새 DDL 의존성을 Migrator Dockerfile에 명시 COPY하고 실제 CLI import smoke를 수행한다. 과거 문자열과 baseline은 보존한 채 latest-only business DDL variant와 type DDL을 installer/validator에 조합한다. 새 타입 FK가 없는 과거 DB를 Prisma model만으로 새 schema라고 판단하지 않는다.
+
 ## R1 #60/#61/#62 — 운영 로그 조회 설계 (2026-10-31, 구현 전)
 
 `logging/access`는 기존 runtime gate/공개 authority, G4 Session/Role/SpecialGrant 재조회와 Audit을 결합한다. API·SSR 공용 인가이며 G7 OFF/BLOCKED·Audit 오류는 fail-closed. 권한/세션 철회는 각 페이지 및 응답 직전 재검사한다. 기존 Auth DB/Provider를 복제하거나 CAD writer 인가로 logs global 권한을 대신하지 않는다. logs:read 허용/거부 감사는 고정 targetId `logs_read`로 다른 global 권한 검사와 구분한다(기존 Audit enum/Schema 유지). 세션별 제한과 별도 프로세스 전체 admission 상한으로 임의 토큰 교체를 통한 감사 폭증을 제한한다. 구현 상한은 세션 토큰당 분당240회, 프로세스 전체 분당600회의 인가 검사이며 성공한 목록 API는 읽기 전·후 검사로2회를 소비한다. 제한 응답은429/Retry-After60이고 제한 후 추가 감사 쓰기는 하지 않는다. 이 제한은 단일 프로세스 기준이며 분산 quota를 보장하지 않는다. SSR은 저장소 내용을 읽기 전 인가하고, 메뉴 probe도 인가 결과만 사용한다.

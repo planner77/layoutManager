@@ -1,4 +1,5 @@
-import { afterEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { installMonotonicTestClock } from '../helpers/monotonic-clock';
 import { createHash, generateKeyPairSync, randomUUID } from 'node:crypto';
 import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -24,7 +25,9 @@ import { GET as getSceneContent } from '../../app/api/cad-files/[versionId]/scen
 
 const roots:string[]=[];
 let db:Database|undefined;
+beforeEach(installMonotonicTestClock);
 afterEach(async()=>{await db?.$disconnect();db=undefined;vi.unstubAllEnvs();
+  vi.restoreAllMocks();
   for(const root of roots.splice(0))rmSync(root,{recursive:true,force:true});});
 async function setup(){
   const root=mkdtempSync(path.join(tmpdir(),'cad-scene-s3-'));chmodSync(root,0o700);roots.push(root);
@@ -112,6 +115,20 @@ async function sceneReaderAt(f:Awaited<ReturnType<typeof setup>>,issuedAt:number
 }
 
 describe('#164 Scene S3 immutable persistence',()=>{
+  test('future-issued session fails before Scene storage or pointer writes',async()=>{
+    const f=await setup();
+    const future=await sceneReaderAt(f,Date.now()+60_000);
+    const request=new Request(f.request.url,{method:'POST',headers:{
+      host:'cad.example.test',origin:'https://cad.example.test',
+      cookie:'cad_session='+future.token,'x-csrf-token':csrfProof(future.token)}});
+    const put=vi.spyOn(f.storage,'putVerified');
+    expect(()=>prepareG7CadWrite(request,'scene-future-session'))
+      .toThrow(expect.objectContaining({code:'UNAUTHENTICATED',status:401}));
+    expect(put).not.toHaveBeenCalled();
+    expect(await f.db.currentScene.count()).toBe(0);
+    expect(await f.db.sceneAsset.count()).toBe(0);
+    expect(await f.db.sceneOrphanJob.count()).toBe(0);
+  });
   test('route rejects OFF writes, Reader and missing Site; active read uses session without write CSRF',async()=>{
     const f=await setup(),value=payload(f.versionId,f.sha);
     const url='https://cad.example.test/api/cad-files/'+f.versionId+'/scene';
@@ -332,7 +349,8 @@ describe('#164 Scene S3 immutable persistence',()=>{
     const results=await Promise.allSettled([
       f.repo.publish(f.versionId,a.manifest,a.bytes,0,f.proof),
       f.repo.publish(f.versionId,b.manifest,b.bytes,0,f.proof)]);
-    expect(results.filter(x=>x.status==='fulfilled')).toHaveLength(1);
+    const outcomes=results.map(result=>result.status==='fulfilled'?'OK':String(result.reason?.code??result.reason?.name));
+    expect(results.filter(x=>x.status==='fulfilled'),outcomes.join(',')).toHaveLength(1);
     expect(results.filter(x=>x.status==='rejected')).toHaveLength(1);
     expect((results.find(x=>x.status==='rejected') as PromiseRejectedResult).reason)
       .toMatchObject({code:'SCENE_REVISION_CONFLICT'});

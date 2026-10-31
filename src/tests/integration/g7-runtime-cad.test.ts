@@ -92,8 +92,11 @@ describe('#153 signed runtime CAD writes',()=>{
   expect(await db.cadFileVersion.count()).toBe(2);
   const deleted=await repo.deleteVersion(second.id,'1234',p);
   expect(deleted.wasCurrent).toBe(true);expect(await db.cadFileVersion.count()).toBe(1);
-  const audit=await db.auditEvent.findMany({orderBy:{timestampUtc:'asc'}});
-  expect(audit.map(row=>row.action)).toEqual(['CAD_UPLOADED','CAD_UPLOADED','CAD_CURRENT_CHANGED','CAD_VERSION_DELETED']);
+  const audit=await db.auditEvent.findMany();
+  // UTC timestamps can tie or move backwards with the host clock. Assert the
+  // append-only ledger's insertion sequence independently of wall-time order.
+  const appended=await db.$queryRawUnsafe<{action:string}[]>('SELECT action FROM "AuditEvent" ORDER BY rowid');
+  expect(appended.map(row=>row.action)).toEqual(['CAD_UPLOADED','CAD_UPLOADED','CAD_CURRENT_CHANGED','CAD_VERSION_DELETED']);
   expect(audit.every(row=>row.actorUserId===a.id&&row.siteId==='site-a'&&row.requestId===p.requestId&&row.timestampUtc.endsWith('Z'))).toBe(true);
   expect((await db.cadFileVersion.findUnique({where:{id:first.id}}))?.sha256).toBe('a'.repeat(64));
  });

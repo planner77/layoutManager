@@ -124,7 +124,8 @@ RUN ./node_modules/.bin/prisma --version >/dev/null \
     && node --import tsx --input-type=module -e 'import { writeLog } from "./server/logger.ts"; if (typeof writeLog !== "function") process.exit(1);' \
     && node --import tsx --input-type=module -e 'import { CAD_BUSINESS_DDL } from "./server/cad-business/schema-ddl.ts"; if (CAD_BUSINESS_DDL.length !== 11) process.exit(1);' \
     && node --import tsx --input-type=module -e 'import { CAD_ANCHOR_DDL } from "./server/cad-business/anchor-ddl.ts"; if (CAD_ANCHOR_DDL.length !== 3) process.exit(1);' \
-    && node --import tsx --input-type=module -e 'import { CAD_MEMO_FEATURE_DDL } from "./server/cad-business/memo-feature-ddl.ts"; if (CAD_MEMO_FEATURE_DDL.length !== 6) process.exit(1);'
+    && node --import tsx --input-type=module -e 'import { CAD_MEMO_FEATURE_DDL } from "./server/cad-business/memo-feature-ddl.ts"; if (CAD_MEMO_FEATURE_DDL.length !== 6) process.exit(1);' \
+    && node --import tsx --input-type=module -e 'import { OUTLINE_TYPE_DDL,LATEST_CAD_OUTLINE_DDL } from "./server/cad-business/schema-ddl.ts"; if (OUTLINE_TYPE_DDL.length !== 9 || !LATEST_CAD_OUTLINE_DDL.includes("outline_type_id") || !LATEST_CAD_OUTLINE_DDL.includes("OutlineType")) process.exit(1);'
 CMD ["./node_modules/.bin/tsx", "scripts/deploy.ts"]
 
 # Default production image: Next.js standalone traced dependencies and static assets only.
