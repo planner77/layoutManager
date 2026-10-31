@@ -5,6 +5,9 @@ import { makeG7RuntimeFixture } from '../helpers/g7-runtime';
 import { createDb,type Database } from '../../server/db';
 import { newSessionCandidate } from '../../server/auth/session';
 import { resolveG7RuntimeGate } from '../../server/g7-operational/runtime-gate';
+// Keep the real G7 auth/Site policy while excluding the unrelated legacy `server-only`
+// context module. The authenticated search helper must never fall back to it.
+vi.mock('@/server/context', () => ({ context: () => { throw new Error('UNEXPECTED_LEGACY_CONTEXT'); } }));
 import { requireMemoSearchSites } from '../../server/scene/scene-context';
 
 let f:ReturnType<typeof makeG7RuntimeFixture>,db:Database;
