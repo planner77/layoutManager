@@ -105,7 +105,7 @@ export function ViewerAppShell({ shellRef, panelScopeKey, isFullscreen, isNative
         workspaceRef={workspaceRef} dialogRef={dialog} open={toolsOpen&&!!tools}
         mobile={mobile} active={!mobile||active==='tools'} raised={topDrawer==='tools'}
         onRaise={()=>setTopDrawer('tools')} onClose={()=>onClosePanel('tools')} onKeyDown={trapTab}>
-        {tools && <><button type="button" className="sticky top-0 z-10 float-right self-end rounded bg-white px-2 py-1 text-sm text-slate-800 sm:hidden"
+        {tools && <><button type="button" className="sticky top-0 z-10 float-right self-end rounded bg-white px-2 py-1 text-sm text-slate-800"
           onClick={()=>onClosePanel('tools')}>도구 닫기</button>{tools}</>}
       </MovableViewerPanel>
       {textSearch?.({workspaceRef,dialogRef:dialog,mobile,active:!mobile||active==='search',
