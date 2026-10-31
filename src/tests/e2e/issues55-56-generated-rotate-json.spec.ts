@@ -135,14 +135,24 @@ test('TC-E6-E2E-001: rejected file keeps session; v2 restores after explicit rel
  page.once('dialog',async dialog=>{expect(dialog.message()).toContain('임시');await dialog.accept();});
  await clickViewerCommand(page,'drawing','다시 불러오기');
  await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
- await expect(page.getByTestId('outline-tree-item')).toHaveCount(0);
+ // Reload resets Viewer UI state: a closed Tree has zero rendered rows even if
+ // the underlying Document has objects. Verify JSON independently first.
+ await expect(page.getByTestId('viewer-outline-tree')).toHaveCount(0);
+ const empty=await exportGenerated(page);
+ expect(empty.objects).toHaveLength(0);
  await page.getByTestId('generated-import-input').setInputFiles(fileOf(data));
  await expect(page.getByTestId('generated-json-message')).toContainText('1개 생성 개체');
- await expect(page.getByTestId('outline-tree-item')).toHaveCount(1);
+ // E6 restores browser data, it does not silently open the optional Tree Drawer.
  const restored=await exportGenerated(page);
  expect(restored.objects.map(o=>o.id)).toEqual(data.objects.map(o=>o.id));
  expect(restored.objects.map(o=>o.editedGeometry))
   .toEqual(data.objects.map(o=>o.editedGeometry));
+ await expect(page.getByTestId('viewer-outline-tree')).toHaveCount(0);
+ await clickViewerTestCommand(page,'viewer-menu-outline-tree');
+ await expect(page.getByTestId('viewer-outline-tree')).toBeVisible();
+ await expect(page.getByTestId('outline-tree-item')).toHaveCount(1);
+ await expect(page.getByTestId('outline-tree-item').first())
+  .toHaveAttribute('data-outline-id',data.objects[0].savedOutlineId);
  page.once('dialog',async dialog=>{expect(dialog.message()).toContain('임시');await dialog.accept();});
  await clickViewerCommand(page,'view','dxf-viewer');
  await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
