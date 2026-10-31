@@ -1,3 +1,56 @@
+## R5a 최종 재시험 GREEN (2026-11-01)
+
+Test-only fixture 보완 뒤 집중8 PASS11.19초 및 새 전체127 files/858 PASS422.47초를 확인했다. Greenfield 새 전체17 PASS4.2분, 독립 QA General 전체128 PASS14.7분도 통과했다. 이전 실패의 수치/원인 한계는 아래 그대로 보존한다. 제품 auth guard 변경 없이 해당 로컬 gate를 수용했으며 원격 CI는 별도다.
+
+## R5a 전체 Unit 정확 실패 및 통제시계 회귀 설계 (2026-11-01)
+
+Root 첫 whole unit 최종 결과는 **127 files 중126 PASS/1 FAIL,857 tests 중856 PASS/1 FAIL,494.39초**다. 정확 오류는 `G7_RUNTIME_ADMIN_APPROVAL_CHANGED`: runtime-admin의 transaction-time check → g2-store insertFirstAdmin → async password hash 후 admin-setup → g7-greenfield 최초 bootstrap assertion에서 발생했다. 최초 gate와 async 작업 후 gate가 달랐다는 근거이며, 원래 host wall clock의 역행을 직접 측정한 것은 아니다.
+
+Manager가 test-only 보완을 승인했다. 양성 first-admin/renew 시험은 Date만 고정하고 finally에서 원복한다. 별도 음성은 T0에 실제 signed gate ACTIVE를 확인하고 real async scrypt 진행 중 Date를 T0-5초로 바꾼 뒤 정확 approval-changed·User/Audit0을 검증한다. T0+1초로 복구 후 real bootstrap 성공을 확인한다. 타 timer/crypto/store/gate를 mock하거나 production 검사를 완화하지 않는다. 이 결정적 음성이 같은 오류를 재현해도 최초 host 역행의 관측 증명으로 해석하지 않는다. 집중·새 전체 unit 결과는 아직 대기다.
+
+## R5a 전체 gate 진행 — Greenfield 재실행 / Unit 원인 미확정 (2026-11-01)
+
+전체 Greenfield 첫 최종 실행은 **16 PASS/1 FAIL,4.8분**으로 끝났다. 새 R5 authority4 및 first-install2는 그 실행 안에서 PASS이나, 기존 R3 GET fixture의 ECONNRESET 때문에 전체 성공은 아니다. Root가 Manager 검토를 거친 GET-only maxRetries1을 적용하고 전체17을 새 `/tmp/layoutmanager-r5-greenfield-final2.log` 및 대응 results로 재실행 중이다.
+
+Whole unit은 아직 최종 출력 전이며 `g7-greenfield.test.ts`의 최초 Admin one-shot/renew 사례1 FAIL가 관측됐다. 같은 사례의 집중 진단은1 PASS/6 SKIP,685ms(`/tmp/layoutmanager-r5-greenfield-unit-diagnosis.log`)지만 원래 전체 실패를 대체하지 않는다. 원래 정확한 실패 원인/stack을 확인하기 전에는 host clock rollback으로 단정하거나 제품/fixture 시계를 변경하지 않는다. 전체 unit PASS 및 R5a 최종 수용은 보류다.
+
+## R5a 전체 Greenfield의 기존 R3 fixture transport 실패 (2026-11-01)
+
+Root full Greenfield17 실행에서 기존 `typed-outline-races.spec.ts`의 older in-flight list 사례가8.4초에 `route.fetch` ECONNRESET로 실패했다. `capturedResponse`의 실 GET response를 얻는 단계이며 stale-response assertion 이전이다. 새 R5 authority4개는21.0/10.9/9.9/11.7초로 모두 PASS했고 후속 기존 사례도 서버가 정상인 상태로 진행했다. 전체17의 최종 결과는 별도로 확인한다. 원시 Playwright error context에는 credential이 포함될 수 있어 정제된 오류 종류/위치만 기록한다.
+
+Manager는 현재 실행 종료 뒤 test-only helper에서 GET method를 명시 확인하고 `route.fetch({maxRetries:1})`로 ECONNRESET 한 번만 재시도하는 보완을 수용했다. 설치된 Playwright Route 계약상 HTTP 응답 코드는 재시도하지 않는다. POST/write나 실제 서버 요청을 mock하지 않고 held read/post 순서·stale snapshot/new row assertions를 유지한다. 반복 reset이 남으면 추가 transport 진단이 필요하며 무제한 retry로 통과시키지 않는다.
+
+## R5a 수정 build의 Browser fixture 후속 (2026-11-01)
+
+- General 집중4의 첫 수정-build 실행은3 PASS/1 FAIL이었다. OFF/no-protected-read4.8초,320px·unit·focus4.1초,Generated6.3초는 PASS다. Hidden-layer는 artifact 생성 경로를 통과했으나 Node GLTFLoader의 `ProgressEvent is not defined`로 검사 harness가 실패했다. QA가 core 시험과 같은 test-only polyfill을 추가하고 새4개 실행을 진행한다. 제품 수정/재build 사유가 아니다.
+- Root authority Browser attempt1은5 PASS/1 FAIL,1.4분이다. first-install2·actor 전환·직렬화 후 row revision·network/JSON proof 검사는 PASS다. Public 사례는 export 이전 `?source=build`의 기존 Scene preflight가 익명을 차단해 로딩 단계에서 실패했다. 인가된 actor로 Source를 먼저 로드한 뒤 logout/noSite Reader로 전환하는 fixture로 수정한다. 기존 Viewer/원본 GET 정책을 완화하지 않으며 새 전체6개 결과를 별도로 확인한다.
+
+## R5a foreign Three guard 수정 source 수용 (2026-11-01)
+
+Manager가 실제 수정 diff와 `/tmp/layoutmanager-r5a-foreign-core-qa.log`의 **2 files/31 PASS,762ms**를 확인했다. Installed three-dxf-viewer의 실제 getFromPath LINE은 app BufferGeometry instanceof=false지만 isBufferGeometry=true였다. 새 구조 검증은 required geometry/attribute API와 typed storage를 확인하며 기존 finite/index/arity/material/group/planarity/budget 검사를 유지한다. 단순 flag-only 위조는 제외한다. 실제 라이브러리 객체를 사용하는 회귀를 추가했고 Manager가 source repair를 수용했다.
+
+수정 포함 production rebuild·전체 unit은 Root가 시작했으며 아직 결과를 확인하지 않았다. General attempt5의 실제 Browser FAIL는 이 focused 결과로 PASS 재분류하지 않고 수정 build에서 별도 재시험한다. 최종 수용 gate는 TestPlan checklist를 따른다.
+
+## R5a General Browser 실제 결함 — legacy DXF geometry 제외 (2026-11-01)
+
+QA attempt5의 실제 three-dxf-viewer DXF A/B/C에서 B 레이어를 화면에서 숨긴 뒤 B만 명시 export했다. Inventory에는 B1개가 있지만 preview는 지원0/제외1·`UNSUPPORTED_GEOMETRY`를 표시하고 download를 차단했다. `/tmp/layoutmanager-r5-ui-attempt5.log`와 attempt5-results의 error-context/trace를 보존했다. Manager는 visibility filter를 원인으로 단정하지 않고 실제 제외 코드를 확인했다. 현재 guard의 `geometry instanceof THREE.BufferGeometry`가 library의 별도 Three constructor와 충돌하는 가능성을 Root/Developer에게 전달했다. 합성 core29 PASS가 실제 library 객체 경로를 검증한 것으로 확대되지 않는다.
+
+Root3411 시험과 공유 build가 활성화된 동안 runtime 수정·재build는 대기한다. Source download case는 수정 후보에서 재시험해야 하며 R5a 전체 수용은 진행 중이다. 별도의 Generated transform/export/history Browser case는 PASS3.3초, 신규 QA spec 타입 오류 수정 후 typecheck PASS(`/tmp/layoutmanager-r5-ui-types-final.log`)다.
+
+## R5a Browser 선행 타입 검사 중단 / 레이어 toggle fixture 보완 (2026-11-01)
+
+Root의 Greenfield3411 명령은 Browser 진입 전 전체 typecheck exit2로 중단됐다. QA 신규 `issue91-exchange.spec.ts`의 Window→필수 `__exchangeBlobTypes` cast 두 곳에서 TS2352가 발생했다. QA가 자기 test 선언만 수정하며 이 실행의 Auth Browser는 FAIL이 아니라 **NOT RUN**이다. Root auth spec은 first-install 선행 순서를 유지하도록 `r5-exchange-authority.spec.ts`로 명명했다.
+
+General attempt3에서 Generated 변환/선택/export/history case는 PASS3.3초다. Hidden-layer case는 기본 `layerPanelOpen:true` 상태에서 메뉴를 무조건 클릭해 panel을 닫은 시험 준비 오류로 중단됐다. Manager가 원인을 지적했고 QA가 이미 열린 dock를 사용하도록 수정했다. 제품 Layer Table/Renderer 결함으로 판정하지 않는다. `/tmp/layoutmanager-r5-ui-attempt3.log`와 첫 실행 로그는 보존한다.
+
+## R5a General Browser 첫 실행 — 시험 selector/setup 보완 (2026-11-01)
+
+독립 QA의 port3410 첫 실행은0/2로 실패했다(`/tmp/layoutmanager-r5-ui-attempt1.log`, `/tmp/layoutmanager-r5-ui-attempt1-results`). 존재하지 않는 레이어 패널 testid를 사용했고 실제 UI는 `complementary`/`전체 화면 레이어`였다. Generated 도구는 dock를 연 후 표시되는데 시험에서 그 준비가 빠졌다. QA는 자신이 소유한 새 spec의 selector/setup만 수정했다. 제품 결함으로 판정한 결과가 아니며 실제 export 수용 assertion 이전 실패다. 재시험 결과는 별도 기록한다.
+
+## R5a 독립 core QA 실패·수정 — 그룹별 확장 정점 사전 한도 (2026-11-01)
+
+최초 independent QA1 PASS/1 FAIL,491ms에서150k source vertices를 두 material group이 재사용해 export300k가 되는 조건이 사전250k 한도를 우회하고 복사 뒤 거절됐다. position.getX spy450,001회가 복사 수행을 입증했다. Developer가 group 확장 상한을 사전 계산해 수정했으며 회귀는 source read0으로 거절된다. 최종 core22+QA7=29 PASS737ms와 QA 별도7 PASS414ms를 확인했다. 첫 실패 로그는 따로 저장하지 않았으며 재현 테스트와 보고를 보존했다. 상세 근거는 TestReport R5a를 따른다.
+
 ## R4 계측 최종 보완 — 남은 heap 추세는 OPEN (2026-11-01)
 
 Handler-release-only 실행은2 PASS/1.9분(`/tmp/layoutmanager-r4-inspector.log`)이며10k heap은1차dispose31.70MB→2차48.58MB였다. Manager source review로 유지 중인 Canvas ElementHandle도 해제하도록 보완했다. 최종 `/tmp/layoutmanager-r4-inspector-final.log`는2 PASS/1.6분,42개 inspector handler와 Canvas handle을 해제한 조건에서도10k heap31,645,380→48,449,656bytes를 관측했다. 이 증가16,804,276bytes는 원인 미확정으로 남긴다. 측정대상7종 listener baseline/Worker0/재진입0Memo는통과했지만 memory leak-free나16.7ms SLA를 입증하지 않는다.

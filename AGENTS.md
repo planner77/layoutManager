@@ -1,3 +1,13 @@
+## #91 교환 파일 내보내기 변경 시 (0.53.0 후보)
+
+- 선택 범위·snapshot·단위·누락·인가·취소를 바꾸기 전에 [Architecture R5](out/Architecture.md)와 [TestPlan R5](out/TestPlan.md)를 읽는다. 실제 수용·실패·게시 상태는 [TestReport](out/TestReport.md)와 [FailureLedger](out/FailureLedger.md)를 따른다.
+- 공개 Source/local Generated export는 ACTIVE 익명·OFF/BLOCKED에서도 가능하다. 서버 그룹은 사용자가 선택한 뒤 fresh actor/보호된 GET/revision을 전후 확인한다. 현재 render baseline과 Generated effective geometry를 구분하고 Viewer/원본/DB를 보존한다.
+- three-dxf-viewer는 별도 Three constructor를 번들한다. geometry 경계는 flag만 신뢰하지 말고 구조·attribute·index·material·범위 한도를 검증한다. 실제 library 객체 회귀를 유지한다.
+- R5a core의 합성/Browser 결과와 R5b visible Memo·혼합 UX/취소 자원 gate를 구분한다. R5b는 R5a 게시 뒤 별도0.54 stacked branch에서 진행하며 전체 #91 수용 기준은 TestPlan이다. 현재 R5a 로컬 gate는 전체unit858·General128·Greenfield17·Auth/Legacy 각1 및 정적/build PASS로 수용했고 Draft PR GO다. 게시·새 CI는 Root 후속이며 R5b 구현은 아직 시작하지 않았다.
+- Manager는 계약·source review·수용, Developer는 core/adapter 및 Root가 배정한 modal, Root는 authority/hook/Viewer·전체 gate·게시, 독립 QA는 별도 core/General 검증을 담당한다. 정확한 실행 역할·결과를 TestReport에 남긴다.
+
+---
+
 ## #174 메모 스냅·연결 이동 변경 시 (0.52.0 후보, 2026-11-01)
 
 - 후보 선택·KEEP/DETACH·Actor/비동기 수명 변경 전에 [Architecture R4](out/Architecture.md)와 [TestPlan TC-R4](out/TestPlan.md)를 읽는다. 실제 검증·실패 및 게시 상태는 [TestReport](out/TestReport.md)와 [FailureLedger](out/FailureLedger.md)를 따른다. 현재 R4 기능/계측 로컬 수용·Draft PR GO, 게시/새 CI 전이다. Frame budget 초과와2차dispose heap 증가의 원인은OPEN이며 #174 성능/현장 완료로 처리하지 않는다. 기반 R3 f179d596의 CI는 SUCCESS다.

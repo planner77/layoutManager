@@ -95,7 +95,11 @@ async function deleteCreatedOutline(api:APIRequestContext,origin:string,versionI
 }
 
 async function capturedResponse(route:Route){
-  const response=await route.fetch();
+  // This fixture captures a read while the client deliberately cancels stale
+  // reads. Retry one transport reset, preserving this exact GET and its proof;
+  // HTTP errors and all mutations remain unretried.
+  expect(route.request().method()).toBe('GET');
+  const response=await route.fetch({maxRetries:1});
   return {response,body:await response.body()};
 }
 

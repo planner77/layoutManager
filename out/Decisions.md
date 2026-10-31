@@ -1,3 +1,58 @@
+## R5a 로컬 수용 / R5b 필수 계속 (2026-11-01)
+
+Manager가 최종 전체unit858·독립 QA General128·Greenfield17·Auth/Legacy 각1 및 type/lint/build PASS와 source review를 근거로 LOCAL R5a ACCEPT / STACKED DRAFT PR GO를 판정한다. Root는 최종 안전 검사·게시·새 CI를 담당한다. R5b 설계는 준비됐지만 구현 전이며 R5a 게시 이후 별도0.54 branch에서 구현 GO한다. #91 전체 완료·현장·병합·배포를 뜻하지 않는다. 실제 로그/잔여는 TestReport/TestPlan을 따른다.
+
+## R5b Memo GET 인가 envelope 호환 확장 (2026-11-01)
+
+Root와 Manager가 기존 Memo GET 및 typed-outline-read를 검토했다. Session 전후만 같은 actor여도 조회 중 A→B→A를 구분하지 못하므로 R5b에서 기존 Memo GET 응답에 실제 actor/Version/SHA/Scene envelope를 추가한다. 기존 목록 필드·Viewer 호환을 보존하고 같은 transaction의 인가/목록 및 응답 전 재확인을 요구한다. 새 route·DB Schema·쓰기 정책 변경은 없으며 actorId는 export artifact에서 제외한다. 상세 계약은 Architecture, 음성/호환 회귀는 TC-R5B-04다. R5a runtime은 변경하지 않는다.
+
+## R5b annotation 배치 확정 / 단계별 UI gate (2026-11-01)
+
+Root와 Manager가 Memo 배치를 확정했다. 현재 증명된 WCS anchor는 보존하고 label plane은 명시적인 fontHeightMetres에 비례하는 고정 WCS offset으로 배치한다. 기존 CSS labelOffset은 무시하며 화면에 교환 파일의 별도 label 배치임을 설명한다. CSS offset을 metadata에도 복사하지 않는다. 현재 clientToWcs가 viewport 바깥을 거부하므로 screen-offset roundtrip이나 새 camera API를 추가하지 않는다. 숨김/offscreen Memo의 명시 export를 안정적으로 지원하는 정책이며 작업 중 카메라 변경은 기존 getEpoch로 무효화한다.
+
+R5a는4개 General 및4개 authority(+2 prerequisite) Browser 후보와 기존 전체 회귀를 통과해야 한다. Native fullscreen에서의 최종 Memo 혼합 UX, Browser 비중단 인코더 취소/중복 job/BlobURL cleanup 및 반복 heap 관측은 **R5b 필수 gate**로 이관한다. R5a core의 cancellation/disposal unit 결과를 그 Browser 증거로 대체하지 않는다. R5a 게시 뒤에도 #91 목표와 해당 미검증 항목은 남는다.
+
+## R5b 설계 준비 — 구현은 R5a gate 이후 (2026-11-01)
+
+Root 요청에 따라 visible Memo export의 요구사항·snapshot/authority/font/자원 seam·TC-R5B-01–10을 기존 상세 문서에 작성했다. 기존 Memo projection에는 자체 revision 필드가 없으므로 current Memo row+projection proof를 묶어 fresh DTO와 비교하는 explicit collector가 필요하다. Actor/DB locator 제외, actual PNG texture+pin/leader 및 Loader/render 증거를 요구한다. 현재는 **DESIGN READY / IMPLEMENTATION NOT STARTED**이며 R5a Browser 결함 수정·실제 전체 gate·게시 후 새0.54 stacked branch에서 별도 구현 GO를 전달한다. 두 Unit을 합쳐 #91 전체 목표를 유지한다.
+
+## R5a Browser 동결 / R5b metadata 후속 (2026-11-01)
+
+Root의0.53.0 production build와 focused authority11 PASS/213ms를 기준으로 General3410 및 Greenfield3411 실제 Browser 검증을 진행한다. Runtime 변경은 실제 결함과 필요한 재build 후에만 반영한다. generated-only export의 명시 Version/SHA scene extras는 현재 R5a 단위/원점/축 계약을 막는 결함으로 보지 않고 R5b metadata 후속으로 기록한다. #91 최종 문서/검증에서 Actor/locator 없이 일관된 출처 metadata를 확인한다.
+
+## R5a core 독립 QA 수용 / UI 통합 gate 진행 (2026-11-01)
+
+Manager는 Developer 완료·source 재작업·독립 QA 결과를 근거로 **CORE INTEGRATION ACCEPT**를 판정한다. 독립 QA 자체 실행은 `/tmp/layoutmanager-r5a-qa-focused.log`의1 file/7 PASS,414ms와 `/tmp/layoutmanager-r5a-qa-lint.log` focused ESLint exit0이다. core+QA29 PASS는 앞선 재검증 기록과 일치한다. QA는 추가 core blocker가 없다고 보고했다. Nested/repeated BLOCK의 legacy/READY baseline, MultiPolygon/hole area·색·계층, Sprite 제외, group 확장 복사 전 차단, exporter 대기 중 취소 후 dispose를 별도로 검증했다.
+
+전체 기능/게시 수용은 아직 아니다. Root의 UI/현재 actor·서버 조회 Browser 회귀, 전체 정적/unit/build, 일반 CAD·Greenfield gate와 최종 합성 performance/lifecycle 증거가 남았다. 실 DXF/GPU/현장 검증은 NOT RUN이다. 개별 inventory `supported:true`여도 선택 조합의 aggregate budget은 prepare에서 명시 거절될 수 있다. R5b Memo는 다음 필수 Unit이며 #91을 R5a로 종료하지 않는다.
+
+## R4 원격 CI 통과 / R5 의존성 해제 (2026-11-01)
+
+Root가 정확 R4 `458d3da6257b0d9a9cbabdd2f60a74d44860fef4`의 [CI41233433577](https://github.com/planner77/layoutManager/actions/runs/41233433577)을 확인했다. Docker Job124632163549와 Verify Job124632163786 모두 completed/SUCCESS다. Verify 실제 로그: Unit124 files/815 tests, 일반 Chromium124 PASS(8.9분), Auth1 PASS(8.7초, CI native clock), Greenfield13 PASS(1.9분), Legacy1 PASS(10.0초). Draft PR183은 draft/mergeable이며 본 기록은 병합·배포를 의미하지 않는다.
+
+Manager는 R4 원격 CI 의존성 조건을 해제하고 **R5 IMPLEMENTATION GO**를 유지한다. R5의 새 코드·시험·독립 QA는 별도 gate다. 이 milestone은 R5 작업 문서에만 기록하고 검증된 clean R4 worktree를 변경하지 않는다.
+
+## R5a 구현 GO — 표시 레이어·스타일·SSR 경계 확정 (2026-11-01)
+
+Manager가 R5 요구사항/Architecture/TC-R5-001–008·012 계약을 검토하고 **조건부 IMPLEMENTATION GO**를 기록한다. R4 CI의 실제 실패가 확인되면 의존성 HOLD로 전환한다. Developer는 순수 모델·read snapshot·encoder·Loader 시험, Root는 modal·인가 재검사·download coordinator·Browser 시험을 맡는다. 코드 완료 뒤 Manager 검토와 독립 QA가 필요하며 현재 R5 실행은 NOT RUN이다.
+
+Layer는 기존 표시 렌더 레이어로 정의하고 mixed-BLOCK 내부 Layer의 정확한 원본 분할은 보장하지 않는다. READY coverage unknown 및 스타일 손실을 공개하고 부분 산출 acknowledgement를 요구한다. GLTFEncoder는 client-event dynamic import, 서버/DB/영속 Scene format 변경 없음으로 확정한다. R5a 게시로 #91을 닫지 않으며 R5b Memo 구현·검증은 필수 후속이다. 상세 계약은 Architecture와 TestPlan을 단일 기준으로 유지한다.
+
+## R5 #91 — 구현 전 ADR/Unit 경계 (2026-11-01)
+
+1. **분리:** R5a0.53.0은DXFbaseline/확정local+인가serverOutline/GLB+singleembeddedglTF/단위·누락·권한·Loadercore, R5b0.54.0은Memovisibleannotation/metadata·혼합UX·최종수명주기다. 둘다필수이며R5a게시로#91을닫지않는다. Root/Developer파일경계는Architecture를따르고Manager계약확인전app코드변경은없다.
+2. **DXF baseline:** issue의`DXF원본`의미에맞춰SceneAsset의immutablelocalmatrix로원래BLOCK/INSERT배치를내보낸다. 임시SceneWork이동·회전·hide제외를UI에명시하고liveViewer를reset하지않는다. Generated는현재확정effectivegeometry다. 화면숨김과명시export포함은독립이며onlyVisible=false를정제된scene에만사용한다.
+3. **교환정확도:** 기존renderergeometry를읽기전용snapshot으로쓰며원본CAD를완전히지원했다고주장하지않는다. READYSourcecoverage불명은null/partialack,알려진render제외는Layer/reason/count로공개한다. 새Sourceparser/권한추정/wholeScene직렬화는하지않는다.
+4. **표준과installed차이:** Khronos의미터·Y-up오른손계와MIME를적용한다. 실제three0.171.0 exporter의binaryfalse는JSONobject/dataURIbuffer이고true는ArrayBuffer다. HTMLCanvasimageembedding경로를검증하며현재web문서의반환type을복사하지않는다. JSONv2의편집복원기능과GLB/glTF교환을분리한다.
+5. **현재인가:** 공개 Source/local-only는 ACTIVE 익명과 OFF/BLOCKED에서도 허용한다. 보호된 Version/Site/Outline GET 및 새 원본 GET으로 local-only를 게이트하지 않는다. 서버 Outline 선택 시에만 fresh Session+보호된 Outlines200/revision을 전후 검증한다. 조회 거부는 그룹 비활성+사유, 선택 후 실패는 job 폐기이며 cached/false-empty 대체는 없다. 기존 Reader/owner 정책과 #172 경계는 유지한다.
+6. **성능/취소:** ownedsnapshot/64MiB추정·32MiB결과/250kvertex보호한도를두고실측한다. exporter에hardAbort가없는구간은취소요청과결과폐기를구분하고singlejob/최종cleanup을보장한다. R4의미해결heap추세를이기능의누수없음근거로쓰지않는다.
+
+UI 설계는ui-ux-pro-max의modal keyboard focus/visiblefocus/좁은화면기준을참조하고기존Viewer스타일을유지한다. 상세지원표와순수계약/TC가동일조건으로기록된후Developer core/API 및RootUI를진행한다. 현재설계단계이며실제R5구현·테스트/PR는NOTRUN이다.
+
+## R4 게시 milestone / R5 조건부 착수 (2026-11-01)
+
+Root가R4 `458d3da6257b0d9a9cbabdd2f60a74d44860fef4`(tree `0cbb6b523985ae0cac23e84aea514e53602b742f`, parentf179d596)를게시하고 [Draft PR183](https://github.com/planner77/layoutManager/pull/183)을열었다.40개파일의remote blob/tree·환경remote·Secret0/금지산출물0·package/lock0.52.0검사와publicfetch/FF/clean을확인했다. [CI41233433577](https://github.com/planner77/layoutManager/actions/runs/41233433577)은진행중이며성공주장은없다. R5worktreeHEAD도458d3da를확인했고기존root사용자변경2개와cleanR4는보존한다. pending중설계/조건부구현은허용하되실제R4CI실패시R5HOLD한다. merge·Issue종료·release/배포는없다.
+
 ## R4 로컬 수용·Draft PR GO — 성능/heap 잔여 공개 (2026-11-01)
 
 Manager는 최종 기능 회귀·독립 QA·실제 계측을 검토해0.52.0의 **LOCAL FUNCTIONAL + MEASUREMENT ACCEPT / DRAFT PR GO**를 판정한다. R4-REQ5는16.7ms 대비 실제 frame/heap/dispose 계측을 요구하며 현장 SLA 합격을 전제하지 않는다. 측정 결과 p95초과와10k 두 번째dispose heap 증가16,804,276bytes를 공개하고 원인/장기 누수 여부는 미해결로 유지한다. Inspector handler와 Canvas handle 명시 해제 후에도 남은 추세를 숨기거나 leak-free로 표현하지 않는다.

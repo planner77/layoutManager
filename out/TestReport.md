@@ -1,3 +1,118 @@
+## R5a 최종 로컬 수용 — LOCAL ACCEPT / STACKED DRAFT PR GO (2026-11-01)
+
+Manager는 최종 product snapshot, source 재검토, 독립 QA 최종 보고 및 아래 실제 로그를 근거로 **LOCAL R5a ACCEPT / STACKED DRAFT PR GO**를 판정한다. 후보0.53.0, 기반 R4 `458d3da`, export worktree의 미커밋 변경 기준이다. 독립 QA는 별도 core/General 검증을 담당했고 Root는 authority/UI 통합 및 전체 gate를 실행했다. 지정 모델 대행 및 실제 역할은 아래 개발 이력을 따른다.
+
+| 실행 | 실제 결과 / 근거 |
+| --- | --- |
+| 최종 전체 unit/integration |127 files /858 PASS /0 FAIL,422.47초, exit0. `/tmp/layoutmanager-r5-all-unit-final.log` |
+| 독립 QA 전체 General Browser |128 PASS /0 FAIL,14.7분. `/tmp/layoutmanager-r5-uiqa-general.log`; focused4도 같은 전체 실행에 포함 |
+| 독립 QA focused exchange Browser |4 PASS,25.3초. `/tmp/layoutmanager-r5-uiqa-focused2.log`; 별도 실행이므로 전체128에 합산하지 않음 |
+| 최종 전체 Greenfield Browser |17 PASS,4.2분. `/tmp/layoutmanager-r5-greenfield-final2.log`; first-install2 및 exchange authority4 포함 |
+| Runtime Auth / Legacy Browser |각1 PASS,각각 전체18.2초/25.9초. `/tmp/layoutmanager-r5-runtime.log`, `/tmp/layoutmanager-r5-legacy.log`; 각각 별도 suite |
+| 최종 정적 / production build |typecheck PASS(`/tmp/layoutmanager-r5-types-last-tests.log`), lint0 errors/기존9 warnings(`/tmp/layoutmanager-r5-all-lint-final.log`), foreign Three guard 포함 build exit0(`/tmp/layoutmanager-r5-build-foreign-fixed.log`) |
+| 수정 집중 회귀 |foreign Three core+QA31 PASS762ms; real hash 중 clock rollback 거부 및 원복 포함 Greenfield unit8 PASS11.19초(`/tmp/layoutmanager-r5-greenfield-unit-fixed.log`) |
+
+Manager는 전체 unit/General 최종 로그를 직접 확인했고 QA의 test SHA-256은 `79f068982515a2689c135042c5496205bb0d2dfe9112248676568758f0a9626a`다. QA 포트3410은 종료됐다. 첫 전체unit856 PASS/1 FAIL 및 Greenfield16 PASS/1 FAIL, 초기 foreign geometry 결함과 재시험은 FailureLedger에 유지한다. 이후 test-only fixture 보완은 production auth guard를 완화하지 않았다.
+
+TC-R5-001–008/012의 R5a core·일반/인가 Browser 범위를 수용한다. Native fullscreen, Browser 비중단 인코더 취소·중복·BlobURL/반복 heap, visible Memo, 명시 Version/SHA extras·renderer 정밀도 고지 및 거부된 private 선택 복구 UX는 **R5b 필수 후속**이다. 실 CAD/GPU/2PC·현장 수용은 NOT RUN이며 #91을 종료하지 않는다. 최종 staged/secret/remote/exact-tree 검사·commit/push/Draft PR/새 CI는 Root가 후속 수행하고, 이 로컬 판정은 게시·병합·GHCR·배포 완료가 아니다.
+
+## R5a 권한 거부 뒤 선택 복구 UX 잔여 (2026-11-01)
+
+Root source review상 이미 선택한 서버 그룹이 안정된 Site403을 받으면 private inventory/headers는 제거되지만 dialog의 선택 key가 남아 다음 prepare에서 다시 missing-server 오류가 날 수 있다. 파일/데이터 노출은 없으며 사용자가 Generated 포함을 해제하거나 창을 다시 열면 공개 Source 내보내기가 가능하다. R5a runtime은 동결을 유지한다.
+
+R5b에서는 Outline/Memo 공통으로 unavailable private key를 정리하고 생존 local 선택을 보존하며 부분 동의를 무효화하는 복구 UX를 필수 검증한다. 현재 한계를 숨은 자동 local 선택 확장이나 서버 실패의 빈 성공으로 처리하지 않는다.
+
+## R5a 정밀도 고지 잔여 — R5b 필수 후속 (2026-11-01)
+
+최종 source 검토에서 inventory warnings에는 Source coverage와 BLOCK 안내만 있고, renderer가 이미 잃은 좌표 정밀도를 복구하지 못한다는 문구는 dialog/artifact warning에 아직 없음을 Root가 확인했다. Operation의 문서 제약은 존재하며 `maxQuantizationError`는 현재 renderer snapshot 대비 export의 추가 Float32 오차다. 원본 CAD 정밀도 보장/실 CAD SLA는 검증하거나 주장하지 않는다.
+
+Manager는 R5a의 nonblocking disclosure limitation으로 공개하고 Architecture의 구현 완료처럼 읽히던 문구를 바로잡았다. R5b에서 명시 Version/SHA metadata와 함께 dialog·artifact precision warning을 반드시 추가·검증한다. 활성 R5a Browser runtime은 이 문서 보완으로 변경하지 않았다.
+
+## R5b font 사전 조사 — 구현/렌더 검증 아님 (2026-11-01)
+
+Root가 읽기 전용으로 설치된 opentype.module의 parse와 bundled NanumGothic font를 확인했다. TTF2,054,744bytes, unitsPerEm1000, glyphs13,297이며 실제 glyph index는 한2705/글647/A33/공백13296, emoji😀0이었다. Font coverage lookup 계획의 설치 호환성 근거이며 Canvas/PNG/GLTF texture나 실제 한글 렌더 PASS가 아니다. Emoji 등 glyph0은 R5b에서 명시 지원 불가 오류로 처리한다. R5b runtime 파일은 아직 작성하지 않았다.
+
+## R5a 수정 candidate General 집중 GREEN / 최종 source 검토 (2026-11-01)
+
+Manager가 `/tmp/layoutmanager-r5-uiqa-focused2.log`를 직접 확인했다.0.53.0 수정 production build의 독립 General 집중 시험은 **4 PASS,25.3초**다. Hidden B의 명시 선택 GLB+embedded glTF 다운로드·새 Loader·MIME·단위/좌표5.7초, Source/Generated OFF·protected read0은3.4초, unknown 단위 수동 지정·320px·cancel/reopen·ESC/focus3.4초, Generated 선택·유효 Translate/Rotate·selection/history 불변4.9초다. 원래 foreign geometry Browser FAIL는 별도 실패 이력으로 유지하며 이 새 실행에서 해결을 확인했다.
+
+Manager는 Root의 authority/hook/modal/Viewer 최종 source도 독립 검토했다. 공개 local-only와 명시 서버 opt-in 경계, 전후 actor/scope/row fingerprint, network/JSON 실패의 private state 제거, DTO whitelist, scope/query/close 취소·finally mutex, retry reset/로컬 선택 유지, zero-supported preview와 download 차단에 추가 blocker가 없었다. Native fullscreen·Browser 비중단 인코더 cancellation/중복/URL/heap의 R5b 미검증을 source 검토로 PASS 처리하지 않는다.
+
+Root 수정 build exit0(`/tmp/layoutmanager-r5-build-foreign-fixed.log`), whole lint0 error/기존9 warning 및 typecheck PASS를 확인/보고받았다. Root Runtime Auth1 PASS(시험14.4초/전체18.2초), Legacy1 PASS(시험3.5초/전체25.9초)는 별도 실행이다. 전체 General128·Greenfield17·whole unit은 진행 중이며 최종 결과를 기다린다.
+
+## R5a foreign Three guard 수정 source 수용 (2026-11-01)
+
+Manager가 실제 수정 diff와 `/tmp/layoutmanager-r5a-foreign-core-qa.log`의 **2 files/31 PASS,762ms**를 확인했다. Installed three-dxf-viewer의 실제 getFromPath LINE은 app BufferGeometry instanceof=false지만 isBufferGeometry=true였다. 새 구조 검증은 required geometry/attribute API와 typed storage를 확인하며 기존 finite/index/arity/material/group/planarity/budget 검사를 유지한다. 단순 flag-only 위조는 제외한다. 실제 라이브러리 객체를 사용하는 회귀를 추가했고 Manager가 source repair를 수용했다.
+
+수정 포함 production rebuild·전체 unit은 Root가 시작했으며 아직 결과를 확인하지 않았다. General attempt5의 실제 Browser FAIL는 이 focused 결과로 PASS 재분류하지 않고 수정 build에서 별도 재시험한다. 최종 수용 gate는 TestPlan checklist를 따른다.
+
+## R5a General Browser 실제 결함 — legacy DXF geometry 제외 (2026-11-01)
+
+QA attempt5의 실제 three-dxf-viewer DXF A/B/C에서 B 레이어를 화면에서 숨긴 뒤 B만 명시 export했다. Inventory에는 B1개가 있지만 preview는 지원0/제외1·`UNSUPPORTED_GEOMETRY`를 표시하고 download를 차단했다. `/tmp/layoutmanager-r5-ui-attempt5.log`와 attempt5-results의 error-context/trace를 보존했다. Manager는 visibility filter를 원인으로 단정하지 않고 실제 제외 코드를 확인했다. 현재 guard의 `geometry instanceof THREE.BufferGeometry`가 library의 별도 Three constructor와 충돌하는 가능성을 Root/Developer에게 전달했다. 합성 core29 PASS가 실제 library 객체 경로를 검증한 것으로 확대되지 않는다.
+
+Root3411 시험과 공유 build가 활성화된 동안 runtime 수정·재build는 대기한다. Source download case는 수정 후보에서 재시험해야 하며 R5a 전체 수용은 진행 중이다. 별도의 Generated transform/export/history Browser case는 PASS3.3초, 신규 QA spec 타입 오류 수정 후 typecheck PASS(`/tmp/layoutmanager-r5-ui-types-final.log`)다.
+
+## R5a UI 소스 독립 검토 — Browser 실행 전 (2026-11-01)
+
+독립 QA가 hook/authority/modal/Viewer 연결을 읽기 전용으로 검토했다. 기본 로컬 open은 공개 runtime/session 조회만 수행하고 서버 그룹 opt-in 뒤 보호된 GET을 실행한다. Actor·서버 scope/revision의 전후 재검사, 실패 시 private 목록 제거, 취소·scope 변경의 abort와 cleanup까지 유지되는 job mutex, artifact metadata whitelist가 source에서 확인됐다. 실제 Browser 수용 결과를 뜻하지 않는다.
+
+발견된 UX 보완: 지원 불가 형상만 선택하면 inspect가 산출한 Layer별 제외 사유를 버리고 generic zero-shape 오류만 표시하는 경로가 있다. Manager가 Root에 zero-supported preview/제외 사유를 보존하며 download를 차단하도록 지시했다. ESC/focus trap·복귀/320px/fullscreen 및 native-select Escape는 Browser 시험 대상으로 남겼다. 이 단계에서 별도 Browser/build를 실행하지 않았다.
+
+## R5a core 독립 QA 수용 / UI 통합 gate 진행 (2026-11-01)
+
+Manager는 Developer 완료·source 재작업·독립 QA 결과를 근거로 **CORE INTEGRATION ACCEPT**를 판정한다. 독립 QA 자체 실행은 `/tmp/layoutmanager-r5a-qa-focused.log`의1 file/7 PASS,414ms와 `/tmp/layoutmanager-r5a-qa-lint.log` focused ESLint exit0이다. core+QA29 PASS는 앞선 재검증 기록과 일치한다. QA는 추가 core blocker가 없다고 보고했다. Nested/repeated BLOCK의 legacy/READY baseline, MultiPolygon/hole area·색·계층, Sprite 제외, group 확장 복사 전 차단, exporter 대기 중 취소 후 dispose를 별도로 검증했다.
+
+실제 역할 보완: core 동결 후 Root가 기존 Developer에게 새 `cad-exchange-dialog.tsx` 파일 구현 보조를 배정했다. Root는 hook/authority/Viewer/Browser 책임을 유지하며 core 소유권을 바꾼 것으로 기록하지 않는다.
+
+전체 기능/게시 수용은 아직 아니다. Root의 UI/현재 actor·서버 조회 Browser 회귀, 전체 정적/unit/build, 일반 CAD·Greenfield gate와 최종 합성 performance/lifecycle 증거가 남았다. 실 DXF/GPU/현장 검증은 NOT RUN이다. 개별 inventory `supported:true`여도 선택 조합의 aggregate budget은 prepare에서 명시 거절될 수 있다. R5b Memo는 다음 필수 Unit이며 #91을 R5a로 종료하지 않는다.
+
+## R5a core 재작업 재검증·Node 계측 (2026-11-01)
+
+Developer 수정 후 Manager가 `/tmp/layoutmanager-r5a-core-qa-final.log`를 확인했다. core22+독립 QA7은 **2 files/29 PASS,737ms**다. `/tmp/layoutmanager-r5a-core-types-final.log`의 typecheck 및 `/tmp/layoutmanager-r5a-core-lint-final.log`의 focused lint PASS를 Developer가 보고했다. Group별 정점 확장 상한을 복사 전에 계산하며 QA의 position-read spy0 회귀가 통과했다. unknown Source coverage의 partial 경고는 DXF 선택 시에만 적용해 generated-only에 무관한 동의를 요구하지 않는다. 독립 QA 최종 판정은 별도로 받는다.
+
+`npx tsx tests/benchmark/cad-exchange-benchmark.ts`를 통한 합성 Node 단일 실행 결과(`/tmp/layoutmanager-r5a-core-benchmark.log`)다. Browser/GPU/heap/현장 성능 증거 또는 반복 median으로 해석하지 않는다.
+
+| LINE 수 | 포맷 | bytes | serialize ms | 새 Loader ms |
+| --- | --- | ---: | ---: | ---: |
+| 100 | GLB | 4,336 | 11.37 | 3.96 |
+| 100 | glTF | 5,290 | 1.95 | 21.58 |
+| 10,000 | GLB | 281,552 | 29.08 | 1.65 |
+| 10,000 | glTF | 374,903 | 29.71 | 12.46 |
+
+추가로10,000개 별도 render object의 capture59.52ms/inspect13.03ms를 측정했다. 한 geometry에10k LINE이 든 앞선 네 행과 구분한다. Browser 통합·최종 전체 gate는 계속 진행 중이다.
+
+## R5a 독립 QA 재작업 — Material Group 복사 전 한도 (2026-11-01)
+
+독립 QA가 `npm test -- tests/unit/cad-exchange-qa.test.ts`를 실행해 **1 PASS/1 FAIL,491ms**를 보고했다. 별도 로그는 이 첫 실행에서 저장하지 않았고 failing regression 파일을 보존했다. Sprite 제외 표시는 PASS. 실패는 150,000개 원본 정점을 두 material group이 각각 참조하는 indexed Mesh(300,000 indices)에서 발생했다. 사전 한도는 원본150k만 세지만 export snapshot은 group별 복사로300k가 되어250k 상한을 넘는다. 최종 reject는 있으나 이미 복사가 끝난 뒤이며, getX spy450,001회(검증150k+복사300k)로 입증했다.
+
+Manager는 TC-R5-007의 **복사 전 한도 위반**으로 판정하고 Developer에 group 확장 후 정점 상한을 사전 계산하는 재작업을 지시했다. QA 회귀는 수정 후 재실행해야 하며 이전 core22 PASS가 이 실패를 덮지 않는다. R5 전체 수용/게시 gate는 진행 중이다.
+
+## R5a core Manager 검토 후 독립 QA 인계 (2026-11-01)
+
+Developer가 구현 완료와 source-review 재작업을 보고했고 Manager가 실제 source와 로그를 검토했다. `npx vitest run tests/unit/cad-exchange.test.ts`는 **1 file/22 PASS,469ms** (`/tmp/layoutmanager-r5a-core-unit.log`), `npm run typecheck` PASS (`/tmp/layoutmanager-r5a-core-types.log`), focused ESLint PASS (`/tmp/layoutmanager-r5a-core-lint.log`), `git diff --check` PASS다. 후보는 R4 `458d3da` 위 uncommitted R5 core이며 앱 버전은 아직0.52.0이다.
+
+반영된 보완: drawRange/array-one·multiMaterial, per-Layer 제외, Float32 이전 double triangulation/Euclidean error, 정점·인덱스·메모리 복사 전 한도와 후검사, 원본/추가개체 namespace, 선형 선택 검증, generated-all 누락 차단, r171 Lines/Points의 명시 KHR_materials_unlit. 독립 QA는 별도 agent에 core audit/추가 테스트를 지시했으며 **진행 중**이다. Root UI/Browser·전체 unit/build·R5 CI·실 CAD/현장 수용은 이22개 테스트로 완료를 주장하지 않는다.
+
+## R4 원격 CI 통과 / R5 의존성 해제 (2026-11-01)
+
+Root가 정확 R4 `458d3da6257b0d9a9cbabdd2f60a74d44860fef4`의 [CI41233433577](https://github.com/planner77/layoutManager/actions/runs/41233433577)을 확인했다. Docker Job124632163549와 Verify Job124632163786 모두 completed/SUCCESS다. Verify 실제 로그: Unit124 files/815 tests, 일반 Chromium124 PASS(8.9분), Auth1 PASS(8.7초, CI native clock), Greenfield13 PASS(1.9분), Legacy1 PASS(10.0초). Draft PR183은 draft/mergeable이며 본 기록은 병합·배포를 의미하지 않는다.
+
+Manager는 R4 원격 CI 의존성 조건을 해제하고 **R5 IMPLEMENTATION GO**를 유지한다. R5의 새 코드·시험·독립 QA는 별도 gate다. 이 milestone은 R5 작업 문서에만 기록하고 검증된 clean R4 worktree를 변경하지 않는다.
+
+## R5a 구현 진행 / Manager 중간 검토 (2026-11-01)
+
+공유 TypeScript bridge를 먼저 작성하고 Root UI와 Developer core 구현을 시작했다. Manager가 bridge에서 실제 `DXF_INSUNITS_<code>` 단위 문자열, 서버 geometry/revision을 포함하는 부분 동의 fingerprint, Layer별 제외 사유/스타일 손실 보고서를 확인·보완 지시했다. 공개 CAD 정책과 충돌하던 local-only Version/Site 인가 요구를 수정했다. ACTIVE 익명 및 OFF/BLOCKED Source/local Generated는 공개 로컬 범위이며 서버 Outline 선택에만 보호된 fresh 조회를 적용한다.
+
+초기 source 검토에서 drawRange/material group, 비평면/유효 attribute 제외, READY 전체 baseline, Generated의 Float32 변환 이전 정밀도 검사, 실패 중 owned geometry 해제 보완을 Developer에게 전달했다. 이는 아직 최종 검증 또는 수용 결과가 아니다. R5 정적/전체 unit/build/Browser/Loader/독립 QA는 **NOT RUN**, 구현 완료 후 실제 결과를 기록한다. R4 CI는 Root가 별도로 관측 중이며 이전 local PASS를 R5 결과로 승계하지 않는다.
+
+## R5 #91 — 분석/설계 착수, 구현 NOT RUN (2026-11-01)
+
+Manager가현재Issue91전체/기존README·AGENTS·version/log/Requirements·Architecture·Database·Decisions·TestPlan을읽고R5a0.53.0/R5b0.54.0경계와TC-R5-001–012를기록했다. 현작업HEAD는R4 `458d3da`,앱은아직0.52.0이다. R5코드/build/unit/Browser/Loader/field는모두NOT RUN이다. 실제installedthree0.171.0source확인과공식문서조사를지원PASS로기록하지않는다.
+
+재사용발견: production Scene은THREE_JSON/CUSTOM_DTO·immutableSceneAsset, test-only scene-poc에GLTFExporter/Loader실험이있다. productionexportreadAPI/선택snapshot은아직없다. READYSourcecoverage총량은확인불가일수있으며원본Entity0/100%를추정하지않는다. bundledNanumGothicTtf를MemoHTMLCanvas계획에사용한다. primitive/texture/양포맷Loader의실제결과는후속Unit에서기록한다.
+
+R4게시후상태: [Draft PR183](https://github.com/planner77/layoutManager/pull/183), source458d3da/tree0cbb6b5/40파일safeauditPASS·R4clean, [CI41233433577](https://github.com/planner77/layoutManager/actions/runs/41233433577)진행중. 아래R4local기록의당시미게시문장은이후게시기록으로보완하며원격PASS·field·성능해결로확대하지않는다. R5새worktree에서만이기록을추가하고cleanR4를변경하지않았다.
+
 ## R4-20261101 — #174 메모 스냅 0.52.0 후보 로컬 수용
 
 **Manager 판정: LOCAL FUNCTIONAL + MEASUREMENT ACCEPT / DRAFT PR GO.** R4-REQ1–5 → TC-R4-001–010의 구현·합성 기능·실제 계측 범위를 수용한다. `feat/issue-174-memo-snap-20261101`, 기반 R3 `f179d596`, package/lock0.52.0 후보이며 아직 R4 commit/PR/원격 CI는 없다. #174는 성능·잔여 heap 원인·현장 검증이 남아 OPEN을 유지한다. Frame SLA나 장기 memory leak-free, 실 CAD/GPU/2PC, release/GHCR/운영 배포를 수용한 판정이 아니다.

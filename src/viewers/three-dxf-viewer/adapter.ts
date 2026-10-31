@@ -34,6 +34,8 @@ import {
 } from '../../domain/generated-document';
 import {SceneWorkDocument,type SceneWorkCommand,type SceneWorkState} from '../../domain/scene-work';
 import type {MemoSnapTarget,SnapPoint} from '../../domain/memo-session-snap';
+import type {ExchangeSelection} from '../../domain/cad-exchange';
+import {captureExchangeBaseline,exchangeInventory,captureExchangeSnapshot as captureExchangeData,type ExchangeBaseline} from './exchange-snapshot';
 
 function release(group: THREE.Object3D) {
   const geometries = new Set<THREE.BufferGeometry>(), materials = new Set<THREE.Material>(), textures = new Set<THREE.Texture>();
@@ -55,6 +57,9 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
   private resize: ResizeObserver;
   private object?: THREE.Group;
   private sceneAsset?:SceneAsset;
+  private exchangeBaseline?:ExchangeBaseline;
+  private exchangeScope?:SceneScope;
+  private exchangeEpoch=0;
   private sceneArtifact?:SceneArtifact;
   private sceneTextIndex?:CadTextIndex;
   private disposed = false;
@@ -219,7 +224,8 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
         this.document?.setSourceUnit(sourceUnitFromDxf(text));
       if(this.outline && validCanvasScope(this.outline))
         this.sceneAsset=tagImportedTree(object,sceneScope(this.outline.versionId,this.outline.sourceSha256,sourceUnitFromDxf(text)));
-      this.object=object;this.scene.add(object);this.bounds.setFromObject(object);
+      this.object=object;this.exchangeBaseline=captureExchangeBaseline(object);this.exchangeScope=this.sceneAsset?.scope;this.exchangeEpoch++;
+      this.scene.add(object);this.bounds.setFromObject(object);
       if(!this.bounds.isEmpty() && ![...this.bounds.min.toArray(),...this.bounds.max.toArray()].every(Number.isFinite)) throw new Error('유효하지 않은 도형 좌표');
       this.fitToView();this.render();
       if(this.outline&&this.sceneAsset)this.initializeRenderWork(this.sceneAsset.scope);
@@ -256,6 +262,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     const object=await restoreSourceScene(source.bytes,source.manifest,source.manifest);
     if(this.disposed){release(object);throw new DOMException('취소됨','AbortError');}
     this.object=object as THREE.Group;
+    this.exchangeBaseline=captureExchangeBaseline(object);this.exchangeScope=source.manifest.scope;this.exchangeEpoch++;
     this.scene.add(object);this.bounds.setFromObject(object);
     if(!this.bounds.isEmpty()&&![...this.bounds.min.toArray(),...this.bounds.max.toArray()].every(Number.isFinite))throw new Error('SCENE_BOUNDS_INVALID');
     this.sceneTextIndex=storedSceneViewerData(source.bytes)?.textIndex;
@@ -300,6 +307,15 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
   getLayers() {
     const names=new Set<string>();this.object?.traverse(o=>{const layer=o.userData.cadLayer??o.userData.entity?.layer;if(typeof layer==='string') names.add(layer);});
     return [...names].sort();
+  }
+  getExchangeInventory(){
+    if(this.disposed)return null;
+    return exchangeInventory(this.object,this.exchangeBaseline,this.exchangeScope,this.getGeneratedObjects(),this.exchangeEpoch);
+  }
+  captureExchangeSnapshot(selection:ExchangeSelection){
+    if(this.disposed)throw new Error('Viewer가 종료되었습니다.');
+    const inventory=this.getExchangeInventory();
+    return captureExchangeData(this.object,this.exchangeBaseline,inventory,selection,this.getGeneratedObjects());
   }
   showLayer(name:string,visible:boolean) {
     if(visible)this.visibleLayers.add(name);else this.visibleLayers.delete(name);
@@ -521,6 +537,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
    * release all replaced/removed GPU buffers, never reparse the SOURCE index. */
   private documentChanged(){
     if(this.disposed)return;
+    this.exchangeEpoch++;
     const objects=this.document?.getObjects()??[];
     const present=new Set(objects.map(item=>item.savedOutlineId));
     for(const [id,group] of this.savedGroups){
@@ -958,7 +975,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
          op.type==='Translate'?{...op}:{...op,pivot:[...op.pivot] as [number,number]}),
        edited:item.edited,dirty:item.dirty,
       sourceEntityIds:[...item.baseResult.sourceEntityIds],kind:item.kind,
-      name:item.name||'외곽선 '+item.savedOutlineId.replace(/^local-/,''),outlineTypeId:item.outlineTypeId,
+      name:item.name||'외곽선 '+item.savedOutlineId.replace(/^local-/,''),outlineTypeId:item.outlineTypeId,outlineTypeName:item.outlineTypeName,
     }));
   }
   getSavedOutlineStates():SavedOutlineOverlayState[]{
@@ -1038,6 +1055,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     this.intrinsicSceneVisibility.clear();
     this.controls.removeEventListener('change',this.cameraChanged);
     this.sceneArtifact=undefined;this.sceneTextIndex=undefined;
+    this.exchangeBaseline=undefined;this.exchangeScope=undefined;this.exchangeEpoch++;
     this.controls.dispose();if(this.object)release(this.object);this.scene.clear();
     this.renderer.dispose();this.renderer.forceContextLoss();this.renderer.domElement.remove();
   }
