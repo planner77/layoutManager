@@ -1,3 +1,9 @@
+## #138 통합 구현 후보 (2026-10-31, v0.47.5)
+
+이전 2026-10-27 문서-only 및 #85 Memo 전용 구현 기록은 역사적 단계이다. 현재 후보는 단일 MovableViewerPanel을 layers/outlines/memos/tools/search에 적용한다. 제목 Drag Handle+CSS px Clamp+Reset+키보드/ESC, 각 Drawer의 초기 edge/독립 z-order·동일 세션 위치, 320px 모바일 단일 Modal, Canvas DOM/Source lifetime 불변을 유지한다. Text Search는 workspace sibling이고 내부 query/결과/카메라 상태를 닫기·재열기 동안 유지한다. 별도 Renderer·Auth/DB 기능은 변경하지 않는다. 상세 [Issues137-139](Issues137-139.md). PR CI/실 현장 시험은 미완료.
+
+---
+
 ## #88/#90 Viewer Memo 검색 UI 적용 (2026-10-31)
 
 Viewer `작업 > 메모 검색`은 #85 기존 Tree/MovableViewerPanel을 열고 해당 검색 Input으로 포커스한다. 독립 검색 모달이나 별도 드래그 핸들을 생성하지 않는다. Drawer/compact 정책 및 캔버스 생명주기, #138 Title Handle/position preservation은 현재 M4 구현을 재사용한다. 홈 `/?target=memos`는 Viewer 보조 패널 범위 밖의 독립 검색 화면이다. 설계와 미실행 수용 [Issues88-90](Issues88-90.md).

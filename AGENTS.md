@@ -1,3 +1,11 @@
+## #139/#138/#137 단일 Viewer PR 후보 (2026-10-31)
+
+- 구현 순서: #139 DXF 텍스트 UTF-8/CP949 판정 수정 → #138 공통 이동 패널 Layer/Outline/Tools/TEXT 확장 → #137 좌상단 도면 전체 목록 이동 및 미저장 confirm. 설계 [Issues137-139](out/Issues137-139.md), 정책 [ViewerPanelPolicy](out/ViewerPanelPolicy.md).
+- 루트 DESIGN.md는 존재하지 않으며 out/Architecture.md, out/Decisions.md를 참조한다. Canvas/Scene/Worker·GET 재생성, WCS/Undo에 패널 좌표 유입, DXF 원본 변경 및 G7/DB 권한 우회 금지.
+- 후보 소스와 합성 테스트는 등록되었으나 로컬 Test/PR CI·실 사용자 DXF·GHCR/현장 수용은 미검증. 정확 HEAD CI 성공, 미해결 리뷰 스레드 0, 충돌 0 확인 후에만 후속 병합/게시/Issue 종료를 판단한다.
+
+---
+
 ## #88/#90 PR #176 v0.47.4 Owner Managed GHCR 최종 검증 (2026-10-31)
 
 - 최신 [실패 원장](out/FailureLedger.md)의 `PR #176 final PR/Owner Managed merge, v0.47.4 GHCR paired release SUCCESS` 절을 최종 증거로 참조. [PR CI #349](https://github.com/planner77/layoutManager/actions/runs/41158289254) 정확 HEAD `8af001ef...` Verify+Docker 모두 성공, P2 리뷰 해결 1/1·Main 충돌 0, [Squash `328bbdc0ca02649cc551a61962cec9e76816ccde`](https://github.com/planner77/layoutManager/commit/328bbdc0ca02649cc551a61962cec9e76816ccde) 완료.

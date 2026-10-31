@@ -1,3 +1,12 @@
+## #139 → #138 → #137 통합 후보 사전 실패/리스크 원장 (2026-10-31)
+
+- Branch: feat/issues-139-138-137-viewer-20261031. Main 기준 1a974448dc5fef5539e6d246cbd1ad30c6f46f73. Source commits: #139 d8fe1050, #138 21f7aa92, #137 896555f6, 합성 시험 9061417c. PR CI 및 로컬 Typecheck/Lint/Unit/E2E/Build NOT RUN; 과거 PR 성공을 새 HEAD 성공으로 오인 금지.
+- #139 위험: 구형 ANSI_949 헤더를 가진 실제 R2007+ UTF-8 여부 미확정; 실 DXF 비반출 현장검증 별도. #138 위험: 기존 Memo Tree/UI/ESC/focus/Canvas 재생성 및 검색 상태 회귀, 신규 합성 E2E 작성. #137 위험: 직접 URL history.back 실패와 로컬 작업 손실, href=/ + confirmDiscard를 적용.
+- 문서 갱신 자동 편집 스크립트 1회 로컬 JS 문자열 SyntaxError로 중단됨(원격 Tree/Commit 미생성); 분리된 안전한 편집으로 복구. 이 에러는 앱 CI 실패나 소스 실행 실패가 아니다.
+- 최종 HEAD PR CI 실행/검증 결과 및 Codex 리뷰/충돌은 별도 실제 증거로 갱신. GHCR/실 운영 변경 및 이슈 종료 수행하지 않음.
+
+---
+
 ## #88/#90 PR #176 — final PR/Owner Managed merge, v0.47.4 GHCR paired release SUCCESS (2026-10-31 KST)
 
 ### Final verified source and review gate

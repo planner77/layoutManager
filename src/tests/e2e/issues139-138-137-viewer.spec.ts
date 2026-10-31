@@ -3,9 +3,17 @@ import {masterFields} from './master-helper';
 import {clickViewerCommand,clickViewerTestCommand} from './viewer-menu-helper';
 import {createTextSearchDxf} from '../fixtures/text-search-dxf';
 
-async function drawing(request:APIRequestContext,name:string){
+const sourceSquare=Buffer.from([
+  '0','SECTION','2','HEADER','9','$INSUNITS','70','4','0','ENDSEC',
+  '0','SECTION','2','ENTITIES',
+  '0','LWPOLYLINE','5','A1','8','EQUIP','90','4','70','1',
+  '10','0','20','0','10','100','20','0','10','100','20','100','10','0','20','100',
+  '0','ENDSEC','0','EOF','',
+].join('\n'));
+
+async function drawing(request:APIRequestContext,name:string,data=Buffer.from(createTextSearchDxf())){
   const created=await request.post('/api/cad-files',{multipart:{
-    file:{name:name+'.dxf',mimeType:'application/octet-stream',buffer:Buffer.from(createTextSearchDxf())},
+    file:{name:name+'.dxf',mimeType:'application/octet-stream',buffer:data},
     ...(await masterFields(request,{businessUnit:name,site:'viewer-movable',building:'A',floor:'1'})),
     registeredAt:'2026-10-31',makeCurrent:'true',deletePassword:'1234',
   }});
@@ -93,7 +101,7 @@ test('TC-137-01: visible first header list link works from direct Viewer URL wit
 });
 
 test('TC-137-02: local outline selection requires discard confirmation; cancel preserves Viewer',async({page,request})=>{
-  const file=await drawing(request,'viewer-discard-'+Date.now());
+  const file=await drawing(request,'viewer-discard-'+Date.now(),sourceSquare);
   await openViewer(page,file.id);
   await clickViewerTestCommand(page,'viewer-menu-outline-tool');
   const canvas=page.getByTestId('cad-canvas').locator('canvas');
@@ -102,7 +110,7 @@ test('TC-137-02: local outline selection requires discard confirmation; cancel p
   await page.mouse.down();
   await page.mouse.move(rect!.x+rect!.width-5,rect!.y+rect!.height-5,{steps:8});
   await page.mouse.up();
-  await expect(page.getByTestId('outline-selection-count')).toContainText('선택');
+  await expect(page.getByTestId('outline-selection-count')).toContainText('선택 1개');
   page.once('dialog',async dialog=>{expect(dialog.message()).toContain('임시 외곽선');await dialog.dismiss();});
   await page.getByTestId('viewer-back-to-list').click();
   await expect(page.getByTestId('cad-viewer-shell')).toBeVisible();
