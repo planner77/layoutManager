@@ -65,3 +65,12 @@ html:has([data-home-sticky='true']) { scroll-padding-top: calc(var(--home-nav-he
 [data-viewer-panel-dragging="true"] .viewer-drawer-grab { cursor:grabbing; }
 
 @media (max-width:767px) { .viewer-drawer-memos { height:auto; max-height:min(74dvh,60%); } }
+
+/* #138: workspace-level floating panels, original #127 edges and 320px compact dialogs. */
+.viewer-drawer-search { top:56px; right:12px; width:min(23rem,35vw); height:min(68dvh,620px,calc(100% - 68px)); max-height:min(68dvh,620px,calc(100% - 68px)); }
+@media (max-width:767px) {
+  .viewer-drawer-search,.viewer-drawer-layers,.viewer-drawer-outlines,.viewer-drawer-tools,.viewer-drawer-memos {
+    top:auto;bottom:0;left:0;right:0;transform:none;width:100%;height:auto;max-height:min(74dvh,60%);
+  }
+}
+

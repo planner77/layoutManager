@@ -1,3 +1,25 @@
+## PR #177 — Run 41163195588 E2E 한 건 실패 분석 및 보완 (2026-10-31)
+
+- Source SHA d706fac0702acd49b0c38efbaf8b2ed5e256b5a6, [PR CI 41163195588](https://github.com/planner77/layoutManager/actions/runs/41163195588) FAILURE: Docker Job 124425180875 SUCCESS; Verify Job 124425181116 Typecheck/Lint/Unit/Integration/OCI/DXF benchmark/Build PASS, Chromium 113 PASS/1 FAIL, G7 signed/Greenfield/Legacy migration SKIPPED.
+- Fail TC-127-DRAWER line 381: alertdialog active + background tools dialog inert, but aria-modal=true remains. No evidence that backend Delete or Drawer data changed. Fix 38db1af524e12e63e33c9064bc2d6ad13ffb02c6: shared modalBlocked across five Viewer panels and restore aria-modal after alertdialog close; original test adds two reactivation assertions.
+- Latest source CI PASS NOT VERIFIED, field DXF/GPU/2-PC remains NOT RUN. Do not merge/publish/close issues based on the old 113 passing tests. Detailed evidence: [FailureLedger](FailureLedger.md).
+
+---
+
+## PR #177 첫 PR CI 실패 후 보완 후보 상태 (2026-10-31)
+
+- [Run 41162108326](https://github.com/planner77/layoutManager/actions/runs/41162108326), HEAD 74be95eb77a3077c0b052ac8be53f19974b2dde4: Verify Job 124421702132 Typecheck SUCCESS, ESLint 2 blocking errors + 10 warnings FAILURE, Unit/Integration/Build/Chromium/G7 E2E SKIPPED. Docker Job 124421702420 SUCCESS.
+- Ref direct render callback/Next raw anchor를 JSX component/Next Link로 수정했고 Codex P1 ESC/Tab trap/Tools scroll 3건 각각 답변·Resolved. Targeted E2E 모바일 양방향 Tab, Escape, Tools scroll 추가했으나 **새 HEAD 기준 Unit/E2E/CI 아직 PASS 확인되지 않음**.
+- 실 회사 DXF 인코딩, GPU 및 두 대 PC 현장 시험은 NOT VERIFIED; 최신 Run ID와 실제 결과는 이후 별도 증거 기록에서 확인해야 한다.
+
+---
+
+## #139/#138/#137 v0.47.5 PR 후보 검증 상태 (2026-10-31)
+
+구현 및 합성 테스트 작성: source text-index strict decoder, generic movable Viewer panels, direct home navigation; Unit TC-139-01~04 및 Playwright TC-138-01/02·TC-137-01/02 추가. 기존 TC-TEXT, TC-U1/U2/U3, TC-M4 등 회귀 대상으로 지정. **현재 로컬 Typecheck/Lint/Unit/Build/Playwright/Docker 및 PR CI 모두 NOT RUN/NOT VERIFIED.** 실 회사 DXF/실 GPU/현장 2PC 수용은 별도. 차후 CI run/HEAD/job이 실제로 확인된 때에만 결과를 갱신한다. [Issues137-139](Issues137-139.md).
+
+---
+
 ## #88/#90 — PR CI #349, Main CI #100, GHCR v0.47.4 verification (2026-10-31 KST)
 
 - Exact PR candidate `8af001ef75378aef8214a998c5223e0cd327baf9`: [PR CI #349](https://github.com/planner77/layoutManager/actions/runs/41158289254) **completed/success**, Verify `124409862915` and Docker `124409862929` SUCCESS (Unit/Integration, compile/lint, production build, Chromium, signed G7/Greenfield/Legacy migration tests and image builds). Prior PR CI #343 lint and #345 Vitest `server-only` failures retained in FailureLedger.

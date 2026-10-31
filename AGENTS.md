@@ -1,3 +1,27 @@
+## PR #177 — #127 모바일 nested-modal 회귀 수정 (2026-10-31)
+
+- [두 번째 PR CI Run 41163195588](https://github.com/planner77/layoutManager/actions/runs/41163195588) 정확 HEAD d706fac0702acd49b0c38efbaf8b2ed5e256b5a6: Docker Job 124425180875 SUCCESS; Verify Job 124425181116는 TypeScript·ESLint·Unit/Integration·OCI 검사·DXF benchmark·Build까지 SUCCESS, Chromium E2E 113 PASS/1 FAIL; 이후 G7/Greenfield/Legacy Migration E2E SKIPPED.
+- 실패 TC-127-DRAWER: 모바일 Generated Delete alertdialog가 나타나도 뒤쪽 Tools Drawer가 aria-modal=true 유지. #138 MovableViewerPanel 공통화 시 기존 !modalOverlay 조건 누락. 해결: 모든 Layer/Outline/Memo/Tools/Search에 Shell modalOpen을 modalBlocked로 전파, top-level confirm 활성 중 Drawer aria-modal 제거, inert/background focus/ESC 계층 유지. Test 335의 Confirm 후 취소/복원 경계 E2E 보강. Lint/CI Skip 정책 변경 금지.
+- [FailureLedger](out/FailureLedger.md), [TestPlan](out/TestPlan.md), [ViewerPanelPolicy](out/ViewerPanelPolicy.md)에 실제 오류와 수정/수용 경계 기록. 루트 DESIGN.md는 없음; Architecture/Decisions 참조. 수정 HEAD CI의 결과는 별도로 확인 전 NOT VERIFIED. Main behind 0, 미해결 리뷰 thread 0, mergeable=true 확인 후 새 CI만 시작; CI 모니터링, 병합, GHCR, Issue 종료, 실 운영 Auth/DB 또는 현장 수용은 수행하지 않는다.
+
+---
+
+## PR #177 — Lint 오류·Codex P1 3건 조치 (2026-10-31)
+
+- 첫 PR CI [Run 41162108326](https://github.com/planner77/layoutManager/actions/runs/41162108326), HEAD 74be95eb: Verify Job 124421702132 Typecheck SUCCESS / ESLint 2 ERROR + 10 WARNING으로 FAILURE; Unit/Build/E2E SKIPPED, Docker Job 124421702420 SUCCESS. 실패 원인은 ViewerAppShell의 React ref를 render-prop에 넘기는 react-hooks/refs 및 ViewerMenuBar의 raw '/' anchor를 Next Link로 대체해야 하는 @next/next/no-html-link-for-pages.
+- 수정 8a05a8f8: data-only search props + JSX CadTextSearch; next/link Link; #138 P1 capture-phase search Escape 별도 처리·모바일 Tab trap 전달·Tools 내부 bounded scroll viewport. E2E 확장 a04d3717: 모바일 Tab/Shift+Tab, 데스크톱/모바일 Escape, Tools Scroll. Codex P1 [4430083615](https://github.com/planner77/layoutManager/pull/177#discussion_r4430083615), [4430083618](https://github.com/planner77/layoutManager/pull/177#discussion_r4430083618), [4430083623](https://github.com/planner77/layoutManager/pull/177#discussion_r4430083623) 답변 후 review threads 3/3 Resolved. 상세 [FailureLedger](out/FailureLedger.md).
+- Main behind 0, mergeable=true 확인. 정확 최신 HEAD에서 새 PR CI 시작 후 모니터링하지 않음; 실행 후 실제 상태 확인 없이 PASS 주장 금지. 루트 DESIGN.md는 없으며 Architecture/Decisions를 설계 기준으로 유지. CI 게이트/인가 우회·운영 DB/Writer·GHCR 게시·Merge/Issue 종료는 범위 밖.
+
+---
+
+## #139/#138/#137 단일 Viewer PR 후보 (2026-10-31)
+
+- 구현 순서: #139 DXF 텍스트 UTF-8/CP949 판정 수정 → #138 공통 이동 패널 Layer/Outline/Tools/TEXT 확장 → #137 좌상단 도면 전체 목록 이동 및 미저장 confirm. 설계 [Issues137-139](out/Issues137-139.md), 정책 [ViewerPanelPolicy](out/ViewerPanelPolicy.md).
+- 루트 DESIGN.md는 존재하지 않으며 out/Architecture.md, out/Decisions.md를 참조한다. Canvas/Scene/Worker·GET 재생성, WCS/Undo에 패널 좌표 유입, DXF 원본 변경 및 G7/DB 권한 우회 금지.
+- 후보 소스와 합성 테스트는 등록되었으나 로컬 Test/PR CI·실 사용자 DXF·GHCR/현장 수용은 미검증. 정확 HEAD CI 성공, 미해결 리뷰 스레드 0, 충돌 0 확인 후에만 후속 병합/게시/Issue 종료를 판단한다.
+
+---
+
 ## #88/#90 PR #176 v0.47.4 Owner Managed GHCR 최종 검증 (2026-10-31)
 
 - 최신 [실패 원장](out/FailureLedger.md)의 `PR #176 final PR/Owner Managed merge, v0.47.4 GHCR paired release SUCCESS` 절을 최종 증거로 참조. [PR CI #349](https://github.com/planner77/layoutManager/actions/runs/41158289254) 정확 HEAD `8af001ef...` Verify+Docker 모두 성공, P2 리뷰 해결 1/1·Main 충돌 0, [Squash `328bbdc0ca02649cc551a61962cec9e76816ccde`](https://github.com/planner77/layoutManager/commit/328bbdc0ca02649cc551a61962cec9e76816ccde) 완료.

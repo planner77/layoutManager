@@ -1,3 +1,29 @@
+## PR #177 E2E TC-127-DRAWER 회귀 재검증 (2026-10-31)
+
+- 최초 Lint 실패와 구별: 두 번째 Run 41163195588의 Chromium 113 PASS/1 FAIL. 실패는 src/tests/e2e/issues124-126-127.spec.ts:381, mobile Tools drawer가 Delete alertdialog 아래에서 inert=true인데 aria-modal=true로 남음.
+- 신규 계약: modalOverlay가 없으면 active mobile drawer/dialog는 aria-modal=true. Delete confirmation / 상위 alertdialog가 나타나면 background drawer(레이어/외곽선/메모/도구/텍스트 검색 공통 패널)는 inert=true이며 aria-modal 존재하지 않아야 함. Escape 혹은 삭제 취소 후 inert=false, aria-modal=true 복원. 실제 Confirm focus/Tab loop 우선순위, 단일 ESC 단계, Canvas DOM/생성 선택/Undo 유지. Desktop drawer aria-modal 미지정.
+- E2E 기존 TC-127-DRAWER에서 두 경로의 복원 assertion 추가. TC-138-02 모바일 검색 단독 dialog, #85 Memo Tree, #39/43 레이어·트리 등 기존 공통 래퍼 테스트와 함께 전체 Chromium 실행. 최초 113 PASS가 최신 HEAD의 PASS를 의미하지 않음. G7/Greenfield/Legacy migration은 이전 Run에서 미실행; 새로운 정확 HEAD CI 결과 필요.
+
+---
+
+## PR #177 첫 실패 및 P1 보완 재검증 계획 (2026-10-31)
+
+- 최초 Run 41162108326 Typecheck PASS, ESLint 2 ERROR + 10 WARNING, Verify 후속 SKIPPED, Docker PASS. 재실행 HEAD에서 React react-hooks/refs (render callback 대신 JSX)와 Next.js internal Link Lint를 실제 확인한다. Lint 비활성화/Skip 없음.
+- TC-138-02 추가: 모바일 검색 모달에서 Tab, Shift+Tab은 내부 경계로 순환하고 모바일 Escape는 검색창만 닫음. 데스크톱 검색 입력 focus Escape도 검색창만 닫고 fullscreen 보존; 열린 모바일 검색 트리거는 숨김.
+- TC-138-P1-TOOLS 추가: 375×580 화면에서 Tools viewport overflow-y:auto / 내부 스크롤/닫기/Canvas identity. 기존 Memo #85, Layer #39, Outline #40, Drawer #127 등과 함께 검증.
+- 정확 HEAD Typecheck·ESLint·Unit/Integration·Build·E2E·G7/Greenfield/Migration 및 Docker CI는 실제 새 실행 결과가 나올 때까지 NOT VERIFIED. 실 DXF/GPU 수용은 별도.
+
+---
+
+## #139 → #138 → #137 단일 PR 후보 회귀 계획 (2026-10-31)
+
+- TC-139-01~04 Unit: AC1032 ANSI_949+UTF8 한글/정확한 삽입점 중심, AC1018 실제 CP949 byte 가나, AC1021 932/936/950/949 stale header, BOM/missing HEADER, unsupported label·invalid byte·Binary DXF. 기존 TC-TEXT-001~011과 두 렌더러 검색·카메라 E2E.
+- TC-138-01/02 E2E: Layer/Outline/Tools/Text 공용 핸들 드래그/reset/close/reopen, search query 유지, CSS/fullscreen/Canvas DOM identity/GET 횟수, 모바일 dialog/ESC/inert. 기존 #85 Memo Tree P1, #39 Layer, #40 Tool 및 320px/native fullscreen 회귀 포함.
+- TC-137-01/02 E2E: 첫 그룹 메뉴 앞 href=/ 도면 목록 링크/키보드, 별도 version list, 현장/직접 URL, 선택 임시 객체 이탈 confirm 취소·수락. 실제 사용자 DXF/DRM/200% 확대 현장 검증 별도.
+- 정확 PR HEAD Verify(Typecheck, ESLint, Vitest/Integration, Build, Playwright) 및 Docker pair CI 결론, Codex 미해결 스레드 0, Main 충돌 0. 테스트가 실행되기 전 PASS를 표시하지 않음. 관련 [Issues137-139](Issues137-139.md).
+
+---
+
 ## PR #176 Run #345 — M7 signed-auth import isolation regression (2026-10-31)
 
 - The G7 Site-scope integration suite must import the real `requireMemoSearchSites` through `scene-context.ts` while a **test-scoped**, fail-on-use mock only replaces `@/server/context` (its indirect Next `server-only` sentinel). This mirrors existing G7 runtime isolation tests.

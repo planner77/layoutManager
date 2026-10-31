@@ -1,3 +1,9 @@
+## #139/#138/#137 Viewer 통합 요구사항 (2026-10-31, v0.47.5 후보)
+
+R-139: R2007+ UTF-8/BOM 우선, 구형 ANSI_949/932/936/950/12xx 엄격 판정, 오류 원인 분리, 기존 한글 TEXT/MTEXT WCS 검색 결과 보존. R-138: Layer/Outline/Tools/TEXT 공용 이동 패널, 원래 Drawer edge/독립 z-order/Reset/키보드/ESC/compact dialog 및 Canvas 재초기화 0. R-137: Viewer 좌측 상단 첫 링크로 전체 목록(/) 이동, 기존 버전 목록 링크 유지, 미저장 작업 이탈 확인. 자세한 구현 경계 [Issues137-139](Issues137-139.md). 현장 실증 별도.
+
+---
+
 ## #88/#90 M6/M7 영속 메모 링크·전체 검색 (2026-10-31)
 
 M6 #88: 승인된 단일 영속 메모의 Version+UUID URL 복사, 로드/권한/원본 SHA/WCS 검증 후 카메라 포커스, 숨김 상태 임시 강조, 실패 시 안전한 안내. M7 #90: `/` 검색 대상 메모 분리, Current 기본/이전 Version 선택, Site 기반 DB 전체 검색·페이지/그룹/작성자/완료/마감일 및 M6 링크 이동. 세션 메모 비공유, 도면 Current-only 변경 금지. 수용기준 [Issues88-90](Issues88-90.md); 테스트 작성 시 NOT RUN.

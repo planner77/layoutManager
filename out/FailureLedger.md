@@ -1,3 +1,47 @@
+## PR #177 — 두 번째 PR CI / #127 nested modal regression 보완 (2026-10-31 KST)
+
+### 검증된 실패 (첫 회차와 별개)
+- [Run 41163195588](https://github.com/planner77/layoutManager/actions/runs/41163195588), 정확 HEAD d706fac0702acd49b0c38efbaf8b2ed5e256b5a6, completed/failure. Docker image/migration/runtime smoke Job [124425180875](https://github.com/planner77/layoutManager/actions/runs/41163195588/job/124425180875) SUCCESS. Verify [Job 124425181116](https://github.com/planner77/layoutManager/actions/runs/41163195588/job/124425181116): npm/Prisma/TypeScript/ESLint/Unit+Integration/OCI manifest tests/DXF 1k·10k·100k benchmark/Next Production Build/Playwright Chromium 설치 SUCCESS; Chromium E2E **113 PASS / 1 FAIL**, 이후 G7 signed runtime, G7 Greenfield 및 Legacy migration E2E **SKIPPED**. 이 실패는 이전 Run 41162108326의 ESLint 2개 오류와 다른 결함이다.
+- 실패 테스트: src/tests/e2e/issues124-126-127.spec.ts:335, TC-127-DRAWER “mobile generated-delete confirmation remains interactive above its Drawer”, 실패 Assertion line 381. 생성 개체 삭제 확인 alertdialog 표시 중 background Tools Drawer는 inert=true가 되었으나 aria-modal="true"가 그대로 남아 expect(not aria-modal=true) 실패. 로그는 14회 polling에서 같은 속성을 관찰. Playwright 실패 trace artifact [13028975356](https://github.com/planner77/layoutManager/actions/runs/41163195588/artifacts/13028975356). 실제 삭제 로직/DB·G7 장애를 입증한 로그가 아니다.
+- 원인: #138의 기존 #127 drawer → MovableViewerPanel 공통화 중 조건식 ‘mobile AND active AND !modalOverlay’가 ‘mobile’로 축소되어 상위 delete confirmation이 떠도 둘 다 modal로 선언하는 접근성 회귀. Shell의 기존 modalOverlay inert effect는 정상 동작해 아래 Drawer가 inert 처리되는 것과 별개의 문제. 기존 #127 접근성/ESC·focus trap 계약이 우선이다.
+
+### 변경 및 회귀 방지
+- 수정 [commit 38db1af524e12e63e33c9064bc2d6ad13ffb02c6](https://github.com/planner77/layoutManager/commit/38db1af524e12e63e33c9064bc2d6ad13ffb02c6): MovableViewerPanel 공통 modalBlocked prop (default false), aria-modal only when mobile AND active AND !modalBlocked. ViewerAppShell의 modalOpen(!!modalOverlay)을 Layer/Outline/Memo/Tools/Search 5개에 전달, CadTextSearch도 속성 전달. 별도 원본 Layer·Canvas·Manager/Worker·Source GET/Undo/삭제 거래 변경 없음.
+- E2E 기존 TC-127-DRAWER를 확장하여 Delete confirm에서 Drawer inert=true & aria-modal 없음, Escape/취소·버튼 취소 후 inert 해제 및 aria-modal=true 복원을 모두 검사. 모든 공통 패널에 동일 컴포넌트 조건을 적용; 기존 TC-138-02 검색 modal standalone true도 보존.
+- 이전 Codex P1 3개 review thread는 답변·Resolved(3/3), 신규 미해결 스레드 0. Main 1a974448dc5fef5539e6d246cbd1ad30c6f46f73 기준 코드 수정 직후 behind=0, ahead=12, PR mergeable=true. 문서 커밋 후 다시 확인.
+- 정확 최신 HEAD의 새로운 PR CI는 시작만 확인하고 모니터링 생략. 새 테스트 결과 확인 전 PASS 주장 금지. 현장 비공개 DXF/실 PC·GPU/Owner GO, GHCR, 운영 Auth/Writer/DB 변경, Main 병합, 이슈 종료 없음.
+
+---
+
+## PR #177 — #139/#138/#137 최초 PR CI 실패 및 P1 3건 보완 (2026-10-31 KST)
+
+### 정확한 실패 증거
+- PR #177 첫 HEAD 74be95eb77a3077c0b052ac8be53f19974b2dde4, [PR CI Run 41162108326](https://github.com/planner77/layoutManager/actions/runs/41162108326) completed/failure. Verify [Job 124421702132](https://github.com/planner77/layoutManager/actions/runs/41162108326/job/124421702132) FAILURE, Docker image/migration/runtime smoke [Job 124421702420](https://github.com/planner77/layoutManager/actions/runs/41162108326/job/124421702420) SUCCESS.
+- Node 22, npm ci, Prisma Client, TypeScript 검사 SUCCESS. ESLint 12 problems = 2 blocking errors + 10 nonblocking warnings. Unit/Integration, OCI tests, benchmarks, Next production build, Chromium/G7/Greenfield/Legacy migration E2E all SKIPPED. 이전 성공 Run 또는 Docker 성공으로 검증 완료를 주장하지 않는다.
+- E1: src/features/cad-viewer/viewer-app-shell.tsx:111, react-hooks/refs Cannot access refs during render. textSearch render-prop 함수를 렌더 중 직접 호출하면서 workspaceRef/dialogRef를 함수 인수로 넘김. Fix: data-only component props + React JSX CadTextSearch 컴포넌트 렌더링 (수동 Ref 전달 함수 호출 금지).
+- E2: src/features/cad-viewer/viewer-menu-bar.tsx:10, @next/next/no-html-link-for-pages. 내부 '/' 링크에 raw anchor를 사용. Fix: next/link Link 컴포넌트로 바꾸고 href='/' + 기존 confirmDiscard 유지. Lint rule/CI 단계 해제 없음.
+
+### Codex P1 3건 (첫 검토 HEAD 74be95eb)
+- [P1 #4430083615](https://github.com/planner77/layoutManager/pull/177#discussion_r4430083615): capture-phase ESC가 신규 data-drawer=search 이벤트를 소비만 하여 창이 닫히지 않음. Viewer escape dispatcher에 검색 전용 close/trigger focus 분기 추가.
+- [P1 #4430083618](https://github.com/planner77/layoutManager/pull/177#discussion_r4430083618): compact 검색 모달에 trapTab 누락, Tab이 외부로 이탈. Shell shared trapTab을 CadTextSearch → MovableViewerPanel onKeyDown에 전달; 모바일 열림 중 외부 검색 트리거 숨김.
+- [P1 #4430083623](https://github.com/planner77/layoutManager/pull/177#discussion_r4430083623): Tools drawer 내 overflow:hidden으로 아래 입력/버튼 잘림. 닫기 버튼은 스크롤 영역 밖에 배치, 본문은 min-h-0 flex-1 overflow-y-auto viewport로 변경.
+- 수정 코드 [8a05a8f8](https://github.com/planner77/layoutManager/commit/8a05a8f8e1e47b758c66a87de5777029b95d04b0), P1 회귀 E2E [a04d3717](https://github.com/planner77/layoutManager/commit/a04d3717aa8ab77ea31310abf040937f254dfd3f) 추가. 모바일 Tab/Shift+Tab, 검색 ESC 모바일/데스크톱, 짧은 화면 tools scroll 및 닫기 검사. 세 원문 리뷰에 직접 답변하고 스레드 PRRT_kwDOUQjDfc6yM484/M485/M489 각각 Resolved 완료 확인 (3/3). 이는 신규 리뷰/새 CI 완료 선언 아님.
+
+### 재실행 전 정합성 및 안전 경계
+- Main 1a974448dc5fef5539e6d246cbd1ad30c6f46f73, behind=0, PR mergeable=true, unresolved review threads 0 (새 CI 시작 직전 점검). 신규 정확 HEAD의 Typecheck/Lint/Unit/E2E/Build/Docker 결과는 검증 전 NOT VERIFIED. CI 모니터링은 Owner 지시로 생략.
+- 루트 DESIGN.md 없음: AGENTS.md, out/Architecture.md, out/Decisions.md, out/ViewerPanelPolicy.md 기반. 실제 사내 DXF/DRM/실 GPU/2PC 현장 수용, 운영 Auth/Writer/DB/Volume, GHCR 게시, PR 병합, Issue 종료는 수행하지 않음.
+
+---
+
+## #139 → #138 → #137 통합 후보 사전 실패/리스크 원장 (2026-10-31)
+
+- Branch: feat/issues-139-138-137-viewer-20261031. Main 기준 1a974448dc5fef5539e6d246cbd1ad30c6f46f73. Source commits: #139 d8fe1050, #138 21f7aa92, #137 896555f6, 합성 시험 9061417c. PR CI 및 로컬 Typecheck/Lint/Unit/E2E/Build NOT RUN; 과거 PR 성공을 새 HEAD 성공으로 오인 금지.
+- #139 위험: 구형 ANSI_949 헤더를 가진 실제 R2007+ UTF-8 여부 미확정; 실 DXF 비반출 현장검증 별도. #138 위험: 기존 Memo Tree/UI/ESC/focus/Canvas 재생성 및 검색 상태 회귀, 신규 합성 E2E 작성. #137 위험: 직접 URL history.back 실패와 로컬 작업 손실, href=/ + confirmDiscard를 적용.
+- 문서 갱신 자동 편집 스크립트 1회 로컬 JS 문자열 SyntaxError로 중단됨(원격 Tree/Commit 미생성); 분리된 안전한 편집으로 복구. 이 에러는 앱 CI 실패나 소스 실행 실패가 아니다.
+- 최종 HEAD PR CI 실행/검증 결과 및 Codex 리뷰/충돌은 별도 실제 증거로 갱신. GHCR/실 운영 변경 및 이슈 종료 수행하지 않음.
+
+---
+
 ## #88/#90 PR #176 — final PR/Owner Managed merge, v0.47.4 GHCR paired release SUCCESS (2026-10-31 KST)
 
 ### Final verified source and review gate

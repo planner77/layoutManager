@@ -1,3 +1,19 @@
+## ADR-053-R3 — #138 shared drawer nested-modal accessibility (2026-10-31)
+
+- Decision: a compact Viewer drawer is aria-modal=true iff it is the active mobile panel and no higher-priority modalOverlay is displayed. A top-level GeneratedDeleteDialog takes modal ownership; underlying drawer stays inert and must not declare aria-modal. A single modal owner prevents conflicting accessibility/focus semantics. Restore original drawer aria-modal after modal dismiss; maintain #127 trap Tab/ESC priority.
+- Implementation: typed modalBlocked prop on MovableViewerPanel, uniformly passed by ViewerAppShell (plus CadTextSearch). Reason: PR #177 second Run 41163195588 Chromium E2E TC-127-DRAWER failure. CI and physical acceptance after fix pending, no policy relaxation.
+
+---
+
+## ADR-053-R2 — #139/#138/#137 Viewer 통합 구현 결정 (2026-10-31)
+
+- #139: DWGCODEPAGE 표기보다 AC1021+ 및 UTF-8 BOM을 우선하여 strict UTF-8, 이전 DXF에만 CP949(WHATWG euc-kr) 등의 선언 사용; 무조건 fatal:false/재인코딩 불가.
+- #138: M4 Memo 공용 drag controller 재사용, search는 Canvas z=0이 아닌 workspace sibling. 패널 위치는 CSS 픽셀/세션 state, CAD WCS/Undo/DB와 분리. 모바일 하나의 활성 modal 및 backdrop/inert/ESC 보존.
+- #137: history.back 대신 stable href=/ 와 confirmDiscard, 기존 버전 목록 목적지 분리. 사업장 권한/원본 콘텐츠/렌더러 lifecycle 변경 없음.
+- 이 ADR은 PR 후보이며 실 DXF/CI/GHCR 수용을 의미하지 않는다. 근거 [Issues137-139](Issues137-139.md).
+
+---
+
 ## ADR #88/#90 — 고정 Memo 딥링크와 인증된 SQLite 조회 (2026-10-31)
 
 고정 UUIDv4 Version+Memo 링크만 허용하고 URL 자체를 권한으로 보지 않는다. 비활성/삭제/깨진 앵커/Version·SHA 오류 시 포커스 금지. 전역 검색은 별도 `target=memos` UI로 기존 도면 Current-only 경계를 보존하고 G7 site-limited `Prisma.sql` JOIN 및 `instr(lower())`를 사용한다. 검색 성능 미측정이므로 FTS5/스키마 인덱스 변경을 추정으로 도입하지 않는다. 한글 NFC와 ASCII 영문 case-folding에 한정. [Issues88-90](Issues88-90.md).

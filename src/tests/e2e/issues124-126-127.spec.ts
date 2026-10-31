@@ -385,11 +385,13 @@ test('TC-127-DRAWER: mobile generated-delete confirmation remains interactive ab
   await page.keyboard.press('Escape');
   await expect(confirm).toHaveCount(0);
   await expect(drawer).not.toHaveAttribute('inert','');
+  await expect(drawer).toHaveAttribute('aria-modal','true');
   await expect(page.getByTestId('canvas-selection-count')).toContainText('생성 1개');
   await expect(page.getByTestId('generated-delete-selected')).toBeFocused();
   await page.getByTestId('generated-delete-selected').click();
   await confirm.getByRole('button',{name:'삭제 취소'}).click();
   await expect(confirm).toHaveCount(0);
+  await expect(drawer).toHaveAttribute('aria-modal','true');
   await expect(page.getByTestId('generated-delete-selected')).toBeFocused();
   await page.getByTestId('generated-delete-selected').click();
   await page.getByTestId('generated-delete-confirm').click();
