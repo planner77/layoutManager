@@ -675,6 +675,8 @@ export function CadViewer({
       if(item.id!==requestedMemoId||item.versionId!==versionId||
          item.sourceSha256.toLowerCase()!==sourceSha256.toLowerCase()||!item.persisted)
         throw new Error('메모의 Version 또는 원본 SHA가 일치하지 않습니다.');
+      if(item.anchor?.mode==='BROKEN_ANCHOR')
+        throw new Error('연결된 메모 앵커가 손상되어 자동 위치 이동을 중단했습니다.');
       const point=assertMemoWcsXY(item.anchorWcsXY);
       const doc=memoSession.current;
       if(!doc?.matches({versionId,sourceSha256}))throw new Error('다른 도면의 메모를 표시할 수 없습니다.');
@@ -1581,7 +1583,7 @@ export function CadViewer({
        disabled:!memoAvailable,reason:memoUnavailable??'로그인 및 영속 메모 조회 후 이용할 수 있습니다.',
        onSelect:()=>{
          if(!appState.memoTreeOpen)dispatchApp({type:'toggle-memo-tree',exclusive:isCompact});
-         requestAnimationFrame(()=>viewerShell.current?.querySelector<HTMLInputElement>('[data-testid="cad-memo-tree-search"]')?.focus());
+         requestAnimationFrame(()=>requestAnimationFrame(()=>viewerShell.current?.querySelector<HTMLInputElement>('[data-testid="cad-memo-tree-search"]')?.focus()));
        }},
       {id:'memo-copy',label:'선택 메모 링크 복사',testId:'viewer-menu-memo-copy',
        disabled:!selectedPersistedMemo,reason:'영속 저장된 단일 메모 선택 및 인증된 조회 권한이 필요합니다.',
@@ -1969,7 +1971,7 @@ export function CadViewer({
           {memoLinkNotice&&<p data-testid="memo-link-notice" role="status" className="text-xs text-amber-700">{memoLinkNotice} <button type="button" className="underline" onClick={()=>setAttempt(n=>n+1)}>다시 시도</button></p>}
           <div className="flex flex-wrap items-center gap-x-2"><p role="status" className="text-xs text-slate-700">{state.status}</p><span data-testid="viewer-active-renderer" className="text-xs text-slate-600">{renderer}</span></div>
           {state.warning && <p className="text-xs text-amber-800" data-testid="viewer-coverage">{state.warning}</p>}
-          {linkFallbackUrl?.renderer===renderer && <label className="block text-xs">{linkFallbackUrl.url.includes('&memo=')?'메모 링크':'현재 Viewer 링크'}<input readOnly aria-label={linkFallbackUrl.url.includes('&memo=')?'복사할 메모 링크':'복사할 Viewer 주소'} value={linkFallbackUrl.url} onFocus={event=>event.currentTarget.select()} /></label>}
+          {linkFallbackUrl?.renderer===renderer && <label className="block text-xs">{linkFallbackUrl.url.includes('&memo=')?'메모 링크':'현재 Viewer 링크'}<input readOnly aria-label={linkFallbackUrl.url.includes('&memo=')?'복사할 메모 링크':'복사할 Viewer 주소'} value={linkFallbackUrl.url} onFocus={event=>event.currentTarget.select()} /> <a className="underline" href={linkFallbackUrl.url} target="_blank" rel="noopener noreferrer">링크 열기</a></label>}
           {recoveryNotice && <p data-testid="viewer-recovery-notice" className="text-xs text-amber-800">{recoveryNotice}</p>}
           {sceneNotice&&<p aria-live="polite" data-testid="scene-status" className="text-xs text-slate-700">{sceneNotice}</p>}
           {state.error && <p role="alert" className="text-xs text-red-700">{state.error} <button type="button" className="underline" onClick={reload}>다시 시도</button> <a className="underline" href={`/api/cad-files/${versionId}/content`} download>원본 다운로드</a> {format==='DXF' && <a className="underline" href={`/cad/versions/${versionId}/viewer?renderer=dxf-viewer`}>dxf-viewer 링크 (원본 사용)</a>}</p>}

@@ -40,7 +40,7 @@ export function MemoSearchPage({query}:{query:MemoSearchQuery}){
     <div className="home-sticky-panel">
       <div className="home-title-row">
         <h1 className="text-xl font-bold">전체 도면 메모 검색</h1>
-        <Link className="rounded border border-slate-400 bg-white px-3 py-2 text-sm hover:bg-slate-50" href="/">도면 목록으로</Link>
+        <div className="flex flex-wrap gap-2"><Link className="rounded border border-slate-400 bg-white px-3 py-2 text-sm hover:bg-slate-50" href="/?target=memos">검색 초기화</Link><Link className="rounded border border-slate-400 bg-white px-3 py-2 text-sm hover:bg-slate-50" href="/">도면 목록으로</Link></div>
       </div>
       <p className="mb-2 text-xs text-slate-600">영속 메모만 검색 · 로그인·Reader 이상 및 Site 권한 필요 · 기본은 현재 도면 Version만 표시</p>
       <form action="/" method="get" role="search" aria-label="전체 메모 검색" className="space-y-2 rounded border border-slate-200 bg-white p-3">
@@ -115,8 +115,10 @@ export function MemoSearchPage({query}:{query:MemoSearchQuery}){
               <td className="p-2">{item.displayName}<p className="text-slate-600">V{item.version} · {item.isCurrent?'현재':'이전'} 버전</p></td>
               <td className="p-2">{item.businessUnit} / {item.product} / {item.site}<p>{item.building} / {item.floor}</p></td>
               <td className="p-2">{item.completionEnabled?(item.isCompleted?'완료':'진행 중'):'미관리'}
+                {!item.visible&&<p className="text-amber-700">숨김 (링크에서만 일시 강조)</p>}
                 {item.dueDate&&<p>마감: {item.dueDate}</p>}
-                <p className="text-slate-500">{item.authorName||item.createdById}</p>
+                <p className="text-slate-500">작성자: {item.authorName||item.createdById}</p>
+                <p className="text-slate-500">수정: {new Date(item.updatedAt).toLocaleString("ko-KR")}</p>
               </td>
               <td className="p-2"><Link
                 href={cadMemoViewerPath(item.versionId,item.memoId)}
