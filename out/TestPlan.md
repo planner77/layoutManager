@@ -1,3 +1,11 @@
+## PR #176 Run #345 — M7 signed-auth import isolation regression (2026-10-31)
+
+- The G7 Site-scope integration suite must import the real `requireMemoSearchSites` through `scene-context.ts` while a **test-scoped**, fail-on-use mock only replaces `@/server/context` (its indirect Next `server-only` sentinel). This mirrors existing G7 runtime isolation tests.
+- Run all three actual authorization cases: Reader with signed Site A and Admin without grant, Admin with only unsigned Site B, and missing/revoked/disabled sessions. Do not replace the subject under test with a stub and do not allow anonymous fallback.
+- PR CI requires Typecheck, ESLint, all Unit/Integration, Next Production Build, browser/signed Greenfield E2E and Docker. Failed Run #345 stopped after one import suite; skipped downstream steps remain NOT RUN.
+
+---
+
 ## #88/#90 PR #176 ESLint + P2 회귀 테스트 확장 (2026-10-31)
 
 - `react-hooks/preserve-manual-memoization`: openDelete/resetOutline의 수동 deps에 실제 setDeleteRequest를 포함해 React Compiler mismatch 0; `react-hooks/set-state-in-effect`: deep-link invalid/renderer/unavailable 상태에서 effect 내 동기 setState 없이 메시지 파생, 복구 가능한 HTTP error는 async callback에서만 갱신한다.

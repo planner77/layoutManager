@@ -1,3 +1,12 @@
+## PR #176 #88/#90 — Vitest `server-only` import guard (2026-10-31)
+
+- [PR CI #345 Run 41153178204](https://github.com/planner77/layoutManager/actions/runs/41153178204), exact HEAD `e758a0d5effcba577dca6ffe2b87fe15952d3c71`: Docker Job SUCCESS, Verify Typecheck/ESLint SUCCESS; Unit/Integration **1 suite import FAILURE**, remaining 103 files/682 tests PASS; Build/Chromium/G7 E2E SKIPPED.
+- Cause: `src/tests/integration/memo-search-auth.test.ts` imports `scene-context.ts`, which imports `@/server/context` with the Next `server-only` sentinel. Vitest executes that sentinel at module evaluation before any test runs. It is not evidence of a Site/RBAC logic failure.
+- Fix: in the synthetic G7 auth integration **test only**, use the established `vi.mock('@/server/context',...)` pattern (see `g7-runtime-cad.test.ts`). Mock throws on invocation so any unexpected legacy/anonymous access still fails. Do not mock `requireMemoSearchSites`, G7 signed gate, Prisma DB, SiteGrant/Role or session logic. No production `server-only` guard removal or security relaxation.
+- Exact HEAD new PR CI required; no PASS until that run finishes. Follow [FailureLedger](out/FailureLedger.md) and [TestReport](out/TestReport.md).
+
+---
+
 ## PR #176 #88/#90 — 메모 HTTP 재조회는 Viewer 재초기화와 분리 (2026-10-31)
 
 - 실패 증거: [PR CI #343](https://github.com/planner77/layoutManager/actions/runs/41148144608) HEAD `8bf85699021ac587bb1595cd44bb27618f141d8b`. Docker SUCCESS, Verify TypeScript SUCCESS, ESLint 3 ERROR(React Compiler manual memoization 2 + effect-sync state 1); Unit/Integration/Build/E2E SKIPPED. 11 warnings는 비차단이며 오류와 구분한다. 최초 #342 취소 Run은 성공으로 오인하지 않는다.

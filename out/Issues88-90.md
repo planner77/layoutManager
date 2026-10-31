@@ -1,3 +1,9 @@
+## PR #176 Run #345 — M7 auth integration test module boundary (2026-10-31)
+
+The signed-G7 Memo search integration imported the Viewer Scene module that indirectly loads the Next `server-only` guard. Run #345 compiled and linted successfully but Vitest could not collect the auth suite. A test-only fail-on-use mock for the legacy server context now isolates the Next marker while preserving real G7 signed authority and database/session tests. See [TestReport](TestReport.md) and [FailureLedger](FailureLedger.md). This is not a waiver of server authorization or claim of successful post-fix tests.
+
+---
+
 ## PR #176 CI #343 correction and P2 review (2026-10-31)
 
 - First confirmed failed CI `41148144608`: Docker pass, Typecheck pass, ESLint 3 errors; downstream Test/Build/Browser skipped. It is not a Docker or DB migration failure. React hook manual memoization deps and effect-sync state errors repaired without disabling checks.

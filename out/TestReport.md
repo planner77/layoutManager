@@ -1,3 +1,11 @@
+## PR #176 M6/M7 — PR CI Run #345 import failure (2026-10-31)
+
+- [PR CI #345 Run 41153178204](https://github.com/planner77/layoutManager/actions/runs/41153178204), exact HEAD `e758a0d5effcba577dca6ffe2b87fe15952d3c71` completed **FAILURE**. Docker Job `124394409585` SUCCESS, Verify Job `124394409303` FAILURE. Verify Typecheck and ESLint SUCCESS, Vitest **103 passed files / 1 failed suite, 682 passed tests**, failure before tests in `memo-search-auth.test.ts` via `node_modules/server-only/index.js`. OCI manifest checks/benchmark/production build/Chromium and G7 signed browser/legacy E2E SKIPPED.
+- Fix in test-only `src/tests/integration/memo-search-auth.test.ts`: fail-closed `vi.mock('@/server/context',...)` before importing the real permission helper; retains G7 authority/session/Role/Grant/Prisma assertions. This prevents Vitest's accidental execution of Next `server-only` marker and retains production boundary.
+- Repaired HEAD's checks **NOT VERIFIED** until fresh CI evidence. Existing Run #343 ESLint FAILURE and #345 Vitest FAILURE remain distinct; do not retroactively mark either success. No GHCR/production DB modifications.
+
+---
+
 ## #88/#90 PR #176 — initial CI #343 실패 및 Code Review 보완 (2026-10-31)
 
 - [Run 41148144608 / PR CI #343](https://github.com/planner77/layoutManager/actions/runs/41148144608), source `8bf85699021ac587bb1595cd44bb27618f141d8b`: Docker Job `124378361245` SUCCESS(모든 이미지/마이그레이션/Greenfield Smoke 단계 완료); Verify Job `124378361508` FAILURE. `npm run typecheck` SUCCESS, `npm run lint` FAIL (React Compiler callback deps #414/#572 및 useEffect sync state #651). Unit/Integration, OCI stats, DXF benchmark, Next production build, Chromium/Runtime/Greenfield/Legacy E2E **SKIPPED**, not SUCCESS. 기타 lint warning 11건은 차단 원인 아님.
