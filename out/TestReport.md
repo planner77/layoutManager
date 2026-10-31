@@ -1,3 +1,9 @@
+## #139/#138/#137 v0.47.5 PR 후보 검증 상태 (2026-10-31)
+
+구현 및 합성 테스트 작성: source text-index strict decoder, generic movable Viewer panels, direct home navigation; Unit TC-139-01~04 및 Playwright TC-138-01/02·TC-137-01/02 추가. 기존 TC-TEXT, TC-U1/U2/U3, TC-M4 등 회귀 대상으로 지정. **현재 로컬 Typecheck/Lint/Unit/Build/Playwright/Docker 및 PR CI 모두 NOT RUN/NOT VERIFIED.** 실 회사 DXF/실 GPU/현장 2PC 수용은 별도. 차후 CI run/HEAD/job이 실제로 확인된 때에만 결과를 갱신한다. [Issues137-139](Issues137-139.md).
+
+---
+
 ## #88/#90 — PR CI #349, Main CI #100, GHCR v0.47.4 verification (2026-10-31 KST)
 
 - Exact PR candidate `8af001ef75378aef8214a998c5223e0cd327baf9`: [PR CI #349](https://github.com/planner77/layoutManager/actions/runs/41158289254) **completed/success**, Verify `124409862915` and Docker `124409862929` SUCCESS (Unit/Integration, compile/lint, production build, Chromium, signed G7/Greenfield/Legacy migration tests and image builds). Prior PR CI #343 lint and #345 Vitest `server-only` failures retained in FailureLedger.

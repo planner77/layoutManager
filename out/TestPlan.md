@@ -1,3 +1,12 @@
+## #139 → #138 → #137 단일 PR 후보 회귀 계획 (2026-10-31)
+
+- TC-139-01~04 Unit: AC1032 ANSI_949+UTF8 한글/정확한 삽입점 중심, AC1018 실제 CP949 byte 가나, AC1021 932/936/950/949 stale header, BOM/missing HEADER, unsupported label·invalid byte·Binary DXF. 기존 TC-TEXT-001~011과 두 렌더러 검색·카메라 E2E.
+- TC-138-01/02 E2E: Layer/Outline/Tools/Text 공용 핸들 드래그/reset/close/reopen, search query 유지, CSS/fullscreen/Canvas DOM identity/GET 횟수, 모바일 dialog/ESC/inert. 기존 #85 Memo Tree P1, #39 Layer, #40 Tool 및 320px/native fullscreen 회귀 포함.
+- TC-137-01/02 E2E: 첫 그룹 메뉴 앞 href=/ 도면 목록 링크/키보드, 별도 version list, 현장/직접 URL, 선택 임시 객체 이탈 confirm 취소·수락. 실제 사용자 DXF/DRM/200% 확대 현장 검증 별도.
+- 정확 PR HEAD Verify(Typecheck, ESLint, Vitest/Integration, Build, Playwright) 및 Docker pair CI 결론, Codex 미해결 스레드 0, Main 충돌 0. 테스트가 실행되기 전 PASS를 표시하지 않음. 관련 [Issues137-139](Issues137-139.md).
+
+---
+
 ## PR #176 Run #345 — M7 signed-auth import isolation regression (2026-10-31)
 
 - The G7 Site-scope integration suite must import the real `requireMemoSearchSites` through `scene-context.ts` while a **test-scoped**, fail-on-use mock only replaces `@/server/context` (its indirect Next `server-only` sentinel). This mirrors existing G7 runtime isolation tests.

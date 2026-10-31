@@ -1,3 +1,12 @@
+## 0.47.5 — PR candidate #139 → #138 → #137 (2026-10-31)
+
+- #139 DXF $ACADVER/legacy ANSI_949 정확 판정 및 UTF-8/CP949 strict 한글 검색 회귀.
+- #138 공용 MovableViewerPanel을 레이어/외곽선/도구/텍스트 검색으로 확대, M4 메모 호환 및 Canvas/검색 상태 보존.
+- #137 Viewer 좌측 맨 앞 전체 목록 이동 앵커와 미저장 작업 확인. 서버/DB/Source/Auth 불변. PR CI 및 GHCR 미수행.
+- 설계/테스트 [Issues137-139](Issues137-139.md).
+
+---
+
 ## 0.47.4 — verified GHCR App/Migrator paired release (2026-10-31)
 
 - [PR #176](https://github.com/planner77/layoutManager/pull/176) delivers #88 M6 persisted Memo share link and #90 M7 secure cross-drawing search. Release source Main `328bbdc0ca02649cc551a61962cec9e76816ccde` from successful [PR CI #349](https://github.com/planner77/layoutManager/actions/runs/41158289254).
