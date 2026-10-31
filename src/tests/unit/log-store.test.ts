@@ -1,6 +1,6 @@
 import { afterEach, expect, test } from 'vitest';
 import { randomUUID } from 'node:crypto';
-import { appendFile, lstat, mkdtemp, readdir, rm, symlink, writeFile, mkdir } from 'node:fs/promises';
+import { appendFile, lstat, mkdtemp, readdir, rm, symlink, unlink, utimes, writeFile, mkdir } from 'node:fs/promises';
 import type { FileHandle } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -119,4 +119,67 @@ test('TC-L3-006: invalid environment input uses safe defaults and never changes 
   expect(config).toMatchObject({ directory: '/data/logs', source: 'app',
     maxFileBytes: 4 * 1024 * 1024, maxTotalBytes: 64 * 1024 * 1024,
     retentionMs: 7 * 86400000 });
+});
+
+
+test('TC-L3-007: idle app writer reopens after maintenance prunes its inode', async () => {
+  const directory = await tmp();
+  const config = { ...opts(directory), maxFileBytes: 300, maxTotalBytes: 900, maxFiles: 2 };
+  const app = new StructuredLogStore(config);
+  const maintenance = new StructuredLogStore({ ...config, source: 'maintenance' });
+  app.enqueue(entry(0));
+  await app.flush(); // descriptor stays open while the other process rotates
+  const [appName] = (await readdir(directory)).filter(name => name.startsWith('app-'));
+  expect(appName).toBeDefined();
+  const past = new Date(Date.now() - 120_000);
+  await utimes(join(directory, appName), past, past);
+
+  maintenance.enqueue(entry(1));
+  await maintenance.flush();
+  maintenance.enqueue(entry(2)); // rotation at 300 bytes, must reclaim idle app file
+  await maintenance.close();
+  expect((await readdir(directory))).not.toContain(appName);
+  expect(maintenance.getStatus().purged).toBeGreaterThan(0);
+
+  // Allow room under the shared two-file retention limit, while still keeping
+  // the app's original file handle open to its now-unlinked inode.
+  const [oldMaintenance] = (await readdir(directory)).filter(name => name.startsWith('maintenance-'));
+  await utimes(join(directory, oldMaintenance), past, past);
+  app.enqueue({ ...entry(3), event: 'after_external_prune' });
+  await app.close();
+  expect(app.getStatus()).toMatchObject({ written: 2, failed: 0 });
+  const readable = await readStructuredLogTail({ directory, source: 'app' });
+  expect(readable.map(row => row.event)).toContain('after_external_prune');
+});
+
+test('TC-L3-008: 10000+ rotation sequence remains inventoried and quota bounded', async () => {
+  const directory = await tmp();
+  const config = { ...opts(directory), maxFileBytes: 300, maxTotalBytes: 900, maxFiles: 3 };
+  const writer = new StructuredLogStore(config);
+  // White-box long-running-writer boundary without allocating 10,000 files.
+  (writer as unknown as { sequence: number }).sequence = 9999;
+  for (let n = 0; n < 9; n++) writer.enqueue({ ...entry(n), event: 'sequence_boundary' });
+  await writer.close();
+  const files = (await readdir(directory)).filter(name => name.endsWith('.jsonl'));
+  expect(files.some(name => /-1000[0-9]\.jsonl$/.test(name))).toBe(true);
+  expect(files.length).toBeLessThanOrEqual(config.maxFiles);
+  const sizes = await Promise.all(files.map(name => lstat(join(directory, name))));
+  expect(sizes.reduce((sum, stat) => sum + stat.size, 0)).toBeLessThanOrEqual(config.maxTotalBytes);
+  expect(writer.getStatus()).toMatchObject({ written: 9, failed: 0 });
+  expect((await readStructuredLogTail({ directory, source: 'app' })).length).toBeGreaterThan(0);
+});
+
+test('TC-L3-009: periodic prune permits exactly maxFiles without deleting a valid file', async () => {
+  const directory = await tmp();
+  const config = { ...opts(directory), maxFileBytes: 300, maxTotalBytes: 900, maxFiles: 2 };
+  const writer = new StructuredLogStore(config);
+  writer.enqueue(entry(0));
+  await writer.flush();
+  (writer as unknown as { lastPruneAt: number }).lastPruneAt = 0;
+  writer.enqueue(entry(1));
+  await writer.close();
+  const files = (await readdir(directory)).filter(name => name.endsWith('.jsonl'));
+  expect(files).toHaveLength(2);
+  expect(writer.getStatus()).toMatchObject({ written: 2, failed: 0, purged: 0 });
+  expect(await readStructuredLogTail({ directory })).toHaveLength(2);
 });

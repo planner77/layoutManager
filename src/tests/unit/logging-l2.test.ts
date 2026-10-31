@@ -48,3 +48,28 @@ test('TC-L2-003: verified revision appears, user-supplied revision cannot overwr
   writeLog('info', 'request_test');
   expect(JSON.parse(String(info.mock.calls[1][0]))).not.toHaveProperty('buildRevision');
 });
+
+
+test('TC-L2-004: UploadStage diagnostics and L2 request failure stage are independent', async () => {
+  const { failure } = await import('../../server/http');
+  const { randomUUID } = await import('node:crypto');
+  const info = vi.spyOn(console, 'log').mockImplementation(() => {});
+  const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+  const ctx = new RequestLogContext(new Request('http://localhost/api/cad-files', { method: 'GET' }));
+  ctx.phase('database_read');
+  const uploadFinish = vi.fn();
+  const diagnostics = {
+    requestId: randomUUID(),
+    finishFailure: uploadFinish,
+  } as unknown as import('../../server/upload-observability').UploadDiagnostics;
+  const error = Object.assign(new Error('private database path'), { code: 'P2022' });
+  const response = failure(error, { request: ctx, diagnostics });
+  expect(response.status).toBe(500);
+  expect(response.headers.get('X-Request-Id')).toBe(ctx.requestId);
+  expect(uploadFinish).toHaveBeenCalledWith(error, 'response', 500);
+  const failures = err.mock.calls.map(args => JSON.parse(String(args[0])));
+  expect(failures[0]).toMatchObject({
+    event: 'http_request_failed', stage: 'database_read', errorCode: 'P2022', requestId: ctx.requestId,
+  });
+  expect(JSON.stringify([...info.mock.calls, ...err.mock.calls])).not.toContain('private database path');
+});
