@@ -8,7 +8,7 @@ import {CadTextSearch} from './cad-text-search';
 // Data-only props: render CadTextSearch through React JSX, never invoke a render
 // callback with refs while ViewerAppShell is rendering (react-hooks/refs).
 type TextSearchProps=Omit<ComponentProps<typeof CadTextSearch>,
-  'workspaceRef'|'dialogRef'|'mobile'|'active'|'raised'|'onRaise'|'onKeyDown'>;
+  'workspaceRef'|'dialogRef'|'mobile'|'active'|'raised'|'onRaise'|'onKeyDown'|'modalBlocked'>;
 
 export function ViewerAppShell({ shellRef, panelScopeKey, isFullscreen, isNativeFullscreen, menuBar, toolbar,
   layerPanel, layerPanelOpen, outlineTreePanel, outlineTreeOpen, memoTreePanel, memoTreeOpen, compactPanel,
@@ -88,25 +88,25 @@ export function ViewerAppShell({ shellRef, panelScopeKey, isFullscreen, isNative
         onClick={()=>active==='search'?onCloseTextSearch():onClosePanel(active)} />}
       <MovableViewerPanel key={panelScopeKey+':layers'} kind="layers" id="viewer-layer-dock" name="레이어"
         workspaceRef={workspaceRef} dialogRef={dialog} open={layerPanelOpen&&!!layerPanel}
-        mobile={mobile} active={!mobile||active==='layers'} raised={topDrawer==='layers'}
+        mobile={mobile} modalBlocked={modalOpen} active={!mobile||active==='layers'} raised={topDrawer==='layers'}
         onRaise={()=>setTopDrawer('layers')} onClose={()=>onClosePanel('layers')} onKeyDown={trapTab}>
         {layerPanel}
       </MovableViewerPanel>
       <MovableViewerPanel key={panelScopeKey+':outlines'} kind="outlines" id="viewer-outline-tree-dock" name="외곽선 목록"
         workspaceRef={workspaceRef} dialogRef={dialog} open={outlineTreeOpen&&!!outlineTreePanel}
-        mobile={mobile} active={!mobile||active==='outlines'} raised={topDrawer==='outlines'}
+        mobile={mobile} modalBlocked={modalOpen} active={!mobile||active==='outlines'} raised={topDrawer==='outlines'}
         onRaise={()=>setTopDrawer('outlines')} onClose={()=>onClosePanel('outlines')} onKeyDown={trapTab}>
         {outlineTreePanel}
       </MovableViewerPanel>
       <MovableViewerPanel key={panelScopeKey} id="viewer-memo-tree-dock" name="메모 트리"
         workspaceRef={workspaceRef} dialogRef={dialog} open={memoTreeOpen&&!!memoTreePanel}
-        mobile={mobile} active={!mobile||active==='memos'} raised={topDrawer==='memos'}
+        mobile={mobile} modalBlocked={modalOpen} active={!mobile||active==='memos'} raised={topDrawer==='memos'}
         onRaise={()=>setTopDrawer('memos')} onClose={()=>onClosePanel('memos')} onKeyDown={trapTab}>
         {memoTreePanel}
       </MovableViewerPanel>
       <MovableViewerPanel key={panelScopeKey+':tools'} kind="tools" id="viewer-tools-dock" name="선택 및 외곽선 도구"
         workspaceRef={workspaceRef} dialogRef={dialog} open={toolsOpen&&!!tools}
-        mobile={mobile} active={!mobile||active==='tools'} raised={topDrawer==='tools'}
+        mobile={mobile} modalBlocked={modalOpen} active={!mobile||active==='tools'} raised={topDrawer==='tools'}
         onRaise={()=>setTopDrawer('tools')} onClose={()=>onClosePanel('tools')} onKeyDown={trapTab}>
         {tools && <>
           <button type="button" className="z-10 shrink-0 self-end rounded bg-white px-2 py-1 text-sm text-slate-800"
@@ -119,7 +119,7 @@ export function ViewerAppShell({ shellRef, panelScopeKey, isFullscreen, isNative
       </MovableViewerPanel>
       {textSearch && <CadTextSearch key={panelScopeKey+':search'} {...textSearch}
         workspaceRef={workspaceRef} dialogRef={dialog}
-        mobile={mobile} active={!mobile||active==='search'} raised={topDrawer==='search'}
+        mobile={mobile} modalBlocked={modalOpen} active={!mobile||active==='search'} raised={topDrawer==='search'}
         onRaise={raiseSearch} onKeyDown={trapTab} />}
     </div>
     <footer ref={footerRef} className="relative z-20 shrink-0 border-t border-slate-200 bg-white px-3 py-1 text-slate-700">{status}</footer>

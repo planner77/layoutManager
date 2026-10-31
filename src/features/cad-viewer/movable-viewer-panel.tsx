@@ -11,6 +11,7 @@ export type ViewerMovableKind='layers'|'outlines'|'memos'|'tools'|'search';
 type Props={
  kind?:ViewerMovableKind;
  id:string;name:string;open:boolean;mobile:boolean;active:boolean;raised:boolean;
+ modalBlocked?:boolean;
  workspaceRef:RefObject<HTMLDivElement|null>;dialogRef?:RefObject<HTMLDivElement|null>;
  children:ReactNode;onRaise:()=>void;onClose:()=>void;
  onKeyDown?:(event:KeyboardEvent<HTMLDivElement>)=>void;
@@ -19,7 +20,7 @@ type Props={
  * Keep component mounted while closed, so same Viewer session retains its position.
  * Use a version/renderer key at the call site to reset on a new Viewer identity.
  */
-export function MovableViewerPanel({kind='memos',id,name,open,mobile,active,raised,workspaceRef,dialogRef,
+export function MovableViewerPanel({kind='memos',id,name,open,mobile,active,raised,modalBlocked=false,workspaceRef,dialogRef,
  children,onRaise,onClose,onKeyDown}:Props){
  const testPrefix=kind==='memos'?'viewer-memo-panel':`viewer-${kind}-panel`;
  const panelRef=useRef<HTMLDivElement|null>(null);
@@ -130,7 +131,7 @@ export function MovableViewerPanel({kind='memos',id,name,open,mobile,active,rais
    if(mobile&&active&&dialogRef)dialogRef.current=node;
   }}
   id={id} role={mobile?'dialog':'region'}
-  aria-modal={mobile?true:undefined}
+  aria-modal={mobile&&active&&!modalBlocked?true:undefined}
   aria-label={name}
   data-testid={id} data-drawer={kind}
   data-viewer-panel-mode={floating?'floating':'edge'}
