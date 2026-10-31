@@ -1,3 +1,39 @@
+## #88/#90 PR #176 릴리스 버전 보호 (2026-10-31)
+
+- `v0.47.3`은 [이전 Main CI #41145893248](https://github.com/planner77/layoutManager/actions/runs/41145893248)에서 이미 App/Migrator GHCR 쌍이 게시된 **기존 릴리스**. `docker-publish.yml`의 동일 버전 태그/이미지 중복 방지 로직은 이미 존재하는 `0.47.3`에 새 #88/#90 소스를 반영하지 않는다. 기존 태그/이미지를 강제 이동하거나 `latest`만 수동 갱신하지 말 것.
+- #88/#90 정식 릴리스 후보는 `src/package.json`과 `src/package-lock.json`을 함께 `0.47.4`로 올리고 **새 정확 HEAD의 전체 PR CI 성공** 후 Owner Managed Squash Merge. `v0.47.4`의 새 태그와 App·Migrator 쌍은 Main Workflow의 실제 성공 로그와 Digest로만 게시 확인. [실패 원장](out/FailureLedger.md)과 [TestReport](out/TestReport.md) 참조.
+- CI 녹색/합성 UI 회귀는 현장 2PC 및 실 Site G7 활성화 수용으로 주장하지 않는다. #88/#90 구현 범위를 명시해 완료 처리하더라도 검색 규모 1k/10k/100k 실측과 현장 다중 세션·앵커 수용 증거는 별개. 메모 검색은 signed G7 Scope를 우회하지 않는다.
+
+---
+
+## PR #176 #88/#90 — Vitest `server-only` import guard (2026-10-31)
+
+- [PR CI #345 Run 41153178204](https://github.com/planner77/layoutManager/actions/runs/41153178204), exact HEAD `e758a0d5effcba577dca6ffe2b87fe15952d3c71`: Docker Job SUCCESS, Verify Typecheck/ESLint SUCCESS; Unit/Integration **1 suite import FAILURE**, remaining 103 files/682 tests PASS; Build/Chromium/G7 E2E SKIPPED.
+- Cause: `src/tests/integration/memo-search-auth.test.ts` imports `scene-context.ts`, which imports `@/server/context` with the Next `server-only` sentinel. Vitest executes that sentinel at module evaluation before any test runs. It is not evidence of a Site/RBAC logic failure.
+- Fix: in the synthetic G7 auth integration **test only**, use the established `vi.mock('@/server/context',...)` pattern (see `g7-runtime-cad.test.ts`). Mock throws on invocation so any unexpected legacy/anonymous access still fails. Do not mock `requireMemoSearchSites`, G7 signed gate, Prisma DB, SiteGrant/Role or session logic. No production `server-only` guard removal or security relaxation.
+- Exact HEAD new PR CI required; no PASS until that run finishes. Follow [FailureLedger](out/FailureLedger.md) and [TestReport](out/TestReport.md).
+
+---
+
+## PR #176 #88/#90 — 메모 HTTP 재조회는 Viewer 재초기화와 분리 (2026-10-31)
+
+- 실패 증거: [PR CI #343](https://github.com/planner77/layoutManager/actions/runs/41148144608) HEAD `8bf85699021ac587bb1595cd44bb27618f141d8b`. Docker SUCCESS, Verify TypeScript SUCCESS, ESLint 3 ERROR(React Compiler manual memoization 2 + effect-sync state 1); Unit/Integration/Build/E2E SKIPPED. 11 warnings는 비차단이며 오류와 구분한다. 최초 #342 취소 Run은 성공으로 오인하지 않는다.
+- React callback `openDelete`/`resetOutline`의 setDeleteRequest dependency를 명시하여 React Compiler 분석과 맞춘다. 잘못된 Memo URL/Renderer/G7 모드 안내는 effect 내부의 동기 setState 대신 렌더 시 계산한다. lint rule 비활성화·CI Skip/timeout 완화 금지.
+- [Codex P2 #4429501072](https://github.com/planner77/layoutManager/pull/176#discussion_r4429501072): 메모 링크 `다시 시도`가 Viewer `attempt`를 증가시키면 Browser-only GeneratedDocument·CAD 작업 차분·Undo/Redo가 별도 확인 없이 소실될 수 있다. 메모 상세·목록의 HTTP 재시도만 각각 `memoDetailRetry`/`memoListRetry`로 분리하고 Renderer/Canvas load epoch은 변경하지 않는다. 완료·Clipboard fallback에서 불필요한 retry button 노출 금지. OFF 세션 임시 메모·Canvas element 유지 Playwright 회귀 추가. 리뷰 답변 및 Resolved, 정확한 Run/커밋/테스트 상태는 [FailureLedger](out/FailureLedger.md).
+- 신규 CI 시작 전 최신 PR HEAD와 Main 뒤처짐/충돌·리뷰 스레드를 다시 확인한다. 결과는 새 Run의 실제 검증 전 NOT VERIFIED. PR 병합·GHCR·Issue 종료·운영 Auth/DB/현장 변경 금지.
+
+---
+
+## #88/#90 M6/M7 구현 경계·검증 지침 (2026-10-31)
+
+- **순서:** #83·#84·#85·#86 선행 기능 완료 후 #88의 영속 메모 URL + 정확한 Version/SHA/권한/WCS 검증 포커스를 먼저 제공하고, #90의 홈 전체 도면 메모 검색을 같은 PR에서 연결한다.
+- **G7 Auth:** signed ACTIVE Site와 실제 UserSiteGrant+Reader 역할, 세션 만료/회수, active Site를 서버에서 매 요청 검증한다. Search COUNT/목록/스니펫/Version 링크 모두 동일 Scope; URL, 클라이언트 body, 임의 Header는 권한이 아니다. G7 OFF에서는 영속 Memo 검색/공유 불가. 브라우저 세션 임시 Memo는 링크 공유 금지.
+- **UI 정책:** Viewer `작업 > 메모 검색`은 M4의 기존 MovableViewerPanel/Drawer 검색 Input으로 이동(#127/#138), `작업 > 선택 메모 링크 복사`는 서버 영속 단일 ID만 활성. 홈 `/?target=memos`는 별도 검색 대상으로 CAD 파일명·설명 Current-only 검색과 격리. 연결 앵커 깨짐·삭제/권한 부재/렌더러 미지원 시 카메라 fallback 금지.
+- **DB/보안:** SQLite `Prisma.sql`로 파라미터 바인딩, NFC/허용 쿼리/길이/Date/Page 제한. #85/#86 Feature sidecars가 없으면 확장 필터만 fail closed. CAD 원본 자동 파싱, 임의 Site count, 공용 Memo 캐시, 자동 schema migration/기존 volume 변경 금지. FTS5/100k 성능 목표는 측정 증거 후에만 승인.
+- **증거:** 설계 [Issues88-90](out/Issues88-90.md), 수용·차단 [TestPlan](out/TestPlan.md)/[TestReport](out/TestReport.md)/[FailureLedger](out/FailureLedger.md). 실제 로컬 Test/PR CI/현장 수용/GHCR 결과가 없으면 PASS·Approved 표기 금지. Owner Managed 정책은 권한 검사나 증거 검증을 생략하는 예외가 아님.
+
+---
+
 ## #85/#86 PR #175 final Owner Managed merge and release launch (2026-10-31)
 
 - [PR CI #341 / Run 41142161238](https://github.com/planner77/layoutManager/actions/runs/41142161238), exact source HEAD `a6d3bdef1cc3e8a12ca95e918b5a2d49fad83d50`, completed **SUCCESS**, Verify Job `124359139129` and Docker Job `124359139260` both **SUCCESS**. Initial TypeScript and later pixel-exact WebGL E2E regressions were fixed and retested; history preserved in [FailureLedger](out/FailureLedger.md).
@@ -987,6 +1023,7 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 | [Issue102](out/Issue102.md) | G0 내부 LAN PROD Nginx/DEV App 직접 접속, Owner 경량 보안 범위·잔여 위험 수용·G0~G7 운영 게이트 | 운영/개발 배포 경로·Nginx/직접 포트, 인증·Site/Version 권한·기존 CAD API 전환, 위험 범위·운영 Go/No-Go/수용 기준 변경 시 |
 | [Issue76](out/Issue76.md) | GitHub Squash 기본 메시지 관리자 설정·CI 진단·Main 실행명 확인 | 저장소 설정·PR/Main CI run-name 변경 시 |
 | [Issues124-126-127](out/Issues124-126-127.md) | 목록 고정/밀도·DXF fallback·Viewer 그룹 메뉴/Drawer 설계와 AC | 목록/Viewer UI·복구·새 릴리스 검증 시 |
+| [Issues88-90](out/Issues88-90.md) | M6 영속 Memo 공유 링크, M7 G7 Scope·DB 검색 및 Current 정책·수용 범위 | Viewer Memo/전역 검색·Source 변경·권한·메뉴·배포 검토 시 |
 | [README](README.md) | 사용자/개발자 프로젝트 안내 | 기능·구조·설정·실행방법 변경 시 |
 
 추가 Markdown 문서가 필요하면 이 표에 목적과 필수 참조 시점을 등록한다. 상세정보를 여러 문서에 독립적으로 복제하지 않는다.

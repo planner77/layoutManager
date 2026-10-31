@@ -10,6 +10,8 @@ import { context } from '@/server/context';
 import { ListFilters } from '@/features/cad-list/list-filters';
 import { CadTable } from '@/features/cad-list/cad-table';
 import { HomeSticky } from '@/features/cad-list/home-sticky';
+import { MemoSearchPage } from '@/features/cad-list/memo-search-page';
+import { memoSearchQuery } from '@/domain/cad-memo-search';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -25,6 +27,17 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
   }
   const params = new URLSearchParams();
   for (const [key, values] of Object.entries(await searchParams)) for (const value of Array.isArray(values) ? values : values === undefined ? [] : [values]) params.append(key, value);
+  if(params.has('target')){
+    let memoQuery;
+    try{memoQuery=memoSearchQuery(params);}
+    catch(error){
+      if(!(error instanceof CadError))throw error;
+      return <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-6">
+        <p>{error.message}</p><Link className="mt-3 inline-block underline" href="/?target=memos">메모 검색 초기화</Link>
+      </div>;
+    }
+    return <MemoSearchPage query={memoQuery}/>;
+  }
   let scoped;
   try { scoped = drawingListParams(params); }
   catch(error) { if (!(error instanceof CadError)) throw error; return <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-6"><p>{error.message}</p><Link className="mt-3 inline-block underline" href="/">검색 조건 초기화</Link></div>; }
@@ -36,6 +49,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
   return <HomeSticky><section>
     <div className="home-sticky-panel">
     <div className="home-title-row"><div><h1 className="text-xl font-bold">CAD 도면 목록</h1></div><div className="flex flex-wrap items-center gap-2"><Button asChild variant="outline"><Link href="/masters">위치별 버전 관리</Link></Button><Button asChild><Link href="/cad/upload"><Plus size={17}/>파일 등록</Link></Button></div></div>
+    <div className="mb-2 text-right text-sm"><Link className="inline-flex rounded border border-teal-600 bg-white px-3 py-1.5 font-semibold text-teal-800 hover:bg-teal-50" href="/?target=memos">메모 검색 (전체 도면)</Link></div>
     <ListFilters key={JSON.stringify({query,mode})} query={query} options={options} mode={mode}/>
     <div className="mb-3 flex items-center justify-between text-sm"><p className="text-slate-500">{filtered ? '검색 결과' : '등록된 도면'} <strong className="ml-1 text-slate-800">{result.total.toLocaleString('ko-KR')}개</strong></p><p className="text-xs text-slate-400">등록일 최신순 · {mode === 'current' ? '현재 버전 도면' : '전체 버전 도면'}</p></div>
     </div>

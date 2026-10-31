@@ -1,3 +1,9 @@
+## #88/#90 M6/M7 영속 메모 링크·전체 검색 (2026-10-31)
+
+M6 #88: 승인된 단일 영속 메모의 Version+UUID URL 복사, 로드/권한/원본 SHA/WCS 검증 후 카메라 포커스, 숨김 상태 임시 강조, 실패 시 안전한 안내. M7 #90: `/` 검색 대상 메모 분리, Current 기본/이전 Version 선택, Site 기반 DB 전체 검색·페이지/그룹/작성자/완료/마감일 및 M6 링크 이동. 세션 메모 비공유, 도면 Current-only 변경 금지. 수용기준 [Issues88-90](Issues88-90.md); 테스트 작성 시 NOT RUN.
+
+---
+
 ## #84 M3 + #167 S6 Origin-aware CAD Memo/Reset (2026-10-31)
 
 - #84: Version/SHA Scope 내 서버 영속 APP_CREATED 객체 또는 canonical 검증 SOURCE handle에 FREE 메모를 명시적으로 연결한다. local/WCS 두 좌표를 분리해 이동·회전 시 World를 서버에서 재산출하고, 대상 삭제는 마지막 World WCS를 유지하며 BROKEN_ANCHOR로 표시한다. 작성자-only Memo 변경·G7 Site Grant·CSRF/Origin·CAS/Audit 불변.

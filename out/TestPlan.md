@@ -1,3 +1,28 @@
+## PR #176 Run #345 — M7 signed-auth import isolation regression (2026-10-31)
+
+- The G7 Site-scope integration suite must import the real `requireMemoSearchSites` through `scene-context.ts` while a **test-scoped**, fail-on-use mock only replaces `@/server/context` (its indirect Next `server-only` sentinel). This mirrors existing G7 runtime isolation tests.
+- Run all three actual authorization cases: Reader with signed Site A and Admin without grant, Admin with only unsigned Site B, and missing/revoked/disabled sessions. Do not replace the subject under test with a stub and do not allow anonymous fallback.
+- PR CI requires Typecheck, ESLint, all Unit/Integration, Next Production Build, browser/signed Greenfield E2E and Docker. Failed Run #345 stopped after one import suite; skipped downstream steps remain NOT RUN.
+
+---
+
+## #88/#90 PR #176 ESLint + P2 회귀 테스트 확장 (2026-10-31)
+
+- `react-hooks/preserve-manual-memoization`: openDelete/resetOutline의 수동 deps에 실제 setDeleteRequest를 포함해 React Compiler mismatch 0; `react-hooks/set-state-in-effect`: deep-link invalid/renderer/unavailable 상태에서 effect 내 동기 setState 없이 메시지 파생, 복구 가능한 HTTP error는 async callback에서만 갱신한다.
+- M6-P2-E2E: 새 브라우저 OFF/임시 메모 상태에서 M6 직접 링크 오류 → `메모만 다시 조회`; 동일 WebGL Canvas 노드, 임시 메모 핀·최근 목록 유지. 새 Memo fetch 이외 source load epoch/GeneratedDocument/Undo/Redo 재설정 금지. 저장 상태가 없는 복사 성공/clipboard fallback에는 retry 버튼 없음. `src/tests/e2e/issues88-90-memo-search.spec.ts`에서 첫 절반 자동, 통합 G7 signed 추가 검증으로 후반 커버.
+- PR #176 최초 [CI #343](https://github.com/planner77/layoutManager/actions/runs/41148144608)는 Typecheck 성공, Lint 실패로 Unit/Integration/E2E/Build skipped. 다음 실행의 실제 결과 없이 전체 회귀 PASS 선언 금지.
+
+---
+
+## #88/#90 M6/M7 test plan — 2026-10-31 (NOT RUN)
+
+- M6-U1 `src/tests/unit/viewer-link.test.ts`: strict UUIDv4, canonical three-dxf-viewer, secret-free URL, invalid memo IDs.
+- M6-E1 `src/tests/e2e/issues88-90-memo-search.spec.ts`: invalid memo URL and unsupported renderer must not focus. M6-E2 **still requires signed G7 browser evidence**: persisted memo focus after DXF/GET race, hidden temporary pin, expired session/403, removed/version mismatch, 320px/immersive, clipboard denial. Existing #85 Tree camera focus test is a precursor, not proof of cross-session M6.
+- M7-U1 `src/tests/unit/cad-memo-search.test.ts`: NFC, bounded query/duplicates/unknown keys, invalid dates, page size, plain snippets; M7-I1 `src/tests/integration/memo-search-sql.test.ts`: synthetic Current/old/hidden/deleted/site/filters/injection/SQL parameterization; M7-I2 `src/tests/integration/memo-search-auth.test.ts`: signed Site Reader, Admin without grant, expired/revoked/disabled; M7-E1 `src/tests/e2e/issues88-90-memo-search.spec.ts`: separate home search, empty keyword/no dump, drawing list unchanged.
+- Gate: typecheck, ESLint, Vitest, Playwright Chromium, build and Docker checks in PR CI with exact HEAD. For accepted M7 performance, measure 1k/10k/100k synthetic memos across Site grants and page sizes plus DXF content GET count=0 under search. **No numbers or pass status asserted before execution.** G7 authenticated E2E and real GPU/site load remain separate acceptance gates.
+
+---
+
 ## #85/#86 — Issue17 및 LayerDropdown WebGL E2E 복원 검증 회귀 (2026-10-31)
 
 - TC-LAYER001 / TC-ISSUE17-001: 기존 `canvas.screenshot().equals(initial)`은 CSS fullscreen/scrollbar/Canvas resize 2px 편차에서도 반드시 false가 될 수 있으므로 복원 조건으로 사용하지 않는다. 정규화 CAD 획 근접 비교를 사용한다. Canvas 중앙에 복원 선 20px 미만은 0점, 512×256/±2px 근접 선 match 92% 초과, Layer 전체 선택/개별 상태·Canvas DOM 유지·원본 재다운로드 0·Zoom 보존을 동시에 검증한다.

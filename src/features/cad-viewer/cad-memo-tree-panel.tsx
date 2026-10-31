@@ -14,6 +14,7 @@ type Props = {
   onPersistVisibility?: (id: string, visible: boolean) => void;
   onSelect: (id: string) => void;
   onEdit: (id: string) => void;
+  onCopyLink?: (id: string) => void;
   onVisibility: (id: string, visible: boolean) => void;
   onGroupVisibility: (groupId: string | null, visible: boolean) => void;
   onCreateGroup: (name: string) => boolean;
@@ -25,7 +26,7 @@ type Props = {
 
 export function CadMemoTreePanel({
   memos, tree, selectedId, allVisible, transientFocusId, persistent, onPersistVisibility, onSelect, onEdit, onVisibility,
-  onGroupVisibility, onCreateGroup, onRenameGroup, onDeleteGroup, onAssignGroup, onClose,
+  onGroupVisibility, onCreateGroup, onRenameGroup, onDeleteGroup, onAssignGroup, onClose, onCopyLink,
 }: Props) {
   const [query, setQuery] = useState('');
   const [statusFilter,setStatusFilter]=useState<'all'|'registered'|'progress'|'completed'>('all');
@@ -227,6 +228,10 @@ export function CadMemoTreePanel({
                     onClick={event => { event.stopPropagation(); setPendingFocusId(null); onVisibility(memo.id, !visible); }}
                     className="shrink-0 rounded border border-slate-400 px-1">{visible ? '숨김' : '표시'}</button>
                   {persistent && <button type="button" data-testid="cad-memo-tree-saved-visibility" aria-label={memo.title+' 저장 표시상태 변경'} disabled={!onPersistVisibility} onClick={event=>{event.stopPropagation();onPersistVisibility?.(memo.id,memo.visible===false);}} className="shrink-0 rounded border border-teal-700 px-1 disabled:opacity-40">{memo.visible===false?'저장 표시':'저장 숨김'}</button>}
+                  {memo.persisted && onCopyLink && <button type="button" data-testid="cad-memo-tree-copy-link"
+                    aria-label={memo.title + ' 메모 링크 복사'}
+                    onClick={event=>{event.stopPropagation();onCopyLink(memo.id);}}
+                    className="shrink-0 rounded border border-teal-700 px-1">링크</button>}
                   <button type="button" onClick={event => { event.stopPropagation(); onEdit(memo.id); }}
                     className="shrink-0 rounded border border-slate-400 px-1">편집</button>
                 </div>

@@ -1,3 +1,27 @@
+## PR #176 M6/M7 — PR CI Run #345 import failure (2026-10-31)
+
+- [PR CI #345 Run 41153178204](https://github.com/planner77/layoutManager/actions/runs/41153178204), exact HEAD `e758a0d5effcba577dca6ffe2b87fe15952d3c71` completed **FAILURE**. Docker Job `124394409585` SUCCESS, Verify Job `124394409303` FAILURE. Verify Typecheck and ESLint SUCCESS, Vitest **103 passed files / 1 failed suite, 682 passed tests**, failure before tests in `memo-search-auth.test.ts` via `node_modules/server-only/index.js`. OCI manifest checks/benchmark/production build/Chromium and G7 signed browser/legacy E2E SKIPPED.
+- Fix in test-only `src/tests/integration/memo-search-auth.test.ts`: fail-closed `vi.mock('@/server/context',...)` before importing the real permission helper; retains G7 authority/session/Role/Grant/Prisma assertions. This prevents Vitest's accidental execution of Next `server-only` marker and retains production boundary.
+- Repaired HEAD's checks **NOT VERIFIED** until fresh CI evidence. Existing Run #343 ESLint FAILURE and #345 Vitest FAILURE remain distinct; do not retroactively mark either success. No GHCR/production DB modifications.
+
+---
+
+## #88/#90 PR #176 — initial CI #343 실패 및 Code Review 보완 (2026-10-31)
+
+- [Run 41148144608 / PR CI #343](https://github.com/planner77/layoutManager/actions/runs/41148144608), source `8bf85699021ac587bb1595cd44bb27618f141d8b`: Docker Job `124378361245` SUCCESS(모든 이미지/마이그레이션/Greenfield Smoke 단계 완료); Verify Job `124378361508` FAILURE. `npm run typecheck` SUCCESS, `npm run lint` FAIL (React Compiler callback deps #414/#572 및 useEffect sync state #651). Unit/Integration, OCI stats, DXF benchmark, Next production build, Chromium/Runtime/Greenfield/Legacy E2E **SKIPPED**, not SUCCESS. 기타 lint warning 11건은 차단 원인 아님.
+- Codex inline P2 `4429501072`: retry on memo notice incorrectly advanced Viewer renderer `attempt`, disposing Browser-only generated history. Corrected with separate memo-only request counters, non-destructive rendering guard and only retryable failures showing a retry action. Manual memoization deps fixed and initial malformed-link notice derived without effect setter. Changes in commits `c783bf4e8ff51ff68f090be0059f9e88708c8709`, `166fdd52c585a50a025a04d3d1c0ab815bd27455`.
+- Added Playwright M6-P2 regression for retained WebGL canvas and session memo after retry. **Not executed** yet; new exact HEAD PR CI is required. No Main/GHCR/production acceptance.
+
+---
+
+## #88/#90 M6/M7 initial implementation evidence — 2026-10-31
+
+- Feature source in branch `feat/issues-88-90-memo-link-search-20261031`: M6 UUID link/share/authenticated GET+focus and M7 Site-scoped SQL search/API/UI, documented in [Issues88-90](Issues88-90.md).
+- Added Unit `viewer-link.test.ts`, `cad-memo-search.test.ts`; Integration `memo-search-sql.test.ts`, `memo-search-auth.test.ts`; Playwright `issues88-90-memo-search.spec.ts`. **All newly introduced tests NOT RUN** at this writing. Typecheck, lint, production build, Docker, CI, external QA and signed-G7 cross-session full M6 AC **NOT VERIFIED**. Do not interpret commit creation as PASS.
+- Database migration, GHCR publish, Main merge, existing data adoption and production scope changes **NOT PERFORMED**. Reviewer/PR CI/mergeability status is tracked by latest GitHub commit/PR evidence, not estimated locally. Uncovered G7 browser and 1k/10k/100k performance require follow-up evidence before issue closure.
+
+---
+
 ## #85/#86 PR #175 final synthesis CI and Main release handoff (2026-10-31)
 
 - PR CI [#341 Run 41142161238](https://github.com/planner77/layoutManager/actions/runs/41142161238), exact HEAD `a6d3bdef1cc3e8a12ca95e918b5a2d49fad83d50` => `completed/success`. Verify Job `124359139129` **SUCCESS**: TypeScript, lint, Unit/Integration, Next production build, Playwright Chromium. Docker Job `124359139260` **SUCCESS**: build, migrator, disposable first-run + CAD runtime smoke. Previous E2E failure 2 of 103 tests in Run 41139632431 is repaired by the final successful run; exact job evidence is authoritative, not a screenshot estimate.

@@ -70,3 +70,49 @@ export async function requireSceneRead(request:Request,db:Database,versionId:str
   });
   if(touched.count!==1)throw deny('UNAUTHENTICATED',401);
 }
+
+
+// #90: every request reloads the G7 session, Reader role, signed Site scope,
+// active Site state, and revocation. A global Admin without Site Grant cannot search.
+export async function requireMemoSearchSites(
+  request:Request,db:Database,gate:G7RuntimeGate,
+):Promise<string[]>{
+  if(gate.state!=='ACTIVE')throw deny('G7_RUNTIME_BLOCKED',503);
+  const raw=cookie(request);
+  if(!raw)throw deny('UNAUTHENTICATED',401);
+  const session=await db.authSession.findUnique({
+    where:{tokenHash:digestSessionToken(raw)},
+    include:{user:{include:{roles:true,sites:true,specials:true}}},
+  });
+  const now=BigInt(Date.now());
+  if(!session||session.revokedAt!==null||session.issuedAt>now||session.lastSeenAt>now||
+    session.expiresAt<=now||now-session.lastSeenAt>=BigInt(SESSION_IDLE_MS)||
+    session.user.status!=='ACTIVE'||session.user.mustChangePassword)
+    throw deny('UNAUTHENTICATED',401);
+  const actor:UserAccess={
+    id:session.user.id,status:'ACTIVE',mustChangePassword:false,
+    roles:session.user.roles.map(x=>x.role as Role),
+    siteGrants:session.user.sites.map(x=>x.siteId),
+    specialGrants:session.user.specials.map(x=>x.permission as SpecialGrant),
+  };
+  const signed=gate.siteIds.filter(id=>actor.siteGrants.includes(id));
+  const active=signed.length?await db.cadSite.findMany({
+    where:{id:{in:signed},active:true},select:{id:true},
+  }):[];
+  const sites:string[]=[];
+  for(const site of active){
+    try{
+      requireResolvedPermission(actor,'memo:read',{kind:'site',siteId:site.id},site.id);
+      sites.push(site.id);
+    }catch{/* Do not reveal unauthorized Site identities or counts. */}
+  }
+  if(!sites.length)throw deny('ACCESS_DENIED',403);
+  const touched=await db.authSession.updateMany({
+    where:{id:session.id,revokedAt:null,issuedAt:{lte:now},expiresAt:{gt:now},
+      lastSeenAt:{gt:now-BigInt(SESSION_IDLE_MS),lte:now},
+      user:{is:{status:'ACTIVE',mustChangePassword:false}}},
+    data:{lastSeenAt:now},
+  });
+  if(touched.count!==1)throw deny('UNAUTHENTICATED',401);
+  return sites;
+}

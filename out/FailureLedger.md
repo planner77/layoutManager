@@ -1,3 +1,74 @@
+## #88/#90 PR #176 — v0.47.4 release version gate before Owner Managed merge (2026-10-31 KST)
+
+- **Verified existing release:** [Main CI Run 41145893248](https://github.com/planner77/layoutManager/actions/runs/41145893248), HEAD `c3e55a95ed2c7a61413e5b0577004252994fe988`, `completed/success`. Its GHCR Job `124370837208` built both candidates and successfully ran `Promote paired release images after both candidates succeed`; signed annotated Git tag `v0.47.3` targets the #85/#86 merge `c3e55a95...`. This is an **existing, immutable previous release**.
+- **Critical collision:** #176 PR HEAD `ef1378529f494827d420fc1d72adcdd69a8fad6b` had the same `src/package.json`/`package-lock.json` version `0.47.3`. In `.github/workflows/docker-publish.yml`, `Check version images on GHCR` + `Decide whether to publish` skip image build/promotion when both version aliases already exist. Merging without a new version would produce Main CI SUCCESS but **would not publish #88/#90 source**. Do **not** retarget `v0.47.3`, mutate old digests or claim latest incorporates these changes.
+- **Owner-requested fix:** update both package manifests to `0.47.4`, confirm `v0.47.4` tag absent before merge, keep historical v0.47.3 tag/digests intact. No dependency upgrade; only package release metadata and docs changed. The new PR HEAD needs **fresh Typecheck/ESLint/Unit/Integration/Next Build/Playwright/G7/Greenfield/Docker PR CI SUCCESS**. Old [PR CI #348 Run 41156347595](https://github.com/planner77/layoutManager/actions/runs/41156347595) was `completed/success` at previous SHA `ef137852...` (Verify `124403886487` SUCCESS, Docker `124403886939` SUCCESS); cannot validate new HEAD.
+- Prior failure ledger Run #343 lint / Run #345 Vitest import remains historically correct. Existing Codex P2 thread `PRRT_kwDOUQjDfc6yLh4a` resolved and latest base Main `7058ec393aad10ebbf22bec6dda70d961cb9b483` behind=0, mergeable=true at previous SHA. Recheck reviews/conflicts after new CI. Owner Managed accepts independent QA procedure waiver, not G7 signed permission or real field acceptance.
+- At future Owner-approved gate, **squash title** `#88 | Persisted Memo deep link and cross-drawing search (#90)`, preserve precise PR PASS HEAD in Conversation ledger before merging; close #88/#90 as `completed` with scope caveats. Merge Main push starts `Main CI and conditional Docker publish`, which should create `v0.47.4` and paired `0.47.4`/ `0.47.4-migrate` and latest aliases only after both candidate manifests are verified. Record actual Main Run ID, exact merge SHA, release-scope and GHCR job states; until successful push logs and digests, `GHCR publication=NOT VERIFIED`.
+- Do not alter production volumes/SQLite/Scene/CAD, G7 Writer/Auth activation, release signature/field acceptance or conflate synthetic test pass with 2-PC real drawing. #96/#113 and future live M6/M7 search/anchor/performance acceptance remain independent.
+
+---
+
+## #88/#90 PR #176 — PR CI #345 Vitest import failure, authenticated test isolation, new CI launch (2026-10-31 KST)
+
+### Exact failed run / scope of evidence
+
+- [PR CI #345 / Run 41153178204](https://github.com/planner77/layoutManager/actions/runs/41153178204) at exact HEAD `e758a0d5effcba577dca6ffe2b87fe15952d3c71`, `completed/failure`. Docker Job `124394409585` **SUCCESS** including baseline/App/Migrator build, disposable Greenfield Compose + Admin/CAD Smoke, native SQLite tests. Verify Job `124394409303` **FAILURE**.
+- Verify steps: npm dependency install and Prisma generate SUCCESS; TypeScript SUCCESS; ESLint SUCCESS (Run #343 prior lint error not repeated); **Vitest Unit/Integration FAILURE** with `103 test files passed / 1 suite failed`, **682 tests passed**. Only failed suite: `src/tests/integration/memo-search-auth.test.ts` at module collection (`0 test`), error `This module cannot be imported from a Client Component module. It should only be used from a Server Component.` from `node_modules/server-only/index.js:1:7`. No actual signed Site/role assertion was executed in that suite; it is an import isolation failure, **not evidence of auth logic failure**.
+- OCI standalone tests, DXF benchmark, Next Production Build, Chromium browser E2E, signed G7 Runtime/Greenfield E2E and legacy migration E2E were **SKIPPED** by sequential fail-fast Verify workflow. Do not treat Docker SUCCESS or the other 682 passing tests as full CI pass.
+
+### Cause and narrowly scoped fix
+
+- `memo-search-auth.test.ts` imports `requireMemoSearchSites` from `src/server/scene/scene-context.ts`. That runtime module also imports `@/server/context`, which intentionally imports the Next `server-only` marker. Vitest's module collection executed this sentinel despite the test only needing the G7 Memo Site auth helper.
+- Fix code commit [`cd05b0faff7a7d27cab890626d12a1eddda8488d`](https://github.com/planner77/layoutManager/commit/cd05b0faff7a7d27cab890626d12a1eddda8488d): add hoisted `vi.mock('@/server/context', () => ({context:()=>{throw new Error('UNEXPECTED_LEGACY_CONTEXT')}}))` in the **test file only**, matching the existing `src/tests/integration/g7-runtime-cad.test.ts` signed-runtime isolation pattern. This excludes the unrelated legacy server-only import without mocking G7 signed authority, SiteGrant, actor/session revocation checks, Prisma, production route, or the `requireMemoSearchSites` implementation. Unexpected legacy fallback fails loudly.
+- Documentation commit `8e2506188bd4ea5a3157fa631ec1f40cd69d805f` adds test-plan and evidence clarifications to `AGENTS.md`, `out/TestPlan.md`, `out/TestReport.md`, and `out/Issues88-90.md`. No production runtime / DB / CAD Source / writer / schema changes and no CI controls disabled.
+
+### Review, Main, and new PR CI gate
+
+- PR #176 latest checked docs HEAD `8e2506188bd4ea5a3157fa631ec1f40cd69d805f`, base Main `7058ec393aad10ebbf22bec6dda70d961cb9b483`: GitHub compare `ahead_by=18, behind_by=0`, `status=ahead`; PR `mergeable=true`, **no Main conflict**. Single previous Codex P2 thread `PRRT_kwDOUQjDfc6yLh4a` is **resolved/outdated** (reply recorded in earlier ledger); `0 unresolved` at this check. Resolved thread status does not equal a fresh Codex approval.
+- New code/docs pushes automatically trigger `pull_request.synchronize` PR CI: intermediate code Run #346 / `41156201323` was `in_progress`, docs Run #347 / `41156295790` was `pending` when observed. These are not PASS and may be cancelled by the final ledger commit due to CI concurrency. The *next* ledger commit to branch must trigger a full PR CI on the exact new HEAD; record Run ID/status if confirmed, with **outcome NOT VERIFIED** until an actual completed run. No ongoing CI monitoring requested.
+- PR merge, GHCR, issue closure, legacy volume migration, G7 Auth/CAD Write activation, real DXF/2-PC/GPU field acceptance and 1k/10k/100k search SLA evidence **NOT PERFORMED**. Keep #88/#90 OPEN. Past #342 cancelled, #343 lint failure, and #345 Vitest failure remain distinct historical records; no retroactive PASS.
+
+---
+
+## #88/#90 PR #176 — PR CI #343 ESLint FAILURE, P2 fixed, new PR CI handoff (2026-10-31 KST)
+
+### Exact failed execution and classification
+- [PR CI #343 / Run #41148144608](https://github.com/planner77/layoutManager/actions/runs/41148144608) `completed/failure`, source HEAD `8bf85699021ac587bb1595cd44bb27618f141d8b`. Earlier [PR CI #342 / Run #41148087457](https://github.com/planner77/layoutManager/actions/runs/41148087457) at `be10753a617d165f49d7242c0756880c47fb7e06` was **CANCELLED**, not success or independent failure.
+- Docker Job `124378361245` **SUCCESS**: baseline and App/Migrator image builds, native SQLite/OCI audits, disposable Greenfield Compose/Admin/CAD/restart smoke all reported success. No Docker/Greenfield migration failure evidenced by this run.
+- Verify Job `124378361508` **FAILURE**: `npm ci` / Prisma Client generation / TypeScript checker **SUCCESS**. `ESLint` **FAILURE** with exactly **3 errors + 11 nonblocking warnings**. `src/features/cad-viewer/viewer.tsx` #414 `openDelete` and #572 `resetOutline`: `react-hooks/preserve-manual-memoization` compiler-inferred `setDeleteRequest` dependency did not match explicit manual deps. #651: `react-hooks/set-state-in-effect` from synchronous `setMemoLinkNotice` inside new direct-link effect. Original M6/M7 request/renderer lifecycles not yet exercised by CI past lint.
+- Unit/Integration/OCI test/outline benchmark, Production Next build, Chromium E2E, signed G7 Runtime and Greenfield E2E, Legacy migration E2E were **SKIPPED** in that failed Verify job. Docker success must not be presented as overall PR success. Existing 11 warning messages remain distinct from lint failures.
+
+### Corrections, review and regression
+- Code correction `c783bf4e8ff51ff68f090be0059f9e88708c8709`: `openDelete`/`resetOutline` manual callback deps explicitly include `setDeleteRequest` rather than disabling lint rules. Invalid UUID/unsupported Renderer/G7 off/unavailable notices are render-derived; async GET success/error continues to update state in asynchronous continuations.
+- [Codex P2 inline finding #4429501072](https://github.com/planner77/layoutManager/pull/176#discussion_r4429501072), thread `PRRT_kwDOUQjDfc6yLh4a`: previous memo-notice retry called `setAttempt`, reinitialized ViewerManager and could silently drop unsaved APP_CREATED/Undo work. Replaced with memo HTTP-only `memoDetailRetry` and `memoListRetry`, with no CAD loader epoch change; link-copy success/fallback does not expose destructive retry. `OFF` or unavailable memo list uses list-only refresh. Reply [#4429705126](https://github.com/planner77/layoutManager/pull/176#discussion_r4429705126) posted and GitHub GraphQL thread **RESOLVED**. This resolves the code finding, not independent CI acceptance.
+- Regression commit `166fdd52c585a50a025a04d3d1c0ab815bd27455`: Playwright `#88 P2` checks that memo-only retry keeps same WebGL canvas element and unsaved browser-session Memo after auth runtime OFF; one unused lint-disable in memo search screen removed. Test execution **NOT VERIFIED** until next exact-head CI.
+- Documentation correction `f573e84b0c6657a7aabaa65c582af400f64584b7` in AGENTS.md, out/Issues88-90.md, TestPlan/TestReport records the technical root cause and non-destructive retry boundary. No tests locally run in connector-only environment. No legacy volume migration, Auth/Writer activation, GHCR, Merge, issue closure or real-site acceptance.
+
+### Latest reviewed gate and new CI trigger
+- Before this ledger write, GitHub PR #176 code/docs HEAD `f573e84b0c6657a7aabaa65c582af400f64584b7`, base Main `7058ec393aad10ebbf22bec6dda70d961cb9b483`: compare status `ahead`, ahead=15, **behind=0**; PR `mergeable=true`, so no known Main conflict. One Codex inline thread is resolved/outdated; **unresolved=0** at the last check. Later commits/reviews must be reassessed for merge decision; no approval is implied.
+- **Next operation:** push this failure ledger entry to the existing PR branch. The resulting `pull_request.synchronize` is expected to start a **new full PR CI** on the post-repair HEAD; verify a workflow Run was queued/started but do not monitor its conclusion per Owner request. Newly started CI is **NOT VERIFIED** and does not retrospectively change Run #343 or #342. If no workflow starts, mark trigger not confirmed and use a supported event rather than reporting success.
+
+---
+
+## #88/#90 PR #176 — new PR review/merge gate and exact-HEAD CI handoff (2026-10-31 KST)
+
+- [PR #176](https://github.com/planner77/layoutManager/pull/176) was created from `feat/issues-88-90-memo-link-search-20261031` at code+ledger HEAD `be10753a617d165f49d7242c0756880c47fb7e06`, base Main `7058ec393aad10ebbf22bec6dda70d961cb9b483`.
+- **Actual GitHub gate read:** after initial mergeable calculation, GitHub REST reported `mergeable=true, mergeable_state=unstable, rebaseable=true`; GitHub compare `status=ahead, ahead_by=11, behind_by=0`; GraphQL review threads `[]` (**0 unresolved**, not independent review approval). No merge conflict and no thread to resolve at that checkpoint. The `unstable` state is CI/check status, not a source merge conflict.
+- Owner requested **start PR CI and skip monitoring**. This record is committed before the latest PR `synchronize` event, which is expected to trigger PR CI. Workflow execution SUCCESS/FAILURE, Run ID, test count and Docker Build **NOT YET VERIFIED**; monitoring deliberately omitted. Do not close #88/#90, merge, push GHCR or change runtime.
+- Automated tests and full M6 signed cross-session/performance acceptance remain in [TestReport](TestReport.md) as NOT RUN/NOT VERIFIED, regardless of PR creation. Failures, if reported, must be appended with exact run/root cause before a new CI attempt.
+
+---
+
+## #88/#90 M6/M7 — pre-PR CI implementation, review and conflict ledger (2026-10-31 KST)
+
+- **Scope and order:** dependencies #83/#84/#85/#86 closed. Root DESIGN.md absent, so AGENTS.md + out/Architecture.md/Decisions.md/Issues88-90.md are design authority. #88 authenticated UUID Version+Memo URL and renderer-ready WCS focus first; #90 G7 Site-scoped DB search and home UI second. Code/test/docs committed on `feat/issues-88-90-memo-link-search-20261031`.
+- **Main alignment verified before PR:** Main `7058ec393aad10ebbf22bec6dda70d961cb9b483`, branch initial development head `89867a685c0748035254524950fa19775adae1a7`, compare GitHub returned `status=ahead, ahead_by=10, behind_by=0`, 27 changed files. No divergent Main commits/conflict at this checkpoint. Actual PR mergeable/review threads will be checked after PR creation. Do not infer future no-conflict automatically.
+- **Synthetic tests added, execution status:** Unit `viewer-link`/`cad-memo-search`, SQLite Integration `memo-search-sql`, G7 signed session `memo-search-auth`, Playwright entry cases `issues88-90-memo-search`. This connected Git-object-only environment cannot execute workspace TypeScript/Vitest/Browser locally. **NOT RUN**; PR CI Typecheck/Lint/Vitest/Playwright/Build/Docker outcomes **NOT VERIFIED**. Real signed cross-session Memo focus and 1k/10k/100k search performance **NOT VERIFIED**; no invented SLA or PASS.
+- **Safety/release:** No auth scope weakening, legacy DB adoption/migration, Version/Current/Scene mutation, origin DXF parsing for search, operation switch, GHCR push or Issue closure. OFF runtime keeps persistent search inaccessible. PR CI trigger planned after this failure ledger commit; monitoring intentionally omitted per Owner instruction. If CI fails, append exact Run, root cause, patch evidence and new HEAD, then restart. No prior failure is suppressed or retroactively marked success.
+
+---
+
 ## #85/#86 PR #175 — PR CI #341 SUCCESS, Owner Managed Squash + Main CI/GHCR launch (2026-10-31 KST)
 
 ### Verified, exact-source PR CI
