@@ -1,3 +1,12 @@
+## PR #177 첫 실패 및 P1 보완 재검증 계획 (2026-10-31)
+
+- 최초 Run 41162108326 Typecheck PASS, ESLint 2 ERROR + 10 WARNING, Verify 후속 SKIPPED, Docker PASS. 재실행 HEAD에서 React react-hooks/refs (render callback 대신 JSX)와 Next.js internal Link Lint를 실제 확인한다. Lint 비활성화/Skip 없음.
+- TC-138-02 추가: 모바일 검색 모달에서 Tab, Shift+Tab은 내부 경계로 순환하고 모바일 Escape는 검색창만 닫음. 데스크톱 검색 입력 focus Escape도 검색창만 닫고 fullscreen 보존; 열린 모바일 검색 트리거는 숨김.
+- TC-138-P1-TOOLS 추가: 375×580 화면에서 Tools viewport overflow-y:auto / 내부 스크롤/닫기/Canvas identity. 기존 Memo #85, Layer #39, Outline #40, Drawer #127 등과 함께 검증.
+- 정확 HEAD Typecheck·ESLint·Unit/Integration·Build·E2E·G7/Greenfield/Migration 및 Docker CI는 실제 새 실행 결과가 나올 때까지 NOT VERIFIED. 실 DXF/GPU 수용은 별도.
+
+---
+
 ## #139 → #138 → #137 단일 PR 후보 회귀 계획 (2026-10-31)
 
 - TC-139-01~04 Unit: AC1032 ANSI_949+UTF8 한글/정확한 삽입점 중심, AC1018 실제 CP949 byte 가나, AC1021 932/936/950/949 stale header, BOM/missing HEADER, unsupported label·invalid byte·Binary DXF. 기존 TC-TEXT-001~011과 두 렌더러 검색·카메라 E2E.

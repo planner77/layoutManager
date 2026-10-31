@@ -1,3 +1,23 @@
+## PR #177 — #139/#138/#137 최초 PR CI 실패 및 P1 3건 보완 (2026-10-31 KST)
+
+### 정확한 실패 증거
+- PR #177 첫 HEAD 74be95eb77a3077c0b052ac8be53f19974b2dde4, [PR CI Run 41162108326](https://github.com/planner77/layoutManager/actions/runs/41162108326) completed/failure. Verify [Job 124421702132](https://github.com/planner77/layoutManager/actions/runs/41162108326/job/124421702132) FAILURE, Docker image/migration/runtime smoke [Job 124421702420](https://github.com/planner77/layoutManager/actions/runs/41162108326/job/124421702420) SUCCESS.
+- Node 22, npm ci, Prisma Client, TypeScript 검사 SUCCESS. ESLint 12 problems = 2 blocking errors + 10 nonblocking warnings. Unit/Integration, OCI tests, benchmarks, Next production build, Chromium/G7/Greenfield/Legacy migration E2E all SKIPPED. 이전 성공 Run 또는 Docker 성공으로 검증 완료를 주장하지 않는다.
+- E1: src/features/cad-viewer/viewer-app-shell.tsx:111, react-hooks/refs Cannot access refs during render. textSearch render-prop 함수를 렌더 중 직접 호출하면서 workspaceRef/dialogRef를 함수 인수로 넘김. Fix: data-only component props + React JSX CadTextSearch 컴포넌트 렌더링 (수동 Ref 전달 함수 호출 금지).
+- E2: src/features/cad-viewer/viewer-menu-bar.tsx:10, @next/next/no-html-link-for-pages. 내부 '/' 링크에 raw anchor를 사용. Fix: next/link Link 컴포넌트로 바꾸고 href='/' + 기존 confirmDiscard 유지. Lint rule/CI 단계 해제 없음.
+
+### Codex P1 3건 (첫 검토 HEAD 74be95eb)
+- [P1 #4430083615](https://github.com/planner77/layoutManager/pull/177#discussion_r4430083615): capture-phase ESC가 신규 data-drawer=search 이벤트를 소비만 하여 창이 닫히지 않음. Viewer escape dispatcher에 검색 전용 close/trigger focus 분기 추가.
+- [P1 #4430083618](https://github.com/planner77/layoutManager/pull/177#discussion_r4430083618): compact 검색 모달에 trapTab 누락, Tab이 외부로 이탈. Shell shared trapTab을 CadTextSearch → MovableViewerPanel onKeyDown에 전달; 모바일 열림 중 외부 검색 트리거 숨김.
+- [P1 #4430083623](https://github.com/planner77/layoutManager/pull/177#discussion_r4430083623): Tools drawer 내 overflow:hidden으로 아래 입력/버튼 잘림. 닫기 버튼은 스크롤 영역 밖에 배치, 본문은 min-h-0 flex-1 overflow-y-auto viewport로 변경.
+- 수정 코드 [8a05a8f8](https://github.com/planner77/layoutManager/commit/8a05a8f8e1e47b758c66a87de5777029b95d04b0), P1 회귀 E2E [a04d3717](https://github.com/planner77/layoutManager/commit/a04d3717aa8ab77ea31310abf040937f254dfd3f) 추가. 모바일 Tab/Shift+Tab, 검색 ESC 모바일/데스크톱, 짧은 화면 tools scroll 및 닫기 검사. 세 원문 리뷰에 직접 답변하고 스레드 PRRT_kwDOUQjDfc6yM484/M485/M489 각각 Resolved 완료 확인 (3/3). 이는 신규 리뷰/새 CI 완료 선언 아님.
+
+### 재실행 전 정합성 및 안전 경계
+- Main 1a974448dc5fef5539e6d246cbd1ad30c6f46f73, behind=0, PR mergeable=true, unresolved review threads 0 (새 CI 시작 직전 점검). 신규 정확 HEAD의 Typecheck/Lint/Unit/E2E/Build/Docker 결과는 검증 전 NOT VERIFIED. CI 모니터링은 Owner 지시로 생략.
+- 루트 DESIGN.md 없음: AGENTS.md, out/Architecture.md, out/Decisions.md, out/ViewerPanelPolicy.md 기반. 실제 사내 DXF/DRM/실 GPU/2PC 현장 수용, 운영 Auth/Writer/DB/Volume, GHCR 게시, PR 병합, Issue 종료는 수행하지 않음.
+
+---
+
 ## #139 → #138 → #137 통합 후보 사전 실패/리스크 원장 (2026-10-31)
 
 - Branch: feat/issues-139-138-137-viewer-20261031. Main 기준 1a974448dc5fef5539e6d246cbd1ad30c6f46f73. Source commits: #139 d8fe1050, #138 21f7aa92, #137 896555f6, 합성 시험 9061417c. PR CI 및 로컬 Typecheck/Lint/Unit/E2E/Build NOT RUN; 과거 PR 성공을 새 HEAD 성공으로 오인 금지.

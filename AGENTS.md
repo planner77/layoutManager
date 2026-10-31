@@ -1,3 +1,11 @@
+## PR #177 — Lint 오류·Codex P1 3건 조치 (2026-10-31)
+
+- 첫 PR CI [Run 41162108326](https://github.com/planner77/layoutManager/actions/runs/41162108326), HEAD 74be95eb: Verify Job 124421702132 Typecheck SUCCESS / ESLint 2 ERROR + 10 WARNING으로 FAILURE; Unit/Build/E2E SKIPPED, Docker Job 124421702420 SUCCESS. 실패 원인은 ViewerAppShell의 React ref를 render-prop에 넘기는 react-hooks/refs 및 ViewerMenuBar의 raw '/' anchor를 Next Link로 대체해야 하는 @next/next/no-html-link-for-pages.
+- 수정 8a05a8f8: data-only search props + JSX CadTextSearch; next/link Link; #138 P1 capture-phase search Escape 별도 처리·모바일 Tab trap 전달·Tools 내부 bounded scroll viewport. E2E 확장 a04d3717: 모바일 Tab/Shift+Tab, 데스크톱/모바일 Escape, Tools Scroll. Codex P1 [4430083615](https://github.com/planner77/layoutManager/pull/177#discussion_r4430083615), [4430083618](https://github.com/planner77/layoutManager/pull/177#discussion_r4430083618), [4430083623](https://github.com/planner77/layoutManager/pull/177#discussion_r4430083623) 답변 후 review threads 3/3 Resolved. 상세 [FailureLedger](out/FailureLedger.md).
+- Main behind 0, mergeable=true 확인. 정확 최신 HEAD에서 새 PR CI 시작 후 모니터링하지 않음; 실행 후 실제 상태 확인 없이 PASS 주장 금지. 루트 DESIGN.md는 없으며 Architecture/Decisions를 설계 기준으로 유지. CI 게이트/인가 우회·운영 DB/Writer·GHCR 게시·Merge/Issue 종료는 범위 밖.
+
+---
+
 ## #139/#138/#137 단일 Viewer PR 후보 (2026-10-31)
 
 - 구현 순서: #139 DXF 텍스트 UTF-8/CP949 판정 수정 → #138 공통 이동 패널 Layer/Outline/Tools/TEXT 확장 → #137 좌상단 도면 전체 목록 이동 및 미저장 confirm. 설계 [Issues137-139](out/Issues137-139.md), 정책 [ViewerPanelPolicy](out/ViewerPanelPolicy.md).
