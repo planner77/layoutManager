@@ -25,9 +25,11 @@ import type {OutlineAssignment} from '../../domain/outline-assignment';
 import {parseOutlineAssignmentMetadata} from '../../domain/outline-assignment';
 import {outlineGeometryBounds} from '../../domain/outline-tree';
 import {selectedTranslationIds,validTranslationPreview} from '../../domain/generated-translate';
+import {selectedRotation,dragRotationDegrees} from '../../domain/generated-rotate';
+import {buildGeneratedTransfer,parseGeneratedTransfer} from '../../domain/generated-transfer';
 import {canvasEditCapability,canvasObjectRef,createGeneratedId,validCanvasScope,type CanvasObjectRef} from '../../domain/canvas-object-selection';
 import {
-  GeneratedDocument,generatedResult,IDENTITY_2D,
+  GeneratedDocument,generatedResult,generatedRigidMatrix,IDENTITY_2D,
   type GeneratedCommand,type Affine2D,
 } from '../../domain/generated-document';
 import {SceneWorkDocument,type SceneWorkCommand,type SceneWorkState} from '../../domain/scene-work';
@@ -83,8 +85,15 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     ids:readonly string[];
     bounds:Readonly<{minX:number;minY:number;maxX:number;maxY:number}>;
   }>;
+  private rotateHandle?:HTMLButtonElement;
+  private dragRotation?:{
+    pointerId:number;ids:readonly string[];pivot:readonly [number,number];
+    start:readonly [number,number];angleDegrees:number;
+  };
+  private rotationGhost?:THREE.Group;
   private cameraChanged=()=>{
     if(this.dragTranslation)this.selector?.cancelGeneratedDrag();
+    if(this.dragRotation)this.dropRotationPreview();
   };
   /** GeneratedDocument owns all confirmed geometry, ordering, UUIDs, metadata and visibility. */
   private document?:GeneratedDocument;
@@ -112,6 +121,26 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     this.renderer.setPixelRatio(window.devicePixelRatio);
     this.renderer.setClearColor(0x000000);
     container.append(this.renderer.domElement);
+    const rotateHandle=document.createElement('button');
+    rotateHandle.type='button';
+    rotateHandle.dataset.testid='generated-rotate-handle';
+    rotateHandle.setAttribute('aria-label','선택한 생성 개체 회전 핸들');
+    rotateHandle.title='WCS XY 반시계(+) 회전 · 드래그, ESC 취소';
+    rotateHandle.textContent='↻';
+    Object.assign(rotateHandle.style,{
+      position:'absolute',zIndex:'46',display:'none',transform:'translate(-50%,-50%)',
+      minWidth:'30px',height:'30px',padding:'3px',borderRadius:'50%',
+      border:'2px solid #0f766e',background:'#fff',color:'#115e59',
+      cursor:'grab',touchAction:'none',fontSize:'19px',fontWeight:'bold',
+    });
+    this.rotateHandle=rotateHandle;
+    container.append(rotateHandle);
+    rotateHandle.addEventListener('pointerdown',this.rotatePointerDown);
+    rotateHandle.addEventListener('pointermove',this.rotatePointerMove);
+    rotateHandle.addEventListener('pointerup',this.rotatePointerUp);
+    rotateHandle.addEventListener('pointercancel',this.rotatePointerCancel);
+    rotateHandle.addEventListener('lostpointercapture',this.rotatePointerCancel);
+    window.addEventListener('keydown',this.rotateKeyDown,true);
     this.camera.position.z = 1000;
     this.controls = new OrbitControls(this.camera,this.renderer.domElement);
     this.controls.enableRotate = false;
@@ -127,6 +156,8 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
       partial.renderer?.dispose();
       partial.renderer?.forceContextLoss();
       for(const canvas of container.querySelectorAll('canvas')) if(!existingCanvases.has(canvas))canvas.remove();
+      this.rotateHandle?.remove();this.rotateHandle=undefined;
+      window.removeEventListener('keydown',this.rotateKeyDown,true);
       this.document?.dispose();this.document=undefined;
       throw error;
     }
@@ -134,12 +165,14 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
   private render = () => {
     if (!this.disposed) {
       this.renderer.render(this.scene,this.camera);
+      this.updateRotateHandle();
       this.outline?.onViewChange?.();
     }
   };
   private size = () => {
     if (this.disposed) return;
     this.selector?.cancelGeneratedDrag();
+    if(this.dragRotation)this.dropRotationPreview();
     const w=Math.max(1,this.container.clientWidth), h=Math.max(1,this.container.clientHeight);
     this.renderer.setSize(w,h);
     const height=this.camera.top-this.camera.bottom;
@@ -585,6 +618,133 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
       this.dropTranslationPreview();
     }
   }
+  /** A dedicated HTML handle owns rotation gestures; selected boundary drag keeps E4 Translate. */
+  private updateRotateHandle(){
+    const handle=this.rotateHandle;
+    if(!handle)return;
+    if(this.dragRotation)return;
+    handle.style.display='none';
+    if(this.disposed||this.mode!=='generated'||!this.outline||!this.selector||!this.document)return;
+    try{
+      const selected=selectedRotation(this.getCanvasObjectSelection(),this.getGeneratedObjects(),this.outline);
+      const at=this.projectWcsToCanvas({x:selected.pivot[0],y:selected.bounds.maxY});
+      if(!at)return;
+      const canvasRect=this.renderer.domElement.getBoundingClientRect();
+      const containerRect=this.container.getBoundingClientRect();
+      const x=canvasRect.left-containerRect.left+at.x;
+      const y=canvasRect.top-containerRect.top+at.y-36;
+      if(!Number.isFinite(x)||!Number.isFinite(y)||x<16||y<16||
+         x>containerRect.width-16||y>containerRect.height-16)return;
+      handle.style.left=x+'px';handle.style.top=y+'px';
+      handle.textContent='↻';handle.style.display='block';
+    }catch{/* SOURCE/mixed/empty/hidden/stale selection has no rotation handle. */}
+  }
+  private rotatePointerDown=(event:PointerEvent)=>{
+    if(event.button!==0||this.dragRotation||!this.document||!this.outline||
+       this.mode!=='generated'||event.ctrlKey||event.metaKey||event.altKey||event.shiftKey)return;
+    try{
+      this.cancelGeneratedCommand();
+      const selected=selectedRotation(this.getCanvasObjectSelection(),this.getGeneratedObjects(),this.outline);
+      const rect=this.renderer.domElement.getBoundingClientRect();
+      const start=this.screenToWorld(event.clientX-rect.left,event.clientY-rect.top);
+      if(!start.every(n=>Number.isFinite(n)&&Math.abs(n)<=1e12))
+        throw new Error('회전 시작 좌표가 유효하지 않습니다.');
+      const entries=this.document.getObjects().filter(item=>selected.ids.includes(item.ref.id));
+      const paths:OutlinePath[]=entries.flatMap(item=>{
+        const g=generatedResult(item).geometry;
+        const polys=g.type==='Polygon'?[g.coordinates]:g.coordinates;
+        return polys.flatMap(poly=>poly.map(ring=>({points:ring,closed:true})));
+      });
+      this.document.stage({type:'Rotate',ids:selected.ids,angleDegrees:0,pivot:selected.pivot},
+        this.getCanvasObjectSelection());
+      this.rotationGhost=this.createPathGroup(paths,0x22d3ee);
+      this.scene.add(this.rotationGhost);
+      this.dragRotation={pointerId:event.pointerId,ids:selected.ids,pivot:selected.pivot,
+        start,angleDegrees:0};
+      this.rotateHandle?.setAttribute('data-canvas-edit-escape-layer','rotate');
+      this.rotateHandle?.setPointerCapture(event.pointerId);
+      this.renderer.domElement.dataset.generatedRotatePreview='0';
+      if(this.rotateHandle)this.rotateHandle.style.cursor='grabbing';
+      event.preventDefault();event.stopPropagation();
+      this.render();
+    }catch(error){
+      this.dropRotationPreview();
+      this.outline?.onEditError?.(error instanceof Error?error.message:'회전을 시작할 수 없습니다.');
+    }
+  };
+  private rotatePointerMove=(event:PointerEvent)=>{
+    const drag=this.dragRotation;
+    if(!drag||drag.pointerId!==event.pointerId||!this.rotationGhost)return;
+    try{
+      const rect=this.renderer.domElement.getBoundingClientRect();
+      const current=this.screenToWorld(event.clientX-rect.left,event.clientY-rect.top);
+      const angleDegrees=dragRotationDegrees(drag.start,current,drag.pivot);
+      const matrix=generatedRigidMatrix({type:'Rotate',angleDegrees,pivot:drag.pivot});
+      // Stage and final commit validate every vertex; preview must also stay WCS finite.
+      const entries=this.document?.getObjects().filter(item=>drag.ids.includes(item.ref.id))??[];
+      for(const item of entries){
+        const bounds=outlineGeometryBounds(generatedResult(item).geometry);
+        if(!bounds)throw new Error('WCS 회전 범위가 유효하지 않습니다.');
+        for(const [x,y] of [[bounds.minX,bounds.minY],[bounds.minX,bounds.maxY],
+          [bounds.maxX,bounds.minY],[bounds.maxX,bounds.maxY]]){
+          const nx=matrix[0]*x+matrix[2]*y+matrix[4];
+          const ny=matrix[1]*x+matrix[3]*y+matrix[5];
+          if(!Number.isFinite(nx)||!Number.isFinite(ny)||Math.abs(nx)>1e12||Math.abs(ny)>1e12)
+            throw new Error('회전 결과가 WCS 유효 범위를 벗어났습니다.');
+        }
+      }
+      drag.angleDegrees=angleDegrees;
+      this.rotationGhost.rotation.z=angleDegrees*Math.PI/180;
+      this.rotationGhost.position.set(matrix[4],matrix[5],0);
+      this.renderer.domElement.dataset.generatedRotatePreview=angleDegrees.toFixed(3);
+      if(this.rotateHandle)this.rotateHandle.textContent=angleDegrees.toFixed(1)+'°';
+      event.preventDefault();event.stopPropagation();this.render();
+    }catch(error){
+      this.outline?.onEditError?.(error instanceof Error?error.message:'회전 미리보기를 취소했습니다.');
+      this.dropRotationPreview();
+    }
+  };
+  private rotatePointerUp=(event:PointerEvent)=>{
+    const drag=this.dragRotation;
+    if(!drag||drag.pointerId!==event.pointerId)return;
+    event.preventDefault();event.stopPropagation();
+    try{
+      if(this.mode!=='generated'||!this.document||!this.outline)
+        throw new Error('회전 도중 Renderer 또는 편집 모드가 변경되었습니다.');
+      const current=selectedRotation(this.getCanvasObjectSelection(),this.getGeneratedObjects(),this.outline);
+      if(current.ids.length!==drag.ids.length||current.ids.some(id=>!drag.ids.includes(id)))
+        throw new Error('회전 도중 선택한 객체가 변경되었습니다.');
+      if(Math.abs(drag.angleDegrees)<1e-8)return;
+      this.document.stage({type:'Rotate',ids:drag.ids,
+        angleDegrees:drag.angleDegrees,pivot:drag.pivot},this.getCanvasObjectSelection());
+      this.document.commitPending(this.getCanvasObjectSelection());
+    }catch(error){
+      this.outline?.onEditError?.(error instanceof Error?error.message:'회전 확정이 취소되었습니다.');
+    }finally{this.dropRotationPreview();}
+  };
+  private rotatePointerCancel=(event:PointerEvent)=>{
+    if(this.dragRotation?.pointerId===event.pointerId)this.dropRotationPreview();
+  };
+  private rotateKeyDown=(event:KeyboardEvent)=>{
+    if(event.key==='Escape'&&this.dragRotation){
+      this.dropRotationPreview();
+      event.preventDefault();event.stopImmediatePropagation();
+    }
+  };
+  private dropRotationPreview(){
+    const drag=this.dragRotation,ghost=this.rotationGhost;
+    this.dragRotation=undefined;this.rotationGhost=undefined;
+    if(this.rotateHandle){
+      this.rotateHandle.removeAttribute('data-canvas-edit-escape-layer');
+      this.rotateHandle.style.cursor='grab';this.rotateHandle.textContent='↻';
+      if(drag&&this.rotateHandle.hasPointerCapture(drag.pointerId))
+        this.rotateHandle.releasePointerCapture(drag.pointerId);
+    }
+    delete this.renderer.domElement.dataset.generatedRotatePreview;
+    if(ghost){this.scene.remove(ghost);release(ghost);}
+    this.document?.cancelPending();
+    if(ghost&&!this.disposed)this.render();
+  }
   private createPathGroup(paths:OutlinePath[],color:number){
     const group=new THREE.Group(),z=this.bounds.isEmpty()?0:this.bounds.max.z+0.5;
     for(const path of paths){
@@ -642,7 +802,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     this.cancelGeneratedCommand();
     if(mode==='select'&&this.sourceWorkChanged())
       throw new Error('렌더 객체 변경 중에는 원본 정밀 선택을 사용할 수 없습니다.');
-    this.mode=mode;this.selector?.setMode(mode);
+    this.mode=mode;this.selector?.setMode(mode);this.updateRotateHandle();
   }
   getOutlineSelection(){return this.selector?.getSelection()??[];}
   clearOutlineSelection(){this.selector?.clear();}
@@ -812,6 +972,26 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     return this.selector?.selectGenerated(entry.ref.id,additive)??false;
   }
   getGeneratedHistory(){return this.document?.history()??{undo:0,redo:0,limit:100};}
+  getGeneratedTransfer(){
+    if(!this.document)throw new Error('생성 개체 Document가 없습니다.');
+    return buildGeneratedTransfer(this.document,this.getOutlineInfo()?.unitCode??null);
+  }
+  importGeneratedTransfer(raw:unknown,replace:boolean):{count:number;legacy:boolean}{
+    if(!this.document||!this.outline||this.disposed)
+      throw new Error('생성 개체 가져오기를 지원하지 않습니다.');
+    const parsed=parseGeneratedTransfer(raw,this.outline,this.getOutlineInfo()?.unitCode??null);
+    if(!replace&&(this.document.getObjects().length>0||
+       this.document.history().undo>0||this.document.history().redo>0))
+      throw new Error('기존 생성 개체가 있습니다. 명시적인 전체 교체 확인이 필요합니다.');
+    // Validate every object before modifying the live Document. On failure
+    // replaceFromImport preserves the current session/history unmodified.
+    this.document.replaceFromImport(parsed.entries);
+    const maxOrdinal=Math.max(0,...parsed.entries.map(e=>Number(e.savedOutlineId.slice(6))));
+    this.nextSavedId=maxOrdinal+1;
+    this.cancelGeneratedCommand();
+    this.selector?.clearObjects();
+    return {count:parsed.entries.length,legacy:parsed.legacy};
+  }
   executeGeneratedCommand(command:GeneratedCommand):void {
     this.cancelGeneratedCommand();
     if(!this.document)throw new Error('이 Renderer에서는 생성 개체 편집을 지원하지 않습니다.');
@@ -830,9 +1010,11 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
   cancelGeneratedCommand():boolean{
     const hadGhost=!!this.dragGhostGroup;
     const hadPending=this.document?.hasPending??false;
+    const hadRotation=!!this.dragRotation;
     const stopped=this.selector?.cancelGeneratedDrag()??false;
+    this.dropRotationPreview();
     this.dropTranslationPreview();
-    return stopped||hadGhost||hadPending;
+    return stopped||hadGhost||hadPending||hadRotation;
   }
   undoGeneratedEdit():boolean{this.cancelGeneratedCommand();return this.document?.undo()??false;}
   redoGeneratedEdit():boolean{this.cancelGeneratedCommand();return this.document?.redo()??false;}
@@ -841,7 +1023,9 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     if(this.disposed)return;this.disposed=true;this.cancel?.();this.resize.disconnect();
     this.terminateWorker('index');this.terminateWorker('compute');
     this.selector?.dispose();this.selector=undefined;
-    this.dropTranslationPreview();
+    this.dropRotationPreview();this.dropTranslationPreview();
+    window.removeEventListener('keydown',this.rotateKeyDown,true);
+    this.rotateHandle?.remove();this.rotateHandle=undefined;
     for(const group of [this.selectionGroup,this.previewGroup,this.savedGroup,this.selectedSavedGroup])if(group)release(group);
     this.savedGroups.clear();this.renderedTransforms.clear();this.document?.dispose();this.document=undefined;
     this.sceneWork?.dispose();this.sceneWork=undefined;this.sceneObjects.clear();this.rendererIds.clear();
