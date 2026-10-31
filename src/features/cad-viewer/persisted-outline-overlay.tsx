@@ -2,8 +2,9 @@
 import { useEffect,useRef,useState } from 'react';
 import type { ViewerManager } from '@/viewers/core/adapter';
 import type { StoredOutline } from './persisted-outline-client';
-export function PersistedOutlineOverlay({outlines,hidden,getManager,viewRevision}:{
+export function PersistedOutlineOverlay({outlines,hidden,selected,getManager,viewRevision}:{
  outlines:readonly StoredOutline[];hidden:ReadonlySet<string>;getManager:()=>ViewerManager|null;viewRevision:number;
+ selected?:ReadonlySet<string>;
 }){
  const root=useRef<HTMLDivElement>(null);
  const [paths,setPaths]=useState<{id:string;d:string}[]>([]);
@@ -39,8 +40,10 @@ export function PersistedOutlineOverlay({outlines,hidden,getManager,viewRevision
  return <div ref={root} aria-label="서버 저장 외곽선 레이어"
    className="pointer-events-none absolute inset-0 z-10 overflow-hidden">
    <svg width="100%" height="100%" className="pointer-events-none" role="img" aria-label="영속 외곽선">
-    {paths.map(p=><path key={p.id} d={p.d} stroke="#22d3ee" strokeWidth="2"
-      fill="#22d3ee" fillOpacity="0.08" fillRule="evenodd" />)}
+    {paths.map(p=><path key={p.id} d={p.d} data-testid="persisted-outline-path" data-outline-id={p.id}
+      data-selected={selected?.has(p.id)??false}
+      stroke={selected?.has(p.id)?'#f59e0b':'#22d3ee'} strokeWidth={selected?.has(p.id)?3:2}
+      fill={selected?.has(p.id)?'#f59e0b':'#22d3ee'} fillOpacity={selected?.has(p.id)?0.2:0.08} fillRule="evenodd" />)}
    </svg>
  </div>;
 }

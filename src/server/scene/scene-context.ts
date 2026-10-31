@@ -1,4 +1,5 @@
 import type { Action } from '@/domain/auth';
+import type { Prisma } from '@/generated/prisma/client';
 import { CadError } from '@/domain/cad';
 import { requireResolvedPermission, type Role, type SpecialGrant, type UserAccess } from '@/domain/auth';
 import { digestSessionToken, SESSION_IDLE_MS } from '@/server/auth/session';
@@ -35,8 +36,9 @@ export function sceneReadContext(request:Request){
   const storage=new SceneBlobStorage(process.env.CAD_STORAGE_PATH,process.env);
   return {gate,repo:new SceneRepository(db,storage),close:async()=>storage.close()};
 }
-export async function requireSceneRead(request:Request,db:Database,versionId:string,gate:G7RuntimeGate,action:Action='cad:read'):Promise<void>{
-  if(gate.state==='OFF')return; // Preserve existing public CAD read mode only.
+export async function requireSceneRead(request:Request,db:Database|Prisma.TransactionClient,versionId:string,gate:G7RuntimeGate,action:Action='cad:read'):
+  Promise<{actorId:string;siteId:string;canWrite:boolean}|null>{
+  if(gate.state==='OFF')return null; // Preserve existing public CAD read mode only.
   if(gate.state!=='ACTIVE')throw deny('G7_RUNTIME_BLOCKED',503);
   const raw=cookie(request);
   if(!raw)throw deny('UNAUTHENTICATED',401);
@@ -57,6 +59,7 @@ export async function requireSceneRead(request:Request,db:Database,versionId:str
     specialGrants:session.user.specials.map(x=>x.permission as SpecialGrant)};
   try{
     if(!gate.siteIds.includes(siteId))throw new Error();
+    if(!await db.cadSite.findFirst({where:{id:siteId,active:true},select:{id:true}}))throw new Error();
     requireResolvedPermission(actor,action,{kind:'version',versionId},siteId);
   }catch{throw deny('ACCESS_DENIED',403);}
   // A scope-authorized Scene read is G3 session activity. Fail closed if the
@@ -69,6 +72,10 @@ export async function requireSceneRead(request:Request,db:Database,versionId:str
     data:{lastSeenAt:now},
   });
   if(touched.count!==1)throw deny('UNAUTHENTICATED',401);
+  let canWrite=false;
+  try{requireResolvedPermission(actor,'outline:write',{kind:'version',versionId},siteId);canWrite=gate.cadWriteEnabled;}
+  catch{/* Reader remains read-only. */}
+  return {actorId:actor.id,siteId,canWrite};
 }
 
 

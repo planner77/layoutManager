@@ -28,7 +28,7 @@ test('TC-U5-E2E-GATE-001: runtime OFF catalogue and pending typed confirmation r
   await expect(tools).toBeVisible();
   await expect(page.getByTestId('outline-type-select')).toBeDisabled();
   await expect(page.getByTestId('outline-typed-confirm')).toBeDisabled();
-  await expect(page.getByTestId('outline-type-gate')).toContainText('업무 타입을 지정하는 기능은 준비 중');
+  await expect(page.getByTestId('outline-type-gate')).toContainText('서버 로그인과 도면 접근 권한');
   await page.getByTestId('outline-instance-name').fill('타입 없는 외곽선');
   await expect(page.getByTestId('outline-typed-confirm')).toBeDisabled();
   await openViewerMenu(page, 'work');

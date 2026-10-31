@@ -13,9 +13,11 @@ import { executeG7RuntimeAdmin } from '../../server/g7-operational/runtime-admin
 import { G7_GREENFIELD_BASELINE, G7_GREENFIELD_SCHEMA_ID,
   G7_OLD_GREENFIELD_BASELINE, G7_OLD_GREENFIELD_BASELINE_CHECKSUM,
   G7_PREVIOUS_ANCHOR_BASELINE,G7_PREVIOUS_ANCHOR_CHECKSUM,
+  G7_PREVIOUS_TYPES_BASELINE,G7_PREVIOUS_TYPES_CHECKSUM,
   G7_DELETE_PASSWORD_TRIGGERS,assertG7GreenfieldSchema } from '../../server/g7-operational/greenfield-schema';
-import { CAD_BUSINESS_DDL } from '../../server/cad-business/schema-ddl';
+import { CAD_BUSINESS_DDL,LATEST_CAD_BUSINESS_DDL,OUTLINE_TYPE_DDL } from '../../server/cad-business/schema-ddl';
 import { CAD_ANCHOR_DDL } from '../../server/cad-business/anchor-ddl';
+import { CAD_MEMO_FEATURE_DDL } from '../../server/cad-business/memo-feature-ddl';
 
 const Sqlite=createRequire(import.meta.url)('better-sqlite3') as new(
   file:string,options?:{readonly?:boolean;fileMustExist?:boolean}
@@ -149,6 +151,27 @@ describe('#153 empty Greenfield installation without prior data or migration rep
       // A mixed old marker and new M4/M5 table must not be silently accepted.
       db.exec('CREATE TABLE "CadMemoFeature"(memo_id TEXT PRIMARY KEY)');
       expect(()=>assertG7GreenfieldSchema(db as never)).toThrow('G7_GREENFIELD_MEMO_FEATURE_SCHEMA_DRIFT');
+    }finally{db.close();}
+  });
+
+  test('R3 previous R2 types baseline remains exact without receipt objects',()=>{
+    const f=fresh(),db=new Sqlite(f.dbfile);
+    try{
+      for(const name of Object.keys(G7_RUNTIME_MIGRATION_CHECKSUMS))
+        db.exec(readFileSync(new URL('../../deploy/g7-s3/prisma/migrations/'+name+'/migration.sql',import.meta.url),'utf8'));
+      db.exec(readFileSync(new URL('../../deploy/scene-assets/migration.sql',import.meta.url),'utf8'));
+      for(const row of [...LATEST_CAD_BUSINESS_DDL,...CAD_ANCHOR_DDL,...CAD_MEMO_FEATURE_DDL,...OUTLINE_TYPE_DDL])
+        db.exec(row.sql);
+      for(const sql of G7_DELETE_PASSWORD_TRIGGERS)db.exec(sql);
+      db.exec('CREATE TABLE "_prisma_migrations"("id" TEXT NOT NULL PRIMARY KEY,"checksum" TEXT NOT NULL,"finished_at" TEXT,"migration_name" TEXT NOT NULL,"logs" TEXT,"rolled_back_at" TEXT,"started_at" TEXT NOT NULL,"applied_steps_count" INTEGER NOT NULL DEFAULT 0)');
+      const now=new Date().toISOString();
+      db.prepare('INSERT INTO "_prisma_migrations"(id,checksum,finished_at,migration_name,logs,rolled_back_at,started_at,applied_steps_count) VALUES(?,?,?,?,NULL,NULL,?,1)')
+        .run('types',G7_PREVIOUS_TYPES_CHECKSUM,now,G7_PREVIOUS_TYPES_BASELINE,now);
+      expect(()=>assertG7GreenfieldSchema(db as never)).not.toThrow();
+      expect(()=>assertG7RuntimeSchema(db as never)).not.toThrow();
+      expect(db.prepare("SELECT name FROM sqlite_master WHERE name='CadOutlineCreateReceipt'").all()).toEqual([]);
+      db.exec('CREATE TABLE "CadOutlineCreateReceipt"(id TEXT)');
+      expect(()=>assertG7GreenfieldSchema(db as never)).toThrow('G7_GREENFIELD_OUTLINE_RECEIPT_SCHEMA_DRIFT');
     }finally{db.close();}
   });
 

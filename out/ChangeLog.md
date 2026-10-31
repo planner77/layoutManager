@@ -1,7 +1,14 @@
-## 0.50.0 후보 — #65 전역 외곽선 타입 관리 (2026-11-01)
+## 0.51.0 후보 — #71/#73 타입 지정 영속 외곽선 (2026-11-01)
+
+- Added: 해당 Version/Site 권한으로 전역 활성 타입 카탈로그와 저장 외곽선을 조회한다. Reader는 조회, Editor 이상은 타입 지정 저장·수정·논리 삭제를 수행한다. 동일 사용자·Version·Idempotency-Key와 동일 정규화 요청의 재시도는 기존 결과를 반환하고 다른 내용은 409로 차단한다.
+- Added: 서버 Snapshot을 참조하는 Viewer 타입별 트리·Overlay·선택·표시·내보내기. 서버 항목은 브라우저 GeneratedDocument Undo에 넣지 않으며 Scene pointer 변경에도 저장 기록과 WCS 연결을 유지한다. 모바일 도구는 좁은 화면에서 간결하게 표시한다.
+- Export: 검증된 원본 기반 행은 Source-v2, 앱 WCS 행은 APPGenerated-v2 snapshot으로 분리한다. 교환용 APP ID는 새 UUID이고 서버 저장/Source 인증의 증명이 아니다.
+- Schema: 새 빈 Greenfield baseline `202611010001`에 영속 타입/receipt 계약을 포함한다. 기존 운영 DB/볼륨 자동 migration은 없다. 현재 개발 후보 검증 범위와 전체 PR CI·현장 수용 잔여는 TestReport를 따른다.
+
+## 0.50.0 기록 — #65 전역 외곽선 타입 관리 (2026-11-01)
 
 - Added: Global OutlineType 목록·등록·수정·비활성화·복구 API와 기존 Viewer 이동 패널을 재사용하는 관리 화면. 서버 Admin/CSRF/활성 쓰기 권한, Unicode 이름 key·Unique, revision CAS 및 전용 append-only 감사를 적용한다.
-- Schema: 빈 Greenfield 신규 baseline에 OutlineType/OutlineTypeAudit와 실제 CadOutline 타입 FK를 추가한다. 과거 baseline/DDL/운영 볼륨은 보존하며 자동 migration은 제공하지 않는다. 타입 확정·영속 트리 사용은 #71/#73 후속이다.
+- Schema: 당시 빈 Greenfield 신규 baseline에 OutlineType/OutlineTypeAudit와 실제 CadOutline 타입 FK를 추가했다. 과거 baseline/DDL/운영 볼륨은 보존하며 자동 migration은 제공하지 않았다. 당시 후속이던 타입 확정·영속 트리 사용은 위 0.51.0 후보에 구현했다.
 - Validation: 전체 Vitest114files/760tests PASS, Production Build/Typecheck/Lint PASS(기존 경고11개), Greenfield 브라우저4/4 및 수정한 기존 Gate2files/4tests PASS. 일반 CAD 초기115PASS/2FAIL의 구404기대 수정 이력은 보존하며 별도 실행을 새 전체117PASS로 합산하지 않는다. 독립 QA26PASS와 실제 Migrator build·tmpfs 신규설치/재시작/FK PASS. 원격 CI·현장·배포는 별도이며 역할별 근거는 TestReport/FailureLedger를 따른다.
 
 ## 0.49.0 후보 — #60/#61/#62 운영 로그 조회 (2026-10-31)

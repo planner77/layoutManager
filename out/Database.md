@@ -1,3 +1,23 @@
+## R3 #71/#73 — Typed 생성 receipt와 기존 타입 FK (구현·로컬 수용, 2026-11-01)
+
+상태: 구현 전 작성한 계약을 최종 source와 대조했고 Manager가 로컬 범위를 수용했다. 실제 실행 범위·잔여와 게시 상태는 [TestReport의 R3-20261101](TestReport.md)을 따른다. 운영 DB 이전·배포·실환경 수용을 뜻하지 않는다.
+
+R2 타입/FK schema를 그대로 포함하는 새 빈 Greenfield 기준 `G7-GREENFIELD-TYPED-OUTLINES-20261101-1` / `202611010001_greenfield_typed_outlines_baseline`을 추가한다. checksum seed는 기존 형식의 `layoutManager:G7-GREENFIELD-TYPED-OUTLINES-20261101-1:baseline`이다. R2 `202610310003_greenfield_outline_types_baseline`과 그 exact DDL/checksum은 previous types baseline으로 보존하고, 기존 old/scene/business/anchor/memo baseline도 변경하지 않는다. **기존 volume ALTER/자동 이전·release identity 완화 없음.**
+
+| 객체 | 필드·제약 / 의미 |
+| --- | --- |
+| `CadOutlineCreateReceipt` | `id` server UUID PK, `actor_user_id` User FK, `version_id` CadFileVersion FK, `idempotency_key` UUIDv4 text, `request_sha256` lowercase64hex, `outline_id` CadOutline FK, `created_at` UTC text. 각 FK는 NO ACTION. Unique(actor_user_id,version_id,idempotency_key), Unique(outline_id). 원래 요청 전문/이름/기하/credential/response JSON은 저장하지 않는다. |
+| Receipt scope guard | INSERT 때 referenced Outline의 version_id/created_by_id가 receipt Version/actor와 일치해야 한다. FK 존재 검사와 별개로 DB INSERT trigger 또는 동등한 실제 composite FK로 강제한다. 다른 Version/actor Outline에 receipt를 붙이는 직접 SQL을 거부하는 시험이 필요하다. |
+| Receipt append-only | UPDATE/DELETE 거부 trigger. Outline logical delete 뒤에도 receipt를 유지해 같은 요청이 새 UUID를 만들거나 삭제 객체를 부활시키지 못하게 한다. 자동 purge/TTL·운영 retention 정책을 새로 도입하지 않는다. |
+| 기존 `CadOutline` | R2 nullable outline_type_id 실제 FK 그대로. type/name snapshot·visible·client/local ID·Idempotency-Key 컬럼은 추가하지 않는다. 새 typed create가 서버의 active OutlineType을 조회해 FK를 기록하고 기존 null row는 미분류다. 서버 UUID, immutable Version/SHA/작성자/createdAt, object CAS와 soft delete는 유지한다. `scene_revision`은 마지막 성공한 쓰기의 Scene context이며 읽기 소유권/표시 수명 조건이 아니다. 새 mutation의 explicit expectedSceneRevision을 현재 pointer와 비교한 뒤 성공 시 이 필드를 갱신한다. 읽기·Source-only reset·Scene 재게시만으로 이 필드나 object revision을 수정하지 않는다. |
+| 기존 `CadBusinessAudit` | CREATE/EDIT/DELETE enum/DDL 불변. 최초 typed 생성의 CREATE 한 행은 Outline+receipt와 같은 transaction. replay는 두 번째 CREATE를 기록하지 않는다. 타입 이름/기하/key를 감사 payload로 추가하지 않는다. |
+
+Receipt는 응답 cache가 아니라 생성 식별 기록이다. 현재 허가된 replay는 동일 digest일 때 연결된 live Outline의 현재 DTO를 반환하며 현재 타입 이름은 JOIN 결과다. 이후 rename/transform/type 비활성은 receipt를 바꾸지 않는다. 같은 key/다른 digest는409, 연결 객체가 논리 삭제되었으면410이며 복구/재생성하지 않는다. 권한이 철회된 actor는 receipt 유무 자체를 조회할 수 없다. 최초 생성의 Outline/감사/receipt INSERT 중 하나라도 실패하면 전체 rollback한다.
+
+새 DDL export는 이미 Migrator가 COPY하는 `server/cad-business/schema-ddl.ts` 안에 별도 배열로 추가해 R2 `CAD_BUSINESS_DDL`/타입 variant/`OUTLINE_TYPE_DDL` 문자열을 변경하지 않는다. PR CI는 baseline Dockerfile과 HEAD source도 조합하므로 기존 COPY closure 안에 유지한다. installer/validator/Prisma 관계/runtime baseline 판별·Schema ID/authority 및 Docker import/CLI smoke를 함께 갱신한다. 현재 Type catalogue/Business baseline의 검증 호환성을 새 릴리스의 기존 volume 자동 활성화 승인으로 해석하지 않는다. 신규 private 일회용 DB backup/restore는 Type→Outline→Receipt/Audit 관계와 모든 metadata를 보존해야 한다. Version hard-delete의 기존 business-row 거부와 ALL logical reset/receipt 보존을 회귀한다.
+
+목록은 기존 live100/Version 제한을 유지하고 `created_at,id` 안정 순서 및 total/offset/limit을 사용한다. 현재200개 이하(임시100+서버100) UI 검증을 이유로 DB 한도나 Scene/geometry byte 한도를 임의 확대하지 않는다. 기존 인덱스 외 추가 조회 인덱스는 실제 query 필요성을 확인한 뒤 최신-only DDL에 포함하며 이 절에 기록한다.
+
 ## R2 #65 — Global OutlineType / 최신 Greenfield FK 설계 (구현 전, 2026-10-31)
 
 이 절이 새 schema의 단일 기준이다. 새 `G7-GREENFIELD-OUTLINE-TYPES-20261031-1` / `202610310003_greenfield_outline_types_baseline` 및 그 전용 checksum을 정의한다. 기존 `202610310002_greenfield_memo_m45_baseline`은 previous memo baseline 상수로 보존한다. 이전 old/scene/business/anchor/memo baseline 검증은 종전 exact DDL을 사용한다. 설치 함수는 빈 DB에만 아래 최신 variant를 생성하며 기존 runtime DB에 ALTER/migrate/rewrite하지 않는다. 과거 DDL 검증 호환은 기존 설치의 release identity/schemaId/version/image 승인 호환을 뜻하지 않는다. 새 릴리스가 과거 volume을 자동 활성화하도록 greenfield-auto/서명 gate의 identity 검사를 완화하지 않는다.

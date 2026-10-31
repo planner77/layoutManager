@@ -1,3 +1,12 @@
+## #71/#73 타입 지정 영속 외곽선 변경 시 (0.51.0 후보, 2026-11-01)
+
+- [Architecture의 R3 계약](out/Architecture.md), [Database의 R3 Schema](out/Database.md), [TestPlan의 TC-R3](out/TestPlan.md)을 먼저 읽고, 실제 통과 범위는 [TestReport](out/TestReport.md)를 확인한다. 아래 #42/#43 브라우저 임시 설계와 #65의 0.50.0 기록은 역사적 기준이다.
+- 전역 활성 타입 Catalogue도 Version/Site 읽기 인가 후 조회한다. Reader는 저장 항목 읽기만 하며, Editor 이상의 typed write는 현재 Actor·Version·Scene revision·Source SHA·타입을 서버에서 재검증한다. 같은 Actor/Version/Idempotency-Key의 동일 요청은 receipt로 재생하고 변경된 본문·삭제 결과는 안전하게 거절한다. 서버 Snapshot을 GeneratedDocument Undo와 분리하고 Scene pointer 변경에도 저장 행·연결 WCS를 보존한다.
+- Source-v2와 APPGenerated-v2 내보내기는 검증 등급별로 분리한다. APP_CREATED 내보내기/새 브라우저 가져오기의 새 UUID는 원본 Source 증명이나 서버 저장 권한이 아니다. `202611010001` baseline은 새 빈 Greenfield 전용이며 기존 DB/볼륨 자동 migration은 없다. 개발 후보, PR CI, 현장 수용, 배포 상태를 각각 실제 근거로 기록한다.
+- 이번 R3 역할: Manager가 요구·판정, Developer가 서버, root가 Viewer/UI·통합, QA가 독립 시험·문서를 담당한다. 전체 완료 판정은 TestReport의 최종 결과 후에만 한다.
+
+---
+
 ## #65 Global 업무 타입 변경 시
 
 - 타입 API·할당·참조를 변경하기 전에 [Architecture의 R2 계약](out/Architecture.md)과 [Database의 R2 스키마](out/Database.md)를 읽는다. 브라우저 시안과 서버 Global Catalogue를 구분한다.
