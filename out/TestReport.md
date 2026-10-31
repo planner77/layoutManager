@@ -1,3 +1,11 @@
+## #88/#90 M6/M7 initial implementation evidence — 2026-10-31
+
+- Feature source in branch `feat/issues-88-90-memo-link-search-20261031`: M6 UUID link/share/authenticated GET+focus and M7 Site-scoped SQL search/API/UI, documented in [Issues88-90](Issues88-90.md).
+- Added Unit `viewer-link.test.ts`, `cad-memo-search.test.ts`; Integration `memo-search-sql.test.ts`, `memo-search-auth.test.ts`; Playwright `issues88-90-memo-search.spec.ts`. **All newly introduced tests NOT RUN** at this writing. Typecheck, lint, production build, Docker, CI, external QA and signed-G7 cross-session full M6 AC **NOT VERIFIED**. Do not interpret commit creation as PASS.
+- Database migration, GHCR publish, Main merge, existing data adoption and production scope changes **NOT PERFORMED**. Reviewer/PR CI/mergeability status is tracked by latest GitHub commit/PR evidence, not estimated locally. Uncovered G7 browser and 1k/10k/100k performance require follow-up evidence before issue closure.
+
+---
+
 ## #85/#86 PR #175 final synthesis CI and Main release handoff (2026-10-31)
 
 - PR CI [#341 Run 41142161238](https://github.com/planner77/layoutManager/actions/runs/41142161238), exact HEAD `a6d3bdef1cc3e8a12ca95e918b5a2d49fad83d50` => `completed/success`. Verify Job `124359139129` **SUCCESS**: TypeScript, lint, Unit/Integration, Next production build, Playwright Chromium. Docker Job `124359139260` **SUCCESS**: build, migrator, disposable first-run + CAD runtime smoke. Previous E2E failure 2 of 103 tests in Run 41139632431 is repaired by the final successful run; exact job evidence is authoritative, not a screenshot estimate.

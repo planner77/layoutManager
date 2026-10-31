@@ -1,3 +1,11 @@
+## Unreleased — #88/#90 Memo URL + cross-drawing Search (2026-10-31)
+
+- M6 #88: authenticated Version/SHA-pinned persisted Memo deep link, WCS camera focus and Tree highlight, hidden temporary display, Clipboard/direct-link fallback, bad UUID/renderer/Anchor fail-closed; reused existing Viewer grouped menu.
+- M7 #90: Current-only-by-default dedicated CAD home Memo search, optional historical Version, location/group/author/status/due filter, Site/role/revocation-limited parameterized SQLite search endpoint, safe snippet and result → M6 focus link. No CAD raw Source fetch or new DB migration.
+- Regression tests and design/operations notes added. **PR CI/Chrome/Typecheck/Build NOT RUN at this writing**, GHCR/Merge/Issue closure not performed; see [Issues88-90](Issues88-90.md) and [TestReport](TestReport.md).
+
+---
+
 ## 0.47.3 — PR #175 merged Owner Managed, GHCR release pending (2026-10-31)
 
 - [PR #175](https://github.com/planner77/layoutManager/pull/175) #85 M4 Memo Tree + #86 M5 optional schedule/completion merged from successful [PR CI #341](https://github.com/planner77/layoutManager/actions/runs/41142161238) (two successful jobs, exact head a6d3bdef). The earlier TS18047 and WebGL PNG exact-match regressions are repaired and documented in FailureLedger.

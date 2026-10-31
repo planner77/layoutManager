@@ -1,3 +1,13 @@
+## #88/#90 Memo 공유·도면 전체 검색 사용/보안 (2026-10-31)
+
+- 영속 메모 공유: 도면 Viewer에서 대상 메모 선택 → `작업 > 선택 메모 링크 복사` 또는 메모 트리 행 `링크` → 현재 도면 Version 고정 URL. 클립보드 미지원 시 표시되는 읽기 전용 주소를 복사하거나 새 창으로 열기. 브라우저 임시 메모는 링크 공유 불가.
+- 도면 전체 메모 검색: 홈 `/` → `메모 검색 (전체 도면)` → 제목/내용/그룹 검색어 입력. 기본 Current만, 과거 메모를 찾을 때에만 `이전 버전 포함`. 위치/작성자/완료/마감일 필터로 좁히고 `메모 위치로 이동` 클릭. 기존 도면 검색 결과와 혼합되지 않는다.
+- G7 로그인·Reader 이상과 허가된 Site가 필요하고 Revocation은 매 조회 반영된다. 링크를 복사해도 제3자에게 권한이 생기지 않는다. 대상 메모가 삭제되거나 연결 앵커가 깨졌거나 Renderer가 호환되지 않으면 안전한 오류 및 재시도/일반 보기만 제공한다.
+- 검색 단어는 URL/브라우저 기록에 남을 수 있으므로 비밀번호·비밀 문서 전문/기밀 공정 문구를 입력하지 않는다. 응답 캐시는 private no-store; 원문 Search query를 구조화 로그나 외부 통계로 보내지 않는다.
+- M6/M7은 Greenfield DB를 변경하지 않는다. 기존 volume에 schema를 자동 도입하거나 운영 Authority/Storage/GHCR를 활성화하지 않는다. 현장 실측/PR CI 합격 전 운영 수용을 주장하지 않는다. [Spec](Issues88-90.md).
+
+---
+
 ## v0.47.3 (#85/#86) Main/GHCR handoff — Owner Managed (2026-10-31)
 
 - [PR #175](https://github.com/planner77/layoutManager/pull/175) exact green CI HEAD `a6d3bdef1cc3e8a12ca95e918b5a2d49fad83d50` Squash Main `c3e55a95ed2c7a61413e5b0577004252994fe988`. [Main CI 41145893248](https://github.com/planner77/layoutManager/actions/runs/41145893248) was started for v0.47.3 paired GHCR App/Migrator publish (release outcome **PENDING/NOT VERIFIED**; no image digest recorded).

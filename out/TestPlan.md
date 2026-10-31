@@ -1,3 +1,12 @@
+## #88/#90 M6/M7 test plan — 2026-10-31 (NOT RUN)
+
+- M6-U1 `src/tests/unit/viewer-link.test.ts`: strict UUIDv4, canonical three-dxf-viewer, secret-free URL, invalid memo IDs.
+- M6-E1 `src/tests/e2e/issues88-90-memo-search.spec.ts`: invalid memo URL and unsupported renderer must not focus. M6-E2 **still requires signed G7 browser evidence**: persisted memo focus after DXF/GET race, hidden temporary pin, expired session/403, removed/version mismatch, 320px/immersive, clipboard denial. Existing #85 Tree camera focus test is a precursor, not proof of cross-session M6.
+- M7-U1 `src/tests/unit/cad-memo-search.test.ts`: NFC, bounded query/duplicates/unknown keys, invalid dates, page size, plain snippets; M7-I1 `src/tests/integration/memo-search-sql.test.ts`: synthetic Current/old/hidden/deleted/site/filters/injection/SQL parameterization; M7-I2 `src/tests/integration/memo-search-auth.test.ts`: signed Site Reader, Admin without grant, expired/revoked/disabled; M7-E1 `src/tests/e2e/issues88-90-memo-search.spec.ts`: separate home search, empty keyword/no dump, drawing list unchanged.
+- Gate: typecheck, ESLint, Vitest, Playwright Chromium, build and Docker checks in PR CI with exact HEAD. For accepted M7 performance, measure 1k/10k/100k synthetic memos across Site grants and page sizes plus DXF content GET count=0 under search. **No numbers or pass status asserted before execution.** G7 authenticated E2E and real GPU/site load remain separate acceptance gates.
+
+---
+
 ## #85/#86 — Issue17 및 LayerDropdown WebGL E2E 복원 검증 회귀 (2026-10-31)
 
 - TC-LAYER001 / TC-ISSUE17-001: 기존 `canvas.screenshot().equals(initial)`은 CSS fullscreen/scrollbar/Canvas resize 2px 편차에서도 반드시 false가 될 수 있으므로 복원 조건으로 사용하지 않는다. 정규화 CAD 획 근접 비교를 사용한다. Canvas 중앙에 복원 선 20px 미만은 0점, 512×256/±2px 근접 선 match 92% 초과, Layer 전체 선택/개별 상태·Canvas DOM 유지·원본 재다운로드 0·Zoom 보존을 동시에 검증한다.
