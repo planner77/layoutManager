@@ -1,3 +1,10 @@
+## PR #178 E6 회귀: Reload는 외곽선 트리 패널을 닫음 (2026-10-31)
+
+- [CI Run 41175039708](https://github.com/planner77/layoutManager/actions/runs/41175039708)은 Unit 697/697, 전체 Chromium 116 PASS/1 FAIL; 유일 실패 `TC-E6-E2E-001`은 JSON 가져오기 성공 메시지 후 *닫혀 있는 트리 패널*의 DOM 항목을 1개로 기대한 UI 테스트 전제 오류. `CadViewer.reload()`는 `viewerAppReducer(reset)`을 호출하여 `outlineTreeOpen=false`; `MovableViewerPanel(open=false)`은 내용을 마운트하지 않는다. 임시 GeneratedDocument와 UI 패널 개폐는 별개이므로 테스트에서도 구분한다.
+- E6 회귀 절차: Reload 후 Browser-only JSON Export가 빈 `objects`인지 확인 → 명시적 Import 후 별도 Export의 UUID/WCS Geometry 대조 → `작업 > 외곽선 목록` 메뉴로 패널을 다시 열어 트리 ID/건수 확인. 패널을 자동으로 열거나 Canvas/Scene 재로드시키지 않는다. 원본 DXF/DB/API/Auth/Current 불변. 상세 [FailureLedger](out/FailureLedger.md), [TestPlan](out/TestPlan.md).
+
+---
+
 ## PR #178 재실패 대응 가이드 — TypeScript strict readonly array 보존 (2026-10-31)
 
 - [Run 41170650410](https://github.com/planner77/layoutManager/actions/runs/41170650410) Verify `124447794463`/Docker `124447794161` 실패는 새로운 TS7006(6건)/TS2347(1건) 원인 하나다. `GeneratedDocument.replaceFromImport`에서 `readonly` typed array/tuple을 직접 `Array.isArray`로 검사하면 TypeScript narrowing이 `any[]`로 확장되어 Callback/Generic 타입 정보가 소실될 수 있다. 공격적 입력 검증은 `unknown` 변수에 대해 실행하고 연산은 명시적 `readonly GeneratedRigidOperation[]`, `Affine2D` 기준으로 수행한다.

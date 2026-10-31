@@ -1,3 +1,8 @@
+## E6 JSON Import와 #127/#138 Outline Tree 표시 분리 — Run 41175039708
+
+- `CadViewer.reload()`은 `viewerAppReducer({type:'reset'})`을 실행하고 `initialViewerAppState.outlineTreeOpen=false`로 돌린다. `MovableViewerPanel`은 닫힌 상태에선 트리 DOM을 렌더하지 않는다. JSON v2 수동 Import는 `GeneratedDocument` 데이터/History만 복원하고 Tree 패널을 임의로 열거나 Canvas/Source를 다시 로딩하지 않는다.
+- 새 E6-E2E 회귀는 Reload 후 빈 JSON Export로 세션 폐기를 확인하고, Import 후 JSON ID/좌표를 별도 확인한 다음 `작업 > 외곽선 목록`을 열어 트리 행과 로컬 ID를 비교한다. 처음의 `TC-E6-E2E-001` 실패는 불충분한 UI 전제이며 기존 AC를 완화하지 않는다. [FailureLedger](FailureLedger.md), [TestPlan](TestPlan.md).
+
 # Issue #55 / #56 — E5 WCS Rotate + E6 Browser JSON v2
 
 작성: 2026-10-31 · 기준 Main `116d04046f75d2bae9fdeeefde7ead0edc011a4f` · 후보 0.48.0

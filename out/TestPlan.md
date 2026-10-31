@@ -1,3 +1,11 @@
+## #56 E6 Chromium Import 재진입 시 Tree 패널 상태 기준 (2026-10-31)
+
+- 실패 Run [41175039708](https://github.com/planner77/layoutManager/actions/runs/41175039708)의 `TC-E6-E2E-001`에서 Import 성공 메시지 뒤 `outline-tree-item` 0건(기대 1). 원인: `Reload → dispatchApp(reset) → outlineTreeOpen=false`, 닫힌 공통 `MovableViewerPanel`은 자식 노드를 DOM에 마운트하지 않음.
+- 강화된 E6-AC1/3/4 회귀: (1) 기존 생성·회전 결과 다운로드, (2) SHA 불일치 Import는 기존 객체/geometry 불변, (3) Reload 이후 트리 패널 닫힘 및 Browser JSON Export 객체 0건, (4) 유효 v2 수동 Import 성공 후 **트리를 열지 않고도 Export UUID/editedGeometry 동일**, (5) `작업 > 외곽선 목록` 그룹 메뉴를 사용자처럼 열고 트리 행·`savedOutlineId` 일치, (6) Renderer 교체 전 unsaved confirm 및 미지원 UI 확인.
+- **금지:** 실제 제품의 선택·Drawer 상태를 데이터 검증을 위해 강제 복구, JSON import에 암묵적인 Tree auto-open/Source reload 추가, E2E 실패 Assertion 삭제·시간 증가·CI Skip. 새 정확 HEAD의 모든 CI 검증과 Server/Source 불변 회귀 결과를 확인 전 PASS 기록 금지.
+
+---
+
 ## PR #178 두 번째 TypeScript strict 실패 회귀 게이트 (2026-10-31)
 
 - 정확 [실패 Run 41170650410](https://github.com/planner77/layoutManager/actions/runs/41170650410)의 `TS7006`(6개 implicit any) / `TS2347`(`reduce<Affine2D>`)를 `src/domain/generated-document.ts`에서 재검증. 수정은 `Array.isArray`의 `unknown` shape check를 명시 타입 `readonly GeneratedRigidOperation[]`/`Affine2D` 계산과 분리하는 것으로, `noImplicitAny`/ESLint 무력화 또는 GitHub CI 검사 생략 금지.

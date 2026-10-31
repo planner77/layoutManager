@@ -1,3 +1,21 @@
+## PR #178 — 세 번째 실패 Run 41175039708 / E6-E2E 패널 상태 혼동 (2026-10-31 KST)
+
+### 관측 결과
+- 정확 실패 HEAD [`34b0ec465cb81424ab85f4c1eca6f912472a1691`](https://github.com/planner77/layoutManager/commit/34b0ec465cb81424ab85f4c1eca6f912472a1691), [PR CI Run 41175039708](https://github.com/planner77/layoutManager/actions/runs/41175039708), **completed/failure**.
+- Verify Job [124460857433](https://github.com/planner77/layoutManager/actions/runs/41175039708/job/124460857433): Typecheck, ESLint, 전체 Unit/Integration **106 files / 697 tests PASS**, OCI manifest synthetic, DXF benchmark, Production Build, Chromium 설치 모두 SUCCESS. Chromium E2E **116 PASS / 1 FAIL (117건 중 1건)**. 별도 G7 signed Runtime/Greenfield/Legacy migration E2E는 Verify 단계에서 SKIPPED (Docker smoke와 혼동 금지). Chromium 실패 trace artifact [13033640009](https://github.com/planner77/layoutManager/actions/runs/41175039708/artifacts/13033640009) 보존.
+- Docker/Migration/Runtime smoke Job [124460857583](https://github.com/planner77/layoutManager/actions/runs/41175039708/job/124460857583)는 completed/**SUCCESS** (앞선 두 Run의 Docker 빌드 실패와 구별). 실 사용자 DXF/GPU/운영 배포나 GHCR 게시까지 증명하지 않는다.
+- 유일 실패: `src/tests/e2e/issues55-56-generated-rotate-json.spec.ts:141`, `TC-E6-E2E-001` [rejected file keeps session; v2 restores after explicit reload]. `await expect(page.getByTestId('outline-tree-item')).toHaveCount(1)`는 5초 동안 0건으로 실패. 앞 단계 `generated-json-message`의 `1개 생성 개체` 성공 알림은 관측됐으나, 그 메시지 자체가 Tree 렌더와 실제 데이터 정합성 증명은 아니다.
+
+### 원인 분석 및 보완
+- 제품 `CadViewer.reload()`는 `dispatchApp({type:'reset'})`으로 `outlineTreeOpen=false`를 복구하고 `ViewerAppState.initial`은 `outlineTreeOpen:false`이다. `MovableViewerPanel`은 `!open`이면 `null` 반환하므로 트리 DOM 자체가 없어진다. 새 JSON Import는 Browser Document를 복원할 뿐 #127 `작업 > 외곽선 목록` 패널을 자동으로 열지 않는 계약이다. 따라서 기존 E2E는 **패널 닫힘과 데이터 없음**을 잘못 동일시했다. 코드 경로상으로는 테스트 전제 오류이고, 실제 복원 Geometry의 성공/실패는 수정 테스트 통과 전까지 확정하지 않는다.
+- 수정 [`4def08b5`](https://github.com/planner77/layoutManager/commit/4def08b57ac0f29c4d81823de1299fe45507dfd7): **테스트 파일만** 변경. Reload 후 패널이 닫힌 것을 확인하고 JSON 파일 Export의 `objects=[]` 검사 → Import 후 Export 결과로 원래 UUID/EditedGeometry 복원 확인 → 그룹 메뉴에서 Outline Tree를 명시적으로 열고 1건 및 `data-outline-id`까지 검사한다. 데이터/트리/메뉴 상태를 각각 독립적으로 검증하므로 테스트를 삭제하거나 기대 수를 완화하지 않는다.
+- App/Domain/Adapter/Worker/Source/DB/API/Prisma/Auth/G7, Dockerfile/CI Gate/Timeout은 변경하지 않았다. 기존 697 Unit과 E5 회전 E2E 통과 증거는 실패 Run 범위에만 적용되며 최신 HEAD 재검증 전에는 PASS로 승계하지 않는다.
+
+### 후속 검증·인계
+- 마지막 리뷰 스레드 `PRRT_kwDOUQjDfc6yOC0e` (Codex P1 Local-ID) resolved, 추가 P1/P2 및 Main 충돌은 새 HEAD에서 재확인할 것. 정확 최종 HEAD PR CI 시작 후 Owner 요청대로 완료 모니터링 생략. CI 전체 성공, 실 도면/GPU, GHCR 게시, PR 병합, #55/#56 이슈 종료는 별도 증거 전 **NOT VERIFIED / NOT DONE**.
+
+---
+
 ## PR #178 / #55+#56 — 두 번째 PR CI 실패: readonly array narrowing / strict TypeScript (2026-10-31 KST)
 
 ### 관측된 Run·Job와 선행 Run 구별
