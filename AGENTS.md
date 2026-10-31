@@ -1,3 +1,11 @@
+## #88/#90 PR #176 v0.47.4 Owner Managed GHCR 최종 검증 (2026-10-31)
+
+- 최신 [실패 원장](out/FailureLedger.md)의 `PR #176 final PR/Owner Managed merge, v0.47.4 GHCR paired release SUCCESS` 절을 최종 증거로 참조. [PR CI #349](https://github.com/planner77/layoutManager/actions/runs/41158289254) 정확 HEAD `8af001ef...` Verify+Docker 모두 성공, P2 리뷰 해결 1/1·Main 충돌 0, [Squash `328bbdc0ca02649cc551a61962cec9e76816ccde`](https://github.com/planner77/layoutManager/commit/328bbdc0ca02649cc551a61962cec9e76816ccde) 완료.
+- [Main CI #100](https://github.com/planner77/layoutManager/actions/runs/41159460418) 두 Job SUCCESS, `v0.47.4` 태그는 Squash `328bbdc0ca02649cc551a61962cec9e76816ccde` 고정. 정식 App `0.47.4`/`latest` `sha256:fb608774450146144c0f47f0aa651df8d9b38d9166b005a366448dd9e9ea3140`, Migrator `0.47.4-migrate`/`latest-migrate` `sha256:aa9ed793289654b78ea39907e5145e810813956ad1c41669f6bfa81107c161e5` 확인. 이전 `v0.47.3` 보존.
+- #88/#90 `closed/completed`는 합성 검증된 코드 구현 범위; 실현장 2PC·G7 활성화·100k 검색 성능 또는 운영 DB/Writer GO 수용을 의미하지 않는다. 이 문서는 **릴리스 뒤 docs-only Main 기록**이므로 Git tag/이미지 소스와 혼동 금지. GHCR를 다시 게시할 필요 없음.
+
+---
+
 ## #88/#90 PR #176 릴리스 버전 보호 (2026-10-31)
 
 - `v0.47.3`은 [이전 Main CI #41145893248](https://github.com/planner77/layoutManager/actions/runs/41145893248)에서 이미 App/Migrator GHCR 쌍이 게시된 **기존 릴리스**. `docker-publish.yml`의 동일 버전 태그/이미지 중복 방지 로직은 이미 존재하는 `0.47.3`에 새 #88/#90 소스를 반영하지 않는다. 기존 태그/이미지를 강제 이동하거나 `latest`만 수동 갱신하지 말 것.

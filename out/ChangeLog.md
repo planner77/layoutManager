@@ -1,3 +1,11 @@
+## 0.47.4 — verified GHCR App/Migrator paired release (2026-10-31)
+
+- [PR #176](https://github.com/planner77/layoutManager/pull/176) delivers #88 M6 persisted Memo share link and #90 M7 secure cross-drawing search. Release source Main `328bbdc0ca02649cc551a61962cec9e76816ccde` from successful [PR CI #349](https://github.com/planner77/layoutManager/actions/runs/41158289254).
+- [Main CI #100](https://github.com/planner77/layoutManager/actions/runs/41159460418) **SUCCESS** with `v0.47.4` tag at release source; App `ghcr.io/planner77/layoutmanager:0.47.4`/`:latest` `sha256:fb608774450146144c0f47f0aa651df8d9b38d9166b005a366448dd9e9ea3140`; Migrator `:0.47.4-migrate`/`:latest-migrate` `sha256:aa9ed793289654b78ea39907e5145e810813956ad1c41669f6bfa81107c161e5`. The old `v0.47.3` release remains immutable.
+- #88/#90 closed/completed (code/CI implementation scope only). No physical field G7/2-PC/100k search performance acceptance or production deployment included. These notes are docs-only post-release evidence, not a new GHCR image source.
+
+---
+
 ## 0.47.4 — #88/#90 Release candidate (2026-10-31)
 
 - Persisted Memo M6 URL/share/validated WCS focus and M7 G7 Site-scoped global DB search (see the earlier Unreleased section for details).

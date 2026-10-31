@@ -1,3 +1,11 @@
+## #88/#90 — PR CI #349, Main CI #100, GHCR v0.47.4 verification (2026-10-31 KST)
+
+- Exact PR candidate `8af001ef75378aef8214a998c5223e0cd327baf9`: [PR CI #349](https://github.com/planner77/layoutManager/actions/runs/41158289254) **completed/success**, Verify `124409862915` and Docker `124409862929` SUCCESS (Unit/Integration, compile/lint, production build, Chromium, signed G7/Greenfield/Legacy migration tests and image builds). Prior PR CI #343 lint and #345 Vitest `server-only` failures retained in FailureLedger.
+- Main [Squash `328bbdc0ca02649cc551a61962cec9e76816ccde`](https://github.com/planner77/layoutManager/commit/328bbdc0ca02649cc551a61962cec9e76816ccde), [Run #100](https://github.com/planner77/layoutManager/actions/runs/41159460418) **completed/success**: scope Job `124413552667`, publish Job `124413581996` both SUCCESS, `v0.47.4` annotated tag points to Squash commit. Official App `sha256:fb608774450146144c0f47f0aa651df8d9b38d9166b005a366448dd9e9ea3140`, Migrator `sha256:aa9ed793289654b78ea39907e5145e810813956ad1c41669f6bfa81107c161e5`; latest paired aliases published.
+- Real signed multi-PC Memo focus, real CAD and anchor behavior, legacy volume conversion, G7 live Writer permission and 1k/10k/100k search benchmarks **NOT VERIFIED** by synthetic CI. Issue #88/#90 implementation scope closed by Owner; field GO remains separate.
+
+---
+
 ## PR #176 M6/M7 — PR CI Run #345 import failure (2026-10-31)
 
 - [PR CI #345 Run 41153178204](https://github.com/planner77/layoutManager/actions/runs/41153178204), exact HEAD `e758a0d5effcba577dca6ffe2b87fe15952d3c71` completed **FAILURE**. Docker Job `124394409585` SUCCESS, Verify Job `124394409303` FAILURE. Verify Typecheck and ESLint SUCCESS, Vitest **103 passed files / 1 failed suite, 682 passed tests**, failure before tests in `memo-search-auth.test.ts` via `node_modules/server-only/index.js`. OCI manifest checks/benchmark/production build/Chromium and G7 signed browser/legacy E2E SKIPPED.

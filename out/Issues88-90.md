@@ -1,3 +1,9 @@
+## v0.47.4 implementation complete — #88/#90 Owner Managed close-out (2026-10-31)
+
+PR #176 merged Main `328bbdc0ca02649cc551a61962cec9e76816ccde` after [PR CI #349 SUCCESS](https://github.com/planner77/layoutManager/actions/runs/41158289254); [Main CI #100 SUCCESS](https://github.com/planner77/layoutManager/actions/runs/41159460418) and published paired GHCR `0.47.4` App/Migrator digests in [FailureLedger](FailureLedger.md). Both Issues [#88](https://github.com/planner77/layoutManager/issues/88) / [#90](https://github.com/planner77/layoutManager/issues/90) are `closed/completed` as implementation scope. Unmeasured 1k/10k/100k search benchmarks, live signed multi-PC/CAD/Anchor/G7 operational acceptance are explicitly **not verified**.
+
+---
+
 ## PR #176 Run #345 — M7 auth integration test module boundary (2026-10-31)
 
 The signed-G7 Memo search integration imported the Viewer Scene module that indirectly loads the Next `server-only` guard. Run #345 compiled and linted successfully but Vitest could not collect the auth suite. A test-only fail-on-use mock for the legacy server context now isolates the Next marker while preserving real G7 signed authority and database/session tests. See [TestReport](TestReport.md) and [FailureLedger](FailureLedger.md). This is not a waiver of server authorization or claim of successful post-fix tests.
