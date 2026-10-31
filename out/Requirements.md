@@ -1,3 +1,13 @@
+## R2 #65 — Global OutlineType 영속 CRUD 요구사항 (구현 전, 2026-10-31)
+
+- R2-REQ1 / AC-U4-01: 서버 UUID인 Global Type의 생성·이름/설명/정렬 수정·비활성·복구·목록을 Admin에게 제공하고 새 세션/재로그인에서도 같은 DB 결과를 조회한다. id/createdAt/createdBy는 불변, revision은1에서 시작한다. 물리 DELETE API는 제공하지 않는다.
+- R2-REQ2 / AC-U4-02/05: G7 ACTIVE 및 검증된 Session에서 default active catalogue GET은 Reader/Editor/Admin, includeInactive 및 관리 기능은 Admin만 가능하다. POST/PATCH는 writer 활성+정확 Host/Origin/CSRF가 필수다. 역할·세션 철회/만료는 매 transaction 재검사한다. 다른 Site Grant 자동 부여·익명 CAD GET 변경·Memo 공동 편집 확대 금지. auth 전 catalogue 내용/개수/스키마 metadata를 반환하지 않는다.
+- R2-REQ3 / AC-U4-03: 이름1~100 UTF-16 code units, 설명null/최대500, 정렬0~9999 정수, trim/NFC 및 Cc/Cf/Cs 거부를 기존 normalizer와 동일하게 적용한다. nameKey는 NFC+locale-independent lowercase로 계산하여 전역 DB Unique(비활성 포함)를 보장한다. client nameKey/scope/id/actor는 받지 않는다. 잘못된 입력400, 중복·stale revision409, 없는 타입404, 미인증401/무권한403/미준비503을 안전하게 구분한다.
+- R2-REQ4 / AC-U4-03/04: 업데이트는 expectedRevision CAS이며 동시 수정2개 중1개만 성공한다. 권한 재확인·mutation·revision 증가·append-only type audit가 하나의 SQLite transaction으로 commit/rollback한다. 감사 INSERT 실패 때 타입 변경도 rollback한다. nullable CadOutline.outline_type_id는 실제 SQLite FK이고 타입 변경·비활성/복구 뒤 id와 기존 참조를 유지한다.
+- R2-REQ5 / AC-U4-04/05: 새 빈 Greenfield의 별도 latest baseline만 타입/FK를 포함한다. old/business/anchor/memo baseline의 DDL·marker·checksum·기존 지원 동작은 그대로 검증한다. 이전 schema에서 API가 자동 DDL을 실행하거나 이름/분류를 이관하지 않는다. 새 pristine 설치·재기동·격리 백업/Restore의 타입/참조/Audit 증거를 확보하고 실제 운영 이전·배포와 구분한다.
+- R2-REQ6: 기존 Viewer types 명령은 Admin/schema/writer capability 뒤 실제 관리 폼을 공용 tools panel에서 연다. 생성/수정/비활성/복구, active+inactive 검색·페이지, conflict 재조회, loading/error/권한 회수 처리, normal/native fullscreen·320px·키보드/ESC/포커스·drag가 동작한다. 타입 관리 열기/닫기로 Canvas/Source/Worker 재로딩·Selection/Undo 변경이 발생하지 않는다. `/lab` 시안 데이터와 운영 catalogue는 독립이다.
+- R2-REQ7: R2의 타입 catalogue/FK를 R3 #71/#73이 소비한다. R2에서 기존 브라우저 typed-v2 metadata를 서버 권위로 바꾸거나 typed Outline 저장의 남은 검증을 우회하지 않는다. Source canonical 및 APP_CREATED 원칙, 실제 CAD bytes/SHA·Current·Version lifecycle은 불변이다.
+
 ## R1 #60/#61/#62 — 운영 로그 조회 구현 요구사항 (2026-10-31, 구현 전)
 
 - R1-REQ1: 기존 활성 G7 세션의 Admin+별도 logs:read 권한만 조회. 매 API/SSR/직접 URL에서 재검사하며 익명 CAD, Memo author-only, 운영 activation 불변. 직접 문서·RSC 진입도 미인증401/무권한403의 HTTP 응답으로 거절하고, G7/Bootstrap/Audit 장애는503·rate 제한은429로 구분한다. 권한 없는 HTTP200 shell을 최종 수용으로 대신하지 않는다. 비인가 응답은 내용·건수·시각·저장소 상태를 포함하지 않는다.

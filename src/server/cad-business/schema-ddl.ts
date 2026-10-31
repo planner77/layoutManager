@@ -57,3 +57,54 @@ export const CAD_BUSINESS_DDL = [
   }
 ] as const;
 export const CAD_BUSINESS_OBJECT_NAMES = new Set<string>(CAD_BUSINESS_DDL.map(row=>row.name));
+
+/** #65 latest EMPTY Greenfield baseline only. Historical CAD_BUSINESS_DDL is immutable. */
+const previousOutline = CAD_BUSINESS_DDL.find(row => row.name === 'CadOutline');
+if (!previousOutline || previousOutline.type !== 'table') throw new Error('OUTLINE_TYPE_DDL_BASE_MISSING');
+const anchor = 'FOREIGN KEY("version_id") REFERENCES "CadFileVersion"("id")';
+if (previousOutline.sql.split(anchor).length !== 2) throw new Error('OUTLINE_TYPE_DDL_BASE_CHANGED');
+export const LATEST_CAD_OUTLINE_DDL = previousOutline.sql.replace(anchor,
+  'FOREIGN KEY("outline_type_id") REFERENCES "OutlineType"("id") ON DELETE NO ACTION ON UPDATE NO ACTION,' + anchor);
+export const LATEST_CAD_BUSINESS_DDL = CAD_BUSINESS_DDL.map(row =>
+  row.name === 'CadOutline' ? { type: row.type, name: row.name, sql: LATEST_CAD_OUTLINE_DDL } : row);
+
+export const OUTLINE_TYPE_DDL = [
+  { type: 'table', name: 'OutlineType', sql: `CREATE TABLE "OutlineType" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "name" TEXT NOT NULL CHECK(length("name") BETWEEN 1 AND 100),
+    "name_key" TEXT NOT NULL CHECK(length("name_key")>=1),
+    "description" TEXT CHECK("description" IS NULL OR length("description")<=500),
+    "active" INTEGER NOT NULL DEFAULT 1 CHECK("active" IN (0,1)),
+    "sort_order" INTEGER NOT NULL CHECK("sort_order" BETWEEN 0 AND 9999),
+    "revision" INTEGER NOT NULL DEFAULT 1 CHECK("revision">=1),
+    "created_by_id" TEXT NOT NULL,"updated_by_id" TEXT NOT NULL,
+    "created_at" TEXT NOT NULL,"updated_at" TEXT NOT NULL,
+    FOREIGN KEY("created_by_id") REFERENCES "User"("id") ON DELETE NO ACTION ON UPDATE NO ACTION,
+    FOREIGN KEY("updated_by_id") REFERENCES "User"("id") ON DELETE NO ACTION ON UPDATE NO ACTION)` },
+  { type: 'table', name: 'OutlineTypeAudit', sql: `CREATE TABLE "OutlineTypeAudit" (
+    "id" TEXT NOT NULL PRIMARY KEY,"actor_user_id" TEXT NOT NULL,"outline_type_id" TEXT NOT NULL,
+    "action" TEXT NOT NULL CHECK("action" IN ('CREATE','UPDATE','DEACTIVATE','REACTIVATE')),
+    "before_revision" INTEGER CHECK("before_revision" IS NULL OR "before_revision">=1),
+    "after_revision" INTEGER NOT NULL CHECK("after_revision">=1),
+    "outcome" TEXT NOT NULL CHECK("outcome"='SUCCESS'),
+    "timestamp_utc" TEXT NOT NULL,"request_id" TEXT NOT NULL CHECK(length("request_id") BETWEEN 1 AND 128),
+    FOREIGN KEY("actor_user_id") REFERENCES "User"("id") ON DELETE NO ACTION ON UPDATE NO ACTION,
+    FOREIGN KEY("outline_type_id") REFERENCES "OutlineType"("id") ON DELETE NO ACTION ON UPDATE NO ACTION)` },
+  { type: 'index', name: 'uq_outline_type_name_key', sql:
+    'CREATE UNIQUE INDEX "uq_outline_type_name_key" ON "OutlineType"("name_key")' },
+  { type: 'index', name: 'ix_outline_type_order', sql:
+    'CREATE INDEX "ix_outline_type_order" ON "OutlineType"("sort_order","name_key","id")' },
+  { type: 'index', name: 'ix_outline_type_audit_type_time', sql:
+    'CREATE INDEX "ix_outline_type_audit_type_time" ON "OutlineTypeAudit"("outline_type_id","timestamp_utc")' },
+  { type: 'trigger', name: 'outline_type_immutable', sql: `CREATE TRIGGER "outline_type_immutable" BEFORE UPDATE ON "OutlineType"
+    WHEN NEW."id"<>OLD."id" OR NEW."created_at"<>OLD."created_at" OR
+      NEW."created_by_id"<>OLD."created_by_id" OR NEW."revision"<>OLD."revision"+1
+    BEGIN SELECT RAISE(ABORT,'OUTLINE_TYPE_IMMUTABLE'); END` },
+  { type: 'trigger', name: 'outline_type_no_delete', sql:
+    'CREATE TRIGGER "outline_type_no_delete" BEFORE DELETE ON "OutlineType" BEGIN SELECT RAISE(ABORT,\'OUTLINE_TYPE_DELETE_DENIED\'); END' },
+  { type: 'trigger', name: 'outline_type_audit_no_update', sql:
+    'CREATE TRIGGER "outline_type_audit_no_update" BEFORE UPDATE ON "OutlineTypeAudit" BEGIN SELECT RAISE(ABORT,\'OUTLINE_TYPE_AUDIT_APPEND_ONLY\'); END' },
+  { type: 'trigger', name: 'outline_type_audit_no_delete', sql:
+    'CREATE TRIGGER "outline_type_audit_no_delete" BEFORE DELETE ON "OutlineTypeAudit" BEGIN SELECT RAISE(ABORT,\'OUTLINE_TYPE_AUDIT_APPEND_ONLY\'); END' },
+] as const;
+export const OUTLINE_TYPE_OBJECT_NAMES = new Set<string>(OUTLINE_TYPE_DDL.map(row => row.name));

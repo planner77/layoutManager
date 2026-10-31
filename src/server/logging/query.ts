@@ -31,6 +31,7 @@ const operations=new Set(['cad_upload','cad_list','cad_delete','cad_content','ca
   'business_memo_list','business_memo_create','business_memo_read','business_memo_change',
   'business_memo_anchor','business_memo_group_create','business_memo_group_change','business_memo_search',
   'business_scene_origin_reset','scene_status','scene_publish','scene_content',
+  'outline_type_list','outline_type_create','outline_type_update','outline_type_access',
   'database_check','storage_cleanup','delete_password_backfill','unspecified']);
 const errorCodes=new Set([...Object.keys(safeMessages),...Object.keys(safeCadMessages),...objectStorageCodes,
   'SERVER_ERROR','HEALTH_UNAVAILABLE','STORAGE_CLEANUP_PENDING','STORAGE_CLEANUP_FAILED',

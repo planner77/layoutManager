@@ -40,16 +40,18 @@ test('TC-U4-E2E-PREVIEW-001: isolated type draft CRUD, duplicate/soft-delete/rev
   await expect(page.getByTestId('outline-type-row')).toHaveCount(0);
 });
 
-test('TC-U4-E2E-GATE-002: production management routes are absent before Owner RBAC approval', async ({ request }) => {
+test('TC-U4-E2E-GATE-002: catalogue routes reject runtime OFF and forged role headers', async ({ request }) => {
   const list = await request.get('/api/outline-types');
-  expect(list.status()).toBe(404);
+  expect(list.status()).toBe(503);
+  expect((await list.json()).error.code).toBe('G7_RUNTIME_UNAVAILABLE');
+  expect(list.headers()['cache-control']).toBe('private, no-store');
   const create = await request.post('/api/outline-types', { data: { name: 'bypass', active: true } });
-  expect(create.status()).toBe(404);
+  expect(create.status()).toBe(503);
   const mutate = await request.patch('/api/outline-types/11111111-1111-4111-8111-111111111111', {
     headers: { 'X-User': 'admin', 'X-Role': 'Admin' },
     data: { name: 'bypass', deletePassword: '1234' },
   });
-  expect(mutate.status()).toBe(404);
+  expect(mutate.status()).toBe(503);
 });
 
 

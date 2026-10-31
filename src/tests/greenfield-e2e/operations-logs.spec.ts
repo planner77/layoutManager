@@ -99,4 +99,6 @@ test('R1 logs real permission gate, filtered table and timeline, cursor, mobile 
   await page.reload();
   await expect(page.getByTestId('operations-log-console')).toHaveCount(0);
   await expect(page.getByRole('link', { name: '운영 · 서버 로그' })).toHaveCount(0);
+  const logout = await page.request.post('/api/g7-runtime/auth/logout', { headers });
+  expect(logout.status()).toBe(200);
 });

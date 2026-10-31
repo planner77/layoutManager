@@ -1,3 +1,11 @@
+## #65 Global 업무 타입 변경 시
+
+- 타입 API·할당·참조를 변경하기 전에 [Architecture의 R2 계약](out/Architecture.md)과 [Database의 R2 스키마](out/Database.md)를 읽는다. 브라우저 시안과 서버 Global Catalogue를 구분한다.
+- 신규 빈 Greenfield는 최신 타입/FK baseline으로 설치한다. 과거 DDL/marker/checksum은 보존하고, 기존 볼륨의 릴리스 identity 검증을 유지한다. Schema 검증 호환성을 자동 업그레이드 승인으로 해석하지 않는다.
+- Viewer 관리는 기존 `작업 > 외곽선 타입 관리`와 공용 tools 창을 사용한다. 창 전환·ESC·Renderer/Version 변경 검증은 [TestPlan의 TC-R2](out/TestPlan.md), 실제 결과와 잔여 조건은 [TestReport](out/TestReport.md)를 확인한다.
+
+---
+
 ## PR #179 — #58/#59 Owner Managed 완료·v0.48.1 GHCR 릴리스 기동 (2026-10-31)
 
 - 최종 PR HEAD `7698b0e035d330361005780fb1e838f5ab421457`, [PR CI 41205118337](https://github.com/planner77/layoutManager/actions/runs/41205118337) Verify `124548636367` + Docker `124548636626` 둘 다 SUCCESS. Codex P2 2건 모두 Resolved/미해결 0, Main behind 0, 충돌 0 확인 후 [PR #179](https://github.com/planner77/layoutManager/pull/179) 정확 제목 Squash Main `4d86a6b1895b2d7e1f70cc69d66cd41b072ab9f8` 병합.

@@ -14,6 +14,8 @@ import { G7_GREENFIELD_BASELINE, G7_GREENFIELD_SCHEMA_ID,
   G7_OLD_GREENFIELD_BASELINE, G7_OLD_GREENFIELD_BASELINE_CHECKSUM,
   G7_PREVIOUS_ANCHOR_BASELINE,G7_PREVIOUS_ANCHOR_CHECKSUM,
   G7_DELETE_PASSWORD_TRIGGERS,assertG7GreenfieldSchema } from '../../server/g7-operational/greenfield-schema';
+import { CAD_BUSINESS_DDL } from '../../server/cad-business/schema-ddl';
+import { CAD_ANCHOR_DDL } from '../../server/cad-business/anchor-ddl';
 
 const Sqlite=createRequire(import.meta.url)('better-sqlite3') as new(
   file:string,options?:{readonly?:boolean;fileMustExist?:boolean}
@@ -128,14 +130,20 @@ describe('#153 empty Greenfield installation without prior data or migration rep
 
   test('v0.47.2 one-row Anchor baseline remains accepted for read-only compatibility',()=>{
     const f=fresh();
-    initializeGreenfield(f.env);
     const db=new Sqlite(f.dbfile);
     try{
-      // Synthetic historical DB: remove only the M4/M5 add-on objects from the
-      // fresh baseline, then stamp the exact old Anchor one-row history marker.
-      db.exec('DROP TABLE "CadMemoFeature"; DROP TABLE "CadMemoGroup"');
-      db.prepare('UPDATE "_prisma_migrations" SET migration_name=?,checksum=?')
-        .run(G7_PREVIOUS_ANCHOR_BASELINE,G7_PREVIOUS_ANCHOR_CHECKSUM);
+      // Construct the exact historical Anchor DDL. A new baseline's CadOutline
+      // now has a type FK, so dropping only add-on tables would be a mixed DB.
+      for(const name of Object.keys(G7_RUNTIME_MIGRATION_CHECKSUMS))
+        db.exec(readFileSync(new URL('../../deploy/g7-s3/prisma/migrations/'+name+'/migration.sql',import.meta.url),'utf8'));
+      db.exec(readFileSync(new URL('../../deploy/scene-assets/migration.sql',import.meta.url),'utf8'));
+      for(const row of CAD_BUSINESS_DDL) db.exec(row.sql);
+      for(const row of CAD_ANCHOR_DDL) db.exec(row.sql);
+      for(const sql of G7_DELETE_PASSWORD_TRIGGERS) db.exec(sql);
+      db.exec('CREATE TABLE "_prisma_migrations"("id" TEXT NOT NULL PRIMARY KEY,"checksum" TEXT NOT NULL,"finished_at" TEXT,"migration_name" TEXT NOT NULL,"logs" TEXT,"rolled_back_at" TEXT,"started_at" TEXT NOT NULL,"applied_steps_count" INTEGER NOT NULL DEFAULT 0)');
+      const now=new Date().toISOString();
+      db.prepare('INSERT INTO "_prisma_migrations"(id,checksum,finished_at,migration_name,logs,rolled_back_at,started_at,applied_steps_count) VALUES(?,?,?,?,NULL,NULL,?,1)')
+        .run('anchor',G7_PREVIOUS_ANCHOR_CHECKSUM,now,G7_PREVIOUS_ANCHOR_BASELINE,now);
       expect(()=>assertG7GreenfieldSchema(db as never)).not.toThrow();
       expect(()=>assertG7RuntimeSchema(db as never)).not.toThrow();
       // A mixed old marker and new M4/M5 table must not be silently accepted.

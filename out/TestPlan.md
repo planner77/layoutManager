@@ -1,3 +1,20 @@
+## R2 #65 — 구현 전 Acceptance / Test Case (2026-10-31)
+
+| TC | 요구/AC | 실제 검증 계획 |
+| --- | --- | --- |
+| TC-R2-001 | REQ1/3, U4-01/03 | Admin POST→GET→PATCH/비활성/복구→별도 세션 GET, immutable UUID/createdAt/createdBy 및 revision 증가; trim/NFC·ASCII 대소문자 중복·inactive 예약·ß/ss 별도키·제어문자/길이/정렬 한도·unknown field400 |
+| TC-R2-002 | REQ2, U4-02/05 | 미인증401, Reader/Editor active GET200 및 관리/includeInactive403, Admin Site Grant0이어도 global 관리 허용, forged role/header/삭제비밀번호 불가; 만료/철회·G7OFF/BLOCKED/old schema503·writerOFF 쓰기차단·pristine probe Audit0 |
+| TC-R2-003 | REQ2/4, U4-02/03 | POST/PATCH 정확 Host/Origin/CSRF, body/UUID검증, 역할/세션 재검사; expectedRevision 동일2건 중성공1/409하나, Unique경쟁409, Audit INSERT 장애시 타입/revision 모두 rollback |
+| TC-R2-004 | REQ4, U4-03/04 | 최신 DB PRAGMA foreign_key_list(CadOutline) 실제 Type FK, 존재않는 typeId INSERT/UPDATE 거절, valid 참조 후rename/deactivate/reactivate 뒤id/FK/기존Geometry 불변, 물리TypeDELETE 및AuditUPDATE/DELETE 거절 |
+| TC-R2-005 | REQ5, U4-05 | 빈 Greenfield 신설·재기동 exact schema/marker, historical old/scene/business/anchor/memo DDL/checksum 통과·변조거절, 이전 실제schema API503/noDDL, 신규 baseline일회용 backup/restore Type/Outline FK/Audit 행 동일, 기존Volume미접근 |
+| TC-R2-006 | REQ6, U4-01/02 | 실제 Admin Viewer types 메뉴→관리 CRUD/검색/페이지/권한회수·409·네트워크오류·재로그인복원; Reader/Editor disabled+직접API차단. `/lab` 데이터 영향없음 |
+| TC-R2-007 | REQ6/7 | tools content/title 전환·일반tools복귀·close/reload/RendererVersion변경·320px/native fullscreen/keyboard/ESC/focus/drag; 메뉴 조작 Source GET/Worker/Canvas reload0 및Selection/Undo/기존Outline/Memo 불변 |
+| TC-R2-008 | REQ5/7 | Prisma generate/typecheck/lint/unit/integration/build, 새 Migrator 모듈 COPY/CLI smoke, 관련 Greenfield/Viewer E2E. R1 logs/G4·Auth/원본·Current 회귀. 실행전PASS금지 |
+
+Manager 설계 후 Developer backend/schema/API, Root frontend/Viewer/E2E 보조 구현, 독립 QA 검증·문서 기록 후 Manager가 수용한다. TestReport에는 실제 역할과 fixture/실행 시계 조건을 기록한다. R1에서 관측한 host clock rollback과 test-only monotonic fixture는 분리하여 유지하고 production 시간 guard를 완화하지 않는다. 원 #65의 배포·현장 수용 및 #71/#73 실제 typed Tree 통합은 로컬 catalogue/FK 검증으로 완료 처리하지 않는다. 새 코드/Schema와 historical 호환 검증을 마치기 전 다음 구현 Unit으로 넘어가지 않는다.
+
+**기존 Issue #41/#42 회귀 경계:** R2가 `/api/outline-types` route를 실제 등록한 뒤 G7 runtime OFF는 경로 부재 `404`가 아니라 고정 오류 `503 G7_RUNTIME_UNAVAILABLE` + `private, no-store`여야 한다. #41/#42 E2E는 이 올바른 거부상태를 검사하면서 forged role/delete-password로 통과하지 않음, R3 typed assignment/select/confirm은 여전히 disabled/미준비, `/lab` browser preview는 별도 저장소를 유지함을 확인한다. Root의 수정 후 두 affected 파일 **4/4 PASS**는 TestReport에 제한 범위로 기록; 과거 Chromium 115/117 결과를 전체 회귀 성공으로 소급하지 않고 일반 CAD/Greenfield 최신 E2E 결과를 별도로 추적한다.
+
 ## R1 PR180 CI 재작업 — baseline logger closure의 엄격한 멱등성 (2026-10-31, 구현 전)
 
 TC-LOG-MIG-003은 실제 `.github/workflows/pr-ci.yml`의 embedded Python을 추출하여 일회용 baseline Dockerfile에 실행한다. 현재 PR base가 이미 logger/store 의존성을 포함하면 실패시키지 않고 원본 bytes를 그대로 보존해야 한다. 과거 baseline에 없을 때만 migrator 내부 logger COPY 바로 뒤에 필요한 store COPY 한 줄을 추가한다.

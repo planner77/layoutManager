@@ -1,3 +1,31 @@
+## R2 #65 — Manager 로컬 수용 결정 (2026-11-01)
+
+**판정: ACCEPT LOCAL SCOPE / Draft PR 게시 가능.** Manager는 Developer 구현 보고, 독립 QA의 API·schema·권한 26 tests 및 최종 소스/CI diff 검토, Root의 최종 전체 114 files / 760 tests PASS(234.30초), build/typecheck/lint, Greenfield Browser 4 PASS(42.5초), 기존 gate 수정 Browser 4 PASS(8.7초), 실제 Migrator 이미지와 격리 UID10001 INIT/RESTART·최신 FK smoke를 근거로 R2 로컬 구현을 수용한다. QA 최종 수용 권고를 확인했고 Manager도 최종 전체 테스트 로그와 workflow의 branch filter 한 줄 변경을 직접 확인했다. CI embedded Python 24 fixture도 통과했다. 실제 실행 범위와 역할은 [TestReport의 R2-20261101](TestReport.md)에 기록한다.
+
+이전 전체 시험의 Scene CAS 및 감사 timestamp 정렬 실패, 첫 회귀 시험의 115/117 결과를 삭제하거나 최종 전체 Browser 117/117로 바꾸지 않는다. 시험 시계와 append 순서 보완은 테스트에만 적용했고 운영 인증·승인 시계 guard 및 timestamp 정책은 유지했다. 최종 전체 unit/integration과 해당 Browser 재시험이 통과했으므로 로컬 gate의 보류를 해제한다.
+
+Root는 비밀정보/산출물 및 staged diff 최종 검사 후 R1 기반 별도 Draft PR을 게시할 수 있다. R2 원격 CI는 아직 미실행이며 실제 실행 결과 확인이 필요하다. 이 판정은 merge·정식 release·운영 배포·기존 볼륨 이관이나 현장 수용을 뜻하지 않는다. 실도면/실환경, Version 변경과 Memo 선택의 별도 조합 시험은 미검증으로 유지한다. 실제 타입 지정 저장과 영속 Tree 연결은 다음 R3 #71/#73의 요구/AC를 먼저 기록한 뒤 별도 구현한다.
+
+## R2 stacked Draft PR의 CI 대상 확대 결정 (2026-11-01)
+
+R2는 R1 위의 별도 기능 묶음이므로 Draft PR base를 `feat/remaining-issues-20261031`로 유지한다. 현재 PR CI의 `pull_request.branches`가 `main`만 허용해 이 구조에서는 자동 검증을 기대할 수 없다. Manager는 `main`과 함께 `feat/**` 대상 PR도 같은 CI를 실행하도록 branch filter 한 줄을 추가하는 것을 승인한다. 기존 `pull_request` 이벤트 종류, `workflow_dispatch`, read-only `contents` 권한, concurrency, 모든 job/step/timeout/검증 gate는 그대로 유지한다. `pull_request_target`이나 권한 확대를 도입하지 않는다.
+
+이는 승인된 순차 기능 묶음의 원격 검증을 가능하게 하는 CI 연결 변경이며, 로컬 760 tests 통과를 원격 CI 성공으로 바꾸어 기록하지 않는다. workflow diff 및 기존 embedded Python 24 fixture를 확인한 후 Draft PR을 게시하고 실제 실행 결과를 별도로 확인한다. 이 변경은 R1 merge나 운영 배포를 승인하지 않는다.
+
+## R2 #65 — Global 업무 타입 영속 관리 착수 결정 (2026-10-31)
+
+최초 설계 기준은 R1 `a2a7014`였고, 구현 기준은 CI 보완 `b9dcdf5`를 fast-forward 통합했다. 별도 `feat/issue-65-global-types-20261031`, 후보0.50.0이다. GitHub #65 원문을 다시 조회했다. Global Catalogue/Admin 관리, 앱 로컬 Session 및 Reader/Editor/Admin 정책은 최신 공통 Auth 구현을 재사용한다. 기존 이슈의 오래된 미구현 설명을 인증 재개발 근거로 쓰지 않는다. R1 PR CI 실패가 확인되면 원인 해결을 R2 최종 수용보다 우선한다.
+
+**이름 정책:** 이름은 trim→NFC, nameKey는 그 결과에 locale-independent JavaScript `toLowerCase()`→NFC를 적용한다. 비활성 이름도 전역 Unique를 계속 점유한다. 이는 Unicode full case-fold가 아니다(예: ß와 ss는 서로 다른 key). 기존 pure validation을 공유하되 `/lab/outline-types`의 메모리 CRUD·scopeKey=null을 실제 catalogue로 승격하지 않는다.
+
+**권한:** `outlineType:read`는 기존 domain 정책대로 인증된 Reader/Editor/Admin, `outlineType:manage`는 Admin이다. Global Type은 Site Grant가 없어도 해당 global 권한으로 관리 가능하지만 실제 Outline/Version의 Site 권한을 부여하지 않는다. 읽기는 G7 ACTIVE, 쓰기는 여기에 `cadWriteEnabled`와 서버 세션/정확 Host·Origin/CSRF를 추가로 요구한다. 삭제 비밀번호·요청 actor/role/scope를 인가로 쓰지 않는다. 최초 Admin 이전 capability probe는 Audit를 만들지 않는다.
+
+**구현 단위:** R2는 catalogue Admin CRUD·실제 nullable Outline FK·참조 보존과 Viewer 관리 메뉴를 구현한다. typed confirm은 R3 #71, 서버 타입 기준 영속 Tree 복원은 #73에서 연결한다. 이 순서는 이름 변경/비활성으로 기존 참조가 파괴되지 않는 DB 수용을 미루는 사유가 아니다. 새 타입으로 실제 Viewer Outline을 생성하고 Tree를 복원하는 통합 수용은 R3 증거와 구분한다.
+
+**운영/Schema:** 새로 만든 빈 Greenfield만 새 baseline을 설치한다. 기존 baseline의 DDL/marker/checksum 및 실제 볼륨을 변경하지 않는다. 최신 CadOutline CREATE DDL의 FK variant를 별도로 만들고 과거 문자열은 보존한다. 새 타입·감사 table은 최신 baseline에만 존재한다. 이전 설치에서 catalogue 기능은503/안전한 disabled이며 앱이 요청/시작 시 migration하지 않는다. 기존 DB 자동 업그레이드·타입 자동 분류·물리 삭제·정식 배포는 수행하지 않는다.
+
+**UI:** 기존 Viewer `작업 > 외곽선 타입 관리`(id types)에서 공용 tools MovableViewerPanel의 제목/내용을 관리자 catalogue 편집으로 전환한다. 새 panel kind/독립 상단 버튼은 추가하지 않는다. 일반 선택·편집 도구로 재진입하면 원래 내용으로 복귀한다. panel close/reload/Version·Renderer 변경 시 관리 모드만 정리하고 Canvas/선택/Undo/원본은 메뉴 조작으로 재생성하지 않는다. Admin+writer/schema capability 전에는 기존 메뉴를 disabled+정확한 사유로 유지한다.
+
 ## R1 최종 AC 대조 — SSR 실제 HTTP 거절 상태 (2026-10-31)
 
 초기 page safe-denial HTML200 한계는 원 #60/#62의 직접 URL/SSR HTTP401/403 수용 기준을 모두 충족하지 않는다. 설치된 Next16.3.4의 Node Proxy 지원을 로컬 source로 확인했으므로 `/operations/logs`에만 정확 matcher를 두고 기존 서버 인가를 재사용하여 실제 거절 status를 반환한다. page/API 내부 검사도 유지하며 CAD 익명 GET 범위·Auth 권한·G7 activation은 변경하지 않는다. 검증 TC-R1-009 추가 후 build/직접 URL·Greenfield를 실제 재검증한다. 기존 HTTP200 shell 테스트 성공을 새 상태 코드 검증으로 승계하지 않는다.
