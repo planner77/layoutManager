@@ -11,7 +11,7 @@ type FailureOptions = {
 export function failure(error: unknown, options: FailureOptions = {}) {
   const request = options.request;
   const diagnostics = options.diagnostics;
-  const stage = options.stage ?? 'response';
+  const stage = options.stage ?? request?.currentStage ?? 'response';
   const requestId = diagnostics?.requestId ?? request?.requestId;
   const status = error instanceof CadError ? error.status : 500;
   const code = error instanceof CadError ? error.code : 'SERVER_ERROR';
@@ -19,7 +19,10 @@ export function failure(error: unknown, options: FailureOptions = {}) {
 
   diagnostics?.finishFailure(error, stage, status);
   if (request) {
-    request.error('http_request_failed', error, { outcome: 'failure', httpStatus: status, errorCode: code, stage });
+    const internalCode = error && typeof error === 'object' && 'code' in error ? error.code : undefined;
+    const safeInternalCode = typeof internalCode === 'string' &&
+      /^(?:P[0-9]{4}|SQLITE_[A-Z0-9_]+)$/.test(internalCode) ? internalCode : code;
+    request.error('http_request_failed', error, { outcome: 'failure', httpStatus: status, errorCode: safeInternalCode, stage });
     request.completed(status, 'failure');
   }
 

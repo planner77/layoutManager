@@ -11,14 +11,17 @@ export async function PUT(request: Request, { params }: { params: Promise<{ loca
   const requestLog = new RequestLogContext(request, 'api', 'cad_set_current');
   let auditTarget = 'CAD_CURRENT';
   try {
+    requestLog.phase('authorization');
     const auth = prepareG7CadWrite(request, requestLog.requestId);
     if (!auth?.runtime) requireSameOrigin(request);
+    requestLog.phase('authorization', 'success');
     let body: unknown;
     try { body = await request.json(); }
     catch { throw new CadError('INVALID_JSON','요청 내용을 확인해주세요.'); }
     auditTarget = validateId(String((body as {versionId?:unknown})?.versionId ?? ''));
     const cad = cadWriteContext(auth);
     let result;
+    requestLog.phase('database_write');
     try {
       result = await cad.repo.setCurrent(
         validateId((await params).locationId),
@@ -26,11 +29,13 @@ export async function PUT(request: Request, { params }: { params: Promise<{ loca
         auth,
       );
     } finally { await cad.close(); }
+    requestLog.phase('database_write', 'success');
+    let cacheWarning = false;
     for (const path of ['/', `/cad/locations/${result.id}`]) {
       try { revalidatePath(path); }
-      catch (error) { requestLog.warn('cache_revalidation_failed', { outcome: 'warning', error }); }
+      catch (error) { cacheWarning = true; requestLog.warn('cache_revalidation_failed', { outcome: 'warning', error }); }
     }
-    requestLog.completed(200);
+    requestLog.completed(200, cacheWarning ? 'warning' : 'success');
     return Response.json(
       { id: result.id, currentVersionId: result.currentVersionId },
       { headers: requestLog.responseHeaders() },
