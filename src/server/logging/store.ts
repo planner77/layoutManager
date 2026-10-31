@@ -166,6 +166,11 @@ export class StructuredLogStore {
     }
   }
 
+  // Protected seam for injected ENOSPC/EROFS tests; runtime uses O_EXCL/O_NOFOLLOW.
+  protected async openNewFile(path: string): Promise<FileHandle> {
+    return open(path, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW, 0o600);
+  }
+
   private async append(bytes: Buffer) {
     if (!this.handle || this.fileSize + bytes.length > this.options.maxFileBytes) {
       if (this.handle) {
@@ -180,8 +185,7 @@ export class StructuredLogStore {
       const name = this.options.source + '-' + String(Date.now()).padStart(13, '0') + '-' +
         this.writerId + '-' + String(this.sequence++).padStart(4, '0') + '.jsonl';
       // O_EXCL/O_NOFOLLOW + private mode; each process writes distinct files.
-      this.handle = await open(join(this.options.directory, name),
-        constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW, 0o600);
+      this.handle = await this.openNewFile(join(this.options.directory, name));
       this.activeName = name;
       this.fileSize = 0;
     }
