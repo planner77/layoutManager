@@ -17,7 +17,9 @@ export function failure(error: unknown, options: FailureOptions = {}) {
   const code = error instanceof CadError ? error.code : 'SERVER_ERROR';
   const message = error instanceof CadError ? error.message : '요청을 처리하지 못했습니다. 잠시 후 다시 시도해주세요.';
 
-  diagnostics?.finishFailure(error, stage, status);
+  // UploadDiagnostics accepts only UploadStage, while L2 request phases include
+  // database_read/database_write/authorization. Keep these two contracts separate.
+  diagnostics?.finishFailure(error, options.stage ?? 'response', status);
   if (request) {
     const internalCode = error && typeof error === 'object' && 'code' in error ? error.code : undefined;
     const safeInternalCode = typeof internalCode === 'string' &&

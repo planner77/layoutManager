@@ -26,7 +26,7 @@ export type StoreOptions = {
   maxQueueBytes: number;
 };
 type FileInfo = { name: string; size: number; mtimeMs: number };
-const FILE_NAME = /^(app|maintenance)-[0-9]{13}-[a-f0-9]{32}-[0-9]{4}\.jsonl$/;
+const FILE_NAME = /^(app|maintenance)-[0-9]{13}-[a-f0-9]{32}-[0-9]{4,16}\.jsonl$/;
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
 const READ_MAX_FILES = 16;
 const READ_MAX_RECORDS = 200;
@@ -78,7 +78,7 @@ async function inventory(directory: string): Promise<FileInfo[]> {
 }
 
 export class StructuredLogStore {
-  private readonly writerId = randomUUID().replace(/-/g, '');
+  private writerId = randomUUID().replace(/-/g, '');
   private readonly queue: Buffer[] = [];
   private runner?: Promise<void>;
   private handle?: FileHandle;
@@ -171,7 +171,33 @@ export class StructuredLogStore {
     return open(path, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW, 0o600);
   }
 
+  // Another writer can reclaim a long-idle file even while this process still
+  // holds its descriptor. POSIX then accepts writes to an unlinked inode.
+  // Verify device/inode and link count BEFORE every append; replace the handle
+  // rather than reporting a successful but unreachable persistence record.
+  private async activeHandleIsLinked(): Promise<boolean> {
+    if (!this.handle || !this.activeName) return false;
+    try {
+      const [opened, linked] = await Promise.all([
+        this.handle.stat(),
+        lstat(join(this.options.directory, this.activeName)),
+      ]);
+      return opened.nlink > 0 && linked.isFile() && !linked.isSymbolicLink() &&
+        opened.dev === linked.dev && opened.ino === linked.ino;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return false;
+      throw error;
+    }
+  }
+
   private async append(bytes: Buffer) {
+    if (this.handle && !(await this.activeHandleIsLinked())) {
+      await this.handle.close();
+      this.handle = undefined;
+      this.activeName = undefined;
+      this.fileSize = 0;
+      this.counters.rotated++;
+    }
     if (!this.handle || this.fileSize + bytes.length > this.options.maxFileBytes) {
       if (this.handle) {
         const prior = this.activeName;
@@ -182,6 +208,12 @@ export class StructuredLogStore {
       }
       await verifiedDirectory(this.options.directory, true);
       await this.prune(bytes.length);
+      // Avoid a sequence that eventually stringifies as scientific notation.
+      // A new random writer namespace safely restarts the sequence.
+      if (!Number.isSafeInteger(this.sequence) || this.sequence >= Number.MAX_SAFE_INTEGER) {
+        this.writerId = randomUUID().replace(/-/g, '');
+        this.sequence = 0;
+      }
       const name = this.options.source + '-' + String(Date.now()).padStart(13, '0') + '-' +
         this.writerId + '-' + String(this.sequence++).padStart(4, '0') + '.jsonl';
       // O_EXCL/O_NOFOLLOW + private mode; each process writes distinct files.
@@ -210,7 +242,9 @@ export class StructuredLogStore {
     let count = files.length;
     for (const file of files) {
       const expired = now - file.mtimeMs > this.options.retentionMs;
-      const excessive = count >= this.options.maxFiles || total + incoming > this.options.maxTotalBytes;
+      // Before creating a file reserve one slot; after a write allow exactly maxFiles.
+      const excessive = count + (incoming > 0 ? 1 : 0) > this.options.maxFiles ||
+        total + incoming > this.options.maxTotalBytes;
       if (!expired && !excessive) break;
       if (file.name === this.activeName) continue;
       // Do not unlink another process's currently written file.
@@ -221,7 +255,8 @@ export class StructuredLogStore {
       count--;
       this.counters.purged++;
     }
-    if (total + incoming > this.options.maxTotalBytes || count >= this.options.maxFiles)
+    if (total + incoming > this.options.maxTotalBytes ||
+        count + (incoming > 0 ? 1 : 0) > this.options.maxFiles)
       throw new Error('LOG_STORE_CAPACITY');
   }
 }
