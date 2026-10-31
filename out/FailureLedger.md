@@ -1,3 +1,12 @@
+## #88/#90 PR #176 — new PR review/merge gate and exact-HEAD CI handoff (2026-10-31 KST)
+
+- [PR #176](https://github.com/planner77/layoutManager/pull/176) was created from `feat/issues-88-90-memo-link-search-20261031` at code+ledger HEAD `be10753a617d165f49d7242c0756880c47fb7e06`, base Main `7058ec393aad10ebbf22bec6dda70d961cb9b483`.
+- **Actual GitHub gate read:** after initial mergeable calculation, GitHub REST reported `mergeable=true, mergeable_state=unstable, rebaseable=true`; GitHub compare `status=ahead, ahead_by=11, behind_by=0`; GraphQL review threads `[]` (**0 unresolved**, not independent review approval). No merge conflict and no thread to resolve at that checkpoint. The `unstable` state is CI/check status, not a source merge conflict.
+- Owner requested **start PR CI and skip monitoring**. This record is committed before the latest PR `synchronize` event, which is expected to trigger PR CI. Workflow execution SUCCESS/FAILURE, Run ID, test count and Docker Build **NOT YET VERIFIED**; monitoring deliberately omitted. Do not close #88/#90, merge, push GHCR or change runtime.
+- Automated tests and full M6 signed cross-session/performance acceptance remain in [TestReport](TestReport.md) as NOT RUN/NOT VERIFIED, regardless of PR creation. Failures, if reported, must be appended with exact run/root cause before a new CI attempt.
+
+---
+
 ## #88/#90 M6/M7 — pre-PR CI implementation, review and conflict ledger (2026-10-31 KST)
 
 - **Scope and order:** dependencies #83/#84/#85/#86 closed. Root DESIGN.md absent, so AGENTS.md + out/Architecture.md/Decisions.md/Issues88-90.md are design authority. #88 authenticated UUID Version+Memo URL and renderer-ready WCS focus first; #90 G7 Site-scoped DB search and home UI second. Code/test/docs committed on `feat/issues-88-90-memo-link-search-20261031`.
