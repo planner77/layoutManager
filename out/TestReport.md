@@ -1,5 +1,10 @@
 ## PR #178 — E6 JSON 복원과 UI Tree 재열기 분리 (2026-10-31)
 
+## #58/#59 pre-PR CI evidence boundary (2026-10-31)
+
+Implementation and synthetic tests committed on feat/58-59-observability-l2-l3. Local npm/Typecheck/Lint/Vitest/Docker/E2E were **NOT RUN** in the connector-only work environment. PR CI will be launched by opening the PR; do not report PASS or GHCR release without verified run evidence. Unit files log-store.test.ts and logging-l2.test.ts provide TC-L3-001..006 and TC-L2-001..003. Physical /data volume survival, app restart, ENOSPC/EROFS, cross-writer budget and backup/rollback not proven in a production environment. No issue closure, Main CI or GHCR. See [Issues58-59](Issues58-59.md).
+
+
 - [Run 41175039708](https://github.com/planner77/layoutManager/actions/runs/41175039708), HEAD `34b0ec465cb81424ab85f4c1eca6f912472a1691`: Verify Typecheck/Lint/106 Unit+Integration 파일 **697 PASS**, Production Build/OCI benchmark PASS. Chromium E2E는 **116 PASS / 1 FAIL**, `TC-E6-E2E-001`에서 `outline-tree-item` 1개 기대 대비 0개(닫힌 Drawer), G7/Greenfield/Legacy Verify E2E 미실행. Docker Migration/Runtime smoke Job `124460857583` SUCCESS. 최초 JSX/이후 TS 타입 실패와 구별하며 이전 Run 내역 유지.
 - 판정: Import 성공 메시지는 보였지만 실제 데이터 복원을 단독 입증하지 않음. `reload`의 `dispatchApp(reset)`가 `outlineTreeOpen=false`를 만들고 공통 `MovableViewerPanel`은 닫혀 있으면 트리 항목을 렌더링하지 않는 것이 실제 테스트 실패 원인으로 분석됨.
 - [E2E 수정 4def08b5](https://github.com/planner77/layoutManager/commit/4def08b57ac0f29c4d81823de1299fe45507dfd7): Reload 뒤 빈 JSON, Import 뒤 동일 ID/editedGeometry JSON, 메뉴를 통한 트리 재개방 후 1행/ID까지 검사. **생성 상태와 UI 패널 표시 상태를 분리한 수용 계약**을 검증하며 제품 코드·DB·서버·CI 게이트 변경 없음. 새 HEAD의 Typecheck/Unit/E2E/실자료 검증은 CI 완료 전 NOT VERIFIED. 상세 [FailureLedger](FailureLedger.md).

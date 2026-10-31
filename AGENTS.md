@@ -1,5 +1,13 @@
 ## PR #178 E6 회귀: Reload는 외곽선 트리 패널을 닫음 (2026-10-31)
 
+## #58/#59 Observability L2+L3 implementation constraints (2026-10-31)
+
+- #57 is completed. Use its single L1 writeLog to send sanitized entries to stdout/stderr and optional app-owned JSONL in /data/logs; never create an alternate logger or ingest raw Next, Nginx, Docker, CAD, SQL, stack, request body or credentials. Root DESIGN.md is absent, so follow out/Architecture.md, out/Decisions.md, out/Issues58-59.md.
+- RequestLogContext.phase and JobLogContext enforce server request/job UUID, allowlisted stage/outcome, safe error code and elapsedMs. Cache invalidation or deferred storage cleanup warning must not transform a committed business write into failure. Health transitions are sampled rather than 30-second error floods.
+- L3 log store remains fixed-path and server-only, UID10001 0700/0600, separate per-writer JSONL with rotation/retention, bounded queue and drop counters. Async persistence failures never break CAD or DB responses. No HTTP read API, Docker socket access, G7 role changes, DB log table or permission bypass. Cross-writer hard global quota is not proven; document risk explicitly. Source files/tests/ops policy in out/Issues58-59.md.
+- Do not claim local tests/PR CI/field volume backup passed without execution evidence. PR opening triggers CI; no monitoring per Owner. PR merge, GHCR and Issue closure are out of scope until separately authorized.
+
+
 - [CI Run 41175039708](https://github.com/planner77/layoutManager/actions/runs/41175039708)은 Unit 697/697, 전체 Chromium 116 PASS/1 FAIL; 유일 실패 `TC-E6-E2E-001`은 JSON 가져오기 성공 메시지 후 *닫혀 있는 트리 패널*의 DOM 항목을 1개로 기대한 UI 테스트 전제 오류. `CadViewer.reload()`는 `viewerAppReducer(reset)`을 호출하여 `outlineTreeOpen=false`; `MovableViewerPanel(open=false)`은 내용을 마운트하지 않는다. 임시 GeneratedDocument와 UI 패널 개폐는 별개이므로 테스트에서도 구분한다.
 - E6 회귀 절차: Reload 후 Browser-only JSON Export가 빈 `objects`인지 확인 → 명시적 Import 후 별도 Export의 UUID/WCS Geometry 대조 → `작업 > 외곽선 목록` 메뉴로 패널을 다시 열어 트리 ID/건수 확인. 패널을 자동으로 열거나 Canvas/Scene 재로드시키지 않는다. 원본 DXF/DB/API/Auth/Current 불변. 상세 [FailureLedger](out/FailureLedger.md), [TestPlan](out/TestPlan.md).
 

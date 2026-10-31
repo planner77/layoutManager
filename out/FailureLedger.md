@@ -1,5 +1,13 @@
 ## PR #178 — 세 번째 실패 Run 41175039708 / E6-E2E 패널 상태 혼동 (2026-10-31 KST)
 
+## #58/#59 L2+L3 initial source review / pre-PR CI ledger (2026-10-31)
+
+- Base Main: 56221f8d4fc0d80622fa1fced85a56b53d1eb213. Issue #57 dependency closed, root DESIGN.md absent. Design authority out/Architecture.md, out/Decisions.md, AGENTS.md. Added one L1 emitter-connected, best-effort private JSONL store, L2 stage/job instrumentation, UID10001 Docker packaging and synthetic tests. No unrelated G7/DB migrations. Existing L1 stdout, Docker local driver and audit boundaries retained.
+- No failed CI run was observed during this implementation session: no new failure root cause may be claimed or classified. At this pre-PR stage local tests NOT RUN, PR CI not yet started, exact run/status NOT VERIFIED. Future failures must be linked to exact HEAD/run/job and fixed in this ledger without weakening gates. New PR review threads and Main conflict status must be checked before final PR CI.
+- Known residual design risk, not a CI failure: independent writer streams are safe from line interleaving but no cross-process atomic quota. Pruning protects recently active other writers and can drop persistence copies when capacity cannot be reclaimed. No authenticated log API before #60/#61. Field volume ownership, backup/restore and rollback NOT VERIFIED. Owner acceptance is not claimed.
+- Once PR is opened, GitHub pull_request(opened) triggers PR CI; monitoring deliberately omitted on Owner request. Do not equate queued/in_progress with success.
+
+
 ### 관측 결과
 - 정확 실패 HEAD [`34b0ec465cb81424ab85f4c1eca6f912472a1691`](https://github.com/planner77/layoutManager/commit/34b0ec465cb81424ab85f4c1eca6f912472a1691), [PR CI Run 41175039708](https://github.com/planner77/layoutManager/actions/runs/41175039708), **completed/failure**.
 - Verify Job [124460857433](https://github.com/planner77/layoutManager/actions/runs/41175039708/job/124460857433): Typecheck, ESLint, 전체 Unit/Integration **106 files / 697 tests PASS**, OCI manifest synthetic, DXF benchmark, Production Build, Chromium 설치 모두 SUCCESS. Chromium E2E **116 PASS / 1 FAIL (117건 중 1건)**. 별도 G7 signed Runtime/Greenfield/Legacy migration E2E는 Verify 단계에서 SKIPPED (Docker smoke와 혼동 금지). Chromium 실패 trace artifact [13033640009](https://github.com/planner77/layoutManager/actions/runs/41175039708/artifacts/13033640009) 보존.

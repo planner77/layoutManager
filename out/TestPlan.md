@@ -1,5 +1,13 @@
 ## #56 E6 Chromium Import 재진입 시 Tree 패널 상태 기준 (2026-10-31)
 
+## #58/#59 L2+L3 synthetic and deployment acceptance (2026-10-31)
+
+- TC-L2-001 request lifecycle and stage ordering, one X-Request-Id, success vs cache/storage warning; TC-L2-002 maintenance job start/stage/outcome/elapsedMs share one server UUID, sanitized failures; TC-L2-003 verified build SHA only. Existing upload/health/delete/masters E2E remain regression gates.
+- TC-L3-001 JSONL valid line, restart persistence and file max size/mode; TC-L3-002 app/maintenance concurrent writer file separation; TC-L3-003 rotation/total budget/file-count pruning; TC-L3-004 private symlink and injected ENOSPC isolation, invalid cursor; TC-L3-005 partial JSONL ignored; TC-L3-006 environment bounds and fixed path.
+- PR CI gates: TypeScript, ESLint, Unit+Integration, Production Build, Chromium E2E, G7 test and Docker runtime/migrator smoke. On isolated disposable Compose volume confirm UID10001, /data/logs permissions, log persistence after app recreate, existing /data/db and /data/cad intact; never use a production volume. Manual backup/restore/rollback, ENOSPC/EROFS and cross-process quota under load are NOT VERIFIED until actual evidence is captured.
+- Stage/step errors and DB P2022 are documented by code and L1 normalization; full physical fault injection and real field evidence remain separate. [Detailed contract](Issues58-59.md).
+
+
 - 실패 Run [41175039708](https://github.com/planner77/layoutManager/actions/runs/41175039708)의 `TC-E6-E2E-001`에서 Import 성공 메시지 뒤 `outline-tree-item` 0건(기대 1). 원인: `Reload → dispatchApp(reset) → outlineTreeOpen=false`, 닫힌 공통 `MovableViewerPanel`은 자식 노드를 DOM에 마운트하지 않음.
 - 강화된 E6-AC1/3/4 회귀: (1) 기존 생성·회전 결과 다운로드, (2) SHA 불일치 Import는 기존 객체/geometry 불변, (3) Reload 이후 트리 패널 닫힘 및 Browser JSON Export 객체 0건, (4) 유효 v2 수동 Import 성공 후 **트리를 열지 않고도 Export UUID/editedGeometry 동일**, (5) `작업 > 외곽선 목록` 그룹 메뉴를 사용자처럼 열고 트리 행·`savedOutlineId` 일치, (6) Renderer 교체 전 unsaved confirm 및 미지원 UI 확인.
 - **금지:** 실제 제품의 선택·Drawer 상태를 데이터 검증을 위해 강제 복구, JSON import에 암묵적인 Tree auto-open/Source reload 추가, E2E 실패 Assertion 삭제·시간 증가·CI Skip. 새 정확 HEAD의 모든 CI 검증과 Server/Source 불변 회귀 결과를 확인 전 PASS 기록 금지.
