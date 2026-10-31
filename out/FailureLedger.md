@@ -1,3 +1,12 @@
+## PR #178 — P1 스레드 해결 및 Main 충돌 재점검, 재시작 CI 인계 (2026-10-31 KST)
+
+- 첫 Run `41170053430`의 공통 JSX TS1005/Next Build 실패 원인과 Code Review P1 Local-ID Regex 문제를 코드 커밋 [`b61b729f`](https://github.com/planner77/layoutManager/commit/b61b729f3abe79e6dd9f7c67ac5f39e995c8106b)로 보완. `GeneratedDocument.replaceFromImport`에 실제 `\d` digit escape가 적용됨을 HEAD 재조회하여 확인; `viewer.tsx`의 조건 JSX 닫기와 `ChangeEvent` 타입 지정도 소스 재조회 확인. 이전 CI 결과는 계속 FAILURE로 보존.
+- Codex P1 [review #4430584078](https://github.com/planner77/layoutManager/pull/178#discussion_r4430584078)에 [답변 #4430599150](https://github.com/planner77/layoutManager/pull/178#discussion_r4430599150) 후 thread `PRRT_kwDOUQjDfc6yOC0e` `is_resolved=true` 확인. 현재 PR 리뷰 스레드 전체 1건, **미해결 0건**.
+- 최신 PR head `b61b729f3abe79e6dd9f7c67ac5f39e995c8106b`, base Main `116d04046f75d2bae9fdeeefde7ead0edc011a4f`; compare `ahead 12 / behind 0`, PR `mergeable=true`. **Main 충돌 없음**, 강제/파괴적 reset이나 merge 필요 없음.
+- 본 실패 원장 추가 갱신 이후 정확한 새 HEAD의 PR CI를 `pull_request synchronize` 자동 트리거로 시작한다. 실행 ID/HEAD는 PR 댓글로 추적 가능하며, Owner 지시에 따라 **CI 완료 모니터링은 생략**한다. 수정 코드의 Typecheck/Lint/Unit/E2E/Docker 및 실 CAD/GPU는 새 실행 결과 확인 전 **NOT VERIFIED**. GHCR/병합/Issue #55/#56 종료/운영 Auth·DB 변경 없음.
+
+---
+
 ## PR #178 / #55+#56 — 최초 PR CI 실패: JSX Syntax + JSON Import ID P1 (2026-10-31 KST)
 
 ### 정확한 실패 증거 (HEAD `a5bbcf7a57f9a96b9cae236089e2709e1e47418c`)
