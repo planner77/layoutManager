@@ -1,3 +1,32 @@
+## PR #179 — v0.48.0 기준 최종 PR CI SUCCESS 및 v0.48.1 새 HEAD 미검증 (2026-10-31)
+
+- 기존 HEAD `ac285b690f4b57cf2fca89cb10f9f029308b0987`의 [Run 41203460377](https://github.com/planner77/layoutManager/actions/runs/41203460377): Verify Job 124543839312, Docker Job 124543839619 **모두 SUCCESS**. 이전 실패 Run 두 건은 실패 원장에 보존.
+- v0.48.0은 이미 이전 Main 56221f8d에 release tag가 있으므로 PR #179의 새 기능을 별도 정식 버전으로 게시하려면 v0.48.1 필요. package.json 및 package-lock.json root version 동시 0.48.1 변경. 변경 후 새 PR CI Verify+Docker의 실제 성공은 **NOT VERIFIED**; 기존 green Run을 최신 소스 성공으로 오표시하지 않는다. Owner는 CI 모니터링 생략. 실 현장 로그 보존/롤백 및 GHCR Digest 별도 증거 필요.
+
+---
+
+## PR #179 — 두 번째 PR CI 결과와 수정 증거 범위 (2026-10-31)
+
+- [Run 41202514157](https://github.com/planner77/layoutManager/actions/runs/41202514157), HEAD `2484115a60100abb8f1e5b289f281fedbc4e0214`, completed/**failure**. Verify 124541002048: Typecheck/ESLint PASS; Unit/Integration 108 files: 106 PASS, 2 FAIL / 710 tests: 708 PASS, 2 FAIL. 정확한 실패 TC-L3-004(0755 잘못된 test fixture로 ENOSPC seam까지 미도달) 및 TC-LOG-MIG-001(신규 store.ts explicit COPY 누락). OCI/DXF/Next/Browser/G7 E2E SKIPPED.
+- Docker 124541002124: baseline Migrator Build 실패 ERR_MODULE_NOT_FOUND server/logging/store (Main Dockerfile에는 PR 신규 의존성 COPY 없음). 이후 새 Docker 이미지/G7 최초 설치·재기동 검증 SKIPPED. 첫 PR CI의 TS2345는 재발하지 않음.
+- 수정 commit 512b5d02(0700 fixture, candidate Dockerfile store.ts explicit COPY, Docker CI file check), 9d2b2143(baseline Dockerfile 임시 사본에 한 파일만 엄격 추가), 5c44eb95/69c98745(TC-LOG-MIG-002 회귀). 모든 기존 Unit/Integration/Production/CI Gate 유지. 테스트 코드 작성/CI 요청은 통과 증거가 아니며 새 CI 결과, 운영 Volume/영속성/실패주입은 **NOT VERIFIED**. 상세 [FailureLedger](FailureLedger.md).
+
+---
+
+## PR #179 / #58+#59 첫 CI 실패 및 수정 후 검증 대기 (2026-10-31)
+
+- Original [Run 41194360963](https://github.com/planner77/layoutManager/actions/runs/41194360963), HEAD 19ba6fb6fad35cb9fd4968a55f6cef95ce0171ea, completed/FAILURE. Verify 124517422622 TS2345 server/http.ts:20; Docker 124517422395 baseline Next Build same error. Lint/Unit/E2E and downstream Docker were SKIPPED (not PASS).
+- Fix 91b34067 separates UploadStage and generic L2 stage; also prevents writes to unlinked inode and supports rotation sequence 10000+. Added TC-L2-004 and TC-L3-007/008/009 in 8ad19a8d; unused import removed 0af08c1f. Codex P2 two replies and Resolved 2/2.
+- Local test suite and corrected PR CI not yet verified; no Main/GHCR/field evidence. See FailureLedger.md. Starting a new PR CI does not certify completion.
+
+---
+
+## #58/#59 pre-PR CI evidence boundary (2026-10-31)
+
+Implementation and synthetic tests committed on feat/58-59-observability-l2-l3. Local npm/Typecheck/Lint/Vitest/Docker/E2E were **NOT RUN** in the connector-only work environment. PR CI will be launched by opening the PR; do not report PASS or GHCR release without verified run evidence. Unit files log-store.test.ts and logging-l2.test.ts provide TC-L3-001..006 and TC-L2-001..003. Physical /data volume survival, app restart, ENOSPC/EROFS, cross-writer budget and backup/rollback not proven in a production environment. No issue closure, Main CI or GHCR. See [Issues58-59](Issues58-59.md).
+
+---
+
 ## PR #178 — E6 JSON 복원과 UI Tree 재열기 분리 (2026-10-31)
 
 - [Run 41175039708](https://github.com/planner77/layoutManager/actions/runs/41175039708), HEAD `34b0ec465cb81424ab85f4c1eca6f912472a1691`: Verify Typecheck/Lint/106 Unit+Integration 파일 **697 PASS**, Production Build/OCI benchmark PASS. Chromium E2E는 **116 PASS / 1 FAIL**, `TC-E6-E2E-001`에서 `outline-tree-item` 1개 기대 대비 0개(닫힌 Drawer), G7/Greenfield/Legacy Verify E2E 미실행. Docker Migration/Runtime smoke Job `124460857583` SUCCESS. 최초 JSX/이후 TS 타입 실패와 구별하며 이전 Run 내역 유지.

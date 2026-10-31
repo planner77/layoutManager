@@ -184,3 +184,15 @@ test('TC-LOG-MIG-001: migrator includes logger direct imports and loads them bef
   expect(ci).toContain('server/upload-error-catalog.ts');
   expect(ci).toContain('node --import tsx --input-type=module -e');
 });
+
+
+test('TC-LOG-MIG-002: CI baseline migrator packages the PR-source logger dependency', () => {
+  const root = path.resolve(process.cwd(), '..');
+  const workflow = readFileSync(path.join(root, '.github/workflows/pr-ci.yml'), 'utf8');
+  const baseline = workflow.split('      - name: Build pre-change baseline (same source, original Dockerfile)\n')[1]
+    ?.split('\n      - name: ')[0] ?? '';
+  expect(baseline).toContain('git show "$BASE_SHA:src/Dockerfile"');
+  expect(baseline).toContain('source.count(anchor) != 1');
+  expect(baseline).toContain('COPY --from=builder /app/src/server/logging/store.ts ./server/logging/store.ts');
+  expect(baseline).toContain('docker buildx build --load --platform linux/amd64 --target migrator');
+});

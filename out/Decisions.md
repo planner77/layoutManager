@@ -1,3 +1,9 @@
+## ADR-055 — #58/#59 additive observability (2026-10-31)
+
+Extend existing #57 single sanitized emitter with allowlisted request/job phases and a bounded private JSONL sink. Preserve stdout/stderr, 30-second health check behavior, business results and rollback. Do not use DB tables or raw framework logs, or expose file path / HTTP API before #60/#61 access policy. New volume data is additive; cross-process atomic total quota is not guaranteed and exhausted stores drop persisted copies without breaking business transactions. See [Issues58-59](Issues58-59.md).
+
+---
+
 ## ADR-063 — E5 WCS CCW Rotate + E6 방어적 Browser JSON v2 (2026-10-31, Issue #55/#56)
 
 - **결정:** #51/52의 E2 `GeneratedDocument`를 단일 authority로 유지하며 E5는 수치·그룹·전용 DOM 핸들 Ghost를 E4 이동과 구분한다. 화면 Y-down 좌표를 Angle에 혼합하지 않고 WCS atan2 각도(+는 CCW)만 적용한다. 공통 Pivot은 집합 WCS bbox center, 사용자 X/Y override 선택 가능. 임시 Preview는 히스토리 0건, PointerUp commit만 명령 1건; ESC/PointerCancel/wheel/size/camera/Renderer/Version/dispose는 cancel한다. SOURCE/RENDER/mixed의 일부 허용은 하지 않는다.

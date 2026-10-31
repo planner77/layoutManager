@@ -1,5 +1,10 @@
 ## v0.48.0 후보 — #55 회전 / #56 편집 생성 개체 JSON v2 (2026-10-31)
 
+## #58/#59 Observability: Request stages and private logs
+
+The same structured L1 logger now supports request phases and maintenance-job correlation. Compose can retain sanitized app-only JSONL in private /data/logs with LOG_STORE_ENABLED=true (7-day retention, 4 MiB/file, 64 MiB total defaults), independently of Docker local logs. No web log-reader API or Docker socket mount is provided; the store is not an audit ledger. On IO failure it drops persistence copies without affecting CAD operations. UID 10001 owns the private directory; never delete an existing data volume to enable logging. See [out/Logging.md](out/Logging.md), [out/Issues58-59.md](out/Issues58-59.md).
+
+
 DXF를 `three-dxf-viewer`로 연 뒤 `작업 → 선택·편집 도구`에서 **생성 개체만 선택**하면 WCS XY 각도(+ = 반시계), Pivot X/Y(기본: 선택 객체 전체 bbox의 중심)를 입력해 한 번에 회전할 수 있습니다. Canvas 위의 **↻ 회전 핸들**을 드래그하면 Ghost로 미리보기, 놓으면 한 번의 Undo로 확정되며 ESC/카메라 변경/취소는 원위치로 복원합니다. SOURCE/RENDER 혼합은 편집할 수 없습니다.
 
 `도면 → 생성 개체 JSON 내보내기 (브라우저)`는 편집된 생성 외곽선의 base geometry, 허용된 Translate/Rotate 연산, transform, 유효 결과 geometry, ID, 이름·타입·가시성을 `cad-generated-objects` 스키마 v2 파일로 내보냅니다. `도면 → 생성 개체 JSON 가져오기 (브라우저)`로 동일 Version/SHA·DXF 단위에서만 복원됩니다. 파일 12MiB, 최대 100개/총 10만 꼭짓점/개체 4,096연산 제한을 초과하거나 변조된 파일은 거부합니다. 기존 임시 개체가 있으면 전체 교체 확인이 필요하고, 복원 후 이전 Undo 이력은 이어지지 않습니다. 기존 #31 원본 Source-only JSON v1/typed v2는 제한된 Legacy 브라우저 Import 경로로 처리합니다. 기존 JSON 내보내기 버튼은 호환 유지됩니다.

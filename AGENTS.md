@@ -1,3 +1,40 @@
+## PR #179 — v0.48.0 중복 릴리스 차단 및 v0.48.1 PR 재검증 (2026-10-31)
+
+- [PR CI Run 41203460377](https://github.com/planner77/layoutManager/actions/runs/41203460377) 정확 HEAD `ac285b690f4b57cf2fca89cb10f9f029308b0987` Verify Job `124543839312` 및 Docker Job `124543839619` 모두 **completed/SUCCESS**. 이전 2개 실패 Run 41194360963/41202514157은 [FailureLedger](out/FailureLedger.md)에 이력 보존.
+- 해당 HEAD의 `src/package.json`은 0.48.0이지만 `v0.48.0` 태그는 이미 Main `56221f8d4fc0d80622fa1fced85a56b53d1eb213`을 가리키는 기존 Release (tag object `4d5163ab...`). Main CI publish workflow는 기존 동일 버전 App/Migrator 이미지가 있을 때 publish를 생략하므로, 이미 릴리스된 버전 tag/image를 강제 재지정하거나 `latest`만 덮어쓰지 않는다.
+- 정식 #58/#59 신규 GHCR 게시를 위해 `src/package.json`과 `src/package-lock.json`의 root/version을 **0.48.1**로 함께 변경했고, `v0.48.1` ref 사전 조회 결과 404(미존재). **버전 변경은 새 HEAD**이므로 기존 성공 PR CI를 자동 승계하지 않고 최종 HEAD의 새 PR CI 두 Job SUCCESS를 검증한 다음에만 Owner Managed Squash Merge/Issue 종료/Main CI GHCR 릴리스로 진행한다.
+- 새 PR CI 모니터링은 사용자 요청에 따라 생략. 새 CI가 완료됐다고 주장하지 않는다. 실패 원장·리뷰 스레드/충돌 상태를 최종 인계 코멘트에 명시한다. 실제 GHCR App/Migrator Digest/보존 여부는 Main Release 완료 전 미검증이며 G7/DB/운영 Volume에 손대지 않는다.
+
+---
+
+## PR #179 — 2차 CI 실패의 Test/Legacy Docker 원인 (2026-10-31)
+
+- [Run 41202514157](https://github.com/planner77/layoutManager/actions/runs/41202514157) / 정확 HEAD `2484115a60100abb8f1e5b289f281fedbc4e0214`: Verify Job 124541002048에서 Typecheck·ESLint SUCCESS, Vitest 108파일 중 106 PASS/2 FAIL (710 테스트 중 708 PASS/2 FAIL). OCI/Benchmark/Next Build/Chromium/G7 E2E는 SKIPPED. Docker Job 124541002124에서 원본 Main Dockerfile로 최신 PR source를 빌드하는 baseline migrator가 새 `logger.ts -> ./logging/store` import를 패키징하지 않아 `ERR_MODULE_NOT_FOUND`; Phase1/Current runtime·Migration Smoke는 SKIPPED. 첫 CI TS2345는 재발하지 않음.
+- TC-L3-004의 `mkdir(actual)`은 기본 umask 아래 0755로 생성되어 `verifiedDirectory`가 먼저 차단; ENOSPC 주입 검증이 실행되지 않았으며 lastFailureCode는 `LOG_IO_FAILED`. 테스트 전용 디렉터리를 `mkdir(...,{ mode:0o700 })`으로 설정하고 권한을 직접 검증한다. 실제 운영 0700 정책 완화나 ENOSPC 코드 조작은 금지.
+- TC-LOG-MIG-001은 logger의 모든 상대 모듈을 migrator Dockerfile에서 개별 COPY 하도록 검증한다. Migrator에 `COPY --from=builder /app/src/server/logging/store.ts ./server/logging/store.ts`를 명시하고 실제 이미지에서 해당 파일 존재/tsx import smoke를 수행한다. CI baseline Dockerfile은 구버전 manifest이므로 동일 PR source 비교를 유지하려면 **측정용 baseline 사본에만** 신규 Logger 파일 한 건을 엄격한 anchor로 추가; 원본 Main 파일이나 CI smoke/size gate를 무력화하지 않는다. TC-LOG-MIG-002 회귀 추가.
+- 모든 실패는 [실패 원장](out/FailureLedger.md)에 Run/Job/정확한 오류 및 수정 커밋으로 보존한다. 이후 새 CI의 성공은 확인 전 NOT VERIFIED. 기존 P2 2건 Resolved, Main 충돌과 새 리뷰는 CI 재시작 전 별도 검사. GHCR/병합/Issue 종료/운영 G7/Volume 변경 금지.
+
+---
+
+## PR #179 — #58/#59 CI 실패 및 Codex P2 재발 방지 (2026-10-31)
+
+- First PR CI Run [41194360963](https://github.com/planner77/layoutManager/actions/runs/41194360963), HEAD 19ba6fb6fad35cb9fd4968a55f6cef95ce0171ea: Verify Job 124517422622 TS2345 at server/http.ts:20, Docker Job 124517422395 baseline Next Build failed due to the SAME error. Lint/Unit/E2E and later Docker smoke SKIPPED; do not claim PASS.
+- RequestLogContext.currentStage (generic string stage) must never be passed into UploadDiagnostics.finishFailure (UploadStage only). Keep distinct stage contracts and X-Request-Id; TC-L2-004 covers the separation and safe P2022 redaction.
+- Codex P2 [4431462654](https://github.com/planner77/layoutManager/pull/179#discussion_r4431462654): idle app file unlinked by maintenance pruning then silently written by open fd. Compare nlink/dev/ino and lstat before append, reopen a new bounded O_EXCL file if missing; TC-L3-007. Concurrent unlink immediately after check still a documented atomicity gap.
+- Codex P2 [4431462655](https://github.com/planner77/layoutManager/pull/179#discussion_r4431462655): sequence 10000+ ignored by four-digit file regex, bypassing retention/size/read. Allow 4..16 digits, reset writer namespace before safe-integer overflow; TC-L3-008. Only pre-create prune reserves a slot; post-write prune permits exactly maxFiles; TC-L3-009.
+- Fix commits 91b34067 and 8ad19a8d, unused import 0af08c1f. Review replies 4431728330 and 4431728526, both P2 threads Resolved. Preserve #57 L1 schema, UID10001, fixed /data/logs, CAD/Auth/DB invariants and full CI gates. New HEAD CI still NOT VERIFIED; no merge/GHCR/Issue closure.
+
+---
+
+## #58/#59 Observability L2+L3 implementation constraints (2026-10-31)
+
+- #57 is completed. Use its single L1 writeLog to send sanitized entries to stdout/stderr and optional app-owned JSONL in /data/logs; never create an alternate logger or ingest raw Next, Nginx, Docker, CAD, SQL, stack, request body or credentials. Root DESIGN.md is absent, so follow out/Architecture.md, out/Decisions.md, out/Issues58-59.md.
+- RequestLogContext.phase and JobLogContext enforce server request/job UUID, allowlisted stage/outcome, safe error code and elapsedMs. Cache invalidation or deferred storage cleanup warning must not transform a committed business write into failure. Health transitions are sampled rather than 30-second error floods.
+- L3 log store remains fixed-path and server-only, UID10001 0700/0600, separate per-writer JSONL with rotation/retention, bounded queue and drop counters. Async persistence failures never break CAD or DB responses. No HTTP read API, Docker socket access, G7 role changes, DB log table or permission bypass. Cross-writer hard global quota is not proven; document risk explicitly. Source files/tests/ops policy in out/Issues58-59.md.
+- Do not claim local tests/PR CI/field volume backup passed without execution evidence. PR opening triggers CI; no monitoring per Owner. PR merge, GHCR and Issue closure are out of scope until separately authorized.
+
+---
+
 ## PR #178 E6 회귀: Reload는 외곽선 트리 패널을 닫음 (2026-10-31)
 
 - [CI Run 41175039708](https://github.com/planner77/layoutManager/actions/runs/41175039708)은 Unit 697/697, 전체 Chromium 116 PASS/1 FAIL; 유일 실패 `TC-E6-E2E-001`은 JSON 가져오기 성공 메시지 후 *닫혀 있는 트리 패널*의 DOM 항목을 1개로 기대한 UI 테스트 전제 오류. `CadViewer.reload()`는 `viewerAppReducer(reset)`을 호출하여 `outlineTreeOpen=false`; `MovableViewerPanel(open=false)`은 내용을 마운트하지 않는다. 임시 GeneratedDocument와 UI 패널 개폐는 별개이므로 테스트에서도 구분한다.

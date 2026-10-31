@@ -29,6 +29,11 @@ services:
       G7_AUTH_ENABLED: "false"
       G7_CAD_WRITE_CUTOVER_ENABLED: "false"
       G7_GREENFIELD_INSTALL_ACK: CREATE_EMPTY_G7_DATABASE
+      LOG_STORE_ENABLED: "${LOG_STORE_ENABLED:-true}"
+      LOG_SOURCE: maintenance
+      LOG_RETENTION_DAYS: "${LOG_RETENTION_DAYS:-7}"
+      LOG_MAX_TOTAL_MB: "${LOG_MAX_TOTAL_MB:-64}"
+      LOG_MAX_FILE_MB: "${LOG_MAX_FILE_MB:-4}"
     volumes:
       - type: volume
         source: cad-layout-viewer-data
@@ -63,6 +68,11 @@ services:
       MAX_UPLOAD_SIZE_MB: "${MAX_UPLOAD_SIZE_MB:-100}"
       LOG_LEVEL: "${LOG_LEVEL:-info}"
       LOG_FORMAT: "${LOG_FORMAT:-json}"
+      LOG_STORE_ENABLED: "${LOG_STORE_ENABLED:-true}"
+      LOG_SOURCE: app
+      LOG_RETENTION_DAYS: "${LOG_RETENTION_DAYS:-7}"
+      LOG_MAX_TOTAL_MB: "${LOG_MAX_TOTAL_MB:-64}"
+      LOG_MAX_FILE_MB: "${LOG_MAX_FILE_MB:-4}"
     volumes:
       - type: volume
         source: cad-layout-viewer-data

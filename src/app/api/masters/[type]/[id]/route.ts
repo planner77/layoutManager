@@ -7,18 +7,22 @@ import { validateId, CadError } from "@/domain/cad";
 import { revalidatePath } from "next/cache";
 export const runtime = "nodejs";
 type Params = { params: Promise<{ type: string; id: string }> };
-function refresh(log: RequestLogContext) {
+function refresh(log: RequestLogContext): boolean {
   try {
     revalidatePath("/", "layout");
+    return true;
   } catch (error) {
     log.warn("cache_revalidation_failed", { outcome: "warning", error });
+    return false;
   }
 }
 export async function PATCH(request: Request, { params }: Params) {
   const log = new RequestLogContext(request, "api", "master_update");
   try {
+    log.phase('authorization');
     const auth = prepareG7CadWrite(request,log.requestId);
     if (!auth?.runtime) requireSameOrigin(request);
+    log.phase('authorization', 'success');
     const p = await params,
       body = await boundedJson(request);
     if ("id" in body || "parentId" in body || "isUnclassified" in body)
@@ -49,10 +53,12 @@ export async function PATCH(request: Request, { params }: Params) {
     }
     const cad = cadWriteContext(auth);
     let result;
+    log.phase('database_write');
     try { result = await cad.masters.update(type,validateId(p.id),data,auth); }
     finally { await cad.close(); }
-    refresh(log);
-    log.completed(200);
+    log.phase('database_write', 'success');
+    const cacheOk = refresh(log);
+    log.completed(200, cacheOk ? 'success' : 'warning');
     return Response.json(result, { headers: log.responseHeaders() });
   } catch (error) {
     try { await recordG7WriteFailure(request,log.requestId,'ROLE','MASTER_CHANGE',error); }
@@ -63,15 +69,19 @@ export async function PATCH(request: Request, { params }: Params) {
 export async function DELETE(request: Request, { params }: Params) {
   const log = new RequestLogContext(request, "api", "master_delete");
   try {
+    log.phase('authorization');
     const auth = prepareG7CadWrite(request,log.requestId);
     if (!auth?.runtime) requireSameOrigin(request);
+    log.phase('authorization', 'success');
     const p = await params;
     const cad = cadWriteContext(auth);
     let result;
+    log.phase('database_write');
     try { result = await cad.masters.remove(masterType(p.type),validateId(p.id),auth); }
     finally { await cad.close(); }
-    refresh(log);
-    log.completed(200);
+    log.phase('database_write', 'success');
+    const cacheOk = refresh(log);
+    log.completed(200, cacheOk ? 'success' : 'warning');
     return Response.json(result, { headers: log.responseHeaders() });
   } catch (error) {
     try { await recordG7WriteFailure(request,log.requestId,'ROLE','MASTER_CHANGE',error); }

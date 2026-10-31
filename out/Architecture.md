@@ -1,3 +1,9 @@
+## #58/#59 Observability L2+L3 (2026-10-31)
+
+RequestLogContext and new JobLogContext reuse #57 writeLog. One optional best-effort queue writes only L1 sanitized app events to private /data/logs JSONL, without any SQLite business log table or changes to CAD, Auth, G7 and original Docker stdout/stderr. Writers use separate UUID-identified files, file and total size limits, mode 0700/0600 and an internal read-only bounded tail interface; no user-controlled file path, Docker socket or HTTP read. Design and concurrency limitations: [Issues58-59](Issues58-59.md).
+
+---
+
 ## #55/#56 브라우저 세션 편집 아키텍처 (2026-10-31)
 
 1. `SelectionController`는 E1 Origin/Scope/UUID 선택 집합을 소유한다. `GeneratedDocument`는 E2~E5 단일 권위 메모리 모델이다. `getGeneratedObjects` / Outline Tree / 기존 SavedOutlines는 projection이며 별도 복제 상태가 없다.

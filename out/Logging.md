@@ -1,5 +1,23 @@
 # Structured Logging 운영 가이드
 
+## #59 로그 영속 저장 CI 배포 회귀 보완 (2026-10-31)
+
+- [Run 41202514157](https://github.com/planner77/layoutManager/actions/runs/41202514157): 저장소 보안 정책은 `0700` 고정. ENOSPC 합성 테스트에서도 유효한 비공개 디렉터리에서 IO 실패만 재현해야 한다.
+- Migrator는 `server/logger.ts`의 정적 `server/logging/store.ts` 의존성을 runtime closure에 명시적으로 포함해야 한다. 후보 Dockerfile·CI 기준 이미지의 source contract를 구분해 검사하고, 신규 성공 검증 전 GHCR / 배포 성공으로 간주하지 않는다. [상세 원장](FailureLedger.md).
+
+## PR #179 — JSONL writer/UploadStage failure correction (2026-10-31)
+
+- Run 41194360963 failed TS2345 in server/http.ts:20: generic RequestLogContext.currentStage is not an UploadStage. UploadDiagnostics receives the explicitly typed upload stage only.
+- The writer checks open FD nlink/dev/ino and its pathname to reopen after external pruning; 10000+ rotation suffix remains visible to inventory/read/retention, and prune(0) honors exact maxFiles. Related tests TC-L2-004, TC-L3-007..009. Shared quota and inode check/write are still not cross-process atomic; corrected CI/field volume evidence unverified. See FailureLedger.md.
+
+---
+
+
+## #58/#59 L2 phase diagnostics and L3 private store (2026-10-31)
+
+The L1 emitter is still the single output owner. New http_request_stage and maintenance_job_* events correlate safe stage/outcome/elapsedMs with server-issued requestId/jobId. Health failure is sampled and recovery recorded once. Only verified 40-hex release commit can be logged as buildRevision. Optional private /data/logs JSONL (Compose enabled) is independent of Docker logs; file 4 MiB, total 64 MiB, 7 days, queue 1 MiB by default; UID10001, directory 0700 and file 0600. The sink drops on IO failure rather than interrupting CAD/DB business processing. No HTTP log-reading API or automatic raw Next/Docker collection. Cross-process aggregate budget is best-effort. Details: [Issues58-59](Issues58-59.md).
+
+
 ## Issue #57 L1 — app 소유 Schema v1·단일 출력 (2026-10-27)
 
 - 기존 `src/server/logger.writeLog`만 구조화 JSON을 stdout/stderr로 출력한다. `UploadDiagnostics`도 `LOG_LEVEL`/`LOG_FORMAT`을 공유한다. `warn→console.warn`, `error→console.error`, `debug/info→console.log`; production은 `LOG_FORMAT=json` 한 줄 권장.

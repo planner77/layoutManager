@@ -170,6 +170,21 @@ jobs:
           BASE_SHA="${{ github.event.pull_request.base.sha }}"
           if [ -z "$BASE_SHA" ]; then BASE_SHA="$(git rev-parse origin/main)"; fi
           git show "$BASE_SHA:src/Dockerfile" > "$RUNNER_TEMP/issue28-baseline.Dockerfile"
+          # The baseline uses the PR's CURRENT source, including the newly added
+          # logger relative import. Supply ONLY this required one-file closure to
+          # the comparison Dockerfile; otherwise baseline migrator cannot start.
+          # Do not bypass its import smoke, size comparison or native DB checks.
+          python3 - "$RUNNER_TEMP/issue28-baseline.Dockerfile" <<'PY'
+          from pathlib import Path
+          import sys
+          baseline = Path(sys.argv[1])
+          source = baseline.read_text()
+          anchor = "COPY --from=builder /app/src/server/logger.ts ./server/logger.ts\n"
+          dependency = "COPY --from=builder /app/src/server/logging/store.ts ./server/logging/store.ts\n"
+          if source.count(anchor) != 1 or dependency in source:
+              raise SystemExit("Baseline logger package manifest differs from expected source")
+          baseline.write_text(source.replace(anchor, anchor + dependency, 1))
+          PY
           docker buildx build --load --platform linux/amd64 -f "$RUNNER_TEMP/issue28-baseline.Dockerfile" -t cad-layout-viewer:baseline .
           docker buildx build --load --platform linux/amd64 --target migrator -f "$RUNNER_TEMP/issue28-baseline.Dockerfile" -t cad-layout-viewer:baseline-migrate .
       - name: Build phase1, standalone app and migration targets
@@ -194,7 +209,7 @@ jobs:
           set -euo pipefail
           docker run --rm --entrypoint sh cad-layout-viewer:ci-migrate -c '
             test "$(id -u)" = 10001
-            for f in node_modules/.bin/prisma node_modules/.bin/tsx generated/prisma/client.ts prisma.config.ts prisma/migrations server/db.ts scripts/deploy.ts server/logger.ts server/upload-error-catalog.ts; do
+            for f in node_modules/.bin/prisma node_modules/.bin/tsx generated/prisma/client.ts prisma.config.ts prisma/migrations server/db.ts scripts/deploy.ts server/logger.ts server/logging/store.ts server/upload-error-catalog.ts; do
               test -e "$f" || { echo "Missing required migrator file: $f"; exit 1; }
             done
             for f in .next public tests server/repositories node_modules/next node_modules/react node_modules/react-dom node_modules/eslint node_modules/vitest node_modules/@playwright/test node_modules/dxf-viewer node_modules/three-dxf-viewer; do

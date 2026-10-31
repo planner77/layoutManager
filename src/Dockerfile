@@ -35,8 +35,9 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd --system --gid 10001 cad \
     && useradd --system --uid 10001 --gid cad --home-dir /app --shell /usr/sbin/nologin cad \
-    && mkdir -p /data/db /data/cad \
-    && chown -R cad:cad /data
+    && mkdir -p /data/db /data/cad /data/logs \
+    && chown -R cad:cad /data \
+    && chmod 0700 /data/logs
 VOLUME ["/data"]
 
 # Measurement-only phase 1: remove application source/tests from the full-dependency image.
@@ -82,6 +83,8 @@ COPY --from=builder /app/src/server/db.ts ./server/db.ts
 COPY --from=builder /app/src/server/backfill-delete-passwords.ts ./server/backfill-delete-passwords.ts
 COPY --from=builder /app/src/server/password.ts ./server/password.ts
 COPY --from=builder /app/src/server/logger.ts ./server/logger.ts
+# Keep the migrator's tsx relative-import closure explicit and auditable.
+COPY --from=builder /app/src/server/logging/store.ts ./server/logging/store.ts
 COPY --from=builder /app/src/server/upload-error-catalog.ts ./server/upload-error-catalog.ts
 COPY --from=builder /app/src/domain/cad.ts ./domain/cad.ts
 # #153 explicit operator entrypoint only; default CMD still applies six CAD
@@ -117,6 +120,7 @@ USER cad
 RUN ./node_modules/.bin/prisma --version >/dev/null \
     && ./node_modules/.bin/tsx --version >/dev/null \
     && node -e "const Database=require('better-sqlite3'); new Database(':memory:').close()" \
+    && test -f /app/src/server/logging/store.ts \
     && node --import tsx --input-type=module -e 'import { writeLog } from "./server/logger.ts"; if (typeof writeLog !== "function") process.exit(1);' \
     && node --import tsx --input-type=module -e 'import { CAD_BUSINESS_DDL } from "./server/cad-business/schema-ddl.ts"; if (CAD_BUSINESS_DDL.length !== 11) process.exit(1);' \
     && node --import tsx --input-type=module -e 'import { CAD_ANCHOR_DDL } from "./server/cad-business/anchor-ddl.ts"; if (CAD_ANCHOR_DDL.length !== 3) process.exit(1);' \

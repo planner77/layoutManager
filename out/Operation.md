@@ -1,3 +1,23 @@
+## PR #179 — 신규 Observability 정식 GHCR release v0.48.1 준비 (2026-10-31)
+
+- v0.48.0 릴리스 태그는 기존 Main 소스를 가리키므로 절대 이동/재사용하지 않는다. 새 JSONL/phase instrumentation release 후보 버전은 `0.48.1` (App), `0.48.1-migrate` (Migrator). package + lock을 일치시켜 PR CI가 새 정확 HEAD에서 성공한 경우에만 squash merge와 Main CI GHCR 게시 경로를 사용한다.
+- `v0.48.1` tag는 사전 조회 시 미존재, 실제 Git tag/App+Migrator GHCR Digest 생성은 Main CI가 실행 완료하기 전에는 확정하지 않는다. 이미 성공한 v0.48.0 / 배포 중인 볼륨/DB/개인 로그를 덮어쓰거나 삭제하지 않는다. 기존 Main tag/Registry를 건드리는 강제 재게시 금지.
+
+---
+
+## PR #179 — 영속 Logger Migrator 패키징 회귀 수정 (2026-10-31)
+
+- Run 41202514157은 Migrator `ERR_MODULE_NOT_FOUND server/logging/store`로 Docker 검사 실패. Logger의 직접 import 파일을 Migrator Image에도 명시적으로 COPY하고 Docker build 자체에서 `test -f`와 `node --import tsx` 검사를 유지한다. CI 기준 이미지 비교는 Main Dockerfile 원본을 유지하되 동일 최신 소스의 새로운 로거 파일 한 건만 CI 임시 Dockerfile에 추가한다. PR CI 통과와 실제 운영 볼륨 수용은 별도로 판단해야 한다.
+- 실제 `/data/db`, `/data/cad`, `/data/logs`, 운영 Auth/G7 상태, 기존 GHCR 이미지는 변경하지 않았다. 변경은 소스/CI 구성과 합성 시험에 한정.
+
+---
+
+## #58/#59 operational logging (2026-10-31)
+
+Compose defaults LOG_STORE_ENABLED=true with private /data/logs under the same existing volume, separate from Docker local logs. Set LOG_RETENTION_DAYS=7 (1..30), LOG_MAX_FILE_MB=4 (1..8) and LOG_MAX_TOTAL_MB=64 (4..256) as bounded choices. UID10001 creates private 0700 directory and 0600 files. Keep using docker compose logs to inspect stdout, but never mount /data/logs into the web UI, expose it via an API or use Docker socket. Only server-internal getLogStoreStatus provides error/drop counters. Check backup space and permissions on an isolated volume before rollout. Old image rollback ignores the directory; do not use down -v. Live field volume/backup/recovery test NOT RUN. See [Issues58-59](Issues58-59.md).
+
+---
+
 ## v0.47.5 Viewer 후보 사용/현장 검증 안내 (2026-10-31)
 
 - Viewer 상단 첫 목록 아이콘은 전체 도면 목록(/)으로 이동. 도면 > 버전 목록은 해당 도면 위치의 버전 목록을 열며 별개. 임시 선택·작업 이력이 있으면 목록 이동 전에 경고하고 취소 시 Viewer 유지.

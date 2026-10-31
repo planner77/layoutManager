@@ -12,7 +12,9 @@ export const runtime = 'nodejs';
 export async function GET(request: Request) {
   const requestLog = new RequestLogContext(request, 'api', 'cad_list');
   try {
+    requestLog.phase('database_read');
     const result = await context().list.search(new URL(request.url).searchParams);
+    requestLog.phase('database_read', 'success');
     requestLog.completed(200);
     return Response.json(result, { headers: requestLog.responseHeaders({ 'Cache-Control': 'no-store' }) });
   } catch (error) {
@@ -26,9 +28,11 @@ export async function POST(request: Request) {
   let stage: UploadStage = 'origin_validation';
   try {
     // Deny before receiving a potentially large CAD body.
+    requestLog.phase('authorization');
     const auth = prepareG7CadWrite(request, requestLog.requestId);
     if (!auth?.runtime) requireSameOrigin(request);
     diagnostics.record('origin_validation', 'success');
+    requestLog.phase('authorization', 'success');
     stage = 'context_initialization';
     const cad = cadWriteContext(auth);
     const { repo, storage } = cad;
@@ -38,10 +42,12 @@ export async function POST(request: Request) {
     stage = 'upload_receive';
     const result = await uploadCad(request, repo, storage, diagnostics, auth);
     stage = 'response';
+    let cacheWarning = false;
     try {
       revalidatePath('/');
       revalidatePath(`/cad/locations/${result.locationId}`);
     } catch (error) {
+      cacheWarning = true;
       diagnostics.record('response', 'warning', { error });
       requestLog.warn('cache_revalidation_failed', { outcome: 'warning', error });
     }
@@ -50,7 +56,7 @@ export async function POST(request: Request) {
       { status: 201, headers: requestLog.responseHeaders() },
     );
     diagnostics.finishSuccess();
-    requestLog.completed(201);
+    requestLog.completed(201, cacheWarning ? 'warning' : 'success');
     return response;
     } finally { await cad.close(); }
   } catch (error) {

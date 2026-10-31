@@ -1,5 +1,6 @@
 import packageInfo from '../package.json';
 import { randomUUID } from 'node:crypto';
+import { StructuredLogStore, logStoreOptions } from './logging/store';
 import { safeMessages, safeCadMessages, objectStorageCodes, categories } from './upload-error-catalog';
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
@@ -33,9 +34,12 @@ const knownErrorNames = new Set([
 const uploadStages = new Set([
   'request_received', 'origin_validation', 'context_initialization', 'upload_receive',
   'upload_validation', 'storage_publish', 'database_registration', 'compensation',
-  'temporary_cleanup', 'response',
+  'temporary_cleanup', 'response', 'authorization', 'validation', 'database_read',
+  'database_write', 'storage_cleanup', 'cache_revalidate', 'result', 'startup_check',
+  'initialization', 'cleanup', 'connection', 'migration', 'recovery',
 ]);
 const outcomes = new Set<LogOutcome>(['started', 'success', 'warning', 'failure']);
+const buildRevision = /^[a-f0-9]{40}$/;
 const methods = new Set(['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']);
 
 function configuredLevel(): LogLevel {
@@ -187,6 +191,16 @@ function allowedFields(fields: Record<string, unknown>): Record<string, unknown>
   return safe;
 }
 
+let persistentStore: StructuredLogStore | undefined;
+function structuredStore() {
+  if (process.env.LOG_STORE_ENABLED !== 'true') return undefined;
+  return persistentStore ??= new StructuredLogStore(logStoreOptions());
+}
+export function getLogStoreStatus() {
+  return persistentStore?.getStatus() ?? { accepted: 0, written: 0, dropped: 0, failed: 0, rotated: 0, purged: 0, queuedBytes: 0 };
+}
+export async function flushLogStore() { await persistentStore?.flush(); }
+
 export function writeLog(level: LogLevel, event: string, fields: Record<string, unknown> = {}) {
   if (priorities[level] < priorities[configuredLevel()]) return;
   const safeEvent = stableEvent.test(event) ? event : 'unclassified_event';
@@ -198,6 +212,8 @@ export function writeLog(level: LogLevel, event: string, fields: Record<string, 
     component: safeToken(fields.component, 'application'),
     operation: safeToken(fields.operation, 'unspecified'),
     appVersion: packageInfo.version,
+    ...(buildRevision.test(process.env.G7_RELEASE_SOURCE_COMMIT ?? '')
+      ? { buildRevision: process.env.G7_RELEASE_SOURCE_COMMIT } : {}),
     ...allowedFields(fields),
   };
   const json = JSON.stringify(entry);
@@ -207,11 +223,14 @@ export function writeLog(level: LogLevel, event: string, fields: Record<string, 
   if (level === 'error') console.error(line);
   else if (level === 'warn') console.warn(line);
   else console.log(line);
+  // The stdout/stderr contract is primary. Never await or expose persistence errors.
+  try { structuredStore()?.enqueue(entry); } catch { /* sink isolation */ }
 }
 
 export class RequestLogContext {
   readonly requestId: string;
   readonly startedAt = Date.now();
+  currentStage = 'request_received';
 
   constructor(
     readonly request: Request,
@@ -238,6 +257,12 @@ export class RequestLogContext {
     };
   }
 
+  phase(stage: string, outcome: LogOutcome = 'started', fields: Record<string, unknown> = {}) {
+    this.currentStage = uploadStages.has(stage) ? stage : 'response';
+    writeLog(outcome === 'failure' ? 'error' : outcome === 'warning' ? 'warn' : 'info',
+      'http_request_stage', this.base({ stage: this.currentStage, outcome, ...fields }));
+  }
+
   debug(event: string, fields: Record<string, unknown> = {}) { writeLog('debug', event, this.base(fields)); }
   info(event: string, fields: Record<string, unknown> = {}) { writeLog('info', event, this.base(fields)); }
   warn(event: string, fields: Record<string, unknown> = {}) { writeLog('warn', event, this.base(fields)); }
@@ -254,5 +279,27 @@ export class RequestLogContext {
     const headers = new Headers(extra);
     headers.set('X-Request-Id', this.requestId);
     return headers;
+  }
+}
+
+
+// Job IDs are server-issued and shared across start/phase/completion, not CAD row IDs.
+export class JobLogContext {
+  readonly jobId = randomUUID();
+  readonly startedAt = Date.now();
+  constructor(readonly operation: string) {
+    writeLog('info', 'maintenance_job_started', this.base({ outcome: 'started', stage: 'initialization' }));
+  }
+  private base(extra: Record<string, unknown> = {}) {
+    return { component: 'maintenance', operation: this.operation, jobId: this.jobId,
+      elapsedMs: Math.max(0, Date.now() - this.startedAt), ...extra };
+  }
+  phase(stage: string, outcome: LogOutcome = 'started', fields: Record<string, unknown> = {}) {
+    writeLog(outcome === 'failure' ? 'error' : outcome === 'warning' ? 'warn' : 'info',
+      'maintenance_job_stage', this.base({ stage, outcome, ...fields }));
+  }
+  completed(outcome: Exclude<LogOutcome, 'started'>, fields: Record<string, unknown> = {}) {
+    writeLog(outcome === 'failure' ? 'error' : outcome === 'warning' ? 'warn' : 'info',
+      'maintenance_job_completed', this.base({ outcome, ...fields }));
   }
 }

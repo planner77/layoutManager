@@ -1,3 +1,29 @@
+## PR #179 — CI #41202514157 재발 방지 시험 게이트 (2026-10-31)
+
+- TC-L3-004: 임시 디렉터리 실제 권한 0700 검증 -> symlink directory 거부 -> 권한이 허용된 다른 경로에서 `openNewFile()`을 ENOSPC 오류로 주입 -> `lastFailureCode=ENOSPC`, dropped/failed 1, 업무 예외 미전파. 운영 `verifiedDirectory()` 권한 제한을 완화하지 않는다.
+- TC-LOG-MIG-001: 모든 logger의 `./` 직접 import가 candidate migrator에 개별 COPY되는지 검사. `store.ts`의 명시적 COPY + migrator nonroot `test -f` + node/tsx import smoke 확인.
+- TC-LOG-MIG-002: baseline Dockerfile은 Main 원본을 사용하되 HEAD 동일 소스에 필수인 `store.ts` 단독 COPY를 비교용 임시 파일에만 fail-closed 주입한다. Baseline runtime 및 migrator 빌드·크기 계측·OCI/native/G7 Greenfield smoke를 모두 실행해 실제 불일치 재발 여부를 확인한다.
+- First PR CI TS2345 개선 성과는 2차 실행의 Typecheck/Lint SUCCESS로 확인. 새로운 수정 커밋의 Typecheck/Lint/Unit/Build/E2E/Docker pass는 신규 CI 전까지 **NOT VERIFIED**; CI gate/timeout/보안·storage 정책 변경 금지.
+
+---
+
+## PR #179 / #58+#59 실패 재발 방지 테스트 (2026-10-31)
+
+- Typecheck gate: server/http.ts line 20 must keep the narrower UploadStage and independent generic request phase; TC-L2-004 verifies P2022 error, 500 response, Request ID and redaction; strict TypeScript/Next baseline build both mandatory.
+- TC-L3-007: app idle >60 seconds with open FD; maintenance prunes old app file at limit; app must reopen linked inode, retain new record and report correct written/failed counters. TC-L3-008: rotation sequence 9999→10000+, inventory/read/retention and maxFiles/maxTotalBytes honored. TC-L3-009: post-append prune allows exactly maxFiles.
+- Preserve prior TC-L2-001..003, TC-L3-001..006 and all logger, upload, delete, masters, health, G7, browser, OCI, Docker smoke, migration gates. Do not change CI skip/timeout/security. New CI and field-volume acceptance NOT VERIFIED.
+
+---
+
+## #58/#59 L2+L3 synthetic and deployment acceptance (2026-10-31)
+
+- TC-L2-001 request lifecycle and stage ordering, one X-Request-Id, success vs cache/storage warning; TC-L2-002 maintenance job start/stage/outcome/elapsedMs share one server UUID, sanitized failures; TC-L2-003 verified build SHA only. Existing upload/health/delete/masters E2E remain regression gates.
+- TC-L3-001 JSONL valid line, restart persistence and file max size/mode; TC-L3-002 app/maintenance concurrent writer file separation; TC-L3-003 rotation/total budget/file-count pruning; TC-L3-004 private symlink and injected ENOSPC isolation, invalid cursor; TC-L3-005 partial JSONL ignored; TC-L3-006 environment bounds and fixed path.
+- PR CI gates: TypeScript, ESLint, Unit+Integration, Production Build, Chromium E2E, G7 test and Docker runtime/migrator smoke. On isolated disposable Compose volume confirm UID10001, /data/logs permissions, log persistence after app recreate, existing /data/db and /data/cad intact; never use a production volume. Manual backup/restore/rollback, ENOSPC/EROFS and cross-process quota under load are NOT VERIFIED until actual evidence is captured.
+- Stage/step errors and DB P2022 are documented by code and L1 normalization; full physical fault injection and real field evidence remain separate. [Detailed contract](Issues58-59.md).
+
+---
+
 ## #56 E6 Chromium Import 재진입 시 Tree 패널 상태 기준 (2026-10-31)
 
 - 실패 Run [41175039708](https://github.com/planner77/layoutManager/actions/runs/41175039708)의 `TC-E6-E2E-001`에서 Import 성공 메시지 뒤 `outline-tree-item` 0건(기대 1). 원인: `Reload → dispatchApp(reset) → outlineTreeOpen=false`, 닫힌 공통 `MovableViewerPanel`은 자식 노드를 DOM에 마운트하지 않음.
