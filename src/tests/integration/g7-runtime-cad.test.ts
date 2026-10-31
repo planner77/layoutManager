@@ -1,8 +1,10 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { writeFileSync } from 'node:fs';
+import { performance } from 'node:perf_hooks';
 import path from 'node:path';
 import { makeG7RuntimeFixture } from '../helpers/g7-runtime';
+import { installMonotonicTestClock } from '../helpers/monotonic-clock';
 import { createDb, type Database } from '../../server/db';
 import { CadRepository } from '../../server/repositories/cad';
 import { MasterRepository } from '../../server/repositories/master';
@@ -22,12 +24,13 @@ import { PATCH as patchMaster } from '../../app/api/masters/[type]/[id]/route';
 
 let f:ReturnType<typeof makeG7RuntimeFixture>,db:Database,repo:CadRepository,masters:MasterRepository;
 beforeEach(()=>{
+  installMonotonicTestClock();
   f=makeG7RuntimeFixture();
   for(const [key,value] of Object.entries(f.env))vi.stubEnv(key,value);
   for(const key of ['G7_S3_CAD_PREVIEW_ONLY','G7_S3_AUTH_API_PREVIEW_ONLY','G7_S3_GO','G7_OPERATION_MANIFEST_PATH'])vi.stubEnv(key,undefined);
   db=createDb('file:'+f.databasePath);repo=new CadRepository(db);masters=new MasterRepository(db);
 });
-afterEach(async()=>{await db.$disconnect();vi.unstubAllEnvs();f.cleanup();});
+afterEach(async()=>{await db.$disconnect();vi.unstubAllEnvs();f.cleanup();vi.restoreAllMocks();});
 async function actor(role='Editor',sites=['site-a'],issuedAt=Date.now(),lastSeenAt=issuedAt) {
   const id=randomUUID(),candidate=newSessionCandidate(id,issuedAt);
   await db.user.create({data:{id,loginName:'u'+id.replaceAll('-','').slice(0,24),
@@ -177,7 +180,8 @@ describe('#153 signed runtime CAD writes',()=>{
   const now=Date.now(),a=await actor('Editor',['site-a'],now-8*3600000+60000,now),input=await floor(),p=proof(a.token);
   // Advance the authorization clock after I/O without expiring Prisma's own
   // transaction-manager timers (those have a separate real 10-second deadline).
-  const realNow=Date.now.bind(Date);
+  const wallAnchor=Date.now(),monotonicAnchor=performance.now();
+  const realNow=()=>wallAnchor+Math.floor(performance.now()-monotonicAnchor);
   let published=false;
   const clock=vi.spyOn(Date,'now').mockImplementation(()=>{
     const stack=new Error().stack??'';

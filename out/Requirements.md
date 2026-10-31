@@ -1,3 +1,13 @@
+## R1 #60/#61/#62 — 운영 로그 조회 구현 요구사항 (2026-10-31, 구현 전)
+
+- R1-REQ1: 기존 활성 G7 세션의 Admin+별도 logs:read 권한만 조회. 매 API/SSR/직접 URL에서 재검사하며 익명 CAD, Memo author-only, 운영 activation 불변. 직접 문서·RSC 진입도 미인증401/무권한403의 HTTP 응답으로 거절하고, G7/Bootstrap/Audit 장애는503·rate 제한은429로 구분한다. 권한 없는 HTTP200 shell을 최종 수용으로 대신하지 않는다. 비인가 응답은 내용·건수·시각·저장소 상태를 포함하지 않는다.
+- R1-REQ2: `/api/operations/logs` GET 필터 from/to UTC(기본1시간, 최대24시간·보존기간 이내), level,event,operation,component,source,outcome,requestId,jobId,errorCode, limit(기본50/최대100), opaque cursor를 AND로 적용한다. 잘못된 값/중복/미지원 query는400. 인가 후 검증·조회한다.
+- R1-REQ3: timestamp DESC/logId DESC, immutable snapshot 페이지, stale cursor410. 별도 reader가 필터를 적용한 후 페이지를 자른다. 기존 tail200개 결과를 필터링하는 방식 금지. scan bytes/file/line/time/결과 크기 모두 제한하고 partial·skipped·disabled·IO error를 구분한다.
+- R1-REQ4: 안전한 DTO만 반환: logId,timestamp,level,event,source,component,operation,appVersion 및 검증된 requestId/jobId/outcome/elapsedMs/errorCode/httpStatus/stage. raw JSON/stack/path/body/actor credential 미포함. app-structured-only coverage 상시 명시.
+- R1-REQ5: 허용/거부 감사는 기존 Audit 저장소 사용, 정제된 requestId/action/outcome/actor만. 검색 원문 저장·재귀 logger 금지. 보수적 유한 rate limiter, store failure가 CAD 요청을 실패시키지 않음. private,no-store 및 Cookie Vary 적용.
+- R1-REQ6: 별도 `/operations/logs` 화면, 권한자 메뉴, 최근 목록/필터/적용·비우기/더보기/새검색·수동갱신/안전 상세. requestId/jobId 재조회 결과를 시간순 timeline 표시; 일부 페이지는 전체로 표현하지 않음. UTC/현지 시각 표기, 텍스트 레벨, empty/denied/disabled/partial/410/503 UI, 320px·keyboard·race/abort 지원. Viewer lifecycle 불변.
+- R1-REQ7: 로그 전체 export와 자동 refresh는 선택 기능이므로 이번 구현에서 제공하지 않는다. 안전한 requestId/jobId 복사만 허용한다. Next/Docker/Nginx raw 로그는 미포함이며 기존 운영 CLI 안내 유지.
+
 ## #55/#56 생성 개체 WCS 회전과 브라우저 JSON v2 (2026-10-31, v0.48.0 후보)
 
 | 요구 | 수용 기준 | 시험 |

@@ -1,3 +1,11 @@
+## R1 #60/#61/#62 — 권한 있는 정제 로그 조회 (0.49.0 후보)
+
+`GET /api/operations/logs`는 G7 활성 authority와 HttpOnly 서버 세션, Admin 역할 및 별도 `logs:read` 특별 권한을 기존 G4와 감사로 확인한 뒤만 `/data/logs`를 읽는다. Site CAD 쓰기 권한으로 대체하지 않으며 익명 CAD 읽기 예외를 로그로 확대하지 않는다. `/api/operations/logs/access`는 인가 결과만 반환하고 저장소를 읽지 않는다. `/operations/logs`는 Node Proxy에서 같은 인가를 실행해 직접 URL/RSC/prefetch도 401/403/429/503과 no-store로 거절하며, 허용된 요청은 Page/API에서 다시 확인한다. 과거 HTTP200 안내 제한은 이 구현으로 대체되었다.
+
+기간(from/to UTC), level/event/operation/component/source/outcome/requestId/jobId/errorCode는 AND 조건이다. 기본 1시간, 최대 24시간, limit 기본50/최대100. UI는 현지 시각 입력을 UTC로 변환하며 같은 requestId/jobId의 기간 내 이벤트를 시간순으로 다시 조회한다. 조회/타임라인은 각각 이전 요청을 취소하고 화면 이탈 때 해제한다. 자동 polling/원시 파일·stack·오류 원문·export는 지원하지 않는다. 모든 API 응답은 private,no-store이며 cursor가 인가를 대신하지 않는다.
+
+읽기 상한·snapshot 수명/메모리·손상 행 정책의 단일 설계는 Architecture의 R1 절을 따른다. 조회는 실시간 무한 스트림이 아니며 새 append는 새 검색에서 반영한다. `partial`/skippedLines/scanTruncated는 결과 누락 가능성을 표시한다. 410이면 첫 페이지 재검색이 필요하다. 로그 저장이 꺼져 있을 때 `disabled`이며, 정상 0행·IO 실패와 구분한다. 기존 logger 및 저장소 정책·운영 로그 보관 설정은 그대로 유지한다. 운영 권한 설정/현장 인수·배포는 별도로 수행한다.
+
 # Structured Logging 운영 가이드
 
 ## #59 로그 영속 저장 CI 배포 회귀 보완 (2026-10-31)
