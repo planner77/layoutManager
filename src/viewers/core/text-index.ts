@@ -60,22 +60,70 @@ function worldOcs(entity: Entity) {
     Math.abs(num(entity, 220, 0)) < 1e-8 &&
     Math.abs(num(entity, 230, 1) - 1) < 1e-8;
 }
+/** Read only ASCII HEADER group pairs. DXF content may be CP949, so never decode
+ * arbitrary entity text while choosing the declared encoding. */
+function sourceHeader(bytes: ArrayBuffer): {version: string | null; codepage: string | null; bom: boolean} {
+  const view = new Uint8Array(bytes);
+  const bom = view.length >= 3 && view[0] === 0xef && view[1] === 0xbb && view[2] === 0xbf;
+  const probe = new TextDecoder('windows-1252').decode(view.subarray(bom ? 3 : 0, Math.min(view.length, 1024 * 1024)));
+  const lines = probe.replace(/\r\n?/g, '\n').split('\n');
+  let inHeader = false;
+  let expectSection = false;
+  let variable = '';
+  let version: string | null = null;
+  let codepage: string | null = null;
+  for (let i = 0; i + 1 < lines.length; i += 2) {
+    const code = lines[i].trim();
+    const value = lines[i + 1].trim();
+    if (code === '0' && value.toUpperCase() === 'SECTION') {
+      expectSection = true;
+      inHeader = false;
+      variable = '';
+    } else if (expectSection && code === '2') {
+      inHeader = value.toUpperCase() === 'HEADER';
+      expectSection = false;
+    } else if (code === '0' && value.toUpperCase() === 'ENDSEC') {
+      if (inHeader) break;
+      inHeader = false;
+      variable = '';
+    } else if (inHeader && code === '9') {
+      variable = value.toUpperCase();
+    } else if (inHeader && variable === '$ACADVER' && code === '1') {
+      version = /^AC\d{4}$/i.test(value) ? value.toUpperCase() : null;
+    } else if (inHeader && variable === '$DWGCODEPAGE' && code === '3') {
+      codepage = value.toUpperCase();
+    }
+  }
+  return {version, codepage, bom};
+}
+
 function decodeSource(bytes: ArrayBuffer): string {
-  const probe = new TextDecoder('windows-1252').decode(bytes.slice(0, 32_768));
+  const probe = new TextDecoder('windows-1252').decode(bytes.slice(0, 32));
   if (probe.startsWith('AutoCAD Binary DXF')) throw new Error('Binary DXF 텍스트 인덱스는 지원하지 않습니다.');
-  const codepage = probe.match(/\$DWGCODEPAGE[\s\S]{0,40}?\b(ANSI_\d+|UTF-8)\b/i)?.[1]?.toUpperCase();
-  const encoding = codepage === 'ANSI_949' ? 'euc-kr'
+  const {version,codepage,bom}=sourceHeader(bytes);
+  const versionNumber = version ? Number(version.slice(2)) : 0;
+  // AC1021 (AutoCAD 2007) and later text is UTF-8 even when the old header
+  // still declares ANSI_949/932/936/950. A UTF-8 BOM also takes precedence.
+  const utf8 = bom || versionNumber >= 1021 || !codepage || codepage === 'UTF-8';
+  const encoding = utf8 ? 'utf-8'
+    : codepage === 'ANSI_949' ? 'euc-kr'  // WHATWG label for Windows-949/CP949
     : codepage === 'ANSI_936' ? 'gbk'
     : codepage === 'ANSI_932' ? 'shift_jis'
     : codepage === 'ANSI_950' ? 'big5'
-    : codepage?.startsWith('ANSI_12') ? 'windows-' + codepage.slice(5)
-    : 'utf-8';
-  try { return new TextDecoder(encoding, { fatal: true }).decode(bytes); }
+    : /^ANSI_12\d{2}$/.test(codepage ?? '') ? 'windows-' + codepage!.slice(5)
+    : null;
+  if (!encoding) throw new Error('지원하지 않는 DXF 코드페이지: ' + codepage);
+  let decoder: TextDecoder;
+  try { decoder = new TextDecoder(encoding, {fatal:true}); }
+  catch { throw new Error('DXF 코드페이지 디코더를 사용할 수 없습니다: ' + (codepage ?? encoding)); }
+  try { return decoder.decode(bytes); }
   catch {
-    if (codepage) throw new Error('DXF 문자 인코딩을 해석할 수 없습니다: ' + codepage);
-    throw new Error('UTF-8이 아닌 DXF입니다. $DWGCODEPAGE 코드페이지 선언이 필요합니다.');
+    if (utf8 && !codepage && !version && !bom)
+      throw new Error('UTF-8이 아닌 DXF입니다. 구형 DXF의 $DWGCODEPAGE 선언을 확인하세요.');
+    throw new Error('DXF 문자 데이터의 바이트가 ' + encoding.toUpperCase() + ' 인코딩에 유효하지 않습니다.');
   }
 }
+
 function unicodeEscape(text: string) {
   return text.replace(/\\U\+([0-9A-Fa-f]{4})/g, (original, hex: string) => {
     const value = Number.parseInt(hex, 16);
