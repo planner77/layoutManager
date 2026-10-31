@@ -1,3 +1,11 @@
+## #88/#90 PR #176 릴리스 버전 보호 (2026-10-31)
+
+- `v0.47.3`은 [이전 Main CI #41145893248](https://github.com/planner77/layoutManager/actions/runs/41145893248)에서 이미 App/Migrator GHCR 쌍이 게시된 **기존 릴리스**. `docker-publish.yml`의 동일 버전 태그/이미지 중복 방지 로직은 이미 존재하는 `0.47.3`에 새 #88/#90 소스를 반영하지 않는다. 기존 태그/이미지를 강제 이동하거나 `latest`만 수동 갱신하지 말 것.
+- #88/#90 정식 릴리스 후보는 `src/package.json`과 `src/package-lock.json`을 함께 `0.47.4`로 올리고 **새 정확 HEAD의 전체 PR CI 성공** 후 Owner Managed Squash Merge. `v0.47.4`의 새 태그와 App·Migrator 쌍은 Main Workflow의 실제 성공 로그와 Digest로만 게시 확인. [실패 원장](out/FailureLedger.md)과 [TestReport](out/TestReport.md) 참조.
+- CI 녹색/합성 UI 회귀는 현장 2PC 및 실 Site G7 활성화 수용으로 주장하지 않는다. #88/#90 구현 범위를 명시해 완료 처리하더라도 검색 규모 1k/10k/100k 실측과 현장 다중 세션·앵커 수용 증거는 별개. 메모 검색은 signed G7 Scope를 우회하지 않는다.
+
+---
+
 ## PR #176 #88/#90 — Vitest `server-only` import guard (2026-10-31)
 
 - [PR CI #345 Run 41153178204](https://github.com/planner77/layoutManager/actions/runs/41153178204), exact HEAD `e758a0d5effcba577dca6ffe2b87fe15952d3c71`: Docker Job SUCCESS, Verify Typecheck/ESLint SUCCESS; Unit/Integration **1 suite import FAILURE**, remaining 103 files/682 tests PASS; Build/Chromium/G7 E2E SKIPPED.

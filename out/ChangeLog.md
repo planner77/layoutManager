@@ -1,3 +1,10 @@
+## 0.47.4 — #88/#90 Release candidate (2026-10-31)
+
+- Persisted Memo M6 URL/share/validated WCS focus and M7 G7 Site-scoped global DB search (see the earlier Unreleased section for details).
+- Preserve published `v0.47.3` pair from PR #175. Advance `src/package.json` and `src/package-lock.json` to `0.47.4`; release eligibility requires new exact-head PR CI and post-merge Main GHCR evidence. **Not published by this candidate commit.**
+
+---
+
 ## Unreleased — #88/#90 Memo URL + cross-drawing Search (2026-10-31)
 
 - M6 #88: authenticated Version/SHA-pinned persisted Memo deep link, WCS camera focus and Tree highlight, hidden temporary display, Clipboard/direct-link fallback, bad UUID/renderer/Anchor fail-closed; reused existing Viewer grouped menu.
