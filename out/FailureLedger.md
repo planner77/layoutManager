@@ -1,3 +1,11 @@
+## PR #181 / Issue #65 — Main 정렬·리뷰/충돌 점검 및 PR CI 시작 기록 (2026-11-01 KST)
+
+- 대상 [PR #181](https://github.com/planner77/layoutManager/pull/181) (Draft, #65), 기존 HEAD `a1bfe7ef0c9070594d6ce905b6b5668a4fe56bbd`, Main `ee8be69f7c4d59fc1ab07f1c614365e18ba6199a`. R1 [PR #180](https://github.com/planner77/layoutManager/pull/180)의 Squash Main과 R2 부모 `b9dcdf58a382d38dd715915b9dfd9657e40c67fd`는 Git tree `54285c7dbfe1c897867c185b54ad7d3059d4b68e`로 **소스 바이트 동일**. PR #181은 R1 이전 공통 조상 `9016feba2a11c9b7bd8552a6ca2c3bee28e4a001` 기준 diverged(ahead 3/behind 1)여서 Main 정렬이 필요했다. Main/R1 동일 tree를 근거로 실제 충돌 코드를 임의로 재작성하지 않고, 두 부모(기존 R2 HEAD + 병합된 Main)를 가진 merge commit으로 정렬한다. 소스 변경은 본 원장 기록 이외에 없음.
+- `AGENTS.md`, [Architecture](Architecture.md), [Decisions](Decisions.md), [Database](Database.md), [TestPlan](TestPlan.md), [TestReport](TestReport.md), [Issue #65](https://github.com/planner77/layoutManager/issues/65)를 확인했다. 루트 `DESIGN.md`는 없음. Global Catalogue/Admin·RBAC·CSRF·CAS·latest-only Greenfield/FK/Append-only Audit, Viewer tools panel 및 후속 #71/#73 경계를 유지한다.
+- 정렬 전 GitHub PR #181 review threads **0**, submitted reviews **0**, 미해결/답변 대상 0. conflict 해결 방식은 R1과 Main 원본 tree 동일성 검증 및 parent lineage 정렬이며, 코드 경합 해소·프로덕션 시험 성공을 과장하지 않는다.
+- R2 로컬 후보 근거는 114 files/760 tests PASS, Greenfield 4/4 PASS, 변경된 legacy gate E2E 별도 4/4 PASS, 별도 migrator isolated smoke로 [TestReport](TestReport.md)에 보존된다. 과거 full E2E 115/117 실패 이력 및 최초 원격 CI 미검증을 소급하여 PASS로 바꾸지 않는다.
+- 정렬된 PR HEAD로 단일 branch ref push 시 `pull_request.synchronize` 이벤트가 `.github/workflows/pr-ci.yml`의 기존 PR CI를 시작하도록 한다. CI Run/Job/성공 여부는 생성 시점까지 미검증이며 사용자 지시대로 완료 모니터링하지 않는다. 병합, GHCR 게시, Issue 종료, 운영 Migration/Writer/권한 전환은 시행하지 않는다.
+
 ## R2 #65 — Scene 회귀의 시간 의존 실패와 fixture 보정 (2026-11-01)
 
 - 최초 전체 실행 `/tmp/layoutmanager-r2-all-tests.log`: 114 files / 758 tests, **757 PASS / 1 FAIL**, 387.37초. Scene 동시 재생성은 기대 fulfilled1/rejected1과 달리 fulfilled0이었다. 이 실행은 거절 code를 출력하지 않아 정확한 두 원인은 확정하지 않는다.
