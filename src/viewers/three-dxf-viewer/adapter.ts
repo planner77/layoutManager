@@ -91,6 +91,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     start:readonly [number,number];angleDegrees:number;
   };
   private rotationGhost?:THREE.Group;
+  private rotateWheel=()=>{if(this.dragRotation)this.dropRotationPreview();};
   private cameraChanged=()=>{
     if(this.dragTranslation)this.selector?.cancelGeneratedDrag();
     if(this.dragRotation)this.dropRotationPreview();
@@ -141,6 +142,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     rotateHandle.addEventListener('pointercancel',this.rotatePointerCancel);
     rotateHandle.addEventListener('lostpointercapture',this.rotatePointerCancel);
     window.addEventListener('keydown',this.rotateKeyDown,true);
+    window.addEventListener('wheel',this.rotateWheel,true);
     this.camera.position.z = 1000;
     this.controls = new OrbitControls(this.camera,this.renderer.domElement);
     this.controls.enableRotate = false;
@@ -158,6 +160,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
       for(const canvas of container.querySelectorAll('canvas')) if(!existingCanvases.has(canvas))canvas.remove();
       this.rotateHandle?.remove();this.rotateHandle=undefined;
       window.removeEventListener('keydown',this.rotateKeyDown,true);
+      window.removeEventListener('wheel',this.rotateWheel,true);
       this.document?.dispose();this.document=undefined;
       throw error;
     }
@@ -1027,6 +1030,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     this.selector?.dispose();this.selector=undefined;
     this.dropRotationPreview();this.dropTranslationPreview();
     window.removeEventListener('keydown',this.rotateKeyDown,true);
+    window.removeEventListener('wheel',this.rotateWheel,true);
     this.rotateHandle?.remove();this.rotateHandle=undefined;
     for(const group of [this.selectionGroup,this.previewGroup,this.savedGroup,this.selectedSavedGroup])if(group)release(group);
     this.savedGroups.clear();this.renderedTransforms.clear();this.document?.dispose();this.document=undefined;
