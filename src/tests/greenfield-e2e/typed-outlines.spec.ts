@@ -91,7 +91,10 @@ test('R3 server-first render confirmation, lost response replay, typed groups, R
     await expect(page.getByTestId('outline-preview')).toHaveCount(0);
     expect(keys).toHaveLength(2);expect(keys[0]).toBe(keys[1]);
     expect(keys[0]).toMatch(/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i);
-    await page.unroute(`**/api/cad-files/${versionId}/outlines`);
+    // The mutation starts an authenticated refetch after its response. Keep the
+    // pass-through handler until page teardown instead of disabling interception
+    // while that refetch is in flight.
+    await expect(page.getByTestId('outline-type-select')).toBeEnabled({timeout:5_000});
     await expect(page.getByTestId('generated-undo')).toHaveText('실행 취소 (0)');
     for(const item of [{type:types[1].id,name:'R3 B 볼록',kind:'볼록 외곽선 미리보기'},
       {type:types[0].id,name:'R3 A 정밀',kind:'정밀 외곽선 미리보기'}]){
@@ -263,7 +266,10 @@ test('R3 canonical Source UI, renamed/inactive references and same-WCS Scene rep
     const after=await (await page.request.get(`/api/cad-files/${versionId}/outlines`)).json();
     const edited=after.outlines.find((item:{id:string})=>item.id===stored.id);
     expect(edited.sceneRevision).toBe(next.revision);expect(JSON.stringify(edited.geometry)).toBe(originalGeometry);
+    const resetResponse=page.waitForResponse(response=>new URL(response.url()).pathname===`/api/cad-files/${versionId}/reset`&&response.request().method()==='POST');
     page.once('dialog',dialog=>dialog.accept());await work(page,'viewer-menu-reset-source');
+    const reset=await resetResponse;expect(reset.status()).toBe(200);
+    expect(await reset.json()).toMatchObject({mode:'SOURCE_ONLY'});
     await expect.poll(async()=>JSON.stringify((await (await page.request.get(`/api/cad-files/${versionId}/outlines`)).json()).outlines)).toBe(JSON.stringify(after.outlines));
     await expect(page.locator(`[data-testid="persisted-outline-path"][data-outline-id="${stored.id}"]`)).toHaveCount(1);
   }finally{

@@ -1,3 +1,10 @@
+## R3 PR182 CI 재작업 — Browser route 수명 (2026-11-01)
+
+- **TC-R3-CI-ROUTE-001:** commit 후 응답 소실→동일 Idempotency-Key replay200의 기존 실제 API/Audit/receipt 검증을 유지한다. 일회성 응답 소실 후에는 동일 route handler가 계속 통과시키도록 page teardown까지 유지한다. replay 직후 타입 선택이5초 내 enabled가 되는지 먼저 검증하고 후속 typed create/Reader/복원까지 실행한다. 기존 route를 refetch 진행 중 제거하지 않는다.
+- 실제 CI trace에는 replay 뒤 자동 refresh와 `/auth/session` 미완료가 `page.unroute` 주변에 겹친다. 이는 interception 수명 가설이며 Playwright 결함으로 확정하지 않는다. 앱 승인·Session guard, 제품 코드 및 전체 timeout은 변경하지 않는다.
+- **TC-R3-CI-ROUTE-002:** Source-only reset은 클릭 전에 해당 Version의 정확 reset POST response 대기를 설치하고 HTTP200 및 `SOURCE_ONLY` mode를 확인한 뒤 저장 Outline snapshot/overlay 보존을 검증한다. 불변 snapshot poll만으로는 실행 완료를 증명할 수 없고 logout 이전 실제 응답을 확인해야 한다.
+- 최신 production build에서 Root 전체9개와 독립 QA 전체9개를 별도 실행해 결과를 기록한다. 새로운401/로그인 실패는 별도 실패로 보존·진단하며 해당 실패를 target case 통과만으로 덮지 않는다. 최종 Root9/QA9 및 정확 reset200 검증으로 로컬 수용했다. 새 HEAD 게시와 WIP 보존 기반 반영 전까지 R4는 HOLD이며 이후 조건부 재개한다. 새 원격 CI/배포는 별도 판정하고 실제 새 실패는 다시 HOLD한다.
+
 ## R3 PR182 CI 재작업 — test clock와 서명 시작 시각 정합성 (2026-11-01)
 
 - **TC-R3-CI-CLOCK-001:** 순수 test-clock factory에 wall/performance source를 주입한다. wall이1000→1001이고 performance가0.2ms만 증가한 경우 현재 clock이새 notBefore1001보다 뒤처지지 않아야 한다. wall forward→rollback에서도 반환 시각은 감소하지 않고, wall rollback 중에는 monotonic 시간으로 진행한다. 기존 알고리즘에서2FAIL/1PASS RED를 실제 확인한 뒤 수정한다.
