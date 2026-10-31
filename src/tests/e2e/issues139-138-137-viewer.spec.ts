@@ -82,10 +82,45 @@ test('TC-138-02: compact mobile search is a single modal; Escape closes it witho
   await expect(dock).toHaveAttribute('role','dialog');
   await expect(dock).toHaveAttribute('aria-modal','true');
   await expect(page.getByTestId('cad-viewer-shell').locator('header')).toHaveJSProperty('inert',true);
+  const focusables=dock.locator('button:not([disabled]),input:not([disabled])');
+  await focusables.last().focus();
+  await page.keyboard.press('Tab');
+  await expect(focusables.first()).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(focusables.last()).toBeFocused();
   await page.getByRole('searchbox',{name:'도면 텍스트 검색어'}).focus();
   await page.keyboard.press('Escape');
   await expect(dock).toHaveCount(0);
   await expect(page.getByTestId('cad-viewer-shell')).toHaveAttribute('data-fullscreen','true');
+  await page.setViewportSize({width:1366,height:900});
+  await clickViewerCommand(page,'work','도면 내 텍스트 검색');
+  await page.getByRole('searchbox',{name:'도면 텍스트 검색어'}).focus();
+  await page.keyboard.press('Escape');
+  await expect(dock).toHaveCount(0);
+  await expect(page.getByTestId('cad-viewer-shell')).toHaveAttribute('data-fullscreen','true');
+});
+
+test('TC-138-P1-TOOLS: compact tools keep a bounded scrollable content viewport',async({page,request})=>{
+  await page.setViewportSize({width:375,height:580});
+  const file=await drawing(request,'viewer-tools-scroll-'+Date.now(),sourceSquare);
+  await openViewer(page,file.id);
+  await clickViewerTestCommand(page,'viewer-menu-tools');
+  const dock=page.getByTestId('viewer-tools-dock');
+  const scroll=dock.getByTestId('viewer-tools-scroll-viewport');
+  await expect(dock).toHaveAttribute('role','dialog');
+  await expect(scroll).toBeVisible();
+  expect(await scroll.evaluate(node=>getComputedStyle(node).overflowY)).toBe('auto');
+  const dimensions=await scroll.evaluate(node=>({
+    outer:node.clientHeight,inner:node.scrollHeight
+  }));
+  expect(dimensions.outer).toBeGreaterThan(0);
+  expect(dimensions.inner).toBeGreaterThanOrEqual(dimensions.outer);
+  await scroll.evaluate(node=>{node.scrollTop=node.scrollHeight;});
+  await expect(dock.getByRole('button',{name:'도구 닫기'})).toBeVisible();
+  await dock.getByRole('button',{name:'도구 닫기'}).click();
+  await expect(dock).toHaveCount(0);
+  // Closing tools only changes UI; CAD Canvas identity must not change.
+  expect(await page.getByTestId('cad-canvas').evaluate(el=>el.isConnected)).toBe(true);
 });
 
 test('TC-137-01: visible first header list link works from direct Viewer URL without browser history',async({page,request})=>{
