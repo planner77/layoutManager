@@ -1977,7 +1977,7 @@ export function CadViewer({
               <button type="button" className="ml-2 underline" data-testid="memo-link-retry"
                 onClick={()=>{
                   setMemoLinkNotice(null);
-                  if(memoServerMode==='unavailable')setMemoListRetry(n=>n+1);
+                  if(memoServerMode==='unavailable'||memoServerMode==='off')setMemoListRetry(n=>n+1);
                   else setMemoDetailRetry(n=>n+1);
                 }}>메모만 다시 조회</button>}
           </p>}

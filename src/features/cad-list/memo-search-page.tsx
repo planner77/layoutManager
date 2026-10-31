@@ -18,7 +18,6 @@ export function MemoSearchPage({query}:{query:MemoSearchQuery}){
       return;
     }
     const controller=new AbortController();
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setState({status:'loading'});
     void fetch('/api/cad-memos/search?'+serialized,{credentials:'same-origin',
       cache:'no-store',signal:controller.signal}).then(async response=>{
