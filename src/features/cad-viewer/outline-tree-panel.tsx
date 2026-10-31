@@ -1,8 +1,9 @@
 'use client';
 
-import { useRef, useState, type KeyboardEvent } from 'react';
+import { useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
-import { buildOutlineTree, type OutlineTreeType } from '@/domain/outline-tree';
+import { buildOutlineTree, buildWorkspaceOutlineTree, type OutlineTreeType } from '@/domain/outline-tree';
+import type { StoredOutlineDto } from '@/domain/typed-outline';
 import type { SavedOutline, SavedOutlineOverlayState } from '@/viewers/core/adapter';
 
 type Props = {
@@ -16,16 +17,20 @@ type Props = {
   onGroupVisibility: (ids: string[], visible: boolean) => void;
   onDelete: (id: string) => void;
   onClose: () => void;
+  server?: {rows:readonly StoredOutlineDto[];hidden:ReadonlySet<string>;selected:ReadonlySet<string>;canWrite:boolean};
+  serverActions?: ReactNode;
+  compact?: boolean;
 };
 
-/** Only confirmed browser-session overlay objects appear in the tree.
- * Buttons control overlays, never Source layers or ViewerManager.load().
+/** Browser drafts and authenticated server rows retain separate identities.
+ * Visibility controls only overlays, never Source layers or ViewerManager.load().
  * Keyboard navigation is on the treeitems, independent of action buttons. */
 export function OutlineTreePanel({
   outlines, overlayStates, types, allowDelete, deleteUnavailableReason,
-  onSelect, onVisibility, onGroupVisibility, onDelete, onClose,
+  onSelect, onVisibility, onGroupVisibility, onDelete, onClose, server, serverActions, compact=false,
 }: Props) {
-  const groups = buildOutlineTree(outlines, overlayStates, types);
+  const groups = server?buildWorkspaceOutlineTree(outlines,overlayStates,types,server.rows,server.hidden,server.selected)
+    :buildOutlineTree(outlines, overlayStates, types);
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
   const [focusedKey, setFocusedKey] = useState<string | null>(null);
   const refs = useRef<Map<string, HTMLDivElement>>(new Map());
@@ -94,12 +99,21 @@ export function OutlineTreePanel({
     <aside aria-label="외곽선 목록" data-testid="viewer-outline-tree"
       className="flex h-full min-h-0 min-w-0 flex-col text-xs text-slate-800">
       <div className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-200 px-3 py-2">
-        <h2 className="font-semibold">외곽선 목록 ({outlines.length})</h2>
+        <h2 className="font-semibold">외곽선 목록 ({outlines.length+(server?.rows.length??0)})</h2>
         <Button size="sm" variant="outline" onClick={onClose}>외곽선 목록 닫기</Button>
       </div>
-      <p data-testid="outline-tree-temporary" className="shrink-0 bg-amber-50 px-3 py-1 text-amber-900">
+      <p data-testid="outline-tree-temporary" className={'shrink-0 bg-amber-50 px-3 py-1 text-amber-900 '+(compact&&server?'sr-only':'')}>
         임시·재접속 시 소멸 · 서버에 저장되지 않습니다.
+        {server&&<span className="block">서버 저장 외곽선은 다시 접속하면 복원됩니다. 표시·숨김은 이 Viewer에만 적용됩니다.</span>}
       </p>
+      {serverActions&&(compact?<details className="relative shrink-0 border-b bg-white">
+        <summary className="cursor-pointer px-3 py-1">임시 {outlines.length}개 · 서버 {server?.rows.length??0}개 · 저장/내보내기</summary>
+        <div className="absolute inset-x-0 top-full z-20 max-h-[40dvh] overflow-auto border bg-white shadow-lg"
+          onClick={event=>{if((event.target as HTMLElement).closest('button')){
+            const details=event.currentTarget.parentElement as HTMLDetailsElement;
+            details.open=false;details.querySelector('summary')?.focus({preventScroll:true});
+          }}}>{serverActions}</div>
+      </details>:serverActions)}
       {!groups.length ? (
         <p data-testid="outline-tree-empty" className="px-3 py-3 text-slate-500">
           아직 확정된 외곽선이 없습니다. 외곽선 생성 도구에서 임시 확정하면 표시됩니다.
@@ -113,7 +127,7 @@ export function OutlineTreePanel({
             const groupKey = 'group:' + group.id;
             return (
               <div key={group.id} className="mb-1" data-testid="outline-tree-group">
-                <div role="treeitem" aria-level={1} aria-expanded={open}
+                <div role="treeitem" aria-level={1} aria-expanded={open} aria-selected={false}
                   aria-label={group.name + ', ' + group.items.length + '개'}
                   ref={node => setRef(groupKey, node)}
                   tabIndex={focusedKey === groupKey || (!focusedKey && index === 0) ? 0 : -1}
@@ -136,11 +150,13 @@ export function OutlineTreePanel({
                   <div role="group" aria-label={group.name + ' 외곽선'} className="ml-2 border-l border-slate-200 pl-1">
                     {group.items.map(item => {
                       const key = 'outline:' + item.id;
+                      const canDelete=item.persistence==='server'?server?.canWrite===true:allowDelete;
                       return (
                         <div key={item.id} role="treeitem" aria-level={2}
                           aria-selected={item.selected} aria-label={item.name + ', ' + item.kind}
                           ref={node => setRef(key, node)}
-                          data-testid="outline-tree-item" data-outline-id={item.id}
+                          data-testid="outline-tree-item" data-outline-id={item.sourceId??item.id}
+                          data-tree-key={item.id} data-persistence={item.persistence??'session'}
                           tabIndex={focusedKey === key ? 0 : -1}
                           onFocus={() => setFocusedKey(key)}
                           onKeyDown={event => handleKey(event, key, group.id, item.id)}
@@ -149,7 +165,7 @@ export function OutlineTreePanel({
                             (item.selected ? 'bg-teal-100' : 'hover:bg-slate-100')}>
                           <span className="min-w-0 flex-1 truncate" title={item.name}>
                             {item.name}
-                            <span className="block text-[10px] text-slate-500">{item.kind === 'CONVEX' ? '볼록' : '정밀'} · 임시</span>
+                            <span className="block text-[10px] text-slate-500">{item.kind === 'CONVEX' ? '볼록' : '정밀'} · {item.persistence==='server'?'서버 저장':'임시'}</span>
                           </span>
                           <button type="button"
                             aria-label={item.name + (item.visible ? ' 숨기기' : ' 표시')}
@@ -158,9 +174,10 @@ export function OutlineTreePanel({
                             className="shrink-0 rounded border border-slate-400 px-1">
                             {item.visible ? '숨김' : '표시'}
                           </button>
-                          <button type="button" disabled={!allowDelete || !item.visible}
+                          <button type="button" disabled={!canDelete || !item.visible}
                             title={!item.visible ? '숨김 개체는 표시한 뒤 삭제할 수 있습니다.' :
-                              (allowDelete ? '선택한 생성 개체 삭제 (실행 취소 가능)' : (deleteUnavailableReason??'생성 개체 편집 모드를 선택하세요.'))}
+                              (item.persistence==='server'?(canDelete?'서버 외곽선 논리 삭제':'외곽선 쓰기 권한이 필요합니다.'):
+                                (allowDelete ? '선택한 생성 개체 삭제 (실행 취소 가능)' : (deleteUnavailableReason??'생성 개체 편집 모드를 선택하세요.')))}
                             aria-label={item.name + ' 삭제'} data-testid="outline-tree-delete"
                             onClick={event => { event.stopPropagation(); onDelete(item.id); }}
                             className="shrink-0 rounded border border-slate-400 px-1 disabled:opacity-40">

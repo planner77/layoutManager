@@ -5,8 +5,9 @@ import type { GlobalOutlineTypeDto, OutlineTypeAccessDto } from '@/domain/outlin
 import { OutlineTypeClientError, readOutlineTypeAccess, readOutlineTypes, writeOutlineType } from './outline-type-client';
 
 const empty = { name: '', description: '', sortOrder: '0' };
-export function OutlineTypeManager({ access, refreshAccess }: {
+export function OutlineTypeManager({ access, refreshAccess, onChanged }: {
   access: OutlineTypeAccessDto | null; refreshAccess: () => Promise<void>;
+  onChanged?: () => void;
 }) {
   const [items, setItems] = useState<GlobalOutlineTypeDto[]>([]);
   const [total, setTotal] = useState(0);
@@ -59,6 +60,7 @@ export function OutlineTypeManager({ access, refreshAccess }: {
       await writeOutlineType(id, body, controller.signal);
       if (controller.signal.aborted) return;
       setNotice(message); resetEditor(); setQuery(current => ({ ...current, offset: 0 }));
+      onChanged?.();
     } catch (failure) {
       if (!controller.signal.aborted) {
         setError(failure instanceof Error ? failure.message : '타입을 저장하지 못했습니다.');

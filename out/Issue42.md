@@ -1,5 +1,7 @@
 # Issue #42 — U5 외곽선 업무 타입 지정·이름·JSON 메타데이터 (v0.35.0)
 
+> **2026-11-01 후속:** 아래는 U5 당시 브라우저 임시 타입 계약과 시험 이력이다. 당시 미구현이던 서버 타입 지정 저장은 0.51.0 후보 [#71/#73](../README.md)에서 해당 Version/Site 권한, 동일 Idempotency-Key 재시도, 서버 Snapshot 분리로 연결했다. 검증된 원본 기반 Source-v2와 APP_CREATED 업무 WCS의 APPGenerated-v2를 구분하며, 새 브라우저 가져오기는 새 UUID를 쓴다. 전체 PR CI·현장 수용은 [TestReport](TestReport.md)의 실제 실행 상태를 따른다.
+
 ## #68 main 변경 통합 및 ADR 번호 충돌 해결 (2026-10-25)
 
 - [main commit 38f05e0f](https://github.com/planner77/layoutManager/commit/38f05e0f2633ca15bfd689b03846d4f0b13f249a) 이후 PR #70은 뒤처짐 1건/mergeable dirty 상태였다. #68의 CI 실행명·GHCR 게시 안전 정책·Issue68/Operation 및 공통 문서 변경을 보존해 두 부모 merge commit으로 통합한다.

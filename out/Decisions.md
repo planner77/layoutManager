@@ -1,3 +1,32 @@
+## R3 #71/#73 — Manager 최종 로컬 수용 / Draft 게시 GO (2026-11-01)
+
+**ACCEPT LOCAL SCOPE.** Developer backend/shared DTO와 Root Viewer/Tree/JSON 구현, 독립 QA의37개 집중 backend 및9개 실제 Browser, Root 전체119 files/791 tests(428.37초)·일반 CAD117개(10.2분)·Greenfield7개(2.1분), production build/typecheck/lint(0 errors/9 warnings), 실제 Migrator build·UID10001 tmpfs INIT/RESTART/exact schema/FK를 검토했다. Manager는 마지막 완료 로그와 desktop/320px capture를 직접 확인했다. Source marker 변조, 오래된 GET/이전 actor mutation, Scene 재게시, 응답 소실 replay,200개 Tree와101개 이후 catalogue의 실제 근거는 [TestReport R3-20261101](TestReport.md)에 기록한다.
+
+최초 provenance/모바일/Tree refresh 제품 결함과 download filename·Scene200·QA cookie/audit-count fixture 실패는 [FailureLedger](FailureLedger.md)에 보존했다. 최종 새 실행이 통과해 로컬 gate를 해제하며, 이전 실패를 삭제하거나 서로 다른 실행을 단일 PASS 수로 합산하지 않는다. 아래 과거 backend-only 수용/HOLD는 이 최종 로컬 결정으로 대체한다.
+
+Root는 최종 staged diff·Secret/산출물·허가된 remote 검사를 마친 뒤 R2 `a1bfe7e`를 head로 갖는 PR181의 기능 브랜치 기반 별도 stacked Draft PR로 게시할 수 있다. 실제 base branch 이름은 원격 PR181 metadata와 대조한다. **원격 CI는 아직 미확인**이며 Draft 게시·CI 관찰 후 별도로 기록한다. 이 GO는 merge·Issue 자동 종료·정식 release/GHCR·기존 volume migration·운영 배포 승인이 아니다. 실 CAD/GPU·사내 PC·운영 백업/복원 수용은 별도 유지한다.
+
+## R3 backend focused 수용 — 2026-11-01
+
+Manager는 Developer 재작업과 독립 QA의 **5 files /37 tests PASS(32.76초)**, typecheck/관련 lint/diff 확인에 근거해 backend/shared DTO의 집중 검증 범위를 수용한다. 실제220자 Scene 참조의128자 제한 결함은 기존 transfer와 같은250자로 보완했고, 최종 read 승인 만료는 실제 HTTP 주입 시험으로503/고정 code/no-store를 확인했다. 최초 Browser4PASS1FAIL48.2초 기록은 유지하며 이 판정을 Browser 성공으로 확대하지 않는다. Root의 새 production build/Greenfield Browser 재시험, UI/export/200개 Tree·전체 회귀·image runtime·원격 CI는 별도 Gate이며 **전체 R3 수용은 대기**다.
+
+## R3 #71/#73 — 타입 서버 확정과 영속 트리 착수 설계 (2026-11-01)
+
+기준 R2 commit `a1bfe7ef0c9070594d6ce905b6b5668a4fe56bbd`, 새 `feat/issues-71-73-typed-outline-tree-20261101`,0.51.0 후보. Manager는 #71/#73 원문·#73 Scene-first 후속 댓글 및 최신 코드와 과거 Issue42/43/97/98 문서를 대조했다. 이 절과 Requirements/Architecture/Database/TestPlan을 구현 전에 작성하며, R2 원격 CI 실패가 확인되면 선행 보완을 먼저 한다.
+
+1. **server-first typed confirm:** 타입 지정 확정은 서버 성공 뒤 서버 UUID 한 건만 표시한다. payload 생성을 위해 임시로 GeneratedDocument에 confirm했다가 지우거나 local/server Overlay를 이중 생성하지 않는다. Preview를 frozen snapshot으로 받아 SOURCE claim(identity base/operations[]) 또는 APP_CREATED geometry를 만드는 순수 utility를 사용한다. `persistable=false` 렌더 Preview는 Source 비인증이라는 의미이며 독립 APP_CREATED 저장 금지가 아니다. 기존 untyped 임시 확정/저장은 호환 경로로 유지하고 새 typed flow와 구분한다.
+2. **Global 타입과 도면 인가 분리:** R2 타입은 Global 그대로, 새 Version-bound catalogue projection이 읽기/쓰기가능상태를 제공한다. Admin type-management capability를 Editor의 Outline write 허가로 쓰지 않는다. Reader도 허가된 Version의 서버 Tree/참조 inactive 타입 metadata를 읽을 수 있지만 global inactive 관리 목록을 얻지는 못한다. 기존 preview scopeKey DTO를 가짜 Site/global 값으로 변환하지 않는다.
+3. **durable idempotency:** UI의 savedServerIds만으로는 응답 소실/restart 중복을 막을 수 없으므로 새 latest-empty baseline에 append-only creation receipt를 추가한다. actor+Version+key+digest로 이미 완료된 생성을 식별하고 Outline/CREATE Audit/receipt를 같은 transaction에 묶는다. 완료 replay도 현재 도면 읽기/쓰기 허가를 검사하지만, 이미 할당된 타입의 후속 비활성 때문에 새로 생성하거나 FK를 삭제하지 않는다. 삭제된 replay는410, 다른payload는409이다. 운영 볼륨 migration/기존 release identity 완화는 하지 않는다.
+4. **조회 시점 타입 이름과 명시 교환:** CadOutline에 생성 당시 typeName snapshot을 추가하지 않는다. 서버/트리/JSON은 current Type JOIN의 이름·active 상태를 사용하며 JSON에 들어간 이름은 export시점 snapshot이다. 기존 트리에서 SOURCE_CANONICAL→Source-v2, APP_CREATED mode→Generated-v2 두 export로 나눈다. 서버 snapshot에만 엄격한 exportSource marker와 informational serverOutlineId를 두고, import는 전체 검증 후 UUID를 새로 발급하며 server 필드를 제거한다. unmarked 사용자 Generated-v2의 UUID 보존은 그대로다. Source null triple의 legacy 이름은 marker-only serverInstanceName으로 보존한다. Render APP_CREATED를 Source JSON으로 변환하거나 Import를 영속 승인으로 취급하지 않는다.
+5. **유한 목록과 수명주기:** 기존 서버100+임시100 상한을 유지한다. 타입 선택은 paged search, 서버 목록은 total/offset/limit·안정 정렬, 트리는 참조 타입만 join하여 큰 전체 catalogue를 무조건 로드하지 않는다.200개 이하 tree는 우선 scroll/키보드 구현과 계측을 사용하고 가상화는 필요성 검증 뒤 결정한다. local/server namespace와 별도 visibility/선택 projection을 사용하며 서버 객체는 브라우저 Undo authority가 아니다. Source mapping0은 APP_CREATED Tree 공통 게이트가 아니다.
+6. **Scene 교체와 독립 업무 객체:** #160/#73의 최신 정책을 적용해 동일 Version/SHA/WCS의 APP_CREATED를 생성 당시 Scene revision에 묶어 숨기지 않는다. SOURCE_CANONICAL도 별도 Origin이 아니라 APP_CREATED의 검증 출처이므로 같은 복원 정책이다. Source-only reset·Scene 재게시 뒤에도 업무 geometry/UUID/revision·Show/Hide/Focus를 유지한다. 현재 pointer와의 동시성은 이후 mutation의 explicit expectedSceneRevision+object CAS로 검사하고 성공 시 last-write context를 갱신한다. 기존 expectedSceneRevision 없는 legacy mutation의 보수적 row-scene fallback/409는 유지한다. 초기 R3 초안의 blanket stale-Scene Overlay 차단 문구는 이 결정으로 교체했으며 코드 구현 전에 정정했다.
+
+새 raw collector/메모 공동 편집·재분류·DB 자동 이전·Scale/Shear·DWG 작업·운영 배포는 이 묶음에 포함하지 않는다. 세부 API/실패/Receipt 및 테스트 계약은 상단 R3 Architecture/Database/TestPlan을 단일 기준으로 삼는다. **Manager IMPLEMENTATION GO:** R2 두 CI Job 성공과 위 Scene 수명주기/explicit PATCH·DELETE Scene CAS 계약을 확인한 뒤 Developer의 backend/schema/API/shared DTO 구현 및 Root의 UI/Viewer/E2E 보조 구현을 지시한다. Developer 완료 보고 검토 후 독립 QA가 검증하고 Manager가 최종 수용한다. 이 GO는 구현·검증 PASS나 Issue 완료 선언이 아니다.
+
+## R2 #65 — Draft 게시 및 원격 CI 진행 근거 (2026-11-01)
+
+Root는 local acceptance 뒤 R2 `a1bfe7ef0c9070594d6ce905b6b5668a4fe56bbd`를 기능 브랜치에 게시하고 [Draft PR181](https://github.com/planner77/layoutManager/pull/181)을 R1 `feat/remaining-issues-20261031` base로 생성했다. `feat/**` filter에 의해 [PR CI41215035518](https://github.com/planner77/layoutManager/actions/runs/41215035518)이 실제 시작되었다. 초기 설계 작성 때 Docker만 성공하고 Verify E2E가 진행 중이었으나, 구현 GO 직전 Root 재조회에서 **Docker Job124577696954와 Verify124577697226 모두 completed/SUCCESS**, 실패 step0(일반/Auth/Greenfield/Legacy 포함)을 확인했다. PR181은 draft/mergeable=true이며 merge/release/deployment는 수행하지 않았다. R1 CI41211482860의 두 Job SUCCESS와 별도 실제 결과이다.
+
 ## R2 #65 — Manager 로컬 수용 결정 (2026-11-01)
 
 **판정: ACCEPT LOCAL SCOPE / Draft PR 게시 가능.** Manager는 Developer 구현 보고, 독립 QA의 API·schema·권한 26 tests 및 최종 소스/CI diff 검토, Root의 최종 전체 114 files / 760 tests PASS(234.30초), build/typecheck/lint, Greenfield Browser 4 PASS(42.5초), 기존 gate 수정 Browser 4 PASS(8.7초), 실제 Migrator 이미지와 격리 UID10001 INIT/RESTART·최신 FK smoke를 근거로 R2 로컬 구현을 수용한다. QA 최종 수용 권고를 확인했고 Manager도 최종 전체 테스트 로그와 workflow의 branch filter 한 줄 변경을 직접 확인했다. CI embedded Python 24 fixture도 통과했다. 실제 실행 범위와 역할은 [TestReport의 R2-20261101](TestReport.md)에 기록한다.

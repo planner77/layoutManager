@@ -93,6 +93,7 @@ model CadFileVersion {
   sceneAssets SceneAsset[]
   currentScene CurrentScene?
   outlines CadOutline[]
+  outlineCreateReceipts CadOutlineCreateReceipt[]
   memos CadMemo[]
   memoGroups CadMemoGroup[]
   @@unique([locationId, version], map: "uq_version_sequence")
@@ -183,6 +184,7 @@ model User {
   outlineTypesCreated OutlineType[] @relation("OutlineTypeCreated")
   outlineTypesUpdated OutlineType[] @relation("OutlineTypeUpdated")
   outlineTypeAudits OutlineTypeAudit[]
+  outlineCreateReceipts CadOutlineCreateReceipt[]
   @@map("User")
 }
 model UserRoleGrant {
@@ -295,7 +297,21 @@ model CadOutline {
   createdBy User @relation("OutlineCreated",fields:[createdById], references:[id], onDelete:NoAction, onUpdate:NoAction)
   updatedBy User @relation("OutlineUpdated",fields:[updatedById], references:[id], onDelete:NoAction, onUpdate:NoAction)
   deletedBy User? @relation("OutlineDeleted",fields:[deletedById], references:[id], onDelete:NoAction, onUpdate:NoAction)
+  createReceipt CadOutlineCreateReceipt?
   @@index([versionId,deletedAt],map:"ix_cad_outline_version_live")
+}
+model CadOutlineCreateReceipt {
+  id String @id
+  actorUserId String @map("actor_user_id")
+  versionId String @map("version_id")
+  idempotencyKey String @map("idempotency_key")
+  requestSha256 String @map("request_sha256")
+  outlineId String @unique(map:"uq_cad_outline_receipt_outline") @map("outline_id")
+  createdAt String @map("created_at")
+  actor User @relation(fields:[actorUserId],references:[id],onDelete:NoAction,onUpdate:NoAction)
+  version CadFileVersion @relation(fields:[versionId],references:[id],onDelete:NoAction,onUpdate:NoAction)
+  outline CadOutline @relation(fields:[outlineId],references:[id],onDelete:NoAction,onUpdate:NoAction)
+  @@unique([actorUserId,versionId,idempotencyKey],map:"uq_cad_outline_receipt_actor_version_key")
 }
 model OutlineType {
   id String @id

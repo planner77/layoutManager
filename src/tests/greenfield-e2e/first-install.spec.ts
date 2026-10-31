@@ -210,5 +210,11 @@ test('SC-14–17 authenticated conversion → persisted Scene → independent br
   await expect(fresh.getByTestId('scene-status')).toContainText('저장된 Scene Asset 복원');
   expect(new URL(fresh.url()).searchParams.get('renderer')).toBe('three-dxf-viewer');
   expect(gets).toBe(getsBeforeReload);
+  for(const api of [consumer.request,page.request]){
+    const active=await (await api.get('/api/g7-runtime/auth/session')).json();
+    expect((await api.post('/api/g7-runtime/auth/logout',{
+      headers:{origin:baseURL!,'x-csrf-token':active.csrfToken},
+    })).status()).toBe(200);
+  }
   await consumer.close();
 });

@@ -108,3 +108,31 @@ export const OUTLINE_TYPE_DDL = [
     'CREATE TRIGGER "outline_type_audit_no_delete" BEFORE DELETE ON "OutlineTypeAudit" BEGIN SELECT RAISE(ABORT,\'OUTLINE_TYPE_AUDIT_APPEND_ONLY\'); END' },
 ] as const;
 export const OUTLINE_TYPE_OBJECT_NAMES = new Set<string>(OUTLINE_TYPE_DDL.map(row => row.name));
+
+/** #71/#73: only the newest EMPTY Greenfield baseline installs these objects. */
+export const CAD_OUTLINE_RECEIPT_DDL = [
+  {type:'table',name:'CadOutlineCreateReceipt',sql:`CREATE TABLE "CadOutlineCreateReceipt" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "actor_user_id" TEXT NOT NULL,
+    "version_id" TEXT NOT NULL,
+    "idempotency_key" TEXT NOT NULL,
+    "request_sha256" TEXT NOT NULL CHECK(length("request_sha256")=64 AND "request_sha256" NOT GLOB '*[^0-9a-f]*'),
+    "outline_id" TEXT NOT NULL,
+    "created_at" TEXT NOT NULL,
+    FOREIGN KEY("actor_user_id") REFERENCES "User"("id") ON DELETE NO ACTION ON UPDATE NO ACTION,
+    FOREIGN KEY("version_id") REFERENCES "CadFileVersion"("id") ON DELETE NO ACTION ON UPDATE NO ACTION,
+    FOREIGN KEY("outline_id") REFERENCES "CadOutline"("id") ON DELETE NO ACTION ON UPDATE NO ACTION)`},
+  {type:'index',name:'uq_cad_outline_receipt_actor_version_key',sql:
+    'CREATE UNIQUE INDEX "uq_cad_outline_receipt_actor_version_key" ON "CadOutlineCreateReceipt"("actor_user_id","version_id","idempotency_key")'},
+  {type:'index',name:'uq_cad_outline_receipt_outline',sql:
+    'CREATE UNIQUE INDEX "uq_cad_outline_receipt_outline" ON "CadOutlineCreateReceipt"("outline_id")'},
+  {type:'trigger',name:'cad_outline_receipt_scope',sql:`CREATE TRIGGER "cad_outline_receipt_scope" BEFORE INSERT ON "CadOutlineCreateReceipt"
+    WHEN NOT EXISTS(SELECT 1 FROM "CadOutline" o WHERE o."id"=NEW."outline_id"
+      AND o."version_id"=NEW."version_id" AND o."created_by_id"=NEW."actor_user_id")
+    BEGIN SELECT RAISE(ABORT,'CAD_OUTLINE_RECEIPT_SCOPE'); END`},
+  {type:'trigger',name:'cad_outline_receipt_no_update',sql:
+    'CREATE TRIGGER "cad_outline_receipt_no_update" BEFORE UPDATE ON "CadOutlineCreateReceipt" BEGIN SELECT RAISE(ABORT,\'CAD_OUTLINE_RECEIPT_APPEND_ONLY\'); END'},
+  {type:'trigger',name:'cad_outline_receipt_no_delete',sql:
+    'CREATE TRIGGER "cad_outline_receipt_no_delete" BEFORE DELETE ON "CadOutlineCreateReceipt" BEGIN SELECT RAISE(ABORT,\'CAD_OUTLINE_RECEIPT_APPEND_ONLY\'); END'},
+] as const;
+export const CAD_OUTLINE_RECEIPT_OBJECT_NAMES = new Set<string>(CAD_OUTLINE_RECEIPT_DDL.map(row=>row.name));

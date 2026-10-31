@@ -26,8 +26,8 @@ export function point(raw:unknown):{x:number;y:number}{
 }
 export function name(raw:unknown):string{
  if(typeof raw!=='string')invalid();
- const x=raw.normalize('NFC').trim();
- if(x.length<1||x.length>100||/[\x00-\x1f\x7f]/.test(x))invalid('BUSINESS_NAME_INVALID');
+ const x=raw.trim().normalize('NFC');
+ if(x.length<1||x.length>100||/[\p{Cc}\p{Cf}\p{Cs}]/u.test(x))invalid('BUSINESS_NAME_INVALID',400);
  return x;
 }
 export function memoGroupName(value:unknown):string{
@@ -121,7 +121,7 @@ export function transformed(base:GeoJSONOutline,ops:Operation[]):{geometry:GeoJS
 export function provenance(input:unknown):string[]{
  if(input===undefined)return [];
  if(!Array.isArray(input)||input.length>256)invalid('OUTLINE_DERIVATION_INVALID');
- const values=input.map(v=>{if(typeof v!=='string'||v.length>128||!v.length)invalid('OUTLINE_DERIVATION_INVALID');return v as string;});
+ const values=input.map(v=>{if(typeof v!=='string'||v.length>250||!v.length)invalid('OUTLINE_DERIVATION_INVALID');return v as string;});
  if(new Set(values).size!==values.length)invalid('OUTLINE_DERIVATION_INVALID');
  return values;
 }

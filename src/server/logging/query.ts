@@ -27,7 +27,7 @@ const events=new Set(['http_request_started','http_request_stage','http_request_
 const components=new Set(['api','upload','maintenance','application']);
 const operations=new Set(['cad_upload','cad_list','cad_delete','cad_content','cad_location','cad_set_current',
   'health','floor_reclassify','master_list','master_create','master_update','master_delete',
-  'business_outline_list','business_outline_create','business_outline_read','business_outline_change',
+  'business_outline_list','business_outline_create','business_outline_read','business_outline_change','business_outline_type_list',
   'business_memo_list','business_memo_create','business_memo_read','business_memo_change',
   'business_memo_anchor','business_memo_group_create','business_memo_group_change','business_memo_search',
   'business_scene_origin_reset','scene_status','scene_publish','scene_content',

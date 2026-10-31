@@ -4,6 +4,7 @@ import {createGeneratedId,validCanvasScope} from './canvas-object-selection';
 import {GeneratedDocument,applyAffine,validatedGeneratedGeometry,
   type GeneratedRestoreEntry,type Affine2D,type GeneratedRigidOperation} from './generated-document';
 import {parseOutlineExport} from './outline-draft';
+import {inspectOutlineSnapshot} from './outline-snapshot-marker';
 import type {OutlineResult,GeoJSONOutline} from '../viewers/core/outline-compute';
 
 export const GENERATED_TRANSFER_MAX_BYTES=12*1024*1024;
@@ -98,23 +99,27 @@ export function parseGeneratedTransfer(input:unknown,scope:CanvasObjectScope,
    // Existing parser requires exact Source/Handle validation; never invent a type.
    const legacy=parseOutlineExport(input,scope.versionId,scope.sourceSha256);
    const rawRows=root.outlines as unknown[];
+   const snapshot=inspectOutlineSnapshot(root,rawRows,'source');
    const now=new Date().toISOString();
-   return {legacy:true,entries:legacy.outlines.map((item,i)=>{
+   const restored=legacy.outlines.map((item,i)=>{
      const original=row(rawRows[i]),createdAt=validDate(original.createdAt)?original.createdAt as string:now;
-     return {id:createGeneratedId(),savedOutlineId:item.id,createdAt,editedAt:null,
-       name:item.name??'',outlineTypeId:item.outlineTypeId,
+     return {id:snapshot.marked?'00000000-0000-4000-8000-'+String(i+1).padStart(12,'0'):createGeneratedId(),savedOutlineId:item.id,createdAt,editedAt:null,
+       name:snapshot.marked?snapshot.names[i]:item.name??'',outlineTypeId:item.outlineTypeId,
        outlineTypeName:item.outlineTypeName,
        baseResult:{kind:item.kind,algorithm:item.algorithm,geometry:item.geometry,
          tolerance:item.tolerance,sourceEntityIds:item.sourceEntityIds,persistable:true,
          warnings:[],durationMs:0},
        transform:[1,0,0,1,0,0] as Affine2D,transformOperations:[],
        visible:true,edited:false};
-   })};
+   });
+   if(snapshot.marked)new GeneratedDocument(scope).replaceFromImport(restored);
+   return {legacy:true,entries:snapshot.marked?restored.map(entry=>({...entry,id:createGeneratedId()})):restored};
  }
  if(root.format!=='cad-generated-objects'||root.schemaVersion!==2||
     root.persistence!=='BROWSER_EXPORT_ONLY'||root.sourceAttestable!==false||
     !Array.isArray(root.objects)||root.objects.length>100)
    throw new Error('생성 개체 JSON v2 형식이 유효하지 않습니다.');
+ const snapshot=inspectOutlineSnapshot(root,root.objects,'generated');
  const ids=new Set<string>(),ordinals=new Set<string>();
  let count=0;
  const entries=root.objects.map(inputRow=>{
@@ -170,5 +175,8 @@ export function parseGeneratedTransfer(input:unknown,scope:CanvasObjectScope,
        warnings,durationMs:base.durationMs} as OutlineResult,
      transform:[...matrix] as unknown as Affine2D,transformOperations:opList};
  });
- return {legacy:false,entries};
+ if(snapshot.marked)new GeneratedDocument(scope).replaceFromImport(entries);
+ return {legacy:false,entries:snapshot.marked?entries.map((entry,index)=>({
+   ...entry,id:createGeneratedId(),savedOutlineId:'local-'+(index+1),
+ })):entries};
 }
