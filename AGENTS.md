@@ -2,7 +2,7 @@
 
 - Root `DESIGN.md`는 현재 트리에 없다. 설계 권위는 `out/Architecture.md`, `out/Decisions.md` 및 `out/Issues55-56.md`다. #51~#54/#160/#166/#127/#138의 최신 선택·Scene·패널 계약을 함께 준수한다.
 - E5 회전은 WCS XY, 양수 반시계, 공동 Bounding-Box 중심과 수동 Pivot, 단일 선택·그룹 선택만 지원한다. 원본 SOURCE/RENDER·혼합·숨김·Version/SHA 불일치 개체는 일괄 거부한다. Canvas 핸들 Ghost는 문서를 바꾸지 않고 PointerUp 수락 1회만 Undo 이력을 작성하며 ESC/Cancel/Camera/Renderer/Unload에서 폐기한다. 다른 변환(Scale/Shear/Mirror/Z)은 허용하지 않는다.
-- E6 내보내기/가져오기는 `도면` 메뉴 하위의 명시적인 브라우저 파일 작업이며 업로드 API/DB/영속화 경로가 아니다. `cad-generated-objects` v2와 기존 #31 Source-only v1/typed v2를 분리해 해석한다. 12MiB/100객체/100k 정점/개체당 64강체명령, UUID·Version·SHA·DXF단위·좌표계·Provenance·Affine/Geometry 동등성을 모두 검증한 다음에만 전체 교체한다. 기존 데이터가 있으면 사용자 동의가 필요하다. 실패는 기존 Document/Undo/Redo를 그대로 보존한다. 복원 시 기존 Undo/Redo는 초기화한다.
+- E6 내보내기/가져오기는 `도면` 메뉴 하위의 명시적인 브라우저 파일 작업이며 업로드 API/DB/영속화 경로가 아니다. `cad-generated-objects` v2와 기존 #31 Source-only v1/typed v2를 분리해 해석한다. 12MiB/100객체/100k 정점/개체당 4,096개 강체명령, UUID·Version·SHA·DXF단위·좌표계·Provenance·Affine/Geometry 동등성을 모두 검증한 다음에만 전체 교체한다. 기존 데이터가 있으면 사용자 동의가 필요하다. 실패는 기존 Document/Undo/Redo를 그대로 보존한다. 복원 시 기존 Undo/Redo는 초기화한다.
 - `src/features/cad-viewer/viewer.tsx`의 `작업 → 선택·편집 도구` Drawer에서 수치 회전 UI를 제공한다. `도면` 그룹의 생성 개체 JSON 작업 외에 독립 상단 버튼을 추가하지 않고, 공유 Drawer(#138) 위치·접근성 계약을 따른다.
 - 파일 출처를 인증된 Source Handle로 승격하지 않는다. Browser JSON과 임의 affine/edited geometry는 서버 #97/#98 canonical 재검증을 대체할 수 없다. 새 DB/Prisma/API/Auth 변경과 원본 DXF/Current 변경 금지.
 - 코드 수정 시 반드시 `generated-rotate.test.ts`, `generated-transfer.test.ts`, `issues55-56-generated-rotate-json.spec.ts` 및 기존 E2~E4 회귀를 고려한다. 로컬 미실행/PR CI 요청/성공/현장 수용을 명확히 구분해 기록한다.

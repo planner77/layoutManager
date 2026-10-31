@@ -296,8 +296,6 @@ export class GeneratedDocument{
         ? Object.freeze({type:'Translate',dx:command.dx,dy:command.dy})
         : Object.freeze({type:'Rotate',angleDegrees:command.angleDegrees,
             pivot:Object.freeze([...command.pivot]) as readonly [number,number]});
-      if(row.entry.transformOperations.length>=64)
-        throw new Error('생성 개체 허용 변환 작업은 최대 64회입니다. JSON 복원과 동일한 상한입니다.');
       const transformOperations=Object.freeze([...row.entry.transformOperations,operation]);
       // Validate EVERY geometry before committing ANY; base geometry never changes.
       applyAffine(row.entry.baseGeometry,next);
@@ -413,7 +411,7 @@ export class GeneratedDocument{
           (typeof input.editedAt!=='string'||!Number.isFinite(Date.parse(input.editedAt)))))
         throw new Error('가져올 이름/타입/가시성/시점이 유효하지 않습니다.');
       if(!Array.isArray(input.transformOperations)||
-         input.transformOperations.length>64||
+         input.transformOperations.length>4096||
          input.edited!==(input.transformOperations.length>0)||
          input.edited!==(input.editedAt!==null))
         throw new Error('편집 이력과 편집 시점이 일치하지 않습니다.');

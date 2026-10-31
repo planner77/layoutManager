@@ -2,7 +2,7 @@
 
 DXF를 `three-dxf-viewer`로 연 뒤 `작업 → 선택·편집 도구`에서 **생성 개체만 선택**하면 WCS XY 각도(+ = 반시계), Pivot X/Y(기본: 선택 객체 전체 bbox의 중심)를 입력해 한 번에 회전할 수 있습니다. Canvas 위의 **↻ 회전 핸들**을 드래그하면 Ghost로 미리보기, 놓으면 한 번의 Undo로 확정되며 ESC/카메라 변경/취소는 원위치로 복원합니다. SOURCE/RENDER 혼합은 편집할 수 없습니다.
 
-`도면 → 생성 개체 JSON 내보내기 (브라우저)`는 편집된 생성 외곽선의 base geometry, 허용된 Translate/Rotate 연산, transform, 유효 결과 geometry, ID, 이름·타입·가시성을 `cad-generated-objects` 스키마 v2 파일로 내보냅니다. `도면 → 생성 개체 JSON 가져오기 (브라우저)`로 동일 Version/SHA·DXF 단위에서만 복원됩니다. 파일 12MiB, 최대 100개/총 10만 꼭짓점/개체 64연산 제한을 초과하거나 변조된 파일은 거부합니다. 기존 임시 개체가 있으면 전체 교체 확인이 필요하고, 복원 후 이전 Undo 이력은 이어지지 않습니다. 기존 #31 원본 Source-only JSON v1/typed v2는 제한된 Legacy 브라우저 Import 경로로 처리합니다. 기존 JSON 내보내기 버튼은 호환 유지됩니다.
+`도면 → 생성 개체 JSON 내보내기 (브라우저)`는 편집된 생성 외곽선의 base geometry, 허용된 Translate/Rotate 연산, transform, 유효 결과 geometry, ID, 이름·타입·가시성을 `cad-generated-objects` 스키마 v2 파일로 내보냅니다. `도면 → 생성 개체 JSON 가져오기 (브라우저)`로 동일 Version/SHA·DXF 단위에서만 복원됩니다. 파일 12MiB, 최대 100개/총 10만 꼭짓점/개체 4,096연산 제한을 초과하거나 변조된 파일은 거부합니다. 기존 임시 개체가 있으면 전체 교체 확인이 필요하고, 복원 후 이전 Undo 이력은 이어지지 않습니다. 기존 #31 원본 Source-only JSON v1/typed v2는 제한된 Legacy 브라우저 Import 경로로 처리합니다. 기존 JSON 내보내기 버튼은 호환 유지됩니다.
 
 **보안·운영 경계:** 가져온 객체는 오직 Browser `APP_CREATED`이며 서버 CAD Source 증명이나 쓰기 권한이 아닙니다. DXF/DB/API/Current/영속 메모를 수정하지 않고 Reload/Renderer 변경 시 사라집니다. 서버 영속화는 별도 #97/#98 Source 재검증 이후에만 가능합니다. [설계·AC](out/Issues55-56.md) · [검증 계획](out/TestPlan.md). 이 브랜치의 로컬 시험·PR CI·실 CAD/GPU 검증은 현재 별도 확인 전입니다.
 

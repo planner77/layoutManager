@@ -53,7 +53,7 @@
 ```
 
 - 신뢰 영역: 업로드 파일은 사용자 단말의 **불신 JSON**. `File.text`와 `JSON.parse` 후 버전/SHA/단위·타입/ID 중복/Origin/Provenance/Geometry/출처 필드를 모두 검사한다. TransformOperations는 Translate/Rotate만 허용, 원본 base에 대해 재계산한 matrix와 editedGeometry가 일치하지 않으면 거부. 행 하나라도 거부되면 기존 Session/Undo/Redo 유지.
-- 상한: 12MiB, 100 objects, 총 100000 vertices, object당 64 operations, WCS ±1e12, Polygon/MultiPolygon closed rings and nonzero area. 저장 결과는 Browser Document 전체 교체만 허용하고 기존 데이터는 UI에서 명시적으로 확인, 이전 Undo/Redo 복원하지 않음.
+- 상한: 12MiB, 100 objects, 총 100000 vertices, object당 4,096 operations, WCS ±1e12, Polygon/MultiPolygon closed rings and nonzero area. 저장 결과는 Browser Document 전체 교체만 허용하고 기존 데이터는 UI에서 명시적으로 확인, 이전 Undo/Redo 복원하지 않음.
 - 기존 #31 Source-only v1/typed v2 입력은 `parseOutlineExport`로 안정적인 Handle을 검증한 다음 Browser UUID를 생성해 Legacy 복원한다. 타입 메타가 있으면 유지한다. v3 Render Scene export와 Browser edited v2는 서로 다른 스키마임을 구분한다. 기존 `buildOutlineExport` 버튼은 변경하지 않는다.
 - API/DB/Prisma/Auth/서버 Canonical/원본 DXF/Current/SHA 변경하지 않는다. Browser APP_CREATED provenance가 서버의 Source Attestation을 인증하지 않는다.
 

@@ -7,6 +7,7 @@ import {parseOutlineExport} from './outline-draft';
 import type {OutlineResult,GeoJSONOutline} from '../viewers/core/outline-compute';
 
 export const GENERATED_TRANSFER_MAX_BYTES=12*1024*1024;
+export const GENERATED_TRANSFER_MAX_OPERATIONS=4096;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const row=(value:unknown):Record<string,unknown>=>{
  if(!value||typeof value!=='object'||Array.isArray(value))
@@ -33,7 +34,8 @@ const strings=(value:unknown,label:string,maxCount:number,maxSize:number):string
  return entries;
 };
 function operations(input:unknown):GeneratedRigidOperation[]{
- if(!Array.isArray(input)||input.length>64)throw new Error('편집 작업은 최대 64개까지 허용됩니다.');
+ if(!Array.isArray(input)||input.length>GENERATED_TRANSFER_MAX_OPERATIONS)
+   throw new Error('브라우저 JSON의 개체별 편집 작업은 최대 4,096개까지 허용됩니다.');
  return input.map((value):GeneratedRigidOperation=>{
    const op=row(value);
    if(op.type==='Translate'&&finite(op.dx)&&finite(op.dy))
