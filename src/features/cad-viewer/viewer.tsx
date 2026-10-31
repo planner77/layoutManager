@@ -22,6 +22,7 @@ import { loadStoredOutlines, mutateStoredOutline, type StoredOutline } from './p
 import { PersistedOutlineOverlay } from './persisted-outline-overlay';
 import {parseWcsTranslation,selectedTranslationIds} from '@/domain/generated-translate';
 import {parseWcsRotation,selectedRotation} from '@/domain/generated-rotate';
+import {outlineGeometryBounds} from '@/domain/outline-tree';
 import {GENERATED_TRANSFER_MAX_BYTES} from '@/domain/generated-transfer';
 import { initialViewerAppState, viewerAppReducer } from '@/features/cad-viewer/viewer-app-state';
 import { isLiveOutlineRequest, outlineToolUnavailableReason, effectiveOutlineBasis } from '@/features/cad-viewer/outline-tool-policy';
@@ -1522,7 +1523,10 @@ export function CadViewer({
             onObjectSelection:refs=>{if(active && loadSequenceRef.current===sequence){setCanvasSelection(refs);syncSavedOutlines();}},
             onPreview:(value,error)=>{if(active && loadSequenceRef.current===sequence && outlineEnabledRef.current){setPreview(value);setPreviewError(error??null);}},
             onSaved:count=>{if(active && loadSequenceRef.current===sequence){setSavedCount(count);syncSavedOutlines();}},
-            onEditError:message=>{if(active && loadSequenceRef.current===sequence)setTranslateError(message);},
+            onEditError:message=>{if(active && loadSequenceRef.current===sequence){
+               if(message.includes('회전')||message.includes('Pivot'))setRotateError(message);
+               else setTranslateError(message);
+             }},
             onViewChange:()=>{if(active)onAdapterViewChange();},
           });
         }
@@ -1636,9 +1640,20 @@ export function CadViewer({
     canvasSelection.map(ref=>ref.origin+':'+ref.id).sort().join('|');
   let commonRotationPivot:readonly [number,number]|null=null;
   if(canDeleteSelection){
-    try{commonRotationPivot=selectedRotation(canvasSelection,manager.current?.getGeneratedObjects()??[],
-      {versionId,sourceSha256}).pivot;}
-    catch{/* Invalid geometry: fail closed in the command itself. */}
+    // Render must read React projections, not manager.current (a mutable ref).
+    const selectedIds=new Set(canvasSelection.map(ref=>ref.id));
+    const geometries=savedOutlines.filter(item=>item.sceneRef?.origin==='APP_CREATED'&&
+      selectedIds.has(item.sceneRef.id)&&
+      savedOverlayStates.some(state=>state.id===item.id&&state.visible));
+    const bounds=geometries.map(item=>outlineGeometryBounds(item.result.geometry));
+    if(bounds.length===canvasSelection.length&&bounds.length>0&&bounds.every(Boolean)){
+      const extents=bounds.filter((bound):bound is NonNullable<typeof bound>=>bound!==null);
+      const minX=Math.min(...extents.map(value=>value.minX)),maxX=Math.max(...extents.map(value=>value.maxX));
+      const minY=Math.min(...extents.map(value=>value.minY)),maxY=Math.max(...extents.map(value=>value.maxY));
+      const pivot:[number,number]=[minX+(maxX-minX)/2,minY+(maxY-minY)/2];
+      if(pivot.every(value=>Number.isFinite(value)&&Math.abs(value)<=1e12))
+        commonRotationPivot=pivot;
+    }
   }
   const pivotX=rotatePivotOverride?.selectionKey===rotateSelectionKey
     ? rotatePivotOverride.x:String(commonRotationPivot?.[0]??0);
