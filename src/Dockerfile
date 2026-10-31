@@ -35,8 +35,9 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd --system --gid 10001 cad \
     && useradd --system --uid 10001 --gid cad --home-dir /app --shell /usr/sbin/nologin cad \
-    && mkdir -p /data/db /data/cad \
-    && chown -R cad:cad /data
+    && mkdir -p /data/db /data/cad /data/logs \
+    && chown -R cad:cad /data \
+    && chmod 0700 /data/logs
 VOLUME ["/data"]
 
 # Measurement-only phase 1: remove application source/tests from the full-dependency image.
@@ -82,6 +83,7 @@ COPY --from=builder /app/src/server/db.ts ./server/db.ts
 COPY --from=builder /app/src/server/backfill-delete-passwords.ts ./server/backfill-delete-passwords.ts
 COPY --from=builder /app/src/server/password.ts ./server/password.ts
 COPY --from=builder /app/src/server/logger.ts ./server/logger.ts
+COPY --from=builder /app/src/server/logging ./server/logging
 COPY --from=builder /app/src/server/upload-error-catalog.ts ./server/upload-error-catalog.ts
 COPY --from=builder /app/src/domain/cad.ts ./domain/cad.ts
 # #153 explicit operator entrypoint only; default CMD still applies six CAD
