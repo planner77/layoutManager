@@ -1,3 +1,12 @@
+## PR #176 #88/#90 — 메모 HTTP 재조회는 Viewer 재초기화와 분리 (2026-10-31)
+
+- 실패 증거: [PR CI #343](https://github.com/planner77/layoutManager/actions/runs/41148144608) HEAD `8bf85699021ac587bb1595cd44bb27618f141d8b`. Docker SUCCESS, Verify TypeScript SUCCESS, ESLint 3 ERROR(React Compiler manual memoization 2 + effect-sync state 1); Unit/Integration/Build/E2E SKIPPED. 11 warnings는 비차단이며 오류와 구분한다. 최초 #342 취소 Run은 성공으로 오인하지 않는다.
+- React callback `openDelete`/`resetOutline`의 setDeleteRequest dependency를 명시하여 React Compiler 분석과 맞춘다. 잘못된 Memo URL/Renderer/G7 모드 안내는 effect 내부의 동기 setState 대신 렌더 시 계산한다. lint rule 비활성화·CI Skip/timeout 완화 금지.
+- [Codex P2 #4429501072](https://github.com/planner77/layoutManager/pull/176#discussion_r4429501072): 메모 링크 `다시 시도`가 Viewer `attempt`를 증가시키면 Browser-only GeneratedDocument·CAD 작업 차분·Undo/Redo가 별도 확인 없이 소실될 수 있다. 메모 상세·목록의 HTTP 재시도만 각각 `memoDetailRetry`/`memoListRetry`로 분리하고 Renderer/Canvas load epoch은 변경하지 않는다. 완료·Clipboard fallback에서 불필요한 retry button 노출 금지. OFF 세션 임시 메모·Canvas element 유지 Playwright 회귀 추가. 리뷰 답변 및 Resolved, 정확한 Run/커밋/테스트 상태는 [FailureLedger](out/FailureLedger.md).
+- 신규 CI 시작 전 최신 PR HEAD와 Main 뒤처짐/충돌·리뷰 스레드를 다시 확인한다. 결과는 새 Run의 실제 검증 전 NOT VERIFIED. PR 병합·GHCR·Issue 종료·운영 Auth/DB/현장 변경 금지.
+
+---
+
 ## #88/#90 M6/M7 구현 경계·검증 지침 (2026-10-31)
 
 - **순서:** #83·#84·#85·#86 선행 기능 완료 후 #88의 영속 메모 URL + 정확한 Version/SHA/권한/WCS 검증 포커스를 먼저 제공하고, #90의 홈 전체 도면 메모 검색을 같은 PR에서 연결한다.

@@ -1,3 +1,10 @@
+## PR #176 CI #343 correction and P2 review (2026-10-31)
+
+- First confirmed failed CI `41148144608`: Docker pass, Typecheck pass, ESLint 3 errors; downstream Test/Build/Browser skipped. It is not a Docker or DB migration failure. React hook manual memoization deps and effect-sync state errors repaired without disabling checks.
+- Codex P2 on memo retry described loss of transient CAD generated edit/Undo state. Request-specific `memoDetailRetry/memoListRetry` replaces Viewer `attempt` reload and retry only appears for eligible retrieval failures; synthetic OFF Canvas identity and session memo preservation case added to Playwright. Refer [FailureLedger](FailureLedger.md), [TestPlan](TestPlan.md); CI run on new HEAD remains NOT VERIFIED.
+
+---
+
 # Issues #88 → #90: 영속 메모 딥링크 및 도면 전체 검색 (2026-10-31)
 
 > 순서: M6 #88 → M7 #90. 선행 #83/#84/#85/#86 Main 완료. 작성 시점 검증 상태: 코드 커밋, 자동/현장 테스트 **NOT RUN**; GHCR/이슈 종료/운영 DB 변경 없음.

@@ -1,3 +1,11 @@
+## #88/#90 PR #176 ESLint + P2 회귀 테스트 확장 (2026-10-31)
+
+- `react-hooks/preserve-manual-memoization`: openDelete/resetOutline의 수동 deps에 실제 setDeleteRequest를 포함해 React Compiler mismatch 0; `react-hooks/set-state-in-effect`: deep-link invalid/renderer/unavailable 상태에서 effect 내 동기 setState 없이 메시지 파생, 복구 가능한 HTTP error는 async callback에서만 갱신한다.
+- M6-P2-E2E: 새 브라우저 OFF/임시 메모 상태에서 M6 직접 링크 오류 → `메모만 다시 조회`; 동일 WebGL Canvas 노드, 임시 메모 핀·최근 목록 유지. 새 Memo fetch 이외 source load epoch/GeneratedDocument/Undo/Redo 재설정 금지. 저장 상태가 없는 복사 성공/clipboard fallback에는 retry 버튼 없음. `src/tests/e2e/issues88-90-memo-search.spec.ts`에서 첫 절반 자동, 통합 G7 signed 추가 검증으로 후반 커버.
+- PR #176 최초 [CI #343](https://github.com/planner77/layoutManager/actions/runs/41148144608)는 Typecheck 성공, Lint 실패로 Unit/Integration/E2E/Build skipped. 다음 실행의 실제 결과 없이 전체 회귀 PASS 선언 금지.
+
+---
+
 ## #88/#90 M6/M7 test plan — 2026-10-31 (NOT RUN)
 
 - M6-U1 `src/tests/unit/viewer-link.test.ts`: strict UUIDv4, canonical three-dxf-viewer, secret-free URL, invalid memo IDs.

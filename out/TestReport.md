@@ -1,3 +1,11 @@
+## #88/#90 PR #176 — initial CI #343 실패 및 Code Review 보완 (2026-10-31)
+
+- [Run 41148144608 / PR CI #343](https://github.com/planner77/layoutManager/actions/runs/41148144608), source `8bf85699021ac587bb1595cd44bb27618f141d8b`: Docker Job `124378361245` SUCCESS(모든 이미지/마이그레이션/Greenfield Smoke 단계 완료); Verify Job `124378361508` FAILURE. `npm run typecheck` SUCCESS, `npm run lint` FAIL (React Compiler callback deps #414/#572 및 useEffect sync state #651). Unit/Integration, OCI stats, DXF benchmark, Next production build, Chromium/Runtime/Greenfield/Legacy E2E **SKIPPED**, not SUCCESS. 기타 lint warning 11건은 차단 원인 아님.
+- Codex inline P2 `4429501072`: retry on memo notice incorrectly advanced Viewer renderer `attempt`, disposing Browser-only generated history. Corrected with separate memo-only request counters, non-destructive rendering guard and only retryable failures showing a retry action. Manual memoization deps fixed and initial malformed-link notice derived without effect setter. Changes in commits `c783bf4e8ff51ff68f090be0059f9e88708c8709`, `166fdd52c585a50a025a04d3d1c0ab815bd27455`.
+- Added Playwright M6-P2 regression for retained WebGL canvas and session memo after retry. **Not executed** yet; new exact HEAD PR CI is required. No Main/GHCR/production acceptance.
+
+---
+
 ## #88/#90 M6/M7 initial implementation evidence — 2026-10-31
 
 - Feature source in branch `feat/issues-88-90-memo-link-search-20261031`: M6 UUID link/share/authenticated GET+focus and M7 Site-scoped SQL search/API/UI, documented in [Issues88-90](Issues88-90.md).
