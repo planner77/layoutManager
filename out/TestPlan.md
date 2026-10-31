@@ -1,3 +1,11 @@
+## PR #178 두 번째 TypeScript strict 실패 회귀 게이트 (2026-10-31)
+
+- 정확 [실패 Run 41170650410](https://github.com/planner77/layoutManager/actions/runs/41170650410)의 `TS7006`(6개 implicit any) / `TS2347`(`reduce<Affine2D>`)를 `src/domain/generated-document.ts`에서 재검증. 수정은 `Array.isArray`의 `unknown` shape check를 명시 타입 `readonly GeneratedRigidOperation[]`/`Affine2D` 계산과 분리하는 것으로, `noImplicitAny`/ESLint 무력화 또는 GitHub CI 검사 생략 금지.
+- 신규 E6 Unit 케이스: 비어 있지 않은 JSON v2 2개 및 Legacy v1 `local-1` 복원, forged operations를 `{broken:true}`로/transform을 문자열 좌표로 위조 시 `replaceFromImport` 전체 거부, 기존 객체·Undo/Redo 완전 불변. 기존 E2 100-step 이력, E4 Drag, E5 numerical/gesture/CCW, Source/Scope/Server gate 동일.
+- 최종 HEAD의 Typecheck → Lint → Unit/Integration → OCI/benchmark → Build → Chromium E2E와 Docker baseline/phase1/native/migration/Greenfield 전 게이트가 모두 필요. 아직 실행 전/최종 결과 확인 전 **NOT VERIFIED**.
+
+---
+
 ## PR #178 재검증 중점 — v2/v1 local-N ID와 JSX 파서 회귀 (2026-10-31)
 
 - 실패 Run `41170053430`: 먼저 `npm run typecheck`의 `viewer.tsx:2146` 조건부 JSX 문법 복구. Docker baseline Next build 동일 오류이므로 CI·Docker 게이트/Skip 수정 금지.

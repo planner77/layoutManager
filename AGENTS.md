@@ -1,3 +1,10 @@
+## PR #178 재실패 대응 가이드 — TypeScript strict readonly array 보존 (2026-10-31)
+
+- [Run 41170650410](https://github.com/planner77/layoutManager/actions/runs/41170650410) Verify `124447794463`/Docker `124447794161` 실패는 새로운 TS7006(6건)/TS2347(1건) 원인 하나다. `GeneratedDocument.replaceFromImport`에서 `readonly` typed array/tuple을 직접 `Array.isArray`로 검사하면 TypeScript narrowing이 `any[]`로 확장되어 Callback/Generic 타입 정보가 소실될 수 있다. 공격적 입력 검증은 `unknown` 변수에 대해 실행하고 연산은 명시적 `readonly GeneratedRigidOperation[]`, `Affine2D` 기준으로 수행한다.
+- Strict Typecheck·ESLint·Input validator·E2 Undo·E5 회전·E6 원자 복원/기존 JSON 호환은 완화하지 않는다. 실제 실패와 수정 [FailureLedger](out/FailureLedger.md), 회귀 [TestReport](out/TestReport.md) 참고. 이후 PR CI 결과를 성공으로 단정하지 않고 시작 사실과 실행 상태만 구분한다.
+
+---
+
 ## PR #178 E5/E6 CI 실패 및 리뷰 수정 기준 (2026-10-31)
 
 - [PR CI Run 41170053430](https://github.com/planner77/layoutManager/actions/runs/41170053430) Verify(124445860365) / Docker(124445860543) 모두 동일 `viewer.tsx:2146` JSX `}` 누락으로 최초 TS/Next Build 실패. ESLint/Unit/E2E/후속 Docker는 SKIPPED.

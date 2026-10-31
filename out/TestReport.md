@@ -1,3 +1,11 @@
+## PR #178 두 번째 실패 Run 41170650410 / strict readonly TypeScript 복구 (2026-10-31)
+
+- 관측: 정확 HEAD `a0b30f3cf710466f8a43449dfe05787becb16910`, [PR CI Run 41170650410](https://github.com/planner77/layoutManager/actions/runs/41170650410) `completed/failure`. Verify Job `124447794463`에서 `generated-document.ts` TS7006 6개 콜백 implicit any + TS2347 1개, Docker Job `124447794161`의 baseline Next Build도 동일 첫 TS7006로 실패. npm ci/Prisma/Compose 사전 합성 검사 등 앞선 단계 SUCCESS; Lint/Unit/Build(E2E)/Docker 후속 smoke는 SKIPPED.
+- 원인: `readonly` tuple/array에 직접 `Array.isArray`를 적용한 후 `reduce/map/every`의 타입이 `any[]`로 축소/확장되는 TS narrowing. 보완: 별도의 `unknown` 변수에서 런타임 모양·유한성 검사, 후속 합성에는 원래의 `readonly GeneratedRigidOperation[]`와 `Affine2D` typed reference 유지 (commit `608a5007`).
+- `generated-transfer.test.ts`에 JS boundary 위조 `transformOperations` 및 유한하지 않은 transform 타입 주입 시 기존 Document/Undo 무변경 회귀를 추가 (commit `e52ed194`). 기존 v2 roundtrip/legacy v1 및 E5 회전 회귀는 유지; 테스트 실행 여부는 신규 CI 이전 모두 NOT RUN. CI 성공, 실 DXF/GPU, Docker runtime 검증은 새 결과 확인 전 **NOT VERIFIED**. 상세 [FailureLedger](FailureLedger.md).
+
+---
+
 ## PR #178 — 첫 PR CI 실패와 수정 후보 검증 기록 (2026-10-31)
 
 - 실행 증거: [PR CI 41170053430](https://github.com/planner77/layoutManager/actions/runs/41170053430) HEAD `a5bbcf7a57f9a96b9cae236089e2709e1e47418c`, Verify Job `124445860365` **TypeScript TS1005 FAIL** (`viewer.tsx:2146`), Docker Job `124445860543` **Next build Syntax FAIL** (동일 JSX). ESLint/Unit/Integration/Chromium/E2E·후속 Docker는 전부 SKIPPED, 새 E5/E6 회귀 테스트의 실행/통과 근거는 없음.

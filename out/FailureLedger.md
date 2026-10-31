@@ -1,3 +1,22 @@
+## PR #178 / #55+#56 — 두 번째 PR CI 실패: readonly array narrowing / strict TypeScript (2026-10-31 KST)
+
+### 관측된 Run·Job와 선행 Run 구별
+- [PR CI Run 41170650410](https://github.com/planner77/layoutManager/actions/runs/41170650410) 정확 HEAD `a0b30f3cf710466f8a43449dfe05787becb16910`, **completed/failure**. 이전 [Run 41170053430](https://github.com/planner77/layoutManager/actions/runs/41170053430)의 JSX 파서/Local-ID P1 실패 후 재실행이며, 최초 실패 이력은 삭제하거나 PASS로 바꾸지 않는다.
+- Verify Job [124447794463](https://github.com/planner77/layoutManager/actions/runs/41170650410/job/124447794463): checkout·Node22·npm ci·Prisma generate SUCCESS, `npm run typecheck` FAILURE (`src/domain/generated-document.ts`). `TS7006` implicit any: line 419 `n`, line 423 `current`/`operation`, line 424 `n`/`i`, line 439 `operation`; `TS2347` line 422 `reduce<Affine2D>` untyped function. ESLint, Unit/Integration, OCI unit, DXF benchmark, Production Build, Chromium E2E, G7/Greenfield/Legacy migration E2E 전부 **SKIPPED / NOT VERIFIED**.
+- Docker Job [124447794161](https://github.com/planner77/layoutManager/actions/runs/41170650410/job/124447794161): Compose 이미징·Python audit syntax 및 합성 테스트 SUCCESS. `Build pre-change baseline (same source, original Dockerfile)` Next.js Production Build가 동일 `generated-document.ts:419:33` TypeScript implicit any로 FAILURE; 이후 image-size·OCI/native/SQLite/migration/Greenfield smoke는 **SKIPPED**. 별도의 Docker/DB/Registry 장애로 분류하지 않는다.
+
+### 직접 원인 및 보완
+- `GeneratedRestoreEntry.transformOperations`은 `readonly GeneratedRigidOperation[]`, `transform`은 `Affine2D` readonly tuple이다. 원래 구현에서 `Array.isArray(input.transformOperations)` 및 `Array.isArray(input.transform)`을 직접 적용하며 타입 흐름이 `any[]`로 확장되어, 뒤따른 `every`, `reduce<Affine2D>`, `some`, `map`의 콜백 타입 추론이 소실되었다. JSX는 이번 실행에서 파싱을 통과했으며 이 TypeScript 문제와 구분한다.
+- 수정 코드 [`608a5007`](https://github.com/planner77/layoutManager/commit/608a5007732f0df67a4ae69544cd268c936d93a9): 공격적 런타임 입력의 `Array.isArray` 검증은 별도의 `unknown` 변수 `untrustedOperations/untrustedTransform`에서 실시하고, 행렬 합성·연산 재구성에는 명시적 `readonly GeneratedRigidOperation[]`/`Affine2D` typed reference를 사용. `every((n:unknown)...)`는 유한한 숫자·6요소 검사 후 진행. Source/UUID/Version/SHA/Geometry, history/atomicity/64→4096 JSON 제한 및 기존 E2 Undo 100-step 계약은 완화하지 않는다.
+- 추가 단위 회귀 [`e52ed194`](https://github.com/planner77/layoutManager/commit/e52ed1945c3f5c112f9eac9ac98de194dfc54cea): `generated-transfer.test.ts`에서 명백히 비정상인 `transformOperations` 객체·비수치 행렬을 untyped boundary로 주입한 경우, `replaceFromImport`가 전체 거부하고 기존 Document/Undo 이력이 그대로인지 검증하도록 보강. 기존 v2 2개 복원 및 v1 `local-1` Legacy 회귀는 유지.
+- 로컬 프로젝트 `npm ci`/전체 Typecheck/Lint/Unit/Build/Chromium/Docker는 이 세션에서 **실행하지 않음**. 독립 TypeScript 5.8 strict 최소 재현 스니펫만 작성해 배열 런타임 검사·명시 타입 분리 컴파일 성공 확인했으나 실제 프로젝트 성공으로 간주하지 않는다. 결과는 신규 PR CI에서 판정한다.
+
+### PR 리뷰/충돌 및 후속 게이트
+- 직전 리뷰 원문 [Codex P1 #4430584078](https://github.com/planner77/layoutManager/pull/178#discussion_r4430584078)은 `local-N` 정규식, [답변 #4430599150](https://github.com/planner77/layoutManager/pull/178#discussion_r4430599150) 및 Resolved. 이번 Run 실패는 새로운 Review P1이 아닌 동일 파일의 TypeScript strict 컴파일 오류이며 리뷰/충돌 상태는 최신 HEAD에서 다시 검사할 것.
+- 실패 원장·실제 CI 단계 관찰을 보존하고, Main 뒤처짐·PR mergeable·신규 미해결 리뷰 스레드를 확인한 뒤 정확한 최종 HEAD의 PR CI를 시작한다. Owner 요청으로 **CI 완료 모니터링은 생략**, 수정 후 Typecheck/Unit/GPU/실자료/OCI 검증 결과는 새 Run 완료 전 **NOT VERIFIED**. 병합·GHCR 게시·Issue #55/#56 종료 및 운영 데이터/권한 변경 없음.
+
+---
+
 ## PR #178 — P1 스레드 해결 및 Main 충돌 재점검, 재시작 CI 인계 (2026-10-31 KST)
 
 - 첫 Run `41170053430`의 공통 JSX TS1005/Next Build 실패 원인과 Code Review P1 Local-ID Regex 문제를 코드 커밋 [`b61b729f`](https://github.com/planner77/layoutManager/commit/b61b729f3abe79e6dd9f7c67ac5f39e995c8106b)로 보완. `GeneratedDocument.replaceFromImport`에 실제 `\d` digit escape가 적용됨을 HEAD 재조회하여 확인; `viewer.tsx`의 조건 JSX 닫기와 `ChangeEvent` 타입 지정도 소스 재조회 확인. 이전 CI 결과는 계속 FAILURE로 보존.
