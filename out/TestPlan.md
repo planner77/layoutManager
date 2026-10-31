@@ -1,3 +1,14 @@
+## R1 PR180 CI 재작업 — baseline logger closure의 엄격한 멱등성 (2026-10-31, 구현 전)
+
+TC-LOG-MIG-003은 실제 `.github/workflows/pr-ci.yml`의 embedded Python을 추출하여 일회용 baseline Dockerfile에 실행한다. 현재 PR base가 이미 logger/store 의존성을 포함하면 실패시키지 않고 원본 bytes를 그대로 보존해야 한다. 과거 baseline에 없을 때만 migrator 내부 logger COPY 바로 뒤에 필요한 store COPY 한 줄을 추가한다.
+
+- AC-CI-1: logger anchor는 전체 파일에 정확1개이며 **migrator stage 내부**여야 한다. migrator stage는 유일해야 한다. missing/duplicate anchor 또는 다른 stage anchor는 실패하고 파일을 바꾸지 않는다.
+- AC-CI-2: dependency가0개일 때만 유효 migrator anchor에 한 줄 삽입한다. dependency가1개이고 같은 migrator 내부이면 byte-identical no-op이다. 전체 dependency가2개 이상이거나 다른 stage에만 존재하면 실패한다. 모호한 dependency 경로/COPY 변형은 임의 허용 대신 fail-closed로 처리한다.
+- AC-CI-3: legacy missing→추가 성공→동일파일 재실행 no-op; current existing→byte-identical no-op; duplicate dependency/anchor, missing anchor, wrong-stage dependency/anchor를 실제 subprocess exit와 파일 bytes로 검증한다. 문자열 존재 확인만으로 실행 증거를 대신하지 않는다.
+- AC-CI-4: 변경은 CI 비교용 temporary Dockerfile만 대상이며 git의 original Dockerfile·앱 코드·실 볼륨을 변경하지 않는다. 기존 baseline/App/Migrator build, import smoke, image-size 비교, native DB·migration 검증을 삭제/skip하지 않는다.
+
+기존 TC-LOG-MIG-001/002와 관련 standalone 테스트·lint/typecheck를 실행한다. 수정 HEAD의 Docker CI 및 Verify CI 실제 결과는 별도 기록하며 로컬 fixture 통과로 Docker image PASS를 주장하지 않는다. R1 실패 원인 해결/검증 전 R2 구현은 보류한다.
+
 ## R1 #60/#61/#62 — 구현 전 AC/TC (2026-10-31)
 
 | TC | 요구사항 / 수용 기준 | 검증 |

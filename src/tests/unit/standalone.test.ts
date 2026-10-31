@@ -2,6 +2,7 @@ import { expect, test } from 'vitest';
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { spawnSync, type SpawnSyncReturns } from 'node:child_process';
 import { prepareStandaloneAssets, standalonePort } from '../../scripts/standalone.mjs';
 
 test('TC-IMAGE-001: standalone start accepts the existing --port contract', () => {
@@ -195,4 +196,62 @@ test('TC-LOG-MIG-002: CI baseline migrator packages the PR-source logger depende
   expect(baseline).toContain('source.count(anchor) != 1');
   expect(baseline).toContain('COPY --from=builder /app/src/server/logging/store.ts ./server/logging/store.ts');
   expect(baseline).toContain('docker buildx build --load --platform linux/amd64 --target migrator');
+});
+
+function baselineShim() {
+  const workflow = readFileSync(path.resolve(process.cwd(), '../.github/workflows/pr-ci.yml'), 'utf8');
+  const section = workflow.split('      - name: Build pre-change baseline (same source, original Dockerfile)\n')[1]
+    ?.split('\n      - name: ')[0] ?? '';
+  const match = section.match(/<<'PY'\n([\s\S]*?)\n {10}PY/);
+  if (!match) throw new Error('Baseline Python preparation not found');
+  return match[1].split('\n').map(line => line.slice(10)).join('\n');
+}
+const loggerCopy = 'COPY --from=builder /app/src/server/logger.ts ./server/logger.ts\n';
+const storeCopy = 'COPY --from=builder /app/src/server/logging/store.ts ./server/logging/store.ts\n';
+function runBaselineShim(source: string, check: (result: SpawnSyncReturns<string>, file: string) => void) {
+  const root = mkdtempSync(path.join(tmpdir(), 'baseline-logger-closure-'));
+  const file = path.join(root, 'Dockerfile');
+  try {
+    writeFileSync(file, source);
+    const result = spawnSync('python3', ['-', file], { input: baselineShim(), encoding: 'utf8' });
+    check(result, file);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+}
+test('TC-LOG-MIG-003: current baseline is unchanged and legacy insertion is idempotent', () => {
+  const current = readFileSync(path.resolve(process.cwd(), 'Dockerfile'), 'utf8');
+  runBaselineShim(current, (result, file) => {
+    expect(result.status, String(result.stderr)).toBe(0);
+    expect(readFileSync(file, 'utf8')).toBe(current);
+  });
+  const legacy = current.replace(storeCopy, '');
+  runBaselineShim(legacy, (result, file) => {
+    expect(result.status, String(result.stderr)).toBe(0);
+    const expected = legacy.replace(loggerCopy, loggerCopy + storeCopy);
+    expect(readFileSync(file, 'utf8')).toBe(expected);
+    const repeated = spawnSync('python3', ['-', file], { input: baselineShim(), encoding: 'utf8' });
+    expect(repeated.status, String(repeated.stderr)).toBe(0);
+    expect(readFileSync(file, 'utf8')).toBe(expected);
+  });
+});
+test.each([
+  ['missing anchor', (source: string) => source.replace(loggerCopy, '')],
+  ['duplicate anchor', (source: string) => source.replace(loggerCopy, loggerCopy + loggerCopy)],
+  ['duplicate dependency', (source: string) => source.replace(storeCopy, storeCopy + storeCopy)],
+  ['wrong-stage anchor', (source: string) => source.replace(loggerCopy, '') + '\n' + loggerCopy],
+  ['wrong-stage dependency', (source: string) => source.replace(storeCopy, '') + '\n' + storeCopy],
+  ['duplicate migrator stage', (source: string) => source + '\nFROM runtime-base AS migrator\n'],
+  ['noncanonical dependency', (source: string) => source.replace(storeCopy, storeCopy.trimEnd() + ' # alternate\n')],
+  ['uppercase duplicate migrator', (source: string) => source + '\nFROM runtime-base AS MIGRATOR\n'],
+  ['lowercase stage boundary', (source: string) => source.replace(storeCopy, '').replace('\nFROM runtime-base AS runtime', '\nfrom runtime-base AS runtime') + '\n' + storeCopy],
+  ['indented stage boundary', (source: string) => source.replace(storeCopy, '').replace('\nFROM runtime-base AS runtime', '\n  FROM runtime-base AS runtime') + '\n' + storeCopy],
+  ['commented fake anchor', (source: string) => source.replace(loggerCopy, '# ' + loggerCopy)],
+  ['lowercase dependency COPY', (source: string) => source.replace(storeCopy, storeCopy.replace('COPY ', 'copy '))],
+  ['indented dependency COPY', (source: string) => source.replace(storeCopy, '  ' + storeCopy)],
+] as const)('TC-LOG-MIG-003: %s is rejected without changing the baseline', (_, malformed) => {
+  const current = readFileSync(path.resolve(process.cwd(), 'Dockerfile'), 'utf8');
+  const source = malformed(current);
+  runBaselineShim(source, (result, file) => {
+    expect(result.status).not.toBe(0);
+    expect(readFileSync(file, 'utf8')).toBe(source);
+  });
 });

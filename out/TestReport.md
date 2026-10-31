@@ -1,3 +1,11 @@
+## PR #180 R1 CI repair — embedded baseline migrator shim fixtures (2026-10-31)
+
+- Antecedent: Docker Job `124564000864` in [Run 41210398076](https://github.com/planner77/layoutManager/actions/runs/41210398076) failed at baseline preparation with `Baseline logger package manifest differs from expected source`; downstream Docker build, smoke and size checks were SKIPPED, not passed. Details and original run state remain in [FailureLedger](FailureLedger.md).
+- Follow-up observation: Verify Job `124564000973` completed SUCCESS; Docker Job failure keeps the original Run unsuccessful.
+- Independent QA: `npx vitest run tests/unit/standalone.test.ts` — **1 file / 24 tests PASS**, including TC-LOG-MIG-003 actual execution of the embedded Python against temporary baseline fixtures: missing dependency inserts exactly one migrator COPY; existing dependency is byte-identical no-op and second execution remains unchanged; duplicate/missing/malformed/wrong-stage anchors or dependencies and ambiguous migrator stages are rejected without mutating the fixture. The warning `Digest-pinned GHCR_IMAGE requires GHCR_MIGRATION_IMAGE explicitly` is from an existing negative-input test; Vitest exited 0.
+- Workflow diff review: only the baseline Dockerfile preparation heredoc changed (29 additions/5 removals) plus tests. It validates a unique migrator stage and exact anchor/dependency placement; the subsequent baseline/phase1/runtime/migrator Docker builds, size measurement, image audits and smoke steps remain present and unchanged. `git diff --check` PASS.
+- This is fixture and static workflow-contract evidence only. It does **not** show the actual Docker job or image/migrator build passing. The new PR CI retry result is pending/not verified; no publish/deploy/Issue operation was performed.
+
 ## U-R1-20261031 — #60/#61/#62 로컬 코드 수용 (0.49.0 후보)
 
 - 기준: Main `9016feb` 기반 `feat/remaining-issues-20261031`의 이 보고서를 포함한 후보 tree. 원본 작업 폴더의 Compose/next-env 미커밋 2건은 보존했다. 잔여18개 이슈의 PR 묶음/순서는 Decisions의 2026-10-31 실행 표가 단일 기준이다. 다음은 R2 #65이며 전체 목표 완료는 아니다.

@@ -1,3 +1,10 @@
+## PR180 / R1 — 이미 포함된 baseline logger 의존성에 대한 CI shim 거절 (2026-10-31)
+
+- 실제 관측: [Run41210398076](https://github.com/planner77/layoutManager/actions/runs/41210398076)의 Docker Job124564000864가 baseline build 준비 단계에서 `Baseline logger package manifest differs from expected source`로 실패했다. 뒤쪽 Docker build/smoke/size 검증은 SKIPPED이며 PASS가 아니다. Verify Job124564000973의 Typecheck/Lint/Unit/Build는 Root 조회 시 성공했고 E2E는 당시 진행 중이었다. 후속 실제 재조회에서 Verify Job124564000973은 최종 SUCCESS였다(Typecheck/Lint/Unit/Build/E2E와 G7/Greenfield/Legacy 순서 모두 포함). Docker 실패가 있어 전체 Run을 PASS로 바꾸지 않는다.
+- 원인: 이전 #59 보완 inline Python이 `source.count(anchor) != 1 or dependency in source`를 모두 오류로 처리한다. 최신 base9016feb에는 PR179에서 store COPY가 이미 포함되어 있어 올바른 기존 manifest가 거절된다. 실제 새 runtime 코드의 파일 누락과 구분한다.
+- Manager 설계: dependency0이면 migrator 내부 유일 logger anchor에만 추가, dependency1이면 같은 migrator 내부인지 검사 후 byte-identical no-op, duplicate/missing anchor/wrong stage는 거절. 실제 embedded Python 실행 TC-LOG-MIG-003으로 legacy/current/error 사례를 확인한다. 기존 Docker build/smoke/크기·복구 gate는 유지한다.
+- 재작업: Developer가 엄격한 멱등성과 stage/COPY 경계 검사를 구현했고 Root·독립 QA가 실제 embedded Python을 실행하는 standalone24/24 PASS, Typecheck·집중 ESLint·diff check PASS를 확인했다. 변경은 heredoc·테스트·문서뿐이며 앱/Dockerfile/운영 데이터는 불변이다. 새 HEAD 실제 Docker 결과는 NOT VERIFIED. 다음 R2 구현은 R1 재작업 gate를 먼저 처리한다. 기존 실패 기록을 성공으로 덮어쓰지 않는다.
+
 ## R1 최종 실패 해소 및 Proxy HTTP 보완 (2026-10-31)
 
 - 통제 시계 전체 중간 실행112파일/731건은 **729 PASS/2 FAIL**: 이미 QA가 보완한 Date.now wrapper 재귀 시험의 구 snapshot과 기존 S3 operational Auth의 실 시계401/403 불일치. 후자는 동일 monotonic test clock을 해당 fixture 파일에만 적용·복원했다. 이후 동결 전체 Vitest **112파일/731 PASS**, 215.62초(`/tmp/layoutmanager-r1-final-all-tests.log`). 과거 실패는 보존한다.
