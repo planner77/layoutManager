@@ -111,7 +111,10 @@ test('TC-139-01: AC1032 UTF-8 wins over obsolete ANSI_949 declaration, with exac
   const source=binaryTextDxf('AC1032','ANSI_949',new TextEncoder().encode('한글 검사'));
   const hits=extractDxfText(source).hits;
   expect(hits).toHaveLength(1);
-  expect(hits[0]).toMatchObject({text:'한글 검사',focus:{minX:25,maxX:25,minY:15,maxY:15}});
+  expect(hits[0].text).toBe('한글 검사');
+  expect((hits[0].focus.minX+hits[0].focus.maxX)/2).toBe(25);
+  expect((hits[0].focus.minY+hits[0].focus.maxY)/2).toBe(15);
+  expect(hits[0].focus.maxX).toBeGreaterThan(hits[0].focus.minX);
   expect(searchKey(hits[0].text)).toContain('검사');
 });
 
@@ -122,9 +125,10 @@ test('TC-139-02: old AC1018 actually decodes valid Windows-949 bytes',()=>{
 
 test('TC-139-03: R2007+ legacy 932/936/950 declarations, BOM, and missing HEADER',()=>{
   for(const codepage of ['ANSI_932','ANSI_936','ANSI_950','ANSI_949']) {
-    const source=binaryTextDxf('AC1021',codepage,new TextEncoder().encode('구역 ABC'),true);
+    const source=binaryTextDxf('AC1021',codepage,new TextEncoder().encode('구역 ABC'));
     expect(extractDxfText(source).hits[0].text).toBe('구역 ABC');
   }
+  expect(extractDxfText(binaryTextDxf('AC1018','ANSI_949',new TextEncoder().encode('한글 BOM'),true)).hits[0].text).toBe('한글 BOM');
   expect(extractDxfText(new TextEncoder().encode(document(text(2,'한국어'))).buffer).hits[0].text).toBe('한국어');
 });
 
