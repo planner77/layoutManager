@@ -122,7 +122,10 @@ export function CadViewer({
   const [memoDeleteArmed, setMemoDeleteArmed] = useState(false);
   const [memoServerMode,setMemoServerMode]=useState<MemoServerMode>('checking');
   const memoDeepLinkApplied=useRef<string|null>(null);
-  const [memoLinkNotice,setMemoLinkNotice]=useState<string|null>(null);
+  const [memoLinkNotice,setMemoLinkNotice]=useState<{message:string;retryable:boolean}|null>(null);
+  // Memo HTTP retries must not advance the CAD source/renderer 'attempt' epoch.
+  const [memoDetailRetry,setMemoDetailRetry]=useState(0);
+  const [memoListRetry,setMemoListRetry]=useState(0);
   const [memoBusy,setMemoBusy]=useState(false);
   const memoSavingRef=useRef(false);
   const getViewEpoch = useCallback(() => viewEpoch.current, []);
@@ -260,7 +263,7 @@ export function CadViewer({
       setMemoError(error instanceof Error?error.message:'메모 목록을 읽지 못했습니다.');
     });
     return ()=>controller.abort();
-  },[versionId,sourceSha256,renderer,format,attempt]);
+  },[versionId,sourceSha256,renderer,format,attempt,memoListRetry]);
 
   const [layers, setLayers] = useState<string[]>([]);
   const [selectedLayers, setSelectedLayers] = useState<Set<string>>(() => new Set());
@@ -436,7 +439,7 @@ export function CadViewer({
       setDeleteError(error instanceof Error?error.message:'삭제 대상을 확인하지 못했습니다.');
       setContextMenu(null);
     }
-  },[renderer,format,state.ready,canvasMode,versionId,sourceSha256]);
+  },[renderer,format,state.ready,canvasMode,versionId,sourceSha256,setDeleteRequest]);
   const confirmDelete = useCallback(() => {
     if(!deleteRequest)return;
     try {
@@ -586,7 +589,7 @@ export function CadViewer({
     setSelectedOutlineTypeId('');
     setOutlineName('');
     setOutlineNotice(null);
-  }, [stopOutlineEditing]);
+  }, [stopOutlineEditing,setDeleteRequest]);
   /** One transition for new-memo placement, existing pin press, and recent-list selection.
    * Cancel outline Worker before clearing Source selection, so stale previews cannot restart.
    * Do not call this from render or synthesize an authorization/DB update. */
@@ -643,25 +646,22 @@ export function CadViewer({
       minY:m.anchorWcsXY.y-3,maxY:m.anchorWcsXY.y+3}))
       setMemoTreeError('메모 WCS로 이동할 수 없습니다.');
   };
-  // #88: revalidate the exact memo through the authenticated per-Version GET.
-  // G7 scope, deleted status and revocation are checked at request time; no
-  // local/session memo may be promoted into a shareable link.
+  // Render the link input/capability errors directly, without synchronously
+  // setting React state in an effect. A copy success is not a retryable error.
+  const memoLinkGateNotice = memoLinkInvalid
+    ? '메모 링크 형식이 올바르지 않습니다. 일반 도면 보기만 가능합니다.'
+    : requestedMemoId && (format!=='DXF'||renderer!=='three-dxf-viewer')
+      ? '이 렌더러에서는 메모 위치 이동을 지원하지 않습니다. three-dxf-viewer로 열어주세요.'
+      : requestedMemoId && (memoServerMode==='off'||memoServerMode==='unavailable')
+        ? '영속 메모를 조회할 수 없습니다. 로그인 및 메모 읽기 권한을 확인하세요.'
+        : null;
+  // #88: revalidate exact memo through the server-side G7 Permission check,
+  // only after the same Version/SHA renderer has finished loading.
   useEffect(()=>{
-    if(!requestedMemoId){
-      if(memoLinkInvalid)setMemoLinkNotice('메모 링크 형식이 올바르지 않습니다. 일반 도면 보기만 가능합니다.');
-      return;
-    }
-    const key=[versionId,sourceSha256,renderer,attempt,requestedMemoId].join(':');
+    if(!requestedMemoId||format!=='DXF'||renderer!=='three-dxf-viewer'||
+       memoServerMode!=='active'||loading||!state.ready)return;
+    const key=[versionId,sourceSha256,renderer,attempt,requestedMemoId,memoDetailRetry].join(':');
     if(memoDeepLinkApplied.current===key)return;
-    if(format!=='DXF'||renderer!=='three-dxf-viewer'){
-      setMemoLinkNotice('이 렌더러에서는 메모 위치 이동을 지원하지 않습니다. three-dxf-viewer로 열어주세요.');
-      return;
-    }
-    if(memoServerMode==='off'||memoServerMode==='unavailable'){
-      setMemoLinkNotice('영속 메모를 조회할 수 없습니다. 로그인 및 메모 읽기 권한을 확인하세요.');
-      return;
-    }
-    if(loading||!state.ready||memoServerMode!=='active')return;
     const controller=new AbortController();
     const url='/api/cad-files/'+encodeURIComponent(versionId)+'/memos/'+encodeURIComponent(requestedMemoId);
     void fetch(url,{credentials:'same-origin',cache:'no-store',signal:controller.signal}).then(async response=>{
@@ -679,7 +679,8 @@ export function CadViewer({
         throw new Error('연결된 메모 앵커가 손상되어 자동 위치 이동을 중단했습니다.');
       const point=assertMemoWcsXY(item.anchorWcsXY);
       const doc=memoSession.current;
-      if(!doc?.matches({versionId,sourceSha256}))throw new Error('다른 도면의 메모를 표시할 수 없습니다.');
+      if(!doc?.matches({versionId,sourceSha256}))
+        throw new Error('다른 도면의 메모를 표시할 수 없습니다.');
       doc.acceptPersisted(item,{versionId,sourceSha256});
       if(!manager.current?.focusBounds({minX:point.x-3,maxX:point.x+3,
         minY:point.y-3,maxY:point.y+3}))
@@ -690,14 +691,16 @@ export function CadViewer({
       setMemoTransientFocusId((!memoAllVisible||item.visible===false||
         !isMemoVisible(memoTree,item.id))?item.id:null);
       if(!appState.memoTreeOpen)dispatchApp({type:'toggle-memo-tree',exclusive:isCompact});
-      setMemoLinkNotice('공유된 메모 위치로 이동했습니다. 숨김 상태는 서버에 변경하지 않았습니다.');
+      setMemoLinkNotice({message:'공유된 메모 위치로 이동했습니다. 숨김 상태는 서버에 변경하지 않았습니다.',
+        retryable:false});
     }).catch(error=>{
       if(controller.signal.aborted)return;
-      setMemoLinkNotice(error instanceof Error?error.message:'메모 위치 이동에 실패했습니다.');
+      setMemoLinkNotice({message:error instanceof Error?error.message:'메모 위치 이동에 실패했습니다.',
+        retryable:true});
     });
     return ()=>controller.abort();
-  },[requestedMemoId,memoLinkInvalid,versionId,sourceSha256,renderer,format,
-    attempt,memoServerMode,loading,state.ready,selectMemo,memoAllVisible,memoTree,
+  },[requestedMemoId,versionId,sourceSha256,renderer,format,attempt,memoDetailRetry,
+    memoServerMode,loading,state.ready,selectMemo,memoAllVisible,memoTree,
     appState.memoTreeOpen,isCompact]);
 
   function copyMemoLink(id:string){
@@ -707,15 +710,15 @@ export function CadViewer({
     const url=cadMemoViewerUrl(window.location.origin,versionId,item.id);
     if(!navigator.clipboard?.writeText){
       setLinkFallbackUrl({renderer,url});
-      setMemoLinkNotice('클립보드를 사용할 수 없습니다. 아래 메모 링크를 직접 복사하세요.');
+      setMemoLinkNotice({message:'클립보드를 사용할 수 없습니다. 아래 메모 링크를 직접 복사하세요.',retryable:false});
       return;
     }
     void navigator.clipboard.writeText(url).then(()=>{
       setLinkFallbackUrl(null);
-      setMemoLinkNotice('메모 링크를 복사했습니다.');
+      setMemoLinkNotice({message:'메모 링크를 복사했습니다.',retryable:false});
     }).catch(()=>{
       setLinkFallbackUrl({renderer,url});
-      setMemoLinkNotice('메모 링크를 복사하지 못했습니다. 아래 링크를 직접 복사하세요.');
+      setMemoLinkNotice({message:'메모 링크를 복사하지 못했습니다. 아래 링크를 직접 복사하세요.',retryable:false});
     });
   }
   async function changeMemoMeta(id:string,update:{groupId?:string|null;visible?:boolean;settings?:MemoSettingsInput}){
@@ -1968,7 +1971,16 @@ export function CadViewer({
       status={
         <>
           {memoServerMode==='unavailable'&&<p role="alert" className="text-xs text-red-800">메모 서버에 연결할 수 없어 메모 변경을 차단했습니다. {memoError}</p>}
-          {memoLinkNotice&&<p data-testid="memo-link-notice" role="status" className="text-xs text-amber-700">{memoLinkNotice} <button type="button" className="underline" onClick={()=>setAttempt(n=>n+1)}>다시 시도</button></p>}
+          {(memoLinkGateNotice||memoLinkNotice)&&<p data-testid="memo-link-notice" role="status" className="text-xs text-amber-700">
+            {memoLinkGateNotice??memoLinkNotice?.message}
+            {requestedMemoId&&(memoLinkGateNotice?.includes('로그인 및')||(!memoLinkGateNotice&&memoLinkNotice?.retryable))&&
+              <button type="button" className="ml-2 underline" data-testid="memo-link-retry"
+                onClick={()=>{
+                  setMemoLinkNotice(null);
+                  if(memoServerMode==='unavailable')setMemoListRetry(n=>n+1);
+                  else setMemoDetailRetry(n=>n+1);
+                }}>메모만 다시 조회</button>}
+          </p>}
           <div className="flex flex-wrap items-center gap-x-2"><p role="status" className="text-xs text-slate-700">{state.status}</p><span data-testid="viewer-active-renderer" className="text-xs text-slate-600">{renderer}</span></div>
           {state.warning && <p className="text-xs text-amber-800" data-testid="viewer-coverage">{state.warning}</p>}
           {linkFallbackUrl?.renderer===renderer && <label className="block text-xs">{linkFallbackUrl.url.includes('&memo=')?'메모 링크':'현재 Viewer 링크'}<input readOnly aria-label={linkFallbackUrl.url.includes('&memo=')?'복사할 메모 링크':'복사할 Viewer 주소'} value={linkFallbackUrl.url} onFocus={event=>event.currentTarget.select()} /> <a className="underline" href={linkFallbackUrl.url} target="_blank" rel="noopener noreferrer">링크 열기</a></label>}
