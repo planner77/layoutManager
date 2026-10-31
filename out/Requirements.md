@@ -1,17 +1,17 @@
-## R5b #91 — 보이는 메모 내보내기 계약 (설계만, 2026-11-01)
+## R5b #91 — 보이는 메모 내보내기 계약 (0.54 로컬 코드·합성 수용, 2026-11-01)
 
-R5a0.53의 Browser/전체 gate·게시 이후 별도 stacked branch의0.54.0에서 진행한다. 현재 구현/시험은 NOT RUN이다. R5a의 공개 Source/local Generated 정책, 원본 baseline·단위·부분 산출·single-job·인가 재검사는 유지한다.
+R5a0.53의 Browser/전체 gate·게시 이후 별도 stacked branch의0.54.0에서 진행한다. R5a Draft PR184 게시 이후 Architecture bridge로 구현했고 R5b의 최종 코드·합성 범위를 로컬 수용했다. 실제 실행 범위와 현장/Owner 잔여는 TestReport 최상단을 따른다. R5a의 공개 Source/local Generated 정책, 원본 baseline·단위·부분 산출·single-job·인가 재검사는 유지한다.
 
 - **R5B-REQ1 선택:** 메모는 기본 OFF이며 DXF/Generated와 독립적으로 전체/명시 선택한다. 브라우저 메모와 서버 메모는 namespace로 구분한다. 화면의 그룹 숨김·일괄 숨김과 명시 export 포함은 독립이다. 삭제·편집 중 Preview·저장 불확실 항목은 포함하지 않는다. Memo-only와 DXF+Generated+Memo 조합을 지원한다.
 - **R5B-REQ2 출처/인가:** 서버 메모 opt-in 시에만 현재 actor 전후 증명과 fresh 보호된 Memo GET을 실행한다. 같은 GET 응답의 actorId/Version/SHA/Scene envelope가 실제 조회 actor와 scope를 증명해야 하며 A→B→A도 거절한다. 기존 목록 필드는 호환 유지하고 새 route/쓰기 권한은 추가하지 않는다. 각 row의 Version/SHA/UUID/revision·논리삭제·bounded100 목록을 검사하고 최종 download 직전 같은 선택 row와 actor를 다시 확인한다. 실패 시 이전 서버 제목/본문/개수/preview를 제거하고 전송을 막는다. 안정된 Site403으로 그룹이 제거되면 unavailable server 선택 key도 제거해 공개 local-only로 복구할 수 있게 하며, 생존 local 선택은 유지하고 기존 부분 동의는 무효화한다. 공개 Source/local-only에는 Memo 권한을 요구하지 않는다. 기존 local 메모가 없는 ACTIVE/익명 상태에서 가짜 local Memo fallback을 생성하지 않는다.
 - **R5B-REQ3 표시 좌표:** 서버 canonical anchor 또는 같은 Memo revision의 현재 Viewer SESSION projection을 사용한다. projection에는 버전·SHA·Viewer generation·Memo revision·target 상태를 함께 캡처하고 fresh row와 일치해야 한다. stale revision/projection을 새 revision으로 재라벨하지 않는다. BROKEN은 마지막 WCS와 경고를 내보내며 현재 선택의 부분 산출 동의를 요구하고 새 대상에 자동 연결하지 않는다. 임시 target ID/localAnchor 관계를 서버 영속 참조로 내보내지 않는다.
-- **R5B-REQ4 실제 텍스트:** bundled NanumGothic으로 제목·전체 본문·줄바꿈을 PNG texture plane에 그려 일반 GLTFLoader에서 실제 보여야 한다. anchor pin+leader가 같은 WCS에서 표시된다. extras-only 또는 일부 문자를 자른 성공은 불가다. 글자 높이는 미터로 명시하며 화면 CSS labelOffset을 사용하지 않고 고정 WCS offset으로 배치하며, 화면 라벨과 다른 교환용 배치라는 설명을 표시한다. 기본 높이는 선택 extent/60을0.01..1m로 제한하며 Memo-only에는0.1m를 사용한다.
+- **R5B-REQ4 실제 텍스트:** bundled NanumGothic으로 제목·전체 본문·줄바꿈을 PNG texture plane에 그려 일반 GLTFLoader에서 실제 보여야 한다. anchor pin+leader가 같은 WCS에서 표시된다. extras-only 또는 일부 문자를 자른 성공은 불가다. 글자 높이는 미터로 명시하며 화면 CSS labelOffset을 사용하지 않고 고정 WCS offset으로 배치하며, 화면 라벨과 다른 교환용 배치라는 설명을 표시한다. 입력 높이는0.001..10m이며 기본값은 선택 extent(미터)/60을0.01..1m로 제한하고 Memo-only에는0.1m를 사용한다.
 - **R5B-REQ5 metadata:** 허용 값은 source Version/SHA·단위/원점/축, Memo namespace/id/revision/title/content/anchorWcs/표시 방법·BROKEN 여부와 활성 일정·완료 필드다. 작성/수정자 ID·이메일·권한·cookie/token·DB/storage locator·raw DTO/group 전체는 제외한다. 그룹 이름 등 부가 metadata는 실제 필요가 확인된 allowlist에만 추가한다.
 - **R5B-REQ6 예산/실패:** 총 Memo100, 개별 texture2048×2048, 누적8,388,608 pixels, 전체 decoded64MiB/파일32MiB를 유지한다. 제목100/본문2000 모델 한도를 지키고 행·글자 수를 몰래 줄이지 않는다. font/glyph/Canvas/PNG 실패·예산 초과는 동의로 우회하지 않고 명시 실패시킨다. 취소·close·unmount·Version/Renderer/actor 변경 후 늦은 download0, owned texture/material/geometry/canvas/URL cleanup을 확인한다.
 
 ## R5 #91 — 교환 파일 내보내기 요구사항 (구현 전, 2026-11-01)
 
-현재 #91 원문 전체를 읽고 기존 Scene/Generated/Memo 계약과 대조했다. 기반은 R4 `458d3da6257b0d9a9cbabdd2f60a74d44860fef4`/0.52.0이다. **R5a0.53.0(core) → R5b0.54.0(Memo/조합 UX)** 두 작은 stacked PR로 나누되 둘 다 구현·검증해야 #91 기능 AC를 종합 판정한다. 현재 둘 다 NOT RUN이며 승인된 잔여 작업의 설계다. 기존 JSON 상태 복원/원본 다운로드/DB 저장과 다른 읽기 전용 교환 기능이다.
+현재 #91 원문 전체를 읽고 기존 Scene/Generated/Memo 계약과 대조했다. 기반은 R4 `458d3da6257b0d9a9cbabdd2f60a74d44860fef4`/0.52.0이다. **R5a0.53.0(core) → R5b0.54.0(Memo/조합 UX)** 두 작은 stacked PR로 나누되 둘 다 구현·검증해야 #91 기능 AC를 종합 판정한다. 최초 설계 시점 둘 다 NOT RUN이었으며 이후 구현·검증한 실제 로컬 수용 범위는 TestReport 최상단을 따른다. 기존 JSON 상태 복원/원본 다운로드/DB 저장과 다른 읽기 전용 교환 기능이다.
 
 - **R5-REQ1 범위:** DXF+three-dxf-viewer의 `도면 > GLB/glTF 내보내기`에서 GLB 또는 단일 embedded glTF, DXF 전체/선택 Layer, 확정 추가 개체 전체/명시 선택, R5b의 Memo 전체/명시 선택을 독립 조합한다. 기본은DXF만 포함, 추가개체/Memo는명시 opt-in. local Generated와 서버 Outline은 namespace로 구분한다. 서버 항목은 현재 인가 조회 DTO가 있을 때만 목록/내보내기에 포함한다. 선택0/지원0/로딩·오류·미지원 renderer는실행거절/사유표시다.
 - **R5-REQ2 원본 의미:** DXF는 **원본 기준 imported Scene baseline**이며 임시 SceneWork 이동·회전·hide를 포함하지 않는다. 전체/선택 Layer는 명시 설정이 우선해 화면 hide와 독립이며 포함 안내를 표시한다. Generated는 확정 effective geometry를 사용하고 삭제/Preview/ghost/선택highlight/카메라/grid/UI는제외한다. 내보내기 때문에 기존 visibility/selection/Undo/SceneWork/원본 bytes/DB/Current를 변경하지 않는다.

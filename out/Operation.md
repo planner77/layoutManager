@@ -1,4 +1,4 @@
-## GLB / glTF 내보내기 — 0.53.0 후보
+## GLB / glTF 내보내기 — 0.54.0 후보
 
 1. 준비된 DXF를 `three-dxf-viewer`로 열고 `도면 → GLB / glTF 내보내기`를 선택한다.
 2. DXF 전체 또는 렌더 레이어를 고른다. 화면의 숨김 상태와 내보내기 포함은 별개다. DXF의 임시 이동·회전은 적용하지 않고 원래 렌더 배치를 사용한다.
@@ -8,9 +8,19 @@
 
 지원 상한은 렌더 drawable20,000개, 확장 정점250,000개, index750,000개, local/server 외곽선 각각100개, 추정 decoded64MiB, 결과32MiB다. 개별 지원 객체도 선택 조합이 상한을 넘으면 준비 단계에서 거절될 수 있다. 범위를 줄여 다시 시도한다. Float32 추가 오차가0.1mm를 넘으면 원점을 조정하거나 범위를 줄인다. 이미 Renderer가 잃은 원본 좌표 정밀도를 복구하지는 않는다.
 
-지원 범위는 평면 render Line/LineLoop/LineSegments/Mesh/Points 및 검증된 Polygon/MultiPolygon/Hole이다. merged BLOCK 내부 Layer와 원본 Entity의 정확한 일대일 분할은 보장하지 않으며 현재 표시 렌더 레이어를 사용한다. 점선·선 굵기·점 크기는 교환 시 손실될 수 있다. Sprite·지원하지 않는 재질/texture·비평면·잘못된 기하 등은 이유와 함께 제외한다. Memo·DWG·dxf-viewer 내보내기는 아직 지원하지 않는다.
+지원 범위는 평면 render Line/LineLoop/LineSegments/Mesh/Points 및 검증된 Polygon/MultiPolygon/Hole이다. merged BLOCK 내부 Layer와 원본 Entity의 정확한 일대일 분할은 보장하지 않으며 현재 표시 렌더 레이어를 사용한다. 점선·선 굵기·점 크기는 교환 시 손실될 수 있다. Sprite·지원하지 않는 재질/texture·비평면·잘못된 기하 등은 이유와 함께 제외한다. Memo는 아래 별도 계약으로 지원한다. DWG·dxf-viewer 내보내기는 지원하지 않는다.
 
 취소 또는 창 닫기는 결과 전송을 막는다. 직렬화가 시작된 구간은 즉시 CPU 중단이 불가능할 수 있어 정리가 끝날 때까지 새 내보내기를 막는다. 다운로드 시작과 브라우저 파일 저장 완료는 구분한다. 실제 검증 상태는 [TestReport](TestReport.md)를 따른다. 원본 파일·Current·DB·영속 Scene을 내보내기로 수정하지 않는다.
+
+### 메모 포함과 글자 높이
+
+메모 포함은 기본 OFF다. 전체 또는 명시 선택을 사용하고 서버 메모는 별도의 조회 옵션으로 불러온다. 숨긴 메모의 명시 포함은 Viewer 표시·선택·Undo를 바꾸지 않는다. 서버 권한이 거부되면 해당 private 목록과 선택을 제거하며 남은 local 선택으로 범위를 다시 확인한다. 메모 제목/본문은 bundled NanumGothic으로 그리며 원본·일정·완료의 필요한 값만 파일에 담는다. 연결이 끊긴 메모는 마지막 WCS와 경고를 사용하며 부분 동의를 요구한다. 오래된 SESSION projection은 현재 row로 다시 조회해야 한다.
+
+글자 높이는0.001~10m다. 초기 AUTO0.1m는 잠정값이며 포함 범위 확인 시 선택 DXF/외곽선의 미터 extent/60을0.01~1m로 제한해 계산한다. Memo-only는0.1m다. 정확한 높이는 확인 결과에 표시한다. 직접 편집한 MANUAL 값은 선택을 바꿔도 유지하며 `글자 높이 자동`으로 되돌릴 수 있다. 화면 CSS label 간격은 교환 파일에 적용하지 않는다.
+
+총 Memo100개, 제목100자·본문2000자, 개별 texture2048²·누적8,388,608pixels 및 기존 decoded64MiB/파일32MiB를 넘으면 범위를 줄인다. 전체 문자를 보존하며 예산 초과·지원하지 않는 glyph·글꼴404/invalid/15초 timeout·Canvas/PNG 실패는 명시 오류로 처리한다. 문자를 자르거나 다른 글꼴로 조용히 바꿔 성공시키지 않는다. emoji 등 번들 글꼴에 없는 문자는 수정 후 다시 시도한다.
+
+FontFace 준비 취소는 대기를 끝내고 늦은 등록·전송을 막지만 native load Promise 자체의 종료를 기다리는 보장은 없다. PNG/GLTF 인코더의 비중단 구간은 실제 완료·owned 정리까지 새 job mutex를 유지한다. Browser 시험은 등록 FontFace·canvas 크기·Blob URL과10회 결과/heap을 관측했으며 직접 GPU texture/material/geometry 해제 횟수 또는 장기 leak-free를 입증하지 않는다. 정확 결과와 계측 범위는 TestReport를 따른다.
 
 ## 0.52.0 후보 — #174 메모 스냅과 위치 이동
 

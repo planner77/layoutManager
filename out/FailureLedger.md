@@ -1,3 +1,43 @@
+## R5b load fixture 재시험 GREEN (2026-11-01)
+
+기존 목록 GET으로 metadata 기준을 조회하도록 보완한 새 load2가2 PASS1.6분으로 완료됐다(`/tmp/layoutmanager-r5b-load2.log`). 실제1k/10k LINE+10Memo 두 규모의 roundtrip·URL·API metadata/원본 SHA 불변을 확인했으며 최초405 setup 실패는 아래에 보존한다.
+
+## R5b 부하 시험 fixture GET 경로 수정 (2026-11-01)
+
+Root의 신규 load 시험 첫 실행2개는 export 이전 metadata 기준 조회에서 실패했다. DELETE 전용 `/api/cad-files/:id`에 GET해405/빈 응답을 JSON으로 읽은 시험 setup 결함이다. 기존 목록 GET `/api/cad-files`의 해당 items 행 조회로 수정했고 Source/DB 불변 assertion을 유지했다. 제품 변경은 없으며 새 실행 `/tmp/layoutmanager-r5b-load2.log`의 실제 결과를 기다린다.
+
+## R5b 수직 반전 BUILD2 시각 수정 확인 (2026-11-01)
+
+독립 QA focused3 PASS32.9초와 두 포맷 dark glyph4778pixels/UV상하 assertion을 통과했다. Manager가 실제 한글·영문 upright screenshot을 확인했으며 GLB/glTF capture는 byte동일SHA54cbc0d59dd1315c9395fdf9607342c8216eae93619b90e3080e9137894bffa8이다. 해당 시각 blocker를 해결했으며 전체 gate는 아직 진행 중이다. 상세 실제 근거는 TestReport BUILD2를 따른다.
+
+## R5b 실제 artifact 글자 수직 반전 — 재작업 필요 (2026-11-01)
+
+Dark glyph pixel 조건을 보완한 QA capture를 QA와 Manager가 직접 확인했다. `/tmp/layoutmanager-r5b-qa-visible-memo-glb.png` 및 glTF capture에서 한글 제목과 `Valve inspection`이 수직 반전되어 읽기 방향이 잘못됐다. Manager는 GLB screenshot을 직접 열어 확인했으며 source 검토상 helper의 +Y camera/up -Z는 기존 XY→XZ 좌표 계약에 맞는다. Annotation의 topLeft=labelZ, bottomLeft=labelZ-height 좌표 관계와 UV가 화면상의 상하 방향을 뒤집는 것으로 판단한다. 단순 camera 회전으로 가리는 해결은 허용하지 않는다.
+
+이는 실제 제품 시각 결함이며 glyph pixels 존재·Loader 성공만으로 TC-R5B-02를 PASS 처리하지 않는다. Product 수정/새 build 및 두 형식 실제 WebGL 한글 screenshot 재검증 전 R5b 수용을 보류한다. Root에 즉시 전달했으며 활성 권한/lifecycle 시험과 rebuild를 조정한다. QA는 production을 수정하지 않았다.
+
+## R5b QA glyph pixel assertion false-positive (2026-11-01)
+
+초기 QA3 PASS의 inkPixels 조건이 배경 #fffef0까지 셌다(RGB 어느 하나<245). Root가 발견해 dark glyph(allRGB<150·alpha>0) 및 실제 한글 screenshot 재검토·3개 재실행을 지시했다. 초기 실행의 Loader/render 사실은 보존하지만 glyph pixels 검증 PASS 주장은 보류한다. 제품 실패로 재분류하지 않는다. 최종 결과는 TestReport를 따른다.
+
+## R5b source 검토 2건 보완 확인 (2026-11-01)
+
+실제 artifact extras 정밀도 고지 및 generic Memo GET 호환을 보완했다. Manager 독립 집중 실행2 files/27 PASS1.08초(`/tmp/layoutmanager-r5b-manager-repair-review.log`)로 해당 재작업을 수용했다. 최초 검토 결함은 아래에 보존하며 Browser/전체 gate 완료를 뜻하지 않는다.
+
+## R5b Developer handoff source 검토 — 재작업 2건 (2026-11-01)
+
+Developer는 focused6 files/53 PASS, typecheck/소유 파일 lint/diff-check PASS를 보고했다. Manager가 core/font/raster/annotation 및 authorized Memo GET 소스를 직접 검토해 두 보완을 지시했다. 정밀도 warning이 반환 report에만 있고 실제 GLB/glTF extras에는 없어 artifact 고지 계약을 충족하지 않았다. 또한 기존 generic Memo GET에 새 DWG415 제한을 넣어 호환 envelope 확장 범위를 벗어났다. 실제 bytes의 경고/precision basis 검증과 기존 feature-off/anchor-absent·허가된 DWG 빈 목록 호환 검증을 요구했다.
+
+이 시점 core 최종 수용은 보류다. QA는 독립 Browser spec/새 Loader·실제 PNG/WebGL helper 작성만 시작하며 Root의 단일 production build 완료 전 실행하지 않는다. Root는 별도 authority/lifecycle Browser를 담당한다. 실제 Browser 결과는 아직 NOT RUN이다.
+
+## R5b 읽기 전용 Memo projection — RED/GREEN 및 source 검토 (2026-11-01)
+
+Root의 신규 client proof 시험 첫 실행은 **2 files/20 PASS·1 FAIL,549ms**였으며 singular transform `[0,0,0,0,10,20]`에서 예상 BROKEN/마지막 WCS(1,2) 대신 ATTACHED/(10,20)을 반환해 실패했다. 로그는 `/tmp/layoutmanager-r5b-memo-client-unit1.log`다. 기존 reconcile의 forward projection만으로는 비가역 행렬을 차단하지 못한 작은 기존 결함이며 단순 읽기 전용 API 리팩터링으로 숨기지 않는다.
+
+공유 snapshot 계산에서 next world를 계산한 뒤 `invertAffine`로 가역성을 검증하고 성공한 경우에만 world를 바꾸도록 보완했다. 유효 target의 기존 reconcile lastWorld 업데이트는 유지하며 snapshot은 복사된 ref/local/world를 반환하고 store를 바꾸지 않는다. Root 재시험 `/tmp/layoutmanager-r5b-memo-client-unit2.log`: **3 files/23 PASS,712ms**. Manager가 최종 로그와 domain diff, `exchange-memo-visual.ts`, `exchange-memo-authority.ts`를 직접 검토했다. selected Memo proof/whitelist, same-revision SESSION 재사용, unbound fresh canonical, actual GET actor/scope/revision0/count/unique ID decoder에 현 source blocker는 없었다.
+
+이는 집중 domain/client proof 결과다. UI hook/실제 Memo GET/PNG·GLTF·Browser 및 전체 R5b 수용은 아직 아니다. Memo 미선택 job에서는 global targetEpoch를 포함한 Memo fingerprint 자체를 적용하지 않아 공개 Source-only가 무관한 Memo 변경에 종속되지 않아야 한다. 해당 통합은 Root 후속 검증이다.
+
 ## R5a 최종 재시험 GREEN (2026-11-01)
 
 Test-only fixture 보완 뒤 집중8 PASS11.19초 및 새 전체127 files/858 PASS422.47초를 확인했다. Greenfield 새 전체17 PASS4.2분, 독립 QA General 전체128 PASS14.7분도 통과했다. 이전 실패의 수치/원인 한계는 아래 그대로 보존한다. 제품 auth guard 변경 없이 해당 로컬 gate를 수용했으며 원격 CI는 별도다.

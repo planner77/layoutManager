@@ -1,3 +1,25 @@
+## R5b / #91 코드·합성 로컬 수용 및 Draft PR GO (2026-11-01)
+
+Manager는 최종 unit131 files/883, 독립 QA General146, Greenfield21, Auth/Legacy 각1 및 type/lint/build PASS와 직접 확인한 한글 upright artifact·권한·수명·부하 근거로 LOCAL R5b / #91 CODE + SYNTHETIC ACCEPT / STACKED DRAFT PR GO를 판정한다. 중단144와 집중 결과는 합산하지 않는다. Root는 최종 staged/secret/remote/exact-tree 검사와 게시·새 CI를 담당한다. 필수 로컬 작업은 완료했으며 현장 실 CAD/GPU/2PC·Owner 수용과 이슈 종료/병합/태그/GHCR/배포는 별도 미수행이다. 정확 범위·실패·계측 한계는 TestReport 최상단을 단일 기준으로 따른다.
+
+## R5a 정확 HEAD 원격 CI 완료 (2026-11-01)
+
+Root가 [PR184](https://github.com/planner77/layoutManager/pull/184)의 정확 HEAD `9accf8ba3e21f2d51dc7694e768f19c75fffb5d5`에 대한 [CI41239705093](https://github.com/planner77/layoutManager/actions/runs/41239705093) 실제 job log를 읽어 Docker `124650849694` 및 Verify `124650849901` 모두 SUCCESS를 확인했다. Unit127 files/858 PASS, General128 PASS11.1분, native Auth1 PASS8.9초, Greenfield17 PASS2.4분, Legacy1 PASS12.9초다. PR 본문에도 반영했고 draft=true/mergeable=true/동일 HEAD를 재확인했다. R5a clean worktree는 변경하지 않고 이 R5b 문서에 후속 근거를 기록한다. 병합·배포·#91 전체 완료를 뜻하지 않는다.
+
+## R5b 글자 높이 AUTO 준비 시점 (2026-11-01)
+
+Inventory에 정확 기하가 없고 기본값 표시만을 위해 보호 서버 GET을 추가하지 않도록 최초 높이는0.1m 잠정 AUTO로 명시한다. 기존 prepare에서 실제 선택 기하로 계산한 명시 높이를 inspect/fingerprint 및 preview에 사용하고 그 후에만 동의/download를 허용한다. 직접 편집한 MANUAL 값은 선택 변경에도 보존한다. Manager가 이 UX 구체화를 승인했으며 핵심 범위·예산은 변경하지 않았다.
+
+## R5b 읽기 전용 Memo projection seam (2026-11-01)
+
+Manager는 Root 제안과 QA의 reconcile mutation 관찰을 근거로 MemoSessionSnapStore.snapshot(targets)의 additive read-only API를 승인했다. 계산은 기존 reconcile과 공유하되 mutation은 reconcile만 수행한다. Root가 domain/helper 회귀를 맡으며 selected-only proof와 stale SESSION fail/no fallback을 유지한다. inspect(snapshot,options?)의 호환 확장도 승인했다. 실제 구현/시험 결과는 아직 기록 전이다.
+
+## R5a 게시 확인 / R5b 조건부 구현 GO (2026-11-01)
+
+Root가 R5a [Draft PR #184](https://github.com/planner77/layoutManager/pull/184)를 게시했다. HEAD `9accf8ba3e21f2d51dc7694e768f19c75fffb5d5`, tree `c290a5ec654eeaea3fdd6baacade74b93b5058c9`, parent R4 `458d3da`다. 지정 remote·Secret0·산출물0·30파일/2429추가35삭제·package0.53·local/remote exact tree·clean 검증을 Root가 보고했다. Draft/base R4/mergeable=true를 확인했으며 [CI41239705093](https://github.com/planner77/layoutManager/actions/runs/41239705093)는 **진행 중/성공 미확인**이다. 기존 원본 작업트리 사용자 변경2개는 보존했다.
+
+Manager는 별도 `feat/issue-91-memo-exchange-20261101`의 R5b0.54 구현 GO를 기록한다. Architecture의 구체 타입·옵션·단계·raster/예산 bridge를 동결했으며 Developer core/font/annotation/Memo GET envelope, Root client/Viewer/UI/Browser, QA 독립 검증으로 분담한다. R5b 실제 시험은 아직 NOT RUN이다. R5a CI의 실제 실패 시 의존 구현을 HOLD하고 먼저 해결한다. #91 종료·병합·GHCR·배포는 수행하거나 승인한 결과가 아니다.
+
 ## R5a 로컬 수용 / R5b 필수 계속 (2026-11-01)
 
 Manager가 최종 전체unit858·독립 QA General128·Greenfield17·Auth/Legacy 각1 및 type/lint/build PASS와 source review를 근거로 LOCAL R5a ACCEPT / STACKED DRAFT PR GO를 판정한다. Root는 최종 안전 검사·게시·새 CI를 담당한다. R5b 설계는 준비됐지만 구현 전이며 R5a 게시 이후 별도0.54 branch에서 구현 GO한다. #91 전체 완료·현장·병합·배포를 뜻하지 않는다. 실제 로그/잔여는 TestReport/TestPlan을 따른다.

@@ -57,6 +57,7 @@ import {MemoSessionSnapStore,collectMemoSnapCandidates,
 import {SceneWorkTools} from './scene-work-tools';
 import {useCadExchange} from './use-cad-exchange';
 import {CadExchangeDialog} from './cad-exchange-dialog';
+import {captureExchangeMemoVisuals} from './exchange-memo-visual';
 
 export function CadViewer({
   versionId,
@@ -339,8 +340,16 @@ export function CadViewer({
     status: '도면 로딩 중…',
     ready: false,
   });
+  const getExchangeMemoVisuals=useCallback(()=>{
+    const scope={versionId,sourceSha256},current=getManager();
+    const records=memoSession.current?.matches(scope)?memoSession.current.list():[];
+    const projections=sessionSnaps.current?.matches(scope)
+      ?sessionSnaps.current.snapshot(current?.getMemoSnapTargets()??[]):{};
+    const generation=versionId+':'+sourceSha256+':'+renderer+':'+attempt+':'+(current?.getExchangeInventory()?.snapshotToken??'unavailable');
+    return captureExchangeMemoVisuals(scope,records,projections,generation,getViewEpoch());
+  },[versionId,sourceSha256,renderer,attempt,getManager,getViewEpoch]);
   const exchange=useCadExchange({versionId,sourceSha256,renderer,format,attempt,
-    ready:state.ready&&!loading,getManager,getEpoch:getViewEpoch});
+    ready:state.ready&&!loading,getManager,getEpoch:getViewEpoch,getMemoVisuals:getExchangeMemoVisuals});
   const {opened:exchangeOpened,close:closeExchange}=exchange;
 
   useEffect(() => () => source.dispose(), [source, versionId]);

@@ -1,3 +1,26 @@
+## R5b 최종 수용 checklist (0.54.0, 로컬 코드·합성 수용 완료)
+
+| Gate | 실제 상태 / 완료 기준 |
+| --- | --- |
+| Memo-only/혼합·새 Loader·actual PNG·upright 한글·메타데이터·320px/fullscreen/AUTO | QA 집중3 PASS, dark glyph/방향·Generated2 혼합 및 개인정보 key 검사를 보완함. TestReport 실제 capture 기준 |
+| SESSION/BROKEN·Translate/Rotate/Undo·stale encoder | Root 새 집중2 PASS20.1초; 최종 전체146에 포함 |
+| 실제 서버 Memo 인가·actor A→B→A·row revision·403 복구 | 최종 전체 Greenfield21 PASS에 positive Reader export와 회귀 포함 |
+| font/Canvas/PNG 실패·취소·비중단 mutex·자원/heap | BUILD2 lifecycle11 PASS, 반복10회 및 heap 한계 공개; 직접 GPU dispose/장기 leak-free 주장 없음 |
+| 상한·metadata·core unit | 전체131 files/883 PASS367.83초, 경계/사전 할당·회귀 포함 |
+| 실제 합성 크기 계측 |1k/10k LINE+10Memo load2 PASS; coordinator/Loader/consumer 시간·bytes·단일 GC heap 구분 |
+| Build/static | BUILD2 PASS; 최종 전체 typecheck PASS·whole lint0 errors/기존9 warnings 확인 |
+| 일반 CAD 전체 회귀 | 중단144는19 PASS/1 interrupted/124 NOT RUN. 새 최종146 PASS/0 FAIL/0 SKIP·interrupted13.4분; focused 합산 없음 |
+| Auth/Legacy | owned controlled Runtime Auth1 PASS21.1초, Legacy1 PASS29.9초 |
+| 문서·게시 전 검사 | .54 문서 갱신 및 Manager LOCAL ACCEPT/Draft GO 완료. Root staged/secret/remote/exact-tree 검사·게시 후속 |
+
+필수 최종 로컬 gate 완료로 Manager가 LOCAL R5b / #91 CODE + SYNTHETIC ACCEPT / STACKED DRAFT PR GO를 기록했다. R5a+b 코드/합성 범위와 현장/실 CAD/GPU/2PC·운영 병합/배포를 구분하며, 실제 수행 전 원격 CI 성공이나 #91 종료를 주장하지 않는다.
+
+## R5b 최종 coverage 보완 — 실제 SESSION/BROKEN export (2026-11-01)
+
+TC-R5B-03은 기존 projection unit 및 R4 live pin Browser만으로 완료하지 않는다. Root가 새 test-only 일반 Browser2개에서 실제 메모 연결→Generated Translate/Rotate/Undo→GLB/glTF의 Memo world 좌표, target 삭제 후 BROKEN 마지막 WCS·부분 동의, held encoder 중 target/view epoch 변경의 stale 결과 폐기를 검증한다. 같은 revision proof의 export wiring을 직접 실행해야 한다.
+
+기존 전체 General144 진행을 초기에 중단하고 INCOMPLETE/CANCELLED로 보존한다. 새 집중2개와 정적 검증 후 정확 최종 suite146을 처음부터 실행하며144 부분 결과와2 focused를 합쳐 전체 PASS라고 하지 않는다. 실제 제품 결함이 없으면 rebuild하지 않고 BUILD2를 사용한다. 발견 시 source repair/rebuild 및 관련 gate를 다시 판정한다.
+
 ## R5a 최종 Manager 수용 checklist (0.53.0, 로컬 수용 완료)
 
 같은 최종 product snapshot과 그 수정에 대응하는 실제 test 파일을 기준으로 판정한다. 이전 후보 PASS·서로 다른 focused 실행을 새 전체 실행으로 합산하지 않는다. Root는 최종 release commit/push/PR와 remote/secret/tree 검사를 담당한다.
@@ -16,7 +39,7 @@
 
 필수 로컬 R5a gate PASS와 concrete blocker0을 확인해 Manager가 **LOCAL R5a ACCEPT / STACKED DRAFT PR GO**를 기록했다. 게시 전 안전 검사는 Root의 후속 책임이다. 원격 CI/병합/배포/현장 수용을 함께 승인한 것이 아니다. R5b의 visible Memo·native fullscreen·Browser 인코더취소/중복/URL/heap gate는 남기며 #91/관련 현장 이슈를 종료하거나 소유자에게 메시지를 보내지 않는다.
 
-## R5b #91 — 구현 전 세부 AC/TC (모두 NOT RUN, 2026-11-01)
+## R5b #91 — 세부 AC/TC (최초 계획, 실제 수용은 상단 checklist, 2026-11-01)
 
 Native fullscreen 및 실제 Browser 비중단 인코더 취소·중복 job·BlobURL cleanup/반복 heap은 R5a에서 완료로 표시하지 않고 아래 TC-R5B-08/09/10에서 반드시 실행한다.
 
@@ -26,10 +49,10 @@ Native fullscreen 및 실제 Browser 비중단 인코더 취소·중복 job·Blo
 | --- | --- |
 | TC-R5B-01 | Memo-only와 DXFB+확정 Generated2+Memo1을 GLB/glTF 두 형식으로 실제 다운로드·새 GLTFLoader로 로드. 선택 외/삭제/Preview 제외, 숨긴 Memo 명시 포함, Source/local/session/DB/Current 불변. |
 | TC-R5B-02 | 한글 제목·영문·줄바꿈 본문이 실제 texture pixels에 존재하며 Loaded Mesh/texture/image/PNG buffer를 검사하고 새 Viewer 렌더 screenshot으로 읽을 수 있음을 확인. extras 문자열만 존재하거나 빈 texture면 FAIL. 외부 리소스 요청0. |
-| TC-R5B-03 | current canonical vs 같은 MemoRevision SESSION projection, target Translate/Rotate/Undo, BROKEN 마지막 WCS, hidden group 명시 포함. stale Memo revision/target epoch/Version/SHA/Renderer/actor를 인위 변경하면 reprepare 요구·download0, 관계 영속화/새 target 자동 연결0. |
+| TC-R5B-03 | current canonical vs 같은 MemoRevision SESSION projection, target Translate/Rotate/Undo, BROKEN 마지막 WCS, hidden group 명시 포함. stale Memo revision/target epoch/Version/SHA/Renderer/actor를 인위 변경하면 reprepare 요구·download0, 관계 영속화/새 target 자동 연결0. Read-only snapshot 반복 전후 binding/lastWorld/epoch 불변, forcedBreak/singular/BROKEN 의미 보존, 기존 reconcile의 lastWorld 갱신 회귀. |
 | TC-R5B-04 | ACTIVE Reader 자신의 Site 허가 성공·foreignSite403·익명401·조회 중 actor변경·권한회수·selected row 삭제/revision 변경·JSON/network 실패. 실제 Memo GET actor envelope의 A→B→A·누락/위조 scope 거절, 같은 transaction 인가 재확인 및 기존 Viewer 응답 호환. 서버 제목/본문/개수/preview 제거, cached false-empty0, unselected server permission이 public local-only export를 막지 않음. 이전 선택 server Outline/Memo의 Site403 뒤 숨은 stale key를 제거하고 local 선택 보존·재확인 후 local-only 회복. |
 | TC-R5B-05 | bundled font 성공·404/invalid bytes/missing Korean glyph/font timeout·Canvas context/PNG encoding failure를 주입. 전체 문자 보존/오류 후 재시도, 중간 취소/unmount 뒤 late texture/download0. |
-| TC-R5B-06 | title100/content2000·긴 무공백·여러 줄, texture2048²/누적8,388,608px/decoded64MiB/artifact32MiB/Memo100 경계 직전·초과. 할당 전 거절을 spy로 확인하며 silent truncate/downscale0. |
+| TC-R5B-06 | title100/content2000·긴 무공백·여러 줄, 글자높이0.001/10m 경계 및 범위 밖·NaN 거부, AUTO 잠정값 고지→정확 선택 기하 prepare 높이 표시·동의 fingerprint, 선택 변경 재계산 및 MANUAL 값 보존·추가 default용 보호 GET0, texture2048²/누적8,388,608px/decoded64MiB/artifact32MiB/Memo100 경계 직전·초과. 할당 전 거절을 spy로 확인하며 silent truncate/downscale0. |
 | TC-R5B-07 | metadata whitelist: schedule/completion 활성·비활성 조합, generated-only 포함 모든 파일 Version/SHA/units/origin/axis; createdBy/updatedBy/email/role/token/locator/target binding0. 원본/raw DTO를 stringify해 넣지 않았음을 검사. dialog·artifact에 renderer snapshot 대비 추가 정밀도 한계와 원본 양자화 복구 불가 warning 존재를 확인. |
 | TC-R5B-08 | success/failure/cancel10회, font 준비·PNG 대기·GLTF 대기 중 각각 취소, global mutex·BlobURL/owned texture/material/geometry/canvas/font cleanup, Browser heap 관측 가능 여부/한계. 지원 범위를 넘는 장기 leak-free 주장은 하지 않음. |
 | TC-R5B-09 | 320px/keyboard focus trap·복귀/ESC 한계층/native fullscreen/글자높이·선택 변경 ack 무효화/0선택, Memo 목록과 기존 Canvas의 선택·숨김·Undo 불변. |
