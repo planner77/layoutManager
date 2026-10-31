@@ -1,3 +1,25 @@
+## #88/#90 PR #176 — PR CI #345 Vitest import failure, authenticated test isolation, new CI launch (2026-10-31 KST)
+
+### Exact failed run / scope of evidence
+
+- [PR CI #345 / Run 41153178204](https://github.com/planner77/layoutManager/actions/runs/41153178204) at exact HEAD `e758a0d5effcba577dca6ffe2b87fe15952d3c71`, `completed/failure`. Docker Job `124394409585` **SUCCESS** including baseline/App/Migrator build, disposable Greenfield Compose + Admin/CAD Smoke, native SQLite tests. Verify Job `124394409303` **FAILURE**.
+- Verify steps: npm dependency install and Prisma generate SUCCESS; TypeScript SUCCESS; ESLint SUCCESS (Run #343 prior lint error not repeated); **Vitest Unit/Integration FAILURE** with `103 test files passed / 1 suite failed`, **682 tests passed**. Only failed suite: `src/tests/integration/memo-search-auth.test.ts` at module collection (`0 test`), error `This module cannot be imported from a Client Component module. It should only be used from a Server Component.` from `node_modules/server-only/index.js:1:7`. No actual signed Site/role assertion was executed in that suite; it is an import isolation failure, **not evidence of auth logic failure**.
+- OCI standalone tests, DXF benchmark, Next Production Build, Chromium browser E2E, signed G7 Runtime/Greenfield E2E and legacy migration E2E were **SKIPPED** by sequential fail-fast Verify workflow. Do not treat Docker SUCCESS or the other 682 passing tests as full CI pass.
+
+### Cause and narrowly scoped fix
+
+- `memo-search-auth.test.ts` imports `requireMemoSearchSites` from `src/server/scene/scene-context.ts`. That runtime module also imports `@/server/context`, which intentionally imports the Next `server-only` marker. Vitest's module collection executed this sentinel despite the test only needing the G7 Memo Site auth helper.
+- Fix code commit [`cd05b0faff7a7d27cab890626d12a1eddda8488d`](https://github.com/planner77/layoutManager/commit/cd05b0faff7a7d27cab890626d12a1eddda8488d): add hoisted `vi.mock('@/server/context', () => ({context:()=>{throw new Error('UNEXPECTED_LEGACY_CONTEXT')}}))` in the **test file only**, matching the existing `src/tests/integration/g7-runtime-cad.test.ts` signed-runtime isolation pattern. This excludes the unrelated legacy server-only import without mocking G7 signed authority, SiteGrant, actor/session revocation checks, Prisma, production route, or the `requireMemoSearchSites` implementation. Unexpected legacy fallback fails loudly.
+- Documentation commit `8e2506188bd4ea5a3157fa631ec1f40cd69d805f` adds test-plan and evidence clarifications to `AGENTS.md`, `out/TestPlan.md`, `out/TestReport.md`, and `out/Issues88-90.md`. No production runtime / DB / CAD Source / writer / schema changes and no CI controls disabled.
+
+### Review, Main, and new PR CI gate
+
+- PR #176 latest checked docs HEAD `8e2506188bd4ea5a3157fa631ec1f40cd69d805f`, base Main `7058ec393aad10ebbf22bec6dda70d961cb9b483`: GitHub compare `ahead_by=18, behind_by=0`, `status=ahead`; PR `mergeable=true`, **no Main conflict**. Single previous Codex P2 thread `PRRT_kwDOUQjDfc6yLh4a` is **resolved/outdated** (reply recorded in earlier ledger); `0 unresolved` at this check. Resolved thread status does not equal a fresh Codex approval.
+- New code/docs pushes automatically trigger `pull_request.synchronize` PR CI: intermediate code Run #346 / `41156201323` was `in_progress`, docs Run #347 / `41156295790` was `pending` when observed. These are not PASS and may be cancelled by the final ledger commit due to CI concurrency. The *next* ledger commit to branch must trigger a full PR CI on the exact new HEAD; record Run ID/status if confirmed, with **outcome NOT VERIFIED** until an actual completed run. No ongoing CI monitoring requested.
+- PR merge, GHCR, issue closure, legacy volume migration, G7 Auth/CAD Write activation, real DXF/2-PC/GPU field acceptance and 1k/10k/100k search SLA evidence **NOT PERFORMED**. Keep #88/#90 OPEN. Past #342 cancelled, #343 lint failure, and #345 Vitest failure remain distinct historical records; no retroactive PASS.
+
+---
+
 ## #88/#90 PR #176 — PR CI #343 ESLint FAILURE, P2 fixed, new PR CI handoff (2026-10-31 KST)
 
 ### Exact failed execution and classification
