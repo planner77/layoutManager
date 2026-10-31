@@ -17,6 +17,10 @@ export type MemoSnapCandidate=Readonly<{
  ref:SnapRef;transform:Affine2D;kind:SnapKind;world:MemoWcsXY;
  distancePx:number;
 }>;
+export type MemoSnapChoice=MemoSnapCandidate & Readonly<{key:string;pointIndex:number}>;
+export type MemoSnapCandidateSet=Readonly<{
+ candidates:readonly MemoSnapChoice[];total:number;scannedPoints:number;limited:boolean;
+}>;
 export type SessionSnapProjection=Readonly<{
  mode:'ATTACHED'|'BROKEN_ANCHOR';ref:SnapRef;
  kind:SnapKind;world:MemoWcsXY;local:MemoWcsXY;
@@ -24,7 +28,6 @@ export type SessionSnapProjection=Readonly<{
  persistence:'SESSION_ONLY';
 }>;
 type Binding={ref:SnapRef;kind:SnapKind;local:MemoWcsXY;lastWorld:MemoWcsXY;forcedBreak?:boolean};
-const LIMIT=1e12;
 const validRef=(ref:SnapRef,scope:MemoScope)=>
  ref.versionId===scope.versionId&&
  ref.sourceSha256.toLowerCase()===scope.sourceSha256.toLowerCase()&&
@@ -33,6 +36,64 @@ const validRef=(ref:SnapRef,scope:MemoScope)=>
 
 function point(p:MemoWcsXY):MemoWcsXY{
  return assertMemoWcsXY(p);
+}
+const priority:Record<SnapKind,number>={ENDPOINT:0,VERTEX:1,CENTER:2};
+const choiceKey=(ref:SnapRef,kind:SnapKind,index:number)=>
+ JSON.stringify([ref.origin,ref.id,kind,index]);
+
+/** Bounded candidates in current CSS viewport; project must return null offscreen. */
+export function collectMemoSnapCandidates(scope:MemoScope,requestedWcs:MemoWcsXY,
+ targets:readonly MemoSnapTarget[],project:(world:MemoWcsXY)=>MemoWcsXY|null,
+ maxDistancePx=12):MemoSnapCandidateSet{
+ assertMemoScope(scope);point(requestedWcs);
+ const origin=project(requestedWcs);
+ if(!origin||!Number.isFinite(origin.x)||!Number.isFinite(origin.y)||
+    !Number.isFinite(maxDistancePx)||maxDistancePx<=0||maxDistancePx>64)
+  return {candidates:[],total:0,scannedPoints:0,limited:false};
+ const found:MemoSnapChoice[]=[];
+ let scannedPoints=0,limited=false;
+ for(const target of targets){
+  if(!target.visible||!validRef(target.ref,scope))continue;
+  const seen=new Set<string>();
+  for(let index=0;index<target.points.length;index++){
+   if(scannedPoints>=20000){limited=true;break;}
+   scannedPoints++;
+   const candidate=target.points[index];
+   if(!Object.hasOwn(priority,candidate.kind))continue;
+   let world:MemoWcsXY;
+   try{world=point(candidate.world);}catch{continue;}
+   const duplicate=JSON.stringify([candidate.kind,world.x,world.y]);
+   if(seen.has(duplicate))continue;
+   seen.add(duplicate);
+   const screen=project(world);
+   if(!screen||!Number.isFinite(screen.x)||!Number.isFinite(screen.y))continue;
+   const distancePx=Math.hypot(screen.x-origin.x,screen.y-origin.y);
+   if(distancePx>maxDistancePx)continue;
+   try{invertAffine(target.transform,world);}catch{continue;}
+   found.push({ref:{...target.ref},transform:[...target.transform] as Affine2D,kind:candidate.kind,world,
+    distancePx,key:choiceKey(target.ref,candidate.kind,index),pointIndex:index});
+  }
+  if(limited)break;
+ }
+ found.sort((a,b)=>a.distancePx-b.distancePx||priority[a.kind]-priority[b.kind]||
+  a.ref.origin.localeCompare(b.ref.origin)||a.ref.id.localeCompare(b.ref.id)||
+  a.pointIndex-b.pointIndex);
+ if(found.length>100||scannedPoints>=20000)limited=true;
+ return {candidates:found.slice(0,100),total:found.length,scannedPoints,limited};
+}
+
+/** A selected key must still identify the same live target and point. */
+export function currentMemoSnapChoice(scope:MemoScope,choice:MemoSnapChoice,
+ targets:readonly MemoSnapTarget[]):boolean{
+ if(!validRef(choice.ref,scope))return false;
+ const target=targets.find(t=>t.visible&&validRef(t.ref,scope)&&
+  t.ref.origin===choice.ref.origin&&t.ref.id===choice.ref.id);
+ if(!target||choice.key!==choiceKey(choice.ref,choice.kind,choice.pointIndex))return false;
+ const pointNow=target.points[choice.pointIndex];
+ if(!pointNow||pointNow.kind!==choice.kind||pointNow.world.x!==choice.world.x||
+    pointNow.world.y!==choice.world.y)return false;
+ return target.transform.length===choice.transform.length&&
+  target.transform.every((v,index)=>v===choice.transform[index]);
 }
 /** CSS pixel tolerance; ignores unsafe or offscreen geometry and respects visibility.
  * Candidates are computed from validated adapter-projected 2D geometry only.
@@ -93,6 +154,19 @@ export class MemoSessionSnapStore {
    throw new Error('세션 스냅은 메모 최대 100개까지만 허용됩니다.');
   this.connections.set(memoId,{ref:{...candidate.ref},kind:candidate.kind,local,lastWorld:point(candidate.world)});
   return {mode:'ATTACHED',ref:candidate.ref,kind:candidate.kind,local,world:point(candidate.world),
+   persistence:'SESSION_ONLY'};
+ }
+ /** Move one existing binding using its current live target inverse, atomically in memory. */
+ reposition(memoId:string,world:MemoWcsXY,targets:readonly MemoSnapTarget[]):SessionSnapProjection{
+  const old=this.connections.get(memoId);
+  if(!old||old.forcedBreak)throw new Error('유효한 세션 연결을 먼저 선택하세요.');
+  const target=targets.find(t=>validRef(t.ref,this.scope)&&
+   t.ref.origin===old.ref.origin&&t.ref.id===old.ref.id);
+  if(!target)throw new Error('연결 대상이 현재 도면에 없습니다.');
+  const nextWorld=point(world),local=invertAffine(target.transform,nextWorld);
+  const next={...old,local,lastWorld:nextWorld};
+  this.connections.set(memoId,next);
+  return {mode:'ATTACHED',ref:next.ref,kind:next.kind,world:nextWorld,local,
    persistence:'SESSION_ONLY'};
  }
  /** S6 SOURCE_ONLY invalidates only DXF_IMPORTED session bindings, not APP_CREATED. */

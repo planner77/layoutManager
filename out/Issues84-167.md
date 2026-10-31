@@ -1,3 +1,7 @@
+## #174 후속 계약 안내 (2026-11-01)
+
+아래 M3 코어 이후의 명시 다중 후보·OFF 및 연결 유지 WCS 이동은 [Requirements R4](Requirements.md), [Architecture R4](Architecture.md), [TestPlan TC-R4](TestPlan.md)에 구현 전 계약을 기록했다. 기존100Memo/20kpoint·작성자-only·세션/영속 구분은 유지한다. R4 실제 결과는 [TestReport](TestReport.md)를 따르며 #174의실PC2대/사내DXF/GPU수용은별도다.
+
 ## #84 추가 구현 — 세션 스냅 후보·임시 객체/원본 차분 동기화 (2026-10-31)
 
 - 이전 PR #173의 의도적 축소를 정정한다. M3 **브라우저 세션 내 자동 스냅**은 실제 지원 범위다. `MemoSessionSnapStore`는 현재 Version/SHA와 Viewer 인스턴스에만 연결되고 메모 ID→GENERATED 또는 RENDER Stable ID와 local WCS, 마지막 world WCS를 메모리로 관리한다. Canonical CadMemo DTO/서버의 `CadMemoAnchor`에는 임시 객체 Ref·작업 차분이 전달되지 않는다.

@@ -138,6 +138,9 @@ test('TC-M1-E2E-002: drag cancellation, invalid coordinates, explicit release an
   await page.mouse.move(bounds!.x+40,bounds!.y+12,{steps:5});
   await page.mouse.up();
   await expect(pin).not.toHaveAttribute('data-memo-wcs-x','50');
+  // KEEP now preserves a session binding after a successful pin move.
+  // Confirm the intentional destruction rather than dismissing its native dialog.
+  page.once('dialog',dialog=>dialog.accept());
   await clickViewerCommand(page,'drawing','다시 불러오기');
   await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
   // Reload intentionally closes the Drawer; explicitly reopen it for the empty-session status.

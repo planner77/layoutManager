@@ -1,3 +1,147 @@
+## R4-20261101 — #174 메모 스냅 0.52.0 후보 로컬 수용
+
+**Manager 판정: LOCAL FUNCTIONAL + MEASUREMENT ACCEPT / DRAFT PR GO.** R4-REQ1–5 → TC-R4-001–010의 구현·합성 기능·실제 계측 범위를 수용한다. `feat/issue-174-memo-snap-20261101`, 기반 R3 `f179d596`, package/lock0.52.0 후보이며 아직 R4 commit/PR/원격 CI는 없다. #174는 성능·잔여 heap 원인·현장 검증이 남아 OPEN을 유지한다. Frame SLA나 장기 memory leak-free, 실 CAD/GPU/2PC, release/GHCR/운영 배포를 수용한 판정이 아니다.
+
+역할은 Manager의 사전 계약·source/결과 검토, Developer의 domain/server 및 실제 BLOCK/다중 target Browser, Root의 UI/통합·wrapper/계측 보완, 독립 QA의 backend·Actor/지연 query·committed-write 경계 시험이다. 실제 역할과 실패 이력을 아래 기록 및 FailureLedger에 보존한다. Manager가 최종 로그/핵심 source를 직접 확인했다.
+
+| 최종 검증 | 실제 결과·근거 |
+| --- | --- |
+| Product 전체 Unit/Integration | post-BLOCK123 files/814 PASS,406.06초 — `/tmp/layoutmanager-r4-all-tests-post-block.log`. 후속 test-only Auth guard는 아래 별도 실행으로 확인. |
+| Auth harness 집중 | Root3 files/16 PASS,20.05초 — `/tmp/layoutmanager-r4-auth-clock-root-unit.log`; Developer의 별도22.03초 결과와 합산하지 않음. |
+| 일반 Browser | 124 PASS,13.0분 — `/tmp/layoutmanager-r4-cad-final.log`. |
+| Greenfield Browser | 최종13 PASS,2.7분 — `/tmp/layoutmanager-r4-greenfield-rerun.log`; 이전12 PASS/1 FAIL은 보존. |
+| Auth / Legacy | controlled Auth1 PASS13.6초 / Legacy1 PASS22.4초, 각각 별도 suite. |
+| Build / Static | post-BLOCK production build PASS; 전체 typecheck PASS; 전체 lint0 ERROR/기존9 WARNING. 마지막 계측 test-only 수정은 scoped type/lint 및 아래2개 재실행으로 검증. |
+| 독립 Actor QA | prerequisites 포함3 PASS52.7초, 별도 unit5 PASS295ms. stale Admin A 의도→Editor B POST0, 재조회 후B저장 및 지연 query 편집/취소. |
+| 독립 write 경계 QA | prerequisites 포함4 PASS54.9초. 실제 commit 뒤 target 삭제/응답 지연의 canonical WCS·부분 완료 안내·SESSION detach/no-rebind, definite precommit 실패의 기존 관계 보존. |
+| 실제 BLOCK/다중 target | combined3 PASS17.1초. BOUNDS 제외 후 두 INSERT별ID/선택WCS, 반복LINE, 두Generated target의 변환/Undo/삭제BROKEN/동일ID복원. |
+| 최종 자원 계측 | inspector handler와 Canvas handle을 모두 명시 해제한 별도2 PASS1.6분 — `/tmp/layoutmanager-r4-inspector-final.log`. 아래 수치와 한계 참조. |
+
+### 최종 Browser 계측 — 기능/정리 확인과 성능 한계를 구분
+
+합성 DXF LINE 입력1k/10k와 **실제100개 UI Memo**를 사용했다. 한 Viewer의10k Memo 지원 시험이 아니다. 동일 app build/Chromium1243,30 rAF 간격, 실제 pan, CDP 강제GC heap을 측정했다. 마지막 실행은 다른 무거운 suite가 끝난 뒤 수행했으므로 앞선 병행 실행의 더 큰 수치를 성능 개선으로 해석하지 않는다.
+
+| LINE 입력 / Memo | rAF p50 / p95 / max(ms) | 16.7ms 초과 | heap 진입→100Memo→1차dispose→2차dispose(bytes) |
+| --- | --- | --- | --- |
+| 1,000 /100 | 16.7 /66.6 /66.7 | 16/30 | 15,606,276→18,268,232→14,242,412→15,778,292 |
+| 10,000 /100 | 16.7 /216.6 /216.7 | 17/30 | 67,314,444→68,518,864→31,645,380→48,449,656 |
+
+두 번의 SPA 이탈에서 측정대상7종(`blur/scroll/keydown/pointerdown/pointerup/resize/fullscreenchange`) app window listener는baseline으로 복원됐고 instrumented Workers0, 재진입 Memo0/100·pin0을 확인했다. Tools 첫 개방 뒤와100개 뒤의 동일 panel 상태 listener 수가 같았다. Raw 전체 event counts와 제외 script IDs를 log에 남겼으며 실제 Playwright global-check marker와 동일 script의 harness listener만 제외했다. Native CDP handler/originalHandler42개와 Canvas ElementHandle을 명시 해제했다. 모든 app/global listener가0이거나 모든 memory가 해제됐다는 뜻은 아니다.
+
+**성능/메모리 잔여:** p95는16.7ms frame budget을 넘었다. 10k의2차dispose heap은1차보다16,804,276bytes 증가했고 그 원인은 아직 설명하지 못했다. Inspector reference를 해제한 뒤에도 남은 관측이며 앱 leak/캐시/브라우저 잔존 중 무엇인지 확정하지 않는다. 장기 leak-free나 현장 SLA PASS를 주장하지 않고 #174 성능/실환경 후속으로 유지한다. R4-REQ5의 계측 수행 수용과 제품 성능 수용은 별개다. Root가320px/100pin 화면을 검토했고 overflow0/44px hit target assertion을 확인한 범위만 시각 결과로 기록한다.
+
+추가 Schema/기존 DB migration, Auth owner 정책 변경, 운영 volume/원본 변경은 없다. 실패 이력·사용법·아키텍처/TC와 버전 문서를 갱신했다. Root의 최종 staged Secret/산출물/remote 검사 후 Conventional Commit·R3 기반 Draft PR를 진행하며 새 원격 CI는 실제 결과 확인 전 미검증이다. 다음 구현 묶음은 승인된 잔여 R5이며 #174 현장/성능 관찰을 완료로 닫지 않는다.
+
+## R4 최종 Greenfield13 및 정적 검사 (2026-11-01)
+
+Root의 수정 frozen test snapshot `/tmp/layoutmanager-r4-greenfield-rerun.log`는 **13 PASS,2.7분**이다. Manager가 최종 요약을 직접 확인했다. TC-R4-009 실제 committed/failed boundary와 Actor·durable anchor, 기존 R1/R2/R3/Scene 흐름을 함께 실행했으며 앞선12 PASS/1 FAIL,3.2분은 실패 이력으로 보존한다.
+
+최종 전체 typecheck PASS, 전체 lint 재검사 **0 ERROR/기존9 WARNING**이다. 신규 Auth harness를 포함한 Root 별도 집중 재실행 `/tmp/layoutmanager-r4-auth-clock-root-unit.log`는 **3 files/16 PASS,20.05초**로 확인했다. Developer의22.03초 실행과 별개이며, 앞선 전체123/814가 이 후속 새 harness test까지 포함했다고 주장하지 않는다.
+
+일반124개는 아직 완료 대기이며, CDP inspector handler RemoteObject가 heap 측정에 영향을 줄 수 있어 test harness에서 반환 handler/originalHandler를 명시 해제한 별도 성능2개 재시험을 진행한다. 제품 변경이나 memory leak 해결을 주장하지 않는다. 최종 R4 수용은 그 실제 결과까지 확인한 뒤 판정한다.
+
+## R4 TC-R4-009 독립 실제 write 경계 GREEN (2026-11-01)
+
+독립 QA의 frozen new spec/기존 최신 build/controlled port3406/Chromium1243 실행은 **4 PASS/0 FAIL,54.9초**(`/tmp/layoutmanager-r4-attempt5.log`)다. First-install prerequisites5.5초/29.8초, committed race8.4초, definite precommit abort7.5초이며 Manager가 최종 log와 assertions를 직접 확인했다.
+
+첫 case는 실제 PATCH `route.fetch()`200으로 서버 commit을 확인한 뒤 response를 보류하고 선택 Generated A를 삭제했다. 동일 위치 B/C가 남아 있어도 전달 후 서버 rev1/FREE WCS(30,20)를 유지하고 SESSION binding을 해제하며 저장됐으나 연결을 적용하지 않았다는 안내를 표시했다. 제3 target 재연결은 없었다. 둘째는 `route.fetch()` 전 abort한 명확한 미commit 실패이며 서버 rev0/FREE WCS(20,20)와 기존 KEEP binding이 유지됐다. 응답 불확실한 실제 원격 commit 전체 경우를 이 둘째 시험으로 대신하지 않는다.
+
+Manager는 TC-R4-009의 이 실제 범위를 집중 수용한다. 이전 fixture 실패/중단 이력은 FailureLedger에 남기고 새 전체 Greenfield13 결과를 확인한 뒤 R4 최종 gate를 판정한다. Product 코드를 바꾸지 않은 시험 보완이며 파일/port3406을 종료·freeze했다.
+
+## R4 Auth harness 로컬 수용 / Greenfield 첫 전체 결과 (2026-11-01)
+
+격리 Auth clock 보완 후 Developer의 **3 files/16 PASS,22.03초**(기존 rollback 음성 회귀 포함), typecheck/관련 lint PASS와 fresh controlled Auth Browser **1 PASS,13.6초**(wall15.48초, `/tmp/layoutmanager-r4-auth-clock-results`)를 확인했다. Manager가 preload의 명시 opt-in·owned 임시 경로/권한/파일 검증과 기본 startup 불변을 검토해 Auth repair 로컬 범위를 수용한다. Native1FAIL16.6초의 측정된 역행 이력은 보존하고 새 harness 단위 시험의 전체 CI 포함 여부는 별도 기록한다.
+
+Root 첫 전체 Greenfield는 **12 PASS/1 FAIL,3.2분**이며 유일 실패는 TC-R4-009의 tree selector/cleanup fixture였다. Failed-precommit case와 나머지12개 성공을 전체13PASS로 바꾸지 않는다. 수정된 독립 focused4 및 새 전체13 재시험은 대기다. 일반124개 역시 아직 진행 중이다.
+
+## R4 post-BLOCK 전체 Unit/Integration (2026-11-01)
+
+Root `/tmp/layoutmanager-r4-all-tests-post-block.log`는 **123 files/814 PASS,406.06초**다. 이는 singleton Material/group wrapper 보완 이후 전체 source snapshot의 실제 실행이며 앞선122/809와 구분한다. 전체 일반Browser·Auth fixture 재검증·Greenfield13 및 독립009는 별도 진행 중이다.
+
+## R4 Auth/Legacy 회귀 중간 상태 (2026-11-01)
+
+Root Auth Browser1 FAIL(`/tmp/layoutmanager-r4-auth.log`)로 삭제 preflight401을 진단 중이다. DELETE 미전송과 실제 원인 구분은 FailureLedger를 따른다. 별도 Legacy Browser는 **1 PASS,22.4초**(`/tmp/layoutmanager-r4-legacy.log`)다. Auth 미해결 상태를 Legacy 성공으로 대체하지 않으며 일반124개/최종unit/독립009와 함께 최종 수용 gate로 남긴다.
+
+## R4 최종 동기화 Browser3개 — BLOCK/LINE/Generated (2026-11-01)
+
+Developer의 frozen `issue174-memo-sync.spec.ts` combined 실행은 fresh post-BLOCK build/격리 port3405에서 **3 PASS,17.1초**(wall17.58초, `/tmp/layoutmanager-r4-sync-final-results`)다. 반복 LINE Handle의 distinct RENDER 후보와 SceneWork Undo/Redo, 실제 DXF BLOCK 내부 B1을 두 유효 INSERT C1/C2에서 사용한 x0/x0.6의 서로 다른 renderer ID, 두 Generated binding의 이동·회전·Undo2/Redo2·삭제/BROKEN/동일 ID 복원을 확인했다.
+
+BLOCK은 BOUNDS layer를 숨겨 frame 후보의 false positive를 제외하고 두 번째 instance 선택 후 pin WCS0.6을 확인했다. 최초 실패 fixture의 I1/I2를 유효 hex Handle로 바꿨으므로 wrapper 원인 분리는 별도의 순수 projection RED/GREEN을 근거로 한다. Manager가 최종 source assertion을 확인했다. Scoped ESLint/whitespace check는PASS다. 앞선 단독 실행과 별도인 최종3개 결과이며 전체 일반Browser/최종unit/독립TC-R4-009는 결과 대기다.
+
+## R4 다중 Generated/반복 LINE 집중 Browser (2026-11-01)
+
+Developer가 fresh post-BLOCK build/격리 port3405에서 Generated 두 Memo의 서로 다른 target에 대한 group Translate/Rotate/Undo2/Redo2, 첫 target 삭제→BROKEN/마지막 WCS 유지→동일 ID Undo/ATTACHED 복원을 **1 PASS,11.5초**로 확인했다(`/tmp/layoutmanager-r4-generated-4-results`). 반복 직접 LINE Handle의 서로 다른 RENDER 후보와 바인딩의 SceneWork Translate/Undo/Redo는 별도 **1 PASS,10.8초**(`/tmp/layoutmanager-r4-render-results`)다. Manager가 해당 시험 source를 검토했다.
+
+이전 tools/camera fixture 실패와 interrupted 실행은 FailureLedger에 남긴다. 실제 BLOCK 후보 및 독립 TC-R4-009·전체 최종 회귀는 별도이며 이 두 집중 PASS로 R4 전체 수용하지 않는다.
+
+## R4 중간 전체 Unit 및 BLOCK 집중 수정 (2026-11-01)
+
+BLOCK wrapper 수정 전 snapshot의 `/tmp/layoutmanager-r4-all-tests.log`는 **122 files/809 PASS,260.97초**다. 이후 singleton Material/group eligibility 변경의 집중 시험은4 files/25 PASS/766ms이며 RED3 FAIL/2 PASS/253ms를 별도 보존했다. 앞선809 PASS를 최종 변경 source의 전체 PASS로 승계하지 않는다. 새 build/실제 BLOCK Browser/최종 전체 시험은 진행 예정이다. 최신 source review에서 단일 Material group 전체 coverage와 기존 geometry/scope/ID 경계가 유지됨을 확인했다.
+
+## R4 BLOCK instance 검증 미통과 (2026-11-01)
+
+신규 BLOCK/반복 INSERT 후보 시험이1 FAIL/8.8초로 distinct2개 후보를 확인하지 못했다. Manager는 TC-R4-001을 미충족/진단 중으로 기록하며 기능을 축소하거나 기존 반복 LINE 성공으로 대체하지 않는다. 실제 renderer/fixture/wrapper 진단과 후속 재시험 결과 전까지 R4 전체 수용은 보류다. 상세 이력은 FailureLedger를 따른다.
+
+## R4 Actor 집중 독립 QA 및 영속 이동 Browser (2026-11-01)
+
+독립 QA의 controlled 새 fixture/port3404 실행 `/tmp/layoutmanager-r4-actor-focused-qa.log`는 first-install2+Actor/race1의 **3 PASS,52.7초**, intent unit은 별도 **5 PASS,295ms**다. 준비 Admin A→Editor B 전환 뒤 stale intent의 Memo POST0, B로 재조회 후 POST1/creator B, 지연 query 동안 좌표 편집·취소 유지가 통과했다. QA가 source의 actor/context/epoch/generation을 독립 검토했고 파일을 수정하지 않았다. Manager는 TC-R4-010 집중 범위를 수용하며 전체 R4 완료와 구분한다.
+
+Root `/tmp/layoutmanager-r4-durable.log`는 first-install2+영속 anchor 이동1의 **3 PASS,50.2초**다. 실제 UI APP attach→KEEP(13,14)/target CAS0, client matrix/local 미전송, target Translate(5,7)·Rotate90 뒤 world(-21,18)/local(13,14), reload 복원, DETACH(1.2,2.3) 뒤 target 이동에도 Memo world/revision 불변과 원본 GET0을 확인했다. 성능·여러 target lifecycle 및 최종 전체 검증은 별도 진행 중이다.
+
+## R4 Actor 보완 Root GREEN — 독립 QA 진행 (2026-11-01)
+
+Root `/tmp/layoutmanager-r4-actor-green.log`는 first-install2개+Actor/지연 query1개 **3 PASS,40.6초**다. `/tmp/layoutmanager-r4-actor-units.log`는 intent unit5 PASS/166ms, `/tmp/layoutmanager-r4-actor-build.log`는 production build PASS다. 실제 Actor RED와 별도 실행으로 보존한다.
+
+Manager가 현재 source의 intent actor 비교·Session proof·query generation/편집/취소/unmount 무효화·post-write guard를 다시 검토했고 독립 QA에 기존 build/새 controlled fixture/별도 port3404의 집중 재시험을 지시했다. Root가 작성 중인 durable Browser/성능 시험이나 파일을 변경하지 않는 범위다. 독립 결과와 R4 전체 수용은 아직 대기다.
+
+## R3 최종 원격 CI SUCCESS — R4 기반 확인 (2026-11-01)
+
+Root가 정확 source `f179d59604e552bfd42389420be4851e5a5d0f2e`의 [Run41228523828](https://github.com/planner77/layoutManager/actions/runs/41228523828)을 확인했다. Verify124617629491 및 Docker124617629701은 모두 **SUCCESS**, 필수 step 모두 PASS다. Verify 실제 결과는 unit120 files/795 tests, 일반 CAD117(6.9분), Auth1(7.0초), Greenfield9(1.4분), Legacy1(10.1초) PASS다. 서로 다른 suite의 시간을 합산하거나 로컬 측정과 섞지 않는다.
+
+Draft PR182 body를 최종 CI 링크로 갱신했고 mergeable=true다. 이 기록은 R4 worktree 문서에만 남겨 검증된 R3 source/worktree를 변경하지 않는다. R3 의존성 CI는 성공했지만 R4 자체의 Actor GREEN·성능·영속/수명주기 검증은 여전히 별도이며 R4 완료, merge, Issue 종료, GHCR/배포/현장 수용으로 확대하지 않는다.
+
+## R4 Actor 의도 검증 — RED 확인·GREEN 대기 (2026-11-01)
+
+TC-R4-010의 실제 Browser RED는2 PASS/1 FAIL,31.7초(`/tmp/layoutmanager-r4-actor-red.log`)다. 준비 Actor A와 확정 시 합법적인 Editor B가 달라진 상태에서 POST201이 발생했다. 이 결과를 server 권한 우회로 해석하지 않는다. intent.actorId 직접 증명·확정 전 비교 및 async staging 무효화 보완을 source review했으며 typecheck/관련 lint PASS다. 새 build와 GREEN/독립 QA 전에는 해결로 판정하지 않는다. 상세 실패/보완 경계는 FailureLedger/Architecture를 따른다.
+
+## R4 Memo Browser 재시험 — 부분 검증 완료 (2026-11-01)
+
+Root의 수정된 Memo Browser8개는 `/tmp/layoutmanager-r4-memo-browser-third.log`에서 **8 PASS,36.0초**다. 최종 typecheck/관련 lint도 exit0이다. 직전 두 번째 실행은7 PASS/1 FAIL,40.5초였고 전체 Tools dock이 핀을 덮은 상태로 pointer 좌표를 보낸 시험이었다. Tools를 닫고 hover actionability와 pointerup 전 preview=true를 확인하도록 시험을 수정했다. 최초5 PASS/3 FAIL,44.3초와 함께 FailureLedger의 이력으로 보존한다.
+
+Manager는 immutable snap intent/정확 live candidate 재검증, raw WCS와 OFF, 화면 밖 후보 제외, KEEP/DETACH server 경로, actor/load guard,44px hit target 및 native select 변경을 source review했다. 아직 실제 durable KEEP/DETACH Browser, 여러 target/Undo/Delete/BROKEN 복원과 성능·수명주기 전체 근거가 남아 있어 **R4 전체 수용 아님**이다. 합성1k/10k DXF LINE에 실제100개 UI Memo를 사용하는 별도 성능 시험은 진행 중이며 단일Viewer10k Memo 지원으로 해석하지 않는다.
+
+## R4 재개 기반 — R3 repair f179d59 게시 (2026-11-01)
+
+R3 route/reset test-only repair `f179d59604e552bfd42389420be4851e5a5d0f2e`, tree `81402198fb25ce716ac63d46a2ed0927d7c19ff0`을 Root가 게시하고4파일 local/remote 일치 및 Secret/산출물/환경remote 검사를 확인했다. PR182 mergeable=true이며 [CI41228523828](https://github.com/planner77/layoutManager/actions/runs/41228523828)은 진행 중이다. Manager가 R4 HEAD f179d59를 직접 확인했다. Root의26개 WIP 보존 검사를 근거로 기존 구현·QA를 유지한 상태에서 조건부 RESUME GO를 내렸다. 새 CI 성공·R4 완료·merge·release/현장 수용은 아니다.
+
+R3 최종 수정의 Root9 PASS/2.2분과 독립 QA9 PASS/2.1분은 아래 R3 결과를 따른다. R4 수정 Browser8개 재시험은 아직 진행 전/결과 대기이며 최초5 PASS/3 FAIL은 아래 이력에 보존한다.
+
+독립 R4 backend/domain QA의 실제 최종 실행은 `npx vitest run tests/unit/memo-session-snap-qa.test.ts tests/integration/typed-outline-runtime.test.ts` **2 files/17 PASS,12.27초**다. 별도 logfile은 없고 QA terminal/tool 실행 기록을 근거로 한다. 이전3 files/24 PASS,11.35초 보고와 합산하지 않는다. 시험 작성 과정의 실패4회차 상세는 FailureLedger를 따른다. 이는 아직 R4 전체 UI/제품 완료 판정이 아니다.
+
+## R4 의존성 재HOLD / R3 Greenfield CI 실패 (2026-11-01)
+
+Root 확인: Run41225698027 Verify124609264151의 Greenfield E2E 실패, Docker124609263950 SUCCESS. 상세 원인은 진단 중이며 이전 Unit795/build/general/auth 통과 보고는 전체 Verify SUCCESS가 아니다. Manager는 R4 추가 구현/시험을 HOLD했고 기존 WIP와 완료 근거를 보존했다.
+
+R4 최초 local Memo Browser8개는 Root 보고 **5 PASS/3 FAIL,44.3초**였다. 카메라 zoom 뒤 화면에 culling된 pin DOM 수와 문서 count의 혼동, Generated saved ID를 local-N으로 가정한 fixture, KEEP binding이 보존된 뒤의 reload discard 확인을 처리하지 않은 fixture가 실패했다. 시험 수정과 명시 discard 문구 보완은 이미 작성됐지만 최종 재시험 결과는 아직 없다. 독립 backend/domain QA의 완료 실행별 정확한 건수/로그는 별도 확인 후 기록하며 R3 CI 성공으로 대체하지 않는다.
+
+## R3 repair 게시 / R4 구현 재개 (2026-11-01)
+
+Root가 repair `08cd4062092e0dff6c68ca211accab8d163a0be5`(parent624dd0f), tree `503f793326a0b62f05d26c0c08a27ed71588e14f`의 local/remote 일치와6개 파일 Secret/산출물/환경remote 검사를 확인했다. R3 worktree는 clean, PR182 body 갱신·mergeable=true이며 [새 CI41225698027](https://github.com/planner77/layoutManager/actions/runs/41225698027)은 in_progress다. 이전 Run41224371317은 Docker SUCCESS/Verify 실패로 보존한다.
+
+Manager가 R4 HEAD08cd406과 기존 설계8개 파일 보존을 확인한 뒤 명시 IMPLEMENTATION RESUME GO를 전달했다. 수정의 실제 로컬120/795 및 독립53·Scene12 PASS는 아래 repair 기록을 따르며 새 원격 CI PASS·merge·Issue 종료·GHCR·배포/현장 수용은 아직 주장하지 않는다. 새 CI 실제 실패 시 의존성 HOLD를 다시 적용한다.
+
+## R3 원격 Verify 실패 / R4 의존성 HOLD (2026-11-01)
+
+Root가 [CI41224371317](https://github.com/planner77/layoutManager/actions/runs/41224371317) Verify Job124605333600 실패를 확인했다. 실제118 files PASS/1 FAIL,790 tests PASS/1 FAIL,119.18초이며 `tests/integration/outline-type-catalog.test.ts` TC-R2-003 line191에서 expected400/actual503이다. 원인은 진단 중이며 Docker는 당시 phase1 build 중으로 성공을 주장하지 않는다. R4 구현 GO는 의존성 HOLD로 전환했고 기존 설계/시작된 변경을 보존한다. R3 후속 수정과 새 CI 결과는 확인 후 별도 기록한다.
+
+## R3 #71/#73 — Draft 게시·원격 CI 시작 (2026-11-01, R4 착수 시점)
+
+Root가 로컬수용 source `624dd0fbf453f5ba8e80d2af608fc34e767b5a34`를 게시하고 R2 PR181 기능브랜치를base로 [Draft PR182](https://github.com/planner77/layoutManager/pull/182)을 생성했다. mergeable=true, [CI41224371317](https://github.com/planner77/layoutManager/actions/runs/41224371317)은 in_progress다.56개 stagedGitblobSHA와tree `42c6d628`의원격/source일치, Secret/산출물/환경remote정합성검사를Root가통과보고했다. 원래workspace의사용자Compose/next-env변경2개는보존했고R3worktree는clean이다. CI성공·merge·Issue종료·release/GHCR/운영배포는아직기록하지않는다. 이게시기록은새R4worktree에만추가했다.
+
+## R4 #174 — 설계 착수 (2026-11-01)
+
+R3 base624dd0f의별도 `feat/issue-174-memo-snap-20261101`에서요구/설계/AC를먼저기록했다. 현재코드·시험은NOTRUN, 후보0.52.0이며원문댓글0개를확인했다. 실제PC2대/사내CAD/GPU/운영DB는접근·검증하지않았다. 역할분담/구현GO와안전경계는Decisions/Architecture R4를따른다.
+
 ## R3 PR182 Browser route 재작업 — 로컬 수용·게시 GO (2026-11-01)
 
 Source `08cd406`의 [CI41225698027](https://github.com/planner77/layoutManager/actions/runs/41225698027)는 unit120 files/795 tests·일반 CAD117·Auth1 PASS, Greenfield8 PASS/1 FAIL(4.0분), Legacy SKIPPED로 Verify 실패다. Docker는 SUCCESS다. clock repair의 기존 로컬 수용은 유지하지만 전체 R3 원격 수용은 아니다. R4는 새 실패 때문에 다시 HOLD다.

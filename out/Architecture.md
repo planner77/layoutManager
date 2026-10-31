@@ -1,3 +1,43 @@
+## R4 #174 — 선택 가능한 세션 스냅과 신뢰된 앵커 이동 계약 (구현 전, 2026-11-01)
+
+**Module 경계:** Developer는 `domain/memo-session-snap.ts` 후보·유지 이동과 기존 adapter 후보 추출의 안정성, `server/cad-business/anchor-service.ts`/anchor route 및 관련 순수·통합/benchmark 시험을 소유한다. Root는 Viewer/MemoEditor/pointer UI·client bridge·Browser 시험을 소유한다. Manager가 계약 검토 후 독립 QA에 인계한다. UI가 DB/파일/Source attestation을 구현하지 않는다.
+
+### 세션 공용 interface
+
+- 기존 `MemoSnapCandidate`/`nearestMemoSnap` 호환을 유지한다. 새 `MemoSnapChoice = MemoSnapCandidate & {key:string;pointIndex:number}`와 `MemoSnapCandidateSet = {candidates:readonly MemoSnapChoice[];total:number;scannedPoints:number;limited:boolean}`를 제공한다. `collectMemoSnapCandidates(scope,requestedWcs,targets,project,maxDistancePx=12)`는 최대20,000 point를 검사하고 거리·동률 kind 우선·stable ref/key 순으로 정렬하여 최대100개를 반환한다. `total`은 실제 검사 범위에서의 적격 수, `limited`는 point/candidate 상한에 도달해 전체 탐색을 보장하지 못함을 뜻한다. adapter가 선행 제한한20,000 point도 보수적으로 limited를 표시한다. Root project wrapper는 현재 Canvas CSS width/height 밖의 투영에null을 반환해 offscreen 후보를 제외한다. 화면 밖의 명시 FREE WCS 입력은 스냅 허가와 구분한다. UI는 상한·확대/다시 선택 안내를 숨기지 않는다.
+- key는 target origin+immutable instance ID+kind+pointIndex를 인코딩해 구성한다. 같은 위치의 다른 target/instance를 합치지 않는다. 닫힌 ring의 반복 끝점 등 동일 target의 중복 point는 결정적으로 처리한다. candidate key는 해당 Viewer/generation 안의 선택 키이며 서버 식별자가 아니다.
+- Root는 raw requested WCS, 후보 snapshot, 선택 key 또는 명시 OFF, Version/SHA/Renderer/attempt/view revision을 하나의 pending 의도로 보관한다. pointer/WCS 입력은 새 의도를 만들고 기본 첫 후보를 선택할 수 있지만 사용자의 수동 선택/해제 이후 확정 때 nearest를 다시 호출하지 않는다. 최신 adapter 후보로 **같은 key·local/world·transform·visible/context**를 검증해 변경되면 재선택을 요구한다. OFF는 원래 requested WCS를 사용한다. 취소/카메라·대상 변동/버전·Renderer 전환은 pending을 무효화한다.
+- `MemoSessionSnapStore.reposition(memoId,world,targets):SessionSnapProjection`은 현재 동일 binding/live target만 사용해 inverse를 계산한다. 없거나 forced-BROKEN/singular면 상태를 바꾸지 않고 거부한다. target visibility는 신규 후보 제외 조건이며 기존 유효 관계의 보존 자체를 제3 객체로 바꾸지 않는다. DETACH는 기존 detach를 사용한다. 최대100 bindings는 유지한다. 서버 Memo의 세션 snap 유지 이동은 먼저 합법적인 FREE World 쓰기를 성공시킨 뒤 세션 local을 갱신하며 임시 ref/matrix는 API에 보내지 않는다.
+
+### BLOCK 렌더 projection의 singleton Material (R4 진단 보완)
+
+BLOCK의 서로 다른 INSERT를 실제 렌더 leaf의 기존 instance ID/world transform으로 유지한다. 상위 renderer가 단일 Material을 `[material]`로 감싼 경우 projection에서 정확1개 배열만 풀어 visible을 검사하는 최소 wrapper 보완을 허용한다. 빈 배열/다중 Material은 제외한다. 배열 Material은 Three의 geometry groups를 통해 렌더되므로 유효한 materialIndex0 group들이 drawRange 전체를 덮는 경우만 허용하고 빈/부분/잘못된 group은 제외한다. drawRange·index·유한 좌표·평면·scope 검증 및 원본 geometry/ID를 유지한다. SourceRef/원본 Entity 권한을 새로 부여하지 않는다. 실제 singleton 두 instance RED/GREEN·숨김/multi 제외 회귀와 원본 BLOCK Browser 후에 지원 결과를 기록한다.
+
+### 준비된 스냅 의도의 Actor 증명 (R4 검토 보완)
+
+Active 서버 모드에서 준비한 `MemoSnapIntent`에는 catalogue와 무관한 현재 Session API의 직접 증명 `actorId`를 묶는다. 확정 전 fresh Session actor와 다르면 서버 write를 보내기 전에 재조회 오류로 거절하며 요청 후 기존 actor/load guard도 유지한다. 서버OFF는 로컬 모드로만 처리하고 서버 권한 증명을 흉내내지 않는다. 이 계약은 #172의 작성자-only 정책을 변경하지 않는다.
+
+준비 중 Session 조회가 비동기이므로 시작 당시 raw requested WCS·Version/SHA/manager/load/view epoch·query generation을 캡처한다. 조회 중 좌표 편집/취소/새 query/도면·카메라 변화가 있으면 이전 결과를 버리고 새 필드나 pending을 덮지 않는다. 새 조회 시작 시 이전 의도를 무효화한다. 준비 Actor A 뒤 cookie만 B로 교체해 focus refresh 이전 확정하는 실제 Browser RED를 먼저 실행하고, 실패가 확인되면 최소 수정과 GREEN을 별도로 기록한다.
+
+### 서버 FREE 쓰기와 세션 연결 사이의 완료 경계
+
+세션 SNAP/KEEP를 사용하는 서버 Memo는 먼저 FREE world를 저장하고 뒤에 browser-only 관계를 적용한다. 이는 DB와 브라우저의 분산 transaction이 아니다. 요청 전에 선택/target을 검증하고, 응답 뒤 actor/Version/load generation과 최신 target/camera를 다시 검증한다. 동일 context에서 **서버 성공이 확인되었지만** 대상이 바뀌어 세션 연결을 적용할 수 없으면 authoritative 서버 WCS를 표시하고 기존 stale SESSION_ONLY binding을 해제한다. “서버 메모는 저장됐으나 대상 변경으로 세션 연결을 적용하지 못했습니다”라고 알리고 rollback·연결 유지 성공을 주장하거나 제3 target으로 재연결하지 않는다.
+
+실패/응답 불확실 상태에서는 commit을 추정하여 기존 binding을 해제하지 않으며 재조회로 확인한다. 이전 actor/Version의 늦은 응답은 현재 화면에 적용하지 않는다. 이 fallback은 명시 FREE-world 쓰기의 성공 후 발생한 세션 후처리 실패에만 한정한다. 일반 target 삭제의 마지막 WCS/BROKEN 유지와 영속 server-anchor KEEP/DETACH의 원자성을 변경하지 않는다.
+
+### 영속 anchor reposition API
+
+기존 PATCH `/api/cad-files/[versionId]/memos/[memoId]/anchor`에 `operation:'reposition'`을 추가한다. 기존 attach/detach body·응답은 호환 유지한다. strict body는 `{operation:'reposition',behavior:'KEEP'|'DETACH',expectedRevision,expectedSceneRevision,anchorWcsXY,expectedTargetRevision?}`이다. 모든 revision은0이상 safe integer, WCS는 기존±1e12 유한2D, 추가 key는400이다. targetId/origin/localAnchor/affine를 새 body에 허용하지 않는다.
+
+- 공통: 현재 인증·활성 Site·Version/SHA·Memo owner와 memo revision, 현재 Scene pointer의 expectedSceneRevision을 transaction 안에서 확인한다. 기존 anchor schema가 없으면503이며 자동DDL은 없다.
+- KEEP: 현재 anchor가 ATTACHED여야 한다. APP_CREATED는 existing target server UUID+같은 Version/SHA+live row를 조회하고 **필수 expectedTargetRevision**을 확인한다. 현재 geometry/허용 operations로 만든 trusted matrix inverse를 requested world에 적용한다. R3 정책대로 오래된 row.sceneRevision 자체를 이유로 같은 WCS target을 거부하지 않는다. DXF_IMPORTED는 기존 서버 검증 SourceRef의 live SOURCE_CANONICAL 근거를 확인하고 identity transform을 사용한다; expectedTargetRevision은 허용하지 않는다. Renderer session delta는 서버 transform으로 간주하지 않는다.
+- DETACH: expectedTargetRevision을 허용하지 않는다. anchor를 삭제하고 요청 WCS로 FREE 이동한다. FREE/BROKEN에도 동일 명시 이동을 허용하되 Memo owner/Scene/Memo CAS는 동일하다.
+- 성공: requested world, KEEP의 local 또는 DETACH cleanup, Memo revision+1/updatedBy와 EDIT Audit1을 원자 commit한다. 응답200은 `{revision,anchor,anchorWcsXY}`이며 UI가 필요하면 권한/actor/Version/generation을 재검사한 Memo GET으로 metadata를 갱신한다. 실패는 기존 world/local/anchor/revision/Audit를 보존한다. 후속 target transform은 기존 reconcile이 저장된 local을 투영하며 직접 Memo 재배치는 작성자-only다.
+
+### 성능/정리 경계
+
+후보 query는 pointer move마다 임의 전 도면/DOM을 재생성하지 않고 bounded snapshot을 사용한다. `getMemoSnapTargets(false)`의 reconciliation은 모든 필요한 live target transform/identity를 유지하며 candidate points 비용과 분리한다. 숨김/비평면/singular/타 scope는 새 후보에서 제외한다. Domain1k/10k target workload와 여러 bounded100-binding store의 aggregate 시험을 단일 Viewer10k 지원으로 표현하지 않는다. 정확성·메모/원본 불변·dispose listener0은 필수 수용 Gate이며 p50/p95/max와16.7ms frame budget 초과는 실제 수치로 기록해 현장 기준 협의에 남긴다.
+
 ## R3 #71/#73 — Typed Outline Interface와 복원 설계 (구현·로컬 수용, 2026-11-01)
 
 상태: 구현 전 작성한 계약을 최종 source와 대조했고 Manager가 로컬 범위를 수용했다. 실제 실행 범위·잔여와 게시 상태는 [TestReport의 R3-20261101](TestReport.md)을 따른다. 운영 DB 이전·배포·실환경 수용을 뜻하지 않는다.

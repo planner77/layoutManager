@@ -1,3 +1,47 @@
+## R4 로컬 수용·Draft PR GO — 성능/heap 잔여 공개 (2026-11-01)
+
+Manager는 최종 기능 회귀·독립 QA·실제 계측을 검토해0.52.0의 **LOCAL FUNCTIONAL + MEASUREMENT ACCEPT / DRAFT PR GO**를 판정한다. R4-REQ5는16.7ms 대비 실제 frame/heap/dispose 계측을 요구하며 현장 SLA 합격을 전제하지 않는다. 측정 결과 p95초과와10k 두 번째dispose heap 증가16,804,276bytes를 공개하고 원인/장기 누수 여부는 미해결로 유지한다. Inspector handler와 Canvas handle 명시 해제 후에도 남은 추세를 숨기거나 leak-free로 표현하지 않는다.
+
+기능·계측 실행은 TestReport 최종표를 기준으로 하고 #174 성능/현장 항목은OPEN이다. 이 범위의 Draft PR 게시와 새 CI 기동을 승인하며 merge·Issue 종료·release/GHCR·배포를 승인한 것으로 확대하지 않는다. Root는 최종 staged/Secret/환경remote 검사와 Conventional Commit/stacked PR를 담당한다. 새 CI 실패가 나오면 후속 구현 의존성을 다시 검토한다. 기존실패/수정 기록은 유지한다.
+
+## R3 최종 CI 수용 — R4 기반 원격 gate 통과 (2026-11-01)
+
+정확 f179d596의 [CI41228523828](https://github.com/planner77/layoutManager/actions/runs/41228523828) Verify124617629491/Docker124617629701 SUCCESS 및 모든 필수 step PASS를 Root가 확인했다. Manager는 R4의 기반 CI 조건을 통과로 기록한다. 기존 조건부 RESUME를 유지하며 R4 자체 결함·필수 시험을 마쳐야 전체 수용할 수 있다. 이전 R3 실패와 재작업 기록은 보존한다. PR182는 draft/mergeable이며 merge·Issue 종료·release/운영 배포는 승인하거나 실행하지 않는다. 이 후속 기록은 R4 문서에만 쓰고 검증된 R3 source는 clean으로 유지한다.
+
+## R4 조건부 RESUME — R3 route/reset repair 게시·기반 반영 (2026-11-01)
+
+Root가 R3 `f179d59604e552bfd42389420be4851e5a5d0f2e`(parent08cd406)의4파일 local/remote blob·tree 및 Secret/산출물/환경remote 검사를 통과했고 PR182를 갱신했다. Manager가 R4 HEAD도 f179d59임을 직접 확인했다. Root는 기존26개 WIP를 보존하고 새 R3 문서 prefix3개와 test-only repair를 반영했다. 기존 source/QA/Editor 변경은 유지한다.
+
+**R4 IMPLEMENTATION RESUME GO.** Root/독립 QA의 최종9/9 PASS 및 정확 Source reset200/`SOURCE_ONLY`로 로컬 gate를 수용했다. [새 CI41228523828](https://github.com/planner77/layoutManager/actions/runs/41228523828)은 진행 중이며 성공을 주장하지 않는다. 실제 신규 실패가 확인되면 다시 HOLD한다. Root는 수정된 Memo Browser8개를 재시험하고 남은 실제 pointer/다중 target/Undo·BROKEN·수명주기/성능 검증을 이어간다. 원래 #174 범위·제품 상한·작성자-only/trusted inverse 및 현장 미검증 조건은 유지한다. 아래 이전 HOLD는 당시 이력으로 보존한다.
+
+## R4 의존성 재HOLD — R3 새 CI Greenfield 실패 (2026-11-01)
+
+[Run41225698027](https://github.com/planner77/layoutManager/actions/runs/41225698027)의 Verify124609264151이 Greenfield E2E step에서 실패했다고 Root가 확인했다. Docker124609263950은 SUCCESS다. 상세 실패와 선행 step의 구조화된 최종 상태는 Root가 확인 중이며 아직 원인을 단정하지 않는다.
+
+Manager는 조건부 재개의 실제 실패 조건에 따라 R4 구현·추가 시험을 다시 HOLD하고 Developer/QA에 즉시 전달했다. 작성된 코드·설계·완료된 로컬 시험은 보존한다. Root가 이미 시작한 build는 비변경 실행으로 마칠 수 있지만 새 R4 구현을 이어가거나 로컬 완료/원격 성공을 선언하지 않는다. R3 원인 수정·검토·관련 검증 및 명시 재개 전까지 이전 RESUME GO는 보류다.
+
+## R4 구현 재개 GO — R3 수정 게시·기반 반영 확인 (2026-11-01)
+
+R3 test-only repair `08cd4062092e0dff6c68ca211accab8d163a0be5`가 게시되었고 R4 worktree의 HEAD도 같은 commit임을 Manager가 확인했다. 기존 R4 설계8개 파일은 byte-exact 보존 후 새 base에 반영되었고 Developer 구현은 아직 시작하지 않았다. 전체120 files/795 tests 및 독립QA53·Scene12의 별도 PASS로 수정의 로컬 gate를 통과했다.
+
+**아래 의존성 HOLD를 해제하고 R4 IMPLEMENTATION RESUME GO를 Developer와 Root에 명시한다.** [새 CI41225698027](https://github.com/planner77/layoutManager/actions/runs/41225698027)은 in_progress이며 원격 성공으로 주장하지 않는다. pending 중 병행 구현을 허용하되 실제 새 실패가 확인되면 즉시 다시 HOLD한다. 원 #174 범위·작성자-only·100 Memo/20k point·서버 trusted inverse·운영/현장 잔여 계약은 유지한다. 이전 실패 Run과 당시 HOLD 기록은 역사로 보존한다.
+
+## R4 구현 의존성 HOLD — R3 원격 CI 실패 (2026-11-01)
+
+[PR182 CI41224371317](https://github.com/planner77/layoutManager/actions/runs/41224371317)의 Verify Job124605333600이 **118 files PASS /1 FAIL,790 tests PASS /1 FAIL,119.18초**로 실패했다. `outline-type-catalog.test.ts`의 TC-R2-003 line191은400 기대에503을 받았다. 원인은 아직 확정하지 않았고 Docker Job은 당시 실행 중이었다. 로컬791PASS를 원격 성공으로 승계하지 않는다.
+
+Manager는 AGENTS의 실패 해결 전 다음 Unit 진행 금지에 따라 **아래 R4 implementation GO를 일시 보류**하고 Developer/Root에 알렸다. R4 설계 문서는 보존하되 코드 구현을 더 진행하지 않으며 이미 시작한 변경은 삭제하지 않는다. Root가 R3 worktree에서 원인을 진단하고 Manager 검토·관련 QA/재시험으로 해결한 뒤 명시 재개한다. 본 HOLD는 이전 R3 로컬 실행 결과를 소급 실패로 바꾸지 않는다.
+
+## R4 #174 — 최소 일관 구현 범위와 Interface GO (2026-11-01)
+
+원문 #174와 댓글0개를 확인했다. R3 local acceptance/PR182 게시 뒤 다음 별도MINOR0.52.0에서 (1) 명시 다중후보·OFF, (2) 세션/영속 관계의KEEP/DETACH WCS 이동, (3) 실제pointer/다중target/수명주기 및bounded합성1k/10k 계측을 하나의 일관된PR로 구현한다. 자동최근접만 추가 검증하고 명시선택/유지이동을 미루는 축소는 하지 않는다. 실PC2대/사내원본/GPU 수용은 접근자료가 없으므로 후속이며 #174 OPEN 유지다.
+
+- 새전역state/DBcolumn/Schema baseline 없이 기존세션SnapStore와CadMemoAnchor를 재사용한다. 명시reposition은기존anchor route의strictoperation이며Memo작성자-only/CAS/Audit를유지한다. #172 공동편집승인·운영Auth/Writer/volume·원본반출·기발행OCI태그변경없음.
+- 제품100Memo/20kpoint상한을성능시험을위해무단확장하지않는다.1k/10k targetquery및boundedstore aggregate실측은가능하지만단일Viewer10kMemo/현장프레임수용으로기록하지않는다. framebudget16.7ms와관측p95를병기하고업무SLA는실환경에서별도결정한다.
+- 후보immutablekey+requestedWCS+explicitOFF+generation을확정권위로하고commit시nearest재선택을금지한다. serverKEEP는기존binding의trustedtargetinverse만사용하고브라우저affine/local/ref재지정입력을거절한다. UI수명주기/actor검사는R3가확립한stale응답차단원칙을유지한다.
+
+**Manager IMPLEMENTATION GO:** 위 Requirements/Architecture/TC-R4 계약을 기록한 뒤 Developer의domainSnap/adapter/serveranchor 구현과 Root의Viewer/MemoEditor/client/Browser보조구현을지시한다. Developer interface freeze 보고→Manager검토→독립QA→Manager최종수용→Rootcommit/stackedDraft 순서다. R3 PR CI는진행중이며실패가확인되면우선원인조치한다; 시작을성공으로간주하지않는다. 이GO는시험PASS·merge·Issue종료·배포승인이아니다.
+
 ## R3 #71/#73 — Manager 최종 로컬 수용 / Draft 게시 GO (2026-11-01)
 
 **ACCEPT LOCAL SCOPE.** Developer backend/shared DTO와 Root Viewer/Tree/JSON 구현, 독립 QA의37개 집중 backend 및9개 실제 Browser, Root 전체119 files/791 tests(428.37초)·일반 CAD117개(10.2분)·Greenfield7개(2.1분), production build/typecheck/lint(0 errors/9 warnings), 실제 Migrator build·UID10001 tmpfs INIT/RESTART/exact schema/FK를 검토했다. Manager는 마지막 완료 로그와 desktop/320px capture를 직접 확인했다. Source marker 변조, 오래된 GET/이전 actor mutation, Scene 재게시, 응답 소실 replay,200개 Tree와101개 이후 catalogue의 실제 근거는 [TestReport R3-20261101](TestReport.md)에 기록한다.

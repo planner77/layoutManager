@@ -1,3 +1,13 @@
+## R4 #174 — 다중 메모 스냅·연결 유지 이동 (구현 전, 2026-11-01)
+
+근거: [#174](https://github.com/planner77/layoutManager/issues/174) 원문과 댓글0개를 확인했다. R3 기능과 CI repair를 포함한 `f179d59604e552bfd42389420be4851e5a5d0f2e`/0.51.0 기반 다음 기능 후보0.52.0이다. 기존 M3 코어/세션 계약은 [Issues84-167](Issues84-167.md)을 유지한다. 아래 코드·합성 범위만 구현하며 #174는 현장 잔여 때문에 OPEN 유지한다.
+
+- **R4-REQ1 후보:** 현재 Canvas CSS viewport 안에 투영되는12 CSS px 범위의 보이는 안전한2D Endpoint/Vertex/Center를 나열한다. 유한 좌표만으로 offscreen 후보를 허용하지 않는다. 기본은 거리·동률 ENDPOINT→VERTEX→CENTER이며 사용자는 다른 후보를 클릭/키보드/터치로 고르거나 스냅 안 함을 선택한다. 원래 요청 WCS와 선택 후보 WCS를 분리하며 확정 시 자동 최근접을 다시 선택해 수동 결정을 덮어쓰지 않는다. 선택은 Version/SHA/Viewer·대상/카메라 generation에 결합하고 숨김·삭제·변환·전환된 stale 후보는 명시 재선택 요구로 거부한다. BLOCK instance와 같은/반복 Handle은 렌더 instance ID로 구분하며 서버 Source 증명으로 승격하지 않는다.
+- **R4-REQ2 이동:** ATTACHED 메모 WCS 이동에 연결 유지/해제를 명시 선택한다. 유지하면 동일 target의 현재 inverse transform으로 localAnchor를 새로 구하고 이후 이동/회전/Undo/Redo에 drift 없이 투영한다. DETACH는 요청한 WCS에 FREE로 남고 자동 제3 대상 재연결을 하지 않는다. BROKEN/FREE에는 유지가 불가하며 삭제된 target의 마지막 WCS를 보존한다. 임시 세션 관계와 서버 영속 관계는 UI/전송을 구분한다.
+- **R4-REQ3 서버:** 새 명시 anchor reposition 동작은 기존 Session/Origin/CSRF/Role/Site와 Memo 작성자-only·Memo/Scene/필요한 target revision CAS를 유지한다. 현재 target matrix는 서버 DB geometry/허용 transform에서 구한다. 브라우저 matrix/localAnchor/actor/target 재지정 주장은 받지 않는다. World+localAnchor+Memo revision+EDIT Audit를 한 transaction으로 확정하고 오류·감사 실패는 전체 rollback한다. #172 공동편집 정책은 변경하지 않는다.
+- **R4-REQ4 UX/수명:** 기존 MemoEditor/공용 패널에서320px·키보드·touch·실제 pin pointer drag를 지원한다. 후보 선택과 패널 DnD/Canvas pan이 충돌하지 않아야 한다. 실패/ESC/취소·stale 응답은 이전 Memo/관계를 보존한다. Renderer/Version/reload에서 임시 관계·pending candidate/listener를 정리하고 영속 관계만 서버에서 복원한다.
+- **R4-REQ5 검증/성능:** 실제 다중 target pointer 이동·회전·Undo/Redo·delete→BROKEN→동일 ID Undo 복구·visibility·Source-only 경계를 합성 Browser로 검증한다. 제품 Memo100개와 후보 정점20,000개 상한을 유지한다.1k/10k target-query 및 bounded100-Memo store의 합성 반복/aggregate 부하에서 p50/p95/max·프레임·메모리(지원 시)·dispose/남은 listener를 실측한다. 이는 단일 Viewer1k/10k Memo 지원이 아니다.16.7ms frame budget 대비 관측을 적고 실 PC2대/사내 DXF/GPU/실규모 기준은 #96/#113/#172 연계 NOT RUN으로 둔다.
+
 ## R3 #71/#73 — 서버 타입 확정과 영속 트리 요구사항 (구현·로컬 수용, 2026-11-01)
 
 상태: 구현 전 작성한 계약을 최종 source와 대조했고 Manager가 로컬 범위를 수용했다. 실제 실행 범위·잔여와 게시 상태는 [TestReport의 R3-20261101](TestReport.md)을 따른다. 운영 DB 이전·배포·실환경 수용을 뜻하지 않는다.
