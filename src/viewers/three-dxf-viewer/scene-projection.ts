@@ -19,8 +19,8 @@ export function sceneOutlineProjection(root:THREE.Object3D,scope:SceneScope):Dxf
     if(nestedDrawable){warnings.push('중첩 렌더 객체의 상위 geometry는 선택에서 제외');return;}
     const geometry=(object as THREE.Mesh).geometry,position=geometry?.getAttribute('position');
     const material=(object as THREE.Mesh).material;
-    if(Array.isArray(material)){warnings.push('다중 Material 렌더 객체는 선택에서 제외');return;}
-    if(material?.visible===false)return;
+    if(Array.isArray(material)&&material.length!==1){warnings.push('다중 또는 빈 Material 렌더 객체는 선택에서 제외');return;}
+    if((Array.isArray(material)?material[0]:material)?.visible===false)return;
     const ref:unknown=object.userData.cadSceneRef;
     if(!position||!validSceneRef(ref,scope)||ref.origin!=='DXF_IMPORTED')return;
     const total=geometry.index?.count??position.count;
@@ -28,6 +28,23 @@ export function sceneOutlineProjection(root:THREE.Object3D,scope:SceneScope):Dxf
     if(!Number.isSafeInteger(start)||start<0||start>=total||
        !(rangeCount===Infinity||Number.isSafeInteger(rangeCount)&&rangeCount>=0)||
        !Number.isSafeInteger(end)||end<=start)return;
+    // Upstream BLOCK merging wraps even one material in an array. Three renders
+    // array materials through geometry groups, so require complete visible coverage
+    // of this drawRange rather than exposing vertices that were never drawn.
+    if(Array.isArray(material)){
+      const groups=geometry.groups;let covered=start;
+      if(!groups.length||groups.some(group=>!Number.isSafeInteger(group.start)||group.start<0||
+        !Number.isSafeInteger(group.count)||group.count<0||group.start+group.count>total||group.materialIndex!==0)){
+        warnings.push('단일 Material group 범위가 유효하지 않아 선택에서 제외');return;
+      }
+      for(const group of [...groups].sort((a,b)=>a.start-b.start)){
+        const from=Math.max(start,group.start),to=Math.min(end,group.start+group.count);
+        if(to<=from)continue;
+        if(from>covered)break;
+        covered=Math.max(covered,to);
+      }
+      if(covered<end){warnings.push('단일 Material group의 미표시 정점은 선택에서 제외');return;}
+    }
     const count=end-start;
     if(used+count>100_000){warnings.push('렌더 선택 투영 정점 한도 초과');return;}
     const indices:number[]=[];

@@ -1,3 +1,11 @@
+## 0.52.0 후보 — #174 메모 스냅 선택·연결 유지 이동 (2026-11-01)
+
+- Added:12 CSS px 안의 Endpoint/Vertex/Center 후보 선택과 명시 OFF, 키보드/터치용 목록,44px 핀 hit target. raw WCS와 선택 후보를 분리하고 동일 key/context를 다시 검증한다.
+- Added: 세션 연결의 동일 target inverse 유지 이동 및 서버 anchor KEEP/DETACH reposition. 기존 Memo owner/Scene·Memo·target CAS/Audit를 유지하며 새 Schema는 없다.
+- Fixed during development: 준비한 메모 의도의 Actor와 확정 Actor가 다른 client lifecycle 결함을 실제 RED로 확인했다. 직접 Session actor 증명 및 비동기 조회 generation 무효화로 보완하고 Root/독립 QA 집중 GREEN을 확인했다.
+- Fixed: BLOCK renderer의 singleton Material을 유효한 전체 group coverage 조건에서 projection에 포함해 서로 다른 INSERT 후보를 유지한다. 외부 라이브러리/Source 권한은 변경하지 않는다. 개발 Auth 양성 시험은 owned disposable fixture의 opt-in clock으로 역행 환경을 통제하며 production guard를 유지한다.
+- Validation: 기능/계측 로컬 수용 및 Draft PR GO. 최종 전체unit123/814, 일반Browser124, Greenfield13, Auth/Legacy 각1 및 집중/독립 QA 결과는 [TestReport](TestReport.md), 실패는 [FailureLedger](FailureLedger.md)를 따른다. Frame budget 초과와 두 번째dispose heap 증가 원인은OPEN이며 성능/장기누수·실 CAD/2PC·PR CI·GHCR/배포 수용은 아직 미완료다. 단일Viewer10k Memo 지원을 주장하지 않는다.
+
 ## 0.51.0 후보 — #71/#73 타입 지정 영속 외곽선 (2026-11-01)
 
 - Added: 해당 Version/Site 권한으로 전역 활성 타입 카탈로그와 저장 외곽선을 조회한다. Reader는 조회, Editor 이상은 타입 지정 저장·수정·논리 삭제를 수행한다. 동일 사용자·Version·Idempotency-Key와 동일 정규화 요청의 재시도는 기존 결과를 반환하고 다른 내용은 409로 차단한다.

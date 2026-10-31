@@ -4,6 +4,7 @@ import { randomBytes, scryptSync } from 'node:crypto';
 import path from 'node:path';
 import { makeG7RuntimeFixture } from './tests/helpers/g7-runtime';
 const fixture=makeG7RuntimeFixture();
+const controlledClock=process.env.G7_RUNTIME_E2E_MONOTONIC_CLOCK==='true';
 const port=process.env.G7_RUNTIME_E2E_PORT ?? '3319';
 const origin='http://127.0.0.1:'+port;
 const uiSite='15300000-0000-4000-8000-000000000003';
@@ -35,5 +36,9 @@ export default defineConfig({
     executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,args:['--no-sandbox'],
   }},
   webServer:{command:`npm run start -- --port ${port}`,url:origin,reuseExistingServer:false,
-    env:{...env,CAD_STORAGE_BACKEND:'local',CAD_STORAGE_PATH:path.join(fixture.root,'cad'),MAX_UPLOAD_SIZE_MB:'100'}},
+    env:{...env,CAD_STORAGE_BACKEND:'local',CAD_STORAGE_PATH:path.join(fixture.root,'cad'),MAX_UPLOAD_SIZE_MB:'100',
+      ...(controlledClock?{G7_RUNTIME_E2E_ROOT:fixture.root,G7_RUNTIME_E2E_MONOTONIC_CLOCK:'true',
+        NODE_OPTIONS:[process.env.NODE_OPTIONS,
+          '--import='+JSON.stringify(path.join(process.cwd(),'tests/fixtures/g7-runtime-monotonic-clock.mjs'))]
+          .filter(Boolean).join(' ')}:{})}},
 });

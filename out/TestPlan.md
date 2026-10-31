@@ -1,3 +1,24 @@
+## R4 Auth 회귀 fixture 보완 계획 (2026-11-01)
+
+실제 wall rollback trace로 실패한 양성 Auth Browser는 owned disposable fixture 서버에 한정한 controlled clock으로 재시험한다. Production의 issued_at/last_seen_at 역행 거부 guard와 기존 명시적 음성 경계 시험은 유지한다. preload는 승인한 fixture path 밖에서 적용되지 않아야 한다. 실제 native 실패1FAIL16.6초와 controlled 재시험을 별도 기록하며 환경 안정화를 제품 auth 정책 변경으로 표현하지 않는다. 최종 Auth PASS 전 R4 전체 수용을 보류한다.
+
+## R4 #174 — 구현 전 Acceptance / Test Cases (2026-11-01)
+
+최초 설계 시점은 모두 NOT RUN이며 실제 진행 결과는 TestReport를 따른다. 후보0.52.0, R3 기능624dd0f와 CI fixture repair를 포함한 최신 basef179d59, 격리 합성 fixture만 사용한다. 기존100 Memo/20k point 제한과 #172 작성자-only를 바꾸지 않는다.
+
+| TC | 요구 | 검증 |
+| --- | --- | --- |
+| TC-R4-001 | REQ1 | 실제12 CSS px 후보 distance/kind/stable tie, endpoint/vertex/center, 같은/반복 Handle의 다른 BLOCK instance, 겹침·숨김·offscreen/nonplanar/singular/foreign scope 제외,100 후보/20k point 상한과 limited 표시. |
+| TC-R4-002 | REQ1/4 | Browser 기본 nearest와 다른 후보 클릭/Arrow·Enter/Space/touch 선택, OFF 원래WCS, 선택 후 confirm이nearest로되돌지않음. 대상변환·hide/delete·camera·Version/Renderer race는stale선택거부/기존메모불변.320px·패널DnD/Canvaspan충돌·ESC취소. |
+| TC-R4-003 | REQ2 | 세션 ATTACHED 유지 이동의 current inverse/local roundtrip; Translate/Rotate/Undo/Redo 반복 drift허용오차, detachFREE, BROKEN keep거절/마지막World보존; 동일ID Undo복구/제3ID자동연결0. 서버전송에임시ref/matrix0. |
+| TC-R4-004 | REQ3 | 실제signedGreenfield ownerKEEP/DETACH200, 다른Editor owner403/Reader403/foreignSite·Version/SHA거절, forgedmatrix/local/target/unknownkey400, staleMemo/Scene/APPtarget409. SourceRef검증/identity, 같은WCS의이전rowScene에서도currentSceneCAS성공. |
+| TC-R4-005 | REQ3 | Audit INSERT장애/revision경쟁/targetdelete에서world/local/revision/anchor전체rollback, 성공EDIT1, 후속targettransform+memo파생World원자갱신, Memo개별삭제/ALLresetdanglinganchor0. 기존attach/detach/oldmovedeattach회귀·schema/marker/DDL불변. |
+| TC-R4-006 | REQ4 | 실pointerpin drag+명시keep/detach, 다중target 동기이동·회전/선택·visibility/Undo/Redo/deleteBROKEN/동일ID복구, Source-only별origin 경계, reload/Renderer/Version→세션관계소멸/영속관계복원, 이전actor/Version늦은응답폐기. |
+| TC-R4-007 | REQ5 | 합성1k/10k targetquery와bounded100Memo store aggregate1k/10k workload, 단일store101거절, cap통계; p50/p95/max/frame·heap지원여부·반복dispose후listener/retainedstore 수실측.16.7ms초과와미측정값을숨기지않고단일Viewer10k지원/현장PASS로표현하지않음. |
+| TC-R4-009 | REQ2/4 | 서버 FREE-world 쓰기 중 세션 target/camera를 바꾼 뒤 성공 응답: canonical WCS 유지·stale SESSION binding 해제·부분 완료 안내·제3 target 재연결0. 실패/불확실 응답은 binding 선해제0, 다른 actor/Version 응답은 UI적용0. 일반 삭제BROKEN 및 영속KEEP transaction과 구분. |
+| TC-R4-010 | REQ1/4 | Actor A에서 스냅 의도를 준비한 뒤 동일 Browser cookie를 B로 전환하고 focus refresh 없이 확정: Memo POST0/명시 재조회 오류. Session proof 지연 중 좌표 편집·취소·후속query의 최신 상태를 이전 응답이 덮지 않음. Catalogue 권한과 독립, OFF모드 server권한 추정0. 실제 RED/GREEN을 분리 기록. |
+| TC-R4-008 | 전체 | generate/typecheck/lint/fullunit-integration/build, 관련일반Viewer/GreenfieldBrowser·기존M1/M2/M3/R3/권한/원본/Scene/Undo회귀. 실제명령/건수/실패재시험/역할을TestReport/FailureLedger기록. 실PC2대/사내CAD/GPU/#96/#113/#172는NOTRUN별도. |
+
 ## R3 PR182 CI 재작업 — Browser route 수명 (2026-11-01)
 
 - **TC-R3-CI-ROUTE-001:** commit 후 응답 소실→동일 Idempotency-Key replay200의 기존 실제 API/Audit/receipt 검증을 유지한다. 일회성 응답 소실 후에는 동일 route handler가 계속 통과시키도록 page teardown까지 유지한다. replay 직후 타입 선택이5초 내 enabled가 되는지 먼저 검증하고 후속 typed create/Reader/복원까지 실행한다. 기존 route를 refetch 진행 중 제거하지 않는다.

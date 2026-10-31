@@ -1,3 +1,7 @@
+## R4 #174 — 기존 Anchor Schema 재사용 (구현 전, 2026-11-01)
+
+새 Table/Column/Index/Trigger/migration/baseline을 추가하지 않는다. `CadMemoAnchor`의 기존 local X/Y·status/target과 `CadMemo`의 WCS/revision, 기존 `CadBusinessAudit` EDIT를 같은 transaction에서 갱신한다. KEEP는 기존 target identity를 보존하고 trusted current inverse를 적용하며 DETACH는 anchor cleanup과 WCS 이동을 함께 수행한다. 작성자-only/CAS/원자성·실제 test는 [Architecture R4](Architecture.md), [TestPlan R4](TestPlan.md)를 따른다. R3 exact baseline/과거DDL/checksum과 실제운영DB/volume은불변이다.
+
 ## R3 #71/#73 — Typed 생성 receipt와 기존 타입 FK (구현·로컬 수용, 2026-11-01)
 
 상태: 구현 전 작성한 계약을 최종 source와 대조했고 Manager가 로컬 범위를 수용했다. 실제 실행 범위·잔여와 게시 상태는 [TestReport의 R3-20261101](TestReport.md)을 따른다. 운영 DB 이전·배포·실환경 수용을 뜻하지 않는다.

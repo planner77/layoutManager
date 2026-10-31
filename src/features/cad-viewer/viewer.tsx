@@ -17,6 +17,9 @@ import {assignMemoToGroup,createMemoGroup,emptyMemoTreeState,isMemoVisible,remov
  renameMemoGroup,setMemoGroupVisible,setMemoVisible,type MemoTreeState} from '@/domain/memo-tree';
 import type {MemoSettingsInput} from '@/domain/memo-schedule';
 import { CadMemoEditor, type MemoEditorFields } from '@/features/cad-viewer/cad-memo-editor';
+import {makeMemoSnapIntent,chooseMemoSnap,memoSnapIntentPoint,resolveMemoSnapIntent,
+  type MemoSnapIntent,type MemoMoveBehavior} from '@/domain/memo-snap-intent';
+import {invertAffine} from '@/domain/cad-memo-anchor';
 import { createPreviewUuid } from '@/features/cad-viewer/preview-uuid';
 import { MemoSession, parseMemoWcsXY, assertMemoWcsXY, type MemoDraft, type MemoWcsXY, type PersistedMemoDraft } from '@/domain/cad-memo';
 import { readPersistedMemos, mutatePersistedMemo,mutatePersistedMemoGroup,mutatePersistedMemoAnchor,resetPersistedBusiness,type MemoServerMode,type PersistedMemoGroup } from './cad-business-client';
@@ -49,7 +52,7 @@ import { ViewerLoadError, isViewerCancellation } from '@/viewers/core/viewer-loa
 import {runtimeCadHeaders} from '@/features/g7-runtime/client';
 import type {SceneWorkCommand,SceneWorkState} from '@/domain/scene-work';
 import type {ResetMode} from '@/domain/cad-reset';
-import {MemoSessionSnapStore,nearestMemoSnap,
+import {MemoSessionSnapStore,collectMemoSnapCandidates,
   type MemoSnapCandidate,type SessionSnapProjection} from '@/domain/memo-session-snap';
 import {SceneWorkTools} from './scene-work-tools';
 
@@ -105,6 +108,10 @@ export function CadViewer({
   const sessionSnaps=useRef<MemoSessionSnapStore|null>(null);
   const [sessionSnapProjection,setSessionSnapProjection]=useState<Record<string,SessionSnapProjection>>({});
   const [pendingSnap,setPendingSnap]=useState<MemoSnapCandidate|null>(null);
+  const [snapIntent,setSnapIntent]=useState<MemoSnapIntent|null>(null);
+  const memoSnapQuery=useRef(0);
+  useEffect(()=>()=>{memoSnapQuery.current++;},[]);
+  const [memoMoveBehavior,setMemoMoveBehavior]=useState<MemoMoveBehavior>('SNAP');
   const memoDragActive = useRef(false);
   const viewEpoch = useRef(0);
   const viewFrame = useRef(0);
@@ -170,11 +177,14 @@ export function CadViewer({
     if(store?.matches({versionId,sourceSha256}))
       setSessionSnapProjection(store.reconcile(manager.current?.getMemoSnapTargets()??[]));
   },[versionId,sourceSha256]);
-  const nearestSessionSnap=useCallback((point:MemoWcsXY):MemoSnapCandidate|null=>{
+  const collectSessionSnaps=useCallback((point:MemoWcsXY)=>{
     const current=manager.current;
-    if(!current||renderer!=='three-dxf-viewer'||format!=='DXF')return null;
-    return nearestMemoSnap({versionId,sourceSha256},point,current.getMemoSnapTargets(true),
-      p=>current.projectWcsToCanvas(p),12);
+    const rect=container.current?.getBoundingClientRect();
+    return collectMemoSnapCandidates({versionId,sourceSha256},point,
+      current&&renderer==='three-dxf-viewer'&&format==='DXF'?current.getMemoSnapTargets(true):[],p=>{
+        const xy=current?.projectWcsToCanvas(p);
+        return xy&&rect&&xy.x>=0&&xy.y>=0&&xy.x<=rect.width&&xy.y<=rect.height?xy:null;
+      },12);
   },[versionId,sourceSha256,renderer,format]);
   const getMemoSession = () => {
     if (!memoSession.current || !memoSession.current.matches(memoScope)) {
@@ -186,7 +196,7 @@ export function CadViewer({
     memoSession.current?.clear();
     memoSession.current = null;
     sessionSnaps.current?.clear();sessionSnaps.current=null;
-    setSessionSnapProjection({});setPendingSnap(null);
+    memoSnapQuery.current++;setSessionSnapProjection({});setPendingSnap(null);setSnapIntent(null);
     setMemoLifecycleKey(versionId + ':' + sourceSha256);
     memoDragActive.current = false;
     setMemoCancelSignal(previous => previous + 1);
@@ -568,6 +578,8 @@ export function CadViewer({
     setMemoPlacing(false);
     setMemoCandidate(null);
     setPendingSnap(null);
+    memoSnapQuery.current++;
+    setSnapIntent(null);
     setMemoSelectedId(null);
     setMemoDeleteArmed(false);
     setMemoError(null);
@@ -715,6 +727,9 @@ export function CadViewer({
     setMemoError(null);
     // Re-selecting an already open memo is a focus action, not a discard-draft command.
     if (memoSelectedId !== id) {
+      memoSnapQuery.current++;
+      setSnapIntent(null);setPendingSnap(null);
+      setMemoMoveBehavior(sessionSnapProjection[id]?.mode==='ATTACHED'||item.anchor?.mode==='ATTACHED'?'KEEP':'SNAP');
       setMemoFields({
         title:item.title,content:item.content,
         x:String(sessionSnapProjection[id]?.world.x??item.anchorWcsXY.x),
@@ -901,50 +916,181 @@ export function CadViewer({
     // Persisted path is CAS; M1 path updates MemoSession, not merely Tree UI.
     void changeMemoMeta(id,{groupId});
   };
-  const placeMemo = useCallback((point:MemoWcsXY) => {
-    // 12 CSS px threshold; closed polygon vertices and visible 2D render
-    // endpoints/centers only. Never promotes the session target to a DB ref.
-    const candidate=nearestSessionSnap(point);
-    const snapped=candidate?.world??point;
-    setPendingSnap(candidate);
-    setMemoCandidate(snapped);
-    setMemoPlacing(false);
-    setMemoDeleteArmed(false);
-    setMemoError(null);
-    setMemoFields(previous=>({...previous,x:String(snapped.x),y:String(snapped.y)}));
-  }, [nearestSessionSnap]);
-  const moveMemoFromCanvas = useCallback((id:string,point:MemoWcsXY) => {
+  const memoSnapContext=()=>versionId+':'+sourceSha256+':'+renderer+':'+attempt+':'+loadSequenceRef.current;
+  function stageMemoSnap(point:MemoWcsXY,actor:string|null){
+    const intent=makeMemoSnapIntent(memoSnapContext(),viewEpoch.current,point,collectSessionSnaps(point),actor);
+    setSnapIntent(intent);setPendingSnap(intent.selected);
+    const shown=memoSnapIntentPoint(intent);
+    setMemoFields(previous=>({...previous,x:String(shown.x),y:String(shown.y)}));
+    return intent;
+  }
+  function prepareMemoSnap(point:MemoWcsXY):MemoSnapIntent|Promise<MemoSnapIntent>{
+    const generation=++memoSnapQuery.current,context=memoSnapContext(),epoch=viewEpoch.current;
+    const requested={...assertMemoWcsXY(point)};
+    setSnapIntent(null);setPendingSnap(null);
+    if(memoServerMode==='off')return stageMemoSnap(requested,null);
+    if(memoServerMode!=='active')throw new Error('메모 로그인 상태를 확인한 후 후보를 다시 조회하세요.');
+    const guard=memoWriteGuard();
+    return guard().then(actor=>{
+      if(generation!==memoSnapQuery.current||context!==memoSnapContext()||epoch!==viewEpoch.current)
+        throw new DOMException('이전 후보 조회를 적용하지 않았습니다.','AbortError');
+      return stageMemoSnap(requested,actor);
+    });
+  }
+  function memoQueryError(error:unknown){
+    if(!(error instanceof DOMException&&error.name==='AbortError'))
+      setMemoError(error instanceof Error?error.message:'스냅 후보를 조회할 수 없습니다.');
+  }
+  const placeMemo = (point:MemoWcsXY) => {
+    const finish=(intent:MemoSnapIntent)=>{
+      setMemoCandidate(memoSnapIntentPoint(intent));setMemoPlacing(false);
+      setMemoDeleteArmed(false);setMemoError(null);
+    };
+    try{
+      const prepared=prepareMemoSnap(point);
+      if(prepared instanceof Promise)void prepared.then(finish).catch(memoQueryError);else finish(prepared);
+    }catch(error){memoQueryError(error);}
+  };
+  function changeMemoFields(fields:MemoEditorFields){
+    if(fields.x!==memoFields.x||fields.y!==memoFields.y){memoSnapQuery.current++;setSnapIntent(null);setPendingSnap(null);}
+    setMemoFields(fields);
+  }
+  function chooseMemoSnapCandidate(key:string|null){
+    if(!snapIntent)return;
+    const next=chooseMemoSnap(snapIntent,key),point=memoSnapIntentPoint(next);
+    setSnapIntent(next);setPendingSnap(next.selected);setMemoError(null);
+    setMemoFields(previous=>({...previous,x:String(point.x),y:String(point.y)}));
+    if(memoCandidate)setMemoCandidate(point);
+  }
+  function refreshMemoSnapCandidates(){
+    try{
+      const point=parseMemoWcsXY(memoFields.x,memoFields.y),prepared=prepareMemoSnap(point);
+      const finish=(intent:MemoSnapIntent)=>{
+        if(memoCandidate)setMemoCandidate(memoSnapIntentPoint(intent));setMemoError(null);
+      };
+      if(prepared instanceof Promise)void prepared.then(finish).catch(memoQueryError);else finish(prepared);
+    }catch(error){memoQueryError(error);}
+  }
+  function memoWriteGuard(){
+    const sequence=loadSequenceRef.current,currentManager=manager.current;
+    let actor:string|null=null;
+    const check=()=>{
+      if(sequence!==loadSequenceRef.current||currentManager!==manager.current)
+        throw new DOMException('다른 도면의 메모 응답을 적용하지 않았습니다.','AbortError');
+    };
+    return async()=>{
+      check();
+      if(memoServerMode==='active'){
+        const response=await fetch('/api/g7-runtime/auth/session',{credentials:'same-origin',cache:'no-store'});
+        const session=await response.json() as {actor?:{id?:string}};
+        if(!response.ok||typeof session.actor?.id!=='string')throw new Error('로그인 상태를 다시 확인하세요.');
+        if(actor!==null&&actor!==session.actor.id)throw new DOMException('이전 계정의 메모 응답을 적용하지 않았습니다.','AbortError');
+        actor=session.actor.id;
+      }
+      check();return actor;
+    };
+  }
+  async function latestMemo(id:string,guard:()=>Promise<unknown>):Promise<PersistedMemoDraft>{
+    const response=await fetch('/api/cad-files/'+encodeURIComponent(versionId)+'/memos/'+encodeURIComponent(id),{
+      credentials:'same-origin',cache:'no-store'});
+    if(!response.ok)throw new Error('저장된 메모를 다시 조회하세요.');
+    const row=await response.json() as PersistedMemoDraft;await guard();return row;
+  }
+  async function applyMemoMove(id:string,requested:MemoWcsXY,behavior:MemoMoveBehavior,intent?:MemoSnapIntent){
     if(memoSavingRef.current)return;
-    void (async()=>{
-      memoSavingRef.current=true;setMemoBusy(true);
-      try {
-        const doc=getMemoSession();
-        const old=doc.get(id);
-        if(!old)throw new Error('메모를 찾을 수 없습니다.');
-        const snap=nearestSessionSnap(point),to=snap?.world??point;
-        let item:MemoDraft;
-        if(memoServerMode==='active'){
-          if(!old.persisted||old.revision===undefined)throw new Error('저장된 메모의 revision이 없습니다.');
-          item=doc.acceptPersisted(await mutatePersistedMemo('PATCH',versionId,{
-            expectedRevision:old.revision,operation:'move',anchorWcsXY:to
-          },id) as PersistedMemoDraft,{versionId,sourceSha256});
-        }else if(memoServerMode==='off'){
-          item=doc.move(id,to,{versionId,sourceSha256});
-        }else throw new Error('메모 서버 확인이 완료되지 않았습니다.');
-        if(snap)getSessionSnapStore().attach(id,snap);
-        else sessionSnaps.current?.detach(id);
-        syncSessionSnaps();
-        setMemos(doc.list());setMemoError(null);setMemoSelectedId(id);
-        setMemoFields(previous=>({...previous,
-          ...(id===memoSelectedId?{}:{title:item.title,content:item.content}),
-          x:String(item.anchorWcsXY.x),y:String(item.anchorWcsXY.y)}));
-      }catch(error){setMemoError(error instanceof Error?error.message:'메모 이동이 취소되었습니다.');}
-      finally{memoSavingRef.current=false;setMemoBusy(false);}
-    })();
-  // Only a committed pointer-up invokes this callback.
-  // The session binding stays private; the server receives only a free WCS coordinate.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[versionId,sourceSha256,memoSelectedId,memoServerMode,nearestSessionSnap,getSessionSnapStore,syncSessionSnaps]);
+    memoSavingRef.current=true;setMemoBusy(true);
+    try{
+      const guard=memoWriteGuard(),actor=await guard();
+      const doc=getMemoSession(),old=doc.get(id);
+      if(!old)throw new Error('메모를 찾을 수 없습니다.');
+      const sessionBinding=sessionSnapProjection[id];
+      const bindingEpoch=viewEpoch.current;
+      let keepTransform:readonly number[]|null=null;
+      if(behavior==='KEEP'&&!sessionBinding&&old.anchor?.mode!=='ATTACHED')
+        throw new Error('유지할 연결이 없습니다. 스냅을 선택하거나 연결 해제로 이동하세요.');
+      let snap:MemoSnapCandidate|null=null,to=requested;
+      if(behavior==='SNAP'){
+        if(!intent)throw new Error('스냅 후보를 먼저 조회하세요.');
+        const resolved=resolveMemoSnapIntent(intent,memoSnapContext(),viewEpoch.current,collectSessionSnaps(intent.requested),actor);
+        snap=resolved.snap;to=resolved.world;
+      }
+      if(behavior==='KEEP'&&sessionBinding){
+        // Validate without changing the live binding before a fallible server write.
+        const target=manager.current?.getMemoSnapTargets().find(target=>
+          target.ref.origin===sessionBinding.ref.origin&&target.ref.id===sessionBinding.ref.id);
+        if(sessionBinding.mode!=='ATTACHED'||!target)throw new Error('연결 객체가 없습니다. 연결을 해제하거나 다시 선택하세요.');
+        invertAffine(target.transform,to);
+        keepTransform=[...target.transform];
+      }
+      let updated:MemoDraft;
+      if(memoServerMode==='active'){
+        if(!old.persisted||old.revision===undefined)throw new Error('메모 revision이 없습니다.');
+        if(!sessionBinding&&(behavior==='KEEP'||behavior==='DETACH')){
+          if(storedSceneRevision===null)throw new Error('현재 Scene을 다시 조회하세요.');
+          const target=old.anchor?.targetRef;
+          const targetRevision=target?.origin==='APP_CREATED'?storedOutlines.find(row=>row.id===target.id)?.revision:undefined;
+          if(behavior==='KEEP'&&target?.origin==='APP_CREATED'&&targetRevision===undefined)
+            throw new Error('연결 객체 revision을 다시 조회하세요.');
+          await mutatePersistedMemoAnchor(versionId,id,{operation:'reposition',behavior,
+            expectedRevision:old.revision,expectedSceneRevision:storedSceneRevision,anchorWcsXY:to,
+            ...(behavior==='KEEP'&&target?.origin==='APP_CREATED'?{expectedTargetRevision:targetRevision}:{})});
+          updated=doc.acceptPersisted(await latestMemo(id,guard),{versionId,sourceSha256});
+        }else{
+          const result=await mutatePersistedMemo('PATCH',versionId,{
+            expectedRevision:old.revision,operation:'move',anchorWcsXY:to},id) as PersistedMemoDraft;
+          await guard();updated=doc.acceptPersisted(result,{versionId,sourceSha256});
+        }
+      }else if(memoServerMode==='off')updated=doc.move(id,to,{versionId,sourceSha256});
+      else throw new Error('메모 저장 상태를 확인할 수 없습니다.');
+      let notice:string|null=null;
+      if(behavior==='KEEP'&&sessionBinding){
+        try{
+          const targets=manager.current?.getMemoSnapTargets()??[];
+          const live=targets.find(target=>target.ref.origin===sessionBinding.ref.origin&&target.ref.id===sessionBinding.ref.id);
+          if(viewEpoch.current!==bindingEpoch||!live||!keepTransform||
+            live.transform.some((value,index)=>value!==keepTransform![index]))throw new Error('changed');
+          getSessionSnapStore().reposition(id,to,targets);
+        }
+        catch{
+          sessionSnaps.current?.detach(id);
+          notice='메모 위치는 저장됐습니다. 대상 변경으로 세션 연결은 적용하지 않았습니다.';
+        }
+      }else if(snap&&intent){
+        try{
+          const current=resolveMemoSnapIntent(intent,memoSnapContext(),viewEpoch.current,collectSessionSnaps(intent.requested),actor);
+          if(current.snap)getSessionSnapStore().attach(id,current.snap);
+        }catch{
+          sessionSnaps.current?.detach(id);
+          notice='메모 위치는 저장됐습니다. 대상 변경으로 세션 연결은 적용하지 않았습니다.';
+        }
+      }else sessionSnaps.current?.detach(id);
+      syncSessionSnaps();setSnapIntent(null);setPendingSnap(null);
+      setMemos(doc.list());setMemoError(notice);setMemoSelectedId(id);
+      const linked=!notice&&((behavior==='KEEP'&&!!sessionBinding)||!!snap)||updated.anchor?.mode==='ATTACHED';
+      setMemoMoveBehavior(linked?'KEEP':behavior==='DETACH'?'DETACH':'SNAP');
+      setMemoFields(previous=>({...previous,
+        ...(id===memoSelectedId?{}:{title:updated.title,content:updated.content}),
+        x:String(updated.anchorWcsXY.x),y:String(updated.anchorWcsXY.y)}));
+    }catch(error){if(!(error instanceof DOMException&&error.name==='AbortError'))
+      setMemoError(error instanceof Error?error.message:'메모 이동을 확인하지 못했습니다.');}
+    finally{memoSavingRef.current=false;setMemoBusy(false);}
+  }
+  const moveMemoFromCanvas = async(id:string,point:MemoWcsXY) => {
+    if(memoSavingRef.current)return;
+    const old=memoSession.current?.get(id);if(!old)return;
+    const behavior=id===memoSelectedId?memoMoveBehavior:
+      (sessionSnapProjection[id]?.mode==='ATTACHED'||old.anchor?.mode==='ATTACHED'?'KEEP':'SNAP');
+    if(behavior==='SNAP'){
+      let intent:MemoSnapIntent;
+      try{intent=await prepareMemoSnap(point);}catch(error){memoQueryError(error);return;}
+      if(intent.choices.total>1){
+        selectMemo(id);setSnapIntent(intent);setPendingSnap(intent.selected);setMemoMoveBehavior('SNAP');
+        const shown=memoSnapIntentPoint(intent);setMemoFields(previous=>({...previous,x:String(shown.x),y:String(shown.y)}));
+        setMemoError('후보가 여러 개입니다. 선택하거나 스냅을 해제한 뒤 위치 이동을 적용하세요.');return;
+      }
+      void applyMemoMove(id,point,behavior,intent);
+    }else void applyMemoMove(id,point,behavior);
+  };
   function startMemoPlacement() {
     setTypeManagerOpen(false);
     if (!memoAvailable) return;
@@ -954,6 +1100,7 @@ export function CadViewer({
     setMemoSelectedId(null);
     setMemoCandidate(null);
     setPendingSnap(null);
+    memoSnapQuery.current++;setSnapIntent(null);setMemoMoveBehavior('SNAP');
     setMemoFields({title:'',content:'',x:'0',y:'0'});
     setMemoDeleteArmed(false);
     setMemoError(null);
@@ -967,25 +1114,32 @@ export function CadViewer({
     if(!memoCandidate||!memoAvailable||memoSavingRef.current)return;
     memoSavingRef.current=true;setMemoBusy(true);
     try{
+      if(!snapIntent)throw new Error('입력 좌표로 후보를 다시 조회하고 선택하세요.');
+      const guard=memoWriteGuard(),actor=await guard();
       const doc=getMemoSession();
-      const requested=parseMemoWcsXY(memoFields.x,memoFields.y);
-      // Revalidate against live geometry at commit: an old candidate is never
-      // authoritative after a camera or target transform change.
-      const candidate=nearestSessionSnap(requested);
-      const location=candidate?.world??requested;
+      const resolved=resolveMemoSnapIntent(snapIntent,memoSnapContext(),viewEpoch.current,collectSessionSnaps(snapIntent.requested),actor);
+      const candidate=resolved.snap,location=resolved.world;
       let created:MemoDraft;
       if(memoServerMode==='active'){
-        created=doc.acceptPersisted(await mutatePersistedMemo('POST',versionId,{
+        const result=await mutatePersistedMemo('POST',versionId,{
           sourceSha256,title:memoFields.title,content:memoFields.content,anchorWcsXY:location
-        }) as PersistedMemoDraft,{versionId,sourceSha256});
+        }) as PersistedMemoDraft;
+        await guard();created=doc.acceptPersisted(result,{versionId,sourceSha256});
       }else if(memoServerMode==='off'){
         created=doc.create({id:createPreviewUuid(),anchorWcsXY:location,
           title:memoFields.title,content:memoFields.content},{versionId,sourceSha256});
       }else throw new Error('메모 저장 서버 확인이 필요합니다.');
-      if(candidate){getSessionSnapStore().attach(created.id,candidate);syncSessionSnaps();}
-      setPendingSnap(null);
-      setMemos(doc.list());selectMemo(created.id);setMemoError(null);
-    }catch(error){setMemoError(error instanceof Error?error.message:'메모를 작성할 수 없습니다.');}
+      let linked=false,notice:string|null=null;
+      if(candidate){
+        try{
+          const current=resolveMemoSnapIntent(snapIntent,memoSnapContext(),viewEpoch.current,collectSessionSnaps(snapIntent.requested),actor);
+          if(current.snap){getSessionSnapStore().attach(created.id,current.snap);linked=true;}
+        }catch{notice='메모는 저장됐습니다. 대상 변경으로 세션 연결은 적용하지 않았습니다.';}
+        syncSessionSnaps();
+      }
+      setPendingSnap(null);setSnapIntent(null);
+      setMemos(doc.list());selectMemo(created.id);setMemoMoveBehavior(linked?'KEEP':'SNAP');setMemoError(notice);
+    }catch(error){if(!(error instanceof DOMException&&error.name==='AbortError'))setMemoError(error instanceof Error?error.message:'메모를 작성할 수 없습니다.');}
     finally{memoSavingRef.current=false;setMemoBusy(false);}
   }
   async function saveMemoText() {
@@ -1009,28 +1163,16 @@ export function CadViewer({
   }
   async function moveMemoFromFields() {
     if(!memoSelectedId||!memoAvailable||memoSavingRef.current)return;
-    memoSavingRef.current=true;setMemoBusy(true);
     try{
-      const doc=getMemoSession(),requested=parseMemoWcsXY(memoFields.x,memoFields.y);
-      const snap=nearestSessionSnap(requested),to=snap?.world??requested;
-      let item:MemoDraft;
-      if(memoServerMode==='active'){
-        const old=doc.get(memoSelectedId);
-        if(!old?.persisted||old.revision===undefined)throw new Error('메모 revision이 없습니다.');
-        item=doc.acceptPersisted(await mutatePersistedMemo('PATCH',versionId,{
-          expectedRevision:old.revision,operation:'move',anchorWcsXY:to
-        },memoSelectedId) as PersistedMemoDraft,{versionId,sourceSha256});
-      }else if(memoServerMode==='off'){
-        item=doc.move(memoSelectedId,to,{versionId,sourceSha256});
-      }else throw new Error('메모 저장 서버 확인이 필요합니다.');
-      if(snap)getSessionSnapStore().attach(item.id,snap);
-      else sessionSnaps.current?.detach(item.id);
-      syncSessionSnaps();
-      setMemos(doc.list());
-      setMemoFields(previous=>({...previous,x:String(item.anchorWcsXY.x),y:String(item.anchorWcsXY.y)}));
-      setMemoError(null);
-    }catch(error){setMemoError(error instanceof Error?error.message:'메모 좌표를 이동할 수 없습니다.');}
-    finally{memoSavingRef.current=false;setMemoBusy(false);}
+      const requested=parseMemoWcsXY(memoFields.x,memoFields.y);
+      if(memoMoveBehavior==='SNAP'){
+        const intent=snapIntent??await prepareMemoSnap(requested);
+        if(!snapIntent&&intent.choices.total>1){
+          setMemoError('후보를 선택하거나 스냅을 해제한 뒤 위치 이동을 적용하세요.');return;
+        }
+        await applyMemoMove(memoSelectedId,requested,'SNAP',intent);
+      }else await applyMemoMove(memoSelectedId,requested,memoMoveBehavior);
+    }catch(error){setMemoError(error instanceof Error?error.message:'메모 좌표를 확인하세요.');}
   }
   async function deleteMemo() {
     if(!memoSelectedId||!memoDeleteArmed||!memoAvailable||memoSavingRef.current)return;
@@ -1055,6 +1197,7 @@ export function CadViewer({
     if(!memoSelectedId||memoServerMode!=='active'||memoSavingRef.current)return;
     memoSavingRef.current=true;setMemoBusy(true);
     try{
+      const guard=memoWriteGuard();await guard();
       const doc=getMemoSession(),old=doc.get(memoSelectedId);
       if(!old?.persisted||old.revision===undefined)throw new Error('영속 메모만 스냅할 수 있습니다.');
       const colon=memoAnchorTarget.indexOf(':');
@@ -1066,14 +1209,12 @@ export function CadViewer({
         expectedRevision:old.revision,operation,
         ...(operation==='attach'?{targetOrigin:origin as 'APP_CREATED'|'DXF_IMPORTED',targetId:id}:{})
       });
-      const response=await fetch('/api/cad-files/'+encodeURIComponent(versionId)+'/memos/'+encodeURIComponent(memoSelectedId),{
-        credentials:'same-origin',cache:'no-store'});
-      if(!response.ok)throw new Error('변경된 메모 재조회가 필요합니다.');
-      doc.acceptPersisted(await response.json() as PersistedMemoDraft,{versionId,sourceSha256});
+      doc.acceptPersisted(await latestMemo(memoSelectedId,guard),{versionId,sourceSha256});
       // Explicit server link always supersedes a temporary viewer-only binding.
       sessionSnaps.current?.detach(memoSelectedId);syncSessionSnaps();
+      setSnapIntent(null);setPendingSnap(null);setMemoMoveBehavior(operation==='attach'?'KEEP':'DETACH');
       setMemos(doc.list());setMemoError(null);
-    }catch(error){setMemoError(error instanceof Error?error.message:'메모 연결을 변경할 수 없습니다. 재조회하세요.');}
+    }catch(error){if(!(error instanceof DOMException&&error.name==='AbortError'))setMemoError(error instanceof Error?error.message:'메모 연결을 변경할 수 없습니다. 재조회하세요.');}
     finally{memoSavingRef.current=false;setMemoBusy(false);}
   }
   /** Explicitly commit the last displayed WCS on disconnect.
@@ -1086,22 +1227,25 @@ export function CadViewer({
     if(!currentProjection)return;
     memoSavingRef.current=true;setMemoBusy(true);
     try{
+      const guard=memoWriteGuard();await guard();
       const doc=getMemoSession(),old=doc.get(memoSelectedId);
       if(!old)throw new Error('메모가 현재 Version에 없습니다.');
       let updated:MemoDraft;
       if(memoServerMode==='active'){
         if(!old.persisted||old.revision===undefined)throw new Error('메모 revision이 없습니다.');
-        updated=doc.acceptPersisted(await mutatePersistedMemo('PATCH',versionId,{
+        const result=await mutatePersistedMemo('PATCH',versionId,{
           expectedRevision:old.revision,operation:'move',anchorWcsXY:currentProjection.world,
-        },memoSelectedId) as PersistedMemoDraft,{versionId,sourceSha256});
+        },memoSelectedId) as PersistedMemoDraft;
+        await guard();updated=doc.acceptPersisted(result,{versionId,sourceSha256});
       }else if(memoServerMode==='off'){
         updated=doc.move(memoSelectedId,currentProjection.world,{versionId,sourceSha256});
       }else throw new Error('메모 저장 상태를 확인할 수 없습니다.');
       sessionSnaps.current?.detach(memoSelectedId);syncSessionSnaps();
+      setSnapIntent(null);setPendingSnap(null);setMemoMoveBehavior('DETACH');
       setMemoFields(previous=>({...previous,
         x:String(updated.anchorWcsXY.x),y:String(updated.anchorWcsXY.y)}));
       setMemos(doc.list());setMemoError(null);
-    }catch(error){setMemoError(error instanceof Error?error.message:'임시 연결 해제 및 좌표 확정이 실패했습니다.');}
+    }catch(error){if(!(error instanceof DOMException&&error.name==='AbortError'))setMemoError(error instanceof Error?error.message:'임시 연결 해제 및 좌표 확정이 실패했습니다.');}
     finally{memoSavingRef.current=false;setMemoBusy(false);}
   }
   /** #167: server CAS + soft-delete audit before any session SceneWork reset. */
@@ -1433,7 +1577,7 @@ export function CadViewer({
       current.getSceneWorkState().undo>0 || current.getSceneWorkState().redo>0 ||
       current.getGeneratedHistory().redo>0 || current.getCanvasObjectSelection().length>0 ||
       current.getOutlineSelection().length>0;
-    return !hasWork || window.confirm('임시 외곽선·실행 취소 이력·선택 상태가 사라집니다. 계속하시겠습니까?');
+    return !hasWork || window.confirm('임시 외곽선·임시 메모·세션 연결·실행 취소 이력·선택 상태가 사라집니다. 계속하시겠습니까?');
   }, []);
   const choose = useCallback((value: typeof renderer) => {
     if (value === renderer) return;
@@ -1925,7 +2069,7 @@ export function CadViewer({
             memos={canvasMemos}
             selectedId={memoScoped?memoSelectedId:null}
             placing={memoScoped && memoPlacing}
-            candidate={memoScoped?memoCandidate:null}
+            candidate={memoScoped?(memoCandidate??(snapIntent?memoSnapIntentPoint(snapIntent):null)):null}
             getManager={getManager}
             viewRevision={viewRevision}
             getViewEpoch={getViewEpoch}
@@ -1966,7 +2110,7 @@ export function CadViewer({
             </span>}
           </div>}
           {memoAvailable && (memoPlacing || memoCandidate || memoSelectedId) && <CadMemoEditor
-            fields={memoFields} onFieldsChange={setMemoFields}
+            fields={memoFields} onFieldsChange={changeMemoFields}
             placing={memoPlacing} newAnchor={memoCandidate} selectedId={memoSelectedId}
             count={memos.length} error={memoError} confirmDelete={memoDeleteArmed}
             persistent={memoServerMode==='active'} busy={memoBusy}
@@ -1986,6 +2130,10 @@ export function CadViewer({
             pendingSnapKind={pendingSnap?.kind}
             sessionSnap={memoSelectedId?sessionSnapProjection[memoSelectedId]:undefined}
             onSessionDetach={()=>{void detachSessionSnap();}}
+            snapIntent={snapIntent} onSnapChoose={chooseMemoSnapCandidate} onSnapRefresh={refreshMemoSnapCandidates}
+            moveBehavior={memoMoveBehavior} onMoveBehaviorChange={behavior=>{
+              memoSnapQuery.current++;setMemoMoveBehavior(behavior);setSnapIntent(null);setPendingSnap(null);setMemoError(null);
+            }}
           />}
           {memoAvailable&&memoSelectedId&&scopedMemos.filter(m=>m.id===memoSelectedId).map(m=>
             <CadMemoSettingsEditor key={m.id+':'+(m.revision??m.updatedAt)}

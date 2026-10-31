@@ -1,3 +1,11 @@
+## #174 메모 스냅·연결 이동 변경 시 (0.52.0 후보, 2026-11-01)
+
+- 후보 선택·KEEP/DETACH·Actor/비동기 수명 변경 전에 [Architecture R4](out/Architecture.md)와 [TestPlan TC-R4](out/TestPlan.md)를 읽는다. 실제 검증·실패 및 게시 상태는 [TestReport](out/TestReport.md)와 [FailureLedger](out/FailureLedger.md)를 따른다. 현재 R4 기능/계측 로컬 수용·Draft PR GO, 게시/새 CI 전이다. Frame budget 초과와2차dispose heap 증가의 원인은OPEN이며 #174 성능/현장 완료로 처리하지 않는다. 기반 R3 f179d596의 CI는 SUCCESS다.
+- 사용자 선택은 raw WCS·immutable candidate key·context/epoch·직접 증명 Actor에 묶고 확정 전에 재검증한다. 세션 관계와 서버 anchor를 구분하며 서버 KEEP는 trusted inverse/작성자-only/CAS/Audit를 유지한다.100 Memo/20k point 상한과 기존 Schema를 유지한다.
+- Manager는 계약/수용, Developer는 domain/backend와 지정 Browser 회귀, Root는 UI/통합·게시, QA는 독립 검증을 담당한다. 변경된 source의 필수 검증과 독립 QA가 끝난 후 완료 판정하며 기존 실패 이력과 WIP를 보존한다.
+
+---
+
 ## #71/#73 타입 지정 영속 외곽선 변경 시 (0.51.0 후보, 2026-11-01)
 
 - [Architecture의 R3 계약](out/Architecture.md), [Database의 R3 Schema](out/Database.md), [TestPlan의 TC-R3](out/TestPlan.md)을 먼저 읽고, 실제 통과 범위는 [TestReport](out/TestReport.md)를 확인한다. 아래 #42/#43 브라우저 임시 설계와 #65의 0.50.0 기록은 역사적 기준이다.

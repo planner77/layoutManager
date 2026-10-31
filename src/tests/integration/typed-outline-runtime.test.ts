@@ -19,6 +19,7 @@ import {GET as getOne,PATCH as patch,DELETE as remove} from '../../app/api/cad-f
 import type {IsolatedDb} from '../../server/g7-staging/g1-store';
 import {BusinessRepository,requireBusinessWrite} from '../../server/cad-business/service';
 import {resetBusinessVersion} from '../../server/cad-business/reset-service';
+import {PATCH as patchMemoAnchor} from '../../app/api/cad-files/[versionId]/memos/[memoId]/anchor/route';
 import {parseDxfOutlineIndex} from '../../viewers/core/outline-geometry';
 import {computeOutline} from '../../viewers/core/outline-compute';
 import {buildTypedOutlineRequest} from '../../domain/typed-outline-draft';
@@ -36,7 +37,7 @@ const dxfBytes=new TextEncoder().encode(dxf);
 let cleanup:(()=>void)|undefined,db:Database|undefined;
 beforeEach(installMonotonicTestClock);
 afterEach(async()=>{await db?.$disconnect();db=undefined;cleanup?.();cleanup=undefined;vi.restoreAllMocks();});
-function setup(withUsers=true){
+function setup(withUsers=true,withForeignSite=false){
  const root=mkdtempSync(path.join(tmpdir(),'typed-outline-r3-'));chmodSync(root,0o700);
  const dir=path.join(root,'db'),cad=path.join(root,'cad'),owner=path.join(root,'owner'),out=path.join(root,'out');
  for(const value of [dir,cad,owner,out])mkdirSync(value,{mode:0o700});
@@ -50,6 +51,9 @@ function setup(withUsers=true){
  raw.prepare('INSERT INTO "BusinessUnit"(id,name) VALUES(?,?)').run('bu','Synthetic');
  raw.prepare('INSERT INTO "Product"(id,business_unit_id,name) VALUES(?,?,?)').run('product','bu','Product');
  raw.prepare('INSERT INTO "CadSite"(id,product_id,name) VALUES(?,?,?)').run('site-a','product','Site A');
+ const foreignSiteId=withForeignSite?randomUUID():undefined;
+ if(foreignSiteId)raw.prepare('INSERT INTO "CadSite"(id,product_id,name) VALUES(?,?,?)')
+  .run(foreignSiteId,'product','R4 foreign Site');
  raw.prepare('INSERT INTO "Building"(id,site_id,name) VALUES(?,?,?)').run('building','site-a','B');
  const floorId=randomUUID();
  raw.prepare('INSERT INTO "CadLocation"(id,building_id,name,next_version) VALUES(?,?,?,1)').run(floorId,'building','F');
@@ -98,7 +102,7 @@ function setup(withUsers=true){
  Object.assign(process.env,env);
  cleanup=()=>{for(const [key,value] of Object.entries(saved))if(value===undefined)delete process.env[key];else process.env[key]=value;rmSync(root,{recursive:true,force:true});};
  db=createDb('file:'+dbfile);
- return {root,dbfile,versionId,sha,typeId,tokens,ids,open:()=>new Sqlite(dbfile)};
+ return {root,dbfile,versionId,sha,typeId,tokens,ids,foreignSiteId,open:()=>new Sqlite(dbfile)};
 }
 function request(method:string,url:string,token?:string,body?:object,key?:string){
  const headers=new Headers({host:'cad.example.test',...(body?{origin,'content-type':'application/json'}:{})});
@@ -313,4 +317,174 @@ test('TC-R3-001: User0 catalogue/Outline probes return 503 and leave all audit l
  for(const table of ['User','AuditEvent','CadBusinessAudit','OutlineTypeAudit','CadOutlineCreateReceipt'])
   expect(raw.prepare('SELECT COUNT(*) AS n FROM "'+table+'"').get()).toMatchObject({n:0});
  raw.close();
+});
+
+test('TC-R4-004/005: explicit owner KEEP uses existing target inverse across Scene pointer change; DETACH is atomic',async()=>{
+ const f=setup(),outlineId=randomUUID(),memoId=randomUUID(),now='2026-11-01T00:00:00.000Z';
+ const base={type:'Polygon',coordinates:[[[0,0],[4,0],[4,4],[0,0]]]},ops=[{type:'Translate',dx:5,dy:0}];
+ await db!.cadOutline.create({data:{id:outlineId,versionId:f.versionId,sourceSha256:f.sha,
+  sceneRevision:0,origin:'APP_CREATED',validationMode:'APP_CREATED',kind:'CONVEX',name:'Target',
+  baseGeometryJson:JSON.stringify(base),geometryJson:JSON.stringify(base),sourceRefsJson:'[]',
+  derivedFromJson:'[]',transformJson:JSON.stringify(ops),revision:2,createdById:f.ids.editor,
+  updatedById:f.ids.editor,createdAt:now,updatedAt:now}});
+ await db!.cadMemo.create({data:{id:memoId,versionId:f.versionId,sourceSha256:f.sha,title:'Pinned',
+  content:'synthetic',anchorX:5,anchorY:0,offsetX:0,offsetY:0,revision:0,
+  createdById:f.ids.editor,updatedById:f.ids.editor,createdAt:now,updatedAt:now}});
+ await db!.cadMemoAnchor.create({data:{memoId,versionId:f.versionId,sourceSha256:f.sha,
+  status:'ATTACHED',targetOrigin:'APP_CREATED',targetId:outlineId,localX:0,localY:0,
+  createdAt:now,updatedAt:now}});
+ await db!.currentScene.update({where:{versionId:f.versionId},data:{revision:1}});
+ const url='/api/cad-files/'+f.versionId+'/memos/'+memoId+'/anchor';
+ const move=(token:string,value:object)=>patchMemoAnchor(request('PATCH',url,token,value),
+  {params:Promise.resolve({versionId:f.versionId,memoId})});
+ const keep={operation:'reposition',behavior:'KEEP',expectedRevision:0,expectedSceneRevision:1,
+  expectedTargetRevision:2,anchorWcsXY:{x:9,y:3}};
+ expect((await move(f.tokens.reader,keep)).status).toBe(403);
+ expect((await move(f.tokens.editor,{...keep,targetId:randomUUID()})).status).toBe(400);
+ expect((await move(f.tokens.editor,{operation:'reposition',behavior:'KEEP',expectedRevision:0,
+  expectedSceneRevision:1,anchorWcsXY:{x:9,y:3}})).status).toBe(400);
+ expect((await move(f.tokens.editor,{...keep,expectedTargetRevision:1})).status).toBe(409);
+ expect((await move(f.tokens.editor,{...keep,expectedSceneRevision:0})).status).toBe(409);
+ const secondId=randomUUID(),session=newSessionCandidate(secondId,Date.now());
+ await db!.user.create({data:{id:secondId,loginName:'r4-second-editor',passwordHash:'synthetic-hash',
+  status:'ACTIVE',mustChangePassword:false,createdAt:BigInt(Date.now()),updatedAt:BigInt(Date.now())}});
+ await db!.userRoleGrant.create({data:{userId:secondId,role:'Editor',grantedAt:BigInt(Date.now())}});
+ await db!.userSiteGrant.create({data:{userId:secondId,siteId:'site-a',grantedAt:BigInt(Date.now())}});
+ await db!.authSession.create({data:{id:session.session.id,userId:secondId,
+  tokenHash:session.session.tokenHash,issuedAt:BigInt(session.session.issuedAt),
+  lastSeenAt:BigInt(session.session.lastSeenAt),expiresAt:BigInt(session.session.expiresAt)}});
+ expect((await move(session.rawToken,keep)).status).toBe(403);
+ const raw=f.open();raw.exec("CREATE TRIGGER r4_audit_fail BEFORE INSERT ON CadBusinessAudit BEGIN SELECT RAISE(ABORT,'R4_AUDIT_FAILURE'); END");raw.close();
+ expect((await move(f.tokens.editor,keep)).status).toBeGreaterThanOrEqual(500);
+ const rawAfter=f.open();rawAfter.exec('DROP TRIGGER r4_audit_fail');rawAfter.close();
+ expect(await db!.cadMemo.findUnique({where:{id:memoId}})).toMatchObject({anchorX:5,revision:0});
+ expect(await db!.cadMemoAnchor.findUnique({where:{memoId}})).toMatchObject({localX:0,localY:0});
+ const response=await move(f.tokens.editor,keep);
+ expect(response.status).toBe(200);
+ expect(response.headers.get('cache-control')).toBe('private, no-store');
+ expect(response.headers.get('vary')).toBe('Cookie');
+ expect(await response.json()).toMatchObject({revision:1,anchorWcsXY:{x:9,y:3},
+  anchor:{mode:'ATTACHED',localAnchorWcsXY:{x:4,y:3}}});
+ expect(await db!.cadBusinessAudit.count({where:{targetKind:'MEMO',targetId:memoId,
+  action:'EDIT',outcome:'SUCCESS'}})).toBe(1);
+ expect((await move(f.tokens.editor,{operation:'reposition',behavior:'DETACH',expectedRevision:1,
+  expectedSceneRevision:1,expectedTargetRevision:2,anchorWcsXY:{x:8,y:7}})).status).toBe(400);
+ const detached=await move(f.tokens.editor,{operation:'reposition',behavior:'DETACH',expectedRevision:1,
+  expectedSceneRevision:1,anchorWcsXY:{x:8,y:7}});
+ expect(detached.status).toBe(200);
+ expect(await detached.json()).toMatchObject({revision:2,anchor:{mode:'FREE'},anchorWcsXY:{x:8,y:7}});
+ expect(await db!.cadMemoAnchor.findUnique({where:{memoId}})).toBeNull();
+ expect(await db!.cadBusinessAudit.count({where:{targetId:memoId,action:'EDIT'}})).toBe(2);
+ const free=await move(f.tokens.editor,{operation:'reposition',behavior:'DETACH',expectedRevision:2,
+  expectedSceneRevision:1,anchorWcsXY:{x:10,y:8}});
+ expect(free.status).toBe(200);expect(await free.json()).toMatchObject({revision:3,anchor:{mode:'FREE'}});
+});
+
+test('TC-R4-004: Source KEEP requires the stored live canonical reference and forbids target revision',async()=>{
+ const f=setup(),outlineId=randomUUID(),memoId=randomUUID(),ref=f.versionId+':'+f.sha+':handle-1',
+  now='2026-11-01T00:00:00.000Z',base={type:'Polygon',coordinates:[[[0,0],[4,0],[4,4],[0,0]]]};
+ await db!.cadOutline.create({data:{id:outlineId,versionId:f.versionId,sourceSha256:f.sha,
+  sceneRevision:0,origin:'APP_CREATED',validationMode:'SOURCE_CANONICAL',kind:'CONVEX',name:'Source',
+  baseGeometryJson:JSON.stringify(base),geometryJson:JSON.stringify(base),sourceRefsJson:JSON.stringify([ref]),
+  derivedFromJson:'[]',transformJson:'[]',revision:0,createdById:f.ids.editor,
+  updatedById:f.ids.editor,createdAt:now,updatedAt:now}});
+ await db!.cadMemo.create({data:{id:memoId,versionId:f.versionId,sourceSha256:f.sha,title:'Source memo',
+  content:'synthetic',anchorX:1,anchorY:2,offsetX:0,offsetY:0,revision:0,
+  createdById:f.ids.editor,updatedById:f.ids.editor,createdAt:now,updatedAt:now}});
+ await db!.cadMemoAnchor.create({data:{memoId,versionId:f.versionId,sourceSha256:f.sha,
+  status:'ATTACHED',targetOrigin:'DXF_IMPORTED',targetId:ref,localX:1,localY:2,
+  createdAt:now,updatedAt:now}});
+ const url='/api/cad-files/'+f.versionId+'/memos/'+memoId+'/anchor';
+ const move=(value:object)=>patchMemoAnchor(request('PATCH',url,f.tokens.editor,value),
+  {params:Promise.resolve({versionId:f.versionId,memoId})});
+ const body={operation:'reposition',behavior:'KEEP',expectedRevision:0,expectedSceneRevision:0,
+  anchorWcsXY:{x:7,y:8}};
+ expect((await move({...body,expectedTargetRevision:0})).status).toBe(400);
+ const kept=await move(body);expect(kept.status).toBe(200);
+ expect(await kept.json()).toMatchObject({revision:1,anchorWcsXY:{x:7,y:8},
+  anchor:{mode:'ATTACHED',localAnchorWcsXY:{x:7,y:8}}});
+ await db!.cadOutline.update({where:{id:outlineId},data:{deletedAt:now,deletedById:f.ids.editor}});
+ expect((await move({...body,expectedRevision:1,anchorWcsXY:{x:9,y:9}})).status).toBe(422);
+ expect(await db!.cadMemo.findUnique({where:{id:memoId}})).toMatchObject({anchorX:7,anchorY:8,revision:1});
+});
+
+test('TC-R4-005 QA: concurrent owner KEEP CAS has one winner and later target rotation preserves its local point',async()=>{
+ const f=setup(),outlineId=randomUUID(),memoId=randomUUID(),now='2026-11-01T00:00:00.000Z';
+ const base={type:'Polygon',coordinates:[[[0,0],[4,0],[4,4],[0,0]]]},initialOps=[{type:'Translate',dx:5,dy:0}];
+ await db!.cadOutline.create({data:{id:outlineId,versionId:f.versionId,sourceSha256:f.sha,
+  sceneRevision:0,origin:'APP_CREATED',validationMode:'APP_CREATED',kind:'CONVEX',name:'Concurrent target',
+  baseGeometryJson:JSON.stringify(base),geometryJson:JSON.stringify(base),sourceRefsJson:'[]',derivedFromJson:'[]',
+  transformJson:JSON.stringify(initialOps),revision:2,createdById:f.ids.editor,updatedById:f.ids.editor,
+  createdAt:now,updatedAt:now}});
+ await db!.cadMemo.create({data:{id:memoId,versionId:f.versionId,sourceSha256:f.sha,title:'CAS memo',content:'synthetic',
+  anchorX:5,anchorY:0,offsetX:0,offsetY:0,revision:0,createdById:f.ids.editor,updatedById:f.ids.editor,
+  createdAt:now,updatedAt:now}});
+ await db!.cadMemoAnchor.create({data:{memoId,versionId:f.versionId,sourceSha256:f.sha,status:'ATTACHED',
+  targetOrigin:'APP_CREATED',targetId:outlineId,localX:0,localY:0,createdAt:now,updatedAt:now}});
+ const url='/api/cad-files/'+f.versionId+'/memos/'+memoId+'/anchor';
+ const move=(value:object)=>patchMemoAnchor(request('PATCH',url,f.tokens.editor,value),
+  {params:Promise.resolve({versionId:f.versionId,memoId})});
+ const candidate=(anchorWcsXY:{x:number;y:number})=>({operation:'reposition',behavior:'KEEP',
+  expectedRevision:0,expectedSceneRevision:0,expectedTargetRevision:2,anchorWcsXY});
+ const responses=await Promise.all([move(candidate({x:9,y:3})),move(candidate({x:8,y:4}))]);
+ expect(responses.map(value=>value.status).sort()).toEqual([200,409]);
+ const winner=await responses.find(value=>value.status===200)!.json();
+ const memoAfterRace=await db!.cadMemo.findUnique({where:{id:memoId}});
+ const anchorAfterRace=await db!.cadMemoAnchor.findUnique({where:{memoId}});
+ expect(memoAfterRace).toMatchObject({revision:1,anchorX:winner.anchorWcsXY.x,anchorY:winner.anchorWcsXY.y});
+ expect(anchorAfterRace).toMatchObject({status:'ATTACHED',targetId:outlineId,
+  localX:winner.anchorWcsXY.x-5,localY:winner.anchorWcsXY.y});
+ expect(await db!.cadBusinessAudit.count({where:{targetKind:'MEMO',targetId:memoId,action:'EDIT',outcome:'SUCCESS'}})).toBe(1);
+ const targetMove=await patch(request('PATCH','/api/cad-files/'+f.versionId+'/outlines/'+outlineId,f.tokens.editor,{
+  expectedRevision:2,expectedSceneRevision:0,operation:'transform',operations:[...initialOps,
+   {type:'Rotate',angleDegrees:90,pivot:[0,0]}],
+ }),itemArgs(f.versionId,outlineId));
+ expect(targetMove.status).toBe(200);
+ const expectedWorld={x:-winner.anchorWcsXY.y,y:winner.anchorWcsXY.x};
+ const memoAfterTargetMove=await db!.cadMemo.findUnique({where:{id:memoId}});
+ expect(memoAfterTargetMove?.revision).toBe(2);
+ expect(memoAfterTargetMove?.anchorX).toBeCloseTo(expectedWorld.x,10);
+ expect(memoAfterTargetMove?.anchorY).toBeCloseTo(expectedWorld.y,10);
+ expect(await db!.cadMemoAnchor.findUnique({where:{memoId}})).toMatchObject({targetId:outlineId,
+  localX:winner.anchorWcsXY.x-5,localY:winner.anchorWcsXY.y});
+ expect(await db!.cadBusinessAudit.count({where:{targetKind:'MEMO',targetId:memoId,action:'EDIT',outcome:'SUCCESS'}})).toBe(2);
+});
+
+test('TC-R4-003/004 QA: wrong Site/Version, forged local/target data and invalid stored affine do not mutate Memo',async()=>{
+ const f=setup(true,true),outlineId=randomUUID(),memoId=randomUUID(),now='2026-11-01T00:00:00.000Z';
+ const base={type:'Polygon',coordinates:[[[0,0],[4,0],[4,4],[0,0]]]};
+ await db!.cadOutline.create({data:{id:outlineId,versionId:f.versionId,sourceSha256:f.sha,sceneRevision:0,
+  origin:'APP_CREATED',validationMode:'APP_CREATED',kind:'CONVEX',name:'Malformed target',
+  baseGeometryJson:JSON.stringify(base),geometryJson:JSON.stringify(base),sourceRefsJson:'[]',derivedFromJson:'[]',
+  transformJson:'[]',revision:0,createdById:f.ids.editor,updatedById:f.ids.editor,createdAt:now,updatedAt:now}});
+ await db!.cadMemo.create({data:{id:memoId,versionId:f.versionId,sourceSha256:f.sha,title:'Guard memo',content:'synthetic',
+  anchorX:1,anchorY:2,offsetX:0,offsetY:0,revision:0,createdById:f.ids.editor,updatedById:f.ids.editor,
+  createdAt:now,updatedAt:now}});
+ await db!.cadMemoAnchor.create({data:{memoId,versionId:f.versionId,sourceSha256:f.sha,status:'ATTACHED',
+  targetOrigin:'APP_CREATED',targetId:outlineId,localX:1,localY:2,createdAt:now,updatedAt:now}});
+ const url='/api/cad-files/'+f.versionId+'/memos/'+memoId+'/anchor';
+ const body={operation:'reposition',behavior:'KEEP',expectedRevision:0,expectedSceneRevision:0,
+  expectedTargetRevision:0,anchorWcsXY:{x:7,y:8}};
+ const move=(token:string,value:object,versionId=f.versionId,memo=memoId)=>patchMemoAnchor(
+  request('PATCH','/api/cad-files/'+versionId+'/memos/'+memo+'/anchor',token,value),
+  {params:Promise.resolve({versionId,memoId:memo})});
+ for(const forged of [{...body,targetId:outlineId},{...body,targetOrigin:'APP_CREATED'},
+   {...body,matrix:[1,0,0,1,0,0]},{...body,localAnchorWcsXY:{x:1,y:2}}])
+  expect((await move(f.tokens.editor,forged)).status).toBe(400);
+ expect((await move(f.tokens.editor,{...body,anchorWcsXY:{x:null,y:8}})).status).toBe(422);
+ expect((await move(f.tokens.editor,body,randomUUID())).status).toBe(403);
+ const siteB=f.foreignSiteId!;
+ const foreignId=randomUUID(),issuedAt=Date.now(),session=newSessionCandidate(foreignId,issuedAt);
+ await db!.user.create({data:{id:foreignId,loginName:'r4-foreign-'+foreignId.slice(0,8),passwordHash:'synthetic-hash',
+  status:'ACTIVE',mustChangePassword:false,createdAt:BigInt(issuedAt),updatedAt:BigInt(issuedAt)}});
+ await db!.userRoleGrant.create({data:{userId:foreignId,role:'Editor',grantedAt:BigInt(issuedAt)}});
+ await db!.userSiteGrant.create({data:{userId:foreignId,siteId:siteB,grantedAt:BigInt(issuedAt)}});
+ await db!.authSession.create({data:{id:session.session.id,userId:foreignId,tokenHash:session.session.tokenHash,
+  issuedAt:BigInt(session.session.issuedAt),lastSeenAt:BigInt(session.session.lastSeenAt),expiresAt:BigInt(session.session.expiresAt)}});
+ expect((await move(session.rawToken,body)).status).toBe(403);
+ const raw=f.open();raw.prepare('UPDATE "CadOutline" SET transform_json=? WHERE id=?').run('[{"type":"Scale"}]',outlineId);raw.close();
+ const invalidAffine=await move(f.tokens.editor,body);expect(invalidAffine.status).toBe(422);
+ expect(await db!.cadMemo.findUnique({where:{id:memoId}})).toMatchObject({revision:0,anchorX:1,anchorY:2});
+ expect(await db!.cadMemoAnchor.findUnique({where:{memoId}})).toMatchObject({localX:1,localY:2,targetId:outlineId});
+ expect(await db!.cadBusinessAudit.count({where:{targetKind:'MEMO',targetId:memoId,action:'EDIT'}})).toBe(0);
 });
