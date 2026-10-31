@@ -1,3 +1,29 @@
+## R1 최종 AC 대조 — SSR 실제 HTTP 거절 상태 (2026-10-31)
+
+초기 page safe-denial HTML200 한계는 원 #60/#62의 직접 URL/SSR HTTP401/403 수용 기준을 모두 충족하지 않는다. 설치된 Next16.3.4의 Node Proxy 지원을 로컬 source로 확인했으므로 `/operations/logs`에만 정확 matcher를 두고 기존 서버 인가를 재사용하여 실제 거절 status를 반환한다. page/API 내부 검사도 유지하며 CAD 익명 GET 범위·Auth 권한·G7 activation은 변경하지 않는다. 검증 TC-R1-009 추가 후 build/직접 URL·Greenfield를 실제 재검증한다. 기존 HTTP200 shell 테스트 성공을 새 상태 코드 검증으로 승계하지 않는다.
+
+## 2026-10-31 남은 18개 Issue 실행 순서 / Manager 착수 결정
+
+기준: origin/main `9016feb`, 앱 0.48.1, GitHub open issue 원문 18건 재조회. 과거 이슈의 미구현 설명보다 최신 코드·완료 PR 근거를 우선하며 구현 수용과 사내 현장 수용을 구분한다. 기존 작업 디렉터리의 미커밋 Compose/next-env 변경은 보존하고 별도 worktree에서 작업한다.
+
+| 순서 / PR 단위 | Issue | 구현·의존 관계와 완료 경계 |
+| --- | --- | --- |
+| R1 로그 권한→조회→화면 | #60, #61, #62 | #57~59 완료 기반. 기존 G7 세션/G4 Admin+logs:read 및 감사 재사용, 별도 bounded query/DTO/API, 운영 화면. 개발·합성 검증 가능, 실제 운영 활성화·현장 PASS는 별도. |
+| R2 Global 타입 관리 | #65 | 기존 Auth/Outline 영속 코어 재사용. Global Admin CRUD·NFC/이름 key·Unique/CAS·비활성 참조 유지. schema 변경 전 Database 갱신, 신규 격리 Greenfield만 검증. |
+| R3 타입 확정→영속 트리 | #71, #73 | R2 후 동일 Version/SHA/Scope·서버 타입 active 검사, typed confirm/서버 UUID 복원, legacy 미분류·세션 visibility 유지. Source mapping 0건을 APP_CREATED 조회 게이트로 삼지 않음. |
+| R4 Memo Snap UX | #174 | #84/#167 완료 기반. 후보 명시 선택/해제→관계 유지/해제 재배치→실포인터·1k/10k 합성 성능. 작성자-only 유지; 서버 inverse는 신뢰된 target에서 계산. 현장 항목 별도 보류. |
+| R5a 교환 export core | #91 | 기존 Scene/Generated 기반 읽기 전용 export scene, GLB/단일 glTF, 단위/WCS/선택 scope·누락 경고·Loader roundtrip. |
+| R5b 교환 export Memo/UX | #91 | R5a 이후 승인된 Memo DTO·실제 보이는 annotation, 그룹 조합·취소·메모리/cleanup. 둘 다 완료해야 #91 기능 AC 종합 판정. |
+| P 정책 결정 후 변경 | #172 | 타 작성자 Memo 편집/삭제 및 Admin 예외 Owner 결정 대기. 자동 권한 확대 금지. author-only 회귀는 계속 수행 가능. |
+| O 원시 로그 ADR→선택 collector | #63 | R1 이후 source 도달성/대안 비교는 가능. 수집기·호스트 권한·배포는 Owner 운영 결정 후 별도 PR. Docker socket/host raw 파일 직접 mount 금지. |
+| A 저장소 관리자 설정 | #76 | 저장소 실제 squash 기본값 재조회→PR_TITLE/BLANK 설정 및 다음 정상 merge 증거. 코드 PR로 완료를 대체할 수 없음; merge/배포 승인 범위와 구분. |
+| F 사내 현장 수용 | #96, #113, #160 | #96 Greenfield PC2대/Auth/백업복구, #113 실DXF/GPU, #160 S7 Scene→업무객체/메모 reset 통합 수용. 현장 자료 반출 없이 Owner 결과 필요. 합성 회귀/체크리스트 준비는 가능. |
+| E Epic 증거 정리 | #37, #49, #81, #50 | 중복 구현하지 않음. #37은 R2/R3, #49는 E1~E6(#51~#56)의 기존 완료 증거 대조이며 #91과 독립, #81은 R4/P/현장, #50은 R1(필수)과 O(선택) 추적. 모든 필수 자식 AC와 실제 증거 후 종료 판정. |
+
+**R1 결정:** 운영 읽기는 CAD write와 다른 global 권한이다. `requireG7CadPermission`은 Site/CAD writer 조건을 요구하므로 그대로 사용하지 않는다. `resolveG7RuntimeGate`→공개 Host 검증→기존 G4 `permit('logs:read',{kind:'global'})`와 감사로 매 요청 인가한다. G7 OFF/BLOCKED는 안전한 503, 활성 상태에서 미인증401/무권한403. 조회 전 Audit 실패도503이며 store 열람 금지. Admin만으로 허용하지 않는다. 인증 모델·감사 365일 정책·운영 활성화는 변경하지 않는다. 익명 CAD GET은 유지한다.
+
+조회 지원은 정제된 app/maintenance JSONL만. 로그 export/자동 polling은 최초 범위에서 제외한다. 반환 DTO는 L1 고정 catalog를 재검증하며 임의 문자열 필드나 raw Error/stack/path/검색어를 반환하지 않는다. Cursor는 bounded immutable server snapshot(기본 TTL120초, 최대8개/8MiB, snapshot 최대1000행)의 opaque 난수로 actor 및 정규화 filter에 결합한다. 새 append는 새 검색에서만 반영, 같은 timestamp는 logId DESC로 정렬. 만료/회수/재시작/원본 rotation 상실은410으로 재검색 안내하며 중복/누락을 숨기지 않는다. Snapshot 상한 초과는 partial로 표시하며 임의 데이터 잘라낸 것을 전체 검색으로 표현하지 않는다.
+
 ## ADR-055 — #58/#59 additive observability (2026-10-31)
 
 Extend existing #57 single sanitized emitter with allowlisted request/job phases and a bounded private JSONL sink. Preserve stdout/stderr, 30-second health check behavior, business results and rollback. Do not use DB tables or raw framework logs, or expose file path / HTTP API before #60/#61 access policy. New volume data is additive; cross-process atomic total quota is not guaranteed and exhausted stores drop persisted copies without breaking business transactions. See [Issues58-59](Issues58-59.md).

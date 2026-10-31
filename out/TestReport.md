@@ -1,3 +1,50 @@
+## PR #180 R1 CI repair — embedded baseline migrator shim fixtures (2026-10-31)
+
+- Antecedent: Docker Job `124564000864` in [Run 41210398076](https://github.com/planner77/layoutManager/actions/runs/41210398076) failed at baseline preparation with `Baseline logger package manifest differs from expected source`; downstream Docker build, smoke and size checks were SKIPPED, not passed. Details and original run state remain in [FailureLedger](FailureLedger.md).
+- Follow-up observation: Verify Job `124564000973` completed SUCCESS; Docker Job failure keeps the original Run unsuccessful.
+- Independent QA: `npx vitest run tests/unit/standalone.test.ts` — **1 file / 24 tests PASS**, including TC-LOG-MIG-003 actual execution of the embedded Python against temporary baseline fixtures: missing dependency inserts exactly one migrator COPY; existing dependency is byte-identical no-op and second execution remains unchanged; duplicate/missing/malformed/wrong-stage anchors or dependencies and ambiguous migrator stages are rejected without mutating the fixture. The warning `Digest-pinned GHCR_IMAGE requires GHCR_MIGRATION_IMAGE explicitly` is from an existing negative-input test; Vitest exited 0.
+- Workflow diff review: only the baseline Dockerfile preparation heredoc changed (29 additions/5 removals) plus tests. It validates a unique migrator stage and exact anchor/dependency placement; the subsequent baseline/phase1/runtime/migrator Docker builds, size measurement, image audits and smoke steps remain present and unchanged. `git diff --check` PASS.
+- This is fixture and static workflow-contract evidence only. It does **not** show the actual Docker job or image/migrator build passing. The new PR CI retry result is pending/not verified; no publish/deploy/Issue operation was performed.
+
+## U-R1-20261031 — #60/#61/#62 로컬 코드 수용 (0.49.0 후보)
+
+- 기준: Main `9016feb` 기반 `feat/remaining-issues-20261031`의 이 보고서를 포함한 후보 tree. 원본 작업 폴더의 Compose/next-env 미커밋 2건은 보존했다. 잔여18개 이슈의 PR 묶음/순서는 Decisions의 2026-10-31 실행 표가 단일 기준이다. 다음은 R2 #65이며 전체 목표 완료는 아니다.
+- 실제 역할: gpt-6-astra Manager `/root/manager`가 구현 전 요구/설계/AC/TC 및 최종 수용을 담당했다. gpt-6-sol Developer `/root/logs_developer`는 권한·reader·DTO·API·집중시험, Root(GPT-6)는 UI/SSR/Proxy/내비게이션·E2E·통제시계 fixture·전체회귀·Git/PR을 담당했다. gpt-6-luna 독립 QA `/root/manager/qa`는 실제 Audit INSERT 실패, 권한/만료/철회·한도·신규 Proxy 검증을 수행했다. Root 구현을 Developer가 했다고 기록하지 않는다.
+- **최종 판정: Manager LOCAL CODE ACCEPTED**. 최신 Next native Production Build(`/tmp/layoutmanager-r1-proxy-build.log`)·Typecheck(`/tmp/layoutmanager-r1-proxy-typecheck.log`) PASS, 전체 ESLint(`/tmp/layoutmanager-r1-proxy-lint.log`) PASS(0ERROR/기존11WARNING), diff/Secret/산출물 검사 위반0.
+- 전체 Vitest **112 files / 731 PASS**, 215.62초(`/tmp/layoutmanager-r1-final-all-tests.log`) 뒤 신규 Proxy unit **1 file / 6 PASS**(`/tmp/layoutmanager-r1-proxy-test.log`). 두 실행을 단일 전체737 실행으로 표현하지 않는다. 독립 QA의 기존6files49PASS 및 Proxy6PASS는 이 수용을 위한 별도 집중 근거다.
+- 일반 Chromium CAD 회귀 **117/117 PASS**, 8.5분(`/tmp/layoutmanager-r1-all-e2e.log`): 등록/Current/삭제·DXF/DWG·선택/편집/Tree/검색/메모·Scene·전체화면 등을 포함한다. 이 run 이후 R1 전용 Proxy/통제시계 fixture/로그 화면 보완을 적용했으며 CAD 매칭·렌더링 코드는 변경하지 않았다.
+- 최신 native Proxy + 통제 합성 시계 Greenfield Chromium **3/3 PASS**, 24.6초(`/tmp/layoutmanager-r1-proxy-greenfield.log`): 빈 DB→최초 Admin→초기 변경/로그인/실제 logout, Scene 저장→독립 BrowserContext/reload(원본 GET0/Index Worker0), 실제 로그 권한 부여/회수·직접 URL401/403/허용200 및 API403/보관비활성200. 로그 UI 데이터만 Mock DTO를 사용해 필터·상세·Clipboard·request timeline·410·empty/partial/503·320px·정리를 검증했다. 실제 허가된 REST→L3 writer→bounded filesystem reader→DTO는 `operations-logs-qa.test.ts` Root 추가 시험 **8/8 PASS**(`/tmp/layoutmanager-r1-real-reader-test.log`)와 전체731에서 별도로 검증했다. 실제 `/data/logs`나 운영 DB는 사용하지 않았다.
+
+| 요구/TC | 구현·실제 근거 | 결과/경계 |
+| --- | --- | --- |
+| R1-REQ1/5, TC-R1-001/002/006 | 기존 global G4 + logs:read/Audit, bootstrap User0 차단, 실제 SQLite Audit trigger 실패/read0, 만료·미래발급·철회·위조/권한·rate/no-store | 로컬 PASS; 운영 활성화/사내 현장 별도 |
+| R1-REQ2/3/4, TC-R1-003~005 | 실제 L3 writer→REST, >200행 필터·tie/페이지 재요청·actor/filter/expiry/rotation, corrupt/raw canary·private mode/symlink·4097 enumeration/monotonic deadline | 로컬 PASS; 모든 byte 경계·실 볼륨 성능/백업 미실행 |
+| R1-REQ6/7, TC-R1-007/008 | 실제 auth+Mock UI DTO의 검색/타임라인/Clipboard/상태/320px·unmount abort, 기존 CAD117회귀 | 해당 합성 범위 PASS; focus race 전 조합/실 PC2대 미검증 |
+| TC-R1-009 | 최신 Node Proxy unit6 + native Build/Greenfield 실제 HTTP401/403/200; API/Page 후속 인가 보존 | PASS; 과거 safe-shell200 제한은 최신 Proxy로 대체 |
+
+- 실제 시계 역행(10초 표본 최대2499ms)으로 실패한 run, 원래 User0 Audit 오염 결함, 잘못된 selector/Date.now mock 재귀·세션 정리·ESM lint 조치는 FailureLedger에 보존했다. 통제 시계는 affected test fixture 및 opt-in dedicated `/tmp/g7-first-run-ui-*` webServer만 사용하며, production Session/CSRF/issued_at/revoked_at 검사는 유지한다. Non-fixture preload 시작 거부도 확인했다. 통제 환경 PASS는 실제 운영 시계/NTP나 현장 PASS가 아니다.
+- npm ci 관측29건(19moderate/9high/1critical)은 기존 고정 의존성 graph의 audit 결과이며 강제 업그레이드하지 않았다. 새 외부 의존성·DB schema/migration·원본 CAD·Volume/Compose·운영 권한·GHCR/tag 변경은 없다. CLI와 Root .env Git credential은401; 연결된 GitHub 도구로 검증한 동일 tree만 Draft PR로 게시한다.
+- **잔여:** PR CI/리뷰·Main/GHCR·현장 PC2대/실 DXF/GPU·실 로그 Volume/백업·운영 시계 수용은 NOT VERIFIED. Issue 자동 종료/병합/배포하지 않는다. Commit/원격 branch/PR 및 CI 시작 여부는 최종 Git/PR 메타데이터를 기준으로 별도 확인한다.
+
+## R1 #60/#61/#62 — 독립 QA 추가 검증 (2026-10-31)
+
+- 독립 추가 파일 `src/tests/integration/operations-logs-qa.test.ts`: 실제 SQLite `AuditEvent` INSERT를 trigger로 거부했을 때 REST가 503을 반환하고 로그 query 함수가 호출되지 않으며 감사행이 생성되지 않는 TC-R1-002 검증, 정상 발급 규칙으로 9시간 전 `newSessionCandidate`를 별도 INSERT해 expired Session을 검증, revoked Session 및 `logs:read` grant 철회가 파일 query 전에 401/403으로 끝나는 TC-R1-001/002 검증, 빈 `level/event/operation/component/source/outcome/requestId/jobId/errorCode` query 값이 각각 400 + `private, no-store` + request ID로 반환되는 TC-R1-003 검증을 추가했다. HTTP limiter rejection은 `reserve`가 `LOG_RATE_LIMITED/429`를 throw하도록 경계 주입하여 route의 429 + `Retry-After: 60` + no-store 및 query 미호출을 확인했다.
+- 실행: `npx vitest run tests/integration/operations-logs-qa.test.ts tests/integration/operations-logs-access.test.ts tests/unit/operations-logs-access.test.ts tests/unit/operations-logs-query.test.ts` — **4 files / 18 tests PASS**. 추가로 `operations-logs-qa.test.ts`와 `operations-logs-query.test.ts` ESLint **PASS**, `npm run typecheck` **PASS**, `git diff --check` **PASS**. Query directory-entry cap(4097 entries, explicit partial)과 monotonic 2s deadline(벽시계 롤백으로 scan budget이 늘지 않음)도 새 source 경계 테스트에서 PASS. Existing limiter unit test separately verifies configured real cap arithmetic (2 per identity / 3 aggregate / 10 entries); route test above verifies HTTP mapping, not 240/600 actual endpoint requests. Developer's focused 19/19 PASS is separate evidence. Whole Vitest/build/Greenfield E2E remains Root-owned.
+- 한계: 각 byte/file/response 상한의 모든 경계값과 브라우저 focus race는 이 추가 run에서 실행하지 않았다. Rate limit은 각 Node worker 프로세스 기준 600회/분 aggregate와 token당 240회/분이며 다중 replica 간 공유가 아니다. 최초 HTML denial 200 관측은 이력이다. 최종 `/operations/logs` SSR 경로는 아래 TC-R1-009 Proxy로 동일한 401/403/429/503 인증 결과를 돌려준다. 실 운영 로그 Volume·백업/복구, 사내 Auth/브라우저, 침투시험은 NOT VERIFIED.
+
+## R1 #60/#61/#62 — monotonic fixture 안정화 후 6개 focused 파일 재실행 (2026-10-31)
+
+- 실제 시계에서 관측된 벽시계 역행(약 2.5초)과 synthetic monotonic fixture 결과는 별개다. Root가 이를 FailureLedger에 실제 환경 실패 근거로 보존했고, 테스트 전용 `installMonotonicTestClock`로 런타임 Auth/CAD 및 R1 fixture lifecycle을 안정화했다. 명시적으로 미래에 발급된 session은 운영 규칙대로 fail-closed 되는 독립 R1 케이스도 유지한다.
+- 첫 synthetic-clock 6-file run **48/49 PASS, 1 FAIL**: `g7-runtime-cad`의 publication-expiry test가 helper 설치 후 `Date.now.bind(Date)`로 wrapper를 캡처해, fallback에서 자기 wrapper를 재귀 호출하며 `RangeError: Maximum call stack size exceeded`를 냈다. 제품 인증 assertion까지 도달하지 못한 테스트 clock integration 결함이었다. 테스트만 보완해 helper 적용 전의 수치 wall-clock 및 `performance.now()` anchor로 fallback 시간을 계산하게 했고, production source/clock guard는 변경하지 않았다.
+- 수정 후 실행 `npx vitest run tests/integration/operations-logs-qa.test.ts tests/integration/operations-logs-access.test.ts tests/unit/operations-logs-access.test.ts tests/unit/operations-logs-query.test.ts tests/integration/g7-runtime-auth.test.ts tests/integration/g7-runtime-cad.test.ts`: **6 files / 49 tests PASS**. 영향받은 6 TS 테스트 파일 ESLint **PASS**, `npm run typecheck` **PASS**, `git diff --check` **PASS**. 실제 시계 역행 위험이 제거됐다는 운영 증거로 해석하지 않는다.
+- Greenfield Chromium/DB setup은 Root 별도 controlled run 3회 담당 중이며 이 기록에 포함하지 않는다. 실 운영 시계/NTP, Volume, Auth, 배포 및 현장 보안 수용은 NOT VERIFIED.
+
+## R1 #60/#61/#62 — protected SSR Proxy TC-R1-009 (2026-10-31)
+
+- `src/proxy.ts` 독립 source review: matcher는 `/operations/logs` 한 경로이며 `authorizeOperationLogs`를 재사용한다. 승인 시 private/no-store로 Next 진행; 인증 거부는 고정된 안전 HTML과 상태 401/403/429/503, private/no-store, Cookie Vary, 429 Retry-After를 반환한다. 예기치 않은 오류는 안전하게 503으로 축약한다. CAD 경로를 matcher에 넣지 않는다.
+- 실행 `npx vitest run tests/unit/operations-logs-proxy.test.ts`: **1 file / 6 tests PASS** (RSC/prefetch용 401·403·429·503 denial, 허용 진행, 좁은 matcher, 비밀 상세 비노출). `npx eslint proxy.ts tests/unit/operations-logs-proxy.test.ts` **PASS**. 이 focused run은 Proxy route unit 근거다.
+- Root의 실제 Greenfield HTTP 401/403/200 검증 3회는 실행 중으로 인계되었으며, 완료된 결과를 확인하기 전에는 PASS로 표기하지 않는다. 초기 page guard의 safe-denial HTML 200 관찰은 과거 결과로 보존하고 최종 Proxy 동작과 혼합하지 않는다. 실제 로그인 브라우저, 운영 G7, Volume/배포/현장 보안 수용은 별도 검증.
+
 ## PR #179 최종 소스 CI·병합 수용 기록 (2026-10-31)
 
 - 최종 PR HEAD `7698b0e035d330361005780fb1e838f5ab421457`: [Run 41205118337](https://github.com/planner77/layoutManager/actions/runs/41205118337) Verify Job `124548636367` + Docker Job `124548636626` **둘 다 SUCCESS**. Main behind 0, mergeable true, Codex P2 2건 Resolved, 미해결 리뷰 0. 기존 실패 Run 41194360963 / 41202514157은 실패 원장 보존.

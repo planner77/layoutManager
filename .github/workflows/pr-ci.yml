@@ -176,14 +176,38 @@ jobs:
           # Do not bypass its import smoke, size comparison or native DB checks.
           python3 - "$RUNNER_TEMP/issue28-baseline.Dockerfile" <<'PY'
           from pathlib import Path
+          import re
           import sys
           baseline = Path(sys.argv[1])
-          source = baseline.read_text()
-          anchor = "COPY --from=builder /app/src/server/logger.ts ./server/logger.ts\n"
-          dependency = "COPY --from=builder /app/src/server/logging/store.ts ./server/logging/store.ts\n"
-          if source.count(anchor) != 1 or dependency in source:
+          source = baseline.read_bytes()
+          anchor = b"COPY --from=builder /app/src/server/logger.ts ./server/logger.ts\n"
+          dependency = b"COPY --from=builder /app/src/server/logging/store.ts ./server/logging/store.ts\n"
+          stages = list(re.finditer(rb"(?im)^[ \t]*FROM[ \t]+[^\r\n]+(?:\r?\n|$)", source))
+          migrators = [i for i, stage in enumerate(stages)
+                       if re.search(rb"(?i)[ \t]+AS[ \t]+migrator[ \t]*(?:\r?\n|$)", stage.group())]
+          if len(migrators) != 1:
+              raise SystemExit("Baseline migrator stage is missing or ambiguous")
+          stage_index = migrators[0]
+          start = stages[stage_index].start()
+          end = stages[stage_index + 1].start() if stage_index + 1 < len(stages) else len(source)
+          # A near-match COPY is not a valid closure. It must not be silently
+          # accepted or duplicated under a different destination/stage.
+          for line in source.splitlines(keepends=True):
+              copy = re.match(rb"(?i)^COPY[ \t]+", line.lstrip())
+              if b"server/logger.ts" in line and copy and line != anchor:
+                  raise SystemExit("Baseline logger COPY is malformed")
+              if b"server/logging/store.ts" in line and copy and line != dependency:
+                  raise SystemExit("Baseline store COPY is malformed")
+          anchors = list(re.finditer(rb"(?m)^" + re.escape(anchor), source))
+          if source.count(anchor) != 1 or len(anchors) != 1 or not (start <= anchors[0].start() < end):
               raise SystemExit("Baseline logger package manifest differs from expected source")
-          baseline.write_text(source.replace(anchor, anchor + dependency, 1))
+          copies = list(re.finditer(rb"(?m)^" + re.escape(dependency), source))
+          count = source.count(dependency)
+          if count != len(copies) or count > 1 or count == 1 and not (start <= copies[0].start() < end):
+              raise SystemExit("Baseline store COPY is duplicate or outside migrator")
+          if count == 0:
+              position = anchors[0].end()
+              baseline.write_bytes(source[:position] + dependency + source[position:])
           PY
           docker buildx build --load --platform linux/amd64 -f "$RUNNER_TEMP/issue28-baseline.Dockerfile" -t cad-layout-viewer:baseline .
           docker buildx build --load --platform linux/amd64 --target migrator -f "$RUNNER_TEMP/issue28-baseline.Dockerfile" -t cad-layout-viewer:baseline-migrate .

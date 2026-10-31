@@ -1,4 +1,5 @@
-import {afterEach, describe, expect, test} from 'vitest';
+import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest';
+import {installMonotonicTestClock} from '../helpers/monotonic-clock';
 import {createRequire} from 'node:module';
 import {randomBytes, randomUUID} from 'node:crypto';
 import {mkdtempSync, writeFileSync, rmSync} from 'node:fs';
@@ -28,10 +29,11 @@ const KEYS=[
  'G7_S3_AUTH_API_PREVIEW_ONLY','G7_S3_TEST_ORIGIN',
  'G7_OPERATION_APPROVAL_ID','G7_OPERATION_CHANGE_ID',
 ] as const;
+beforeEach(installMonotonicTestClock);
 afterEach(()=>{
   for(const k of KEYS){if(saved[k]===undefined)delete process.env[k];else Object.assign(process.env,{[k]:saved[k]});}
   if(home)rmSync(home,{recursive:true,force:true});
-  home=null;saved={};
+  home=null;saved={};vi.restoreAllMocks();
 });
 function cli(executable:string,args:string[],extra:Record<string,string>={}) {
   return spawnSync(executable,args,{

@@ -1,3 +1,11 @@
+## 0.49.0 후보 운영 로그 조회 — #60/#61/#62
+
+기존 최초 관리자/서버 세션 절차를 사용한다. 관리자는 계정/권한 관리에서 조회할 Admin에게 `logs:read` 특별 Grant를 명시적으로 부여한다. Admin 역할만으로는 로그를 볼 수 없으며 Site Grant나 도면 삭제 비밀번호는 로그 권한이 아니다. 권한 회수·로그아웃·만료 이후 API와 직접 화면 URL은 차단한다. 화면 진입도 Node Proxy에서 같은 인가로 401/403/429/503을 반환하며 CAD 경로에는 적용하지 않는다. 운영 활성화를 위해 G7 검증을 우회하거나 기존 볼륨을 새 설치로 취급하지 않는다.
+
+`LOG_STORE_ENABLED`와 private `/data/logs`의 기존 보관 절차는 아래 #58/#59 운영 지침을 따른다. 이 기능을 추가하는 것만으로 설정을 활성화하거나 디렉터리를 생성·삭제하지 않는다. 웹 화면의 출처는 정제된 app/maintenance만이며 Next/컨테이너/Nginx는 기존 운영 CLI를 사용한다. UI/권한/오류 및 조회 상한은 Logging과 Architecture의 R1 절을 따른다. 안전한 로그 DTO만 표시하며 전체 로그 파일 다운로드는 없다.
+
+읽기 API 장애나 410 페이지 만료 때 조건을 좁혀 재검색한다. 로그 IO 장애를 해결하려고 CAD/DB 볼륨을 삭제하거나 권한을 0777로 완화하지 않는다. 새 코드·합성 시험과 실제 현장/게시/배포 수용은 TestReport에서 분리한다.
+
 ## PR #179 — 신규 Observability 정식 GHCR release v0.48.1 준비 (2026-10-31)
 
 - v0.48.0 릴리스 태그는 기존 Main 소스를 가리키므로 절대 이동/재사용하지 않는다. 새 JSONL/phase instrumentation release 후보 버전은 `0.48.1` (App), `0.48.1-migrate` (Migrator). package + lock을 일치시켜 PR CI가 새 정확 HEAD에서 성공한 경우에만 squash merge와 Main CI GHCR 게시 경로를 사용한다.

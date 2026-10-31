@@ -1,3 +1,10 @@
+## 0.49.0 후보 — #60/#61/#62 운영 로그 조회 (2026-10-31)
+
+- Added: 기존 G7 세션·Admin+logs:read·감사를 재사용하는 전역 로그 읽기 인가, 고정 private JSONL 조건 조회 API, bounded snapshot cursor와 정제 DTO.
+- Added: 별도 운영 화면의 기간/레벨/출처/작업/상관 ID 검색, 최신순 목록·상세·시간순 타임라인, 명시 페이지 조회와 비활성/일부/만료/오류 안내.
+- Docs: 잔여 18개 이슈를 의존 순서대로 PR 단위와 정책/현장/관리자 작업으로 매핑. 실제 DB/운영 권한·Compose/Volume/원시 로그 수집 변경 없음.
+- Validation: 전체 Vitest 731/731 PASS 후 새 Proxy 보안6/6 PASS, 일반 CAD E2E117/117 및 통제 합성 시계 Greenfield3/3 PASS, 최신 Production Build/Typecheck/Lint PASS(기존 경고11개). 서로 다른 실행을 전체737회 단일 실행으로 합산하지 않는다. 실제 시계 역행 실패·fixture 조치·독립 QA와 PR CI/현장 잔여는 TestReport/FailureLedger에서 분리한다.
+
 ## [0.48.0 후보] Issue #55 / #56 브라우저 GENERATED 편집 (2026-10-31)
 
 - #55: 기존 WCS XY GeneratedDocument Rotate 명령을 그룹 Pivot 계산, 수치 편집(+ = CCW), Canvas ↻ Ghost/ESC/PointerUp 확정, Undo 1단계에 연결. 기존 SOURCE/RENDER/mixed fail-closed, Hole/MultiPolygon 및 immutable base 보존.
