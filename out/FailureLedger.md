@@ -1,3 +1,23 @@
+## #88/#90 PR #176 — PR CI #343 ESLint FAILURE, P2 fixed, new PR CI handoff (2026-10-31 KST)
+
+### Exact failed execution and classification
+- [PR CI #343 / Run #41148144608](https://github.com/planner77/layoutManager/actions/runs/41148144608) `completed/failure`, source HEAD `8bf85699021ac587bb1595cd44bb27618f141d8b`. Earlier [PR CI #342 / Run #41148087457](https://github.com/planner77/layoutManager/actions/runs/41148087457) at `be10753a617d165f49d7242c0756880c47fb7e06` was **CANCELLED**, not success or independent failure.
+- Docker Job `124378361245` **SUCCESS**: baseline and App/Migrator image builds, native SQLite/OCI audits, disposable Greenfield Compose/Admin/CAD/restart smoke all reported success. No Docker/Greenfield migration failure evidenced by this run.
+- Verify Job `124378361508` **FAILURE**: `npm ci` / Prisma Client generation / TypeScript checker **SUCCESS**. `ESLint` **FAILURE** with exactly **3 errors + 11 nonblocking warnings**. `src/features/cad-viewer/viewer.tsx` #414 `openDelete` and #572 `resetOutline`: `react-hooks/preserve-manual-memoization` compiler-inferred `setDeleteRequest` dependency did not match explicit manual deps. #651: `react-hooks/set-state-in-effect` from synchronous `setMemoLinkNotice` inside new direct-link effect. Original M6/M7 request/renderer lifecycles not yet exercised by CI past lint.
+- Unit/Integration/OCI test/outline benchmark, Production Next build, Chromium E2E, signed G7 Runtime and Greenfield E2E, Legacy migration E2E were **SKIPPED** in that failed Verify job. Docker success must not be presented as overall PR success. Existing 11 warning messages remain distinct from lint failures.
+
+### Corrections, review and regression
+- Code correction `c783bf4e8ff51ff68f090be0059f9e88708c8709`: `openDelete`/`resetOutline` manual callback deps explicitly include `setDeleteRequest` rather than disabling lint rules. Invalid UUID/unsupported Renderer/G7 off/unavailable notices are render-derived; async GET success/error continues to update state in asynchronous continuations.
+- [Codex P2 inline finding #4429501072](https://github.com/planner77/layoutManager/pull/176#discussion_r4429501072), thread `PRRT_kwDOUQjDfc6yLh4a`: previous memo-notice retry called `setAttempt`, reinitialized ViewerManager and could silently drop unsaved APP_CREATED/Undo work. Replaced with memo HTTP-only `memoDetailRetry` and `memoListRetry`, with no CAD loader epoch change; link-copy success/fallback does not expose destructive retry. `OFF` or unavailable memo list uses list-only refresh. Reply [#4429705126](https://github.com/planner77/layoutManager/pull/176#discussion_r4429705126) posted and GitHub GraphQL thread **RESOLVED**. This resolves the code finding, not independent CI acceptance.
+- Regression commit `166fdd52c585a50a025a04d3d1c0ab815bd27455`: Playwright `#88 P2` checks that memo-only retry keeps same WebGL canvas element and unsaved browser-session Memo after auth runtime OFF; one unused lint-disable in memo search screen removed. Test execution **NOT VERIFIED** until next exact-head CI.
+- Documentation correction `f573e84b0c6657a7aabaa65c582af400f64584b7` in AGENTS.md, out/Issues88-90.md, TestPlan/TestReport records the technical root cause and non-destructive retry boundary. No tests locally run in connector-only environment. No legacy volume migration, Auth/Writer activation, GHCR, Merge, issue closure or real-site acceptance.
+
+### Latest reviewed gate and new CI trigger
+- Before this ledger write, GitHub PR #176 code/docs HEAD `f573e84b0c6657a7aabaa65c582af400f64584b7`, base Main `7058ec393aad10ebbf22bec6dda70d961cb9b483`: compare status `ahead`, ahead=15, **behind=0**; PR `mergeable=true`, so no known Main conflict. One Codex inline thread is resolved/outdated; **unresolved=0** at the last check. Later commits/reviews must be reassessed for merge decision; no approval is implied.
+- **Next operation:** push this failure ledger entry to the existing PR branch. The resulting `pull_request.synchronize` is expected to start a **new full PR CI** on the post-repair HEAD; verify a workflow Run was queued/started but do not monitor its conclusion per Owner request. Newly started CI is **NOT VERIFIED** and does not retrospectively change Run #343 or #342. If no workflow starts, mark trigger not confirmed and use a supported event rather than reporting success.
+
+---
+
 ## #88/#90 PR #176 — new PR review/merge gate and exact-HEAD CI handoff (2026-10-31 KST)
 
 - [PR #176](https://github.com/planner77/layoutManager/pull/176) was created from `feat/issues-88-90-memo-link-search-20261031` at code+ledger HEAD `be10753a617d165f49d7242c0756880c47fb7e06`, base Main `7058ec393aad10ebbf22bec6dda70d961cb9b483`.
