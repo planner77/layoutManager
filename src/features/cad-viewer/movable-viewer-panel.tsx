@@ -7,7 +7,9 @@ type Drag={
  pointerId:number;startClientX:number;startClientY:number;startX:number;startY:number;
  original:ViewerPanelPosition;moved:boolean;
 };
+export type ViewerMovableKind='layers'|'outlines'|'memos'|'tools'|'search';
 type Props={
+ kind?:ViewerMovableKind;
  id:string;name:string;open:boolean;mobile:boolean;active:boolean;raised:boolean;
  workspaceRef:RefObject<HTMLDivElement|null>;dialogRef?:RefObject<HTMLDivElement|null>;
  children:ReactNode;onRaise:()=>void;onClose:()=>void;
@@ -17,8 +19,9 @@ type Props={
  * Keep component mounted while closed, so same Viewer session retains its position.
  * Use a version/renderer key at the call site to reset on a new Viewer identity.
  */
-export function MovableViewerPanel({id,name,open,mobile,active,raised,workspaceRef,dialogRef,
+export function MovableViewerPanel({kind='memos',id,name,open,mobile,active,raised,workspaceRef,dialogRef,
  children,onRaise,onClose,onKeyDown}:Props){
+ const testPrefix=kind==='memos'?'viewer-memo-panel':`viewer-${kind}-panel`;
  const panelRef=useRef<HTMLDivElement|null>(null);
  const dragRef=useRef<Drag|null>(null);
  const [placement,setPlacement]=useState<ViewerPanelPosition>(EDGE_PANEL_POSITION);
@@ -129,19 +132,19 @@ export function MovableViewerPanel({id,name,open,mobile,active,raised,workspaceR
   id={id} role={mobile?'dialog':'region'}
   aria-modal={mobile?true:undefined}
   aria-label={name}
-  data-testid={id} data-drawer="memos"
+  data-testid={id} data-drawer={kind}
   data-viewer-panel-mode={floating?'floating':'edge'}
   data-viewer-panel-dragging={dragging?'true':'false'}
   data-canvas-edit-escape-layer={mobile?'drawer':undefined}
   onKeyDown={onKeyDown}
   onPointerDownCapture={onRaise}
   onFocusCapture={onRaise}
-  className="viewer-drawer viewer-drawer-memos"
+  className={`viewer-drawer viewer-drawer-${kind} pointer-events-auto`}
   style={floating?{left:placement.x,top:placement.y,right:'auto',bottom:'auto',
     transform:'none',zIndex:raised?36:30}:{zIndex:raised?36:30}}>
-  {!mobile&&<div data-testid="viewer-memo-panel-toolbar"
+  {!mobile&&<div data-testid={testPrefix+'-toolbar'}
    className="flex shrink-0 items-center gap-1 border-b border-slate-300 bg-slate-50 px-2 py-1">
-   <button type="button" data-testid="viewer-memo-panel-drag-handle"
+   <button type="button" data-testid={testPrefix+'-drag-handle'}
     aria-label={name+' 창 이동 (방향키 또는 드래그)'}
     aria-keyshortcuts="ArrowUp ArrowDown ArrowLeft ArrowRight"
     onPointerDown={onHandleDown} onPointerMove={onHandleMove}
@@ -150,9 +153,9 @@ export function MovableViewerPanel({id,name,open,mobile,active,raised,workspaceR
     className="viewer-drawer-grab min-w-0 flex-1 rounded border border-slate-400 px-2 py-1 text-left text-xs font-semibold">
     이동 ↕
    </button>
-   <button type="button" data-testid="viewer-memo-panel-reset" onClick={reset}
+   <button type="button" data-testid={testPrefix+'-reset'} onClick={reset}
     className="shrink-0 rounded border border-slate-400 px-2 py-1 text-xs">위치 초기화</button>
-   <button type="button" data-testid="viewer-memo-panel-close" onClick={onClose}
+   <button type="button" data-testid={testPrefix+'-close'} onClick={onClose}
     className="shrink-0 rounded border border-slate-400 px-2 py-1 text-xs">창 닫기</button>
   </div>}
   <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{children}</div>

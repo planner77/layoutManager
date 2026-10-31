@@ -1698,12 +1698,17 @@ export function CadViewer({
         else if(panel==='memos'){dispatchApp({type:'toggle-memo-tree'});requestAnimationFrame(()=>viewerShell.current?.querySelector<HTMLButtonElement>('[data-viewer-group=work]')?.focus({preventScroll:true}));}
         else {closeMemoEditor();dispatchApp({type:'close-tools'});requestAnimationFrame(()=>viewerShell.current?.querySelector<HTMLButtonElement>('[data-viewer-group=work]')?.focus({preventScroll:true}));}
       }}
+      textSearchOpen={searchOpen}
+      onCloseTextSearch={()=>{setSearchOpen(false);requestAnimationFrame(()=>viewerShell.current?.querySelector<HTMLButtonElement>('[data-testid="cad-text-search-trigger"]')?.focus({preventScroll:true}));}}
+      textSearch={({workspaceRef,dialogRef,mobile,active,raised,onRaise})=>
+        <CadTextSearch key={versionId+':'+sourceSha256+':'+renderer+':'+attempt}
+          getManager={getManager} format={format} ready={state.ready} loading={loading}
+          layers={layers} selectedLayers={selectedLayers}
+          open={searchOpen} onOpenChange={setSearchOpen}
+          workspaceRef={workspaceRef} dialogRef={dialogRef} mobile={mobile}
+          active={active} raised={raised} onRaise={onRaise} />}
       canvas={
         <>
-          <CadTextSearch key={versionId + ':' + renderer + ':' + attempt}
-            getManager={getManager} format={format} ready={state.ready} loading={loading}
-            layers={layers} selectedLayers={selectedLayers}
-            open={searchOpen} onOpenChange={setSearchOpen} />
           <div
             ref={container}
             data-testid="cad-canvas"

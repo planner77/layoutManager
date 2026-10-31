@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useId, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type RefObject } from 'react';
+import { MovableViewerPanel } from './movable-viewer-panel';
 import { Button } from '@/components/ui/button';
 import type { ViewerManager } from '@/viewers/core/adapter';
 import type { CadTextIndex } from '@/viewers/core/text-index';
@@ -12,6 +13,7 @@ const PAGE_SIZE = 100;
 /** A renderer-neutral overlay; works inside regular, CSS immersive and native fullscreen shells. */
 export function CadTextSearch({
   getManager, format, ready, loading, layers, selectedLayers, open, onOpenChange,
+  workspaceRef, dialogRef, mobile, active, raised, onRaise,
 }: {
   getManager: () => ViewerManager | null;
   format: ViewerFormat;
@@ -21,8 +23,15 @@ export function CadTextSearch({
   selectedLayers: ReadonlySet<string>;
   open: boolean;
   onOpenChange: (value: boolean) => void;
+  workspaceRef:RefObject<HTMLDivElement|null>;dialogRef:RefObject<HTMLDivElement|null>;
+  mobile:boolean;active:boolean;raised:boolean;onRaise:()=>void;
 }) {
   const id = useId();
+  const wasOpen=useRef(false);
+  useEffect(()=>{
+    if(open&&!wasOpen.current)onRaise();
+    wasOpen.current=open;
+  },[open,onRaise]);
   const setOpen = onOpenChange;
   const [index, setIndex] = useState<CadTextIndex | null>(null);
   const [working, setWorking] = useState(false);
@@ -75,26 +84,24 @@ export function CadTextSearch({
     if (next && ready && format === 'DXF' && !index) { setWorking(true); setError(''); }
   }
 
-  return <div
-    onKeyDown={event => {
-      // SelectionController handles Escape during window capture and may consume it.
-      // Never close this panel when another UI layer already used this keystroke.
-      if (event.key === 'Escape' && open && !event.defaultPrevented) {
-        event.preventDefault();
-        event.stopPropagation();
-        onOpenChange(false);
-      }
-    }}
-    className="pointer-events-none absolute inset-y-2 right-2 z-[40] flex max-w-[calc(100vw-1rem)] flex-col items-end"
-  >
+  return <>
     <Button type="button" size="sm" variant="outline" onClick={toggle}
-      aria-expanded={open} aria-controls={id} disabled={format === 'DXF' && (loading || !ready)}
-      className="pointer-events-auto max-w-full border-slate-300 bg-white text-slate-900 shadow">
+      data-testid="cad-text-search-trigger" aria-expanded={open} aria-controls={id} disabled={format === 'DXF' && (loading || !ready)}
+      className="pointer-events-auto absolute right-2 top-2 z-[45] max-w-full border-slate-300 bg-white text-slate-900 shadow">
       도면 내 텍스트 검색
     </Button>
-    {open && <aside id={id} aria-label="도면 내 텍스트 검색"
-      data-testid="cad-text-search"
-      className="pointer-events-auto mt-2 flex min-h-0 max-h-[min(64dvh,38rem)] w-[min(23rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-lg border border-slate-200 bg-white p-3 text-slate-900 shadow-xl">
+    <MovableViewerPanel kind="search" id="viewer-text-search-dock" name="도면 내 텍스트 검색"
+      workspaceRef={workspaceRef} dialogRef={dialogRef} open={open}
+      mobile={mobile} active={active} raised={raised} onRaise={onRaise}
+      onClose={()=>setOpen(false)}>
+      <aside id={id} aria-label="도면 내 텍스트 검색"
+        onKeyDown={event=>{
+          if(event.key==='Escape'&&open&&!event.defaultPrevented){
+            event.preventDefault();event.stopPropagation();setOpen(false);
+          }
+        }}
+        data-testid="cad-text-search"
+        className="pointer-events-auto flex min-h-0 w-full flex-1 flex-col overflow-hidden bg-white p-3 text-slate-900">
       <div className="mb-2 flex items-center justify-between gap-2">
         <strong className="text-sm">현재 도면 내 텍스트 검색</strong>
         <Button type="button" size="sm" variant="ghost" onClick={() => setOpen(false)}>닫기</Button>
@@ -150,6 +157,7 @@ export function CadTextSearch({
         {index && searchKey(query) && matches.length === 0 && <p className="text-xs text-slate-500">일치하는 도면 내 텍스트가 없습니다.</p>}
         <p className="mt-2 text-[11px] text-slate-500">부분 일치 · 대소문자 무시 · Unicode NFC · MTEXT 개행 공백화. 위치는 텍스트 삽입점을 기준으로 이동합니다.</p>
       </>}
-    </aside>}
-  </div>;
+      </aside>
+    </MovableViewerPanel>
+  </>;
 }
