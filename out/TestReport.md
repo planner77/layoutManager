@@ -1,3 +1,11 @@
+## PR #177 v0.47.5 Owner Managed 구현 인수 / CI 게이트 검증 및 Main 인계 (2026-10-31)
+
+- 원 소스 HEAD `b9002c45ac8c18aee96a87d8ad51add292ffbf8f`, [PR CI Run 41166539969](https://github.com/planner77/layoutManager/actions/runs/41166539969) **completed/success**, Verify Job `124435339774`와 Docker/Migration/Runtime Job `124435339563` **completed/success**. 이 Run이 Typecheck/ESLint/Unit/Integration/Production Build/Chromium/G7/Greenfield/Migration 및 Docker 게이트의 최종 합성 검증 근거. 선행 [Run 41162108326](https://github.com/planner77/layoutManager/actions/runs/41162108326) Lint 오류와 [Run 41163195588](https://github.com/planner77/layoutManager/actions/runs/41163195588) TC-127-DRAWER E2E 오류는 실패 원장에 원형 보존.
+- 미해결 리뷰 0, Main ahead=13/behind=0, clean에서 Owner Managed 승인 후 Squash `82ebb4c8b953b96497e7b287d600d8f6a9f59af4`. #139/#138/#137 각 completed (합성 구현 범위). Main [Run 41167762237](https://github.com/planner77/layoutManager/actions/runs/41167762237) release-scope 성공 / GHCR 게시 Job 시작까지 관측; **Main Run 결과/OCI Digest NOT VERIFIED**. 사내 원본 ANSI_949 DXF/DRM/GPU/실 기기·성능 별도 현장 수용(#113/#96).
+- 이 문서는 post-merge docs-only 기록이며 v0.47.5 이미지의 릴리스 소스를 재지정하거나 GHCR 게시 성공을 보증하지 않는다.
+
+---
+
 ## PR #177 — Run 41163195588 E2E 한 건 실패 분석 및 보완 (2026-10-31)
 
 - Source SHA d706fac0702acd49b0c38efbaf8b2ed5e256b5a6, [PR CI 41163195588](https://github.com/planner77/layoutManager/actions/runs/41163195588) FAILURE: Docker Job 124425180875 SUCCESS; Verify Job 124425181116 Typecheck/Lint/Unit/Integration/OCI/DXF benchmark/Build PASS, Chromium 113 PASS/1 FAIL, G7 signed/Greenfield/Legacy migration SKIPPED.

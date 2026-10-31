@@ -1,3 +1,11 @@
+## PR #177 — Owner Managed 병합·이슈 종료 및 v0.47.5 GHCR Main CI 시작 기록 (2026-10-31)
+
+- 최신 [실패 원장](out/FailureLedger.md) `PR #177 — Owner Managed 최종 PR 병합·Issue 종료` 절 참조. 정확 최종 PR HEAD `b9002c45ac8c18aee96a87d8ad51add292ffbf8f` [PR CI Run 41166539969](https://github.com/planner77/layoutManager/actions/runs/41166539969) Verify `124435339774` 및 Docker `124435339563` 두 Job SUCCESS. 기존 Lint·E2E 실패 원장과 Codex P1 3건 답변·Resolved(미해결 0) 유지. PR 병합 직전 Main behind=0, conflict=0, clean.
+- Owner Managed 승인에 따라 [PR #177](https://github.com/planner77/layoutManager/pull/177) Squash Main `82ebb4c8b953b96497e7b287d600d8f6a9f59af4` 병합, #139/#138/#137 `closed/completed`. [Main CI 41167762237](https://github.com/planner77/layoutManager/actions/runs/41167762237) 정확 Merge HEAD에서 기동, release-scope Job `124438930802` SUCCESS, GHCR build/push Job `124438962719` 시작 확인. App/Migrator v0.47.5 **실제 GHCR 게시 성공/Digest는 미확인**, 무단 v0.47.4 재태그 금지.
+- 본 최종 운영 기록은 **docs-only post-merge Main 변경**이므로 이미 검증한 릴리스 소스와 Git tag/OCI digest를 혼동하지 않는다. 실 비공개 DXF/GPU/2PC 현장 수용과 운영 G7 Auth/Writer·DB/Volume 변경은 시행하지 않음. CI 추가 모니터링은 Owner 요청대로 생략.
+
+---
+
 ## PR #177 — #127 모바일 nested-modal 회귀 수정 (2026-10-31)
 
 - [두 번째 PR CI Run 41163195588](https://github.com/planner77/layoutManager/actions/runs/41163195588) 정확 HEAD d706fac0702acd49b0c38efbaf8b2ed5e256b5a6: Docker Job 124425180875 SUCCESS; Verify Job 124425181116는 TypeScript·ESLint·Unit/Integration·OCI 검사·DXF benchmark·Build까지 SUCCESS, Chromium E2E 113 PASS/1 FAIL; 이후 G7/Greenfield/Legacy Migration E2E SKIPPED.

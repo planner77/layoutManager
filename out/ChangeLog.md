@@ -1,3 +1,11 @@
+## 0.47.5 — PR #177 Owner Managed 병합·GHCR Main 실행 인계 (2026-10-31)
+
+- #139(UTF-8 vs stale ANSI_949 text index), #138(공통 Viewer movable Layer/Outline/Tools/TEXT Panel), #137(전체 도면 목록 Link + 미저장 Confirm) 구현·합성 회귀 및 [PR CI 41166539969](https://github.com/planner77/layoutManager/actions/runs/41166539969) Verify/Docker SUCCESS.
+- 3 Codex P1 리뷰 답변/Resolved, Main 충돌 0. [Squash `82ebb4c8`](https://github.com/planner77/layoutManager/commit/82ebb4c8b953b96497e7b287d600d8f6a9f59af4), 관련 Issues #139/#138/#137 `closed/completed` (합성 코드 범위).
+- Main [CI 41167762237](https://github.com/planner77/layoutManager/actions/runs/41167762237) release-scope SUCCESS / GHCR job 시작. **App/Migrator 0.47.5 이미지 게시 성공·정식 digest는 아직 미확인**. 기존 v0.47.4 및 실운영 Auth/DB/볼륨/현장 원본 변경 없음. 이 항목은 post-merge docs-only 증거 기록.
+
+---
+
 ## 0.47.5 — PR candidate #139 → #138 → #137 (2026-10-31)
 
 - #139 DXF $ACADVER/legacy ANSI_949 정확 판정 및 UTF-8/CP949 strict 한글 검색 회귀.

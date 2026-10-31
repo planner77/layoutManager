@@ -1,3 +1,21 @@
+## PR #177 — Owner Managed 최종 PR 병합·Issue 종료 / v0.47.5 Main GHCR 실행 인계 (2026-10-31 KST)
+
+### 정확 검증 소스·병합 게이트
+- [PR #177](https://github.com/planner77/layoutManager/pull/177) 최종 HEAD `b9002c45ac8c18aee96a87d8ad51add292ffbf8f`, [PR CI Run 41166539969](https://github.com/planner77/layoutManager/actions/runs/41166539969) **completed/success**. Verify Job `124435339774` + Docker image/migration/runtime-smoke Job `124435339563` **모두 SUCCESS**. 앞선 Run [41162108326](https://github.com/planner77/layoutManager/actions/runs/41162108326) (ESLint 2 오류), [41163195588](https://github.com/planner77/layoutManager/actions/runs/41163195588) (Chromium 113 PASS/1 FAIL) 이력·원인·회귀 복구 증거는 아래 절에 그대로 보존. 실패 Run 또는 중간 취소 Run을 성공으로 간주하지 않는다.
+- Codex P1 3건 [r4430083615](https://github.com/planner77/layoutManager/pull/177#discussion_r4430083615), [r4430083618](https://github.com/planner77/layoutManager/pull/177#discussion_r4430083618), [r4430083623](https://github.com/planner77/layoutManager/pull/177#discussion_r4430083623) 각각 답변 및 Resolved; 최종 PR 전체 리뷰 Thread 3/3 Resolved / 미해결 0. Main 시작 기준 `1a974448dc5fef5539e6d246cbd1ad30c6f46f73`, behind=0, mergeable=true, `mergeable_state=clean`. Owner의 명시적인 GHCR·Issue 종료·Main CI 승인 및 [Owner Managed 최종 인계 댓글 #6538871753](https://github.com/planner77/layoutManager/pull/177#issuecomment-6538871753) 보존.
+- 정확한 제목 `#139 | Correct DXF text decoding and movable Viewer panels (#138 #137)`, `merge_method=squash`, body 빈 값, `expected_head_sha=b9002c45...`로 [Main Squash `82ebb4c8b953b96497e7b287d600d8f6a9f59af4`](https://github.com/planner77/layoutManager/commit/82ebb4c8b953b96497e7b287d600d8f6a9f59af4) 성공. PR closed/merged.
+
+### Main CI/GHCR 발행 상태 (추가 모니터링하지 않음)
+- Merge push의 [Main CI Run 41167762237](https://github.com/planner77/layoutManager/actions/runs/41167762237), event=push, exact source `82ebb4c8b953b96497e7b287d600d8f6a9f59af4` 기동 확인. `Main CI - verify release scope` Job `124438930802` **SUCCESS**, `Build and push to GHCR` Job `124438962719` **in_progress**에서 인계. 요청대로 추가 모니터링 없음.
+- 정식 새 버전 후보 `0.47.5` / `v0.47.5`; 병합 전 Git ref `v0.47.5` 부재(404) 확인. Main workflow는 App `ghcr.io/planner77/layoutmanager:0.47.5` 및 Migrator `:0.47.5-migrate`의 pair build/push와 조건 충족 시 `:latest` / `:latest-migrate` 승격 경로를 실행한다. **실제 OCI 이미지/태그/digest 발행 SUCCESS는 실행 완료 증거를 아직 확인하지 않아 NOT VERIFIED/PENDING**. 기존 v0.47.4 manifest/tag 재지정 금지.
+- 본 최종 원장 갱신은 **릴리스 소스 이후 docs-only Main 커밋**으로 보관하며, v0.47.5 Git tag/OCI source는 Squash `82ebb4c8...` 기준. 새 docs-only push가 발생하면 release-scope는 문서-only diff로 GHCR SKIP되어야 하나 독립 Run의 실제 결과는 확인 전 미검증. 이미 시작한 Main Release가 새 문서 커밋 소스로 바뀌는 것은 아님.
+
+### Issue 종료 및 현장 경계
+- [Issue #139](https://github.com/planner77/layoutManager/issues/139), [#138](https://github.com/planner77/layoutManager/issues/138), [#137](https://github.com/planner77/layoutManager/issues/137) 각각 GitHub `closed/completed`, 코드/합성 CI 범위의 Owner Managed 수용 사유를 해당 Issue 댓글에 기록. 이것은 실 회사 DXF/ANSI_949 원본·DRM/GPU, 2PC·200%/native fullscreen·실 현장 성능/보안 인수까지 PASS했다는 의미가 아님. 해당 수용은 #113/#96에 별도 추적.
+- 실제 운영 Compose, Auth/Writer GO, DB/CAD/S3/Volume 이관·복구, 원본 도면 파일 변경 없음. CI 최종 완료/Digest 증거는 향후 별도 확인 전까지 주장하지 않는다.
+
+---
+
 ## PR #177 — 두 번째 PR CI / #127 nested modal regression 보완 (2026-10-31 KST)
 
 ### 검증된 실패 (첫 회차와 별개)
