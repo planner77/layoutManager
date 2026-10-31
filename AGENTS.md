@@ -1,3 +1,11 @@
+## PR #179 — #58/#59 Owner Managed 완료·v0.48.1 GHCR 릴리스 기동 (2026-10-31)
+
+- 최종 PR HEAD `7698b0e035d330361005780fb1e838f5ab421457`, [PR CI 41205118337](https://github.com/planner77/layoutManager/actions/runs/41205118337) Verify `124548636367` + Docker `124548636626` 둘 다 SUCCESS. Codex P2 2건 모두 Resolved/미해결 0, Main behind 0, 충돌 0 확인 후 [PR #179](https://github.com/planner77/layoutManager/pull/179) 정확 제목 Squash Main `4d86a6b1895b2d7e1f70cc69d66cd41b072ab9f8` 병합.
+- [Issue #58](https://github.com/planner77/layoutManager/issues/58)/[#59](https://github.com/planner77/layoutManager/issues/59) Owner Managed 코드/합성 CI 범위 `closed/completed`. [Main CI Run 41206533210](https://github.com/planner77/layoutManager/actions/runs/41206533210) 병합 HEAD `push`로 시작 확인; **GHCR 0.48.1 App/Migrator 게시 완료와 OCI Digest는 미확인**. 사용자 지시대로 CI 완료 모니터링 생략.
+- 기록을 남기는 Main 수정은 docs-only, 이미 검증한 Squash 릴리스 소스와 tag를 변경하지 않는다. 새 docs-only Main CI의 GHCR 제외는 release-scope 조건에 의존하고 실제 결과는 검증 전 NOT VERIFIED. 기존 v0.48.0 재태그 금지. 실제 현장 Volume/백업/정전/크로스 프로세스 원자 quota와 G7 운영 인수 미수행. 실패·보완 이력 [out/FailureLedger.md](out/FailureLedger.md) 보존.
+
+---
+
 ## PR #179 — v0.48.0 중복 릴리스 차단 및 v0.48.1 PR 재검증 (2026-10-31)
 
 - [PR CI Run 41203460377](https://github.com/planner77/layoutManager/actions/runs/41203460377) 정확 HEAD `ac285b690f4b57cf2fca89cb10f9f029308b0987` Verify Job `124543839312` 및 Docker Job `124543839619` 모두 **completed/SUCCESS**. 이전 2개 실패 Run 41194360963/41202514157은 [FailureLedger](out/FailureLedger.md)에 이력 보존.

@@ -1,3 +1,11 @@
+## PR #179 최종 소스 CI·병합 수용 기록 (2026-10-31)
+
+- 최종 PR HEAD `7698b0e035d330361005780fb1e838f5ab421457`: [Run 41205118337](https://github.com/planner77/layoutManager/actions/runs/41205118337) Verify Job `124548636367` + Docker Job `124548636626` **둘 다 SUCCESS**. Main behind 0, mergeable true, Codex P2 2건 Resolved, 미해결 리뷰 0. 기존 실패 Run 41194360963 / 41202514157은 실패 원장 보존.
+- [PR #179](https://github.com/planner77/layoutManager/pull/179) Main Squash `4d86a6b1895b2d7e1f70cc69d66cd41b072ab9f8`로 병합, #58/#59 `closed/completed`. [Main CI Run 41206533210](https://github.com/planner77/layoutManager/actions/runs/41206533210) push 시작 확인, CI 완료/정식 GHCR App·Migrator 0.48.1 OCI digest **NOT VERIFIED**, 사용자 요청으로 모니터링 생략. 현장 진단/복구/Volume·G7 전환 검증 별도.
+- 이 기록은 소스·릴리스 검증 뒤의 docs-only Main 변경이며, 검증된 배포 아티팩트 소스 커밋과 혼동하지 않는다.
+
+---
+
 ## PR #179 — v0.48.0 기준 최종 PR CI SUCCESS 및 v0.48.1 새 HEAD 미검증 (2026-10-31)
 
 - 기존 HEAD `ac285b690f4b57cf2fca89cb10f9f029308b0987`의 [Run 41203460377](https://github.com/planner77/layoutManager/actions/runs/41203460377): Verify Job 124543839312, Docker Job 124543839619 **모두 SUCCESS**. 이전 실패 Run 두 건은 실패 원장에 보존.

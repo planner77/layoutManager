@@ -1,3 +1,19 @@
+## PR #179 — Owner Managed 최종 Squash Merge·#58/#59 종료·v0.48.1 Main CI 시작 (2026-10-31 KST)
+
+### 최신 검증 및 병합 증거
+- PR [#179](https://github.com/planner77/layoutManager/pull/179) 최종 PR HEAD `7698b0e035d330361005780fb1e838f5ab421457`, [PR CI Run 41205118337](https://github.com/planner77/layoutManager/actions/runs/41205118337) `completed/success`, head_sha 정확 일치. Verify [Job 124548636367](https://github.com/planner77/layoutManager/actions/runs/41205118337/job/124548636367) 및 Docker/Migrator Runtime Smoke [Job 124548636626](https://github.com/planner77/layoutManager/actions/runs/41205118337/job/124548636626) **둘 다 SUCCESS**. 기존 최초 실패 Run [41194360963](https://github.com/planner77/layoutManager/actions/runs/41194360963) 및 재실패 Run [41202514157](https://github.com/planner77/layoutManager/actions/runs/41202514157)의 정확한 원인·보완 이력은 본 원장의 아래 절에 그대로 보존.
+- 병합 직전 Main `56221f8d4fc0d80622fa1fced85a56b53d1eb213`, compare `ahead 19 / behind 0`, PR `mergeable=true`, 충돌 0. Codex P2 review [4431462654](https://github.com/planner77/layoutManager/pull/179#discussion_r4431462654) 및 [4431462655](https://github.com/planner77/layoutManager/pull/179#discussion_r4431462655) 답변 후 두 Thread 모두 `Resolved` / 미해결 0. [최종 Owner Managed 게이트 승인·근거 댓글](https://github.com/planner77/layoutManager/pull/179#issuecomment-6544097286) 별도 보존.
+- 정확 Squash 제목 `#59 | Persist bounded server JSONL logs and instrument API/maintenance stages (#58)`, `expected_head_sha=7698b0e0...`, `commit_message=""`로 [Main Squash 4d86a6b1895b2d7e1f70cc69d66cd41b072ab9f8](https://github.com/planner77/layoutManager/commit/4d86a6b1895b2d7e1f70cc69d66cd41b072ab9f8) 성공. PR state `closed/merged` 검증. [#58](https://github.com/planner77/layoutManager/issues/58) 및 [#59](https://github.com/planner77/layoutManager/issues/59) 각각 `closed/completed`, 완료 근거를 Issue 댓글 [#58](https://github.com/planner77/layoutManager/issues/58#issuecomment-6544106828) / [#59](https://github.com/planner77/layoutManager/issues/59#issuecomment-6544107381)에 기록.
+
+### Main CI / GHCR 릴리스 요청 상태
+- 병합 Main SHA 정확 일치하는 [Main CI Run 41206533210](https://github.com/planner77/layoutManager/actions/runs/41206533210), `event=push`, `head_sha=4d86a6b1...`, 확인 시 `in_progress`였으며 Main 릴리스 워크플로가 **시작**되었음을 확인. 사용자 지시에 따라 이후 완료 모니터링하지 않음. **Main CI SUCCESS / GHCR 게시 성공 / App·Migrator OCI Digest는 NOT VERIFIED**. 주어진 워크플로의 정식 후보는 기존 `v0.48.0`와 분리된 새 `v0.48.1`, `ghcr.io/planner77/layoutmanager:0.48.1`, `:0.48.1-migrate` 및 조건부 latest aliases; 게시 성공/실제 생성 태그는 완료 로그 확인 전 주장하지 않는다.
+- 현재 문단을 남기는 작업은 **docs-only post-merge Main 메타데이터** 변경이다. 릴리스 소스는 Squash `4d86a6b1...`이며, 이 변경은 이전 PR CI HEAD 또는 release-tag의 소스를 소급 변경하지 않는다. docs-only push가 추가 Main CI를 발생시키면 `release-scope`는 변경 파일이 `*.md`만인 것을 검증해 **GHCR skip이어야 한다**; 해당 새 workflow의 실제 결과는 아직 검증하지 않았다. 원본 v0.48.0 태그/이미지 강제 재지정 금지.
+
+### Owner Managed 인수 범위 및 잔여 위험
+- L2 #58 HTTP/maintenance Job ID·단계·경고/실패·Health 계측 및 L3 #59 bounded private JSONL·Rotation·재시작 보존·내부 읽기 소스의 **소스·자동 합성 CI 수용 범위**로 완료. 실제 현장 UID10001 Docker Volume의 재구성·보안·백업·복원·정전·디스크 full 및 크로스 프로세스 global quota/FD unlink의 완전한 원자성은 **미검증/잔여 위험**, 별도 현장 검증 필요. #60/#61 웹 로그 조회 권한·API는 미구현. 운영 G7/Auth/CAD writer, 실제 DB/CAD/S3 볼륨/현장 Release 적용 변경 없음.
+
+---
+
 ## PR #179 — 최종 PR CI SUCCESS / v0.48.0 릴리스 충돌 확인 및 v0.48.1 재검증 게이트 (2026-10-31 KST)
 
 ### 검증된 성공 HEAD·Run
