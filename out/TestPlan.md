@@ -1,3 +1,47 @@
+## #56 E6 Chromium Import 재진입 시 Tree 패널 상태 기준 (2026-10-31)
+
+- 실패 Run [41175039708](https://github.com/planner77/layoutManager/actions/runs/41175039708)의 `TC-E6-E2E-001`에서 Import 성공 메시지 뒤 `outline-tree-item` 0건(기대 1). 원인: `Reload → dispatchApp(reset) → outlineTreeOpen=false`, 닫힌 공통 `MovableViewerPanel`은 자식 노드를 DOM에 마운트하지 않음.
+- 강화된 E6-AC1/3/4 회귀: (1) 기존 생성·회전 결과 다운로드, (2) SHA 불일치 Import는 기존 객체/geometry 불변, (3) Reload 이후 트리 패널 닫힘 및 Browser JSON Export 객체 0건, (4) 유효 v2 수동 Import 성공 후 **트리를 열지 않고도 Export UUID/editedGeometry 동일**, (5) `작업 > 외곽선 목록` 그룹 메뉴를 사용자처럼 열고 트리 행·`savedOutlineId` 일치, (6) Renderer 교체 전 unsaved confirm 및 미지원 UI 확인.
+- **금지:** 실제 제품의 선택·Drawer 상태를 데이터 검증을 위해 강제 복구, JSON import에 암묵적인 Tree auto-open/Source reload 추가, E2E 실패 Assertion 삭제·시간 증가·CI Skip. 새 정확 HEAD의 모든 CI 검증과 Server/Source 불변 회귀 결과를 확인 전 PASS 기록 금지.
+
+---
+
+## PR #178 두 번째 TypeScript strict 실패 회귀 게이트 (2026-10-31)
+
+- 정확 [실패 Run 41170650410](https://github.com/planner77/layoutManager/actions/runs/41170650410)의 `TS7006`(6개 implicit any) / `TS2347`(`reduce<Affine2D>`)를 `src/domain/generated-document.ts`에서 재검증. 수정은 `Array.isArray`의 `unknown` shape check를 명시 타입 `readonly GeneratedRigidOperation[]`/`Affine2D` 계산과 분리하는 것으로, `noImplicitAny`/ESLint 무력화 또는 GitHub CI 검사 생략 금지.
+- 신규 E6 Unit 케이스: 비어 있지 않은 JSON v2 2개 및 Legacy v1 `local-1` 복원, forged operations를 `{broken:true}`로/transform을 문자열 좌표로 위조 시 `replaceFromImport` 전체 거부, 기존 객체·Undo/Redo 완전 불변. 기존 E2 100-step 이력, E4 Drag, E5 numerical/gesture/CCW, Source/Scope/Server gate 동일.
+- 최종 HEAD의 Typecheck → Lint → Unit/Integration → OCI/benchmark → Build → Chromium E2E와 Docker baseline/phase1/native/migration/Greenfield 전 게이트가 모두 필요. 아직 실행 전/최종 결과 확인 전 **NOT VERIFIED**.
+
+---
+
+## PR #178 재검증 중점 — v2/v1 local-N ID와 JSX 파서 회귀 (2026-10-31)
+
+- 실패 Run `41170053430`: 먼저 `npm run typecheck`의 `viewer.tsx:2146` 조건부 JSX 문법 복구. Docker baseline Next build 동일 오류이므로 CI·Docker 게이트/Skip 수정 금지.
+- Codex P1 `4430584078`: `replaceFromImport`는 `/^local-[1-9]\d{0,12}$/` 단일 digit escape만 허용. `generated-transfer.test.ts`의 `E6-AC1` 생성 3→편집·삭제→JSON v2의 2건 복원, `E6-AC2` Legacy v1 `local-1` 복원, `E6-AC4` 오류 시 기존 Document·Undo 유지 등에서 실검증. 빈 Import만 통과해도 승인하지 않는다.
+- 새 정확 HEAD의 Typecheck, ESLint, Unit+Integration, production Build, Chromium E2E, OCI/Docker/Greenfield/Legacy 필수 게이트를 기존 워크플로대로 확인하며, 실행 완료 전 PASS 표기 금지.
+
+---
+
+## Issue #55/#56 E5/E6 통합 테스트 계획 (2026-10-31, v0.48.0 후보)
+
+| Case | 단계 | AC |
+|---|---|---|
+| TC-E5-UNIT-001 | +90/-90/180/360 WCS CCW 회전, 정확한 기준점·원본 불변 | E5-AC1 |
+| TC-E5-UNIT-002 | 두 Generated Polygon+Hole/MultiPolygon 그룹 bbox Pivot, stage/commit 단일 Undo/Redo | E5-AC2 |
+| TC-E5-UNIT-003 | NaN/Infinity/±한도/중복/혼합 SOURCE·stale 범위는 통째 거절, History 불변 | E5-AC3 |
+| TC-E5-UNIT-004 | Pointer start/end 상대 WCS atan2 각도와 center exception, 양/음 방향 | E5-AC4 |
+| TC-E5-E2E-001 | Tree 다중 선택→수치 Pivot/Angle→JSON geometry/Undo/Redo/기존 데이터 ID 동일 | E5-AC1/2/5 |
+| TC-E5-E2E-002 | ↻ 핸들 Ghost/ESC 취소→다시 Drag PointerUp 확정, 기존 Move와 분리 | E5-AC3/4 |
+| TC-E6-UNIT-001 | 생성3→이동/회전/삭제1/숨김→v2 저장/복원 동일 geometry·메타·가시성, Undo 초기화 | E6-AC1 |
+| TC-E6-UNIT-002 | #31 Source-only v1 strict parser→미분류 Legacy UUID Browser Import | E6-AC2 |
+| TC-E6-UNIT-003 | Version/SHA/INSUNITS/Origin/중복 UUID/변조 Affine·Geometry/닫힘/사이즈 거절 | E6-AC3 |
+| TC-E6-UNIT-004 | 잘못된 일부 행도 전체 교체 취소, 기존 객체·Undo/Redo 보존, 빈 Document 허용 | E6-AC4 |
+| TC-E6-E2E-001 | 메뉴 v2 다운로드, 잘못된 SHA 파일 실패→기존 유지, Reload 후 동일 파일 복원, 타 Renderer 미지원 | E6-AC1/3/4 |
+
+추가 회귀: `generated-document.test.ts`, `generated-translate.test.ts`, `issue54-generated-translate.spec.ts`, `issue52-generated-history.spec.ts`, `issue53-generated-delete.spec.ts`; Overlay/Outline Tree, #127/#138 Viewer 접근성, #160/#166 SceneWork, Server Auth/Source/Current API 변경 감시. 실행: `cd src && npm run typecheck && npm run lint && npm test -- --run && npx playwright test tests/e2e/issues55-56-generated-rotate-json.spec.ts`. 로컬 실행 가능 환경/실도면·GPU 검증은 별도. PR CI 요청은 PASS 근거가 아니다.
+
+---
+
 ## PR #177 E2E TC-127-DRAWER 회귀 재검증 (2026-10-31)
 
 - 최초 Lint 실패와 구별: 두 번째 Run 41163195588의 Chromium 113 PASS/1 FAIL. 실패는 src/tests/e2e/issues124-126-127.spec.ts:381, mobile Tools drawer가 Delete alertdialog 아래에서 inert=true인데 aria-modal=true로 남음.

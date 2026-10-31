@@ -59,6 +59,9 @@ export interface CadViewerAdapter {
   resetSceneWork?():void;
   /** Browser-only command entry point, with E2 scope and selection validation. */
   getGeneratedHistory?():{undo:number;redo:number;limit:number};
+  /** #56 browser-only import/export; must never call a server write endpoint. */
+  getGeneratedTransfer?():unknown;
+  importGeneratedTransfer?(data:unknown,replace:boolean):{count:number;legacy:boolean};
   executeGeneratedCommand?(command:GeneratedCommand):void;
   stageGeneratedCommand?(command:GeneratedCommand):void;
   commitGeneratedCommand?():boolean;
@@ -224,6 +227,16 @@ export class ViewerManager {
     return this.adapter?.getCanvasEditCapability?.()??{canSelect:false,canEdit:false,reason:'이 Renderer는 통합 객체 선택을 지원하지 않습니다.'};
   }
   getGeneratedHistory(){return this.adapter?.getGeneratedHistory?.()??{undo:0,redo:0,limit:100};}
+  getGeneratedTransfer():unknown{
+    if(!this.adapter?.getGeneratedTransfer)
+      throw new Error('이 Renderer는 생성 개체 JSON 내보내기를 지원하지 않습니다.');
+    return this.adapter.getGeneratedTransfer();
+  }
+  importGeneratedTransfer(data:unknown,replace=false):{count:number;legacy:boolean}{
+    if(!this.adapter?.importGeneratedTransfer)
+      throw new Error('이 Renderer는 생성 개체 JSON 가져오기를 지원하지 않습니다.');
+    return this.adapter.importGeneratedTransfer(data,replace);
+  }
   getSceneWorkState():SceneWorkState {
     return this.adapter?.getSceneWorkState?.()??{objects:[],undo:0,redo:0,limit:100};
   }

@@ -1,3 +1,11 @@
+## [0.48.0 후보] Issue #55 / #56 브라우저 GENERATED 편집 (2026-10-31)
+
+- #55: 기존 WCS XY GeneratedDocument Rotate 명령을 그룹 Pivot 계산, 수치 편집(+ = CCW), Canvas ↻ Ghost/ESC/PointerUp 확정, Undo 1단계에 연결. 기존 SOURCE/RENDER/mixed fail-closed, Hole/MultiPolygon 및 immutable base 보존.
+- #56: `cad-generated-objects` 브라우저 JSON v2 Export/Import. Version/SHA/INSUNITS/UUID/Origin/Provenance/허용 rigid operations/Geometry/크기 검증, 전체 성공 시 atomic replace; 기존 #31 v1/typed v2 Legacy와 다운로드 호환 유지. 서버 업로드/자동 DB 저장 없음.
+- 메뉴 위치는 #127 `도면` 그룹과 #138 기존 `작업 → 선택·편집 도구` 이동 패널을 재사용. `src/package.json` + `src/package-lock.json` 버전 0.48.0 후보. 회귀 및 구현 상세 [Issues55-56](Issues55-56.md). PR CI/현장 수용 결과 미확인.
+
+---
+
 ## 0.47.5 — PR #177 Owner Managed 병합·GHCR Main 실행 인계 (2026-10-31)
 
 - #139(UTF-8 vs stale ANSI_949 text index), #138(공통 Viewer movable Layer/Outline/Tools/TEXT Panel), #137(전체 도면 목록 Link + 미저장 Confirm) 구현·합성 회귀 및 [PR CI 41166539969](https://github.com/planner77/layoutManager/actions/runs/41166539969) Verify/Docker SUCCESS.

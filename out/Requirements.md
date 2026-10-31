@@ -1,3 +1,19 @@
+## #55/#56 생성 개체 WCS 회전과 브라우저 JSON v2 (2026-10-31, v0.48.0 후보)
+
+| 요구 | 수용 기준 | 시험 |
+|---|---|---|
+| FR-E5-01 | GENERATED-only, 동일 Version/SHA·기존 선택을 그대로 사용, 원본·혼합·숨김·다른 도면 전체 거부 | TC-E5-UNIT-001/003, E2E-001 |
+| FR-E5-02 | 각도(+) 반시계 WCS XY, 단위 표시·수동 Pivot X/Y, 그룹 Bounding Box 중심 기본, 부동소수/경계 거부 | TC-E5-UNIT-001/002/003, E2E-001 |
+| FR-E5-03 | ↻ 핸들 Ghost, ESC·PointerCancel·resize·camera·renderer 취소, PointerUp만 1회 원자 확정+Undo, Hole/MultiPolygon 불변 | TC-E5-UNIT-002/004, E2E-002 |
+| FR-E6-01 | Browser 생성 객체 JSON v2 스키마 `cad-generated-objects`에 UUID/Version/SHA/INSUNITS/base/effective/유한 Affine/허용 작업·메타데이터/가시성/Provenance 포함 | TC-E6-UNIT-001, E2E-001 |
+| FR-E6-02 | v1 Source-only 및 typed v2 Legacy 검증/복원 분기, 새 v2와 혼동 금지, Source/RENDER를 인증하지 않음 | TC-E6-UNIT-002 |
+| FR-E6-03 | 안전한 파일 크기·개수·정점·변환 이력/중복·단위·Version/SHA·기하/연산 합치 검증, 전체 검증 후 원자 교체, 기존 편집이 있으면 확인, 실패 시 원본 Document/Undo/Redo 보존 | TC-E6-UNIT-003/004, E2E-001 |
+| NFR-E5/E6-01 | 도면 `도면` 그룹 JSON, `작업 → 선택·편집 도구` 회전, 공용 Drawer(#127/#138)·원본 DXF/Current/DB/서버 API/인증·기존 Export 계약 불변 | Viewer E2~E4 + TC-E5/E6 |
+
+**제외**: Scale/Shear/Z/Mirror, JSON 자동 서버 저장/가져오기, 다른 Renderer/DWG, 레거시 JSON v3의 원본 출처 자동 인증, 복원 이전 Undo 재생. [설계](Issues55-56.md) · [ADR-063](Decisions.md). CI와 실도면 수용은 별개.
+
+---
+
 ## #139/#138/#137 Viewer 통합 요구사항 (2026-10-31, v0.47.5 후보)
 
 R-139: R2007+ UTF-8/BOM 우선, 구형 ANSI_949/932/936/950/12xx 엄격 판정, 오류 원인 분리, 기존 한글 TEXT/MTEXT WCS 검색 결과 보존. R-138: Layer/Outline/Tools/TEXT 공용 이동 패널, 원래 Drawer edge/독립 z-order/Reset/키보드/ESC/compact dialog 및 Canvas 재초기화 0. R-137: Viewer 좌측 상단 첫 링크로 전체 목록(/) 이동, 기존 버전 목록 링크 유지, 미저장 작업 이탈 확인. 자세한 구현 경계 [Issues137-139](Issues137-139.md). 현장 실증 별도.

@@ -1,3 +1,36 @@
+## PR #178 — E6 JSON 복원과 UI Tree 재열기 분리 (2026-10-31)
+
+- [Run 41175039708](https://github.com/planner77/layoutManager/actions/runs/41175039708), HEAD `34b0ec465cb81424ab85f4c1eca6f912472a1691`: Verify Typecheck/Lint/106 Unit+Integration 파일 **697 PASS**, Production Build/OCI benchmark PASS. Chromium E2E는 **116 PASS / 1 FAIL**, `TC-E6-E2E-001`에서 `outline-tree-item` 1개 기대 대비 0개(닫힌 Drawer), G7/Greenfield/Legacy Verify E2E 미실행. Docker Migration/Runtime smoke Job `124460857583` SUCCESS. 최초 JSX/이후 TS 타입 실패와 구별하며 이전 Run 내역 유지.
+- 판정: Import 성공 메시지는 보였지만 실제 데이터 복원을 단독 입증하지 않음. `reload`의 `dispatchApp(reset)`가 `outlineTreeOpen=false`를 만들고 공통 `MovableViewerPanel`은 닫혀 있으면 트리 항목을 렌더링하지 않는 것이 실제 테스트 실패 원인으로 분석됨.
+- [E2E 수정 4def08b5](https://github.com/planner77/layoutManager/commit/4def08b57ac0f29c4d81823de1299fe45507dfd7): Reload 뒤 빈 JSON, Import 뒤 동일 ID/editedGeometry JSON, 메뉴를 통한 트리 재개방 후 1행/ID까지 검사. **생성 상태와 UI 패널 표시 상태를 분리한 수용 계약**을 검증하며 제품 코드·DB·서버·CI 게이트 변경 없음. 새 HEAD의 Typecheck/Unit/E2E/실자료 검증은 CI 완료 전 NOT VERIFIED. 상세 [FailureLedger](FailureLedger.md).
+
+---
+
+## PR #178 두 번째 실패 Run 41170650410 / strict readonly TypeScript 복구 (2026-10-31)
+
+- 관측: 정확 HEAD `a0b30f3cf710466f8a43449dfe05787becb16910`, [PR CI Run 41170650410](https://github.com/planner77/layoutManager/actions/runs/41170650410) `completed/failure`. Verify Job `124447794463`에서 `generated-document.ts` TS7006 6개 콜백 implicit any + TS2347 1개, Docker Job `124447794161`의 baseline Next Build도 동일 첫 TS7006로 실패. npm ci/Prisma/Compose 사전 합성 검사 등 앞선 단계 SUCCESS; Lint/Unit/Build(E2E)/Docker 후속 smoke는 SKIPPED.
+- 원인: `readonly` tuple/array에 직접 `Array.isArray`를 적용한 후 `reduce/map/every`의 타입이 `any[]`로 축소/확장되는 TS narrowing. 보완: 별도의 `unknown` 변수에서 런타임 모양·유한성 검사, 후속 합성에는 원래의 `readonly GeneratedRigidOperation[]`와 `Affine2D` typed reference 유지 (commit `608a5007`).
+- `generated-transfer.test.ts`에 JS boundary 위조 `transformOperations` 및 유한하지 않은 transform 타입 주입 시 기존 Document/Undo 무변경 회귀를 추가 (commit `e52ed194`). 기존 v2 roundtrip/legacy v1 및 E5 회전 회귀는 유지; 테스트 실행 여부는 신규 CI 이전 모두 NOT RUN. CI 성공, 실 DXF/GPU, Docker runtime 검증은 새 결과 확인 전 **NOT VERIFIED**. 상세 [FailureLedger](FailureLedger.md).
+
+---
+
+## PR #178 — 첫 PR CI 실패와 수정 후보 검증 기록 (2026-10-31)
+
+- 실행 증거: [PR CI 41170053430](https://github.com/planner77/layoutManager/actions/runs/41170053430) HEAD `a5bbcf7a57f9a96b9cae236089e2709e1e47418c`, Verify Job `124445860365` **TypeScript TS1005 FAIL** (`viewer.tsx:2146`), Docker Job `124445860543` **Next build Syntax FAIL** (동일 JSX). ESLint/Unit/Integration/Chromium/E2E·후속 Docker는 전부 SKIPPED, 새 E5/E6 회귀 테스트의 실행/통과 근거는 없음.
+- 별개 Codex P1 [#4430584078](https://github.com/planner77/layoutManager/pull/178#discussion_r4430584078): `GeneratedDocument.replaceFromImport`의 `local-N` ID 정규식 이중 백슬래시가 비어 있지 않은 v2/v1 가져오기를 거절. 기존 `generated-transfer.test.ts`의 E6-AC1/AC2는 정상 local-1 복원까지 검증해야 하며 새 CI 실행 이후 결과 판정.
+- 수정 후보: 조건부 JSX 종료 `}`, 타입 명시 및 `local-N` 정규식 단일 digit escape. Root `DESIGN.md` 없음. 변경 범위는 Viewer UI와 Browser Document ID validator, Ledger/가이드/테스트 기록만; API/DB/Source/G7·GHCR 운영 변경 없음. 로컬 Typecheck/Lint/Vitest/Playwright/Docker/실도면/GPU **NOT RUN**. 새 정확 HEAD CI 완료 전 검증 성공 선언 금지.
+
+---
+
+## #55/#56 E5/E6 검증 추적 — 2026-10-31 (구현 브랜치 후보 / 미검증)
+
+- 기준 Main: `116d04046f75d2bae9fdeeefde7ead0edc011a4f`, Branch: `feat/issues-55-56-generated-rotate-json`, v0.48.0 후보. 루트 `DESIGN.md` 미존재로 `AGENTS.md`, `out/Architecture.md`, `out/Decisions.md`, `out/Issues55-56.md`를 설계 권위로 사용한다.
+- 작성 시험: `generated-rotate.test.ts`(E5 +90/-90/180/360, 그룹 Pivot, Invalid, Undo, drag 각도), `generated-transfer.test.ts`(E6 v2 및 v1 Source-only Legacy, validation/atomicity/empty), `issues55-56-generated-rotate-json.spec.ts`(numeric/drag/ESC, Export/Import, wrong SHA, reload, renderer).
+- **상태:** 연결된 GitHub 소스 변경을 확인했으나 로컬 Node/Chromium/실 GPU/실 CAD 테스트는 이 세션에서 미실행. PR CI는 신규 PR 생성 전까지 NOT STARTED; 실행 생성만 진행하고 Owner 지시로 결과 모니터링하지 않는다. 성공/FAIL 여부를 미리 주장하지 않는다.
+- 서버 DB/Prisma/API/Auth, 원본 DXF bytes/Current/Layer, #97/#98 Source 검증은 별도이며 브라우저 파일 Import를 영속 승인으로 수용하지 않는다. 현장 수용 별도.
+
+---
+
 ## PR #177 v0.47.5 Owner Managed 구현 인수 / CI 게이트 검증 및 Main 인계 (2026-10-31)
 
 - 원 소스 HEAD `b9002c45ac8c18aee96a87d8ad51add292ffbf8f`, [PR CI Run 41166539969](https://github.com/planner77/layoutManager/actions/runs/41166539969) **completed/success**, Verify Job `124435339774`와 Docker/Migration/Runtime Job `124435339563` **completed/success**. 이 Run이 Typecheck/ESLint/Unit/Integration/Production Build/Chromium/G7/Greenfield/Migration 및 Docker 게이트의 최종 합성 검증 근거. 선행 [Run 41162108326](https://github.com/planner77/layoutManager/actions/runs/41162108326) Lint 오류와 [Run 41163195588](https://github.com/planner77/layoutManager/actions/runs/41163195588) TC-127-DRAWER E2E 오류는 실패 원장에 원형 보존.

@@ -1,3 +1,74 @@
+## PR #178 — 세 번째 실패 Run 41175039708 / E6-E2E 패널 상태 혼동 (2026-10-31 KST)
+
+### 관측 결과
+- 정확 실패 HEAD [`34b0ec465cb81424ab85f4c1eca6f912472a1691`](https://github.com/planner77/layoutManager/commit/34b0ec465cb81424ab85f4c1eca6f912472a1691), [PR CI Run 41175039708](https://github.com/planner77/layoutManager/actions/runs/41175039708), **completed/failure**.
+- Verify Job [124460857433](https://github.com/planner77/layoutManager/actions/runs/41175039708/job/124460857433): Typecheck, ESLint, 전체 Unit/Integration **106 files / 697 tests PASS**, OCI manifest synthetic, DXF benchmark, Production Build, Chromium 설치 모두 SUCCESS. Chromium E2E **116 PASS / 1 FAIL (117건 중 1건)**. 별도 G7 signed Runtime/Greenfield/Legacy migration E2E는 Verify 단계에서 SKIPPED (Docker smoke와 혼동 금지). Chromium 실패 trace artifact [13033640009](https://github.com/planner77/layoutManager/actions/runs/41175039708/artifacts/13033640009) 보존.
+- Docker/Migration/Runtime smoke Job [124460857583](https://github.com/planner77/layoutManager/actions/runs/41175039708/job/124460857583)는 completed/**SUCCESS** (앞선 두 Run의 Docker 빌드 실패와 구별). 실 사용자 DXF/GPU/운영 배포나 GHCR 게시까지 증명하지 않는다.
+- 유일 실패: `src/tests/e2e/issues55-56-generated-rotate-json.spec.ts:141`, `TC-E6-E2E-001` [rejected file keeps session; v2 restores after explicit reload]. `await expect(page.getByTestId('outline-tree-item')).toHaveCount(1)`는 5초 동안 0건으로 실패. 앞 단계 `generated-json-message`의 `1개 생성 개체` 성공 알림은 관측됐으나, 그 메시지 자체가 Tree 렌더와 실제 데이터 정합성 증명은 아니다.
+
+### 원인 분석 및 보완
+- 제품 `CadViewer.reload()`는 `dispatchApp({type:'reset'})`으로 `outlineTreeOpen=false`를 복구하고 `ViewerAppState.initial`은 `outlineTreeOpen:false`이다. `MovableViewerPanel`은 `!open`이면 `null` 반환하므로 트리 DOM 자체가 없어진다. 새 JSON Import는 Browser Document를 복원할 뿐 #127 `작업 > 외곽선 목록` 패널을 자동으로 열지 않는 계약이다. 따라서 기존 E2E는 **패널 닫힘과 데이터 없음**을 잘못 동일시했다. 코드 경로상으로는 테스트 전제 오류이고, 실제 복원 Geometry의 성공/실패는 수정 테스트 통과 전까지 확정하지 않는다.
+- 수정 [`4def08b5`](https://github.com/planner77/layoutManager/commit/4def08b57ac0f29c4d81823de1299fe45507dfd7): **테스트 파일만** 변경. Reload 후 패널이 닫힌 것을 확인하고 JSON 파일 Export의 `objects=[]` 검사 → Import 후 Export 결과로 원래 UUID/EditedGeometry 복원 확인 → 그룹 메뉴에서 Outline Tree를 명시적으로 열고 1건 및 `data-outline-id`까지 검사한다. 데이터/트리/메뉴 상태를 각각 독립적으로 검증하므로 테스트를 삭제하거나 기대 수를 완화하지 않는다.
+- App/Domain/Adapter/Worker/Source/DB/API/Prisma/Auth/G7, Dockerfile/CI Gate/Timeout은 변경하지 않았다. 기존 697 Unit과 E5 회전 E2E 통과 증거는 실패 Run 범위에만 적용되며 최신 HEAD 재검증 전에는 PASS로 승계하지 않는다.
+
+### 후속 검증·인계
+- 마지막 리뷰 스레드 `PRRT_kwDOUQjDfc6yOC0e` (Codex P1 Local-ID) resolved, 추가 P1/P2 및 Main 충돌은 새 HEAD에서 재확인할 것. 정확 최종 HEAD PR CI 시작 후 Owner 요청대로 완료 모니터링 생략. CI 전체 성공, 실 도면/GPU, GHCR 게시, PR 병합, #55/#56 이슈 종료는 별도 증거 전 **NOT VERIFIED / NOT DONE**.
+
+---
+
+## PR #178 / #55+#56 — 두 번째 PR CI 실패: readonly array narrowing / strict TypeScript (2026-10-31 KST)
+
+### 관측된 Run·Job와 선행 Run 구별
+- [PR CI Run 41170650410](https://github.com/planner77/layoutManager/actions/runs/41170650410) 정확 HEAD `a0b30f3cf710466f8a43449dfe05787becb16910`, **completed/failure**. 이전 [Run 41170053430](https://github.com/planner77/layoutManager/actions/runs/41170053430)의 JSX 파서/Local-ID P1 실패 후 재실행이며, 최초 실패 이력은 삭제하거나 PASS로 바꾸지 않는다.
+- Verify Job [124447794463](https://github.com/planner77/layoutManager/actions/runs/41170650410/job/124447794463): checkout·Node22·npm ci·Prisma generate SUCCESS, `npm run typecheck` FAILURE (`src/domain/generated-document.ts`). `TS7006` implicit any: line 419 `n`, line 423 `current`/`operation`, line 424 `n`/`i`, line 439 `operation`; `TS2347` line 422 `reduce<Affine2D>` untyped function. ESLint, Unit/Integration, OCI unit, DXF benchmark, Production Build, Chromium E2E, G7/Greenfield/Legacy migration E2E 전부 **SKIPPED / NOT VERIFIED**.
+- Docker Job [124447794161](https://github.com/planner77/layoutManager/actions/runs/41170650410/job/124447794161): Compose 이미징·Python audit syntax 및 합성 테스트 SUCCESS. `Build pre-change baseline (same source, original Dockerfile)` Next.js Production Build가 동일 `generated-document.ts:419:33` TypeScript implicit any로 FAILURE; 이후 image-size·OCI/native/SQLite/migration/Greenfield smoke는 **SKIPPED**. 별도의 Docker/DB/Registry 장애로 분류하지 않는다.
+
+### 직접 원인 및 보완
+- `GeneratedRestoreEntry.transformOperations`은 `readonly GeneratedRigidOperation[]`, `transform`은 `Affine2D` readonly tuple이다. 원래 구현에서 `Array.isArray(input.transformOperations)` 및 `Array.isArray(input.transform)`을 직접 적용하며 타입 흐름이 `any[]`로 확장되어, 뒤따른 `every`, `reduce<Affine2D>`, `some`, `map`의 콜백 타입 추론이 소실되었다. JSX는 이번 실행에서 파싱을 통과했으며 이 TypeScript 문제와 구분한다.
+- 수정 코드 [`608a5007`](https://github.com/planner77/layoutManager/commit/608a5007732f0df67a4ae69544cd268c936d93a9): 공격적 런타임 입력의 `Array.isArray` 검증은 별도의 `unknown` 변수 `untrustedOperations/untrustedTransform`에서 실시하고, 행렬 합성·연산 재구성에는 명시적 `readonly GeneratedRigidOperation[]`/`Affine2D` typed reference를 사용. `every((n:unknown)...)`는 유한한 숫자·6요소 검사 후 진행. Source/UUID/Version/SHA/Geometry, history/atomicity/64→4096 JSON 제한 및 기존 E2 Undo 100-step 계약은 완화하지 않는다.
+- 추가 단위 회귀 [`e52ed194`](https://github.com/planner77/layoutManager/commit/e52ed1945c3f5c112f9eac9ac98de194dfc54cea): `generated-transfer.test.ts`에서 명백히 비정상인 `transformOperations` 객체·비수치 행렬을 untyped boundary로 주입한 경우, `replaceFromImport`가 전체 거부하고 기존 Document/Undo 이력이 그대로인지 검증하도록 보강. 기존 v2 2개 복원 및 v1 `local-1` Legacy 회귀는 유지.
+- 로컬 프로젝트 `npm ci`/전체 Typecheck/Lint/Unit/Build/Chromium/Docker는 이 세션에서 **실행하지 않음**. 독립 TypeScript 5.8 strict 최소 재현 스니펫만 작성해 배열 런타임 검사·명시 타입 분리 컴파일 성공 확인했으나 실제 프로젝트 성공으로 간주하지 않는다. 결과는 신규 PR CI에서 판정한다.
+
+### PR 리뷰/충돌 및 후속 게이트
+- 직전 리뷰 원문 [Codex P1 #4430584078](https://github.com/planner77/layoutManager/pull/178#discussion_r4430584078)은 `local-N` 정규식, [답변 #4430599150](https://github.com/planner77/layoutManager/pull/178#discussion_r4430599150) 및 Resolved. 이번 Run 실패는 새로운 Review P1이 아닌 동일 파일의 TypeScript strict 컴파일 오류이며 리뷰/충돌 상태는 최신 HEAD에서 다시 검사할 것.
+- 실패 원장·실제 CI 단계 관찰을 보존하고, Main 뒤처짐·PR mergeable·신규 미해결 리뷰 스레드를 확인한 뒤 정확한 최종 HEAD의 PR CI를 시작한다. Owner 요청으로 **CI 완료 모니터링은 생략**, 수정 후 Typecheck/Unit/GPU/실자료/OCI 검증 결과는 새 Run 완료 전 **NOT VERIFIED**. 병합·GHCR 게시·Issue #55/#56 종료 및 운영 데이터/권한 변경 없음.
+
+---
+
+## PR #178 — P1 스레드 해결 및 Main 충돌 재점검, 재시작 CI 인계 (2026-10-31 KST)
+
+- 첫 Run `41170053430`의 공통 JSX TS1005/Next Build 실패 원인과 Code Review P1 Local-ID Regex 문제를 코드 커밋 [`b61b729f`](https://github.com/planner77/layoutManager/commit/b61b729f3abe79e6dd9f7c67ac5f39e995c8106b)로 보완. `GeneratedDocument.replaceFromImport`에 실제 `\d` digit escape가 적용됨을 HEAD 재조회하여 확인; `viewer.tsx`의 조건 JSX 닫기와 `ChangeEvent` 타입 지정도 소스 재조회 확인. 이전 CI 결과는 계속 FAILURE로 보존.
+- Codex P1 [review #4430584078](https://github.com/planner77/layoutManager/pull/178#discussion_r4430584078)에 [답변 #4430599150](https://github.com/planner77/layoutManager/pull/178#discussion_r4430599150) 후 thread `PRRT_kwDOUQjDfc6yOC0e` `is_resolved=true` 확인. 현재 PR 리뷰 스레드 전체 1건, **미해결 0건**.
+- 최신 PR head `b61b729f3abe79e6dd9f7c67ac5f39e995c8106b`, base Main `116d04046f75d2bae9fdeeefde7ead0edc011a4f`; compare `ahead 12 / behind 0`, PR `mergeable=true`. **Main 충돌 없음**, 강제/파괴적 reset이나 merge 필요 없음.
+- 본 실패 원장 추가 갱신 이후 정확한 새 HEAD의 PR CI를 `pull_request synchronize` 자동 트리거로 시작한다. 실행 ID/HEAD는 PR 댓글로 추적 가능하며, Owner 지시에 따라 **CI 완료 모니터링은 생략**한다. 수정 코드의 Typecheck/Lint/Unit/E2E/Docker 및 실 CAD/GPU는 새 실행 결과 확인 전 **NOT VERIFIED**. GHCR/병합/Issue #55/#56 종료/운영 Auth·DB 변경 없음.
+
+---
+
+## PR #178 / #55+#56 — 최초 PR CI 실패: JSX Syntax + JSON Import ID P1 (2026-10-31 KST)
+
+### 정확한 실패 증거 (HEAD `a5bbcf7a57f9a96b9cae236089e2709e1e47418c`)
+- [PR CI Run 41170053430](https://github.com/planner77/layoutManager/actions/runs/41170053430) `completed/failure`. Verify Job [124445860365](https://github.com/planner77/layoutManager/actions/runs/41170053430/job/124445860365): checkout, Node, npm ci, Prisma generate **SUCCESS**; `npm run typecheck`에서 `src/features/cad-viewer/viewer.tsx(2146,11): error TS1005: '}' expected`로 실패. ESLint/Unit/Integration/OCI synthetic/benchmark/Production Build/Chromium/G7/Greenfield/Legacy E2E는 **SKIPPED** (PASS 아님). 실패 원인은 `{generatedJsonMessage && <p>...</p>`의 마지막 조건 표현식 닫기 `}` 누락.
+- Docker Job [124445860543](https://github.com/planner77/layoutManager/actions/runs/41170053430/job/124445860543): 전처리 Compose images·Python audit 유닛 **SUCCESS**; `Build pre-change baseline (same source, original Dockerfile)`의 Next Build에서 동일 JSX `Expected '</', got '{'` (`viewer.tsx:2146`)로 실패. 후속 Docker build/size/SQLite/migration/Greenfield smoke는 **SKIPPED**. Docker 자체 용량·DB·OCI 문제로 오진하지 않는다.
+- Codex P1 리뷰 [#4430584078](https://github.com/planner77/layoutManager/pull/178#discussion_r4430584078) / thread `PRRT_kwDOUQjDfc6yOC0e` (`src/domain/generated-document.ts:399`): `replaceFromImport` 정규식 `\\d` 이중 백슬래시가 정상 `local-1`을 모두 거부하는 실제 기능 결함. `parseGeneratedTransfer`는 이미 `\d`를 사용하고 있었으며 두 검증기의 계약 불일치가 원인. 복원이 비어 있지 않은 경우 v2/v1 양쪽에 영향. CI는 해당 테스트까지 도달하지 못했으므로 리뷰 지적과 CI 관측 실패는 구분한다.
+
+### 원인·수정 및 검증 게이트
+- `viewer.tsx`: 조건부 JSX를 `{generatedJsonMessage && <p>...</p>}`로 닫아 TS 파서 복구. `React.ChangeEvent`는 명시 `ChangeEvent` type import로 정리한다.
+- `generated-document.ts`: `local-[1-9]\d{0,12}`을 실제 digit escape 단일 백슬래시로 통일한다. 입력 크기/UUID/Source/Version/SHA/Affine/원자성 검사 및 E2 기존 Undo 상한은 낮추지 않는다. 기존 `generated-transfer.test.ts` E6-AC1(비어 있지 않은 v2 2개), E6-AC2(v1 local-1 legacy), E6-AC4(기존 상태 실패 시 무변경)와 E5 tests가 회귀 증거가 되어야 한다. Parser/Codex 수정 뒤 정확 HEAD CI가 성공할 때만 PASS 판정한다.
+- Main 기준 HEAD `116d04046f75d2bae9fdeeefde7ead0edc011a4f` / PR #178은 최초 실패 당시 `behind=0`, `mergeable=true`, P1 미해결 1건. 코드 보완 후 리뷰 스레드 답변·Resolved, Main 비교·병합가능성 재검증과 신규 정확 HEAD CI 시작을 별도로 기록한다.
+- 새 PR CI의 성공/실패 및 GHCR 게시·병합·이슈 완료는 아직 **NOT VERIFIED / NOT DONE**. GitHub Connector를 통한 수정이며 로컬 npm/Node/Browser/실 CAD GPU 실행은 하지 않았으므로 CI 및 현장 수용 주장 금지. Owner 지시대로 새 Run 시작 이후 모니터링하지 않는다.
+
+---
+
+## Issue #55/#56 — PR CI 시작 전 실패 원장 및 Gate (2026-10-31 KST)
+
+- 기본 근거: 최신 Main `116d04046f75d2bae9fdeeefde7ead0edc011a4f`; Branch `feat/issues-55-56-generated-rotate-json`; E5/E6 단일 PR. Root `DESIGN.md`는 없으므로 AGENTS/Architecture/Decisions/Issues55-56를 검토했다.
+- 발견된 구현 선행 결함: 기존 E2 Doc에는 Rotate 명령이 있으나 E5 수치 폼·공통 Pivot·Canvas 회전 핸들이 없고, 기존 #31 JSON v1/v2 다운로드에는 E6 edited transform/operation 검증 Import가 없다. 보완 경로: 새 GeneratedRotate/Transfer, Adapter/Manager 연결, 메뉴/Tool Drawer, Unit/E2E.
+- 사전 설계 리뷰에서 수정: (1) 사용자 제공 Affine를 허용 Operation 재합성 결과와 **정확 일치**로 확인하여 위조 오차 허용 제거; (2) 한 객체 변환 명령 최대 64개와 12MiB Blob 파일 한도 명시; (3) 축소 화면의 회전 핸들 상단 clip 회피; (4) 실패 Import 후 원본 Document/Undo/Redo 유지. 기존 실패 CI Run에 대한 재해석/성공 덮어쓰기 없음.
+- PR 생성 전 미해결 Review Thread 없음 (신규 PR 없음). Main 정렬/충돌/새 PR Thread는 PR 생성 시 별도 확인할 것. 로컬 TypeScript/ESLint/Unit/Chromium/E2E/Production Build **NOT RUN**; 새로운 PR CI는 아직 **NOT STARTED**. 결과가 나오지 않은 CI·실도면/GPU를 PASS로 표기 금지. CI Monitoring은 Owner 지시로 생략.
+- 원장 결론: 관측된 CI 실패는 아직 없으며 과거 PR의 실패/수정 기록은 보존한다. PR CI가 실패하면 정확 Run/Job·원인·교정 Commit/검증 범위를 이 절 위에 추가한다.
+
+---
+
 ## PR #177 — Owner Managed 최종 PR 병합·Issue 종료 / v0.47.5 Main GHCR 실행 인계 (2026-10-31 KST)
 
 ### 정확 검증 소스·병합 게이트

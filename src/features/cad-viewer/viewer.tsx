@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useReducer, useRef, useState, type ChangeEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { FullscreenLayerPanel } from '@/features/cad-viewer/fullscreen-layer-panel';
 import { ViewerAppShell } from '@/features/cad-viewer/viewer-app-shell';
@@ -21,6 +21,9 @@ import { readPersistedMemos, mutatePersistedMemo,mutatePersistedMemoGroup,mutate
 import { loadStoredOutlines, mutateStoredOutline, type StoredOutline } from './persisted-outline-client';
 import { PersistedOutlineOverlay } from './persisted-outline-overlay';
 import {parseWcsTranslation,selectedTranslationIds} from '@/domain/generated-translate';
+import {parseWcsRotation,selectedRotation} from '@/domain/generated-rotate';
+import {outlineGeometryBounds} from '@/domain/outline-tree';
+import {GENERATED_TRANSFER_MAX_BYTES} from '@/domain/generated-transfer';
 import { initialViewerAppState, viewerAppReducer } from '@/features/cad-viewer/viewer-app-state';
 import { isLiveOutlineRequest, outlineToolUnavailableReason, effectiveOutlineBasis } from '@/features/cad-viewer/outline-tool-policy';
 import { ViewerManager, type OutlineInfo, type SavedOutline, type SavedOutlineOverlayState } from '@/viewers/core/adapter';
@@ -94,6 +97,7 @@ export function CadViewer({
   const container = useRef<HTMLDivElement>(null);
   const viewerShell = useRef<HTMLDivElement>(null);
   const manager = useRef<ViewerManager | null>(null);
+  const generatedImportInput=useRef<HTMLInputElement>(null);
   const memoSession = useRef<MemoSession | null>(null);
   // Browser-only associations. No localStorage, server DTO or unsaved target UUID promotion.
   const sessionSnaps=useRef<MemoSessionSnapStore|null>(null);
@@ -289,6 +293,10 @@ export function CadViewer({
   const [translateX,setTranslateX]=useState('0');
   const [translateY,setTranslateY]=useState('0');
   const [translateError,setTranslateError]=useState<string|null>(null);
+  const [rotateAngle,setRotateAngle]=useState('90');
+  const [rotatePivotOverride,setRotatePivotOverride]=useState<{selectionKey:string;x:string;y:string}|null>(null);
+  const [rotateError,setRotateError]=useState<string|null>(null);
+  const [generatedJsonMessage,setGeneratedJsonMessage]=useState<{error:boolean;text:string}|null>(null);
   const [contextMenu,setContextMenu]=useState<{x:number;y:number}|null>(null);
   const [selectedOutlineTypeId,setSelectedOutlineTypeId]=useState('');
   const [outlineName,setOutlineName]=useState('');
@@ -473,6 +481,79 @@ export function CadViewer({
       setTranslateError(error instanceof Error?error.message:'이동이 거부되었습니다.');
     }
   },[renderer,format,state.ready,canvasMode,translateX,translateY,versionId,sourceSha256,syncSavedOutlines]);
+  const applyRotation=useCallback((pivotX:string,pivotY:string)=>{
+    try{
+      const current=manager.current;
+      if(!current||renderer!=='three-dxf-viewer'||format!=='DXF'||
+         !state.ready||canvasMode==='pan'||outlineEnabledRef.current)
+        throw new Error('생성 개체 편집 모드에서 현재 도면을 열고 회전하세요.');
+      const selection=selectedRotation(current.getCanvasObjectSelection(),
+        current.getGeneratedObjects(),{versionId,sourceSha256});
+      const {angleDegrees,pivot}=parseWcsRotation(rotateAngle,pivotX,pivotY);
+      if(angleDegrees!==0)
+        current.executeGeneratedCommand({type:'Rotate',ids:selection.ids,angleDegrees,pivot});
+      setRotateError(null);syncSavedOutlines();
+    }catch(error){
+      setRotateError(error instanceof Error?error.message:'WCS 회전이 거부되었습니다.');
+    }
+  },[renderer,format,state.ready,canvasMode,rotateAngle,versionId,sourceSha256,syncSavedOutlines]);
+  function exportGeneratedJson(){
+    try{
+      if(!treeAvailable)throw new Error(treeUnavailable??'도면 표시를 완료하세요.');
+      const payload=manager.current?.getGeneratedTransfer();
+      if(!payload)throw new Error('생성 개체 Document를 확인할 수 없습니다.');
+      const json=JSON.stringify(payload,null,2);
+      if(new Blob([json]).size>GENERATED_TRANSFER_MAX_BYTES)
+        throw new Error('내보낼 JSON이 12 MiB를 초과했습니다.');
+      const url=URL.createObjectURL(new Blob([json],{type:'application/json'}));
+      const link=document.createElement('a');
+      link.href=url;link.download='cad-generated-objects-'+versionId.slice(0,8)+'.json';
+      link.click();setTimeout(()=>URL.revokeObjectURL(url),0);
+      setGeneratedJsonMessage({error:false,text:'생성 개체 JSON v2를 브라우저 파일로 내보냈습니다. 서버에는 저장되지 않습니다.'});
+    }catch(error){
+      setGeneratedJsonMessage({error:true,text:error instanceof Error?error.message:'JSON 내보내기에 실패했습니다.'});
+    }
+  }
+  async function importGeneratedJson(event:ChangeEvent<HTMLInputElement>){
+    const file=event.currentTarget.files?.[0];
+    // Re-selecting the same file must be possible after validation failure.
+    event.currentTarget.value='';
+    if(!file)return;
+    const activeManager=manager.current;
+    const loadEpoch=loadSequenceRef.current;
+    try{
+      if(!treeAvailable||!activeManager||!state.ready||format!=='DXF'||
+         renderer!=='three-dxf-viewer')
+        throw new Error('DXF three-dxf-viewer가 준비된 상태에서만 가져올 수 있습니다.');
+      if(file.size>GENERATED_TRANSFER_MAX_BYTES)
+        throw new Error('JSON 파일은 12 MiB를 초과할 수 없습니다.');
+      if(!file.name.toLowerCase().endsWith('.json'))
+        throw new Error('.json 파일을 선택하세요.');
+      const text=await file.text();
+      if(new Blob([text]).size>GENERATED_TRANSFER_MAX_BYTES)
+        throw new Error('JSON 파일이 12 MiB를 초과합니다.');
+      let payload:unknown;
+      try{payload=JSON.parse(text);}catch{throw new Error('JSON 파싱에 실패했습니다.');}
+      if(manager.current!==activeManager||loadSequenceRef.current!==loadEpoch)
+        throw new Error('파일을 읽는 중 도면/Renderer가 변경되었습니다.');
+      const hasWork=activeManager.getGeneratedObjects().length>0 ||
+        activeManager.getGeneratedHistory().undo>0||activeManager.getGeneratedHistory().redo>0;
+      if(hasWork&&!window.confirm('기존 브라우저 생성 개체를 모두 교체하고 Undo/Redo 이력을 초기화할까요? (서버에는 저장되지 않음)'))
+        return;
+      if(manager.current!==activeManager||loadSequenceRef.current!==loadEpoch)
+        throw new Error('확인 중 도면/Renderer가 변경되었습니다.');
+      const result=activeManager.importGeneratedTransfer(payload,hasWork);
+      setDeleteRequest(null);setRotateError(null);setTranslateError(null);
+      setGeneratedJsonMessage({error:false,text:
+        result.count+'개 생성 개체를 복원했습니다. '+(result.legacy?'v1/v2 미분류 Legacy 변환. ':'')+
+        '이전 Undo/Redo는 복원하지 않습니다. 서버 저장 없음.'});
+      syncSavedOutlines();
+    }catch(error){
+      setGeneratedJsonMessage({error:true,text:
+        (error instanceof Error?error.message:'JSON 가져오기가 거부되었습니다.')+
+        ' 기존 브라우저 작업은 유지됩니다.'});
+    }
+  }
   useEffect(()=>{
     if(!contextMenu)return;
     const close=(event:PointerEvent)=>{
@@ -588,6 +669,8 @@ export function CadViewer({
     setOutlineBasis('render');
     setDeleteRequest(null);setDeleteError(null);setContextMenu(null);
     setTranslateX('0');setTranslateY('0');setTranslateError(null);
+    setRotateAngle('90');setRotatePivotOverride(null);setRotateError(null);
+    setGeneratedJsonMessage(null);
     setCanvasMode('pan');
     setCanvasSelection([]);
     setSelectedOutlineTypeId('');
@@ -1440,7 +1523,10 @@ export function CadViewer({
             onObjectSelection:refs=>{if(active && loadSequenceRef.current===sequence){setCanvasSelection(refs);syncSavedOutlines();}},
             onPreview:(value,error)=>{if(active && loadSequenceRef.current===sequence && outlineEnabledRef.current){setPreview(value);setPreviewError(error??null);}},
             onSaved:count=>{if(active && loadSequenceRef.current===sequence){setSavedCount(count);syncSavedOutlines();}},
-            onEditError:message=>{if(active && loadSequenceRef.current===sequence)setTranslateError(message);},
+            onEditError:message=>{if(active && loadSequenceRef.current===sequence){
+               if(message.includes('회전')||message.includes('Pivot'))setRotateError(message);
+               else setTranslateError(message);
+             }},
             onViewChange:()=>{if(active)onAdapterViewChange();},
           });
         }
@@ -1550,6 +1636,29 @@ export function CadViewer({
   const deleteModeAvailable=treeAvailable && !appState.outlineToolEnabled &&
     canvasMode!=='pan';
   const canDeleteSelection=deleteModeAvailable && editCapability.canEdit;
+  const rotateSelectionKey=versionId+':'+sourceSha256+':'+
+    canvasSelection.map(ref=>ref.origin+':'+ref.id).sort().join('|');
+  let commonRotationPivot:readonly [number,number]|null=null;
+  if(canDeleteSelection){
+    // Render must read React projections, not manager.current (a mutable ref).
+    const selectedIds=new Set(canvasSelection.map(ref=>ref.id));
+    const geometries=savedOutlines.filter(item=>item.sceneRef?.origin==='APP_CREATED'&&
+      selectedIds.has(item.sceneRef.id)&&
+      savedOverlayStates.some(state=>state.id===item.id&&state.visible));
+    const bounds=geometries.map(item=>outlineGeometryBounds(item.result.geometry));
+    if(bounds.length===canvasSelection.length&&bounds.length>0&&bounds.every(Boolean)){
+      const extents=bounds.filter((bound):bound is NonNullable<typeof bound>=>bound!==null);
+      const minX=Math.min(...extents.map(value=>value.minX)),maxX=Math.max(...extents.map(value=>value.maxX));
+      const minY=Math.min(...extents.map(value=>value.minY)),maxY=Math.max(...extents.map(value=>value.maxY));
+      const pivot:[number,number]=[minX+(maxX-minX)/2,minY+(maxY-minY)/2];
+      if(pivot.every(value=>Number.isFinite(value)&&Math.abs(value)<=1e12))
+        commonRotationPivot=pivot;
+    }
+  }
+  const pivotX=rotatePivotOverride?.selectionKey===rotateSelectionKey
+    ? rotatePivotOverride.x:String(commonRotationPivot?.[0]??0);
+  const pivotY=rotatePivotOverride?.selectionKey===rotateSelectionKey
+    ? rotatePivotOverride.y:String(commonRotationPivot?.[1]??0);
   const closeMetadataOverlays=useCallback(()=>{setNameTipOpen(false);setNameTipPinned(false);setInfoOpen(false);},[]);
   const selectedPersistedMemo=memoServerMode==='active'&&scopedMemos.find(m=>m.id===memoSelectedId)?.persisted===true;
   const commandGroups:ViewerCommandGroup[]=[
@@ -1560,6 +1669,12 @@ export function CadViewer({
       ...(format==='DXF'?[{id:'build-scene',label:'원본 DXF로 Scene 생성/재생성',disabled:loading||sceneBusy,reason:'명시적으로 원본을 읽고 변환합니다. 기존 저장 Scene은 저장 성공 전 유지됩니다.',onSelect:buildScene},
         {id:'save-scene',label:'Scene Asset 저장',disabled:!sceneCandidate||sceneBusy||loading,reason:'명시 변환 완료 후 승인된 로그인·사업장 쓰기 권한으로 저장합니다.',onSelect:()=>void saveScene()}]:[]),
       {id:'download',label:'원본 다운로드',kind:'link',download:true,href:`/api/cad-files/${versionId}/content`},
+      {id:'generated-json-export',label:'생성 개체 JSON 내보내기 (브라우저)',
+        testId:'viewer-menu-generated-export',disabled:!treeAvailable,reason:treeUnavailable??undefined,
+        onSelect:exportGeneratedJson},
+      {id:'generated-json-import',label:'생성 개체 JSON 가져오기 (브라우저)',
+        testId:'viewer-menu-generated-import',disabled:!treeAvailable,reason:treeUnavailable??undefined,
+        onSelect:()=>generatedImportInput.current?.click()},
       {id:'copy',label:'도면 링크 복사',onSelect:()=>{const url=cadViewerUrl(window.location.origin,versionId,format,renderer);if(!navigator.clipboard?.writeText){setLinkFallbackUrl({renderer,url});return;}void navigator.clipboard.writeText(url).catch(()=>setLinkFallbackUrl({renderer,url}));}},
     ]},
     {id:'view',label:'보기',commands:[
@@ -1610,6 +1725,9 @@ export function CadViewer({
   ];
 
   return <div className="space-y-3">
+    <input ref={generatedImportInput} data-testid="generated-import-input" type="file"
+      accept=".json,application/json" className="sr-only" aria-label="생성 개체 JSON 파일 선택"
+      onChange={event=>{void importGeneratedJson(event);}} />
     <ViewerAppShell
       shellRef={viewerShell}
       panelScopeKey={versionId+':'+sourceSha256+':'+renderer+':'+attempt}
@@ -1827,7 +1945,7 @@ export function CadViewer({
           </section>}
           {treeAvailable && <div data-testid="cad-object-selection-tools"
             className="flex flex-wrap items-center gap-2 border-b border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-800">
-            <strong>객체 선택 · 생성 개체 로컬 편집 (E3/E4)</strong>
+            <strong>객체 선택 · 생성 개체 로컬 편집 (E3/E4/E5)</strong>
             <Button size="sm" variant={canvasMode==='pan'&&!appState.outlineToolEnabled?'default':'outline'}
               data-testid="canvas-mode-pan" aria-pressed={canvasMode==='pan'&&!appState.outlineToolEnabled}
               onClick={()=>changeCanvasMode('pan')}>탐색 (Pan)</Button>
@@ -1868,6 +1986,33 @@ export function CadViewer({
                 이동 적용 ({generatedCount})
               </button>
               <span className="text-slate-500">선택된 생성 개체 경계를 5px 이상 드래그하면 미리보기 후 확정 · Esc 취소</span>
+            </form>
+            <form data-testid="generated-rotate-form"
+              className="flex flex-wrap items-center gap-1 rounded border border-slate-300 bg-white px-2 py-1"
+              onSubmit={event=>{event.preventDefault();applyRotation(pivotX,pivotY);}}>
+              <span className="font-medium">WCS 회전 · +각도 반시계(CCW)</span>
+              <label htmlFor="generated-rotate-angle">각도 °</label>
+              <input id="generated-rotate-angle" data-testid="generated-rotate-angle" type="text" inputMode="decimal"
+                value={rotateAngle} onChange={event=>setRotateAngle(event.target.value)}
+                disabled={!deleteModeAvailable} className="w-20 rounded border border-slate-300 bg-white px-1.5 py-1 text-slate-900" />
+              <label htmlFor="generated-rotate-pivot-x">Pivot X</label>
+              <input id="generated-rotate-pivot-x" data-testid="generated-rotate-pivot-x" type="text" inputMode="decimal"
+                value={pivotX} disabled={!deleteModeAvailable}
+                onChange={event=>setRotatePivotOverride({selectionKey:rotateSelectionKey,x:event.target.value,y:pivotY})}
+                className="w-24 rounded border border-slate-300 bg-white px-1.5 py-1 text-slate-900" />
+              <label htmlFor="generated-rotate-pivot-y">Pivot Y</label>
+              <input id="generated-rotate-pivot-y" data-testid="generated-rotate-pivot-y" type="text" inputMode="decimal"
+                value={pivotY} disabled={!deleteModeAvailable}
+                onChange={event=>setRotatePivotOverride({selectionKey:rotateSelectionKey,x:pivotX,y:event.target.value})}
+                className="w-24 rounded border border-slate-300 bg-white px-1.5 py-1 text-slate-900" />
+              <Button type="button" size="sm" variant="outline" data-testid="generated-rotate-default-pivot"
+                disabled={!commonRotationPivot} onClick={()=>setRotatePivotOverride(null)}>공통 bbox 중심</Button>
+              <button type="submit" data-testid="generated-rotate-apply"
+                disabled={!canDeleteSelection||!commonRotationPivot} title={canDeleteSelection?'WCS XY에서 선택 생성 개체를 공통 Pivot 기준 회전':editCapability.reason}
+                className="rounded bg-teal-700 px-2.5 py-1 text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-400">
+                회전 적용 ({generatedCount})
+              </button>
+              <span className="text-slate-500">선택 객체 위의 ↻ 핸들로 미리보기 · ESC 취소 · 한 번 확정은 Undo 1단계</span>
             </form>
             <Button size="sm" variant="outline" data-testid="generated-undo"
               disabled={generatedHistory.undo===0} title="생성 개체 편집 취소 (Ctrl/⌘+Z)"
@@ -1994,6 +2139,10 @@ export function CadViewer({
           {outlineNotice && <p data-testid="outline-tool-notice" className="text-xs text-teal-800">{outlineNotice}</p>}
            {deleteError && <p data-testid="generated-delete-error" role="alert" className="text-xs text-red-700">{deleteError}</p>}
            {translateError && <p data-testid="generated-translate-error" role="alert" className="text-xs text-red-700">{translateError}</p>}
+           {rotateError && <p data-testid="generated-rotate-error" role="alert" className="text-xs text-red-700">{rotateError}</p>}
+           {generatedJsonMessage && <p data-testid="generated-json-message"
+             role={generatedJsonMessage.error?'alert':'status'}
+             className={generatedJsonMessage.error?'text-xs text-red-700':'text-xs text-teal-800'}>{generatedJsonMessage.text}</p>}
           {memoError && !memoPlacing && !memoCandidate && !memoSelectedId &&
             <p data-testid="cad-memo-status-error" role="alert" className="text-xs text-red-700">{memoError}</p>}
           {outlineUnavailable && <p data-testid="outline-tool-unavailable" className="text-xs text-slate-500">{outlineUnavailable}</p>}
