@@ -21,3 +21,9 @@ Date: 2026-10-31. Dependency #57 completed. Root DESIGN.md does not exist; archi
 - Original Run 41194360963 TS2345: generic request stage must not be passed to UploadDiagnostics.finishFailure, which accepts only UploadStage. TC-L2-004 verifies the separate types, P2022 and Request ID.
 - P2 4431462654: another writer may unlink an idle open file; verify fd nlink/dev/ino against path before append, reopen on mismatch, TC-L3-007. This does not provide cross-process atomic check+write or guarantee retention beyond eviction.
 - P2 4431462655: accept file sequence 10000+ in inventory/read/retention and reset before Number.MAX_SAFE_INTEGER; TC-L3-008. Fix prune(0) exact maxFiles condition; TC-L3-009. Both P2 threads answered and Resolved. Corrected PR CI and field tests not yet verified; see FailureLedger.md.
+
+
+## PR #179 2차 실패 후 Migrator 배포 정합성 (2026-10-31)
+
+- 첫 재시작 Run `41202514157`에서 L2 Typecheck/ESLint는 성공했으나 L3 테스트용 디렉터리 0755로 인해 ENOSPC 주입이 호출되지 않았다. Fixture만 0700으로 수정, runtime fail-closed 권한 정책 유지.
+- Logger의 신규 정적 import `./logging/store`는 최소 Migrator Docker Target에도 개별 COPY 및 비루트 `test -f`와 tsx import smoke가 반드시 필요. Main 기반의 CI 비교용 Dockerfile은 동일 현재 PR 소스와 호환되도록 신규 파일 한 건만 임시 사본에 추가해야 하며 원본 Main 이미지·측정 게이트는 건드리지 않는다. 상세 [FailureLedger](FailureLedger.md), [TestPlan](TestPlan.md).

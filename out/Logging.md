@@ -1,5 +1,10 @@
 # Structured Logging 운영 가이드
 
+## #59 로그 영속 저장 CI 배포 회귀 보완 (2026-10-31)
+
+- [Run 41202514157](https://github.com/planner77/layoutManager/actions/runs/41202514157): 저장소 보안 정책은 `0700` 고정. ENOSPC 합성 테스트에서도 유효한 비공개 디렉터리에서 IO 실패만 재현해야 한다.
+- Migrator는 `server/logger.ts`의 정적 `server/logging/store.ts` 의존성을 runtime closure에 명시적으로 포함해야 한다. 후보 Dockerfile·CI 기준 이미지의 source contract를 구분해 검사하고, 신규 성공 검증 전 GHCR / 배포 성공으로 간주하지 않는다. [상세 원장](FailureLedger.md).
+
 ## PR #179 — JSONL writer/UploadStage failure correction (2026-10-31)
 
 - Run 41194360963 failed TS2345 in server/http.ts:20: generic RequestLogContext.currentStage is not an UploadStage. UploadDiagnostics receives the explicitly typed upload stage only.

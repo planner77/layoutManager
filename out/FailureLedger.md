@@ -1,3 +1,22 @@
+## PR #179 — 2차 PR CI 실패: Vitest 2건 및 baseline migrator 모듈 미포함 (2026-10-31 KST)
+
+### 실패 실행 증거
+- [PR #179](https://github.com/planner77/layoutManager/pull/179), 수정 전 HEAD `2484115a60100abb8f1e5b289f281fedbc4e0214`, [PR CI Run 41202514157](https://github.com/planner77/layoutManager/actions/runs/41202514157) **completed/failure**. 첫 실패 Run 41194360963(TS2345)은 아래 원장에 별도 보존하며 성공으로 소급 변경하지 않는다.
+- Verify [Job 124541002048](https://github.com/planner77/layoutManager/actions/runs/41202514157/job/124541002048): TypeScript 및 ESLint **SUCCESS**, Vitest **108개 파일 중 106 PASS/2 FAIL, 710개 테스트 중 708 PASS/2 FAIL**. 실패 1: `src/tests/unit/log-store.test.ts:96`, TC-L3-004, expected `lastFailureCode=ENOSPC` vs actual `LOG_IO_FAILED`. 실패 2: `src/tests/unit/standalone.test.ts:179`, TC-LOG-MIG-001, migrator Dockerfile에 명시적 `COPY /app/src/server/logging/store.ts -> ./server/logging/store.ts`가 없다는 assertion. OCI manifest synthetic / DXF benchmark / Production Build / Chromium E2E / G7 signed/Greenfield/Legacy E2E **SKIPPED/NOT VERIFIED**.
+- Docker [Job 124541002124](https://github.com/planner77/layoutManager/actions/runs/41202514157/job/124541002124): Compose image 검증과 Python audit synthetic SUCCESS, baseline App Build 완료 후 **baseline Migrator Build FAIL**: `Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/app/src/server/logging/store' imported from /app/src/server/logger.ts`, `[migrator 43/43] RUN ... node --import tsx...`. 이후 Phase1/Current Runtime·Migrator builds, OCI/native/image measurement, G7 Greenfield/restart smoke는 **SKIPPED/NOT VERIFIED**. 동일 신규 소스 import closure가 Main 기반의 원본 baseline Dockerfile에 없어서 발생; 독립 DB/권한/registry 문제 아님.
+
+### 근본 원인 및 안전한 수정
+1. TC-L3-004의 `mkdir(actual)`은 일반 CI umask(0022)로 0755 생성되어 `verifiedDirectory()` 0700 접근 제한에 먼저 걸림. Fixture에서 `await mkdir(actual,{mode:0o700})` 및 `lstat(mode & 0o777) === 0o700`를 사용해 테스트가 실제 injection seam `FullDisk.openNewFile() -> ENOSPC`까지 도달하게 수정. **운영 권한 정책/오류 코드 처리 변경 없음**.
+2. PR의 migrator target은 신규 logger 직속 의존성을 `COPY --from=builder /app/src/server/logging ./server/logging`으로 복사해 standalone 테스트에서 기대하는 개별 closure manifest와 달랐다. **정확한 신규 파일 1건** `COPY --from=builder /app/src/server/logging/store.ts ./server/logging/store.ts`로 교체하고 `RUN test -f`, Actions CI migrator packaged files 검사에 파일을 명시. TC-LOG-MIG-001 유지.
+3. Baseline Dockerfile은 Main의 이전 manifest라 최근 PR HEAD 소스의 새 `./logging/store` import를 알 수 없었다. PR CI의 비교용 baseline Dockerfile **임시 사본만** logger COPY anchor를 정확히 1건 확인하고 동일 단일 파일 COPY 추가; baseline/current source 일치, 이전 baseline image-size 및 migration/native/import smoke 유지. Anchor 변경 또는 추가 파일 중복 시 fail closed. TC-LOG-MIG-002는 이 보정 경로와 원래 비교 검증 유지 여부를 검사.
+4. 수정 커밋: [512b5d02](https://github.com/planner77/layoutManager/commit/512b5d02e24fd492dadf6baeff0e6b8ab087ab58) (Unit fixture/후보 Dockerfile/CI packaged check), [9d2b2143](https://github.com/planner77/layoutManager/commit/9d2b2143eb7a7e1d8b11f3b7cf729a46dc728cf3) (측정용 baseline closure), [5c44eb95](https://github.com/planner77/layoutManager/commit/5c44eb95e57eb5784c30bb815b3878a877a34102) 및 [69c98745](https://github.com/planner77/layoutManager/commit/69c98745ec00abd08ab70f6eebb99f4cbe84763e) (new TC-LOG-MIG-002 및 정상 newline split). 기존 P2 2건/가드/업무 동작 변경 없음.
+
+### 검증·리뷰·병합 경계
+- 로컬 npm/Typecheck/ESLint/Vitest/Next/Playwright/Docker 전체 실행하지 않음. 수정 후 CI의 동일 AC 및 Docker baseline smoke 결과는 신규 Run 완료 전 **NOT VERIFIED**. 새 리뷰 스레드, Main behind, mergeable 재확인 후 정확 HEAD PR synchronize로 신규 CI 시작; Owner 요청에 따라 완료 모니터링 생략.
+- 이전 Codex P2 4431462654/4431462655는 답변·Resolved, 신규 리뷰 발견 시 별도 기록. 실 운영 Volume/DB/CAD, cross-process atomic quota, Auth/G7, backup/rollback 및 GHCR/병합/이슈 종료는 이 작업에서 수행하지 않음.
+
+---
+
 ## PR #179 — #58/#59 첫 PR CI 실패 및 두 건 P2 해결 (2026-10-31 KST)
 
 ### 실패 기록: 정확 HEAD·Run·Job

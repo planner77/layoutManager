@@ -1,3 +1,12 @@
+## PR #179 — CI #41202514157 재발 방지 시험 게이트 (2026-10-31)
+
+- TC-L3-004: 임시 디렉터리 실제 권한 0700 검증 -> symlink directory 거부 -> 권한이 허용된 다른 경로에서 `openNewFile()`을 ENOSPC 오류로 주입 -> `lastFailureCode=ENOSPC`, dropped/failed 1, 업무 예외 미전파. 운영 `verifiedDirectory()` 권한 제한을 완화하지 않는다.
+- TC-LOG-MIG-001: 모든 logger의 `./` 직접 import가 candidate migrator에 개별 COPY되는지 검사. `store.ts`의 명시적 COPY + migrator nonroot `test -f` + node/tsx import smoke 확인.
+- TC-LOG-MIG-002: baseline Dockerfile은 Main 원본을 사용하되 HEAD 동일 소스에 필수인 `store.ts` 단독 COPY를 비교용 임시 파일에만 fail-closed 주입한다. Baseline runtime 및 migrator 빌드·크기 계측·OCI/native/G7 Greenfield smoke를 모두 실행해 실제 불일치 재발 여부를 확인한다.
+- First PR CI TS2345 개선 성과는 2차 실행의 Typecheck/Lint SUCCESS로 확인. 새로운 수정 커밋의 Typecheck/Lint/Unit/Build/E2E/Docker pass는 신규 CI 전까지 **NOT VERIFIED**; CI gate/timeout/보안·storage 정책 변경 금지.
+
+---
+
 ## PR #179 / #58+#59 실패 재발 방지 테스트 (2026-10-31)
 
 - Typecheck gate: server/http.ts line 20 must keep the narrower UploadStage and independent generic request phase; TC-L2-004 verifies P2022 error, 500 response, Request ID and redaction; strict TypeScript/Next baseline build both mandatory.

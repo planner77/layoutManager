@@ -1,3 +1,10 @@
+## PR #179 — 영속 Logger Migrator 패키징 회귀 수정 (2026-10-31)
+
+- Run 41202514157은 Migrator `ERR_MODULE_NOT_FOUND server/logging/store`로 Docker 검사 실패. Logger의 직접 import 파일을 Migrator Image에도 명시적으로 COPY하고 Docker build 자체에서 `test -f`와 `node --import tsx` 검사를 유지한다. CI 기준 이미지 비교는 Main Dockerfile 원본을 유지하되 동일 최신 소스의 새로운 로거 파일 한 건만 CI 임시 Dockerfile에 추가한다. PR CI 통과와 실제 운영 볼륨 수용은 별도로 판단해야 한다.
+- 실제 `/data/db`, `/data/cad`, `/data/logs`, 운영 Auth/G7 상태, 기존 GHCR 이미지는 변경하지 않았다. 변경은 소스/CI 구성과 합성 시험에 한정.
+
+---
+
 ## #58/#59 operational logging (2026-10-31)
 
 Compose defaults LOG_STORE_ENABLED=true with private /data/logs under the same existing volume, separate from Docker local logs. Set LOG_RETENTION_DAYS=7 (1..30), LOG_MAX_FILE_MB=4 (1..8) and LOG_MAX_TOTAL_MB=64 (4..256) as bounded choices. UID10001 creates private 0700 directory and 0600 files. Keep using docker compose logs to inspect stdout, but never mount /data/logs into the web UI, expose it via an API or use Docker socket. Only server-internal getLogStoreStatus provides error/drop counters. Check backup space and permissions on an isolated volume before rollout. Old image rollback ignores the directory; do not use down -v. Live field volume/backup/recovery test NOT RUN. See [Issues58-59](Issues58-59.md).

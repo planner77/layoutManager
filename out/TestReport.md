@@ -1,3 +1,11 @@
+## PR #179 — 두 번째 PR CI 결과와 수정 증거 범위 (2026-10-31)
+
+- [Run 41202514157](https://github.com/planner77/layoutManager/actions/runs/41202514157), HEAD `2484115a60100abb8f1e5b289f281fedbc4e0214`, completed/**failure**. Verify 124541002048: Typecheck/ESLint PASS; Unit/Integration 108 files: 106 PASS, 2 FAIL / 710 tests: 708 PASS, 2 FAIL. 정확한 실패 TC-L3-004(0755 잘못된 test fixture로 ENOSPC seam까지 미도달) 및 TC-LOG-MIG-001(신규 store.ts explicit COPY 누락). OCI/DXF/Next/Browser/G7 E2E SKIPPED.
+- Docker 124541002124: baseline Migrator Build 실패 ERR_MODULE_NOT_FOUND server/logging/store (Main Dockerfile에는 PR 신규 의존성 COPY 없음). 이후 새 Docker 이미지/G7 최초 설치·재기동 검증 SKIPPED. 첫 PR CI의 TS2345는 재발하지 않음.
+- 수정 commit 512b5d02(0700 fixture, candidate Dockerfile store.ts explicit COPY, Docker CI file check), 9d2b2143(baseline Dockerfile 임시 사본에 한 파일만 엄격 추가), 5c44eb95/69c98745(TC-LOG-MIG-002 회귀). 모든 기존 Unit/Integration/Production/CI Gate 유지. 테스트 코드 작성/CI 요청은 통과 증거가 아니며 새 CI 결과, 운영 Volume/영속성/실패주입은 **NOT VERIFIED**. 상세 [FailureLedger](FailureLedger.md).
+
+---
+
 ## PR #179 / #58+#59 첫 CI 실패 및 수정 후 검증 대기 (2026-10-31)
 
 - Original [Run 41194360963](https://github.com/planner77/layoutManager/actions/runs/41194360963), HEAD 19ba6fb6fad35cb9fd4968a55f6cef95ce0171ea, completed/FAILURE. Verify 124517422622 TS2345 server/http.ts:20; Docker 124517422395 baseline Next Build same error. Lint/Unit/E2E and downstream Docker were SKIPPED (not PASS).

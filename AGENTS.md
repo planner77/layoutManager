@@ -1,3 +1,12 @@
+## PR #179 — 2차 CI 실패의 Test/Legacy Docker 원인 (2026-10-31)
+
+- [Run 41202514157](https://github.com/planner77/layoutManager/actions/runs/41202514157) / 정확 HEAD `2484115a60100abb8f1e5b289f281fedbc4e0214`: Verify Job 124541002048에서 Typecheck·ESLint SUCCESS, Vitest 108파일 중 106 PASS/2 FAIL (710 테스트 중 708 PASS/2 FAIL). OCI/Benchmark/Next Build/Chromium/G7 E2E는 SKIPPED. Docker Job 124541002124에서 원본 Main Dockerfile로 최신 PR source를 빌드하는 baseline migrator가 새 `logger.ts -> ./logging/store` import를 패키징하지 않아 `ERR_MODULE_NOT_FOUND`; Phase1/Current runtime·Migration Smoke는 SKIPPED. 첫 CI TS2345는 재발하지 않음.
+- TC-L3-004의 `mkdir(actual)`은 기본 umask 아래 0755로 생성되어 `verifiedDirectory`가 먼저 차단; ENOSPC 주입 검증이 실행되지 않았으며 lastFailureCode는 `LOG_IO_FAILED`. 테스트 전용 디렉터리를 `mkdir(...,{ mode:0o700 })`으로 설정하고 권한을 직접 검증한다. 실제 운영 0700 정책 완화나 ENOSPC 코드 조작은 금지.
+- TC-LOG-MIG-001은 logger의 모든 상대 모듈을 migrator Dockerfile에서 개별 COPY 하도록 검증한다. Migrator에 `COPY --from=builder /app/src/server/logging/store.ts ./server/logging/store.ts`를 명시하고 실제 이미지에서 해당 파일 존재/tsx import smoke를 수행한다. CI baseline Dockerfile은 구버전 manifest이므로 동일 PR source 비교를 유지하려면 **측정용 baseline 사본에만** 신규 Logger 파일 한 건을 엄격한 anchor로 추가; 원본 Main 파일이나 CI smoke/size gate를 무력화하지 않는다. TC-LOG-MIG-002 회귀 추가.
+- 모든 실패는 [실패 원장](out/FailureLedger.md)에 Run/Job/정확한 오류 및 수정 커밋으로 보존한다. 이후 새 CI의 성공은 확인 전 NOT VERIFIED. 기존 P2 2건 Resolved, Main 충돌과 새 리뷰는 CI 재시작 전 별도 검사. GHCR/병합/Issue 종료/운영 G7/Volume 변경 금지.
+
+---
+
 ## PR #179 — #58/#59 CI 실패 및 Codex P2 재발 방지 (2026-10-31)
 
 - First PR CI Run [41194360963](https://github.com/planner77/layoutManager/actions/runs/41194360963), HEAD 19ba6fb6fad35cb9fd4968a55f6cef95ce0171ea: Verify Job 124517422622 TS2345 at server/http.ts:20, Docker Job 124517422395 baseline Next Build failed due to the SAME error. Lint/Unit/E2E and later Docker smoke SKIPPED; do not claim PASS.
