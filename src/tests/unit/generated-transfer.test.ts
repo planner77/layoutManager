@@ -93,6 +93,14 @@ describe('Issue #56 E6: browser-only, fail-closed JSON round-trip',()=>{
   const parsed=parseGeneratedTransfer(buildGeneratedTransfer(prepare(2),4),scope,4);
   const malicious=parsed.entries.map((o,i)=>i===1?{...o,id:uuids[0]}:o);
   expect(()=>target.replaceFromImport(malicious)).toThrow();
+  // Runtime guards must reject untrusted callers without changing a live
+  // Document, even if TypeScript types are bypassed at a JS boundary.
+  const forgedOperations=[{...parsed.entries[0],transformOperations:{broken:true}}] as
+    unknown as typeof parsed.entries;
+  expect(()=>target.replaceFromImport(forgedOperations)).toThrow();
+  const forgedTransform=[{...parsed.entries[0],transform:[1,0,0,1,'bad',0]}] as
+    unknown as typeof parsed.entries;
+  expect(()=>target.replaceFromImport(forgedTransform)).toThrow();
   expect(JSON.stringify(target.getObjects())).toBe(old);
   expect(target.history()).toEqual(history);
   const blank=prepare(0),exported=buildGeneratedTransfer(blank,null);
