@@ -143,6 +143,7 @@ test('TC-E6-E2E-001: rejected file keeps session; v2 restores after explicit rel
  expect(restored.objects.map(o=>o.id)).toEqual(data.objects.map(o=>o.id));
  expect(restored.objects.map(o=>o.editedGeometry))
   .toEqual(data.objects.map(o=>o.editedGeometry));
+ page.once('dialog',async dialog=>{expect(dialog.message()).toContain('임시');await dialog.accept();});
  await clickViewerCommand(page,'view','dxf-viewer');
  await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
  await expect(page.getByTestId('generated-rotate-form')).toHaveCount(0);

@@ -34,7 +34,7 @@ const strings=(value:unknown,label:string,maxCount:number,maxSize:number):string
 };
 function operations(input:unknown):GeneratedRigidOperation[]{
  if(!Array.isArray(input)||input.length>64)throw new Error('편집 작업은 최대 64개까지 허용됩니다.');
- return input.map(value=>{
+ return input.map((value):GeneratedRigidOperation=>{
    const op=row(value);
    if(op.type==='Translate'&&finite(op.dx)&&finite(op.dy))
      return {type:'Translate',dx:op.dx,dy:op.dy};

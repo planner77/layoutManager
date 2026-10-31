@@ -77,12 +77,12 @@ describe('Issue #56 E6: browser-only, fail-closed JSON round-trip',()=>{
   reject(v=>{(v as {sourceSha256:string}).sourceSha256='b'.repeat(64);});
   expect(()=>parseGeneratedTransfer(raw,scope,1)).toThrow();
   reject(v=>{(v as {sourceAttestable:boolean}).sourceAttestable=true;});
-  reject(v=>{(v.objects[0] as {id:string}).id=raw.objects[1].id;});
-  reject(v=>{(v.objects[0] as {origin:string}).origin='DXF_IMPORTED';});
-  reject(v=>{(v.objects[0] as {editedGeometry:GeoJSONOutline}).editedGeometry={type:'Polygon',
+  reject(v=>{(v.objects[0] as unknown as {id:string}).id=raw.objects[1].id;});
+  reject(v=>{(v.objects[0] as unknown as {origin:string}).origin='DXF_IMPORTED';});
+  reject(v=>{(v.objects[0] as unknown as {editedGeometry:GeoJSONOutline}).editedGeometry={type:'Polygon',
      coordinates:[[[0,0],[1,0],[1,1],[0,1],[0,0]]]};});
-  reject(v=>{(v.objects[0] as {transform:number[]}).transform=[1,0,0,1,NaN,0];});
-  reject(v=>{(v.objects[0] as {baseGeometry:GeoJSONOutline}).baseGeometry={type:'Polygon',
+  reject(v=>{(v.objects[0] as unknown as {transform:number[]}).transform=[1,0,0,1,NaN,0];});
+  reject(v=>{(v.objects[0] as unknown as {baseGeometry:GeoJSONOutline}).baseGeometry={type:'Polygon',
      coordinates:[[[0,0],[10,0],[10,10],[0,10],[1,1]]]};});
   expect(()=>parseGeneratedTransfer('a'.repeat(GENERATED_TRANSFER_MAX_BYTES+1),scope,4)).toThrow();
  });
