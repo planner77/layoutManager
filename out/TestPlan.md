@@ -1,3 +1,10 @@
+## R3 PR182 CI 재작업 — test clock와 서명 시작 시각 정합성 (2026-11-01)
+
+- **TC-R3-CI-CLOCK-001:** 순수 test-clock factory에 wall/performance source를 주입한다. wall이1000→1001이고 performance가0.2ms만 증가한 경우 현재 clock이새 notBefore1001보다 뒤처지지 않아야 한다. wall forward→rollback에서도 반환 시각은 감소하지 않고, wall rollback 중에는 monotonic 시간으로 진행한다. 기존 알고리즘에서2FAIL/1PASS RED를 실제 확인한 뒤 수정한다.
+- **TC-R3-CI-CLOCK-002:** 실제 서명된 Greenfield fixture의 `notBefore-1`은BLOCKED, 정확 `notBefore`는ACTIVE, 정확 `expiresAt`은BLOCKED여야 한다. 올바른 현재 조회200과 실제 미래 시각 HTTP503/고정 `G7_RUNTIME_UNAVAILABLE`를 확인한다. 기존 미래 Session401/스토리지 접근0과 승인 만료 거부를 유지한다.
+- 수정은 `tests/helpers/monotonic-clock.ts`와 관련 시험에만 한정한다. native wall source를 spy 설치 전에 포획하고 `max(previous,nativeWall,anchoredMonotonic)`을 사용한다. 제품 `Date`/서명/Session/Origin/CSRF/승인 gate 및 invalid-query400 기대는 완화하지 않는다. RED·집중 GREEN·전체회귀·독립QA·새 원격CI를 별도 실행으로 기록한다.
+- 원격 실패 로그에 실제 wall/monotonic 차이가 없으므로1ms mechanism 재현을 CI의 정확한 delta 측정으로 주장하지 않는다. 원인은 재현 가능한 fixture 결함과 부합하는 유력 원인으로 구분한다. 초기 R4 HOLD는 수정의 전체120/795 및 독립QA53·Scene12 검증으로 로컬 gate를 통과했다. 수정 HEAD 게시와 R4 기반 반영 확인 후 구현을 조건부 재개하며 원격 CI는 별도 확인한다. 상세 판정은 TestReport의 R3 PR182 재작업을 따른다.
+
 ## R3 #71/#73 — Acceptance / Test Case (구현 전 설계·로컬 검증 반영, 2026-11-01)
 
 아래 시험은 최초 설계 시점 **NOT RUN**으로 작성했다. 이후 구현·재작업·독립 QA와 전체 회귀의 실제 결과를 [TestReport R3-20261101](TestReport.md)에 기록했고 Manager가 해당 로컬 범위를 수용했다. 계획 표의 모든 조합이나 실환경 수용까지 자동 PASS로 해석하지 않는다. R2 성공 근거를 R3의 타입 저장/영속 트리 성공으로 승계하지 않는다. 후보0.51.0, 새 격리 Greenfield와 합성 DXF/Scene을 사용하며 실 운영 DB/volume은 접근하지 않는다.
