@@ -1,7 +1,12 @@
 import * as THREE from 'three';
 import type {ExchangeArtifact,ExchangeBuildContext,ExchangeGeneratedInput,ExchangeOptions,ExchangePrimitive,ExchangeReport,ExchangeSnapshot,ExchangeUnit} from '../../domain/cad-exchange';
-import {EXCHANGE_LIMITS,EXCHANGE_UNIT_METRES,exchangeOptionsFingerprint,exchangeSourceUnit} from '../../domain/cad-exchange';
+import {EXCHANGE_LIMITS,EXCHANGE_UNIT_METRES,exchangeOptionsFingerprint,exchangeSourceUnit,selectedExchangeMemos} from '../../domain/cad-exchange';
 import {validatedGeneratedGeometry} from '../../domain/generated-document';
+import {loadExchangeMemoFont,type MemoFontLease} from './exchange-memo-font';
+import {rasterizeExchangeMemos} from './exchange-memo-raster';
+import {buildExchangeMemoAnnotation} from './exchange-memo-annotation';
+
+const PRECISION_WARNING='좌표 오차는 renderer snapshot 대비 추가 Float32 오차입니다. 이미 잃은 원본 CAD 정밀도는 복구하지 못합니다.';
 
 function abort(signal?:AbortSignal){if(signal?.aborted)throw new DOMException('취소됨','AbortError');}
 function unitFor(snapshot:ExchangeSnapshot,choice:ExchangeOptions['unit']):ExchangeUnit{
@@ -14,6 +19,7 @@ function boundsOf(snapshot:ExchangeSnapshot):THREE.Box3{
  for(const p of snapshot.primitives)for(let i=0;i<p.positions.length;i+=3)box.expandByPoint(v.set(p.positions[i],p.positions[i+1],p.positions[i+2]));
  for(const g of snapshot.generated){const geo=validatedGeneratedGeometry(g.geometry),polys=geo.type==='Polygon'?[geo.coordinates]:geo.coordinates;
   for(const poly of polys)for(const ring of poly)for(const point of ring)box.expandByPoint(v.set(point[0],point[1],0));}
+ for(const memo of snapshot.memos??[])box.expandByPoint(v.set(memo.anchorWcs.x,memo.anchorWcs.y,0));
  return box;
 }
 function transform(x:number,y:number,z:number,o:THREE.Vector3,s:number):readonly [number,number,number]{
@@ -102,8 +108,9 @@ function validateSelection(snapshot:ExchangeSnapshot){
  if(snapshot.generated.filter(g=>g.origin==='LOCAL_GENERATED').length>EXCHANGE_LIMITS.generatedPerOrigin||snapshot.generated.filter(g=>g.origin==='SERVER_OUTLINE').length>EXCHANGE_LIMITS.generatedPerOrigin)throw new Error('생성 개체 수 상한을 초과했습니다.');
 }
 /** Exact preflight counts for the modal, before acknowledgement and serialization. */
-export function inspectExchangeSnapshot(snapshot:ExchangeSnapshot){
+export function inspectExchangeSnapshot(snapshot:ExchangeSnapshot,options?:ExchangeOptions){
  validateSelection(snapshot);
+ const memos=selectedExchangeMemos(snapshot,options);
  const selected=snapshot.inventory.objects.filter(item=>item.origin==='DXF'&&snapshot.selection.dxf.enabled&&(snapshot.selection.dxf.mode==='all'||snapshot.selection.dxf.layers.includes(item.layer)));
  const layerMap=new Map<string,{accepted:number;excluded:number;reasons:Record<string,number>;styleLoss:Record<string,number>}>();
  const layer=(name:string)=>{let row=layerMap.get(name);if(!row){row={accepted:0,excluded:0,reasons:{},styleLoss:{}};layerMap.set(name,row);}return row;};
@@ -116,24 +123,27 @@ export function inspectExchangeSnapshot(snapshot:ExchangeSnapshot){
  }
  const excluded=[...layerMap.values()].reduce((n,r)=>n+r.excluded,0),styleLoss:Record<string,number>={};
  for(const row of layerMap.values())for(const [reason,count] of Object.entries(row.styleLoss))styleLoss[reason]=(styleLoss[reason]??0)+count;
- const partial=snapshot.selection.dxf.enabled&&snapshot.inventory.sourceCoverage==='unknown'||excluded>0||Object.keys(styleLoss).length>0;
- return {excluded,styleLoss,partial,layers:[...layerMap].map(([name,row])=>({layer:name,...row}))};
+ const broken=memos.filter(memo=>memo.broken).length;
+ const partial=snapshot.selection.dxf.enabled&&snapshot.inventory.sourceCoverage==='unknown'||excluded>0||Object.keys(styleLoss).length>0||broken>0;
+ return {excluded,styleLoss,partial,layers:[...layerMap].map(([name,row])=>({layer:name,...row})),memoCount:memos.length,
+  memoWarnings:broken?[`연결이 끊긴 메모 ${broken}개는 마지막 WCS 위치로 포함합니다.`]:[]};
 }
 /** Browser event path only. No fetch, DB write, live Scene mutation, or Blob URL. */
 export async function buildExchangeArtifact(snapshot:ExchangeSnapshot,options:ExchangeOptions,context:ExchangeBuildContext={}):Promise<ExchangeArtifact>{
  abort(context.signal);context.onStage?.('prepare');validateSelection(snapshot);
- if(snapshot.selection.memos.enabled)throw new Error('Memo 내보내기는 다음 Unit에서 연결됩니다.');
+ const memos=selectedExchangeMemos(snapshot,options);
  const unit=unitFor(snapshot,options.unit),scale=EXCHANGE_UNIT_METRES[unit];
  const bounds=boundsOf(snapshot);if(bounds.isEmpty())throw new Error('선택한 지원 객체가 없습니다.');
  const origin=options.origin.mode==='auto'?bounds.getCenter(new THREE.Vector3()):new THREE.Vector3(options.origin.x,options.origin.y,options.origin.z);
  if(![origin.x,origin.y,origin.z].every(Number.isFinite)||[origin.x,origin.y,origin.z].some(n=>Math.abs(n)>1e12))throw new Error('유효하지 않은 원점입니다.');
- const {excluded,styleLoss,partial,layers}=inspectExchangeSnapshot(snapshot);
+ const {excluded,styleLoss,partial,layers,memoWarnings}=inspectExchangeSnapshot(snapshot,options);
  const fingerprint=exchangeOptionsFingerprint(snapshot,options);
  if(partial&&options.partialAck!==fingerprint)throw new Error('누락 또는 스타일 손실 가능성을 확인한 현재 선택 동의가 필요합니다.');
- const preVertices=snapshot.primitives.reduce((n,p)=>n+p.positions.length/3,0)+snapshot.generated.reduce((n,g)=>n+(g.geometry.type==='Polygon'?[g.geometry.coordinates]:g.geometry.coordinates).reduce((a,p)=>a+p.reduce((b,r)=>b+r.length,0),0),0);
- const preIndices=snapshot.primitives.reduce((n,p)=>n+(p.indices?.length??p.positions.length/3),0)+snapshot.generated.reduce((n,g)=>n+(g.geometry.type==='Polygon'?[g.geometry.coordinates]:g.geometry.coordinates).reduce((a,p)=>a+p.reduce((b,r)=>b+r.length*6,0),0),0);
- if(snapshot.primitives.length+snapshot.generated.length>EXCHANGE_LIMITS.drawables||preVertices>EXCHANGE_LIMITS.vertices||preIndices>EXCHANGE_LIMITS.indices||preVertices*64+preIndices*8>EXCHANGE_LIMITS.estimatedBytes)throw new Error('내보내기 정점/인덱스/메모리 상한을 초과했습니다.');
+ const preVertices=snapshot.primitives.reduce((n,p)=>n+p.positions.length/3,0)+snapshot.generated.reduce((n,g)=>n+(g.geometry.type==='Polygon'?[g.geometry.coordinates]:g.geometry.coordinates).reduce((a,p)=>a+p.reduce((b,r)=>b+r.length,0),0),0)+memos.length*100;
+ const preIndices=snapshot.primitives.reduce((n,p)=>n+(p.indices?.length??p.positions.length/3),0)+snapshot.generated.reduce((n,g)=>n+(g.geometry.type==='Polygon'?[g.geometry.coordinates]:g.geometry.coordinates).reduce((a,p)=>a+p.reduce((b,r)=>b+r.length*6,0),0),0)+memos.length*320;
+ if(snapshot.primitives.length+snapshot.generated.length+memos.length*3>EXCHANGE_LIMITS.drawables||preVertices>EXCHANGE_LIMITS.vertices||preIndices>EXCHANGE_LIMITS.indices||preVertices*64+preIndices*8+(memos.length?EXCHANGE_LIMITS.texturePixels*4:0)>EXCHANGE_LIMITS.estimatedBytes)throw new Error('내보내기 정점/인덱스/메모리 상한을 초과했습니다.');
  const scene=new THREE.Scene(),precision={max:0};
+ let font:MemoFontLease|undefined,raster:ReturnType<typeof rasterizeExchangeMemos>|undefined;
  try{
   const namespaces=new Map<string,THREE.Group>(),groups=new Map<string,THREE.Group>();
   const add=(origin:string,layer:string,obj:THREE.Object3D)=>{
@@ -142,17 +152,26 @@ export async function buildExchangeArtifact(snapshot:ExchangeSnapshot,options:Ex
   };
   for(const p of snapshot.primitives){abort(context.signal);add('DXF',p.layer,objectFor(p,origin,scale,precision));}
   for(const g of snapshot.generated){abort(context.signal);add(g.origin,g.origin==='LOCAL_GENERATED'?'생성 개체':'서버 외곽선',shapeObject(g,origin,scale,precision));}
-  const included=layers.reduce((n,row)=>n+row.accepted,0)+snapshot.generated.length;
+  if(memos.length){
+   context.onStage?.('font');font=await loadExchangeMemoFont(context.signal);abort(context.signal);
+   context.onStage?.('rasterize');raster=rasterizeExchangeMemos(memos,font,context.signal);abort(context.signal);
+   for(const entry of raster.rasters){abort(context.signal);add(entry.memo.origin,'메모',buildExchangeMemoAnnotation(entry,origin,scale,options.memoTextHeightMetres!,precision));}
+  }
+  const included=layers.reduce((n,row)=>n+row.accepted,0)+snapshot.generated.length+memos.length;
   if(!included)throw new Error('선택한 지원 객체가 없습니다.');
-  const vertices=snapshot.primitives.reduce((n,p)=>n+p.positions.length/3,0)+snapshot.generated.reduce((n,g)=>n+(g.geometry.type==='Polygon'?[g.geometry.coordinates]:g.geometry.coordinates).reduce((a,p)=>a+p.reduce((b,r)=>b+r.length,0),0),0);
-  let actualBytes=0,actualIndices=0;scene.traverse(o=>{const g=(o as THREE.Mesh).geometry;if(!g)return;
+  let actualBytes=(raster?.pixels??0)*4,actualIndices=0,vertices=0;scene.traverse(o=>{const g=(o as THREE.Mesh).geometry;if(!g)return;
+   vertices+=g.getAttribute('position')?.count??0;
    for(const name of Object.keys(g.attributes))actualBytes+=g.getAttribute(name).array.byteLength;
    if(g.index){actualBytes+=g.index.array.byteLength;actualIndices+=g.index.count;}
   });
   if(included>EXCHANGE_LIMITS.drawables||vertices>EXCHANGE_LIMITS.vertices||actualIndices>EXCHANGE_LIMITS.indices||actualBytes>EXCHANGE_LIMITS.estimatedBytes)throw new Error('내보내기 정점/인덱스/메모리 상한을 초과했습니다.');
   if(precision.max>1e-4)throw new Error('원점 기준 Float32 좌표 오차가 0.1mm를 초과합니다.');
-  scene.userData={sourceUnit:snapshot.inventory.scope.sourceUnit,selectedUnit:unit,metresPerUnit:scale,originWcs:origin.toArray(),axisMapping:'(x,y,z)->(x,z,-y)',maxQuantizationError:precision.max,sourceCoverage:snapshot.inventory.sourceCoverage};
-  const report:ExchangeReport={included,excluded,vertices,warnings:snapshot.selection.dxf.enabled?[...snapshot.inventory.warnings]:[],maxQuantizationError:precision.max,sourceCoverage:snapshot.inventory.sourceCoverage,styleLoss,layers};
+  scene.userData={versionId:snapshot.inventory.scope.versionId,sourceSha256:snapshot.inventory.scope.sourceSha256,
+   sourceUnit:snapshot.inventory.scope.sourceUnit,selectedUnit:unit,metresPerUnit:scale,originWcs:origin.toArray(),axisMapping:'(x,y,z)->(x,z,-y)',
+   maxQuantizationError:precision.max,precisionBasis:'RENDERER_SNAPSHOT_ADDITIONAL_FLOAT32',precisionWarning:PRECISION_WARNING,
+   sourceCoverage:snapshot.inventory.sourceCoverage};
+  const report:ExchangeReport={included,excluded,vertices,warnings:[...(snapshot.selection.dxf.enabled?[...snapshot.inventory.warnings]:[]),...memoWarnings,
+   PRECISION_WARNING],maxQuantizationError:precision.max,sourceCoverage:snapshot.inventory.sourceCoverage,styleLoss,layers};
   abort(context.signal);context.onStage?.('serialize');
   const {GLTFExporter}=await import('three/addons/exporters/GLTFExporter.js');
   abort(context.signal);
@@ -169,6 +188,8 @@ export async function buildExchangeArtifact(snapshot:ExchangeSnapshot,options:Ex
   context.onStage?.('complete');
   return {bytes,mime:options.format==='glb'?'model/gltf-binary':'model/gltf+json',extension:options.format,report};
  }finally{
-  scene.traverse(o=>{const d=o as THREE.Mesh;d.geometry?.dispose();if(d.material)for(const m of Array.isArray(d.material)?d.material:[d.material])m.dispose();});scene.clear();
+  const textures=new Set<THREE.Texture>();scene.traverse(o=>{const d=o as THREE.Mesh;d.geometry?.dispose();if(d.material)for(const m of Array.isArray(d.material)?d.material:[d.material]){
+   const map=(m as THREE.MeshBasicMaterial).map;if(map)textures.add(map);m.dispose();
+  }});for(const texture of textures)texture.dispose();scene.clear();raster?.dispose();font?.dispose();
  }
 }

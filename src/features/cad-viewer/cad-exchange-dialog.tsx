@@ -49,6 +49,11 @@ export function CadExchangeDialog({controller,defaultFilename}:{controller:Contr
   const [origin,setOrigin]=useState({x:'0',y:'0',z:'0'});
   const [acknowledged,setAcknowledged]=useState(false);
   const [includeAllServer,setIncludeAllServer]=useState(false);
+  const [memosEnabled,setMemosEnabled]=useState(false),[memoMode,setMemoMode]=useState<'all'|'selected'>('all');
+  const [chosenMemoKeys,setChosenMemoKeys]=useState<string[]>([]),[memoSearch,setMemoSearch]=useState('');
+  const [includeAllServerMemos,setIncludeAllServerMemos]=useState(false);
+  const [memoHeight,setMemoHeight]=useState('0.1'),[manualMemoHeight,setManualMemoHeight]=useState(false);
+  const [privateAvailability,setPrivateAvailability]=useState({outlines:false,memos:false});
   const wasOpen=useRef(false);
   const busy=controller.busy||controller.loading;
   const inventory=controller.data?.inventory;
@@ -59,6 +64,8 @@ export function CadExchangeDialog({controller,defaultFilename}:{controller:Contr
   const generatedObjects=useMemo(()=>inventory?.objects.filter(item=>item.origin==='LOCAL_GENERATED'||item.origin==='SERVER_OUTLINE')??[],[inventory]);
   const localCount=generatedObjects.filter(item=>item.origin==='LOCAL_GENERATED').length;
   const serverCount=generatedObjects.filter(item=>item.origin==='SERVER_OUTLINE').length;
+  const memoObjects=useMemo(()=>inventory?.objects.filter(item=>item.origin==='LOCAL_MEMO'||item.origin==='SERVER_MEMO')??[],[inventory]);
+  const filteredMemos=useMemo(()=>memoObjects.filter(item=>(item.name+' '+item.key).toLocaleLowerCase().includes(memoSearch.toLocaleLowerCase())),[memoObjects,memoSearch]);
   const autoUnit=exchangeSourceUnit(inventory?.scope.sourceUnit??'UNSPECIFIED');
 
   useEffect(()=>{
@@ -67,21 +74,41 @@ export function CadExchangeDialog({controller,defaultFilename}:{controller:Contr
       setLayerSearch('');setLayerPage(0);setGeneratedEnabled(false);setGeneratedMode('all');setChosenKeys([]);
       setObjectSearch('');setObjectPage(0);setUnit('auto');setOriginMode('auto');setOrigin({x:'0',y:'0',z:'0'});
       setAcknowledged(false);setIncludeAllServer(false);
+      setMemosEnabled(false);setMemoMode('all');setChosenMemoKeys([]);setMemoSearch('');setIncludeAllServerMemos(false);
+      setMemoHeight('0.1');setManualMemoHeight(false);
     }
     wasOpen.current=controller.opened;
   },[controller.opened,defaultFilename]);
+  const outlineAvailable=controller.data?.serverAvailable??false,memoAvailable=controller.data?.memoServerAvailable??false;
+  // Adjust this form's private selection before rendering revoked rows. The
+  // coordinator already invalidates its prepared artifact when a group fails.
+  if(privateAvailability.outlines!==outlineAvailable||privateAvailability.memos!==memoAvailable){
+    setPrivateAvailability({outlines:outlineAvailable,memos:memoAvailable});setAcknowledged(false);
+    if(!outlineAvailable){setChosenKeys(keys=>keys.filter(key=>key.startsWith('local:')));setIncludeAllServer(false);}
+    if(!memoAvailable){setChosenMemoKeys(keys=>keys.filter(key=>key.startsWith('memo-local:')));setIncludeAllServerMemos(false);}
+  }
   const invalidate=()=>{controller.invalidate();setAcknowledged(false);};
   const filteredLayers=useMemo(()=>inventory?.layers.filter(name=>name.toLocaleLowerCase().includes(layerSearch.toLocaleLowerCase()))??[],[inventory,layerSearch]);
   const filteredObjects=useMemo(()=>generatedObjects.filter(item=>
     (item.name+' '+item.key).toLocaleLowerCase().includes(objectSearch.toLocaleLowerCase())),[generatedObjects,objectSearch]);
-  const effectiveKeys=includeAllServer&&controller.data?.serverAvailable
-    ?[...new Set([...chosenKeys,...generatedObjects.filter(item=>item.origin==='SERVER_OUTLINE').map(item=>item.key)])]:chosenKeys;
+  const validGeneratedKeys=new Set(generatedObjects.map(item=>item.key));
+  const effectiveKeys=(includeAllServer&&controller.data?.serverAvailable
+    ?[...new Set([...chosenKeys,...generatedObjects.filter(item=>item.origin==='SERVER_OUTLINE').map(item=>item.key)])]:chosenKeys)
+    .filter(key=>validGeneratedKeys.has(key));
+  const validMemoKeys=new Set(memoObjects.map(item=>item.key));
+  const effectiveMemoKeys=(includeAllServerMemos&&controller.data?.memoServerAvailable
+    ?[...new Set([...chosenMemoKeys,...memoObjects.filter(item=>item.origin==='SERVER_MEMO').map(item=>item.key)])]:chosenMemoKeys)
+    .filter(key=>validMemoKeys.has(key));
   const selectedSourceCount=sourceEnabled?sourceObjects.filter(item=>sourceMode==='all'||chosenLayers.includes(item.layer)).length:0;
   const selectedGeneratedCount=generatedEnabled?generatedObjects.filter(item=>generatedMode==='all'||effectiveKeys.includes(item.key)).length:0;
   const effectiveGeneratedEnabled=generatedEnabled&&(generatedMode==='all'?generatedObjects.length>0:effectiveKeys.length>0);
+  const selectedMemoCount=memosEnabled?memoObjects.filter(item=>memoMode==='all'||effectiveMemoKeys.includes(item.key)).length:0;
+  const effectiveMemosEnabled=memosEnabled&&selectedMemoCount>0;
+  const displayedMemoHeight=manualMemoHeight?memoHeight:String(controller.prepared?.memoTextHeightMetres??0.1);
+  const validMemoHeight=!effectiveMemosEnabled||!manualMemoHeight||memoHeight.trim()!==''&&Number.isFinite(Number(memoHeight))&&Number(memoHeight)>=0.001&&Number(memoHeight)<=10;
   const validOrigin=originMode==='auto'||Object.values(origin).every(value=>value.trim()!==''&&Number.isFinite(Number(value))&&Math.abs(Number(value))<=1e12);
   const validUnit=unit!=='auto'||!!autoUnit;
-  const canReview=!!inventory&&!busy&&validOrigin&&validUnit&&(selectedSourceCount+selectedGeneratedCount)>0&&
+  const canReview=!!inventory&&!busy&&validOrigin&&validUnit&&validMemoHeight&&(selectedSourceCount+selectedGeneratedCount+selectedMemoCount)>0&&
     (!sourceEnabled||sourceMode==='all'||chosenLayers.length>0);
   const previewFilename=exchangeFilename(filenameBase,format);
   const prepare=()=>{
@@ -89,10 +116,11 @@ export function CadExchangeDialog({controller,defaultFilename}:{controller:Contr
     const selection:ExchangeSelection={
       dxf:{enabled:sourceEnabled,mode:sourceMode,layers:sourceMode==='layers'?chosenLayers:[]},
       generated:{enabled:effectiveGeneratedEnabled,mode:generatedMode,keys:generatedMode==='selected'?effectiveKeys:[]},
-      memos:{enabled:false,mode:'all',ids:[]},
+      memos:{enabled:effectiveMemosEnabled,mode:memoMode,ids:effectiveMemosEnabled&&memoMode==='selected'?effectiveMemoKeys:[]},
     };
     const options:ExchangeOptions={format,unit,origin:originMode==='auto'?{mode:'auto'}:
-      {mode:'custom',x:Number(origin.x),y:Number(origin.y),z:Number(origin.z)},filenameBase};
+      {mode:'custom',x:Number(origin.x),y:Number(origin.y),z:Number(origin.z)},filenameBase,
+      ...(effectiveMemosEnabled&&manualMemoHeight?{memoTextHeightMetres:Number(memoHeight)}:{})};
     setAcknowledged(false);void controller.prepare(selection,options);
   };
   const toggleServer=async(checked:boolean)=>{
@@ -104,6 +132,14 @@ export function CadExchangeDialog({controller,defaultFilename}:{controller:Contr
       setIncludeAllServer(true);setGeneratedEnabled(true);setGeneratedMode('selected');
     }}else{setIncludeAllServer(false);controller.excludeServer();setChosenKeys(previous=>previous.filter(key=>!key.startsWith('server:')));
       if(generatedMode==='selected'&&!chosenKeys.some(key=>key.startsWith('local:')))setGeneratedEnabled(false);}
+  };
+  const toggleServerMemos=async(checked:boolean)=>{
+    invalidate();
+    if(checked){const loaded=await controller.loadServerMemos();if(loaded){
+      const includedLocal=!memosEnabled?[]:memoMode==='all'?memoObjects.filter(item=>item.origin==='LOCAL_MEMO').map(item=>item.key):effectiveMemoKeys.filter(key=>key.startsWith('memo-local:'));
+      setChosenMemoKeys(includedLocal);setIncludeAllServerMemos(true);setMemosEnabled(true);setMemoMode('selected');
+    }}else{setIncludeAllServerMemos(false);controller.excludeServerMemos();setChosenMemoKeys(keys=>keys.filter(key=>key.startsWith('memo-local:')));
+      if(memoMode==='selected'&&!effectiveMemoKeys.some(key=>key.startsWith('memo-local:')))setMemosEnabled(false);}
   };
   if(!controller.opened)return null;
   return <Dialog.Root open onOpenChange={open=>{if(!open)controller.close();}}>
@@ -180,7 +216,44 @@ export function CadExchangeDialog({controller,defaultFilename}:{controller:Contr
               </>}
             </div>}
           </fieldset>
-          <fieldset disabled className="rounded-lg border border-slate-200 p-3 opacity-60"><legend className="px-1 font-semibold">메모</legend><CheckRow checked={false} disabled onChange={()=>{}}>메모 내보내기는 아직 지원하지 않습니다.</CheckRow></fieldset>
+          <fieldset disabled={busy} className="space-y-2 rounded-lg border border-slate-200 p-3">
+            <legend className="px-1 font-semibold">메모</legend>
+            <CheckRow checked={memosEnabled} onChange={checked=>{invalidate();setMemosEnabled(checked);}} testId="cad-exchange-memos-enable">
+              메모 포함 · 브라우저 {memoObjects.filter(item=>item.origin==='LOCAL_MEMO').length}개 · 서버 {memoObjects.filter(item=>item.origin==='SERVER_MEMO').length}개
+            </CheckRow>
+            <CheckRow checked={controller.data?.memoServerAvailable??false} disabled={!controller.data?.canLoadMemos}
+              onChange={checked=>void toggleServerMemos(checked)} testId="cad-exchange-server-memos-enable">권한 있는 서버 메모 조회·포함</CheckRow>
+            {controller.data?.memoServerReason&&<p className="pl-2 text-xs text-slate-600">{controller.data.memoServerReason}</p>}
+            <p className="pl-2 text-xs text-slate-600">숨긴 메모도 명시적으로 포함할 수 있습니다. 제목·본문은 한글 텍스처와 핀·연결선으로 표시하며, 화면의 라벨 간격 대신 지정한 글자 높이에 비례해 배치합니다.</p>
+            {memosEnabled&&<div className="space-y-2 pl-2">
+              <div className="flex flex-wrap gap-3 text-sm">
+                <label className="flex min-h-11 items-center gap-2"><input type="radio" name="exchange-memo-mode" checked={memoMode==='all'} onChange={()=>{invalidate();setMemoMode('all');}} />전체 메모</label>
+                <label className="flex min-h-11 items-center gap-2"><input type="radio" name="exchange-memo-mode" checked={memoMode==='selected'} onChange={()=>{invalidate();setMemoMode('selected');}} />메모 선택</label>
+              </div>
+              {memoMode==='selected'&&<>
+                <div className="flex flex-wrap gap-2">
+                  <input type="search" aria-label="내보낼 메모 검색" value={memoSearch} onChange={event=>setMemoSearch(event.target.value)} className="min-h-11 min-w-0 flex-1 rounded-md border border-slate-300 px-3 text-sm" />
+                  <Button type="button" variant="outline" className="min-h-11" onClick={()=>{invalidate();setIncludeAllServerMemos(false);setChosenMemoKeys(memoObjects.map(item=>item.key));}}>메모 전체 선택</Button>
+                  <Button type="button" variant="outline" className="min-h-11" onClick={()=>{invalidate();setIncludeAllServerMemos(false);setChosenMemoKeys([]);}}>메모 전체 해제</Button>
+                </div>
+                <div className="max-h-44 overflow-y-auto rounded-md border border-slate-200">
+                  {filteredMemos.map(item=><CheckRow key={item.key} checked={effectiveMemoKeys.includes(item.key)} onChange={checked=>{
+                    invalidate();setIncludeAllServerMemos(false);setChosenMemoKeys(checked?[...new Set([...effectiveMemoKeys,item.key])]:effectiveMemoKeys.filter(key=>key!==item.key));
+                  }}><span className="mr-2 rounded bg-slate-100 px-1.5 py-0.5 text-xs">{item.origin==='LOCAL_MEMO'?'브라우저 메모':'서버 메모'}</span>{item.name}</CheckRow>)}
+                  {!filteredMemos.length&&<p className="p-3 text-sm text-slate-600">포함할 메모가 없습니다.</p>}
+                </div>
+              </>}
+              <div className="flex flex-wrap items-end gap-2">
+                <label className="min-w-0 flex-1 space-y-1 text-sm">메모 글자 높이 (m)
+                  <input type="number" step="any" min="0.001" max="10" value={displayedMemoHeight} onChange={event=>{invalidate();setMemoHeight(event.target.value);setManualMemoHeight(true);}}
+                    className="min-h-11 w-full rounded-md border border-slate-300 px-3" data-testid="cad-exchange-memo-height" />
+                </label>
+                <Button type="button" variant="outline" className="min-h-11" onClick={()=>{invalidate();setManualMemoHeight(false);}}>글자 높이 자동</Button>
+              </div>
+              <p className="text-xs text-slate-600">{manualMemoHeight?'직접 지정한 값을 유지합니다.':controller.prepared?.memoTextHeightMetres!==undefined?'선택한 형상 크기로 계산한 자동 높이입니다.':'자동 임시값 0.1m · 포함 범위 확인 시 선택한 형상 크기로 계산합니다.'}</p>
+              {!validMemoHeight&&<p role="alert" className="text-sm text-rose-800">메모 글자 높이는 0.001~10m의 유한한 수치로 입력하세요.</p>}
+            </div>}
+          </fieldset>
           <fieldset disabled={busy} className="grid gap-3 rounded-lg border border-slate-200 p-3 sm:grid-cols-2">
             <legend className="px-1 font-semibold">파일과 좌표</legend>
             <label className="space-y-1 text-sm">형식<select value={format} onChange={event=>{invalidate();setFormat(event.target.value as 'glb'|'gltf');}} className="min-h-11 w-full rounded-md border border-slate-300 px-3"><option value="glb">GLB (.glb)</option><option value="gltf">단일 embedded glTF (.gltf)</option></select></label>
@@ -191,12 +264,14 @@ export function CadExchangeDialog({controller,defaultFilename}:{controller:Contr
             <label className="space-y-1 text-sm">원점<select value={originMode} onChange={event=>{invalidate();setOriginMode(event.target.value as 'auto'|'custom');}} className="min-h-11 w-full rounded-md border border-slate-300 px-3"><option value="auto">선택 형상 중심</option><option value="custom">직접 입력 (원본 WCS)</option></select></label>
             {originMode==='custom'&&<div className="grid grid-cols-3 gap-2 sm:col-span-2">{(['x','y','z'] as const).map(axis=><label key={axis} className="space-y-1 text-sm">{axis.toUpperCase()}<input type="number" step="any" value={origin[axis]} onChange={event=>{invalidate();setOrigin(previous=>({...previous,[axis]:event.target.value}));}} className="min-h-11 w-full min-w-0 rounded-md border border-slate-300 px-2" /></label>)}</div>}
             <p className="text-xs text-slate-600 sm:col-span-2">예상 파일명: {previewFilename} · 원본 단위 {inventory.scope.sourceUnit} → 미터 · XY 평면 → glTF XZ 평면</p>
+            <p className="text-xs text-amber-900 sm:col-span-2">정밀도 수치는 현재 렌더 형상 대비 추가 변환 오차입니다. 렌더러가 이미 잃은 원본 CAD 정밀도는 복구할 수 없습니다.</p>
             {!validUnit&&<p role="alert" className="text-sm text-amber-800 sm:col-span-2">원본 단위가 0·미상·미지원 값입니다. inch, foot, mm, cm, m 중 하나를 명시하세요.</p>}
             {!validOrigin&&<p role="alert" className="text-sm text-rose-800 sm:col-span-2">원점 X/Y/Z에 유한한 WCS 수치를 입력하세요.</p>}
           </fieldset>
           {controller.prepared&&<section data-testid="cad-exchange-preview" className="space-y-2 rounded-lg border border-teal-300 bg-teal-50 p-3 text-sm">
             <h3 className="font-semibold">포함 범위 확인 결과</h3>
-            <p>지원 산출 개체 {controller.prepared.included}개 · 추가 개체 {controller.prepared.generated}개 · 제외 {controller.prepared.preview.excluded}개</p>
+            <p>지원 산출 개체 {controller.prepared.included}개 · 추가 개체 {controller.prepared.generated}개 · 메모 {controller.prepared.memos}개 · 제외 {controller.prepared.preview.excluded}개</p>
+            {controller.prepared.memos>0&&<p>메모 글자 높이 {controller.prepared.memoTextHeightMetres}m · 연결이 끊긴 메모는 마지막 확인 위치를 사용합니다.</p>}
             <div className="max-h-44 overflow-y-auto rounded border border-teal-200 bg-white">
               {controller.prepared.preview.layers.map(row=><div key={row.layer} className="border-b border-slate-100 px-2 py-2 last:border-0">
                 <strong>{row.layer}</strong> · 렌더 객체 포함 {row.accepted} / 제외 {row.excluded}

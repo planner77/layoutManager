@@ -181,7 +181,8 @@ export class MemoSessionSnapStore {
   return b?{mode:'BROKEN_ANCHOR',ref:b.ref,kind:b.kind,local:b.local,world:b.lastWorld,
    persistence:'SESSION_ONLY'}:null;
  }
- reconcile(targets:readonly MemoSnapTarget[]):Readonly<Record<string,SessionSnapProjection>>{
+ /** Read-only export projection: observing a target never advances lastWorld. */
+ snapshot(targets:readonly MemoSnapTarget[]):Readonly<Record<string,SessionSnapProjection>>{
   const live=new Map(targets.filter(t=>validRef(t.ref,this.scope))
    .map(t=>[t.ref.origin+':'+t.ref.id,t]));
   const projected:Record<string,SessionSnapProjection>={};
@@ -189,11 +190,22 @@ export class MemoSessionSnapStore {
    const target=live.get(b.ref.origin+':'+b.ref.id);
    let mode:SessionSnapProjection['mode']='BROKEN_ANCHOR',world=b.lastWorld;
    if(target&&!b.forcedBreak){
-    try{world=projectAffine(target.transform,b.local);mode='ATTACHED';}
+    try{
+     const next=projectAffine(target.transform,b.local);
+     invertAffine(target.transform,next);
+     world=next;mode='ATTACHED';
+    }
     catch{/* keep last resolved world and never auto-snap to another target */}
    }
-   this.connections.set(memoId,{...b,lastWorld:world});
-   projected[memoId]={mode,ref:b.ref,local:b.local,world,kind:b.kind,persistence:'SESSION_ONLY'};
+   projected[memoId]={mode,ref:{...b.ref},local:{...b.local},world:{...world},kind:b.kind,persistence:'SESSION_ONLY'};
+  }
+  return projected;
+ }
+ reconcile(targets:readonly MemoSnapTarget[]):Readonly<Record<string,SessionSnapProjection>>{
+  const projected=this.snapshot(targets);
+  for(const [memoId,projection]of Object.entries(projected)){
+   const binding=this.connections.get(memoId);
+   if(binding)this.connections.set(memoId,{...binding,lastWorld:projection.world});
   }
   return projected;
  }

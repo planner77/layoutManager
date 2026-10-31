@@ -1,4 +1,6 @@
-## R5 #91 — 읽기 전용 교환, Schema 불변 (구현 전, 2026-11-01)
+## R5 #91 — 읽기 전용 교환, Schema 불변 (0.54 후보, 2026-11-01)
+
+R5b는 기존 Memo GET에 actorId/versionId/sourceSha256/sceneRevision 응답 envelope를 호환 추가했다. 목록과 인가 proof는 같은 transaction에서 읽고 응답 전 재검사한다. 이는 API 읽기 계약이며 DDL이나 새 서버 저장이 아니다. 기존 memos/groups/featuresAvailable·optional feature/anchor 경로와 허가된 DWG 빈 조회를 유지한다.
 
 R5a/b는새Table/Column/Index/Trigger/migration/baseline·서버파일저장을추가하지않는다. 현존인가GET으로조회한liveOutline/MemoDTO를현재Actor/Version/SHA/revision에묶어browser에서만교환파일로만든다. read필요에기존인증session last_seen가변할수있으나업무Outline/Memo/Audit/Current/원본데이터는수정하지않는다. #172owner쓰기정책이나삭제필터를바꾸지않고exportextras를영속인증/Sourceattestation으로사용하지않는다. 시험은업무DB fingerprint 불변을인증운영필드와구분한다.
 

@@ -1,10 +1,11 @@
 import { CadError, validateId } from '@/domain/cad';
 import { failure, boundedJson } from '@/server/http';
 import { RequestLogContext } from '@/server/logger';
-import { sceneReadContext, requireSceneRead } from '@/server/scene/scene-context';
+import { sceneReadContext } from '@/server/scene/scene-context';
 import { cadWriteContext } from '@/server/g7-operational/cad-preview-context';
 import { recordG7WriteFailure } from '@/server/g7-operational/cad-guard';
-import { BusinessRepository, requireBusinessWrite } from '@/server/cad-business/service';
+import { BusinessRepository,requireBusinessWrite } from '@/server/cad-business/service';
+import {authorizedMemoList} from '@/server/cad-business/authorized-memo-read';
 export const runtime='nodejs';
 type Params={params:Promise<{versionId:string}>};
 export async function GET(request:Request,{params}:Params){
@@ -14,8 +15,7 @@ export async function GET(request:Request,{params}:Params){
   const id=validateId((await params).versionId);
   ctx=sceneReadContext(request);
   if(ctx.gate.state!=='ACTIVE')throw new CadError('BUSINESS_AUTH_REQUIRED','로그인이 필요합니다.',401);
-  await requireSceneRead(request,ctx.repo.db,id,ctx.gate,'memo:read');
-  const result=await new BusinessRepository(ctx.repo.db).list('memo',id);
+  const result=await authorizedMemoList(ctx.repo.db,request,id,ctx.gate);
   log.completed(200);return Response.json(result,{headers:log.responseHeaders({'Cache-Control':'private, no-store'})});
  }catch(error){return failure(error,{request:log});}finally{await ctx?.close();}
 }

@@ -1,10 +1,10 @@
-## #91 교환 파일 내보내기 변경 시 (0.53.0 후보)
+## #91 교환 파일 내보내기 변경 시 (0.54.0 후보)
 
-- 선택 범위·snapshot·단위·누락·인가·취소를 바꾸기 전에 [Architecture R5](out/Architecture.md)와 [TestPlan R5](out/TestPlan.md)를 읽는다. 실제 수용·실패·게시 상태는 [TestReport](out/TestReport.md)와 [FailureLedger](out/FailureLedger.md)를 따른다.
-- 공개 Source/local Generated export는 ACTIVE 익명·OFF/BLOCKED에서도 가능하다. 서버 그룹은 사용자가 선택한 뒤 fresh actor/보호된 GET/revision을 전후 확인한다. 현재 render baseline과 Generated effective geometry를 구분하고 Viewer/원본/DB를 보존한다.
-- three-dxf-viewer는 별도 Three constructor를 번들한다. geometry 경계는 flag만 신뢰하지 말고 구조·attribute·index·material·범위 한도를 검증한다. 실제 library 객체 회귀를 유지한다.
-- R5a core의 합성/Browser 결과와 R5b visible Memo·혼합 UX/취소 자원 gate를 구분한다. R5b는 R5a 게시 뒤 별도0.54 stacked branch에서 진행하며 전체 #91 수용 기준은 TestPlan이다. 현재 R5a 로컬 gate는 전체unit858·General128·Greenfield17·Auth/Legacy 각1 및 정적/build PASS로 수용했고 Draft PR GO다. 게시·새 CI는 Root 후속이며 R5b 구현은 아직 시작하지 않았다.
-- Manager는 계약·source review·수용, Developer는 core/adapter 및 Root가 배정한 modal, Root는 authority/hook/Viewer·전체 gate·게시, 독립 QA는 별도 core/General 검증을 담당한다. 정확한 실행 역할·결과를 TestReport에 남긴다.
+- 선택/snapshot·글자 높이·단위·누락·인가·font/PNG·취소를 바꾸기 전에 [Architecture R5b](out/Architecture.md)와 [TestPlan TC-R5B](out/TestPlan.md)를 읽는다. 실제 수용·실패·게시 상태의 단일 기준은 [TestReport](out/TestReport.md)/[FailureLedger](out/FailureLedger.md)다.
+- 공개 Source/local export와 명시 opt-in 서버 조회를 구분한다. 실제 GET actor/scope envelope와 선택 row proof를 전후 확인하고, Memo projection은 read-only snapshot으로 캡처한다. schema/쓰기 정책은 기존 계약을 유지한다.
+- 별도 Three constructor geometry는 구조 검증과 실제 library 회귀를 유지한다. 한글 annotation은 extras/픽셀 개수뿐 아니라 실제 새 Loader의 upright 렌더로 검증한다. native encoder mutex와 owned 정리, FontFace 취소 한계는 Operation을 따른다.
+- 기반 R5a PR184/정확9accf8b CI Verify·Docker SUCCESS다. R5b는 BUILD2/type/lint·unit883·General146·Greenfield21·Auth/Legacy 각1 및 계측으로 LOCAL CODE+SYNTHETIC ACCEPT/Draft GO다. 게시·새 원격 CI/현장·Owner 수용은 후속이다. 이전 수직 반전 실패를 새 결과와 구분한다.
+- Manager는 계약·source 수용·문서, Developer는 core/서버 및 명시 배정한 lifecycle 시험, Root는 client/UI·권한/전체 gate·게시, QA는 독립 General/시각 검증을 담당한다. 실제 실행 주체를 정확히 기록한다.
 
 ---
 

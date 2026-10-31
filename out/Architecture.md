@@ -1,6 +1,26 @@
-## R5b #91 — Memo snapshot/texture seam (설계만, 2026-11-01)
+## R5b 구현 bridge / 로컬 코드·합성 수용 (2026-11-01)
+
+기반은 게시된 R5a `9accf8ba3e21f2d51dc7694e768f19c75fffb5d5`이며0.54.0 작업에서 아래 bridge를 공유한다. R5a 정확 HEAD CI는 성공했고 R5b 코드·합성 로컬 수용을 마쳤다. 새 R5b 게시·CI 및 현장 수용은 TestReport 실제 결과로 구분한다.
+
+- `ExchangeSnapshot.memos?:readonly ExchangeMemoInput[]`는 생략 시 빈 배열이다. `ExchangeOrigin`은 `LOCAL_MEMO|SERVER_MEMO`를 추가한다. 기존 primitive/Generated 계약과 동작은 유지한다.
+- `ExchangeMemoInput`은 `{key,id,origin,revision,title,content,anchorWcs:{x,y,z:0},anchorMode:'CANONICAL'|'SESSION'|'BROKEN',broken,settings:MemoSettings}`다. key는 `memo-local:<id>` 또는 `memo-server:<id>`이고 origin과 일치해야 한다. Server revision은 0 이상의 안전 정수(신규 Memo revision0 포함), local은 null이다. settings는 기존 MemoSettings를 받아 artifact에서 활성 값만 whitelist한다. labelOffset/actor/group/raw DTO를 추가하지 않는다.
+- 기존 `selection.memos.ids`는 raw ID가 아니라 위 namespaced key 목록이다. `all`도 frozen snapshot의 허가된 전체 Memo에만 적용한다. enabled=false면 Memo0이며 stale selected key, 중복 key, 지원0은 명시 오류다. Inventory objects에 같은 Memo key/origin/name을 넣고 Memo namespace layer를 사용한다. 기존 Generated 필터는 Memo를 혼입하지 않는다.
+- `ExchangeOptions.memoTextHeightMetres?:number`는 Memo 포함 시 필수이며 finite **0.001..10m** 범위다. UI 초기값은 선택된 DXF/Generated extent를 미터로 환산한 최대 폭/60을 **0.01..1m**로 clamp하고, Memo-only 또는 유효 extent0이면 **0.1m**다. 최초 UI는0.1m를 잠정 AUTO값으로 표시하고 `포함 범위 확인 시 계산`이라고 명시한다. 기존 prepare에서 실제 선택된 DXF/local 및 fresh server 기하의 정확 extent로 자동값을 계산한 뒤 inspect/fingerprint 전에 명시 옵션으로 전달한다. 실제 높이는 preview/부분 동의/download 전에 입력에 반영한다. 기본값 표시만을 위한 추가 보호 GET은 하지 않는다. 사용자 직접 편집은 해당 dialog 세션을 MANUAL로 바꾸고 선택 변경에도 값을 유지한다. AUTO에서 선택이 바뀌면 이전 preview/동의를 무효화하고 다음 prepare에서 재계산한다. Fingerprint에는 정규화 Memo 내용/위치/설정/선택과 글자 높이를 포함한다.
+- `ExchangeBuildContext.onStage`는 기존 `prepare|serialize|complete`에 `font|rasterize`를 추가한다. PNG 작업은 rasterize 단계이며 signal을 각 await 뒤 검사한다. 기존 inspect는 동기·순수로 Memo 선택/기하/문자길이/옵션 한도를 검증하고, font/canvas는 실제 비동기 export 단계에서만 실행한다. 숨은 PNG 준비나 성공 전 download는 없다.
+- Raster 기본은 본문32px·제목40px, line-height1.35, padding16px, 최대 폭2048px의 실제 font measureText/codepoint wrapping이다. 필요한 전체 크기를 계산한 후 canvas를 할당하고 개별2048²·총8,388,608px·decoded64MiB·최종32MiB를 초과하면 오류다. font timeout은15초이며 취소와 구분한다. Text 전체 보존, 잘라내기/몰래 축소 금지다. WCS 높이는 본문 em32px를 지정 미터 높이에 대응하며 제목은1.25배다. leader는 anchor→label의 글자높이 비례 고정 offset(+2h,+2h)으로 시작하고 원본 CSS offset은 무시한다고 고지한다.
+- Developer 소유: domain cad-exchange 및 core snapshot/export·font/raster/annotation 신규 모듈·관련 unit/Loader 시험, 기존 Memo GET envelope 및 서버 read service/관련 시험. Root 소유: client authority/Viewer Memo proof collector/hook/dialog/Browser 및 package version. 같은 파일의 병행 수정은 하지 않는다. Manager는 문서와 source 수용, QA는 독립 검증이다.
+
+아래 세부 계약과 TC-R5B-01–10을 필수 수용 조건으로 유지한다. 타입/API 변경이 더 필요하면 구현 전에 Manager/Root에게 정확한 diff를 제안한다.
+
+## R5b #91 — Memo snapshot/texture seam (0.54 구현 계약, 2026-11-01)
 
 R5a 브랜치에는 아래 runtime을 구현하지 않는다. R5a 실제 gate 후0.54 stacked branch에서 Manager GO와 함께 타입 bridge를 먼저 확정한다. Developer는 순수 Memo export schema/whitelist·font rasterizer·owned annotation builder·Loader 시험을 담당하고, Root는 Viewer Memo snapshot bridge·현재 actor/fresh Memo 조회·hook/modal·Browser 통합을 담당한다. QA는 별도 source 및 Browser 검증이다. 새 서버 route/DB/영속 Scene schema는 추가하지 않는다. 기존 Memo GET의 읽기 응답에 아래 인가 envelope만 호환 확장한다.
+
+### Read-only projection과 inspect 보완
+
+Root는 `MemoSessionSnapStore.snapshot(targets)`를 추가해 현재 projection을 mutation 없이 읽는다. `reconcile`과 동일 projection 계산을 공유하되 `lastWorld` 업데이트는 기존 `reconcile`만 수행한다. Export는 `reconcile`을 호출하지 않는다. forcedBreak/singular/BROKEN 마지막 WCS 의미를 보존하고 snapshot 전후 binding/lastWorld/epoch 및 반복 호출 불변성을 focused test로 검증한다. 이 domain 파일과 시험은 Root 소유이며 Developer core 파일과 겹치지 않는다.
+
+Root collector는 선택된 Memo key의 proof만 job fingerprint로 검증한다. 선택하지 않은 Memo의 변경이 공개 Source-only 내보내기를 막지 않는다. 유효 SESSION binding이 있는 row의 revision/content가 fresh row와 다르면 fail하며 canonical fallback은 금지한다. 현재 binding이 없는 fresh row는 canonical을 사용할 수 있다. Developer의 `inspectExchangeSnapshot(snapshot,options?)`는 호환 확장으로 허용한다. 기존 Memo 없는 한 인수 호출은 유지하고 Memo 선택 시에는 명시 height 옵션이 필요하다.
 
 ### 현재 구조와 immutable Memo proof
 

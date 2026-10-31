@@ -71,13 +71,26 @@ describe('R5 exchange core',()=>{
   const fmt={...options,format:'gltf' as const};const artifact=await buildExchangeArtifact(snap,{...fmt,partialAck:exchangeOptionsFingerprint(snap,fmt)});
   const json=JSON.parse(new TextDecoder().decode(artifact.bytes));
   expect(json.asset.version).toBe('2.0');expect(json.buffers.every((b:{uri:string})=>b.uri.startsWith('data:'))).toBe(true);
+  expect(json.scenes[0].extras).toMatchObject({versionId:source.versionId,sourceSha256:source.sourceSha256,
+   precisionBasis:'RENDERER_SNAPSHOT_ADDITIONAL_FLOAT32'});
+  expect(json.scenes[0].extras.precisionWarning).toContain('복구하지 못합니다');
   const restored=(await new GLTFLoader().parseAsync(new TextDecoder().decode(artifact.bytes),'')).scene;
+  expect(restored.userData.precisionWarning).toContain('복구하지 못합니다');
   let triangles=0,area=0;restored.traverse(o=>{if(!(o instanceof THREE.Mesh))return;
    const p=o.geometry.getAttribute('position'),idx=o.geometry.getIndex();const ids=idx?Array.from(idx.array):Array.from({length:p.count},(_,i)=>i);
    triangles+=ids.length/3;for(let i=0;i<ids.length;i+=3){const a=ids[i],b=ids[i+1],c=ids[i+2];area+=Math.abs((p.getX(b)-p.getX(a))*(p.getZ(c)-p.getZ(a))-(p.getZ(b)-p.getZ(a))*(p.getX(c)-p.getX(a)))/2;}
   });
   expect(triangles).toBeGreaterThan(0);expect(area).toBeCloseTo(96e-6,9);
   expect(JSON.stringify(json)).toContain('outlineTypeName');
+  const binary={...options,format:'glb' as const};
+  const glb=await buildExchangeArtifact(snap,{...binary,partialAck:exchangeOptionsFingerprint(snap,binary)});
+  const glbView=new DataView(glb.bytes.buffer,glb.bytes.byteOffset,glb.bytes.byteLength);
+  const glbJson=JSON.parse(new TextDecoder().decode(glb.bytes.subarray(20,20+glbView.getUint32(12,true))));
+  expect(glbJson.scenes[0].extras).toMatchObject({versionId:source.versionId,sourceSha256:source.sourceSha256,
+   precisionBasis:'RENDERER_SNAPSHOT_ADDITIONAL_FLOAT32'});
+  expect(glbJson.scenes[0].extras.precisionWarning).toContain('복구하지 못합니다');
+  const glbLoaded=(await new GLTFLoader().parseAsync(glb.bytes.buffer.slice(glb.bytes.byteOffset,glb.bytes.byteOffset+glb.bytes.byteLength) as ArrayBuffer,'')).scene;
+  expect(glbLoaded.userData.precisionWarning).toContain('복구하지 못합니다');
  });
  test('drawRange and material groups export only rendered triangle with correct material',()=>{
   const {root,baseline,mesh}=scene();
