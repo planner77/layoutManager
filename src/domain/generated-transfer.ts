@@ -81,7 +81,9 @@ export type GeneratedTransferParsed=Readonly<{
 export function parseGeneratedTransfer(input:unknown,scope:CanvasObjectScope,
  expectedUnitCode:number|null):GeneratedTransferParsed{
  if(!validCanvasScope(scope))throw new Error('검증된 Version/SHA 범위가 필요합니다.');
- if(JSON.stringify(input).length>GENERATED_TRANSFER_MAX_BYTES)
+ const serialized=JSON.stringify(input);
+ if(typeof serialized!=='string')throw new Error('생성 개체 JSON 객체가 필요합니다.');
+ if(new TextEncoder().encode(serialized).byteLength>GENERATED_TRANSFER_MAX_BYTES)
    throw new Error('생성 개체 JSON 파일이 12 MiB를 초과합니다.');
  const root=row(input);
  if(root.versionId!==scope.versionId||
@@ -146,7 +148,7 @@ export function parseGeneratedTransfer(input:unknown,scope:CanvasObjectScope,
    if(!Array.isArray(object.transform)||object.transform.length!==6||
       !object.transform.every(v=>finite(v,4e12)))
      throw new Error('2D Affine 변환이 유효하지 않습니다.');
-   const matrix=object.transform as Affine2D;
+   const matrix=object.transform as unknown as Affine2D;
    // Geometry is NEVER accepted on trust. It must match the reconstructed edit.
    const recomputed=applyAffine(geometry,matrix);
    validatedGeneratedGeometry(recomputed);

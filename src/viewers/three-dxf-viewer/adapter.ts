@@ -632,7 +632,9 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
       const canvasRect=this.renderer.domElement.getBoundingClientRect();
       const containerRect=this.container.getBoundingClientRect();
       const x=canvasRect.left-containerRect.left+at.x;
-      const y=canvasRect.top-containerRect.top+at.y-36;
+      const anchorY=canvasRect.top-containerRect.top+at.y;
+      // A fitted drawing often leaves <36px margin above its bbox.
+      const y=anchorY>=44?anchorY-30:anchorY+30;
       if(!Number.isFinite(x)||!Number.isFinite(y)||x<16||y<16||
          x>containerRect.width-16||y>containerRect.height-16)return;
       handle.style.left=x+'px';handle.style.top=y+'px';

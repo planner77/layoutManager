@@ -296,6 +296,8 @@ export class GeneratedDocument{
         ? Object.freeze({type:'Translate',dx:command.dx,dy:command.dy})
         : Object.freeze({type:'Rotate',angleDegrees:command.angleDegrees,
             pivot:Object.freeze([...command.pivot]) as readonly [number,number]});
+      if(row.entry.transformOperations.length>=64)
+        throw new Error('생성 개체 허용 변환 작업은 최대 64회입니다. JSON 복원과 동일한 상한입니다.');
       const transformOperations=Object.freeze([...row.entry.transformOperations,operation]);
       // Validate EVERY geometry before committing ANY; base geometry never changes.
       applyAffine(row.entry.baseGeometry,next);
@@ -421,8 +423,7 @@ export class GeneratedDocument{
       const baseResult=freezeResult(input.baseResult);
       const recomputed=input.transformOperations.reduce<Affine2D>(
         (current,operation)=>composeAffine(generatedRigidMatrix(operation),current),IDENTITY_2D);
-      if(recomputed.some((n,i)=>Math.abs(n-input.transform[i])>
-        1e-10*Math.max(1,Math.abs(n),Math.abs(input.transform[i]))))
+      if(recomputed.some((n,i)=>n!==input.transform[i]))
         throw new Error('허용 작업과 Affine 변환이 일치하지 않습니다.');
       const geometry=applyAffine(baseResult.geometry,recomputed);
       validatedGeneratedGeometry(geometry);
