@@ -1,3 +1,9 @@
+## ADR #88/#90 — 고정 Memo 딥링크와 인증된 SQLite 조회 (2026-10-31)
+
+고정 UUIDv4 Version+Memo 링크만 허용하고 URL 자체를 권한으로 보지 않는다. 비활성/삭제/깨진 앵커/Version·SHA 오류 시 포커스 금지. 전역 검색은 별도 `target=memos` UI로 기존 도면 Current-only 경계를 보존하고 G7 site-limited `Prisma.sql` JOIN 및 `instr(lower())`를 사용한다. 검색 성능 미측정이므로 FTS5/스키마 인덱스 변경을 추정으로 도입하지 않는다. 한글 NFC와 ASCII 영문 case-folding에 한정. [Issues88-90](Issues88-90.md).
+
+---
+
 ## ADR — #85/#86 WebGL Canvas 레이어 복원 E2E의 비교 기준 (2026-10-31)
 
 - 배경: PR #175 CI #41139632431에서는 Layer/UI와 원본 선이 정상 복원된 Trace에도 Canvas PNG 전체 바이트 `Buffer.equals`가 2건 실패했다. CSS fullscreen/Drawer/페이지 스크롤에 따른 1~3 px 크기 차이나 WebGL AA 변화는 소스 Layer 불변을 위반하지 않는다.

@@ -1,3 +1,9 @@
+## #88/#90 M6/M7 DB 불변성 (2026-10-31)
+
+신규 DB 객체/Prisma 마이그레이션/Greenfield baseline/트리거 변경 **없음**. 기존 live CadMemo+Version의 동일 SHA, Location/Building/Site/Product/BusinessUnit 및 User, optional M4/M5 Feature/Group JOIN. 동일 signed Site 조건에서 Count+Page를 트랜잭션 조회하며 Page25/50/100; soft delete, inactive Site, 기타 Site 누출 금지. 기존 `ix_cad_memo_version_live` 포함 인덱스 활용, 100k 검색 성능 측정 전 신규 FTS 없음. [Issues88-90](Issues88-90.md).
+
+---
+
 ## #85/#86 new EMPTY G7 Memo sidecars (2026-10-31)
 
 G7-GREENFIELD-MEMO-M45-20261031-1 / 202610310002_greenfield_memo_m45_baseline adds CadMemoGroup (UUID, Version/SHA, owner, Revision, soft delete), CadMemoFeature (Memo UUID PK/FK, group FK, visible, schedule flags/date-only, completion status/server UTC), indexes and immutable triggers. Historical Business/Anchor SQL fingerprints remain intact; no legacy ALTER/adoption. [Spec](Issues85-86.md).
