@@ -1,3 +1,12 @@
+## PR #179 — v0.48.0 중복 릴리스 차단 및 v0.48.1 PR 재검증 (2026-10-31)
+
+- [PR CI Run 41203460377](https://github.com/planner77/layoutManager/actions/runs/41203460377) 정확 HEAD `ac285b690f4b57cf2fca89cb10f9f029308b0987` Verify Job `124543839312` 및 Docker Job `124543839619` 모두 **completed/SUCCESS**. 이전 2개 실패 Run 41194360963/41202514157은 [FailureLedger](out/FailureLedger.md)에 이력 보존.
+- 해당 HEAD의 `src/package.json`은 0.48.0이지만 `v0.48.0` 태그는 이미 Main `56221f8d4fc0d80622fa1fced85a56b53d1eb213`을 가리키는 기존 Release (tag object `4d5163ab...`). Main CI publish workflow는 기존 동일 버전 App/Migrator 이미지가 있을 때 publish를 생략하므로, 이미 릴리스된 버전 tag/image를 강제 재지정하거나 `latest`만 덮어쓰지 않는다.
+- 정식 #58/#59 신규 GHCR 게시를 위해 `src/package.json`과 `src/package-lock.json`의 root/version을 **0.48.1**로 함께 변경했고, `v0.48.1` ref 사전 조회 결과 404(미존재). **버전 변경은 새 HEAD**이므로 기존 성공 PR CI를 자동 승계하지 않고 최종 HEAD의 새 PR CI 두 Job SUCCESS를 검증한 다음에만 Owner Managed Squash Merge/Issue 종료/Main CI GHCR 릴리스로 진행한다.
+- 새 PR CI 모니터링은 사용자 요청에 따라 생략. 새 CI가 완료됐다고 주장하지 않는다. 실패 원장·리뷰 스레드/충돌 상태를 최종 인계 코멘트에 명시한다. 실제 GHCR App/Migrator Digest/보존 여부는 Main Release 완료 전 미검증이며 G7/DB/운영 Volume에 손대지 않는다.
+
+---
+
 ## PR #179 — 2차 CI 실패의 Test/Legacy Docker 원인 (2026-10-31)
 
 - [Run 41202514157](https://github.com/planner77/layoutManager/actions/runs/41202514157) / 정확 HEAD `2484115a60100abb8f1e5b289f281fedbc4e0214`: Verify Job 124541002048에서 Typecheck·ESLint SUCCESS, Vitest 108파일 중 106 PASS/2 FAIL (710 테스트 중 708 PASS/2 FAIL). OCI/Benchmark/Next Build/Chromium/G7 E2E는 SKIPPED. Docker Job 124541002124에서 원본 Main Dockerfile로 최신 PR source를 빌드하는 baseline migrator가 새 `logger.ts -> ./logging/store` import를 패키징하지 않아 `ERR_MODULE_NOT_FOUND`; Phase1/Current runtime·Migration Smoke는 SKIPPED. 첫 CI TS2345는 재발하지 않음.

@@ -1,3 +1,17 @@
+## PR #179 — 최종 PR CI SUCCESS / v0.48.0 릴리스 충돌 확인 및 v0.48.1 재검증 게이트 (2026-10-31 KST)
+
+### 검증된 성공 HEAD·Run
+- [PR #179](https://github.com/planner77/layoutManager/pull/179) 이전 최종 HEAD `ac285b690f4b57cf2fca89cb10f9f029308b0987`의 [PR CI Run 41203460377](https://github.com/planner77/layoutManager/actions/runs/41203460377) **completed/SUCCESS**. Verify [Job 124543839312](https://github.com/planner77/layoutManager/actions/runs/41203460377/job/124543839312) **SUCCESS** (TypeScript/Lint/Unit/Integration/Build/E2E 경로), Docker/migrator/Greenfield smoke [Job 124543839619](https://github.com/planner77/layoutManager/actions/runs/41203460377/job/124543839619) **SUCCESS**. 두 번의 이전 실패 Run `41194360963` (TS2345) 및 `41202514157` (Vitest 두 건/Migrator import)은 삭제하지 않고 아래에 보존.
+- 성공 시점 Main 기준 HEAD `56221f8d4fc0d80622fa1fced85a56b53d1eb213`, compare ahead=17/behind=0, PR mergeable=true. Codex P2 2건 [4431462654](https://github.com/planner77/layoutManager/pull/179#discussion_r4431462654), [4431462655](https://github.com/planner77/layoutManager/pull/179#discussion_r4431462655) 답변 및 2/2 Resolved, 미해결 0건. 새 변경/리뷰 후 다시 확인할 것.
+
+### GHCR 신규 릴리스 버전 충돌과 조치
+- Main `src/package.json`/lock과 검증된 PR HEAD는 `0.48.0`이다. [Git tag v0.48.0](https://github.com/planner77/layoutManager/releases/tag/v0.48.0)의 ref object `4d5163ab899d43df0ead93c5684290d0ed55db6c`은 **이미 존재**하며 이전 Main `56221f8d4fc0d80622fa1fced85a56b53d1eb213`을 가리킨다. 릴리스 workflow의 `Create release tag from package version`는 기존 tag를 재생성하지 않고 `Check version images on GHCR`에서 App/Migrator 버전 이미지가 모두 존재하면 publish skip. 그대로 병합하면 새 #58/#59 소스의 새로운 버전 GHCR 이미지 발행을 보장할 수 없다.
+- `v0.48.1` ref 부재(404) 확인 후 [version bump commit 6746904d9279b07a9de44cf44fcccb847ab0edaf](https://github.com/planner77/layoutManager/commit/6746904d9279b07a9de44cf44fcccb847ab0edaf)에서 **src/package.json + src/package-lock.json**의 root version을 같이 0.48.1로 갱신했다. 기존 v0.48.0 tag/OCI 이미지 및 `latest`는 손대지 않았다. 이 버전 변경은 기능 코드를 바꾸지 않더라도 PR SHA를 변경하므로 성공한 Run 41203460377을 **새 최종 HEAD 검증 증거로 간주하지 않는다**.
+- 필수 게이트: 새 최종 PR HEAD의 Verify+Docker Job completed/SUCCESS, fresh Main 뒤처짐=0, mergeable=true, review thread 미해결=0을 확인한 이후에만 한 줄 Squash `#59 | Persist bounded server JSONL logs and instrument API/maintenance stages (#58)` 병합; Issue #58/#59 closed/completed은 수용된 코드·합성 CI 범위로 설명하고 현장 Volume/백업/정전/원자성은 미검증으로 명시. 이후 Main CI 자동 시작에서 GHCR v0.48.1 App/Migrator 쌍을 게시하도록 한다. Main CI/실제 Digest는 수행 전 또는 완료 로그 확인 전 성공으로 표시 금지.
+- 사용자 요청: CI 완료 모니터링 생략. 이번 조치는 신규 PR CI를 시작하는 데까지 수행하고 미검증 소스를 병합하거나 기존 버전 이미지 재태그를 강제하지 않는다. 실제 운영 DB/CAD/인증/G7/Volume 변경 없음.
+
+---
+
 ## PR #179 — 2차 PR CI 실패: Vitest 2건 및 baseline migrator 모듈 미포함 (2026-10-31 KST)
 
 ### 실패 실행 증거

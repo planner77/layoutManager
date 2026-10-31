@@ -1,3 +1,10 @@
+## PR #179 — v0.48.0 기준 최종 PR CI SUCCESS 및 v0.48.1 새 HEAD 미검증 (2026-10-31)
+
+- 기존 HEAD `ac285b690f4b57cf2fca89cb10f9f029308b0987`의 [Run 41203460377](https://github.com/planner77/layoutManager/actions/runs/41203460377): Verify Job 124543839312, Docker Job 124543839619 **모두 SUCCESS**. 이전 실패 Run 두 건은 실패 원장에 보존.
+- v0.48.0은 이미 이전 Main 56221f8d에 release tag가 있으므로 PR #179의 새 기능을 별도 정식 버전으로 게시하려면 v0.48.1 필요. package.json 및 package-lock.json root version 동시 0.48.1 변경. 변경 후 새 PR CI Verify+Docker의 실제 성공은 **NOT VERIFIED**; 기존 green Run을 최신 소스 성공으로 오표시하지 않는다. Owner는 CI 모니터링 생략. 실 현장 로그 보존/롤백 및 GHCR Digest 별도 증거 필요.
+
+---
+
 ## PR #179 — 두 번째 PR CI 결과와 수정 증거 범위 (2026-10-31)
 
 - [Run 41202514157](https://github.com/planner77/layoutManager/actions/runs/41202514157), HEAD `2484115a60100abb8f1e5b289f281fedbc4e0214`, completed/**failure**. Verify 124541002048: Typecheck/ESLint PASS; Unit/Integration 108 files: 106 PASS, 2 FAIL / 710 tests: 708 PASS, 2 FAIL. 정확한 실패 TC-L3-004(0755 잘못된 test fixture로 ENOSPC seam까지 미도달) 및 TC-LOG-MIG-001(신규 store.ts explicit COPY 누락). OCI/DXF/Next/Browser/G7 E2E SKIPPED.
