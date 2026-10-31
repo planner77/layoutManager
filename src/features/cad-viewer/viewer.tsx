@@ -1612,7 +1612,7 @@ export function CadViewer({
       isFullscreen={isFullscreen}
       isNativeFullscreen={isNativeFullscreen}
       menuBar={
-        <ViewerMenuBar commandGroups={commandGroups} onMenuOpen={closeMetadataOverlays} />
+        <ViewerMenuBar commandGroups={commandGroups} onMenuOpen={closeMetadataOverlays} onBeforeListNavigation={confirmDiscard} />
       }
       toolbar={
         <>
