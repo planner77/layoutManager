@@ -119,3 +119,20 @@ test('TC-137-02: local outline selection requires discard confirmation; cancel p
   await page.getByTestId('viewer-back-to-list').click();
   await expect(page).toHaveURL(/\/$/);
 });
+
+for (const renderer of ['dxf-viewer','three-dxf-viewer'] as const) {
+  test('TC-139-E2E: '+renderer+' indexes UTF-8 Korean even when DXF AC1032 still declares ANSI_949',async({page,request})=>{
+    const source=createTextSearchDxf().replace(
+      '0\nSECTION\n2\nENTITIES',
+      '0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1032\n9\n$DWGCODEPAGE\n3\nANSI_949\n0\nENDSEC\n0\nSECTION\n2\nENTITIES'
+    );
+    const created=await drawing(request,'viewer-codepage-'+renderer+'-'+Date.now(),Buffer.from(source,'utf8'));
+    await page.goto('/cad/versions/'+created.id+'/viewer?renderer='+renderer);
+    await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
+    await clickViewerCommand(page,'work','도면 내 텍스트 검색');
+    const input=page.getByRole('searchbox',{name:'도면 텍스트 검색어'});
+    await input.fill('검사 구역 45');
+    await expect(page.getByTestId('cad-text-search')).toContainText('검색 결과 1개');
+    await expect(page.getByTestId('cad-text-search').getByRole('listitem')).toHaveCount(1);
+  });
+}
