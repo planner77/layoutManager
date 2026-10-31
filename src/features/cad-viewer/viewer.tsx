@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { FullscreenLayerPanel } from '@/features/cad-viewer/fullscreen-layer-panel';
-import { CadTextSearch } from '@/features/cad-viewer/cad-text-search';
 import { ViewerAppShell } from '@/features/cad-viewer/viewer-app-shell';
 import { ViewerMenuBar } from '@/features/cad-viewer/viewer-menu-bar';
 import type { ViewerCommandGroup } from '@/features/cad-viewer/viewer-command-menu';
@@ -528,6 +527,11 @@ export function CadViewer({
       if(event.key==='Escape' && drawer){
         event.preventDefault();event.stopImmediatePropagation();
         const name=drawer.dataset.drawer;
+        if(name==='search'){
+          setSearchOpen(false);
+          requestAnimationFrame(()=>viewerShell.current?.querySelector<HTMLButtonElement>('[data-testid="cad-text-search-trigger"]')?.focus({preventScroll:true}));
+          return;
+        }
         if(name==='layers')dispatchApp({type:'close-layers'});
         else if(name==='outlines')dispatchApp({type:'toggle-outline-tree'});
         else if(name==='memos')dispatchApp({type:'toggle-memo-tree'});
@@ -1700,13 +1704,8 @@ export function CadViewer({
       }}
       textSearchOpen={searchOpen}
       onCloseTextSearch={()=>{setSearchOpen(false);requestAnimationFrame(()=>viewerShell.current?.querySelector<HTMLButtonElement>('[data-testid="cad-text-search-trigger"]')?.focus({preventScroll:true}));}}
-      textSearch={({workspaceRef,dialogRef,mobile,active,raised,onRaise})=>
-        <CadTextSearch key={versionId+':'+sourceSha256+':'+renderer+':'+attempt}
-          getManager={getManager} format={format} ready={state.ready} loading={loading}
-          layers={layers} selectedLayers={selectedLayers}
-          open={searchOpen} onOpenChange={setSearchOpen}
-          workspaceRef={workspaceRef} dialogRef={dialogRef} mobile={mobile}
-          active={active} raised={raised} onRaise={onRaise} />}
+      textSearch={{getManager,format,ready:state.ready,loading,layers,selectedLayers,
+        open:searchOpen,onOpenChange:setSearchOpen}}
       canvas={
         <>
           <div

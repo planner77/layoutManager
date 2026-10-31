@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useMemo, useRef, useState, type RefObject } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type RefObject } from 'react';
 import { MovableViewerPanel } from './movable-viewer-panel';
 import { Button } from '@/components/ui/button';
 import type { ViewerManager } from '@/viewers/core/adapter';
@@ -13,7 +13,7 @@ const PAGE_SIZE = 100;
 /** A renderer-neutral overlay; works inside regular, CSS immersive and native fullscreen shells. */
 export function CadTextSearch({
   getManager, format, ready, loading, layers, selectedLayers, open, onOpenChange,
-  workspaceRef, dialogRef, mobile, active, raised, onRaise,
+  workspaceRef, dialogRef, mobile, active, raised, onRaise, onKeyDown,
 }: {
   getManager: () => ViewerManager | null;
   format: ViewerFormat;
@@ -25,6 +25,7 @@ export function CadTextSearch({
   onOpenChange: (value: boolean) => void;
   workspaceRef:RefObject<HTMLDivElement|null>;dialogRef:RefObject<HTMLDivElement|null>;
   mobile:boolean;active:boolean;raised:boolean;onRaise:()=>void;
+  onKeyDown?:(event:KeyboardEvent<HTMLDivElement>)=>void;
 }) {
   const id = useId();
   const wasOpen=useRef(false);
@@ -93,7 +94,7 @@ export function CadTextSearch({
     <MovableViewerPanel kind="search" id="viewer-text-search-dock" name="도면 내 텍스트 검색"
       workspaceRef={workspaceRef} dialogRef={dialogRef} open={open}
       mobile={mobile} active={active} raised={raised} onRaise={onRaise}
-      onClose={()=>setOpen(false)}>
+      onKeyDown={onKeyDown} onClose={()=>setOpen(false)}>
       <aside id={id} aria-label="도면 내 텍스트 검색"
         onKeyDown={event=>{
           if(event.key==='Escape'&&open&&!event.defaultPrevented){

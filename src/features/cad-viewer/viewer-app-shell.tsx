@@ -1,11 +1,14 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { useCallback, useEffect, useRef, useState, type ComponentProps, type ReactNode, type RefObject } from 'react';
 import type { ViewerCompactPanel } from './viewer-app-state';
 import {MovableViewerPanel} from './movable-viewer-panel';
+import {CadTextSearch} from './cad-text-search';
 
-type SearchPanelContext={workspaceRef:RefObject<HTMLDivElement|null>;dialogRef:RefObject<HTMLDivElement|null>;
- mobile:boolean;active:boolean;raised:boolean;onRaise:()=>void;};
+// Data-only props: render CadTextSearch through React JSX, never invoke a render
+// callback with refs while ViewerAppShell is rendering (react-hooks/refs).
+type TextSearchProps=Omit<ComponentProps<typeof CadTextSearch>,
+  'workspaceRef'|'dialogRef'|'mobile'|'active'|'raised'|'onRaise'|'onKeyDown'>;
 
 export function ViewerAppShell({ shellRef, panelScopeKey, isFullscreen, isNativeFullscreen, menuBar, toolbar,
   layerPanel, layerPanelOpen, outlineTreePanel, outlineTreeOpen, memoTreePanel, memoTreeOpen, compactPanel,
@@ -19,7 +22,7 @@ export function ViewerAppShell({ shellRef, panelScopeKey, isFullscreen, isNative
   memoTreePanel?: ReactNode; memoTreeOpen: boolean;
   compactPanel: ViewerCompactPanel;
   canvas: ReactNode; tools?: ReactNode; toolsOpen: boolean;
-  textSearch?: (context:SearchPanelContext)=>ReactNode; textSearchOpen:boolean; onCloseTextSearch:()=>void;
+  textSearch?: TextSearchProps; textSearchOpen:boolean; onCloseTextSearch:()=>void;
   onClosePanel: (panel: Exclude<ViewerCompactPanel, null>) => void;
   status: ReactNode; modalOverlay?: ReactNode; nativeLoadingOverlay?: ReactNode;
 }) {
@@ -105,11 +108,19 @@ export function ViewerAppShell({ shellRef, panelScopeKey, isFullscreen, isNative
         workspaceRef={workspaceRef} dialogRef={dialog} open={toolsOpen&&!!tools}
         mobile={mobile} active={!mobile||active==='tools'} raised={topDrawer==='tools'}
         onRaise={()=>setTopDrawer('tools')} onClose={()=>onClosePanel('tools')} onKeyDown={trapTab}>
-        {tools && <><button type="button" className="sticky top-0 z-10 float-right self-end rounded bg-white px-2 py-1 text-sm text-slate-800"
-          onClick={()=>onClosePanel('tools')}>도구 닫기</button>{tools}</>}
+        {tools && <>
+          <button type="button" className="z-10 shrink-0 self-end rounded bg-white px-2 py-1 text-sm text-slate-800"
+            onClick={()=>onClosePanel('tools')}>도구 닫기</button>
+          <div data-testid="viewer-tools-scroll-viewport"
+            className="min-h-0 w-full flex-1 overflow-y-auto overscroll-contain">
+            {tools}
+          </div>
+        </>}
       </MovableViewerPanel>
-      {textSearch?.({workspaceRef,dialogRef:dialog,mobile,active:!mobile||active==='search',
-        raised:topDrawer==='search',onRaise:raiseSearch})}
+      {textSearch && <CadTextSearch key={panelScopeKey+':search'} {...textSearch}
+        workspaceRef={workspaceRef} dialogRef={dialog}
+        mobile={mobile} active={!mobile||active==='search'} raised={topDrawer==='search'}
+        onRaise={raiseSearch} onKeyDown={trapTab} />}
     </div>
     <footer ref={footerRef} className="relative z-20 shrink-0 border-t border-slate-200 bg-white px-3 py-1 text-slate-700">{status}</footer>
     {modalOverlay}
