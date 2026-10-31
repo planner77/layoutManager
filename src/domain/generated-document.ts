@@ -410,18 +410,24 @@ export class GeneratedDocument{
          (input.editedAt!==null&&
           (typeof input.editedAt!=='string'||!Number.isFinite(Date.parse(input.editedAt)))))
         throw new Error('가져올 이름/타입/가시성/시점이 유효하지 않습니다.');
-      if(!Array.isArray(input.transformOperations)||
-         input.transformOperations.length>4096||
-         input.edited!==(input.transformOperations.length>0)||
+      // Validate hostile runtime input through unknown values without widening
+      // typed readonly arrays to any[] (Array.isArray narrows its argument).
+      const untrustedOperations:unknown=input.transformOperations;
+      const untrustedTransform:unknown=input.transform;
+      if(!Array.isArray(untrustedOperations)||
+         untrustedOperations.length>4096||
+         input.edited!==(untrustedOperations.length>0)||
          input.edited!==(input.editedAt!==null))
         throw new Error('편집 이력과 편집 시점이 일치하지 않습니다.');
-      if(!Array.isArray(input.transform)||input.transform.length!==6||
-         !input.transform.every(n=>typeof n==='number'&&Number.isFinite(n)))
+      if(!Array.isArray(untrustedTransform)||untrustedTransform.length!==6||
+         !untrustedTransform.every((n:unknown)=>typeof n==='number'&&Number.isFinite(n)))
         throw new Error('유한한 2D Affine 변환이 필요합니다.');
+      const operations:readonly GeneratedRigidOperation[]=input.transformOperations;
+      const suppliedTransform:Affine2D=input.transform;
       const baseResult=freezeResult(input.baseResult);
-      const recomputed=input.transformOperations.reduce<Affine2D>(
+      const recomputed=operations.reduce<Affine2D>(
         (current,operation)=>composeAffine(generatedRigidMatrix(operation),current),IDENTITY_2D);
-      if(recomputed.some((n,i)=>n!==input.transform[i]))
+      if(recomputed.some((n,i)=>n!==suppliedTransform[i]))
         throw new Error('허용 작업과 Affine 변환이 일치하지 않습니다.');
       const geometry=applyAffine(baseResult.geometry,recomputed);
       validatedGeneratedGeometry(geometry);
@@ -436,7 +442,7 @@ export class GeneratedDocument{
         name:input.name,outlineTypeId:input.outlineTypeId,outlineTypeName:input.outlineTypeName,
         kind:baseResult.kind,baseResult,baseGeometry:baseResult.geometry,
         transform:Object.freeze([...recomputed]) as unknown as Affine2D,
-        transformOperations:Object.freeze(input.transformOperations.map(operation=>
+        transformOperations:Object.freeze(operations.map(operation=>
           operation.type==='Translate'?Object.freeze({...operation}):
             Object.freeze({...operation,pivot:Object.freeze([...operation.pivot]) as readonly [number,number]}))),
         visible:input.visible,edited:input.edited,dirty:true,
