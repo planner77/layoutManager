@@ -1,9 +1,18 @@
-## PR #178 — E6 JSON 복원과 UI Tree 재열기 분리 (2026-10-31)
+## PR #179 / #58+#59 첫 CI 실패 및 수정 후 검증 대기 (2026-10-31)
+
+- Original [Run 41194360963](https://github.com/planner77/layoutManager/actions/runs/41194360963), HEAD 19ba6fb6fad35cb9fd4968a55f6cef95ce0171ea, completed/FAILURE. Verify 124517422622 TS2345 server/http.ts:20; Docker 124517422395 baseline Next Build same error. Lint/Unit/E2E and downstream Docker were SKIPPED (not PASS).
+- Fix 91b34067 separates UploadStage and generic L2 stage; also prevents writes to unlinked inode and supports rotation sequence 10000+. Added TC-L2-004 and TC-L3-007/008/009 in 8ad19a8d; unused import removed 0af08c1f. Codex P2 two replies and Resolved 2/2.
+- Local test suite and corrected PR CI not yet verified; no Main/GHCR/field evidence. See FailureLedger.md. Starting a new PR CI does not certify completion.
+
+---
 
 ## #58/#59 pre-PR CI evidence boundary (2026-10-31)
 
 Implementation and synthetic tests committed on feat/58-59-observability-l2-l3. Local npm/Typecheck/Lint/Vitest/Docker/E2E were **NOT RUN** in the connector-only work environment. PR CI will be launched by opening the PR; do not report PASS or GHCR release without verified run evidence. Unit files log-store.test.ts and logging-l2.test.ts provide TC-L3-001..006 and TC-L2-001..003. Physical /data volume survival, app restart, ENOSPC/EROFS, cross-writer budget and backup/rollback not proven in a production environment. No issue closure, Main CI or GHCR. See [Issues58-59](Issues58-59.md).
 
+---
+
+## PR #178 — E6 JSON 복원과 UI Tree 재열기 분리 (2026-10-31)
 
 - [Run 41175039708](https://github.com/planner77/layoutManager/actions/runs/41175039708), HEAD `34b0ec465cb81424ab85f4c1eca6f912472a1691`: Verify Typecheck/Lint/106 Unit+Integration 파일 **697 PASS**, Production Build/OCI benchmark PASS. Chromium E2E는 **116 PASS / 1 FAIL**, `TC-E6-E2E-001`에서 `outline-tree-item` 1개 기대 대비 0개(닫힌 Drawer), G7/Greenfield/Legacy Verify E2E 미실행. Docker Migration/Runtime smoke Job `124460857583` SUCCESS. 최초 JSX/이후 TS 타입 실패와 구별하며 이전 Run 내역 유지.
 - 판정: Import 성공 메시지는 보였지만 실제 데이터 복원을 단독 입증하지 않음. `reload`의 `dispatchApp(reset)`가 `outlineTreeOpen=false`를 만들고 공통 `MovableViewerPanel`은 닫혀 있으면 트리 항목을 렌더링하지 않는 것이 실제 테스트 실패 원인으로 분석됨.

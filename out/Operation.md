@@ -1,9 +1,10 @@
-## v0.47.5 Viewer 후보 사용/현장 검증 안내 (2026-10-31)
-
 ## #58/#59 operational logging (2026-10-31)
 
 Compose defaults LOG_STORE_ENABLED=true with private /data/logs under the same existing volume, separate from Docker local logs. Set LOG_RETENTION_DAYS=7 (1..30), LOG_MAX_FILE_MB=4 (1..8) and LOG_MAX_TOTAL_MB=64 (4..256) as bounded choices. UID10001 creates private 0700 directory and 0600 files. Keep using docker compose logs to inspect stdout, but never mount /data/logs into the web UI, expose it via an API or use Docker socket. Only server-internal getLogStoreStatus provides error/drop counters. Check backup space and permissions on an isolated volume before rollout. Old image rollback ignores the directory; do not use down -v. Live field volume/backup/recovery test NOT RUN. See [Issues58-59](Issues58-59.md).
 
+---
+
+## v0.47.5 Viewer 후보 사용/현장 검증 안내 (2026-10-31)
 
 - Viewer 상단 첫 목록 아이콘은 전체 도면 목록(/)으로 이동. 도면 > 버전 목록은 해당 도면 위치의 버전 목록을 열며 별개. 임시 선택·작업 이력이 있으면 목록 이동 전에 경고하고 취소 시 Viewer 유지.
 - 레이어, 외곽선 트리, 도구, TEXT 검색 창의 제목 핸들을 데스크톱에서 드래그하거나 방향키로 이동. 위치 초기화로 원래 edge 복원, 창 닫기는 현재 보조 창만 닫음. 모바일 320/375px은 단일 Drawer, 검색 query/레이어/Canvas 상태 보존.

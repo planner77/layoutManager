@@ -1,9 +1,10 @@
-## ADR-063 — E5 WCS CCW Rotate + E6 방어적 Browser JSON v2 (2026-10-31, Issue #55/#56)
-
 ## ADR-055 — #58/#59 additive observability (2026-10-31)
 
 Extend existing #57 single sanitized emitter with allowlisted request/job phases and a bounded private JSONL sink. Preserve stdout/stderr, 30-second health check behavior, business results and rollback. Do not use DB tables or raw framework logs, or expose file path / HTTP API before #60/#61 access policy. New volume data is additive; cross-process atomic total quota is not guaranteed and exhausted stores drop persisted copies without breaking business transactions. See [Issues58-59](Issues58-59.md).
 
+---
+
+## ADR-063 — E5 WCS CCW Rotate + E6 방어적 Browser JSON v2 (2026-10-31, Issue #55/#56)
 
 - **결정:** #51/52의 E2 `GeneratedDocument`를 단일 authority로 유지하며 E5는 수치·그룹·전용 DOM 핸들 Ghost를 E4 이동과 구분한다. 화면 Y-down 좌표를 Angle에 혼합하지 않고 WCS atan2 각도(+는 CCW)만 적용한다. 공통 Pivot은 집합 WCS bbox center, 사용자 X/Y override 선택 가능. 임시 Preview는 히스토리 0건, PointerUp commit만 명령 1건; ESC/PointerCancel/wheel/size/camera/Renderer/Version/dispose는 cancel한다. SOURCE/RENDER/mixed의 일부 허용은 하지 않는다.
 - **E6 데이터:** 동일 도면 Version + SHA + INSUNITS 범위 `cad-generated-objects` v2를 별도 Browser 계약으로 정의한다. Immutable base와 TransformOperations를 재합성해 클라이언트 matrix 및 effectiveGeometry가 동일해야만 복원한다. UUID 유일성/Origin/Provenance/geometry/4,096개 operations·100개 objects·100k vertices·12MiB를 전부 검증한 뒤 replace하며 기존 데이터가 있으면 사용자 확인. Undo/Redo는 재생하지 않고 초기화한다.

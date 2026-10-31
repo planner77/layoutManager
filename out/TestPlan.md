@@ -1,4 +1,10 @@
-## #56 E6 Chromium Import 재진입 시 Tree 패널 상태 기준 (2026-10-31)
+## PR #179 / #58+#59 실패 재발 방지 테스트 (2026-10-31)
+
+- Typecheck gate: server/http.ts line 20 must keep the narrower UploadStage and independent generic request phase; TC-L2-004 verifies P2022 error, 500 response, Request ID and redaction; strict TypeScript/Next baseline build both mandatory.
+- TC-L3-007: app idle >60 seconds with open FD; maintenance prunes old app file at limit; app must reopen linked inode, retain new record and report correct written/failed counters. TC-L3-008: rotation sequence 9999→10000+, inventory/read/retention and maxFiles/maxTotalBytes honored. TC-L3-009: post-append prune allows exactly maxFiles.
+- Preserve prior TC-L2-001..003, TC-L3-001..006 and all logger, upload, delete, masters, health, G7, browser, OCI, Docker smoke, migration gates. Do not change CI skip/timeout/security. New CI and field-volume acceptance NOT VERIFIED.
+
+---
 
 ## #58/#59 L2+L3 synthetic and deployment acceptance (2026-10-31)
 
@@ -7,6 +13,9 @@
 - PR CI gates: TypeScript, ESLint, Unit+Integration, Production Build, Chromium E2E, G7 test and Docker runtime/migrator smoke. On isolated disposable Compose volume confirm UID10001, /data/logs permissions, log persistence after app recreate, existing /data/db and /data/cad intact; never use a production volume. Manual backup/restore/rollback, ENOSPC/EROFS and cross-process quota under load are NOT VERIFIED until actual evidence is captured.
 - Stage/step errors and DB P2022 are documented by code and L1 normalization; full physical fault injection and real field evidence remain separate. [Detailed contract](Issues58-59.md).
 
+---
+
+## #56 E6 Chromium Import 재진입 시 Tree 패널 상태 기준 (2026-10-31)
 
 - 실패 Run [41175039708](https://github.com/planner77/layoutManager/actions/runs/41175039708)의 `TC-E6-E2E-001`에서 Import 성공 메시지 뒤 `outline-tree-item` 0건(기대 1). 원인: `Reload → dispatchApp(reset) → outlineTreeOpen=false`, 닫힌 공통 `MovableViewerPanel`은 자식 노드를 DOM에 마운트하지 않음.
 - 강화된 E6-AC1/3/4 회귀: (1) 기존 생성·회전 결과 다운로드, (2) SHA 불일치 Import는 기존 객체/geometry 불변, (3) Reload 이후 트리 패널 닫힘 및 Browser JSON Export 객체 0건, (4) 유효 v2 수동 Import 성공 후 **트리를 열지 않고도 Export UUID/editedGeometry 동일**, (5) `작업 > 외곽선 목록` 그룹 메뉴를 사용자처럼 열고 트리 행·`savedOutlineId` 일치, (6) Renderer 교체 전 unsaved confirm 및 미지원 UI 확인.

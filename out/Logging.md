@@ -1,5 +1,13 @@
 # Structured Logging 운영 가이드
 
+## PR #179 — JSONL writer/UploadStage failure correction (2026-10-31)
+
+- Run 41194360963 failed TS2345 in server/http.ts:20: generic RequestLogContext.currentStage is not an UploadStage. UploadDiagnostics receives the explicitly typed upload stage only.
+- The writer checks open FD nlink/dev/ino and its pathname to reopen after external pruning; 10000+ rotation suffix remains visible to inventory/read/retention, and prune(0) honors exact maxFiles. Related tests TC-L2-004, TC-L3-007..009. Shared quota and inode check/write are still not cross-process atomic; corrected CI/field volume evidence unverified. See FailureLedger.md.
+
+---
+
+
 ## #58/#59 L2 phase diagnostics and L3 private store (2026-10-31)
 
 The L1 emitter is still the single output owner. New http_request_stage and maintenance_job_* events correlate safe stage/outcome/elapsedMs with server-issued requestId/jobId. Health failure is sampled and recovery recorded once. Only verified 40-hex release commit can be logged as buildRevision. Optional private /data/logs JSONL (Compose enabled) is independent of Docker logs; file 4 MiB, total 64 MiB, 7 days, queue 1 MiB by default; UID10001, directory 0700 and file 0600. The sink drops on IO failure rather than interrupting CAD/DB business processing. No HTTP log-reading API or automatic raw Next/Docker collection. Cross-process aggregate budget is best-effort. Details: [Issues58-59](Issues58-59.md).

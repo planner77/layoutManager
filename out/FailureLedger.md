@@ -1,4 +1,20 @@
-## PR #178 — 세 번째 실패 Run 41175039708 / E6-E2E 패널 상태 혼동 (2026-10-31 KST)
+## PR #179 — #58/#59 첫 PR CI 실패 및 두 건 P2 해결 (2026-10-31 KST)
+
+### 실패 기록: 정확 HEAD·Run·Job
+- [PR #179](https://github.com/planner77/layoutManager/pull/179) original HEAD 19ba6fb6fad35cb9fd4968a55f6cef95ce0171ea, [Run 41194360963](https://github.com/planner77/layoutManager/actions/runs/41194360963): completed/FAILURE.
+- Verify [Job 124517422622](https://github.com/planner77/layoutManager/actions/runs/41194360963/job/124517422622): checkout/npm ci/Prisma generation SUCCESS, TypeScript server/http.ts(20,37) TS2345: string is not assignable to UploadStage | undefined. ESLint, Unit/Integration, OCI, DXF benchmark, Production Build, Chromium E2E, G7/Greenfield/Legacy E2E SKIPPED.
+- Docker [Job 124517422395](https://github.com/planner77/layoutManager/actions/runs/41194360963/job/124517422395): prechecks SUCCESS; pre-change baseline Next Build failed on identical server/http.ts:20 TypeScript error. Subsequent Phase1/Runtime/Migrator/Docker native/Greenfield/restart tests SKIPPED. This is one code regression, not independent Docker/storage failure.
+
+### 원인·코드 보완·회귀
+- Root cause: failure() combined UploadStage options.stage with general RequestLogContext.currentStage, then passed its string type into UploadDiagnostics.finishFailure. Fix [91b340673ca2ae1e750b2544025758efef394564](https://github.com/planner77/layoutManager/commit/91b340673ca2ae1e750b2544025758efef394564) passes only options.stage ?? response to UploadDiagnostics while the generic HTTP failure log keeps currentStage. TypeScript and HTTP response contracts unchanged; TC-L2-004 in [8ad19a8d](https://github.com/planner77/layoutManager/commit/8ad19a8d298673d39a6384041366cc84d901caa6).
+- Codex P2 [4431462654](https://github.com/planner77/layoutManager/pull/179#discussion_r4431462654): maintenance could unlink an idle app writer file after 60 seconds even while the app had an open fd, losing readable events while incrementing written. Fix checks fh.stat() nlink/dev/ino against pathname lstat on each append and recreates a file if missing/replaced; TC-L3-007 recreates app+maintenance idle/unlink/reopen/read. Reply [4431728330](https://github.com/planner77/layoutManager/pull/179#discussion_r4431728330); thread PRRT_kwDOUQjDfc6yQLds Resolved.
+- Codex P2 [4431462655](https://github.com/planner77/layoutManager/pull/179#discussion_r4431462655): FILE_NAME regex excluded sequences >=10000, silently bypassing inventory/retention/read. Fix allows 4..16 digit suffix and safe sequence rollover; TC-L3-008 validates 9999→10000+ quota/read. Also fix maxFiles exact boundary during prune(0), TC-L3-009. Reply [4431728526](https://github.com/planner77/layoutManager/pull/179#discussion_r4431728526); thread PRRT_kwDOUQjDfc6yQLdt Resolved. Unused test import cleanup commit [0af08c1f](https://github.com/planner77/layoutManager/commit/0af08c1f4b33b7d80743e8f3dfab551688025152).
+
+### 미검증·후속 게이트
+- Two P2 review threads answered and Resolved 2/2 as observed; check again for newly raised comments. File ownership lookup and append are not cross-process atomic, so a small unlink race remains; whole-store quota across writers is best-effort. Future #60/#61 logs:read Auth not introduced.
+- Local npm/typecheck/lint/test/build/Playwright/Docker were not performed in this connector session. New exact-HEAD PR CI will be triggered by pull_request synchronize after this ledger change; do not claim success before results. Field Volume/backup/rollback/real hardware ENOSPC remains NOT VERIFIED. Recheck main behind=0, mergeable and open review threads before final CI start. No GHCR/merge/issue closures/operational G7 or CAD/DB changes.
+
+---
 
 ## #58/#59 L2+L3 initial source review / pre-PR CI ledger (2026-10-31)
 
@@ -7,6 +23,9 @@
 - Known residual design risk, not a CI failure: independent writer streams are safe from line interleaving but no cross-process atomic quota. Pruning protects recently active other writers and can drop persistence copies when capacity cannot be reclaimed. No authenticated log API before #60/#61. Field volume ownership, backup/restore and rollback NOT VERIFIED. Owner acceptance is not claimed.
 - Once PR is opened, GitHub pull_request(opened) triggers PR CI; monitoring deliberately omitted on Owner request. Do not equate queued/in_progress with success.
 
+---
+
+## PR #178 — 세 번째 실패 Run 41175039708 / E6-E2E 패널 상태 혼동 (2026-10-31 KST)
 
 ### 관측 결과
 - 정확 실패 HEAD [`34b0ec465cb81424ab85f4c1eca6f912472a1691`](https://github.com/planner77/layoutManager/commit/34b0ec465cb81424ab85f4c1eca6f912472a1691), [PR CI Run 41175039708](https://github.com/planner77/layoutManager/actions/runs/41175039708), **completed/failure**.
