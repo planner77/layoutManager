@@ -68,7 +68,8 @@ function scopeId(db: IsolatedDb, resource: Resource): string | null {
   if (resource.kind === 'version') return resolveG1VersionSite(db, resource.versionId);
   return null;
 }
-function target(resource: Resource): { kind: AuditTarget; id: string } {
+function target(resource: Resource, action?: Action): { kind: AuditTarget; id: string } {
+  if (action === 'logs:read' && resource.kind === 'global') return { kind: 'ROLE', id: 'logs_read' };
   if (resource.kind === 'site') return { kind: 'SITE', id: resource.siteId };
   if (resource.kind === 'version') return { kind: 'VERSION', id: resource.versionId };
   return { kind: 'ROLE', id: 'global' };
@@ -76,10 +77,11 @@ function target(resource: Resource): { kind: AuditTarget; id: string } {
 function decide(db: IsolatedDb, faults: Faults, tokenHash: string | null,
   action: Action, resource: Resource, context: G4Context): Decision {
   const actor = actorFromSession(db, tokenHash, context.now);
-  const ref = target(resource);
+  const ref = target(resource, action);
   if (!actor) {
-    append(db, faults, 'AUTHORIZATION_DENIED', null, null, 'SESSION',
-      'unauthenticated', context, 'DENIED');
+    append(db, faults, 'AUTHORIZATION_DENIED', null, null,
+      action === 'logs:read' ? ref.kind : 'SESSION',
+      action === 'logs:read' ? ref.id : 'unauthenticated', context, 'DENIED');
     return { ok: false, status: 401 };
   }
   const resolvedSiteId = scopeId(db, resource);
@@ -112,7 +114,7 @@ function guarded<T>(db: IsolatedDb, faults: Faults, token: string | null,
       } catch (error) {
         if (!auditForbidden || !(error instanceof G4Failure) || error.status !== 403) throw error;
         db.exec('ROLLBACK TO g4_runtime_work; RELEASE g4_runtime_work;');
-        const ref = target(resource);
+        const ref = target(resource, action);
         append(db, faults, 'AUTHORIZATION_DENIED', decision.actor.id, decision.actor.id,
           ref.kind, ref.id, context, 'DENIED', decision.siteId);
         return { ok: false as const, status: 403 as const };
@@ -173,7 +175,7 @@ export function createG4IsolatedStore(db: IsolatedDb, faults: Faults = {}, scope
   return {
     permit(token, action, resource, context) {
       return scoped(token, action, resource, context, (actor, siteId, context) => {
-        const ref = target(resource);
+        const ref = target(resource, action);
         append(db, faults, 'AUTHORIZATION_GRANTED', actor.id, actor.id,
           ref.kind, ref.id, context, 'SUCCESS', siteId);
         return { siteId };

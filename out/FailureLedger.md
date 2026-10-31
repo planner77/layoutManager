@@ -1,3 +1,33 @@
+## R1 최종 실패 해소 및 Proxy HTTP 보완 (2026-10-31)
+
+- 통제 시계 전체 중간 실행112파일/731건은 **729 PASS/2 FAIL**: 이미 QA가 보완한 Date.now wrapper 재귀 시험의 구 snapshot과 기존 S3 operational Auth의 실 시계401/403 불일치. 후자는 동일 monotonic test clock을 해당 fixture 파일에만 적용·복원했다. 이후 동결 전체 Vitest **112파일/731 PASS**, 215.62초(`/tmp/layoutmanager-r1-final-all-tests.log`). 과거 실패는 보존한다.
+- 새 Proxy는 일반 Page200 제한을 그대로 완료 처리하지 않도록 #60/#62 원 AC를 재확인한 보완이다. 구현 전 Manager가 Architecture/Requirements/TestPlan/Decisions를 갱신했고, `/operations/logs`만 동일 인가·정적 안전 HTML·401/403/429/503·no-store로 처리했다. 기존 CAD 경로는 matcher 밖이다. native Production Build PASS, 새 보안 unit **6/6 PASS**, 이후 native Proxy + controlled Greenfield **3/3 PASS**(24.6초). 전체731과 이후 신규6은 별도 실행이다.
+- 최종 Typecheck/Lint PASS(0ERROR/기존11WARNING), staged diff 및 실제 Secret/산출물 검사 위반0. 실 시계/NTP·사내 현장·실 로그 Volume·운영 배포/권한 전환·PR CI/GHCR는 이 로컬 시험으로 완료 주장하지 않는다.
+
+## R1 통제 시계 시험과 fixture 정리 (2026-10-31)
+
+- 후속 전체 Vitest는 112 files / 729 tests, **726 PASS / 3 FAIL**, 238.54초. 기존 G7 Auth Site, CAD Site 및 신규 로그 익명 인가에서 503/거절이 발생했다. 관측된 wall rollback은 승인 notBefore/Session 시각 경계에도 영향을 주므로 실제 시계를 통과했다고 주장하지 않는다. `/tmp/layoutmanager-r1-frozen-tests.log`.
+- 최종 앱 Build/Typecheck는 PASS. 실제 시계 Greenfield3건은 **1 PASS / 2 FAIL**: 최초 Admin 성공 뒤 Scene GET/새 로그 관리 Grant가 401. `/tmp/layoutmanager-r1-final-greenfield.log`. 운영 시간 검사는 그대로 유지한다.
+- Manager 검토 후 synthetic integration의 affected4files만 각 시험 Date.now를 performance 기반 단조 시계로 설정/복원한다. 브라우저는 **명시적 G7_E2E_MONOTONIC_CLOCK=true**일 때 dedicated Greenfield webServer에만 test preload를 사용한다. private owned /tmp/g7-first-run-ui-*·db/cad 경로와 로컬 환경을 검증하고 일치하지 않으면 거절한다. production package/Compose/시작 코드에는 연결하지 않는다. future-issued Session401/read0 음성 시험을 추가했다.
+- 첫 controlled Greenfield는 **2 PASS / 1 FAIL**: 기존 최초 Admin/Scene 복원 성공, 새 로그 시나리오의 네 번째 로그인은 정상 SESSION_LIMIT409. BrowserContext 종료가 서버 세션을 회수하지 않으므로 첫 관리자 시나리오 끝에 실제 CSRF 보호 logout을 추가했다. 3-session 제한은 변경하지 않는다. `/tmp/layoutmanager-r1-controlled-greenfield.log`.
+- test preload 초안 .cjs는 ESLint no-require-imports4ERROR로 실패하여 ESM.mjs/--import로 교체했다. 규칙 disable/skip은 추가하지 않았다. 최종 통제 시계 전체 시험·QA·브라우저 결과는 TestReport 후속 실측을 따른다.
+
+## R1 전체 회귀 및 시계 역행 관측 (2026-10-31)
+
+- 최초 전체 Vitest: 110 files / 720 tests, **718 PASS / 2 FAIL**, 336.92초. 기존 g7-runtime-auth bootstrap/recovery는 g1-store.ts:41 `CHECK constraint failed: revoked_at`; 새 로그 인가 시험은 동시 재작업으로 도입한 logs_read assertion과 구 모듈 snapshot이 섞여 실패했다. 실행을 성공으로 수정하거나 focused19PASS를 전체720PASS로 합산하지 않는다. 로그 `/tmp/layoutmanager-r1-all-tests.log`.
+- 구체적 환경 증거: Greenfield UI2 trace의 GET setup wall14:01:55.285Z/monotonic5857.584 뒤 POST setup wall14:01:53.834Z/monotonic6849.848. 뒤 요청에서 wall 시각이 2.443초 감소했다. 별도 Node10초 표본은 **역행1회/최대2499ms**를 측정했다. CSRF의 expires-now 상한 및 Session issued_at/revoked_at 조건은 유지하며, 이 관측을 제품 기능 PASS로 사용하지 않는다. UI2는 첫 잘못된 코드 POST가 SETUP_CSRF_DENIED, 이후 로그인 실패의 2FAIL이며 최초 G2 Audit 오염 버그와 구분한다.
+- 동일 기존 bootstrap/recovery를 별도 단독 실행한 Developer 보고는 PASS(4.45초). 원래 전체 실행은 계속 FAIL로 보존하고 최종 동결 소스/독립 QA/재시험 결과를 별도 기록한다.
+
+## R1 #60/#61/#62 로컬 신규 설치 회귀 (2026-10-31)
+
+- 기준: 9016feb 기반 0.49.0 uncommitted snapshot, 최초 Production Build PASS 뒤 격리 Greenfield Playwright. `/tmp/layoutmanager-r1-greenfield.log`, 2 FAIL / 0 PASS: 최초 Admin 등록 `G7_SETUP_UNAVAILABLE`, 후속 로그 화면 로그인 실패.
+- 원인: 새 운영 내비게이션이 G7 ACTIVE/아직 User0 상태에서 로그 access를 probe → G4가 익명 거부 Audit을 기록 → G2의 pristine bootstrap 전제 위반. 기존 인증 API의 User0/BOOTSTRAP_REQUIRED 선행 차단을 신규 로그 guard에도 적용해야 한다. 테스트 타임아웃이나 G2 무결성 규칙을 완화하지 않는다.
+- 조치: nav는 현재 인증 세션 확인 후에만 logs access probe; 서버 guard는 최초 bootstrap 전 Audit/limiter 생성 방지와 fail-closed. 실제 0→1 Admin 및 로그 전체 흐름 재검증 전 해결 PASS로 표시하지 않는다. 모든 DB/비밀번호/코드는 disposable synthetic fixture이며 실 운영 데이터는 사용하지 않았다.
+- 재시험: 최초 Admin 등록·로그인 PASS. 로그 UI는 `getByLabel(레벨,exact)`가 select의 option 텍스트를 포함한 label과 매칭하지 못해 1 FAIL/1 PASS. 실제 접근성 트리는 combobox 이름 레벨로 정상이며 locator를 사용자 역할 기반 `getByRole(combobox,name:레벨)`로 수정했다. Fixture 작업명도 실제 logger catalog인 cad_upload로 정합화. 재시험 전 최종 PASS 아님.
+- 후속 UI 시험은 실제 권한·검색·상세·Clipboard·타임라인·320px까지 진행했으나 페이지 만료 alert selector가 Next route-announcer까지 2개를 매칭하여 1 FAIL/1 PASS. 제품 알림을 operations-log-console 영역으로 한정하여 수정.
+- 추가 관측: 새 UI 최초 ESLint는 useEffect에서 동기 load→setState 호출 규칙으로 1ERROR. 초기 load를 cleanup 가능한 microtask로 시작하고 집중 ESLint 재실행 PASS. 기존 코드 ESLint는 0ERROR/11WARNING.
+- #76 관리자 설정 조회는 기존 gh credential과 Root .env token 각각 HTTP401. 연결 GitHub 도구에는 repository-settings PATCH/전체 설정 필드가 없어 변경/검증을 완료하지 않았다. Secret 값은 출력하지 않았고 설정은 변경하지 않았다.
+
 ## PR #179 — Owner Managed 최종 Squash Merge·#58/#59 종료·v0.48.1 Main CI 시작 (2026-10-31 KST)
 
 ### 최신 검증 및 병합 증거

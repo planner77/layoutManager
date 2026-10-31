@@ -1,3 +1,19 @@
+## R1 #60/#61/#62 — 구현 전 AC/TC (2026-10-31)
+
+| TC | 요구사항 / 수용 기준 | 검증 |
+| --- | --- | --- |
+| TC-R1-001 | REQ1 / L4-AC1~3, L5-AC2 | G7 OFF/BLOCKED503, active anonymous401, Reader/Editor/Admin(no grant)403, Admin+logs:read200; forged headers/delete password/duplicate cookie/expired/revoked Session 차단; denied store 접근0회·metadata0건 |
+| TC-R1-002 | REQ1/5 / L4-AC4~5 | 기존 G4 allow/deny Audit의 고정 logs_read target, actor/requestId만, 검색 원문·secret 없음; Audit DB 실패503/store0회; grant/logout 철회 후 API·SSR·cursor 즉시 거절 |
+| TC-R1-003 | REQ2 / L5-AC1 | UTC·range·retention·limit·각 필터 AND, >200행 중 과거 일치행도 발견, duplicate/unknown/path/XSS/과대 query400 |
+| TC-R1-004 | REQ3 / L5-AC3 | 동일 timestamp tie와 모든 snapshot 페이지 합집합 중복0/누락0, 동시 append는 새 검색만, filter/actor cursor 재사용 차단, expiry/rotation/restart410 |
+| TC-R1-005 | REQ3/4 / L5-AC4~5 | corrupt/truncated/oversize line skip, symlink/unsafe mode/IO503, store disabled와 empty 차이, bounded scan/deadline/response/snapshot eviction, raw strings/stack/SQL/credentials 비노출 |
+| TC-R1-006 | REQ5 / L5-AC5~6 | 세션별·프로세스 전체 rate429·Retry-After 및 임의 토큰 교체 차단, no-store/private/Cookie Vary, store 실패 시 upload/current/delete 기존 성공/오류 계약 불변 |
+| TC-R1-007 | REQ6 / L6-AC1~4 | Playwright 권한별 메뉴/직접URL/API·필터·pagination·상세·request/job timeline·partial/410/disabled/503/empty; 안전 ID 복사 |
+| TC-R1-008 | REQ6/7 / L6-AC5 | 320px/keyboard/label/loading/취소·late-response·unmount·수동갱신, 기존 CAD 등록/목록/Viewer 회귀, app-only 안내·export/자동polling 없음 |
+| TC-R1-009 | REQ1/6 / L4-AC3, L6-AC1 | `/operations/logs` Proxy의 실제 HTTP401/403/503/429 및 no-store/Cookie Vary/429 Retry-After, 허용200·SSR 재검사·RSC/prefetch 동일차단; 고정 안전 HTML/no reader·metadata, pristine bootstrap 감사0, 정확 matcher로 익명 CAD 목록/Viewer/API 무영향. Unit proxy gate + Greenfield 직접 URL 상태 검증 |
+
+Developer 완료 후 QA가 독립 검증한다. Typecheck, lint, 관련 Unit/API/Playwright 및 build 실행, 실패를 고친 뒤 다음 bundle 진행. 전체 suite와 Docker는 리소스/환경에 맞게 실제 결과를 기록한다. 실행 전 모두 NOT RUN; 실제 사내 Auth/PC2대/GPU/로그 Volume/백업·배포 성능은 #96/#113 현장 수용에 남기며 합성 성공으로 대체하지 않는다. 버전 후보0.49.0 및 Changelog/README/Logging/Operation/TestReport는 구현/QA 때 결과와 함께 갱신한다.
+
 ## PR #179 — CI #41202514157 재발 방지 시험 게이트 (2026-10-31)
 
 - TC-L3-004: 임시 디렉터리 실제 권한 0700 검증 -> symlink directory 거부 -> 권한이 허용된 다른 경로에서 `openNewFile()`을 ENOSPC 오류로 주입 -> `lastFailureCode=ENOSPC`, dropped/failed 1, 업무 예외 미전파. 운영 `verifiedDirectory()` 권한 제한을 완화하지 않는다.

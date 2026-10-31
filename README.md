@@ -1,3 +1,13 @@
+## 0.49.0 후보 — 운영 로그 권한·조회·타임라인 (#60/#61/#62)
+
+`운영 · 서버 로그`는 활성 서버 세션의 Admin과 별도 `logs:read` 권한을 확인한 사용자에게 표시됩니다. `/operations/logs`에서 최근 1시간의 정제된 app/maintenance 이벤트를 검색하고, 기간·레벨·작업·요청/작업 ID와 페이지·타임라인을 확인할 수 있습니다. 권한 없는 API는 401/403, 운영 인증 비활성은 503으로 차단합니다. 직접 화면 URL과 RSC/prefetch도 동일한 서버 인가로 401/403을 반환하며 조회 컴포넌트를 실행하지 않습니다.
+
+서버 설정 `LOG_STORE_ENABLED=true`가 아닐 때는 보관 비활성 안내가 나옵니다. 기존 `/data/logs` 읽기만 사용하며 원시 Next.js/컨테이너/Nginx 로그·로그 파일 다운로드·자동 갱신은 제공하지 않습니다. 로그가 비었음, 손상/읽기 상한으로 일부만 표시됨, 페이지 만료, IO 오류를 구분합니다. 페이지는 짧은 서버 메모리 스냅샷이므로 만료되면 다시 검색합니다. 실제 운영 설정·권한을 자동 변경하지 않습니다.
+
+잔여 18개 이슈의 PR 묶음과 순서는 [Decisions](out/Decisions.md), 설계/AC/시험은 [Requirements](out/Requirements.md), [TestPlan](out/TestPlan.md), 실제 결과는 [TestReport](out/TestReport.md)를 따릅니다. PR CI·현장 수용·배포는 실행 근거 확인 전 미완료입니다.
+
+---
+
 ## v0.48.0 후보 — #55 회전 / #56 편집 생성 개체 JSON v2 (2026-10-31)
 
 ## #58/#59 Observability: Request stages and private logs

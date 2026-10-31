@@ -23,6 +23,10 @@ export default defineConfig({
     url:origin+'/api/health',
     reuseExistingServer:false,
     env:{
+      // Optional deterministic clock applies only to this owned /tmp server.
+      NODE_OPTIONS: process.env.G7_E2E_MONOTONIC_CLOCK === 'true'
+        ? [process.env.NODE_OPTIONS, '--import=' + JSON.stringify(path.join(process.cwd(), 'tests/fixtures/g7-monotonic-clock.mjs'))].filter(Boolean).join(' ')
+        : process.env.NODE_OPTIONS ?? '',
       DATABASE_URL:'file:'+path.join(root,'db','cad.sqlite'),
       CAD_STORAGE_PATH:path.join(root,'cad'),CAD_STORAGE_BACKEND:'local',
       G7_GREENFIELD_MODE:'true',G7_GREENFIELD_AUTOMATED:'true',

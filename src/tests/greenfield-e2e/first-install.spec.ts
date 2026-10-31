@@ -38,6 +38,13 @@ test('#109 initial browser Admin setup requires host code, then redirects to acc
   expect(setup.status()).toBe(404);
   await page.goto('/');
   await expect(page.getByRole('heading',{name:'CAD 도면 목록'})).toBeVisible();
+  // Closing a browser context does not revoke a server session. Leave a slot
+  // for subsequent scenarios while keeping the production three-session cap.
+  const current = await (await page.request.get('/api/g7-runtime/auth/session')).json();
+  const logout = await page.request.post('/api/g7-runtime/auth/logout', {
+    headers: { origin: new URL(page.url()).origin, 'x-csrf-token': current.csrfToken },
+  });
+  expect(logout.status()).toBe(200);
 });
 
 test('SC-14–17 authenticated conversion → persisted Scene → independent browser and reload without original GET or parsing',async({page,browser,baseURL})=>{

@@ -1,8 +1,9 @@
-import { afterEach, beforeAll, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import { writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { makeG7RuntimeFixture } from '../helpers/g7-runtime';
+import { installMonotonicTestClock } from '../helpers/monotonic-clock';
 import * as runtimeDb from '../../server/g7-operational/runtime-db';
 import { GET, POST } from '../../app/api/g7-runtime/[...segments]/route';
 import { hashLocalPassword } from '../../server/auth/password';
@@ -19,6 +20,7 @@ let fixture: ReturnType<typeof makeG7RuntimeFixture> | undefined;
 let hash: string;
 let saved: Record<string, string | undefined> = {};
 beforeAll(async () => { hash = await hashLocalPassword(PASSWORD); });
+beforeEach(installMonotonicTestClock);
 afterEach(() => {
   for (const [key, value] of Object.entries(saved)) {
     if (value === undefined) delete process.env[key]; else Object.assign(process.env, { [key]: value });
