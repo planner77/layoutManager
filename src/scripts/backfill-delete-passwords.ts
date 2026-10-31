@@ -1,19 +1,20 @@
 import { database } from '@/server/db';
 import { backfillDeletePasswords } from '@/server/backfill-delete-passwords';
-import { writeLog } from '@/server/logger';
+import { JobLogContext, flushLogStore } from '@/server/logger';
 
 const db = database();
 let failed = false;
-const startedAt = Date.now();
+const job = new JobLogContext('delete_password_backfill');
 
 try {
-  writeLog('info', 'delete_password_backfill_started', { component: 'maintenance', operation: 'delete_password_backfill', outcome: 'started' });
+  job.phase('database_write');
   await backfillDeletePasswords(db);
+  job.phase('database_write', 'success');
 } catch (error) {
   failed = true;
-  writeLog('error', 'delete_password_backfill_failed', { component: 'maintenance', operation: 'delete_password_backfill', outcome: 'failure', errorCode: 'DELETE_PASSWORD_BACKFILL_FAILED', error });
+  job.phase('database_write', 'failure', { errorCode: 'DELETE_PASSWORD_BACKFILL_FAILED', error });
 } finally {
-  await db.$disconnect();
-  writeLog(failed ? 'warn' : 'info', 'delete_password_backfill_completed', { component: 'maintenance', operation: 'delete_password_backfill', outcome: failed ? 'warning' : 'success', elapsedMs: Date.now() - startedAt });
+  job.completed(failed ? 'failure' : 'success', failed ? { errorCode: 'DELETE_PASSWORD_BACKFILL_FAILED' } : {});
+  try { await db.$disconnect(); } finally { await flushLogStore(); }
 }
 if (failed) process.exitCode = 1;
