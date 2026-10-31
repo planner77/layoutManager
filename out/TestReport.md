@@ -1,3 +1,12 @@
+## #55/#56 E5/E6 검증 추적 — 2026-10-31 (구현 브랜치 후보 / 미검증)
+
+- 기준 Main: `116d04046f75d2bae9fdeeefde7ead0edc011a4f`, Branch: `feat/issues-55-56-generated-rotate-json`, v0.48.0 후보. 루트 `DESIGN.md` 미존재로 `AGENTS.md`, `out/Architecture.md`, `out/Decisions.md`, `out/Issues55-56.md`를 설계 권위로 사용한다.
+- 작성 시험: `generated-rotate.test.ts`(E5 +90/-90/180/360, 그룹 Pivot, Invalid, Undo, drag 각도), `generated-transfer.test.ts`(E6 v2 및 v1 Source-only Legacy, validation/atomicity/empty), `issues55-56-generated-rotate-json.spec.ts`(numeric/drag/ESC, Export/Import, wrong SHA, reload, renderer).
+- **상태:** 연결된 GitHub 소스 변경을 확인했으나 로컬 Node/Chromium/실 GPU/실 CAD 테스트는 이 세션에서 미실행. PR CI는 신규 PR 생성 전까지 NOT STARTED; 실행 생성만 진행하고 Owner 지시로 결과 모니터링하지 않는다. 성공/FAIL 여부를 미리 주장하지 않는다.
+- 서버 DB/Prisma/API/Auth, 원본 DXF bytes/Current/Layer, #97/#98 Source 검증은 별도이며 브라우저 파일 Import를 영속 승인으로 수용하지 않는다. 현장 수용 별도.
+
+---
+
 ## PR #177 v0.47.5 Owner Managed 구현 인수 / CI 게이트 검증 및 Main 인계 (2026-10-31)
 
 - 원 소스 HEAD `b9002c45ac8c18aee96a87d8ad51add292ffbf8f`, [PR CI Run 41166539969](https://github.com/planner77/layoutManager/actions/runs/41166539969) **completed/success**, Verify Job `124435339774`와 Docker/Migration/Runtime Job `124435339563` **completed/success**. 이 Run이 Typecheck/ESLint/Unit/Integration/Production Build/Chromium/G7/Greenfield/Migration 및 Docker 게이트의 최종 합성 검증 근거. 선행 [Run 41162108326](https://github.com/planner77/layoutManager/actions/runs/41162108326) Lint 오류와 [Run 41163195588](https://github.com/planner77/layoutManager/actions/runs/41163195588) TC-127-DRAWER E2E 오류는 실패 원장에 원형 보존.

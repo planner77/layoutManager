@@ -1,3 +1,23 @@
+## Issue #55/#56 E5/E6 통합 테스트 계획 (2026-10-31, v0.48.0 후보)
+
+| Case | 단계 | AC |
+|---|---|---|
+| TC-E5-UNIT-001 | +90/-90/180/360 WCS CCW 회전, 정확한 기준점·원본 불변 | E5-AC1 |
+| TC-E5-UNIT-002 | 두 Generated Polygon+Hole/MultiPolygon 그룹 bbox Pivot, stage/commit 단일 Undo/Redo | E5-AC2 |
+| TC-E5-UNIT-003 | NaN/Infinity/±한도/중복/혼합 SOURCE·stale 범위는 통째 거절, History 불변 | E5-AC3 |
+| TC-E5-UNIT-004 | Pointer start/end 상대 WCS atan2 각도와 center exception, 양/음 방향 | E5-AC4 |
+| TC-E5-E2E-001 | Tree 다중 선택→수치 Pivot/Angle→JSON geometry/Undo/Redo/기존 데이터 ID 동일 | E5-AC1/2/5 |
+| TC-E5-E2E-002 | ↻ 핸들 Ghost/ESC 취소→다시 Drag PointerUp 확정, 기존 Move와 분리 | E5-AC3/4 |
+| TC-E6-UNIT-001 | 생성3→이동/회전/삭제1/숨김→v2 저장/복원 동일 geometry·메타·가시성, Undo 초기화 | E6-AC1 |
+| TC-E6-UNIT-002 | #31 Source-only v1 strict parser→미분류 Legacy UUID Browser Import | E6-AC2 |
+| TC-E6-UNIT-003 | Version/SHA/INSUNITS/Origin/중복 UUID/변조 Affine·Geometry/닫힘/사이즈 거절 | E6-AC3 |
+| TC-E6-UNIT-004 | 잘못된 일부 행도 전체 교체 취소, 기존 객체·Undo/Redo 보존, 빈 Document 허용 | E6-AC4 |
+| TC-E6-E2E-001 | 메뉴 v2 다운로드, 잘못된 SHA 파일 실패→기존 유지, Reload 후 동일 파일 복원, 타 Renderer 미지원 | E6-AC1/3/4 |
+
+추가 회귀: `generated-document.test.ts`, `generated-translate.test.ts`, `issue54-generated-translate.spec.ts`, `issue52-generated-history.spec.ts`, `issue53-generated-delete.spec.ts`; Overlay/Outline Tree, #127/#138 Viewer 접근성, #160/#166 SceneWork, Server Auth/Source/Current API 변경 감시. 실행: `cd src && npm run typecheck && npm run lint && npm test -- --run && npx playwright test tests/e2e/issues55-56-generated-rotate-json.spec.ts`. 로컬 실행 가능 환경/실도면·GPU 검증은 별도. PR CI 요청은 PASS 근거가 아니다.
+
+---
+
 ## PR #177 E2E TC-127-DRAWER 회귀 재검증 (2026-10-31)
 
 - 최초 Lint 실패와 구별: 두 번째 Run 41163195588의 Chromium 113 PASS/1 FAIL. 실패는 src/tests/e2e/issues124-126-127.spec.ts:381, mobile Tools drawer가 Delete alertdialog 아래에서 inert=true인데 aria-modal=true로 남음.

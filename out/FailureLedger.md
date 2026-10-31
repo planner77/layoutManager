@@ -1,3 +1,13 @@
+## Issue #55/#56 — PR CI 시작 전 실패 원장 및 Gate (2026-10-31 KST)
+
+- 기본 근거: 최신 Main `116d04046f75d2bae9fdeeefde7ead0edc011a4f`; Branch `feat/issues-55-56-generated-rotate-json`; E5/E6 단일 PR. Root `DESIGN.md`는 없으므로 AGENTS/Architecture/Decisions/Issues55-56를 검토했다.
+- 발견된 구현 선행 결함: 기존 E2 Doc에는 Rotate 명령이 있으나 E5 수치 폼·공통 Pivot·Canvas 회전 핸들이 없고, 기존 #31 JSON v1/v2 다운로드에는 E6 edited transform/operation 검증 Import가 없다. 보완 경로: 새 GeneratedRotate/Transfer, Adapter/Manager 연결, 메뉴/Tool Drawer, Unit/E2E.
+- 사전 설계 리뷰에서 수정: (1) 사용자 제공 Affine를 허용 Operation 재합성 결과와 **정확 일치**로 확인하여 위조 오차 허용 제거; (2) 한 객체 변환 명령 최대 64개와 12MiB Blob 파일 한도 명시; (3) 축소 화면의 회전 핸들 상단 clip 회피; (4) 실패 Import 후 원본 Document/Undo/Redo 유지. 기존 실패 CI Run에 대한 재해석/성공 덮어쓰기 없음.
+- PR 생성 전 미해결 Review Thread 없음 (신규 PR 없음). Main 정렬/충돌/새 PR Thread는 PR 생성 시 별도 확인할 것. 로컬 TypeScript/ESLint/Unit/Chromium/E2E/Production Build **NOT RUN**; 새로운 PR CI는 아직 **NOT STARTED**. 결과가 나오지 않은 CI·실도면/GPU를 PASS로 표기 금지. CI Monitoring은 Owner 지시로 생략.
+- 원장 결론: 관측된 CI 실패는 아직 없으며 과거 PR의 실패/수정 기록은 보존한다. PR CI가 실패하면 정확 Run/Job·원인·교정 Commit/검증 범위를 이 절 위에 추가한다.
+
+---
+
 ## PR #177 — Owner Managed 최종 PR 병합·Issue 종료 / v0.47.5 Main GHCR 실행 인계 (2026-10-31 KST)
 
 ### 정확 검증 소스·병합 게이트

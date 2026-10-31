@@ -1,3 +1,15 @@
+## #55/#56 브라우저 세션 편집 아키텍처 (2026-10-31)
+
+1. `SelectionController`는 E1 Origin/Scope/UUID 선택 집합을 소유한다. `GeneratedDocument`는 E2~E5 단일 권위 메모리 모델이다. `getGeneratedObjects` / Outline Tree / 기존 SavedOutlines는 projection이며 별도 복제 상태가 없다.
+2. E5 Numeric Form은 `selectedRotation → parseWcsRotation → ViewerManager → ThreeDxfViewerAdapter.executeGeneratedCommand → GeneratedDocument.execute`를 이용한다. 그룹 Pivot은 WCS XY 전체 bbox 중심, 수동 좌표로 재지정 가능. Canvas ↻ Handle은 지정된 Pointer의 Ghost 임시 THREE Group과 문서 Pending만 소유하며 release 전에 geometry를 확정하지 않는다. Undo/Redo 단일 History와 GPU 자원 release는 E2/E3 기존 계약.
+3. E6 `buildGeneratedTransfer → 브라우저 Blob`와 `File.text/JSON.parse → parseGeneratedTransfer → replaceFromImport`는 파일 범위 검증, 유일 UUID/ID, 세션 Scope, 기하 타입·닫힘·면적·좌표, 회전/이동 op 재합성, 정확 Affine 및 editedGeometry 동등성, 개수/정점/64연산 상한을 적용한다. **모든 행을 새 배열로 사전 생성한 후** 원자 교체하고 Undo/Redo/Pending을 비운다. Import 실패는 기존 Document를 한 글자도 수정하지 않는다.
+4. v1 및 typed v2의 기존 Source-only 파일은 별도 `parseOutlineExport`의 안정적 Handle 검증을 먼저 통과한 경우에만 새 Browser UUID를 부여한다. 브라우저 APP_CREATED v2는 Server canonical/Source attestation의 근거가 아님. 오염·영속화 오해 차단.
+5. 메뉴는 #127 `도면` 그룹에 Import/Export, 회전 컨트롤은 #138 `작업 → 선택·편집 도구` 기존 이동 패널 내부. 다른 DXF Renderer/DWG는 API가 노출되지 않으며 `getGeneratedTransfer/importGeneratedTransfer`는 ViewerManager의 optional adapter method.
+
+**권한**: Server-auth/API/DB/Migration/Current/원본 Source/Scene Asset 불변. 브라우저 파일은 사용자 단말에서만 처리되고 `#97/#98` 서버 독립 검증·권한/감사는 별도. [상세](Issues55-56.md).
+
+---
+
 ## PR #177 Viewer modal nesting architecture — #127 preserved by #138 (2026-10-31)
 
 - ViewerAppShell is authoritative for the top-level modalOverlay and drawer inert lifecycle. A generated-delete alertdialog supersedes any compact Drawer. Shared MovableViewerPanel receives modalBlocked from shell; the ARIA modal flag is only set on the active compact panel when no modalOverlay exists. The existing shell effect still applies inert to all drawers, and unwinds it when confirmation closes. Applies to Layer, Outline, Memo, Tools and TEXT search. This is UI accessibility state, never CAD WCS, SQLite/Prisma, Source or Renderer work.
