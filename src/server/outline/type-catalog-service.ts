@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { outlineTypeNameKey, normalizeOutlineTypeInput } from '@/domain/outline-type';
 import type { GlobalOutlineTypeDto, OutlineTypeAccessDto, OutlineTypePageDto } from '@/domain/outline-type-catalog';
-import { G7_GREENFIELD_BASELINE } from '@/server/g7-operational/greenfield-schema';
+import { G7_GREENFIELD_BASELINE, G7_PREVIOUS_TYPES_BASELINE } from '@/server/g7-operational/greenfield-schema';
 import type { G7RuntimeActiveGate } from '@/server/g7-operational/runtime-gate';
 import { G4Failure, type G4Context } from '@/server/auth/g4-service';
 import { g7GuardedMutation } from '@/server/g7-staging/g4-store';
@@ -20,7 +20,8 @@ function projection(row: Row): GlobalOutlineTypeDto {
 }
 function requireSchema(db:IsolatedDb):void {
   const marker=db.prepare('SELECT migration_name FROM "_prisma_migrations"').get();
-  if(marker?.migration_name!==G7_GREENFIELD_BASELINE) throw new G4Failure('CATALOG_UNAVAILABLE',503);
+  if(marker?.migration_name!==G7_GREENFIELD_BASELINE&&marker?.migration_name!==G7_PREVIOUS_TYPES_BASELINE)
+    throw new G4Failure('CATALOG_UNAVAILABLE',503);
 }
 function scope(gate:G7RuntimeActiveGate,check:()=>void) {
   return {siteIds:gate.siteIds,assertCurrent:check,now:Date.now};

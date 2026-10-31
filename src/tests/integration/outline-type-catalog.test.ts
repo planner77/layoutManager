@@ -7,6 +7,7 @@ import path from 'node:path';
 import packageInfo from '../../package.json' with {type:'json'};
 import { initializeGreenfield } from '../../server/g7-operational/greenfield-install';
 import { issueGreenfieldAuthority } from '../../server/g7-operational/greenfield-authority';
+import { resolveG7RuntimeGate } from '../../server/g7-operational/runtime-gate';
 import { G7_GREENFIELD_SCHEMA_ID, G7_PREVIOUS_MEMO_BASELINE, G7_PREVIOUS_MEMO_CHECKSUM,
   G7_DELETE_PASSWORD_TRIGGERS, assertG7GreenfieldSchema } from '../../server/g7-operational/greenfield-schema';
 import { G7_RUNTIME_MIGRATION_CHECKSUMS } from '../../server/g7-operational/runtime-db';
@@ -188,13 +189,29 @@ test('TC-R2-003/004: CSRF/Host, audit rollback, Unicode nameKey and physical FK/
 test('TC-R2-003: strict body/query, missing ID and release writer OFF',async()=>{
   fixture=setup();const admin=fixture.tokens.admin;
   for(const path of ['?limit=101','?limit=1&limit=2','?unknown=x','?includeInactive=yes','?q=%00'])
-    expect((await listRequest(admin,path)).status).toBe(400);
+    expect((await listRequest(admin,path)).status,path).toBe(400);
   expect((await createRequest(admin,{name:'Bad',sortOrder:0,actor:'admin'})).status).toBe(400);
   expect((await createRequest(admin,{name:'Bad',sortOrder:-1})).status).toBe(400);
   expect((await patchRequest(admin,randomUUID(),{expectedRevision:1,name:'Missing'})).status).toBe(404);
   expect((await patchRequest(admin,'bad',{expectedRevision:1,name:'Missing'})).status).toBe(400);
   process.env.G7_CAD_WRITE_CUTOVER_ENABLED='false';
   expect((await createRequest(admin,{name:'Disabled',sortOrder:0})).status).toBe(503);
+});
+
+test('TC-R2-003: fixture clock alignment preserves signed notBefore and expiry boundaries',async()=>{
+  fixture=setup();
+  const approval=JSON.parse(readFileSync(fixture.env.G7_RUNTIME_APPROVAL_PATH,'utf8')) as {
+    notBeforeUtc:string;expiresAtUtc:string;
+  };
+  const start=Date.parse(approval.notBeforeUtc),end=Date.parse(approval.expiresAtUtc);
+  expect(resolveG7RuntimeGate(process.env,start-1).state).toBe('BLOCKED');
+  expect(resolveG7RuntimeGate(process.env,start).state).toBe('ACTIVE');
+  expect(resolveG7RuntimeGate(process.env,end).state).toBe('BLOCKED');
+  expect((await listRequest(fixture.tokens.admin)).status).toBe(200);
+  vi.spyOn(Date,'now').mockReturnValue(start-1);
+  const future=await listRequest(fixture.tokens.admin);
+  expect(future.status).toBe(503);
+  expect(await future.json()).toMatchObject({error:{code:'G7_RUNTIME_UNAVAILABLE'}});
 });
 
 test('TC-R2-001/003: concurrent revision and unique-name races serialize in the DB',async()=>{

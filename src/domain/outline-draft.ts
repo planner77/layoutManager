@@ -7,6 +7,7 @@ import type {GeoJSONOutline} from '../viewers/core/outline-compute';
 import type {SavedOutline,GeneratedOutlineObject} from '../viewers/core/adapter';
 import {parseOutlineAssignmentMetadata} from './outline-assignment';
 import {sceneScope,validSceneRef,sceneIdentity,type CadSceneObjectRef} from './cad-scene';
+import {inspectOutlineSnapshot} from './outline-snapshot-marker';
 export type OutlineDraft={
   id:string;kind:OutlineKind;algorithm:string;
   sourceEntityIds:string[];geometry:GeoJSONOutline;
@@ -83,6 +84,7 @@ export function parseOutlineExport(
     throw new Error('잘못된 INSUNITS 값입니다.');
   if(!Array.isArray(root.outlines)||root.outlines.length<1||root.outlines.length>MAX_OUTLINES)
     throw new Error('외곽선 개수 제한(1~100)을 확인해주세요.');
+  inspectOutlineSnapshot(root,root.outlines,'source');
   const drafts:OutlineDraft[]=[];
   const ids=new Set<string>(),prefix=expectedVersionId+':'+expectedSourceSha256.toLowerCase()+':';
   for(const raw of root.outlines){

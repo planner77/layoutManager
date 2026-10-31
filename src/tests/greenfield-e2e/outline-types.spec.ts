@@ -184,4 +184,8 @@ test('R2 global catalogue persists, rejects stale edits, preserves Viewer and lo
   const restored = await (await page.request.get('/api/outline-types?includeInactive=true')).json();
   const restoredItem = restored.items.find((value: { id: string }) => value.id === typeId);
   expect(restoredItem).toMatchObject({ id: typeId, name: 'R2 수정 구역', createdAt: item.createdAt, createdById: item.createdById });
+  const active=await (await page.request.get('/api/g7-runtime/auth/session')).json();
+  expect((await page.request.post('/api/g7-runtime/auth/logout',{
+    headers:{origin:baseURL!,'x-csrf-token':active.csrfToken},
+  })).status()).toBe(200);
 });

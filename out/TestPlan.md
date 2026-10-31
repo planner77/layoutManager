@@ -1,3 +1,40 @@
+## R3 PR182 CI 재작업 — Browser route 수명 (2026-11-01)
+
+- **TC-R3-CI-ROUTE-001:** commit 후 응답 소실→동일 Idempotency-Key replay200의 기존 실제 API/Audit/receipt 검증을 유지한다. 일회성 응답 소실 후에는 동일 route handler가 계속 통과시키도록 page teardown까지 유지한다. replay 직후 타입 선택이5초 내 enabled가 되는지 먼저 검증하고 후속 typed create/Reader/복원까지 실행한다. 기존 route를 refetch 진행 중 제거하지 않는다.
+- 실제 CI trace에는 replay 뒤 자동 refresh와 `/auth/session` 미완료가 `page.unroute` 주변에 겹친다. 이는 interception 수명 가설이며 Playwright 결함으로 확정하지 않는다. 앱 승인·Session guard, 제품 코드 및 전체 timeout은 변경하지 않는다.
+- **TC-R3-CI-ROUTE-002:** Source-only reset은 클릭 전에 해당 Version의 정확 reset POST response 대기를 설치하고 HTTP200 및 `SOURCE_ONLY` mode를 확인한 뒤 저장 Outline snapshot/overlay 보존을 검증한다. 불변 snapshot poll만으로는 실행 완료를 증명할 수 없고 logout 이전 실제 응답을 확인해야 한다.
+- 최신 production build에서 Root 전체9개와 독립 QA 전체9개를 별도 실행해 결과를 기록한다. 새로운401/로그인 실패는 별도 실패로 보존·진단하며 해당 실패를 target case 통과만으로 덮지 않는다. 최종 Root9/QA9 및 정확 reset200 검증으로 로컬 수용했다. 새 HEAD 게시와 WIP 보존 기반 반영 전까지 R4는 HOLD이며 이후 조건부 재개한다. 새 원격 CI/배포는 별도 판정하고 실제 새 실패는 다시 HOLD한다.
+
+## R3 PR182 CI 재작업 — test clock와 서명 시작 시각 정합성 (2026-11-01)
+
+- **TC-R3-CI-CLOCK-001:** 순수 test-clock factory에 wall/performance source를 주입한다. wall이1000→1001이고 performance가0.2ms만 증가한 경우 현재 clock이새 notBefore1001보다 뒤처지지 않아야 한다. wall forward→rollback에서도 반환 시각은 감소하지 않고, wall rollback 중에는 monotonic 시간으로 진행한다. 기존 알고리즘에서2FAIL/1PASS RED를 실제 확인한 뒤 수정한다.
+- **TC-R3-CI-CLOCK-002:** 실제 서명된 Greenfield fixture의 `notBefore-1`은BLOCKED, 정확 `notBefore`는ACTIVE, 정확 `expiresAt`은BLOCKED여야 한다. 올바른 현재 조회200과 실제 미래 시각 HTTP503/고정 `G7_RUNTIME_UNAVAILABLE`를 확인한다. 기존 미래 Session401/스토리지 접근0과 승인 만료 거부를 유지한다.
+- 수정은 `tests/helpers/monotonic-clock.ts`와 관련 시험에만 한정한다. native wall source를 spy 설치 전에 포획하고 `max(previous,nativeWall,anchoredMonotonic)`을 사용한다. 제품 `Date`/서명/Session/Origin/CSRF/승인 gate 및 invalid-query400 기대는 완화하지 않는다. RED·집중 GREEN·전체회귀·독립QA·새 원격CI를 별도 실행으로 기록한다.
+- 원격 실패 로그에 실제 wall/monotonic 차이가 없으므로1ms mechanism 재현을 CI의 정확한 delta 측정으로 주장하지 않는다. 원인은 재현 가능한 fixture 결함과 부합하는 유력 원인으로 구분한다. 초기 R4 HOLD는 수정의 전체120/795 및 독립QA53·Scene12 검증으로 로컬 gate를 통과했다. 수정 HEAD 게시와 R4 기반 반영 확인 후 구현을 조건부 재개하며 원격 CI는 별도 확인한다. 상세 판정은 TestReport의 R3 PR182 재작업을 따른다.
+
+## R3 #71/#73 — Acceptance / Test Case (구현 전 설계·로컬 검증 반영, 2026-11-01)
+
+아래 시험은 최초 설계 시점 **NOT RUN**으로 작성했다. 이후 구현·재작업·독립 QA와 전체 회귀의 실제 결과를 [TestReport R3-20261101](TestReport.md)에 기록했고 Manager가 해당 로컬 범위를 수용했다. 계획 표의 모든 조합이나 실환경 수용까지 자동 PASS로 해석하지 않는다. R2 성공 근거를 R3의 타입 저장/영속 트리 성공으로 승계하지 않는다. 후보0.51.0, 새 격리 Greenfield와 합성 DXF/Scene을 사용하며 실 운영 DB/volume은 접근하지 않는다.
+
+| TC | 요구/원 이슈 AC | 실제 검증 계획 |
+| --- | --- | --- |
+| TC-R3-001 | REQ1, U5-01/02/05 | Admin·Editor·Reader+Site의 Version catalogue/Outline GET; Reader canCreate=false, Editor canCreate=true, 타입 Admin/noSite403. G7OFF/BLOCKED/oldschema/User0, expired/future/revoked/forged identity, inactiveSite/signedSite외/foreignVersion403; no-store/Vary/안전 metadata·pristine Audit0. Query 중복/unknown/bounds400. |
+| TC-R3-002 | REQ1/2/3, U5-01~03 | 실제 Admin 타입2개×CONVEX/PRECISE 조합; Globaltype를다른Site소유로위조하지않고 권한있는각Version에서사용. 동일Preview의 type선택만바꿀때좌표/Handle/SHA/algorithm/kind불변. 미선택·unknown/inactive타입/잘못된이름·typeName/actor/id주입거절, 기본이름·중복이름정책일치. |
+| TC-R3-003 | REQ3, U5-03/05 | server SOURCE_CANONICAL immutable byte/SHA/Handle/geometry 재계산, foreignSHA/Version/Handle/SourceExport타입불일치·geometry변조/Scene409. APP_CREATED render Preview(persistable=false)가 Sourceclaim없이 저장됨; Sourceindex0/Worker실패/READY Scene재접속에서도 APP_CREATED 타입조회·저장·Tree. |
+| TC-R3-004 | REQ4, U5-05 | 같은actor+Version+key 동시요청2개=Outline1/CREATE Audit1/receipt1/같은UUID; 다른key2개=2개. 같은key/다른payload409, JSONobjectkey순서만달라도같은digest. 응답소실후같은key재시도와DB재open/restartreplay. type비활성후replay기존UUID,타입inactive최초생성409,receipt조회전권한철회403,Scene변경replay새생성0,삭제후410/부활0. |
+| TC-R3-005 | REQ3/4/8, U5-05 | 실제Audit INSERT 및receipt INSERT장애각각 전체rollback; directFK/receiptactor-Version불일치 INSERT거부,append-onlyguard. objectCAS409/타Editor허용된Site공동Outline편집·Memo타작성자거부. ALLreset논리삭제후receipt유지,Versionharddelete기존거부. 새baselineinit/restart/exactschema/checksum·R2및historicalDDL불변·변조거부·backuprestore동일Graph. |
+| TC-R3-006 | REQ2/4, U5-01/02/04/05 | 실제Browser Preview→타입·이름→서버확정201; duplicateclick/통신불확실samekeyretry; 실패401/403/409/503에서Preview보존·성공문구/서버row추가0,再조회後명시retry. 성공뒤serverrow1,localGenerated/Undo증가0,Preview정리. serverType active race/rename currentlabel 반영. |
+| TC-R3-007 | REQ5/6, U6-PROD-01~03 | local+server이름/ID충돌을namespace로분리; typeId기준2타입×kind/미분류group·개수/배지,rename/inactive현재JOIN명·참조보존. 서버Polygon/MultiPolygon/hole Overlay/강조/전체boundsfocus. 같은 Version/SHA/WCS의 Scene 재게시·SOURCE_ONLY reset 뒤 APP_CREATED(두 validationMode) geometry/UUID/revision·Overlay/Focus/hidden 상태 보존. ShowHide개별/그룹이DB/revision/Audit/Layer/Source/Undo/메모불변. |
+| TC-R3-008 | REQ5/6, U6-PROD-03/04 | reload/relogin/두BrowserContext/Renderer왕복/Version전환/계정변경→서버만복원,임시소멸,visibilitydefault; 같은context재조회/창재열기hidden보존. delayed旧Version·旧actor응답폐기,로그아웃/권한회수/삭제재조회즉시서버목록·강조clear. 메뉴/Tree재조회는Canvasidentity·SourceGET·Worker재시작0. |
+| TC-R3-009 | REQ7, U6-PROD-01/04 | 타입101개이상의뒤페이지검색·선택/confirm; Reader에inactive전체카탈로그누출0. Outline100건 limit25 페이지합집합중복/누락0·total정합·안정tie순서;101번째create413. 최대mixed200Tree실제계측·Arrow/Home/End/Space/Enter/포커스가시성/스크롤·320px/nativefullscreen/공용창drag/Reset/ESC. 한도초과응답을부분전체로위장하지않음. |
+| TC-R3-010 | REQ8, U5-04 | 기존 local v1/typed-v2/Generated-v2 호환. 서버 SOURCE→source-v2 / APP_CREATED→generated-v2 두 동작의 실제 roundtrip: current typeId/name·kind·기하·legacy serverInstanceName 보존, server UUID는별도 informational alias. marker Generated snapshot을2회import하면각각새UUID, unmarked사용자Generated-v2는기존UUID유지. 잘못된marker/marker없는server필드/중복serverUUID/receipt주입/다른Version·SHA·unit/geometry·ops변조거절·Document원자보존. 파싱후server필드/receipt없음. 타입rename후명은export시점snapshot이며생성시점고정명으로주장하지않음. |
+| TC-R3-013 | 실제 Browser 실패 회귀 | 실제 `importedId(sceneScope(...),path)`/합성 Browser claim의220자 참조가 정확히 보존된 APP_CREATED 저장201;250자허용/251자거부,257개·중복거부·Source승격0. 최종 read 재검사 중 approval 만료를 route에서 주입하여503/no-store/metadata0을 확인한다. 최초 Browser4PASS1FAIL은 유지하고 새 build 재시험 결과를 별도 기록한다. |
+| TC-R3-014 | REQ4/6, 인증·mutation 수명주기 | 실제 Browser에서 typed POST 중 시작한 focus GET의 이전 snapshot 응답을 commit 뒤까지 지연해도 새 서버 row/동일 key receipt가 유지된다. legacy mutation 응답을 지연한 사이 다른 계정으로 전환하면 이전 actor 결과 및 후속 Memo를 적용하지 않는다. pre/post actor·mutation begin/finally epoch·현재 Version/load sequence를 검증하며 uncertain intent/key/Preview는 유지한다. 독립 QA 실행 횟수·실패 fixture와 최종 결과를 별도로 기록한다. |
+| TC-R3-011 | REQ1~8 | Prisma generate/typecheck/lint/fullunit-integration/build,관련일반Viewer/Greenfield E2E,실Migratorimport/init/restart,기존Auth/캐시Scene/원본bytes/Current/삭제/메모anchor/GeneratedUndo회귀. 각실행숫자·실패/수정/재시험과역할을TestReport/FailureLedger에구분. |
+| TC-R3-012 | REQ3/6, U5-05,U6-PROD-02~04 | Scene revision N에 생성 후 같은 Version/SHA/WCS pointer N+1 재게시: 조회/Overlay는 기존 row.sceneRevision=N이어도 유지. 변경에 current expectedSceneRevision=N+1+정확 object CAS이면 성공하고 last-write sceneRevision만 N+1 갱신; N 제출/실행 중 pointer 변경/object CAS충돌은409·전체rollback. legacy expectedSceneRevision 누락 요청은 이전 보수적409 유지. 타입 inactive/연결 Memo anchor·ALL logical reset/receipt replay도 함께 회귀하며 실제 foreign Version/SHA/WCS는 계속 거부. |
+
+Manager가 위 계약을 Developer에게 인계하고 backend/schema/API 검토 뒤 독립 QA를 수행한다. Root UI/통합 지원은 실제 역할로 기록한다. R2 PR181 원격 CI run `41215035518`의 Docker/Verify 두 job은 SUCCESS를 확인했다. 이 결과를 R3 CI 성공으로 승계하지 않는다. 이후 R3 로컬 수용·원격 CI·실 PC/실DXF/GPU·실환경 배포 수용은 각각 분리한다. 초기200개 트리에서는 가상화 대신 bounded scroll을 선택하며 실제 측정 결과에 따라 후속 판단한다.
+
 ## R2 #65 — 구현 전 Acceptance / Test Case (2026-10-31)
 
 | TC | 요구/AC | 실제 검증 계획 |

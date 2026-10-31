@@ -4,6 +4,7 @@ import { afterEach,describe,expect,test } from 'vitest';
 import { CAD_BUSINESS_DDL } from '../../server/cad-business/schema-ddl';
 import { geometry,operations,point,transformed,provenance,revision,keys,memoEditOperation } from '../../server/cad-business/validation';
 import { MemoSession, type PersistedMemoDraft } from '../../domain/cad-memo';
+import {importedId,sceneScope} from '../../domain/cad-scene';
 const require=createRequire(import.meta.url);
 const Sqlite=require('better-sqlite3') as new (path:string)=>{exec:(sql:string)=>void;prepare:(sql:string)=>{get:(...args:unknown[])=>Record<string,unknown>;run:(...args:unknown[])=>unknown};close:()=>void};
 const dbs:{close:()=>void}[]=[];
@@ -27,6 +28,17 @@ describe('#98/#83 closed-world geometry and memo validation',()=>{
   expect(()=>provenance(['one','one'])).toThrow();
   expect(()=>revision(-1)).toThrow();
   expect(()=>keys({expectedRevision:0,origin:'DXF_IMPORTED'},['expectedRevision'])).toThrow();
+ });
+ test('R3 render Scene occurrence IDs remain intact within the bounded provenance contract',()=>{
+  const sceneId=importedId(sceneScope(v,sha,'4'),[1,2,3,4,5,6,7,8,9,10]);
+  expect(sceneId).toHaveLength(220);
+  expect(provenance([sceneId])).toEqual([sceneId]);
+  expect(provenance(['x'.repeat(250)])).toEqual(['x'.repeat(250)]);
+  for(const invalid of [['x'.repeat(251)],[''],[sceneId,sceneId],
+    Array.from({length:257},(_,i)=>'ref-'+i)]){
+    try{provenance(invalid);throw new Error('unexpectedly accepted');}
+    catch(error){expect(error).toMatchObject({code:'OUTLINE_DERIVATION_INVALID'});}
+  }
  });
  test('server hydrated memo keeps immutable Version/SHA and revision',()=>{
   const m=new MemoSession({versionId:v,sourceSha256:sha});
