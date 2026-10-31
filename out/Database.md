@@ -1,3 +1,7 @@
+## R5 #91 — 읽기 전용 교환, Schema 불변 (구현 전, 2026-11-01)
+
+R5a/b는새Table/Column/Index/Trigger/migration/baseline·서버파일저장을추가하지않는다. 현존인가GET으로조회한liveOutline/MemoDTO를현재Actor/Version/SHA/revision에묶어browser에서만교환파일로만든다. read필요에기존인증session last_seen가변할수있으나업무Outline/Memo/Audit/Current/원본데이터는수정하지않는다. #172owner쓰기정책이나삭제필터를바꾸지않고exportextras를영속인증/Sourceattestation으로사용하지않는다. 시험은업무DB fingerprint 불변을인증운영필드와구분한다.
+
 ## R4 #174 — 기존 Anchor Schema 재사용 (구현 전, 2026-11-01)
 
 새 Table/Column/Index/Trigger/migration/baseline을 추가하지 않는다. `CadMemoAnchor`의 기존 local X/Y·status/target과 `CadMemo`의 WCS/revision, 기존 `CadBusinessAudit` EDIT를 같은 transaction에서 갱신한다. KEEP는 기존 target identity를 보존하고 trusted current inverse를 적용하며 DETACH는 anchor cleanup과 WCS 이동을 함께 수행한다. 작성자-only/CAS/원자성·실제 test는 [Architecture R4](Architecture.md), [TestPlan R4](TestPlan.md)를 따른다. R3 exact baseline/과거DDL/checksum과 실제운영DB/volume은불변이다.

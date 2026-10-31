@@ -7,6 +7,7 @@ import type {GeneratedCommand,Affine2D,GeneratedRigidOperation} from '../../doma
 import type {SceneWorkCommand,SceneWorkState} from '../../domain/scene-work';
 import type {MemoSnapTarget} from '../../domain/memo-session-snap';
 import type {OutlineAssignment} from '../../domain/outline-assignment';
+import type {ExchangeInventory,ExchangeSelection,ExchangeSnapshot} from '../../domain/cad-exchange';
 import {outlineGeometryBounds} from '../../domain/outline-tree';
 export type SavedOutlineOverlayState = {id:string;visible:boolean;selected:boolean};
 export type OutlineInfo = {entityCount:number;renderEntityCount?:number;exactSourceEntityCount?:number;sourceUnavailableReason?:string;unitCode:number|null;warnings:string[];renderedObjectCount?:number;excludedEntityCount?:number;spatialIndexMs?:number;sourceIndexMs?:number;renderAuditMs?:number};
@@ -20,7 +21,7 @@ export type GeneratedOutlineObject = Readonly<{
    /** Serialized #97 source operations (optional for older adapters). */
    transformOperations?:readonly GeneratedRigidOperation[];
    edited:boolean;dirty:boolean;
-  sourceEntityIds:readonly string[];kind:OutlineKind;name:string;outlineTypeId:string|null;
+  sourceEntityIds:readonly string[];kind:OutlineKind;name:string;outlineTypeId:string|null;outlineTypeName?:string|null;
 }>;
 import { ViewerSource } from './source';
 import type {ReadyScene} from './source';
@@ -38,6 +39,8 @@ export interface CadViewerAdapter {
   zoomIn(): void;
   zoomOut(): void;
   getLayers?(): string[];
+  getExchangeInventory?():ExchangeInventory|null;
+  captureExchangeSnapshot?(selection:ExchangeSelection):ExchangeSnapshot;
   showLayer?(name: string, visible: boolean): void;
   focusBounds?(bounds: CadFocusBounds): void;
   /** M1 viewport conversions are valid only for the active renderer/visible canvas. */
@@ -213,6 +216,11 @@ export class ViewerManager {
   zoomIn() { this.adapter?.zoomIn(); }
   zoomOut() { this.adapter?.zoomOut(); }
   getLayers() { return this.adapter?.getLayers?.() ?? []; }
+  getExchangeInventory(){return this.adapter?.getExchangeInventory?.()??null;}
+  captureExchangeSnapshot(selection:ExchangeSelection):ExchangeSnapshot{
+    if(!this.adapter?.captureExchangeSnapshot)throw new Error('이 Renderer는 GLB/glTF 내보내기를 지원하지 않습니다.');
+    return this.adapter.captureExchangeSnapshot(selection);
+  }
   showLayer(name:string,visible:boolean) { this.adapter?.showLayer?.(name,visible); }
   getOutlineInfo() { return this.adapter?.getOutlineInfo?.() ?? null; }
   clientToWcs(clientX:number,clientY:number) { return this.adapter?.clientToWcs?.(clientX,clientY) ?? null; }

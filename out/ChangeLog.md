@@ -1,9 +1,17 @@
+## 0.53.0 후보 — #91 R5a GLB / glTF 교환 파일 (2026-11-01)
+
+- Added: DXF three-dxf-viewer의 렌더 레이어 및 확정 local/권한 있는 server Outline을 선택해 GLB 또는 embedded glTF로 내보내는 읽기 전용 기능. 원본 배치 baseline과 현재 Generated 기하를 구분한다.
+- Added: 단위→미터·오른손계 XZ·중심/지정 원점, Layer별 제외 및 스타일 손실 사전 안내, 부분 산출 동의, 현재 actor/서버 내용 재검사, 취소 후 결과 폐기와 owned 자원 정리.
+- Fixed during development: material-group 확장 정점의 사전 한도 누락을 독립 QA로 발견하고 복사 전 검증으로 보완. 실제 r171 exporter의 Lines/Points unlit 표시는 export-only material로 유지한다. 공개 로컬 내보내기는 보호된 Outline/Site 권한에 종속시키지 않는다.
+- Validation: foreign Three guard 회귀31 PASS, 최종 전체unit127 files/858 PASS, 독립 QA 일반Browser128 PASS, Greenfield17 PASS, Auth/Legacy 각1 PASS, type/lint/build PASS(기존lint9 warnings). LOCAL R5a ACCEPT/Draft PR GO이며 게시·새 원격 CI는 후속이다. 실제 결과는 [TestReport](TestReport.md)를 따른다. 단일 Node 합성 계측을 Browser/GPU/실 CAD 성능으로 해석하지 않는다. Memo는 R5b 후속이며 #91 종료·병합·GHCR/배포는 아직 하지 않았다. 서버/API/DB/영속 Scene 형식 변경 없음.
+
 ## 0.52.0 후보 — #174 메모 스냅 선택·연결 유지 이동 (2026-11-01)
 
 - Added:12 CSS px 안의 Endpoint/Vertex/Center 후보 선택과 명시 OFF, 키보드/터치용 목록,44px 핀 hit target. raw WCS와 선택 후보를 분리하고 동일 key/context를 다시 검증한다.
 - Added: 세션 연결의 동일 target inverse 유지 이동 및 서버 anchor KEEP/DETACH reposition. 기존 Memo owner/Scene·Memo·target CAS/Audit를 유지하며 새 Schema는 없다.
 - Fixed during development: 준비한 메모 의도의 Actor와 확정 Actor가 다른 client lifecycle 결함을 실제 RED로 확인했다. 직접 Session actor 증명 및 비동기 조회 generation 무효화로 보완하고 Root/독립 QA 집중 GREEN을 확인했다.
 - Fixed: BLOCK renderer의 singleton Material을 유효한 전체 group coverage 조건에서 projection에 포함해 서로 다른 INSERT 후보를 유지한다. 외부 라이브러리/Source 권한은 변경하지 않는다. 개발 Auth 양성 시험은 owned disposable fixture의 opt-in clock으로 역행 환경을 통제하며 production guard를 유지한다.
+- 후속 원격 검증: 정확 R4 `458d3da`의 CI41233433577 Verify/Docker SUCCESS. 아래 로컬 결과와 별도로 TestReport에 최종 CI815개 unit 및 Browser gate를 기록했으며 현장·배포 완료를 뜻하지 않는다.
 - Validation: 기능/계측 로컬 수용 및 Draft PR GO. 최종 전체unit123/814, 일반Browser124, Greenfield13, Auth/Legacy 각1 및 집중/독립 QA 결과는 [TestReport](TestReport.md), 실패는 [FailureLedger](FailureLedger.md)를 따른다. Frame budget 초과와 두 번째dispose heap 증가 원인은OPEN이며 성능/장기누수·실 CAD/2PC·PR CI·GHCR/배포 수용은 아직 미완료다. 단일Viewer10k Memo 지원을 주장하지 않는다.
 
 ## 0.51.0 후보 — #71/#73 타입 지정 영속 외곽선 (2026-11-01)
