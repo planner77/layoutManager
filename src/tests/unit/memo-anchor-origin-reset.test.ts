@@ -51,6 +51,9 @@ describe('#84 M3 immutable WCS origin and #167 S6 reset',()=>{
   expect(sameRevisionSnapshot(expected,[{id:uuid(2),revision:4},{id:uuid(1),revision:0}])).toBe(true);
   expect(sameRevisionSnapshot(expected,[{id:uuid(2),revision:5},{id:uuid(1),revision:0}])).toBe(false);
   expect(sameRevisionSnapshot(expected,[{id:uuid(2),revision:4}])).toBe(false);
+  // Duplicate query rows must never stand in for the missing live ID.
+  expect(sameRevisionSnapshot(expected,[{id:uuid(1),revision:0},{id:uuid(1),revision:0}])).toBe(false);
+  expect(sameRevisionSnapshot(expected,[{id:uuid(1),revision:0},{id:uuid(3),revision:4}])).toBe(false);
   expect(()=>resetRows([{id:uuid(1),revision:1},{id:uuid(1),revision:1}])).toThrow();
   expect(()=>resetRows([{id:uuid(1),revision:0,deletedAt:'now'}])).toThrow();
   expect(()=>resetRows([{id:uuid(1),revision:Number.NaN}])).toThrow();

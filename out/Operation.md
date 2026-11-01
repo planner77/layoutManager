@@ -1,3 +1,11 @@
+## Epic #81/#160 — 중복 Scene Target 및 Reset 불일치 대응 (2026-11-01)
+
+- Viewer Memo 스냅 대상 Origin/ID 중복 시 임의 Target을 강제로 선택하지 않는다. 마지막 WCS/BROKEN 표시를 유지하며, 재조회/유일 ID 확인 후 사용자가 명시 재시도한다. FREE WCS 배치는 유지하고 관계를 무단 서버 저장하지 않는다.
+- S6 reset 요청/DB Snapshot이 다르면 409 전체 거절·최신 상태 재조회가 원칙이다. 복수 행/누락/충돌 시 원본 DXF/READY SceneAsset 및 업무 데이터의 부분 수정은 수행하지 않는다.
+- **운영:** 기존 SQLite/Volume Migration·CAD 반출·Auth/Writer 강제 ON/게시된 이미지 덮어쓰기 금지. #96/#113/#190 현장 2PC/GPU/백업·복구 및 #160 S7 Owner Managed 수용은 별도. [세부](Epics81-160.md).
+
+---
+
 ## 2026-11-01 v0.55.1 병합/게시·현장 인수 분리
 
 - #189 코드/합성 PR CI 성공, Main Squash `19167bc3274ac7955ecb2935602f0404cd0a82bf`, Main CI [41280051780](https://github.com/planner77/layoutManager/actions/runs/41280051780) 시작. GHCR 게시 완료/OCI App+Migrator Digest는 **Main CI 최종 확인 전 미검증**이며 사용자 지시로 모니터링하지 않는다. 정식 운영 Compose의 0.55.1 쌍 사용은 양쪽 digest 확인 후 별도 결정.

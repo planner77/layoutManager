@@ -1,3 +1,11 @@
+## Epic #81/#160: Memo Session ↔ Scene Target / Reset Snapshot 경계 (2026-11-01)
+
+현재 Viewer Session의 `versionId+sourceSha256+origin+id`는 단일 Snap Target을 식별해야 한다. 동일 `origin+id`가 복수 Target으로 제공될 때 첫/마지막 Transform을 선택하지 않고 후보·선택 검증·기존 관계 projection·reposition 전부 fail-closed로 처리한다. 기존 Memo는 마지막 유효 WCS의 BROKEN 관계를 유지하고 서버 관계로 승격시키지 않는다.
+
+Reset은 요청한 live outline/memo revision 집합과 transaction 내부 실제 조회 집합이 서로 유일한 ID 및 동일 Revision으로 1:1 대응할 때만 `SOURCE_ONLY/ALL`을 수행한다. 원본 DXF/READY Scene Asset 불변, G7 Actor·Site·CAS·Audit는 기존 그대로. [세부 추적](Epics81-160.md).
+
+---
+
 ## R6 #186 — Memo Projection / Viewer lifecycle 성능 분리 (2026-11-01)
 
 ### 실행 경로·원인 가설

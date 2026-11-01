@@ -1,3 +1,11 @@
+## Epic #81 + #160 — 메모 스냅/Scene Reset 교차 무결성 (2026-11-01, 0.55.2 후보)
+
+- [통합 설계·수용 경계](out/Epics81-160.md): 동일 Viewer Scope에서 중복된 `Origin+Scene ID`는 Memo Session Snap 후보·확정·재배치·projection에서 일괄 거절. 기존 연결 메모는 마지막 WCS에 동결/BROKEN, 유일한 동일 immutable ID가 복귀한 경우에만 재계산. 서버 영속 Snap/작성자 권한은 변경하지 않는다.
+- S6 `sameRevisionSnapshot`은 expected/observed 양쪽 ID 유일성·revision 1:1 비교를 만족해야 한다. 예상 A/B vs 관측 A/A 같은 중복 행은 길이가 같아도 거절. 서버 G7/Site/Actor/Scene CAS 및 단일 거래/Audit/Source 무변경 정책 유지.
+- Root `DESIGN.md`는 존재하지 않으므로 `out/Architecture.md`, `out/Decisions.md`를 정본으로 사용한다. Unit TC-EPIC-81-160-01/02 추가, 실제 신규 PR CI Verify/Docker 성공은 실행·결과 확인 전 NOT VERIFIED. 현장 #96/#113/#190 및 #160 S7 OPEN, S8 DRM은 명시 조건부. 운영 DB/Volume·Auth/Writer·GHCR 미변경.
+
+---
+
 ## PR #189 / #186 Owner Managed 코드 완료, 현장 #190 이관 (2026-11-01, v0.55.1)
 
 - [PR #189](https://github.com/planner77/layoutManager/pull/189) 정확 검증 HEAD `dc8e7c3a0c023272e2fa723a9abe35627efdd35a`. [PR CI Run 41278134690](https://github.com/planner77/layoutManager/actions/runs/41278134690) **Verify 124764393470 / Docker 124764393555 둘 다 SUCCESS**; Typecheck/Lint/Unit·Integration/OCI/Benchmark/Build/General·G7·Greenfield·Legacy Playwright, Docker Greenfield smoke 등 전체 검증 단계 SUCCESS. 최초 [Run 41277155938](https://github.com/planner77/layoutManager/actions/runs/41277155938) IEEE-754 좌표 exact assertion 실패와 `toBeCloseTo(…,9)` 보완을 FailureLedger에 보존.
@@ -1217,6 +1225,7 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 | [Issue76](out/Issue76.md) | GitHub Squash 기본 메시지 관리자 설정·CI 진단·Main 실행명 확인 | 저장소 설정·PR/Main CI run-name 변경 시 |
 | [Issues124-126-127](out/Issues124-126-127.md) | 목록 고정/밀도·DXF fallback·Viewer 그룹 메뉴/Drawer 설계와 AC | 목록/Viewer UI·복구·새 릴리스 검증 시 |
 | [Issues88-90](out/Issues88-90.md) | M6 영속 Memo 공유 링크, M7 G7 Scope·DB 검색 및 Current 정책·수용 범위 | Viewer Memo/전역 검색·Source 변경·권한·메뉴·배포 검토 시 |
+| [Epics81-160](out/Epics81-160.md) | #81 Memo × #160 Scene 중복 ID·Reset Snapshot, 회귀·현장 S7 경계 | Memo/Scene/초기화/Owner 통합 변경 시 |
 | [README](README.md) | 사용자/개발자 프로젝트 안내 | 기능·구조·설정·실행방법 변경 시 |
 
 추가 Markdown 문서가 필요하면 이 표에 목적과 필수 참조 시점을 등록한다. 상세정보를 여러 문서에 독립적으로 복제하지 않는다.

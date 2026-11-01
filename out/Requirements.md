@@ -1,3 +1,11 @@
+## FR-EPIC-81-160 — Memo/Scene 교차 식별자·CAS 보존 (2026-11-01)
+
+- **FR-EPIC-81-160-01:** 동일 Version/SHA 내 동일 Origin/ID가 중복되면 Snap 후보/기존 선택/재배치에서 배제한다. 기존 Memo 마지막 WCS 불변, BROKEN 표시, 제3 ID 자동 재바인딩 금지. 정상 후보와 FREE WCS 메모 배치는 허용한다.
+- **FR-EPIC-81-160-02:** `SOURCE_ONLY/ALL`은 요청 및 DB live Snapshot의 ID/Revision 1:1 비교(중복/누락/Stale 거절)와 기존 Scope/Actor/Scene CAS가 참일 때만 실행한다.
+- **FR-EPIC-81-160-03:** 기존 #81 하위 M1~M7 / #160 S0~S6을 중복 구현하지 않는다. S7/G7/실 DXF/GPU/2PC/Owner 시험은 #160/#113/#96/#190에서 계속 추적한다. [상세](Epics81-160.md).
+
+---
+
 ## PERF-MEMO-186 — 실제 원인 분리 및 현장 성능 AC (2026-11-01)
 
 1. 1k/10k synthetic LINE + 100 Memo 핀의 `rAF` frame baseline과 0 Memo/100 Visible/100 CSS-hidden 코호트를 같은 pan 조건에서 구분하여 p50/p95/max·budget 초과를 원본/수정 후 각각 수집한다. 숫자는 실제 PC/GPU SLA 승인이 아닐 것.
