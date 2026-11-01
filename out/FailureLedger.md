@@ -1,3 +1,14 @@
+## PR #194 / Issue #191 — ESLint 4건 실패 및 수리 (2026-11-01 KST)
+
+- **실측:** [PR CI Run 41285766585](https://github.com/planner77/layoutManager/actions/runs/41285766585), HEAD a89956c9d704aeb173e625b3c970d3f3fa29a3c8, completed/failure. Verify [Job 124786741824](https://github.com/planner77/layoutManager/actions/runs/41285766585/job/124786741824) Step 8 ESLint 검사 **FAIL: 4 errors, 9 warnings**. npm ci / Prisma Generate / TypeScript **SUCCESS**. Unit·Integration, Benchmark, Production Build, Chromium General/G7/Greenfield/Legacy E2E **SKIPPED**. Docker [Job 124786742016](https://github.com/planner77/layoutManager/actions/runs/41285766585/job/124786742016) **SUCCESS** (원래 실패 HEAD에서만). 새로운 HEAD PASS를 대변하지 않음.
+- **원인:** src/features/master/master-manager.tsx:85–86 렌더 함수에서 selectedRef.current/filterRef.current 직접 대입 → react-hooks/refs 2 errors. 같은 파일:160/168 useEffect에서 각각 동기 setMode, setFocusedKey → react-hooks/set-state-in-effect 2 errors. 나머지 9 warnings는 이번 Run 실패를 유발하지 않은 기존 lint warnings.
+- **수리 커밋:** [a29c3c7](https://github.com/planner77/layoutManager/commit/a29c3c716d0d1202c9ee0b21d05f6626453257f7). Ref 갱신은 의존성별 Effect 내부로, showInactive mode/notice 초기화는 체크박스 onChange 사용자 이벤트로, tree roving tabIndex는 visible 노드를 기준으로 유효 focusKey를 렌더 중 순수 계산. ESLint disable/규칙 완화 없음.
+- **연관 E2E 사전 보완:** [c0518c3](https://github.com/planner77/layoutManager/commit/c0518c3f58f8c68d938de4b7417d81b100efbb02)로 src/tests/e2e/current-only-list.spec.ts에서 과거 5열 master region locator 제거. 새 계층 트리의 이름 검색→사업부 하위 층 선택→우측 '버전 이력'으로 이동해 Current 미지정 층도 찾는 시험. 기존 도면 Version/Current 불변성 assertion 그대로 유지.
+- **검증 경계:** 위 수리 HEAD의 로컬 Typecheck/ESLint/Vitest/Playwright/Docker 실행은 GitHub 원격 파일 편집 환경에서 **NOT RUN**, 새 PR CI 결과 **NOT VERIFIED**. 41285766585 Docker 성공과 TypeScript 성공을 새 HEAD에 소급 적용하지 않음. 실패 Run/Job은 위와 같이 보존하고 본 기록을 추가한 최신 커밋의 synchronize PR CI 기동을 요청. CI 완료 모니터링 생략.
+- **리뷰/충돌 사전 확인:** PR reviews 0 / inline threads 0 / unresolved 0, Main behind 0, mergeable=true (최신 HEAD 별도 확인). Owner Managed 승인과 독립 QA 승인 구분. GHCR·병합·Issue 종료·운영 Auth/Writer/DB/Volume 변경 없음.
+
+---
+
 ## PR #194 / Issue #191 — 리뷰·충돌 게이트 및 PR CI 최초 실행 (2026-11-01 KST)
 
 - **PR:** https://github.com/planner77/layoutManager/pull/194, title "#191 | Replace five-column location masters with accessible hierarchy tree", main 기준 base 327ac0c13534d240c2880eb293c77e5cf44736a4; PR 최초 검토 HEAD b8392d8f7ed9bbc89e4bb92ad2beb5c067880ebe.
