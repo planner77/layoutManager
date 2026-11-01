@@ -1,3 +1,12 @@
+## Issue #191 — PR 개설 전 최종 소스 및 충돌 사전 점검 (2026-11-01 KST)
+
+- **후보 버전/무결성:** src/package.json 및 src/package-lock.json 루트 버전을 0.55.3으로 동기화. git ref v0.55.3 조회 404(미존재), v0.55.2 기존 이미지/태그 재사용·이동 없음.
+- **사전 Main 정렬:** main 327ac0c13534d240c2880eb293c77e5cf44736a4, feat/issue-191-master-tree-20261101 비교 ahead 24/behind 0, merge-base main 일치, 서버의 Git 변경 충돌을 일으킬 상이한 Main이 아직 확인되지 않음. 이는 **PR mergeable API/리뷰 스레드 검사를 대체하지 않으며**, PR 개설 후 별도 확인한다.
+- **정적 위험 조치:** Tree 자식 DOM focus bubbling이 상위 노드의 roving tabindex 상태를 덮지 않도록 이벤트 currentTarget 검사; master E2E 오류 판정은 Next route-announcer 충돌을 피하도록 main 내 alert로 제한. 런타임 및 E2E 실실행 PASS는 **NOT VERIFIED**.
+- **PR CI:** PR 개설 전 확인된 신규 Run/Job 없음. main 대상 PR open 시 \`.github/workflows/pr-ci.yml\` trigger, run 시작 전후의 정확 커밋·신호만 기록하고 지속 모니터링하지 않음. 이슈 종료/병합/운영·GHCR 미실행.
+
+---
+
 ## Issue #191 — Master Tree 구현·PR CI 시작 전 실패/위험 원장 (2026-11-01 KST)
 
 - **범위/기준:** Main 327ac0c13534d240c2880eb293c77e5cf44736a4, feat/issue-191-master-tree-20261101, #24 기존 5단계 API/권한/UUID 및 #191 상세 UI 요구. 루트 DESIGN.md 부재 → out/Architecture.md·Decisions.md·Issue191.md 참조.
