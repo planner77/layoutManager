@@ -1,3 +1,11 @@
+## Issue #191 — 트리/상세 관리 UI 후보 검증 상태 (2026-11-01)
+
+- 구현: master-tree.ts 순수 트리/검색/활성 경로, master-manager.tsx 두 패널, MasterRepository.create 활성 조상 guard, 새 Unit/Integration/E2E + 기존 Master 5열 테스트 개정. [설계·시험](Issue191.md).
+- 해당 신규 HEAD의 로컬 Typecheck/ESLint/Vitest/Playwright/Production Build/Docker **NOT RUN**; 성공·실패 실측 근거가 없다. PR CI 열기 전 Run/Job **NOT VERIFIED**. 과거 #24/#109/G7 성공을 새로운 코드 통과로 소급하지 않는다.
+- 현장 CAD/2PC, 운영 Auth/Writer, 기존 운영 DB·Volume, GHCR 게시 및 Issue 종료 **NOT RUN/NOT REQUESTED**. 신규 CI 결과와 수리 증거는 실행 확인 후 이 문서와 [FailureLedger](FailureLedger.md)에 후속 기록.
+
+---
+
 ## PR #192 — #81/#160 교차 보완 Owner Managed 코드 수용 (2026-11-01)
 
 - **코드/합성 CI PASS:** HEAD `3da74d76134e69924018e519ff4ce458e96c7487` / [PR CI Run 41281582636](https://github.com/planner77/layoutManager/actions/runs/41281582636) Verify `124774528508`, Docker `124774528276` 각각 `completed/success`. 기존 TC-EPIC-81-160-01/02 중복 Scene Target/KEEP 이동·Reset Snapshot 회귀가 전체 자동 CI gate에 포함되어 성공했다. 로컬 npm/현장 실행 없음.
