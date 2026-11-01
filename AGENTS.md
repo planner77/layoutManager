@@ -1,3 +1,13 @@
+## #197 — PR CI 최적화 6건 (2026-11-01, 구현 PR 후보)
+
+- 디자인/AC 정본: [out/CIOptimization.md](out/CIOptimization.md). PR CI 증가: #159 약 11분, #194 약 24.5분. General Chromium E2E 93→148건/5.8→14.8분 및 Greenfield 1→22건/0.1→3분으로 확대; 원인은 실제 Job 로그 근거.
+- `.github/workflows/pr-ci.yml`: scope(fail-closed)→quality(기존 lint/type/unit/OCI/benchmark/build)→General 2 Shards, Greenfield 및 G7/Legacy 각각 병렬; Docker runtime 검증 병렬. 마지막 `verify`의 기존 required-check 표시 이름 `Typecheck, lint, test, build, E2E` 보존. **full에서 모든 required group success, doc-only에서 모든 heavy group skipped 강제**.
+- Browser Jobs는 동일 Run/Attempt의 정확 HEAD `.next` TAR을 다운로드하며 재빌드하지 않음. 각 Runner는 Prisma/SQLite/CAD fixture 격리, workers=1/fullyParallel=false 유지. 느린 테스트 JSON/Step Summary 저장.
+- Docker baseline/phase1/size 비교는 Dockerfile/lockfile/Next tracing/packaging/CI workflow 변경 시 필수; 나머지 코드 PR에서도 Runtime/Migrator/native/invalid-migration/Compose Greenfield는 필수. Buildx GHA 캐시 scope 분리. CI helper는 `.github/scripts`에만 있으며 GHCR Main release metadata-only allowlist에 정확 4개 등록.
+- PR CI 실제 성공/개선량, PR merge/Main CI/GHCR 게시·현장 수용은 **NOT VERIFIED**. CI 시작 이후 미모니터링 요청 유지. 운영 DB/Volume/Auth/Writer 및 원본 CAD 비변경. 근거 [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md), [FailureLedger](out/FailureLedger.md).
+
+---
+
 ## PR #194 / #191 — Owner Managed 코드 완료·Main CI/GHCR 핸드오프 (2026-11-01, v0.55.3)
 
 - 최종 PR HEAD `3257a31b9bae4e82ed81d8bb462011b9bc6cf7ac`에서 [PR CI Run 41295744097](https://github.com/planner77/layoutManager/actions/runs/41295744097) `completed/success`. Verify `124816115059`, Docker `124816115216` 모두 SUCCESS; 이전 ESLint 3회·General E2E 1회 실패와 #52 native Undo focus 경합 재현/수리 근거는 [FailureLedger](out/FailureLedger.md) / [TestReport](out/TestReport.md)에 보존.

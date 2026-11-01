@@ -1,3 +1,15 @@
+## TC-197 — PR CI 최적화 6건 검증 (2026-11-01)
+
+- Scope unit: `python3 .github/scripts/test_pr_ci_scope.py`; md-only는 full=false/baseline=false, code+docs true/false, Dockerfile/lock/Workflow true/true, manual true/true, empty/깨진 NUL·비정상 path 반드시 실패.
+- Reporter unit: `node --test .github/scripts/report-playwright-duration.check.mjs`; nested suites, attempt 합산·최종 상태·markdown escape/invalid report.
+- PR 일반 E2E `--shard=1/2`, `--shard=2/2`: 2 Shard의 total/union은 변경 전 suite 전체와 동일(현재 #194 148개 참고), Worker=1, shard별 DB/경로 분리; 하나라도 실패하면 최종 `verify` 실패.
+- G7 Greenfield 22개, signed/runtime 1개, Legacy Migration 1개와 General E2E 모두 정확 HEAD의 같은 TAR 복원 후 수행. `npm run build`은 quality에서 1회; Browser Job에는 재빌드 금지.
+- Docker Baseline condition true: #28/#66/#67 size/Layer SHA/closure/Audit 수행; false: 위 비교만 생략하고 Web+Migrator native, invalid migration, Compose startup/restart/health/static 모두 수행. Cache miss/장애 시 재빌드 가능, 검증 필수.
+- 문서 전용 PR에서는 GitHub required check `Typecheck, lint, test, build, E2E`가 성공하되, 코드/Workflow PR에서는 중량 Job이 하나라도 skipped/failure면 실패. Main CI metadata-only helper 수정은 GHCR skip(별도 Run으로 검증).
+- 테스트 JSON/Job Summary 상위 10개 slow cases와 원본 artifact 확인. 이전 #159/#194 증거와 동일 SHA/성공 Run의 실행시간을 비교하되 예상 시간을 결과로 기재하지 말 것. 상세 [CIOptimization](CIOptimization.md).
+
+---
+
 ## PR #194 CI 보완 — TC-E2-E2E-001 포커스/단축키 회귀 (2026-11-01)
 
 - 실패 기준: HEAD `e9c20d446a180eb69e31a07d4457134558221490`, Run `41293959571`, Verify `124810809243`, General E2E 147 PASS / 1 FAIL. 이름 input의 Ctrl+Z 관측값이 `pending`으로 남음. 이전 ESLint 실패와 구분한다.

@@ -1,3 +1,11 @@
+## Issue #197 — PR CI 병렬화·캐시 변경 위험 원장 (2026-11-01, CI 시작 전)
+
+- **아직 실제 신규 실패 관측 없음:** 구현 변경은 [CIOptimization](CIOptimization.md)에 따라 별도 PR로 진행하며, 신규 CI가 실행/완료되지 않은 단계에서 PASS/FAIL 또는 절감 시간을 추정하여 기록하지 않는다.
+- **선제 위험 및 Fail-Closed 처리:** (1) Shard fixture/DB 충돌 → Worker1 유지, Runner별 temp DB; (2) JSON reporter 또는 build TAR 누락 → 해당 Job 실패와 최종 verify 실패; (3) scope diff 파싱 오류·PR base/head 불일치 → scope 실패 및 required gate 실패; (4) GHA cache miss/eviction → 일반 빌드 복구, native/Compose 검증 생략 없음; (5) Docker baseline 미실행 여부 → packaging/lock/workflow 변경 시 반드시 비교, 일반 source 변경도 Runtime/Migrator smoke 유지; (6) CI-only main push의 GHCR 게시 → 정확 4개 helper allowlist, 실제 Main 로그로 후검증.
+- **근거:** #159/Run40951594117, #194/Run41295744097 성공 Step timestamps와 파일 `.github/workflows/pr-ci.yml`. GHCR/배포/운영 Auth/Writer 활성화 없음.
+
+---
+
 ## PR #194 / Issue #191 — 최종 PR CI 성공·Owner Managed 병합·GHCR Main CI 시작 (2026-11-01 KST)
 
 - **최종 검증 정본:** 코드/시험 PR HEAD `3257a31b9bae4e82ed81d8bb462011b9bc6cf7ac`, [PR CI Run 41295744097](https://github.com/planner77/layoutManager/actions/runs/41295744097), `completed/success`. Verify Job `124816115059` **SUCCESS**(TypeScript, ESLint, Unit/Integration, OCI/Benchmark, Production Build, General Chromium, G7 Signed Runtime, Greenfield #109, Legacy Migration E2E); Docker Job `124816115216` **SUCCESS**(App/Migrator image, native dependencies, isolated Greenfield restart/smoke). 기존 Run 41293959571의 E2E 포커스 경합 실패 및 이전 3회 ESLint 실패·결정적 RED/GREEN/로컬 QA 증거는 아래 역사 원장에 그대로 보존하며 과거 HEAD 결과와 구분한다.

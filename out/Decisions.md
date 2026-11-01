@@ -1,3 +1,15 @@
+## ADR-197 — PR CI 필수 검증을 유지하며 병렬화·조건부 비용 분리 (2026-11-01)
+
+**결정:** General E2E를 workers=1의 파일 단위 2-Shard로 나누고 Greenfield를 별도 Job으로 실행. G7 Signed Runtime 및 Legacy Migration도 유지한다. `quality`가 생성한 정확 HEAD standalone TAR을 테스트 Job에 전달한다. `scope`는 Git diff 경로 전체를 fail-closed 검사하며 docs-only일 때만 중량 테스트를 생략하고 기존 이름의 `verify` required gate가 필수 상태를 집계한다. Docker baseline 비교는 패키징 관련 변경에만, native/runtime/Greenfield smoke는 모든 코드 PR에 실행. GHCR은 CI-only helper allowlist로 원치 않는 게시를 금지한다.
+
+**사유:** 2026-10-29 #159 11.0분→11-01 #194 24.5분 중 E2E 5.8→14.8분/Greenfield 0.1→3.0분이 전체 증가의 약 88%를 설명한다. Typecheck/Lint·Docker checks를 약화해도 주 병목은 줄지 않는다.
+
+**대안 배제:** 테스트 제거/skip·retry/timeout 증가, 테스트 파일 내 fullyParallel=true 즉시 전환(공유 fixture 경합), 수동 변경 파일 탐지, Main release에 CI helper 포함, 실 CAD 입력 업로드, 운영 Schema/Volume 변경.
+
+**증거·미검증:** [CIOptimization](CIOptimization.md)·[TestPlan](TestPlan.md) 참조. PR CI 실측, Shard 균형, BuildKit cache hit/실행 실패 재현 및 Main GHCR skip은 실제 Run 전 **NOT VERIFIED**.
+
+---
+
 ## ADR-191 — 5열 Master UI를 단일 트리 + 선택 상세로 교체 (2026-11-01)
 
 **결정:** 기존 다섯 단계 데이터 모델, 불변 UUID/Parent FK, Server API/G7 승인·감사 경계는 유지하고 /masters 표시와 상호작용만 트리/상세 2패널로 전환. 서버 master 생성에 활성 부모·조상 검증을 트랜잭션 내부에서 추가한다. 검색은 이름 일치+조상·임시 확장, 삭제는 전체 경로 확인과 FK 차단. 미분류 제품 이름, Current/Version/원본은 그대로 보존.

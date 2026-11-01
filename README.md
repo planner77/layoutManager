@@ -734,3 +734,4 @@ docker image inspect "$CAD_IMAGE_NAME:$CAD_IMAGE_VERSION" --format '{{json .Repo
 ```
 
 게시한 전체 이미지 주소를 `.env`의 `GHCR_IMAGE`에 넣으면 위의 Compose pull 절차로 실행할 수 있습니다. Token을 `.env.example`, Docker build argument, image label 또는 Git에 넣지 않습니다. Docker 인증 저장은 사용 환경의 credential helper 정책을 따르며 필요하면 작업 후 `docker logout ghcr.io`로 해제합니다. package 권한·visibility는 GitHub 설정을 따르고 임의 공개 전환을 하지 않습니다. GHCR 인증/권한 및 원본 연결 설명은 [GitHub 공식 문서](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)를 참조하세요.
+\n### PR CI 시간 최적화 (#197)\n\nPlaywright 일반 E2E 2-Shard/Greenfield 병렬화, docs-only PR 경량화, 테스트별 실행시간 JSON·Summary, Docker Baseline 조건부 비교·GHA cache, standalone Production Build 재사용 및 기존 required check 안전 집계는 [CIOptimization](out/CIOptimization.md)에 문서화되어 있습니다. CI 실제 개선량은 GitHub Actions 성공 Run으로만 확인합니다.\n
