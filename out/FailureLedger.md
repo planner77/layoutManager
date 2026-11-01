@@ -1,3 +1,12 @@
+## Issue #191 — Master Tree 구현·PR CI 시작 전 실패/위험 원장 (2026-11-01 KST)
+
+- **범위/기준:** Main 327ac0c13534d240c2880eb293c77e5cf44736a4, feat/issue-191-master-tree-20261101, #24 기존 5단계 API/권한/UUID 및 #191 상세 UI 요구. 루트 DESIGN.md 부재 → out/Architecture.md·Decisions.md·Issue191.md 참조.
+- **관측된 CI 실패:** 이 신규 기능 브랜치에 대한 PR CI는 아직 시작 전이며 **실제 Run/Job 실패가 관측되지 않음**. 과거 CI 실패와 섞거나 성공으로 표기하지 않는다. 로컬 Node 의존성 설치/Vitest/Typecheck/Playwright/Docker는 현재 GitHub source connector 환경에서 **NOT RUN**.
+- **정적 위험/대응:** (1) 기존 master.spec.ts의 5열 locator는 새 UI와 불일치 → Tree/Detail CRUD·키보드·검색/모바일 E2E로 교체. (2) 직접 POST는 기존 MasterRepository에서 비활성 상위 경로를 검사하지 않음 → 동일 DB transaction에서 직계·조상 active guard + Integration. (3) 검색/필터/재조회 선택 stale·중복 쓰기 → generation ID·기존 확장 상태 보존·서버 성공 후 별도 재조회. (4) 미분류 이름 PATCH, 참조 자식 삭제·이력 접근/G7 권한 → 불변/안전 삭제·기존 Server guard 유지.
+- **향후 게이트:** 정확 PR HEAD의 Verify(Prisma/TS/ESLint/Vitest/Build/E2E), Docker/Greenfield/Legacy 및 unresolved review threads·Main 비교 필요. PR 개설이 PR CI를 시작하며 결과는 사용자의 모니터링 생략 요청으로 **NOT VERIFIED**. 실패가 실제 확인되면 Run/Job/HEAD/원인·보완 기록을 이 원장 최상단에 추가한다. PR 병합, GHCR 게시, 이슈 종료/운영 변경 없음.
+
+---
+
 ## PR #192 — 최종 PR CI 성공·리뷰/충돌·Owner Managed 병합 및 Main CI 시작 (2026-11-01 KST)
 
 - **CI 정본:** 최종 HEAD `3da74d76134e69924018e519ff4ce458e96c7487`, [PR CI Run 41281582636](https://github.com/planner77/layoutManager/actions/runs/41281582636) `completed/success`. Verify Job `124774528508` `completed/success`(Typecheck·ESLint·Unit/Integration·Build·E2E 등 CI gate), Docker Job `124774528276` `completed/success`(Docker image/runtime smoke). 초기 HEAD `1ecd7e9a38ed1c88217ec1dd5ab462a9ebc5d042` [Run 41281326806](https://github.com/planner77/layoutManager/actions/runs/41281326806)은 정확 HEAD가 달라 최종 PASS 증거로 사용하지 않는다.
