@@ -92,7 +92,7 @@ test("TC-191-E2E-01/02/04/05/06: tree CRUD, search, keyboard, inactive and histo
   await page.getByRole("button", { name: "삭제", exact: true }).click();
   await expect(page.getByRole("alertdialog")).toContainText(bu + " > " + product);
   await page.getByRole("button", { name: "삭제 확인" }).click();
-  await expect(page.getByRole("alert")).toContainText("하위 항목이나 도면 이력");
+  await expect(page.locator("main").getByRole("alert")).toContainText("하위 항목이나 도면 이력");
   await page.getByRole("button", { name: "비활성화 대안" }).click();
   await expect(page.getByRole("checkbox", { name: "활성 상태로 사용" })).toBeChecked();
   await page.getByRole("button", { name: "취소", exact: true }).click();
@@ -100,7 +100,7 @@ test("TC-191-E2E-01/02/04/05/06: tree CRUD, search, keyboard, inactive and histo
   await page.getByRole("button", { name: "+ 사업부 추가" }).click();
   await page.getByLabel("새 사업부 이름").fill(bu);
   await page.getByRole("button", { name: "등록 저장" }).click();
-  await expect(page.getByRole("alert")).toContainText("동일한 이름");
+  await expect(page.locator("main").getByRole("alert")).toContainText("동일한 이름");
   await expect(page.getByLabel("새 사업부 이름")).toHaveValue(bu);
   await page.getByRole("button", { name: "취소", exact: true }).click();
 
@@ -129,7 +129,7 @@ test("TC-191-E2E-03: empty, query miss and GET error are distinct and recoverabl
       body: '{"error":{"code":"SERVICE_UNAVAILABLE","message":"기준정보 DB 점검 중"}}' });
   });
   await page.getByRole("button", { name: "새로고침" }).click();
-  await expect(page.getByRole("alert")).toContainText("기준정보 DB 점검 중");
+  await expect(page.locator("main").getByRole("alert")).toContainText("기준정보 DB 점검 중");
   await expect(page.getByRole("tree")).toHaveCount(0);
   await page.unroute("**/api/masters?active=false");
   await page.getByRole("button", { name: "새로고침" }).click();
