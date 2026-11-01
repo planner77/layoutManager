@@ -1,3 +1,15 @@
+## ADR-172 — Same-Site 공동 편집 / 작성자 또는 Site Admin 삭제 (2026-11-01, Owner APPROVED)
+
+**최신 우선 정책:** 동일 Site의 Editor는 다른 작성자가 생성한 Memo의 텍스트·위치·메타데이터 및 Anchor를 수정할 수 있다. 별도의 전역 관리자 권한이나 사용자 입력 actor 대신 기존 G7 Session+Role+Server-resolved Site Grant를 사용한다. 기존 R4, ADR-062 등에서 언급한 `author-only` 내용은 **과거 구현 계약**으로 보존하되 수정 권한 부분은 본 ADR로 대체한다.
+
+- PATCH: `memo:write`와 Version/Site/Revision/원본 SHA·Anchor Target 검증, 생성자 ID 불변, 변경자 Audit.
+- DELETE: 위 검사 후 Memo 작성자 또는 해당 Site Grant가 있는 Admin만 허용. 일반 Editor B는 작성자 A의 Memo를 삭제할 수 없다. Admin도 Site Grant 없이 삭제할 수 없다. Soft delete 후 검색/조회 제외.
+- Reset: SOURCE_ONLY는 연결 해제 EDIT, ALL은 모두 Memo 삭제이므로 모든 작성자 소유 또는 Site Admin 조건 실패 시 전체 롤백. 그룹 작성자 전용 관리와 그룹 삭제의 타 작성자 Memo 미분류 이동 EDIT는 유지.
+- UX: Memo GET 응답 `actorId/canDeleteAny`에 기반한 삭제 버튼 비활성화는 편의 기능; 보안은 요청마다 별도 서버 재검증. 권한을 회수하면 UI 표시가 잠시 남을 수 있으나 서버는 403을 반환해야 한다.
+- 기존 Schema/녹색 필드 신규 설치 정책, Source SHA/WCS/CAS/Audit/Secret 보호 유지. Owner가 지정한 공동 편집은 운영 현장 활성화/2PC 합격을 자동 승인하지 않는다. PR/CI 수용과 실제 #96/#113/#186 수용을 분리한다.
+
+---
+
 ## ADR — 2026-11-01 #37/#49/#50 통합 회귀 보완
 
 - 완료된 하위 기능은 중복 구현하지 않고 두 취약한 UI 경계만 보완한다: Viewer disabled link에 navigable href가 남는 문제, 로그 Timeline의 확인된 저장소/커서 오류에 메인 목록까지 없어지는 문제.
