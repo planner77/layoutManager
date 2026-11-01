@@ -17,7 +17,7 @@
 | 독립 QA, port3542 | **6 PASS**(`/tmp/pr200-repair-qa-report.md`). Source 경합·Zone retry 두 사례·기존 수동 복구·OFF/fallback·runtime OFF. Root의19/5건과 중복을 고유 TC 수로 합산하지 않는다. |
 
 - 제품 수리: 명시적 public status OFF는 Zone GET 생략, ACTIVE는 실제 보호 GET으로 계속 인가. 오류 때 보호 정보는 폐기하면서 retry shell을 유지한다. 같은 Version renderer-only escape는 pending Source를 공유하고 Version/full reload/source-error의 기존 초기화는 유지한다. 기존 콘솔 오류0·성공 download1 기준을 완화/필터링해서 통과시키지 않았다.
-- Git/리뷰: latest main `2bccf90`, behind0/충돌 없음을 재확인하고 현재 P2 review4435768211의 수리 답변·resolve는 원격 코드 반영 후 수행한다. Commit/동일 tree 게시 및 새 CI 시작은 실제 원격 상태를 확인한다.
+- Git/리뷰: latest main `2bccf90`, behind0·conflict marker0. 수리 source commit [`e3d442b`](https://github.com/planner77/layoutManager/commit/e3d442b46fdfecb28929b730fecf59c58db0c774)의 tree `479acb1d722c52b67a4e4f40300450495dcf2e10`이 검증한 로컬 snapshot과 일치한다. P2 review4435768211에 답변4435894228·resolve 후 전체1/unresolved0을 재조회했다. 해결 결과 기록 commit을 source 뒤에 연결해 expected PR HEAD9f88d8e로 fast-forward 게시하고 CI 시작만 확인한다. 이전 로컬 Git 인증 거절에 따라 동일 지정 저장소의 연결 도구를 사용하며 기존 commit/branch를 보존한다.
 - **NOT VERIFIED:** 새 정확 HEAD 원격 PR CI 완료 및 새 Docker/GHCR/운영·현장 수용. 이번 수리는 로컬 필수 gate와 독립 QA를 통과했으며 사용자의 요청대로 CI 재시작 이후 모니터링하지 않는다. PR 병합·이슈 종료·권한/Writer 활성화 없음.
 
 ---
