@@ -153,7 +153,7 @@ jobs:
         run: |
           test -f .next/standalone/server.js
           tar --exclude='.next/cache' -cf "$RUNNER_TEMP/production-build.tar" .next
-          tar -tf "$RUNNER_TEMP/production-build.tar" | grep -q '^.next/standalone/server.js$'
+          tar -tf "$RUNNER_TEMP/production-build.tar" .next/standalone/server.js > /dev/null
       - name: Upload exact-HEAD production build artifact
         uses: actions/upload-artifact@v4
         with:
