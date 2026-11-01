@@ -1,6 +1,13 @@
 # Issue #76 — GitHub Squash Merge 기본 커밋 메시지 정책
 
-Date: 2026-10-25 · Scope: GitHub repository admin setting / read-only CI audit / operator guide · State: **admin setting NOT APPLIED**
+Date: 2026-10-25 · Scope: GitHub repository admin setting / read-only CI audit / operator guide · State (2026-11-01): **read-only audit MERGED; admin setting NOT APPLIED**
+
+## 2026-11-01 — 기존 구현 및 운영 설정 재검증
+
+- [PR #89](https://github.com/planner77/layoutManager/pull/89) 최종 HEAD `959387c6c895a1422574ae32e7b8167593a558f3`의 [PR CI 40179740394](https://github.com/planner77/layoutManager/actions/runs/40179740394) **completed/success**, Verify·Docker 둘 다 성공. Read-only Squash 설정 진단 코드는 이미 병합되었으며 중복 구현 대상이 아니다.
+- [Main commit 14111b45](https://github.com/planner77/layoutManager/commit/14111b45a36907245342751d9d1a139b5215474d) subject는 `#76 | Squash 기본 메시지 정책 진단 및 운영 가이드`, body는 비어 있다. [Main CI 40182008444](https://github.com/planner77/layoutManager/actions/runs/40182008444) **completed/success**, run-name 한 줄, release-scope success 및 GHCR **skipped**. 이는 명시적 Squash API 인자를 사용한 결과이며 **저장소 기본값 수용의 증거가 아니다**.
+- 2026-11-01 공개 REST 재조회: `allow_squash_merge=true`, `squash_merge_commit_title=COMMIT_OR_PR_TITLE`, `squash_merge_commit_message=COMMIT_MESSAGES`. 요구 `true/PR_TITLE/BLANK`가 **NOT APPLIED**, AC-76-01 및 기본값 적용 후 TC-CI-76-005/AC-76-03 **BLOCKED**. GitHub 연결 도구에는 저장소 설정 PATCH 기능이 없으므로 관리자 [Settings](https://github.com/planner77/layoutManager/settings) → General → Pull Requests에서 **Default commit message = Pull request title** 변경 후 REST 확인·다음 정상 Squash 재검증이 필요하다.
+- 후속 변경 범위는 문서와 증거 정합화에 한정. Workflow/App/GHCR/DB/버전 미변경, 새 문서 PR CI는 시작과 성공을 구분. Issue #76은 **OPEN** 유지.
 
 ## PR #89 검증·main 통합 기록 (2026-10-25)
 
@@ -34,8 +41,8 @@ Date: 2026-10-25 · Scope: GitHub repository admin setting / read-only CI audit 
 | AC | 검증 | 현 상태 |
 | --- | --- | --- |
 | AC-76-01 Repo 기본값 `PR_TITLE/BLANK`로 실제 변경 | 관리자 Settings + REST GET 3항목 | **BLOCKED / NOT APPLIED** |
-| AC-76-02 설정 변경 여부를 안전하게 진단 | TC-CI-76-001~004; PR Job Summary | Bash 샘플의 4 fixture 검증, 실제 PR CI 대기 |
-| AC-76-03 새 정상 Squash main subject/body/Run 이름 | TC-CI-76-005, 실제 main push | **NOT RUN** |
-| AC-76-04 GHCR 등 다른 CI 계약 불변 | TC-CI-76-006, Workflow diff | 정적 검사, 실제 PR CI 대기 |
+| AC-76-02 설정 변경 여부를 안전하게 진단 | TC-CI-76-001~004; PR Job Summary | **구현 병합**: #89 최종 PR CI success; 로컬 mock 4 fixture PASS, 네트워크 오류 fixture 미실행 |
+| AC-76-03 새 정상 Squash main subject/body/Run 이름 | TC-CI-76-005, 실제 main push | 명시적 제목/빈 본문 Main 검증 성공; **기본값 적용 후 정상 Squash는 BLOCKED / NOT RUN** |
+| AC-76-04 GHCR 등 다른 CI 계약 불변 | TC-CI-76-006, Workflow diff | #89 Verify·Docker success/Main release-scope success 및 GHCR skipped |
 
 실제 REST 설정 조회는 위 **불일치** 증거이며, GitHub Runner/관리자 UI에 대한 실행 성공은 아니다. [TestPlan](TestPlan.md)·[TestReport](TestReport.md)·[Operation](Operation.md) 참고.

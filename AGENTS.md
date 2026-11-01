@@ -934,6 +934,13 @@ DXF_IMPORTED 변형은 세션 작업 차분, APP_CREATED는 GeneratedDocument로
 
 - 수정된 #54 HEAD `6845c4b4`: [PR CI 40181171710](https://github.com/planner77/layoutManager/actions/runs/40181171710) **completed/success**, P1 thread resolved. #76 [main 14111b45](https://github.com/planner77/layoutManager/commit/14111b45a36907245342751d9d1a139b5215474d)는 문서·PR CI 비차단 read-only audit만 변경하며 Viewer/DB/GHCR 런타임 변경 없음. #54와 #76 문서 및 CI 작업을 모두 보존하고 main을 통합한다. 병합 HEAD의 새 PR CI 성공은 별도 확인해야 한다.
 
+## Issue #76 — 2026-11-01 운영 설정 재점검 및 완료 경계
+
+- [PR #89](https://github.com/planner77/layoutManager/pull/89) CI 40179740394 SUCCESS, Main Squash `14111b45` 단일 제목·빈 본문, Main CI 40182008444 SUCCESS/GHCR SKIPPED는 검증되었다. 그러나 REST 재조회 `true/COMMIT_OR_PR_TITLE/COMMIT_MESSAGES`여서 repository default 목표 `true/PR_TITLE/BLANK`는 **미적용**. 명시적 Squash 병합 성공은 기본 설정 수용을 대체하지 않는다.
+- GitHub 연결 도구로 repository settings PATCH 불가. 관리자 [Settings](https://github.com/planner77/layoutManager/settings) 변경·REST 재조회·**기본값 변경 후 다음 정상 Squash**의 subject/body/Main run-name 확인 시에만 #76 수용 및 종료. CI audit는 비차단이며 이 후속 문서 PR은 구현을 중복하지 않는다. [Issue76](out/Issue76.md) / [FailureLedger](out/FailureLedger.md).
+
+---
+
 ## Issue #76 — Squash Merge 관리자 설정·PR CI 읽기 전용 진단 (2026-10-25)
 
 - #74 Main 실행명 fallback 구현과 저장소 영구 설정을 분리한다. 2026-10-25 REST GET에서는 `allow_squash_merge=true`, `squash_merge_commit_title=COMMIT_OR_PR_TITLE`, `squash_merge_commit_message=COMMIT_MESSAGES`로 확인되어 **#76 관리자 적용은 미완료**다.
