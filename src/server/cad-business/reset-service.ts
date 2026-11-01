@@ -8,6 +8,7 @@ import {writeTransaction,type Database} from '@/server/db';
 import {requireG7CadPermission,type G7CadWrite} from '@/server/g7-operational/cad-guard';
 import {businessSchema} from './service';
 import {hasAnchorSchema} from './anchor-service';
+import {isSiteMemoAdmin} from './memo-policy';
 import {keys,revision,sourceSha} from './validation';
 function reject(code:string,status=409):never {throw new CadError(code,'현재 도면의 업무 객체가 변경되었습니다. 다시 조회한 후 확인하세요.',status);}
 export async function resetBusinessVersion(db:Database,versionId:string,raw:unknown,proof:G7CadWrite){
@@ -53,8 +54,8 @@ export async function resetBusinessVersion(db:Database,versionId:string,raw:unkn
     for(const a of anchors){
      const memo=activeMemos.find(m=>m.id===a.memoId);
      if(!memo)reject('RESET_ANCHOR_INTEGRITY');
-     // Do not silently bypass #172's author-only memo modification policy.
-     if(memo.createdById!==memoActor.actorId)reject('RESET_MEMO_OWNER_REQUIRED',403);
+     // #172 SOURCE_ONLY breaks an Anchor (EDIT), not the Memo itself.
+     // Site-authorized Editors may edit another author's Anchor.
      await tx.cadMemoAnchor.update({where:{memoId:a.memoId},data:{
       status:'BROKEN_ANCHOR',targetId:null,targetOrigin:null,localX:null,localY:null,updatedAt:now}});
      const changed=await tx.cadMemo.updateMany({
@@ -65,8 +66,9 @@ export async function resetBusinessVersion(db:Database,versionId:string,raw:unkn
     }
    }
   }else{
-   // Privileged Outline writers cannot use this to delete other authors' Memos.
-   if(activeMemos.some(m=>m.createdById!==memoActor.actorId))reject('RESET_MEMO_OWNER_REQUIRED',403);
+   // #172 ALL is bulk Memo DELETE: any foreign author requires Site Admin.
+   if(activeMemos.some(m=>m.createdById!==memoActor.actorId) &&
+      !await isSiteMemoAdmin(tx,memoActor.actorId))reject('RESET_MEMO_OWNER_REQUIRED',403);
    // Delete dependent links first (same transaction), otherwise a later Outline move
    // would select a dangling ATTACHED anchor and fail with MEMO_ANCHOR_INTEGRITY.
    if(hasAnchors)await tx.cadMemoAnchor.deleteMany({where:{versionId,memoId:{in:activeMemos.map(m=>m.id)}}});
