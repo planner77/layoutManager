@@ -48,7 +48,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Check fail-closed scope classifier (#197)
-        run: python3 src/scripts/test_pr_ci_scope.py
+        run: python3 .github/scripts/test_pr_ci_scope.py
       - name: Determine required CI scope
         id: classify
         env:
@@ -58,7 +58,7 @@ jobs:
         run: |
           set -euo pipefail
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            python3 src/scripts/pr_ci_scope.py manual /dev/null "$GITHUB_OUTPUT"
+            python3 .github/scripts/pr_ci_scope.py manual /dev/null "$GITHUB_OUTPUT"
           else
             for sha in "$BASE_SHA" "$HEAD_SHA"; do
               if [[ ! "$sha" =~ ^[0-9a-f]{40}$ ]] || ! git cat-file -e "${sha}^{commit}"; then
@@ -67,7 +67,7 @@ jobs:
               fi
             done
             git diff --name-only -z "$BASE_SHA" "$HEAD_SHA" -- > "$RUNNER_TEMP/pr-changed-paths.nul"
-            python3 src/scripts/pr_ci_scope.py pr "$RUNNER_TEMP/pr-changed-paths.nul" "$GITHUB_OUTPUT"
+            python3 .github/scripts/pr_ci_scope.py pr "$RUNNER_TEMP/pr-changed-paths.nul" "$GITHUB_OUTPUT"
           fi
           echo "## PR CI path scope (#197)" >> "$GITHUB_STEP_SUMMARY"
           grep -E '^(full|baseline)=' "$GITHUB_OUTPUT" >> "$GITHUB_STEP_SUMMARY"
@@ -144,7 +144,7 @@ jobs:
       # run.mjs treats unresolved Webpack import/export warnings as hard failures.
       # This must run BEFORE browser tests and GHCR promotion.
       - name: Validate timing reporter (#197)
-        run: node --test scripts/report-playwright-duration.check.mjs
+        run: node --test ../.github/scripts/report-playwright-duration.check.mjs
 
       - name: Production 빌드
         run: npm run build
@@ -205,7 +205,7 @@ jobs:
         run: npm run test:e2e -- --shard=${{ matrix.shard }}/2 --reporter=dot,json
       - name: Report slow Playwright tests (#197)
         if: always()
-        run: node scripts/report-playwright-duration.mjs "$PLAYWRIGHT_JSON_OUTPUT_FILE" "General Chromium shard ${{ matrix.shard }}/2"
+        run: node ../.github/scripts/report-playwright-duration.mjs "$PLAYWRIGHT_JSON_OUTPUT_FILE" "General Chromium shard ${{ matrix.shard }}/2"
       - name: Upload Playwright JSON and failure traces
         if: always()
         uses: actions/upload-artifact@v4
@@ -256,7 +256,7 @@ jobs:
         run: npx playwright test --config playwright.g7-greenfield.config.ts --reporter=dot,json
       - name: Report slow Playwright tests (#197)
         if: always()
-        run: node scripts/report-playwright-duration.mjs "$PLAYWRIGHT_JSON_OUTPUT_FILE" "G7 Greenfield"
+        run: node ../.github/scripts/report-playwright-duration.mjs "$PLAYWRIGHT_JSON_OUTPUT_FILE" "G7 Greenfield"
       - name: Upload Playwright JSON and failure traces
         if: always()
         uses: actions/upload-artifact@v4
@@ -307,14 +307,14 @@ jobs:
         run: npx playwright test --config playwright.g7-runtime.config.ts --reporter=dot,json
       - name: Report signed-runtime timing
         if: always()
-        run: node scripts/report-playwright-duration.mjs "$RUNNER_TEMP/signed-runtime.json" "G7 Signed Runtime"
+        run: node ../.github/scripts/report-playwright-duration.mjs "$RUNNER_TEMP/signed-runtime.json" "G7 Signed Runtime"
       - name: Legacy migration E2E 테스트
         env:
           PLAYWRIGHT_JSON_OUTPUT_FILE: ${{ runner.temp }}/legacy-migration.json
         run: npm run test:master-migration -- --reporter=dot,json
       - name: Report migration timing
         if: always()
-        run: node scripts/report-playwright-duration.mjs "$RUNNER_TEMP/legacy-migration.json" "Legacy Migration"
+        run: node ../.github/scripts/report-playwright-duration.mjs "$RUNNER_TEMP/legacy-migration.json" "Legacy Migration"
       - name: Upload runtime/legacy JSON and failure traces
         if: always()
         uses: actions/upload-artifact@v4

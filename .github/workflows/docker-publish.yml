@@ -73,7 +73,7 @@ jobs:
                 reason="Only documentation/workflow metadata changed"
                 for file in "${changed[@]}"; do
                   case "$file" in
-                    *.md|.github/workflows/*.yml|.github/workflows/*.yaml) ;;
+                    *.md|.github/workflows/*.yml|.github/workflows/*.yaml|.github/scripts/pr_ci_scope.py|.github/scripts/test_pr_ci_scope.py|.github/scripts/report-playwright-duration.mjs|.github/scripts/report-playwright-duration.check.mjs) ;;
                     *)
                       publish=true
                       reason="Runtime-affecting change detected: $file"
