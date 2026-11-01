@@ -1,3 +1,19 @@
+## PR #198 — 최초 CI 성공 및 리뷰 보완 후 재검증 후보 (2026-11-01)
+
+- 최초 확인: HEAD `946b1e42c49a3e5806c019d073acac15ab43bfd5`, [PR CI 41302441739](https://github.com/planner77/layoutManager/actions/runs/41302441739) completed/success. Scope, Quality, General Chromium E2E 1/2·2/2, Greenfield, G7 signed+Legacy, Docker runtime, Aggregate Verify **8개 Job 모두 SUCCESS**.
+- Code Review P1/P2의 rename 검증 우회 및 rerun-artifact 경로 문제를 수정해 Unit/워크플로를 보강하고, main #76 문서 변경을 보존해 충돌을 해결한다. 기존 결과는 새 HEAD PASS로 간주하지 않으며 새 CI/성능 개선량은 **NOT VERIFIED**. 별도 Issue #76 관리자 변경/GHCR/운영 반영 없음.
+
+---
+
+## Issue #197 — PR CI 시간 최적화 구현 후보 (2026-11-01, 새 Run 이전)
+
+- **기준 실측:** #159 [Run 40951594117](https://github.com/planner77/layoutManager/actions/runs/40951594117) Verify 약 11.0분(General 93/5.8분, Greenfield 1/0.1분), #194 [Run 41295744097](https://github.com/planner77/layoutManager/actions/runs/41295744097) Verify 약 24.5분(General 148/14.8분, Greenfield 22/3.0분). Docker ~5.6→5.2분. 각각 성공 로그의 실제 Step timestamp 기준, 재시도 0. 현재 코드 성능 SLA를 뜻하지 않음.
+- **구현 후보:** Issue #197의 6항(P0 E2E Shard 2 + Greenfield 독립, P1 doc-only scope + timing JSON, P2 Docker 조건부 baseline/BuildKit cache + standalone TAR reuse)을 단일 PR에 반영. 기존 필수 `verify` 이름·Scope 실패 차단/완전한 E2E/Docker native·Migration smoke 유지.
+- **검증 상태:** 구조·스크립트 검토 진행; 완전한 로컬 Node/Docker/Playwright 및 원격 신규 정확 PR HEAD 실행·완료·성능 단축 결과는 **NOT RUN / NOT VERIFIED**. 15~18분 목표는 실측 전 확정값 아님. CI 실패 시 [FailureLedger](FailureLedger.md)에 실제 run/step/log/조치를 갱신하고 임의 PASS로 기록 금지.
+- **범위:** 운영 런타임·G7 Auth/Writer·DB/CAD Volume/원본 현장 데이터 불변. metadata-only Main release-scope allowlist 보강, 기존 GitHub 게시 태그 강제 갱신 없음.
+
+---
+
 ## Issue #191 — PR #194 최종 CI·병합 / 0.55.3 Release 핸드오프 (2026-11-01 KST)
 
 - **최종 PR 검증:** 정확 HEAD `3257a31b9bae4e82ed81d8bb462011b9bc6cf7ac`, [Run 41295744097](https://github.com/planner77/layoutManager/actions/runs/41295744097) `completed/success`; Verify `124816115059` / Docker `124816115216` 둘 다 SUCCESS. TypeScript/ESLint/Unit·Integration/OCI/Benchmark/Build/General+G7+Greenfield+Legacy Browser 및 Docker Runtime/Greenfield 검증 완료. E2E focus 경합 실패 [Run 41293959571](https://github.com/planner77/layoutManager/actions/runs/41293959571)의 결정적 RED 후 수리/독립 QA 및 이전 ESLint 실패는 아래 보고서/FailureLedger에서 추적한다.

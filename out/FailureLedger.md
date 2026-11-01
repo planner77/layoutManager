@@ -1,3 +1,21 @@
+## PR #198 / Issue #197 — 검증 뒤 발견된 P1/P2 Review와 #76 Main 충돌 조치 (2026-11-01)
+
+- **최초 CI SUCCESS:** 최종 이전 HEAD `946b1e42c49a3e5806c019d073acac15ab43bfd5`, [Run 41302441739](https://github.com/planner77/layoutManager/actions/runs/41302441739) `completed/success`; Scope, Quality, Docker Runtime, General Chromium E2E shard 1/2 + 2/2, Greenfield, Runtime+Legacy, required Aggregate Verify까지 **8/8 Job 성공**. 현 시점까지 새 PR CI 실패는 확인되지 않았으며 이 성공은 후속 보완 커밋에 승계하지 않는다.
+- **Codex Review P1** `git diff --name-only -z`는 rename 출발점(삭제된 소스)을 숨겨 `src/Dockerfile` → `README.md`를 Markdown-only로 오분류할 수 있다. 수정: `git diff --no-renames --name-only -z`로 삭제·추가 두 경로를 보고, disposable Git repo에서 같은 사례를 실제 재현·회귀 검증한다. 기존 fail-closed 범위 분류 및 전체 Gate 유지.
+- **Codex Review P2** `quality` 성공 후 Browser 실패 Job만 rerun하면 `github.run_attempt` 증가로 기존 TAR을 찾지 못했다. 수정: Build/3개 Browser Job의 Artifact 이름을 `production-build-<run_id>`로 일치시키고 전체 재실행 시 `upload-artifact@v4 overwrite:true` 적용. 이전 성공 Quality Artifact도 failed-only rerun에서 이용 가능. 실사용 retry 수용은 재현 전 미검증.
+- **Main 충돌:** `main`의 #76 docs-only commit `9bfdc7a9506843ada7a9765659d7c29313988c16` 이후 AGENTS/README/FailureLedger/TestPlan/TestReport가 충돌해 `mergeable_state=dirty`. Main 쪽 전체 내용을 보존하고 #197 서두/서식을 추가하며, #76만 변경한 `out/Issue76.md`/`out/Operation.md`도 Main 버전을 통합한다. #76 관리자 Squash 설정은 여전히 별도 BLOCKED.
+- **결과 게이트:** review thread 해결 여부·Main behind0/mergeable clean 확인 및 새 정확 PR HEAD PR CI 성공 전에는 **PR 병합, Issue #197 close, Main CI/GHCR 게시 금지**. 사용자 요청에 따라 신규 CI 시작 후 모니터링 생략. 운영 DB/CAD/Auth/Writer 및 Source 변경 없음.
+
+---
+
+## Issue #197 — PR CI 병렬화·캐시 변경 위험 원장 (2026-11-01, CI 시작 전)
+
+- **아직 실제 신규 실패 관측 없음:** 구현 변경은 [CIOptimization](CIOptimization.md)에 따라 별도 PR로 진행하며, 신규 CI가 실행/완료되지 않은 단계에서 PASS/FAIL 또는 절감 시간을 추정하여 기록하지 않는다.
+- **선제 위험 및 Fail-Closed 처리:** (1) Shard fixture/DB 충돌 → Worker1 유지, Runner별 temp DB; (2) JSON reporter 또는 build TAR 누락 → 해당 Job 실패와 최종 verify 실패; (3) scope diff 파싱 오류·PR base/head 불일치 → scope 실패 및 required gate 실패; (4) GHA cache miss/eviction → 일반 빌드 복구, native/Compose 검증 생략 없음; (5) Docker baseline 미실행 여부 → packaging/lock/workflow 변경 시 반드시 비교, 일반 source 변경도 Runtime/Migrator smoke 유지; (6) CI-only main push의 GHCR 게시 → 정확 4개 helper allowlist, 실제 Main 로그로 후검증.
+- **근거:** #159/Run40951594117, #194/Run41295744097 성공 Step timestamps와 파일 `.github/workflows/pr-ci.yml`. GHCR/배포/운영 Auth/Writer 활성화 없음.
+
+---
+
 ## Issue #76 — 2026-11-01 관리자 설정 BLOCKED / 기존 PR #89 완료 기록 (CI 실패 아님)
 
 - **현재 REST 실측:** `allow_squash_merge=true`, `squash_merge_commit_title=COMMIT_OR_PR_TITLE`, `squash_merge_commit_message=COMMIT_MESSAGES`. 목표 `true/PR_TITLE/BLANK`와 불일치. 이는 **운영 관리자 설정 잔여**이며 PR CI 실패와 다르다. Read-only audit 경고는 정상 비차단 진단이다.

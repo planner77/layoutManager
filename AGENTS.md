@@ -1,3 +1,22 @@
+## PR #198 — PR CI 기존 성공·리뷰 보완·Main 정렬 (2026-11-01)
+
+- 직전 PR CI [Run 41302441739](https://github.com/planner77/layoutManager/actions/runs/41302441739) HEAD `946b1e42c49a3e5806c019d073acac15ab43bfd5` 8개 Job SUCCESS(2 Shards 포함). 그러나 이후 Codex P1/P2 리뷰 수정 및 Main #76 동기화로 새 HEAD의 CI 통과는 별도 필요.
+- P1: `git diff --no-renames --name-only -z`로 이름 변경된 소스의 구/신 경로를 빠짐없이 검사; 독립 disposable Git rename Unit 추가. P2: `production-build-<run_id>` artifact 고정 + 전체 재실행 시 `overwrite:true`, 실패 Browser Job만 재실행해도 이전 성공 Quality artifact 유지.
+- #76 docs-only Main `9bfdc7a9506843ada7a9765659d7c29313988c16`의 AGENTS/README/FailureLedger/TestPlan/TestReport, Issue76/Operation 내용을 보존하며 conflict를 해소하고 양 부모 merge로 Main 정렬. 신규 PR CI에 성공하기 전 병합/Issue 종료/GHCR 수행하지 않는다.
+- 근거 [CIOptimization](out/CIOptimization.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md), [FailureLedger](out/FailureLedger.md). 현재 구현 branch 후속 CI Run/Job, 효과는 새 실행에서 별도 확인. 사용자 요청에 따라 CI 완료 모니터링 생략.
+
+---
+
+## #197 — PR CI 최적화 6건 (2026-11-01, 구현 PR 후보)
+
+- 디자인/AC 정본: [out/CIOptimization.md](out/CIOptimization.md). PR CI 증가: #159 약 11분, #194 약 24.5분. General Chromium E2E 93→148건/5.8→14.8분 및 Greenfield 1→22건/0.1→3분으로 확대; 원인은 실제 Job 로그 근거.
+- `.github/workflows/pr-ci.yml`: scope(fail-closed)→quality(기존 lint/type/unit/OCI/benchmark/build)→General 2 Shards, Greenfield 및 G7/Legacy 각각 병렬; Docker runtime 검증 병렬. 마지막 `verify`의 기존 required-check 표시 이름 `Typecheck, lint, test, build, E2E` 보존. **full에서 모든 required group success, doc-only에서 모든 heavy group skipped 강제**.
+- Browser Jobs는 동일 Run/Attempt의 정확 HEAD `.next` TAR을 다운로드하며 재빌드하지 않음. 각 Runner는 Prisma/SQLite/CAD fixture 격리, workers=1/fullyParallel=false 유지. 느린 테스트 JSON/Step Summary 저장.
+- Docker baseline/phase1/size 비교는 Dockerfile/lockfile/Next tracing/packaging/CI workflow 변경 시 필수; 나머지 코드 PR에서도 Runtime/Migrator/native/invalid-migration/Compose Greenfield는 필수. Buildx GHA 캐시 scope 분리. CI helper는 `.github/scripts`에만 있으며 GHCR Main release metadata-only allowlist에 정확 4개 등록.
+- PR CI 실제 성공/개선량, PR merge/Main CI/GHCR 게시·현장 수용은 **NOT VERIFIED**. CI 시작 이후 미모니터링 요청 유지. 운영 DB/Volume/Auth/Writer 및 원본 CAD 비변경. 근거 [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md), [FailureLedger](out/FailureLedger.md).
+
+---
+
 ## PR #194 / #191 — Owner Managed 코드 완료·Main CI/GHCR 핸드오프 (2026-11-01, v0.55.3)
 
 - 최종 PR HEAD `3257a31b9bae4e82ed81d8bb462011b9bc6cf7ac`에서 [PR CI Run 41295744097](https://github.com/planner77/layoutManager/actions/runs/41295744097) `completed/success`. Verify `124816115059`, Docker `124816115216` 모두 SUCCESS; 이전 ESLint 3회·General E2E 1회 실패와 #52 native Undo focus 경합 재현/수리 근거는 [FailureLedger](out/FailureLedger.md) / [TestReport](out/TestReport.md)에 보존.

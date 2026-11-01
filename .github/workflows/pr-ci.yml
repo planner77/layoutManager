@@ -35,19 +35,42 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  verify:
-    name: Typecheck, lint, test, build, E2E
+  scope:
+    name: Classify PR scope and audit merge defaults
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-
-    defaults:
-      run:
-        working-directory: src
-
+    timeout-minutes: 5
+    outputs:
+      full: ${{ steps.classify.outputs.full }}
+      baseline: ${{ steps.classify.outputs.baseline }}
     steps:
-      - name: 저장소 체크아웃
+      - name: Checkout history for exact PR diff
         uses: actions/checkout@v4
-
+        with:
+          fetch-depth: 0
+      - name: Check fail-closed scope classifier (#197)
+        run: python3 .github/scripts/test_pr_ci_scope.py
+      - name: Determine required CI scope
+        id: classify
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            python3 .github/scripts/pr_ci_scope.py manual /dev/null "$GITHUB_OUTPUT"
+          else
+            for sha in "$BASE_SHA" "$HEAD_SHA"; do
+              if [[ ! "$sha" =~ ^[0-9a-f]{40}$ ]] || ! git cat-file -e "${sha}^{commit}"; then
+                echo "::error::PR ref missing; refusing docs-only classification"
+                exit 1
+              fi
+            done
+            git diff --no-renames --name-only -z "$BASE_SHA" "$HEAD_SHA" -- > "$RUNNER_TEMP/pr-changed-paths.nul"
+            python3 .github/scripts/pr_ci_scope.py pr "$RUNNER_TEMP/pr-changed-paths.nul" "$GITHUB_OUTPUT"
+          fi
+          echo "## PR CI path scope (#197)" >> "$GITHUB_STEP_SUMMARY"
+          grep -E '^(full|baseline)=' "$GITHUB_OUTPUT" >> "$GITHUB_STEP_SUMMARY"
 
       # Advisory only until a repository administrator applies Issue #76.
       # Do not mistake an advisory PR CI success for acceptance of the repo setting.
@@ -75,6 +98,19 @@ jobs:
             echo "::warning title=${prefix}::Expected enabled/PR_TITLE/BLANK, observed ${observed}. Administrator must update repository Settings; diagnostic is non-blocking."
             echo "- ${prefix}: **NOT APPLIED** (expected enabled/PR_TITLE/BLANK; observed ${observed}). See Issue #76." >> "$GITHUB_STEP_SUMMARY"
           fi
+
+  quality:
+    name: Static, unit, benchmark and production build
+    needs: scope
+    if: needs.scope.outputs.full == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: src
+    steps:
+      - name: Checkout exact PR revision
+        uses: actions/checkout@v4
 
       - name: Node.js 설정
         uses: actions/setup-node@v4
@@ -107,35 +143,195 @@ jobs:
 
       # run.mjs treats unresolved Webpack import/export warnings as hard failures.
       # This must run BEFORE browser tests and GHCR promotion.
+      - name: Validate timing reporter (#197)
+        run: node --test ../.github/scripts/report-playwright-duration.check.mjs
+
       - name: Production 빌드
         run: npm run build
 
-      - name: Playwright Chromium 설치
-        run: npx playwright install --with-deps chromium
-
-      - name: E2E 테스트
-        run: npm run test:e2e
-
-      - name: G7 서명 Runtime 로그인·관리·CAD 권한 E2E
-        run: npx playwright test --config playwright.g7-runtime.config.ts
-
-      - name: G7 신규설치 최초 관리자 웹 UI E2E (#109)
-        run: npx playwright test --config playwright.g7-greenfield.config.ts
-
-      - name: Legacy migration E2E 테스트
-        run: npm run test:master-migration
-
-      - name: E2E 실패 결과 업로드
-        if: failure()
+      - name: Pack reusable standalone build (preserve symlinks)
+        run: |
+          test -f .next/standalone/server.js
+          tar --exclude='.next/cache' -cf "$RUNNER_TEMP/production-build.tar" .next
+          tar -tf "$RUNNER_TEMP/production-build.tar" .next/standalone/server.js > /dev/null
+      - name: Upload exact-HEAD production build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-test-results
-          path: src/test-results
+          name: production-build-${{ github.run_id }}
+          path: ${{ runner.temp }}/production-build.tar
+          if-no-files-found: error
+          retention-days: 1
+          overwrite: true
+
+  e2e:
+    name: General Chromium E2E (shard ${{ matrix.shard }}/2)
+    needs: [scope, quality]
+    if: needs.scope.outputs.full == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    defaults:
+      run:
+        working-directory: src
+    env:
+      PLAYWRIGHT_JSON_OUTPUT_FILE: /tmp/layoutmanager-general-shard-${{ matrix.shard }}.json
+    steps:
+      - name: Checkout exact PR revision
+        uses: actions/checkout@v4
+      - name: Node.js and npm cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.14.0
+          cache: npm
+          cache-dependency-path: src/package-lock.json
+      - name: Install frozen dependencies
+        run: npm ci
+      - name: Generate Prisma Client for isolated test database
+        run: npm run db:generate
+      - name: Download exact-HEAD production build
+        uses: actions/download-artifact@v4
+        with:
+          name: production-build-${{ github.run_id }}
+          path: ${{ runner.temp }}
+      - name: Restore standalone build without rebuilding
+        run: |
+          tar -xf "$RUNNER_TEMP/production-build.tar" -C .
+          test -f .next/standalone/server.js
+      - name: Playwright Chromium and system dependencies
+        run: npx playwright install --with-deps chromium
+      - name: General E2E shard ${{ matrix.shard }}/2
+        run: npm run test:e2e -- --shard=${{ matrix.shard }}/2 --reporter=dot,json
+      - name: Report slow Playwright tests (#197)
+        if: always()
+        run: node ../.github/scripts/report-playwright-duration.mjs "$PLAYWRIGHT_JSON_OUTPUT_FILE" "General Chromium shard ${{ matrix.shard }}/2"
+      - name: Upload Playwright JSON and failure traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-general-${{ matrix.shard }}-${{ github.run_attempt }}
+          path: |
+            ${{ env.PLAYWRIGHT_JSON_OUTPUT_FILE }}
+            src/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  greenfield-e2e:
+    name: G7 Greenfield UI E2E (#109)
+    needs: [scope, quality]
+    if: needs.scope.outputs.full == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: src
+    env:
+      PLAYWRIGHT_JSON_OUTPUT_FILE: /tmp/layoutmanager-greenfield.json
+    steps:
+      - name: Checkout exact PR revision
+        uses: actions/checkout@v4
+      - name: Node.js and npm cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.14.0
+          cache: npm
+          cache-dependency-path: src/package-lock.json
+      - name: Install frozen dependencies
+        run: npm ci
+      - name: Generate Prisma Client for isolated test database
+        run: npm run db:generate
+      - name: Download exact-HEAD production build
+        uses: actions/download-artifact@v4
+        with:
+          name: production-build-${{ github.run_id }}
+          path: ${{ runner.temp }}
+      - name: Restore standalone build without rebuilding
+        run: |
+          tar -xf "$RUNNER_TEMP/production-build.tar" -C .
+          test -f .next/standalone/server.js
+      - name: Playwright Chromium and system dependencies
+        run: npx playwright install --with-deps chromium
+      - name: G7 신규설치 최초 관리자 웹 UI E2E (#109)
+        run: npx playwright test --config playwright.g7-greenfield.config.ts --reporter=dot,json
+      - name: Report slow Playwright tests (#197)
+        if: always()
+        run: node ../.github/scripts/report-playwright-duration.mjs "$PLAYWRIGHT_JSON_OUTPUT_FILE" "G7 Greenfield"
+      - name: Upload Playwright JSON and failure traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-greenfield-${{ github.run_attempt }}
+          path: |
+            ${{ env.PLAYWRIGHT_JSON_OUTPUT_FILE }}
+            src/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  runtime-legacy-e2e:
+    name: G7 signed runtime and legacy migration E2E
+    needs: [scope, quality]
+    if: needs.scope.outputs.full == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: src
+    steps:
+      - name: Checkout exact PR revision
+        uses: actions/checkout@v4
+      - name: Node.js and npm cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.14.0
+          cache: npm
+          cache-dependency-path: src/package-lock.json
+      - name: Install frozen dependencies
+        run: npm ci
+      - name: Generate Prisma Client for isolated test database
+        run: npm run db:generate
+      - name: Download exact-HEAD production build
+        uses: actions/download-artifact@v4
+        with:
+          name: production-build-${{ github.run_id }}
+          path: ${{ runner.temp }}
+      - name: Restore standalone build without rebuilding
+        run: |
+          tar -xf "$RUNNER_TEMP/production-build.tar" -C .
+          test -f .next/standalone/server.js
+      - name: Playwright Chromium and system dependencies
+        run: npx playwright install --with-deps chromium
+      - name: G7 서명 Runtime 로그인·관리·CAD 권한 E2E
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_FILE: ${{ runner.temp }}/signed-runtime.json
+        run: npx playwright test --config playwright.g7-runtime.config.ts --reporter=dot,json
+      - name: Report signed-runtime timing
+        if: always()
+        run: node ../.github/scripts/report-playwright-duration.mjs "$RUNNER_TEMP/signed-runtime.json" "G7 Signed Runtime"
+      - name: Legacy migration E2E 테스트
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_FILE: ${{ runner.temp }}/legacy-migration.json
+        run: npm run test:master-migration -- --reporter=dot,json
+      - name: Report migration timing
+        if: always()
+        run: node ../.github/scripts/report-playwright-duration.mjs "$RUNNER_TEMP/legacy-migration.json" "Legacy Migration"
+      - name: Upload runtime/legacy JSON and failure traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-runtime-legacy-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/signed-runtime.json
+            ${{ runner.temp }}/legacy-migration.json
+            src/test-results/
           if-no-files-found: ignore
           retention-days: 7
 
   docker-runtime:
     name: Docker image size, migration and runtime smoke
+    needs: scope
+    if: needs.scope.outputs.full == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -165,6 +361,7 @@ jobs:
           python3 -m py_compile src/scripts/audit_standalone_layers.py src/scripts/test_audit_standalone_layers.py src/scripts/smoke_web_runtime.py src/scripts/smoke_greenfield_runtime.py
           python3 src/scripts/test_audit_standalone_layers.py
       - name: Build pre-change baseline (same source, original Dockerfile)
+        if: needs.scope.outputs.baseline == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -212,21 +409,53 @@ jobs:
           PY
           docker buildx build --load --platform linux/amd64 -f "$RUNNER_TEMP/issue28-baseline.Dockerfile" -t cad-layout-viewer:baseline .
           docker buildx build --load --platform linux/amd64 --target migrator -f "$RUNNER_TEMP/issue28-baseline.Dockerfile" -t cad-layout-viewer:baseline-migrate .
-      - name: Build phase1, standalone app and migration targets
-        shell: bash
-        run: |
-          set -euo pipefail
-          docker buildx build --load --platform linux/amd64 --target phase1 -f src/Dockerfile -t cad-layout-viewer:phase1 .
-          docker buildx build --load --platform linux/amd64 --target runtime -f src/Dockerfile -t cad-layout-viewer:ci .
-          docker buildx build --load --platform linux/amd64 --target migrator -f src/Dockerfile -t cad-layout-viewer:ci-migrate .
+      # Buildx action supplies authenticated GHA cache parameters; separate target scopes
+      # prevent phase1/runtime/migrator cache overwrites. Cache faults are non-fatal.
+      - name: Build phase1 for baseline comparison (when packaging changed)
+        if: needs.scope.outputs.baseline == 'true'
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: src/Dockerfile
+          target: phase1
+          platforms: linux/amd64
+          load: true
+          tags: cad-layout-viewer:phase1
+          cache-from: type=gha,scope=layoutmanager-phase1
+          cache-to: type=gha,scope=layoutmanager-phase1,mode=max,ignore-error=true
+      - name: Build standalone web runtime with GHA cache
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: src/Dockerfile
+          target: runtime
+          platforms: linux/amd64
+          load: true
+          tags: cad-layout-viewer:ci
+          cache-from: type=gha,scope=layoutmanager-runtime
+          cache-to: type=gha,scope=layoutmanager-runtime,mode=max,ignore-error=true
+      - name: Build dedicated migrator with GHA cache
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: src/Dockerfile
+          target: migrator
+          platforms: linux/amd64
+          load: true
+          tags: cad-layout-viewer:ci-migrate
+          cache-from: type=gha,scope=layoutmanager-migrator
+          cache-to: type=gha,scope=layoutmanager-migrator,mode=max,ignore-error=true
       - name: Measure 3 image sizes, layers and directories
+        if: needs.scope.outputs.baseline == 'true'
         run: bash src/scripts/measure-images.sh cad-layout-viewer:baseline cad-layout-viewer:phase1 cad-layout-viewer:ci "$GITHUB_STEP_SUMMARY"
       - name: Verify web layer SHA, native and transition-only size saving (#67)
+        if: needs.scope.outputs.baseline == 'true'
         shell: bash
         run: |
           set -euo pipefail
           python3 src/scripts/audit_standalone_layers.py cad-layout-viewer:baseline cad-layout-viewer:ci "$GITHUB_STEP_SUMMARY"
       - name: Measure migrator baseline vs dedicated dependency closure
+        if: needs.scope.outputs.baseline == 'true'
         run: bash src/scripts/measure-migrator.sh cad-layout-viewer:baseline-migrate cad-layout-viewer:ci-migrate "$GITHUB_STEP_SUMMARY"
       - name: Verify migrator packaged files and native dependencies
         shell: bash
@@ -328,3 +557,48 @@ jobs:
           docker compose --env-file .env.example -f src/docker-compose.yml ps || true
           docker compose --env-file .env.example -f src/docker-compose.yml logs --tail 80 || true
           docker compose --env-file .env.example -f src/docker-compose.yml down || true
+
+  verify:
+    # Keep the historical required-check name. Jobs may skip only for verified docs-only PRs.
+    name: Typecheck, lint, test, build, E2E
+    if: always()
+    needs: [scope, quality, e2e, greenfield-e2e, runtime-legacy-e2e, docker-runtime]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SCOPE_RESULT: ${{ needs.scope.result }}
+      FULL: ${{ needs.scope.outputs.full }}
+      QUALITY_RESULT: ${{ needs.quality.result }}
+      GENERAL_RESULT: ${{ needs.e2e.result }}
+      GREENFIELD_RESULT: ${{ needs.greenfield-e2e.result }}
+      RUNTIME_LEGACY_RESULT: ${{ needs.runtime-legacy-e2e.result }}
+      DOCKER_RESULT: ${{ needs.docker-runtime.result }}
+    steps:
+      - name: Require every applicable validation gate (#197)
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "## PR CI required gate" >> "$GITHUB_STEP_SUMMARY"
+          if [[ "$SCOPE_RESULT" != "success" ]]; then
+            echo "::error::Scope classification failed; CI must not pass"
+            exit 1
+          fi
+          for pair in "quality:$QUALITY_RESULT" "general-e2e:$GENERAL_RESULT" \
+            "greenfield-e2e:$GREENFIELD_RESULT" "runtime-legacy-e2e:$RUNTIME_LEGACY_RESULT" \
+            "docker-runtime:$DOCKER_RESULT"; do
+            name="${pair%%:*}"
+            result="${pair#*:}"
+            echo "- $name: $result" >> "$GITHUB_STEP_SUMMARY"
+            if [[ "$FULL" == "false" ]]; then
+              [[ "$result" == "skipped" ]] || { echo "::error::$name unexpectedly ran on docs-only PR"; exit 1; }
+            elif [[ "$FULL" == "true" ]]; then
+              [[ "$result" == "success" ]] || { echo "::error::Required $name did not succeed"; exit 1; }
+            else
+              echo "::error::Unknown scope decision"; exit 1
+            fi
+          done
+          if [[ "$FULL" == "false" ]]; then
+            echo "- Verified markdown-only: full application suite not required." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "- All mandatory application, browser and Docker checks succeeded." >> "$GITHUB_STEP_SUMMARY"
+          fi
