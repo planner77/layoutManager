@@ -1,3 +1,12 @@
+## Issue #76 — 2026-11-01 관리자 설정 BLOCKED / 기존 PR #89 완료 기록 (CI 실패 아님)
+
+- **현재 REST 실측:** `allow_squash_merge=true`, `squash_merge_commit_title=COMMIT_OR_PR_TITLE`, `squash_merge_commit_message=COMMIT_MESSAGES`. 목표 `true/PR_TITLE/BLANK`와 불일치. 이는 **운영 관리자 설정 잔여**이며 PR CI 실패와 다르다. Read-only audit 경고는 정상 비차단 진단이다.
+- **이미 구현된 범위:** [PR #89](https://github.com/planner77/layoutManager/pull/89) 최종 [PR CI 40179740394](https://github.com/planner77/layoutManager/actions/runs/40179740394) success, [Main commit 14111b45](https://github.com/planner77/layoutManager/commit/14111b45a36907245342751d9d1a139b5215474d) 단일 제목/빈 본문, [Main CI 40182008444](https://github.com/planner77/layoutManager/actions/runs/40182008444) success/GHCR skipped. 기존 명시적 Squash API 인자에 의한 성공이며 기본 설정이 바뀐 증거는 아니다. 과거 #53 충돌과 수리 내역은 아래에 유지한다.
+- **원인/조치:** 현재 연결 GitHub 도구에 Repository Settings PATCH 없음. 관리자 [Settings](https://github.com/planner77/layoutManager/settings)에서 Pull request title 적용 → REST 재조회 → 적용 후 다음 정상 Squash의 제목·빈 본문·Main run-name을 확인해야 #76을 수용한다. Issue #76 OPEN 유지.
+- **이번 후속 작업:** 과거 문서의 CI 대기 표기와 중복 테스트 계획을 정합화. Workflow/App/DB/GHCR/버전 미변경. 새 문서 PR CI는 실행 결과 확인 전 **NOT VERIFIED**. 신규 CI 실패나 GitHub 관리자 설정 변경을 주장하지 않음.
+
+---
+
 ## PR #194 / Issue #191 — 최종 PR CI 성공·Owner Managed 병합·GHCR Main CI 시작 (2026-11-01 KST)
 
 - **최종 검증 정본:** 코드/시험 PR HEAD `3257a31b9bae4e82ed81d8bb462011b9bc6cf7ac`, [PR CI Run 41295744097](https://github.com/planner77/layoutManager/actions/runs/41295744097), `completed/success`. Verify Job `124816115059` **SUCCESS**(TypeScript, ESLint, Unit/Integration, OCI/Benchmark, Production Build, General Chromium, G7 Signed Runtime, Greenfield #109, Legacy Migration E2E); Docker Job `124816115216` **SUCCESS**(App/Migrator image, native dependencies, isolated Greenfield restart/smoke). 기존 Run 41293959571의 E2E 포커스 경합 실패 및 이전 3회 ESLint 실패·결정적 RED/GREEN/로컬 QA 증거는 아래 역사 원장에 그대로 보존하며 과거 HEAD 결과와 구분한다.

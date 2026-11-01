@@ -1289,28 +1289,17 @@ PR 검증: 최신 HEAD typecheck/lint/unit/integration/build/E2E/Docker; 운영 
 | TC-CI-76-001 | API `true / PR_TITLE / BLANK` fixture | `PASS`, Summary PASS, CI 정상 진행 | 로컬 Bash fixture PASS |
 | TC-CI-76-002 | API `true / COMMIT_OR_PR_TITLE / COMMIT_MESSAGES` fixture | warning + `NOT APPLIED`, CI 진단은 non-blocking; 관리자 승인 **미완료** | 로컬 Bash fixture PASS, 실제 REST 불일치 확인 |
 | TC-CI-76-003 | 잘못된 JSON/배열 fixture | warning + `NOT VERIFIED`, 잘못된 응답을 PASS로 처리 금지 | 로컬 Bash fixture PASS |
-| TC-CI-76-004 | REST GET 실패 | warning + `NOT VERIFIED`, 다른 앱 CI 방해 금지 | 설계/셸 분기 검사; CI 미실행 |
+| TC-CI-76-004 | REST GET 실패 | warning + `NOT VERIFIED`, 다른 앱 CI 방해 금지 | 셸 분기 검사; 네트워크 오류 fixture 미실행 (#89 CI success와 구별) |
 | TC-CI-76-005 | 관리자 설정 변경 + 새로운 PR squash | GET 3항목 PASS, main commit subject 단일행/body 빈 문자열, `MAIN CI | #N | 설명` | **BLOCKED: 관리자 설정 미적용** |
-| TC-CI-76-006 | PR CI YAML diff 및 GHCR scope | 기존 trigger/permissions/concurrency/Typecheck·Docker·GHCR 의사결정 불변, docs/workflow-only Main은 GHCR SKIP | 정적 확인, PR CI 미실행 |
+| TC-CI-76-006 | PR CI YAML diff 및 GHCR scope | 기존 trigger/permissions/concurrency/Typecheck·Docker·GHCR 의사결정 불변, docs/workflow-only Main은 GHCR SKIP | #89 최종 PR CI success/Main success/GHCR skipped 확인 |
 
 - Bash `set -euo pipefail` 구문 점검과 REST 응답 mock 분기는 별도로 확인한다. GitHub Actions Runner의 실제 output 및 적용 후 Main title은 원격 workflow/run 증거가 있어야 PASS이다. 설정 불일치는 CI 자체 실패가 아니므로 FailedLedger에 가짜 Failure로 기록하지 않는다. [Issue76](Issue76.md).
+
+**2026-11-01 정합화:** #89의 read-only audit는 병합 및 PR CI success. TC-CI-76-005는 저장소 기본값을 바꾼 **이후의 정상 Squash**가 필요해 BLOCKED. REST `true/COMMIT_OR_PR_TITLE/COMMIT_MESSAGES`는 여전히 불일치. 이전 중복 #76 TC 표를 단일 정본으로 합쳤다.
 
 ### Issue #54/#76 최신 main 통합 검증 (2026-10-25)
 
 - 원본 수정 HEAD `6845c4b4`의 PR CI #40181171710 성공은 확인했다. #76 비차단 읽기 전용 CI 진단 추가 및 문서 병합 결과의 새 HEAD CI는 별도 검증 대상. TC-E4-E2E-001~004/#31·#51·#52·#53/Docker/Legacy를 유지하며 #76의 관리자 설정 미적용은 앱 CI 실패로 오인하지 않는다.
-
-## Issue #76 — GitHub Squash 기본 메시지 관리자 정책 및 진단 (2026-10-25)
-
-| TC | 조건 | 기대 / 실패 분류 | 실행 현황 |
-| --- | --- | --- | --- |
-| TC-CI-76-001 | API `true / PR_TITLE / BLANK` fixture | `PASS`, Summary PASS, CI 정상 진행 | 로컬 Bash fixture PASS |
-| TC-CI-76-002 | API `true / COMMIT_OR_PR_TITLE / COMMIT_MESSAGES` fixture | warning + `NOT APPLIED`, CI 진단은 non-blocking; 관리자 승인 **미완료** | 로컬 Bash fixture PASS, 실제 REST 불일치 확인 |
-| TC-CI-76-003 | 잘못된 JSON/배열 fixture | warning + `NOT VERIFIED`, 잘못된 응답을 PASS로 처리 금지 | 로컬 Bash fixture PASS |
-| TC-CI-76-004 | REST GET 실패 | warning + `NOT VERIFIED`, 다른 앱 CI 방해 금지 | 설계/셸 분기 검사; CI 미실행 |
-| TC-CI-76-005 | 관리자 설정 변경 + 새로운 PR squash | GET 3항목 PASS, main commit subject 단일행/body 빈 문자열, `MAIN CI | #N | 설명` | **BLOCKED: 관리자 설정 미적용** |
-| TC-CI-76-006 | PR CI YAML diff 및 GHCR scope | 기존 trigger/permissions/concurrency/Typecheck·Docker·GHCR 의사결정 불변, docs/workflow-only Main은 GHCR SKIP | 정적 확인, PR CI 미실행 |
-
-- Bash `set -euo pipefail` 구문 점검과 REST 응답 mock 분기는 별도로 확인한다. GitHub Actions Runner의 실제 output 및 적용 후 Main title은 원격 workflow/run 증거가 있어야 PASS이다. 설정 불일치는 CI 자체 실패가 아니므로 FailedLedger에 가짜 Failure로 기록하지 않는다. [Issue76](Issue76.md).
 
 ### Issue #54 P1 리뷰 대응 — 임계값 이전 Wheel/Resize Cancellation
 

@@ -633,9 +633,9 @@ G4는 테스트에서만 G1 guarded cad-auth-g1 임시 SQLite를 사용하는 �
 
 ## Issue #76 — Squash Merge 기본값 관리자 적용 및 CI 감사 (2026-10-25)
 
-**현황:** 공개 GitHub REST `GET /repos/planner77/layoutManager`로 `allow_squash_merge=true`, `squash_merge_commit_title=COMMIT_OR_PR_TITLE`, `squash_merge_commit_message=COMMIT_MESSAGES` 확인. 요구값 `true / PR_TITLE / BLANK`가 아니므로 **관리자 설정 적용되지 않음**. `DESIGN.md`는 없고 기존 ADR-041/Architecture 정책을 사용한다.
+**현황 (2026-11-01 재조회):** 공개 GitHub REST `GET /repos/planner77/layoutManager`로 `allow_squash_merge=true`, `squash_merge_commit_title=COMMIT_OR_PR_TITLE`, `squash_merge_commit_message=COMMIT_MESSAGES` 확인. 요구값 `true / PR_TITLE / BLANK`가 아니므로 **관리자 설정 적용되지 않음**. `DESIGN.md`는 없고 기존 ADR-041/Architecture 정책을 사용한다.
 
-**변경 방법:** [Repository Settings → General](https://github.com/planner77/layoutManager/settings) → Pull Requests → Allow squash merging 켜기 → Default commit message에서 **Pull request title** 선택. 관리자 권한이 없는 자동화 도구는 이 설정을 변경하지 않는다. 공식 [UI 안내](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/configuring-commit-squashing-for-pull-requests) / [Repository REST](https://docs.github.com/en/rest/repos/repos#update-a-repository).
+**변경 방법:** [Repository Settings → General](https://github.com/planner77/layoutManager/settings) → Pull Requests → Allow squash merging 켜기 → Default commit message에서 **Pull request title** 선택. 현재 연결된 GitHub 자동화 도구에는 Repository Settings PATCH가 없어 관리자 계정으로 UI에서 직접 변경해야 한다. 공식 [UI 안내](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/configuring-commit-squashing-for-pull-requests) / [Repository REST](https://docs.github.com/en/rest/repos/repos#update-a-repository).
 
 **독립 검증 명령 (공개 repo; 실패 시 미수용):**
 
@@ -647,6 +647,8 @@ curl -fsS -H 'Accept: application/vnd.github+json' \
 ```
 
 **PR CI read-only 진단:** Verify Job은 같은 API 3개 필드의 실제 값을 확인한다. 일치=Summary `PASS`, 불일치=warning/`NOT APPLIED`, GET/JSON 장애=warning/`NOT VERIFIED`. 현재 관리자 미조치로 인한 오탐 CI 차단을 피하기 위해 **advisory/non-blocking**이다. PR CI 성공이 관리자 설정 성공을 뜻하지 않는다. 이 진단은 credentials를 출력하지 않으며 `contents:read`와 기존 트리거/Job/GHCR gate를 유지한다.
+
+**기존 구현/시험:** PR #89 최종 PR CI 40179740394 success, Main CI 40182008444 success/단일행/빈 본문, GHCR skipped. 이 성공은 **API 병합에서 제목과 빈 body를 명시한 결과**로 저장소 Default 변경 증거가 아니다. AC-76-01/AC-76-03은 관리자 조치 전 BLOCKED, 이슈는 OPEN 유지.
 
 **최종 수용:** 변경 후 API 응답 + 다음 정상 `#N | 설명` PR의 기본 Squash subject 한 줄/빈 body + 실제 Main Actions `MAIN CI | #N | 설명` 증거로 확인한다. API/Agent squash 병합 시 `commit_title`을 명시하고 `commit_message=""`도 계속 지정한다. 이전 Run #35/#36은 변경 불가. [Issue76](Issue76.md), [TestPlan](TestPlan.md) 참고.
 

@@ -1751,6 +1751,12 @@ gzip 차이는 매 실행 생성되는 renderer UUID와 압축 내용의 영향�
 - [수정 HEAD PR CI 40181171710](https://github.com/planner77/layoutManager/actions/runs/40181171710), SHA `6845c4b4e1e22157b64ce05215e67710c9a3a985`, **completed/success**: P1의 5px 이전 Wheel/Resize 후보 취소와 TC-E4-E2E-004 포함. 최초 Run 40177837419는 수정 이전 별도 PASS.
 - #76 [main 14111b45](https://github.com/planner77/layoutManager/commit/14111b45a36907245342751d9d1a139b5215474d)의 PR CI advisory 및 문서 변경을 #54 브랜치에 통합한다. 이 merge commit에서 앱 기능 코드 변경 없으나 새 PR CI 결과는 **NOT VERIFIED**. GHCR 게시·실 CAD/GPU 수용은 별도.
 
+## U-ISSUE76-RECHECK-20261101 — 이전 CI 증거 및 설정 미적용 분리
+
+- [PR #89](https://github.com/planner77/layoutManager/pull/89) 최종 HEAD `959387c6c895a1422574ae32e7b8167593a558f3`, [PR CI 40179740394](https://github.com/planner77/layoutManager/actions/runs/40179740394) success: Verify Job `121128038644`, Docker Job `121128038864` 모두 success. 기존 read-only audit 코드는 Main에 병합됨.
+- [Main commit 14111b45](https://github.com/planner77/layoutManager/commit/14111b45a36907245342751d9d1a139b5215474d) subject `#76 | Squash 기본 메시지 정책 진단 및 운영 가이드`, body empty. [Main CI 40182008444](https://github.com/planner77/layoutManager/actions/runs/40182008444) success, 실행명 단일행, scope Job `121134834613` success, GHCR Job `121134862333` skipped. **명시적 API merge 성공이지 저장소 기본값 변경 증거 아님**.
+- 2026-11-01 GET 값 `true/COMMIT_OR_PR_TITLE/COMMIT_MESSAGES`로 목표 `true/PR_TITLE/BLANK`와 불일치. AC-76-01/기본값 적용 후 AC-76-03 **BLOCKED**. 이번 문서 PR의 새 CI/실행 결과 및 관리자 Settings 변경은 **NOT VERIFIED / NOT RUN** (과거 결과 재사용 금지).
+
 ## U-ISSUE76-PREFLIGHT-20261025 — 관리자 설정 불일치 및 CI 진단의 로컬 사전 검증
 
 - GitHub REST `GET https://api.github.com/repos/planner77/layoutManager` (2026-10-25) 응답에서 `allow_squash_merge=true`, `squash_merge_commit_title=COMMIT_OR_PR_TITLE`, `squash_merge_commit_message=COMMIT_MESSAGES`를 확인했다. **관리자 UI / PATCH 미실행, AC-76-01 미완료**.
