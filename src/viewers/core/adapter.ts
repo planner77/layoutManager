@@ -46,6 +46,8 @@ export interface CadViewerAdapter {
   /** M1 viewport conversions are valid only for the active renderer/visible canvas. */
   clientToWcs?(clientX:number,clientY:number):{x:number;y:number}|null;
   projectWcsToCanvas?(point:{x:number;y:number}):{x:number;y:number}|null;
+  /** #186: same camera/viewport for a bounded batch; optional for legacy adapters. */
+  projectWcsBatch?(points:readonly {x:number;y:number}[]):({x:number;y:number}|null)[];
   getOutlineInfo?(): OutlineInfo | null;
   setSelectionMode?(mode:CanvasSelectionMode): void;
   getCanvasObjectSelection?():CanvasObjectRef[];
@@ -225,6 +227,9 @@ export class ViewerManager {
   getOutlineInfo() { return this.adapter?.getOutlineInfo?.() ?? null; }
   clientToWcs(clientX:number,clientY:number) { return this.adapter?.clientToWcs?.(clientX,clientY) ?? null; }
   projectWcsToCanvas(point:{x:number;y:number}) { return this.adapter?.projectWcsToCanvas?.(point) ?? null; }
+  projectWcsBatch(points:readonly {x:number;y:number}[]):({x:number;y:number}|null)[]{
+    return this.adapter?.projectWcsBatch?.(points)??points.map(point=>this.projectWcsToCanvas(point));
+  }
   setSelectionMode(mode:CanvasSelectionMode) { this.adapter?.setSelectionMode?.(mode); }
   getCanvasObjectSelection(){return this.adapter?.getCanvasObjectSelection?.()??[];}
   getGeneratedObjects(){return this.adapter?.getGeneratedObjects?.()??[];}

@@ -1,3 +1,13 @@
+## #186 / PR-C — Memo 10k/Heap 격리 측정·현장 인수 (0.55.1 후보, 2026-11-01)
+
+- 운영 측정과 CI는 분리한다. CI의 1k/10k `LINE` 합성·100핀/0핀/100핀 CSS hide 측정은 CPU/Browser/Javascript 경향 확인일 뿐, 실제 CAD·GPU/VRAM 현장 합격이 아니다.
+- 도입 시 `src/tests/e2e/issue174-memo-performance.spec.ts`의 30 rAF frame p50/p95/max·16.7ms 초과 건수와 1/2/3회 종료 GC used Heap/DOM count/Worker/listener를 **같은 버전·조건·워밍업**에서 재측정한다. 첫 실행/카메라 이동/React paint/Next route cache/CDP inspector의 영향은 각각 기록한다. CDN/로그인·계정/도면 경로·원본 해시 등 현장 식별 정보는 공개 파일에 기록하지 않는다.
+- App-local 성능과 시스템 GPU 성능은 다르다. 사내 Owner가 1k/10k/100k 실제 DXF·Memo/Target 혼합 부하 및 PC CPU/GPU/Browser/driver 조건, WCS/최대 오차, frame p95/최대·Heap 반복 허용치/VRAM SLA를 **사전 승인**한 후 #113/#186 필드 Gate를 진행한다. 도면 원본/리포트/환경 상세는 사내 비공개 저장소에 보존한다.
+- 사용자 기능: 동일 Site Editor 공동 수정(#172), 삭제는 Memo 작성자 또는 Site Admin, Version/Scope/Session/CAS/Audit. 렌더 batch 최적화는 좌표·핀 레이블·drag/ESC·스냅 후보·서버 Memo/Scene 데이터를 변경하지 않는다.
+- 신규 빈 Greenfield 2PC·백업/Restore 및 실제 GPU/사용자 동의는 #96/#113/#186에서 별도 Owner Managed 판정한다. 설치 Auth Writer 강제 활성화·기존 DB/Volume migration/DRM 우회는 금지.
+
+---
+
 ## #172 / PR-B — 메모 공동 수정 운영·권한 수용 (0.55.0 후보, 2026-11-01)
 
 1. **권한 표:** 같은 Site Grant의 Editor는 작성자와 무관하게 Memo 제목/본문·WCS·일정/완료·Visibility/Group·Anchor를 수정한다. **삭제**는 해당 Memo의 원 작성자 또는 Site Grant 가진 Admin만. Reader는 읽기만, Admin이라도 Site Grant가 없으면 Memo 변경/삭제 불허. 원본 작성자·생성시각은 고정, 수정자는 서버 감사에 남는다.

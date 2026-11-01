@@ -1,3 +1,15 @@
+## ADR-186 — Project WCS batch / dispose reference hygiene, heap root cause 보류 (2026-11-01)
+
+**결정:** 실제 10k frame 지연과 16,804,276B Heap 증가 원인이 확인되지 않은 상태에서 임의 지연 budget를 만족했다고 주장하거나 WebGL/메모 표시 빈도를 강제 하향하지 않는다. 소스에서 직접 확인되는 무효 반복 Canvas rect 조회를 동일 좌표 결과의 batch API로 치환하고, adapter dispose 참조 정리를 보완한다.
+
+- 100 핀 투영은 1개 Camera+CSS rect snapshot으로 처리하며 Preview/Offscreen/Touch/WCS·DPR, 기존 단일 point API와 동일 결과를 보존한다. 새 batch 메서드가 없는 legacy adapter에서는 단건 API를 사용한다.
+- 동일 투영 시 React state no-op. 카메라 변경 시 실제 값이 바뀌면 핀 재투영·갱신은 필수이며, 동반 이동·앵커·현재 선택 상태의 의미는 유지.
+- Frame test는 0 Memo/100 Memo Visible/100 Memo CSS Hidden 코호트로 Three/React와 Memo paint의 영향을 분리하고 30개 rAF interval 수치를 **진단값**으로만 남긴다. Headless synthetic·Chrome CDP 강제 GC는 GPU 실측이나 현장 SLA를 대체하지 않는다.
+- 두 번째 dispose Heap +16MB는 누수 여부가 미확정이며, 3회 이상 반복/route cache/inspector refs/DOMCounters 확인 후 판단. 실제 retained graph 없이 'leak fixed' 판정 금지.
+- #186 현장/2PC는 계속 OPEN. #113 real DXF/GPU, #96 신규 인증/2PC는 해당 Owner 현장 절차에 종속. 원본 CAD/DB 스키마/운영 Auth/Writer/GHCR 기존 태그는 불변. PR-C 합성 CI와 Owner 현장 수용은 구분한다.
+
+---
+
 ## ADR-172 — Same-Site 공동 편집 / 작성자 또는 Site Admin 삭제 (2026-11-01, Owner APPROVED)
 
 **최신 우선 정책:** 동일 Site의 Editor는 다른 작성자가 생성한 Memo의 텍스트·위치·메타데이터 및 Anchor를 수정할 수 있다. 별도의 전역 관리자 권한이나 사용자 입력 actor 대신 기존 G7 Session+Role+Server-resolved Site Grant를 사용한다. 기존 R4, ADR-062 등에서 언급한 `author-only` 내용은 **과거 구현 계약**으로 보존하되 수정 권한 부분은 본 ADR로 대체한다.

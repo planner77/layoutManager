@@ -1,3 +1,15 @@
+## PR-C #186 — Memo 10k frame/heap root-cause isolation + bounded projection (2026-11-01, 0.55.1 후보)
+
+- #186은 **메모 렌더 성능/Heap 원인 분리와 현장 2PC 수용이 혼재된 OPEN 이슈**다. 이 PR은 코드·합성 계측을 진행하며, 현장 #96(신규 Auth), #113(실 DXF/GPU), #186(2PC/성능 SLA)는 완료로 대체하지 않는다.
+- 기존 계측 10k LINE+100 Memo에서 frame p95=216.6ms, 30프레임 중 17회 >16.7ms, 1차/2차 dispose 31,645,380→48,449,656B(+16,804,276B). 이는 **특정 개발 환경 수치**이며 원인 미확정, leak 증명·현장 합격 아님.
+- **코드 병목 가설**: `CadMemoOverlay` 화면 좌표 투영은 Memo마다 `ThreeDxfViewerAdapter.projectWcsToCanvas`→canvas `getBoundingClientRect()`를 반복했다. `projectWcsBatch`로 동일 camera+CSS viewport의 1회 rect read/Vector3 재사용을 구현하고, 결과가 같은 경우 Memo React state 업데이트를 생략한다. `projectWcsToCanvas` 단건 계약, NaN/±1e12 검증, DPR/WCS/preview/cull/100 Memo 상한 유지.
+- **Heap 분리**: Three adapter `dispose`에서 렌더 'change' listener 명시 해제, 이미 해제한 Scene 객체의 `index/renderIndex/sceneAsset` 및 대형 참조 즉시 비움. 기존 `Renderer.dispose/forceContextLoss`, Geometry/Material/Texture, Worker·ResizeObserver 정리 유지. 이것이 과거 Heap 16MB 증가의 주원인임은 아직 검증되지 않음.
+- **계측**: `issue174-memo-performance.spec.ts`의 동일 synthetic 1k/10k LINE·100 pins 상황에서 0 Memo, 100 Memo Visible, 100 Memo CSS Hidden의 팬 동작 30 rAF sample을 각각 수집한다. 세 번 종료 시 CDP 강제 GC 후 JS used Heap·DOMCounters/Worker·핵심 listener·하네스 inspector reference를 관찰한다. 숨김 조건은 paint만 분리하며 React 위치 투영/Three rendering 비용은 여전히 존재한다. GPU VRAM 측정 아님.
+- **검증 경계**: `memo-screen-projection.test.ts`가 Three Vector3 좌표 동치, batch 1회/101점, preview/candidate·offscreen·no-op 비교를 검사. 기존 Memo gesture/candidate/KEEP/DETACH/BROKEN/CAS/Owner #172 공동 편집·삭제와 Renderer fallback, Source byte/SHA를 변경하지 않는다. 성능 수치 개선·누수 해소·현장 2PC 성공은 **재측정·Owner SLA 승인 전 NOT VERIFIED**.
+- 루트 DESIGN.md는 없으며 Architecture/Decisions/TestPlan/TestReport/FailureLedger/Operation을 정본으로 사용. 기존 DB/Volume 자동 Migration·기존 GHCR tag 덮어쓰기/운영 Writer 강제 활성화/실 CAD 외부 반출 금지. GHCR/Issue 종료는 CI·Owner 범위별 별도 승인.
+
+---
+
 ## #172 PR-B — Memo 동일 Site Editor 공동 수정 / 작성자·Admin 삭제 (0.55.0 후보, 2026-11-01)
 
 - **Owner 확정 정책:** G7 ACTIVE, 실제 서명된 Site/Version 범위의 Editor·Admin은 다른 작성자의 Memo 텍스트·WCS·Metadata·Anchor를 수정할 수 있다. **메모 논리 삭제는 원 작성자 또는 같은 Site Grant를 보유한 Admin만** 가능하다. Admin 역할만으로 Site 허용으로 간주하지 않는다. `createdById/createdAt` 불변, `updatedById`와 실제 actor Audit/CAS 갱신.

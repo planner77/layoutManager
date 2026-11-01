@@ -1,3 +1,24 @@
+## PR #189 / Issue #186 — 최초 PR CI 단위 테스트 IEEE-754 비교 실패 (2026-11-01 KST)
+
+- **실제 실패:** [PR #189](https://github.com/planner77/layoutManager/pull/189), [Run 41277155938](https://github.com/planner77/layoutManager/actions/runs/41277155938) `completed/failure`, HEAD `052ce241381cc8c42f986223f928165b66e2cb45`. Verify [Job 124761562731](https://github.com/planner77/layoutManager/actions/runs/41277155938/job/124761562731) Step 9 `Unit 및 Integration 테스트` 실패. `133 files` 중 132 PASS/1 FAIL; `891 tests` 중 890 PASS/1 FAIL. `tests/unit/memo-screen-projection.test.ts:36`: `expected {x:110.00000000000001,y:40} to deeply equal {x:110,y:40}`. 이 테스트 신규 TC-186-01의 100 pins+candidate / preview assertion이다.
+- **원인:** THREE `Vector3.project`의 정규화 좌표를 CSS pixel로 변환할 때 발생하는 IEEE-754 소수점 오차를 `toEqual`로 비트 수준 동일 비교. WCS/Camera/viewport 계산 로직 및 서버 저장값 결함의 증거가 아니다. 100핀 projection callback 1회/101점 자체는 오류 보고가 없었으며, 해당 동일 테스트의 후속 좌표 assertion은 최초 실패로 통과 여부가 미확인이다.
+- **수정:** `src/tests/unit/memo-screen-projection.test.ts`의 preview pin·기본 pin·candidate X/Y를 `toBeCloseTo(expected, 9)`로 개별 비교하여 미세한 부동소수점 오차만 허용. 100핀+1후보 batch 호출 횟수, preview/cull·invalid·no-op assertions 보존. `src/viewers/core/canvas-projection.ts`와 `src/domain/memo-screen-projection.ts`의 프로덕션 WCS/CSS/DPR/NaN/±1e12 계약이나 G7·DB·CAD는 변경하지 않는다.
+- **다른 Gate:** 같은 Run의 Docker [Job 124761562520](https://github.com/planner77/layoutManager/actions/runs/41277155938/job/124761562520)은 **SUCCESS**. Verify 의존성 설치·Prisma Client·TypeScript 검사·ESLint 검사 **SUCCESS**; Unit 실패 이후 OCI layer unit, DXF benchmark, Production Build, Playwright Chromium/General/G7/Legacy E2E는 **SKIPPED**. 이전 HEAD의 Docker PASS는 새로운 HEAD 성공 증거가 아니다.
+- **Review/Main:** 수정 전 PR review 0·inline thread 0, PR `mergeable=true`, `main` 대비 ahead 19/behind 0·충돌 0 확인. 정확한 새 HEAD의 충돌/리뷰는 CI 재시작 직전·병합 전 별도로 확인한다. 새 변경(테스트+원장+보고서)을 한 Git object commit/tree로 원격 브랜치 fast-forward해 `pull_request.synchronize` PR CI를 새로 시작한다. 수리 SHA/새 Run은 해당 PR의 GitHub commits/Actions 및 인계 코멘트에 기록한다.
+- **검증 경계:** 이 수정의 로컬 Vitest/Typecheck/Playwright/Docker는 GitHub connector 환경에서 실행되지 않아 **NOT RUN**. 정확한 새 HEAD CI 결과는 완료 확인 전 **NOT VERIFIED**; 요청에 따라 모니터링 생략. PR 병합·GHCR 게시·Issue #186 종료·운영 Auth/Writer 변경·실 CAD 반출/현장 2PC 수용은 수행하지 않는다. #96/#113/#186 OPEN 유지.
+
+---
+
+## PR-C #186 — 10k Memo frame/heap 미확정 원인 및 검증 경계 (2026-11-01)
+
+- Base Main `40278024f4ff58dc9de70b6866f8f2b84019b758`, branch `feat/issue-186-memo-performance-20261101`, package/version 0.55.1 후보. 최신 #172 정책은 PR #188/Main에서 계승. Root DESIGN.md 없음.
+- **기존 실패/관측:** #174 10k +100핀 과거 p95 216.6ms/17 frames >16.7ms; dispose heap +16,804,276B. 이것은 실 현장 SLA/소스 누수 확정이 아니며 이번 코드 패치 이후의 개선 수치로 주장하지 않는다.
+- 분석: Memo 좌표 별 canvas DOMRect 반복 조회, React no-op commit 시도 및 Adapter dispose 후 미정리되는 source/renderIndex/sceneAsset 참조를 소스에서 확인. WCS batch+cleanup 및 정확 workload 0/100 Visible/100 Hidden·세 번 종료 CDP 진단 도구를 추가. CDP Inspector 자체의 handler retention, Next route/cache, GPU/Canvas는 별도로 증명해야 하며 JS Heap 하나로 결론 금지.
+- **현재 검증:** 변경파일 작성, 단위 및 E2E test 추가 후 아직 로컬 npm/typecheck/ESLint/Vitest/Playwright/Build/Docker **실행되지 않음** (GitHub 연결 소스 API만 이용). PR CI Run/Job 결과는 최초 실행 후에만 기록. CI 오류가 발생하면 정확한 Run, job, 원인/보완 commit 및 새 HEAD CI를 본 실패 원장에 추가해 이력을 보존한다.
+- **범위:** 기존 DB·CAD·S3 Volume, 기밀 현장 자료, 운영 Auth/Writer, 기존 GHCR 태그 변경 없음. #186/Open field, #113 실제 DXF/GPU, #96 2PC/Auth 수용을 합성 PR CI 성공으로 종료하지 않는다.
+
+---
+
 ## PR #188 / Issue #172 — 첫 PR CI TypeScript 파서 실패 보완 (2026-11-01 KST)
 
 - **관측한 실패:** [PR #188](https://github.com/planner77/layoutManager/pull/188), [Run 41272222655](https://github.com/planner77/layoutManager/actions/runs/41272222655), attempt 1, 기존 HEAD `ed7b3184981b517a591bc346089f0729d4ac15c2`, `completed/failure`. Verify [Job 124747159527](https://github.com/planner77/layoutManager/actions/runs/41272222655/job/124747159527) step 7 **TypeScript 검사**: `tests/integration/typed-outline-runtime.test.ts(505,96): error TS1005: ',' expected` (`tsc --noEmit`, exit 2). GitHub 로그의 실제 원문 기준.

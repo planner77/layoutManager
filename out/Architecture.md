@@ -1,3 +1,17 @@
+## R6 #186 — Memo Projection / Viewer lifecycle 성능 분리 (2026-11-01)
+
+### 실행 경로·원인 가설
+- 기존 `CadMemoOverlay`는 Viewer의 `viewRevision` 변경 시 rAF를 예약하고, 각 pin마다 `projectWcsToCanvas` 호출 → `ThreeDxfViewerAdapter`에서 canvas `getBoundingClientRect()` 반복 → `THREE.Vector3.project(camera)`. 100 pins일 때 한 프레임에 최대 100회 동일 레이아웃 좌표 조회 및 100 Vector3 할당 가능(실제 브라우저 비용은 계측 필요).
+- 새 경로는 `ViewerManager.projectWcsBatch` → optional adapter `projectWcsBatch` → `core/canvas-projection.ts`의 1회 viewport rect + 1개 재사용 Vector3로 N개 투영. 레거시 Renderer는 단건 fallback. 순서/WCS/카메라/Orthographic/DPR 결과 동일, offscreen clip/preview/candidate는 `domain/memo-screen-projection.ts`의 순수 UI projection으로 유지.
+- `CadMemoOverlay`는 같은 positions/candidate를 재계산했을 때 `setScreenPositions` / `setCandidateScreen`의 이전 상태를 그대로 돌려주어 불필요한 commit을 줄인다. Canvas Render/Outline Overlay 자체는 변하지 않으며 GPU/DOM/layout 부하 전체를 해결했다고 주장할 수 없다.
+
+### 수명주기
+- `ThreeDxfViewerAdapter.dispose`는 controls change listener 둘 모두 해제하고 WebGL geometry/material/texture, worker, resize, document 및 scene 이력 정리 후 `index/renderIndex/sceneAsset` 대형 참조를 명시적으로 지운다. 늦은 비동기 closure가 adapter를 보유하더라도 GC 도달 가능 객체가 줄어드는지 CDP로 확인한다.
+- CDP JS Heap usedSize(강제 GC)·DOMCounters/Worker/listeners·React/Three/Next route cache 및 inspector handle 유무는 서로 다른 관측치다. JS Heap usedSize는 GPU VRAM과 동일하지 않고 전체 증가만으로 application leak 원인을 입증하지 못한다. stable-after-warmup, cohort별 반복·분리 비교 및 private field GPU 증거가 추가로 필요.
+- 메모 session WCS binding 저장/변경, server signed G7 policy(#172), candidate point 20,000 및 live binding 100 한도는 불변. Admin Site Grant 없이 delete 불허.
+
+---
+
 ## R6 / #172 Memo 공동 수정과 제한 삭제 — 서버 권한 구조 (2026-11-01)
 
 - 신뢰 경로: `G7CadWrite`의 서명된 승인 상태 + 현 거래 `requireG7CadPermission(tx, proof, 'memo:write', Version)` → 실제 User/Session/Role/Version→Building→Site/Grant → Memo/Revision/SHA → CAS + Audit. 웹 요청 body, 임의 Role 헤더 및 Viewer capability는 권한 근거가 아니다.

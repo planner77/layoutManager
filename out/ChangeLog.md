@@ -1,3 +1,12 @@
+## 0.55.1 PR-C 후보 — #186 Memo projection 및 Heap 진단 강화 (2026-11-01)
+
+- 100-pin WCS 투영을 한 번의 CSS canvas rect 읽기와 단일 Three.Vector3 재사용으로 처리. 기존 단건 projection/legacy fallback 유지, React 동일 screen snapshot no-op.
+- Three adapter dispose 시 Render controls 'change' listener와 큰 source/renderIndex/SceneAsset 참조를 명시 해제. 기존 Browser source·Scene·CAS·audit·작성자 정책 그대로.
+- 0 Memo/100 Visible/100 Hidden pan frame p50/p95와 3회 Dispose GC heap/DOM/Worker/listener를 나눠 측정하는 Browser test 보완; pure 100 pin+candidate batch unit 추가.
+- 실제 개선 수치, 이전 16.8MB Heap의 앱 누수 여부, GPU/VRAM/2PC Owner 수용은 **NOT VERIFIED**. #186은 필드 수용 전 Open 유지, #96/#113과 구분. 기존 v0.55.0 이미지는 변경하지 않음.
+
+---
+
 ## 0.55.0 후보 — #172 Memo 동일 Site Editor 공동 수정 (2026-11-01)
 
 - Site/Version/Role/Session/G7 서명 권한을 확인한 Editor는 다른 작성자의 영속 Memo 내용·좌표·일정/완료·표시/그룹·Anchor 수정 가능. Memo 논리 삭제는 작성자 또는 동일 Site Grant 가진 Admin으로 제한.

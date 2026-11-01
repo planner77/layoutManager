@@ -5,6 +5,7 @@ import type { ViewerManager } from '@/viewers/core/adapter';
 import {
   assertMemoWcsXY, type MemoDraft, type MemoWcsXY,
 } from '@/domain/cad-memo';
+import {projectMemoPins,sameScreenPoint,sameScreenPositions} from '@/domain/memo-screen-projection';
 
 type Gesture = {
   id: string; pointerId: number; clientX: number; clientY: number;
@@ -50,18 +51,17 @@ export function CadMemoOverlay({
     const frame = requestAnimationFrame(() => {
       const rect = root.current?.getBoundingClientRect();
       const manager = getManager();
-      if (!rect || !manager) { setScreenPositions({});setCandidateScreen(null);return; }
-      const positions:Record<string,{x:number;y:number}> = {};
-      for (const memo of memos) {
-        const point=preview?.id===memo.id?preview.point:memo.anchorWcsXY;
-        const xy=manager.projectWcsToCanvas(point);
-        if (!xy || xy.x<0 || xy.y<0 || xy.x>rect.width || xy.y>rect.height) continue;
-        positions[memo.id]=xy;
+      if (!rect || !manager) {
+        setScreenPositions(previous=>Object.keys(previous).length?{}:previous);
+        setCandidateScreen(previous=>previous===null?previous:null);
+        return;
       }
-      setScreenPositions(positions);
-      const candidatePoint=candidate ? manager.projectWcsToCanvas(candidate) : null;
-      setCandidateScreen(candidatePoint && candidatePoint.x >= 0 && candidatePoint.y >= 0 &&
-        candidatePoint.x <= rect.width && candidatePoint.y <= rect.height ? candidatePoint : null);
+      // #186 one camera/viewport snapshot, independent of Memo count.
+      // Skip React state churn for unchanged positions after unrelated renders.
+      const next=projectMemoPins(memos,preview,candidate,rect,
+        points=>manager.projectWcsBatch(points));
+      setScreenPositions(previous=>sameScreenPositions(previous,next.positions)?previous:next.positions);
+      setCandidateScreen(previous=>sameScreenPoint(previous,next.candidate)?previous:next.candidate);
     });
     return () => cancelAnimationFrame(frame);
   }, [memos, preview, candidate, getManager, viewRevision]);

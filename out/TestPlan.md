@@ -1,3 +1,19 @@
+## TC-186 — Memo frame/heap 원인 격리 (0.55.1 PR-C, 2026-11-01)
+
+| TC | 대상 | 판정·증거 |
+| --- | --- | --- |
+| TC-186-01 | `tests/unit/memo-screen-projection.test.ts` | `THREE.Vector3.project` 기준 WCS→CSS XY/dpr 독립·NaN/±1e12/viewport invalid, 100핀+1후보 한 번 batch, preview override/culling/stable no-op |
+| TC-186-02 | 기존 Viewer/Canvas gesture | 44px hit area/클릭/5px drag/ESC/keyboard/320px touch, selected pin·WCS, original Canvas manager 유지. R4/R5 E2E 회귀 |
+| TC-186-03 | `tests/e2e/issue174-memo-performance.spec.ts` | 1k·10k synthetic LINE+100핀, 0/100-visible/100-hidden 각 30 sample 같은 pan, p50/p95/max/>16.7ms를 각 코호트별 기록. 3종 모두 **비교용 진단값**; Owner SLA 미정 |
+| TC-186-04 | 같은 test, CDP | 1차·2차·3차 unload 뒤 GC `Runtime.getHeapUsage`, `Memory.getDOMCounters`(지원 시), Worker 0/7종 app window listener baseline. CDP handler release, Canvas handle dispose 여부 분리 |
+| TC-186-05 | Session snap / PERMISSIONS | Candidate 20k/100 limit, multi-choice/preview, KEEP/DETACH/BROKEN/Undo/Redo/동일 ID 복원, signed G7 #172 공동 수정/삭제 정책 및 서버 CAS/Audit |
+| TC-186-06 | Full gates | Typecheck, ESLint, Vitest, General/Greenfield/Auth/Legacy Playwright, Next production build, Docker + CI 비교. 실제 실행 Run·Job 결과를 확인 전 PASS로 기록하지 않음 |
+| TC-186-07 | Owner field, **별도** | 동등 PC·GPU·Chrome 조건 1k/10k/100k 실 DXF, 단일 Viewer 혼합 Memo/Target, 2PC/BACKUP, frame/heap/VRAM/SLA 반복·비공개 증거. #96/#113/#186 종료 전 합성값을 승인값으로 대체 금지 |
+
+GC/Inspector/Next route cache/Three/WebGL/DOM 요소 수가 다른 측정치이므로 단일 Heap delta로 누수 확정하지 않는다. 임의 성능 threshold를 CI에 넣지 않고 *정확한 workload 비교*와 필수 기능/자원 정리 assertion을 유지한다. 실 기준 정의 전에는 합성 통과만 자동 판정할 수 있다.
+
+---
+
 ## TC-172 — 메모 공동 수정 / 작성자·Site Admin 삭제 및 Reset (0.55.0 PR-B, 2026-11-01)
 
 | TC | 자동화/설비 | 기대 결과 |

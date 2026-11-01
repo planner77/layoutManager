@@ -15,6 +15,28 @@ function largeDxf(count:number){
 async function twoFrames(page:Page){
   await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
 }
+/** Sample the SAME 30 rAF intervals during the SAME pan gesture for each cohort.
+ * These are CPU/browser frame intervals, not GPU VRAM or real-site SLA.
+ */
+async function panFrames(page:Page){
+  const samples=page.evaluate(()=>new Promise<number[]>(resolve=>{
+    const observed:number[]=[];let previous:number|null=null;
+    const tick=(now:number)=>{
+      if(previous!==null)observed.push(now-previous);previous=now;
+      if(observed.length>=30)resolve(observed);else requestAnimationFrame(tick);
+    };requestAnimationFrame(tick);
+  }));
+  const box=(await page.getByTestId('cad-canvas').locator('canvas').boundingBox())!;
+  await page.mouse.move(box.x+box.width-50,box.y+box.height/2);
+  await page.mouse.down();
+  await page.mouse.move(box.x+box.width-80,box.y+box.height/2+20,{steps:12});
+  await page.mouse.up();
+  return (await samples).sort((a,b)=>a-b);
+}
+const frameStats=(frames:number[])=>({
+ samples:frames.length,p50:frames[15],p95:frames[28],max:frames[29],
+ over16_7:frames.filter(value=>value>16.7).length,
+});
 for(const count of [1000,10000])test(`R4 browser ${count} synthetic DXF LINE inputs with bounded 100 Memo pins, frames and disposal`,async({page,request},testInfo)=>{
   test.setTimeout(240_000);
   await page.addInitScript(()=>{
@@ -72,6 +94,14 @@ for(const count of [1000,10000])test(`R4 browser ${count} synthetic DXF LINE inp
     catch{return null;}
   };
   const beforeHeap=await heap();
+  const counters=async()=>{
+    try{
+      const now=await session.send('Memory.getDOMCounters');
+      return {documents:now.documents,nodes:now.nodes,jsEventListeners:now.jsEventListeners};
+    }catch{return null;} // Browser/CDP support varies.
+  };
+  const initialDom=await counters();
+  const emptyFrames=await panFrames(page);
   const listenersBeforePins=(await nativeListeners()).counts;
   let listenersAfterFirst:Record<string,number>|null=null;
   for(let i=0;i<100;i++){
@@ -91,17 +121,16 @@ for(const count of [1000,10000])test(`R4 browser ${count} synthetic DXF LINE inp
   await page.getByTestId('viewer-tools-dock').getByRole('button',{name:'도구 닫기',exact:true}).click();
   if(await page.getByTestId('fullscreen-layer-panel').isVisible())
     await page.getByRole('button',{name:'레이어 패널 접기',exact:true}).click();
-  const framePromise=page.evaluate(()=>new Promise<number[]>(resolve=>{
-    const samples:number[]=[];let previous:number|null=null;
-    const frame=(now:number)=>{
-      if(previous!==null)samples.push(now-previous);previous=now;
-      if(samples.length===30)resolve(samples);else requestAnimationFrame(frame);
-    };requestAnimationFrame(frame);
-  }));
-  const box=(await page.getByTestId('cad-canvas').locator('canvas').boundingBox())!;
-  await page.mouse.move(box.x+box.width-50,box.y+box.height/2);await page.mouse.down();
-  await page.mouse.move(box.x+box.width-80,box.y+box.height/2+20,{steps:12});await page.mouse.up();
-  const frames=(await framePromise).sort((a,b)=>a-b),afterHeap=await heap();
+  const frames=await panFrames(page),afterHeap=await heap();
+  const afterPinsDom=await counters();
+  // CSS-hidden keeps Memo state, projection work and handlers in place,
+  // but removes label/pin paint. Do not misattribute renderer-only p95 to Memo.
+  const overlay=page.getByTestId('cad-memo-overlay');
+  await overlay.evaluate(node=>{(node as HTMLElement).style.visibility='hidden';});
+  await twoFrames(page);
+  const hiddenFrames=await panFrames(page);
+  await overlay.evaluate(node=>{(node as HTMLElement).style.visibility='';});
+  await twoFrames(page);
   expect(frames).toHaveLength(30);
   expect(await canvas!.evaluate(node=>node===document.querySelector('[data-testid="cad-canvas"] canvas'))).toBe(true);
   await canvas!.dispose();
@@ -109,13 +138,15 @@ for(const count of [1000,10000])test(`R4 browser ${count} synthetic DXF LINE inp
   page.once('dialog',dialog=>dialog.accept());
   await page.getByRole('link',{name:'도면 목록으로 이동',exact:true}).click();
   await expect(page.getByTestId('cad-canvas')).toHaveCount(0);await twoFrames(page);
-  const disposedHeap=await heap(),native=await nativeListeners();
+  const disposedHeap=await heap(),disposedDom=await counters(),native=await nativeListeners();
   const disposed={listeners:native.counts,workers:await page.evaluate(()=>window.r4Lifecycle.workers())};
   if(Object.entries(disposed.listeners).some(([key,value])=>value>(baseline[key]??0)))
     console.log('R4_REMAINING_LISTENER_METADATA',JSON.stringify(native.details));
   console.log('R4_BROWSER_LOAD',JSON.stringify({dxfLineInputs:count,productMemoPins:100,
-    frames:{samples:frames.length,p50:frames[15],p95:frames[28],max:frames[29],over16_7:frames.filter(value=>value>16.7).length},
+    frames:frameStats(frames),frameControls:{noMemo:frameStats(emptyFrames),
+      hundredPinsHidden:frameStats(hiddenFrames),hundredPinsVisible:frameStats(frames)},
     heap:{before:beforeHeap,after100:afterHeap,afterDispose:disposedHeap},
+    domCounters:{before:initialDom,after100:afterPinsDom,afterDispose:disposedDom},
     listenerBaseline:baseline,listenerBeforePins:listenersBeforePins,listenerAfterFirst:listenersAfterFirst,
     listenerAfter100:listenersAfterPins,listenerAfterDispose:disposed.listeners,workersAfterDispose:disposed.workers,
     rawHomeListeners:homeListeners.rawCounts,rawDisposedListeners:native.rawCounts,
@@ -131,9 +162,26 @@ for(const count of [1000,10000])test(`R4 browser ${count} synthetic DXF LINE inp
   await page.getByRole('link',{name:'도면 목록으로 이동',exact:true}).click();
   await expect(page.getByTestId('cad-canvas')).toHaveCount(0);await twoFrames(page);
   const second=await nativeListeners(),secondWorkers=await page.evaluate(()=>window.r4Lifecycle.workers());
+  const secondHeap=await heap(),secondDom=await counters();
   console.log('R4_SECOND_DISPOSE',JSON.stringify({dxfLineInputs:count,memoPinsOnReentry:0,
-    listeners:second.counts,rawListeners:second.rawCounts,workers:secondWorkers,heap:await heap(),
-    releasedInspectorHandlers:second.releasedHandlers}));
+    listeners:second.counts,rawListeners:second.rawCounts,workers:secondWorkers,heap:secondHeap,
+    domCounters:secondDom,heapDeltaFromFirstDispose:secondHeap!==null&&disposedHeap!==null?
+      secondHeap-disposedHeap:null,releasedInspectorHandlers:second.releasedHandlers}));
   expect(secondWorkers).toBe(0);
   for(const [key,value] of Object.entries(second.counts))expect(value,key).toBeLessThanOrEqual(baseline[key]??0);
+  // Third same-workload (zero Memo) cycle: measure warm route/framework cache
+  // after a second and third disposal. Heap growth alone is NOT proof of an app leak.
+  await page.locator(`a[href*="/cad/versions/${version.id}/viewer"]`).first().click();
+  await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
+  await expect(page.getByTestId('cad-memo-pin')).toHaveCount(0);
+  await page.getByRole('link',{name:'도면 목록으로 이동',exact:true}).click();
+  await expect(page.getByTestId('cad-canvas')).toHaveCount(0);await twoFrames(page);
+  const third=await nativeListeners(),thirdWorkers=await page.evaluate(()=>window.r4Lifecycle.workers());
+  const thirdHeap=await heap(),thirdDom=await counters();
+  console.log('R4_THIRD_DISPOSE',JSON.stringify({dxfLineInputs:count,memoPinsOnReentry:0,
+    listeners:third.counts,workers:thirdWorkers,heap:thirdHeap,domCounters:thirdDom,
+    heapDeltaFromSecondDispose:thirdHeap!==null&&secondHeap!==null?thirdHeap-secondHeap:null,
+    cdpInspectorNotes:'CDP Runtime/DOMDebugger references and Next.js route/module cache are not individually ruled out'}));
+  expect(thirdWorkers).toBe(0);
+  for(const [key,value] of Object.entries(third.counts))expect(value,key).toBeLessThanOrEqual(baseline[key]??0);
 });
