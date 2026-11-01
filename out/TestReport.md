@@ -1,10 +1,10 @@
 ## PR-C #186 — 성능 계측·projection 개선 코드 후보 (2026-11-01)
 
-**상태: CODE CHANGED / LOCAL RUNTIME NOT EXECUTED / PR CI NOT VERIFIED / FIELD & 2PC NOT ACCEPTED.** 이전 #174 수치(10k LINE+100 Memo p95=216.6ms, 17/30>16.7ms; 1차/2차 dispose 31,645,380→48,449,656B,+16,804,276B)는 **과거 기록**이며 이 브랜치 변경 후 값으로 재표기하지 않는다.
+**상태: CODE CHANGED / LOCAL RUNTIME NOT EXECUTED / FIRST PR CI FAILED (Run 41277155938, Unit 1/891) / CORRECTION RETEST NOT VERIFIED / FIELD & 2PC NOT ACCEPTED.** 이전 #174 수치(10k LINE+100 Memo p95=216.6ms, 17/30>16.7ms; 1차/2차 dispose 31,645,380→48,449,656B,+16,804,276B)는 **과거 기록**이며 이 브랜치 변경 후 값으로 재표기하지 않는다.
 
 - 수정: Three adapter batch WCS projection (per-100 pin 100 rect requests→한 호출당 1 rect, 1 reused Vector3), pure bounded Memo preview/candidate screen computation & no-op state, `ThreeDxfViewerAdapter.dispose` large index/Scene ref clearing 및 Render change listener 명시 해제. 원본 DXF/SHA/Scene/DB/Anchor 정책은 불변.
-- unit 신규 `memo-screen-projection.test.ts`: 순수 projection/Three 비교, invalid/offscreen, 100 memo+candidate callback 1회. 실행 상태 **NOT RUN**.
-- 브라우저 기존 `issue174-memo-performance.spec.ts` 확장: 0 Memo, 100 visible, 100 CSS-hidden pan frame 통계, 3회 dispose별 GC Heap·DOMCounters/Worker/listener. 숫자 **CI 결과 전 미확정**. CSS 숨김은 paint만 분리하며 상위 React update 및 WebGL은 남는다.
+- unit 신규 `memo-screen-projection.test.ts`: 순수 projection/Three 비교, invalid/offscreen, 100 memo+candidate callback 1회. 첫 PR CI Verify에서 파일의 3개 중 2 PASS/1 FAIL (`toEqual`의 `110.00000000000001` vs `110`); 전체 890/891 PASS, Typecheck/ESLint PASS. X/Y를 `toBeCloseTo(...,9)`로 수정, 정확한 새 HEAD의 재검증 **NOT VERIFIED**.
+- 브라우저 기존 `issue174-memo-performance.spec.ts` 확장: 0 Memo, 100 visible, 100 CSS-hidden pan frame 통계, 3회 dispose별 GC Heap·DOMCounters/Worker/listener. 숫자 **첫 CI Unit 실패로 E2E SKIPPED/미확정**. CSS 숨김은 paint만 분리하며 상위 React update 및 WebGL은 남는다.
 - 근본 원인 단정 금지: source-level 중복 계산과 retainable graph는 확인했으나 과거 Heap 증가가 앱 메모리 leak인지/Chrome DevTools 또는 Next cache 때문인지 실측·retainer graph 증거 없음.
 - Merge/GHCR/Owner Managed 최종 인수는 정확 HEAD PR CI Verify/Docker·리뷰/충돌 검토 후 별도. #186 현장/성능 SLA 및 #96/#113 Owner 수용은 계속 OPEN.
 

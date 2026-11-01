@@ -33,9 +33,14 @@ describe('#186 one-viewport Memo WCS batch projector',()=>{
   const result=projectMemoPins(memos,{id:'memo3',point:{x:10,y:10}},
    {x:100,y:50},{width:200,height:100},projector);
   expect(calls).toBe(1);expect(projectedCount).toBe(101);
-  expect(result.positions.memo3).toEqual({x:110,y:40});
-  expect(result.positions.memo4).toEqual({x:54,y:50});
-  expect(result.candidate).toEqual({x:200,y:0});
+  // THREE's orthographic projection may produce 110.00000000000001 for x=110.
+  // Preserve the WCS/CSS projection contract; compare IEEE-754 coordinates with tolerance.
+  expect(result.positions.memo3.x).toBeCloseTo(110,9);
+  expect(result.positions.memo3.y).toBeCloseTo(40,9);
+  expect(result.positions.memo4.x).toBeCloseTo(54,9);
+  expect(result.positions.memo4.y).toBeCloseTo(50,9);
+  expect(result.candidate?.x).toBeCloseTo(200,9);
+  expect(result.candidate?.y).toBeCloseTo(0,9);
   expect(Object.keys(result.positions)).toHaveLength(100);
  });
  it('culls offscreen/invalid points, retains order, no-op positions are referentially comparable',()=>{
