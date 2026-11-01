@@ -1,3 +1,13 @@
+## PERF-MEMO-186 — 실제 원인 분리 및 현장 성능 AC (2026-11-01)
+
+1. 1k/10k synthetic LINE + 100 Memo 핀의 `rAF` frame baseline과 0 Memo/100 Visible/100 CSS-hidden 코호트를 같은 pan 조건에서 구분하여 p50/p95/max·budget 초과를 원본/수정 후 각각 수집한다. 숫자는 실제 PC/GPU SLA 승인이 아닐 것.
+2. Memo 100개까지 WCS→Canvas 동일 camera/viewport로 묶어 계산, 기존 단건 API fallback/finite/culling/preview/candidate/drag/ESC/keyboard/touch/label 정확도 유지; UI/Canvas 파일/Scene 데이터 불변.
+3. Dispose 후 2회 이상 동일 workload 재진입에서 CDP 강제 GC JS Heap, DOMCounters/Worker/listener, inspector/Next cache/Three retained references를 각각 비교하고 원인이 확증된 문제만 누수로 분류. Heap 증가 단독으로 leak-free 또는 leak 확정 금지.
+4. 성능 병목 개선 시 현재 Owner 정책 #172 Site Editor 공동 수정/작성자·Site Admin 삭제와 Memo 스냅 100 binding/20k candidate 제한을 훼손하지 않을 것.
+5. #186 현장 수용은 #96 2PC Auth/Session/Audit 신규 설치와 #113 real DXF/GPU/Vram 및 Owner 서명 별도 충족 필요. 기존 CAD 외부 반출/레거시 migration은 범위 밖.
+
+---
+
 ## FR-MEMO-172 — 동사업장 Editor 공동 수정 / 제한 삭제 (2026-11-01)
 
 1. Editor 이상은 현재 서버 Session/Role/Site Grant가 허용하는 Version의 타 작성자 Memo 본문·WCS 좌표·일정/완료·표시/그룹·영속 Anchor를 수정 가능. 생성자/생성시각 불변, 변경자/감사 기록과 CAS 필수.
