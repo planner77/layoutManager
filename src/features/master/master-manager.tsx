@@ -135,8 +135,10 @@ export function MasterManager() {
         setSelectedKey(nextSelection);
         setMode("view");
       }
-      setFocusedKey((previous) => previous && nextIndex.has(previous)
-        ? previous : nextSelection ?? nextRoots[0]?.key ?? null);
+      setFocusedKey((previous) => preferred?.selectKey && nextIndex.has(preferred.selectKey)
+        ? preferred.selectKey
+        : previous && nextIndex.has(previous)
+          ? previous : nextSelection ?? nextRoots[0]?.key ?? null);
       setError("");
       setLoaded(true);
       return true;
@@ -356,7 +358,7 @@ export function MasterManager() {
           aria-expanded={hasChildren ? opened : undefined}
           aria-selected={isSelected}
           tabIndex={entry.key === (focusedKey ?? visible[0]?.key) ? 0 : -1}
-          onFocus={() => setFocusedKey(entry.key)}
+          onFocus={(event) => { if (event.currentTarget === event.target) setFocusedKey(entry.key); }}
           onKeyDown={(event) => onTreeKeyDown(event, entry)}
           className="rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-teal-600"
         >
