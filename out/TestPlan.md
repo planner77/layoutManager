@@ -1,3 +1,20 @@
+## TC-172 — 메모 공동 수정 / 작성자·Site Admin 삭제 및 Reset (0.55.0 PR-B, 2026-11-01)
+
+| TC | 자동화/설비 | 기대 결과 |
+| --- | --- | --- |
+| TC-172-01 | Integration `typed-outline-runtime.test.ts` 실제 G7 세션 A/B | A 작성, 동일 Site Editor B의 text/move/metadata 성공. `createdById` 불변, `updatedById=B`, WCS 명시 이동, Revision CAS/Audit |
+| TC-172-02 | 동일 시험 / 2개 작성자 및 Admin | B DELETE 403/행·성공 Audit 불변, A DELETE 성공, 해당 Site 권한 없는 Admin 403, Site Grant 부여 후 Admin DELETE 성공·soft delete |
+| TC-172-03 | Signed G7 실 거래 | Reader/다른 Site/권한 회수/세션 revoke·만료/CSRF/Origin·forge actor/role 거부, stale·동시 CAS 1 SUCCESS/1 CONFLICT |
+| TC-172-04 | GET/Viewer | `actorId/canDeleteAny` 현재 인가 GET 값, 비작성자 Editor Delete disabled·server recheck, 영속 Memo 검색/Reload 후 삭제 비노출, OFF/권한 실패 격리 |
+| TC-172-05 | Anchor/Reset Integration | B attach/reposition KEEP/DETACH, SOURCE_ONLY 타 작성자 Anchor BROKEN 허용, ALL mixed authors Editor 403/원자 rollback·Site Admin 성공 |
+| TC-172-06 | Greenfield Browser `memo-collaboration.spec.ts` | 독립 브라우저 A(Admin 소유자), B(Editor 같은 Site) 로그인을 분리. B Viewer 편집·삭제 disabled 및 실제 DELETE 403, A DELETE 후 B reload에서 비노출 |
+| TC-172-07 | 기존 전체 자동 게이트 | Typecheck/Lint/Vitest/General E2E/Greenfield/Auth/Legacy/Docker. 현재 HEAD의 PR CI Verified 결과 확인 전 PASS로 판단 금지 |
+| TC-172-08 | Owner 사내 전용 | 신규 빈 Greenfield 2 PC, 실제 세션/권한 회수/Audit/백업·복원·HTTP LAN 경계, #96/#113의 별도 signed 현장 증거 |
+
+기존 Group 생성/이름 변경/삭제는 그룹 작성자 전용이며 그룹 삭제의 타 Memo 미분류 이동은 DELETE가 아닌 메타데이터 EDIT로 검증한다. 실 CAD/기밀 자료는 CI에 올리지 않는다. `DESIGN.md`는 없으므로 Architecture/Decisions/AGENTS가 설계 정본.
+
+---
+
 ## 0.54.1 Epic #37/#49/#50 통합 회귀 계획 — CI 요청 전
 
 | TC | 대상 | 기대 |

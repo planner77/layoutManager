@@ -1,3 +1,9 @@
+## #172 Memo 공동 수정 — 0.55.0 R6 Schema 불변 (2026-11-01)
+
+신규 `CadMemo` / `CadMemoAnchor` / `CadMemoFeature` / `CadMemoGroup` 및 관련 Audit·Revision 스키마를 **변경하지 않는다**. `created_by_id` / `created_at`은 최초 작성자/생성시각 불변이며 `updated_by_id`는 실제 승인된 동일 Site Editor, `deleted_by_id`는 원 작성자 또는 같은 Site Admin만 기록한다. DELETE는 soft delete이고 `CadBusinessAudit`는 실제 actor와 Revision 이전/이후 값을 보존한다. Group 삭제는 Memo의 `group_id`를 NULL 처리하며 Memo 행 soft delete가 아니다. Owner의 기존 DB 미재사용 Greenfield 정책/DDL fingerprint/CAS/FK를 유지하고 자동 migration·adopt·data erase를 실행하지 않는다.
+
+---
+
 ## R5 #91 — 읽기 전용 교환, Schema 불변 (0.54 후보, 2026-11-01)
 
 R5b는 기존 Memo GET에 actorId/versionId/sourceSha256/sceneRevision 응답 envelope를 호환 추가했다. 목록과 인가 proof는 같은 transaction에서 읽고 응답 전 재검사한다. 이는 API 읽기 계약이며 DDL이나 새 서버 저장이 아니다. 기존 memos/groups/featuresAvailable·optional feature/anchor 경로와 허가된 DWG 빈 조회를 유지한다.

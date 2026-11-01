@@ -65,7 +65,8 @@ export class MemoGroupRepository{
     for(const row of assigned){
      const memo=await tx.cadMemo.findFirst({where:{id:row.memoId,versionId,deletedAt:null}});
      if(!memo)continue; // historic soft-deleted memo gets only its sidecar unassigned
-     if(memo.createdById!==allowed.actorId)blocked('BUSINESS_OWNER_REQUIRED',403);
+     // #172 removing an owned group only unassigns Memo metadata; it never deletes a Memo.
+     // G7 memo:write has already verified this Editor's Site/Version.
      const n=await tx.cadMemo.updateMany({where:{id:memo.id,versionId,revision:memo.revision,deletedAt:null},
       data:{revision:memo.revision+1,updatedById:allowed.actorId,updatedAt:new Date().toISOString()}});
      if(n.count!==1)cas();

@@ -1,3 +1,14 @@
+## R6 / #172 Memo 공동 수정과 제한 삭제 — 서버 권한 구조 (2026-11-01)
+
+- 신뢰 경로: `G7CadWrite`의 서명된 승인 상태 + 현 거래 `requireG7CadPermission(tx, proof, 'memo:write', Version)` → 실제 User/Session/Role/Version→Building→Site/Grant → Memo/Revision/SHA → CAS + Audit. 웹 요청 body, 임의 Role 헤더 및 Viewer capability는 권한 근거가 아니다.
+- `BusinessRepository.editMemo`는 같은 Site Editor의 `text/move/metadata` 수정을 허용하며 `remove=true`일 때만 `canDeleteMemo`를 추가 적용한다. 작성자 또는 허가 Site가 이미 검증된 Admin은 soft delete; 다른 Editor는 `BUSINESS_OWNER_REQUIRED/403`. Audit의 actor는 실제 변경자; 생성자는 유지한다.
+- `mutateMemoAnchor/repositionMemoAnchor`는 Memo 수정으로서 동일한 Site Scope·Revision 및 Target/Scene 검증 후 shared EDIT 허용. 보존 WCS/신뢰 inverse, Anchor DROP/BROKEN, 라이프사이클 실패 원자성은 이전 R4 계약을 그대로 따른다.
+- `resetBusinessVersion`: SOURCE_ONLY는 다른 작성자 Memo라도 SOURCE 연계 BREAK(EDIT) 허용; ALL은 전체 영속 Memo soft delete이므로 타인 작성자 포함 시 거래 내 Admin Role 검증 후에만 원자 승인. 그룹 소유권은 여전히 그룹 작성자 한정; 그룹 삭제 시 소속 Memo의 미분류 이동은 삭제가 아닌 EDIT로 처리한다.
+- `authorizedMemoList`는 이미 Version/Site 인가된 read transaction에서 최신 `actorId`와 `canDeleteAny`(Site 인가 Admin, CAD Write 활성)를 부가 출력한다. 브라우저는 이를 삭제 버튼 표시 힌트로만 사용하고 G7 실제 DELETE가 최종 권한 검사한다. Actor/Site/승인 변경·리비전 stale 응답은 그대로 거부한다.
+- 스키마, API 경로, immutable 원본 Scene/DXF/Current, Viewer Manager/Undo/Renderer 및 Owner Managed 신규 설치 경계는 변경하지 않는다. 이 설계는 코드/합성 수용 후보이며 실제 운영 GO/#96/#113/#186와 분리한다.
+
+---
+
 ## Epic #37/#49/#50 Integration R1 — Viewer 메뉴·로그 Timeline 오류 경계
 
 ViewerCommandMenus는 비활성/빈 href 링크에 실제 anchor href를 제공하지 않고 메뉴 항목 버튼으로 표현한다. ViewerManager/SelectionController/GeneratedDocument/Server Outline·Source bytes는 변경하지 않는다.

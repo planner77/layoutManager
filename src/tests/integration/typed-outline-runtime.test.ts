@@ -20,6 +20,8 @@ import type {IsolatedDb} from '../../server/g7-staging/g1-store';
 import {BusinessRepository,requireBusinessWrite} from '../../server/cad-business/service';
 import {resetBusinessVersion} from '../../server/cad-business/reset-service';
 import {PATCH as patchMemoAnchor} from '../../app/api/cad-files/[versionId]/memos/[memoId]/anchor/route';
+import {GET as getMemoList,POST as postMemo} from '../../app/api/cad-files/[versionId]/memos/route';
+import {PATCH as patchMemo,DELETE as deleteMemo} from '../../app/api/cad-files/[versionId]/memos/[memoId]/route';
 import {parseDxfOutlineIndex} from '../../viewers/core/outline-geometry';
 import {computeOutline} from '../../viewers/core/outline-compute';
 import {buildTypedOutlineRequest} from '../../domain/typed-outline-draft';
@@ -353,7 +355,8 @@ test('TC-R4-004/005: explicit owner KEEP uses existing target inverse across Sce
  await db!.authSession.create({data:{id:session.session.id,userId:secondId,
   tokenHash:session.session.tokenHash,issuedAt:BigInt(session.session.issuedAt),
   lastSeenAt:BigInt(session.session.lastSeenAt),expiresAt:BigInt(session.session.expiresAt)}});
- expect((await move(session.rawToken,keep)).status).toBe(403);
+ // #172 same-Site Editor now passes ownership; stale target revisions still fail closed.
+ expect((await move(session.rawToken,{...keep,expectedTargetRevision:1})).status).toBe(409);
  const raw=f.open();raw.exec("CREATE TRIGGER r4_audit_fail BEFORE INSERT ON CadBusinessAudit BEGIN SELECT RAISE(ABORT,'R4_AUDIT_FAILURE'); END");raw.close();
  expect((await move(f.tokens.editor,keep)).status).toBeGreaterThanOrEqual(500);
  const rawAfter=f.open();rawAfter.exec('DROP TRIGGER r4_audit_fail');rawAfter.close();
@@ -487,4 +490,155 @@ test('TC-R4-003/004 QA: wrong Site/Version, forged local/target data and invalid
  expect(await db!.cadMemo.findUnique({where:{id:memoId}})).toMatchObject({revision:0,anchorX:1,anchorY:2});
  expect(await db!.cadMemoAnchor.findUnique({where:{memoId}})).toMatchObject({localX:1,localY:2,targetId:outlineId});
  expect(await db!.cadBusinessAudit.count({where:{targetKind:'MEMO',targetId:memoId,action:'EDIT'}})).toBe(0);
+});
+
+
+/** #172: real signed G7 transactions; all actors are server-issued sessions with Site Grants. */
+async function secondMemoEditor(){
+ const id=randomUUID(),now=Date.now(),candidate=newSessionCandidate(id,now);
+ await db!.user.create({data:{id,loginName:'memo-b-'+id.slice(0,8),passwordHash:'synthetic-hash',
+   status:'ACTIVE',mustChangePassword:false,createdAt:BigInt(now),updatedAt:BigInt(now)}});
+ await db!.userRoleGrant.create({data:{userId:id,role:'Editor',grantedAt:BigInt(now)}});
+ await db!.userSiteGrant.create({data:{userId:id,siteId:'site-a',grantedAt:BigInt(now)}});
+ await db!.authSession.create({data:{id:candidate.session.id,userId:id,
+   tokenHash:candidate.session.tokenHash,issuedAt:BigInt(candidate.session.issuedAt),
+   lastSeenAt:BigInt(candidate.session.lastSeenAt),expiresAt:BigInt(candidate.session.expiresAt)}});
+ return {id,token:candidate.rawToken};
+}
+const memoPayload=(f:ReturnType<typeof setup>,title='Memo A')=>({
+ sourceSha256:f.sha,title,content:'Original',anchorWcsXY:{x:10,y:20},
+});
+const memoArgs=(versionId:string,memoId:string)=>({params:Promise.resolve({versionId,memoId})});
+
+test('TC-172-01/02: same-Site Editor edits foreign Memo; DELETE is author or Site Admin only',async()=>{
+ const f=setup(),b=await secondMemoEditor(),base='/api/cad-files/'+f.versionId+'/memos';
+ const created=await postMemo(request('POST',base,f.tokens.editor,memoPayload(f)),args(f.versionId));
+ expect(created.status).toBe(201);const m=await created.json();
+ expect(m).toMatchObject({createdById:f.ids.editor,revision:0,anchorWcsXY:{x:10,y:20}});
+ const url=base+'/'+m.id;
+ const edit=(token:string,body:object)=>patchMemo(request('PATCH',url,token,body),memoArgs(f.versionId,m.id));
+ const remove=(token:string,body:object)=>deleteMemo(request('DELETE',url,token,body),memoArgs(f.versionId,m.id));
+ const text=await edit(b.token,{expectedRevision:0,operation:'text',title:'Shared',content:'Edited by B'});
+ expect(text.status).toBe(200);
+ expect(await text.json()).toMatchObject({createdById:f.ids.editor,updatedById:b.id,
+  revision:1,anchorWcsXY:{x:10,y:20},title:'Shared'});
+ const move=await edit(b.token,{expectedRevision:1,operation:'move',anchorWcsXY:{x:13,y:15}});
+ expect(move.status).toBe(200);
+ expect(await move.json()).toMatchObject({createdById:f.ids.editor,updatedById:b.id,
+  revision:2,anchorWcsXY:{x:13,y:15}});
+ const meta=await edit(b.token,{expectedRevision:2,operation:'metadata',groupId:null,visible:true,
+  scheduleEnabled:true,startDate:'2026-11-01',dueDate:'2026-11-02',
+  completionEnabled:true,isCompleted:false});
+ expect(meta.status).toBe(200);
+ expect(await meta.json()).toMatchObject({createdById:f.ids.editor,updatedById:b.id,
+  revision:3,scheduleEnabled:true,completionEnabled:true});
+ expect((await remove(b.token,{expectedRevision:3})).status).toBe(403);
+ expect((await remove(f.tokens.reader,{expectedRevision:3})).status).toBe(403);
+ expect((await remove(f.tokens.admin,{expectedRevision:3})).status).toBe(403);
+ expect(await db!.cadMemo.findUnique({where:{id:m.id}})).toMatchObject({
+  revision:3,createdById:f.ids.editor,updatedById:b.id,deletedAt:null});
+ expect(await db!.cadBusinessAudit.count({where:{targetId:m.id,action:'DELETE'}})).toBe(0);
+ const audit=await db!.cadBusinessAudit.findMany({where:{targetId:m.id},orderBy:{timestampUtc:'asc'}});
+ expect(audit).toHaveLength(4);
+ expect(audit.filter(x=>x.actorUserId===b.id&&x.action==='EDIT')).toHaveLength(3);
+ // A separate memo can be deleted by an Admin only after an actual current Site Grant.
+ const second=await (await postMemo(request('POST',base,f.tokens.editor,memoPayload(f,'Admin target')),
+   args(f.versionId))).json();
+ await db!.userSiteGrant.create({data:{userId:f.ids.admin,siteId:'site-a',
+   grantedAt:BigInt(Date.now())}});
+ const adminDelete=await remove(f.tokens.admin,{expectedRevision:3});
+ expect(adminDelete.status).toBe(200);
+ expect(await db!.cadMemo.findUnique({where:{id:m.id}})).toMatchObject({
+  createdById:f.ids.editor,deletedById:f.ids.admin,revision:4});
+ const authorDelete=await deleteMemo(request('DELETE',base+'/'+second.id,f.tokens.editor,
+  {expectedRevision:0}),memoArgs(f.versionId,second.id));
+ expect(authorDelete.status).toBe(200);
+ const remaining=await (await getMemoList(request('GET',base,f.tokens.reader),args(f.versionId))).json();
+ expect(remaining.memos).toHaveLength(0);
+ expect(await db!.cadMemo.count()).toBe(2); // soft delete only
+ expect(await db!.cadBusinessAudit.count({where:{targetId:m.id,action:'DELETE',
+  actorUserId:f.ids.admin}})).toBe(1);
+});
+
+test('TC-172-03/04: foreign Editor cannot forge Admin, bypass Scope/CSRF or defeat CAS',async()=>{
+ const f=setup(),b=await secondMemoEditor(),base='/api/cad-files/'+f.versionId+'/memos';
+ const m=await (await postMemo(request('POST',base,f.tokens.editor,memoPayload(f)),args(f.versionId))).json();
+ const url=base+'/'+m.id,params=memoArgs(f.versionId,m.id);
+ const edit=(token:string,value:object)=>patchMemo(request('PATCH',url,token,value),params);
+ const text={expectedRevision:0,operation:'text',title:'Shared',content:'B'};
+ const forged=new Request('http://0.0.0.0'+url,{method:'DELETE',headers:{
+  host:'cad.example.test',origin:'https://cad.example.test',cookie:'cad_session='+b.token,
+  'x-csrf-token':csrfProof(b.token),'x-role':'Admin','x-user-id':f.ids.admin,
+  'content-type':'application/json'},body:JSON.stringify({expectedRevision:0})});
+ expect((await deleteMemo(forged,params)).status).toBe(403);
+ expect((await edit(b.token,{...text,actorId:f.ids.admin})).status).toBe(400);
+ expect((await patchMemo(new Request('http://0.0.0.0'+url,{method:'PATCH',headers:{
+  host:'cad.example.test',origin:'https://attacker.test',cookie:'cad_session='+b.token,
+  'x-csrf-token':csrfProof(b.token),'content-type':'application/json'},
+  body:JSON.stringify(text)}),params)).status).toBe(403);
+ expect((await patchMemo(new Request('http://0.0.0.0'+url,{method:'PATCH',headers:{
+  host:'cad.example.test',origin:'https://cad.example.test',cookie:'cad_session='+b.token,
+  'x-csrf-token':'fake','content-type':'application/json'},body:JSON.stringify(text)}),params)).status).toBe(403);
+ expect((await edit(f.tokens.reader,text)).status).toBe(403);
+ expect((await edit(b.token,{...text,expectedRevision:5})).status).toBe(409);
+ const responses=await Promise.all([edit(f.tokens.editor,text),edit(b.token,text)]);
+ expect(responses.map(x=>x.status).sort()).toEqual([200,409]);
+ expect(await db!.cadBusinessAudit.count({where:{targetId:m.id,action:'EDIT'}})).toBe(1);
+ await db!.userSiteGrant.deleteMany({where:{userId:b.id,siteId:'site-a'}});
+ expect((await edit(b.token,{...text,expectedRevision:1})).status).toBe(403);
+ expect((await edit(b.token,{...text,expectedRevision:1})).status).toBe(403);
+ await db!.authSession.updateMany({where:{userId:b.id},data:{revokedAt:BigInt(Date.now())}});
+ expect((await edit(b.token,{...text,expectedRevision:1})).status).toBe(401);
+ expect(await db!.cadMemo.findUnique({where:{id:m.id}})).toMatchObject({revision:1,deletedAt:null});
+});
+
+test('TC-172-05: Editor shared anchor edits and SOURCE_ONLY reset preserve owner; ALL rejects mixed owners',async()=>{
+ const f=setup(),b=await secondMemoEditor(),base='/api/cad-files/'+f.versionId+'/memos';
+ const a=await (await postMemo(request('POST',base,f.tokens.editor,memoPayload(f)),args(f.versionId))).json();
+ const other=await (await postMemo(request('POST',base,b.token,memoPayload(f,'B Memo')),args(f.versionId))).json();
+ const anchorUrl=base+'/'+a.id+'/anchor',params=memoArgs(f.versionId,a.id);
+ const outlineId=randomUUID(),now='2026-11-01T00:00:00.000Z';
+ await db!.cadOutline.create({data:{id:outlineId,versionId:f.versionId,sourceSha256:f.sha,
+  sceneRevision:0,origin:'APP_CREATED',validationMode:'APP_CREATED',kind:'CONVEX',name:'Target',
+  baseGeometryJson:JSON.stringify(polygon),geometryJson:JSON.stringify(polygon),
+  sourceRefsJson:'[]',derivedFromJson:'[]',transformJson:'[]',
+  revision:0,createdById:f.ids.editor,updatedById:f.ids.editor,createdAt:now,updatedAt:now}});
+ const anchor=(token:string,value:object)=>patchMemoAnchor(request('PATCH',anchorUrl,token,value),params);
+ const attached=await anchor(b.token,{expectedRevision:0,operation:'attach',
+  targetOrigin:'APP_CREATED',targetId:outlineId});
+ expect(attached.status).toBe(200);
+ expect(await db!.cadMemo.findUnique({where:{id:a.id}})).toMatchObject({revision:1,
+  createdById:f.ids.editor,updatedById:b.id});
+ const reposition=await anchor(b.token,{expectedRevision:1,operation:'reposition',
+  behavior:'KEEP',expectedSceneRevision:0,expectedTargetRevision:0,anchorWcsXY:{x:13,y:15}});
+ expect(reposition.status).toBe(200);
+ expect((await reposition.json()).anchorWcsXY).toEqual({x:13,y:15});
+ const detached=await anchor(b.token,{expectedRevision:2,operation:'detach'});
+ expect(detached.status).toBe(200);
+ const sourceRef=f.versionId+':'+f.sha+':source-ref';
+ await db!.cadMemoAnchor.create({data:{memoId:a.id,versionId:f.versionId,sourceSha256:f.sha,
+  status:'ATTACHED',targetOrigin:'DXF_IMPORTED',targetId:sourceRef,localX:13,localY:15,
+  createdAt:now,updatedAt:now}});
+ const sourceReset=(token:string,mode:'SOURCE_ONLY'|'ALL',memos:{id:string;revision:number}[])=>{
+  const p=requireBusinessWrite(request('POST','/api/cad-files/'+f.versionId+'/reset',token,
+    {mode}),'memo-r172-reset');
+  return resetBusinessVersion(db!,f.versionId,{mode,sourceSha256:f.sha,expectedSceneRevision:0,
+    outlines:[{id:outlineId,revision:0}],memos},p);
+ };
+ const reset=await sourceReset(b.token,'SOURCE_ONLY',[{id:a.id,revision:3},{id:other.id,revision:0}]);
+ expect(reset).toMatchObject({broken:1,deletedMemos:0});
+ expect(await db!.cadMemo.findUnique({where:{id:a.id}})).toMatchObject({
+  createdById:f.ids.editor,updatedById:b.id,revision:4,anchorX:13,anchorY:15,deletedAt:null});
+ expect(await db!.cadMemoAnchor.findUnique({where:{memoId:a.id}})).toMatchObject({status:'BROKEN_ANCHOR'});
+ await expect(sourceReset(b.token,'ALL',[{id:a.id,revision:4},{id:other.id,revision:0}]))
+  .rejects.toMatchObject({code:'RESET_MEMO_OWNER_REQUIRED',status:403});
+ expect(await db!.cadMemo.count({where:{deletedAt:null}})).toBe(2);
+ expect(await db!.cadOutline.count({where:{deletedAt:null}})).toBe(1);
+ await db!.userSiteGrant.create({data:{userId:f.ids.admin,siteId:'site-a',grantedAt:BigInt(Date.now())}});
+ const admin=await sourceReset(f.tokens.admin,'ALL',[{id:a.id,revision:4},{id:other.id,revision:0}]);
+ expect(admin).toMatchObject({deletedMemos:2,deletedOutlines:1});
+ expect(await db!.cadMemo.count({where:{deletedAt:null}})).toBe(0);
+ expect(await db!.cadOutline.count({where:{deletedAt:null}})).toBe(0);
+ expect(await db!.cadBusinessAudit.count({where:{targetKind:'MEMO',action:'DELETE',
+  actorUserId:f.ids.admin}})).toBe(2);
 });

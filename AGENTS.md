@@ -1,3 +1,13 @@
+## #172 PR-B — Memo 동일 Site Editor 공동 수정 / 작성자·Admin 삭제 (0.55.0 후보, 2026-11-01)
+
+- **Owner 확정 정책:** G7 ACTIVE, 실제 서명된 Site/Version 범위의 Editor·Admin은 다른 작성자의 Memo 텍스트·WCS·Metadata·Anchor를 수정할 수 있다. **메모 논리 삭제는 원 작성자 또는 같은 Site Grant를 보유한 Admin만** 가능하다. Admin 역할만으로 Site 허용으로 간주하지 않는다. `createdById/createdAt` 불변, `updatedById`와 실제 actor Audit/CAS 갱신.
+- 모든 Server Memo PATCH/DELETE/Anchor/Reset은 `requireG7CadPermission`의 현재 Session·Role·실 Site·Version·Origin/CSRF·승인 Gate를 통과한다. UI의 `canDeleteAny`는 인가된 목록 GET에 첨부하는 **표시용 힌트**일 뿐, 삭제 권한의 근거가 아니다. 권한 회수/Actor 변경/동시 CAS 경쟁 시 실제 서버가 거부해야 한다.
+- `SOURCE_ONLY`의 SOURCE Anchor BROKEN은 EDIT로 간주해 다른 Editor도 허용하고, `ALL`은 DELETE이므로 타 작성자 Memo를 포함하면 Admin을 제외한 Editor는 트랜잭션 전체를 403으로 거절한다. 그룹 생성/이름 변경/삭제는 기존 그룹 작성자 정책을 유지하되 그룹 삭제의 타인 Memo 미분류 이동은 메타데이터 EDIT로 처리한다.
+- Read envelope `actorId/canDeleteAny`·Viewer 삭제 버튼/UI/권한 오류, Author 및 Rev CAS, Audit와 OLD schema 단순 조회를 회귀한다. `src/tests/integration/typed-outline-runtime.test.ts`, `src/tests/greenfield-e2e/memo-collaboration.spec.ts`, `src/tests/unit/authorized-memo-read.test.ts` 참조.
+- Root `DESIGN.md` 없음: `out/Architecture.md`, `out/Decisions.md`, `out/TestPlan.md`, `out/TestReport.md`, `out/FailureLedger.md`를 정본으로 사용한다. 기존 실패 원장 보존·새 PR CI는 결과 확인 전 PASS 아님. 신규 DB Schema/기존 Volume Migration·운영 Auth/Writer 강제 활성화·실 CAD/GPU/사내 2PC·GHCR 게시는 이 PR 범위 밖이며 #96/#113/#186에서 추적한다.
+
+---
+
 ## Epic #37/#49/#50 통합 보완 (0.54.1 후보, 2026-11-01)
 
 - 설계·AC 및 추적 근거: [out/Epics37-49-50.md](out/Epics37-49-50.md). #37/#49/#50는 상위 Epic이며 구현 완료된 자식 #38~#43/#65/#71/#73, #51~#56, #57~#62의 기능을 재구현하지 않는다.
