@@ -1,3 +1,12 @@
+## Issue #191 / PR #194 — 2차 CI React Hook 간접 상태 변경 수리 (2026-11-01)
+
+- **실제 실패**: [PR CI Run 41291679198](https://github.com/planner77/layoutManager/actions/runs/41291679198), 원본 HEAD `5fac25bda03a9f5b44dd2455d17491f8f71aa7c3`, completed/failure. Verify Job `124804106503`: npm ci/Prisma 생성/TypeScript SUCCESS, ESLint **FAIL (1 error, 9 warnings)**. 실패 위치 `src/features/master/master-manager.tsx:167`, `react-hooks/set-state-in-effect`, Effect의 `void refresh()` 호출 경로에서 비동기 함수의 첫 번째 `setLoading(true)`를 동기적으로 실행함. Unit·Integration/Build/General·G7·Greenfield·Legacy E2E **SKIPPED**. Docker Job `124804106759` SUCCESS는 해당 과거 HEAD에서만 유효.
+- **수정**: [Commit 8fc5c44](https://github.com/planner77/layoutManager/commit/8fc5c4479d6c9df90e1eeb26a7592ade50696b4e). `refresh`의 최초 동기 `setLoading(true)` 제거; 첫 진입은 `useState(true)`, 수동 새로고침과 비활성 필터는 클릭/변경 이벤트에서 `setLoading(true)` 수행. Effect 자체는 조회만 시작하고 데이터 fetch 이후 결과/오류/종료 상태 반영. 로딩 중 선택 상세를 숨겨 필터 전환 직후 stale 편집 방지. 기존 request sequence, G7/DB/API/Current/도면 이력 변경 없음. ESLint 규칙 비활성화/CI gate 우회 없음.
+- **증거 경계**: 수정 이후의 로컬 npm Typecheck/ESLint/Vitest/Playwright/Docker **NOT RUN**. 새 정확 HEAD의 PR CI 성공/실패 **NOT VERIFIED**(요청대로 시작 후 모니터링 안 함). 이전 HEAD의 TypeScript/Docker PASS는 이 변경의 전체 테스트 근거가 아님. 실패 원장 [FailureLedger](FailureLedger.md)에 원본 Run/Job/정확한 수리·후속 CI 범위 기록.
+- PR 병합, GHCR 게시, Issue #191 종료, 운영 Auth/Writer·SQLite/CAD Volume 변경 및 현장 검증은 진행하지 않음.
+
+---
+
 ## Issue #191 PR #194 — ESLint 최초 실패/정적 수정 회귀 (2026-11-01)
 
 - 정확 실패 HEAD a89956c9d704aeb173e625b3c970d3f3fa29a3c8, [Run 41285766585](https://github.com/planner77/layoutManager/actions/runs/41285766585) completed/failure. Verify Job 124786741824: TypeScript PASS 후 ESLint 4 errors (react-hooks/refs 2, react-hooks/set-state-in-effect 2), 9 warnings; Unit·Integration/Build/Playwright SKIPPED. Docker Job 124786742016 SUCCESS.
