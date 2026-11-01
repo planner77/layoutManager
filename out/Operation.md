@@ -1,3 +1,13 @@
+## #172 / PR-B — 메모 공동 수정 운영·권한 수용 (0.55.0 후보, 2026-11-01)
+
+1. **권한 표:** 같은 Site Grant의 Editor는 작성자와 무관하게 Memo 제목/본문·WCS·일정/완료·Visibility/Group·Anchor를 수정한다. **삭제**는 해당 Memo의 원 작성자 또는 Site Grant 가진 Admin만. Reader는 읽기만, Admin이라도 Site Grant가 없으면 Memo 변경/삭제 불허. 원본 작성자·생성시각은 고정, 수정자는 서버 감사에 남는다.
+2. Viewer의 메모 삭제 버튼은 권한 없는 다른 Editor에서 disabled지만 권한 판단은 최종 서버 요청의 signed G7 Session·Site·Role·Version/CAS/CSRF·Audit로 수행한다. 로그인·Grant가 변경됐으면 새로고침/목록 재조회 후 다시 시도한다. Error 401/403/409는 무단 재시도·데이터 삭제 없이 알려야 한다.
+3. SOURCE_ONLY는 타 작성자 Memo의 SOURCE 연계를 마지막 WCS의 BROKEN으로 바꾸되 메모를 보존. ALL은 실제 soft delete이므로 다른 작성자 Memo를 가진 Editor는 전체 거절; Site Admin만 혼합 작성자 일괄 삭제 가능. 변경 전 영향/대상 개수와 리비전을 확인한다.
+4. Group 생성/수정/삭제는 생성자 전용(기존 정책)이나 소유 Group 제거 시 포함된 메모는 미분류로 이동, 메모 자체 삭제하지 않음. 파일·SceneAsset/Current/Version 원본 및 감사 원장은 보존한다.
+5. 신규 설치 현장 2 PC에서 Author A/Editor B/Admin C/Reader 및 다른 Site Grant 회수·로그아웃·세션 만료·동시 CAS·Undo/Anchor/재접속·백업·Restore를 비공개 증거로 수용(#96/#113). 사용자 본인의 현장 GO 전 Docker Compose/Auth Writer/배포·GHCR는 변경하지 않는다.
+
+---
+
 ## GLB / glTF 내보내기 — 0.54.0 후보
 
 1. 준비된 DXF를 `three-dxf-viewer`로 열고 `도면 → GLB / glTF 내보내기`를 선택한다.
