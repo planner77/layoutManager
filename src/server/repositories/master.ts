@@ -62,6 +62,48 @@ function referenced(error: unknown): never {
     );
   throw error;
 }
+// Prevent creating new masters under a disabled ancestor (even through direct API).
+// This check runs in the same transaction as the insertion.
+async function requireActiveMasterParent(tx: Tx, type: MasterType, parentId?: string): Promise<void> {
+  if (type === "business-units") return;
+  if (!parentId) throw new CadError("INVALID_PARENT", "상위 기준정보를 선택해주세요.", 409);
+  let allowed = false;
+  switch (type) {
+    case "products": {
+      const parent = await tx.businessUnit.findUnique({ where: { id: parentId }, select: { active: true } });
+      allowed = parent?.active === true;
+      break;
+    }
+    case "sites": {
+      const parent = await tx.product.findUnique({
+        where: { id: parentId }, select: { active: true, businessUnit: { select: { active: true } } },
+      });
+      allowed = parent?.active === true && parent.businessUnit.active;
+      break;
+    }
+    case "buildings": {
+      const parent = await tx.cadSite.findUnique({
+        where: { id: parentId },
+        select: { active: true, product: { select: { active: true, businessUnit: { select: { active: true } } } } },
+      });
+      allowed = parent?.active === true && parent.product.active && parent.product.businessUnit.active;
+      break;
+    }
+    case "floors": {
+      const parent = await tx.building.findUnique({
+        where: { id: parentId },
+        select: { active: true, site: { select: { active: true, product: { select: { active: true, businessUnit: { select: { active: true } } } } } } },
+      });
+      allowed = parent?.active === true && parent.site.active && parent.site.product.active &&
+        parent.site.product.businessUnit.active;
+      break;
+    }
+  }
+  if (!allowed) throw new CadError(
+    "INVALID_PARENT", "상위 기준정보가 없거나 비활성 상태입니다. 활성 경로를 선택해주세요.", 409,
+  );
+}
+
 export class MasterRepository {
   constructor(private db: Database) {}
   tree(includeInactive = true) {
@@ -113,6 +155,7 @@ export class MasterRepository {
       const sites = auth && input.parentId && (type === 'buildings' || type === 'floors')
         ? await masterSites(tx,type === 'buildings' ? 'sites' : 'buildings',input.parentId) : [];
       const actor = auth ? await requireG7MasterPermission(tx,auth,sites) : null;
+      await requireActiveMasterParent(tx, type, input.parentId);
       const perform = async () => {
       try {
         switch (type) {
