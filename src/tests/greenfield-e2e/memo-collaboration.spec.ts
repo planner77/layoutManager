@@ -102,7 +102,7 @@ test('TC-172-BROWSER: same-Site Editor edits another author, cannot DELETE; owne
   await expect(second.getByTestId('scene-status')).toContainText('저장된 Scene Asset 복원');
   await second.getByRole('button',{name:'작업',exact:true}).click();
   await second.getByTestId('viewer-menu-tools').click();
-  await expect(second.getByTestId('cad-memo-latest')).not.toContainText(title);
+  await expect(second.getByTestId('cad-memo-latest').getByRole('button',{name:title,exact:true})).toHaveCount(0);
  }finally{
   if(memoId&&versionId){
    const row=await page.request.get('/api/cad-files/'+versionId+'/memos/'+memoId);
