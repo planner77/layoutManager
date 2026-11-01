@@ -72,17 +72,14 @@ test("TC-LIST-093-E2E-001: default Current, toggle, history search and Location 
 
   // A Location with no Current stays reachable via the master hierarchy.
   await page.getByRole("link", { name: "위치별 버전 관리" }).click();
-  await page.getByRole("region", { name: "1. 사업부" })
-    .getByText(businessUnit, { exact: true }).click();
-  await page.getByRole("region", { name: "2. 제품" })
-    .getByText("제품", { exact: true }).click();
-  await page.getByRole("region", { name: "3. 사업장 / 법인" })
-    .getByText(`[사업장] ${site}`, { exact: true }).click();
-  await page.getByRole("region", { name: "4. 동" })
-    .getByText("A동", { exact: true }).click();
-  const unassigned = page.getByRole("region", { name: "5. 층" })
-    .locator("div.rounded-lg").filter({ hasText: "3층" });
-  await unassigned.getByRole("link", { name: "버전 이력" }).click();
+  // A floor without Current remains discoverable through the new master tree.
+  await page.getByRole("textbox", { name: "항목 검색" }).fill("3층");
+  const branch = page.getByRole("treeitem", { name: "사업부: " + businessUnit });
+  const unassigned = branch.getByRole("treeitem", { name: "층: 3층" });
+  await unassigned.getByRole("button", { name: "3층", exact: true }).click();
+  await expect(page.getByTestId("master-selected-path"))
+    .toContainText(businessUnit + " > 제품 > [사업장] " + site + " > A동 > 3층");
+  await page.getByRole("link", { name: "버전 이력" }).click();
   await expect(page.locator(`#version-${onlyOld.id}`)).toContainText("이전 버전");
   await page.locator(`#version-${onlyOld.id}`)
     .getByRole("button", { name: "Current 지정" }).click();
