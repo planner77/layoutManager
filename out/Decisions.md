@@ -1,3 +1,11 @@
+## ADR-191 — 5열 Master UI를 단일 트리 + 선택 상세로 교체 (2026-11-01)
+
+**결정:** 기존 다섯 단계 데이터 모델, 불변 UUID/Parent FK, Server API/G7 승인·감사 경계는 유지하고 /masters 표시와 상호작용만 트리/상세 2패널로 전환. 서버 master 생성에 활성 부모·조상 검증을 트랜잭션 내부에서 추가한다. 검색은 이름 일치+조상·임시 확장, 삭제는 전체 경로 확인과 FK 차단. 미분류 제품 이름, Current/Version/원본은 그대로 보존.
+
+**대안·제외:** 5열 폼 유지, 신규 트리 DB, 부모 DnD, cascade delete, Client-only 권한 검사, Schema migration 모두 배제. 이유: #24 ID·FK·도면 이력 정합성 우선. 별도 루트 DESIGN.md가 없으므로 [Issue191](Issue191.md)·Architecture·이 ADR을 정본으로 사용. 검증 완료는 TestReport/FailureLedger의 실제 CI 증거가 있어야 인정.
+
+---
+
 ## ADR-EPIC-81-160 보완 — 서버 PATCH 이전 유일 ID 확인 (2026-11-01)
 
 Viewer KEEP의 사전 검증과 사후 검증이 서로 다른 Target 선택 규칙을 사용하는 것은 일관성 결함이다. `uniqueMemoSnapTarget`을 두 단계에서 공통 사용하여 모호한 ID를 서버 쓰기 전에 배제한다. 비동기 서버 요청 이후 실제 Canvas 변경까지 원자적으로 보증할 수 없으므로 기존 epoch/transform 재검증·세션 관계 분리 정책을 유지한다.

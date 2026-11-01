@@ -1,3 +1,27 @@
+## PR #194 / Issue #191 — 3차 ESLint 실패 및 Effect 비동기 조회 분리 (2026-11-01)
+
+- [실패 Run 41292700455](https://github.com/planner77/layoutManager/actions/runs/41292700455) 정확 HEAD `693af939d762f4d54f2f0af758aa6fd26972ff22`: Verify 124807072543 TypeScript SUCCESS 후 ESLint 1 error(`react-hooks/set-state-in-effect` at `master-manager.tsx:168`), Unit/Build/Browser SKIPPED, Docker 124807072396 SUCCESS. [FailureLedger](out/FailureLedger.md), [TestReport](out/TestReport.md)에서 이전 Run 41285766585/41291679198도 보존.
+- 중요 재발 방지: Effect에서 State setter가 있는 비동기 함수 `refresh()`를 **직접 호출하지 않는다**. 초기/필터 GET을 순수 `fetchMasterNodes(showInactive)` 네트워크 Promise의 `.then/.catch/.finally`에서 처리하고, 수동 저장/새로고침의 `refresh(preferred)`와 공통 결과 반영 콜백을 재사용한다. ESLint/React Hooks rule/CI gate 해제 금지. 원본·Version·Current·G7 인가·Audit·DB 마이그레이션은 영향 없음.
+- 신규 PR CI의 실제 Run/Job 성공은 확인 전 NOT VERIFIED, 사용자 지시에 따라 CI 시작 후 모니터링 생략. Owner Managed 리뷰, Main 충돌 및 실패 원장 기록을 최종 HEAD에 대해 확인. PR 병합/GHCR/Issue 종료/운영 활성화 없음.
+
+---
+
+## PR #194 / #191 — React Hooks ESLint 실패 수리·기준정보 회귀 (2026-11-01)
+
+- [PR CI Run 41285766585](https://github.com/planner77/layoutManager/actions/runs/41285766585) 정확 실패 HEAD a89956c9d704aeb173e625b3c970d3f3fa29a3c8: Verify ESLint 오류 4건(react-hooks/refs 2, react-hooks/set-state-in-effect 2). TypeScript SUCCESS, Docker SUCCESS, Unit/Build/E2E SKIPPED. [FailureLedger](out/FailureLedger.md)/[TestReport](out/TestReport.md) 기록.
+- 수리 a29c3c7: master-manager.tsx 렌더 중 ref.current 대입을 효과 안으로, filter change mode 초기화는 이벤트로, 트리 포커스는 visible 기반 파생 변수로 변경. ESLint 규칙/CI gate 완화하지 않음. #45 E2E의 5열 기준정보 탐색도 c0518c3에서 #191 트리 검색→층 상세 이력으로 전환.
+- 이번 수정의 새로운 정확 HEAD PR CI 성공, 독립 QA, 현장 수용/GHCR 게시/병합은 별도 실제 증거 전까지 NOT VERIFIED. User 지시로 CI 모니터링 생략. Root DESIGN.md 부재로 Architecture/Decisions·Issue191.md를 설계 정본으로 사용. 운영 DB/Volume/Auth·CAD Writer 미변경.
+
+---
+
+## #191 — 위치 기준정보 트리·상세 편집 (2026-11-01, PR CI 후보)
+
+- 범위·5단계 불변·기능/상태/키보드·오류 및 보안 테스트 계약은 [out/Issue191.md](out/Issue191.md), [Requirements](out/Requirements.md), [Architecture](out/Architecture.md), [Decisions](out/Decisions.md), [TestPlan](out/TestPlan.md)를 따른다. 루트 DESIGN.md는 없음.
+- /masters는 사업부 → 제품 → 사업장/법인 → 동 → 층 단일 트리와 우측 상세/등록·편집·안전 삭제. 기존 API와 불변 UUID/부모 FK, 미분류 이름 제약, 이력/Current 링크 재사용. 비활성 조상 아래 신규 기준정보 생성은 UI + MasterRepository 트랜잭션 이중 차단.
+- G7 Runtime/Site Grant/Auth/Origin/CSRF/Audit, 업로드·재분류·원본·Current·운영 DB/Volume·Auth/Writer 플래그는 변경하지 않는다. 기능 브랜치, 신규 로컬·PR CI 실측 결과는 [TestReport](out/TestReport.md)/[FailureLedger](out/FailureLedger.md)에만 근거로 기록한다. PR 생성이 CI를 시작하나 요청대로 완료 모니터링은 생략하고, GHCR/병합/이슈 종료는 별도.
+
+---
+
 ## PR #192 — #81/#160 Owner Managed 병합 및 CI/GHCR 핸드오프 (2026-11-01, 0.55.2)
 
 - 최종 PR HEAD `3da74d76134e69924018e519ff4ce458e96c7487`, [PR CI Run 41281582636](https://github.com/planner77/layoutManager/actions/runs/41281582636) **completed/success**; Verify Job `124774528508`·Docker Job `124774528276` 모두 SUCCESS. 미해결 inline review threads 0, 제출 review 0(Owner Managed), Main behind 0, mergeable clean.

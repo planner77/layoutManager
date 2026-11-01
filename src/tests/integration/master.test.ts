@@ -374,3 +374,30 @@ test("TC-MASTER-005: migration failure rolls back the entire schema/data rewrite
   ).toEqual({ count: 0 });
   sqlite.close();
 });
+
+test("TC-191-INTEGRATION-01: direct master create refuses an inactive parent or ancestor without partial writes", async () => {
+  const businessUnit = await masters.create("business-units", { name: "조직 191" });
+  const product = await masters.create("products", { parentId: businessUnit.id, name: "제품 191" });
+  const site = await masters.create("sites", { parentId: product.id, name: "사업장 191", kind: "SITE" });
+  const building = await masters.create("buildings", { parentId: site.id, name: "동 191" });
+
+  await masters.update("business-units", businessUnit.id, { active: false });
+  await expect(masters.create("products", { parentId: businessUnit.id, name: "다른 제품" }))
+    .rejects.toMatchObject({ code: "INVALID_PARENT", status: 409 });
+  await expect(masters.create("sites", { parentId: product.id, name: "다른 사업장", kind: "SITE" }))
+    .rejects.toMatchObject({ code: "INVALID_PARENT", status: 409 });
+  await expect(masters.create("buildings", { parentId: site.id, name: "다른 동" }))
+    .rejects.toMatchObject({ code: "INVALID_PARENT", status: 409 });
+  await expect(masters.create("floors", { parentId: building.id, name: "새 층" }))
+    .rejects.toMatchObject({ code: "INVALID_PARENT", status: 409 });
+  expect((await masters.tree())[0].products[0].sites[0].buildings[0].floors).toHaveLength(0);
+  expect(await masters.tree(false)).toHaveLength(0);
+
+  await masters.update("business-units", businessUnit.id, { active: true });
+  await masters.update("sites", site.id, { active: false });
+  await expect(masters.create("floors", { parentId: building.id, name: "추가 거절" }))
+    .rejects.toMatchObject({ code: "INVALID_PARENT", status: 409 });
+  await masters.update("sites", site.id, { active: true });
+  const floor = await masters.create("floors", { parentId: building.id, name: "1F" });
+  expect((await masters.tree(false))[0].products[0].sites[0].buildings[0].floors[0].id).toBe(floor.id);
+});

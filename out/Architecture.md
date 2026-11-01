@@ -1,3 +1,12 @@
+## ADR 구현 참조 — #191 기준정보 단일 트리 + 상세 편집 (2026-11-01)
+
+- Client: 기존 master-manager.tsx 5열 폼 교체. master-tree.ts는 불변 type:id 키/부모·조상/전체 경로·검색 포함·임시 조상 확장·전체 활성 경로를 계산하는 순수 함수. MasterManager는 선택/확장/검색/필터/모드/입력 Draft 분리, GET generation 폐기, 저장 중 요청 직렬화와 성공 후 ID 선택·부모 확장 재조회 수행.
+- Rendering: 데스크톱 2열/모바일 1열, role=tree/treeitem/group, aria-expanded/selected/level, 위·아래·좌·우/Home/End/Enter/Space, Tab으로 상세 작업 이동. 이름 검색은 일치 노드+조상만, 결과 0건과 root 0건 별도.
+- Server: GET 기존 nested tree/active 조건 그대로. POST 기존 타입/name/parentId/kind 계약; MasterRepository.create transaction에서 직계 부모와 모든 조상 active를 검증해 INVALID_PARENT/409 거부. PATCH/DELETE, Audit, Site Grant, CSRF, Version/Current/원본/Schema 불변.
+- 장애: POST/PATCH/DELETE 실패 Draft 보존, 참조 삭제 시 비활성화 대안; 쓰기 성공 후 GET 실패 시 재쓰기 없이 재조회 안내. 승인된 운영 인가 플래그 자체 변경 없음. [세부 설계](Issue191.md).
+
+---
+
 ## PR #192 Viewer KEEP pre-write 고유성 경계 (2026-11-01)
 
 `applyMemoMove`의 세션 KEEP는 `uniqueMemoSnapTarget`로 Scope 유효하며 유일한 Target임을 검사한 뒤에만 서버 영속 WCS PATCH를 허용한다. PATCH 후에는 동일 helper로 변경 여부를 재검증하고 문제가 있으면 브라우저 세션 바인딩만 해제한다. 서버의 기존 G7 Session/Actor/Role/Site/CSRF/CAS는 독립 필수 조건이며 client-only Scene Ref를 영속으로 승격하지 않는다.
