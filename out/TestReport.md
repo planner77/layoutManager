@@ -1,3 +1,19 @@
+## 2026-11-01 Epic #37/#49/#50 통합 회귀 (0.54.1 후보)
+
+| 검증 대상 | 근거 | 실제 결과 |
+| --- | --- | --- |
+| Viewer 비활성 링크 Unit | TC-EPIC-37-49-UNIT-001 | NOT RUN — 신규 브랜치 PR CI 대상 |
+| Viewer/Generated/SOURCE 통합 E2E | TC-EPIC-37-49-E2E-001 | NOT RUN — 신규 브랜치 PR CI 대상 |
+| 서버 로그 타임라인 503 복구 E2E | TC-EPIC-50-E2E-001 및 기존 권한 철회 | NOT RUN — 신규 브랜치 PR CI 대상 |
+| 전체 Unit/Integration·Typecheck·Lint·Build | PR CI verify job | NOT RUN / NOT VERIFIED |
+| Chromium 일반·Greenfield·Auth/Legacy E2E | PR CI verify job | NOT RUN / NOT VERIFIED |
+| Docker/Migrator·배포 smoke | PR CI docker-runtime job | NOT RUN / NOT VERIFIED |
+| 실제 CAD, GPU, 운영 로그 디스크·현장 | 별도 운영/수용 | NOT RUN |
+
+문서·구현 후보는 [Epics37-49-50](Epics37-49-50.md). 해당 표는 성공을 의미하지 않으며 이전 Head의 CI 결과는 이 Commit의 검증이 아니다. 실제 CI 실행 결과를 관측한 후에만 채운다. 사용자 요청에 따라 CI 시작 이후 모니터링·GHCR 게시·병합·이슈 종료는 수행하지 않는다.
+
+---
+
 ## R5b / #91 코드·합성 범위 최종 로컬 수용 — STACKED DRAFT PR GO (2026-11-01)
 
 Manager는 Developer 구현·재작업 보고, 독립 QA 최종 보고, Root source/전체 gate와 직접 확인한 로그·한글 screenshot을 근거로 **LOCAL R5b / #91 CODE + SYNTHETIC ACCEPT / STACKED DRAFT PR GO**를 판정한다. Version0.54.0, 기반 R5a `9accf8ba3e21f2d51dc7694e768f19c75fffb5d5`, 수정 BUILD2와 최종 시험 파일 기준이다. 아직 R5b commit/push/Draft PR/원격 CI 전이며 Root가 최종 staged·secret·remote·exact-tree 검사와 게시를 수행한다.

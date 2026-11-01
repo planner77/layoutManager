@@ -1,3 +1,11 @@
+## 0.54.1 UI 타임라인 오류 복구 — Epic #50
+
+운영 로그 화면에서 목록 조회와 동일 requestId/jobId Timeline 조회는 별개로 권한 확인을 받는다. Timeline 요청만 410 cursor 만료이거나 503 LOG_STORE_UNAVAILABLE로 확인된 경우 이전 타임라인 단계 및 페이지를 제거하고 오류를 표시하며, 성공·인가 완료된 메인 목록은 유지하여 사용자가 상관 ID를 다시 조회할 수 있도록 한다.
+
+401/403 인증·권한 실패, G7_RUNTIME_UNAVAILABLE 및 분류 불가/응답 이상/네트워크 오류는 기존처럼 메인 목록·상세·타임라인을 전부 제거한다. 이 분리는 사용자 편의/UI 표시 정책만 변경하며 서버의 권한 재검사, 접근 감사, 캐시 차단, 원시 로그 수집 범위 및 저장소 보존 정책을 변경하지 않는다. 실제 자동 시험은 TestReport 확인 전 NOT VERIFIED.
+
+---
+
 ## R1 #60/#61/#62 — 권한 있는 정제 로그 조회 (0.49.0 후보)
 
 `GET /api/operations/logs`는 G7 활성 authority와 HttpOnly 서버 세션, Admin 역할 및 별도 `logs:read` 특별 권한을 기존 G4와 감사로 확인한 뒤만 `/data/logs`를 읽는다. Site CAD 쓰기 권한으로 대체하지 않으며 익명 CAD 읽기 예외를 로그로 확대하지 않는다. `/api/operations/logs/access`는 인가 결과만 반환하고 저장소를 읽지 않는다. `/operations/logs`는 Node Proxy에서 같은 인가를 실행해 직접 URL/RSC/prefetch도 401/403/429/503과 no-store로 거절하며, 허용된 요청은 Page/API에서 다시 확인한다. 과거 HTTP200 안내 제한은 이 구현으로 대체되었다.
