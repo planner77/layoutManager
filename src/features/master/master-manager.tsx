@@ -86,10 +86,10 @@ export function MasterManager() {
   const { runWithLoading } = useGlobalLoading();
 
   const all = useMemo(() => flattenMasterTree(roots), [roots]);
-  const index = useMemo(() => new Map(all.map((entry) => [entry.key, entry])), [all]);
+  const index = useMemo(() => new Map<string, MasterTreeEntry>(all.map((entry) => [entry.key, entry])), [all]);
   const search = useMemo(() => searchMasterTree(all, searchText), [all, searchText]);
   const visible = useMemo(() => visibleMasterTree(roots, expanded, search), [roots, expanded, search]);
-  const visibleIndex = useMemo(() => new Map(visible.map((entry, pos) => [entry.key, pos])), [visible]);
+  const visibleIndex = useMemo(() => new Map<string, number>(visible.map((entry, pos) => [entry.key, pos])), [visible]);
   const selected = selectedKey ? index.get(selectedKey) ?? null : null;
   const creatingParent = createParentKey ? index.get(createParentKey) ?? null : null;
   const creatingLevel = creatingParent ? masterLevels[creatingParent.level + 1] : masterLevels[0];
@@ -110,7 +110,7 @@ export function MasterManager() {
       if (requestNumber !== sequence.current) return false;
       const nextRoots = buildMasterTree(data.items);
       const entries = flattenMasterTree(nextRoots);
-      const nextIndex = new Map(entries.map((entry) => [entry.key, entry]));
+      const nextIndex = new Map<string, MasterTreeEntry>(entries.map((entry) => [entry.key, entry]));
       const nextSelection = preferred
         ? (preferred.selectKey && nextIndex.has(preferred.selectKey)
             ? preferred.selectKey
