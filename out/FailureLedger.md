@@ -1,3 +1,22 @@
+## PR #200 / #196 — Owner Managed 병합·이슈 종료·GHCR Main CI 시작 (2026-11-02 KST)
+
+- 최종 PR HEAD `2c5b5e13bd91f8c219e64c69c6ee4abcdd289a06`, [PR CI 41313128074](https://github.com/planner77/layoutManager/actions/runs/41313128074) **8/8 Job SUCCESS**. 아래 병합 직전 gate와 최초 실패/RED→GREEN·리뷰 해결 기록을 보존한다. 새 CI 실패는 관측하지 않았다.
+- 실제 **gpt-6-astra Manager**가 최신 CI·리뷰/충돌 상태를 근거로 코드·합성 검증 범위의 최종 GO를 회신했다. Root가 정확 PR 제목과 빈 Squash 본문, expected HEAD를 지정해 [PR #200](https://github.com/planner77/layoutManager/pull/200)을 Main [`ae928b4229fc98ef2cb0274f8c132cb62ba376f3`](https://github.com/planner77/layoutManager/commit/ae928b4229fc98ef2cb0274f8c132cb62ba376f3)로 병합했다. 병합 tree는 CI가 검증한 PR tree와 동일하다.
+- [Issue #196](https://github.com/planner77/layoutManager/issues/196) **closed/completed** 재조회 확인. 이는 코드·합성 수용의 종료이며 현장 #113/#193 실제 DXF/GPU·2PC/성능·운영 수용은 미실행이다. 해당 현장 이슈는 닫지 않는다.
+- 정확 Merge HEAD의 [Main CI Run 41339438989](https://github.com/planner77/layoutManager/actions/runs/41339438989) **push/in_progress 시작**만 확인했다. workflow의 정상 runtime release 경로에서 `v0.56.0`, GHCR `ghcr.io/planner77/layoutmanager:0.56.0` 및 `:0.56.0-migrate` App/Migrator pair 검증·게시를 처리한다. **실제 태그 생성·게시 완료·OCI digest·배포는 NOT VERIFIED**이며 사용자 지시대로 이후 CI 모니터링하지 않는다.
+- 최종 기록은 **docs-only Main 후속 커밋**이다. 검증된 runtime Squash/package/lock/Workflow를 변경하지 않으며 `.md` allowlist에 따라 이 후속 push는 GHCR 재게시 제외 대상이다(실제 후속 CI 결과 미확인). 기존 Git 인증 실패 원장에 따라 동일 지정 저장소의 연결 GitHub 도구로 expected Main SHA lease·fast-forward 게시하며 Force/History rewrite 없이 로컬/원격 tree를 대조한다. Secret/DB/CAD/Build 산출물은 포함하지 않는다.
+
+---
+
+## PR #200 / #196 — 병합 직전 최종 Gate (2026-11-02 KST)
+
+- 정확 PR HEAD `2c5b5e13bd91f8c219e64c69c6ee4abcdd289a06`, [PR CI Run 41313128074](https://github.com/planner77/layoutManager/actions/runs/41313128074) **completed/success**. Scope, Quality, Docker, General shard 1/2·2/2, Greenfield, signed/legacy, Aggregate **8/8 Job SUCCESS**. Verify `124870819418`, Docker `124867539334`; 해당 HEAD check-runs도 전부 success.
+- P2 `PRRT_kwDOUQjDfc6yanPw` **resolved=true, 전체1/미해결0**. 제출 review2건은 COMMENTED이며 CHANGES_REQUESTED0; 독립 PR 승인을 수행했다고 주장하지 않는다. 실제 Manager/Developer/독립 QA 근거는 아래 수리 기록을 따른다.
+- Main `2bccf90105f58b1060c1b802e74a3957af23228f` 대비 behind0, mergeable=true, worktree clean 및 diff-check 통과. `v0.56.0` 사전 미존재. 기존 원본 workspace의 Compose/next-env 변경을 보존한다.
+- 사용자가 GHCR 게시와 #196 종료를 포함한 병합/Main CI 시작을 명시 승인했다. 정확 제목/빈 본문/expected HEAD로 Squash한다. 검증된 PR HEAD를 바꾸지 않도록 병합 직전 기록은 로컬에 준비하고 실제 병합·Issue close·Main run 증거는 docs-only Main 후속 커밋에 기록한다. GHCR App/Migrator 0.56.0 게시 완료·OCI digest는 미확인으로 유지하며 완료 모니터링하지 않는다. 현장 #113/#193 수용과 운영 Auth/Writer 활성화는 별도다.
+
+---
+
 ## PR #200 / #196 — 최초 CI 실패와 P2 조회 재시도 수리 (2026-11-01)
 
 - 실패 정본: HEAD `9f88d8e0539eb831f4f4353bb12f07f361fff654`, [Run 41309924909](https://github.com/planner77/layoutManager/actions/runs/41309924909) `completed/failure`. General Chromium shard2 [Job 124859317153](https://github.com/planner77/layoutManager/actions/runs/41309924909/job/124859317153) **66 PASS/2 FAIL/7.1분**; aggregate Verify124861602124는 필수 shard 실패를 정상 차단했다. Scope124857959766, Quality124858006661(Type/Lint/Unit/OCI/benchmark/Build), Docker124858006685, Greenfield124859317031, signed+legacy124859317046, General shard1 124859317215는 **해당 이전 HEAD에서 SUCCESS**. 새 수리 HEAD의 PASS로 승계하지 않는다.

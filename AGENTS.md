@@ -1,3 +1,9 @@
+## #196 — Main 병합·GHCR 인계 (2026-11-02, 0.56.0)
+
+구역 후속 수정·릴리스 확인 시 [FailureLedger](out/FailureLedger.md)/[TestReport](out/TestReport.md) 상단을 읽는다. PR #200 최종 HEAD2c5b5e1의 CI 8/8 SUCCESS·미해결 리뷰0·충돌0 및 실제 Manager GO 후 Squash Main ae928b4와 #196 closed/completed를 확인했다. Main CI41339438989는 GHCR 0.56.0 App/Migrator 게시 시작만 확인했으며 완료·digest·배포는 미확인이다. 현장 #113/#193 수용은 별도다. 아래 후보/CI 대기 표기는 당시 기록이다. 이 후속 갱신은 docs-only이며 runtime release 소스·태그를 변경하지 않는다.
+
+---
+
 ## PR #200 / #196 — CI 실패·리뷰 수리 (2026-11-01)
 
 구역 조회 상태/재시도 또는 수동 Renderer 전환을 변경할 때 [Issue196](out/Issue196.md)의 PR #200 수리 AC와 [FailureLedger](out/FailureLedger.md) 최초 Run41309924909를 먼저 읽는다. OFF에서 Zone API 생략, ACTIVE 실패 후 retry 접근 유지, 같은 Version의 진행 중 Source 공유 및 완료 GET 정확1회가 기준이다. 새 CI 성공은 별도 검증 대상이며 시작 후 모니터링은 생략한다.

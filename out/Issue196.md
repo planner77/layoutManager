@@ -1,3 +1,9 @@
+## 완료 상태 — 2026-11-02 KST
+
+PR #200 최종 HEAD `2c5b5e1`의 PR CI 41313128074 **8/8 SUCCESS**, 미해결 리뷰0/충돌0 및 실제 Manager 최종 GO 후 Main `ae928b4`로 Squash 병합했다. #196은 코드·합성 검증 범위 **closed/completed**다. [Main CI 41339438989](https://github.com/planner77/layoutManager/actions/runs/41339438989)가 GHCR 0.56.0 App/Migrator 게시 경로로 시작됐으며 완료·digest는 미확인이다. 실제 현장 #113/#193 수용은 별도 미검증이며 [TestReport](TestReport.md)/[FailureLedger](FailureLedger.md)가 실제 결과 정본이다. 아래 보완 계약의 재현 전 표현은 당시 설계 순서를 보존한 기록이다.
+
+---
+
 ## PR #200 CI·리뷰 보완 계약 (2026-11-01)
 
 실패 근거는 [Run 41309924909](https://github.com/planner77/layoutManager/actions/runs/41309924909), 정확 HEAD `9f88d8e`다. General Shard 2의 `TC-126-RECOVERY` 원본 완료 GET 2회(기대 1회) 및 `workflow.spec.ts`의 Zone OFF 조회 503 console error가 실패했고 Aggregate도 후속 실패했다. 다른 Job 성공을 이 두 실패의 성공으로 대체하지 않는다. P2 리뷰 `PRRT_kwDOUQjDfc6yanPw`는 Zone GET 실패 후 목록 메뉴·패널까지 비활성화되어 재시도할 수 없는 문제다. 실제 재현·수리·재시험은 TestReport/FailureLedger에 기록한다.

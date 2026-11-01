@@ -1,3 +1,12 @@
+## PR #200 / #196 — 최종 원격 수용·Main 릴리스 인계 (2026-11-02 KST)
+
+- 정확 PR HEAD `2c5b5e13bd91f8c219e64c69c6ee4abcdd289a06`의 [PR CI Run 41313128074](https://github.com/planner77/layoutManager/actions/runs/41313128074) **completed/success**. Scope124867497306, Quality124867539436, Docker124867539334, Greenfield124868822851, General shard2 124868822853, signed/legacy124868822855, General shard1 124868822925, required Verify124870819418 모두 **SUCCESS(8/8)**. Type/Lint/Unit/OCI/benchmark/Build, exact-HEAD artifact Browser 및 Docker native/migrator/Compose gate가 통과했다. 이전 실패 결과를 덮어쓰지 않는다.
+- P2 thread1 **resolved/미해결0**, 제출 review2 COMMENTED·CHANGES_REQUESTED0, Main behind0·mergeable=true·conflict0 확인. Owner Managed 범위이며 새 독립 PR 승인을 주장하지 않는다. 실제 Manager 최종 GO 후 Root가 정확 제목/빈 본문 Squash Main `ae928b4229fc98ef2cb0274f8c132cb62ba376f3` 병합 및 #196 closed/completed를 확인했다. 소스/버전0.56.0은 검증된 PR tree 그대로다.
+- [Main CI Run 41339438989](https://github.com/planner77/layoutManager/actions/runs/41339438989), Merge HEAD `push/in_progress` 시작 확인. GHCR App `0.56.0`/Migrator `0.56.0-migrate` 정상 release 경로를 시작했으며 **완료·태그·OCI digest·배포는 NOT VERIFIED**, 요청대로 모니터링 생략. 현장 #113/#193 미실행 및 운영 Auth/Writer·DB/Volume 비변경 경계를 유지한다.
+- 실패/재시험·실제 역할·병합 전 gate·게시 경로의 정본은 [FailureLedger](FailureLedger.md) 상단을 따른다. 아래의 이전 '새 CI 미확인/병합 없음'은 당시 시점 기록이며 현재 상태는 이 절이 우선한다. 본 사후 문서 갱신은 docs-only이며 앱 재시험·GHCR 재게시 대상으로 확대하지 않는다.
+
+---
+
 ## PR #200 / #196 — 실패 Run 41309924909 수리 검증 (2026-11-01)
 
 정확 실패 HEAD `9f88d8e`, General shard2 **66PASS/2FAIL**, 나머지 gate 결과와 원인/RED 근거는 [FailureLedger](FailureLedger.md) 상단을 따른다. 과거 Run의 성공 Job은 수리 HEAD 결과로 승계하지 않는다.
