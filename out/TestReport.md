@@ -1,3 +1,15 @@
+## PR-B #172 — Owner 정책 확정 및 구현 후보 (2026-11-01)
+
+**상태: SOURCE CHANGED / AUTOMATED TESTS NOT RUN LOCALLY / PR CI NOT YET VERIFIED / FIELD NOT ACCEPTED.** 실제 PR CI 결과는 정확 HEAD의 Run/Job 완료 증거 확인 후 추가한다. 기존 R4, R5의 합성 통과·실패 이력을 본 변경의 PASS로 승계하지 않는다.
+
+- 구현: signed G7 권한 있는 동일 Site Editor는 타 작성자 Memo text/move/metadata/Anchor 수정. Memo DELETE는 작성자 또는 해당 Site Grant 보유 Admin. `SOURCE_ONLY` Cross-Editor Anchor BREAK 허용, `ALL` 타 작성자 Memo 삭제에는 Site Admin 필수. Group은 그룹 작성자 소유 유지.
+- 읽기-only GET의 `actorId/canDeleteAny` 추가와 Viewer Delete disabled/설명, 서버의 모든 write 재검사; CadMemo `createdById/createdAt` 불변, updatedBy/Audit 및 Revision CAS.
+- 코드: `server/cad-business/{memo-policy,service,anchor-service,reset-service,memo-groups,authorized-memo-read}.ts`, `features/cad-viewer/{cad-business-client,cad-memo-editor,viewer}.tsx/ts`.
+- 추가 증거 목표: `src/tests/integration/typed-outline-runtime.test.ts` TC-172-01~05, `src/tests/greenfield-e2e/memo-collaboration.spec.ts` TC-172-06, `src/tests/unit/authorized-memo-read.test.ts`. 작성한 테스트는 실행 전에는 PASS로 분류하지 않는다.
+- 데이터/운영: 신규 Greenfield Schema 변경 없음, 기존 DB migration/운영 Auth·Writer 활성화/실 CAD/GPU/2PC/OCI GHCR 릴리스 수행하지 않음. 현장 인수는 #96/#113/#172/#186 후속.
+
+---
+
 ## 2026-11-01 Epic #37/#49/#50 통합 회귀 (0.54.1 후보)
 
 | 검증 대상 | 근거 | 실제 결과 |
