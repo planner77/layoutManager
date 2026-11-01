@@ -57,6 +57,18 @@ function readableError(error: unknown): string {
   return error instanceof Error ? error.message : "기준정보 작업에 실패했습니다.";
 }
 
+async function fetchMasterNodes(includeInactive: boolean): Promise<MasterNode[]> {
+  const response = await fetch(
+    "/api/masters?active=" + (includeInactive ? "false" : "true"),
+    { cache: "no-store" },
+  );
+  if (!response.ok) throw await responseError(response);
+  const payload = (await response.json()) as { items?: MasterNode[] };
+  if (!Array.isArray(payload.items))
+    throw new Error("기준정보 응답의 계층 목록이 올바르지 않습니다.");
+  return payload.items;
+}
+
 export function MasterManager() {
   const [roots, setRoots] = useState<MasterTreeEntry[]>([]);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
@@ -105,69 +117,98 @@ export function MasterManager() {
     (createParentKey === null || (creatingParent !== null &&
       creatingParent.level < 4 && hasActiveMasterPath(creatingParent, index)));
 
+  // A fetch resolves off the render/effect stack. Only its asynchronous
+  // completion commits React state. This same commit path is used by mutation
+  // refreshes and initial/filter reads to preserve selection and expansion.
+  const applyLoadedTree = useCallback((
+    items: MasterNode[],
+    requestNumber: number,
+    preferred?: RefreshTarget,
+  ): boolean => {
+    if (requestNumber !== sequence.current) return false;
+    const nextRoots = buildMasterTree(items);
+    const entries = flattenMasterTree(nextRoots);
+    const nextIndex = new Map<string, MasterTreeEntry>(
+      entries.map((entry) => [entry.key, entry]),
+    );
+    const nextSelection = preferred
+      ? (preferred.selectKey && nextIndex.has(preferred.selectKey)
+          ? preferred.selectKey
+          : preferred.parentKey && nextIndex.has(preferred.parentKey)
+            ? preferred.parentKey : null)
+      : (selectedRef.current && nextIndex.has(selectedRef.current)
+          ? selectedRef.current : null);
+    setRoots(nextRoots);
+    setExpanded((previous) => {
+      const next = new Set([...previous].filter((key) => nextIndex.has(key)));
+      if (!initialExpansion.current) {
+        for (const entry of entries)
+          if (entry.level < 2 && entry.children.length) next.add(entry.key);
+      }
+      if (nextSelection) {
+        for (const key of nextIndex.get(nextSelection)?.ancestorKeys ?? []) next.add(key);
+      }
+      if (preferred?.parentKey && nextIndex.has(preferred.parentKey)) next.add(preferred.parentKey);
+      return next;
+    });
+    initialExpansion.current = true;
+    if (nextSelection !== selectedRef.current) {
+      setSelectedKey(nextSelection);
+      setMode("view");
+    }
+    setFocusedKey((previous) => preferred?.selectKey && nextIndex.has(preferred.selectKey)
+      ? preferred.selectKey
+      : previous && nextIndex.has(previous)
+        ? previous : nextSelection ?? nextRoots[0]?.key ?? null);
+    setError("");
+    setLoaded(true);
+    return true;
+  }, []);
+
+  const applyLoadError = useCallback((cause: unknown, requestNumber: number) => {
+    if (requestNumber !== sequence.current) return;
+    // Clear stale details as well as the filtered tree after GET failures.
+    setRoots([]);
+    setSelectedKey(null);
+    setMode("view");
+    setLoaded(true);
+    setError(readableError(cause));
+  }, []);
+
   const refresh = useCallback(async (preferred?: RefreshTarget): Promise<boolean> => {
     const requestNumber = ++sequence.current;
-    // Loading starts in the initiating UI event (or initial state). The effect
-    // only initiates this async read; React state changes follow the await.
     try {
-      const response = await fetch("/api/masters?active=" + (filterRef.current ? "false" : "true"), {
-        cache: "no-store",
-      });
-      if (!response.ok) throw await responseError(response);
-      const data = (await response.json()) as { items?: MasterNode[] };
-      if (!Array.isArray(data.items)) throw new Error("기준정보 응답의 계층 목록이 올바르지 않습니다.");
-      if (requestNumber !== sequence.current) return false;
-      const nextRoots = buildMasterTree(data.items);
-      const entries = flattenMasterTree(nextRoots);
-      const nextIndex = new Map<string, MasterTreeEntry>(entries.map((entry) => [entry.key, entry]));
-      const nextSelection = preferred
-        ? (preferred.selectKey && nextIndex.has(preferred.selectKey)
-            ? preferred.selectKey
-            : preferred.parentKey && nextIndex.has(preferred.parentKey)
-              ? preferred.parentKey : null)
-        : (selectedRef.current && nextIndex.has(selectedRef.current) ? selectedRef.current : null);
-      setRoots(nextRoots);
-      setExpanded((previous) => {
-        const next = new Set([...previous].filter((key) => nextIndex.has(key)));
-        if (!initialExpansion.current) {
-          for (const entry of entries)
-            if (entry.level < 2 && entry.children.length) next.add(entry.key);
-        }
-        if (nextSelection) {
-          for (const key of nextIndex.get(nextSelection)?.ancestorKeys ?? []) next.add(key);
-        }
-        if (preferred?.parentKey && nextIndex.has(preferred.parentKey)) next.add(preferred.parentKey);
-        return next;
-      });
-      initialExpansion.current = true;
-      if (nextSelection !== selectedRef.current) {
-        setSelectedKey(nextSelection);
-        setMode("view");
-      }
-      setFocusedKey((previous) => preferred?.selectKey && nextIndex.has(preferred.selectKey)
-        ? preferred.selectKey
-        : previous && nextIndex.has(previous)
-          ? previous : nextSelection ?? nextRoots[0]?.key ?? null);
-      setError("");
-      setLoaded(true);
-      return true;
+      const items = await fetchMasterNodes(filterRef.current);
+      return applyLoadedTree(items, requestNumber, preferred);
     } catch (cause) {
-      if (requestNumber !== sequence.current) return false;
-      setRoots([]);
-      setSelectedKey(null);
-      setMode("view");
-      setLoaded(true);
-      setError(readableError(cause));
+      applyLoadError(cause, requestNumber);
       return false;
     } finally {
       if (requestNumber === sequence.current) setLoading(false);
     }
-  }, []);
+  }, [applyLoadedTree, applyLoadError]);
 
   useEffect(() => {
-    void refresh();
-    return () => { sequence.current += 1; };
-  }, [showInactive, refresh]);
+    // Do not invoke refresh() directly in this effect: even a nominally async
+    // function which can set state is flagged as a synchronous effect update.
+    // The network promise is the subscription boundary for all React writes.
+    let active = true;
+    const requestNumber = ++sequence.current;
+    void fetchMasterNodes(showInactive)
+      .then((items) => {
+        if (active) applyLoadedTree(items, requestNumber);
+      })
+      .catch((cause: unknown) => {
+        if (active) applyLoadError(cause, requestNumber);
+      })
+      .finally(() => {
+        if (active && requestNumber === sequence.current) setLoading(false);
+      });
+    return () => {
+      active = false;
+      sequence.current += 1;
+    };
+  }, [showInactive, applyLoadedTree, applyLoadError]);
 
   useEffect(() => {
     if (mode === "create" || mode === "edit") nameRef.current?.focus();
