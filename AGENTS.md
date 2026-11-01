@@ -1,3 +1,12 @@
+## PR #194 / #191 — Owner Managed 코드 완료·Main CI/GHCR 핸드오프 (2026-11-01, v0.55.3)
+
+- 최종 PR HEAD `3257a31b9bae4e82ed81d8bb462011b9bc6cf7ac`에서 [PR CI Run 41295744097](https://github.com/planner77/layoutManager/actions/runs/41295744097) `completed/success`. Verify `124816115059`, Docker `124816115216` 모두 SUCCESS; 이전 ESLint 3회·General E2E 1회 실패와 #52 native Undo focus 경합 재현/수리 근거는 [FailureLedger](out/FailureLedger.md) / [TestReport](out/TestReport.md)에 보존.
+- PR #194 review threads/unresolved **0**, 제출 review 0(Owner Managed; 신규 독립 PR 승인 아님), main behind 0, `mergeable=true/clean`. 정확 제목 Squash Main [`73a550dcf5b4310179efcd5a48b7c1883ee2844f`](https://github.com/planner77/layoutManager/commit/73a550dcf5b4310179efcd5a48b7c1883ee2844f) 병합, #191 `closed/completed`. `v0.55.3` 사전 미존재.
+- [Main CI Run 41298598883](https://github.com/planner77/layoutManager/actions/runs/41298598883) 시작(in_progress) 확인. Runtime 변경/0.55.3 후보 GHCR App+Migrator pair `:0.55.3`, `:0.55.3-migrate` 및 latest alias는 Main release workflow **게시 대상**이나 실제 게시·digest·CI 완료는 사용자 요청에 따라 **NOT VERIFIED**(CI 모니터링 생략). 운영 DB/Volume, Auth/Writer 활성화, CAD 반출, 별도 현장 #96/#113/#190/#193 Gate 미수행.
+- 본 사후 정리는 **docs-only Main** commit이다. 이미 검증된 런타임 Squash / package version / release tag를 건드리거나 PR CI를 재실행하지 않고, docs-only Main scope check는 GHCR SKIPPED 대상으로 분리한다.
+
+---
+
 ## PR #194 / Issue #191 — 3차 ESLint 실패 및 Effect 비동기 조회 분리 (2026-11-01)
 
 - [실패 Run 41292700455](https://github.com/planner77/layoutManager/actions/runs/41292700455) 정확 HEAD `693af939d762f4d54f2f0af758aa6fd26972ff22`: Verify 124807072543 TypeScript SUCCESS 후 ESLint 1 error(`react-hooks/set-state-in-effect` at `master-manager.tsx:168`), Unit/Build/Browser SKIPPED, Docker 124807072396 SUCCESS. [FailureLedger](out/FailureLedger.md), [TestReport](out/TestReport.md)에서 이전 Run 41285766585/41291679198도 보존.

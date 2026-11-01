@@ -1,3 +1,12 @@
+## Issue #191 — PR #194 최종 CI·병합 / 0.55.3 Release 핸드오프 (2026-11-01 KST)
+
+- **최종 PR 검증:** 정확 HEAD `3257a31b9bae4e82ed81d8bb462011b9bc6cf7ac`, [Run 41295744097](https://github.com/planner77/layoutManager/actions/runs/41295744097) `completed/success`; Verify `124816115059` / Docker `124816115216` 둘 다 SUCCESS. TypeScript/ESLint/Unit·Integration/OCI/Benchmark/Build/General+G7+Greenfield+Legacy Browser 및 Docker Runtime/Greenfield 검증 완료. E2E focus 경합 실패 [Run 41293959571](https://github.com/planner77/layoutManager/actions/runs/41293959571)의 결정적 RED 후 수리/독립 QA 및 이전 ESLint 실패는 아래 보고서/FailureLedger에서 추적한다.
+- **Owner Managed 완료:** 리뷰 스레드/미해결 0, 제출 Review 0(독립 승인 주장 없음), Main behind 0, 충돌 0. [PR #194](https://github.com/planner77/layoutManager/pull/194) Squash `73a550dcf5b4310179efcd5a48b7c1883ee2844f` 병합, [#191](https://github.com/planner77/layoutManager/issues/191) Closed/Completed. 운영 DB·원본 CAD·인증 상태/Writer 변경 또는 실제 현장 수용으로 확대 해석하지 않는다.
+- **Main/GHCR:** [Run 41298598883](https://github.com/planner77/layoutManager/actions/runs/41298598883) `push/in_progress` 시작 확인. Runtime 변경 및 package `0.55.3`으로 GHCR App+Migrator의 paired 릴리스 후보; `v0.55.3` 사전 미존재. Workflow 완료/태그/두 OCI digest/게시 SUCCESS는 CI 모니터링 생략으로 **NOT VERIFIED**. 본 사후 문서-only Main 기록은 별도 release-scope skip 대상(결과 확인 전 NOT VERIFIED).
+- #96/#113/#190/#193 현장·운영 조건은 별도 OPEN/BLOCKED 범위이며 본 이슈의 합성 CI 성공과 별개.
+
+---
+
 ## Issue #191 / PR #194 — Run 41293959571 포커스 경합 재현·시험 보완 (2026-11-01)
 
 - **실패 정본:** HEAD `e9c20d446a180eb69e31a07d4457134558221490`, [Run 41293959571](https://github.com/planner77/layoutManager/actions/runs/41293959571), Verify `124810809243`: TypeScript/Lint/134 files·896 Unit·Integration/OCI/benchmark/Build PASS, General E2E **147 PASS/1 FAIL**. `TC-E2-E2E-001` input Ctrl+Z 관측값 `pending` != `native`. G7/Greenfield/Legacy SKIPPED. Docker `124810809082` PASS는 위 과거 HEAD 한정. 과거 3회 ESLint 실패와 구분한다.
