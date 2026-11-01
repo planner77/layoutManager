@@ -176,7 +176,7 @@ jobs:
       run:
         working-directory: src
     env:
-      PLAYWRIGHT_JSON_OUTPUT_FILE: ${{ runner.temp }}/general-shard-${{ matrix.shard }}.json
+      PLAYWRIGHT_JSON_OUTPUT_FILE: /tmp/layoutmanager-general-shard-${{ matrix.shard }}.json
     steps:
       - name: Checkout exact PR revision
         uses: actions/checkout@v4
@@ -227,7 +227,7 @@ jobs:
       run:
         working-directory: src
     env:
-      PLAYWRIGHT_JSON_OUTPUT_FILE: ${{ runner.temp }}/greenfield.json
+      PLAYWRIGHT_JSON_OUTPUT_FILE: /tmp/layoutmanager-greenfield.json
     steps:
       - name: Checkout exact PR revision
         uses: actions/checkout@v4
