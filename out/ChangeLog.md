@@ -1,3 +1,12 @@
+## 0.55.0 후보 — #172 Memo 동일 Site Editor 공동 수정 (2026-11-01)
+
+- Site/Version/Role/Session/G7 서명 권한을 확인한 Editor는 다른 작성자의 영속 Memo 내용·좌표·일정/완료·표시/그룹·Anchor 수정 가능. Memo 논리 삭제는 작성자 또는 동일 Site Grant 가진 Admin으로 제한.
+- SOURCE_ONLY의 타인 메모 Anchor 해제 EDIT 허용, ALL에서 타인 소유 Memo 일괄 삭제는 Site Admin에게만 허용. Group 작성자 자체 권한 유지, 그룹 제거 시 타인 메모 미분류 처리.
+- Memo GET actor/canDeleteAny 표시 힌트, Viewer 삭제 버튼 비활성화·문구 정비, Signed G7 단위/Greenfield 두 브라우저 회귀 추가. 신규 DB Schema·원본 CAD·Renderer·release gate 변경 없음.
+- **실행 증거:** 실제 새 PR CI/Owner Managed QA 완료 전 기능 수용 미확정. 기존 GHCR 0.54.x 태그 재사용/변경 금지, 2PC 현장 수용 별도(#96/#172/#113).
+
+---
+
 ## 0.54.1 후보 — #37/#49/#50 Viewer/Logs 통합 신뢰성 (2026-11-01)
 
 - Fixed: Viewer 실행 메뉴에서 비활성화된 링크 항목에 실제 이동·다운로드 href가 남지 않도록 fail-closed 처리. 활성 URL 명령과 기존 패널·원본/생성 선택을 유지한다.
