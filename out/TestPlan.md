@@ -1,3 +1,20 @@
+## TC-191 — 위치 기준정보 단일 트리/상세 UI 회귀 (2026-11-01)
+
+| ID | 절차 | 기대 |
+|---|---|---|
+| TC-191-UNIT-01 | business-unit/product/SITE·LEGAL_ENTITY/building/floor fixture 빌드 | 불변 type:id, 부모·조상·전체 경로·Site 종류·미분류 반영 |
+| TC-191-UNIT-02 | 자식 검색/대소문자/미검색/검색 해제 | 일치 노드+조상, 검색 중 임시 확장, 기존 expanded 불변 |
+| TC-191-UNIT-03 | 자신·중간 조상 active=false | 직계 하위 추가 비허용 |
+| TC-191-INTEGRATION-01 | 부·제품·Site·동 비활성, 직접 POST/재활성 | INVALID_PARENT 409, DB 무변경·트랜잭션, 복구 후 생성 성공 |
+| TC-191-E2E-01/02/04/05/06 | /masters 전체 계층 CRUD, kind, 검색, 비활성, 삭제 409, 이력 link, 방향키, 390px | ID/경로 유지, 오류 Draft 보존, 1열 적응형, 키보드·ARIA |
+| TC-191-E2E-03 | Empty GET, 미검색, GET 503→재조회 | 안내 구분, stale tree 비표시, 오류 복구 |
+| 회귀 | 기존 TC-MASTER-002/003/005/007, G7 runtime, Greenfield bootstrap, Legacy migration | Server Session/Site Grant/CSRF/Audit, Current/UUID/원본·Upload 재분류 영향 없음 |
+| PR CI | Typecheck, ESLint, Vitest, Build, General/G7/Greenfield/Legacy Browser, Docker | 정확 HEAD·Run/Job 성공 확인 전 NOT VERIFIED |
+
+[구체 계약](Issue191.md). Owner CI 모니터링 생략 요청으로 실행 직후 결과를 PASS로 기록하지 않는다.
+
+---
+
 ## TC-EPIC-81-160 — Memo/Scene 교차 합성 검증 (2026-11-01)
 
 | ID | 입력·행위 | 기대 결과 |
