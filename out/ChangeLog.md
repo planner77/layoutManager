@@ -1,3 +1,12 @@
+## 0.54.1 후보 — #37/#49/#50 Viewer/Logs 통합 신뢰성 (2026-11-01)
+
+- Fixed: Viewer 실행 메뉴에서 비활성화된 링크 항목에 실제 이동·다운로드 href가 남지 않도록 fail-closed 처리. 활성 URL 명령과 기존 패널·원본/생성 선택을 유지한다.
+- Fixed: 서버 로그 요청/작업 타임라인의 확인된 cursor 만료·영속 로그 저장소 오류에서 실패한 단계는 제거하되 별도 인가된 메인 목록은 유지. 인가 실패·알 수 없는 오류는 전체 로그 Row 폐기.
+- Added: #37/#49 통합 합성 DXF·Generated Rotate/Undo/Redo·원본 SHA E2E, #50 Timeline 저장소 오류 Greenfield E2E, Viewer 메뉴 Unit, [통합 인수 문서](Epics37-49-50.md).
+- Scope: 기존 Auth/Audit, CAD 원본/DB/Volume, #63 원시 컨테이너 로그 수집 제외. 새 CI·현장 검증은 NOT VERIFIED. 이 항목은 게시/Release 완료 기록이 아니다.
+
+---
+
 ## 0.54.0 후보 — #91 R5b 보이는 메모 교환 파일 (2026-11-01)
 
 - Added: 선택한 local/server Memo의 전체 한글 제목·본문을 GLB/embedded glTF의 PNG plane·핀·연결선으로 표현한다. 숨김과 포함을 분리하고 Memo-only 및 DXF/Generated 혼합, AUTO/수동 미터 글자 높이를 제공한다.

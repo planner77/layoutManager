@@ -1,3 +1,12 @@
+## 2026-11-01 #37/#49/#50 통합 보완 — PR CI 요청 전 기준
+
+- 기준 Main c992fe87c68e65b5820203f42ad4cb13b92d1544 및 0.54.0에서 #37, #49, #50의 하위 이슈가 이미 구현/종료되었음을 확인. #63은 선택적 P2 원시 로그 수집으로 범위 제외. 별도 루트 DESIGN.md는 없으며 AGENTS/Architecture/Decisions/Requirements/Logging/TestPlan을 기준으로 한다.
+- 신규 Viewer 메뉴 disabled link의 href 우회, 로그 Timeline 저장소 503·cursor 410의 불필요한 메인 목록 비움 방지, 회귀 검증을 단일 브랜치에 작성. package/lock은 0.54.1 후보로 동기화한다. 서버 인증/감사·CAD 원본·운영 DB/볼륨/GHCR 변경 없음.
+- 새 통합 Unit/E2E와 기존 Greenfield E2E 갱신 및 [수용 추적](Epics37-49-50.md). 이 항목 작성 시점의 로컬 Typecheck/Lint/Unit/Build/Browser 테스트는 **NOT RUN**이고 원격 CI Run/결과는 **NOT VERIFIED**. 미관측 결과를 PASS로 주장하지 않는다. 운영·실도면 성능 및 #63은 인수 대상이 아니다.
+- 요청된 범위는 PR 열기로 PR CI 기동(모니터링 생략)까지만이며, CI 실패 시 실제 원인·Run ID·재검증을 별도 원장 항목에 추가한다. 기존 실패 기록은 모두 보존.
+
+---
+
 ## PR #185 / Issue #91 R5b — Main 정렬·리뷰/충돌 검증 및 새 PR CI 요청 (2026-11-01 KST)
 
 - 대상 [PR #185](https://github.com/planner77/layoutManager/pull/185)는 #91 보이는 Memo GLB/glTF R5b의 **Draft / 스택형 PR**이며 기반은 여전히 미병합 [PR #184](https://github.com/planner77/layoutManager/pull/184)의 `feat/issue-91-exchange-export-20261101` (`9accf8ba3e21f2d51dc7694e768f19c75fffb5d5`)이다. 해당 선행 PR/기반 브랜치 자체는 수정·병합하지 않았다. Issue #91은 OPEN이다.

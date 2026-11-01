@@ -1,3 +1,13 @@
+## Epic #37/#49/#50 Integration R1 — Viewer 메뉴·로그 Timeline 오류 경계
+
+ViewerCommandMenus는 비활성/빈 href 링크에 실제 anchor href를 제공하지 않고 메뉴 항목 버튼으로 표현한다. ViewerManager/SelectionController/GeneratedDocument/Server Outline·Source bytes는 변경하지 않는다.
+
+운영 로그 UI는 HTTP status 및 정제된 error.code를 함께 분류한다. 410 cursor expiry 또는 정확한 503 LOG_STORE_UNAVAILABLE은 Timeline snapshot만 폐기하고 기존에 별도 인가된 메인 목록은 보존한다. 401/403·불명확한 503·네트워크/응답 변형은 기존처럼 전체 목록/상세/Timeline을 제거한다. G7/G4 서버 인가·감사와 JSONL Reader의 권한·상한은 변경하지 않는다.
+
+[통합 추적 문서](Epics37-49-50.md)에서 요구·테스트·비범위를 관리한다. 신규 DB/스키마·운영 Auth 활성화·로그 수집기 확장은 도입하지 않는다.
+
+---
+
 ## R5b 구현 bridge / 로컬 코드·합성 수용 (2026-11-01)
 
 기반은 게시된 R5a `9accf8ba3e21f2d51dc7694e768f19c75fffb5d5`이며0.54.0 작업에서 아래 bridge를 공유한다. R5a 정확 HEAD CI는 성공했고 R5b 코드·합성 로컬 수용을 마쳤다. 새 R5b 게시·CI 및 현장 수용은 TestReport 실제 결과로 구분한다.
