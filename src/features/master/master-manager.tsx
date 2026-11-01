@@ -98,7 +98,7 @@ export function MasterManager() {
   const visible = useMemo(() => visibleMasterTree(roots, expanded, search), [roots, expanded, search]);
   const visibleIndex = useMemo(() => new Map<string, number>(visible.map((entry, pos) => [entry.key, pos])), [visible]);
   const effectiveFocusedKey = focusedKey && visibleIndex.has(focusedKey) ? focusedKey : visible[0]?.key ?? null;
-  const selected = selectedKey ? index.get(selectedKey) ?? null : null;
+  const selected = !loading && selectedKey ? index.get(selectedKey) ?? null : null;
   const creatingParent = createParentKey ? index.get(createParentKey) ?? null : null;
   const creatingLevel = creatingParent ? masterLevels[creatingParent.level + 1] : masterLevels[0];
   const creatingAllowed = mode === "create" &&
@@ -107,7 +107,8 @@ export function MasterManager() {
 
   const refresh = useCallback(async (preferred?: RefreshTarget): Promise<boolean> => {
     const requestNumber = ++sequence.current;
-    setLoading(true);
+    // Loading starts in the initiating UI event (or initial state). The effect
+    // only initiates this async read; React state changes follow the await.
     try {
       const response = await fetch("/api/masters?active=" + (filterRef.current ? "false" : "true"), {
         cache: "no-store",
@@ -451,13 +452,14 @@ export function MasterManager() {
             onChange={(event) => {
               setMode("view");
               setNotice("");
+              setLoading(true);
               setShowInactive(event.target.checked);
             }}
           />
           비활성 항목 표시
         </label>
         <Button type="button" size="sm" variant="outline" disabled={loading || busy}
-          onClick={() => { void refresh(); }}>새로고침</Button>
+          onClick={() => { setLoading(true); void refresh(); }}>새로고침</Button>
       </div>
       {error && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</p>}
       {notice && <p role="status" className="rounded-lg border border-teal-200 bg-teal-50 p-3 text-sm text-teal-900">{notice}</p>}
