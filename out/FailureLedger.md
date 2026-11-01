@@ -1,3 +1,13 @@
+## PR #194 / Issue #191 — 리뷰·충돌 게이트 및 PR CI 최초 실행 (2026-11-01 KST)
+
+- **PR:** https://github.com/planner77/layoutManager/pull/194, title "#191 | Replace five-column location masters with accessible hierarchy tree", main 기준 base 327ac0c13534d240c2880eb293c77e5cf44736a4; PR 최초 검토 HEAD b8392d8f7ed9bbc89e4bb92ad2beb5c067880ebe.
+- **리뷰:** GitHub inline review threads 0 / 미해결 0, 제출 리뷰 0. Owner Managed 운영 정책이며 독립 QA 승인으로 표기하지 않는다. 별도 해결이 필요한 리뷰 지적은 관측되지 않았다.
+- **충돌:** GitHub raw PR mergeable=true, mergeable_state=unstable (pending checks; clean 완료를 의미하지 않음). main 비교 ahead 25 / behind 0, merge-base main 일치, 코드 병합 충돌 관측 0. CI 미완료 상태에서 병합·release를 실행하지 않는다.
+- **최초 CI 요청:** pull_request.opened가 [PR CI Run 41285696095](https://github.com/planner77/layoutManager/actions/runs/41285696095)를 시작했으며 initial HEAD b8392d8f7ed9bbc89e4bb92ad2beb5c067880ebe, 확인 시 status=in_progress/conclusion=null. **성공/실패 미판정**. 본 원장 기록을 PR 브랜치에 반영하는 후속 synchronize는 새 HEAD CI를 재요청하며, 최초 Run은 최종 HEAD 검증 증거가 아니다.
+- **검증 경계:** 로컬 TS/Lint/Vitest/Browser/Docker NOT RUN. 최신 커밋 PR CI 결과 NOT VERIFIED. User 요청으로 지속 모니터링 생략. GHCR 게시, PR 병합, Issue #191 종료, 운영 Auth/CAD Writer/DB/Volume 변경 없음. 새 실패가 실제 보고되면 정확 Run/Job/HEAD·원인·수리 SHA를 본 원장 상단에 누적 기록한다.
+
+---
+
 ## Issue #191 — PR 개설 전 최종 소스 및 충돌 사전 점검 (2026-11-01 KST)
 
 - **후보 버전/무결성:** src/package.json 및 src/package-lock.json 루트 버전을 0.55.3으로 동기화. git ref v0.55.3 조회 404(미존재), v0.55.2 기존 이미지/태그 재사용·이동 없음.
