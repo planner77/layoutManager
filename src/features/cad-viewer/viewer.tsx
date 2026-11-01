@@ -136,6 +136,7 @@ export function CadViewer({
   const [memoError, setMemoError] = useState<string|null>(null);
   const [memoDeleteArmed, setMemoDeleteArmed] = useState(false);
   const [memoServerMode,setMemoServerMode]=useState<MemoServerMode>('checking');
+  const [memoDeleteActor,setMemoDeleteActor]=useState<{id:string;canDeleteAny:boolean}|null>(null);
   const memoDeepLinkApplied=useRef<string|null>(null);
   const [memoLinkNotice,setMemoLinkNotice]=useState<{message:string;retryable:boolean}|null>(null);
   // Memo HTTP retries must not advance the CAD source/renderer 'attempt' epoch.
@@ -211,6 +212,7 @@ export function CadViewer({
     setMemoTransientFocusId(null);
     setMemoTreeError(null);
     setMemoServerMode('checking');
+    setMemoDeleteActor(null);
     setMemoPlacing(false);
     setMemoCandidate(null);
     setMemoSelectedId(null);
@@ -269,17 +271,18 @@ export function CadViewer({
         setMemos(session.list());
         setMemoGroupRecords(result.groups);
         setMemoFeaturesAvailable(result.featuresAvailable);
+        setMemoDeleteActor({id:result.actorId,canDeleteAny:result.canDeleteAny});
         setMemoTree({...emptyMemoTreeState,
           groups:result.groups.map(g=>({id:g.id,name:g.name})),
           groupByMemo:Object.fromEntries(result.memos.filter(m=>m.groupId).map(m=>[m.id,m.groupId!]))});
       }else{
-        setMemoFeaturesAvailable(false);setMemoGroupRecords([]);
+        setMemoFeaturesAvailable(false);setMemoGroupRecords([]);setMemoDeleteActor(null);
       }
       setMemoServerMode(result.mode);
       setMemoError(null);
     }).catch(error=>{
       if(controller.signal.aborted)return;
-      memoSession.current=null;setMemos([]);setMemoGroupRecords([]);setMemoFeaturesAvailable(false);
+      memoSession.current=null;setMemos([]);setMemoGroupRecords([]);setMemoFeaturesAvailable(false);setMemoDeleteActor(null);
       setMemoServerMode('unavailable');
       setMemoError(error instanceof Error?error.message:'메모 목록을 읽지 못했습니다.');
     });
@@ -1875,7 +1878,10 @@ export function CadViewer({
   const pivotY=rotatePivotOverride?.selectionKey===rotateSelectionKey
     ? rotatePivotOverride.y:String(commonRotationPivot?.[1]??0);
   const closeMetadataOverlays=useCallback(()=>{setNameTipOpen(false);setNameTipPinned(false);setInfoOpen(false);},[]);
-  const selectedPersistedMemo=memoServerMode==='active'&&scopedMemos.find(m=>m.id===memoSelectedId)?.persisted===true;
+  const selectedMemoForDelete=scopedMemos.find(m=>m.id===memoSelectedId);
+  const memoCanDelete=!selectedMemoForDelete?.persisted || !!(memoDeleteActor &&
+    (memoDeleteActor.canDeleteAny||selectedMemoForDelete.createdById===memoDeleteActor.id));
+  const selectedPersistedMemo=memoServerMode==='active'&&selectedMemoForDelete?.persisted===true;
   const commandGroups:ViewerCommandGroup[]=[
     {id:'drawing',label:'도면',commands:[
       {id:'info',label:'도면 정보',onSelect:()=>setInfoOpen(value=>!value)},
@@ -2128,7 +2134,7 @@ export function CadViewer({
           {memoAvailable && <div data-testid="cad-memo-status"
             className="flex flex-wrap items-center gap-2 border-b border-amber-200 bg-amber-50 px-3 py-1 text-xs text-slate-800">
             <strong>CAD 메모 {memoServerMode==='active'?'M2 영속':'M1 임시'} · {scopedMemos.length}/100</strong>
-            <span>{memoServerMode==='active'?'WCS 고정 · 서버 저장/다시 열기 · 작성자/Revision/CAS/감사 · 명시적 좌표 이동':'WCS 고정 · 임시 세션만 · Reload/Renderer/Version 변경 시 소실'}</span>
+            <span>{memoServerMode==='active'?'WCS 고정 · 동일 Site Editor 공동 수정 · 삭제는 작성자/Admin · Revision/CAS/감사 · 명시적 좌표 이동':'WCS 고정 · 임시 세션만 · Reload/Renderer/Version 변경 시 소실'}</span>
             {scopedMemos.length>0 && <span data-testid="cad-memo-latest">
               {scopedMemos.slice(-5).map(item=><button key={item.id} type="button"
                 className="mr-1 rounded border border-amber-500 bg-white px-1.5 py-0.5 hover:bg-amber-100"
@@ -2139,7 +2145,7 @@ export function CadViewer({
             fields={memoFields} onFieldsChange={changeMemoFields}
             placing={memoPlacing} newAnchor={memoCandidate} selectedId={memoSelectedId}
             count={memos.length} error={memoError} confirmDelete={memoDeleteArmed}
-            persistent={memoServerMode==='active'} busy={memoBusy}
+            persistent={memoServerMode==='active'} busy={memoBusy} canDelete={memoCanDelete}
             onConfirmCoordinate={placeMemoAtEnteredWcs} onCreate={createMemo}
             onSaveText={saveMemoText} onApplyPosition={moveMemoFromFields}
             onArmDelete={()=>setMemoDeleteArmed(true)} onDelete={deleteMemo}
