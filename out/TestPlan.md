@@ -2,7 +2,7 @@
 
 | ID | 입력·행위 | 기대 결과 |
 |---|---|---|
-| TC-EPIC-81-160-01 | 같은 Scope/Origin/ID이면서 기하·transform이 상이한 2개 Target, 기존 선택·reconcile·reposition·유일 대상 복구 | candidate 0/nearest null/current choice false; 마지막 WCS/BROKEN, reposition mutation 0, 복구 시 같은 ID ATTACHED |
+| TC-EPIC-81-160-01 | 같은 Scope/Origin/ID이면서 기하·transform이 상이한 2개 Target, 기존 선택·reconcile·reposition·유일 대상 복구, Viewer KEEP 서버 저장 전 확인 | candidate 0/nearest null/current choice false; 마지막 WCS/BROKEN, reposition mutation 0, 유일 Ref 아닌 경우 영속 PATCH 이전 거절, 복구 시 같은 ID ATTACHED |
 | TC-EPIC-81-160-02 | reset expected A/B, observed B/A·A/A·A/누락·A/C·stale revision | B/A만 true, 중복/누락/미등록/stale 모두 false, DB 원자 Reset 불변 |
 | TC-EPIC-81-160-03 | PR CI Typecheck/Lint/Vitest/Benchmark/Build/General·G7·Greenfield·Legacy E2E/Docker | 정확 HEAD·Run/Job 증거 기반 판정; 현장/GPU/2PC/Owner GO 제외 |
 

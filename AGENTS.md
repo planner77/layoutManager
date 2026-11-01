@@ -1,3 +1,9 @@
+## PR #192 추가 경계 — KEEP 이동의 영속 PATCH 이전 고유 대상 확인 (2026-11-01)
+
+- Viewer `applyMemoMove`의 연결 유지(KEEP)는 `uniqueMemoSnapTarget`로 동일 Scope/Origin+ID의 유일 Target을 확인한 뒤에만 서버 WCS PATCH. PATCH 후 확인에도 같은 검사를 적용해 대상 변경 시 세션 연결만 해제한다. 신규 Unit TC-EPIC-81-160-01 확장. [상세](out/Epics81-160.md).
+
+---
+
 ## Epic #81 + #160 — 메모 스냅/Scene Reset 교차 무결성 (2026-11-01, 0.55.2 후보)
 
 - [통합 설계·수용 경계](out/Epics81-160.md): 동일 Viewer Scope에서 중복된 `Origin+Scene ID`는 Memo Session Snap 후보·확정·재배치·projection에서 일괄 거절. 기존 연결 메모는 마지막 WCS에 동결/BROKEN, 유일한 동일 immutable ID가 복귀한 경우에만 재계산. 서버 영속 Snap/작성자 권한은 변경하지 않는다.

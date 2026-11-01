@@ -48,6 +48,21 @@ function duplicateTargetKeys(scope:MemoScope,targets:readonly MemoSnapTarget[]):
  }
  return duplicates;
 }
+/** Return the only scope-valid target for a session SnapRef, or null when absent/ambiguous.
+ * Called before a fallible persisted Memo move as well as after it.
+ */
+export function uniqueMemoSnapTarget(scope:MemoScope,ref:SnapRef,
+ targets:readonly MemoSnapTarget[]):MemoSnapTarget|null{
+ if(!validRef(ref,scope))return null;
+ let found:MemoSnapTarget|null=null;
+ for(const target of targets){
+  if(!validRef(target.ref,scope)||targetKey(target.ref)!==targetKey(ref))continue;
+  if(found)return null;
+  found=target;
+ }
+ return found;
+}
+
 function point(p:MemoWcsXY):MemoWcsXY{
  return assertMemoWcsXY(p);
 }
@@ -176,11 +191,8 @@ export class MemoSessionSnapStore {
  reposition(memoId:string,world:MemoWcsXY,targets:readonly MemoSnapTarget[]):SessionSnapProjection{
   const old=this.connections.get(memoId);
   if(!old||old.forcedBreak)throw new Error('유효한 세션 연결을 먼저 선택하세요.');
-  if(duplicateTargetKeys(this.scope,targets).has(targetKey(old.ref)))
-   throw new Error('같은 ID의 스냅 대상이 중복되었습니다.');
-  const target=targets.find(t=>validRef(t.ref,this.scope)&&
-   t.ref.origin===old.ref.origin&&t.ref.id===old.ref.id);
-  if(!target)throw new Error('연결 대상이 현재 도면에 없습니다.');
+  const target=uniqueMemoSnapTarget(this.scope,old.ref,targets);
+  if(!target)throw new Error('연결 대상이 누락되었거나 같은 ID의 스냅 대상이 중복되었습니다.');
   const nextWorld=point(world),local=invertAffine(target.transform,nextWorld);
   const next={...old,local,lastWorld:nextWorld};
   this.connections.set(memoId,next);

@@ -1,3 +1,9 @@
+## PR #192 Viewer KEEP pre-write 고유성 경계 (2026-11-01)
+
+`applyMemoMove`의 세션 KEEP는 `uniqueMemoSnapTarget`로 Scope 유효하며 유일한 Target임을 검사한 뒤에만 서버 영속 WCS PATCH를 허용한다. PATCH 후에는 동일 helper로 변경 여부를 재검증하고 문제가 있으면 브라우저 세션 바인딩만 해제한다. 서버의 기존 G7 Session/Actor/Role/Site/CSRF/CAS는 독립 필수 조건이며 client-only Scene Ref를 영속으로 승격하지 않는다.
+
+---
+
 ## Epic #81/#160: Memo Session ↔ Scene Target / Reset Snapshot 경계 (2026-11-01)
 
 현재 Viewer Session의 `versionId+sourceSha256+origin+id`는 단일 Snap Target을 식별해야 한다. 동일 `origin+id`가 복수 Target으로 제공될 때 첫/마지막 Transform을 선택하지 않고 후보·선택 검증·기존 관계 projection·reposition 전부 fail-closed로 처리한다. 기존 Memo는 마지막 유효 WCS의 BROKEN 관계를 유지하고 서버 관계로 승격시키지 않는다.

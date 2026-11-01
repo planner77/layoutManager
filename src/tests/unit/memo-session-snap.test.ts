@@ -4,7 +4,7 @@ import {sceneScope,createSceneRef,importedId} from '../../domain/cad-scene';
 import {SceneWorkDocument} from '../../domain/scene-work';
 import {MemoSession} from '../../domain/cad-memo';
 import type {OutlineResult} from '../../viewers/core/outline-compute';
-import {MemoSessionSnapStore,nearestMemoSnap,collectMemoSnapCandidates,currentMemoSnapChoice,
+import {MemoSessionSnapStore,nearestMemoSnap,collectMemoSnapCandidates,currentMemoSnapChoice,uniqueMemoSnapTarget,
  type MemoSnapTarget} from '../../domain/memo-session-snap';
 import {readFileSync} from 'node:fs';
 
@@ -51,10 +51,14 @@ describe('#84 M3 session-only object snapping and bounded candidate selection',(
    points:[{kind:'ENDPOINT',world:{x:101,y:2}}]};
   const choice=collectMemoSnapCandidates(scope,{x:1,y:2},[target],screen).candidates[0];
   expect(choice).toBeDefined();
+  expect(uniqueMemoSnapTarget(scope,ref,[target])).toBe(target);
+  expect(uniqueMemoSnapTarget({...scope,versionId:'foreign'},ref,[target])).toBeNull();
   const store=new MemoSessionSnapStore(scope);
   store.attach(memoId,choice!);
   expect(store.reconcile([target])[memoId]).toMatchObject({mode:'ATTACHED',world:{x:1,y:2}});
   const ambiguous=[target,conflicting];
+  expect(uniqueMemoSnapTarget(scope,ref,ambiguous)).toBeNull();
+  expect(uniqueMemoSnapTarget(scope,ref,[{...target,visible:false},conflicting])).toBeNull();
   expect(collectMemoSnapCandidates(scope,{x:1,y:2},ambiguous,screen))
    .toMatchObject({candidates:[],total:0});
   expect(nearestMemoSnap(scope,{x:1,y:2},ambiguous,screen)).toBeNull();
@@ -65,6 +69,11 @@ describe('#84 M3 session-only object snapping and bounded candidate selection',(
   expect(()=>store.reposition(memoId,{x:3,y:4},ambiguous)).toThrow(/중복/);
   expect(store.get(memoId)).toEqual(before);
   expect(store.reconcile([target])[memoId]).toMatchObject({mode:'ATTACHED',world:{x:1,y:2}});
+  // The Viewer must enforce the same uniqueness before its persisted PATCH.
+  const viewer=readFileSync(new URL('../../features/cad-viewer/viewer.tsx',import.meta.url),'utf8');
+  const move=viewer.slice(viewer.indexOf('async function applyMemoMove'),viewer.indexOf('const moveMemoFromCanvas'));
+  expect(move.match(/uniqueMemoSnapTarget\(/g)).toHaveLength(2);
+  expect(move.indexOf('uniqueMemoSnapTarget(')).toBeLessThan(move.indexOf("mutatePersistedMemo('PATCH'"));
  });
 
  it('R4: bounds candidate storage and scanned points while retaining total in scanned range',()=>{
