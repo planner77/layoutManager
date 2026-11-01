@@ -1,3 +1,15 @@
+## PR #200 / #196 CI·P2 리뷰 수리 계획 (2026-11-01)
+
+[Issue196 수리 계약](Issue196.md#pr-200-ci리뷰-보완-계약-2026-11-01)의 AC-Z196-R1~R5 / TC-Z196-REPAIR-01~05를 따른다. 기준 실패 Run `41309924909`, HEAD `9f88d8e`: General Shard 2의 원본 GET 중복 및 OFF Zone 503 console error, Aggregate 후속 실패다.
+
+기존 `workflow.spec.ts`와 held-font `TC-126-RECOVERY`를 수정 전 재현한다. OFF에서는 실제 Zone 요청 0/console errors0, ACTIVE에서는 최초·갱신 transient failure 후 데이터 제거+도달 가능한 Retry+동일 Canvas 복구, fallback 승인 metadata 조회, stale Version/actor·401/403 fail-closed를 검증한다. 원본 성공 GET **정확 1회** assertion과 나머지 abort/Canvas·late callback 검사를 보존한다. 오류 필터/횟수 허용 확대/수명주기 재시작으로 시험을 우회하지 않는다.
+
+결정적 보완 probe는 첫 content의 실제 body 완료 뒤 반환 Promise만 지연하고 network 완료1→manual escape→Promise 해제 순서로 경합을 만든다. 기존 pending Source dispose에서 RED를 확인하고 동일 Version renderer-only 전환의 Promise 공유 수정 뒤 성공 GET1을 확인한다. Version 변경/full reload/source 오류 retry의 fresh Source·취소 정책은 별도 회귀한다.
+
+관련 정적·Unit·Browser/Build 및 독립 QA 이후 Manager가 수용한다. 새로운 PR CI는 시작까지만 확인하고 완료 모니터링은 생략한다. 과거 다른 Job PASS·새 CI 시작·합성 복구를 최신 전체 CI 성공/현장 #113/#193·배포 완료로 표기하지 않는다. 실제 결과와 재현 실패도 TestReport/FailureLedger에 분리 기록한다.
+
+---
+
 ## #196 의미론적 구역 Z0–Z4 검증 계획 (2026-11-01)
 
 [Issue196 요구사항→AC→시험 추적](Issue196.md#요구사항ac시험-추적)의 TC-Z196-01~08이 신규 기준이다. Geometry/Snap·metadata CRUD/멱등/409·3단계 트리/포함·click vs focus·Version/Reset·G7/DB 무결·Panel lifecycle·전체 회귀를 각각 실제 Unit/Integration/Playwright로 연결한다. 부모의 오목 경계를 가로지르는 edge, parent 축소 시 자식, 참조 중 category/parent 삭제, stale Scope/actor 응답, 두 Reset mode 후 stale PATCH, V2 미매핑은 필수 부정 시험이다.

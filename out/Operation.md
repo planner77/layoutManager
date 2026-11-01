@@ -1,3 +1,11 @@
+## PR #200 — 구역 조회 재시도·Renderer 전환 수리 (0.56.0 후보 유지)
+
+G7 OFF는 public status로 확인해 구역 API의 불필요한 503 조회를 생략한다. 구역 조회의 일시적 오류·권한 변경 시 기존 보호 정보는 지워지고 오류 패널/다시 조회 경로가 남는다. 운영 상태나 권한을 복구한 뒤 구역 목록의 새로고침을 사용하며 서버 재인가를 통과해야 한다. 원본 재로드나 임시 CAD 작업 폐기를 재시도 조건으로 요구하지 않는다.
+
+같은 Version에서 로딩 중 Viewer를 바꿔도 원본 다운로드는 공유한다. 실제 원본 통신 실패의 다시 불러오기와 다른 Version 전환은 기존 경로를 사용한다. 실패 Run과 실제 수리 검증은 FailureLedger/TestReport를 따른다. 환경 변수·DB/Volume·Auth/Writer 설정을 변경하는 수리가 아니다.
+
+---
+
 ## #196 구역 저장·버전 정합성 운영 (0.56.0 후보)
 
 - 구역 API는 Version으로 실제 층/Site를 해석하며 서명된 G7 ACTIVE·세션·Site Grant를 요청마다 검사한다. Reader 조회, Editor/Admin 공동 수정, 작성자 또는 해당 Site Admin 논리 삭제, Site Admin 카테고리 관리다. G7 OFF·Writer OFF·구역 Schema 부재에서는 쓰기를 활성화하지 않는다.

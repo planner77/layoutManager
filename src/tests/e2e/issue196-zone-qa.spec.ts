@@ -20,6 +20,10 @@ test('#196 QA: mobile zone drawer and tree keyboard navigation',async({page,requ
  const zone=(id:string,name:string)=>({id,locationId:'qa-floor',siteId:'qa-site',name,categoryId:null,
   description:'',code:'',tags:[],sortOrder:0,parentZoneId:null,references:[],revision:1,
   createdById:'qa-actor',updatedById:'qa-actor',createdAt:'2026-11-01',updatedAt:'2026-11-01',geometry:null});
+ // The synthetic Zone envelope represents an explicitly ACTIVE G7 viewer.
+ await page.route('**/api/g7-runtime/status',route=>route.fulfill({status:200,json:{
+  state:'ACTIVE',authEnabled:true,cadWriteEnabled:true,
+ }}));
  await page.route(`**/api/cad-files/${versionId}/zones`,route=>route.fulfill({json:{
   zones:[zone('qa-zone-1','QA Alpha'),zone('qa-zone-2','QA Beta')],categories:[],actorId:'qa-actor',
   canEdit:true,canDeleteAny:false,canManageCategories:false,locationId:'qa-floor',siteId:'qa-site',

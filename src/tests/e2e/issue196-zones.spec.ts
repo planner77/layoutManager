@@ -15,8 +15,9 @@ test('#196 zone controls remain gated on legacy source and renderer fallback wit
   registeredAt:'2026-11-01',makeCurrent:'true',deletePassword:'1234',
  }});
  expect(upload.status()).toBe(201);const {id}=await upload.json() as {id:string};
- let zoneReads=0;
+ let zoneReads=0;const consoleErrors:string[]=[];
  page.on('request',req=>{if(new URL(req.url()).pathname===`/api/cad-files/${id}/zones`)zoneReads++;});
+ page.on('console',message=>{if(message.type()==='error')consoleErrors.push(message.text());});
  await page.goto(`/cad/versions/${id}/viewer?renderer=three-dxf-viewer`);
  await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
  const canvas=page.getByTestId('cad-canvas').locator('canvas');
@@ -26,9 +27,9 @@ test('#196 zone controls remain gated on legacy source and renderer fallback wit
  const create=page.getByTestId('viewer-menu-zone-create'),list=page.getByTestId('viewer-menu-zone-list');
  await expect(create).toHaveAttribute('aria-disabled','true');
  await expect(list).toHaveAttribute('aria-disabled','true');
- await expect(list).toHaveAttribute('title',/Scene|구역/);
+ await expect(list).toHaveAttribute('title',/G7.*OFF/);
  await expect(page.getByTestId('viewer-zone-dock')).toHaveCount(0);
- await expect.poll(()=>zoneReads).toBeGreaterThan(0);
+ expect(zoneReads).toBe(0);
  expect(await original!.evaluate(node=>node===document.querySelector('[data-testid="cad-canvas"] canvas'))).toBe(true);
  await page.getByRole('button',{name:'보기',exact:true}).click();
  await page.getByRole('menuitemradio',{name:'dxf-viewer',exact:true}).click();
@@ -38,4 +39,6 @@ test('#196 zone controls remain gated on legacy source and renderer fallback wit
  await expect(create).toHaveAttribute('aria-disabled','true');
  await expect(create).toHaveAttribute('title',/DXF three-dxf-viewer/);
  await expect(page.getByTestId('viewer-zone-dock')).toHaveCount(0);
+ expect(zoneReads).toBe(0);
+ expect(consoleErrors.filter(message=>message.includes('/zones')||message.includes('503'))).toEqual([]);
 });

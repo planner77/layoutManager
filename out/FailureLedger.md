@@ -1,3 +1,18 @@
+## PR #200 / #196 — 최초 CI 실패와 P2 조회 재시도 수리 (2026-11-01)
+
+- 실패 정본: HEAD `9f88d8e0539eb831f4f4353bb12f07f361fff654`, [Run 41309924909](https://github.com/planner77/layoutManager/actions/runs/41309924909) `completed/failure`. General Chromium shard2 [Job 124859317153](https://github.com/planner77/layoutManager/actions/runs/41309924909/job/124859317153) **66 PASS/2 FAIL/7.1분**; aggregate Verify124861602124는 필수 shard 실패를 정상 차단했다. Scope124857959766, Quality124858006661(Type/Lint/Unit/OCI/benchmark/Build), Docker124858006685, Greenfield124859317031, signed+legacy124859317046, General shard1 124859317215는 **해당 이전 HEAD에서 SUCCESS**. 새 수리 HEAD의 PASS로 승계하지 않는다.
+- 실제 실패① `TC-E2E-001`, workflow.spec.ts:148: errors[] 기대에 503 resource error3건. G7 OFF에서도 Zone GET을 보내던 초기 hook 때문이며 정상 CAD UI 전체 흐름에 불필요한 콘솔 오류를 만들었다. 503 응답을 200으로 위장하거나 console assertion을 제거하지 않고 public status 사전 확인으로 OFF Zone GET을 생략한다.
+- 실제 실패② `TC-126-RECOVERY`, issues124-126-127.spec.ts:162: 성공한 source GET1회 기대에2회. 원장의 과거 #151 수리에서는 취소된 첫 요청만 추가 허용했으며 **두 성공 GET은 여전히 회귀**다. 원 assertion/timeout/retry 정책을 유지한다.
+- 재현: 변경 전 기존 두 파일 집중 실행 **6 PASS/1 FAIL/27.9s**(`/tmp/pr200-repair-red.log`), workflow503 재현. intermittent source 경합은 새 `pr200-source-cache-race.spec.ts`가 실제 body 수신→JS Promise만 지연→수동 renderer escape 순서로 **1 FAIL/2.3s**, Expected completed1/Received2를 재현(`/tmp/pr200-source-red.log`). 원본·Auth 헤더/원시 trace는 Git에 넣지 않는다.
+- 원인/수리: manual `choose`가 Source `pending`이면 dispose하는데 network body 완료와 ArrayBuffer Promise 캐시 확정 사이에도 pending이다. 같은 Version renderer-only 전환은 진행 중 다운로드를 새 Manager와 공유한다. Version 전환/full reload/source 오류 재시도의 별도 초기화는 유지하고 늦은 Manager 결과는 generation으로 차단한다.
+- P2 [review4435768211](https://github.com/planner77/layoutManager/pull/200#discussion_r4435768211), thread `PRRT_kwDOUQjDfc6yanPw`: 실패 시 list를 비우고 그 list 존재를 menu/panel gate로 사용해 수동 재시도까지 막혔다. 보호 데이터는 비우되 transient/status 오류 후 retry shell은 유지한다. ACTIVE 인가 조회·Renderer fallback·actor/Version stale 방어 및 서버 G7 강제 검증은 보존한다.
+- 최종 로컬 GREEN: 전체 **139 files/915 PASS/309.04s**(`/tmp/pr200-repair-unit.log`), Typecheck/Build exit0(`/tmp/pr200-repair-{typecheck,build}.log`), Lint0 errors/기존8 warnings(`/tmp/pr200-repair-lint.log`). General6files **19 PASS/1.5분**(`/tmp/pr200-repair-green.log`): 기존 workflow errors[]와 정상/수동 escape 기준, 새 Source 경합 **1 PASS/1.4s** 및 Zone 최초/갱신503·401·403 복구·지연 Version 방어를 확인했다.
+- 실제 signed G75건 **5 PASS/1.1분**(`/tmp/pr200-repair-g7.log`): 최초 설치/Scene 복원, keyboard·actor 폼 소거, DPR2 실제 Snap/Reset 및 metadata/계층/reload/같은 ID remap/fallback 승인 조회를 회귀했다. 독립 gpt-6-luna QA **6 PASS**(`/tmp/pr200-repair-qa-report.md`, port3542). 기존 재현 RED를 삭제/완화하지 않았고 debug instrumentation은 제품에 추가하지 않았다.
+- gpt-6-astra Manager는 코드·집중 Browser/QA를 검토해 전체 Unit 성공 후 PR 게시를 승인했으며 위 915 PASS로 조건을 충족했다. 수리 source4파일과 관련 시험/가이드/원장을 반영한다. 후보0.56.0 유지. 새 HEAD의 원격 CI 완료·현장/운영 수용과는 별개다.
+- Manager가 Issue196/TestPlan에 수리 AC·결정적 경합 seam을 기록하고 Developer 구현을 승인했다. 로컬 GREEN/독립 QA는 위와 같이 확인했고, 최종 review 답변·resolve/충돌 및 새 PR CI 시작은 해당 수리 커밋을 게시한 뒤 실제 상태로 확인한다. candidate0.56.0 유지, 운영/DB/원본/권한 설정·병합·GHCR/이슈 종료 없음.
+
+---
+
 ## Issue #196 — 로컬 구현 오류·재검증 원장 (2026-11-01)
 
 - 기준 Main `2bccf90`, 별도 `feat/issue-196-semantic-zones-20261101` worktree. 원래 폴더의 Compose/next-env 수정 2건을 보존했다. 신규 PR CI 실패는 아직 관측하지 않았다.

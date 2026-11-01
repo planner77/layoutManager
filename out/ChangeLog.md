@@ -2,6 +2,7 @@
 
 - Added: 층별 구역 ID·업무 메타데이터·부모 계층, Site 카테고리, Version/SHA/Scene별 Polygon mapping과 G7 권한·CAS·멱등 생성·감사·논리 삭제.
 - Added: Viewer 구역 생성/목록, 기존 객체 Snap과 자유 WCS 입력, 계층 트리·상세·검색·표시·Bounds focus 및 공통 이동 패널 연계.
+- Fixed (PR #200 CI/review): G7 OFF 구역 조회 생략, 일시적 조회 실패 후 수동 재시도 접근, 수동 Viewer 전환 중 진행 원본 공유. 실패 원장/재시험을 보존하며 미릴리스 후보0.56.0을 유지한다.
 - Schema: 신규 빈 Greenfield 전용 baseline, 과거 설치 fingerprint 보존. 기존 운영 Volume 자동 이전 없음.
 - 검증·제약: 단순 Polygon, 교차점 Snap 미지원, V2 자동 경계 이관 없음. 실제 결과는 TestReport/FailureLedger의 #196 기록을 따른다. PR CI 완료·현장 #113/#193·병합·GHCR 게시 미확인.
 

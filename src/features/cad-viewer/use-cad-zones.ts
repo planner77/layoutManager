@@ -3,7 +3,7 @@ import {useCallback,useEffect,useRef,useState} from 'react';
 import {closeZonePoints,isZoneGeometryMapped,type CadZoneDto,type ZoneCategoryDto,type ZoneListDto,type ZoneMetadata,type ZonePoint,type ZonePolygon} from '@/domain/cad-zone';
 import {collectMemoSnapCandidates,currentMemoSnapChoice,type MemoSnapChoice} from '@/domain/memo-session-snap';
 import type {ViewerManager} from '@/viewers/core/adapter';
-import {createZone,createZoneCategory,deleteZone,deleteZoneCategory,patchZone,patchZoneCategory,readZones,ZoneRequestError} from './cad-zone-client';
+import {createZone,createZoneCategory,deleteZone,deleteZoneCategory,patchZone,patchZoneCategory,probeZoneAvailability,readZones,ZoneRequestError} from './cad-zone-client';
 import {createPreviewUuid} from './preview-uuid';
 
 export function useCadZones({versionId,sourceSha256,renderer,format,ready,loading,attempt,getManager,getCanvas,getViewEpoch}:{
@@ -13,6 +13,7 @@ export function useCadZones({versionId,sourceSha256,renderer,format,ready,loadin
  const [list,setList]=useState<ZoneListDto|null>(null);
  const [error,setError]=useState<string|null>(null);
  const [loadingList,setLoadingList]=useState(false);
+ const [availability,setAvailability]=useState<'checking'|'active'|'off'|'error'>('checking');
  const [busy,setBusy]=useState(false);
  const [selectedId,setSelectedId]=useState<string|null>(null);
  const [hidden,setHidden]=useState<ReadonlySet<string>>(()=>new Set());
@@ -32,14 +33,26 @@ export function useCadZones({versionId,sourceSha256,renderer,format,ready,loadin
  const exactScene=!!list&&sceneRevision!==null&&list.sceneRevision===sceneRevision&&
   list.versionId===versionId&&list.sourceSha256===sourceSha256;
  const readUnavailable=!readSupported?'검증된 Version/SHA가 필요합니다.':
-  !list?error??'구역 조회 권한을 확인하는 중입니다.':null;
+  availability==='off'?'구역 기능은 G7 운영 모드 OFF에서 제공하지 않습니다.':
+  availability==='checking'?'구역 운영 상태를 확인하는 중입니다.':null;
  const unavailable=!supported?'구역 생성·편집은 Scene이 준비된 DXF three-dxf-viewer에서만 사용할 수 있습니다.':
   !list?error??'구역 권한과 Scene을 확인하는 중입니다.':
   !exactScene?'현재 Version/SHA/Scene 개정과 구역 자료가 일치하지 않습니다. Scene 저장 후 다시 조회하세요.':null;
  const canCreate=unavailable===null&&!!list?.canEdit;
+ const clearProtected=useCallback(()=>{
+  actorId.current=null;setList(null);setHidden(new Set());setSelectedId(null);
+  setDrawing(false);setDrawingExistingId(null);setPoints([]);setClosed(false);setSnap(null);
+  setBusy(false);saveKey.current=null;lifecycleEpoch.current+=1;
+ },[]);
  const refresh=useCallback(async(signal?:AbortSignal)=>{
   const token=++requestEpoch.current;setLoadingList(true);setError(null);
-  try{const data=await readZones(versionId,signal);if(token!==requestEpoch.current)return false;
+  try{
+   const status=await probeZoneAvailability(signal);if(token!==requestEpoch.current)return false;
+   if(status==='OFF'){
+    clearProtected();setAvailability('off');setError(null);return false;
+   }
+   setAvailability('active');
+   const data=await readZones(versionId,signal);if(token!==requestEpoch.current)return false;
    if(data.versionId!==versionId||data.sourceSha256!==sourceSha256)throw new Error('구역 목록의 Version/SHA가 현재 도면과 다릅니다.');
    if(actorId.current&&actorId.current!==data.actorId){
     setSelectedId(null);setDrawing(false);setDrawingExistingId(null);setPoints([]);setClosed(false);
@@ -48,15 +61,15 @@ export function useCadZones({versionId,sourceSha256,renderer,format,ready,loadin
    actorId.current=data.actorId;
    setList(data);setSelectedId(id=>data.zones.some(z=>z.id===id)?id:null);return true;
   }catch(e){if(signal?.aborted||token!==requestEpoch.current)return false;
-   actorId.current=null;setList(null);setHidden(new Set());setSelectedId(null);setDrawing(false);setPoints([]);setSnap(null);
+   clearProtected();setAvailability('error');
    setError(e instanceof Error?e.message:'구역 목록을 읽지 못했습니다.');return false;
   }finally{if(token===requestEpoch.current)setLoadingList(false);}
- },[versionId,sourceSha256]);
+ },[versionId,sourceSha256,clearProtected]);
  useEffect(()=>{
   const controller=new AbortController();
   // A renderer/reload switch invalidates all session-only visibility and drafts.
   const frame=requestAnimationFrame(()=>{setList(null);setSelectedId(null);setHidden(new Set());setAllVisible(true);
-   setDrawing(false);setDrawingExistingId(null);setPoints([]);setClosed(false);setSnap(null);setBusy(false);setError(null);
+   setDrawing(false);setDrawingExistingId(null);setPoints([]);setClosed(false);setSnap(null);setBusy(false);setError(null);setAvailability('checking');
    if(readSupported)void refresh(controller.signal);
   });
   return()=>{cancelAnimationFrame(frame);controller.abort();requestEpoch.current+=1;lifecycleEpoch.current+=1;actorId.current=null;};
@@ -92,7 +105,18 @@ export function useCadZones({versionId,sourceSha256,renderer,format,ready,loadin
   if(found.length)setSnap({free:world,choices:found,epoch:getViewEpoch(),total:candidates.total,limited:candidates.limited});else addPoint(world);
  };
  const assertActor=async(expected:string,manageCategories=false)=>{
-  const current=await readZones(versionId);
+  let current:ZoneListDto,off=false;
+  try{
+   if(await probeZoneAvailability()!=='ACTIVE'){
+    off=true;throw new Error('구역 기능이 비활성화되었습니다.');
+   }
+   current=await readZones(versionId);
+  }catch(error){
+   clearProtected();
+   setAvailability(off?'off':'error');
+   setError(error instanceof Error?error.message:'구역 권한을 다시 확인하세요.');
+   throw error;
+  }
   if(current.actorId!==expected||current.versionId!==versionId||current.sourceSha256!==sourceSha256||
      current.sceneRevision!==sceneRevision||!(manageCategories?current.canManageCategories:current.canEdit)){
    actorId.current=null;setList(null);setSelectedId(null);setDrawing(false);setDrawingExistingId(null);

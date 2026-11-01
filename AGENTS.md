@@ -1,3 +1,9 @@
+## PR #200 / #196 — CI 실패·리뷰 수리 (2026-11-01)
+
+구역 조회 상태/재시도 또는 수동 Renderer 전환을 변경할 때 [Issue196](out/Issue196.md)의 PR #200 수리 AC와 [FailureLedger](out/FailureLedger.md) 최초 Run41309924909를 먼저 읽는다. OFF에서 Zone API 생략, ACTIVE 실패 후 retry 접근 유지, 같은 Version의 진행 중 Source 공유 및 완료 GET 정확1회가 기준이다. 새 CI 성공은 별도 검증 대상이며 시작 후 모니터링은 생략한다.
+
+---
+
 ## Issue #196 — 의미론적 구역 구현·PR CI 후보 (2026-11-01, 0.56.0)
 
 구역 생성·수정·계층/카테고리·Snap·Version mapping·Reset·G7 변경 전 [Issue196](out/Issue196.md)의 ADR/AC와 [Database](out/Database.md), [ViewerPanelPolicy](out/ViewerPanelPolicy.md)를 읽는다. 실제 검증과 실패/재시험은 [TestReport](out/TestReport.md)/[FailureLedger](out/FailureLedger.md)를 따른다. PR CI는 시작까지만 요청되었으며 성공·현장 수용은 별도다.

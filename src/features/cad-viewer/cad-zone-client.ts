@@ -5,6 +5,17 @@ const root=(versionId:string)=>`/api/cad-files/${encodeURIComponent(versionId)}`
 export class ZoneRequestError extends Error{
  constructor(message:string,readonly status:number,readonly code:string){super(message);this.name='ZoneRequestError';}
 }
+/** Public capability only. ACTIVE still requires the protected Zone GET below. */
+export async function probeZoneAvailability(signal?:AbortSignal):Promise<'ACTIVE'|'OFF'>{
+ let response:Response;
+ try{response=await fetch('/api/g7-runtime/status',{credentials:'same-origin',cache:'no-store',signal});}
+ catch(error){if(signal?.aborted)throw error;throw new ZoneRequestError('구역 운영 상태를 확인하지 못했습니다. 다시 시도하세요.',503,'STATUS_UNAVAILABLE');}
+ if(!response.ok)throw new ZoneRequestError('구역 운영 상태를 확인하지 못했습니다. 다시 시도하세요.',response.status,'STATUS_UNAVAILABLE');
+ const body=await response.json().catch(()=>null);
+ if(body?.state==='OFF'&&body?.authEnabled===false&&body?.cadWriteEnabled===false)return 'OFF';
+ if(body?.state==='ACTIVE'&&body?.authEnabled===true)return 'ACTIVE';
+ throw new ZoneRequestError('구역 운영 상태가 확인되지 않았습니다. 다시 시도하세요.',503,'STATUS_UNAVAILABLE');
+}
 async function result<T>(response:Response):Promise<T>{
  const body=await response.json().catch(()=>null);
  if(!response.ok)throw new ZoneRequestError(body?.error?.message||`구역 요청 실패 (${response.status})`,

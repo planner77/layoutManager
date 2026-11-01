@@ -1637,7 +1637,8 @@ export function CadViewer({
     closeExchange();
     loadSequenceRef.current++;
     sceneRequest.current?.abort();setSceneBusy(false);setSceneCandidate(false);setSceneMode('scene-first');
-    if (loading && source.state(`/api/cad-files/${versionId}/content`) === 'pending') source.dispose();
+    // Renderer-only escape reuses this Version's in-flight source promise.
+    // Full reload, a different Version, and source-error retry still dispose it.
     fallbackTried.current = false; fallbackReason.current = null; setRecoveryNotice(null); setLinkFallbackUrl(null);
     manager.current?.dispose();
     setLoading(true);
@@ -1653,7 +1654,7 @@ export function CadViewer({
     const url = new URL(window.location.href);
     url.searchParams.set('renderer', value);
     window.history.replaceState(null, '', url);
-  }, [loading, renderer, resetOutline, confirmDiscard, source, versionId, resetMemos,closeExchange]);
+  }, [renderer, resetOutline, confirmDiscard, resetMemos,closeExchange]);
 
   function reload() {
     if (loading || !confirmDiscard()) return;
@@ -1984,7 +1985,9 @@ export function CadViewer({
       {id:'zone-list',label:'구역 목록',testId:'viewer-menu-zone-list',kind:'checkbox',checked:appState.zonePanelOpen,
         expanded:appState.zonePanelOpen,controls:appState.zonePanelOpen?'viewer-zone-dock':undefined,
         disabled:!!zones.readUnavailable,reason:zones.readUnavailable??undefined,
-        onSelect:()=>{if(appState.zonePanelOpen&&zones.drawing)zones.cancel();if(!appState.zonePanelOpen)void zones.refresh();dispatchApp({type:'toggle-zones',exclusive:isCompact});}},
+        onSelect:()=>{if(appState.zonePanelOpen&&zones.drawing)zones.cancel();
+          if(!appState.zonePanelOpen&&zones.list)void zones.refresh();
+          dispatchApp({type:'toggle-zones',exclusive:isCompact});}},
       {id:'memo-tree',label:'메모 트리',testId:'viewer-menu-memo-tree',kind:'checkbox',
        checked:appState.memoTreeOpen,expanded:memoAvailable&&appState.memoTreeOpen,
        controls:memoAvailable&&appState.memoTreeOpen?'viewer-memo-tree-dock':undefined,
@@ -2125,7 +2128,7 @@ export function CadViewer({
           className="border-t border-red-300 bg-red-50 p-2 text-xs text-red-800">{memoTreeError}</p>}
       </div> : null}
       memoTreeOpen={memoAvailable&&appState.memoTreeOpen}
-      zonePanel={<CadZonePanel key={versionId+':'+(zones.list?.actorId??'none')+':'+(zones.drawingExistingId??(zones.drawing?'drawing':'browse'))} list={zones.list} selectedId={zones.selectedId} hidden={zones.hidden}
+      zonePanel={<CadZonePanel key={versionId+':'+(zones.list?.actorId??'none')+':'+(zones.drawingExistingId??(zones.drawing?'drawing':'browse'))} list={zones.list} loadingList={zones.loadingList} selectedId={zones.selectedId} hidden={zones.hidden}
         allVisible={zones.allVisible} canEdit={zones.canCreate} editReason={zones.unavailable??(!zones.list?.canEdit?'구역 쓰기 권한이 없습니다.':null)} drawing={zones.drawing} points={zones.points} closed={zones.closed}
         notice={zones.error} busy={zones.busy} snap={zones.snap} onChooseSnap={zones.chooseSnap}
         onSelect={zones.setSelectedId} onFocus={zones.focus}

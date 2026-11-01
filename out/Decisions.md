@@ -1,3 +1,9 @@
+## ADR-196-REPAIR — 보호 데이터와 retry UI, renderer/source 취소 범위 분리
+
+2026-11-01 PR #200의 실제 CI 두 실패와 P2 review를 근거로 public status OFF에서는 Zone GET을 생략하고, ACTIVE 오류는 보호 데이터 폐기와 retry shell 보존을 함께 수행한다. public status로 서버 인가를 대체하지 않는다. 같은 Version renderer-only 수동 전환은 pending source를 공유해 body-complete/cache-pending 경합의 두 성공 다운로드를 방지한다. full reload/Version 변경/원본 오류는 별도 초기화를 유지한다. 기존 completedGET1·consoleError0 assertion을 완화하는 대안은 배제한다. 수리 AC와 실제 결과는 Issue196/TestPlan/TestReport/FailureLedger 참조.
+
+---
+
 ## ADR-Z196-01~08 — 의미론적 Zone 확정 기본안 (2026-11-01)
 
 Manager가 승인된 #196 구현 범위 안에서 결정했으며 정책 전문은 [Issue196 Z0](Issue196.md#z0-확정-결정)를 따른다. 독립 Site ZoneCategory/Admin+Site CRUD/null 미분류, 층 Zone ID·exact Version/SHA/Scene geometry, Site Editor 공동 수정·작성자 또는 Site Admin soft delete, 단일 simple Polygon/Hole·MultiPolygon 거부, 전체 경계 부모 포함 및 명시 수치 오차·형제 겹침 경고, 두 Scene Reset의 Zone 보존+geometry 무효화를 확정했다. 기존 OutlineType/위치 마스터/원본·Current 정책을 바꾸지 않는다.

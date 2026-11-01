@@ -1,3 +1,31 @@
+## PR #200 CI·리뷰 보완 계약 (2026-11-01)
+
+실패 근거는 [Run 41309924909](https://github.com/planner77/layoutManager/actions/runs/41309924909), 정확 HEAD `9f88d8e`다. General Shard 2의 `TC-126-RECOVERY` 원본 완료 GET 2회(기대 1회) 및 `workflow.spec.ts`의 Zone OFF 조회 503 console error가 실패했고 Aggregate도 후속 실패했다. 다른 Job 성공을 이 두 실패의 성공으로 대체하지 않는다. P2 리뷰 `PRRT_kwDOUQjDfc6yanPw`는 Zone GET 실패 후 목록 메뉴·패널까지 비활성화되어 재시도할 수 없는 문제다. 실제 재현·수리·재시험은 TestReport/FailureLedger에 기록한다.
+
+### 최소 수정 설계
+
+- **기능 가용성과 데이터 조회 결과를 분리한다.** 기존 공개 `/api/g7-runtime/status`의 유효한 OFF 응답을 확인하면 Zone 목록/카테고리 API를 호출하지 않는다. OFF는 정상 미지원 상태로 안내하며 서버 503을 고의로 발생시켜 기능을 탐지하지 않는다. 상태 확인은 권한 증거가 아니다. ACTIVE에서는 실제 Zone GET이 Session·Site·Version·Schema를 계속 검증한다. status 실패/불명확/BLOCKED는 OFF 또는 허가로 추정하지 않는다.
+- **조회 가능한 패널은 `list !== null`과 독립이다.** ACTIVE의 일시적 네트워크/5xx 실패는 기존 보호 데이터·선택·폼·geometry projection을 폐기하면서 오류와 `다시 시도`를 표시한다. 이미 열린 패널을 숨기거나 메뉴를 잠가 재시도 경로를 없애지 않는다. 최초 실패에서도 메뉴→패널→재시도가 가능해야 한다. 재시도는 status/Zone read만 수행하고 Viewer reload나 원본 재요청을 요구하지 않는다.
+- 401/403·actor 변경·Version/SHA 변경에서도 보호 데이터·이전 actor의 로컬 폼을 제거한다. 재시도 UI의 존재는 데이터 접근 허가가 아니며, 다시 시도할 때 현재 status와 서버 권한을 새로 확인한다. 이전 request generation/Version/SHA/actor에 속한 지연 응답은 현재 데이터를 복원하지 못한다.
+- ACTIVE에서 승인된 metadata 조회는 계속 renderer·Scene readiness와 독립이다. dxf-viewer fallback에서도 읽기를 유지하며 생성/편집/geometry focus는 기존 capability 제한을 따른다. OFF 회피를 위해 조회를 three-dxf-viewer에만 한정하거나 서버 인가를 완화하지 않는다.
+- **결정적 Source 경합 probe 승인:** 첫 `/content` 응답의 실제 `arrayBuffer()` 완료 후 반환 Promise만 보류한다. network requestfinished=1 및 body-ready를 확인한 뒤 manual renderer escape를 실행하고 보류 Promise를 해제한다. 이는 network 완료와 ViewerSource cache 완료 플래그 사이의 경합을 분리하며 CAD payload·HTTP 결과를 변조하지 않는다. 기존 manual switch의 pending Source dispose가 두 번째 GET을 만드는지 RED로 확인한다. 확인되면 **동일 Version의 renderer-only 전환에서 진행 중 Source Promise를 공유**하고, Version 변경·명시 full reload·source 오류 재시도는 기존 fresh/dispose 정책을 보존하는 최소 수정이 허용된다. 관련 Unit/기존 recovery Browser의 cancel·late callback 회귀를 함께 검증한다.
+- 원본 GET 2회의 원인은 **아직 재현·분석 대상**이다. 정확 기존 recovery 시험을 먼저 실행하고 font hold→manual renderer switch→Source request/body completion/abort→늦은 callback 순서를 확인한다. 원본 캐시 결함으로 단정하지 않는다. 확인된 원인에 필요한 최소 Wrapper/수명주기 수정만 허용하고 외부 라이브러리는 먼저 변경하지 않는다. 기존 **성공한 content GET 정확 1회**, 전체 GET 최대 2회 및 나머지 명시 abort 계약을 유지한다.
+- Panel/status/retry는 `cad-canvas`·ViewerManager·Source·Parse/Worker의 수명이나 기존 Pan/Zoom을 재시작하지 않는다. Source 복구의 불변 계약, G7 Auth/Writer·DB baseline·운영 Volume·원본 bytes/SHA·Current는 변경하지 않는다. 새 운영 활성화나 migration은 범위 밖이다.
+
+### 수리 수용 기준
+
+| AC / TC | 필수 결과 |
+| --- | --- |
+| AC-Z196-R1 / TC-Z196-REPAIR-01 | 실제 OFF Viewer 및 기존 `workflow.spec.ts`: Zone GET/카테고리 GET 0, 불필요한 Zone 503 console error 0, 기존 `expect(errors).toEqual([])` 유지. |
+| AC-Z196-R2 / TC-Z196-REPAIR-02 | ACTIVE 최초 GET 실패 및 기존 목록 갱신 실패를 각각 주입. 보호 데이터/선택/폼/overlay 제거, 패널/메뉴 재시도 접근 가능, 같은 Canvas에서 다음 성공 GET으로 복구. 원본 GET/Parse·Manager 재생성 증가 0. |
+| AC-Z196-R3 / TC-Z196-REPAIR-03 | ACTIVE fallback metadata 조회 유지, 지원하지 않는 edit/focus 차단. 401/403/status BLOCKED/actor 변경·지연 Version 응답에서 정보 복원/권한 우회 0. |
+| AC-Z196-R4 / TC-126-RECOVERY | 기존 held-font manual escape 시험의 성공 content GET 정확 1, 전체 GET≤2, 나머지 모두 abort, late failure 무시·Canvas 1·Blob error0. assertion 완화·console error 필터·임의 sleep/retry 증가로 통과시키지 않는다. |
+| AC-Z196-R5 / TC-Z196-REPAIR-05 | 관련 focused RED→GREEN, Typecheck/Lint/관련 Unit·Browser/Build, 독립 QA 및 Manager 검토. 리뷰 답변/Resolved·Main 충돌 여부·실패 원장을 실제 결과와 함께 기록하고 수정 HEAD PR CI 시작까지만 확인. 새 CI 완료·현장·배포·병합·종료는 미검증 상태 유지. |
+
+본 계약은 수리 구현 GO이며 실제 시험 PASS 선언은 아니다. 기존 Z0 도메인·권한·DB·현장 수용 경계는 유지한다.
+
+---
+
 # Issue #196 — 의미론적 구역: 설계·구현 계약
 
 - 원 요구: [GitHub #196](https://github.com/planner77/layoutManager/issues/196). 기준 Main `2bccf90`, 2026-11-01.

@@ -1,3 +1,27 @@
+## PR #200 / #196 — 실패 Run 41309924909 수리 검증 (2026-11-01)
+
+정확 실패 HEAD `9f88d8e`, General shard2 **66PASS/2FAIL**, 나머지 gate 결과와 원인/RED 근거는 [FailureLedger](FailureLedger.md) 상단을 따른다. 과거 Run의 성공 Job은 수리 HEAD 결과로 승계하지 않는다.
+
+- 실제 역할: **gpt-6-astra Manager** 수리 AC/설계·재작업 및 최종 수용, **gpt-6-sol Developer** Zone read/retry·Renderer 전환·관련 시험, **gpt-6-luna QA** 독립 Browser 검증, **root** CI/review 조사·결정적 Source RED·통합/전체 검사·가이드/원장·게시. Manager의 전체 Unit 성공 조건은 아래 결과로 충족했다.
+- Node22.14.0, Chromium1243/SwiftShader, 임시 SQLite/storage 및 생성 DXF. G7/운영 설정·원본/Current·DB schema·package version 불변, 미릴리스 후보0.56.0 유지. 설계/시험 계약은 Issue196/TestPlan/Architecture/ViewerPanelPolicy 및 과거 #151 원장을 참조했다.
+
+| 실제 실행 | 결과 |
+| --- | --- |
+| 변경 전 기존 CI 두 파일 집중 | **6 PASS/1 FAIL/27.9s**, workflow errors[]에5033건 재현(`/tmp/pr200-repair-red.log`). |
+| 변경 전 새 Source 결정적 경합 | **1 FAIL/2.3s**, 실제 HTTP body 완료 뒤 ArrayBuffer Promise 지연→manual escape에서 completed1 기대/2 관측(`/tmp/pr200-source-red.log`). |
+| 변경 전 P2 retry Browser | **FAIL/13.3s**, 최초 Zone503 후 메뉴 disabled로 retry 불가(`/tmp/pr200-zone-retry-red-results`). |
+| 전체 `npm --prefix src test` | **139 files/915 PASS/309.04s**(`/tmp/pr200-repair-unit.log`). |
+| `npm --prefix src run typecheck`, `lint`, `build` | 각각 **exit0**; Lint0 errors/기존8 warnings. `/tmp/pr200-repair-{typecheck,lint,build}.log`. |
+| General6files, port3541 | **19 PASS/1.5분**(`/tmp/pr200-repair-green.log`). 기존 workflow·모든 #124/#126/#127 회귀, source completed GET 정확1 및 새 실제 경합1.4s, OFF Zone GET0/5030, ACTIVE 최초/갱신503·401·403 이후 데이터 제거/Retry·같은 Canvas/Source 유지·늦은 Version 응답 격리. |
+| signed G7, port3543 | **5 PASS/1.1분**(`/tmp/pr200-repair-g7.log`). first-install2+구역 keyboard/actor폼1+실 Snap/Reset1+semantic1; metadata/reconnect/동일 ID 경계 mapping·원본 SHA/fallback 승인 조회 보존. |
+| 독립 QA, port3542 | **6 PASS**(`/tmp/pr200-repair-qa-report.md`). Source 경합·Zone retry 두 사례·기존 수동 복구·OFF/fallback·runtime OFF. Root의19/5건과 중복을 고유 TC 수로 합산하지 않는다. |
+
+- 제품 수리: 명시적 public status OFF는 Zone GET 생략, ACTIVE는 실제 보호 GET으로 계속 인가. 오류 때 보호 정보는 폐기하면서 retry shell을 유지한다. 같은 Version renderer-only escape는 pending Source를 공유하고 Version/full reload/source-error의 기존 초기화는 유지한다. 기존 콘솔 오류0·성공 download1 기준을 완화/필터링해서 통과시키지 않았다.
+- Git/리뷰: latest main `2bccf90`, behind0/충돌 없음을 재확인하고 현재 P2 review4435768211의 수리 답변·resolve는 원격 코드 반영 후 수행한다. Commit/동일 tree 게시 및 새 CI 시작은 실제 원격 상태를 확인한다.
+- **NOT VERIFIED:** 새 정확 HEAD 원격 PR CI 완료 및 새 Docker/GHCR/운영·현장 수용. 이번 수리는 로컬 필수 gate와 독립 QA를 통과했으며 사용자의 요청대로 CI 재시작 이후 모니터링하지 않는다. PR 병합·이슈 종료·권한/Writer 활성화 없음.
+
+---
+
 ## Issue #196 — 구역 0.56.0 로컬 검증·PR 인계 (2026-11-01)
 
 - 기준 Main `2bccf90`, branch `feat/issue-196-semantic-zones-20261101`; 이 기록을 포함한 commit snapshot. 원래 workspace의 Compose/next-env 변경 2건을 별도 worktree로 보존했다. [Issue196](Issue196.md)의 설계/AC와 Database/ViewerPanelPolicy를 구현에 연결했다.

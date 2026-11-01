@@ -1,3 +1,9 @@
+## PR #200 / #196 — 오류 복구 보완 요구
+
+- OFF에서 불필요한 Zone GET/503 console 오류0, ACTIVE 인가 조회 실패 후 보호 데이터 폐기와 retry 접근 유지, 재시도만으로 Canvas/Manager/Source 재생성0. 동일 Version renderer-only 전환은 완료 source GET 정확1회이며 full reload/Version/error 재시도 격리는 보존한다. 상세 수용 기준은 [Issue196](Issue196.md)/[TestPlan](TestPlan.md), 실제 실패·수리는 FailureLedger/TestReport를 따른다.
+
+---
+
 ## #196 의미론적 공간 구역 (2026-11-01, 구현 계약)
 
 FR-ZONE-01~05 및 AC-ZONE-01~08의 정본은 [Issue196](Issue196.md)다. 층 소속 불변 Zone ID/메타데이터·사용자 지정 계층과 exact Version/SHA/Scene geometry를 분리하며, 독립 Site 카테고리·공동 편집/작성자 또는 Site Admin 삭제·단순 Polygon·명시 재매핑을 제공한다. 위치 5단계/OutlineType/원본 CAD는 독립이다. G7 승인 경계, Reset 보존·무효화, UI/Snap/트리·패널/접근성, 합성 시험과 실제 현장 수용 구분은 상세 계약을 따른다. 설계 기록은 실제 구현/검증 PASS가 아니다.
