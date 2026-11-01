@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Building2, Factory, Layers, Package, Warehouse } from "lucide-react";
 import {
   useCallback,
   useEffect,
@@ -392,7 +393,16 @@ export function MasterManager() {
                 (event.currentTarget.closest('[role="treeitem"]') as HTMLElement | null)?.focus();
               }}
             >
-              <span className="block truncate font-medium" title={label}>{label}</span>
+              <span className="flex min-w-0 items-center gap-2">
+                <span aria-hidden="true" className="shrink-0 text-slate-500">
+                  {entry.type === "business-units" ? <Building2 size={15} />
+                    : entry.type === "products" ? <Package size={15} />
+                      : entry.type === "sites" ? <Factory size={15} />
+                        : entry.type === "buildings" ? <Warehouse size={15} />
+                          : <Layers size={15} />}
+                </span>
+                <span className="block truncate font-medium" title={label}>{label}</span>
+              </span>
             </button>
             {entry.node.isUnclassified && (
               <span className="shrink-0 rounded bg-amber-100 px-1.5 py-0.5 text-[11px] text-amber-900">
