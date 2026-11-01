@@ -1,3 +1,12 @@
+## PR-B #172 — Owner Memo 공동 수정 정책 신규 후보 (2026-11-01)
+
+- 기준 최신 Main `44302a69f0f5be09f3fe4800e09d4e596c4d2e5f`, 독립 브랜치 `feat/issue-172-memo-shared-edit-20261101`, 기존 `0.54.1`과 충돌 방지용 `0.55.0` 후보. `AGENTS.md`와 `out/{Architecture,Decisions,Requirements,TestPlan,TestReport,Operation}.md` 참조. 루트 `DESIGN.md` 404.
+- 과거 작성자-only Server Memo/Anchor/Reset 검사를 Owner 승인에 따라 개정. Server memo:write + Version-Site 인증은 유지하며 Delete만 작성자 또는 Site Admin으로 한정, SOURCE_ONLY EDIT와 ALL DELETE 경계 분리. Client `canDeleteAny`는 힌트일 뿐 인가가 아님. Full transaction CAS/Audit·동시 작업·계정 전환을 회귀 목표로 지정.
+- **아직 검증되지 않은 내용:** 로컬 npm/Typecheck/Lint/Vitest/Playwright/Build/Docker 실행 없음(연결 GitHub source만 이용). 최초 및 최종 PR CI 성공, Review/Conflict 판정, GHCR 이미지·현장 승인 및 Signed G7 활성화는 관측 전 `NOT VERIFIED`. 사후 실제 CI 실패가 발생할 경우 Run/Job, 정확 원인, 수리 SHA 및 새 HEAD 검증을 추가하고 기존 실패 기록을 삭제하지 않는다.
+- 과거 R4/#174, R5/#91 합성 성능·운영 수용 미완 기록은 유지. 기존 운영 DB·Volume·이전 사용자 계정/마이그레이션·사내 CAD 자료를 변경하지 않음. Owner가 확정한 #172 정책만 구현.
+
+---
+
 ## 2026-11-01 #37/#49/#50 통합 보완 — PR CI 요청 전 기준
 
 - 기준 Main c992fe87c68e65b5820203f42ad4cb13b92d1544 및 0.54.0에서 #37, #49, #50의 하위 이슈가 이미 구현/종료되었음을 확인. #63은 선택적 P2 원시 로그 수집으로 범위 제외. 별도 루트 DESIGN.md는 없으며 AGENTS/Architecture/Decisions/Requirements/Logging/TestPlan을 기준으로 한다.
