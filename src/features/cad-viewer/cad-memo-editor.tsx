@@ -3,6 +3,8 @@
 import type { MemoWcsXY } from '@/domain/cad-memo';
 import type {MemoAnchorState} from '@/domain/cad-memo-anchor';
 import type {SessionSnapProjection,SnapKind} from '@/domain/memo-session-snap';
+import type {MemoSnapIntent,MemoMoveBehavior} from '@/domain/memo-snap-intent';
+import {MemoSnapPicker} from './memo-snap-picker';
 
 export type MemoEditorFields = { title: string; content: string; x: string; y: string };
 
@@ -12,6 +14,7 @@ export function CadMemoEditor({
   onDelete, onCancel, persistent, busy,
   anchor, anchorOptions, anchorTarget, onAnchorTargetChange, onAttach, onDetach,
   sessionSnap, pendingSnapKind, onSessionDetach,
+  snapIntent,onSnapChoose,onSnapRefresh,moveBehavior,onMoveBehaviorChange,
 }: {
   fields: MemoEditorFields;
   onFieldsChange: (fields: MemoEditorFields) => void;
@@ -25,6 +28,11 @@ export function CadMemoEditor({
   sessionSnap?:SessionSnapProjection;
   pendingSnapKind?:SnapKind;
   onSessionDetach?:()=>void;
+  snapIntent:MemoSnapIntent|null;
+  onSnapChoose:(key:string|null)=>void;
+  onSnapRefresh:()=>void;
+  moveBehavior:MemoMoveBehavior;
+  onMoveBehaviorChange:(behavior:MemoMoveBehavior)=>void;
   anchorOptions?:readonly {value:string;label:string}[];
   anchorTarget?:string;
   onAnchorTargetChange?:(next:string)=>void;
@@ -80,7 +88,7 @@ export function CadMemoEditor({
           value={fields.y} onChange={event=>onFieldsChange({...fields,y:event.target.value})} />
       </label>
       <div className="flex flex-wrap gap-1.5">
-        {placing && <button type="button" data-testid="cad-memo-coordinate-place"
+        {creating && <button type="button" data-testid="cad-memo-coordinate-place"
           onClick={onConfirmCoordinate} className="rounded bg-slate-700 px-2 py-1.5 text-white">
           좌표로 배치
         </button>}
@@ -102,6 +110,18 @@ export function CadMemoEditor({
           className="rounded border border-slate-500 bg-white px-2 py-1.5">취소/닫기</button>
       </div>
     </div>
+    {selectedId&&!creating&&<label className="mt-2 flex flex-col gap-1 font-medium">위치 이동 시 연결
+      <select aria-label="메모 이동 시 연결" data-testid="cad-memo-move-behavior" value={moveBehavior} disabled={busy}
+        onChange={event=>onMoveBehaviorChange(event.target.value as MemoMoveBehavior)}
+        className="min-h-11 w-full rounded border border-slate-400 bg-white px-2">
+        <option value="KEEP" disabled={sessionSnap?.mode!=='ATTACHED'&&anchor?.mode!=='ATTACHED'}>기존 객체 연결 유지</option>
+        <option value="DETACH">연결 해제 · 입력한 WCS로 이동</option>
+        <option value="SNAP">가까운 객체 스냅 후보 선택</option>
+      </select>
+      <span className="font-normal text-slate-600">연결 유지와 해제는 위치 적용 또는 핀 드래그 완료 시 확정됩니다.</span>
+    </label>}
+    {(creating||moveBehavior==='SNAP')&&<MemoSnapPicker intent={snapIntent} busy={busy}
+      onChoose={onSnapChoose} onRefresh={onSnapRefresh}/>}
     {sessionSnap&&selectedId&&!creating&&<div data-testid="cad-memo-session-snap"
       className="mt-2 flex flex-wrap items-center gap-2 rounded border border-teal-400 bg-white p-2">
       <strong>{sessionSnap.mode==='ATTACHED'?'세션 스냅 연결':'연결 객체 없음 · 마지막 WCS 유지'}</strong>

@@ -13,7 +13,7 @@ type Gesture = {
 
 /**
  * M1 overlay is a sibling, never a child, of the WebGL canvas.
- * Only the pin's 24px hit target accepts pointer events in normal mode;
+ * Only the pin's 44px hit target accepts pointer events in normal mode;
  * labels and leader text pass events through to the Source/Generated canvas.
  * The placement plane is interactive only while the mutually exclusive add
  * tool is active. Camera projection is delegated to the active adapter.
@@ -199,12 +199,12 @@ export function CadMemoOverlay({
           ignoredDragClick.current=null;
           if (!ignore) onSelect(memo.id);
         }}
-        className={'pointer-events-auto absolute flex h-6 w-6 items-center justify-center rounded-full border-2 text-xs font-bold shadow-md ' +
-          (selectedId===memo.id?'border-white bg-teal-700 text-white':'border-white bg-amber-500 text-black')}
+        className="pointer-events-auto absolute flex h-11 w-11 touch-none select-none items-center justify-center rounded-full text-xs font-bold focus-visible:outline-2 focus-visible:outline-teal-600"
         style={{ left:screen.x,top:screen.y,transform:'translate(-50%, -50%)' }}>
-        <span aria-hidden="true">M</span>
+        <span aria-hidden="true" className={'flex h-6 w-6 items-center justify-center rounded-full border-2 border-white shadow-md '+
+          (selectedId===memo.id?'bg-teal-700 text-white':'bg-amber-500 text-black')}>M</span>
         <span aria-hidden="true" className="pointer-events-none absolute z-10 max-h-20 w-max max-w-40 overflow-hidden rounded border border-slate-300 bg-white/95 px-1.5 py-1 text-left text-[11px] font-normal leading-tight text-slate-900 shadow-sm"
-          style={{left:12+memo.labelOffset.x,top:memo.labelOffset.y,whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>
+          style={{left:22+memo.labelOffset.x,top:memo.labelOffset.y,whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>
           <strong className="block font-semibold">{memo.title}</strong>
           {memo.content && <span className="mt-0.5 block max-h-12 overflow-hidden whitespace-pre-wrap font-normal text-slate-700">{memo.content.slice(0,160)}{memo.content.length>160?'…':''}</span>}
         </span>

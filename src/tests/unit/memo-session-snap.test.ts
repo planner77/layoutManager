@@ -4,7 +4,8 @@ import {sceneScope,createSceneRef,importedId} from '../../domain/cad-scene';
 import {SceneWorkDocument} from '../../domain/scene-work';
 import {MemoSession} from '../../domain/cad-memo';
 import type {OutlineResult} from '../../viewers/core/outline-compute';
-import {MemoSessionSnapStore,nearestMemoSnap,type MemoSnapTarget} from '../../domain/memo-session-snap';
+import {MemoSessionSnapStore,nearestMemoSnap,collectMemoSnapCandidates,currentMemoSnapChoice,
+ type MemoSnapTarget} from '../../domain/memo-session-snap';
 import {readFileSync} from 'node:fs';
 
 const scope={versionId:'123e4567-e89b-42d3-a456-426614174000',sourceSha256:'f'.repeat(64)};
@@ -25,6 +26,49 @@ function generated(item:GeneratedEntry):MemoSnapTarget {
     points:[{kind:'VERTEX',world:{x:g.coordinates[0][2][0],y:g.coordinates[0][2][1]}}]};
 }
 describe('#84 M3 session-only object snapping and bounded candidate selection',()=>{
+ it('R4: keeps distinct explicit candidates and rejects stale selected geometry',()=>{
+  const targets:MemoSnapTarget[]=[
+   {ref:{...scope,origin:'RENDER',id:'instance:a'},transform:[1,0,0,1,0,0],visible:true,
+    points:[{kind:'ENDPOINT',world:{x:0,y:0}},{kind:'VERTEX',world:{x:0,y:0}},
+     {kind:'ENDPOINT',world:{x:0,y:0}}]},
+   {ref:{...scope,origin:'RENDER',id:'instance:b'},transform:[1,0,0,1,0,0],visible:true,
+    points:[{kind:'CENTER',world:{x:0,y:0}}]},
+  ];
+  const found=collectMemoSnapCandidates(scope,{x:0,y:0},targets,screen);
+  expect(found.candidates.map(c=>c.kind)).toEqual(['ENDPOINT','VERTEX','CENTER']);
+  expect(found.total).toBe(3);expect(found.scannedPoints).toBe(4);
+  expect(new Set(found.candidates.map(c=>c.key)).size).toBe(3);
+  expect(currentMemoSnapChoice(scope,found.candidates[0],targets)).toBe(true);
+  expect(currentMemoSnapChoice(scope,found.candidates[0],[{...targets[0],visible:false},targets[1]])).toBe(false);
+  expect(currentMemoSnapChoice(scope,found.candidates[0],[{...targets[0],transform:[1,0,0,1,1,0]},targets[1]])).toBe(false);
+  expect(collectMemoSnapCandidates(scope,{x:0,y:0},targets,()=>null).total).toBe(0);
+ });
+ it('R4: bounds candidate storage and scanned points while retaining total in scanned range',()=>{
+  const many:MemoSnapTarget={ref:{...scope,origin:'RENDER',id:'bounded'},
+   transform:[1,0,0,1,0,0],visible:true,
+   points:Array.from({length:20001},(_,i)=>({kind:'VERTEX' as const,world:{x:i/100000,y:0}}))};
+  const found=collectMemoSnapCandidates(scope,{x:0,y:0},[many],screen);
+  expect(found.scannedPoints).toBe(20000);expect(found.total).toBe(20000);
+  expect(found.candidates).toHaveLength(100);expect(found.limited).toBe(true);
+  const exactly={...many,points:many.points.slice(0,20000)};
+  expect(collectMemoSnapCandidates(scope,{x:0,y:0},[exactly],screen).limited).toBe(true);
+ });
+ it('R4: repositions only an existing live binding and preserves it on invalid inverse',()=>{
+  const store=new MemoSessionSnapStore(scope);
+  const target:MemoSnapTarget={ref:{...scope,origin:'GENERATED',id:outlineId},visible:true,
+   transform:[0,1,-1,0,4,5],points:[{kind:'VERTEX',world:{x:4,y:5}}]};
+  store.attach(memoId,nearestMemoSnap(scope,{x:4,y:5},[target],screen)!);
+  expect(store.reposition(memoId,{x:3,y:7},[target])).toMatchObject({mode:'ATTACHED',
+   world:{x:3,y:7},local:{x:2,y:1}});
+  const before=store.get(memoId);
+  expect(()=>store.reposition(memoId,{x:20,y:20},[{...target,transform:[0,0,0,0,0,0]}])).toThrow();
+  expect(store.get(memoId)).toEqual(before);
+  expect(()=>store.reposition(memoId,{x:20,y:20},[])).toThrow();
+  expect(store.get(memoId)).toEqual(before);
+  store.breakOrigin('GENERATED');
+  expect(()=>store.reposition(memoId,{x:20,y:20},[target])).toThrow();
+  expect(store.get(memoId)).toEqual(before);
+ });
  it('selects a visible in-scope WCS vertex within 12 CSS pixels and rejects other scope or hidden',()=>{
   const doc=new GeneratedDocument(scope);
   const item=doc.append({id:outlineId,savedOutlineId:'local-1',createdAt:'2026-10-31T00:00:00Z',result:outline});

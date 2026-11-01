@@ -40,6 +40,9 @@ export async function mutatePersistedMemo(method:'POST'|'PATCH'|'DELETE',version
 /** #84: direct business-anchor route; accepts neither client actor nor arbitrary affine. */
 export async function mutatePersistedMemoAnchor(versionId:string,memoId:string,payload:{
  expectedRevision:number;operation:'attach'|'detach';targetOrigin?:'APP_CREATED'|'DXF_IMPORTED';targetId?:string;
+}|{
+ expectedRevision:number;operation:'reposition';behavior:'KEEP'|'DETACH';expectedSceneRevision:number;
+ anchorWcsXY:import('@/domain/cad-memo').MemoWcsXY;expectedTargetRevision?:number;
 }):Promise<{revision:number;anchor:import('@/domain/cad-memo-anchor').MemoAnchorState}>{
  const headers=await runtimeCadHeaders({'Content-Type':'application/json'});
  const response=await fetch(url(versionId,memoId)+'/anchor',{
