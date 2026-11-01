@@ -1,3 +1,12 @@
+## PR #194 CI 보완 — TC-E2-E2E-001 포커스/단축키 회귀 (2026-11-01)
+
+- 실패 기준: HEAD `e9c20d446a180eb69e31a07d4457134558221490`, Run `41293959571`, Verify `124810809243`, General E2E 147 PASS / 1 FAIL. 이름 input의 Ctrl+Z 관측값이 `pending`으로 남음. 이전 ESLint 실패와 구분한다.
+- AC: 실제 Browser에서 메뉴 닫기→도구 패널→입력 포커스가 확정된 뒤 native Ctrl+Z 이벤트/기본 동작 비차단과 생성 이력 불변을 검증한다. pending·blocked 모두 실패해야 하며 retry/timeout 증가/규칙 완화로 통과시키지 않는다.
+- 재현/검증: 기존 실패 테스트 집중 실행 및 필요 시 동일 포커스 경쟁을 결정적으로 재현. 수정 후 해당 파일·기준정보 트리/Current 회귀, Typecheck/Lint/Unit/Build를 실제 실행하고 독립 QA가 점검한다. 정확 명령/결과는 TestReport·FailureLedger에 기록한다.
+- 후보 버전 0.55.3 유지(기존 PR의 시험 보완). 최종 commit push의 synchronize로 PR CI를 시작하고 완료 모니터링은 생략한다.
+
+---
+
 ## TC-191 — 위치 기준정보 단일 트리/상세 UI 회귀 (2026-11-01)
 
 | ID | 절차 | 기대 |

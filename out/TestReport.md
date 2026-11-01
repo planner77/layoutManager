@@ -1,3 +1,24 @@
+## Issue #191 / PR #194 — Run 41293959571 포커스 경합 재현·시험 보완 (2026-11-01)
+
+- **실패 정본:** HEAD `e9c20d446a180eb69e31a07d4457134558221490`, [Run 41293959571](https://github.com/planner77/layoutManager/actions/runs/41293959571), Verify `124810809243`: TypeScript/Lint/134 files·896 Unit·Integration/OCI/benchmark/Build PASS, General E2E **147 PASS/1 FAIL**. `TC-E2-E2E-001` input Ctrl+Z 관측값 `pending` != `native`. G7/Greenfield/Legacy SKIPPED. Docker `124810809082` PASS는 위 과거 HEAD 한정. 과거 3회 ESLint 실패와 구분한다.
+- **원인/수리:** Viewer 메뉴의 정상 `close()`는 다음 animation frame에 Work trigger로 포커스를 복원한다. 테스트가 이를 기다리지 않고 input을 focus하여 Ctrl+Z 대상이 다시 trigger가 되는 간헐 경합이다. 제품 코드 대신 E2E의 순서를 trigger focus 완료→input focus 확인→실제 키 입력으로 보완. input native assertion을 유지하고 Viewer window capture 핸들러 이후 window bubble에서도 target=input/`defaultPrevented=false`, 생성 Undo 비활성 검증을 추가했다. 재시도/skip/sleep/timeout 증가·CI gate 완화 없음.
+- **실제 역할:** root가 실패 로그·원장·AC·원인/변경 review·정적/전체 Unit·기준정보 회귀·게시를 담당, AGENTS 현행 역할의 `gpt-6-sol` Developer가 재현과 test-only 수리, 완료 보고 검토 뒤 `gpt-6-luna` QA가 독립 검증했다. 별도 Manager 모델을 실행한 것으로 기록하지 않는다. Node **22.14.0**, npm **11.10.0**, 후보 **0.55.3**, Linux, Playwright 고정 배포본 Chromium1243, 격리 임시 SQLite/storage. 기존 main과 로컬 수정 2개는 별도 worktree로 보존했다.
+
+| 실제 실행 | 결과/증거 |
+|---|---|
+| Developer 기존 집중 시험: `CAD_E2E_PORT=3411 npx playwright test tests/e2e/issue52-generated-history.spec.ts --grep TC-E2-E2E-001 --output test-results/issue191-baseline` | **1 PASS/11.7s**. 단독 정상 통과가 간헐 경합 부재를 증명하지 않음 |
+| Developer 임시 결정적 probe: `CAD_E2E_PORT=3412 npx playwright test tests/e2e/issue52-focus-probe.spec.ts --grep TC-E2-E2E-001 --output test-results/issue191-probe` | **1 FAIL/15.7s (의도한 RED)**. 실제 메뉴의 focus rAF callback을 input.focus 뒤에 실행. held count>0 및 activeElement=Work trigger 확인 뒤 기존 assertion과 동일하게 `pending` 실패. probe 소스 제거, trace/context는 Git 제외 결과에만 보관 |
+| Developer 수정 후 해당 파일, port3411/output `test-results/issue191-fixed` | **2 PASS/12.3s**, typecheck/대상 파일 ESLint/diff-check exit0 |
+| Root `npm test` | **exit0 / 134 files·896 tests PASS / 281.99s**, `/tmp/issue191-unit.log`. Digest pin 거부 문구는 예상 negative case이며 실패 아님 |
+| Root `npm run db:generate`, `npm run typecheck`, `npm run lint`, `npm run build` | 각각 **exit0**; Lint **0 errors/기존 9 warnings**. 로그 `/tmp/issue191-{generate,typecheck,lint,build}.log` |
+| Root `CAD_E2E_PORT=3413 PLAYWRIGHT_CHROMIUM_EXECUTABLE=/home/planner/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome npx playwright test tests/e2e/master.spec.ts tests/e2e/current-only-list.spec.ts --output=/tmp/issue191-master-results` | **6 PASS/28.8s**, `/tmp/issue191-master.log` |
+| 독립 QA: 같은 Chromium/port3414, `npx playwright test tests/e2e/issue52-generated-history.spec.ts --output=/tmp/issue191-qa-results` | **2 PASS/12.7s**, `/tmp/issue191-qa.log`, `/tmp/issue191-qa-report.md`. 실제 Viewer capture 이후 native 이벤트 관측·assertion 비약화·probe/debug 제거 및 diff-check 확인 |
+
+- Root 전체 Unit 결과까지 확인해 로컬 필수 gate를 완료했다. 제품 소스/Schema/API/권한/Version/Current/원본은 변경하지 않았다. test-only 수정이므로 로컬 Docker 및 General 전체148/G7/Greenfield/Legacy/현장 실도면은 재실행하지 않고 새 PR CI에 맡긴다. 이전 HEAD Docker PASS를 새 HEAD 검증으로 사용하지 않는다.
+- **판정/인계:** root는 위 결정적 RED·수정 후 GREEN·독립 QA 근거로 CI 시험 보완을 수용한다. 로컬 git push dry-run 인증은 거부되어 연결된 GitHub 도구로 동일 지정 저장소의 PR branch에 단일 fast-forward 게시한다. 최종 수리/원장 commit의 synchronize로 PR CI 시작 요청, 새 CI 완료/성공은 **NOT VERIFIED**(Owner 요청으로 모니터링 생략). 운영/GHCR/병합/Issue 종료는 시행하지 않는다. 후보 **0.55.3 유지**.
+
+---
+
 ## Issue #191 / PR #194 — Run 41292700455 재실패와 Effect/GET 분리 (2026-11-01)
 
 - 이전 HEAD `693af939d762f4d54f2f0af758aa6fd26972ff22`의 [PR CI Run 41292700455](https://github.com/planner77/layoutManager/actions/runs/41292700455) completed/failure: Verify 124807072543 ESLint 1 error(`master-manager.tsx:168:10`, react-hooks/set-state-in-effect), 9 warnings. TypeScript/Prisma/npm ci PASS, Unit·Build·Playwright SKIPPED. Docker 124807072396 PASS(해당 이전 HEAD에 한정).

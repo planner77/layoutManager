@@ -1,3 +1,10 @@
+## 2026-11-01 — PR #194 CI 시험 보완 (0.55.3 후보 유지)
+
+- `TC-E2-E2E-001`이 메뉴 종료의 지연 포커스 복원과 경합해 Ctrl+Z를 input으로 보내지 못한 시험 순서를 보완한다. trigger 복원→input 포커스 확정 후 native 이벤트·전역 기본동작 비차단·Undo 불변을 검사한다.
+- 실패 Run `41293959571`과 실제 재현/로컬 검증·새 CI 경계를 [FailureLedger](FailureLedger.md)/[TestReport](TestReport.md)에 누적한다. 제품 코드·Schema·API·배포 변경 없음.
+
+---
+
 ## 2026-11-01 — #191 위치 기준정보 트리/상세 편집 (PR CI 후보)
 
 - /masters 5열 카드 CRUD→반응형 계층 트리+선택 상세, 검색/비활성 필터/키보드/명시적 저장·확인·이력 링크.

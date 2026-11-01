@@ -54,19 +54,32 @@ test('TC-E2-E2E-001: history buttons and editable text keep native Ctrl+Z, reloa
   await expect(page.getByTestId('generated-undo')).toBeDisabled();
   await expect(page.getByTestId('outline-tree-item')).toHaveCount(1);
   await clickViewerTestCommand(page, 'viewer-menu-outline-tool');
+  // Closing a menu returns focus to its trigger on the next animation frame.
+  await expect(page.locator('[data-viewer-group="work"]')).toBeFocused();
   const input=page.getByTestId('outline-instance-name');
   await input.focus();
+  await expect(input).toBeFocused();
   await page.evaluate(()=>{
     const input=document.querySelector<HTMLInputElement>('[data-testid="outline-instance-name"]');
     if(!input)return;
     input.setAttribute('data-input-keydown','pending');
+    input.setAttribute('data-window-keydown','pending');
     input.addEventListener('keydown',event=>{
       if(event.key.toLowerCase()==='z'&&event.ctrlKey)
         input.setAttribute('data-input-keydown',event.defaultPrevented?'blocked':'native');
     });
+    const observeWindowKeydown=(event:KeyboardEvent)=>{
+      if(event.key.toLowerCase()==='z'&&event.ctrlKey){
+        input.setAttribute('data-window-keydown',event.target===input&&!event.defaultPrevented?'native':'blocked');
+        window.removeEventListener('keydown',observeWindowKeydown);
+      }
+    };
+    window.addEventListener('keydown',observeWindowKeydown);
   });
   await page.keyboard.press('Control+z');
   await expect(input).toHaveAttribute('data-input-keydown','native');
+  await expect(input).toHaveAttribute('data-window-keydown','native');
+  await expect(page.getByTestId('generated-undo')).toBeDisabled();
   await clickViewerTestCommand(page, 'viewer-menu-outline-tool');
   page.once('dialog', async dialog => { expect(dialog.message()).toContain('임시 외곽선'); await dialog.accept(); });
   await clickViewerCommand(page, 'drawing', '다시 불러오기');
