@@ -44,7 +44,7 @@ export async function repositionMemoAnchor(db:Database,versionId:string,memoId:s
   const allowed=await requireG7CadPermission(tx,proof,'memo:write',{kind:'version',versionId});
   const memo=await tx.cadMemo.findFirst({where:{id:memoId,versionId,deletedAt:null}});
   if(!memo)fail('MEMO_ANCHOR_NOT_FOUND',404);
-  if(memo.createdById!==allowed.actorId)fail('MEMO_ANCHOR_OWNER_REQUIRED',403);
+  // #172: server-validated memo:write and Version/Site scope authorize shared edits.
   if(memo.revision!==expected)fail('MEMO_ANCHOR_REVISION_CONFLICT');
   const version=await tx.cadFileVersion.findUnique({where:{id:versionId},
    select:{sha256:true,fileFormat:true}});
@@ -92,7 +92,7 @@ export async function repositionMemoAnchor(db:Database,versionId:string,memoId:s
 }
 async function audited(tx:Tx,proof:G7CadWrite,actorId:string,siteId:string,versionId:string,
  memoId:string,before:number,after:number){
- // An outline move can change only a derived anchor. Cross-editor text edits remain blocked.
+ // #172: audit every authorized cross-editor Anchor edit and retain original creator.
  const allowed=await requireG7CadPermission(tx,proof,'memo:write',{kind:'version',versionId});
  if(allowed.actorId!==actorId||allowed.siteId!==siteId)fail('MEMO_ANCHOR_ACCESS_DENIED',403);
  await tx.cadBusinessAudit.create({data:{id:randomUUID(),actorUserId:actorId,siteId,versionId,
@@ -114,7 +114,7 @@ export async function mutateMemoAnchor(db:Database,versionId:string,memoId:strin
   const allowed=await requireG7CadPermission(tx,proof,'memo:write',{kind:'version',versionId});
   const memo=await tx.cadMemo.findFirst({where:{id:memoId,versionId,deletedAt:null}});
   if(!memo)fail('MEMO_ANCHOR_NOT_FOUND',404);
-  if(memo.createdById!==allowed.actorId)fail('MEMO_ANCHOR_OWNER_REQUIRED',403);
+  // #172: server-validated memo:write and Version/Site scope authorize shared edits.
   if(memo.revision!==expected)fail('MEMO_ANCHOR_REVISION_CONFLICT',409);
   const now=new Date().toISOString();
   if(b.operation==='attach'){
