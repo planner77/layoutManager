@@ -1,3 +1,19 @@
+## Issue #191 — 위치 기준정보 트리 UX 요구사항 (2026-11-01)
+
+| ID | 요구사항 | 수용 기준 |
+|---|---|---|
+| FR-191-01 | 5단계 기준정보 단일 트리 탐색·전체 경로·SITE/LEGAL_ENTITY·미분류 표시 | AC-01; TC-191-UNIT-01/E2E-01 |
+| FR-191-02 | 루트/직계 자식 추가, 선택 상세 편집, 명시적 저장·취소/삭제 확인, 성공 후 선택·확장 보존 | AC-02; TC-191-E2E-01 |
+| FR-191-03 | ID/부모/미분류 불변, 활성 조상·중복·FK 이력 삭제/권한 차단 | AC-03/07; TC-191-INTEGRATION-01, 기존 G7 |
+| FR-191-04 | 전체 이름 검색+조상, 비활성 API 필터, 검색/빈 상태 구분 | AC-04; TC-191-UNIT-02/E2E-03 |
+| FR-191-05 | Current 미지정/이전 버전 포함 층별 버전 이력 링크 유지 | AC-05; TC-191-E2E-01, 기존 TC-MASTER-003/005 |
+| FR-191-06 | ARIA 트리/로빙 Tab/Arrow·Enter·Space, 좁은 화면 1열 | AC-06; TC-191-E2E-01 |
+| FR-191-07 | 기존 서버 Runtime Session/Site Grant/CSRF/Audit 유지, 테스트·문서 변경 | AC-07/08; 기존 Signed/Greenfield CI |
+
+[설계 및 검증 정본](Issue191.md). 기존 FR-MASTER 및 도면 등록·Current·재분류 계약의 의미를 변경하지 않는다. 실제 CI PASS 여부는 별도 TestReport.
+
+---
+
 ## FR-EPIC-81-160 — Memo/Scene 교차 식별자·CAS 보존 (2026-11-01)
 
 - **FR-EPIC-81-160-01:** 동일 Version/SHA 내 동일 Origin/ID가 중복되면 Snap 후보/기존 선택/재배치에서 배제한다. 기존 Memo 마지막 WCS 불변, BROKEN 표시, 제3 ID 자동 재바인딩 금지. 정상 후보와 FREE WCS 메모 배치는 허용한다.
