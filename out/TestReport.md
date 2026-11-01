@@ -1,3 +1,13 @@
+## Issue #191 / PR #194 — Run 41292700455 재실패와 Effect/GET 분리 (2026-11-01)
+
+- 이전 HEAD `693af939d762f4d54f2f0af758aa6fd26972ff22`의 [PR CI Run 41292700455](https://github.com/planner77/layoutManager/actions/runs/41292700455) completed/failure: Verify 124807072543 ESLint 1 error(`master-manager.tsx:168:10`, react-hooks/set-state-in-effect), 9 warnings. TypeScript/Prisma/npm ci PASS, Unit·Build·Playwright SKIPPED. Docker 124807072396 PASS(해당 이전 HEAD에 한정).
+- 원인: Effect가 `void refresh()`를 호출하고 refresh 내부에 `setState`를 포함해, 최초 `setLoading(true)`를 제거해도 React Hooks lint가 Effect의 간접 상태 변경 가능성을 검출했다.
+- 보완 [5e4b431c](https://github.com/planner77/layoutManager/commit/5e4b431c1c337336a376ed56d10f7c66fb532e65): 초기/필터 GET은 Effect가 `fetchMasterNodes` Promise에 `.then/.catch/.finally`를 등록하고 비동기 완료 시 상태 처리. 사용자 작업은 `refresh`로 요청하되 공통 `applyLoadedTree/applyLoadError`를 재사용. 조상 확장·선택·세대 번호 충돌 제거·오류 UX 유지. ESLint 우회·API/Prisma/권한/Current 변경 없음.
+- 현 HEAD는 아직 로컬 Typecheck/Lint/Unit/E2E/Docker **NOT RUN**, 신규 PR CI **NOT VERIFIED**. 완료 결과는 사용자 지시에 따라 모니터링하지 않음. 원장 [FailureLedger](FailureLedger.md)에서 실패 Run/Job/수리 SHA 추적.
+- 현장·운영 Auth/Writer, DB/Volume, GHCR, PR 병합, Issue 종료는 별도 단계.
+
+---
+
 ## Issue #191 / PR #194 — 2차 CI React Hook 간접 상태 변경 수리 (2026-11-01)
 
 - **실제 실패**: [PR CI Run 41291679198](https://github.com/planner77/layoutManager/actions/runs/41291679198), 원본 HEAD `5fac25bda03a9f5b44dd2455d17491f8f71aa7c3`, completed/failure. Verify Job `124804106503`: npm ci/Prisma 생성/TypeScript SUCCESS, ESLint **FAIL (1 error, 9 warnings)**. 실패 위치 `src/features/master/master-manager.tsx:167`, `react-hooks/set-state-in-effect`, Effect의 `void refresh()` 호출 경로에서 비동기 함수의 첫 번째 `setLoading(true)`를 동기적으로 실행함. Unit·Integration/Build/General·G7·Greenfield·Legacy E2E **SKIPPED**. Docker Job `124804106759` SUCCESS는 해당 과거 HEAD에서만 유효.
