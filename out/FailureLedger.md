@@ -1,3 +1,14 @@
+## PR #192 — 최종 PR CI 성공·리뷰/충돌·Owner Managed 병합 및 Main CI 시작 (2026-11-01 KST)
+
+- **CI 정본:** 최종 HEAD `3da74d76134e69924018e519ff4ce458e96c7487`, [PR CI Run 41281582636](https://github.com/planner77/layoutManager/actions/runs/41281582636) `completed/success`. Verify Job `124774528508` `completed/success`(Typecheck·ESLint·Unit/Integration·Build·E2E 등 CI gate), Docker Job `124774528276` `completed/success`(Docker image/runtime smoke). 초기 HEAD `1ecd7e9a38ed1c88217ec1dd5ab462a9ebc5d042` [Run 41281326806](https://github.com/planner77/layoutManager/actions/runs/41281326806)은 정확 HEAD가 달라 최종 PASS 증거로 사용하지 않는다.
+- **실패·원인:** 이번 PR에 확인된 실패 Run은 없음(시작 Run의 결과 추정 금지). 최초 코드 위험은 (1) Memo Session Snap 후보·reconcile의 중복 Origin/ID 임의 선택, (2) Scene Reset DB observed Snapshot 중복 ID의 동치 오판, (3) Viewer KEEP pre-write에서 첫 ID를 임의 찾는 경로. 각각 중복 fail-closed/마지막 WCS BROKEN 보존, observed 유일성, `uniqueMemoSnapTarget` 사전·사후 공통 가드 및 합성 Unit 보완. 오래된 Ledger 실패·수리 기록 전체 아래 보존.
+- **병합 Gate:** 제출 Review 0/inline Review Thread 0/미해결 0 (Owner Managed, 독립 승인 아님). GitHub PR `mergeable=true/clean`; Main `ahead 2/behind 0`, 충돌 0. `v0.55.2` tag 미존재 확인. 정확한 PR 제목 `#81 | Memo–Scene ID ambiguity and reset snapshot integrity (#160)`으로 Squash Merge **성공**, Main `b3fcf3eda19177f52e00c0191d5ffb9f333bb0e8`; [PR #192](https://github.com/planner77/layoutManager/pull/192).
+- **Main CI/GHCR:** 런타임 변경 Main push [Run 41283558627](https://github.com/planner77/layoutManager/actions/runs/41283558627) `queued` 시작 확인. `docker-publish.yml` release-scope는 소스 파일 변경을 GHCR App `ghcr.io/planner77/layoutmanager:0.55.2` 및 Migrator `:0.55.2-migrate` **빌드/태그 게시 후보**로 처리한다. 실제 Run 완료, release-scope 판정, 양쪽 OCI digest 및 태그 게시 **NOT VERIFIED**(사용자 지시로 CI 모니터링 생략); GHCR 게시 완료 주장 금지. 기존 0.55.1/tag/이미지 강제 이동 없음. 이 사후 docs-only Main 기록은 재게시 대상 아님.
+- **이슈/잔여 Gate:** Owner 코드·합성 범위로 #81 및 #160 `closed/completed`. 실제 #160 S7 및 #81 현장 Memo/Scene 교차 통합 검증은 [#193](https://github.com/planner77/layoutManager/issues/193) `OPEN/BLOCKED` 신규 이관, 기존 [#96](https://github.com/planner77/layoutManager/issues/96)/[#113](https://github.com/planner77/layoutManager/issues/113)/[#190](https://github.com/planner77/layoutManager/issues/190) OPEN. 실 DXF 3종·GPU/2PC·Owner SLA/원자 Reset/Backup·Restore/운영 Auth·Writer GO 미수행; 합성 CI를 현장 PASS로 전용 금지.
+- **출처:** AGENTS.md, out/Epics81-160.md, Architecture/Decisions/Requirements/TestPlan/TestReport/Operation, PR/CI 및 GitHub issue 상태. Root DESIGN.md 없음. 이 기록은 원장 이전 항목을 삭제/덮어쓰지 않는 후속 문서-only Main 변경.
+
+---
+
 ## PR #192 보완 — Viewer KEEP의 서버 저장 전 중복 ID 검사 (2026-11-01 KST)
 
 - PR 최초 HEAD `1ecd7e9a38ed1c88217ec1dd5ab462a9ebc5d042`에서 `pull_request.opened` [PR CI Run 41281326806](https://github.com/planner77/layoutManager/actions/runs/41281326806) 시작 관측(`in_progress`, 완료 미확인). 해당 결과를 새 HEAD의 성공 증거로 재사용하지 않는다.

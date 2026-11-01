@@ -1,3 +1,11 @@
+## 0.55.2 PR #192 — 병합·게시/현장 경계 (2026-11-01)
+
+- 정확 HEAD [PR CI 41281582636](https://github.com/planner77/layoutManager/actions/runs/41281582636) Verify/Docker 성공 후 Main Squash `b3fcf3eda19177f52e00c0191d5ffb9f333bb0e8`. [Main CI 41283558627](https://github.com/planner77/layoutManager/actions/runs/41283558627) 시작 확인했으며 GHCR 0.55.2 App·0.55.2-migrate 쌍의 완료/digest **NOT VERIFIED**. 최초 태그 존재·충돌 검증 외 재태그/수동 게시 없음.
+- #81/#160 `closed/completed`는 코드·합성 CI 수용이며, #193 S7 통합 현장 및 #96/#113/#190 업무/보안/성능 수용을 통과한 것이 아니다. 현장에 승인 없이 Compose 재시작/기존 데이터 마이그레이션/Writer·Auth 활성화 금지. 최초 설치는 빈 Greenfield + DXF 수동 재등록 정책 유지. 민감 DXF 원본·SHA·로그/실 자료는 GitHub 반출 금지.
+- 이 문서-only 원장 기록은 런타임 코드나 이전 OCI pair를 수정하지 않는다; `docker-publish.yml` release-scope docs-only skip 조건을 유지한다.
+
+---
+
 ## Epic #81/#160 — 중복 Scene Target 및 Reset 불일치 대응 (2026-11-01)
 
 - Viewer Memo 스냅 대상 Origin/ID 중복 시 임의 Target을 강제로 선택하지 않는다. 마지막 WCS/BROKEN 표시를 유지하며, 재조회/유일 ID 확인 후 사용자가 명시 재시도한다. FREE WCS 배치는 유지하고 관계를 무단 서버 저장하지 않는다.

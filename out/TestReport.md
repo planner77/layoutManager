@@ -1,3 +1,11 @@
+## PR #192 — #81/#160 교차 보완 Owner Managed 코드 수용 (2026-11-01)
+
+- **코드/합성 CI PASS:** HEAD `3da74d76134e69924018e519ff4ce458e96c7487` / [PR CI Run 41281582636](https://github.com/planner77/layoutManager/actions/runs/41281582636) Verify `124774528508`, Docker `124774528276` 각각 `completed/success`. 기존 TC-EPIC-81-160-01/02 중복 Scene Target/KEEP 이동·Reset Snapshot 회귀가 전체 자동 CI gate에 포함되어 성공했다. 로컬 npm/현장 실행 없음.
+- **Main/GHCR:** PR #192 Squash Main [`b3fcf3ed`](https://github.com/planner77/layoutManager/commit/b3fcf3eda19177f52e00c0191d5ffb9f333bb0e8) 성공, [Main CI Run 41283558627](https://github.com/planner77/layoutManager/actions/runs/41283558627) `queued` 시작; 0.55.2 App/Migrator release 완료/digest **NOT VERIFIED**.
+- **차단/미수용:** #81/#160은 코드 범위 Owner Managed `closed/completed`; #193 통합 현장·#96 Auth/2PC·#113 실 DXF/GPU·#190 Memo/Heap **OPEN/BLOCKED**, 실제 2PC·SLA/복구/Owner 서명 전 실증 PASS 금지. 본 기록은 docs-only 추적이며 릴리스 이미지 SHA를 변경하지 않는다.
+
+---
+
 ## PR #192 보완 — KEEP pre-write gate 수용 범위 (2026-11-01)
 
 - `uniqueMemoSnapTarget` 서버 이동 전·후 사용과 중복 대상/타 Scope 단위 테스트 **작성**. 첫 PR CI Run 41281326806은 초기 HEAD에서 시작되었으나 추가 커밋과 다른 버전이다. 새 HEAD의 PR CI 완료/성공과 로컬 Typecheck/Vitest/E2E는 **NOT VERIFIED/NOT RUN**.

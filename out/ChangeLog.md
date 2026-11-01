@@ -1,3 +1,10 @@
+## 0.55.2 — #81/#160 Owner Managed 코드 병합·릴리스 기동 (2026-11-01)
+
+- PR #192 HEAD `3da74d76134e69924018e519ff4ce458e96c7487`, [PR CI 41281582636](https://github.com/planner77/layoutManager/actions/runs/41281582636) Verify/Docker 둘 다 SUCCESS, [Squash Main `b3fcf3eda19177f52e00c0191d5ffb9f333bb0e8`](https://github.com/planner77/layoutManager/commit/b3fcf3eda19177f52e00c0191d5ffb9f333bb0e8) 성공.
+- [Main CI 41283558627](https://github.com/planner77/layoutManager/actions/runs/41283558627) 시작 확인, App 0.55.2/Migrator 0.55.2-migrate GHCR 실제 게시/OCI digest 결과 NOT VERIFIED. Epic #81/#160 코드 범위 closed/completed; S7 필드 #193 OPEN 및 #96/#113/#190 기존 미수용 유지. 사후 문서 업데이트는 GHCR 재게시 대상 아님.
+
+---
+
 ## 0.55.2 후보 — Epic #81/#160 교차 무결성 (2026-11-01)
 
 - 동일 Origin+Scene ID가 중복되면 Memo Session Snap 선택·이동·projection을 차단, 연결 메모 마지막 WCS 유지. S6 reset DB 조회 행의 ID 유일성 강화.

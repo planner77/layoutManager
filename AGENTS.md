@@ -1,3 +1,12 @@
+## PR #192 — #81/#160 Owner Managed 병합 및 CI/GHCR 핸드오프 (2026-11-01, 0.55.2)
+
+- 최종 PR HEAD `3da74d76134e69924018e519ff4ce458e96c7487`, [PR CI Run 41281582636](https://github.com/planner77/layoutManager/actions/runs/41281582636) **completed/success**; Verify Job `124774528508`·Docker Job `124774528276` 모두 SUCCESS. 미해결 inline review threads 0, 제출 review 0(Owner Managed), Main behind 0, mergeable clean.
+- [PR #192](https://github.com/planner77/layoutManager/pull/192) 정확 제목 Squash Main [`b3fcf3eda19177f52e00c0191d5ffb9f333bb0e8`](https://github.com/planner77/layoutManager/commit/b3fcf3eda19177f52e00c0191d5ffb9f333bb0e8) 병합. [Main CI Run 41283558627](https://github.com/planner77/layoutManager/actions/runs/41283558627) `push/queued` 시작 확인. 0.55.2 App+Migrator GHCR release path 대상이나 **완료·OCI digest NOT VERIFIED**(모니터링 생략).
+- Owner 지시로 Epic [#81](https://github.com/planner77/layoutManager/issues/81)/[#160](https://github.com/planner77/layoutManager/issues/160) **코드·합성 CI 범위 closed/completed**; 미수용 S7 현장/통합은 [#193](https://github.com/planner77/layoutManager/issues/193) **OPEN/BLOCKED**로 이관, #96/#113/#190도 OPEN. S8 DRM 조건부. Root DESIGN.md 부재로 Architecture/Decisions 사용. 운영 DB/Volume/Auth/Writer/CAD 반출 없음.
+- 이번 후속 문서 수정은 docs-only Main 기록이며, 앞선 0.55.2 런타임 Squash 커밋과 혼동하거나 새 GHCR 게시를 요청하지 않는다. 실제 릴리스 완성으로 표기 금지.
+
+---
+
 ## PR #192 추가 경계 — KEEP 이동의 영속 PATCH 이전 고유 대상 확인 (2026-11-01)
 
 - Viewer `applyMemoMove`의 연결 유지(KEEP)는 `uniqueMemoSnapTarget`로 동일 Scope/Origin+ID의 유일 Target을 확인한 뒤에만 서버 WCS PATCH. PATCH 후 확인에도 같은 검사를 적용해 대상 변경 시 세션 연결만 해제한다. 신규 Unit TC-EPIC-81-160-01 확장. [상세](out/Epics81-160.md).
