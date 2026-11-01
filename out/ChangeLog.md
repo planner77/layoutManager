@@ -1,3 +1,11 @@
+## 2026-11-01 — #191 위치 기준정보 트리/상세 편집 (PR CI 후보)
+
+- /masters 5열 카드 CRUD→반응형 계층 트리+선택 상세, 검색/비활성 필터/키보드/명시적 저장·확인·이력 링크.
+- MasterRepository 신규 자식 생성 시 비활성 조상 검증 강화. API payload/DB schema/Version/Current/원본/Auth/Audit 미변경. Unit/Integration/Browser 테스트 갱신.
+- 신규 검증 및 원격 PR CI 결과 NOT VERIFIED; GHCR 게시/병합·배포 아님. [설계/수용](Issue191.md).
+
+---
+
 ## 0.55.2 — #81/#160 Owner Managed 코드 병합·릴리스 기동 (2026-11-01)
 
 - PR #192 HEAD `3da74d76134e69924018e519ff4ce458e96c7487`, [PR CI 41281582636](https://github.com/planner77/layoutManager/actions/runs/41281582636) Verify/Docker 둘 다 SUCCESS, [Squash Main `b3fcf3eda19177f52e00c0191d5ffb9f333bb0e8`](https://github.com/planner77/layoutManager/commit/b3fcf3eda19177f52e00c0191d5ffb9f333bb0e8) 성공.
