@@ -1,9 +1,124 @@
+## PR #185 / Issue #91 R5b — Main 정렬·리뷰/충돌 검증 및 새 PR CI 요청 (2026-11-01 KST)
+
+- 대상 [PR #185](https://github.com/planner77/layoutManager/pull/185)는 #91 보이는 Memo GLB/glTF R5b의 **Draft / 스택형 PR**이며 기반은 여전히 미병합 [PR #184](https://github.com/planner77/layoutManager/pull/184)의 `feat/issue-91-exchange-export-20261101` (`9accf8ba3e21f2d51dc7694e768f19c75fffb5d5`)이다. 해당 선행 PR/기반 브랜치 자체는 수정·병합하지 않았다. Issue #91은 OPEN이다.
+- 정렬 전 R5b HEAD `777941fdb4e8831c55d303d428ba2dca11fa2efc`, 최신 Main `a0f232bc70d8ee113daafbd831892d27b0ed0070`, 공통 조상 `9016feba2a11c9b7bd8552a6ca2c3bee28e4a001`. Main 대비 ahead 9 / behind 4. Git Tree 전체 blob 비교에서 Main에만 존재하는 파일은 0개, 공통 경로 중 blob 상이 17개다. 그 중 R5a/R5b의 신규 코어/수정/테스트·버전(0.54.0) 및 상단 설계·시험 문서는 의도한 확장으로 유지한다. Main의 `out/FailureLedger.md`에만 남았던 #181/#182/#183 정렬·검증 **3개 원장 섹션**을 원문 그대로 복원하고 R5b의 기존 실패 및 성공 이력을 삭제하지 않는다. 소스/설계 충돌은 추가 덮어쓰기 없이 검토했으며 코드 동작을 변경하지 않는다.
+- `AGENTS.md` R5b, 루트 부재 `DESIGN.md` 대신 `out/Architecture.md`, `out/Decisions.md`, `out/Requirements.md`, `out/TestPlan.md`, `out/TestReport.md`, `out/Operation.md`, PR #184/#185 및 #91을 참조했다. Review threads 0 / reviews 0 / 코멘트 0으로 답변하거나 Resolve할 스레드가 없었다. PR 제목은 CI issue-ref 규칙에 맞게 `#91 | Export readable Memo annotations in GLB/glTF (0.54.0)`으로 정정했다.
+- 정렬 이전 정확 HEAD `777941fdb4e8831c55d303d428ba2dca11fa2efc`의 [PR CI 41244183609](https://github.com/planner77/layoutManager/actions/runs/41244183609)는 `completed/success`였지만 **새 병합 HEAD에는 승계하지 않는다**. 이번 정렬은 기존 PR HEAD와 현재 Main을 두 부모로 하는 1회 merge commit/tree update이며 브랜치 ref 갱신의 `pull_request.synchronize`로 새 PR CI를 요청한다. 새 CI Run/성공·GHCR 게시/현장/성능 수용은 아직 **NOT VERIFIED**이고 사용자 지시대로 CI 결과를 모니터링하지 않는다. PR 병합, GHCR, 태그, Issue 종료, 운영 DB/볼륨/Auth/Writer 변경은 하지 않는다.
+
 ## PR #183 / #174 — Main 정렬·리뷰·충돌 검증 및 PR CI 재기동 (2026-11-01 KST)
 
 - 대상 [PR #183](https://github.com/planner77/layoutManager/pull/183), Draft / [Issue #174](https://github.com/planner77/layoutManager/issues/174) OPEN. 정렬 전 PR HEAD `458d3da6257b0d9a9cbabdd2f60a74d44860fef4`, Main `5515ca195734731bf34bc05ba9b125f6a6c3f2b1`, 공통 조상 `9016feba2a11c9b7bd8552a6ca2c3bee28e4a001`; 비교 ahead 7 / behind 3. 기존 [PR CI 41233433577](https://github.com/planner77/layoutManager/actions/runs/41233433577)의 Verify/Docker SUCCESS는 이전 HEAD의 증거이며 새로운 정렬 HEAD 성공을 보증하지 않는다.
 - `AGENTS.md`, `out/Architecture.md` R4, `out/Decisions.md`, `out/Requirements.md`, `out/TestPlan.md` TC-R4, `out/TestReport.md`, `out/Issues84-167.md`, #174를 확인했다. 루트 `DESIGN.md`는 존재하지 않아 Architecture/Decisions를 기준으로 했다. Actor/Version/Scene/Target 검증·작성자-only/CAS/Audit·서버 trusted inverse 및 세션 임시 연결 비영속 계약을 보존한다. 10k LINE/100pin rAF p95 216.6ms와 2차 dispose heap 증가16,804,276bytes의 원인 미해결, 실 CAD/GPU/2PC 현장 수용은 #174 OPEN에 유지한다.
 - PR #183 직전 부모 `f179d59604e552bfd42389420be4851e5a5d0f2e`와 Main의 Git Tree 전체 blob 비교에서 코드·설정 차이는 없고 `out/FailureLedger.md` 한 파일만 달랐다. Main의 #181/#182 정렬 기록 총15줄(두 삽입 블록)과 PR #183의 R4 기록을 삭제·중복 없이 결합한다. 다른 source/blob을 변경하지 않은 merge commit의 부모를 기존 PR HEAD와 현 Main HEAD로 설정한다. 검토 시점 미해결 리뷰 스레드0, 리뷰 제출0, source 충돌0. PR 제목은 CI issue-ref 정책에 따라 `#174 | ...`로 정리했다.
 - PR branch 업데이트는 `pull_request.synchronize`로 새로운 HEAD의 PR CI를 요청한다. 본 문서 작성 시점의 새 Run ID, 종료/성공은 미확인이며 모니터링하지 않는다. 병합, GHCR 게시, Issue 종료, 운영 DB/볼륨 변경·배포·현장 승인 조치는 수행하지 않는다.
+
+## PR #182 / #71·#73 — Main 정렬·리뷰·충돌 확인 및 PR CI 시작 요청 (2026-11-01 KST)
+
+- 대상 [PR #182](https://github.com/planner77/layoutManager/pull/182) Draft, 기존 HEAD `f179d59604e552bfd42389420be4851e5a5d0f2e`, Main `927938da941e6bbc5fd1f89b8a8c18fe7e6dd6ed`; 공통 조상 `9016feba2a11c9b7bd8552a6ca2c3bee28e4a001`. 정렬 전 GitHub 비교는 ahead 6 / behind 2, PR review threads 0 / submitted reviews 0. 이미 검증한 최초 HEAD의 [PR CI 41228523828](https://github.com/planner77/layoutManager/actions/runs/41228523828) Verify/Docker SUCCESS는 새로운 정렬 HEAD의 성공으로 승계하지 않는다.
+- `AGENTS.md`, `out/Architecture.md`, `out/Database.md`, `out/Decisions.md`, `out/Requirements.md`, `out/TestPlan.md`, `out/TestReport.md`, `out/Operation.md`, Issue [#71](https://github.com/planner77/layoutManager/issues/71)/[#73](https://github.com/planner77/layoutManager/issues/73)와 선행 #65를 검토했다. 루트 `DESIGN.md`는 없음. Editor/Site/Version/Scene/SHA 재인가, Reader read-only, 영속 receipt 원자성, 타입 FK/유효성, 브라우저 로컬 Tree/Undo 분리, 새 빈 Greenfield 전용 baseline의 운영 경계를 유지한다.
+- 선행 R2 기능 브랜치 `a1bfe7ef0c9070594d6ce905b6b5668a4fe56bbd`의 Git Tree `0e3d6a2364722e1e71decdfffcdced848350bbe3`와 Main Tree `312268daf1548f224cf9f52a7ec866daf8581988`의 blob 비교에서 차이는 **out/FailureLedger.md 한 파일**이었다. Main에만 있던 PR #181 정렬·검증 이력 8줄을 원형으로 보존하고, R3의 새 변경 및 이전 모든 실패 이력을 함께 유지한다. Main 소스 코드와 R2의 공통 파일을 임의 재작성하지 않고 기존 PR HEAD와 Main HEAD를 부모로 갖는 merge commit의 Tree에 원장 결합만 적용한다.
+- 위 분석 기준 미해결 리뷰 댓글 0·별도 코드 충돌 0; 정렬 후 PR 메타데이터와 ahead/behind 및 HEAD parents를 확인한다. 정렬 ref 갱신의 pull_request.synchronize 이벤트로 PR CI를 새 HEAD에서 시작한다. 실행 완료/성공·실제 CI run ID는 생성·관측 전 미검증으로 남긴다. 사용자 지시에 따라 CI 결과 모니터링은 하지 않는다. 병합, GHCR 게시, Issue 종료, 운영 DB/Volume Migration·배포·현장 승인 작업은 수행하지 않는다.
+
+## PR #181 / Issue #65 — Main 정렬·리뷰/충돌 점검 및 PR CI 시작 기록 (2026-11-01 KST)
+
+- 대상 [PR #181](https://github.com/planner77/layoutManager/pull/181) (Draft, #65), 기존 HEAD `a1bfe7ef0c9070594d6ce905b6b5668a4fe56bbd`, Main `ee8be69f7c4d59fc1ab07f1c614365e18ba6199a`. R1 [PR #180](https://github.com/planner77/layoutManager/pull/180)의 Squash Main과 R2 부모 `b9dcdf58a382d38dd715915b9dfd9657e40c67fd`는 Git tree `54285c7dbfe1c897867c185b54ad7d3059d4b68e`로 **소스 바이트 동일**. PR #181은 R1 이전 공통 조상 `9016feba2a11c9b7bd8552a6ca2c3bee28e4a001` 기준 diverged(ahead 3/behind 1)여서 Main 정렬이 필요했다. Main/R1 동일 tree를 근거로 실제 충돌 코드를 임의로 재작성하지 않고, 두 부모(기존 R2 HEAD + 병합된 Main)를 가진 merge commit으로 정렬한다. 소스 변경은 본 원장 기록 이외에 없음.
+- `AGENTS.md`, [Architecture](Architecture.md), [Decisions](Decisions.md), [Database](Database.md), [TestPlan](TestPlan.md), [TestReport](TestReport.md), [Issue #65](https://github.com/planner77/layoutManager/issues/65)를 확인했다. 루트 `DESIGN.md`는 없음. Global Catalogue/Admin·RBAC·CSRF·CAS·latest-only Greenfield/FK/Append-only Audit, Viewer tools panel 및 후속 #71/#73 경계를 유지한다.
+- 정렬 전 GitHub PR #181 review threads **0**, submitted reviews **0**, 미해결/답변 대상 0. conflict 해결 방식은 R1과 Main 원본 tree 동일성 검증 및 parent lineage 정렬이며, 코드 경합 해소·프로덕션 시험 성공을 과장하지 않는다.
+- R2 로컬 후보 근거는 114 files/760 tests PASS, Greenfield 4/4 PASS, 변경된 legacy gate E2E 별도 4/4 PASS, 별도 migrator isolated smoke로 [TestReport](TestReport.md)에 보존된다. 과거 full E2E 115/117 실패 이력 및 최초 원격 CI 미검증을 소급하여 PASS로 바꾸지 않는다.
+- 정렬된 PR HEAD로 단일 branch ref push 시 `pull_request.synchronize` 이벤트가 `.github/workflows/pr-ci.yml`의 기존 PR CI를 시작하도록 한다. CI Run/Job/성공 여부는 생성 시점까지 미검증이며 사용자 지시대로 완료 모니터링하지 않는다. 병합, GHCR 게시, Issue 종료, 운영 Migration/Writer/권한 전환은 시행하지 않는다.
+
+## R5b load fixture 재시험 GREEN (2026-11-01)
+
+기존 목록 GET으로 metadata 기준을 조회하도록 보완한 새 load2가2 PASS1.6분으로 완료됐다(`/tmp/layoutmanager-r5b-load2.log`). 실제1k/10k LINE+10Memo 두 규모의 roundtrip·URL·API metadata/원본 SHA 불변을 확인했으며 최초405 setup 실패는 아래에 보존한다.
+
+## R5b 부하 시험 fixture GET 경로 수정 (2026-11-01)
+
+Root의 신규 load 시험 첫 실행2개는 export 이전 metadata 기준 조회에서 실패했다. DELETE 전용 `/api/cad-files/:id`에 GET해405/빈 응답을 JSON으로 읽은 시험 setup 결함이다. 기존 목록 GET `/api/cad-files`의 해당 items 행 조회로 수정했고 Source/DB 불변 assertion을 유지했다. 제품 변경은 없으며 새 실행 `/tmp/layoutmanager-r5b-load2.log`의 실제 결과를 기다린다.
+
+## R5b 수직 반전 BUILD2 시각 수정 확인 (2026-11-01)
+
+독립 QA focused3 PASS32.9초와 두 포맷 dark glyph4778pixels/UV상하 assertion을 통과했다. Manager가 실제 한글·영문 upright screenshot을 확인했으며 GLB/glTF capture는 byte동일SHA54cbc0d59dd1315c9395fdf9607342c8216eae93619b90e3080e9137894bffa8이다. 해당 시각 blocker를 해결했으며 전체 gate는 아직 진행 중이다. 상세 실제 근거는 TestReport BUILD2를 따른다.
+
+## R5b 실제 artifact 글자 수직 반전 — 재작업 필요 (2026-11-01)
+
+Dark glyph pixel 조건을 보완한 QA capture를 QA와 Manager가 직접 확인했다. `/tmp/layoutmanager-r5b-qa-visible-memo-glb.png` 및 glTF capture에서 한글 제목과 `Valve inspection`이 수직 반전되어 읽기 방향이 잘못됐다. Manager는 GLB screenshot을 직접 열어 확인했으며 source 검토상 helper의 +Y camera/up -Z는 기존 XY→XZ 좌표 계약에 맞는다. Annotation의 topLeft=labelZ, bottomLeft=labelZ-height 좌표 관계와 UV가 화면상의 상하 방향을 뒤집는 것으로 판단한다. 단순 camera 회전으로 가리는 해결은 허용하지 않는다.
+
+이는 실제 제품 시각 결함이며 glyph pixels 존재·Loader 성공만으로 TC-R5B-02를 PASS 처리하지 않는다. Product 수정/새 build 및 두 형식 실제 WebGL 한글 screenshot 재검증 전 R5b 수용을 보류한다. Root에 즉시 전달했으며 활성 권한/lifecycle 시험과 rebuild를 조정한다. QA는 production을 수정하지 않았다.
+
+## R5b QA glyph pixel assertion false-positive (2026-11-01)
+
+초기 QA3 PASS의 inkPixels 조건이 배경 #fffef0까지 셌다(RGB 어느 하나<245). Root가 발견해 dark glyph(allRGB<150·alpha>0) 및 실제 한글 screenshot 재검토·3개 재실행을 지시했다. 초기 실행의 Loader/render 사실은 보존하지만 glyph pixels 검증 PASS 주장은 보류한다. 제품 실패로 재분류하지 않는다. 최종 결과는 TestReport를 따른다.
+
+## R5b source 검토 2건 보완 확인 (2026-11-01)
+
+실제 artifact extras 정밀도 고지 및 generic Memo GET 호환을 보완했다. Manager 독립 집중 실행2 files/27 PASS1.08초(`/tmp/layoutmanager-r5b-manager-repair-review.log`)로 해당 재작업을 수용했다. 최초 검토 결함은 아래에 보존하며 Browser/전체 gate 완료를 뜻하지 않는다.
+
+## R5b Developer handoff source 검토 — 재작업 2건 (2026-11-01)
+
+Developer는 focused6 files/53 PASS, typecheck/소유 파일 lint/diff-check PASS를 보고했다. Manager가 core/font/raster/annotation 및 authorized Memo GET 소스를 직접 검토해 두 보완을 지시했다. 정밀도 warning이 반환 report에만 있고 실제 GLB/glTF extras에는 없어 artifact 고지 계약을 충족하지 않았다. 또한 기존 generic Memo GET에 새 DWG415 제한을 넣어 호환 envelope 확장 범위를 벗어났다. 실제 bytes의 경고/precision basis 검증과 기존 feature-off/anchor-absent·허가된 DWG 빈 목록 호환 검증을 요구했다.
+
+이 시점 core 최종 수용은 보류다. QA는 독립 Browser spec/새 Loader·실제 PNG/WebGL helper 작성만 시작하며 Root의 단일 production build 완료 전 실행하지 않는다. Root는 별도 authority/lifecycle Browser를 담당한다. 실제 Browser 결과는 아직 NOT RUN이다.
+
+## R5b 읽기 전용 Memo projection — RED/GREEN 및 source 검토 (2026-11-01)
+
+Root의 신규 client proof 시험 첫 실행은 **2 files/20 PASS·1 FAIL,549ms**였으며 singular transform `[0,0,0,0,10,20]`에서 예상 BROKEN/마지막 WCS(1,2) 대신 ATTACHED/(10,20)을 반환해 실패했다. 로그는 `/tmp/layoutmanager-r5b-memo-client-unit1.log`다. 기존 reconcile의 forward projection만으로는 비가역 행렬을 차단하지 못한 작은 기존 결함이며 단순 읽기 전용 API 리팩터링으로 숨기지 않는다.
+
+공유 snapshot 계산에서 next world를 계산한 뒤 `invertAffine`로 가역성을 검증하고 성공한 경우에만 world를 바꾸도록 보완했다. 유효 target의 기존 reconcile lastWorld 업데이트는 유지하며 snapshot은 복사된 ref/local/world를 반환하고 store를 바꾸지 않는다. Root 재시험 `/tmp/layoutmanager-r5b-memo-client-unit2.log`: **3 files/23 PASS,712ms**. Manager가 최종 로그와 domain diff, `exchange-memo-visual.ts`, `exchange-memo-authority.ts`를 직접 검토했다. selected Memo proof/whitelist, same-revision SESSION 재사용, unbound fresh canonical, actual GET actor/scope/revision0/count/unique ID decoder에 현 source blocker는 없었다.
+
+이는 집중 domain/client proof 결과다. UI hook/실제 Memo GET/PNG·GLTF·Browser 및 전체 R5b 수용은 아직 아니다. Memo 미선택 job에서는 global targetEpoch를 포함한 Memo fingerprint 자체를 적용하지 않아 공개 Source-only가 무관한 Memo 변경에 종속되지 않아야 한다. 해당 통합은 Root 후속 검증이다.
+
+## R5a 최종 재시험 GREEN (2026-11-01)
+
+Test-only fixture 보완 뒤 집중8 PASS11.19초 및 새 전체127 files/858 PASS422.47초를 확인했다. Greenfield 새 전체17 PASS4.2분, 독립 QA General 전체128 PASS14.7분도 통과했다. 이전 실패의 수치/원인 한계는 아래 그대로 보존한다. 제품 auth guard 변경 없이 해당 로컬 gate를 수용했으며 원격 CI는 별도다.
+
+## R5a 전체 Unit 정확 실패 및 통제시계 회귀 설계 (2026-11-01)
+
+Root 첫 whole unit 최종 결과는 **127 files 중126 PASS/1 FAIL,857 tests 중856 PASS/1 FAIL,494.39초**다. 정확 오류는 `G7_RUNTIME_ADMIN_APPROVAL_CHANGED`: runtime-admin의 transaction-time check → g2-store insertFirstAdmin → async password hash 후 admin-setup → g7-greenfield 최초 bootstrap assertion에서 발생했다. 최초 gate와 async 작업 후 gate가 달랐다는 근거이며, 원래 host wall clock의 역행을 직접 측정한 것은 아니다.
+
+Manager가 test-only 보완을 승인했다. 양성 first-admin/renew 시험은 Date만 고정하고 finally에서 원복한다. 별도 음성은 T0에 실제 signed gate ACTIVE를 확인하고 real async scrypt 진행 중 Date를 T0-5초로 바꾼 뒤 정확 approval-changed·User/Audit0을 검증한다. T0+1초로 복구 후 real bootstrap 성공을 확인한다. 타 timer/crypto/store/gate를 mock하거나 production 검사를 완화하지 않는다. 이 결정적 음성이 같은 오류를 재현해도 최초 host 역행의 관측 증명으로 해석하지 않는다. 집중·새 전체 unit 결과는 아직 대기다.
+
+## R5a 전체 gate 진행 — Greenfield 재실행 / Unit 원인 미확정 (2026-11-01)
+
+전체 Greenfield 첫 최종 실행은 **16 PASS/1 FAIL,4.8분**으로 끝났다. 새 R5 authority4 및 first-install2는 그 실행 안에서 PASS이나, 기존 R3 GET fixture의 ECONNRESET 때문에 전체 성공은 아니다. Root가 Manager 검토를 거친 GET-only maxRetries1을 적용하고 전체17을 새 `/tmp/layoutmanager-r5-greenfield-final2.log` 및 대응 results로 재실행 중이다.
+
+Whole unit은 아직 최종 출력 전이며 `g7-greenfield.test.ts`의 최초 Admin one-shot/renew 사례1 FAIL가 관측됐다. 같은 사례의 집중 진단은1 PASS/6 SKIP,685ms(`/tmp/layoutmanager-r5-greenfield-unit-diagnosis.log`)지만 원래 전체 실패를 대체하지 않는다. 원래 정확한 실패 원인/stack을 확인하기 전에는 host clock rollback으로 단정하거나 제품/fixture 시계를 변경하지 않는다. 전체 unit PASS 및 R5a 최종 수용은 보류다.
+
+## R5a 전체 Greenfield의 기존 R3 fixture transport 실패 (2026-11-01)
+
+Root full Greenfield17 실행에서 기존 `typed-outline-races.spec.ts`의 older in-flight list 사례가8.4초에 `route.fetch` ECONNRESET로 실패했다. `capturedResponse`의 실 GET response를 얻는 단계이며 stale-response assertion 이전이다. 새 R5 authority4개는21.0/10.9/9.9/11.7초로 모두 PASS했고 후속 기존 사례도 서버가 정상인 상태로 진행했다. 전체17의 최종 결과는 별도로 확인한다. 원시 Playwright error context에는 credential이 포함될 수 있어 정제된 오류 종류/위치만 기록한다.
+
+Manager는 현재 실행 종료 뒤 test-only helper에서 GET method를 명시 확인하고 `route.fetch({maxRetries:1})`로 ECONNRESET 한 번만 재시도하는 보완을 수용했다. 설치된 Playwright Route 계약상 HTTP 응답 코드는 재시도하지 않는다. POST/write나 실제 서버 요청을 mock하지 않고 held read/post 순서·stale snapshot/new row assertions를 유지한다. 반복 reset이 남으면 추가 transport 진단이 필요하며 무제한 retry로 통과시키지 않는다.
+
+## R5a 수정 build의 Browser fixture 후속 (2026-11-01)
+
+- General 집중4의 첫 수정-build 실행은3 PASS/1 FAIL이었다. OFF/no-protected-read4.8초,320px·unit·focus4.1초,Generated6.3초는 PASS다. Hidden-layer는 artifact 생성 경로를 통과했으나 Node GLTFLoader의 `ProgressEvent is not defined`로 검사 harness가 실패했다. QA가 core 시험과 같은 test-only polyfill을 추가하고 새4개 실행을 진행한다. 제품 수정/재build 사유가 아니다.
+- Root authority Browser attempt1은5 PASS/1 FAIL,1.4분이다. first-install2·actor 전환·직렬화 후 row revision·network/JSON proof 검사는 PASS다. Public 사례는 export 이전 `?source=build`의 기존 Scene preflight가 익명을 차단해 로딩 단계에서 실패했다. 인가된 actor로 Source를 먼저 로드한 뒤 logout/noSite Reader로 전환하는 fixture로 수정한다. 기존 Viewer/원본 GET 정책을 완화하지 않으며 새 전체6개 결과를 별도로 확인한다.
+
+## R5a foreign Three guard 수정 source 수용 (2026-11-01)
+
+Manager가 실제 수정 diff와 `/tmp/layoutmanager-r5a-foreign-core-qa.log`의 **2 files/31 PASS,762ms**를 확인했다. Installed three-dxf-viewer의 실제 getFromPath LINE은 app BufferGeometry instanceof=false지만 isBufferGeometry=true였다. 새 구조 검증은 required geometry/attribute API와 typed storage를 확인하며 기존 finite/index/arity/material/group/planarity/budget 검사를 유지한다. 단순 flag-only 위조는 제외한다. 실제 라이브러리 객체를 사용하는 회귀를 추가했고 Manager가 source repair를 수용했다.
+
+수정 포함 production rebuild·전체 unit은 Root가 시작했으며 아직 결과를 확인하지 않았다. General attempt5의 실제 Browser FAIL는 이 focused 결과로 PASS 재분류하지 않고 수정 build에서 별도 재시험한다. 최종 수용 gate는 TestPlan checklist를 따른다.
+
+## R5a General Browser 실제 결함 — legacy DXF geometry 제외 (2026-11-01)
+
+QA attempt5의 실제 three-dxf-viewer DXF A/B/C에서 B 레이어를 화면에서 숨긴 뒤 B만 명시 export했다. Inventory에는 B1개가 있지만 preview는 지원0/제외1·`UNSUPPORTED_GEOMETRY`를 표시하고 download를 차단했다. `/tmp/layoutmanager-r5-ui-attempt5.log`와 attempt5-results의 error-context/trace를 보존했다. Manager는 visibility filter를 원인으로 단정하지 않고 실제 제외 코드를 확인했다. 현재 guard의 `geometry instanceof THREE.BufferGeometry`가 library의 별도 Three constructor와 충돌하는 가능성을 Root/Developer에게 전달했다. 합성 core29 PASS가 실제 library 객체 경로를 검증한 것으로 확대되지 않는다.
+
+Root3411 시험과 공유 build가 활성화된 동안 runtime 수정·재build는 대기한다. Source download case는 수정 후보에서 재시험해야 하며 R5a 전체 수용은 진행 중이다. 별도의 Generated transform/export/history Browser case는 PASS3.3초, 신규 QA spec 타입 오류 수정 후 typecheck PASS(`/tmp/layoutmanager-r5-ui-types-final.log`)다.
+
+## R5a Browser 선행 타입 검사 중단 / 레이어 toggle fixture 보완 (2026-11-01)
+
+Root의 Greenfield3411 명령은 Browser 진입 전 전체 typecheck exit2로 중단됐다. QA 신규 `issue91-exchange.spec.ts`의 Window→필수 `__exchangeBlobTypes` cast 두 곳에서 TS2352가 발생했다. QA가 자기 test 선언만 수정하며 이 실행의 Auth Browser는 FAIL이 아니라 **NOT RUN**이다. Root auth spec은 first-install 선행 순서를 유지하도록 `r5-exchange-authority.spec.ts`로 명명했다.
+
+General attempt3에서 Generated 변환/선택/export/history case는 PASS3.3초다. Hidden-layer case는 기본 `layerPanelOpen:true` 상태에서 메뉴를 무조건 클릭해 panel을 닫은 시험 준비 오류로 중단됐다. Manager가 원인을 지적했고 QA가 이미 열린 dock를 사용하도록 수정했다. 제품 Layer Table/Renderer 결함으로 판정하지 않는다. `/tmp/layoutmanager-r5-ui-attempt3.log`와 첫 실행 로그는 보존한다.
+
+## R5a General Browser 첫 실행 — 시험 selector/setup 보완 (2026-11-01)
+
+독립 QA의 port3410 첫 실행은0/2로 실패했다(`/tmp/layoutmanager-r5-ui-attempt1.log`, `/tmp/layoutmanager-r5-ui-attempt1-results`). 존재하지 않는 레이어 패널 testid를 사용했고 실제 UI는 `complementary`/`전체 화면 레이어`였다. Generated 도구는 dock를 연 후 표시되는데 시험에서 그 준비가 빠졌다. QA는 자신이 소유한 새 spec의 selector/setup만 수정했다. 제품 결함으로 판정한 결과가 아니며 실제 export 수용 assertion 이전 실패다. 재시험 결과는 별도 기록한다.
+
+## R5a 독립 core QA 실패·수정 — 그룹별 확장 정점 사전 한도 (2026-11-01)
+
+최초 independent QA1 PASS/1 FAIL,491ms에서150k source vertices를 두 material group이 재사용해 export300k가 되는 조건이 사전250k 한도를 우회하고 복사 뒤 거절됐다. position.getX spy450,001회가 복사 수행을 입증했다. Developer가 group 확장 상한을 사전 계산해 수정했으며 회귀는 source read0으로 거절된다. 최종 core22+QA7=29 PASS737ms와 QA 별도7 PASS414ms를 확인했다. 첫 실패 로그는 따로 저장하지 않았으며 재현 테스트와 보고를 보존했다. 상세 근거는 TestReport R5a를 따른다.
 
 ## R4 계측 최종 보완 — 남은 heap 추세는 OPEN (2026-11-01)
 
@@ -117,13 +232,6 @@ QA가 실제 terminal/tool 기록으로4번의 집중 실행을 보고했다. �
 - Docker는 확인 시 phase1 build 진행 중이었다. 이후 step/Job 결과를 미리 PASS로 쓰지 않는다. 이전 local119/791PASS와 다른 실행이며 원격 실패를 숨기지 않는다.
 - Manager는 R4 구현을 HOLD하고 기존 R4 설계·시작된 변경을 보존하도록 지시했다. 제품 승인/Session/CSRF guard 또는 기대값을 근거 없이 완화하지 않는다. Root 진단→Manager 검토→QA 집중 검증과 실제 새 CI 결과를 후속 기록한다.
 
-## PR #182 / #71·#73 — Main 정렬·리뷰·충돌 확인 및 PR CI 시작 요청 (2026-11-01 KST)
-
-- 대상 [PR #182](https://github.com/planner77/layoutManager/pull/182) Draft, 기존 HEAD `f179d59604e552bfd42389420be4851e5a5d0f2e`, Main `927938da941e6bbc5fd1f89b8a8c18fe7e6dd6ed`; 공통 조상 `9016feba2a11c9b7bd8552a6ca2c3bee28e4a001`. 정렬 전 GitHub 비교는 ahead 6 / behind 2, PR review threads 0 / submitted reviews 0. 이미 검증한 최초 HEAD의 [PR CI 41228523828](https://github.com/planner77/layoutManager/actions/runs/41228523828) Verify/Docker SUCCESS는 새로운 정렬 HEAD의 성공으로 승계하지 않는다.
-- `AGENTS.md`, `out/Architecture.md`, `out/Database.md`, `out/Decisions.md`, `out/Requirements.md`, `out/TestPlan.md`, `out/TestReport.md`, `out/Operation.md`, Issue [#71](https://github.com/planner77/layoutManager/issues/71)/[#73](https://github.com/planner77/layoutManager/issues/73)와 선행 #65를 검토했다. 루트 `DESIGN.md`는 없음. Editor/Site/Version/Scene/SHA 재인가, Reader read-only, 영속 receipt 원자성, 타입 FK/유효성, 브라우저 로컬 Tree/Undo 분리, 새 빈 Greenfield 전용 baseline의 운영 경계를 유지한다.
-- 선행 R2 기능 브랜치 `a1bfe7ef0c9070594d6ce905b6b5668a4fe56bbd`의 Git Tree `0e3d6a2364722e1e71decdfffcdced848350bbe3`와 Main Tree `312268daf1548f224cf9f52a7ec866daf8581988`의 blob 비교에서 차이는 **out/FailureLedger.md 한 파일**이었다. Main에만 있던 PR #181 정렬·검증 이력 8줄을 원형으로 보존하고, R3의 새 변경 및 이전 모든 실패 이력을 함께 유지한다. Main 소스 코드와 R2의 공통 파일을 임의 재작성하지 않고 기존 PR HEAD와 Main HEAD를 부모로 갖는 merge commit의 Tree에 원장 결합만 적용한다.
-- 위 분석 기준 미해결 리뷰 댓글 0·별도 코드 충돌 0; 정렬 후 PR 메타데이터와 ahead/behind 및 HEAD parents를 확인한다. 정렬 ref 갱신의 pull_request.synchronize 이벤트로 PR CI를 새 HEAD에서 시작한다. 실행 완료/성공·실제 CI run ID는 생성·관측 전 미검증으로 남긴다. 사용자 지시에 따라 CI 결과 모니터링은 하지 않는다. 병합, GHCR 게시, Issue 종료, 운영 DB/Volume Migration·배포·현장 승인 작업은 수행하지 않는다.
-
 ## R3 PR182 두 번째 Verify 실패 — Greenfield route 수명 조사 (2026-11-01)
 
 - [Run41225698027](https://github.com/planner77/layoutManager/actions/runs/41225698027), source `08cd4062092e0dff6c68ca211accab8d163a0be5`: Verify124609264151은 Greenfield **8 PASS /1 FAIL,4.0분**으로 실패했다. 전체 unit120 files/795 tests, 일반 CAD117 및 Auth1은 PASS이며 Legacy는 SKIPPED다. Docker124609263950은 SUCCESS다. 앞선 clock repair의 원격 unit 재검증과 새 Browser 실패를 구분한다.
@@ -168,14 +276,6 @@ QA가 실제 terminal/tool 기록으로4번의 집중 실행을 보고했다. �
 - Manager directed Developer rework: map runtime-approval loss to safe 503 without exposing the internal error; independent QA added a route-level GET injection that asserts 503, `G7_RUNTIME_BLOCKED`, private/no-store and Cookie Vary. The test clock moves only after the authorized Outline query and restores in `finally`. At initial observation the route-level rerun was pending; the following result supersedes that status.
 - **Focused rework verification (2026-11-01):** `typed-outline-read.ts` now catches approval-current assertion errors and translates them to fixed `CadError('G7_RUNTIME_BLOCKED',...,503)`. Independent QA's route-level GET injection advances Date.now only after the authorized `cadOutline.findMany` resolves, then asserts **503 / G7_RUNTIME_BLOCKED / private,no-store / Vary Cookie**, restoring the Date.now and createDb spies in `finally`. Combined run of typed-outline runtime, Greenfield, catalogue, independent typed-outline QA and business-contract files: **5 files / 37 tests PASS, 32.76s**. Focused typecheck, affected backend/test ESLint and `git diff --check` passed. This resolves the internal late-expiry status finding in local focused evidence; the earlier pre-rework observation of raw 500 remains an accurate historical record.
 - Related evidence: current R3 entry in [TestReport](TestReport.md), independent QA test `src/tests/integration/typed-outline-qa.test.ts`.
-
-## PR #181 / Issue #65 — Main 정렬·리뷰/충돌 점검 및 PR CI 시작 기록 (2026-11-01 KST)
-
-- 대상 [PR #181](https://github.com/planner77/layoutManager/pull/181) (Draft, #65), 기존 HEAD `a1bfe7ef0c9070594d6ce905b6b5668a4fe56bbd`, Main `ee8be69f7c4d59fc1ab07f1c614365e18ba6199a`. R1 [PR #180](https://github.com/planner77/layoutManager/pull/180)의 Squash Main과 R2 부모 `b9dcdf58a382d38dd715915b9dfd9657e40c67fd`는 Git tree `54285c7dbfe1c897867c185b54ad7d3059d4b68e`로 **소스 바이트 동일**. PR #181은 R1 이전 공통 조상 `9016feba2a11c9b7bd8552a6ca2c3bee28e4a001` 기준 diverged(ahead 3/behind 1)여서 Main 정렬이 필요했다. Main/R1 동일 tree를 근거로 실제 충돌 코드를 임의로 재작성하지 않고, 두 부모(기존 R2 HEAD + 병합된 Main)를 가진 merge commit으로 정렬한다. 소스 변경은 본 원장 기록 이외에 없음.
-- `AGENTS.md`, [Architecture](Architecture.md), [Decisions](Decisions.md), [Database](Database.md), [TestPlan](TestPlan.md), [TestReport](TestReport.md), [Issue #65](https://github.com/planner77/layoutManager/issues/65)를 확인했다. 루트 `DESIGN.md`는 없음. Global Catalogue/Admin·RBAC·CSRF·CAS·latest-only Greenfield/FK/Append-only Audit, Viewer tools panel 및 후속 #71/#73 경계를 유지한다.
-- 정렬 전 GitHub PR #181 review threads **0**, submitted reviews **0**, 미해결/답변 대상 0. conflict 해결 방식은 R1과 Main 원본 tree 동일성 검증 및 parent lineage 정렬이며, 코드 경합 해소·프로덕션 시험 성공을 과장하지 않는다.
-- R2 로컬 후보 근거는 114 files/760 tests PASS, Greenfield 4/4 PASS, 변경된 legacy gate E2E 별도 4/4 PASS, 별도 migrator isolated smoke로 [TestReport](TestReport.md)에 보존된다. 과거 full E2E 115/117 실패 이력 및 최초 원격 CI 미검증을 소급하여 PASS로 바꾸지 않는다.
-- 정렬된 PR HEAD로 단일 branch ref push 시 `pull_request.synchronize` 이벤트가 `.github/workflows/pr-ci.yml`의 기존 PR CI를 시작하도록 한다. CI Run/Job/성공 여부는 생성 시점까지 미검증이며 사용자 지시대로 완료 모니터링하지 않는다. 병합, GHCR 게시, Issue 종료, 운영 Migration/Writer/권한 전환은 시행하지 않는다.
 
 ## R2 #65 — Scene 회귀의 시간 의존 실패와 fixture 보정 (2026-11-01)
 

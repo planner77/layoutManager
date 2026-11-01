@@ -1,3 +1,108 @@
+## R5b 구현 bridge / 로컬 코드·합성 수용 (2026-11-01)
+
+기반은 게시된 R5a `9accf8ba3e21f2d51dc7694e768f19c75fffb5d5`이며0.54.0 작업에서 아래 bridge를 공유한다. R5a 정확 HEAD CI는 성공했고 R5b 코드·합성 로컬 수용을 마쳤다. 새 R5b 게시·CI 및 현장 수용은 TestReport 실제 결과로 구분한다.
+
+- `ExchangeSnapshot.memos?:readonly ExchangeMemoInput[]`는 생략 시 빈 배열이다. `ExchangeOrigin`은 `LOCAL_MEMO|SERVER_MEMO`를 추가한다. 기존 primitive/Generated 계약과 동작은 유지한다.
+- `ExchangeMemoInput`은 `{key,id,origin,revision,title,content,anchorWcs:{x,y,z:0},anchorMode:'CANONICAL'|'SESSION'|'BROKEN',broken,settings:MemoSettings}`다. key는 `memo-local:<id>` 또는 `memo-server:<id>`이고 origin과 일치해야 한다. Server revision은 0 이상의 안전 정수(신규 Memo revision0 포함), local은 null이다. settings는 기존 MemoSettings를 받아 artifact에서 활성 값만 whitelist한다. labelOffset/actor/group/raw DTO를 추가하지 않는다.
+- 기존 `selection.memos.ids`는 raw ID가 아니라 위 namespaced key 목록이다. `all`도 frozen snapshot의 허가된 전체 Memo에만 적용한다. enabled=false면 Memo0이며 stale selected key, 중복 key, 지원0은 명시 오류다. Inventory objects에 같은 Memo key/origin/name을 넣고 Memo namespace layer를 사용한다. 기존 Generated 필터는 Memo를 혼입하지 않는다.
+- `ExchangeOptions.memoTextHeightMetres?:number`는 Memo 포함 시 필수이며 finite **0.001..10m** 범위다. UI 초기값은 선택된 DXF/Generated extent를 미터로 환산한 최대 폭/60을 **0.01..1m**로 clamp하고, Memo-only 또는 유효 extent0이면 **0.1m**다. 최초 UI는0.1m를 잠정 AUTO값으로 표시하고 `포함 범위 확인 시 계산`이라고 명시한다. 기존 prepare에서 실제 선택된 DXF/local 및 fresh server 기하의 정확 extent로 자동값을 계산한 뒤 inspect/fingerprint 전에 명시 옵션으로 전달한다. 실제 높이는 preview/부분 동의/download 전에 입력에 반영한다. 기본값 표시만을 위한 추가 보호 GET은 하지 않는다. 사용자 직접 편집은 해당 dialog 세션을 MANUAL로 바꾸고 선택 변경에도 값을 유지한다. AUTO에서 선택이 바뀌면 이전 preview/동의를 무효화하고 다음 prepare에서 재계산한다. Fingerprint에는 정규화 Memo 내용/위치/설정/선택과 글자 높이를 포함한다.
+- `ExchangeBuildContext.onStage`는 기존 `prepare|serialize|complete`에 `font|rasterize`를 추가한다. PNG 작업은 rasterize 단계이며 signal을 각 await 뒤 검사한다. 기존 inspect는 동기·순수로 Memo 선택/기하/문자길이/옵션 한도를 검증하고, font/canvas는 실제 비동기 export 단계에서만 실행한다. 숨은 PNG 준비나 성공 전 download는 없다.
+- Raster 기본은 본문32px·제목40px, line-height1.35, padding16px, 최대 폭2048px의 실제 font measureText/codepoint wrapping이다. 필요한 전체 크기를 계산한 후 canvas를 할당하고 개별2048²·총8,388,608px·decoded64MiB·최종32MiB를 초과하면 오류다. font timeout은15초이며 취소와 구분한다. Text 전체 보존, 잘라내기/몰래 축소 금지다. WCS 높이는 본문 em32px를 지정 미터 높이에 대응하며 제목은1.25배다. leader는 anchor→label의 글자높이 비례 고정 offset(+2h,+2h)으로 시작하고 원본 CSS offset은 무시한다고 고지한다.
+- Developer 소유: domain cad-exchange 및 core snapshot/export·font/raster/annotation 신규 모듈·관련 unit/Loader 시험, 기존 Memo GET envelope 및 서버 read service/관련 시험. Root 소유: client authority/Viewer Memo proof collector/hook/dialog/Browser 및 package version. 같은 파일의 병행 수정은 하지 않는다. Manager는 문서와 source 수용, QA는 독립 검증이다.
+
+아래 세부 계약과 TC-R5B-01–10을 필수 수용 조건으로 유지한다. 타입/API 변경이 더 필요하면 구현 전에 Manager/Root에게 정확한 diff를 제안한다.
+
+## R5b #91 — Memo snapshot/texture seam (0.54 구현 계약, 2026-11-01)
+
+R5a 브랜치에는 아래 runtime을 구현하지 않는다. R5a 실제 gate 후0.54 stacked branch에서 Manager GO와 함께 타입 bridge를 먼저 확정한다. Developer는 순수 Memo export schema/whitelist·font rasterizer·owned annotation builder·Loader 시험을 담당하고, Root는 Viewer Memo snapshot bridge·현재 actor/fresh Memo 조회·hook/modal·Browser 통합을 담당한다. QA는 별도 source 및 Browser 검증이다. 새 서버 route/DB/영속 Scene schema는 추가하지 않는다. 기존 Memo GET의 읽기 응답에 아래 인가 envelope만 호환 확장한다.
+
+### Read-only projection과 inspect 보완
+
+Root는 `MemoSessionSnapStore.snapshot(targets)`를 추가해 현재 projection을 mutation 없이 읽는다. `reconcile`과 동일 projection 계산을 공유하되 `lastWorld` 업데이트는 기존 `reconcile`만 수행한다. Export는 `reconcile`을 호출하지 않는다. forcedBreak/singular/BROKEN 마지막 WCS 의미를 보존하고 snapshot 전후 binding/lastWorld/epoch 및 반복 호출 불변성을 focused test로 검증한다. 이 domain 파일과 시험은 Root 소유이며 Developer core 파일과 겹치지 않는다.
+
+Root collector는 선택된 Memo key의 proof만 job fingerprint로 검증한다. 선택하지 않은 Memo의 변경이 공개 Source-only 내보내기를 막지 않는다. 유효 SESSION binding이 있는 row의 revision/content가 fresh row와 다르면 fail하며 canonical fallback은 금지한다. 현재 binding이 없는 fresh row는 canonical을 사용할 수 있다. Developer의 `inspectExchangeSnapshot(snapshot,options?)`는 호환 확장으로 허용한다. 기존 Memo 없는 한 인수 호출은 유지하고 Memo 선택 시에는 명시 height 옵션이 필요하다.
+
+### 현재 구조와 immutable Memo proof
+
+현재 `MemoDraft`에는 author IDs·labelOffset·anchor 관계 등 export하면 안 되는 필드가 섞여 있다. `MemoSessionSnapStore`의 projection 자체에는 Memo revision이 없으며 `scopedMemos`는 표시용 projection을 덮어쓴다. 이 배열/React cache 또는 raw DTO를 바로 exporter에 넘기지 않는다. Root가 **현재 Memo row와 현재 reconcile projection을 같은 순간의 proof로 묶는 read-only collector**를 제공한다. `ExchangeMemoVisualProof`는 내부 `{scope,viewerGeneration,memoKey,memoRevision:number|null,memoContentFingerprint,targetEpoch,world,anchorMode:'CANONICAL'|'SESSION'|'BROKEN',snapshotToken}`이며 서버/파일에 전송하지 않는다. Fresh 서버 row revision/content와 cached row가 다르면 projection 재사용을 거절하고 Viewer를 명시 갱신한 뒤 새 prepare를 요구한다. 이미 stale한 projection에 새 revision을 붙이는 것은 금지한다. 증명 불가할 때 silent canonical fallback도 하지 않는다.
+
+`ExchangeMemoInput`은 정제된 `{key:'memo-local:<id>'|'memo-server:<id>',id,origin:'LOCAL_MEMO'|'SERVER_MEMO',revision:number|null,title,content,anchorWcs:{x,y,z:0},anchorMode,broken:boolean,settings}`만 갖는다. `ExchangeSnapshot.memos`와 Memo 포함/선택은 이 DTO를 사용하며 options에 `memoTextHeightMetres`를 추가한다. local snapshot은 scope+memo epoch+content/geometry fingerprint, 서버 snapshot은 여기에 actor·fresh row revision proof를 내부적으로 더한다. 부분 동의 fingerprint에도 Memo 내용·위치·선택·글자 높이를 포함한다. BROKEN 마지막 WCS를 포함하면 Memo-only에도 preview.partial을 설정하고 사유를 표시한다. Font/glyph/encoding 실패는 partial 동의로 우회하지 않는다. 최종 전송 전 local/SESSION projection fingerprint와 protected row를 모두 재검사한다.
+
+기존 Memo GET은 actorId를 payload에 포함하지 않아 Session 전후 확인만으로는 조회 중 cookie A→B→A의 실제 응답 actor를 증명할 수 없다. R5b에서 같은 GET의 기존 `memos/groups/featuresAvailable`을 보존하고 `actorId/versionId/sourceSha256/sceneRevision` envelope를 호환 추가한다. 기존 typed-outline-read 방식처럼 같은 transaction에서 인가·현재 Version/Scene·bounded rows를 읽고 응답 전 runtime approval/session/Site 읽기 권한을 재확인한다. Export decoder는 envelope의 실제 요청 actor/scope를 직접 Session 전후 증명과 비교하고 최종 선택 row revision/content까지 다시 확인한다. Envelope가 없거나 다르면 서버 export를 거절하며 actorId는 내부 증명에만 사용하고 artifact에는 넣지 않는다. 기존 Viewer 소비자의 추가 필드 호환성과 A→B→A·scope mismatch·revocation 회귀를 검증한다. `mode:'off'`를 서버 권한 실패의 빈 성공으로 쓰지 않는다. 서버 Memo 그룹을 선택하지 않으면 protected Memo export 조회를 추가하지 않는다. 숨겨진 서버 Memo도 fresh 조회로 허가된 row일 때 명시 선택할 수 있다. 서버 DTO 선택과 source local-only 정책은 별개다.
+
+### Font·Canvas·geometry 책임
+
+고정 same-origin `/fonts/NanumGothic-Regular.ttf`만 읽고 외부 font/image URL 또는 CSS computed font를 사용하지 않는다. 같은 font bytes로 FontFace를 로드·등록한 뒤 Canvas에서 사용하며, 필요한 문자 coverage는 실제 cmap/glyph lookup으로 확인한다. 설치된 Three r171 `examples/jsm/libs/opentype.module.js`가 `parse`와 font.charToGlyphIndex를 제공하므로 Browser dynamic import를 우선 검토한다. glyph0/.notdef 및 지원 못 하는 제어/조합 표현은 명시 오류이며 `document.fonts.check`만으로 한글 지원을 입증하지 않는다. 라틴·한글·공백은 glyph 존재를 검사하고 줄바꿈은 layout 제어로 처리한다. 본문 TAB은 raster에서4칸 공백으로 표현하되 원문 extras는 보존한다. fallback 폰트로 조용히 대체하지 않는다.
+
+rasterizer는 제목/본문을 plain text로 measureText하고 전체 줄바꿈을 정한 뒤 Canvas를 할당한다. 긴 unbroken 문자열도 codepoint 경계를 지키며 줄바꿈하고 전체 텍스트를 보존한다. 예산 검사는 width×height 및 누적 decoded bytes로 **할당 전** 수행한다. 각 PNG는 HTMLCanvasElement 기반 CanvasTexture로 embedded glTF data URI 또는 GLB bufferView에 들어가며 외부 fetch를 남기지 않는다. Plane은 XZ 평면/unlit/DoubleSide, pin·leader와 별도 Memo namespace 아래에 놓는다. label 위치는 글자 높이 비례 WCS offset으로 고정하고 화면 pan/zoom/CSS labelOffset을 사용하지 않는다. 모든 geometry는 R5a와 동일 origin/axis/Float32 오류 검사를 따른다.
+
+### 수명과 metadata
+
+font 준비·rasterize·PNG encode·GLTF serialize의 stage를 표시하고 signal을 단계 사이에 검사한다. 비동기 PNG/GLTF 작업은 직접 중단할 수 없는 구간의 결과를 폐기하며 페이지 single-job mutex를 cleanup 종료까지 유지한다. 새 FontFace를 소유했다면 document.fonts에서 제거하고, canvas 크기 초기화/참조 해제, texture/material/geometry dispose와 BlobURL revoke를 success/error/cancel 모두 수행한다. 원본 Viewer material·공유 font/cache 자원은 해제하지 않는다. 테스트는 생성·해제 횟수 및 반복 작업 후 retained references/URL을 검증한다.
+
+scene extras에는 R5a에서 미뤄둔 명시 `versionId`/`sourceSha256`를 모든 조합에 추가한다. R5b dialog와 artifact warning에 `maxQuantizationError`가 이미 양자화된 renderer snapshot 대비 추가 오차라는 점과 원본 CAD 정밀도 복구 불가를 명시한다. 이 값으로 원본 CAD SLA를 주장하지 않는다. Memo settings는 scheduleEnabled일 때 startDate/dueDate, completionEnabled일 때 isCompleted/completedAt만 복사한다. actor/createdById/updatedById/group DTO 전체/target binding/localAnchor는 누락시킨다. 파일 metadata는 read-only 교환용이며 Memo API나 JSON 복원 명령으로 사용할 수 없다.
+
+## R5 #91 — Exchange export 계약 (구현 전, 2026-11-01)
+
+### 작은 Unit와 책임
+
+R5a는0.53.0의 core(DXF baseline+확정 local/권한 있는 server Outline, format/units/누락/선택/Loader roundtrip)를완료하고 독립QA 뒤 R4 기반 Draft PR로게시한다. R5b는그기반0.54.0에서 visible Memo+metadata/혼합그룹/전체UX·취소·자원시험을완료한다. R5a UI에서 Memo는 `다음 Unit에서 연결` 사유로 disabled이고 #91 전체 완료가 아니다. Manager는 계약/수용, Developer는순수모델/exporter/adapter read API, Root는Viewer modal/현재actor조회·job orchestration, QA는독립검증이다. Root가 source/서버계약을 바꾸는 구현을 병렬로 시작하기 전에 아래 경계를 공유한다.
+
+### 재사용과 새 seam
+
+현재 production은 `scene-tags`, `scene-custom-dto`, `scene-serialization`, `sceneAsset`, GeneratedDocument 및 R3/R4 DTO를 재사용한다. 기존 test-only `scene-poc-browser.ts`의 GLTFExporter/Loader 실험은 참고 근거이며 그대로 production에 whole-scene export하지 않는다. `this.scene`은 helper/UI가 섞여 있으므로 접근 입력으로 금지한다. 원본 bytes 재parse나 외부 dependency 수정은 새 export의 전제조건이 아니다.
+
+Developer 소유 제안: `domain/cad-exchange.ts`(순수 schema/단위/옵션/필터/metadata/budget), `viewers/three-dxf-viewer/exchange-snapshot.ts`(owned 복사/원본baseline), `viewers/three-dxf-viewer/exchange-export.ts`(browser-only GLTFExporter/geometry/메모plane 확장), adapter/core의 optional read API와 그 unit/Loader tests. Root 소유: `features/cad-viewer/cad-exchange-dialog.tsx`(core 동결 후 Root 지시로 Developer가 새 modal 파일 구현을 보조), `features/cad-viewer/use-cad-exchange.ts`(또는 동등한 단일 orchestration hook), 기존Viewer/menu 연결, Browser UX/권한 tests. Viewer에 geometry serializer나DB규칙을 넣지 않는다. 파일명변경은 같은책임을유지할때조정가능하다.
+
+공유계약을 먼저고정한다:
+
+- `ExchangeInventory`: `{scope:{versionId,sourceSha256,sourceUnit},snapshotToken,layers,objects,warnings,sourceCoverage}`. objects는 stable namespace key(`dxf:<renderId>`, `local:<UUID>`, `server:<UUID>`, R5b `memo:<UUID>`)와 origin/layer/name/estimatedVertices/지원여부만노출한다. 원본 entity count가없으면null이다. `inspectExchangeSnapshot(snapshot)`은 사전 Layer별 accepted/excluded/reasons/styleLoss와 partial 여부를 제공한다. 임의 Three object/원시 userData/network locator를UI에전달하지않는다.
+- `ExchangeSelection`: `{dxf:{enabled,mode:'all'|'layers',layers:string[]},generated:{enabled,mode:'all'|'selected',keys:string[]},memos:{enabled,mode:'all'|'selected',ids:string[]}}`. 존재하지않거나중복/다른scope key는오류다. whole목록은캡처시점의bounded목록이며기존Canvas선택을변경하지않는다. `ExchangeOptions`는format·허용unit choice·origin(auto/custom finiteXYZ)·파일이름base·snapshot/options fingerprint에결합한partialAck, R5b글자높이m를포함한다.
+- Adapter `getExchangeInventory()`는read-only경량조회, `captureExchangeSnapshot(selection)`은budget검사후선택된DXF/localGenerated의owned geometry/attributes/material DTO를복사한다. 동기capturing중scope/token이바뀌면거절한다. Source baseline은 legacy tagImportedTree 직후 및 READY restore 직후 전체 imported tree의 world matrix를 별도 read-only Map으로 캡처한다. READY 경로에 sceneAsset 필드가 없더라도 복원된 원래 local matrix 계층으로 계산한 전체 baseline을 보존한다. 선택가능leaf의`sceneObjects.baseWorld`만쓰면display-only/multiMaterial을누락하므로그것을전체기준으로쓰지않는다. liveSceneWork/visibility를일시reset하거나원본material을dispose하지않는다.
+- Root coordinator는fresh서버 DTO를기존GET으로조회·검증해snapshot에결합한다. Adapter는서버fetch하지않는다. `buildExchangeArtifact(snapshot,options,{signal,onStage})`는새exportscene만생성하고`{bytes,mime,extension,report}`를반환한다. 실제download/파일명/BlobURL은Root가최종재인가후수행한다. 생성artifact에는인증권위가없으며JSONv2복원/APIpayload로재사용하지않는다.
+
+### Geometry/스타일과 누락 정책
+
+초기 whitelist는유효BufferGeometry의Line/LineLoop/LineSegments/Mesh/Points이며각 drawRange/index/group/material별 실제primitive만독립복사한다. finite좌표/유효index/group·일관된scope·boundednode/vertex를검증한다. Mesh의normal/color/UV는허용typedattribute만복사한다. LineBasic/MeshBasic/Points의RGB·opacity·vertex color를보존하고unlit표현을검증한다. r171 exporter는 MeshBasicMaterial만 KHR_materials_unlit을 기록하므로 export-only Line/Points도 MeshBasicMaterial을 사용하며 live material은 바꾸지 않는다. multiMaterial은유효group으로분리가능한경우만지원하며모호한group은고정reason으로제외한다. Sprite/Skinned/Shader/미지원texture/외부resource/비평면·3D 등firstscope밖은제외진단한다. THREE scene객체를통째로clone/serialize하거나userData전체를복사하지않는다.
+
+DXF LINE/Polyline/원·호는이미renderer가표현한line/triangle geometry의visual fidelity만보장한다. renderer에없는Source Entity를새로생성하지않는다. TEXT/MTEXT가안전한mesh로존재하면visualgeometry로처리하되text문자열복구/원본Entity정밀성을주장하지않는다. Line width/dash가교환에서보존되지않으면사전warning+ack와extras degradedstyle을기록한다. BLOCK/INSERT는baselineworldmatrix+instanceID를보존한다. Generated/서버Outline Polygon/MultiPolygon/Holes는validated effectivegeometry를ShapeGeometry/triangulation으로만들어분리영역과holes를roundtrip한다. source색은현재렌더baseline색이며기존black→white대비보정이적용됐을수있음을sourceCAD색완전보존과구분한다.
+
+Coverage는exporter가검사한renderer객체/Layer별 accepted/excluded를정확히기록한다. Source총Entity/미렌더Entity가불명인READY/legacy는`sourceCoverage:'unknown'`/countsnull이다. 기존RenderCoverage와원본index의실제근거는추가진단으로사용하지만bbox매핑을완전원본형상증명으로격상하지않는다. unknown 또는실제제외/스타일손실이있으면명시partialAck없이다운로드하지않는다. 모든선택그룹이0supported이면차단하며변경된snapshot/옵션은ack를무효화한다.
+
+### Render Layer와 브라우저 경계 보완
+
+R5a의 Layer 선택은 기존 Adapter `getLayers()`의 표시 레이어(`cadLayer`, fallback `entity.layer`)와 일치시킨다. UI와 report는 **렌더 레이어 / 렌더 객체 수**로 명명하며 원본 Entity별 정확한 레이어 분할을 주장하지 않는다. r171 BLOCK 병합은 서로 다른 INSERT node를 유지하지만 내부 여러 Layer가 한 drawable에 합쳐질 수 있다. 이 경우 현재 표시 레이어 기준으로 포함하고 mixed-BLOCK mapping 품질 경고와 partial acknowledgement를 요구한다. READY Scene의 정제된 `cadLayer`에는 원시 `userData.entities` 증거가 없으므로 원본별 매핑 완전성은 unknown이다. 이 차이를 해결하려고 원본을 다시 parse하거나 영속 Scene schema를 확대하지 않는다.
+
+GLB/glTF core는 CAD line dash/linewidth 및 Points.size 표현을 그대로 보장하지 않는다. 기하 누락과 별개로 스타일 손실의 해당 렌더 객체 수와 사유를 세고, 보고서와 사전 경고/ack에 포함한다. unlit RGB/opacity와 기하 보존 여부는 Loader로 별도 확인한다. GLTFExporter를 포함하는 encoder는 클라이언트 사용자 실행 경로에서 dynamic import하며 SSR module 평가에서 브라우저 의존성을 실행하지 않는다. R5a에는 서버 route/DB/영속 Scene format 변경을 추가하지 않는다.
+
+### 좌표/단위/precision
+
+검증된자동map은INSUNITS1(inch=.0254m),2(international foot=.3048m),4(mm=.001m),5(cm=.01m),6(m=1)이다.0/미상/다른code는실행전동일허용단위중사용자가명시선택한다.21US survey feet를2와같게취급하지않으며지원안내후명시환산선택을요구한다. 기본origin은선택geometry의double WCS bounds중심이고custom finiteXYZ도가능하다. `(X,Y,Z)=(s*(x-ox),s*(z-oz),-s*(y-oy))`로handedness를유지한다.2DXY는glTFXZ에놓이며솔리드/압출을생성하지않는다.
+
+baseline localposition→doubleworldmatrix→origin차감→scale/축변환→Float32순서다. 이미 renderer position에 양자화된 Source 정보는 복원할 수 없다. R5a는 Operation에 이 제약을 설명하지만 inventory/dialog/artifact warning에는 아직 포함하지 않았다. R5b에서 dialog와 artifact에 snapshot-relative 정밀도와 복구 불가 제약을 명시하는 warning을 추가해야 한다. 새Float32전환의vertex Euclidean error가1e-4m를넘으면정밀도실패로범위를줄이거나origin을조정하게한다. 이한도는renderer snapshot 대비교환오차이며원본CAD SLA가아니다. extras에원본unit/code·선택unit·metresPerUnit·originWcs·axisMapping·maxQuantizationError를기록한다.
+
+### 서버권한과 immutable job
+
+공개 Source/local Generated는 G7 ACTIVE의 익명 및 OFF/BLOCKED에서도 내보낼 수 있다. 기존 공개 CAD GET/Viewer 정책을 유지하며 local-only에 보호된 Outline/Version/Site GET이나 새 원본 GET을 요구하지 않는다. ACTIVE의 직접 Session 조회401은 안정된 anonymous actor 증거로 인정한다. OFF/BLOCKED에서는 공개 로컬 범위로 표시하고 서버 그룹을 비활성화한다. 현재 client Version/SHA/Renderer/load generation/snapshotToken 및 options fingerprint는 모든 job에서 준비·최종 download 전에 검증한다. Actor 변화는 job을 폐기하지만 익명 자체가 로컬 내보내기 거부 사유는 아니다.
+
+서버 Outline 그룹 선택 시에만 fresh Session과 보호된 `/outlines` GET200의 actorId/Version/SHA/Scene revision/row revision/content fingerprint를 준비 및 최종 download 직전에 재검증한다. 기존 bounded pagination·logical-delete 필터를 적용한다. 조회 거부/실패는 서버 그룹 비활성+실제 사유로 표시하며 cached 행이나 false-empty 목록으로 대체하지 않는다. 이미 선택된 서버 그룹의 실패/권한회수/actor 변경이면 전체 artifact를 폐기하고 재조회하도록 한다. R5b 서버 Memo는 같은 원칙으로 `/memos`를 검증한다. metadata에 token/cookie/actor userID/계정/email/권한/locator/receipt/원시 parser userData를 넣지 않는다. 재검사는 체크 시점의 인가이며 다운로드 후 철회/파일 회수를 보장하지 않는다.
+
+### R5b Memo 표시 계약
+
+R5b metadata 후속: generated-only 파일도 출처를 구분하도록 scene extras에 whitelist된 `versionId`/`sourceSha256`를 명시한다. 현재 R5a의 source render key에 이 값이 간접 포함되는 것은 일관된 provenance 계약을 대신하지 않는다. Actor/계정/locator는 추가하지 않으며 활성 Browser 시험 중 R5a runtime을 수정하지 않는다.
+
+Memo는전용annotation group의anchor pin/leader와XZplane의unlit DoubleSide PNGtexture로보인다. 로컬`NanumGothic-Regular.ttf`를FontFace로로드하고`document.fonts`준비후HTMLCanvas에plain text줄바꿈을그린다. 외부HTML/SVG/URL로드나OffscreenCanvas glTFimage분기를사용하지않는다. 화면CSSlabelOffset은미터로사용하지않는다. 글자높이(m)를명시하고default는선택bounds extent/60을.01..1m로clamp(범위없는Memo-only는.1m); plane/leaderoffset은그높이로결정해카메라와독립시킨다.
+
+텍스트는title100/content2000의모델한도를유지하고전체를표시한다. 임의잘라내기대신canvas/texture한도를넘으면재설정·범위축소오류를표시한다. snapshot의anchorWcs는freshservercanonical 또는동일Memo revision의유효SESSION projection이며BROKEN은마지막WCS/경고를보존한다. extras는id/origin/revision/title/content/world/일정·완료의활성필드와group name정도로제한하고개인Actor식별자는제외한다. R5b기능이완성되기전R5a에서메모0개를성공한것처럼내보내지않는다.
+
+### 한도/취소/자원
+
+초기export상한:선택drawables20,000/vertex250,000/index750,000/localGenerated100+serverOutline100/Memo100, geometry+texture decoded 추정64MiB, texture누적8,388,608pixels(개별최대2048×2048), 최종artifact32MiB. 금액/SLA가아닌브라우저보호한도이며추가시험없이확대하지않는다. inventory에서사전예산,복사/triangulation/texture직후·serialize결과에재검사하고초과시download0이다.
+
+GLTFExporter r171 `parseAsync`에는AbortSignal이없으므로가능한준비단계는abort하고시작된직렬화는결과를버린뒤owned자원을finally로정리한다. 그동안두번째job을시작하지않고취소요청됨을표시한다. 객체URL은다운로드DOM이소비한후revocation하며취소/예외에도정리한다. owned geometry/material/texture/image/canvas만dispose하고liveViewer공유resource에는손대지않는다. Scene/Viewer전환·dialogclose·ESC·unmount는jobgeneration을무효화한다.
+
+공식근거: [Three GLTFExporter](https://threejs.org/docs/pages/GLTFExporter.html), [Khronos glTF2.0](https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html), [Autodesk INSUNITS](https://help.autodesk.com/cloudhelp/2025/ENU/AutoCAD-Core/files/GUID-A58A87BB-482B-4042-A00A-EEF55A2B4FD8.htm). 실제설치three0.171.0source는binary=true에ArrayBuffer, false에JSON object/dataURIbuffer를반환하므로object는JSON.stringify한다. `onlyVisible:false`, `includeCustomExtensions:false`, animations[]를명시하고이미정제된선택scene만전달한다. glTF이미지는HTMLCanvas dataURI 경로, GLB이미지는bufferView이며실제양포맷Loader시험전완전지원PASS로표현하지않는다.
+
 ## R4 #174 — 선택 가능한 세션 스냅과 신뢰된 앵커 이동 계약 (구현 전, 2026-11-01)
 
 **Module 경계:** Developer는 `domain/memo-session-snap.ts` 후보·유지 이동과 기존 adapter 후보 추출의 안정성, `server/cad-business/anchor-service.ts`/anchor route 및 관련 순수·통합/benchmark 시험을 소유한다. Root는 Viewer/MemoEditor/pointer UI·client bridge·Browser 시험을 소유한다. Manager가 계약 검토 후 독립 QA에 인계한다. UI가 DB/파일/Source attestation을 구현하지 않는다.

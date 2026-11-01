@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test } from 'vitest';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 import { createRequire } from 'node:module';
 import { generateKeyPairSync } from 'node:crypto';
 import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -196,28 +196,61 @@ describe('#153 empty Greenfield installation without prior data or migration rep
   });
 
   test('first Admin setup is one-shot; approval renewal is signed and independent of any snapshot',async()=>{
-    const f=fresh();
-    initializeGreenfield(f.env);
-    const sites=seed(f).siteIds;
-    const x=owner(f,sites);
-    const secretDir=path.join(f.root,'secret');mkdirSync(secretDir,{mode:0o700});
-    const secret=path.join(secretDir,'admin.password');writeFileSync(secret,'synthetic-initial-password',{mode:0o600});
-    const bootstrap={...x.env,ADMIN_BOOTSTRAP_ENABLED:'true',
-      ADMIN_BOOTSTRAP_USERNAME:'admin',ADMIN_BOOTSTRAP_PASSWORD_FILE:secret};
-    expect(await executeG7RuntimeAdmin(bootstrap)).toBe('bootstrap');
-    expect(await executeG7RuntimeAdmin(bootstrap)).toBe('disabled');
-    const db=new Sqlite(f.dbfile);
-    try {
-      expect(db.prepare('SELECT COUNT(*) AS n FROM "User"').get()?.n).toBe(1);
-      expect(db.prepare('SELECT COUNT(*) AS n FROM "AuditEvent"').get()?.n).toBe(1);
-    } finally{db.close();}
-    const later={...x.config,approvalId:'OWNER-greenfield-renewed'};
-    writeFileSync(x.input,JSON.stringify(later),{mode:0o600});
-    expect(issueGreenfieldAuthority('renew',x.input,x.out,x.key,f.env).mode).toBe('renew');
-    expect(resolveG7RuntimeGate(x.env).state).toBe('ACTIVE');
-    const raw=JSON.parse(readFileSync(x.env.G7_RUNTIME_APPROVAL_PATH,'utf8'));
-    raw.approvalId='OWNER-forged';
-    writeFileSync(x.env.G7_RUNTIME_APPROVAL_PATH,JSON.stringify(raw),{mode:0o600});
-    expect(resolveG7RuntimeGate(x.env).state).toBe('BLOCKED');
+    // This positive fixture tests one-shot setup/signatures, independently of
+    // host wall-clock changes during real asynchronous password hashing.
+    vi.useFakeTimers({toFake:['Date']});
+    vi.setSystemTime(new Date('2026-11-01T00:00:00Z'));
+    try{
+      const f=fresh();
+      initializeGreenfield(f.env);
+      const sites=seed(f).siteIds;
+      const x=owner(f,sites);
+      const secretDir=path.join(f.root,'secret');mkdirSync(secretDir,{mode:0o700});
+      const secret=path.join(secretDir,'admin.password');writeFileSync(secret,'synthetic-initial-password',{mode:0o600});
+      const bootstrap={...x.env,ADMIN_BOOTSTRAP_ENABLED:'true',
+        ADMIN_BOOTSTRAP_USERNAME:'admin',ADMIN_BOOTSTRAP_PASSWORD_FILE:secret};
+      expect(await executeG7RuntimeAdmin(bootstrap)).toBe('bootstrap');
+      expect(await executeG7RuntimeAdmin(bootstrap)).toBe('disabled');
+      const db=new Sqlite(f.dbfile);
+      try {
+        expect(db.prepare('SELECT COUNT(*) AS n FROM "User"').get()?.n).toBe(1);
+        expect(db.prepare('SELECT COUNT(*) AS n FROM "AuditEvent"').get()?.n).toBe(1);
+      } finally{db.close();}
+      const later={...x.config,approvalId:'OWNER-greenfield-renewed'};
+      writeFileSync(x.input,JSON.stringify(later),{mode:0o600});
+      expect(issueGreenfieldAuthority('renew',x.input,x.out,x.key,f.env).mode).toBe('renew');
+      expect(resolveG7RuntimeGate(x.env).state).toBe('ACTIVE');
+      const raw=JSON.parse(readFileSync(x.env.G7_RUNTIME_APPROVAL_PATH,'utf8'));
+      raw.approvalId='OWNER-forged';
+      writeFileSync(x.env.G7_RUNTIME_APPROVAL_PATH,JSON.stringify(raw),{mode:0o600});
+      expect(resolveG7RuntimeGate(x.env).state).toBe('BLOCKED');
+    }finally{vi.useRealTimers();}
+  });
+
+  test('clock rollback during real async Admin hashing rejects the transaction without inserting identity or audit',async()=>{
+    vi.useFakeTimers({toFake:['Date']});
+    const issuedAt=new Date('2026-11-01T00:00:00Z').getTime();
+    vi.setSystemTime(issuedAt);
+    try{
+      const f=fresh();initializeGreenfield(f.env);
+      const x=owner(f,seed(f).siteIds);
+      const secretDir=path.join(f.root,'secret');mkdirSync(secretDir,{mode:0o700});
+      const secret=path.join(secretDir,'admin.password');
+      writeFileSync(secret,'synthetic-initial-password',{mode:0o600});
+      const bootstrap={...x.env,ADMIN_BOOTSTRAP_ENABLED:'true',
+        ADMIN_BOOTSTRAP_USERNAME:'admin',ADMIN_BOOTSTRAP_PASSWORD_FILE:secret};
+      expect(resolveG7RuntimeGate(x.env).state).toBe('ACTIVE');
+      // The initial gate runs synchronously, then hashing uses real crypto.
+      const pending=executeG7RuntimeAdmin(bootstrap);
+      vi.setSystemTime(issuedAt-5000);
+      await expect(pending).rejects.toThrow(/^G7_RUNTIME_ADMIN_APPROVAL_CHANGED$/);
+      const db=new Sqlite(f.dbfile);
+      try{
+        expect(db.prepare('SELECT COUNT(*) AS n FROM "User"').get()?.n).toBe(0);
+        expect(db.prepare('SELECT COUNT(*) AS n FROM "AuditEvent"').get()?.n).toBe(0);
+      }finally{db.close();}
+      vi.setSystemTime(issuedAt+1000);
+      expect(await executeG7RuntimeAdmin(bootstrap)).toBe('bootstrap');
+    }finally{vi.useRealTimers();}
   });
 });

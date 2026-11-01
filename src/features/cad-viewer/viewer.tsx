@@ -55,6 +55,9 @@ import type {ResetMode} from '@/domain/cad-reset';
 import {MemoSessionSnapStore,collectMemoSnapCandidates,
   type MemoSnapCandidate,type SessionSnapProjection} from '@/domain/memo-session-snap';
 import {SceneWorkTools} from './scene-work-tools';
+import {useCadExchange} from './use-cad-exchange';
+import {CadExchangeDialog} from './cad-exchange-dialog';
+import {captureExchangeMemoVisuals} from './exchange-memo-visual';
 
 export function CadViewer({
   versionId,
@@ -337,6 +340,17 @@ export function CadViewer({
     status: '도면 로딩 중…',
     ready: false,
   });
+  const getExchangeMemoVisuals=useCallback(()=>{
+    const scope={versionId,sourceSha256},current=getManager();
+    const records=memoSession.current?.matches(scope)?memoSession.current.list():[];
+    const projections=sessionSnaps.current?.matches(scope)
+      ?sessionSnaps.current.snapshot(current?.getMemoSnapTargets()??[]):{};
+    const generation=versionId+':'+sourceSha256+':'+renderer+':'+attempt+':'+(current?.getExchangeInventory()?.snapshotToken??'unavailable');
+    return captureExchangeMemoVisuals(scope,records,projections,generation,getViewEpoch());
+  },[versionId,sourceSha256,renderer,attempt,getManager,getViewEpoch]);
+  const exchange=useCadExchange({versionId,sourceSha256,renderer,format,attempt,
+    ready:state.ready&&!loading,getManager,getEpoch:getViewEpoch,getMemoVisuals:getExchangeMemoVisuals});
+  const {opened:exchangeOpened,close:closeExchange}=exchange;
 
   useEffect(() => () => source.dispose(), [source, versionId]);
   useEffect(()=>{
@@ -586,6 +600,9 @@ export function CadViewer({
   }, []);
   useEffect(() => {
     const handleKeyDown = (event:KeyboardEvent) => {
+      if(event.key==='Escape'&&exchangeOpened){
+        event.preventDefault();event.stopImmediatePropagation();closeExchange();return;
+      }
       if(event.key==='Escape' && deleteRequest){
         event.preventDefault();event.stopImmediatePropagation();
         setDeleteRequest(null);return;
@@ -655,7 +672,7 @@ export function CadViewer({
     // Capture ahead of native fullscreen/selection handling for staged edit ESC.
     window.addEventListener('keydown',handleKeyDown,true);
     return ()=>window.removeEventListener('keydown',handleKeyDown,true);
-  },[syncSavedOutlines,deleteRequest,contextMenu,state.ready,canvasMode,openDelete,nameTipOpen,infoOpen,memoPlacing,memoCandidate,memoSelectedId,closeMemoEditor,typeManagerOpen]);
+  },[syncSavedOutlines,deleteRequest,contextMenu,state.ready,canvasMode,openDelete,nameTipOpen,infoOpen,memoPlacing,memoCandidate,memoSelectedId,closeMemoEditor,typeManagerOpen,exchangeOpened,closeExchange]);
   const stopOutlineEditing = useCallback(() => {
     // Must cancel the Worker BEFORE clearing selection: selection callbacks can
     // otherwise enqueue a new compute job for the previous previewKind.
@@ -1582,6 +1599,7 @@ export function CadViewer({
   const choose = useCallback((value: typeof renderer) => {
     if (value === renderer) return;
     if (!confirmDiscard()) return;
+    closeExchange();
     loadSequenceRef.current++;
     sceneRequest.current?.abort();setSceneBusy(false);setSceneCandidate(false);setSceneMode('scene-first');
     if (loading && source.state(`/api/cad-files/${versionId}/content`) === 'pending') source.dispose();
@@ -1600,10 +1618,11 @@ export function CadViewer({
     const url = new URL(window.location.href);
     url.searchParams.set('renderer', value);
     window.history.replaceState(null, '', url);
-  }, [loading, renderer, resetOutline, confirmDiscard, source, versionId, resetMemos]);
+  }, [loading, renderer, resetOutline, confirmDiscard, source, versionId, resetMemos,closeExchange]);
 
   function reload() {
     if (loading || !confirmDiscard()) return;
+    closeExchange();
     loadSequenceRef.current++;
     sceneRequest.current?.abort();setSceneBusy(false);setSceneCandidate(false);setSceneMode('scene-first');
     manager.current?.dispose();
@@ -1623,6 +1642,7 @@ export function CadViewer({
 
   function buildScene() {
     if(loading||sceneBusy||!confirmDiscard())return;
+    closeExchange();
     sceneRequest.current?.abort();
     loadSequenceRef.current++;manager.current?.dispose();source.dispose();
     fallbackTried.current=false;fallbackReason.current=null;
@@ -1864,6 +1884,12 @@ export function CadViewer({
       ...(format==='DXF'?[{id:'build-scene',label:'원본 DXF로 Scene 생성/재생성',disabled:loading||sceneBusy,reason:'명시적으로 원본을 읽고 변환합니다. 기존 저장 Scene은 저장 성공 전 유지됩니다.',onSelect:buildScene},
         {id:'save-scene',label:'Scene Asset 저장',disabled:!sceneCandidate||sceneBusy||loading,reason:'명시 변환 완료 후 승인된 로그인·사업장 쓰기 권한으로 저장합니다.',onSelect:()=>void saveScene()}]:[]),
       {id:'download',label:'원본 다운로드',kind:'link',download:true,href:`/api/cad-files/${versionId}/content`},
+      {id:'exchange-export',label:'GLB/glTF 내보내기',testId:'viewer-menu-exchange-export',
+        disabled:format!=='DXF'||renderer!=='three-dxf-viewer'||!state.ready||loading||exchange.busy,
+        reason:format!=='DXF'||renderer!=='three-dxf-viewer'?'DXF three-dxf-viewer에서 지원합니다.':
+          exchange.busy?'진행 중인 내보내기 정리가 끝난 후 이용할 수 있습니다.':
+          !state.ready||loading?'도면 표시가 완료된 후 이용할 수 있습니다.':undefined,
+        onSelect:()=>void exchange.open()},
       {id:'generated-json-export',label:'생성 개체 JSON 내보내기 (브라우저)',
         testId:'viewer-menu-generated-export',disabled:!treeAvailable,reason:treeUnavailable??undefined,
         onSelect:exportGeneratedJson},
@@ -2402,7 +2428,7 @@ export function CadViewer({
           {outlineUnavailable && <p data-testid="outline-tool-unavailable" className="text-xs text-slate-500">{outlineUnavailable}</p>}
         </>
       }
-      modalOverlay={deleteRequest ? <GeneratedDeleteDialog request={deleteRequest}
+      modalOverlay={exchangeOpened?<CadExchangeDialog key={exchange.sessionId} controller={exchange} defaultFilename={displayName}/>:deleteRequest ? <GeneratedDeleteDialog request={deleteRequest}
         onCancel={()=>setDeleteRequest(null)} onConfirm={confirmDelete} /> : null}
       nativeLoadingOverlay={loading ? <div data-testid="viewer-loading-overlay" role="progressbar" aria-label="도면 로딩 중" className="pointer-events-none absolute inset-0 z-[65] flex items-center justify-center bg-slate-950/45"><div className="pointer-events-auto max-w-sm rounded-lg bg-white p-4 text-sm text-slate-900 shadow-xl"><p>도면을 여는 중입니다…</p>{format==='DXF' && <button type="button" className="mt-3 rounded bg-teal-700 px-3 py-2 text-white" onClick={()=>choose(renderer==='three-dxf-viewer'?'dxf-viewer':'three-dxf-viewer')}>로딩 중단 후 {renderer==='three-dxf-viewer'?'dxf-viewer':'three-dxf-viewer'}로 열기</button>}<a className="mt-2 block underline" href={`/api/cad-files/${versionId}/content`} download>원본 다운로드</a></div></div> : null}
     />
