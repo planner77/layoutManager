@@ -1,3 +1,51 @@
+## PR #200 / #196 — 실패 Run 41309924909 수리 검증 (2026-11-01)
+
+정확 실패 HEAD `9f88d8e`, General shard2 **66PASS/2FAIL**, 나머지 gate 결과와 원인/RED 근거는 [FailureLedger](FailureLedger.md) 상단을 따른다. 과거 Run의 성공 Job은 수리 HEAD 결과로 승계하지 않는다.
+
+- 실제 역할: **gpt-6-astra Manager** 수리 AC/설계·재작업 및 최종 수용, **gpt-6-sol Developer** Zone read/retry·Renderer 전환·관련 시험, **gpt-6-luna QA** 독립 Browser 검증, **root** CI/review 조사·결정적 Source RED·통합/전체 검사·가이드/원장·게시. Manager의 전체 Unit 성공 조건은 아래 결과로 충족했다.
+- Node22.14.0, Chromium1243/SwiftShader, 임시 SQLite/storage 및 생성 DXF. G7/운영 설정·원본/Current·DB schema·package version 불변, 미릴리스 후보0.56.0 유지. 설계/시험 계약은 Issue196/TestPlan/Architecture/ViewerPanelPolicy 및 과거 #151 원장을 참조했다.
+
+| 실제 실행 | 결과 |
+| --- | --- |
+| 변경 전 기존 CI 두 파일 집중 | **6 PASS/1 FAIL/27.9s**, workflow errors[]에5033건 재현(`/tmp/pr200-repair-red.log`). |
+| 변경 전 새 Source 결정적 경합 | **1 FAIL/2.3s**, 실제 HTTP body 완료 뒤 ArrayBuffer Promise 지연→manual escape에서 completed1 기대/2 관측(`/tmp/pr200-source-red.log`). |
+| 변경 전 P2 retry Browser | **FAIL/13.3s**, 최초 Zone503 후 메뉴 disabled로 retry 불가(`/tmp/pr200-zone-retry-red-results`). |
+| 전체 `npm --prefix src test` | **139 files/915 PASS/309.04s**(`/tmp/pr200-repair-unit.log`). |
+| `npm --prefix src run typecheck`, `lint`, `build` | 각각 **exit0**; Lint0 errors/기존8 warnings. `/tmp/pr200-repair-{typecheck,lint,build}.log`. |
+| General6files, port3541 | **19 PASS/1.5분**(`/tmp/pr200-repair-green.log`). 기존 workflow·모든 #124/#126/#127 회귀, source completed GET 정확1 및 새 실제 경합1.4s, OFF Zone GET0/5030, ACTIVE 최초/갱신503·401·403 이후 데이터 제거/Retry·같은 Canvas/Source 유지·늦은 Version 응답 격리. |
+| signed G7, port3543 | **5 PASS/1.1분**(`/tmp/pr200-repair-g7.log`). first-install2+구역 keyboard/actor폼1+실 Snap/Reset1+semantic1; metadata/reconnect/동일 ID 경계 mapping·원본 SHA/fallback 승인 조회 보존. |
+| 독립 QA, port3542 | **6 PASS**(`/tmp/pr200-repair-qa-report.md`). Source 경합·Zone retry 두 사례·기존 수동 복구·OFF/fallback·runtime OFF. Root의19/5건과 중복을 고유 TC 수로 합산하지 않는다. |
+
+- 제품 수리: 명시적 public status OFF는 Zone GET 생략, ACTIVE는 실제 보호 GET으로 계속 인가. 오류 때 보호 정보는 폐기하면서 retry shell을 유지한다. 같은 Version renderer-only escape는 pending Source를 공유하고 Version/full reload/source-error의 기존 초기화는 유지한다. 기존 콘솔 오류0·성공 download1 기준을 완화/필터링해서 통과시키지 않았다.
+- Git/리뷰: latest main `2bccf90`, behind0·conflict marker0. 수리 source commit [`e3d442b`](https://github.com/planner77/layoutManager/commit/e3d442b46fdfecb28929b730fecf59c58db0c774)의 tree `479acb1d722c52b67a4e4f40300450495dcf2e10`이 검증한 로컬 snapshot과 일치한다. P2 review4435768211에 답변4435894228·resolve 후 전체1/unresolved0을 재조회했다. 해결 결과 기록 commit을 source 뒤에 연결해 expected PR HEAD9f88d8e로 fast-forward 게시하고 CI 시작만 확인한다. 이전 로컬 Git 인증 거절에 따라 동일 지정 저장소의 연결 도구를 사용하며 기존 commit/branch를 보존한다.
+- **NOT VERIFIED:** 새 정확 HEAD 원격 PR CI 완료 및 새 Docker/GHCR/운영·현장 수용. 이번 수리는 로컬 필수 gate와 독립 QA를 통과했으며 사용자의 요청대로 CI 재시작 이후 모니터링하지 않는다. PR 병합·이슈 종료·권한/Writer 활성화 없음.
+
+---
+
+## Issue #196 — 구역 0.56.0 로컬 검증·PR 인계 (2026-11-01)
+
+- 기준 Main `2bccf90`, branch `feat/issue-196-semantic-zones-20261101`; 이 기록을 포함한 commit snapshot. 원래 workspace의 Compose/next-env 변경 2건을 별도 worktree로 보존했다. [Issue196](Issue196.md)의 설계/AC와 Database/ViewerPanelPolicy를 구현에 연결했다.
+- 실제 역할: **gpt-6-astra Manager** 설계·AC·재작업 판단 및 최종 코드/합성 범위 검토, **gpt-6-sol Developer 2명** Backend/Viewer 구현, **gpt-6-luna QA** 독립 수치·코드·320/375px Browser 검증, **root** 공통 Geometry/Auth·통합 review·Reset 이력/감사 rollback·Docker closure 보완·시험·문서·게시. QA 보고 `/tmp/issue196-qa-report.md`. Manager 재작업 항목을 수정했고 마지막 actor 폼 검증도 통과해 **로컬 CODE+검증된 합성 범위 수용 / PR GO** 조건을 만족했다. 원격 CI·Docker·현장 수용으로 확대하지 않는다.
+- 환경: Linux, Node22.14.0/npm11.10.0, Playwright 고정 Chromium1243/SwiftShader, 생성 DXF, owned `/tmp` SQLite/storage. 일반 1440×1000 및 320/375×800, Snap Browser DPR2. 실제 운영 DB/Volume/Auth/Writer·원본 CAD는 변경하지 않았다.
+
+| 실제 실행 | 결과·검증 경계 |
+| --- | --- |
+| `npm --prefix src run db:generate`, `typecheck`, `lint`, `build` | **각 exit0**. 전체 Lint 0 errors/기존8 warnings. 최종 Build `/tmp/issue196-build-verified.log`; 마지막 변경은 Docker packaging/test/docs이며 앱 JS 소스는 동일하다. Typecheck `/tmp/issue196-typecheck-verified.log`, Lint `/tmp/issue196-lint-verified.log`. |
+| `npm --prefix src test` | **137 files/911 PASS**, 333.37s(`/tmp/issue196-unit-final.log`). 기존 실패 결과는 FailureLedger에 보존. |
+| 신규 packaging 및 standalone; 최종 Geometry/Auth/Panel/QA/closure 집중 | **25 PASS**(`/tmp/issue196-packaging.log`), **18 PASS**(`/tmp/issue196-last-targeted.log`). 전체 911과 중복을 합산하지 않는다. 신규 closure 검사는 전체 run 이후 추가한 1 TC다. |
+| `tests/integration/zone-runtime.test.ts` | **7 PASS**(`/tmp/issue196-zone-rollback.log`, 전체 run에도 포함). signed Reader/Editor/Admin·Site/CSRF/권한 회수·잘못된 SHA/Scene·idempotency/CAS/분류/계층/FK/Unique/cycle·V2 미매핑 및 명시 remap·두 Reset·201 deleted+1 live·Schema drift·Audit 실패 실제 rollback·원본/Current 불변. 과거 typed-outline 18건도 회귀 통과. |
+| General Browser: `issue196-zone-qa.spec.ts` + `issue196-zones.spec.ts` | 독립 QA **2 PASS**. 320/375px 단일 Drawer/ESC·키보드와 legacy/G7 OFF/fallback 생성 비활성·Canvas identity. 조회 envelope를 주입한 UI 시험이며 실제 서버 인가를 대체하지 않는다. |
+| Greenfield bootstrap·Scene·신규 keyboard·semantic 복합 실행 | bootstrap/Scene **2 PASS**, keyboard **1 PASS**, semantic **1 PASS**. 최초 합동 5건 중 Snap 1건은 시험의 화면 밖 click으로 실패했고 아래 별도 재검증했다. |
+| `semantic-zones.spec.ts` 실제 signed G7 | **PASS**(`/tmp/issue196-greenfield-confirm.log`, 10.8s). UI 숫자 경계 생성, 복수 참조/3단계 계층·reload·동일 ID 경계 수정·CAS409·원본 SHA 보존·패널 반복 Canvas/Source lifetime·dxf-viewer fallback 승인 metadata 조회/쓰기 비활성/오이동 차단. |
+| `issue196-zone-snap-qa.spec.ts` 실제 signed G7·DPR2 | **1 PASS/8.3s**(`/tmp/issue196-snap-retest.log`). 실제 source ENDPOINT/VERTEX 후보와 자유 WCS 좌표 혼합 저장, Zoom 후 이전 후보 거절, 새 후보 선택, SOURCE_ONLY Reset 후 Scene revision 동일해도 overlay 제거·UNMAPPED/RESET·focus 차단·metadata 보존. 테스트 전용 calibration Zone의 실제 투영으로 좌표를 계산하며 Snap 후보는 실제 Adapter에서 얻었다. |
+| Actor 전환 폼 소거 추가 Browser | **1 PASS/4.3s**, fresh bootstrap 포함 **3 PASS/29.4s**(`/tmp/issue196-actor-verified.log`). 고정된 인가 read envelope의 actor 전환을 주입해 미저장 폼/선택 소거를 확인했다. 실제 actor/Site 인가는 위 signed 서버 회귀와 별개다. |
+| Git/docs/Secret/PR review·conflict | 최종 stage diff/secret 검토 및 main 재조회 후 게시한다. 현재 base 최신 `2bccf90`, behind0. 신규 PR 생성 전 기존 #196 연관 open PR 없음. |
+
+- 구현 범위: 층별 불변 Zone ID/metadata/parent, 독립 Site category, Version/SHA/Scene별 geometry, safe references, Editor 공동 수정·작성자/Site Admin 삭제, transactional Audit/CAS/멱등, Reset 보존·무효화, 이동 가능한 공통 구역 패널/조회/생성/Snap/수치 편집/트리·검색·표시·focus. 카테고리 DELETE는 비활성화(재활성 가능), vertex 편집은 수치 입력, URL query/fragment·Hole/MultiPolygon·INTERSECTION Snap은 미지원으로 명시했다.
+- **NOT RUN/NOT VERIFIED:** 새 원격 PR CI 완료, 실제 Docker image build/run·Main CI/GHCR 게시·배포·병합·Issue 종료, 현장 #113/#193의 실제 DXF/GPU/2PC·성능 SLA/백업 복구. 요청은 PR CI 시작까지만이며 시작 후 결과를 모니터링하지 않는다. 일반 E2E 전체/다른 Browser/장기 성능은 신규 정확 HEAD의 CI 또는 별도 현장 단계에서 확인한다.
+
+---
+
 ## PR #198 — 최초 CI 성공 및 리뷰 보완 후 재검증 후보 (2026-11-01)
 
 - 최초 확인: HEAD `946b1e42c49a3e5806c019d073acac15ab43bfd5`, [PR CI 41302441739](https://github.com/planner77/layoutManager/actions/runs/41302441739) completed/success. Scope, Quality, General Chromium E2E 1/2·2/2, Greenfield, G7 signed+Legacy, Docker runtime, Aggregate Verify **8개 Job 모두 SUCCESS**.

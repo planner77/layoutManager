@@ -10,6 +10,7 @@ import {businessSchema} from './service';
 import {hasAnchorSchema} from './anchor-service';
 import {isSiteMemoAdmin} from './memo-policy';
 import {keys,revision,sourceSha} from './validation';
+import {G7_GREENFIELD_BASELINE} from '@/server/g7-operational/greenfield-schema';
 function reject(code:string,status=409):never {throw new CadError(code,'현재 도면의 업무 객체가 변경되었습니다. 다시 조회한 후 확인하세요.',status);}
 export async function resetBusinessVersion(db:Database,versionId:string,raw:unknown,proof:G7CadWrite){
  const b=keys(raw,['mode','sourceSha256','expectedSceneRevision','outlines','memos']);
@@ -26,6 +27,14 @@ export async function resetBusinessVersion(db:Database,versionId:string,raw:unkn
   const memoActor=await requireG7CadPermission(tx,proof,'memo:write',{kind:'version',versionId});
   if(outlineActor.actorId!==memoActor.actorId||outlineActor.siteId!==memoActor.siteId)
     reject('RESET_ACTOR_CONFLICT',403);
+  const marker=await tx.$queryRawUnsafe<{migration_name:string}[]>(
+   'SELECT migration_name FROM "_prisma_migrations"');
+  const zoneAvailable=marker.length===1&&marker[0].migration_name===G7_GREENFIELD_BASELINE;
+  if(zoneAvailable){
+   const zoneActor=await requireG7CadPermission(tx,proof,'zone:write',{kind:'version',versionId});
+   if(zoneActor.actorId!==outlineActor.actorId||zoneActor.siteId!==outlineActor.siteId)
+    reject('RESET_ACTOR_CONFLICT',403);
+  }
   const version=await tx.cadFileVersion.findUnique({where:{id:versionId},select:{sha256:true,fileFormat:true}});
   if(!version||version.sha256.toLowerCase()!==sha||version.fileFormat!=='DXF')reject('RESET_VERSION_CONFLICT');
   const scene=await tx.currentScene.findUnique({where:{versionId}});
@@ -89,7 +98,30 @@ export async function resetBusinessVersion(db:Database,versionId:string,raw:unkn
     await audit('OUTLINE',o.id,o.revision,'DELETE');deletedOutlines++;
    }
   }
-  return {mode:b.mode,sceneRevision,broken,deletedMemos,deletedOutlines,
+  let unmappedZones=0;
+  if(zoneAvailable){
+   const rows=await tx.cadZoneGeometry.findMany({where:{versionId,zone:{deletedAt:null}},include:{zone:true},take:201});
+   if(rows.length>200)reject('RESET_ZONE_LIMIT',413);
+   for(const geometry of rows){
+    const before=geometry.zone.revision;
+    const changed=await tx.cadZone.updateMany({where:{id:geometry.zoneId,revision:before,deletedAt:null},
+     data:{revision:before+1,updatedById:outlineActor.actorId,updatedAt:now}});
+    if(changed.count!==1)reject('RESET_REVISION_CONFLICT');
+    await tx.cadZoneGeometry.update({where:{zoneId_versionId:{zoneId:geometry.zoneId,versionId}},
+     data:{state:'UNMAPPED',reason:'RESET',revision:geometry.revision+1,updatedAt:now}});
+    await tx.cadZoneAudit.create({data:{id:randomUUID(),actorUserId:outlineActor.actorId,
+     siteId:outlineActor.siteId,locationId:geometry.locationId,versionId,
+     targetKind:'ZONE',targetId:geometry.zoneId,action:'EDIT',beforeRevision:before,
+     afterRevision:before+1,requestId:proof.requestId,timestampUtc:now}});
+    await tx.cadZoneAudit.create({data:{id:randomUUID(),actorUserId:outlineActor.actorId,
+     siteId:outlineActor.siteId,locationId:geometry.locationId,versionId,
+     targetKind:'GEOMETRY',targetId:geometry.zoneId,action:'UNMAP',beforeRevision:geometry.revision,
+     afterRevision:geometry.revision+1,requestId:proof.requestId,timestampUtc:now}});
+    unmappedZones++;
+   }
+   await requireG7CadPermission(tx,proof,'zone:write',{kind:'version',versionId});
+  }
+  return {mode:b.mode,sceneRevision,broken,deletedMemos,deletedOutlines,unmappedZones,
     resetSceneWork:true,versionId};
  });
 }

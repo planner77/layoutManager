@@ -442,3 +442,92 @@ model CadMemoFeature {
  group CadMemoGroup? @relation(fields:[groupId],references:[id],onDelete:NoAction,onUpdate:NoAction)
  @@index([versionId,groupId],map:"ix_cad_memo_feature_version_group")
 }
+
+// #196: fresh Greenfield semantic zones. Existing SQLite volumes are never migrated.
+model ZoneCategory {
+ id String @id
+ siteId String @map("site_id")
+ name String
+ nameKey String @map("name_key")
+ active Boolean @default(true)
+ sortOrder Int @map("sort_order")
+ revision Int @default(1)
+ createdById String @map("created_by_id")
+ updatedById String @map("updated_by_id")
+ createdAt String @map("created_at")
+ updatedAt String @map("updated_at")
+ @@unique([siteId,id],map:"uq_zone_category_site_id")
+ @@unique([siteId,nameKey],map:"uq_zone_category_site_name")
+ @@index([siteId,active,sortOrder],map:"ix_zone_category_site_order")
+}
+model CadZone {
+ id String @id
+ locationId String @map("location_id")
+ siteId String @map("site_id")
+ name String
+ nameKey String @map("name_key")
+ categoryId String? @map("category_id")
+ description String
+ code String
+ tagsJson String @map("tags_json")
+ sortOrder Int @map("sort_order")
+ parentZoneId String? @map("parent_zone_id")
+ referencesJson String @map("references_json")
+ revision Int @default(1)
+ createdById String @map("created_by_id")
+ updatedById String @map("updated_by_id")
+ deletedById String? @map("deleted_by_id")
+ createdAt String @map("created_at")
+ updatedAt String @map("updated_at")
+ deletedAt String? @map("deleted_at")
+ geometries CadZoneGeometry[]
+ receipt CadZoneCreateReceipt?
+ @@unique([locationId,id],map:"uq_cad_zone_floor_id")
+ @@index([locationId,deletedAt,sortOrder],map:"ix_cad_zone_floor_live")
+ @@index([siteId,categoryId],map:"ix_cad_zone_category")
+ @@index([locationId,parentZoneId],map:"ix_cad_zone_parent")
+}
+model CadZoneGeometry {
+ zoneId String @map("zone_id")
+ locationId String @map("location_id")
+ versionId String @map("version_id")
+ sourceSha256 String @map("source_sha256")
+ sceneRevision Int @map("scene_revision")
+ polygonJson String @map("polygon_json")
+ boundsJson String @map("bounds_json")
+ area Float
+ state String
+ reason String?
+ revision Int @default(1)
+ createdAt String @map("created_at")
+ updatedAt String @map("updated_at")
+ zone CadZone @relation(fields:[zoneId],references:[id],onDelete:NoAction,onUpdate:NoAction)
+ @@id([zoneId,versionId])
+ @@index([versionId,state],map:"ix_cad_zone_geometry_version")
+}
+model CadZoneCreateReceipt {
+ id String @id
+ actorUserId String @map("actor_user_id")
+ versionId String @map("version_id")
+ idempotencyKey String @map("idempotency_key")
+ requestSha256 String @map("request_sha256")
+ zoneId String @unique(map:"uq_cad_zone_receipt_zone") @map("zone_id")
+ createdAt String @map("created_at")
+ zone CadZone @relation(fields:[zoneId],references:[id],onDelete:NoAction,onUpdate:NoAction)
+ @@unique([actorUserId,versionId,idempotencyKey],map:"uq_cad_zone_receipt_actor_version_key")
+}
+model CadZoneAudit {
+ id String @id
+ actorUserId String @map("actor_user_id")
+ siteId String @map("site_id")
+ locationId String? @map("location_id")
+ versionId String? @map("version_id")
+ targetKind String @map("target_kind")
+ targetId String @map("target_id")
+ action String
+ beforeRevision Int? @map("before_revision")
+ afterRevision Int? @map("after_revision")
+ requestId String @map("request_id")
+ timestampUtc String @map("timestamp_utc")
+ @@index([siteId,timestampUtc],map:"ix_cad_zone_audit_site_time")
+}

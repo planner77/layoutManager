@@ -1,3 +1,17 @@
+## ADR-196-REPAIR — 보호 데이터와 retry UI, renderer/source 취소 범위 분리
+
+2026-11-01 PR #200의 실제 CI 두 실패와 P2 review를 근거로 public status OFF에서는 Zone GET을 생략하고, ACTIVE 오류는 보호 데이터 폐기와 retry shell 보존을 함께 수행한다. public status로 서버 인가를 대체하지 않는다. 같은 Version renderer-only 수동 전환은 pending source를 공유해 body-complete/cache-pending 경합의 두 성공 다운로드를 방지한다. full reload/Version 변경/원본 오류는 별도 초기화를 유지한다. 기존 completedGET1·consoleError0 assertion을 완화하는 대안은 배제한다. 수리 AC와 실제 결과는 Issue196/TestPlan/TestReport/FailureLedger 참조.
+
+---
+
+## ADR-Z196-01~08 — 의미론적 Zone 확정 기본안 (2026-11-01)
+
+Manager가 승인된 #196 구현 범위 안에서 결정했으며 정책 전문은 [Issue196 Z0](Issue196.md#z0-확정-결정)를 따른다. 독립 Site ZoneCategory/Admin+Site CRUD/null 미분류, 층 Zone ID·exact Version/SHA/Scene geometry, Site Editor 공동 수정·작성자 또는 Site Admin soft delete, 단일 simple Polygon/Hole·MultiPolygon 거부, 전체 경계 부모 포함 및 명시 수치 오차·형제 겹침 경고, 두 Scene Reset의 Zone 보존+geometry 무효화를 확정했다. 기존 OutlineType/위치 마스터/원본·Current 정책을 바꾸지 않는다.
+
+G7 ACTIVE/실 Session·Role·Site·Version/Origin·CSRF/Runtime Write Gate가 요청마다 적용된다. 새 empty Greenfield baseline은 구현하며 과거 baseline/기존 운영 Volume 자동 이관·운영 Writer 활성화는 수행하지 않는다. 별도 실제 현장 #113/#193 수용은 synthetic 시험과 분리한다. 이 결정은 배포·CI 성공·현장 수용 선언이 아니다.
+
+---
+
 ## ADR-197 — PR CI 필수 검증을 유지하며 병렬화·조건부 비용 분리 (2026-11-01)
 
 **결정:** General E2E를 workers=1의 파일 단위 2-Shard로 나누고 Greenfield를 별도 Job으로 실행. G7 Signed Runtime 및 Legacy Migration도 유지한다. `quality`가 생성한 정확 HEAD standalone TAR을 테스트 Job에 전달한다. `scope`는 Git diff 경로 전체를 fail-closed 검사하며 docs-only일 때만 중량 테스트를 생략하고 기존 이름의 `verify` required gate가 필수 상태를 집계한다. Docker baseline 비교는 패키징 관련 변경에만, native/runtime/Greenfield smoke는 모든 코드 PR에 실행. GHCR은 CI-only helper allowlist로 원치 않는 게시를 금지한다.

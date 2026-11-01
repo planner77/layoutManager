@@ -11,7 +11,7 @@ type TextSearchProps=Omit<ComponentProps<typeof CadTextSearch>,
   'workspaceRef'|'dialogRef'|'mobile'|'active'|'raised'|'onRaise'|'onKeyDown'|'modalBlocked'>;
 
 export function ViewerAppShell({ shellRef, panelScopeKey, isFullscreen, isNativeFullscreen, menuBar, toolbar,
-  layerPanel, layerPanelOpen, outlineTreePanel, outlineTreeOpen, memoTreePanel, memoTreeOpen, compactPanel,
+  layerPanel, layerPanelOpen, outlineTreePanel, outlineTreeOpen, memoTreePanel, memoTreeOpen, zonePanel, zonePanelOpen, compactPanel,
   canvas, tools, toolsOpen, toolsTitle = '선택 및 외곽선 도구', textSearch, textSearchOpen, onCloseTextSearch, onClosePanel, status, modalOverlay, nativeLoadingOverlay }: {
   shellRef: RefObject<HTMLDivElement | null>;
   panelScopeKey:string;
@@ -20,6 +20,7 @@ export function ViewerAppShell({ shellRef, panelScopeKey, isFullscreen, isNative
   layerPanel?: ReactNode; layerPanelOpen: boolean;
   outlineTreePanel?: ReactNode; outlineTreeOpen: boolean;
   memoTreePanel?: ReactNode; memoTreeOpen: boolean;
+  zonePanel?: ReactNode; zonePanelOpen:boolean;
   compactPanel: ViewerCompactPanel;
   canvas: ReactNode; tools?: ReactNode; toolsOpen: boolean; toolsTitle?: string;
   textSearch?: TextSearchProps; textSearchOpen:boolean; onCloseTextSearch:()=>void;
@@ -35,6 +36,7 @@ export function ViewerAppShell({ shellRef, panelScopeKey, isFullscreen, isNative
     compactPanel==='layers' && layerPanelOpen && layerPanel ? 'layers' :
     compactPanel==='outlines' && outlineTreeOpen && outlineTreePanel ? 'outlines' :
     compactPanel==='memos' && memoTreeOpen && memoTreePanel ? 'memos' :
+    compactPanel==='zones' && zonePanelOpen && zonePanel ? 'zones' :
     compactPanel==='tools' && toolsOpen && tools ? 'tools' : null) : null;
   const dialog = useRef<HTMLDivElement>(null);
   const headerRef=useRef<HTMLElement>(null);
@@ -103,6 +105,12 @@ export function ViewerAppShell({ shellRef, panelScopeKey, isFullscreen, isNative
         mobile={mobile} modalBlocked={modalOpen} active={!mobile||active==='memos'} raised={topDrawer==='memos'}
         onRaise={()=>setTopDrawer('memos')} onClose={()=>onClosePanel('memos')} onKeyDown={trapTab}>
         {memoTreePanel}
+      </MovableViewerPanel>
+      <MovableViewerPanel key={panelScopeKey+':zones'} kind="zones" id="viewer-zone-dock" name="구역 목록"
+        workspaceRef={workspaceRef} dialogRef={dialog} open={zonePanelOpen&&!!zonePanel}
+        mobile={mobile} modalBlocked={modalOpen} active={!mobile||active==='zones'} raised={topDrawer==='zones'}
+        onRaise={()=>setTopDrawer('zones')} onClose={()=>onClosePanel('zones')} onKeyDown={trapTab}>
+        {zonePanel}
       </MovableViewerPanel>
       <MovableViewerPanel key={panelScopeKey+':tools'} kind="tools" id="viewer-tools-dock" name={toolsTitle}
         workspaceRef={workspaceRef} dialogRef={dialog} open={toolsOpen&&!!tools}

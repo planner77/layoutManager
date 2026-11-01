@@ -57,6 +57,10 @@ import {MemoSessionSnapStore,collectMemoSnapCandidates,uniqueMemoSnapTarget,
 import {SceneWorkTools} from './scene-work-tools';
 import {useCadExchange} from './use-cad-exchange';
 import {CadExchangeDialog} from './cad-exchange-dialog';
+import {CadZonePanel} from './cad-zone-panel';
+import {CadZoneOverlay} from './cad-zone-overlay';
+import {useCadZones} from './use-cad-zones';
+import {validateZonePolygon} from '@/domain/cad-zone';
 import {captureExchangeMemoVisuals} from './exchange-memo-visual';
 
 export function CadViewer({
@@ -343,6 +347,20 @@ export function CadViewer({
     status: '도면 로딩 중…',
     ready: false,
   });
+  const getZoneCanvas=useCallback(()=>container.current,[]);
+  const zones=useCadZones({versionId,sourceSha256,renderer,format,ready:state.ready,loading,
+    attempt,getManager,getCanvas:getZoneCanvas,getViewEpoch});
+  const zoneSpacePan=useRef(false);
+  useEffect(()=>{
+    const down=(event:KeyboardEvent)=>{if(event.code!=='Space'||!zones.drawing)return;
+      const target=event.target instanceof HTMLElement?event.target:null;
+      if(target?.closest('input,textarea,select,button,a,[contenteditable="true"]'))return;
+      zoneSpacePan.current=true;event.preventDefault();};
+    const up=(event:KeyboardEvent)=>{if(event.code==='Space')zoneSpacePan.current=false;};
+    const blur=()=>{zoneSpacePan.current=false;};
+    window.addEventListener('keydown',down,true);window.addEventListener('keyup',up,true);window.addEventListener('blur',blur);
+    return()=>{window.removeEventListener('keydown',down,true);window.removeEventListener('keyup',up,true);window.removeEventListener('blur',blur);zoneSpacePan.current=false;};
+  },[zones.drawing]);
   const getExchangeMemoVisuals=useCallback(()=>{
     const scope={versionId,sourceSha256},current=getManager();
     const records=memoSession.current?.matches(scope)?memoSession.current.list():[];
@@ -623,6 +641,12 @@ export function CadViewer({
         setMemoCancelSignal(previous=>previous+1);
         return;
       }
+      if(event.key==='Escape' && zones.snap){
+        event.preventDefault();event.stopImmediatePropagation();zones.chooseSnap(null);return;
+      }
+      if(event.key==='Escape' && zones.drawing){
+        event.preventDefault();event.stopImmediatePropagation();zones.cancel();return;
+      }
       if(event.key==='Escape' && !typeManagerOpen && (memoPlacing || memoCandidate || memoSelectedId)){
         event.preventDefault();event.stopImmediatePropagation();
         closeMemoEditor();return;
@@ -647,6 +671,7 @@ export function CadViewer({
         if(name==='layers')dispatchApp({type:'close-layers'});
         else if(name==='outlines')dispatchApp({type:'toggle-outline-tree'});
         else if(name==='memos')dispatchApp({type:'toggle-memo-tree'});
+        else if(name==='zones')dispatchApp({type:'toggle-zones'});
         else if(name==='tools'){setTypeManagerOpen(false);dispatchApp({type:'close-tools'});}
         requestAnimationFrame(()=>viewerShell.current?.querySelector<HTMLButtonElement>('[data-viewer-group=work]')?.focus({preventScroll:true}));
         return;
@@ -675,7 +700,7 @@ export function CadViewer({
     // Capture ahead of native fullscreen/selection handling for staged edit ESC.
     window.addEventListener('keydown',handleKeyDown,true);
     return ()=>window.removeEventListener('keydown',handleKeyDown,true);
-  },[syncSavedOutlines,deleteRequest,contextMenu,state.ready,canvasMode,openDelete,nameTipOpen,infoOpen,memoPlacing,memoCandidate,memoSelectedId,closeMemoEditor,typeManagerOpen,exchangeOpened,closeExchange]);
+  },[syncSavedOutlines,deleteRequest,contextMenu,state.ready,canvasMode,openDelete,nameTipOpen,infoOpen,memoPlacing,memoCandidate,memoSelectedId,closeMemoEditor,typeManagerOpen,exchangeOpened,closeExchange,zones]);
   const stopOutlineEditing = useCallback(() => {
     // Must cancel the Worker BEFORE clearing selection: selection callbacks can
     // otherwise enqueue a new compute job for the previous previewKind.
@@ -1113,6 +1138,7 @@ export function CadViewer({
     }else void applyMemoMove(id,point,behavior);
   };
   function startMemoPlacement() {
+    if(zones.drawing)zones.cancel();
     setTypeManagerOpen(false);
     if (!memoAvailable) return;
     if (memoPlacing) { closeMemoEditor(); return; }
@@ -1299,6 +1325,9 @@ export function CadViewer({
           outlines:storedOutlines.map(o=>({id:o.id,revision:o.revision})),
           memos:permanentMemos.map(m=>({id:m.id,revision:m.revision!})),
         });
+        // Reset invalidates current Version geometry while Scene revision stays
+        // unchanged. Hide stale projected paths before any fallible refetch.
+        zones.invalidateMappings();void zones.refresh();
       }
       if(manager.current!==current)throw new Error('초기화 중 Viewer가 변경되었습니다. 서버 상태를 재조회하세요.');
       current.cancelGeneratedCommand();current.cancelOutlinePreview();
@@ -1331,6 +1360,7 @@ export function CadViewer({
     finally{setResetBusy(false);}
   }
   function toggleOutlineTool() {
+    if(zones.drawing)zones.cancel();
     if (!outlineAvailable) return;
     const enabled = !outlineEnabledRef.current;
     if (enabled) {
@@ -1372,6 +1402,7 @@ export function CadViewer({
   }
   /** General selection and generated-only targeting are independent of U3. */
   function changeCanvasMode(next:'pan'|'objects'|'generated') {
+    if(zones.drawing)zones.cancel();
     if (!treeAvailable) return;
     closeMemoEditor();
     setDeleteRequest(null);setContextMenu(null);
@@ -1606,7 +1637,8 @@ export function CadViewer({
     closeExchange();
     loadSequenceRef.current++;
     sceneRequest.current?.abort();setSceneBusy(false);setSceneCandidate(false);setSceneMode('scene-first');
-    if (loading && source.state(`/api/cad-files/${versionId}/content`) === 'pending') source.dispose();
+    // Renderer-only escape reuses this Version's in-flight source promise.
+    // Full reload, a different Version, and source-error retry still dispose it.
     fallbackTried.current = false; fallbackReason.current = null; setRecoveryNotice(null); setLinkFallbackUrl(null);
     manager.current?.dispose();
     setLoading(true);
@@ -1622,7 +1654,7 @@ export function CadViewer({
     const url = new URL(window.location.href);
     url.searchParams.set('renderer', value);
     window.history.replaceState(null, '', url);
-  }, [loading, renderer, resetOutline, confirmDiscard, source, versionId, resetMemos,closeExchange]);
+  }, [renderer, resetOutline, confirmDiscard, resetMemos,closeExchange]);
 
   function reload() {
     if (loading || !confirmDiscard()) return;
@@ -1883,6 +1915,28 @@ export function CadViewer({
   const memoCanDelete=!selectedMemoForDelete?.persisted || !!(memoDeleteActor &&
     (memoDeleteActor.canDeleteAny||selectedMemoForDelete.createdById===memoDeleteActor.id));
   const selectedPersistedMemo=memoServerMode==='active'&&selectedMemoForDelete?.persisted===true;
+  const prepareZoneDrawing=()=>{
+    if(!zones.canCreate)return;
+    closeMemoEditor();setTypeManagerOpen(false);
+    if(outlineEnabledRef.current){outlineEnabledRef.current=false;stopOutlineEditing();dispatchApp({type:'set-outline-tool',enabled:false});}
+    manager.current?.cancelGeneratedCommand();manager.current?.clearCanvasObjectSelection();
+    manager.current?.setSelectionMode('pan');setCanvasMode('pan');
+    setDeleteRequest(null);setContextMenu(null);
+    if(!appState.zonePanelOpen)dispatchApp({type:'toggle-zones',exclusive:isCompact});
+  };
+  const startZoneDrawing=()=>{if(!zones.canCreate)return;prepareZoneDrawing();zones.start();};
+  const reuseSelectedOutline=()=>{
+    const source=storedOutlines.find(row=>outlineWorkspace.selected.has(row.id)&&!storedOutlineHidden.has(row.id))?.geometry??
+      savedOutlines.find(row=>savedOverlayStates.some(s=>s.id===row.id&&s.selected&&s.visible))?.result.geometry;
+    if(!source||source.type!=='Polygon'||source.coordinates.length!==1){
+      zones.reportError('선택한 단일 Polygon 외곽선이 없습니다. Hole·MultiPolygon은 구역 경계로 복사할 수 없습니다.');return;
+    }
+    try{const normalized=validateZonePolygon(source);
+      zones.setPoints(normalized.polygon.coordinates[0].slice(0,-1).map(([x,y])=>({x,y})));
+      zones.setClosed(true);
+      zones.reportError(null);
+    }catch(error){zones.reportError(error instanceof Error?error.message:'선택 외곽선의 경계가 유효하지 않습니다.');}
+  };
   const commandGroups:ViewerCommandGroup[]=[
     {id:'drawing',label:'도면',commands:[
       {id:'info',label:'도면 정보',onSelect:()=>setInfoOpen(value=>!value)},
@@ -1924,6 +1978,16 @@ export function CadViewer({
       {id:'tools',label:'선택·편집 도구',testId:'viewer-menu-tools',kind:'checkbox',checked:appState.toolsOpen&&!typeManagerOpen,expanded:(outlineAvailable||memoAvailable)&&appState.toolsOpen&&!typeManagerOpen,controls:(outlineAvailable||memoAvailable)&&appState.toolsOpen?'viewer-tools-dock':undefined,disabled:!(outlineAvailable||memoAvailable),reason:!(outlineAvailable||memoAvailable)?(outlineUnavailable??memoUnavailable??undefined):undefined,onSelect:()=>{if(typeManagerOpen){setTypeManagerOpen(false);return;}if(appState.toolsOpen)closeMemoEditor();dispatchApp({type:'toggle-tools',exclusive:isCompact});}},
       {id:'outline',label:'외곽선 생성',testId:'viewer-menu-outline-tool',kind:'checkbox',checked:appState.outlineToolEnabled,expanded:appState.outlineToolEnabled&&appState.toolsOpen,controls:appState.outlineToolEnabled&&appState.toolsOpen?'viewer-tools-dock':undefined,disabled:!outlineAvailable,reason:outlineUnavailable??undefined,onSelect:()=>{setTypeManagerOpen(false);toggleOutlineTool();}},
       {id:'tree',label:'외곽선 목록',testId:'viewer-menu-outline-tree',kind:'checkbox',checked:appState.outlineTreeOpen,expanded:treeAvailable&&appState.outlineTreeOpen,controls:treeAvailable&&appState.outlineTreeOpen?'viewer-outline-tree-dock':undefined,disabled:!treeAvailable,reason:treeUnavailable??undefined,onSelect:()=>{if(!appState.outlineTreeOpen)void outlineWorkspace.refresh();dispatchApp({type:'toggle-outline-tree',exclusive:isCompact});}},
+      {id:'zone-create',label:'구역 생성',testId:'viewer-menu-zone-create',kind:'checkbox',checked:zones.drawing,
+        expanded:appState.zonePanelOpen,controls:appState.zonePanelOpen?'viewer-zone-dock':undefined,
+        disabled:!zones.canCreate,reason:zones.unavailable??(!zones.list?.canEdit?'구역 쓰기 권한이 없습니다.':undefined),
+        onSelect:()=>{if(zones.drawing)zones.cancel();else startZoneDrawing();}},
+      {id:'zone-list',label:'구역 목록',testId:'viewer-menu-zone-list',kind:'checkbox',checked:appState.zonePanelOpen,
+        expanded:appState.zonePanelOpen,controls:appState.zonePanelOpen?'viewer-zone-dock':undefined,
+        disabled:!!zones.readUnavailable,reason:zones.readUnavailable??undefined,
+        onSelect:()=>{if(appState.zonePanelOpen&&zones.drawing)zones.cancel();
+          if(!appState.zonePanelOpen&&zones.list)void zones.refresh();
+          dispatchApp({type:'toggle-zones',exclusive:isCompact});}},
       {id:'memo-tree',label:'메모 트리',testId:'viewer-menu-memo-tree',kind:'checkbox',
        checked:appState.memoTreeOpen,expanded:memoAvailable&&appState.memoTreeOpen,
        controls:memoAvailable&&appState.memoTreeOpen?'viewer-memo-tree-dock':undefined,
@@ -2064,6 +2128,20 @@ export function CadViewer({
           className="border-t border-red-300 bg-red-50 p-2 text-xs text-red-800">{memoTreeError}</p>}
       </div> : null}
       memoTreeOpen={memoAvailable&&appState.memoTreeOpen}
+      zonePanel={<CadZonePanel key={versionId+':'+(zones.list?.actorId??'none')+':'+(zones.drawingExistingId??(zones.drawing?'drawing':'browse'))} list={zones.list} loadingList={zones.loadingList} selectedId={zones.selectedId} hidden={zones.hidden}
+        allVisible={zones.allVisible} canEdit={zones.canCreate} editReason={zones.unavailable??(!zones.list?.canEdit?'구역 쓰기 권한이 없습니다.':null)} drawing={zones.drawing} points={zones.points} closed={zones.closed}
+        notice={zones.error} busy={zones.busy} snap={zones.snap} onChooseSnap={zones.chooseSnap}
+        onSelect={zones.setSelectedId} onFocus={zones.focus}
+        onVisibility={(id,visible)=>{if(visible)zones.setAllVisible(true);zones.setHidden(current=>{const next=new Set(current);if(visible)next.delete(id);else next.add(id);return next;});}}
+        onAllVisibility={zones.setAllVisible} onCreateStart={startZoneDrawing} onCancel={zones.cancel}
+        onUndoPoint={()=>{zones.setPoints(current=>current.slice(0,-1));zones.setClosed(false);}}
+        onClosePolygon={zones.closePolygon}
+        onAddPoint={zones.addPoint} onEditPoint={(index,point)=>{zones.setPoints(current=>current.map((p,i)=>i===index?point:p));zones.setClosed(false);}}
+        onReuseOutline={reuseSelectedOutline} onSave={zones.save} onDelete={zones.remove}
+        onEditGeometry={zone=>{prepareZoneDrawing();zones.editGeometry(zone);}} drawingExistingId={zones.drawingExistingId}
+        onCategoryCreate={zones.categoryCreate} onCategoryPatch={zones.categoryPatch} onCategoryDelete={zones.categoryDelete}
+        onRefresh={()=>void zones.refresh()} onClose={()=>{if(zones.drawing)zones.cancel();dispatchApp({type:'toggle-zones'});}}/>}
+      zonePanelOpen={appState.zonePanelOpen&&!zones.readUnavailable}
       compactPanel={appState.compactPanel}
       toolsOpen={appState.toolsOpen}
       toolsTitle={typeManagerOpen?'외곽선 타입 관리':undefined}
@@ -2071,6 +2149,7 @@ export function CadViewer({
         if(panel==='layers'){dispatchApp({type:'close-layers'});requestAnimationFrame(()=>viewerShell.current?.querySelector<HTMLButtonElement>('[data-viewer-group=work]')?.focus({preventScroll:true}));}
         else if(panel==='outlines'){dispatchApp({type:'toggle-outline-tree'});requestAnimationFrame(()=>viewerShell.current?.querySelector<HTMLButtonElement>('[data-viewer-group=work]')?.focus({preventScroll:true}));}
         else if(panel==='memos'){dispatchApp({type:'toggle-memo-tree'});requestAnimationFrame(()=>viewerShell.current?.querySelector<HTMLButtonElement>('[data-viewer-group=work]')?.focus({preventScroll:true}));}
+        else if(panel==='zones'){if(zones.drawing)zones.cancel();dispatchApp({type:'toggle-zones'});requestAnimationFrame(()=>viewerShell.current?.querySelector<HTMLButtonElement>('[data-viewer-group=work]')?.focus({preventScroll:true}));}
         else {if(!typeManagerOpen)closeMemoEditor();setTypeManagerOpen(false);dispatchApp({type:'close-tools'});requestAnimationFrame(()=>viewerShell.current?.querySelector<HTMLButtonElement>('[data-viewer-group=work]')?.focus({preventScroll:true}));}
       }}
       textSearchOpen={searchOpen}
@@ -2084,7 +2163,15 @@ export function CadViewer({
             data-testid="cad-canvas"
             className="absolute inset-0 h-full min-h-0 w-full overflow-hidden bg-black"
             aria-label={`${format} 도면`}
+            onPointerDownCapture={event=>{
+              if(!zones.drawing||zoneSpacePan.current||event.button!==0||!event.isPrimary)return;
+              event.preventDefault();event.stopPropagation();
+              zones.canvasPoint(event.clientX,event.clientY);
+            }}
+            onClickCapture={event=>{if(zones.drawing){event.preventDefault();event.stopPropagation();}}}
+            onDoubleClickCapture={event=>{if(zones.drawing){event.preventDefault();event.stopPropagation();}}}
             onContextMenu={event=>{
+              if(zones.drawing){event.preventDefault();return;}
               if(event.target instanceof HTMLCanvasElement && deleteModeAvailable &&
                  manager.current?.isSelectedGeneratedAt(event.clientX,event.clientY)){
                 event.preventDefault();
@@ -2098,6 +2185,10 @@ export function CadViewer({
           {outlineWorkspace.mode==='active' && <PersistedOutlineOverlay
             outlines={storedOutlines}
             hidden={storedOutlineHidden} selected={outlineWorkspace.selected} getManager={getManager} viewRevision={viewRevision} />}
+          {zones.list&&<CadZoneOverlay zones={zones.list.zones}
+            scope={{versionId,sourceSha256,sceneRevision:zones.sceneRevision}} hidden={zones.hidden}
+            allVisible={zones.allVisible} selectedId={zones.selectedId} points={zones.points}
+            closed={zones.closed} getManager={getManager} viewRevision={viewRevision}/>}
           {memoAvailable && <CadMemoOverlay
             memos={canvasMemos}
             selectedId={memoScoped?memoSelectedId:null}

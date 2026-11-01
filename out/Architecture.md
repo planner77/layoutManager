@@ -1,3 +1,19 @@
+## PR #200 / #196 — 조회 capability와 재시도 UI·Source 수명주기 (2026-11-01)
+
+Zone UI는 public Runtime status를 먼저 읽어 명시적 OFF일 때 보호 Zone GET을 보내지 않는다. public ACTIVE는 인가 근거가 아니며 실제 Zone GET/쓰기의 Session·Site·Version·Gate 재검증은 기존 서버가 수행한다. 권한/통신 실패 시 보호 데이터는 폐기하되 오류·Retry panel 접근은 유지한다. 데이터 성공 여부와 재시도 UI gate를 분리하고 stale Version/actor 응답이 현재 세션을 덮지 못하게 한다.
+
+Renderer-only 수동 전환은 이전 Manager의 generation·Adapter/Worker를 폐기하면서 같은 Version의 진행 중 immutable Source Promise는 공유한다. network body 완료와 JS cache 확정 사이를 취소로 오판하지 않는다. Version 변경/full reload/source 오류 재시도는 기존 Source 정리 경로를 유지한다. AC/실패·검증은 Issue196/TestPlan/FailureLedger/TestReport를 따른다.
+
+---
+
+## #196 Zone 도메인·Viewer/API 분리 (2026-11-01)
+
+[Issue196](Issue196.md)의 공유 DTO/API와 ADR-Z196-01~08을 구현 계약으로 사용한다. `src/domain/cad-zone.ts`는 client/server 공통 metadata·simple Polygon·포함/겹침·계층 검증만 소유한다. 서버는 G7 실제 Version→Location→Site 권한/Revision CAS/DB 거래/Audit, Viewer는 배타적 입력 모드·세션 Snap 입력·Zone overlay/tree·MovableViewerPanel을 소유한다. 기존 Memo 후보 알고리즘·Adapter WCS/focus를 재사용하되 Memo 영속 Anchor나 CadOutline row를 Zone으로 전용하지 않는다.
+
+Zone metadata는 층 단위, geometry는 Version/SHA/Scene 단위다. Scene Reset은 CurrentScene revision을 바꾸지 않는 현행 구현이므로 두 mode 모두 Zone geometry를 **동일 transaction에서 명시 무효화**하고 Zone revision을 올린다. metadata/parent/과거 polygon 및 원본/Current는 보존한다. stale mapping은 포커스/overlay 금지이며 새 Version 자동 복사도 금지한다. 패널 조작은 Canvas/Manager/Source lifetime을 변경하지 않는다. DB 정본은 [Database](Database.md), 수용은 [TestPlan](TestPlan.md)이다.
+
+---
+
 ## ADR 구현 참조 — #191 기준정보 단일 트리 + 상세 편집 (2026-11-01)
 
 - Client: 기존 master-manager.tsx 5열 폼 교체. master-tree.ts는 불변 type:id 키/부모·조상/전체 경로·검색 포함·임시 조상 확장·전체 활성 경로를 계산하는 순수 함수. MasterManager는 선택/확장/검색/필터/모드/입력 Draft 분리, GET generation 폐기, 저장 중 요청 직렬화와 성공 후 ID 선택·부모 확장 재조회 수행.

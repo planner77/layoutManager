@@ -8,17 +8,20 @@ import { CAD_BUSINESS_DDL, CAD_BUSINESS_OBJECT_NAMES,
   CAD_OUTLINE_RECEIPT_DDL, CAD_OUTLINE_RECEIPT_OBJECT_NAMES } from '../cad-business/schema-ddl';
 import { CAD_ANCHOR_DDL, CAD_ANCHOR_OBJECT_NAMES } from '../cad-business/anchor-ddl';
 import {CAD_MEMO_FEATURE_DDL,CAD_MEMO_FEATURE_OBJECT_NAMES} from '../cad-business/memo-feature-ddl';
+import {CAD_ZONE_DDL,CAD_ZONE_OBJECT_NAMES} from '../cad-business/zone-ddl';
 import type { IsolatedDb } from '../g7-staging/g1-store';
 
 export const G7_GREENFIELD_CAPABILITY = 'G7-GREENFIELD-AUTH-V1' as const;
-export const G7_GREENFIELD_SCHEMA_ID = 'G7-GREENFIELD-TYPED-OUTLINES-20261101-1' as const;
+export const G7_GREENFIELD_SCHEMA_ID = 'G7-GREENFIELD-SEMANTIC-ZONES-20261101-1' as const;
+export const G7_PREVIOUS_TYPED_OUTLINES_BASELINE = '202611010001_greenfield_typed_outlines_baseline' as const;
+export const G7_PREVIOUS_TYPED_OUTLINES_CHECKSUM = createHash('sha256').update('layoutManager:G7-GREENFIELD-TYPED-OUTLINES-20261101-1:baseline').digest('hex');
 export const G7_PREVIOUS_TYPES_SCHEMA_ID = 'G7-GREENFIELD-OUTLINE-TYPES-20261031-1' as const;
 export const G7_PREVIOUS_MEMO_SCHEMA_ID = 'G7-GREENFIELD-MEMO-M45-20261031-1' as const;
 export const G7_PREVIOUS_ANCHOR_BASELINE='202610310001_greenfield_anchor_baseline' as const;
 export const G7_PREVIOUS_ANCHOR_CHECKSUM=createHash('sha256').update('layoutManager:G7-GREENFIELD-ANCHOR-20261031-1:baseline').digest('hex');
 export const G7_PREVIOUS_MEMO_BASELINE = '202610310002_greenfield_memo_m45_baseline' as const;
 export const G7_PREVIOUS_TYPES_BASELINE = '202610310003_greenfield_outline_types_baseline' as const;
-export const G7_GREENFIELD_BASELINE = '202611010001_greenfield_typed_outlines_baseline' as const;
+export const G7_GREENFIELD_BASELINE = '202611010002_greenfield_semantic_zones_baseline' as const;
 export const G7_PREVIOUS_BUSINESS_BASELINE='202610300002_greenfield_business_baseline' as const;
 export const G7_PREVIOUS_BUSINESS_CHECKSUM=createHash('sha256').update('layoutManager:G7-GREENFIELD-BUSINESS-20261030-1:baseline').digest('hex');
 export const G7_SCENE_GREENFIELD_BASELINE = '202610300001_greenfield_scene_baseline' as const;
@@ -28,7 +31,7 @@ export const G7_PREVIOUS_MEMO_CHECKSUM =
 export const G7_PREVIOUS_TYPES_CHECKSUM =
   createHash('sha256').update('layoutManager:G7-GREENFIELD-OUTLINE-TYPES-20261031-1:baseline').digest('hex');
 export const G7_GREENFIELD_BASELINE_CHECKSUM =
-  createHash('sha256').update('layoutManager:G7-GREENFIELD-TYPED-OUTLINES-20261101-1:baseline').digest('hex');
+  createHash('sha256').update('layoutManager:G7-GREENFIELD-SEMANTIC-ZONES-20261101-1:baseline').digest('hex');
 export const G7_OLD_GREENFIELD_BASELINE = '202610290001_greenfield_baseline' as const;
 export const G7_OLD_GREENFIELD_BASELINE_CHECKSUM =
   createHash('sha256').update('layoutManager:G7-GREENFIELD-20261029-1:baseline').digest('hex');
@@ -55,9 +58,10 @@ export function assertG7GreenfieldSchema(db: IsolatedDb): void {
   const anchor=history.length===1&&history[0].migration_name===G7_PREVIOUS_ANCHOR_BASELINE;
   const memo=history.length===1&&history[0].migration_name===G7_PREVIOUS_MEMO_BASELINE;
   const previousTypes=history.length===1&&history[0].migration_name===G7_PREVIOUS_TYPES_BASELINE;
+  const previousTyped=history.length===1&&history[0].migration_name===G7_PREVIOUS_TYPED_OUTLINES_BASELINE;
   const next=history.length===1&&history[0].migration_name===G7_GREENFIELD_BASELINE;
-  if ((!old&&!scene&&!business&&!anchor&&!memo&&!previousTypes&&!next) ||
-      history[0].checksum !== (old?G7_OLD_GREENFIELD_BASELINE_CHECKSUM:scene?G7_SCENE_GREENFIELD_BASELINE_CHECKSUM:business?G7_PREVIOUS_BUSINESS_CHECKSUM:anchor?G7_PREVIOUS_ANCHOR_CHECKSUM:memo?G7_PREVIOUS_MEMO_CHECKSUM:previousTypes?G7_PREVIOUS_TYPES_CHECKSUM:G7_GREENFIELD_BASELINE_CHECKSUM) ||
+  if ((!old&&!scene&&!business&&!anchor&&!memo&&!previousTypes&&!previousTyped&&!next) ||
+      history[0].checksum !== (old?G7_OLD_GREENFIELD_BASELINE_CHECKSUM:scene?G7_SCENE_GREENFIELD_BASELINE_CHECKSUM:business?G7_PREVIOUS_BUSINESS_CHECKSUM:anchor?G7_PREVIOUS_ANCHOR_CHECKSUM:memo?G7_PREVIOUS_MEMO_CHECKSUM:previousTypes?G7_PREVIOUS_TYPES_CHECKSUM:previousTyped?G7_PREVIOUS_TYPED_OUTLINES_CHECKSUM:G7_GREENFIELD_BASELINE_CHECKSUM) ||
       history[0].finished_at == null || history[0].rolled_back_at != null)
     throw new Error('G7_GREENFIELD_INSTALL_HISTORY');
 
@@ -67,41 +71,47 @@ export function assertG7GreenfieldSchema(db: IsolatedDb): void {
       normalize(row.sql) === normalize(sql))))
     throw new Error('G7_GREENFIELD_DELETE_PASSWORD_GUARD');
 
-  const normal = rows.filter(row => !guards.includes(row) && !CAD_BUSINESS_OBJECT_NAMES.has(row.name) && !CAD_ANCHOR_OBJECT_NAMES.has(row.name) && !CAD_MEMO_FEATURE_OBJECT_NAMES.has(row.name) && !OUTLINE_TYPE_OBJECT_NAMES.has(row.name) && !CAD_OUTLINE_RECEIPT_OBJECT_NAMES.has(row.name)).map(row =>
+  const normal = rows.filter(row => !guards.includes(row) && !CAD_BUSINESS_OBJECT_NAMES.has(row.name) && !CAD_ANCHOR_OBJECT_NAMES.has(row.name) && !CAD_MEMO_FEATURE_OBJECT_NAMES.has(row.name) && !OUTLINE_TYPE_OBJECT_NAMES.has(row.name) && !CAD_OUTLINE_RECEIPT_OBJECT_NAMES.has(row.name) && !CAD_ZONE_OBJECT_NAMES.has(row.name)).map(row =>
     [row.type,row.name,normalize(row.sql)]);
   if (createHash('sha256').update(JSON.stringify(normal)).digest('hex') !== (old?G7_BASE_DDL_SHA256:G7_SCENE_DDL_SHA256))
     throw new Error('G7_GREENFIELD_SCHEMA_DRIFT');
   const extra = rows.filter(row => CAD_BUSINESS_OBJECT_NAMES.has(row.name)).map(row =>
     [row.type,row.name,normalize(row.sql)].join('|')).sort();
-  const expected = (next||previousTypes) ? LATEST_CAD_BUSINESS_DDL.map(row =>
+  const expected = (next||previousTyped||previousTypes) ? LATEST_CAD_BUSINESS_DDL.map(row =>
     [row.type,row.name,normalize(row.sql)].join('|')).sort() :
     (business || anchor || memo) ? CAD_BUSINESS_DDL.map(row =>
     [row.type,row.name,normalize(row.sql)].join('|')).sort() : [];
   if (JSON.stringify(extra)!==JSON.stringify(expected)) throw new Error('G7_GREENFIELD_BUSINESS_SCHEMA_DRIFT');
   const anchors=rows.filter(row=>CAD_ANCHOR_OBJECT_NAMES.has(row.name)).map(row=>
     [row.type,row.name,normalize(row.sql)].join('|')).sort();
-  const expectedAnchors=(anchor||memo||previousTypes||next)?CAD_ANCHOR_DDL.map(row=>
+  const expectedAnchors=(anchor||memo||previousTypes||previousTyped||next)?CAD_ANCHOR_DDL.map(row=>
     [row.type,row.name,normalize(row.sql)].join('|')).sort():[];
   if(JSON.stringify(anchors)!==JSON.stringify(expectedAnchors))
     throw new Error('G7_GREENFIELD_ANCHOR_SCHEMA_DRIFT');
   const memoFeatures=rows.filter(row=>CAD_MEMO_FEATURE_OBJECT_NAMES.has(row.name)).map(row=>
     [row.type,row.name,normalize(row.sql)].join('|')).sort();
-  const expectedMemoFeatures=(memo||previousTypes||next)?CAD_MEMO_FEATURE_DDL.map(row=>
+  const expectedMemoFeatures=(memo||previousTypes||previousTyped||next)?CAD_MEMO_FEATURE_DDL.map(row=>
     [row.type,row.name,normalize(row.sql)].join('|')).sort():[];
   if(JSON.stringify(memoFeatures)!==JSON.stringify(expectedMemoFeatures))
     throw new Error('G7_GREENFIELD_MEMO_FEATURE_SCHEMA_DRIFT');
   const types=rows.filter(row=>OUTLINE_TYPE_OBJECT_NAMES.has(row.name)).map(row=>
     [row.type,row.name,normalize(row.sql)].join('|')).sort();
-  const expectedTypes=(previousTypes||next)?OUTLINE_TYPE_DDL.map(row=>
+  const expectedTypes=(previousTypes||previousTyped||next)?OUTLINE_TYPE_DDL.map(row=>
     [row.type,row.name,normalize(row.sql)].join('|')).sort():[];
   if(JSON.stringify(types)!==JSON.stringify(expectedTypes))
     throw new Error('G7_GREENFIELD_OUTLINE_TYPE_SCHEMA_DRIFT');
   const receipts=rows.filter(row=>CAD_OUTLINE_RECEIPT_OBJECT_NAMES.has(row.name)).map(row=>
     [row.type,row.name,normalize(row.sql)].join('|')).sort();
-  const expectedReceipts=next?CAD_OUTLINE_RECEIPT_DDL.map(row=>
+  const expectedReceipts=(previousTyped||next)?CAD_OUTLINE_RECEIPT_DDL.map(row=>
     [row.type,row.name,normalize(row.sql)].join('|')).sort():[];
   if(JSON.stringify(receipts)!==JSON.stringify(expectedReceipts))
     throw new Error('G7_GREENFIELD_OUTLINE_RECEIPT_SCHEMA_DRIFT');
+  const zones=rows.filter(row=>CAD_ZONE_OBJECT_NAMES.has(row.name)).map(row=>
+    [row.type,row.name,normalize(row.sql)].join('|')).sort();
+  const expectedZones=next?CAD_ZONE_DDL.map(row=>
+    [row.type,row.name,normalize(row.sql)].join('|')).sort():[];
+  if(JSON.stringify(zones)!==JSON.stringify(expectedZones))
+    throw new Error('G7_GREENFIELD_ZONE_SCHEMA_DRIFT');
 
   const check = db.prepare('PRAGMA quick_check').all();
   if (check.length !== 1 || Object.values(check[0])[0] !== 'ok' ||

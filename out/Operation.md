@@ -1,3 +1,20 @@
+## PR #200 — 구역 조회 재시도·Renderer 전환 수리 (0.56.0 후보 유지)
+
+G7 OFF는 public status로 확인해 구역 API의 불필요한 503 조회를 생략한다. 구역 조회의 일시적 오류·권한 변경 시 기존 보호 정보는 지워지고 오류 패널/다시 조회 경로가 남는다. 운영 상태나 권한을 복구한 뒤 구역 목록의 새로고침을 사용하며 서버 재인가를 통과해야 한다. 원본 재로드나 임시 CAD 작업 폐기를 재시도 조건으로 요구하지 않는다.
+
+같은 Version에서 로딩 중 Viewer를 바꿔도 원본 다운로드는 공유한다. 실제 원본 통신 실패의 다시 불러오기와 다른 Version 전환은 기존 경로를 사용한다. 실패 Run과 실제 수리 검증은 FailureLedger/TestReport를 따른다. 환경 변수·DB/Volume·Auth/Writer 설정을 변경하는 수리가 아니다.
+
+---
+
+## #196 구역 저장·버전 정합성 운영 (0.56.0 후보)
+
+- 구역 API는 Version으로 실제 층/Site를 해석하며 서명된 G7 ACTIVE·세션·Site Grant를 요청마다 검사한다. Reader 조회, Editor/Admin 공동 수정, 작성자 또는 해당 Site Admin 논리 삭제, Site Admin 카테고리 관리다. G7 OFF·Writer OFF·구역 Schema 부재에서는 쓰기를 활성화하지 않는다.
+- 새 빈 Greenfield baseline에만 구역 테이블을 설치한다. 기존 DB/Volume에 DDL을 자동 적용하지 않는다. 과거 baseline 조회 호환성을 구역 쓰기 지원으로 해석하지 않는다. 운영 이전·백업/복구 수용은 별도 승인 절차다.
+- 409는 최신 revision/부모/Scene 변경을 확인하고 명시적으로 재적용한다. 네트워크 결과 불확실 시 신규 생성은 같은 Idempotency-Key/정규화 payload로 재시도하며 현재 인가를 다시 통과해야 한다. 신규 버전은 경계 미매핑, Scene Reset은 구역 정보·이력을 보존하고 해당 버전 경계를 재연결 필요로 전환한다.
+- 참조는 plain text와 인증정보·query·fragment 없는 HTTP/HTTPS 링크다. 서버는 URL을 fetch하지 않는다. 원본/설명/참조 전문과 credential을 진단 로그에 복제하지 않는다. 설계 정본은 [Issue196](Issue196.md), DB는 [Database](Database.md), 실제 검증/실패는 TestReport/FailureLedger다.
+
+---
+
 ## 0.55.2 PR #192 — 병합·게시/현장 경계 (2026-11-01)
 
 - 정확 HEAD [PR CI 41281582636](https://github.com/planner77/layoutManager/actions/runs/41281582636) Verify/Docker 성공 후 Main Squash `b3fcf3eda19177f52e00c0191d5ffb9f333bb0e8`. [Main CI 41283558627](https://github.com/planner77/layoutManager/actions/runs/41283558627) 시작 확인했으며 GHCR 0.55.2 App·0.55.2-migrate 쌍의 완료/digest **NOT VERIFIED**. 최초 태그 존재·충돌 검증 외 재태그/수동 게시 없음.
