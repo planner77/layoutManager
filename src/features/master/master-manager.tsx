@@ -82,15 +82,22 @@ export function MasterManager() {
   const busyRef = useRef(false);
   const selectedRef = useRef(selectedKey);
   const filterRef = useRef(showInactive);
-  selectedRef.current = selectedKey;
-  filterRef.current = showInactive;
   const { runWithLoading } = useGlobalLoading();
+
+  useEffect(() => {
+    selectedRef.current = selectedKey;
+  }, [selectedKey]);
+
+  useEffect(() => {
+    filterRef.current = showInactive;
+  }, [showInactive]);
 
   const all = useMemo(() => flattenMasterTree(roots), [roots]);
   const index = useMemo(() => new Map<string, MasterTreeEntry>(all.map((entry) => [entry.key, entry])), [all]);
   const search = useMemo(() => searchMasterTree(all, searchText), [all, searchText]);
   const visible = useMemo(() => visibleMasterTree(roots, expanded, search), [roots, expanded, search]);
   const visibleIndex = useMemo(() => new Map<string, number>(visible.map((entry, pos) => [entry.key, pos])), [visible]);
+  const effectiveFocusedKey = focusedKey && visibleIndex.has(focusedKey) ? focusedKey : visible[0]?.key ?? null;
   const selected = selectedKey ? index.get(selectedKey) ?? null : null;
   const creatingParent = createParentKey ? index.get(createParentKey) ?? null : null;
   const creatingLevel = creatingParent ? masterLevels[creatingParent.level + 1] : masterLevels[0];
@@ -157,16 +164,9 @@ export function MasterManager() {
   }, []);
 
   useEffect(() => {
-    setMode("view");
-    setNotice("");
     void refresh();
     return () => { sequence.current += 1; };
   }, [showInactive, refresh]);
-
-  useEffect(() => {
-    if (focusedKey && !visibleIndex.has(focusedKey))
-      setFocusedKey(visible[0]?.key ?? null);
-  }, [focusedKey, visible, visibleIndex]);
 
   useEffect(() => {
     if (mode === "create" || mode === "edit") nameRef.current?.focus();
@@ -358,7 +358,7 @@ export function MasterManager() {
           aria-level={entry.level + 1}
           aria-expanded={hasChildren ? opened : undefined}
           aria-selected={isSelected}
-          tabIndex={entry.key === (focusedKey ?? visible[0]?.key) ? 0 : -1}
+          tabIndex={entry.key === effectiveFocusedKey ? 0 : -1}
           onFocus={(event) => { if (event.currentTarget === event.target) setFocusedKey(entry.key); }}
           onKeyDown={(event) => onTreeKeyDown(event, entry)}
           className="rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-teal-600"
@@ -448,7 +448,11 @@ export function MasterManager() {
             type="checkbox"
             checked={showInactive}
             disabled={busy}
-            onChange={(event) => setShowInactive(event.target.checked)}
+            onChange={(event) => {
+              setMode("view");
+              setNotice("");
+              setShowInactive(event.target.checked);
+            }}
           />
           비활성 항목 표시
         </label>
