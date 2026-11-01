@@ -1,3 +1,13 @@
+## FR-MEMO-172 — 동사업장 Editor 공동 수정 / 제한 삭제 (2026-11-01)
+
+1. Editor 이상은 현재 서버 Session/Role/Site Grant가 허용하는 Version의 타 작성자 Memo 본문·WCS 좌표·일정/완료·표시/그룹·영속 Anchor를 수정 가능. 생성자/생성시각 불변, 변경자/감사 기록과 CAS 필수.
+2. Memo DELETE는 원래 작성자 또는 같은 Site Grant 보유 Admin만; 다른 Editor/Reader/미승인 Admin/회수된 Session/위조 Header는 403·401. DB 행 soft delete/Audit 보존.
+3. `SOURCE_ONLY` 관련 Memo Anchor BREAK는 EDIT로 공동 수정 가능. `ALL` 삭제는 전체 대상의 작성자 소유 또는 Site Admin 조건 미충족 시 모두 rollback.
+4. Viewer는 승인된 GET actor 및 Admin capability로 삭제 버튼 비활성화, 서버 요청 재검사 필수. Viewer/Server/Actor 재조회 경계에서 stale 상태가 데이터 쓰기를 승인하지 않음.
+5. 기존 Group 관리 소유권, Source/Scene/Version/SHA/Current·미인가 DB 변경 금지. 합성 CI와 실 사내 2PC 현장 수용 분리(#96/#113/#172).
+
+---
+
 ## Epic #37/#49/#50 통합 보완 요구 (0.54.1 후보)
 
 - EPIC-INT-01: 메뉴의 비활성 링크는 키보드·마우스로 이동/다운로드할 수 없고, 활성 링크·Layer 패널·Canvas/Tree는 정상 유지해야 한다.
