@@ -47,7 +47,7 @@ export async function authorizedMemoList(db:Database,request:Request,versionId:s
   approvalCurrent(gate);
   const current=await requireSceneRead(request,tx,versionId,gate,'memo:read');
   if(!current||current.actorId!==actor.actorId)denied('UNAUTHENTICATED',401);
-  const canDeleteAny=gate.cadWriteEnabled&&await isSiteMemoAdmin(tx,actor.actorId);
+  const canDeleteAny=gate.cadWriteEnabled ? await isSiteMemoAdmin(tx,actor.actorId) : false;
   approvalCurrent(gate);
   return {actorId:actor.actorId,canDeleteAny,versionId,sourceSha256:version.sha256,sceneRevision:scene?.revision??null,
    memos:rows.map(row=>memoDto(row,anchorDto(byId.get(row.id)??null),byMemo.get(row.id)??null)),
