@@ -66,7 +66,7 @@ jobs:
                 exit 1
               fi
             done
-            git diff --name-only -z "$BASE_SHA" "$HEAD_SHA" -- > "$RUNNER_TEMP/pr-changed-paths.nul"
+            git diff --no-renames --name-only -z "$BASE_SHA" "$HEAD_SHA" -- > "$RUNNER_TEMP/pr-changed-paths.nul"
             python3 .github/scripts/pr_ci_scope.py pr "$RUNNER_TEMP/pr-changed-paths.nul" "$GITHUB_OUTPUT"
           fi
           echo "## PR CI path scope (#197)" >> "$GITHUB_STEP_SUMMARY"
@@ -157,10 +157,11 @@ jobs:
       - name: Upload exact-HEAD production build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: production-build-${{ github.run_id }}-${{ github.run_attempt }}
+          name: production-build-${{ github.run_id }}
           path: ${{ runner.temp }}/production-build.tar
           if-no-files-found: error
           retention-days: 1
+          overwrite: true
 
   e2e:
     name: General Chromium E2E (shard ${{ matrix.shard }}/2)
@@ -193,7 +194,7 @@ jobs:
       - name: Download exact-HEAD production build
         uses: actions/download-artifact@v4
         with:
-          name: production-build-${{ github.run_id }}-${{ github.run_attempt }}
+          name: production-build-${{ github.run_id }}
           path: ${{ runner.temp }}
       - name: Restore standalone build without rebuilding
         run: |
@@ -244,7 +245,7 @@ jobs:
       - name: Download exact-HEAD production build
         uses: actions/download-artifact@v4
         with:
-          name: production-build-${{ github.run_id }}-${{ github.run_attempt }}
+          name: production-build-${{ github.run_id }}
           path: ${{ runner.temp }}
       - name: Restore standalone build without rebuilding
         run: |
@@ -293,7 +294,7 @@ jobs:
       - name: Download exact-HEAD production build
         uses: actions/download-artifact@v4
         with:
-          name: production-build-${{ github.run_id }}-${{ github.run_attempt }}
+          name: production-build-${{ github.run_id }}
           path: ${{ runner.temp }}
       - name: Restore standalone build without rebuilding
         run: |

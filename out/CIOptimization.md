@@ -46,3 +46,9 @@
 현재 실제 PR CI 완료/메트릭 **NOT VERIFIED**. 로컬 Docker/Chromium 종합 실행 **NOT RUN**. 새 PR CI 이후 [TestReport](TestReport.md)와 [FailureLedger](FailureLedger.md)에 실제 HEAD/Run/Job 로그를 남긴다.
 
 공식 참고: https://playwright.dev/docs/test-sharding · https://playwright.dev/docs/test-reporters · https://docs.docker.com/build/cache/backends/gha/ · https://docs.github.com/en/actions.
+
+## Reviewer P1/P2 보완 (PR #198, 2026-11-01)
+
+- Changed-path scope Git command는 `git diff --no-renames --name-only -z`를 사용하여 파일 rename을 삭제+추가로 취급한다. `src/Dockerfile`→`README.md`라도 Docker baseline 및 전체 CI를 실행하며, disposable Git 저장소로 회귀 시험한다.
+- Production build artifact 이름은 attempt가 아닌 `production-build-production-build-${{ github.run_id }}`로 고정한다. Quality가 full rerun되면 `overwrite: true`로 최신 동일 커밋 빌드로 교체한다. 실패 브라우저 Job만 rerun되면 성공했던 Quality artifact를 재사용한다.
+- Codex Review P1/P2 및 Main #76 문서 변경 보완 이후 신규 정확 HEAD PR CI PASS를 확인하기 전 병합·이슈 종료·GHCR 성공은 주장하지 않는다.
