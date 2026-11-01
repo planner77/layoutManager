@@ -1,6 +1,7 @@
 import type { CadFocusBounds } from '../core/text-index';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import {projectWcsBatch as batchProjectWcs} from '../core/canvas-projection';
 import { DXFViewer } from 'three-dxf-viewer';
 import type { CadViewerAdapter } from '../core/adapter';
 import { explicitElevation } from './normalize';
@@ -473,13 +474,13 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     return Number.isFinite(x)&&Number.isFinite(y)&&Math.abs(x)<=1e12&&Math.abs(y)<=1e12?{x,y}:null;
   }
   projectWcsToCanvas(point:{x:number;y:number}):{x:number;y:number}|null{
-    if(this.disposed||!Number.isFinite(point.x)||!Number.isFinite(point.y)||
-       Math.abs(point.x)>1e12||Math.abs(point.y)>1e12)return null;
+    return this.projectWcsBatch([point])[0]??null;
+  }
+  /** #186: one DOMRect and one Vector3 reused across a Memo pin batch. */
+  projectWcsBatch(points:readonly {x:number;y:number}[]):({x:number;y:number}|null)[]{
+    if(this.disposed)return points.map(()=>null);
     const rect=this.renderer.domElement.getBoundingClientRect();
-    if(rect.width<=0||rect.height<=0)return null;
-    const projected=new THREE.Vector3(point.x,point.y,0).project(this.camera);
-    const x=(projected.x+1)*rect.width/2, y=(1-projected.y)*rect.height/2;
-    return Number.isFinite(x)&&Number.isFinite(y)?{x,y}:null;
+    return batchProjectWcs(this.camera,rect,points);
   }
   private terminateWorker(kind:'index'|'compute') {
     const task=this.activeWorkers[kind];delete this.activeWorkers[kind];
@@ -1053,10 +1054,15 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     this.savedGroups.clear();this.renderedTransforms.clear();this.document?.dispose();this.document=undefined;
     this.sceneWork?.dispose();this.sceneWork=undefined;this.sceneObjects.clear();this.rendererIds.clear();
     this.intrinsicSceneVisibility.clear();
+    this.controls.removeEventListener('change',this.render);
     this.controls.removeEventListener('change',this.cameraChanged);
     this.sceneArtifact=undefined;this.sceneTextIndex=undefined;
     this.exchangeBaseline=undefined;this.exchangeScope=undefined;this.exchangeEpoch++;
     this.controls.dispose();if(this.object)release(this.object);this.scene.clear();
+    // Late event/async closures may transiently retain this adapter. Drop
+    // large source/render indexes and Scene bytes at the disposal boundary.
+    this.object=undefined;this.index=undefined;this.renderIndex=undefined;
+    this.renderCoverage=undefined;this.sceneAsset=undefined;this.outline=undefined;
     this.renderer.dispose();this.renderer.forceContextLoss();this.renderer.domElement.remove();
   }
 }
