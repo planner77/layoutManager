@@ -40,11 +40,12 @@ test('R1 logs real permission gate, filtered table and timeline, cursor, mobile 
     outcome: 'failure', errorCode: 'SERVER_ERROR', elapsedMs: 31, httpStatus: 500 };
   let requested = new URLSearchParams();
   let expired = false;
-  let mode: 'ok' | 'empty' | 'partial' | 'offline' = 'ok';
+  let mode: 'ok' | 'empty' | 'partial' | 'offline' | 'timeline-offline' = 'ok';
   await page.route('**/api/operations/logs?*', async route => {
     requested = new URL(route.request().url()).searchParams;
     if (expired) return route.fulfill({ status: 410, json: { error: { code: 'CURSOR_EXPIRED' } } });
-    if (mode === 'offline') return route.fulfill({ status: 503, json: { error: { code: 'LOG_STORE_UNAVAILABLE' } } });
+    if (mode === 'offline' || (mode === 'timeline-offline' && requested.has('requestId')))
+      return route.fulfill({ status: 503, json: { error: { code: 'LOG_STORE_UNAVAILABLE' } } });
     const timeline = requested.has('requestId');
     const later = { ...first, logId: '4cb69b36-d900-4f48-94c5-b872ba19d6b7',
       timestamp: new Date(Date.parse(at) - 1000).toISOString(), level: 'info',
@@ -72,6 +73,16 @@ test('R1 logs real permission gate, filtered table and timeline, cursor, mobile 
   const timeline = page.getByRole('region', { name: '요청 작업 타임라인' });
   await expect(timeline.locator('li')).toHaveCount(2);
   await expect(timeline.locator('li').first()).toContainText('http_request_started');
+  // A transient timeline read error must not erase the separately authorized
+  // main list. It must remove stale timeline steps and permit an explicit retry.
+  mode = 'timeline-offline';
+  await page.getByRole('button', { name: 'requestId: ' + id.slice(0, 8) + '…' }).click();
+  await expect(timeline.getByRole('alert')).toContainText('로그 저장소를 조회하지 못했습니다.');
+  await expect(timeline.locator('li')).toHaveCount(0);
+  await expect(page.getByRole('cell', { name: 'http_request_stage cad_upload' })).toBeVisible();
+  mode = 'ok';
+  await page.getByRole('button', { name: 'requestId: ' + id.slice(0, 8) + '…' }).click();
+  await expect(timeline.locator('li')).toHaveCount(2);
   expect(requested.has('level')).toBe(false);
   await page.setViewportSize({ width: 320, height: 800 });
   await expect(page.getByRole('button', { name: '검색 적용 / 첫 페이지' })).toBeVisible();

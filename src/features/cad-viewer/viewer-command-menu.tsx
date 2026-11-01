@@ -18,6 +18,11 @@ export type ViewerCommand = {
 };
 export type ViewerCommandGroup = { id: string; label: string; commands: ViewerCommand[] };
 
+/** A disabled menu link must not retain a navigable href (fail-closed). */
+export function canNavigateViewerCommand(command: Pick<ViewerCommand, 'kind' | 'href' | 'disabled'>): boolean {
+  return command.kind === 'link' && Boolean(command.href) && !command.disabled;
+}
+
 export function ViewerCommandMenus({ groups, onMenuOpen }: { groups: ViewerCommandGroup[]; onMenuOpen?: () => void }) {
   const [open, setOpen] = useState<string | null>(null);
   const [menuOffset,setMenuOffset]=useState(0);
@@ -104,7 +109,7 @@ export function ViewerCommandMenus({ groups, onMenuOpen }: { groups: ViewerComma
           const common={role, tabIndex:-1, 'data-testid':command.testId, 'aria-controls':command.controls, 'aria-expanded':command.expanded, 'aria-describedby':command.disabled&&command.reason?`viewer-command-reason-${group.id}-${command.id}`:undefined, 'aria-disabled':command.disabled || undefined, 'aria-checked':command.kind==='radio'||command.kind==='checkbox'?Boolean(command.checked):undefined,
             title:command.reason, className:'viewer-command-item block w-full rounded px-3 py-2 text-left text-sm hover:bg-teal-50 focus:bg-teal-50 focus:outline focus:outline-2 focus:outline-teal-700 '+(command.disabled?'cursor-not-allowed text-slate-400':'')} as const;
           return <div key={command.id}>
-            {command.kind==='link' && command.href ? <a href={command.href} download={command.download || undefined} {...common} onKeyDown={event=>{if(event.key===' '){event.preventDefault();event.currentTarget.click();}}} onClick={()=>close()}>{command.label}</a> :
+            {canNavigateViewerCommand(command) ? <a href={command.href!} download={command.download || undefined} {...common} onKeyDown={event=>{if(event.key===' '){event.preventDefault();event.currentTarget.click();}}} onClick={()=>close()}>{command.label}</a> :
               <button type="button" {...common} onClick={()=>{if(command.disabled)return;command.onSelect?.();close();}}>
                 {(command.kind==='radio'||command.kind==='checkbox') && <span aria-hidden="true" className="mr-2 inline-block w-3">{command.checked?'✓':''}</span>}{command.label}
               </button>}

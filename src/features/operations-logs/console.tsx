@@ -26,6 +26,9 @@ function params(filters: Filters) {
   }
   return query;
 }
+class LogRequestError extends Error {
+  constructor(message: string, readonly status: number, readonly code: string) { super(message); }
+}
 const errors: Record<string, string> = {
   UNAUTHENTICATED: '로그인이 필요하거나 세션이 만료되었습니다.',
   ACCESS_DENIED: '서버 로그 조회 권한이 없습니다.',
@@ -47,11 +50,13 @@ async function queryPage(query: URLSearchParams, signal: AbortSignal): Promise<L
   });
   const body = await response.json();
   if (!response.ok) {
-    if (response.status === 410) throw new Error(errors.CURSOR_EXPIRED);
-    if (response.status === 401) throw new Error(errors.UNAUTHENTICATED);
-    if (response.status === 403) throw new Error(errors.ACCESS_DENIED);
-    if (response.status === 429) throw new Error(errors.LOG_RATE_LIMITED);
-    throw new Error(errors[String(body?.error?.code)] ?? '요청을 처리하지 못했습니다. 검색 조건과 운영 상태를 확인하세요.');
+    const code = typeof body?.error?.code === 'string' ? body.error.code : '';
+    const message = response.status === 410 ? errors.CURSOR_EXPIRED :
+      response.status === 401 ? errors.UNAUTHENTICATED :
+      response.status === 403 ? errors.ACCESS_DENIED :
+      response.status === 429 ? errors.LOG_RATE_LIMITED :
+      errors[code] ?? '요청을 처리하지 못했습니다. 검색 조건과 운영 상태를 확인하세요.';
+    throw new LogRequestError(message, response.status, code);
   }
   if (!Array.isArray(body.items) || body.sourceCoverage !== 'app-structured-only' ||
     !['ok', 'disabled', 'partial'].includes(body.status)) throw new Error('로그 응답을 확인하지 못했습니다. 다시 검색하세요.');
@@ -162,8 +167,18 @@ export function OperationsLogsConsole() {
         .sort((a, b) => a.timestamp.localeCompare(b.timestamp) || a.logId.localeCompare(b.logId)));
     } catch (failure) {
       if (!controller.signal.aborted) {
-        setRows([]); setPage(null); clearTimeline();
-        setError(failure instanceof Error ? failure.message : '타임라인 조회에 실패했습니다.');
+        const message = failure instanceof Error ? failure.message : '타임라인 조회에 실패했습니다.';
+        // A verified cursor expiry or log-store I/O failure is not an auth
+        // revocation. Keep the already authorized list, but never display
+        // stale timeline steps as if they belong to the failed request.
+        const recoverable = failure instanceof LogRequestError &&
+          (failure.status === 410 || (failure.status === 503 && failure.code === 'LOG_STORE_UNAVAILABLE'));
+        if (recoverable) {
+          setTimeline(null); setTimelineRows([]); setTimelineError(message);
+        } else {
+          // Any authorization/unknown failure evicts all potentially sensitive rows.
+          setRows([]); setPage(null); clearTimeline(); setError(message);
+        }
       }
     } finally { if (!controller.signal.aborted) setTimelineBusy(false); }
   }
