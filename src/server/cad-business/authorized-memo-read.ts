@@ -7,6 +7,7 @@ import {assertRuntimeApprovalCurrent} from '@/server/g7-operational/runtime-hand
 import type {G7RuntimeActiveGate} from '@/server/g7-operational/runtime-gate';
 import {anchorDto} from './anchor-service';
 import {memoDto,memoGroupDto} from './service';
+import {isSiteMemoAdmin} from './memo-policy';
 
 type Tx=Prisma.TransactionClient;
 const denied=(code:string,status:number):never=>{throw new CadError(code,'메모 조회를 처리할 수 없습니다.',status);};
@@ -46,8 +47,9 @@ export async function authorizedMemoList(db:Database,request:Request,versionId:s
   approvalCurrent(gate);
   const current=await requireSceneRead(request,tx,versionId,gate,'memo:read');
   if(!current||current.actorId!==actor.actorId)denied('UNAUTHENTICATED',401);
+  const canDeleteAny=gate.cadWriteEnabled&&await isSiteMemoAdmin(tx,actor.actorId);
   approvalCurrent(gate);
-  return {actorId:actor.actorId,versionId,sourceSha256:version.sha256,sceneRevision:scene?.revision??null,
+  return {actorId:actor.actorId,canDeleteAny,versionId,sourceSha256:version.sha256,sceneRevision:scene?.revision??null,
    memos:rows.map(row=>memoDto(row,anchorDto(byId.get(row.id)??null),byMemo.get(row.id)??null)),
    groups:groups.map(memoGroupDto),featuresAvailable:support.featuresAvailable};
  });
