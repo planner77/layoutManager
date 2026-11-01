@@ -1,3 +1,13 @@
+## Issue #191 PR #194 — ESLint 최초 실패/정적 수정 회귀 (2026-11-01)
+
+- 정확 실패 HEAD a89956c9d704aeb173e625b3c970d3f3fa29a3c8, [Run 41285766585](https://github.com/planner77/layoutManager/actions/runs/41285766585) completed/failure. Verify Job 124786741824: TypeScript PASS 후 ESLint 4 errors (react-hooks/refs 2, react-hooks/set-state-in-effect 2), 9 warnings; Unit·Integration/Build/Playwright SKIPPED. Docker Job 124786742016 SUCCESS.
+- 수리 commit a29c3c716d0d1202c9ee0b21d05f6626453257f7: 렌더 중 ref 대입 제거(Effect로 동기화), 필터 이벤트에서 mode 초기화, visible 계층에서 roving focus 파생. React Hooks lint 비활성화·우회 없음.
+- 보완 commit c0518c3f58f8c68d938de4b7417d81b100efbb02: #45 Current 없는 층 기존 5열 E2E를 새 트리 검색→층 선택→버전 이력으로 변경; Current/Version assertion 유지.
+- **수리 이후** 로컬 TypeScript/ESLint/Vitest/Playwright/Docker **NOT RUN**, 새로운 정확 HEAD의 PR CI **NOT VERIFIED**. 기존 Docker PASS를 새 HEAD 성공 증거로 사용하지 않는다. 추가 Run의 실제 증거는 FailureLedger.md에 기록한다.
+- 사용자 CI 모니터링 생략 지시, GHCR/병합/Issue #191 종료·운영 DB/Auth/CAD Writer 변경 없음.
+
+---
+
 ## Issue #191 — 트리/상세 관리 UI 후보 검증 상태 (2026-11-01)
 
 - 구현: master-tree.ts 순수 트리/검색/활성 경로, master-manager.tsx 두 패널, MasterRepository.create 활성 조상 guard, 새 Unit/Integration/E2E + 기존 Master 5열 테스트 개정. [설계·시험](Issue191.md).
