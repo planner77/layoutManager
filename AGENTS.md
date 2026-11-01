@@ -1,3 +1,11 @@
+## PR #194 / #191 — React Hooks ESLint 실패 수리·기준정보 회귀 (2026-11-01)
+
+- [PR CI Run 41285766585](https://github.com/planner77/layoutManager/actions/runs/41285766585) 정확 실패 HEAD a89956c9d704aeb173e625b3c970d3f3fa29a3c8: Verify ESLint 오류 4건(react-hooks/refs 2, react-hooks/set-state-in-effect 2). TypeScript SUCCESS, Docker SUCCESS, Unit/Build/E2E SKIPPED. [FailureLedger](out/FailureLedger.md)/[TestReport](out/TestReport.md) 기록.
+- 수리 a29c3c7: master-manager.tsx 렌더 중 ref.current 대입을 효과 안으로, filter change mode 초기화는 이벤트로, 트리 포커스는 visible 기반 파생 변수로 변경. ESLint 규칙/CI gate 완화하지 않음. #45 E2E의 5열 기준정보 탐색도 c0518c3에서 #191 트리 검색→층 상세 이력으로 전환.
+- 이번 수정의 새로운 정확 HEAD PR CI 성공, 독립 QA, 현장 수용/GHCR 게시/병합은 별도 실제 증거 전까지 NOT VERIFIED. User 지시로 CI 모니터링 생략. Root DESIGN.md 부재로 Architecture/Decisions·Issue191.md를 설계 정본으로 사용. 운영 DB/Volume/Auth·CAD Writer 미변경.
+
+---
+
 ## #191 — 위치 기준정보 트리·상세 편집 (2026-11-01, PR CI 후보)
 
 - 범위·5단계 불변·기능/상태/키보드·오류 및 보안 테스트 계약은 [out/Issue191.md](out/Issue191.md), [Requirements](out/Requirements.md), [Architecture](out/Architecture.md), [Decisions](out/Decisions.md), [TestPlan](out/TestPlan.md)를 따른다. 루트 DESIGN.md는 없음.
