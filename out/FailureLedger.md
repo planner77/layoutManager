@@ -1,3 +1,12 @@
+## PR #188 / Issue #172 — 첫 PR CI TypeScript 파서 실패 보완 (2026-11-01 KST)
+
+- **관측한 실패:** [PR #188](https://github.com/planner77/layoutManager/pull/188), [Run 41272222655](https://github.com/planner77/layoutManager/actions/runs/41272222655), attempt 1, 기존 HEAD `ed7b3184981b517a591bc346089f0729d4ac15c2`, `completed/failure`. Verify [Job 124747159527](https://github.com/planner77/layoutManager/actions/runs/41272222655/job/124747159527) step 7 **TypeScript 검사**: `tests/integration/typed-outline-runtime.test.ts(505,96): error TS1005: ',' expected` (`tsc --noEmit`, exit 2). GitHub 로그의 실제 원문 기준.
+- **직접 원인 / 수정:** TC-172의 `secondMemoEditor()`에서 AuthSession 테스트 fixture 작성 시 `expiresAt:BigInt(candidate.session.expiresAt}});` 형태로 `BigInt(` 닫는 `)`가 누락된 구문 오류. `expiresAt:BigInt(candidate.session.expiresAt)}});`로 정정하고 기존 Session/Role/Site Grant, production G7 인가·Memo 작성자/Site Admin DELETE 정책 및 시험 assertion을 변경하지 않음.
+- **다른 gate 상태:** 동일 Run의 Docker [Job 124747159433](https://github.com/planner77/layoutManager/actions/runs/41272222655/job/124747159433) **SUCCESS**. Verify는 npm ci/Prisma Client 생성 PASS 후 TypeScript에서 중단되어 ESLint/Vitest/Benchmark/Build/Playwright(G7 포함)/Legacy는 **SKIPPED/NOT VERIFIED**. Docker 성공을 전체 PR 검증 성공으로 해석하지 않음.
+- **리뷰/충돌/재검증:** 수정 전 inline review threads **0**, PR `mergeable=true`, Main 비교 ahead 27/behind 0으로 해결할 리뷰 스레드/충돌 없음. 외부 리뷰 승인/독립 QA 완료를 의미하지 않음. 로컬 Typecheck/Lint/Test/Docker는 GitHub connector 환경에서 실행하지 않아 **NOT RUN**. 수정+이 원장 기록을 한 Git commit/tree로 반영하고 HEAD fast-forward `pull_request.synchronize`로 **새 PR CI 시작**; 새 CI 종료·성공은 **NOT VERIFIED**, 사용자 요청으로 모니터링하지 않음. PR 병합/GHCR/Issue 종료/운영 전환은 수행하지 않음.
+
+---
+
 ## PR-B #172 — Owner Memo 공동 수정 정책 신규 후보 (2026-11-01)
 
 - 기준 최신 Main `44302a69f0f5be09f3fe4800e09d4e596c4d2e5f`, 독립 브랜치 `feat/issue-172-memo-shared-edit-20261101`, 기존 `0.54.1`과 충돌 방지용 `0.55.0` 후보. `AGENTS.md`와 `out/{Architecture,Decisions,Requirements,TestPlan,TestReport,Operation}.md` 참조. 루트 `DESIGN.md` 404.

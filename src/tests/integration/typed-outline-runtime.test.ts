@@ -502,7 +502,7 @@ async function secondMemoEditor(){
  await db!.userSiteGrant.create({data:{userId:id,siteId:'site-a',grantedAt:BigInt(now)}});
  await db!.authSession.create({data:{id:candidate.session.id,userId:id,
    tokenHash:candidate.session.tokenHash,issuedAt:BigInt(candidate.session.issuedAt),
-   lastSeenAt:BigInt(candidate.session.lastSeenAt),expiresAt:BigInt(candidate.session.expiresAt}});
+   lastSeenAt:BigInt(candidate.session.lastSeenAt),expiresAt:BigInt(candidate.session.expiresAt)}});
  return {id,token:candidate.rawToken};
 }
 const memoPayload=(f:ReturnType<typeof setup>,title='Memo A')=>({
