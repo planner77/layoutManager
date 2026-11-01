@@ -52,7 +52,7 @@ import { ViewerLoadError, isViewerCancellation } from '@/viewers/core/viewer-loa
 import {runtimeCadHeaders} from '@/features/g7-runtime/client';
 import type {SceneWorkCommand,SceneWorkState} from '@/domain/scene-work';
 import type {ResetMode} from '@/domain/cad-reset';
-import {MemoSessionSnapStore,collectMemoSnapCandidates,
+import {MemoSessionSnapStore,collectMemoSnapCandidates,uniqueMemoSnapTarget,
   type MemoSnapCandidate,type SessionSnapProjection} from '@/domain/memo-session-snap';
 import {SceneWorkTools} from './scene-work-tools';
 import {useCadExchange} from './use-cad-exchange';
@@ -1036,9 +1036,10 @@ export function CadViewer({
       }
       if(behavior==='KEEP'&&sessionBinding){
         // Validate without changing the live binding before a fallible server write.
-        const target=manager.current?.getMemoSnapTargets().find(target=>
-          target.ref.origin===sessionBinding.ref.origin&&target.ref.id===sessionBinding.ref.id);
-        if(sessionBinding.mode!=='ATTACHED'||!target)throw new Error('연결 객체가 없습니다. 연결을 해제하거나 다시 선택하세요.');
+        const target=uniqueMemoSnapTarget({versionId,sourceSha256},sessionBinding.ref,
+          manager.current?.getMemoSnapTargets()??[]);
+        if(sessionBinding.mode!=='ATTACHED'||!target)
+          throw new Error('연결 객체가 없거나 같은 ID가 중복되었습니다. 연결을 해제하거나 다시 선택하세요.');
         invertAffine(target.transform,to);
         keepTransform=[...target.transform];
       }
@@ -1066,7 +1067,7 @@ export function CadViewer({
       if(behavior==='KEEP'&&sessionBinding){
         try{
           const targets=manager.current?.getMemoSnapTargets()??[];
-          const live=targets.find(target=>target.ref.origin===sessionBinding.ref.origin&&target.ref.id===sessionBinding.ref.id);
+          const live=uniqueMemoSnapTarget({versionId,sourceSha256},sessionBinding.ref,targets);
           if(viewEpoch.current!==bindingEpoch||!live||!keepTransform||
             live.transform.some((value,index)=>value!==keepTransform![index]))throw new Error('changed');
           getSessionSnapStore().reposition(id,to,targets);

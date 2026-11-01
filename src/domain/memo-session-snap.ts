@@ -34,6 +34,35 @@ const validRef=(ref:SnapRef,scope:MemoScope)=>
  (ref.origin==='GENERATED'||ref.origin==='RENDER')&&
  typeof ref.id==='string'&&ref.id.length>0&&ref.id.length<=2048;
 
+/** Scene objects must have a unique (origin, ID) within one Viewer scope.
+ * Never select an arbitrary first/last target when the renderer duplicates it.
+ */
+const targetKey=(ref:SnapRef)=>JSON.stringify([ref.origin,ref.id]);
+function duplicateTargetKeys(scope:MemoScope,targets:readonly MemoSnapTarget[]):Set<string>{
+ const seen=new Set<string>(),duplicates=new Set<string>();
+ for(const target of targets){
+  if(!validRef(target.ref,scope))continue;
+  const key=targetKey(target.ref);
+  if(seen.has(key))duplicates.add(key);
+  else seen.add(key);
+ }
+ return duplicates;
+}
+/** Return the only scope-valid target for a session SnapRef, or null when absent/ambiguous.
+ * Called before a fallible persisted Memo move as well as after it.
+ */
+export function uniqueMemoSnapTarget(scope:MemoScope,ref:SnapRef,
+ targets:readonly MemoSnapTarget[]):MemoSnapTarget|null{
+ if(!validRef(ref,scope))return null;
+ let found:MemoSnapTarget|null=null;
+ for(const target of targets){
+  if(!validRef(target.ref,scope)||targetKey(target.ref)!==targetKey(ref))continue;
+  if(found)return null;
+  found=target;
+ }
+ return found;
+}
+
 function point(p:MemoWcsXY):MemoWcsXY{
  return assertMemoWcsXY(p);
 }
@@ -50,10 +79,11 @@ export function collectMemoSnapCandidates(scope:MemoScope,requestedWcs:MemoWcsXY
  if(!origin||!Number.isFinite(origin.x)||!Number.isFinite(origin.y)||
     !Number.isFinite(maxDistancePx)||maxDistancePx<=0||maxDistancePx>64)
   return {candidates:[],total:0,scannedPoints:0,limited:false};
+ const duplicated=duplicateTargetKeys(scope,targets);
  const found:MemoSnapChoice[]=[];
  let scannedPoints=0,limited=false;
  for(const target of targets){
-  if(!target.visible||!validRef(target.ref,scope))continue;
+  if(!target.visible||!validRef(target.ref,scope)||duplicated.has(targetKey(target.ref)))continue;
   const seen=new Set<string>();
   for(let index=0;index<target.points.length;index++){
    if(scannedPoints>=20000){limited=true;break;}
@@ -85,7 +115,7 @@ export function collectMemoSnapCandidates(scope:MemoScope,requestedWcs:MemoWcsXY
 /** A selected key must still identify the same live target and point. */
 export function currentMemoSnapChoice(scope:MemoScope,choice:MemoSnapChoice,
  targets:readonly MemoSnapTarget[]):boolean{
- if(!validRef(choice.ref,scope))return false;
+ if(!validRef(choice.ref,scope)||duplicateTargetKeys(scope,targets).has(targetKey(choice.ref)))return false;
  const target=targets.find(t=>t.visible&&validRef(t.ref,scope)&&
   t.ref.origin===choice.ref.origin&&t.ref.id===choice.ref.id);
  if(!target||choice.key!==choiceKey(choice.ref,choice.kind,choice.pointIndex))return false;
@@ -110,11 +140,12 @@ export function nearestMemoSnap(
  const origin=project(world);
  if(!origin||!Number.isFinite(origin.x)||!Number.isFinite(origin.y)||
     !Number.isFinite(maxDistancePx)||maxDistancePx<=0||maxDistancePx>64)return null;
+ const duplicated=duplicateTargetKeys(scope,targets);
  let nearest:MemoSnapCandidate|null=null;
  const priority:Record<SnapKind,number>={ENDPOINT:0,VERTEX:1,CENTER:2};
  let remaining=20000;
  for(const target of targets){
-  if(!target.visible||!validRef(target.ref,scope))continue;
+  if(!target.visible||!validRef(target.ref,scope)||duplicated.has(targetKey(target.ref)))continue;
   if(target.points.length>remaining)break;
   remaining-=target.points.length;
   for(const candidate of target.points){
@@ -160,9 +191,8 @@ export class MemoSessionSnapStore {
  reposition(memoId:string,world:MemoWcsXY,targets:readonly MemoSnapTarget[]):SessionSnapProjection{
   const old=this.connections.get(memoId);
   if(!old||old.forcedBreak)throw new Error('유효한 세션 연결을 먼저 선택하세요.');
-  const target=targets.find(t=>validRef(t.ref,this.scope)&&
-   t.ref.origin===old.ref.origin&&t.ref.id===old.ref.id);
-  if(!target)throw new Error('연결 대상이 현재 도면에 없습니다.');
+  const target=uniqueMemoSnapTarget(this.scope,old.ref,targets);
+  if(!target)throw new Error('연결 대상이 누락되었거나 같은 ID의 스냅 대상이 중복되었습니다.');
   const nextWorld=point(world),local=invertAffine(target.transform,nextWorld);
   const next={...old,local,lastWorld:nextWorld};
   this.connections.set(memoId,next);
@@ -183,11 +213,12 @@ export class MemoSessionSnapStore {
  }
  /** Read-only export projection: observing a target never advances lastWorld. */
  snapshot(targets:readonly MemoSnapTarget[]):Readonly<Record<string,SessionSnapProjection>>{
-  const live=new Map(targets.filter(t=>validRef(t.ref,this.scope))
-   .map(t=>[t.ref.origin+':'+t.ref.id,t]));
+  const duplicated=duplicateTargetKeys(this.scope,targets);
+  const live=new Map(targets.filter(t=>validRef(t.ref,this.scope)&&
+   !duplicated.has(targetKey(t.ref))).map(t=>[targetKey(t.ref),t]));
   const projected:Record<string,SessionSnapProjection>={};
   for(const [memoId,b] of this.connections){
-   const target=live.get(b.ref.origin+':'+b.ref.id);
+   const target=live.get(targetKey(b.ref));
    let mode:SessionSnapProjection['mode']='BROKEN_ANCHOR',world=b.lastWorld;
    if(target&&!b.forcedBreak){
     try{

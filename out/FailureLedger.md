@@ -1,3 +1,19 @@
+## PR #192 보완 — Viewer KEEP의 서버 저장 전 중복 ID 검사 (2026-11-01 KST)
+
+- PR 최초 HEAD `1ecd7e9a38ed1c88217ec1dd5ab462a9ebc5d042`에서 `pull_request.opened` [PR CI Run 41281326806](https://github.com/planner77/layoutManager/actions/runs/41281326806) 시작 관측(`in_progress`, 완료 미확인). 해당 결과를 새 HEAD의 성공 증거로 재사용하지 않는다.
+- **추가 분석:** `viewer.tsx:applyMemoMove`의 KEEP 분기가 실제 `getMemoSnapTargets().find(...)`로 첫 Target만 검사하여, 중복 Origin/ID라도 서버 `mutatePersistedMemo('PATCH')` 뒤 Store의 중복 거부에 걸릴 수 있다. 이 불일치를 서버 저장 전 차단하기 위해 재사용 가능한 `uniqueMemoSnapTarget(scope,ref,targets)`를 정의하고 Viewer KEEP 사전 검증 및 서버 응답 후 재검증 양쪽에 적용한다. 임시 세션 연결과 서버 작성자/Site 인가는 독립적으로 유지한다.
+- **회귀:** 중복/숨김/타 Version Target을 대상으로 유일 객체 조회 차단, Viewer 사전 검사 위치 검증 추가. 추가 수리 커밋의 `pull_request.synchronize`가 **새 PR CI를 요청**하며, 정확한 새 Run 및 리뷰/충돌 상태는 PR 인계 코멘트로 기록. 로컬 npm/TS/Vitest/Browser/Docker **NOT RUN**, CI 완료·PASS/실 DXF·2PC·GHCR **NOT VERIFIED**. 실제 CI 실패는 **관측되지 않았으므로 실패로 기재하지 않는다.**
+
+---
+
+## Epic #81/#160 — 교차 경계 결함 분석·수리 원장 (2026-11-01 KST)
+
+- **분석:** `sameRevisionSnapshot`의 조회 ID 집합 검사는 길이와 revision map 값만 비교하여 `expected[A,B]`, `observed[A,A]`를 TRUE로 만들 수 있었다(실제 Prisma `findMany` 중복 발생 증거는 없으며 코드 경계의 잠재 문제). `MemoSessionSnapStore.snapshot`은 동일 Origin/ID 중복 시 Map 마지막 대상을 사용하고, 후보/최근접/선택/재배치도 모호성을 확인하지 않았다.
+- **조치:** 조회 ID 중복 Set 검사와 Memo 모든 대상 소비 경로의 duplicate fail-closed; 마지막 유효 WCS 보존, 서버 Anchor·G7·Scene 원본 데이터 불변. TC-EPIC-81-160-01/02 추가. 기존 원장은 삭제/대체하지 않는다.
+- **검증·리뷰:** 이번 PR의 실제 CI 실패 Run/Job·리뷰 지적/충돌은 **아직 관측되지 않음**. 로컬 시험 **NOT RUN**, 새 HEAD PR CI 성공 **NOT VERIFIED**, 현장/운영 미실행. PR 생성 뒤 리뷰 스레드·Main 비교 및 CI 시작 근거는 PR 본문/코멘트로 추적. GHCR 게시·병합·Issue 종료 없음. [설계](Epics81-160.md).
+
+---
+
 ## PR #189 — 최종 CI 성공·리뷰/충돌·Owner Managed 병합 및 Main CI 기동 기록 (2026-11-01 KST)
 
 - **정확한 PR CI 증거:** 검증 HEAD `dc8e7c3a0c023272e2fa723a9abe35627efdd35a`; [PR CI Run 41278134690](https://github.com/planner77/layoutManager/actions/runs/41278134690) `completed/success`. Verify [Job 124764393470](https://github.com/planner77/layoutManager/actions/runs/41278134690/job/124764393470) **SUCCESS**: npm/Prisma, TypeScript, ESLint, Unit+Integration, OCI layer stats, synthetic 1k/10k/100k source benchmark, production build, Chromium E2E, G7 Signed runtime·Greenfield·Legacy E2E 모두 실행·성공. Docker [Job 124764393555](https://github.com/planner77/layoutManager/actions/runs/41278134690/job/124764393555) **SUCCESS**: baseline/standalone runtime+migrator image, size/native/Prisma, migration reject 및 disposable Greenfield smoke. 이전 [Run 41277155938](https://github.com/planner77/layoutManager/actions/runs/41277155938)의 Unit 1/891 실패와 exact floating point assertion 수리 증거는 아래 역사 항목에 그대로 보존한다.

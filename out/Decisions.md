@@ -1,3 +1,15 @@
+## ADR-EPIC-81-160 보완 — 서버 PATCH 이전 유일 ID 확인 (2026-11-01)
+
+Viewer KEEP의 사전 검증과 사후 검증이 서로 다른 Target 선택 규칙을 사용하는 것은 일관성 결함이다. `uniqueMemoSnapTarget`을 두 단계에서 공통 사용하여 모호한 ID를 서버 쓰기 전에 배제한다. 비동기 서버 요청 이후 실제 Canvas 변경까지 원자적으로 보증할 수 없으므로 기존 epoch/transform 재검증·세션 관계 분리 정책을 유지한다.
+
+---
+
+## ADR-EPIC-81-160 — 모호한 객체 ID/초기화 스냅샷은 거부 (2026-11-01)
+
+**결정:** (1) 중복 `(origin,id)` Scene Target은 두 후보 모두 배제하며, 연결 메모는 마지막 확인 WCS에서 BROKEN 처리한다. 동일 immutable ID가 다시 유일하면 정상 재계산 가능. (2) 초기화 `expected`와 `observed`의 ID·Revision 대응은 중복 없는 전단사 관계를 요구한다. **근거:** 임의 대상 선택은 메모 위치를 바꾸고, 중복 DB 결과를 단순 길이 비교로 허용하면 Reset CAS 사전조건이 깨진다. 임의 선택/중복 행 무시/자동 삭제 대안은 채택하지 않는다. 서버 Actor·Site/원자 Soft Delete 정책 변경 없음. [계약](Epics81-160.md).
+
+---
+
 ## 2026-11-01 #186 Owner Managed 코드 종료/현장 위험 이관 결정
 
 - #189은 정확한 PR CI HEAD `dc8e7c3a0c023272e2fa723a9abe35627efdd35a`에서 Verify/Docker [Run 41278134690](https://github.com/planner77/layoutManager/actions/runs/41278134690) 성공, 리뷰 스레드·Main 충돌 0으로 Owner Managed 병합 `19167bc3274ac7955ecb2935602f0404cd0a82bf` 완료. 이전 단위 부동소수점 실패와 수정은 FailureLedger에 보존.

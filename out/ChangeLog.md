@@ -1,3 +1,10 @@
+## 0.55.2 후보 — Epic #81/#160 교차 무결성 (2026-11-01)
+
+- 동일 Origin+Scene ID가 중복되면 Memo Session Snap 선택·이동·projection을 차단, 연결 메모 마지막 WCS 유지. S6 reset DB 조회 행의 ID 유일성 강화.
+- 회귀 Unit 2개·설계/ADR/요구/시험/실패 원장 갱신. `src/package.json` / `src/package-lock.json` 0.55.2 일치, 기존 v0.55.1 GHCR tag 이동 금지. [세부](Epics81-160.md).
+
+---
+
 ## 0.55.1 코드/합성 검증 완료 — PR #189 Owner Managed Squash Main (2026-11-01)
 
 - PR CI [41278134690](https://github.com/planner77/layoutManager/actions/runs/41278134690) Verify/Docker 성공, Main Squash `19167bc3274ac7955ecb2935602f0404cd0a82bf` 및 [Main CI 41280051780](https://github.com/planner77/layoutManager/actions/runs/41280051780) 기동 확인. `v0.55.1`/GHCR App·Migrator 게시·OCI digest는 확인 전 NOT VERIFIED.

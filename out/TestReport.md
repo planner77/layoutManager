@@ -1,3 +1,18 @@
+## PR #192 보완 — KEEP pre-write gate 수용 범위 (2026-11-01)
+
+- `uniqueMemoSnapTarget` 서버 이동 전·후 사용과 중복 대상/타 Scope 단위 테스트 **작성**. 첫 PR CI Run 41281326806은 초기 HEAD에서 시작되었으나 추가 커밋과 다른 버전이다. 새 HEAD의 PR CI 완료/성공과 로컬 Typecheck/Vitest/E2E는 **NOT VERIFIED/NOT RUN**.
+- S7 실 현장·Auth·GPU·2PC·운영 Volume 변경 없음. [상세](Epics81-160.md).
+
+---
+
+## Epic #81/#160 — Scene ID 중복·Reset Snapshot 회귀 후보 (2026-11-01)
+
+- **작성:** `src/domain/memo-session-snap.ts`의 중복 Scene Target 거부·기존 메모 마지막 WCS/BROKEN 보존 및 `src/domain/cad-reset.ts` 조회 ID 유일성 검사, Unit 2건 추가.
+- **실행 상태:** GitHub 소스 연결만 이용하여 로컬 npm/typecheck/ESLint/Vitest/Playwright/Build/Docker는 **NOT RUN**. PR CI Verify/Docker **시작 요청 전 NOT VERIFIED**; 새 CI 결과를 모니터링하지 않는다.
+- **미수용:** 현장 승인 DXF·GPU·2PC/다중 사용자/Backup/Restore·Owner S7. #81/#160 Epic 및 #96/#113/#190 OPEN. 기존 CI/GHCR 수용과 이 합성 수정은 서로 다른 SHA. [추적](Epics81-160.md).
+
+---
+
 ## PR #189 최종 PR CI 확인 및 후속 현장 추적 (2026-11-01 KST)
 
 - 코드/합성 품질 Gate: HEAD `dc8e7c3a0c023272e2fa723a9abe35627efdd35a`, [Run 41278134690](https://github.com/planner77/layoutManager/actions/runs/41278134690) Verify Job 124764393470 / Docker Job 124764393555 모두 `completed/success`. Unit/Integration, OCI, synthetic benchmark, Build, Chromium/G7/Greenfield/Legacy E2E, Docker runtime/migrator/Greenfield smoke 단계 성공. 최초 Run 41277155938의 Unit exact-coordinate 실패/수정 이력은 FailureLedger 참조.

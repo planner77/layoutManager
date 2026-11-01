@@ -17,5 +17,10 @@ export function resetRows(raw:unknown):RevisionEntry[]{
 export function sameRevisionSnapshot(expected:readonly RevisionEntry[],observed:readonly RevisionEntry[]):boolean{
  if(expected.length!==observed.length)return false;
  const map=new Map(expected.map(row=>[row.id,row.revision]));
- return map.size===expected.length && observed.every(row=>map.get(row.id)===row.revision);
+ const observedIds=new Set<string>();
+ return map.size===expected.length && observed.every(row=>{
+  if(observedIds.has(row.id))return false;
+  observedIds.add(row.id);
+  return map.get(row.id)===row.revision;
+ });
 }
