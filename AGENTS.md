@@ -1,3 +1,12 @@
+## PR #189 / #186 Owner Managed 코드 완료, 현장 #190 이관 (2026-11-01, v0.55.1)
+
+- [PR #189](https://github.com/planner77/layoutManager/pull/189) 정확 검증 HEAD `dc8e7c3a0c023272e2fa723a9abe35627efdd35a`. [PR CI Run 41278134690](https://github.com/planner77/layoutManager/actions/runs/41278134690) **Verify 124764393470 / Docker 124764393555 둘 다 SUCCESS**; Typecheck/Lint/Unit·Integration/OCI/Benchmark/Build/General·G7·Greenfield·Legacy Playwright, Docker Greenfield smoke 등 전체 검증 단계 SUCCESS. 최초 [Run 41277155938](https://github.com/planner77/layoutManager/actions/runs/41277155938) IEEE-754 좌표 exact assertion 실패와 `toBeCloseTo(…,9)` 보완을 FailureLedger에 보존.
+- Main 대비 behind 0, mergeable true, submitted review 0 / unresolved thread 0(독립 승인 수행 아님), 충돌 0 확인 후 **Squash Main `19167bc3274ac7955ecb2935602f0404cd0a82bf` 병합 성공**. [Main CI Run 41280051780](https://github.com/planner77/layoutManager/actions/runs/41280051780) `push/in_progress` 시작 확인, 사용자 지시에 따라 **CI 모니터링 생략**. 릴리스 workflow에서 `v0.55.1` 및 GHCR App `0.55.1` / Migrator `0.55.1-migrate`의 태그 생성·후보 검증·게시가 후속되며 실제 OCI digest/게시 결과는 **NOT VERIFIED**.
+- Owner의 관련 이슈 종료 지시로 [#186](https://github.com/planner77/layoutManager/issues/186)는 **코드·합성 CI에 한해 closed/completed**. 해당 이슈의 현장 미수용 AC 전체는 [#190](https://github.com/planner77/layoutManager/issues/190) **OPEN/BLOCKED**로 이관; #96 Auth/2PC, #113 실제 DXF/GPU와 연계. **#190 현장 수용 완료 이전에는 GPU 성능 SLA/누수 해소/2PC/Backup·Restore PASS를 주장하거나 #190을 종료하지 않는다.** 아래 기존 #186 OPEN 기록은 이관 전 역사적 맥락으로 해석한다.
+- 현장 소스·DB/S3/Volume, 인증·CAD Writer 활성화 및 release 태그 강제 재지정은 하지 않는다. 이 문서 후속 갱신은 docs-only이며 첫 Main Release 빌드 이미지 변경·GHCR 중복 게시 대상으로 취급하지 않는다.
+
+---
+
 ## PR-C #186 — Memo 10k frame/heap root-cause isolation + bounded projection (2026-11-01, 0.55.1 후보)
 
 - #186은 **메모 렌더 성능/Heap 원인 분리와 현장 2PC 수용이 혼재된 OPEN 이슈**다. 이 PR은 코드·합성 계측을 진행하며, 현장 #96(신규 Auth), #113(실 DXF/GPU), #186(2PC/성능 SLA)는 완료로 대체하지 않는다.

@@ -1,3 +1,11 @@
+## 2026-11-01 v0.55.1 병합/게시·현장 인수 분리
+
+- #189 코드/합성 PR CI 성공, Main Squash `19167bc3274ac7955ecb2935602f0404cd0a82bf`, Main CI [41280051780](https://github.com/planner77/layoutManager/actions/runs/41280051780) 시작. GHCR 게시 완료/OCI App+Migrator Digest는 **Main CI 최종 확인 전 미검증**이며 사용자 지시로 모니터링하지 않는다. 정식 운영 Compose의 0.55.1 쌍 사용은 양쪽 digest 확인 후 별도 결정.
+- #186은 Owner Managed 코드·합성 행정 종료, 실 DXF/GPU frame/Heap·2PC 및 Backup/Restore Owner 수용은 후속 **#190 OPEN/BLOCKED**로 이관. #96/#113 추가 현장 AC 유지. 승인 전 기존 DB·Volume/Migration/Auth/Writer·기밀 DXF를 변경하지 않는다.
+- 아래 #186 OPEN/필드 수용 문장은 이관 시점 이전의 구현 지침이며, 실 현장 미수용 추적은 현재 #190에서 수행한다.
+
+---
+
 ## #186 / PR-C — Memo 10k/Heap 격리 측정·현장 인수 (0.55.1 후보, 2026-11-01)
 
 - 운영 측정과 CI는 분리한다. CI의 1k/10k `LINE` 합성·100핀/0핀/100핀 CSS hide 측정은 CPU/Browser/Javascript 경향 확인일 뿐, 실제 CAD·GPU/VRAM 현장 합격이 아니다.

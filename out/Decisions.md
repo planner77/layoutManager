@@ -1,3 +1,11 @@
+## 2026-11-01 #186 Owner Managed 코드 종료/현장 위험 이관 결정
+
+- #189은 정확한 PR CI HEAD `dc8e7c3a0c023272e2fa723a9abe35627efdd35a`에서 Verify/Docker [Run 41278134690](https://github.com/planner77/layoutManager/actions/runs/41278134690) 성공, 리뷰 스레드·Main 충돌 0으로 Owner Managed 병합 `19167bc3274ac7955ecb2935602f0404cd0a82bf` 완료. 이전 단위 부동소수점 실패와 수정은 FailureLedger에 보존.
+- User/Owner의 병합·GHCR·관련 이슈 종료 요청은 **코드/합성 범위 행정 완료**로 해석하며, #186의 미완료 현장 Gate는 [#190](https://github.com/planner77/layoutManager/issues/190)으로 분리하고 원 #186을 `closed/completed` 처리한다. #190의 전체 field AC, #96 Auth/2PC, #113 real DXF/GPU는 OPEN/BLOCKED. 실측 없이 GPU/frame/Heap·2PC/SLA를 통과 처리하지 않는다.
+- Main CI [41280051780](https://github.com/planner77/layoutManager/actions/runs/41280051780) 시작, GHCR App/Migrator 게시 성공 및 digest는 **NOT VERIFIED**. 운영 Auth Writer 활성화, 기존 DB migration 및 실제 DXF 외부 반출 금지 유지.
+
+---
+
 ## ADR-186 — Project WCS batch / dispose reference hygiene, heap root cause 보류 (2026-11-01)
 
 **결정:** 실제 10k frame 지연과 16,804,276B Heap 증가 원인이 확인되지 않은 상태에서 임의 지연 budget를 만족했다고 주장하거나 WebGL/메모 표시 빈도를 강제 하향하지 않는다. 소스에서 직접 확인되는 무효 반복 Canvas rect 조회를 동일 좌표 결과의 batch API로 치환하고, adapter dispose 참조 정리를 보완한다.

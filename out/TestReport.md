@@ -1,10 +1,18 @@
+## PR #189 최종 PR CI 확인 및 후속 현장 추적 (2026-11-01 KST)
+
+- 코드/합성 품질 Gate: HEAD `dc8e7c3a0c023272e2fa723a9abe35627efdd35a`, [Run 41278134690](https://github.com/planner77/layoutManager/actions/runs/41278134690) Verify Job 124764393470 / Docker Job 124764393555 모두 `completed/success`. Unit/Integration, OCI, synthetic benchmark, Build, Chromium/G7/Greenfield/Legacy E2E, Docker runtime/migrator/Greenfield smoke 단계 성공. 최초 Run 41277155938의 Unit exact-coordinate 실패/수정 이력은 FailureLedger 참조.
+- 코드 Owner Managed Main Squash [`19167bc3274ac7955ecb2935602f0404cd0a82bf`](https://github.com/planner77/layoutManager/commit/19167bc3274ac7955ecb2935602f0404cd0a82bf) 완료; [Main CI 41280051780](https://github.com/planner77/layoutManager/actions/runs/41280051780) 시작 확인. **Main CI 종료·GHCR App/Migrator OCI digest/게시 결과는 미확인**(모니터링 생략).
+- **현장:** #186은 코드/합성에 한해 행정 종료, 실제 CAD/GPU/frame p95·3회 GC heap 원인·Owner SLA/2PC/Auth/Backup·Restore 등 미검증 항목 전부 [#190](https://github.com/planner77/layoutManager/issues/190) OPEN/BLOCKED. 실제 향상률, 누수 해결 여부, 운영/현장 합격은 **NOT VERIFIED**.
+
+---
+
 ## PR-C #186 — 성능 계측·projection 개선 코드 후보 (2026-11-01)
 
-**상태: CODE CHANGED / LOCAL RUNTIME NOT EXECUTED / FIRST PR CI FAILED (Run 41277155938, Unit 1/891) / CORRECTION RETEST NOT VERIFIED / FIELD & 2PC NOT ACCEPTED.** 이전 #174 수치(10k LINE+100 Memo p95=216.6ms, 17/30>16.7ms; 1차/2차 dispose 31,645,380→48,449,656B,+16,804,276B)는 **과거 기록**이며 이 브랜치 변경 후 값으로 재표기하지 않는다.
+**상태: CODE/SYNTHETIC PR CI VERIFIED (Run 41278134690, Verify+Docker SUCCESS) / LOCAL RUNTIME NOT EXECUTED / MAIN CI STARTED, GHCR NOT VERIFIED / FIELD & 2PC NOT ACCEPTED.** 이전 #174 수치(10k LINE+100 Memo p95=216.6ms, 17/30>16.7ms; 1차/2차 dispose 31,645,380→48,449,656B,+16,804,276B)는 **과거 기록**이며 이 브랜치 변경 후 값으로 재표기하지 않는다.
 
 - 수정: Three adapter batch WCS projection (per-100 pin 100 rect requests→한 호출당 1 rect, 1 reused Vector3), pure bounded Memo preview/candidate screen computation & no-op state, `ThreeDxfViewerAdapter.dispose` large index/Scene ref clearing 및 Render change listener 명시 해제. 원본 DXF/SHA/Scene/DB/Anchor 정책은 불변.
-- unit 신규 `memo-screen-projection.test.ts`: 순수 projection/Three 비교, invalid/offscreen, 100 memo+candidate callback 1회. 첫 PR CI Verify에서 파일의 3개 중 2 PASS/1 FAIL (`toEqual`의 `110.00000000000001` vs `110`); 전체 890/891 PASS, Typecheck/ESLint PASS. X/Y를 `toBeCloseTo(...,9)`로 수정, 정확한 새 HEAD의 재검증 **NOT VERIFIED**.
-- 브라우저 기존 `issue174-memo-performance.spec.ts` 확장: 0 Memo, 100 visible, 100 CSS-hidden pan frame 통계, 3회 dispose별 GC Heap·DOMCounters/Worker/listener. 숫자 **첫 CI Unit 실패로 E2E SKIPPED/미확정**. CSS 숨김은 paint만 분리하며 상위 React update 및 WebGL은 남는다.
+- unit 신규 `memo-screen-projection.test.ts`: 첫 PR CI 1/891 실패는 IEEE-754 x=110.00000000000001 vs 110 exact-assertion; X/Y `toBeCloseTo(...,9)` 보완 후 재실행 Run 41278134690에서 전체 Unit/Integration Step **SUCCESS**. 원장에 실패/수정 이력 보존.
+- 브라우저 기존 `issue174-memo-performance.spec.ts` 확장: 0 Memo, 100 visible, 100 CSS-hidden pan frame 통계, 3회 dispose별 GC Heap·DOMCounters/Worker/listener. CI 재실행 Run 41278134690의 Chromium E2E Step **SUCCESS**; 숫자 본 문서 미전사로 **실측 개선 폭/현장 SLA 미확정**. CSS 숨김은 paint만 분리하며 상위 React update 및 WebGL은 남는다.
 - 근본 원인 단정 금지: source-level 중복 계산과 retainable graph는 확인했으나 과거 Heap 증가가 앱 메모리 leak인지/Chrome DevTools 또는 Next cache 때문인지 실측·retainer graph 증거 없음.
 - Merge/GHCR/Owner Managed 최종 인수는 정확 HEAD PR CI Verify/Docker·리뷰/충돌 검토 후 별도. #186 현장/성능 SLA 및 #96/#113 Owner 수용은 계속 OPEN.
 

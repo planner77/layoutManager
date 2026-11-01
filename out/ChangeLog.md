@@ -1,3 +1,10 @@
+## 0.55.1 코드/합성 검증 완료 — PR #189 Owner Managed Squash Main (2026-11-01)
+
+- PR CI [41278134690](https://github.com/planner77/layoutManager/actions/runs/41278134690) Verify/Docker 성공, Main Squash `19167bc3274ac7955ecb2935602f0404cd0a82bf` 및 [Main CI 41280051780](https://github.com/planner77/layoutManager/actions/runs/41280051780) 기동 확인. `v0.55.1`/GHCR App·Migrator 게시·OCI digest는 확인 전 NOT VERIFIED.
+- #186 코드·합성 범위 `closed/completed`; 실제 DXF/GPU·frame/Heap·2PC 현장 AC는 #190 `OPEN/BLOCKED` 이관, #96/#113 유지. 이전 성능 수치로 개선이나 장기 leak-free 증명 불가.
+
+---
+
 ## 0.55.1 PR-C 후보 — #186 Memo projection 및 Heap 진단 강화 (2026-11-01)
 
 - 100-pin WCS 투영을 한 번의 CSS canvas rect 읽기와 단일 Three.Vector3 재사용으로 처리. 기존 단건 projection/legacy fallback 유지, React 동일 screen snapshot no-op.

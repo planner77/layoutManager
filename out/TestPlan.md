@@ -1,3 +1,11 @@
+## 2026-11-01 TC-186 추적 변경 (PR #189 완료, 현장 #190 OPEN)
+
+- TC-186-01~06: HEAD `dc8e7c3a0c023272e2fa723a9abe35627efdd35a` [Run 41278134690](https://github.com/planner77/layoutManager/actions/runs/41278134690) Verify/Docker **SUCCESS**로 코드/합성 게이트를 수용한다. [#186](https://github.com/planner77/layoutManager/issues/186)은 Owner Managed 행정 완료.
+- TC-186-07 및 기존 #186 미체크 필드/Heap/2PC/Owner SLA는 전부 [#190](https://github.com/planner77/layoutManager/issues/190) `OPEN/BLOCKED`로 이관한다. 현장 수치·GPU/VRAM·누수 원인/2PC/Backup·Restore 승인은 PR CI와 별개이며 완료 주장 금지.
+- Main CI [41280051780](https://github.com/planner77/layoutManager/actions/runs/41280051780) 시작, GHCR 게시/digest `NOT VERIFIED`.
+
+---
+
 ## TC-186 — Memo frame/heap 원인 격리 (0.55.1 PR-C, 2026-11-01)
 
 | TC | 대상 | 판정·증거 |
