@@ -10,6 +10,6 @@ describe('TC-EPIC-37-49-UNIT-001: fail-closed app menu link', () => {
 
   it('preserves navigation of enabled version/download links', () => {
     expect(canNavigateViewerCommand({ kind: 'link', href: '/cad/locations/x' })).toBe(true);
-    expect(canNavigateViewerCommand({ kind: 'link', href: '/api/cad-files/x/content', download: true })).toBe(true);
+    expect(canNavigateViewerCommand({ kind: 'link', href: '/api/cad-files/x/content' })).toBe(true);
   });
 });

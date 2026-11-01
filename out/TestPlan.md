@@ -1,3 +1,15 @@
+## 0.54.1 Epic #37/#49/#50 통합 회귀 계획 — CI 요청 전
+
+| TC | 대상 | 기대 |
+| --- | --- | --- |
+| TC-EPIC-37-49-UNIT-001 | tests/unit/viewer-command-link.test.ts | disabled·빈 href·비링크 차단 및 유효 링크 유지 |
+| TC-EPIC-37-49-E2E-001 | tests/e2e/issue37-49-epic-regression.spec.ts | Viewer Layer/Tree/Canvas 격리, GENERATED 회전/Undo·Redo/JSON, SOURCE mixed 거부, 원본 SHA 불변 |
+| TC-EPIC-50-E2E-001 | tests/greenfield-e2e/operations-logs.spec.ts | 타임라인 저장소 503 후 목록 유지·단계 폐기·재조회와 기존 권한 철회 차단 |
+
+기존 Unit/Integration, 일반 Chromium E2E, Greenfield/Auth/Legacy와 Typecheck/Lint/Build는 PR CI workflow 대상. 현재 새 TC의 실제 실행 및 PR CI 성공은 NOT RUN/NOT VERIFIED. 운영 CAD/Volume, GPU/현장, GHCR는 해당 증거와 구분한다.
+
+---
+
 ## R5b 최종 수용 checklist (0.54.0, 로컬 코드·합성 수용 완료)
 
 | Gate | 실제 상태 / 완료 기준 |

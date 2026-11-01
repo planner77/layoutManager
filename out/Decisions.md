@@ -1,3 +1,12 @@
+## ADR — 2026-11-01 #37/#49/#50 통합 회귀 보완
+
+- 완료된 하위 기능은 중복 구현하지 않고 두 취약한 UI 경계만 보완한다: Viewer disabled link에 navigable href가 남는 문제, 로그 Timeline의 확인된 저장소/커서 오류에 메인 목록까지 없어지는 문제.
+- 보안 판단: 실제 권한은 기존 G7 세션/서버 인가·감사를 통해서만 검사한다. 메뉴 비활성 상태는 인증 대체가 아니다. 모르는 조회 실패는 기존 fail-closed 데이터 제거가 우선이다.
+- 잔여: #63 원시 컨테이너 로그 수집은 P2 옵션; #96 운영 인증/현장 Gate와 DB/볼륨 Migration은 비대상.
+- 새 PR CI 실제 결과는 실행 후 별도 확인해야 하며 기존 성공 기록을 새 Commit에 승계하지 않는다.
+
+---
+
 ## R5b / #91 코드·합성 로컬 수용 및 Draft PR GO (2026-11-01)
 
 Manager는 최종 unit131 files/883, 독립 QA General146, Greenfield21, Auth/Legacy 각1 및 type/lint/build PASS와 직접 확인한 한글 upright artifact·권한·수명·부하 근거로 LOCAL R5b / #91 CODE + SYNTHETIC ACCEPT / STACKED DRAFT PR GO를 판정한다. 중단144와 집중 결과는 합산하지 않는다. Root는 최종 staged/secret/remote/exact-tree 검사와 게시·새 CI를 담당한다. 필수 로컬 작업은 완료했으며 현장 실 CAD/GPU/2PC·Owner 수용과 이슈 종료/병합/태그/GHCR/배포는 별도 미수행이다. 정확 범위·실패·계측 한계는 TestReport 최상단을 단일 기준으로 따른다.

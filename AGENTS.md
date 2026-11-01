@@ -1,3 +1,13 @@
+## Epic #37/#49/#50 통합 보완 (0.54.1 후보, 2026-11-01)
+
+- 설계·AC 및 추적 근거: [out/Epics37-49-50.md](out/Epics37-49-50.md). #37/#49/#50는 상위 Epic이며 구현 완료된 자식 #38~#43/#65/#71/#73, #51~#56, #57~#62의 기능을 재구현하지 않는다.
+- Viewer 메뉴의 disabled link는 실제 링크 URL을 노출하지 않고 명시적으로 비활성화한다. 원본 SOURCE 편집은 여전히 차단하며 GENERATED 로컬 편집/Undo·Redo 및 타입별 Tree 상태를 유지한다.
+- 로그 타임라인의 확인된 cursor 만료(410) 및 로그 저장소 불가(503/LOG_STORE_UNAVAILABLE)는 Timeline 결과만 폐기한다. 인증·인가·미확인 장애 시 이미 조회된 모든 데이터는 fail-closed로 비운다.
+- 기존 G7 권한/감사, 로그 JSONL Reader, 서버 CAD 저장·Migration 및 운영 볼륨을 변경하지 않는다. #63 원시 로그 수집은 선택 후속.
+- 신규 자동 검증은 CI에서 요청하며 실제 실행·성공/현장/GHCR 배포는 결과 확인 전 주장하지 않는다.
+
+---
+
 ## #91 교환 파일 내보내기 변경 시 (0.54.0 후보)
 
 - 선택/snapshot·글자 높이·단위·누락·인가·font/PNG·취소를 바꾸기 전에 [Architecture R5b](out/Architecture.md)와 [TestPlan TC-R5B](out/TestPlan.md)를 읽는다. 실제 수용·실패·게시 상태의 단일 기준은 [TestReport](out/TestReport.md)/[FailureLedger](out/FailureLedger.md)다.

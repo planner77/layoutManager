@@ -1,3 +1,12 @@
+## Epic #37/#49/#50 통합 보완 요구 (0.54.1 후보)
+
+- EPIC-INT-01: 메뉴의 비활성 링크는 키보드·마우스로 이동/다운로드할 수 없고, 활성 링크·Layer 패널·Canvas/Tree는 정상 유지해야 한다.
+- EPIC-INT-02: GENERATED 편집·회전·Undo/Redo·JSON v2를 수행하고 SOURCE 또는 혼합 선택의 편집을 거부한다. 원본 CAD content SHA가 불변이어야 한다.
+- EPIC-INT-03: 서버 로그 타임라인 조회 410과 확인된 LOG_STORE_UNAVAILABLE 503 실패 시, 실패한 Timeline 단계만 초기화한다. 권한 오류/알 수 없는 실패는 전체 민감 Row를 비워야 한다. 서버 인가·감사·no-store 불변.
+- 상세 계약은 [Epics37-49-50](Epics37-49-50.md), 시험은 TestPlan TC-EPIC-*, 실제 결과는 TestReport. #63 원시 로그 수집과 현장 인수는 이번 PR 범위 밖이다.
+
+---
+
 ## R5b #91 — 보이는 메모 내보내기 계약 (0.54 로컬 코드·합성 수용, 2026-11-01)
 
 R5a0.53의 Browser/전체 gate·게시 이후 별도 stacked branch의0.54.0에서 진행한다. R5a Draft PR184 게시 이후 Architecture bridge로 구현했고 R5b의 최종 코드·합성 범위를 로컬 수용했다. 실제 실행 범위와 현장/Owner 잔여는 TestReport 최상단을 따른다. R5a의 공개 Source/local Generated 정책, 원본 baseline·단위·부분 산출·single-job·인가 재검사는 유지한다.
