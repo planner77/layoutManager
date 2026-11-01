@@ -11,7 +11,7 @@ export type MemoEditorFields = { title: string; content: string; x: string; y: s
 export function CadMemoEditor({
   fields, onFieldsChange, placing, newAnchor, selectedId, count, error, confirmDelete,
   onConfirmCoordinate, onCreate, onSaveText, onApplyPosition, onArmDelete,
-  onDelete, onCancel, persistent, busy,
+  onDelete, onCancel, persistent, busy, canDelete,
   anchor, anchorOptions, anchorTarget, onAnchorTargetChange, onAttach, onDetach,
   sessionSnap, pendingSnapKind, onSessionDetach,
   snapIntent,onSnapChoose,onSnapRefresh,moveBehavior,onMoveBehaviorChange,
@@ -24,6 +24,7 @@ export function CadMemoEditor({
   count: number;
   persistent:boolean;
   busy:boolean;
+  canDelete:boolean; // advisory UX; server rechecks G7 scope/role on every request.
   anchor?:MemoAnchorState;
   sessionSnap?:SessionSnapProjection;
   pendingSnapKind?:SnapKind;
@@ -53,7 +54,7 @@ export function CadMemoEditor({
     aria-label={persistent?'서버 메모 편집':'임시 메모 편집'} className="border-b border-slate-300 bg-amber-50 px-3 py-2 text-xs text-slate-900">
     <div className="flex flex-wrap items-center gap-2">
       <strong>{creating ? '메모 신규 배치' : '메모 내용·위치 편집'}</strong>
-      <span className="text-amber-800">{persistent?'서버 영속 · 재접속 복원 · 작성자 기반 수정/삭제':'브라우저 세션 임시 · 저장/공유 불가'} · {count}/100개 {busy?'· 저장 중':''}</span>
+      <span className="text-amber-800">{persistent?'서버 영속 · 같은 Site Editor 공동 수정 · 삭제는 작성자/Admin':'브라우저 세션 임시 · 저장/공유 불가'} · {count}/100개 {busy?'· 저장 중':''}</span>
       {placing && <span data-testid="cad-memo-place-hint">
         Canvas 클릭 또는 아래 WCS 좌표 입력 후 [좌표로 배치] (ESC 취소)
       </span>}
@@ -101,7 +102,8 @@ export function CadMemoEditor({
             className="rounded bg-teal-700 px-2 py-1.5 text-white">텍스트 저장 (좌표 불변)</button>
           <button type="button" data-testid="cad-memo-apply-position" onClick={onApplyPosition} disabled={busy}
             className="rounded bg-slate-700 px-2 py-1.5 text-white">위치 이동 적용</button>
-          <button type="button" data-testid="cad-memo-delete" onClick={confirmDelete?onDelete:onArmDelete} disabled={busy}
+          <button type="button" data-testid="cad-memo-delete" onClick={confirmDelete?onDelete:onArmDelete}
+            disabled={busy||!canDelete} title={canDelete?'메모 논리 삭제':'작성자 또는 Site 권한을 가진 Admin만 삭제할 수 있습니다.'}
             className="rounded border border-red-400 bg-white px-2 py-1.5 text-red-800">
             {confirmDelete?'삭제 확정':persistent?'메모 논리 삭제':'로컬 메모 삭제'}
           </button>
