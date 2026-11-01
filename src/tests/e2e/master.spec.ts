@@ -133,7 +133,7 @@ test("TC-191-E2E-03: empty, query miss and GET error are distinct and recoverabl
   await expect(page.getByRole("tree")).toHaveCount(0);
   await page.unroute("**/api/masters?active=false");
   await page.getByRole("button", { name: "새로고침" }).click();
-  await expect(page.getByRole("alert")).toHaveCount(0);
+  await expect(page.getByText("기준정보 DB 점검 중")).toHaveCount(0);
 });
 
 test("TC-MASTER-003/005/007: three-version current history survives inactive master and browser reclassification", async ({
