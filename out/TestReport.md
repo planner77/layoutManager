@@ -1,3 +1,27 @@
+## Issue #196 — 구역 0.56.0 로컬 검증·PR 인계 (2026-11-01)
+
+- 기준 Main `2bccf90`, branch `feat/issue-196-semantic-zones-20261101`; 이 기록을 포함한 commit snapshot. 원래 workspace의 Compose/next-env 변경 2건을 별도 worktree로 보존했다. [Issue196](Issue196.md)의 설계/AC와 Database/ViewerPanelPolicy를 구현에 연결했다.
+- 실제 역할: **gpt-6-astra Manager** 설계·AC·재작업 판단 및 최종 코드/합성 범위 검토, **gpt-6-sol Developer 2명** Backend/Viewer 구현, **gpt-6-luna QA** 독립 수치·코드·320/375px Browser 검증, **root** 공통 Geometry/Auth·통합 review·Reset 이력/감사 rollback·Docker closure 보완·시험·문서·게시. QA 보고 `/tmp/issue196-qa-report.md`. Manager 재작업 항목을 수정했고 마지막 actor 폼 검증도 통과해 **로컬 CODE+검증된 합성 범위 수용 / PR GO** 조건을 만족했다. 원격 CI·Docker·현장 수용으로 확대하지 않는다.
+- 환경: Linux, Node22.14.0/npm11.10.0, Playwright 고정 Chromium1243/SwiftShader, 생성 DXF, owned `/tmp` SQLite/storage. 일반 1440×1000 및 320/375×800, Snap Browser DPR2. 실제 운영 DB/Volume/Auth/Writer·원본 CAD는 변경하지 않았다.
+
+| 실제 실행 | 결과·검증 경계 |
+| --- | --- |
+| `npm --prefix src run db:generate`, `typecheck`, `lint`, `build` | **각 exit0**. 전체 Lint 0 errors/기존8 warnings. 최종 Build `/tmp/issue196-build-verified.log`; 마지막 변경은 Docker packaging/test/docs이며 앱 JS 소스는 동일하다. Typecheck `/tmp/issue196-typecheck-verified.log`, Lint `/tmp/issue196-lint-verified.log`. |
+| `npm --prefix src test` | **137 files/911 PASS**, 333.37s(`/tmp/issue196-unit-final.log`). 기존 실패 결과는 FailureLedger에 보존. |
+| 신규 packaging 및 standalone; 최종 Geometry/Auth/Panel/QA/closure 집중 | **25 PASS**(`/tmp/issue196-packaging.log`), **18 PASS**(`/tmp/issue196-last-targeted.log`). 전체 911과 중복을 합산하지 않는다. 신규 closure 검사는 전체 run 이후 추가한 1 TC다. |
+| `tests/integration/zone-runtime.test.ts` | **7 PASS**(`/tmp/issue196-zone-rollback.log`, 전체 run에도 포함). signed Reader/Editor/Admin·Site/CSRF/권한 회수·잘못된 SHA/Scene·idempotency/CAS/분류/계층/FK/Unique/cycle·V2 미매핑 및 명시 remap·두 Reset·201 deleted+1 live·Schema drift·Audit 실패 실제 rollback·원본/Current 불변. 과거 typed-outline 18건도 회귀 통과. |
+| General Browser: `issue196-zone-qa.spec.ts` + `issue196-zones.spec.ts` | 독립 QA **2 PASS**. 320/375px 단일 Drawer/ESC·키보드와 legacy/G7 OFF/fallback 생성 비활성·Canvas identity. 조회 envelope를 주입한 UI 시험이며 실제 서버 인가를 대체하지 않는다. |
+| Greenfield bootstrap·Scene·신규 keyboard·semantic 복합 실행 | bootstrap/Scene **2 PASS**, keyboard **1 PASS**, semantic **1 PASS**. 최초 합동 5건 중 Snap 1건은 시험의 화면 밖 click으로 실패했고 아래 별도 재검증했다. |
+| `semantic-zones.spec.ts` 실제 signed G7 | **PASS**(`/tmp/issue196-greenfield-confirm.log`, 10.8s). UI 숫자 경계 생성, 복수 참조/3단계 계층·reload·동일 ID 경계 수정·CAS409·원본 SHA 보존·패널 반복 Canvas/Source lifetime·dxf-viewer fallback 승인 metadata 조회/쓰기 비활성/오이동 차단. |
+| `issue196-zone-snap-qa.spec.ts` 실제 signed G7·DPR2 | **1 PASS/8.3s**(`/tmp/issue196-snap-retest.log`). 실제 source ENDPOINT/VERTEX 후보와 자유 WCS 좌표 혼합 저장, Zoom 후 이전 후보 거절, 새 후보 선택, SOURCE_ONLY Reset 후 Scene revision 동일해도 overlay 제거·UNMAPPED/RESET·focus 차단·metadata 보존. 테스트 전용 calibration Zone의 실제 투영으로 좌표를 계산하며 Snap 후보는 실제 Adapter에서 얻었다. |
+| Actor 전환 폼 소거 추가 Browser | **1 PASS/4.3s**, fresh bootstrap 포함 **3 PASS/29.4s**(`/tmp/issue196-actor-verified.log`). 고정된 인가 read envelope의 actor 전환을 주입해 미저장 폼/선택 소거를 확인했다. 실제 actor/Site 인가는 위 signed 서버 회귀와 별개다. |
+| Git/docs/Secret/PR review·conflict | 최종 stage diff/secret 검토 및 main 재조회 후 게시한다. 현재 base 최신 `2bccf90`, behind0. 신규 PR 생성 전 기존 #196 연관 open PR 없음. |
+
+- 구현 범위: 층별 불변 Zone ID/metadata/parent, 독립 Site category, Version/SHA/Scene별 geometry, safe references, Editor 공동 수정·작성자/Site Admin 삭제, transactional Audit/CAS/멱등, Reset 보존·무효화, 이동 가능한 공통 구역 패널/조회/생성/Snap/수치 편집/트리·검색·표시·focus. 카테고리 DELETE는 비활성화(재활성 가능), vertex 편집은 수치 입력, URL query/fragment·Hole/MultiPolygon·INTERSECTION Snap은 미지원으로 명시했다.
+- **NOT RUN/NOT VERIFIED:** 새 원격 PR CI 완료, 실제 Docker image build/run·Main CI/GHCR 게시·배포·병합·Issue 종료, 현장 #113/#193의 실제 DXF/GPU/2PC·성능 SLA/백업 복구. 요청은 PR CI 시작까지만이며 시작 후 결과를 모니터링하지 않는다. 일반 E2E 전체/다른 Browser/장기 성능은 신규 정확 HEAD의 CI 또는 별도 현장 단계에서 확인한다.
+
+---
+
 ## PR #198 — 최초 CI 성공 및 리뷰 보완 후 재검증 후보 (2026-11-01)
 
 - 최초 확인: HEAD `946b1e42c49a3e5806c019d073acac15ab43bfd5`, [PR CI 41302441739](https://github.com/planner77/layoutManager/actions/runs/41302441739) completed/success. Scope, Quality, General Chromium E2E 1/2·2/2, Greenfield, G7 signed+Legacy, Docker runtime, Aggregate Verify **8개 Job 모두 SUCCESS**.

@@ -7,7 +7,7 @@ type Drag={
  pointerId:number;startClientX:number;startClientY:number;startX:number;startY:number;
  original:ViewerPanelPosition;moved:boolean;
 };
-export type ViewerMovableKind='layers'|'outlines'|'memos'|'tools'|'search';
+export type ViewerMovableKind='layers'|'outlines'|'memos'|'zones'|'tools'|'search';
 type Props={
  kind?:ViewerMovableKind;
  id:string;name:string;open:boolean;mobile:boolean;active:boolean;raised:boolean;
@@ -103,7 +103,6 @@ export function MovableViewerPanel({kind='memos',id,name,open,mobile,active,rais
   window.addEventListener('blur',cancelOnBlur);
   return ()=>window.removeEventListener('blur',cancelOnBlur);
  // Only the active pointer gesture owns cancel-on-blur.
- // eslint-disable-next-line react-hooks/exhaustive-deps
  },[dragging]);
  useEffect(()=>{
   if(!open||mobile)return;

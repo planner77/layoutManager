@@ -1,3 +1,23 @@
+## Issue #196 — 로컬 구현 오류·재검증 원장 (2026-11-01)
+
+- 기준 Main `2bccf90`, 별도 `feat/issue-196-semantic-zones-20261101` worktree. 원래 폴더의 Compose/next-env 수정 2건을 보존했다. 신규 PR CI 실패는 아직 관측하지 않았다.
+- 최초 공통 모듈 Type Check: **exit 2**, `domain/cad-zone.ts:110` unknown 좌표 배열 인덱싱 2건, `:177` parent possibly undefined 1건. 공통 검사기의 종료 분기 `return invalid(...)`와 검증 후 parent 접근의 타입을 명시해 수정했다. 전체 후속 Type Check 결과는 아래 실제 실행 기록으로 보완한다. ESLint 해당 공통 파일 exit0.
+- 공통 Geometry/Auth 초기 시험: 6/6 PASS; 권한 기존 회귀 포함 재실행 결과는 TestReport에 기록. 과거 CI 성공을 새 HEAD 성공으로 사용하지 않는다. 새 PR CI는 시작 후 사용자 지시대로 모니터링하지 않는다.
+- 공통 회귀 1차: `viewer-app-state`/Memo Snap/Geometry/Auth **5 files, 33 PASS/1 FAIL**, `/tmp/issue196-shared-regression.log`. 실패는 기존 `TC-U1-UNIT-001` 초기 상태 exact assertion이 새 `zonePanelOpen:false`를 누락한 것. 기대 계약 갱신 및 구역 compact/exclusive/reset 회귀를 Developer에 요청했다. 기존 Snap/Auth/경계 검사는 통과했다. 최종 재시험은 실행 후 기록한다.
+- 실제 G7 Browser 1차: bootstrap/Scene **2 PASS**, 신규 Zone **1 FAIL**(`/tmp/issue196-greenfield.log`, 41.9s). 숫자 WCS root 생성은 성공했으나 기본값 메타데이터를 생략한 child POST가 400. POST 필수 metadata를 `name`으로 정규화하고 동일 child/복수 참조 회귀를 추가했다. PATCH는 전체 metadata 교체 계약을 유지하며 stale409 Browser payload도 전체 필드를 보내도록 보완했다.
+- 전체 Unit 1차: **136 files, 907 PASS/1 FAIL, 309.18s**(`/tmp/issue196-unit-all.log`). 실행 도중 새 DB cycle trigger/그에 대한 assertion이 추가되어 구 snapshot의 raw cycle UPDATE가 거절되지 않았다. 최신 snapshot의 focused zone 회귀는 PASS이며 전체 재실행을 진행한다. 첫 결과를 최종 PASS로 간주하지 않는다.
+- Manager/QA 실제 재작업: Reset의 삭제 이력 포함 200 제한, Reset 후 Viewer stale mapping, actor 전환 후 local form 잔존, nested button 방향키, fallback metadata 조회, 외곽선 재사용 오류의 draft 손실. 구현을 수정하고 집중 시험을 보강했다. Root의 `TC-Z196-RESET-HISTORY`는 201 deleted+1 live에서 두 Reset mode 성공·삭제 이력 불변을, `TC-Z196-AUDIT-ROLLBACK`은 Schema 변경 없이 실제 Audit insert 예외를 주입해 Zone/Geometry/receipt 전부 rollback·같은 키 재시도 성공을 확인했다(최신 zone 7/7 PASS, `/tmp/issue196-zone-rollback.log`).
+- 시험 조정: 중복 Production Build 1회는 Next lock으로 exit1(`/tmp/issue196-build.log`), 완료된 단일 Build 후 최종 소스에 대해 직렬 재빌드한다. 개발 도중 DDL이 추가된 이전 disposable fixture 재사용은 `G7_GREENFIELD_SETUP_BLOCKED`로 fail-closed(`/tmp/issue196-greenfield-retest.log`); 새 fixture에서 검증한다. General fallback 첫 시험은 renderer 이름 strict locator가 두 항목과 일치해 실패, `exact:true` 보완 후 1/1 PASS. Developer의 임시 import typo/Schema drift 기대값 수정은 focused 최종 23/23 통과 보고와 구분한다.
+- 최종 전체 Unit: **137 files / 911 PASS / 0 FAIL**, 333.37s(`/tmp/issue196-unit-final.log`). 새 Docker transitive-DDL closure 회귀와 기존 standalone **2 files/25 PASS**(`/tmp/issue196-packaging.log`), 최종 Geometry/QA/Panel/closure **4 files/18 PASS**(`/tmp/issue196-last-targeted.log`). 중복 실행을 고유 TC 합계로 합산하지 않는다.
+- 구역 Snap Browser의 2회 테스트 오류는 별도 보존: 첫 번째는 Zoom 뒤 WCS(0,0)이 viewport 밖으로 나가 fresh 후보 미발견(`/tmp/issue196-greenfield-final.log`, 다른 4건 PASS); 두 번째는 Fit 직후 아직 갱신 전 SVG 투영을 읽어 x=-62.61(`/tmp/issue196-greenfield-confirm.log`, 다른 3건 PASS). 실제 stale 후보 거절은 두 번 모두 성공했다. Fit→실제 투영 좌표가 canvas 안에 들어올 때까지 polling하도록 시험을 보완한 최종 DPR2 Snap/free-WCS/Reset **1 PASS/8.3s**(`/tmp/issue196-snap-retest.log`). 제품 검증을 skip하거나 시간 제한을 늘리지 않았다.
+- Actor 폼 소거 추가 시험의 `route.fetch` 완료/`unroute` 경합은 `Route is already handled` 및 cleanup의 disposed response로 실패했다(`/tmp/issue196-actor-confirm.log`, `/tmp/issue196-actor-final.log`). 인가된 read envelope를 미리 읽은 뒤 즉시 고정 actor 응답을 주입하고 해당 응답 완료 및 handler 종료를 기다리는 방식으로 시험을 보완했다. 실제 인가 변경/삭제 정책은 signed 서버 시험과 구분하며 최신 결과는 TestReport에 기록한다.
+- Root 패키징 review에서 migrator의 새 `zone-ddl.ts` COPY 누락을 발견해 명시 COPY와 build-time import smoke를 추가했다. 이는 관측된 원격 CI 실패가 아니며 정적 패키징 회귀·직접 모듈 import가 통과했다. 실제 Docker 이미지 build/run은 PR CI에 맡기며 로컬 PASS로 주장하지 않는다. 새 회귀의 변수명 `module`은 Next ESLint 1 error로 발견해 `entryPath`로 수정했다. 최종 Lint 0 errors/기존8 warnings, Typecheck exit0.
+- Actor UI 최종: fresh 설치/Scene 2건과 actor+keyboard 1건이 **3 PASS/29.4s**, actor 시험 **4.3s**(`/tmp/issue196-actor-verified.log`). QA/Manager 재작업의 마지막 조건을 충족했다. Actor 변경 envelope는 UI 경계 주입 시험이며 실제 로그인·Role·Site·CSRF/CAS 인가는 별도 signed 회귀로 검증했다.
+- 게시 인증: 기본 Git credential 및 `.env` 지정 credential의 안전한 askpass dry-run 모두 `Invalid username or token`으로 exit128. 값·헤더·credential URL은 출력하지 않았다. Force push/다른 저장소 우회 없이 동일 지정 저장소의 연결된 GitHub 도구로 fast-forward 게시한다. 이는 원격 CI 실패가 아니다.
+- 환경: npm ci 성공, audit 요약 29 vulnerabilities(19 moderate/9 high/1 critical). 이는 설치 시 의존 그래프의 관측 결과이며 이번 기능이 해결한 것으로 기록하지 않는다. 자동 force downgrade/lock 변경을 수행하지 않았다.
+
+---
+
 ## PR #198 / Issue #197 — 검증 뒤 발견된 P1/P2 Review와 #76 Main 충돌 조치 (2026-11-01)
 
 - **최초 CI SUCCESS:** 최종 이전 HEAD `946b1e42c49a3e5806c019d073acac15ab43bfd5`, [Run 41302441739](https://github.com/planner77/layoutManager/actions/runs/41302441739) `completed/success`; Scope, Quality, Docker Runtime, General Chromium E2E shard 1/2 + 2/2, Greenfield, Runtime+Legacy, required Aggregate Verify까지 **8/8 Job 성공**. 현 시점까지 새 PR CI 실패는 확인되지 않았으며 이 성공은 후속 보완 커밋에 승계하지 않는다.

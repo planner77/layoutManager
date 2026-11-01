@@ -1,3 +1,12 @@
+## 0.56.0 — Issue #196 의미론적 구역 (PR 후보)
+
+- Added: 층별 구역 ID·업무 메타데이터·부모 계층, Site 카테고리, Version/SHA/Scene별 Polygon mapping과 G7 권한·CAS·멱등 생성·감사·논리 삭제.
+- Added: Viewer 구역 생성/목록, 기존 객체 Snap과 자유 WCS 입력, 계층 트리·상세·검색·표시·Bounds focus 및 공통 이동 패널 연계.
+- Schema: 신규 빈 Greenfield 전용 baseline, 과거 설치 fingerprint 보존. 기존 운영 Volume 자동 이전 없음.
+- 검증·제약: 단순 Polygon, 교차점 Snap 미지원, V2 자동 경계 이관 없음. 실제 결과는 TestReport/FailureLedger의 #196 기록을 따른다. PR CI 완료·현장 #113/#193·병합·GHCR 게시 미확인.
+
+---
+
 ## 2026-11-01 — PR #194 CI 시험 보완 (0.55.3 후보 유지)
 
 - `TC-E2-E2E-001`이 메뉴 종료의 지연 포커스 복원과 경합해 Ctrl+Z를 input으로 보내지 못한 시험 순서를 보완한다. trigger 복원→input 포커스 확정 후 native 이벤트·전역 기본동작 비차단·Undo 불변을 검사한다.

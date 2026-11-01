@@ -10,6 +10,7 @@ export type Action =
   | 'cad:read' | 'cad:upload' | 'cad:current' | 'cad:delete'
   | 'outline:read' | 'outline:write' | 'memo:read' | 'memo:write'
   | 'outlineType:read' | 'outlineType:manage'
+  | 'zone:read' | 'zone:write' | 'zoneCategory:manage'
   | 'users:manage' | 'grants:manage'
   | SpecialGrant;
 export type Resource =
@@ -34,7 +35,7 @@ export class AuthorizationError extends Error {
   constructor() { super('접근 권한이 없습니다.'); this.name = 'AuthorizationError'; }
 }
 
-const SITE_ACTIONS: readonly Action[] = ['cad:read', 'cad:upload', 'cad:current', 'cad:delete', 'outline:read', 'outline:write', 'memo:read', 'memo:write'];
+const SITE_ACTIONS: readonly Action[] = ['cad:read', 'cad:upload', 'cad:current', 'cad:delete', 'outline:read', 'outline:write', 'memo:read', 'memo:write', 'zone:read', 'zone:write', 'zoneCategory:manage'];
 const GLOBAL_ACTIONS: readonly Action[] = [
   'outlineType:read', 'outlineType:manage', 'users:manage', 'grants:manage',
   'audit:read', 'logs:read',
@@ -45,12 +46,12 @@ function hasRole(roles: readonly Role[], required: Role) {
 }
 
 function eligible(user: UserAccess, action: Action) {
-  if (action === 'cad:read' || action === 'outline:read' || action === 'memo:read' || action === 'outlineType:read') {
+  if (action === 'cad:read' || action === 'outline:read' || action === 'memo:read' || action === 'outlineType:read' || action === 'zone:read') {
     return user.roles.some(role => role === 'Reader' || role === 'Editor' || role === 'Admin');
   }
-  if (action === 'outline:write' || action === 'memo:write' || action === 'cad:upload' ||
+  if (action === 'outline:write' || action === 'memo:write' || action === 'zone:write' || action === 'cad:upload' ||
       action === 'cad:current' || action === 'cad:delete') return hasRole(user.roles, 'Editor') || hasRole(user.roles, 'Admin');
-  if (action === 'outlineType:manage' || action === 'users:manage' || action === 'grants:manage') {
+  if (action === 'zoneCategory:manage' || action === 'outlineType:manage' || action === 'users:manage' || action === 'grants:manage') {
     return hasRole(user.roles, 'Admin');
   }
   if (action === 'audit:read' || action === 'logs:read') {

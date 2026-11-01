@@ -1,3 +1,11 @@
+## #196 의미론적 구역 Z0–Z4 검증 계획 (2026-11-01)
+
+[Issue196 요구사항→AC→시험 추적](Issue196.md#요구사항ac시험-추적)의 TC-Z196-01~08이 신규 기준이다. Geometry/Snap·metadata CRUD/멱등/409·3단계 트리/포함·click vs focus·Version/Reset·G7/DB 무결·Panel lifecycle·전체 회귀를 각각 실제 Unit/Integration/Playwright로 연결한다. 부모의 오목 경계를 가로지르는 edge, parent 축소 시 자식, 참조 중 category/parent 삭제, stale Scope/actor 응답, 두 Reset mode 후 stale PATCH, V2 미매핑은 필수 부정 시험이다.
+
+Root/Developer 구현 후 별도 QA가 정확 최종 tree를 검증하고 Manager가 완료/재작업을 결정한다. Typecheck/Lint/관련 Unit·Integration/Build 및 필요한 General/G7/Greenfield/Legacy Browser·Docker empty baseline을 실행하고 실패·수리는 FailureLedger, 결과는 TestReport에 기록한다. PR CI는 시작 후 모니터링하지 않는 사용자 범위이며 완료를 추정하지 않는다. synthetic PASS는 #113/#193 실제 DXF/GPU/2PC·운영 수용의 대체 근거가 아니다.
+
+---
+
 ## TC-197-REV — 리뷰 지적과 Main 충돌 회귀 (2026-11-01)
 
 | TC | 실행 및 입력 | 기대 |

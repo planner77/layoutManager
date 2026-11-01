@@ -8,6 +8,7 @@ describe('TC-U1-UNIT-001: viewer app docking state', () => {
       outlineToolEnabled: false,
       outlineTreeOpen: false,
       memoTreeOpen: false,
+      zonePanelOpen: false,
       toolsOpen: false,
       compactPanel: 'layers',
     });
@@ -74,6 +75,19 @@ describe('TC-U1-UNIT-001: viewer app docking state', () => {
     expect(reopened).toMatchObject({ layerPanelOpen: true, outlineTreeOpen: true, compactPanel: 'layers' });
     expect(withTree.layerPanelOpen).toBe(true);
   });
+});
+
+describe('#196 zone dock isolation',()=>{
+ it('opens one mobile drawer, preserves outline mode, and clears the panel on reset',()=>{
+  const outlined=viewerAppReducer(initialViewerAppState,{type:'set-outline-tool',enabled:true});
+  const zones=viewerAppReducer(outlined,{type:'toggle-zones',exclusive:true});
+  expect(zones).toMatchObject({zonePanelOpen:true,layerPanelOpen:false,outlineTreeOpen:false,
+   memoTreeOpen:false,toolsOpen:false,outlineToolEnabled:true,compactPanel:'zones'});
+  const switched=viewerAppReducer(zones,{type:'toggle-memo-tree',exclusive:true});
+  expect(switched).toMatchObject({zonePanelOpen:false,memoTreeOpen:true,compactPanel:'memos'});
+  expect(viewerAppReducer(zones,{type:'compact-exclusive'})).toEqual(zones);
+  expect(viewerAppReducer(zones,{type:'reset'})).toEqual(initialViewerAppState);
+ });
 });
 
 describe('TC-U3-UNIT-001: outline tool state machine', () => {

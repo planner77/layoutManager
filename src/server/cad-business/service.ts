@@ -13,7 +13,7 @@ import { attestTransformedOutlineDraftAgainstImmutableDxf } from '@/server/outli
 import { geometry,keys,memoEditOperation,memoGroupId,memoText,name,operations,point,provenance,revision,sourceSha,transformed,ID } from './validation';
 import type { GeoJSONOutline } from '@/viewers/core/outline-compute';
 import type { StoredOutlineDto, ReferencedOutlineType } from '@/domain/typed-outline';
-import { G7_GREENFIELD_BASELINE } from '@/server/g7-operational/greenfield-schema';
+import { G7_GREENFIELD_BASELINE, G7_PREVIOUS_TYPED_OUTLINES_BASELINE } from '@/server/g7-operational/greenfield-schema';
 function bad(code:string,status:number):never {throw new CadError(code,'업무 객체를 확인하거나 수정할 수 없습니다.',status);}
 function cas():never {return bad('BUSINESS_REVISION_CONFLICT',409);}
 function stableJson(value:unknown):string{
@@ -24,7 +24,7 @@ function stableJson(value:unknown):string{
 }
 async function receiptSchema(tx:Parameters<Parameters<typeof writeTransaction>[1]>[0]):Promise<void>{
  const rows=await tx.$queryRawUnsafe<{migration_name:string}[]>('SELECT migration_name FROM "_prisma_migrations"');
- if(rows.length!==1||rows[0].migration_name!==G7_GREENFIELD_BASELINE)bad('BUSINESS_SCHEMA_UNAVAILABLE',503);
+ if(rows.length!==1||![G7_GREENFIELD_BASELINE,G7_PREVIOUS_TYPED_OUTLINES_BASELINE].includes(rows[0].migration_name as typeof G7_GREENFIELD_BASELINE))bad('BUSINESS_SCHEMA_UNAVAILABLE',503);
 }
 type Kind='outline'|'memo';
 type AuditAction='CREATE'|'EDIT'|'DELETE';

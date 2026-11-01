@@ -1,3 +1,9 @@
+## Issue #196 — 의미론적 구역 구현·PR CI 후보 (2026-11-01, 0.56.0)
+
+구역 생성·수정·계층/카테고리·Snap·Version mapping·Reset·G7 변경 전 [Issue196](out/Issue196.md)의 ADR/AC와 [Database](out/Database.md), [ViewerPanelPolicy](out/ViewerPanelPolicy.md)를 읽는다. 실제 검증과 실패/재시험은 [TestReport](out/TestReport.md)/[FailureLedger](out/FailureLedger.md)를 따른다. PR CI는 시작까지만 요청되었으며 성공·현장 수용은 별도다.
+
+---
+
 ## PR #198 — PR CI 기존 성공·리뷰 보완·Main 정렬 (2026-11-01)
 
 - 직전 PR CI [Run 41302441739](https://github.com/planner77/layoutManager/actions/runs/41302441739) HEAD `946b1e42c49a3e5806c019d073acac15ab43bfd5` 8개 Job SUCCESS(2 Shards 포함). 그러나 이후 Codex P1/P2 리뷰 수정 및 Main #76 동기화로 새 HEAD의 CI 통과는 별도 필요.
@@ -1251,6 +1257,7 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 
 | 문서 | 목적 | 반드시 참조하는 상황 |
 | --- | --- | --- |
+| [Issue196](out/Issue196.md) | 의미론적 구역 ADR·API·Snap·Geometry·계층·권한·AC | 구역 생성/수정, Version mapping, Reset, 카테고리 또는 구역 UI 변경 전 |
 | [Requirements](out/Requirements.md) | 상세 기능/비기능 요구사항, 범위 | 기능 추가·수정·삭제 전 |
 | [Architecture](out/Architecture.md) | 구조와 Component 책임 | 구조 변경, 신규 Module, Viewer 변경 시 |
 | [ViewerPanelPolicy](out/ViewerPanelPolicy.md) | #138 Viewer 조회·작업 보조 창의 공통 drag/Drawer·위치 복원·Canvas 입력 경계·반응형·수명주기 지침 | Viewer 내 검색·목록·트리·편집·도구 창의 요구사항 등록, 설계/구현, 코드 리뷰/수용 시험 시 (예외 사유도 기록) |

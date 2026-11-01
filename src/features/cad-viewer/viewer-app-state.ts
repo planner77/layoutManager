@@ -2,13 +2,14 @@
  * UI-only state shared by the U1 shell and the temporary #85 Memo Tree.
  * Never use it as a dependency of ViewerManager.load() or server persistence.
  */
-export type ViewerCompactPanel = 'layers' | 'outlines' | 'memos' | 'tools' | null;
+export type ViewerCompactPanel = 'layers' | 'outlines' | 'memos' | 'zones' | 'tools' | null;
 
 export type ViewerAppState = {
   layerPanelOpen: boolean;
   outlineToolEnabled: boolean;
   outlineTreeOpen: boolean;
   memoTreeOpen: boolean;
+  zonePanelOpen: boolean;
   toolsOpen: boolean;
   compactPanel: ViewerCompactPanel;
 };
@@ -19,6 +20,7 @@ export type ViewerAppAction =
   | { type: 'set-outline-tool'; enabled: boolean }
   | { type: 'toggle-outline-tree'; exclusive?: boolean }
   | { type: 'toggle-memo-tree'; exclusive?: boolean }
+  | { type: 'toggle-zones'; exclusive?: boolean }
   | { type: 'toggle-tools'; exclusive?: boolean }
   | { type: 'compact-exclusive' }
   | { type: 'close-tools' }
@@ -29,6 +31,7 @@ export const initialViewerAppState: ViewerAppState = {
   outlineToolEnabled: false,
   outlineTreeOpen: false,
   memoTreeOpen: false,
+  zonePanelOpen: false,
   toolsOpen: false,
   compactPanel: 'layers',
 };
@@ -37,6 +40,7 @@ function firstOpen(state: ViewerAppState): ViewerCompactPanel {
   if (state.layerPanelOpen) return 'layers';
   if (state.outlineTreeOpen) return 'outlines';
   if (state.memoTreeOpen) return 'memos';
+  if (state.zonePanelOpen) return 'zones';
   if (state.toolsOpen) return 'tools';
   return null;
 }
@@ -50,12 +54,14 @@ export function viewerAppReducer(state: ViewerAppState, action: ViewerAppAction)
         state.compactPanel === 'layers' && state.layerPanelOpen ? 'layers' :
         state.compactPanel === 'outlines' && state.outlineTreeOpen ? 'outlines' :
         state.compactPanel === 'memos' && state.memoTreeOpen ? 'memos' :
+        state.compactPanel === 'zones' && state.zonePanelOpen ? 'zones' :
         state.compactPanel === 'tools' && state.toolsOpen ? 'tools' : firstOpen(state);
       return {
         ...state, compactPanel: active,
         layerPanelOpen: active === 'layers',
         outlineTreeOpen: active === 'outlines',
         memoTreeOpen: active === 'memos',
+        zonePanelOpen: active === 'zones',
         toolsOpen: active === 'tools',
       };
     }
@@ -66,6 +72,7 @@ export function viewerAppReducer(state: ViewerAppState, action: ViewerAppAction)
         layerPanelOpen,
         outlineTreeOpen: action.exclusive && layerPanelOpen ? false : state.outlineTreeOpen,
         memoTreeOpen: action.exclusive && layerPanelOpen ? false : state.memoTreeOpen,
+        zonePanelOpen: action.exclusive && layerPanelOpen ? false : state.zonePanelOpen,
         toolsOpen: action.exclusive && layerPanelOpen ? false : state.toolsOpen,
       };
       return { ...next, compactPanel: layerPanelOpen ? 'layers' :
@@ -82,6 +89,7 @@ export function viewerAppReducer(state: ViewerAppState, action: ViewerAppAction)
         layerPanelOpen: action.exclusive && toolsOpen ? false : state.layerPanelOpen,
         outlineTreeOpen: action.exclusive && toolsOpen ? false : state.outlineTreeOpen,
         memoTreeOpen: action.exclusive && toolsOpen ? false : state.memoTreeOpen,
+        zonePanelOpen: action.exclusive && toolsOpen ? false : state.zonePanelOpen,
       };
       return { ...next, compactPanel: toolsOpen ? 'tools' :
         state.compactPanel === 'tools' ? firstOpen(next) : state.compactPanel };
@@ -94,6 +102,7 @@ export function viewerAppReducer(state: ViewerAppState, action: ViewerAppAction)
       const next = {
         ...state, outlineTreeOpen,
         memoTreeOpen: outlineTreeOpen ? false : state.memoTreeOpen,
+        zonePanelOpen: outlineTreeOpen ? false : state.zonePanelOpen,
         layerPanelOpen: action.exclusive && outlineTreeOpen ? false : state.layerPanelOpen,
         toolsOpen: action.exclusive && outlineTreeOpen ? false : state.toolsOpen,
       };
@@ -105,11 +114,21 @@ export function viewerAppReducer(state: ViewerAppState, action: ViewerAppAction)
       const next = {
         ...state, memoTreeOpen,
         outlineTreeOpen: memoTreeOpen ? false : state.outlineTreeOpen,
+        zonePanelOpen: memoTreeOpen ? false : state.zonePanelOpen,
         layerPanelOpen: action.exclusive && memoTreeOpen ? false : state.layerPanelOpen,
         toolsOpen: action.exclusive && memoTreeOpen ? false : state.toolsOpen,
       };
       return { ...next, compactPanel: memoTreeOpen ? 'memos' :
         state.compactPanel === 'memos' ? firstOpen(next) : state.compactPanel };
+    }
+    case 'toggle-zones': {
+      const zonePanelOpen=!state.zonePanelOpen;
+      const next={...state,zonePanelOpen,
+        outlineTreeOpen:zonePanelOpen?false:state.outlineTreeOpen,
+        memoTreeOpen:zonePanelOpen?false:state.memoTreeOpen,
+        layerPanelOpen:action.exclusive&&zonePanelOpen?false:state.layerPanelOpen,
+        toolsOpen:action.exclusive&&zonePanelOpen?false:state.toolsOpen};
+      return {...next,compactPanel:zonePanelOpen?'zones':state.compactPanel==='zones'?firstOpen(next):state.compactPanel};
     }
   }
 }

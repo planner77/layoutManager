@@ -7,7 +7,7 @@ import type { Database } from '@/server/db';
 import { writeTransaction } from '@/server/db';
 import { requireSceneRead } from '@/server/scene/scene-context';
 import { assertRuntimeApprovalCurrent } from '@/server/g7-operational/runtime-handler';
-import { G7_GREENFIELD_BASELINE } from '@/server/g7-operational/greenfield-schema';
+import { G7_GREENFIELD_BASELINE, G7_PREVIOUS_TYPED_OUTLINES_BASELINE } from '@/server/g7-operational/greenfield-schema';
 import type { G7RuntimeActiveGate } from '@/server/g7-operational/runtime-gate';
 import { outlineDto } from './service';
 
@@ -40,7 +40,7 @@ export function outlinePageQuery(url:string,catalog:boolean):Page {
 async function latest(tx:Tx):Promise<void>{
   const rows=await tx.$queryRawUnsafe<{migration_name:string}[]>(
     'SELECT migration_name FROM "_prisma_migrations"');
-  if(rows.length!==1||rows[0].migration_name!==G7_GREENFIELD_BASELINE)
+  if(rows.length!==1||![G7_GREENFIELD_BASELINE,G7_PREVIOUS_TYPED_OUTLINES_BASELINE].includes(rows[0].migration_name as typeof G7_GREENFIELD_BASELINE))
     denied('BUSINESS_SCHEMA_UNAVAILABLE',503);
 }
 async function snapshot(tx:Tx,request:Request,versionId:string,gate:G7RuntimeActiveGate){

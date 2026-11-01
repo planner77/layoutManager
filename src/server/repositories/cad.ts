@@ -231,6 +231,13 @@ export class CadRepository {
       if (businessTables.length===2 && ((await tx.cadOutline.count({where:{versionId:id}}))>0 ||
           (await tx.cadMemo.count({where:{versionId:id}}))>0))
         throw new CadError('CAD_BUSINESS_DATA_EXISTS','연결된 외곽선·메모의 감사/보존 정책 확정 전에는 이 버전을 삭제할 수 없습니다.',409);
+      const zoneTables=await tx.$queryRawUnsafe<{name:string}[]>(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('CadZoneGeometry','CadZoneCreateReceipt')");
+      if(zoneTables.length===1)
+        throw new CadError('CAD_ZONE_SCHEMA_DRIFT','구역 데이터 테이블이 불완전합니다.',503);
+      if(zoneTables.length===2 && ((await tx.cadZoneGeometry.count({where:{versionId:id}}))>0 ||
+          (await tx.cadZoneCreateReceipt.count({where:{versionId:id}}))>0))
+        throw new CadError('CAD_ZONE_DATA_EXISTS','연결된 구역 기록이 있어 버전을 삭제할 수 없습니다.',409);
       await tx.cadFileVersion.delete({ where: { id } });
       if (auth && allowed) await appendG7CadAudit(
         tx, auth, allowed.actorId, allowed.siteId, 'CAD_VERSION_DELETED',

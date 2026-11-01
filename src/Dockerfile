@@ -101,6 +101,7 @@ COPY --from=builder /app/src/server/g7-staging/g4-store.ts ./server/g7-staging/g
 COPY --from=builder /app/src/server/cad-business/schema-ddl.ts ./server/cad-business/schema-ddl.ts
 COPY --from=builder /app/src/server/cad-business/anchor-ddl.ts ./server/cad-business/anchor-ddl.ts
 COPY --from=builder /app/src/server/cad-business/memo-feature-ddl.ts ./server/cad-business/memo-feature-ddl.ts
+COPY --from=builder /app/src/server/cad-business/zone-ddl.ts ./server/cad-business/zone-ddl.ts
 COPY --from=builder /app/src/server/g7-operational/greenfield-schema.ts ./server/g7-operational/greenfield-schema.ts
 COPY --from=builder /app/src/server/g7-operational/greenfield-install.ts ./server/g7-operational/greenfield-install.ts
 COPY --from=builder /app/src/server/g7-operational/greenfield-auto.ts ./server/g7-operational/greenfield-auto.ts
@@ -126,6 +127,7 @@ RUN ./node_modules/.bin/prisma --version >/dev/null \
     && node --import tsx --input-type=module -e 'import { CAD_ANCHOR_DDL } from "./server/cad-business/anchor-ddl.ts"; if (CAD_ANCHOR_DDL.length !== 3) process.exit(1);' \
     && node --import tsx --input-type=module -e 'import { CAD_MEMO_FEATURE_DDL } from "./server/cad-business/memo-feature-ddl.ts"; if (CAD_MEMO_FEATURE_DDL.length !== 6) process.exit(1);' \
     && node --import tsx --input-type=module -e 'import { OUTLINE_TYPE_DDL,LATEST_CAD_OUTLINE_DDL } from "./server/cad-business/schema-ddl.ts"; if (OUTLINE_TYPE_DDL.length !== 9 || !LATEST_CAD_OUTLINE_DDL.includes("outline_type_id") || !LATEST_CAD_OUTLINE_DDL.includes("OutlineType")) process.exit(1);' \
+    && node --import tsx --input-type=module -e 'import { CAD_ZONE_DDL } from "./server/cad-business/zone-ddl.ts"; if (!CAD_ZONE_DDL.some(row => row.name === "CadZoneGeometry")) process.exit(1);' \
     && node --import tsx --input-type=module -e 'import { CAD_OUTLINE_RECEIPT_DDL } from "./server/cad-business/schema-ddl.ts"; if (CAD_OUTLINE_RECEIPT_DDL.length !== 6) process.exit(1);'
 CMD ["./node_modules/.bin/tsx", "scripts/deploy.ts"]
 

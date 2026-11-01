@@ -1,3 +1,21 @@
+## #196 Zone 신규 empty Greenfield schema 계약 (2026-11-01)
+
+정책/DTO/API는 [Issue196](Issue196.md), **DB 구조의 정본은 이 절과 구현 Prisma/DDL**이다. 신규 latest baseline을 추가하며 기존 TYPED_OUTLINES 및 과거 `CAD_BUSINESS_DDL` 문장·hash·marker는 수정하지 않는다. 기존 설치 ALTER/adopt/자동 이관 없음. Prisma model·Greenfield installer/schema assertion/runtime authority·Migrator COPY/empty install smoke를 함께 갱신한다. 구 schema에서 Zone 부재는 503으로 닫되 기존 CAD 조회는 유지한다. 실행 결과는 TestReport에 별도 기록한다.
+
+최신 신규 설치 marker는 `202611010002_greenfield_semantic_zones_baseline`, Schema ID는 `G7-GREENFIELD-SEMANTIC-ZONES-20261101-1`이다. 과거 typed marker `202611010001_greenfield_typed_outlines_baseline`과 해당 checksum을 별도로 보존한다.
+
+| 엔티티 | 저장·불변·참조 계약 |
+| --- | --- |
+| ZoneCategory | 서버 UUID, site_id FK, name/name_key, active, sort_order, revision, created/updated actor·시각. DELETE는 active=false로 비활성화하며 재활성 가능하고 이름/감사를 보존한다. Unique(site_id,name_key), inactive 이름도 예약. 참조 중 삭제409·비활성 허용, 물리 삭제 금지. OutlineType과 FK/자동 매핑 없음. |
+| CadZone | 서버 UUID, location_id 및 검증된 site_id, nullable parent_zone_id/category_id, name/name_key, description/code/tags_json/references_json/sort_order, revision, immutable created_by/created_at, updated_by/at, deleted_by/at. live 이름은 층 내 Unique. location/parent/category/actor 실제 FK NO ACTION. 복합 FK 또는 DB trigger로 parent의 같은 층 및 category의 같은 Site를 차단하고 서비스도 재검증한다. |
+| CadZoneGeometry | Unique(zone_id,version_id), location_id, source_sha256, scene_revision, polygon_json, 서버 계산 bounds/area, 유효/무효 상태, revision/시각. Zone+Location 및 Version+Location 복합 FK NO ACTION 또는 동등 DB guard로 cross-floor mapping을 막는다. SHA는 해당 Version과 일치해야 한다. Zone/Version/소유 관계 불변, 버전 간 자동 copy 없음. |
+| 생성 receipt | actor+Version+Idempotency-Key Unique, request digest와 zone_id FK. 최초 생성/receipt/Audit 같은 transaction, 동일 payload 재시도 같은 ID, 다른 payload409. 요청 전문·설명·credential 저장 없음. |
+| 감사 | 신규 Zone/Category action은 append-only Audit 저장소에 실제 actor·site·version context·target·before/after revision·requestId·UTC를 남긴다. 기존 CadBusinessAudit CHECK가 새 target kind를 허용하지 않으면 **기존 DDL을 고치지 않고** 독립 Zone Audit sidecar를 추가한다. Audit 실패 시 mutation rollback. |
+
+부모 삭제는 live 자식 존재 시 거절하고 cascade/reparent하지 않는다. reparent/geometry 변경 시 모든 동일 Version의 valid 부모·자식 포함을 transaction에서 다시 검사한다. Reset은 Zone metadata/parent/polygon 보존, 해당 Version geometry 무효화+Zone/geometry revision+Audit를 기존 업무 reset과 원자 처리한다. stale Scene mapping은 읽기 시 UNMAPPED, no geometry row는 null이며 둘 다 focus 금지다. Version/Location 삭제도 참조가 남아 있으면 안전한409로 거절하며 Zone history를 몰래 제거하지 않는다. FK/immutable/soft-delete/Unique/동시 CAS 및 과거 baseline fingerprint 회귀는 TC-Z196-06/08로 검증한다.
+
+---
+
 ## #186 Frame/Heap 성능 PR — DB Schema 불변 (2026-11-01)
 
 Memo Projection 및 ThreeDxfViewerAdapter Dispose 참조/Renderer 코드를 최적화하되 `CadMemo`/`CadMemoAnchor`/`CadMemoFeature`/`CurrentScene` 등 Prisma 모델·SQLite DDL/트리거·Baseline checksum을 변경하지 않는다. 100 Memo/Version 및 100 live Snap binding, 20k 후보 Point 상한을 유지하고 API Actor/Role/Site·Revision CAS·Audit는 기존 #172 확정 정책을 따른다. Read-only Synthetic Perf 테스트만 새 데이터를 disposable test store에 작성하며 운영 DB/GHCR/기존 데이터 migration 없음.
