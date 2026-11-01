@@ -1,3 +1,13 @@
+## PR-C #186 — 10k Memo frame/heap 미확정 원인 및 검증 경계 (2026-11-01)
+
+- Base Main `40278024f4ff58dc9de70b6866f8f2b84019b758`, branch `feat/issue-186-memo-performance-20261101`, package/version 0.55.1 후보. 최신 #172 정책은 PR #188/Main에서 계승. Root DESIGN.md 없음.
+- **기존 실패/관측:** #174 10k +100핀 과거 p95 216.6ms/17 frames >16.7ms; dispose heap +16,804,276B. 이것은 실 현장 SLA/소스 누수 확정이 아니며 이번 코드 패치 이후의 개선 수치로 주장하지 않는다.
+- 분석: Memo 좌표 별 canvas DOMRect 반복 조회, React no-op commit 시도 및 Adapter dispose 후 미정리되는 source/renderIndex/sceneAsset 참조를 소스에서 확인. WCS batch+cleanup 및 정확 workload 0/100 Visible/100 Hidden·세 번 종료 CDP 진단 도구를 추가. CDP Inspector 자체의 handler retention, Next route/cache, GPU/Canvas는 별도로 증명해야 하며 JS Heap 하나로 결론 금지.
+- **현재 검증:** 변경파일 작성, 단위 및 E2E test 추가 후 아직 로컬 npm/typecheck/ESLint/Vitest/Playwright/Build/Docker **실행되지 않음** (GitHub 연결 소스 API만 이용). PR CI Run/Job 결과는 최초 실행 후에만 기록. CI 오류가 발생하면 정확한 Run, job, 원인/보완 commit 및 새 HEAD CI를 본 실패 원장에 추가해 이력을 보존한다.
+- **범위:** 기존 DB·CAD·S3 Volume, 기밀 현장 자료, 운영 Auth/Writer, 기존 GHCR 태그 변경 없음. #186/Open field, #113 실제 DXF/GPU, #96 2PC/Auth 수용을 합성 PR CI 성공으로 종료하지 않는다.
+
+---
+
 ## PR #188 / Issue #172 — 첫 PR CI TypeScript 파서 실패 보완 (2026-11-01 KST)
 
 - **관측한 실패:** [PR #188](https://github.com/planner77/layoutManager/pull/188), [Run 41272222655](https://github.com/planner77/layoutManager/actions/runs/41272222655), attempt 1, 기존 HEAD `ed7b3184981b517a591bc346089f0729d4ac15c2`, `completed/failure`. Verify [Job 124747159527](https://github.com/planner77/layoutManager/actions/runs/41272222655/job/124747159527) step 7 **TypeScript 검사**: `tests/integration/typed-outline-runtime.test.ts(505,96): error TS1005: ',' expected` (`tsc --noEmit`, exit 2). GitHub 로그의 실제 원문 기준.
