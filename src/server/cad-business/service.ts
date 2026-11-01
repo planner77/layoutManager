@@ -1,6 +1,7 @@
 /** #98/#83 authenticated, revision-CAS business persistence. No legacy/anonymous fallback. */
 import { createHash, randomUUID } from 'node:crypto';
 import {anchorDto,hasAnchorSchema,reconcileOutlineAnchors} from './anchor-service';
+import {canDeleteMemo} from './memo-policy';
 import type {MemoAnchorState} from '@/domain/cad-memo-anchor';
 import {EMPTY_MEMO_SETTINGS,normalizeMemoSettings,type MemoSettings} from '@/domain/memo-schedule';
 import type { Database } from '@/server/db';
@@ -177,8 +178,10 @@ export class BusinessRepository {
    const old=await tx.cadMemo.findFirst({where:{id,versionId,deletedAt:null}});
    if(!old)bad('BUSINESS_NOT_FOUND',404);
    await version(tx,versionId,old.sourceSha256);
-   // M2 Owner has NOT approved cross-Editor Memo collaboration: owner-only.
-   if(old.createdById!==allowed.actorId)bad('BUSINESS_OWNER_REQUIRED',403);
+   // #172: a site-authorized Editor may edit another author's Memo.
+   // DELETE remains original-author or explicitly site-authorized Admin only.
+   if(remove && !await canDeleteMemo(tx,allowed.actorId,old.createdById))
+    bad('BUSINESS_OWNER_REQUIRED',403);
    if(old.revision!==expected)cas();
    if(operation==='metadata'){
     if(typeof b.visible!=='boolean')bad('MEMO_VISIBILITY_INVALID',422);
