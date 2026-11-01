@@ -1,3 +1,11 @@
+## PR #194 / Issue #191 — 3차 ESLint 실패 및 Effect 비동기 조회 분리 (2026-11-01)
+
+- [실패 Run 41292700455](https://github.com/planner77/layoutManager/actions/runs/41292700455) 정확 HEAD `693af939d762f4d54f2f0af758aa6fd26972ff22`: Verify 124807072543 TypeScript SUCCESS 후 ESLint 1 error(`react-hooks/set-state-in-effect` at `master-manager.tsx:168`), Unit/Build/Browser SKIPPED, Docker 124807072396 SUCCESS. [FailureLedger](out/FailureLedger.md), [TestReport](out/TestReport.md)에서 이전 Run 41285766585/41291679198도 보존.
+- 중요 재발 방지: Effect에서 State setter가 있는 비동기 함수 `refresh()`를 **직접 호출하지 않는다**. 초기/필터 GET을 순수 `fetchMasterNodes(showInactive)` 네트워크 Promise의 `.then/.catch/.finally`에서 처리하고, 수동 저장/새로고침의 `refresh(preferred)`와 공통 결과 반영 콜백을 재사용한다. ESLint/React Hooks rule/CI gate 해제 금지. 원본·Version·Current·G7 인가·Audit·DB 마이그레이션은 영향 없음.
+- 신규 PR CI의 실제 Run/Job 성공은 확인 전 NOT VERIFIED, 사용자 지시에 따라 CI 시작 후 모니터링 생략. Owner Managed 리뷰, Main 충돌 및 실패 원장 기록을 최종 HEAD에 대해 확인. PR 병합/GHCR/Issue 종료/운영 활성화 없음.
+
+---
+
 ## PR #194 / #191 — React Hooks ESLint 실패 수리·기준정보 회귀 (2026-11-01)
 
 - [PR CI Run 41285766585](https://github.com/planner77/layoutManager/actions/runs/41285766585) 정확 실패 HEAD a89956c9d704aeb173e625b3c970d3f3fa29a3c8: Verify ESLint 오류 4건(react-hooks/refs 2, react-hooks/set-state-in-effect 2). TypeScript SUCCESS, Docker SUCCESS, Unit/Build/E2E SKIPPED. [FailureLedger](out/FailureLedger.md)/[TestReport](out/TestReport.md) 기록.
