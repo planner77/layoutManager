@@ -1,3 +1,11 @@
+## #191 — 위치 기준정보 트리·상세 편집 (2026-11-01, PR CI 후보)
+
+- 범위·5단계 불변·기능/상태/키보드·오류 및 보안 테스트 계약은 [out/Issue191.md](out/Issue191.md), [Requirements](out/Requirements.md), [Architecture](out/Architecture.md), [Decisions](out/Decisions.md), [TestPlan](out/TestPlan.md)를 따른다. 루트 DESIGN.md는 없음.
+- /masters는 사업부 → 제품 → 사업장/법인 → 동 → 층 단일 트리와 우측 상세/등록·편집·안전 삭제. 기존 API와 불변 UUID/부모 FK, 미분류 이름 제약, 이력/Current 링크 재사용. 비활성 조상 아래 신규 기준정보 생성은 UI + MasterRepository 트랜잭션 이중 차단.
+- G7 Runtime/Site Grant/Auth/Origin/CSRF/Audit, 업로드·재분류·원본·Current·운영 DB/Volume·Auth/Writer 플래그는 변경하지 않는다. 기능 브랜치, 신규 로컬·PR CI 실측 결과는 [TestReport](out/TestReport.md)/[FailureLedger](out/FailureLedger.md)에만 근거로 기록한다. PR 생성이 CI를 시작하나 요청대로 완료 모니터링은 생략하고, GHCR/병합/이슈 종료는 별도.
+
+---
+
 ## PR #192 — #81/#160 Owner Managed 병합 및 CI/GHCR 핸드오프 (2026-11-01, 0.55.2)
 
 - 최종 PR HEAD `3da74d76134e69924018e519ff4ce458e96c7487`, [PR CI Run 41281582636](https://github.com/planner77/layoutManager/actions/runs/41281582636) **completed/success**; Verify Job `124774528508`·Docker Job `124774528276` 모두 SUCCESS. 미해결 inline review threads 0, 제출 review 0(Owner Managed), Main behind 0, mergeable clean.
