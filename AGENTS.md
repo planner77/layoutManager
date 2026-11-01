@@ -1,3 +1,12 @@
+## PR #198 — PR CI 기존 성공·리뷰 보완·Main 정렬 (2026-11-01)
+
+- 직전 PR CI [Run 41302441739](https://github.com/planner77/layoutManager/actions/runs/41302441739) HEAD `946b1e42c49a3e5806c019d073acac15ab43bfd5` 8개 Job SUCCESS(2 Shards 포함). 그러나 이후 Codex P1/P2 리뷰 수정 및 Main #76 동기화로 새 HEAD의 CI 통과는 별도 필요.
+- P1: `git diff --no-renames --name-only -z`로 이름 변경된 소스의 구/신 경로를 빠짐없이 검사; 독립 disposable Git rename Unit 추가. P2: `production-build-<run_id>` artifact 고정 + 전체 재실행 시 `overwrite:true`, 실패 Browser Job만 재실행해도 이전 성공 Quality artifact 유지.
+- #76 docs-only Main `9bfdc7a9506843ada7a9765659d7c29313988c16`의 AGENTS/README/FailureLedger/TestPlan/TestReport, Issue76/Operation 내용을 보존하며 conflict를 해소하고 양 부모 merge로 Main 정렬. 신규 PR CI에 성공하기 전 병합/Issue 종료/GHCR 수행하지 않는다.
+- 근거 [CIOptimization](out/CIOptimization.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md), [FailureLedger](out/FailureLedger.md). 현재 구현 branch 후속 CI Run/Job, 효과는 새 실행에서 별도 확인. 사용자 요청에 따라 CI 완료 모니터링 생략.
+
+---
+
 ## #197 — PR CI 최적화 6건 (2026-11-01, 구현 PR 후보)
 
 - 디자인/AC 정본: [out/CIOptimization.md](out/CIOptimization.md). PR CI 증가: #159 약 11분, #194 약 24.5분. General Chromium E2E 93→148건/5.8→14.8분 및 Greenfield 1→22건/0.1→3분으로 확대; 원인은 실제 Job 로그 근거.
@@ -943,6 +952,13 @@ DXF_IMPORTED 변형은 세션 작업 차분, APP_CREATED는 GeneratedDocument로
 ## Issue #54 / PR #92 — #76 main 통합 및 검증 기록 (2026-10-25)
 
 - 수정된 #54 HEAD `6845c4b4`: [PR CI 40181171710](https://github.com/planner77/layoutManager/actions/runs/40181171710) **completed/success**, P1 thread resolved. #76 [main 14111b45](https://github.com/planner77/layoutManager/commit/14111b45a36907245342751d9d1a139b5215474d)는 문서·PR CI 비차단 read-only audit만 변경하며 Viewer/DB/GHCR 런타임 변경 없음. #54와 #76 문서 및 CI 작업을 모두 보존하고 main을 통합한다. 병합 HEAD의 새 PR CI 성공은 별도 확인해야 한다.
+
+## Issue #76 — 2026-11-01 운영 설정 재점검 및 완료 경계
+
+- [PR #89](https://github.com/planner77/layoutManager/pull/89) CI 40179740394 SUCCESS, Main Squash `14111b45` 단일 제목·빈 본문, Main CI 40182008444 SUCCESS/GHCR SKIPPED는 검증되었다. 그러나 REST 재조회 `true/COMMIT_OR_PR_TITLE/COMMIT_MESSAGES`여서 repository default 목표 `true/PR_TITLE/BLANK`는 **미적용**. 명시적 Squash 병합 성공은 기본 설정 수용을 대체하지 않는다.
+- GitHub 연결 도구로 repository settings PATCH 불가. 관리자 [Settings](https://github.com/planner77/layoutManager/settings) 변경·REST 재조회·**기본값 변경 후 다음 정상 Squash**의 subject/body/Main run-name 확인 시에만 #76 수용 및 종료. CI audit는 비차단이며 이 후속 문서 PR은 구현을 중복하지 않는다. [Issue76](out/Issue76.md) / [FailureLedger](out/FailureLedger.md).
+
+---
 
 ## Issue #76 — Squash Merge 관리자 설정·PR CI 읽기 전용 진단 (2026-10-25)
 

@@ -293,6 +293,7 @@ G1~G3 DB·세션 계약 위에 Role/Site/Version 인가, Admin Grant·Account �
 - GitHub 저장소 Settings → General → Pull Requests → **Allow squash merging / Default commit message: Pull request title**로 지정해야 합니다. 현재 REST 확인값 `COMMIT_OR_PR_TITLE / COMMIT_MESSAGES`는 목표 `PR_TITLE / BLANK`와 달라 **미완료**입니다.
 - PR CI는 이를 읽기 전용으로 조회해 `PASS`, `NOT APPLIED`, `NOT VERIFIED` 중 하나를 경고/Job Summary로 표시합니다. 경고 자체는 다른 PR CI를 차단하지 않으며, 실제 설정 변경·새 Main CI 단일행 확인을 대체하지 않습니다. 세부 절차 [Issue76](out/Issue76.md) / [Operation](out/Operation.md).
 - 앱 버전, GHCR 게시 범위, 기존 #74 multiline 보호, DXF/DWG 데이터는 변동 없습니다.
+- **2026-11-01 재확인:** #76 진단은 [PR #89](https://github.com/planner77/layoutManager/pull/89)로 이미 병합되어 PR CI [40179740394](https://github.com/planner77/layoutManager/actions/runs/40179740394)와 Main CI [40182008444](https://github.com/planner77/layoutManager/actions/runs/40182008444)가 성공했습니다. 하지만 저장소 기본값은 여전히 `true/COMMIT_OR_PR_TITLE/COMMIT_MESSAGES`로 목표 `true/PR_TITLE/BLANK`와 다릅니다. 기존 Main 빈 본문은 명시적 API 인자의 결과이지 관리자 설정 변경 증거가 아닙니다.
 
 ## v0.40.0 — Issue #54 생성 개체 WCS 이동·그룹 이동 (E4)
 
@@ -734,4 +735,5 @@ docker image inspect "$CAD_IMAGE_NAME:$CAD_IMAGE_VERSION" --format '{{json .Repo
 ```
 
 게시한 전체 이미지 주소를 `.env`의 `GHCR_IMAGE`에 넣으면 위의 Compose pull 절차로 실행할 수 있습니다. Token을 `.env.example`, Docker build argument, image label 또는 Git에 넣지 않습니다. Docker 인증 저장은 사용 환경의 credential helper 정책을 따르며 필요하면 작업 후 `docker logout ghcr.io`로 해제합니다. package 권한·visibility는 GitHub 설정을 따르고 임의 공개 전환을 하지 않습니다. GHCR 인증/권한 및 원본 연결 설명은 [GitHub 공식 문서](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)를 참조하세요.
-\n### PR CI 시간 최적화 (#197)\n\nPlaywright 일반 E2E 2-Shard/Greenfield 병렬화, docs-only PR 경량화, 테스트별 실행시간 JSON·Summary, Docker Baseline 조건부 비교·GHA cache, standalone Production Build 재사용 및 기존 required check 안전 집계는 [CIOptimization](out/CIOptimization.md)에 문서화되어 있습니다. CI 실제 개선량은 GitHub Actions 성공 Run으로만 확인합니다.\n
+
+### PR CI 시간 최적화 (#197)\n\nPlaywright 일반 E2E 2-Shard/Greenfield 병렬화, docs-only PR 경량화, 테스트별 실행시간 JSON·Summary, Docker Baseline 조건부 비교·GHA cache, standalone Production Build 재사용 및 기존 required check 안전 집계는 [CIOptimization](out/CIOptimization.md)에 문서화되어 있습니다. CI 실제 개선량은 GitHub Actions 성공 Run으로만 확인합니다.\n
