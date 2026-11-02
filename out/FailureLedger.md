@@ -1,3 +1,12 @@
+## PR #213 / Issue #211 — 구현·리뷰/충돌 확인 및 CI 기동 (2026-11-02)
+
+- [PR #213](https://github.com/planner77/layoutManager/pull/213): 구현+문서 초기 HEAD `6746ccbeb60da2f83ef3417bbb74765367923e47`, 17개 파일, [Issue #211](https://github.com/planner77/layoutManager/issues/211). #209 엔진·현재 DB Schema·runtime image package version 0.58.0은 변경하지 않고 G7 통합 호스트 Frontend/단위·CI Docker·Runbook만 변경했다.
+- **PR CI #434 / [Run 41449067782](https://github.com/planner77/layoutManager/actions/runs/41449067782)** 는 해당 초기 HEAD에서 `in_progress`, `conclusion:null`로 **시작만 확인**했다. Job/검증 최종 결과는 확인하지 않는다. 본 원장 보완 commit이 PR HEAD를 바꾸므로 새 CI는 별도 HEAD/Run 기준이며 완료/성공은 NOT VERIFIED. CI 결과 모니터링 생략 요청을 준수한다.
+- 병합 전 현재 원격 검사: `main=663e18add184f7041574e6e4d891a086a62bee49`, PR head initial `6746ccbe...`, compare `behind=0/ahead=1`, GitHub `mergeable=true`, conflicts 0, 미해결 review thread **0**/전체 review thread **0**, submitted reviews **0**. 리뷰 승인으로 간주하지 않음.
+- Python/Docker 전체 실행은 PR CI로 요청했으며 현재 이 작업의 별도 로컬 성공 증거는 없음(**NOT VERIFIED**). 원격 branch·PR 외 기존 운영 Volume/DB/CAD/.env와 Main/이미지 태그/GHCR은 조작하지 않았다. PR 병합·Issue 종료는 수행하지 않음. 후속 CI 실패 시 정확 Run/Job/Source로 최초 실패와 수리를 별도 기록한다.
+
+---
+
 ## Issue #211 — Host 배포 Frontend PR CI 시작 전 원장 (2026-11-02)
 
 - Owner 요청: 분석·설계·구현·문서→리뷰 미해결/충돌 점검→원장 기록→PR CI 시작. **CI 결과 모니터링 생략**. 이전 #209 PR #210 최초 GHCR 인증 실패와 #210 P2 readonly WAL 실패/수정·성공 원문을 아래에서 삭제하지 않는다.
