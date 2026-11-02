@@ -1,3 +1,13 @@
+## PR #217 / Issue #208 — P1-A Node CPU-only 검증 PR 개설·초기 CI 시작 및 Main 정렬 (2026-11-03 KST)
+
+- **원격 개발 범위:** [PR #217](https://github.com/planner77/layoutManager/pull/217), Draft/OPEN, source branch `feature/issue-208-server-scene-poc`, 최초 PR HEAD `9bfb7cf8b16f4e010fca080075e6ba859dc45381`. 실제 구현은 순수 Node 변환 PoC·영속 Queue 상태 계약·합성 Unit 및 설계 문서 **P1-A만**. 최초 업로드 서버 자동 enqueue/Worker/Scene 게시/목록 UI/Compose·실 운영 AC01–09는 NOT IMPLEMENTED/NOT ACCEPTED.
+- **실제 최초 CI 시작:** [PR CI #441 Run41514593711](https://github.com/planner77/layoutManager/actions/runs/41514593711), 최초 PR HEAD `9bfb7cf8b16f4e010fca080075e6ba859dc45381`, 조회 시 `in_progress`, conclusion `null`. 8/8 PASS·실 Node 실증·Docker/Typecheck/Lint/E2E 성공은 **NOT VERIFIED**. 이번 원장 보완 커밋은 PR `synchronize`로 신규 정확 HEAD의 CI를 재시작하며 **최종 HEAD의 별도 Run/Job/Conclusion 확인 전 PASS 주장 금지**. 사용자 요청대로 시작만 확인하고 완료 모니터링하지 않는다.
+- **미해결 리뷰/충돌:** PR 최초 확인 `review_threads=[]` (미해결 0), submitted reviews=[] (독립 승인 없음), `mergeable=true` (충돌 없음). 최신 Main `3daf3d0675533fb060a9da376634f005d5f01094`가 선행 branch 대비 FailureLedger-only 1 commit 앞서 있어, 기존 PR #148 종료 실패 원장 내용을 보존한 후 정식 2-parent merge `9bfb7cf8b16f4e010fca080075e6ba859dc45381`로 정렬. 최초 비교 `behind=0/ahead=21`; 기존 실패 이력 삭제/재작성 없음. 이후 Main 동시 변경 시 재검증 필요.
+- **미실행/리스크:** 이 환경에서 독립 로컬 Node/Vitest/npm/Playwright/OCI 실행 불가, 실제 CPU-only + font/private `_font`/data URL 등 결과 미확정. Node 실제 synthetic/Browser parity/fail injection/프로세스 격리/G7 재인가/영속 큐는 Go 판정 전까지 운영 활성화 금지. G7 Runtime/Session/Site·Auth Writer/원본/READY/Version/Current/APP_CREATED/Memo/Zone/Outline/운영 DB·Volume 및 GHCR 변경 없음.
+- **조치 경계:** PR 생성으로 CI 시작 요청 수행; 병합/GHCR/Issue #208 종료/현장 승인 미진행. P1-A 검증이 실패하면 원인·phase를 정확 기록하고 Node direct NO-GO 후 서버 독립 Headless/Node parser 대안을 재설계. 문서/테스트 정본 [Issue208](Issue208.md)/[TestPlan](TestPlan.md)/[TestReport](TestReport.md).
+
+---
+
 ## PR #148 — M4-A 부분 Draft 종료 / #175·#177 후속 승계 (2026-11-03 KST)
 
 - **최종 상태:** [PR #148](https://github.com/planner77/layoutManager/pull/148) `closed` / `merged=false` / `draft=true`, 최종 부분 구현 HEAD `8b5199fd39a9e535213e9fc38cc99a2b3bb509fe`, 종료 시각 **2026-11-03 04:49:54 KST** (GitHub `2026-11-02T19:49:54Z`). [종료 근거·Owner 요청에 따른 PR 코멘트](https://github.com/planner77/layoutManager/pull/148#issuecomment-6586893288). 기존 M1 세션 M4-A 구현은 최신 M2/M3/G7 코드에 재병합하지 않고 **SUPERSEDED_BY_PR_175_AND_177 / CLOSED_NOT_MERGED**로 정리. Draft 및 구 브랜치 보존, 자동 삭제 없음.
