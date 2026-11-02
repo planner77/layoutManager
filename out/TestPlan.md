@@ -1,3 +1,22 @@
+## TC-216 — 0.58.1 immutable 릴리스 및 G7 Upgrade 수용 계획 (2026-11-03)
+
+| TC | 검증 내용 | 수용 조건 |
+| --- | --- | --- |
+| TC-216-01 | Package/lock의 버전 및 v0.58.0 불변 | 0.58.1 동기화, old tag/digest 보존 |
+| TC-216-02 | G7 registry 0.56→0.57→0.58→0.58.1 / 0.58→0.58.1 | 세 edge/한 edge 정확 COMPATIBLE, SQL migration 없음 |
+| TC-216-03 | Schema ID/baseline/checksum/data/runtime 계약 drift·unknown·downgrade | 호환 위반 및 미등록 경로 fail-closed |
+| TC-216-04 | 이전 0.58.0 synthetic DB/CAD→0.58.1, 0.56부터 전 구간 통합 | installId, DB bytes, Scene/Memo/Zone/Outline/Auth/Audit/Current, WAL·격리복구 보존 |
+| TC-216-05 | GHCR 양쪽 version tag 존재/부재/부분, Main tag SHA mismatch, tag 재실행 | 양쪽 기존 SKIP, 모두 신규 후보, 부분 존재 FAIL, mismatch FAIL, 이전 digest overwrite 금지 |
+| TC-216-06 | 실제 두 OCI 후보와 게시 쌍 검증 | 동일 source·version, 다른 role/digest, linux/amd64, 정확 tag commit (Main 이후) |
+| TC-216-07 | 기존 #209/#211 CLI pair·계획 승인·App 중지·백업·복구·분리 start | Python 회귀+G7 independent QA+Disposable Docker smoke |
+| TC-216-08 | PR CI full | Static/Unit/Build/General Chromium 2 shard/Greenfield/G7 Signed·Legacy/Docker/Verify 전체 성공 |
+| TC-216-09 | Main GHCR 실제 게시 및 v0.58.0 보존 | 새 0.58.1와 0.58.1-migrate digest+revision 확인 전 Issue 종료 금지 |
+| TC-216-10 | 문서/리뷰/충돌/운영 경계 | 리뷰 미해결 0, Main behind/충돌 0, Ledger 기록·현장/Worker 별도 |
+
+신규 issue216-release-contract 및 issue216-ghcr-workflow unit, G7 upgrade 통합/QA, host Python 회귀, GHCR Main Job이 관련 증거다. **현 시점 로컬 npm/TypeScript/Vitest/Playwright/Docker/OCI NOT RUN, PR CI 성공·GHCR 게시·현장 수용 NOT VERIFIED.** 사용자 요청에 따라 PR CI 시작 후 완료 모니터링 없음. [Issue216](Issue216.md).
+
+---
+
 ## TC-208-A1-NOGO — CI #457 async DOM 의존 재현·명시 차단 및 부분 serializer 검증 (2026-11-03)
 
 | TC | 방법 | 합격 조건 및 판정 범위 |

@@ -1,3 +1,13 @@
+## #216 — 기존 0.58.0 릴리스 이미지 중복 스킵 및 신규 0.58.1 보완 (2026-11-03 KST)
+
+- **정확 선행 증거:** [Main CI Run41528536561](https://github.com/planner77/layoutManager/actions/runs/41528536561) on a4f040c641d6d7192caa711142bfb66cfcab825c: Main 성공, GHCR Job SUCCESS이나 Check version images both-exist, Skip duplicate version build SUCCESS, 신규 App/Migrator build/candidate/promotion/OCI 측정은 SKIPPED. Runtime 병합 성공을 신규 image digest 게시 성공으로 오인한 릴리스 공백이며 GitHub Actions job failure 자체는 아니다.
+- **원인:** package/tag 0.58.0이 이전 릴리스에 고정되고 두 이미지 이미 존재. v0.58.0/image SHA를 강제 이동할 수 없으며 latest 단독 변경도 금지.
+- **보완:** 새 package/lock 0.58.1, G7 동일 zones baseline/checksum/data/runtime의 forward COMPATIBLE edge, 합성 upgrade/host Python/Docker smoke version 정합 시험, GHCR 기존 pair SKIP·신규 pair만 게시·부분 pair G7_RELEASE_PARTIAL_PAIR FAIL·source tag G7_RELEASE_TAG_SOURCE_MISMATCH FAIL, tag rerun overwrite 방지. v0.58.0 및 운영 .env/DB/Volume/CAD/Writer/Auth 불변.
+- **작업 브랜치/기준:** feat/216-immutable-0.58.1-g7-release; Main baseline 3c25c14812853a5183e0c5d82c02caca06a94a94. 이 기록 작성 시 원격 소스만 수정, 로컬 npm/Vitest/tsc/lint/Build/Playwright/Docker/OCI NOT RUN, 신규 PR CI 실패 또는 성공 결과는 아직 없음. 미확인 성공을 기록하거나 과거 실패 원장 내용을 덮어쓰지 않는다.
+- **향후 게이트:** 최종 PR 생성 후 review thread/충돌/Main behind 실제 확인, PR CI 시작만 확인(완료 모니터링 없음). PR CI full SUCCESS→Main 정확 source 병합→새 두 GHCR digest 검증 전 #216 종료/현장 GO 금지. #218 Worker 및 실제 고객 DXF 별도. [설계](Issue216.md), [시험](TestPlan.md).
+
+---
+
 ## PR #217 / #208 — 실제 Main CI 성공, GHCR 중복 버전 빌드 SKIPPED 확인 (2026-11-03 KST)
 
 - **Main CI 정확 실행:** Squash 기능 Main `a4f040c641d6d7192caa711142bfb66cfcab825c`의 [Run41528536561](https://github.com/planner77/layoutManager/actions/runs/41528536561) `push/completed/success`. Release scope Job `125562440174` SUCCESS, `Build and push to GHCR` Job `125562604239` SUCCESS **하지만 배포 산출물은 없음**. GitHub Steps에서 `Check version images on GHCR` SUCCESS, `Skip duplicate version build` **SUCCESS**, `Build application candidate` / `Build migration candidate` / `Promote paired release images after both candidates succeed` / `Measure published linux-amd64 OCI layer bytes` 모두 **SKIPPED**. 기존 `0.58.0` pair 존재를 확인하고 중복 게시를 생략하는 설계 그대로 실행됨.
