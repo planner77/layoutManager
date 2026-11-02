@@ -2,7 +2,7 @@ import {ViewerLoadError} from './viewer-load-error';
 
 /** #212 browser-only diagnostics. No CAD text, paths, UUIDs or server request/job IDs. */
 export const SCENE_BUILD_PHASES = [
-  'SOURCE_VERIFY','DXF_DECODE_NORMALIZE','DXF_PARSE','THREE_SCENE_BUILD_TAG',
+  'SOURCE_READ_VERIFY','DXF_DECODE_NORMALIZE','DXF_PARSE','THREE_SCENE_BUILD_TAG',
   'OPTIONAL_OUTLINE_INDEX','TEXT_INDEX_EXTRACT','SCENE_JSON_INSPECT',
   'CUSTOM_DTO_SERIALIZE','PAYLOAD_VALIDATE','ARTIFACT_READY',
 ] as const;
