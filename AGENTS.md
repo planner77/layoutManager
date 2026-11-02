@@ -1,3 +1,9 @@
+## PR #213 / Issue #211 — Owner Managed Main 병합·GHCR 경계 (2026-11-02)
+
+[FailureLedger](out/FailureLedger.md)/[TestReport](out/TestReport.md)에 정확 PR CI #437 / Run41454272839의 최종 HEAD `dff4995fbbecb9838d259ec904f2f6b0aaf7d0a1` **8/8 SUCCESS**, Codex P2 thread1 resolved/unresolved0, 충돌0, behind0 및 Owner-approved Squash Main `423ff93a0866becb436511cca5207fb713411dfd`(source와 동일 Git tree)를 기록한다. Issue #211은 **closed/completed(코드+합성 CI)**. Main CI #128 Run41458237958은 push로 **시작만 확인**; 사용자 지시로 완료 모니터링하지 않는다. package version `0.58.0`은 기존 릴리스 태그/성공한 GHCR App+Migrator 이미지쌍을 유지한다. 새 CLI는 **Docker 호스트 스크립트**이며, #211 때문에 기존 `v0.58.0`/image tags를 강제로 재지정하지 않는다. Main workflow의 중복 version image 존재시 skip 판단을 존중하고 실제 이번 GHCR 새 게시/최종 결과는 NOT VERIFIED. 이 후속 기록은 docs-only Main으로 runtime/릴리스 재빌드 대상이 아니다. 실 운영 Volume·CAD·Site 권한·현장 수용은 #96/#113/#193 별도.
+
+---
+
 ## PR #213 / Issue #211 — CI #436 실패·호스트 Registry Chain P2 보완 (2026-11-02)
 
 PR CI [Run 41449453584](https://github.com/planner77/layoutManager/actions/runs/41449453584)의 Quality Job에서 **Unit 1 FAIL / 943 PASS**: 기존 GF-109-CI-CONTRACT가 #211 도입 후 사라진 첫 `compose up -d --no-build app` 문구를 강제하여 실패했다. Docker Job은 SUCCESS, dependent Verify FAIL, Browser Jobs SKIPPED다. 기존 #109 실제 first-admin/CAD/restart 영속 검증을 삭제하거나 CI gate를 낮추지 말고, 통합 CLI `status→plan→execute(exact hash)→admin setup/CAD→stop→plan start→start(exact hash)→stop/migrate/app/verify` 순서를 정적 테스트에서 검사한다. [Codex P2](https://github.com/planner77/layoutManager/pull/213#discussion_r4442687155): #209 `g7-upgrade.py` 출력 filter가 `steps` 배열을 누락하여 호환 업그레이드의 실제 chain이 UI/CLI에서 빈 배열로 표시되었다. `COMPATIBLE/MIGRATION`의 **검증된 길이 제한 배열**만 안전 전달하고 #211 frontend는 실제 존재/decision/chain 정합성 불일치 시 fail-closed한다. Mock 반환 배열만으로 합격하지 않고 **실제 #209 helper 출력 직렬화→frontend 파싱** 경계를 테스트한다. 이전 실패/수리 이력·최종 CI 실측은 [FailureLedger](out/FailureLedger.md)/[TestReport](out/TestReport.md)를 따른다. 새로운 CI 시작 이후 결과는 사용자 요청에 따라 모니터링하지 않는다.
