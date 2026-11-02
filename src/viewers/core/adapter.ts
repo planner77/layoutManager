@@ -144,7 +144,8 @@ export class ViewerManager {
     catch(error) { metric.sceneBuild=adapter.getSceneBuildDiagnostics?.();
       if (this.adapter === adapter) { adapter.dispose(); this.adapter = undefined; }
       if(isViewerCancellation(error))throw error;
-      if(error instanceof ViewerLoadError&&error.stage==='scene')throw error;
+      if(error instanceof ViewerLoadError&&error.stage==='scene'&&error.reasonCode==='UNSUPPORTED'&&
+          error.message==='이 Renderer는 저장된 Scene Asset을 지원하지 않습니다.')throw error;
       if(this.format==='DWG' && isKnownSafeDwgAdapterLoadError(error))throw error;
       if(this.format==='DXF' && isKnownSafeSceneBuildError(error))throw error;
       if(scene)throw new ViewerLoadError('scene','REBUILD_REQUIRED','저장된 Scene을 복원하지 못했습니다. 자동 원본 재변환은 실행하지 않습니다.',error);
