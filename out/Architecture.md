@@ -1,3 +1,13 @@
+## #212 — 수동 DXF Scene 생성 관측/직렬화 경계 (2026-11-02)
+
+Browser `ThreeDxfViewerAdapter.load`는 파일 해시 확인→UTF-8 decode/normalize→`three-dxf-viewer@1.0.44`의 결합 font+DXF parse/geometry→실제 `Object3D` preflight→tag stable refs→선택적 outline index→textIndex→CUSTOM_DTO serializer→payload/manifest 검증→`ARTIFACT_READY` 순서로 동작한다. `SceneBuildTracker`는 stage, success/warning/failure elapsedMs 및 allowlisted numeric counters만 가진다. 이전 `LOAD` 오류를 일률적 parser 실패/폰트 문제라고 단정하지 않고, 원본 Error는 안전한 UI 코드의 cause 내부에만 둔다. `ViewerManager`는 허용된 typed Scene 오류만 그대로 통과시켜 spoofed message/stack이 UI/metric에 나타나는 것을 막는다.
+
+`preflightSceneRoot`는 실제 node/geometry/attribute scalar/depth를 반복 순회로 집계; 제한 초과 시 후보를 만들지 않는다. CUSTOM_DTO 경로의 중복 Three Object3DJSON→inspect를 제거하고 `toCustomDto` 결과에 기존 서버와 동일한 `validateStoredScenePayload`/manifest SHA 검사를 실행한다. THREE_JSON 경로는 기존 inspect 유지. Size32MiB/nodes100k/scalars2M/depth128은 동일. 게시 전 HTML/React UI는 브라우저 Artifactual READY와 서버 `CurrentScene READY`를 구분. Scene POST API/Repository CAS, 원본·Current/APP_CREATED·Memo·Zone·Outline/G7 Gate·Audit, 원본 GET/Source lifetime 및 DB schema는 그대로이다.
+
+#208은 별도 서버 CPU-only worker·진단 영속화, 업로드 enqueue/Job ID/list states의 설계 정본이며 이번 브라우저 tracker를 서버 background 실행의 증거로 재사용하지 않는다. [ADR-212](Decisions.md), [세부](Issue212.md), [검증](TestPlan.md).
+
+---
+
 ## #211 PR #213 P2 — 호스트 CLI Registry chain의 안전한 전파 (2026-11-02)
 
 읽기 전용 등록 업그레이드의 실제 흐름은 `greenfield-upgrade-engine.planGreenfieldUpgrade` → `src/scripts/g7-greenfield.ts plan`(`steps: chain.map(kind)`) → `g7-upgrade.py` stdout 필터 → `g7-deploy.py upgrade()` → `inspect.registryChain` → 운영자 계획 승인이다. 이전 helper는 **scalar allowlist**라 `steps` 배열을 조용히 제거하여 유효한 0.56→0.58 경로조차 `[]`로 표시하는 결함이 있었다. #209 helper는 비밀 원문/SQL 없이 `COMPATIBLE` 또는 `MIGRATION` 값만 포함한 길이 0~64의 순서 있는 배열을 명시적으로 허용한다. 유효하지 않은 배열은 `G7_UPGRADE_HOST_OUTPUT_INVALID`; #211 frontend는 planId SHA-256/의사결정/chain 비어 있음·종류 불일치를 `G7_DEPLOY_UPGRADE_CHAIN_INVALID`로 차단한다. 필터가 다시 배열을 누락해도 승인이 진행되지 않는다. Read-only/볼륨·백업·DDL/보존 경계는 #209와 동일하다. [검증](TestPlan.md) [실패 원장](FailureLedger.md).
