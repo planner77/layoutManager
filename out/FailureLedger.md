@@ -1,3 +1,13 @@
+## PR #210 / #209 — CI #432 GHCR pull 실패 및 인증 보완 (2026-11-02)
+
+- 정확 [PR CI #432 / Run 41404871339](https://github.com/planner77/layoutManager/actions/runs/41404871339)는 PR HEAD `f2d1b9d965c35d309888592a8263832918fdab2b` (Actions merge SHA `e397e06e7b46418e21a82a41e0401a6aaa281349`)에서 **completed/failure**. Scope/Quality/General Chromium shard 1·2/G7 Greenfield/G7 signed+legacy **6 SUCCESS**, Docker Job `125145063988` **FAIL**, 종속 Verify Job `125150043001` **FAIL**. 전체 PR CI 성공은 아니다.
+- 최초 실제 오류: Docker step "Upgrade real 0.56 Greenfield image with preserved DB and CAD (#209)"의 `docker pull ghcr.io/planner77/layoutmanager:0.56.0`에서 `Error response from daemon: error from registry: unauthorized` (exit1). 실제 0.56 App+Migrator 데이터 보존 upgrade smoke 및 후속 readonly WAL smoke는 이 Run에서 **NOT RUN**. 앞서 출력된 의도적 잘못된 DB/DDL migration 오류는 성공적으로 거절하는 negative smoke이고 이번 failure가 아니다.
+- Workflow의 Docker Job에는 GHCR 로그인 및 `packages: read` 권한이 없었다. 즉 **비인증 pull 거부**가 관측 원인이다. 이 오류만으로 0.56 tag 미게시, private package Actions 접근권 부재 여부를 확정할 수 없고 기능/데이터 보존 결함의 증거도 아니다.
+- 보완: Docker Job에만 `contents: read`+`packages: read`, 동일 저장소 PR/수동 실행에만 `docker/login-action@v3`+임시 기본 `GITHUB_TOKEN` read 인증. 외부 Fork에 private GHCR 인증 제공 금지. 두 실제 immutable 0.56.0 tag pull은 계속 필수이며 실패 시 package 게시/Actions access 진단을 명확히 남긴다. 대체 image/source build/검증 skip 없음; #209 schema/엔진/DB/실 CAD/볼륨 변경 없음.
+- 코드 수정 전 원격 상태: 리뷰 thread1/resolved1/unresolved0, Main behind0, `mergeable=true`. 이 커밋 synchronize로 PR CI를 시작하며 **완료/성공·실제 인증/배포/GHCR 게시·병합·#209 종료는 NOT VERIFIED/NOT DONE**. GHCR의 package Actions access 또는 immutable tag 게시가 누락됐다면 후속 관리 조치가 필요하다.
+
+---
+
 ## PR #210 — P2 해결·최종 CI 인계 (2026-11-02)
 
 - P2 수정 [472f481cca94df3af211b7fac5c99ac20ec47631](https://github.com/planner77/layoutManager/commit/472f481cca94df3af211b7fac5c99ac20ec47631)/tree `f93aa2e3cfc2be3af7f275c89b6cd688dd6a237e`를 expected HEAD lease와 fast-forward로 게시했다. local/remote SHA·tree 일치, Main behind0, mergeable=true, staged Secret/runtime 산출물0을 확인했다.

@@ -334,6 +334,9 @@ jobs:
     if: needs.scope.outputs.full == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: read
     steps:
       - name: Checkout including baseline revision
         uses: actions/checkout@v4
@@ -534,14 +537,27 @@ jobs:
           docker compose -f src/deploy/g5/compose.preview.yml --profile g5-prod config --quiet
           docker compose -f src/deploy/g5/compose.preview.yml --profile g5-dev config --quiet
 
+      # Do not grant a private GHCR package token to a fork.
+      # The published 0.56 App/Migrator are mandatory, not replaceable by a rebuilt source.
+      - name: Authenticate GHCR for immutable 0.56 release smoke (#209)
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - name: Upgrade real 0.56 Greenfield image with preserved DB and CAD (#209)
         shell: bash
         run: |
           set -euo pipefail
           VERSION="$(python3 -c 'import json;print(json.load(open("src/package.json"))["version"])')"
           # Old immutable release read only; never publish or retag a registry image.
-          docker pull ghcr.io/planner77/layoutmanager:0.56.0
-          docker pull ghcr.io/planner77/layoutmanager:0.56.0-migrate
+          for old_tag in 0.56.0 0.56.0-migrate; do
+            if ! docker pull "ghcr.io/planner77/layoutmanager:${old_tag}"; then
+              echo "::error::GHCR ${old_tag} unavailable: confirm immutable tag was published and grant this repository Actions read access to its package."
+              exit 1
+            fi
+          done
           docker tag cad-layout-viewer:ci "cad-layout-viewer:${VERSION}"
           docker tag cad-layout-viewer:ci-migrate "cad-layout-viewer:${VERSION}-migrate"
           python3 src/scripts/smoke_greenfield_upgrade.py \
