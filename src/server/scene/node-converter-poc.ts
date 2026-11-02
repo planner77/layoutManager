@@ -2,9 +2,11 @@
  * Issue #208 / P1-A experimental Node-only feasibility probe.
  *
  * NOT a production worker, upload hook or authenticated publishing boundary.
- * It uses the pinned three-dxf-viewer internals to test whether a CPU-only
- * Object3D can be produced and serialized without DOM/WebGL. A passing
- * synthetic test does not authorize enabling automated Scene publication.
+ * #457 has proven the pinned three-dxf-viewer has asynchronous browser
+ * dependencies (WMF/RTF's window access). A Node-only parse can appear to
+ * succeed while leaving unhandled rejections. This probe MUST fail closed
+ * before invoking the unsafe loader in Node; no READY is inferred.
+ * Headless server runtime or a supported pure parser needs a new GO gate.
  */
 import { readFile } from 'node:fs/promises';
 import { extname } from 'node:path';
@@ -42,6 +44,8 @@ function isTypefaceJson(value: unknown): value is TypefaceJson {
     finite(box.yMin) && finite(box.yMax);
 }
 
+/** CI #457: pinned 1.0.44 direct Node conversion is NO-GO, not a green Scene result. */
+export const NODE_DIRECT_DXF_STATUS = 'NO_GO_ASYNC_DOM_DEPENDENCY' as const;
 export const NODE_SCENE_POC_SOURCE_CAP = 16 * 1024 * 1024; // experimental memory bound; NOT the upload limit
 export type NodeScenePocPhase = 'SOURCE_VERIFY' | 'FONT_PREPARE' | 'DXF_PARSE' | 'SCENE_BUILD'
   | 'TEXT_INDEX' | 'SERIALIZE' | 'ROUND_TRIP';
@@ -99,10 +103,10 @@ function ownedMaterials(root: THREE.Object3D) {
 }
 
 /**
- * Run only in a disposable test process. No routes, DB, storage or credentials
- * are accessed. The DXFViewer's _font field is intentionally an unsupported
- * pinned-version probe and must be replaced by a supported abstraction before GO.
- * RTF/Text/INSERT behavior on other CAD inputs remains unproven.
+ * Test-only source/font preflight. No routes, DB, storage or credentials.
+ * Direct Node upstream parse is definitively NO-GO for the pinned version.
+ * The browser/headless path below is retained as unverified experimental code,
+ * not reachable from Node and not a production Worker or publishing endpoint.
  */
 export async function probeNodeScene(input: Readonly<{
   source: Uint8Array;
@@ -158,6 +162,18 @@ export async function probeNodeScene(input: Readonly<{
   } catch {
     // Never expose local font file paths or parser details in public failures.
     throw new NodeScenePocError('FONT_PREPARE', 'SCENE_FONT_UNAVAILABLE');
+  }
+
+  // CI #457 (Run41520729471, exact HEAD b7909f4): four unhandled
+  // ReferenceError(window is not defined) rejections appeared even though all
+  // 962 Vitest assertions passed. The bundled WMF/RTF routines schedule
+  // asynchronous work that the getFromPath Promise does not own. try/catch
+  // around getFromPath therefore cannot make direct Node Scene conversion safe.
+  // Fail at this trusted boundary after source + font preflight, *before* any
+  // upstream parse/render promise can be scheduled. Do not add a fake window,
+  // suppress unhandledRejection, or report Scene READY from partial geometry.
+  if (typeof process !== 'undefined' && typeof process.versions?.node === 'string') {
+    throw new NodeScenePocError('DXF_PARSE', 'SCENE_CONVERTER_UNAVAILABLE');
   }
 
   const viewer = new DXFViewer();
