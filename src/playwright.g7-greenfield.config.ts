@@ -19,7 +19,7 @@ export default defineConfig({
   use:{baseURL:origin,viewport:{width:1440,height:1000},trace:'retain-on-failure',
     launchOptions:{executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,args:['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader']}},
   webServer:{
-    command:`node --import tsx scripts/g7-greenfield.ts auto && npm run start -- --port ${port}`,
+    command:`G7_AUTH_ENABLED=false G7_CAD_WRITE_CUTOVER_ENABLED=false node --import tsx scripts/g7-greenfield.ts auto && npm run start -- --port ${port}`,
     url:origin+'/api/health',
     reuseExistingServer:false,
     env:{

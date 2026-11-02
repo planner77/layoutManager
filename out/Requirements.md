@@ -1,3 +1,18 @@
+## #209 — 기존 Greenfield 보존형 업그레이드 (2026-11-02 설계)
+
+[Issue #209](https://github.com/planner77/layoutManager/issues/209)의 구현 승인 범위는 코드·격리 합성 시험·PR CI 시작이다. 운영 DB/Volume 수정, 배포·GHCR·병합 및 CI 완료 모니터링은 포함하지 않는다. 아래는 계획/수용 기준이며 실제 PASS는 TestReport/FailureLedger에만 기록한다.
+
+- **FR-209-01 상태 판정:** 최초 빈 설치, 동일 릴리스 재시작, 호환 업그레이드, 승인 필요 Schema migration, BLOCKED를 분리한다. 유효한 자동 Greenfield manifest+실제 exact baseline/checksum/DDL/FK/trigger+등록 release contract를 함께 검증한다. 런타임의 과거 Schema 읽기 허용은 쓰기 migration 권한이 아니다.
+- **FR-209-02 선언적 경로:** 초기 지원은 동일 semantic-zones Schema의 0.56.0→0.57.0→0.58.0 명시 edge 및 전체 chain이다. SemVer/schemaId만의 승인, 임의 버전/다운그레이드, 같은 버전의 다른 source/image 재채택은 금지한다. 향후 edge는 버전 관리된 pre/post 검증·SQL checksum·데이터/운영 계약을 등록한다. 실제 과거 Schema 경로를 이번에 등록했다고 주장하지 않는다. Fixture로 다음 동일/변경 Schema와 건너뛰기 엔진을 검증한다.
+- **FR-209-03 보존:** installId, 계정·Session·Grant·Audit, 기준정보 UUID, Version/Current/삭제 암호, Scene/메모/외곽선/구역 및 원본 hash/연결을 보존한다. 설정 코드 재발급·초기화·빈 seed 재실행·marker만 바꿔 DB를 합격시키는 행위는 금지한다.
+- **FR-209-04 보전/승인:** host에서 기존 App 정지 확인→동시 실행 lock/maintenance→SQLite 일관 백업과 CAD·설치 메타데이터 복구 세트→격리 복원 검증→적용/post-check→atomic manifest commit. Schema DDL은 정확 plan hash에 대한 명시 승인 후에만 실행한다. 권한/볼륨/디스크/불완전 backup/lock/무결성 오류는 fail-closed다.
+- **FR-209-05 장애:** durable journal의 source/target/plan/단계/backup/checkpoint로 중복·재시도·crash를 구분한다. 불확실한 조합은 RESTORE_REQUIRED로 보존·차단한다. restore는 검증한 세트를 새 빈 격리 대상에 복원하며 원본을 자동 덮어쓰거나 downgrade하지 않는다.
+- **FR-209-06 운용/보안:** preflight/plan/apply/status/restore 또는 동등 CLI, 안전한 code+stage+retry/recovery+action 출력. 임의 SQL/경로/DB·CAD bytes/Secret/설정 코드를 출력하지 않는다. S3/Expert/Legacy·manifest 없는 비빈 Volume은 unsupported/BLOCKED다. 실제 OCI provenance와 환경변수 주장/로컬 합성 시험을 구분하고 arbitrary digest pair를 승인하지 않는다.
+
+AC1–AC7의 추적은 TestPlan TC-209-01–10을 따른다. 이 설계는 아래 역사적 '모든 버전 교체 차단' 정책을 **등록된 자동 Greenfield 경로에 한해서만** 확장하며 Legacy 이관 폐기를 번복하지 않는다.
+
+---
+
 ## #204 / #202 — 기준정보 이름 불변 식별과 기본 목록 메모 조건 (2026-11-02, 구현 계약)
 
 | 요구사항 | 계약 | 수용 시험 |

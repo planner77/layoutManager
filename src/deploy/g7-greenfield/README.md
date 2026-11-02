@@ -1,3 +1,61 @@
+# #209 — 정상 Greenfield 설치의 등록 릴리스 업그레이드 (0.58.0 후보)
+
+이 절은 아래 #109의 **릴리스 변경 차단 정책만** 대체합니다. 최초 설치는 여전히 빈 볼륨을 사용합니다. 기존 정상 Greenfield 업그레이드는 설치 ID와 **같은 볼륨**을 유지하며 마커 없는 비빈 볼륨/레거시 6→7/HOLD 이관, S3, 과거 수동 서명 Expert 설치는 자동 지원하지 않습니다.0.56→0.57 논리 identity 회귀는 새 엔진의 합성 시험이며 이미 게시된0.57 이미지를 수정하지 않습니다. 실제 배포에는 새 엔진이 포함된0.58.0 이후 검증된 이미지 쌍이 필요합니다.
+
+## 지원 선언과 준비
+
+`server/g7-operational/greenfield-upgrade-registry.ts`가 쓰기 호환성 정본입니다. 최초 등록은0.56.0→0.57.0→0.58.0의 동일 zones baseline/data/runtime contract입니다. 전체 edge가 연결될 때만 중간 릴리스 skip을 허용합니다. Schema ID/SemVer 또는 runtime의 과거 Schema 읽기 지원만으로 승인하지 않습니다. 현재 실제 업무 Schema 변경 edge는 없습니다. 향후 Schema 변경은 검토된 forward SQL+SHA·정확 plan 승인·pre/post/복구 시험을 registry에 등록해야 합니다. 외부 SQL/JSON/강제 채택 플래그는 지원하지 않습니다.
+
+1. 별도 운영 변경 승인을 받고 App 외 host 작업·백그라운드 CAD writer를 모두 정지합니다. helper는 같은 볼륨을 사용하는 **실행 중인 Docker 컨테이너**도 검사합니다. Docker socket/호스트 권한을 가진 다른 관리자가 유지보수 중 서비스를 다시 켜지 않도록 협조합니다.
+2. 기존 `.env`와 **CAD_DATA_VOLUME_NAME을 보존**합니다. 목표 App/Migrator 쌍을 신뢰하는 레지스트리에서 미리 pull하고 버전·Source·Digest/architecture를 검증합니다. `GHCR_IMAGE`, `GHCR_MIGRATION_IMAGE`, `G7_RELEASE_SOURCE_COMMIT`을 목표 release 값으로 설정합니다. Source는 두 이미지 `org.opencontainers.image.revision`과 같은40자리 소문자 hex여야 합니다. 기존 manifest가 검증 가능한 version 태그 쌍이고 source가 빈 문자열이면 지원된 과거 설치로 검증합니다. source가 없는 digest 설치는 릴리스 출처를 확인할 수 없어 차단하며 marker를 편집해 우회하지 않습니다.
+3. Linux/amd64 이미지와 Python3.9+/Docker Compose v2를 사용합니다. helper는 실제 local image inspect의 version/revision/source/role을 확인하고 **고정 local Image ID**로 migrator를 실행합니다. 이 검사는 서명된 OCI provenance를 대신하지 않습니다. 임의로 재태깅한 이미지·label 없는 과거 target은 차단합니다.
+4. 저장소의 기존 백업 정책에 따라 별도 안전 매체에도 DB/CAD를 보관합니다. 자동 복구 세트는 source 볼륨 내부의 private 디렉터리이며 볼륨 자체 손실/디스크 고장 대비 백업이 아닙니다. DB 파일을 열린 상태에서 `docker cp`하는 것을 일관 백업으로 간주하지 않습니다. 복구 세트를 Git/로그/CI artifact로 반출하지 않습니다.
+
+## 검사·계획·적용
+
+서버 호스트에서 저장소 Root 기준으로 실행합니다. helper는 `.env`를 shell source하지 않고 Compose 결과를 메모리에서만 읽으며 Git credential을 컨테이너에 전달하지 않습니다.
+
+```sh
+python3 src/scripts/g7-upgrade.py .env preflight
+python3 src/scripts/g7-upgrade.py .env plan
+python3 src/scripts/g7-upgrade.py .env auto
+```
+
+`preflight/plan/status`는 source를 갱신하지 않습니다. `auto`는 App을 정지하고 다른 실행 writer0을 확인한 뒤 동일 Schema/계약 호환 upgrade만 실행합니다. 새 recovery set의 SQLite backup(WAL 반영)·CAD/Scene 원본/manifest와 hash·DB/FK/Current/Version 정합성을 확인한 후 journal과 manifest를 갱신합니다. SQL/trigger/checksum을 덮어써서 통과시키지 않습니다. 같은 릴리스 재시작은 설치 정보·사용자·setup code를 재발급하지 않습니다.
+
+향후 등록된 Schema 변경은 `plan`에서 받은 정확한 `planId` SHA를 운영자가 검토·승인합니다. 데이터/경로/계획이 달라지면 승인을 다시 받아야 합니다.
+
+```sh
+python3 src/scripts/g7-upgrade.py .env apply --approve-plan <64자리-planId>
+python3 src/scripts/g7-upgrade.py .env status
+```
+
+완료해도 helper는 App을 **정지 상태로 유지**합니다. journal 완료·backup 검증과 `verifiedAppImageId`를 확인하고, `docker image inspect <목표-App-ref> --format '{{.Id}}'`가 그 ID와 같은지 확인한 후 기동합니다. 태그가 변경되었다면 다시 검사합니다.
+
+```sh
+docker compose --env-file .env -f src/docker-compose.yml up -d --no-deps app
+docker compose --env-file .env -f src/docker-compose.yml ps
+docker compose --env-file .env -f src/docker-compose.yml logs --tail 80 migrate
+```
+
+`--no-deps`는 **이미 검증하여 성공 완료한 helper 이후에만** 사용합니다. 통상 `up`의 migrate `service_completed_successfully` 차단은 그대로 유지합니다. helper는 one-off `docker run`을 사용하므로 실행 결과는 명령의 정형 출력에서 확인하고, 일반 Compose `auto` 실패 원인은 `logs migrate`에서 확인합니다. Health200뿐 아니라 기존 사용자 로그인·Site Grant/Reader 차단·조회·새 쓰기·Current·원본 SHA·Scene/메모/외곽선/구역 연결과 Audit를 수용합니다. 실제 업무 데이터 대조는 사내에서만 수행합니다.
+
+## 실패·상태·격리 복원
+
+`code/stage/retryable/nextAction`은 비민감 진단입니다. `PAIR_MISMATCH/UNSUPPORTED_PATH/SCHEMA_INCOMPATIBLE`은 이미지·지원 선언을, `BACKUP_REQUIRED`는 공간/권한/백업 상태를 확인합니다. `LOCKED/RESTORE_REQUIRED/POSTCHECK_FAILED`에서는 App을 계속 정지합니다. 자동 lock 삭제·manifest 편집·재설치·볼륨 초기화·역방향 SQL을 수행하지 않습니다. 아직 SQL 전의 명확한 사전 실패와 commit 여부가 모호한 중단은 journal로 구별합니다. 정상 SQL 트랜잭션 rollback과 프로세스 강제 종료 시험은 서로 다른 증거입니다.
+
+검증한 backup ID를 사용해 **존재하지 않는 새 named volume**에 복원합니다. backup 전 강제 종료로 ID가 없다면 자동 복원을 실행하지 말고 기존 별도 안전 백업/격리 조사와 운영 승인이 확보될 때까지 BLOCKED를 유지합니다. 현재 볼륨과 기존 복구 볼륨은 덮어쓰지 않습니다.
+
+```sh
+python3 src/scripts/g7-upgrade.py .env restore --backup <backup-UUID> --restore-volume <새-격리-볼륨명>
+```
+
+source는 readonly, 새 대상은 UID10001/private db+cad로 준비합니다. DB·원본·기존 manifest를 함께 복원하고 무결성을 재검사합니다. 복원본은 backup에 기록된 **이전 릴리스 이미지 쌍**과 contract가 맞아야 합니다. 별도 포트·격리 프로젝트에서 Health/로그인/인가·업무 데이터를 검증한 뒤 명시 운영 승인으로만 서비스 대상을 전환합니다. 현재 live 볼륨은 보존하고 실패 복구 자료도 삭제하지 않습니다. restore는 이전 Snapshot의 명시적 복구이며 일반 downgrade나 실패한 live DB의 강제 채택이 아닙니다.
+
+실제 시험 범위/실패·미실행은 [TestReport](../../../out/TestReport.md)/[FailureLedger](../../../out/FailureLedger.md) #209를 따릅니다. 코드·합성 시험·PR CI 시작은 GHCR 게시나 운영 업그레이드 수용과 다릅니다.
+
+---
+
 # Issue #109 — 표준 Docker Compose G7 신규 설치 Runbook (0.44.2 PR 후보)
 
 > **최신 표준 설치 경로:** 이 문서의 아래 절차가 이전 #153 수동 서명·Site Seed / 포트 3001 예시를 **대체**합니다. 이 하단의 #153 내용은 역사적 Expert 설치 경로로만 남기며 기본 명령에 적용하지 않습니다. 실제 운영 이미지 게시·현장 배포·2PC 수용은 별도 승인/검증이 필요합니다.

@@ -1,3 +1,13 @@
+## #209 — 기존 Greenfield 업그레이드 운영
+
+빈 볼륨 최초 설치와 기존 설치의 릴리스 업그레이드는 [Greenfield Runbook](../src/deploy/g7-greenfield/README.md)의 각각 별도 절을 따른다. 기존 Greenfield의 볼륨명을 유지하고 `python3 src/scripts/g7-upgrade.py .env preflight`, `plan`, `auto`(호환 Schema) 또는 `apply --approve-plan <SHA>`(등록된 Schema 변경)를 사용한다. Python3/Docker Compose v2가 필요하며 이미 신뢰 검증하여 pull한 App/Migrator 쌍의 OCI version/source/role/architecture를 호스트에서 확인한다. `G7_RELEASE_SOURCE_COMMIT`은 목표 이미지 revision과 같은40hex로 설정한다.
+
+변경 명령은 App 정지·동일 볼륨의 다른 실행 컨테이너0을 검사한다. 성공해도 App은 정지 상태로 두며 결과/업무 복구 세트를 확인한 뒤 matching App을 기동해 Health·로그인/인가·CRUD를 수용한다. Docker 외 host writer는 운영자가 정지해야 한다. 복구 세트는 DB/CAD 비밀정보를 포함하므로 private 저장·별도 암호화/오프호스트 보관 정책을 적용하고 Git/Actions artifact/공개 로그로 반출하지 않는다. 같은 디스크의 자동 세트는 디스크 자체 고장 대비 외부 백업의 대체가 아니다.
+
+진단은 code/stage/retry/action만 읽는다. lock/hold 또는 RESTORE_REQUIRED에서 marker를 편집하거나 강제로 잠금을 지우지 않는다. 검증된 세트를 새 빈 복구 볼륨에 복원하고 이전 이미지 contract·업무 검증을 통과한 경우에만 명시적으로 서비스 대상으로 채택한다. 상세 명령·오류 대응은 위 Runbook이 정본이다. 이번 구현/CI 작업은 실 운영 DB·볼륨 수정 승인이 아니다.
+
+---
+
 ## PR #200 — 구역 조회 재시도·Renderer 전환 수리 (0.56.0 후보 유지)
 
 G7 OFF는 public status로 확인해 구역 API의 불필요한 503 조회를 생략한다. 구역 조회의 일시적 오류·권한 변경 시 기존 보호 정보는 지워지고 오류 패널/다시 조회 경로가 남는다. 운영 상태나 권한을 복구한 뒤 구역 목록의 새로고침을 사용하며 서버 재인가를 통과해야 한다. 원본 재로드나 임시 CAD 작업 폐기를 재시도 조건으로 요구하지 않는다.

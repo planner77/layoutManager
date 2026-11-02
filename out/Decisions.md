@@ -1,3 +1,16 @@
+## ADR-209 — 등록된 Greenfield release chain과 보존형 복구 (2026-11-02)
+
+**상태:** 사용자 승인 범위의 구현 결정; 실제 테스트·운영 수용 전. Root DESIGN.md 부재로 Architecture와 이 문서를 정본으로 사용한다.
+
+- 기존 exact identity restart 보호를 유지하고 별도 migrator orchestrator를 도입한다. Schema ID 동일만으로 안전 판정하지 않는다. 현재 release registry에0.56.0/0.57.0/새0.58.0과 명시된 compatible edges만 등록한다. 향후 변경 Schema 엔진은 내부 합성 registry로 검증하며 미등록 과거 Greenfield/Legacy를 채택하지 않는다.
+- 동일 Schema·데이터/운영 contract 경로는 검증된 backup/quiescence 아래 자동 적용 가능하다. Schema SQL은 source+target+chain+volume+snapshot을 묶은 plan hash 승인 없이는 실행0이다. 외부 unsigned compatibility JSON·임의 SQL·강제 채택 flag는 지원하지 않는다. 번들 registry의 신뢰 경계는 검토·배포 코드이며 독립 암호학적 서명 증명과 혼동하지 않는다.
+- Upgrade 기능 추가이므로 후보 버전은0.58.0이다. 이미 게시된0.57.0 이미지의 동작을 소급 수정했다고 주장하지 않는다.0.56→0.57 사례는 새 공통 엔진에서 선언된 두 릴리스의 합성 회귀로 증명하고 실제 배포는 수정 포함 새 이미지 쌍이 필요하다.
+- Quiescence는 host의 App 정지 확인을 필수로 하고 DB lock/hold로 보강한다. `compose up` 의존성만으로 기존 writer가 중지됐다고 간주하지 않는다. digest pair는 host provenance 검증 근거 없이 허용하지 않는다. 태그/환경변수 검증의 한계를 문서화한다.
+- 실패 복구는 검증된 recovery set→새 빈 격리 Volume/디렉터리 복원으로 제한한다. live DB/CAD/manifest 일부만 덮어쓰는 자동 rollback보다 불확실 상태 보존·RESTORE_REQUIRED를 선택한다. 원본 볼륨 유지 및 명시적 전환/운영 재기동은 운영자 절차다.
+- CI 시작 이후 모니터링 생략, 병합/태그/GHCR/운영 볼륨/배포는 이번 작업 밖이다. 현장 수용 #96/#113/#190/#193과 폐기된 Legacy 이관 결정은 그대로다. 역할별 실제 증거와 실패·재시험은 TestReport/FailureLedger에 남긴다.
+
+---
+
 ## ADR-202-204 — 불변 Master ID와 인가된 Version 단위 메모 검색 (2026-11-02)
 
 **결정:** #204는 이미 존재하는 UUID/name 분리와 PATCH를 명확히 하고 회귀로 보증한다. 새 displayName/테이블/마이그레이션은 추가하지 않는다. 참조·비활성 일반 master의 이름 변경은 허용하며 시스템 미분류 이름은 예외다. 기존 정상 G7 쓰기 승인 없이 편집을 허용한다는 의미가 아니다.

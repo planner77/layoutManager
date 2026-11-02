@@ -17,11 +17,37 @@ const SETUP_FILE='first-admin.code';
 export const G7_SETUP_TTL_MS=60*60*1000;
 const blocked=(code:string):never=>{throw new Error(code);};
 
-type Identity={schemaId:string;version:string;appImage:string;migratorImage:string;sourceCommit:string};
-type Installation=Identity&{installId:string};
+export type Identity={schemaId:string;version:string;appImage:string;migratorImage:string;sourceCommit:string};
+export type Installation=Identity&{installId:string};
 const digestRef=/@sha256:[a-f0-9]{64}$/;
-const tagged=/:(v?\d+\.\d+\.\d+)(-migrate)?$/;
-function identity(env:Readonly<Record<string,string|undefined>>):Identity {
+function validPair(version:string,appImage:string,migratorImage:string):boolean {
+  if(!appImage||!migratorImage||appImage===migratorImage||
+    appImage.includes('://')||migratorImage.includes('://'))return false;
+  if(appImage==='cad-layout-viewer:local'&&
+    migratorImage==='cad-layout-viewer:local-migrate')return true;
+  const parse=(ref:string):{repo:string;tag:string;digest:string}|null=>{
+    const at=ref.indexOf('@');
+    const digest=at<0?'':ref.slice(at+1);
+    if(at>=0&&!/^sha256:[a-f0-9]{64}$/.test(digest))return null;
+    const name=at<0?ref:ref.slice(0,at);
+    const colon=name.lastIndexOf(':'),slash=name.lastIndexOf('/');
+    const tagged=colon>slash;
+    const repo=tagged?name.slice(0,colon):name;
+    const tag=tagged?name.slice(colon+1):'';
+    if(!repo||tagged&&!tag||!/^[a-z0-9][a-z0-9./:_-]*$/.test(repo)||repo.includes('..')||
+      repo.includes('//')||repo.endsWith('/')||tag&&!/^v?\d+\.\d+\.\d+(-migrate)?$/.test(tag))
+      return null;
+    return {repo,tag,digest};
+  };
+  const app=parse(appImage),migrator=parse(migratorImage);
+  if(!app||!migrator||app.repo!==migrator.repo||Boolean(app.digest)!==Boolean(migrator.digest)||
+    app.digest&&app.digest===migrator.digest)return false;
+  if(!app.digest&&(!app.tag||!migrator.tag))return false;
+  if(app.tag&&app.tag.replace(/^v/,'')!==version)return false;
+  if(migrator.tag&&migrator.tag.replace(/^v/,'')!==version+'-migrate')return false;
+  return true;
+}
+export function identity(env:Readonly<Record<string,string|undefined>>):Identity {
   if(env.G7_GREENFIELD_MODE!=='true'||env.G7_GREENFIELD_AUTOMATED!=='true'||
     env.CAD_STORAGE_BACKEND!=='local')blocked('G7_AUTO_CONFIGURATION');
   const appImage=env.G7_DEPLOY_APP_IMAGE??'',migratorImage=env.G7_DEPLOY_MIGRATOR_IMAGE??'';
@@ -29,19 +55,12 @@ function identity(env:Readonly<Record<string,string|undefined>>):Identity {
   if(!appImage||!migratorImage||appImage===migratorImage||
     (sourceCommit!==''&&!/^[a-f0-9]{40}$/.test(sourceCommit)))
     blocked('G7_AUTO_RELEASE_INVALID');
-  const appTag=appImage.match(tagged),migratorTag=migratorImage.match(tagged);
   const version=packageInfo.version;
-  const locallyBuilt=appImage==='cad-layout-viewer:local' &&
-    migratorImage==='cad-layout-viewer:local-migrate';
-  if(!locallyBuilt && !(
-      digestRef.test(appImage)&&digestRef.test(migratorImage)
-    ) && !(
-      appTag?.[1]?.replace(/^v/,'')===version && !appTag?.[2] &&
-      migratorTag?.[1]?.replace(/^v/,'')===version && migratorTag?.[2]==='-migrate'
-    ))blocked('G7_AUTO_IMAGE_PAIR_INVALID');
+  if(!validPair(version,appImage,migratorImage)||
+    (digestRef.test(appImage)&&sourceCommit===''))blocked('G7_AUTO_IMAGE_PAIR_INVALID');
   return {schemaId:G7_GREENFIELD_SCHEMA_ID,version,appImage,migratorImage,sourceCommit};
 }
-function target(env:Readonly<Record<string,string|undefined>>) {
+export function target(env:Readonly<Record<string,string|undefined>>) {
   const dbUrl=env.DATABASE_URL,cad=env.CAD_STORAGE_PATH;
   // A direct throw is intentional: strict TS control flow must narrow these
   // values before slice()/path calls (same failure class as #153 ledger).
@@ -77,15 +96,37 @@ function privateFile(filename:string,max=4096):{text:string;modified:number} {
     return {text:bytes.toString('utf8'),modified:stat.mtimeMs};
   }finally{closeSync(fd);}
 }
-function verifyInstallation(env:Readonly<Record<string,string|undefined>>,t:ReturnType<typeof target>) {
-  const want=identity(env);
-  const raw:unknown=JSON.parse(privateFile(t.manifest).text);
+export function validateInstallation(raw:unknown):Installation {
   if(!raw||typeof raw!=='object'||Array.isArray(raw))blocked('G7_AUTO_INSTALL_INVALID');
   const found=raw as Record<string,unknown>;
   if(Object.keys(found).sort().join()!=='appImage,installId,migratorImage,schemaId,sourceCommit,version'||
     !/^[0-9a-f-]{36}$/.test(String(found.installId))||
-    Object.entries(want).some(([key,value])=>found[key]!==value))
+    !/^\d+\.\d+\.\d+$/.test(String(found.version))||
+    typeof found.schemaId!=='string'||typeof found.appImage!=='string'||
+    typeof found.migratorImage!=='string'||
+    !validPair(String(found.version),String(found.appImage),String(found.migratorImage))||
+    (digestRef.test(String(found.appImage))&&found.sourceCommit==='')||
+    (found.sourceCommit!==''&&!/^[a-f0-9]{40}$/.test(String(found.sourceCommit))))
+    blocked('G7_AUTO_INSTALL_INVALID');
+  return found as Installation;
+}
+export function readInstallation(t:ReturnType<typeof target>):Installation {
+  return validateInstallation(JSON.parse(privateFile(t.manifest).text));
+}
+function verifyInstallation(env:Readonly<Record<string,string|undefined>>,t:ReturnType<typeof target>) {
+  const want=identity(env),found=readInstallation(t);
+  if(Object.entries(want).some(([key,value])=>found[key as keyof Identity]!==value))
     blocked('G7_AUTO_RELEASE_MISMATCH');
+  if(existsSync(path.join(t.dbDir,'g7-upgrade.lock')))blocked('G7_UPGRADE_RESTORE_REQUIRED');
+  const journal=path.join(t.dbDir,'g7-upgrade-journal.json');
+  if(existsSync(journal)){
+    const raw:unknown=JSON.parse(privateFile(journal,65536).text);
+    const record=raw as {phase?:unknown;source?:unknown}|null;
+    if(!record||typeof record!=='object'||
+      !(record.phase==='COMPLETE'||record.phase==='FAILED_PREWRITE'&&
+        JSON.stringify(record.source)===JSON.stringify(found)))
+      blocked('G7_UPGRADE_RESTORE_REQUIRED');
+  }
   const db=openG7RuntimeDb({databasePath:t.dbPath,schemaMode:'GREENFIELD'},true);
   try{return db.prepare('SELECT COUNT(*) AS n FROM "User"').get()?.n as number;}
   finally{db.close();}
@@ -98,7 +139,10 @@ export function ensureAutomatedGreenfield(env:Readonly<Record<string,string|unde
   const release=identity(env),t=target(env);
   if(existsSync(t.manifest)) {
     const users=verifyInstallation(env,t);
-    if(users===0)privateFile(t.code,128); // Missing or unsafe code is an incomplete installation.
+    if(users===0){
+      if(!existsSync(t.code))blocked('G7_AUTO_SETUP_INCOMPLETE');
+      privateFile(t.code,128); // Missing or unsafe code is an incomplete installation.
+    }
     return {state:'G7_GREENFIELD_READY' as const,mode:'RESTART' as const};
   }
   // A DB without our marker, even a valid old #153 Greenfield database, is not
