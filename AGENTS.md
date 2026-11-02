@@ -1,3 +1,11 @@
+## PR #217 / Issue #208 — CI #457 직접 Node 변환기 NO-GO·비동기 오류 fail-closed (2026-11-03 KST)
+
+[PR CI #457 Run41520729471](https://github.com/planner77/layoutManager/actions/runs/41520729471), 정확 실패 HEAD `b7909f4c98704fa14d63caf5baa750105af313ac`: Quality Unit 테스트는 **962/962 assertion PASS였지만 Vitest가 4개의 unhandled rejection을 검출하여 실패**했다. `three-dxf-viewer@1.0.44`의 DXF 변환 중 WMF/RTF 관련 비동기 경로가 브라우저 전역 `window`를 읽어 `ReferenceError: window is not defined`를 발생시켰다. 단순 try/catch나 반환된 Scene 후보/manifest만으로 서버 변환 성공을 주장해서는 안 된다. Docker Job은 성공했고, 브라우저/G7 E2E는 선행 실패로 미실행.
+
+**기술 판정:** 기존 라이브러리를 호출하는 직접 Node 방식은 현재 **NO-GO**, #208의 자동 생성 AC-01/02는 미충족이다. `probeNodeScene`은 source/TTF 준비 후 Node 프로세스에서 상위 변환기 호출 전에 `DXF_PARSE/SCENE_CONVERTER_UNAVAILABLE`로 fail-closed한다. 테스트는 이 상태를 **실패한 기술 가설의 정확한 부정 테스트**로 검사하고, Three.js `CUSTOM_DTO` 직렬화/복원은 별도 순수 Node 테스트로 구분한다. 가짜 window/DOM, unhandledRejection 무시, 테스트 skip·CI gate 완화, 생성된 부분 객체를 서버 READY로 기록하는 우회는 금지. 후속 실증은 분리된 서버 headless Chromium/소프트웨어 WebGL Worker 또는 검증된 Node 파서로 신규 GO 게이트를 거쳐야 한다. 원본·기존 READY/Current, G7/Auth/Writer/Audit, Memo/Zone/Outline, 운영 DB/Volume/GHCR은 불변. [판정 및 다음 순서](out/Issue208.md), [실패 원장](out/FailureLedger.md), [수용 테스트](out/TestPlan.md). 수정 HEAD의 PR CI는 시작·완료를 구분하고 요청대로 완료 모니터링 생략.
+
+---
+
 ## PR #217 / Issue #208 — CI #445 Unit 실패: 빌드 전 글꼴 파생 파일 미생성 수리 (2026-11-03 KST)
 
 정확 [PR CI #445 Run41517145247](https://github.com/planner77/layoutManager/actions/runs/41517145247), HEAD `6932550e7c5e37d6f11b9d528da2fc594a26fb5b`의 Quality Unit 959 PASS/1 FAIL은 합성 Node Scene POC의 `FONT_PREPARE/SCENE_FONT_UNAVAILABLE`이다. `src/public/fonts/CadKorean.typeface.json`은 추적된 파일이 아니라 `scripts/fonts.mjs`가 `npm run dev/build`에서 생성한다. PR CI는 `npm test`가 `npm run build`보다 앞서므로 POC에서 생성 파일을 전제한 설계가 잘못되었다. 수정은 **추적된 NanumGothic-Regular.ttf를 Node TTFLoader로 메모리 내 typeface로 변환**한 뒤 같은 `FontLoader.parse` 경로 사용. 명시 JSON 경로 검증과 안전 실패·메모리 상한 유지, 임시/공용 폰트 생성 파일이나 npm test 빌드 선행 요구 추가 금지. 이번 오류는 CPU-only DXF parser 불가능의 증거가 아니며 실제 Node DXF 변환 성공은 새 CI 전까지 미검증이다. Docker Job은 SUCCESS, E2E는 선행 실패로 SKIPPED; TypeScript/ESLint·CI gate 완화 없음. [FailureLedger](out/FailureLedger.md)/[Issue208](out/Issue208.md)/[TestReport](out/TestReport.md) 참조. 기존 Scene/원본/Current/G7/Auth/DB/GHCR 비변경.
