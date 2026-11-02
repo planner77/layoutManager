@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { resolve } from 'node:path';
+import { join, resolve } from 'node:path';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { sceneDxf } from '../fixtures/scene-dxf';
 import { sceneSha256 } from '../../domain/scene-digest';
 import { sceneScope } from '../../domain/cad-scene';
@@ -53,5 +55,27 @@ describe('#208 P1-A: CPU-only server DXF converter GO/NO-GO probe (not productio
     await expect(probeNodeScene({
       source, versionId, expectedSha256: sha, fontJsonPath: '/missing-font-for-poc.json',
     })).rejects.toMatchObject({ phase: 'FONT_PREPARE', code: 'SCENE_FONT_UNAVAILABLE' });
+  });
+
+  it('rejects structurally invalid typeface JSON without forwarding file contents or paths', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'scene-poc-invalid-typeface-'));
+    try {
+      const invalidFont = join(directory, 'invalid.json');
+      await writeFile(invalidFont, JSON.stringify({glyphs: {}, resolution: 'not-a-number'}), 'utf8');
+      const rejected: unknown = await probeNodeScene({
+        source, versionId, expectedSha256: sha, fontJsonPath: invalidFont,
+      }).catch((error: unknown): unknown => error);
+      expect(rejected).toBeInstanceOf(NodeScenePocError);
+      expect(rejected).toMatchObject({
+        phase: 'FONT_PREPARE', code: 'SCENE_FONT_UNAVAILABLE',
+        message: 'SCENE_FONT_UNAVAILABLE',
+      });
+      if (!(rejected instanceof NodeScenePocError))
+        throw new Error('Invalid typeface must produce a safe typed failure.');
+      expect(rejected.message).not.toContain(invalidFont);
+      expect(rejected.message).not.toContain('not-a-number');
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
   });
 });
