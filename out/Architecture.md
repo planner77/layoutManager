@@ -1,3 +1,13 @@
+## #208 P1-A / CI #457 — Node direct Scene Builder의 비동기 DOM 의존과 차단 경계 (2026-11-03)
+
+`three-dxf-viewer@1.0.44`의 `getFromPath`는 직접 Node에서 반환 결과를 낼 수 있어도 내부 WMF/RTF 분기에서 독립 Promise를 생성해 `window is not defined` unhandled rejection 4건이 Vitest에 누적되었다. 반환된 Object3D/DTO와 unawaited 작업의 완료/안전성이 다르므로 try/catch/Promise.race/유효 manifest만으로 **정상 Scene 변환 성공을 증명하지 못한다**. CI Run41520729471 Unit 962/962 assertion PASS·4 errors/Quality FAIL이 이를 입증한다.
+
+**현재 안전 경계:** `probeNodeScene`은 SHA/바이트/형식/TTF·JSON 글꼴 기본 검증 후 Node `process.versions.node` 감지 시 `NodeScenePocError('DXF_PARSE','SCENE_CONVERTER_UNAVAILABLE')`로 **upstream `getFromPath` 호출 이전에 차단**한다. DOM/window를 추가하거나 전역 rejection handler를 설치하지 않는다. 기존 `tagImportedTree`/`serializeSourceScene`/`restoreSourceScene`의 순수 Three Group 테스트는 renderer/parser 비의존 계층만 검증하며 A1 GO 근거가 아니다. 실제 DXF→Scene CPU-only 서버 경로는 구현되지 않음.
+
+**후속 ADR 경계:** 지원되는 독립 headless Chromium(software renderer) 또는 Node native parser 분리의 fidelity·리소스·관측성 실증이 선행; 별도 프로세스 crash/isolation, timeout/memory bound, 글꼴, 캐시, Origin/Stable ID, OLE/RTF/MTEXT/BLOCK/INSERT, 저장 불변성을 확인한 다음에만 `SceneBuildJob` outbox/lease/fencing·G7 제한된 내부 게시 경계로 연결. 사용자 Browser 숨김 탭·Mock DOM·unhandled swallow, Job READY만으로 CurrentScene READY 처리 금지. [Issue208](Issue208.md), [Decisions](Decisions.md), [TestPlan](TestPlan.md).
+
+---
+
 ## #208 P1-A / CI #445 — Node Scene PoC 글꼴 입력 시점 분리 (2026-11-03)
 
 PR Quality Job의 `npm test`가 `npm run build`보다 먼저 실행되므로 `scripts/fonts.mjs`의 산출물인 `public/fonts/CadKorean.typeface.json`을 노드 실험에 필수로 의존하면 테스트가 DXF 변환 전에 실패한다. Node PoC의 `FONT_PREPARE`는 명시 `.ttf`로 지정한 git-tracked `NanumGothic-Regular.ttf`를 `TTFLoader.parse`로 메모리 내 typeface 객체로 만들고, Production font generator와 동일한 `CAD Korean` family/메타데이터 정규화 후 `FontLoader.parse`를 호출한다. 명시 `.json`도 구조 검증 후 사용 가능하며 지원하지 않는 확장자·빈/큰 입력·손상 내용은 원본 경로/예외 누출 없이 차단한다. 별도 `npm run build`/숨김 Browser/임시 파일 생성이 Node 시험의 전제 조건이 아니다.
