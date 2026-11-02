@@ -1,3 +1,13 @@
+## PR #217 / #208 — PR CI #442 TypeScript 실패 및 보완 후 재검증 대기 (2026-11-03 KST)
+
+- **정확 실행:** [PR CI #442 Run41514760273](https://github.com/planner77/layoutManager/actions/runs/41514760273), source HEAD `dfb059e96e189b21e8a176b91f865d200cf9ee47`, `completed/failure`.
+- **Job 분리:** Scope `125515649993` SUCCESS. Quality `125515840109` FAILURE (TypeScript 단계 `server/scene/node-converter-poc.ts:104 TS2345`, `148/149 TS2322`); Docker `125515840257` FAILURE (`Next.js npm run build`에서 동일 `104 TS2345`, Next Typecheck 직후 중단), Required Verify `125516975378` FAILURE. G7 Signed/Legacy `125516569193`, General Browser `125516569867`, Greenfield UI `125516570306`는 선행 gate 실패로 SKIPPED. Lint/Unit/Browser/worker runtime 성공 주장 불가.
+- **정확 원인:** `JSON.parse` 결과의 `unknown`은 `FontLoader.parse(FontData)`에 바로 전달할 수 없다. `preflightSceneRoot`는 실제로 네 수치를 항상 반환하지만 반환형을 `SceneBuildStats=Partial<Record<...>>`로 잘못 선언하여 `geometryCount`와 `attributeScalars`가 `number | undefined`가 되었다. Docker Build failure는 네트워크/런타임/이미지 배포 실패가 아니라 동일 TypeScript 검사의 중복 노출.
+- **보완 코드:** `isTypefaceJson` TypeScript runtime shape guard로 안전한 입력만 FontLoader.parse에 전달하고 invalid/missing JSON은 고정 `SCENE_FONT_UNAVAILABLE`. `ScenePreflightStats`는 `Required<Pick<SceneBuildStats,sceneNodes|geometryCount|attributeScalars|maxDepth>>`로 정확 지정. `scene-build-diagnostics.test.ts` required numeric compile contract 및 `scene-node-converter-poc.test.ts` malformed font fail-closed를 추가. 대체 `?? 0`로 누락을 은폐하지 않으며 기존 CI/TypeScript Strict 유지.
+- **검증 상태:** 이번 보완은 GitHub 코드 리뷰·정적 근거 기준으로 반영, 이 환경에서 Node/npm/Vitest/Next/Docker 직접 실행 **NOT RUN**. 수정 후 새 정확 HEAD의 CI·Node PoC 실행/브라우저 동등성 결과는 확인 전 **NOT VERIFIED**. A1–A5 및 #208 P1-B/C/D 전체 미완료, #113/#193 현장 별도. [이슈 기술 게이트](Issue208.md), [실패 원장](FailureLedger.md).
+
+---
+
 ## #208 P1-A — CPU-only Node converter PoC 제출 전 확인 상태 (2026-11-03)
 
 - 작업 범위: 실제 three-dxf-viewer 1.0.44 + font pre-parse(data URL) Node DXF→CUSTOM_DTO/restore 실험, SceneBuildJob 상태/오류 taxonomy, 합성 Vitest 두 파일, 이슈 P1-A/P1-B/C/D 설계·운영 경계 문서.
