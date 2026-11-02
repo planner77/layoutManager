@@ -3,7 +3,7 @@
 2026-11-02 · [GitHub #212](https://github.com/planner77/layoutManager/issues/212) · PR 후보 · **현장/CI 수용 아님**
 
 ## 기준 및 재현 근거
-- 관찰된 현장 값: DXF 20MiB+, AC1024 이상, 한글 TEXT/MTEXT, BLOCK/INSERT. UTF-8 strict valid, model TEXT/MTEXT 7,646 / block TEXT/MTEXT 64, model INSERT 240 / nested INSERT 717, 이론적 확장 인스턴스 상한 약 214,474, 순환은 보고되지 않음. 이 값은 소스 바이트·파서 객체 수 또는 Scene 인스턴스 수와 같지 않으며 실제 기하 직렬화 실패의 원인으로 확정할 수 없다. 원본/내부 SHA, Handle, 좌표/문자 내용은 저장소/CI에 올리지 않는다.
+- 관찰된 현장 값: DXF 5MiB 미만 사례와 별도의 20MiB 이상 사례(동일 파일인지 미확인), AC1024 이상, 한글 TEXT/MTEXT, BLOCK/INSERT. UTF-8 strict valid로 보고되었으며, 이론적 BLOCK 확장 추정치는 20만 초과·순환 미발견으로 보고됨. 이 값은 소스 바이트·파서 객체 수 또는 Scene 인스턴스 수와 같지 않으며 실제 기하 직렬화 실패의 원인으로 확정할 수 없다. 원본/내부 SHA, Handle, 좌표/문자 내용은 저장소/CI에 올리지 않는다.
 - 코드상 검증된 결함: `ThreeDxfViewerAdapter.load`가 원인을 일반 Error로 덮고 `ViewerManager`에서 `adapter-load:LOAD`가 되었음. 실패 후 레거시 `dxf-viewer` 표시 성공이 Scene 변환·저장 성공 안내와 혼동되었음.
 - 코드상 위험: `serializeSourceScene(...,'CUSTOM_DTO')` 호출 전에 `root.toJSON→inspect`와 `toCustomDto`를 연속 수행해 두 개의 Scene 표현을 구성함. 이로 인한 실제 OOM/시간 초과는 실측되지 않았으므로 가설로 보존.
 
