@@ -1,3 +1,12 @@
+## #208 P1-A — 사전 기술 위험·미실행 Gate 원장 (2026-11-03, PR CI 이전)
+
+- **실패 사건으로 판정하지 않음:** 아직 해당 신규 PoC의 실제 PR CI Run/Job이 없어 실패 실행·원인/수리·재시험 결과는 **NOT RUN / NOT VERIFIED**. 과거 CI 성공/실패 이력은 변경하지 않는다.
+- **위험 1 (미증명):** pinned `three-dxf-viewer@1.0.44`의 `_font` private preload, data URL, RTF/MTEXT/INSERT Node 호환성은 공식 지원 API가 아니다. 합성 Node converter 단위 시험이 실패하면 Node direct **NO-GO** 및 별도 headless Worker/공식 파서 검증 필요. 브라우저 세션 자동화로 치환 금지.
+- **위험 2 (미구현):** CPU-only 프로세스 timeout/OOM, source cap 16MiB PoC vs 운영 입력 100MB, 32MiB DTO cap, CP949/대형 현장 자료, browser parity/OCI/G7 재인가/Queue·Lease/CAS·UI는 수용 불가 상태. 이 위험은 성공한 단위 시험으로 닫히지 않는다.
+- **보존 사항:** 원본/Current/기존 READY/APP_CREATED/Memo/Zone/Outline, 운영 DB·볼륨/Auth·Writer/GHCR 및 모든 CI gate 불변. PR CI 시작 후 확인/실패·리뷰 스레드·충돌은 **실제 증거**로 별도 기록할 것. [Issue208](Issue208.md).
+
+---
+
 ## PR #214 / Issue #212 — 최종 PR CI 합격·Owner Managed Main 병합·GHCR 신규 게시 보류 (2026-11-03 KST)
 
 - **최종 CI:** [PR CI #440 / Run41508339395](https://github.com/planner77/layoutManager/actions/runs/41508339395), 원본 기능 HEAD `ef83a210c16abe040c7ae451d14012a8469085b9`, `completed/success` **8/8 Job SUCCESS**: scope `125493318190`, Quality/TypeScript/Lint/Unit/Build `125493423035`, Docker migration/runtime `125493423408`, G7 Signed/Legacy E2E `125495643032`, G7 Greenfield Browser E2E `125495643077`, General Chromium shard1 `125495643092`, shard2 `125495643138`, Required Verify `125500750930`. 전 실패 [#438 TypeScript TS18046](https://github.com/planner77/layoutManager/actions/runs/41463408681), [#439 Greenfield 25/26](https://github.com/planner77/layoutManager/actions/runs/41504441240) 및 회귀 수정 내역은 아래 원문 보존; #440 PASS로만 현재 통합 CI 판정.
