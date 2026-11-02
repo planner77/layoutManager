@@ -11,8 +11,10 @@ export function sceneLoadNotice(input:Readonly<{
   if(input.mode==='build'){
     if(input.renderer==='three-dxf-viewer'&&input.artifactReady)
       return 'THREE_SCENE_ARTIFACT_READY · Scene 생성·검증 완료. 서버에 저장하기 전이므로 READY 상태는 아닙니다.';
-    if(input.renderer==='dxf-viewer'&&input.fallback)
-      return `FALLBACK_DXF_DISPLAYED_SCENE_FAILED · 도면만 대체 표시했습니다. Scene 생성 실패 (${input.fallback.phase}:${input.fallback.code}). Scene Asset 저장은 불가능합니다.`;
+    if(input.renderer==='dxf-viewer'&&(input.fallback||input.fallbackReason)){
+      const reason=input.fallback?`${input.fallback.phase}:${input.fallback.code}`:input.fallbackReason;
+      return `FALLBACK_DXF_DISPLAYED_SCENE_FAILED · 도면만 대체 표시했습니다. Scene 생성 실패 (${reason}). Scene Asset 저장은 불가능합니다.`;
+    }
     return `Scene 생성 실패 또는 검증된 Artifact 없음. 도면 표시와 Scene 생성은 별개입니다.${input.fallbackReason?' ('+input.fallbackReason+')':''}`;
   }
   if(input.fallback)
