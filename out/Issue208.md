@@ -1,3 +1,18 @@
+## 2026-11-03 — PR CI #457 직접 Node converter 명시적 NO-GO, P1-A 서버 Headless 비교 필요
+
+**검증 근거:** [PR CI #457 Run41520729471](https://github.com/planner77/layoutManager/actions/runs/41520729471), `b7909f4c98704fa14d63caf5baa750105af313ac`. Quality Unit/Integration `962 PASS / 0 failed assertions`였으나 Vitest **4 unhandled rejections**로 Job FAILURE. pinned `three-dxf-viewer@1.0.44`의 `getFromPath` 과정에서 WMF/RTF 하위 비동기 코드가 `window`를 참조. try/catch가 감싸는 Promise 완료 이후에도 오류가 발생하므로 **일부 직렬화 결과/테스트 PASS는 Node 실행 안전성·fidelity의 증명이 아니다**. Docker runtime/migration SUCCESS는 서버 converter 동작의 증거가 아니며 브라우저/G7 E2E는 SKIPPED.
+
+**A1 판정 = NO-GO (직접 Node 방식)**. `src/server/scene/node-converter-poc.ts`는 안전한 원본 SHA/크기·DXF 구조 및 bundled TTF 준비 후, Node 프로세스에서 upstream 변환을 호출하지 않고 명시 `DXF_PARSE/SCENE_CONVERTER_UNAVAILABLE`로 거절한다. 이를 **예상되는 거절**로 Unit 검증해 async orphan rejection을 방지한다. 별도 합성 Three Group→기존 `CUSTOM_DTO` serializer/full validator→restore 실증은 parser/INSERT/문자 fidelity를 증명하지 않으며 완전한 DXF Scene 생성으로 해석 금지. 시스템 자동 READY, 영속 SceneJob, Docker Worker, 업로드 작업 enqueue 및 목록 상태는 아직 **미구현**.
+
+**다음 P1-A 기술 대안·GO 조건:**
+1. **서버 독립 headless Chromium**: 전용 컨테이너/프로세스에서 기존 브라우저 Scene Builder를 재사용하되, GPU 없이 소프트웨어 WebGL·글꼴·런타임 번들·DOM/Worker 의존을 합성 DXF로 실제 검증. 브라우저 탭/사용자 세션과 무관, CPU/RAM/시간 상한, 비루트, crash/timeout 및 비동기 오류 0을 증명. Headless 실행도 성공 전 GO 아님.
+2. **순수 Node DXF 파서/Renderer 분리**: 공식 지원 파서를 선택할 경우 `three-dxf-viewer`의 WCS, TEXT/MTEXT/BLOCK/INSERT/Layer/Stable ID·manifest와의 fidelity matrix를 재실측하여 builder/schema 식별 계약을 확정. 부분 객체·누락 도형을 READY로 승격 금지.
+3. A1 후속 방식이 실제 샘플·불신 DXF에서 통과한 뒤에만 P1-B 영속 큐+G7 내부 Actor 재인가+CAS, P1-C 목록/진단, P1-D OCI/운영을 구현. 실패 시 명시 BLOCKED/FAILED 및 이전 READY 불변. 원본/실 SHA/경로/계정·Cad bytes 공개 GitHub/CI 반출 금지.
+
+기존 본 문서 하단의 최초 Node direct **시도 계획/미검증** 기록은 당시 설계 역사이며, 현 최종 A1 판정은 이 2026-11-03 CI 실증 절을 우선한다. [원장](FailureLedger.md), [실측](TestReport.md), [TC](TestPlan.md).
+
+---
+
 ## 2026-11-03 P1-A CI #445 Font 입력 수명주기 교정
 
 [CI #445](https://github.com/planner77/layoutManager/actions/runs/41517145247)에서 TypeScript·Docker는 통과했고 Node DXF synthetic test가 `FONT_PREPARE/SCENE_FONT_UNAVAILABLE`로 실패했다. `CadKorean.typeface.json`은 Git 원본이 아니라 `scripts/fonts.mjs`의 `npm run dev/build` 단계에만 생성되며 CI는 `npm test`를 build보다 먼저 실행한다. PoC는 이제 **추적된 NanumGothic-Regular.ttf를 TTFLoader.parse로 직접 읽고 메모리에서 브라우저의 typeface label을 준비**한다. 이미 생성된 JSON에 대한 명시적 호환 입력도 유지하며 파일 크기 cap·형식 검사·safe code만 반환한다. `scripts/fonts.mjs`/기존 브라우저 글꼴 산출물·Production Dockerfile/Viewer 코드는 변경하지 않는다.
