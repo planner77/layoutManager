@@ -11,7 +11,9 @@ import type {SceneScope,CadSceneObjectRef} from '../../domain/cad-scene';
 import {validSceneRef} from '../../domain/cad-scene';
 import type {ReadyScene} from '../core/source';
 import type {SceneArtifact} from '../core/adapter';
-import {serializeSourceScene,restoreSourceScene,storedSceneViewerData} from './scene-serialization';
+import {preflightSceneRoot,serializeSourceScene,restoreSourceScene,storedSceneViewerData} from './scene-serialization';
+import {SceneBuildTracker,type SceneBuildDiagnostics} from '../core/scene-build-diagnostics';
+import {isViewerCancellation} from '../core/viewer-load-error';
 import {extractDxfText,type CadTextIndex} from '../core/text-index';
 import {sceneOutlineProjection} from './scene-projection';
 import {sceneSha256} from '../../domain/scene-digest';
@@ -62,6 +64,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
   private exchangeScope?:SceneScope;
   private exchangeEpoch=0;
   private sceneArtifact?:SceneArtifact;
+  private buildTrace?:SceneBuildTracker;
   private sceneTextIndex?:CadTextIndex;
   private disposed = false;
   private cancel?: () => void;
@@ -189,52 +192,78 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     this.camera.updateProjectionMatrix();this.render();
   };
   async load(source: ArrayBuffer) {
-    if(this.outline?.prepareScene&&sceneSha256(new Uint8Array(source))!==this.outline.sourceSha256)
-      throw new ViewerLoadError('scene','SOURCE_DIGEST_MISMATCH','수신한 DXF 바이트와 Version 체크섬이 다릅니다. Scene 생성을 중단했습니다.');
-    const text=new TextDecoder().decode(source);
-    if(!/(?:^|\n)\s*0\s*\r?\nSECTION\s*\r?\n/.test(text) || !/(?:^|\n)\s*0\s*\r?\nEOF\s*$/.test(text)) throw new Error('DXF 처리에 실패했습니다. 유효한 ASCII DXF인지 확인해주세요.');
-    const url=URL.createObjectURL(new Blob([explicitElevation(text)]));
-    const viewer=new DXFViewer();viewer.useCache=false;
-    // The upstream loader reads the font before fetching this URL. Stop its
-    // progress chain after cancellation so a late font response cannot fetch
-    // an already revoked blob URL.
-    viewer.subscribe('progress',()=>{
-      if(this.disposed)throw new DOMException('취소됨','AbortError');
-    });
+    const building=this.outline?.prepareScene===true;
+    const trace=this.buildTrace=building?new SceneBuildTracker():undefined;
+    let url:string|undefined, parseStarted:number|undefined, serializeStarted:number|undefined;
+    this.sceneArtifact=undefined;
     try {
+      trace?.begin('SOURCE_VERIFY');
+      trace?.stat('sourceBytes',source.byteLength);
+      if(building&&sceneSha256(new Uint8Array(source))!==this.outline?.sourceSha256)
+        throw new ViewerLoadError('scene','SOURCE_DIGEST_MISMATCH','원본 DXF 체크섬이 일치하지 않습니다.');
+      trace?.begin('DXF_DECODE_NORMALIZE');
+      const text=new TextDecoder().decode(source);
+      if(!/(?:^|\n)\s*0\s*\r?\nSECTION\s*\r?\n/.test(text) || !/(?:^|\n)\s*0\s*\r?\nEOF\s*$/.test(text))
+        throw new Error('INVALID_DXF_STRUCTURE');
+      url=URL.createObjectURL(new Blob([explicitElevation(text)]));
+      const viewer=new DXFViewer();viewer.useCache=false;
+      // Upstream loads its font before the blob. A late loader is cancelled and
+      // its returned Object3D released instead of attaching to the next Version.
+      viewer.subscribe('progress',()=>{
+        if(this.disposed)throw new DOMException('취소됨','AbortError');
+      });
+      trace?.begin('DXF_PARSE');
+      parseStarted=performance.now();
       const pending=viewer.getFromPath(url,'/fonts/CadKorean.typeface.json').then(object=>{
-        if (this.disposed) { if(object) release(object); throw new DOMException('취소됨','AbortError'); }
+        if(this.disposed){if(object)release(object);throw new DOMException('취소됨','AbortError');}
         return object;
       });
       const object=await Promise.race([pending,new Promise<never>((_,reject)=>{
         this.cancel=()=>reject(new DOMException('취소됨','AbortError'));
       })]);
-      if(!object) throw new Error('도형 또는 글꼴 로드 실패');
-      // Upstream caches materials globally. Own clones before applying background contrast.
+      if(!object)throw new Error('DXF_LOADER_EMPTY');
+      trace?.stat('parseMs',performance.now()-parseStarted);
+      trace?.stat('dxfEntities',viewer.lastDXF?.entities?.length);
+      trace?.begin('THREE_SCENE_BUILD_TAG');
+      // Protect the existing persisted limits before recursively tagging or
+      // allocating the CUSTOM_DTO. These counts are actual Object3Ds, not
+      // theoretical expansions of nested DXF BLOCK/INSERT.
+      if(trace){
+        const counts=preflightSceneRoot(object);
+        trace.stat('sceneNodes',counts.sceneNodes);
+        trace.stat('geometryCount',counts.geometryCount);
+        trace.stat('attributeScalars',counts.attributeScalars);
+        trace.stat('maxDepth',counts.maxDepth);
+      }
+      // The upstream library may cache material instances globally. Own copies.
       const owned=new Map<THREE.Material,THREE.Material>();
       const clone=(original:THREE.Material)=>{
-        if(!owned.has(original)) {
+        if(!owned.has(original)){
           const material=original.clone() as THREE.Material & {color?:THREE.Color};
-          if(material.color?.getHex()===0) material.color.setHex(0xffffff);
+          if(material.color?.getHex()===0)material.color.setHex(0xffffff);
           owned.set(original,material);
         }
         return owned.get(original)!;
       };
-      object.traverse(o=>{const mesh=o as THREE.Mesh;if(mesh.material)mesh.material=Array.isArray(mesh.material)?mesh.material.map(clone):clone(mesh.material);});
-      if(this.outline && validCanvasScope(this.outline))
+      object.traverse(o=>{const mesh=o as THREE.Mesh;if(mesh.material)
+        mesh.material=Array.isArray(mesh.material)?mesh.material.map(clone):clone(mesh.material);});
+      if(this.outline&&validCanvasScope(this.outline))
         this.document?.setSourceUnit(sourceUnitFromDxf(text));
-      if(this.outline && validCanvasScope(this.outline))
+      if(this.outline&&validCanvasScope(this.outline))
         this.sceneAsset=tagImportedTree(object,sceneScope(this.outline.versionId,this.outline.sourceSha256,sourceUnitFromDxf(text)));
+      if(building&&!this.sceneAsset)throw new Error('SCENE_SCOPE_INVALID');
       this.object=object;this.exchangeBaseline=captureExchangeBaseline(object);this.exchangeScope=this.sceneAsset?.scope;this.exchangeEpoch++;
       this.scene.add(object);this.bounds.setFromObject(object);
-      if(!this.bounds.isEmpty() && ![...this.bounds.min.toArray(),...this.bounds.max.toArray()].every(Number.isFinite)) throw new Error('유효하지 않은 도형 좌표');
+      if(!this.bounds.isEmpty()&&![...this.bounds.min.toArray(),...this.bounds.max.toArray()].every(Number.isFinite))
+        throw new Error('SCENE_BOUNDS_INVALID');
       this.fitToView();this.render();
       if(this.outline&&this.sceneAsset)this.initializeRenderWork(this.sceneAsset.scope);
-      if(this.outline && !this.bounds.isEmpty()) {
-        try {
+      if(this.outline&&!this.bounds.isEmpty()){
+        trace?.begin('OPTIONAL_OUTLINE_INDEX');
+        try{
           const indexStarted=performance.now();
           this.index=await this.runOutlineWorker<DxfOutlineIndex>('index',{
-            text,versionId:this.outline.versionId,sourceSha256:this.outline.sourceSha256
+            text,versionId:this.outline.versionId,sourceSha256:this.outline.sourceSha256,
           });
           this.sourceIndexMs=performance.now()-indexStarted;
           if(this.disposed)throw new DOMException('취소됨','AbortError');
@@ -244,20 +273,47 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
           const selectable=this.renderCoverage.selectable.filter(e=>this.visibleLayers.has(e.layer));
           this.selector?.setSourceEntities(selectable);
           this.spatialIndexMs=this.selector?.indexBuildMs;
-        }catch(error) {
-          if(this.disposed)throw error;
-          this.indexError=error instanceof Error?error.message:'객체 선택 인덱스를 만들 수 없습니다.';
+          trace?.end();
+        }catch(error){
+          if(this.disposed||isViewerCancellation(error))throw error;
+          // Optional outline index failure is a warning, not a failed Scene.
+          // Never expose arbitrary Worker error text/stack to the UI/metrics.
+          this.indexError='원본 정밀 선택 인덱스를 생성하지 못했습니다.';
+          trace?.end('warning');
         }
       }
-      if(this.outline?.prepareScene&&this.sceneAsset){
-        this.sceneArtifact=await serializeSourceScene(object,this.sceneAsset,'CUSTOM_DTO',{textIndex:extractDxfText(source)});
+      if(building&&this.sceneAsset){
+        trace?.begin('TEXT_INDEX_EXTRACT');
+        const textIndex=extractDxfText(source);
+        serializeStarted=performance.now();
+        const candidate=await serializeSourceScene(object,this.sceneAsset,'CUSTOM_DTO',{textIndex},
+          phase=>trace?.begin(phase));
+        trace?.stat('serializeMs',performance.now()-serializeStarted);
+        trace?.stat('serializedBytes',candidate.bytes.length);
         if(this.disposed)throw new DOMException('취소됨','AbortError');
+        // serializeSourceScene validates the complete persisted CUSTOM_DTO,
+        // manifest and digest before returning any publishable artifact.
+        trace?.begin('ARTIFACT_READY');
+        this.sceneArtifact=candidate;
+        trace?.ready();
       }
-      return {empty:this.bounds.isEmpty(),entityCount:viewer.lastDXF?.entities?.length,warning:this.indexError?'원본 정밀 선택 자료를 만들 수 없습니다. 렌더 객체 작업은 계속 사용할 수 있습니다.':undefined};
-    } catch(error) {
-      if(error instanceof DOMException && error.name==='AbortError') throw error;
+      return {empty:this.bounds.isEmpty(),entityCount:viewer.lastDXF?.entities?.length,
+        warning:this.indexError?'원본 정밀 선택 자료를 만들 수 없습니다. 렌더 객체 작업은 계속 사용할 수 있습니다.':undefined};
+    }catch(error){
+      if(parseStarted!==undefined&&trace&&trace.snapshot().stats.parseMs===undefined)
+        trace.stat('parseMs',performance.now()-parseStarted);
+      if(serializeStarted!==undefined&&trace&&trace.snapshot().stats.serializeMs===undefined)
+        trace.stat('serializeMs',performance.now()-serializeStarted);
+      if(isViewerCancellation(error)||this.disposed)
+        throw new DOMException('취소됨','AbortError');
+      // Retain the raw exception only as an internal cause. UI/metrics receive
+      // an allowlisted phase and code; the upstream message may contain CAD data.
+      if(trace)throw trace.fail(error);
       throw new Error('DXF 처리에 실패했습니다. 파일과 글꼴 로드를 확인해주세요.');
-    } finally {this.cancel=undefined;URL.revokeObjectURL(url);}
+    }finally{
+      this.cancel=undefined;
+      if(url)URL.revokeObjectURL(url);
+    }
   }
   async loadScene(source:ReadyScene){
     const object=await restoreSourceScene(source.bytes,source.manifest,source.manifest);
@@ -274,6 +330,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     return {empty:this.bounds.isEmpty(),entityCount:this.renderIndex?.entities.length??0,metrics:{parseMs:0}};
   }
   getSceneArtifact(){return this.sceneArtifact;}
+  getSceneBuildDiagnostics():SceneBuildDiagnostics|undefined{return this.buildTrace?.snapshot();}
   getSceneTextIndex(){
     if(!this.sceneTextIndex)throw new Error('이 Scene에 문자 검색 자료가 없습니다. 도면 메뉴에서 명시적으로 재변환하세요.');
     return this.sceneTextIndex;
@@ -1056,7 +1113,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     this.intrinsicSceneVisibility.clear();
     this.controls.removeEventListener('change',this.render);
     this.controls.removeEventListener('change',this.cameraChanged);
-    this.sceneArtifact=undefined;this.sceneTextIndex=undefined;
+    this.sceneArtifact=undefined;this.sceneTextIndex=undefined;this.buildTrace=undefined;
     this.exchangeBaseline=undefined;this.exchangeScope=undefined;this.exchangeEpoch++;
     this.controls.dispose();if(this.object)release(this.object);this.scene.clear();
     // Late event/async closures may transiently retain this adapter. Drop
