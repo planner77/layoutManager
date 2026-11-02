@@ -1,3 +1,13 @@
+## PR #207 / Issues #202·#204 — Owner Managed 병합·이슈 종료·GHCR Main CI 시작 (2026-11-02 KST)
+
+- 최종 PR HEAD `94c1ca32804f02240ea52edad326c80af9b97c83`에서 [PR CI Run 41384255921 (#428)](https://github.com/planner77/layoutManager/actions/runs/41384255921) **completed/success, 8/8 Job SUCCESS**. Scope, Quality, Docker, General Chromium 2 shards, G7 Greenfield, G7 signed/legacy, 최종 Verify 모두 SUCCESS. 기존 로컬 QA/fixture 실패 및 수정·재시험 내역은 아래 원장에 그대로 보존하며 이번 PR CI의 신규 실패는 관측하지 않았다.
+- 병합 전 [PR #207](https://github.com/planner77/layoutManager/pull/207) review threads 0 / unresolved 0, 제출 review 0(독립 PR 승인 아님), Main `8b38b849adc5e242d7509c72323a497f14aaf50f` 대비 behind 0, mergeable=true, 충돌 없음. Owner의 병합·GHCR·이슈 종료 명시 요청에 따라 정확한 HEAD SHA를 지정해 **Squash Main [11a059a29c6a674644a1dfb62447929ee451e043](https://github.com/planner77/layoutManager/commit/11a059a29c6a674644a1dfb62447929ee451e043)** 병합 성공. PR과 Squash Main의 Git tree는 모두 `509be59caf01d94e2679d437c553f892c4e96c7e`로 동일하다(28 변경 파일).
+- [Issue #202](https://github.com/planner77/layoutManager/issues/202), [Issue #204](https://github.com/planner77/layoutManager/issues/204) **closed/completed**를 각각 확인했다. 기능/합성 CI 범위 완료이며 실제 현장/운영 DB·G7 Runtime 활성화, Auth/Writer 설정 변경, CAD Source/Volume 변경·배포 수용은 별도다.
+- [Main CI Run 41389538694](https://github.com/planner77/layoutManager/actions/runs/41389538694)는 정확 Squash SHA `11a059a29c6a674644a1dfb62447929ee451e043`의 **push/in_progress 시작**만 확인했다. `.github/workflows/docker-publish.yml`에서 런타임 변경을 인식하여 `v0.57.0` 태그 및 GHCR App `ghcr.io/planner77/layoutmanager:0.57.0` / Migrator `ghcr.io/planner77/layoutmanager:0.57.0-migrate`의 pair 후보 검증·게시 경로로 진행한다. **실제 태그 생성, GHCR 게시 완료, OCI digest, Main CI 성공, 운영 배포는 NOT VERIFIED**이며 사용자 요청에 따라 추가 CI 모니터링 생략.
+- 본 기록은 **docs-only Main 후속 커밋**으로 AGENTS.md와 FailureLedger.md만 변경한다. 이미 통과한 Runtime Squash tree·버전·Workflow는 수정하지 않으며 Workflow의 `*.md` 변경 예외에 따라 후속 문서 push는 GHCR 재게시 제외 대상이다(후속 CI 결과 미확인). Force/history rewrite·Secret·운영 데이터 수정 없음.
+
+---
+
 ## #202 / #204 — 분석·구현·검증 원장 (2026-11-02)
 
 - 환경/게시: 원래 workspace는0.19.1로 오래되어 public origin fetch 후 최신 Main `8b38b84`의 별도 worktree를 만들었다. 사용자 로컬 변경2개는 보존했다. `gh` 저장 credential과 기존 `.env` Git credential의 API 인증은 실패했다(401/인증 실패 범주, 값·헤더 미출력). Fetch 성공은 public 읽기 증거이며 push 권한의 증거가 아니다. 동일 지정 저장소의 연결된 GitHub 도구로 검사한 tree를 fast-forward 게시할 예정이다. Force/History rewrite 없음.

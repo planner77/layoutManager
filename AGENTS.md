@@ -1,3 +1,9 @@
+## PR #207 / #202·#204 — Owner Managed 병합·GHCR 인계 (2026-11-02, 0.57.0)
+
+[FailureLedger](out/FailureLedger.md) 상단에 정확 PR CI Run41384255921 **8/8 SUCCESS**, 리뷰 스레드/미해결0·충돌0, Source/Squash 동일 tree 및 Main [11a059a](https://github.com/planner77/layoutManager/commit/11a059a29c6a674644a1dfb62447929ee451e043) 병합을 기록했다. #202·#204는 closed/completed. [Main CI Run41389538694](https://github.com/planner77/layoutManager/actions/runs/41389538694)는 GHCR `0.57.0` App+Migrator pair 게시 workflow의 **시작만 확인**했으며 실제 게시·digest·현장/운영 수용은 미확인이다. 본 사후 문서 기록은 docs-only이므로 runtime source/버전/릴리스 태그를 변경하지 않으며 후속 CI는 별도 모니터링하지 않는다.
+
+---
+
 ## #204 / #202 — 기준정보 이름·기본 목록 메모 검색 (0.57.0 개발 후보)
 
 이름 편집 또는 도면 목록의 메모 조건을 변경할 때 [Requirements](out/Requirements.md)/[Architecture](out/Architecture.md)/[Decisions](out/Decisions.md)/[TestPlan](out/TestPlan.md)의 #204/#202 계약을 먼저 읽는다. 실제 수용은 TestReport/FailureLedger의 최종 소스 증거를 따른다. PR CI는 시작만 확인하고 완료 모니터링은 생략한다.
