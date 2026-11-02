@@ -1,3 +1,17 @@
+## TC-208-A1-NOGO — CI #457 async DOM 의존 재현·명시 차단 및 부분 serializer 검증 (2026-11-03)
+
+| TC | 방법 | 합격 조건 및 판정 범위 |
+| --- | --- | --- |
+| TC-208-NG-01 | `scene-node-converter-poc.test.ts`: Node `process.versions.node`, `window/document` 부재, 실제 committed TTF·합성 DXF/SHA를 `probeNodeScene`에 전달 | 반드시 typed `DXF_PARSE/SCENE_CONVERTER_UNAVAILABLE`, `NODE_DIRECT_DXF_STATUS=NO_GO_ASYNC_DOM_DEPENDENCY`. 실제 upstream `getFromPath` 호출 전 fail-closed; **부분 Scene 성공을 주장하지 않음** |
+| TC-208-NG-02 | 정확 기존 `preflightSceneRoot` + `tagImportedTree` + `serializeSourceScene(CUSTOM_DTO)` + `restoreSourceScene`를 **직접 만든 Three Group/Line**에 실행 | manifest/source scope/digest/byte length 및 restored tree ID/count 일치. 이는 **파서 비의존 serializer 부분 시험**, DXF 변환/문자/INSERT fidelity GO가 아님 |
+| TC-208-NG-03 | 기존 source SHA mismatch/16MiB cap/구조 오류/TTF·JSON 부재·손상/금지 확장자 주입 | 기존 정확 단계/allowlisted errorCode, 민감 Source·경로·stack 비노출. No Test skip/fake window/ignored rejection |
+| TC-208-NG-04 | `npm run typecheck`, ESLint, full Vitest/Unit+Integration, Docker/Next/Browser/Greenfield/G7/required Verify | 신규 HEAD에서 0 unhandled rejections, CI green은 **NO-GO 정책/하위 serializer 테스트 수용만**. 실제 Server CPU-only DXF→Scene 가능성 수용 아님 |
+| TC-208-FUTURE | 독립 Headless Chromium software render 또는 지원 Node 파서 PoC | 진짜 DXF LINE/TEXT/MTEXT/BLOCK/INSERT/WCS/layer/Stable ID DTO·restore 동일성, CPU·메모리·timeout, 0 latent unhandled, 격리/restart·보안 시험 필요; **NOT IMPLEMENTED/NOT RUN** |
+
+#457 [실패 CI](https://github.com/planner77/layoutManager/actions/runs/41520729471)의 기존 962 assertion PASS / 4 비동기 오류와 새 실행을 반드시 구분한다. 이전 TC-208-A1의 'Node 실변환'은 이 라이브러리/Node 직접 방식에서 **실패로 판정**되었으므로 'expected NO-GO 테스트가 통과'했다는 이유로 GO로 치환하지 않는다. Headless/새 파서 게이트 통과 전 #208 AC-01/02, Worker/Queue/UI/배포/현장 #113/#193 미수용. [Issue208](Issue208.md), [FailureLedger](FailureLedger.md).
+
+---
+
 ## TC-208-A1-FONT — CI #445 빌드 전 글꼴 입력 독립성/Node 실변환 재시험 (2026-11-03)
 
 - CI Quality 순서 `npm run db:generate → typecheck → lint → npm test → npm run build`; Unit 단계에서 gitignored/빌드 산출물인 `public/fonts/CadKorean.typeface.json`을 요구하면 안 된다. `scripts/fonts.mjs`의 실제 입력 `public/fonts/NanumGothic-Regular.ttf`를 직접 명시 전달하고 `TTFLoader.parse → familyName/이름 메타데이터 정규화 → FontLoader.parse`를 메모리 내 수행한다. 합성 Scene DXF의 실제 `getFromPath`/CUSTOM_DTO/Restore는 계속 실행해야 하며 mock parser/skip/optional pass 금지.
