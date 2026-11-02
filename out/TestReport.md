@@ -1,3 +1,9 @@
+## #212 / PR #214 — 최종 CI #440 PASS 및 Main 병합·GHCR 분리 판정 (2026-11-03 KST)
+
+[PR CI #440 Run41508339395](https://github.com/planner77/layoutManager/actions/runs/41508339395), HEAD `ef83a210c16abe040c7ae451d14012a8469085b9`, **completed/success 8/8 Jobs**(Scope, Quality TypeScript/Lint/Unit/Build, Docker Runtime, Greenfield, G7 Signed/Legacy, General Chromium shard1/2, required Verify). 역사적 #438 TypeScript 신규 테스트 fail 및 #439 Greenfield R3 구 메시지 fail은 보완되었고 실제 통합 CI 성공으로 재검증되었다. 미해결 review thread0, 충돌0, Main behind0 확인 후 [PR #214](https://github.com/planner77/layoutManager/pull/214)를 Squash Main `1ba46dc4a2fd50e06ce84069fce98977c55632bf`로 병합; 동일 Git tree `e6dda9e901ac1951ba360e66f6317d77baedfcfd`. Issue #212 **closed/completed**(코드·합성 CI). [Main CI #130 Run41511179566](https://github.com/planner77/layoutManager/actions/runs/41511179566) 시작만 확인 후 결과 미모니터링. GHCR release workflow는 기존 `0.58.0` App/Migrator pair가 있으면 duplicate skip하므로 **#212 신규 코드의 실제 이미지 게시/digest 미확인**; 후속 새 immutable release/G7 registry 검증을 [#216](https://github.com/planner77/layoutManager/issues/216)에 OPEN으로 추적한다. 복잡 실 DXF(5MiB/20MiB+), GPU/메모리/현장 장비·업무 연결, #113/#193/208 등은 CODE CI PASS와 무관하게 미수용.
+
+---
+
 ## PR #214 / #212 — CI #439 Greenfield R3 Scene 상태 단언 불일치 (2026-11-03 KST)
 
 [Run41504441240](https://github.com/planner77/layoutManager/actions/runs/41504441240), source `0cc44705b504c3a89facd969a31f76ba5131816d`: Quality(TypeScript·Lint·Unit·Build), Docker Runtime, General 2 shards, G7 Signed/Legacy, Scope **각 SUCCESS**; G7 Greenfield E2E **25/26 PASS**, `typed-outlines.spec.ts:196` 한 건만 FAIL; Required Verify 종속 FAIL. `scene-status` 실제는 `THREE_SCENE_ARTIFACT_READY`(브라우저 Artifact만, 미게시)였고 이전 문구를 검사하는 E2E가 계약을 따라가지 못했다. 테스트를 실제 renderer 및 3분리 상태 계약의 검증된 Artifact/서버 미게시/fallback 아님 확인으로 보완하고 기존 R3 Source·Outline·Scene 보존 시험을 유지했다. 코드상 변경과 메시지 정적 확인은 **새 E2E 성공 증거가 아님**; 후속 Run은 생성/시작만 확인 후 미모니터링, 합격 NOT VERIFIED. 실제 사내 복잡 DXF/성능/작업 승인·GHCR/현장 수용 별도.

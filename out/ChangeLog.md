@@ -1,3 +1,10 @@
+## 2026-11-03 — #212 PR #214 합격·Main 병합과 새 GHCR 릴리스 #216 후속
+
+- 최종 PR CI #440 (Run41508339395) 8/8 SUCCESS; 앞선 #438 TypeScript TS18046 및 #439 Greenfield R3 상태 기대값 실패를 수리한 검증된 Source HEAD `ef83a210c16abe040c7ae451d14012a8469085b9`를 Main `1ba46dc4a2fd50e06ce84069fce98977c55632bf`로 동일 tree Squash. Issue #212 closed/completed. Main CI #130 시작 확인, 결과 모니터링 생략.
+- 패키지 버전 `0.58.0`/기존 `v0.58.0` GHCR App/Migrator 이미지쌍과 운영 데이터는 유지. 중복 버전의 신규 이미지 게시가 자동 수행되지 않는 릴리스 공백은 [#216](https://github.com/planner77/layoutManager/issues/216)에 추적; 검증된 신규 release 버전/registry·digest 확인 전 #212 Scene 수정이 GHCR에 반영되었다고 주장하지 않는다.
+
+---
+
 ## 2026-11-03 — PR #214 Greenfield E2E Scene 상태 문구 계약 보완 (#212)
 
 - 실패 CI #439 / Run41504441240의 `typed-outlines.spec.ts:196`은 이전 상태 메시지 `원본 DXF 변환 완료`를 기다려 25/26 E2E에서 1건 실패. 신규 화면의 정상 `THREE_SCENE_ARTIFACT_READY`와 서버 미게시, fallback 부재 및 `three-dxf-viewer`를 검증하도록 테스트 수정.

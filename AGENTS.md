@@ -1,3 +1,9 @@
+## PR #214 / Issue #212 — CI #440 성공·Main 병합 및 신규 GHCR 릴리스 별도 게이트 (2026-11-03 KST)
+
+[FailureLedger](out/FailureLedger.md)/[TestReport](out/TestReport.md)에서 정확 PR CI [#440 Run41508339395](https://github.com/planner77/layoutManager/actions/runs/41508339395) 최종 HEAD `ef83a210c16abe040c7ae451d14012a8469085b9`의 **8/8 SUCCESS** 및 과거 #438/439 실패·보완, review thread0/unresolved0, Main behind0/충돌0과 Owner 승인 Squash Main `1ba46dc4a2fd50e06ce84069fce98977c55632bf`(검증 PR과 동일 Git tree)을 기록한다. Issue #212는 **closed/completed(코드+합성 CI 범위)**, [Main CI #130 Run41511179566](https://github.com/planner77/layoutManager/actions/runs/41511179566)는 push로 시작만 확인하고 Owner 요청에 따라 완료를 모니터링하지 않는다. **GHCR 신규 게시와 코드 병합은 별개:** package version `0.58.0` 및 기존 태그 `v0.58.0` 유지; workflow는 기존 App/Migrator 이미지쌍이 있는 경우 중복 게시를 생략하므로 #212를 포함한 새 이미지 게시를 주장하지 않는다. 새 릴리스 버전/G7 registry·upgrade path/CI/이미지쌍 실 게시를 [Issue #216](https://github.com/planner77/layoutManager/issues/216)에 OPEN으로 별도 추적한다. 기존 태그·digest 강제 갱신/실 운영 Volume/CAD·권한 수정 없음. 본 기록은 docs-only Main이며 GHCR 이미지 갱신 대상이 아니다. 실제 복잡 DXF/GPU 현장 #113/#193과 #208 자동 Worker는 별도.
+
+---
+
 ## PR #214 / Issue #212 — CI #439 Greenfield E2E Scene 상태 문구 계약 수리 (2026-11-03 KST)
 
 [실패 원장](out/FailureLedger.md)에 정확 PR CI #439 / Run41504441240의 G7 Greenfield E2E 25/26 PASS·1 FAIL을 보존한다. `typed-outlines.spec.ts:196`은 #212 이전 `원본 DXF 변환 완료` 문구를 기다렸으나, **정상 three-dxf-viewer 변환의 검증된 브라우저 Artifact**는 `THREE_SCENE_ARTIFACT_READY`이고 **서버 READY 아님**을 표시한다. 테스트 기대값만 정확한 신규 계약으로 전환하고 실제 `three-dxf-viewer` 및 `FALLBACK_DXF_DISPLAYED_SCENE_FAILED` 부재를 함께 검증한다. UI를 구 문구로 되돌리거나 fallback을 Artifact/서버 게시 성공으로 취급하지 않으며 G7·Outline·Scene 원본/기존 READY/인증·권한/DB/CAD/CI gate를 완화하지 않는다. 신규 PR CI의 실행과 완료는 구분하고 사용자 요청대로 시작만 확인 후 모니터링 생략.
