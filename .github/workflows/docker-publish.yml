@@ -506,14 +506,26 @@ jobs:
           set -euo pipefail
           IMAGE="${REGISTRY}/${IMAGE_NAME}:${APP_VERSION}"
           MIGRATION_IMAGE="${IMAGE}-migrate"
-          APP_EXISTS=false
-          MIGRATOR_EXISTS=false
-          docker buildx imagetools inspect "$IMAGE" >/dev/null 2>&1 && APP_EXISTS=true
-          docker buildx imagetools inspect "$MIGRATION_IMAGE" >/dev/null 2>&1 && MIGRATOR_EXISTS=true
-          if [[ "$APP_EXISTS" == "true" && "$MIGRATOR_EXISTS" == "true" ]]; then
+          # An inspect failure is NOT necessarily an absent tag. Only an explicit
+          # manifest-not-found response is eligible for an initial publish.
+          inspect_version() {
+            local result
+            if result="$(docker buildx imagetools inspect "$1" 2>&1)"; then
+              printf '%s\n' present
+            elif [[ "$result" == *"404 Not Found"* || "$result" == *"manifest unknown"* ||
+                    "$result" == *"MANIFEST_UNKNOWN"* ]]; then
+              printf '%s\n' absent
+            else
+              echo "::error::G7_RELEASE_REGISTRY_CHECK_FAILED: ambiguous registry response; fail closed." >&2
+              return 1
+            fi
+          }
+          APP_STATUS="$(inspect_version "$IMAGE")"
+          MIGRATOR_STATUS="$(inspect_version "$MIGRATION_IMAGE")"
+          if [[ "$APP_STATUS" == "present" && "$MIGRATOR_STATUS" == "present" ]]; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
             echo "Immutable version pair exists: $IMAGE and $MIGRATION_IMAGE"
-          elif [[ "$APP_EXISTS" == "false" && "$MIGRATOR_EXISTS" == "false" ]]; then
+          elif [[ "$APP_STATUS" == "absent" && "$MIGRATOR_STATUS" == "absent" ]]; then
             echo "exists=false" >> "$GITHUB_OUTPUT"
             echo "Both version tags absent: paired publish eligible."
           else
