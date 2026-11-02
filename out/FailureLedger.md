@@ -1,3 +1,10 @@
+## PR #217 / #208 — CI #457 수리 후 리뷰·Main 병합 준비 확인 (2026-11-03 KST)
+
+- **검토:** [PR #217](https://github.com/planner77/layoutManager/pull/217)은 Draft/OPEN, 직전 수정 HEAD `1d8383ba20c0f5e093e51548bf49ba69d0da8805`. `list_pull_request_review_threads` 결과 전체 0 / 미해결 0, `list_pull_request_reviews` 결과 0(독립 승인 획득 주장 금지). Main `aa6954a944fbdda7c50b4bdef261504d582e2f56`에 대해 `compare` 상태 **ahead, behind=0, ahead=67**, GitHub `mergeable=true`(충돌 없음). 추가 리뷰 해결/병합 conflict 수리 불필요; Main이 이후 바뀌면 다시 비교. 이번 원장 추가 커밋 후 새 HEAD는 별도 GitHub CI run으로 확인한다.
+- **정확 판정 범위:** 이전 [CI #457](https://github.com/planner77/layoutManager/actions/runs/41520729471)의 Unit assertion 962 PASS / 4 unhandled rejection / 전체 FAILURE를 변경하지 않는다. 현재 코드의 pinned `three-dxf-viewer` direct Node **NO-GO**를 명시적으로 반환하도록 수정하였으며 안전한 하위 serializer 테스트와 실제 DXF 변환 성공을 혼동하지 않는다. 수정 후 `npm/typecheck/lint/Vitest/Playwright/Docker` 로컬 직접 실행 NOT RUN; 새 PR CI 시작 확인 전 성공 미확정. PR 병합·GHCR·Issue 종료·운영 Worker 기동/DB·Volume 조치 미실시.
+
+---
+
 ## PR #217 / #208 — CI #457 직접 Node upstream의 비동기 DOM 의존 4건, NO-GO 판정 및 안전 차단 (2026-11-03 KST)
 
 - **정확 실패 근거:** [PR CI #457 Run41520729471](https://github.com/planner77/layoutManager/actions/runs/41520729471) on HEAD `b7909f4c98704fa14d63caf5baa750105af313ac`, `completed/failure`. Scope `125536288340` SUCCESS, Docker image/migration/runtime smoke `125536434792` SUCCESS. Quality `125536434951` **FAILURE** at Unit/Integration: **145/145 test files 및 962/962 assertions PASS**인데 **4 unhandled rejections** 때문에 Vitest exit1. `ReferenceError: window is not defined` at `node_modules/three-dxf-viewer/dist/main.js:7986`, `bd.lWMFJS`/WMF/RTF construction → `gm._drawDXF`/`gm.getFromPath` → `server/scene/node-converter-poc.ts:173`. Required Verify `125538556873` FAILURE(종속), G7 Greenfield `125538137150` / Signed-Legacy `125538137795` / General Chromium `125538138098` **SKIPPED**. TypeScript/ESLint 단계와 Docker SUCCESS를 E2E 또는 parser GO로 전환하지 않음.
