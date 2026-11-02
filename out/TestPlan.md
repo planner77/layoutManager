@@ -1,3 +1,9 @@
+## TC-212-10 — Greenfield R3 Canonical Scene Artifact 상태 E2E 회귀 (2026-11-03 KST)
+
+`typed-outlines.spec.ts`의 명시적 `원본 DXF로 Scene 생성/재생성`은 검증된 `three-dxf-viewer` renderer와 함께 `scene-status`의 `THREE_SCENE_ARTIFACT_READY` 및 `서버에 저장하기 전이므로 READY 상태는 아닙니다`를 확인한다. `FALLBACK_DXF_DISPLAYED_SCENE_FAILED`가 나타나면 정상 변환 성공으로 처리하지 않는다. 구 문구 `원본 DXF 변환 완료`로 상태 판별·복구하는 우회 금지. R3 원본 기반 외곽선·타입 변경/비활성·Scene 저장/교체·재접속·Reset·Audit/Source WCS 회귀는 그대로 유지하고 26개 Greenfield 및 다른 모든 PR 필수 Job의 실제 재실행을 요구한다. 확인 전 PASS 또는 현장 Scene 수용 선언 불가.
+
+---
+
 ## TC-212-09 — TS18046/거절 Error 정적·런타임 일치 회귀 (2026-11-03 KST)
 
 `scene-build-diagnostics.test.ts`의 untrusted `manager.load` 거절 값은 계속 `unknown`으로 처리한다. `ViewerLoadError` 런타임 `instanceof` 확인 및 부정 분기로 fail-closed 한 후에만 `stage/reasonCode/message`를 읽는다. spoofed `ViewerLoadError`·무허가 reasonCode·일반 `Error`가 모두 안전한 `adapter-load:LOAD`와 고정 메시지로 정규화되고 비밀 메시지를 누출하지 않아야 한다. `npm run typecheck` (strict), 관련 Vitest, 전체 PR CI(기존 Docker/Browser 포함)를 재실행한다. 실행/성공은 새 결과 확인 전 NOT VERIFIED. 기존 소스/현장 데이터와 UI/서버 인가/동작은 수정하지 않는다.

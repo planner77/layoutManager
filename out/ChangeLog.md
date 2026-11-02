@@ -1,3 +1,10 @@
+## 2026-11-03 — PR #214 Greenfield E2E Scene 상태 문구 계약 보완 (#212)
+
+- 실패 CI #439 / Run41504441240의 `typed-outlines.spec.ts:196`은 이전 상태 메시지 `원본 DXF 변환 완료`를 기다려 25/26 E2E에서 1건 실패. 신규 화면의 정상 `THREE_SCENE_ARTIFACT_READY`와 서버 미게시, fallback 부재 및 `three-dxf-viewer`를 검증하도록 테스트 수정.
+- 런타임 UI/Scene 직렬화·한도·서버 게시·Source/DB/Current/G7 권한/CI 정책은 변경하지 않는다. 기존 #438 실패 이력 보존; 새 CI는 시작만 확인하고 결과 미모니터링.
+
+---
+
 ## 2026-11-03 — PR #214 / #212 CI #438 TypeScript 테스트 보완
 
 - `scene-build-diagnostics.test.ts`의 `unknown` rejection을 `ViewerLoadError` 런타임 guard로 확인하여 TS18046 3건의 신규 테스트 타입 문제를 수정했다. 안전 오류 코드/문구·비밀 비노출 검증은 유지하며 TypeScript strict/CI gate를 완화하지 않는다.

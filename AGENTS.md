@@ -1,3 +1,9 @@
+## PR #214 / Issue #212 — CI #439 Greenfield E2E Scene 상태 문구 계약 수리 (2026-11-03 KST)
+
+[실패 원장](out/FailureLedger.md)에 정확 PR CI #439 / Run41504441240의 G7 Greenfield E2E 25/26 PASS·1 FAIL을 보존한다. `typed-outlines.spec.ts:196`은 #212 이전 `원본 DXF 변환 완료` 문구를 기다렸으나, **정상 three-dxf-viewer 변환의 검증된 브라우저 Artifact**는 `THREE_SCENE_ARTIFACT_READY`이고 **서버 READY 아님**을 표시한다. 테스트 기대값만 정확한 신규 계약으로 전환하고 실제 `three-dxf-viewer` 및 `FALLBACK_DXF_DISPLAYED_SCENE_FAILED` 부재를 함께 검증한다. UI를 구 문구로 되돌리거나 fallback을 Artifact/서버 게시 성공으로 취급하지 않으며 G7·Outline·Scene 원본/기존 READY/인증·권한/DB/CAD/CI gate를 완화하지 않는다. 신규 PR CI의 실행과 완료는 구분하고 사용자 요청대로 시작만 확인 후 모니터링 생략.
+
+---
+
 ## PR #214 / Issue #212 — CI #438 TypeScript 테스트 경계 보완 (2026-11-03 KST)
 
 [FailureLedger](out/FailureLedger.md)/[TestReport](out/TestReport.md): #212 Scene 수동 생성 PR CI #438의 TypeScript 실패 `TS18046` 3건은 `tests/unit/scene-build-diagnostics.test.ts:54`에서 `unknown` 타입의 거절 값을 `expect(...).toMatchObject` 뒤에 속성 접근한 테스트 코드가 원인이다. Vitest `expect`는 TypeScript narrowing 보장이 아니므로 **실제 `instanceof ViewerLoadError` 검증 및 분기** 뒤에만 `stage/reasonCode/message`를 읽는다. 실패시 명시 테스트 오류, 정상시 기존 `LOAD` 고정 메시지/민감한 CAD Error 내용 비노출 회귀를 유지한다. TypeScript strict/CI gate 완화나 runtime 분류·Scene Source/DB/권한 변경 금지. 정확 CI Run/HEAD·원인·수리·재시험은 Ledger에 누적하고 새 PR CI 시작 후 결과는 요청대로 모니터링하지 않는다.

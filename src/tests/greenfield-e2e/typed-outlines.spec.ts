@@ -193,7 +193,13 @@ test('R3 canonical Source UI, renamed/inactive references and same-WCS Scene rep
     await page.goto(viewer);await ready(page);
     await page.getByRole('button',{name:'도면',exact:true}).click();
     await page.getByRole('menuitem',{name:'원본 DXF로 Scene 생성/재생성',exact:true}).click();
-    await expect(page.getByTestId('scene-status')).toContainText('원본 DXF 변환 완료');
+    // #212: an actual validated browser artifact is NOT a published server READY Scene.
+    // A display-only dxf-viewer fallback must never satisfy this Source outline setup.
+    const sceneStatus=page.getByTestId('scene-status');
+    await expect(sceneStatus).toContainText('THREE_SCENE_ARTIFACT_READY');
+    await expect(sceneStatus).toContainText('서버에 저장하기 전이므로 READY 상태는 아닙니다');
+    await expect(sceneStatus).not.toContainText('FALLBACK_DXF_DISPLAYED_SCENE_FAILED');
+    await expect(page.getByTestId('viewer-active-renderer')).toHaveText('three-dxf-viewer');
     const layers=page.getByTestId('fullscreen-layer-panel');
     await layers.getByRole('button',{name:'전체 해제',exact:true}).click();
     await layers.getByRole('checkbox',{name:'OUTLINE',exact:true}).check();

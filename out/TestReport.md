@@ -1,3 +1,9 @@
+## PR #214 / #212 — CI #439 Greenfield R3 Scene 상태 단언 불일치 (2026-11-03 KST)
+
+[Run41504441240](https://github.com/planner77/layoutManager/actions/runs/41504441240), source `0cc44705b504c3a89facd969a31f76ba5131816d`: Quality(TypeScript·Lint·Unit·Build), Docker Runtime, General 2 shards, G7 Signed/Legacy, Scope **각 SUCCESS**; G7 Greenfield E2E **25/26 PASS**, `typed-outlines.spec.ts:196` 한 건만 FAIL; Required Verify 종속 FAIL. `scene-status` 실제는 `THREE_SCENE_ARTIFACT_READY`(브라우저 Artifact만, 미게시)였고 이전 문구를 검사하는 E2E가 계약을 따라가지 못했다. 테스트를 실제 renderer 및 3분리 상태 계약의 검증된 Artifact/서버 미게시/fallback 아님 확인으로 보완하고 기존 R3 Source·Outline·Scene 보존 시험을 유지했다. 코드상 변경과 메시지 정적 확인은 **새 E2E 성공 증거가 아님**; 후속 Run은 생성/시작만 확인 후 미모니터링, 합격 NOT VERIFIED. 실제 사내 복잡 DXF/성능/작업 승인·GHCR/현장 수용 별도.
+
+---
+
 ## PR #214 / Issue #212 — TS18046 CI #438 실패와 보완 (2026-11-03 KST)
 
 [CI #438 Run41463408681](https://github.com/planner77/layoutManager/actions/runs/41463408681) 정확 HEAD `f4e54af94415622488ae94dc55352fc75fb42fdf`에서 **TypeScript FAIL** `scene-build-diagnostics.test.ts:54`의 `unknown` 속성 접근 3건(TS18046); Docker runtime/scope SUCCESS, Unit/Lint/Build 및 Browser E2E 미실행(SKIPPED), required Verify FAIL. 신규 테스트에서 명시 `unknown`→`instanceof ViewerLoadError` guard로 runtime 타입 확인 후 `stage/reasonCode/message`의 안전한 고정 출력만 검증하도록 보완했다. 실제 TypeScript/Vitest/전체 PR CI **재검증 결과 전까지 NOT VERIFIED**. 최초 실패/변경 근거는 [FailureLedger](FailureLedger.md), [TestPlan](TestPlan.md) 참조. 실제 DXF/GPU/영속 Scene/Site 업무 검증은 별도.
