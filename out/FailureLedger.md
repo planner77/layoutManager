@@ -1,3 +1,14 @@
+## PR #148 — M4-A 부분 Draft 종료 / #175·#177 후속 승계 (2026-11-03 KST)
+
+- **최종 상태:** [PR #148](https://github.com/planner77/layoutManager/pull/148) `closed` / `merged=false` / `draft=true`, 최종 부분 구현 HEAD `8b5199fd39a9e535213e9fc38cc99a2b3bb509fe`, 종료 시각 **2026-11-03 04:49:54 KST** (GitHub `2026-11-02T19:49:54Z`). [종료 근거·Owner 요청에 따른 PR 코멘트](https://github.com/planner77/layoutManager/pull/148#issuecomment-6586893288). 기존 M1 세션 M4-A 구현은 최신 M2/M3/G7 코드에 재병합하지 않고 **SUPERSEDED_BY_PR_175_AND_177 / CLOSED_NOT_MERGED**로 정리. Draft 및 구 브랜치 보존, 자동 삭제 없음.
+- **구 PR CI 정확 기록:** [Run 40603237481](https://github.com/planner77/layoutManager/actions/runs/40603237481), HEAD `8b5199fd39a9e535213e9fc38cc99a2b3bb509fe`, `completed/failure`. Docker image/migration/runtime smoke Job `122536653580` **SUCCESS**. Verify Job `122536654047`에서 TypeScript/ESLint/Unit+Integration/OCI/Benchmark/Production Build **SUCCESS**, Chromium Playwright E2E **92 PASS / 2 FAIL**; Legacy migration E2E **SKIPPED**. 실패 TC는 `TC-ISSUE17-001` (`src/tests/e2e/issue17-fullscreen-layers.spec.ts:154`, Canvas screenshot `.equals(zoomed)` 5s timeout), `TC-LAYER001` (`src/tests/e2e/layer-dropdown.spec.ts:71`, `.equals(initial)` 5s timeout). 현 기록은 실제 CI 실패 근거이며 과거 실패를 SUCCESS로 소급하지 않음.
+- **후속 구현·검증:** [PR #175](https://github.com/planner77/layoutManager/pull/175)에서 구 #148의 Tree/domain/keyboard/UI 및 테스트 일부를 최신 영속 G7 M4/M5에 선별 이식, Canvas 재표시 E2E의 불안정한 screenshot byte-equality를 정규화 stroke 유사도 검증으로 보완. 정확 최종 HEAD `a6d3bdef1cc3e8a12ca95e918b5a2d49fad83d50`의 [PR CI Run 41142161238](https://github.com/planner77/layoutManager/actions/runs/41142161238) Verify/Docker **SUCCESS**, Squash Main `c3e55a95ed2c7a61413e5b0577004252994fe988`. [PR #177](https://github.com/planner77/layoutManager/pull/177)은 #138 공통 MovableViewerPanel 적용을 후속 확대하고 Main 병합 완료. [Issue #85](https://github.com/planner77/layoutManager/issues/85) 및 [#86](https://github.com/planner77/layoutManager/issues/86) `closed/completed` 확인. 코드/합성 CI 완료와 선택적 Memo parent/child 및 실제 현장/운영 수용은 구분.
+- **리뷰/충돌 판정:** PR #148 인라인 리뷰 스레드 **0 / 미해결 0**. 종료 전 최신 Main compare `diverged`, ahead **25** / behind **53**, PR `mergeable=false`. 후속 Main에 구 브랜치를 억지 rebase/merge하여 최신 G7·Memo persistence를 덮어쓰는 것을 방지하며 추가 충돌 해결/재CI 불필요.
+- **변경·릴리스 경계:** PR #148의 변경은 **상태 종료·코멘트**뿐이며, 별도 Main 병합, PR CI 재기동, GHCR App/Migrator 신규 게시, 태그/이미지 이동, 운영 DB/Volume/CAD/Auth/Writer 변경 **없음**. 이 원장 추가는 Main **문서만 수정**하는 이력 커밋이며 새로운 기능 구현·릴리스 증거가 아님. 문서-only push에 의해 자동화된 Main 워크플로가 실행될 수 있으나 CI 성공 또는 GHCR 게시를 자동 추정하지 않으며 신규 결과 모니터링 대상이 아님.
+
+
+---
+
 ## #208 P1-A — 사전 기술 위험·미실행 Gate 원장 (2026-11-03, PR CI 이전)
 
 - **실패 사건으로 판정하지 않음:** 아직 해당 신규 PoC의 실제 PR CI Run/Job이 없어 실패 실행·원인/수리·재시험 결과는 **NOT RUN / NOT VERIFIED**. 과거 CI 성공/실패 이력은 변경하지 않는다.
