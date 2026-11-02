@@ -1,3 +1,13 @@
+## #208 P1-A — CPU-only Node converter PoC 제출 전 확인 상태 (2026-11-03)
+
+- 작업 범위: 실제 three-dxf-viewer 1.0.44 + font pre-parse(data URL) Node DXF→CUSTOM_DTO/restore 실험, SceneBuildJob 상태/오류 taxonomy, 합성 Vitest 두 파일, 이슈 P1-A/P1-B/C/D 설계·운영 경계 문서.
+- **실행 결과:** 이 GitHub 연결 기반 환경에서는 `npm ci`, `npm run typecheck`, `npm run lint`, `vitest`, Playwright, Docker/OCI/CPU-only Benchmark를 **수행하지 않았다(NOT RUN)**. 실행 가능한 PoC가 존재하는 것과 성공은 다르다.
+- **미구현:** Durable Queue/Worker/transactional enqueue/G7 Actor revocation 재검증/Scene storage publish/Compose/Prisma/목록 UI/API·재시도. 업로드 사용 경험은 기존 수동 경로로 유지한다.
+- **현장:** 5MiB 미만/20MiB 이상 실 도면, 한글·BLOCK/INSERT 깊이, CPU/RAM/OOM·WebGL/2PC, #113/#193 미수용. PR CI 실행 여부와 exact HEAD/Run은 별도 실제 기록 후에만 변경한다.
+- Gate 및 TC: [Issue208](Issue208.md), [TestPlan](TestPlan.md). PR·Main·GHCR/Issue 종료 성공 판정 전부 NOT VERIFIED.
+
+---
+
 ## #212 / PR #214 — 최종 CI #440 PASS 및 Main 병합·GHCR 분리 판정 (2026-11-03 KST)
 
 [PR CI #440 Run41508339395](https://github.com/planner77/layoutManager/actions/runs/41508339395), HEAD `ef83a210c16abe040c7ae451d14012a8469085b9`, **completed/success 8/8 Jobs**(Scope, Quality TypeScript/Lint/Unit/Build, Docker Runtime, Greenfield, G7 Signed/Legacy, General Chromium shard1/2, required Verify). 역사적 #438 TypeScript 신규 테스트 fail 및 #439 Greenfield R3 구 메시지 fail은 보완되었고 실제 통합 CI 성공으로 재검증되었다. 미해결 review thread0, 충돌0, Main behind0 확인 후 [PR #214](https://github.com/planner77/layoutManager/pull/214)를 Squash Main `1ba46dc4a2fd50e06ce84069fce98977c55632bf`로 병합; 동일 Git tree `e6dda9e901ac1951ba360e66f6317d77baedfcfd`. Issue #212 **closed/completed**(코드·합성 CI). [Main CI #130 Run41511179566](https://github.com/planner77/layoutManager/actions/runs/41511179566) 시작만 확인 후 결과 미모니터링. GHCR release workflow는 기존 `0.58.0` App/Migrator pair가 있으면 duplicate skip하므로 **#212 신규 코드의 실제 이미지 게시/digest 미확인**; 후속 새 immutable release/G7 registry 검증을 [#216](https://github.com/planner77/layoutManager/issues/216)에 OPEN으로 추적한다. 복잡 실 DXF(5MiB/20MiB+), GPU/메모리/현장 장비·업무 연결, #113/#193/208 등은 CODE CI PASS와 무관하게 미수용.
