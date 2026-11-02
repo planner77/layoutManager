@@ -49,7 +49,13 @@ describe('#212 safe manual DXF Scene stage diagnostics',()=>{
     ]){
       const adapter:CadViewerAdapter={load:async()=>{throw raw;},dispose:vi.fn(),fitToView:vi.fn(),zoomIn:vi.fn(),zoomOut:vi.fn()};
       const manager=new ViewerManager(async()=>adapter);
-      const rejected=await manager.load('/synthetic','DXF').catch((error:unknown)=>error);
+      const rejected:unknown=await manager.load('/synthetic','DXF').catch((error:unknown):unknown=>error);
+      // An expectation alone does not narrow unknown for TypeScript (TS18046).
+      // Check the actual runtime error before reading the three safe fields.
+      expect(rejected).toBeInstanceOf(ViewerLoadError);
+      if(!(rejected instanceof ViewerLoadError)){
+        throw new Error('ViewerManager must return a typed, sanitized load error.');
+      }
       expect(rejected).toMatchObject({stage:'adapter-load',reasonCode:'LOAD',message:'Viewer 도면 처리에 실패했습니다.'});
       expect(JSON.stringify({stage:rejected.stage,code:rejected.reasonCode,message:rejected.message})).not.toContain('SECRET');
     }

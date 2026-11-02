@@ -1,3 +1,10 @@
+## 2026-11-03 — PR #214 / #212 CI #438 TypeScript 테스트 보완
+
+- `scene-build-diagnostics.test.ts`의 `unknown` rejection을 `ViewerLoadError` 런타임 guard로 확인하여 TS18046 3건의 신규 테스트 타입 문제를 수정했다. 안전 오류 코드/문구·비밀 비노출 검증은 유지하며 TypeScript strict/CI gate를 완화하지 않는다.
+- 최초 실패 Run41463408681/Quality Job125338491789 및 별도 Docker 성공/Browser 미실행은 FailureLedger·TestReport에 보존한다. 후속 PR CI 시작만 수행하고 결과/현장/배포/GHCR 성공은 미확인.
+
+---
+
 ## 2026-11-02 — Issue #212 수동 Scene 생성 단계 진단과 CUSTOM_DTO 검증 (PR CI 후보)
 
 - Fixed: 3D 변환 실패를 `adapter-load:LOAD` 단일 코드로 감추던 브라우저 수동 Scene 경로를 phase·allowlisted code/숫자 통계와 정확한 상태로 분리. 실패 후 `dxf-viewer` 성공을 Scene Asset 변환 완료·저장 가능으로 오인하던 안내와 Save 조건 보완.

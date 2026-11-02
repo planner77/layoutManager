@@ -1,3 +1,9 @@
+## PR #214 / Issue #212 — CI #438 TypeScript 테스트 경계 보완 (2026-11-03 KST)
+
+[FailureLedger](out/FailureLedger.md)/[TestReport](out/TestReport.md): #212 Scene 수동 생성 PR CI #438의 TypeScript 실패 `TS18046` 3건은 `tests/unit/scene-build-diagnostics.test.ts:54`에서 `unknown` 타입의 거절 값을 `expect(...).toMatchObject` 뒤에 속성 접근한 테스트 코드가 원인이다. Vitest `expect`는 TypeScript narrowing 보장이 아니므로 **실제 `instanceof ViewerLoadError` 검증 및 분기** 뒤에만 `stage/reasonCode/message`를 읽는다. 실패시 명시 테스트 오류, 정상시 기존 `LOAD` 고정 메시지/민감한 CAD Error 내용 비노출 회귀를 유지한다. TypeScript strict/CI gate 완화나 runtime 분류·Scene Source/DB/권한 변경 금지. 정확 CI Run/HEAD·원인·수리·재시험은 Ledger에 누적하고 새 PR CI 시작 후 결과는 요청대로 모니터링하지 않는다.
+
+---
+
 ## Issue #212 — 수동 Scene 생성 실패 단계·안전 진단/DTO 중복 제거 (2026-11-02, PR CI 후보)
 
 실 DXF 20MiB+·AC1024+/TEXT·MTEXT/BLOCK·INSERT의 `adapter-load:LOAD` 원인 확정 전 [out/Issue212.md](out/Issue212.md)를 따른다. `three-dxf-viewer`의 예외 덮어쓰기와 성공한 `dxf-viewer` fallback이 잘못된 Scene 성공 메시지를 생성하던 코드를 수정한다. 수동 `source=build`만 브라우저 단계 `SceneBuildTracker`로 추적하며 font/parser 통합 upstream 실패는 정확 원인 미확정 `SCENE_CONVERTER_UNAVAILABLE`, 구조·텍스트 인덱스·직렬화·검증·제한 초과는 관측 단계별 safe code를 표시한다. 원본 CAD/Error 전문·경로·SHA·Handle/토큰은 진단과 GitHub에 기록하지 않는다.

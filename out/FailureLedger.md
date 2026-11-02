@@ -1,3 +1,12 @@
+## PR #214 / Issue #212 — CI #438 실패 TypeScript TS18046 / 수리 인계 (2026-11-03 KST)
+
+- **관측 실패:** [PR CI #438 / Run41463408681](https://github.com/planner77/layoutManager/actions/runs/41463408681) (`pull_request`, source HEAD `f4e54af94415622488ae94dc55352fc75fb42fdf`, `completed/failure`); Quality `125338491789` **FAIL** at `TypeScript 검사` / `tsc --noEmit` with `src/tests/unit/scene-build-diagnostics.test.ts(54,36)/(54,56)/(54,84): TS18046 'rejected' is of type 'unknown'` 3건, exit 2. Required Verify `125342398581` **FAIL** due to prerequisite Quality. Docker Runtime `125338491707` **SUCCESS**, Scope `125337926885` SUCCESS; General 2-shard/Greenfield/G7 Signed-Legacy E2E **SKIPPED** (not executed, not failed); Unit/Lint/Build were not reached in the failed Quality job.
+- **직접 원인:** untrusted Adapter Error를 fail-closed 처리하는 단위 테스트가 `manager.load(...).catch((error:unknown)=>error)` 결과를 `unknown`으로 받는 것은 맞지만, `expect(rejected).toMatchObject(...)` assertion만으로 TS type guard가 작동하지 않는데 `rejected.stage/reasonCode/message`에 직접 접근했다. 이는 새로운 Scene Runtime 버그가 검증되었다는 증거가 아니라 신규 테스트의 정적 타입 결함이다.
+- **보완:** `src/tests/unit/scene-build-diagnostics.test.ts`에서 거절 결과를 명시 `unknown`으로 유지하고 `expect(rejected).toBeInstanceOf(ViewerLoadError)` + 실제 `if (!(rejected instanceof ViewerLoadError)) throw` guard 후에만 허용된 `stage/reasonCode/message`를 읽도록 수정. 원본 unsafe `Error.message`가 metric/UI 문자열에 유출되지 않는 확인, spoofed code/알 수 없는 Error의 `adapter-load:LOAD` 수용 규칙, 관리자/원본·Scene/권한·SDK 코드 불변. `as any`/TS 검사 해제 또는 Test Skip 없음.
+- **재시험:** 수리 및 실패 원장을 동일 기능 브랜치의 1회 커밋으로 게시하고 새로운 PR CI를 시작한다. CI 실행/Job 성공·현장 DXF/GPU 수용은 정확 새 HEAD/Run 결과 확인 전 **NOT VERIFIED**. 사용자 지시로 CI 결과 모니터링 생략. Main CI #128/#129는 각각 SUCCESS이고 PR #213은 이미 병합·#211 완료: 이번 #438 실패와 혼동하지 않는다. PR #214는 별개 #212이며 병합/GHCR/Issue 종료/운영 DB·Volume·CAD 조작은 수행하지 않는다.
+
+---
+
 ## Issue #212 — 수동 Scene 실패 근거·구현 경계·PR CI 시작 준비 (2026-11-02)
 
 - **현장 보고(원인 미확정):** 도면은 `dxf-viewer` fallback으로 보이나 `three-dxf-viewer`는 `adapter-load:LOAD`, Scene 자동/수동 후보 미생성. 5MiB 미만/20MiB 이상 파일 크기 보고는 같은 파일인지 확인되지 않았고, AC1024+·TEXT/MTEXT/BLOCK/INSERT 사례의 이론적 확장 인스턴스가 20만 건 초과로 보고되었으나 이 수치는 Scene 노드/DOM·geometry scalar 수나 정확한 예외 원인 증거가 아니다. 원본 byte/SHA/Handle/문자 내용은 CI/원장에 포함하지 않음.

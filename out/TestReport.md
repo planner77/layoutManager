@@ -1,3 +1,9 @@
+## PR #214 / Issue #212 — TS18046 CI #438 실패와 보완 (2026-11-03 KST)
+
+[CI #438 Run41463408681](https://github.com/planner77/layoutManager/actions/runs/41463408681) 정확 HEAD `f4e54af94415622488ae94dc55352fc75fb42fdf`에서 **TypeScript FAIL** `scene-build-diagnostics.test.ts:54`의 `unknown` 속성 접근 3건(TS18046); Docker runtime/scope SUCCESS, Unit/Lint/Build 및 Browser E2E 미실행(SKIPPED), required Verify FAIL. 신규 테스트에서 명시 `unknown`→`instanceof ViewerLoadError` guard로 runtime 타입 확인 후 `stage/reasonCode/message`의 안전한 고정 출력만 검증하도록 보완했다. 실제 TypeScript/Vitest/전체 PR CI **재검증 결과 전까지 NOT VERIFIED**. 최초 실패/변경 근거는 [FailureLedger](FailureLedger.md), [TestPlan](TestPlan.md) 참조. 실제 DXF/GPU/영속 Scene/Site 업무 검증은 별도.
+
+---
+
 ## Issue #212 — 수동 Scene 단계 진단/DTO 직렬화 PR CI 후보 (2026-11-02)
 
 - **수정·검토 근거(정적/코드 확인):** 기존 adapter의 catch-all로 `adapter-load:LOAD` 발생 및 Viewer's sceneMode=build fallback 후 잘못된 "원본 DXF 변환 완료" 안내 경로 확인. 수정 경로: `src/viewers/core/scene-build-diagnostics.ts`, `src/viewers/three-dxf-viewer/{adapter,scene-serialization}.ts`, `src/domain/scene-payload.ts`, `src/viewers/core/{adapter,metrics}.ts`, `src/features/cad-viewer/{viewer,scene-status}.tsx/ts`. 원본 Source SHA/Server Scene API/Repository·CurrentScene·CAS·Audit/DB Schema/권한 미변경.
