@@ -1,3 +1,11 @@
+## PR #217 / #208 — Main CI 완료 결과 및 GHCR 실제 Skip 정정 (2026-11-03 KST)
+
+- [Main CI Run41528536561](https://github.com/planner77/layoutManager/actions/runs/41528536561), 기능 Squash SHA `a4f040c641d6d7192caa711142bfb66cfcab825c`: `completed/success`; scope Job `125562440174` SUCCESS, GHCR workflow Job `125562604239` SUCCESS. 그러나 두 Docker candidate Build 및 Version/latest pair promotion/OCI measurement는 **SKIPPED**이고 `Skip duplicate version build` 단계가 **SUCCESS**. **이번 PR 코드의 신규 GHCR 이미지 게시 0건**, workflow Job 성공을 release 완료로 표시 금지.
+- [Docs-only Main CI Run41529165102](https://github.com/planner77/layoutManager/actions/runs/41529165102), 사후 기록 SHA `f54b99bc89ef99aee54c07af6be0dbf7c4d47ab4`: `completed/success`, scope SUCCESS, GHCR Build+Push Job **SKIPPED**. 소스 기능 검증은 앞선 PR #472 8/8 SUCCESS, 운영 GHCR 릴리스는 [Issue #216](https://github.com/planner77/layoutManager/issues/216) OPEN. 기존 v0.58.0 App+Migrator tag/digest 불변, 실제 새 버전·G7 등록 upgrade/OCI pair 게시를 별도 완료해야 함.
+- #208 `closed:not_planned / superseded`와 [#218](https://github.com/planner77/layoutManager/issues/218) OPEN은 바뀌지 않음. Node direct 변환 NO-GO, 자동 Worker/Scene Queue/목록 UI 및 #113/#193 현장 미완료; 성공·미구현·미게시 구분.
+
+---
+
 ## PR #217 / #208 — 최종 PR CI #472 8/8 성공·Main 병합 및 후속 수용 범위 (2026-11-03 KST)
 
 - **검증:** [PR CI #472 Run41524840539](https://github.com/planner77/layoutManager/actions/runs/41524840539) exact source `5501770c6773980672b1e2c6f54ccaaaf21874d4` `completed/success`. 성공 Job: Scope 125550451788; Quality TS/Lint/Unit+Integration/Build 125550520026; Docker Runtime/Migrator 125550519987; G7 Signed/Legacy 125554081036; G7 Greenfield 125554081107; General Chromium shard1 125554080929·shard2 125554081118; Required Verify 125559182398. 8/8 SUCCESS, 기존 #442/#445/#457 실패 이력 별도.

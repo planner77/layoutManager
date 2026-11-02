@@ -1,3 +1,12 @@
+## PR #217 / #208 — 실제 Main CI 성공, GHCR 중복 버전 빌드 SKIPPED 확인 (2026-11-03 KST)
+
+- **Main CI 정확 실행:** Squash 기능 Main `a4f040c641d6d7192caa711142bfb66cfcab825c`의 [Run41528536561](https://github.com/planner77/layoutManager/actions/runs/41528536561) `push/completed/success`. Release scope Job `125562440174` SUCCESS, `Build and push to GHCR` Job `125562604239` SUCCESS **하지만 배포 산출물은 없음**. GitHub Steps에서 `Check version images on GHCR` SUCCESS, `Skip duplicate version build` **SUCCESS**, `Build application candidate` / `Build migration candidate` / `Promote paired release images after both candidates succeed` / `Measure published linux-amd64 OCI layer bytes` 모두 **SKIPPED**. 기존 `0.58.0` pair 존재를 확인하고 중복 게시를 생략하는 설계 그대로 실행됨.
+- **docs-only 후속 CI:** 사후 정확 증거 AGENTS/FailureLedger/TestReport/ChangeLog 단일 커밋 `f54b99bc89ef99aee54c07af6be0dbf7c4d47ab4`의 [Main CI Run41529165102](https://github.com/planner77/layoutManager/actions/runs/41529165102) `push/completed/success`: Scope Job `125564605306` SUCCESS, GHCR Job `125564675439` **SKIPPED**(docs-only). 기능 Main과 후속 docs-only 실행을 분리.
+- **GHCR 게시 결과:** 이 턴에 사용자 요청한 **새 PR #217 코드의 GHCR 이미지 실제 게시/새 digest는 발생하지 않았음**. 워크플로 Job SUCCESS ≠ 이미지 게시. 불변 v0.58.0/기존 App·Migrator digest 보존, 새 immutable SemVer·G7 registry upgrade·새 PR CI/OCI pair 검증·실 publish가 필요한 [#216](https://github.com/planner77/layoutManager/issues/216) **OPEN**. 임의 tag overwrite/운영 .env·Volume 변경 없음. Issue #208은 완료가 아닌 `SUPERSEDED_BY_#218 / closed:not_planned`, [#218](https://github.com/planner77/layoutManager/issues/218) 핵심 기능 OPEN.
+- **이번 기록의 범위:** 이 문서 후속은 docs-only로 실제 런타임 코드를 변경하거나 기존 성공 CI를 재해석하지 않으며, 신규 Main push가 일으킬 CI 완료는 후속 별도 결과 확인 전 NOT VERIFIED.
+
+---
+
 ## PR #217 / #208 — 최종 CI #472 성공·Owner Managed Squash·#218 전량 이관·GHCR #216 보류 (2026-11-03 KST)
 
 - **정확 증거:** [PR CI #472 Run41524840539](https://github.com/planner77/layoutManager/actions/runs/41524840539), 기능 HEAD `5501770c6773980672b1e2c6f54ccaaaf21874d4`, `completed/success` **8/8 Job SUCCESS**: Scope `125550451788`, Docker image/migration/runtime `125550519987`, Quality Typecheck/Lint/Unit/Benchmark/Build `125550520026`, Chromium E2E shard1 `125554080929` / shard2 `125554081118`, G7 Signed/Legacy `125554081036`, G7 Greenfield UI `125554081107`, Required Verify `125559182398`. 기존 실패 #442 TS, #445 Font, #457 unhandled `window`의 정확 원인/NO-GO 및 수리 기록은 아래 원문 그대로 보존.
