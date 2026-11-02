@@ -497,9 +497,8 @@ jobs:
 
       # main에서 같은 버전 태그가 이미 존재하더라도 이미지 게시가 중간에 실패했을 수 있으므로
       # GHCR에 실제 버전 이미지가 있는지 확인한다.
-      - name: Check version images on GHCR
+      - name: Check immutable version pair on GHCR
         id: release_image
-        if: github.ref == 'refs/heads/main'
         shell: bash
         env:
           APP_VERSION: ${{ steps.version.outputs.version }}
@@ -507,13 +506,19 @@ jobs:
           set -euo pipefail
           IMAGE="${REGISTRY}/${IMAGE_NAME}:${APP_VERSION}"
           MIGRATION_IMAGE="${IMAGE}-migrate"
-          if docker buildx imagetools inspect "$IMAGE" >/dev/null 2>&1 &&
-             docker buildx imagetools inspect "$MIGRATION_IMAGE" >/dev/null 2>&1; then
+          APP_EXISTS=false
+          MIGRATOR_EXISTS=false
+          docker buildx imagetools inspect "$IMAGE" >/dev/null 2>&1 && APP_EXISTS=true
+          docker buildx imagetools inspect "$MIGRATION_IMAGE" >/dev/null 2>&1 && MIGRATOR_EXISTS=true
+          if [[ "$APP_EXISTS" == "true" && "$MIGRATOR_EXISTS" == "true" ]]; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
-            echo "Both version images already exist: $IMAGE and $MIGRATION_IMAGE"
-          else
+            echo "Immutable version pair exists: $IMAGE and $MIGRATION_IMAGE"
+          elif [[ "$APP_EXISTS" == "false" && "$MIGRATOR_EXISTS" == "false" ]]; then
             echo "exists=false" >> "$GITHUB_OUTPUT"
-            echo "App or migration version image is missing; publish both."
+            echo "Both version tags absent: paired publish eligible."
+          else
+            echo "::error::G7_RELEASE_PARTIAL_PAIR: one immutable tag already exists; do not overwrite either tag."
+            exit 1
           fi
 
       - name: Decide whether to publish
@@ -523,12 +528,21 @@ jobs:
           set -euo pipefail
           SHOULD_PUBLISH=false
 
-          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
-            SHOULD_PUBLISH=true
-          elif [[ "${GITHUB_REF}" == "refs/heads/main" ]]; then
-            if [[ "${{ steps.release_tag.outputs.created }}" == "true" || "${{ steps.release_image.outputs.exists }}" != "true" ]]; then
-              SHOULD_PUBLISH=true
-            fi
+          if [[ "${GITHUB_REF}" == refs/tags/v* || "${GITHUB_REF}" == "refs/heads/main" ]]; then
+            case "${{ steps.release_image.outputs.exists }}" in
+              true) echo "Immutable version pair exists: no tag or digest overwrite." ;;
+              false)
+                if [[ "${GITHUB_REF}" == "refs/heads/main" ]]; then
+                  TAG_COMMIT="$(git rev-list -n 1 "refs/tags/v${{ steps.version.outputs.version }}")"
+                  if [[ "$TAG_COMMIT" != "$GITHUB_SHA" ]]; then
+                    echo "::error::G7_RELEASE_TAG_SOURCE_MISMATCH: release tag points to another commit."
+                    exit 1
+                  fi
+                fi
+                SHOULD_PUBLISH=true
+                ;;
+              *) echo "::error::G7_RELEASE_PAIR_CHECK_FAILED"; exit 1 ;;
+            esac
           fi
 
           echo "publish=$SHOULD_PUBLISH" >> "$GITHUB_OUTPUT"
@@ -658,4 +672,4 @@ jobs:
         if: steps.publish.outputs.publish != 'true'
         shell: bash
         run: |
-          echo "The release tag and BOTH GHCR images already exist. No Docker image was built for this main push."
+          echo "Both immutable version tags already exist. No duplicate Docker image was built or promoted."
