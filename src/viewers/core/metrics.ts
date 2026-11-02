@@ -1,6 +1,8 @@
 import type {SceneBuildDiagnostics} from './scene-build-diagnostics';
 export type ViewerMetric = {
   schemaVersion:1; renderer:string; versionId:string; timestamp:string;
+  /** Per mounted Viewer lifecycle; not a server jobId or requestId. */
+  loadAttempt?:number;
   result:'partial'|'success'|'empty'|'error'|'cancelled';
   sourceMode:'miss'|'pending'|'memory'; fileBytes:number|null; entityCount:number|null;
   sourceWaitMs:number|null; initializeMs:number|null; adapterLoadMs:number|null; totalMs:number;
