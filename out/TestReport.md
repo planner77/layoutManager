@@ -2,7 +2,7 @@
 
 - **수정·검토 근거(정적/코드 확인):** 기존 adapter의 catch-all로 `adapter-load:LOAD` 발생 및 Viewer's sceneMode=build fallback 후 잘못된 "원본 DXF 변환 완료" 안내 경로 확인. 수정 경로: `src/viewers/core/scene-build-diagnostics.ts`, `src/viewers/three-dxf-viewer/{adapter,scene-serialization}.ts`, `src/domain/scene-payload.ts`, `src/viewers/core/{adapter,metrics}.ts`, `src/features/cad-viewer/{viewer,scene-status}.tsx/ts`. 원본 Source SHA/Server Scene API/Repository·CurrentScene·CAS·Audit/DB Schema/권한 미변경.
 - **작성된 합성 테스트(실행 전):** `scene-build-diagnostics.test.ts`는 allowlist/code/원인 masking, ViewerManager spoofed-message 차단, stage elapsed/outcome, fallback/local-vs-server READY, Object3D node/scalar/depth cap을 확인하도록 추가. `scene-loader.test.ts`는 세 단계 nested Group/Line/Mesh와 typed buffer round trip, Custom DTO만 Three JSON 생략 및 저장 전 validate 수행을 확인하도록 확장.
-- **실행 판정:** 로컬 npm 의존성·실 브라우저/Docker 실행을 제공받지 못했으므로 Typecheck, Lint, Vitest/Integration, Playwright/Greenfield, Docker, 현장 CAD/GPU는 **NOT RUN / NOT VERIFIED**. PR 생성 뒤 GitHub CI 실행만 시작하고 사용자 요청대로 완료를 모니터링하지 않는다. 코드 작성·정적 대조만으로 CI PASS/실 20MiB CAD 원인 확정 또는 성능 개선 실증을 주장하지 않는다.
+- **실행 판정:** 원격 GitHub Connector 환경에 로컬 npm 의존성·실 브라우저/Docker 실행을 제공받지 못했으므로 Typecheck, Lint, Vitest/Integration, Playwright/Greenfield, Docker, 현장 CAD/GPU는 **NOT RUN / NOT VERIFIED**. PR 생성 뒤 GitHub CI 실행만 시작하고 사용자 요청대로 완료를 모니터링하지 않는다. 코드 작성·정적 대조만으로 CI PASS/실 20MiB CAD 원인 확정 또는 성능 개선 실증을 주장하지 않는다.
 - **잔여 수용:** 실제 복합 DXF·WCS/Layer/한글·원본 확장 인스턴스 비교, peak heap·p95·30초 Worker, 브라우저 fallback 후 Save POST0, 저장 API Actor/Source/READY 연계, 현장 #113/#193과 서버 Worker #208은 별도 Gate. [설계·판정](Issue212.md), [시험](TestPlan.md), [원장](FailureLedger.md).
 
 ---
