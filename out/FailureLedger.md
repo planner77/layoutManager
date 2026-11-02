@@ -1,3 +1,12 @@
+## #209 / PR #210 — 코드·합성 수용 및 PR CI 시작 (2026-11-02)
+
+- [PR #210](https://github.com/planner77/layoutManager/pull/210) 생성, source commit `f37913e08b18c6b470aac017f3408975d39e0d6e`, tree `c91ed877c8e2c50dab1c9f0fc23e0022c109af59`, version0.58.0 후보. 원격 GitHub 연결 도구로 검사된31파일 blob SHA를 각각 대조하고 같은 tree의 Conventional Commit을 만든 뒤 기능 branch를 게시했다. `.env` 지정 origin과 일치하고 local/remote commit·tree를 fast-forward만으로 동기화했다. staged Secret 실제값 일치0, CAD/DB/cache/build 파일0, 사용자 원래 worktree 변경2개 보존.
+- 게시 후 실제 inline review threads0/unresolved0, main 대비behind0, `mergeable=true`를 확인했다. 기존 연결 PR이 없어 처리할 원격 미해결 thread는 없었으며 Manager/Developer/독립 QA와 Root 최종 리뷰에서 발견한 문제·재작업은 아래 원장에 모두 보존했다. 충돌0, force/history rewrite0.
+- 정확 source HEAD의 [PR CI Run41402534033 (#429)](https://github.com/planner77/layoutManager/actions/runs/41402534033) `in_progress` **시작만 확인**했다. CI 성공·완료·Main/GHCR·운영 배포는 NOT VERIFIED. 요청에 따라 Job/log·완료 모니터링을 하지 않는다. 본 문서 후속 동기화는 runtime source 변경 없이 CI 인계를 기록하며, synchronize 후 최종 HEAD CI도 시작까지만 확인한다.
+- 최종 코드·합성 범위 Manager GO이며 Issue #209는 OPEN, PR 미병합. 기존 immutable0.57.0이 수정된 것은 아니고 새 engine은0.58.0 후보다. 실제 운영 volume/Schema migration·GHCR 게시·현장 수용은 별도 승인/검증 대상이다. 다음 작업은 PR CI/리뷰 결과 수용이며 이번 요청의 CI 모니터링 범위에는 포함하지 않는다.
+
+---
+
 ## #209 — Greenfield 릴리스 업그레이드 구현 원장 (2026-11-02)
 
 - 원래 workspace `main`0.19.1/로컬 변경2개는 보존했다. `.env` 지정 origin 일치(값 미출력)를 확인하고 public fetch 후 최신 Main `5b3085b`의 별도 worktree/feature branch를 만들었다. `gh auth status`의 기존 credential은 invalid; GitHub 연결 도구 읽기는 성공했다. Public fetch는 push 권한 증거가 아니다. 지정된 동일 저장소의 연결 도구로만 게시하며 Secret/credential URL을 출력하지 않는다.

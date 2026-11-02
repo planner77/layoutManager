@@ -3,7 +3,7 @@
 - Added: 설치와 업그레이드 분기, 번들 compatibility/forward migration registry, preflight/plan/apply/status/isolated restore, DB/CAD 일관 복구 세트·private journal 및 manifest atomic commit.
 - Added: 실제 이미지 쌍·writer 정지를 검사하는 호스트 도구와 원인 코드/단계/복구 안내. 기존 Auth/인가·원본·Current·삭제 보호 계약은 유지한다.
 - Compatibility: 최초 지원 source0.56/0.57→candidate0.58; 미등록 버전·과거 레거시·S3/Expert 자동 업그레이드는 BLOCKED. 이미 게시된0.57 이미지는 변경하지 않는다. 실제 검증/실패와 미수용 범위는 TestReport/FailureLedger를 따른다.
-- Delivery: PR CI 시작 대상이며 병합·Tag/GHCR·운영 업그레이드는 별도 승인/검증 전이다.
+- Delivery: [PR #210](https://github.com/planner77/layoutManager/pull/210) 게시 및 PR CI 시작만 확인했다. 완료 모니터링은 생략하며 병합·Tag/GHCR·운영 업그레이드는 별도 승인/검증 전이다.
 
 ## 0.57.0 — #202 / #204 구현 후보 (2026-11-02)
 

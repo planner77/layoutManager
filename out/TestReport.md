@@ -1,3 +1,9 @@
+## #209 / PR #210 게시·CI 인계
+
+최종 source `f37913e08b18c6b470aac017f3408975d39e0d6e`/tree `c91ed877c8e2c50dab1c9f0fc23e0022c109af59`를 기능 branch로 게시하고 [PR #210](https://github.com/planner77/layoutManager/pull/210)을 생성했다. Main behind0·mergeable=true·미해결 리뷰0을 확인했다. [PR CI Run41402534033](https://github.com/planner77/layoutManager/actions/runs/41402534033)는 시작(in_progress)만 확인했으며 성공/완료는 미확인이다. 후속 문서 synchronize의 최종 HEAD CI도 시작까지만 확인하고 모니터링하지 않는다. 전체 실패·Secret/동일 tree/역할·현장 경계는 FailureLedger와 아래 본 검증 기록을 따른다. PR 병합·Issue 종료·GHCR/실 운영 적용은 수행하지 않았다.
+
+---
+
 ## U-ISSUE209-20261102 — Greenfield 릴리스 업그레이드 (0.58.0 후보)
 
 - 역할/범위: 실제 gpt-6-astra Manager가 Requirements/Architecture/Decisions/TestPlan에 요구·설계·AC를 먼저 기록하고 source review/재작업을 지시했다. 실제 gpt-6-sol Developer가 registry/backup/engine/CLI를 구현했고 실제 gpt-6-luna QA가 독립 fault/복구·업무 그래프 및 Browser 검증을 수행했다. Root는 호스트 도구·Docker/Compose/CI·운영 문서·버전과 전체 검사/게시를 담당한다. 별도 worktree에서 기존 로컬 변경2개를 보존했다.
