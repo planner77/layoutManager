@@ -23,7 +23,14 @@ function fixture(){
   const docker=path.join(bin,'docker');
   writeFileSync(docker,`#!/usr/bin/env bash
 if [[ "$1" != buildx || "$2" != imagetools || "$3" != inspect ]]; then exit 9; fi
-if [[ "$4" == *-migrate ]]; then [[ "\${MIGRATOR_EXISTS}" == yes ]]; else [[ "\${APP_EXISTS}" == yes ]]; fi
+if [[ "$REGISTRY_ERROR" == yes ]]; then echo "network/authentication failure" >&2; exit 29; fi
+if [[ "$4" == *-migrate ]]; then
+  [[ "\${MIGRATOR_EXISTS}" == yes ]] && exit 0
+else
+  [[ "\${APP_EXISTS}" == yes ]] && exit 0
+fi
+printf '%s\\n' 'manifest unknown: 404 Not Found' >&2
+exit 1
 `);
   chmodSync(docker,0o700);
   const git=path.join(bin,'git');
@@ -91,5 +98,11 @@ describe('#216 immutable GHCR pair workflow (no registry network)',()=>{
       expect(result.stderr).toContain('G7_RELEASE_PARTIAL_PAIR');
       expect(result.output).not.toContain('exists=false');
     }
+  });
+  test('registry network or authentication uncertainty must not publish',()=>{
+    const result=execute(check,{REGISTRY_ERROR:'yes'});
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain('G7_RELEASE_REGISTRY_CHECK_FAILED');
+    expect(result.output).not.toContain('exists=false');
   });
 });
