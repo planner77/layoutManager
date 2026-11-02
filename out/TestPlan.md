@@ -1,3 +1,11 @@
+## TC-208-A0 — CI #442 TypeScript 정적 계약·Font fail-closed 재검증 (2026-11-03)
+
+- **검증 대상:** `src/server/scene/node-converter-poc.ts`, `src/viewers/three-dxf-viewer/scene-serialization.ts`, `src/tests/unit/scene-build-diagnostics.test.ts`, `src/tests/unit/scene-node-converter-poc.test.ts`. 변경은 P1-A 실험 정적 계약에 한정.
+- **정적:** `FontLoader.parse`의 `Parameters<FontLoader['parse']>[0]`를 무검증 `unknown`으로 전달하지 않는다. glyphs/boundingBox/familyName/resolution/metric shape를 런타임 guard로 확인하고 malformed font는 `FONT_PREPARE/SCENE_FONT_UNAVAILABLE`로 닫는다. `preflightSceneRoot`는 SceneBuildStats의 optional telemetry와 달리 `sceneNodes/geometryCount/attributeScalars/maxDepth`를 모두 `number`로 반환하며 compile-time required assignment를 검사한다.
+- **실행:** `npm run typecheck` → `npm run lint` → synthetic `scene-build-diagnostics.test.ts`/`scene-node-converter-poc.test.ts` → 전체 Test/Build/Greenfield/Docker/Browser PR CI. 외부 민감 Font/CAD 입력값 공개 금지. 신규 CI 실제 PASS 전 검증 결과 `NOT VERIFIED`; Node direct parser/runtime/브라우저 parity GO는 별도 A1–A5 조건 충족 후 판정. 기존 권한·메모·구역·외곽선/Schema 변경 없음.
+
+---
+
 ## TC-208-P1-A — Node CPU-only Scene 실제 변환 게이트 (2026-11-03)
 
 | Test | Input / method | 합격 조건 |
