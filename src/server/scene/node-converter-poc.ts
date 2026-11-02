@@ -17,6 +17,29 @@ import { explicitElevation } from '../../viewers/three-dxf-viewer/normalize';
 import { preflightSceneRoot, restoreSourceScene, serializeSourceScene } from '../../viewers/three-dxf-viewer/scene-serialization';
 import { extractDxfText } from '../../viewers/core/text-index';
 
+type TypefaceJson = Parameters<FontLoader['parse']>[0];
+const finite = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isFinite(value);
+/**
+ * JSON.parse yields untrusted unknown. Narrow only the typeface structure
+ * needed by FontLoader, and keep invalid CAD font content out of error logs.
+ * This is a test-only format preflight, NOT a replacement for library parsing.
+ */
+function isTypefaceJson(value: unknown): value is TypefaceJson {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false;
+  const data = value as Record<string, unknown>;
+  const glyphs = data.glyphs;
+  const bounds = data.boundingBox;
+  if (glyphs === null || typeof glyphs !== 'object' || Array.isArray(glyphs) ||
+      bounds === null || typeof bounds !== 'object' || Array.isArray(bounds)) return false;
+  const box = bounds as Record<string, unknown>;
+  return typeof data.familyName === 'string' && data.familyName.length > 0 &&
+    finite(data.resolution) && data.resolution > 0 &&
+    finite(data.ascender) && finite(data.descender) &&
+    finite(data.underlinePosition) && finite(data.underlineThickness) &&
+    finite(box.yMin) && finite(box.yMax);
+}
+
 export const NODE_SCENE_POC_SOURCE_CAP = 16 * 1024 * 1024; // experimental memory bound; NOT the upload limit
 export type NodeScenePocPhase = 'SOURCE_VERIFY' | 'FONT_PREPARE' | 'DXF_PARSE' | 'SCENE_BUILD'
   | 'TEXT_INDEX' | 'SERIALIZE' | 'ROUND_TRIP';
@@ -101,6 +124,7 @@ export async function probeNodeScene(input: Readonly<{
   let font: ReturnType<FontLoader['parse']>;
   try {
     const json: unknown = JSON.parse(await readFile(input.fontJsonPath, 'utf8'));
+    if (!isTypefaceJson(json)) throw new Error('INVALID_TYPEFACE_JSON');
     font = new FontLoader().parse(json);
   } catch {
     throw new NodeScenePocError('FONT_PREPARE', 'SCENE_FONT_UNAVAILABLE');
