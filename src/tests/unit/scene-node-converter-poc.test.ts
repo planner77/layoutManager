@@ -8,7 +8,9 @@ import { sceneScope } from '../../domain/cad-scene';
 import { NODE_SCENE_POC_SOURCE_CAP, NodeScenePocError, probeNodeScene } from '../../server/scene/node-converter-poc';
 
 const versionId = '11111111-1111-4111-8111-111111111111';
-const fontJsonPath = resolve(process.cwd(), 'public/fonts/CadKorean.typeface.json');
+// Committed font source. The derived CadKorean.typeface.json is generated
+// only by npm run dev/build, AFTER the PR CI's Unit test stage.
+const fontPath = resolve(process.cwd(), 'public/fonts/NanumGothic-Regular.ttf');
 const source = new TextEncoder().encode(sceneDxf);
 const sha = sceneSha256(source);
 
@@ -19,7 +21,7 @@ describe('#208 P1-A: CPU-only server DXF converter GO/NO-GO probe (not productio
     expect(typeof document).toBe('undefined');
     expect(typeof window).toBe('undefined');
     const result = await probeNodeScene({
-      source, versionId, expectedSha256: sha, fontJsonPath,
+      source, versionId, expectedSha256: sha, fontPath,
     });
     expect(result.sourceEntityCount).toBeGreaterThan(2);
     expect(result.objectCount).toBeGreaterThan(1);
@@ -35,7 +37,7 @@ describe('#208 P1-A: CPU-only server DXF converter GO/NO-GO probe (not productio
   it('fails closed on a mismatched immutable source, without reading font or disclosing source', async () => {
     const corrupted = await probeNodeScene({
       source, versionId, expectedSha256: 'f'.repeat(64),
-      fontJsonPath: '/private/never-read-font.json',
+      fontPath: '/private/never-read-font.json',
     }).catch((error: unknown): unknown => error);
     expect(corrupted).toBeInstanceOf(NodeScenePocError);
     expect(corrupted).toMatchObject({
@@ -50,11 +52,20 @@ describe('#208 P1-A: CPU-only server DXF converter GO/NO-GO probe (not productio
   it('bounds the experimental input and reports a missing font as an allowlisted stage', async () => {
     const tooLarge = new Uint8Array(NODE_SCENE_POC_SOURCE_CAP + 1);
     await expect(probeNodeScene({
-      source: tooLarge, versionId, expectedSha256: 'f'.repeat(64), fontJsonPath,
+      source: tooLarge, versionId, expectedSha256: 'f'.repeat(64), fontPath,
     })).rejects.toMatchObject({ phase: 'SOURCE_VERIFY', code: 'SCENE_ASSET_TOO_LARGE' });
     await expect(probeNodeScene({
-      source, versionId, expectedSha256: sha, fontJsonPath: '/missing-font-for-poc.json',
+      source, versionId, expectedSha256: sha, fontPath: '/missing-font-for-poc.json',
     })).rejects.toMatchObject({ phase: 'FONT_PREPARE', code: 'SCENE_FONT_UNAVAILABLE' });
+  });
+
+  it('rejects unsupported font input types before trying to parse arbitrary bytes', async () => {
+    await expect(probeNodeScene({
+      source, versionId, expectedSha256: sha,
+      fontPath: '/private/untrusted-font.svg',
+    })).rejects.toMatchObject({
+      phase: 'FONT_PREPARE', code: 'SCENE_FONT_UNAVAILABLE',
+    });
   });
 
   it('rejects structurally invalid typeface JSON without forwarding file contents or paths', async () => {
@@ -63,7 +74,7 @@ describe('#208 P1-A: CPU-only server DXF converter GO/NO-GO probe (not productio
       const invalidFont = join(directory, 'invalid.json');
       await writeFile(invalidFont, JSON.stringify({glyphs: {}, resolution: 'not-a-number'}), 'utf8');
       const rejected: unknown = await probeNodeScene({
-        source, versionId, expectedSha256: sha, fontJsonPath: invalidFont,
+        source, versionId, expectedSha256: sha, fontPath: invalidFont,
       }).catch((error: unknown): unknown => error);
       expect(rejected).toBeInstanceOf(NodeScenePocError);
       expect(rejected).toMatchObject({
