@@ -1,3 +1,9 @@
+## PR #217 / Issue #208 — CI #445 Unit 실패: 빌드 전 글꼴 파생 파일 미생성 수리 (2026-11-03 KST)
+
+정확 [PR CI #445 Run41517145247](https://github.com/planner77/layoutManager/actions/runs/41517145247), HEAD `6932550e7c5e37d6f11b9d528da2fc594a26fb5b`의 Quality Unit 959 PASS/1 FAIL은 합성 Node Scene POC의 `FONT_PREPARE/SCENE_FONT_UNAVAILABLE`이다. `src/public/fonts/CadKorean.typeface.json`은 추적된 파일이 아니라 `scripts/fonts.mjs`가 `npm run dev/build`에서 생성한다. PR CI는 `npm test`가 `npm run build`보다 앞서므로 POC에서 생성 파일을 전제한 설계가 잘못되었다. 수정은 **추적된 NanumGothic-Regular.ttf를 Node TTFLoader로 메모리 내 typeface로 변환**한 뒤 같은 `FontLoader.parse` 경로 사용. 명시 JSON 경로 검증과 안전 실패·메모리 상한 유지, 임시/공용 폰트 생성 파일이나 npm test 빌드 선행 요구 추가 금지. 이번 오류는 CPU-only DXF parser 불가능의 증거가 아니며 실제 Node DXF 변환 성공은 새 CI 전까지 미검증이다. Docker Job은 SUCCESS, E2E는 선행 실패로 SKIPPED; TypeScript/ESLint·CI gate 완화 없음. [FailureLedger](out/FailureLedger.md)/[Issue208](out/Issue208.md)/[TestReport](out/TestReport.md) 참조. 기존 Scene/원본/Current/G7/Auth/DB/GHCR 비변경.
+
+---
+
 ## Viewer 요구사항 접수·설계 시 메뉴 그룹/아이템 평가 (2026-10-27 수립, 2026-11-03 최신화)
 
 - **적용 대상:** CAD Viewer의 신규 기능·UI/UX 변경을 요청받거나 Issue를 등록·분석·구현할 때는 **#127(v0.42.0) 그룹 메뉴 기반 UX에 통합할 필요가 있는지 먼저 판단**한다. 별도 상단 버튼을 기본안으로 추가하지 않는다. 단순 배치·편집 세부값은 기존 Drawer/대화상자/컨텍스트 메뉴에 두고, 사용자가 상시 접근해야 할 명령·전환·찾기·입출력은 Viewer 그룹의 실행 아이템으로 만든다.
