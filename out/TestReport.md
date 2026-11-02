@@ -2,7 +2,7 @@
 
 리뷰 [discussion_r4439624166](https://github.com/planner77/layoutManager/pull/210#discussion_r4439624166)의 stopped WAL/no-sidecar+readonly 실패를 QA가 이전 실제 image로 RED 재현했다. 수정한 CLI-only read inspection adapter의 안정된 private detached copy와 live-WAL 통상 SQLite 조회를 구별하고 Runtime HTTP를 유지했다. 설계/TC는 Architecture/Decisions/TestPlan의 P2 절, 원인·재작업은 FailureLedger를 따른다.
 
-최신 관련 통합 **23/23 PASS**, 독립 stopped/active WAL9/9는 이에 포함된다. TypeScript/관련 ESLint PASS, 실제 최종 migrator `sha256:0680cebc4de62254b45f2d0010e434dad29358fecbcfc18103adcbc78fe204da`의 reusable Docker smoke는2회 PASS다. readonly stopped DB의 preflight/plan/status 성공·원본 metadata/hash/sidecar 불변, activeWAL committed row 반영, apply의 SQLite recovery set 및 source readonly 격리 restore 지문 동일을 검증했다. 새 smoke는 PR CI 필수 Docker step으로 연결했다. 앞선938 전체 및 이전 Browser 수용은 별도 근거이며 이 delta의 새 전체 실행으로 합산하지 않는다. 실제 Manager는 P2 source/QA/패키징 범위를 수용했다. 원격 thread resolve·새 HEAD CI 시작은 후속 인계에서 실제 확인한다.
+최신 관련 통합 **23/23 PASS**, 독립 stopped/active WAL9/9는 이에 포함된다. TypeScript/관련 ESLint PASS, 실제 최종 migrator `sha256:0680cebc4de62254b45f2d0010e434dad29358fecbcfc18103adcbc78fe204da`의 reusable Docker smoke는2회 PASS다. readonly stopped DB의 preflight/plan/status 성공·원본 metadata/hash/sidecar 불변, activeWAL committed row 반영, apply의 SQLite recovery set 및 source readonly 격리 restore 지문 동일을 검증했다. 새 smoke는 PR CI 필수 Docker step으로 연결했다. 앞선938 전체 및 이전 Browser 수용은 별도 근거이며 이 delta의 새 전체 실행으로 합산하지 않는다. 실제 Manager는 P2 source/QA/패키징 범위를 수용했다. P2 수정 commit `472f481cca94df3af211b7fac5c99ac20ec47631` 게시 후 reply4439718467과 실제 thread resolve를 완료했고 원격 unresolved0/Main behind0/mergeable=true를 재조회했다. PR CI Run41404605393은 시작만 확인했고 후속 문서 HEAD의 새 CI도 시작까지만 확인한다. 결과/Job/log 모니터링·병합·GHCR·배포는 수행하지 않았다.
 
 ---
 

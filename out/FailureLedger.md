@@ -1,3 +1,12 @@
+## PR #210 — P2 해결·최종 CI 인계 (2026-11-02)
+
+- P2 수정 [472f481cca94df3af211b7fac5c99ac20ec47631](https://github.com/planner77/layoutManager/commit/472f481cca94df3af211b7fac5c99ac20ec47631)/tree `f93aa2e3cfc2be3af7f275c89b6cd688dd6a237e`를 expected HEAD lease와 fast-forward로 게시했다. local/remote SHA·tree 일치, Main behind0, mergeable=true, staged Secret/runtime 산출물0을 확인했다.
+- [리뷰 reply4439718467](https://github.com/planner77/layoutManager/pull/210#discussion_r4439718467)에 실제 RED·코드 변경·readonly Docker 2회/23집중·기존 업그레이드 회귀 증거를 답변하고 thread `PRRT_kwDOUQjDfc6yj5LK`를 실제 resolve했다. 원격 재조회 **threads1/resolved1/unresolved0**, 충돌0. 새 실패/리뷰를 숨기지 않고 아래에 재현부터 보존했다.
+- 정확 수정 HEAD의 [PR CI Run41404605393 (#431)](https://github.com/planner77/layoutManager/actions/runs/41404605393) `in_progress` 시작만 확인했다. 본 사후 문서 동기화로 최종 HEAD의 synchronize CI가 생성되면 시작까지만 확인한다. Job/log/완료는 모니터링하지 않으며 CI 성공·Main/GHCR·운영 수용을 주장하지 않는다.
+- Manager의 최종 코드·합성 GO 유지, Issue #209 OPEN/PR #210 미병합,0.58.0 후보. 다음은 별도 요청에 따른 CI/리뷰 수용이며 운영·실자료/배포·게시된0.57 변경은 수행하지 않았다.
+
+---
+
 ## PR #210 / #209 — P2 readonly WAL 사전 점검 재작업 (2026-11-02)
 
 - 실제 미해결 리뷰 [discussion_r4439624166](https://github.com/planner77/layoutManager/pull/210#discussion_r4439624166), thread `PRRT_kwDOUQjDfc6yj5LK`: 읽기 전용 호스트 preflight/plan/status에서 clean-close WAL DB는 sidecar를 생성할 수 없어 실패한다는 지적이다. 첫 게시 후 확인 당시 thread0이었으나 후속 문서 HEAD `d1118be` 점검에서 새 thread1을 확인했다. 기존 Manager GO를 이 P2에 대해 보류하고 재현/수정/재검증한다.
