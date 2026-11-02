@@ -1,3 +1,17 @@
+## TC-MENU-EXT — #127 후속 요구·상단 메뉴 연계 회귀 계획 (2026-10-27 작성, 후속 기능 회귀 **NOT RUN**)
+
+| TC | 검증 범위 | 합격 기준 |
+| --- | --- | --- |
+| TC-MENU-EXT-001 (요구 분석) | 새로운/변경된 Viewer 기능 Issue 샘플과 #37/#49/#55/#56/#65/#71/#73/#81/#82/#85/#88/#90/#91 추적 | 각 해당 이슈에 `상단 메뉴 연계`의 화면/정확한 그룹·아이템/실행·Drawer/상태·권한·disabled 사유/AC가 있고, 불필요한 상단 항목도 근거를 기록 |
+| TC-MENU-EXT-002 (그룹 명령) | Viewer `도면/보기/작업` 및 #56 JSON, #91 GLB/glTF, #65 Admin 항목 추가 시 | 상위는 메뉴를 실제 전개, item action/link/check/radio 동작, 빈/가짜 그룹·불필요한 상단 버튼 없음; 인가/G7/Admin·지원 Schema 불충족 시 disabled+사유, 조건 충족 시 실제 API 호출 |
+| TC-MENU-EXT-003 (Drawer·Canvas) | #49/#55 생성 회전, #71/#73 외곽선, #82/#85 메모 도구/트리, 우측 Memo/Outline Tree 전환 | 각 메뉴→올바른 Drawer·세부 조작, open/close 10회 후 canvas DOM identity/원본 GET/Worker/Manager lifecycle·Selection/Undo·visibility 불변; desktop/mobile/320px·200% 접근성 |
+| TC-MENU-EXT-004 (권한/렌더러) | Three↔dxf fallback·DWG, 미선택/대상 혼합, G7/Admin/Type API 인가 및 지원 Schema 조건별, Session/Role 회수 | 실제 renderer/ready/capability와 checked·expanded·disabled 사유 일치; 미인가 API/직접 URL은 서버 거부, 임시 메모 공유/영속 Export 우회 없음 |
+| TC-MENU-EXT-005 (키보드/경계) | 그룹 Enter/Space/Arrow/Home/End/Esc/Tab, tooltip/메모 Search/복사 fallback/모달, CSS/native fullscreen | 한 Esc에 한 계층 닫힘, focus 복원/모달 trap, Canvas hit-test·도면/레이어/검색 회귀 0. #62 전역 운영 메뉴와 Viewer 그룹 혼동 없음 |
+
+**상태:** PR #133 정적 문서·추적 검토는 TestReport에 별도 기록하며 실제 Viewer Unit/Playwright/E2E와 혼동하지 않는다. 위 항목은 **향후 해당 Issue 구현 PR에서 작성·실행할 Unit/Playwright/E2E 및 리뷰 체크리스트**이며 이 문서 변경만으로 테스트 실행/합격·현장 수용을 주장하지 않는다. #127 완료 당시의 실증 근거는 [TestReport](TestReport.md) U-ISSUES124-126-127-20261027, 후속 UI 정책은 [ADR-127](Decisions.md) 및 [Issues124-126-127](Issues124-126-127.md) 참조. 기존 자동 테스트를 삭제하거나 CI 미실행을 PASS로 대체 금지.
+
+---
+
 ## TC-208-A0 — CI #442 TypeScript 정적 계약·Font fail-closed 재검증 (2026-11-03)
 
 - **검증 대상:** `src/server/scene/node-converter-poc.ts`, `src/viewers/three-dxf-viewer/scene-serialization.ts`, `src/tests/unit/scene-build-diagnostics.test.ts`, `src/tests/unit/scene-node-converter-poc.test.ts`. 변경은 P1-A 실험 정적 계약에 한정.
