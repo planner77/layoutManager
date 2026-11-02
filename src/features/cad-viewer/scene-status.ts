@@ -7,7 +7,7 @@ export function sceneLoadNotice(input:Readonly<{
   artifactReady:boolean;fallback?:SceneFallback|null;fallbackReason?:string|null;
 }>):string{
   if(input.strategy==='READY_SCENE')
-    return '저장된 READY Scene Asset 복원 · DXF 원본 조회·재파싱 없음';
+    return '저장된 Scene Asset 복원 (서버 READY) · DXF 원본 조회·재파싱 없음';
   if(input.mode==='build'){
     if(input.renderer==='three-dxf-viewer'&&input.artifactReady)
       return 'THREE_SCENE_ARTIFACT_READY · Scene 생성·검증 완료. 서버에 저장하기 전이므로 READY 상태는 아닙니다.';
