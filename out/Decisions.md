@@ -1,3 +1,13 @@
+## ADR-208-NODE-NOGO — 직접 Node `three-dxf-viewer@1.0.44` 전환 보류 및 안전 차단 (2026-11-03)
+
+**사실:** [PR CI #457](https://github.com/planner77/layoutManager/actions/runs/41520729471), source `b7909f4c98704fa14d63caf5baa750105af313ac`: Unit assertion 962건 모두 통과했음에도 `three-dxf-viewer/dist/main.js`의 WMF/RTF 관련 `window is not defined` **unhandled rejection 4건**으로 Quality 실패. 기존 `try/catch getFromPath`가 수명주기 밖 Promise를 기다리지 않아 partial success를 허용함을 증명.
+
+**결정:** pinned upstream의 **Node direct 방식은 NO-GO**이며, 기존 P1-A 가설의 결과를 부분적 CPU-only 성공으로 상향 보고하지 않는다. `probeNodeScene`은 원본과 글꼴 확인 후 Node process에서 upstream loader 이전 `DXF_PARSE/SCENE_CONVERTER_UNAVAILABLE`로 막는다. 별도 순수 Three/CUSTOM_DTO serialize·restore의 테스트는 하위 서브시스템 검증으로만 평가한다. 대안은 서버 독립 headless Chromium(소프트웨어 WebGL) 또는 검증된 Node-native DXF converter이며 실제 분리 프로세스·비루트·자원상한·무인 재시작·한글/BLOCK/INSERT/WCS/Layer/Stable ID·DTO round-trip·대상 CAD fidelity/비동기 오류0 확인 시에만 후속 GO.
+
+**배제:** `window={}` polyfill, jsdom만으로 합격 주장, `process.on('unhandledRejection')` swallow, 테스트 skip/CI rules 완화, Scene 부분 결과 READY, 업로드를 브라우저 worker/숨김 탭으로 자동 처리, G7 승인 우회. 현재 #208 P1-B/C/D, CPU-only Worker/OCI/영속 Job·목록 UI 미구현 및 #113/#193 현장 OPEN. 기존 Storage/DB/Auth/CurrentScene/원본/GHCR 불변. [Issue208](Issue208.md), [FailureLedger](FailureLedger.md), [TestReport](TestReport.md).
+
+---
+
 ## ADR-208-FONT — P1-A Node 실험 글꼴은 추적된 TTF에서 재현 가능하게 준비 (2026-11-03)
 
 **상황/증거:** PR CI #445 Unit test `FONT_PREPARE` 실패. `CadKorean.typeface.json`은 Git에 없고 `scripts/fonts.mjs`가 `run.mjs build/dev`에서만 생성한다. CI Quality는 `npm test`를 `npm run build`보다 먼저 수행하므로 생성 JSON을 읽는 Node PoC의 사전조건이 잘못되었다. **결정:** 독립 CPU-only PoC의 positive synthetic test는 Git에 포함된 TTF를 직접 읽어 `TTFLoader.parse`, family/원본 이름 정규화, `FontLoader.parse`로 임시 파일 없이 메모리 변환한다. 기존 JSON 지원을 없애거나 인증된 프로덕션 글꼴 생성 경로를 변경하지 않는다. 확장자·크기·typeface shape를 제한하고 실패는 안전 코드만 응답. Unit 전에 전체 Production build, 빌드 폰트 체크인, fake font/skip test, CI 순서 교환/게이트 완화는 배제한다.
