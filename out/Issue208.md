@@ -1,3 +1,11 @@
+## 2026-11-03 P1-A CI #445 Font 입력 수명주기 교정
+
+[CI #445](https://github.com/planner77/layoutManager/actions/runs/41517145247)에서 TypeScript·Docker는 통과했고 Node DXF synthetic test가 `FONT_PREPARE/SCENE_FONT_UNAVAILABLE`로 실패했다. `CadKorean.typeface.json`은 Git 원본이 아니라 `scripts/fonts.mjs`의 `npm run dev/build` 단계에만 생성되며 CI는 `npm test`를 build보다 먼저 실행한다. PoC는 이제 **추적된 NanumGothic-Regular.ttf를 TTFLoader.parse로 직접 읽고 메모리에서 브라우저의 typeface label을 준비**한다. 이미 생성된 JSON에 대한 명시적 호환 입력도 유지하며 파일 크기 cap·형식 검사·safe code만 반환한다. `scripts/fonts.mjs`/기존 브라우저 글꼴 산출물·Production Dockerfile/Viewer 코드는 변경하지 않는다.
+
+이것은 `FONT_PREPARE` 원인 수리일 뿐 실제 Node-only `three-dxf-viewer.getFromPath` 파싱/INSERT/Text/serialize 검증은 **다음 CI 전까지 NOT VERIFIED**. P1-A GO/NO-GO 및 P1-B/C/D·GHCR·#113/#193 수용 미완료. [실측](TestReport.md)/[실패 원장](FailureLedger.md)/[재시험](TestPlan.md).
+
+---
+
 ## 2026-11-03 P1-A CI #442 수리 보완
 
 [PR #217](https://github.com/planner77/layoutManager/pull/217)의 [CI #442 Run41514760273](https://github.com/planner77/layoutManager/actions/runs/41514760273)에서 **TypeScript 3건 실패**: 실험 Node converter의 `FontLoader.parse(unknown)` TS2345와 부분형 `SceneBuildStats`의 geometryCount/attributeScalars를 필수 number에 대입한 TS2322×2. Docker/Verify 실패는 Quality의 같은 컴파일 오류가 빌드 경로에서 반복된 결과이고, 아직 Node converter의 실행형 A1 게이트는 수행되지 않았다. 수정으로 guarded TypeFace JSON parse 및 preflight required count type/regression 테스트를 도입했다. 기존 P1-B/C/D는 미구현, P1-A 실 runtime GO/NO-GO와 CPU-only OCI/현장 수용은 미확인. 정확 원장 [FailureLedger](FailureLedger.md), 시험 [TestPlan](TestPlan.md). CI 결과 확인 전 성공 주장 금지.
