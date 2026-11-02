@@ -723,8 +723,10 @@ jobs:
               exit 1
             fi
             docker buildx imagetools inspect "$IMAGE@$digest" >/dev/null
+            # Buildx .Image is a SINGLE image-config for our linux/amd64 build;
+            # do not index it as a map (attestation descriptors are not platforms).
             # Verify linux/amd64 OCI role/revision/version *before* public aliases.
-            docker buildx imagetools inspect --format '{{json (index .Image "linux/amd64")}}' "$IMAGE@$digest" |
+            docker buildx imagetools inspect --format '{{json .Image}}' "$IMAGE@$digest" |
               jq -e --arg revision "$SOURCE_SHA" --arg role "$role" --arg version "$APP_VERSION" '
                 .os == "linux" and .architecture == "amd64" and
                 .config.Labels["org.opencontainers.image.version"] == $version and

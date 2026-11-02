@@ -1,3 +1,11 @@
+## #216 / PR #220 — OCI 후보 확인 템플릿 P1 리뷰 보완 (2026-11-03)
+
+- **검토된 위험:** PR #220 inline reviewer는 현재 단일 linux/amd64 후보 이미지에 `{{json (index .Image "linux/amd64")}}`를 적용하면 Buildx `.Image`가 단일 config object인 상황에서 잘못된 인덱싱으로 템플릿 실패가 발생한다고 지적. 이는 Main GHCR 후보가 실제 유효해도 `G7_RELEASE_OCI_PAIR_INVALID`로 publish를 멈추는 P1 위험이며, **현재 CI에서 발생한 실패로 단정하지 않는다**.
+- **수리:** 후보 inspection을 공식 Docker Buildx 단일 플랫폼 `--format '{{json .Image}}'`로 변경. Node+JSON 구조의 `.os=linux/.architecture=amd64/.config.Labels` 3종 정확 검사, 후보 digest 검증 및 pair promotion 이전 Gate는 그대로. Unit에서 template 선택을 검사하고 원래 tag/source/OCI provenance와 운영 DB/CAD/G7 계약 변경 없음.
+- **CI 구분:** 기존 PR CI #476의 TS2345는 별개 테스트 입력 추론 문제(이미 타입 수리/원장 기록), OCI code는 아직 GHCR에 진입하지 않았다. 신규 CI 전체 성공 전 리뷰 해결·실 GHCR 게시 PASS 주장 금지.
+
+---
+
 ## PR #220 / #216 — CI #476 타입 추론 실패와 회귀 테스트 오라클 수리 (2026-11-03 KST)
 
 - **실제 CI:** [PR CI #476 Run41542254686](https://github.com/planner77/layoutManager/actions/runs/41542254686), 실패 HEAD `eb9b56d76b8bbdde6bcacafffe9b012272deb25f`. Quality Job `125609157571`은 `npm run typecheck`에서 `src/tests/unit/issue216-ghcr-workflow.test.ts:124` `TS2345`로 FAILURE. 입력 array의 원소별 선택적 환경변수 키가 TypeScript union에서 `string | undefined`가 되어 `execute(..., Record<string,string>)`에 전달할 수 없음. Unit/Build/Browser E2E는 Quality 실패로 검증 전/미실행. Docker Job `125609157707`는 이 기록 시 별도로 실행 중이었으므로 결과 추측 금지.

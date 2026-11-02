@@ -1,3 +1,9 @@
+## #216 / PR #220 — 단일 플랫폼 OCI template P1 예방 수정 검증 상태 (2026-11-03)
+
+[PR #220](https://github.com/planner77/layoutManager/pull/220) P1 리뷰: 후보 빌드는 linux/amd64 단일 플랫폼이므로 Buildx `.Image`는 JSON 단일 config; 잘못된 `index .Image "linux/amd64"`는 정상 OCI에서 template 실패를 유발할 수 있다. `{{json .Image}}` + 기존 JSON schema/labels/source 검증으로 수정, unit 문자열 회귀 추가. 현 시점 정적 코드 변경만 적용, 실제 Buildx candidate/OCI Main CI 및 최종 PR CI 성공은 NOT VERIFIED. 원본 #138 failure와 구별한다.
+
+---
+
 ## PR #220 / #216 — CI #476 실패한 TypeScript 단계와 수정 후 재검증 (2026-11-03)
 
 [CI #476 Run41542254686](https://github.com/planner77/layoutManager/actions/runs/41542254686), 실패 source `eb9b56d76b8bbdde6bcacafffe9b012272deb25f`: Scope SUCCESS, Quality Job `125609157571` TS2345 (시험용 환경변수 override object union에 `undefined` 추론), Unit/Build/브라우저는 미실행/선행 실패 SKIPPED. Docker Job은 이 시점 별도 진행 중(종료 결과 확인 전). 수정은 `Record<string,string>[]` 타입 명시로 테스트 내용 그대로 유지. 신규 정확 HEAD의 PR CI가 성공하기 전 GHCR 복구/Runtime 배포 완료 주장 금지.

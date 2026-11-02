@@ -131,6 +131,8 @@ describe('#216 immutable GHCR pair workflow (no registry network)',()=>{
     expect(workflow).toContain('org.opencontainers.image.revision=${{ steps.publish.outputs.source_sha }}');
     expect(workflow).toContain('build-${{ steps.publish.outputs.source_sha }}-app');
     expect(workflow).toContain('build-${{ steps.publish.outputs.source_sha }}-migrate');
+    expect(workflow).toContain("--format '{{json .Image}}'");
+    expect(workflow).not.toContain('index .Image "linux/amd64"');
   });
   test('partial image version pair is fail-closed, not silently overwritten',()=>{
     for(const pair of [{APP_EXISTS:'yes',MIGRATOR_EXISTS:'no'},

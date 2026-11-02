@@ -1,3 +1,9 @@
+## TC-216-R07 — Docker Buildx single-platform OCI label reader (2026-11-03)
+
+- 기존 linux/amd64-only Buildx candidate `.Image`를 반드시 단일 config object로 파싱한다. `--format '{{json .Image}}'` 및 `jq`의 `.architecture/.os/.config.Labels` 검증 유지. map index `index .Image "linux/amd64"` 사용 금지. source commit·version·app/migrator role·linux-amd64 불일치 및 digest 이상은 공개 tag 승격 전에 HALT. Unit/PR CI + 실제 Main candidate registry 증거로 최종 판정하고 신규 시험 전 PASS 표기 금지.
+
+---
+
 ## TC-216-RECOVERY — Immutable v0.58.1 GHCR 오류 복구·배포 후 게이트 (2026-11-03)
 
 | TC | 검사 방법 | 합격·차단 기준 |

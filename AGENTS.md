@@ -1,3 +1,9 @@
+## #216 / PR #220 OCI P1 리뷰 — 단일 플랫폼 Buildx JSON .Image 계약 (2026-11-03)
+
+리뷰 [PR #220](https://github.com/planner77/layoutManager/pull/220)의 OCI 후보 검증에서 `platforms: linux/amd64` **단일 플랫폼**을 생성하는 Buildx `.Image`가 단일 config object임에도 `{{json (index .Image "linux/amd64")}}`를 사용한 문제를 발견했다. 템플릿이 실패하여 정상 image가 `G7_RELEASE_OCI_PAIR_INVALID`로 잘못 차단될 수 있는 P1 리뷰 내용. 공식 Docker `imagetools inspect` JSON 설명과 일치하도록 `{{json .Image}}` 및 `jq .os/.architecture/.config.Labels` 검증으로 정정하고 Unit에서 해당 template 회귀를 검사한다. 단일 OCI role/version/source/amd64 조건과 fail-closed 정책, 원본 tag/source SHA 불변. 실제 신규 PR CI/OCI publish 결과는 **미검증**. [FailureLedger](out/FailureLedger.md).
+
+---
+
 ## #216 / PR #220 CI #476 — TypeScript TS2345 테스트 사전 오류 보완 (2026-11-03 KST)
 
 [Run41542254686](https://github.com/planner77/layoutManager/actions/runs/41542254686) source `eb9b56d76b8bbdde6bcacafffe9b012272deb25f`에서 Quality `125609157571` FAILURE: `issue216-ghcr-workflow.test.ts:124` 테스트 입력 union의 선택적 키가 `undefined`로 추론되어 `Record<string,string>`과 불일치 (`TS2345`). 해결은 별도 `mismatches: Record<string,string>[]` 입력 선언으로 string-only 테스트 환경 유지; 런타임/OCI/CI gate 미변경. Docker Build/실 GHCR 및 나머지 Test는 아직 해당 HEAD 성공 근거 없음. [FailureLedger](out/FailureLedger.md).
