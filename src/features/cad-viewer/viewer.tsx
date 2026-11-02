@@ -1711,7 +1711,7 @@ export function CadViewer({
       const result=await response.json();
       if(!response.ok)throw new Error(result?.error?.code==='SCENE_REVISION_CONFLICT'?'다른 저장과 충돌했습니다. 기존 Scene은 유지됩니다. 다시 조회하세요.':`Scene 저장 실패 (${response.status}). 로그인·사업장 권한·승인된 저장 기능을 확인하세요.`);
       if(result.status!=='READY'||!Number.isSafeInteger(result.revision))throw new Error('Scene 저장 응답을 확인하지 못했습니다. 다시 조회하여 상태를 확인하세요.');
-      if(sequence===loadSequenceRef.current){expectedSceneRevision.current=result.revision;setSceneNotice('Scene Asset 저장 완료. 다시 불러오기 또는 재접속하면 원본 DXF 없이 복원합니다.');setSceneCandidate(false);void outlineWorkspace.refresh();}
+      if(sequence===loadSequenceRef.current){expectedSceneRevision.current=result.revision;setSceneNotice('SCENE_PUBLISH_READY · Scene Asset 저장 완료. 재접속 시 원본 DXF 없이 READY Scene으로 복원합니다.');setSceneCandidate(false);void outlineWorkspace.refresh();}
     }catch(error){if(!request.signal.aborted&&sequence===loadSequenceRef.current)setSceneNotice(error instanceof Error?error.message:'Scene Asset 저장에 실패했습니다.');}
     finally{if(sceneRequest.current===request){sceneRequest.current=null;setSceneBusy(false);}}
   }
@@ -1788,7 +1788,7 @@ export function CadViewer({
       },
       source,
       { renderer, versionId, report: value => { if (active && loadSequenceRef.current===sequence) setMetric({
-          ...value,
+          ...value,loadAttempt:sequence,
           sceneBuild:value.sceneBuild??fallbackSceneDiagnostics.current??undefined,
           fallback: fallbackReason.current ? { reasonCode: fallbackReason.current, attempt: 1 } : undefined,
         }); } },
