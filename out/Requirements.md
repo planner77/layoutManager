@@ -1,3 +1,9 @@
+## R-208 / P1-A — 서버 단독 DXF Scene 변환 사전 게이트 (2026-11-03)
+
+Issue #208은 서버 독립 Worker/영속 큐/Version별 Scene 작업 상태/안전 진단이 목표다. **현재 P1-A 후보에만** 지원 라이브러리의 Node CPU-only 직접 변환 PoC, 기존 Scene identity·material normalization·CUSTOM_DTO validator/restore, 안전한 상태·단계·retry 분류와 실행형 합성 시험을 추가한다. Node parser/폰트/WebGL 제약과 16MiB 실험 입력 cap은 운영 기능/상한 변경이 아니다. 서버 독립성·브라우저 Scene fidelity/CPU·RAM/OCI 검증 및 G7 내부 Actor/Site 재인가/DB transactional enqueue/CAS/감사·UI는 후속 P1-B/C/D이며 완료로 표시할 수 없다. 수용 기준 및 미검증 항목은 [Issue208](Issue208.md); 실 DXF·2PC는 #113/#193.
+
+---
+
 ## R-212 — 수동 Scene 진단·자원 제한·성공 상태 정합성 (2026-11-02)
 
 1. Scene Build 활성 시 Source SHA·DXF 구조·upstream parser/font/geometry·Optional index·textIndex·DTO 직렬화/도메인 Validator를 각각 안전한 phase/code·성공/경고/실패/경과시간으로 분리하고 원인을 모르면 UNKNOWN 또는 결합 converter 실패로 유지한다.
