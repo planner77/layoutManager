@@ -1,3 +1,11 @@
+## #208 / P1-A — Node DXF→Scene CPU-only PoC 및 안전한 후속 경계 (2026-11-03)
+
+현재 `node-converter-poc.ts`는 실제 원본 해시→TextDecoder/explicitElevation→Node `DXFViewer`와 font pre-parse→`preflightSceneRoot`→material clone→stable Scene tag→text-index→CUSTOM_DTO+validator→restore 검증의 **격리 실험**만 한다. Browser WebGL/서버 Auth/DB/Storage와는 연결되지 않으며 private `_font`/data URL은 기술 리스크다. `scene-build-job.ts`는 버전 고정 phase/상태 전이·안전 공개 요약과 timeout/backoff의 순수 도메인 계약이다. JOB READY만으로 서버 Scene READY를 추정하지 않으며 CurrentScene verified pointer가 정본이다.
+
+P1-A GO 전 G7 승인 upload transaction/outbox·claim/lease/fencing/heartbeat/attempt schema, Actor/Site 재인가·Audit, `SceneRepository` CAS publish, 세션 독립 Worker/OCI/Greenfield schema·목록 API/UX/실 CAD 성능을 구현한 것으로 주장하지 않는다. 상세 sequence/fault/NO-GO는 [Issue208](Issue208.md), 원본 브라우저 수동 #212와 구분한다.
+
+---
+
 ## #212 — 수동 DXF Scene 생성 관측/직렬화 경계 (2026-11-02)
 
 Browser `ThreeDxfViewerAdapter.load`는 Manager sourceWaitMs 측정 후 파일 해시 확인→UTF-8 decode/normalize→`three-dxf-viewer@1.0.44`의 결합 font+DXF parse/geometry→실제 `Object3D` preflight→tag stable refs→선택적 outline index→textIndex→CUSTOM_DTO serializer→payload/manifest 검증→`ARTIFACT_READY` 순서로 동작한다. `SceneBuildTracker`는 stage, success/warning/failure elapsedMs 및 allowlisted numeric counters만 가진다. 이전 `LOAD` 오류를 일률적 parser 실패/폰트 문제라고 단정하지 않고, 원본 Error는 안전한 UI 코드의 cause 내부에만 둔다. `ViewerManager`는 허용된 typed Scene 오류만 그대로 통과시켜 spoofed message/stack이 UI/metric에 나타나는 것을 막는다.
