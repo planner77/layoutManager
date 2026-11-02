@@ -1,3 +1,21 @@
+## PR #133 — 최종 docs-only CI 및 병합 검증 (2026-11-03 KST)
+
+- **Source/정합성:** HEAD `ddd958f5fbaef22d4d34868c24edac8d07d20075`, 8개 Markdown 변경, Main behind0, 병합 충돌0·미해결 리뷰 thread0. 기존 Main 문서 보존, `ADR-127` 고유, FR-MENU-EXT-01~04/NFR-MENU-EXT-01 및 TC-MENU-EXT-001~005, 후속 13개 Closed 이력과 #65 인증된 Admin/G7·지원 Schema 조건 반영. Source/Squash Tree 동일 `19d6b20c522f638f7b3bfb44bc2ce8d6b620ff67`.
+- **PR CI #443:** [Run41514898605](https://github.com/planner77/layoutManager/actions/runs/41514898605) `completed/success`, Scope 125515840608/Verify 125516013309 SUCCESS, 기타 Runtime/Browser/Docker Job 5개는 **SKIPPED**(docs-only). 과거 Run40408850027/HEAD e0f5fcb3 성공은 별도.
+- **Main 병합/CI:** Squash [`5d030cde48416e018dfddb59ac9f43f95552c373`](https://github.com/planner77/layoutManager/commit/5d030cde48416e018dfddb59ac9f43f95552c373); [Main CI Run41515158324](https://github.com/planner77/layoutManager/actions/runs/41515158324) `completed/success` release-scope Job 125516725543 SUCCESS, GHCR push 125517090647 SKIPPED. PR merged/closed, 기존 #127 및 13개 이슈 closed 유지.
+- **테스트 해석:** `TC-MENU-EXT-001~005`의 실제 CAD UI, G7 server/keyboard/Canvas lifecycle 및 현장 회귀는 신규 실행 대상이 아니며 **NOT RUN**; 이번 PASS는 정확 docs-only scope gate의 성공이다. 신규 GHCR App/Migrator pair 발행과 실 설치/운영 승인을 주장하지 않는다.
+
+---
+
+## PR #133 — Viewer 메뉴 규약·요구/설계 추적의 정적 검증 (2026-11-03 KST)
+
+- **기존 CI:** 원 PR HEAD `e0f5fcb3b11997edc0452a32079dc4ac62b0e7dd`, [Run 40408850027](https://github.com/planner77/layoutManager/actions/runs/40408850027) `completed/success`, Verify Job 121873600618 및 Docker Job 121873600155 SUCCESS. 이는 최신 Main 통합 HEAD의 CI 결과를 대체하지 않는다.
+- **정적 검증 기준:** `AGENTS.md` 필수 메뉴/Drawer·권한·수명주기 판단, 고유 `ADR-127`(기존 `ADR-054` 두 항목 그대로 유지), `FR-MENU-EXT-01~04`/`NFR-MENU-EXT-01`, `TC-MENU-EXT-001~005`, #127 매트릭스 13개 이슈 모두 Closed, #65 인증된 G7/Admin/지원 Schema 조건부 활성, 최신 Main 원문 보존. PR 문서 6개 변경·본 TestReport·FailureLedger 이외 앱 코드/DB/릴리스 파일 변경 없음.
+- **미실행:** 문서 정책 자체는 새 기능 구현이 아니다. `TC-MENU-EXT-001~005`의 Viewer UI·키보드·Drawer/Canvas·Renderer·권한 API 관련 실제 Unit/Playwright/E2E는 이번 문서 PR에서 새로 실행하지 않음(**NOT RUN**); 차후 기능 변경 PR에서 실증. 현장 CAD/GPU/운영 인증·GHCR 게시 수용과 무관.
+- **원격 검증 게이트:** 신규 HEAD PR CI 필수 Jobs, review thread0/충돌0/behind0를 업데이트 후 확인하며 실패 시 원장에 Run/HEAD/수리 추가. 실행 전 새 CI 결과를 PASS로 기록하지 않는다.
+
+---
+
 ## PR #217 / #208 — PR CI #442 TypeScript 실패 및 보완 후 재검증 대기 (2026-11-03 KST)
 
 - **정확 실행:** [PR CI #442 Run41514760273](https://github.com/planner77/layoutManager/actions/runs/41514760273), source HEAD `dfb059e96e189b21e8a176b91f865d200cf9ee47`, `completed/failure`.
