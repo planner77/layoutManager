@@ -1,3 +1,9 @@
+## PR #217 / #208 — CI #442 TypeScript 3건 수리·Node PoC 게이트 유지 (2026-11-03 KST)
+
+[PR CI #442 Run41514760273](https://github.com/planner77/layoutManager/actions/runs/41514760273), source HEAD `dfb059e96e189b21e8a176b91f865d200cf9ee47`에서 Quality TypeScript `TS2345` (`node-converter-poc.ts:104`) 및 `TS2322` 2건(148,149)이 발생했다. Docker build도 동일 TypeScript 실패의 종속 결과이며 DXF 실행 실패나 Docker 환경 오작동을 증명하지 않는다. `FontLoader.parse` 이전 `unknown` JSON 형식 검사, `preflightSceneRoot`가 반환하는 필수 4개 통계의 정확한 required type, malformed font 및 numeric count regression을 적용했다. `skipLibCheck`/strict/CI gate를 완화하거나 `0`으로 optional 통계를 꾸미지 않는다. 기존 원본/Scene/Current/G7/운영 데이터·배포 변경 없음. 새 PR CI의 실행/완료 및 CPU-only PoC의 실제 성공은 구분하고, 시작 이후 결과 모니터링 생략. 근거 [FailureLedger](out/FailureLedger.md)/[TestReport](out/TestReport.md), 후속 Gate [Issue208](out/Issue208.md).
+
+---
+
 ## Issue #208 — P1-A Node CPU-only Scene 변환 가능성 선행 검증 (2026-11-03, PR 후보)
 
 최초 업로드 후 자동 Scene 생성 #208은 **P1-A GO/NO-GO 선행**이다. [out/Issue208.md](out/Issue208.md)의 A1–A5 기술 게이트, [Architecture](out/Architecture.md)/[Decisions](out/Decisions.md)를 따른다. Node POC는 pinned `three-dxf-viewer`의 unsupported private `_font`과 `data:` fetch로 실제 객체·기존 CUSTOM_DTO validator·restore를 시험하지만, CI/CPU-only 컨테이너/브라우저 동등성·권한/Worker·DB schema/목록 UI는 **미검증 또는 미구현**이다. P1-A 테스트 PASS만으로 자동 생성 기능 완료·운영 GO를 주장하지 않는다.
