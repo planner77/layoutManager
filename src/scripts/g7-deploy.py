@@ -320,6 +320,9 @@ def inspect(env_file, project_name=None):
         "runningAppVersion": app["version"] or "UNKNOWN",
         "runningAppImageId": app["imageId"] or "UNKNOWN",
         "targetAppImageId": context["appId"],
+        "targetMigratorImageId": context["migrateId"],
+        "targetReleaseSourceCommit": context["migrate"].get("environment", {}).get(
+            "G7_RELEASE_SOURCE_COMMIT", "UNKNOWN"),
         "projectKey": project_key, "volumeKey": volume_key,
         "volumeState": "ABSENT" if volume is None else "EXISTS",
         "appState": app["state"], "health": app["health"],
@@ -328,6 +331,7 @@ def inspect(env_file, project_name=None):
         "registryChain": steps, "enginePlanId": engine.get("planId") or "UNKNOWN",
         "approvalRequired": True,
         "blockers": ["RECOVERY_HOLD"] if mode == "RESTORE_REQUIRED" else [],
+        "recoveryStage": engine.get("phase") or "UNKNOWN" if mode == "RESTORE_REQUIRED" else None,
         "nextAction": "ISOLATED_RESTORE_ONLY" if mode == "RESTORE_REQUIRED" else
                       "REVIEW_AND_APPROVE_FRESH_INSTALL" if mode == "FRESH_INSTALL" else
                       "PLAN_START_OR_NOOP" if mode == "RESTART_SAME_RELEASE" else
@@ -440,6 +444,8 @@ def emit(value, *, as_json):
         return
     for key in ("state", "decision", "operation", "installedVersion", "targetVersion",
                 "runningAppVersion", "appState", "health", "businessAcceptance",
+                "targetAppImageId", "targetMigratorImageId", "targetReleaseSourceCommit",
+                "recoveryStage",
                 "projectKey", "volumeKey", "volumeState", "registryChain",
                 "planId", "effects", "approvalRequired", "code", "stage",
                 "retryable", "nextAction"):
