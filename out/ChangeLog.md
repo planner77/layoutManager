@@ -1,3 +1,11 @@
+## 2026-11-02 — #211 PR #213 CI #436 실패 수정 및 Codex P2 체인 보고
+
+- 정확 실패 Run41449453584: 기존 `GF-109-CI-CONTRACT` 정적 테스트가 새 통합 CLI로 대체된 첫 Compose 시작 명령을 찾지 못함(Unit 943/944, Docker Job SUCCESS). 실 CI의 승인된 신규 설치/재시작 + first-admin/CAD/영속 smoke 순서를 유지한 채 테스트의 12개 필수 단계로 갱신.
+- #209 `g7-upgrade.py` stdout filter에서 사라진 등록 release `steps`를 검증된 `COMPATIBLE/MIGRATION` 안전 목록으로만 제공, 잘못된 chain/plan 해시는 통합 CLI에서 fail-closed; 실제 helper→frontend 직렬화 회귀 추가. 원본/DB/DDL/Registry/Writer0/Backup/Site Auth 변경 없음.
+- 새 PR CI는 commit push로 시작하되 완료/성공·현장 수용은 확인 전 NOT VERIFIED. [FailureLedger](FailureLedger.md) / [Issue211](Issue211.md).
+
+---
+
 ## 2026-11-02 — #211 G7 통합 호스트 배포 Frontend (PR 후보)
 
 - `src/scripts/g7-deploy.py`: #109 최초 Greenfield·동일 릴리스와 #209 registered release upgrade를 분리/통합 안내하고 read-only 검사→해시 지문 승인을 요구한다. 업그레이드 후 App STOPPED, 별도 승인 start. Docker volume/project/network/이미지 pair/비밀 출력 경계를 유지한다.

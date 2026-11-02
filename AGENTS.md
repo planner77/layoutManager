@@ -1,3 +1,9 @@
+## PR #213 / Issue #211 — CI #436 실패·호스트 Registry Chain P2 보완 (2026-11-02)
+
+PR CI [Run 41449453584](https://github.com/planner77/layoutManager/actions/runs/41449453584)의 Quality Job에서 **Unit 1 FAIL / 943 PASS**: 기존 GF-109-CI-CONTRACT가 #211 도입 후 사라진 첫 `compose up -d --no-build app` 문구를 강제하여 실패했다. Docker Job은 SUCCESS, dependent Verify FAIL, Browser Jobs SKIPPED다. 기존 #109 실제 first-admin/CAD/restart 영속 검증을 삭제하거나 CI gate를 낮추지 말고, 통합 CLI `status→plan→execute(exact hash)→admin setup/CAD→stop→plan start→start(exact hash)→stop/migrate/app/verify` 순서를 정적 테스트에서 검사한다. [Codex P2](https://github.com/planner77/layoutManager/pull/213#discussion_r4442687155): #209 `g7-upgrade.py` 출력 filter가 `steps` 배열을 누락하여 호환 업그레이드의 실제 chain이 UI/CLI에서 빈 배열로 표시되었다. `COMPATIBLE/MIGRATION`의 **검증된 길이 제한 배열**만 안전 전달하고 #211 frontend는 실제 존재/decision/chain 정합성 불일치 시 fail-closed한다. Mock 반환 배열만으로 합격하지 않고 **실제 #209 helper 출력 직렬화→frontend 파싱** 경계를 테스트한다. 이전 실패/수리 이력·최종 CI 실측은 [FailureLedger](out/FailureLedger.md)/[TestReport](out/TestReport.md)를 따른다. 새로운 CI 시작 이후 결과는 사용자 요청에 따라 모니터링하지 않는다.
+
+---
+
 ## Issue #211 — 권장 통합 G7 Docker Host CLI (2026-11-02, PR CI 후보)
 
 G7 신규 빈 설치/동일 릴리스 재시작/등록 업그레이드는 `python3 src/scripts/g7-deploy.py .env status|plan|execute|start`를 단일 권장 진입점으로 사용한다. [설계·안전 계약](out/Issue211.md), [#209 Runbook](src/deploy/g7-greenfield/README.md), [FailureLedger](out/FailureLedger.md)를 먼저 읽는다. `execute`와 별도 `start`는 현재 `planId` 64hex 정확 승인이 필요하며, Schema 변경에는 **추가로 #209 engine planId**가 적용된다. OCI App/Migrator image ID·source·role·architecture, 고정 Volume/Project, 새 볼륨 readonly-nocopy, 유지보수 writer0/backup/restore/journal 검사를 완화하지 않는다. `.env`는 운영자만 수동 수정하고 helper는 shell source/pull/edit/DB reset/lock 삭제를 하지 않는다. 정상 업그레이드 이후에도 App STOPPED, 별도 승인 기동 및 운영 수용 필요. Python 단위·기존 #209 실제 Docker upgrade와 신규 disposable Compose CLI smoke를 필수 PR CI에 연결하고 수용 전 CI 성공을 주장하지 않는다.

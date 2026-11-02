@@ -1,3 +1,12 @@
+## TC-211-P2 — 실패 Run #436 및 Codex Chain 리뷰 보완 (2026-11-02)
+
+- **TC-211-P2-01:** `standalone.test.ts` GF-109-CI-CONTRACT는 Docker workflow의 실제 첫 `g7-deploy.py ... status/plan/execute --approve-plan` → 최초 관리자 코드 → CAD create → stop → `plan --operation start/start --approve-plan` → stop → 기존 migrator 재실행·app → verify 순서를 보장한다. 관리자/영속 검증 또는 실제 Docker Job을 skip하지 않는다.
+- **TC-211-P2-02:** #209 helper가 정상 `steps:["COMPATIBLE","COMPATIBLE"]`을 순서대로 전달하고 privatePath/secret 필드를 거절. 단일 문자열, 원시 경로/객체, 64개 초과 단계 등 비허용 배열은 BLOCKED·stdout 유출0.
+- **TC-211-P2-03:** 실제 #209 HostTests.invoke 출력 → #211 `upgrade()` subprocess 응답 파싱을 연결하여 등록 chain이 사용자에게 그대로 표시되는지 검증. `steps` 누락/빈 Upgrade chain/결정과 어긋난 MIGRATION/잘못된 planId는 `G7_DEPLOY_UPGRADE_CHAIN_INVALID`.
+- **TC-211-P2-04:** 기존 호스트 Writer0/Volume/Registry/Backup/restore/Schema planId·Greenfield 영속 Docker smoke 변경 없이 재실행; 원격 CI 실제 완료 전 PASS 주장 금지.
+
+---
+
 ## TC-211 — 통합 배포 Host CLI (2026-11-02)
 
 | 케이스 | 기대 | 게이트 |

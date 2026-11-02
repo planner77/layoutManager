@@ -1,3 +1,11 @@
+## PR #213 CI #436 후속 보완 (2026-11-02)
+
+- **CI 정적 계약:** #109의 최초 관리자 코드·CAD CRUD·Migrator 재실행·영속 검증은 그대로 유지하고, 해당 CI의 신규 설치 및 별도 start 명령만 #211 plan/approve 기반으로 갱신한다. [TestPlan](TestPlan.md) TC-211-P2 참조.
+- **실제 업그레이드 체인 표시:** 기존 #209 helper의 stdout scalar filter가 `steps`를 버리던 결함을 수정한다. 길이≤64의 허용된 `COMPATIBLE/MIGRATION` 순서 목록만 전달하고 임의 JSON·SQL·경로 등은 제거한다. #211 frontend는 정상 upgrade 시 배열 누락/빈 목록/잘못된 종류·planId를 차단하여 실제 체인 표시 없는 승인을 금지한다. 엔진/DDL/백업은 변경하지 않는다.
+- 실패 실측·리뷰 이력: [FailureLedger](FailureLedger.md) / [TestReport](TestReport.md). CI 시작 이후 최종 결과는 미모니터링·NOT VERIFIED.
+
+---
+
 # Issue #211 — G7 Greenfield 통합 Docker 호스트 배포 CLI (2026-11-02)
 
 ## 요구·권한·범위

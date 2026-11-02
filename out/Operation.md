@@ -1,3 +1,9 @@
+## #211 PR #213 — 배포 계획에 Registry Chain 표시 확인 (2026-11-02)
+
+`g7-deploy.py .env plan --json`의 `registryChain`은 #209에 등록된 forward edge 종류(`COMPATIBLE`, `MIGRATION`)를 실제 순서로 표시한다. 예: 기존 설치가 0.56.0에서 0.58.0으로 이동하는 등록 경로는 `["COMPATIBLE","COMPATIBLE"]`로 보여야 한다. 과거 host helper 필터가 이 배열을 제거하여 잘못 `[]`로 표시하는 문제가 PR #213 리뷰에서 확인되었다. 보완 후에는 정상 Upgrade chain이 누락/비어 있거나 계획/결정과 맞지 않으면 `G7_DEPLOY_UPGRADE_CHAIN_INVALID`로 승인 전 BLOCKED 처리한다. 무시하고 `--yes`/수동 marker 편집/직접 SQL로 우회하지 않고 설치 소스/이미지·registry chain·로그와 보존된 복구 Runbook을 확인한다. 비밀/SQL/원본 payload를 표시에 포함하지 않는다. [설계](Issue211.md) [검증](TestPlan.md).
+
+---
+
 ## Issue #211 — 신규·재시작·보존 업그레이드 공통 운영 명령 (2026-11-02)
 
 **권장 명령:** `python3 src/scripts/g7-deploy.py .env status --json` → `plan --json` → 검토한 64자리 `planId`로 `execute --approve-plan <계획지문> --json`. 성공한 Upgrade는 App 정지 유지: `plan --operation start --json` → 새 계획지문으로 `start --approve-plan <start-planId> --json` → `status`. 기존 설치 Volume 이름 유지. 이전에 신뢰하는 이미지 쌍을 수동 pull 후 `.env`의 `GHCR_IMAGE/GHCR_MIGRATION_IMAGE/G7_RELEASE_SOURCE_COMMIT`을 운영자가 직접 변경한다. Source는 이미지 revision과 같은 40 소문자 hex, OCI label은 서명 아님. 복구 필요·중간 실패는 자동 재시작/lock 삭제/manifest 조작 금지, 기존 `g7-upgrade.py restore`의 새 격리 Volume 경로만 별도 운영 승인. manifest=target이 health·업무 데이터 수용 PASS가 아니다. [Issue211](Issue211.md) / [Runbook](../src/deploy/g7-greenfield/README.md).

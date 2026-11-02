@@ -1,3 +1,14 @@
+## PR #213 / Issue #211 — CI #436 실패와 Codex P2 Chain 표시 결함 보완 (2026-11-02)
+
+- **정확 실패 실행:** [PR CI #436 / Run 41449453584](https://github.com/planner77/layoutManager/actions/runs/41449453584), PR HEAD `f306fe8d4dd9b0809a5816a4ad36a87e981c3ce1`, `completed/failure`. Quality Job `125291629006` **failure**(`Unit 및 Integration 테스트`), Docker runtime Job `125291629108` **success**, scope `125291542240` success, 필요한 Verify Job `125297097107` failure(상위 Unit 실패 종속), G7·General Browser E2E는 **skipped**, 독립 기능 결함의 증거 아님. Unit 정확 **142 Test Files 중 141 PASS/1 FAIL, 944 tests 중 943 PASS/1 FAIL**.
+- **최초 원인:** `src/tests/unit/standalone.test.ts:163` `GF-109-CI-CONTRACT`는 첫 신규 설치/재시작에 옛 `up -d --no-build app` 리터럴을 요구했으나 새 Docker smoke는 #211 `g7-deploy.py status→plan→execute --approve-plan`과 별도 `plan --operation start→start --approve-plan`으로 바뀌었다. Assertion `expected -1 to be greater than or equal to 0`. 정책·데이터 결함으로 바로 단정하지 않고 **기존 정적 테스트 계약 미동기화**로 확인했다.
+- **수리:** 기존 GF-109 계약의 설치·Admin 1회 코드·CAD CRUD·replay migrator·재시작 영속 테스트는 유지한다. 테스트의 명령 순서를 실제 CI에 있는 12개 요소(신규 CLI 승인·별도 start 포함)로 갱신하고 Runtime/Browser/Unit CI gate를 약화·삭제하지 않았다. 실제 Workflow 문자열과 새 계약을 순서 비교한 **12/12 일치**는 정적 점검이며, 새로운 Python/Vitest/실 Docker 결과와 혼동하지 않는다.
+- **추가 리뷰 P2:** [PR #213 Codex discussion r4442687155](https://github.com/planner77/layoutManager/pull/213#discussion_r4442687155) `g7-upgrade.py`의 기존 scalar-only stdout safe-filter가 #209 `plan.steps` 배열을 누락. 따라서 등록된 0.56.0→0.58.0의 실제 2-edge chain도 #211 plan에 `registryChain:[]`로 보이는 결함(코드상 확정). **보완:** 호스트 필터에서 `COMPATIBLE/MIGRATION`의 허용된 길이≤64 순서 배열만 전달하고 비밀·raw SQL·객체는 차단; #211 frontend도 missing/malformed/decision 불일치/planId 오류 시 `G7_DEPLOY_UPGRADE_CHAIN_INVALID` fail-closed. #209→#211 실제 stdout 직렬화 경계 회귀·negative tests 추가하여 단독 mocked `upgrade()` 배열의 blindspot 제거.
+- **기존 수용/실패 보존:** 초기 CI #434/#435는 후속 synchronize로 취소되었으며 새 실패 원인으로 합산하지 않는다. 원래 #209의 GHCR auth/P2 WAL 실패·복구 기록, 승인된 Registry/Writer0/WAL-aware Backup·Schema exact plan은 그대로 유지한다. 이번 PR의 운영 DB/Volume/CAD, `.env`, release 이미지, Main, GHCR, Issue 종료는 변경하지 않는다.
+- **재시험 방침:** 수정 커밋 push가 새 PR CI를 시작하도록 연결한다. CI Run/HEAD는 생성 직후 **시작만 확인**하고 사용자 지시에 따라 결과/Job 완료 모니터링 생략. 새 성공은 **NOT VERIFIED**이며 현장 #96/#113/#193 수용과 별개다.
+
+---
+
 ## PR #213 / Issue #211 — 구현·리뷰/충돌 확인 및 CI 기동 (2026-11-02)
 
 - [PR #213](https://github.com/planner77/layoutManager/pull/213): 구현+문서 초기 HEAD `6746ccbeb60da2f83ef3417bbb74765367923e47`, 17개 파일, [Issue #211](https://github.com/planner77/layoutManager/issues/211). #209 엔진·현재 DB Schema·runtime image package version 0.58.0은 변경하지 않고 G7 통합 호스트 Frontend/단위·CI Docker·Runbook만 변경했다.

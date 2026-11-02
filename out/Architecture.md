@@ -1,3 +1,9 @@
+## #211 PR #213 P2 — 호스트 CLI Registry chain의 안전한 전파 (2026-11-02)
+
+읽기 전용 등록 업그레이드의 실제 흐름은 `greenfield-upgrade-engine.planGreenfieldUpgrade` → `src/scripts/g7-greenfield.ts plan`(`steps: chain.map(kind)`) → `g7-upgrade.py` stdout 필터 → `g7-deploy.py upgrade()` → `inspect.registryChain` → 운영자 계획 승인이다. 이전 helper는 **scalar allowlist**라 `steps` 배열을 조용히 제거하여 유효한 0.56→0.58 경로조차 `[]`로 표시하는 결함이 있었다. #209 helper는 비밀 원문/SQL 없이 `COMPATIBLE` 또는 `MIGRATION` 값만 포함한 길이 0~64의 순서 있는 배열을 명시적으로 허용한다. 유효하지 않은 배열은 `G7_UPGRADE_HOST_OUTPUT_INVALID`; #211 frontend는 planId SHA-256/의사결정/chain 비어 있음·종류 불일치를 `G7_DEPLOY_UPGRADE_CHAIN_INVALID`로 차단한다. 필터가 다시 배열을 누락해도 승인이 진행되지 않는다. Read-only/볼륨·백업·DDL/보존 경계는 #209와 동일하다. [검증](TestPlan.md) [실패 원장](FailureLedger.md).
+
+---
+
 ## Architecture #211 — Host Deployment Frontend/Engine 경계 (2026-11-02)
 
 [Issue211](Issue211.md)의 흐름: `g7-deploy.py`가 Compose config·실제 image labels/ID(#209 `inspect_pair`)·전역 Project/Network/Container/Volume 충돌을 읽어 신규 빈 Volume과 이미 설치된 G7 Volume을 구분한다. Volume 미존재면 `docker volume inspect`에서 멈춰 read-only mount하지 않으며, 기존 빈 Volume만 `readonly,volume-nocopy` probe를 사용한다. 정상 nonempty는 고정 Migrator Image ID의 `g7-upgrade.py status/plan` → 기존 TypeScript registry/DB/CAD 검증으로 위임한다. .env SHA + Compose SHA + 실제 Image ID/Volume identity + App 상태 + engine planId/operation/effects의 SHA-256가 호스트 승인 지문. SQL 경로는 #209 engine의 별도 정확 Schema 승인을 유지한다. FRESH 설치/RESTART는 #109 Compose 안전 경로, UPGRADE는 #209 Host stop/backup/journal/restore를 그대로 호출한다. 별도 start는 검증된 기존 manifest 상태에서만 허용한다. 새 Schema/DB 마이그레이션/HTTP Docker socket·Auth bypass는 없다.

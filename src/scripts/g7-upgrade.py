@@ -60,6 +60,31 @@ def inspect_pair(app_ref, migrator_ref, source, inspect):
     return app["Id"], migrator["Id"]
 
 
+
+def safe_diagnostic(value):
+    """Only explicit scalar fields and bounded, verified registry edge kinds cross stdout.
+
+    The plan array must never be silently dropped: the host deployment frontend
+    requires it to show the operator the actual registered upgrade chain.
+    """
+    if not isinstance(value, dict) or ("state" not in value and "code" not in value):
+        return None
+    safe_keys = {"state", "code", "stage", "retryable", "nextAction", "action", "mode",
+                 "planHash", "decision", "backupId", "sourceVersion", "targetVersion",
+                 "restoreRequired", "step", "planId", "from", "to", "requiresApproval",
+                 "phase", "recovery"}
+    safe = {key: item for key, item in value.items() if key in safe_keys
+            and isinstance(item, (str, bool, int, type(None)))}
+    if "steps" in value:
+        steps = value["steps"]
+        if (not isinstance(steps, list) or len(steps) > 64
+                or any(type(step) is not str or step not in ("COMPATIBLE", "MIGRATION")
+                       for step in steps)):
+            raise Blocked("G7_UPGRADE_HOST_OUTPUT_INVALID")
+        safe["steps"] = steps.copy()
+    return safe
+
+
 def main(args=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("env_file", type=Path)
@@ -160,13 +185,8 @@ def main(args=None):
         for line in stream.splitlines():
             try:
                 value = json.loads(line)
-                if isinstance(value, dict) and ("state" in value or "code" in value):
-                    safe_keys = {"state", "code", "stage", "retryable", "nextAction", "action", "mode",
-                                 "planHash", "decision", "backupId", "sourceVersion", "targetVersion",
-                                 "restoreRequired", "step", "planId", "from", "to", "requiresApproval",
-                                 "phase", "recovery"}
-                    safe = {key: item for key, item in value.items() if key in safe_keys
-                            and isinstance(item, (str, bool, int, type(None)))}
+                safe = safe_diagnostic(value)
+                if safe is not None:
                     destination.write(json.dumps(safe, separators=(",", ":")) + "\n")
             except ValueError:
                 pass

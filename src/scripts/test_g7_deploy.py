@@ -2,6 +2,7 @@
 """Issue #211: synthetic host policy tests; no Docker state or data are touched."""
 import importlib.util
 import json
+import subprocess
 from pathlib import Path
 import unittest
 from unittest import mock
@@ -100,6 +101,44 @@ class G7DeployPolicyTests(unittest.TestCase):
             result = deploy.apply(self.env, None, self.context, plan)
         self.assertEqual(result["state"], "UPGRADED_APP_STOPPED")
         helper.assert_called_once_with(self.env, "auto", None, None)
+
+    def test_real_209_helper_filter_to_frontend_chain(self):
+        # Exercise the actual #209 output filter, then the #211 subprocess
+        # boundary. A mocked upgrade() return would hide the P2 regression.
+        source = Path(__file__).with_name("test_g7_upgrade.py")
+        spec = importlib.util.spec_from_file_location("g7_upgrade_regression_211", source)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        plan = {"state": "UPGRADE_COMPATIBLE", "planId": "a" * 64,
+                "from": "0.56.0", "to": "0.58.0",
+                "steps": ["COMPATIBLE", "COMPATIBLE"],
+                "secret": "must-not-appear", "privatePath": "/secret"}
+        _, code, stdout = module.HostTests().invoke("plan", cli_output=json.dumps(plan))
+        self.assertEqual(code, 0)
+        self.assertNotIn("must-not-appear", stdout)
+        self.assertNotIn("/secret", stdout)
+        wrapped = subprocess.CompletedProcess(["host"], 0, stdout, "")
+        with mock.patch.object(deploy, "command", return_value=wrapped):
+            visible = deploy.upgrade(self.env, "plan")
+        self.assertEqual(visible["steps"], ["COMPATIBLE", "COMPATIBLE"])
+        self.assertEqual(visible["from"], "0.56.0")
+        self.assertEqual(visible["to"], "0.58.0")
+
+    def test_frontend_rejects_missing_or_incompatible_real_chain(self):
+        base = {"state": "UPGRADE_COMPATIBLE", "planId": "a" * 64,
+                "from": "0.56.0", "to": "0.58.0"}
+        for payload in ({**base},
+                        {**base, "steps": []},
+                        {**base, "steps": ["MIGRATION"]},
+                        {**base, "steps": ["COMPATIBLE", {"secret": 1}]},
+                        {**base, "steps": ["COMPATIBLE"] * 65},
+                        {**base, "planId": "bad", "steps": ["COMPATIBLE"]}):
+            with self.subTest(payload=repr(payload)[:90]):
+                completed = subprocess.CompletedProcess(
+                    ["host"], 0, json.dumps(payload) + "\n", "")
+                with mock.patch.object(deploy, "command", return_value=completed):
+                    with self.assertRaisesRegex(deploy.Blocked, "CHAIN_INVALID"):
+                        deploy.upgrade(self.env, "plan")
 
     def test_schema_upgrade_binds_engine_exact_plan(self):
         engine = {"state": "UPGRADE_MIGRATION_REQUIRED", "planId": "f" * 64,

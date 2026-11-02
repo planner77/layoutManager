@@ -108,6 +108,29 @@ def upgrade(env_file, action, project_name=None, approved=None):
         raise Blocked((data or {}).get("code") or "G7_DEPLOY_UPGRADE_FAILED")
     if data is None:
         raise Blocked("G7_DEPLOY_HELPER_RESPONSE_INVALID")
+    if action == "plan":
+        # The #209 host helper must preserve the real registry chain. Do not
+        # show an empty or inferred upgrade plan when a filter drops 'steps'.
+        steps = data.get("steps")
+        state = data.get("state")
+        plan_id = data.get("planId")
+        if (not isinstance(steps, list) or len(steps) > 64 or
+                any(type(item) is not str or item not in ("COMPATIBLE", "MIGRATION")
+                    for item in steps) or
+                not isinstance(plan_id, str) or
+                not re.fullmatch(r"[a-f0-9]{64}", plan_id)):
+            raise Blocked("G7_DEPLOY_UPGRADE_CHAIN_INVALID")
+        if state == "RESTART_SAME_RELEASE":
+            if steps or data.get("from") != data.get("to"):
+                raise Blocked("G7_DEPLOY_UPGRADE_CHAIN_INVALID")
+        elif state == "UPGRADE_COMPATIBLE":
+            if not steps or "MIGRATION" in steps or data.get("from") == data.get("to"):
+                raise Blocked("G7_DEPLOY_UPGRADE_CHAIN_INVALID")
+        elif state == "UPGRADE_MIGRATION_REQUIRED":
+            if "MIGRATION" not in steps or data.get("from") == data.get("to"):
+                raise Blocked("G7_DEPLOY_UPGRADE_CHAIN_INVALID")
+        else:
+            raise Blocked("G7_DEPLOY_UPGRADE_CHAIN_INVALID")
     return data
 
 

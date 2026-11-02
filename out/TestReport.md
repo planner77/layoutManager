@@ -1,3 +1,9 @@
+## #211 PR #213 — CI #436 실측 실패 및 P2 재시험 대기 (2026-11-02)
+
+[Run 41449453584](https://github.com/planner77/layoutManager/actions/runs/41449453584) 정확 HEAD `f306fe8d4dd9b0809a5816a4ad36a87e981c3ce1`에서 Quality Job `125291629006` **Unit 943/944 PASS, 1 FAIL**(`src/tests/unit/standalone.test.ts:163`, GF-109 명령 순서); Docker runtime Job `125291629108` **SUCCESS**; scope success; 후속 Browser skipped/required Verify fail. Unit 오류는 #211 신규 CLI 실행을 반영하지 않은 정적 계약이다. 기존 테스트를 폐기하지 않고 12개 실제 Host CLI/Admin/CAD/재시작/영속 단계를 순서대로 검사하도록 갱신했다. 정적 비교 12/12 일치 확인(새 전체 Vitest PASS는 아님). [Codex P2](https://github.com/planner77/layoutManager/pull/213#discussion_r4442687155)의 #209 helper 필터 `steps` 누락도 안전한 허용 배열/결정·hash 교차 검증과 실제 helper→frontend 직렬화 테스트로 보완했다. 수정 이후 Python/Vitest/실 Docker/전체 PR CI **NOT VERIFIED**; 실제 결과는 새 Run/Job에서 확인 전까지 PASS로 기재하지 않는다. 운영 현장·GHCR/배포·Volume/DB 변경 없음.
+
+---
+
 ## Issue #211 — 구현·검증 요청 상태 (2026-11-02)
 
 단일 호스트 CLI `src/scripts/g7-deploy.py`, Python 정책 회귀 `src/scripts/test_g7_deploy.py` 및 PR CI Python gate/Disposable Compose 신규 설치·별도 start 검증을 추가했다. #209 helper에 위임하므로 실제 WAL-aware backup/restore·registry/SQL edge는 기존 통합 스위트를 회귀한다. 정적/단위/실 Docker 실행 결과는 새 PR CI가 완료되기 전 **NOT VERIFIED**, 성공 수·실제 GHCR digest·운영 DB/Volume/업무 수용도 미확인이다. 별도 로컬 Docker 검증은 이번 원격 작업 환경에서 수행하지 않았다. [TC-211](TestPlan.md), [설계·제약](Issue211.md), [FailureLedger](FailureLedger.md) 참조.

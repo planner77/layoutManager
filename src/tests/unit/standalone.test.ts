@@ -149,11 +149,19 @@ test('GF-109-CI-CONTRACT: Greenfield Docker smoke passes setup code and checks r
   expect(step).toBeDefined();
   expect(step).toContain('exec -T app cat /data/db/first-admin.code');
 
+  // #211 replaces ONLY the first-run and explicit same-release start steps
+  // with host-plan approval. Keep #109's first-admin, CAD, migration replay,
+  // and persistence assertions in their actual CI execution order.
   let cursor = 0;
   for (const command of [
-    'up -d --no-build app',
+    'python3 src/scripts/g7-deploy.py .env.example status --json',
+    'python3 src/scripts/g7-deploy.py .env.example plan --json',
+    'python3 src/scripts/g7-deploy.py .env.example execute --approve-plan "$G7_PLAN" --json',
     'cat /data/db/first-admin.code',
     'G7_CI_FIRST_SETUP_CODE="$CODE" python3 src/scripts/smoke_greenfield_runtime.py create',
+    'stop app',
+    'python3 src/scripts/g7-deploy.py .env.example plan --operation start --json',
+    'python3 src/scripts/g7-deploy.py .env.example start --approve-plan "$G7_START_PLAN" --json',
     'stop app',
     'up --no-build --force-recreate migrate',
     'up -d --no-build app',
