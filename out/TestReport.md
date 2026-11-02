@@ -1,3 +1,12 @@
+## PR #217 / #208 — CI #445 Unit 1건 실패·글꼴 원인 및 수정 후 재검증 보류 (2026-11-03 KST)
+
+- **정확 CI:** [PR CI #445 Run41517145247](https://github.com/planner77/layoutManager/actions/runs/41517145247), source HEAD `6932550e7c5e37d6f11b9d528da2fc594a26fb5b`, `completed/failure`. Scope Job `125524284796` SUCCESS. Quality `125524385155`은 TypeScript/ESLint 단계를 통과한 뒤 **Unit/Integration 959 PASS·1 FAIL(960 tests; 144 pass/1 fail suites)**. 정확 실패 `tests/unit/scene-node-converter-poc.test.ts:21`, `probeNodeScene`의 `FONT_PREPARE/SCENE_FONT_UNAVAILABLE`, `node-converter-poc.ts:130`; 합성 DXF 실제 변환은 폰트 준비 전에 중단. Docker `125524385169` SUCCESS. Required Verify `125528106539` FAILURE. G7 Greenfield `125526962110`, G7 Signed/Legacy `125526962286`, General Chromium `125526962515` SKIPPED.
+- **확인된 설계 불일치:** git의 `src/public/fonts`에는 `NanumGothic-Regular.ttf`/OFL만 있고 `CadKorean.typeface.json`은 `scripts/fonts.mjs`가 dev/build 실행에서 파생한다. CI의 Unit 단계는 Build 이전이므로 생성 JSON 부재로 `readFile`이 실패, catch에서 고정 `SCENE_FONT_UNAVAILABLE` 반환. 이것을 파서/OOM/생산 폰트 파손으로 오진하지 않는다.
+- **수리:** 실험 Node PoC에서 TTF/JSON 명시 입력을 분리; git-tracked TTF를 `TTFLoader.parse`해 `scripts/fonts.mjs`와 동등한 family/meta label을 적용한 뒤 `FontLoader.parse`. 생성 25MiB JSON 파일 생성/체크인/CI 순서 조작 없이 Node only. 기존 JSON 구조 검사 유지, 확장자 allowlist 및 8MiB TTF·32MiB JSON 상한, malformed TTF/JSON/미지원 확장자 보안 부정 테스트 추가. 기존 합성 DXF→Object3D→CUSTOM_DTO→restore 통합 Unit 삭제·우회 없음.
+- **검증/미구현:** GitHub 원격 코드·테스트 반영만 확인, 로컬 npm/Vitest/TypeScript/Docker 실행 **NOT RUN**. 새 PR CI 성공·새 HEAD 변환 및 Server CPU-only GO/실제 Browser fidelity/Worker/Queue/G7 auth/실 도면 20MiB+ 모두 **NOT VERIFIED**. 기존 READY/Current/원본·메모·Zone/Outline/DB/Volume/GHCR 변경 없음. 근거 [FailureLedger](FailureLedger.md), [TC](TestPlan.md), [설계](Issue208.md).
+
+---
+
 ## PR #133 — 최종 docs-only CI 및 병합 검증 (2026-11-03 KST)
 
 - **Source/정합성:** HEAD `ddd958f5fbaef22d4d34868c24edac8d07d20075`, 8개 Markdown 변경, Main behind0, 병합 충돌0·미해결 리뷰 thread0. 기존 Main 문서 보존, `ADR-127` 고유, FR-MENU-EXT-01~04/NFR-MENU-EXT-01 및 TC-MENU-EXT-001~005, 후속 13개 Closed 이력과 #65 인증된 Admin/G7·지원 Schema 조건 반영. Source/Squash Tree 동일 `19d6b20c522f638f7b3bfb44bc2ce8d6b620ff67`.
