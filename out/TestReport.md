@@ -1,3 +1,12 @@
+## PR #133 — Viewer 메뉴 규약·요구/설계 추적의 정적 검증 (2026-11-03 KST)
+
+- **기존 CI:** 원 PR HEAD `e0f5fcb3b11997edc0452a32079dc4ac62b0e7dd`, [Run 40408850027](https://github.com/planner77/layoutManager/actions/runs/40408850027) `completed/success`, Verify Job 121873600618 및 Docker Job 121873600155 SUCCESS. 이는 최신 Main 통합 HEAD의 CI 결과를 대체하지 않는다.
+- **정적 검증 기준:** `AGENTS.md` 필수 메뉴/Drawer·권한·수명주기 판단, 고유 `ADR-127`(기존 `ADR-054` 두 항목 그대로 유지), `FR-MENU-EXT-01~04`/`NFR-MENU-EXT-01`, `TC-MENU-EXT-001~005`, #127 매트릭스 13개 이슈 모두 Closed, #65 인증된 G7/Admin/지원 Schema 조건부 활성, 최신 Main 원문 보존. PR 문서 6개 변경·본 TestReport·FailureLedger 이외 앱 코드/DB/릴리스 파일 변경 없음.
+- **미실행:** 문서 정책 자체는 새 기능 구현이 아니다. `TC-MENU-EXT-001~005`의 Viewer UI·키보드·Drawer/Canvas·Renderer·권한 API 관련 실제 Unit/Playwright/E2E는 이번 문서 PR에서 새로 실행하지 않음(**NOT RUN**); 차후 기능 변경 PR에서 실증. 현장 CAD/GPU/운영 인증·GHCR 게시 수용과 무관.
+- **원격 검증 게이트:** 신규 HEAD PR CI 필수 Jobs, review thread0/충돌0/behind0를 업데이트 후 확인하며 실패 시 원장에 Run/HEAD/수리 추가. 실행 전 새 CI 결과를 PASS로 기록하지 않는다.
+
+---
+
 ## #212 / PR #214 — 최종 CI #440 PASS 및 Main 병합·GHCR 분리 판정 (2026-11-03 KST)
 
 [PR CI #440 Run41508339395](https://github.com/planner77/layoutManager/actions/runs/41508339395), HEAD `ef83a210c16abe040c7ae451d14012a8469085b9`, **completed/success 8/8 Jobs**(Scope, Quality TypeScript/Lint/Unit/Build, Docker Runtime, Greenfield, G7 Signed/Legacy, General Chromium shard1/2, required Verify). 역사적 #438 TypeScript 신규 테스트 fail 및 #439 Greenfield R3 구 메시지 fail은 보완되었고 실제 통합 CI 성공으로 재검증되었다. 미해결 review thread0, 충돌0, Main behind0 확인 후 [PR #214](https://github.com/planner77/layoutManager/pull/214)를 Squash Main `1ba46dc4a2fd50e06ce84069fce98977c55632bf`로 병합; 동일 Git tree `e6dda9e901ac1951ba360e66f6317d77baedfcfd`. Issue #212 **closed/completed**(코드·합성 CI). [Main CI #130 Run41511179566](https://github.com/planner77/layoutManager/actions/runs/41511179566) 시작만 확인 후 결과 미모니터링. GHCR release workflow는 기존 `0.58.0` App/Migrator pair가 있으면 duplicate skip하므로 **#212 신규 코드의 실제 이미지 게시/digest 미확인**; 후속 새 immutable release/G7 registry 검증을 [#216](https://github.com/planner77/layoutManager/issues/216)에 OPEN으로 추적한다. 복잡 실 DXF(5MiB/20MiB+), GPU/메모리/현장 장비·업무 연결, #113/#193/208 등은 CODE CI PASS와 무관하게 미수용.

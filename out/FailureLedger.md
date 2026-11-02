@@ -1,3 +1,12 @@
+## PR #133 — Viewer 메뉴 문서의 최신 Main 충돌 및 계약 보완 (2026-11-03 KST)
+
+- **이전 근거:** [PR #133](https://github.com/planner77/layoutManager/pull/133) 기존 HEAD `e0f5fcb3b11997edc0452a32079dc4ac62b0e7dd`, [PR CI Run 40408850027](https://github.com/planner77/layoutManager/actions/runs/40408850027) `completed/success`; Typecheck/Lint/Build/E2E Verify Job `121873600618`, Docker/Migration Job `121873600155` 둘 다 SUCCESS. Review thread0/unresolved0, 제출 Review0. 기존 분기는 Main보다 65커밋 behind이며 `mergeable=false`(병합 차단). 구 HEAD CI 성공을 새 HEAD 성공으로 간주하지 않는다.
+- **원인:** docs-only 정책 PR 장기 분기로 문서 충돌 위험. 후속 이슈 #37/#49/#55/#56/#65/#71/#73/#81/#82/#85/#88/#90/#91은 2026-11-03 현재 13/13 Closed이고 각 이슈 본문 메뉴 연계 기록은 이미 존재. 당시 `ADR-054` 신규 지정은 현재 Main의 #57 Logger 및 #151 현장 반입 승인 ADR과 번호가 중복됨. #65 Type Admin은 0.50.0 이후 인증·G7 ACTIVE·지원 Schema에서 조건부 실행하는 기능으로 발전했으므로 기존 '항상 disabled' 문구는 부정확.
+- **조치:** 기존 PR과 최신 Main을 부모로 하여 Main Tree를 기준으로 원래 6개 Markdown 문서 규약을 의미 병합, 고유 `ADR-127` 참조 통일, 당시 열린 13개 이슈의 종료 이력·#65 실제 권한 경계 반영. 실패 원장과 TestReport 추가. 기능 코드·인증/DB·운영 CAD/Volume·패키지/이미지 태그 변경 없음.
+- **검증 경계:** 문서 원본 보존·ID/TC/13개 추적 행을 정적으로 점검. 새로운 HEAD PR CI·리뷰/충돌·Main 병합과 CI는 실제 확인 전 **NOT VERIFIED**. 본 작업은 docs-only라 GHCR App/Migrator 신규 게시 불필요; 현장 UX/E2E·G7 운영 수용은 별도.
+
+---
+
 ## PR #148 — M4-A 부분 Draft 종료 / #175·#177 후속 승계 (2026-11-03 KST)
 
 - **최종 상태:** [PR #148](https://github.com/planner77/layoutManager/pull/148) `closed` / `merged=false` / `draft=true`, 최종 부분 구현 HEAD `8b5199fd39a9e535213e9fc38cc99a2b3bb509fe`, 종료 시각 **2026-11-03 04:49:54 KST** (GitHub `2026-11-02T19:49:54Z`). [종료 근거·Owner 요청에 따른 PR 코멘트](https://github.com/planner77/layoutManager/pull/148#issuecomment-6586893288). 기존 M1 세션 M4-A 구현은 최신 M2/M3/G7 코드에 재병합하지 않고 **SUPERSEDED_BY_PR_175_AND_177 / CLOSED_NOT_MERGED**로 정리. Draft 및 구 브랜치 보존, 자동 삭제 없음.
