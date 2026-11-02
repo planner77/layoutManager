@@ -42,9 +42,8 @@ describe('#208 P1-A durable job state safety contract', () => {
       jobState: 'RUNNING', stage: 'DXF_PARSE' }))
       .toEqual({ scene: 'RUNNING', build: 'RUNNING', phase: 'DXF_PARSE' });
     expect(sceneBuildPublicSummary({ fileFormat: 'DXF', validatedScene: 'MISSING',
-      jobState: 'READY', stage: 'READY' })).toMatchObject({ scene: 'READY' });
-    // Above illustrates an invalid persisted job state: the data integration
-    // must not pass unverified READY. This domain function must also reject it.
+      jobState: 'READY', stage: 'READY' })).toMatchObject({ scene: 'REBUILD_REQUIRED' });
+    // A job saying READY without a verified CurrentScene must never display completion.
     expect(sceneBuildPublicSummary({ fileFormat: 'DXF', validatedScene: 'READY',
       jobState: 'RUNNING', stage: 'DXF_PARSE' }))
       .toEqual({ scene: 'READY', build: 'RUNNING', phase: 'DXF_PARSE' });
