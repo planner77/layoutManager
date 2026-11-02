@@ -104,7 +104,7 @@ describe('#212 safe manual DXF Scene stage diagnostics',()=>{
     expect(local).toContain('THREE_SCENE_ARTIFACT_READY');
     expect(local).toContain('READY 상태는 아닙니다');
     const server=sceneLoadNotice({mode:'scene-first',renderer:'three-dxf-viewer',strategy:'READY_SCENE',artifactReady:false});
-    expect(server).toContain('저장된 READY Scene');
+    expect(server).toContain('저장된 Scene Asset 복원 (서버 READY)');
     expect(sceneLoadNotice({mode:'build',renderer:'dxf-viewer',strategy:'LEGACY_DXF',artifactReady:false}))
       .not.toContain('변환 완료');
   });
