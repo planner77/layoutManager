@@ -4,7 +4,8 @@ import {toCustomDto,fromCustomDto,type CustomSceneDto} from './scene-custom-dto'
 import {validateSceneAsset,validateSceneManifest,validSceneRef,type SceneAsset,type SceneScope,type SceneManifest,type SceneFormat} from '../../domain/cad-scene';
 import {sceneSha256} from '../../domain/scene-digest';
 import {validateSceneViewerData,type SceneViewerData} from '../../domain/scene-viewer-data';
-import {validateStoredScenePayload} from '../../domain/scene-payload';
+import {SCENE_PAYLOAD_LIMITS,validateStoredScenePayload} from '../../domain/scene-payload';
+import {SceneBuildLimitError,type SceneBuildPhase,type SceneBuildStats} from '../core/scene-build-diagnostics';
 export type {SceneFormat,SceneManifest} from '../../domain/cad-scene';
 const enc=new TextEncoder(),dec=new TextDecoder('utf-8',{fatal:true});
 const digest=async(b:Uint8Array)=>sceneSha256(b);
@@ -58,7 +59,37 @@ function inspect(tree:unknown,asset:SceneAsset):void{
  };
  walk(tree.object,[]);if(actual.length!==asset.objects.length)throw new Error('SCENE_NODE_COUNT_INVALID');
 }
-export async function serializeSourceScene(root:THREE.Object3D,asset:SceneAsset,format:SceneFormat,viewerData?:SceneViewerData):Promise<{bytes:Uint8Array;manifest:SceneManifest}>{
+/** Check actual Object3D complexity before identity tagging, JSON or any large DTO allocation.
+ * Counts duplicated geometry per node because CUSTOM_DTO embeds it per node.
+ * This is only a resource preflight; persisted bytes still undergo full domain validation.
+ */
+export function preflightSceneRoot(root:THREE.Object3D):SceneBuildStats{
+ let nodes=0,geometryCount=0,attributeScalars=0,maxDepth=0;
+ const pending:Array<{node:THREE.Object3D;depth:number}>=[{node:root,depth:0}];
+ while(pending.length){
+  const {node,depth}=pending.pop()!;
+  nodes++;maxDepth=Math.max(maxDepth,depth);
+  if(nodes>SCENE_PAYLOAD_LIMITS.nodes)throw new SceneBuildLimitError('nodes');
+  if(depth>SCENE_PAYLOAD_LIMITS.depth)throw new SceneBuildLimitError('depth');
+  const geometry=(node as THREE.Mesh).geometry as THREE.BufferGeometry|undefined;
+  if(geometry){
+   geometryCount++;
+   if(geometry.isBufferGeometry){
+    for(const attribute of Object.values(geometry.attributes)){
+     const length=(attribute as THREE.BufferAttribute).array?.length;
+     if(typeof length==='number'&&Number.isSafeInteger(length)){
+      attributeScalars+=length;
+      if(attributeScalars>SCENE_PAYLOAD_LIMITS.attributeScalars)throw new SceneBuildLimitError('attributeScalars');
+     }
+    }
+   }
+  }
+  for(let i=node.children.length-1;i>=0;i--)pending.push({node:node.children[i],depth:depth+1});
+ }
+ return {sceneNodes:nodes,geometryCount,attributeScalars,maxDepth};
+}
+export async function serializeSourceScene(root:THREE.Object3D,asset:SceneAsset,format:SceneFormat,viewerData?:SceneViewerData,
+ onPhase?:(phase:Extract<SceneBuildPhase,'SCENE_JSON_INSPECT'|'CUSTOM_DTO_SERIALIZE'|'PAYLOAD_VALIDATE'>)=>void):Promise<{bytes:Uint8Array;manifest:SceneManifest}>{
  validateSceneAsset(asset);if(asset.state!=='BUILDING')throw new Error('SCENE_NOT_BUILDING');
  const readyAsset:SceneAsset={...asset,state:'READY'};
  // Upstream userData contains parser internals (including BLOCK references). Keep only
@@ -70,13 +101,30 @@ export async function serializeSourceScene(root:THREE.Object3D,asset:SceneAsset,
    const layer=typeof data.cadLayer==='string'?data.cadLayer:typeof data.layer==='string'?data.layer:typeof entity.layer==='string'?entity.layer:undefined;
    node.userData={cadSceneRef:data.cadSceneRef,...(layer?{cadLayer:layer}:{})};
   });
-  const tree=sanitizeTree(root.toJSON());inspect(tree,readyAsset);
   if(format!=='THREE_JSON'&&format!=='CUSTOM_DTO')throw new Error('SCENE_FORMAT_INVALID');
   if(viewerData)validateSceneViewerData(viewerData);
-  const payload=format==='CUSTOM_DTO'?toCustomDto(root,readyAsset):{asset:readyAsset,tree};
+  // #212: CUSTOM_DTO has its own strict schema/typed-buffer validator. Building
+  // a second full THREE_JSON representation first is redundant and can exhaust
+  // memory on nested INSERT drawings. Preserve THREE_JSON's original inspection.
+  let payload:CustomSceneDto|{asset:SceneAsset;tree:THREE.Object3DJSON};
+  if(format==='CUSTOM_DTO'){
+   onPhase?.('CUSTOM_DTO_SERIALIZE');
+   payload=toCustomDto(root,readyAsset);
+  }else{
+   onPhase?.('SCENE_JSON_INSPECT');
+   const tree=sanitizeTree(root.toJSON());inspect(tree,readyAsset);
+   payload={asset:readyAsset,tree};
+  }
   bytes=enc.encode(JSON.stringify({...payload,...(viewerData?{viewerData}:{})}));
+  if(bytes.length>SCENE_PAYLOAD_LIMITS.bytes)throw new SceneBuildLimitError('bytes');
  }finally{for(const [node,data] of backup)node.userData=data;}
- return {bytes,manifest:{scope:asset.scope,sceneId:asset.sceneId,format,state:'READY',revision:asset.revision,byteLength:bytes.length,sha256:await digest(bytes)}};
+ const manifest:SceneManifest={scope:asset.scope,sceneId:asset.sceneId,format,state:'READY',
+  revision:asset.revision,byteLength:bytes.length,sha256:await digest(bytes)};
+ if(format==='CUSTOM_DTO'){
+  onPhase?.('PAYLOAD_VALIDATE');
+  validateStoredScenePayload(bytes,manifest);
+ }
+ return {bytes,manifest};
 }
 export async function restoreSourceScene(bytes:Uint8Array,manifest:SceneManifest,expected:Readonly<{scope:SceneScope;format:SceneFormat;byteLength:number;sha256:string}>):Promise<THREE.Object3D>{
  validateSceneManifest(manifest,expected);
