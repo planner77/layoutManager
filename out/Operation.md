@@ -1,3 +1,19 @@
+## #208 CI #457 — 직접 Node Scene converter NO-GO 운영 가이드 (2026-11-03)
+
+이 PR의 Node direct PoC는 임의 신규 DXF 업로드를 자동 Scene 변환하지 않는다. [CI #457](https://github.com/planner77/layoutManager/actions/runs/41520729471)에서 source/font 검증 후 `three-dxf-viewer@1.0.44`가 Node에 없는 `window`를 비동기적으로 참조하여 4 unhandled rejections 발생. 기존 Vitest assertions 962 PASS에도 **Unit Job/CI 실패**. 이를 서버 CPU-only Scene 생성 완료로 표시하거나 Worker를 켜서는 안 된다.
+
+수정된 테스트 PoC는 Node에서 `DXF_PARSE/SCENE_CONVERTER_UNAVAILABLE`로 파생 Asset 게시 전 거부한다. 일부 Object3D/DTO 존재, Viewer fallback 성공, 자체 생성 테스트 Group은 진짜 DXF 작업 READY가 아니다. 운영자는 기존 승인된 브라우저 수동 `Scene 생성/재생성 → 영속 저장` 절차와 `CurrentScene` 실제 검증 READY만 사용한다. 임의 `window` mock, unhandled rejection 무시, CI test skip, 기존 READY/Current 포인터 삭제·원본 재등록, G7 Auth/Writer 강제 활성화 및 볼륨 초기화로 해결하지 않는다.
+
+후속 서버 독립 headless/지원되는 순수 파서 실제 GO 실증·자원/시간 제한·Worker/Job/Audit·재시작/장애 복구 Runbook 준비 전에는 앱/Migrator/Worker 릴리스를 승인하지 않는다. 자세한 NO-GO 기술 판정 [Issue208](Issue208.md); 실제 CI 현황 [TestReport](TestReport.md)/[FailureLedger](FailureLedger.md). 현장 #113/#193 별도 미수용.
+
+---
+
+## #208 P1-A 운영 금지선 — Node converter 실험과 자동 생성 구별 (2026-11-03)
+
+`src/server/scene/node-converter-poc.ts`는 테스트 전용이며 App API/Worker/Compose/환경변수/Volume/DB schema에 연결되지 않았다. 최초 DXF 업로드 후 서버 Scene 자동 생성, 목록 job status/재시도는 **아직 사용할 수 없다**. 수동 Scene 생성·저장 및 서버 READY 검증은 #212 기존 절차대로 수행한다. P1-A Node/font/encoding/geometry/round-trip 합성 CI 성공·CPU-only OCI·현장 20MiB DXF 모두 별도 확인이 필요하고, 미확인 시 AUTO WORKER 설정/이미지 enable 금지. G7 active/Editor/Site·source hash/버전/Current/기존 READY/영속 메모·외곽선/Zone 보존, #209 등록 업그레이드와 실제 Volume 이관 금지 정책을 계속 따른다. 후속 Queue·Lease/OOM/timeout/Recovery Runbook은 [Issue208](Issue208.md).
+
+---
+
 ## #212 — 수동 DXF Scene 재생성 실패 시 운영 절차 (2026-11-02)
 
 1. Viewer의 `도면 > 원본 DXF로 Scene 생성/재생성`을 **명시적으로** 실행한다. 생성 완료 여부는 `도면 표시 완료`가 아니라 `THREE_SCENE_ARTIFACT_READY` 상태와 **Scene Asset 저장** 명령의 활성화로 확인한다. 저장 후에는 서버 `READY` 응답과 재접속 시 `READY_SCENE` 복원을 별도로 확인한다. 저장 전 브라우저 후보는 서버에 영속화되지 않는다.

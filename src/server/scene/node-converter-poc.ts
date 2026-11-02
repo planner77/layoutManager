@@ -1,0 +1,227 @@
+/**
+ * Issue #208 / P1-A experimental Node-only feasibility probe.
+ *
+ * NOT a production worker, upload hook or authenticated publishing boundary.
+ * #457 has proven the pinned three-dxf-viewer has asynchronous browser
+ * dependencies (WMF/RTF's window access). A Node-only parse can appear to
+ * succeed while leaving unhandled rejections. This probe MUST fail closed
+ * before invoking the unsafe loader in Node; no READY is inferred.
+ * Headless server runtime or a supported pure parser needs a new GO gate.
+ */
+import { readFile } from 'node:fs/promises';
+import { extname } from 'node:path';
+import * as THREE from 'three';
+import { FontLoader } from 'three/addons/loaders/FontLoader.js';
+import { TTFLoader } from 'three/addons/loaders/TTFLoader.js';
+import { DXFViewer } from 'three-dxf-viewer';
+import { sceneSha256 } from '../../domain/scene-digest';
+import type { SceneManifest } from '../../domain/cad-scene';
+import { sceneScope, sourceUnitFromDxf, tagImportedTree } from '../../viewers/three-dxf-viewer/scene-tags';
+import { explicitElevation } from '../../viewers/three-dxf-viewer/normalize';
+import { preflightSceneRoot, restoreSourceScene, serializeSourceScene } from '../../viewers/three-dxf-viewer/scene-serialization';
+import { extractDxfText } from '../../viewers/core/text-index';
+
+type TypefaceJson = Parameters<FontLoader['parse']>[0];
+const finite = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isFinite(value);
+/**
+ * JSON.parse yields untrusted unknown. Narrow only the typeface structure
+ * needed by FontLoader, and keep invalid CAD font content out of error logs.
+ * This is a test-only format preflight, NOT a replacement for library parsing.
+ */
+function isTypefaceJson(value: unknown): value is TypefaceJson {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false;
+  const data = value as Record<string, unknown>;
+  const glyphs = data.glyphs;
+  const bounds = data.boundingBox;
+  if (glyphs === null || typeof glyphs !== 'object' || Array.isArray(glyphs) ||
+      bounds === null || typeof bounds !== 'object' || Array.isArray(bounds)) return false;
+  const box = bounds as Record<string, unknown>;
+  return typeof data.familyName === 'string' && data.familyName.length > 0 &&
+    finite(data.resolution) && data.resolution > 0 &&
+    finite(data.ascender) && finite(data.descender) &&
+    finite(data.underlinePosition) && finite(data.underlineThickness) &&
+    finite(box.yMin) && finite(box.yMax);
+}
+
+/** CI #457: pinned 1.0.44 direct Node conversion is NO-GO, not a green Scene result. */
+export const NODE_DIRECT_DXF_STATUS = 'NO_GO_ASYNC_DOM_DEPENDENCY' as const;
+export const NODE_SCENE_POC_SOURCE_CAP = 16 * 1024 * 1024; // experimental memory bound; NOT the upload limit
+export type NodeScenePocPhase = 'SOURCE_VERIFY' | 'FONT_PREPARE' | 'DXF_PARSE' | 'SCENE_BUILD'
+  | 'TEXT_INDEX' | 'SERIALIZE' | 'ROUND_TRIP';
+export type NodeScenePocCode =
+  'SCENE_SOURCE_DIGEST_MISMATCH' | 'SCENE_SOURCE_UNAVAILABLE' | 'SCENE_FONT_UNAVAILABLE'
+  | 'SCENE_DXF_PARSE_FAILED' | 'SCENE_CONVERTER_UNAVAILABLE' | 'SCENE_ASSET_TOO_LARGE'
+  | 'SCENE_SERIALIZE_FAILED' | 'SCENE_VALIDATE_FAILED';
+export class NodeScenePocError extends Error {
+  constructor(readonly phase: NodeScenePocPhase, readonly code: NodeScenePocCode) {
+    // Never leak original CAD bytes, source paths or upstream exception strings.
+    super(code);
+    this.name = 'NodeScenePocError';
+  }
+}
+export type NodeScenePocResult = Readonly<{
+  bytes: Uint8Array;
+  manifest: SceneManifest;
+  objectCount: number;
+  geometryCount: number;
+  attributeScalars: number;
+  sourceEntityCount: number;
+  restoredObjectCount: number;
+}>;
+
+function release(root: THREE.Object3D) {
+  const geometries = new Set<THREE.BufferGeometry>();
+  const materials = new Set<THREE.Material>();
+  root.traverse(node => {
+    const mesh = node as THREE.Mesh;
+    if (mesh.geometry) geometries.add(mesh.geometry);
+    if (mesh.material) for (const material of Array.isArray(mesh.material) ? mesh.material : [mesh.material])
+      materials.add(material);
+  });
+  geometries.forEach(geometry => geometry.dispose());
+  materials.forEach(material => material.dispose());
+  root.clear();
+}
+function ownedMaterials(root: THREE.Object3D) {
+  // Match the browser adapter's #212 conversion normalization. Upstream can
+  // reuse mutable material instances between objects.
+  const owned = new Map<THREE.Material, THREE.Material>();
+  const clone = (original: THREE.Material) => {
+    if (!owned.has(original)) {
+      const material = original.clone() as THREE.Material & { color?: THREE.Color };
+      if (material.color?.getHex() === 0) material.color.setHex(0xffffff);
+      owned.set(original, material);
+    }
+    return owned.get(original)!;
+  };
+  root.traverse(node => {
+    const mesh = node as THREE.Mesh;
+    if (mesh.material)
+      mesh.material = Array.isArray(mesh.material) ? mesh.material.map(clone) : clone(mesh.material);
+  });
+}
+
+/**
+ * Test-only source/font preflight. No routes, DB, storage or credentials.
+ * Direct Node upstream parse is definitively NO-GO for the pinned version.
+ * The browser/headless path below is retained as unverified experimental code,
+ * not reachable from Node and not a production Worker or publishing endpoint.
+ */
+export async function probeNodeScene(input: Readonly<{
+  source: Uint8Array;
+  expectedSha256: string;
+  versionId: string;
+  fontPath: string;
+}>): Promise<NodeScenePocResult> {
+  if (!input.source.length) throw new NodeScenePocError('SOURCE_VERIFY', 'SCENE_SOURCE_UNAVAILABLE');
+  if (input.source.length > NODE_SCENE_POC_SOURCE_CAP)
+    throw new NodeScenePocError('SOURCE_VERIFY', 'SCENE_ASSET_TOO_LARGE');
+  if (sceneSha256(input.source) !== input.expectedSha256)
+    throw new NodeScenePocError('SOURCE_VERIFY', 'SCENE_SOURCE_DIGEST_MISMATCH');
+
+  // Browser #212 intentionally uses this same TextDecoder; encoding fidelity
+  // for non-UTF8 legacy DXFs is NOT implied by this experiment.
+  const text = new TextDecoder().decode(input.source);
+  if (!/(?:^|\n)\s*0\s*\r?\nSECTION\s*\r?\n/.test(text) ||
+      !/(?:^|\n)\s*0\s*\r?\nEOF\s*$/.test(text))
+    throw new NodeScenePocError('DXF_PARSE', 'SCENE_DXF_PARSE_FAILED');
+
+  let font: ReturnType<FontLoader['parse']>;
+  try {
+    // CI runs npm test before npm run build, so the derived
+    // CadKorean.typeface.json does not yet exist. Accept the committed TTF
+    // explicitly and prepare the equivalent typeface entirely in memory.
+    const extension = extname(input.fontPath).toLowerCase();
+    if (extension !== '.ttf' && extension !== '.json') throw new Error('FONT_FORMAT_UNSUPPORTED');
+    const source = await readFile(input.fontPath);
+    const maxBytes = extension === '.ttf' ? 8 * 1024 * 1024 : 32 * 1024 * 1024;
+    if (!source.byteLength || source.byteLength > maxBytes) throw new Error('FONT_SIZE_UNSUPPORTED');
+    let typeface: unknown;
+    if (extension === '.ttf') {
+      const parsed = new TTFLoader().parse(
+        source.buffer.slice(source.byteOffset, source.byteOffset + source.byteLength),
+      );
+      // Mirror scripts/fonts.mjs, including the reserved-family-name change.
+      // This is a private PoC, not a replacement for the production font build.
+      parsed.familyName = 'CAD Korean';
+      const names = (parsed as unknown as {
+        original_font_information?: Record<string, unknown>
+      }).original_font_information;
+      if (names) {
+        for (const key of ['fontFamily', 'fullName', 'postScriptName', 'preferredFamily', 'uniqueID']) {
+          if (names[key]) names[key] = { en: 'CAD Korean' };
+        }
+      }
+      typeface = parsed;
+    } else {
+      typeface = JSON.parse(source.toString('utf8')) as unknown;
+    }
+    if (!isTypefaceJson(typeface)) throw new Error('INVALID_TYPEFACE_JSON');
+    font = new FontLoader().parse(typeface);
+  } catch {
+    // Never expose local font file paths or parser details in public failures.
+    throw new NodeScenePocError('FONT_PREPARE', 'SCENE_FONT_UNAVAILABLE');
+  }
+
+  // CI #457 (Run41520729471, exact HEAD b7909f4): four unhandled
+  // ReferenceError(window is not defined) rejections appeared even though all
+  // 962 Vitest assertions passed. The bundled WMF/RTF routines schedule
+  // asynchronous work that the getFromPath Promise does not own. try/catch
+  // around getFromPath therefore cannot make direct Node Scene conversion safe.
+  // Fail at this trusted boundary after source + font preflight, *before* any
+  // upstream parse/render promise can be scheduled. Do not add a fake window,
+  // suppress unhandledRejection, or report Scene READY from partial geometry.
+  if (typeof process !== 'undefined' && typeof process.versions?.node === 'string') {
+    throw new NodeScenePocError('DXF_PARSE', 'SCENE_CONVERTER_UNAVAILABLE');
+  }
+
+  const viewer = new DXFViewer();
+  viewer.useCache = false;
+  // Existing package calls _loadFont before fetching a DXF. In this
+  // disposable probe ONLY, preload the same font without an HTTP/DOM loader.
+  (viewer as unknown as { _font: typeof font })._font = font;
+  const dxfUrl = 'data:text/plain;charset=utf-8;base64,' +
+    Buffer.from(explicitElevation(text), 'utf8').toString('base64');
+  let root: THREE.Object3D | undefined;
+  let restored: THREE.Object3D | undefined;
+  try {
+    try { root = await viewer.getFromPath(dxfUrl, 'poc://font-preloaded') ?? undefined; }
+    catch { throw new NodeScenePocError('DXF_PARSE', 'SCENE_CONVERTER_UNAVAILABLE'); }
+    if (!root) throw new NodeScenePocError('DXF_PARSE', 'SCENE_CONVERTER_UNAVAILABLE');
+
+    let counts: ReturnType<typeof preflightSceneRoot>;
+    try { counts = preflightSceneRoot(root); ownedMaterials(root); }
+    catch { throw new NodeScenePocError('SCENE_BUILD', 'SCENE_ASSET_TOO_LARGE'); }
+
+    const scope = sceneScope(input.versionId, input.expectedSha256, sourceUnitFromDxf(text));
+    let candidate: Awaited<ReturnType<typeof serializeSourceScene>>;
+    try {
+      const asset = tagImportedTree(root, scope);
+      const copy = new ArrayBuffer(input.source.byteLength);
+      new Uint8Array(copy).set(input.source);
+      const textIndex = extractDxfText(copy);
+      candidate = await serializeSourceScene(root, asset, 'CUSTOM_DTO', { textIndex });
+    } catch {
+      throw new NodeScenePocError('SERIALIZE', 'SCENE_SERIALIZE_FAILED');
+    }
+    try { restored = await restoreSourceScene(candidate.bytes, candidate.manifest, candidate.manifest); }
+    catch { throw new NodeScenePocError('ROUND_TRIP', 'SCENE_VALIDATE_FAILED'); }
+    let restoredObjectCount = 0;
+    restored.traverse(() => { restoredObjectCount++; });
+    if (restoredObjectCount !== counts.sceneNodes)
+      throw new NodeScenePocError('ROUND_TRIP', 'SCENE_VALIDATE_FAILED');
+    return {
+      bytes: candidate.bytes,
+      manifest: candidate.manifest,
+      objectCount: counts.sceneNodes,
+      geometryCount: counts.geometryCount,
+      attributeScalars: counts.attributeScalars,
+      sourceEntityCount: viewer.lastDXF?.entities?.length ?? 0,
+      restoredObjectCount,
+    };
+  } finally {
+    if (restored) release(restored);
+    if (root) release(root);
+  }
+}

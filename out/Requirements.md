@@ -1,3 +1,11 @@
+## R-208-A1 판정 갱신 — 직접 Node 변환 NO-GO, 서버 독립 대안 필요 (2026-11-03)
+
+[CI #457](https://github.com/planner77/layoutManager/actions/runs/41520729471): synthetic Unit assertion `962/962 PASS`에도 pinned `three-dxf-viewer@1.0.44`가 `window` 브라우저 전역에 의존하는 비동기 작업 4건을 unhandled rejection으로 방출해 전체 Quality FAIL. 이 경우 반환 Scene/manifest가 있어도 CPU-only 무인 Worker의 안정 실행이나 충실도 수용으로 볼 수 없다. 직접 Node PoC는 이후 `SCENE_CONVERTER_UNAVAILABLE`로 **fail-closed**하고 upstream DXF parser를 호출하지 않아야 한다.
+
+**업데이트된 게이트:** (1) Node direct=NO-GO, (2) Headless Chromium 별도 서버 프로세스/소프트웨어 WebGL 또는 공식 Node 파서의 실제 DXF→Scene/저장 후보/복원과 비동기 오류0, 메모리·CPU·시간 상한/재시작 복구를 입증하기 전 전체 자동화 GO 금지, (3) 독립 `THREE.Group`→CUSTOM_DTO/restore 단위 성공은 DXF 파싱 검증을 대체하지 못함, (4) 기존 G7 인가/영속 큐/Scene CAS/도면 목록 Job 상태 요구는 그대로 미구현. 오류 전역 무시·window polyfill·가짜 test pass·READY 오인 금지. 문서 [Issue208](Issue208.md), [ADR](Decisions.md), [TestPlan](TestPlan.md).
+
+---
+
 ## FR-VIEWER-MENU-EXT — Issue #127 완료 후 신규 요구사항 메뉴 연계 (2026-10-27 수립, 2026-11-03 최신화)
 
 | ID | 요구사항 / 수용 해석 | 추적 |
@@ -9,6 +17,12 @@
 | NFR-MENU-EXT-01 | 신규 명령 통합으로 Canvas DOM/Source/Worker 재생성·선택/가시성/Undo 변경 0, ESC 한 입력에 한 계층, focus 복귀·키보드·모바일·fullscreen 및 메뉴 밀도 회귀 0. | #127 ADR-053 및 ADR-127, TC-MENU-EXT-003/005 |
 
 이 항목은 **후속 개발 시 적용할 요구/시험 기준**이다. 현재 #127(v0.42.0) 구현 완료를 변경하지 않으며 목록 `/` 메모 검색과 전역 `운영 > 서버 로그`(#62)는 별도 내비게이션에 둔다. #84 스냅·#86 일정/완료는 세부 Drawer 내부의 기능으로, 독립 상단 메뉴 아이템을 추가하지 않는다. 자세한 실제 매핑은 [Issues124-126-127](Issues124-126-127.md) 참조.
+
+---
+
+## R-208 / P1-A — 서버 단독 DXF Scene 변환 사전 게이트 (2026-11-03)
+
+Issue #208은 서버 독립 Worker/영속 큐/Version별 Scene 작업 상태/안전 진단이 목표다. **현재 P1-A 후보에만** 지원 라이브러리의 Node CPU-only 직접 변환 PoC, 기존 Scene identity·material normalization·CUSTOM_DTO validator/restore, 안전한 상태·단계·retry 분류와 실행형 합성 시험을 추가한다. Node parser/폰트/WebGL 제약과 16MiB 실험 입력 cap은 운영 기능/상한 변경이 아니다. 서버 독립성·브라우저 Scene fidelity/CPU·RAM/OCI 검증 및 G7 내부 Actor/Site 재인가/DB transactional enqueue/CAS/감사·UI는 후속 P1-B/C/D이며 완료로 표시할 수 없다. 수용 기준 및 미검증 항목은 [Issue208](Issue208.md); 실 DXF·2PC는 #113/#193.
 
 ---
 

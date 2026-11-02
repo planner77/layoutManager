@@ -63,7 +63,10 @@ function inspect(tree:unknown,asset:SceneAsset):void{
  * Counts duplicated geometry per node because CUSTOM_DTO embeds it per node.
  * This is only a resource preflight; persisted bytes still undergo full domain validation.
  */
-export function preflightSceneRoot(root:THREE.Object3D):SceneBuildStats{
+/** Unlike sparse telemetry stats, the preflight result always contains all four counts. */
+export type ScenePreflightStats = Readonly<Required<Pick<SceneBuildStats,
+  'sceneNodes'|'geometryCount'|'attributeScalars'|'maxDepth'>>>;
+export function preflightSceneRoot(root:THREE.Object3D):ScenePreflightStats{
  let nodes=0,geometryCount=0,attributeScalars=0,maxDepth=0;
  const pending:Array<{node:THREE.Object3D;depth:number}>=[{node:root,depth:0}];
  while(pending.length){

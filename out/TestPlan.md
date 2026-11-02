@@ -1,3 +1,25 @@
+## TC-208-A1-NOGO — CI #457 async DOM 의존 재현·명시 차단 및 부분 serializer 검증 (2026-11-03)
+
+| TC | 방법 | 합격 조건 및 판정 범위 |
+| --- | --- | --- |
+| TC-208-NG-01 | `scene-node-converter-poc.test.ts`: Node `process.versions.node`, `window/document` 부재, 실제 committed TTF·합성 DXF/SHA를 `probeNodeScene`에 전달 | 반드시 typed `DXF_PARSE/SCENE_CONVERTER_UNAVAILABLE`, `NODE_DIRECT_DXF_STATUS=NO_GO_ASYNC_DOM_DEPENDENCY`. 실제 upstream `getFromPath` 호출 전 fail-closed; **부분 Scene 성공을 주장하지 않음** |
+| TC-208-NG-02 | 정확 기존 `preflightSceneRoot` + `tagImportedTree` + `serializeSourceScene(CUSTOM_DTO)` + `restoreSourceScene`를 **직접 만든 Three Group/Line**에 실행 | manifest/source scope/digest/byte length 및 restored tree ID/count 일치. 이는 **파서 비의존 serializer 부분 시험**, DXF 변환/문자/INSERT fidelity GO가 아님 |
+| TC-208-NG-03 | 기존 source SHA mismatch/16MiB cap/구조 오류/TTF·JSON 부재·손상/금지 확장자 주입 | 기존 정확 단계/allowlisted errorCode, 민감 Source·경로·stack 비노출. No Test skip/fake window/ignored rejection |
+| TC-208-NG-04 | `npm run typecheck`, ESLint, full Vitest/Unit+Integration, Docker/Next/Browser/Greenfield/G7/required Verify | 신규 HEAD에서 0 unhandled rejections, CI green은 **NO-GO 정책/하위 serializer 테스트 수용만**. 실제 Server CPU-only DXF→Scene 가능성 수용 아님 |
+| TC-208-FUTURE | 독립 Headless Chromium software render 또는 지원 Node 파서 PoC | 진짜 DXF LINE/TEXT/MTEXT/BLOCK/INSERT/WCS/layer/Stable ID DTO·restore 동일성, CPU·메모리·timeout, 0 latent unhandled, 격리/restart·보안 시험 필요; **NOT IMPLEMENTED/NOT RUN** |
+
+#457 [실패 CI](https://github.com/planner77/layoutManager/actions/runs/41520729471)의 기존 962 assertion PASS / 4 비동기 오류와 새 실행을 반드시 구분한다. 이전 TC-208-A1의 'Node 실변환'은 이 라이브러리/Node 직접 방식에서 **실패로 판정**되었으므로 'expected NO-GO 테스트가 통과'했다는 이유로 GO로 치환하지 않는다. Headless/새 파서 게이트 통과 전 #208 AC-01/02, Worker/Queue/UI/배포/현장 #113/#193 미수용. [Issue208](Issue208.md), [FailureLedger](FailureLedger.md).
+
+---
+
+## TC-208-A1-FONT — CI #445 빌드 전 글꼴 입력 독립성/Node 실변환 재시험 (2026-11-03)
+
+- CI Quality 순서 `npm run db:generate → typecheck → lint → npm test → npm run build`; Unit 단계에서 gitignored/빌드 산출물인 `public/fonts/CadKorean.typeface.json`을 요구하면 안 된다. `scripts/fonts.mjs`의 실제 입력 `public/fonts/NanumGothic-Regular.ttf`를 직접 명시 전달하고 `TTFLoader.parse → familyName/이름 메타데이터 정규화 → FontLoader.parse`를 메모리 내 수행한다. 합성 Scene DXF의 실제 `getFromPath`/CUSTOM_DTO/Restore는 계속 실행해야 하며 mock parser/skip/optional pass 금지.
+- 음성 테스트: source digest 불일치가 font 로드를 앞서 실패, font 파일 부재·손상 TTF·잘못된 JSON typeface·확장자 거부 시 모두 `FONT_PREPARE/SCENE_FONT_UNAVAILABLE`(민감 경로/예외 원문 비노출). font 원본 크기 제한(`TTF 8MiB, JSON 32MiB`)은 PoC 자원 상한이며 기존 DXF/Scene 운영 상한 변경이 아니다.
+- 재시험 Gate: 정확 HEAD `npm run typecheck`·`npm run lint`·`npm test`(145 suites와 합성 신규 unit)·Production Build·Docker·G7/Greenfield/General E2E 전체. **확인 전 PASS/Node CPU-only GO 불가.** 추가 실 DXF/브라우저 fidelity/Worker·G7 내부 권한·Queue·독립 OCI는 계속 미구현·미검증.
+
+---
+
 ## TC-MENU-EXT — #127 후속 요구·상단 메뉴 연계 회귀 계획 (2026-10-27 작성, 후속 기능 회귀 **NOT RUN**)
 
 | TC | 검증 범위 | 합격 기준 |
@@ -9,6 +31,29 @@
 | TC-MENU-EXT-005 (키보드/경계) | 그룹 Enter/Space/Arrow/Home/End/Esc/Tab, tooltip/메모 Search/복사 fallback/모달, CSS/native fullscreen | 한 Esc에 한 계층 닫힘, focus 복원/모달 trap, Canvas hit-test·도면/레이어/검색 회귀 0. #62 전역 운영 메뉴와 Viewer 그룹 혼동 없음 |
 
 **상태:** PR #133 정적 문서·추적 검토는 TestReport에 별도 기록하며 실제 Viewer Unit/Playwright/E2E와 혼동하지 않는다. 위 항목은 **향후 해당 Issue 구현 PR에서 작성·실행할 Unit/Playwright/E2E 및 리뷰 체크리스트**이며 이 문서 변경만으로 테스트 실행/합격·현장 수용을 주장하지 않는다. #127 완료 당시의 실증 근거는 [TestReport](TestReport.md) U-ISSUES124-126-127-20261027, 후속 UI 정책은 [ADR-127](Decisions.md) 및 [Issues124-126-127](Issues124-126-127.md) 참조. 기존 자동 테스트를 삭제하거나 CI 미실행을 PASS로 대체 금지.
+
+---
+
+## TC-208-A0 — CI #442 TypeScript 정적 계약·Font fail-closed 재검증 (2026-11-03)
+
+- **검증 대상:** `src/server/scene/node-converter-poc.ts`, `src/viewers/three-dxf-viewer/scene-serialization.ts`, `src/tests/unit/scene-build-diagnostics.test.ts`, `src/tests/unit/scene-node-converter-poc.test.ts`. 변경은 P1-A 실험 정적 계약에 한정.
+- **정적:** `FontLoader.parse`의 `Parameters<FontLoader['parse']>[0]`를 무검증 `unknown`으로 전달하지 않는다. glyphs/boundingBox/familyName/resolution/metric shape를 런타임 guard로 확인하고 malformed font는 `FONT_PREPARE/SCENE_FONT_UNAVAILABLE`로 닫는다. `preflightSceneRoot`는 SceneBuildStats의 optional telemetry와 달리 `sceneNodes/geometryCount/attributeScalars/maxDepth`를 모두 `number`로 반환하며 compile-time required assignment를 검사한다.
+- **실행:** `npm run typecheck` → `npm run lint` → synthetic `scene-build-diagnostics.test.ts`/`scene-node-converter-poc.test.ts` → 전체 Test/Build/Greenfield/Docker/Browser PR CI. 외부 민감 Font/CAD 입력값 공개 금지. 신규 CI 실제 PASS 전 검증 결과 `NOT VERIFIED`; Node direct parser/runtime/브라우저 parity GO는 별도 A1–A5 조건 충족 후 판정. 기존 권한·메모·구역·외곽선/Schema 변경 없음.
+
+---
+
+## TC-208-P1-A — Node CPU-only Scene 실제 변환 게이트 (2026-11-03)
+
+| Test | Input / method | 합격 조건 |
+|---|---|---|
+| TC-208-A1 | Node Vitest + 실제 `sceneDxf` (LINE/CIRCLE/BLOCK/INSERT/TEXT/MTEXT), 실제 project font/three-dxf-viewer | DOM·window/WebGL 없이 Object3D·CUSTOM_DTO/manifest SHA·validator/restore; 실패면 Node direct NO-GO |
+| TC-208-A2 | source SHA mismatch, 16MiB PoC cap, font unavailable | 안전한 phase+errorCode, 예외 전문/파일 경로 미노출 |
+| TC-208-A3 | 상태 stage allowlist, unknown fail-closed, terminal 전이, backoff | JOB READY를 CurrentScene READY로 간주하지 않고 verified pointer 우선 |
+| TC-208-A4 | 브라우저 #212와 동일 합성 input의 stable ID/WCS/layer/geometry/textIndex/DTO fingerprint 및 큰 INSERT | **미구현/NOT RUN**, 별도 실행 필요 |
+| TC-208-A5 | 별도 CPU-only Worker OCI/Compose+UID10001/OOM/timeout/Storage+G7 Gate | **미구현/NOT RUN**, P1-B/D 후 실행 |
+| TC-208-A6 | transactional enqueue/lease/2-workers/Auth revoke/READY CAS/목록·업로드 UX/E2E | **미구현/NOT RUN**, P1-B/C 후 실행 |
+
+`src/tests/unit/scene-node-converter-poc.test.ts`와 `scene-build-job.test.ts`는 default Vitest suite에서 자동 실행한다. PR CI가 시작되어도 완료/합격을 보장하지 않는다. #208 AC01–09 완료 판정은 [Issue208](Issue208.md)/[TestReport](TestReport.md) gate 전체와 운영 #113/#193 구분 필요.
 
 ---
 

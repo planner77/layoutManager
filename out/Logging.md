@@ -1,3 +1,17 @@
+## #208 CI #457 — Promise 완료와 unhandled rejection을 구분한 Scene 진단 계약 (2026-11-03)
+
+`three-dxf-viewer@1.0.44`의 직접 Node `getFromPath`가 962 assertion PASS 상태에서도 WMF/RTF 관련 `window is not defined` 4개의 **unhandled rejection**을 Vitest에 남겼다. 이 비동기 오류는 기존 try/catch의 밖이므로 `ARTIFACT_READY`/DTO SHA만으로 Server Worker's 실제 READY를 주장하지 않는다. `probeNodeScene`은 Node에서 upstream 호출 전에 `DXF_PARSE/SCENE_CONVERTER_UNAVAILABLE`의 안전한 코드로 fail-closed. UI/운영 로그에는 raw stack, Source/CAD/Handle/path/token/글꼴 bytes를 노출하지 않는다.
+
+후속 Headless/Node 파서 실증에서는 작업 종료 후 비동기 오류, 지연된 exception, abort/cancel/timeout·OOM까지 Worker Job의 결과/첫 실패·stage/elapsedMs와 연결해야 하며, subprocess crash/async failure를 성공 ACK로 전환하지 않는다. 현재 JobLogContext/업로드 Job ID/server state 연결과 P1-B/C 구현 없음. 이전 #212 브라우저 SceneBuildTracker는 별도이며 실제 서버 `CurrentScene READY`는 저장 데이터 검증만으로 결정. [Issue208](Issue208.md), [TestReport](TestReport.md), [FailureLedger](FailureLedger.md).
+
+---
+
+## #208 P1-A — 서버 변환 실험의 오류·로그 경계
+
+Node PoC는 `NodeScenePocError.phase/code`만 반환하고 upstream exception, CAD 원문·개인/사이트·Source SHA·font path·stack을 출력하지 않는다. `scene-build-job.ts`는 단일 버전 taxonomy/allowlist 및 UNKNOWN 보존을 제공한다. 실험 코드가 Worker Job log/성능 metric을 구현했다는 뜻이 아니다. P1-B 이후에만 JobLogContext의 requestId↔jobId, stage 시작/종료 UTC·elapsedMs, mandatory/optional warning, bounded attempt history/오류 원인 분류를 기존 로거와 연계한다. 공개 목록은 jobId/actor/error 원문 비노출, 운영 raw timeline은 logs:read 유지. [Issue208](Issue208.md).
+
+---
+
 ## #212 — 수동 브라우저 Scene 단계 진단 (2026-11-02)
 
 `ViewerMetric.sceneBuild`는 browser-local `status/phase/steps{phase,outcome,elapsedMs}/stats`의 **정제된 숫자/코드**만 추가한다. `adapter-load:LOAD` 대신 검증된 `SceneBuildError`는 allowlisted `SCENE_*` reasonCode와 실제 phase를 표시한다. `getFromPath`는 font fetch, parse, geometry가 결합되어 있으므로 generic `SCENE_CONVERTER_UNAVAILABLE`로만 기록; 원인을 특정하지 않는다. `OPTIONAL_OUTLINE_INDEX` timeout은 warning이고 Scene Artifact의 필수 성공·실패와 분리한다. Client Error.cause 원문/stack/파일명/원본 텍스트/Handle/SHA/site/token은 metric·download JSON·Log API로 전달하지 않는다. Browser client metric은 서버 `RequestLogContext`/operation JobLog가 아니고 `requestId/jobId`를 추정·생성하지 않는다. 서버 #208 전용 영속 Job 시도/로그/상관 ID는 별도 구현. [Issue212](Issue212.md).

@@ -1,3 +1,21 @@
+## ADR-208-NODE-NOGO — 직접 Node `three-dxf-viewer@1.0.44` 전환 보류 및 안전 차단 (2026-11-03)
+
+**사실:** [PR CI #457](https://github.com/planner77/layoutManager/actions/runs/41520729471), source `b7909f4c98704fa14d63caf5baa750105af313ac`: Unit assertion 962건 모두 통과했음에도 `three-dxf-viewer/dist/main.js`의 WMF/RTF 관련 `window is not defined` **unhandled rejection 4건**으로 Quality 실패. 기존 `try/catch getFromPath`가 수명주기 밖 Promise를 기다리지 않아 partial success를 허용함을 증명.
+
+**결정:** pinned upstream의 **Node direct 방식은 NO-GO**이며, 기존 P1-A 가설의 결과를 부분적 CPU-only 성공으로 상향 보고하지 않는다. `probeNodeScene`은 원본과 글꼴 확인 후 Node process에서 upstream loader 이전 `DXF_PARSE/SCENE_CONVERTER_UNAVAILABLE`로 막는다. 별도 순수 Three/CUSTOM_DTO serialize·restore의 테스트는 하위 서브시스템 검증으로만 평가한다. 대안은 서버 독립 headless Chromium(소프트웨어 WebGL) 또는 검증된 Node-native DXF converter이며 실제 분리 프로세스·비루트·자원상한·무인 재시작·한글/BLOCK/INSERT/WCS/Layer/Stable ID·DTO round-trip·대상 CAD fidelity/비동기 오류0 확인 시에만 후속 GO.
+
+**배제:** `window={}` polyfill, jsdom만으로 합격 주장, `process.on('unhandledRejection')` swallow, 테스트 skip/CI rules 완화, Scene 부분 결과 READY, 업로드를 브라우저 worker/숨김 탭으로 자동 처리, G7 승인 우회. 현재 #208 P1-B/C/D, CPU-only Worker/OCI/영속 Job·목록 UI 미구현 및 #113/#193 현장 OPEN. 기존 Storage/DB/Auth/CurrentScene/원본/GHCR 불변. [Issue208](Issue208.md), [FailureLedger](FailureLedger.md), [TestReport](TestReport.md).
+
+---
+
+## ADR-208-FONT — P1-A Node 실험 글꼴은 추적된 TTF에서 재현 가능하게 준비 (2026-11-03)
+
+**상황/증거:** PR CI #445 Unit test `FONT_PREPARE` 실패. `CadKorean.typeface.json`은 Git에 없고 `scripts/fonts.mjs`가 `run.mjs build/dev`에서만 생성한다. CI Quality는 `npm test`를 `npm run build`보다 먼저 수행하므로 생성 JSON을 읽는 Node PoC의 사전조건이 잘못되었다. **결정:** 독립 CPU-only PoC의 positive synthetic test는 Git에 포함된 TTF를 직접 읽어 `TTFLoader.parse`, family/원본 이름 정규화, `FontLoader.parse`로 임시 파일 없이 메모리 변환한다. 기존 JSON 지원을 없애거나 인증된 프로덕션 글꼴 생성 경로를 변경하지 않는다. 확장자·크기·typeface shape를 제한하고 실패는 안전 코드만 응답. Unit 전에 전체 Production build, 빌드 폰트 체크인, fake font/skip test, CI 순서 교환/게이트 완화는 배제한다.
+
+**판정 경계:** 이것은 파일 존재성 오류 해결이지 `three-dxf-viewer` Node parser/실 CAD Scene Fidelity의 GO가 아니다. 새 exact HEAD 실행, Round-trip/metadata/Font 파서·Worker/CPU-only 실행 확인 전 P1-A 미검증, P1-B/C/D 미구현. [Issue208](Issue208.md).
+
+---
+
 ## ADR-127 — Issue #127 완료 후 Viewer 메뉴 확장/요구사항 수집 규약 (2026-10-27 수립, 2026-11-03 최신화)
 
 - **맥락:** #127은 v0.42.0에서 그룹 명령 `도면/보기/작업`, 좌·우·하단 overlay Drawer 및 두 정보 Sticky 헤더로 완료됐다. 이후 당시 미완인 #37/#49/#55/#56/#65/#71/#73/#81/#82/#85/#88/#90/#91 작업이 개별 PR로 진행되며 각각 상단 버튼을 추가하면 메뉴 밀도 회귀와 지원 Renderer/권한/상태 불일치, Canvas 리로드 위험이 생긴다.
@@ -6,6 +24,14 @@
 - **후속 UI 경계:** #56 JSON과 #91 glTF export는 `도면`; #49/#55/#71/#73/#82/#85/#88/#90은 `작업`; #85 전체 Memo show/hide는 `보기`. Snap #84/일정 #86은 하단/우측 메모 편집기 상세 조작(상단 독립 항목 불필요). #85 Memo Tree는 기존 우측 Outline Tree와 Drawer tab/콘텐츠 교체 방식 우선 설계. #62 `운영 > 서버 로그`는 Viewer 메뉴가 아닌 전역 nav.
 - **안전성/검증:** UI 상태는 CadViewer command handler와 기존 Manager, reducer 경유; 메뉴·Drawer 개폐가 Source GET/Worker/Canvas DOM·Layer/Selection/Undo를 재생성·변경하지 않음. 실제 Renderer(fallback 포함)·모드·신뢰된 인증·Role/Scope로 enabled/checked/expanded 결정. 키보드·ESC 1계층·focus 복귀·desktop/mobile/native/CSS fullscreen 유지. 메뉴 노출로 서버 인가/영속 G7 GO를 대신할 수 없음.
 - **효력:** 본 ADR은 후속 요구·Issue·설계·테스트 작성 기준이다. #127 완료 사실/ADR-053·기존 Owner G7 NO-GO를 변경하거나 신규 기능을 즉시 개발·릴리스하라는 승인이 아니다. 13개 후속 이슈는 2026-11-03 기준 모두 Closed이며 이후 기능 변경은 개별 Issue의 선행/AC/CI 게이트를 따른다. [추적 매트릭스](Issues124-126-127.md), [Requirements](Requirements.md), [Architecture](Architecture.md), [TestPlan](TestPlan.md) 참조.
+
+---
+
+## ADR-208-P1-A — CPU-only direct Node converter 사전 실증, 자동 활성화 보류 (2026-11-03)
+
+**결정:** 기존 `three-dxf-viewer@1.0.44`의 실제 Group/geometry + 프로젝트 CUSTOM_DTO serializer/restore를 순수 Node에서 검증하는 실행형 synthetic PoC를 우선 둔다. 공식 지원되지 않는 `_font` preload와 data URL fetch는 PoC에만 제한하며, timeout/OOM·한글/CP949/BLOCK/실 대형 CAD·브라우저 동등성·CPU-only Docker가 증명되지 않으면 프로덕션 GO 불가. Headless Chromium(서버 전용 격리 컨테이너)과 공식 Node 파서 비교가 다음 대안이며 실제 구현 전 검증한다.
+
+**배제:** 브라우저 hidden tab/Web Worker, request 종료 뒤 미대기 Promise, 인증 토큰 저장/권한 우회, 현재 Scene READY를 Job 상태만으로 변경, 기존 READY/Version/Current/영속 업무정보 손상. 현재 프로덕션 변동 없음. **P1-B/C/D 보류** 및 미수용 AC/정확 시험 구분은 [Issue208](Issue208.md)/[TestReport](TestReport.md).
 
 ---
 

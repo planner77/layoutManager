@@ -1,3 +1,9 @@
+## #208 P1-A — Durable SceneBuildJob 스키마 설계안 (실 DB 미적용)
+
+`scene-build-job.ts`는 Queue/READY/Fencing이 아니라 안전한 TypeScript Domain 계약이다. P1-B 후보 스키마 `SceneBuildJob`에는 version+source SHA+builder+schema UNIQUE active, actorId/sessionId/requestId, state/phase/attempt/nextRunAt, leaseOwner/leaseExpiry/fencing, created/updated/finished UTC를 보관하고 `SceneBuildAttempt`로 단계/오류 코드·결과만 관리한다. 별도 `SceneOrphanJob`(이미지 정리)과 혼동 금지. 등록 Version INSERT+Job intent INSERT 한 SQLite transaction 필수. 원본/토큰/에러 전문·내부 경로 DB 저장 불허. 확정 전 Prisma/DDL/G7 baseline/upgrade registry를 추가하지 않았으며 기존 운영 DB 자동 ALTER 없음. 설계 [Issue208](Issue208.md), #209/#216 릴리스 게이트.
+
+---
+
 ## #209 — Greenfield 업그레이드와 복구 메타데이터
 
 이번0.58.0 후보는 업무 Table/Column/FK/trigger와 기존 `_prisma_migrations` baseline/checksum을 변경하지 않는다. 동일 Schema 지원 chain은 User/Grant/Session/Audit·기준정보 UUID·Version/Current·삭제 암호·Scene/메모/외곽선/구역을 그대로 보존한다. 읽기 호환 Schema가 등록된 upgrade source임을 뜻하지 않는다.

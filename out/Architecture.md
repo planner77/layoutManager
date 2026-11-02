@@ -1,3 +1,21 @@
+## #208 P1-A / CI #457 — Node direct Scene Builder의 비동기 DOM 의존과 차단 경계 (2026-11-03)
+
+`three-dxf-viewer@1.0.44`의 `getFromPath`는 직접 Node에서 반환 결과를 낼 수 있어도 내부 WMF/RTF 분기에서 독립 Promise를 생성해 `window is not defined` unhandled rejection 4건이 Vitest에 누적되었다. 반환된 Object3D/DTO와 unawaited 작업의 완료/안전성이 다르므로 try/catch/Promise.race/유효 manifest만으로 **정상 Scene 변환 성공을 증명하지 못한다**. CI Run41520729471 Unit 962/962 assertion PASS·4 errors/Quality FAIL이 이를 입증한다.
+
+**현재 안전 경계:** `probeNodeScene`은 SHA/바이트/형식/TTF·JSON 글꼴 기본 검증 후 Node `process.versions.node` 감지 시 `NodeScenePocError('DXF_PARSE','SCENE_CONVERTER_UNAVAILABLE')`로 **upstream `getFromPath` 호출 이전에 차단**한다. DOM/window를 추가하거나 전역 rejection handler를 설치하지 않는다. 기존 `tagImportedTree`/`serializeSourceScene`/`restoreSourceScene`의 순수 Three Group 테스트는 renderer/parser 비의존 계층만 검증하며 A1 GO 근거가 아니다. 실제 DXF→Scene CPU-only 서버 경로는 구현되지 않음.
+
+**후속 ADR 경계:** 지원되는 독립 headless Chromium(software renderer) 또는 Node native parser 분리의 fidelity·리소스·관측성 실증이 선행; 별도 프로세스 crash/isolation, timeout/memory bound, 글꼴, 캐시, Origin/Stable ID, OLE/RTF/MTEXT/BLOCK/INSERT, 저장 불변성을 확인한 다음에만 `SceneBuildJob` outbox/lease/fencing·G7 제한된 내부 게시 경계로 연결. 사용자 Browser 숨김 탭·Mock DOM·unhandled swallow, Job READY만으로 CurrentScene READY 처리 금지. [Issue208](Issue208.md), [Decisions](Decisions.md), [TestPlan](TestPlan.md).
+
+---
+
+## #208 P1-A / CI #445 — Node Scene PoC 글꼴 입력 시점 분리 (2026-11-03)
+
+PR Quality Job의 `npm test`가 `npm run build`보다 먼저 실행되므로 `scripts/fonts.mjs`의 산출물인 `public/fonts/CadKorean.typeface.json`을 노드 실험에 필수로 의존하면 테스트가 DXF 변환 전에 실패한다. Node PoC의 `FONT_PREPARE`는 명시 `.ttf`로 지정한 git-tracked `NanumGothic-Regular.ttf`를 `TTFLoader.parse`로 메모리 내 typeface 객체로 만들고, Production font generator와 동일한 `CAD Korean` family/메타데이터 정규화 후 `FontLoader.parse`를 호출한다. 명시 `.json`도 구조 검증 후 사용 가능하며 지원하지 않는 확장자·빈/큰 입력·손상 내용은 원본 경로/예외 누출 없이 차단한다. 별도 `npm run build`/숨김 Browser/임시 파일 생성이 Node 시험의 전제 조건이 아니다.
+
+변환을 이어서 실행하는 실제 `DXFViewer.getFromPath(data URL)`의 browser-independent 여부, parser/block/KO fidelity, Worker/OCI resource는 여전히 A1–A5 미검증이며 성공으로 가정하지 않는다. `src/scripts/fonts.mjs`, Viewer `/fonts/CadKorean.typeface.json`, app/migrator 이미지와 storage/auth/CurrentScene은 변경하지 않는다. [ADR](Decisions.md)/[시험](TestPlan.md)/[실패](FailureLedger.md).
+
+---
+
 ## ADR-127 / #127 후속 — Viewer 명령 그룹을 통한 기능 확장 규약 (2026-10-27 수립, 2026-11-03 최신화)
 
 - **구성 경계:** `src/features/cad-viewer/viewer.tsx`의 `CadViewer`가 메뉴의 `ViewerCommandGroup[]`/실제 handler와 capability·선택·권한 상태를 조합하고, `viewer-menu-bar.tsx`→`viewer-command-menu.tsx`가 접근 가능한 command group/role/checked/disabled를 렌더링한다. 상세 기능은 기존 `ViewerAppShell`의 좌 레이어·우 Tree·하단 도구 overlay Drawer 또는 명시 대화상자에 연결한다. 신규 기능은 **기존 명령/Drawer 재사용 우선**, 별도 상위 버튼 추가 금지.
@@ -5,6 +23,14 @@
 - **우측 Drawer 조정 기준:** 기존 Outline Tree와 후속 Memo Tree는 우측 영역에서 탭/콘텐츠 전환을 우선 검토하여 상시 두 우측 도크/겹침을 만들지 않는다. 두 Tree의 selection/filter/visibility는 독립 유지하고, 모바일은 한 Drawer/모달 포커스, desktop은 #127 non-modal 정책 및 Canvas 가시 면적 보존.
 - **명령·수명 주기:** onSelect는 기존 Manager/App reducer/검증된 도메인·서버 API를 통해서만 실행. menu/Drawer state를 Viewer Source load-effect dependency에 넣지 않고 Canvas ref/Manager/Adapter/Worker 재생성 없이 command handler만 확장한다. `dxf-viewer` fallback/DWG와 권한 없는 상태를 false 성공처럼 숨기지 않고 disabled 이유로 명시. 서버 API 검증은 UI 메뉴 숨김과 독립.
 - **범위 구획:** CAD 도면 목록 `/`의 메모 통합 검색은 별도 목록 UI, `운영 > 서버 로그`(#62)는 전역 layout navigation이며 Viewer #127 상단 그룹으로 옮기지 않는다. #109 기반 Auth/Prisma/G7의 설치별 실제 운영 활성·인가·지원 Schema와 UI 문서 규칙은 별개. 근거 [ADR-127](Decisions.md), [이슈별 연결표](Issues124-126-127.md), [FR-MENU-EXT](Requirements.md).
+
+---
+
+## #208 / P1-A — Node DXF→Scene CPU-only PoC 및 안전한 후속 경계 (2026-11-03)
+
+현재 `node-converter-poc.ts`는 실제 원본 해시→TextDecoder/explicitElevation→Node `DXFViewer`와 font pre-parse→`preflightSceneRoot`→material clone→stable Scene tag→text-index→CUSTOM_DTO+validator→restore 검증의 **격리 실험**만 한다. Browser WebGL/서버 Auth/DB/Storage와는 연결되지 않으며 private `_font`/data URL은 기술 리스크다. `scene-build-job.ts`는 버전 고정 phase/상태 전이·안전 공개 요약과 timeout/backoff의 순수 도메인 계약이다. JOB READY만으로 서버 Scene READY를 추정하지 않으며 CurrentScene verified pointer가 정본이다.
+
+P1-A GO 전 G7 승인 upload transaction/outbox·claim/lease/fencing/heartbeat/attempt schema, Actor/Site 재인가·Audit, `SceneRepository` CAS publish, 세션 독립 Worker/OCI/Greenfield schema·목록 API/UX/실 CAD 성능을 구현한 것으로 주장하지 않는다. 상세 sequence/fault/NO-GO는 [Issue208](Issue208.md), 원본 브라우저 수동 #212와 구분한다.
 
 ---
 

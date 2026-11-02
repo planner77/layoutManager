@@ -1,3 +1,21 @@
+## PR #217 / #208 — CI #457 962/962 단언 PASS·비동기 오류 4건, Node direct NO-GO 판정 (2026-11-03 KST)
+
+- **원본 CI 증거:** [PR CI #457 / Run41520729471](https://github.com/planner77/layoutManager/actions/runs/41520729471), source `b7909f4c98704fa14d63caf5baa750105af313ac`, `completed/failure`. Scope Job `125536288340` SUCCESS, Docker image/migration/runtime `125536434792` SUCCESS, Quality `125536434951` FAILURE (**145/145 Test files·962/962 assertion PASS**, 단 Vitest **4 unhandled rejection Errors**), Required Verify `125538556873` FAILURE. G7 Greenfield `125538137150`, G7 Signed/Legacy `125538137795`, General Chromium E2E `125538138098` SKIPPED.
+- **실제 오류:** `ReferenceError: window is not defined` at `node_modules/three-dxf-viewer/dist/main.js:7986`, WMFJS 관련 `bd.lWMFJS`/후속 WMF/RTF 객체 생성 스택, `gm.getFromPath` → `probeNodeScene:173`. 다른 Vitest assertion이 모두 PASS이어도 반환 Promise 밖에서 비동기 오류가 발생해 전체 CI FAILED. 소스/폰트 유효·부분 Object3D/DTO 생성 가능성과 **서버 변환 안정성**은 별도 판정이다.
+- **기술 결과:** pinned `three-dxf-viewer@1.0.44` 직접 Node CPU-only 접근을 **NO-GO**로 확정한다. 원인 자료를 근거로 `NODE_DIRECT_DXF_STATUS`와 Node process fail-closed guard를 `getFromPath` **이전**에 적용하고 `SCENE_CONVERTER_UNAVAILABLE`을 반환. 실제 DXF→Scene positive Test를 무작정 PASS로 남기거나 `window`/Promise를 mock하지 않고, 가설의 부정 결과를 정확한 테스트로 변경. 별도의 pure Three Group→기존 CUSTOM_DTO/manifest/restore 시험으로 **serializer 부분 능력만** 구분한다. 기존 SHA·TTF·JSON fail-closed 테스트 유지.
+- **현 검증 경계:** 변경은 GitHub 원격 작성으로, 이 환경에서 별도 `npm ci/tsc/Vitest/Docker/Playwright` 직접 실행 **NOT RUN**. 다음 PR CI의 실제 success/0 unhandled 여부는 확인 전 **NOT VERIFIED**. A1 Node-direct는 이미 NO-GO이고, 대안 Headless Chromium/Node-native converter를 구현·실증하지 않았으므로 Issue #208 AC-01/02, 영속 Queue/G7 Worker·도면 목록 UI·OCI 배포 및 실 DXF/GPU/2PC 현장 #113/#193은 계속 미완료. PR/MAIN 병합, GHCR 게시, 운영 파일·Volume/Auth·Writer 수정 없음. [후속 설계](Issue208.md)/[TC](TestPlan.md)/[실패 원장](FailureLedger.md).
+
+---
+
+## PR #217 / #208 — CI #445 Unit 1건 실패·글꼴 원인 및 수정 후 재검증 보류 (2026-11-03 KST)
+
+- **정확 CI:** [PR CI #445 Run41517145247](https://github.com/planner77/layoutManager/actions/runs/41517145247), source HEAD `6932550e7c5e37d6f11b9d528da2fc594a26fb5b`, `completed/failure`. Scope Job `125524284796` SUCCESS. Quality `125524385155`은 TypeScript/ESLint 단계를 통과한 뒤 **Unit/Integration 959 PASS·1 FAIL(960 tests; 144 pass/1 fail suites)**. 정확 실패 `tests/unit/scene-node-converter-poc.test.ts:21`, `probeNodeScene`의 `FONT_PREPARE/SCENE_FONT_UNAVAILABLE`, `node-converter-poc.ts:130`; 합성 DXF 실제 변환은 폰트 준비 전에 중단. Docker `125524385169` SUCCESS. Required Verify `125528106539` FAILURE. G7 Greenfield `125526962110`, G7 Signed/Legacy `125526962286`, General Chromium `125526962515` SKIPPED.
+- **확인된 설계 불일치:** git의 `src/public/fonts`에는 `NanumGothic-Regular.ttf`/OFL만 있고 `CadKorean.typeface.json`은 `scripts/fonts.mjs`가 dev/build 실행에서 파생한다. CI의 Unit 단계는 Build 이전이므로 생성 JSON 부재로 `readFile`이 실패, catch에서 고정 `SCENE_FONT_UNAVAILABLE` 반환. 이것을 파서/OOM/생산 폰트 파손으로 오진하지 않는다.
+- **수리:** 실험 Node PoC에서 TTF/JSON 명시 입력을 분리; git-tracked TTF를 `TTFLoader.parse`해 `scripts/fonts.mjs`와 동등한 family/meta label을 적용한 뒤 `FontLoader.parse`. 생성 25MiB JSON 파일 생성/체크인/CI 순서 조작 없이 Node only. 기존 JSON 구조 검사 유지, 확장자 allowlist 및 8MiB TTF·32MiB JSON 상한, malformed TTF/JSON/미지원 확장자 보안 부정 테스트 추가. 기존 합성 DXF→Object3D→CUSTOM_DTO→restore 통합 Unit 삭제·우회 없음.
+- **검증/미구현:** GitHub 원격 코드·테스트 반영만 확인, 로컬 npm/Vitest/TypeScript/Docker 실행 **NOT RUN**. 새 PR CI 성공·새 HEAD 변환 및 Server CPU-only GO/실제 Browser fidelity/Worker/Queue/G7 auth/실 도면 20MiB+ 모두 **NOT VERIFIED**. 기존 READY/Current/원본·메모·Zone/Outline/DB/Volume/GHCR 변경 없음. 근거 [FailureLedger](FailureLedger.md), [TC](TestPlan.md), [설계](Issue208.md).
+
+---
+
 ## PR #133 — 최종 docs-only CI 및 병합 검증 (2026-11-03 KST)
 
 - **Source/정합성:** HEAD `ddd958f5fbaef22d4d34868c24edac8d07d20075`, 8개 Markdown 변경, Main behind0, 병합 충돌0·미해결 리뷰 thread0. 기존 Main 문서 보존, `ADR-127` 고유, FR-MENU-EXT-01~04/NFR-MENU-EXT-01 및 TC-MENU-EXT-001~005, 후속 13개 Closed 이력과 #65 인증된 Admin/G7·지원 Schema 조건 반영. Source/Squash Tree 동일 `19d6b20c522f638f7b3bfb44bc2ce8d6b620ff67`.
@@ -13,6 +31,26 @@
 - **정적 검증 기준:** `AGENTS.md` 필수 메뉴/Drawer·권한·수명주기 판단, 고유 `ADR-127`(기존 `ADR-054` 두 항목 그대로 유지), `FR-MENU-EXT-01~04`/`NFR-MENU-EXT-01`, `TC-MENU-EXT-001~005`, #127 매트릭스 13개 이슈 모두 Closed, #65 인증된 G7/Admin/지원 Schema 조건부 활성, 최신 Main 원문 보존. PR 문서 6개 변경·본 TestReport·FailureLedger 이외 앱 코드/DB/릴리스 파일 변경 없음.
 - **미실행:** 문서 정책 자체는 새 기능 구현이 아니다. `TC-MENU-EXT-001~005`의 Viewer UI·키보드·Drawer/Canvas·Renderer·권한 API 관련 실제 Unit/Playwright/E2E는 이번 문서 PR에서 새로 실행하지 않음(**NOT RUN**); 차후 기능 변경 PR에서 실증. 현장 CAD/GPU/운영 인증·GHCR 게시 수용과 무관.
 - **원격 검증 게이트:** 신규 HEAD PR CI 필수 Jobs, review thread0/충돌0/behind0를 업데이트 후 확인하며 실패 시 원장에 Run/HEAD/수리 추가. 실행 전 새 CI 결과를 PASS로 기록하지 않는다.
+
+---
+
+## PR #217 / #208 — PR CI #442 TypeScript 실패 및 보완 후 재검증 대기 (2026-11-03 KST)
+
+- **정확 실행:** [PR CI #442 Run41514760273](https://github.com/planner77/layoutManager/actions/runs/41514760273), source HEAD `dfb059e96e189b21e8a176b91f865d200cf9ee47`, `completed/failure`.
+- **Job 분리:** Scope `125515649993` SUCCESS. Quality `125515840109` FAILURE (TypeScript 단계 `server/scene/node-converter-poc.ts:104 TS2345`, `148/149 TS2322`); Docker `125515840257` FAILURE (`Next.js npm run build`에서 동일 `104 TS2345`, Next Typecheck 직후 중단), Required Verify `125516975378` FAILURE. G7 Signed/Legacy `125516569193`, General Browser `125516569867`, Greenfield UI `125516570306`는 선행 gate 실패로 SKIPPED. Lint/Unit/Browser/worker runtime 성공 주장 불가.
+- **정확 원인:** `JSON.parse` 결과의 `unknown`은 `FontLoader.parse(FontData)`에 바로 전달할 수 없다. `preflightSceneRoot`는 실제로 네 수치를 항상 반환하지만 반환형을 `SceneBuildStats=Partial<Record<...>>`로 잘못 선언하여 `geometryCount`와 `attributeScalars`가 `number | undefined`가 되었다. Docker Build failure는 네트워크/런타임/이미지 배포 실패가 아니라 동일 TypeScript 검사의 중복 노출.
+- **보완 코드:** `isTypefaceJson` TypeScript runtime shape guard로 안전한 입력만 FontLoader.parse에 전달하고 invalid/missing JSON은 고정 `SCENE_FONT_UNAVAILABLE`. `ScenePreflightStats`는 `Required<Pick<SceneBuildStats,sceneNodes|geometryCount|attributeScalars|maxDepth>>`로 정확 지정. `scene-build-diagnostics.test.ts` required numeric compile contract 및 `scene-node-converter-poc.test.ts` malformed font fail-closed를 추가. 대체 `?? 0`로 누락을 은폐하지 않으며 기존 CI/TypeScript Strict 유지.
+- **검증 상태:** 이번 보완은 GitHub 코드 리뷰·정적 근거 기준으로 반영, 이 환경에서 Node/npm/Vitest/Next/Docker 직접 실행 **NOT RUN**. 수정 후 새 정확 HEAD의 CI·Node PoC 실행/브라우저 동등성 결과는 확인 전 **NOT VERIFIED**. A1–A5 및 #208 P1-B/C/D 전체 미완료, #113/#193 현장 별도. [이슈 기술 게이트](Issue208.md), [실패 원장](FailureLedger.md).
+
+---
+
+## #208 P1-A — CPU-only Node converter PoC 제출 전 확인 상태 (2026-11-03)
+
+- 작업 범위: 실제 three-dxf-viewer 1.0.44 + font pre-parse(data URL) Node DXF→CUSTOM_DTO/restore 실험, SceneBuildJob 상태/오류 taxonomy, 합성 Vitest 두 파일, 이슈 P1-A/P1-B/C/D 설계·운영 경계 문서.
+- **실행 결과:** 이 GitHub 연결 기반 환경에서는 `npm ci`, `npm run typecheck`, `npm run lint`, `vitest`, Playwright, Docker/OCI/CPU-only Benchmark를 **수행하지 않았다(NOT RUN)**. 실행 가능한 PoC가 존재하는 것과 성공은 다르다.
+- **미구현:** Durable Queue/Worker/transactional enqueue/G7 Actor revocation 재검증/Scene storage publish/Compose/Prisma/목록 UI/API·재시도. 업로드 사용 경험은 기존 수동 경로로 유지한다.
+- **현장:** 5MiB 미만/20MiB 이상 실 도면, 한글·BLOCK/INSERT 깊이, CPU/RAM/OOM·WebGL/2PC, #113/#193 미수용. PR CI 실행 여부와 exact HEAD/Run은 별도 실제 기록 후에만 변경한다.
+- Gate 및 TC: [Issue208](Issue208.md), [TestPlan](TestPlan.md). PR·Main·GHCR/Issue 종료 성공 판정 전부 NOT VERIFIED.
 
 ---
 

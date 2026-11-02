@@ -1,3 +1,38 @@
+## 2026-11-03 — PR #217 / #208 CI #457: 직접 Node DXF 변환 NO-GO 및 unhandled rejection 차단
+
+- [Run41520729471](https://github.com/planner77/layoutManager/actions/runs/41520729471)의 Quality Unit은 962/962 assertion PASS이나 pinned `three-dxf-viewer@1.0.44`의 `getFromPath` 하위 WMF/RTF 브라우저 전역 `window` 접근으로 비동기 **unhandled rejection 4건** 발생, CI 실패. Docker/TypeScript/Lint 정상, E2E는 미실행.
+- `node-converter-poc.ts`: `NODE_DIRECT_DXF_STATUS=NO_GO_ASYNC_DOM_DEPENDENCY`를 도입하고 Node process에서 upstream 변환 호출 전에 `SCENE_CONVERTER_UNAVAILABLE`로 안전하게 종료. 오류 무시·window mock·partial Asset READY 금지.
+- `scene-node-converter-poc.test.ts`: 잘못된 기존 positive Node-DXF assertion을 **실제 증거에 따른 NO-GO** expected failure로 바꾸고, 별도 pure Three Group→기존 CUSTOM_DTO full validator→restore 시험으로 하위 serializer 동작만 검증. Source/Font validation negative tests 유지.
+- AGENTS/Requirements/Architecture/Decisions/Issue208/Logging/Operation/TestPlan/TestReport/FailureLedger/README를 최신 A1 NO-GO와 대안 headless/Node 파서 검증 대상으로 동기화. 운영 업로드·G7/Scene/Current/DB/Volume/Compose/릴리스 변경 없음. 수정 HEAD PR CI/후속 기술 GO/자동 Worker·목록 UI·Issue 종료는 별도 미검증/미구현.
+
+---
+
+## 2026-11-03 — #208 / PR #217 CI #445 Font stage 실패·빌드 독립 보완
+
+- [PR CI #445 Run41517145247](https://github.com/planner77/layoutManager/actions/runs/41517145247) Quality Unit **959/960 PASS·1 FAIL**: Node Scene synthetic PoC가 `FONT_PREPARE/SCENE_FONT_UNAVAILABLE`로 중단. TypeScript/ESLint·Docker smoke는 성공, Browser/G7 E2E는 선행 실패로 미실행. root cause는 빌드 시 생성되는 `CadKorean.typeface.json`을 빌드 **이전** Unit에서 읽는 순서 불일치.
+- `src/server/scene/node-converter-poc.ts`에 tracked `NanumGothic-Regular.ttf`의 TTFLoader 기반 in-memory TypeFace 준비 및 명시 `.json` path 호환, 안전 파일 형식/크기 한도 추가. `scene-node-converter-poc.test.ts`는 실제 TTF 입력으로 완전한 DXF→CUSTOM_DTO/restore 검사를 유지하고 누락 글꼴·손상 TTF/JSON·지원하지 않는 확장자 오류를 검증.
+- AGENTS, Architecture, Decisions, Issue208, TestPlan/TestReport/FailureLedger/README를 실제 CI 실패에 맞춰 갱신. Viewer/기존 스크립트/DB/권한/Scene/Volume/CI workflow·GHCR 변경 없음. 새 CI 성공·Node CPU-only 완성·자동 Worker/목록 UI는 미확인/미구현.
+
+---
+
+## 2026-11-03 — PR #217 / Issue #208 CI #442 TS 수리·안전 타입 계약 보강
+
+- CI Run41514760273 (`completed/failure`)의 Quality TS2345×1/TS2322×2 및 Docker의 동일 TypeScript 빌드 종속 실패를 분석. Reader/G7/Runtime·Docker Config 문제로 오진하지 않음.
+- `node-converter-poc.ts`: 불신 Font JSON을 runtime guard 후 `FontLoader.parse` 입력으로 좁혀 실패시 공개 안전 코드만 반환.
+- `scene-serialization.ts`: 실제 `preflightSceneRoot` 반환 4개 통계를 정확한 `ScenePreflightStats` required type으로 정의. 필수 개수를 임의 0으로 치환하거나 기하 검증·Scene cap을 완화하지 않음.
+- `scene-build-diagnostics.test.ts` 및 `scene-node-converter-poc.test.ts`: numeric compile contract, malformed typeface/에러 비노출 회귀 추가. AGENTS/Issue208/TestPlan/TestReport/FailureLedger 갱신.
+- 새 PR CI 시작 전 완료·Node CPU-only 실제 변환/OCI 수용·Worker/Queue/UI/배포/Issue 종료 **NOT VERIFIED**. P1-A 선행 게이트 유지.
+
+---
+
+## 2026-11-03 — Issue #208 P1-A Node CPU-only Scene PoC / 설계 게이트 (부분 구현)
+
+- 신규 `node-converter-poc.ts`: pinned 실제 DXF→Three Object3D→CUSTOM_DTO/manifest validator→restore를 Node CPU-only에서 시도하는 격리 실험. 안전한 SHA/font/크기 실패 분류, synthetic fixture 실행형 Vitest.
+- 신규 `scene-build-job.ts`: Phase/Job state 전이, READY pointer 우선순위, safe allowlist/backoff 및 unit tests. P1-B durable queue와 독립 Worker/게시·P1-C 도면 목록 상태/UI·P1-D Docker/Greenfield 배포는 **아직 구현되지 않음**.
+- [Issue208](Issue208.md)/Architecture/Decisions/Requirements/Database/Logging/Operation/TestPlan/TestReport/FailureLedger/AGENTS/README 문서에 기술 게이트 및 미실행 증거 명시. 실제 CI 결과·CPU-only 실증/배포·현장 수용/Issue 종료는 NOT VERIFIED.
+
+---
+
 ## 2026-11-03 — #212 PR #214 합격·Main 병합과 새 GHCR 릴리스 #216 후속
 
 - 최종 PR CI #440 (Run41508339395) 8/8 SUCCESS; 앞선 #438 TypeScript TS18046 및 #439 Greenfield R3 상태 기대값 실패를 수리한 검증된 Source HEAD `ef83a210c16abe040c7ae451d14012a8469085b9`를 Main `1ba46dc4a2fd50e06ce84069fce98977c55632bf`로 동일 tree Squash. Issue #212 closed/completed. Main CI #130 시작 확인, 결과 모니터링 생략.

@@ -1,3 +1,17 @@
+## PR #217 / Issue #208 — CI #457 직접 Node 변환기 NO-GO·비동기 오류 fail-closed (2026-11-03 KST)
+
+[PR CI #457 Run41520729471](https://github.com/planner77/layoutManager/actions/runs/41520729471), 정확 실패 HEAD `b7909f4c98704fa14d63caf5baa750105af313ac`: Quality Unit 테스트는 **962/962 assertion PASS였지만 Vitest가 4개의 unhandled rejection을 검출하여 실패**했다. `three-dxf-viewer@1.0.44`의 DXF 변환 중 WMF/RTF 관련 비동기 경로가 브라우저 전역 `window`를 읽어 `ReferenceError: window is not defined`를 발생시켰다. 단순 try/catch나 반환된 Scene 후보/manifest만으로 서버 변환 성공을 주장해서는 안 된다. Docker Job은 성공했고, 브라우저/G7 E2E는 선행 실패로 미실행.
+
+**기술 판정:** 기존 라이브러리를 호출하는 직접 Node 방식은 현재 **NO-GO**, #208의 자동 생성 AC-01/02는 미충족이다. `probeNodeScene`은 source/TTF 준비 후 Node 프로세스에서 상위 변환기 호출 전에 `DXF_PARSE/SCENE_CONVERTER_UNAVAILABLE`로 fail-closed한다. 테스트는 이 상태를 **실패한 기술 가설의 정확한 부정 테스트**로 검사하고, Three.js `CUSTOM_DTO` 직렬화/복원은 별도 순수 Node 테스트로 구분한다. 가짜 window/DOM, unhandledRejection 무시, 테스트 skip·CI gate 완화, 생성된 부분 객체를 서버 READY로 기록하는 우회는 금지. 후속 실증은 분리된 서버 headless Chromium/소프트웨어 WebGL Worker 또는 검증된 Node 파서로 신규 GO 게이트를 거쳐야 한다. 원본·기존 READY/Current, G7/Auth/Writer/Audit, Memo/Zone/Outline, 운영 DB/Volume/GHCR은 불변. [판정 및 다음 순서](out/Issue208.md), [실패 원장](out/FailureLedger.md), [수용 테스트](out/TestPlan.md). 수정 HEAD의 PR CI는 시작·완료를 구분하고 요청대로 완료 모니터링 생략.
+
+---
+
+## PR #217 / Issue #208 — CI #445 Unit 실패: 빌드 전 글꼴 파생 파일 미생성 수리 (2026-11-03 KST)
+
+정확 [PR CI #445 Run41517145247](https://github.com/planner77/layoutManager/actions/runs/41517145247), HEAD `6932550e7c5e37d6f11b9d528da2fc594a26fb5b`의 Quality Unit 959 PASS/1 FAIL은 합성 Node Scene POC의 `FONT_PREPARE/SCENE_FONT_UNAVAILABLE`이다. `src/public/fonts/CadKorean.typeface.json`은 추적된 파일이 아니라 `scripts/fonts.mjs`가 `npm run dev/build`에서 생성한다. PR CI는 `npm test`가 `npm run build`보다 앞서므로 POC에서 생성 파일을 전제한 설계가 잘못되었다. 수정은 **추적된 NanumGothic-Regular.ttf를 Node TTFLoader로 메모리 내 typeface로 변환**한 뒤 같은 `FontLoader.parse` 경로 사용. 명시 JSON 경로 검증과 안전 실패·메모리 상한 유지, 임시/공용 폰트 생성 파일이나 npm test 빌드 선행 요구 추가 금지. 이번 오류는 CPU-only DXF parser 불가능의 증거가 아니며 실제 Node DXF 변환 성공은 새 CI 전까지 미검증이다. Docker Job은 SUCCESS, E2E는 선행 실패로 SKIPPED; TypeScript/ESLint·CI gate 완화 없음. [FailureLedger](out/FailureLedger.md)/[Issue208](out/Issue208.md)/[TestReport](out/TestReport.md) 참조. 기존 Scene/원본/Current/G7/Auth/DB/GHCR 비변경.
+
+---
+
 ## Viewer 요구사항 접수·설계 시 메뉴 그룹/아이템 평가 (2026-10-27 수립, 2026-11-03 최신화)
 
 - **적용 대상:** CAD Viewer의 신규 기능·UI/UX 변경을 요청받거나 Issue를 등록·분석·구현할 때는 **#127(v0.42.0) 그룹 메뉴 기반 UX에 통합할 필요가 있는지 먼저 판단**한다. 별도 상단 버튼을 기본안으로 추가하지 않는다. 단순 배치·편집 세부값은 기존 Drawer/대화상자/컨텍스트 메뉴에 두고, 사용자가 상시 접근해야 할 명령·전환·찾기·입출력은 Viewer 그룹의 실행 아이템으로 만든다.
@@ -6,6 +20,20 @@
 - **상태와 안전성:** `CadViewer`의 기존 `ViewerCommandMenus` 및 Manager handler를 이용하고, 메뉴/Drawer 개폐만으로 `cad-canvas` remount·Source GET/parse/Worker 재시작·Layer/Overlay/Selection/Undo 상태 변경을 일으키지 않는다. 메뉴의 checked/expanded/disabled와 실제 현재 Renderer(자동 fallback 포함), 권한/지원 범위는 일치시킨다. 키보드·모바일 단일 Drawer·CSS/native fullscreen·ESC 최상위 1계층·focus 복귀를 기존 #127 계약대로 검증한다.
 - **보안·영속 승인:** 버튼 노출은 권한 허가가 아니다. #96/#109 G7 및 #65/#71/#73/#83/#88/#90/#91 등 인증·서버 API/영속 데이터 선행/Owner 승인 없이 서버 기능을 활성화하거나 Reader 공개 Viewer의 익명 권한을 확장하지 않는다. 미구현·미지원 기능은 명확한 disabled 사유 제공, 실행되지 않는 가짜 메뉴 금지.
 - **범위 구분:** CAD 도면 목록(`/`), 전역 내비게이션(`운영 > 서버 로그`, #62), 관리자 전용 화면과 Viewer 메뉴를 혼동하지 않는다. #84 스냅과 #86 메모 일정·완료는 메모 상세 Drawer 내부 조작으로 통합한다. 본 규약은 **요구사항 분석/문서화 계약**이며 기존 이슈의 자동 구현·병합·GHCR·운영 활성화 승인이 아니다. 2026-10-27 당시 추적 이슈 13건은 2026-11-03 기준 모두 Closed이며 기존 Issue 본문의 연계 기록은 보존한다. 후속 메뉴 연결 기준은 [#127 후속 매핑](out/Issues124-126-127.md), [ADR-127](out/Decisions.md), [Requirements](out/Requirements.md), [Architecture](out/Architecture.md), [TestPlan](out/TestPlan.md) 참조.
+
+---
+
+## PR #217 / #208 — CI #442 TypeScript 3건 수리·Node PoC 게이트 유지 (2026-11-03 KST)
+
+[PR CI #442 Run41514760273](https://github.com/planner77/layoutManager/actions/runs/41514760273), source HEAD `dfb059e96e189b21e8a176b91f865d200cf9ee47`에서 Quality TypeScript `TS2345` (`node-converter-poc.ts:104`) 및 `TS2322` 2건(148,149)이 발생했다. Docker build도 동일 TypeScript 실패의 종속 결과이며 DXF 실행 실패나 Docker 환경 오작동을 증명하지 않는다. `FontLoader.parse` 이전 `unknown` JSON 형식 검사, `preflightSceneRoot`가 반환하는 필수 4개 통계의 정확한 required type, malformed font 및 numeric count regression을 적용했다. `skipLibCheck`/strict/CI gate를 완화하거나 `0`으로 optional 통계를 꾸미지 않는다. 기존 원본/Scene/Current/G7/운영 데이터·배포 변경 없음. 새 PR CI의 실행/완료 및 CPU-only PoC의 실제 성공은 구분하고, 시작 이후 결과 모니터링 생략. 근거 [FailureLedger](out/FailureLedger.md)/[TestReport](out/TestReport.md), 후속 Gate [Issue208](out/Issue208.md).
+
+---
+
+## Issue #208 — P1-A Node CPU-only Scene 변환 가능성 선행 검증 (2026-11-03, PR 후보)
+
+최초 업로드 후 자동 Scene 생성 #208은 **P1-A GO/NO-GO 선행**이다. [out/Issue208.md](out/Issue208.md)의 A1–A5 기술 게이트, [Architecture](out/Architecture.md)/[Decisions](out/Decisions.md)를 따른다. Node POC는 pinned `three-dxf-viewer`의 unsupported private `_font`과 `data:` fetch로 실제 객체·기존 CUSTOM_DTO validator·restore를 시험하지만, CI/CPU-only 컨테이너/브라우저 동등성·권한/Worker·DB schema/목록 UI는 **미검증 또는 미구현**이다. P1-A 테스트 PASS만으로 자동 생성 기능 완료·운영 GO를 주장하지 않는다.
+
+이번 변경은 production upload/publish/UI/Prisma/Compose/G7 Auth·Writer/Audit/Scene Source·Current·APP_CREATED·Memo·Zone·Outline/기존 Version/Volume/GHCR를 수정하지 않는다. 실행 전 테스트와 CI는 PASS가 아니다. Node 불가능 시 서버 독립 headless converter 또는 지원되는 Parser 대안을 명시적으로 비교하고 B안(브라우저 세션 의존)으로 묵시적 대체 금지. PR CI는 시작만 확인하고 사용자 요청에 따라 완료 모니터링 생략, 리뷰 스레드/충돌/실패 원장은 실제 상태와 분리하여 기록한다.
 
 ---
 
