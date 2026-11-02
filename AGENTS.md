@@ -1,3 +1,9 @@
+## #204 / #202 — 기준정보 이름·기본 목록 메모 검색 (0.57.0 개발 후보)
+
+이름 편집 또는 도면 목록의 메모 조건을 변경할 때 [Requirements](out/Requirements.md)/[Architecture](out/Architecture.md)/[Decisions](out/Decisions.md)/[TestPlan](out/TestPlan.md)의 #204/#202 계약을 먼저 읽는다. 실제 수용은 TestReport/FailureLedger의 최종 소스 증거를 따른다. PR CI는 시작만 확인하고 완료 모니터링은 생략한다.
+
+---
+
 ## #196 — Main 병합·GHCR 인계 (2026-11-02, 0.56.0)
 
 구역 후속 수정·릴리스 확인 시 [FailureLedger](out/FailureLedger.md)/[TestReport](out/TestReport.md) 상단을 읽는다. PR #200 최종 HEAD2c5b5e1의 CI 8/8 SUCCESS·미해결 리뷰0·충돌0 및 실제 Manager GO 후 Squash Main ae928b4와 #196 closed/completed를 확인했다. Main CI41339438989는 GHCR 0.56.0 App/Migrator 게시 시작만 확인했으며 완료·digest·배포는 미확인이다. 현장 #113/#193 수용은 별도다. 아래 후보/CI 대기 표기는 당시 기록이다. 이 후속 갱신은 docs-only이며 runtime release 소스·태그를 변경하지 않는다.
