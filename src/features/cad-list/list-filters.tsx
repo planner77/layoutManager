@@ -21,6 +21,7 @@ export function ListFilters({ query, options, mode }: { query: CadListQuery; opt
     <div className="mb-2 flex flex-wrap items-end gap-2">
       <label className="grow">파일명<input name="filename" defaultValue={query.filename} placeholder="파일명으로 검색" maxLength={255}/></label>
       <label className="grow">도면 설명<input name="description" defaultValue={query.description} placeholder="설명으로 검색" maxLength={2000}/></label>
+      <label className="grow">메모 검색어 (제목·본문)<input name="memo" type="search" defaultValue={query.memo} placeholder="메모 내용으로 도면 찾기" maxLength={100}/></label>
       <Button type="submit"><Search size={16}/>검색</Button><Button variant="outline" asChild><Link href="/">초기화</Link></Button>
     </div>
     <details ref={advanced} open className="home-advanced"><summary>추가 필터</summary><div className="grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-7">

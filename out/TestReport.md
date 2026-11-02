@@ -1,4 +1,40 @@
+## #202 / #204 — 0.57.0 후보 검증 (2026-11-02)
+
+- 기준: origin/main `8b38b84`, 별도 `feat/issues-202-204-20261102` worktree. 원래 workspace의 Compose/next-env 수정2건은 보존했다. Node22.14.0/npm11.10.0, Chromium1243/SwiftShader, Linux x86_64, 격리 임시 SQLite/CAD fixture를 사용했다.
+- 역할: gpt-6-astra Manager가 요구·설계·AC/구현 GO와 최종 검토, gpt-6-sol Developer2명이 이슈별 구현·집중 시험, gpt-6-luna QA가 독립 검증을 담당했다. Root는 통합 리뷰·전체 검사·개인정보/오류 응답 보완·문서·게시를 담당한다. 실제 PR 승인/운영 현장 수용과 로컬 QA는 구분한다.
+- #204 추적: FR-204-01/02 → MasterManager 변경 필드만 PATCH → `master.test.ts`, `g7-runtime-cad.test.ts`, `zone-runtime.test.ts`, `master.spec.ts`. 다섯 단계2회 이상 이름 변경, 활성/비활성, 이름 정규화/형제 중복/미분류, Site/Role/감사 롤백, 같은 UUID/부모·Version·Current·원본·사용자 도면명·메모·구역 보존을 확인했다. 새 브라우저에서 최신 트리·등록 dropdown·목록/위치 필터·층 이력·Viewer 위치를 확인했다. 기존 이름/ID 모델·Schema·migration은 추가하지 않았다.
+- #202 추적: FR-202-01–04 → 공통 `authorized-drawing-memo-list` + CadListRepository의 인가 Site/제목·본문 EXISTS와 page-scoped window query → `drawing-memo-list.test.ts`, `memo-search-auth.test.ts`, 일반/Greenfield `drawing-memo-list` Browser. 빈 조건의 공개 조회, nonblank의 실제 signed G7 권한, 고정3 SELECT·Version count/페이지 중복 방지·SQL 최대3 preview와 exact Memo/Version 링크, Current/전체·AND·URL·320px 및 DXF content GET0을 검증했다. 삭제/SHA 불일치 제외와 기존 #90 검색은 유지한다. 홈 metadata no-referrer 및 GET 오류 private,no-store/no-referrer를 추가했다.
+
+| 검사 | 실제 결과 |
+| --- | --- |
+| 설치 / Prisma 생성 | 각각 exit0; 설치 당시 기존29 advisories(19 moderate/9 high/1 critical), 자동 수정 없음 |
+| 전체 Unit/Integration | 140 files / 924 PASS / 299.32초, `/tmp/issues202-204-unit-all.log` |
+| 구현 집중 | Developer master+G7 27 PASS, Greenfield 참조 보존1 PASS; 최신 drawing memo 고정3 SELECT 포함3 PASS, signed auth4 PASS. 전체와 중복 합산하지 않음 |
+| 최종 Typecheck / ESLint | exit0 / 0 errors·기존8 warnings; `/tmp/issues202-204-{typecheck,lint}-final2.log` |
+| 최종 Production Build | exit0; `/tmp/issues202-204-build-final2.log`, cache/referrer 보완 포함 |
+| 독립 QA 집중 | 최초40 PASS/1 FAIL(기존 Zone15초 timeout), 원래 Zone suite 단독 재실행8 PASS/15.18초. 원장에 최초 실패 보존 |
+| 독립 QA General Browser | 8 files / 27 PASS / 57.2초, port3556, `/tmp/qa-202-204-e2e.log`; master/current/name/link/upload/workflow/#88–90 및 #202320px 포함 |
+| 독립 QA signed Browser | 3 PASS / 30.2초, port3557, `/tmp/qa-202-204-greenfield.log`; 실제 세션·권한/오류 header·메모 exact focus·HTML text escape·referrer·320px 검증 |
+
+### #202 합성 SQL 성능
+
+`npx tsx tests/benchmark/drawing-memo-search-benchmark.ts` exit0, `/tmp/issues202-204-benchmark-final.log`. 초기1회 제외 후3회 warm median(ms), 페이지25/100. 분산은10메모/Version과 인가 Site 절반, 집중은 한 Version에 전량을 배치했다. 기존 `ix_cad_memo_version_live(version_id,deleted_at)`를 사용하며 EXPLAIN에서 Version scan·메모 version/live index lookup을 확인했다. 결과는 페이지 Version당 최대3개 본문만 전송하나 SQLite는 해당 Version의 모든 일치를 검사/순위화한다.
+
+| 메모 수 | 분산 page25 / page100(ms) | 단일 Version 집중 page25 / page100(ms) |
+| --- | --- | --- |
+| 1k | 1.7 / 1.6 | 1.0 / 1.0 |
+| 10k | 2.5 / 3.5 | 3.9 / 4.0 |
+| 100k | 22.9 / 24.3 | 32.4 / 34.7 |
+
+관측 최대34.7ms를 근거로 Manager가 동일 환경·분포·반복의 **100k warm median ≤100ms**를 임시 로컬 회귀 목표로 정했다. 이 측정은 repository/SQL만 포함하며 로그인·인가·HTTP·브라우저 렌더·동시 부하 및 실 CAD/GPU/운영 SLA가 아니다. 원본 파일 조회/파싱은 경로상0이다. 신규 인덱스/FTS/Schema는 도입하지 않았다.
+
+- 최종 수용: gpt-6-astra Manager가 위 실제 증거를 검토하고 **0.57.0 코드·합성 범위 PR 게시/CI 시작 GO**를 회신했다. 독립 QA의 반복 benchmark도 통과했다(100k 분산21.2/22.2ms·집중34.9/33.9ms, `/tmp/qa-202-204-benchmark.log`). Root가 `/tmp/qa-202-204-memo-{320,results}.png`를 직접 검토했다. 320px 메모 입력/본문·결과는 document overflow 없이 접근 가능하며 기존 전역 header nav clipping은 이전부터 존재한 제한으로 남긴다.
+- 게시 경계: PR CI는 시작만 확인하고 완료 모니터링하지 않는다. PR 병합·Issue 종료·태그/GHCR·운영 DB/Volume/Auth/Writer 변경은 수행하지 않는다. 실패·재시험·Git 인증 경계는 FailureLedger를 따른다.
+
+---
+
 ## PR #200 / #196 — 최종 원격 수용·Main 릴리스 인계 (2026-11-02 KST)
+
 
 - 정확 PR HEAD `2c5b5e13bd91f8c219e64c69c6ee4abcdd289a06`의 [PR CI Run 41313128074](https://github.com/planner77/layoutManager/actions/runs/41313128074) **completed/success**. Scope124867497306, Quality124867539436, Docker124867539334, Greenfield124868822851, General shard2 124868822853, signed/legacy124868822855, General shard1 124868822925, required Verify124870819418 모두 **SUCCESS(8/8)**. Type/Lint/Unit/OCI/benchmark/Build, exact-HEAD artifact Browser 및 Docker native/migrator/Compose gate가 통과했다. 이전 실패 결과를 덮어쓰지 않는다.
 - P2 thread1 **resolved/미해결0**, 제출 review2 COMMENTED·CHANGES_REQUESTED0, Main behind0·mergeable=true·conflict0 확인. Owner Managed 범위이며 새 독립 PR 승인을 주장하지 않는다. 실제 Manager 최종 GO 후 Root가 정확 제목/빈 본문 Squash Main `ae928b4229fc98ef2cb0274f8c132cb62ba376f3` 병합 및 #196 closed/completed를 확인했다. 소스/버전0.56.0은 검증된 PR tree 그대로다.

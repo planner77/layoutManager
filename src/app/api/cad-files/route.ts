@@ -1,4 +1,6 @@
 import { context } from '@/server/context';
+import { listQuery } from '@/domain/cad-list';
+import { withAuthorizedDrawingMemoList } from '@/server/services/authorized-drawing-memo-list';
 import { cadWriteContext } from '@/server/g7-operational/cad-preview-context';
 import { failure, requireSameOrigin } from '@/server/http';
 import { uploadCad } from '@/server/services/upload';
@@ -13,12 +15,22 @@ export async function GET(request: Request) {
   const requestLog = new RequestLogContext(request, 'api', 'cad_list');
   try {
     requestLog.phase('database_read');
-    const result = await context().list.search(new URL(request.url).searchParams);
+    const params = new URL(request.url).searchParams;
+    const query = listQuery(params);
+    const result = query.memo
+      ? await withAuthorizedDrawingMemoList(request, (repo, sites) => repo.list(query, sites))
+      : await context().list.search(params);
     requestLog.phase('database_read', 'success');
     requestLog.completed(200);
-    return Response.json(result, { headers: requestLog.responseHeaders({ 'Cache-Control': 'no-store' }) });
+    return Response.json(result, { headers: requestLog.responseHeaders({
+      'Cache-Control': query.memo ? 'private, no-store' : 'no-store',
+      ...(query.memo ? { 'Referrer-Policy': 'no-referrer' } : {}),
+    }) });
   } catch (error) {
-    return failure(error, { request: requestLog });
+    const response = failure(error, { request: requestLog });
+    response.headers.set('Cache-Control', 'private, no-store');
+    response.headers.set('Referrer-Policy', 'no-referrer');
+    return response;
   }
 }
 

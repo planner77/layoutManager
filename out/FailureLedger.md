@@ -1,4 +1,22 @@
+## #202 / #204 — 분석·구현·검증 원장 (2026-11-02)
+
+- 환경/게시: 원래 workspace는0.19.1로 오래되어 public origin fetch 후 최신 Main `8b38b84`의 별도 worktree를 만들었다. 사용자 로컬 변경2개는 보존했다. `gh` 저장 credential과 기존 `.env` Git credential의 API 인증은 실패했다(401/인증 실패 범주, 값·헤더 미출력). Fetch 성공은 public 읽기 증거이며 push 권한의 증거가 아니다. 동일 지정 저장소의 연결된 GitHub 도구로 검사한 tree를 fast-forward 게시할 예정이다. Force/History rewrite 없음.
+- 설치: `npm ci` exit0, 29 advisories(19 moderate/9 high/1 critical). 기존 의존성 경고이며 이번 이슈가 해결했다고 주장하지 않는다.
+- 독립 QA 집중 시험 1차: **40 PASS / 1 FAIL**, 기존 `TC-Z196-RESET-HISTORY`가15초 timeout(실제15.94초, `/tmp/qa-202-204-focused.log`). 전체 Unit/Build와 동시 실행 중 자원 경합 가능성이 있으나 원인은 재시험 전 미확정이다. timeout/skip을 완화하지 않고 전체 Zone suite를 단독 재실행한다. 후속 부분 실행은 중단했으며 PASS 근거로 사용하지 않는다.
+- #204 Browser 최초 집중 실행: 신규2건 **2 FAIL**(`/tmp/issues204-developer-e2e.log`). 첫 Site 편집은 접힌 트리 내부 버튼 대기30초 timeout, 두 번째 연계 화면은 목록 위치 필터를 select/option으로 가정해0개를 관측했다. 실제 노출·필터 DOM 계약과 비교해 선택자/탐색을 수정하고 원래 데이터 불변 기대는 유지한 채 재실행한다. 성공으로 바꿔 기록하지 않는다.
+- #202 signed Greenfield Browser 초기2회는 각각 **2 PASS / 1 FAIL**(`/tmp/issues202-developer-g7.log`): 테스트 setup이 Site 생성 후 실제 Site Grant를 부여하기 전에 Building을 생성해403 ACCESS_DENIED로 거절되었다. 권한 우회 없이 Grant 선행 순서로 fixture를 수정한다. 이는 인가가 정상 차단한 시험 준비 오류이며 정상 검색/링크 흐름의 PASS 증거가 아니다.
+- #204 Browser2차: 신규2건 **2 FAIL**(`/tmp/issues204-developer-e2e-r2.log`). 검색 후 Site 버튼 선택자가 펼치기/선택2개에 일치한 strict 오류는 `exact:true`로, desktop에서 이미 열린 details의 숨겨진 summary 클릭 대기는 실제 표시된 필터를 검증하도록 수정한다. 이름·UUID·필터/원본 보존 assertion은 유지한다.
+- #204 Browser3차: **1 PASS / 1 FAIL**(`/tmp/issues204-developer-e2e-r3.log`); 저장 후 이전 이름 검색어 때문에 새 이름 노드가 정상적으로 필터링되어 tree assertion이 실패했다. 검색 초기화 후 최신 이름/비활성을 검증하도록 수정했다. 단일 재시험 R4 PASS, 최종 신규2건 **2 PASS/6.64초**(`/tmp/issues204-developer-e2e-r5.log`). 조회/저장/데이터 보존 기대를 완화하지 않았다.
+- #202 General320px 최초 시험은 `getByRole('alert')`가 화면 경고와 Next route announcer에 동시에 일치한 strict 오류. 실제 경고 panel로 한정한 재시험 **1 PASS**(`/tmp/issues202-developer-general.log`). Site Grant 순서를 고친 signed Greenfield **3 PASS/31.0초**(`/tmp/issues202-developer-g7.log`): 최초 설치·Scene 복원2건과 새 메모 목록1건. 최종 cache/privacy 변경의 재검증은 독립 QA가 별도로 수행한다.
+- 독립 QA Zone 재시험: 원래 전체 suite·15초 제한 그대로 **8 PASS/15.18초**, `/tmp/qa-202-204-zone-retest.log`. 최초 timeout은 자원 경합과 일치하는 일시 실패로 분류하되 확정된 제품 원인으로 주장하지 않는다. Root 전체 Unit은 **140 files/924 PASS/299.32초**(`/tmp/issues202-204-unit-all.log`). 이후 추가된 고정3 SELECT 회귀는 최신 focused3/3 PASS로 별도 확인했다.
+- Root/Manager source review 보완: API GET 오류에도 `private, no-store`와 `no-referrer`를 명시했고, 홈 검색어가 링크/프리패치 Referer로 전파되지 않도록 Page metadata `referrer=no-referrer`를 추가했다. 이는 관측 CI 실패가 아니라 게시 전 코드 검토 결과다. 변경 후 final production build 및 독립 Browser를 수행한다.
+- 최종 독립 QA: 관련 General8files **27 PASS/57.2초**, signed Greenfield **3 PASS/30.2초**, `/tmp/qa-202-204-{e2e,greenfield}.log`. QA가 직접 추가한 영속 HTML-like 제목 text escape·주입 node0/JS 실행0·meta referrer·320px doc width 검증도 통과했다. Root가 실제 capture를 확인했다. 기존320px 전역 nav clipping은 별도 기존 제한이며 검색 form/result document overflow와 구분한다. 독립 benchmark도 모든 scale/distribution/count/cap3/sourceGET0을 통과했다. Manager는 코드·합성 PR 게시/CI 시작 GO만 수용했다.
+- 신규 PR CI 실패는 아직 관측하지 않았다. 실제 실패·원인·수정·재실행은 발생 시 누적한다. CI 시작 후 사용자 요청에 따라 완료 모니터링하지 않으며 과거 성공을 새 HEAD PASS로 승계하지 않는다.
+
+---
+
 ## PR #200 / #196 — Owner Managed 병합·이슈 종료·GHCR Main CI 시작 (2026-11-02 KST)
+
 
 - 최종 PR HEAD `2c5b5e13bd91f8c219e64c69c6ee4abcdd289a06`, [PR CI 41313128074](https://github.com/planner77/layoutManager/actions/runs/41313128074) **8/8 Job SUCCESS**. 아래 병합 직전 gate와 최초 실패/RED→GREEN·리뷰 해결 기록을 보존한다. 새 CI 실패는 관측하지 않았다.
 - 실제 **gpt-6-astra Manager**가 최신 CI·리뷰/충돌 상태를 근거로 코드·합성 검증 범위의 최종 GO를 회신했다. Root가 정확 PR 제목과 빈 Squash 본문, expected HEAD를 지정해 [PR #200](https://github.com/planner77/layoutManager/pull/200)을 Main [`ae928b4229fc98ef2cb0274f8c132cb62ba376f3`](https://github.com/planner77/layoutManager/commit/ae928b4229fc98ef2cb0274f8c132cb62ba376f3)로 병합했다. 병합 tree는 CI가 검증한 PR tree와 동일하다.

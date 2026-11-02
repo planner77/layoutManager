@@ -379,9 +379,9 @@ export function MasterManager() {
       return;
     }
     void mutate("edit", selected, {
-      ...(!selected.node.isUnclassified ? { name } : {}),
-      active: draftActive,
-      ...(selected.type === "sites" ? { kind: draftKind } : {}),
+      ...(!selected.node.isUnclassified && name !== selected.node.name ? { name } : {}),
+      ...(draftActive !== selected.node.active ? { active: draftActive } : {}),
+      ...(selected.type === "sites" && draftKind !== selected.node.kind ? { kind: draftKind } : {}),
     });
   }
 

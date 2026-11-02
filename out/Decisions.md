@@ -1,3 +1,19 @@
+## ADR-202-204 — 불변 Master ID와 인가된 Version 단위 메모 검색 (2026-11-02)
+
+**결정:** #204는 이미 존재하는 UUID/name 분리와 PATCH를 명확히 하고 회귀로 보증한다. 새 displayName/테이블/마이그레이션은 추가하지 않는다. 참조·비활성 일반 master의 이름 변경은 허용하며 시스템 미분류 이름은 예외다. 기존 정상 G7 쓰기 승인 없이 편집을 허용한다는 의미가 아니다.
+
+#202는 기존 기본 Version 목록에 선택적 `memo` 조건을 추가한다. nonblank에서 #90 signed Session/Site 인가를 재사용하고 제목/본문 EXISTS를 기존 조건과 AND한다. 단순 JOIN으로 Version 수가 증폭되거나 전용 메모 검색으로 화면을 대체하는 대안은 배제한다. 빈 조건은 기존 일반 목록과 완전히 같은 경로다. 결과에는 제한 preview3개와 일치 count 및 #88 exact 링크를 제공한다. count/페이지/preview의 인가·삭제·SHA 조건을 공유하고 같은 snapshot으로 조회한다. 새 FTS/Index/Schema 변경은 이번 범위 밖이며 실제 SQL 성능을 먼저 측정한다.
+
+**현재 차이:** MasterRepository.update는 이미 이름 정규화·불변 ID·미분류 방어가 있으나 다섯 단계 반복 rename과 메모/Zone 참조 보존 시험을 보강해야 한다. 기본 CadListQuery/Repository에는 메모 조건·G7 보호 검색 경로가 없으며 전용 #90 검색은 메모 행 단위이므로 결과를 직접 이어붙여 사용할 수 없다.
+
+**성능 판단:** 100k 합성 메모의 분산/단일 Version 집중, page25/100에서 Root 재측정 warm median 최대34.7ms를 관측한 뒤 같은 환경·3회 반복의 임시 회귀 목표를100ms 이하로 설정한다. 이는 사전 합격 기준이 아니며 실제 수치는 TestReport에 보존한다. Repository SQL 경로만 측정하므로 HTTP·G7 인가·렌더링·동시 부하·운영 SLA의 목표로 전용하지 않는다.
+
+**Manager 판정(2026-11-02):** Root 전체924 Unit·정적 검사·최종 runtime build와 독립 QA 일반27/서명3 Browser, 권한·XSS·referrer·320px·exact Memo focus, 분산/집중 SQL 실측을 근거로 코드·합성 PR 후보를 수용한다. 최초 Zone timeout은 기존 조건 그대로 단독8 PASS로 재확인했으며 실패 이력은 유지한다. 기존320px 상단 내비게이션 잘림은 신규 검색 입력과 구분된 제한이다. 실제 상세 결과는 TestReport/FailureLedger를 따른다.
+
+**완료 경계:** 로컬 구현·독립 QA 후 Manager가 수용한다. PR CI는 시작만 확인하고 완료를 모니터링하지 않는다. 병합/태그/GHCR/운영 이전·현장 실 CAD 수용으로 확대하지 않는다. 정확 결과·실패는 TestReport/FailureLedger에 기록한다.
+
+---
+
 ## ADR-196-REPAIR — 보호 데이터와 retry UI, renderer/source 취소 범위 분리
 
 2026-11-01 PR #200의 실제 CI 두 실패와 P2 review를 근거로 public status OFF에서는 Zone GET을 생략하고, ACTIVE 오류는 보호 데이터 폐기와 retry shell 보존을 함께 수행한다. public status로 서버 인가를 대체하지 않는다. 같은 Version renderer-only 수동 전환은 pending source를 공유해 body-complete/cache-pending 경합의 두 성공 다운로드를 방지한다. full reload/Version 변경/원본 오류는 별도 초기화를 유지한다. 기존 completedGET1·consoleError0 assertion을 완화하는 대안은 배제한다. 수리 AC와 실제 결과는 Issue196/TestPlan/TestReport/FailureLedger 참조.
