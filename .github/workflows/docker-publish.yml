@@ -517,7 +517,7 @@ jobs:
             echo "exists=false" >> "$GITHUB_OUTPUT"
             echo "Both version tags absent: paired publish eligible."
           else
-            echo "::error::G7_RELEASE_PARTIAL_PAIR: one immutable tag already exists; do not overwrite either tag."
+            echo "::error::G7_RELEASE_PARTIAL_PAIR: one immutable tag already exists; do not overwrite either tag." >&2
             exit 1
           fi
 
@@ -535,13 +535,13 @@ jobs:
                 if [[ "${GITHUB_REF}" == "refs/heads/main" ]]; then
                   TAG_COMMIT="$(git rev-list -n 1 "refs/tags/v${{ steps.version.outputs.version }}")"
                   if [[ "$TAG_COMMIT" != "$GITHUB_SHA" ]]; then
-                    echo "::error::G7_RELEASE_TAG_SOURCE_MISMATCH: release tag points to another commit."
+                    echo "::error::G7_RELEASE_TAG_SOURCE_MISMATCH: release tag points to another commit." >&2
                     exit 1
                   fi
                 fi
                 SHOULD_PUBLISH=true
                 ;;
-              *) echo "::error::G7_RELEASE_PAIR_CHECK_FAILED"; exit 1 ;;
+              *) echo "::error::G7_RELEASE_PAIR_CHECK_FAILED" >&2; exit 1 ;;
             esac
           fi
 
