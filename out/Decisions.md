@@ -1,3 +1,11 @@
+## ADR-208-FONT — P1-A Node 실험 글꼴은 추적된 TTF에서 재현 가능하게 준비 (2026-11-03)
+
+**상황/증거:** PR CI #445 Unit test `FONT_PREPARE` 실패. `CadKorean.typeface.json`은 Git에 없고 `scripts/fonts.mjs`가 `run.mjs build/dev`에서만 생성한다. CI Quality는 `npm test`를 `npm run build`보다 먼저 수행하므로 생성 JSON을 읽는 Node PoC의 사전조건이 잘못되었다. **결정:** 독립 CPU-only PoC의 positive synthetic test는 Git에 포함된 TTF를 직접 읽어 `TTFLoader.parse`, family/원본 이름 정규화, `FontLoader.parse`로 임시 파일 없이 메모리 변환한다. 기존 JSON 지원을 없애거나 인증된 프로덕션 글꼴 생성 경로를 변경하지 않는다. 확장자·크기·typeface shape를 제한하고 실패는 안전 코드만 응답. Unit 전에 전체 Production build, 빌드 폰트 체크인, fake font/skip test, CI 순서 교환/게이트 완화는 배제한다.
+
+**판정 경계:** 이것은 파일 존재성 오류 해결이지 `three-dxf-viewer` Node parser/실 CAD Scene Fidelity의 GO가 아니다. 새 exact HEAD 실행, Round-trip/metadata/Font 파서·Worker/CPU-only 실행 확인 전 P1-A 미검증, P1-B/C/D 미구현. [Issue208](Issue208.md).
+
+---
+
 ## ADR-127 — Issue #127 완료 후 Viewer 메뉴 확장/요구사항 수집 규약 (2026-10-27 수립, 2026-11-03 최신화)
 
 - **맥락:** #127은 v0.42.0에서 그룹 명령 `도면/보기/작업`, 좌·우·하단 overlay Drawer 및 두 정보 Sticky 헤더로 완료됐다. 이후 당시 미완인 #37/#49/#55/#56/#65/#71/#73/#81/#82/#85/#88/#90/#91 작업이 개별 PR로 진행되며 각각 상단 버튼을 추가하면 메뉴 밀도 회귀와 지원 Renderer/권한/상태 불일치, Canvas 리로드 위험이 생긴다.
