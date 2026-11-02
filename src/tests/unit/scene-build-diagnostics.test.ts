@@ -124,7 +124,11 @@ describe('#212 actual Scene preflight matches unchanged persisted limits',()=>{
     root.add(new THREE.Group());
     root.children[0].add(new THREE.Line(geometry,new THREE.LineBasicMaterial()));
     root.add(new THREE.Line(geometry,new THREE.LineBasicMaterial()));
-    expect(preflightSceneRoot(root)).toEqual({
+    // #208 CI #442: preflight produces complete numeric counts, unlike
+    // sparse telemetry SceneBuildStats. Compile-time contract is intentional.
+    const counts: {sceneNodes:number;geometryCount:number;attributeScalars:number;maxDepth:number}
+      = preflightSceneRoot(root);
+    expect(counts).toEqual({
       sceneNodes:4,geometryCount:2,attributeScalars:12,maxDepth:2,
     });
   });
