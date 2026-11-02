@@ -1,3 +1,13 @@
+## #212 — 수동 DXF Scene 재생성 실패 시 운영 절차 (2026-11-02)
+
+1. Viewer의 `도면 > 원본 DXF로 Scene 생성/재생성`을 **명시적으로** 실행한다. 생성 완료 여부는 `도면 표시 완료`가 아니라 `THREE_SCENE_ARTIFACT_READY` 상태와 **Scene Asset 저장** 명령의 활성화로 확인한다. 저장 후에는 서버 `READY` 응답과 재접속 시 `READY_SCENE` 복원을 별도로 확인한다. 저장 전 브라우저 후보는 서버에 영속화되지 않는다.
+2. `FALLBACK_DXF_DISPLAYED_SCENE_FAILED`가 나오면 레거시 `dxf-viewer`는 도면만 표시한 것이다. Scene 생성·저장 성공이 아니며 저장 버튼을 사용할 수 없다. 재시도 전에 Stage/Code와 비민감 통계를 보존하고 글꼴 배포/지원 DXF 버전/리소스·속성 cap을 점검한다. `SCENE_CONVERTER_UNAVAILABLE`은 font vs parser 미확정, `SCENE_TEXT_INDEX_FAILED`는 Unicode/코드페이지·BLOCK 텍스트 검색 경로, `SCENE_UNSUPPORTED_GEOMETRY`는 typed attribute/도형 비지원, `SCENE_ASSET_TOO_LARGE`는 기존 schema limits 확인. 코드가 UNKNOWN이면 정확한 재현 없이 특정 원인 확정 금지.
+3. 브라우저 metric의 `sceneBuild.steps`는 각 단계의 outcome/elapsedMs, `stats`는 원본 bytes/기하 객체 수/속성 scalar/직렬화 byte 등 숫자다. 이 값만 공유하고 원본 DXF·메모/문자 내용·Handle·SHA/내부 파일 경로·원본 Exception/DevTools Stack·계정/토큰·고객 CAD 화면 캡처를 공개 GitHub/CI에 첨부하지 않는다. 실제 현장 재현은 사내 안전한 경로에서 관리한다.
+4. 기존 서버 READY/Version/Current, APP_CREATED/Memo/Zone/Outline는 실패 시 그대로이다. 원본 삭제·재등록/볼륨 초기화·Auth/Writer 강제 활성화·Scene 크기 한도 확장을 해결법으로 사용하지 않는다. 서버 저장 시 401/403/409/503은 별도 G7 인가·CAS/Storage 수리이며 Browser 단계 READY와 무관하다.
+5. 최초 업로드 직후 서버 백그라운드 자동 Scene·상태 조회/재시도는 [#208](https://github.com/planner77/layoutManager/issues/208) 미구현 범위, 현장 실 DXF/GPU/2PC는 #113/#193 수용 필요. [설계](Issue212.md), [TC](TestPlan.md), [실제 결과](TestReport.md).
+
+---
+
 ## #211 PR #213 — 배포 계획에 Registry Chain 표시 확인 (2026-11-02)
 
 `g7-deploy.py .env plan --json`의 `registryChain`은 #209에 등록된 forward edge 종류(`COMPATIBLE`, `MIGRATION`)를 실제 순서로 표시한다. 예: 기존 설치가 0.56.0에서 0.58.0으로 이동하는 등록 경로는 `["COMPATIBLE","COMPATIBLE"]`로 보여야 한다. 과거 host helper 필터가 이 배열을 제거하여 잘못 `[]`로 표시하는 문제가 PR #213 리뷰에서 확인되었다. 보완 후에는 정상 Upgrade chain이 누락/비어 있거나 계획/결정과 맞지 않으면 `G7_DEPLOY_UPGRADE_CHAIN_INVALID`로 승인 전 BLOCKED 처리한다. 무시하고 `--yes`/수동 marker 편집/직접 SQL로 우회하지 않고 설치 소스/이미지·registry chain·로그와 보존된 복구 Runbook을 확인한다. 비밀/SQL/원본 payload를 표시에 포함하지 않는다. [설계](Issue211.md) [검증](TestPlan.md).
