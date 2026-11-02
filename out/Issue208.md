@@ -1,3 +1,9 @@
+## 2026-11-03 P1-A CI #442 수리 보완
+
+[PR #217](https://github.com/planner77/layoutManager/pull/217)의 [CI #442 Run41514760273](https://github.com/planner77/layoutManager/actions/runs/41514760273)에서 **TypeScript 3건 실패**: 실험 Node converter의 `FontLoader.parse(unknown)` TS2345와 부분형 `SceneBuildStats`의 geometryCount/attributeScalars를 필수 number에 대입한 TS2322×2. Docker/Verify 실패는 Quality의 같은 컴파일 오류가 빌드 경로에서 반복된 결과이고, 아직 Node converter의 실행형 A1 게이트는 수행되지 않았다. 수정으로 guarded TypeFace JSON parse 및 preflight required count type/regression 테스트를 도입했다. 기존 P1-B/C/D는 미구현, P1-A 실 runtime GO/NO-GO와 CPU-only OCI/현장 수용은 미확인. 정확 원장 [FailureLedger](FailureLedger.md), 시험 [TestPlan](TestPlan.md). CI 결과 확인 전 성공 주장 금지.
+
+---
+
 # Issue #208 — 서버 영속 Scene 자동 생성 / P1-A 기술 게이트 (2026-11-03)
 
 > 상태: **PARTIAL / P1-A 실행형 PoC 작성, Node 합성 시험·CPU-only 컨테이너 실측·브라우저 동등성 NOT VERIFIED.** P1-B/C/D는 아직 구현되지 않았으며 최초 업로드→Scene 자동 게시를 운영에 사용하지 않는다. 승인/병합/릴리스가 아니라 검증 후보 문서다.
