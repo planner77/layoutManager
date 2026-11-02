@@ -1,3 +1,12 @@
+## PR #133 — 최종 docs-only CI 및 병합 검증 (2026-11-03 KST)
+
+- **Source/정합성:** HEAD `ddd958f5fbaef22d4d34868c24edac8d07d20075`, 8개 Markdown 변경, Main behind0, 병합 충돌0·미해결 리뷰 thread0. 기존 Main 문서 보존, `ADR-127` 고유, FR-MENU-EXT-01~04/NFR-MENU-EXT-01 및 TC-MENU-EXT-001~005, 후속 13개 Closed 이력과 #65 인증된 Admin/G7·지원 Schema 조건 반영. Source/Squash Tree 동일 `19d6b20c522f638f7b3bfb44bc2ce8d6b620ff67`.
+- **PR CI #443:** [Run41514898605](https://github.com/planner77/layoutManager/actions/runs/41514898605) `completed/success`, Scope 125515840608/Verify 125516013309 SUCCESS, 기타 Runtime/Browser/Docker Job 5개는 **SKIPPED**(docs-only). 과거 Run40408850027/HEAD e0f5fcb3 성공은 별도.
+- **Main 병합/CI:** Squash [`5d030cde48416e018dfddb59ac9f43f95552c373`](https://github.com/planner77/layoutManager/commit/5d030cde48416e018dfddb59ac9f43f95552c373); [Main CI Run41515158324](https://github.com/planner77/layoutManager/actions/runs/41515158324) `completed/success` release-scope Job 125516725543 SUCCESS, GHCR push 125517090647 SKIPPED. PR merged/closed, 기존 #127 및 13개 이슈 closed 유지.
+- **테스트 해석:** `TC-MENU-EXT-001~005`의 실제 CAD UI, G7 server/keyboard/Canvas lifecycle 및 현장 회귀는 신규 실행 대상이 아니며 **NOT RUN**; 이번 PASS는 정확 docs-only scope gate의 성공이다. 신규 GHCR App/Migrator pair 발행과 실 설치/운영 승인을 주장하지 않는다.
+
+---
+
 ## PR #133 — Viewer 메뉴 규약·요구/설계 추적의 정적 검증 (2026-11-03 KST)
 
 - **기존 CI:** 원 PR HEAD `e0f5fcb3b11997edc0452a32079dc4ac62b0e7dd`, [Run 40408850027](https://github.com/planner77/layoutManager/actions/runs/40408850027) `completed/success`, Verify Job 121873600618 및 Docker Job 121873600155 SUCCESS. 이는 최신 Main 통합 HEAD의 CI 결과를 대체하지 않는다.

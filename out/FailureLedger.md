@@ -1,3 +1,13 @@
+## PR #133 — PR CI #443 PASS, Main Squash 병합, Main CI #133 PASS (2026-11-03 KST)
+
+- **정확 소스:** [PR #133](https://github.com/planner77/layoutManager/pull/133) 통합 HEAD `ddd958f5fbaef22d4d34868c24edac8d07d20075`, Main 대비 behind0, mergeable true·미해결 review thread0·제출 review0(Owner Managed). 변경 8개 Markdown만, 원래 6개 문서+FailureLedger+TestReport. ADR-127 고유 참조와 13개 완료 이슈/권한 조건 반영.
+- **PR CI:** [#443 Run41514898605](https://github.com/planner77/layoutManager/actions/runs/41514898605) 정확 HEAD의 `completed/success`. Scope Job 125515840608, required Verify Job 125516013309 **SUCCESS**. Docs-only Scope 기준 Runtime Quality/Docker/G7/Chromium 등 **5개 Job SKIPPED**, 따라서 새로운 Viewer 코드/E2E 전체 테스트 PASS를 주장하지 않는다. 과거 HEAD `e0f5fcb3` CI [Run40408850027](https://github.com/planner77/layoutManager/actions/runs/40408850027) 2개 Job SUCCESS는 별도 이력.
+- **병합:** 정확 HEAD 지정 `squash`로 Main [`5d030cde48416e018dfddb59ac9f43f95552c373`](https://github.com/planner77/layoutManager/commit/5d030cde48416e018dfddb59ac9f43f95552c373) 성공. Source/Squash 동일 Git Tree `19d6b20c522f638f7b3bfb44bc2ce8d6b620ff67`. PR Closed/Merged; 원 #127 및 13개 후속 Issue Closed 그대로 유지, 재개방/추가 Issue 종료 없음.
+- **Main CI/GHCR:** [Main CI #133 Run41515158324](https://github.com/planner77/layoutManager/actions/runs/41515158324) `push/completed/success`; release scope Job 125516725543 SUCCESS, **GHCR Build/Push Job 125517090647 SKIPPED** (docs-only). 따라서 신규 이미지/태그/digest 게시 없음. 패키지 버전·운영 G7 Auth/DB/Volume·원본 CAD·실 현장 수용 변경 없음.
+- **이후 기록 범위:** 본 기록은 Main 후속 docs-only 원장/보고서 정리이며 이미 검증된 PR HEAD/런타임 결과를 바꾸지 않는다. 후속 Main CI는 별도 시작·검증할 수 있고 기능·GHCR 배포를 선언하지 않는다.
+
+---
+
 ## PR #133 — Viewer 메뉴 문서의 최신 Main 충돌 및 계약 보완 (2026-11-03 KST)
 
 - **이전 근거:** [PR #133](https://github.com/planner77/layoutManager/pull/133) 기존 HEAD `e0f5fcb3b11997edc0452a32079dc4ac62b0e7dd`, [PR CI Run 40408850027](https://github.com/planner77/layoutManager/actions/runs/40408850027) `completed/success`; Typecheck/Lint/Build/E2E Verify Job `121873600618`, Docker/Migration Job `121873600155` 둘 다 SUCCESS. Review thread0/unresolved0, 제출 Review0. 기존 분기는 Main보다 65커밋 behind이며 `mergeable=false`(병합 차단). 구 HEAD CI 성공을 새 HEAD 성공으로 간주하지 않는다.
