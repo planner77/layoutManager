@@ -7,8 +7,10 @@
  * synthetic test does not authorize enabling automated Scene publication.
  */
 import { readFile } from 'node:fs/promises';
+import { extname } from 'node:path';
 import * as THREE from 'three';
 import { FontLoader } from 'three/addons/loaders/FontLoader.js';
+import { TTFLoader } from 'three/addons/loaders/TTFLoader.js';
 import { DXFViewer } from 'three-dxf-viewer';
 import { sceneSha256 } from '../../domain/scene-digest';
 import type { SceneManifest } from '../../domain/cad-scene';
@@ -106,7 +108,7 @@ export async function probeNodeScene(input: Readonly<{
   source: Uint8Array;
   expectedSha256: string;
   versionId: string;
-  fontJsonPath: string;
+  fontPath: string;
 }>): Promise<NodeScenePocResult> {
   if (!input.source.length) throw new NodeScenePocError('SOURCE_VERIFY', 'SCENE_SOURCE_UNAVAILABLE');
   if (input.source.length > NODE_SCENE_POC_SOURCE_CAP)
@@ -123,10 +125,38 @@ export async function probeNodeScene(input: Readonly<{
 
   let font: ReturnType<FontLoader['parse']>;
   try {
-    const json: unknown = JSON.parse(await readFile(input.fontJsonPath, 'utf8'));
-    if (!isTypefaceJson(json)) throw new Error('INVALID_TYPEFACE_JSON');
-    font = new FontLoader().parse(json);
+    // CI runs npm test before npm run build, so the derived
+    // CadKorean.typeface.json does not yet exist. Accept the committed TTF
+    // explicitly and prepare the equivalent typeface entirely in memory.
+    const extension = extname(input.fontPath).toLowerCase();
+    if (extension !== '.ttf' && extension !== '.json') throw new Error('FONT_FORMAT_UNSUPPORTED');
+    const source = await readFile(input.fontPath);
+    const maxBytes = extension === '.ttf' ? 8 * 1024 * 1024 : 32 * 1024 * 1024;
+    if (!source.byteLength || source.byteLength > maxBytes) throw new Error('FONT_SIZE_UNSUPPORTED');
+    let typeface: unknown;
+    if (extension === '.ttf') {
+      const parsed = new TTFLoader().parse(
+        source.buffer.slice(source.byteOffset, source.byteOffset + source.byteLength),
+      );
+      // Mirror scripts/fonts.mjs, including the reserved-family-name change.
+      // This is a private PoC, not a replacement for the production font build.
+      parsed.familyName = 'CAD Korean';
+      const names = (parsed as unknown as {
+        original_font_information?: Record<string, unknown>
+      }).original_font_information;
+      if (names) {
+        for (const key of ['fontFamily', 'fullName', 'postScriptName', 'preferredFamily', 'uniqueID']) {
+          if (names[key]) names[key] = { en: 'CAD Korean' };
+        }
+      }
+      typeface = parsed;
+    } else {
+      typeface = JSON.parse(source.toString('utf8')) as unknown;
+    }
+    if (!isTypefaceJson(typeface)) throw new Error('INVALID_TYPEFACE_JSON');
+    font = new FontLoader().parse(typeface);
   } catch {
+    // Never expose local font file paths or parser details in public failures.
     throw new NodeScenePocError('FONT_PREPARE', 'SCENE_FONT_UNAVAILABLE');
   }
 
