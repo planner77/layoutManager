@@ -1,3 +1,11 @@
+## Issue #212 — 수동 Scene 생성 실패 단계·안전 진단/DTO 중복 제거 (2026-11-02, PR CI 후보)
+
+실 DXF 20MiB+·AC1024+/TEXT·MTEXT/BLOCK·INSERT의 `adapter-load:LOAD` 원인 확정 전 [out/Issue212.md](out/Issue212.md)를 따른다. `three-dxf-viewer`의 예외 덮어쓰기와 성공한 `dxf-viewer` fallback이 잘못된 Scene 성공 메시지를 생성하던 코드를 수정한다. 수동 `source=build`만 브라우저 단계 `SceneBuildTracker`로 추적하며 font/parser 통합 upstream 실패는 정확 원인 미확정 `SCENE_CONVERTER_UNAVAILABLE`, 구조·텍스트 인덱스·직렬화·검증·제한 초과는 관측 단계별 safe code를 표시한다. 원본 CAD/Error 전문·경로·SHA·Handle/토큰은 진단과 GitHub에 기록하지 않는다.
+
+`CUSTOM_DTO`에서 중복 `root.toJSON`을 제거해도 저장 전 `validateStoredScenePayload`(SHA256/manifest/ID/geometry/typed attributes 및 기존 32MiB·100k nodes·2M scalars·depth128)을 필수로 실행한다. 서버 READY(검증된 CurrentScene)와 클라이언트 ARTIFACT_READY, fallback 도면 표시를 구분하며 fallback 시 Scene 저장 버튼/POST 불가. 기존 원본·현재 포인터/기존 READY·Memo·Zone·Outline/G7 권한·Schema/Volume/릴리스 이미지는 변경하지 않는다. 서버 Worker·자동 업로드/목록 상태·Job 로그는 #208 OPEN이고, 실제 DXF/GPU 현장 #113/#193 OPEN. 시험/실패/PR CI 결과는 [TestReport](out/TestReport.md)/[FailureLedger](out/FailureLedger.md)만 근거로 기록하며 실행 전 PASS 주장 금지. PR CI 시작 이후 결과 모니터링 생략·병합/GHCR/Issue 종료는 별도.
+
+---
+
 ## PR #213 / Issue #211 — Owner Managed Main 병합·GHCR 경계 (2026-11-02)
 
 [FailureLedger](out/FailureLedger.md)/[TestReport](out/TestReport.md)에 정확 PR CI #437 / Run41454272839의 최종 HEAD `dff4995fbbecb9838d259ec904f2f6b0aaf7d0a1` **8/8 SUCCESS**, Codex P2 thread1 resolved/unresolved0, 충돌0, behind0 및 Owner-approved Squash Main `423ff93a0866becb436511cca5207fb713411dfd`(source와 동일 Git tree)를 기록한다. Issue #211은 **closed/completed(코드+합성 CI)**. Main CI #128 Run41458237958은 push로 **시작만 확인**; 사용자 지시로 완료 모니터링하지 않는다. package version `0.58.0`은 기존 릴리스 태그/성공한 GHCR App+Migrator 이미지쌍을 유지한다. 새 CLI는 **Docker 호스트 스크립트**이며, #211 때문에 기존 `v0.58.0`/image tags를 강제로 재지정하지 않는다. Main workflow의 중복 version image 존재시 skip 판단을 존중하고 실제 이번 GHCR 새 게시/최종 결과는 NOT VERIFIED. 이 후속 기록은 docs-only Main으로 runtime/릴리스 재빌드 대상이 아니다. 실 운영 Volume·CAD·Site 권한·현장 수용은 #96/#113/#193 별도.
