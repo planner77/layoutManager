@@ -1,3 +1,11 @@
+## #208 P1-A / CI #445 — Node Scene PoC 글꼴 입력 시점 분리 (2026-11-03)
+
+PR Quality Job의 `npm test`가 `npm run build`보다 먼저 실행되므로 `scripts/fonts.mjs`의 산출물인 `public/fonts/CadKorean.typeface.json`을 노드 실험에 필수로 의존하면 테스트가 DXF 변환 전에 실패한다. Node PoC의 `FONT_PREPARE`는 명시 `.ttf`로 지정한 git-tracked `NanumGothic-Regular.ttf`를 `TTFLoader.parse`로 메모리 내 typeface 객체로 만들고, Production font generator와 동일한 `CAD Korean` family/메타데이터 정규화 후 `FontLoader.parse`를 호출한다. 명시 `.json`도 구조 검증 후 사용 가능하며 지원하지 않는 확장자·빈/큰 입력·손상 내용은 원본 경로/예외 누출 없이 차단한다. 별도 `npm run build`/숨김 Browser/임시 파일 생성이 Node 시험의 전제 조건이 아니다.
+
+변환을 이어서 실행하는 실제 `DXFViewer.getFromPath(data URL)`의 browser-independent 여부, parser/block/KO fidelity, Worker/OCI resource는 여전히 A1–A5 미검증이며 성공으로 가정하지 않는다. `src/scripts/fonts.mjs`, Viewer `/fonts/CadKorean.typeface.json`, app/migrator 이미지와 storage/auth/CurrentScene은 변경하지 않는다. [ADR](Decisions.md)/[시험](TestPlan.md)/[실패](FailureLedger.md).
+
+---
+
 ## ADR-127 / #127 후속 — Viewer 명령 그룹을 통한 기능 확장 규약 (2026-10-27 수립, 2026-11-03 최신화)
 
 - **구성 경계:** `src/features/cad-viewer/viewer.tsx`의 `CadViewer`가 메뉴의 `ViewerCommandGroup[]`/실제 handler와 capability·선택·권한 상태를 조합하고, `viewer-menu-bar.tsx`→`viewer-command-menu.tsx`가 접근 가능한 command group/role/checked/disabled를 렌더링한다. 상세 기능은 기존 `ViewerAppShell`의 좌 레이어·우 Tree·하단 도구 overlay Drawer 또는 명시 대화상자에 연결한다. 신규 기능은 **기존 명령/Drawer 재사용 우선**, 별도 상위 버튼 추가 금지.
