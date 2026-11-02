@@ -1,3 +1,11 @@
+## #209 — Greenfield 릴리스 업그레이드 (0.58.0 후보)
+
+Greenfield 릴리스·Schema·배포 이미지·복구 변경 전 [Architecture](out/Architecture.md), [Decisions](out/Decisions.md)의 #209와 [현재 Runbook](src/deploy/g7-greenfield/README.md)의 업그레이드 절을 읽는다. 릴리스마다 `greenfield-upgrade-registry.ts`에 정확 baseline/checksum·data/runtime contract 및 지원 edge를 등록하고 전체 chain·변조/복구 회귀를 실행한다. 읽기 Schema 허용은 쓰기 Migration 승인이 아니다. 실제 DDL edge는 검토한 SQL hash·pre/post 검증·정확 plan 승인·복구 시험이 갖춰진 경우에만 등록한다. 코드에 등록되지 않은 릴리스는 BLOCKED로 유지한다.
+
+최초 설치는 빈 볼륨, 후속 업그레이드는 동일 설치 ID/볼륨과 호스트 writer 정지·검증된 복구 세트를 사용한다. 레거시 6→7/HOLD 채택은 폐기 결정을 유지한다. 실제 근거는 [TestReport](out/TestReport.md)/[FailureLedger](out/FailureLedger.md), CI 시작·완료·GHCR·현장 수용을 따로 기록한다.
+
+---
+
 ## PR #207 / #202·#204 — Owner Managed 병합·GHCR 인계 (2026-11-02, 0.57.0)
 
 [FailureLedger](out/FailureLedger.md) 상단에 정확 PR CI Run41384255921 **8/8 SUCCESS**, 리뷰 스레드/미해결0·충돌0, Source/Squash 동일 tree 및 Main [11a059a](https://github.com/planner77/layoutManager/commit/11a059a29c6a674644a1dfb62447929ee451e043) 병합을 기록했다. #202·#204는 closed/completed. [Main CI Run41389538694](https://github.com/planner77/layoutManager/actions/runs/41389538694)는 GHCR `0.57.0` App+Migrator pair 게시 workflow의 **시작만 확인**했으며 실제 게시·digest·현장/운영 수용은 미확인이다. 본 사후 문서 기록은 docs-only이므로 runtime source/버전/릴리스 태그를 변경하지 않으며 후속 CI는 별도 모니터링하지 않는다.

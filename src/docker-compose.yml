@@ -1,5 +1,6 @@
 # Issue #109: ONE ordinary Compose command installs an empty G7 database.
-# An existing/legacy volume is NEVER deleted, migrated, adopted or backfilled.
+# Established marked installations use #209 registered upgrades via g7-upgrade.py.
+# Unmarked/legacy volumes are never adopted, reset, or deleted.
 # docker compose --env-file .env -f src/docker-compose.yml up -d --pull always
 name: cad-layout-viewer
 
@@ -94,7 +95,8 @@ services:
 volumes:
   cad-layout-viewer-data:
     # Deliberately different from pre-#109's old cad-layout-viewer-data.
-    # A named volume is persistent. Use a NEW unused name for each fresh site.
+    # A named volume is persistent. New unused name only for FIRST installation.
+    # Keep the SAME name for registered upgrades; never use down -v.
     name: "${CAD_DATA_VOLUME_NAME:-cad-layout-viewer-greenfield-install-v1}"
 
 networks:

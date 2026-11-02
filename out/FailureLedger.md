@@ -1,3 +1,70 @@
+## PR #210 / #209 — CI #432 GHCR pull 실패 및 인증 보완 (2026-11-02)
+
+- 정확 [PR CI #432 / Run 41404871339](https://github.com/planner77/layoutManager/actions/runs/41404871339)는 PR HEAD `f2d1b9d965c35d309888592a8263832918fdab2b` (Actions merge SHA `e397e06e7b46418e21a82a41e0401a6aaa281349`)에서 **completed/failure**. Scope/Quality/General Chromium shard 1·2/G7 Greenfield/G7 signed+legacy **6 SUCCESS**, Docker Job `125145063988` **FAIL**, 종속 Verify Job `125150043001` **FAIL**. 전체 PR CI 성공은 아니다.
+- 최초 실제 오류: Docker step "Upgrade real 0.56 Greenfield image with preserved DB and CAD (#209)"의 `docker pull ghcr.io/planner77/layoutmanager:0.56.0`에서 `Error response from daemon: error from registry: unauthorized` (exit1). 실제 0.56 App+Migrator 데이터 보존 upgrade smoke 및 후속 readonly WAL smoke는 이 Run에서 **NOT RUN**. 앞서 출력된 의도적 잘못된 DB/DDL migration 오류는 성공적으로 거절하는 negative smoke이고 이번 failure가 아니다.
+- Workflow의 Docker Job에는 GHCR 로그인 및 `packages: read` 권한이 없었다. 즉 **비인증 pull 거부**가 관측 원인이다. 이 오류만으로 0.56 tag 미게시, private package Actions 접근권 부재 여부를 확정할 수 없고 기능/데이터 보존 결함의 증거도 아니다.
+- 보완: Docker Job에만 `contents: read`+`packages: read`, 동일 저장소 PR/수동 실행에만 `docker/login-action@v3`+임시 기본 `GITHUB_TOKEN` read 인증. 외부 Fork에 private GHCR 인증 제공 금지. 두 실제 immutable 0.56.0 tag pull은 계속 필수이며 실패 시 package 게시/Actions access 진단을 명확히 남긴다. 대체 image/source build/검증 skip 없음; #209 schema/엔진/DB/실 CAD/볼륨 변경 없음.
+- 코드 수정 전 원격 상태: 리뷰 thread1/resolved1/unresolved0, Main behind0, `mergeable=true`. 이 커밋 synchronize로 PR CI를 시작하며 **완료/성공·실제 인증/배포/GHCR 게시·병합·#209 종료는 NOT VERIFIED/NOT DONE**. GHCR의 package Actions access 또는 immutable tag 게시가 누락됐다면 후속 관리 조치가 필요하다.
+
+---
+
+## PR #210 — P2 해결·최종 CI 인계 (2026-11-02)
+
+- P2 수정 [472f481cca94df3af211b7fac5c99ac20ec47631](https://github.com/planner77/layoutManager/commit/472f481cca94df3af211b7fac5c99ac20ec47631)/tree `f93aa2e3cfc2be3af7f275c89b6cd688dd6a237e`를 expected HEAD lease와 fast-forward로 게시했다. local/remote SHA·tree 일치, Main behind0, mergeable=true, staged Secret/runtime 산출물0을 확인했다.
+- [리뷰 reply4439718467](https://github.com/planner77/layoutManager/pull/210#discussion_r4439718467)에 실제 RED·코드 변경·readonly Docker 2회/23집중·기존 업그레이드 회귀 증거를 답변하고 thread `PRRT_kwDOUQjDfc6yj5LK`를 실제 resolve했다. 원격 재조회 **threads1/resolved1/unresolved0**, 충돌0. 새 실패/리뷰를 숨기지 않고 아래에 재현부터 보존했다.
+- 정확 수정 HEAD의 [PR CI Run41404605393 (#431)](https://github.com/planner77/layoutManager/actions/runs/41404605393) `in_progress` 시작만 확인했다. 본 사후 문서 동기화로 최종 HEAD의 synchronize CI가 생성되면 시작까지만 확인한다. Job/log/완료는 모니터링하지 않으며 CI 성공·Main/GHCR·운영 수용을 주장하지 않는다.
+- Manager의 최종 코드·합성 GO 유지, Issue #209 OPEN/PR #210 미병합,0.58.0 후보. 다음은 별도 요청에 따른 CI/리뷰 수용이며 운영·실자료/배포·게시된0.57 변경은 수행하지 않았다.
+
+---
+
+## PR #210 / #209 — P2 readonly WAL 사전 점검 재작업 (2026-11-02)
+
+- 실제 미해결 리뷰 [discussion_r4439624166](https://github.com/planner77/layoutManager/pull/210#discussion_r4439624166), thread `PRRT_kwDOUQjDfc6yj5LK`: 읽기 전용 호스트 preflight/plan/status에서 clean-close WAL DB는 sidecar를 생성할 수 없어 실패한다는 지적이다. 첫 게시 후 확인 당시 thread0이었으나 후속 문서 HEAD `d1118be` 점검에서 새 thread1을 확인했다. 기존 Manager GO를 이 P2에 대해 보류하고 재현/수정/재검증한다.
+- 독립 QA가 이전 실제 migrator image로 새 disposable volume의 User/Admin·WAL을 만들고 마지막 connection을 닫아 WAL/SHM 없는 상태를 만든 뒤 **Docker readonly mount**에서 preflight를 실행했다. `G7_GREENFIELD_SETUP_BLOCKED`/SQLite `unable to open database file` at assertDeclaredSchema→currentData를 실제 재현했다. DB/manifest SHA·sidecar 목록이 그대로여서 원본은 변경되지 않았다. 기존 writable WAL 시험을 이 조합의 성공으로 승계하지 않는다.
+- 설계: CLI-only 읽기 adapter가 일반 DB/실제 WAL에는 통상 SQLite readonly를 사용하고, WAL header이며 WAL/SHM/journal이 모두 없고 원본 UID/private/realpath/inode/size/hash가 전후 같은 경우에만 private detached copy에서 조회한다. 실제/live WAL은 기존 SQLite 조회를 유지하며 immutable=1·WAL 무시는 금지한다. 이는 안정화된 읽기 snapshot이며 검증된 SQLite backup을 대체하지 않는다. Runtime HTTP 경로는 변경하지 않는다.
+- 수정/재검증: CLI-only `greenfield-readonly-inspection.ts`를 engine/recovery schema 조회에 연결하고 migrator COPY에 포함했다. runtime HTTP DB open은 그대로다. 마지막 관련 통합 **3files/23 PASS**, 별도 QA stopped/active WAL9/9(23에 포함)·TypeScript/관련 ESLint PASS, Python smoke syntax PASS를 확인했다. 읽기 copy는 private·source/temp 경로·UID/realpath/inode/size/hash/sidecar 전후 검사와 cleanup을 적용한다.
+- 실제 최종 image pair를646파일 고정 context SHA256 `f9353d9fc96bbd6623261e219b95102779d178e4633d3e453f38ab409a464264`로 재빌드했다. App `sha256:a83f670b5c043fed9d977b7c9f2a0be140bca81eb788af8ed2a151464bcdb4ae`, Migrator `sha256:0680cebc4de62254b45f2d0010e434dad29358fecbcfc18103adcbc78fe204da`. 이후 바뀐 것은 Docker smoke의 오류 단계 보존 코드뿐이며 runtime diff0이다.
+- 새 `smoke_greenfield_wal_readonly.py`를 실제 Docker readonly mount로2회 실행해 **PASS**했다. stoppedWAL/no sidecars preflight/plan/status 성공+DB/manifest inode/size/mode/uid/SHA/목록 동일; active writer의 committed User2건 반영; writer 종료 뒤 실제 apply/backup 및 source readonly→새 빈 volume restore의 전체 row 지문 동일. 소유한 합성 volume만 정리했다. 이 script를 PR CI Docker 필수 step에 추가했다.
+- 새 P2 pair로 실제0.56 Docker 설치→candidate upgrade→모든 row/CAD 지문 동일→restart/Health/login/read/보호삭제도 재실행 PASS했다(`/tmp/issue210-p2-upgrade-regression.log`). 호스트 Python10/10·scope7/7·smoke syntax도 다시 통과했다.
+- 실제 Manager가 마지막 source/COPY/23집중 및 독립 readonly Docker 증거를 수용해 P2 수정 Commit/Push·thread 응답/resolve·새 CI 시작 GO를 승인했다. 원격 resolve/최종 HEAD 시작은 실제 확인 후 후속 인계에 기록한다.
+- 새 module을 migrator COPY에 포함하고 실제 readonly Docker 회귀를 PR CI에 등록했다. 원격 reply/resolve·새 HEAD CI 시작은 실제 확인 후 누적한다. CI Job/로그/완료 모니터링은 계속 생략한다.
+
+---
+
+## #209 / PR #210 — 코드·합성 수용 및 PR CI 시작 (2026-11-02)
+
+- [PR #210](https://github.com/planner77/layoutManager/pull/210) 생성, source commit `f37913e08b18c6b470aac017f3408975d39e0d6e`, tree `c91ed877c8e2c50dab1c9f0fc23e0022c109af59`, version0.58.0 후보. 원격 GitHub 연결 도구로 검사된31파일 blob SHA를 각각 대조하고 같은 tree의 Conventional Commit을 만든 뒤 기능 branch를 게시했다. `.env` 지정 origin과 일치하고 local/remote commit·tree를 fast-forward만으로 동기화했다. staged Secret 실제값 일치0, CAD/DB/cache/build 파일0, 사용자 원래 worktree 변경2개 보존.
+- 게시 후 실제 inline review threads0/unresolved0, main 대비behind0, `mergeable=true`를 확인했다. 기존 연결 PR이 없어 처리할 원격 미해결 thread는 없었으며 Manager/Developer/독립 QA와 Root 최종 리뷰에서 발견한 문제·재작업은 아래 원장에 모두 보존했다. 충돌0, force/history rewrite0.
+- 정확 source HEAD의 [PR CI Run41402534033 (#429)](https://github.com/planner77/layoutManager/actions/runs/41402534033) `in_progress` **시작만 확인**했다. CI 성공·완료·Main/GHCR·운영 배포는 NOT VERIFIED. 요청에 따라 Job/log·완료 모니터링을 하지 않는다. 본 문서 후속 동기화는 runtime source 변경 없이 CI 인계를 기록하며, synchronize 후 최종 HEAD CI도 시작까지만 확인한다.
+- 최종 코드·합성 범위 Manager GO이며 Issue #209는 OPEN, PR 미병합. 기존 immutable0.57.0이 수정된 것은 아니고 새 engine은0.58.0 후보다. 실제 운영 volume/Schema migration·GHCR 게시·현장 수용은 별도 승인/검증 대상이다. 다음 작업은 PR CI/리뷰 결과 수용이며 이번 요청의 CI 모니터링 범위에는 포함하지 않는다.
+
+---
+
+## #209 — Greenfield 릴리스 업그레이드 구현 원장 (2026-11-02)
+
+- 원래 workspace `main`0.19.1/로컬 변경2개는 보존했다. `.env` 지정 origin 일치(값 미출력)를 확인하고 public fetch 후 최신 Main `5b3085b`의 별도 worktree/feature branch를 만들었다. `gh auth status`의 기존 credential은 invalid; GitHub 연결 도구 읽기는 성공했다. Public fetch는 push 권한 증거가 아니다. 지정된 동일 저장소의 연결 도구로만 게시하며 Secret/credential URL을 출력하지 않는다.
+- 원인 분석: 기존 `verifyInstallation`이 version/image/source/schema를 모두 exact 비교하여 같은 업무 Schema의 릴리스 변경을 거절한다. 이 이슈의 현장 migrate 내부 원인 코드를 직접 관측한 것은 아니며 코드·이슈 재현 정보와 합성 회귀로 구별한다. 단일 `G7_GREENFIELD_SETUP_BLOCKED` 진단도 수정 대상이다.
+- 준비: `npm ci` exit0(910 packages/45초), 기존 advisories29(19 moderate/9 high/1 critical). Prisma generate exit0. 의존성을 이번 작업이 교정했다고 주장하지 않는다.
+- 설계 후 root 호스트 helper 자체 시험6/6 PASS(daemon/실볼륨 접근 없는 합성). Manager 사전 리뷰에서 태그/label version 불일치, restore volume 생성 경합/recursive chown, env/출력 field allowlist 및 App image ID 추적 보완을 요구했고 root가 반영했다. 이는 CI 실패가 아닌 게시 전 source review다. 추가 회귀/독립 QA와 전체 검사 결과는 후속 기록한다.
+- 릴리스 경계: 새 기능은0.58.0 후보.0.56→0.57은 새 엔진의 합성 논리 identity 회귀이며 이미 게시된0.57 이미지에 소급 적용되지 않는다. 기존 immutable0.57 pair로 본 기능 실행/AC7 현장 완료를 주장하지 않는다. 지원된 새 pair 게시·운영 업그레이드·GHCR/병합·현장 수용은 이번 작업 범위 밖이다.
+- 구현 중 첫 Typecheck는 신규 테스트의 `backupId` optional union 전달 TS2345로 실패했다(`/tmp/issue209-typecheck-first.log`). Developer가 명시 존재 확인과 narrowing을 추가한 후 Root Typecheck는 exit0이었다. 첫 production build는 후속 plan 선언 결합 변경 중 `FRESH_INSTALL.declarations` 누락으로 TypeScript 단계에서 실패했다(`/tmp/issue209-build.log`). 수정 후 final Build를 재실행하며 이전 성공을 승계하지 않는다.
+- 독립 QA/source review: 디스크 공간 검사가 durable hold/lock 이후여서 사전 ENOSPC에도 backup 없이 RESTORE_REQUIRED가 되는 문제를 확인했다. 사전 공간 검사를 lock 전으로 이동하고, 제어 가능한 pre-DDL 실패는 정확한 원본 snapshot 재검증 후 자기 lock만 정리하도록 재작업한다. 실제 crash와 예외 주입의 근거는 별도 기록한다.
+- 호스트 smoke 사전 리뷰에서 고정 Compose project가 다른 설치 App을 정지시킬 가능성을 발견했다(실제 실행 전). 임의의 격리 project와 정지 전 실제 `/data` volume 대조를 추가했다. 잘못된 env volume은 stop0/DDL0, 최종 host10/10 PASS. 실제 운영 컨테이너/볼륨 접근·정지 없음.
+- Root 최초 전체 Unit은141 files/929 tests 중 **927 PASS/2 FAIL**, 479.97초였다(`/tmp/issue209-unit-all.log`). 두 실패는 upgrade 기존5 tests의 compatible/migration 적용 중 `createRecoverySet`의 격리 restore rehearsal에서 BACKUP_REQUIRED였으며 구현 보완 중 snapshot을 실행했다. Developer 수정 후 최신 집중 Developer+QA10/10 PASS를 별도로 확인했으나 최초 전체 실패를 덮지 않으며 최종 전체 suite를 재실행한다. 최초 suite는 그 뒤 추가된 QA fault cases를 포함하지 않았다.
+- 독립 Greenfield Browser 최초 기동은 신규 migrator mode guard의 `G7_UPGRADE_UNSUPPORTED_MODE`로 webServer 단계에서 중단되어 시험0건/NOT RUN이었다. 기존 config가 `auto && App`을 공통 writer=true 환경으로 실행한 fixture 문제를 확인하고, auto 명령에만 Auth/Writer=false를 명시하여 App=true를 유지했다. 제품 인가 guard는 완화하지 않았고 이후 Browser를 재실행한다.
+- 독립 Greenfield 첫 전체 Browser는26건 중 **23 PASS/3 FAIL**이었다: memo-anchor-move의 login label120초 timeout, typed-outline-races의 cleanup auth/session API timeout, typed-outlines의 count 기대3/관측4. Root의 최종 local Build가 첫 실패 구간에 같은 `.next`를 갱신한 실행 격리 실수가 있었다. 뒤 두 실패의 원인은 이 시점 미확정(정리 실패의 후속 영향 가능성)이며 단정하지 않고, 모든 Build 종료·소스 고정 후 fresh fixture로 관련 묶음을 재시험한다. timeout/count assertion은 완화하지 않는다.
+- 최종 전체 Unit/Integration은 **142 files/938 PASS/0 FAIL,408.71초**였다(`/tmp/issue209-unit-final.log`). 후속 source review의 마지막 변경은 집중3files/18PASS 및 TypeScript/관련 ESLint로 재검증했다. Python host10/10와 일반 Browser10/10 PASS도 별도 확인했다. 이전 전체2FAIL은 위에 보존했다.
+- 최종644개 파일을 Secret/runtime/build 제외한 고정 context로 복제해 같은 소스 App/Migrator를 빌드했다(content SHA256 `b4f10d301059159aa3fc7f8e91b49f5152f0d254bbb700a5fa8a17c6fa03754f`). 최종 current src와 snapshot diff0. App local image ID `sha256:410b3970af735b9d43dd4492d0a4f57cf636ec8512afb97ef8510d65bc8f9f9c`, Migrator `sha256:a6e9d68d874eeeb303e0d74dba897d1a83bbf5aab10d5cf570b5597c9fc47222`. 테스트용 OCI revision은 합성40hex이며 실제 release commit/provenance로 주장하지 않는다.
+- 같은 최종 pair의 실제0.56.0 disposable Docker→candidate upgrade가 PASS했다(`/tmp/issue209-docker-upgrade-final.log`): old 실제 이미지version/revision쌍 검사·초기관리자/Grant/원본·Current→safe helper plan/apply→모든 row/CAD 지문동일→새 native migrator restart→Health/login/read/보호삭제. source와 fixture는 유일한 일회용 volume이며 사내 운영 데이터0. Docker readonly source/isolated restore는 별도 fault QA 근거와 구분한다.
+- Greenfield 독립 clean retry A(first-install+memo-anchor)는 **3/3 PASS**. Retry B는 typed-outlines가 의존하는 outline-types의 `r2reader` 생성 fixture를 누락하여 narrowed run1건이 실패했다(제품 인가 실패 아님). prerequisite를 포함한 fresh retry C(first-install+outline-types+typed-outline-races+typed-outlines)는 **8/8 PASS**. 원래23/26 및 각 재시험은 별도 근거이며26/26 단일 실행으로 합산하지 않는다. 추가 signed Runtime Browser1/1, Legacy Browser1/1 및 Auth/Legacy/Greenfield 통합37/37 PASS를 QA가 확인했다.
+- 추가 Compose smoke 최초 시도는 기존 `cad-layout-viewer-app`(Created)을 발견해 생성/정지 전 보존·중단했다. 후속 시험은 프로젝트·앱 이름·네트워크·볼륨 모두 고유한 격리 override를 사용한다. 이 인프라 격리는 제품의 migrate→app dependency 계약을 변경하지 않는다. 격리 wrapper 전체 시도의 coarse command 실패도 보존한다(세부 단계/최초 원인 미확정). 이후 별도 계측한 동일 흐름은 첫 up에서 migrate exited0/App started, 최종 전체 fresh→Health/Admin/Grant/CAD→migrator recreate/App restart→로그인/조회/보호삭제 모두 PASS(`/tmp/issue209-compose-verification.log`). 기존 default 컨테이너는 그대로 보존했으며 재현된 제품 결함은 없다.
+- 최종 staged 검토에서 tagged digest pair(`App:version@sha256`/`Migrator:version-migrate@sha256`)의 source validator가 repository 비교에 tag를 포함하여 정상 쌍을 거절하는 결함을 발견했다. 호스트 검사와 CLI 판정이 달라 App 정지 후 차단될 수 있으므로 게시 GO를 보류하고 normalize·role/version 검증 및 실제 tag@digest 회귀를 추가한다. 앞선 direct-digest/태그 시험 성공을 이 조합의 PASS로 승계하지 않는다. Developer가 repository/tag/role/digest를 분리하고 빈 tag·같은 digest·다른 repository·잘못된 version/role 거부를 보완한 정확 소스로 type/lint와 집중19/19 PASS를 확인했다. 실제 local registry를 이용한 tagged digest 이미지 시험을 추가한다.
+- tag@digest 최종 검증: 정확644파일 고정 context SHA256 `f153add098a848243d7f72e7533bbcf21debdca1edfde6530b31412052d9661c`로 App `sha256:0007c3caf72f5793bc5601fdfb49cf1fa339c407f50feea313e9971763d4efba` / Migrator `sha256:1a525b1c7005d0ee4407597271694f029e1915ca28f4a3d3d088ea076fb40fc6`를 재빌드했다. 임시 **loopback local Registry**의 실제 tag+digest pair(App manifestSHA `396f279e34b1a5f18cd2f43a48de9d7d010b4b36b1c9b115ecfeda0e500c7673`, Migrator `d0d60ebfdf8f8c04c04def1a50c592a191121e388c914a30de6f88b3408e0fb4`)로 genuine0.56→candidate upgrade/원본·전체 row 지문 보존/restart/health/login/read/보호삭제 PASS(`/tmp/issue209-tagged-digest-smoke.log`). 시험 Registry/volume만 정리했다. 이는 GHCR 게시가 아니며 실제 release Source label/서명 증거로 사용하지 않는다.
+- 실제 Manager가 마지막 parser 수정/19집중/type/lint/새 고정 pair smoke를 재검토해 **코드·합성 범위 PR 게시/CI 시작 GO를 복원**했다. 이전938 전체 회귀와 최종 delta19/새 pair 근거를 별도 기록하며 새 전체939 실행으로 합산하지 않는다. Source 최종 이후 운영 Runbook 명확화만 추가했고 runtime code 변경은 없다.
+- 위 실제 로컬 수용 근거로 PR 게시/CI 시작을 진행한다. CI 성공은 NOT VERIFIED이며 시작 이후 사용자 요청대로 모니터링하지 않는다. 기존 #209 관련 PR은 없었으며 새 PR의 미해결 리뷰·충돌과 SHA/CI 시작은 게시 후 별도 확인한다.
+
+---
+
 ## PR #207 / Issues #202·#204 — Owner Managed 병합·이슈 종료·GHCR Main CI 시작 (2026-11-02 KST)
 
 - 최종 PR HEAD `94c1ca32804f02240ea52edad326c80af9b97c83`에서 [PR CI Run 41384255921 (#428)](https://github.com/planner77/layoutManager/actions/runs/41384255921) **completed/success, 8/8 Job SUCCESS**. Scope, Quality, Docker, General Chromium 2 shards, G7 Greenfield, G7 signed/legacy, 최종 Verify 모두 SUCCESS. 기존 로컬 QA/fixture 실패 및 수정·재시험 내역은 아래 원장에 그대로 보존하며 이번 PR CI의 신규 실패는 관측하지 않았다.

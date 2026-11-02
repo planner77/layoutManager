@@ -1,3 +1,33 @@
+## PR #210 P2 — TC-209-RO-WAL (2026-11-02)
+
+- **RO-WAL-01:** 실제 Docker read-only mount, WAL header·완료 checkpoint·sidecar 없음인 정상 Greenfield에 `preflight/plan/status` 성공. 원본 DB/manifest/CAD SHA·mode·directory entries 전후 동일, 원본 WAL/SHM 생성0.
+- **RO-WAL-02:** 활성 writer의 WAL에만 최신 committed row가 있는 fixture는 이를 반영하거나 안전하게 거절한다. main DB만 읽은 stale 성공은 금지. 기존 WAL/SHM hash·상태 검증은 writer 변경과 구분한다.
+- **RO-WAL-03:** copy 중 원본/identity 변경·sidecar 생성/복사 실패는 fail-closed 및 temporary cleanup; symlink/권한 오류 거절. `immutable=1` 우회0. read-only source recovery set 검증도 동일 경계로 확인한다.
+- **RO-WAL-04:** 기존 upgrade/fault+Auth focused·Typecheck/Lint, Migrator COPY/CLI smoke, actual readonly container 검증. 원본 증거를 보존하고 source 변경 후 PR CI는 시작만 확인한다.
+
+---
+
+## #209 — Greenfield upgrade 검증 계획 (2026-11-02)
+
+아래는 실행 계획이다. 실제 결과·실패/재시험·미실행은 TestReport/FailureLedger에 별도 기록한다. 모든 DB/CAD/backup/restore는 disposable 합성 fixture이며 운영 볼륨을 사용하지 않는다.
+
+| TC | 요구/Issue AC | 검증 및 합격 기준 |
+| --- | --- | --- |
+| TC-209-01 | FR01–03 / AC1 |0.56.0 valid zones manifest+DB→0.57.0 선언 회귀. 기존 exact 비교의 RED 확증; User/Grant/Session/Audit, UUID/Version/Current/삭제 암호 trigger, DXF/Scene/메모/외곽선/구역 rows·links·SHA 사전/사후 보존. 변경 포함 새 릴리스까지 chain도 검사 |
+| TC-209-02 | FR01 / AC2 | 빈 설치 및 여러 번 동일 릴리스 restart 멱등/설정 코드·installId 유지; marker 없는 비빈/Legacy/불완전 최초 설치·DB drift·손상 차단 |
+| TC-209-03 | FR02 / AC3 | 내부 fixture 동일 Schema 다음 release·Schema forward edge·전체 chain skip 성공. 미지원/역방향/cycle/동일 Schema 비호환 contract/누락 중간 edge 거절. runtime read 지원이 migration 승인으로 승격되지 않음 |
+| TC-209-04 | FR04 / AC4–5 | 이미지 repo/version/role/digest/source/architecture 불일치, volume/UID/permission/symlink/hardlink/기존 lock·hold·동시 실행·App 미정지 거절. schema plan 승인 없음/다른 hash/변경 snapshot에서 DDL0 |
+| TC-209-05 | FR03–04 / AC4 | WAL 포함 DB backup 및 CAD/Scene·manifest recovery set→새 빈 대상 실제 restore→quick_check/FK/schema/비밀번호 guard 및 rows·files hash 일치. 백업 공간 부족/복사 실패/수정·누락 파일/불완전 snapshot은 적용0 |
+| TC-209-06 | FR05 / AC4 | backup 전/후, SQL 중간, SQL commit 후, manifest rename 전/후 강제 종료·오류 injection. 기존 데이터 보존, journal 상태와 App gate 차단 정확; 재실행 성공 또는 RESTORE_REQUIRED를 실제 증명. 타 작업 lock 제거0 |
+| TC-209-07 | FR05 / AC4–7 | restore 손상 세트/다른 install/잘못된 대상/비빈 target 거절; 복원 성공 후 이전 이미지 contract/조회 확인. 원본 미변경, live 자동 rollback·downgrade0 |
+| TC-209-08 | FR06 / AC5–7 | CLI preflight/plan/apply/status/restore와 structured safe diagnostics(code/stage/retry/action), 알 수 없는 오류도 SQL/전체 경로/Secret/code/DB·CAD bytes 노출0; S3/Expert unsupported |
+| TC-209-09 | FR03,06 / AC1,6 | 실제 Greenfield browser 로그인/권한/조회/쓰기·원본/Current·업무 연결 회귀 및 Auth/Legacy 격리. Docker App+Migrator/tsx/native/Compose 최초설치→기존 설치 upgrade→restart→health/CRUD |
+| TC-209-10 | 전체 / AC6–7 | Typecheck/Lint/전체 Unit·Integration/Build 및 필수 CI gate 유지. Docker closure·업그레이드 smoke CI 포함; guide 명령/승인·장애·격리복원 절차 검토. PR CI 시작과 완료 성공·GHCR·운영 수용 구분 |
+
+미래 Schema fixture는 실제 DDL 변경·pre/post condition·검증된 backup·정확 plan 승인·실패 복구를 실행해야 하며 planner 분기 Unit만으로 AC3/4를 PASS 처리하지 않는다.0.56→0.57은 새 엔진의 합성 회귀이고 기존0.57 이미지가 이미 수정됐다는 증거가 아니다. 최초 Manager 설계→Developer 구현/시험→독립 QA→Manager GO/재작업 순서를 유지한다.
+
+---
+
 ## #204 / #202 — 구현 전 수용 계약 (2026-11-02)
 
 | TC | 준비·동작 | 필수 기대 |

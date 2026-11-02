@@ -69,6 +69,7 @@ RUN node scripts/prepare-migrator-package.mjs \
 
 # The web runtime is unchanged. Both images share one version and /data volume.
 FROM runtime-base AS migrator
+LABEL com.planner77.g7.image-role="migrator"
 COPY --from=migrator-dependencies --chown=cad:cad /app/src/node_modules ./node_modules
 COPY --from=migrator-dependencies --chown=cad:cad /app/src/package.json ./package.json
 COPY --from=builder /app/src/tsconfig.json ./tsconfig.json
@@ -105,6 +106,10 @@ COPY --from=builder /app/src/server/cad-business/zone-ddl.ts ./server/cad-busine
 COPY --from=builder /app/src/server/g7-operational/greenfield-schema.ts ./server/g7-operational/greenfield-schema.ts
 COPY --from=builder /app/src/server/g7-operational/greenfield-install.ts ./server/g7-operational/greenfield-install.ts
 COPY --from=builder /app/src/server/g7-operational/greenfield-auto.ts ./server/g7-operational/greenfield-auto.ts
+COPY --from=builder /app/src/server/g7-operational/greenfield-upgrade-registry.ts ./server/g7-operational/greenfield-upgrade-registry.ts
+COPY --from=builder /app/src/server/g7-operational/greenfield-upgrade-backup.ts ./server/g7-operational/greenfield-upgrade-backup.ts
+COPY --from=builder /app/src/server/g7-operational/greenfield-upgrade-engine.ts ./server/g7-operational/greenfield-upgrade-engine.ts
+COPY --from=builder /app/src/server/g7-operational/greenfield-readonly-inspection.ts ./server/g7-operational/greenfield-readonly-inspection.ts
 COPY --from=builder /app/src/server/g7-operational/greenfield-gate.ts ./server/g7-operational/greenfield-gate.ts
 COPY --from=builder /app/src/server/g7-operational/greenfield-authority.ts ./server/g7-operational/greenfield-authority.ts
 COPY --from=builder /app/src/server/g7-operational/runtime-admin.ts ./server/g7-operational/runtime-admin.ts
@@ -133,6 +138,7 @@ CMD ["./node_modules/.bin/tsx", "scripts/deploy.ts"]
 
 # Default production image: Next.js standalone traced dependencies and static assets only.
 FROM runtime-base AS runtime
+LABEL com.planner77.g7.image-role="app"
 ENV HOSTNAME=0.0.0.0 PORT=3000
 COPY --from=builder --chown=cad:cad /app/src/.next/standalone ./
 # better-sqlite3 and its glibc-linked native .node are traced into standalone

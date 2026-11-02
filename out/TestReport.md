@@ -1,3 +1,54 @@
+## PR #210 P2 — Docker readonly WAL 점검·복구 재검증
+
+리뷰 [discussion_r4439624166](https://github.com/planner77/layoutManager/pull/210#discussion_r4439624166)의 stopped WAL/no-sidecar+readonly 실패를 QA가 이전 실제 image로 RED 재현했다. 수정한 CLI-only read inspection adapter의 안정된 private detached copy와 live-WAL 통상 SQLite 조회를 구별하고 Runtime HTTP를 유지했다. 설계/TC는 Architecture/Decisions/TestPlan의 P2 절, 원인·재작업은 FailureLedger를 따른다.
+
+최신 관련 통합 **23/23 PASS**, 독립 stopped/active WAL9/9는 이에 포함된다. TypeScript/관련 ESLint PASS, 실제 최종 migrator `sha256:0680cebc4de62254b45f2d0010e434dad29358fecbcfc18103adcbc78fe204da`의 reusable Docker smoke는2회 PASS다. readonly stopped DB의 preflight/plan/status 성공·원본 metadata/hash/sidecar 불변, activeWAL committed row 반영, apply의 SQLite recovery set 및 source readonly 격리 restore 지문 동일을 검증했다. 새 smoke는 PR CI 필수 Docker step으로 연결했다. 앞선938 전체 및 이전 Browser 수용은 별도 근거이며 이 delta의 새 전체 실행으로 합산하지 않는다. 실제 Manager는 P2 source/QA/패키징 범위를 수용했다. P2 수정 commit `472f481cca94df3af211b7fac5c99ac20ec47631` 게시 후 reply4439718467과 실제 thread resolve를 완료했고 원격 unresolved0/Main behind0/mergeable=true를 재조회했다. PR CI Run41404605393은 시작만 확인했고 후속 문서 HEAD의 새 CI도 시작까지만 확인한다. 결과/Job/log 모니터링·병합·GHCR·배포는 수행하지 않았다.
+
+---
+
+## #209 / PR #210 게시·CI 인계
+
+최종 source `f37913e08b18c6b470aac017f3408975d39e0d6e`/tree `c91ed877c8e2c50dab1c9f0fc23e0022c109af59`를 기능 branch로 게시하고 [PR #210](https://github.com/planner77/layoutManager/pull/210)을 생성했다. Main behind0·mergeable=true·미해결 리뷰0을 확인했다. [PR CI Run41402534033](https://github.com/planner77/layoutManager/actions/runs/41402534033)는 시작(in_progress)만 확인했으며 성공/완료는 미확인이다. 후속 문서 synchronize의 최종 HEAD CI도 시작까지만 확인하고 모니터링하지 않는다. 전체 실패·Secret/동일 tree/역할·현장 경계는 FailureLedger와 아래 본 검증 기록을 따른다. PR 병합·Issue 종료·GHCR/실 운영 적용은 수행하지 않았다.
+
+---
+
+## U-ISSUE209-20261102 — Greenfield 릴리스 업그레이드 (0.58.0 후보)
+
+- 역할/범위: 실제 gpt-6-astra Manager가 Requirements/Architecture/Decisions/TestPlan에 요구·설계·AC를 먼저 기록하고 source review/재작업을 지시했다. 실제 gpt-6-sol Developer가 registry/backup/engine/CLI를 구현했고 실제 gpt-6-luna QA가 독립 fault/복구·업무 그래프 및 Browser 검증을 수행했다. Root는 호스트 도구·Docker/Compose/CI·운영 문서·버전과 전체 검사/게시를 담당한다. 별도 worktree에서 기존 로컬 변경2개를 보존했다.
+- 설계/구현: `greenfield-upgrade-registry.ts`의 명시 release+contract+forward chain, `greenfield-upgrade-engine.ts`의 preflight/plan/apply/status 및 lock/hold/journal, `greenfield-upgrade-backup.ts`의 WAL 일관 backup·CAD/manifest 세트·격리 복원, `scripts/g7-greenfield.ts`의 안전한 진단에 연결한다. installId·업무 Schema/기존 baseline/checksum을 유지한다. 호스트 `scripts/g7-upgrade.py`는 실제 이미지 쌍 및 정지 전 volume 일치, 모든 실행 writer0과 고정 migrator Image ID를 검사한다. 실제 production Schema migration edge는 아직 등록하지 않았다.
+
+| 검증 | 실제 결과/근거 |
+| --- | --- |
+| 설치/생성 | npm ci exit0,910 packages; db:generate exit0. 기존 보안 권고29건은 별도 유지 |
+| 전체 Unit/Integration | **142 files /938 PASS/0 FAIL,408.71초**; `/tmp/issue209-unit-final.log`. 첫 전체927PASS/2FAIL 및 수정은 FailureLedger에 보존 |
+| 최종 집중/독립 QA | Developer+기존 auto+독립 QA3files **18/18 PASS**; 독립 QA7건은 여기에 포함되어 중복 합산하지 않음. 실제 데이터 그래프·WAL·동시 apply·공간 부족 apply·손상/대상 거부·3개 실제 SIGKILL checkpoint 포함 |
+| 정적/Build | TypeScript exit0, 전체 ESLint0errors/기존8warnings. production Build exit0; 첫 TS/build 실패 및 후속 수정·재검증은 FailureLedger에 분리 |
+| 호스트 도구 | Python10/10 PASS; 태그/digest/role/source/platform·다른 volume App stop0·다른 project writer·restore 생성 경합/새 대상·stdout planId/비민감 field 필터. Python syntax 및 PR scope7/7 PASS |
+| 일반 Browser | upload/workflow/delete **10 PASS/50.1초**, Chromium1243/port3350/격리 local DB. 등록·메모/검색·Current·보호 삭제·두 DXF Viewer 전환 및 오류/크기 진단 |
+| Auth/Legacy/Greenfield 통합 | QA **37/37 PASS/113.78초**; Runtime Auth/Migration/Greenfield 관련 통합 회귀 |
+| Docker | 실제0.56.0 old App/Migrator의 일회용 설치→Admin/Grant/DXF/Current→새 후보 upgrade→모든 DB 행/CAD 지문 동일→restart/health/login/read/보호 delete PASS. 최종 고정644파일 context App/Migrator pair로 재실행 PASS(`/tmp/issue209-docker-upgrade-final.log`); native/tsx/Prisma 패키징도 실제 Docker Build에서 통과 |
+| 독립 Browser | Greenfield 전체 최초 **23/26 PASS,3 FAIL**; Build 종료 후 fresh fixture로 first-install+memo-anchor **3/3 PASS**, outline-types 필수 준비를 포함한 first-install+typed-races/typed-outlines **8/8 PASS**. signed Runtime **1/1**, Legacy migration **1/1 PASS**. 하나의26/26 실행으로 합산하지 않음 |
+| 최종 Compose | 최종 pair의 신규 설치→one-shot migrate 성공 후 App 시작→health/Admin/Grant/CAD→migrator 재실행/App restart→health/login/read/보호 delete PASS(`/tmp/issue209-compose-verification.log`). 고유 project/container/network/volume만 사용 |
+| PR CI | 최종 로컬 수용 후 PR 생성으로 시작한다. 완료/GHCR·운영 적용 NOT VERIFIED; 모니터링하지 않음 |
+
+TC-209-01/05/07의 `g7-greenfield-upgrade-qa.test.ts`는 AuthSession/Audit/UserRole/Site Grant·기준정보 UUID·Version/Current·DXF/Scene bytes·SceneAsset·CadMemo/CadOutline/CadZone가 들어 있는 합성 DB의 **모든 table row**를 upgrade 전/후 및 복원본에서 비교한다. TC-209-03의 generic migration fixture는 새 table/DDL hash/history·pre/post condition과 정확한 승인 SHA, 실패 transaction rollback을 실제 실행한다. TC-209-04/06은 실제 apply 공간 부족에서 DB/manifest 동일·lock/hold/journal0·정상 retry를 확인하고, child process를 BACKED_UP/MIGRATION_COMMITTED/MANIFEST_COMMITTED에서 SIGKILL하여 RESTORE_REQUIRED와 격리 복원을 증명한다. 이것은 사내 실 자료 또는 전원 손실/모든 filesystem 장애 순서의 증명이 아니다.
+
+TC-209-08/09의 CLI/호스트·Docker 실행은 Secret/setup code/DB·CAD 내용을 출력/업로드하지 않고 정형 상태·성공 판정만 남긴다. 합성 복구 세트/브라우저 cookie·DB는 Git/CI artifact 대상이 아니다. 실제 source/digest provenance는 운영자의 신뢰 정책이 필요하며 OCI label 대조를 암호학적 서명으로 표현하지 않는다.
+
+제한: 이미 게시된 immutable0.57.0 pair는 바뀌지 않으며0.56→0.57은 registry/새 engine의 논리 회귀다. 수정 기능은0.58.0 후보에 포함된다. 레거시6→7/HOLD 채택, S3/Expert 업그레이드·실 운영 볼륨 변경·이미지 게시/배포·현장 수용은 미수행이다. backup 전 hard crash에는 복구 세트가 없을 수 있어 BLOCKED 상태에서 별도 안전 백업/운영 조사가 필요하다. 일반 downgrade/자동 강제 복구는 지원하지 않는다. 최종 Manager 판정/Commit/Push/PR/CI 시작은 별도 게시 절에서 구분한다.
+
+최종 image 검증은 동일644파일 고정 context(content SHA256 `b4f10d301059159aa3fc7f8e91b49f5152f0d254bbb700a5fa8a17c6fa03754f`)에서 생성한 App `sha256:410b3970af735b9d43dd4492d0a4f57cf636ec8512afb97ef8510d65bc8f9f9c`, Migrator `sha256:a6e9d68d874eeeb303e0d74dba897d1a83bbf5aab10d5cf570b5597c9fc47222`를 사용했다. OCI revision label은 합성값이며 실제 release commit의 출처/게시 증거가 아니다. 이후 변경은 운영 Runbook의 backup 전 중단 제한 문구뿐이며 runtime code는 동일하다.
+
+### 최종 tagged digest delta와 Manager 판정
+
+최종 source review에서 tag@digest repository parsing 거부를 발견·수정했고, `repo:version@sha` + `repo:version-migrate@sha` 정상 쌍과 잘못된 tag/role/repo·동일 digest·빈 tag·source 누락 회귀를 추가했다. 마지막 정확 소스 **집중3files/19 PASS,TypeScript/관련 ESLint PASS**, 호스트10 PASS다. 앞선 전체938은 이 delta 이전 근거이며 새로운 전체939 실행으로 합산하지 않는다.
+
+정확644파일 context `f153add098a848243d7f72e7533bbcf21debdca1edfde6530b31412052d9661c`에서 두 이미지를 재빌드하고, 사설 loopback 임시 Registry에만 올린 실제 App/Migrator tag@digest 쌍으로 genuine0.56→candidate 업그레이드·모든 row/CAD 지문·restart/Health/login/read/보호삭제를 재시험해 PASS했다(`/tmp/issue209-tagged-digest-smoke.log`). 마지막 local Image ID는 App `sha256:0007c3caf72f5793bc5601fdfb49cf1fa339c407f50feea313e9971763d4efba`, Migrator `sha256:1a525b1c7005d0ee4407597271694f029e1915ca28f4a3d3d088ea076fb40fc6`다. GHCR 게시0/실운영 volume 접근0, 시험 Registry와 disposable volume을 정리했다.
+
+실제 Manager는 위 마지막 수정·집중/재빌드/실행 증거를 검토하여 **코드·합성 검증 범위의 Commit/Push·PR/CI 시작 GO**를 복원했다. Source 변경은 여기서 동결하고 문서의 한계/진단만 갱신한다. CI 완료·병합·릴리스/운영 적용은 포함하지 않는다.
+
+---
+
 ## #202 / #204 — 0.57.0 후보 검증 (2026-11-02)
 
 - 기준: origin/main `8b38b84`, 별도 `feat/issues-202-204-20261102` worktree. 원래 workspace의 Compose/next-env 수정2건은 보존했다. Node22.14.0/npm11.10.0, Chromium1243/SwiftShader, Linux x86_64, 격리 임시 SQLite/CAD fixture를 사용했다.

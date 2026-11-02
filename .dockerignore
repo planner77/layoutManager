@@ -19,6 +19,8 @@
 **/benchmark-results
 **/acceptance-results
 **/*.tsbuildinfo
+**/__pycache__
+**/*.pyc
 **/*.log
 
 # 런타임 DB와 CAD 원본은 named volume 또는 S3에서만 읽는다.

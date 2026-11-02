@@ -1,3 +1,32 @@
+## PR #210 P2 — Read-only WAL 사전 점검 (2026-11-02)
+
+리뷰 스레드 `PRRT_kwDOUQjDfc6yj5LK`의 정지된 WAL DB는 checkpoint 후 `-wal`/`-shm`이 없어도 header가 WAL을 유지할 수 있다. 원본 볼륨을 read-only로 마운트한 CLI의 SQLite 읽기는 sidecar 초기화 때문에 실패할 수 있으므로, CLI inspection에 한해 아래 경계를 추가한다.
+
+- WAL header이고 `-wal`/`-shm`/`-journal`이 모두 없는 경우에만 원본 밖 private 임시 디렉터리에 main DB의 **검사용 detached copy**를 만든다. 복사 전후 원본 regular-file·UID/권한·realpath·device/inode/size/SHA가 동일하고 복사본 SHA가 같으며 sidecar가 계속 없어야 결과를 사용한다. 변화가 있으면 fail-closed, 임시 파일은 finally 정리한다.
+- SQLite는 복사본 디렉터리에만 필요한 sidecar를 만들고 기존 exact Schema/FK/무결성/업무 snapshot 검증을 수행한다. live WAL/SHM/journal이 있으면 일반 readonly SQLite 경로를 사용하며, WAL을 버리는 main-only fallback이나 `immutable=1`은 금지한다.
+- `currentData`와 read-only 복구 세트 검증에 공통 adapter를 사용한다. 계획의 원본 manifest/volume identity와 적용 직전 재검증은 그대로이며, HTTP runtime DB open 및 실제 backup/restore 계약은 변경하지 않는다. 이 복사본은 durable backup이 아니며 WAL을 포함하는 실제 backup API를 대체하지 않는다.
+
+실제 readonly container 재현/원본 비변경/active WAL 결과는 TestReport/FailureLedger에 기록한다. CI는 새 실행 시작만 확인한다.
+
+---
+
+## #209 — Install / Upgrade 경계 (2026-11-02 설계)
+
+루트 DESIGN.md는 없으므로 이 절과 Decisions가 설계 정본이다. `greenfield-auto.ts`의 기존 exact release 비교가 0.56→0.57 차단의 코드상 원인이다. 현장 내부 오류 직접 관측과 구분하고 재현 시험으로 확증한다.
+
+1. **Read/runtime:** strict manifest/current-image identity와 exact Schema 검증을 유지한다. HTTP/runtime은 migration을 import하거나 실행하지 않는다. 완료되지 않은 upgrade journal/maintenance 상태에서는 App 권한을 활성화하지 않는다. `openG7RuntimeDb`의 기존 hold 차단을 유지한다.
+2. **Plan:** CLI 전용 registry는 release→schema+baseline+checksum+runtime/data/operational contract와 directed edge를 선언한다. 최초 지원0.56.0→0.57.0→0.58.0은 동일 Schema이며 순서 있는 전체 edge 검증 없이 skip하지 않는다. Schema 읽기 allowlist와 upgrade 쓰기 allowlist는 별개다. Registry는 배포 코드에 포함된 검토 대상이며 외부 JSON/env로 edge·SQL·validator를 추가할 수 없다. 내부 fixture registry는 CLI에서 주입 불가다.
+3. **Identity:** source manifest의 private-file/UID/realpath 검증, App/Migrator 같은 repository·version/role, sourceCommit와 목표 package identity를 검증한다. digest/architecture/source provenance는 host image inspect/release 증거로 확인해야 한다. 문자열 두 개가 digest 문법에 맞는 것만으로 업그레이드 승인하지 않는다. 코드에 번들된 registry를 암호학적으로 서명된 OCI 증거라고 표현하지 않는다.
+4. **Quiescence:** Compose dependency는 이미 실행 중인 App을 중지하지 못한다. 운영 helper/SOP는 기존 App 정지·확인을 선행하고 새 App을 post-check 이후에 시작한다. Engine의 독점 lock, 기존 runtime hold와 SQLite 쓰기 잠금은 추가 경계이며 이미 열린 구 프로세스의 파일 쓰기까지 막는다고 가정하지 않는다. 볼륨의 device/inode/소유권과 DB/CAD 경로를 plan에 결합하고 symlink/hardlink/부정 locators는 거절한다.
+5. **Backup:** WAL을 포함하는 SQLite backup API 또는 동등 일관 snapshot을 이용하고 DB 파일 단순 복사는 금지한다. CAD immutable 파일·Scene과 manifest/필수 메타데이터를 private recovery set으로 저장, hash·FK/quick_check·DDL/trigger·Current/Version·참조 파일 검사 및 격리 restore 검증을 완료한다. 디스크 여유 부족·복사 중 변경·hash 불일치는 적용 이전 차단한다. Secret 데이터가 있는 복구 세트는 Git/로그/CI artifact에 포함하지 않는다.
+6. **Apply:** journal은 source+target+planHash+volume binding+단계+backup hashes를 기록한다. schema-changing edge는 정확 계획 승인과 검증된 backup을 요구하고 forward transaction/pre/post validation을 수행한다. 같은 Schema edge는 업무 DB·CAD를 수정하지 않는다. 검증 후에만 private temp→fsync→rename→directory fsync로 manifest를 교체한다. installId는 불변이며 이전 identity는 journal에 남긴다.
+7. **Recovery:** lock/journal/hold는 소유한 작업만 정리한다. 모호한 중간 상태에서 자동 lock 삭제/manifest 채택을 하지 않는다. 명백히 동일한 사전/사후 스냅샷이면 정의된 checkpoint의 멱등 resume만 허용한다. 제어된 pre-write 실패는 source manifest/업무 rows/CAD/volume이 계획과 정확히 동일함을 재검증한 경우에만 자신이 소유한 hold/lock을 해제하여 재시도할 수 있다. 그 외 RESTORE_REQUIRED로 보존하고 App 차단. Backup 완성 전 실제 crash로 복구 세트가 없으면 복원 가능하다고 주장하지 않고 원본 보존·수동 조사 필요 상태를 명시한다. restore는 검증한 recovery set을 명시 승인으로 **새 빈 격리 대상**에 복원·재검증한다. 실운영 경로 overwrite/downgrade 자동화는 제공하지 않는다.
+8. **Delivery:** 설치·CLI 상태 출력은 정형 allowlist code/stage/retry/action만 사용한다. Migrator COPY closure/tsx/native SQLite와 일반 Compose one-shot `service_completed_successfully`를 검증한다. 앱 Health 및 로그인·인가·업무 CRUD 검증은 manifest commit과 별도 deployment acceptance이며 HTTP Health만으로 데이터 보존을 주장하지 않는다.
+
+실제 업무 Schema 추가는 없고 Database 정본에 운영 메타데이터/보존 경계를 기록한다. 최초 버그 회귀와 미래 Schema engine 시험은 합성 데이터로만 수행한다.
+
+---
+
 ## #204 / #202 구현 경계 (2026-11-02)
 
 - **기준정보:** 기존 MasterRepository.update의 immutable ID 선택 + name 정규화/중복/미분류 방어를 재사용한다. UI는 ID·소속 불변과 이름 편집 가능성을 명시하며, 이름 저장 시 실제 변경한 name/active/kind만 PATCH해 다른 세션의 상태·종류를 덮어쓰지 않는다. 기존 G7 master permission, Origin/CSRF, 감사 transaction은 그대로 통과해야 한다. 이름을 FK로 사용하거나 기존 참조를 재생성하지 않는다.

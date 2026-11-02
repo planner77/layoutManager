@@ -1,3 +1,11 @@
+## #209 — Greenfield 업그레이드와 복구 메타데이터
+
+이번0.58.0 후보는 업무 Table/Column/FK/trigger와 기존 `_prisma_migrations` baseline/checksum을 변경하지 않는다. 동일 Schema 지원 chain은 User/Grant/Session/Audit·기준정보 UUID·Version/Current·삭제 암호·Scene/메모/외곽선/구역을 그대로 보존한다. 읽기 호환 Schema가 등록된 upgrade source임을 뜻하지 않는다.
+
+업그레이드 메타데이터는 서버 private filesystem에 별도 journal/lock/backup으로 저장하며 DB Schema의 대체 기준으로 사용하지 않는다. `g7-install.json`의 installId는 불변이고 검증 완료 후 identity만 atomic fsync/rename으로 갱신한다. 이전 identity·계획/단계·backup 참조는 journal에 남긴다. WAL을 포함하는 SQLite 일관 backup과 CAD/Scene·기존 manifest를 복구 세트로 보존한다. restore는 소유권/권한/무결성을 검증한 새 빈 대상에만 수행한다. 경로·명령·상태 복구 정본은 [Runbook](../src/deploy/g7-greenfield/README.md)의 #209 절이다. 실제 업무 Schema migration edge는 향후 SQL hash·정확 승인·pre/post/복구 시험이 등록된 경우에만 지원한다.
+
+---
+
 ## #196 Zone 신규 empty Greenfield schema 계약 (2026-11-01)
 
 정책/DTO/API는 [Issue196](Issue196.md), **DB 구조의 정본은 이 절과 구현 Prisma/DDL**이다. 신규 latest baseline을 추가하며 기존 TYPED_OUTLINES 및 과거 `CAD_BUSINESS_DDL` 문장·hash·marker는 수정하지 않는다. 기존 설치 ALTER/adopt/자동 이관 없음. Prisma model·Greenfield installer/schema assertion/runtime authority·Migrator COPY/empty install smoke를 함께 갱신한다. 구 schema에서 Zone 부재는 503으로 닫되 기존 CAD 조회는 유지한다. 실행 결과는 TestReport에 별도 기록한다.

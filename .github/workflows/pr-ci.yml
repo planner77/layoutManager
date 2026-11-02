@@ -334,6 +334,9 @@ jobs:
     if: needs.scope.outputs.full == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: read
     steps:
       - name: Checkout including baseline revision
         uses: actions/checkout@v4
@@ -341,6 +344,9 @@ jobs:
           fetch-depth: 0
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+      - name: Read candidate version for inspected image-pair labels (#209)
+        id: image-version
+        run: python3 -c 'import json,os;v=json.load(open("src/package.json"))["version"];open(os.environ["GITHUB_OUTPUT"],"a").write("version="+v+"\n")'
       - name: Validate tagless and digest image-pair Compose resolution
         shell: bash
         run: |
@@ -360,6 +366,8 @@ jobs:
           set -euo pipefail
           python3 -m py_compile src/scripts/audit_standalone_layers.py src/scripts/test_audit_standalone_layers.py src/scripts/smoke_web_runtime.py src/scripts/smoke_greenfield_runtime.py
           python3 src/scripts/test_audit_standalone_layers.py
+          python3 -m py_compile src/scripts/g7-upgrade.py src/scripts/test_g7_upgrade.py src/scripts/smoke_greenfield_wal_readonly.py
+          python3 src/scripts/test_g7_upgrade.py
       - name: Build pre-change baseline (same source, original Dockerfile)
         if: needs.scope.outputs.baseline == 'true'
         shell: bash
@@ -432,6 +440,10 @@ jobs:
           platforms: linux/amd64
           load: true
           tags: cad-layout-viewer:ci
+          labels: |
+            org.opencontainers.image.source=https://github.com/planner77/layoutManager
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ steps.image-version.outputs.version }}
           cache-from: type=gha,scope=layoutmanager-runtime
           cache-to: type=gha,scope=layoutmanager-runtime,mode=max,ignore-error=true
       - name: Build dedicated migrator with GHA cache
@@ -443,6 +455,10 @@ jobs:
           platforms: linux/amd64
           load: true
           tags: cad-layout-viewer:ci-migrate
+          labels: |
+            org.opencontainers.image.source=https://github.com/planner77/layoutManager
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ steps.image-version.outputs.version }}
           cache-from: type=gha,scope=layoutmanager-migrator
           cache-to: type=gha,scope=layoutmanager-migrator,mode=max,ignore-error=true
       - name: Measure 3 image sizes, layers and directories
@@ -521,6 +537,42 @@ jobs:
           docker compose -f src/deploy/g5/compose.preview.yml --profile g5-prod config --quiet
           docker compose -f src/deploy/g5/compose.preview.yml --profile g5-dev config --quiet
 
+      # Do not grant a private GHCR package token to a fork.
+      # The published 0.56 App/Migrator are mandatory, not replaceable by a rebuilt source.
+      - name: Authenticate GHCR for immutable 0.56 release smoke (#209)
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upgrade real 0.56 Greenfield image with preserved DB and CAD (#209)
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="$(python3 -c 'import json;print(json.load(open("src/package.json"))["version"])')"
+          # Old immutable release read only; never publish or retag a registry image.
+          for old_tag in 0.56.0 0.56.0-migrate; do
+            if ! docker pull "ghcr.io/planner77/layoutmanager:${old_tag}"; then
+              echo "::error::GHCR ${old_tag} unavailable: confirm immutable tag was published and grant this repository Actions read access to its package."
+              exit 1
+            fi
+          done
+          docker tag cad-layout-viewer:ci "cad-layout-viewer:${VERSION}"
+          docker tag cad-layout-viewer:ci-migrate "cad-layout-viewer:${VERSION}-migrate"
+          python3 src/scripts/smoke_greenfield_upgrade.py \
+            --old-app ghcr.io/planner77/layoutmanager:0.56.0 \
+            --old-migrator ghcr.io/planner77/layoutmanager:0.56.0-migrate \
+            --app "cad-layout-viewer:${VERSION}" --migrator "cad-layout-viewer:${VERSION}-migrate" \
+            --source "${{ github.sha }}"
+      - name: Readonly stopped and active WAL inspection and recovery (#210 P2)
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="$(python3 -c 'import json;print(json.load(open("src/package.json"))["version"])')"
+          python3 src/scripts/smoke_greenfield_wal_readonly.py \
+            --migrator "cad-layout-viewer:${VERSION}-migrate" --version "$VERSION" \
+            --source "${{ github.sha }}"
       - name: Compose Greenfield first run, Admin, CAD, restart persistence
         shell: bash
         run: |
