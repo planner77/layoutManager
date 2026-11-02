@@ -8,7 +8,7 @@ import {
 } from '../../viewers/core/scene-build-diagnostics';
 import {preflightSceneRoot} from '../../viewers/three-dxf-viewer/scene-serialization';
 import {SCENE_PAYLOAD_LIMITS} from '../../domain/scene-payload';
-import {sceneLoadNotice} from '../../features/cad-viewer/scene-status';
+import {canPublishSceneCandidate,sceneLoadNotice} from '../../features/cad-viewer/scene-status';
 
 afterEach(()=>vi.unstubAllGlobals());
 
@@ -82,6 +82,14 @@ describe('#212 safe manual DXF Scene stage diagnostics',()=>{
 
   it('separates fallback drawing display, local Scene artifact and confirmed server READY',()=>{
     const fallback={phase:'CUSTOM_DTO_SERIALIZE',code:'SCENE_UNSUPPORTED_GEOMETRY'} as const;
+    const allowed={mode:'build' as const,renderer:'three-dxf-viewer',artifactReady:true,
+      sceneCandidate:true,busy:false,loading:false};
+    expect(canPublishSceneCandidate(allowed)).toBe(true);
+    for(const denied of [
+      {...allowed,renderer:'dxf-viewer'}, {...allowed,artifactReady:false},
+      {...allowed,sceneCandidate:false}, {...allowed,busy:true},
+      {...allowed,loading:true}, {...allowed,mode:'scene-first' as const},
+    ])expect(canPublishSceneCandidate(denied)).toBe(false);
     const fallbackNotice=sceneLoadNotice({
       mode:'build',renderer:'dxf-viewer',strategy:'LEGACY_DXF',artifactReady:false,fallback,
     });
