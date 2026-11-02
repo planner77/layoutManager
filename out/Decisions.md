@@ -1,3 +1,11 @@
+## ADR-208-P1-A — CPU-only direct Node converter 사전 실증, 자동 활성화 보류 (2026-11-03)
+
+**결정:** 기존 `three-dxf-viewer@1.0.44`의 실제 Group/geometry + 프로젝트 CUSTOM_DTO serializer/restore를 순수 Node에서 검증하는 실행형 synthetic PoC를 우선 둔다. 공식 지원되지 않는 `_font` preload와 data URL fetch는 PoC에만 제한하며, timeout/OOM·한글/CP949/BLOCK/실 대형 CAD·브라우저 동등성·CPU-only Docker가 증명되지 않으면 프로덕션 GO 불가. Headless Chromium(서버 전용 격리 컨테이너)과 공식 Node 파서 비교가 다음 대안이며 실제 구현 전 검증한다.
+
+**배제:** 브라우저 hidden tab/Web Worker, request 종료 뒤 미대기 Promise, 인증 토큰 저장/권한 우회, 현재 Scene READY를 Job 상태만으로 변경, 기존 READY/Version/Current/영속 업무정보 손상. 현재 프로덕션 변동 없음. **P1-B/C/D 보류** 및 미수용 AC/정확 시험 구분은 [Issue208](Issue208.md)/[TestReport](TestReport.md).
+
+---
+
 ## ADR-212 — 수동 Scene 진단을 원본/렌더/게시 상태에서 분리 (2026-11-02)
 
 **결정:** 데이터 손실이 없는 최소 수리로 브라우저 수동 `source=build`에 단계별 allowlist 실패 진단과 CUSTOM_DTO 직접 직렬화 및 기존 도메인/manifest 검증을 적용한다. 기존 `root.toJSON/inspect`는 THREE_JSON일 때만 유지; preflight는 실 Object3D nodes/속성 수를 제한하며 고객 도면에 대한 성능·완료 가능성을 선행 보장하지 않는다. Viewer `dxf-viewer` fallback 표시 성공은 Scene 후보 생성 및 서버 READY와 독립이고, 후보가 없으면 Scene 저장 API 호출을 UI·함수 이중 차단한다.
