@@ -1,3 +1,12 @@
+## 2026-11-02 — Issue #212 수동 Scene 생성 단계 진단과 CUSTOM_DTO 검증 (PR CI 후보)
+
+- Fixed: 3D 변환 실패를 `adapter-load:LOAD` 단일 코드로 감추던 브라우저 수동 Scene 경로를 phase·allowlisted code/숫자 통계와 정확한 상태로 분리. 실패 후 `dxf-viewer` 성공을 Scene Asset 변환 완료·저장 가능으로 오인하던 안내와 Save 조건 보완.
+- Changed: `CUSTOM_DTO` 저장 전 중복 Three JSON 트리 할당/inspection 제거, 대신 기존 `validateStoredScenePayload`·manifest SHA/ID/typed attribute와 32MiB/node/scalar/depth 상한을 정확 적용. Optional index Warning은 필수 Scene 실패와 분리.
+- Tests: 합성 단계/프라이버시/한도/fallback Unit 및 중첩 Scene ID/Geometry round-trip regression 코드 추가. 로컬/CI/현장 성공 **NOT VERIFIED**; PR CI 시작 후 완료 모니터링 생략.
+- No schema migration/Source·Current 변경/G7 Auth·Writer 조작/GHCR 게시/실 CAD 반출. 서버 Worker·업로드 자동 생성·목록 상태는 #208, 현장 실 DXF/GPU는 #113/#193. [설계](Issue212.md), [원장](FailureLedger.md).
+
+---
+
 ## 2026-11-02 — #211 PR #213 CI #436 실패 수정 및 Codex P2 체인 보고
 
 - 정확 실패 Run41449453584: 기존 `GF-109-CI-CONTRACT` 정적 테스트가 새 통합 CLI로 대체된 첫 Compose 시작 명령을 찾지 못함(Unit 943/944, Docker Job SUCCESS). 실 CI의 승인된 신규 설치/재시작 + first-admin/CAD/영속 smoke 순서를 유지한 채 테스트의 12개 필수 단계로 갱신.
