@@ -2,6 +2,7 @@ import { expect, test } from 'vitest';
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { spawnSync, type SpawnSyncReturns } from 'node:child_process';
 import { prepareStandaloneAssets, standalonePort } from '../../scripts/standalone.mjs';
 
 test('TC-IMAGE-001: standalone start accepts the existing --port contract', () => {
@@ -45,6 +46,9 @@ test('TC-IMAGE-003: release images separate the one-shot migrator from web start
   expect(migrator).not.toContain('COPY --from=dependencies /app/src/node_modules ./node_modules');
   expect(migrator).not.toContain('COPY --from=builder /app/src/node_modules');
   expect(migrator).toContain('USER cad');
+  // Fresh Greenfield DDL reads this isolated SQL at runtime. Keep it outside
+  // the old seven-migration Prisma history but inside the migrator closure.
+  expect(migrator).toContain('COPY --from=builder /app/src/deploy/scene-assets ./deploy/scene-assets');
 
   // Check the *migrator stage*, not an obsolete image-wide CMD string.
   const migratorCmd = migrator?.split('\n').find(line => line.trim().startsWith('CMD ['));
@@ -135,6 +139,127 @@ test('TC-IMG67-001: standalone traced native SQLite has no second image COPY', (
   const workflow = readFileSync(path.join(root, '.github/workflows/pr-ci.yml'), 'utf8');
   expect(workflow).toContain('test_audit_standalone_layers.py');
   expect(workflow).toContain('audit_standalone_layers.py');
-  expect(workflow).toContain('smoke_web_runtime.py create');
-  expect(workflow).toContain('smoke_web_runtime.py verify-delete');
+});
+
+test('GF-109-CI-CONTRACT: Greenfield Docker smoke passes setup code and checks restart persistence', () => {
+  const root = path.resolve(process.cwd(), '..');
+  const workflow = readFileSync(path.join(root, '.github/workflows/pr-ci.yml'), 'utf8');
+  const step = workflow.split('      - name: Compose Greenfield first run, Admin, CAD, restart persistence\n')[1]
+    ?.split('\n      - name: ')[0];
+  expect(step).toBeDefined();
+  expect(step).toContain('exec -T app cat /data/db/first-admin.code');
+
+  // #211 replaces ONLY the first-run and explicit same-release start steps
+  // with host-plan approval. Keep #109's first-admin, CAD, migration replay,
+  // and persistence assertions in their actual CI execution order.
+  let cursor = 0;
+  for (const command of [
+    'python3 src/scripts/g7-deploy.py .env.example status --json',
+    'python3 src/scripts/g7-deploy.py .env.example plan --json',
+    'python3 src/scripts/g7-deploy.py .env.example execute --approve-plan "$G7_PLAN" --json',
+    'cat /data/db/first-admin.code',
+    'G7_CI_FIRST_SETUP_CODE="$CODE" python3 src/scripts/smoke_greenfield_runtime.py create',
+    'stop app',
+    'python3 src/scripts/g7-deploy.py .env.example plan --operation start --json',
+    'python3 src/scripts/g7-deploy.py .env.example start --approve-plan "$G7_START_PLAN" --json',
+    'stop app',
+    'up --no-build --force-recreate migrate',
+    'up -d --no-build app',
+    'python3 src/scripts/smoke_greenfield_runtime.py verify',
+  ]) {
+    const index = step?.indexOf(command, cursor) ?? -1;
+    expect(index).toBeGreaterThanOrEqual(0);
+    cursor = index + command.length;
+  }
+});
+
+test('TC-LOG-MIG-001: migrator includes logger direct imports and loads them before DB migration', () => {
+  const root = path.resolve(process.cwd(), '..');
+  const logger = readFileSync(path.join(root, 'src/server/logger.ts'), 'utf8');
+  const docker = readFileSync(path.join(root, 'src/Dockerfile'), 'utf8');
+  const ci = readFileSync(path.join(root, '.github/workflows/pr-ci.yml'), 'utf8');
+  const migrator = docker.split('FROM runtime-base AS migrator\n')[1]?.split('\nFROM runtime-base AS runtime')[0];
+  expect(migrator).toBeDefined();
+  // Password backfill imports logger via tsx; the minimal migrator isn't a Next.js trace.
+  const relativeImports = Array.from(logger.matchAll(/\bfrom\s+['"]\.\/([^'"]+)['"]/g), ([, specifier]) => specifier);
+  expect(relativeImports).toContain('upload-error-catalog');
+  for (const specifier of relativeImports) {
+    const file = specifier.endsWith('.ts') ? specifier : specifier + '.ts';
+    expect(migrator).toContain(
+      'COPY --from=builder /app/src/server/' + file + ' ./server/' + file,
+    );
+  }
+  expect(migrator).toContain('node --import tsx --input-type=module -e');
+  expect(ci).toContain('server/upload-error-catalog.ts');
+  expect(ci).toContain('node --import tsx --input-type=module -e');
+});
+
+
+test('TC-LOG-MIG-002: CI baseline migrator packages the PR-source logger dependency', () => {
+  const root = path.resolve(process.cwd(), '..');
+  const workflow = readFileSync(path.join(root, '.github/workflows/pr-ci.yml'), 'utf8');
+  const baseline = workflow.split('      - name: Build pre-change baseline (same source, original Dockerfile)\n')[1]
+    ?.split('\n      - name: ')[0] ?? '';
+  expect(baseline).toContain('git show "$BASE_SHA:src/Dockerfile"');
+  expect(baseline).toContain('source.count(anchor) != 1');
+  expect(baseline).toContain('COPY --from=builder /app/src/server/logging/store.ts ./server/logging/store.ts');
+  expect(baseline).toContain('docker buildx build --load --platform linux/amd64 --target migrator');
+});
+
+function baselineShim() {
+  const workflow = readFileSync(path.resolve(process.cwd(), '../.github/workflows/pr-ci.yml'), 'utf8');
+  const section = workflow.split('      - name: Build pre-change baseline (same source, original Dockerfile)\n')[1]
+    ?.split('\n      - name: ')[0] ?? '';
+  const match = section.match(/<<'PY'\n([\s\S]*?)\n {10}PY/);
+  if (!match) throw new Error('Baseline Python preparation not found');
+  return match[1].split('\n').map(line => line.slice(10)).join('\n');
+}
+const loggerCopy = 'COPY --from=builder /app/src/server/logger.ts ./server/logger.ts\n';
+const storeCopy = 'COPY --from=builder /app/src/server/logging/store.ts ./server/logging/store.ts\n';
+function runBaselineShim(source: string, check: (result: SpawnSyncReturns<string>, file: string) => void) {
+  const root = mkdtempSync(path.join(tmpdir(), 'baseline-logger-closure-'));
+  const file = path.join(root, 'Dockerfile');
+  try {
+    writeFileSync(file, source);
+    const result = spawnSync('python3', ['-', file], { input: baselineShim(), encoding: 'utf8' });
+    check(result, file);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+}
+test('TC-LOG-MIG-003: current baseline is unchanged and legacy insertion is idempotent', () => {
+  const current = readFileSync(path.resolve(process.cwd(), 'Dockerfile'), 'utf8');
+  runBaselineShim(current, (result, file) => {
+    expect(result.status, String(result.stderr)).toBe(0);
+    expect(readFileSync(file, 'utf8')).toBe(current);
+  });
+  const legacy = current.replace(storeCopy, '');
+  runBaselineShim(legacy, (result, file) => {
+    expect(result.status, String(result.stderr)).toBe(0);
+    const expected = legacy.replace(loggerCopy, loggerCopy + storeCopy);
+    expect(readFileSync(file, 'utf8')).toBe(expected);
+    const repeated = spawnSync('python3', ['-', file], { input: baselineShim(), encoding: 'utf8' });
+    expect(repeated.status, String(repeated.stderr)).toBe(0);
+    expect(readFileSync(file, 'utf8')).toBe(expected);
+  });
+});
+test.each([
+  ['missing anchor', (source: string) => source.replace(loggerCopy, '')],
+  ['duplicate anchor', (source: string) => source.replace(loggerCopy, loggerCopy + loggerCopy)],
+  ['duplicate dependency', (source: string) => source.replace(storeCopy, storeCopy + storeCopy)],
+  ['wrong-stage anchor', (source: string) => source.replace(loggerCopy, '') + '\n' + loggerCopy],
+  ['wrong-stage dependency', (source: string) => source.replace(storeCopy, '') + '\n' + storeCopy],
+  ['duplicate migrator stage', (source: string) => source + '\nFROM runtime-base AS migrator\n'],
+  ['noncanonical dependency', (source: string) => source.replace(storeCopy, storeCopy.trimEnd() + ' # alternate\n')],
+  ['uppercase duplicate migrator', (source: string) => source + '\nFROM runtime-base AS MIGRATOR\n'],
+  ['lowercase stage boundary', (source: string) => source.replace(storeCopy, '').replace('\nFROM runtime-base AS runtime', '\nfrom runtime-base AS runtime') + '\n' + storeCopy],
+  ['indented stage boundary', (source: string) => source.replace(storeCopy, '').replace('\nFROM runtime-base AS runtime', '\n  FROM runtime-base AS runtime') + '\n' + storeCopy],
+  ['commented fake anchor', (source: string) => source.replace(loggerCopy, '# ' + loggerCopy)],
+  ['lowercase dependency COPY', (source: string) => source.replace(storeCopy, storeCopy.replace('COPY ', 'copy '))],
+  ['indented dependency COPY', (source: string) => source.replace(storeCopy, '  ' + storeCopy)],
+] as const)('TC-LOG-MIG-003: %s is rejected without changing the baseline', (_, malformed) => {
+  const current = readFileSync(path.resolve(process.cwd(), 'Dockerfile'), 'utf8');
+  const source = malformed(current);
+  runBaselineShim(source, (result, file) => {
+    expect(result.status).not.toBe(0);
+    expect(readFileSync(file, 'utf8')).toBe(source);
+  });
 });

@@ -8,8 +8,33 @@ export type GeoJSONOutline = {type:'Polygon';coordinates:XY[][]} | {type:'MultiP
 export type OutlineResult = {
   kind:OutlineKind; algorithm:string; geometry:GeoJSONOutline;
   sourceEntityIds:string[]; persistable:boolean; warnings:string[];
+  geometryBasis?:'RENDER_WCS_2D'; derivedFrom?:string[];
   tolerance:number; durationMs:number;
 };
+/** Render geometry is never a source Handle attestation. */
+export function computeRenderOutline(kind:OutlineKind,entities:OutlineEntity[],tolerance=0.02):OutlineResult{
+  const meshes=entities.filter(e=>e.entityType==='Mesh');
+  const others=entities.filter(e=>e.entityType!=='Mesh');
+  let result:OutlineResult;
+  if(kind==='PRECISE'&&meshes.length){
+    // Triangle interiors are a surface union, not even-odd nested contours.
+    const triangles=meshes.flatMap(e=>e.paths.map(p=>{
+      const ring=normalizeRing(p.points,tolerance);
+      if(ring.length!==3)throw new Error('삼각 Mesh만 정밀 외곽선으로 계산할 수 있습니다.');
+      return [close(ring)];
+    }));
+    const otherResult=others.length?computeOutline(kind,others,tolerance):null;
+    const otherPolys=otherResult?(otherResult.geometry.type==='Polygon'?[otherResult.geometry.coordinates]:otherResult.geometry.coordinates):[];
+    const merged=polygonClipping.union(triangles[0],...triangles.slice(1),...otherPolys) as XY[][][];
+    if(!merged.length)throw new Error('렌더 Mesh Union 결과가 비어 있습니다.');
+    result={kind,algorithm:'polygon-clipping-union-v1',geometry:merged.length===1?
+      {type:'Polygon',coordinates:merged[0]}:{type:'MultiPolygon',coordinates:merged},
+      sourceEntityIds:[],persistable:false,warnings:otherResult?.warnings??[],tolerance,durationMs:0};
+  }else result=computeOutline(kind,entities,tolerance);
+  return {...result,sourceEntityIds:[],persistable:false,geometryBasis:'RENDER_WCS_2D',
+    derivedFrom:entities.map(entity=>entity.id),
+    warnings:[...result.warnings,'렌더 형상 기반 브라우저 결과: 원본 Entity 정확성은 검증되지 않았습니다.']};
+}
 const EPS=1e-8;
 function close(ring:XY[]):XY[] {return [...ring,[...ring[0]] as XY];}
 function distance(a:XY,b:XY){return Math.hypot(a[0]-b[0],a[1]-b[1]);}

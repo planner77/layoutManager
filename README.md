@@ -1,4 +1,253 @@
+## #212 — 수동 DXF Scene 생성 진단·대체 렌더러 안내 (2026-11-02, PR 후보)
+
+도면 Viewer의 `도면 > 원본 DXF로 Scene 생성/재생성`은 기존 브라우저 수동 경로입니다. `THREE_SCENE_ARTIFACT_READY`는 브라우저가 저장 후보를 검증한 상태로, G7 인증·Site 쓰기 권한으로 **Scene Asset 저장**까지 성공해야 서버 영속 READY가 됩니다. 반면 `FALLBACK_DXF_DISPLAYED_SCENE_FAILED`는 `dxf-viewer`가 도면만 대체 표시했다는 뜻으로 Scene 생성/저장 성공이 아니며 저장 버튼은 비활성화됩니다.
+
+오류 진단은 단계/오류 코드와 비민감 수치만 제공하며 DXF 원본, 내부 경로/Stack/Handle·문자/Source SHA·계정/토큰을 공개 공유하지 않습니다. 32MiB Scene payload/100k nodes/2M attribute scalars/depth128 제한을 유지합니다. 최초 DXF 업로드 후 서버 백그라운드 Scene 자동 생성·목록 Job 상태는 별도 [#208](https://github.com/planner77/layoutManager/issues/208) 개발 범위입니다. [진단·제약](out/Issue212.md) · [운영](out/Operation.md) · [검증 상태](out/TestReport.md). PR CI 실행·실 고객 CAD/GPU/운영 배포 합격은 아직 확인 전입니다.
+
+---
+
+## #211 — G7 Docker 호스트 단일 배포 CLI (2026-11-02)
+
+**신규 빈 Greenfield 설치·기존 동일 릴리스 재시작·등록 릴리스 업그레이드의 권장 진입점**은 `python3 src/scripts/g7-deploy.py .env status --json` / `plan --json` / `execute --approve-plan <64자리 planId> --json`이다. 기존 설치 업그레이드 후 App은 **정지 상태로 유지**되며 `plan --operation start` → `start --approve-plan <새 start planId>`의 별도 승인 기동이 필요하다. 먼저 신뢰하는 App/Migrator를 수동 pull·검증하고, `.env`의 목표 이미지 두 개·40hex `G7_RELEASE_SOURCE_COMMIT`을 **운영자가 직접 수정**, 기존 `CAD_DATA_VOLUME_NAME` 유지. Helper는 `.env`를 자동 변경하거나 비어 있지 않은 볼륨을 재설치하지 않는다. 이전 일반 Compose `up -d --pull always` 명령은 **새 설치/검증된 동일 릴리스**에만 적합하며 기존 릴리스 변경 절차가 아니다. 상세 예시·실패 대응: [G7 Runbook](src/deploy/g7-greenfield/README.md), [Issue211 설계](out/Issue211.md).
+
+---
+
+## 기존 Greenfield 설치 업그레이드 — 0.58.0 개발 후보 (#209)
+
+정상 설치를 마친 local Greenfield는 릴리스에 등록된 지원 경로를 따라 같은 볼륨과 설치 ID를 유지하며 업그레이드합니다. 운영자는 App/Migrator 이미지 쌍과 Source를 확인하고 호스트 도구의 `preflight → plan → auto`를 실행합니다. 도구는 App을 정지하고 무결성 검사·SQLite/CAD 복구 세트 검증 뒤 설치 정보를 갱신합니다. 실제 Schema 변경은 정확한 계획 승인이 필요하며, 복구는 새 빈 볼륨에 수행합니다. 명령과 제한은 [Greenfield Runbook](src/deploy/g7-greenfield/README.md)의 #209 절을 따릅니다.
+
+이 코드는0.58.0 후보에 포함됩니다.0.56→0.57은 새 엔진의 합성 회귀이며 이미 게시된0.57.0 이미지의 동작이 변경되는 것은 아닙니다. 실제 이미지 게시·운영 업그레이드·현장 수용은 별도입니다. 시험/CI 상태는 [TestReport](out/TestReport.md)/[FailureLedger](out/FailureLedger.md)를 확인하세요.
+
+---
+
+## 기준정보 이름 편집·도면 목록 메모 검색 (#204/#202, 0.57.0 개발 후보)
+
+위치 기준정보의 이름은 기존 항목을 선택해 편집합니다. 도면에서 참조하거나 비활성화한 항목도 이름을 바꿀 수 있으며 ID·소속과 도면 이력은 유지합니다. 시스템 미분류 제품의 이름은 잠겨 있습니다.
+
+기본 도면 목록의 메모 조건은 메모 제목 또는 본문을 검색하고 파일명·설명·위치 등의 조건과 함께 적용합니다. 같은 버전의 메모가 여러 개 일치해도 도면은 한 행이며, 일치 개수와 제한된 미리보기에서 정확한 메모 링크를 열 수 있습니다. 메모 조건에는 활성 G7 세션과 해당 Site 읽기 권한이 필요합니다. 조건을 비우면 기존 도면 목록을 사용합니다. 현재/전체 버전 토글은 그대로 적용하며 별도 메모 검색도 유지합니다.
+
+전체 Unit·정적 검사·빌드와 독립 QA의 일반 Browser27건·서명 G7 Browser3건을 근거로 Manager가 코드·합성 범위의 PR 후보를 수용했습니다. 구현·시험 계약은 [Requirements](out/Requirements.md)/[TestPlan](out/TestPlan.md), 실제 수치·실패와 재시험은 [TestReport](out/TestReport.md)/[FailureLedger](out/FailureLedger.md)를 따릅니다. 320px의 기존 상단 내비게이션 잘림은 남아 있으며 신규 검색 입력은 화면 폭 안에 표시됩니다. PR CI는 시작만 확인하며 완료·운영 배포·실도면 수용은 검증 전입니다.
+
+---
+
+## 의미론적 구역 — 0.56.0 Main 병합
+
+DXF의 three-dxf-viewer에서 `작업 > 구역 생성`과 `구역 목록`으로 층별 구역을 관리합니다. 객체 끝점·꼭짓점 Snap과 자유 WCS/수치 입력을 함께 사용하고, 이름·분류·설명·참조 정보 및 부모 구역을 저장합니다. 트리의 한 번 클릭은 선택, 더블클릭·Enter는 유효한 해당 버전 경계로 이동합니다. 초기 경계는 단순 Polygon이며 Hole/MultiPolygon·교차점 Snap은 지원하지 않습니다.
+
+구역 조회가 일시적으로 실패하면 목록 패널의 오류 안내에서 다시 조회할 수 있습니다. 보호 정보는 지우되 원본을 재로드하지 않고 복구하며, G7 OFF에서는 구역 조회를 비활성화합니다.
+
+구역 정보는 층에 유지되고 경계는 정확한 Version·원본 SHA·Scene revision에 매핑됩니다. 새 버전은 미매핑으로 시작하며 재연결 전에는 이전 경계를 표시하지 않습니다. Site별 카테고리는 외곽선 타입과 별도로 관리합니다. 신규 빈 Greenfield Schema 및 승인된 G7 세션/Site 권한이 필요합니다. 기존 볼륨의 자동 이전·인증/Writer 강제 활성화는 수행하지 않습니다. 설계·제한은 [Issue196](out/Issue196.md), 실제 검증은 [TestReport](out/TestReport.md)를 확인하세요. [PR #200](https://github.com/planner77/layoutManager/pull/200)의 최종 CI 8/8 성공 후 Main 병합·#196 종료를 완료했습니다. [Main CI](https://github.com/planner77/layoutManager/actions/runs/41339438989)가 GHCR 0.56.0 App/Migrator 게시를 시작했으며 게시 완료·배포 및 실제 현장 수용은 미확인입니다.
+
+---
+
+## 위치 기준정보 트리 관리 (#191, PR CI 후보)
+
+**위치 기준정보**(/masters)는 기존 사업부·제품·사업장/법인·동·층을 한 개의 계층 트리로 표시합니다. 이름 검색 시 일치하는 항목과 상위 경로를 함께 보여주며, 비활성 항목 표시와 모두 펼치기/접기를 지원합니다. 노드 이름을 선택하면 오른쪽에 전체 경로, 종류, 상태가 나타납니다. 사업부는 트리 아래에서 새로 추가하고, 하위 항목은 선택 후 **하위 추가**로 직계 한 단계씩 등록합니다. 편집과 삭제는 우측에서 명시적으로 저장/취소·확인합니다.
+
+트리에서 ↑/↓로 이동, ←/→로 접기/펼치기·상위/자식 이동, Home/End로 처음/끝, Enter/Space로 선택합니다. 좁은 화면에서는 트리와 상세 패널이 위아래로 배치됩니다. 하위 항목·도면 이력이 있으면 삭제되지 않으므로 **편집 / 상태 변경**에서 비활성화하세요. 층의 **버전 이력**은 Current가 없는 상태에서도 사용 가능하며, 기존 도면 이력/원본은 보존됩니다. 미분류 제품명, ID와 부모 소속은 편집할 수 없습니다.
+
+G7 활성화 시 현행 Session/Role/Site Grant/CSRF/서명된 Runtime Write가 서버에 적용되며, 비활성 UI 여부만으로 권한이 부여되지는 않습니다. [설계·제약·시험](out/Issue191.md). 이 변경의 신규 PR CI·현장 수용·GHCR 게시 완료는 **검증 전**입니다.
+
+---
+
+## Memo 공동 편집 권한 (0.55.0 개발 후보, #172)
+
+영속 메모는 동일 Site의 Editor가 작성자와 무관하게 제목/본문, 위치, 일정·완료, 표시 설정 및 연결 앵커를 수정할 수 있도록 개선 중입니다. **논리 삭제는 최초 작성자 또는 해당 Site 권한을 가진 Admin만** 할 수 있습니다. 작성자·생성시각은 유지되며 변경자는 서버 Audit/Revision에 기록됩니다.
+
+Viewer의 삭제 버튼 비활성화는 안내 기능이며 최종 권한은 항상 서버가 현재 계정, Site Grant, Session 및 Version으로 다시 판단합니다. 전체 객체 초기화(ALL)는 타 작성자 메모가 포함되면 일반 Editor에게 거절되며, SOURCE_ONLY는 메모를 남기고 원본 연결을 끊습니다. 이 코드는 PR CI·사내 2PC 수용 전 후보로, 기존 운영 데이터 자동 이관이나 GHCR 게시를 의미하지 않습니다.
+
+---
+
+## 0.54.1 후보 — Viewer 편집/운영 로그 통합 회귀 (#37/#49/#50)
+
+기존 앱형 Viewer·업무 타입/트리·SOURCE/GENERATED 통합 선택·생성 개체 로컬 편집/JSON과 G7 권한 기반 서버 구조화 로그 조회 기능을 재사용합니다. 실행 메뉴의 비활성 링크는 더 이상 이동/다운로드 링크로 동작하지 않습니다. 서버 로그 화면은 타임라인 전용 cursor 만료 또는 저장소 읽기 장애에 한해 기존 인가된 메인 목록을 유지하고, 실패한 단계는 지워 재조회할 수 있게 합니다. 인증/권한 오류나 분류할 수 없는 오류에서는 로그를 모두 비웁니다.
+
+합성 DXF/Greenfield 회귀를 추가했으며 설계·시험·잔여 조건은 [Epics37-49-50](out/Epics37-49-50.md)과 [TestReport](out/TestReport.md)를 참조합니다. 최신 Commit의 원격 CI 및 실 현장/GPU는 검증 전이고 GHCR 배포/운영 변경은 수행하지 않았습니다. Next/Container/Nginx 원시 로그 자동 수집(#63)은 포함되지 않습니다.
+
+---
+
+## 0.54.0 후보 — 한글 메모를 포함한 GLB / glTF 내보내기 (#91 R5b)
+
+`three-dxf-viewer`의 `도면 → GLB / glTF 내보내기`에서 메모를 별도로 선택할 수 있습니다. 숨긴 메모도 명시적으로 포함하며 메모만 또는 DXF 레이어·확정 외곽선과 함께 내보냅니다. 한글 제목과 본문은 일반 GLTFLoader에서도 보이는 텍스처·핀·연결선으로 표현합니다. 화면 라벨 간격 대신 미터 단위 글자 높이를 사용합니다. 자동 높이는 포함 범위를 확인할 때 계산하고, 직접 입력한 값은 선택을 바꿔도 유지합니다.
+
+서버 메모는 조회 옵션을 선택한 뒤 현재 도면 읽기 권한과 내용을 확인해 포함합니다. 권한이나 내용이 바뀌면 전송을 막고 다시 확인하도록 안내합니다. 공개 도면·브라우저 개체만 내보내는 데 서버 메모 권한은 필요하지 않습니다. 파일에는 출처 Version/SHA와 좌표·표시 정보가 포함되며 작성자·권한·저장 위치는 넣지 않습니다.
+
+수정 후보는 전체 unit883개·독립 QA General146개·Greenfield21개·Auth/Legacy 각1개 및 typecheck/lint/production build를 통과해 코드·합성 범위를 로컬 수용했습니다. 실제 두 형식의 한글 렌더와 부하 측정을 확인했으며 Draft PR 게시·새 원격 CI는 후속 단계입니다. 현장 실 CAD/GPU/2PC 및 Owner 수용은 별도입니다. 시험별 근거는 [TestReport](out/TestReport.md), 사용법·한도·취소 및 오류 처리는 [Operation](out/Operation.md)을 따릅니다. 새 DB Schema나 서버 저장 기능은 추가하지 않습니다.
+
+---
+
+## 0.53.0 후보 — GLB / glTF 내보내기 (#91 R5a)
+
+DXF를 `three-dxf-viewer`로 연 뒤 `도면 → GLB / glTF 내보내기`에서 렌더 레이어와 확정 외곽선을 선택할 수 있습니다. GLB 또는 외부 파일이 필요 없는 단일 glTF를 만듭니다. DXF는 임시 이동·회전 이전의 원본 렌더 배치를 사용하고, 추가 외곽선은 현재 확정된 기하를 사용합니다. 화면에서 숨긴 레이어도 내보내기에서 선택하면 포함됩니다.
+
+기본값은 DXF만 포함합니다. 브라우저의 추가 개체는 별도로 선택하며, 서버 외곽선은 명시적으로 불러온 뒤 현재 조회 권한을 확인해 포함합니다. 공개 도면과 브라우저 개체는 익명으로도 내보낼 수 있습니다. 내보내기 전에 단위·원점과 레이어별 제외 사유를 확인하세요. 결과는 미터와 glTF XZ 평면으로 변환되며, 원본 Entity 전체의 변환 여부가 확인되지 않거나 스타일 손실이 있으면 부분 산출 동의가 필요합니다.
+
+아래는0.53.0 개발 후보 당시의 기록입니다. 독립 QA와 전체 unit858개·일반 Browser128개·Greenfield17개·Auth/Legacy 각1개 및 정적 검사·production build를 통과해 로컬 수용했습니다. 이후 Draft PR184를 게시했고 정확 HEAD9accf8b의 Verify/Docker CI가 모두 통과했습니다. 실제 결과는 [TestReport](out/TestReport.md), 한도와 오류 대응은 [Operation](out/Operation.md)을 따릅니다. 당시 메모는 후속 범위였으며 현재0.54 후보의 상태는 위 안내를 따릅니다. 원본 CAD 편집·GLB 가져오기·새 서버 저장 기능은 추가하지 않습니다.
+
+---
+
+## 0.52.0 후보 — 메모 스냅 후보와 연결 유지 이동 (#174)
+
+메모를 배치할 때 화면의12px 범위에서 끝점·꼭짓점·중심점 후보를 찾아 선택할 수 있습니다. 후보 목록은 키보드와 터치를 지원하며, `스냅 안 함`을 선택하면 처음 입력한 WCS 좌표를 사용합니다. 카메라·도면·대상·계정이 바뀐 뒤에는 후보를 다시 조회해야 합니다.
+
+연결된 메모의 위치 이동은 기존 객체 연결 유지, 연결 해제 후 WCS 이동, 새 스냅 후보 선택으로 구분합니다. Viewer의 임시 연결과 서버에 저장된 연결은 수명이 다릅니다. 임시 연결은 Viewer 전환·새로고침 때 사라지고, 영속 연결은 서버에서 복원합니다. 제품의100개 메모와20,000개 후보 점 제한은 유지합니다.
+
+현재0.52.0은 기능·합성 계측의 로컬 검증을 마친 후보입니다. 큰 합성 도면에서 frame budget 초과와 재진입 뒤 잔여 heap 증가가 관찰되어 성능·메모리 원인 및 현장 검증은 남아 있습니다. 이후 정확 R4 HEAD의 PR CI는 통과했으며, 현장 수용·배포는 완료되지 않았습니다. 실제 통과 범위와 남은 작업은 [TestReport](out/TestReport.md), 사용·오류 대응은 [Operation](out/Operation.md)을 확인하세요. 새 DB Schema나 기존 볼륨 자동 migration은 추가하지 않습니다.
+
+---
+
+## 0.51.0 후보 — 타입 지정 외곽선 저장·트리 (#71/#73)
+
+G7 활성 세션에서 해당 도면 Version의 Site 읽기 권한이 있는 사용자는 전역 활성 타입 목록과 저장된 외곽선을 조회할 수 있습니다. Reader는 조회만 가능하고, 해당 Site의 Editor 이상은 타입을 지정해 외곽선을 저장·수정·논리 삭제할 수 있습니다. 저장 요청은 같은 사용자·Version·Idempotency-Key의 동일 본문 재시도에 기존 결과를 반환하며, 다른 본문은 충돌로 거절합니다. 응답이 불확실할 때는 같은 키로 재시도합니다.
+
+Viewer의 타입별 트리는 저장된 외곽선을 다시 불러와 보여줍니다. 저장 항목은 브라우저 GeneratedDocument의 실행 취소 이력에 섞이지 않으며, Scene pointer 변경 후에도 서버 기록과 연결 WCS 좌표를 유지합니다. 내보내기는 검증된 Source만 Source-v2로, APP_CREATED는 APPGenerated-v2로 분리합니다. 이 서버 Snapshot을 가져오면 새 UUID의 브라우저 개체가 생기며 원본 Source 증명이나 서버 저장을 자동 획득하지 않습니다. 기존 일반 Generated-v2 파일의 UUID 복원은 유지합니다. 모바일은 같은 도구를 좁은 화면의 간결한 패널에서 사용합니다.
+
+`202611010001` Schema는 새 빈 Greenfield 설치용입니다. 기존 DB/볼륨의 자동 migration은 제공하지 않습니다. 현재 상태는 개발 브랜치의 0.51.0 후보이며 전체 PR CI·현장 수용·배포 결과는 [TestReport](out/TestReport.md)를 확인하세요. [#42의 기존 브라우저 타입 계약](out/Issue42.md)과 [#43의 임시 트리 계약](out/Issue43.md)은 아래 0.50.0 기록 이후 구현된 이번 서버 연결과 구분됩니다.
+
+---
+
+## 0.50.0 기록 — 전역 외곽선 타입 관리 (#65)
+
+Viewer의 `작업 → 외곽선 타입 관리`에서 관리자가 서버 공통 타입을 등록·검색·수정·비활성화·복구할 수 있습니다. Reader/Editor는 목록 읽기만 허용하며, 관리 메뉴는 활성 서버 인증·Admin·쓰기 가능 상태에서 열립니다. 같은 이름은 비활성 상태에서도 예약되고, 다른 사용자의 수정과 충돌하면 목록을 다시 조회해야 합니다. 타입 관리 중에도 도면 Canvas와 선택·실행 취소 상태를 유지합니다.
+
+당시 Schema는 **빈 Greenfield 신규 설치용**이었습니다. 기존 DB/볼륨을 자동 갱신하지 않습니다. 당시 후속이던 외곽선 타입 확정 및 영속 트리 연결은 위 0.51.0 후보를 참조합니다. 실제 검증 결과와 남은 조건은 [TestReport](out/TestReport.md), Schema 기준은 [Database](out/Database.md)를 따릅니다.
+
+---
+
+## 0.49.0 후보 — 운영 로그 권한·조회·타임라인 (#60/#61/#62)
+
+`운영 · 서버 로그`는 활성 서버 세션의 Admin과 별도 `logs:read` 권한을 확인한 사용자에게 표시됩니다. `/operations/logs`에서 최근 1시간의 정제된 app/maintenance 이벤트를 검색하고, 기간·레벨·작업·요청/작업 ID와 페이지·타임라인을 확인할 수 있습니다. 권한 없는 API는 401/403, 운영 인증 비활성은 503으로 차단합니다. 직접 화면 URL과 RSC/prefetch도 동일한 서버 인가로 401/403을 반환하며 조회 컴포넌트를 실행하지 않습니다.
+
+서버 설정 `LOG_STORE_ENABLED=true`가 아닐 때는 보관 비활성 안내가 나옵니다. 기존 `/data/logs` 읽기만 사용하며 원시 Next.js/컨테이너/Nginx 로그·로그 파일 다운로드·자동 갱신은 제공하지 않습니다. 로그가 비었음, 손상/읽기 상한으로 일부만 표시됨, 페이지 만료, IO 오류를 구분합니다. 페이지는 짧은 서버 메모리 스냅샷이므로 만료되면 다시 검색합니다. 실제 운영 설정·권한을 자동 변경하지 않습니다.
+
+잔여 18개 이슈의 PR 묶음과 순서는 [Decisions](out/Decisions.md), 설계/AC/시험은 [Requirements](out/Requirements.md), [TestPlan](out/TestPlan.md), 실제 결과는 [TestReport](out/TestReport.md)를 따릅니다. PR CI·현장 수용·배포는 실행 근거 확인 전 미완료입니다.
+
+---
+
+## v0.48.0 후보 — #55 회전 / #56 편집 생성 개체 JSON v2 (2026-10-31)
+
+## #58/#59 Observability: Request stages and private logs
+
+The same structured L1 logger now supports request phases and maintenance-job correlation. Compose can retain sanitized app-only JSONL in private /data/logs with LOG_STORE_ENABLED=true (7-day retention, 4 MiB/file, 64 MiB total defaults), independently of Docker local logs. No web log-reader API or Docker socket mount is provided; the store is not an audit ledger. On IO failure it drops persistence copies without affecting CAD operations. UID 10001 owns the private directory; never delete an existing data volume to enable logging. See [out/Logging.md](out/Logging.md), [out/Issues58-59.md](out/Issues58-59.md).
+
+
+DXF를 `three-dxf-viewer`로 연 뒤 `작업 → 선택·편집 도구`에서 **생성 개체만 선택**하면 WCS XY 각도(+ = 반시계), Pivot X/Y(기본: 선택 객체 전체 bbox의 중심)를 입력해 한 번에 회전할 수 있습니다. Canvas 위의 **↻ 회전 핸들**을 드래그하면 Ghost로 미리보기, 놓으면 한 번의 Undo로 확정되며 ESC/카메라 변경/취소는 원위치로 복원합니다. SOURCE/RENDER 혼합은 편집할 수 없습니다.
+
+`도면 → 생성 개체 JSON 내보내기 (브라우저)`는 편집된 생성 외곽선의 base geometry, 허용된 Translate/Rotate 연산, transform, 유효 결과 geometry, ID, 이름·타입·가시성을 `cad-generated-objects` 스키마 v2 파일로 내보냅니다. `도면 → 생성 개체 JSON 가져오기 (브라우저)`로 동일 Version/SHA·DXF 단위에서만 복원됩니다. 파일 12MiB, 최대 100개/총 10만 꼭짓점/개체 4,096연산 제한을 초과하거나 변조된 파일은 거부합니다. 기존 임시 개체가 있으면 전체 교체 확인이 필요하고, 복원 후 이전 Undo 이력은 이어지지 않습니다. 기존 #31 원본 Source-only JSON v1/typed v2는 제한된 Legacy 브라우저 Import 경로로 처리합니다. 기존 JSON 내보내기 버튼은 호환 유지됩니다.
+
+**보안·운영 경계:** 가져온 객체는 오직 Browser `APP_CREATED`이며 서버 CAD Source 증명이나 쓰기 권한이 아닙니다. DXF/DB/API/Current/영속 메모를 수정하지 않고 Reload/Renderer 변경 시 사라집니다. 서버 영속화는 별도 #97/#98 Source 재검증 이후에만 가능합니다. [설계·AC](out/Issues55-56.md) · [검증 계획](out/TestPlan.md). 이 브랜치의 로컬 시험·PR CI·실 CAD/GPU 검증은 현재 별도 확인 전입니다.
+
+---
+
+## Viewer v0.47.5 PR 후보: #139/#138/#137 (2026-10-31)
+
+DXF 도면 내부 한글 검색은 R2007+ UTF-8을 오래된 ANSI_949 헤더보다 우선하며 실제 구형 CP949는 별도로 해석합니다. 상단 작업 메뉴로 레이어·외곽선·도구·TEXT 검색을 연 뒤 제목의 이동 핸들 또는 방향키로 이동할 수 있고 위치 초기화로 원래 Drawer edge에 복귀합니다. 좌측 상단 첫 아이콘은 전체 목록(/)으로 이동하며 임시 편집·선택 데이터의 이탈을 확인합니다. 기존 버전 목록은 따로 유지합니다. 화면 변경은 원본 도면과 서버 Auth/DB를 바꾸지 않습니다. [설계·시험](out/Issues137-139.md). PR CI 및 실도면/GHCR 검증 완료 상태 아님.
+
+---
+
+## #88/#90 M6/M7 — Memo 공유·도면 목록 전체 검색 (개발 브랜치, 2026-10-31)
+
+도면 Viewer에서 영속 메모 하나를 선택하고 `작업 → 선택 메모 링크 복사` 또는 메모 트리 행 `링크`를 이용하면 해당 **도면 Version + 메모 UUID**에 고정된 링크를 복사할 수 있습니다. 링크 받은 사람도 G7 로그인·사업장 메모 읽기 권한이 있어야 합니다. 도면 표시가 완료되면 메모 좌표로 이동해 강조하며, 숨긴 메모는 임시 표시할 뿐 서버 상태를 바꾸지 않습니다. Browser 임시 메모는 링크 공유할 수 없습니다.
+
+홈 CAD 목록에서 `메모 검색 (전체 도면)`을 열어 별도로 메모 제목·본문·그룹을 검색할 수 있습니다. 기존 도면 파일명/설명 검색과 분리되어 있고 기본은 **현재 Version의 메모만** 검색합니다. 필요할 때 `이전 버전 포함`을 선택하세요. 위치/작성자/완료/마감일 필터, 페이지 크기, 검색 결과의 `메모 위치로 이동`을 지원합니다. G7 활성화·서버 로그인 없이는 영속 메모 검색/공유가 제한됩니다. 검색어가 URL에 남을 수 있으므로 비밀번호나 민감 문서 전문은 입력하지 마세요.
+
+기존 데이터 DB migration/GHCR 게시 없이 구현하는 범위이며 CI·실 운영 검증 결과는 아직 미확정입니다. 설계/보안·제약 [Issues88-90](out/Issues88-90.md), 테스트 증거 [TestReport](out/TestReport.md)를 참조하세요.
+
+---
+
+## 0.47.0 후보 — Three.js 객체 작업 (#166)
+
+`작업 → 외곽선 생성`의 기본 기하 기준은 **렌더 WCS 2D**입니다. 원본 Handle 매핑이 없거나 원본 분석 Worker가 실패해도 지원하는 Three.js 객체를 선택해 임시 APP_CREATED 외곽선을 만들 수 있습니다. 선택 단위는 Object3D 전체이며 병합 BLOCK/Mesh/LineSegments의 개별 CAD Entity 선택을 보장하지 않습니다. 정밀 원본 모드는 별도로 선택하며 기존 원본 검증을 유지합니다.
+
+`작업 → 선택·편집 도구`에서 렌더·생성 객체를 선택합니다. DXF_IMPORTED만 선택하면 세션 작업 차분으로 이동·회전·숨김/복원·실행 취소/다시 실행을 사용할 수 있습니다. 생성 객체는 기존 이동·삭제·Undo/Redo 및 외곽선 목록을 사용합니다. 혼합 선택의 변형은 전체 거절됩니다. 원본 DXF와 저장된 기준 Scene은 보존됩니다.
+
+새 외곽선·작업 차분·독립 WCS 메모는 현재 브라우저 세션에만 있으며 다시 불러오기/Renderer/Version 전환 시 소실됩니다. Scene Asset 저장에는 업무 편집 결과가 포함되지 않습니다. 렌더 파생 JSON은 원본 canonical 검증 자료가 아니며 정밀 원본 JSON과 구분됩니다. 영속 CRUD/트리/연결 앵커는 #98/#73/#83/#84 후속입니다. 최신 시험·PR CI 상태는 [TestReport](out/TestReport.md)를 따릅니다.
+
+---
+
 # CAD Web Viewer P.O.C.
+
+## 0.46.0 후보 — Scene Asset 저장과 Scene 우선 조회 (#164/#165)
+
+DXF를 명시적으로 변환한 뒤 **도면 → Scene Asset 저장**으로 파생 Scene을 게시합니다. 신규 Scene Schema에서 저장된 READY 도면을 다시 열면 원본 DXF를 다운로드하거나 파싱하지 않고 검증된 Scene과 문자 검색 정보를 복원합니다. 저장 Scene이 없거나 손상·비호환이면 상태를 표시하고, **도면 → 원본 DXF로 Scene 생성/재생성**을 선택한 경우에만 원본을 변환합니다. 기존 dxf-viewer 조회는 원본을 사용하는 레거시 경로입니다.
+
+저장은 기존 로그인·사업장 쓰기 권한·G7 승인 및 revision 검사를 따릅니다. Scene bytes는 Local 또는 설정된 S3에 immutable로 보관하며 검증 후 현재 Scene pointer와 Audit을 함께 확정합니다. APP_CREATED 외곽선과 메모의 별도 서버 저장/재접속 복원은 #98/#83 후속이며 현재 세션 편집 결과가 Scene Asset에 함께 저장되지는 않습니다.
+
+신규 Schema는 빈 Greenfield 설치용 후보이고 기존 운영 DB를 자동으로 변경하지 않습니다. 현재 개발 검증·PR 후보이며 CI/현장 수용·배포 완료를 뜻하지 않습니다. 실제 시험/한계는 [TestReport](out/TestReport.md), 사용·상태·저장소 경계는 [Operation](out/Operation.md), DB 기준은 [Database](out/Database.md)를 따릅니다.
+
+---
+
+## 0.45.0 후보 — CAD Scene 계약·Origin 및 직렬화 실험 (#161–#163)
+
+DXF 변환 직후 실제 Three 렌더 트리에 `DXF_IMPORTED`와 앱 관리 ID를 부여하고, 생성 외곽선은 기존 `GENERATED` 선택 계약을 유지하면서 `APP_CREATED` 참조를 갖습니다. ID는 renderer UUID와 분리하며 같은 Version/source·변환기·schema·tree 경로에서 재현됩니다. 원본 Handle이 없는 개체도 ID를 얻지만 정밀 Entity 연결을 임의로 만들지 않습니다.
+
+별도 합성 Browser 시험에서 Three JSON·GLB·전용 DTO의 직렬화와 새 컨텍스트 복원을 비교합니다. 새 UI 메뉴나 서버 Scene 저장 기능은 추가하지 않았습니다. 원본 DXF·DB/API·기존 선택/편집 정책은 유지하며, 영속화(S3)·Scene 로더(S4)·일반 렌더 개체 선택(S5)·초기화 실행(S6)은 후속입니다. 포맷별 손실·실제 측정/검증 상태는 [TestReport](out/TestReport.md), 실행은 [Operation](out/Operation.md), 설계는 [Architecture](out/Architecture.md)의 #161–#163 절을 따릅니다. PR CI·GHCR·배포·실DXF 현장 수용 완료를 뜻하지 않습니다.
+
+---
+
+## 0.44.2 신규 설치 — Issue #109 (2026-10-30, PR 후보)
+
+기본 `src/docker-compose.yml`는 이제 **G7 Greenfield 신규 설치**를 위한 진입점입니다. `docker compose --env-file .env -f src/docker-compose.yml up -d --pull always`로 빈 독립 볼륨에 최종 Schema를 설치하고 기본 포트 **3000**에서 접속합니다. 기존 DB/계정/도면·기존 Migration/백업/HOLD/Owner 서명은 자동 이관·삭제·참조하지 않습니다. **이전 데이터가 필요한 경우 별도 경로를 사용해야 하며, 신규 설치 명령으로 구 DB를 복구할 수 없습니다.**
+
+- `.env`에는 같은 릴리스의 App/Migrator 이미지(또는 digest), `G7_RUNTIME_ORIGIN`(접속하는 브라우저의 정확한 공개 Origin), 새 `CAD_DATA_VOLUME_NAME`을 설정합니다. 인증 없는 HTTP를 쓰는 경우 내부 방화벽으로 접근을 제한합니다.
+- 첫 접속은 `/g7-runtime/setup`으로 안내됩니다. Docker 호스트 소유자가 `/data/db/first-admin.code`를 확인해 웹에서 최초 관리자/초기 비밀번호를 설정합니다. 코드는 생성 후 1시간만 유효하며, 사용자 생성 뒤 재사용할 수 없습니다.
+- 초기 비밀번호를 변경해 로그인하고 사업부→제품→사업장을 추가합니다. 사용자/권한 관리에서 Admin 자신에게 해당 Site를 명시 부여한 뒤 동→층을 추가하고 DXF를 등록합니다. 재시작해도 볼륨의 DB/CAD/Audit는 유지됩니다. Owner 서명의 24시간 갱신은 신규 Self-hosted 흐름에 필요 없습니다.
+- 부적합하거나 이미 데이터가 있는 볼륨, 승인하지 않은 릴리스 교체, 보안 파일/스키마 손상은 자동 복구하지 않고 시작을 차단합니다. 이전 #153 수동/서명 Greenfield Runbook은 **기존 Expert 경로**로만 유지됩니다.
+
+상세: [#109 신규 설치 운영 절차](out/Operation.md), [설계](out/Architecture.md), [원장](out/FailureLedger.md). **현재 0.44.2는 구현/PR CI 후보**이며 실제 GHCR 발행 또는 운영 설치를 의미하지 않습니다.
+
+---
+
+
+> **신규 설치(Greenfield, Issue #153):** 이전 DB나 Migration/HOLD/복구 데이터를 사용하지 않고, 별도 보관 DXF만 신규 등록합니다. [신규 설치 Runbook](src/deploy/g7-greenfield/README.md) 및 [독립 Docker Compose](src/docker-compose.greenfield.yml)를 사용하세요. 기존 기본 Compose는 이 신규 설치 절차가 아닙니다.
+
+
+## 0.44.0 후보 — G7 운영 통합 (Issue #153)
+
+기존 Auth/Session/Role/Site/Audit를 실제 로그인·운영 화면과 CAD 거래에 연결합니다. 기본 OFF이며 독립 로컬 Trust, Owner 서명, 정확한 릴리스·Schema·Site Scope가 일치해야 `/g7-runtime`과 보호된 변경 기능을 사용할 수 있습니다. 기존 익명 CAD 읽기·Viewer·원본과 삭제 비밀번호는 유지합니다. 계정 초기/복구 CLI, 격리 Migration/동일 Snapshot Restore와 실패 HOLD를 제공합니다.
+
+현재는 구현 후보이며 실제 운영 활성화·정식 이미지/태그·병합·배포를 수행하지 않습니다. [운영 선행조건](out/Operation.md), [실제 시험 결과](out/TestReport.md), [실패 원장](out/FailureLedger.md)을 확인하세요. 아래 버전별 기록은 당시 실행 범위를 보존합니다.
+
+승인된 사업장 비활성화는 해당 사업장의 CAD 쓰기를 제한합니다. 다른 활성 사업장과 관리자 기능은 계속 사용할 수 있으며 기준정보에서 다시 활성화할 수 있습니다. PR #156의 강제 종료 Migration 복구·회귀 검증은 [TestReport](out/TestReport.md)와 [실행 Runbook](src/deploy/g7-runtime/README.md)을 참조하세요.
+
+## v0.43.0 릴리스 후보 — CAD 메모 M1 (Issue #82)
+
+새 UI 기능이므로 이전 정식 `v0.42.1`을 재사용하지 않고 **MINOR 버전 0.43.0**을 신규 이미지 쌍으로 발행합니다. DXF `three-dxf-viewer`에서 `작업 > 메모 추가/편집` 메뉴로 아래 도구 Drawer를 열어 WCS XY 고정 임시 메모를 배치·편집·이동·삭제합니다. 메모 제목/본문을 수정해도 명시적 위치 이동 명령 없이는 앵커 좌표가 변하지 않습니다. 다른 Renderer(DWG, dxf-viewer)는 지원하지 않습니다.
+
+메모는 브라우저 세션만 유지되며 **재로드·Renderer 또는 버전 변경 시 소실**, 서버 저장·공유·작성자 인증은 #83 이후 별도입니다. Main #142의 비운영 격리 Auth/G7 서비스는 그대로 OFF. 이전 PR HEAD `4a4a8ff` CI [40580691233](https://github.com/planner77/layoutManager/actions/runs/40580691233) 성공은 **0.43.0으로 버전을 바꾼 새 HEAD의 CI 성공을 의미하지 않습니다**. 정식 GHCR App/Migrator pair 및 Main CI는 새 PR CI 통과 후 별도로 확인하며, 시작 사실만으로 게시 완료를 주장하지 않습니다. 상세 [Issue82](out/Issue82.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md), [FailureLedger](out/FailureLedger.md).
+
+### #82 / #99 통합 참고 — 메모 ADR-053, 실DXF ADR-052 (2026-10-25)
+
+- WCS 메모 M1은 `ADR-053`(브라우저 임시 세션)이며 실도면 P0/P5 비공개 검증 정책은 #99의 `ADR-052`이다. 최신 #99의 `npm run verify:outline-acceptance` 명령을 보존하며 합성 E2E 통과는 운영 실 DXF/GPU 수용이 아니다.
+- #99 후보 패치 0.40.3 이후 메모 M1 후보는 0.41.0으로 정렬한다. 서버 인증/영속화는 별도 #83/G7 Owner 승인이 없으므로 활성화하지 않는다.
+
+
+### Issue #82 / PR #111 — FREE 메모와 Source 외곽선 도구의 독립 범위
+
+- DXF three-dxf-viewer에서 원본의 안정 Handle/선택 가능한 외곽선 인덱스가 없는 경우에도 **자유 WCS 메모**를 배치할 수 있습니다. 이때 외곽선 생성/원본 객체 선택 기능은 기존대로 disabled이며 Memo status/추가 기능만 사용됩니다. `dxf-viewer`나 DWG에서는 메모가 비활성입니다.
+- 이 동작으로 기존 U1의 '외곽선 도구가 없으면 전체 도크 없음' 검사를 기능별 상태로 수정하고, 무Handle 합성 DXF 메모 배치 회귀를 추가했습니다. 실제 서버 메모 저장·작성자 인증/공유 기능은 아직 없으며 Reload/Version 변경 시 임시 메모는 소멸합니다. 자세한 시험 이력은 [FailureLedger](out/FailureLedger.md), [TestPlan](out/TestPlan.md) 참조.
+
+
+### Issue #82 / PR #111 — 메모/외곽선 편집 도구 독점 정책 보완
+
+- 이미 배치한 메모 핀을 클릭하거나 드래그 또는 하단 최근 메모 버튼으로 선택해도 **외곽선 생성·원본/생성 객체 선택이 자동 종료되고 탐색(Pan) 모드로 전환**됩니다. 메모 편집과 외곽선 생성은 동시에 활성화되지 않습니다.
+- 메모 제목·본문을 입력한 상태에서 PIN을 드래그하면 위치만 확정합니다. 드래그 직후 브라우저가 발생시키는 클릭은 저장 전 텍스트 초안을 초기화하지 않으며, **텍스트 저장**을 눌러야 본문/제목 변경이 확정됩니다. 서버 저장은 여전히 없는 M1 세션 시안입니다.
+- 최초 PR CI에서는 ESLint 오류로 이후 Unit/E2E가 실행되지 않았습니다. 수정 코드/신규 E2E 검증은 PR CI 결과 확인 전으로, 모든 시험이 성공했다고 표시하지 않습니다. [FailureLedger](out/FailureLedger.md), [TestReport](out/TestReport.md).
+
+
+## v0.41.0 — CAD 메모 M1 (Issue #82, 브라우저 세션 임시 기능)
+
+- DXF 도면을 **three-dxf-viewer**로 연 후 메뉴의 **메모 추가**를 눌러 Canvas 클릭 또는 `WCS X/Y` 숫자로 메모 위치를 지정하고 **메모 작성 확정**을 선택합니다. 제목(필수)·여러 줄 본문(일반 텍스트)을 입력할 수 있습니다. 메모의 핀과 미리보기 텍스트는 확대/축소/이동/화면 크기 변경 후에도 지정 WCS 도면 좌표에 위치하며, 핀 클릭으로 다시 편집합니다.
+- **텍스트 저장 (좌표 불변)**은 제목/내용만 수정합니다. 위치 변경은 `WCS X/Y` 수정 후 **위치 이동 적용** 또는 핀을 5px 이상 드래그해 놓는 것으로만 확정됩니다. ESC/취소·휠/화면 변동 중 드래그는 원래 위치를 유지합니다. 로컬 삭제는 별도 확인이 필요합니다. 제목/본문은 HTML/Markdown으로 실행하지 않습니다.
+- M1은 메모가 **브라우저 세션 임시**입니다. 저장 API/DB·작성자 식별/다른 사용자 공유 기능이 없으므로 **새로고침, Viewer 변경, Version 변경 시 모든 메모가 사라집니다**. 현재 100건 상한·제목 100자·본문 2000자, 표시 프리뷰 160자. 다른 Renderer/DWG/도면 실패에는 메모 버튼이 비활성입니다. #2 도면 등록 설명과 별도입니다.
+- 1k/10k Synthetic DXF opt-in 성능 회귀는 `cd src && npm run test:benchmark -- --grep TC-M1-BENCH` 명령으로 실행합니다. 실제 실행 값/현장 SLA는 아직 확보하지 않았습니다.
+- **후속:** #83 메모 영속/작성자/인증/감사, #84 객체 Snap, #85 메모 트리·표시, #86 일정, #88 Deep Link, #90 목록 검색. 관련 운영 인증 정책 미검증/미승인 상태에서는 서버 영속을 활성화하지 않습니다. 설계/검증은 [Issue82](out/Issue82.md), [ADR-053](out/Decisions.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md)를 참조. CI·실 도면/GPU/native 수용 미검증.
+
+
+## Issue #57 — 서버 구조화 로그 단일화 (v0.42.1 PR 후보)
+
+기존 #18 공통 Logger를 재사용하여 업로드 단계 로그에도 동일한 JSON Schema v1, `LOG_LEVEL`/`LOG_FORMAT`, 안전 필드 allowlist를 적용합니다. 공개 API 응답·`X-Request-Id`·업로드 진단 첫 실패 원인은 유지됩니다. Server 로그 조회/보관은 별도 #59~#62로 미구현이며 Next/Nginx/브라우저 원시 로그도 자동 수집하지 않습니다. 상세 계약과 Docker 조회는 [Issue57](out/Issue57.md), [Logging](out/Logging.md) 참조. 현재 변경은 PR CI 시작 후보이며 배포 완료를 뜻하지 않습니다.
+
 
 ## 0.42.0 — 목록·DXF 복구·Viewer 작업 공간
 
@@ -86,6 +335,7 @@ G1~G3 DB·세션 계약 위에 Role/Site/Version 인가, Admin Grant·Account �
 - GitHub 저장소 Settings → General → Pull Requests → **Allow squash merging / Default commit message: Pull request title**로 지정해야 합니다. 현재 REST 확인값 `COMMIT_OR_PR_TITLE / COMMIT_MESSAGES`는 목표 `PR_TITLE / BLANK`와 달라 **미완료**입니다.
 - PR CI는 이를 읽기 전용으로 조회해 `PASS`, `NOT APPLIED`, `NOT VERIFIED` 중 하나를 경고/Job Summary로 표시합니다. 경고 자체는 다른 PR CI를 차단하지 않으며, 실제 설정 변경·새 Main CI 단일행 확인을 대체하지 않습니다. 세부 절차 [Issue76](out/Issue76.md) / [Operation](out/Operation.md).
 - 앱 버전, GHCR 게시 범위, 기존 #74 multiline 보호, DXF/DWG 데이터는 변동 없습니다.
+- **2026-11-01 재확인:** #76 진단은 [PR #89](https://github.com/planner77/layoutManager/pull/89)로 이미 병합되어 PR CI [40179740394](https://github.com/planner77/layoutManager/actions/runs/40179740394)와 Main CI [40182008444](https://github.com/planner77/layoutManager/actions/runs/40182008444)가 성공했습니다. 하지만 저장소 기본값은 여전히 `true/COMMIT_OR_PR_TITLE/COMMIT_MESSAGES`로 목표 `true/PR_TITLE/BLANK`와 다릅니다. 기존 Main 빈 본문은 명시적 API 인자의 결과이지 관리자 설정 변경 증거가 아닙니다.
 
 ## v0.40.0 — Issue #54 생성 개체 WCS 이동·그룹 이동 (E4)
 
@@ -527,3 +777,5 @@ docker image inspect "$CAD_IMAGE_NAME:$CAD_IMAGE_VERSION" --format '{{json .Repo
 ```
 
 게시한 전체 이미지 주소를 `.env`의 `GHCR_IMAGE`에 넣으면 위의 Compose pull 절차로 실행할 수 있습니다. Token을 `.env.example`, Docker build argument, image label 또는 Git에 넣지 않습니다. Docker 인증 저장은 사용 환경의 credential helper 정책을 따르며 필요하면 작업 후 `docker logout ghcr.io`로 해제합니다. package 권한·visibility는 GitHub 설정을 따르고 임의 공개 전환을 하지 않습니다. GHCR 인증/권한 및 원본 연결 설명은 [GitHub 공식 문서](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)를 참조하세요.
+
+### PR CI 시간 최적화 (#197)\n\nPlaywright 일반 E2E 2-Shard/Greenfield 병렬화, docs-only PR 경량화, 테스트별 실행시간 JSON·Summary, Docker Baseline 조건부 비교·GHA cache, standalone Production Build 재사용 및 기존 required check 안전 집계는 [CIOptimization](out/CIOptimization.md)에 문서화되어 있습니다. CI 실제 개선량은 GitHub Actions 성공 Run으로만 확인합니다.\n

@@ -1,6 +1,7 @@
 'use client';
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { runtimeCadHeaders } from '@/features/g7-runtime/client';
 import { Button } from '@/components/ui/button';
 import { useGlobalLoading } from '@/components/global-loading';
 
@@ -15,7 +16,7 @@ export function CurrentButton({ locationId, versionId }: { locationId: string; v
     setBusy(true); setError('');
     try {
       await runWithLoading('현재 버전을 변경하는 중입니다...', async () => {
-        const response = await fetch(`/api/cad-locations/${locationId}/current`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ versionId }) });
+        const response = await fetch(`/api/cad-locations/${locationId}/current`, { method: 'PUT', headers: await runtimeCadHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify({ versionId }) });
         if (!response.ok) { const data = await response.json(); throw new Error(data.error?.message ?? 'Current 변경에 실패했습니다.'); }
         router.refresh();
       });

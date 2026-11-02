@@ -1,12 +1,637 @@
-# Architecture 초안
-
-## ADR-054 / #127 후속 — Viewer 명령 그룹을 통한 기능 확장 규약 (2026-10-27)
+## ADR-127 / #127 후속 — Viewer 명령 그룹을 통한 기능 확장 규약 (2026-10-27 수립, 2026-11-03 최신화)
 
 - **구성 경계:** `src/features/cad-viewer/viewer.tsx`의 `CadViewer`가 메뉴의 `ViewerCommandGroup[]`/실제 handler와 capability·선택·권한 상태를 조합하고, `viewer-menu-bar.tsx`→`viewer-command-menu.tsx`가 접근 가능한 command group/role/checked/disabled를 렌더링한다. 상세 기능은 기존 `ViewerAppShell`의 좌 레이어·우 Tree·하단 도구 overlay Drawer 또는 명시 대화상자에 연결한다. 신규 기능은 **기존 명령/Drawer 재사용 우선**, 별도 상위 버튼 추가 금지.
-- **메뉴 정보 구조:** `도면`=정보·파일/Version·링크·JSON 입출력(#56)·GLB/glTF export(#91); `보기`=Renderer/Camera/Fullscreen·전체 메모 세션 visibility(#85); `작업`=선택/편집(#49/#55)·외곽선 생성/타입 선택(#71)/Tree(#73)·메모 추가(#82)/Tree(#85)/링크 복사(#88)/검색(#90). #65 관리자는 현재 disabled된 `작업 > 외곽선 타입 관리`를 RBAC 검증 뒤 동일 command로 연결; 별도 `관리` 그룹은 독립 UX/권한 결정 후 도입. #84 Snap·#86 일정/완료는 메모 Drawer 내부 상세 컨트롤이며 무조건 새 메뉴 item이 아님.
+- **메뉴 정보 구조:** `도면`=정보·파일/Version·링크·JSON 입출력(#56)·GLB/glTF export(#91); `보기`=Renderer/Camera/Fullscreen·전체 메모 세션 visibility(#85); `작업`=선택/편집(#49/#55)·외곽선 생성/타입 선택(#71)/Tree(#73)·메모 추가(#82)/Tree(#85)/링크 복사(#88)/검색(#90). #65 구현 이후 `작업 > 외곽선 타입 관리`는 인증된 Admin/G7 ACTIVE/지원 Schema일 때 기존 command로 실행하고 불충족 시 disabled 사유를 표시; 별도 `관리` 그룹은 독립 UX/권한 결정 후 도입. #84 Snap·#86 일정/완료는 메모 Drawer 내부 상세 컨트롤이며 무조건 새 메뉴 item이 아님.
 - **우측 Drawer 조정 기준:** 기존 Outline Tree와 후속 Memo Tree는 우측 영역에서 탭/콘텐츠 전환을 우선 검토하여 상시 두 우측 도크/겹침을 만들지 않는다. 두 Tree의 selection/filter/visibility는 독립 유지하고, 모바일은 한 Drawer/모달 포커스, desktop은 #127 non-modal 정책 및 Canvas 가시 면적 보존.
 - **명령·수명 주기:** onSelect는 기존 Manager/App reducer/검증된 도메인·서버 API를 통해서만 실행. menu/Drawer state를 Viewer Source load-effect dependency에 넣지 않고 Canvas ref/Manager/Adapter/Worker 재생성 없이 command handler만 확장한다. `dxf-viewer` fallback/DWG와 권한 없는 상태를 false 성공처럼 숨기지 않고 disabled 이유로 명시. 서버 API 검증은 UI 메뉴 숨김과 독립.
-- **범위 구획:** CAD 도면 목록 `/`의 메모 통합 검색은 별도 목록 UI, `운영 > 서버 로그`(#62)는 전역 layout navigation이며 Viewer #127 상단 그룹으로 옮기지 않는다. #109 운영 Auth/Prisma/G7 승인·영속 API 활성화와 UI 문서 규칙은 별개. 근거 [ADR-054](Decisions.md), [이슈별 연결표](Issues124-126-127.md), [FR-MENU-EXT](Requirements.md).
+- **범위 구획:** CAD 도면 목록 `/`의 메모 통합 검색은 별도 목록 UI, `운영 > 서버 로그`(#62)는 전역 layout navigation이며 Viewer #127 상단 그룹으로 옮기지 않는다. #109 기반 Auth/Prisma/G7의 설치별 실제 운영 활성·인가·지원 Schema와 UI 문서 규칙은 별개. 근거 [ADR-127](Decisions.md), [이슈별 연결표](Issues124-126-127.md), [FR-MENU-EXT](Requirements.md).
+
+---
+
+## #212 — 수동 DXF Scene 생성 관측/직렬화 경계 (2026-11-02)
+
+Browser `ThreeDxfViewerAdapter.load`는 Manager sourceWaitMs 측정 후 파일 해시 확인→UTF-8 decode/normalize→`three-dxf-viewer@1.0.44`의 결합 font+DXF parse/geometry→실제 `Object3D` preflight→tag stable refs→선택적 outline index→textIndex→CUSTOM_DTO serializer→payload/manifest 검증→`ARTIFACT_READY` 순서로 동작한다. `SceneBuildTracker`는 stage, success/warning/failure elapsedMs 및 allowlisted numeric counters만 가진다. 이전 `LOAD` 오류를 일률적 parser 실패/폰트 문제라고 단정하지 않고, 원본 Error는 안전한 UI 코드의 cause 내부에만 둔다. `ViewerManager`는 허용된 typed Scene 오류만 그대로 통과시켜 spoofed message/stack이 UI/metric에 나타나는 것을 막는다.
+
+`preflightSceneRoot`는 실제 node/geometry/attribute scalar/depth를 반복 순회로 집계; 제한 초과 시 후보를 만들지 않는다. CUSTOM_DTO 경로의 중복 Three Object3DJSON→inspect를 제거하고 `toCustomDto` 결과에 기존 서버와 동일한 `validateStoredScenePayload`/manifest SHA 검사를 실행한다. THREE_JSON 경로는 기존 inspect 유지. Size32MiB/nodes100k/scalars2M/depth128은 동일. 게시 전 HTML/React UI는 브라우저 Artifactual READY와 서버 `CurrentScene READY`를 구분. Scene POST API/Repository CAS, 원본·Current/APP_CREATED·Memo·Zone·Outline/G7 Gate·Audit, 원본 GET/Source lifetime 및 DB schema는 그대로이다.
+
+#208은 별도 서버 CPU-only worker·진단 영속화, 업로드 enqueue/Job ID/list states의 설계 정본이며 이번 브라우저 tracker를 서버 background 실행의 증거로 재사용하지 않는다. [ADR-212](Decisions.md), [세부](Issue212.md), [검증](TestPlan.md).
+
+---
+
+## #211 PR #213 P2 — 호스트 CLI Registry chain의 안전한 전파 (2026-11-02)
+
+읽기 전용 등록 업그레이드의 실제 흐름은 `greenfield-upgrade-engine.planGreenfieldUpgrade` → `src/scripts/g7-greenfield.ts plan`(`steps: chain.map(kind)`) → `g7-upgrade.py` stdout 필터 → `g7-deploy.py upgrade()` → `inspect.registryChain` → 운영자 계획 승인이다. 이전 helper는 **scalar allowlist**라 `steps` 배열을 조용히 제거하여 유효한 0.56→0.58 경로조차 `[]`로 표시하는 결함이 있었다. #209 helper는 비밀 원문/SQL 없이 `COMPATIBLE` 또는 `MIGRATION` 값만 포함한 길이 0~64의 순서 있는 배열을 명시적으로 허용한다. 유효하지 않은 배열은 `G7_UPGRADE_HOST_OUTPUT_INVALID`; #211 frontend는 planId SHA-256/의사결정/chain 비어 있음·종류 불일치를 `G7_DEPLOY_UPGRADE_CHAIN_INVALID`로 차단한다. 필터가 다시 배열을 누락해도 승인이 진행되지 않는다. Read-only/볼륨·백업·DDL/보존 경계는 #209와 동일하다. [검증](TestPlan.md) [실패 원장](FailureLedger.md).
+
+---
+
+## Architecture #211 — Host Deployment Frontend/Engine 경계 (2026-11-02)
+
+[Issue211](Issue211.md)의 흐름: `g7-deploy.py`가 Compose config·실제 image labels/ID(#209 `inspect_pair`)·전역 Project/Network/Container/Volume 충돌을 읽어 신규 빈 Volume과 이미 설치된 G7 Volume을 구분한다. Volume 미존재면 `docker volume inspect`에서 멈춰 read-only mount하지 않으며, 기존 빈 Volume만 `readonly,volume-nocopy` probe를 사용한다. 정상 nonempty는 고정 Migrator Image ID의 `g7-upgrade.py status/plan` → 기존 TypeScript registry/DB/CAD 검증으로 위임한다. .env SHA + Compose SHA + 실제 Image ID/Volume identity + App 상태 + engine planId/operation/effects의 SHA-256가 호스트 승인 지문. SQL 경로는 #209 engine의 별도 정확 Schema 승인을 유지한다. FRESH 설치/RESTART는 #109 Compose 안전 경로, UPGRADE는 #209 Host stop/backup/journal/restore를 그대로 호출한다. 별도 start는 검증된 기존 manifest 상태에서만 허용한다. 새 Schema/DB 마이그레이션/HTTP Docker socket·Auth bypass는 없다.
+
+---
+
+## PR #210 P2 — Read-only WAL 사전 점검 (2026-11-02)
+
+리뷰 스레드 `PRRT_kwDOUQjDfc6yj5LK`의 정지된 WAL DB는 checkpoint 후 `-wal`/`-shm`이 없어도 header가 WAL을 유지할 수 있다. 원본 볼륨을 read-only로 마운트한 CLI의 SQLite 읽기는 sidecar 초기화 때문에 실패할 수 있으므로, CLI inspection에 한해 아래 경계를 추가한다.
+
+- WAL header이고 `-wal`/`-shm`/`-journal`이 모두 없는 경우에만 원본 밖 private 임시 디렉터리에 main DB의 **검사용 detached copy**를 만든다. 복사 전후 원본 regular-file·UID/권한·realpath·device/inode/size/SHA가 동일하고 복사본 SHA가 같으며 sidecar가 계속 없어야 결과를 사용한다. 변화가 있으면 fail-closed, 임시 파일은 finally 정리한다.
+- SQLite는 복사본 디렉터리에만 필요한 sidecar를 만들고 기존 exact Schema/FK/무결성/업무 snapshot 검증을 수행한다. live WAL/SHM/journal이 있으면 일반 readonly SQLite 경로를 사용하며, WAL을 버리는 main-only fallback이나 `immutable=1`은 금지한다.
+- `currentData`와 read-only 복구 세트 검증에 공통 adapter를 사용한다. 계획의 원본 manifest/volume identity와 적용 직전 재검증은 그대로이며, HTTP runtime DB open 및 실제 backup/restore 계약은 변경하지 않는다. 이 복사본은 durable backup이 아니며 WAL을 포함하는 실제 backup API를 대체하지 않는다.
+
+실제 readonly container 재현/원본 비변경/active WAL 결과는 TestReport/FailureLedger에 기록한다. CI는 새 실행 시작만 확인한다.
+
+---
+
+## #209 — Install / Upgrade 경계 (2026-11-02 설계)
+
+루트 DESIGN.md는 없으므로 이 절과 Decisions가 설계 정본이다. `greenfield-auto.ts`의 기존 exact release 비교가 0.56→0.57 차단의 코드상 원인이다. 현장 내부 오류 직접 관측과 구분하고 재현 시험으로 확증한다.
+
+1. **Read/runtime:** strict manifest/current-image identity와 exact Schema 검증을 유지한다. HTTP/runtime은 migration을 import하거나 실행하지 않는다. 완료되지 않은 upgrade journal/maintenance 상태에서는 App 권한을 활성화하지 않는다. `openG7RuntimeDb`의 기존 hold 차단을 유지한다.
+2. **Plan:** CLI 전용 registry는 release→schema+baseline+checksum+runtime/data/operational contract와 directed edge를 선언한다. 최초 지원0.56.0→0.57.0→0.58.0은 동일 Schema이며 순서 있는 전체 edge 검증 없이 skip하지 않는다. Schema 읽기 allowlist와 upgrade 쓰기 allowlist는 별개다. Registry는 배포 코드에 포함된 검토 대상이며 외부 JSON/env로 edge·SQL·validator를 추가할 수 없다. 내부 fixture registry는 CLI에서 주입 불가다.
+3. **Identity:** source manifest의 private-file/UID/realpath 검증, App/Migrator 같은 repository·version/role, sourceCommit와 목표 package identity를 검증한다. digest/architecture/source provenance는 host image inspect/release 증거로 확인해야 한다. 문자열 두 개가 digest 문법에 맞는 것만으로 업그레이드 승인하지 않는다. 코드에 번들된 registry를 암호학적으로 서명된 OCI 증거라고 표현하지 않는다.
+4. **Quiescence:** Compose dependency는 이미 실행 중인 App을 중지하지 못한다. 운영 helper/SOP는 기존 App 정지·확인을 선행하고 새 App을 post-check 이후에 시작한다. Engine의 독점 lock, 기존 runtime hold와 SQLite 쓰기 잠금은 추가 경계이며 이미 열린 구 프로세스의 파일 쓰기까지 막는다고 가정하지 않는다. 볼륨의 device/inode/소유권과 DB/CAD 경로를 plan에 결합하고 symlink/hardlink/부정 locators는 거절한다.
+5. **Backup:** WAL을 포함하는 SQLite backup API 또는 동등 일관 snapshot을 이용하고 DB 파일 단순 복사는 금지한다. CAD immutable 파일·Scene과 manifest/필수 메타데이터를 private recovery set으로 저장, hash·FK/quick_check·DDL/trigger·Current/Version·참조 파일 검사 및 격리 restore 검증을 완료한다. 디스크 여유 부족·복사 중 변경·hash 불일치는 적용 이전 차단한다. Secret 데이터가 있는 복구 세트는 Git/로그/CI artifact에 포함하지 않는다.
+6. **Apply:** journal은 source+target+planHash+volume binding+단계+backup hashes를 기록한다. schema-changing edge는 정확 계획 승인과 검증된 backup을 요구하고 forward transaction/pre/post validation을 수행한다. 같은 Schema edge는 업무 DB·CAD를 수정하지 않는다. 검증 후에만 private temp→fsync→rename→directory fsync로 manifest를 교체한다. installId는 불변이며 이전 identity는 journal에 남긴다.
+7. **Recovery:** lock/journal/hold는 소유한 작업만 정리한다. 모호한 중간 상태에서 자동 lock 삭제/manifest 채택을 하지 않는다. 명백히 동일한 사전/사후 스냅샷이면 정의된 checkpoint의 멱등 resume만 허용한다. 제어된 pre-write 실패는 source manifest/업무 rows/CAD/volume이 계획과 정확히 동일함을 재검증한 경우에만 자신이 소유한 hold/lock을 해제하여 재시도할 수 있다. 그 외 RESTORE_REQUIRED로 보존하고 App 차단. Backup 완성 전 실제 crash로 복구 세트가 없으면 복원 가능하다고 주장하지 않고 원본 보존·수동 조사 필요 상태를 명시한다. restore는 검증한 recovery set을 명시 승인으로 **새 빈 격리 대상**에 복원·재검증한다. 실운영 경로 overwrite/downgrade 자동화는 제공하지 않는다.
+8. **Delivery:** 설치·CLI 상태 출력은 정형 allowlist code/stage/retry/action만 사용한다. Migrator COPY closure/tsx/native SQLite와 일반 Compose one-shot `service_completed_successfully`를 검증한다. 앱 Health 및 로그인·인가·업무 CRUD 검증은 manifest commit과 별도 deployment acceptance이며 HTTP Health만으로 데이터 보존을 주장하지 않는다.
+
+실제 업무 Schema 추가는 없고 Database 정본에 운영 메타데이터/보존 경계를 기록한다. 최초 버그 회귀와 미래 Schema engine 시험은 합성 데이터로만 수행한다.
+
+---
+
+## #204 / #202 구현 경계 (2026-11-02)
+
+- **기준정보:** 기존 MasterRepository.update의 immutable ID 선택 + name 정규화/중복/미분류 방어를 재사용한다. UI는 ID·소속 불변과 이름 편집 가능성을 명시하며, 이름 저장 시 실제 변경한 name/active/kind만 PATCH해 다른 세션의 상태·종류를 덮어쓰지 않는다. 기존 G7 master permission, Origin/CSRF, 감사 transaction은 그대로 통과해야 한다. 이름을 FK로 사용하거나 기존 참조를 재생성하지 않는다.
+- **목록 입력:** CadListQuery의 선택적 `memo` 문자열은 trim/NFC·최대100자·C0/C1 제어문자/중복 거절. 공백은 빈값으로 기존 목록 분기에 남긴다. 홈과 API의 current=false 의미 차이(#93), 기존 drawingListUrl/두 GET form query 전달을 보존한다.
+- **인가:** 홈 페이지와 /api/cad-files는 nonblank memo에서 `src/server/services/authorized-drawing-memo-list.ts`의 공통 helper로 기존 #90 signed G7 search authority를 실제 서버에서 얻는다. 홈 options 조회도 인가 이후에 수행하며, 빈 조건은 기존 공개 목록/API Current 계약을 유지한다. 서비스/repository 경계에 허용 Site 집합을 전달하고 누락·빈 권한은 fail-closed. 런타임 공개 상태·UI 힌트나 전달된 Site 문자열로 인가하지 않는다. 보호 API 성공·오류는 private,no-store와 Referrer-Policy:no-referrer를 적용하고, 홈은 metadata.referrer=no-referrer로 내비게이션·prefetch에 검색어 Referer가 실리지 않게 한다. 에러에서 메모 count/preview를 반환하지 않는다.
+- **SQL:** 기존 Version outer query에 authorized Site 조건과 correlated EXISTS를 AND한다. EXISTS는 `m.version_id=v.id`, `m.source_sha256=v.sha256`, `deleted_at IS NULL`, 제목/본문 literal 부분일치 OR를 만족한다. #90과 같은 bound Prisma.sql + instr(lower())를 재사용하며 그룹명은 기본 목록 조건 대상이 아니다. DXF 지원 범위는 #90과 동일하다. Count와 페이지 행 및 페이지 내 preview는 같은 DB snapshot으로 조회한다. 일치 페이지는 count/page/ranked preview의 고정 3 SELECT이며, 빈 페이지는 preview 조회를 생략한다. ROW_NUMBER/COUNT window로 전송되는 SQL 결과를 페이지 Version당 최대3행으로 제한한다. SQLite 내부는 해당 페이지 Version의 일치 메모를 모두 검사·순위화하므로 내부 작업량까지 상수라는 의미는 아니다.
+- **응답 경계:** Version당 일치 개수와 최대3개 preview, 기존 160자 본문 snippet helper, plain text React, exact Version+Memo builder를 사용한다. Preview는 SQL에서 페이지 Version 및 순위/limit를 적용해 제한하며 전체 메모를 읽어 JS에서 자르지 않는다. 제목도 저장 모델의 길이 한도를 따른다. 정렬은 기존 Version 정렬, preview는 updated_at DESC/id ASC로 결정적이다. 숨김 메모는 #90처럼 검색 가능하나 삭제·SHA 불일치는 제외한다. 클릭 시 기존 #88의 Viewer 서버 인가 재검증을 유지한다.
+- **데이터 불변:** 두 이슈 모두 신규 Prisma/Schema/migration·원본 쓰기·Current 교체·운영 Auth 활성화가 없다. UUID/FK·Version·원본 SHA·메모·Zone는 rename 전후 비교로 입증한다.
+
+---
+
+## PR #200 / #196 — 조회 capability와 재시도 UI·Source 수명주기 (2026-11-01)
+
+Zone UI는 public Runtime status를 먼저 읽어 명시적 OFF일 때 보호 Zone GET을 보내지 않는다. public ACTIVE는 인가 근거가 아니며 실제 Zone GET/쓰기의 Session·Site·Version·Gate 재검증은 기존 서버가 수행한다. 권한/통신 실패 시 보호 데이터는 폐기하되 오류·Retry panel 접근은 유지한다. 데이터 성공 여부와 재시도 UI gate를 분리하고 stale Version/actor 응답이 현재 세션을 덮지 못하게 한다.
+
+Renderer-only 수동 전환은 이전 Manager의 generation·Adapter/Worker를 폐기하면서 같은 Version의 진행 중 immutable Source Promise는 공유한다. network body 완료와 JS cache 확정 사이를 취소로 오판하지 않는다. Version 변경/full reload/source 오류 재시도는 기존 Source 정리 경로를 유지한다. AC/실패·검증은 Issue196/TestPlan/FailureLedger/TestReport를 따른다.
+
+---
+
+## #196 Zone 도메인·Viewer/API 분리 (2026-11-01)
+
+[Issue196](Issue196.md)의 공유 DTO/API와 ADR-Z196-01~08을 구현 계약으로 사용한다. `src/domain/cad-zone.ts`는 client/server 공통 metadata·simple Polygon·포함/겹침·계층 검증만 소유한다. 서버는 G7 실제 Version→Location→Site 권한/Revision CAS/DB 거래/Audit, Viewer는 배타적 입력 모드·세션 Snap 입력·Zone overlay/tree·MovableViewerPanel을 소유한다. 기존 Memo 후보 알고리즘·Adapter WCS/focus를 재사용하되 Memo 영속 Anchor나 CadOutline row를 Zone으로 전용하지 않는다.
+
+Zone metadata는 층 단위, geometry는 Version/SHA/Scene 단위다. Scene Reset은 CurrentScene revision을 바꾸지 않는 현행 구현이므로 두 mode 모두 Zone geometry를 **동일 transaction에서 명시 무효화**하고 Zone revision을 올린다. metadata/parent/과거 polygon 및 원본/Current는 보존한다. stale mapping은 포커스/overlay 금지이며 새 Version 자동 복사도 금지한다. 패널 조작은 Canvas/Manager/Source lifetime을 변경하지 않는다. DB 정본은 [Database](Database.md), 수용은 [TestPlan](TestPlan.md)이다.
+
+---
+
+## ADR 구현 참조 — #191 기준정보 단일 트리 + 상세 편집 (2026-11-01)
+
+- Client: 기존 master-manager.tsx 5열 폼 교체. master-tree.ts는 불변 type:id 키/부모·조상/전체 경로·검색 포함·임시 조상 확장·전체 활성 경로를 계산하는 순수 함수. MasterManager는 선택/확장/검색/필터/모드/입력 Draft 분리, GET generation 폐기, 저장 중 요청 직렬화와 성공 후 ID 선택·부모 확장 재조회 수행.
+- Rendering: 데스크톱 2열/모바일 1열, role=tree/treeitem/group, aria-expanded/selected/level, 위·아래·좌·우/Home/End/Enter/Space, Tab으로 상세 작업 이동. 이름 검색은 일치 노드+조상만, 결과 0건과 root 0건 별도.
+- Server: GET 기존 nested tree/active 조건 그대로. POST 기존 타입/name/parentId/kind 계약; MasterRepository.create transaction에서 직계 부모와 모든 조상 active를 검증해 INVALID_PARENT/409 거부. PATCH/DELETE, Audit, Site Grant, CSRF, Version/Current/원본/Schema 불변.
+- 장애: POST/PATCH/DELETE 실패 Draft 보존, 참조 삭제 시 비활성화 대안; 쓰기 성공 후 GET 실패 시 재쓰기 없이 재조회 안내. 승인된 운영 인가 플래그 자체 변경 없음. [세부 설계](Issue191.md).
+
+---
+
+## PR #192 Viewer KEEP pre-write 고유성 경계 (2026-11-01)
+
+`applyMemoMove`의 세션 KEEP는 `uniqueMemoSnapTarget`로 Scope 유효하며 유일한 Target임을 검사한 뒤에만 서버 영속 WCS PATCH를 허용한다. PATCH 후에는 동일 helper로 변경 여부를 재검증하고 문제가 있으면 브라우저 세션 바인딩만 해제한다. 서버의 기존 G7 Session/Actor/Role/Site/CSRF/CAS는 독립 필수 조건이며 client-only Scene Ref를 영속으로 승격하지 않는다.
+
+---
+
+## Epic #81/#160: Memo Session ↔ Scene Target / Reset Snapshot 경계 (2026-11-01)
+
+현재 Viewer Session의 `versionId+sourceSha256+origin+id`는 단일 Snap Target을 식별해야 한다. 동일 `origin+id`가 복수 Target으로 제공될 때 첫/마지막 Transform을 선택하지 않고 후보·선택 검증·기존 관계 projection·reposition 전부 fail-closed로 처리한다. 기존 Memo는 마지막 유효 WCS의 BROKEN 관계를 유지하고 서버 관계로 승격시키지 않는다.
+
+Reset은 요청한 live outline/memo revision 집합과 transaction 내부 실제 조회 집합이 서로 유일한 ID 및 동일 Revision으로 1:1 대응할 때만 `SOURCE_ONLY/ALL`을 수행한다. 원본 DXF/READY Scene Asset 불변, G7 Actor·Site·CAS·Audit는 기존 그대로. [세부 추적](Epics81-160.md).
+
+---
+
+## R6 #186 — Memo Projection / Viewer lifecycle 성능 분리 (2026-11-01)
+
+### 실행 경로·원인 가설
+- 기존 `CadMemoOverlay`는 Viewer의 `viewRevision` 변경 시 rAF를 예약하고, 각 pin마다 `projectWcsToCanvas` 호출 → `ThreeDxfViewerAdapter`에서 canvas `getBoundingClientRect()` 반복 → `THREE.Vector3.project(camera)`. 100 pins일 때 한 프레임에 최대 100회 동일 레이아웃 좌표 조회 및 100 Vector3 할당 가능(실제 브라우저 비용은 계측 필요).
+- 새 경로는 `ViewerManager.projectWcsBatch` → optional adapter `projectWcsBatch` → `core/canvas-projection.ts`의 1회 viewport rect + 1개 재사용 Vector3로 N개 투영. 레거시 Renderer는 단건 fallback. 순서/WCS/카메라/Orthographic/DPR 결과 동일, offscreen clip/preview/candidate는 `domain/memo-screen-projection.ts`의 순수 UI projection으로 유지.
+- `CadMemoOverlay`는 같은 positions/candidate를 재계산했을 때 `setScreenPositions` / `setCandidateScreen`의 이전 상태를 그대로 돌려주어 불필요한 commit을 줄인다. Canvas Render/Outline Overlay 자체는 변하지 않으며 GPU/DOM/layout 부하 전체를 해결했다고 주장할 수 없다.
+
+### 수명주기
+- `ThreeDxfViewerAdapter.dispose`는 controls change listener 둘 모두 해제하고 WebGL geometry/material/texture, worker, resize, document 및 scene 이력 정리 후 `index/renderIndex/sceneAsset` 대형 참조를 명시적으로 지운다. 늦은 비동기 closure가 adapter를 보유하더라도 GC 도달 가능 객체가 줄어드는지 CDP로 확인한다.
+- CDP JS Heap usedSize(강제 GC)·DOMCounters/Worker/listeners·React/Three/Next route cache 및 inspector handle 유무는 서로 다른 관측치다. JS Heap usedSize는 GPU VRAM과 동일하지 않고 전체 증가만으로 application leak 원인을 입증하지 못한다. stable-after-warmup, cohort별 반복·분리 비교 및 private field GPU 증거가 추가로 필요.
+- 메모 session WCS binding 저장/변경, server signed G7 policy(#172), candidate point 20,000 및 live binding 100 한도는 불변. Admin Site Grant 없이 delete 불허.
+
+---
+
+## R6 / #172 Memo 공동 수정과 제한 삭제 — 서버 권한 구조 (2026-11-01)
+
+- 신뢰 경로: `G7CadWrite`의 서명된 승인 상태 + 현 거래 `requireG7CadPermission(tx, proof, 'memo:write', Version)` → 실제 User/Session/Role/Version→Building→Site/Grant → Memo/Revision/SHA → CAS + Audit. 웹 요청 body, 임의 Role 헤더 및 Viewer capability는 권한 근거가 아니다.
+- `BusinessRepository.editMemo`는 같은 Site Editor의 `text/move/metadata` 수정을 허용하며 `remove=true`일 때만 `canDeleteMemo`를 추가 적용한다. 작성자 또는 허가 Site가 이미 검증된 Admin은 soft delete; 다른 Editor는 `BUSINESS_OWNER_REQUIRED/403`. Audit의 actor는 실제 변경자; 생성자는 유지한다.
+- `mutateMemoAnchor/repositionMemoAnchor`는 Memo 수정으로서 동일한 Site Scope·Revision 및 Target/Scene 검증 후 shared EDIT 허용. 보존 WCS/신뢰 inverse, Anchor DROP/BROKEN, 라이프사이클 실패 원자성은 이전 R4 계약을 그대로 따른다.
+- `resetBusinessVersion`: SOURCE_ONLY는 다른 작성자 Memo라도 SOURCE 연계 BREAK(EDIT) 허용; ALL은 전체 영속 Memo soft delete이므로 타인 작성자 포함 시 거래 내 Admin Role 검증 후에만 원자 승인. 그룹 소유권은 여전히 그룹 작성자 한정; 그룹 삭제 시 소속 Memo의 미분류 이동은 삭제가 아닌 EDIT로 처리한다.
+- `authorizedMemoList`는 이미 Version/Site 인가된 read transaction에서 최신 `actorId`와 `canDeleteAny`(Site 인가 Admin, CAD Write 활성)를 부가 출력한다. 브라우저는 이를 삭제 버튼 표시 힌트로만 사용하고 G7 실제 DELETE가 최종 권한 검사한다. Actor/Site/승인 변경·리비전 stale 응답은 그대로 거부한다.
+- 스키마, API 경로, immutable 원본 Scene/DXF/Current, Viewer Manager/Undo/Renderer 및 Owner Managed 신규 설치 경계는 변경하지 않는다. 이 설계는 코드/합성 수용 후보이며 실제 운영 GO/#96/#113/#186와 분리한다.
+
+---
+
+## Epic #37/#49/#50 Integration R1 — Viewer 메뉴·로그 Timeline 오류 경계
+
+ViewerCommandMenus는 비활성/빈 href 링크에 실제 anchor href를 제공하지 않고 메뉴 항목 버튼으로 표현한다. ViewerManager/SelectionController/GeneratedDocument/Server Outline·Source bytes는 변경하지 않는다.
+
+운영 로그 UI는 HTTP status 및 정제된 error.code를 함께 분류한다. 410 cursor expiry 또는 정확한 503 LOG_STORE_UNAVAILABLE은 Timeline snapshot만 폐기하고 기존에 별도 인가된 메인 목록은 보존한다. 401/403·불명확한 503·네트워크/응답 변형은 기존처럼 전체 목록/상세/Timeline을 제거한다. G7/G4 서버 인가·감사와 JSONL Reader의 권한·상한은 변경하지 않는다.
+
+[통합 추적 문서](Epics37-49-50.md)에서 요구·테스트·비범위를 관리한다. 신규 DB/스키마·운영 Auth 활성화·로그 수집기 확장은 도입하지 않는다.
+
+---
+
+## R5b 구현 bridge / 로컬 코드·합성 수용 (2026-11-01)
+
+기반은 게시된 R5a `9accf8ba3e21f2d51dc7694e768f19c75fffb5d5`이며0.54.0 작업에서 아래 bridge를 공유한다. R5a 정확 HEAD CI는 성공했고 R5b 코드·합성 로컬 수용을 마쳤다. 새 R5b 게시·CI 및 현장 수용은 TestReport 실제 결과로 구분한다.
+
+- `ExchangeSnapshot.memos?:readonly ExchangeMemoInput[]`는 생략 시 빈 배열이다. `ExchangeOrigin`은 `LOCAL_MEMO|SERVER_MEMO`를 추가한다. 기존 primitive/Generated 계약과 동작은 유지한다.
+- `ExchangeMemoInput`은 `{key,id,origin,revision,title,content,anchorWcs:{x,y,z:0},anchorMode:'CANONICAL'|'SESSION'|'BROKEN',broken,settings:MemoSettings}`다. key는 `memo-local:<id>` 또는 `memo-server:<id>`이고 origin과 일치해야 한다. Server revision은 0 이상의 안전 정수(신규 Memo revision0 포함), local은 null이다. settings는 기존 MemoSettings를 받아 artifact에서 활성 값만 whitelist한다. labelOffset/actor/group/raw DTO를 추가하지 않는다.
+- 기존 `selection.memos.ids`는 raw ID가 아니라 위 namespaced key 목록이다. `all`도 frozen snapshot의 허가된 전체 Memo에만 적용한다. enabled=false면 Memo0이며 stale selected key, 중복 key, 지원0은 명시 오류다. Inventory objects에 같은 Memo key/origin/name을 넣고 Memo namespace layer를 사용한다. 기존 Generated 필터는 Memo를 혼입하지 않는다.
+- `ExchangeOptions.memoTextHeightMetres?:number`는 Memo 포함 시 필수이며 finite **0.001..10m** 범위다. UI 초기값은 선택된 DXF/Generated extent를 미터로 환산한 최대 폭/60을 **0.01..1m**로 clamp하고, Memo-only 또는 유효 extent0이면 **0.1m**다. 최초 UI는0.1m를 잠정 AUTO값으로 표시하고 `포함 범위 확인 시 계산`이라고 명시한다. 기존 prepare에서 실제 선택된 DXF/local 및 fresh server 기하의 정확 extent로 자동값을 계산한 뒤 inspect/fingerprint 전에 명시 옵션으로 전달한다. 실제 높이는 preview/부분 동의/download 전에 입력에 반영한다. 기본값 표시만을 위한 추가 보호 GET은 하지 않는다. 사용자 직접 편집은 해당 dialog 세션을 MANUAL로 바꾸고 선택 변경에도 값을 유지한다. AUTO에서 선택이 바뀌면 이전 preview/동의를 무효화하고 다음 prepare에서 재계산한다. Fingerprint에는 정규화 Memo 내용/위치/설정/선택과 글자 높이를 포함한다.
+- `ExchangeBuildContext.onStage`는 기존 `prepare|serialize|complete`에 `font|rasterize`를 추가한다. PNG 작업은 rasterize 단계이며 signal을 각 await 뒤 검사한다. 기존 inspect는 동기·순수로 Memo 선택/기하/문자길이/옵션 한도를 검증하고, font/canvas는 실제 비동기 export 단계에서만 실행한다. 숨은 PNG 준비나 성공 전 download는 없다.
+- Raster 기본은 본문32px·제목40px, line-height1.35, padding16px, 최대 폭2048px의 실제 font measureText/codepoint wrapping이다. 필요한 전체 크기를 계산한 후 canvas를 할당하고 개별2048²·총8,388,608px·decoded64MiB·최종32MiB를 초과하면 오류다. font timeout은15초이며 취소와 구분한다. Text 전체 보존, 잘라내기/몰래 축소 금지다. WCS 높이는 본문 em32px를 지정 미터 높이에 대응하며 제목은1.25배다. leader는 anchor→label의 글자높이 비례 고정 offset(+2h,+2h)으로 시작하고 원본 CSS offset은 무시한다고 고지한다.
+- Developer 소유: domain cad-exchange 및 core snapshot/export·font/raster/annotation 신규 모듈·관련 unit/Loader 시험, 기존 Memo GET envelope 및 서버 read service/관련 시험. Root 소유: client authority/Viewer Memo proof collector/hook/dialog/Browser 및 package version. 같은 파일의 병행 수정은 하지 않는다. Manager는 문서와 source 수용, QA는 독립 검증이다.
+
+아래 세부 계약과 TC-R5B-01–10을 필수 수용 조건으로 유지한다. 타입/API 변경이 더 필요하면 구현 전에 Manager/Root에게 정확한 diff를 제안한다.
+
+## R5b #91 — Memo snapshot/texture seam (0.54 구현 계약, 2026-11-01)
+
+R5a 브랜치에는 아래 runtime을 구현하지 않는다. R5a 실제 gate 후0.54 stacked branch에서 Manager GO와 함께 타입 bridge를 먼저 확정한다. Developer는 순수 Memo export schema/whitelist·font rasterizer·owned annotation builder·Loader 시험을 담당하고, Root는 Viewer Memo snapshot bridge·현재 actor/fresh Memo 조회·hook/modal·Browser 통합을 담당한다. QA는 별도 source 및 Browser 검증이다. 새 서버 route/DB/영속 Scene schema는 추가하지 않는다. 기존 Memo GET의 읽기 응답에 아래 인가 envelope만 호환 확장한다.
+
+### Read-only projection과 inspect 보완
+
+Root는 `MemoSessionSnapStore.snapshot(targets)`를 추가해 현재 projection을 mutation 없이 읽는다. `reconcile`과 동일 projection 계산을 공유하되 `lastWorld` 업데이트는 기존 `reconcile`만 수행한다. Export는 `reconcile`을 호출하지 않는다. forcedBreak/singular/BROKEN 마지막 WCS 의미를 보존하고 snapshot 전후 binding/lastWorld/epoch 및 반복 호출 불변성을 focused test로 검증한다. 이 domain 파일과 시험은 Root 소유이며 Developer core 파일과 겹치지 않는다.
+
+Root collector는 선택된 Memo key의 proof만 job fingerprint로 검증한다. 선택하지 않은 Memo의 변경이 공개 Source-only 내보내기를 막지 않는다. 유효 SESSION binding이 있는 row의 revision/content가 fresh row와 다르면 fail하며 canonical fallback은 금지한다. 현재 binding이 없는 fresh row는 canonical을 사용할 수 있다. Developer의 `inspectExchangeSnapshot(snapshot,options?)`는 호환 확장으로 허용한다. 기존 Memo 없는 한 인수 호출은 유지하고 Memo 선택 시에는 명시 height 옵션이 필요하다.
+
+### 현재 구조와 immutable Memo proof
+
+현재 `MemoDraft`에는 author IDs·labelOffset·anchor 관계 등 export하면 안 되는 필드가 섞여 있다. `MemoSessionSnapStore`의 projection 자체에는 Memo revision이 없으며 `scopedMemos`는 표시용 projection을 덮어쓴다. 이 배열/React cache 또는 raw DTO를 바로 exporter에 넘기지 않는다. Root가 **현재 Memo row와 현재 reconcile projection을 같은 순간의 proof로 묶는 read-only collector**를 제공한다. `ExchangeMemoVisualProof`는 내부 `{scope,viewerGeneration,memoKey,memoRevision:number|null,memoContentFingerprint,targetEpoch,world,anchorMode:'CANONICAL'|'SESSION'|'BROKEN',snapshotToken}`이며 서버/파일에 전송하지 않는다. Fresh 서버 row revision/content와 cached row가 다르면 projection 재사용을 거절하고 Viewer를 명시 갱신한 뒤 새 prepare를 요구한다. 이미 stale한 projection에 새 revision을 붙이는 것은 금지한다. 증명 불가할 때 silent canonical fallback도 하지 않는다.
+
+`ExchangeMemoInput`은 정제된 `{key:'memo-local:<id>'|'memo-server:<id>',id,origin:'LOCAL_MEMO'|'SERVER_MEMO',revision:number|null,title,content,anchorWcs:{x,y,z:0},anchorMode,broken:boolean,settings}`만 갖는다. `ExchangeSnapshot.memos`와 Memo 포함/선택은 이 DTO를 사용하며 options에 `memoTextHeightMetres`를 추가한다. local snapshot은 scope+memo epoch+content/geometry fingerprint, 서버 snapshot은 여기에 actor·fresh row revision proof를 내부적으로 더한다. 부분 동의 fingerprint에도 Memo 내용·위치·선택·글자 높이를 포함한다. BROKEN 마지막 WCS를 포함하면 Memo-only에도 preview.partial을 설정하고 사유를 표시한다. Font/glyph/encoding 실패는 partial 동의로 우회하지 않는다. 최종 전송 전 local/SESSION projection fingerprint와 protected row를 모두 재검사한다.
+
+기존 Memo GET은 actorId를 payload에 포함하지 않아 Session 전후 확인만으로는 조회 중 cookie A→B→A의 실제 응답 actor를 증명할 수 없다. R5b에서 같은 GET의 기존 `memos/groups/featuresAvailable`을 보존하고 `actorId/versionId/sourceSha256/sceneRevision` envelope를 호환 추가한다. 기존 typed-outline-read 방식처럼 같은 transaction에서 인가·현재 Version/Scene·bounded rows를 읽고 응답 전 runtime approval/session/Site 읽기 권한을 재확인한다. Export decoder는 envelope의 실제 요청 actor/scope를 직접 Session 전후 증명과 비교하고 최종 선택 row revision/content까지 다시 확인한다. Envelope가 없거나 다르면 서버 export를 거절하며 actorId는 내부 증명에만 사용하고 artifact에는 넣지 않는다. 기존 Viewer 소비자의 추가 필드 호환성과 A→B→A·scope mismatch·revocation 회귀를 검증한다. `mode:'off'`를 서버 권한 실패의 빈 성공으로 쓰지 않는다. 서버 Memo 그룹을 선택하지 않으면 protected Memo export 조회를 추가하지 않는다. 숨겨진 서버 Memo도 fresh 조회로 허가된 row일 때 명시 선택할 수 있다. 서버 DTO 선택과 source local-only 정책은 별개다.
+
+### Font·Canvas·geometry 책임
+
+고정 same-origin `/fonts/NanumGothic-Regular.ttf`만 읽고 외부 font/image URL 또는 CSS computed font를 사용하지 않는다. 같은 font bytes로 FontFace를 로드·등록한 뒤 Canvas에서 사용하며, 필요한 문자 coverage는 실제 cmap/glyph lookup으로 확인한다. 설치된 Three r171 `examples/jsm/libs/opentype.module.js`가 `parse`와 font.charToGlyphIndex를 제공하므로 Browser dynamic import를 우선 검토한다. glyph0/.notdef 및 지원 못 하는 제어/조합 표현은 명시 오류이며 `document.fonts.check`만으로 한글 지원을 입증하지 않는다. 라틴·한글·공백은 glyph 존재를 검사하고 줄바꿈은 layout 제어로 처리한다. 본문 TAB은 raster에서4칸 공백으로 표현하되 원문 extras는 보존한다. fallback 폰트로 조용히 대체하지 않는다.
+
+rasterizer는 제목/본문을 plain text로 measureText하고 전체 줄바꿈을 정한 뒤 Canvas를 할당한다. 긴 unbroken 문자열도 codepoint 경계를 지키며 줄바꿈하고 전체 텍스트를 보존한다. 예산 검사는 width×height 및 누적 decoded bytes로 **할당 전** 수행한다. 각 PNG는 HTMLCanvasElement 기반 CanvasTexture로 embedded glTF data URI 또는 GLB bufferView에 들어가며 외부 fetch를 남기지 않는다. Plane은 XZ 평면/unlit/DoubleSide, pin·leader와 별도 Memo namespace 아래에 놓는다. label 위치는 글자 높이 비례 WCS offset으로 고정하고 화면 pan/zoom/CSS labelOffset을 사용하지 않는다. 모든 geometry는 R5a와 동일 origin/axis/Float32 오류 검사를 따른다.
+
+### 수명과 metadata
+
+font 준비·rasterize·PNG encode·GLTF serialize의 stage를 표시하고 signal을 단계 사이에 검사한다. 비동기 PNG/GLTF 작업은 직접 중단할 수 없는 구간의 결과를 폐기하며 페이지 single-job mutex를 cleanup 종료까지 유지한다. 새 FontFace를 소유했다면 document.fonts에서 제거하고, canvas 크기 초기화/참조 해제, texture/material/geometry dispose와 BlobURL revoke를 success/error/cancel 모두 수행한다. 원본 Viewer material·공유 font/cache 자원은 해제하지 않는다. 테스트는 생성·해제 횟수 및 반복 작업 후 retained references/URL을 검증한다.
+
+scene extras에는 R5a에서 미뤄둔 명시 `versionId`/`sourceSha256`를 모든 조합에 추가한다. R5b dialog와 artifact warning에 `maxQuantizationError`가 이미 양자화된 renderer snapshot 대비 추가 오차라는 점과 원본 CAD 정밀도 복구 불가를 명시한다. 이 값으로 원본 CAD SLA를 주장하지 않는다. Memo settings는 scheduleEnabled일 때 startDate/dueDate, completionEnabled일 때 isCompleted/completedAt만 복사한다. actor/createdById/updatedById/group DTO 전체/target binding/localAnchor는 누락시킨다. 파일 metadata는 read-only 교환용이며 Memo API나 JSON 복원 명령으로 사용할 수 없다.
+
+## R5 #91 — Exchange export 계약 (구현 전, 2026-11-01)
+
+### 작은 Unit와 책임
+
+R5a는0.53.0의 core(DXF baseline+확정 local/권한 있는 server Outline, format/units/누락/선택/Loader roundtrip)를완료하고 독립QA 뒤 R4 기반 Draft PR로게시한다. R5b는그기반0.54.0에서 visible Memo+metadata/혼합그룹/전체UX·취소·자원시험을완료한다. R5a UI에서 Memo는 `다음 Unit에서 연결` 사유로 disabled이고 #91 전체 완료가 아니다. Manager는 계약/수용, Developer는순수모델/exporter/adapter read API, Root는Viewer modal/현재actor조회·job orchestration, QA는독립검증이다. Root가 source/서버계약을 바꾸는 구현을 병렬로 시작하기 전에 아래 경계를 공유한다.
+
+### 재사용과 새 seam
+
+현재 production은 `scene-tags`, `scene-custom-dto`, `scene-serialization`, `sceneAsset`, GeneratedDocument 및 R3/R4 DTO를 재사용한다. 기존 test-only `scene-poc-browser.ts`의 GLTFExporter/Loader 실험은 참고 근거이며 그대로 production에 whole-scene export하지 않는다. `this.scene`은 helper/UI가 섞여 있으므로 접근 입력으로 금지한다. 원본 bytes 재parse나 외부 dependency 수정은 새 export의 전제조건이 아니다.
+
+Developer 소유 제안: `domain/cad-exchange.ts`(순수 schema/단위/옵션/필터/metadata/budget), `viewers/three-dxf-viewer/exchange-snapshot.ts`(owned 복사/원본baseline), `viewers/three-dxf-viewer/exchange-export.ts`(browser-only GLTFExporter/geometry/메모plane 확장), adapter/core의 optional read API와 그 unit/Loader tests. Root 소유: `features/cad-viewer/cad-exchange-dialog.tsx`(core 동결 후 Root 지시로 Developer가 새 modal 파일 구현을 보조), `features/cad-viewer/use-cad-exchange.ts`(또는 동등한 단일 orchestration hook), 기존Viewer/menu 연결, Browser UX/권한 tests. Viewer에 geometry serializer나DB규칙을 넣지 않는다. 파일명변경은 같은책임을유지할때조정가능하다.
+
+공유계약을 먼저고정한다:
+
+- `ExchangeInventory`: `{scope:{versionId,sourceSha256,sourceUnit},snapshotToken,layers,objects,warnings,sourceCoverage}`. objects는 stable namespace key(`dxf:<renderId>`, `local:<UUID>`, `server:<UUID>`, R5b `memo:<UUID>`)와 origin/layer/name/estimatedVertices/지원여부만노출한다. 원본 entity count가없으면null이다. `inspectExchangeSnapshot(snapshot)`은 사전 Layer별 accepted/excluded/reasons/styleLoss와 partial 여부를 제공한다. 임의 Three object/원시 userData/network locator를UI에전달하지않는다.
+- `ExchangeSelection`: `{dxf:{enabled,mode:'all'|'layers',layers:string[]},generated:{enabled,mode:'all'|'selected',keys:string[]},memos:{enabled,mode:'all'|'selected',ids:string[]}}`. 존재하지않거나중복/다른scope key는오류다. whole목록은캡처시점의bounded목록이며기존Canvas선택을변경하지않는다. `ExchangeOptions`는format·허용unit choice·origin(auto/custom finiteXYZ)·파일이름base·snapshot/options fingerprint에결합한partialAck, R5b글자높이m를포함한다.
+- Adapter `getExchangeInventory()`는read-only경량조회, `captureExchangeSnapshot(selection)`은budget검사후선택된DXF/localGenerated의owned geometry/attributes/material DTO를복사한다. 동기capturing중scope/token이바뀌면거절한다. Source baseline은 legacy tagImportedTree 직후 및 READY restore 직후 전체 imported tree의 world matrix를 별도 read-only Map으로 캡처한다. READY 경로에 sceneAsset 필드가 없더라도 복원된 원래 local matrix 계층으로 계산한 전체 baseline을 보존한다. 선택가능leaf의`sceneObjects.baseWorld`만쓰면display-only/multiMaterial을누락하므로그것을전체기준으로쓰지않는다. liveSceneWork/visibility를일시reset하거나원본material을dispose하지않는다.
+- Root coordinator는fresh서버 DTO를기존GET으로조회·검증해snapshot에결합한다. Adapter는서버fetch하지않는다. `buildExchangeArtifact(snapshot,options,{signal,onStage})`는새exportscene만생성하고`{bytes,mime,extension,report}`를반환한다. 실제download/파일명/BlobURL은Root가최종재인가후수행한다. 생성artifact에는인증권위가없으며JSONv2복원/APIpayload로재사용하지않는다.
+
+### Geometry/스타일과 누락 정책
+
+초기 whitelist는유효BufferGeometry의Line/LineLoop/LineSegments/Mesh/Points이며각 drawRange/index/group/material별 실제primitive만독립복사한다. finite좌표/유효index/group·일관된scope·boundednode/vertex를검증한다. Mesh의normal/color/UV는허용typedattribute만복사한다. LineBasic/MeshBasic/Points의RGB·opacity·vertex color를보존하고unlit표현을검증한다. r171 exporter는 MeshBasicMaterial만 KHR_materials_unlit을 기록하므로 export-only Line/Points도 MeshBasicMaterial을 사용하며 live material은 바꾸지 않는다. multiMaterial은유효group으로분리가능한경우만지원하며모호한group은고정reason으로제외한다. Sprite/Skinned/Shader/미지원texture/외부resource/비평면·3D 등firstscope밖은제외진단한다. THREE scene객체를통째로clone/serialize하거나userData전체를복사하지않는다.
+
+DXF LINE/Polyline/원·호는이미renderer가표현한line/triangle geometry의visual fidelity만보장한다. renderer에없는Source Entity를새로생성하지않는다. TEXT/MTEXT가안전한mesh로존재하면visualgeometry로처리하되text문자열복구/원본Entity정밀성을주장하지않는다. Line width/dash가교환에서보존되지않으면사전warning+ack와extras degradedstyle을기록한다. BLOCK/INSERT는baselineworldmatrix+instanceID를보존한다. Generated/서버Outline Polygon/MultiPolygon/Holes는validated effectivegeometry를ShapeGeometry/triangulation으로만들어분리영역과holes를roundtrip한다. source색은현재렌더baseline색이며기존black→white대비보정이적용됐을수있음을sourceCAD색완전보존과구분한다.
+
+Coverage는exporter가검사한renderer객체/Layer별 accepted/excluded를정확히기록한다. Source총Entity/미렌더Entity가불명인READY/legacy는`sourceCoverage:'unknown'`/countsnull이다. 기존RenderCoverage와원본index의실제근거는추가진단으로사용하지만bbox매핑을완전원본형상증명으로격상하지않는다. unknown 또는실제제외/스타일손실이있으면명시partialAck없이다운로드하지않는다. 모든선택그룹이0supported이면차단하며변경된snapshot/옵션은ack를무효화한다.
+
+### Render Layer와 브라우저 경계 보완
+
+R5a의 Layer 선택은 기존 Adapter `getLayers()`의 표시 레이어(`cadLayer`, fallback `entity.layer`)와 일치시킨다. UI와 report는 **렌더 레이어 / 렌더 객체 수**로 명명하며 원본 Entity별 정확한 레이어 분할을 주장하지 않는다. r171 BLOCK 병합은 서로 다른 INSERT node를 유지하지만 내부 여러 Layer가 한 drawable에 합쳐질 수 있다. 이 경우 현재 표시 레이어 기준으로 포함하고 mixed-BLOCK mapping 품질 경고와 partial acknowledgement를 요구한다. READY Scene의 정제된 `cadLayer`에는 원시 `userData.entities` 증거가 없으므로 원본별 매핑 완전성은 unknown이다. 이 차이를 해결하려고 원본을 다시 parse하거나 영속 Scene schema를 확대하지 않는다.
+
+GLB/glTF core는 CAD line dash/linewidth 및 Points.size 표현을 그대로 보장하지 않는다. 기하 누락과 별개로 스타일 손실의 해당 렌더 객체 수와 사유를 세고, 보고서와 사전 경고/ack에 포함한다. unlit RGB/opacity와 기하 보존 여부는 Loader로 별도 확인한다. GLTFExporter를 포함하는 encoder는 클라이언트 사용자 실행 경로에서 dynamic import하며 SSR module 평가에서 브라우저 의존성을 실행하지 않는다. R5a에는 서버 route/DB/영속 Scene format 변경을 추가하지 않는다.
+
+### 좌표/단위/precision
+
+검증된자동map은INSUNITS1(inch=.0254m),2(international foot=.3048m),4(mm=.001m),5(cm=.01m),6(m=1)이다.0/미상/다른code는실행전동일허용단위중사용자가명시선택한다.21US survey feet를2와같게취급하지않으며지원안내후명시환산선택을요구한다. 기본origin은선택geometry의double WCS bounds중심이고custom finiteXYZ도가능하다. `(X,Y,Z)=(s*(x-ox),s*(z-oz),-s*(y-oy))`로handedness를유지한다.2DXY는glTFXZ에놓이며솔리드/압출을생성하지않는다.
+
+baseline localposition→doubleworldmatrix→origin차감→scale/축변환→Float32순서다. 이미 renderer position에 양자화된 Source 정보는 복원할 수 없다. R5a는 Operation에 이 제약을 설명하지만 inventory/dialog/artifact warning에는 아직 포함하지 않았다. R5b에서 dialog와 artifact에 snapshot-relative 정밀도와 복구 불가 제약을 명시하는 warning을 추가해야 한다. 새Float32전환의vertex Euclidean error가1e-4m를넘으면정밀도실패로범위를줄이거나origin을조정하게한다. 이한도는renderer snapshot 대비교환오차이며원본CAD SLA가아니다. extras에원본unit/code·선택unit·metresPerUnit·originWcs·axisMapping·maxQuantizationError를기록한다.
+
+### 서버권한과 immutable job
+
+공개 Source/local Generated는 G7 ACTIVE의 익명 및 OFF/BLOCKED에서도 내보낼 수 있다. 기존 공개 CAD GET/Viewer 정책을 유지하며 local-only에 보호된 Outline/Version/Site GET이나 새 원본 GET을 요구하지 않는다. ACTIVE의 직접 Session 조회401은 안정된 anonymous actor 증거로 인정한다. OFF/BLOCKED에서는 공개 로컬 범위로 표시하고 서버 그룹을 비활성화한다. 현재 client Version/SHA/Renderer/load generation/snapshotToken 및 options fingerprint는 모든 job에서 준비·최종 download 전에 검증한다. Actor 변화는 job을 폐기하지만 익명 자체가 로컬 내보내기 거부 사유는 아니다.
+
+서버 Outline 그룹 선택 시에만 fresh Session과 보호된 `/outlines` GET200의 actorId/Version/SHA/Scene revision/row revision/content fingerprint를 준비 및 최종 download 직전에 재검증한다. 기존 bounded pagination·logical-delete 필터를 적용한다. 조회 거부/실패는 서버 그룹 비활성+실제 사유로 표시하며 cached 행이나 false-empty 목록으로 대체하지 않는다. 이미 선택된 서버 그룹의 실패/권한회수/actor 변경이면 전체 artifact를 폐기하고 재조회하도록 한다. R5b 서버 Memo는 같은 원칙으로 `/memos`를 검증한다. metadata에 token/cookie/actor userID/계정/email/권한/locator/receipt/원시 parser userData를 넣지 않는다. 재검사는 체크 시점의 인가이며 다운로드 후 철회/파일 회수를 보장하지 않는다.
+
+### R5b Memo 표시 계약
+
+R5b metadata 후속: generated-only 파일도 출처를 구분하도록 scene extras에 whitelist된 `versionId`/`sourceSha256`를 명시한다. 현재 R5a의 source render key에 이 값이 간접 포함되는 것은 일관된 provenance 계약을 대신하지 않는다. Actor/계정/locator는 추가하지 않으며 활성 Browser 시험 중 R5a runtime을 수정하지 않는다.
+
+Memo는전용annotation group의anchor pin/leader와XZplane의unlit DoubleSide PNGtexture로보인다. 로컬`NanumGothic-Regular.ttf`를FontFace로로드하고`document.fonts`준비후HTMLCanvas에plain text줄바꿈을그린다. 외부HTML/SVG/URL로드나OffscreenCanvas glTFimage분기를사용하지않는다. 화면CSSlabelOffset은미터로사용하지않는다. 글자높이(m)를명시하고default는선택bounds extent/60을.01..1m로clamp(범위없는Memo-only는.1m); plane/leaderoffset은그높이로결정해카메라와독립시킨다.
+
+텍스트는title100/content2000의모델한도를유지하고전체를표시한다. 임의잘라내기대신canvas/texture한도를넘으면재설정·범위축소오류를표시한다. snapshot의anchorWcs는freshservercanonical 또는동일Memo revision의유효SESSION projection이며BROKEN은마지막WCS/경고를보존한다. extras는id/origin/revision/title/content/world/일정·완료의활성필드와group name정도로제한하고개인Actor식별자는제외한다. R5b기능이완성되기전R5a에서메모0개를성공한것처럼내보내지않는다.
+
+### 한도/취소/자원
+
+초기export상한:선택drawables20,000/vertex250,000/index750,000/localGenerated100+serverOutline100/Memo100, geometry+texture decoded 추정64MiB, texture누적8,388,608pixels(개별최대2048×2048), 최종artifact32MiB. 금액/SLA가아닌브라우저보호한도이며추가시험없이확대하지않는다. inventory에서사전예산,복사/triangulation/texture직후·serialize결과에재검사하고초과시download0이다.
+
+GLTFExporter r171 `parseAsync`에는AbortSignal이없으므로가능한준비단계는abort하고시작된직렬화는결과를버린뒤owned자원을finally로정리한다. 그동안두번째job을시작하지않고취소요청됨을표시한다. 객체URL은다운로드DOM이소비한후revocation하며취소/예외에도정리한다. owned geometry/material/texture/image/canvas만dispose하고liveViewer공유resource에는손대지않는다. Scene/Viewer전환·dialogclose·ESC·unmount는jobgeneration을무효화한다.
+
+공식근거: [Three GLTFExporter](https://threejs.org/docs/pages/GLTFExporter.html), [Khronos glTF2.0](https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html), [Autodesk INSUNITS](https://help.autodesk.com/cloudhelp/2025/ENU/AutoCAD-Core/files/GUID-A58A87BB-482B-4042-A00A-EEF55A2B4FD8.htm). 실제설치three0.171.0source는binary=true에ArrayBuffer, false에JSON object/dataURIbuffer를반환하므로object는JSON.stringify한다. `onlyVisible:false`, `includeCustomExtensions:false`, animations[]를명시하고이미정제된선택scene만전달한다. glTF이미지는HTMLCanvas dataURI 경로, GLB이미지는bufferView이며실제양포맷Loader시험전완전지원PASS로표현하지않는다.
+
+## R4 #174 — 선택 가능한 세션 스냅과 신뢰된 앵커 이동 계약 (구현 전, 2026-11-01)
+
+**Module 경계:** Developer는 `domain/memo-session-snap.ts` 후보·유지 이동과 기존 adapter 후보 추출의 안정성, `server/cad-business/anchor-service.ts`/anchor route 및 관련 순수·통합/benchmark 시험을 소유한다. Root는 Viewer/MemoEditor/pointer UI·client bridge·Browser 시험을 소유한다. Manager가 계약 검토 후 독립 QA에 인계한다. UI가 DB/파일/Source attestation을 구현하지 않는다.
+
+### 세션 공용 interface
+
+- 기존 `MemoSnapCandidate`/`nearestMemoSnap` 호환을 유지한다. 새 `MemoSnapChoice = MemoSnapCandidate & {key:string;pointIndex:number}`와 `MemoSnapCandidateSet = {candidates:readonly MemoSnapChoice[];total:number;scannedPoints:number;limited:boolean}`를 제공한다. `collectMemoSnapCandidates(scope,requestedWcs,targets,project,maxDistancePx=12)`는 최대20,000 point를 검사하고 거리·동률 kind 우선·stable ref/key 순으로 정렬하여 최대100개를 반환한다. `total`은 실제 검사 범위에서의 적격 수, `limited`는 point/candidate 상한에 도달해 전체 탐색을 보장하지 못함을 뜻한다. adapter가 선행 제한한20,000 point도 보수적으로 limited를 표시한다. Root project wrapper는 현재 Canvas CSS width/height 밖의 투영에null을 반환해 offscreen 후보를 제외한다. 화면 밖의 명시 FREE WCS 입력은 스냅 허가와 구분한다. UI는 상한·확대/다시 선택 안내를 숨기지 않는다.
+- key는 target origin+immutable instance ID+kind+pointIndex를 인코딩해 구성한다. 같은 위치의 다른 target/instance를 합치지 않는다. 닫힌 ring의 반복 끝점 등 동일 target의 중복 point는 결정적으로 처리한다. candidate key는 해당 Viewer/generation 안의 선택 키이며 서버 식별자가 아니다.
+- Root는 raw requested WCS, 후보 snapshot, 선택 key 또는 명시 OFF, Version/SHA/Renderer/attempt/view revision을 하나의 pending 의도로 보관한다. pointer/WCS 입력은 새 의도를 만들고 기본 첫 후보를 선택할 수 있지만 사용자의 수동 선택/해제 이후 확정 때 nearest를 다시 호출하지 않는다. 최신 adapter 후보로 **같은 key·local/world·transform·visible/context**를 검증해 변경되면 재선택을 요구한다. OFF는 원래 requested WCS를 사용한다. 취소/카메라·대상 변동/버전·Renderer 전환은 pending을 무효화한다.
+- `MemoSessionSnapStore.reposition(memoId,world,targets):SessionSnapProjection`은 현재 동일 binding/live target만 사용해 inverse를 계산한다. 없거나 forced-BROKEN/singular면 상태를 바꾸지 않고 거부한다. target visibility는 신규 후보 제외 조건이며 기존 유효 관계의 보존 자체를 제3 객체로 바꾸지 않는다. DETACH는 기존 detach를 사용한다. 최대100 bindings는 유지한다. 서버 Memo의 세션 snap 유지 이동은 먼저 합법적인 FREE World 쓰기를 성공시킨 뒤 세션 local을 갱신하며 임시 ref/matrix는 API에 보내지 않는다.
+
+### BLOCK 렌더 projection의 singleton Material (R4 진단 보완)
+
+BLOCK의 서로 다른 INSERT를 실제 렌더 leaf의 기존 instance ID/world transform으로 유지한다. 상위 renderer가 단일 Material을 `[material]`로 감싼 경우 projection에서 정확1개 배열만 풀어 visible을 검사하는 최소 wrapper 보완을 허용한다. 빈 배열/다중 Material은 제외한다. 배열 Material은 Three의 geometry groups를 통해 렌더되므로 유효한 materialIndex0 group들이 drawRange 전체를 덮는 경우만 허용하고 빈/부분/잘못된 group은 제외한다. drawRange·index·유한 좌표·평면·scope 검증 및 원본 geometry/ID를 유지한다. SourceRef/원본 Entity 권한을 새로 부여하지 않는다. 실제 singleton 두 instance RED/GREEN·숨김/multi 제외 회귀와 원본 BLOCK Browser 후에 지원 결과를 기록한다.
+
+### 준비된 스냅 의도의 Actor 증명 (R4 검토 보완)
+
+Active 서버 모드에서 준비한 `MemoSnapIntent`에는 catalogue와 무관한 현재 Session API의 직접 증명 `actorId`를 묶는다. 확정 전 fresh Session actor와 다르면 서버 write를 보내기 전에 재조회 오류로 거절하며 요청 후 기존 actor/load guard도 유지한다. 서버OFF는 로컬 모드로만 처리하고 서버 권한 증명을 흉내내지 않는다. 이 계약은 #172의 작성자-only 정책을 변경하지 않는다.
+
+준비 중 Session 조회가 비동기이므로 시작 당시 raw requested WCS·Version/SHA/manager/load/view epoch·query generation을 캡처한다. 조회 중 좌표 편집/취소/새 query/도면·카메라 변화가 있으면 이전 결과를 버리고 새 필드나 pending을 덮지 않는다. 새 조회 시작 시 이전 의도를 무효화한다. 준비 Actor A 뒤 cookie만 B로 교체해 focus refresh 이전 확정하는 실제 Browser RED를 먼저 실행하고, 실패가 확인되면 최소 수정과 GREEN을 별도로 기록한다.
+
+### 서버 FREE 쓰기와 세션 연결 사이의 완료 경계
+
+세션 SNAP/KEEP를 사용하는 서버 Memo는 먼저 FREE world를 저장하고 뒤에 browser-only 관계를 적용한다. 이는 DB와 브라우저의 분산 transaction이 아니다. 요청 전에 선택/target을 검증하고, 응답 뒤 actor/Version/load generation과 최신 target/camera를 다시 검증한다. 동일 context에서 **서버 성공이 확인되었지만** 대상이 바뀌어 세션 연결을 적용할 수 없으면 authoritative 서버 WCS를 표시하고 기존 stale SESSION_ONLY binding을 해제한다. “서버 메모는 저장됐으나 대상 변경으로 세션 연결을 적용하지 못했습니다”라고 알리고 rollback·연결 유지 성공을 주장하거나 제3 target으로 재연결하지 않는다.
+
+실패/응답 불확실 상태에서는 commit을 추정하여 기존 binding을 해제하지 않으며 재조회로 확인한다. 이전 actor/Version의 늦은 응답은 현재 화면에 적용하지 않는다. 이 fallback은 명시 FREE-world 쓰기의 성공 후 발생한 세션 후처리 실패에만 한정한다. 일반 target 삭제의 마지막 WCS/BROKEN 유지와 영속 server-anchor KEEP/DETACH의 원자성을 변경하지 않는다.
+
+### 영속 anchor reposition API
+
+기존 PATCH `/api/cad-files/[versionId]/memos/[memoId]/anchor`에 `operation:'reposition'`을 추가한다. 기존 attach/detach body·응답은 호환 유지한다. strict body는 `{operation:'reposition',behavior:'KEEP'|'DETACH',expectedRevision,expectedSceneRevision,anchorWcsXY,expectedTargetRevision?}`이다. 모든 revision은0이상 safe integer, WCS는 기존±1e12 유한2D, 추가 key는400이다. targetId/origin/localAnchor/affine를 새 body에 허용하지 않는다.
+
+- 공통: 현재 인증·활성 Site·Version/SHA·Memo owner와 memo revision, 현재 Scene pointer의 expectedSceneRevision을 transaction 안에서 확인한다. 기존 anchor schema가 없으면503이며 자동DDL은 없다.
+- KEEP: 현재 anchor가 ATTACHED여야 한다. APP_CREATED는 existing target server UUID+같은 Version/SHA+live row를 조회하고 **필수 expectedTargetRevision**을 확인한다. 현재 geometry/허용 operations로 만든 trusted matrix inverse를 requested world에 적용한다. R3 정책대로 오래된 row.sceneRevision 자체를 이유로 같은 WCS target을 거부하지 않는다. DXF_IMPORTED는 기존 서버 검증 SourceRef의 live SOURCE_CANONICAL 근거를 확인하고 identity transform을 사용한다; expectedTargetRevision은 허용하지 않는다. Renderer session delta는 서버 transform으로 간주하지 않는다.
+- DETACH: expectedTargetRevision을 허용하지 않는다. anchor를 삭제하고 요청 WCS로 FREE 이동한다. FREE/BROKEN에도 동일 명시 이동을 허용하되 Memo owner/Scene/Memo CAS는 동일하다.
+- 성공: requested world, KEEP의 local 또는 DETACH cleanup, Memo revision+1/updatedBy와 EDIT Audit1을 원자 commit한다. 응답200은 `{revision,anchor,anchorWcsXY}`이며 UI가 필요하면 권한/actor/Version/generation을 재검사한 Memo GET으로 metadata를 갱신한다. 실패는 기존 world/local/anchor/revision/Audit를 보존한다. 후속 target transform은 기존 reconcile이 저장된 local을 투영하며 직접 Memo 재배치는 작성자-only다.
+
+### 성능/정리 경계
+
+후보 query는 pointer move마다 임의 전 도면/DOM을 재생성하지 않고 bounded snapshot을 사용한다. `getMemoSnapTargets(false)`의 reconciliation은 모든 필요한 live target transform/identity를 유지하며 candidate points 비용과 분리한다. 숨김/비평면/singular/타 scope는 새 후보에서 제외한다. Domain1k/10k target workload와 여러 bounded100-binding store의 aggregate 시험을 단일 Viewer10k 지원으로 표현하지 않는다. 정확성·메모/원본 불변·dispose listener0은 필수 수용 Gate이며 p50/p95/max와16.7ms frame budget 초과는 실제 수치로 기록해 현장 기준 협의에 남긴다.
+
+## R3 #71/#73 — Typed Outline Interface와 복원 설계 (구현·로컬 수용, 2026-11-01)
+
+상태: 구현 전 작성한 계약을 최종 source와 대조했고 Manager가 로컬 범위를 수용했다. 실제 실행 범위·잔여와 게시 상태는 [TestReport의 R3-20261101](TestReport.md)을 따른다. 운영 DB 이전·배포·실환경 수용을 뜻하지 않는다.
+
+**Browser 통합 재작업 결정:** APP_CREATED `derivedFrom`는 불투명 Scene 참조이며 실제 canonical ID가220자를 사용한다. 서버 provenance의 기존128자 한도는 이를 거부하므로 기존 Generated-v2 importer와 같은 참조당250자로 맞춘다. 최대256개·고유성·빈 문자열/비문자열 거부·전체 HTTP body 한도는 유지하고 ID를 자르거나 정규화하지 않는다. 이 참조는 Source 증명이 아니며 Source attestation/geometry 검증을 완화하지 않는다.250자를 넘는 참조는 명시 오류로 거부한다. 최종 read 재인가 중 runtime approval 소실은 내부 일반 Error를 노출하지 않고 고정 안전503으로 반환한다.
+
+### 권위와 읽기
+
+R2 `GlobalOutlineTypeDto`/타입 저장소를 재사용하되, 기존 preview `OutlineType.scopeKey`에 가짜 Site 값을 넣어 Global 타입을 지역 타입으로 위장하지 않는다. 새 `AuthorizedOutlineCatalog`는 `{actorId,versionId,sourceSha256,sceneRevision:number|null,catalogScope:'GLOBAL',canCreate:boolean,items:OutlineTypeChoice[],total,offset,limit}`이다. `OutlineTypeChoice`는 `{id,name,active:true,sortOrder,revision}`이며 읽기 인가가 완료된 현재 Version에 한정한 UI projection이다. actorId는 이미 현재 session에 노출된 User UUID이며 권한 token이 아니다. raw Session ID/token/cookie를 DTO에 넣지 않는다. 로컬 순수 검증은 Version/SHA·활성 ID·이름을 대조하지만 서버 인가를 대신하지 않는다. `/lab` preview DTO/메모리 CRUD는 이 Interface를 구현하지 않는다. 공유 DTO의 단일 파일은 Developer 소유 `domain/typed-outline.ts`이며 `AuthorizedOutlineCatalog`, `OutlineTypeChoice`, `StoredOutlineDto`, `StoredOutlinePageDto`, mode별 `StoredOutlineCreateDto`, `StoredOutlineCreateResultDto`를 함께 정의한다. Create result는 기존 row에 `replayed:boolean`을 더하며 UI에 별도 동일 구조 타입을 복제하지 않는다. Root는 UI projection/export utility와 Viewer/Browser 시험을 담당한다.
+
+새 Version catalogue와 영속 Outline 읽기를 담당하는 Module은 기존 G7 runtime/schema/Session/Role/Site 검사를 재사용하고 Reader를 허용한다. CAD writer proof를 GET 권한으로 사용하지 않는다. 실제 Version→활성 Site·사용자 grant·signed Site, future/expired/revoked session, runtime identity/만료를 읽기 전과 반환 시점에 검사하며 성공한 snapshot의 actorId/count/rows/type JOIN/Scene pointer는 같은 읽기 transaction에서 얻는다. 종료 시 actor도 처음 인가 주체와 같아야 한다. 실패 감사는 기존 G4 안전 고정 대상/actor/requestId 방식과 일치시키고 User0 probe는503/Audit0이다. auth 전 catalogue·건수·receipt 정보를 반환하지 않는다. 공통 read helper를 보완하면 Scene/Memo 기존 읽기 회귀도 실행한다. Client는 catalogue와 Outline page의 actorId/Version/SHA/context를 대조하고 다른 actor의 이전 generation 결과를 버리며, row.createdById를 현재 사용자로 오인하지 않는다.
+
+| Interface | 계약 |
+| --- | --- |
+| GET `/api/cad-files/[versionId]/outline-types` | 인증된 `outline:read`+global type 읽기 후 현재 Version/SHA context와 active 목록만 반환. `q` trim/NFC/lowercase 최대100, `offset`0..100000, `limit`기본50/1..100, 중복·unknown query400. sort_order,name_key,id 순. canCreate는 현재 Editor/Admin+해당 Site+writer+latest receipt schema+Scene READY 조건이며 Admin 타입 관리 여부와 무관. |
+| GET `/api/cad-files/[versionId]/outlines` | 기존 `outlines` 배열 필드를 유지하며 `{actorId,versionId,sourceSha256,sceneRevision,canWrite,total,offset,limit,outlines}` 추가. 기본 limit100,1..100,offset0..100000; created_at,id ASC 안정 순. 각 row는 현재 `outlineType:{id,name,active,sortOrder,revision}|null`을 JOIN하며 기존 outlineTypeId와 일치해야 한다. global inactive catalogue 조회권 없이도 허가된 해당 Version의 참조 타입 최소 metadata만 볼 수 있다. soft-deleted 제외. |
+| GET `/api/cad-files/[versionId]/outlines/[outlineId]` | 목록 첫100개에서 찾는 방식 대신 exact Version+UUID 조회. 같은 읽기 인가/타입 JOIN/응답 정제를 적용한다. |
+| POST `/api/cad-files/[versionId]/outlines` | 기존 strict body mode/sourceSha256/expectedSceneRevision/name/kind 및 각 mode별 geometry/sourceExport 계약을 유지하고 실제 active outlineTypeId를 허용한다. typed 입력에는 UUIDv4 `Idempotency-Key` header 필수. client outlineTypeName/actor/scope/id 필드를 추가로 신뢰하지 않는다. 최초201, 동일 생성 replay200; 기존 row shape에 `replayed:boolean`을 추가해 소비 가능하게 한다. |
+| PATCH/DELETE 기존 Outline route | PATCH rename body=`{expectedRevision,expectedSceneRevision?,operation:'rename',name}`, transform body=`{expectedRevision,expectedSceneRevision?,operation:'transform',operations}`; DELETE body=`{expectedRevision,expectedSceneRevision?}`. 그 외 key는400이다. R3 UI는 항상 현재 observed expectedSceneRevision을 보낸다. 명시 값은0이상 safe integer이며 현재 pointer 및 object revision이 모두 일치해야 변경한다. 과거 row.sceneRevision과 현재 pointer가 다르다는 이유만으로 거절하지 않는다. 성공 시 같은 CAS transaction에서 row.sceneRevision을 해당 current expected 값으로 갱신하며 revision+1/감사/anchor 처리를 수행한다. 이 필드를 생략한 legacy body만 row.sceneRevision을 보수적 expected 값으로 사용하여 pointer가 바뀌었으면409이다. type 재분류는 허용하지 않는다. |
+
+모든 신규/보완 응답은 X-Request-Id, private,no-store,Vary Cookie 및 안전 error code/message를 사용한다. 권한401/403, 미준비503, type 미존재/비활성·SHA/Scene/CAS·idempotency mismatch409, 삭제된 replay410을 구분한다. Reader는 읽기/Show·Hide/Focus만 가능하고 모든 mutation은 서버에서 다시 검사한다. 기존 live100 한도는 그대로이며 Viewer의 완전 snapshot에서 total>100 또는 누락/중복/다른 scope row가 나오면 실패로 표시한다. Page 결과를 전체 Overlay라고 취급하지 않는다. 타입 검색 페이지 변경은 Preview/선택 geometry/Worker를 건드리지 않는다.
+
+### 생성 transaction과 재시도
+
+typed create body를 strict 검증·이름 정규화한 뒤 key를 제외한 mode/SHA/Scene revision/typeId/name/kind/geometry 또는 sourceExport를 결정적 key-order JSON(배열 순서 보존)으로 SHA-256 해시한다. 이 digest는 동일 요청 식별이며 원본 canonical 증명이 아니다. `requestId`는 요청 추적용 서버 ID로 유지하고 Idempotency-Key로 대체하지 않는다. key/digest·raw geometry·이름/설명 전문을 로그에 추가하지 않는다.
+
+1. 현재 Session/도면 쓰기 권한·Version/SHA를 먼저 검사하고 actor+Version+key receipt를 조회한다. 동일 digest receipt가 있으면 현재 권한을 재검사하고 기존 live row의 **현재** DTO를 replay200으로 반환한다. 타입이 비활성화되었거나 Scene revision이 이후 바뀌어도 새 생성/감사를 하지 않는다. 삭제된 row는410, digest 불일치는409이다. 다른 actor의 receipt를 조회하지 않는다.
+2. 최초 요청은 active 타입 및 Scene revision을 검사한다. SOURCE_CANONICAL의 immutable bytes 재조회/서버 canonical CPU 작업 전에 이 preflight를 하고, 최종 쓰기 transaction에서 권한·Version/SHA/Scene·active 타입·동일 key를 다시 검사한다. typed sourceExport에 type ID가 있으면 상위 요청 type ID와 일치해야 한다. export의 typeName은 문법만 검증하고 권위/현재 이름으로 사용하지 않는다. APP_CREATED는 검증된 독립 WCS geometry이며 Source index/Handle 성공 조건을 붙이지 않는다.
+3. 최종 transaction은100개 한도→server UUID row→CadBusinessAudit CREATE→receipt를 하나로 commit한다. 두 요청이 preflight를 함께 통과해도 최종 key 재검사/DB Unique로 하나만 생성된다. replay는 한도 검사보다 먼저 처리하고 receipt·Audit 실패는 객체도 rollback한다. 기존 type-less API 호환 경로는 key 없는 기존 요청도 유지하되 새 typed 경로에서 key를 생략하거나 client UUID를 서버 ID로 채택하지 않는다.
+
+### Viewer와 Tree
+
+Version/SHA/Renderer/attempt 및 인증 주체에 결합한 영속 Outline 상태 Module이 로드/확정/재조회/오류/Abort와 receipt retry 상태를 소유한다. MemoServerMode를 Outline 읽기 허가의 대리 조건으로 쓰지 않는다. Reader도 별도 읽기 상태로 서버 목록을 얻는다. Viewer focus/트리 재열기·명시 새로고침 시 권한과 목록을 재확인하고,401/403/503·계정 전환에서는 서버 목록/강조를 clear한다. 응답 직전에도 request generation/context를 확인해 오래된 응답을 버린다. 같은 context 재조회는 생존 UUID의 hidden state와 선택을 보존하고, Reload/Renderer/Version/계정 변경은 default visible로 재시작한다. TypeManager 저장 성공은 active 선택 목록과 referenced type 이름만 invalidate/refetch하며 hidden/selection/Preview/Canvas를 초기화하지 않는다. metadata retry를 전체 Viewer load epoch나 Renderer 재생성으로 처리하지 않는다.
+
+**Scene revision은 읽기 소유권이 아니라 쓰기 동시성 context다.** 같은 Version/SHA/WCS의 저장된 APP_CREATED는 현재 Scene revision과 row.sceneRevision이 달라도 복원/Overlay/트리/Focus/visibility를 유지한다. SOURCE_CANONICAL은 APP_CREATED의 검증 출처이므로 똑같이 적용하며 Source index 성공을 다시 요구하지 않는다. `storedOutlines.filter(row => row.sceneRevision === currentSceneRevision)` 같은 blanket gate는 제거한다. Source-only reset과 동일 Version/SHA의 Scene 재게시가 기존 업무 geometry·ID/revision/visibility를 변경해서는 안 된다. 실제 Version/SHA/WCS가 다르거나 DTO가 유효하지 않을 때는 차단한다. 이후 mutation은 새로 읽은 현재 expectedSceneRevision과 object CAS를 보내 최종 transaction에서 검사하고, 성공한 mutation만 last-write sceneRevision을 갱신한다. 원본 claim 검증이나 signed runtime identity 검사는 이 정책으로 완화하지 않는다.
+
+typed confirm은 현재 Preview를 캡처해 source mode별 순수 payload를 만든다. SOURCE Preview의 전달용 local ID는 `local-1` 등 transport alias이며 GeneratedDocument에 넣지 않고 canonical export의 baseGeometry/operations[]를 구성한다. 렌더 Preview는 APP_CREATED로 저장하며 preview.persistable=false만으로 배제하거나 true로 바꾸지 않는다. 현재 catalog/Scene/canCreate/선택type가 확인되어야 버튼을 활성화한다. 같은 제출 의도의 key와 payload는 성공 또는 명시적 종료까지 유지하고, 통신 불확실 때 새 key 자동 재발급·자동 새 객체 생성은 금지한다. 권한/충돌 시 Preview를 남기되 재인증/재조회 뒤 명시 재시도하게 한다. 성공 시 반환된 서버 DTO만 추가하고 Preview를 취소하며 local GeneratedDocument/Undo/Source/Worker를 재생성하지 않는다.
+
+Tree의 순수 projection은 `local:<local-id>`와 `server:<uuid>`라는 구분된 item key, `persistence`,typeId/name/active,kind,instanceName,visible,selected를 받는다. 기존 임시 Tree의 delete/Undo는 local key에만 적용하고 server key는 현재 권한·CAS 기반 변경 동작으로 보낸다. 서버 focus는 검증된 geometry bounds→Manager WCS focus 및 별도 SVG highlight로 연결하며 GENERATED CanvasObjectRef로 위장하지 않는다. 그룹 Show/Hide는 해당 local/서버 overlay의 메모리 state만 수정한다. Source Layer·Memo·도구 ON/OFF·Generated selection/Undo와 분리한다. 공용 `MovableViewerPanel`/기존 작업 메뉴를 재사용하고 새 독립 창은 만들지 않는다. 현재 상한의 최대200개 mixed rows에는 스크롤/접근 가능한 키보드 탐색을 사용하며 가상화는 측정 결과가 필요할 때 별도 판단한다.
+
+### JSON projection과 이름
+
+서버에는 type ID만 저장하며 confirm-time type-name snapshot 컬럼을 추가하지 않는다. Tree와 내보내기의 outlineTypeName은 현재 authorized JOIN 결과의 표시 이름을 그 시점 snapshot으로 사용한다. 저장 이후 rename된 타입의 옛 명칭이 영구 재현된다고 주장하지 않는다. 기존 local JSON 동작은 그대로 유지하고, 서버 결과는 기존 트리 안의 **두 명시 동작**으로 validationMode별로 내보낸다. 각 snapshot은 서버100개 한도 안이며 local+server200개를 한 envelope에 합치거나 잘라내지 않는다.
+
+- `SOURCE_CANONICAL` 서버 snapshot은 기존 source-v2 envelope/outlines와 결정적 `local-N` transport alias를 쓴다. 최상위 `exportSource:'SERVER_SNAPSHOT'`, 각 row `serverOutlineId`(고유 UUIDv4)와 `serverInstanceName`(정규화1..100)을 추가한다. typed row는 기존 typeId/typeName/name을 유지하고 name==serverInstanceName이어야 한다. unclassified row는 기존 v2 null triple을 그대로 유지하고, marker-aware import가 serverInstanceName을 브라우저 표시 이름으로 사용한다. 실제 sourceRefs/geometry/kind 외에 가짜 원본 참조를 만들지 않는다.
+- `APP_CREATED` 검증 mode 서버 snapshot은 **기존 `format:'cad-generated-objects',schemaVersion:2`**를 쓴다. 같은 top-level marker와 각 object의 `serverOutlineId`를 추가한다. object.id는 serverOutlineId와 다른 임시 transport UUID, savedOutlineId는 local-N이다. 현재 effective geometry를 baseGeometry/editedGeometry로 평탄화하고 identity affine/operations[]/edited=false/editedAt=null을 사용해 과거 Undo/편집 이력을 꾸미지 않는다. baseResult는 해당 kind, `algorithm:'server-wcs-snapshot-v1'`, `geometryBasis:'RENDER_WCS_2D'`,persistable=false,sourceEntityIds=[],유효한 tolerance/기하를 사용하며 provenance.sourceAttestable=false다. 현재 typeId/typeName/instanceName을 유지하고 visibility는 현재 Viewer의 세션 값일 뿐 DB 정책이 아니다. Source-v2나 기존 지원하지 않는 outline-v3 import로 우회하지 않는다.
+- marker shape는 기존 envelope/row 필드에 위 명시 필드만 추가한 것이다. marker 값이 다른 문자열/null이거나 marker 없이 serverOutlineId/serverInstanceName을 넣은 파일, 중복·잘못된 server UUID, typed 이름 불일치, 해당 envelope의 허용 필드 외 receipt/Idempotency-Key/서버 상태를 넣은 snapshot은 거절한다. marker가 있더라도 기존 Version/SHA/unit/개수/byte·geometry/affine/operations/provenance 검사를 전부 통과해야 한다.
+- import는 **전체 파일 검증 후** marker가 있는 Generated-v2의 모든 객체 UUID를 새 browser UUID로 바꾸고 transport local alias를 브라우저 범위에 배정한다. Source-v2는 기존 legacy import처럼 새 UUID를 발급한다. 반환 `GeneratedRestoreEntry`에는 serverOutlineId/serverInstanceName/marker/receipt를 보관하지 않는다(serverInstanceName은 검증된 일반 name 값으로만 반영). 실패는 기존 Document/Undo를 바꾸지 않는다. marker 없는 기존 사용자 Generated-v2는 #56대로 UUID를 보존한다. 서버 snapshot을 import했다는 사실은 서버 생성 이력·권한·Source 재검증 성공을 뜻하지 않는다.
+
+## R2 #65 — Global Type 서비스/API/Viewer 설계 (구현 전, 2026-10-31)
+
+서버 catalogue service는 `resolveG7RuntimeGate`/정확 public Host, `openG7RuntimeDb`, 기존 `g7GuardedMutation`을 재사용한다. 이 primitive는 현재 runtime-user-management에서도 사용하며 BEGIN IMMEDIATE 안에서 DB-owned Session/User/Role을 조회하고 domain `outlineType:read|manage` global 권한을 검사한다. Site 한정 CAD helper를 global catalogue에 재사용하지 않는다. 초기 User0에서는 bootstrap503을 먼저 반환하여 anonymous capability가 최초 설치에 Audit를 만들지 않는다. request body 수신 뒤 실제 transaction에서 현재 gate/session/role을 재검사하고 mutation 마지막에 gate를 다시 확인한다. POST/PATCH는 기존 csrfProof/requireSessionCsrf 및 G7 writer 활성 조건을 추가한다. 서버 Session/Role 모델을 새로 만들지 않는다.
+
+타입 변경·CAS·OutlineTypeAudit를 같은 동기 SQLite transaction에서 처리한다. authorization denial은 기존 G4 감사, 성공한 CREATE/UPDATE/DEACTIVATE/REACTIVATE는 새 append-only Audit에 actor/typeId/전후 revision/time/requestId만 기록한다. 임의 actor/scope·nameKey는 입력받지 않는다. immutable DB trigger/Unique/FK는 [Database](Database.md)의 latest-only DDL에서 보장한다. 이전 catalogue 없는 baseline은 기능503이며 runtime auto-DDL은 금지다. 글로벌 읽기/관리 권한은 Viewer의 Version/Site 접근권한을 대체하지 않는다.
+
+**공유 DTO/API 계약:** `GlobalOutlineTypeDto`는 `id,name,description,active,sortOrder,revision,createdAt,updatedAt,createdById,updatedById,scope:'GLOBAL'`이다. prototype scopeKey=null과 구분한다. 기존 pure normalization을 공유/명확히 분리하되 preview CRUD 연결은 금지한다.
+
+- GET `/api/outline-types/access`: `{canRead:true,canManage:boolean,writeEnabled:boolean,scope:'GLOBAL'}`. 인증/role/schema 확인 후 metadata만 반환한다. Viewer는 canManage && writeEnabled일 때만 관리 명령을 활성화한다.
+- GET `/api/outline-types`: active만 기본; `includeInactive=true`는 Admin 전용. `q`(trim/NFC/lowercase 이름 부분 문자열, 최대100), `offset`(기본0/정수0..100000), `limit`(기본50/1..100). 불필요/중복 query는400. 정렬 sort_order,name_key,id를 server SQL로 고정하고 SQL parameter로 검색한다. 응답 `{items:GlobalOutlineTypeDto[],total:number,offset:number,limit:number}`. 변경 후 UI는 첫 페이지 재검색한다. list snapshot의 grant 검사를 transaction에서 수행한다.
+- POST `/api/outline-types`: `{name,description?:string|null,sortOrder:number}` →201 `{item:GlobalOutlineTypeDto}`.
+- PATCH `/api/outline-types/[typeId]`: `{expectedRevision:number,name?,description?,sortOrder?,active?}`(변경 필드1개 이상) →200 `{item:GlobalOutlineTypeDto}`. 활성 변경시 DEACTIVATE/REACTIVATE, 나머지는 UPDATE audit. stale revision409, duplicate409, not-found404. DELETE 없음.
+- 오류 `{error:{code,message},requestId}`는 고정 안전 message만. 모든 응답 X-Request-Id/private,no-store/Vary Cookie. 입력 body는 기존 boundedJson 상한 또는 더 작은16KiB, ID UUID 및 unknown keys 거부. 민감 입력·SQL·원시 Error를 logger/응답에 넣지 않는다. RequestLogContext를 사용할 때 새 outline_type_list/create/update/access operation 및 필요한 고정 errorCode를 R1 로그 DTO catalog와 일치시켜 안전한 신규 이벤트가 누락되지 않게 한다.
+
+Viewer는 관리 전용 client component를 tools content override로 사용한다. 기존 tools MovableViewerPanel title/내용만 전환하고 같은 canvas/window lifecycle을 유지한다. capability와 catalogue 요청은 AbortController 및 stale-response guard, 관리 open 시/브라우저 focus 시 재확인한다. 401/403/503 후 관리 쓰기를 disabled/내용 clear하고 사유 표시한다. 관리 close/reload/Renderer·Version 변경 또는 일반 tools command는 override 해제. 타입 입력에는 plain text/labels, 수정/비활성/복구에는 현재 revision,409에는 재조회 안내를 사용한다. Admin 목록은 includeInactive=true로 이름·상태·revision을 보여주며 변경 후 현재 결과를 재조회한다. typed confirm/tree catalogue 소비는 R3로 남긴다.
+
+새 DDL 의존성을 Migrator Dockerfile에 명시 COPY하고 실제 CLI import smoke를 수행한다. 과거 문자열과 baseline은 보존한 채 latest-only business DDL variant와 type DDL을 installer/validator에 조합한다. 새 타입 FK가 없는 과거 DB를 Prisma model만으로 새 schema라고 판단하지 않는다.
+
+## R1 #60/#61/#62 — 운영 로그 조회 설계 (2026-10-31, 구현 전)
+
+`logging/access`는 기존 runtime gate/공개 authority, G4 Session/Role/SpecialGrant 재조회와 Audit을 결합한다. API·SSR 공용 인가이며 G7 OFF/BLOCKED·Audit 오류는 fail-closed. 권한/세션 철회는 각 페이지 및 응답 직전 재검사한다. 기존 Auth DB/Provider를 복제하거나 CAD writer 인가로 logs global 권한을 대신하지 않는다. logs:read 허용/거부 감사는 고정 targetId `logs_read`로 다른 global 권한 검사와 구분한다(기존 Audit enum/Schema 유지). 세션별 제한과 별도 프로세스 전체 admission 상한으로 임의 토큰 교체를 통한 감사 폭증을 제한한다. 구현 상한은 세션 토큰당 분당240회, 프로세스 전체 분당600회의 인가 검사이며 성공한 목록 API는 읽기 전·후 검사로2회를 소비한다. 제한 응답은429/Retry-After60이고 제한 후 추가 감사 쓰기는 하지 않는다. 이 제한은 단일 프로세스 기준이며 분산 quota를 보장하지 않는다. SSR은 저장소 내용을 읽기 전 인가하고, 메뉴 probe도 인가 결과만 사용한다.
+
+`logging/query`는 store 고정 `/data/logs` 경계에서 safe reader를 호출한다. private directory/file mode·symlink/O_NOFOLLOW·fd stat 검증, immutable 크기 기준 read, 부분 마지막 line skip, 파일 인벤토리/scan budget 초과 partial, deadline/abort, ENOENT rotation과 IO 실패를 구분한다. defaults: scan32MiB/16files, line16KiB, scan deadline2초, response256KiB, snapshot1000행/TTL120초/총8개8MiB. 필터 적용 후 bounded sort/snapshot 저장, timestamp+UUID 안정 순서. 인벤토리가 cap을 넘으면 알리고 무제한 readdir/stat 반복을 피한다. 정해진 max보다 큰 개별 row는 skip+counter. 모든 file path는 서버 내부에서만 취급한다.
+
+`GET /api/operations/logs` 성공 DTO: `{items:LogEntryDto[],nextCursor:string|null,sourceCoverage:'app-structured-only',status:'ok'|'disabled'|'partial',skippedLines:number,scanTruncated:boolean}`. 에러 `{error:{code:string},requestId:string}`; 모든 응답 X-Request-Id, Cache-Control private,no-store, Vary Cookie. 금지된 요청에는 source status/counters 없음. Authorization을 먼저 수행한 뒤 query validate/scan; snapshot cursor는 actor/filter/TTL에 결합하고 random opaque 값만 클라이언트에 전달한다. snapshot은 권한을 부여하지 않는다. filter 변경은 새 검색. 누락된 snapshot/rotation 손실은410, scan 제한은 명시 partial. 0행과 store disabled를 구분한다.
+
+`src/server/logging/access.ts`의 `authorizeOperationLogs(request): Promise<void>`는 SSR 공개 계약이다(내부 actor identity helper는 서버 전용). `GET /api/operations/logs/access`는 같은 인가 뒤 `{allowed:true}`만 반환하며 로그 저장소에 접근하지 않는다. 메뉴는 이 capability만 사용한다. `src/proxy.ts`는 정확한 `/operations/logs` matcher로 문서·RSC 직접 진입을 같은 서버 인가로 먼저 검사한다. 설치된 Next16.3.4의 `get-page-static-info.js`는 Proxy가 항상 Node.js runtime임을 명시하므로 runtime segment config나 실험적 auth interrupts 없이 기존 Node Auth/Audit 모듈을 재사용한다. 미인증401·무권한403·비활성/Bootstrap/Audit 장애503·rate429를 정적 안전 안내 HTML 상태로 반환하고 private,no-store 및 Cookie Vary를 적용한다. 429는 Retry-After60이다. 권한 통과 시 NextResponse.next()로 넘기고 page의 기존 재검사도 유지한다. API는 기존 route 검사/응답 직전 재검사를 유지한다. Proxy matcher를 CAD 공개 페이지/API 전체로 확장하지 않는다. 세부 오류·로그 metadata는 HTML에 포함하지 않는다. 이전 HTTP200 거절-shell 허용안은 이 설계로 대체하며 과거 실행 결과는 역사 기록으로 보존한다.
+
+UI는 기존 root navigation에 권한 확인 후 운영 로그 링크를 추가하고 별도 page/client table로 구현한다. 필터 요청과 timeline 요청의 AbortController/요청 순번을 독립 관리한다. timeline은 같은 기간의 requestId/jobId를 서버에 재질의하고 시간 ASC로 표시하며 pagination을 표시한다. React text escaping 외에 서버 catalog DTO 정제가 필수다. ViewerManager/Adapter는 import하거나 재생성하지 않는다. 새 schema/migration/Compose volume/G7 기본값 변경 없음.
+
+## #58/#59 Observability L2+L3 (2026-10-31)
+
+RequestLogContext and new JobLogContext reuse #57 writeLog. One optional best-effort queue writes only L1 sanitized app events to private /data/logs JSONL, without any SQLite business log table or changes to CAD, Auth, G7 and original Docker stdout/stderr. Writers use separate UUID-identified files, file and total size limits, mode 0700/0600 and an internal read-only bounded tail interface; no user-controlled file path, Docker socket or HTTP read. Design and concurrency limitations: [Issues58-59](Issues58-59.md).
+
+---
+
+## #55/#56 브라우저 세션 편집 아키텍처 (2026-10-31)
+
+1. `SelectionController`는 E1 Origin/Scope/UUID 선택 집합을 소유한다. `GeneratedDocument`는 E2~E5 단일 권위 메모리 모델이다. `getGeneratedObjects` / Outline Tree / 기존 SavedOutlines는 projection이며 별도 복제 상태가 없다.
+2. E5 Numeric Form은 `selectedRotation → parseWcsRotation → ViewerManager → ThreeDxfViewerAdapter.executeGeneratedCommand → GeneratedDocument.execute`를 이용한다. 그룹 Pivot은 WCS XY 전체 bbox 중심, 수동 좌표로 재지정 가능. Canvas ↻ Handle은 지정된 Pointer의 Ghost 임시 THREE Group과 문서 Pending만 소유하며 release 전에 geometry를 확정하지 않는다. Undo/Redo 단일 History와 GPU 자원 release는 E2/E3 기존 계약.
+3. E6 `buildGeneratedTransfer → 브라우저 Blob`와 `File.text/JSON.parse → parseGeneratedTransfer → replaceFromImport`는 파일 범위 검증, 유일 UUID/ID, 세션 Scope, 기하 타입·닫힘·면적·좌표, 회전/이동 op 재합성, 정확 Affine 및 editedGeometry 동등성, 개수/정점/64연산 상한을 적용한다. **모든 행을 새 배열로 사전 생성한 후** 원자 교체하고 Undo/Redo/Pending을 비운다. Import 실패는 기존 Document를 한 글자도 수정하지 않는다.
+4. v1 및 typed v2의 기존 Source-only 파일은 별도 `parseOutlineExport`의 안정적 Handle 검증을 먼저 통과한 경우에만 새 Browser UUID를 부여한다. 브라우저 APP_CREATED v2는 Server canonical/Source attestation의 근거가 아님. 오염·영속화 오해 차단.
+5. 메뉴는 #127 `도면` 그룹에 Import/Export, 회전 컨트롤은 #138 `작업 → 선택·편집 도구` 기존 이동 패널 내부. 다른 DXF Renderer/DWG는 API가 노출되지 않으며 `getGeneratedTransfer/importGeneratedTransfer`는 ViewerManager의 optional adapter method.
+
+**권한**: Server-auth/API/DB/Migration/Current/원본 Source/Scene Asset 불변. 브라우저 파일은 사용자 단말에서만 처리되고 `#97/#98` 서버 독립 검증·권한/감사는 별도. [상세](Issues55-56.md).
+
+---
+
+## PR #177 Viewer modal nesting architecture — #127 preserved by #138 (2026-10-31)
+
+- ViewerAppShell is authoritative for the top-level modalOverlay and drawer inert lifecycle. A generated-delete alertdialog supersedes any compact Drawer. Shared MovableViewerPanel receives modalBlocked from shell; the ARIA modal flag is only set on the active compact panel when no modalOverlay exists. The existing shell effect still applies inert to all drawers, and unwinds it when confirmation closes. Applies to Layer, Outline, Memo, Tools and TEXT search. This is UI accessibility state, never CAD WCS, SQLite/Prisma, Source or Renderer work.
+- Exact failing evidence Run 41163195588 TC-127-DRAWER. Updated E2E asserts suppression and restoration. Other Reader/Editor permissions and production Auth/Writer gates unchanged.
+
+---
+
+## #139/#138/#137 Viewer 증분 아키텍처 (2026-10-31)
+
+text-index.ts는 UTF-8/CP949 결정에 HEADER group code(9/1/3)를 사용하고 client-side Worker read-only 색인 및 원본 file/Scene/renderer 분리를 유지한다. ViewerAppShell은 동일 Canvas/Manager/Source를 고정하고 layer/outline/memo/tools 및 검색에 공통 MovableViewerPanel을 workspace sibling으로 적용한다. CadTextSearch parent 상태(index/query/selection)는 open=false에도 보존되며, close는 자식 floating panel에만 적용된다. ViewerMenuBar의 독립 홈 앵커는 CadViewer.confirmDiscard로 클라이언트 미저장 이탈을 보호한다. DB/API/Prisma/Auth/G7 불변. [Issues137-139](Issues137-139.md).
+
+---
+
+## #88/#90 Memo link→global search 설계 (2026-10-31)
+
+Viewer는 고정 Version/SHA+인증 GET을 DXF 렌더 준비 후 다시 검증해 기존 M4 WCS focus/Tree highlight를 적용한다. 서버 `/api/cad-memos/search`는 G7 session/Reader/SiteGrant/signed Site 검사 후 Memo→Version→Location→Site의 parameterized SQL 조인, Current-only 기본/과거 Version 옵션, 안전한 DTO만 반환한다. CAD 원본 파싱/Current 변경/FTS/마이그레이션 없음. 상세 [Issues88-90](Issues88-90.md).
+
+---
+
+## #85/#86 M4/M5 (2026-10-31)
+
+Memo Tree's session-only whole/group/item visibility stays outside canonical M2/M3 persistence. Group CRUD, explicit saved visibility and M5 optional dates/completion are scoped CadMemoGroup/CadMemoFeature sidecars, using authenticated Memo owner+Version/SHA+CAS/Audit. No WCS/Anchor/Outline/Scene mutation. [Spec](Issues85-86.md).
+
+---
+
+## #84 M3 — Client Session Snap vs Server CadMemoAnchor separation (2026-10-31)
+
+- Browser-only `MemoSessionSnapStore`는 WCS 후보 탐색 및 target local anchor의 Affine 투영/리셋을 소유한다. GeneratedDocument와 SceneWorkDocument는 기존의 변경/Undo/Redo 주체이고 `ViewerManager.getMemoSnapTargets`는 read-only 검증된 2D geometry ref/transform만 제공한다. MemoSession의 canonical persisted Memo는 복제하지 않고 별도 projection으로 Canvas 핀만 이동한다. 삭제/Undo 시 원래 stable ID로만 복원, 같은 Scope의 다른 ID에 재스냅 금지.
+- Server `CadMemoAnchor`는 작성자·Site·CAS 및 영속 UUID/source canonical provenance를 통과한 실제 객체만 소유. 새 브라우저 렌더 객체 ID는 서버 신뢰 인풋이 아니라서 전송 금지. PIN 임시 이동이 서버에 반영되려면 명시적인 Memo PATCH move 성공이 필요; 해당 시 FREE WCS만 저장.
+- SOURCE_ONLY SessionWork reset에서 RENDER 세션 관계를 강제로 BROKEN(last WCS); APP_CREATED 관계는 유지. ALL 초기화 후 브라우저 관계를 삭제. 새로고침/Renderer/Version은 Store destroy. [Design](Issues84-167.md).
+
+---
+
+## #84/#167 — Memo Anchor and Origin-aware Scene Reset Architecture (2026-10-31)
+
+새 `CadMemoAnchor`는 `CadMemo`의 1:1 외부 관계이며 기존 FREE 좌표/텍스트 계약을 유지한다. Server-side permission→Version/SHA/CurrentScene revision→Memo Owner/Outline Target→CAS→Audit transaction 경로를 재사용한다. Outline 변형/삭제 시 종속 Memo의 세계 좌표 또는 BROKEN 상태를 동일 DB transaction으로 처리하고 마지막 정상 WCS를 보존한다.
+
+S6 SOURCE_ONLY는 imported SceneWork 변형/Undo/visibility를 원상복원하고 APP_CREATED 데이터 불변. ALL은 exact expectedRevision snapshot을 서버에서 완전 대조해 Memo와 Outline을 Soft Delete+Audit, READY Scene와 원본 DXF, Current Version은 불변. 신규 Schema는 v0.47.2 empty Greenfield 한정이며 #172 Owner 정책은 열려 있다. [Full design](Issues84-167.md).
+
+---
+
+## #98/#83 — WCS 업무 데이터·G7 영속 아키텍처 (2026-10-30)
+
+[상세 설계](Issues98-83.md). Canvas M1/GeneratedDocument ↔ 브라우저 명시 CRUD → Next Route → G7 ACTIVE Site Scope/Session/CSRF → SQLite Object CAS + Append-only Business Audit. 신규 GET은 G7 ACTIVE+Version/site 권한을 강제한다. 원본 Scene은 immutable reference; APP_CREATED independent geometry, 정확 SOURCE only 서버 immutable DXF SHA/Handle attestation. 원본과 독립 typed/reload overlay이며 로컬 Undo가 DB 변경을 보장하지 않는다. 새 빈 Greenfield DDL만 별도 exact allowlist로 검증; 이전 baseline은 그대로 보존.
+
+---
+
+## #166 Scene S5 — 일반 렌더 작업과 정밀 원본 작업 분리 (2026-10-30, 구현 전)
+
+- **선택 경계:** 기존 `SelectionController`의 Click/Box/modifier/공간 index를 재사용하되 mode `render`는 Scene projection, `select`는 검증된 원본 index만 소비한다. `objects`는 RENDER+GENERATED, `generated`는 GENERATED만 사용한다. Canvas RENDER ref는 검증된 DXF_IMPORTED Scene ref를 가리키며 Object3D.uuid↔Stable ID lookup을 Adapter lifetime에서 구성/폐기한다. Scope/Scene identity 검사 없는 ref와 renderer metadata의 추정 Handle은 거부한다.
+- **두 index:** 일반 render index는 source Worker 전후 독립 구성한다. source index/coverage 실패는 exact mode만 unavailable로 만든다. READY Scene은 mappedSource=0이며 renderEntityCount를 별도 보고한다. 렌더 작업 변환 뒤 원본 WCS index가 화면과 달라지므로 nonidentity 작업 변환 또는 작업 숨김 차분이 남아 있으면 exact source mode는 fail-closed하고 Undo로 baseline 복귀 시에만 다시 허용한다. `OutlineInfo`에는 renderEntityCount/exactSourceEntityCount/sourceUnavailableReason를 추가하고 기존 entityCount는 원본 대응 수 의미를 유지한다.
+- **기하 경계:** `scene-projection.ts`는 index/drawRange와 matrixWorld를 적용한 유한 WCS XY 평면 primitive만 받아들인다. 비평면/Points·미지원 타입/퇴화·수치 한도는 명시 제외한다. 다중 material/group 범위와 geometry를 가진 부모의 중첩 변환은 정확히 지원하지 못하면 명시 제외하고 drawRange 정수 경계를 검증한다. 여러 원본을 합친 하나의 geometry는 하나의 렌더 선택 단위이다. 검증된 폐영역/hole의 PRECISE와 점집합의 CONVEX 계산을 기존 계산 모듈에 연결한다. 결과 `geometryBasis=RENDER_WCS_2D`, `persistable=false`, sourceEntityIds는 비어도 유효하며 선택적 derivedFrom만 Scene 유래를 표현한다. strict source parser/서버 canonical 검증에는 이 결과를 입력할 수 없다.
+- **작업 차분:** 순수 `domain/scene-work.ts`가 immutable baseline+별도 visibility/affine delta와 bounded Undo/Redo를 소유한다. Adapter는 base local matrix에 WCS affine를 투영하며 object buffers/기준 asset/artifact를 변경하지 않는다. 재직렬화 저장은 기존 immutable snapshot bytes를 사용한다. Layer visibility와 작업 visibility는 AND로 계산한다. hidden 객체 복원은 세션 작업 상태의 Stable ID 목록으로 가능하다. 비유한 값/외부 scope/중복/잘못된 ID/혼합 Origin은 명령 전체 거절한다.
+- **기존 업무 모듈:** APP_CREATED는 GeneratedDocument를 단일 기준으로 유지하고 sourceEntityIds 필수 규칙을 render-basis 결과에만 완화한다. 엄격 source export envelope/attestation은 그대로; render-basis browser JSON은 별도 판별자/검증 경계에서 소비한다. 기존 Tree/선택/강조/Export는 동일 Document 투영, 자유 WCS MemoSession은 독립. #84 연결 anchor 구현 부재를 숨기지 않는다.
+- **UI/수명:** root Viewer API façade가 `getSceneWorkState`, `executeSceneWorkCommand`, `undoSceneWork`, `redoSceneWork`를 노출한다. #127 그룹 메뉴/#138 panel 안에서 기본 렌더/명시 정밀 모드와 선택 단위·불가 이유를 표시한다. OrbitControls modifier+ROTATE가 Pan으로 전환되는 설치본 동작을 고려해 선택 모드에서는 enablePan을 끄고 Space/탐색 모드에서만 켠다. 모드/Layer 변경 때 preview/staged command를 취소하고 전환/reload/dispose에서 선택·Worker·ID map·차분 history를 폐기한다. 신규 DB/서버 저장/API 또는 Source 바이트 수정은 없다.
+
+분업: root는 façade/UI/E2E·릴리스 문서, 지정 Developer는 domain/Three Adapter/controller/projection·Unit, Manager는 사전 요구·설계·TC와 보고 검토, 구현 동결 뒤 지정 QA는 독립 시험·문서 증거를 담당한다.
+
+---
+
+## #164/#165 Scene 영속화와 정상 로더 통합 설계 (2026-10-30, 구현 전)
+
+1. **생성 경계:** 최초/명시 재생성에서만 브라우저 Three converter를 실행한다. #168의 custom DTO와 Scene identity/tag를 재사용하고 문자 검색·레이어·표시용 메타데이터는 같은 digest로 보호되는 allowlist sidecar에 저장한다. 원본 DXF text/parser 객체·외부 URL·APP_CREATED/Memo/선택 overlay를 기준 blob에 넣지 않는다. 정확 Handle 매핑 없는 sidecar는 정밀 source attestation으로 사용하지 않는다.
+2. **검증 경계:** 서버는 payload 크기·JSON depth/shape·수치·attribute typed array·domain ID/Origin·중복·참조·scope/format/schema/builder/renderer/frame을 검증한다. 실제 Version의 source SHA를 DB에서 읽어 비교하며 클라이언트 manifest를 trusted expectation으로 쓰지 않는다. browser restore도 independently expected manifest/bytes를 대조한다. 서버에서 DOM/WebGL converter를 실행하지 않는다.
+3. **영속 경계:** 파일 bytes는 exclusive immutable local object 또는 conditional S3 object, metadata/current pointer는 SQLite로 분리한다. prepare 및 readback digest/size verify는 writer transaction 전에 수행한다. transaction에서 최신 권한·Version/source·expected revision을 재검증하고 Asset metadata+pointer CAS+SCENE_PUBLISHED Audit을 함께 commit한다. 이전 READY를 BUILDING으로 덮지 않는다. 동일 retry는 정의된 identity/revision에 한해 멱등, stale 경쟁자는 409. 불확실 commit/PUT 실패 후 기존 blob이나 새 참조 가능 blob을 추측 삭제하지 않는다.
+4. **실패와 수명:** 참조 없는 후보 blob은 실패 코드/재시도 추적 대상으로 남기며 GC는 reference 재확인+유예를 요구한다. 본 PR은 자동 sweep/기존 원본 삭제를 하지 않는다. 새 asset 실패는 APP_CREATED/Memo에 쓰기를 하지 않는다. 버전 삭제와 asset cleanup 관계는 Database에서 명시하며 임의 cascade 업무 삭제 금지.
+5. **권한:** 신규 Scene 쓰기는 기존 G7 proof가 반드시 존재해야 하며 cad:upload 권한을 실제 Version Site에 적용한다. Audit은 기존 append-only 경로의 명시 SCENE_PUBLISHED action으로 원자 기록한다. AUTH 활성 읽기는 기존 Session+cad:read/Version Site 정책, 비활성 읽기는 현행 공개 CAD read 정책을 따른다. 비활성 쓰기를 기존 익명 업로드 호환 경로로 우회하지 않는다.
+6. **Viewer:** ViewerSource/Manager가 READY_SCENE과 명시 원본 생성·legacy 전략을 구분한다. READY는 Scene manifest/blob만 요청하고 converter와 outline DXF Worker를 시작하지 않는다. restore 후 Layer/Camera/Text/Scene ID를 초기화한다. Source parser 기반 기능은 S5/명시 진단 전 구체적 미지원 이유를 반환한다. missing/손상/비호환에서 자동 fallback하지 않으며 사용자가 dxf-viewer를 선택하면 기존 원본 경로를 사용할 수 있음을 표시한다.
+7. **업무 객체:** GeneratedDocument/메모의 기존 독립 세션 및 domain refs는 보존한다. #98/#83 영속 API는 이번 구현에 추가하지 않으며 APP_CREATED 재접속 복원은 PENDING이다. future provider seam은 Scene blob과 분리하며 빈 서버 목록을 영속화 성공으로 주장하지 않는다.
+8. **Schema/기동:** 신규 정확 Greenfield baseline은 별도 version/fingerprint로 식별한다. 구 정확 baseline은 별도 호환 판정하며 Scene schema 부재를 명시 상태로 다룬다. 알려지지 않은 테이블을 허용해 fingerprint를 완화하지 않는다. migration과 신규 빈 DB 설치는 격리 임시 DB만 시험; 라이브 marker/DB 변경·운영 활성화 없음.
+
+기존 S0/S1 계약은 그대로이며 아래 S3 후속 문단의 구현 순서 중 Scene 저장/로더 부분을 이번 PR로 진행한다. DB 필드·제약의 단일 기준은 [Database](Database.md), 실행 결과는 [TestReport](TestReport.md)이다.
+
+---
+
+## #161–#163 Scene 도메인 및 격리 직렬화 설계 (2026-10-30, 구현 전)
+
+현행 흐름은 CadFileVersion(ID+원본 byte SHA) → ViewerManager → ThreeDxfViewerAdapter.getFromPath → Three object이며, GeneratedDocument는 별도 UUID·WCS geometry/affine/Undo를 소유한다. MemoSession은 별도 WCS 메모 세션이다. 새 도메인은 브라우저/Three import가 없는 순수 모듈로 둔다. Adapter wrapper만 Three tree를 도메인 Ref로 연결하고, renderer 자체는 수정하지 않는다.
+
+- **식별:** SceneAsset identity는 Version/source SHA와 정확 builder/renderer/schema/frame에 바인딩한다. 각 DXF_IMPORTED ID는 Scene identity + 명시 변환 tree 경로에서 결정적으로 부여하며 변환 결과 tree 경로 대응표를 blob에 보존한다. 이는 원본 Entity Handle 동일성을 보증하지 않는다. 반복 INSERT·병합 그룹·handle 누락에도 경로별 ID를 발급하며 Object3D.uuid와 분리한다. 다른 builder/schema는 새 Scene identity를 요구한다. APP_CREATED는 기존 앱 CSPRNG UUID를 별도 namespace로 사용, generated local-N은 기존 JSON 표시 호환키로만 남긴다.
+- **Origin:** DXF_IMPORTED/APP_CREATED는 생성 주체이며 readonly + runtime 검증으로 보호한다. sourceRef는 확인된 정밀 Entity 연결, derivedFrom은 선택적 유래 참조이다. 현재 schema 1은 동일 scope의 DXF_IMPORTED ID를 유래로 검증하며 APP_CREATED 간 계보나 다른 Scene 대응표는 후속 schema로 확장한다. 계산 외곽선과 복제 결과는 APP_CREATED이다. SOURCE/GENERATED Canvas DTO는 기존 동작과 함께 명시 변환한다. 이번에는 일반 Render-object 선택 UI/편집 정책을 활성화하지 않는다(S5).
+- **분리:** 기준 DXF Scene blob에는 DXF_IMPORTED만 포함한다. helper/selection/highlight/generated overlay/Memo를 합치지 않는다. SceneObject working transform/visibility/revision은 immutable 기준 Scene에 대한 별도 차분이다. AppObject는 자체 ID·WCS geometry·revision·선택적 type/outline 연계가 권위이며 캐시 재생성으로 삭제되지 않는다.
+- **검증·복원:** trusted manifest 기대치와 bytes digest/크기, schema/format/builder/renderer/source/version/frame를 먼저 비교한다. JSON shape/metadata/고유 IDs/Origin/finite transform·geometry를 제한하고 외부 texture/image URL이나 실행 자원을 로드하지 않는다. 손상은 FAILED, 호환성 불일치는 REBUILD_REQUIRED로 표현하고 원본 fallback/재생성/업무자료 삭제를 자동 수행하지 않는다. byte SHA는 손상/identity 검사이며 인증·서명이 아니다.
+- **수명/Reset:** 원본 DXF는 현행 Version 삭제 정책으로 보존한다. 기준 Scene은 immutable 교체; working delta는 Scene revision CAS로 별도 관리. 화면 제거는 GPU/selection/index 정리일 뿐 업무 삭제가 아니다. A reset은 DXF 유래 Scene/delta만 재구축, APP_CREATED·독립 Memo WCS 보존; 재연결 불가 대상은 BROKEN_ANCHOR로 남기고 추측 재부착 금지. B reset은 사용자가 지정한 APP_CREATED/Memo 범위까지 soft-delete+Audit/CAS 거래가 필요하며 이번에는 계약만 정의한다. Undo는 Scene revision에 귀속되고 reset 뒤 옛 scene 편집을 재적용하지 않는다.
+- **S3 후속:** BUILDING→READY 게시 시 immutable bytes write+verify 후 manifest/expectedWorkingRevision CAS와 독립 업무 객체 참조 변경을 원자 처리한다. 중간 실패는 이전 READY 유지, orphan artifact는 참조 없는 경우에만 유예 GC. cache TTL은 DB 업무 데이터 TTL이 아니며 원본/APP_CREATED/Memo를 지우지 않는다. 요청별 #96 Role/Site/Version/Auth/CSRF/Audit 재검증, #98 Outline CRUD·#83 Memo API 재사용; #65 type, #73 tree, #56 JSON은 소비자이다. 신규 경쟁 DB/API는 만들지 않는다.
+
+PoC는 테스트 전용 Browser harness로 실제 npm converter와 세 포맷 exporter/loader를 실행한다. 별도 컨텍스트 복원은 생성 context 종료 후 bytes/manifest만 전달한다. WebGL adapter 의존성을 서버 SSR로 옮기지 않으며 CPU-only 생성은 실제 Node 실험 또는 미지원 판정을 기록한다. 소프트웨어 WebGL 결과는 실 GPU 성능 수용이 아니다.
+
+### #161–#163 구현 확인 보충 (2026-10-30)
+
+`src/domain/cad-scene.ts`가 순수 scope/ref/asset/manifest와 WCS App geometry 계약의 기준이다. `scene-tags.ts`는 실제 adapter가 `getFromPath`를 마친 직후 tree occurrence별 ID를 적용한다. `GeneratedDocument`는 같은 source unit scope의 APP_CREATED ID를 생성 시 1회 발급하고 history/visibility에서 보존한다. Tagging의 BUILDING은 아직 byte artifact가 없다는 뜻이며 S2 serializer가 별도 READY payload/manifest를 생성한다. READY는 **메모리 실험 후보**이며 S3 DB 게시 완료를 뜻하지 않는다. 기준 artifact revision은 working delta CAS revision과 별개이다.
+
+S2 JSON restore는 trusted expectation/manifest/digest/length/shape/정확 ref/geometry/material 참조와 외부 자원 금지를 검사한 뒤 ObjectLoader를 호출한다. Custom DTO는 지원하는 Group/Object3D/Line/LineSegments/LineLoop/Mesh/Points/Sprite + BufferAttribute/material allowlist를 명시 재구축한다. GLB는 비교 후보이며 동일 검증 envelope의 운영 로더가 아니다. 원본 Entity Handle은 tree ID의 의미가 아니며 sourceRef는 확실한 원본 매핑이 있을 때만 부여한다. 기본 adapter 태깅은 어떤 handle도 추측해 sourceRef로 기록하지 않는다.
+
+---
+
+## #109 자동 Greenfield 설치 아키텍처 — ADR-058 (2026-10-30, 0.44.2 후보)
+
+**경로:** 일반 `src/docker-compose.yml`의 `migrate`(one-shot, 동일 /data 볼륨) → `ensureAutomatedGreenfield()` → 미개설 DB에서 검토된 G7 최종 Schema와 단일 baseline·삭제 암호 트리거 작성 → 0600 최초 설정 코드 → 0600 release/설치 marker **마지막 작성** → `app:3000` 기동. Marker가 있으면 동일 이미지·버전·Source 설정·Schema fingerprint/DB FK, UID/경로·보안 모드를 검증하고 데이터 변경 없이 재개. Marker가 없는데 DB/CAD/디렉터리에 파일이 있으면 설치 실패. 기존 `deploy.ts` 6개 레거시 Migration은 이 경로에서 실행하지 않는다.
+
+**신뢰 분리:** (1) 로컬 소유자의 신규 빈 볼륨 선택, (2) 컨테이너 App/Migrator 이미지 참조·서버 패키지 버전 일치와 설치 marker, (3) 매 요청 실 DB final Schema·HOLD/권한 검증, (4) 최초 관리자 Host 코드·CSRF 및 G2 DB 유일성 거래, (5) 일반 G3 로그인·Role/Site Grant·CAD write+Audit 거래. 전 단계 **fail-closed**. 단순 환경변수 true나 임의 HTTP 계정정보로 기존 DB를 활성화할 수 없다. 참조 일치는 실제 OCI digest 출처의 독립적 증명이 아니므로 운영자는 Registry/호스트의 이미지 digest를 확인해야 한다.
+
+**수명주기:** 이전 Owner-signed mode의 24h 승인기간을 일반 **Self-hosted Greenfield** 계정 기능의 TTL로 재사용하지 않는다. 설치 Identity·Schema는 배포 일관성 검증에 사용하고, 사용자 세션은 기존 8h absolute/30m idle/3개 제한, 일회용 로그인 CSRF, Password/Role/Site revoke는 서버 DB로 재검사한다. ADMIN은 Site0에서도 전역 사용자 관리/사업장 생성 가능하지만 CAD 권한은 사용자에게 Site를 별도 부여한 후 가능. 새 Site는 DB 기준 매 요청 동적 스코프로만 확인되며 클라이언트 주장·Forwarded ID가 근거가 되지 않는다.
+
+**웹 설정:** GET `/api/g7-runtime/setup`은 15분 CSRF HMAC+HttpOnly SameSite cookie만 발행; POST는 정확 Host/Origin, CSRF, UID=10001 0600 설치 코드(1h), 영속 횟수 제한 후 기존 G2 BEGIN IMMEDIATE가 User+Admin Role+Audit를 원자 기록. 1명 등록 후 User 존재 검사로 코드·화면 재사용 금지. 이전 `/api/g7-runtime/auth|users|access`와 Prisma CAD 보호를 변경 없이 사용한다. 코드 복구는 user 0일 때 명시 Docker 운영 명령만 허용한다. 운영 로그에 code/password를 출력하지 않는다.
+
+**호환성 경계:** 구 `src/docker-compose.greenfield.yml` 및 독립 서명 Owner 승인 도구는 Expert/역사 경로로 잔존. 일반 Compose로 이전 데이터·기존 Docker volume을 마운트하거나 SQLite를 열어 이관하지 않는다. 정상 재시작 외의 버전 교체는 controlled change이며 자동 이미지 갱신으로 기존 데이터에 다른 스키마를 적용하지 않는다.
+
+---
+
+## #153 Greenfield 아키텍처 (2026-10-29, 현행)
+
+신규 `docker-compose.greenfield.yml`은 독립 볼륨/컨테이너/포트를 사용한다. 기존 DB·HOLD·CAD 원본·S3 객체·과거 Snapshot은 참조하지 않는다. 구 자동 Migrator는 Greenfield 모드에서 거부된다. 별도 Owner가 보관한 DXF는 시스템 가동 후 새로 등록한다.
+
+전용 설치 명령은 검토된 CAD/Auth 최종 DDL을 빈 메모리 DB에서 구성해 새 SQLite 파일에 DDL만 생성하고 단일 `greenfield_baseline` 이력을 기록한다. 기존 Migration 이력·데이터를 재생하지 않는다. Runtime은 SQL fingerprint, 삭제비밀번호 보호 트리거, FK 및 무결성을 검증한다. Owner Greenfield 승인에는 현재 App/Migrator 릴리스, Origin, Site, Auth/CAD_WRITE Scope, 기한만 결합하며 이전 rollback OCI/SNAP/Epoch 필드는 없다. 기존 세션·Role/Site·Audit·Origin/CSRF 검사는 재사용한다.
+
+# Architecture 초안
+
+## #153 — Runtime 신뢰 경계와 기존 서비스 통합 (2026-10-29)
+
+`runtime-gate.ts`는 로컬 독립 Trust 파일과 Owner Ed25519 서명 승인, 설치 버전/Release Identity, 실제 7개 Migration 및 Schema를 검증한다. pure `preflight.ts`/`s3-5-owner-decision.ts`의 비활성 결과는 그대로 보존한다. Runtime API는 별도 `/api/g7-runtime/**`, 기존 Preview/Staging 쿠키·경로와 분리하며 G2/G3/G4 서비스·SQLite 저장소를 재사용한다. 프록시 내부 bind URL 대신 승인된 공개 Host를 검증한다.
+
+CAD는 기존 Route → Service → Prisma Repository → 저장소 흐름과 보상·삭제 작업을 보존한다. 거래 안에서 현재 Session/Role/Site/Version 소속·Runtime Scope를 재검사하고 업무 변경+Audit를 원자 Commit한다. 익명 CAD GET은 계속 분리한다. 관리·쓰기 UI는 서버 검증을 보조하며 권한 근거가 아니다. 실제 이미지 출처는 현장 Owner가 검증해 독립 Trust를 배치해야 하며, 이 코드는 OCI 실행 신원을 스스로 증명하지 않는다.
+
+승인된 Site ID의 존재는 Runtime 신뢰 검사로 유지하고, `CadSite.active`는 개별 업무 상태로 분리한다. Runtime CAD 거래와 최종 Audit 직전, Runtime 전용 G4 permit에서 대상 Site 활성 여부를 검사한다. Admin 기준정보 권한은 비활성 Site에도 유효하여 같은 경로로 재활성화할 수 있다. Preview의 기존 G4 계약은 변경하지 않는다.
+
+Migration/Restore 실행 잠금은 영속 private SQLite sidecar의 exclusive transaction으로 프로세스 수명에 묶는다. lock inode를 unlink하지 않아 contender 간 재생성 경쟁을 피한다. 원자 HOLD에 승인/Snapshot/Epoch identity를 보존하여 Snapshot 완성 전 중단도 같은 승인·검증된 여섯 Schema에서 재개한다. 자식 Prisma와 구형 marker의 유지보수 조건은 실행 Runbook을 단일 기준으로 한다.
+
+## #154 S3-5-R0 — 오프라인 릴리스 단위 Owner 결정 구조 (2026-10-28)
+
+- 신뢰 레이어: 합성 B2-5 Packet(17개 미신뢰 주장) → 사내 C0 Ed25519 Owner·QA 영수증 Bytes/SHA 서명 → **S3-5-R0 Release Owner 결정 서명**. R0은 기존 `assessS34COwnerManagedBinding`를 다시 실행하고, 사내 승인된 별도 Release/Scope Identity를 입력으로 받아 C0의 Source+Rollback Source/Schema/OCI 4 Role·Version/SNAP/Epoch/CR을 릴리스별 GO 주장과 1:1 대조한다. 메시지는 C0 서명 쌍+Canonical Statement SHA-256로 연결한다.
+- 키/Source 진위와 실제 현장 복원 증명은 Owner가 외부 비반출로 관리하며 프로그램이 확인 가능한 것은 **메모리 내 주어진 서명/바이트와 Key의 정합성**. Good Output도 `LOCAL_RELEASE_DECISION_CONSISTENT_NOT_ACTIVATED`, 운영 허가·Release Verified·Auth/CAD Write·runtimeActivated 모두 false.
+- 모듈은 pure Node Crypto 함수로 Production Route/Auth/DB/Prisma/S3/OCI/Docker/환경변수/파일 I/O에 연결하지 않는다. Owner 보고(`OWNER_ATTESTED_FIELD_ACCEPTANCE_COMPLETE`)와 외부 미검증(`NOT_EXTERNALLY_VERIFIED`)을 구분하고 운영 S3-5 GO는 #153 별도. [Runbook](../src/deploy/g7-s3/S3-5.md).
+
+## #151 S3-4-C0 — 현장 격리 Owner Managed Trust Binder 계층 (2026-10-28)
+
+- Stage A/B2: `assessS34Readiness`, `assessS34B25DisposableEvidence`는 **미신뢰 서류/EV·QA·SNAP 주장 정합성** 검사다. Stage C0의 `assessS34COwnerManagedBinding`은 현장 **내부로 반입된 순수 코드**에서 작은 검증 영수증(Uint8Array)의 SHA-256 및 사이트 사전 신뢰 Owner/QA Ed25519 Public Key 2개로 서명의 바이트 무결성을 검사한다. Trust Anchors는 입력 Packet이 아닌 별도 사내 승인 저장소에서 주입한다.
+- 출력: `BLOCKED/PENDING/LOCAL_SIGNED_RECEIPTS_CONSISTENT_NOT_SITE_GO`와 고정 Reason/건수뿐. 공개 컴포넌트·서버 API·Prisma·Docker·OCI/S3 네트워크/파일 조회는 없음. 현장 원본/키/실 EV·QA·SNAP/해시/실 서명·개인 ID는 GitHub/ChatGPT/CI로 반출 금지.
+- 17개 증거 영수증의 일치와 두 서명은 **신고된 바이트의 서명 정합성**일 뿐, 독립 Human QA의 수행·실 Registry 인증/Writer Zero/동일 SQLite·CAD·S3 Snapshot·물리 Restore+Rollback을 자동 입증하지 않는다. Owner Managed 현장 수용은 사내 독립 검증·승인 정책에 따라 실제 수행되어야 하며 S3-4-C trusted release binding/S3-5 GO는 이후 별도.
+- #142 B2-5 [Main `8ea0a3088e3d`](https://github.com/planner77/layoutManager/commit/8ea0a3088e3dc10ae340cf5a095375f626519e1e) / [Main CI 40636610114](https://github.com/planner77/layoutManager/actions/runs/40636610114) SUCCESS·GHCR SKIPPED는 합성 기능 완료일 뿐 현장 수용 미확인. [Runbook](../src/deploy/g7-s3/S3-4-C.md), [Issue #151](https://github.com/planner77/layoutManager/issues/151) 필수 참조.
+
+## #142 B2-5 — 격리 EV/QA/SNAP 교차검증 구조 (2026-10-28)
+
+- 운영 라우트와 독립된 Pure src/server/g7-operational/s3-4-b2-5.ts는 기존 S3-4-A readiness 주장과 별도의 합성 QA Ledger를 결합한다. 정확 17개 체크, 네 이미지 Digest/Source/Schema, SNAP/UTC/EV/QA의 참조 일치만 검증; DB/Registry/Prisma/Docker/File/Network I/O는 없다.
+- Trust boundary: 두 자가 제공 Packet이 서로 일치해도 independent reviewer, 실제 site snapshot, OCI provenance, physical rollback이 검증되는 것은 아니다. DISPOSABLE_EVIDENCE_RECONCILED_NOT_SITE_PROOF 결과의 운영/실증 플래그 항상 false.
+- 현행 CAD/메모 M1와 활성 Prisma/Compose/Nginx 코드는 그대로 유지. Runbook: src/deploy/g7-s3/S3-4-B2-5.md.
+
+## #142 B2-4 — OCI·Snapshot·DB/CAD/S3 Replay 교차검증 아키텍처 (2026-10-28)
+
+- `src/server/g7-operational/s3-4-b2-4.ts`는 **별도 제공된 Buffers만** 처리하는 순수 격리 Preflight. 세 Stage `source(CAD_BASELINE)`, `candidate(G7_CANDIDATE)`, `rollback(CAD_BASELINE)`가 동일 `SNAP-*`/`E-*`와 별도 S3 marker bytes/version claim을 가졌는지 비교. Source↔Candidate/Source↔Rollback의 로컬/S3-export Byte, DB Version/locator·S3 object VersionId claim 일대일 대응; Rollback SQLite 원본과 Byte-for-Byte 동일.
+- 기존 B2-1 순수 OCI 4-role digest/config/Schema/Source label verifier를 호출해 합성 원본/복귀 App/Migrator pair만 검사. `rollbackCompatible:false`/`registryVerified:false` 유지, 실제 이미지 실행·배포·Registry 증거는 아님. 기존 B2-3 `assessS34B23DisposableMigration`를 source/candidate에 호출하여 CAD 7 Tables/Current/Version/nextVersion, SHA, FK, 8 Auth Tables, Audit Update/Delete immutable Probe 검사. Snapshot label 자체는 authenticated same-source proof 아님.
+- 상태는 `BLOCKED` 또는 `DISPOSABLE_REPLAY_MATCH_NOT_SITE_PROOF`, site/provenance/physical restore/GO false 고정. 실제 B2-2B 필드 바이트 수집과 B2-4 실 복원/롤백은 별도 Owner/QA 인가가 필요하며 기존 Active Prisma/App/OCI/Compose/Nginx 호출 없음.
+
+## #142 B2-3 P2 — Audit append-only를 예외·실제 Row 상태로 이중 검증 (2026-10-28)
+
+- 이미 복사된 SQLite 메모리 Clone에서만 합성 `AuditEvent` Row를 넣고, 후보 Trigger 이름 `g1_audit_no_update/no_delete` 확인 외에 **전체 Audit Table Content Snapshot**을 UPDATE 전 캡처한다. UPDATE/DELETE 각각의 예외와 실행 후 전체 Snapshot 완전 동등성이 모두 있어야만 Audit append-only 검사 양성; 중간 변경 시 즉시 FAIL/CLOSED.
+- SQLite `AFTER UPDATE/DELETE ... RAISE(FAIL)`은 오류를 던지면서도 변경/삭제를 보존할 수 있어 예외만 검사하던 `auditMutationProbe`는 위양성 위험이 있었다. 인메모리에서 실제 Row를 재검증해 `AUDIT_NOT_APPEND_ONLY/BLOCKED`로 차단한다. 생산 DB/OCI/네트워크·현장 증거/GO flag와 연결되지 않음.
+
+## #142 B2-3 CI TS narrowing + Local Storage binding (2026-10-27)
+
+- `exact(v:unknown)`에서 `Boolean(v)`은 타입 시스템에 `null` 제외를 보장하지 않아 CI Verify와 Docker image baseline Build에서 같은 TS2769/TS2345가 발생. 반환 논리는 유지하되 `v!==null&&typeof v==='object'`를 사용하여 객체 타입을 먼저 증명한 다음 `Object.keys/Object.hasOwn` 접근.
+- 신규 메모리 SQLite verifier는 실제 Local CAD `CadStorage.publish` 의 `<locationId>/<dbVersionId>/original.ext` 불변식을 DB Row `CadFileVersion.location_id/id`에 직접 바인딩한다. 두 독립 supplied Snapshot/Asset이 같은 잘못된 locator를 주장해도 `LOCAL_LOCATOR_OWNER_INVALID`를 반환. S3 Object UUID와 DB Version UUID의 독립성·원본 접근 금지·GO=false 그대로.
+
+## #142 B2-3 — quarantined formal Prisma와 합성 CAD 보존 검증 분리 (2026-10-27)
+
+- 통합 테스트 `g7-s3-4-b2-3.test.ts`는 기존 disposable `prisma.config.ts`를 통한 안전한 `prisma migrate deploy`로 CAD 6+Auth 1개의 `_prisma_migrations` 적용을 입증한다. 별도 메모리 SQLite 실험은 동일 6 CAD SQL 후 Local/S3-export 데이터를 심고 7번째 Auth SQL 적용 전후 Buffer를 `s3-4-b2-3.ts`에 공급하여 CAD Row/Current/Version/해시·FK·Audit 불변성을 확인한다.
+- 라이브 DB/파일/S3/Prisma 운영 경로 호출이 없는 Byte-only 검사기이고, CLI 실행도 UID/0700/0600 보호된 일회용 `/tmp`에서만 허용된다. `DISPOSABLE_SEVEN_SCHEMA_INVARIANTS_ONLY`는 현장 Snapshot/OCI provenance/restore/Owner GO가 아니다. [Runbook](../src/deploy/g7-s3/S3-4-B2-3.md).
+
+## #142 B2-2B P2 — S3 Locator 전역 중복 검증 (2026-10-27)
+
+- `B2-2B Observation`은 B2-2A의 주장 패킷·메모리 SQLite·별도 CAD/S3 Buffer 및 저장소 locator를 비교할 때, 독립된 S3 Object UUID(≠DB Version UUID)를 허용하면서도 **전체 S3 Version들의 Locator 일의성**을 별도 `Set`으로 검사한다. 개별 키·DB UUID 중복 방지와 `storagePath` Unique는 서로 다른 불변식이다.
+- 동일 S3 locator가 2개 Version에 연결되면 자료 크기/해시/VersionId가 일치하더라도 `DUPLICATE_S3_LOCATOR/BLOCKED`. 실제 운영 DB Unique Index가 빠진 합성/파손 복제본이라도 코드 자체가 불일치를 발견해야 한다. 외부 경로·네트워크 접근/원본 S3 인증/운영 GO는 없음.
+
+## #142 PR #145 Codex P2 — S3 Locator ↔ DB Version 매핑 독립성 (2026-10-27)
+
+- 실제 `S3ObjectStorage.prepare()`가 먼저 생성하는 `s3:<bucket>:cad/<object_uuid>/original.ext`는 `CadRepository.register()`가 DB 레코드에 부여하는 `CadFileVersion.id`와 독립이다. B2-2B는 사용자 제공 합성 `s3ObjectLocator`를 별도 안전 형식 검증한 뒤 DB `storage_path`와 정확히 비교한다. 이전의 `objectUuid === dbVersionUuid` 암묵적 가정 제거.
+- DB Version UUID·Local 저장 path는 그대로 유지, S3는 Bucket/Object UUID 매핑이 틀리면 fail-closed. S3 locator는 격리 자료 **입력 항목**일 뿐 인증된 외부 출처가 아니며 반환/로깅 없음. 기존 B1 메모리 SQLite 및 NO-GO 경계 불변.
+
+## #142 B2-2B — Buffer-only 격리 증거 검증 계층 (2026-10-27)
+
+- `src/server/g7-operational/s3-4-b2-2b-observation.ts`는 B2-2A packet와 외부에서 별도로 제공한 합성 SQLite·Local CAD/S3 export·marker Buffer 및 opaque V/L-key ↔ disposable SQLite UUID mapping을 교차 검증한다. 신뢰 경계를 B1 메모리 SQLite/Buffer 계층에 두고 운영 Database/File/S3 네트워크/API/Worker/배포 경로와 분리한다.
+- **Trust limitation:** 바이트 SHA·FK·Current·Version/nextVersion 일치는 원본 Writer 동결, authoritative S3 ObjectVersionId 및 실제 동일 Snapshot/Source 증명이 아니다. 양성도 `DISPOSABLE_BYTES_CONSISTENT_NOT_SITE_PROOF`, `operationalGo=false`. [B2-2B Runbook](../src/deploy/g7-s3/S3-4-B2-2B.md).
+
+## #142 B2-2A — Snapshot Barrier 주장형식 검증 계층 (2026-10-27)
+
+- `assessS34B22CapturePacket(packet:unknown)` 순수 함수: opaque `SNAP-*`/운영자·Change ID, 쓰기중지 임대 주장/Source Epoch, 세 캡처 시간 구간, SQLite Version/Current/FK/Audit 및 Local/S3 versioned object 인벤토리 일치 확인. 부정확한/중복/누락된 상태를 BLOCKED하고 일치해도 `CAPTURE_CLAIMS_CONSISTENT_NOT_SOURCE_PROOF` 한정.
+- 신뢰경계: 제출된 packet JSON 자체가 서명·실 수집 절차·진짜 S3 버전 증명이 아니므로 실제 DB/CAD/S3 I/O/네트워크·운영 Auth·Prisma 경로에 연결하지 않음. [Runbook](../src/deploy/g7-s3/S3-4-B2-2.md)·B2-2B 현장 증명 분리.
+
+## #142 S3-4-B2-1 — 순수 OCI 검증 계층, 런타임 절연 (2026-10-27)
+
+- `inspectS34B2OfflinePair`는 OCI manifest/config Buffer의 SHA-256·플랫폼/OCI 형식·4개 역할 label/source/version/schema 및 불변 `@sha256` 참조의 로컬 모순만 검사한다. 운영 네트워크/Docker/Prisma/S3/DB 호출 없음. 검증된 registry 출처·서명·실 compatibility binding 없음.
+- Output은 `BLOCKED` 혹은 `LOCAL_DIGESTS_MATCH_NOT_REGISTRY_PROOF`이며 모두 GO/OAuth/CADWrite 불가능. OCI content digest 일치와 실제 원격 Registry에서 서명된 provenance를 받았는지 구분하며, B2-2..5 및 S3-4-C 별도. [B2 Runbook](../src/deploy/g7-s3/S3-4-B2.md).
+
+## Issue #138 — Viewer 공통 Movable Panel 셸 경계 (2026-10-27)
+
+- 현재 #127 overlay Drawer(Layer left / Outline right / Tools bottom)와 Viewer 상단 그룹 메뉴는 **초기 edge·공통 진입**으로 유지하고, 데스크톱 이동 시작 시 동일 panel content를 Shell-owned floating layout으로 위치 전환한다. `ViewerAppShell` 내 panel register/placement state와 이동 handle, viewport-safe CSS pixel clamp, reset/z-order를 **재사용 가능한 컴포넌트/리듀서**로 분리한다. Body 복제·이중 mount 금지.
+- `ViewerAppShell` 외부에 Canvas/WCS 조작과 섞이는 위치 state를 추가하지 않는다. 이동 drag는 오직 panel header pointer event에서 시작, PointerCapture/Cancel/keyboard 및 z-index/ESC scope는 #127 modal/drawer·ADR-033과 정렬. 창 좌표 = CSS pixels, WCS 좌표 아님. 모바일/작은 화면은 기존 단일 modal Drawer 흐름으로 안전하게 복귀한다.
+- panel 열기/이동/닫기는 ViewerManager/Adapter lifecycle·source GET·parse·Worker·GPU·CAD state와 독립. Reader가 텍스트 검색창을 이동해도 검색 결과 선택→기존 focusBounds/Zoom을 유지하고, Outline 생성/편집 도구는 기존 캔버스 선택·WCS Transform을 그대로 사용. 새 Viewer 조회/작업 창은 [ViewerPanelPolicy](ViewerPanelPolicy.md) 재사용 기본, 예외 ADR/Issue에 명시.
+- 기존 [Issues124-126-127](Issues124-126-127.md), ADR-053 및 [Issue #138](https://github.com/planner77/layoutManager/issues/138) 참조. **설계만이며 이동 컴포넌트 아직 구현되지 않음.**
+
+
+## #109 PR #141 — Unit 실패 및 P1/P2 보완 (2026-10-27)
+
+- [PR CI #40444154044](https://github.com/planner77/layoutManager/actions/runs/40444154044), HEAD `b5f340e69bd28aed939bb1c443df355c1652f5bf`: Unit/Integration 404 중 5 실패, Typecheck/ESLint·Docker PASS, Build/E2E SKIPPED. 5개 공통 직접 원인: 정상 Manifest Sorted Key 기대 순서 오타→`SNAPSHOT_MANIFEST_MISMATCH`.
+- [Codex P1 #4384813274](https://github.com/planner77/layoutManager/pull/141#discussion_r4384813274) key order 수정. [P2 #4384813277](https://github.com/planner77/layoutManager/pull/141#discussion_r4384813277) SQLite source path 재오픈 TOCTOU를 검증 Buffer→메모리 DB로 교정, [P2 #4384813278](https://github.com/planner77/layoutManager/pull/141#discussion_r4384813278) 8개 Auth table 완전/완전부재 검사로 수정. 관련 회귀 테스트·B1 Runbook 추가. **신규 HEAD CI 전 PASS 미확인**.
+- S3-4-B1은 격리 readonly/합성 clone 무결성 검사 준비이며 실제 운영 Snapshot 동시성·실 Registry OCI·실 Migration/Restore/rollback은 NOT RUN. Auth/Write/운영 SQL·Compose/Nginx·GHCR·실 DB/CAD/S3·Issue 종료 금지.
+
+
+## #109 S3-4-B1 — 파일시스템 복제본 격리 및 무결성 확인 (2026-10-27)
+
+- `inspectS34B1Clone`은 특정 UID 소유 0700 `/tmp/cad-g7-s3-b-*` 아래의 합성/격리 복원본에만 접근한다. SQLite `readonly + fileMustExist`, CAD·S3-export 파일은 원본 DB locator를 안전 경로로 변환하고 `O_NOFOLLOW/O_NONBLOCK` fd 확인 후 읽는다. SQL/데이터 쓰기 없음.
+- G7 7번째 후보 Schema의 table 존재 여부와 CAD-only 기준을 구분하고 FK/quick_check/Current 소속·nextVersion/SHA·파일 크기를 검증. S3-export는 실제 S3 API 접속이 아니며 SNAP manifest는 쓰기중지/동일 Snapshot 출처의 증명이 아니다. B1 성공을 B2 복구 승인으로 전파하지 않는다.
+
+
+## #109 S3-4-A — 오프라인 릴리스 증거 검증 경계 (2026-10-27)
+
+- 서버 요청/운영 라우트와 절연된 Pure `assessS34Readiness` + CLI private JSON loader. **DB/OCI/S3/Prisma/Docker 네트워크 호출 0**, 영속 DB 쓰기·runtime binding 없음. Trust boundary: 형식이 올바른 PASS도 사내 관리자 attestation이고 독립 proof가 아니다.
+- OCI App/Migrator·rollback 쌍의 digest/version/source, 정확 S3 schema, 동일 Snapshot ID, 복구 체크·FK/Current/Version/bytes·Audit/Admin SOP 상태를 fail-closed 해 `BLOCKED/PENDING/EVIDENCE_PACKET_COMPLETE_NOT_GO`만 반환. 이 결과는 운영 activation trigger가 될 수 없다. B/C 실제 검증과 binding 별도.
+- S3-3 Preview·기존 익명 CAD GET 및 운영 경로, 활성 Prisma/Migrator/Storage 불변. [S3-4 Runbook](../src/deploy/g7-s3/S3-4.md).
+
+
+## Issue #109 S3-3 — CAD API 권한·Audit 원자성 준비, 운영 OFF (2026-10-27)
+
+- **기능:** 기존 CAD Multipart POST·Current PUT·Version DELETE에서 서버 DB의 최신 Session/Role/Site를 같은 Prisma Transaction 안에 재조회하고 승인된 Editor/Admin+Site만 쓰기 허용한다. DELETE는 기존 삭제 비밀번호도 요구하며, CAD DB 변경과 CAD_UPLOADED/CAD_CURRENT_CHANGED/CAD_VERSION_DELETED Audit INSERT 중 하나라도 실패하면 DB를 롤백한다. 기존 업로드 보상·삭제 Job, 익명 GET/Viewer·CAD 데이터 규약은 유지한다.
+- **운영 차단:** `NODE_ENV=production`에서는 S3-3 프리뷰 활성화 불가. 정확한 S3-2 disposable DB/marker/7 migration, loopback origin, `G7_S3_AUTH_API_PREVIEW_ONLY=true`, `G7_S3_CAD_PREVIEW_ONLY=true`, `G7_AUTH_ENABLED=false`, `G7_CAD_WRITE_CUTOVER_ENABLED=false` 조건만 격리 시험 허용. 별도 Prisma Client와 0700 root 하위 로컬 CAD 저장소 이용. 운영 Migration·실 DB/CAD/S3·Compose/Nginx/.env·GHCR 게시·인증/쓰기 활성화 없음.
+- **시험·잔여:** synthetic integration(Unit) 검증 코드 추가; 실제 PR CI는 시작 전이므로 결과 `NOT RUN`. 일회용 Preview Cookie의 Path는 `/api/g7-operational`이므로 다른 CAD 경로의 프로그램 시험에서는 테스트용 Cookie를 명시적으로 넘기며 운영 브라우저 인증이 활성된 상태는 아님. S3-4는 OCI/운영 Migration/실복구·신뢰 release binding, S3-5는 릴리스별 Owner GO 및 현장 수용. 기존 유사범위 PR #128은 미병합·충돌 상태이며 자동 병합하지 않는다. #109/#96 OPEN/BLOCKED.
+- **후속 정확 Squash:** `#109 | S3-3 Isolated CAD write and Audit [G7-S3-3-NO-GHCR]` 및 개별 파일 allowlist만 GHCR 미게시. 내부 로그/비밀번호/IP/실 도면 반출 금지. [S3-3 Runbook](../src/deploy/g7-s3/S3-3.md).
+
+
+## #109 S3-2 — 운영 Auth API 계약의 예약 라우트/격리 실행 구조 (2026-10-26)
+
+- 새 `/api/g7-operational/[...segments]` App Router는 G3 Login·Session·Password Change/Logout, G4 Role/Site/Grant·Disable·Audit, Admin-only Account Create 진입점을 갖는다. 실제 프로덕션 요청은 `NODE_ENV=production`에서 조건과 무관하게 **404(노출 0)**. 개발·시험만 loopback `127.0.0.1`·G7_S3_AUTH_API_PREVIEW_ONLY·G7_S3_MIGRATION_TEST_ONLY와 UID/0700/0600 마커·일회용 SQLite, Auth/Write OFF를 통과해야 별도 S3 Preview Handler로 전달된다.
+- **재사용:** S1 G2/G3/G4 SQLite 영속 어댑터와 G3/G4 Request-Service를 격리 테스트 DB에 연결해 검증된 세션 발급/Role/Site/로그 감사 거래 의미를 보존. 신규 `users/create`는 먼저 DB G4 users:manage 인가·감사를 실행한 뒤 KDF 해싱, 실제 User INSERT+ACCOUNT_CREATED Audit를 하나의 BEGIN IMMEDIATE 거래에서 세션/역할 재검증. 기존 `cad_session` Cookie는 무시하고 `cad_g7_s3_session`을 Path=/api/g7-operational로 한정한다.
+- **NO-GO:** 운영 Prisma 활성 Migration 6개 유지; S3-1 후보기록을 실제 DB에 적용하는 경로 없음. 이 API는 S3-4 릴리스 검증·Owner GO로 프로덕션에 자동 전환되지 않으며, 향후 별도 Code PR에서 신뢰된 Release/Operation binding 및 생산 DB 접근 방식을 심사해야 한다. 기존 CAD REST/익명 GET·Viewer/쓰기, Nginx/Compose, 새 영속 Outline/Memo/Type/Logs, Audit purge 변경하지 않는다. [S3-2 Runbook](../src/deploy/g7-s3/S3-2.md).
+
+
+## Issue #57 — 축소 Migrator source dependency 경계 (2026-10-27)
+
+`scripts/deploy.ts` → Prisma `migrate deploy` → `scripts/backfill-delete-passwords.ts` → `server/logger.ts` → `server/upload-error-catalog.ts`. Web은 Next standalone traced bundle인 반면 Migrator는 `src/Dockerfile`의 개별 파일 COPY image. 최초 PR CI 40418875931은 Web/Verify 정상이어도 Migrator의 마지막 모듈이 누락돼 Compose 기동 실패했다. 새로운 로거 의존성을 추가할 때 Migrator COPY 및 `node --import tsx` preload를 함께 검증한다. [Issue57](Issue57.md), [TestPlan](TestPlan.md), [FailureLedger](FailureLedger.md) 참고.
+
+
+
+## Issue #57 L1 — 공통 Log 데이터 경계 (2026-10-27)
+
+`API RequestLogContext / UploadDiagnostics / maintenance` → **기존** `server/logger.writeLog` → app Schema v1·확장 field allowlist·안전 code/category/message catalog 재검증 → `LOG_LEVEL/LOG_FORMAT` → stdout/stderr → Docker local rotation. 기존 `upload-observability.ts`의 별도 emitter를 제거하되 업로드 단계·first failure와 HTTP start/end는 의미가 달라 event를 유지한다. 반복 Health 200 정보만 debug, failure는 error. 인증된 로그 저장·조회/원시 Next·Nginx 수집/기존 DB/CAD/Viewer/G7 운영은 이 단계에서 구현하지 않는다. [Issue57](Issue57.md), [Logging](Logging.md), ADR-054.
+
 
 ## Issues #124/#126/#127 구조 (2026-10-26)
 
@@ -121,6 +746,19 @@ actual PROD   사내 PC → 현행 Nginx → 운영 App  (G7 변경 미승인)
 - 공격/CIDR 차단 구성이 아닌 업무 배포 정합성 검증이다. 저장/이관/인증·CAD bytes/SHA/Current/API/Prisma 미변경. 세부 매트릭스·검증 상태는 [Issue107](Issue107.md), [TestPlan](TestPlan.md), [Operation](Operation.md).
 
 
+### #82 / #99 Main 통합 구조 및 ADR 분리 (2026-10-25)
+
+- #99의 `outline-acceptance-gate`, `private-acceptance-paths`, `verify-outline-acceptance`, `outline.acceptance.ts` private E2E 변경을 그대로 보존한다. #82는 기존 M1 클라이언트 `MemoSession`/Canvas Overlay와 공개 브라우저 UI만 추가하며 독립, `out/Decisions.md`의 **ADR-053** 적용(#99은 ADR-052). DB/Server Auth/Memo CRUD/Prisma/GHCR 변경 또는 운영 활성화는 없다.
+- 공통 Viewer Tools Dock의 Memo 자유 WCS 가용성은 Source 선택과 독립, #99 실제 DXF/GPU 현장 수용은 여전히 별도. 신규 Main 통합 후 전체 CI 검증 결과는 따로 확인해야 한다.
+
+
+### Issue #82 M1/U1 — Shared Tools Dock의 선택 가능성과 메모 가용성 분리
+
+- ViewerAppShell의 `viewer-tools-dock`은 기존 #31/#40 Source/Generated selection 용도뿐 아니라 #82의 FREE WCS memo status/editor도 포함한다. `outlineAvailable`은 기존 RenderCoverage/verified Source mapping의 엄격한 조건을 유지한다. `memoAvailable`은 유효한 Version/SHA·DXF three renderer·loaded/ready에 독립적이며 Source stable Handle 유무로 거부하지 않는다.
+- 따라서 no-Handle fixture에서 Dock 자체가 존재해도 `cad-object-selection-tools`/Outline 조작은 **부재**, Memo status 0/100 및 추가 버튼은 **존재**해야 한다. 비지원 dxf-viewer/DWG는 memo disabled 및 Memo status 미표시. E2E U1 fixture를 UI 독립 영역 수준에서 확인하도록 수정, 메모 화면 좌표와 Source hit-test 구현은 변경하지 않음.
+- 수용: [Run 40198344153](https://github.com/planner77/layoutManager/actions/runs/40198344153), 기존 TC-U1-E2E-001 불일치 1/78. 코드·데이터·보안/DB 변경 아닌 테스트·문서 정렬이며 새 CI 전 PASS 주장 금지.
+
+
 ## Issue #102 / ADR-051-R1 — PROD Nginx·DEV Direct 경계 (2026-10-25)
 
 ```text
@@ -132,6 +770,22 @@ DEV:  [개발 PC] -----------------> HTTP [별도 개발 App] -> [개발 DB/CAD]
 - PROD App direct host publish(`src/docker-compose.yml`의 `host_ip:0.0.0.0`)는 Nginx 단일 진입 계약에 대한 **배포 확인 필요 사항**이다. DEV direct는 별도 개발 서버/데이터에 한정된다. 실제 host/bind/upstream 설정은 G5에서 **비운영 계획/격리 시험**, G7 승인 이후에만 운영 적용한다.
 - Auth 도메인 순수 모듈·DB Session/Role/Site/Audit 및 기존 정상 접근 검사 흐름은 D1~D5대로 유지. 공격 시뮬레이션 전용 구현·침투검증은 G5/G6 필수 경로에서 제외. 데이터·권한·세션·감사·마이그레이션/복구 검증과 외곽선 원본 불변 계약은 유지.
 - 기존 Viewer/도면 조회 경로를 G0 문서만으로 인증 차단하거나 API에 신규 코드를 연결하지 않는다. 운영 로그인/관리/영속 API·Prisma·Proxy/Compose OFF.
+
+
+### Issue #82 / PR #111 — Memo pointerdown 경계와 click 합성 방어
+
+- `CadViewer.beginMemoInteraction(id?)`은 새 배치와 기존 PIN/최근 목록 경로의 공통 동기 Tool transition. 기존 memo UUID·Version/SHA 존재를 확인한 다음 outline Worker/선택 취소 → Generated staging 취소·객체 선택 해제 → Pan 모드로 전환; 그 뒤 memo pointerdown에서 활성 viewport epoch/WCS를 잡는다.
+- `CadMemoOverlay`의 진행 중 gesture는 event handler/ref로만 관리하고 JSX render 중 `gesture.current`를 읽지 않는다(React Hooks refs lint). 5px 이상 move는 `ignoredDragClick`을 기록, up/commit 이후 발생하는 pointer-derived click 1회를 selection으로 전달하지 않는다. 새 pointerdown 때 초기화하고 키보드 click(detail=0)은 동작한다.
+- 같은 메모 재선택은 미저장 editor `title/content`를 유지; 다른 메모 선택일 때만 로컬 확정값으로 form 초기화. 원본/DB/Layer/Current/GHCR/서버 인증/영속화 불변. Review #4370961641/#4370961642, TestPlan E2E-004/005.
+
+
+## Issue #82 / M1 — Browser-only CAD Memo WCS overlay (v0.41.0 / 2026-10-25)
+
+- **의존성:** `ViewerMenuBar`(메모 도구/지원 사유) → `CadViewer`(scope·메모 session 소유/입력 검증/명령) → `ViewerManager` → `CadViewerAdapter`(optional `clientToWcs/projectWcsToCanvas`) → `ThreeDxfViewerAdapter`(OrthographicCamera unproject/project) → sibling `CadMemoOverlay`(pin/label/gesture). `CadMemoEditor`는 동일 Viewer shell tools dock의 plain-text 입력 폼이다. `MemoSession`은 네트워크·브라우저 storage·사용자 인증과 독립된 `Map<UUID,MemoDraft>` 단일 세션 상태이다.
+- **Canonical 위치:** `MemoDraft.anchorWcsXY` WCS XY가 정본이며 `labelOffset`은 앵커 대비 CSS px 표시 오프셋(기본 14,-12), `screenPositions`는 카메라 회전 불가 Orthographic projection으로 매 requestAnimationFrame 시 파생한다. CSS/native fullscreen, container ResizeObserver, zoom/pan/fit와 DPR은 앵커를 변경하지 않는다. 버전+SHA scope가 다르면 read/write 다른 문서. PIN hit 24x24 CSS px는 유일한 인터랙티브 오브젝트이며 label/leader 텍스트는 pointer-through, 평면 전체 오버레이는 '메모 추가' 모드에 한해 클릭을 받는다.
+- **명령 경계:** `create(id,anchor,title,content)`은 draft 후 사용자 확정 때만 append, `editText`는 immutable anchor 복사, `move`는 유한 WCS 좌표 명시적 승인 이후 anchor 교체, `remove`는 명시적 2차 클릭 확인 후 로컬 제거. 내부 UUID는 [preview-uuid](../src/features/cad-viewer/preview-uuid.ts) secure-context fallback 재사용, 서버 신뢰 ID/작성자/감사 근거 아님. 본문은 React escaped text node만 표시; HTML/Markdown 실행 금지. 제목 100/본문 2000/NFC/제어문자/±1e12/최대 100메모; Canvas label preview는 본문 첫 160자만 표시하고 편집 폼은 전체.
+- **포인터 선점/취소:** 독립 memo pin이 captured pointer를 받되 DXF/Generated selection handler와 동시 이벤트 처리하지 않는다. 5px 전에는 미이동; 시작 client→world/epoch/anchor를 스냅하고 ghost만 임시 재배치, pointerup에 동일 epoch/유효 scope·대상 확인 후 원자 commit. Esc·pointercancel·lostcapture·blur·scroll·wheel·camera render/Resize(시점 epoch 갱신)·툴/Version/Renderer/리로드·유한범위 오류에서는 버리고 Document에 반영하지 않는다. 다른 선택 모드로 전환하면 메모 draft/gesture만 닫고 기존 완료 memo pin은 유지. 완전한 Snap/Move following은 #84.
+- **성능/금지사항:** 최대 100 메모·100 labels(본문 프리뷰 160자), RAF coalescing으로 화면 투영 업데이트; 실제 대형 도면+GPU FPS/latency와 native fullscreen/모바일은 별도 현장 실측까지 미보증. Source/Origin/WCS IDs, Outline GeneratedDocument/Undo/Redo, Worker/Layer/Current/Version/sha, #2 version.description, REST API/Prisma/DB/권한/Auth 및 docker-ghcr 리소스 불변. 서버 `CadMemo` 모델/CRUD/작성자/사이트 Scope는 #83의 보안 게이트 후 별도 PR.
 
 
 ## Issue #99 — 실설비 DXF Source/Render·Browser/GPU 증거 전용 경로 (2026-10-25)

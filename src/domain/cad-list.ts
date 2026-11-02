@@ -3,6 +3,7 @@ import { CadError } from "./cad";
 export type CadListQuery = {
   filename: string;
   description: string;
+  memo: string;
   businessUnit: string;
   product: string;
   site: string;
@@ -31,6 +32,7 @@ export type CadListItem = {
   fileSize: number;
   registeredAt: string;
   isCurrent: boolean;
+  memoMatches?: { count: number; previews: { id: string; title: string; snippet: string }[] };
 };
 
 export function listQuery(params = new URLSearchParams()): CadListQuery {
@@ -79,10 +81,14 @@ export function listQuery(params = new URLSearchParams()): CadListQuery {
     CadListQuery,
     "businessUnit" | "product" | "site" | "building" | "floor"
   >;
+  const memo = value("memo", 100);
+  if (memo && /[\x7f-\x9f]/u.test(memo))
+    throw new CadError("INVALID_QUERY", "메모 검색 조건을 확인해주세요.");
   return {
     ...location,
     filename: value("filename", 255),
     description: value("description", 2000),
+    memo,
     format: format as CadListQuery["format"],
     current: current as CadListQuery["current"],
     page: integer("page", 1, 1_000_000),

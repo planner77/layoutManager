@@ -8,6 +8,7 @@ import {
   Copy,
 } from "lucide-react";
 import Link from "next/link";
+import { runtimeCadHeaders, RuntimeClientError } from "@/features/g7-runtime/client";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useGlobalLoading } from "@/components/global-loading";
@@ -135,7 +136,7 @@ export function UploadForm({ today, maxMb }: { today: string; maxMb: number }) {
     try {
       await runWithLoading("도면을 등록하는 중입니다...", async () => {
         const interpreted = await interpretUploadResponse(
-          await fetch("/api/cad-files", { method: "POST", body: form }),
+          await fetch("/api/cad-files", { method: "POST", headers: await runtimeCadHeaders(), body: form }),
         );
         if ("diagnostic" in interpreted) {
           setError(interpreted.diagnostic);
@@ -148,8 +149,12 @@ export function UploadForm({ today, maxMb }: { today: string; maxMb: number }) {
           router.refresh();
         }
       });
-    } catch {
-      const diagnostic = connectionDiagnostic();
+    } catch (failure) {
+      const diagnostic = failure instanceof RuntimeClientError
+        ? { ...connectionDiagnostic(), outcome: 'failed' as const, code: failure.code,
+            httpStatus: failure.status, summary: failure.message,
+            guidance: '계정 / 로그인에서 세션과 담당 사업장 권한을 확인한 뒤 다시 시도하세요.' }
+        : connectionDiagnostic();
       setError(diagnostic);
       console.error("CAD upload diagnostic", diagnostic);
     } finally {
@@ -498,6 +503,10 @@ export function UploadForm({ today, maxMb }: { today: string; maxMb: number }) {
             <p className="mt-2">
               등록 ID: <span className="font-mono text-xs">{result.id}</span>
             </p>
+            <Link className="mt-3 mr-4 inline-block underline"
+              href={`/cad/versions/${result.id}/viewer${result.originalFilename.toLowerCase().endsWith('.dxf')?'?source=build':''}`}>
+              {result.originalFilename.toLowerCase().endsWith('.dxf')?'DXF 최초 변환·Scene 생성':'도면 보기'}
+            </Link>
             <a
               className="mt-3 inline-block underline"
               href={`/api/cad-files/${result.id}/content`}

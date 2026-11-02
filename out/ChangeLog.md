@@ -1,4 +1,378 @@
+## 2026-11-03 — #212 PR #214 합격·Main 병합과 새 GHCR 릴리스 #216 후속
+
+- 최종 PR CI #440 (Run41508339395) 8/8 SUCCESS; 앞선 #438 TypeScript TS18046 및 #439 Greenfield R3 상태 기대값 실패를 수리한 검증된 Source HEAD `ef83a210c16abe040c7ae451d14012a8469085b9`를 Main `1ba46dc4a2fd50e06ce84069fce98977c55632bf`로 동일 tree Squash. Issue #212 closed/completed. Main CI #130 시작 확인, 결과 모니터링 생략.
+- 패키지 버전 `0.58.0`/기존 `v0.58.0` GHCR App/Migrator 이미지쌍과 운영 데이터는 유지. 중복 버전의 신규 이미지 게시가 자동 수행되지 않는 릴리스 공백은 [#216](https://github.com/planner77/layoutManager/issues/216)에 추적; 검증된 신규 release 버전/registry·digest 확인 전 #212 Scene 수정이 GHCR에 반영되었다고 주장하지 않는다.
+
+---
+
+## 2026-11-03 — PR #214 Greenfield E2E Scene 상태 문구 계약 보완 (#212)
+
+- 실패 CI #439 / Run41504441240의 `typed-outlines.spec.ts:196`은 이전 상태 메시지 `원본 DXF 변환 완료`를 기다려 25/26 E2E에서 1건 실패. 신규 화면의 정상 `THREE_SCENE_ARTIFACT_READY`와 서버 미게시, fallback 부재 및 `three-dxf-viewer`를 검증하도록 테스트 수정.
+- 런타임 UI/Scene 직렬화·한도·서버 게시·Source/DB/Current/G7 권한/CI 정책은 변경하지 않는다. 기존 #438 실패 이력 보존; 새 CI는 시작만 확인하고 결과 미모니터링.
+
+---
+
+## 2026-11-03 — PR #214 / #212 CI #438 TypeScript 테스트 보완
+
+- `scene-build-diagnostics.test.ts`의 `unknown` rejection을 `ViewerLoadError` 런타임 guard로 확인하여 TS18046 3건의 신규 테스트 타입 문제를 수정했다. 안전 오류 코드/문구·비밀 비노출 검증은 유지하며 TypeScript strict/CI gate를 완화하지 않는다.
+- 최초 실패 Run41463408681/Quality Job125338491789 및 별도 Docker 성공/Browser 미실행은 FailureLedger·TestReport에 보존한다. 후속 PR CI 시작만 수행하고 결과/현장/배포/GHCR 성공은 미확인.
+
+---
+
+## 2026-11-02 — Issue #212 수동 Scene 생성 단계 진단과 CUSTOM_DTO 검증 (PR CI 후보)
+
+- Fixed: 3D 변환 실패를 `adapter-load:LOAD` 단일 코드로 감추던 브라우저 수동 Scene 경로를 phase·allowlisted code/숫자 통계와 정확한 상태로 분리. 실패 후 `dxf-viewer` 성공을 Scene Asset 변환 완료·저장 가능으로 오인하던 안내와 Save 조건 보완.
+- Changed: `CUSTOM_DTO` 저장 전 중복 Three JSON 트리 할당/inspection 제거, 대신 기존 `validateStoredScenePayload`·manifest SHA/ID/typed attribute와 32MiB/node/scalar/depth 상한을 정확 적용. Optional index Warning은 필수 Scene 실패와 분리.
+- Tests: 합성 단계/프라이버시/한도/fallback Unit 및 중첩 Scene ID/Geometry round-trip regression 코드 추가. 로컬/CI/현장 성공 **NOT VERIFIED**; PR CI 시작 후 완료 모니터링 생략.
+- No schema migration/Source·Current 변경/G7 Auth·Writer 조작/GHCR 게시/실 CAD 반출. 서버 Worker·업로드 자동 생성·목록 상태는 #208, 현장 실 DXF/GPU는 #113/#193. [설계](Issue212.md), [원장](FailureLedger.md).
+
+---
+
+## 2026-11-02 — #211 PR #213 CI #436 실패 수정 및 Codex P2 체인 보고
+
+- 정확 실패 Run41449453584: 기존 `GF-109-CI-CONTRACT` 정적 테스트가 새 통합 CLI로 대체된 첫 Compose 시작 명령을 찾지 못함(Unit 943/944, Docker Job SUCCESS). 실 CI의 승인된 신규 설치/재시작 + first-admin/CAD/영속 smoke 순서를 유지한 채 테스트의 12개 필수 단계로 갱신.
+- #209 `g7-upgrade.py` stdout filter에서 사라진 등록 release `steps`를 검증된 `COMPATIBLE/MIGRATION` 안전 목록으로만 제공, 잘못된 chain/plan 해시는 통합 CLI에서 fail-closed; 실제 helper→frontend 직렬화 회귀 추가. 원본/DB/DDL/Registry/Writer0/Backup/Site Auth 변경 없음.
+- 새 PR CI는 commit push로 시작하되 완료/성공·현장 수용은 확인 전 NOT VERIFIED. [FailureLedger](FailureLedger.md) / [Issue211](Issue211.md).
+
+---
+
+## 2026-11-02 — #211 G7 통합 호스트 배포 Frontend (PR 후보)
+
+- `src/scripts/g7-deploy.py`: #109 최초 Greenfield·동일 릴리스와 #209 registered release upgrade를 분리/통합 안내하고 read-only 검사→해시 지문 승인을 요구한다. 업그레이드 후 App STOPPED, 별도 승인 start. Docker volume/project/network/이미지 pair/비밀 출력 경계를 유지한다.
+- `src/scripts/test_g7_deploy.py` + PR CI py_compile/unit 및 disposable Compose smoke, `out/Issue211.md`와 관련 Requirements/Architecture/Decisions/TestPlan/Operation/Runbook 문서를 추가한다.
+- DB Schema/registry/manifest 계약·Auth/Writer·업무 CAD 원본은 수정하지 않는다. CI 성공·GHCR 게시·현장 수용은 미확인, 병합/Issue 종료 없음.
+
+---
+
+# 0.58.0 — #209 Greenfield 등록 릴리스 업그레이드 (개발 후보)
+
+- Added: 설치와 업그레이드 분기, 번들 compatibility/forward migration registry, preflight/plan/apply/status/isolated restore, DB/CAD 일관 복구 세트·private journal 및 manifest atomic commit.
+- Fixed: PR #210 P2의 stopped WAL/no-sidecar 읽기 전용 사전 점검 및 readonly recovery 검증. private stable read copy와 live-WAL 실제 조회를 구분하고 Docker 회귀를 추가했다.
+- Added: 실제 이미지 쌍·writer 정지를 검사하는 호스트 도구와 원인 코드/단계/복구 안내. 기존 Auth/인가·원본·Current·삭제 보호 계약은 유지한다.
+- Compatibility: 최초 지원 source0.56/0.57→candidate0.58; 미등록 버전·과거 레거시·S3/Expert 자동 업그레이드는 BLOCKED. 이미 게시된0.57 이미지는 변경하지 않는다. 실제 검증/실패와 미수용 범위는 TestReport/FailureLedger를 따른다.
+- Delivery: [PR #210](https://github.com/planner77/layoutManager/pull/210) 게시 및 PR CI 시작만 확인했다. 완료 모니터링은 생략하며 병합·Tag/GHCR·운영 업그레이드는 별도 승인/검증 전이다.
+
+## 0.57.0 — #202 / #204 구현 후보 (2026-11-02)
+
+- Added: 기본 도면 목록의 권한 기반 메모 제목·본문 검색, Version 단위 결과·일치 개수/최대3 미리보기 및 정확한 메모 링크. 빈 조건의 기존 조회·Current/전체 버전 계약을 유지한다.
+- Fixed: 기준정보 이름만 저장할 때 다른 세션에서 변경한 상태·Site 종류를 덮어쓰지 않도록 변경 필드만 PATCH한다. UUID·부모·참조 데이터 불변 정책의 회귀를 보강한다.
+- Tests: 전체924 Unit, 독립 General27/signed3 Browser, 이름·G7/감사·메모/구역/원본 보존 및1k/10k/100k SQL 계측을 검증했다. 실제 범위/실패/재시험은 TestReport/FailureLedger를 따른다. 로컬 코드·합성 후보를 수용했으며 새 PR CI 결과·릴리스는 미확인이다.
+
+---
+
+## 0.56.0 — Issue #196 의미론적 구역 (Main 병합, GHCR 게시 기동)
+
+
+- Added: 층별 구역 ID·업무 메타데이터·부모 계층, Site 카테고리, Version/SHA/Scene별 Polygon mapping과 G7 권한·CAS·멱등 생성·감사·논리 삭제.
+- Added: Viewer 구역 생성/목록, 기존 객체 Snap과 자유 WCS 입력, 계층 트리·상세·검색·표시·Bounds focus 및 공통 이동 패널 연계.
+- Fixed (PR #200 CI/review): G7 OFF 구역 조회 생략, 일시적 조회 실패 후 수동 재시도 접근, 수동 Viewer 전환 중 진행 원본 공유. 실패 원장/재시험을 보존하며 버전0.56.0을 유지한다.
+- Schema: 신규 빈 Greenfield 전용 baseline, 과거 설치 fingerprint 보존. 기존 운영 Volume 자동 이전 없음.
+- 검증·제약: 단순 Polygon, 교차점 Snap 미지원, V2 자동 경계 이관 없음. 실제 결과는 TestReport/FailureLedger의 #196 기록을 따른다. PR #200 최종 CI 8/8 SUCCESS·Main ae928b4 병합·#196 종료 완료. Main CI 41339438989의 GHCR App/Migrator 게시 시작; 실제 게시 완료·digest·배포·현장 #113/#193 수용은 미확인.
+
+---
+
+## 2026-11-01 — PR #194 CI 시험 보완 (0.55.3 후보 유지)
+
+- `TC-E2-E2E-001`이 메뉴 종료의 지연 포커스 복원과 경합해 Ctrl+Z를 input으로 보내지 못한 시험 순서를 보완한다. trigger 복원→input 포커스 확정 후 native 이벤트·전역 기본동작 비차단·Undo 불변을 검사한다.
+- 실패 Run `41293959571`과 실제 재현/로컬 검증·새 CI 경계를 [FailureLedger](FailureLedger.md)/[TestReport](TestReport.md)에 누적한다. 제품 코드·Schema·API·배포 변경 없음.
+
+---
+
+## 2026-11-01 — #191 위치 기준정보 트리/상세 편집 (PR CI 후보)
+
+- /masters 5열 카드 CRUD→반응형 계층 트리+선택 상세, 검색/비활성 필터/키보드/명시적 저장·확인·이력 링크.
+- MasterRepository 신규 자식 생성 시 비활성 조상 검증 강화. API payload/DB schema/Version/Current/원본/Auth/Audit 미변경. Unit/Integration/Browser 테스트 갱신.
+- 신규 검증 및 원격 PR CI 결과 NOT VERIFIED; GHCR 게시/병합·배포 아님. [설계/수용](Issue191.md).
+
+---
+
+## 0.55.2 — #81/#160 Owner Managed 코드 병합·릴리스 기동 (2026-11-01)
+
+- PR #192 HEAD `3da74d76134e69924018e519ff4ce458e96c7487`, [PR CI 41281582636](https://github.com/planner77/layoutManager/actions/runs/41281582636) Verify/Docker 둘 다 SUCCESS, [Squash Main `b3fcf3eda19177f52e00c0191d5ffb9f333bb0e8`](https://github.com/planner77/layoutManager/commit/b3fcf3eda19177f52e00c0191d5ffb9f333bb0e8) 성공.
+- [Main CI 41283558627](https://github.com/planner77/layoutManager/actions/runs/41283558627) 시작 확인, App 0.55.2/Migrator 0.55.2-migrate GHCR 실제 게시/OCI digest 결과 NOT VERIFIED. Epic #81/#160 코드 범위 closed/completed; S7 필드 #193 OPEN 및 #96/#113/#190 기존 미수용 유지. 사후 문서 업데이트는 GHCR 재게시 대상 아님.
+
+---
+
+## 0.55.2 후보 — Epic #81/#160 교차 무결성 (2026-11-01)
+
+- 동일 Origin+Scene ID가 중복되면 Memo Session Snap 선택·이동·projection을 차단, 연결 메모 마지막 WCS 유지. S6 reset DB 조회 행의 ID 유일성 강화.
+- 회귀 Unit 2개·설계/ADR/요구/시험/실패 원장 갱신. `src/package.json` / `src/package-lock.json` 0.55.2 일치, 기존 v0.55.1 GHCR tag 이동 금지. [세부](Epics81-160.md).
+
+---
+
+## 0.55.1 코드/합성 검증 완료 — PR #189 Owner Managed Squash Main (2026-11-01)
+
+- PR CI [41278134690](https://github.com/planner77/layoutManager/actions/runs/41278134690) Verify/Docker 성공, Main Squash `19167bc3274ac7955ecb2935602f0404cd0a82bf` 및 [Main CI 41280051780](https://github.com/planner77/layoutManager/actions/runs/41280051780) 기동 확인. `v0.55.1`/GHCR App·Migrator 게시·OCI digest는 확인 전 NOT VERIFIED.
+- #186 코드·합성 범위 `closed/completed`; 실제 DXF/GPU·frame/Heap·2PC 현장 AC는 #190 `OPEN/BLOCKED` 이관, #96/#113 유지. 이전 성능 수치로 개선이나 장기 leak-free 증명 불가.
+
+---
+
+## 0.55.1 PR-C 후보 — #186 Memo projection 및 Heap 진단 강화 (2026-11-01)
+
+- 100-pin WCS 투영을 한 번의 CSS canvas rect 읽기와 단일 Three.Vector3 재사용으로 처리. 기존 단건 projection/legacy fallback 유지, React 동일 screen snapshot no-op.
+- Three adapter dispose 시 Render controls 'change' listener와 큰 source/renderIndex/SceneAsset 참조를 명시 해제. 기존 Browser source·Scene·CAS·audit·작성자 정책 그대로.
+- 0 Memo/100 Visible/100 Hidden pan frame p50/p95와 3회 Dispose GC heap/DOM/Worker/listener를 나눠 측정하는 Browser test 보완; pure 100 pin+candidate batch unit 추가.
+- 실제 개선 수치, 이전 16.8MB Heap의 앱 누수 여부, GPU/VRAM/2PC Owner 수용은 **NOT VERIFIED**. #186은 필드 수용 전 Open 유지, #96/#113과 구분. 기존 v0.55.0 이미지는 변경하지 않음.
+
+---
+
+## 0.55.0 후보 — #172 Memo 동일 Site Editor 공동 수정 (2026-11-01)
+
+- Site/Version/Role/Session/G7 서명 권한을 확인한 Editor는 다른 작성자의 영속 Memo 내용·좌표·일정/완료·표시/그룹·Anchor 수정 가능. Memo 논리 삭제는 작성자 또는 동일 Site Grant 가진 Admin으로 제한.
+- SOURCE_ONLY의 타인 메모 Anchor 해제 EDIT 허용, ALL에서 타인 소유 Memo 일괄 삭제는 Site Admin에게만 허용. Group 작성자 자체 권한 유지, 그룹 제거 시 타인 메모 미분류 처리.
+- Memo GET actor/canDeleteAny 표시 힌트, Viewer 삭제 버튼 비활성화·문구 정비, Signed G7 단위/Greenfield 두 브라우저 회귀 추가. 신규 DB Schema·원본 CAD·Renderer·release gate 변경 없음.
+- **실행 증거:** 실제 새 PR CI/Owner Managed QA 완료 전 기능 수용 미확정. 기존 GHCR 0.54.x 태그 재사용/변경 금지, 2PC 현장 수용 별도(#96/#172/#113).
+
+---
+
+## 0.54.1 후보 — #37/#49/#50 Viewer/Logs 통합 신뢰성 (2026-11-01)
+
+- Fixed: Viewer 실행 메뉴에서 비활성화된 링크 항목에 실제 이동·다운로드 href가 남지 않도록 fail-closed 처리. 활성 URL 명령과 기존 패널·원본/생성 선택을 유지한다.
+- Fixed: 서버 로그 요청/작업 타임라인의 확인된 cursor 만료·영속 로그 저장소 오류에서 실패한 단계는 제거하되 별도 인가된 메인 목록은 유지. 인가 실패·알 수 없는 오류는 전체 로그 Row 폐기.
+- Added: #37/#49 통합 합성 DXF·Generated Rotate/Undo/Redo·원본 SHA E2E, #50 Timeline 저장소 오류 Greenfield E2E, Viewer 메뉴 Unit, [통합 인수 문서](Epics37-49-50.md).
+- Scope: 기존 Auth/Audit, CAD 원본/DB/Volume, #63 원시 컨테이너 로그 수집 제외. 새 CI·현장 검증은 NOT VERIFIED. 이 항목은 게시/Release 완료 기록이 아니다.
+
+---
+
+## 0.54.0 후보 — #91 R5b 보이는 메모 교환 파일 (2026-11-01)
+
+- Added: 선택한 local/server Memo의 전체 한글 제목·본문을 GLB/embedded glTF의 PNG plane·핀·연결선으로 표현한다. 숨김과 포함을 분리하고 Memo-only 및 DXF/Generated 혼합, AUTO/수동 미터 글자 높이를 제공한다.
+- Added: 같은 revision의 세션 projection 또는 canonical/BROKEN WCS 증명, 읽기 전용 snapshot, 서버 Memo GET의 호환 actor/Version/SHA/Scene envelope와 전후 선택 row 검증. 권한 실패 후 private 선택을 제거하고 local 선택을 보존한다.
+- Fixed: 실제 Browser에서 발견한 메모 글자 수직 반전을 수정했다. 원본 정밀도 복구 불가 고지와 Version/SHA를 실제 artifact에 포함하고, 비가역 snap target은 마지막 WCS의 BROKEN으로 처리한다.
+- Validation: BUILD2·typecheck PASS, whole lint0 errors/기존9 warnings, 전체unit131 files/883 PASS, 독립 QA General146 PASS, Greenfield21 PASS, Auth/Legacy 각1 PASS. 1k/10k LINE+10Memo 실제 load 계측을 포함해 LOCAL CODE+SYNTHETIC ACCEPT/Draft PR GO이며 게시·새 CI는 후속이다. 실패와 재시험, font/PNG 취소 및 heap 한계는 [TestReport](TestReport.md)를 따른다. 기존 Schema/DDL/운영 DB·원본·Current는 변경하지 않는다.
+
+## 0.53.0 후보 — #91 R5a GLB / glTF 교환 파일 (2026-11-01)
+
+- Added: DXF three-dxf-viewer의 렌더 레이어 및 확정 local/권한 있는 server Outline을 선택해 GLB 또는 embedded glTF로 내보내는 읽기 전용 기능. 원본 배치 baseline과 현재 Generated 기하를 구분한다.
+- Added: 단위→미터·오른손계 XZ·중심/지정 원점, Layer별 제외 및 스타일 손실 사전 안내, 부분 산출 동의, 현재 actor/서버 내용 재검사, 취소 후 결과 폐기와 owned 자원 정리.
+- Fixed during development: material-group 확장 정점의 사전 한도 누락을 독립 QA로 발견하고 복사 전 검증으로 보완. 실제 r171 exporter의 Lines/Points unlit 표시는 export-only material로 유지한다. 공개 로컬 내보내기는 보호된 Outline/Site 권한에 종속시키지 않는다.
+- Validation: foreign Three guard 회귀31 PASS, 최종 전체unit127 files/858 PASS, 독립 QA 일반Browser128 PASS, Greenfield17 PASS, Auth/Legacy 각1 PASS, type/lint/build PASS(기존lint9 warnings). LOCAL R5a ACCEPT 후 Draft PR184 게시 및 정확9accf8b의 Verify/Docker CI SUCCESS를 확인했다. 실제 결과는 [TestReport](TestReport.md)를 따른다. 단일 Node 합성 계측을 Browser/GPU/실 CAD 성능으로 해석하지 않는다. Memo는 R5b 후속이며 #91 종료·병합·GHCR/배포는 아직 하지 않았다. 서버/API/DB/영속 Scene 형식 변경 없음.
+
+## 0.52.0 후보 — #174 메모 스냅 선택·연결 유지 이동 (2026-11-01)
+
+- Added:12 CSS px 안의 Endpoint/Vertex/Center 후보 선택과 명시 OFF, 키보드/터치용 목록,44px 핀 hit target. raw WCS와 선택 후보를 분리하고 동일 key/context를 다시 검증한다.
+- Added: 세션 연결의 동일 target inverse 유지 이동 및 서버 anchor KEEP/DETACH reposition. 기존 Memo owner/Scene·Memo·target CAS/Audit를 유지하며 새 Schema는 없다.
+- Fixed during development: 준비한 메모 의도의 Actor와 확정 Actor가 다른 client lifecycle 결함을 실제 RED로 확인했다. 직접 Session actor 증명 및 비동기 조회 generation 무효화로 보완하고 Root/독립 QA 집중 GREEN을 확인했다.
+- Fixed: BLOCK renderer의 singleton Material을 유효한 전체 group coverage 조건에서 projection에 포함해 서로 다른 INSERT 후보를 유지한다. 외부 라이브러리/Source 권한은 변경하지 않는다. 개발 Auth 양성 시험은 owned disposable fixture의 opt-in clock으로 역행 환경을 통제하며 production guard를 유지한다.
+- 후속 원격 검증: 정확 R4 `458d3da`의 CI41233433577 Verify/Docker SUCCESS. 아래 로컬 결과와 별도로 TestReport에 최종 CI815개 unit 및 Browser gate를 기록했으며 현장·배포 완료를 뜻하지 않는다.
+- Validation: 기능/계측 로컬 수용 및 Draft PR GO. 최종 전체unit123/814, 일반Browser124, Greenfield13, Auth/Legacy 각1 및 집중/독립 QA 결과는 [TestReport](TestReport.md), 실패는 [FailureLedger](FailureLedger.md)를 따른다. Frame budget 초과와 두 번째dispose heap 증가 원인은OPEN이며 성능/장기누수·실 CAD/2PC·PR CI·GHCR/배포 수용은 아직 미완료다. 단일Viewer10k Memo 지원을 주장하지 않는다.
+
+## 0.51.0 후보 — #71/#73 타입 지정 영속 외곽선 (2026-11-01)
+
+- Added: 해당 Version/Site 권한으로 전역 활성 타입 카탈로그와 저장 외곽선을 조회한다. Reader는 조회, Editor 이상은 타입 지정 저장·수정·논리 삭제를 수행한다. 동일 사용자·Version·Idempotency-Key와 동일 정규화 요청의 재시도는 기존 결과를 반환하고 다른 내용은 409로 차단한다.
+- Added: 서버 Snapshot을 참조하는 Viewer 타입별 트리·Overlay·선택·표시·내보내기. 서버 항목은 브라우저 GeneratedDocument Undo에 넣지 않으며 Scene pointer 변경에도 저장 기록과 WCS 연결을 유지한다. 모바일 도구는 좁은 화면에서 간결하게 표시한다.
+- Export: 검증된 원본 기반 행은 Source-v2, 앱 WCS 행은 APPGenerated-v2 snapshot으로 분리한다. 교환용 APP ID는 새 UUID이고 서버 저장/Source 인증의 증명이 아니다.
+- Schema: 새 빈 Greenfield baseline `202611010001`에 영속 타입/receipt 계약을 포함한다. 기존 운영 DB/볼륨 자동 migration은 없다. 현재 개발 후보 검증 범위와 전체 PR CI·현장 수용 잔여는 TestReport를 따른다.
+
+## 0.50.0 기록 — #65 전역 외곽선 타입 관리 (2026-11-01)
+
+- Added: Global OutlineType 목록·등록·수정·비활성화·복구 API와 기존 Viewer 이동 패널을 재사용하는 관리 화면. 서버 Admin/CSRF/활성 쓰기 권한, Unicode 이름 key·Unique, revision CAS 및 전용 append-only 감사를 적용한다.
+- Schema: 당시 빈 Greenfield 신규 baseline에 OutlineType/OutlineTypeAudit와 실제 CadOutline 타입 FK를 추가했다. 과거 baseline/DDL/운영 볼륨은 보존하며 자동 migration은 제공하지 않았다. 당시 후속이던 타입 확정·영속 트리 사용은 위 0.51.0 후보에 구현했다.
+- Validation: 전체 Vitest114files/760tests PASS, Production Build/Typecheck/Lint PASS(기존 경고11개), Greenfield 브라우저4/4 및 수정한 기존 Gate2files/4tests PASS. 일반 CAD 초기115PASS/2FAIL의 구404기대 수정 이력은 보존하며 별도 실행을 새 전체117PASS로 합산하지 않는다. 독립 QA26PASS와 실제 Migrator build·tmpfs 신규설치/재시작/FK PASS. 원격 CI·현장·배포는 별도이며 역할별 근거는 TestReport/FailureLedger를 따른다.
+
+## 0.49.0 후보 — #60/#61/#62 운영 로그 조회 (2026-10-31)
+
+- Added: 기존 G7 세션·Admin+logs:read·감사를 재사용하는 전역 로그 읽기 인가, 고정 private JSONL 조건 조회 API, bounded snapshot cursor와 정제 DTO.
+- Added: 별도 운영 화면의 기간/레벨/출처/작업/상관 ID 검색, 최신순 목록·상세·시간순 타임라인, 명시 페이지 조회와 비활성/일부/만료/오류 안내.
+- Docs: 잔여 18개 이슈를 의존 순서대로 PR 단위와 정책/현장/관리자 작업으로 매핑. 실제 DB/운영 권한·Compose/Volume/원시 로그 수집 변경 없음.
+- Validation: 전체 Vitest 731/731 PASS 후 새 Proxy 보안6/6 PASS, 일반 CAD E2E117/117 및 통제 합성 시계 Greenfield3/3 PASS, 최신 Production Build/Typecheck/Lint PASS(기존 경고11개). 서로 다른 실행을 전체737회 단일 실행으로 합산하지 않는다. 실제 시계 역행 실패·fixture 조치·독립 QA와 PR CI/현장 잔여는 TestReport/FailureLedger에서 분리한다.
+
+## [0.48.0 후보] Issue #55 / #56 브라우저 GENERATED 편집 (2026-10-31)
+
+- #55: 기존 WCS XY GeneratedDocument Rotate 명령을 그룹 Pivot 계산, 수치 편집(+ = CCW), Canvas ↻ Ghost/ESC/PointerUp 확정, Undo 1단계에 연결. 기존 SOURCE/RENDER/mixed fail-closed, Hole/MultiPolygon 및 immutable base 보존.
+- #56: `cad-generated-objects` 브라우저 JSON v2 Export/Import. Version/SHA/INSUNITS/UUID/Origin/Provenance/허용 rigid operations/Geometry/크기 검증, 전체 성공 시 atomic replace; 기존 #31 v1/typed v2 Legacy와 다운로드 호환 유지. 서버 업로드/자동 DB 저장 없음.
+- 메뉴 위치는 #127 `도면` 그룹과 #138 기존 `작업 → 선택·편집 도구` 이동 패널을 재사용. `src/package.json` + `src/package-lock.json` 버전 0.48.0 후보. 회귀 및 구현 상세 [Issues55-56](Issues55-56.md). PR CI/현장 수용 결과 미확인.
+
+---
+
+## 0.47.5 — PR #177 Owner Managed 병합·GHCR Main 실행 인계 (2026-10-31)
+
+- #139(UTF-8 vs stale ANSI_949 text index), #138(공통 Viewer movable Layer/Outline/Tools/TEXT Panel), #137(전체 도면 목록 Link + 미저장 Confirm) 구현·합성 회귀 및 [PR CI 41166539969](https://github.com/planner77/layoutManager/actions/runs/41166539969) Verify/Docker SUCCESS.
+- 3 Codex P1 리뷰 답변/Resolved, Main 충돌 0. [Squash `82ebb4c8`](https://github.com/planner77/layoutManager/commit/82ebb4c8b953b96497e7b287d600d8f6a9f59af4), 관련 Issues #139/#138/#137 `closed/completed` (합성 코드 범위).
+- Main [CI 41167762237](https://github.com/planner77/layoutManager/actions/runs/41167762237) release-scope SUCCESS / GHCR job 시작. **App/Migrator 0.47.5 이미지 게시 성공·정식 digest는 아직 미확인**. 기존 v0.47.4 및 실운영 Auth/DB/볼륨/현장 원본 변경 없음. 이 항목은 post-merge docs-only 증거 기록.
+
+---
+
+## 0.47.5 — PR candidate #139 → #138 → #137 (2026-10-31)
+
+- #139 DXF $ACADVER/legacy ANSI_949 정확 판정 및 UTF-8/CP949 strict 한글 검색 회귀.
+- #138 공용 MovableViewerPanel을 레이어/외곽선/도구/텍스트 검색으로 확대, M4 메모 호환 및 Canvas/검색 상태 보존.
+- #137 Viewer 좌측 맨 앞 전체 목록 이동 앵커와 미저장 작업 확인. 서버/DB/Source/Auth 불변. PR CI 및 GHCR 미수행.
+- 설계/테스트 [Issues137-139](Issues137-139.md).
+
+---
+
+## 0.47.4 — verified GHCR App/Migrator paired release (2026-10-31)
+
+- [PR #176](https://github.com/planner77/layoutManager/pull/176) delivers #88 M6 persisted Memo share link and #90 M7 secure cross-drawing search. Release source Main `328bbdc0ca02649cc551a61962cec9e76816ccde` from successful [PR CI #349](https://github.com/planner77/layoutManager/actions/runs/41158289254).
+- [Main CI #100](https://github.com/planner77/layoutManager/actions/runs/41159460418) **SUCCESS** with `v0.47.4` tag at release source; App `ghcr.io/planner77/layoutmanager:0.47.4`/`:latest` `sha256:fb608774450146144c0f47f0aa651df8d9b38d9166b005a366448dd9e9ea3140`; Migrator `:0.47.4-migrate`/`:latest-migrate` `sha256:aa9ed793289654b78ea39907e5145e810813956ad1c41669f6bfa81107c161e5`. The old `v0.47.3` release remains immutable.
+- #88/#90 closed/completed (code/CI implementation scope only). No physical field G7/2-PC/100k search performance acceptance or production deployment included. These notes are docs-only post-release evidence, not a new GHCR image source.
+
+---
+
+## 0.47.4 — #88/#90 Release candidate (2026-10-31)
+
+- Persisted Memo M6 URL/share/validated WCS focus and M7 G7 Site-scoped global DB search (see the earlier Unreleased section for details).
+- Preserve published `v0.47.3` pair from PR #175. Advance `src/package.json` and `src/package-lock.json` to `0.47.4`; release eligibility requires new exact-head PR CI and post-merge Main GHCR evidence. **Not published by this candidate commit.**
+
+---
+
+## Unreleased — #88/#90 Memo URL + cross-drawing Search (2026-10-31)
+
+- M6 #88: authenticated Version/SHA-pinned persisted Memo deep link, WCS camera focus and Tree highlight, hidden temporary display, Clipboard/direct-link fallback, bad UUID/renderer/Anchor fail-closed; reused existing Viewer grouped menu.
+- M7 #90: Current-only-by-default dedicated CAD home Memo search, optional historical Version, location/group/author/status/due filter, Site/role/revocation-limited parameterized SQLite search endpoint, safe snippet and result → M6 focus link. No CAD raw Source fetch or new DB migration.
+- Regression tests and design/operations notes added. **PR CI/Chrome/Typecheck/Build NOT RUN at this writing**, GHCR/Merge/Issue closure not performed; see [Issues88-90](Issues88-90.md) and [TestReport](TestReport.md).
+
+---
+
+## 0.47.3 — PR #175 merged Owner Managed, GHCR release pending (2026-10-31)
+
+- [PR #175](https://github.com/planner77/layoutManager/pull/175) #85 M4 Memo Tree + #86 M5 optional schedule/completion merged from successful [PR CI #341](https://github.com/planner77/layoutManager/actions/runs/41142161238) (two successful jobs, exact head a6d3bdef). The earlier TS18047 and WebGL PNG exact-match regressions are repaired and documented in FailureLedger.
+- Main Squash `c3e55a95ed2c7a61413e5b0577004252994fe988`; both implementation issues closed Owner Managed with deferred memo-parent hierarchy, existing-volume migration and site acceptance explicitly excluded.
+- [Main CI #41145893248](https://github.com/planner77/layoutManager/actions/runs/41145893248) initiated expected App/Migrator v0.47.3 paired GHCR publication. Images/digests and CI success NOT YET VERIFIED; a later docs-only Main push does not change the runtime release SHA.
+
+---
+
+## 0.47.3 PR #175 — E2E WebGL layer restoration regression correction (2026-10-31)
+
+- 2차 PR CI #41139632431: Docker/TypeScript/Lint/Unit/Next Build success, Playwright 101 passed / 2 failed due byte-exact Canvas PNG comparison after layer/fullscreen restoration. Added test-only normalized source-stroke similarity helper, retaining CSS fullscreen/Layer selection/Canvas identity/source request invariants. Related AGENTS, Decisions, TestPlan/TestReport and FailureLedger updated. New HEAD CI not yet verified; Main merge/GHCR/Issue close not done.
+
+---
+
+## 0.47.3 PR #175 corrective changes (2026-10-31)
+
+- Correct strict TypeScript TS18047 x5 from first PR CI #41137913177 (and dependent Docker Next baseline failure); shared desktop movable Memo Tree with pointer/keyboard/reset and modal fallback (#138 P1).
+- Fix local group assignment/deletion synchronization with MemoSession and search completion filtering (Codex P2 x2). Preserve old v0.47.2 one-row Anchor baseline for read-only runtime compatibility while maintaining exact schema checks.
+- Three review threads replied/resolved; Unit/E2E/Greenfield compatibility tests and failure ledger updated. New PR CI will run on final HEAD; no GHCR or issue closure.
+
+---
+
+## v0.47.2 정식 GHCR Release 발행 확인 (2026-10-31)
+
+- [#173](https://github.com/planner77/layoutManager/pull/173) Issue #84 Memo M3 자동 Session Snap·서버 영속 Attachment, #167 SOURCE_ONLY/ALL Origin Reset 코어 구현. [PR CI #332](https://github.com/planner77/layoutManager/actions/runs/41127321736) SUCCESS 및 [Main `59068a62ad8bb4e90b9d016ed0ddc0e6ae639ab7`](https://github.com/planner77/layoutManager/commit/59068a62ad8bb4e90b9d016ed0ddc0e6ae639ab7) Squash 완료.
+- `v0.47.2` 태그 및 App `ghcr.io/planner77/layoutmanager:0.47.2`/`:latest` `sha256:45d6df2cdb2100d2cf6b20264f0a39bc407938902b1490492c4c5a29036a5c06`, Migrator `:0.47.2-migrate`/`:latest-migrate` `sha256:77841b57e0e44b80b914beacedb02e4ce81bef2d0acb4524c545a19d6e47d6ad` 동시 후보 검증·정식 pair promotion SUCCESS. [Main CI #95](https://github.com/planner77/layoutManager/actions/runs/41131717206) 최종 SUCCESS, [docs-only Main CI #96](https://github.com/planner77/layoutManager/actions/runs/41132397577) SUCCESS/GHCR SKIPPED.
+- Issue #84/#167 코어 코드/합성 CI 종료, 잔여 UI/성능 #174, 정책 #172, Site/Auth/DXF/2PC #96/#113, Epic #160 S7 OPEN. 기존 운영 DB/Volume 이관 또는 실 CAD 현장 수용 미진행.
+
+---
+
+## 0.47.2 — PR #173 M3/S6 (2026-10-31)
+
+- [PR #173](https://github.com/planner77/layoutManager/pull/173)에서 #84 Memo WCS 자동 Endpoint/Vertex/Center 12px 스냅, 임시 GENERATED/RENDER 세션 변환·Undo/Redo/삭제 복원, 영속 CadMemoAnchor 생성·권한·CAS·감사, 삭제된 Memo의 dangling Anchor 회귀 보완을 구현.
+- #167 Source-only·ALL 초기화 메뉴/명시 확인 및 현재 Version 정확 ID·Revision 검증·단일 거래 soft delete+Audit, 원본 DXF/READY Scene/Current 불변. 신규 Greenfield `G7-GREENFIELD-ANCHOR-20261031-1` 별도 초기 스키마. 패키지·lock `0.47.2`.
+- [PR CI #332](https://github.com/planner77/layoutManager/actions/runs/41127321736) 성공·Squash [`59068a62ad8bb4e90b9d016ed0ddc0e6ae639ab7`](https://github.com/planner77/layoutManager/commit/59068a62ad8bb4e90b9d016ed0ddc0e6ae639ab7). [Main CI #95](https://github.com/planner77/layoutManager/actions/runs/41131717206) release-scope Job `124324008108` SUCCESS, GHCR Build/push Job `124324087630` **in_progress/PENDING**. 릴리스 태그 `v0.47.2`는 merge commit `59068a62ad8bb4e90b9d016ed0ddc0e6ae639ab7`에 생성 확인. App/Migrator 실제 pair 게시 성공/OCI Digest는 이 문서 기록 당시 **NOT VERIFIED**, 이후 실제 CI/Registry 로그 확인 전 SUCCESS라고 주장하지 않는다.
+- 잔여 #174 UI·성능, #172 Memo 작성자 정책, #96/#113 현장, #160 S7 별도. 기존 DB 이관 및 실제 운영 배포 미실시.
+
+---
+
+## v0.47.2 PR #173 M3 추가 보완 (2026-10-31)
+
+- #84 임시 GENERATED / DXF_IMPORTED WCS 후보 ENDPOINT·VERTEX·CENTER 12px 자동 스냅을 구현하고, 브라우저 세션의 Target local anchor와 생성·렌더 Transform/Undo/Redo를 연결. Delete→BROKEN_ANCHOR(last WCS)·동일 ID Undo→복귀, SOURCE_ONLY 강제 해제, 명시적 WCS 확정, 임시 관계 저장/공유 불가 안내.
+- #84/#167 Codex P1 수정: 개별 Memo DELETE 및 전체 초기화 시 dependent Anchor cleanup을 동일 SQLite transaction 내에서 실행해 이후 Outline/CAD 작업 불필요한 충돌 차단.
+- 신규 Unit/Chromium E2E 작성; 실제 최신 HEAD CI 성공은 실행 결과 확인 전 보장하지 않음. 운영 DB/Volume Migration, 서버에 저장되지 않은 SceneWork 영속 전환, Field Approval은 제외.
+
+---
+
+## v0.47.2 구현 후보 — Issue #84 M3 / #167 S6 (2026-10-31)
+
+- 업무 메모 FREE/ATTACHED/BROKEN_ANCHOR, 서버 영속 APP_CREATED UUID 및 인증된 SOURCE Ref 연결; Outline move/rotate/delete 시 종속 Memo world WCS/revision/audit 동기화.
+- DXF_IMPORTED 기준 SceneWork만 복구하는 SOURCE_ONLY와 명시 확인 후 Current Version의 APP_CREATED/Memo를 한 서버 거래에서 soft delete 하는 ALL 초기화. 임시/영속 객체의 범위 분리, 원본 Scene/DXF/Current 불변.
+- 별도 CadMemoAnchor 스키마 + 새 빈 Greenfield marker, 이전 business baseline 보존, 0.47.2 package/lock. 실제 CI/GHCR/현장 acceptance는 미확인. #172 타 작성자 Memo 편집 정책 미변경.
+
+---
+
+## v0.47.1 공식 GHCR 발행 — Issue #98/#83 (2026-10-30)
+
+- 최종 PR #171 CI #316 SUCCESS, Squash Main [e1984e26](https://github.com/planner77/layoutManager/commit/e1984e26a8649f0ac2bce3b0cb74ce69b163441e); [Main CI #93](https://github.com/planner77/layoutManager/actions/runs/41064962451) SUCCESS.
+- 신규 `v0.47.1` 및 `ghcr.io/planner77/layoutmanager:0.47.1`+`:0.47.1-migrate`·latest pair 게시 성공. 정확 SHA-256은 [FailureLedger](FailureLedger.md)에서 확인. 기존 `v0.47.0` 유지.
+- Issue #98/#83 코어 구현 종료, #172·#65/#71/#73·#84·#96/#109/#113 후속 수용 별도. 현장 설치·기존 볼륨 이전·복구·Auth 활성화 미실행.
+
+---
+
+## 0.47.1 — #98/#83 CadOutline·CadMemo 별도 업무 영속 Release 후보 (2026-10-30)
+
+- 기존 0.47.0 GHCR App/Migrator 정식 쌍을 덮어쓰지 않도록 `src/package.json`과 lockfile을 함께 0.47.1로 승격.
+- 신규 빈 Greenfield에 CadOutline, CadMemo 및 불변 감사 테이블. 사이트/세션 검증, WCS 좌표, SOURCE SHA/Handle 확인, Revision CAS, 논리 삭제, 별도 영속 Overlay 및 메모 재접속 복원.
+- PR #171 Codex P1/P2 세 건 보완, #311 strict TypeScript·#314 Vitest server-only import 실패 회귀를 보완하고 #315 두 Job 성공 확인. 버전 bump 이후 최신 CI 성공/병합/Main CI/GHCR 게시 사실은 각각 실제 관측하기 전 미확인.
+- #65, #84, Editor 공동 편집 및 실 현장 이전/수용은 별도이며 운영 데이터/볼륨/DRM/S3 무단 변경 없음.
+
+---
+
+## #98/#83 업무 외곽선·메모 별도 영속 PR 후보 (2026-10-30)
+
+- 신규 빈 Greenfield DDL에 CadOutline/CadMemo/CadBusinessAudit, 불변·append-only SQLite trigger와 Prisma 모델 추가. 기존 Scene·구 baseline fingerprint·서버 G7 인증 정책 유지.
+- G7 ACTIVE Version-Site 읽기/쓰기, Memo 작성자-only 수정/삭제, Outline Site Editor 협업, Revision CAS/Soft Delete/감사. APP_CREATED 독립 WCS 기하와 서버 소유 SOURCE SHA/Handle canonical 검증을 분리.
+- Memo Viewer: ACTIVE 재접속 서버 복원과 분리된 text/move 작업; OFF 기존 임시 M1 동작. Outline Viewer: 명시적 서버 저장, 개별 WCS Overlay, 이름/위치/회전/논리 삭제와 세션 Show/Hide.
+- 타입 #65, 연결 Memo #84, 기존 볼륨 전환, QA/CI 결과 확인, 병합/GHCR/배포/이슈 종료는 별도.
+
+---
+
+## 0.47.0 후보 — #166 Scene S5 일반 객체 작업
+
+- 원본 Handle 매핑과 독립적인 Three.js Stable ObjectRef 선택, 지원 WCS 2D 렌더 기하의 임시 APP_CREATED 외곽선 생성 및 기존 목록·편집·메모 소비 경로를 연결한다.
+- DXF_IMPORTED 이동·회전·표시 차분과 전용 Undo/Redo를 immutable 기준 Scene·원본 DXF에서 분리한다. 혼합 Origin 변경은 전체 거절한다. 정밀 원본 SHA/Handle/canonical 검증은 명시 모드에서 유지한다.
+- 렌더 기반 외곽선 provenance는 선택적이며 strict 원본 JSON 계약과 구분한다. 새로운 DB/서버 업무 API·운영 migration·배포는 없다. 실제 검증과 미실행 범위는 TestReport, 누적 실패는 FailureLedger를 따른다. PR CI 결과 확인 전 릴리스/수용 완료를 주장하지 않는다.
+
+---
+
+## 0.46.0 후보 — #164/#165 Scene Asset 영속화·Scene-first Viewer
+
+- #168 Scene domain/custom DTO를 재사용하고, typed array·geometry·Origin/ID·Version/source SHA·문자 검색 sidecar를 서버/브라우저에서 검증한다. Local/S3 immutable bytes와 SQLite SceneAsset/CurrentScene CAS·Audit, 실패 후보 추적을 추가한다.
+- 신규 Greenfield exact baseline과 별도 격리 SQL 후보를 추가한다. 기존 7-migration 경로 및 기존 exact baseline은 유지하며 실제 운영 DB에 적용하지 않는다.
+- READY 재진입은 저장 Scene을 복원하고 원본 GET/converter/outline parser를 시작하지 않는다. 명시 변환·저장은 기존 도면 메뉴에 연결하고 missing/corrupt/incompatible 및 기존 레거시 경로를 구분한다.
+- 기존 G7 권한·Site·CSRF·Audit를 재사용한다. APP_CREATED/#98/#83 독립 영속 API, S6 reset, 현장/운영 수용은 포함하지 않는다. 실제 실행 결과·실패 이력은 [TestReport](TestReport.md)/[FailureLedger](FailureLedger.md)를 기준으로 하며 CI 성공 관측 전 AC 완료 처리하지 않는다.
+
+---
+
+## 0.45.0 후보 — PR #168 Codex P2 Custom DTO 복원 보완
+
+- `scene-custom-dto.ts`에서 정규화된 정수형 BufferAttribute의 원시 저장 타입과 normalized flag를 보존하고 타입·범위·오버플로·지원되지 않는 특수 Attribute를 명시 거부하도록 변경했다. 미기재 type의 구 PoC Custom DTO는 잘못된 결과를 만들지 않고 거부한다.
+- `SC-08` Vitest 정상/음성 회귀와 TestPlan/TestReport/Decisions/FailureLedger를 갱신했다. 이전 PR CI 성공과 수정 HEAD CI 미검증 상태를 구분한다. 운영 API/DB·CAD·GHCR/배포는 변경하지 않는다.
+
+---
+
+## 0.45.0 후보 — #161–#163 CAD Scene S0/S1/S2
+
+- 순수 SceneAsset/SceneObject/AppObject·manifest 계약과 검증기를 추가하고 Version/source SHA·schema/builder/renderer/frame·불변 생성 Origin/ID를 구분했다. 실제 adapter 렌더 트리와 GeneratedDocument에 연결하며 기존 SOURCE/GENERATED·Undo/Redo·메모/JSON 동작을 유지한다.
+- 실제 `three-dxf-viewer@1.0.44` 합성 DXF에서 Three JSON·GLB·전용 DTO bytes를 생성하고 새 Browser 컨텍스트에서 복원하는 기본 Playwright 실험을 추가했다. 손상·scope·metadata·format·외부 자원·overlay 혼입 검증과 포맷별 충실도/크기/시간을 기록한다.
+- 신규 DB/API·Scene 저장/cutover·S5 선택/편집 활성화·원본 변경·배포는 포함하지 않는다. 실제 시험과 실패/수정 이력은 [TestReport](TestReport.md), [FailureLedger](FailureLedger.md)를 기준으로 한다. 현재 PR 후보이며 CI/GHCR/현장 수용 완료 기록이 아니다.
+
+---
+
+## 0.44.2 후보 — #109 표준 Compose 신규 설치 및 최초 관리자 웹 설정
+
+- 일반 Compose의 빈 볼륨에 최종 Schema를 생성하고 호스트 일회용 코드로 웹 최초 Admin 설정; 기존 권한·세션·감사를 유지하는 신규 설치 후보. 기존 DB 자동 삭제/이관은 하지 않는다.
+- PR #159의 2차 CI 실패(`40946304142`): 익명 CRUD smoke를 기대하던 테스트를 현행 인증 Greenfield 설치/CAD/재시작 계약에 맞췄다. Native SQLite·레이어 감사 검증은 보존했다.
+- 독립 로컬 QA에서 발견한 최초 Setup E2E의 전역 alert 모호성을 설정 폼 범위로 제한해 검증한다. API·보안 정책은 변경하지 않는다.
+- 설치·개발 문서의 순서를 사업장 생성 → 본인 명시 Site Grant → 동·층 생성으로 정정했다. 상세 실제 검증은 [TestReport](TestReport.md), 누적 실패는 [FailureLedger](FailureLedger.md) 참조. PR 후보 유지; GHCR 게시·병합·현장 수용 완료 기록이 아니다.
+
+---
+
+## 0.44.1 후보 — #153 Greenfield 신규 설치
+
+- 빈 독립 DB/새 CAD 볼륨에 최종 Schema와 G7 Auth/Role/Site/Audit 기능 구축, 예전 DB 데이터·HOLD·Migration 사용 안 함.
+- 단발 Site seed/Owner 신규 서명/초기 Admin, 별도 보관 DXF를 수동 업로드.
+- PR 후보 상태; CI·GHCR·현장 설치 완료 주장이 아님.
+
 # ChangeLog
+
+## 0.44.0 후보 — Issue #153 G7 운영 통합
+
+기존 Auth/Session/Role/Site/Audit를 실제 Runtime API·관리 UI·CAD 거래에 연결하고 별도 서명 Runtime Gate와 격리 Migration/Restore 실행 경로를 추가한다. 실제 운영 활성화·정식 이미지/태그·병합·배포는 이번 작업에서 수행하지 않는다. 검증 결과는 TestReport의 #153 절을 따른다.
+
+- PR #156 P2 보완: Site 비활성화의 영향을 해당 Site CAD 쓰기로 한정하고 다른 Site·로그인·Admin 재활성화 경로를 유지한다. Migration/Restore 강제 종료 후 실행 잠금과 HOLD를 통한 명시 복구 회귀를 추가한다. 미릴리스 0.44.0 후보 내 보완이며 실제 결과는 TestReport의 PR #156 절을 따른다.
+
+## v0.43.0 후보 — Issue #82 세션 WCS 메모 및 Renderer UX (2026-10-28)
+
+- MINOR 신규 기능. `three-dxf-viewer`에 session-local MemoDraft WCS XY 앵커·핀·레이블, 위치 drag/좌표 명시 확정·텍스트만 저장/ESC rollback·Version/SHA 격리, Source/Generated Tool 상호배타와 비지원 Renderer fail-closed 적용. #127 `작업 > 메모 추가/편집`과 하단 Drawer 재사용. 메모 영속, 사용자인증 및 공유는 #83 등 후속 비범위.
+- `v0.42.1`은 기존 릴리스 태그이므로 앱/lock root를 `0.43.0`으로 정렬. 기존 App/Migrator Tag/Digest 이동 금지. Main CI를 통한 새로운 Pair digest·릴리스 게이트 및 실제 게시 결과 검증 필요.
+- 버전 정렬 전 [PR #111 CI 40580691233](https://github.com/planner77/layoutManager/actions/runs/40580691233) Verify/Chromium/Legacy/Docker SUCCESS. 정렬된 **최종 HEAD PR CI는 미실행/미검증**, 그 결과와 최신 리뷰·Main 충돌 확인 전 병합 금지. 현장 CAD/GPU/운영 DB·Prisma/G7 Auth/Writer/Owner GO OFF.
+
+## v0.42.1 후보 — Issue #57 공통 Logger·UploadDiagnostics 단일화 (2026-10-27)
+
+- 기존 #18 구조화 Logger 재사용 및 업로드 별도 console JSON emitter 제거. Versioned Schema v1, 안전한 필드 allowlist/정적 Error code·category 재정제, `LOG_LEVEL`/`LOG_FORMAT` 단일 필터 적용. 공개 진단/첫 실패/요청 ID 계약 유지, 반복 성공 Health 200 debug-only.
+- 일부 수동 CLI의 원시 Error 메시지 출력 제거; 단위 회귀 테스트 및 운영/개발 가이드 동기화. 최초 PR CI의 Migrator Logger→Catalog 누락에 따른 Docker smoke 실패를 COPY closure/Node import 사전검사/TC-LOG-MIG-001로 보완했으며 수정 HEAD CI 결과는 미검증. 기존 API 응답/DB Migration·Viewer·G7 Auth 활성화 및 로그 보관/조회 API/UI는 변경/추가 없음.
+- 소스·PR CI 후보이며 CI PASS, GHCR 이미지 게시, 병합 또는 사내 운영 적용 완료가 아니다. [Issue57](Issue57.md), [TestReport](TestReport.md) 참고.
+
 
 ## v0.42.0 — #124/#126/#127 목록 고정·DXF 복구·Viewer 메뉴/Drawer (2026-10-27)
 
@@ -47,6 +421,33 @@ G1~G3 기반 G4 비라우팅 서버 인가, Admin Grant/disable, 안전 append-o
 - PR #115 구 HEAD d771d553 CI 40201366001 Verify/Docker 성공 이후 Codex P2 리뷰 4371142398에 따라 관리 화면을 Viewer로 오인할 수 있는 검증을 실제 /cad/versions/ID/viewer 요청으로 교정하고 Unit TC-P4-G5-007 추가.
 - 기존 v0.40.3 GHCR pair를 재사용하지 않고 src/package.json/lock root 0.40.4로 정렬. 수정 HEAD PR CI [40224438075](https://github.com/planner77/layoutManager/actions/runs/40224438075), Main CI/GHCR App·Migrator Pair 게시 [40225537167](https://github.com/planner77/layoutManager/actions/runs/40225537167) 모두 성공, 태그 v0.40.4 확인. 실제 LAN 기능 E2E는 #108에서 NOT RUN.
 - 기존 운영 Nginx/Compose/Auth/API/Prisma/DB/CAD/S3/원본 SHA·Current 불변. G6 현장 수용과 G7 별도 Owner 운영 승인 유지.
+
+
+### #82 PR #111 — #99 Main 코드·정책 통합, ADR-053 재번호화 (2026-10-25)
+
+- #99 실 DXF Private evidence gate/CLI, symlink path 보호, 테스트와 npm `verify:outline-acceptance` script를 최신 main에서 모두 유지. #99 실DXF ADR-052는 불변, #82 WCS Memo ADR은 중복 방지 위해 ADR-053으로 이동. 0.41.0(app/lock root)과 현 0.40.3 main 패치 이력을 구분하며 재게시·태그 이동·GHCR 승격 없음.
+- 새 통합 HEAD CI에서 U1 shared Memo Dock 정정과 #99 Unit/Build/E2E 회귀를 다시 검증해야 한다. CI 시작은 PASS와 다름.
+
+
+### Issue #82 / PR #111 — 2차 CI 77/78 E2E 회귀 U1/M1 계약 수정 (2026-10-25)
+
+- 최초 lint 실패 교정 뒤 PR CI [40198344153](https://github.com/planner77/layoutManager/actions/runs/40198344153)에서 Typecheck/Lint/Unit/Benchmark/Build/Docker PASS, Chromium E2E 77 PASS/1 FAIL (U1 기존 dock 부재 assertion). Legacy SKIPPED.
+- Memo M1 FREE WCS가 Source stable Handle 없이도 지원되는 현행 설계를 유지하며, U1 test assertion을 Memo status Dock과 Source/Outline 도구 미노출 개별 검사로 전환. dxf-viewer·DWG에서는 Memo disabled 검증, 무Handle DXF의 WCS 메모 생성 신규 TC-M1-E2E-006 추가. 원본 U1 기능/스크롤·ESC·레이어 테스트 유지.
+- 제품 코드·앱 버전 0.41.0·API/DB/Prisma/Auth/원본 SHA/Current/GeneratedDocument/배포 정책 불변. 새 HEAD CI 미확인; 기존 실패 원장 보존.
+
+
+### Issue #82 / PR #111 — 최초 CI ESLint 차단 및 편집 리뷰 보완 (2026-10-25)
+
+- 기존 `1515eca` [Run 40196496297](https://github.com/planner77/layoutManager/actions/runs/40196496297) Verify Typecheck PASS/ESLint 2 errors FAIL, 나머지 Verify SKIPPED, Docker Job PASS. React ref/render 규칙 위반, E2E let→const, 불필요 lint suppression 제거.
+- [P1 4370961641](https://github.com/planner77/layoutManager/pull/111#discussion_r4370961641) 기존 memo pin/list 접근 도구 독점, [P2 4370961642](https://github.com/planner77/layoutManager/pull/111#discussion_r4370961642) Drag click이 편집 폼 미저장 텍스트를 덮어쓰는 결함 수정. `TC-M1-E2E-004/005` 추가, 실패 원장 누적. 최신 CI 결과 전 NOT VERIFIED, 버전 0.41.0 및 기존 Source/DB/Auth/Current 불변.
+
+
+## v0.41.0 — Issue #82 CAD 메모 M1 WCS 세션 Overlay (2026-10-25 / PR CI 검증 전)
+
+- `MemoSession` 도메인(Version UUIDv4+SHA64/UUIDv4 local, NFC 제목·본문 유효성, WCS finite ±1e12, 100건 상한), `CadMemoOverlay` WCS 고정 pin+plain-text label, 클릭 자유 배치/위치 드래그 Ghost 취소·확정, 수치 이동과 텍스트만 별도 수정/삭제.
+- `ViewerManager/ThreeDxfViewerAdapter` CSS px↔WCS Orthographic 변환과 카메라/Resize 갱신; M1 메뉴/툴을 Viewer shell에 연결하고 #40 Outline 생성/Generated 선택·Source hit-test와 분리. 메모는 Reload/Version/Renderer 전환에서 소멸하고 Auth/영속 저장이 없음을 명시.
+- Unit 6/E2E 3 및 opt-in Benchmark 2(1k/10k synthetic DXF) 작성, [Issue82](Issue82.md)/ADR-053·Requirements/Architecture/TestPlan/TestReport/README/AGENTS 동기화. Native/실 CAD/GPU/100 Memo 성능 미실측. Typecheck/Lint/Unit/E2E/Build/Docker/PR CI 결과 **NOT RUN/NOT VERIFIED**(실제 완료 뒤 판단).
+- `src/package.json`/`src/package-lock.json` root 0.41.0 정렬. DB/API/Prisma/Auth/Docker/Version·SHA/Current/원본·Generated edit·#2 설명 기능 불변, 영속 #83 별도 차단.
 
 
 ## Unreleased — Issue #99 PR #110 P1 보안 리뷰 보완 / GHCR v0.40.3 후보 (2026-10-25)

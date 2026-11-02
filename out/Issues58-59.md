@@ -1,0 +1,29 @@
+# Issues #58 / #59 — Observability L2+L3
+Date: 2026-10-31. Dependency #57 completed. Root DESIGN.md does not exist; architecture and ADR are authoritative.
+
+## Implementation
+- The existing L1 writeLog emitter still writes sanitized, schemaVersion=1 JSON to stdout/stderr. It additionally queues those same allowlisted events in an optional, server-owned JSONL sink. Do not mirror arbitrary Next, Docker, Nginx, SQL, exception stack, raw upload or credential data.
+- RequestLogContext.phase correlates API operations to the existing server requestId, X-Request-Id, stage, outcome and elapsedMs. Success/warning/failure distinguish a completed business write from an unsuccessful storage cleanup or cache revalidation. Safe internal Prisma P#### or SQLITE_* codes may be recorded without changing HTTP response. JobLogContext provides server UUID jobId, phase and elapsedMs across database checks, storage cleanup and delete-password backfill. Verified 40-hex G7_RELEASE_SOURCE_COMMIT becomes buildRevision; arbitrary revision is rejected.
+- Health success polling remains debug-only, failure is transition-sampled or every five minutes, and recovery emits once. No Next startup/shutdown signal hooks are installed because framework lifecycle behavior and signals are not stable contracts.
+- The private store uses a server-fixed /data/logs directory, UID 10001, directory 0700 and file 0600, O_EXCL+O_NOFOLLOW and lstat validation. Each writer gets a unique filename, source app or maintenance, logId UUID, and rotation sequence; app and maintenance never append to the same file. No Docker socket or path from client is involved. No SQLite business log table is added.
+- Default Compose: LOG_STORE_ENABLED=true, LOG_RETENTION_DAYS=7, LOG_MAX_FILE_MB=4, LOG_MAX_TOTAL_MB=64; invalid numeric settings fall back to defaults. Supported ranges: retention 1..30 days, file 1..8 MiB, aggregate 4..256 MiB, maximum 64 files, in-memory queue 1 MiB. Enqueue is best effort and non-blocking. ENOSPC, EROFS and permission errors increment bounded in-memory counters but never invoke the logger or fail business writes. Maintenance scripts flush before process exit. Partial trailing lines from an interrupted writer are ignored; restarts create a new file.
+- Internal readStructuredLogTail accepts only source, bounded limit <=200 and validated timestamp/logId cursor. It scans at most 16 regular files, 8 MiB each, never a user-supplied filename, and ignores invalid JSON or unterminated last lines. NO HTTP log viewer is implemented until #60/#61 authentication and access scope is approved.
+- Docker local driver retention (10 MiB x 5) is unchanged and is independent of the app-owned store; persistence is NOT immutable AuditEvent. Aggregate budget enforcement runs on opening and periodically on writes. Distinct concurrent writers are isolated but lack atomic cross-process quota coordination; brief overage can occur. Another writer may prune even an open file after 60 seconds of inactivity; before each following append the writer checks nlink/dev/ino and the pathname and reopens if unlinked or replaced. Previously evicted records still obey retention. Logging may drop if capacity cannot be reclaimed. Exact cross-process atomic quota guarantees and sudden power-loss fsync durability are not claimed.
+- Dockerfile creates /data/logs non-root. Existing /data/db, /data/cad, data volume names, App/Migrator image pair, G7 Auth and CAD permissions are unchanged. Preexisting mounted volumes can create the private directory at first write; unsafe permissions disable only sink writes. Backups of volume may contain up to the configured log budget. Older image rollback ignores logs. Never run down -v, alter live DB or purge logs without Owner approval.
+
+## Test and acceptance
+- Synthetic tests: logging-l2.test.ts, log-store.test.ts plus existing logger/upload/delete/health suites. Verify request/job IDs, stage order, warning semantics, revision, rotation/retention, restart persistence, independent writers, symlinks, truncated JSON, queue and injection-based ENOSPC.
+- CI, Docker Compose smoke and actual field volume backup/rollback are NOT VERIFIED until runs complete. No deployment, GHCR publication, issue closure, real G7 runtime changes or production migration is authorized in this PR-CI start request.
+
+
+## PR #179 failed CI and P2 remedies (2026-10-31)
+
+- Original Run 41194360963 TS2345: generic request stage must not be passed to UploadDiagnostics.finishFailure, which accepts only UploadStage. TC-L2-004 verifies the separate types, P2022 and Request ID.
+- P2 4431462654: another writer may unlink an idle open file; verify fd nlink/dev/ino against path before append, reopen on mismatch, TC-L3-007. This does not provide cross-process atomic check+write or guarantee retention beyond eviction.
+- P2 4431462655: accept file sequence 10000+ in inventory/read/retention and reset before Number.MAX_SAFE_INTEGER; TC-L3-008. Fix prune(0) exact maxFiles condition; TC-L3-009. Both P2 threads answered and Resolved. Corrected PR CI and field tests not yet verified; see FailureLedger.md.
+
+
+## PR #179 2차 실패 후 Migrator 배포 정합성 (2026-10-31)
+
+- 첫 재시작 Run `41202514157`에서 L2 Typecheck/ESLint는 성공했으나 L3 테스트용 디렉터리 0755로 인해 ENOSPC 주입이 호출되지 않았다. Fixture만 0700으로 수정, runtime fail-closed 권한 정책 유지.
+- Logger의 신규 정적 import `./logging/store`는 최소 Migrator Docker Target에도 개별 COPY 및 비루트 `test -f`와 tsx import smoke가 반드시 필요. Main 기반의 CI 비교용 Dockerfile은 동일 현재 PR 소스와 호환되도록 신규 파일 한 건만 임시 사본에 추가해야 하며 원본 Main 이미지·측정 게이트는 건드리지 않는다. 상세 [FailureLedger](FailureLedger.md), [TestPlan](TestPlan.md).

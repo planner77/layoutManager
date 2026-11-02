@@ -20,12 +20,16 @@ export function resolveG1VersionSite(db: IsolatedDb, versionId: string): string 
 }
 /** G2 recovery: consumed nonce, password change, session revoke and audit commit together. */
 export function consumeG1Recovery(db: IsolatedDb, target: string, nonce: string,
-    newHash: string, now: number, requestId: string, injectFailure = false): void {
+    newHash: string, now: number, requestId: string, injectFailure = false,
+    runtime?: Readonly<{ assertCurrent(): void; now(): number; assertTarget?(id: string): void }>): void {
   if (!/^[A-Za-z0-9_-]{16,128}$/.test(nonce) || !newHash.startsWith('scrypt$local-v1$'))
     throw new Error('G7_RECOVERY_INPUT_INVALID');
   const nonceHash = createHash('sha256').update(nonce).digest('hex');
   db.exec('BEGIN IMMEDIATE');
   try {
+    runtime?.assertCurrent();
+    runtime?.assertTarget?.(target);
+    now = runtime?.now() ?? now;
     const allowed = db.prepare('SELECT 1 FROM "User" u JOIN "UserRoleGrant" r ON r.user_id=u.id WHERE u.id=? AND u.status=\'ACTIVE\' AND r.role=\'Admin\'').get(target);
     if (!allowed) throw new Error('G7_RECOVERY_TARGET_INVALID');
     db.prepare('INSERT INTO "AdminRecoveryNonce"(nonce_hash,user_id,consumed_at) VALUES(?,?,?)')

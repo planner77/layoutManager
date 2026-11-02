@@ -12,6 +12,7 @@ on:
   pull_request:
     branches:
       - main
+      - 'feat/**'
     types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
     inputs:
@@ -34,19 +35,42 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  verify:
-    name: Typecheck, lint, test, build, E2E
+  scope:
+    name: Classify PR scope and audit merge defaults
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-
-    defaults:
-      run:
-        working-directory: src
-
+    timeout-minutes: 5
+    outputs:
+      full: ${{ steps.classify.outputs.full }}
+      baseline: ${{ steps.classify.outputs.baseline }}
     steps:
-      - name: 저장소 체크아웃
+      - name: Checkout history for exact PR diff
         uses: actions/checkout@v4
-
+        with:
+          fetch-depth: 0
+      - name: Check fail-closed scope classifier (#197)
+        run: python3 .github/scripts/test_pr_ci_scope.py
+      - name: Determine required CI scope
+        id: classify
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            python3 .github/scripts/pr_ci_scope.py manual /dev/null "$GITHUB_OUTPUT"
+          else
+            for sha in "$BASE_SHA" "$HEAD_SHA"; do
+              if [[ ! "$sha" =~ ^[0-9a-f]{40}$ ]] || ! git cat-file -e "${sha}^{commit}"; then
+                echo "::error::PR ref missing; refusing docs-only classification"
+                exit 1
+              fi
+            done
+            git diff --no-renames --name-only -z "$BASE_SHA" "$HEAD_SHA" -- > "$RUNNER_TEMP/pr-changed-paths.nul"
+            python3 .github/scripts/pr_ci_scope.py pr "$RUNNER_TEMP/pr-changed-paths.nul" "$GITHUB_OUTPUT"
+          fi
+          echo "## PR CI path scope (#197)" >> "$GITHUB_STEP_SUMMARY"
+          grep -E '^(full|baseline)=' "$GITHUB_OUTPUT" >> "$GITHUB_STEP_SUMMARY"
 
       # Advisory only until a repository administrator applies Issue #76.
       # Do not mistake an advisory PR CI success for acceptance of the repo setting.
@@ -74,6 +98,19 @@ jobs:
             echo "::warning title=${prefix}::Expected enabled/PR_TITLE/BLANK, observed ${observed}. Administrator must update repository Settings; diagnostic is non-blocking."
             echo "- ${prefix}: **NOT APPLIED** (expected enabled/PR_TITLE/BLANK; observed ${observed}). See Issue #76." >> "$GITHUB_STEP_SUMMARY"
           fi
+
+  quality:
+    name: Static, unit, benchmark and production build
+    needs: scope
+    if: needs.scope.outputs.full == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: src
+    steps:
+      - name: Checkout exact PR revision
+        uses: actions/checkout@v4
 
       - name: Node.js 설정
         uses: actions/setup-node@v4
@@ -106,31 +143,200 @@ jobs:
 
       # run.mjs treats unresolved Webpack import/export warnings as hard failures.
       # This must run BEFORE browser tests and GHCR promotion.
+      - name: Validate timing reporter (#197)
+        run: node --test ../.github/scripts/report-playwright-duration.check.mjs
+
       - name: Production 빌드
         run: npm run build
 
-      - name: Playwright Chromium 설치
-        run: npx playwright install --with-deps chromium
-
-      - name: E2E 테스트
-        run: npm run test:e2e
-
-      - name: Legacy migration E2E 테스트
-        run: npm run test:master-migration
-
-      - name: E2E 실패 결과 업로드
-        if: failure()
+      - name: Pack reusable standalone build (preserve symlinks)
+        run: |
+          test -f .next/standalone/server.js
+          tar --exclude='.next/cache' -cf "$RUNNER_TEMP/production-build.tar" .next
+          tar -tf "$RUNNER_TEMP/production-build.tar" .next/standalone/server.js > /dev/null
+      - name: Upload exact-HEAD production build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-test-results
-          path: src/test-results
+          name: production-build-${{ github.run_id }}
+          path: ${{ runner.temp }}/production-build.tar
+          if-no-files-found: error
+          retention-days: 1
+          overwrite: true
+
+  e2e:
+    name: General Chromium E2E (shard ${{ matrix.shard }}/2)
+    needs: [scope, quality]
+    if: needs.scope.outputs.full == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    defaults:
+      run:
+        working-directory: src
+    env:
+      PLAYWRIGHT_JSON_OUTPUT_FILE: /tmp/layoutmanager-general-shard-${{ matrix.shard }}.json
+    steps:
+      - name: Checkout exact PR revision
+        uses: actions/checkout@v4
+      - name: Node.js and npm cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.14.0
+          cache: npm
+          cache-dependency-path: src/package-lock.json
+      - name: Install frozen dependencies
+        run: npm ci
+      - name: Generate Prisma Client for isolated test database
+        run: npm run db:generate
+      - name: Download exact-HEAD production build
+        uses: actions/download-artifact@v4
+        with:
+          name: production-build-${{ github.run_id }}
+          path: ${{ runner.temp }}
+      - name: Restore standalone build without rebuilding
+        run: |
+          tar -xf "$RUNNER_TEMP/production-build.tar" -C .
+          test -f .next/standalone/server.js
+      - name: Playwright Chromium and system dependencies
+        run: npx playwright install --with-deps chromium
+      - name: General E2E shard ${{ matrix.shard }}/2
+        run: npm run test:e2e -- --shard=${{ matrix.shard }}/2 --reporter=dot,json
+      - name: Report slow Playwright tests (#197)
+        if: always()
+        run: node ../.github/scripts/report-playwright-duration.mjs "$PLAYWRIGHT_JSON_OUTPUT_FILE" "General Chromium shard ${{ matrix.shard }}/2"
+      - name: Upload Playwright JSON and failure traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-general-${{ matrix.shard }}-${{ github.run_attempt }}
+          path: |
+            ${{ env.PLAYWRIGHT_JSON_OUTPUT_FILE }}
+            src/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  greenfield-e2e:
+    name: G7 Greenfield UI E2E (#109)
+    needs: [scope, quality]
+    if: needs.scope.outputs.full == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: src
+    env:
+      PLAYWRIGHT_JSON_OUTPUT_FILE: /tmp/layoutmanager-greenfield.json
+    steps:
+      - name: Checkout exact PR revision
+        uses: actions/checkout@v4
+      - name: Node.js and npm cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.14.0
+          cache: npm
+          cache-dependency-path: src/package-lock.json
+      - name: Install frozen dependencies
+        run: npm ci
+      - name: Generate Prisma Client for isolated test database
+        run: npm run db:generate
+      - name: Download exact-HEAD production build
+        uses: actions/download-artifact@v4
+        with:
+          name: production-build-${{ github.run_id }}
+          path: ${{ runner.temp }}
+      - name: Restore standalone build without rebuilding
+        run: |
+          tar -xf "$RUNNER_TEMP/production-build.tar" -C .
+          test -f .next/standalone/server.js
+      - name: Playwright Chromium and system dependencies
+        run: npx playwright install --with-deps chromium
+      - name: G7 신규설치 최초 관리자 웹 UI E2E (#109)
+        run: npx playwright test --config playwright.g7-greenfield.config.ts --reporter=dot,json
+      - name: Report slow Playwright tests (#197)
+        if: always()
+        run: node ../.github/scripts/report-playwright-duration.mjs "$PLAYWRIGHT_JSON_OUTPUT_FILE" "G7 Greenfield"
+      - name: Upload Playwright JSON and failure traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-greenfield-${{ github.run_attempt }}
+          path: |
+            ${{ env.PLAYWRIGHT_JSON_OUTPUT_FILE }}
+            src/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  runtime-legacy-e2e:
+    name: G7 signed runtime and legacy migration E2E
+    needs: [scope, quality]
+    if: needs.scope.outputs.full == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: src
+    steps:
+      - name: Checkout exact PR revision
+        uses: actions/checkout@v4
+      - name: Node.js and npm cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.14.0
+          cache: npm
+          cache-dependency-path: src/package-lock.json
+      - name: Install frozen dependencies
+        run: npm ci
+      - name: Generate Prisma Client for isolated test database
+        run: npm run db:generate
+      - name: Download exact-HEAD production build
+        uses: actions/download-artifact@v4
+        with:
+          name: production-build-${{ github.run_id }}
+          path: ${{ runner.temp }}
+      - name: Restore standalone build without rebuilding
+        run: |
+          tar -xf "$RUNNER_TEMP/production-build.tar" -C .
+          test -f .next/standalone/server.js
+      - name: Playwright Chromium and system dependencies
+        run: npx playwright install --with-deps chromium
+      - name: G7 서명 Runtime 로그인·관리·CAD 권한 E2E
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_FILE: ${{ runner.temp }}/signed-runtime.json
+        run: npx playwright test --config playwright.g7-runtime.config.ts --reporter=dot,json
+      - name: Report signed-runtime timing
+        if: always()
+        run: node ../.github/scripts/report-playwright-duration.mjs "$RUNNER_TEMP/signed-runtime.json" "G7 Signed Runtime"
+      - name: Legacy migration E2E 테스트
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_FILE: ${{ runner.temp }}/legacy-migration.json
+        run: npm run test:master-migration -- --reporter=dot,json
+      - name: Report migration timing
+        if: always()
+        run: node ../.github/scripts/report-playwright-duration.mjs "$RUNNER_TEMP/legacy-migration.json" "Legacy Migration"
+      - name: Upload runtime/legacy JSON and failure traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-runtime-legacy-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/signed-runtime.json
+            ${{ runner.temp }}/legacy-migration.json
+            src/test-results/
           if-no-files-found: ignore
           retention-days: 7
 
   docker-runtime:
     name: Docker image size, migration and runtime smoke
+    needs: scope
+    if: needs.scope.outputs.full == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: read
     steps:
       - name: Checkout including baseline revision
         uses: actions/checkout@v4
@@ -138,6 +344,9 @@ jobs:
           fetch-depth: 0
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+      - name: Read candidate version for inspected image-pair labels (#209)
+        id: image-version
+        run: python3 -c 'import json,os;v=json.load(open("src/package.json"))["version"];open(os.environ["GITHUB_OUTPUT"],"a").write("version="+v+"\n")'
       - name: Validate tagless and digest image-pair Compose resolution
         shell: bash
         run: |
@@ -155,32 +364,117 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 -m py_compile src/scripts/audit_standalone_layers.py src/scripts/test_audit_standalone_layers.py src/scripts/smoke_web_runtime.py
+          python3 -m py_compile src/scripts/audit_standalone_layers.py src/scripts/test_audit_standalone_layers.py src/scripts/smoke_web_runtime.py src/scripts/smoke_greenfield_runtime.py
           python3 src/scripts/test_audit_standalone_layers.py
+          python3 -m py_compile src/scripts/g7-upgrade.py src/scripts/test_g7_upgrade.py src/scripts/smoke_greenfield_wal_readonly.py
+          python3 src/scripts/test_g7_upgrade.py
+          # #211 single entrypoint: fail PR before Docker build if host policy regresses.
+          python3 -m py_compile src/scripts/g7-deploy.py src/scripts/test_g7_deploy.py
+          python3 src/scripts/test_g7_deploy.py
       - name: Build pre-change baseline (same source, original Dockerfile)
+        if: needs.scope.outputs.baseline == 'true'
         shell: bash
         run: |
           set -euo pipefail
           BASE_SHA="${{ github.event.pull_request.base.sha }}"
           if [ -z "$BASE_SHA" ]; then BASE_SHA="$(git rev-parse origin/main)"; fi
           git show "$BASE_SHA:src/Dockerfile" > "$RUNNER_TEMP/issue28-baseline.Dockerfile"
+          # The baseline uses the PR's CURRENT source, including the newly added
+          # logger relative import. Supply ONLY this required one-file closure to
+          # the comparison Dockerfile; otherwise baseline migrator cannot start.
+          # Do not bypass its import smoke, size comparison or native DB checks.
+          python3 - "$RUNNER_TEMP/issue28-baseline.Dockerfile" <<'PY'
+          from pathlib import Path
+          import re
+          import sys
+          baseline = Path(sys.argv[1])
+          source = baseline.read_bytes()
+          anchor = b"COPY --from=builder /app/src/server/logger.ts ./server/logger.ts\n"
+          dependency = b"COPY --from=builder /app/src/server/logging/store.ts ./server/logging/store.ts\n"
+          stages = list(re.finditer(rb"(?im)^[ \t]*FROM[ \t]+[^\r\n]+(?:\r?\n|$)", source))
+          migrators = [i for i, stage in enumerate(stages)
+                       if re.search(rb"(?i)[ \t]+AS[ \t]+migrator[ \t]*(?:\r?\n|$)", stage.group())]
+          if len(migrators) != 1:
+              raise SystemExit("Baseline migrator stage is missing or ambiguous")
+          stage_index = migrators[0]
+          start = stages[stage_index].start()
+          end = stages[stage_index + 1].start() if stage_index + 1 < len(stages) else len(source)
+          # A near-match COPY is not a valid closure. It must not be silently
+          # accepted or duplicated under a different destination/stage.
+          for line in source.splitlines(keepends=True):
+              copy = re.match(rb"(?i)^COPY[ \t]+", line.lstrip())
+              if b"server/logger.ts" in line and copy and line != anchor:
+                  raise SystemExit("Baseline logger COPY is malformed")
+              if b"server/logging/store.ts" in line and copy and line != dependency:
+                  raise SystemExit("Baseline store COPY is malformed")
+          anchors = list(re.finditer(rb"(?m)^" + re.escape(anchor), source))
+          if source.count(anchor) != 1 or len(anchors) != 1 or not (start <= anchors[0].start() < end):
+              raise SystemExit("Baseline logger package manifest differs from expected source")
+          copies = list(re.finditer(rb"(?m)^" + re.escape(dependency), source))
+          count = source.count(dependency)
+          if count != len(copies) or count > 1 or count == 1 and not (start <= copies[0].start() < end):
+              raise SystemExit("Baseline store COPY is duplicate or outside migrator")
+          if count == 0:
+              position = anchors[0].end()
+              baseline.write_bytes(source[:position] + dependency + source[position:])
+          PY
           docker buildx build --load --platform linux/amd64 -f "$RUNNER_TEMP/issue28-baseline.Dockerfile" -t cad-layout-viewer:baseline .
           docker buildx build --load --platform linux/amd64 --target migrator -f "$RUNNER_TEMP/issue28-baseline.Dockerfile" -t cad-layout-viewer:baseline-migrate .
-      - name: Build phase1, standalone app and migration targets
-        shell: bash
-        run: |
-          set -euo pipefail
-          docker buildx build --load --platform linux/amd64 --target phase1 -f src/Dockerfile -t cad-layout-viewer:phase1 .
-          docker buildx build --load --platform linux/amd64 --target runtime -f src/Dockerfile -t cad-layout-viewer:ci .
-          docker buildx build --load --platform linux/amd64 --target migrator -f src/Dockerfile -t cad-layout-viewer:ci-migrate .
+      # Buildx action supplies authenticated GHA cache parameters; separate target scopes
+      # prevent phase1/runtime/migrator cache overwrites. Cache faults are non-fatal.
+      - name: Build phase1 for baseline comparison (when packaging changed)
+        if: needs.scope.outputs.baseline == 'true'
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: src/Dockerfile
+          target: phase1
+          platforms: linux/amd64
+          load: true
+          tags: cad-layout-viewer:phase1
+          cache-from: type=gha,scope=layoutmanager-phase1
+          cache-to: type=gha,scope=layoutmanager-phase1,mode=max,ignore-error=true
+      - name: Build standalone web runtime with GHA cache
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: src/Dockerfile
+          target: runtime
+          platforms: linux/amd64
+          load: true
+          tags: cad-layout-viewer:ci
+          labels: |
+            org.opencontainers.image.source=https://github.com/planner77/layoutManager
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ steps.image-version.outputs.version }}
+          cache-from: type=gha,scope=layoutmanager-runtime
+          cache-to: type=gha,scope=layoutmanager-runtime,mode=max,ignore-error=true
+      - name: Build dedicated migrator with GHA cache
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: src/Dockerfile
+          target: migrator
+          platforms: linux/amd64
+          load: true
+          tags: cad-layout-viewer:ci-migrate
+          labels: |
+            org.opencontainers.image.source=https://github.com/planner77/layoutManager
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ steps.image-version.outputs.version }}
+          cache-from: type=gha,scope=layoutmanager-migrator
+          cache-to: type=gha,scope=layoutmanager-migrator,mode=max,ignore-error=true
       - name: Measure 3 image sizes, layers and directories
+        if: needs.scope.outputs.baseline == 'true'
         run: bash src/scripts/measure-images.sh cad-layout-viewer:baseline cad-layout-viewer:phase1 cad-layout-viewer:ci "$GITHUB_STEP_SUMMARY"
       - name: Verify web layer SHA, native and transition-only size saving (#67)
+        if: needs.scope.outputs.baseline == 'true'
         shell: bash
         run: |
           set -euo pipefail
           python3 src/scripts/audit_standalone_layers.py cad-layout-viewer:baseline cad-layout-viewer:ci "$GITHUB_STEP_SUMMARY"
       - name: Measure migrator baseline vs dedicated dependency closure
+        if: needs.scope.outputs.baseline == 'true'
         run: bash src/scripts/measure-migrator.sh cad-layout-viewer:baseline-migrate cad-layout-viewer:ci-migrate "$GITHUB_STEP_SUMMARY"
       - name: Verify migrator packaged files and native dependencies
         shell: bash
@@ -188,13 +482,14 @@ jobs:
           set -euo pipefail
           docker run --rm --entrypoint sh cad-layout-viewer:ci-migrate -c '
             test "$(id -u)" = 10001
-            for f in node_modules/.bin/prisma node_modules/.bin/tsx generated/prisma/client.ts prisma.config.ts prisma/migrations server/db.ts scripts/deploy.ts; do
+            for f in node_modules/.bin/prisma node_modules/.bin/tsx generated/prisma/client.ts prisma.config.ts prisma/migrations server/db.ts scripts/deploy.ts server/logger.ts server/logging/store.ts server/upload-error-catalog.ts; do
               test -e "$f" || { echo "Missing required migrator file: $f"; exit 1; }
             done
             for f in .next public tests server/repositories node_modules/next node_modules/react node_modules/react-dom node_modules/eslint node_modules/vitest node_modules/@playwright/test node_modules/dxf-viewer node_modules/three-dxf-viewer; do
               test ! -e "$f" || { echo "Unexpected migrator file: $f"; exit 1; }
             done
             node -e "const Db=require(\"better-sqlite3\");new Db(\":memory:\").close()"
+            node --import tsx --input-type=module -e "import { writeLog } from \"./server/logger.ts\"; if (typeof writeLog !== \"function\") process.exit(1)"
           '
 
       - name: Validate nonroot web native SQLite and packaged Prisma client (#67)
@@ -245,25 +540,91 @@ jobs:
           docker compose -f src/deploy/g5/compose.preview.yml --profile g5-prod config --quiet
           docker compose -f src/deploy/g5/compose.preview.yml --profile g5-dev config --quiet
 
-      - name: Compose fresh install, static assets, health and idempotent migration
+      # Do not grant a private GHCR package token to a fork.
+      # The published 0.56 App/Migrator are mandatory, not replaceable by a rebuilt source.
+      - name: Authenticate GHCR for immutable 0.56 release smoke (#209)
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upgrade real 0.56 Greenfield image with preserved DB and CAD (#209)
         shell: bash
-        env:
-          GHCR_IMAGE: cad-layout-viewer:ci
-          GHCR_MIGRATION_IMAGE: cad-layout-viewer:ci-migrate
         run: |
           set -euo pipefail
+          VERSION="$(python3 -c 'import json;print(json.load(open("src/package.json"))["version"])')"
+          # Old immutable release read only; never publish or retag a registry image.
+          for old_tag in 0.56.0 0.56.0-migrate; do
+            if ! docker pull "ghcr.io/planner77/layoutmanager:${old_tag}"; then
+              echo "::error::GHCR ${old_tag} unavailable: confirm immutable tag was published and grant this repository Actions read access to its package."
+              exit 1
+            fi
+          done
+          docker tag cad-layout-viewer:ci "cad-layout-viewer:${VERSION}"
+          docker tag cad-layout-viewer:ci-migrate "cad-layout-viewer:${VERSION}-migrate"
+          python3 src/scripts/smoke_greenfield_upgrade.py \
+            --old-app ghcr.io/planner77/layoutmanager:0.56.0 \
+            --old-migrator ghcr.io/planner77/layoutmanager:0.56.0-migrate \
+            --app "cad-layout-viewer:${VERSION}" --migrator "cad-layout-viewer:${VERSION}-migrate" \
+            --source "${{ github.sha }}"
+      - name: Readonly stopped and active WAL inspection and recovery (#210 P2)
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="$(python3 -c 'import json;print(json.load(open("src/package.json"))["version"])')"
+          python3 src/scripts/smoke_greenfield_wal_readonly.py \
+            --migrator "cad-layout-viewer:${VERSION}-migrate" --version "$VERSION" \
+            --source "${{ github.sha }}"
+      - name: Compose Greenfield first run, Admin, CAD, restart persistence
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="$(python3 -c 'import json;print(json.load(open("src/package.json"))["version"])')"
+          export GHCR_IMAGE="cad-layout-viewer:${VERSION}"
+          export GHCR_MIGRATION_IMAGE="cad-layout-viewer:${VERSION}-migrate"
+          export G7_RELEASE_SOURCE_COMMIT="${{ github.sha }}"
+          export CAD_DATA_VOLUME_NAME="cad-layout-viewer-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          echo "CAD_DATA_VOLUME_NAME=$CAD_DATA_VOLUME_NAME" >> "$GITHUB_ENV"
+          docker tag cad-layout-viewer:ci "$GHCR_IMAGE"
+          docker tag cad-layout-viewer:ci-migrate "$GHCR_MIGRATION_IMAGE"
           docker compose --env-file .env.example -f src/docker-compose.yml config --quiet
-          docker compose --env-file .env.example -f src/docker-compose.yml up -d --no-build app
-          curl --fail --silent --show-error --retry 40 --retry-delay 3 --retry-connrefused --retry-all-errors --connect-timeout 3 --max-time 10 http://127.0.0.1:3000/api/health
-          python3 src/scripts/smoke_web_runtime.py create http://127.0.0.1:3000 "$RUNNER_TEMP/issue67-crud.json"
-          curl --fail http://127.0.0.1:3000/fonts/NanumGothic-Regular.ttf --output /dev/null
-          curl --fail http://127.0.0.1:3000/fonts/CadKorean.typeface.json --output /dev/null
-          curl --fail http://127.0.0.1:3000/libredwg/wasm/libredwg-web.wasm --output /dev/null
+          # #211: read-only new-volume check and explicitly approved fresh install.
+          python3 src/scripts/g7-deploy.py .env.example status --json > "$RUNNER_TEMP/g7-211-before.json"
+          python3 - "$RUNNER_TEMP/g7-211-before.json" <<'PY'
+          import json,sys
+          data=json.load(open(sys.argv[1]))
+          assert data['decision']=='FRESH_INSTALL' and data['volumeState']=='ABSENT', data
+          PY
+          python3 src/scripts/g7-deploy.py .env.example plan --json > "$RUNNER_TEMP/g7-211-plan.json"
+          G7_PLAN="$(python3 -c 'import json,os;print(json.load(open(os.environ["RUNNER_TEMP"]+"/g7-211-plan.json"))["planId"])')"
+          python3 src/scripts/g7-deploy.py .env.example execute --approve-plan "$G7_PLAN" --json > "$RUNNER_TEMP/g7-211-execute.json"
+          python3 - "$RUNNER_TEMP/g7-211-execute.json" <<'PY'
+          import json,sys
+          assert json.load(open(sys.argv[1]))['state']=='FRESH_INSTALLED'
+          PY
+          curl --fail --silent --show-error --retry 40 --retry-delay 3 --retry-connrefused --retry-all-errors --connect-timeout 3 --max-time 10 http://localhost:3000/api/health
+          # The one-time code is synthetic; never print it in Actions output.
+          CODE="$(docker compose --env-file .env.example -f src/docker-compose.yml exec -T app cat /data/db/first-admin.code)"
+          G7_CI_FIRST_SETUP_CODE="$CODE" python3 src/scripts/smoke_greenfield_runtime.py create http://localhost:3000 "$RUNNER_TEMP/issue109-crud.json"
+          unset CODE
+          curl --fail http://localhost:3000/fonts/NanumGothic-Regular.ttf --output /dev/null
+          curl --fail http://localhost:3000/fonts/CadKorean.typeface.json --output /dev/null
+          curl --fail http://localhost:3000/libredwg/wasm/libredwg-web.wasm --output /dev/null
+          docker compose --env-file .env.example -f src/docker-compose.yml stop app
+          # #211: stopped same-release App needs a separate approved start plan.
+          python3 src/scripts/g7-deploy.py .env.example plan --operation start --json > "$RUNNER_TEMP/g7-211-start.json"
+          G7_START_PLAN="$(python3 -c 'import json,os;print(json.load(open(os.environ["RUNNER_TEMP"]+"/g7-211-start.json"))["planId"])')"
+          python3 src/scripts/g7-deploy.py .env.example start --approve-plan "$G7_START_PLAN" --json > "$RUNNER_TEMP/g7-211-start-result.json"
+          python3 - "$RUNNER_TEMP/g7-211-start-result.json" <<'PY'
+          import json,sys
+          assert json.load(open(sys.argv[1]))['state']=='STARTED_VERIFIED_IMAGE'
+          PY
           docker compose --env-file .env.example -f src/docker-compose.yml stop app
           docker compose --env-file .env.example -f src/docker-compose.yml up --no-build --force-recreate migrate
           docker compose --env-file .env.example -f src/docker-compose.yml up -d --no-build app
-          curl --fail --silent --show-error --retry 40 --retry-delay 3 --retry-connrefused --retry-all-errors --connect-timeout 3 --max-time 10 http://127.0.0.1:3000/api/health
-          python3 src/scripts/smoke_web_runtime.py verify-delete http://127.0.0.1:3000 "$RUNNER_TEMP/issue67-crud.json"
+          curl --fail --silent --show-error --retry 40 --retry-delay 3 --retry-connrefused --retry-all-errors --connect-timeout 3 --max-time 10 http://localhost:3000/api/health
+          python3 src/scripts/smoke_greenfield_runtime.py verify http://localhost:3000 "$RUNNER_TEMP/issue109-crud.json"
       - name: Dump Docker diagnostics and stop without deleting volume
         if: always()
         shell: bash
@@ -274,3 +635,48 @@ jobs:
           docker compose --env-file .env.example -f src/docker-compose.yml ps || true
           docker compose --env-file .env.example -f src/docker-compose.yml logs --tail 80 || true
           docker compose --env-file .env.example -f src/docker-compose.yml down || true
+
+  verify:
+    # Keep the historical required-check name. Jobs may skip only for verified docs-only PRs.
+    name: Typecheck, lint, test, build, E2E
+    if: always()
+    needs: [scope, quality, e2e, greenfield-e2e, runtime-legacy-e2e, docker-runtime]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SCOPE_RESULT: ${{ needs.scope.result }}
+      FULL: ${{ needs.scope.outputs.full }}
+      QUALITY_RESULT: ${{ needs.quality.result }}
+      GENERAL_RESULT: ${{ needs.e2e.result }}
+      GREENFIELD_RESULT: ${{ needs.greenfield-e2e.result }}
+      RUNTIME_LEGACY_RESULT: ${{ needs.runtime-legacy-e2e.result }}
+      DOCKER_RESULT: ${{ needs.docker-runtime.result }}
+    steps:
+      - name: Require every applicable validation gate (#197)
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "## PR CI required gate" >> "$GITHUB_STEP_SUMMARY"
+          if [[ "$SCOPE_RESULT" != "success" ]]; then
+            echo "::error::Scope classification failed; CI must not pass"
+            exit 1
+          fi
+          for pair in "quality:$QUALITY_RESULT" "general-e2e:$GENERAL_RESULT" \
+            "greenfield-e2e:$GREENFIELD_RESULT" "runtime-legacy-e2e:$RUNTIME_LEGACY_RESULT" \
+            "docker-runtime:$DOCKER_RESULT"; do
+            name="${pair%%:*}"
+            result="${pair#*:}"
+            echo "- $name: $result" >> "$GITHUB_STEP_SUMMARY"
+            if [[ "$FULL" == "false" ]]; then
+              [[ "$result" == "skipped" ]] || { echo "::error::$name unexpectedly ran on docs-only PR"; exit 1; }
+            elif [[ "$FULL" == "true" ]]; then
+              [[ "$result" == "success" ]] || { echo "::error::Required $name did not succeed"; exit 1; }
+            else
+              echo "::error::Unknown scope decision"; exit 1
+            fi
+          done
+          if [[ "$FULL" == "false" ]]; then
+            echo "- Verified markdown-only: full application suite not required." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "- All mandatory application, browser and Docker checks succeeded." >> "$GITHUB_STEP_SUMMARY"
+          fi

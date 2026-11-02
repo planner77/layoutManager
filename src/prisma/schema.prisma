@@ -40,6 +40,7 @@ model CadSite {
   buildings Building[]
   siteGrants UserSiteGrant[]
   auditEvents AuditEvent[]
+  businessAudits CadBusinessAudit[]
   @@unique([productId, name], map: "uq_site_parent_name")
   @@index([productId], map: "ix_site_product")
 }
@@ -89,11 +90,59 @@ model CadFileVersion {
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
   location CadLocation @relation("OwnedVersions", fields: [locationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   currentFor CadLocation? @relation("CurrentVersion")
+  sceneAssets SceneAsset[]
+  currentScene CurrentScene?
+  outlines CadOutline[]
+  outlineCreateReceipts CadOutlineCreateReceipt[]
+  memos CadMemo[]
+  memoGroups CadMemoGroup[]
   @@unique([locationId, version], map: "uq_version_sequence")
   @@unique([locationId, id], map: "uq_version_owner_id")
   @@index([registeredAt(sort: Desc), createdAt(sort: Desc), id], map: "ix_version_registered")
   @@index([fileFormat, registeredAt(sort: Desc)], map: "ix_version_format_registered")
   @@index([sha256], map: "ix_version_sha256")
+}
+
+// #164 immutable derivative bytes are stored outside SQLite; only a verified
+// asset can be selected by the version-owned, revisioned pointer.
+model SceneAsset {
+  id String @id
+  versionId String @map("version_id")
+  sourceSha256 String @map("source_sha256")
+  manifestJson String @map("manifest_json")
+  digest String
+  byteLength Int @map("byte_length")
+  format String
+  storageLocator String @unique(map:"uq_scene_storage_locator") @map("storage_locator")
+  createdAt DateTime @default(now()) @map("created_at")
+  version CadFileVersion @relation(fields:[versionId], references:[id], onDelete:NoAction, onUpdate:NoAction)
+  currentFor CurrentScene? @relation("CurrentSceneAsset")
+  @@unique([versionId,id],map:"uq_scene_asset_version_id")
+  @@index([versionId,createdAt],map:"ix_scene_asset_version_created")
+}
+
+model CurrentScene {
+  versionId String @id @map("version_id")
+  assetId String @map("asset_id")
+  revision Int
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  version CadFileVersion @relation(fields:[versionId], references:[id], onDelete:NoAction, onUpdate:NoAction)
+  asset SceneAsset @relation("CurrentSceneAsset",fields:[versionId,assetId],references:[versionId,id],onDelete:NoAction,onUpdate:NoAction)
+  @@unique([versionId,assetId],map:"uq_current_scene_version_asset")
+  @@index([assetId],map:"ix_current_scene_asset")
+}
+
+// The job is independent of Version so a deleted Version still has a durable
+// cleanup record. An uncertain remote PUT is never treated as safe to delete.
+model SceneOrphanJob {
+  id String @id
+  assetId String @unique(map:"uq_scene_orphan_asset") @map("asset_id")
+  storageLocator String @unique(map:"uq_scene_orphan_locator") @map("storage_locator")
+  state String
+  attempts Int @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  @@index([state,createdAt],map:"ix_scene_orphan_state_created")
 }
 model CadDeletionJob {
   id String @id
@@ -122,6 +171,20 @@ model User {
   events             AuditEvent[] @relation("AuditActor")
   eventsAffected     AuditEvent[] @relation("AuditAffected")
   recoveryNonces     AdminRecoveryNonce[]
+  outlinesCreated CadOutline[] @relation("OutlineCreated")
+  outlinesUpdated CadOutline[] @relation("OutlineUpdated")
+  outlinesDeleted CadOutline[] @relation("OutlineDeleted")
+  memosCreated CadMemo[] @relation("MemoCreated")
+  memosUpdated CadMemo[] @relation("MemoUpdated")
+  memosDeleted CadMemo[] @relation("MemoDeleted")
+  memoGroupsCreated CadMemoGroup[] @relation("MemoGroupCreated")
+  memoGroupsUpdated CadMemoGroup[] @relation("MemoGroupUpdated")
+  memoGroupsDeleted CadMemoGroup[] @relation("MemoGroupDeleted")
+  businessAudits CadBusinessAudit[]
+  outlineTypesCreated OutlineType[] @relation("OutlineTypeCreated")
+  outlineTypesUpdated OutlineType[] @relation("OutlineTypeUpdated")
+  outlineTypeAudits OutlineTypeAudit[]
+  outlineCreateReceipts CadOutlineCreateReceipt[]
   @@map("User")
 }
 model UserRoleGrant {
@@ -203,4 +266,268 @@ model G3LoginAttempt {
   count Int
   untilAt BigInt @map("until_at")
   @@map("G3LoginAttempt")
+}
+
+ 
+// #98: APP_CREATED always; SOURCE_CANONICAL describes verification mode, NOT Origin.
+model CadOutline {
+  id String @id
+  versionId String @map("version_id")
+  sourceSha256 String @map("source_sha256")
+  sceneRevision Int @map("scene_revision")
+  origin String
+  validationMode String @map("validation_mode")
+  kind String
+  name String
+  baseGeometryJson String @map("base_geometry_json")
+  geometryJson String @map("geometry_json")
+  sourceRefsJson String @map("source_refs_json")
+  derivedFromJson String @map("derived_from_json")
+  transformJson String @map("transform_json")
+  outlineTypeId String? @map("outline_type_id")
+  outlineType OutlineType? @relation(fields:[outlineTypeId], references:[id], onDelete:NoAction, onUpdate:NoAction)
+  revision Int @default(0)
+  createdById String @map("created_by_id")
+  updatedById String @map("updated_by_id")
+  deletedById String? @map("deleted_by_id")
+  createdAt String @map("created_at")
+  updatedAt String @map("updated_at")
+  deletedAt String? @map("deleted_at")
+  version CadFileVersion @relation(fields:[versionId], references:[id], onDelete:NoAction, onUpdate:NoAction)
+  createdBy User @relation("OutlineCreated",fields:[createdById], references:[id], onDelete:NoAction, onUpdate:NoAction)
+  updatedBy User @relation("OutlineUpdated",fields:[updatedById], references:[id], onDelete:NoAction, onUpdate:NoAction)
+  deletedBy User? @relation("OutlineDeleted",fields:[deletedById], references:[id], onDelete:NoAction, onUpdate:NoAction)
+  createReceipt CadOutlineCreateReceipt?
+  @@index([versionId,deletedAt],map:"ix_cad_outline_version_live")
+}
+model CadOutlineCreateReceipt {
+  id String @id
+  actorUserId String @map("actor_user_id")
+  versionId String @map("version_id")
+  idempotencyKey String @map("idempotency_key")
+  requestSha256 String @map("request_sha256")
+  outlineId String @unique(map:"uq_cad_outline_receipt_outline") @map("outline_id")
+  createdAt String @map("created_at")
+  actor User @relation(fields:[actorUserId],references:[id],onDelete:NoAction,onUpdate:NoAction)
+  version CadFileVersion @relation(fields:[versionId],references:[id],onDelete:NoAction,onUpdate:NoAction)
+  outline CadOutline @relation(fields:[outlineId],references:[id],onDelete:NoAction,onUpdate:NoAction)
+  @@unique([actorUserId,versionId,idempotencyKey],map:"uq_cad_outline_receipt_actor_version_key")
+}
+model OutlineType {
+  id String @id
+  name String
+  nameKey String @unique(map:"uq_outline_type_name_key") @map("name_key")
+  description String?
+  active Boolean @default(true)
+  sortOrder Int @map("sort_order")
+  revision Int @default(1)
+  createdById String @map("created_by_id")
+  updatedById String @map("updated_by_id")
+  createdAt String @map("created_at")
+  updatedAt String @map("updated_at")
+  createdBy User @relation("OutlineTypeCreated",fields:[createdById],references:[id],onDelete:NoAction,onUpdate:NoAction)
+  updatedBy User @relation("OutlineTypeUpdated",fields:[updatedById],references:[id],onDelete:NoAction,onUpdate:NoAction)
+  outlines CadOutline[]
+  audits OutlineTypeAudit[]
+  @@index([sortOrder,nameKey,id],map:"ix_outline_type_order")
+}
+model OutlineTypeAudit {
+  id String @id
+  actorUserId String @map("actor_user_id")
+  outlineTypeId String @map("outline_type_id")
+  action String
+  beforeRevision Int? @map("before_revision")
+  afterRevision Int @map("after_revision")
+  outcome String
+  timestampUtc String @map("timestamp_utc")
+  requestId String @map("request_id")
+  actor User @relation(fields:[actorUserId],references:[id],onDelete:NoAction,onUpdate:NoAction)
+  outlineType OutlineType @relation(fields:[outlineTypeId],references:[id],onDelete:NoAction,onUpdate:NoAction)
+  @@index([outlineTypeId,timestampUtc],map:"ix_outline_type_audit_type_time")
+}
+model CadMemo {
+  anchor CadMemoAnchor?
+  feature CadMemoFeature?
+  id String @id
+  versionId String @map("version_id")
+  sourceSha256 String @map("source_sha256")
+  title String
+  content String
+  anchorX Float @map("anchor_x")
+  anchorY Float @map("anchor_y")
+  offsetX Float @map("offset_x")
+  offsetY Float @map("offset_y")
+  revision Int @default(0)
+  createdById String @map("created_by_id")
+  updatedById String @map("updated_by_id")
+  deletedById String? @map("deleted_by_id")
+  createdAt String @map("created_at")
+  updatedAt String @map("updated_at")
+  deletedAt String? @map("deleted_at")
+  version CadFileVersion @relation(fields:[versionId], references:[id], onDelete:NoAction, onUpdate:NoAction)
+  createdBy User @relation("MemoCreated",fields:[createdById], references:[id], onDelete:NoAction, onUpdate:NoAction)
+  updatedBy User @relation("MemoUpdated",fields:[updatedById], references:[id], onDelete:NoAction, onUpdate:NoAction)
+  deletedBy User? @relation("MemoDeleted",fields:[deletedById], references:[id], onDelete:NoAction, onUpdate:NoAction)
+  @@index([versionId,deletedAt],map:"ix_cad_memo_version_live")
+}
+model CadBusinessAudit {
+  id String @id
+  actorUserId String @map("actor_user_id")
+  siteId String @map("site_id")
+  versionId String @map("version_id")
+  targetKind String @map("target_kind")
+  targetId String @map("target_id")
+  action String
+  beforeRevision Int? @map("before_revision")
+  afterRevision Int? @map("after_revision")
+  outcome String
+  requestId String @map("request_id")
+  timestampUtc String @map("timestamp_utc")
+  actor User @relation(fields:[actorUserId],references:[id],onDelete:NoAction,onUpdate:NoAction)
+  site CadSite @relation(fields:[siteId],references:[id],onDelete:NoAction,onUpdate:NoAction)
+  @@index([versionId,timestampUtc],map:"ix_cad_business_audit_version_time")
+  @@index([actorUserId,timestampUtc],map:"ix_cad_business_audit_actor_time")
+}
+
+/** #84: optional M3 binding. Legacy v0.47.1 CadMemo columns remain unchanged. */
+model CadMemoAnchor {
+ memoId String @id @map("memo_id")
+ versionId String @map("version_id")
+ sourceSha256 String @map("source_sha256")
+ status String
+ targetOrigin String? @map("target_origin")
+ targetId String? @map("target_id")
+ localX Float? @map("local_x")
+ localY Float? @map("local_y")
+ createdAt String @map("created_at")
+ updatedAt String @map("updated_at")
+ memo CadMemo @relation(fields:[memoId],references:[id],onDelete:NoAction,onUpdate:NoAction)
+ @@index([versionId,targetOrigin,targetId,status],map:"ix_cad_memo_anchor_target")
+}
+
+/** #85/#86: optional sidecar in freshly installed Greenfield. No historical schema rewrite. */
+model CadMemoGroup {
+ id String @id
+ versionId String @map("version_id")
+ sourceSha256 String @map("source_sha256")
+ name String
+ sortOrder Int @map("sort_order")
+ revision Int @default(0)
+ createdById String @map("created_by_id")
+ updatedById String @map("updated_by_id")
+ deletedById String? @map("deleted_by_id")
+ createdAt String @map("created_at")
+ updatedAt String @map("updated_at")
+ deletedAt String? @map("deleted_at")
+ version CadFileVersion @relation(fields:[versionId],references:[id],onDelete:NoAction,onUpdate:NoAction)
+ createdBy User @relation("MemoGroupCreated",fields:[createdById],references:[id],onDelete:NoAction,onUpdate:NoAction)
+ updatedBy User @relation("MemoGroupUpdated",fields:[updatedById],references:[id],onDelete:NoAction,onUpdate:NoAction)
+ deletedBy User? @relation("MemoGroupDeleted",fields:[deletedById],references:[id],onDelete:NoAction,onUpdate:NoAction)
+ members CadMemoFeature[]
+ @@index([versionId,deletedAt,sortOrder],map:"ix_cad_memo_group_version_live")
+}
+model CadMemoFeature {
+ memoId String @id @map("memo_id")
+ versionId String @map("version_id")
+ sourceSha256 String @map("source_sha256")
+ groupId String? @map("group_id")
+ visible Boolean @default(true)
+ scheduleEnabled Boolean @default(false) @map("schedule_enabled")
+ startDate String? @map("start_date")
+ dueDate String? @map("due_date")
+ completionEnabled Boolean @default(false) @map("completion_enabled")
+ isCompleted Boolean @default(false) @map("is_completed")
+ completedAt String? @map("completed_at")
+ memo CadMemo @relation(fields:[memoId],references:[id],onDelete:NoAction,onUpdate:NoAction)
+ group CadMemoGroup? @relation(fields:[groupId],references:[id],onDelete:NoAction,onUpdate:NoAction)
+ @@index([versionId,groupId],map:"ix_cad_memo_feature_version_group")
+}
+
+// #196: fresh Greenfield semantic zones. Existing SQLite volumes are never migrated.
+model ZoneCategory {
+ id String @id
+ siteId String @map("site_id")
+ name String
+ nameKey String @map("name_key")
+ active Boolean @default(true)
+ sortOrder Int @map("sort_order")
+ revision Int @default(1)
+ createdById String @map("created_by_id")
+ updatedById String @map("updated_by_id")
+ createdAt String @map("created_at")
+ updatedAt String @map("updated_at")
+ @@unique([siteId,id],map:"uq_zone_category_site_id")
+ @@unique([siteId,nameKey],map:"uq_zone_category_site_name")
+ @@index([siteId,active,sortOrder],map:"ix_zone_category_site_order")
+}
+model CadZone {
+ id String @id
+ locationId String @map("location_id")
+ siteId String @map("site_id")
+ name String
+ nameKey String @map("name_key")
+ categoryId String? @map("category_id")
+ description String
+ code String
+ tagsJson String @map("tags_json")
+ sortOrder Int @map("sort_order")
+ parentZoneId String? @map("parent_zone_id")
+ referencesJson String @map("references_json")
+ revision Int @default(1)
+ createdById String @map("created_by_id")
+ updatedById String @map("updated_by_id")
+ deletedById String? @map("deleted_by_id")
+ createdAt String @map("created_at")
+ updatedAt String @map("updated_at")
+ deletedAt String? @map("deleted_at")
+ geometries CadZoneGeometry[]
+ receipt CadZoneCreateReceipt?
+ @@unique([locationId,id],map:"uq_cad_zone_floor_id")
+ @@index([locationId,deletedAt,sortOrder],map:"ix_cad_zone_floor_live")
+ @@index([siteId,categoryId],map:"ix_cad_zone_category")
+ @@index([locationId,parentZoneId],map:"ix_cad_zone_parent")
+}
+model CadZoneGeometry {
+ zoneId String @map("zone_id")
+ locationId String @map("location_id")
+ versionId String @map("version_id")
+ sourceSha256 String @map("source_sha256")
+ sceneRevision Int @map("scene_revision")
+ polygonJson String @map("polygon_json")
+ boundsJson String @map("bounds_json")
+ area Float
+ state String
+ reason String?
+ revision Int @default(1)
+ createdAt String @map("created_at")
+ updatedAt String @map("updated_at")
+ zone CadZone @relation(fields:[zoneId],references:[id],onDelete:NoAction,onUpdate:NoAction)
+ @@id([zoneId,versionId])
+ @@index([versionId,state],map:"ix_cad_zone_geometry_version")
+}
+model CadZoneCreateReceipt {
+ id String @id
+ actorUserId String @map("actor_user_id")
+ versionId String @map("version_id")
+ idempotencyKey String @map("idempotency_key")
+ requestSha256 String @map("request_sha256")
+ zoneId String @unique(map:"uq_cad_zone_receipt_zone") @map("zone_id")
+ createdAt String @map("created_at")
+ zone CadZone @relation(fields:[zoneId],references:[id],onDelete:NoAction,onUpdate:NoAction)
+ @@unique([actorUserId,versionId,idempotencyKey],map:"uq_cad_zone_receipt_actor_version_key")
+}
+model CadZoneAudit {
+ id String @id
+ actorUserId String @map("actor_user_id")
+ siteId String @map("site_id")
+ locationId String? @map("location_id")
+ versionId String? @map("version_id")
+ targetKind String @map("target_kind")
+ targetId String @map("target_id")
+ action String
+ beforeRevision Int? @map("before_revision")
+ afterRevision Int? @map("after_revision")
+ requestId String @map("request_id")
+ timestampUtc String @map("timestamp_utc")
+ @@index([siteId,timestampUtc],map:"ix_cad_zone_audit_site_time")
 }

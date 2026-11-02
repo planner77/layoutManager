@@ -5,6 +5,7 @@
 import type { SavedOutline, SavedOutlineOverlayState } from '../viewers/core/adapter';
 import type { GeoJSONOutline } from '../viewers/core/outline-compute';
 import type { CadFocusBounds } from '../viewers/core/text-index';
+import type { StoredOutlineDto } from './typed-outline';
 
 export type OutlineTreeType = Readonly<{ id: string; name: string }>;
 export type OutlineTreeItem = Readonly<{
@@ -14,6 +15,8 @@ export type OutlineTreeItem = Readonly<{
   visible: boolean;
   selected: boolean;
   legacy: boolean;
+  persistence?: 'session'|'server';
+  sourceId?: string;
 }>;
 export type OutlineTreeGroup = Readonly<{
   id: string;
@@ -62,6 +65,31 @@ export function buildOutlineTree(
   // Always put legacy items after typed groups; empty catalogue nodes are valid.
   return [...typeOrder.filter(id => id !== 'legacy'), ...(groups.has('legacy') ? ['legacy'] : [])]
     .map(id => groups.get(id)!);
+}
+
+/** UI identities keep persisted UUIDs out of the local GeneratedDocument. */
+export function buildWorkspaceOutlineTree(
+  outlines:readonly SavedOutline[],states:readonly SavedOutlineOverlayState[],
+  catalogTypes:readonly OutlineTreeType[],server:readonly StoredOutlineDto[],
+  hidden:ReadonlySet<string>,selected:ReadonlySet<string>,
+):OutlineTreeGroup[]{
+  const used=new Set(outlines.map(row=>row.outlineTypeId).filter(Boolean));
+  const types=new Map(catalogTypes.filter(type=>used.has(type.id)).map(type=>[type.id,{...type,sortOrder:0,active:true}]));
+  for(const row of server)if(row.outlineType)types.set(row.outlineType.id,{...row.outlineType});
+  const ordered=[...types.values()].sort((a,b)=>a.sortOrder-b.sortOrder||a.name.localeCompare(b.name)||a.id.localeCompare(b.id));
+  const groups:{id:string;name:string;legacy:boolean;items:OutlineTreeItem[]}[]=buildOutlineTree(outlines,states,ordered).map(group=>({...group,items:group.items.map(item=>({
+    ...item,id:'local:'+item.id,sourceId:item.id,persistence:'session' as const,
+  }))}));
+  const byId=new Map(groups.map(group=>[group.id,group]));
+  for(const row of server){
+    const key=row.outlineTypeId??'legacy';
+    let group=byId.get(key);
+    if(!group){group={id:key,name:row.outlineType?.name??'미분류 (legacy)',legacy:key==='legacy',items:[]};groups.push(group);byId.set(key,group);}
+    group.items.push({id:'server:'+row.id,sourceId:row.id,persistence:'server',name:row.name,kind:row.kind,
+      legacy:row.outlineTypeId===null,visible:!hidden.has(row.id),selected:selected.has(row.id)});
+  }
+  for(const group of groups){const type=types.get(group.id);if(type)group.name=type.name+(type.active?'':' (비활성)');}
+  return [...groups.filter(group=>!group.legacy),...groups.filter(group=>group.legacy)];
 }
 
 /**

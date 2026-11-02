@@ -2,7 +2,7 @@ import { afterEach, expect, test, vi } from 'vitest';
 import { CadError } from '../../domain/cad';
 import { sanitizeServerError, UploadDiagnostics } from '../../server/upload-observability';
 
-afterEach(() => { vi.restoreAllMocks(); vi.useRealTimers(); });
+afterEach(() => { vi.restoreAllMocks(); vi.useRealTimers(); delete process.env.LOG_LEVEL; delete process.env.LOG_FORMAT; });
 
 test('TC-OBS-004/007: upload logs are correlated one-line JSON with safe fields', () => {
   vi.useFakeTimers(); vi.setSystemTime(new Date('2026-09-09T02:00:00.000Z'));

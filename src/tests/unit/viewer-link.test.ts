@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { cadViewerUrl } from '../../viewers/core/link';
+import { cadViewerUrl, cadMemoViewerUrl, cadMemoViewerPath, parseMemoLinkId } from '../../viewers/core/link';
 
 describe('TC-LINK-001: canonical version viewer links', () => {
   test('uses only the current browser origin and an immutable encoded version path', () => {
@@ -23,5 +23,24 @@ describe('TC-LINK-001: canonical version viewer links', () => {
 
   test('rejects non-HTTP origins', () => {
     expect(() => cadViewerUrl('file:///tmp/drawing', 'v1', 'DXF')).toThrow('HTTP(S)');
+  });
+});
+
+
+describe('#88 M6: immutable, allowlisted memo links',()=>{
+  const version='11111111-1111-4111-8111-111111111111';
+  const memo='22222222-2222-4222-8222-222222222222';
+  test('uses DXF three renderer and only Version+memo UUID',()=>{
+    expect(cadMemoViewerUrl('http://cad.example/bad?token=abc',version,memo))
+      .toBe('http://cad.example/cad/versions/'+version+'/viewer?renderer=three-dxf-viewer&memo='+memo);
+    expect(parseMemoLinkId(memo.toUpperCase())).toBe(memo);
+    expect(cadMemoViewerPath(version,memo)).toBe('/cad/versions/'+version+'/viewer?renderer=three-dxf-viewer&memo='+memo);
+  });
+  test('rejects draft, repeated, malformed and path-injection values',()=>{
+    expect(parseMemoLinkId(undefined)).toBeNull();
+    for(const bad of [['memo'], 'session-id','../../etc/passwd',memo+'&x=1',null]){
+      expect(()=>parseMemoLinkId(bad)).toThrow();
+    }
+    expect(()=>cadMemoViewerUrl('http://cad.example',version,'not-persisted')).toThrow();
   });
 });

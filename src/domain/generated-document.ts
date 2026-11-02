@@ -9,6 +9,7 @@ import {
   type CanvasObjectRef,type CanvasObjectScope,
 } from './canvas-object-selection';
 import type {OutlineResult,GeoJSONOutline} from '../viewers/core/outline-compute';
+import {createSceneRef,sceneScope,type CadSceneObjectRef} from './cad-scene';
 import type {OutlineKind,XY} from '../viewers/core/outline-geometry';
 
 export const GENERATED_HISTORY_LIMIT=100;
@@ -21,8 +22,12 @@ export type GeneratedCommand =
   | Readonly<{type:'Delete';ids:readonly string[]}>
   | Readonly<{type:'Translate';ids:readonly string[];dx:number;dy:number}>
   | Readonly<{type:'Rotate';ids:readonly string[];angleDegrees:number;pivot:readonly [number,number]}>;
+export type GeneratedRigidOperation =
+ | Readonly<{type:'Translate';dx:number;dy:number}>
+ | Readonly<{type:'Rotate';angleDegrees:number;pivot:readonly [number,number]}>;
 export type GeneratedEntry=Readonly<{
   ref:CanvasObjectRef;
+  sceneRef:CadSceneObjectRef;
   savedOutlineId:string;
   createdAt:string;
   editedAt:string|null;
@@ -33,9 +38,18 @@ export type GeneratedEntry=Readonly<{
   baseResult:Readonly<OutlineResult>;
   baseGeometry:GeoJSONOutline;
   transform:Affine2D;
+  transformOperations:readonly GeneratedRigidOperation[];
   visible:boolean;
   edited:boolean;
   dirty:boolean;
+}>;
+/** Sanitized import only: callers must parse untrusted JSON before replace(). */
+export type GeneratedRestoreEntry=Readonly<{
+ id:string;savedOutlineId:string;createdAt:string;editedAt:string|null;
+ name:string;outlineTypeId:string|null;outlineTypeName:string|null;
+ baseResult:OutlineResult;transform:Affine2D;
+ transformOperations:readonly GeneratedRigidOperation[];
+ visible:boolean;edited:boolean;
 }>;
 type Patch=Readonly<{id:string;index:number;before:GeneratedEntry;after?:GeneratedEntry}>;
 type History=Readonly<{type:GeneratedCommand['type'];patches:readonly Patch[];bytes:number}>;
@@ -89,6 +103,10 @@ function cloneGeometry(geometry:GeoJSONOutline):GeoJSONOutline{
     ? {type:'Polygon' as const,coordinates:cloned[0]}
     : {type:'MultiPolygon' as const,coordinates:Object.freeze(cloned) as unknown as XY[][][]});
 }
+/** Same WCS, closure, area and vertex validations for local import and commands. */
+export function validatedGeneratedGeometry(geometry:GeoJSONOutline):GeoJSONOutline{
+ return cloneGeometry(geometry);
+}
 function pointsCount(g:GeoJSONOutline):number{
   const polys=g.type==='Polygon'?[g.coordinates]:g.coordinates;
   return polys.reduce((n,poly)=>n+poly.reduce((m,ring)=>m+ring.length,0),0);
@@ -97,12 +115,17 @@ function freezeResult(result:OutlineResult):Readonly<OutlineResult>{
   if(result.kind!=='CONVEX'&&result.kind!=='PRECISE')throw new Error('지원하지 않는 외곽선 종류입니다.');
   if(typeof result.algorithm!=='string'||!result.algorithm ||
     !Number.isFinite(result.tolerance)||result.tolerance<=0 ||
-    !Array.isArray(result.sourceEntityIds)||!result.sourceEntityIds.length||
+    !Array.isArray(result.sourceEntityIds)||
+    (result.geometryBasis==='RENDER_WCS_2D' ?
+      result.persistable!==false || result.sourceEntityIds.length!==0 ||
+      (result.derivedFrom!==undefined&&(!Array.isArray(result.derivedFrom)||result.derivedFrom.some(id=>typeof id!=='string'||!id))) :
+      !result.sourceEntityIds.length)||
     !result.sourceEntityIds.every(id=>typeof id==='string'&&id.length>0))
       throw new Error('생성 근거가 유효하지 않습니다.');
   const geometry=cloneGeometry(result.geometry);
   return Object.freeze({...result,geometry,
     sourceEntityIds:Object.freeze([...result.sourceEntityIds]) as unknown as string[],
+    ...(result.derivedFrom?{derivedFrom:Object.freeze([...result.derivedFrom]) as unknown as string[]}:{}),
     warnings:Object.freeze([...result.warnings]) as unknown as string[]});
 }
 /** x'=a*x+c*y+e, y'=b*x+d*y+f. left multiplication for WCS operations. */
@@ -110,6 +133,23 @@ export function composeAffine(left:Affine2D,right:Affine2D):Affine2D{
   const [a,b,c,d,e,f]=left,[g,h,i,j,k,l]=right;
   return Object.freeze([a*g+c*h,b*g+d*h,a*i+c*j,b*i+d*j,
     a*k+c*l+e,b*k+d*l+f]) as unknown as Affine2D;
+}
+/** WCS XY CCW: translation and rotation are the ONLY supported edit operations. */
+export function generatedRigidMatrix(operation:GeneratedRigidOperation):Affine2D{
+ if(operation.type==='Translate'){
+   if(!finiteCoordinate(operation.dx)||!finiteCoordinate(operation.dy))
+     throw new Error('변환 이동량이 유효하지 않습니다.');
+   return [1,0,0,1,operation.dx,operation.dy];
+ }
+ if(operation.type!=='Rotate'||!Number.isFinite(operation.angleDegrees)||
+    Math.abs(operation.angleDegrees)>MAX_DEGREES||
+    !Array.isArray(operation.pivot)||operation.pivot.length!==2||
+    !operation.pivot.every(finiteCoordinate))
+   throw new Error('변환 회전 각도/중심점이 유효하지 않습니다.');
+ const radians=operation.angleDegrees*Math.PI/180;
+ const cos=Math.cos(radians),sin=Math.sin(radians);
+ const [px,py]=operation.pivot;
+ return [cos,sin,-sin,cos,px-px*cos+py*sin,py-px*sin-py*cos];
 }
 export function applyAffine(geometry:GeoJSONOutline,matrix:Affine2D):GeoJSONOutline{
   const vertex=([x,y]:XY):XY=>{
@@ -137,6 +177,13 @@ export class GeneratedDocument{
   private pending:Pending|null=null;
   private disposed=false;
   private issued=new Set<string>();
+  private sourceUnit='UNSPECIFIED';
+  setSourceUnit(unit:string){
+    this.assertLive();
+    if(this.objects.length||this.issued.size)throw new Error('생성 개체 Scene Scope를 변경할 수 없습니다.');
+    sceneScope(this.scope.versionId,this.scope.sourceSha256,unit);
+    this.sourceUnit=unit;
+  }
   constructor(
     readonly scope:CanvasObjectScope,
     private readonly onChange?:(event:GeneratedDocumentEvent)=>void,
@@ -186,10 +233,12 @@ export class GeneratedDocument{
         newVertexCount>GENERATED_VERTEX_LIMIT;
     const entry=Object.freeze({
       ref:Object.freeze(canvasObjectRef('GENERATED',input.id,this.scope)),
+      sceneRef:createSceneRef(sceneScope(this.scope.versionId,this.scope.sourceSha256,this.sourceUnit),'APP_CREATED',input.id),
       savedOutlineId:input.savedOutlineId,createdAt:input.createdAt,
       editedAt:null,name:input.name??'',outlineTypeId:input.outlineTypeId??null,
       outlineTypeName:input.outlineTypeName??null,kind:baseResult.kind,
       baseResult,baseGeometry:baseResult.geometry,transform:IDENTITY_2D,
+      transformOperations:Object.freeze([]) as readonly GeneratedRigidOperation[],
       visible:true,edited:false,dirty:false,
     }) as GeneratedEntry;
     if(discardIncompatibleHistory)this.undoEntries=[];
@@ -235,22 +284,23 @@ export class GeneratedDocument{
   }
   private build(command:GeneratedCommand,selection:readonly CanvasObjectRef[]){
     const rows=this.prepare(command,selection);
-    let transform:Affine2D=IDENTITY_2D;
-    if(command.type==='Translate'){
-      transform=[1,0,0,1,command.dx,command.dy];
-    }else if(command.type==='Rotate'){
-      const rad=command.angleDegrees*Math.PI/180;
-      const cos=Math.cos(rad),sin=Math.sin(rad);
-      const [px,py]=command.pivot;
-      transform=[cos,sin,-sin,cos,px-px*cos+py*sin,py-px*sin-py*cos];
-    }
+    const transform:Affine2D=command.type==='Delete'?IDENTITY_2D:
+      generatedRigidMatrix(command);
     const now=new Date().toISOString();
     const patches:Patch[]=rows.map(row=>{
       if(command.type==='Delete')return {id:row.id,index:row.index,before:row.entry};
       const next=composeAffine(transform,row.entry.transform);
+      // Preserve the exact allowlisted operations, not an untrusted affine
+      // reconstructed by the browser at the #97 server provenance boundary.
+      const operation:GeneratedRigidOperation=command.type==='Translate'
+        ? Object.freeze({type:'Translate',dx:command.dx,dy:command.dy})
+        : Object.freeze({type:'Rotate',angleDegrees:command.angleDegrees,
+            pivot:Object.freeze([...command.pivot]) as readonly [number,number]});
+      const transformOperations=Object.freeze([...row.entry.transformOperations,operation]);
       // Validate EVERY geometry before committing ANY; base geometry never changes.
       applyAffine(row.entry.baseGeometry,next);
-      const after=Object.freeze({...row.entry,transform:next,edited:true,dirty:true,editedAt:now});
+      const after=Object.freeze({...row.entry,transform:next,transformOperations,
+        edited:true,dirty:true,editedAt:now});
       return {id:row.id,index:row.index,before:row.entry,after};
     });
     const size=64+patches.reduce((n,p)=>n+160+
@@ -321,7 +371,7 @@ export class GeneratedDocument{
         const reference=reverse?patch.before:patch.after!;
         // Visibility is independent of editing history; never undo a Tree toggle.
         return Object.freeze({...o,transform:reference.transform,
-          edited:reference.edited,editedAt:reference.editedAt,
+          transformOperations:reference.transformOperations,edited:reference.edited,editedAt:reference.editedAt,
           dirty:reference.dirty || o.visible!==patch.before.visible});
       });
     }
@@ -335,6 +385,72 @@ export class GeneratedDocument{
     this.assertLive();this.pending=null;
     const item=this.redoEntries.pop();if(!item)return false;
     this.travel(item,false);this.undoEntries.push(item);this.emit('redo');return true;
+  }
+  /** Replace an entire session only after full validation. Failure leaves Document,
+   * pending command, selection projection and undo/redo completely unchanged. */
+  replaceFromImport(inputs:readonly GeneratedRestoreEntry[]):void{
+    this.assertLive();
+    if(!Array.isArray(inputs)||inputs.length>GENERATED_OBJECT_LIMIT)
+      throw new Error('가져올 개체 수 상한을 초과했습니다.');
+    const ids=new Set<string>(),ordinals=new Set<string>();
+    let vertexTotal=0;
+    const entries=inputs.map(input=>{
+      if(!UUID.test(input.id)||ids.has(input.id)||
+         !/^local-[1-9]\d{0,12}$/.test(input.savedOutlineId)||
+         ordinals.has(input.savedOutlineId))
+        throw new Error('가져올 UUID/로컬 ID가 유효하지 않거나 중복입니다.');
+      ids.add(input.id);ordinals.add(input.savedOutlineId);
+      if(typeof input.name!=='string'||input.name.length>100||
+         (input.outlineTypeId!==null&&
+          (typeof input.outlineTypeId!=='string'||input.outlineTypeId.length>128))||
+         (input.outlineTypeName!==null&&
+          (typeof input.outlineTypeName!=='string'||input.outlineTypeName.length>100))||
+         typeof input.visible!=='boolean'||typeof input.edited!=='boolean'||
+         typeof input.createdAt!=='string'||!Number.isFinite(Date.parse(input.createdAt))||
+         (input.editedAt!==null&&
+          (typeof input.editedAt!=='string'||!Number.isFinite(Date.parse(input.editedAt)))))
+        throw new Error('가져올 이름/타입/가시성/시점이 유효하지 않습니다.');
+      // Validate hostile runtime input through unknown values without widening
+      // typed readonly arrays to any[] (Array.isArray narrows its argument).
+      const untrustedOperations:unknown=input.transformOperations;
+      const untrustedTransform:unknown=input.transform;
+      if(!Array.isArray(untrustedOperations)||
+         untrustedOperations.length>4096||
+         input.edited!==(untrustedOperations.length>0)||
+         input.edited!==(input.editedAt!==null))
+        throw new Error('편집 이력과 편집 시점이 일치하지 않습니다.');
+      if(!Array.isArray(untrustedTransform)||untrustedTransform.length!==6||
+         !untrustedTransform.every((n:unknown)=>typeof n==='number'&&Number.isFinite(n)))
+        throw new Error('유한한 2D Affine 변환이 필요합니다.');
+      const operations:readonly GeneratedRigidOperation[]=input.transformOperations;
+      const suppliedTransform:Affine2D=input.transform;
+      const baseResult=freezeResult(input.baseResult);
+      const recomputed=operations.reduce<Affine2D>(
+        (current,operation)=>composeAffine(generatedRigidMatrix(operation),current),IDENTITY_2D);
+      if(recomputed.some((n,i)=>n!==suppliedTransform[i]))
+        throw new Error('허용 작업과 Affine 변환이 일치하지 않습니다.');
+      const geometry=applyAffine(baseResult.geometry,recomputed);
+      validatedGeneratedGeometry(geometry);
+      vertexTotal+=pointsCount(baseResult.geometry);
+      if(vertexTotal>GENERATED_VERTEX_LIMIT)
+        throw new Error('가져올 꼭짓점 수 상한을 초과했습니다.');
+      return Object.freeze({
+        ref:Object.freeze(canvasObjectRef('GENERATED',input.id,this.scope)),
+        sceneRef:createSceneRef(sceneScope(this.scope.versionId,this.scope.sourceSha256,this.sourceUnit),
+          'APP_CREATED',input.id),
+        savedOutlineId:input.savedOutlineId,createdAt:input.createdAt,editedAt:input.editedAt,
+        name:input.name,outlineTypeId:input.outlineTypeId,outlineTypeName:input.outlineTypeName,
+        kind:baseResult.kind,baseResult,baseGeometry:baseResult.geometry,
+        transform:Object.freeze([...recomputed]) as unknown as Affine2D,
+        transformOperations:Object.freeze(operations.map(operation=>
+          operation.type==='Translate'?Object.freeze({...operation}):
+            Object.freeze({...operation,pivot:Object.freeze([...operation.pivot]) as readonly [number,number]}))),
+        visible:input.visible,edited:input.edited,dirty:true,
+      }) as GeneratedEntry;
+    });
+    this.objects=entries;this.issued=ids;
+    this.undoEntries=[];this.redoEntries=[];this.pending=null;
+    this.emit('clear');
   }
   clear():void{
     this.assertLive();this.objects=[];this.undoEntries=[];this.redoEntries=[];

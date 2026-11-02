@@ -7,6 +7,8 @@ describe('TC-U1-UNIT-001: viewer app docking state', () => {
       layerPanelOpen: true,
       outlineToolEnabled: false,
       outlineTreeOpen: false,
+      memoTreeOpen: false,
+      zonePanelOpen: false,
       toolsOpen: false,
       compactPanel: 'layers',
     });
@@ -75,6 +77,19 @@ describe('TC-U1-UNIT-001: viewer app docking state', () => {
   });
 });
 
+describe('#196 zone dock isolation',()=>{
+ it('opens one mobile drawer, preserves outline mode, and clears the panel on reset',()=>{
+  const outlined=viewerAppReducer(initialViewerAppState,{type:'set-outline-tool',enabled:true});
+  const zones=viewerAppReducer(outlined,{type:'toggle-zones',exclusive:true});
+  expect(zones).toMatchObject({zonePanelOpen:true,layerPanelOpen:false,outlineTreeOpen:false,
+   memoTreeOpen:false,toolsOpen:false,outlineToolEnabled:true,compactPanel:'zones'});
+  const switched=viewerAppReducer(zones,{type:'toggle-memo-tree',exclusive:true});
+  expect(switched).toMatchObject({zonePanelOpen:false,memoTreeOpen:true,compactPanel:'memos'});
+  expect(viewerAppReducer(zones,{type:'compact-exclusive'})).toEqual(zones);
+  expect(viewerAppReducer(zones,{type:'reset'})).toEqual(initialViewerAppState);
+ });
+});
+
 describe('TC-U3-UNIT-001: outline tool state machine', () => {
   it('defaults OFF and switches without changing unrelated layer/tree state', () => {
     let state = initialViewerAppState;
@@ -89,4 +104,17 @@ describe('TC-U3-UNIT-001: outline tool state machine', () => {
     const active = viewerAppReducer(initialViewerAppState, { type: 'set-outline-tool', enabled: true });
     expect(viewerAppReducer(active, { type: 'reset' })).toEqual(initialViewerAppState);
   });
+});
+
+
+describe('#85 M4 compact Memo Tree state regression',()=>{
+ it('retains exclusive Outline/Memo right dock and never alters layer visibility',()=>{
+  const withMemo=viewerAppReducer(initialViewerAppState,{type:'toggle-memo-tree'});
+  expect(withMemo).toMatchObject({memoTreeOpen:true,outlineTreeOpen:false,layerPanelOpen:true});
+  const withOutline=viewerAppReducer(withMemo,{type:'toggle-outline-tree'});
+  expect(withOutline).toMatchObject({memoTreeOpen:false,outlineTreeOpen:true,layerPanelOpen:true});
+  const compact=viewerAppReducer(withOutline,{type:'toggle-memo-tree',exclusive:true});
+  expect(compact).toMatchObject({memoTreeOpen:true,outlineTreeOpen:false,layerPanelOpen:false,toolsOpen:false,compactPanel:'memos'});
+  expect(viewerAppReducer(compact,{type:'reset'})).toEqual(initialViewerAppState);
+ });
 });

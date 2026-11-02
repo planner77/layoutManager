@@ -1,0 +1,16 @@
+{
+  "release": {
+    "sourceCommit": "REPLACE_WITH_RELEASE_COMMIT_40_HEX",
+    "version": "0.44.1",
+    "appDigest": "sha256:REPLACE_WITH_CURRENT_APP_DIGEST",
+    "migratorDigest": "sha256:REPLACE_WITH_CURRENT_MIGRATOR_DIGEST"
+  },
+  "origin": "http://REPLACE_WITH_HOST:3001",
+  "approvalId": "OWNER-GREENFIELD-001",
+  "changeRequestId": "CR-GREENFIELD-001",
+  "scopes": [
+    "AUTH",
+    "CAD_WRITE"
+  ],
+  "validMinutes": 240
+}

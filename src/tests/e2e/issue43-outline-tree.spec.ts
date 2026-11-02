@@ -22,6 +22,8 @@ async function createDrawing(request: APIRequestContext, businessUnit: string) {
 }
 
 async function selectSquare(page: Page) {
+  // Legacy canonical/Handle regression explicitly uses the exact-source mode.
+  await page.getByTestId('outline-basis').selectOption('source');
   const canvas = page.getByTestId('cad-canvas').locator('canvas');
   await canvas.scrollIntoViewIfNeeded();
   await expect(canvas).toBeInViewport({ratio:1});

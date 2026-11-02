@@ -5,7 +5,7 @@ import {TRANSLATE_DRAG_THRESHOLD_PX} from '../../domain/generated-translate';
 import {SelectionSpatialIndex} from './selection-spatial-index';
 
 /** 'select' is the #31/#40 SOURCE-only outline worker mode. */
-export type SelectionMode='pan'|'select'|'objects'|'generated';
+export type SelectionMode='pan'|'select'|'render'|'objects'|'generated';
 export type GeneratedSelectable=Readonly<{id:string;geometry:GeoJSONOutline}>;
 /** Adapter handles the document stage/ghost/commit; controller only owns gesture arbitration. */
 export type GeneratedDragHandlers=Readonly<{
@@ -46,6 +46,16 @@ function pathsFor(entity:OutlineEntity) {
    return segments;
  });
 }
+function insideMesh(entity:OutlineEntity,p:XY):boolean{
+ if(entity.entityType!=='Mesh')return false;
+ return entity.paths.some(path=>{
+   if(path.points.length<3)return false;
+   const [a,b,c]=path.points;
+   const cross=(u:XY,v:XY,w:XY)=>(v[0]-u[0])*(w[1]-u[1])-(v[1]-u[1])*(w[0]-u[0]);
+   const u=cross(a,b,p),v=cross(b,c,p),w=cross(c,a,p);
+   return (u>=-1e-8&&v>=-1e-8&&w>=-1e-8)||(u<=1e-8&&v<=1e-8&&w<=1e-8);
+ });
+}
 /** One DOM input controller and one source SpatialIndex for all four modes.
  * Generated shapes are at most 100 confirmed session objects and are tested
  * dynamically; never add their paths to the immutable source index/Worker. */
@@ -53,8 +63,10 @@ export class SelectionController {
  private ids=new Set<string>();
  private generatedIds=new Set<string>();
  private generated:readonly GeneratedSelectable[]=[];
- private readonly spatial:SelectionSpatialIndex;
- private readonly idToLayer:Map<string,string>;
+ private spatial:SelectionSpatialIndex;
+ private idToLayer:Map<string,string>;
+ private sourceEntities:OutlineEntity[]=[];
+ private renderEntities:OutlineEntity[]=[];
  get indexBuildMs(){return this.spatial.buildMs;}
  get indexAssignments(){return this.spatial.assignmentCount;}
  get overflowEntities(){return this.spatial.overflowCount;}
@@ -76,6 +88,7 @@ export class SelectionController {
    private onObjectsChange?:(sources:OutlineEntity[],generatedIds:readonly string[])=>void,
    private onGeneratedDrag?:GeneratedDragHandlers,
  ) {
+   this.sourceEntities=entities;
    this.spatial=new SelectionSpatialIndex(entities);
    this.idToLayer=new Map(entities.map(e=>[e.id,e.layer]));
    this.visible=new Set(entities.map(e=>e.layer));
@@ -100,8 +113,20 @@ export class SelectionController {
  }
  setMode(mode:SelectionMode){
    this.cancelDrag();this.mode=mode;
+   this.switchEntities();
    this.canvas.style.cursor=mode==='pan'?this.previousCursor:'crosshair';
    this.onPanKey(mode==='pan'||this.space);
+ }
+ setSourceEntities(entities:OutlineEntity[]){this.sourceEntities=entities;if(this.mode==='select')this.switchEntities(true);}
+ setRenderEntities(entities:OutlineEntity[]){this.renderEntities=entities;if(this.mode!=='select')this.switchEntities(true);}
+ private switchEntities(preserve=false){
+   const next=this.mode==='select'?this.sourceEntities:this.renderEntities;
+   if(this.entities===next)return;
+   this.entities=next;this.spatial=new SelectionSpatialIndex(next);
+   this.idToLayer=new Map(next.map(e=>[e.id,e.layer]));
+   if(preserve)this.ids=new Set([...this.ids].filter(id=>this.idToLayer.has(id)&&this.visible.has(this.idToLayer.get(id)!)));
+   else{this.ids.clear();this.generatedIds.clear();}
+   this.emit();
  }
  setVisibleLayers(layers:Set<string>){
    this.visible=new Set(layers);
@@ -215,7 +240,7 @@ export class SelectionController {
    }
    const dragging=Math.hypot(x-start.x,y-start.y)>=MIN_DRAG_PX;
    this.cancelDrag();
-   const includeSource=this.mode==='select'||this.mode==='objects';
+   const includeSource=this.mode==='select'||this.mode==='render'||this.mode==='objects';
    const includeGenerated=this.mode==='objects'||this.mode==='generated';
    let sourceHits:OutlineEntity[]=[];
    let generatedHits:GeneratedSelectable[]=[];
@@ -229,7 +254,9 @@ export class SelectionController {
        sourceHits=candidates.filter(e=>{
          if(contained)return e.paths.every(path=>path.points.every(p=>p[0]>=rect[0]&&p[0]<=rect[2]&&p[1]>=rect[1]&&p[1]<=rect[3]));
          if(e.bounds[2]<rect[0]||e.bounds[0]>rect[2]||e.bounds[3]<rect[1]||e.bounds[1]>rect[3])return false;
-         return pathsFor(e).some(([a,b])=>segmentIntersectsBox(a,b,rect));
+         return pathsFor(e).some(([a,b])=>segmentIntersectsBox(a,b,rect))||
+           ([[rect[0],rect[1]],[rect[0],rect[3]],[rect[2],rect[1]],[rect[2],rect[3]]] as XY[])
+             .some(corner=>insideMesh(e,corner));
        });
      }
      if(includeGenerated)generatedHits=this.generated.filter(o=>contained?
@@ -238,7 +265,7 @@ export class SelectionController {
      const p=this.screenToWorld(x,y),q=this.screenToWorld(x+CLICK_PX,y),radius=Math.hypot(q[0]-p[0],q[1]-p[1]);
      if(includeSource){
        const candidates=this.spatial.query([p[0]-radius,p[1]-radius,p[0]+radius,p[1]+radius]).filter(e=>this.visible.has(e.layer));
-       const ranked=candidates.map(e=>({e,d:pathsFor(e).reduce((best,[a,b])=>Math.min(best,distanceToSegment(p,a,b)),Infinity)})).sort((a,b)=>a.d-b.d);
+       const ranked=candidates.map(e=>({e,d:insideMesh(e,p)?0:pathsFor(e).reduce((best,[a,b])=>Math.min(best,distanceToSegment(p,a,b)),Infinity)})).sort((a,b)=>a.d-b.d);
        if(ranked[0]&&ranked[0].d<=radius)sourceHits=[ranked[0].e];
      }
      // In general-object mode a matching DXF entity ALWAYS wins over its

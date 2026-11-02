@@ -1,4 +1,52 @@
+## #212 — 수동 브라우저 Scene 단계 진단 (2026-11-02)
+
+`ViewerMetric.sceneBuild`는 browser-local `status/phase/steps{phase,outcome,elapsedMs}/stats`의 **정제된 숫자/코드**만 추가한다. `adapter-load:LOAD` 대신 검증된 `SceneBuildError`는 allowlisted `SCENE_*` reasonCode와 실제 phase를 표시한다. `getFromPath`는 font fetch, parse, geometry가 결합되어 있으므로 generic `SCENE_CONVERTER_UNAVAILABLE`로만 기록; 원인을 특정하지 않는다. `OPTIONAL_OUTLINE_INDEX` timeout은 warning이고 Scene Artifact의 필수 성공·실패와 분리한다. Client Error.cause 원문/stack/파일명/원본 텍스트/Handle/SHA/site/token은 metric·download JSON·Log API로 전달하지 않는다. Browser client metric은 서버 `RequestLogContext`/operation JobLog가 아니고 `requestId/jobId`를 추정·생성하지 않는다. 서버 #208 전용 영속 Job 시도/로그/상관 ID는 별도 구현. [Issue212](Issue212.md).
+
+---
+
+## 0.54.1 UI 타임라인 오류 복구 — Epic #50
+
+운영 로그 화면에서 목록 조회와 동일 requestId/jobId Timeline 조회는 별개로 권한 확인을 받는다. Timeline 요청만 410 cursor 만료이거나 503 LOG_STORE_UNAVAILABLE로 확인된 경우 이전 타임라인 단계 및 페이지를 제거하고 오류를 표시하며, 성공·인가 완료된 메인 목록은 유지하여 사용자가 상관 ID를 다시 조회할 수 있도록 한다.
+
+401/403 인증·권한 실패, G7_RUNTIME_UNAVAILABLE 및 분류 불가/응답 이상/네트워크 오류는 기존처럼 메인 목록·상세·타임라인을 전부 제거한다. 이 분리는 사용자 편의/UI 표시 정책만 변경하며 서버의 권한 재검사, 접근 감사, 캐시 차단, 원시 로그 수집 범위 및 저장소 보존 정책을 변경하지 않는다. 실제 자동 시험은 TestReport 확인 전 NOT VERIFIED.
+
+---
+
+## R1 #60/#61/#62 — 권한 있는 정제 로그 조회 (0.49.0 후보)
+
+`GET /api/operations/logs`는 G7 활성 authority와 HttpOnly 서버 세션, Admin 역할 및 별도 `logs:read` 특별 권한을 기존 G4와 감사로 확인한 뒤만 `/data/logs`를 읽는다. Site CAD 쓰기 권한으로 대체하지 않으며 익명 CAD 읽기 예외를 로그로 확대하지 않는다. `/api/operations/logs/access`는 인가 결과만 반환하고 저장소를 읽지 않는다. `/operations/logs`는 Node Proxy에서 같은 인가를 실행해 직접 URL/RSC/prefetch도 401/403/429/503과 no-store로 거절하며, 허용된 요청은 Page/API에서 다시 확인한다. 과거 HTTP200 안내 제한은 이 구현으로 대체되었다.
+
+기간(from/to UTC), level/event/operation/component/source/outcome/requestId/jobId/errorCode는 AND 조건이다. 기본 1시간, 최대 24시간, limit 기본50/최대100. UI는 현지 시각 입력을 UTC로 변환하며 같은 requestId/jobId의 기간 내 이벤트를 시간순으로 다시 조회한다. 조회/타임라인은 각각 이전 요청을 취소하고 화면 이탈 때 해제한다. 자동 polling/원시 파일·stack·오류 원문·export는 지원하지 않는다. 모든 API 응답은 private,no-store이며 cursor가 인가를 대신하지 않는다.
+
+읽기 상한·snapshot 수명/메모리·손상 행 정책의 단일 설계는 Architecture의 R1 절을 따른다. 조회는 실시간 무한 스트림이 아니며 새 append는 새 검색에서 반영한다. `partial`/skippedLines/scanTruncated는 결과 누락 가능성을 표시한다. 410이면 첫 페이지 재검색이 필요하다. 로그 저장이 꺼져 있을 때 `disabled`이며, 정상 0행·IO 실패와 구분한다. 기존 logger 및 저장소 정책·운영 로그 보관 설정은 그대로 유지한다. 운영 권한 설정/현장 인수·배포는 별도로 수행한다.
+
 # Structured Logging 운영 가이드
+
+## #59 로그 영속 저장 CI 배포 회귀 보완 (2026-10-31)
+
+- [Run 41202514157](https://github.com/planner77/layoutManager/actions/runs/41202514157): 저장소 보안 정책은 `0700` 고정. ENOSPC 합성 테스트에서도 유효한 비공개 디렉터리에서 IO 실패만 재현해야 한다.
+- Migrator는 `server/logger.ts`의 정적 `server/logging/store.ts` 의존성을 runtime closure에 명시적으로 포함해야 한다. 후보 Dockerfile·CI 기준 이미지의 source contract를 구분해 검사하고, 신규 성공 검증 전 GHCR / 배포 성공으로 간주하지 않는다. [상세 원장](FailureLedger.md).
+
+## PR #179 — JSONL writer/UploadStage failure correction (2026-10-31)
+
+- Run 41194360963 failed TS2345 in server/http.ts:20: generic RequestLogContext.currentStage is not an UploadStage. UploadDiagnostics receives the explicitly typed upload stage only.
+- The writer checks open FD nlink/dev/ino and its pathname to reopen after external pruning; 10000+ rotation suffix remains visible to inventory/read/retention, and prune(0) honors exact maxFiles. Related tests TC-L2-004, TC-L3-007..009. Shared quota and inode check/write are still not cross-process atomic; corrected CI/field volume evidence unverified. See FailureLedger.md.
+
+---
+
+
+## #58/#59 L2 phase diagnostics and L3 private store (2026-10-31)
+
+The L1 emitter is still the single output owner. New http_request_stage and maintenance_job_* events correlate safe stage/outcome/elapsedMs with server-issued requestId/jobId. Health failure is sampled and recovery recorded once. Only verified 40-hex release commit can be logged as buildRevision. Optional private /data/logs JSONL (Compose enabled) is independent of Docker logs; file 4 MiB, total 64 MiB, 7 days, queue 1 MiB by default; UID10001, directory 0700 and file 0600. The sink drops on IO failure rather than interrupting CAD/DB business processing. No HTTP log-reading API or automatic raw Next/Docker collection. Cross-process aggregate budget is best-effort. Details: [Issues58-59](Issues58-59.md).
+
+
+## Issue #57 L1 — app 소유 Schema v1·단일 출력 (2026-10-27)
+
+- 기존 `src/server/logger.writeLog`만 구조화 JSON을 stdout/stderr로 출력한다. `UploadDiagnostics`도 `LOG_LEVEL`/`LOG_FORMAT`을 공유한다. `warn→console.warn`, `error→console.error`, `debug/info→console.log`; production은 `LOG_FORMAT=json` 한 줄 권장.
+- 필수: `timestamp`, `schemaVersion:1`, `level`, `event`, `component`, `operation`, `appVersion`. 선택: `requestId/jobId/outcome/elapsedMs/httpStatus/errorCode`; 선언 확장: `method/route/stage/backend/recoveryId/status/jobCount/error`. 동적 경로·파일명·Locator/stack/임의 Error message·credentials·CAD bytes는 emit하지 않는다.
+- 성공 Health 200의 start/end는 debug로 기록하여 `LOG_LEVEL=info`에서 억제하되 실패 503 error는 보존. 다른 API start/end와 업로드 stage·first failure는 동일 `X-Request-Id`로 상관 분석한다. Next.js/Prisma/Nginx/Docker/Browser/수동 CLI 출력은 별도 소스이고 v1 Schema 준수·웹 조회가 보장되지 않는다. 보관·조회와 권한은 후속 #59~#62.
+- 현행 발생 위치 목록, stage별 Event 및 Schema 버전 정책은 [Issue57](Issue57.md), [ADR-054](Decisions.md), [TestPlan](TestPlan.md) 참조.
+
 
 ## Issue #31 P4-D0 — 감사와 운영 로그의 책임 경계 (설계, 2026-10-25)
 

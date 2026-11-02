@@ -1,25 +1,42 @@
 'use client';
 
-import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { useCallback, useEffect, useRef, useState, type ComponentProps, type ReactNode, type RefObject } from 'react';
 import type { ViewerCompactPanel } from './viewer-app-state';
+import {MovableViewerPanel} from './movable-viewer-panel';
+import {CadTextSearch} from './cad-text-search';
 
-export function ViewerAppShell({ shellRef, isFullscreen, isNativeFullscreen, menuBar, toolbar,
-  layerPanel, layerPanelOpen, outlineTreePanel, outlineTreeOpen, compactPanel,
-  canvas, tools, toolsOpen, onClosePanel, status, modalOverlay, nativeLoadingOverlay }: {
+// Data-only props: render CadTextSearch through React JSX, never invoke a render
+// callback with refs while ViewerAppShell is rendering (react-hooks/refs).
+type TextSearchProps=Omit<ComponentProps<typeof CadTextSearch>,
+  'workspaceRef'|'dialogRef'|'mobile'|'active'|'raised'|'onRaise'|'onKeyDown'|'modalBlocked'>;
+
+export function ViewerAppShell({ shellRef, panelScopeKey, isFullscreen, isNativeFullscreen, menuBar, toolbar,
+  layerPanel, layerPanelOpen, outlineTreePanel, outlineTreeOpen, memoTreePanel, memoTreeOpen, zonePanel, zonePanelOpen, compactPanel,
+  canvas, tools, toolsOpen, toolsTitle = '선택 및 외곽선 도구', textSearch, textSearchOpen, onCloseTextSearch, onClosePanel, status, modalOverlay, nativeLoadingOverlay }: {
   shellRef: RefObject<HTMLDivElement | null>;
+  panelScopeKey:string;
   isFullscreen: boolean; isNativeFullscreen: boolean;
   menuBar: ReactNode; toolbar: ReactNode;
   layerPanel?: ReactNode; layerPanelOpen: boolean;
   outlineTreePanel?: ReactNode; outlineTreeOpen: boolean;
+  memoTreePanel?: ReactNode; memoTreeOpen: boolean;
+  zonePanel?: ReactNode; zonePanelOpen:boolean;
   compactPanel: ViewerCompactPanel;
-  canvas: ReactNode; tools?: ReactNode; toolsOpen: boolean;
+  canvas: ReactNode; tools?: ReactNode; toolsOpen: boolean; toolsTitle?: string;
+  textSearch?: TextSearchProps; textSearchOpen:boolean; onCloseTextSearch:()=>void;
   onClosePanel: (panel: Exclude<ViewerCompactPanel, null>) => void;
   status: ReactNode; modalOverlay?: ReactNode; nativeLoadingOverlay?: ReactNode;
 }) {
   const [mobile, setMobile] = useState(false);
+  const [topDrawer,setTopDrawer]=useState<ViewerCompactPanel|'search'>(null);
+  const raiseSearch=useCallback(()=>setTopDrawer('search'),[]);
+  const workspaceRef=useRef<HTMLDivElement>(null);
   const modalOpen=!!modalOverlay;
-  const active = mobile ? (compactPanel==='layers' && layerPanelOpen && layerPanel ? 'layers' :
+  const active = mobile ? (textSearchOpen ? 'search' :
+    compactPanel==='layers' && layerPanelOpen && layerPanel ? 'layers' :
     compactPanel==='outlines' && outlineTreeOpen && outlineTreePanel ? 'outlines' :
+    compactPanel==='memos' && memoTreeOpen && memoTreePanel ? 'memos' :
+    compactPanel==='zones' && zonePanelOpen && zonePanel ? 'zones' :
     compactPanel==='tools' && toolsOpen && tools ? 'tools' : null) : null;
   const dialog = useRef<HTMLDivElement>(null);
   const headerRef=useRef<HTMLElement>(null);
@@ -63,25 +80,55 @@ export function ViewerAppShell({ shellRef, isFullscreen, isNativeFullscreen, men
     if (event.shiftKey && document.activeElement===first) { event.preventDefault(); last.focus(); }
     else if (!event.shiftKey && document.activeElement===last) { event.preventDefault(); first.focus(); }
   };
-  const drawer = (name: Exclude<ViewerCompactPanel,null>, open:boolean, content:ReactNode, id:string) =>
-    open && content && (!mobile || active===name) ? <div key={name} id={id} ref={active===name?dialog:undefined}
-      role={mobile ? 'dialog' : 'region'} aria-modal={mobile && active===name && !modalOpen ? true : undefined}
-      aria-label={name==='layers'?'레이어':name==='outlines'?'외곽선 목록':'선택 및 외곽선 도구'}
-      data-testid={id} data-drawer={name} data-canvas-edit-escape-layer={mobile && active===name ? 'drawer' : undefined} onKeyDown={trapTab}
-      className={`viewer-drawer viewer-drawer-${name} ${mobile && active!==name?'viewer-drawer-hidden':''}`}>
-      {name==='tools' && <button type="button" className="sticky top-0 z-10 float-right rounded bg-white px-2 py-1 text-sm text-slate-800" onClick={()=>onClosePanel('tools')}>도구 닫기</button>}
-      {content}
-    </div> : null;
   return <div ref={shellRef} tabIndex={-1} data-testid="cad-viewer-shell"
     data-fullscreen={isFullscreen ? 'true' : 'false'} data-native-fullscreen={isNativeFullscreen ? 'true' : 'false'}
     className={isFullscreen ? 'fixed inset-0 z-[90] flex h-[100dvh] w-screen flex-col overflow-hidden bg-black' : 'relative flex flex-col rounded-xl border border-slate-200 bg-white'}>
     <header ref={headerRef} className={isFullscreen?"relative z-50 shrink-0":"sticky top-0 z-50 shrink-0"}>{menuBar}{toolbar}</header>
-    <div data-testid="viewer-workspace" className={isFullscreen ? 'relative min-h-0 flex-1 overflow-hidden' : 'relative h-[65vh] min-h-96 overflow-hidden'}>
+    <div ref={workspaceRef} data-testid="viewer-workspace" className={isFullscreen ? 'relative min-h-0 flex-1 overflow-hidden' : 'relative h-[65vh] min-h-96 overflow-hidden'}>
       <section ref={canvasRef} aria-label="CAD 작업 캔버스" data-testid="viewer-canvas-region" className="absolute inset-0 z-0 overflow-hidden">{canvas}</section>
-      {mobile && active && <button type="button" className="viewer-drawer-backdrop" aria-label="패널 닫기" onClick={()=>onClosePanel(active)} />}
-      {drawer('layers',layerPanelOpen,layerPanel,'viewer-layer-dock')}
-      {drawer('outlines',outlineTreeOpen,outlineTreePanel,'viewer-outline-tree-dock')}
-      {drawer('tools',toolsOpen,tools,'viewer-tools-dock')}
+      {mobile && active && <button type="button" className="viewer-drawer-backdrop" aria-label="패널 닫기"
+        onClick={()=>active==='search'?onCloseTextSearch():onClosePanel(active)} />}
+      <MovableViewerPanel key={panelScopeKey+':layers'} kind="layers" id="viewer-layer-dock" name="레이어"
+        workspaceRef={workspaceRef} dialogRef={dialog} open={layerPanelOpen&&!!layerPanel}
+        mobile={mobile} modalBlocked={modalOpen} active={!mobile||active==='layers'} raised={topDrawer==='layers'}
+        onRaise={()=>setTopDrawer('layers')} onClose={()=>onClosePanel('layers')} onKeyDown={trapTab}>
+        {layerPanel}
+      </MovableViewerPanel>
+      <MovableViewerPanel key={panelScopeKey+':outlines'} kind="outlines" id="viewer-outline-tree-dock" name="외곽선 목록"
+        workspaceRef={workspaceRef} dialogRef={dialog} open={outlineTreeOpen&&!!outlineTreePanel}
+        mobile={mobile} modalBlocked={modalOpen} active={!mobile||active==='outlines'} raised={topDrawer==='outlines'}
+        onRaise={()=>setTopDrawer('outlines')} onClose={()=>onClosePanel('outlines')} onKeyDown={trapTab}>
+        {outlineTreePanel}
+      </MovableViewerPanel>
+      <MovableViewerPanel key={panelScopeKey} id="viewer-memo-tree-dock" name="메모 트리"
+        workspaceRef={workspaceRef} dialogRef={dialog} open={memoTreeOpen&&!!memoTreePanel}
+        mobile={mobile} modalBlocked={modalOpen} active={!mobile||active==='memos'} raised={topDrawer==='memos'}
+        onRaise={()=>setTopDrawer('memos')} onClose={()=>onClosePanel('memos')} onKeyDown={trapTab}>
+        {memoTreePanel}
+      </MovableViewerPanel>
+      <MovableViewerPanel key={panelScopeKey+':zones'} kind="zones" id="viewer-zone-dock" name="구역 목록"
+        workspaceRef={workspaceRef} dialogRef={dialog} open={zonePanelOpen&&!!zonePanel}
+        mobile={mobile} modalBlocked={modalOpen} active={!mobile||active==='zones'} raised={topDrawer==='zones'}
+        onRaise={()=>setTopDrawer('zones')} onClose={()=>onClosePanel('zones')} onKeyDown={trapTab}>
+        {zonePanel}
+      </MovableViewerPanel>
+      <MovableViewerPanel key={panelScopeKey+':tools'} kind="tools" id="viewer-tools-dock" name={toolsTitle}
+        workspaceRef={workspaceRef} dialogRef={dialog} open={toolsOpen&&!!tools}
+        mobile={mobile} modalBlocked={modalOpen} active={!mobile||active==='tools'} raised={topDrawer==='tools'}
+        onRaise={()=>setTopDrawer('tools')} onClose={()=>onClosePanel('tools')} onKeyDown={trapTab}>
+        {tools && <>
+          <button type="button" className="z-10 shrink-0 self-end rounded bg-white px-2 py-1 text-sm text-slate-800"
+            onClick={()=>onClosePanel('tools')}>도구 닫기</button>
+          <div data-testid="viewer-tools-scroll-viewport"
+            className="min-h-0 w-full flex-1 overflow-y-auto overscroll-contain">
+            {tools}
+          </div>
+        </>}
+      </MovableViewerPanel>
+      {textSearch && <CadTextSearch key={panelScopeKey+':search'} {...textSearch}
+        workspaceRef={workspaceRef} dialogRef={dialog}
+        mobile={mobile} modalBlocked={modalOpen} active={!mobile||active==='search'} raised={topDrawer==='search'}
+        onRaise={raiseSearch} onKeyDown={trapTab} />}
     </div>
     <footer ref={footerRef} className="relative z-20 shrink-0 border-t border-slate-200 bg-white px-3 py-1 text-slate-700">{status}</footer>
     {modalOverlay}

@@ -1,5 +1,9 @@
 # Issue #96 — 로컬 계정·세션·Role/Site·감사 공통 기반
 
+## #153 G7 실제 운영 연결 구현 (2026-10-29)
+
+기존 G2/G3/G4 공통 기반을 재사용해 #153에서 실제 Runtime API/UI·CAD 권한·Audit·격리 Migration/복구를 통합한다. 최신 Owner Managed 정책과 구현 범위는 [Requirements](Requirements.md)의 FR-G7-153, 운영 선행조건은 [Operation](Operation.md)을 따른다. 구현·합성 검증은 실제 운영 활성화/전환 수용이 아니며 상위 Issue를 자동 종료하지 않는다.
+
 ## #109 S1 — 단일 Staging 통합 구현·운영 OFF (2026-10-26)
 
 #109에서 Staging 별도 Prisma schema/history·App Router 미러 API·G1~G4 로그인/Session/Role/Site/Grant/Audit/단발 Admin·동일 DB 거래 CAD DXF staging 쓰기 검증을 단일 PR로 작성한다. 운영 `src/prisma`/마이그레이터·CAD API·Nginx/Compose/.env/실 DB/CAD/S3는 **변경 0**, `G7_AUTH_ENABLED` 및 CAD write flag 기본 false, staging 격리 Root·manifest 승인 없이는 404. #108 Owner 수용과 G7 별도 GO는 다르며 S1 시험은 실제 운영 승인이나 #96 AC 완료가 아니다. #109 및 #96 OPEN/BLOCKED 유지.

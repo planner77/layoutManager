@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { runtimeCadHeaders } from '@/features/g7-runtime/client';
 import { Dialog } from 'radix-ui';
 import { Button } from '@/components/ui/button';
 import { useGlobalLoading } from '@/components/global-loading';
@@ -45,9 +46,12 @@ export function DeleteButton({ versionId, filename, version, location, isCurrent
     setError('');
     try {
       await runWithLoading('도면을 삭제하는 중입니다...', async () => {
+        // Resolve authentication before dispatch: a rejected session is a known
+        // precondition failure, not an uncertain deletion outcome.
+        const headers = await runtimeCadHeaders({ 'Content-Type': 'application/json' });
         let r: Response;
         try {
-          r = await fetch(`/api/cad-files/${versionId}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }) });
+          r = await fetch(`/api/cad-files/${versionId}`, { method: 'DELETE', headers, body: JSON.stringify({ password }) });
         } catch {
           throw new Error('OUTCOME_UNKNOWN');
         }

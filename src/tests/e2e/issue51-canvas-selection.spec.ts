@@ -36,6 +36,8 @@ async function dragCanvas(page:Page,fromRight=false,ctrl=false){
 }
 async function createOutlines(page:Page){
   await clickViewerTestCommand(page, 'viewer-menu-outline-tool');
+  // Legacy canonical/Handle regression explicitly uses the exact-source mode.
+  await page.getByTestId('outline-basis').selectOption('source');
   await dragCanvas(page);
   const tools=page.getByTestId('cad-outline-tools');
   await expect(page.getByTestId('outline-selection-count')).toContainText('선택 1개');

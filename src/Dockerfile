@@ -35,8 +35,9 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd --system --gid 10001 cad \
     && useradd --system --uid 10001 --gid cad --home-dir /app --shell /usr/sbin/nologin cad \
-    && mkdir -p /data/db /data/cad \
-    && chown -R cad:cad /data
+    && mkdir -p /data/db /data/cad /data/logs \
+    && chown -R cad:cad /data \
+    && chmod 0700 /data/logs
 VOLUME ["/data"]
 
 # Measurement-only phase 1: remove application source/tests from the full-dependency image.
@@ -68,6 +69,7 @@ RUN node scripts/prepare-migrator-package.mjs \
 
 # The web runtime is unchanged. Both images share one version and /data volume.
 FROM runtime-base AS migrator
+LABEL com.planner77.g7.image-role="migrator"
 COPY --from=migrator-dependencies --chown=cad:cad /app/src/node_modules ./node_modules
 COPY --from=migrator-dependencies --chown=cad:cad /app/src/package.json ./package.json
 COPY --from=builder /app/src/tsconfig.json ./tsconfig.json
@@ -82,15 +84,61 @@ COPY --from=builder /app/src/server/db.ts ./server/db.ts
 COPY --from=builder /app/src/server/backfill-delete-passwords.ts ./server/backfill-delete-passwords.ts
 COPY --from=builder /app/src/server/password.ts ./server/password.ts
 COPY --from=builder /app/src/server/logger.ts ./server/logger.ts
+# Keep the migrator's tsx relative-import closure explicit and auditable.
+COPY --from=builder /app/src/server/logging/store.ts ./server/logging/store.ts
+COPY --from=builder /app/src/server/upload-error-catalog.ts ./server/upload-error-catalog.ts
 COPY --from=builder /app/src/domain/cad.ts ./domain/cad.ts
+# #153 explicit operator entrypoint only; default CMD still applies six CAD
+# migrations. Signed Runtime authority is required before G2 writes anything.
+COPY --from=builder /app/src/scripts/g7-greenfield.ts ./scripts/g7-greenfield.ts
+COPY --from=builder /app/src/scripts/g7-greenfield-authority.ts ./scripts/g7-greenfield-authority.ts
+COPY --from=builder /app/src/scripts/g7-runtime-admin.ts ./scripts/g7-runtime-admin.ts
+COPY --from=builder /app/src/scripts/g7-runtime-rehearsal.ts ./scripts/g7-runtime-rehearsal.ts
+COPY --from=builder /app/src/server/auth ./server/auth
+COPY --from=builder /app/src/server/g7-staging/g1-store.ts ./server/g7-staging/g1-store.ts
+COPY --from=builder /app/src/server/g7-staging/g2-store.ts ./server/g7-staging/g2-store.ts
+COPY --from=builder /app/src/server/g7-staging/g4-store.ts ./server/g7-staging/g4-store.ts
+# #98/#83: exact Greenfield business DDL belongs to the migrator's runtime closure.
+COPY --from=builder /app/src/server/cad-business/schema-ddl.ts ./server/cad-business/schema-ddl.ts
+COPY --from=builder /app/src/server/cad-business/anchor-ddl.ts ./server/cad-business/anchor-ddl.ts
+COPY --from=builder /app/src/server/cad-business/memo-feature-ddl.ts ./server/cad-business/memo-feature-ddl.ts
+COPY --from=builder /app/src/server/cad-business/zone-ddl.ts ./server/cad-business/zone-ddl.ts
+COPY --from=builder /app/src/server/g7-operational/greenfield-schema.ts ./server/g7-operational/greenfield-schema.ts
+COPY --from=builder /app/src/server/g7-operational/greenfield-install.ts ./server/g7-operational/greenfield-install.ts
+COPY --from=builder /app/src/server/g7-operational/greenfield-auto.ts ./server/g7-operational/greenfield-auto.ts
+COPY --from=builder /app/src/server/g7-operational/greenfield-upgrade-registry.ts ./server/g7-operational/greenfield-upgrade-registry.ts
+COPY --from=builder /app/src/server/g7-operational/greenfield-upgrade-backup.ts ./server/g7-operational/greenfield-upgrade-backup.ts
+COPY --from=builder /app/src/server/g7-operational/greenfield-upgrade-engine.ts ./server/g7-operational/greenfield-upgrade-engine.ts
+COPY --from=builder /app/src/server/g7-operational/greenfield-readonly-inspection.ts ./server/g7-operational/greenfield-readonly-inspection.ts
+COPY --from=builder /app/src/server/g7-operational/greenfield-gate.ts ./server/g7-operational/greenfield-gate.ts
+COPY --from=builder /app/src/server/g7-operational/greenfield-authority.ts ./server/g7-operational/greenfield-authority.ts
+COPY --from=builder /app/src/server/g7-operational/runtime-admin.ts ./server/g7-operational/runtime-admin.ts
+COPY --from=builder /app/src/server/g7-operational/runtime-gate.ts ./server/g7-operational/runtime-gate.ts
+COPY --from=builder /app/src/server/g7-operational/runtime-db.ts ./server/g7-operational/runtime-db.ts
+COPY --from=builder /app/src/server/g7-operational/runtime-migration.ts ./server/g7-operational/runtime-migration.ts
+COPY --from=builder /app/src/server/g7-operational/disposable-target.ts ./server/g7-operational/disposable-target.ts
+COPY --from=builder /app/src/server/g7-operational/preflight.ts ./server/g7-operational/preflight.ts
+COPY --from=builder /app/src/deploy/g7-s3 ./deploy/g7-s3
+COPY --from=builder /app/src/deploy/scene-assets ./deploy/scene-assets
+COPY --from=builder /app/src/deploy/g7-runtime ./deploy/g7-runtime
+COPY --from=builder /app/src/domain/auth.ts ./domain/auth.ts
 USER cad
 RUN ./node_modules/.bin/prisma --version >/dev/null \
     && ./node_modules/.bin/tsx --version >/dev/null \
-    && node -e "const Database=require('better-sqlite3'); new Database(':memory:').close()"
+    && node -e "const Database=require('better-sqlite3'); new Database(':memory:').close()" \
+    && test -f /app/src/server/logging/store.ts \
+    && node --import tsx --input-type=module -e 'import { writeLog } from "./server/logger.ts"; if (typeof writeLog !== "function") process.exit(1);' \
+    && node --import tsx --input-type=module -e 'import { CAD_BUSINESS_DDL } from "./server/cad-business/schema-ddl.ts"; if (CAD_BUSINESS_DDL.length !== 11) process.exit(1);' \
+    && node --import tsx --input-type=module -e 'import { CAD_ANCHOR_DDL } from "./server/cad-business/anchor-ddl.ts"; if (CAD_ANCHOR_DDL.length !== 3) process.exit(1);' \
+    && node --import tsx --input-type=module -e 'import { CAD_MEMO_FEATURE_DDL } from "./server/cad-business/memo-feature-ddl.ts"; if (CAD_MEMO_FEATURE_DDL.length !== 6) process.exit(1);' \
+    && node --import tsx --input-type=module -e 'import { OUTLINE_TYPE_DDL,LATEST_CAD_OUTLINE_DDL } from "./server/cad-business/schema-ddl.ts"; if (OUTLINE_TYPE_DDL.length !== 9 || !LATEST_CAD_OUTLINE_DDL.includes("outline_type_id") || !LATEST_CAD_OUTLINE_DDL.includes("OutlineType")) process.exit(1);' \
+    && node --import tsx --input-type=module -e 'import { CAD_ZONE_DDL } from "./server/cad-business/zone-ddl.ts"; if (!CAD_ZONE_DDL.some(row => row.name === "CadZoneGeometry")) process.exit(1);' \
+    && node --import tsx --input-type=module -e 'import { CAD_OUTLINE_RECEIPT_DDL } from "./server/cad-business/schema-ddl.ts"; if (CAD_OUTLINE_RECEIPT_DDL.length !== 6) process.exit(1);'
 CMD ["./node_modules/.bin/tsx", "scripts/deploy.ts"]
 
 # Default production image: Next.js standalone traced dependencies and static assets only.
 FROM runtime-base AS runtime
+LABEL com.planner77.g7.image-role="app"
 ENV HOSTNAME=0.0.0.0 PORT=3000
 COPY --from=builder --chown=cad:cad /app/src/.next/standalone ./
 # better-sqlite3 and its glibc-linked native .node are traced into standalone

@@ -89,8 +89,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
     const results = await runG5Probes(args.baseUrl, fetch, args);
     for (const result of results) console.log(result);
     console.log('G5 read-only normal-path smoke: PASS (not G6 field acceptance)');
-  } catch (error) {
-    console.error('G5 read-only normal-path smoke: FAIL - ' + (error instanceof Error ? error.message : 'unknown error'));
+  } catch {
+    console.error('G5 read-only normal-path smoke: FAIL (private details suppressed)');
     process.exitCode = 1;
   }
 }

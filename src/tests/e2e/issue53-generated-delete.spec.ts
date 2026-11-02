@@ -32,6 +32,8 @@ async function selectSource(page:Page){
 }
 async function createGenerated(page:Page,count:number){
   await clickViewerTestCommand(page, 'viewer-menu-outline-tool');
+  // Preserve the legacy v1 source-derived export regression.
+  await page.getByTestId('outline-basis').selectOption('source');
   await selectSource(page);
   await expect(page.getByTestId('outline-selection-count')).toContainText('선택 1개');
   const tools=page.getByTestId('cad-outline-tools');

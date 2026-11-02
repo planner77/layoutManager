@@ -23,6 +23,8 @@ dwg-test-results/
 benchmark-results/
 acceptance-results/
 *.tsbuildinfo
+__pycache__/
+*.pyc
 *.log
 *.dump
 *.tmp

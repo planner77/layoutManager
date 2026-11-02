@@ -42,7 +42,8 @@ export type G4Store = Readonly<{
 }>;
 
 export type G4Code = 'UNAUTHENTICATED' | 'ACCESS_DENIED' | 'CONFLICT' |
-  'BAD_INPUT' | 'G4_UNAVAILABLE';
+  'BAD_INPUT' | 'G4_UNAVAILABLE' | 'NOT_FOUND' | 'CATALOG_UNAVAILABLE' | 'WRITE_DISABLED' |
+  'G7_RUNTIME_UNAVAILABLE' | 'BOOTSTRAP_REQUIRED';
 export class G4Failure extends Error {
   constructor(readonly code: G4Code, readonly status: number) { super(code); }
 }

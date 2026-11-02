@@ -89,3 +89,54 @@ test('TC-TEXT-006: block loop is rejected without recursion or fabricated hits',
   expect(index.hits).toHaveLength(0);
   expect(index.skipped['미지원 INSERT 배열/OCS/순환']).toBe(1);
 });
+
+// #139: synthetic binary fixtures are intentionally free of company CAD bytes.
+// U+AC00 = CP949 B0 A1; U+B098 = CP949 B3 AA.
+function binaryTextDxf(version:string,codepage:string,textBytes:Uint8Array,bom=false):ArrayBuffer {
+  const prefix = new TextEncoder().encode(
+    '0\nSECTION\n2\nHEADER\n9\n$DWGCODEPAGE\n3\n' + codepage +
+    '\n9\n$ACADVER\n1\n' + version + '\n0\nENDSEC\n0\nSECTION\n2\nENTITIES\n' +
+    '0\nTEXT\n10\n25\n20\n15\n40\n8\n1\n');
+  const suffix = new TextEncoder().encode('\n0\nENDSEC\n0\nEOF\n');
+  const buffer = new Uint8Array((bom?3:0)+prefix.length+textBytes.length+suffix.length);
+  let position=0;
+  if(bom){buffer.set([0xef,0xbb,0xbf]);position=3;}
+  buffer.set(prefix,position);position+=prefix.length;
+  buffer.set(textBytes,position);position+=textBytes.length;
+  buffer.set(suffix,position);
+  return buffer.buffer;
+}
+
+test('TC-139-01: AC1032 UTF-8 wins over obsolete ANSI_949 declaration, with exact WCS focus',()=>{
+  const source=binaryTextDxf('AC1032','ANSI_949',new TextEncoder().encode('한글 검사'));
+  const hits=extractDxfText(source).hits;
+  expect(hits).toHaveLength(1);
+  expect(hits[0].text).toBe('한글 검사');
+  expect((hits[0].focus.minX+hits[0].focus.maxX)/2).toBe(25);
+  expect((hits[0].focus.minY+hits[0].focus.maxY)/2).toBe(15);
+  expect(hits[0].focus.maxX).toBeGreaterThan(hits[0].focus.minX);
+  expect(searchKey(hits[0].text)).toContain('검사');
+});
+
+test('TC-139-02: old AC1018 actually decodes valid Windows-949 bytes',()=>{
+  const cp949=Uint8Array.from([0xb0,0xa1,0xb3,0xaa]); // 가나
+  expect(extractDxfText(binaryTextDxf('AC1018','ANSI_949',cp949)).hits[0].text).toBe('가나');
+});
+
+test('TC-139-03: R2007+ legacy 932/936/950 declarations, BOM, and missing HEADER',()=>{
+  for(const codepage of ['ANSI_932','ANSI_936','ANSI_950','ANSI_949']) {
+    const source=binaryTextDxf('AC1021',codepage,new TextEncoder().encode('구역 ABC'));
+    expect(extractDxfText(source).hits[0].text).toBe('구역 ABC');
+  }
+  expect(extractDxfText(binaryTextDxf('AC1018','ANSI_949',new TextEncoder().encode('한글 BOM'),true)).hits[0].text).toBe('한글 BOM');
+  expect(extractDxfText(new TextEncoder().encode(document(text(2,'한국어'))).buffer).hits[0].text).toBe('한국어');
+});
+
+test('TC-139-04: unsupported codepages, invalid UTF-8 and binary input fail with distinct messages',()=>{
+  expect(()=>extractDxfText(binaryTextDxf('AC1018','ANSI_999',new TextEncoder().encode('A'))))
+    .toThrow('지원하지 않는 DXF 코드페이지');
+  expect(()=>extractDxfText(binaryTextDxf('AC1032','ANSI_949',Uint8Array.from([0xe3,0x81]))))
+    .toThrow('바이트가 UTF-8');
+  expect(()=>extractDxfText(new TextEncoder().encode('AutoCAD Binary DXF').buffer)).toThrow('Binary DXF');
+});
+

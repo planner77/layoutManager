@@ -1,8 +1,10 @@
 import { CadRepository } from '../repositories/cad';
 import type { StorageBackend } from '../storage/backend';
 import type { UploadDiagnostics } from '../upload-observability';
+import type { G7CadWrite } from '../g7-operational/cad-guard';
 function recoveryId(locator: string | undefined) { return locator?.match(/(?:cad\/|\/)([0-9a-f]{8}-[0-9a-f-]{27})\/original\.(?:dxf|dwg)$/i)?.[1]; }
-export async function uploadCad(request: Request, repo: CadRepository, storage: StorageBackend, diagnostics?: UploadDiagnostics) {
+export async function uploadCad(request: Request, repo: CadRepository, storage: StorageBackend,
+  diagnostics?: UploadDiagnostics, auth?: G7CadWrite) {
   let received;
   try {
     received = await storage.receive(request, diagnostics);
@@ -35,7 +37,7 @@ export async function uploadCad(request: Request, repo: CadRepository, storage: 
             diagnostics?.record('storage_publish', 'failure', { error });
             throw error;
           }
-        });
+        }, auth);
       diagnostics?.record('database_registration', 'success');
     } catch (error) {
       diagnostics?.record('database_registration', 'failure', { error });

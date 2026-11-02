@@ -1,4 +1,271 @@
+## #209 — Greenfield 업그레이드와 복구 메타데이터
+
+이번0.58.0 후보는 업무 Table/Column/FK/trigger와 기존 `_prisma_migrations` baseline/checksum을 변경하지 않는다. 동일 Schema 지원 chain은 User/Grant/Session/Audit·기준정보 UUID·Version/Current·삭제 암호·Scene/메모/외곽선/구역을 그대로 보존한다. 읽기 호환 Schema가 등록된 upgrade source임을 뜻하지 않는다.
+
+업그레이드 메타데이터는 서버 private filesystem에 별도 journal/lock/backup으로 저장하며 DB Schema의 대체 기준으로 사용하지 않는다. `g7-install.json`의 installId는 불변이고 검증 완료 후 identity만 atomic fsync/rename으로 갱신한다. 이전 identity·계획/단계·backup 참조는 journal에 남긴다. WAL을 포함하는 SQLite 일관 backup과 CAD/Scene·기존 manifest를 복구 세트로 보존한다. restore는 소유권/권한/무결성을 검증한 새 빈 대상에만 수행한다. 경로·명령·상태 복구 정본은 [Runbook](../src/deploy/g7-greenfield/README.md)의 #209 절이다. 실제 업무 Schema migration edge는 향후 SQL hash·정확 승인·pre/post/복구 시험이 등록된 경우에만 지원한다.
+
+---
+
+## #196 Zone 신규 empty Greenfield schema 계약 (2026-11-01)
+
+정책/DTO/API는 [Issue196](Issue196.md), **DB 구조의 정본은 이 절과 구현 Prisma/DDL**이다. 신규 latest baseline을 추가하며 기존 TYPED_OUTLINES 및 과거 `CAD_BUSINESS_DDL` 문장·hash·marker는 수정하지 않는다. 기존 설치 ALTER/adopt/자동 이관 없음. Prisma model·Greenfield installer/schema assertion/runtime authority·Migrator COPY/empty install smoke를 함께 갱신한다. 구 schema에서 Zone 부재는 503으로 닫되 기존 CAD 조회는 유지한다. 실행 결과는 TestReport에 별도 기록한다.
+
+최신 신규 설치 marker는 `202611010002_greenfield_semantic_zones_baseline`, Schema ID는 `G7-GREENFIELD-SEMANTIC-ZONES-20261101-1`이다. 과거 typed marker `202611010001_greenfield_typed_outlines_baseline`과 해당 checksum을 별도로 보존한다.
+
+| 엔티티 | 저장·불변·참조 계약 |
+| --- | --- |
+| ZoneCategory | 서버 UUID, site_id FK, name/name_key, active, sort_order, revision, created/updated actor·시각. DELETE는 active=false로 비활성화하며 재활성 가능하고 이름/감사를 보존한다. Unique(site_id,name_key), inactive 이름도 예약. 참조 중 삭제409·비활성 허용, 물리 삭제 금지. OutlineType과 FK/자동 매핑 없음. |
+| CadZone | 서버 UUID, location_id 및 검증된 site_id, nullable parent_zone_id/category_id, name/name_key, description/code/tags_json/references_json/sort_order, revision, immutable created_by/created_at, updated_by/at, deleted_by/at. live 이름은 층 내 Unique. location/parent/category/actor 실제 FK NO ACTION. 복합 FK 또는 DB trigger로 parent의 같은 층 및 category의 같은 Site를 차단하고 서비스도 재검증한다. |
+| CadZoneGeometry | Unique(zone_id,version_id), location_id, source_sha256, scene_revision, polygon_json, 서버 계산 bounds/area, 유효/무효 상태, revision/시각. Zone+Location 및 Version+Location 복합 FK NO ACTION 또는 동등 DB guard로 cross-floor mapping을 막는다. SHA는 해당 Version과 일치해야 한다. Zone/Version/소유 관계 불변, 버전 간 자동 copy 없음. |
+| 생성 receipt | actor+Version+Idempotency-Key Unique, request digest와 zone_id FK. 최초 생성/receipt/Audit 같은 transaction, 동일 payload 재시도 같은 ID, 다른 payload409. 요청 전문·설명·credential 저장 없음. |
+| 감사 | 신규 Zone/Category action은 append-only Audit 저장소에 실제 actor·site·version context·target·before/after revision·requestId·UTC를 남긴다. 기존 CadBusinessAudit CHECK가 새 target kind를 허용하지 않으면 **기존 DDL을 고치지 않고** 독립 Zone Audit sidecar를 추가한다. Audit 실패 시 mutation rollback. |
+
+부모 삭제는 live 자식 존재 시 거절하고 cascade/reparent하지 않는다. reparent/geometry 변경 시 모든 동일 Version의 valid 부모·자식 포함을 transaction에서 다시 검사한다. Reset은 Zone metadata/parent/polygon 보존, 해당 Version geometry 무효화+Zone/geometry revision+Audit를 기존 업무 reset과 원자 처리한다. stale Scene mapping은 읽기 시 UNMAPPED, no geometry row는 null이며 둘 다 focus 금지다. Version/Location 삭제도 참조가 남아 있으면 안전한409로 거절하며 Zone history를 몰래 제거하지 않는다. FK/immutable/soft-delete/Unique/동시 CAS 및 과거 baseline fingerprint 회귀는 TC-Z196-06/08로 검증한다.
+
+---
+
+## #186 Frame/Heap 성능 PR — DB Schema 불변 (2026-11-01)
+
+Memo Projection 및 ThreeDxfViewerAdapter Dispose 참조/Renderer 코드를 최적화하되 `CadMemo`/`CadMemoAnchor`/`CadMemoFeature`/`CurrentScene` 등 Prisma 모델·SQLite DDL/트리거·Baseline checksum을 변경하지 않는다. 100 Memo/Version 및 100 live Snap binding, 20k 후보 Point 상한을 유지하고 API Actor/Role/Site·Revision CAS·Audit는 기존 #172 확정 정책을 따른다. Read-only Synthetic Perf 테스트만 새 데이터를 disposable test store에 작성하며 운영 DB/GHCR/기존 데이터 migration 없음.
+
+---
+
+## #172 Memo 공동 수정 — 0.55.0 R6 Schema 불변 (2026-11-01)
+
+신규 `CadMemo` / `CadMemoAnchor` / `CadMemoFeature` / `CadMemoGroup` 및 관련 Audit·Revision 스키마를 **변경하지 않는다**. `created_by_id` / `created_at`은 최초 작성자/생성시각 불변이며 `updated_by_id`는 실제 승인된 동일 Site Editor, `deleted_by_id`는 원 작성자 또는 같은 Site Admin만 기록한다. DELETE는 soft delete이고 `CadBusinessAudit`는 실제 actor와 Revision 이전/이후 값을 보존한다. Group 삭제는 Memo의 `group_id`를 NULL 처리하며 Memo 행 soft delete가 아니다. Owner의 기존 DB 미재사용 Greenfield 정책/DDL fingerprint/CAS/FK를 유지하고 자동 migration·adopt·data erase를 실행하지 않는다.
+
+---
+
+## R5 #91 — 읽기 전용 교환, Schema 불변 (0.54 후보, 2026-11-01)
+
+R5b는 기존 Memo GET에 actorId/versionId/sourceSha256/sceneRevision 응답 envelope를 호환 추가했다. 목록과 인가 proof는 같은 transaction에서 읽고 응답 전 재검사한다. 이는 API 읽기 계약이며 DDL이나 새 서버 저장이 아니다. 기존 memos/groups/featuresAvailable·optional feature/anchor 경로와 허가된 DWG 빈 조회를 유지한다.
+
+R5a/b는새Table/Column/Index/Trigger/migration/baseline·서버파일저장을추가하지않는다. 현존인가GET으로조회한liveOutline/MemoDTO를현재Actor/Version/SHA/revision에묶어browser에서만교환파일로만든다. read필요에기존인증session last_seen가변할수있으나업무Outline/Memo/Audit/Current/원본데이터는수정하지않는다. #172owner쓰기정책이나삭제필터를바꾸지않고exportextras를영속인증/Sourceattestation으로사용하지않는다. 시험은업무DB fingerprint 불변을인증운영필드와구분한다.
+
+## R4 #174 — 기존 Anchor Schema 재사용 (구현 전, 2026-11-01)
+
+새 Table/Column/Index/Trigger/migration/baseline을 추가하지 않는다. `CadMemoAnchor`의 기존 local X/Y·status/target과 `CadMemo`의 WCS/revision, 기존 `CadBusinessAudit` EDIT를 같은 transaction에서 갱신한다. KEEP는 기존 target identity를 보존하고 trusted current inverse를 적용하며 DETACH는 anchor cleanup과 WCS 이동을 함께 수행한다. 작성자-only/CAS/원자성·실제 test는 [Architecture R4](Architecture.md), [TestPlan R4](TestPlan.md)를 따른다. R3 exact baseline/과거DDL/checksum과 실제운영DB/volume은불변이다.
+
+## R3 #71/#73 — Typed 생성 receipt와 기존 타입 FK (구현·로컬 수용, 2026-11-01)
+
+상태: 구현 전 작성한 계약을 최종 source와 대조했고 Manager가 로컬 범위를 수용했다. 실제 실행 범위·잔여와 게시 상태는 [TestReport의 R3-20261101](TestReport.md)을 따른다. 운영 DB 이전·배포·실환경 수용을 뜻하지 않는다.
+
+R2 타입/FK schema를 그대로 포함하는 새 빈 Greenfield 기준 `G7-GREENFIELD-TYPED-OUTLINES-20261101-1` / `202611010001_greenfield_typed_outlines_baseline`을 추가한다. checksum seed는 기존 형식의 `layoutManager:G7-GREENFIELD-TYPED-OUTLINES-20261101-1:baseline`이다. R2 `202610310003_greenfield_outline_types_baseline`과 그 exact DDL/checksum은 previous types baseline으로 보존하고, 기존 old/scene/business/anchor/memo baseline도 변경하지 않는다. **기존 volume ALTER/자동 이전·release identity 완화 없음.**
+
+| 객체 | 필드·제약 / 의미 |
+| --- | --- |
+| `CadOutlineCreateReceipt` | `id` server UUID PK, `actor_user_id` User FK, `version_id` CadFileVersion FK, `idempotency_key` UUIDv4 text, `request_sha256` lowercase64hex, `outline_id` CadOutline FK, `created_at` UTC text. 각 FK는 NO ACTION. Unique(actor_user_id,version_id,idempotency_key), Unique(outline_id). 원래 요청 전문/이름/기하/credential/response JSON은 저장하지 않는다. |
+| Receipt scope guard | INSERT 때 referenced Outline의 version_id/created_by_id가 receipt Version/actor와 일치해야 한다. FK 존재 검사와 별개로 DB INSERT trigger 또는 동등한 실제 composite FK로 강제한다. 다른 Version/actor Outline에 receipt를 붙이는 직접 SQL을 거부하는 시험이 필요하다. |
+| Receipt append-only | UPDATE/DELETE 거부 trigger. Outline logical delete 뒤에도 receipt를 유지해 같은 요청이 새 UUID를 만들거나 삭제 객체를 부활시키지 못하게 한다. 자동 purge/TTL·운영 retention 정책을 새로 도입하지 않는다. |
+| 기존 `CadOutline` | R2 nullable outline_type_id 실제 FK 그대로. type/name snapshot·visible·client/local ID·Idempotency-Key 컬럼은 추가하지 않는다. 새 typed create가 서버의 active OutlineType을 조회해 FK를 기록하고 기존 null row는 미분류다. 서버 UUID, immutable Version/SHA/작성자/createdAt, object CAS와 soft delete는 유지한다. `scene_revision`은 마지막 성공한 쓰기의 Scene context이며 읽기 소유권/표시 수명 조건이 아니다. 새 mutation의 explicit expectedSceneRevision을 현재 pointer와 비교한 뒤 성공 시 이 필드를 갱신한다. 읽기·Source-only reset·Scene 재게시만으로 이 필드나 object revision을 수정하지 않는다. |
+| 기존 `CadBusinessAudit` | CREATE/EDIT/DELETE enum/DDL 불변. 최초 typed 생성의 CREATE 한 행은 Outline+receipt와 같은 transaction. replay는 두 번째 CREATE를 기록하지 않는다. 타입 이름/기하/key를 감사 payload로 추가하지 않는다. |
+
+Receipt는 응답 cache가 아니라 생성 식별 기록이다. 현재 허가된 replay는 동일 digest일 때 연결된 live Outline의 현재 DTO를 반환하며 현재 타입 이름은 JOIN 결과다. 이후 rename/transform/type 비활성은 receipt를 바꾸지 않는다. 같은 key/다른 digest는409, 연결 객체가 논리 삭제되었으면410이며 복구/재생성하지 않는다. 권한이 철회된 actor는 receipt 유무 자체를 조회할 수 없다. 최초 생성의 Outline/감사/receipt INSERT 중 하나라도 실패하면 전체 rollback한다.
+
+새 DDL export는 이미 Migrator가 COPY하는 `server/cad-business/schema-ddl.ts` 안에 별도 배열로 추가해 R2 `CAD_BUSINESS_DDL`/타입 variant/`OUTLINE_TYPE_DDL` 문자열을 변경하지 않는다. PR CI는 baseline Dockerfile과 HEAD source도 조합하므로 기존 COPY closure 안에 유지한다. installer/validator/Prisma 관계/runtime baseline 판별·Schema ID/authority 및 Docker import/CLI smoke를 함께 갱신한다. 현재 Type catalogue/Business baseline의 검증 호환성을 새 릴리스의 기존 volume 자동 활성화 승인으로 해석하지 않는다. 신규 private 일회용 DB backup/restore는 Type→Outline→Receipt/Audit 관계와 모든 metadata를 보존해야 한다. Version hard-delete의 기존 business-row 거부와 ALL logical reset/receipt 보존을 회귀한다.
+
+목록은 기존 live100/Version 제한을 유지하고 `created_at,id` 안정 순서 및 total/offset/limit을 사용한다. 현재200개 이하(임시100+서버100) UI 검증을 이유로 DB 한도나 Scene/geometry byte 한도를 임의 확대하지 않는다. 기존 인덱스 외 추가 조회 인덱스는 실제 query 필요성을 확인한 뒤 최신-only DDL에 포함하며 이 절에 기록한다.
+
+## R2 #65 — Global OutlineType / 최신 Greenfield FK 설계 (구현 전, 2026-10-31)
+
+이 절이 새 schema의 단일 기준이다. 새 `G7-GREENFIELD-OUTLINE-TYPES-20261031-1` / `202610310003_greenfield_outline_types_baseline` 및 그 전용 checksum을 정의한다. 기존 `202610310002_greenfield_memo_m45_baseline`은 previous memo baseline 상수로 보존한다. 이전 old/scene/business/anchor/memo baseline 검증은 종전 exact DDL을 사용한다. 설치 함수는 빈 DB에만 아래 최신 variant를 생성하며 기존 runtime DB에 ALTER/migrate/rewrite하지 않는다. 과거 DDL 검증 호환은 기존 설치의 release identity/schemaId/version/image 승인 호환을 뜻하지 않는다. 새 릴리스가 과거 volume을 자동 활성화하도록 greenfield-auto/서명 gate의 identity 검사를 완화하지 않는다.
+
+| 객체 | 필드·제약 |
+| --- | --- |
+| OutlineType | id UUID PK; name TEXT 1..100, name_key TEXT UNIQUE BINARY NOT NULL; description nullable 최대500; active INTEGER CHECK0/1 default1; sort_order INTEGER CHECK0..9999; revision INTEGER CHECK>=1 default1; created_by_id/updated_by_id User FK NO ACTION; created_at/updated_at UTC text. Global 고정이므로 Site/scope 컬럼 없음. name_key는 서버가 trim/NFC 이름에 toLowerCase/NFC를 적용해 계산한다. SQLite가 Unicode NFC/full-fold를 계산한다고 주장하지 않는다. |
+| OutlineTypeAudit | id UUID PK; actor_user_id User FK, outline_type_id OutlineType FK; action CREATE/UPDATE/DEACTIVATE/REACTIVATE; before_revision nullable/after_revision>=1; outcome SUCCESS; timestamp_utc, request_id. 이름/설명 전문·세션·비밀번호 미포함. 변경과 같은 transaction으로 append. |
+| CadOutline 최신 CREATE variant | 기존 모든 컬럼/CHECK/FK/trigger 의미 보존, nullable outline_type_id에 FOREIGN KEY REFERENCES OutlineType(id) ON DELETE NO ACTION ON UPDATE NO ACTION 추가. 과거 CAD_BUSINESS_DDL의 CadOutline 문자열은 변경하지 않는다. FK 목록/위반 실제 시험 필수이며 단순 application lookup/trigger만으로 FK를 대체하지 않는다. |
+| Index/Trigger | OutlineType 전역 name_key Unique 및 목록용 sort_order/name_key/id index; id/created_at/created_by_id 불변 및 물리 DELETE 금지 trigger. OutlineTypeAudit type/time index 및 UPDATE/DELETE 차단 trigger. 기존 CadOutline immutable/삭제/Anchor/Memo guard는 유지. |
+
+변경·비활성/복구는 typeId를 유지하므로 기존 외곽선 FK가 남는다. 비활성 타입은 새 할당에서 제외하지만 기존 참조를 지우지 않는다(실제 신규 할당은 #71). 타입 Audit는 기존365일 보존 원칙을 따르되 승인되지 않은 자동/물리 purge를 구현하지 않는다. 인가 실패는 공통 G4 AuditEvent로 남기고 성공한 타입 변경의 구체적 action/revision은 OutlineTypeAudit에 보존한다. 기존 AuditEvent enum/DDL을 변경하지 않는다.
+
+Prisma는 새 OutlineType/OutlineTypeAudit 및 CadOutline optional relation을 표현하되 과거 nullable scalar 조회와 호환되어야 한다. installer, assertG7GreenfieldSchema, assertG7RuntimeSchema, schema ID/baseline 판별·authority 검증, 테스트 fixture 및 Migrator 명시 COPY/실행 smoke를 함께 갱신한다. historical marker의 동일 checksum과 DDL이 계속 통과하고 변조된 새/과거 schema는 계속 거절해야 한다. 복구 시험은 새 private 일회용 DB의 동일 snapshot backup/restore이며 기존 볼륨 rollback/데이터 이관 증거로 주장하지 않는다.
+
+## #88/#90 M6/M7 DB 불변성 (2026-10-31)
+
+신규 DB 객체/Prisma 마이그레이션/Greenfield baseline/트리거 변경 **없음**. 기존 live CadMemo+Version의 동일 SHA, Location/Building/Site/Product/BusinessUnit 및 User, optional M4/M5 Feature/Group JOIN. 동일 signed Site 조건에서 Count+Page를 트랜잭션 조회하며 Page25/50/100; soft delete, inactive Site, 기타 Site 누출 금지. 기존 `ix_cad_memo_version_live` 포함 인덱스 활용, 100k 검색 성능 측정 전 신규 FTS 없음. [Issues88-90](Issues88-90.md).
+
+---
+
+## #85/#86 new EMPTY G7 Memo sidecars (2026-10-31)
+
+G7-GREENFIELD-MEMO-M45-20261031-1 / 202610310002_greenfield_memo_m45_baseline adds CadMemoGroup (UUID, Version/SHA, owner, Revision, soft delete), CadMemoFeature (Memo UUID PK/FK, group FK, visible, schedule flags/date-only, completion status/server UTC), indexes and immutable triggers. Historical Business/Anchor SQL fingerprints remain intact; no legacy ALTER/adoption. [Spec](Issues85-86.md).
+
+---
+
+## #84 M3 + #167 S6 신규 영속 스키마 (2026-10-31)
+
+- 새 Greenfield baseline `202610310001_greenfield_anchor_baseline`, ID `G7-GREENFIELD-ANCHOR-20261031-1`. 이전 `202610300002_greenfield_business_baseline` 및 Scene/old exact SQL fingerprint는 보존. 신규 `CadMemoAnchor`(memo_id FK/PK, version_id, source_sha256, status ATTACHED/BROKEN_ANCHOR, target_origin/target_id, local_x/y, timestamps), target index, immutable trigger. 구 설치에 자동 추가/이관하지 않음.
+- Memo world `anchorX/Y`는 final resolved WCS, local anchor는 target inverse 변환 기준. TARGET soft delete 시 anchor row는 BROKEN/target=NULL, Memo 좌표는 보존. 대상 변형의 Memo Revision+Audit와 기존 CadOutline CAS는 동일 writeTransaction.
+- S6 ALL은 CAD Version별 정확 live Memo/Outline snapshot과 G7 권한·Memo author 검사 후 각각 deletedAt/deletedById/revision 업데이트 + append-only Audit. Raw DB DELETE 및 원본 DXF/SceneAsset/Current 변경은 수행하지 않음. 최신 설계 [Issues84-167](Issues84-167.md).
+
+---
+
+## #98/#83 업무 영속 신규 empty Greenfield DDL (2026-10-30)
+
+Schema ID G7-GREENFIELD-BUSINESS-20261030-1, baseline 202610300002_greenfield_business_baseline. DDL source: src/server/cad-business/schema-ddl.ts, Prisma model src/prisma/schema.prisma. CadOutline: server UUID, immutable Version/FK·SHA·author·createdAt, scene_revision, origin APP_CREATED, independent WCS base/effective geometry, derivation/source refs, transform operations, revision CAS, logical deletedAt/by; OutlineType null until #65. CadMemo: Version/FK·SHA, title/content plain, WCS anchor+offset, author, revision CAS, soft delete. CadBusinessAudit: actor/site FK, version text, target, action, before/after revision, requestId, UTC time, UPDATE/DELETE blocked by triggers. Version hard delete linked rows 409. Existing Scene checksum, password triggers and old baseline markers immutable; business rows only present in new-empty install. [상세](Issues98-83.md).
+
+---
+
+## #166 S5 (0.47.0 후보) — DB 변경 없음
+
+일반 Render ObjectRef·DXF_IMPORTED 작업 차분·APP_CREATED 외곽선/독립 WCS 메모 연계는 브라우저 세션 상태이다. Table/Column/Index/Constraint·SceneAsset/CurrentScene CAS·CAD Current·Session/Grant/Audit 정책과 원본 저장 locator는 변경하지 않는다. 새 DB migration/영속 업무 API를 도입하지 않는다. #98/#83/#73/#84의 서버 업무 CRUD/앵커/트리·복원은 해당 이슈 후속이며 S5 성공으로 소급 완료하지 않는다.
+
+---
+
+## #164/#165 Scene metadata/CurrentScene 설계 계약 (2026-10-30, 구현 전)
+
+본 절은 신규 Schema 구현 지시이며 실제 DB 적용 기록이 아니다. 구현 후 정확한 Prisma/SQL 필드·제약을 대조하여 보충한다. #168 순수 도메인을 재사용하고 대용량 Scene bytes는 DB에 넣지 않는다.
+
+- **Immutable SceneAsset:** 서버 발급 asset ID, 소유 Version ID/source SHA, derivative digest/byte length, format/schema/builder/renderer/frame, manifest, 서버 전용 storage locator, createdAt. DB identity에 Object3D.uuid를 사용하지 않는다. 게시된 blob/manifest는 수정하지 않고 새 Asset으로 교체한다.
+- **CurrentScene:** Version별 pointer 최대 1개, Asset 소유권을 Version에 결속하고 revision은 단조 증가한다. 최초 expectedRevision=null과 갱신 expectedRevision=N을 구분하며 CAS 경쟁은 409다. 기존 CAD Current/Version 선택과 독립한다.
+- **Transaction:** 최신 Version/source와 권한을 재확인하고 Asset metadata·CurrentScene pointer/revision·SCENE_PUBLISHED Audit을 같은 거래로 갱신한다. Storage prepare/readback은 거래 밖에서 실행한다. 실패하면 기존 READY pointer를 변경하지 않는다.
+- **수명:** Scene은 파생 데이터이며 기존 원본 삭제/cleanup 계약을 보존한다. Version 소유 관계와 DB 삭제 처리를 구현에서 명시하고 orphan blob은 참조 재확인·유예 없이 지우지 않는다. APP_CREATED/#98 CadOutline 및 #83 Memo의 독립 테이블/API를 여기서 추가하지 않는다.
+- **Greenfield:** 신규 exact baseline/schema identity와 기존 exact baseline을 구분한다. 기존 marker를 수정하거나 미지 DDL drift를 허용하지 않는다. 기존 baseline Scene API는 LEGACY_DISABLED로 구분하며 일반 MISSING과 혼동하지 않는다. 신규 빈 DB와 격리 migration만 시험하며 실 DB 자동 이관/activation은 하지 않는다.
+
+API 계약: `POST scene {manifest,bytesBase64,expectedRevision:null|number}`, `GET scene {status:LEGACY_DISABLED|MISSING|READY|REBUILD_REQUIRED,manifest?,assetId?,revision?,contentUrl?}`. contentUrl은 Version/immutable assetId의 ID-only API이고 locator/endpoint/credential을 노출하지 않는다. UNAVAILABLE은 fetch/network 장애의 Viewer 표시로 구분한다.
+
+### 구현 필드 대조 (개발 중, 운영 적용 아님)
+
+| 모델 | 필드/제약 |
+| --- | --- |
+| SceneAsset | `id`, `version_id` FK, `source_sha256`, `manifest_json`, `digest`, `byte_length>0`, `format=CUSTOM_DTO`, unique `storage_locator`, `created_at`; `(version_id,id)` unique |
+| CurrentScene | `version_id` PK/FK, `asset_id`, `revision>=0`, `updated_at`; `(version_id,asset_id)` composite FK로 타 Version Asset 연결 차단 |
+| SceneOrphanJob | `id`, unique `asset_id`, unique `storage_locator`, `state=PREPARING/VERIFIED/UNCERTAIN/CLEANUP`, `attempts>=0`, 생성/갱신 시각. Version 삭제 뒤에도 cleanup 추적을 유지하도록 Version FK 없음 |
+
+schema/builder/renderer/frame 및 stable Scene ID는 검증된 `manifest_json`에 보존한다. SQL 후보는 `src/deploy/scene-assets/migration.sql`이며 기존 정확 7개 migration history 밖에 둔다. 신규 Greenfield installer가 명시적으로 포함하는 baseline ID는 `202610300001_greenfield_scene_baseline`, 기존 `202610290001_greenfield_baseline`은 별도 exact hash로 검증한다. AuditEvent CHECK에 `SCENE_PUBLISHED`만 추가하기 위한 table 재구성은 기존 행을 그대로 복사하고 append-only UPDATE/DELETE trigger와 기존 제약을 재설치한다. Version 삭제는 기존 암호·권한·Audit 거래 안에서 CurrentScene을 분리하고 각 SceneAsset의 CLEANUP job을 기록한 뒤 metadata와 Version을 삭제한다. blob은 유예 cleanup까지 보존한다. 실제 해당 삭제 회귀는 TestReport에 기록한다. 이 SQL의 운영 적용은 이번 범위가 아니다.
+
+---
+
+## #161–#163 Scene S0 계약만 추가 (2026-10-30)
+
+**DDL/Prisma/기존 DB 변경 없음.** SceneAsset(Version ID, sourceSha256, asset byteDigest/byteLength, format, builderVersion, rendererVersion, sceneSchemaVersion, coordinateFrame, state), SceneObject(immutable scoped app ID/Origin, optional sourceRef/derivedFrom, working transform/visibility/revision), AppObject(별도 ID/WCS geometry/revision/업무 연계)는 순수 도메인 계약이다. source byte SHA와 derivative byte SHA는 서로 다른 identity이다.
+
+S3의 영속 모델은 #98 Outline/#83 Memo 및 #96 Site/Auth/Audit와 통합하여 별도 결정한다. immutable Asset 게시 + manifest pointer CAS + 관련 업무 변경은 같은 논리 거래로 처리; 저장 blob 검증 완료 전 READY 금지. source 삭제·asset TTL·업무 soft-delete는 자동 cascade로 합치지 않는다. reset A/B, BROKEN_ANCHOR, Undo 수명은 [Architecture](Architecture.md)의 Scene 절이 정본이다.
+#161–#163 구현 결과: DB Table/Column/Index/Migration 변경 0. SceneAsset/Manifest/WorkingRevision은 순수 Domain/테스트 메모리 계약이며 S3에서 별도 DB 설계·CAS·업무 소유권을 재검토한다.
+
+
+---
+
+## #109 초기 DB 계약 — 일반 Docker Compose (2026-10-30)
+
+- 새 **빈** `/data/db/cad.sqlite`에 `G7-GREENFIELD-20261029-1` final schema를 최초 1회 생성하고 `_prisma_migrations`에는 `202610290001_greenfield_baseline` **한 건만** 저장한다. 구 6/7 Migration 기록을 합성하지 않는다.
+- 삭제 암호 INSERT/UPDATE 트리거 둘, G7 Auth/Session/Grant/Audit, G3LoginAttempt 등의 보안 제약, sqlite_master DDL fingerprint, `PRAGMA quick_check` 및 `foreign_key_check`를 검사한다.
+- `/data/db/g7-install.json`(0600)은 App/Migrator reference/version/Schema/Source 설정+설치 ID를 보유하는 **신규 설치 식별자**다. `/data/db/first-admin.code`(0600)은 브라우저에 노출되지 않는 최초 관리자 256-bit 임시 코드다. 둘 다 앱 UID 소유. 설치 완료 marker는 Code와 Schema를 만든 후 마지막으로 작성한다.
+- 초기 데이터: `BusinessUnit/Product/CadSite/Building/CadLocation/CadFileVersion/User/AuditEvent` 모두 **0건**. 첫 Admin은 DB 원자 거래로 User/Role/Audit를 만들되 Site Grant는 0건. Site는 인증된 Admin이 웹 기준정보로 만든 후 별도 Grant한다.
+- 기존 DB, 손상·불일치 Schema, marker 누락·오염/파일 권한 이상, 다른 이미지 쌍을 만나면 DDL·UPDATE·DELETE·RESEED를 하지 않고 차단한다. 정상 restart도 기존 SQLite·CAD·Audit 데이터를 변경하지 않는다.
+
+---
+
+## #153 Greenfield DB 최초 Schema 계약 (2026-10-29)
+
+빈 독립 SQLite 파일에 CAD/Auth 현재 기능의 DDL을 처음부터 만든다. 과거 6→7 이관/이력 복제는 수행하지 않는다. 설치 기록은 단일 `202610290001_greenfield_baseline`과 고정 checksum. Auth/User/Role/SiteGrant/Session/Audit 및 CAD 관련 Table/Index/Trigger/ForeignKey를 엄격히 검증하고 `cad_version_delete_password_insert/update`를 최종 Schema에 포함한다. 이미 초기화된 DB나 비어 있지 않은 저장소에는 재설치 거부. 새 BusinessUnit/Product/Site/Building/Location과 이후 수동 DXF 업로드로만 데이터를 생성한다.
+
 # Database Schema — 단일 기준 문서
+
+## #153 — Runtime Schema 수용 경계 (2026-10-29)
+
+기존 활성 CAD Migration 6개와 격리 `202610260002_g7_operational_auth` 7번째 SQL을 재사용하며 신규 Table/Column이나 활성 이력의 자동 승격은 없다. Runtime은 정확한 완료 이력·SQL 체크섬·전체 Schema fingerprint·8개 Auth Table·FK·append-only trigger와 승인 Site 존재를 검증한 DB만 연다. 부분 적용·이력/Schema drift는 기능 활성화를 차단한다.
+
+CAD 거래와 Audit는 동일 Prisma transaction, 계정/Grant 변경과 Audit는 기존 G4 SQLite transaction을 사용한다. 365일 보존 방향을 유지하며 자동 삭제 API는 노출하지 않는다. 이전 6개 Schema로의 복귀는 역방향 DDL 추측 적용 대신 같은 Snapshot의 DB+Local CAD+versioned S3-export 전체 복원으로 시험한다. 실제 운영 DB에는 적용하지 않는다.
+
+## #154 S3-5-R0 — DB/Schema/운영 원본 불변 (2026-10-28)
+
+- Site Owner는 B2/C 수용 완료를 보고했으나 DB/원본 서명·현장 위치/OCI Digest·private SNAP은 반출 불가, GitHub에는 `OWNER_ATTESTED_FIELD_ACCEPTANCE_COMPLETE`만 기록. PR Unit 합성 fixture는 실 현장 데이터가 아니다.
+- S3-5-R0의 Release Identity/Source/Schema/SNAP 바인딩은 **인메모리** 검사일 뿐 실제 운영 SQLite/CAD/S3/Prisma Schema·Migration History·Audit·Current/Version/Rollback 데이터의 조회·수정/실행을 수행하지 않는다. 신규 7th Auth SQL은 그대로 격리, 운영 DDL 자동 승격 금지.
+- S3-5별 별도 승인·정식 Migration/릴리스 롤백 준비/배포는 Issue #153 및 #109/#96의 후속 범위. C0/R0 합성 긍정으로 `operationalGo=false/runtimeActivated=false`.
+
+## #151 S3-4-C0 — 영수증·신뢰 키는 현장 내 보유, DB 무변경 (2026-10-28)
+
+- S3-4-C0 준비 코드/합성 테스트는 기존 앱 DB·Prisma `src/prisma/**`, Auth 7th candidate SQL, CAD Version/Current, SQLite/S3 백업·원본·Audit 행에 접근하거나 변경하지 않는다. `src/server/g7-operational/s3-4-c.ts`는 호출자가 사내 메모리로 제공하는 작은 Receipt Bytes만 해시/검증한다.
+- 실 현장 `SNAP-*`, OCI Digest/Manifest, Source Revision, SQLite/CAD/S3 원본 SHA/Version, QA/Owner 신원·서명과 별도 사내 Trust Anchor는 비반출/비공개. 공개 GitHub에는 상태·고정 Reason만 남긴다. 실제 DB·S3 물리 Restore/복구·정식 Migration은 미실시·미확인.
+- 서명된 로컬 Receipt 무결성이 확인되어도 `privateSourceAuthenticated=false`, `sameSnapshotRestored=false`, `operationalGo=false`. 실제 Source/Backup/Restore의 독립 수용과 DB/Schema cutover는 #142/#109/#96 및 S3-5 별도 승인 전 차단.
+
+## #142 B2-5 — 실제 DB/Schema 변경 0건 (2026-10-28)
+
+- B2-5는 읽기 전용 합성 증거 참조 교차검증으로 SQL/Schema/Prisma Migration, 운영 CAD/DB/Current/Version/Local·S3 Bytes 변경 없음. S3-4-A 체크의 FK/Audit/Current/SHA/Restore 증거 ID·스냅샷 연결만 교차 대조하며 실제 DB/S3 원본은 읽지 않는다.
+- 운영 WAL-consistent SQLite 백업/Versioned S3/실 Restore와 Auth/CAD Write 활성화는 여전히 별도 승인 단계. Runbook: src/deploy/g7-s3/S3-4-B2-5.md.
+
+## #142 B2-4 — 합성 SQLite 복원 바이트 기준 및 Auth Candidate 분리 (2026-10-28)
+
+- Source/rollback은 CAD 6 Migration baseline SQLite Buffer, candidate는 격리된 G7 Auth 7번째 SQL 적용 Buffer라는 합성 세 단계. Rollback SQLite는 `Buffer.equals(source.sqliteBytes)` **전체 바이트** 일치 필수. 로컬/S3-export 오브젝트 Buffer도 DB Version/Locator/S3 VersionId claim(신뢰되지 않음)별 Source·Candidate·Rollback 모두 바이트 일치, 누락·중복/변조 차단.
+- 후보 SQLite는 기존 B2-3의 QuickCheck·FK·CAD hierarchy/Current/nextVersion/SHA·8 Auth Tables/Audit Event append-only(예외 + 실제 Row 불변) 검사 재사용. 실제 WAL-consistent SQLite online backup, 현장 Schema rollback, OCI 이전 이미지 호환성, ORM/운영 Prisma Migration·데이터 변경은 검증 또는 실행하지 않음.
+
+## #142 B2-3 — Audit AFTER Trigger 예외와 실제 행 불변식 분리 (2026-10-28)
+
+- 격리 Auth 후보 `AuditEvent`는 `g1_audit_no_update`, `g1_audit_no_delete` Trigger가 실제 행 UPDATE/DELETE를 허용하지 않아야 한다. **예외 발생 자체는 불변식 증명이 아님.** SQLite `RAISE(FAIL)`이 AFTER Trigger에서 발생해도 변경·삭제가 남을 수 있으므로 메모리 Clone의 `SELECT * ORDER BY id` 전체 Audit Row를 매 시도 직후 최초 Snapshot과 비교한다.
+- UPDATE/DELETE 각각에 대한 예외+행 동일성 조건을 모두 충족할 때만 `auditAppendOnlyChecked=true`, 어느 조건 실패라도 `AUDIT_NOT_APPEND_ONLY/BLOCKED`. 활성 Prisma Schema/실 DB·마이그레이션 SQL/운영 Trigger는 변경하지 않는다.
+
+## #142 B2-3 P2 — Local CAD StoragePath/DB Owner 불변식 (2026-10-27)
+
+- `CadStorage.publish`는 실제 DB `CadFileVersion.location_id/id`에서 `<Location UUID>/<Version UUID>/original.(dxf|dwg)` Local `storage_path`를 구성한다. 기존 B2-3 Byte verifier의 정규식 모양 검사와 DB·Asset 제공 문자열의 동일성만으로는 잘못된 소속을 탐지하지 못한다. B2-3은 정규식 그룹을 DB `location_id`와 `id`에 직접 비교해 어긋남을 `LOCAL_LOCATOR_OWNER_INVALID/BLOCKED`로 차단한다.
+- before/after Snapshot 둘 모두 같은 잘못된 Local 경로라도 양성으로 보지 않는다. `S3ObjectStorage.prepare`의 S3 객체 UUID와 DB Version UUID는 별개이므로 동일성 강제 금지. 실제 Schema/active Prisma Migration/운영 DB 변경 없음.
+
+## #142 B2-3 — 기존 CAD 6 + quarantined Auth 후보 1 (2026-10-27)
+
+- `src/prisma/migrations`의 활성 6개 CAD 이력과 후보 폴더 SQL 복사본의 동일성 검사, G7 격리 `202610260002_g7_operational_auth`는 `src/deploy/g7-s3/prisma/migrations`에만 유지. 기존 운영 Prisma History/DDL 무변경.
+- UID-owned Disposable CLI에서 `_prisma_migrations`의 성공 7건 및 8개 Auth Tables 확인. 합성 6→7 메모리 검사에서는 CAD 7 Tables 전체 Row/Current owner·nextVersion·Version/Storage Path/File Size/SHA/Local+S3 Byte 보존과 SQLite Quick Check/FK=0, Auth 8개, `g1_audit_no_update`·`g1_audit_no_delete` Trigger 실제 기능을 확인. CLI 결과와 seeded SQL 전후 결과는 별개의 증거.
+- 합성 후보 검사기는 실제 DB·CAD·S3 출처/Registry/Writer·Owner GO를 인증하지 않음. [Runbook](../src/deploy/g7-s3/S3-4-B2-3.md).
+
+## #142 B2-2B P2 — CadFileVersion.storagePath Unique 무결성 (2026-10-27)
+
+- 공식 `src/prisma/schema.prisma`의 `CadFileVersion.storagePath String @unique(map: "uq_storage_path")`는 S3 Object Locator를 서로 다른 DB Version에서 중복 사용할 수 없도록 하는 **별개 Unique 제약**이다. `@@unique([locationId, version])`/DB Version ID/opaque V Key 중복 검사로 대체되지 않는다.
+- B2-2B는 합성/격리 메모리 SQLite의 Unique 인덱스가 생략되거나 깨져도 중복 S3 locator를 `DUPLICATE_S3_LOCATOR`로 차단한다. 독립된 Object UUID와 DB Version UUID는 계속 허용한다. 회귀에는 고의로 Unique Index를 생략한 손상 모사와 인덱스가 있는 정상 3 Version 시나리오를 분리한다. 운영 Schema·Prisma Migration/DB 데이터 변경 없음.
+
+## #142 B2-2B P2 — S3 storage_path 객체 UUID ≠ DB Version UUID (2026-10-27)
+
+- `CadFileVersion.id`는 `CadRepository.register()`에서 생성되지만 `CadFileVersion.storage_path`가 S3형이면 `S3ObjectStorage.prepare()`가 **사전에 독립 생성한 UUID**의 `s3:bucket:cad/<object_uuid>/original.(dxf|dwg)`가 저장된다. 두 UUID를 일치 제약으로 오해하면 정상 버전이 잘못 차단된다. B2-2B 합성 mapping은 DB Version ID와 분리된 `s3ObjectLocator`를 받아 DB의 실제 `storage_path`와 정확 대조한다.
+- Local 저장 경로 `<locationId>/<dbVersionId>/original.ext` 계약은 기존 그대로이며, 스키마/마이그레이션·실 운영 DB 변경은 발생하지 않는다. 객체 Locator 값과 버킷·원본 경로는 사내 자료로 취급하고 공개 리포트/로그에 출력하지 않는다.
+
+## #142 B2-2B — 격리 SQLite Buffer 검사, 운영 Schema 불변 (2026-10-27)
+
+- B2-2A의 FK/QuickCheck/Current/Audit=0은 주장이다. B2-2B는 합성 `CAD_BASELINE` SQLite Buffer를 메모리에서만 열어 실제 `PRAGMA quick_check`·`foreign_key_check`, `CadLocation(id,current_version_id,next_version)`, `CadFileVersion(id,location_id,version,file_size,sha256,storage_path,file_format)` 전체 결과를 opaque V/L-key ↔ disposable UUID map과 대조한다. 재조회 pathname·DB Write/SQL DDL/운영 WAL 접근 없음.
+- Auth 후보 Table이 존재하면 본 B2-2B baseline 단계는 BLOCKED. 후보 7번째 Migration과 append-only Audit Trigger의 독립 실제 검증은 B2-3. `src/prisma/schema.prisma`·활성 `src/prisma/migrations/**`·`src/scripts/deploy.ts`와 운영 CAD Version/Current 변경 없음.
+
+## #142 B2-2A — 원본 DB 데이터·스키마 불변 (2026-10-27)
+
+- 오프라인 패킷 검증은 별도 SQLite 연결이나 운영 DB Read를 실행하지 않으며, 임의의 FK=0/Current 정합성/Audit 정합성 **주장**을 검사할 뿐 진짜 SQLite의 무결성을 보증하지 않음. `src/prisma/migrations/**`, 운영 G7 7번째 격리 SQL, Auth Schema, `src/scripts/deploy.ts` 불변.
+- S3 `storageVersionId`는 별도 승인된 오퍼레이터가 사내 S3 버전 객체로 확인해야 하는 캡처 증거 항목이며 현재 CAD DB 컬럼에서 자동 추출됐다고 가정하지 않음.
+
+## #142 S3-4-B2-1 — 운영 Schema/Prisma 불변 (2026-10-27)
+
+- 이 증분은 OCI byte-only source/Schema 계약 확인이다. `src/prisma/migrations/**` 활성 6개와 `src/scripts/deploy.ts` 자동 Migrator **불변**. 7번째 Auth 후보는 `src/deploy/g7-s3/prisma/migrations/202610260002_g7_operational_auth`에 격리됨.
+- OCI config의 `com.planner77.g7.schema-id` 라벨만 읽어 일치성을 평가할 수 있지만 실제 SQLite tables·Migration history·FK나 snapshot restore는 **입증하지 않는다**. B2-3/B2-4 실 복제본 시험·B2-5 내부 증거 필요.
+
+## #109 PR #141 — Unit 실패 및 P1/P2 보완 (2026-10-27)
+
+- [PR CI #40444154044](https://github.com/planner77/layoutManager/actions/runs/40444154044), HEAD `b5f340e69bd28aed939bb1c443df355c1652f5bf`: Unit/Integration 404 중 5 실패, Typecheck/ESLint·Docker PASS, Build/E2E SKIPPED. 5개 공통 직접 원인: 정상 Manifest Sorted Key 기대 순서 오타→`SNAPSHOT_MANIFEST_MISMATCH`.
+- [Codex P1 #4384813274](https://github.com/planner77/layoutManager/pull/141#discussion_r4384813274) key order 수정. [P2 #4384813277](https://github.com/planner77/layoutManager/pull/141#discussion_r4384813277) SQLite source path 재오픈 TOCTOU를 검증 Buffer→메모리 DB로 교정, [P2 #4384813278](https://github.com/planner77/layoutManager/pull/141#discussion_r4384813278) 8개 Auth table 완전/완전부재 검사로 수정. 관련 회귀 테스트·B1 Runbook 추가. **신규 HEAD CI 전 PASS 미확인**.
+- S3-4-B1은 격리 readonly/합성 clone 무결성 검사 준비이며 실제 운영 Snapshot 동시성·실 Registry OCI·실 Migration/Restore/rollback은 NOT RUN. Auth/Write/운영 SQL·Compose/Nginx·GHCR·실 DB/CAD/S3·Issue 종료 금지.
+
+
+## #109 S3-4-B1 — read-only restored clone boundary (2026-10-27)
+
+- 운영 `src/prisma/migrations/**` 6개 CAD 이력 불변, 후보 Auth SQL은 `src/deploy/g7-s3/prisma/migrations/**` 격리 유지. B1은 자체 migration 명령 없이 **격리 복원 DB에 대한 읽기 전용** `PRAGMA quick_check`/FK 및 Version/Current/nextVersion·SHA 대조만 수행한다.
+- 7번째 후보 테이블 존재 상태는 B1 `G7_CANDIDATE` marker와 맞아야 하며, marker만의 진위/운영 Schema 적용 근거는 불충분. 별도 B2 private Prisma migrate deploy+DB/CAD/S3 restore/rollback 실증 필요.
+
+
+## #109 S3-4-A — Prisma Migration과 Snapshot 복원 범위 (2026-10-27)
+
+- 현재 운영 자동 `src/scripts/deploy.ts`는 `src/prisma/migrations/**`에 있는 CAD 6개만 자동 migrate deploy. 추가 Auth SQL은 `src/deploy/g7-s3/prisma/migrations/202610260002_g7_operational_auth/**`의 **격리 후보**이며 이번 S3-4-A에서 승격·실행 금지.
+- S3-4-A 패킷은 후보 이력 byte 동등/격리 여부, 사내 복제 DB Migration dry-run, FK=0·Version/Current·원본 SHA·삭제해시/감사 무결성, DB/CAD/S3 단일 Snapshot 복원과 rollback의 내부 증거 ID를 요구하지만 **직접 DB에 접속하지 않는다**. 후보 Migration CI Fixture PASS와 실 운영 Snapshot 복구를 혼동하지 않는다.
+- S3-4-B 별도 사내 복제 볼륨과 완전 복구 실증 전 운영 Migration **NO-GO**.
+
+
+## Issue #109 S3-3 — CAD API 권한·Audit 원자성 준비, 운영 OFF (2026-10-27)
+
+- **기능:** 기존 CAD Multipart POST·Current PUT·Version DELETE에서 서버 DB의 최신 Session/Role/Site를 같은 Prisma Transaction 안에 재조회하고 승인된 Editor/Admin+Site만 쓰기 허용한다. DELETE는 기존 삭제 비밀번호도 요구하며, CAD DB 변경과 CAD_UPLOADED/CAD_CURRENT_CHANGED/CAD_VERSION_DELETED Audit INSERT 중 하나라도 실패하면 DB를 롤백한다. 기존 업로드 보상·삭제 Job, 익명 GET/Viewer·CAD 데이터 규약은 유지한다.
+- **운영 차단:** `NODE_ENV=production`에서는 S3-3 프리뷰 활성화 불가. 정확한 S3-2 disposable DB/marker/7 migration, loopback origin, `G7_S3_AUTH_API_PREVIEW_ONLY=true`, `G7_S3_CAD_PREVIEW_ONLY=true`, `G7_AUTH_ENABLED=false`, `G7_CAD_WRITE_CUTOVER_ENABLED=false` 조건만 격리 시험 허용. 별도 Prisma Client와 0700 root 하위 로컬 CAD 저장소 이용. 운영 Migration·실 DB/CAD/S3·Compose/Nginx/.env·GHCR 게시·인증/쓰기 활성화 없음.
+- **시험·잔여:** synthetic integration(Unit) 검증 코드 추가; 실제 PR CI는 시작 전이므로 결과 `NOT RUN`. 일회용 Preview Cookie의 Path는 `/api/g7-operational`이므로 다른 CAD 경로의 프로그램 시험에서는 테스트용 Cookie를 명시적으로 넘기며 운영 브라우저 인증이 활성된 상태는 아님. S3-4는 OCI/운영 Migration/실복구·신뢰 release binding, S3-5는 릴리스별 Owner GO 및 현장 수용. 기존 유사범위 PR #128은 미병합·충돌 상태이며 자동 병합하지 않는다. #109/#96 OPEN/BLOCKED.
+- **후속 정확 Squash:** `#109 | S3-3 Isolated CAD write and Audit [G7-S3-3-NO-GHCR]` 및 개별 파일 allowlist만 GHCR 미게시. 내부 로그/비밀번호/IP/실 도면 반출 금지. [S3-3 Runbook](../src/deploy/g7-s3/S3-3.md).
+
+
+## #109 S3-2 — 영속 Auth/Admin 거래와 DB 출처 경계 (2026-10-26)
+
+- S3-1 정식 후보 `202610260002_g7_operational_auth`를 가진 **일회용 SQLite DB만** S3-2 preview open 가능. 공유 `disposable-target.ts`를 Prisma 설정과 HTTP/Admin CLI에서 같이 사용해 canonical `/tmp/cad-g7-s3-*/fixture.sqlite`·UID 0700/0600·marker/Nonce/Schema ID/양쪽 DB URL을 대조. `preview-db.ts`에서 `_prisma_migrations` 성공 행/8개 Auth 테이블·`PRAGMA foreign_key_check`를 확인하고 DB 연결 실패는 API 503(데이터 정보 비노출).
+- G3 로그인/세션·비밀번호 갱신, G4 Role/Site/SpecialGrant/Disable·권한/감사 adapter는 검증된 SQLite BEGIN IMMEDIATE 거래 사용. S3-2 Admin 계정 생성은 먼저 DB users:manage 권한검사+Audit를 수행하고, KDF 수행 후 **같은 거래에서 세션/역할 재검증과 User INSERT+ACCOUNT_CREATED Audit**. 최초 비밀번호 변경 필요·역할 자동부여 0. G2 초기 Admin·복구는 Secret 0600·명시 CLI, nonce 해시 1회와 session 회수·AdminRecovery Audit 원자성.
+- 운영 `src/prisma/migrations` 추가 SQL **0**, 운영 `scripts/deploy.ts`/`src/prisma.config.ts`/실 DB/CAD/S3 변경 0. 프로덕션 운영 DB에 User/Auth 테이블은 이번 PR로 추가되지 않는다. 운영 API 라우트도 프로덕션 OFF이며 실 Auth DB/Migrator 통합은 S3-4 릴리스별 승인까지 금지.
+
 
 ## Issue #109 S3-1 — 운영 Prisma 모델 통합 / 정식 후보 Migration 분리 (2026-10-26)
 

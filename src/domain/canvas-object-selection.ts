@@ -2,7 +2,7 @@
  * SOURCE identity comes from the verified #31 render mapping; GENERATED identity
  * is a separate CSPRNG UUID, never the legacy local-N JSON export ordinal.
  * This is a *capability* contract, not authorization to write to the server. */
-export type CanvasObjectOrigin = 'SOURCE' | 'GENERATED';
+export type CanvasObjectOrigin = 'SOURCE' | 'RENDER' | 'GENERATED';
 export type CanvasObjectRef = Readonly<{
   origin: CanvasObjectOrigin;
   id: string;
@@ -10,7 +10,7 @@ export type CanvasObjectRef = Readonly<{
   sourceSha256: string;
 }>;
 export type CanvasObjectScope = Readonly<{versionId:string;sourceSha256:string}>;
-export type CanvasSelectionMode = 'pan' | 'select' | 'objects' | 'generated';
+export type CanvasSelectionMode = 'pan' | 'select' | 'render' | 'objects' | 'generated';
 export type CanvasEditCapability = Readonly<{canSelect:boolean;canEdit:boolean;reason:string}>;
 
 const SHA256 = /^[a-f0-9]{64}$/i;
@@ -22,7 +22,8 @@ export function canvasObjectRef(
   origin:CanvasObjectOrigin,id:string,scope:CanvasObjectScope,
 ):CanvasObjectRef {
   if(!validCanvasScope(scope) || !id ||
-    (origin==='GENERATED' && !UUID_V4.test(id)))throw new Error('객체 참조 범위 또는 ID가 유효하지 않습니다.');
+    (origin==='GENERATED' && !UUID_V4.test(id)) ||
+    !['SOURCE','RENDER','GENERATED'].includes(origin))throw new Error('객체 참조 범위 또는 ID가 유효하지 않습니다.');
   return {origin,id,versionId:scope.versionId,sourceSha256:scope.sourceSha256.toLowerCase()};
 }
 export function sameCanvasScope(ref:CanvasObjectRef,scope:CanvasObjectScope):boolean {
@@ -39,14 +40,16 @@ export function canvasEditCapability(
   for(const ref of selection){
     if(!sameCanvasScope(ref,scope) || !ref.id ||
       (ref.origin==='GENERATED' && !UUID_V4.test(ref.id)) ||
-      (ref.origin!=='SOURCE' && ref.origin!=='GENERATED'))
+      (ref.origin!=='SOURCE' && ref.origin!=='RENDER' && ref.origin!=='GENERATED'))
       return {canSelect:false,canEdit:false,reason:'다른 도면 또는 유효하지 않은 객체 참조입니다.'};
     const key=ref.origin+':'+ref.id;
     if(keys.has(key))return {canSelect:false,canEdit:false,reason:'중복 객체 참조를 사용할 수 없습니다.'};
     keys.add(key);
   }
-  if(selection.some(ref=>ref.origin==='SOURCE'))
-    return {canSelect:true,canEdit:false,reason:'원본 DXF 또는 원본·생성 혼합 선택은 읽기 전용입니다. 생성 개체만 다시 선택하세요.'};
+  if(selection.some(ref=>ref.origin==='SOURCE'||ref.origin==='RENDER'))
+    return {canSelect:true,canEdit:false,reason:selection.some(ref=>ref.origin==='GENERATED')
+      ? '원본/렌더와 생성 개체의 혼합 선택은 생성 개체 편집에서 읽기 전용입니다.'
+      : '원본 또는 렌더 객체는 생성 개체 편집 명령의 대상이 아닙니다.'};
   return {canSelect:true,canEdit:true,reason:'생성 개체만 선택됨 (변경 명령은 E2~E5에서 제공)'};
 }
 
