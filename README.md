@@ -1,3 +1,11 @@
+## #212 — 수동 DXF Scene 생성 진단·대체 렌더러 안내 (2026-11-02, PR 후보)
+
+도면 Viewer의 `도면 > 원본 DXF로 Scene 생성/재생성`은 기존 브라우저 수동 경로입니다. `THREE_SCENE_ARTIFACT_READY`는 브라우저가 저장 후보를 검증한 상태로, G7 인증·Site 쓰기 권한으로 **Scene Asset 저장**까지 성공해야 서버 영속 READY가 됩니다. 반면 `FALLBACK_DXF_DISPLAYED_SCENE_FAILED`는 `dxf-viewer`가 도면만 대체 표시했다는 뜻으로 Scene 생성/저장 성공이 아니며 저장 버튼은 비활성화됩니다.
+
+오류 진단은 단계/오류 코드와 비민감 수치만 제공하며 DXF 원본, 내부 경로/Stack/Handle·문자/Source SHA·계정/토큰을 공개 공유하지 않습니다. 32MiB Scene payload/100k nodes/2M attribute scalars/depth128 제한을 유지합니다. 최초 DXF 업로드 후 서버 백그라운드 Scene 자동 생성·목록 Job 상태는 별도 [#208](https://github.com/planner77/layoutManager/issues/208) 개발 범위입니다. [진단·제약](out/Issue212.md) · [운영](out/Operation.md) · [검증 상태](out/TestReport.md). PR CI 실행·실 고객 CAD/GPU/운영 배포 합격은 아직 확인 전입니다.
+
+---
+
 ## #211 — G7 Docker 호스트 단일 배포 CLI (2026-11-02)
 
 **신규 빈 Greenfield 설치·기존 동일 릴리스 재시작·등록 릴리스 업그레이드의 권장 진입점**은 `python3 src/scripts/g7-deploy.py .env status --json` / `plan --json` / `execute --approve-plan <64자리 planId> --json`이다. 기존 설치 업그레이드 후 App은 **정지 상태로 유지**되며 `plan --operation start` → `start --approve-plan <새 start planId>`의 별도 승인 기동이 필요하다. 먼저 신뢰하는 App/Migrator를 수동 pull·검증하고, `.env`의 목표 이미지 두 개·40hex `G7_RELEASE_SOURCE_COMMIT`을 **운영자가 직접 수정**, 기존 `CAD_DATA_VOLUME_NAME` 유지. Helper는 `.env`를 자동 변경하거나 비어 있지 않은 볼륨을 재설치하지 않는다. 이전 일반 Compose `up -d --pull always` 명령은 **새 설치/검증된 동일 릴리스**에만 적합하며 기존 릴리스 변경 절차가 아니다. 상세 예시·실패 대응: [G7 Runbook](src/deploy/g7-greenfield/README.md), [Issue211 설계](out/Issue211.md).
