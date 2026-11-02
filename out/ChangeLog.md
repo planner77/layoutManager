@@ -1,3 +1,11 @@
+## 2026-11-03 — #208 / PR #217 CI #445 Font stage 실패·빌드 독립 보완
+
+- [PR CI #445 Run41517145247](https://github.com/planner77/layoutManager/actions/runs/41517145247) Quality Unit **959/960 PASS·1 FAIL**: Node Scene synthetic PoC가 `FONT_PREPARE/SCENE_FONT_UNAVAILABLE`로 중단. TypeScript/ESLint·Docker smoke는 성공, Browser/G7 E2E는 선행 실패로 미실행. root cause는 빌드 시 생성되는 `CadKorean.typeface.json`을 빌드 **이전** Unit에서 읽는 순서 불일치.
+- `src/server/scene/node-converter-poc.ts`에 tracked `NanumGothic-Regular.ttf`의 TTFLoader 기반 in-memory TypeFace 준비 및 명시 `.json` path 호환, 안전 파일 형식/크기 한도 추가. `scene-node-converter-poc.test.ts`는 실제 TTF 입력으로 완전한 DXF→CUSTOM_DTO/restore 검사를 유지하고 누락 글꼴·손상 TTF/JSON·지원하지 않는 확장자 오류를 검증.
+- AGENTS, Architecture, Decisions, Issue208, TestPlan/TestReport/FailureLedger/README를 실제 CI 실패에 맞춰 갱신. Viewer/기존 스크립트/DB/권한/Scene/Volume/CI workflow·GHCR 변경 없음. 새 CI 성공·Node CPU-only 완성·자동 Worker/목록 UI는 미확인/미구현.
+
+---
+
 ## 2026-11-03 — PR #217 / Issue #208 CI #442 TS 수리·안전 타입 계약 보강
 
 - CI Run41514760273 (`completed/failure`)의 Quality TS2345×1/TS2322×2 및 Docker의 동일 TypeScript 빌드 종속 실패를 분석. Reader/G7/Runtime·Docker Config 문제로 오진하지 않음.
