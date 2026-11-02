@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync, chmodSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync, chmodSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
@@ -51,7 +51,7 @@ function execute(command:string,env:Record<string,string>){
         GITHUB_REF:'refs/heads/main',GITHUB_SHA:HEAD,TAG_COMMIT:HEAD,
         GITHUB_OUTPUT:f.output,...env}});
     return {status:actual.status,stderr:actual.stderr,
-      output:readFileSync(f.output,{encoding:'utf8',flag:'a+'})};
+      output:existsSync(f.output)?readFileSync(f.output,'utf8'):''};
   }finally{rmSync(f.root,{recursive:true,force:true});}
 }
 describe('#216 immutable GHCR pair workflow (no registry network)',()=>{

@@ -9,7 +9,7 @@
 
 1. Package/lock top 및 lock packages root 모두 0.58.1. 기존 package identity와 version 표시/OCI label/릴리스 태그 연결을 재사용한다.
 2. Greenfield release registry에 zones('0.58.1'), 0.58.0→0.58.1 COMPATIBLE forward edge 추가. G7_GREENFIELD_SCHEMA_ID/G7_GREENFIELD_BASELINE/G7_GREENFIELD_BASELINE_CHECKSUM 및 G7-ZONES-DATA-V1/G7-ZONES-RUNTIME-V1 동일. 0.56→0.57→0.58→0.58.1 경로 모든 edge 검증; SQL migration 없음. Registry drift/unknown/downgrade 차단.
-3. GHCR Main release: v0.58.1 태그가 실제 Main source commit을 가리킬 때, App/Migrator linux/amd64 candidate 빌드 및 각각의 digest/manifest 검증 후 0.58.1-migrate→0.58.1→latest-migrate→latest 승격. 두 이미지의 version tag가 이미 존재하면 main/tag rerun SKIP, 한쪽만 있으면 G7_RELEASE_PARTIAL_PAIR로 HALT, tag source 불일치면 G7_RELEASE_TAG_SOURCE_MISMATCH로 HALT. 여러 Registry tag promotion은 원자적이지 않으므로 부분 실패 시 자동 overwrite 금지 및 별도 수동 조정.
+3. GHCR Main release: v0.58.1 태그가 실제 Main source commit을 가리킬 때, App/Migrator linux/amd64 candidate 빌드 및 각각의 digest/manifest 검증 후 0.58.1-migrate→0.58.1→latest-migrate→latest 승격. 두 이미지의 version tag가 이미 존재하면 main/tag rerun SKIP, 한쪽만 있으면 G7_RELEASE_PARTIAL_PAIR로 HALT하고, 조회 실패가 명확한 manifest-404가 아닌 network/auth 불확실성이면 G7_RELEASE_REGISTRY_CHECK_FAILED로 HALT, tag source 불일치면 G7_RELEASE_TAG_SOURCE_MISMATCH로 HALT. 여러 Registry tag promotion은 원자적이지 않으므로 부분 실패 시 자동 overwrite 금지 및 별도 수동 조정.
 4. Host #209/#211의 immutable local OCI pair 검증, same original volume, App stop/Writer0, preflight/plan 승인 SHA, SQLite/CAD/Scene/Current/Auth/Audit 일관 백업과 격리복원/사후 검증, 별도 App start 순서 유지. 운영 .env는 운영자가 신규 이미지 게시 증거 확인 후 수동 변경.
 5. 신규 DB schema, Auth/Writer 활성, DXF 원본 삭제·재등록, 기존 READY Scene/Current 수정, Worker/Queue 연결, 운영 DB/Volume/CAD/실 현장 테스트는 이 PR 범위가 아니다.
 
