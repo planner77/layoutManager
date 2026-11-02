@@ -1,3 +1,9 @@
+## #208 — 서버 독립 Scene 자동 생성: 선행 기술 검증 진행 중 (2026-11-03)
+
+최초 DXF 업로드 후 자동 Scene 생성·영속 작업 상태·도면 목록 진행/실패/재시도 기능은 [Issue #208](https://github.com/planner77/layoutManager/issues/208)의 목표이며 **현재 제공되는 운영 기능이 아닙니다**. Node CPU-only `three-dxf-viewer` 실제 변환/직렬화 가능성에 대한 **격리된 P1-A PoC**와 합성 테스트만 추가했습니다. CPU-only Docker, 브라우저 fidelity, G7 재인가, transactional Queue/Worker/배포/화면은 P1-B/C/D의 검증 및 구현 대상입니다. 기존 수동 생성·저장은 #212 절차를 사용하세요. [설계·GO/NO-GO](out/Issue208.md), [실제 시험 기록](out/TestReport.md).
+
+---
+
 ## #212 — 수동 DXF Scene 생성 진단·대체 렌더러 안내 (2026-11-02, PR 후보)
 
 도면 Viewer의 `도면 > 원본 DXF로 Scene 생성/재생성`은 기존 브라우저 수동 경로입니다. `THREE_SCENE_ARTIFACT_READY`는 브라우저가 저장 후보를 검증한 상태로, G7 인증·Site 쓰기 권한으로 **Scene Asset 저장**까지 성공해야 서버 영속 READY가 됩니다. 반면 `FALLBACK_DXF_DISPLAYED_SCENE_FAILED`는 `dxf-viewer`가 도면만 대체 표시했다는 뜻으로 Scene 생성/저장 성공이 아니며 저장 버튼은 비활성화됩니다.
