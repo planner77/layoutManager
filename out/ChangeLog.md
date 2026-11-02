@@ -1,4 +1,13 @@
+## 0.57.0 — #202 / #204 구현 후보 (2026-11-02)
+
+- Added: 기본 도면 목록의 권한 기반 메모 제목·본문 검색, Version 단위 결과·일치 개수/최대3 미리보기 및 정확한 메모 링크. 빈 조건의 기존 조회·Current/전체 버전 계약을 유지한다.
+- Fixed: 기준정보 이름만 저장할 때 다른 세션에서 변경한 상태·Site 종류를 덮어쓰지 않도록 변경 필드만 PATCH한다. UUID·부모·참조 데이터 불변 정책의 회귀를 보강한다.
+- Tests: 전체924 Unit, 독립 General27/signed3 Browser, 이름·G7/감사·메모/구역/원본 보존 및1k/10k/100k SQL 계측을 검증했다. 실제 범위/실패/재시험은 TestReport/FailureLedger를 따른다. 로컬 코드·합성 후보를 수용했으며 새 PR CI 결과·릴리스는 미확인이다.
+
+---
+
 ## 0.56.0 — Issue #196 의미론적 구역 (Main 병합, GHCR 게시 기동)
+
 
 - Added: 층별 구역 ID·업무 메타데이터·부모 계층, Site 카테고리, Version/SHA/Scene별 Polygon mapping과 G7 권한·CAS·멱등 생성·감사·논리 삭제.
 - Added: Viewer 구역 생성/목록, 기존 객체 Snap과 자유 WCS 입력, 계층 트리·상세·검색·표시·Bounds focus 및 공통 이동 패널 연계.

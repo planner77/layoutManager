@@ -1,3 +1,24 @@
+## #204 / #202 — 구현 전 수용 계약 (2026-11-02)
+
+| TC | 준비·동작 | 필수 기대 |
+| --- | --- | --- |
+| TC-204-01 | 5단계 일반 master를 2회 이상 rename; 참조·비활성 node 포함 | 동일 UUID/부모·관련 FK, 새 이름 표시·재조회; 참조 상태는 rename 차단 사유 아님 |
+| TC-204-02 | trim/NFC 중복·다른 부모 동명·빈값/긴값·미분류 rename | 형제 중복·잘못된 이름·미분류는 기존 오류, 다른 부모 동명 허용; 실패 원자성 |
+| TC-204-03 | Current/여러 Version/메모/구역이 연결된 계층 rename | ID/관계/Current/nextVersion/원본 SHA·bytes·사용자 도면명 보존, 새 세션·재조회 후 목록·상세·Viewer 경로 최신 이름 |
+| TC-204-04 | G7 signed Master PATCH 정상/미인가 Site·Role·CSRF/Origin 실패 | 서버 인가·Audit 보존과 Audit 실패 rollback; 이름만 변경 시 active/kind 미전송으로 타 세션 상태 보존 |
+| TC-202-01 | 제목/본문 각각 일치·둘 다/여러 메모·불일치, 파일명/설명/위치/형식 AND | Version 1행, 정확 total/page, literal %/_/따옴표·NFC/영문 case 정책, 안전한 snippet |
+| TC-202-02 | Current/과거/Current 없는 층, pageSize·페이지 이동·toggle | 기본 Current/전체 정책, URL 조건 유지·page reset; API current=false는 여전히 비Current만, nonblank memo API 요청도 동일 G7 인가 적용 |
+| TC-202-03 | G7 OFF/익명/만료·회수/다른 Site/Grant 없는 Admin/활성 Site 조건 | nonblank 검색 거부 또는 실제 허용 Site만, 결과·total·preview 누출0; 빈 조건은 기존 공개 목록 |
+| TC-202-04 | 삭제·숨김·SHA 불일치·여러 버전 메모; 입력 중복/100자 초과/C0/C1 | 삭제·SHA 불일치 제외, 숨김은 #90 정책, 변조 거절; 제목/본문 외 그룹명만 일치는 제외 |
+| TC-202-05 | 기본 검색폼·결과 0/오류/재시도·reload/back·preview 링크 | max3 plain text snippets/Version, 320px·한글/다중행 안전 표시, 정확 일치 count/Version+Memo deep link와 WCS focus; 클릭 후 #88 재인가 |
+| TC-202-06 | 합성 메모 1k/10k/100k, 같은 Version 집중과 다수 Version 분산 | SQL 실행계획·시간·결과 행/count/preview 상한 기록, 전체 메모 JS 적재·CAD fetch 없음; 운영 SLA 추정 금지 |
+
+구현 추적: TC-204-01/02/03은 `tests/integration/master.test.ts`, `zone-runtime.test.ts`와 `tests/e2e/master.spec.ts`, TC-204-04는 `tests/integration/g7-runtime-cad.test.ts`에 연결한다. TC-202-01/02/04 및 고정3 SELECT는 `tests/integration/drawing-memo-list.test.ts`, TC-202-03은 `memo-search-auth.test.ts`, TC-202-05는 `tests/e2e/drawing-memo-list.spec.ts`와 `tests/greenfield-e2e/zz-drawing-memo-list.spec.ts`에 연결한다. TC-202-06은 `src/tests/benchmark/drawing-memo-search-benchmark.ts`의 1k/10k/100k 분산·단일 Version 집중 데이터와 page25/100 비교다. 실측 후 선정한 임시 회귀 목표는 같은 환경의100k·두 분포·page25/100에서 warm3회 median100ms 이하이며, SQL 외 HTTP/Auth/render/운영 SLA와 구분한다. 위 tests 경로는 모두 src/ 아래이며 실제 실행 결과는 TestReport를 따른다.
+
+구현 파일→TC→실제 결과를 TestReport에서 연결한다. Typecheck/Lint/전체 Unit·Integration/Build, 관련 일반·signed G7/Greenfield 브라우저 및 기존 Legacy 회귀를 검증한다. 독립 QA는 별도 결과 디렉터리/fixture로 실행하며 동시 Playwright artifact 충돌을 방지한다. 실패는 FailureLedger에 원인·수리·재시험을 누적하고 미실행을 PASS로 기록하지 않는다. 새 PR CI는 시작 후 모니터링하지 않는다.
+
+---
+
 ## PR #200 / #196 CI·P2 리뷰 수리 계획 (2026-11-01)
 
 [Issue196 수리 계약](Issue196.md#pr-200-ci리뷰-보완-계약-2026-11-01)의 AC-Z196-R1~R5 / TC-Z196-REPAIR-01~05를 따른다. 기준 실패 Run `41309924909`, HEAD `9f88d8e`: General Shard 2의 원본 GET 중복 및 OFF Zone 503 console error, Aggregate 후속 실패다.

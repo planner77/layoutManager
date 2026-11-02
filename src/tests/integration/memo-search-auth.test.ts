@@ -9,6 +9,7 @@ import { resolveG7RuntimeGate } from '../../server/g7-operational/runtime-gate';
 // context module. The authenticated search helper must never fall back to it.
 vi.mock('@/server/context', () => ({ context: () => { throw new Error('UNEXPECTED_LEGACY_CONTEXT'); } }));
 import { requireMemoSearchSites } from '../../server/scene/scene-context';
+import { withAuthorizedDrawingMemoList } from '../../server/services/authorized-drawing-memo-list';
 
 let f:ReturnType<typeof makeG7RuntimeFixture>,db:Database;
 beforeEach(()=>{
@@ -67,4 +68,19 @@ describe('#90 M7: per-request signed G7 Reader/Site scope',()=>{
     await expect(requireMemoSearchSites(request(fresh.token),db,gate))
       .rejects.toMatchObject({code:'UNAUTHENTICATED'});
   });
+});
+
+test('#202 drawing memo list wrapper denies before repository access and accepts only signed Reader scope', async () => {
+  const reader=await actor('Reader',['site-a']);
+  const admin=await actor('Admin',[]);
+  let called=0;
+  const action=async (_repo: unknown, sites: readonly string[])=>{called++;return sites;};
+  await expect(withAuthorizedDrawingMemoList(request(),action)).rejects.toMatchObject({code:'UNAUTHENTICATED'});
+  await expect(withAuthorizedDrawingMemoList(request(admin.token),action)).rejects.toMatchObject({code:'ACCESS_DENIED'});
+  expect(called).toBe(0);
+  expect(await withAuthorizedDrawingMemoList(request(reader.token),action)).toEqual(['site-a']);
+  expect(called).toBe(1);
+  await db.authSession.update({where:{id:reader.sessionId},data:{revokedAt:BigInt(Date.now())}});
+  await expect(withAuthorizedDrawingMemoList(request(reader.token),action)).rejects.toMatchObject({code:'UNAUTHENTICATED'});
+  expect(called).toBe(1);
 });

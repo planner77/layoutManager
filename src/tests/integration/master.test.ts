@@ -7,6 +7,7 @@ import { createRequire } from "node:module";
 import { createDb, type Database } from "../../server/db";
 import { MasterRepository } from "../../server/repositories/master";
 import { CadRepository } from "../../server/repositories/cad";
+import { CadListRepository } from "../../server/repositories/cad-list";
 import {
   hashDeletePassword,
   verifyDeletePassword,
@@ -80,6 +81,79 @@ test("TC-MASTER-001/006: hierarchy lifecycle, duplicate, immutable identity and 
   expect(await masters.remove("floors", floor.id)).toMatchObject({
     deleted: true,
   });
+});
+test("TC-204-01/03: five repeated name-only renames preserve referenced hierarchy, Current and source", async () => {
+  const bu = await masters.create("business-units", { name: "사업부 원본" });
+  const product = await masters.create("products", { parentId: bu.id, name: "제품 원본" });
+  const site = await masters.create("sites", { parentId: product.id, name: "사업장 원본", kind: "LEGAL_ENTITY" });
+  const building = await masters.create("buildings", { parentId: site.id, name: "동 원본" });
+  const floor = await masters.create("floors", { parentId: building.id, name: "층 원본" });
+  const original = Buffer.from("0\nSECTION\n2\nENTITIES\n0\nENDSEC\n0\nEOF\n");
+  const sourcePaths = [1, 2].map(n => path.join(directory, `source-${n}.dxf`));
+  await Promise.all(sourcePaths.map(sourcePath => writeFile(sourcePath, original)));
+  const cad = new CadRepository(db);
+  const input = {
+    businessUnitId: bu.id, productId: product.id, siteId: site.id,
+    buildingId: building.id, floorId: floor.id, registeredAt: "2026-11-02",
+    makeCurrent: true, description: "도면 설명", drawingName: "사용자 도면명", deletePassword: "1234",
+  };
+  const versions = [];
+  for (let n = 1; n <= 2; n++) versions.push(await cad.register(input, {
+    originalFilename: `original-${n}.dxf`, fileFormat: "DXF", fileSize: original.length,
+    sha256: createHash("sha256").update(original).digest("hex"), storagePath: sourcePaths[n - 1],
+  }));
+  const beforeVersions = await db.cadFileVersion.findMany({ where: { locationId: floor.id }, orderBy: { version: "asc" } });
+  const beforeFloor = await db.cadLocation.findUniqueOrThrow({ where: { id: floor.id } });
+  const cases = [
+    ["business-units", bu.id, "사업부"], ["products", product.id, "제품"],
+    ["sites", site.id, "사업장"], ["buildings", building.id, "동"], ["floors", floor.id, "층"],
+  ] as const;
+  for (const [type, id, label] of cases) {
+    for (const revision of [1, 2]) {
+      const changed = await masters.update(type, id, { name: `${label} 변경 ${revision}` });
+      expect(changed.id).toBe(id);
+      expect(changed.name).toBe(`${label} 변경 ${revision}`);
+    }
+    await masters.update(type, id, { active: false });
+    const renamedInactive = await masters.update(type, id, { name: `${label} 비활성 변경` });
+    expect(renamedInactive).toMatchObject({ id, name: `${label} 비활성 변경`, active: false });
+  }
+  const tree = await new MasterRepository(db).tree();
+  const child = tree[0].products[0].sites[0].buildings[0].floors[0];
+  expect(child).toMatchObject({ id: floor.id, buildingId: building.id, name: "층 비활성 변경" });
+  expect(tree[0].products[0].sites[0]).toMatchObject({ id: site.id, productId: product.id, kind: "LEGAL_ENTITY" });
+  expect(tree[0].products[0]).toMatchObject({ id: product.id, businessUnitId: bu.id });
+  expect(tree[0].products[0].sites[0].buildings[0]).toMatchObject({ id: building.id, siteId: site.id });
+  expect(await db.cadLocation.findUniqueOrThrow({ where: { id: floor.id } })).toMatchObject({
+    currentVersionId: beforeFloor.currentVersionId, nextVersion: beforeFloor.nextVersion, buildingId: beforeFloor.buildingId,
+  });
+  expect(await db.cadFileVersion.findMany({ where: { locationId: floor.id }, orderBy: { version: "asc" } })).toEqual(beforeVersions);
+  expect(beforeVersions.map(v => v.id)).toEqual(versions.map(v => v.id));
+  for (const sourcePath of sourcePaths) expect(await readFile(sourcePath)).toEqual(original);
+  const detail = await new CadListRepository(db).version(versions[1].id);
+  expect(detail.location).toMatchObject({ businessUnit: "사업부 비활성 변경", product: "제품 비활성 변경",
+    site: "사업장 비활성 변경", building: "동 비활성 변경", floor: "층 비활성 변경" });
+  expect(detail.displayName).toBe("사용자 도면명");
+});
+
+test("TC-204-02: normalized sibling collision, different-parent names and immutable unclassified name", async () => {
+  const bu = await masters.create("business-units", { name: "Alpha" });
+  const other = await masters.create("business-units", { name: "Other" });
+  const first = await masters.create("products", { parentId: bu.id, name: "Caf\u00e9" });
+  const sibling = await masters.create("products", { parentId: bu.id, name: "Other product" });
+  const otherParent = await masters.create("products", { parentId: other.id, name: "Caf\u00e9" });
+  expect(otherParent.id).not.toBe(first.id);
+  await expect(masters.update("products", sibling.id, { name: "  Cafe\u0301  " }))
+    .rejects.toMatchObject({ code: "DUPLICATE_MASTER", status: 409 });
+  await expect(masters.create("products", { parentId: bu.id, name: " Cafe\u0301 " }))
+    .rejects.toMatchObject({ code: "DUPLICATE_MASTER", status: 409 });
+  for (const name of ["   ", "x".repeat(101)])
+    await expect(masters.update("products", sibling.id, { name })).rejects.toMatchObject({ code: "INVALID_MASTER_NAME" });
+  expect(await db.product.findUniqueOrThrow({ where: { id: sibling.id } })).toMatchObject({ name: "Other product", businessUnitId: bu.id });
+  await db.product.update({ where: { id: first.id }, data: { isUnclassified: true } });
+  await expect(masters.update("products", first.id, { name: "Changed" }))
+    .rejects.toMatchObject({ code: "UNCLASSIFIED_IMMUTABLE", status: 409 });
+  expect(await db.product.findUniqueOrThrow({ where: { id: first.id } })).toMatchObject({ name: "Caf\u00e9", isUnclassified: true });
 });
 test("TC-MASTER-005/006: unclassified floor reclassification preserves complete history and rejects collision", async () => {
   const legacy = await seedChain(db, {

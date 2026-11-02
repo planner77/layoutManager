@@ -1,3 +1,18 @@
+## #204 / #202 — 기준정보 이름 불변 식별과 기본 목록 메모 조건 (2026-11-02, 구현 계약)
+
+| 요구사항 | 계약 | 수용 시험 |
+| --- | --- | --- |
+| FR-204-01 | 사업부·제품·사업장/법인·동·층의 UUID와 부모 FK는 불변이며 기존 name만 편집한다. 참조·비활성 상태도 이름 변경 가능; 시스템 미분류 제품은 예외로 이름 잠금. | TC-204-01/02 |
+| FR-204-02 | trim/NFC 후 빈값·길이·제어문자와 같은 부모 중복을 기존 정책으로 거절. 반복 이름 변경은 Version/Location/Current/메모/구역 FK와 원본 SHA·bytes를 보존한다. 표시 이름 컬럼·Schema·migration 추가 없음. | TC-204-01/03/04 |
+| FR-202-01 | 기본 도면 목록에 제목/본문 메모 문자열 조건을 추가한다. 두 필드는 OR, 기존 파일명·설명·위치·형식 조건과는 AND. 결과 단위는 Version 1행이며 다중 메모로 중복·total/paging 변화 없음. | TC-202-01/02 |
+| FR-202-02 | 비어 있지 않은 메모 조건에는 #90과 동일한 실제 G7 ACTIVE/Session/Role/서명 Site 범위∩SiteGrant∩활성 Site가 필수다. 삭제/잘못된 SHA 메모와 미인가 Site는 결과·count·snippet 모두 제외한다. 빈 조건은 기존 공개 목록 동작을 보존한다. | TC-202-03/04 |
+| FR-202-03 | Current 기본/전체 버전 토글·페이지·새로고침·뒤로가기에서 메모 조건 보존. 안전한 제한 스니펫·일치 개수·정확한 Version+Memo 직접 링크로 결과 근거를 제공한다. 전용 #90 검색 유지. | TC-202-02/05 |
+| FR-202-04 | DB SQL로 조건·정렬·count·pagination 수행; DXF 다운로드/파싱이나 전체 메모 application cache 금지. 1k/10k/100k 합성 SQL 시간/계획/응답 상한을 실측하고 운영 SLA와 구분한다. | TC-202-06 |
+
+이 계약의 구현 책임과 AC는 Architecture/Decisions/TestPlan을 따른다. 실제 결과는 TestReport/FailureLedger만 정본이며 신규 PR CI는 시작 이후 모니터링하지 않는다.
+
+---
+
 ## PR #200 / #196 — 오류 복구 보완 요구
 
 - OFF에서 불필요한 Zone GET/503 console 오류0, ACTIVE 인가 조회 실패 후 보호 데이터 폐기와 retry 접근 유지, 재시도만으로 Canvas/Manager/Source 재생성0. 동일 Version renderer-only 전환은 완료 source GET 정확1회이며 full reload/Version/error 재시도 격리는 보존한다. 상세 수용 기준은 [Issue196](Issue196.md)/[TestPlan](TestPlan.md), 실제 실패·수리는 FailureLedger/TestReport를 따른다.

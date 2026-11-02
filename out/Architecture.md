@@ -1,3 +1,14 @@
+## #204 / #202 구현 경계 (2026-11-02)
+
+- **기준정보:** 기존 MasterRepository.update의 immutable ID 선택 + name 정규화/중복/미분류 방어를 재사용한다. UI는 ID·소속 불변과 이름 편집 가능성을 명시하며, 이름 저장 시 실제 변경한 name/active/kind만 PATCH해 다른 세션의 상태·종류를 덮어쓰지 않는다. 기존 G7 master permission, Origin/CSRF, 감사 transaction은 그대로 통과해야 한다. 이름을 FK로 사용하거나 기존 참조를 재생성하지 않는다.
+- **목록 입력:** CadListQuery의 선택적 `memo` 문자열은 trim/NFC·최대100자·C0/C1 제어문자/중복 거절. 공백은 빈값으로 기존 목록 분기에 남긴다. 홈과 API의 current=false 의미 차이(#93), 기존 drawingListUrl/두 GET form query 전달을 보존한다.
+- **인가:** 홈 페이지와 /api/cad-files는 nonblank memo에서 `src/server/services/authorized-drawing-memo-list.ts`의 공통 helper로 기존 #90 signed G7 search authority를 실제 서버에서 얻는다. 홈 options 조회도 인가 이후에 수행하며, 빈 조건은 기존 공개 목록/API Current 계약을 유지한다. 서비스/repository 경계에 허용 Site 집합을 전달하고 누락·빈 권한은 fail-closed. 런타임 공개 상태·UI 힌트나 전달된 Site 문자열로 인가하지 않는다. 보호 API 성공·오류는 private,no-store와 Referrer-Policy:no-referrer를 적용하고, 홈은 metadata.referrer=no-referrer로 내비게이션·prefetch에 검색어 Referer가 실리지 않게 한다. 에러에서 메모 count/preview를 반환하지 않는다.
+- **SQL:** 기존 Version outer query에 authorized Site 조건과 correlated EXISTS를 AND한다. EXISTS는 `m.version_id=v.id`, `m.source_sha256=v.sha256`, `deleted_at IS NULL`, 제목/본문 literal 부분일치 OR를 만족한다. #90과 같은 bound Prisma.sql + instr(lower())를 재사용하며 그룹명은 기본 목록 조건 대상이 아니다. DXF 지원 범위는 #90과 동일하다. Count와 페이지 행 및 페이지 내 preview는 같은 DB snapshot으로 조회한다. 일치 페이지는 count/page/ranked preview의 고정 3 SELECT이며, 빈 페이지는 preview 조회를 생략한다. ROW_NUMBER/COUNT window로 전송되는 SQL 결과를 페이지 Version당 최대3행으로 제한한다. SQLite 내부는 해당 페이지 Version의 일치 메모를 모두 검사·순위화하므로 내부 작업량까지 상수라는 의미는 아니다.
+- **응답 경계:** Version당 일치 개수와 최대3개 preview, 기존 160자 본문 snippet helper, plain text React, exact Version+Memo builder를 사용한다. Preview는 SQL에서 페이지 Version 및 순위/limit를 적용해 제한하며 전체 메모를 읽어 JS에서 자르지 않는다. 제목도 저장 모델의 길이 한도를 따른다. 정렬은 기존 Version 정렬, preview는 updated_at DESC/id ASC로 결정적이다. 숨김 메모는 #90처럼 검색 가능하나 삭제·SHA 불일치는 제외한다. 클릭 시 기존 #88의 Viewer 서버 인가 재검증을 유지한다.
+- **데이터 불변:** 두 이슈 모두 신규 Prisma/Schema/migration·원본 쓰기·Current 교체·운영 Auth 활성화가 없다. UUID/FK·Version·원본 SHA·메모·Zone는 rename 전후 비교로 입증한다.
+
+---
+
 ## PR #200 / #196 — 조회 capability와 재시도 UI·Source 수명주기 (2026-11-01)
 
 Zone UI는 public Runtime status를 먼저 읽어 명시적 OFF일 때 보호 Zone GET을 보내지 않는다. public ACTIVE는 인가 근거가 아니며 실제 Zone GET/쓰기의 Session·Site·Version·Gate 재검증은 기존 서버가 수행한다. 권한/통신 실패 시 보호 데이터는 폐기하되 오류·Retry panel 접근은 유지한다. 데이터 성공 여부와 재시도 UI gate를 분리하고 stale Version/actor 응답이 현재 세션을 덮지 못하게 한다.

@@ -2,7 +2,7 @@ import type {Prisma} from '../../generated/prisma/client';
 import {createZone as createZoneService} from '../../server/cad-business/zone-service';
 import {afterEach,beforeEach,expect,test,vi} from 'vitest';
 import {createHash,generateKeyPairSync,randomUUID} from 'node:crypto';
-import {chmodSync,mkdirSync,mkdtempSync,rmSync,writeFileSync} from 'node:fs';
+import {chmodSync,mkdirSync,mkdtempSync,readFileSync,rmSync,writeFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {createRequire} from 'node:module';
@@ -13,6 +13,8 @@ import {G7_GREENFIELD_BASELINE,G7_GREENFIELD_SCHEMA_ID,assertG7GreenfieldSchema}
 import {newSessionCandidate} from '../../server/auth/session';
 import {csrfProof} from '../../server/auth/login-service';
 import {createDb,type Database} from '../../server/db';
+import {MasterRepository} from '../../server/repositories/master';
+import {CadListRepository} from '../../server/repositories/cad-list';
 import {installMonotonicTestClock} from '../helpers/monotonic-clock';
 import {GET as list,POST as create} from '../../app/api/cad-files/[versionId]/zones/route';
 import {PATCH as patch,DELETE as remove} from '../../app/api/cad-files/[versionId]/zones/[zoneId]/route';
@@ -137,6 +139,48 @@ test('TC-Z196-02/06: signed Site roles, CSRF, idempotency, CAS and Audit',async(
  expect(raw.prepare('SELECT COUNT(*) AS n FROM "CadZoneCreateReceipt"').get()).toMatchObject({n:2});
  expect(raw.prepare('SELECT COUNT(*) AS n FROM "CadZoneAudit"').get()).toMatchObject({n:4});
  raw.close();
+});
+test('TC-204-03: full Greenfield memo, zone, Version, Current and source survive all five master renames',async()=>{
+ const f=setup(),masters=new MasterRepository(db!),listRepo=new CadListRepository(db!);
+ const zoneResponse=await create(request('POST','/api/cad-files/'+f.versionId+'/zones',f.tokens.editor,
+  zoneBody(f,'Stable zone',ring(0,0,10)),randomUUID()),args(f.versionId));
+ expect(zoneResponse.status).toBe(201);
+ const zone=(await zoneResponse.json()).zone;
+ const memoId=randomUUID(),now='2026-11-02T00:00:00.000Z';
+ await db!.cadMemo.create({data:{id:memoId,versionId:f.versionId,sourceSha256:f.sha,title:'Stable memo',content:'Persistent body',
+  anchorX:1,anchorY:2,offsetX:3,offsetY:4,createdById:f.ids.editor,updatedById:f.ids.editor,createdAt:now,updatedAt:now}});
+ const secondId=randomUUID(),secondStorage=f.floorId+'/'+secondId+'/original.dxf';
+ const firstStorage=path.join(f.root,'cad',f.floorId,f.versionId,'original.dxf');
+ const bytes=readFileSync(firstStorage),secondFile=path.join(f.root,'cad',secondStorage);
+ mkdirSync(path.dirname(secondFile),{recursive:true,mode:0o700});writeFileSync(secondFile,bytes,{mode:0o600});
+ await db!.cadFileVersion.create({data:{id:secondId,locationId:f.floorId,version:2,originalFilename:'second.dxf',
+  drawingName:'사용자 도면명',description:'설명',deletePasswordHash:'scrypt$synthetic',fileFormat:'DXF',fileSize:bytes.length,
+  sha256:f.sha,storagePath:secondStorage,registeredAt:'2026-11-02'}});
+ await db!.cadLocation.update({where:{id:f.floorId},data:{currentVersionId:secondId,nextVersion:3}});
+ const snapshot=async()=>({
+  floor:await db!.cadLocation.findUniqueOrThrow({where:{id:f.floorId},select:{id:true,buildingId:true,active:true,currentVersionId:true,nextVersion:true}}),
+  versions:await db!.cadFileVersion.findMany({where:{locationId:f.floorId},orderBy:{version:'asc'}}),
+  memo:await db!.cadMemo.findUniqueOrThrow({where:{id:memoId}}),
+  zone:await db!.cadZone.findUniqueOrThrow({where:{id:zone.id}}),
+  geometry:await db!.cadZoneGeometry.findMany({where:{zoneId:zone.id},orderBy:{versionId:'asc'}}),
+ });
+ const before=await snapshot(),sourceHash=createHash('sha256').update(bytes).digest('hex');
+ const levels=[['business-units','bu'],['products','product'],['sites','site-a'],['buildings','building'],['floors',f.floorId]] as const;
+ for(const [type,id] of levels)for(let n=1;n<=2;n++) {
+  const updated=await masters.update(type,id,{name:`M204 ${type} ${n}`});
+  expect(updated.id).toBe(id);
+ }
+ expect(await snapshot()).toEqual(before);
+ expect(createHash('sha256').update(readFileSync(firstStorage)).digest('hex')).toBe(sourceHash);
+ expect(createHash('sha256').update(readFileSync(secondFile)).digest('hex')).toBe(sourceHash);
+ const freshDb=createDb('file:'+f.dbfile),fresh=new CadListRepository(freshDb);
+ try {
+  const detail=await fresh.version(secondId);
+  expect(detail.location).toMatchObject({businessUnit:'M204 business-units 2',product:'M204 products 2',
+   site:'M204 sites 2',building:'M204 buildings 2',floor:'M204 floors 2'});
+  expect(detail.displayName).toBe('사용자 도면명');
+  expect((await listRepo.version(f.versionId)).location.floor).toBe('M204 floors 2');
+ } finally { await freshDb.$disconnect(); }
 });
 test('TC-Z196-03/05: parent containment, category reference, both reset modes and stale CAS',async()=>{
  const f=setup(),url='/api/cad-files/'+f.versionId;

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { resolveG7RuntimeGate } from '@/server/g7-operational/runtime-gate';
 import { openG7RuntimeDb } from '@/server/g7-operational/runtime-db';
@@ -12,9 +13,11 @@ import { CadTable } from '@/features/cad-list/cad-table';
 import { HomeSticky } from '@/features/cad-list/home-sticky';
 import { MemoSearchPage } from '@/features/cad-list/memo-search-page';
 import { memoSearchQuery } from '@/domain/cad-memo-search';
+import { withAuthorizedDrawingMemoList } from '@/server/services/authorized-drawing-memo-list';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+export const metadata = { referrer: 'no-referrer' as const };
 
 export default async function Page({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const gate = resolveG7RuntimeGate();
@@ -42,10 +45,31 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
   try { scoped = drawingListParams(params); }
   catch(error) { if (!(error instanceof CadError)) throw error; return <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-6"><p>{error.message}</p><Link className="mt-3 inline-block underline" href="/">검색 조건 초기화</Link></div>; }
   const { query, mode } = scoped;
-  const service = context().list;
-  const [result, options] = await Promise.all([service.search(scoped.params), service.options()]);
+  let result, options;
+  if (query.memo) {
+    try {
+      const origin = gate.state === 'ACTIVE' ? gate.origin : 'http://localhost';
+      const request = new Request(origin + '/', { headers: await headers() });
+      [result, options] = await withAuthorizedDrawingMemoList(request, (repo, sites) =>
+        Promise.all([repo.list(query, sites), repo.options()]));
+    } catch (error) {
+      if (!(error instanceof CadError)) throw error;
+      const auth = error.status === 401 || error.status === 403;
+      return <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-6">
+        <p>{auth ? '메모 검색에는 로그인과 해당 사업장의 읽기 권한이 필요합니다.' : error.status === 503 ? '메모 검색을 지금 사용할 수 없습니다.' : error.message}</p>
+        <div className="mt-3 flex flex-wrap gap-4">
+          {auth && <Link className="underline" href="/g7-runtime">계정 / 로그인</Link>}
+          <Link className="underline" href={drawingListUrl(query, query.page, mode)}>다시 시도</Link>
+          <Link className="underline" href="/">검색 초기화</Link>
+        </div>
+      </div>;
+    }
+  } else {
+    const service = context().list;
+    [result, options] = await Promise.all([service.search(scoped.params), service.options()]);
+  }
   const pages = Math.max(1, Math.ceil(result.total / result.pageSize));
-  const filtered = Boolean(query.filename || query.description || query.businessUnit || query.product || query.site || query.building || query.floor || query.format);
+  const filtered = Boolean(query.filename || query.description || query.memo || query.businessUnit || query.product || query.site || query.building || query.floor || query.format);
   return <HomeSticky><section>
     <div className="home-sticky-panel">
     <div className="home-title-row"><div><h1 className="text-xl font-bold">CAD 도면 목록</h1></div><div className="flex flex-wrap items-center gap-2"><Button asChild variant="outline"><Link href="/masters">위치별 버전 관리</Link></Button><Button asChild><Link href="/cad/upload"><Plus size={17}/>파일 등록</Link></Button></div></div>

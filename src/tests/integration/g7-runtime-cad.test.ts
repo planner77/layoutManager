@@ -267,6 +267,40 @@ describe('#153 canonical hierarchy mutations cannot bypass CAD Site authorizatio
   await expect(masters.create('sites',{name:'Expanded',parentId:'product',kind:'SITE'},proof(admin.token))).rejects.toMatchObject({code:'G7_SCOPE_EXTENSION_REQUIRED'});
   expect((await db.product.findUnique({where:{id:'product'}}))?.active).toBe(true);
  });
+ test('TC-204-04: scoped Admin renames inactive Site; denied roles and failed Audit roll back',async()=>{
+  const admin=await actor('Admin',['site-a']),reader=await actor('Reader',['site-a']);
+  const denied=proof(reader.token);
+  await expect(masters.update('sites','site-a',{name:'Reader denied'},denied))
+    .rejects.toMatchObject({code:'ACCESS_DENIED'});
+  const approved=proof(admin.token);
+  await masters.update('sites','site-a',{active:false},approved);
+  const beforeAudit=await db.auditEvent.count();
+  const renamed=await masters.update('sites','site-a',{name:'Inactive latest'},approved);
+  expect(renamed).toMatchObject({id:'site-a',name:'Inactive latest',active:false,productId:'product'});
+  expect(await db.auditEvent.count()).toBe(beforeAudit+1);
+  await db.userSiteGrant.delete({where:{userId_siteId:{userId:admin.id,siteId:'site-a'}}});
+  await expect(masters.update('sites','site-a',{name:'No grant'},approved))
+    .rejects.toMatchObject({code:'ACCESS_DENIED'});
+  expect((await db.cadSite.findUniqueOrThrow({where:{id:'site-a'}})).name).toBe('Inactive latest');
+  await db.userSiteGrant.create({data:{userId:admin.id,siteId:'site-a',grantedAt:BigInt(Date.now())}});
+  const raw=f.openDb();
+  try {raw.exec('CREATE TRIGGER "master_204_audit_failure" BEFORE INSERT ON "AuditEvent" BEGIN SELECT RAISE(ABORT,\'audit unavailable\'); END');}
+  finally {raw.close();}
+  await expect(masters.update('sites','site-a',{name:'Must roll back'},approved)).rejects.toThrow();
+  expect((await db.cadSite.findUniqueOrThrow({where:{id:'site-a'}})).name).toBe('Inactive latest');
+  expect(await db.auditEvent.count()).toBe(beforeAudit+1);
+ });
+ test('TC-204-02/04: even signed Admin direct PATCH cannot rename unclassified product',async()=>{
+  const admin=await actor('Admin',['site-a']);
+  const product=await db.product.create({data:{id:randomUUID(),businessUnitId:'bu',name:'미분류 제품',isUnclassified:true}});
+  const response=await patchMaster(new Request('http://0.0.0.0:3000/api/masters/products/'+product.id,{
+    method:'PATCH',headers:{host:'cad.example.test',origin:f.trust.origin,cookie:'cad_session='+admin.token,
+      'x-csrf-token':csrfProof(admin.token),'content-type':'application/json'},body:JSON.stringify({name:'Forbidden'})}),
+    {params:Promise.resolve({type:'products',id:product.id})});
+  expect(response.status).toBe(409);
+  expect((await response.json()).error.code).toBe('UNCLASSIFIED_IMMUTABLE');
+  expect((await db.product.findUniqueOrThrow({where:{id:product.id}})).name).toBe('미분류 제품');
+ });
  test('reclassification requires both source and destination explicit Site grants/scopes',async()=>{
   const source=await floor(),target=await floor('site-b'),admin=await actor('Admin',['site-a','site-b']);
   await db.product.update({where:{id:'product'},data:{isUnclassified:true}});

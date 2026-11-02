@@ -1,6 +1,7 @@
 import { Prisma } from "@/generated/prisma/client";
 import { type CadListItem, type CadListQuery } from "@/domain/cad-list";
 import { CadError, resolvedDrawingName } from "@/domain/cad";
+import { memoSearchSnippet } from "@/domain/cad-memo-search";
 import { type Database, writeTransaction } from "../db";
 const joins = Prisma.sql`JOIN CadLocation l ON l.id=v.location_id JOIN Building bl ON bl.id=l.building_id JOIN CadSite s ON s.id=bl.site_id JOIN Product p ON p.id=s.product_id JOIN BusinessUnit bu ON bu.id=p.business_unit_id`;
 const columns = Prisma.sql`v.id,v.location_id AS locationId,v.version,v.original_filename AS originalFilename,v.drawing_name AS drawingName,v.description,v.file_format AS fileFormat,v.file_size AS fileSize,v.registered_at AS registeredAt,bu.name AS businessUnit,p.name AS product,s.name AS site,s.kind AS siteKind,bl.name AS building,l.name AS floor,CASE WHEN l.current_version_id=v.id THEN 1 ELSE 0 END AS isCurrent`;
@@ -71,7 +72,9 @@ export class CadListRepository {
       displayName: resolvedDrawingName(l, file.version, drawingName),
     };
   }
-  async list(query: CadListQuery) {
+  async list(query: CadListQuery, authorizedSiteIds?: readonly string[]) {
+    if (query.memo && !authorizedSiteIds?.length)
+      throw new CadError("ACCESS_DENIED", "메모 검색 권한이 없습니다.", 403);
     const c: Prisma.Sql[] = [Prisma.sql`1=1`];
     if (query.filename)
       c.push(Prisma.sql`instr(v.original_filename,${query.filename})>0`);
@@ -88,6 +91,16 @@ export class CadListRepository {
       c.push(
         Prisma.sql`(l.current_version_id IS NULL OR l.current_version_id!=v.id)`,
       );
+    if (query.memo) {
+      c.push(Prisma.sql`s.active=1`);
+      c.push(Prisma.sql`s.id IN (${Prisma.join([...authorizedSiteIds!])})`);
+      c.push(Prisma.sql`v.file_format='DXF'`);
+      c.push(Prisma.sql`EXISTS (
+        SELECT 1 FROM CadMemo m
+        WHERE m.version_id=v.id AND m.source_sha256=v.sha256 AND m.deleted_at IS NULL
+          AND (instr(lower(m.title),lower(${query.memo}))>0 OR instr(lower(m.content),lower(${query.memo}))>0)
+      )`);
+    }
     const where = Prisma.join(c, " AND ");
     return writeTransaction(this.db, async (tx) => {
       const count = await tx.$queryRaw<{ total: bigint }[]>(
@@ -96,8 +109,46 @@ export class CadListRepository {
       const rows = await tx.$queryRaw<Row[]>(
         Prisma.sql`SELECT ${columns} FROM CadFileVersion v ${joins} WHERE ${where} ORDER BY v.registered_at DESC,v.created_at DESC,v.id ASC LIMIT ${query.pageSize} OFFSET ${(query.page - 1) * query.pageSize}`,
       );
+      const items = rows.map(item);
+      if (query.memo) {
+        // Page IDs come from the authorized query in this transaction. Each
+        // preview SQL result is bounded even when a Version has many memos.
+        const ids = items.map(row => row.id);
+        if (ids.length) {
+          const match = Prisma.sql`m.deleted_at IS NULL AND m.source_sha256=v.sha256 AND
+            (instr(lower(m.title),lower(${query.memo}))>0 OR instr(lower(m.content),lower(${query.memo}))>0)`;
+          const matches = await tx.$queryRaw<{
+            versionId: string; count: bigint | number; id: string; title: string; content: string;
+          }[]>(Prisma.sql`WITH ranked AS (
+              SELECT m.version_id AS versionId,m.id,
+                COUNT(*) OVER (PARTITION BY m.version_id) AS count,
+                ROW_NUMBER() OVER (PARTITION BY m.version_id ORDER BY m.updated_at DESC,m.id ASC) AS rank
+              FROM CadMemo m JOIN CadFileVersion v ON v.id=m.version_id
+              WHERE m.version_id IN (${Prisma.join(ids)}) AND ${match}
+            )
+            SELECT ranked.versionId,ranked.count,m.id,m.title,m.content
+            FROM ranked JOIN CadMemo m ON m.id=ranked.id
+            WHERE ranked.rank<=3 ORDER BY ranked.versionId,ranked.rank`);
+          const byVersion = new Map<string, CadListItem['memoMatches']>();
+          for (const match of matches) {
+            let group = byVersion.get(match.versionId);
+            if (!group) {
+              group = { count: Number(match.count), previews: [] };
+              byVersion.set(match.versionId, group);
+            }
+            group.previews.push({ id: match.id, title: match.title,
+              snippet: memoSearchSnippet(match.content, query.memo) });
+          }
+          for (const row of items) {
+            row.memoMatches = {
+              count: byVersion.get(row.id)?.count ?? 0,
+              previews: byVersion.get(row.id)?.previews ?? [],
+            };
+          }
+        }
+      }
       return {
-        items: rows.map(item),
+        items,
         total: Number(count[0].total),
         page: query.page,
         pageSize: query.pageSize,
