@@ -1,3 +1,13 @@
+## ADR-216 — 0.58.1 새 immutable version과 G7 forward edge (2026-11-03)
+
+**결정:** 기존 v0.58.0 및 GHCR App/Migrator digest가 #212/#208 병합 전 코드와 연결되어 있으므로 이를 강제 이동하지 않는다. 새 버전 0.58.1을 package/lock/tag/OCI identity로 채택하고 같은 zones G7 baseline/checksum/data/runtime contract를 사용하는 0.58.0→0.58.1 COMPATIBLE 전방 경로만 추가한다. Schema/SQL migration·운영 Volume 변화 없음.
+
+**원자성의 한계와 정책:** GHCR 두 version tag를 일괄 원자적 변경할 수 없으므로, 모두 없을 때에만 신규 빌드·양쪽 digest 검증 후 pair 승격, 모두 있으면 SKIP, 한쪽만 있으면 원인 분석을 위한 HALT(G7_RELEASE_PARTIAL_PAIR)를 선택한다. 다른 source commit에 이미 연결된 release tag는 HALT(G7_RELEASE_TAG_SOURCE_MISMATCH). Tag rerun 시 기존 version digest overwrite 금지. 자동 재시도 편의보다 provenance와 이전 버전 불변성 우선.
+
+**비대상:** #218 업로드 후 자동 Scene Worker, #113/#193 실 DXF·GPU 수용, 운영 .env 자동 수정, DB 초기화/강제 Upgrade, Auth/Writer 활성화, GHCR 직접 게시(이 PR 단계). PR CI 시작/코드 구현만으로 운영 수용 판정 금지. 근거 out/Issue216.md, out/TestPlan.md, src/deploy/g7-greenfield/README.md.
+
+---
+
 ## ADR-208-NODE-NOGO — 직접 Node `three-dxf-viewer@1.0.44` 전환 보류 및 안전 차단 (2026-11-03)
 
 **사실:** [PR CI #457](https://github.com/planner77/layoutManager/actions/runs/41520729471), source `b7909f4c98704fa14d63caf5baa750105af313ac`: Unit assertion 962건 모두 통과했음에도 `three-dxf-viewer/dist/main.js`의 WMF/RTF 관련 `window is not defined` **unhandled rejection 4건**으로 Quality 실패. 기존 `try/catch getFromPath`가 수명주기 밖 Promise를 기다리지 않아 partial success를 허용함을 증명.

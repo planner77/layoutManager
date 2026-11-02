@@ -1,3 +1,11 @@
+## #216 — 0.58.1 신규 불변 GHCR 릴리스 후보 (2026-11-03)
+
+#212 PR #214 Scene 진단 및 #208 PR #217 Node-direct NO-GO 코드는 Main에 병합되었지만 기존 0.58.0 App/Migrator pair 존재로 새 이미지 빌드가 생략되었습니다. [Release Issue #216](https://github.com/planner77/layoutManager/issues/216)은 이전 v0.58.0 tag/digest 보존, 새로운 0.58.1 버전, 0.58.0→0.58.1 G7 호환 registry edge 및 App/Migrator OCI pair 게시 게이트를 준비합니다. #218 자동 Scene Worker/Queue는 여전히 별도 미구현입니다.
+
+운영 적용 전 **전체 PR CI 성공 → Main 병합/실 GHCR digest·source/role 검증 → 운영자 수동 .env 변경/기존 볼륨 보존 → G7 host plan/승인·복구·별도 start** 순서로 진행합니다. 현재 구현은 배포나 현장 수용을 뜻하지 않습니다. [설계](out/Issue216.md), [운영 가이드](src/deploy/g7-greenfield/README.md).
+
+---
+
 ## #208 P1-A — 2026-11-03 Node 직접 DXF→Scene 변환 NO-GO 판정
 
 [PR CI #457](https://github.com/planner77/layoutManager/actions/runs/41520729471)에서 `three-dxf-viewer@1.0.44`의 내부 WMF/RTF 브라우저 의존으로 `window is not defined` 비동기 오류가 4건 발생했습니다. Unit 단언 962건이 통과했더라도 **Node 단독 Scene Builder가 안전하게 완성된 것이 아닙니다**. 현재 Node direct PoC는 이 라이브러리를 호출하기 전에 `SCENE_CONVERTER_UNAVAILABLE`로 차단하며, 별도 Three.js Scene 직렬화/복원 검증은 DXF parser 동등성의 근거로 사용하지 않습니다.

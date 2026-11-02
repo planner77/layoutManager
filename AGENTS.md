@@ -1,3 +1,13 @@
+## Issue #216 — 0.58.1 신규 immutable GHCR App/Migrator 릴리스 후보 (2026-11-03 KST)
+
+- 배경: #212 PR #214 및 #208 P1-A PR #217 코드가 Main에 반영되었으나 0.58.0 tag/이미지가 존재하여 Main CI GHCR 후보 빌드·게시가 SKIPPED되었다. 기존 v0.58.0/OCI digest를 보존하고 **0.58.1 신규 릴리스 후보**를 준비한다. 서버 자동 Scene Worker/Queue/UI는 #218 미구현으로 분리한다.
+- 새 버전: src/package.json과 lockfile 두 위치 버전을 일치시키고 G7 registry에 zones('0.58.1') 및 0.58.0→0.58.1 COMPATIBLE edge를 등록한다. 과거 0.56→0.57→0.58과 동일한 Schema ID, baseline, checksum, dataContract=G7-ZONES-DATA-V1, runtimeContract=G7-ZONES-RUNTIME-V1. 신규 SQL migration 없음; registry 미등록/계약 drift/역방향 금지.
+- GHCR: 새 version App·Migrator 이미지가 둘 다 없으면 candidate 두 digest와 OCI role/version/source/linux-amd64 검증 후 버전 태그를 승격한다. 둘 다 있으면 SKIP. 하나만 있으면 G7_RELEASE_PARTIAL_PAIR로 HALT, 기존 버전 overwrite 금지. Main 태그가 source와 불일치하면 G7_RELEASE_TAG_SOURCE_MISMATCH로 HALT. Tag rerun에서도 이미 있는 버전쌍 강제 재게시 금지.
+- 운영: 기존 volume/CAD/Auth/Writer/Current/DB와 .env 설정을 변경하지 않는다. 새 pair 실제 게시 후에만 운영자가 수동으로 GHCR_IMAGE, GHCR_MIGRATION_IMAGE, G7_RELEASE_SOURCE_COMMIT을 바꾸고 g7-deploy.py status/plan/계획 지문 승인/백업·격리 복원·별도 start를 수행한다.
+- **현재 경계**: 원격 소스/문서 변경까지. 로컬 npm/Vitest/tsc/Docker/Playwright NOT RUN. PR CI 최종 성공, Main 병합, GHCR 새 digest, 실 DXF·현장 업무 수용은 NOT VERIFIED. 요청대로 PR CI 시작 후 완료 모니터링 생략. 상세: out/Issue216.md, out/TestPlan.md, out/FailureLedger.md.
+
+---
+
 ## PR #217 / Issue #208 → #218 — P1-A CI SUCCESS·Main Squash 및 배포 경계 (2026-11-03 KST)
 
 [PR #217](https://github.com/planner77/layoutManager/pull/217)의 검증된 정확 HEAD `5501770c6773980672b1e2c6f54ccaaaf21874d4`에서 [PR CI #472 Run41524840539](https://github.com/planner77/layoutManager/actions/runs/41524840539) **8/8 SUCCESS**(Scope/Quality/Docker/G7 Greenfield/G7 Signed·Legacy/General Chromium shard1·2/Required Verify). 리뷰 thread 0/미해결 0, submitted review 0(Owner Managed), Main behind 0·충돌 0 확인 후 **Squash Main `a4f040c641d6d7192caa711142bfb66cfcab825c` 병합**. [Main CI Run41528536561](https://github.com/planner77/layoutManager/actions/runs/41528536561)은 정확 commit의 push로 시작 확인, 완료 모니터링 생략.

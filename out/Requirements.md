@@ -1,3 +1,17 @@
+## R-216 — 0.58.1 release/G7 upgrade acceptance (2026-11-03)
+
+| ID | 요구·차단조건 | 근거/시험 |
+| --- | --- | --- |
+| FR-216-01 | package/lock/OCI/tag 0.58.1 일관, 기존 v0.58.0 tag/digest 불변, #212/#208 Main 코드 포함, #218 자동 Worker 제외 | TC-216-01,09 |
+| FR-216-02 | 동일 zones schemaId/baseline/checksum/dataContract/runtimeContract의 명시 0.58.0→0.58.1 COMPATIBLE edge; 0.56/0.57 경유 전체 체인 검증, drift·downgrade·미등록 거부 | TC-216-02,03 |
+| FR-216-03 | GHCR 이미지 양쪽 신규면 candidate→digest→public pair, 양쪽 기존이면 SKIP, 부분 pair면 FAIL; 정확 release tag/source commit, amd64·role·revision 검증 | TC-216-05,06 |
+| FR-216-04 | 기존 installId/DB·CAD/SceneAsset/Current/Auth/Audit/Memo/Zone/Outline/Volume 보존; 사용자 수동 .env, 계획 SHA 승인·백업/격리복구·분리 start | TC-216-04,07 |
+| NFR-216-01 | PR CI Static/Unit/Build/일반 Chromium 2 shard/G7 Greenfield/Signed/Legacy/Docker 성공 전 병합 금지, GHCR 실 digest/현장 수용을 별도 검증 | TC-216-08,09,10 |
+
+현재 소스 반영 단계이며 실제 CI 성공/릴리스 게시·운영 수용은 NOT VERIFIED. out/Issue216.md와 out/TestPlan.md를 따른다.
+
+---
+
 ## R-208-A1 판정 갱신 — 직접 Node 변환 NO-GO, 서버 독립 대안 필요 (2026-11-03)
 
 [CI #457](https://github.com/planner77/layoutManager/actions/runs/41520729471): synthetic Unit assertion `962/962 PASS`에도 pinned `three-dxf-viewer@1.0.44`가 `window` 브라우저 전역에 의존하는 비동기 작업 4건을 unhandled rejection으로 방출해 전체 Quality FAIL. 이 경우 반환 Scene/manifest가 있어도 CPU-only 무인 Worker의 안정 실행이나 충실도 수용으로 볼 수 없다. 직접 Node PoC는 이후 `SCENE_CONVERTER_UNAVAILABLE`로 **fail-closed**하고 upstream DXF parser를 호출하지 않아야 한다.

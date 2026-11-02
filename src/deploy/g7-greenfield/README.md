@@ -1,3 +1,20 @@
+# #216 — immutable 0.58.1 릴리스 후보 및 운영 안내
+
+**주의:** 0.58.1은 기존 0.58.0 이미지의 #212/#208 수정 코드 미게시를 해소하기 위한 새 릴리스 후보입니다. [Issue #216](https://github.com/planner77/layoutManager/issues/216). **PR CI 성공, Main merge, GHCR 실제 이미지쌍 게시/digest 확인 전에는 운영 .env를 수정하지 마세요.** 기존 v0.58.0 tag/digest·운영 Volume/DB/CAD는 보존합니다. #218 자동 Worker는 포함하지 않습니다.
+
+**호환 경로:** G7 registry에 0.56.0→0.57.0→0.58.0→0.58.1, 모두 동일 semantic-zones Schema/baseline/checksum 및 data/runtime contract를 사용하는 COMPATIBLE edge가 존재합니다. 정확한 Schema·데이터 계약 검증 없는 직접 skip은 불가합니다. SQL migration 변경은 없습니다.
+
+**향후 승인된 배포 순서:**
+1. Main GHCR 게시가 완료되면 app 0.58.1, migrator 0.58.1-migrate를 각각 신뢰하는 저장소에서 pull하고 linux/amd64, role, version, 공통 source 40hex, 서로 다른 digest를 검증합니다. 새 digest와 G7_RELEASE_SOURCE_COMMIT이 실제 OCI revision과 같은지 확인합니다. 기존 이미지가 하나만 있는 상태는 G7_RELEASE_PARTIAL_PAIR로 HALT하고 수동 조사하며 자동 tag overwrite 하지 않습니다.
+2. 운영자가 기존 CAD_DATA_VOLUME_NAME 보존, .env의 GHCR_IMAGE, GHCR_MIGRATION_IMAGE, G7_RELEASE_SOURCE_COMMIT을 수동 변경합니다. latest 단독/임의 source 사용, 앱 켠 채 DB 변경, 기존 볼륨 초기화 금지.
+3. python3 src/scripts/g7-deploy.py .env status --json → python3 src/scripts/g7-deploy.py .env plan --json 실행. installed/target/registryChain/planId와 blockers, 백업·복구 영향을 확인합니다.
+4. 현재 계획의 실제 SHA로 python3 src/scripts/g7-deploy.py .env execute --approve-plan <64hex-planId> --json. 기존 App 중지/Writer0/같은 볼륨/백업·postcheck·격리복원 검증 유지. 성공 후 App은 STOPPED이며 plan --operation start --json 이후 별도 계획 지문 승인으로 기동합니다.
+5. 실제 로그인·Site 권한, 원본/Scene/메모·외곽선·구역, Current/Version, 로그와 고객 도면을 현장에서 독립 확인합니다. CI/합성 smoke만으로 운영 GO 주장 금지.
+
+**배포 공정 정책:** Main release workflow에서 새 tag 생성과 최초 GHCR App/Migrator pair 게시를 수행하며 정확 digest가 기록되기 전 Release #216 완료 금지. 0.58.0 과거 tag에 re-push 하지 않습니다. [정본 설계](../../../out/Issue216.md) / [시험](../../../out/TestPlan.md).
+
+---
+
 # #211 — G7 호스트 단일 배포 CLI / 기존 #209 업그레이드 엔진 재사용
 
 **권장 진입점은 `python3 src/scripts/g7-deploy.py`입니다.** 기존 아래 #209 `g7-upgrade.py`는 지원되는 하위 호환 도구이자 격리 복원 도구입니다. CLI는 .env를 직접 실행하는 shell source·자동 수정·이미지 pull을 하지 않고 Compose 결과와 실제 이미지 ID를 검사합니다. 단일 CLI의 일반 `--yes`는 없으며 **현재 계획의 64hex 지문**을 복사해 승인합니다. 추측한 버전/Source/계획값으로 실행하지 마세요.
