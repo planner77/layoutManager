@@ -1,3 +1,12 @@
+## PR #219 / #216 — PR CI #474 실패 및 두 테스트 보완 (2026-11-03 KST)
+
+- [PR CI #474 Run41533666311](https://github.com/planner77/layoutManager/actions/runs/41533666311), Source HEAD `73fde4ad0e0ff1fc0927a41a96a7332e0eee704d`: **completed/failure**. Quality (`125580157984`) TypeScript `TS2339` `prior.installId` 오류, Docker (`125580157616`)의 Python `test_g7_deploy.py:123` helper chain 3개 vs assertion 2개 불일치. Scope PASS, Verify FAIL(종속), Greenfield/Chromium/G7 Signed+Legacy E2E SKIPPED.
+- 수정: Manifest 설치 ID는 typed `f.old.installId`로 검증, 전체 `0.56.0→0.58.1` 정방향 registry chain을 Python expected 3 `COMPATIBLE`로 반영. 기존 G7 호환 정책, Code/Schema/Upgrade/host, GHCR pair fail-closed gate 불변. 관련 P1 리뷰의 지적 사항을 코드와 일치시킴.
+- 새 회귀의 로컬 npm/tsc/Vitest/Python/Docker/Playwright **NOT RUN**. 수정 커밋 push 후 PR CI를 시작하며 성공은 실제 CI 완료 전까지 NOT VERIFIED. 첫 #474의 실패 판정을 변경하지 않는다. 새 GHCR 이미지, Main 병합, 운영 .env/DB/CAD/Volume 변경, 자동 Scene Worker/현장 수용은 미수행.
+- [원인·정확 Job](FailureLedger.md), [계획](TestPlan.md), [Issue 설계](Issue216.md).
+
+---
+
 ## #216 — 0.58.1 코드 후보/시험 상태 (2026-11-03 KST)
 
 - 원인 증거: [Main CI Run41528536561](https://github.com/planner77/layoutManager/actions/runs/41528536561)에서 기존 0.58.0 App/Migrator 모두 존재하여 Skip duplicate version build=SUCCESS, 신규 App/Migrator candidate Build·Promote·OCI 측정 단계는 SKIPPED. Main CI 완료 SUCCESS와 신규 GHCR 게시 여부는 별개다.

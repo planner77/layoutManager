@@ -120,7 +120,7 @@ class G7DeployPolicyTests(unittest.TestCase):
         wrapped = subprocess.CompletedProcess(["host"], 0, stdout, "")
         with mock.patch.object(deploy, "command", return_value=wrapped):
             visible = deploy.upgrade(self.env, "plan")
-        self.assertEqual(visible["steps"], ["COMPATIBLE", "COMPATIBLE"])
+        self.assertEqual(visible["steps"], ["COMPATIBLE", "COMPATIBLE", "COMPATIBLE"])
         self.assertEqual(visible["from"], "0.56.0")
         self.assertEqual(visible["to"], "0.58.1")
 

@@ -1,3 +1,12 @@
+## PR #219 / Issue #216 — PR CI #474 재현된 테스트 계약 불일치 2건 (2026-11-03 KST)
+
+- **정확 실행:** [PR CI #474 Run41533666311](https://github.com/planner77/layoutManager/actions/runs/41533666311), `pull_request/completed/failure`, Source HEAD `73fde4ad0e0ff1fc0927a41a96a7332e0eee704d`. Scope Job `125579975459` SUCCESS. Quality `125580157984` FAILURE; Docker `125580157616` FAILURE; Required Verify `125581014485` FAILURE(종속), G7 Greenfield/General Chromium/G7 Signed·Legacy SKIPPED (별도 버그 아님).
+- **Failure A — Quality TypeScript:** `npm run typecheck`의 `TS2339` at `src/tests/integration/g7-greenfield-upgrade.test.ts:94:43`, `Property 'installId' does not exist on type '{ version: string; appImage: string; migratorImage: string; }'`. #216 신규 0.58.0→0.58.1 합성 시험에서 spread한 `prior`의 정적 타입이 `installId`를 선언하지 않음. 해결: 설치 marker가 원래 가지고 있던 `f.old.installId`와 업그레이드 후 `manifest.installId`를 비교한다. 테스트 타입을 `any`로 우회하거나 타입체크 완화 금지.
+- **Failure B — Docker Python pre-build:** `src/scripts/test_g7_deploy.py:123` `G7DeployPolicyTests.test_real_209_helper_filter_to_frontend_chain`, 실제 helper→frontend 결과 `['COMPATIBLE','COMPATIBLE','COMPATIBLE']` vs 기존 테스트 기대 `['COMPATIBLE','COMPATIBLE']`: `AssertionError: Lists differ`. #216 registry 0.58.0→0.58.1 edge를 fixture 입력에는 추가했지만 최종 기대 단언 하나가 누락됨. 해결: 정확 3개를 기대하도록 수정하고 기존 secret filtering/from/to 검증 유지. PR #219 Codex P1 inline review `PRRC_kwDOUQjDfc8AAAABCSQNNw` (database ID `4448324919`)와 일치. Python audit 11/11 PASS, #209 Python 11/11 PASS였으나 #211 Python 12개 중 1 FAIL. 실제 Docker Image/Runtime Smoke는 실행 이전에 중단; 이미지 빌드 실패로 오인 금지.
+- **경계/후속:** 코어 G7 registry, production DB/Volume/CAD, OCI tag/digest, GHCR, Auth/Writer/Scene 자동 Worker 미변경. CI Required Verify와 브라우저 skip을 루트 원인과 구별. GitHub 커넥터로 파일 보완; 로컬 npm/python/Docker/Playwright **NOT RUN**, 새 PR CI SUCCESS 아직 **NOT VERIFIED**. 수정 후 정확 HEAD로 PR CI를 재시작(새 commit push)하며 사용자 지시로 결과 완료 모니터링 생략. 실패 원인/기존 #474 기록 유지.
+
+---
+
 ## #216 — 기존 0.58.0 릴리스 이미지 중복 스킵 및 신규 0.58.1 보완 (2026-11-03 KST)
 
 - **정확 선행 증거:** [Main CI Run41528536561](https://github.com/planner77/layoutManager/actions/runs/41528536561) on a4f040c641d6d7192caa711142bfb66cfcab825c: Main 성공, GHCR Job SUCCESS이나 Check version images both-exist, Skip duplicate version build SUCCESS, 신규 App/Migrator build/candidate/promotion/OCI 측정은 SKIPPED. Runtime 병합 성공을 신규 image digest 게시 성공으로 오인한 릴리스 공백이며 GitHub Actions job failure 자체는 아니다.

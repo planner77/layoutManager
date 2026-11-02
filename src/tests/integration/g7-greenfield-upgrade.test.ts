@@ -91,7 +91,7 @@ describe('#209 Greenfield release upgrade',()=>{
     expect(readFileSync(f.dbPath)).toEqual(before);
     const manifest=JSON.parse(readFileSync(f.manifest,'utf8')) as Record<string,string>;
     expect(manifest.version).toBe('0.58.1');
-    expect(manifest.installId).toBe(prior.installId);
+    expect(manifest.installId).toBe(f.old.installId);
     expect(statusGreenfieldUpgrade(f.env).state).toBe('RESTART_SAME_RELEASE');
   });
 

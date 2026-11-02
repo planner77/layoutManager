@@ -31,3 +31,7 @@
 ## 검증 경계
 
 GitHub 커넥터로 원격 코드·시험 파일/운영 문서를 작성했다. 코드 작성 단계에서는 로컬 npm/TypeScript/Vitest/Playwright/Docker/GHCR 명령을 직접 실행하지 않았으며 결과를 PASS로 기재하지 않는다. 사용자 요청대로 PR CI 시작 후 완료 모니터링 생략. Main 병합/태그 생성/실 GHCR digest/운영 DB 업그레이드는 하지 않는다. 후속 실패 발생 시 정확 Run/Job/HEAD·원인/수리 정보를 out/FailureLedger.md에 누적한다.
+
+## PR CI #474 시험 계약 보완 기록 (2026-11-03 KST)
+
+PR #219 최초 Source HEAD `73fde4ad0e0ff1fc0927a41a96a7332e0eee704d`에서 [PR CI #474](https://github.com/planner77/layoutManager/actions/runs/41533666311) 실패. 신규 0.58.0→0.58.1 합성 통합 테스트의 `prior.installId` TS2339와 0.56→0.58.1 3단계 `COMPATIBLE` edge를 아직 2단계로 검사하던 Python #211 호스트 회귀의 독립 실패이다. 테스트 자료형과 기대 chain을 정합화하며 Registry/DB/GHCR/CI gate를 완화하지 않는다. 정확 결과와 재시도 경계는 [FailureLedger](FailureLedger.md)/[TestReport](TestReport.md) 참조.
