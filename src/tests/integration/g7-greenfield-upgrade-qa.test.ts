@@ -27,7 +27,7 @@ function fixture(){
   const dbDir=path.join(root,'db'),cad=path.join(root,'cad');
   mkdirSync(dbDir,{mode:0o700});mkdirSync(cad,{mode:0o700});
   const dbPath=path.join(dbDir,'cad.sqlite');
-  const release='ghcr.io/planner77/layoutmanager:0.58.0';
+  const release='ghcr.io/planner77/layoutmanager:0.58.1';
   const env={G7_GREENFIELD_MODE:'true',G7_GREENFIELD_AUTOMATED:'true',G7_AUTH_ENABLED:'false',
     G7_CAD_WRITE_CUTOVER_ENABLED:'false',CAD_STORAGE_BACKEND:'local',CAD_STORAGE_PATH:cad,
     DATABASE_URL:'file:'+dbPath,G7_DEPLOY_APP_IMAGE:release,G7_DEPLOY_MIGRATOR_IMAGE:release+'-migrate',
@@ -99,10 +99,10 @@ function migrationRegistry(dbPath:string):UpgradeRegistry{
     checksum:G7_GREENFIELD_BASELINE_CHECKSUM};
   return {releases:[
     {...common,version:'0.56.0',dataContract:'G7-ZONES-DATA-V1',runtimeContract:'G7-ZONES-RUNTIME-V1'},
-    {...common,version:'0.58.0',dataContract:'G7-ZONES-DATA-V2',runtimeContract:'G7-ZONES-RUNTIME-V2',
+    {...common,version:'0.58.1',dataContract:'G7-ZONES-DATA-V2',runtimeContract:'G7-ZONES-RUNTIME-V2',
       ddlSha256:targetDdl,history:[{name:G7_GREENFIELD_BASELINE,checksum:G7_GREENFIELD_BASELINE_CHECKSUM},
         {name:'qa_upgrade_probe',checksum}]}],
-    edges:[{from:'0.56.0',to:'0.58.0',kind:'MIGRATION',sql,
+    edges:[{from:'0.56.0',to:'0.58.1',kind:'MIGRATION',sql,
       sqlSha256:sha(sql),migrationName:'qa_upgrade_probe',migrationChecksum:checksum,
       precondition:'SELECT 1 AS ok',postcondition:'SELECT 1 AS ok'}]};
 }
@@ -156,7 +156,7 @@ describe('#209 independent failure and recovery QA',()=>{
       expect(journal.backupId).toMatch(/^[0-9a-f-]{36}$/);
       expect(statusGreenfieldUpgrade(f.env).state).toBe('RESTORE_REQUIRED');
       const liveManifest=JSON.parse(readFileSync(f.manifest,'utf8')) as Record<string,string>;
-      expect(liveManifest.version).toBe(phase==='MANIFEST_COMMITTED'?'0.58.0':'0.56.0');
+      expect(liveManifest.version).toBe(phase==='MANIFEST_COMMITTED'?'0.58.1':'0.56.0');
       const live=new Sqlite(f.dbPath,{readonly:true});
       try{expect(live.prepare('SELECT name FROM sqlite_master WHERE name=\'UpgradeProbe\'').get()?.name)
         .toBe('UpgradeProbe');}finally{live.close();}
@@ -262,7 +262,7 @@ describe('#209 independent failure and recovery QA',()=>{
     const backup=path.join(f.dbDir,'g7-upgrade-backups',result.backupId!,'cad.sqlite');
     writeFileSync(backup,'tampered',{mode:0o600});
     expect(()=>verifyRecoverySet(f.dbDir,result.backupId!)).toThrow('G7_UPGRADE_BACKUP_INVALID');
-    expect(readFileSync(f.manifest).toString()).toContain('0.58.0');
+    expect(readFileSync(f.manifest).toString()).toContain('0.58.1');
   });
 
   test('existing lock blocks planning and a SIGKILL at durable BACKED_UP leaves restore gate and permits isolated recovery',async()=>{

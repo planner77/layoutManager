@@ -1,3 +1,11 @@
+## DB-216 — 0.58.1 compatibility-only 릴리스 (DB/DDL 변경 없음)
+
+0.58.1은 0.58.0과 정확히 동일한 G7_GREENFIELD_SCHEMA_ID, G7_GREENFIELD_BASELINE, G7_GREENFIELD_BASELINE_CHECKSUM 및 G7-ZONES-DATA-V1/G7-ZONES-RUNTIME-V1을 사용한다. greenfield-upgrade-registry.ts에 오직 정방향 COMPATIBLE release edge를 추가한다. Prisma schema/SQL migrations/트리거/테이블 및 운영 DB·볼륨·CAD 원본·Version/Current·SceneAsset/메모/외곽선/구역/Auth/Audit는 변경하지 않는다.
+
+계획/Upgrade 엔진은 기존 DB migration checksum/DDL/FK와 marker·data hash·CAD content hash/복구 세트·installId를 확인한다. 일치하지 않는 설치나 역방향 upgrade는 등록 불가로 차단한다. CLI의 성공은 새 schema 생성이나 현장 수용을 의미하지 않는다. 관련 #209/#211/#216/#218.
+
+---
+
 ## #208 P1-A — Durable SceneBuildJob 스키마 설계안 (실 DB 미적용)
 
 `scene-build-job.ts`는 Queue/READY/Fencing이 아니라 안전한 TypeScript Domain 계약이다. P1-B 후보 스키마 `SceneBuildJob`에는 version+source SHA+builder+schema UNIQUE active, actorId/sessionId/requestId, state/phase/attempt/nextRunAt, leaseOwner/leaseExpiry/fencing, created/updated/finished UTC를 보관하고 `SceneBuildAttempt`로 단계/오류 코드·결과만 관리한다. 별도 `SceneOrphanJob`(이미지 정리)과 혼동 금지. 등록 Version INSERT+Job intent INSERT 한 SQLite transaction 필수. 원본/토큰/에러 전문·내부 경로 DB 저장 불허. 확정 전 Prisma/DDL/G7 baseline/upgrade registry를 추가하지 않았으며 기존 운영 DB 자동 ALTER 없음. 설계 [Issue208](Issue208.md), #209/#216 릴리스 게이트.

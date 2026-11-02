@@ -1,3 +1,12 @@
+## 0.58.1 — Issue #216 신규 immutable 릴리스 후보 (2026-11-03)
+
+- #212 Scene 수동 생성 실패 진단 및 #208 P1-A Node direct NO-GO 결과를 포함한 Main 코드의 새 이미지 게시를 위해 package/lock 0.58.1 동기화. v0.58.0 tag와 기존 App/Migrator digest 유지.
+- G7 registry에 기존 0.58.0→0.58.1 COMPATIBLE edge 추가. Semantic zones schema ID/baseline/checksum 및 data/runtime contract 동일, 신규 SQL migration 없음. 0.56→0.57→0.58→0.58.1 전체 경로 검증.
+- Main/tag GHCR release의 기존 pair 재게시 SKIP, 부분 pair HALT 및 source 불일치 HALT, 두 candidate digest 확인 후 버전 pair 승격 계약과 unit/통합/host Python 회귀 및 운영 문서 갱신.
+- GitHub 원격 PR 후보 단계. PR CI 성공·Main GHCR 실제 digest·운영 .env/DB/CAD/Volume 변경 및 현장 수용 NOT VERIFIED/NOT PERFORMED. 자동 Scene Worker/Queue/UI는 #218 별도 미구현. [Issue216](Issue216.md).
+
+---
+
 ## 2026-11-03 — #208 P1-A 검증 PR #217 병합, 전체 자동 Worker #218 승계·GHCR #216 별도
 
 - PR #217 exact 기능 HEAD `5501770c6773980672b1e2c6f54ccaaaf21874d4`의 [CI #472](https://github.com/planner77/layoutManager/actions/runs/41524840539) **8/8 SUCCESS**, 리뷰 thread/미해결0·충돌0·Main behind0 후 [Squash `a4f040c`](https://github.com/planner77/layoutManager/commit/a4f040c641d6d7192caa711142bfb66cfcab825c). [Main CI Run41528536561](https://github.com/planner77/layoutManager/actions/runs/41528536561) 시작만 확인·완료 미모니터링.

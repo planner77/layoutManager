@@ -1,3 +1,21 @@
+## PR #219 / #216 — PR CI #474 실패 및 두 테스트 보완 (2026-11-03 KST)
+
+- [PR CI #474 Run41533666311](https://github.com/planner77/layoutManager/actions/runs/41533666311), Source HEAD `73fde4ad0e0ff1fc0927a41a96a7332e0eee704d`: **completed/failure**. Quality (`125580157984`) TypeScript `TS2339` `prior.installId` 오류, Docker (`125580157616`)의 Python `test_g7_deploy.py:123` helper chain 3개 vs assertion 2개 불일치. Scope PASS, Verify FAIL(종속), Greenfield/Chromium/G7 Signed+Legacy E2E SKIPPED.
+- 수정: Manifest 설치 ID는 typed `f.old.installId`로 검증, 전체 `0.56.0→0.58.1` 정방향 registry chain을 Python expected 3 `COMPATIBLE`로 반영. 기존 G7 호환 정책, Code/Schema/Upgrade/host, GHCR pair fail-closed gate 불변. 관련 P1 리뷰의 지적 사항을 코드와 일치시킴.
+- 새 회귀의 로컬 npm/tsc/Vitest/Python/Docker/Playwright **NOT RUN**. 수정 커밋 push 후 PR CI를 시작하며 성공은 실제 CI 완료 전까지 NOT VERIFIED. 첫 #474의 실패 판정을 변경하지 않는다. 새 GHCR 이미지, Main 병합, 운영 .env/DB/CAD/Volume 변경, 자동 Scene Worker/현장 수용은 미수행.
+- [원인·정확 Job](FailureLedger.md), [계획](TestPlan.md), [Issue 설계](Issue216.md).
+
+---
+
+## #216 — 0.58.1 코드 후보/시험 상태 (2026-11-03 KST)
+
+- 원인 증거: [Main CI Run41528536561](https://github.com/planner77/layoutManager/actions/runs/41528536561)에서 기존 0.58.0 App/Migrator 모두 존재하여 Skip duplicate version build=SUCCESS, 신규 App/Migrator candidate Build·Promote·OCI 측정 단계는 SKIPPED. Main CI 완료 SUCCESS와 신규 GHCR 게시 여부는 별개다.
+- 변경 내용: 0.58.1 package/lock, semantic zones G7 0.58.0→0.58.1 COMPATIBLE edge, 기존 0.56/0.57 경유 체인, 합성 기존 설치 upgrade 및 DB 보전 회귀, Python host/Disposable WAL smoke 후보 버전 정합, immutable GHCR pair fail-closed, 신규 TypeScript 2종 unit.
+- 실행 구분: GitHub 원격 연결로 코드와 테스트/문서만 반영. 본 기록 작성 당시 별도 로컬 npm ci/typecheck/lint/Vitest/Playwright/Build/Docker/OCI **NOT RUN**. PR CI 전체 성공과 GHCR 새 App/Migrator digest 실제 게시/현장 수용은 **NOT VERIFIED**; PASS 주장 금지. PR 생성 시 CI 시작 여부만 확인하고 사용자 지시대로 완료 모니터링하지 않는다.
+- 검증 항목: [TC-216](TestPlan.md), [설계](Issue216.md), [실패 원장](FailureLedger.md). #218 자동 Scene Worker/Queue/UI, #113/#193 실제 복잡 DXF/GPU/2PC 모두 후속 별도.
+
+---
+
 ## PR #217 / #208 — Main CI 완료 결과 및 GHCR 실제 Skip 정정 (2026-11-03 KST)
 
 - [Main CI Run41528536561](https://github.com/planner77/layoutManager/actions/runs/41528536561), 기능 Squash SHA `a4f040c641d6d7192caa711142bfb66cfcab825c`: `completed/success`; scope Job `125562440174` SUCCESS, GHCR workflow Job `125562604239` SUCCESS. 그러나 두 Docker candidate Build 및 Version/latest pair promotion/OCI measurement는 **SKIPPED**이고 `Skip duplicate version build` 단계가 **SUCCESS**. **이번 PR 코드의 신규 GHCR 이미지 게시 0건**, workflow Job 성공을 release 완료로 표시 금지.

@@ -18,13 +18,13 @@ def fixture():
         "config": {"name": "test-g7"}, "app": {"container_name": "sample-app"},
         "migrate": {}, "volume": "g7-explicit-unused-volume", "project": "test-g7",
         "envSha": "a" * 64, "appId": "sha256:" + "a" * 64,
-        "migrateId": "sha256:" + "b" * 64, "targetVersion": "0.58.0", "projectName": None,
+        "migrateId": "sha256:" + "b" * 64, "targetVersion": "0.58.1", "projectName": None,
     }
 
 
 def app(state="absent", image_id=None):
     return {"containerId": "container-id" if state != "absent" else None,
-            "imageId": image_id, "version": "0.58.0" if image_id else None,
+            "imageId": image_id, "version": "0.58.1" if image_id else None,
             "state": state, "health": "UNKNOWN"}
 
 
@@ -75,10 +75,10 @@ class G7DeployPolicyTests(unittest.TestCase):
 
     def test_restart_plan_binding_and_noop(self):
         engine = {"state": "RESTART_SAME_RELEASE", "planId": "e" * 64,
-                  "from": "0.58.0", "to": "0.58.0", "steps": []}
+                  "from": "0.58.1", "to": "0.58.1", "steps": []}
         _, view, stamp = self.inspect_with({"Name": self.context["volume"], "Driver": "local"},
                                             app("running", self.context["appId"]), engine=engine)
-        self.assertEqual(view["installedVersion"], "0.58.0")
+        self.assertEqual(view["installedVersion"], "0.58.1")
         self.assertEqual(view["appState"], "running")
         self.assertEqual(view["businessAcceptance"], "NOT_VERIFIED")
         execute = deploy.build_plan(view, stamp)
@@ -90,7 +90,7 @@ class G7DeployPolicyTests(unittest.TestCase):
 
     def test_compatible_upgrade_delegates_to_209_helper(self):
         engine = {"state": "UPGRADE_COMPATIBLE", "planId": "f" * 64,
-                  "from": "0.56.0", "to": "0.58.0", "steps": ["COMPATIBLE", "COMPATIBLE"]}
+                  "from": "0.56.0", "to": "0.58.1", "steps": ["COMPATIBLE", "COMPATIBLE", "COMPATIBLE"]}
         _, view, stamp = self.inspect_with({"Name": self.context["volume"], "Driver": "local"},
                                             app("running", "sha256:" + "f" * 64), engine=engine)
         plan = deploy.build_plan(view, stamp)
@@ -110,8 +110,8 @@ class G7DeployPolicyTests(unittest.TestCase):
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         plan = {"state": "UPGRADE_COMPATIBLE", "planId": "a" * 64,
-                "from": "0.56.0", "to": "0.58.0",
-                "steps": ["COMPATIBLE", "COMPATIBLE"],
+                "from": "0.56.0", "to": "0.58.1",
+                "steps": ["COMPATIBLE", "COMPATIBLE", "COMPATIBLE"],
                 "secret": "must-not-appear", "privatePath": "/secret"}
         _, code, stdout = module.HostTests().invoke("plan", cli_output=json.dumps(plan))
         self.assertEqual(code, 0)
@@ -120,13 +120,13 @@ class G7DeployPolicyTests(unittest.TestCase):
         wrapped = subprocess.CompletedProcess(["host"], 0, stdout, "")
         with mock.patch.object(deploy, "command", return_value=wrapped):
             visible = deploy.upgrade(self.env, "plan")
-        self.assertEqual(visible["steps"], ["COMPATIBLE", "COMPATIBLE"])
+        self.assertEqual(visible["steps"], ["COMPATIBLE", "COMPATIBLE", "COMPATIBLE"])
         self.assertEqual(visible["from"], "0.56.0")
-        self.assertEqual(visible["to"], "0.58.0")
+        self.assertEqual(visible["to"], "0.58.1")
 
     def test_frontend_rejects_missing_or_incompatible_real_chain(self):
         base = {"state": "UPGRADE_COMPATIBLE", "planId": "a" * 64,
-                "from": "0.56.0", "to": "0.58.0"}
+                "from": "0.56.0", "to": "0.58.1"}
         for payload in ({**base},
                         {**base, "steps": []},
                         {**base, "steps": ["MIGRATION"]},
@@ -142,7 +142,7 @@ class G7DeployPolicyTests(unittest.TestCase):
 
     def test_schema_upgrade_binds_engine_exact_plan(self):
         engine = {"state": "UPGRADE_MIGRATION_REQUIRED", "planId": "f" * 64,
-                  "from": "0.58.0", "to": "0.59.0", "steps": ["MIGRATION"]}
+                  "from": "0.58.1", "to": "0.59.0", "steps": ["MIGRATION"]}
         self.context["targetVersion"] = "0.59.0"
         _, view, stamp = self.inspect_with({"Name": self.context["volume"], "Driver": "local"},
                                             app(), engine=engine)
@@ -163,7 +163,7 @@ class G7DeployPolicyTests(unittest.TestCase):
 
     def test_stale_plan_denied_before_apply(self):
         engine = {"state": "RESTART_SAME_RELEASE", "planId": "e" * 64,
-                  "from": "0.58.0", "to": "0.58.0", "steps": []}
+                  "from": "0.58.1", "to": "0.58.1", "steps": []}
         _, view, stamp = self.inspect_with({"Name": self.context["volume"], "Driver": "local"},
                                             app(), engine=engine)
         expected = deploy.build_plan(view, stamp)["planId"]

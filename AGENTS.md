@@ -1,3 +1,21 @@
+## PR #219 / Issue #216 — PR CI #474 실패 분석·수리 (2026-11-03 KST)
+
+- **실패 정확성:** [Run41533666311](https://github.com/planner77/layoutManager/actions/runs/41533666311), PR CI **#474**, Source HEAD `73fde4ad0e0ff1fc0927a41a96a7332e0eee704d`, `completed/failure`. Scope Job **125579975459 SUCCESS**. Quality Job **125580157984 FAILURE** (`npm run typecheck`: `TS2339` `src/tests/integration/g7-greenfield-upgrade.test.ts:94` — `prior.installId`는 `{version,appImage,migratorImage}` 정적 객체 타입에 존재하지 않음). Docker Job **125580157616 FAILURE** (실 Docker 빌드 전 Python 합성 회귀 `src/scripts/test_g7_deploy.py:123`: 실제 helper `COMPATIBLE` 3개 ↔ 테스트 기대 2개). Verify Job **125581014485 FAILURE**는 필수 Quality/Docker 실패의 종속 결과. Greenfield / Signed·Legacy / General Browser E2E는 SKIPPED이며 해당 기능 실패는 관측되지 않았다.
+- **수리:** `installId`는 신규 0.58.0 identity override 객체가 아닌 기존 설치 manifest fixture `f.old.installId`에서 확인한다. Python #209 helper→#211 frontend 통합 시험 기대값을 등록된 `0.56→0.57→0.58→0.58.1` **3 COMPATIBLE edge**와 일치시킨다. 실제 G7 registry·Version·Host 필터/PlanApproval·ABI/DB 스키마, GHCR publishing gate를 완화·우회하지 않는다. PR inline P1 thread(실제 helper 3-edge assertion mismatch) 관련 수리다.
+- **시험·릴리스 경계:** 로컬 npm/tsc/Python/Docker/Chromium 실행 **NOT RUN** (GitHub 원격 수정). 수정 HEAD의 PR CI는 새 push로 시작만 확인하고 완료 모니터링 생략. 최초 실패 #474는 PASS로 재분류하지 않고, 최종 CI SUCCESS·Main 병합·GHCR `0.58.1` App/Migrator 실제 digest 게시·업그레이드/현장 수용은 후속 별도. 운영 `.env`/DB/Volume/원본 CAD, 기존 `v0.58.0` 이미지 불변. [FailureLedger](out/FailureLedger.md), [TestReport](out/TestReport.md), [Issue216](out/Issue216.md).
+
+---
+
+## Issue #216 — 0.58.1 신규 immutable GHCR App/Migrator 릴리스 후보 (2026-11-03 KST)
+
+- 배경: #212 PR #214 및 #208 P1-A PR #217 코드가 Main에 반영되었으나 0.58.0 tag/이미지가 존재하여 Main CI GHCR 후보 빌드·게시가 SKIPPED되었다. 기존 v0.58.0/OCI digest를 보존하고 **0.58.1 신규 릴리스 후보**를 준비한다. 서버 자동 Scene Worker/Queue/UI는 #218 미구현으로 분리한다.
+- 새 버전: src/package.json과 lockfile 두 위치 버전을 일치시키고 G7 registry에 zones('0.58.1') 및 0.58.0→0.58.1 COMPATIBLE edge를 등록한다. 과거 0.56→0.57→0.58과 동일한 Schema ID, baseline, checksum, dataContract=G7-ZONES-DATA-V1, runtimeContract=G7-ZONES-RUNTIME-V1. 신규 SQL migration 없음; registry 미등록/계약 drift/역방향 금지.
+- GHCR: 새 version App·Migrator 이미지가 둘 다 없으면 candidate 두 digest와 OCI role/version/source/linux-amd64 검증 후 버전 태그를 승격한다. 둘 다 있으면 SKIP. 하나만 있으면 G7_RELEASE_PARTIAL_PAIR로 HALT, 기존 버전 overwrite 금지. Main 태그가 source와 불일치하면 G7_RELEASE_TAG_SOURCE_MISMATCH로 HALT. Tag rerun에서도 이미 있는 버전쌍 강제 재게시 금지.
+- 운영: 기존 volume/CAD/Auth/Writer/Current/DB와 .env 설정을 변경하지 않는다. 새 pair 실제 게시 후에만 운영자가 수동으로 GHCR_IMAGE, GHCR_MIGRATION_IMAGE, G7_RELEASE_SOURCE_COMMIT을 바꾸고 g7-deploy.py status/plan/계획 지문 승인/백업·격리 복원·별도 start를 수행한다.
+- **현재 경계**: 원격 소스/문서 변경까지. 로컬 npm/Vitest/tsc/Docker/Playwright NOT RUN. PR CI 최종 성공, Main 병합, GHCR 새 digest, 실 DXF·현장 업무 수용은 NOT VERIFIED. 요청대로 PR CI 시작 후 완료 모니터링 생략. 상세: out/Issue216.md, out/TestPlan.md, out/FailureLedger.md.
+
+---
+
 ## PR #217 / Issue #208 → #218 — P1-A CI SUCCESS·Main Squash 및 배포 경계 (2026-11-03 KST)
 
 [PR #217](https://github.com/planner77/layoutManager/pull/217)의 검증된 정확 HEAD `5501770c6773980672b1e2c6f54ccaaaf21874d4`에서 [PR CI #472 Run41524840539](https://github.com/planner77/layoutManager/actions/runs/41524840539) **8/8 SUCCESS**(Scope/Quality/Docker/G7 Greenfield/G7 Signed·Legacy/General Chromium shard1·2/Required Verify). 리뷰 thread 0/미해결 0, submitted review 0(Owner Managed), Main behind 0·충돌 0 확인 후 **Squash Main `a4f040c641d6d7192caa711142bfb66cfcab825c` 병합**. [Main CI Run41528536561](https://github.com/planner77/layoutManager/actions/runs/41528536561)은 정확 commit의 push로 시작 확인, 완료 모니터링 생략.

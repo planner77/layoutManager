@@ -31,7 +31,7 @@ def main():
     global PHASE
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--migrator", required=True, help="candidate migrator image tag")
-    parser.add_argument("--version", default="0.58.0")
+    parser.add_argument("--version", default="0.58.1")
     parser.add_argument("--source", help="40 lowercase hex image source commit; defaults to candidate label")
     options = parser.parse_args()
     if not re.fullmatch(r"\d+\.\d+\.\d+", options.version):

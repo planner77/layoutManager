@@ -1,3 +1,13 @@
+## #216 — 0.58.1 신규 불변 App/Migrator 릴리스 운영 경계 (2026-11-03)
+
+- **전제:** #212 및 #208 P1-A Main 코드 병합 후 기존 0.58.0 GHCR 이미지쌍 중복으로 실제 Scene 보완 코드가 게시되지 않았다. 이전 v0.58.0 tag/digest 보존, 신규 0.58.1의 App/Migrator 두 이미지가 모두 빌드·게시되고 정확한 source/version/role/linux-amd64/digest를 확인하기 전 운영 배포를 진행하지 않는다.
+- **호스트 절차:** 운영자가 검증한 0.58.1 App 및 0.58.1-migrate를 수동 pull한 후 기존 CAD_DATA_VOLUME_NAME을 유지하고 사설 .env에 GHCR_IMAGE/GHCR_MIGRATION_IMAGE/G7_RELEASE_SOURCE_COMMIT을 수동 변경한다. 최신 태그만 단독 사용하지 않는다.
+- python3 src/scripts/g7-deploy.py .env status --json → python3 src/scripts/g7-deploy.py .env plan --json. installed/target/registryChain/실제 64hex planId, 기존 source bytes/Schema·baseline·checksum, 충분한 backup 및 복구 준비, App 정지/Writer0 확인.
+- python3 src/scripts/g7-deploy.py .env execute --approve-plan <실제-planId> --json. Upgrade 성공 후에도 App STOPPED; plan --operation start로 새 지문을 확인해 별도 start 승인. lock/hold/restore required·부분 GHCR pair·불일치 이미지·미등록 경로는 HALT하며 수동 manifest/DB/볼륨 편집·강제 초기화 금지.
+- 실제 로그인/RBAC/CAD/Scene/Memo/Zone/Outline/Audit/Current/원본과 업무 화면은 별도 현장 수용. 이 PR은 CI/실 OCI 게시/현장 수용이 완료되지 않은 배포 전 후보. Worker/Queue는 #218로 구분. [runbook](../src/deploy/g7-greenfield/README.md), [design](Issue216.md).
+
+---
+
 ## #208 CI #457 — 직접 Node Scene converter NO-GO 운영 가이드 (2026-11-03)
 
 이 PR의 Node direct PoC는 임의 신규 DXF 업로드를 자동 Scene 변환하지 않는다. [CI #457](https://github.com/planner77/layoutManager/actions/runs/41520729471)에서 source/font 검증 후 `three-dxf-viewer@1.0.44`가 Node에 없는 `window`를 비동기적으로 참조하여 4 unhandled rejections 발생. 기존 Vitest assertions 962 PASS에도 **Unit Job/CI 실패**. 이를 서버 CPU-only Scene 생성 완료로 표시하거나 Worker를 켜서는 안 된다.

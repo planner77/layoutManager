@@ -1,3 +1,22 @@
+## PR #219 / Issue #216 — PR CI #474 재현된 테스트 계약 불일치 2건 (2026-11-03 KST)
+
+- **정확 실행:** [PR CI #474 Run41533666311](https://github.com/planner77/layoutManager/actions/runs/41533666311), `pull_request/completed/failure`, Source HEAD `73fde4ad0e0ff1fc0927a41a96a7332e0eee704d`. Scope Job `125579975459` SUCCESS. Quality `125580157984` FAILURE; Docker `125580157616` FAILURE; Required Verify `125581014485` FAILURE(종속), G7 Greenfield/General Chromium/G7 Signed·Legacy SKIPPED (별도 버그 아님).
+- **Failure A — Quality TypeScript:** `npm run typecheck`의 `TS2339` at `src/tests/integration/g7-greenfield-upgrade.test.ts:94:43`, `Property 'installId' does not exist on type '{ version: string; appImage: string; migratorImage: string; }'`. #216 신규 0.58.0→0.58.1 합성 시험에서 spread한 `prior`의 정적 타입이 `installId`를 선언하지 않음. 해결: 설치 marker가 원래 가지고 있던 `f.old.installId`와 업그레이드 후 `manifest.installId`를 비교한다. 테스트 타입을 `any`로 우회하거나 타입체크 완화 금지.
+- **Failure B — Docker Python pre-build:** `src/scripts/test_g7_deploy.py:123` `G7DeployPolicyTests.test_real_209_helper_filter_to_frontend_chain`, 실제 helper→frontend 결과 `['COMPATIBLE','COMPATIBLE','COMPATIBLE']` vs 기존 테스트 기대 `['COMPATIBLE','COMPATIBLE']`: `AssertionError: Lists differ`. #216 registry 0.58.0→0.58.1 edge를 fixture 입력에는 추가했지만 최종 기대 단언 하나가 누락됨. 해결: 정확 3개를 기대하도록 수정하고 기존 secret filtering/from/to 검증 유지. PR #219 Codex P1 inline review `PRRC_kwDOUQjDfc8AAAABCSQNNw` (database ID `4448324919`)와 일치. Python audit 11/11 PASS, #209 Python 11/11 PASS였으나 #211 Python 12개 중 1 FAIL. 실제 Docker Image/Runtime Smoke는 실행 이전에 중단; 이미지 빌드 실패로 오인 금지.
+- **경계/후속:** 코어 G7 registry, production DB/Volume/CAD, OCI tag/digest, GHCR, Auth/Writer/Scene 자동 Worker 미변경. CI Required Verify와 브라우저 skip을 루트 원인과 구별. GitHub 커넥터로 파일 보완; 로컬 npm/python/Docker/Playwright **NOT RUN**, 새 PR CI SUCCESS 아직 **NOT VERIFIED**. 수정 후 정확 HEAD로 PR CI를 재시작(새 commit push)하며 사용자 지시로 결과 완료 모니터링 생략. 실패 원인/기존 #474 기록 유지.
+
+---
+
+## #216 — 기존 0.58.0 릴리스 이미지 중복 스킵 및 신규 0.58.1 보완 (2026-11-03 KST)
+
+- **정확 선행 증거:** [Main CI Run41528536561](https://github.com/planner77/layoutManager/actions/runs/41528536561) on a4f040c641d6d7192caa711142bfb66cfcab825c: Main 성공, GHCR Job SUCCESS이나 Check version images both-exist, Skip duplicate version build SUCCESS, 신규 App/Migrator build/candidate/promotion/OCI 측정은 SKIPPED. Runtime 병합 성공을 신규 image digest 게시 성공으로 오인한 릴리스 공백이며 GitHub Actions job failure 자체는 아니다.
+- **원인:** package/tag 0.58.0이 이전 릴리스에 고정되고 두 이미지 이미 존재. v0.58.0/image SHA를 강제 이동할 수 없으며 latest 단독 변경도 금지.
+- **보완:** 새 package/lock 0.58.1, G7 동일 zones baseline/checksum/data/runtime의 forward COMPATIBLE edge, 합성 upgrade/host Python/Docker smoke version 정합 시험, GHCR 기존 pair SKIP·신규 pair만 게시·부분 pair G7_RELEASE_PARTIAL_PAIR FAIL·불확실한 registry network/auth 응답 G7_RELEASE_REGISTRY_CHECK_FAILED FAIL·source tag G7_RELEASE_TAG_SOURCE_MISMATCH FAIL, tag rerun overwrite 방지. v0.58.0 및 운영 .env/DB/Volume/CAD/Writer/Auth 불변.
+- **작업 브랜치/기준:** feat/216-immutable-0.58.1-g7-release; Main baseline 3c25c14812853a5183e0c5d82c02caca06a94a94. 이 기록 작성 시 원격 소스만 수정, 로컬 npm/Vitest/tsc/lint/Build/Playwright/Docker/OCI NOT RUN, 신규 PR CI 실패 또는 성공 결과는 아직 없음. 미확인 성공을 기록하거나 과거 실패 원장 내용을 덮어쓰지 않는다.
+- **향후 게이트:** 최종 PR 생성 후 review thread/충돌/Main behind 실제 확인, PR CI 시작만 확인(완료 모니터링 없음). PR CI full SUCCESS→Main 정확 source 병합→새 두 GHCR digest 검증 전 #216 종료/현장 GO 금지. #218 Worker 및 실제 고객 DXF 별도. [설계](Issue216.md), [시험](TestPlan.md).
+
+---
+
 ## PR #217 / #208 — 실제 Main CI 성공, GHCR 중복 버전 빌드 SKIPPED 확인 (2026-11-03 KST)
 
 - **Main CI 정확 실행:** Squash 기능 Main `a4f040c641d6d7192caa711142bfb66cfcab825c`의 [Run41528536561](https://github.com/planner77/layoutManager/actions/runs/41528536561) `push/completed/success`. Release scope Job `125562440174` SUCCESS, `Build and push to GHCR` Job `125562604239` SUCCESS **하지만 배포 산출물은 없음**. GitHub Steps에서 `Check version images on GHCR` SUCCESS, `Skip duplicate version build` **SUCCESS**, `Build application candidate` / `Build migration candidate` / `Promote paired release images after both candidates succeed` / `Measure published linux-amd64 OCI layer bytes` 모두 **SKIPPED**. 기존 `0.58.0` pair 존재를 확인하고 중복 게시를 생략하는 설계 그대로 실행됨.

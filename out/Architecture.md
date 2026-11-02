@@ -1,3 +1,15 @@
+## #216 아키텍처 — immutable 0.58.1 Release / G7 compatible upgrade (2026-11-03)
+
+**릴리스 계층:** 0.58.1 package+lock 버전과 annotated v0.58.1 태그, OCI version/revision 메타데이터를 일치시킨다. 기존 v0.58.0와 App/Migrator digest는 불변. 이 버전은 #212 수동 Scene 생성 오류 단계 진단·#208 Node direct NO-GO fail-closed 결과를 배포 가능하게 하는 목적이며 #218 Worker/Job 기능 구현은 포함하지 않는다.
+
+**G7 계약 계층:** source-controlled greenfield-upgrade-registry.ts가 유일한 쓰기 호환성 정본이다. 기존 0.56.0→0.57.0→0.58.0 및 새 0.58.0→0.58.1은 전부 COMPATIBLE; Schema ID/baseline/checksum/history/DDL·dataContract/runtimeContract 동일한 경우만 해석한다. 0.56.0→0.58.1 skip은 세 가지 edge 전부 검증한 경우만 승인한다. 기존 data/schema/UUID/Current/SceneAsset/메모·외곽선·구역·Audit 모두 유지, SQL migration 추가 없음. 미등록 버전·drift/downgrade fail closed.
+
+**OCI 쌍:** Main release workflow는 새 v0.58.1 태그가 정확 source HEAD를 가리키는지 검사하고 linux/amd64 App·Migrator를 각각 build-SHA candidate로 게시한다. 두 digest와 registry manifest를 사전 검사한 후 version-migrate→version→latest-migrate→latest를 승격한다. 태그 4개는 원자적 거래가 아니므로 부분 version pair를 자동 재게시하지 않고 G7_RELEASE_PARTIAL_PAIR로 차단; 양쪽 이미 존재하면 tag push/re-run 모두 SKIP. 실제 게시와 revision/role/digest는 향후 Main CI 산출물로 별도 확인.
+
+**호스트 경계:** #209/#211 기존 g7-deploy.py가 운영자 수동 .env, 동일 볼륨, 실제 OCI pair/version/source/role 확인, App 정지·Writer0, 계획 지문·backup/restore/postcheck·별도 start 승인을 유지한다. 현재 브랜치에서 운영 volume·환경변수/DB/도면 데이터 변경 없음. 설계 정본 out/Issue216.md.
+
+---
+
 ## #208 P1-A / CI #457 — Node direct Scene Builder의 비동기 DOM 의존과 차단 경계 (2026-11-03)
 
 `three-dxf-viewer@1.0.44`의 `getFromPath`는 직접 Node에서 반환 결과를 낼 수 있어도 내부 WMF/RTF 분기에서 독립 Promise를 생성해 `window is not defined` unhandled rejection 4건이 Vitest에 누적되었다. 반환된 Object3D/DTO와 unawaited 작업의 완료/안전성이 다르므로 try/catch/Promise.race/유효 manifest만으로 **정상 Scene 변환 성공을 증명하지 못한다**. CI Run41520729471 Unit 962/962 assertion PASS·4 errors/Quality FAIL이 이를 입증한다.
