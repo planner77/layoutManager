@@ -1,3 +1,18 @@
+## TC-216-RECOVERY — Immutable v0.58.1 GHCR 오류 복구·배포 후 게이트 (2026-11-03)
+
+| TC | 검사 방법 | 합격·차단 기준 |
+| --- | --- | --- |
+| TC-216-R01 | Docker Buildx `imagetools inspect` 오류 모양: 정확 ref `ERROR: REF: not found`, partial, 혼합 timeout·AUTH | 정확 동일 ref 미존재만 absent; 일반 `not found`/AUTH/NETWORK 비밀 무출력·fail-closed |
+| TC-216-R02 | App+Migrator 두 태그 존재/미존재/혼합 조합 | 기존 둘이면 SKIP, 모두 없을 때만 신규 pair 후보 허용, 한쪽만 있으면 ERROR/HALT; 기존 tag overwrite 0 |
+| TC-216-R03 | Main Recovery Squash 정확 제목, path allowlist, tag SHA `bbd526...`, source `934e556...`, tree `2a8ed...` | 정확 match에서만 source_sha=934e, 근접 제목/다른 source/다른 tag/tree/운영 Runtime 변경은 HALT |
+| TC-216-R04 | Original v0.58.1 tag commit checkout 및 OCI app/migrator candidate | 원본 `934e...` code/0.58.1 package, app+Migrate 양측 revision 동일 `934e...`, role 구별, linux/amd64, 이미지 digest 안전 검사 후 공개 version/latest |
+| TC-216-R05 | PR CI full static/unit/Docker/Chromium/G7/required verify | 최신 HEAD에 대해 8/8 SUCCESS, Review thread unresolved0, Main behind/conflicts0 확인 후 Main squash |
+| TC-216-R06 | Main GHCR 실 게시 후 OCI 확인, 정확 release source/tag 불변 | Main GHCR App `:0.58.1` 및 Migrator `:0.58.1-migrate` 실제 읽기 가능, 고유 digest/source/version/role/amd64, 기존 v0.58.0 불변. 결과 미검증이면 Issue #216 OPEN |
+
+현 시점 PR CI/Main GHCR 복구 결과는 **NOT VERIFIED**. 실 데이터/고객 DXF·운영 .env/DB/Volume 및 #218 Worker/Queue 제외. [원장](FailureLedger.md).
+
+---
+
 ## TC-216 — 0.58.1 immutable 릴리스 및 G7 Upgrade 수용 계획 (2026-11-03)
 
 | TC | 검증 내용 | 수용 조건 |

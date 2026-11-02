@@ -1,3 +1,12 @@
+## #216 / Main CI #138 GHCR 검사 실패, 복구 PR 검증 범위 (2026-11-03 KST)
+
+- 이전 PR [CI #475](https://github.com/planner77/layoutManager/actions/runs/41536335056) 8/8 SUCCESS/Source `5b5b5e7e3937e847fb114185268e4fd01eabe54c`; Main `934e5561ff7d54b388d59b6f8e8f40bd14bcd45e` Squash/동일 tree `2a8ed7596a4b3444a03fd839784c9e0a5a125a0c`. 이것은 **Runtime 코드 검증**, 실 GHCR 게시 수용과 분리.
+- [Main CI #138](https://github.com/planner77/layoutManager/actions/runs/41539913477) attempt1/2 모두 GHCR check `G7_RELEASE_REGISTRY_CHECK_FAILED`, Build/Promotion/OCI 지표 SKIPPED. Annotated `v0.58.1`의 원본 source 고정은 확인, Registry의 실제 0.58.1 pair 존재/부재·새 이미지 digest/role/source/amd64 및 현장 배포는 **미검증**.
+- 복구 변경: GHCR 정확 ref-bound missing 응답만 absent 허용, 인증/통신/모호 오류 fail-closed, source/tag object/tree 세 곳 고정 및 정확 recovery Squash/허용 path만 원본 release source checkout, App+Migrator OCI label/amd64/digest 사전 검증. 변경은 Workflow·Unit·문서이며 실제 Runtime/DB/Scene/Volume/원본 DXF 불변.
+- 신규 Unit: `issue216-ghcr-workflow.test.ts`에서 both-existing/both-absent/partial/ambiguous/mixed-not-found·tag source mismatch/approved recovery source·tag SHA/tamper 부정 시험. `g7-staging-ghcr-guard.test.ts`에서 정확 recovery scope 허용/근접 제목 및 운영 경로 거부. 로컬 npm/tsc/Vitest/Docker/Playwright/GHCR는 이번 원격 작업 시 **NOT RUN**; PR CI 시작·완료/별도 Main GHCR 실제 증거를 반드시 구분하고 PASS 선반영 금지.
+
+---
+
 ## PR #219 / #216 — PR CI #474 실패 및 두 테스트 보완 (2026-11-03 KST)
 
 - [PR CI #474 Run41533666311](https://github.com/planner77/layoutManager/actions/runs/41533666311), Source HEAD `73fde4ad0e0ff1fc0927a41a96a7332e0eee704d`: **completed/failure**. Quality (`125580157984`) TypeScript `TS2339` `prior.installId` 오류, Docker (`125580157616`)의 Python `test_g7_deploy.py:123` helper chain 3개 vs assertion 2개 불일치. Scope PASS, Verify FAIL(종속), Greenfield/Chromium/G7 Signed+Legacy E2E SKIPPED.

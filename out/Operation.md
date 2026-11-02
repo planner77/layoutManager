@@ -1,3 +1,12 @@
+## #216 GHCR 0.58.1 실패 복구 Runbook (2026-11-03)
+
+1. [Main CI #138](https://github.com/planner77/layoutManager/actions/runs/41539913477)에서는 `G7_RELEASE_REGISTRY_CHECK_FAILED`로 App/Migrator 후보 Build/Promotion 이전 차단. 기존 `v0.58.1` 태그가 `934e...` source commit에 정합하며 태그 이동·강제 재지정/수동 latest 업데이트를 해서는 안 된다.
+2. Recovery PR CI 전체 성공 및 정확한 Owner 승인 Squash title/allowlisted paths만 Main에 병합한다. GitHub Actions가 기존 tagged commit/tree SHA를 확인하고 `934e...` 원본을 checkout하여 빌드한다. manifest 조회 결과가 불명확하거나 이미지가 한 개만 존재하면 자동 복구가 중단되며 운영자가 인증·네트워크·정확 ref 상태를 조사한다.
+3. GHCR에서 `0.58.1` App와 `0.58.1-migrate` Migrator의 실제 digest/role/version/revision/linux/amd64를 둘 다 확인하고 `v0.58.0` 기존 태그/digest 불변을 확인한 후에만 Issue #216 완료 표시. Main job success만으로 확인 불가.
+4. 운영 환경 적용은 별도 승인: `.env` 수동 수정, 같은 `CAD_DATA_VOLUME_NAME`, 신뢰하는 OCI image pull/source check, `g7-deploy.py status/plan --json`의 정확 지문, maintenance/Writer0·백업·격리 복원·별도 start. 현장 DXF·2PC·GPU 및 #218 자동 Worker 미구현은 별도.
+
+---
+
 ## #216 — 0.58.1 신규 불변 App/Migrator 릴리스 운영 경계 (2026-11-03)
 
 - **전제:** #212 및 #208 P1-A Main 코드 병합 후 기존 0.58.0 GHCR 이미지쌍 중복으로 실제 Scene 보완 코드가 게시되지 않았다. 이전 v0.58.0 tag/digest 보존, 신규 0.58.1의 App/Migrator 두 이미지가 모두 빌드·게시되고 정확한 source/version/role/linux-amd64/digest를 확인하기 전 운영 배포를 진행하지 않는다.
