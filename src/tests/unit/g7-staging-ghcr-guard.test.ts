@@ -836,3 +836,30 @@ describe('#154 S3-5-R0 release-specific Owner decision NO-GHCR allowlist', () =>
     expect(tag.values).toContain('publish=true');
   });
 });
+
+describe('#216 exact immutable GHCR recovery source/scope (no alternate runtime build)',()=>{
+  const exact='#216 | Recover immutable v0.58.1 GHCR pair [G7-RECOVERY-0581]';
+  const allowed=['.github/workflows/docker-publish.yml',
+    'src/tests/unit/issue216-ghcr-workflow.test.ts',
+    'src/tests/unit/g7-staging-ghcr-guard.test.ts',
+    'AGENTS.md','out/FailureLedger.md','out/Issue216.md','out/TestReport.md'];
+  test('only exact recovery subject and vetted metadata/test files publish',()=>{
+    const result=runScope(allowed,exact);
+    expect(result.status,result.stderr).toBe(0);
+    expect(result.values).toContain('publish=true');
+    expect(result.values).not.toContain('publish=false');
+  });
+  test('near subject and production source changes fail closed',()=>{
+    for(const bad of [exact+' extra',exact+' ',exact+'-suffix']){
+      const result=runScope(allowed,bad);
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toContain('G7_RECOVERY_SUBJECT_INVALID');
+    }
+    for(const forbidden of ['src/Dockerfile','src/package.json',
+      'src/prisma/schema.prisma','src/server/g7-operational/greenfield-upgrade-registry.ts']){
+      const result=runScope([...allowed,forbidden],exact);
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toContain('G7_RECOVERY_SCOPE_FORBIDDEN');
+    }
+  });
+});
