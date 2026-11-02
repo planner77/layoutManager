@@ -1,3 +1,12 @@
+## 2026-11-03 — PR #217 / #208 CI #457: 직접 Node DXF 변환 NO-GO 및 unhandled rejection 차단
+
+- [Run41520729471](https://github.com/planner77/layoutManager/actions/runs/41520729471)의 Quality Unit은 962/962 assertion PASS이나 pinned `three-dxf-viewer@1.0.44`의 `getFromPath` 하위 WMF/RTF 브라우저 전역 `window` 접근으로 비동기 **unhandled rejection 4건** 발생, CI 실패. Docker/TypeScript/Lint 정상, E2E는 미실행.
+- `node-converter-poc.ts`: `NODE_DIRECT_DXF_STATUS=NO_GO_ASYNC_DOM_DEPENDENCY`를 도입하고 Node process에서 upstream 변환 호출 전에 `SCENE_CONVERTER_UNAVAILABLE`로 안전하게 종료. 오류 무시·window mock·partial Asset READY 금지.
+- `scene-node-converter-poc.test.ts`: 잘못된 기존 positive Node-DXF assertion을 **실제 증거에 따른 NO-GO** expected failure로 바꾸고, 별도 pure Three Group→기존 CUSTOM_DTO full validator→restore 시험으로 하위 serializer 동작만 검증. Source/Font validation negative tests 유지.
+- AGENTS/Requirements/Architecture/Decisions/Issue208/Logging/Operation/TestPlan/TestReport/FailureLedger/README를 최신 A1 NO-GO와 대안 headless/Node 파서 검증 대상으로 동기화. 운영 업로드·G7/Scene/Current/DB/Volume/Compose/릴리스 변경 없음. 수정 HEAD PR CI/후속 기술 GO/자동 Worker·목록 UI·Issue 종료는 별도 미검증/미구현.
+
+---
+
 ## 2026-11-03 — #208 / PR #217 CI #445 Font stage 실패·빌드 독립 보완
 
 - [PR CI #445 Run41517145247](https://github.com/planner77/layoutManager/actions/runs/41517145247) Quality Unit **959/960 PASS·1 FAIL**: Node Scene synthetic PoC가 `FONT_PREPARE/SCENE_FONT_UNAVAILABLE`로 중단. TypeScript/ESLint·Docker smoke는 성공, Browser/G7 E2E는 선행 실패로 미실행. root cause는 빌드 시 생성되는 `CadKorean.typeface.json`을 빌드 **이전** Unit에서 읽는 순서 불일치.
