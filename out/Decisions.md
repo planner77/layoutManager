@@ -1,3 +1,11 @@
+## ADR-212 — 수동 Scene 진단을 원본/렌더/게시 상태에서 분리 (2026-11-02)
+
+**결정:** 데이터 손실이 없는 최소 수리로 브라우저 수동 `source=build`에 단계별 allowlist 실패 진단과 CUSTOM_DTO 직접 직렬화 및 기존 도메인/manifest 검증을 적용한다. 기존 `root.toJSON/inspect`는 THREE_JSON일 때만 유지; preflight는 실 Object3D nodes/속성 수를 제한하며 고객 도면에 대한 성능·완료 가능성을 선행 보장하지 않는다. Viewer `dxf-viewer` fallback 표시 성공은 Scene 후보 생성 및 서버 READY와 독립이고, 후보가 없으면 Scene 저장 API 호출을 UI·함수 이중 차단한다.
+
+**배제:** Error 원문/문자 내용/Handle/원본SHA/경로/stack의 Viewer metric·GitHub 기록, upstream font와 DXF parse의 관측 불가능한 원인 단정, 크기/노드 상한 완화, 미지원 객체 일부 누락한 Scene 저장, 원본 자동 교체, 기존 READY 덮어쓰기, LLM 변환, 브라우저 background job을 #208 영속 worker로 간주하는 대안. 기존 Editor/Site/G7 Auth·Audit·Revision/CAS 및 persisted source/Scene 원자성 유지. [Issue212](Issue212.md). 실제 Unit/CI/현장 결과 확인 전 합격 상태 아님.
+
+---
+
 ## ADR-211-P2 — 안전한 Registry Chain 출력 보증 (2026-11-02)
 
 등록 upgrade의 운영자 계획에 chain이 누락되면 approve UX가 잘못된 정보를 제공하므로 **빈 배열로 계속하기보다 차단**한다. 허용 출력값은 #209 엔진이 이미 제공하는 단계 종류 `COMPATIBLE/MIGRATION`의 순서 있는 길이 제한 배열이다. SQL·Schema 세부 내용이나 추가 객체는 전달하지 않는다. #211 frontend는 chain 형태/해시/decision과 비어 있지 않음 조건을 재검사하되 실제 registry/마이그레이션 엔진을 복제하지 않는다. 단위 검증은 **Host filter를 실제 호출하여 serialise한 결과 → frontend**에 연결해 mocking blindspot을 차단한다. #436의 GF-109 static CI 계약은 구 Compose 첫 실행 리터럴을 새 Host CLI 정확 승인 시퀀스로 갱신하며 first-admin/CAD/재시작 DB 보존 테스트는 유지한다. [P2 이력](FailureLedger.md).
