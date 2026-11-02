@@ -2,7 +2,7 @@
 
 | TC | Synthetic/fault case | 기대 |
 |---|---|---|
-| TC-212-01 | 안전한 합성 DXF/THREE Group·반복 중첩 Group/Line/Mesh, UTF-8 한글 TEXT/MTEXT fixture | 실 Object3D node/geometry/속성 숫자 집계, STABLE ref/Layer/WCS/geometry·dtype round-trip/manifest SHA 유효 |
+| TC-212-01 | 안전한 합성 소형 DXF/THREE Group·반복 중첩 Group/Line/Mesh, UTF-8 한글 TEXT/MTEXT fixture. 5MiB 미만과 20MiB 이상 실 파일은 별도 구간으로 관측 | 실 Object3D node/geometry/속성 숫자 집계, STABLE ref/Layer/WCS/geometry·dtype round-trip/manifest SHA 유효 |
 | TC-212-02 | `CUSTOM_DTO` serializer `root.toJSON` spy throw; `THREE_JSON`은 기존 inspect | Custom에서는 중복 `toJSON` 호출0, 양 경로 무결성 보존; 오류 시 browser Artifact/서버 POST 없음 |
 | TC-212-03 | 원본 SHA mismatch, 구조 오류, text index codepage, upstream font/parser 실패, DTO unsupported, invalid payload | 정확 stage+allowlisted errorCode. font/parser를 구별할 수 없는 경우 CONVERTER_UNAVAILABLE/UNKNOWN; cause 원문/Stack/URL/CAD 누출0 |
 | TC-212-04 | Object3D node100k+/scalar2M+/depth128+/payload32MiB+ 경계 | 제한 즉시 명시 실패·실수로 상한 증가0·미완료 `ARTIFACT_READY` 금지 |
