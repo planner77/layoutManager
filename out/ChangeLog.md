@@ -1,3 +1,13 @@
+## 2026-11-03 — PR #217 / Issue #208 CI #442 TS 수리·안전 타입 계약 보강
+
+- CI Run41514760273 (`completed/failure`)의 Quality TS2345×1/TS2322×2 및 Docker의 동일 TypeScript 빌드 종속 실패를 분석. Reader/G7/Runtime·Docker Config 문제로 오진하지 않음.
+- `node-converter-poc.ts`: 불신 Font JSON을 runtime guard 후 `FontLoader.parse` 입력으로 좁혀 실패시 공개 안전 코드만 반환.
+- `scene-serialization.ts`: 실제 `preflightSceneRoot` 반환 4개 통계를 정확한 `ScenePreflightStats` required type으로 정의. 필수 개수를 임의 0으로 치환하거나 기하 검증·Scene cap을 완화하지 않음.
+- `scene-build-diagnostics.test.ts` 및 `scene-node-converter-poc.test.ts`: numeric compile contract, malformed typeface/에러 비노출 회귀 추가. AGENTS/Issue208/TestPlan/TestReport/FailureLedger 갱신.
+- 새 PR CI 시작 전 완료·Node CPU-only 실제 변환/OCI 수용·Worker/Queue/UI/배포/Issue 종료 **NOT VERIFIED**. P1-A 선행 게이트 유지.
+
+---
+
 ## 2026-11-03 — Issue #208 P1-A Node CPU-only Scene PoC / 설계 게이트 (부분 구현)
 
 - 신규 `node-converter-poc.ts`: pinned 실제 DXF→Three Object3D→CUSTOM_DTO/manifest validator→restore를 Node CPU-only에서 시도하는 격리 실험. 안전한 SHA/font/크기 실패 분류, synthetic fixture 실행형 Vitest.
