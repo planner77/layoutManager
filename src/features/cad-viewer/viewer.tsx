@@ -49,7 +49,7 @@ import { selectRenderer, type ViewerFormat, type ViewerRenderer } from '@/viewer
 import { ViewerSource } from '@/viewers/core/source';
 import { cadViewerUrl, cadMemoViewerUrl } from '@/viewers/core/link';
 import { ViewerLoadError, isViewerCancellation } from '@/viewers/core/viewer-load-error';
-import {isKnownSafeSceneBuildError,type SceneBuildDiagnostics} from '@/viewers/core/scene-build-diagnostics';
+import {isKnownSafeSceneBuildError,type SceneBuildDiagnostics,type SceneBuildErrorCode} from '@/viewers/core/scene-build-diagnostics';
 import {sceneLoadNotice,type SceneFallback} from './scene-status';
 import {runtimeCadHeaders} from '@/features/g7-runtime/client';
 import type {SceneWorkCommand,SceneWorkState} from '@/domain/scene-work';
@@ -1834,7 +1834,7 @@ export function CadViewer({
           error instanceof ViewerLoadError && error.stage !== 'source' && error.stage!=='scene' && !fallbackTried.current) {
         fallbackTried.current=true; fallbackReason.current=`${error.stage}:${error.reasonCode}`;
         if(isKnownSafeSceneBuildError(error)){
-          fallbackSceneFailure.current={phase:error.phase,code:error.reasonCode as keyof typeof import('@/viewers/core/scene-build-diagnostics').SCENE_BUILD_MESSAGES};
+          fallbackSceneFailure.current={phase:error.phase,code:error.reasonCode as SceneBuildErrorCode};
           fallbackSceneDiagnostics.current=error.diagnostics;
         }
         setRecoveryNotice(`three-dxf-viewer 처리 실패 (${fallbackReason.current}). dxf-viewer로 한 번 다시 엽니다.`);
