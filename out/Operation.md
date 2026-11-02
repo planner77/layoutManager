@@ -1,3 +1,9 @@
+## #208 P1-A 운영 금지선 — Node converter 실험과 자동 생성 구별 (2026-11-03)
+
+`src/server/scene/node-converter-poc.ts`는 테스트 전용이며 App API/Worker/Compose/환경변수/Volume/DB schema에 연결되지 않았다. 최초 DXF 업로드 후 서버 Scene 자동 생성, 목록 job status/재시도는 **아직 사용할 수 없다**. 수동 Scene 생성·저장 및 서버 READY 검증은 #212 기존 절차대로 수행한다. P1-A Node/font/encoding/geometry/round-trip 합성 CI 성공·CPU-only OCI·현장 20MiB DXF 모두 별도 확인이 필요하고, 미확인 시 AUTO WORKER 설정/이미지 enable 금지. G7 active/Editor/Site·source hash/버전/Current/기존 READY/영속 메모·외곽선/Zone 보존, #209 등록 업그레이드와 실제 Volume 이관 금지 정책을 계속 따른다. 후속 Queue·Lease/OOM/timeout/Recovery Runbook은 [Issue208](Issue208.md).
+
+---
+
 ## #212 — 수동 DXF Scene 재생성 실패 시 운영 절차 (2026-11-02)
 
 1. Viewer의 `도면 > 원본 DXF로 Scene 생성/재생성`을 **명시적으로** 실행한다. 생성 완료 여부는 `도면 표시 완료`가 아니라 `THREE_SCENE_ARTIFACT_READY` 상태와 **Scene Asset 저장** 명령의 활성화로 확인한다. 저장 후에는 서버 `READY` 응답과 재접속 시 `READY_SCENE` 복원을 별도로 확인한다. 저장 전 브라우저 후보는 서버에 영속화되지 않는다.
