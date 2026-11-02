@@ -2,6 +2,8 @@ import { validateSceneAsset, validateSceneManifest, validSceneRef, type SceneMan
 import { validateSceneViewerData } from './scene-viewer-data';
 import { sceneSha256 } from './scene-digest';
 
+export const SCENE_PAYLOAD_LIMITS = Object.freeze({bytes:32*1024*1024,nodes:100_000,attributeScalars:2_000_000,depth:128});
+
 const record = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
 const finite = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 const uint = (v: unknown): v is number => Number.isSafeInteger(v) && Number(v) >= 0;
@@ -18,8 +20,8 @@ function keys(value: Record<string, unknown>, allowed: string[]) {
 }
 /** Pure bounded validation of the selected S2 format. No Three/DOM/network/DB. */
 export function validateStoredScenePayload(bytes: Uint8Array, manifest: SceneManifest): void {
+  if (bytes.length > SCENE_PAYLOAD_LIMITS.bytes) fail();
   validateSceneManifest(manifest, {scope:manifest.scope,format:'CUSTOM_DTO',byteLength:bytes.length,sha256:sceneSha256(bytes)});
-  if (bytes.length > 32 * 1024 * 1024) fail();
   const dto: unknown = JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));
   if (!record(dto) || dto.schema !== 1) fail();
   keys(dto,['schema','asset','root','viewerData']);
@@ -30,12 +32,12 @@ export function validateStoredScenePayload(bytes: Uint8Array, manifest: SceneMan
     keys(object as unknown as Record<string,unknown>,['ref','treePath','kind','visible','transform','revision']);
     keys(object.ref as unknown as Record<string,unknown>,['versionId','sourceSha256','schema','builder','renderer','frame','sourceUnit','sceneId','id','origin','sourceRef','derivedFrom']);
   }
-  if (asset.objects.length > 100_000 || asset.state !== 'READY' || asset.sceneId !== manifest.sceneId ||
+  if (asset.objects.length > SCENE_PAYLOAD_LIMITS.nodes || asset.state !== 'READY' || asset.sceneId !== manifest.sceneId ||
       asset.revision !== manifest.revision || JSON.stringify(asset.scope) !== JSON.stringify(manifest.scope)) fail();
   if (dto.viewerData !== undefined) validateSceneViewerData(dto.viewerData);
   let count = 0, scalars = 0;
   const walk = (node: unknown, path: number[]) => {
-    if (!record(node) || path.length > 128 || ++count > 100_000) fail();
+    if (!record(node) || path.length > SCENE_PAYLOAD_LIMITS.depth || ++count > SCENE_PAYLOAD_LIMITS.nodes) fail();
     keys(node,['type','name','visible','matrix','ref','layer','geometry','materials','children']);
     const expected = asset.objects[count-1];
     if (!expected || !nodeTypes.has(String(node.type)) || !validSceneRef(node.ref,asset.scope) ||
@@ -57,7 +59,7 @@ export function validateStoredScenePayload(bytes: Uint8Array, manifest: SceneMan
             !Array.isArray(attribute.array) || attribute.array.length % attribute.itemSize ||
             typeof attribute.normalized !== 'boolean' || typeof attribute.arrayType !== 'string' ||
             !Object.hasOwn(arrays,attribute.arrayType)) fail();
-        scalars += attribute.array.length; if (scalars > 2_000_000) fail();
+        scalars += attribute.array.length; if (scalars > SCENE_PAYLOAD_LIMITS.attributeScalars) fail();
         const range = arrays[attribute.arrayType];
         if (attribute.array.some(n => !finite(n) || range && (!Number.isInteger(n) || n < range[0] || n > range[1]) ||
             attribute.arrayType === 'Float32Array' && !Number.isFinite(Math.fround(n)))) fail();

@@ -1,3 +1,32 @@
+## TC-212-10 — Greenfield R3 Canonical Scene Artifact 상태 E2E 회귀 (2026-11-03 KST)
+
+`typed-outlines.spec.ts`의 명시적 `원본 DXF로 Scene 생성/재생성`은 검증된 `three-dxf-viewer` renderer와 함께 `scene-status`의 `THREE_SCENE_ARTIFACT_READY` 및 `서버에 저장하기 전이므로 READY 상태는 아닙니다`를 확인한다. `FALLBACK_DXF_DISPLAYED_SCENE_FAILED`가 나타나면 정상 변환 성공으로 처리하지 않는다. 구 문구 `원본 DXF 변환 완료`로 상태 판별·복구하는 우회 금지. R3 원본 기반 외곽선·타입 변경/비활성·Scene 저장/교체·재접속·Reset·Audit/Source WCS 회귀는 그대로 유지하고 26개 Greenfield 및 다른 모든 PR 필수 Job의 실제 재실행을 요구한다. 확인 전 PASS 또는 현장 Scene 수용 선언 불가.
+
+---
+
+## TC-212-09 — TS18046/거절 Error 정적·런타임 일치 회귀 (2026-11-03 KST)
+
+`scene-build-diagnostics.test.ts`의 untrusted `manager.load` 거절 값은 계속 `unknown`으로 처리한다. `ViewerLoadError` 런타임 `instanceof` 확인 및 부정 분기로 fail-closed 한 후에만 `stage/reasonCode/message`를 읽는다. spoofed `ViewerLoadError`·무허가 reasonCode·일반 `Error`가 모두 안전한 `adapter-load:LOAD`와 고정 메시지로 정규화되고 비밀 메시지를 누출하지 않아야 한다. `npm run typecheck` (strict), 관련 Vitest, 전체 PR CI(기존 Docker/Browser 포함)를 재실행한다. 실행/성공은 새 결과 확인 전 NOT VERIFIED. 기존 소스/현장 데이터와 UI/서버 인가/동작은 수정하지 않는다.
+
+---
+
+## TC-212 — 수동 Scene 변환·진단·직렬화 수용 게이트 (2026-11-02)
+
+| TC | Synthetic/fault case | 기대 |
+|---|---|---|
+| TC-212-01 | 안전한 합성 소형 DXF/THREE Group·반복 중첩 Group/Line/Mesh, UTF-8 한글 TEXT/MTEXT fixture. 5MiB 미만과 20MiB 이상 실 파일은 별도 구간으로 관측 | 실 Object3D node/geometry/속성 숫자 집계, STABLE ref/Layer/WCS/geometry·dtype round-trip/manifest SHA 유효 |
+| TC-212-02 | `CUSTOM_DTO` serializer `root.toJSON` spy throw; `THREE_JSON`은 기존 inspect | Custom에서는 중복 `toJSON` 호출0, 양 경로 무결성 보존; 오류 시 browser Artifact/서버 POST 없음 |
+| TC-212-03 | 원본 SHA mismatch, 구조 오류, text index codepage, upstream font/parser 실패, DTO unsupported, invalid payload | 정확 stage+allowlisted errorCode. font/parser를 구별할 수 없는 경우 CONVERTER_UNAVAILABLE/UNKNOWN; cause 원문/Stack/URL/CAD 누출0 |
+| TC-212-04 | Object3D node100k+/scalar2M+/depth128+/payload32MiB+ 경계 | 제한 즉시 명시 실패·실수로 상한 증가0·미완료 `ARTIFACT_READY` 금지 |
+| TC-212-05 | Optional outline Worker timeout(30초), Worker/Renderer dispose 및 전환/재시도 | Optional warning/필수 직렬화 영향 분리, 중복 원본 GET/취소·stale 결과 회귀 |
+| TC-212-06 | 수동 build에서 3D 변환 실패 + dxf fallback 화면 정상 | `FALLBACK_DXF_DISPLAYED_SCENE_FAILED`, save disabled/POST0, 서버 READY/Current pointer 보존 |
+| TC-212-07 | 3D 변환·검증 성공/저장 권한 거부(401/403)/CAS(409)/Storage(503)/재접속 READY | Browser ARTIFACT_READY != 서버 READY. 서버 Source/SHA·권한·Revision·Audit 불변과 복구 안내 |
+| TC-212-08 | 원격 PR CI 전체 + 20MiB+ 실제 사용자 DXF(사내 승인 환경) | Typecheck/Lint/Unit/Integration/General/Greenfield/G7/Legacy/Docker + 현장 PC/GPU/자원 프로파일 수집. 두 Gate 분리 |
+
+`src/tests/unit/scene-build-diagnostics.test.ts`, `src/tests/unit/scene-loader.test.ts`, 기존 `scene-custom-dto.test.ts`, `viewer-source.test.ts` 및 Playwright Viewer spec 연결. CI/현장 실측 전에는 **NOT VERIFIED**. Root DESIGN.md 없음: Architecture/Decisions/Issue212를 계약 정본으로 사용. [TestReport](TestReport.md)/[FailureLedger](FailureLedger.md).
+
+---
+
 ## TC-211-P2 — 실패 Run #436 및 Codex Chain 리뷰 보완 (2026-11-02)
 
 - **TC-211-P2-01:** `standalone.test.ts` GF-109-CI-CONTRACT는 Docker workflow의 실제 첫 `g7-deploy.py ... status/plan/execute --approve-plan` → 최초 관리자 코드 → CAD create → stop → `plan --operation start/start --approve-plan` → stop → 기존 migrator 재실행·app → verify 순서를 보장한다. 관리자/영속 검증 또는 실제 Docker Job을 skip하지 않는다.

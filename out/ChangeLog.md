@@ -1,3 +1,26 @@
+## 2026-11-03 — PR #214 Greenfield E2E Scene 상태 문구 계약 보완 (#212)
+
+- 실패 CI #439 / Run41504441240의 `typed-outlines.spec.ts:196`은 이전 상태 메시지 `원본 DXF 변환 완료`를 기다려 25/26 E2E에서 1건 실패. 신규 화면의 정상 `THREE_SCENE_ARTIFACT_READY`와 서버 미게시, fallback 부재 및 `three-dxf-viewer`를 검증하도록 테스트 수정.
+- 런타임 UI/Scene 직렬화·한도·서버 게시·Source/DB/Current/G7 권한/CI 정책은 변경하지 않는다. 기존 #438 실패 이력 보존; 새 CI는 시작만 확인하고 결과 미모니터링.
+
+---
+
+## 2026-11-03 — PR #214 / #212 CI #438 TypeScript 테스트 보완
+
+- `scene-build-diagnostics.test.ts`의 `unknown` rejection을 `ViewerLoadError` 런타임 guard로 확인하여 TS18046 3건의 신규 테스트 타입 문제를 수정했다. 안전 오류 코드/문구·비밀 비노출 검증은 유지하며 TypeScript strict/CI gate를 완화하지 않는다.
+- 최초 실패 Run41463408681/Quality Job125338491789 및 별도 Docker 성공/Browser 미실행은 FailureLedger·TestReport에 보존한다. 후속 PR CI 시작만 수행하고 결과/현장/배포/GHCR 성공은 미확인.
+
+---
+
+## 2026-11-02 — Issue #212 수동 Scene 생성 단계 진단과 CUSTOM_DTO 검증 (PR CI 후보)
+
+- Fixed: 3D 변환 실패를 `adapter-load:LOAD` 단일 코드로 감추던 브라우저 수동 Scene 경로를 phase·allowlisted code/숫자 통계와 정확한 상태로 분리. 실패 후 `dxf-viewer` 성공을 Scene Asset 변환 완료·저장 가능으로 오인하던 안내와 Save 조건 보완.
+- Changed: `CUSTOM_DTO` 저장 전 중복 Three JSON 트리 할당/inspection 제거, 대신 기존 `validateStoredScenePayload`·manifest SHA/ID/typed attribute와 32MiB/node/scalar/depth 상한을 정확 적용. Optional index Warning은 필수 Scene 실패와 분리.
+- Tests: 합성 단계/프라이버시/한도/fallback Unit 및 중첩 Scene ID/Geometry round-trip regression 코드 추가. 로컬/CI/현장 성공 **NOT VERIFIED**; PR CI 시작 후 완료 모니터링 생략.
+- No schema migration/Source·Current 변경/G7 Auth·Writer 조작/GHCR 게시/실 CAD 반출. 서버 Worker·업로드 자동 생성·목록 상태는 #208, 현장 실 DXF/GPU는 #113/#193. [설계](Issue212.md), [원장](FailureLedger.md).
+
+---
+
 ## 2026-11-02 — #211 PR #213 CI #436 실패 수정 및 Codex P2 체인 보고
 
 - 정확 실패 Run41449453584: 기존 `GF-109-CI-CONTRACT` 정적 테스트가 새 통합 CLI로 대체된 첫 Compose 시작 명령을 찾지 못함(Unit 943/944, Docker Job SUCCESS). 실 CI의 승인된 신규 설치/재시작 + first-admin/CAD/영속 smoke 순서를 유지한 채 테스트의 12개 필수 단계로 갱신.

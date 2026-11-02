@@ -1,3 +1,9 @@
+## #212 — 수동 브라우저 Scene 단계 진단 (2026-11-02)
+
+`ViewerMetric.sceneBuild`는 browser-local `status/phase/steps{phase,outcome,elapsedMs}/stats`의 **정제된 숫자/코드**만 추가한다. `adapter-load:LOAD` 대신 검증된 `SceneBuildError`는 allowlisted `SCENE_*` reasonCode와 실제 phase를 표시한다. `getFromPath`는 font fetch, parse, geometry가 결합되어 있으므로 generic `SCENE_CONVERTER_UNAVAILABLE`로만 기록; 원인을 특정하지 않는다. `OPTIONAL_OUTLINE_INDEX` timeout은 warning이고 Scene Artifact의 필수 성공·실패와 분리한다. Client Error.cause 원문/stack/파일명/원본 텍스트/Handle/SHA/site/token은 metric·download JSON·Log API로 전달하지 않는다. Browser client metric은 서버 `RequestLogContext`/operation JobLog가 아니고 `requestId/jobId`를 추정·생성하지 않는다. 서버 #208 전용 영속 Job 시도/로그/상관 ID는 별도 구현. [Issue212](Issue212.md).
+
+---
+
 ## 0.54.1 UI 타임라인 오류 복구 — Epic #50
 
 운영 로그 화면에서 목록 조회와 동일 requestId/jobId Timeline 조회는 별개로 권한 확인을 받는다. Timeline 요청만 410 cursor 만료이거나 503 LOG_STORE_UNAVAILABLE로 확인된 경우 이전 타임라인 단계 및 페이지를 제거하고 오류를 표시하며, 성공·인가 완료된 메인 목록은 유지하여 사용자가 상관 ID를 다시 조회할 수 있도록 한다.

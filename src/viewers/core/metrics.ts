@@ -1,5 +1,8 @@
+import type {SceneBuildDiagnostics} from './scene-build-diagnostics';
 export type ViewerMetric = {
   schemaVersion:1; renderer:string; versionId:string; timestamp:string;
+  /** Per mounted Viewer lifecycle; not a server jobId or requestId. */
+  loadAttempt?:number;
   result:'partial'|'success'|'empty'|'error'|'cancelled';
   sourceMode:'miss'|'pending'|'memory'; fileBytes:number|null; entityCount:number|null;
   sourceWaitMs:number|null; initializeMs:number|null; adapterLoadMs:number|null; totalMs:number;
@@ -7,6 +10,8 @@ export type ViewerMetric = {
   browser:string; reasons:Record<string,string>; error:string|null;
   fallback?: {reasonCode:string;attempt:number};
   loadStrategy?:'READY_SCENE'|'LEGACY_DXF'|'DWG';
+  /** Browser-local, aggregate-only; not a server Job/requestId or field CAD evidence. */
+  sceneBuild?:SceneBuildDiagnostics;
 };
 export async function observeFrame():Promise<boolean> {
   if(typeof requestAnimationFrame==='undefined' || document.visibilityState!=='visible')return false;

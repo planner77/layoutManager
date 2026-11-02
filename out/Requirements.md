@@ -1,3 +1,13 @@
+## R-212 — 수동 Scene 진단·자원 제한·성공 상태 정합성 (2026-11-02)
+
+1. Scene Build 활성 시 Source SHA·DXF 구조·upstream parser/font/geometry·Optional index·textIndex·DTO 직렬화/도메인 Validator를 각각 안전한 phase/code·성공/경고/실패/경과시간으로 분리하고 원인을 모르면 UNKNOWN 또는 결합 converter 실패로 유지한다.
+2. 완전한 `CUSTOM_DTO`/manifest SHA·크기·scene scope/ID·typed attribute 및 기존 32MiB/100k node/2M attribute scalar/depth128 검증을 통과하기 전 Scene 게시 후보를 노출하지 않는다. 이론적 BLOCK 확장량을 실측된 Scene Object3D 수와 동일시하거나 오류를 숨겨 일부 도면만 READY로 만들지 않는다.
+3. 서버 `READY_SCENE` 복원, 브라우저 검증 후보 `THREE_SCENE_ARTIFACT_READY`, 레거시 대체 표시 `FALLBACK_DXF_DISPLAYED_SCENE_FAILED`를 구분하고 후자에서는 Scene 저장 비활성/POST0. Scene 업로드 서버 권한·Revision/게시 검증 변경 금지.
+4. 민감 오류 전문·Stack·원본/좌표/Handle/SHA·내부 경로/토큰은 공개 Metric/화면/CI 출력에 기록하지 않는다. Browser-local 단계 통계는 Job/worker 로그가 아니다. Cancel/Renderer 전환/Version 변경은 stale 진단을 폐기한다.
+5. #212는 기존 브라우저 수동 변환 경로만 수정. 최초 DXF 업로드 후 server CPU-only 자동 Scene, Durable Job Queue, JobID/상태 UI는 #208 별도 AC. 필드/실 CAD·GPU 성능의 미확인 조건은 #113/#193. [구현 계약](Issue212.md).
+
+---
+
 ## R-211 — 통합 Docker Host CLI (2026-11-02)
 
 Owner 확정: 단일 호스트 인터페이스, 상태 자동판별 후 계획·위험·영향·Plan SHA 승인, 운영자 수동 `.env` 변경. 5가지 상태(FRESH_INSTALL/RESTART_SAME_RELEASE/UPGRADE_COMPATIBLE/UPGRADE_MIGRATION_REQUIRED/RESTORE_REQUIRED)와 BLOCKED를 지원한다. source Volume 자동 생성 없는 read-only inspect/status/plan, installed/target/running/health/businessAcceptance 별도 표시, project/volume 해시 식별, App+Migrator 이미지 ID 검증, exact Schema planId, 호환 업그레이드 성공 후 App STOPPED·별도 시작을 요구한다. #209 하위 엔진이 마이그레이션, 백업·복구, SQLite/원본/Scene/Memo/Zone/Outline/Audit 보존을 담당한다. S3/Expert/레거시/다운그레이드/.env 자동수정/무인 승인·복구는 제외한다. [Issue211](Issue211.md), [TestReport](TestReport.md).

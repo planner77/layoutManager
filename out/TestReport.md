@@ -1,3 +1,24 @@
+## PR #214 / #212 — CI #439 Greenfield R3 Scene 상태 단언 불일치 (2026-11-03 KST)
+
+[Run41504441240](https://github.com/planner77/layoutManager/actions/runs/41504441240), source `0cc44705b504c3a89facd969a31f76ba5131816d`: Quality(TypeScript·Lint·Unit·Build), Docker Runtime, General 2 shards, G7 Signed/Legacy, Scope **각 SUCCESS**; G7 Greenfield E2E **25/26 PASS**, `typed-outlines.spec.ts:196` 한 건만 FAIL; Required Verify 종속 FAIL. `scene-status` 실제는 `THREE_SCENE_ARTIFACT_READY`(브라우저 Artifact만, 미게시)였고 이전 문구를 검사하는 E2E가 계약을 따라가지 못했다. 테스트를 실제 renderer 및 3분리 상태 계약의 검증된 Artifact/서버 미게시/fallback 아님 확인으로 보완하고 기존 R3 Source·Outline·Scene 보존 시험을 유지했다. 코드상 변경과 메시지 정적 확인은 **새 E2E 성공 증거가 아님**; 후속 Run은 생성/시작만 확인 후 미모니터링, 합격 NOT VERIFIED. 실제 사내 복잡 DXF/성능/작업 승인·GHCR/현장 수용 별도.
+
+---
+
+## PR #214 / Issue #212 — TS18046 CI #438 실패와 보완 (2026-11-03 KST)
+
+[CI #438 Run41463408681](https://github.com/planner77/layoutManager/actions/runs/41463408681) 정확 HEAD `f4e54af94415622488ae94dc55352fc75fb42fdf`에서 **TypeScript FAIL** `scene-build-diagnostics.test.ts:54`의 `unknown` 속성 접근 3건(TS18046); Docker runtime/scope SUCCESS, Unit/Lint/Build 및 Browser E2E 미실행(SKIPPED), required Verify FAIL. 신규 테스트에서 명시 `unknown`→`instanceof ViewerLoadError` guard로 runtime 타입 확인 후 `stage/reasonCode/message`의 안전한 고정 출력만 검증하도록 보완했다. 실제 TypeScript/Vitest/전체 PR CI **재검증 결과 전까지 NOT VERIFIED**. 최초 실패/변경 근거는 [FailureLedger](FailureLedger.md), [TestPlan](TestPlan.md) 참조. 실제 DXF/GPU/영속 Scene/Site 업무 검증은 별도.
+
+---
+
+## Issue #212 — 수동 Scene 단계 진단/DTO 직렬화 PR CI 후보 (2026-11-02)
+
+- **수정·검토 근거(정적/코드 확인):** 기존 adapter의 catch-all로 `adapter-load:LOAD` 발생 및 Viewer's sceneMode=build fallback 후 잘못된 "원본 DXF 변환 완료" 안내 경로 확인. 수정 경로: `src/viewers/core/scene-build-diagnostics.ts`, `src/viewers/three-dxf-viewer/{adapter,scene-serialization}.ts`, `src/domain/scene-payload.ts`, `src/viewers/core/{adapter,metrics}.ts`, `src/features/cad-viewer/{viewer,scene-status}.tsx/ts`. 원본 Source SHA/Server Scene API/Repository·CurrentScene·CAS·Audit/DB Schema/권한 미변경.
+- **작성된 합성 테스트(실행 전):** `scene-build-diagnostics.test.ts`는 allowlist/code/원인 masking, ViewerManager spoofed-message 차단, stage elapsed/outcome, fallback/local-vs-server READY, Object3D node/scalar/depth cap을 확인하도록 추가. `scene-loader.test.ts`는 세 단계 nested Group/Line/Mesh와 typed buffer round trip, Custom DTO만 Three JSON 생략 및 저장 전 validate 수행을 확인하도록 확장.
+- **실행 판정:** 원격 GitHub Connector 환경에 로컬 npm 의존성·실 브라우저/Docker 실행을 제공받지 못했으므로 Typecheck, Lint, Vitest/Integration, Playwright/Greenfield, Docker, 현장 CAD/GPU는 **NOT RUN / NOT VERIFIED**. PR 생성 뒤 GitHub CI 실행만 시작하고 사용자 요청대로 완료를 모니터링하지 않는다. 코드 작성·정적 대조만으로 CI PASS/실 20MiB CAD 원인 확정 또는 성능 개선 실증을 주장하지 않는다.
+- **잔여 수용:** 실제 복합 DXF·WCS/Layer/한글·원본 확장 인스턴스 비교, peak heap·p95·30초 Worker, 브라우저 fallback 후 Save POST0, 저장 API Actor/Source/READY 연계, 현장 #113/#193과 서버 Worker #208은 별도 Gate. [설계·판정](Issue212.md), [시험](TestPlan.md), [원장](FailureLedger.md).
+
+---
+
 ## PR #213 / Issue #211 — 최종 CI 합격·Main 인계 (2026-11-02)
 
 [PR CI #437 Run41454272839](https://github.com/planner77/layoutManager/actions/runs/41454272839)의 정확 source HEAD `dff4995fbbecb9838d259ec904f2f6b0aaf7d0a1`에서 **completed/success, 8/8 Job SUCCESS**. Scope, Quality(static/type/lint/unit/build), Docker Runtime 및 실제 업그레이드 smoke, General Chromium E2E 두 shard, G7 Greenfield, Signed/Legacy Browser, required Verify 성공. 전 실패 #436의 GF-109 정적 계약 1건과 Codex P2 `steps` 누락은 수정·회귀 후 통합 CI 합격. 리뷰 1 resolved/0 unresolved, Main behind0, mergeable=true 확인 후 [PR #213](https://github.com/planner77/layoutManager/pull/213) Squash Main `423ff93a0866becb436511cca5207fb713411dfd`; 검증된 PR HEAD 및 Squash Main의 tree `fa568d361feb0c62d7c666c836c694e96b30a6b9` 동일. [Issue #211](https://github.com/planner77/layoutManager/issues/211) 코드·합성 CI 범위 closed/completed. [Main CI #128 Run41458237958](https://github.com/planner77/layoutManager/actions/runs/41458237958) 시작만 확인하고 완료 미모니터링. v0.58.0 GHCR App+Migrator는 이전 #209 릴리스 Main CI #126의 게시 성공 증거가 있으며 이번 버전의 재게시·새 digest는 미확인/중복 방지 대상. 실제 운영 데이터·Site/원본 SHA·현장/업무 수용(#96/#113/#193)은 수행되지 않았고 PASS로 해석하지 않는다. 실패 원문·재작업 기록은 [FailureLedger](FailureLedger.md)에 보존한다.

@@ -1,3 +1,30 @@
+## PR #214 / Issue #212 — PR CI #439 G7 Greenfield E2E 1건 실패·보완 (2026-11-03 KST)
+
+- **정확 실패:** [PR CI #439 / Run41504441240](https://github.com/planner77/layoutManager/actions/runs/41504441240), source HEAD `0cc44705b504c3a89facd969a31f76ba5131816d`, `completed/failure`. Scope Job `125479998420` SUCCESS; Quality/Type/Lint/Unit/Build `125480098154` SUCCESS; Docker Runtime `125480098149` SUCCESS; General Chromium shard1 `125483901926` 및 shard2 `125483901901` SUCCESS; G7 Signed/Legacy `125483901963` SUCCESS. **G7 Greenfield UI Job `125483902010` FAILURE**: Playwright **25 passed/1 failed(26 total)**. Required Verify `125488265817`은 Greenfield 종속 실패로 FAIL. 새 TypeScript 오류나 실제 Schema·CAD 복구 실패의 증거는 아니다.
+- **최초 오류:** `src/tests/greenfield-e2e/typed-outlines.spec.ts:196`, R3 canonical Source UI 시험에서 `getByTestId('scene-status').toContainText('원본 DXF 변환 완료')`가 Timeout(5000ms). 실제 UI는 `THREE_SCENE_ARTIFACT_READY · Scene 생성·검증 완료. 서버에 저장하기 전이므로 READY 상태는 아닙니다.`로 성공 표시. 원인은 #212 새 3분리 상태 계약(검증된 클라이언트 Artifact / dxf-viewer fallback 표시 / 서버 게시 READY)과 **이전 R3 브라우저 테스트 리터럴 간 미동기화**. 이 오류만으로 DXF 변환/Scene 영속 실패라고 판단하지 않는다.
+- **수리:** `typed-outlines.spec.ts`의 해당 단언을 `THREE_SCENE_ARTIFACT_READY` 및 `서버에 저장하기 전이므로 READY 상태는 아닙니다` 기대, `FALLBACK_DXF_DISPLAYED_SCENE_FAILED` 부재와 실제 renderer `three-dxf-viewer` 확인으로 교체. 기존 R3 Source/Outline 서버 저장·이름 변경·비활성/재접속·Scene revision/Reset/Source WCS·권한 회귀는 삭제·완화하지 않았다. 실제 `scene-status.ts` 반환 문구와 정적 대조했으며 별도 브라우저 실행 성공을 대신하지 않는다. #212의 안전한 상태/게시 경계나 실제 Source/DB/CAD·G7 Auth/CI 게이트를 변경하지 않는다.
+- **재시험:** 현재 기능 브랜치에 수정 코드·AGENTS/FailureLedger/TestReport/TestPlan/ChangeLog를 커밋하여 새로운 PR CI를 기동한다. 정확 새 HEAD Run/Job은 **시작만 확인**하고 Owner 요청대로 결과 모니터링 생략; 새 E2E 26/26·전체 PR CI 성공은 새 실행 결과 전까지 **NOT VERIFIED**. 앞선 #438 TypeScript TS18046 실패와 해당 보완 결과는 아래 역사 기록 그대로 유지. 실 DXF/GPU/2PC(#113/#193), #208 CPU Worker, GHCR/병합/Issue 종료는 미진행.
+
+---
+
+## PR #214 / Issue #212 — CI #438 실패 TypeScript TS18046 / 수리 인계 (2026-11-03 KST)
+
+- **관측 실패:** [PR CI #438 / Run41463408681](https://github.com/planner77/layoutManager/actions/runs/41463408681) (`pull_request`, source HEAD `f4e54af94415622488ae94dc55352fc75fb42fdf`, `completed/failure`); Quality `125338491789` **FAIL** at `TypeScript 검사` / `tsc --noEmit` with `src/tests/unit/scene-build-diagnostics.test.ts(54,36)/(54,56)/(54,84): TS18046 'rejected' is of type 'unknown'` 3건, exit 2. Required Verify `125342398581` **FAIL** due to prerequisite Quality. Docker Runtime `125338491707` **SUCCESS**, Scope `125337926885` SUCCESS; General 2-shard/Greenfield/G7 Signed-Legacy E2E **SKIPPED** (not executed, not failed); Unit/Lint/Build were not reached in the failed Quality job.
+- **직접 원인:** untrusted Adapter Error를 fail-closed 처리하는 단위 테스트가 `manager.load(...).catch((error:unknown)=>error)` 결과를 `unknown`으로 받는 것은 맞지만, `expect(rejected).toMatchObject(...)` assertion만으로 TS type guard가 작동하지 않는데 `rejected.stage/reasonCode/message`에 직접 접근했다. 이는 새로운 Scene Runtime 버그가 검증되었다는 증거가 아니라 신규 테스트의 정적 타입 결함이다.
+- **보완:** `src/tests/unit/scene-build-diagnostics.test.ts`에서 거절 결과를 명시 `unknown`으로 유지하고 `expect(rejected).toBeInstanceOf(ViewerLoadError)` + 실제 `if (!(rejected instanceof ViewerLoadError)) throw` guard 후에만 허용된 `stage/reasonCode/message`를 읽도록 수정. 원본 unsafe `Error.message`가 metric/UI 문자열에 유출되지 않는 확인, spoofed code/알 수 없는 Error의 `adapter-load:LOAD` 수용 규칙, 관리자/원본·Scene/권한·SDK 코드 불변. `as any`/TS 검사 해제 또는 Test Skip 없음.
+- **재시험:** 수리 및 실패 원장을 동일 기능 브랜치의 1회 커밋으로 게시하고 새로운 PR CI를 시작한다. CI 실행/Job 성공·현장 DXF/GPU 수용은 정확 새 HEAD/Run 결과 확인 전 **NOT VERIFIED**. 사용자 지시로 CI 결과 모니터링 생략. Main CI #128/#129는 각각 SUCCESS이고 PR #213은 이미 병합·#211 완료: 이번 #438 실패와 혼동하지 않는다. PR #214는 별개 #212이며 병합/GHCR/Issue 종료/운영 DB·Volume·CAD 조작은 수행하지 않는다.
+
+---
+
+## Issue #212 — 수동 Scene 실패 근거·구현 경계·PR CI 시작 준비 (2026-11-02)
+
+- **현장 보고(원인 미확정):** 도면은 `dxf-viewer` fallback으로 보이나 `three-dxf-viewer`는 `adapter-load:LOAD`, Scene 자동/수동 후보 미생성. 5MiB 미만/20MiB 이상 파일 크기 보고는 같은 파일인지 확인되지 않았고, AC1024+·TEXT/MTEXT/BLOCK/INSERT 사례의 이론적 확장 인스턴스가 20만 건 초과로 보고되었으나 이 수치는 Scene 노드/DOM·geometry scalar 수나 정확한 예외 원인 증거가 아니다. 원본 byte/SHA/Handle/문자 내용은 CI/원장에 포함하지 않음.
+- **코드상 직접 확인된 결함/수리:** `ThreeDxfViewerAdapter.load`의 catch-all이 근본 오류를 제거하고 `ViewerManager`가 `LOAD`를 보고, 성공한 레거시 렌더가 `sceneMode=build` 성공 안내를 유발하던 경로를 단계별 safe typed error 및 fallback 상태 분리로 보완. Custom DTO에서 `root.toJSON→inspect`를 불필요하게 중복 수행하던 경로는 `toCustomDto→validateStoredScenePayload`로 변경. 기존 limits(32MiB/100k nodes/2M scalars/depth128), SHA/ID·검증, Server Scene API와 source/READY/G7 보존.
+- **검증 상태:** 작성한 합성 Unit·기존 회귀는 **코드만 등록**, 이 작업에서 로컬 npm, Typecheck/Lint, Vitest/Playwright/OCI/Docker 또는 운영현장 실행하지 않음. 따라서 현재 **새로운 PR CI 실패/성공의 실측 기록 없음**, 재현 불가 단계(폰트 vs 파서, OOM/timeout, 실제 DXF)는 확정하지 않음. PR 개설 및 synchronize가 CI를 기동하며 Run/Job 성공은 사용자 요청대로 모니터링하지 않음.
+- **리뷰/충돌:** 원격 브랜치의 새 PR 작성 후 기존 미해결 threads/mergeability를 확인하고 해결 여부를 분리 기록. 독립 리뷰 승인을 임의 선언하지 않음. 후속 실패는 정확 PR HEAD, Run/Job/최초 실패 stage, 원인/수리/재시험으로 이력 보존. 병합/Main/GHCR·Issue 종료는 이번 요청 범위 밖, 실제 #208/#113/#193은 OPEN.
+
+---
+
 ## PR #213 / Issue #211 — Owner Managed CI 합격·Squash 병합·GHCR 인계 (2026-11-02)
 
 - **CI 정확성:** 기능 PR 최종 HEAD `dff4995fbbecb9838d259ec904f2f6b0aaf7d0a1`에서 [PR CI #437 / Run41454272839](https://github.com/planner77/layoutManager/actions/runs/41454272839) `completed/success`, **8/8 Job SUCCESS**. Scope `125306862583`, Quality/Type/Lint/Unit/Build `125306955839`, Docker Runtime `125306955825`, Greenfield E2E `125310161545`, Chromium General shard1 `125310161682` / shard2 `125310161585`, G7 signed/legacy `125310161762`, Required Verify `125315038341` 모두 성공. 기존 #436의 실제 Unit 943/944 실패와 #434/#435 취소는 아래 원장을 삭제하지 않고 역사적으로 유지한다.

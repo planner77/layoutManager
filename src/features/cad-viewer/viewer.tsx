@@ -49,6 +49,8 @@ import { selectRenderer, type ViewerFormat, type ViewerRenderer } from '@/viewer
 import { ViewerSource } from '@/viewers/core/source';
 import { cadViewerUrl, cadMemoViewerUrl } from '@/viewers/core/link';
 import { ViewerLoadError, isViewerCancellation } from '@/viewers/core/viewer-load-error';
+import {isKnownSafeSceneBuildError,type SceneBuildDiagnostics,type SceneBuildErrorCode} from '@/viewers/core/scene-build-diagnostics';
+import {canPublishSceneCandidate,sceneLoadNotice,type SceneFallback} from './scene-status';
 import {runtimeCadHeaders} from '@/features/g7-runtime/client';
 import type {SceneWorkCommand,SceneWorkState} from '@/domain/scene-work';
 import type {ResetMode} from '@/domain/cad-reset';
@@ -239,6 +241,8 @@ export function CadViewer({
   const [loading, setLoading] = useState(true);
   const fallbackTried = useRef(false);
   const fallbackReason = useRef<string | null>(null);
+  const fallbackSceneFailure=useRef<SceneFallback|null>(null);
+  const fallbackSceneDiagnostics=useRef<SceneBuildDiagnostics|null>(null);
   const [recoveryNotice, setRecoveryNotice] = useState<string | null>(null);
   const [infoOpen,setInfoOpen]=useState(false);
   const [nameTipOpen,setNameTipOpen]=useState(false);
@@ -1639,7 +1643,7 @@ export function CadViewer({
     sceneRequest.current?.abort();setSceneBusy(false);setSceneCandidate(false);setSceneMode('scene-first');
     // Renderer-only escape reuses this Version's in-flight source promise.
     // Full reload, a different Version, and source-error retry still dispose it.
-    fallbackTried.current = false; fallbackReason.current = null; setRecoveryNotice(null); setLinkFallbackUrl(null);
+    fallbackTried.current = false; fallbackReason.current = null; fallbackSceneFailure.current=null; fallbackSceneDiagnostics.current=null; setRecoveryNotice(null); setLinkFallbackUrl(null);
     manager.current?.dispose();
     setLoading(true);
     setState({ status: '도면 로딩 중…', ready: false });
@@ -1662,7 +1666,7 @@ export function CadViewer({
     loadSequenceRef.current++;
     sceneRequest.current?.abort();setSceneBusy(false);setSceneCandidate(false);setSceneMode('scene-first');
     manager.current?.dispose();
-    fallbackTried.current=false; fallbackReason.current=null; setRecoveryNotice(null); setLinkFallbackUrl(null);
+    fallbackTried.current=false; fallbackReason.current=null; fallbackSceneFailure.current=null; fallbackSceneDiagnostics.current=null; setRecoveryNotice(null); setLinkFallbackUrl(null);
     setLoading(true);
     source.dispose();
     setMetric(null);
@@ -1681,7 +1685,7 @@ export function CadViewer({
     closeExchange();
     sceneRequest.current?.abort();
     loadSequenceRef.current++;manager.current?.dispose();source.dispose();
-    fallbackTried.current=false;fallbackReason.current=null;
+    fallbackTried.current=false;fallbackReason.current=null;fallbackSceneFailure.current=null;fallbackSceneDiagnostics.current=null;
     // Keep direct/reopened links Scene-first even when conversion starts in
     // the legacy ?renderer=dxf-viewer mode.
     const url=new URL(window.location.href);
@@ -1692,7 +1696,8 @@ export function CadViewer({
     resetOutline();resetMemos();setAttempt(value=>value+1);
   }
   async function saveScene() {
-    const artifact=manager.current?.getSceneArtifact();if(!artifact||sceneBusy)return;
+    const artifact=manager.current?.getSceneArtifact();
+    if(!artifact||!canPublishSceneCandidate({mode:sceneMode,renderer,artifactReady:true,sceneCandidate,busy:sceneBusy,loading}))return;
     const request=new AbortController();sceneRequest.current?.abort();sceneRequest.current=request;
     const sequence=loadSequenceRef.current;
     setSceneBusy(true);setSceneNotice('Scene Asset 저장·검증 중…');
@@ -1706,7 +1711,7 @@ export function CadViewer({
       const result=await response.json();
       if(!response.ok)throw new Error(result?.error?.code==='SCENE_REVISION_CONFLICT'?'다른 저장과 충돌했습니다. 기존 Scene은 유지됩니다. 다시 조회하세요.':`Scene 저장 실패 (${response.status}). 로그인·사업장 권한·승인된 저장 기능을 확인하세요.`);
       if(result.status!=='READY'||!Number.isSafeInteger(result.revision))throw new Error('Scene 저장 응답을 확인하지 못했습니다. 다시 조회하여 상태를 확인하세요.');
-      if(sequence===loadSequenceRef.current){expectedSceneRevision.current=result.revision;setSceneNotice('Scene Asset 저장 완료. 다시 불러오기 또는 재접속하면 원본 DXF 없이 복원합니다.');setSceneCandidate(false);void outlineWorkspace.refresh();}
+      if(sequence===loadSequenceRef.current){expectedSceneRevision.current=result.revision;setSceneNotice('SCENE_PUBLISH_READY · Scene Asset 저장 완료. 재접속 시 원본 DXF 없이 READY Scene으로 복원합니다.');setSceneCandidate(false);void outlineWorkspace.refresh();}
     }catch(error){if(!request.signal.aborted&&sequence===loadSequenceRef.current)setSceneNotice(error instanceof Error?error.message:'Scene Asset 저장에 실패했습니다.');}
     finally{if(sceneRequest.current===request){sceneRequest.current=null;setSceneBusy(false);}}
   }
@@ -1782,7 +1787,11 @@ export function CadViewer({
         return new DxfViewerAdapter(container.current);
       },
       source,
-      { renderer, versionId, report: value => { if (active && loadSequenceRef.current===sequence) setMetric({ ...value, fallback: fallbackReason.current ? { reasonCode: fallbackReason.current, attempt: 1 } : undefined }); } },
+      { renderer, versionId, report: value => { if (active && loadSequenceRef.current===sequence) setMetric({
+          ...value,loadAttempt:sequence,
+          sceneBuild:value.sceneBuild??fallbackSceneDiagnostics.current??undefined,
+          fallback: fallbackReason.current ? { reasonCode: fallbackReason.current, attempt: 1 } : undefined,
+        }); } },
       format,
       format==='DXF'&&renderer==='three-dxf-viewer'?{versionId,sourceSha256,mode:sceneMode}:undefined,
     );
@@ -1808,18 +1817,26 @@ export function CadViewer({
         });
         setLayers(nextLayers);
         setSelectedLayers(new Set(nextLayers));
-        setSceneCandidate(!!instance.getSceneArtifact());
+        const artifactReady=!!instance.getSceneArtifact();
+        setSceneCandidate(artifactReady&&sceneMode==='build'&&renderer==='three-dxf-viewer');
         syncSavedOutlines();
         if(sceneMode==='build'){
           const url=new URL(window.location.href);url.searchParams.delete('source');window.history.replaceState(null,'',url);
         }
-        if(format==='DXF')setSceneNotice(instance.getLoadStrategy()==='READY_SCENE'?'저장된 Scene Asset 복원 · DXF 원본 조회·재파싱 없음':sceneMode==='build'?'원본 DXF 변환 완료. Scene Asset 저장은 로그인·권한·서버 승인 후 가능합니다.':'레거시 DXF 로딩 · 원본을 사용합니다.');
+        if(format==='DXF')setSceneNotice(sceneLoadNotice({
+          mode:sceneMode,renderer,strategy:instance.getLoadStrategy(),artifactReady,
+          fallback:fallbackSceneFailure.current,fallbackReason:fallbackReason.current,
+        }));
         if(fallbackReason.current && renderer==='dxf-viewer')setRecoveryNotice(`three-dxf-viewer 실패 (${fallbackReason.current}) 후 dxf-viewer로 표시했습니다. 일부 선택·외곽선 기능은 지원되지 않습니다.`);
       }
     }).catch(error => {
       if (active && loadSequenceRef.current===sequence && renderer === 'three-dxf-viewer' && format === 'DXF' &&
           error instanceof ViewerLoadError && error.stage !== 'source' && error.stage!=='scene' && !fallbackTried.current) {
         fallbackTried.current=true; fallbackReason.current=`${error.stage}:${error.reasonCode}`;
+        if(isKnownSafeSceneBuildError(error)){
+          fallbackSceneFailure.current={phase:error.phase,code:error.reasonCode as SceneBuildErrorCode};
+          fallbackSceneDiagnostics.current=error.diagnostics;
+        }
         setRecoveryNotice(`three-dxf-viewer 처리 실패 (${fallbackReason.current}). dxf-viewer로 한 번 다시 엽니다.`);
         setRenderer('dxf-viewer');
         const url=new URL(window.location.href);url.searchParams.set('renderer','dxf-viewer');
@@ -1943,7 +1960,7 @@ export function CadViewer({
       {id:'versions',label:'버전 목록',kind:'link',href:`/cad/locations/${locationId}`},
       {id:'reload',label:'다시 불러오기',disabled:loading,reason:loading?'로딩이 끝난 뒤 다시 불러올 수 있습니다.':undefined,onSelect:reload},
       ...(format==='DXF'?[{id:'build-scene',label:'원본 DXF로 Scene 생성/재생성',disabled:loading||sceneBusy,reason:'명시적으로 원본을 읽고 변환합니다. 기존 저장 Scene은 저장 성공 전 유지됩니다.',onSelect:buildScene},
-        {id:'save-scene',label:'Scene Asset 저장',disabled:!sceneCandidate||sceneBusy||loading,reason:'명시 변환 완료 후 승인된 로그인·사업장 쓰기 권한으로 저장합니다.',onSelect:()=>void saveScene()}]:[]),
+        {id:'save-scene',label:'Scene Asset 저장',disabled:!canPublishSceneCandidate({mode:sceneMode,renderer,artifactReady:sceneCandidate,sceneCandidate,busy:sceneBusy,loading}),reason:'검증된 Scene Artifact가 있을 때만 승인된 서버로 저장합니다. 대체 표시 성공은 저장 대상이 아닙니다.',onSelect:()=>void saveScene()}]:[]),
       {id:'download',label:'원본 다운로드',kind:'link',download:true,href:`/api/cad-files/${versionId}/content`},
       {id:'exchange-export',label:'GLB/glTF 내보내기',testId:'viewer-menu-exchange-export',
         disabled:format!=='DXF'||renderer!=='three-dxf-viewer'||!state.ready||loading||exchange.busy,
