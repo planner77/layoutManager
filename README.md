@@ -1,3 +1,11 @@
+## #208 P1-A — 2026-11-03 Node 직접 DXF→Scene 변환 NO-GO 판정
+
+[PR CI #457](https://github.com/planner77/layoutManager/actions/runs/41520729471)에서 `three-dxf-viewer@1.0.44`의 내부 WMF/RTF 브라우저 의존으로 `window is not defined` 비동기 오류가 4건 발생했습니다. Unit 단언 962건이 통과했더라도 **Node 단독 Scene Builder가 안전하게 완성된 것이 아닙니다**. 현재 Node direct PoC는 이 라이브러리를 호출하기 전에 `SCENE_CONVERTER_UNAVAILABLE`로 차단하며, 별도 Three.js Scene 직렬화/복원 검증은 DXF parser 동등성의 근거로 사용하지 않습니다.
+
+Issue #208의 다음 기술 실증은 **서버 독립 headless Chromium(software WebGL)** 또는 검증된 순수 Node DXF 변환기를 CPU-only 및 합성/현장 DXF fidelity 조건으로 비교하는 것입니다. 아직 영속 Job queue/Worker/자동 업로드 Scene·상태 목록/UI/OCI 배포는 구현되지 않았고, 기존 브라우저 명시 수동 생성/저장 경로를 사용해야 합니다. [기술 판정/후속 Gate](out/Issue208.md), [FailureLedger](out/FailureLedger.md), [TestPlan](out/TestPlan.md).
+
+---
+
 ## #208 P1-A — Node Scene 실험 글꼴 준비·CI #445 수리 (2026-11-03)
 
 `npm test`는 `npm run build` 이전에도 동작해야 합니다. 기존 `CadKorean.typeface.json`은 추적된 원본이 아니라 build/dev에서 생성되는 파생 파일이므로, Node CPU-only DXF 변환 실험은 이제 Git에 포함된 `NanumGothic-Regular.ttf`를 메모리 내에서 TypeFace로 변환합니다. 잘못된 TTF/JSON 입력은 `FONT_PREPARE`의 안전 코드로 실패합니다. 실제 Node Scene 변환 성공은 신규 CI 전까지 미확인이고 업로드 후 자동 Scene Worker/영속 Queue/도면 목록 상태는 여전히 #208 후속 구현 범위입니다. [실패 증거](out/FailureLedger.md), [기술 Gate](out/Issue208.md).
