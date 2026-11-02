@@ -23,7 +23,7 @@ function fixture(){
   const docker=path.join(bin,'docker');
   writeFileSync(docker,`#!/usr/bin/env bash
 if [[ "$1" != buildx || "$2" != imagetools || "$3" != inspect ]]; then exit 9; fi
-if [[ "$4" == *-migrate ]]; then [[ "${MIGRATOR_EXISTS}" == yes ]]; else [[ "${APP_EXISTS}" == yes ]]; fi
+if [[ "$4" == *-migrate ]]; then [[ "\${MIGRATOR_EXISTS}" == yes ]]; else [[ "\${APP_EXISTS}" == yes ]]; fi
 `);
   chmodSync(docker,0o700);
   const git=path.join(bin,'git');
