@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import {sceneSha256} from '../../domain/scene-digest';
 import {validateStoredScenePayload} from '../../domain/scene-payload';
 import {sceneScope,tagImportedTree} from '../../viewers/three-dxf-viewer/scene-tags';
-import {serializeSourceScene,restoreSourceScene} from '../../viewers/three-dxf-viewer/scene-serialization';
+import {preflightSceneRoot,serializeSourceScene,restoreSourceScene} from '../../viewers/three-dxf-viewer/scene-serialization';
 import {sceneOutlineProjection} from '../../viewers/three-dxf-viewer/scene-projection';
 import {ViewerSource} from '../../viewers/core/source';
 import {ViewerManager,type CadViewerAdapter} from '../../viewers/core/adapter';
@@ -102,4 +102,39 @@ describe('SC-14/15/16 Scene loader',()=>{
     const bytes=new TextEncoder().encode(JSON.stringify(dto));
     expect(()=>validateStoredScenePayload(bytes,{...p.manifest,byteLength:bytes.length,sha256:sceneSha256(bytes)})).toThrow();
   });
+  it('#212: CUSTOM_DTO skips redundant root.toJSON and validates nested/repeated blocks and typed geometry before READY',async()=>{
+    const root=new THREE.Group();root.name='synthetic';
+    const shared=new THREE.BufferGeometry();
+    shared.setAttribute('position',new THREE.BufferAttribute(new Float32Array([0,0,0,5,0,0]),3));
+    for(let i=0;i<3;i++){
+      const block=new THREE.Group();block.name='BLOCK';block.position.set(50*i,10,0);
+      const inner=new THREE.Group();inner.name='NESTED';inner.position.set(3,0,0);
+      const line=new THREE.Line(shared,new THREE.LineBasicMaterial({color:0x123456}));
+      line.userData.cadLayer='SAFE_LAYER';
+      inner.add(line);block.add(inner);root.add(block);
+    }
+    const mesh=new THREE.Mesh(new THREE.BoxGeometry(1,2,3),new THREE.MeshBasicMaterial());
+    mesh.userData.cadLayer='ANOTHER';root.add(mesh);
+    const stats=preflightSceneRoot(root);expect(stats).toMatchObject({sceneNodes:12,geometryCount:4,maxDepth:3});
+    const asset=tagImportedTree(root,scope);
+    const json=vi.spyOn(root,'toJSON').mockImplementation(()=>{throw new Error('redundant JSON conversion called');});
+    const phases:string[]=[];
+    const p=await serializeSourceScene(root,asset,'CUSTOM_DTO',{textIndex:{hits:[],skipped:{},truncated:false}},
+      phase=>phases.push(phase));
+    expect(json).not.toHaveBeenCalled();json.mockRestore();
+    expect(phases).toEqual(['CUSTOM_DTO_SERIALIZE','PAYLOAD_VALIDATE']);
+    expect(()=>validateStoredScenePayload(p.bytes,p.manifest)).not.toThrow();
+    const restored=await restoreSourceScene(p.bytes,p.manifest,p.manifest);
+    const sourceRefs:string[]=[];const restoredRefs:string[]=[];
+    root.traverse(node=>sourceRefs.push(node.userData.cadSceneRef.id));
+    restored.traverse(node=>restoredRefs.push(node.userData.cadSceneRef.id));
+    expect(restoredRefs).toEqual(sourceRefs);
+    expect(restored.children).toHaveLength(root.children.length);
+    const before=root.children[0].children[0].children[0] as THREE.Line;
+    const after=restored.children[0].children[0].children[0] as THREE.Line;
+    expect(after.geometry.getAttribute('position').array).toEqual(before.geometry.getAttribute('position').array);
+    expect(after.userData.cadLayer).toBe('SAFE_LAYER');
+    expect(restored.children[1].position.x).toBeCloseTo(50);
+  });
+
 });
