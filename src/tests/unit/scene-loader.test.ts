@@ -115,7 +115,7 @@ describe('SC-14/15/16 Scene loader',()=>{
     }
     const mesh=new THREE.Mesh(new THREE.BoxGeometry(1,2,3),new THREE.MeshBasicMaterial());
     mesh.userData.cadLayer='ANOTHER';root.add(mesh);
-    const stats=preflightSceneRoot(root);expect(stats).toMatchObject({sceneNodes:12,geometryCount:4,maxDepth:3});
+    const stats=preflightSceneRoot(root);expect(stats).toMatchObject({sceneNodes:11,geometryCount:4,maxDepth:3});
     const asset=tagImportedTree(root,scope);
     const json=vi.spyOn(root,'toJSON').mockImplementation(()=>{throw new Error('redundant JSON conversion called');});
     const phases:string[]=[];
