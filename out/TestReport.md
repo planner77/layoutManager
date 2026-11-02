@@ -1,3 +1,12 @@
+## PR #217 / #208 — 최종 PR CI #472 8/8 성공·Main 병합 및 후속 수용 범위 (2026-11-03 KST)
+
+- **검증:** [PR CI #472 Run41524840539](https://github.com/planner77/layoutManager/actions/runs/41524840539) exact source `5501770c6773980672b1e2c6f54ccaaaf21874d4` `completed/success`. 성공 Job: Scope 125550451788; Quality TS/Lint/Unit+Integration/Build 125550520026; Docker Runtime/Migrator 125550519987; G7 Signed/Legacy 125554081036; G7 Greenfield 125554081107; General Chromium shard1 125554080929·shard2 125554081118; Required Verify 125559182398. 8/8 SUCCESS, 기존 #442/#445/#457 실패 이력 별도.
+- **병합:** 미해결 thread 0, 리뷰 제출0(Owner Managed), Main behind0·`mergeable=true`에서 PR #217 Ready→[Squash Main a4f040c](https://github.com/planner77/layoutManager/commit/a4f040c641d6d7192caa711142bfb66cfcab825c). [Main CI Run41528536561](https://github.com/planner77/layoutManager/actions/runs/41528536561) 정확 squash SHA `push/in_progress` 시작 확인, 결과는 요청대로 미모니터링.
+- **기술 수용:** Node direct upstream parser는 비동기 DOM dependency로 **NO-GO**; 해당 실패 방지와 하위 serializer 테스트 성공은 자동 Scene 영속화를 입증하지 않는다. #208은 `closed:not_planned / SUPERSEDED_BY_#218`, 원래 R1–R5/AC01–09 전부 [#218](https://github.com/planner77/layoutManager/issues/218) OPEN에 승계. Headless software renderer/지원 파서·Worker/Queue/G7 재인가·목록 UI·Docker 운영 및 실제 #113/#193 field **미구현/NOT VERIFIED**.
+- **이미지 릴리스:** Main workflow는 0.58.0 기존 GHCR App+Migrator pair 중복 publish를 생략하도록 되어 있어 새 #217 source의 실제 GHCR 게시·digest/운영 배포 **NOT VERIFIED**, 다음 새 SemVer/G7 registry/OCI paired publish는 [#216](https://github.com/planner77/layoutManager/issues/216) OPEN. 기존 이미지/Volume/원본/권한 변경 없이 합성 CI 성공과 릴리스 완료를 구분.
+
+---
+
 ## PR #217 / #208 — CI #457 962/962 단언 PASS·비동기 오류 4건, Node direct NO-GO 판정 (2026-11-03 KST)
 
 - **원본 CI 증거:** [PR CI #457 / Run41520729471](https://github.com/planner77/layoutManager/actions/runs/41520729471), source `b7909f4c98704fa14d63caf5baa750105af313ac`, `completed/failure`. Scope Job `125536288340` SUCCESS, Docker image/migration/runtime `125536434792` SUCCESS, Quality `125536434951` FAILURE (**145/145 Test files·962/962 assertion PASS**, 단 Vitest **4 unhandled rejection Errors**), Required Verify `125538556873` FAILURE. G7 Greenfield `125538137150`, G7 Signed/Legacy `125538137795`, General Chromium E2E `125538138098` SKIPPED.

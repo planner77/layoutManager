@@ -1,3 +1,12 @@
+## 2026-11-03 — #208 P1-A 검증 PR #217 병합, 전체 자동 Worker #218 승계·GHCR #216 별도
+
+- PR #217 exact 기능 HEAD `5501770c6773980672b1e2c6f54ccaaaf21874d4`의 [CI #472](https://github.com/planner77/layoutManager/actions/runs/41524840539) **8/8 SUCCESS**, 리뷰 thread/미해결0·충돌0·Main behind0 후 [Squash `a4f040c`](https://github.com/planner77/layoutManager/commit/a4f040c641d6d7192caa711142bfb66cfcab825c). [Main CI Run41528536561](https://github.com/planner77/layoutManager/actions/runs/41528536561) 시작만 확인·완료 미모니터링.
+- 직접 Node `three-dxf-viewer`의 WMF/RTF 브라우저 의존 NO-GO+안전 차단·DTO serializer/상태 도메인만 코드/합성 테스트로 수용. #208은 `SUPERSEDED_BY_#218 / closed:not_planned`, 전체 원래 자동 Worker·큐·목록 상태 요구 AC01–09는 [후속 #218](https://github.com/planner77/layoutManager/issues/218) OPEN.
+- package/version `0.58.0` 기존 App+Migrator GHCR pair 유지, 새 immutable SemVer·G7 등록 업그레이드·OCI digest 게시를 [릴리스 #216](https://github.com/planner77/layoutManager/issues/216) OPEN에서 추적. 기존 릴리스 중복 게시 skip 정책, 이번 Main CI 시작만으로 신규 GHCR 게시 주장 금지. 운영 데이터·Auth/Writer·CAD/Volume 불변.
+- 이번 사후 기록은 docs-only Main 변경, 새로운 런타임·GHCR 이미지 산출 대상 아님.
+
+---
+
 ## 2026-11-03 — PR #217 / #208 CI #457: 직접 Node DXF 변환 NO-GO 및 unhandled rejection 차단
 
 - [Run41520729471](https://github.com/planner77/layoutManager/actions/runs/41520729471)의 Quality Unit은 962/962 assertion PASS이나 pinned `three-dxf-viewer@1.0.44`의 `getFromPath` 하위 WMF/RTF 브라우저 전역 `window` 접근으로 비동기 **unhandled rejection 4건** 발생, CI 실패. Docker/TypeScript/Lint 정상, E2E는 미실행.

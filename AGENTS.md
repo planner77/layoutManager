@@ -1,3 +1,13 @@
+## PR #217 / Issue #208 → #218 — P1-A CI SUCCESS·Main Squash 및 배포 경계 (2026-11-03 KST)
+
+[PR #217](https://github.com/planner77/layoutManager/pull/217)의 검증된 정확 HEAD `5501770c6773980672b1e2c6f54ccaaaf21874d4`에서 [PR CI #472 Run41524840539](https://github.com/planner77/layoutManager/actions/runs/41524840539) **8/8 SUCCESS**(Scope/Quality/Docker/G7 Greenfield/G7 Signed·Legacy/General Chromium shard1·2/Required Verify). 리뷰 thread 0/미해결 0, submitted review 0(Owner Managed), Main behind 0·충돌 0 확인 후 **Squash Main `a4f040c641d6d7192caa711142bfb66cfcab825c` 병합**. [Main CI Run41528536561](https://github.com/planner77/layoutManager/actions/runs/41528536561)은 정확 commit의 push로 시작 확인, 완료 모니터링 생략.
+
+**기능 수용 경계:** 직접 Node `three-dxf-viewer@1.0.44`의 비동기 `window` 의존은 **NO-GO**, 이 PR은 안전한 차단/직렬화 부분 검증을 끝낸 기술 결과일 뿐 자동 DXF Scene 생성·영속 Worker/Job·목록 UI를 구현하지 않았다. [Issue #208](https://github.com/planner77/layoutManager/issues/208)은 **SUPERSEDED_BY_#218 / closed:not_planned**(원래 AC 미완료, completed 아님)으로 대체 종료, R1–R5/AC01–09/Owner 정책 A는 [후속 #218](https://github.com/planner77/layoutManager/issues/218) OPEN에 전량 승계. 실 #113/#193 현장 별도.
+
+**GHCR 새 릴리스 미게시:** `src/package.json=0.58.0` 및 `v0.58.0` 태그/기존 App+Migrator image pair는 불변. Main release workflow의 기존 버전 pair 중복 skip 정책 때문에 병합 및 CI 시작만으로 새 digest/image 게시를 주장할 수 없다. 새 immutable SemVer·G7 Registry/Upgrade·App+Migrator OCI 검증/실 digest 게시를 [Release #216](https://github.com/planner77/layoutManager/issues/216) OPEN으로 추적. 운영 DB/Volume/CAD/Auth/Writer 강제 변경 금지. [실패 원장](out/FailureLedger.md)/[테스트 보고서](out/TestReport.md) 참조. 이번 사후 문서 변경은 **docs-only**이며 GHCR 릴리스 대상이 아님.
+
+---
+
 ## PR #217 / Issue #208 — CI #457 직접 Node 변환기 NO-GO·비동기 오류 fail-closed (2026-11-03 KST)
 
 [PR CI #457 Run41520729471](https://github.com/planner77/layoutManager/actions/runs/41520729471), 정확 실패 HEAD `b7909f4c98704fa14d63caf5baa750105af313ac`: Quality Unit 테스트는 **962/962 assertion PASS였지만 Vitest가 4개의 unhandled rejection을 검출하여 실패**했다. `three-dxf-viewer@1.0.44`의 DXF 변환 중 WMF/RTF 관련 비동기 경로가 브라우저 전역 `window`를 읽어 `ReferenceError: window is not defined`를 발생시켰다. 단순 try/catch나 반환된 Scene 후보/manifest만으로 서버 변환 성공을 주장해서는 안 된다. Docker Job은 성공했고, 브라우저/G7 E2E는 선행 실패로 미실행.
