@@ -1,3 +1,14 @@
+## Viewer 요구사항 접수·설계 시 메뉴 그룹/아이템 평가 (2026-10-27 수립, 2026-11-03 최신화)
+
+- **적용 대상:** CAD Viewer의 신규 기능·UI/UX 변경을 요청받거나 Issue를 등록·분석·구현할 때는 **#127(v0.42.0) 그룹 메뉴 기반 UX에 통합할 필요가 있는지 먼저 판단**한다. 별도 상단 버튼을 기본안으로 추가하지 않는다. 단순 배치·편집 세부값은 기존 Drawer/대화상자/컨텍스트 메뉴에 두고, 사용자가 상시 접근해야 할 명령·전환·찾기·입출력은 Viewer 그룹의 실행 아이템으로 만든다.
+- **메뉴 구조 기준:** 현재 Viewer `도면`(도면 정보·버전·다운로드·링크·Import/Export), `보기`(Renderer·Zoom/Fit·전체 화면·가시성), `작업`(선택·외곽선·메모·검색·좌/우/하단 Drawer)을 우선 재사용한다. `관리`는 실제 승인된 관리 기능·서버 권한과 충분한 명령이 생긴 경우에만 별도 그룹으로 분리하고, 기존 `작업 > 외곽선 타입 관리`는 #65 구현 이후에도 인증된 Admin·G7 ACTIVE·지원 Schema에서만 실행하고, 조건 불충족 시 disabled 및 사유 표시. 상위 메뉴는 실행 명령을 펼치는 용도이고 실제 하위 항목만 노출한다. 메뉴 하나마다 상위 그룹/상단 버튼을 늘리지 않는다.
+- **요구사항/Issue 필수 기록:** Viewer UI 관련 신규·변경 Issue에는 `상단 메뉴 연계` 항목으로 **적용 화면**, **기존 그룹 > 정확한 메뉴 아이템명**, **동작(action/check/radio/link)·연결 Drawer/대화상자**, **기존 명령 재사용/신규 명령 여부**, **지원 Renderer·상태·Role/Scope·승인 선행과 disabled 사유**, **접근성·Escape·포커스·회귀 AC/TC**를 명시한다. 상단 메뉴 불필요 시에도 `불필요 — 세부 조작은 OO Drawer/화면 내부`로 판단 근거를 적는다. 실제 그룹 변경은 중복과 반응형 밀도·업무 흐름 비교 후 ADR/Requirements/Architecture/TestPlan에 동기화한다.
+- **상태와 안전성:** `CadViewer`의 기존 `ViewerCommandMenus` 및 Manager handler를 이용하고, 메뉴/Drawer 개폐만으로 `cad-canvas` remount·Source GET/parse/Worker 재시작·Layer/Overlay/Selection/Undo 상태 변경을 일으키지 않는다. 메뉴의 checked/expanded/disabled와 실제 현재 Renderer(자동 fallback 포함), 권한/지원 범위는 일치시킨다. 키보드·모바일 단일 Drawer·CSS/native fullscreen·ESC 최상위 1계층·focus 복귀를 기존 #127 계약대로 검증한다.
+- **보안·영속 승인:** 버튼 노출은 권한 허가가 아니다. #96/#109 G7 및 #65/#71/#73/#83/#88/#90/#91 등 인증·서버 API/영속 데이터 선행/Owner 승인 없이 서버 기능을 활성화하거나 Reader 공개 Viewer의 익명 권한을 확장하지 않는다. 미구현·미지원 기능은 명확한 disabled 사유 제공, 실행되지 않는 가짜 메뉴 금지.
+- **범위 구분:** CAD 도면 목록(`/`), 전역 내비게이션(`운영 > 서버 로그`, #62), 관리자 전용 화면과 Viewer 메뉴를 혼동하지 않는다. #84 스냅과 #86 메모 일정·완료는 메모 상세 Drawer 내부 조작으로 통합한다. 본 규약은 **요구사항 분석/문서화 계약**이며 기존 이슈의 자동 구현·병합·GHCR·운영 활성화 승인이 아니다. 2026-10-27 당시 추적 이슈 13건은 2026-11-03 기준 모두 Closed이며 기존 Issue 본문의 연계 기록은 보존한다. 후속 메뉴 연결 기준은 [#127 후속 매핑](out/Issues124-126-127.md), [ADR-127](out/Decisions.md), [Requirements](out/Requirements.md), [Architecture](out/Architecture.md), [TestPlan](out/TestPlan.md) 참조.
+
+---
+
 ## PR #217 / #208 — CI #442 TypeScript 3건 수리·Node PoC 게이트 유지 (2026-11-03 KST)
 
 [PR CI #442 Run41514760273](https://github.com/planner77/layoutManager/actions/runs/41514760273), source HEAD `dfb059e96e189b21e8a176b91f865d200cf9ee47`에서 Quality TypeScript `TS2345` (`node-converter-poc.ts:104`) 및 `TS2322` 2건(148,149)이 발생했다. Docker build도 동일 TypeScript 실패의 종속 결과이며 DXF 실행 실패나 Docker 환경 오작동을 증명하지 않는다. `FontLoader.parse` 이전 `unknown` JSON 형식 검사, `preflightSceneRoot`가 반환하는 필수 4개 통계의 정확한 required type, malformed font 및 numeric count regression을 적용했다. `skipLibCheck`/strict/CI gate를 완화하거나 `0`으로 optional 통계를 꾸미지 않는다. 기존 원본/Scene/Current/G7/운영 데이터·배포 변경 없음. 새 PR CI의 실행/완료 및 CPU-only PoC의 실제 성공은 구분하고, 시작 이후 결과 모니터링 생략. 근거 [FailureLedger](out/FailureLedger.md)/[TestReport](out/TestReport.md), 후속 Gate [Issue208](out/Issue208.md).
@@ -1328,6 +1339,8 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 - 기본 Stack: Next.js App Router, React, TypeScript, shadcn/ui, Tailwind CSS, SQLite, Prisma 우선, Local Filesystem(default)/선택적 S3 호환 저장소. 실제 설치 버전과 호환성은 Unit 0B에서 검증·고정한다.
 
 ## 반드시 지킬 규칙
+
+- Viewer 신규·변경 요구의 `도면/보기/작업` 그룹·정확한 실행 항목 또는 불필요 근거, Role/Renderer/G7·Drawer·Canvas 수명주기·접근성 영향은 Issue에 기록한다. `ADR-127`·`FR-MENU-EXT`를 따른다.
 
 - 사업부→제품→사업장/법인→동→층의 다섯 ID chain이 Location 계층이며 CadLocation ID는 최종 층을 식별한다. 각 단계는 부모 ID+이름 Unique를 사용하고 **Location별 Current는 최대 하나**이다. Current 교체는 트랜잭션으로 처리하고 다른 Location의 Version 참조를 DB에서도 차단한다.
 - DXF는 `dxf-viewer` / `three-dxf-viewer` 선택, DWG는 `libredwg-web` Adapter만 허용한다. DWG→DXF 우회와 CAD 편집은 범위 밖이다.
