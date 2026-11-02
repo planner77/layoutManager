@@ -1,3 +1,9 @@
+## Issue #211 — 구현·검증 요청 상태 (2026-11-02)
+
+단일 호스트 CLI `src/scripts/g7-deploy.py`, Python 정책 회귀 `src/scripts/test_g7_deploy.py` 및 PR CI Python gate/Disposable Compose 신규 설치·별도 start 검증을 추가했다. #209 helper에 위임하므로 실제 WAL-aware backup/restore·registry/SQL edge는 기존 통합 스위트를 회귀한다. 정적/단위/실 Docker 실행 결과는 새 PR CI가 완료되기 전 **NOT VERIFIED**, 성공 수·실제 GHCR digest·운영 DB/Volume/업무 수용도 미확인이다. 별도 로컬 Docker 검증은 이번 원격 작업 환경에서 수행하지 않았다. [TC-211](TestPlan.md), [설계·제약](Issue211.md), [FailureLedger](FailureLedger.md) 참조.
+
+---
+
 ## PR #210 P2 — Docker readonly WAL 점검·복구 재검증
 
 리뷰 [discussion_r4439624166](https://github.com/planner77/layoutManager/pull/210#discussion_r4439624166)의 stopped WAL/no-sidecar+readonly 실패를 QA가 이전 실제 image로 RED 재현했다. 수정한 CLI-only read inspection adapter의 안정된 private detached copy와 live-WAL 통상 SQLite 조회를 구별하고 Runtime HTTP를 유지했다. 설계/TC는 Architecture/Decisions/TestPlan의 P2 절, 원인·재작업은 FailureLedger를 따른다.

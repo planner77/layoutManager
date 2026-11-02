@@ -1,3 +1,9 @@
+## ADR-211 — G7 통합 CLI와 이중 계획 승인 (2026-11-02)
+
+**결정:** `src/scripts/g7-deploy.py`가 단일 운영자 CLI이고 `g7-upgrade.py`는 지원되는 내부 호환 helper/격리 restore 경로로 유지한다. `inspect/status/plan`은 조회용, `execute`와 `start`는 작업종류·환경/Volume/런타임 snapshot에 결합한 SHA-256 exact `--approve-plan` 승인 후에만 실행한다. 기존 #209 SQL/DDL 승인은 상위 지문으로 대체하지 않고 엔진의 정확 `planId`로 한번 더 확인한다. `.env`는 운영자가 image/source를 수동으로 수정하며 CLI가 쓰거나 shell source하지 않는다. 설치 manifest/target 일치와 running Image ID/health/업무 수용을 별도 상태로 유지한다. Legacy/S3 Expert/무인 upgrade 및 automatic restore는 차단하고 #209 readonly·writer0·WAL backup·journal 보존을 유지한다. 타 관리자 경쟁은 배포 독점 운영 필요. 실제 현장·GHCR/병합은 별도 증거가 필요하다. [상세](Issue211.md).
+
+---
+
 ## ADR-209 보완 — WAL read-only 검사용 복사본 (PR #210 P2)
 
 Read-only mount를 read-write로 완화하면 preflight가 원본 sidecar를 생성할 수 있으므로, sidecar가 전혀 없는 안정된 WAL main DB에만 private detached inspection을 허용한다. 원본·복사본 SHA와 파일 identity, sidecar 부재를 복사 전후 확인하며 live WAL은 정상 SQLite 경로로 읽는다. `immutable=1`로 WAL을 무시하는 대안은 미반영 committed row를 놓칠 수 있어 사용하지 않는다. 실제 복구 백업과 임시 검사용 복사본은 별개다. 수용 근거는 TC-209-RO-WAL 및 TestReport/FailureLedger에 기록한다.

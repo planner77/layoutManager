@@ -1,3 +1,20 @@
+## TC-211 — 통합 배포 Host CLI (2026-11-02)
+
+| 케이스 | 기대 | 게이트 |
+|---|---|---|
+| TC-211-01 missing/기존 empty/기존 nonempty Volume | read-only 조회·미존재 생성0·잘못된 채택0·정상 상태 구분 | Python mocked Docker + disposable named volume smoke |
+| TC-211-02 .env Source 누락, image ID/role/version/source/arch mismatch | BLOCKED / 필드별 nextAction / 변경0 | #209 inspect_pair 재사용 + Python 단위 |
+| TC-211-03 동일 릴리스 running/no-op, stopped→승인 start | 원본/설정코드 재작성0, health/업무 PASS 미선언 | Python unit + Compose smoke |
+| TC-211-04 compatible 0.56→0.58 전체 edge | #209 backup/quiescence/WAL/manifest/Scene/Memo/Zone/Outline/Audit 보존, App STOPPED | 기존 #209 실 이미지 Docker smoke 재사용 |
+| TC-211-05 Synthetic Schema DDL | 상위 exact Host 지문 + 하위 exact engine planId, 중복 DDL0 | Python delegation + #209 합성 migration 시험 |
+| TC-211-06 no source, volume/project/network conflict, foreign writer, hold, stale plan, tag retarget | 정확 BLOCKED·원본 변경0·관리자 강제 중지0 | Python mock/fail-closed + Docker smoke |
+| TC-211-07 separate start | 승인 이후 동일 image ID·health 관측, 업그레이드 후 App STOPPED 유지 | Docker compose stop/start + Python |
+| TC-211-08 secret/readonly | 민감정보 및 내부 경로 전문 stdout/CI 0; WAL sidecar/Volume list/DB/SHA 원본 불변 | Python policy/기존 #210 WAL Docker smoke |
+
+필수 CI: `python3 -m py_compile src/scripts/g7-deploy.py src/scripts/test_g7_deploy.py`, `python3 src/scripts/test_g7_deploy.py`, #209 기존 Docker runtime/Greenfield/Legacy/정적·Unit. 성공 판정 전 CI Run/Job 증거 확인 필요. 운영 현장 별도 #96/#113/#193.
+
+---
+
 ## PR #210 P2 — TC-209-RO-WAL (2026-11-02)
 
 - **RO-WAL-01:** 실제 Docker read-only mount, WAL header·완료 checkpoint·sidecar 없음인 정상 Greenfield에 `preflight/plan/status` 성공. 원본 DB/manifest/CAD SHA·mode·directory entries 전후 동일, 원본 WAL/SHM 생성0.

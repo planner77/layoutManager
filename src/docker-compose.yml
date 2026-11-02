@@ -1,3 +1,7 @@
+# Issue #211: use python3 src/scripts/g7-deploy.py .env status/plan/execute/start.
+# Bare Compose up --pull always below is ONLY for a NEW empty install or a
+# separately verified SAME-release restart. It is NEVER an upgrade command.
+# Do not delete/reassign a previous Greenfield volume or bypass #209 gates.
 # Issue #109: ONE ordinary Compose command installs an empty G7 database.
 # Established marked installations use #209 registered upgrades via g7-upgrade.py.
 # Unmarked/legacy volumes are never adopted, reset, or deleted.

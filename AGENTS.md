@@ -1,3 +1,9 @@
+## Issue #211 — 권장 통합 G7 Docker Host CLI (2026-11-02, PR CI 후보)
+
+G7 신규 빈 설치/동일 릴리스 재시작/등록 업그레이드는 `python3 src/scripts/g7-deploy.py .env status|plan|execute|start`를 단일 권장 진입점으로 사용한다. [설계·안전 계약](out/Issue211.md), [#209 Runbook](src/deploy/g7-greenfield/README.md), [FailureLedger](out/FailureLedger.md)를 먼저 읽는다. `execute`와 별도 `start`는 현재 `planId` 64hex 정확 승인이 필요하며, Schema 변경에는 **추가로 #209 engine planId**가 적용된다. OCI App/Migrator image ID·source·role·architecture, 고정 Volume/Project, 새 볼륨 readonly-nocopy, 유지보수 writer0/backup/restore/journal 검사를 완화하지 않는다. `.env`는 운영자만 수동 수정하고 helper는 shell source/pull/edit/DB reset/lock 삭제를 하지 않는다. 정상 업그레이드 이후에도 App STOPPED, 별도 승인 기동 및 운영 수용 필요. Python 단위·기존 #209 실제 Docker upgrade와 신규 disposable Compose CLI smoke를 필수 PR CI에 연결하고 수용 전 CI 성공을 주장하지 않는다.
+
+---
+
 ## PR #210 / Issue #209 — Main 병합·0.58.0 GHCR 인계 (2026-11-02)
 
 [실패 원장](out/FailureLedger.md) 상단에 PR CI [#433 / Run41407700036](https://github.com/planner77/layoutManager/actions/runs/41407700036) **8/8 SUCCESS**, 앞선 #432 GHCR `unauthorized` 재현·인증 수리, 리뷰 thread1 resolved/미해결0·Main behind0·충돌0 및 Main [de92be0](https://github.com/planner77/layoutManager/commit/de92be0ea3a5de38008a57e8c29013d19667f11e) Squash 병합·동일 Git tree를 기록했다. Issue #209는 **closed/completed(코드·합성 CI)**. 정확 Main commit의 [Main CI Run41416197476](https://github.com/planner77/layoutManager/actions/runs/41416197476)은 0.58.0 App/Migrator GHCR 게시 workflow **시작만 확인**했으며 게시 완료/이미지 digest/태그 생성/운영 수용은 미검증이다. 요청대로 CI 완료 모니터링 생략. 이 문서 사후 수정은 docs-only로 runtime 소스·버전·릴리스 태그 변경 없이 GHCR 재게시 대상에서 제외한다. 기존 정상 Greenfield 설치의 업그레이드는 아래 등록된 compatibility/backup/plan 승인 정책만 따르고 실제 운영 Volume 적용은 별도다.

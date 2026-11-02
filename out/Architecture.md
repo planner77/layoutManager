@@ -1,3 +1,9 @@
+## Architecture #211 — Host Deployment Frontend/Engine 경계 (2026-11-02)
+
+[Issue211](Issue211.md)의 흐름: `g7-deploy.py`가 Compose config·실제 image labels/ID(#209 `inspect_pair`)·전역 Project/Network/Container/Volume 충돌을 읽어 신규 빈 Volume과 이미 설치된 G7 Volume을 구분한다. Volume 미존재면 `docker volume inspect`에서 멈춰 read-only mount하지 않으며, 기존 빈 Volume만 `readonly,volume-nocopy` probe를 사용한다. 정상 nonempty는 고정 Migrator Image ID의 `g7-upgrade.py status/plan` → 기존 TypeScript registry/DB/CAD 검증으로 위임한다. .env SHA + Compose SHA + 실제 Image ID/Volume identity + App 상태 + engine planId/operation/effects의 SHA-256가 호스트 승인 지문. SQL 경로는 #209 engine의 별도 정확 Schema 승인을 유지한다. FRESH 설치/RESTART는 #109 Compose 안전 경로, UPGRADE는 #209 Host stop/backup/journal/restore를 그대로 호출한다. 별도 start는 검증된 기존 manifest 상태에서만 허용한다. 새 Schema/DB 마이그레이션/HTTP Docker socket·Auth bypass는 없다.
+
+---
+
 ## PR #210 P2 — Read-only WAL 사전 점검 (2026-11-02)
 
 리뷰 스레드 `PRRT_kwDOUQjDfc6yj5LK`의 정지된 WAL DB는 checkpoint 후 `-wal`/`-shm`이 없어도 header가 WAL을 유지할 수 있다. 원본 볼륨을 read-only로 마운트한 CLI의 SQLite 읽기는 sidecar 초기화 때문에 실패할 수 있으므로, CLI inspection에 한해 아래 경계를 추가한다.

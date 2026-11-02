@@ -1,3 +1,12 @@
+## Issue #211 — Host 배포 Frontend PR CI 시작 전 원장 (2026-11-02)
+
+- Owner 요청: 분석·설계·구현·문서→리뷰 미해결/충돌 점검→원장 기록→PR CI 시작. **CI 결과 모니터링 생략**. 이전 #209 PR #210 최초 GHCR 인증 실패와 #210 P2 readonly WAL 실패/수정·성공 원문을 아래에서 삭제하지 않는다.
+- 이번 변경: `g7-deploy.py`의 미존재 Volume 조회 시 생성0, 기존 빈 Volume `volume-nocopy` readonly probe, target image ID 및 Compose/Project/Network/foreign container 검사, exact host SHA 계획 승인과 #209 Schema exact planId 재사용, 별도 start/status. Docker 앱/마이그레이터 실제 런타임 재작성·운영 볼륨 수정 없음.
+- 정책상 차단은 실패로 은폐하지 않음: `G7_UPGRADE_SOURCE_REQUIRED`, `G7_UPGRADE_PAIR_MISMATCH`, `G7_DEPLOY_VOLUME_FOREIGN`, `G7_DEPLOY_NETWORK_CONFLICT`, `G7_DEPLOY_STALE_PLAN`, `G7_DEPLOY_RESTORE_REQUIRED`는 **BLOCKED** 및 안전 nextAction. CI 및 현장 재현은 아직 결과 미확인.
+- Python test와 기존 #209 WAL·데이터 보존 Docker smoke를 PR CI에 연결한다. 새 CI의 실제 Run/Jobs, 실패/성공은 요청대로 완료 모니터링하지 않으므로 **NOT VERIFIED**. 새 리뷰 comment와 병합 가능성은 PR 생성 후 직접 확인하고, 실제 CI 시작 사실만 기록한다. PR 병합·GHCR 게시·Issue 종료·실 DB/Volume 변경 없음.
+
+---
+
 ## PR #210 / Issue #209 — PR CI 성공, Squash Main·GHCR 게시 경로 인계 (2026-11-02)
 
 - 최종 소스 **PR HEAD `8140e7dcaab871e5975915f11116874a0aba7476`** [PR CI #433 / Run41407700036](https://github.com/planner77/layoutManager/actions/runs/41407700036): `completed/success`, **8/8 Job SUCCESS**(Scope, Quality/Type/Lint/Unit/Build, Docker runtime/실 0.56.0 App+Migrator→0.58.0 합성 업그레이드·WAL readonly, General Chromium shard2, Greenfield Browser, Signed/Legacy Browser, required Verify). 직접 실패 Run41404871339 (#432)의 GHCR `unauthorized` 및 `8140e7d` package-read/login 수정 기록은 바로 아래 원문 그대로 보존한다.

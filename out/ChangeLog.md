@@ -1,3 +1,11 @@
+## 2026-11-02 — #211 G7 통합 호스트 배포 Frontend (PR 후보)
+
+- `src/scripts/g7-deploy.py`: #109 최초 Greenfield·동일 릴리스와 #209 registered release upgrade를 분리/통합 안내하고 read-only 검사→해시 지문 승인을 요구한다. 업그레이드 후 App STOPPED, 별도 승인 start. Docker volume/project/network/이미지 pair/비밀 출력 경계를 유지한다.
+- `src/scripts/test_g7_deploy.py` + PR CI py_compile/unit 및 disposable Compose smoke, `out/Issue211.md`와 관련 Requirements/Architecture/Decisions/TestPlan/Operation/Runbook 문서를 추가한다.
+- DB Schema/registry/manifest 계약·Auth/Writer·업무 CAD 원본은 수정하지 않는다. CI 성공·GHCR 게시·현장 수용은 미확인, 병합/Issue 종료 없음.
+
+---
+
 # 0.58.0 — #209 Greenfield 등록 릴리스 업그레이드 (개발 후보)
 
 - Added: 설치와 업그레이드 분기, 번들 compatibility/forward migration registry, preflight/plan/apply/status/isolated restore, DB/CAD 일관 복구 세트·private journal 및 manifest atomic commit.

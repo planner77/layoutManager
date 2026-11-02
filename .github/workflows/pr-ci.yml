@@ -368,6 +368,9 @@ jobs:
           python3 src/scripts/test_audit_standalone_layers.py
           python3 -m py_compile src/scripts/g7-upgrade.py src/scripts/test_g7_upgrade.py src/scripts/smoke_greenfield_wal_readonly.py
           python3 src/scripts/test_g7_upgrade.py
+          # #211 single entrypoint: fail PR before Docker build if host policy regresses.
+          python3 -m py_compile src/scripts/g7-deploy.py src/scripts/test_g7_deploy.py
+          python3 src/scripts/test_g7_deploy.py
       - name: Build pre-change baseline (same source, original Dockerfile)
         if: needs.scope.outputs.baseline == 'true'
         shell: bash
@@ -580,12 +583,26 @@ jobs:
           VERSION="$(python3 -c 'import json;print(json.load(open("src/package.json"))["version"])')"
           export GHCR_IMAGE="cad-layout-viewer:${VERSION}"
           export GHCR_MIGRATION_IMAGE="cad-layout-viewer:${VERSION}-migrate"
+          export G7_RELEASE_SOURCE_COMMIT="${{ github.sha }}"
           export CAD_DATA_VOLUME_NAME="cad-layout-viewer-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           echo "CAD_DATA_VOLUME_NAME=$CAD_DATA_VOLUME_NAME" >> "$GITHUB_ENV"
           docker tag cad-layout-viewer:ci "$GHCR_IMAGE"
           docker tag cad-layout-viewer:ci-migrate "$GHCR_MIGRATION_IMAGE"
           docker compose --env-file .env.example -f src/docker-compose.yml config --quiet
-          docker compose --env-file .env.example -f src/docker-compose.yml up -d --no-build app
+          # #211: read-only new-volume check and explicitly approved fresh install.
+          python3 src/scripts/g7-deploy.py .env.example status --json > "$RUNNER_TEMP/g7-211-before.json"
+          python3 - "$RUNNER_TEMP/g7-211-before.json" <<'PY'
+          import json,sys
+          data=json.load(open(sys.argv[1]))
+          assert data['decision']=='FRESH_INSTALL' and data['volumeState']=='ABSENT', data
+          PY
+          python3 src/scripts/g7-deploy.py .env.example plan --json > "$RUNNER_TEMP/g7-211-plan.json"
+          G7_PLAN="$(python3 -c 'import json,os;print(json.load(open(os.environ["RUNNER_TEMP"]+"/g7-211-plan.json"))["planId"])')"
+          python3 src/scripts/g7-deploy.py .env.example execute --approve-plan "$G7_PLAN" --json > "$RUNNER_TEMP/g7-211-execute.json"
+          python3 - "$RUNNER_TEMP/g7-211-execute.json" <<'PY'
+          import json,sys
+          assert json.load(open(sys.argv[1]))['state']=='FRESH_INSTALLED'
+          PY
           curl --fail --silent --show-error --retry 40 --retry-delay 3 --retry-connrefused --retry-all-errors --connect-timeout 3 --max-time 10 http://localhost:3000/api/health
           # The one-time code is synthetic; never print it in Actions output.
           CODE="$(docker compose --env-file .env.example -f src/docker-compose.yml exec -T app cat /data/db/first-admin.code)"
@@ -594,6 +611,15 @@ jobs:
           curl --fail http://localhost:3000/fonts/NanumGothic-Regular.ttf --output /dev/null
           curl --fail http://localhost:3000/fonts/CadKorean.typeface.json --output /dev/null
           curl --fail http://localhost:3000/libredwg/wasm/libredwg-web.wasm --output /dev/null
+          docker compose --env-file .env.example -f src/docker-compose.yml stop app
+          # #211: stopped same-release App needs a separate approved start plan.
+          python3 src/scripts/g7-deploy.py .env.example plan --operation start --json > "$RUNNER_TEMP/g7-211-start.json"
+          G7_START_PLAN="$(python3 -c 'import json,os;print(json.load(open(os.environ["RUNNER_TEMP"]+"/g7-211-start.json"))["planId"])')"
+          python3 src/scripts/g7-deploy.py .env.example start --approve-plan "$G7_START_PLAN" --json > "$RUNNER_TEMP/g7-211-start-result.json"
+          python3 - "$RUNNER_TEMP/g7-211-start-result.json" <<'PY'
+          import json,sys
+          assert json.load(open(sys.argv[1]))['state']=='STARTED_VERIFIED_IMAGE'
+          PY
           docker compose --env-file .env.example -f src/docker-compose.yml stop app
           docker compose --env-file .env.example -f src/docker-compose.yml up --no-build --force-recreate migrate
           docker compose --env-file .env.example -f src/docker-compose.yml up -d --no-build app

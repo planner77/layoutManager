@@ -1,3 +1,9 @@
+## #211 — G7 Docker 호스트 단일 배포 CLI (2026-11-02)
+
+**신규 빈 Greenfield 설치·기존 동일 릴리스 재시작·등록 릴리스 업그레이드의 권장 진입점**은 `python3 src/scripts/g7-deploy.py .env status --json` / `plan --json` / `execute --approve-plan <64자리 planId> --json`이다. 기존 설치 업그레이드 후 App은 **정지 상태로 유지**되며 `plan --operation start` → `start --approve-plan <새 start planId>`의 별도 승인 기동이 필요하다. 먼저 신뢰하는 App/Migrator를 수동 pull·검증하고, `.env`의 목표 이미지 두 개·40hex `G7_RELEASE_SOURCE_COMMIT`을 **운영자가 직접 수정**, 기존 `CAD_DATA_VOLUME_NAME` 유지. Helper는 `.env`를 자동 변경하거나 비어 있지 않은 볼륨을 재설치하지 않는다. 이전 일반 Compose `up -d --pull always` 명령은 **새 설치/검증된 동일 릴리스**에만 적합하며 기존 릴리스 변경 절차가 아니다. 상세 예시·실패 대응: [G7 Runbook](src/deploy/g7-greenfield/README.md), [Issue211 설계](out/Issue211.md).
+
+---
+
 ## 기존 Greenfield 설치 업그레이드 — 0.58.0 개발 후보 (#209)
 
 정상 설치를 마친 local Greenfield는 릴리스에 등록된 지원 경로를 따라 같은 볼륨과 설치 ID를 유지하며 업그레이드합니다. 운영자는 App/Migrator 이미지 쌍과 Source를 확인하고 호스트 도구의 `preflight → plan → auto`를 실행합니다. 도구는 App을 정지하고 무결성 검사·SQLite/CAD 복구 세트 검증 뒤 설치 정보를 갱신합니다. 실제 Schema 변경은 정확한 계획 승인이 필요하며, 복구는 새 빈 볼륨에 수행합니다. 명령과 제한은 [Greenfield Runbook](src/deploy/g7-greenfield/README.md)의 #209 절을 따릅니다.

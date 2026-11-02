@@ -1,3 +1,9 @@
+## Issue #211 — 신규·재시작·보존 업그레이드 공통 운영 명령 (2026-11-02)
+
+**권장 명령:** `python3 src/scripts/g7-deploy.py .env status --json` → `plan --json` → 검토한 64자리 `planId`로 `execute --approve-plan <계획지문> --json`. 성공한 Upgrade는 App 정지 유지: `plan --operation start --json` → 새 계획지문으로 `start --approve-plan <start-planId> --json` → `status`. 기존 설치 Volume 이름 유지. 이전에 신뢰하는 이미지 쌍을 수동 pull 후 `.env`의 `GHCR_IMAGE/GHCR_MIGRATION_IMAGE/G7_RELEASE_SOURCE_COMMIT`을 운영자가 직접 변경한다. Source는 이미지 revision과 같은 40 소문자 hex, OCI label은 서명 아님. 복구 필요·중간 실패는 자동 재시작/lock 삭제/manifest 조작 금지, 기존 `g7-upgrade.py restore`의 새 격리 Volume 경로만 별도 운영 승인. manifest=target이 health·업무 데이터 수용 PASS가 아니다. [Issue211](Issue211.md) / [Runbook](../src/deploy/g7-greenfield/README.md).
+
+---
+
 ## PR #210 P2 — readonly WAL 검사
 
 호스트 preflight/plan/status는 source volume readonly를 유지한다. WAL/SHM/journal이 없는 안정된 WAL main DB만 CLI의 private detached read copy에서 확인하고 원본 identity/hash·sidecar 부재를 전후 검증한다. 실제 WAL이 존재하면 기존 SQLite snapshot을 사용하며 WAL을 무시해 성공시키지 않는다. 임시 copy는 자동 정리하고 durable SQLite/CAD 복구 세트와 구별한다. source가 검사 중 변하면 fail-closed이며 writer 정지 후 새 계획을 확인한다. 별도 설정/우회 플래그는 없다.
