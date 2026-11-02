@@ -1,3 +1,20 @@
+## TC-212 — 수동 Scene 변환·진단·직렬화 수용 게이트 (2026-11-02)
+
+| TC | Synthetic/fault case | 기대 |
+|---|---|---|
+| TC-212-01 | 안전한 합성 DXF/THREE Group·반복 중첩 Group/Line/Mesh, UTF-8 한글 TEXT/MTEXT fixture | 실 Object3D node/geometry/속성 숫자 집계, STABLE ref/Layer/WCS/geometry·dtype round-trip/manifest SHA 유효 |
+| TC-212-02 | `CUSTOM_DTO` serializer `root.toJSON` spy throw; `THREE_JSON`은 기존 inspect | Custom에서는 중복 `toJSON` 호출0, 양 경로 무결성 보존; 오류 시 browser Artifact/서버 POST 없음 |
+| TC-212-03 | 원본 SHA mismatch, 구조 오류, text index codepage, upstream font/parser 실패, DTO unsupported, invalid payload | 정확 stage+allowlisted errorCode. font/parser를 구별할 수 없는 경우 CONVERTER_UNAVAILABLE/UNKNOWN; cause 원문/Stack/URL/CAD 누출0 |
+| TC-212-04 | Object3D node100k+/scalar2M+/depth128+/payload32MiB+ 경계 | 제한 즉시 명시 실패·실수로 상한 증가0·미완료 `ARTIFACT_READY` 금지 |
+| TC-212-05 | Optional outline Worker timeout(30초), Worker/Renderer dispose 및 전환/재시도 | Optional warning/필수 직렬화 영향 분리, 중복 원본 GET/취소·stale 결과 회귀 |
+| TC-212-06 | 수동 build에서 3D 변환 실패 + dxf fallback 화면 정상 | `FALLBACK_DXF_DISPLAYED_SCENE_FAILED`, save disabled/POST0, 서버 READY/Current pointer 보존 |
+| TC-212-07 | 3D 변환·검증 성공/저장 권한 거부(401/403)/CAS(409)/Storage(503)/재접속 READY | Browser ARTIFACT_READY != 서버 READY. 서버 Source/SHA·권한·Revision·Audit 불변과 복구 안내 |
+| TC-212-08 | 원격 PR CI 전체 + 20MiB+ 실제 사용자 DXF(사내 승인 환경) | Typecheck/Lint/Unit/Integration/General/Greenfield/G7/Legacy/Docker + 현장 PC/GPU/자원 프로파일 수집. 두 Gate 분리 |
+
+`src/tests/unit/scene-build-diagnostics.test.ts`, `src/tests/unit/scene-loader.test.ts`, 기존 `scene-custom-dto.test.ts`, `viewer-source.test.ts` 및 Playwright Viewer spec 연결. CI/현장 실측 전에는 **NOT VERIFIED**. Root DESIGN.md 없음: Architecture/Decisions/Issue212를 계약 정본으로 사용. [TestReport](TestReport.md)/[FailureLedger](FailureLedger.md).
+
+---
+
 ## TC-211-P2 — 실패 Run #436 및 Codex Chain 리뷰 보완 (2026-11-02)
 
 - **TC-211-P2-01:** `standalone.test.ts` GF-109-CI-CONTRACT는 Docker workflow의 실제 첫 `g7-deploy.py ... status/plan/execute --approve-plan` → 최초 관리자 코드 → CAD create → stop → `plan --operation start/start --approve-plan` → stop → 기존 migrator 재실행·app → verify 순서를 보장한다. 관리자/영속 검증 또는 실제 Docker Job을 skip하지 않는다.
