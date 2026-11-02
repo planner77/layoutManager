@@ -29,11 +29,13 @@ import type {SceneManifest} from '../../domain/cad-scene';
 export type SceneArtifact=Readonly<{bytes:Uint8Array;manifest:SceneManifest}>;
 export type SceneLoadPolicy=Readonly<{versionId:string;sourceSha256:string;mode:'scene-first'|'build'}>;
 import { ViewerLoadError, isKnownSafeDwgAdapterLoadError, isViewerCancellation } from './viewer-load-error';
+import {isKnownSafeSceneBuildError,type SceneBuildDiagnostics} from './scene-build-diagnostics';
 import {heapBytes,observeFrame,type ViewerMetric} from './metrics';
 export interface CadViewerAdapter {
   load(source: ArrayBuffer): Promise<{ empty: boolean; entityCount?:number; warning?:string; metrics?: { initializeMs?: number; parseMs?: number } }>;
   loadScene?(source:ReadyScene):ReturnType<CadViewerAdapter['load']>;
   getSceneArtifact?():SceneArtifact|undefined;
+  getSceneBuildDiagnostics?():SceneBuildDiagnostics|undefined;
   getSceneTextIndex?():CadTextIndex;
   fitToView(): void;
   zoomIn(): void;
@@ -126,6 +128,7 @@ export class ViewerManager {
       if(scene&&!adapter.loadScene)throw new ViewerLoadError('scene','UNSUPPORTED','이 Renderer는 저장된 Scene Asset을 지원하지 않습니다.');
       const result = scene?await adapter.loadScene!(scene):await adapter.load(bytes.slice(0));
       if(scene){metric.parseMs=0;metric.reasons.parseMs='READY_SCENE restores validated buffers without DXF parsing.';}
+      metric.sceneBuild=adapter.getSceneBuildDiagnostics?.();
       metric.adapterLoadMs=performance.now()-loading;
       if (result.metrics?.initializeMs !== undefined) { metric.initializeMs=result.metrics.initializeMs; delete metric.reasons.initializeMs; }
       if (result.metrics?.parseMs !== undefined) { metric.parseMs=result.metrics.parseMs; delete metric.reasons.parseMs; }
@@ -138,10 +141,12 @@ export class ViewerManager {
       this.activeUrl=url;
       return result;
     }
-    catch(error) { if (this.adapter === adapter) { adapter.dispose(); this.adapter = undefined; }
+    catch(error) { metric.sceneBuild=adapter.getSceneBuildDiagnostics?.();
+      if (this.adapter === adapter) { adapter.dispose(); this.adapter = undefined; }
       if(isViewerCancellation(error))throw error;
       if(error instanceof ViewerLoadError&&error.stage==='scene')throw error;
       if(this.format==='DWG' && isKnownSafeDwgAdapterLoadError(error))throw error;
+      if(this.format==='DXF' && isKnownSafeSceneBuildError(error))throw error;
       if(scene)throw new ViewerLoadError('scene','REBUILD_REQUIRED','저장된 Scene을 복원하지 못했습니다. 자동 원본 재변환은 실행하지 않습니다.',error);
       throw new ViewerLoadError('adapter-load','LOAD','Viewer 도면 처리에 실패했습니다.',error); }
     } catch(error) {
