@@ -1,3 +1,17 @@
+## FR-VIEWER-MENU-EXT — Issue #127 완료 후 신규 요구사항 메뉴 연계 (2026-10-27 수립, 2026-11-03 최신화)
+
+| ID | 요구사항 / 수용 해석 | 추적 |
+| --- | --- | --- |
+| FR-MENU-EXT-01 | 신규·변경 Viewer 요구분석 때 그룹 메뉴 필요 여부를 우선 판정한다. Viewer·도면 목록·전역 운영 내비게이션 범위를 구분하고, 필요하면 기존 `도면/보기/작업` 그룹의 정확한 실행 아이템명 및 동작·Drawer를 **Issue 본문에 명시**한다. 상단 메뉴 불필요도 판단 근거 기록. | #127, AGENTS, TC-MENU-EXT-001 |
+| FR-MENU-EXT-02 | 개별 상단 버튼의 무분별한 추가 금지. 상위 그룹은 메뉴 아이템을 노출하는 트리거이며 하위는 실행 가능한 action/link/checkbox/radio. 새 그룹(예: `관리`)은 권한/기능과 메뉴 밀도 근거·ADR 변경이 있을 때만 생성; 텅 빈/가짜/미승인 명령 활성화 금지. | #37, #65, #127, TC-MENU-EXT-002 |
+| FR-MENU-EXT-03 | #56 JSON Import/Export, #91 GLB/glTF Export는 `도면`; #55/#49 편집, #71/#73 외곽선, #82/#85/#88/#90 메모 생성·트리·링크·검색은 `작업`; #85 전체 메모 가시성은 `보기`. 상세 제어는 기존 하단/우측 Drawer 및 대화상자에 둔다. | [이슈별 매핑](Issues124-126-127.md), TC-MENU-EXT-003 |
+| FR-MENU-EXT-04 | 지원 Renderer·실제 선택/로드/온오프/권한에 맞는 disabled+사유·checked/expanded 표기; #109 운영 활성·#83/#65 영속 기능은 실제 G7 인증·RBAC·Scope·지원 Schema에서만 서버 명령 활성. 메뉴 숨김은 API 권한 검사를 대신하지 않음. | #65/#71/#73/#81/#88/#90/#91, TC-MENU-EXT-004 |
+| NFR-MENU-EXT-01 | 신규 명령 통합으로 Canvas DOM/Source/Worker 재생성·선택/가시성/Undo 변경 0, ESC 한 입력에 한 계층, focus 복귀·키보드·모바일·fullscreen 및 메뉴 밀도 회귀 0. | #127 ADR-053 및 ADR-127, TC-MENU-EXT-003/005 |
+
+이 항목은 **후속 개발 시 적용할 요구/시험 기준**이다. 현재 #127(v0.42.0) 구현 완료를 변경하지 않으며 목록 `/` 메모 검색과 전역 `운영 > 서버 로그`(#62)는 별도 내비게이션에 둔다. #84 스냅·#86 일정/완료는 세부 Drawer 내부의 기능으로, 독립 상단 메뉴 아이템을 추가하지 않는다. 자세한 실제 매핑은 [Issues124-126-127](Issues124-126-127.md) 참조.
+
+---
+
 ## R-208 / P1-A — 서버 단독 DXF Scene 변환 사전 게이트 (2026-11-03)
 
 Issue #208은 서버 독립 Worker/영속 큐/Version별 Scene 작업 상태/안전 진단이 목표다. **현재 P1-A 후보에만** 지원 라이브러리의 Node CPU-only 직접 변환 PoC, 기존 Scene identity·material normalization·CUSTOM_DTO validator/restore, 안전한 상태·단계·retry 분류와 실행형 합성 시험을 추가한다. Node parser/폰트/WebGL 제약과 16MiB 실험 입력 cap은 운영 기능/상한 변경이 아니다. 서버 독립성·브라우저 Scene fidelity/CPU·RAM/OCI 검증 및 G7 내부 Actor/Site 재인가/DB transactional enqueue/CAS/감사·UI는 후속 P1-B/C/D이며 완료로 표시할 수 없다. 수용 기준 및 미검증 항목은 [Issue208](Issue208.md); 실 DXF·2PC는 #113/#193.
