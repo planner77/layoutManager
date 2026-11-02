@@ -115,12 +115,13 @@ describe('#216 immutable GHCR pair workflow (no registry network)',()=>{
     expect(repaired.status,repaired.stderr).toBe(0);
     expect(repaired.output).toContain('publish=true');
     expect(repaired.output).toContain('source_sha='+PINNED_SOURCE);
-    for(const mismatch of [
+    const mismatches:Record<string,string>[]=[
       {TAG_OBJECT:'c'.repeat(40)},
       {TAG_TREE:'d'.repeat(40)},
       {TAG_COMMIT:'e'.repeat(40)},
       {COMMIT_MESSAGE:RECOVERY_TITLE+' changed'},
-    ]){
+    ];
+    for(const mismatch of mismatches){
       const blocked=execute(shell,{COMMIT_MESSAGE:RECOVERY_TITLE,
         TAG_COMMIT:PINNED_SOURCE,...mismatch});
       expect(blocked.status).not.toBe(0);

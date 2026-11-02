@@ -1,3 +1,10 @@
+## 2026-11-03 — #216 GHCR 복구 PR CI #476 TypeScript 테스트 타입 보완
+
+- `issue216-ghcr-workflow.test.ts`에서 상이한 선택적 key를 가진 오류 주입 input union이 `Record<string,string>`과 호환되지 않아 TS2345. Runtime code/GHCR 검증 수용 실패가 아니라 CI Quality의 테스트 코드 타입 오류.
+- 문자열 env override 유형을 명시한 `Record<string,string>[]`로 정확화. FAIL 원장 및 미실행 경계 유지, CI strict/테스트/기존 release source/tag·운영 데이터 변경 없음.
+
+---
+
 ## 2026-11-03 — #216 GHCR immutable release recovery candidate
 
 - Main PR #219 검증 CI #475 8/8 SUCCESS, Main squash `934e5561...` 및 annotated `v0.58.1` 태그 생성 확인. Main CI #138의 GHCR 상태 판정은 두 차례 `G7_RELEASE_REGISTRY_CHECK_FAILED`로 fail closed해 Build/Promotion이 미실행.

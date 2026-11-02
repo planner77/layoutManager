@@ -1,3 +1,9 @@
+## #216 / PR #220 CI #476 — TypeScript TS2345 테스트 사전 오류 보완 (2026-11-03 KST)
+
+[Run41542254686](https://github.com/planner77/layoutManager/actions/runs/41542254686) source `eb9b56d76b8bbdde6bcacafffe9b012272deb25f`에서 Quality `125609157571` FAILURE: `issue216-ghcr-workflow.test.ts:124` 테스트 입력 union의 선택적 키가 `undefined`로 추론되어 `Record<string,string>`과 불일치 (`TS2345`). 해결은 별도 `mismatches: Record<string,string>[]` 입력 선언으로 string-only 테스트 환경 유지; 런타임/OCI/CI gate 미변경. Docker Build/실 GHCR 및 나머지 Test는 아직 해당 HEAD 성공 근거 없음. [FailureLedger](out/FailureLedger.md).
+
+---
+
 ## #216 — Main CI #138 실패·불변 v0.58.1 원본 소스 복구 PR (2026-11-03 KST)
 
 - **증거:** [PR #219](https://github.com/planner77/layoutManager/pull/219) 검증 HEAD `5b5b5e7e3937e847fb114185268e4fd01eabe54c`의 [CI #475 Run41536335056](https://github.com/planner77/layoutManager/actions/runs/41536335056)은 8/8 SUCCESS, 리뷰 미해결0, Main behind0, Squash `934e5561ff7d54b388d59b6f8e8f40bd14bcd45e`로 병합됨. PR/병합 Git tree 모두 `2a8ed7596a4b3444a03fd839784c9e0a5a125a0c`. Annotated tag `v0.58.1` Git tag object `bbd526ce3ce222dea7b63d1c8b081990ab238268`은 정확 해당 커밋을 가리킴. #216은 병합 시 자동 CLOSED 처리되었으나 실제 릴리스 AC 미완료로 재OPEN.

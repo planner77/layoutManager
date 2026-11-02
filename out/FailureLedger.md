@@ -1,3 +1,11 @@
+## PR #220 / #216 — CI #476 타입 추론 실패와 회귀 테스트 오라클 수리 (2026-11-03 KST)
+
+- **실제 CI:** [PR CI #476 Run41542254686](https://github.com/planner77/layoutManager/actions/runs/41542254686), 실패 HEAD `eb9b56d76b8bbdde6bcacafffe9b012272deb25f`. Quality Job `125609157571`은 `npm run typecheck`에서 `src/tests/unit/issue216-ghcr-workflow.test.ts:124` `TS2345`로 FAILURE. 입력 array의 원소별 선택적 환경변수 키가 TypeScript union에서 `string | undefined`가 되어 `execute(..., Record<string,string>)`에 전달할 수 없음. Unit/Build/Browser E2E는 Quality 실패로 검증 전/미실행. Docker Job `125609157707`는 이 기록 시 별도로 실행 중이었으므로 결과 추측 금지.
+- **수리:** 테스트의 `mismatches` 입력을 명시적 `Record<string,string>[]`으로 구성해 의도한 '문자열 환경변수 덮어쓰기 사전'을 타입에 정확 반영. `as any`/TypeScript strict·CI gate 완화나 운영 검사 로직 변경 없이 4가지 tag/source/subject 위변조 거절 테스트 그대로 유지.
+- **후속:** 이 실패를 원장에 FAIL로 보존하고 수정된 exact HEAD의 새 PR CI를 시작. 재실행 결과 PASS는 실제 관측 전 `NOT VERIFIED`. GHCR v0.58.1 게시·Main Merge/원본 Docker 검증은 아직 미실행. 기존 tagged source/tag/object SHA·CAD/DB/Volume 불변.
+
+---
+
 ## #216 — Main CI #138 2회 동일 GHCR manifest 검사 실패 및 불변 릴리스 복구 (2026-11-03 KST)
 
 - **증거:** [Main CI #138 Run41539913477](https://github.com/planner77/layoutManager/actions/runs/41539913477) exact Main `934e5561ff7d54b388d59b6f8e8f40bd14bcd45e`, attempt1 release-scope `125601131036` SUCCESS, GHCR `125601417511` FAILURE. attempt2 release-scope `125602250765` SUCCESS, GHCR `125602250478` FAILURE. 두 번 모두 Docker Login SUCCESS 후 `Check immutable version pair on GHCR`에서 안전 코드 `G7_RELEASE_REGISTRY_CHECK_FAILED`; App/Migrator candidate Build, pair digest 검증, Version/latest 승격 및 OCI 크기 측정 **SKIPPED**. tag 생성은 SUCCESS, 원본 `v0.58.1` annotated tag object `bbd526ce3ce222dea7b63d1c8b081990ab238268` → source `934e5561...`(tree `2a8ed7596a4b3444a03fd839784c9e0a5a125a0c`). Main CI 성공/이미지 게시 판정 불가.

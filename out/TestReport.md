@@ -1,3 +1,9 @@
+## PR #220 / #216 — CI #476 실패한 TypeScript 단계와 수정 후 재검증 (2026-11-03)
+
+[CI #476 Run41542254686](https://github.com/planner77/layoutManager/actions/runs/41542254686), 실패 source `eb9b56d76b8bbdde6bcacafffe9b012272deb25f`: Scope SUCCESS, Quality Job `125609157571` TS2345 (시험용 환경변수 override object union에 `undefined` 추론), Unit/Build/브라우저는 미실행/선행 실패 SKIPPED. Docker Job은 이 시점 별도 진행 중(종료 결과 확인 전). 수정은 `Record<string,string>[]` 타입 명시로 테스트 내용 그대로 유지. 신규 정확 HEAD의 PR CI가 성공하기 전 GHCR 복구/Runtime 배포 완료 주장 금지.
+
+---
+
 ## #216 / Main CI #138 GHCR 검사 실패, 복구 PR 검증 범위 (2026-11-03 KST)
 
 - 이전 PR [CI #475](https://github.com/planner77/layoutManager/actions/runs/41536335056) 8/8 SUCCESS/Source `5b5b5e7e3937e847fb114185268e4fd01eabe54c`; Main `934e5561ff7d54b388d59b6f8e8f40bd14bcd45e` Squash/동일 tree `2a8ed7596a4b3444a03fd839784c9e0a5a125a0c`. 이것은 **Runtime 코드 검증**, 실 GHCR 게시 수용과 분리.
