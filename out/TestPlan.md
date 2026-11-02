@@ -1,3 +1,11 @@
+## TC-208-A1-FONT — CI #445 빌드 전 글꼴 입력 독립성/Node 실변환 재시험 (2026-11-03)
+
+- CI Quality 순서 `npm run db:generate → typecheck → lint → npm test → npm run build`; Unit 단계에서 gitignored/빌드 산출물인 `public/fonts/CadKorean.typeface.json`을 요구하면 안 된다. `scripts/fonts.mjs`의 실제 입력 `public/fonts/NanumGothic-Regular.ttf`를 직접 명시 전달하고 `TTFLoader.parse → familyName/이름 메타데이터 정규화 → FontLoader.parse`를 메모리 내 수행한다. 합성 Scene DXF의 실제 `getFromPath`/CUSTOM_DTO/Restore는 계속 실행해야 하며 mock parser/skip/optional pass 금지.
+- 음성 테스트: source digest 불일치가 font 로드를 앞서 실패, font 파일 부재·손상 TTF·잘못된 JSON typeface·확장자 거부 시 모두 `FONT_PREPARE/SCENE_FONT_UNAVAILABLE`(민감 경로/예외 원문 비노출). font 원본 크기 제한(`TTF 8MiB, JSON 32MiB`)은 PoC 자원 상한이며 기존 DXF/Scene 운영 상한 변경이 아니다.
+- 재시험 Gate: 정확 HEAD `npm run typecheck`·`npm run lint`·`npm test`(145 suites와 합성 신규 unit)·Production Build·Docker·G7/Greenfield/General E2E 전체. **확인 전 PASS/Node CPU-only GO 불가.** 추가 실 DXF/브라우저 fidelity/Worker·G7 내부 권한·Queue·독립 OCI는 계속 미구현·미검증.
+
+---
+
 ## TC-MENU-EXT — #127 후속 요구·상단 메뉴 연계 회귀 계획 (2026-10-27 작성, 후속 기능 회귀 **NOT RUN**)
 
 | TC | 검증 범위 | 합격 기준 |
