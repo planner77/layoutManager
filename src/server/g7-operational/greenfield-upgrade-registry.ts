@@ -24,9 +24,10 @@ const zones=(version:string):ReleaseDeclaration=>({version,
   checksum:G7_GREENFIELD_BASELINE_CHECKSUM,
   dataContract:'G7-ZONES-DATA-V1',runtimeContract:'G7-ZONES-RUNTIME-V1'});
 export const GREENFIELD_UPGRADE_REGISTRY:UpgradeRegistry={
-  releases:[zones('0.56.0'),zones('0.57.0'),zones('0.58.0')],
+  releases:[zones('0.56.0'),zones('0.57.0'),zones('0.58.0'),zones('0.58.1')],
   edges:[{from:'0.56.0',to:'0.57.0',kind:'COMPATIBLE'},
-    {from:'0.57.0',to:'0.58.0',kind:'COMPATIBLE'}],
+    {from:'0.57.0',to:'0.58.0',kind:'COMPATIBLE'},
+    {from:'0.58.0',to:'0.58.1',kind:'COMPATIBLE'}],
 };
 
 function forward(from:string,to:string):boolean {

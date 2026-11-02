@@ -13,14 +13,14 @@ spec = importlib.util.spec_from_file_location("g7_upgrade", Path(__file__).with_
 upgrade = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(upgrade)
 SOURCE = "a" * 40
-APP = "ghcr.io/planner77/layoutmanager:0.58.0"
+APP = "ghcr.io/planner77/layoutmanager:0.58.1"
 MIGRATOR = APP + "-migrate"
 
 
 def image(role):
     return {"Id": "sha256:" + ("b" if role == "app" else "c") * 64,
             "Os": "linux", "Architecture": "amd64", "Config": {"Labels": {
-                "org.opencontainers.image.version": "0.58.0",
+                "org.opencontainers.image.version": "0.58.1",
                 "org.opencontainers.image.source": "https://github.com/planner77/layoutManager",
                 "org.opencontainers.image.revision": SOURCE,
                 "com.planner77.g7.image-role": role}}}
@@ -62,12 +62,12 @@ class PairTests(unittest.TestCase):
     def test_unbound_source_cross_repository_and_same_image_fail(self):
         with self.assertRaisesRegex(upgrade.Blocked, "SOURCE_REQUIRED"):
             upgrade.inspect_pair(APP, MIGRATOR, "", lambda _: image("app"))
-        for ref in ("other.example/app:0.58.0-migrate", MIGRATOR):
+        for ref in ("other.example/app:0.58.1-migrate", MIGRATOR):
             with self.assertRaisesRegex(upgrade.Blocked, "PAIR_MISMATCH"):
                 upgrade.inspect_pair(APP, ref, SOURCE, lambda _: image("app"))
 
     def test_mistagged_and_malformed_digest_refs_fail_before_maintenance(self):
-        for refs in ((APP.replace("0.58.0", "0.57.0"), MIGRATOR),
+        for refs in ((APP.replace("0.58.1", "0.57.0"), MIGRATOR),
                      (APP + "@sha256:bad", MIGRATOR),
                      (APP.rsplit(":", 1)[0], MIGRATOR)):
             with self.subTest(refs=refs), self.assertRaisesRegex(upgrade.Blocked, "PAIR_MISMATCH"):
@@ -136,7 +136,7 @@ class HostTests(unittest.TestCase):
 
     def test_real_cli_plan_fields_survive_filter_and_private_fields_do_not(self):
         plan = {"state": "UPGRADE_COMPATIBLE", "planId": "d" * 64, "from": "0.56.0",
-                "to": "0.58.0", "steps": ["COMPATIBLE", "COMPATIBLE"],
+                "to": "0.58.1", "steps": ["COMPATIBLE", "COMPATIBLE", "COMPATIBLE"],
                 "requiresApproval": False, "privatePath": "/private/canary",
                 "secret": "never-forward-this"}
         _, result, output = self.invoke("plan", cli_output=json.dumps(plan))
@@ -145,13 +145,13 @@ class HostTests(unittest.TestCase):
         self.assertEqual(forwarded["planId"], plan["planId"])
         self.assertEqual(forwarded["from"], "0.56.0")
         self.assertFalse(forwarded["requiresApproval"])
-        self.assertEqual(forwarded["steps"], ["COMPATIBLE", "COMPATIBLE"])
+        self.assertEqual(forwarded["steps"], ["COMPATIBLE", "COMPATIBLE", "COMPATIBLE"])
         self.assertNotIn("private", output)
         self.assertNotIn("never-forward", output)
 
     def test_invalid_chain_payload_never_reaches_operator(self):
         base = {"state": "UPGRADE_COMPATIBLE", "planId": "d" * 64,
-                "from": "0.56.0", "to": "0.58.0"}
+                "from": "0.56.0", "to": "0.58.1"}
         for bad in ("COMPATIBLE", ["COMPATIBLE", "/private/leak"],
                     ["COMPATIBLE", {"raw_sql": "SELECT secret"}],
                     ["COMPATIBLE"] * 65):
