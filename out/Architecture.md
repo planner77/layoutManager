@@ -1,3 +1,13 @@
+## ADR-127 / #127 후속 — Viewer 명령 그룹을 통한 기능 확장 규약 (2026-10-27 수립, 2026-11-03 최신화)
+
+- **구성 경계:** `src/features/cad-viewer/viewer.tsx`의 `CadViewer`가 메뉴의 `ViewerCommandGroup[]`/실제 handler와 capability·선택·권한 상태를 조합하고, `viewer-menu-bar.tsx`→`viewer-command-menu.tsx`가 접근 가능한 command group/role/checked/disabled를 렌더링한다. 상세 기능은 기존 `ViewerAppShell`의 좌 레이어·우 Tree·하단 도구 overlay Drawer 또는 명시 대화상자에 연결한다. 신규 기능은 **기존 명령/Drawer 재사용 우선**, 별도 상위 버튼 추가 금지.
+- **메뉴 정보 구조:** `도면`=정보·파일/Version·링크·JSON 입출력(#56)·GLB/glTF export(#91); `보기`=Renderer/Camera/Fullscreen·전체 메모 세션 visibility(#85); `작업`=선택/편집(#49/#55)·외곽선 생성/타입 선택(#71)/Tree(#73)·메모 추가(#82)/Tree(#85)/링크 복사(#88)/검색(#90). #65 구현 이후 `작업 > 외곽선 타입 관리`는 인증된 Admin/G7 ACTIVE/지원 Schema일 때 기존 command로 실행하고 불충족 시 disabled 사유를 표시; 별도 `관리` 그룹은 독립 UX/권한 결정 후 도입. #84 Snap·#86 일정/완료는 메모 Drawer 내부 상세 컨트롤이며 무조건 새 메뉴 item이 아님.
+- **우측 Drawer 조정 기준:** 기존 Outline Tree와 후속 Memo Tree는 우측 영역에서 탭/콘텐츠 전환을 우선 검토하여 상시 두 우측 도크/겹침을 만들지 않는다. 두 Tree의 selection/filter/visibility는 독립 유지하고, 모바일은 한 Drawer/모달 포커스, desktop은 #127 non-modal 정책 및 Canvas 가시 면적 보존.
+- **명령·수명 주기:** onSelect는 기존 Manager/App reducer/검증된 도메인·서버 API를 통해서만 실행. menu/Drawer state를 Viewer Source load-effect dependency에 넣지 않고 Canvas ref/Manager/Adapter/Worker 재생성 없이 command handler만 확장한다. `dxf-viewer` fallback/DWG와 권한 없는 상태를 false 성공처럼 숨기지 않고 disabled 이유로 명시. 서버 API 검증은 UI 메뉴 숨김과 독립.
+- **범위 구획:** CAD 도면 목록 `/`의 메모 통합 검색은 별도 목록 UI, `운영 > 서버 로그`(#62)는 전역 layout navigation이며 Viewer #127 상단 그룹으로 옮기지 않는다. #109 기반 Auth/Prisma/G7의 설치별 실제 운영 활성·인가·지원 Schema와 UI 문서 규칙은 별개. 근거 [ADR-127](Decisions.md), [이슈별 연결표](Issues124-126-127.md), [FR-MENU-EXT](Requirements.md).
+
+---
+
 ## #208 / P1-A — Node DXF→Scene CPU-only PoC 및 안전한 후속 경계 (2026-11-03)
 
 현재 `node-converter-poc.ts`는 실제 원본 해시→TextDecoder/explicitElevation→Node `DXFViewer`와 font pre-parse→`preflightSceneRoot`→material clone→stable Scene tag→text-index→CUSTOM_DTO+validator→restore 검증의 **격리 실험**만 한다. Browser WebGL/서버 Auth/DB/Storage와는 연결되지 않으며 private `_font`/data URL은 기술 리스크다. `scene-build-job.ts`는 버전 고정 phase/상태 전이·안전 공개 요약과 timeout/backoff의 순수 도메인 계약이다. JOB READY만으로 서버 Scene READY를 추정하지 않으며 CurrentScene verified pointer가 정본이다.
