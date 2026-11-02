@@ -1,3 +1,9 @@
+## ADR-209 보완 — WAL read-only 검사용 복사본 (PR #210 P2)
+
+Read-only mount를 read-write로 완화하면 preflight가 원본 sidecar를 생성할 수 있으므로, sidecar가 전혀 없는 안정된 WAL main DB에만 private detached inspection을 허용한다. 원본·복사본 SHA와 파일 identity, sidecar 부재를 복사 전후 확인하며 live WAL은 정상 SQLite 경로로 읽는다. `immutable=1`로 WAL을 무시하는 대안은 미반영 committed row를 놓칠 수 있어 사용하지 않는다. 실제 복구 백업과 임시 검사용 복사본은 별개다. 수용 근거는 TC-209-RO-WAL 및 TestReport/FailureLedger에 기록한다.
+
+---
+
 ## ADR-209 — 등록된 Greenfield release chain과 보존형 복구 (2026-11-02)
 
 **상태:** 사용자 승인 범위의 구현 결정; 실제 테스트·운영 수용 전. Root DESIGN.md 부재로 Architecture와 이 문서를 정본으로 사용한다.

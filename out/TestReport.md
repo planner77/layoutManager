@@ -1,3 +1,11 @@
+## PR #210 P2 — Docker readonly WAL 점검·복구 재검증
+
+리뷰 [discussion_r4439624166](https://github.com/planner77/layoutManager/pull/210#discussion_r4439624166)의 stopped WAL/no-sidecar+readonly 실패를 QA가 이전 실제 image로 RED 재현했다. 수정한 CLI-only read inspection adapter의 안정된 private detached copy와 live-WAL 통상 SQLite 조회를 구별하고 Runtime HTTP를 유지했다. 설계/TC는 Architecture/Decisions/TestPlan의 P2 절, 원인·재작업은 FailureLedger를 따른다.
+
+최신 관련 통합 **23/23 PASS**, 독립 stopped/active WAL9/9는 이에 포함된다. TypeScript/관련 ESLint PASS, 실제 최종 migrator `sha256:0680cebc4de62254b45f2d0010e434dad29358fecbcfc18103adcbc78fe204da`의 reusable Docker smoke는2회 PASS다. readonly stopped DB의 preflight/plan/status 성공·원본 metadata/hash/sidecar 불변, activeWAL committed row 반영, apply의 SQLite recovery set 및 source readonly 격리 restore 지문 동일을 검증했다. 새 smoke는 PR CI 필수 Docker step으로 연결했다. 앞선938 전체 및 이전 Browser 수용은 별도 근거이며 이 delta의 새 전체 실행으로 합산하지 않는다. 실제 Manager는 P2 source/QA/패키징 범위를 수용했다. 원격 thread resolve·새 HEAD CI 시작은 후속 인계에서 실제 확인한다.
+
+---
+
 ## #209 / PR #210 게시·CI 인계
 
 최종 source `f37913e08b18c6b470aac017f3408975d39e0d6e`/tree `c91ed877c8e2c50dab1c9f0fc23e0022c109af59`를 기능 branch로 게시하고 [PR #210](https://github.com/planner77/layoutManager/pull/210)을 생성했다. Main behind0·mergeable=true·미해결 리뷰0을 확인했다. [PR CI Run41402534033](https://github.com/planner77/layoutManager/actions/runs/41402534033)는 시작(in_progress)만 확인했으며 성공/완료는 미확인이다. 후속 문서 synchronize의 최종 HEAD CI도 시작까지만 확인하고 모니터링하지 않는다. 전체 실패·Secret/동일 tree/역할·현장 경계는 FailureLedger와 아래 본 검증 기록을 따른다. PR 병합·Issue 종료·GHCR/실 운영 적용은 수행하지 않았다.

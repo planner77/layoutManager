@@ -7,6 +7,7 @@ import path from 'node:path';
 import { assertDeclaredSchema, GREENFIELD_UPGRADE_REGISTRY,
   type ReleaseDeclaration, type UpgradeRegistry } from './greenfield-upgrade-registry';
 import { validateInstallation } from './greenfield-auto';
+import { withReadOnlyInspection } from './greenfield-readonly-inspection';
 
 type Db={backup:(filename:string)=>Promise<unknown>;prepare:(sql:string)=>{all:()=>Record<string,unknown>[]};close:()=>void};
 const Sqlite=createRequire(import.meta.url)('better-sqlite3') as new(filename:string,options?:{readonly?:boolean;fileMustExist?:boolean})=>Db;
@@ -114,9 +115,11 @@ export async function createRecoverySet(input:{dbPath:string;dbDir:string;cadDir
   chmodSync(path.join(dir,'cad.sqlite'),0o600);
   const backupFd=openSync(path.join(dir,'cad.sqlite'),constants.O_RDONLY|constants.O_NOFOLLOW);
   try{fsyncSync(backupFd);}finally{closeSync(backupFd);}
-  const backupDb=new Sqlite(path.join(dir,'cad.sqlite'),{fileMustExist:true,readonly:true});
-  try{assertDeclaredSchema(backupDb as never,input.sourceRelease);}catch{throw new Error('G7_UPGRADE_BACKUP_REQUIRED');}
-  finally{backupDb.close();}
+  try{withReadOnlyInspection(path.join(dir,'cad.sqlite'),inspectedPath=>{
+    const backupDb=new Sqlite(inspectedPath,{fileMustExist:true,readonly:true});
+    try{assertDeclaredSchema(backupDb as never,input.sourceRelease);}
+    finally{backupDb.close();}
+  });}catch{throw new Error('G7_UPGRADE_BACKUP_REQUIRED');}
   copyCad(input.cadDir,path.join(dir,'cad'),input.cad);
   assertCadSnapshot(input.cadDir,input.cad);
   const sourceManifestSha256=fileSha256(input.manifest);
@@ -176,12 +179,14 @@ export function verifyRecoverySet(dbDir:string,id:string,
     !manifestRelease||manifest.schemaId!==manifestRelease.schemaId)
     throw new Error('G7_UPGRADE_BACKUP_INVALID');
   assertCadSnapshot(path.join(dir,'cad'),raw.cad);
-  const db=new Sqlite(path.join(dir,'cad.sqlite'),{fileMustExist:true,readonly:true});
-  try{
-    const release=registry.releases.find(r=>r.version===raw.sourceVersion);
-    if(!release)throw new Error('G7_UPGRADE_BACKUP_INVALID');
-    assertDeclaredSchema(db as never,release);
-  }finally{db.close();}
+  withReadOnlyInspection(path.join(dir,'cad.sqlite'),inspectedPath=>{
+    const db=new Sqlite(inspectedPath,{fileMustExist:true,readonly:true});
+    try{
+      const release=registry.releases.find(r=>r.version===raw.sourceVersion);
+      if(!release)throw new Error('G7_UPGRADE_BACKUP_INVALID');
+      assertDeclaredSchema(db as never,release);
+    }finally{db.close();}
+  });
   return raw;
 }
 export function restoreRecoverySet(dbDir:string,id:string,targetDbDir:string,targetCadDir:string,

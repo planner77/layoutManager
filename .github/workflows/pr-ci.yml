@@ -363,7 +363,7 @@ jobs:
           set -euo pipefail
           python3 -m py_compile src/scripts/audit_standalone_layers.py src/scripts/test_audit_standalone_layers.py src/scripts/smoke_web_runtime.py src/scripts/smoke_greenfield_runtime.py
           python3 src/scripts/test_audit_standalone_layers.py
-          python3 -m py_compile src/scripts/g7-upgrade.py src/scripts/test_g7_upgrade.py
+          python3 -m py_compile src/scripts/g7-upgrade.py src/scripts/test_g7_upgrade.py src/scripts/smoke_greenfield_wal_readonly.py
           python3 src/scripts/test_g7_upgrade.py
       - name: Build pre-change baseline (same source, original Dockerfile)
         if: needs.scope.outputs.baseline == 'true'
@@ -548,6 +548,14 @@ jobs:
             --old-app ghcr.io/planner77/layoutmanager:0.56.0 \
             --old-migrator ghcr.io/planner77/layoutmanager:0.56.0-migrate \
             --app "cad-layout-viewer:${VERSION}" --migrator "cad-layout-viewer:${VERSION}-migrate" \
+            --source "${{ github.sha }}"
+      - name: Readonly stopped and active WAL inspection and recovery (#210 P2)
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="$(python3 -c 'import json;print(json.load(open("src/package.json"))["version"])')"
+          python3 src/scripts/smoke_greenfield_wal_readonly.py \
+            --migrator "cad-layout-viewer:${VERSION}-migrate" --version "$VERSION" \
             --source "${{ github.sha }}"
       - name: Compose Greenfield first run, Admin, CAD, restart persistence
         shell: bash

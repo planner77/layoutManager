@@ -109,6 +109,7 @@ COPY --from=builder /app/src/server/g7-operational/greenfield-auto.ts ./server/g
 COPY --from=builder /app/src/server/g7-operational/greenfield-upgrade-registry.ts ./server/g7-operational/greenfield-upgrade-registry.ts
 COPY --from=builder /app/src/server/g7-operational/greenfield-upgrade-backup.ts ./server/g7-operational/greenfield-upgrade-backup.ts
 COPY --from=builder /app/src/server/g7-operational/greenfield-upgrade-engine.ts ./server/g7-operational/greenfield-upgrade-engine.ts
+COPY --from=builder /app/src/server/g7-operational/greenfield-readonly-inspection.ts ./server/g7-operational/greenfield-readonly-inspection.ts
 COPY --from=builder /app/src/server/g7-operational/greenfield-gate.ts ./server/g7-operational/greenfield-gate.ts
 COPY --from=builder /app/src/server/g7-operational/greenfield-authority.ts ./server/g7-operational/greenfield-authority.ts
 COPY --from=builder /app/src/server/g7-operational/runtime-admin.ts ./server/g7-operational/runtime-admin.ts

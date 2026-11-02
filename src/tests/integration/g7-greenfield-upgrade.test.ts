@@ -1,9 +1,9 @@
-import { afterEach, describe, expect, test } from 'vitest';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 import { createHash, randomUUID } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { createRequire } from 'node:module';
-import { chmodSync, cpSync, mkdirSync, mkdtempSync, readFileSync, readdirSync,
-  rmSync, unlinkSync, writeFileSync } from 'node:fs';
+import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync,
+  rmSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { ensureAutomatedGreenfield, identity,
@@ -12,12 +12,13 @@ import { applyGreenfieldUpgrade, planGreenfieldUpgrade, restoreGreenfieldUpgrade
   statusGreenfieldUpgrade } from '../../server/g7-operational/greenfield-upgrade-engine';
 import { ddlSha256, resolveUpgradeChain, type UpgradeRegistry } from '../../server/g7-operational/greenfield-upgrade-registry';
 import { G7_GREENFIELD_BASELINE,G7_GREENFIELD_BASELINE_CHECKSUM } from '../../server/g7-operational/greenfield-schema';
+import { withReadOnlyInspection } from '../../server/g7-operational/greenfield-readonly-inspection';
 
 type Db={prepare:(sql:string)=>{all:()=>Record<string,unknown>[];get:()=>Record<string,unknown>;
   run:(...args:unknown[])=>unknown};exec:(sql:string)=>void;close:()=>void};
 const Sqlite=createRequire(import.meta.url)('better-sqlite3') as new(file:string)=>Db;
 const roots:string[]=[];
-afterEach(()=>{for(const root of roots.splice(0))rmSync(root,{recursive:true,force:true});});
+afterEach(()=>{vi.unstubAllEnvs();for(const root of roots.splice(0))rmSync(root,{recursive:true,force:true});});
 const hash=(bytes:string)=>createHash('sha256').update(bytes).digest('hex');
 function fixture(){
   const root=mkdtempSync(path.join(tmpdir(),'g7-upgrade-'));roots.push(root);chmodSync(root,0o700);
@@ -244,6 +245,46 @@ describe('#209 Greenfield release upgrade',()=>{
       ['scripts/g7-greenfield.ts','auto'],{cwd:path.resolve(),encoding:'utf8',env:childEnv});
     expect(result.status).toBe(1);
     expect(JSON.parse(result.stderr)).toMatchObject({state:'BLOCKED',stage:'auto'});
+  });
+
+  test('checkpointed WAL header with no sidecars is inspected without writing source',()=>{
+    const f=fixture(),db=new Sqlite(f.dbPath);
+    db.exec('PRAGMA journal_mode=WAL');db.close();
+    const header=readFileSync(f.dbPath);
+    expect([header[18],header[19]]).toEqual([2,2]);
+    const names=readdirSync(f.dbDir).sort();
+    expect(names.some(name=>name.endsWith('-wal')||name.endsWith('-shm'))).toBe(false);
+    const before=createHash('sha256').update(header).digest('hex');
+    chmodSync(f.dbDir,0o500);
+    try{
+      expect(planGreenfieldUpgrade(f.env).decision).toBe('UPGRADE_COMPATIBLE');
+      expect(statusGreenfieldUpgrade(f.env).state).toBe('UPGRADE_COMPATIBLE');
+      expect(readdirSync(f.dbDir).sort()).toEqual(names);
+      expect(createHash('sha256').update(readFileSync(f.dbPath)).digest('hex')).toBe(before);
+    }finally{chmodSync(f.dbDir,0o700);}
+  });
+
+  test('readonly inspection refuses symlink, source-side temp and sidecar race',()=>{
+    const f=fixture(),db=new Sqlite(f.dbPath);
+    db.exec('PRAGMA journal_mode=WAL');db.close();
+    const link=path.join(f.root,'linked.sqlite');symlinkSync(f.dbPath,link);
+    expect(()=>withReadOnlyInspection(link,()=>true)).toThrow('G7_UPGRADE_STORAGE_UNSAFE');
+    const nestedTemp=path.join(f.dbDir,'temp');mkdirSync(nestedTemp,{mode:0o700});
+    vi.stubEnv('TMPDIR',nestedTemp);
+    expect(()=>withReadOnlyInspection(f.dbPath,()=>true)).toThrow('G7_UPGRADE_STORAGE_UNSAFE');
+    expect(readdirSync(nestedTemp)).toHaveLength(0);
+    vi.unstubAllEnvs();
+    const wal=f.dbPath+'-wal';
+    expect(()=>withReadOnlyInspection(f.dbPath,()=>{
+      writeFileSync(wal,'simulated concurrent writer',{mode:0o600});return true;
+    })).toThrow('G7_UPGRADE_DATA_CHANGED');
+    unlinkSync(wal);
+    let detached='';
+    expect(()=>withReadOnlyInspection(f.dbPath,inspectedPath=>{
+      detached=inspectedPath;throw new Error('synthetic inspection failure');
+    })).toThrow('synthetic inspection failure');
+    expect(detached).not.toBe(f.dbPath);
+    expect(existsSync(detached)).toBe(false);
   });
 
   test('generic migration edge requires exact plan approval and verified postcondition',async()=>{

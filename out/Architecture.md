@@ -1,3 +1,15 @@
+## PR #210 P2 — Read-only WAL 사전 점검 (2026-11-02)
+
+리뷰 스레드 `PRRT_kwDOUQjDfc6yj5LK`의 정지된 WAL DB는 checkpoint 후 `-wal`/`-shm`이 없어도 header가 WAL을 유지할 수 있다. 원본 볼륨을 read-only로 마운트한 CLI의 SQLite 읽기는 sidecar 초기화 때문에 실패할 수 있으므로, CLI inspection에 한해 아래 경계를 추가한다.
+
+- WAL header이고 `-wal`/`-shm`/`-journal`이 모두 없는 경우에만 원본 밖 private 임시 디렉터리에 main DB의 **검사용 detached copy**를 만든다. 복사 전후 원본 regular-file·UID/권한·realpath·device/inode/size/SHA가 동일하고 복사본 SHA가 같으며 sidecar가 계속 없어야 결과를 사용한다. 변화가 있으면 fail-closed, 임시 파일은 finally 정리한다.
+- SQLite는 복사본 디렉터리에만 필요한 sidecar를 만들고 기존 exact Schema/FK/무결성/업무 snapshot 검증을 수행한다. live WAL/SHM/journal이 있으면 일반 readonly SQLite 경로를 사용하며, WAL을 버리는 main-only fallback이나 `immutable=1`은 금지한다.
+- `currentData`와 read-only 복구 세트 검증에 공통 adapter를 사용한다. 계획의 원본 manifest/volume identity와 적용 직전 재검증은 그대로이며, HTTP runtime DB open 및 실제 backup/restore 계약은 변경하지 않는다. 이 복사본은 durable backup이 아니며 WAL을 포함하는 실제 backup API를 대체하지 않는다.
+
+실제 readonly container 재현/원본 비변경/active WAL 결과는 TestReport/FailureLedger에 기록한다. CI는 새 실행 시작만 확인한다.
+
+---
+
 ## #209 — Install / Upgrade 경계 (2026-11-02 설계)
 
 루트 DESIGN.md는 없으므로 이 절과 Decisions가 설계 정본이다. `greenfield-auto.ts`의 기존 exact release 비교가 0.56→0.57 차단의 코드상 원인이다. 현장 내부 오류 직접 관측과 구분하고 재현 시험으로 확증한다.

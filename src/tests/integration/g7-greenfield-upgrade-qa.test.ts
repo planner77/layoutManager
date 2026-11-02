@@ -199,6 +199,46 @@ describe('#209 independent failure and recovery QA',()=>{
       .toBe('wal-committed');}finally{restored.close();writer.close();}
   });
 
+  test('closed WAL with no sidecars stays source-read-only through plan, backup verify, and isolated restore',async()=>{
+    const f=fixture(),walDb=new Sqlite(f.dbPath);
+    expect(walDb.prepare('PRAGMA journal_mode=WAL').get().journal_mode).toBe('wal');
+    walDb.close();
+    expect(existsSync(f.dbPath+'-wal')).toBe(false);
+    expect(existsSync(f.dbPath+'-shm')).toBe(false);
+    const dbBefore=readFileSync(f.dbPath),manifestBefore=readFileSync(f.manifest);
+    expect(planGreenfieldUpgrade(f.env).decision).toBe('UPGRADE_COMPATIBLE');
+    expect(statusGreenfieldUpgrade(f.env).state).toBe('UPGRADE_COMPATIBLE');
+    expect(readFileSync(f.dbPath)).toEqual(dbBefore);
+    expect(readFileSync(f.manifest)).toEqual(manifestBefore);
+    expect(existsSync(f.dbPath+'-wal')).toBe(false);
+    expect(existsSync(f.dbPath+'-shm')).toBe(false);
+    const result=await applyGreenfieldUpgrade(maintenance(f.env));
+    if(!('backupId' in result))throw new Error('expected WAL recovery set');
+    expect(verifyRecoverySet(f.dbDir,result.backupId!).sourceVersion).toBe('0.56.0');
+    const dbTarget=path.join(f.root,'stopped-wal-restore-db'),cadTarget=path.join(f.root,'stopped-wal-restore-cad');
+    mkdirSync(dbTarget,{mode:0o700});mkdirSync(cadTarget,{mode:0o700});
+    expect(restoreGreenfieldUpgrade(f.env,result.backupId!,dbTarget,cadTarget).state)
+      .toBe('RESTORED_ISOLATED');
+    const restored=new Sqlite(path.join(dbTarget,'cad.sqlite'),{readonly:true});
+    try{expect(restored.prepare('SELECT COUNT(*) AS n FROM "User"').get().n).toBe(1);}
+    finally{restored.close();}
+  });
+
+  test('active WAL committed rows change the plan snapshot while writer remains open',()=>{
+    const f=fixture(),writer=new Sqlite(f.dbPath);
+    try{
+      writer.exec('PRAGMA journal_mode=WAL; PRAGMA wal_autocheckpoint=0');
+      writer.prepare('UPDATE "User" SET login_name=? WHERE id=?').run('wal-committed-one',f.user);
+      expect(existsSync(f.dbPath+'-wal')).toBe(true);
+      expect(existsSync(f.dbPath+'-shm')).toBe(true);
+      const first=planGreenfieldUpgrade(f.env);
+      writer.prepare('UPDATE "User" SET login_name=? WHERE id=?').run('wal-committed-two',f.user);
+      const second=planGreenfieldUpgrade(f.env);
+      expect(second.dataSha256).not.toBe(first.dataSha256);
+      expect(second.planId).not.toBe(first.planId);
+    }finally{writer.close();}
+  });
+
   test('space preflight failure and recovery-set tampering do not mutate source DB or manifest',async()=>{
     const f=fixture(),dbBefore=readFileSync(f.dbPath),manifestBefore=readFileSync(f.manifest);
     const fs=statfsSync(f.dbDir,{bigint:true});

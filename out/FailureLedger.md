@@ -1,3 +1,17 @@
+## PR #210 / #209 — P2 readonly WAL 사전 점검 재작업 (2026-11-02)
+
+- 실제 미해결 리뷰 [discussion_r4439624166](https://github.com/planner77/layoutManager/pull/210#discussion_r4439624166), thread `PRRT_kwDOUQjDfc6yj5LK`: 읽기 전용 호스트 preflight/plan/status에서 clean-close WAL DB는 sidecar를 생성할 수 없어 실패한다는 지적이다. 첫 게시 후 확인 당시 thread0이었으나 후속 문서 HEAD `d1118be` 점검에서 새 thread1을 확인했다. 기존 Manager GO를 이 P2에 대해 보류하고 재현/수정/재검증한다.
+- 독립 QA가 이전 실제 migrator image로 새 disposable volume의 User/Admin·WAL을 만들고 마지막 connection을 닫아 WAL/SHM 없는 상태를 만든 뒤 **Docker readonly mount**에서 preflight를 실행했다. `G7_GREENFIELD_SETUP_BLOCKED`/SQLite `unable to open database file` at assertDeclaredSchema→currentData를 실제 재현했다. DB/manifest SHA·sidecar 목록이 그대로여서 원본은 변경되지 않았다. 기존 writable WAL 시험을 이 조합의 성공으로 승계하지 않는다.
+- 설계: CLI-only 읽기 adapter가 일반 DB/실제 WAL에는 통상 SQLite readonly를 사용하고, WAL header이며 WAL/SHM/journal이 모두 없고 원본 UID/private/realpath/inode/size/hash가 전후 같은 경우에만 private detached copy에서 조회한다. 실제/live WAL은 기존 SQLite 조회를 유지하며 immutable=1·WAL 무시는 금지한다. 이는 안정화된 읽기 snapshot이며 검증된 SQLite backup을 대체하지 않는다. Runtime HTTP 경로는 변경하지 않는다.
+- 수정/재검증: CLI-only `greenfield-readonly-inspection.ts`를 engine/recovery schema 조회에 연결하고 migrator COPY에 포함했다. runtime HTTP DB open은 그대로다. 마지막 관련 통합 **3files/23 PASS**, 별도 QA stopped/active WAL9/9(23에 포함)·TypeScript/관련 ESLint PASS, Python smoke syntax PASS를 확인했다. 읽기 copy는 private·source/temp 경로·UID/realpath/inode/size/hash/sidecar 전후 검사와 cleanup을 적용한다.
+- 실제 최종 image pair를646파일 고정 context SHA256 `f9353d9fc96bbd6623261e219b95102779d178e4633d3e453f38ab409a464264`로 재빌드했다. App `sha256:a83f670b5c043fed9d977b7c9f2a0be140bca81eb788af8ed2a151464bcdb4ae`, Migrator `sha256:0680cebc4de62254b45f2d0010e434dad29358fecbcfc18103adcbc78fe204da`. 이후 바뀐 것은 Docker smoke의 오류 단계 보존 코드뿐이며 runtime diff0이다.
+- 새 `smoke_greenfield_wal_readonly.py`를 실제 Docker readonly mount로2회 실행해 **PASS**했다. stoppedWAL/no sidecars preflight/plan/status 성공+DB/manifest inode/size/mode/uid/SHA/목록 동일; active writer의 committed User2건 반영; writer 종료 뒤 실제 apply/backup 및 source readonly→새 빈 volume restore의 전체 row 지문 동일. 소유한 합성 volume만 정리했다. 이 script를 PR CI Docker 필수 step에 추가했다.
+- 새 P2 pair로 실제0.56 Docker 설치→candidate upgrade→모든 row/CAD 지문 동일→restart/Health/login/read/보호삭제도 재실행 PASS했다(`/tmp/issue210-p2-upgrade-regression.log`). 호스트 Python10/10·scope7/7·smoke syntax도 다시 통과했다.
+- 실제 Manager가 마지막 source/COPY/23집중 및 독립 readonly Docker 증거를 수용해 P2 수정 Commit/Push·thread 응답/resolve·새 CI 시작 GO를 승인했다. 원격 resolve/최종 HEAD 시작은 실제 확인 후 후속 인계에 기록한다.
+- 새 module을 migrator COPY에 포함하고 실제 readonly Docker 회귀를 PR CI에 등록했다. 원격 reply/resolve·새 HEAD CI 시작은 실제 확인 후 누적한다. CI Job/로그/완료 모니터링은 계속 생략한다.
+
+---
+
 ## #209 / PR #210 — 코드·합성 수용 및 PR CI 시작 (2026-11-02)
 
 - [PR #210](https://github.com/planner77/layoutManager/pull/210) 생성, source commit `f37913e08b18c6b470aac017f3408975d39e0d6e`, tree `c91ed877c8e2c50dab1c9f0fc23e0022c109af59`, version0.58.0 후보. 원격 GitHub 연결 도구로 검사된31파일 blob SHA를 각각 대조하고 같은 tree의 Conventional Commit을 만든 뒤 기능 branch를 게시했다. `.env` 지정 origin과 일치하고 local/remote commit·tree를 fast-forward만으로 동기화했다. staged Secret 실제값 일치0, CAD/DB/cache/build 파일0, 사용자 원래 worktree 변경2개 보존.

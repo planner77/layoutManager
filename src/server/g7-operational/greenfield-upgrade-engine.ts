@@ -8,6 +8,7 @@ import { ensureAutomatedGreenfield, identity, target, readInstallation,
   type Installation } from './greenfield-auto';
 import { assertDeclaredSchema, GREENFIELD_UPGRADE_REGISTRY, resolveUpgradeChain,
   type MigrationEdge, type ReleaseDeclaration, type UpgradeRegistry } from './greenfield-upgrade-registry';
+import { withReadOnlyInspection } from './greenfield-readonly-inspection';
 import { assertCadSnapshot, assertSpace, cadSnapshot, createRecoverySet,
   fileSha256, privateAtomicWrite, restoreRecoverySet, verifyRecoverySet,
   type FileHash } from './greenfield-upgrade-backup';
@@ -109,17 +110,19 @@ function currentData(t:Paths,release:ReleaseDeclaration):{hash:string;cad:FileHa
     stat.uid!==process.getuid?.()||(stat.mode&0o077)!==0||
     realpathSync(t.dbPath)!==t.dbPath)
     throw new Error('G7_UPGRADE_STORAGE_UNSAFE');
-  const db=new Sqlite(t.dbPath,{fileMustExist:true,readonly:true});
-  try{
-    db.exec('BEGIN');
-    assertDeclaredSchema(db as never,release);
-    const cad=cadSnapshot(t.cad);
-    verifyCadRefs(db,t.cad,cad);
-    const result={hash:dataDigest(db),cad,
-      users:Number(db.prepare('SELECT COUNT(*) AS n FROM "User"').get()?.n)};
-    db.exec('COMMIT');
-    return result;
-  }finally{db.close();}
+  return withReadOnlyInspection(t.dbPath,inspectedPath=>{
+    const db=new Sqlite(inspectedPath,{fileMustExist:true,readonly:true});
+    try{
+      db.exec('BEGIN');
+      assertDeclaredSchema(db as never,release);
+      const cad=cadSnapshot(t.cad);
+      verifyCadRefs(db,t.cad,cad);
+      const result={hash:dataDigest(db),cad,
+        users:Number(db.prepare('SELECT COUNT(*) AS n FROM "User"').get()?.n)};
+      db.exec('COMMIT');
+      return result;
+    }finally{db.close();}
+  });
 }
 function declared(registry:UpgradeRegistry,found:Installation,want:ReturnType<typeof identity>):readonly MigrationEdge[]{
   const old=registry.releases.find(r=>r.version===found.version);

@@ -1,3 +1,12 @@
+## PR #210 P2 — TC-209-RO-WAL (2026-11-02)
+
+- **RO-WAL-01:** 실제 Docker read-only mount, WAL header·완료 checkpoint·sidecar 없음인 정상 Greenfield에 `preflight/plan/status` 성공. 원본 DB/manifest/CAD SHA·mode·directory entries 전후 동일, 원본 WAL/SHM 생성0.
+- **RO-WAL-02:** 활성 writer의 WAL에만 최신 committed row가 있는 fixture는 이를 반영하거나 안전하게 거절한다. main DB만 읽은 stale 성공은 금지. 기존 WAL/SHM hash·상태 검증은 writer 변경과 구분한다.
+- **RO-WAL-03:** copy 중 원본/identity 변경·sidecar 생성/복사 실패는 fail-closed 및 temporary cleanup; symlink/권한 오류 거절. `immutable=1` 우회0. read-only source recovery set 검증도 동일 경계로 확인한다.
+- **RO-WAL-04:** 기존 upgrade/fault+Auth focused·Typecheck/Lint, Migrator COPY/CLI smoke, actual readonly container 검증. 원본 증거를 보존하고 source 변경 후 PR CI는 시작만 확인한다.
+
+---
+
 ## #209 — Greenfield upgrade 검증 계획 (2026-11-02)
 
 아래는 실행 계획이다. 실제 결과·실패/재시험·미실행은 TestReport/FailureLedger에 별도 기록한다. 모든 DB/CAD/backup/restore는 disposable 합성 fixture이며 운영 볼륨을 사용하지 않는다.

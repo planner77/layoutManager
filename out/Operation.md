@@ -1,3 +1,9 @@
+## PR #210 P2 — readonly WAL 검사
+
+호스트 preflight/plan/status는 source volume readonly를 유지한다. WAL/SHM/journal이 없는 안정된 WAL main DB만 CLI의 private detached read copy에서 확인하고 원본 identity/hash·sidecar 부재를 전후 검증한다. 실제 WAL이 존재하면 기존 SQLite snapshot을 사용하며 WAL을 무시해 성공시키지 않는다. 임시 copy는 자동 정리하고 durable SQLite/CAD 복구 세트와 구별한다. source가 검사 중 변하면 fail-closed이며 writer 정지 후 새 계획을 확인한다. 별도 설정/우회 플래그는 없다.
+
+---
+
 ## #209 — 기존 Greenfield 업그레이드 운영
 
 빈 볼륨 최초 설치와 기존 설치의 릴리스 업그레이드는 [Greenfield Runbook](../src/deploy/g7-greenfield/README.md)의 각각 별도 절을 따른다. 기존 Greenfield의 볼륨명을 유지하고 `python3 src/scripts/g7-upgrade.py .env preflight`, `plan`, `auto`(호환 Schema) 또는 `apply --approve-plan <SHA>`(등록된 Schema 변경)를 사용한다. Python3/Docker Compose v2가 필요하며 이미 신뢰 검증하여 pull한 App/Migrator 쌍의 OCI version/source/role/architecture를 호스트에서 확인한다. `G7_RELEASE_SOURCE_COMMIT`은 목표 이미지 revision과 같은40hex로 설정한다.
