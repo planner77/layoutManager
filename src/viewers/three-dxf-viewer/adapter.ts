@@ -14,6 +14,7 @@ import type {SceneArtifact} from '../core/adapter';
 import {preflightSceneRoot,serializeSourceScene,restoreSourceScene,storedSceneViewerData} from './scene-serialization';
 import {SceneBuildTracker,type SceneBuildDiagnostics} from '../core/scene-build-diagnostics';
 import {isViewerCancellation} from '../core/viewer-load-error';
+import {heapBytes} from '../core/metrics';
 import {extractDxfText,type CadTextIndex} from '../core/text-index';
 import {sceneOutlineProjection} from './scene-projection';
 import {sceneSha256} from '../../domain/scene-digest';
@@ -197,7 +198,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     let url:string|undefined, parseStarted:number|undefined, serializeStarted:number|undefined;
     this.sceneArtifact=undefined;
     try {
-      trace?.begin('SOURCE_VERIFY');
+      trace?.begin('SOURCE_READ_VERIFY');
       trace?.stat('sourceBytes',source.byteLength);
       if(building&&sceneSha256(new Uint8Array(source))!==this.outline?.sourceSha256)
         throw new ViewerLoadError('scene','SOURCE_DIGEST_MISMATCH','원본 DXF 체크섬이 일치하지 않습니다.');
@@ -292,6 +293,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
         const candidate=await serializeSourceScene(object,this.sceneAsset,'CUSTOM_DTO',{textIndex},
           phase=>trace?.begin(phase));
         trace?.stat('serializeMs',performance.now()-serializeStarted);
+        trace?.stat('jsHeapBytes',heapBytes()??undefined);
         trace?.stat('serializedBytes',candidate.bytes.length);
         if(this.disposed)throw new DOMException('취소됨','AbortError');
         // serializeSourceScene validates the complete persisted CUSTOM_DTO,
@@ -311,7 +313,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
         throw new DOMException('취소됨','AbortError');
       // Retain the raw exception only as an internal cause. UI/metrics receive
       // an allowlisted phase and code; the upstream message may contain CAD data.
-      if(trace)throw trace.fail(error);
+      if(trace){trace.stat('jsHeapBytes',heapBytes()??undefined);throw trace.fail(error);}
       throw new Error('DXF 처리에 실패했습니다. 파일과 글꼴 로드를 확인해주세요.');
     }finally{
       this.cancel=undefined;
