@@ -1,3 +1,17 @@
+# #211 — G7 호스트 단일 배포 CLI / 기존 #209 업그레이드 엔진 재사용
+
+**권장 진입점은 `python3 src/scripts/g7-deploy.py`입니다.** 기존 아래 #209 `g7-upgrade.py`는 지원되는 하위 호환 도구이자 격리 복원 도구입니다. CLI는 .env를 직접 실행하는 shell source·자동 수정·이미지 pull을 하지 않고 Compose 결과와 실제 이미지 ID를 검사합니다. 단일 CLI의 일반 `--yes`는 없으며 **현재 계획의 64hex 지문**을 복사해 승인합니다. 추측한 버전/Source/계획값으로 실행하지 마세요.
+
+1. 운영자가 신뢰하는 동일 source/version App+Migrator 이미지를 미리 `docker pull`하고 호스트에서 label/version/revision/role/architecture 확인합니다. `.env`의 `GHCR_IMAGE`, `GHCR_MIGRATION_IMAGE`, `G7_RELEASE_SOURCE_COMMIT`(목표 이미지 revision 동일한 40자리 소문자 sha)을 **수동 변경**합니다. 최초 설치는 명시한 고유 **빈** `CAD_DATA_VOLUME_NAME`, 기존 업그레이드는 **동일한 기존 Volume**을 유지합니다. OCI label은 독립 provenance/서명 증명이 아닙니다.
+2. `python3 src/scripts/g7-deploy.py .env status --json`, `python3 src/scripts/g7-deploy.py .env plan --json`으로 installed/target/running App 이미지·볼륨·Schema chain·blocker·부작용·계획 ID를 각각 확인합니다. `RESTART_SAME_RELEASE`은 앱이 실행·건강·업무 수용 완료되었다는 뜻이 **아닙니다**. 목표 .env를 바꾸기 전에 조회했다면 아직 이전 릴리스의 상태를 본 것입니다.
+3. `python3 src/scripts/g7-deploy.py .env execute --approve-plan <위-planId> --json`으로 승인 후 실행합니다. 신규 설치는 #109 one-shot migrator + App, 동일 릴리스는 running NOOP 또는 검증된 시작, 호환 업그레이드는 #209 stop/writer0/recovery/postcheck로 위임합니다. Schema 변경은 이 승인과 함께 내부 #209의 **정확한 engine planId** 검증을 추가로 거칩니다.
+4. 업그레이드 성공 시 App은 반드시 **STOPPED**로 유지됩니다. `python3 src/scripts/g7-deploy.py .env plan --operation start --json`의 새로운 지문을 검토하고 `python3 src/scripts/g7-deploy.py .env start --approve-plan <새-start-planId> --json`으로 기동합니다. `status`/Health200과 별도로 로그인·Site Grant/Reader 차단·CAD CRUD/Current·DXF SHA·Scene/Memo/Outline/Zone/Audit를 검증합니다.
+5. `RESTORE_REQUIRED`/볼륨 불명/이미지 불일치/타 프로젝트 writer/plan 변경은 **BLOCKED**입니다. App 강제 시작, lock/hold 삭제, manifest 편집, 기존 Volume 초기화 금지. 검증된 백업 ID가 있을 때만 아래 #209의 `g7-upgrade.py ... restore --backup <UUID> --restore-volume <새 빈 격리 Volume>` 절차를 별도 승인으로 수행합니다. 실제 사내 데이터·비밀·복구 세트는 CI/GitHub에 올리지 않습니다.
+
+상세 상태 모델과 수용 경계는 [Issue211](../../../out/Issue211.md), [TestPlan](../../../out/TestPlan.md), [Operation](../../../out/Operation.md)을 따릅니다. 아래 #109의 과거 일반 `docker compose up -d --pull always`는 신규 설치/검증된 동일 버전 재시작 예시이며 **업그레이드 용도로 사용하지 않습니다**.
+
+---
+
 # #209 — 정상 Greenfield 설치의 등록 릴리스 업그레이드 (0.58.0 후보)
 
 이 절은 아래 #109의 **릴리스 변경 차단 정책만** 대체합니다. 최초 설치는 여전히 빈 볼륨을 사용합니다. 기존 정상 Greenfield 업그레이드는 설치 ID와 **같은 볼륨**을 유지하며 마커 없는 비빈 볼륨/레거시 6→7/HOLD 이관, S3, 과거 수동 서명 Expert 설치는 자동 지원하지 않습니다.0.56→0.57 논리 identity 회귀는 새 엔진의 합성 시험이며 이미 게시된0.57 이미지를 수정하지 않습니다. 실제 배포에는 새 엔진이 포함된0.58.0 이후 검증된 이미지 쌍이 필요합니다.

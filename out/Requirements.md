@@ -1,3 +1,9 @@
+## R-211 — 통합 Docker Host CLI (2026-11-02)
+
+Owner 확정: 단일 호스트 인터페이스, 상태 자동판별 후 계획·위험·영향·Plan SHA 승인, 운영자 수동 `.env` 변경. 5가지 상태(FRESH_INSTALL/RESTART_SAME_RELEASE/UPGRADE_COMPATIBLE/UPGRADE_MIGRATION_REQUIRED/RESTORE_REQUIRED)와 BLOCKED를 지원한다. source Volume 자동 생성 없는 read-only inspect/status/plan, installed/target/running/health/businessAcceptance 별도 표시, project/volume 해시 식별, App+Migrator 이미지 ID 검증, exact Schema planId, 호환 업그레이드 성공 후 App STOPPED·별도 시작을 요구한다. #209 하위 엔진이 마이그레이션, 백업·복구, SQLite/원본/Scene/Memo/Zone/Outline/Audit 보존을 담당한다. S3/Expert/레거시/다운그레이드/.env 자동수정/무인 승인·복구는 제외한다. [Issue211](Issue211.md), [TestReport](TestReport.md).
+
+---
+
 ## #209 — 기존 Greenfield 보존형 업그레이드 (2026-11-02 설계)
 
 [Issue #209](https://github.com/planner77/layoutManager/issues/209)의 구현 승인 범위는 코드·격리 합성 시험·PR CI 시작이다. 운영 DB/Volume 수정, 배포·GHCR·병합 및 CI 완료 모니터링은 포함하지 않는다. 아래는 계획/수용 기준이며 실제 PASS는 TestReport/FailureLedger에만 기록한다.

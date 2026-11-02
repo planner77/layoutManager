@@ -1,3 +1,32 @@
+## PR #213 / Issue #211 — CI #436 실패와 Codex P2 Chain 표시 결함 보완 (2026-11-02)
+
+- **정확 실패 실행:** [PR CI #436 / Run 41449453584](https://github.com/planner77/layoutManager/actions/runs/41449453584), PR HEAD `f306fe8d4dd9b0809a5816a4ad36a87e981c3ce1`, `completed/failure`. Quality Job `125291629006` **failure**(`Unit 및 Integration 테스트`), Docker runtime Job `125291629108` **success**, scope `125291542240` success, 필요한 Verify Job `125297097107` failure(상위 Unit 실패 종속), G7·General Browser E2E는 **skipped**, 독립 기능 결함의 증거 아님. Unit 정확 **142 Test Files 중 141 PASS/1 FAIL, 944 tests 중 943 PASS/1 FAIL**.
+- **최초 원인:** `src/tests/unit/standalone.test.ts:163` `GF-109-CI-CONTRACT`는 첫 신규 설치/재시작에 옛 `up -d --no-build app` 리터럴을 요구했으나 새 Docker smoke는 #211 `g7-deploy.py status→plan→execute --approve-plan`과 별도 `plan --operation start→start --approve-plan`으로 바뀌었다. Assertion `expected -1 to be greater than or equal to 0`. 정책·데이터 결함으로 바로 단정하지 않고 **기존 정적 테스트 계약 미동기화**로 확인했다.
+- **수리:** 기존 GF-109 계약의 설치·Admin 1회 코드·CAD CRUD·replay migrator·재시작 영속 테스트는 유지한다. 테스트의 명령 순서를 실제 CI에 있는 12개 요소(신규 CLI 승인·별도 start 포함)로 갱신하고 Runtime/Browser/Unit CI gate를 약화·삭제하지 않았다. 실제 Workflow 문자열과 새 계약을 순서 비교한 **12/12 일치**는 정적 점검이며, 새로운 Python/Vitest/실 Docker 결과와 혼동하지 않는다.
+- **추가 리뷰 P2:** [PR #213 Codex discussion r4442687155](https://github.com/planner77/layoutManager/pull/213#discussion_r4442687155) `g7-upgrade.py`의 기존 scalar-only stdout safe-filter가 #209 `plan.steps` 배열을 누락. 따라서 등록된 0.56.0→0.58.0의 실제 2-edge chain도 #211 plan에 `registryChain:[]`로 보이는 결함(코드상 확정). **보완:** 호스트 필터에서 `COMPATIBLE/MIGRATION`의 허용된 길이≤64 순서 배열만 전달하고 비밀·raw SQL·객체는 차단; #211 frontend도 missing/malformed/decision 불일치/planId 오류 시 `G7_DEPLOY_UPGRADE_CHAIN_INVALID` fail-closed. #209→#211 실제 stdout 직렬화 경계 회귀·negative tests 추가하여 단독 mocked `upgrade()` 배열의 blindspot 제거.
+- **기존 수용/실패 보존:** 초기 CI #434/#435는 후속 synchronize로 취소되었으며 새 실패 원인으로 합산하지 않는다. 원래 #209의 GHCR auth/P2 WAL 실패·복구 기록, 승인된 Registry/Writer0/WAL-aware Backup·Schema exact plan은 그대로 유지한다. 이번 PR의 운영 DB/Volume/CAD, `.env`, release 이미지, Main, GHCR, Issue 종료는 변경하지 않는다.
+- **재시험 방침:** 수정 커밋 push가 새 PR CI를 시작하도록 연결한다. CI Run/HEAD는 생성 직후 **시작만 확인**하고 사용자 지시에 따라 결과/Job 완료 모니터링 생략. 새 성공은 **NOT VERIFIED**이며 현장 #96/#113/#193 수용과 별개다.
+
+---
+
+## PR #213 / Issue #211 — 구현·리뷰/충돌 확인 및 CI 기동 (2026-11-02)
+
+- [PR #213](https://github.com/planner77/layoutManager/pull/213): 구현+문서 초기 HEAD `6746ccbeb60da2f83ef3417bbb74765367923e47`, 17개 파일, [Issue #211](https://github.com/planner77/layoutManager/issues/211). #209 엔진·현재 DB Schema·runtime image package version 0.58.0은 변경하지 않고 G7 통합 호스트 Frontend/단위·CI Docker·Runbook만 변경했다.
+- **PR CI #434 / [Run 41449067782](https://github.com/planner77/layoutManager/actions/runs/41449067782)** 는 해당 초기 HEAD에서 `in_progress`, `conclusion:null`로 **시작만 확인**했다. Job/검증 최종 결과는 확인하지 않는다. 본 원장 보완 commit이 PR HEAD를 바꾸므로 새 CI는 별도 HEAD/Run 기준이며 완료/성공은 NOT VERIFIED. CI 결과 모니터링 생략 요청을 준수한다.
+- 병합 전 현재 원격 검사: `main=663e18add184f7041574e6e4d891a086a62bee49`, PR head initial `6746ccbe...`, compare `behind=0/ahead=1`, GitHub `mergeable=true`, conflicts 0, 미해결 review thread **0**/전체 review thread **0**, submitted reviews **0**. 리뷰 승인으로 간주하지 않음.
+- Python/Docker 전체 실행은 PR CI로 요청했으며 현재 이 작업의 별도 로컬 성공 증거는 없음(**NOT VERIFIED**). 원격 branch·PR 외 기존 운영 Volume/DB/CAD/.env와 Main/이미지 태그/GHCR은 조작하지 않았다. PR 병합·Issue 종료는 수행하지 않음. 후속 CI 실패 시 정확 Run/Job/Source로 최초 실패와 수리를 별도 기록한다.
+
+---
+
+## Issue #211 — Host 배포 Frontend PR CI 시작 전 원장 (2026-11-02)
+
+- Owner 요청: 분석·설계·구현·문서→리뷰 미해결/충돌 점검→원장 기록→PR CI 시작. **CI 결과 모니터링 생략**. 이전 #209 PR #210 최초 GHCR 인증 실패와 #210 P2 readonly WAL 실패/수정·성공 원문을 아래에서 삭제하지 않는다.
+- 이번 변경: `g7-deploy.py`의 미존재 Volume 조회 시 생성0, 기존 빈 Volume `volume-nocopy` readonly probe, target image ID 및 Compose/Project/Network/foreign container 검사, exact host SHA 계획 승인과 #209 Schema exact planId 재사용, 별도 start/status. Docker 앱/마이그레이터 실제 런타임 재작성·운영 볼륨 수정 없음.
+- 정책상 차단은 실패로 은폐하지 않음: `G7_UPGRADE_SOURCE_REQUIRED`, `G7_UPGRADE_PAIR_MISMATCH`, `G7_DEPLOY_VOLUME_FOREIGN`, `G7_DEPLOY_NETWORK_CONFLICT`, `G7_DEPLOY_STALE_PLAN`, `G7_DEPLOY_RESTORE_REQUIRED`는 **BLOCKED** 및 안전 nextAction. CI 및 현장 재현은 아직 결과 미확인.
+- Python test와 기존 #209 WAL·데이터 보존 Docker smoke를 PR CI에 연결한다. 새 CI의 실제 Run/Jobs, 실패/성공은 요청대로 완료 모니터링하지 않으므로 **NOT VERIFIED**. 새 리뷰 comment와 병합 가능성은 PR 생성 후 직접 확인하고, 실제 CI 시작 사실만 기록한다. PR 병합·GHCR 게시·Issue 종료·실 DB/Volume 변경 없음.
+
+---
+
 ## PR #210 / Issue #209 — PR CI 성공, Squash Main·GHCR 게시 경로 인계 (2026-11-02)
 
 - 최종 소스 **PR HEAD `8140e7dcaab871e5975915f11116874a0aba7476`** [PR CI #433 / Run41407700036](https://github.com/planner77/layoutManager/actions/runs/41407700036): `completed/success`, **8/8 Job SUCCESS**(Scope, Quality/Type/Lint/Unit/Build, Docker runtime/실 0.56.0 App+Migrator→0.58.0 합성 업그레이드·WAL readonly, General Chromium shard2, Greenfield Browser, Signed/Legacy Browser, required Verify). 직접 실패 Run41404871339 (#432)의 GHCR `unauthorized` 및 `8140e7d` package-read/login 수정 기록은 바로 아래 원문 그대로 보존한다.

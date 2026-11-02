@@ -136,7 +136,8 @@ class HostTests(unittest.TestCase):
 
     def test_real_cli_plan_fields_survive_filter_and_private_fields_do_not(self):
         plan = {"state": "UPGRADE_COMPATIBLE", "planId": "d" * 64, "from": "0.56.0",
-                "to": "0.58.0", "requiresApproval": False, "privatePath": "/private/canary",
+                "to": "0.58.0", "steps": ["COMPATIBLE", "COMPATIBLE"],
+                "requiresApproval": False, "privatePath": "/private/canary",
                 "secret": "never-forward-this"}
         _, result, output = self.invoke("plan", cli_output=json.dumps(plan))
         self.assertEqual(result, 0)
@@ -144,8 +145,22 @@ class HostTests(unittest.TestCase):
         self.assertEqual(forwarded["planId"], plan["planId"])
         self.assertEqual(forwarded["from"], "0.56.0")
         self.assertFalse(forwarded["requiresApproval"])
+        self.assertEqual(forwarded["steps"], ["COMPATIBLE", "COMPATIBLE"])
         self.assertNotIn("private", output)
         self.assertNotIn("never-forward", output)
+
+    def test_invalid_chain_payload_never_reaches_operator(self):
+        base = {"state": "UPGRADE_COMPATIBLE", "planId": "d" * 64,
+                "from": "0.56.0", "to": "0.58.0"}
+        for bad in ("COMPATIBLE", ["COMPATIBLE", "/private/leak"],
+                    ["COMPATIBLE", {"raw_sql": "SELECT secret"}],
+                    ["COMPATIBLE"] * 65):
+            with self.subTest(bad=repr(bad)[:60]):
+                calls, result, output = self.invoke(
+                    "plan", cli_output=json.dumps({**base, "steps": bad}))
+                self.assertEqual(result, "G7_UPGRADE_HOST_OUTPUT_INVALID")
+                self.assertEqual(output, "")
+                self.assertTrue(any(call[:2] == ["docker", "run"] for call in calls))
 
     def test_restore_racing_existing_volume_never_mkdir_or_chown(self):
         calls = []
