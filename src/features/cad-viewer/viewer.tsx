@@ -50,7 +50,7 @@ import { ViewerSource } from '@/viewers/core/source';
 import { cadViewerUrl, cadMemoViewerUrl } from '@/viewers/core/link';
 import { ViewerLoadError, isViewerCancellation } from '@/viewers/core/viewer-load-error';
 import {isKnownSafeSceneBuildError,type SceneBuildDiagnostics,type SceneBuildErrorCode} from '@/viewers/core/scene-build-diagnostics';
-import {sceneLoadNotice,type SceneFallback} from './scene-status';
+import {canPublishSceneCandidate,sceneLoadNotice,type SceneFallback} from './scene-status';
 import {runtimeCadHeaders} from '@/features/g7-runtime/client';
 import type {SceneWorkCommand,SceneWorkState} from '@/domain/scene-work';
 import type {ResetMode} from '@/domain/cad-reset';
@@ -1697,7 +1697,7 @@ export function CadViewer({
   }
   async function saveScene() {
     const artifact=manager.current?.getSceneArtifact();
-    if(!artifact||!sceneCandidate||loading||sceneBusy||sceneMode!=='build'||renderer!=='three-dxf-viewer')return;
+    if(!artifact||!canPublishSceneCandidate({mode:sceneMode,renderer,artifactReady:true,sceneCandidate,busy:sceneBusy,loading}))return;
     const request=new AbortController();sceneRequest.current?.abort();sceneRequest.current=request;
     const sequence=loadSequenceRef.current;
     setSceneBusy(true);setSceneNotice('Scene Asset 저장·검증 중…');
@@ -1960,7 +1960,7 @@ export function CadViewer({
       {id:'versions',label:'버전 목록',kind:'link',href:`/cad/locations/${locationId}`},
       {id:'reload',label:'다시 불러오기',disabled:loading,reason:loading?'로딩이 끝난 뒤 다시 불러올 수 있습니다.':undefined,onSelect:reload},
       ...(format==='DXF'?[{id:'build-scene',label:'원본 DXF로 Scene 생성/재생성',disabled:loading||sceneBusy,reason:'명시적으로 원본을 읽고 변환합니다. 기존 저장 Scene은 저장 성공 전 유지됩니다.',onSelect:buildScene},
-        {id:'save-scene',label:'Scene Asset 저장',disabled:!sceneCandidate||sceneMode!=='build'||renderer!=='three-dxf-viewer'||sceneBusy||loading,reason:'검증된 Scene Artifact가 있을 때만 승인된 서버로 저장합니다. 대체 표시 성공은 저장 대상이 아닙니다.',onSelect:()=>void saveScene()}]:[]),
+        {id:'save-scene',label:'Scene Asset 저장',disabled:!canPublishSceneCandidate({mode:sceneMode,renderer,artifactReady:sceneCandidate,sceneCandidate,busy:sceneBusy,loading}),reason:'검증된 Scene Artifact가 있을 때만 승인된 서버로 저장합니다. 대체 표시 성공은 저장 대상이 아닙니다.',onSelect:()=>void saveScene()}]:[]),
       {id:'download',label:'원본 다운로드',kind:'link',download:true,href:`/api/cad-files/${versionId}/content`},
       {id:'exchange-export',label:'GLB/glTF 내보내기',testId:'viewer-menu-exchange-export',
         disabled:format!=='DXF'||renderer!=='three-dxf-viewer'||!state.ready||loading||exchange.busy,
