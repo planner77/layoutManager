@@ -96,6 +96,10 @@ describe('#212 safe manual DXF Scene stage diagnostics',()=>{
     expect(fallbackNotice).toContain('FALLBACK_DXF_DISPLAYED_SCENE_FAILED');
     expect(fallbackNotice).toContain('CUSTOM_DTO_SERIALIZE:SCENE_UNSUPPORTED_GEOMETRY');
     expect(fallbackNotice).not.toContain('변환 완료');
+    const genericFallback=sceneLoadNotice({mode:'build',renderer:'dxf-viewer',
+      strategy:'LEGACY_DXF',artifactReady:false,fallbackReason:'adapter-load:LOAD'});
+    expect(genericFallback).toContain('FALLBACK_DXF_DISPLAYED_SCENE_FAILED');
+    expect(genericFallback).toContain('adapter-load:LOAD');
     const local=sceneLoadNotice({mode:'build',renderer:'three-dxf-viewer',strategy:'LEGACY_DXF',artifactReady:true});
     expect(local).toContain('THREE_SCENE_ARTIFACT_READY');
     expect(local).toContain('READY 상태는 아닙니다');
