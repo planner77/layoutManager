@@ -1,3 +1,11 @@
+## 2026-11-03 — Issue #208 P1-A Node CPU-only Scene PoC / 설계 게이트 (부분 구현)
+
+- 신규 `node-converter-poc.ts`: pinned 실제 DXF→Three Object3D→CUSTOM_DTO/manifest validator→restore를 Node CPU-only에서 시도하는 격리 실험. 안전한 SHA/font/크기 실패 분류, synthetic fixture 실행형 Vitest.
+- 신규 `scene-build-job.ts`: Phase/Job state 전이, READY pointer 우선순위, safe allowlist/backoff 및 unit tests. P1-B durable queue와 독립 Worker/게시·P1-C 도면 목록 상태/UI·P1-D Docker/Greenfield 배포는 **아직 구현되지 않음**.
+- [Issue208](Issue208.md)/Architecture/Decisions/Requirements/Database/Logging/Operation/TestPlan/TestReport/FailureLedger/AGENTS/README 문서에 기술 게이트 및 미실행 증거 명시. 실제 CI 결과·CPU-only 실증/배포·현장 수용/Issue 종료는 NOT VERIFIED.
+
+---
+
 ## 2026-11-03 — #212 PR #214 합격·Main 병합과 새 GHCR 릴리스 #216 후속
 
 - 최종 PR CI #440 (Run41508339395) 8/8 SUCCESS; 앞선 #438 TypeScript TS18046 및 #439 Greenfield R3 상태 기대값 실패를 수리한 검증된 Source HEAD `ef83a210c16abe040c7ae451d14012a8469085b9`를 Main `1ba46dc4a2fd50e06ce84069fce98977c55632bf`로 동일 tree Squash. Issue #212 closed/completed. Main CI #130 시작 확인, 결과 모니터링 생략.
