@@ -1,3 +1,11 @@
+## R-208-A1 판정 갱신 — 직접 Node 변환 NO-GO, 서버 독립 대안 필요 (2026-11-03)
+
+[CI #457](https://github.com/planner77/layoutManager/actions/runs/41520729471): synthetic Unit assertion `962/962 PASS`에도 pinned `three-dxf-viewer@1.0.44`가 `window` 브라우저 전역에 의존하는 비동기 작업 4건을 unhandled rejection으로 방출해 전체 Quality FAIL. 이 경우 반환 Scene/manifest가 있어도 CPU-only 무인 Worker의 안정 실행이나 충실도 수용으로 볼 수 없다. 직접 Node PoC는 이후 `SCENE_CONVERTER_UNAVAILABLE`로 **fail-closed**하고 upstream DXF parser를 호출하지 않아야 한다.
+
+**업데이트된 게이트:** (1) Node direct=NO-GO, (2) Headless Chromium 별도 서버 프로세스/소프트웨어 WebGL 또는 공식 Node 파서의 실제 DXF→Scene/저장 후보/복원과 비동기 오류0, 메모리·CPU·시간 상한/재시작 복구를 입증하기 전 전체 자동화 GO 금지, (3) 독립 `THREE.Group`→CUSTOM_DTO/restore 단위 성공은 DXF 파싱 검증을 대체하지 못함, (4) 기존 G7 인가/영속 큐/Scene CAS/도면 목록 Job 상태 요구는 그대로 미구현. 오류 전역 무시·window polyfill·가짜 test pass·READY 오인 금지. 문서 [Issue208](Issue208.md), [ADR](Decisions.md), [TestPlan](TestPlan.md).
+
+---
+
 ## FR-VIEWER-MENU-EXT — Issue #127 완료 후 신규 요구사항 메뉴 연계 (2026-10-27 수립, 2026-11-03 최신화)
 
 | ID | 요구사항 / 수용 해석 | 추적 |
