@@ -15,7 +15,7 @@ afterEach(()=>vi.unstubAllGlobals());
 describe('#212 safe manual DXF Scene stage diagnostics',()=>{
   it('preserves known phase and original internal cause without leaking CAD details to UI or metric',async()=>{
     const secret=new Error('unsafe local private/path CAD_CONTENT');
-    const tracker=new SceneBuildTracker();tracker.begin('SOURCE_VERIFY');tracker.stat('sourceBytes',8);
+    const tracker=new SceneBuildTracker();tracker.begin('SOURCE_READ_VERIFY');tracker.stat('sourceBytes',8);
     tracker.begin('TEXT_INDEX_EXTRACT');const error=tracker.fail(secret);
     expect(error).toBeInstanceOf(SceneBuildError);
     expect(error.cause).toBe(secret);
@@ -56,7 +56,7 @@ describe('#212 safe manual DXF Scene stage diagnostics',()=>{
   });
 
   it('distinguishes each proven phase and leaves ambiguous font/parser or timeout as uncertain',()=>{
-    expect(sceneBuildErrorCode('SOURCE_VERIFY',new ViewerLoadError('scene','SOURCE_DIGEST_MISMATCH','unsafe')))
+    expect(sceneBuildErrorCode('SOURCE_READ_VERIFY',new ViewerLoadError('scene','SOURCE_DIGEST_MISMATCH','unsafe')))
       .toBe('SCENE_SOURCE_DIGEST_MISMATCH');
     expect(sceneBuildErrorCode('DXF_DECODE_NORMALIZE',new Error('unsafe'))).toBe('SCENE_DXF_PARSE_FAILED');
     expect(sceneBuildErrorCode('DXF_PARSE',new Error('ambiguous font or parser')))
@@ -73,7 +73,7 @@ describe('#212 safe manual DXF Scene stage diagnostics',()=>{
     for(const limit of ['bytes','nodes','attributeScalars','depth'] as const){
       expect(sceneBuildErrorCode('THREE_SCENE_BUILD_TAG',new SceneBuildLimitError(limit))).toBe('SCENE_ASSET_TOO_LARGE');
     }
-    const tracker=new SceneBuildTracker();tracker.begin('SOURCE_VERIFY');
+    const tracker=new SceneBuildTracker();tracker.begin('SOURCE_READ_VERIFY');
     tracker.begin('OPTIONAL_OUTLINE_INDEX');tracker.end('warning');
     tracker.begin('ARTIFACT_READY');tracker.ready();
     expect(tracker.snapshot()).toMatchObject({status:'ARTIFACT_READY',phase:'ARTIFACT_READY'});
