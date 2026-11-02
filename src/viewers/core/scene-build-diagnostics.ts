@@ -42,14 +42,15 @@ export class SceneBuildError extends ViewerLoadError {
   readonly retryable:boolean;
   constructor(public readonly phase:SceneBuildPhase, code:SceneBuildErrorCode,
     public readonly diagnostics:SceneBuildDiagnostics,cause?:unknown) {
-    super('adapter-load',code,SCENE_BUILD_MESSAGES[code],cause);
+    super(code==='SCENE_SOURCE_DIGEST_MISMATCH'?'scene':'adapter-load',code,SCENE_BUILD_MESSAGES[code],cause);
     this.name='SceneBuildError';
     // A browser-only retry remains an explicit user action, never automatic publication.
     this.retryable=code==='SCENE_CONVERTER_UNAVAILABLE'||code==='SCENE_FONT_UNAVAILABLE';
   }
 }
 export function isKnownSafeSceneBuildError(error:unknown):error is SceneBuildError{
-  return error instanceof SceneBuildError&&error.stage==='adapter-load'&&
+  return error instanceof SceneBuildError&&
+    error.stage===(error.reasonCode==='SCENE_SOURCE_DIGEST_MISMATCH'?'scene':'adapter-load')&&
     SCENE_BUILD_PHASES.includes(error.phase)&&
     Object.hasOwn(SCENE_BUILD_MESSAGES,error.reasonCode)&&
     error.message===SCENE_BUILD_MESSAGES[error.reasonCode as SceneBuildErrorCode];
