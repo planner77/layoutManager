@@ -222,6 +222,9 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
         this.cancel=()=>reject(new DOMException('취소됨','AbortError'));
       })]);
       if(!object)throw new Error('DXF_LOADER_EMPTY');
+      // Own the parsed tree before any later preflight can fail. ViewerManager
+      // disposes the adapter and its geometries on every unsuccessful load.
+      this.object=object;
       trace?.stat('parseMs',performance.now()-parseStarted);
       trace?.stat('dxfEntities',viewer.lastDXF?.entities?.length);
       trace?.begin('THREE_SCENE_BUILD_TAG');
@@ -252,7 +255,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
       if(this.outline&&validCanvasScope(this.outline))
         this.sceneAsset=tagImportedTree(object,sceneScope(this.outline.versionId,this.outline.sourceSha256,sourceUnitFromDxf(text)));
       if(building&&!this.sceneAsset)throw new Error('SCENE_SCOPE_INVALID');
-      this.object=object;this.exchangeBaseline=captureExchangeBaseline(object);this.exchangeScope=this.sceneAsset?.scope;this.exchangeEpoch++;
+      this.exchangeBaseline=captureExchangeBaseline(object);this.exchangeScope=this.sceneAsset?.scope;this.exchangeEpoch++;
       this.scene.add(object);this.bounds.setFromObject(object);
       if(!this.bounds.isEmpty()&&![...this.bounds.min.toArray(),...this.bounds.max.toArray()].every(Number.isFinite))
         throw new Error('SCENE_BOUNDS_INVALID');
