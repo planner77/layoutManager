@@ -19,3 +19,12 @@ export function sceneLoadNotice(input:Readonly<{
     return `레거시 DXF 대체 표시 · three-dxf-viewer 실패 (${input.fallback.phase}:${input.fallback.code}). Scene READY를 의미하지 않습니다.`;
   return '레거시 DXF 로딩 · 원본을 사용합니다. Scene 저장/복원 성공을 의미하지 않습니다.';
 }
+
+/** A display-only fallback can never authorize a Scene publication request. */
+export function canPublishSceneCandidate(input:Readonly<{
+  mode:'scene-first'|'build';renderer:string;artifactReady:boolean;
+  sceneCandidate:boolean;busy:boolean;loading:boolean;
+}>):boolean{
+  return input.mode==='build'&&input.renderer==='three-dxf-viewer'&&
+    input.artifactReady&&input.sceneCandidate&&!input.busy&&!input.loading;
+}
