@@ -1,3 +1,12 @@
+## Issue #212 — 수동 Scene 실패 근거·구현 경계·PR CI 시작 준비 (2026-11-02)
+
+- **현장 보고(원인 미확정):** 도면은 `dxf-viewer` fallback으로 보이나 `three-dxf-viewer`는 `adapter-load:LOAD`, Scene 자동/수동 후보 미생성. AC1024+·TEXT/MTEXT/BLOCK/INSERT가 포함된 DXF의 이론적 확장 인스턴스가 약214,474로 보고되었으나 이 수치는 Scene 노드/DOM·geometry scalar 수나 정확한 예외 원인 증거가 아니다. 원본 byte/SHA/Handle/문자 내용은 CI/원장에 포함하지 않음.
+- **코드상 직접 확인된 결함/수리:** `ThreeDxfViewerAdapter.load`의 catch-all이 근본 오류를 제거하고 `ViewerManager`가 `LOAD`를 보고, 성공한 레거시 렌더가 `sceneMode=build` 성공 안내를 유발하던 경로를 단계별 safe typed error 및 fallback 상태 분리로 보완. Custom DTO에서 `root.toJSON→inspect`를 불필요하게 중복 수행하던 경로는 `toCustomDto→validateStoredScenePayload`로 변경. 기존 limits(32MiB/100k nodes/2M scalars/depth128), SHA/ID·검증, Server Scene API와 source/READY/G7 보존.
+- **검증 상태:** 작성한 합성 Unit·기존 회귀는 **코드만 등록**, 이 작업에서 로컬 npm, Typecheck/Lint, Vitest/Playwright/OCI/Docker 또는 운영현장 실행하지 않음. 따라서 현재 **새로운 PR CI 실패/성공의 실측 기록 없음**, 재현 불가 단계(폰트 vs 파서, OOM/timeout, 실제 DXF)는 확정하지 않음. PR 개설 및 synchronize가 CI를 기동하며 Run/Job 성공은 사용자 요청대로 모니터링하지 않음.
+- **리뷰/충돌:** 원격 브랜치의 새 PR 작성 후 기존 미해결 threads/mergeability를 확인하고 해결 여부를 분리 기록. 독립 리뷰 승인을 임의 선언하지 않음. 후속 실패는 정확 PR HEAD, Run/Job/최초 실패 stage, 원인/수리/재시험으로 이력 보존. 병합/Main/GHCR·Issue 종료는 이번 요청 범위 밖, 실제 #208/#113/#193은 OPEN.
+
+---
+
 ## PR #213 / Issue #211 — Owner Managed CI 합격·Squash 병합·GHCR 인계 (2026-11-02)
 
 - **CI 정확성:** 기능 PR 최종 HEAD `dff4995fbbecb9838d259ec904f2f6b0aaf7d0a1`에서 [PR CI #437 / Run41454272839](https://github.com/planner77/layoutManager/actions/runs/41454272839) `completed/success`, **8/8 Job SUCCESS**. Scope `125306862583`, Quality/Type/Lint/Unit/Build `125306955839`, Docker Runtime `125306955825`, Greenfield E2E `125310161545`, Chromium General shard1 `125310161682` / shard2 `125310161585`, G7 signed/legacy `125310161762`, Required Verify `125315038341` 모두 성공. 기존 #436의 실제 Unit 943/944 실패와 #434/#435 취소는 아래 원장을 삭제하지 않고 역사적으로 유지한다.
