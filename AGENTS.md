@@ -1,3 +1,11 @@
+## Issue #208 — P1-A Node CPU-only Scene 변환 가능성 선행 검증 (2026-11-03, PR 후보)
+
+최초 업로드 후 자동 Scene 생성 #208은 **P1-A GO/NO-GO 선행**이다. [out/Issue208.md](out/Issue208.md)의 A1–A5 기술 게이트, [Architecture](out/Architecture.md)/[Decisions](out/Decisions.md)를 따른다. Node POC는 pinned `three-dxf-viewer`의 unsupported private `_font`과 `data:` fetch로 실제 객체·기존 CUSTOM_DTO validator·restore를 시험하지만, CI/CPU-only 컨테이너/브라우저 동등성·권한/Worker·DB schema/목록 UI는 **미검증 또는 미구현**이다. P1-A 테스트 PASS만으로 자동 생성 기능 완료·운영 GO를 주장하지 않는다.
+
+이번 변경은 production upload/publish/UI/Prisma/Compose/G7 Auth·Writer/Audit/Scene Source·Current·APP_CREATED·Memo·Zone·Outline/기존 Version/Volume/GHCR를 수정하지 않는다. 실행 전 테스트와 CI는 PASS가 아니다. Node 불가능 시 서버 독립 headless converter 또는 지원되는 Parser 대안을 명시적으로 비교하고 B안(브라우저 세션 의존)으로 묵시적 대체 금지. PR CI는 시작만 확인하고 사용자 요청에 따라 완료 모니터링 생략, 리뷰 스레드/충돌/실패 원장은 실제 상태와 분리하여 기록한다.
+
+---
+
 ## PR #214 / Issue #212 — CI #440 성공·Main 병합 및 신규 GHCR 릴리스 별도 게이트 (2026-11-03 KST)
 
 [FailureLedger](out/FailureLedger.md)/[TestReport](out/TestReport.md)에서 정확 PR CI [#440 Run41508339395](https://github.com/planner77/layoutManager/actions/runs/41508339395) 최종 HEAD `ef83a210c16abe040c7ae451d14012a8469085b9`의 **8/8 SUCCESS** 및 과거 #438/439 실패·보완, review thread0/unresolved0, Main behind0/충돌0과 Owner 승인 Squash Main `1ba46dc4a2fd50e06ce84069fce98977c55632bf`(검증 PR과 동일 Git tree)을 기록한다. Issue #212는 **closed/completed(코드+합성 CI 범위)**, [Main CI #130 Run41511179566](https://github.com/planner77/layoutManager/actions/runs/41511179566)는 push로 시작만 확인하고 Owner 요청에 따라 완료를 모니터링하지 않는다. **GHCR 신규 게시와 코드 병합은 별개:** package version `0.58.0` 및 기존 태그 `v0.58.0` 유지; workflow는 기존 App/Migrator 이미지쌍이 있는 경우 중복 게시를 생략하므로 #212를 포함한 새 이미지 게시를 주장하지 않는다. 새 릴리스 버전/G7 registry·upgrade path/CI/이미지쌍 실 게시를 [Issue #216](https://github.com/planner77/layoutManager/issues/216)에 OPEN으로 별도 추적한다. 기존 태그·digest 강제 갱신/실 운영 Volume/CAD·권한 수정 없음. 본 기록은 docs-only Main이며 GHCR 이미지 갱신 대상이 아니다. 실제 복잡 DXF/GPU 현장 #113/#193과 #208 자동 Worker는 별도.
