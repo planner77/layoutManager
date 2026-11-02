@@ -1,3 +1,13 @@
+## PR #210 / Issue #209 — PR CI 성공, Squash Main·GHCR 게시 경로 인계 (2026-11-02)
+
+- 최종 소스 **PR HEAD `8140e7dcaab871e5975915f11116874a0aba7476`** [PR CI #433 / Run41407700036](https://github.com/planner77/layoutManager/actions/runs/41407700036): `completed/success`, **8/8 Job SUCCESS**(Scope, Quality/Type/Lint/Unit/Build, Docker runtime/실 0.56.0 App+Migrator→0.58.0 합성 업그레이드·WAL readonly, General Chromium shard2, Greenfield Browser, Signed/Legacy Browser, required Verify). 직접 실패 Run41404871339 (#432)의 GHCR `unauthorized` 및 `8140e7d` package-read/login 수정 기록은 바로 아래 원문 그대로 보존한다.
+- 병합 직전 PR #210 `open`, `mergeable=true`, Main `behind=0`; GitHub review thread **1 resolved / 0 unresolved**, submitted review2 COMMENTED, CHANGES_REQUESTED0. [병합 전 증거 코멘트](https://github.com/planner77/layoutManager/pull/210#issuecomment-6572972930)에 SHA/CI/스레드/릴리스 경계를 기록하고, OWNER 명시 요청대로 정확 PR HEAD를 지정하여 **Squash Main `de92be0ea3a5de38008a57e8c29013d19667f11e`**로 병합. PR HEAD와 Squash Main의 tree는 모두 `2ed65c692d560b35396bbc5555a84cbe00d9890e`로 **완전 동일**, commit subject `#209 | Greenfield 데이터 보존형 릴리스 업그레이드·복구`/body blank. 검증된 런타임 소스·Version0.58.0 불변.
+- [Issue #209](https://github.com/planner77/layoutManager/issues/209)를 `closed/completed`로 실제 종료 확인했다. 이는 **코드·합성/PR CI 범위**이며 실 G7 운영 Volumes/Schema 변경·실 현장 데이터 이전/복구 또는 사용자 업무 현장 수용을 뜻하지 않는다.
+- 정확 Squash `de92be0`의 [Main CI Run41416197476 (#126)](https://github.com/planner77/layoutManager/actions/runs/41416197476) `push/in_progress` **시작만 확인**. `.github/workflows/docker-publish.yml`의 runtime-affecting 경로로 GHCR App `ghcr.io/planner77/layoutmanager:0.58.0` 및 Migrator `:0.58.0-migrate` (latest 쌍) **게시 워크플로에 인계**. `v0.58.0` 사전 tag 없음, workflow는 새 태그 생성/후보 이미지 쌍 검증 후 게시하도록 설계됨. **실제 tag 생성·GHCR tag/digest 게시 완료·Main CI 최종 성공·운영 배포는 NOT VERIFIED**, 요청에 따라 후속 모니터링 안 함.
+- 이 사후 기록은 **docs-only Main**의 `AGENTS.md`+`out/FailureLedger.md`만 바꾼다. 기존 검증된 Squash tree·제품 Version·Runtime/테스트·GHCR Release workflow 변경 없음. `docker-publish.yml`의 문서 변경 release-scope는 **GHCR SKIP 대상**이며, 별도 사후 Main push CI의 결과도 미검증이다. Main publish concurrency는 `cancel-in-progress: false`이며 최초 기능 릴리스 워크플로를 취소하지 않는다. 이미 게시된 이전 버전 tag/이미지 재지정·운영 DB/Volume/Writer 조작 없음.
+
+---
+
 ## PR #210 / #209 — CI #432 GHCR pull 실패 및 인증 보완 (2026-11-02)
 
 - 정확 [PR CI #432 / Run 41404871339](https://github.com/planner77/layoutManager/actions/runs/41404871339)는 PR HEAD `f2d1b9d965c35d309888592a8263832918fdab2b` (Actions merge SHA `e397e06e7b46418e21a82a41e0401a6aaa281349`)에서 **completed/failure**. Scope/Quality/General Chromium shard 1·2/G7 Greenfield/G7 signed+legacy **6 SUCCESS**, Docker Job `125145063988` **FAIL**, 종속 Verify Job `125150043001` **FAIL**. 전체 PR CI 성공은 아니다.
