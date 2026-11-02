@@ -68,6 +68,27 @@ describe('#208 P1-A: CPU-only server DXF converter GO/NO-GO probe (not productio
     });
   });
 
+  it('fails closed on malformed committed-font format bytes without disclosing input', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'scene-poc-invalid-ttf-'));
+    try {
+      const invalidFont = join(directory, 'invalid.ttf');
+      await writeFile(invalidFont, 'invalid synthetic non-font bytes', 'utf8');
+      const rejected: unknown = await probeNodeScene({
+        source, versionId, expectedSha256: sha, fontPath: invalidFont,
+      }).catch((error: unknown): unknown => error);
+      expect(rejected).toBeInstanceOf(NodeScenePocError);
+      expect(rejected).toMatchObject({
+        phase: 'FONT_PREPARE', code: 'SCENE_FONT_UNAVAILABLE',
+        message: 'SCENE_FONT_UNAVAILABLE',
+      });
+      if (!(rejected instanceof NodeScenePocError))
+        throw new Error('Malformed TTF must fail with a safe typed error.');
+      expect(rejected.message).not.toContain(invalidFont);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
   it('rejects structurally invalid typeface JSON without forwarding file contents or paths', async () => {
     const directory = await mkdtemp(join(tmpdir(), 'scene-poc-invalid-typeface-'));
     try {
