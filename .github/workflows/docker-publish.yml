@@ -92,6 +92,27 @@ jobs:
           fi
           # #109 S1: exact first-line subject only; allow multiline squash body.
           COMMIT_SUBJECT="$(sed -n '1p' <<< "$COMMIT_MESSAGE")"
+          # One-time source-pinned publication of the already annotated v0.58.1
+          # tag after #138 failed BEFORE any candidates were built. Never let
+          # another path or near-match subject request a release recovery.
+          if [[ "$GITHUB_REF" == "refs/heads/main" &&
+                "$COMMIT_SUBJECT" == "#216 | Recover immutable v0.58.1 GHCR pair [G7-RECOVERY-0581]" ]]; then
+            (( ${#changed[@]} > 0 )) || {
+              echo "::error::G7_RECOVERY_SCOPE_EMPTY" >&2; exit 1;
+            }
+            for file in "${changed[@]}"; do
+              case "$file" in
+                .github/workflows/docker-publish.yml|src/tests/unit/issue216-ghcr-workflow.test.ts|src/tests/unit/g7-staging-ghcr-guard.test.ts|AGENTS.md|out/Issue216.md|out/FailureLedger.md|out/TestReport.md|out/TestPlan.md|out/Decisions.md|out/Operation.md|out/ChangeLog.md|README.md) ;;
+                *) echo "::error::G7_RECOVERY_SCOPE_FORBIDDEN" >&2; exit 1 ;;
+              esac
+            done
+            publish=true
+            reason="Approved immutable v0.58.1 source-pinned GHCR pair recovery only"
+          elif [[ "$GITHUB_REF" == "refs/heads/main" &&
+                  "$COMMIT_SUBJECT" == "#216 | Recover immutable v0.58.1"* ]]; then
+            echo "::error::G7_RECOVERY_SUBJECT_INVALID" >&2
+            exit 1
+          fi
           if [[ "$GITHUB_REF" == "refs/heads/main" &&
                 "$COMMIT_SUBJECT" == "#109 | S1 Staging-only integration [G7-S1-NO-GHCR]" ]]; then
             for file in "${changed[@]}"; do
@@ -469,9 +490,16 @@ jobs:
         shell: bash
         env:
           APP_VERSION: ${{ steps.version.outputs.version }}
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
         run: |
           set -euo pipefail
           TAG="v${APP_VERSION}"
+          COMMIT_SUBJECT="$(sed -n '1p' <<< "$COMMIT_MESSAGE")"
+          if [[ "$COMMIT_SUBJECT" == "#216 | Recover immutable v0.58.1 GHCR pair [G7-RECOVERY-0581]" ]] &&
+             ! git ls-remote --exit-code --tags origin "refs/tags/${TAG}" >/dev/null 2>&1; then
+            echo "::error::G7_RECOVERY_TAG_MISSING: pinned annotated release tag must already exist." >&2
+            exit 1
+          fi
 
           if git ls-remote --exit-code --tags origin "refs/tags/${TAG}" >/dev/null 2>&1; then
             echo "Release tag ${TAG} already exists."
@@ -512,11 +540,22 @@ jobs:
             local result
             if result="$(docker buildx imagetools inspect "$1" 2>&1)"; then
               printf '%s\n' present
-            elif [[ "$result" == *"404 Not Found"* || "$result" == *"manifest unknown"* ||
-                    "$result" == *"MANIFEST_UNKNOWN"* ]]; then
+            elif [[ "$result" == "ERROR: ${1}: not found" ||
+                    "$result" == "ERROR: ${1}: 404 Not Found" ||
+                    "$result" == "ERROR: ${1}: manifest unknown" ||
+                    "$result" == "ERROR: ${1}: MANIFEST_UNKNOWN" ]]; then
+              # Docker Buildx reports absent GHCR tags as 'ERROR: REF: not found'.
+              # Matching the FULL exact ref and response prevents an auth/network
+              # failure containing 'not found' elsewhere from authorizing publish.
               printf '%s\n' absent
             else
-              echo "::error::G7_RELEASE_REGISTRY_CHECK_FAILED: ambiguous registry response; fail closed." >&2
+              # Safe classification only: never echo raw registry stderr or tokens.
+              local category=UNKNOWN
+              if [[ "$result" == *"not found"* ]]; then category=UNSCOPED_NOT_FOUND
+              elif [[ "$result" == *"unauthorized"* || "$result" == *"denied"* ]]; then category=AUTH
+              elif [[ "$result" == *"timeout"* || "$result" == *"connection"* ]]; then category=NETWORK
+              fi
+              echo "::error::G7_RELEASE_REGISTRY_CHECK_FAILED:${category}; fail closed." >&2
               return 1
             fi
           }
@@ -536,9 +575,12 @@ jobs:
       - name: Decide whether to publish
         id: publish
         shell: bash
+        env:
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
         run: |
           set -euo pipefail
           SHOULD_PUBLISH=false
+          SOURCE_SHA="$GITHUB_SHA"
 
           if [[ "${GITHUB_REF}" == refs/tags/v* || "${GITHUB_REF}" == "refs/heads/main" ]]; then
             case "${{ steps.release_image.outputs.exists }}" in
@@ -547,8 +589,17 @@ jobs:
                 if [[ "${GITHUB_REF}" == "refs/heads/main" ]]; then
                   TAG_COMMIT="$(git rev-list -n 1 "refs/tags/v${{ steps.version.outputs.version }}")"
                   if [[ "$TAG_COMMIT" != "$GITHUB_SHA" ]]; then
-                    echo "::error::G7_RELEASE_TAG_SOURCE_MISMATCH: release tag points to another commit." >&2
-                    exit 1
+                    COMMIT_SUBJECT="$(sed -n '1p' <<< "$COMMIT_MESSAGE")"
+                    if [[ "$COMMIT_SUBJECT" != "#216 | Recover immutable v0.58.1 GHCR pair [G7-RECOVERY-0581]" ||
+                          "${{ steps.version.outputs.version }}" != "0.58.1" ||
+                          "$TAG_COMMIT" != "934e5561ff7d54b388d59b6f8e8f40bd14bcd45e" ||
+                          "$(git rev-parse 'refs/tags/v0.58.1^{tag}')" != "bbd526ce3ce222dea7b63d1c8b081990ab238268" ||
+                          "$(git rev-parse "${TAG_COMMIT}^{tree}")" != "2a8ed7596a4b3444a03fd839784c9e0a5a125a0c" ]]; then
+                      echo "::error::G7_RELEASE_TAG_SOURCE_MISMATCH: source or annotated tag differs from approved immutable release." >&2
+                      exit 1
+                    fi
+                    SOURCE_SHA="$TAG_COMMIT"
+                    echo "Approved source-pinned v0.58.1 GHCR recovery; no tag movement."
                   fi
                 fi
                 SHOULD_PUBLISH=true
@@ -558,7 +609,27 @@ jobs:
           fi
 
           echo "publish=$SHOULD_PUBLISH" >> "$GITHUB_OUTPUT"
-          echo "Publish version image: $SHOULD_PUBLISH"
+          echo "source_sha=$SOURCE_SHA" >> "$GITHUB_OUTPUT"
+          echo "Publish version image: $SHOULD_PUBLISH (source $SOURCE_SHA)"
+
+      # The job's new Main commit contains only vetted recovery workflow/test/docs.
+      # Build the *original tagged release tree*, not the workflow repair tree.
+      - name: Checkout exact immutable source for paired candidate images
+        if: steps.publish.outputs.publish == 'true'
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ steps.publish.outputs.source_sha }}
+          APP_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]] || exit 1
+          git cat-file -e "${SOURCE_SHA}^{commit}"
+          if [[ "$SOURCE_SHA" != "$GITHUB_SHA" ]]; then
+            git checkout --detach "$SOURCE_SHA"
+          fi
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          test "$(node -p "require('./src/package.json').version")" = "$APP_VERSION"
+          echo "OCI source pinned: $SOURCE_SHA"
 
       # Public release aliases are :version/:latest and :version-migrate/:latest-migrate.
       # Temporary immutable :build-SHA-* candidate tags are not deployment entry points.
@@ -576,7 +647,7 @@ jobs:
             org.opencontainers.image.title=Layout Manager
             org.opencontainers.image.description=CAD Layout Manager
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
-            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.revision=${{ steps.publish.outputs.source_sha }}
             org.opencontainers.image.version=${{ steps.version.outputs.version }}
 
       - name: Generate migration image metadata
@@ -593,7 +664,7 @@ jobs:
             org.opencontainers.image.title=Layout Manager DB migration runner
             org.opencontainers.image.description=Prisma migration and password backfill
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
-            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.revision=${{ steps.publish.outputs.source_sha }}
             org.opencontainers.image.version=${{ steps.version.outputs.version }}
 
       # Build/push candidate digests first. Public release aliases must not be
@@ -609,7 +680,7 @@ jobs:
           target: runtime
           platforms: linux/amd64
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:build-${{ github.sha }}-app
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:build-${{ steps.publish.outputs.source_sha }}-app
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -624,7 +695,7 @@ jobs:
           target: migrator
           platforms: linux/amd64
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:build-${{ github.sha }}-migrate
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:build-${{ steps.publish.outputs.source_sha }}-migrate
           labels: ${{ steps.meta_migration.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -643,12 +714,26 @@ jobs:
         run: |
           set -euo pipefail
           IMAGE="${REGISTRY}/${IMAGE_NAME}"
-          for digest in "$APP_DIGEST" "$MIGRATION_DIGEST"; do
+          SOURCE_SHA="${{ steps.publish.outputs.source_sha }}"
+          for spec in "app:$APP_DIGEST" "migrator:$MIGRATION_DIGEST"; do
+            role="${spec%%:*}"
+            digest="${spec#*:}"
             if ! [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
               echo "::error::Invalid candidate digest"
               exit 1
             fi
             docker buildx imagetools inspect "$IMAGE@$digest" >/dev/null
+            # Verify linux/amd64 OCI role/revision/version *before* public aliases.
+            docker buildx imagetools inspect --format '{{json (index .Image "linux/amd64")}}' "$IMAGE@$digest" |
+              jq -e --arg revision "$SOURCE_SHA" --arg role "$role" --arg version "$APP_VERSION" '
+                .os == "linux" and .architecture == "amd64" and
+                .config.Labels["org.opencontainers.image.version"] == $version and
+                .config.Labels["org.opencontainers.image.revision"] == $revision and
+                .config.Labels["com.planner77.g7.image-role"] == $role
+              ' >/dev/null || {
+                echo "::error::G7_RELEASE_OCI_PAIR_INVALID" >&2
+                exit 1
+              }
           done
           # Public tags are created only after both targets have built and
           # their candidate registry manifests are independently readable.
