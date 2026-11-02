@@ -1,3 +1,18 @@
+## TC-208-P1-A — Node CPU-only Scene 실제 변환 게이트 (2026-11-03)
+
+| Test | Input / method | 합격 조건 |
+|---|---|---|
+| TC-208-A1 | Node Vitest + 실제 `sceneDxf` (LINE/CIRCLE/BLOCK/INSERT/TEXT/MTEXT), 실제 project font/three-dxf-viewer | DOM·window/WebGL 없이 Object3D·CUSTOM_DTO/manifest SHA·validator/restore; 실패면 Node direct NO-GO |
+| TC-208-A2 | source SHA mismatch, 16MiB PoC cap, font unavailable | 안전한 phase+errorCode, 예외 전문/파일 경로 미노출 |
+| TC-208-A3 | 상태 stage allowlist, unknown fail-closed, terminal 전이, backoff | JOB READY를 CurrentScene READY로 간주하지 않고 verified pointer 우선 |
+| TC-208-A4 | 브라우저 #212와 동일 합성 input의 stable ID/WCS/layer/geometry/textIndex/DTO fingerprint 및 큰 INSERT | **미구현/NOT RUN**, 별도 실행 필요 |
+| TC-208-A5 | 별도 CPU-only Worker OCI/Compose+UID10001/OOM/timeout/Storage+G7 Gate | **미구현/NOT RUN**, P1-B/D 후 실행 |
+| TC-208-A6 | transactional enqueue/lease/2-workers/Auth revoke/READY CAS/목록·업로드 UX/E2E | **미구현/NOT RUN**, P1-B/C 후 실행 |
+
+`src/tests/unit/scene-node-converter-poc.test.ts`와 `scene-build-job.test.ts`는 default Vitest suite에서 자동 실행한다. PR CI가 시작되어도 완료/합격을 보장하지 않는다. #208 AC01–09 완료 판정은 [Issue208](Issue208.md)/[TestReport](TestReport.md) gate 전체와 운영 #113/#193 구분 필요.
+
+---
+
 ## TC-212-10 — Greenfield R3 Canonical Scene Artifact 상태 E2E 회귀 (2026-11-03 KST)
 
 `typed-outlines.spec.ts`의 명시적 `원본 DXF로 Scene 생성/재생성`은 검증된 `three-dxf-viewer` renderer와 함께 `scene-status`의 `THREE_SCENE_ARTIFACT_READY` 및 `서버에 저장하기 전이므로 READY 상태는 아닙니다`를 확인한다. `FALLBACK_DXF_DISPLAYED_SCENE_FAILED`가 나타나면 정상 변환 성공으로 처리하지 않는다. 구 문구 `원본 DXF 변환 완료`로 상태 판별·복구하는 우회 금지. R3 원본 기반 외곽선·타입 변경/비활성·Scene 저장/교체·재접속·Reset·Audit/Source WCS 회귀는 그대로 유지하고 26개 Greenfield 및 다른 모든 PR 필수 Job의 실제 재실행을 요구한다. 확인 전 PASS 또는 현장 Scene 수용 선언 불가.
