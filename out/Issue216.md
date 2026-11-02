@@ -1,3 +1,12 @@
+## PR #219 병합 후 — Main GHCR #138 실패·고정 source 재발행 계약 (2026-11-03)
+
+- 이전 PR #219는 Source `5b5b5e7e3937e847fb114185268e4fd01eabe54c`, CI #475 8/8 SUCCESS 후 Main `934e5561ff7d54b388d59b6f8e8f40bd14bcd45e`로 병합됨. 당시 Issue #216은 키워드에 따라 자동 CLOSED되었으나 실제 릴리스 수용 미완료로 REOPEN.
+- [Main CI #138](https://github.com/planner77/layoutManager/actions/runs/41539913477) attempt1/2 GHCR inspect fail closed `G7_RELEASE_REGISTRY_CHECK_FAILED`. annotated tag v0.58.1 object `bbd526ce3ce222dea7b63d1c8b081990ab238268` → source `934e5561...` → Git tree `2a8ed7596a4b3444a03fd839784c9e0a5a125a0c`. 새 후보/공개 tag/OCI size/실 image digest 결과 없음.
+- **선택된 복구 정책:** v0.58.1 SHA/태그 재지정 금지. 정확 missing ref 전체 오류와 비밀 제거된 error-shape 진단 추가. GHCR 기존 2개 태그 이미 존재 시 SKIP, 한 개만 존재 시 HALT, 전부 없으면 정확 소스/태그/트리 SHA 및 허용된 Recovery PR Subject/Changed path를 검증하여 기존 0.58.1 소스를 checkout하고 후보 2개를 빌드한다. 신뢰할 수 없는 런타임 코드를 임의 승격하지 않는다. Candidate OCI labels version/revision/role/amd64 및 registry digest 확인 전 version/latest 승격 금지.
+- **운영 경계:** #209/#211 G7 Registry upgrade/host plan 승인과 별개. #218 자동 생성 미구현. 운영 .env/Volume/DB/Auth/Writer/Scene/CAD 원본과 이전 v0.58.0 digest는 그대로. [신규 시험](TestPlan.md), [실패 원장](FailureLedger.md), [운영](Operation.md). GHCR 실 digest 증거 확인 후에만 Issue completed 종료.
+
+---
+
 # Issue #216 — 0.58.1 불변 릴리스 / G7 호환 Registry / GHCR App-Migrator pair
 
 ## 사실·원인

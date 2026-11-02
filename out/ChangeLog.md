@@ -1,3 +1,18 @@
+## 2026-11-03 — #216 GHCR 복구 PR CI #476 TypeScript 테스트 타입 보완
+
+- `issue216-ghcr-workflow.test.ts`에서 상이한 선택적 key를 가진 오류 주입 input union이 `Record<string,string>`과 호환되지 않아 TS2345. Runtime code/GHCR 검증 수용 실패가 아니라 CI Quality의 테스트 코드 타입 오류.
+- 문자열 env override 유형을 명시한 `Record<string,string>[]`로 정확화. FAIL 원장 및 미실행 경계 유지, CI strict/테스트/기존 release source/tag·운영 데이터 변경 없음.
+
+---
+
+## 2026-11-03 — #216 GHCR immutable release recovery candidate
+
+- Main PR #219 검증 CI #475 8/8 SUCCESS, Main squash `934e5561...` 및 annotated `v0.58.1` 태그 생성 확인. Main CI #138의 GHCR 상태 판정은 두 차례 `G7_RELEASE_REGISTRY_CHECK_FAILED`로 fail closed해 Build/Promotion이 미실행.
+- 현재 #216 원인 분류 중 '원본 Buildx stderr 비노출'은 확정이고 '표준 `ERROR: REF: not found` 미인지'는 검증 대기 가설. Manifest exact-ref missing 분류·안전 진단 추가, 태그/원본 SHA 고정 복구 Gate와 OCI role/version/revision/amd64 검사를 구현 후보로 편성. 새 SemVer 강제 발행 대신 v0.58.1 immutable source 보존.
+- Unit/Scope 회귀·설계/운영/FailureLedger 갱신. 복구 PR CI/새 Main GHCR 게시 결과 및 실 image digest는 아직 미확인; 실 운영 .env·DB/Volume/CAD 불변.
+
+---
+
 ## 0.58.1 — Issue #216 신규 immutable 릴리스 후보 (2026-11-03)
 
 - #212 Scene 수동 생성 실패 진단 및 #208 P1-A Node direct NO-GO 결과를 포함한 Main 코드의 새 이미지 게시를 위해 package/lock 0.58.1 동기화. v0.58.0 tag와 기존 App/Migrator digest 유지.

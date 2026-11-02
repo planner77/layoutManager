@@ -1,3 +1,24 @@
+## #216 / PR #220 OCI P1 리뷰 — 단일 플랫폼 Buildx JSON .Image 계약 (2026-11-03)
+
+리뷰 [PR #220](https://github.com/planner77/layoutManager/pull/220)의 OCI 후보 검증에서 `platforms: linux/amd64` **단일 플랫폼**을 생성하는 Buildx `.Image`가 단일 config object임에도 `{{json (index .Image "linux/amd64")}}`를 사용한 문제를 발견했다. 템플릿이 실패하여 정상 image가 `G7_RELEASE_OCI_PAIR_INVALID`로 잘못 차단될 수 있는 P1 리뷰 내용. 공식 Docker `imagetools inspect` JSON 설명과 일치하도록 `{{json .Image}}` 및 `jq .os/.architecture/.config.Labels` 검증으로 정정하고 Unit에서 해당 template 회귀를 검사한다. 단일 OCI role/version/source/amd64 조건과 fail-closed 정책, 원본 tag/source SHA 불변. 실제 신규 PR CI/OCI publish 결과는 **미검증**. [FailureLedger](out/FailureLedger.md).
+
+---
+
+## #216 / PR #220 CI #476 — TypeScript TS2345 테스트 사전 오류 보완 (2026-11-03 KST)
+
+[Run41542254686](https://github.com/planner77/layoutManager/actions/runs/41542254686) source `eb9b56d76b8bbdde6bcacafffe9b012272deb25f`에서 Quality `125609157571` FAILURE: `issue216-ghcr-workflow.test.ts:124` 테스트 입력 union의 선택적 키가 `undefined`로 추론되어 `Record<string,string>`과 불일치 (`TS2345`). 해결은 별도 `mismatches: Record<string,string>[]` 입력 선언으로 string-only 테스트 환경 유지; 런타임/OCI/CI gate 미변경. Docker Build/실 GHCR 및 나머지 Test는 아직 해당 HEAD 성공 근거 없음. [FailureLedger](out/FailureLedger.md).
+
+---
+
+## #216 — Main CI #138 실패·불변 v0.58.1 원본 소스 복구 PR (2026-11-03 KST)
+
+- **증거:** [PR #219](https://github.com/planner77/layoutManager/pull/219) 검증 HEAD `5b5b5e7e3937e847fb114185268e4fd01eabe54c`의 [CI #475 Run41536335056](https://github.com/planner77/layoutManager/actions/runs/41536335056)은 8/8 SUCCESS, 리뷰 미해결0, Main behind0, Squash `934e5561ff7d54b388d59b6f8e8f40bd14bcd45e`로 병합됨. PR/병합 Git tree 모두 `2a8ed7596a4b3444a03fd839784c9e0a5a125a0c`. Annotated tag `v0.58.1` Git tag object `bbd526ce3ce222dea7b63d1c8b081990ab238268`은 정확 해당 커밋을 가리킴. #216은 병합 시 자동 CLOSED 처리되었으나 실제 릴리스 AC 미완료로 재OPEN.
+- **실제 게시 실패:** [Main CI #138 Run41539913477](https://github.com/planner77/layoutManager/actions/runs/41539913477) attempt1 GHCR Job `125601417511`, attempt2 `125602250478` 모두 `Check immutable version pair on GHCR` 단계에서 `G7_RELEASE_REGISTRY_CHECK_FAILED` 실패. 이미지 Build/Promotion/OCI 측정 **SKIPPED**. 현재 빌드 조회 stdout/stderr는 필터되어 실제 응답 문구는 미확정; Buildx 표준 `ERROR: REF: not found` 형식을 인식하지 못한 **가능성이 있는 분류 계약 문제**로 취급하며 원격 실제 원인 확정 전 가설을 사실로 기록하지 않는다.
+- **복구 코드 정책:** 기존 `v0.58.1` 태그·App/Migrator digest를 절대 이동/덮어쓰지 않는다. GHCR missing은 정확 이미지 ref에 대한 전체 `ERROR: REF: not found` 또는 명시적 manifest 미존재 응답일 때만 허용하며 네트워크/인증/불명확 오류는 안전 코드로 차단. 이미지 1개만 존재 시 게시 금지. 오직 정확 Squash 제목 `#216 | Recover immutable v0.58.1 GHCR pair [G7-RECOVERY-0581]`+허용된 Workflow/테스트/문서 diff에 한해, source/tag object/tree SHA **3중 고정** 확인 후 원본 `934e5561...` commit을 checkout하여 Docker App/Migrator 두 후보를 빌드한다. OCI revision/version/amd64/role/digest 사전 확인 후 공개 tag 승격; `GITHUB_SHA`(문서 수리 커밋)를 이미지 원본으로 잘못 기재하지 않는다. 원본 Runtime/DB/CAD/Scene/볼륨/운영 .env 변경 없음.
+- **실행/종료 경계:** 최초 GitHub 수정/Unit/PR CI 시작은 GHCR 게시 성공이 아니다. 정확 PR CI full green → Owner Managed 미해결 리뷰0/behind0 → Squash Main→ Main CI 실 GHCR App+Migrator 새 digest/원본 SHA/role 확인 → Issue #216 completed 종료. Main CI GHCR FAIL/SKIP이면 #216 OPEN 유지. 자동 Worker/Queue는 #218 별도. [실패 원장](out/FailureLedger.md) / [복구 설계](out/Issue216.md).
+
+---
+
 ## PR #219 / Issue #216 — PR CI #474 실패 분석·수리 (2026-11-03 KST)
 
 - **실패 정확성:** [Run41533666311](https://github.com/planner77/layoutManager/actions/runs/41533666311), PR CI **#474**, Source HEAD `73fde4ad0e0ff1fc0927a41a96a7332e0eee704d`, `completed/failure`. Scope Job **125579975459 SUCCESS**. Quality Job **125580157984 FAILURE** (`npm run typecheck`: `TS2339` `src/tests/integration/g7-greenfield-upgrade.test.ts:94` — `prior.installId`는 `{version,appImage,migratorImage}` 정적 객체 타입에 존재하지 않음). Docker Job **125580157616 FAILURE** (실 Docker 빌드 전 Python 합성 회귀 `src/scripts/test_g7_deploy.py:123`: 실제 helper `COMPATIBLE` 3개 ↔ 테스트 기대 2개). Verify Job **125581014485 FAILURE**는 필수 Quality/Docker 실패의 종속 결과. Greenfield / Signed·Legacy / General Browser E2E는 SKIPPED이며 해당 기능 실패는 관측되지 않았다.

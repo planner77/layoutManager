@@ -7,6 +7,10 @@ import path from 'node:path';
 const workflow=readFileSync(
   new URL('../../../.github/workflows/docker-publish.yml',import.meta.url),'utf8');
 const HEAD='a'.repeat(40);
+const PINNED_SOURCE='934e5561ff7d54b388d59b6f8e8f40bd14bcd45e';
+const PINNED_TAG_OBJECT='bbd526ce3ce222dea7b63d1c8b081990ab238268';
+const PINNED_TREE='2a8ed7596a4b3444a03fd839784c9e0a5a125a0c';
+const RECOVERY_TITLE='#216 | Recover immutable v0.58.1 GHCR pair [G7-RECOVERY-0581]';
 function script(name:string):string{
   const at=workflow.indexOf('      - name: '+name+'\n');
   if(at<0)throw new Error('RELEASE_STEP_NOT_FOUND: '+name);
@@ -29,14 +33,25 @@ if [[ "$4" == *-migrate ]]; then
 else
   [[ "\${APP_EXISTS}" == yes ]] && exit 0
 fi
-printf '%s\\n' 'manifest unknown: 404 Not Found' >&2
+if [[ "$REGISTRY_ERROR" == mixed ]]; then
+  printf '%s\\n' "ERROR: $4: not found: connection timeout" >&2
+else
+  printf '%s\\n' "ERROR: $4: not found" >&2
+fi
 exit 1
 `);
   chmodSync(docker,0o700);
   const git=path.join(bin,'git');
   writeFileSync(git,`#!/usr/bin/env bash
-if [[ "$1" != rev-list || "$2" != -n || "$3" != 1 ]]; then exit 9; fi
-printf '%s\\n' "$TAG_COMMIT"
+if [[ "$1" == rev-list && "$2" == -n && "$3" == 1 ]]; then
+  printf '%s\\n' "$TAG_COMMIT"
+elif [[ "$1" == rev-parse && "$2" == 'refs/tags/v0.58.1^{tag}' ]]; then
+  printf '%s\\n' "$TAG_OBJECT"
+elif [[ "$1" == rev-parse && "$2" == "\${TAG_COMMIT}^{tree}" ]]; then
+  printf '%s\\n' "$TAG_TREE"
+else
+  exit 9
+fi
 `);
   chmodSync(git,0o700);
   return {root,bin,output:path.join(root,'output.txt')};
@@ -49,6 +64,7 @@ function execute(command:string,env:Record<string,string>){
         REGISTRY:'ghcr.io',IMAGE_NAME:'planner77/layoutmanager',
         APP_VERSION:'0.58.1',APP_EXISTS:'no',MIGRATOR_EXISTS:'no',
         GITHUB_REF:'refs/heads/main',GITHUB_SHA:HEAD,TAG_COMMIT:HEAD,
+        TAG_OBJECT:PINNED_TAG_OBJECT,TAG_TREE:PINNED_TREE,COMMIT_MESSAGE:'',
         GITHUB_OUTPUT:f.output,...env}});
     return {status:actual.status,stderr:actual.stderr,
       output:existsSync(f.output)?readFileSync(f.output,'utf8'):''};
@@ -89,6 +105,34 @@ describe('#216 immutable GHCR pair workflow (no registry network)',()=>{
     expect(mismatch.status).not.toBe(0);
     expect(mismatch.stderr).toContain('G7_RELEASE_TAG_SOURCE_MISMATCH');
     expect(mismatch.output).not.toContain('publish=true');
+    expect(execute(shell,{GITHUB_REF:'refs/heads/main'}).output)
+      .toContain('source_sha='+HEAD);
+  });
+  test('approved repair uses exactly tagged source, never a new main tree',()=>{
+    const shell=publish.replaceAll('${{ steps.release_image.outputs.exists }}','false')
+      .replaceAll('${{ steps.version.outputs.version }}','0.58.1');
+    const repaired=execute(shell,{COMMIT_MESSAGE:RECOVERY_TITLE,TAG_COMMIT:PINNED_SOURCE});
+    expect(repaired.status,repaired.stderr).toBe(0);
+    expect(repaired.output).toContain('publish=true');
+    expect(repaired.output).toContain('source_sha='+PINNED_SOURCE);
+    const mismatches:Record<string,string>[]=[
+      {TAG_OBJECT:'c'.repeat(40)},
+      {TAG_TREE:'d'.repeat(40)},
+      {TAG_COMMIT:'e'.repeat(40)},
+      {COMMIT_MESSAGE:RECOVERY_TITLE+' changed'},
+    ];
+    for(const mismatch of mismatches){
+      const blocked=execute(shell,{COMMIT_MESSAGE:RECOVERY_TITLE,
+        TAG_COMMIT:PINNED_SOURCE,...mismatch});
+      expect(blocked.status).not.toBe(0);
+      expect(blocked.stderr).toContain('G7_RELEASE_TAG_SOURCE_MISMATCH');
+    }
+    expect(workflow).toContain('Checkout exact immutable source for paired candidate images');
+    expect(workflow).toContain('org.opencontainers.image.revision=${{ steps.publish.outputs.source_sha }}');
+    expect(workflow).toContain('build-${{ steps.publish.outputs.source_sha }}-app');
+    expect(workflow).toContain('build-${{ steps.publish.outputs.source_sha }}-migrate');
+    expect(workflow).toContain("--format '{{json .Image}}'");
+    expect(workflow).not.toContain('index .Image "linux/amd64"');
   });
   test('partial image version pair is fail-closed, not silently overwritten',()=>{
     for(const pair of [{APP_EXISTS:'yes',MIGRATOR_EXISTS:'no'},
@@ -98,6 +142,12 @@ describe('#216 immutable GHCR pair workflow (no registry network)',()=>{
       expect(result.stderr).toContain('G7_RELEASE_PARTIAL_PAIR');
       expect(result.output).not.toContain('exists=false');
     }
+  });
+  test('unscoped absence-like failures never authorize a publish',()=>{
+    const result=execute(check,{REGISTRY_ERROR:'mixed'});
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain('G7_RELEASE_REGISTRY_CHECK_FAILED');
+    expect(result.output).not.toContain('exists=false');
   });
   test('registry network or authentication uncertainty must not publish',()=>{
     const result=execute(check,{REGISTRY_ERROR:'yes'});

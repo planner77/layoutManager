@@ -1,3 +1,13 @@
+## ADR-216-R — 기존 immutable v0.58.1 태그의 source-pinned GHCR 복구 (2026-11-03)
+
+**배경:** v0.58.1 annotated tag는 정확 Main `934e5561...`에 존재하지만 Main CI #138 2회 실패로 이미지 후보/승격이 실행되지 않았다. 단순 새 Main 커밋을 v0.58.1로 태그 이동하거나 그것의 OCI revision을 원본처럼 표시할 수 없음.
+
+**선택:** 엄격한 ref-scoped Buildx manifest missing 검사와 안전한 비민감 error-class 진단을 추가. 기존 tag object SHA `bbd526...`, release commit SHA `934e556...`/tree `2a8ed...`를 정확 허용한 Recovery Squash subject/path allowlist에서만 참조하여 원본 Tree의 App/Migrator를 빌드한다. Main CI 워크플로는 고쳐지더라도 생성된 이미지는 **old release commit provenance**를 유지해야 함. App/Migrator 후보 각각 role/version/revision/linux/amd64 검증 후 게시하며 불명확/부분 이미지 상태는 HALT. Release source와 Workflow code의 Git SHA는 다를 수 있으므로 별도 증거로 기록한다.
+
+**제약:** 원본 tag와 기존 image digest 변경 금지, 실제 Runtime DB/CAD/Volume 자동 복구/초기화 없음, Main CI/OCI 실 결과 확인 전 release ACCEPT 불가. 불변 소스 재발행이 불가능하면 별도 신규 SemVer 릴리스 설계로 전환하며 태그 재사용 금지.
+
+---
+
 ## ADR-216 — 0.58.1 새 immutable version과 G7 forward edge (2026-11-03)
 
 **결정:** 기존 v0.58.0 및 GHCR App/Migrator digest가 #212/#208 병합 전 코드와 연결되어 있으므로 이를 강제 이동하지 않는다. 새 버전 0.58.1을 package/lock/tag/OCI identity로 채택하고 같은 zones G7 baseline/checksum/data/runtime contract를 사용하는 0.58.0→0.58.1 COMPATIBLE 전방 경로만 추가한다. Schema/SQL migration·운영 Volume 변화 없음.

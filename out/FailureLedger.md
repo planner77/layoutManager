@@ -1,3 +1,28 @@
+## #216 / PR #220 — OCI 후보 확인 템플릿 P1 리뷰 보완 (2026-11-03)
+
+- **검토된 위험:** PR #220 inline reviewer는 현재 단일 linux/amd64 후보 이미지에 `{{json (index .Image "linux/amd64")}}`를 적용하면 Buildx `.Image`가 단일 config object인 상황에서 잘못된 인덱싱으로 템플릿 실패가 발생한다고 지적. 이는 Main GHCR 후보가 실제 유효해도 `G7_RELEASE_OCI_PAIR_INVALID`로 publish를 멈추는 P1 위험이며, **현재 CI에서 발생한 실패로 단정하지 않는다**.
+- **수리:** 후보 inspection을 공식 Docker Buildx 단일 플랫폼 `--format '{{json .Image}}'`로 변경. Node+JSON 구조의 `.os=linux/.architecture=amd64/.config.Labels` 3종 정확 검사, 후보 digest 검증 및 pair promotion 이전 Gate는 그대로. Unit에서 template 선택을 검사하고 원래 tag/source/OCI provenance와 운영 DB/CAD/G7 계약 변경 없음.
+- **CI 구분:** 기존 PR CI #476의 TS2345는 별개 테스트 입력 추론 문제(이미 타입 수리/원장 기록), OCI code는 아직 GHCR에 진입하지 않았다. 신규 CI 전체 성공 전 리뷰 해결·실 GHCR 게시 PASS 주장 금지.
+
+---
+
+## PR #220 / #216 — CI #476 타입 추론 실패와 회귀 테스트 오라클 수리 (2026-11-03 KST)
+
+- **실제 CI:** [PR CI #476 Run41542254686](https://github.com/planner77/layoutManager/actions/runs/41542254686), 실패 HEAD `eb9b56d76b8bbdde6bcacafffe9b012272deb25f`. Quality Job `125609157571`은 `npm run typecheck`에서 `src/tests/unit/issue216-ghcr-workflow.test.ts:124` `TS2345`로 FAILURE. 입력 array의 원소별 선택적 환경변수 키가 TypeScript union에서 `string | undefined`가 되어 `execute(..., Record<string,string>)`에 전달할 수 없음. Unit/Build/Browser E2E는 Quality 실패로 검증 전/미실행. Docker Job `125609157707`는 이 기록 시 별도로 실행 중이었으므로 결과 추측 금지.
+- **수리:** 테스트의 `mismatches` 입력을 명시적 `Record<string,string>[]`으로 구성해 의도한 '문자열 환경변수 덮어쓰기 사전'을 타입에 정확 반영. `as any`/TypeScript strict·CI gate 완화나 운영 검사 로직 변경 없이 4가지 tag/source/subject 위변조 거절 테스트 그대로 유지.
+- **후속:** 이 실패를 원장에 FAIL로 보존하고 수정된 exact HEAD의 새 PR CI를 시작. 재실행 결과 PASS는 실제 관측 전 `NOT VERIFIED`. GHCR v0.58.1 게시·Main Merge/원본 Docker 검증은 아직 미실행. 기존 tagged source/tag/object SHA·CAD/DB/Volume 불변.
+
+---
+
+## #216 — Main CI #138 2회 동일 GHCR manifest 검사 실패 및 불변 릴리스 복구 (2026-11-03 KST)
+
+- **증거:** [Main CI #138 Run41539913477](https://github.com/planner77/layoutManager/actions/runs/41539913477) exact Main `934e5561ff7d54b388d59b6f8e8f40bd14bcd45e`, attempt1 release-scope `125601131036` SUCCESS, GHCR `125601417511` FAILURE. attempt2 release-scope `125602250765` SUCCESS, GHCR `125602250478` FAILURE. 두 번 모두 Docker Login SUCCESS 후 `Check immutable version pair on GHCR`에서 안전 코드 `G7_RELEASE_REGISTRY_CHECK_FAILED`; App/Migrator candidate Build, pair digest 검증, Version/latest 승격 및 OCI 크기 측정 **SKIPPED**. tag 생성은 SUCCESS, 원본 `v0.58.1` annotated tag object `bbd526ce3ce222dea7b63d1c8b081990ab238268` → source `934e5561...`(tree `2a8ed7596a4b3444a03fd839784c9e0a5a125a0c`). Main CI 성공/이미지 게시 판정 불가.
+- **원인 조사·불확실성:** 기존 `imagetools inspect` stdout/stderr는 비밀 보호를 위해 숨긴 뒤 `404 Not Found`, `manifest unknown` 등 한정 문자열만 Missing으로 판정하여, Buildx가 반환할 수 있는 `ERROR: REF: not found`와 일치하지 않을 가능성이 있다. 현 로그에는 원본 실패 응답이 없으므로 네트워크/인증/진짜 manifest 부재 원인을 **확정하지 않는다**. 결론은 '존재·부재 판정 불확실하여 안전 차단'이다. 재시도 2회가 동일 실패였음만 확인.
+- **복구 설계:** 정확 full error `ERROR: <조회 요청한 정확한 ref>: not found` 등 엄격한 미존재 형식을 추가 인지. 불확실 응답은 민감 정보 없는 `UNSCOPED_NOT_FOUND/AUTH/NETWORK/UNKNOWN` 범주만 기록하고 HALT한다. App/Migrator 둘 다 없음만 초기 pair 게시 허용, 부분 존재/기존 pair는 변형 금지. 별도 PR을 통과한 정확 recovery Squash subject+경로 allowlist/Tag object SHA·Source commit SHA·Tree SHA 고정으로 **기존 tagged source만** 빌드하고 OCI label revision을 당시 Main source `934e...`로 기록한다. 공개 태그 승격 이전 후보 manifest/version/role/linux-amd64/source 검증, 기존 0.58.0과 운영 데이터 불변.
+- **상태:** 이 원장 작성 시 변경은 별도 recovery branch의 소스/테스트/문서에 한정. 신규 PR CI·Main CI·GHCR 실 digest는 **NOT RUN/NOT VERIFIED**. 기존 #216은 병합 시 자동 CLOSED가 되었지만 GHCR AC 미충족으로 재OPEN 완료. 새 PR/CI에서 실패 발생 시 정확 Run/Job/HEAD·원인·수리 기록을 추가하고 의미 없이 성공 판정하거나 CI gate/권한을 완화하지 않는다. 최종 실 OCI 게시·고정 source/role 확인 전 CLOSED 불가.
+
+---
+
 ## PR #219 / Issue #216 — PR CI #474 재현된 테스트 계약 불일치 2건 (2026-11-03 KST)
 
 - **정확 실행:** [PR CI #474 Run41533666311](https://github.com/planner77/layoutManager/actions/runs/41533666311), `pull_request/completed/failure`, Source HEAD `73fde4ad0e0ff1fc0927a41a96a7332e0eee704d`. Scope Job `125579975459` SUCCESS. Quality `125580157984` FAILURE; Docker `125580157616` FAILURE; Required Verify `125581014485` FAILURE(종속), G7 Greenfield/General Chromium/G7 Signed·Legacy SKIPPED (별도 버그 아님).
