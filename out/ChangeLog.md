@@ -1,3 +1,11 @@
+## 2026-11-03 — #218 PR #221 CI #495 가상 페이지 Origin·초기화 Error 수리
+
+- CI #495: Quality/Chromium/G7/Docker/UID10001·synthetic watchdog/위험 preflight PASS, CPU Headless 핵심 시험은 BUNDLE/TTF/Chromium 시작 후 `PAGEERROR_OTHER`로 `sceneA2` 미등록, `A2_TIMEOUT:HARNESS_READY` FAIL. 실제 DXF 변환/Validator 미실행.
+- 임의 HTTP `p1-a2.invalid`을 potentially trustworthy `localhost`로 대체하고 script route served·SecureContext/UUID 검증, JS pageerror allowlist 즉시 실패, 정적 host 회귀 추가. 원인은 Crypto 관련 가능성이나 원본 JS 오류 분류 부족으로 확정 불가.
+- Playwright 전체 시험/DTO·원본 파싱/full validator/Rootless CPU Container·read-only/network-none, Required CI 전부 유지. 변경은 시험 파일/문서뿐이며 P1-A2 GO BLOCKED, #218 OPEN/P1-B/C/D/운영 GHCR 미착수. [실측 #495](https://github.com/planner77/layoutManager/actions/runs/41558698574), [원장](FailureLedger.md).
+
+---
+
 ## 2026-11-03 — #218 PR #221 CI #485 CPU-only Headless 변환 timeout 진단/안전 차단 개선
 
 - CI #485: Quality/전체 일반 Chromium E2E/G7/Docker SUCCESS. 별도 CPU-only proof는 합성 위험 preflight PASS이나 실제 DXF→Scene 변환·검증 시험 180,000ms timeout FAIL, 내부 어느 단계에서 지연되는지 미관측. A2 GO 불가.
