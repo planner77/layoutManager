@@ -1,3 +1,9 @@
+## 2026-11-03 — P1-A2 PR #221 CI #479 1차 실행 실패 및 보완
+
+[Run41551357571](https://github.com/planner77/layoutManager/actions/runs/41551357571) PR HEAD `f40ba4a0dcc6ebe4c5598cf6962e847e81bdfbe3`: Quality Typecheck `TS2322`(TTFLoader metadata string vs nested language map), 독립 A2 CPU Run Playwright output 폴더 `/app/src/test-results` mkdir `ENOENT` (read-only container). Docker/UID10001 및 기존 Runtime smoke 성공, **실 DXF 변환 시험은 미실행**. TypeScript는 `Record<string,unknown>` metadata guard, Playwright 결과 경로는 `/tmp/a2-playwright-results` tmpfs로 수정. 후속 exact HEAD CI 결과 관찰 전 PASS/GO 금지. 기존 required CI·rootfs RO·cgroup·G7 승인 불변. [FailureLedger](FailureLedger.md) 및 [TestReport](TestReport.md).
+
+---
+
 ## 6. 벤더 공식 문서 확인 및 A 후보 보안 보류 사유
 
 - [Chromium: Using Chromium with SwiftShader](https://chromium.googlesource.com/chromium/src/+/main/docs/gpu/swiftshader.md): CPU software implementation 및 `--use-gl=angle --use-angle=swiftshader` 실험 모드, `--enable-unsafe-swiftshader` 안전 경고. **Chromium은 SwiftShader를 신뢰하지 않는 콘텐츠 처리에 사용하도록 설계된 안전한 프로덕션 격리로 보장하지 않는다.** 별도 sandbox+격리/허용 입력과 취약성 관리 없이 신규 DXF 파일을 production 자동 게시할 수 없으므로 보안 검증을 추가 GO 필수 조건으로 둔다.
