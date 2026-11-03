@@ -1,3 +1,13 @@
+## 2026-11-03 — PR #221 CI #514 정규식 오류, CPU browser 고정 버전 정합 검증
+
+CI [#514 Run41564217739](https://github.com/planner77/layoutManager/actions/runs/41564217739) HEAD `ea3145c5b2fa2d55a6b631d45ffbed201937baf3`: Scope/Quality/Docker/G7/일반 Chromium 통과, A2 CPU Browser `PAGEERROR_SYNTAX_INVALID_REGEXP`로 actual DXF 변환 미실행, 3/4 tests PASS. Node `vm.Script` 구문 PASS와 브라우저 런타임 정규식 생성의 성공은 별개.
+
+**검증된 차이와 선택:** #514 A2 Debian apt browser Chromium156.0.8078.73, 같은 CI 일반 Chromium Browser scene-poc E2E PASS는 Playwright Chromium153.0.8010.12. 초기화 버그의 정확한 regexp/패키지는 미확인이고 version mismatch는 가설이다. `src/tests/a2/Dockerfile`을 lockfile-pinned Playwright browser로 대체하고 major=153 확인/strict `chrome153` bundle target으로 실험한다. 이미 설치한 npm dependencies와 OS 기반 CPU runtime은 동일, 빌드 때 Browser를 획득하고 실행은 offline(`--network none`), rootless UID10001/read-only/CPU-RAM 제한 유지한다. 이는 **검증 가능한 실행환경 정렬**, 운영 Worker/Scene 완료 판정 아님.
+
+GO 잔여: 실제 synthetic 변환/전체 Validator/Browser parity, sandbox/OOM/late async/필드 DXF/한글 BLOCK fidelity, 브라우저 패키지/SBOM/폐쇄망 공급망. #218 OPEN, P1-B/C/D 금지, #216 OCI GHCR/G7 인증/DB·Volume 불변.
+
+---
+
 ## 2026-11-03 — PR #221 CI #506 A2 Script SyntaxError 및 Bundle 정합성 검증 수리
 
 [PR CI #506 Run41561632191](https://github.com/planner77/layoutManager/actions/runs/41561632191) HEAD `06d6bda224e74b30e40548184902ec44f518dd6e`, Quality/Docker/General Chromium 2/G7 E2E 성공. CPU proof `125673426531`에서 bundle/TTF/Chromium 준비 및 localhost virtual `HARNESS_SCRIPT_REQUESTED`까지 성공, 직후 `PAGEERROR_SYNTAX`로 `window.sceneA2`가 등록되지 않아 실제 DXF→Object3D/Validator/Restore 미실행. 4개 시험 중 3 PASS, 1 FAIL. 이전 nonsecure-Origin 가설은 localhost 후에도 재현되므로 root cause로 확인되지 않음.
