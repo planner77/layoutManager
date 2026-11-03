@@ -1,3 +1,12 @@
+## #218 / PR #221 — PR CI #485 Headless CPU 180s timeout·단계 증거 보강 (2026-11-03 KST)
+
+- **실제 실패:** [PR CI #485 Run41555129727](https://github.com/planner77/layoutManager/actions/runs/41555129727), 정확 HEAD `23d4b8df0948e4ee1d6b3a34dba9673e56136440`, `completed/failure`. Scope `125652535081`, Quality `125652599410`, Docker `125652599527`, Chromium 2-shard `125654262720/125654262771`, G7 Greenfield `125654262734`, G7 Signed/Legacy `125654262851` **SUCCESS**. 단독 CPU proof Job `125652599400`에서 합성 사전검증 1건 PASS, 실제 DXF→Scene 검증 1건 **180,000ms 초과 FAIL**. Required Verify `125657270237`은 A2 필수 Job 실패로 FAIL.
+- **진단 경계:** 컨테이너 Debian/Chromium 빌드 및 UID10001 확인은 PASS. 그러나 실패 Job에 단계별 진행 로그가 없어 Chromium launch, font, DXFViewer getFromPath, WebGL/Serialize 중 지연 위치·원인 확정 불가. OOM/kill/async 원인으로 추측 금지. 테스트 timeout 자체를 DXF Converter NO-GO 확정이나 GO로 분류하지 않는다.
+- **수리:** 실험 전용 `src/tests/a2/headless-browser.ts`의 SOURCE/WEBGL/DXF_PARSE/PREFLIGHT/TAG/TEXT_INDEX/CUSTOM_DTO/VALIDATE/RESTORE/RENDER allowlisted phase, `headless.spec.ts`의 host/Font route/PageError/Resource 실패 milestone과 단계별 bounded launch 25s/navigation 20s/conversion 60s 실패 코드(`A2_TIMEOUT:...:LAST_PHASE=...`), never-settling Promise 거절 회귀 추가. 기존 Playwright 전체 180s, Docker 15m, CPU2/RAM1536MiB/UID10001/read-only/no-network, 모든 required CI 및 실제 DXF/validator 단언 유지. 시간 상한 증대·skip·ready fake 금지.
+- **후속:** 새 정확 HEAD에서 PR CI 시작만 확인하고 완료는 사용자 요청대로 모니터링하지 않는다. 합성 DXF/브라우저 #212 Adapter fidelity·한글·중첩 INSERT·프로세스 sandbox/OOM·필드 수용은 증거 확보 전 모두 미검증. **P1-A2 BLOCKED, #218 OPEN, P1-B/C/D 착수 금지.** [FailureLedger](out/FailureLedger.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md), [Issue218](out/Issue218.md).
+
+---
+
 ## #218 / PR #221 — CI #479 Quality·A2 CPU Fail 원인/경계 및 수리 (2026-11-03 KST)
 
 - **정확한 실패:** [PR CI #479 / Run41551357571](https://github.com/planner77/layoutManager/actions/runs/41551357571), HEAD `f40ba4a0dcc6ebe4c5598cf6962e847e81bdfbe3`, `completed/failure`. Quality Job `125639534190`이 `src/tests/a2/headless.spec.ts:34` `TS2322` (TTF metadata 필드 `string` 타입에 실제 font JSON의 `{en:string}` 대입)로 `typecheck` 실패. A2 CPU Job `125639534277`은 Debian 이미지 빌드·UID10001 검사를 통과했지만, read-only `/app/src` 아래 Playwright 기본 `test-results` 생성에서 `ENOENT`가 발생해 **실 DXF test 실행 전에 실패**.
