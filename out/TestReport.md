@@ -1,3 +1,9 @@
+## #218 / PR #221 — CI #479 실패 실측과 수정 후 재시험 경계 (2026-11-03 KST)
+
+- 실패 Run: [CI #479](https://github.com/planner77/layoutManager/actions/runs/41551357571), HEAD `f40ba4a0dcc6ebe4c5598cf6962e847e81bdfbe3`, `completed/failure`. Quality Job `125639534190`: TypeScript `TS2322` `headless.spec.ts:34` (font JSON metadata language map vs string field) — Typecheck FAILURE, Unit/Build 미실행. A2 CPU Job `125639534277`: Debian 컨테이너 빌드 + UID10001 검사 성공, Playwright test 시작 전 default `/app/src/test-results` mkdir `ENOENT`로 FAILURE (read-only rootfs). Docker-runtime Job `125639534249` SUCCESS, UI·G7 E2E SKIPPED, Verify `125644337801` FAILURE(종속).
+- 적용한 보완: `src/tests/a2/headless.spec.ts`의 `TTFLoader` metadata를 typed `Record<string,unknown>` guard로 처리, 실 TTF/한글 glyph/Font build 수명주기 보존. `src/tests/a2/playwright.config.ts`의 Playwright artifacts를 `/tmp/a2-playwright-results` (격리 tmpfs)로 이동. container `--read-only`/UID10001/network none/resource limits 및 기존 Required CI 일절 완화하지 않음.
+- 수정 후 TypeScript/Vitest/Playwright/SwiftShader/CUSTOM_DTO/Font/Save/Restore 결과는 **새 CI의 실제 로그 전까지 NOT VERIFIED**, 별도 local npm/Docker 테스트 NOT RUN. `a2-cpu-probe`에서 DXF 시험이 돌지 않았으므로 이전 "실험 구성"을 P1-A2 GO 또는 field acceptance로 승격하지 않는다. 상세 [FailureLedger](FailureLedger.md), [Issue218](Issue218.md).
+
 ## #218 / P1-A2 — CPU-only 서버 변환기 실험 PR (2026-11-03, 시험 전)
 
 **기준 Main:** `55b82cdf35f6d9f606dcab16830cd61ce0098082`; 기술 검증 분리 브랜치 `feat/218-a2-headless-cpu-gate`. 기존 #217의 [CI #457](https://github.com/planner77/layoutManager/actions/runs/41520729471) 직접 Node DXFViewer unhandled rejection 4건 NO-GO 및 [CI #472](https://github.com/planner77/layoutManager/actions/runs/41524840539) 8/8 CI SUCCESS는 **선행 역사적 사실**이며 이 PR의 신기술 GO 증거가 아니다.
