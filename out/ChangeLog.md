@@ -1,3 +1,11 @@
+## 0.59.0 — #218 Scene Fidelity 및 Sandbox 후속 후보 (2026-11-03)
+
+- CUSTOM_DTO v2에 material 렌더 속성·실제 ShapeGeometry parameters·index/drawRange 및 원본 선택 index/binding 계약을 추가했다. fresh restore에서 world bounds와 render coverage를 재감사한다. v1은 fidelity UNKNOWN으로 읽는다.
+- Package/lock0.59.0 및 동일 DB baseline의 G7 forward COMPATIBLE edge. 기존0.58.1 source/tag·원본·DB·volume·배포는 보전한다.
+- PR #222 검증 전용 병합: Main2efae76, exact HEAD CI #543 9/9 성공, tree 일치, #218 OPEN. Sandbox/Node의 실제 근거는 [Issue218Sandbox](Issue218Sandbox.md). 최종 검증과 GO는 [TestReport](TestReport.md)를 따른다.
+
+---
+
 ## 2026-11-03 — #218 P1-A2 live Adapter parity·프로세스 안전성 후속 검증
 
 - Test-only: 실제 Adapter와 독립 CPU 후보의 동일 입력/전체 DTO·기하·재질·텍스트/Layer/fresh restore 비교 및 명시적 PARTIAL matrix.

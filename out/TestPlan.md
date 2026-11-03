@@ -1,3 +1,11 @@
+## TC-218-FX — Scene 충실도·격리 후속
+
+[Issue218](Issue218.md) FX01–FX08 → v2 validator/serializer/source bridge/Adapter → focused unit·실 Browser parity·기존5+4 및 fault/recovery가 추적 경로다. v2는 geometry/material 손실 허용 없이 비교하고 원본 index의 live/fresh coverage 일치를 확인한다. v1 UNKNOWN, scope/handle/curve/재질/자원 상한 변조를 음성 시험한다. 기존 #216 release path를 유지하고0.58.1→0.59.0에서 합성 DB·CAD·installId 보전을 확인한다.
+
+Sandbox는 [Issue218Sandbox](Issue218Sandbox.md)의 실제 namespace/seccomp/NNP/capability와 unsafe flag 유무, converter와 Viewer restore 성공을 각각 기록한다. Launch/parse 성공을 전체 안전성 PASS로 간주하지 않는다. 보안·source fidelity·현장/라이선스 미충족 시 P1-B는 NO-GO다.
+
+---
+
 ## TC-218-A2-F01–F05 / S01–S06 — 후속 단일 검증 PR
 
 - 설계/수용 정본: [Issue218](Issue218.md) 상단. 기존 P0 5+P1-A2 4 시험과 discovery는 그대로 필수다. 추가 `parity.playwright.config.ts`의 두 테스트를 실제 CLI JSON discovery로 전체 선택 검증한다. source SHA/cycle/폭증/비지원 거절은 원본 SHA를 맞춘 실제 후보 호출에서 font 요청 전 실패해야 한다.

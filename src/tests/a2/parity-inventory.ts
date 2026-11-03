@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type {CadTextIndex} from '../../viewers/core/text-index';
+import {writeShapeGeometry} from '../../viewers/three-dxf-viewer/scene-shape';
 
 /** JSON safe, complete render inventory for the synthetic parity fixture. */
 export function parityInventory(root:THREE.Object3D,textIndex?:CadTextIndex){
@@ -19,6 +20,9 @@ export function parityInventory(root:THREE.Object3D,textIndex?:CadTextIndex){
       matrix:object.matrix.toArray(),matrixWorld:object.matrixWorld.toArray(),worldBBox:box(object),
       geometry:g?{
         type:g.type,
+        shape:g.type==='ShapeGeometry'?writeShapeGeometry(g as THREE.ShapeGeometry):null,
+        shapeConstructor:g.type==='ShapeGeometry'&&Boolean((g as THREE.ShapeGeometry).parameters?.shapes),
+        shapeClone:g.type==='ShapeGeometry'&&g.clone().type==='ShapeGeometry',
         attributes:Object.fromEntries(Object.entries(g.attributes).map(([name,a])=>[name,{
           itemSize:a.itemSize,normalized:a.normalized,arrayType:a.array.constructor.name,
           array:Array.from(a.array),

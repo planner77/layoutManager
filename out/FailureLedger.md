@@ -1,3 +1,15 @@
+## #218 FX / Sandbox — 확정 원인과 후속 조치 (2026-11-03 KST)
+
+- **기존 확정 실패:** v1 CUSTOM_DTO Writer가 material.side를 저장하지 않아 DoubleSide2가 FrontSide0으로 복원됐다(합성4개). 복원기는 모든 geometry를 BufferGeometry로 만들어 실제 ShapeGeometry2개의 class/constructor 의미를 잃었다. viewerData가 textIndex만 저장하여 원본 outline index와 parser→render binding은 fresh restore에서 복원되지 않았다. 동등성 검증 PR #222가 이 손실을 명시적으로 측정했다.
+- **독립 QA 실행 경합:** 첫 parity 실행에서 `CadKorean.typeface.json` JSON.parse가 `Unterminated string`(position19626496)으로 Browser launch 전에 실패했다. 동시에 실행한 `npm run build`가 `prepareFonts()`로 같은 생성 파일을 rewrite 중이어서 부분 파일을 읽었다. 완성 파일은25,810,552bytes·정상 JSON으로 확인했다. 최초 실행은 FAIL로 보전하며 Build 완료 후 동일 동결 source/font에서 순차 재시험한 결과2/2 PASS(16.8s)했다. 제품 파서·DTO 실패나 OOM으로 분류하지 않는다. 수정 범위는 검증 순서이며 제품 font 코드는 변경하지 않는다.
+- **조치 설계:** v2 closed material/Shape constructor/buffer/index/drawRange 및 source index/binding 계약, 실제 복원 world bounds 재감사, v1 legacy UNKNOWN. schema/builder identity 및 기존 Scene 참조·bytes/DB 보전. 구현·시험 결과는 [TestReport](TestReport.md), 수용 정본은 [Issue218](Issue218.md).
+- **새 Sandbox 실측 실패:** 공식 Playwright1.63 seccomp+cap-drop ALL에서 Chromium sys_chroot 거절. 해당 allow rule의 CAP_SYS_CHROOT 조건만 제거한 disposable profile에서는 실제 renderer namespace/seccomp 확인 및 no-unsafe-SwiftShader candidate 변환·validator/readback 성공. GPU/WebGL 차단 상태의 fresh Adapter restore는 `Error creating WebGL context`로 실패(exit40). launch/parse 성공과 restore 실패를 구분한다. 기존6fault 재시험은 아직 이 profile에서 미실행. [정확 조건·해시·공식 출처](Issue218Sandbox.md).
+- **최종 재현·잔여 실패:** 동결0.59.0 source, 실제 Dockerfile image `sha256:848e905bdeb5a851310950c8a6f66f0ff110dfb3ab36eaf39fe1e55353d732dd`의 source31개 hash 일치, 전체151files988tests 및 Browser11/11·fault6/recovery6 PASS. Strict targeted profile에서도 v2 candidate24nodes/21,506vertices/1,998,797bytes full validator/readback은 성공했지만 fresh restore는 여전히 WEBGL_CONTEXT_UNAVAILABLE였다. 연구 supervisor exit0은 이 예상 실패를 올바로 분류했다는 뜻이며 restore PASS가 아니다. Strict-profile fault6은 미실행, 보안·source partial·SBOM/현장·신규CI 증거가 미충족이므로 P1-B NO-GO를 유지했다. 실제 결과 정본은 [TestReport](TestReport.md)다.
+- **대안의 검증 범위:** Node dxf-parser1.1.2와 기존 dxf5.3.0은 합성7종 model entity·2block·한글 parse 성공. geometry/glyph/DTO/복원·malformed/메모리/고객 도면 증거는 없음. direct Node Viewer의 기존 비동기 window 실패가 해결된 것으로 간주하지 않는다.
+- **병합 기록:** #222 exact HEAD0ade59a [CI #543](https://github.com/planner77/layoutManager/actions/runs/41625577506) 9/9 SUCCESS, Main2efae76와 tree 동일, #218 OPEN. 이 성공은 운영 GO가 아니다. 신규0.59.0 PR의 CI 결과는 아직 미확인이다.
+
+---
+
 ## #218 A2 후속 — live parity·process safety 구현/검증 원장 (2026-11-03)
 
 기준 Main0c7ab5f, branch feat/218-a2-adapter-safety, 제품0.58.1. 앞선 PR221/CI541 성공은 기존 합성 proof 범위이며 신규 F/S TC 결과로 재사용하지 않는다.

@@ -8,7 +8,7 @@ import { chromium, type Browser, type Page } from '@playwright/test';
 import { a2SyntheticDxf } from './fixtures';
 import { sceneSha256 } from '../../domain/scene-digest';
 import { validateStoredScenePayload } from '../../domain/scene-payload';
-import { compareParity, canonicalRestoredInventory } from './compare-parity';
+import { compareParity } from './compare-parity';
 
 const mode = process.argv[2];
 const modes = new Set(['normal','stall','sigkill','oom','node-uncaught','node-unhandled','browser-late','sandbox-probe']);
@@ -141,9 +141,7 @@ async function run(): Promise<void> {
     const result=JSON.parse(restored) as {inventory?:Inventory;loaded?:unknown;textIndex?:unknown};
     if(!result.inventory || counts(result.inventory).nodes!==convertedCounts.nodes ||
       counts(result.inventory).vertices!==convertedCounts.vertices || !result.textIndex || !result.loaded) return fail('RESTORE');
-    // Assert the exact documented fixture losses before comparing every remaining field.
-    const {canonical}=canonicalRestoredInventory(candidate.inventory,result.inventory);
-    compareParity(result.inventory,canonical,'restored');
+    compareParity(result.inventory,candidate.inventory,'restored');
     compareParity(result.textIndex,candidate.textIndex,'textIndex');
     phase('RESTORE_VALID');
     await restoredPage.context().close();

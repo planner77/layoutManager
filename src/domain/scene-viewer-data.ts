@@ -2,10 +2,13 @@ import type { CadTextIndex } from '../viewers/core/text-index';
 
 /** Display-only derivative metadata. Never an attestation of source geometry. */
 export type SceneViewerData = Readonly<{ textIndex: CadTextIndex }>;
+import {validateSceneSourceIndex,type SceneSourceIndex} from './scene-source-index';
+import type {SceneAsset} from './cad-scene';
+export type SceneViewerDataV2 = Readonly<{textIndex:CadTextIndex;sourceIndex:SceneSourceIndex}>;
 const record = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
 const text = (v: unknown, limit: number): v is string => typeof v === 'string' && v.length <= limit;
-export function validateSceneViewerData(value: unknown): SceneViewerData {
-  if (!record(value) || Object.keys(value).join() !== 'textIndex' || !record(value.textIndex))
+export function validateSceneViewerData(value: unknown,asset?:SceneAsset,budget?:{scalars:number}): SceneViewerDataV2|SceneViewerData {
+  if (!record(value) || Object.keys(value).sort().join() !== (asset?'sourceIndex,textIndex':'textIndex') || !record(value.textIndex))
     throw new Error('SCENE_VIEWER_DATA_INVALID');
   const index = value.textIndex;
   if (Object.keys(index).some(k => !['hits', 'skipped', 'truncated'].includes(k)) ||
@@ -28,5 +31,6 @@ export function validateSceneViewerData(value: unknown): SceneViewerData {
   for (const [key, n] of Object.entries(index.skipped)) {
     if (!text(key, 256) || !Number.isSafeInteger(n) || Number(n) < 0) throw new Error('SCENE_TEXT_INDEX_INVALID');
   }
+  if(asset){validateSceneSourceIndex(value.sourceIndex,asset,budget??{scalars:0});return value as SceneViewerDataV2;}
   return value as SceneViewerData;
 }

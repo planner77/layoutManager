@@ -8,10 +8,10 @@ import { explicitElevation } from './normalize';
 import {sceneScope,sourceUnitFromDxf,tagImportedTree,tagAppTree} from './scene-tags';
 import type {SceneAsset} from '../../domain/cad-scene';
 import type {SceneScope,CadSceneObjectRef} from '../../domain/cad-scene';
-import {validSceneRef} from '../../domain/cad-scene';
+import {validSceneRef,validateSceneAsset} from '../../domain/cad-scene';
 import type {ReadyScene} from '../core/source';
 import type {SceneArtifact} from '../core/adapter';
-import {preflightSceneRoot,serializeSourceScene,restoreSourceScene,storedSceneViewerData} from './scene-serialization';
+import {preflightSceneRoot,serializeSourceScene,restoreSourceScene,storedSceneViewerData,storedSceneFidelityProfile} from './scene-serialization';
 import {SceneBuildTracker,type SceneBuildDiagnostics} from '../core/scene-build-diagnostics';
 import {isViewerCancellation} from '../core/viewer-load-error';
 import {heapBytes} from '../core/metrics';
@@ -21,6 +21,8 @@ import {sceneSha256} from '../../domain/scene-digest';
 import {ViewerLoadError} from '../core/viewer-load-error';
 import {SelectionController,type SelectionMode} from './selection-controller';
 import {reconcileRenderCoverage,type RenderObservation,type RenderCoverage} from './render-coverage';
+import {captureSourceIndex,auditRestoredSourceIndex} from './scene-source-bridge';
+import type {SceneViewerDataV2} from '../../domain/scene-viewer-data';
 import type {DxfOutlineIndex,OutlineEntity,OutlineKind,OutlinePath} from '../core/outline-geometry';
 import type {OutlineResult} from '../core/outline-compute';
 import {captureSceneVisibility,applySceneVisibility} from './scene-layer-visibility';
@@ -290,7 +292,9 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
         trace?.begin('TEXT_INDEX_EXTRACT');
         const textIndex=extractDxfText(source);
         serializeStarted=performance.now();
-        const candidate=await serializeSourceScene(object,this.sceneAsset,'CUSTOM_DTO',{textIndex},
+        const sourceIndex=this.index?captureSourceIndex(object,this.sceneAsset,this.index):
+          {state:'UNAVAILABLE' as const,reason:'WORKER_FAILED' as const};
+        const candidate=await serializeSourceScene(object,this.sceneAsset,'CUSTOM_DTO',{textIndex,sourceIndex},
           phase=>trace?.begin(phase));
         trace?.stat('serializeMs',performance.now()-serializeStarted);
         trace?.stat('jsHeapBytes',heapBytes()??undefined);
@@ -327,12 +331,26 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     this.exchangeBaseline=captureExchangeBaseline(object);this.exchangeScope=source.manifest.scope;this.exchangeEpoch++;
     this.scene.add(object);this.bounds.setFromObject(object);
     if(!this.bounds.isEmpty()&&![...this.bounds.min.toArray(),...this.bounds.max.toArray()].every(Number.isFinite))throw new Error('SCENE_BOUNDS_INVALID');
-    this.sceneTextIndex=storedSceneViewerData(source.bytes)?.textIndex;
+    const viewerData=storedSceneViewerData(source.bytes);
+    const fidelity=storedSceneFidelityProfile(source.bytes);
+    this.sceneTextIndex=viewerData?.textIndex;
     this.document?.setSourceUnit(source.manifest.scope.sourceUnit);
     this.initializeRenderWork(source.manifest.scope);
-    this.indexError='READY Scene에는 검증된 원본 Entity 인덱스가 없습니다.';
+    const sourceIndex=viewerData&&'sourceIndex' in viewerData?(viewerData as SceneViewerDataV2).sourceIndex:undefined;
+    if(sourceIndex?.state==='READY'){
+      const parsed=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(source.bytes)) as {asset:unknown};
+      const asset=validateSceneAsset(parsed.asset);
+      this.renderCoverage=auditRestoredSourceIndex(object,asset,sourceIndex)??undefined;
+      this.index=sourceIndex.index;
+      this.selector?.setSourceEntities(this.renderCoverage!.selectable.filter(e=>this.visibleLayers.has(e.layer)));
+      this.spatialIndexMs=this.selector?.indexBuildMs;
+    }else this.indexError=sourceIndex?.state==='UNAVAILABLE'&&sourceIndex.reason==='WORKER_FAILED'?
+      '원본 정밀 선택 인덱스를 생성하지 못했습니다.':
+      sourceIndex?'원본 정밀 선택 인덱스를 사용할 수 없습니다. 명시적으로 재변환하세요.':
+      '기존 Scene의 원본 선택 및 렌더 충실도를 확인할 수 없습니다. 명시적으로 재변환하세요.';
     this.fitToView();this.render();
-    return {empty:this.bounds.isEmpty(),entityCount:this.renderIndex?.entities.length??0,metrics:{parseMs:0}};
+    return {empty:this.bounds.isEmpty(),entityCount:this.renderIndex?.entities.length??0,metrics:{parseMs:0},
+      ...(fidelity.action==='REBUILD_REQUIRED'?{warning:this.indexError}: {})};
   }
   getSceneArtifact(){return this.sceneArtifact;}
   getSceneBuildDiagnostics():SceneBuildDiagnostics|undefined{return this.buildTrace?.snapshot();}

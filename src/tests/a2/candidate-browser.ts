@@ -6,6 +6,8 @@ import {explicitElevation} from '../../viewers/three-dxf-viewer/normalize';
 import {sceneScope,sourceUnitFromDxf,tagImportedTree} from '../../viewers/three-dxf-viewer/scene-tags';
 import {preflightSceneRoot,serializeSourceScene} from '../../viewers/three-dxf-viewer/scene-serialization';
 import {extractDxfText} from '../../viewers/core/text-index';
+import {parseDxfOutlineIndex} from '../../viewers/core/outline-geometry';
+import {captureSourceIndex} from '../../viewers/three-dxf-viewer/scene-source-bridge';
 import {parityInventory} from './parity-inventory';
 import {preflightA2Dxf} from './dxf-risk-preflight';
 import packageJson from '../../package.json';
@@ -37,7 +39,9 @@ export async function buildCandidate({dxf,versionId,sourceSha256}:CandidateReque
     const asset=tagImportedTree(root,scope);
     const textIndex=extractDxfText(source.buffer as ArrayBuffer);
     const inventory=parityInventory(root,textIndex);
-    const artifact=await serializeSourceScene(root,asset,'CUSTOM_DTO',{textIndex});
+    const index=parseDxfOutlineIndex(dxf,versionId,sourceSha256);
+    const sourceIndex=captureSourceIndex(root,asset,index);
+    const artifact=await serializeSourceScene(root,asset,'CUSTOM_DTO',{textIndex,sourceIndex});
     return {artifact:{bytes:[...artifact.bytes],manifest:artifact.manifest},inventory,preflight,
       textIndex,sourceSha256,sourcePreflight,packageVersion:packageJson.version};
   }finally{URL.revokeObjectURL(url);}

@@ -1,3 +1,11 @@
+## #218 FX — v2 호환성과 격리 검증 운영 경계
+
+0.59.0 Writer의 CUSTOM_DTO v2는 이전0.58.1 Reader가 지원하지 않는다. 기존 v1은 읽기 호환되지만 fidelity UNKNOWN이며 원본 재빌드로 v2를 생성한다. 기존 Scene bytes를 자동 변환하거나 원본/Current를 교체하지 않는다. G7 forward COMPATIBLE은 DB baseline 유지의 의미이고 임의 앱 downgrade 허용이 아니다. 기존 백업·복구 세트 절차를 적용한다.
+
+[Sandbox 연구](Issue218Sandbox.md)의 profile/namespace 시험은 시험 이미지에 한정한다. runtime host sysctl·권한·운영 Compose를 변경하지 않으며 sandbox launch·parser 성공을 Worker 운영 승인으로 사용하지 않는다. 판정은 [TestReport](TestReport.md)에 기록한다.
+
+---
+
 ## #218 A2 후속 검증 실행 — 운영과 분리
 
 `src/tests/a2/Dockerfile`은 동일0.58.1 기반의 시험 전용 이미지다. root에서 `docker build -f src/tests/a2/Dockerfile -t layoutmanager-a2-proof:local .` 후 동일 원래 resource/security flags로 기존5+4와 `tests/a2/parity.playwright.config.ts`를 각각 새 컨테이너에서 실행한다. Discovery는 root의 `node src/tests/a2/check-discovery.mjs --check` 및 `node src/tests/a2/check-parity-discovery.mjs --check`; process unit은 `node --test src/tests/a2/process-safety.test.mjs`다.

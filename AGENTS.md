@@ -1,3 +1,11 @@
+## #218 Fidelity·Sandbox 후속 — 0.59.0 후보
+
+PR #222는 검증 전용으로 Squash 병합됐다(Main `2efae7631b175d25b9c4f961cc1fd0fdc23010f5`). 정확 HEAD `0ade59a`의 [CI #543](https://github.com/planner77/layoutManager/actions/runs/41625577506) 9/9 Job SUCCESS, 미해결 리뷰0/충돌0 및 병합 전후 tree 일치를 확인했고 #218은 OPEN이다.
+
+현재 범위는 [Issue218](out/Issue218.md) FX01–FX08의 CUSTOM_DTO v2 충실도와 [Sandbox 연구](out/Issue218Sandbox.md)다. 기존 CAD Scene identity/DB baseline은 유지한다. v1은 legacy UNKNOWN으로 읽고, v2 source snapshot도 원본 의미의 서버 attestation으로 간주하지 않는다. Manager(gpt-6-astra) 설계 → Developer(gpt-6-sol) 구현 → QA(gpt-6-luna) 검증으로 진행하며 root가 통합·게시한다. 실제 검증 결과는 TestReport에 기록한다. 보안·충실도 GO 전에는 P1-B를 시작하지 않는다.
+
+---
+
 ## #218 A2 후속 — 실제 Adapter 동등성·프로세스 안전성
 
 A2 parity 또는 프로세스 fault/cleanup/recovery/CI를 변경할 때 [Issue218](out/Issue218.md) 상단 F01–F05/S01–S06, [TestReport](out/TestReport.md), [FailureLedger](out/FailureLedger.md)를 먼저 읽는다. 기존9개와 추가parity/process 검증을 함께 유지하고, PARTIAL·BLOCKED와 실제 정상/음성시험 통과를 구분한다. 검증 PR과 운영 GO·P1-B는 별도다.
@@ -1529,6 +1537,7 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 
 | 문서 | 목적 | 반드시 참조하는 상황 |
 | --- | --- | --- |
+| [Issue218Sandbox](out/Issue218Sandbox.md) | Chromium 격리·Node DXF Parser 공식 근거와 실제 재현 실험 | #218 sandbox/profile/Node 대안·GO 검토 전 |
 | [Issue196](out/Issue196.md) | 의미론적 구역 ADR·API·Snap·Geometry·계층·권한·AC | 구역 생성/수정, Version mapping, Reset, 카테고리 또는 구역 UI 변경 전 |
 | [Requirements](out/Requirements.md) | 상세 기능/비기능 요구사항, 범위 | 기능 추가·수정·삭제 전 |
 | [Architecture](out/Architecture.md) | 구조와 Component 책임 | 구조 변경, 신규 Module, Viewer 변경 시 |
