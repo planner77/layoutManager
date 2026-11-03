@@ -1,3 +1,10 @@
+### #218 실험 A 보안 확인 항목
+
+Chromium 공식 SwiftShader 문서의 `--enable-unsafe-swiftshader` 보안 경고에 따라 **sandbox:false를 합성 CI 결과에서 생산용 보안 PASS로 승격하지 않는다.** 프로덕션 untrusted DXF ingestion sandbox isolation/프로세스 권한·비밀 접근/취약점 patch/SBOM/악성 입력 완화 증거가 GO 필수다. 고객 실 DXF·2PC/GPU 필드 AC는 TC-218-A2-08 / #113/#193 별개로 남기며 A2 기술 GO를 필드 수용과 혼동하지 않는다.
+
+
+---
+
 ## TC-218-A2 — CPU-only 실제 DXF 변환 Gate (2026-11-03, 시험 실행 전)
 
 | TC | 테스트 방법·입력 | PASS 필요 증거 | 지금 상태 |
@@ -11,7 +18,7 @@
 | TC-218-A2-07 | PR CI Quality/Unit/Browser 2-shard/Greenfield/Signed/Legacy/Docker + 전용 a2-cpu-probe, required verify | 정확 PR HEAD 전부 SUCCESS, unresolved review0/behind0/mergeable | PR CI 시작 전 NOT RUN |
 | TC-218-A2-08 | 신규 5MiB/20MiB+ 고객 DXF·2PC/GPU/원본/현장 Owner SLA, 외부 반출 금지 | #113/#193 별도 현장 서명/비공개 evidence ID | FIELD BLOCKED |
 
-**GO 금지:** A2-01~08의 범위별 필요한 실제 증거가 확보되지 않음. 1e-5는 **합성 Browser 비교** 기준이지 산업 현장의 정확도 SLA가 아니다. P1-B/C/D 자동 기능/OCI/G7/업로드/권한/목록 기능 구현 0. [Issue218](Issue218.md).
+**GO 금지:** A2-01~07의 단계별 필요한 실제 증거(현장 A2-08은 독립 수용)가 확보되지 않음. 1e-5는 **합성 Browser 비교** 기준이지 산업 현장의 정확도 SLA가 아니다. P1-B/C/D 자동 기능/OCI/G7/업로드/권한/목록 기능 구현 0. [Issue218](Issue218.md).
 
 ---
 
