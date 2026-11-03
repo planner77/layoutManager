@@ -1,3 +1,12 @@
+## #218 / PR #221 — PR CI #495 P1-A2 초기 페이지 Error/보안 Origin 진단 수리 (2026-11-03 KST)
+
+- **실제 실패:** [PR CI #495 Run41558698574](https://github.com/planner77/layoutManager/actions/runs/41558698574), HEAD `91509d1dce9522acb2b8a0f934c9b08fa63fa4b8`, `completed/failure`. Scope `125664193250`, Quality `125664254641`, Docker `125664254546`, General Chromium 두 샤드 `125666447788/125666447705`, G7 Greenfield `125666447689`, G7 Signed/Legacy `125666447601` **SUCCESS**. A2 CPU Job `125664254542`은 Debian build/UID10001 및 2개의 독립 시험 PASS, 핵심 DXF→Scene 시험 1개 FAIL; Required Verify `125669442387`은 종속 FAILURE.
+- **확정된 현상:** BUNDLE/TTF 준비·SwiftShader Chromium launch 성공. `HARNESS_NAVIGATE_START → PAGEERROR_OTHER → A2_TIMEOUT:HARNESS_READY:LAST_PHASE=UNOBSERVED` (20s). 아직 `window.sceneA2`가 없으므로 실제 DXF parser/Serializer/Validator 실행 전 실패. JS 예외 전문이 로깅되지 않아 실제 error Type/Message 및 원인 확정은 불가.
+- **수리와 검증 가설:** 기존 브라우저 E2E와 달리 시험이 `http://p1-a2.invalid` 비신뢰 HTTP origin을 사용하는 것이 원인일 가능성: MDN/W3C는 `http://localhost`를 potentially trustworthy/secure context로, `Crypto.randomUUID`를 secure-context-only로 규정한다. **원인 가설이지 CI #495의 원래 JS 예외가 이를 확증한 것은 아님.** 실험용 가상 페이지를 `http://localhost/__a2`로 변경하고 기존 Playwright in-memory 응답 및 Docker `--network none` 보존. Script route가 실제 호출됐는지, `window.isSecureContext`와 `crypto.randomUUID` 사용 가능한지 검증. 페이지 초기화 error 시 allowlisted code를 즉시 실패 처리하여 20초의 맹목적 READY 대기를 제거(문제 숨김/skip 금지).
+- **운영/GO 경계:** A2 source→Scene/DTO/full validator/복원/E2E/실 DXF 성공은 **아직 NOT VERIFIED**, 브라우저 초기화 개선만. 기존 25/20/60초 bounded test, 전체 180초·컨테이너 15분, CPU2/RAM1536MiB, UID10001, read-only/rootless/network-none 및 원래 필수 Quality/Docker/G7/Chromium checks 보존. #218 OPEN/P1-A2 GO BLOCKED/P1-B/C/D 미착수. [FailureLedger](out/FailureLedger.md), [TestReport](out/TestReport.md), [TestPlan](out/TestPlan.md).
+
+---
+
 ## #218 / PR #221 — PR CI #485 Headless CPU 180s timeout·단계 증거 보강 (2026-11-03 KST)
 
 - **실제 실패:** [PR CI #485 Run41555129727](https://github.com/planner77/layoutManager/actions/runs/41555129727), 정확 HEAD `23d4b8df0948e4ee1d6b3a34dba9673e56136440`, `completed/failure`. Scope `125652535081`, Quality `125652599410`, Docker `125652599527`, Chromium 2-shard `125654262720/125654262771`, G7 Greenfield `125654262734`, G7 Signed/Legacy `125654262851` **SUCCESS**. 단독 CPU proof Job `125652599400`에서 합성 사전검증 1건 PASS, 실제 DXF→Scene 검증 1건 **180,000ms 초과 FAIL**. Required Verify `125657270237`은 A2 필수 Job 실패로 FAIL.
