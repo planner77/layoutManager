@@ -1,5 +1,7 @@
 ## 2026-11-04 — B1 저장 계약 및 G7 릴리스 선행 조건 (Draft)
 
+
+**동시성 1 보증:** 기존 개별 Job `status+attempt` CAS에 더해, 후보 SQL의 partial UNIQUE `uq_scene_build_one_running`은 전역 `RUNNING` 상태를 하나만 허용한다. Claim은 활성 RUNNING을 먼저 검사하며 경쟁이 발생하면 DB UNIQUE 실패를 숨기지 않는다. 실 Worker가 여러 프로세스로 배포되는 분산 설계의 대체가 아니며, 활성화 전 신규 G7 릴리스 등록과 실제 통합 시험이 필요하다.
 **부분 구현, GO-PILOT 미승인.** 이 PR은 `SceneBuildJob` Prisma 모델과 `deploy/scene-build-jobs/migration.sql`의 **검토용 전진 DDL**, `scene-build-job-queue.ts`의 트랜잭션 Enqueue·단일 Job CAS 선점·만료 재시도·실패 상태를 추가한다. `CadRepository.register()`는 `SCENE_AUTO_BUILD_ENABLED=true`일 때 승인된 G7 Runtime의 **DXF**에 한해서만 같은 `writeTransaction`으로 Job을 생성한다. 기본값 OFF, 승인되지 않은 Runtime 또는 등록되지 않은 Job 테이블이면 업로드도 fail closed/롤백하도록 설계했다.
 
 

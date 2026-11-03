@@ -1,5 +1,7 @@
 ## #225 B1 Schema / CAS / Feature Gate 검증 계획 (2026-11-04)
 
+
+**동시성 1 보증:** 기존 개별 Job `status+attempt` CAS에 더해, 후보 SQL의 partial UNIQUE `uq_scene_build_one_running`은 전역 `RUNNING` 상태를 하나만 허용한다. Claim은 활성 RUNNING을 먼저 검사하며 경쟁이 발생하면 DB UNIQUE 실패를 숨기지 않는다. 실 Worker가 여러 프로세스로 배포되는 분산 설계의 대체가 아니며, 활성화 전 신규 G7 릴리스 등록과 실제 통합 시험이 필요하다.
 - **TEST/GO-DEV**: 실제 Prisma 모델과 SQL DDL key/index/foreign keys, invalid digest/status와 중복 key 거절, SQLite Version+Job transaction rollback; 별도 fixture only.
 - **TEST/GO-INTEGRATE**: 승인된 G7 Runtime+DXF에 대해서만 같은 `CadRepository.register` 트랜잭션으로 Job을 기록하고 Job 저장 실패 시 Version·Audit·Current 및 원본 Storage 보상 정책을 지킬 것. 기본 `SCENE_AUTO_BUILD_ENABLED` OFF, 등록 전 schema가 없으면 fail closed. 단일 claim CAS, stale/retry, 오류 allowlist, 권한/세션 토큰 비노출.
 - **TEST/GO-PILOT (현재 NOT RUN)**: 등록된 신규 G7 Migration/Schema fingerprint/백업-복구 및 실 DB Enqueue·Worker restart·DTO non-WebGL 변환·`SceneRepository` Authorize/CAS·브라우저 재접속. 정확 CI HEAD 성공 전 PASS 주장 금지.

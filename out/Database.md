@@ -1,5 +1,7 @@
 ## #225 B1 — 전진 전용 SceneBuildJob 후보 / 기존 G7 0.59.0 불변 (2026-11-04)
 
+
+**동시성 1 보증:** 기존 개별 Job `status+attempt` CAS에 더해, 후보 SQL의 partial UNIQUE `uq_scene_build_one_running`은 전역 `RUNNING` 상태를 하나만 허용한다. Claim은 활성 RUNNING을 먼저 검사하며 경쟁이 발생하면 DB UNIQUE 실패를 숨기지 않는다. 실 Worker가 여러 프로세스로 배포되는 분산 설계의 대체가 아니며, 활성화 전 신규 G7 릴리스 등록과 실제 통합 시험이 필요하다.
 | 구분 | 현재 상태 |
 | --- | --- |
 | `SceneBuildJob` Prisma model | 별도 영속 Queue schema 정의 (Version/SHA/Builder/DTO v2 UNIQUE, Actor/Site FK, status/attempt/due) |

@@ -33,7 +33,7 @@ describe('#225 B1 staged G7 schema: offline, no production migration',()=>{
   const rows=db.prepare("SELECT name,type FROM sqlite_master WHERE tbl_name='SceneBuildJob' ORDER BY name").all() as Array<{name:string;type:string}>;
   expect(rows.filter(r=>r.type==='table').map(r=>r.name)).toEqual(['SceneBuildJob']);
   expect(rows.filter(r=>r.type==='index').map(r=>r.name)).toEqual(
-    expect.arrayContaining(['ix_scene_build_due','ix_scene_build_version','uq_scene_build_identity']));
+    expect.arrayContaining(['ix_scene_build_due','ix_scene_build_version','uq_scene_build_identity','uq_scene_build_one_running']));
   expect(sql).not.toMatch(/token_hash|cookie|password/i);
   expect(singleSceneJobKey({versionId:'CadFileVersion',sourceSha256:'a'.repeat(64),
    builder:CAD_SCENE_BUILDER,payloadSchema:2})).toBeTruthy();
@@ -42,6 +42,15 @@ describe('#225 B1 staged G7 schema: offline, no production migration',()=>{
   const {db}=fixture();insert(db);
   expect(()=>insert(db,'another-job')).toThrow(/UNIQUE/);
   expect(db.prepare('SELECT count(*) AS n FROM "SceneBuildJob"').get()).toMatchObject({n:1});
+ });
+ it('enforces a single RUNNING intent while permitting multiple QUEUED jobs',()=>{
+  const {db}=fixture();
+  insert(db,'first','CadFileVersion','RUNNING','a'.repeat(64));
+  insert(db,'second','CadFileVersion','QUEUED','b'.repeat(64));
+  expect(()=>db.prepare('UPDATE "SceneBuildJob" SET status=? WHERE id=?')
+    .run('RUNNING','second')).toThrow(/UNIQUE/);
+  expect(db.prepare('SELECT status FROM "SceneBuildJob" WHERE id=?').get('second'))
+    .toMatchObject({status:'QUEUED'});
  });
  it('rejects invalid state, broken source digest, and unknown version/actor/site',()=>{
   const {db}=fixture();

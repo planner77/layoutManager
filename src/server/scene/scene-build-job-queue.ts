@@ -45,6 +45,13 @@ export async function enqueueSceneBuildTx(tx:Tx,input:SceneEnqueueIntent){
 export async function claimNextSceneJob(db:Database,now=new Date()){
   if(!validTime(now))throw new Error('SCENE_JOB_TIME_INVALID');
   return writeTransaction(db,async tx=>{
+    // Initial supported deployment is one Worker with concurrency=1.
+    // Database partial unique index is the final defense if another process
+    // races this check. Never run a second job while any RUNNING exists.
+    const running=await tx.sceneBuildJob.findFirst({
+      where:{status:'RUNNING'},select:{id:true},
+    });
+    if(running)return null;
     const picked=await tx.sceneBuildJob.findFirst({
       where:{status:'QUEUED',dueAt:{lte:now}},
       orderBy:[{dueAt:'asc'},{createdAt:'asc'},{id:'asc'}],

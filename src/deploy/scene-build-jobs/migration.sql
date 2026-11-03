@@ -30,6 +30,11 @@ CREATE TABLE "SceneBuildJob" (
 );
 CREATE UNIQUE INDEX "uq_scene_build_identity"
   ON "SceneBuildJob"("version_id","source_sha256","builder","payload_schema");
+-- One RUNNING intent globally even if an operator accidentally starts a
+-- second worker process. This partial unique index is a reviewed raw-SQL
+-- invariant, intentionally not expressible by Prisma's regular @@unique.
+CREATE UNIQUE INDEX "uq_scene_build_one_running"
+  ON "SceneBuildJob"("status") WHERE "status"='RUNNING';
 CREATE INDEX "ix_scene_build_due"
   ON "SceneBuildJob"("status","due_at","created_at");
 CREATE INDEX "ix_scene_build_version"

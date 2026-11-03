@@ -9,7 +9,10 @@ const enqueue={versionId:'version-001',sourceSha256:sha,actorId:'actor-001',
 type Call={where?:unknown;data?:Record<string,unknown>};
 function fixture(row:Record<string,unknown>|null,count=1){
  const create=vi.fn(async(_args:Call)=>({id:'job-001'}));
- const findFirst=vi.fn(async(_args:Call)=>row);
+ const findFirst=vi.fn(async(args:Call)=>{
+  const wanted=(args.where as {status?:string}|undefined)?.status;
+  return row && row.status===wanted ? row:null;
+ });
  const updateMany=vi.fn(async(_args:Call)=>({count}));
  const tx={sceneBuildJob:{create,findFirst,updateMany}};
  const db={$transaction:vi.fn(async(fn:(arg:typeof tx)=>Promise<unknown>)=>fn(tx))};
@@ -43,6 +46,11 @@ describe('#225 B1 transactional queue adapter (stubbed transaction)',()=>{
     data:{status:'RUNNING',stage:'SOURCE_READ',attempt:{increment:1},startedAt:new Date(1100)},
   });
   expect((await claimNextSceneJob(fixture(original,0).db as never,new Date(1100)))).toBeNull();
+ });
+ it('refuses to claim any new job while another job is RUNNING',async()=>{
+  const active=fixture({...original,status:'RUNNING',attempt:1,startedAt:new Date(1000)});
+  expect(await claimNextSceneJob(active.db as never,new Date(1100))).toBeNull();
+  expect(active.updateMany).not.toHaveBeenCalled();
  });
  it('a stale RUNNING attempt schedules bounded retry and never publishes READY',async()=>{
   const f=fixture({...original,status:'RUNNING',attempt:1,startedAt:new Date(100)});
