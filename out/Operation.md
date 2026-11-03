@@ -1,3 +1,11 @@
+## #218 P1-A2 — CI #514 이후 CPU-only Browser 검증 이미지 운영 경계 (2026-11-03)
+
+- test-only Dockerfile은 `node:22.14.0-bookworm-slim` + npm lockfile의 Playwright Chromium을 이미지 **빌드 단계에만 다운로드**하여 `/opt/ms-playwright`에 저장한다. 실행 시 `PLAYWRIGHT_BROWSERS_PATH`와 `A2_BROWSER_EXPECTED_MAJOR=153`을 검사. 재현 실험에서 외부 패키지/Chromium apt 156 혼용은 버전 드리프트이므로 차단.
+- PR CI에 이미 정의된 `docker run --network none --read-only --user 10001:10001 --cpus 2 --memory 1536m --pids-limit 256 --tmpfs /tmp ...`는 유지하고 환경변수·CAD/DB/운영 Volume·G7 Session을 마운트하지 않는다. `playwright install --with-deps`은 **빌드 네트워크 필요**하며 완전 폐쇄망 *이미지 빌드*가 검증됐다고 주장하면 안 된다. 운영 폐쇄망에서는 신뢰된 사전 빌드 digest/SBOM/라이선스·패치 관리 필수.
+- Chromium153는 기존 `scene-poc.spec.ts`에서 성공한 버전이라 테스트 경로 차이를 줄이지만, 소프트웨어 WebGL sandbox 취약점·실 원본 고객 DXF/2PC/G7 인증 게시 GO로 승격하지 않는다. [FailureLedger](FailureLedger.md), [TestPlan](TestPlan.md).
+
+---
+
 ## #218 P1-A2 — CI #495 CPU-only 시험 PageError/localhost 진단 재실행 안내 (2026-11-03)
 
 - [PR CI #495](https://github.com/planner77/layoutManager/actions/runs/41558698574): 기존 검증은 전부 성공, CPU Headless synthetic page에서 PAGEERROR_OTHER/HARNESS_READY 20s Timeout. 번들·TTF·Chromium 실행은 성공, DXF parser 미호출. 이는 실제 도면 변환·영속 Worker 게시의 성공 또는 실패를 확정하지 않음.
