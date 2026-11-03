@@ -1,3 +1,9 @@
+## #218 / PR #221 — CI #479 Quality·A2 CPU Fail 원인/경계 및 수리 (2026-11-03 KST)
+
+- **정확한 실패:** [PR CI #479 / Run41551357571](https://github.com/planner77/layoutManager/actions/runs/41551357571), HEAD `f40ba4a0dcc6ebe4c5598cf6962e847e81bdfbe3`, `completed/failure`. Quality Job `125639534190`이 `src/tests/a2/headless.spec.ts:34` `TS2322` (TTF metadata 필드 `string` 타입에 실제 font JSON의 `{en:string}` 대입)로 `typecheck` 실패. A2 CPU Job `125639534277`은 Debian 이미지 빌드·UID10001 검사를 통과했지만, read-only `/app/src` 아래 Playwright 기본 `test-results` 생성에서 `ENOENT`가 발생해 **실 DXF test 실행 전에 실패**.
+- **수정:** 기존 `node-converter-poc.ts`에서 사용한 `Record<string,unknown>`으로 `original_font_information`을 안전하게 좁혀 metadata만 정규화(실 한글 glyph/TTF 변환 삭제 금지). `playwright.config.ts`에 `outputDir:/tmp/a2-playwright-results` 명시하여 CI의 기존 비루트·read-only/사설 tmpfs 보안 경계를 유지한 채 쓰기 경로만 수정. Quality/전용 CPU suite/Required Verify 완화·Skip, rootfs rw 전환 금지.
+- **증거 경계:** Docker Runtime Job `125639534249` SUCCESS; 기존 Browser·G7 E2E는 Quality 실패로 SKIPPED, Verify `125644337801` FAILED(종속). `a2-cpu-probe`에서 실제 DXF→Scene/SwiftShader/full validator는 **아직 실행 전**이므로 GO 아님. 수정 후 정확 HEAD PR CI를 새 synchronize 이벤트로 시작, 완료 결과 모니터링하지 않고 P1-B/C/D 차단. [FailureLedger](out/FailureLedger.md), [TestReport](out/TestReport.md), [Issue218](out/Issue218.md).
+
 ## #218 / P1-A2 — CPU-only 독립 DXF Scene Builder 기술 Gate (2026-11-03)
 
 **범위·차단:** #217 P1-A 직접 Node `three-dxf-viewer@1.0.44`는 CI #457의 비동기 `window` 오류 4건으로 NO-GO. #218 후속 첫 PR은 `feat/218-a2-headless-cpu-gate`에서 **서버 독립 Chromium+SwiftShader 실험용 합성 시험과 fail-closed 검증만** 수행한다. 생산용 업로드 Hook, G7/권한/Queue/Worker/DB/SceneRepository/Current/Compose/릴리스 이미지는 변경하지 않는다. P1-A2 GO 입증 없이는 P1-B/C/D 개발·활성화 금지.
