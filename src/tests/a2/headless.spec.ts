@@ -230,6 +230,13 @@ test('P1-A2 real synthetic conversion: isolated SwiftShader versus browser basel
     latePageErrors: errors.length, compare:'test-harness browser baseline, NOT viewer UI',
   }));
 });
+test('P1-A2 watchdog reports a stalled stage as failure, never as READY', async () => {
+  // Synthetic never-resolving promise: exercise only the *diagnostic* watchdog.
+  // No browser/Scene work is mocked into an artificial successful conversion.
+  await expect(bounded('SYNTHETIC_STALL', 25,
+    () => new Promise<never>(() => {}), () => 'DXF_PARSE_START'))
+    .rejects.toThrow('A2_TIMEOUT:SYNTHETIC_STALL:LAST_PHASE=DXF_PARSE_START');
+});
 test('P1-A2 strict preparse fail-closed: unsupported, nested explosion, cycle, source cap', () => {
   expect(() => preflightA2Dxf(new TextEncoder().encode(
     a2SyntheticDxf.replace('\nLINE\n', '\n3DSOLID\n'))))
