@@ -3,9 +3,11 @@ import * as THREE from 'three';
 import {toCustomDto,fromCustomDto,type CustomSceneDto} from './scene-custom-dto';
 import {validateSceneAsset,validateSceneManifest,validSceneRef,type SceneAsset,type SceneScope,type SceneManifest,type SceneFormat} from '../../domain/cad-scene';
 import {sceneSha256} from '../../domain/scene-digest';
-import {validateSceneViewerData,type SceneViewerData} from '../../domain/scene-viewer-data';
+import {validateSceneViewerData,type SceneViewerData,type SceneViewerDataV2} from '../../domain/scene-viewer-data';
 import {SCENE_PAYLOAD_LIMITS,validateStoredScenePayload} from '../../domain/scene-payload';
 import {SceneBuildLimitError,type SceneBuildPhase,type SceneBuildStats} from '../core/scene-build-diagnostics';
+import {validateShapeDtos} from '../../domain/scene-shape';
+import {writeShapeGeometry} from './scene-shape';
 export type {SceneFormat,SceneManifest} from '../../domain/cad-scene';
 const enc=new TextEncoder(),dec=new TextDecoder('utf-8',{fatal:true});
 const digest=async(b:Uint8Array)=>sceneSha256(b);
@@ -78,6 +80,14 @@ export function preflightSceneRoot(root:THREE.Object3D):ScenePreflightStats{
   if(geometry){
    geometryCount++;
    if(geometry.isBufferGeometry){
+    const indices=geometry.index?.array.length??0;
+    attributeScalars+=indices;
+    if(attributeScalars>SCENE_PAYLOAD_LIMITS.attributeScalars)throw new SceneBuildLimitError('attributeScalars');
+    if(geometry.type==='ShapeGeometry'){
+      const shape=writeShapeGeometry(geometry as THREE.ShapeGeometry);
+      const budget={scalars:attributeScalars};validateShapeDtos(shape.shapes,shape.curveSegments,budget);
+      attributeScalars=budget.scalars;
+    }
     for(const attribute of Object.values(geometry.attributes)){
      const length=(attribute as THREE.BufferAttribute).array?.length;
      if(typeof length==='number'&&Number.isSafeInteger(length)){
@@ -91,9 +101,10 @@ export function preflightSceneRoot(root:THREE.Object3D):ScenePreflightStats{
  }
  return {sceneNodes:nodes,geometryCount,attributeScalars,maxDepth};
 }
-export async function serializeSourceScene(root:THREE.Object3D,asset:SceneAsset,format:SceneFormat,viewerData?:SceneViewerData,
+export async function serializeSourceScene(root:THREE.Object3D,asset:SceneAsset,format:SceneFormat,viewerData?:SceneViewerData|SceneViewerDataV2,
  onPhase?:(phase:Extract<SceneBuildPhase,'SCENE_JSON_INSPECT'|'CUSTOM_DTO_SERIALIZE'|'PAYLOAD_VALIDATE'>)=>void):Promise<{bytes:Uint8Array;manifest:SceneManifest}>{
  validateSceneAsset(asset);if(asset.state!=='BUILDING')throw new Error('SCENE_NOT_BUILDING');
+ const preflight=format==='CUSTOM_DTO'?preflightSceneRoot(root):undefined;
  const readyAsset:SceneAsset={...asset,state:'READY'};
  // Upstream userData contains parser internals (including BLOCK references). Keep only
  // verified app identity and a display layer; restore the live viewer tree afterwards.
@@ -105,7 +116,12 @@ export async function serializeSourceScene(root:THREE.Object3D,asset:SceneAsset,
    node.userData={cadSceneRef:data.cadSceneRef,...(layer?{cadLayer:layer}:{})};
   });
   if(format!=='THREE_JSON'&&format!=='CUSTOM_DTO')throw new Error('SCENE_FORMAT_INVALID');
-  if(viewerData)validateSceneViewerData(viewerData);
+  const effectiveData:SceneViewerData|SceneViewerDataV2=format==='CUSTOM_DTO'?{
+   textIndex:viewerData?.textIndex??{hits:[],skipped:{},truncated:false},
+   sourceIndex:'sourceIndex' in (viewerData??{})?(viewerData as SceneViewerDataV2).sourceIndex:{state:'UNAVAILABLE',reason:'INDEX_ABSENT'},
+  }:viewerData??{textIndex:{hits:[],skipped:{},truncated:false}};
+  if(viewerData||format==='CUSTOM_DTO')validateSceneViewerData(effectiveData,format==='CUSTOM_DTO'?readyAsset:undefined,
+    {scalars:preflight?.attributeScalars??0});
   // #212: CUSTOM_DTO has its own strict schema/typed-buffer validator. Building
   // a second full THREE_JSON representation first is redundant and can exhaust
   // memory on nested INSERT drawings. Preserve THREE_JSON's original inspection.
@@ -118,7 +134,7 @@ export async function serializeSourceScene(root:THREE.Object3D,asset:SceneAsset,
    const tree=sanitizeTree(root.toJSON());inspect(tree,readyAsset);
    payload={asset:readyAsset,tree};
   }
-  bytes=enc.encode(JSON.stringify({...payload,...(viewerData?{viewerData}:{})}));
+  bytes=enc.encode(JSON.stringify({...payload,...(format==='CUSTOM_DTO'||viewerData?{viewerData:effectiveData}:{})}));
   if(bytes.length>SCENE_PAYLOAD_LIMITS.bytes)throw new SceneBuildLimitError('bytes');
  }finally{for(const [node,data] of backup)node.userData=data;}
  const manifest:SceneManifest={scope:asset.scope,sceneId:asset.sceneId,format,state:'READY',
@@ -137,14 +153,25 @@ export async function restoreSourceScene(bytes:Uint8Array,manifest:SceneManifest
  const asset=validateSceneAsset(parsed.asset);
  if(asset.state!=='READY'||asset.revision!==manifest.revision||JSON.stringify(asset.scope)!==JSON.stringify(expected.scope)||asset.sceneId!==manifest.sceneId)throw new Error('SCENE_ASSET_MISMATCH');
  if(expected.format==='CUSTOM_DTO'){
-  if(parsed.schema!==1||!rec(parsed.root))throw new Error('SCENE_CUSTOM_SCHEMA_INVALID');
+  if(parsed.schema!==1&&parsed.schema!==2||!rec(parsed.root))throw new Error('SCENE_CUSTOM_SCHEMA_INVALID');
   validateStoredScenePayload(bytes,manifest);
   safe(parsed);return fromCustomDto(parsed as CustomSceneDto);
  }
  inspect(parsed.tree,asset);
  return new THREE.ObjectLoader().parse(parsed.tree as THREE.Object3DJSON);
 }
-export function storedSceneViewerData(bytes:Uint8Array):SceneViewerData|undefined{
+export function storedSceneViewerData(bytes:Uint8Array):SceneViewerData|SceneViewerDataV2|undefined{
  const parsed=JSON.parse(dec.decode(bytes)) as Record<string,unknown>;
- return parsed.viewerData===undefined?undefined:validateSceneViewerData(parsed.viewerData);
+ if(parsed.viewerData===undefined)return undefined;
+ if(parsed.schema===2)return validateSceneViewerData(parsed.viewerData,validateSceneAsset(parsed.asset)) as SceneViewerDataV2;
+ return validateSceneViewerData(parsed.viewerData) as SceneViewerData;
+}
+export function storedSceneFidelityProfile(bytes:Uint8Array):Readonly<{
+  render:'FULL_V2'|'LEGACY_FIDELITY_UNKNOWN';sourceIndex:'READY'|'UNAVAILABLE';action:'NONE'|'REBUILD_REQUIRED';
+}>{
+ const parsed=JSON.parse(dec.decode(bytes)) as Record<string,unknown>;
+ if(parsed.schema!==2)return {render:'LEGACY_FIDELITY_UNKNOWN',sourceIndex:'UNAVAILABLE',action:'REBUILD_REQUIRED'};
+ const data=storedSceneViewerData(bytes) as SceneViewerDataV2;
+ return {render:'FULL_V2',sourceIndex:data.sourceIndex.state,
+  action:data.sourceIndex.state==='READY'?'NONE':'REBUILD_REQUIRED'};
 }

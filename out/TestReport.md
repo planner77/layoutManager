@@ -1,3 +1,34 @@
+## #223 / CI #545 — Greenfield 회귀 수리·독립 QA 완료 (2026-11-03 KST)
+
+- 원격 정확 HEAD `b8f4ebe`, [CI #545](https://github.com/planner77/layoutManager/actions/runs/41645624408)는 Greenfield24 PASS/2 FAIL 및 Required Verify 종속 FAIL, 다른7 Job은 SUCCESS다. 이전 로컬988/Browser11/fault6 수용이 이 실패를 취소하지 않는다.
+- 실제 RED: owned 임시 root/controlled clock의 초기 Admin·SC14·R3 chain3case는1 PASS/2 FAIL(53.4s)로 같은 mapping0vs5·consumer heading 실패를 재현했다. CI trace login200→409 확인; public body의 SESSION_LIMIT code는 직접 관측하지 않았다.
+- 단일 변수 개입: 매핑0→5 한 줄만 변경하면 SC14 및 후속 login 실패 지점은 통과했다. 전체subset 결과는2 PASS/1 FAIL(1.0m)이며 R2에서 생성하는 r2reader를 제외한 fixture 전제 누락으로 R3 후반에 실패했다. Manager가 C545-05를 실제 prerequisite/full suite 기준으로 정합화했고 이 실행을 GREEN으로 기록하지 않는다.
+- Manager gpt-6-astra 설계 C545-01~06 → Developer gpt-6-sol test-only3파일 수리 완료. 실제 fixture의 v2 scope/독립 sourceSHA/5bindings 및 original·fresh·reload exact render6/mapped5/observed5/excluded1을 검증한다. 기존 원본GET/Blob/indexWorker/liveWorker0·text/Layer·immutable payload/Scene revision·명시 Renderer 전환 단언은 보전했다.
+- Developer 최종 실행: 전체 controlled Greenfield **27/27 PASS(3.8m)**, typecheck/관련 lint/diffcheck PASS, helper unit **3/3 PASS**. 실제2 authenticated context의 본문 예외 후 옛 cookie 각각401·후속3login200/4번째409를 확인했다. Logout은 context close 전에 수행하고 한 정리 실패에도 나머지를 시도하며 primary/cleanup 오류를 함께 보전한다. Manager 직접 소스검토가 독립 QA 착수를 승인했다. 독립 QA gpt-6-luna도 동결 소스의 전체 Greenfield **27/27 PASS(3.2m)**, helper **3/3 PASS**, typecheck PASS, full lint0errors/기존8warnings를 확인했다. SCENE_RECONNECT는 originalGET0/Blob0/indexWorker0/sceneGET4/contexts2이고 R2 prerequisite과 R3까지 통과했다.
+- QA 실행 이력: 최초 잘못된 임시root는 owned-fixture guard가 server/test 전에 거절해 NOT RUN이었다. 다음 유효한 canonical/0700 수동root 실행은 자동root 안내를 재시작 요구로 해석해7개 PASS 후8번째 도중 CANCELLED됐다. 정정 안내 후 자동 owned root의 전체27 PASS를 정본으로 삼고 partial/cancel을 제품 실패나 전체 PASS로 계수하지 않는다. guard와 제품은 변경하지 않았다.
+- 검증 범위: 제품/App/Adapter/auth/DB/package/Docker/CI 설정은 변경0이다. 기존 성공 CI545의 quality/build/Docker/general/runtime/A2는 그 당시 baseline 결과로 보전하고, 새 delta는 관련 helper·type/lint 및 전체 Greenfield로 검증한다. 전체988/build/Docker를 새 delta 통과로 재명명하거나 불필요하게 반복하지 않는다.
+- Manager 최종 판정: C545-01~05 수리 ACCEPT/추가 재작업0. C545-06은 최종 게시·새 정확 HEAD CI 시작 확인을 남긴 상태에서 이 소스 기록을 확정한다. 시작 여부와 새 HEAD는 최종 PR metadata/완료 보고로 확인하며 새 CI 완료 PASS를 미리 쓰지 않는다.
+- 제품 source/version0.59.0·3-session 제한·인가·DB·원본·운영 volume/배포·A2 P1-B NO-GO는 유지한다. 최종 재조회 review threads0/unresolved0·mergeable=true, base Main2efae76/headb8f4ebe 및 Main ancestor를 확인했다. 새 CI는 원장 기록 뒤 시작하고 완료 모니터링은 생략한다.
+
+---
+
+## #218 FX / Sandbox — 0.59.0 후속 구현·로컬 검증 완료 (2026-11-03 KST)
+
+- **병합 완료:** PR #222 검증 전용 Squash Main `2efae7631b175d25b9c4f961cc1fd0fdc23010f5`. Exact PR HEAD `0ade59a2aa3245c7323963f254ce3f24b3e110db`의 [CI #543](https://github.com/planner77/layoutManager/actions/runs/41625577506) 9/9 Job SUCCESS, review 미해결0/충돌0 및 tree 동일을 확인했다. 병합 후 #218 OPEN. 아래 #222의 CI 미확인 표기는 당시 기록이다.
+- **역할:** Manager gpt-6-astra 설계/AC, Developer gpt-6-sol fidelity 구현·sandbox research, root 통합·release compatibility·게시. 독립 QA gpt-6-luna가 Manager 구현 검토 승인 후 동결 소스를 검증했다. 실제 역할만 기록한다.
+- **독립 QA:** typecheck/build PASS; lint0errors·기존8warnings; focused Vitest3files20tests PASS; process-safety3/3 및 sandbox-profile2/2 PASS. 실제 parity2/2 PASS(16.8s), raw inventory 손실0, 실제 ShapeGeometry/clone2개, material side loss0, source index live/fresh READY 및 mapped3/render10, text4. Canvas source 선택·PRECISE 외곽선 일치, Translate/Rotate 중 source mode 차단, Undo/reset후 전체 inventory 일치, Layer toggle 확인. Fresh restore 전 original GET/font/index Worker/parser 각각0. 기존 부분 대응은 확대하지 않았다.
+- **실행 경합 보전:** 첫 QA parity는 동시 Build의 생성 font JSON rewrite 중 부분 파일을 읽어 FAIL이었다. Build 완료 후 같은 동결 source/font에서 순차 재실행2/2 PASS했다. 최초 실패를 덮어쓰지 않으며 [FailureLedger](FailureLedger.md)에 원인을 기록했다.
+- **호환/통합:** G70.58.1→0.59.0 compatible 및 기존 release path/DB/CAD/installId 보전4files24tests PASS. 전체 Vitest151files988tests PASS(343.50s). 정확 최종 Docker image Browser11/11 PASS: P0 5/5(13.9s), 필수 A2 4/4(10.3s), actual Adapter parity 2/2(16.9s). 각기 다른 새 cgroup에서 실행했고 모두 exit0/OOMKilled=false/PID0으로 종료·삭제했다. 프로세스·strict profile의 실제 결과는 아래와 같다.
+- **최종 이미지:** 실제 `src/tests/a2/Dockerfile`로 `layoutmanager-a2-proof:issue218-fidelity-final` build PASS, image `sha256:848e905bdeb5a851310950c8a6f66f0ff110dfb3ab36eaf39fe1e55353d732dd`. 변경 소스31개 각각의 SHA-256이 동결 로컬 소스와 컨테이너 내부에서 모두 일치했다.
+- **프로세스:** stall·converter SIGKILL·actual OOM·Node delayed uncaught/unhandled·Browser late error의6음성 + 각각 fresh recovery6 PASS. OOM만 Docker OOMKilled=true/exit137/supervisorKilled=false이며, exit137만으로 OOM을 추정하지 않았다. 모든 정상 복구는24nodes/21,506vertices/v2 bytes1,998,797의 full validator·SHA·파일 readback·새 actual Adapter raw inventory/class/material 복원·quiet/clean exit0·PID0을 확인하고 source bytes 불변이었다. 정확 run label의 잔여 컨테이너0. 기존 unsafe SwiftShader 시험 launch의 결과이며 strict profile의6fault는 NOT RUN이다.
+- **Strict Sandbox:** 동일 최종 이미지에서 고정 Playwright profile+단일 chroot delta 및 기존 UID10001/CPU2/RAM·swap1536MiB/SHM256MiB/PID256/read-only/network-none/cap-drop ALL/NNP/tmp512MiB를 유지했다. 실제 renderer user/PID namespace 분리·seccomp filters2·NNP1·CapEff0·no-no-sandbox/no-unsafe-SwiftShader를 확인했다. 동일 v2 candidate24nodes/21,506vertices/1,998,797bytes 변환·full validator·readback PASS. Fresh live restore는 `WEBGL_CONTEXT_UNAVAILABLE`, 연구 receipt는 **RESEARCH_ONLY_NO_GO**였다. Probe 컨테이너 exit0/OOMKilled=false/PID0 및 정확 run label 잔여0. 연구 supervisor의 정상 종료는 restore 성공이나 보안 GO를 뜻하지 않는다. 기본 Docker profile의 기존 strict launch probe는 BLOCKED/LAUNCH_REJECTED로 별도 기록한다.
+- **Node 대안:** dxf-parser1.1.2 및 기존 dxf5.3.0의 Node parse만 확인했다. 독립 Scene converter/한글 geometry·fidelity/fault 수용 증거가 아니다. 재현 명령·profile/LICENSE/NOTICE 해시·공식 근거·미실행 범위는 [Issue218Sandbox](Issue218Sandbox.md)에 있다.
+- **소스 검사:** 상류 SHA 고정을 위해 vendored Playwright LICENSE의 원본 CRLF bytes를 보전한다. CRLF 파일이 해당 LICENSE 한 개뿐임을 확인하고 `git -c core.whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol diff --cached --check`로 staged whitespace를 검사한다. Profile/LICENSE/NOTICE hash 검증은 별도로 통과했다.
+- **Manager 수용:** gpt-6-astra가 두 실제 process/sandbox report를 직접 읽고 QA·full988·packaged11·hash31 증거를 검토해 **구현 보완 PR ACCEPT / 추가 재작업0**으로 판정했다. 운영 GO 수용과 구분한다.
+- **GO 재판정:** 보안상 허용되는 전체 복원 경로와 exact-profile fault, source partial의 필요한 수용·현장·SBOM/license/provenance·신규 exact HEAD CI 증거가 충족되지 않아 **P1-A2/P1-B NO-GO**다. 구현 보완 PR의 수용과 운영 GO는 별개다. #218 OPEN, 영속 Worker/Job/DDL/운영 volume/배포 없음. 신규 PR CI는 시작한 뒤 완료 모니터링을 생략하고 NOT VERIFIED로 남긴다.
+
+---
+
 ## U-218-A2-FS-20261103 — 실제 Adapter 동등성·프로세스 안전성 후속 PR
 
 - 상태: 최종 구현·독립 QA 및 정확 packaged-image 검증 완료. `gpt-6-astra` Manager가 **검증 전용 후속 PR 수용**을 판정했다. 원격 정확 HEAD CI는 시작만 요청하며 결과 미확인이고 운영 GO는 BLOCKED다. 아래 기존 결과와 별도다. AC/추적: [Issue218](Issue218.md) F01–F05/S01–S06 → candidate/live/parity 및 process-child/supervisor → 추가 필수 A2 CI.

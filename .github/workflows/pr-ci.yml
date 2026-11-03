@@ -662,6 +662,7 @@ jobs:
           node src/tests/a2/check-discovery.mjs --check
           node src/tests/a2/check-parity-discovery.mjs --check
           node --test src/tests/a2/process-safety.test.mjs
+          node --test src/tests/a2/sandbox-profile.test.mjs
       - name: Build disposable Debian/Chromium/Node proof image (not GHCR)
         shell: bash
         run: |
@@ -741,6 +742,13 @@ jobs:
           A2_PROCESS_REPORT_DIR: ${{ runner.temp }}/a2-proof/process-safety
           A2_PROCESS_RUN_ID: ${{ github.run_id }}-${{ github.run_attempt }}
         run: node tests/a2/process-safety.mjs
+      - name: Record strict sandbox research evidence (NO-GO, expected WebGL restore block)
+        working-directory: src
+        env:
+          A2_PROOF_IMAGE: layoutmanager-a2-proof:ci
+          A2_SANDBOX_REPORT_DIR: ${{ runner.temp }}/a2-proof/sandbox
+          A2_SANDBOX_RUN_ID: ${{ github.run_id }}-${{ github.run_attempt }}
+        run: node tests/a2/sandbox-probe.mjs
       - name: Archive synthetic-only A2 phases and resource/Crash evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -760,6 +768,10 @@ jobs:
           mapfile -t process_containers < <(docker ps -aq --filter "label=io.layoutmanager.a2-process-run=$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT")
           if (( ${#process_containers[@]} )); then
             docker rm -f "${process_containers[@]}" >/dev/null 2>&1 || true
+          fi
+          mapfile -t sandbox_containers < <(docker ps -aq --filter "label=io.layoutmanager.a2-sandbox-probe=$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT")
+          if (( ${#sandbox_containers[@]} )); then
+            docker rm -f "${sandbox_containers[@]}" >/dev/null 2>&1 || true
           fi
 
   verify:

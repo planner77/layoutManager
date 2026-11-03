@@ -10,16 +10,16 @@ describe('#216 immutable 0.58.1 release',()=>{
   test('package, lockfile and exact G7 compatible edges agree',()=>{
     const pkg=readJson(new URL('../../package.json',import.meta.url));
     const lock=readJson(new URL('../../package-lock.json',import.meta.url));
-    expect(pkg.version).toBe('0.58.1');
+    expect(GREENFIELD_UPGRADE_REGISTRY.releases.some(r=>r.version===pkg.version)).toBe(true);
     expect(lock.version).toBe(pkg.version);
     expect(lock.packages?.['']?.version).toBe(pkg.version);
-    expect(GREENFIELD_UPGRADE_REGISTRY.releases.map(r=>r.version))
+    expect(GREENFIELD_UPGRADE_REGISTRY.releases.filter(r=>r.version!=='0.59.0').map(r=>r.version))
       .toEqual(['0.56.0','0.57.0','0.58.0','0.58.1']);
-    expect(resolveUpgradeChain(GREENFIELD_UPGRADE_REGISTRY,'0.56.0',pkg.version))
+    expect(resolveUpgradeChain(GREENFIELD_UPGRADE_REGISTRY,'0.56.0','0.58.1'))
       .toEqual([{from:'0.56.0',to:'0.57.0',kind:'COMPATIBLE'},
         {from:'0.57.0',to:'0.58.0',kind:'COMPATIBLE'},
         {from:'0.58.0',to:'0.58.1',kind:'COMPATIBLE'}]);
-    expect(resolveUpgradeChain(GREENFIELD_UPGRADE_REGISTRY,'0.58.0',pkg.version))
+    expect(resolveUpgradeChain(GREENFIELD_UPGRADE_REGISTRY,'0.58.0','0.58.1'))
       .toEqual([{from:'0.58.0',to:'0.58.1',kind:'COMPATIBLE'}]);
     expect(()=>resolveUpgradeChain(GREENFIELD_UPGRADE_REGISTRY,'0.58.1','0.58.0'))
       .toThrow('G7_UPGRADE_UNSUPPORTED_PATH');

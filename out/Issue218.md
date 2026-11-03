@@ -4,6 +4,132 @@
 
 ---
 
+## 2026-11-03 — CI #545 test-only 수리 최종 수용 (신규 CI 시작 전)
+
+**Manager 판정: 구현 수리 ACCEPT, 추가 재작업 요구0.** C545-01~05는 Developer·독립 QA의 동결 소스 실행과 코드 검토로 충족했다. 원인은 **v1 index 미복원 기대0이 v2의 실제 복원5와 불일치한 시험 결함**, 이어서 **SC-14 assertion 실패가 tail-only logout을 건너뛰어 남긴 Admin 세션2개와 R3 main 세션1개가 기존 cap3을 채워 독립 consumer login409를 유발한 연쇄 시험 결함**이다. 원래3case의 동일2실패 재현, 기대0→5만 바꾼 대조에서 SC-14·후속 consumer 로그인 통과, 실제 session 정리/기존 cap 회귀 및 전체 R2/R3 chain 성공을 종합해 이 인과를 수용한다. CI409 응답 body에서 SESSION_LIMIT 코드 자체를 직접 관측한 것은 아니며, 제품 auth의 cap 분기와 대조·회귀가 근거다. 제품 Auth/runtime 결함으로 분류하지 않는다.
+
+독립 QA `gpt-6-luna`가 자동 소유 격리 root의 전체 Greenfield **27/27 PASS(3.2분)**, helper3/3·typecheck·전체 lint(0errors·기존8warnings)를 완료했다. 원본/fresh/reload의 exact render6/mapped5/observed5/excluded1과 v2 Scope/독립 source SHA, fresh 원본GET0/Blob0/indexWorker0(sceneGET4·contexts2), 실제2session 본문 예외→oldcookie401→새3login200/4번째409 및 R2/R3 전체 chain이 통과했다. Developer의 별도 전체27/27(3.8분)과 일치한다. QA 첫 잘못된 root는 guard가 server/test 시작 전에 거절한 **NOT RUN**, 이후 유효 수동 root 실행은7PASS 후 중단한 **CANCELLED**로 보존하며 최종27시험 성공으로 덮어쓰지 않는다. 최초3case 및 중간 fixture/SHA 단언 실패와 수정도 [FailureLedger](FailureLedger.md)에 남기고, 최종 실행 정본은 [TestReport](TestReport.md)다.
+
+변경은 test3파일과 추적 문서에 한정한다. 제품/Adapter/auth/package/schema/DB/Docker/workflow 변경0, 제품0.59.0·cap3·권한·CSRF·clock·timeout/retry·필수 CI를 유지했다. Manager는 이 수리의 root 통합/단일 PR 갱신을 수용한다. **C545-06은 최종 secret/review/conflict/base 검사·push·정확 새 HEAD CI 시작 확인이 남아 있으므로 진행 중**이며 root가 실제 완료를 기록한다. 신규 CI 완료는 사용자 요청대로 모니터링하지 않고, 시작을 성공으로 기록하지 않는다.
+
+**#218 OPEN, A2/P1-B NO-GO·P1-B/C/D 미착수/금지 유지.** 이번 Greenfield 시험 수리는 strict WebGL restore 실패, source PARTIAL, 보안/라이선스/SBOM/현장 수용의 기존 미충족 조건을 해결하거나 완화하지 않는다. 운영 Worker·배포·병합 승인을 의미하지 않는다.
+
+---
+
+## 2026-11-03 — PR #223 CI #545 Greenfield 회귀 수리 설계·AC (구현 전)
+
+**현재: test-only 수리 구현 검토 수용, 독립 QA 실행 승인·결과 대기.** 대상은 `feat/218-a2-fidelity-security-published`, exact HEAD `b8f4ebe`, 제품0.59.0이다. [CI #545 Run41645624408](https://github.com/planner77/layoutManager/actions/runs/41645624408)의 G7 Greenfield Job125952595152는24 PASS/2 FAIL이고 Required Verify가 종속 실패했다. 다른7jobs(A2/fault/strict research probe 포함)는 PASS다. Root 확인 시 review 미해결0·mergeable=true·Main2efae76 일치이며 리뷰/충돌이 있었다고 만들지 않는다. 아래 과거 로컬 수용은 이번 원격 실패를 취소하지 않는다.
+
+**Manager 구현 검토:** `first-install.spec.ts`/`owned-sessions.ts`/`g7-owned-sessions.test.ts` 세 파일을 직접 검토했다. v2의 원본·fresh·reload exact6/5/5/1과 독립 source SHA/Version/Scope, 기존 무파싱·불변 저장 단언을 보존하며 session 소유 등록→logout→context close를 모든 본문 실패 경로에 적용했다. 한 cleanup 실패 뒤에도 나머지 정리를 시도하고 본문 실패와 cleanup 실패를 별도 보존한다. 실제2session 강제 본문 실패→oldcookie401→새3login200/4번째409 회귀는 기존 cap3을 유지한다. Developer 보고는 focused first-install3/3, 전체 Greenfield27/27(3.8분), helper3/3/typecheck/scopedlint/diffcheck PASS다. Manager는 소스 검토 및 diff-check를 완료하고 **독립 QA 착수를 승인**하며, 이 보고를 독립 실행 결과로 대체하지 않는다. 제품/Auth/timeout/retry/버전 변경은 없다.
+
+### 현상·원인 가설 및 제한된 수리 방향
+
+Root가 실행한 `G7_E2E_MONOTONIC_CLOCK=true npx playwright test --config playwright.g7-greenfield.config.ts first-install.spec.ts typed-outlines.spec.ts --grep 'initial browser Admin|SC-14|R3 server-first' --reporter=line`의 실제 로그를 Manager가 확인했다. 합성 최초 설치→SC-14→R3의3시험에서 **1PASS/2FAIL(53.4s)**로 동일 현상이 재현됐다. SC-14는 원본GET/Blob/Worker0을 확인한 뒤 `정밀 원본 매핑 0개` 기대에 실패했고 실제 UI는 **render6/mapped5/observed5/excluded1**이었다. 후속 R3는 독립 consumer 로그인 후 `현재 세션` heading 부재로 실패했다. Root가 제공한 CI trace에서 후속 login200→consumer409를 확인했으나 응답 body에는 code 필드가 없어 SESSION_LIMIT 코드를 직접 관측한 것으로 기록하지 않는다. 원시 trace의 cookie/token/CSRF/password/header는 출력하거나 커밋하지 않는다.
+
+순위 가설과 반증 조건은 다음과 같다. (1) v1 원본 index 미복원에 맞춘 오래된 기대0이 v2의 의도된 snapshot 복원5와 불일치한다. 같은 source fixture의 실제 원본·stored schema2/snapshot·fresh/reload가 동일5라면 기대를 강화해 갱신하고, 서로 다르면 제품 fidelity 문제로 재분류한다. (2) SC-14의 실패가 tail-only logout/consumer.close를 건너뛰어 Admin 세션2개를 남기고, 후속 R3 main 로그인으로 cap3에 도달해 consumer가409가 된다. 실제 auth store의 `active>=3 → SESSION_LIMIT409`와 일치하지만, 정확 code/격리 DB의 session 상태·한 변수 cleanup 대조로 연쇄 원인을 확인한다. (3) 독립 auth/clock 또는 G7 scope 실패라면 앞선 세션을 정상 정리해도 후속 동일 로그인 실패가 남거나401/403 등 다른 분류가 관측될 것이다. 이미 monotonic 격리 시계에서 재현됐다는 사실만으로 모든 clock 문제를 해결했다고 주장하지 않는다.
+
+**수리 범위는 test-only다.** `tests/greenfield-e2e/first-install.spec.ts`의 v2 기대와 session/context 소유·정리, 필요한 작은 test helper/회귀 및 직접 영향을 받는 consumer cleanup만 보완한다. 세션 수용량3, 만료·clock·권한·CSRF·rate limit, 제품 serializer/Adapter/Scene API/G7 auth, timeout/retry/skip/필수 CI는 유지한다. 제품 결함이 별도로 입증되지 않는 한 버전0.59.0/package/lock/registry·DDL·Worker·운영 자산은 변경하지 않는다. 기존 A2/fidelity 전체 검증을 삭제/낮추거나 원본으로 fallback해 테스트를 통과시키지 않는다.
+
+**재현 최소화의 전제조건 보완:** Developer가 기대값0→5만 바꾼 단일개입에서 기존3case는2PASS/1FAIL(약1분)이었다. SC-14가 통과하고 후속 R3의 독립 consumer 로그인도 원래 실패 지점을 통과했으나, 이후 line156에서 `r2reader` fixture 부재로 실패했다. 이 사용자는 subset에서 빠진 R2 global catalogue 시험이 만든다. 따라서 기존3case는 원래 두 증상에 대한 유효한 RED/개입 진단이지만 R3 전체 완료를 판정할 완전한 fixture chain은 아니었다. 새 fixture 실패를 제품 auth 결함으로 분류하거나3case GREEN으로 기록하지 않는다. 기존 관측을 원장에 모두 남기고, R3 source/fixture를 우회하지 않은 의존성 보완4case 또는 원래 전체 Greenfield suite로 후속 검증한다. 최종 수용은 기존26시험과 새 cleanup 회귀 전체 통과를 요구한다.
+
+### Developer 구현 계약
+
+1. `sceneDxf`의 persisted envelope가 `schema:2`, sourceIndex READY이며 같은 Version/원본SHA/전체 SceneScope에 묶였는지 검증한다. 알려진 합성 fixture의 stable source subset과 mapping은 정확5, render6/observed5/excluded1이다. 원본·fresh independent context·reload 결과에서 동일한 매핑을 확인하며 `>0` 또는 임의 범위로 약화하지 않는다. 누락 Handle·미지원 text 등 제외를 전체 source 지원으로 바꾸지 않는다.
+2. Fresh context와 reload 각각에서 원본GET0, parser를 나타내는 Blob URL0, index Worker0/liveWorker0, 문자 검색·Layer·render outline·immutable stored payload/Scene revision·원본 SHA 보존을 유지한다. 이후 **명시적인** dxf-viewer 선택에서만 기존 예상 원본GET 증가를 허용하며 앞선 restore 무파싱 증거와 구별한다.
+3. 로그인 성공 이후의 모든 경로를 `try/finally` 또는 동일한 수명 관리 helper로 감싼다. 생성한 각 authenticated context는 등록 즉시 소유 목록에 넣고, logout은 context를 닫기 전에 실제 session/CSRF로 수행한다. 소비자 생성 전 실패, 로그인 중 실패, assertion throw, 정상 완료 모두 해당된다. Browser context.close만으로 서버 session이 revoked됐다고 간주하지 않는다.
+4. 하나의 logout이 실패해도 나머지 소유 session logout과 consumer.close를 모두 시도한다. Primary assertion 실패를 조용히 성공으로 바꾸거나 cleanup 오류로만 덮어쓰지 않는다. Unexpected logout status/network 실패는 안전한 분류로 별도 보존하고 정상 시에는 cleanup 실패 자체가 시험을 실패시킨다. 활성 세션이 없는 정상 응답(401)은 구별하되 모든 non200을 무조건 무시하지 않는다. Playwright가 소유한 primary context와 시험이 만든 consumer의 close 책임을 구분한다.
+5. 실패 시 실제2개 session을 남기던 패턴을 test seam에 고정한다. 합성 독립 session2개를 열고 본문에서 의도한 예외를 발생시켜 호출자가 그 예외를 확인한 뒤, helper가 둘 다 logout/consumer close했음을 실제 API 또는 read-only 격리 DB로 확인한다. 다음 로그인/독립 consumer가200으로 회복되는지 검증한다. 공유 운영 DB를 수정하거나 테스트 편의를 위해 session table을 직접 삭제·강제 revoke하지 않는다. 의도된 예외는 명시적으로 검증하는 회귀이며 정상 시험 FAIL을 catch하고 PASS로 바꾸는 장치가 아니다. 동일 helper의 logout 한 건 실패 시 나머지 cleanup 계속됨은 작고 결정적인 음성시험으로 보완할 수 있다.
+
+### 수용 기준
+
+| AC / TC | 필수 증거 | 금지/실패 조건 |
+| --- | --- | --- |
+| C545-01 | 기존 controlled3test chain RED1PASS/2FAIL 기록 및 정확 CI545 job/line/응답 분류, session2→3→consumer409 원인 또는 반증을 단일 변수 대조로 확보 | missing heading만 보고 auth 원인 확정 금지; cookie/token/CSRF/trace 전문 출력 금지 |
+| C545-02 | 실제 v2 source snapshot·Version/SHA/Scope, 원본과 independent fresh/reload의 mapped5/render6/observed5/excluded1 exact | v1 기대0 유지·단언삭제·`>0`·원본 fallback·source coverage 확대 금지 |
+| C545-03 | fresh/reload 원본GET0/Blob0/indexWorker0/liveWorker0 및 기존 문자/Layer/outline/저장 bytes/revision/Renderer 전환 회귀 | 무파싱 단언 제거/제품 변경으로 시험 통과 금지 |
+| C545-04 | 실제 authenticated2context 본문 예외→모든 소유 session logout·consumer close→다음 독립 로그인 성공; cleanup1건 실패해도 나머지 정리 시도 | cap3/인가/CSRF/clock/rate-limit 완화·DB session 직접 삭제·정리 실패 은폐 금지 |
+| C545-05 | 누락된 R2 global catalogue 전제조건을 포함한4case(initial Admin→SC-14→R2 global catalogue→R3) 또는 원래 전체 Greenfield suite(기존26시험 및 새 회귀 포함) 전체PASS로 후속 R3 완료까지 검증; 최종 수용에는 전체 suite PASS 필수. 관련 helper unit·typecheck/lint; 제품 source가 동일하면 이미 성공한 CI545 Quality/build/Docker/일반2/legacy/A2 결과를 기존 근거로 사용 | 기존3case RED와 단일개입2PASS/1fixtureFAIL 보존; 불완전 subset을 GREEN으로 만들기 위한 R3 fixture 우회/가짜 사용자/skip 금지; timeout 증가/retry상향/CI선택 축소 금지 |
+| C545-06 | 독립 QA/Manager 재검토, 실제 실패·대조·수리·최종실행을 FailureLedger/TestReport 동기화, 최종 review/conflict/base/secret 검사 후 한 번의 coherent push 및 신규 정확 HEAD CI 시작 확인 | 새 CI 완료를 미확인 상태에서 PASS로 쓰지 않음; 사용자의 완료 모니터링 불요 유지 |
+
+제품 source가 변경되지 않으면 기존 정확0.59.0 standalone을 사용하고 이미 통과한 전체988unit/build/이미지 검사를 불필요하게 반복하지 않는다. 새 source 변경·실패 또는 해결되지 않은 관련 우려가 생기면 필요한 검증 범위를 다시 정한다. Manager 설계 후 Developer가 test-only 수리하고, 완료 소스 검토를 통과한 뒤 독립 QA가 실행한다. Root가 공통 문서/실패 원장·PR 본문·commit/push/CI 시작 확인을 통합한다. 이 작업은 PR #223 회귀 수리이며 **#218 OPEN, A2/P1-B NO-GO·P1-B/C/D 금지**와 보안·license/SBOM·현장/source PARTIAL의 기존 조건을 유지한다. 새 수리 결과는 작성 시 **NOT RUN**이다.
+
+---
+
+## 2026-11-03 — Manager 최종 판정: fidelity 보완 PR 수용, A2/P1-B NO-GO
+
+**구현 보완 PR은 ACCEPT다.** Manager는 동결 소스 검토, 독립 QA 보고 및 정확 packaged-image 증거를 검토했으며 추가 재작업 요구는 없다. 후보 제품0.59.0의 CUSTOM_DTO v2는 material side 손실4개·ShapeGeometry 클래스 손실2개를 제거하고, 실제 ShapeGeometry/clone·전체 raw buffers/재질/변환/문자 동등성과 원본 선택 snapshot 복원을 검증했다. 동일 합성 원본의 live/fresh source index는 READY·mapped3/render10, text4이며 실제 Canvas 선택/PRECISE 외곽선, Layer, Translate/Rotate 중 source 차단·Undo/reset, fresh source GET/parser/font/index Worker0도 통과했다. **원본 전체 Entity 매핑은 여전히 PARTIAL**이며3/10을 전체 source 지원으로 해석하지 않는다. Legacy v1은 immutable bytes/Scene identity를 유지하며 fidelity UNKNOWN·재생성 필요로 구분한다.
+
+독립 QA의 typecheck/build/lint(0errors·기존8warnings), focused20·process/profile5·parity2가 통과했고 root 전체151files/988tests 및 G7 호환24tests도 통과했다. 최초 QA parity의 동시 Build/font rewrite 경합 실패와 순차 재시험 성공은 [FailureLedger](FailureLedger.md)에 보존한다. 실제 Dockerfile 최종 이미지 `sha256:848e905bdeb5a851310950c8a6f66f0ff110dfb3ab36eaf39fe1e55353d732dd`는 변경 소스31개 hash 일치, 독립 새 컨테이너 P05/A24/parity2 총11시험 PASS(exit0/OOMfalse/PID0)다. Manager가 최종 process JSON을 직접 확인했다: timeout/SIGKILL/OOM/Node uncaught·unhandled/browser late error6종과 각 fresh recovery6종 PASS, OOM만 OOMKilled=true·exit137·supervisorKilled=false, 모든 recovery는 v2 full validator/readback/raw fresh restore/quiet·정상 종료를 완료했다(24nodes/21506vertices/1998797bytes). 원본 불변과 종료 후PID0를 확인했으며 이는 기존 합성 실험 launch 설정의 프로세스 증거다. 상세 실측 정본은 [TestReport](TestReport.md)다.
+
+**운영 A2 GO 및 P1-B 착수는 NO-GO/BLOCKED다.** 최종 strict targeted-profile 보고는 실제 renderer user/PID namespace 분리·seccomp2filters/NNP1/CapEff0·no-no-sandbox/no-unsafe-SwiftShader와 v2 변환/validator/readback 성공을 확인했으나, fresh live restore는 `WEBGL_CONTEXT_UNAVAILABLE`로 실패했다. 보고서의 `RESEARCH_ONLY_NO_GO` 및 컨테이너 exit0는 **예상된 실패 경계의 검증 성공**이며 안전한 변환기 전체 성공이 아니다. 이 strict profile에서6fault/recovery는 NOT RUN이고, SwiftShader 위험·완전한 license/SBOM/공급망·고객/2PC/현장 #113/#193·source PARTIAL의 필요한 수용 및 신규 정확 PR HEAD CI가 미완료다. 회사/Owner 승인을 대신하지 않으며 원래 A2-01~06 조건을 완화하지 않는다. **#218 OPEN, P1-B/C/D 미착수·금지 유지**. Root의 후속 commit/PR 검토 범위만 수용하며 신규 CI 성공·병합·GHCR 게시·운영 배포를 이 판정으로 주장하지 않는다.
+
+---
+
+## 2026-11-03 — PR #222 병합 후 Scene fidelity 보완·보안 재평가 설계 (구현 전)
+
+**상태: 설계/AC 확정, 구현·독립 QA 미실행, P1-A2 GO BLOCKED.** 사용자 승인 범위는 (1) 검증 전용 PR #222 병합 및 #218 OPEN 유지, (2) 저장/복원의 material side·실제 Geometry 의미·원본 Entity 선택 인덱스 보완, (3) Chromium 격리 개선 또는 공식 Node DXF parser 대안 평가, (4) 기존 보안/fidelity GO 조건을 충족한 뒤에만 P1-B 영속 Worker 착수다. Root가 보고한 PR #222 exact `0ade` HEAD CI #543 9/9 및 review0/conflict0, squash `2efae7631b175d25b9c4f961cc1fd0fdc23010f5` tree 동일·Issue OPEN 확인을 이 브랜치의 출발점으로 삼는다. 이 절은 기존 test-only 설계보다 최신인 **제품 계약 보완 설계**이며 아래 과거 실패/PARTIAL 결과는 역사적 증거로 보존한다. 작업 브랜치는 `feat/218-a2-fidelity-security`, 기존 source package는 0.58.1이다.
+
+### 요구·확인된 원인과 구현 경계
+
+- R-218-FX01: 실제 Adapter의 MeshBasicMaterial 네 slot `side=2`가 serializer의 필드 누락으로 restore 기본값 `0`이 되는 손실을 제거한다. source/candidate/fresh restore 모두 비교하며 기존 알려진 손실 보정 clone으로 새 성공을 만들지 않는다.
+- R-218-FX02: 현재 CUSTOM_DTO가 geometry의 numeric buffers만 기록하고 모든 geometry를 `new BufferGeometry()`로 만들기 때문에 ShapeGeometry 두 개의 클래스/parameters가 사라진다. 실제 `ShapeGeometry`와 검증된 Shape/Path/Curve 의미를 보존한다. `geometry.type='ShapeGeometry'` 대입, prototype 교체, 클래스명만 비교하는 시험은 해결로 인정하지 않는다.
+- R-218-FX03: 원본 로드의 Worker `DxfOutlineIndex`와 보수적 source↔render 대응은 현재 메모리에만 있고 직렬화 시 parser `userData.entity`가 제거된다. 범위가 제한된 명시 JSON snapshot으로 필요한 파생 정보만 저장하고 fresh `loadScene`에서 재검증한다. 원본 DXF GET/재파싱/원본 Worker 호출 없이 이전에 검증된 선택을 복구한다.
+- R-218-FX04: legacy payload의 알 수 없는 fidelity를 새 계약 성공으로 승격하지 않는다. 기존 immutable Scene bytes/row/Current, 원본, APP_CREATED/Memo/Zone/Outline 참조 및 기존 source 정밀 선택의 보수적 제외 규칙을 보존한다. 인덱스 검증은 canonical source attestation이나 쓰기 인가를 대체하지 않는다.
+
+수정 위치는 `domain/scene-payload.ts`, `scene-viewer-data.ts` 및 필요한 pure DTO validator 모듈, `viewers/three-dxf-viewer/scene-custom-dto.ts`, `scene-serialization.ts`, Adapter·render-coverage의 명시 snapshot bridge, 관련 unit/integration/browser/A2 시험이다. UI 신규 메뉴/버튼은 만들지 않고 기존 경고/선택 capability를 사용한다. DB DDL/Prisma/migration/S3 locator/SceneRepository 게시 규칙/G7 권한/업로드 Hook/영속 Worker는 이 단계에서 추가하지 않는다. Root가 package/Release registry 및 공통 추적 문서를 통합한다.
+
+### 결정: CUSTOM_DTO payload v2, Scene identity는 보존
+
+선택은 **CUSTOM_DTO envelope `schema:2`**의 명시 신규 계약이다. 기존 `schema:1`의 material/geometry/index 누락을 선택적 필드의 기본값으로 채워 full fidelity로 오판하는 방법은 채택하지 않는다. `CAD_SCENE_SCHEMA=1`, `SceneScope`/`sceneIdentity`/`importedId`, 기존 builder·renderer는 유지한다. 동일 parser/render 알고리즘의 직렬화 의미를 복구하는 변경이며 Scope 버전을 무조건 올리면 기존 DXF_IMPORTED id와 이를 참조하는 APP_CREATED/Memo가 달라지는 부작용이 있다. 향후 Node 대안의 실제 renderer/생성 의미가 달라지면 별도 builder/identity 변경 분석을 먼저 수행한다. 향후 P1-B의 build idempotency/cache key는 Scene identity와 별개인 CUSTOM_DTO payload 계약 버전도 포함해야 하며 scope.schema=1만 보고 legacy v1을 v2 fidelity 충족으로 재사용하지 않는다. 이는 후속 설계 요구이며 지금 Job/Worker를 구현한다는 뜻은 아니다.
+
+- 새 serializer는 v2만 생성하며 v2에 필요한 material/geometry 계약 필드 누락·unknown key·unknown enum은 거절한다. 도메인 full validator와 Three 복원기가 같은 버전 분기를 사용하고 임의 JSON/ObjectLoader dispatch나 외부 URL을 허용하지 않는다.
+- 기존 v1은 기존 strict 규칙으로 읽을 수 있다. v1은 `LEGACY_FIDELITY_UNKNOWN`/명시 재생성 필요 capability와 source 선택 불가를 반환하며 v2/full-fidelity/원본 index READY로 보고하지 않는다. 기존 서버 저장 상태 READY는 historical immutable storage 상태로 남고 **fidelity 합격과 구별**한다. v1 복원만으로 자동 재저장/Current 교체/원본 GET/재생성을 하지 않는다. 복원 제한을 기존 Viewer 경고/진단으로 표시하고 명시적인 기존 재생성 명령만 사용한다.
+- v2에서 원본 Worker가 실패하면 snapshot은 명시 `UNAVAILABLE` 및 allowlisted reason이다. 렌더/텍스트 Scene 복원은 가능하지만 source-index fidelity 수용은 실패/미확인으로 남는다. snapshot 자체를 생략하고 READY처럼 보이는 방식은 금지한다. pure serializer 시험 등 원본 index가 없는 경로도 명시적인 unavailable 입력/기본 상태를 만든다.
+- 제품 범위가 원본 선택 인덱스의 저장·복원 기능을 추가하므로 후보 SemVer는 **0.59.0**이다. `package.json`/lock/README/ChangeLog 일치 및 0.58.1→0.59.0 G7 `COMPATIBLE` edge를 추가하되 DB schema/baseline/checksum/data/runtime contract 동일성을 회귀 확인한다. 이는 G7 데이터 DDL 호환성 선언이지 Scene v2가 구버전 앱으로 읽힌다는 선언은 아니다. **0.58.1 앱은 v2를 거부**하므로 이전 앱으로의 임의 downgrade를 보장하지 않으며 기존 backup/restore·release 승인 규칙을 유지한다. 운영 upgrade/배포/GHCR 게시나 기존 0.58.1 tag 이동은 수행하지 않는다.
+
+### v2 Material·Geometry 구체 계약
+
+1. Material은 기존 type/color/opacity/transparent/linewidth/dashSize/gapSize 외에 `side`(0/1/2), `depthTest`, `depthWrite`, `alphaTest`(finite 0..1), `blending`을 필수로 기록·복원한다. blending은 지원되는 built-in enum만 허용하고 CustomBlending을 보존할 전체 방정식/인자 계약이 없으면 명시 거절한다. 새 값 없이 Three 기본값으로 조용히 대체하지 않는다. 모든 slot별 source/candidate/restore exact; side 변경을 raycast/양면 삼각형 실제 동작으로도 확인한다.
+2. Geometry는 closed discriminated union `BufferGeometry | ShapeGeometry`다. 양쪽 모두 기존 typed attributes/index/groups와 `drawRange`를 보존하며 index storage의 Uint16/Uint32 의미도 검증한다. Infinity draw count는 JSON의 명시 null sentinel 하나로만 encode/decode하고 NaN/negative/fractional/out-of-range 시작/수량은 거절한다. 허용 외 geometry class는 실패한다.
+3. ShapeGeometry는 실제 constructor parameters(정규화한 Shape 배열 및 holes/curveSegments)를 추가 저장한다. Shape/Path/Curve는 허용된 필요한 2D curve type의 수치 필드만 가진 closed DTO로 만들며 arbitrary `type` 문자열을 Three class lookup으로 dispatch하지 않는다. Line/QuadraticBezier/CubicBezier 등 실제 글꼴이 사용하는 유형을 명시하고 미지원은 거절한다. UUID·cached arc lengths·parser 객체·함수·원본 font/URL은 저장하지 않는다. autoClose/currentPoint 등 재구성 의미에 필요한 값은 명시 검증한다.
+4. 복원은 실제 `THREE.Shape`/`Path`/허용 curve 객체와 `new THREE.ShapeGeometry(shapes,curveSegments)`로 구성한다. 검증된 원래 attributes/index/groups/drawRange를 복원하여 버퍼가 바뀌지 않게 하되 constructor identity/parameters는 실제로 유지한다. `instanceof THREE.ShapeGeometry`, clone/toJSON에 필요한 parameters, 구멍·Bezier 곡선의 재구성 및 버퍼/BB/변환 동등성을 확인한다.
+5. 기존 32MiB/nodes100k/attributeScalars2M/depth128은 유지한다. Curve control-point 및 source-index 좌표의 추가 비용은 별도 숨은 무제한 배열이 되지 않게 같은 총 scalar budget에 합산한다. shape/curve/hole 개수와 curveSegments는 검증 후 constructor를 호출하며 tessellation 예상 비용도 2M 한도 내인지 사전 계산한다. 예: curveSegments는 positive safe integer 최대256, 총 예상 curve samples/생성 scalar 비용을 제한한다. 상한 안에서도 잘못된 수치/타입/외부 resource/unknown key는 거절한다.
+
+### 원본 선택 snapshot 및 fresh restore
+
+`viewerData.textIndex`는 보존한다. v2의 `viewerData.sourceIndex`는 `READY | UNAVAILABLE` discriminant를 갖는다. READY는 완전한 SceneScope와 정규화한 DxfOutlineIndex(`versionId/sourceSha256/unitCode/entities/warnings`), 그리고 source↔render 관측을 재구성할 mapping 목록을 갖는다. `UNAVAILABLE`는 허용된 reason code만 갖는다. 여기의 READY는 **유효한 파생 snapshot 존재**이며 모든 원본 Entity 지원/매핑 또는 서버 canonical source 보증이 아니다.
+
+- Snapshot은 실제 source Adapter가 원본 Worker/index를 완료하고 audit한 뒤, serializer가 parser userData를 제거하기 **전에** 만든다. 후보도 같은 원본과 실제 index 추출/정규화 계약을 사용한다. `OutlineEntity`는 id/handle/entityType/layer/instancePath/stable/paths/bounds만 허용한다. 버전/SHA/전체 Scope 불일치, 중복 id, invalid boolean/enum, 비유한·과대 좌표, 뒤집힌 bounds, paths와 bounds 불일치, unknown key, 초과 개수는 거절한다. 중복/모호한 handle이 있는 기존 index는 stable:false 및 선택 제외로 보존하며 안정성을 허위 주장하는 항목을 거절한다. 기존 안정성 없는 entity의 `stable:false`를 true로 승격하지 않는다. text/index 문자열도 길이를 제한하며 경고는 제한된 안전 텍스트/코드만 저장한다.
+- Mapping은 실제 source audit의 각 관측과 동일한 `sceneObjectId/handle/entityType/layer`를 담는다. Scene object ref는 같은 asset의 DXF_IMPORTED에 실제 존재해야 하며 중복/foreign id를 거절한다. stored bounds·mappedCount·selectable boolean을 권위로 신뢰하지 않는다. 필요한 layer 부재는 명시 null로만 표현하고 기존 불일치 제외 정책을 유지한다. raw `userData.entity`나 DXF BLOCK 객체를 복원하지 않는다.
+- Fresh restore는 full validator→실 geometry 복원→stable scene ref로 mapping object resolve→실제 object의 world bounds 재계산→기존 `reconcileRenderCoverage`를 다시 수행한다. 새로운 parser 내부 메타데이터 대신 검증된 bridge로 audit을 수행하며 source 선택은 다시 검증된 selectable subset만 설정한다. mapping이 없는 Entity, source unstable, type/layer/WCS 불일치, merged/nested 지원 제한은 기존대로 제외한다.
+- Live에서 mapped source3/render index10인 합성 기준은 restore에서도 **동일한3/10 및 제외 사유**를 보존해야 한다. 이 보완을 source semantic instances11개 전체가 매핑됐다는 주장으로 바꾸지 않는다. Source 선택/정밀 외곽선/선택 해제/Layer off-on, SceneWork 이동·회전 중 source 선택 차단 및 Undo/reset 복구, dispose/re-entry를 검증한다.
+- Source snapshot은 source-derived Viewer capability이지 canonical 저장·수정의 권한 증거가 아니다. 기존 서버 source attestation/G7 Actor·Site·Session/Revision CAS는 그대로 적용한다. restore에서 source/file/font 네트워크 요청과 DXF parse/outline index Worker 호출이 각각0인지 계측한다(렌더 UI가 원래 쓰는 자산과 구별).
+
+### 수용 기준·시험 (모두 신규 실행 전)
+
+| AC / TC | 필수 확인 | 실패/경계 |
+| --- | --- | --- |
+| FX01 / TC-218-FX01 | 기존 같은 source·전체 글꼴·Scope의 live/candidate/write-read/fresh Adapter 전체 비교; 네 side slot과 두 ShapeGeometry까지 손실0 | class/side 보정 clone 제거; raw 비교 실패를 정상화 금지; 모든 기존 ID·buffer·matrix·text·layer 단언 유지 |
+| FX02 / TC-218-FX02 | side0/1/2, 비기본 depth/alpha/blending 및 두 방향 raycast; 실제 ShapeGeometry instanceof/parameters/clone, hole·Bezier, typed buffers/groups/drawRange | invalid/누락 enum·unknown geometry/curve·NaN·분수 index·범위초과·외부 resource 실패; type spoof는 PASS 불가 |
+| FX03 / TC-218-FX03 | 실제 Worker snapshot roundtrip, 동일 source3/render10·원본 선택·정밀 외곽선·Layer 동작; fresh process sourceGET0/parse0/indexWorker0 | renderer ID를 source handle로 대체 금지; nested/unmapped source를 임의 지원 처리 금지 |
+| FX04 / TC-218-FX04 | source SHA/Version/Scope/scene ref/instancePath/좌표/bounds/mapping을 개별 변조하여 full validator 또는 restore audit 거절 | SHA만 재계산해도 구조·Scope·mapping·bounds 불변식을 위반한 변조는 거절; 완전히 일관된 임의 source 의미의 진위를 원본 없이 증명한다고 주장하지 않음; stored mapped count에 의존 금지; 새 권한/attestation 부여0 |
+| FX05 / TC-218-FX05 | v1 bytes/manifest 불변 read + legacy fidelity UNKNOWN·source unavailable, v2 unavailable의 안전 복원, v2 필수 필드 누락 실패 | legacy를 full READY로 오표시0, 자동 원본GET/재생성/DBwrite/Current교체0; 기존 v1 선택 실패가 회귀라고 위장되지 않게 명시 |
+| FX06 / TC-218-FX06 | 32MiB/100k/2M/depth128 및 source paths/shape/control samples 개수 경계의 사전 실패, source risk preflight 유지 | 한도 상향·샘플 축소·새 hidden allocation 무제한·필수 시험 skip 금지 |
+| FX07 / TC-218-FX07 | 기존 Scene API/persistence/Auth/CAS/APP_CREATED/Memo/Zone/Outline·G7 upgrade chain 회귀 및 0.59.0 package/lock 정합 | DB/원본/immutable Scene 변형0, 0.58.1 immutable release 변화0; backward-app reader 지원을 허위 선언 금지 |
+| FX08 / TC-218-FX08 | 실제 CLI discovery 기존 P0 5+A2 4+parity 및 신규 시험 유지; 독립 QA typecheck/lint/build/full unit·관련 browser/G7, 정확 packaged CPU image/fault+fresh recovery | fault 후 복원도 신규 class/side/index 단언을 사용; 과거 합성 PASS를 신규 payload 성공으로 승계 금지 |
+
+### 보안 연구 및 GO 계약
+
+공식 자료와 실제 격리 시험은 별도 [Issue218Sandbox](Issue218Sandbox.md)에 기록한다. Chromium user namespace/seccomp 개선은 현재 UID10001/read-only/network-none/cap-drop/no-new-privileges/CPU2/RAM1536MiB/swap1536MiB/SHM256MiB/PID256 및 기한 상한을 보존한다. `--privileged`, host Docker socket/운영 volume/secret mount, seccomp unconfined, host sysctl 임의 변경이나 sandbox off를 보안 성공으로 처리하는 방안은 승인 범위가 아니다. 좁은 검토된 seccomp syscall 허용의 효과는 실제 sandbox 상태와 동일 DXF 변환·fresh restore/fault 경계에서 증명해야 한다. launch 성공 하나는 A2-05 PASS가 아니다. SwiftShader의 공식 untrusted-content 경고는 컨테이너 개시 성공으로 해소되지 않는다.
+
+공식 Node parser 지원을 조사하는 것은 허용되지만 parser API/Node 실행 성공만으로 Scene 생성 동등성·license/SBOM/보안 수용을 선언하지 않는다. 새로운 parser의 실제 source→render·한글 glyph·TEXT/MTEXT·BLOCK/nested INSERT·WCS·material·geometry·선택 snapshot 및 동일 fault/resource 시험이 모두 필요하다. 기존 `three-dxf-viewer` 직접 Node NO-GO/late rejection 증거는 유지한다. untrusted 파일은 실제 외부 공격 가능 입력으로 다루고 합성 fixture 성공을 보안 검토 대신 사용하지 않는다.
+
+**P1-B 착수 판정은 아직 NO-GO/BLOCKED다.** 이 fidelity 보완·보안 조사 PR의 구현 수용과 **A2 GO**는 별개다. 기존 A2-01~06, source fidelity의 미지원/PARTIAL 처리에 대한 필요한 명시 수용, 정확 HEAD 필수 CI·리뷰, sandbox/SwiftShader·라이선스/SBOM·공급망 및 기존 실제 고객/2PC/현장 #113/#193 조건을 그대로 평가한다. 현장 수용을 구현 GO에서 몰래 빼거나 새 이름의 더 약한 GO를 만들지 않는다. 기술 증거가 모두 통과해도 남은 회사/Owner 판단은 에이전트가 대신 승인하지 않는다. 보안 또는 fidelity가 UNKNOWN이면 Worker 착수하지 않는다. 모두 충족되고 Manager가 근거별 GO를 기록한 뒤에만 사용자 요청의 조건부 P1-B를 실행한다.
+
+진행 순서는 Manager 본 설계→gpt-6-sol Developer 구현→Manager 구현 검토→gpt-6-luna 독립 QA/문서→Manager 수용·GO 재평가→root 최종 통합/commit/PR이다. Manager는 이 문서만 소유하고 root가 공통 요구/Architecture/ADR/Database/TestPlan/README/ChangeLog/실측 보고를 동기화한다. 이 절 작성 시 구현 시험 및 신규 보안 결과는 **NOT RUN/NOT VERIFIED**이며 실 결과는 TestReport에 기록한다. #218 OPEN, P1-B/C/D 미착수.
+
+---
+
 ## 2026-11-03 — 후속 단일 PR: 실제 Viewer Adapter 동등성 및 프로세스 안전성 검증 설계
 
 **최신 판정: 구현·독립 QA·정확 최종 이미지 검증 완료, Manager가 검증 전용 PR을 수용했다. 운영 GO는 BLOCKED, F03/F04 전체 복원은 PARTIAL/UNMET이며 새 원격 HEAD CI 결과는 미확인이다. 아래 설계/AC는 구현 전에 기록했으며 실제 결과 정본은 [TestReport](TestReport.md) 상단이다.** 사용자 승인 범위는 #218 P1-A2의 두 미완료 증거를 하나의 후속 PR에서 검증하는 것이다. 기준 Main `0c7ab5f`(앞선 #221 squash `dc80f88` 및 CI #541 성공 기록 포함), branch `feat/218-a2-adapter-safety`, package **0.58.1 유지**. 아래 AC/TC는 기존 R-218-A2-02/03/04 및 A2-02/04의 추가 시험이며 기존 성공·실패 이력을 덮어쓰지 않는다.

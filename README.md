@@ -1,28 +1,18 @@
-## #218 A2 후속 — 실제 Adapter 및 프로세스 검증
+## #218 — Scene Fidelity 보완과 Sandbox 검증 (0.59.0 후보)
 
-실제 Viewer Adapter와 독립 CPU 후보를 동일 합성 DXF/전체 글꼴로 비교하고, 컨테이너 timeout·강제 종료·실제 OOM·지연 오류 및 새 변환/복원을 검증한다. 이는 시험 전용 후속 PR이며 제품0.58.1과 운영 기능은 유지한다. Source 매핑/원본 index 비복원/geometry 클래스·material side 손실과 sandbox의 제한을 포함한 실제 결과는 [TestReport](out/TestReport.md), 수용 기준은 [Issue218](out/Issue218.md)를 따른다. P1-A2 운영 GO는 계속 보류다.
+PR #222는 검증 전용으로 병합했고 #218은 OPEN이다. 이번 후속 변경은 CUSTOM_DTO v2에 material side·ShapeGeometry 의미·원본 선택 index와 render binding을 저장하고 fresh restore에서 재검증한다. 기존 v1은 읽을 수 있지만 fidelity UNKNOWN이며 원본 재빌드가 필요하다. DB migration은 없고 이전0.58.1 앱은 새 v2를 읽지 못하므로 복구에는 기존 backup/release 절차를 따른다.
 
----
+설계·수용 기준은 [Issue218](out/Issue218.md), 실제 시험은 [TestReport](out/TestReport.md), 실패는 [FailureLedger](out/FailureLedger.md), 격리 구성·Node Parser의 공식 근거와 한계는 [Issue218Sandbox](out/Issue218Sandbox.md)를 따른다. P1-B는 보안·충실도 GO 전까지 보류한다.
 
-## #218 / PR #221 CI 보완 (2026-11-03)
-
-CPU 전용 기술 시험의 테스트 선택과 글꼴·packet·좌표 비교 자원 사용을 보완했다. 실제 실패 분석은 [FailureLedger](out/FailureLedger.md), 로컬·컨테이너·독립 QA 결과는 [TestReport](out/TestReport.md)를 따른다. 제품 버전0.58.1과 운영 기능은 그대로이며 #218 기술 GO는 보류다.
+PR #223의 CI #545 Greenfield 회귀는 v2 매핑 기대값과 시험 실패 시 세션 정리를 보완했다. 제품0.59.0·인증 제한은 유지하며 실제 실행 결과와 새 CI 상태는 [TestReport](out/TestReport.md)·[FailureLedger](out/FailureLedger.md)를 따른다.
 
 ---
 
-## #218 / P1-A2 CPU-only proof: 기존 Scene PoC 경로 재사용 (2026-11-03)
+## #218 선행 검증과 현재 제공 범위
 
-CPU-only Headless Chromium 시험은 초기 중복 Browser bundle이 CI #525에서 `SYNTAX_INVALID_REGEXP`로 실행 전 실패한 이력이 있습니다. Test-only A2 코드는 이제 기존 일반 Chromium E2E에서 실제 DXF→Scene 검증된 `src/tests/e2e/scene-poc-browser.ts`를 직접 재사용하고, 같은 합성 한국어/BLOCK DXF의 SourceSHA/CUSTOM_DTO 전체 검증/임시 파일 영속성/서로 다른 Browser 복원과 좌표·객체 ID 비교를 요구합니다. 원래 Reader/Editor/G7/SceneRepository 및 App/Worker는 변경하지 않았습니다.
+PR #221·#222의0.58.1 시험 전용 변경은 합성 DXF/전체 글꼴의 CPU 변환·실제 Adapter 비교·fault/recovery를 검증했다. 당시 발견한 side·Geometry·선택 index 손실과 CI 실패 이력은 [TestReport](out/TestReport.md)·[FailureLedger](out/FailureLedger.md)에 보존한다. 현재0.59.0 후보의 수정·판정은 위 내용을 따른다.
 
-기술 게이트 **GO 보류**: A2 CPU-only 실제 재시험 결과, live Viewer Adapter의 WCS/한글·BLOCK fidelity, OOM/kill/restart·비동기 오류0, untrusted software WebGL 보안과 #113/#193 현장 수용이 확보되기 전에는 P1-B/C/D로 진행하지 않습니다. [Issue218](out/Issue218.md), [FailureLedger](out/FailureLedger.md), [TestPlan](out/TestPlan.md).
-
----
-
-## Issue #218 / P1-A2 — CPU-only Headless Scene 변환 검증 후보 (2026-11-03)
-
-[#218](https://github.com/planner77/layoutManager/issues/218)의 첫 번째 단계는 [#208](https://github.com/planner77/layoutManager/issues/208)/[#217](https://github.com/planner77/layoutManager/pull/217) 직접 Node DXF Viewer 기술 NO-GO 이후 **서버 독립 Chromium + software WebGL**이 실제 DXF/한글/BLOCK→Three Object3D→`CUSTOM_DTO`→Manifest/SHA/full validator→Restore를 수행할 수 있는지 확인하는 기술 시험입니다. 별도 시험용 소스/CPU-only Debian 이미지/합성 데이터 및 CI Gate만 추가합니다.
-
-현재 P1-A2는 **시험 미실행·GO 미확정**입니다. 독립 브라우저 실험/SQLite·S3 비연결 임시 파일을 실제 제품의 Scene 자동 생성/저장, G7 인증된 서버 READY, Home 목록 작업 상태라고 간주하지 마세요. 업로드 후 Scene은 기존 수동 Viewer 빌드/저장을 이용하며 P1-B Worker/Queue, P1-C 상태 UI/API, P1-D 운영 배포는 미구현입니다. Release #216 v0.58.1 불변 복구와도 무관합니다. 기술 비교와 한계: [Issue218](out/Issue218.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md).
+자동 Scene Worker/Queue와 도면 목록 작업 상태는 아직 제공하지 않는다. 기존 `도면 > 원본 DXF로 Scene 생성/재생성`에서 수동으로 생성하고 Scene Asset 저장까지 성공해야 서버 영속 READY가 된다. 기술 시험 성공과 G7 인증·권한·운영 보안·현장 수용은 별도다.
 
 ---
 

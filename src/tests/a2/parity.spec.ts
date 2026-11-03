@@ -46,17 +46,18 @@ async function launch(kind:'candidate'|'live'){
   const expectedMajor=process.env.A2_BROWSER_EXPECTED_MAJOR||'153';
   if(browser.version().split('.')[0]!==expectedMajor){await browser.close();throw new Error('A2_BROWSER_VERSION_MISMATCH');}
   const context=await browser.newContext({serviceWorkers:'block'});
-  const errors:string[]=[];let fontRequests=0,workerRequests=0;
+  const errors:string[]=[];let fontRequests=0,workerRequests=0,originalRequests=0;
   const files=await bundles(),f=await font();
   await context.route('**/fonts/CadKorean.typeface.json',route=>{fontRequests++;return route.fulfill({status:200,contentType:'application/json',body:f.body});});
   await context.route('**/core/outline-worker.ts',route=>{workerRequests++;return route.fulfill({status:200,contentType:'application/javascript',body:files.worker});});
+  await context.route('**/api/cad-files/**/content',route=>{originalRequests++;return route.abort();});
   await context.route('**/__a2-entry.js',route=>route.fulfill({status:200,contentType:'application/javascript',body:files[kind]}));
   await context.route('**/__a2-entry',route=>route.fulfill({status:200,contentType:'text/html',body:'<!doctype html><html><body><script type="module" src="/__a2-entry.js"></script></body></html>'}));
   const page=await context.newPage();
   page.on('pageerror',e=>errors.push(e.name));page.on('crash',()=>errors.push('CRASH'));
   await page.goto(origin+'/__a2-entry');
   await page.waitForFunction(k=>typeof (window as unknown as Record<string,{build?:unknown;loadSource?:unknown}>)[k]?.[k==='a2Candidate'?'build':'loadSource']==='function',kind==='candidate'?'a2Candidate':'a2Live');
-  return {browser,context,page,errors,fontRequests:()=>fontRequests,workerRequests:()=>workerRequests,fontSha:f.sha};
+  return {browser,context,page,errors,fontRequests:()=>fontRequests,workerRequests:()=>workerRequests,originalRequests:()=>originalRequests,fontSha:f.sha};
 }
 async function candidate(page:Page,req=request):Promise<Candidate>{
   const wire=await page.evaluate(async r=>JSON.stringify(await (window as unknown as {a2Candidate:{build:(r:CandidateRequest)=>Promise<Candidate>}}).a2Candidate.build(r)),req);
@@ -71,12 +72,47 @@ async function liveRestore(page:Page,artifact:Artifact):Promise<LiveRestore>{
   const wire=await page.evaluate(async text=>JSON.stringify(await (window as unknown as {a2Live:A2LiveApi}).a2Live.loadScene({artifact:JSON.parse(text) as Artifact})),raw);
   return JSON.parse(wire) as LiveRestore;
 }
+async function sourceSelection(page:Page){
+  const target=await page.evaluate(()=>(window as unknown as {a2Live:A2LiveApi}).a2Live.sourceTarget());
+  await page.mouse.click(target.clientX,target.clientY);
+  const result=await page.evaluate(()=>(window as unknown as {a2Live:A2LiveApi}).a2Live.probeSource());
+  expect(result.selected).toContain(target.id);
+  return result;
+}
 function checked(a:Artifact){
   const bytes=Uint8Array.from(a.bytes);
   expect(bytes.length).toBe(a.manifest.byteLength);
   expect(sceneSha256(bytes)).toBe(a.manifest.sha256);
   validateStoredScenePayload(bytes,a.manifest);
   return bytes;
+}
+function assertSnapshotTamperRejected(artifact:Artifact){
+  const raw=JSON.parse(new TextDecoder().decode(Uint8Array.from(artifact.bytes)));
+  expect(raw.schema).toBe(2);
+  expect(raw.viewerData.sourceIndex.state).toBe('READY');
+  const mutations:Array<(x:typeof raw)=>void>=[
+    x=>{x.viewerData.sourceIndex.scope.versionId='foreign-version';},
+    x=>{x.viewerData.sourceIndex.index.sourceSha256='0'.repeat(64);},
+    x=>{x.viewerData.sourceIndex.index.unitCode=99;},
+    x=>{x.viewerData.sourceIndex.index.entities[0].id='invented';},
+    x=>{x.viewerData.sourceIndex.index.entities[0].stable=true;x.viewerData.sourceIndex.index.entities[0].handle='BAD';},
+    x=>{x.viewerData.sourceIndex.index.entities[0].bounds[0]+=100;},
+    x=>{x.viewerData.sourceIndex.index.entities[0].paths[0].points[0][0]=1e20;},
+    x=>{x.viewerData.sourceIndex.index.entities.push(structuredClone(x.viewerData.sourceIndex.index.entities[0]));},
+    x=>{x.viewerData.sourceIndex.bindings[0].sceneObjectId='foreign-object';},
+    x=>{x.viewerData.sourceIndex.bindings[0].handle='BAD';},
+    x=>{x.viewerData.sourceIndex.bindings[0].entityType='3DSOLID';},
+    x=>{x.viewerData.sourceIndex.bindings[0].layer='https://invalid.example/layer';},
+    x=>{const id=x.viewerData.sourceIndex.bindings[0].sceneObjectId;
+      const walk=(node:typeof x.root):boolean=>{if(node.ref.id===id){node.layer='OTHER';return true;}return node.children.some(walk);};
+      if(!walk(x.root))throw new Error('A2_BINDING_NODE_MISSING');},
+  ];
+  for(const [i,mutate] of mutations.entries()){const value=structuredClone(raw);mutate(value);
+    const bytes=new TextEncoder().encode(JSON.stringify(value));
+    const manifest={...artifact.manifest,byteLength:bytes.length,sha256:sceneSha256(bytes)};
+    let rejected=false;try{validateStoredScenePayload(bytes,manifest);}catch{rejected=true;}
+    if(!rejected)throw new Error('A2_SNAPSHOT_TAMPER_ACCEPTED:'+i);
+  }
 }
 function coverage(inventory:ParityInventory){
   const nodes=inventory.nodes as Array<{type:string;geometry?:{attributes?:Record<string,unknown>}}>;const kinds:Record<string,number>={};
@@ -107,6 +143,7 @@ test('F01-F05 independent candidate vs actual live Adapter and fresh live restor
     expect(built.sourceSha256).toBe(request.sourceSha256);
     expect(built.sourcePreflight).toEqual({model:7,blocks:2,expandedBound:11});
     checked(built.artifact);
+    assertSnapshotTamperRejected(built.artifact);
     const hits=(built.textIndex as CadTextIndex).hits;
     expect(hits.filter(h=>h.type==='TEXT')).toHaveLength(3);
     expect(hits.filter(h=>h.type==='MTEXT')).toHaveLength(1);
@@ -127,10 +164,11 @@ test('F01-F05 independent candidate vs actual live Adapter and fresh live restor
     checked(source.artifact);
     expect(source.artifact.manifest.scope).toEqual(built.artifact.manifest.scope);
     expect(source.packageVersion).toBe(built.packageVersion);
-    expect(source.packageVersion).toBe('0.58.1');
+    expect(source.packageVersion).toBe('0.59.0');
     compareParity(source.inventory,built.inventory,'source');
     compareParity(JSON.parse(new TextDecoder().decode(Uint8Array.from(source.artifact.bytes))),
       JSON.parse(new TextDecoder().decode(Uint8Array.from(built.artifact.bytes))),'dto');
+    const selectedSource=await sourceSelection(l.page);
     expect(l.errors).toEqual([]);
     await l.context.close();await l.browser.close();l=undefined;
 
@@ -139,19 +177,31 @@ test('F01-F05 independent candidate vs actual live Adapter and fresh live restor
     expect(sceneSha256(read)).toBe(built.artifact.manifest.sha256);
     r=await launch('live');
     const restored=await liveRestore(r.page,{bytes:[...read],manifest:built.artifact.manifest});
+    expect(r.fontRequests()).toBe(0);
+    expect(r.workerRequests()).toBe(0);
+    expect(r.originalRequests()).toBe(0);
+    expect(restored.screen.parserCalls).toBe(0);
+    expect(restored.shapeGeometryCount).toBe(2);
     expect(restored.screen.webgl).toBe(true);
     expect(restored.screen.renderer.toLowerCase()).toContain('swiftshader');
     expect(restored.screen.layers).toEqual(source.screen.layers);
-    expect(restored.screen.outline.indexState).toBe('UNAVAILABLE');
+    expect(restored.screen.outline.indexState).toBe('READY');
+    expect(restored.screen.outlineInfo?.exactSourceEntityCount).toBe(source.screen.outlineInfo?.exactSourceEntityCount);
+    expect(restored.screen.outlineInfo?.renderedObjectCount).toBe(source.screen.outlineInfo?.renderedObjectCount);
     expect(restored.screen.outline.renderIndex).toBeGreaterThan(0);
-    expect(restored.screen.outlineInfo?.sourceUnavailableReason).toBeTruthy();
-    // Raw source/restored inventories expose exact known CUSTOM_DTO material and shape class loss.
-    const {canonical,shapeClassLoss,materialSideLoss}=canonicalRestoredInventory(built.inventory,restored.inventory);
-    compareParity(restored.inventory,canonical,'restored');
+    compareParity(restored.inventory,built.inventory,'restored');
     const unexpected=structuredClone(restored.inventory);
     (unexpected.nodes as Array<{materials:Array<{side:number}>}>)[22].materials[0].side=1;
-    expect(()=>canonicalRestoredInventory(built.inventory,unexpected)).toThrow('A2_RESTORE_MATERIAL_SIDE');
+    expect(()=>compareParity(unexpected,built.inventory,'side-tamper')).toThrow('A2_PARITY_NUMBER');
     compareParity(restored.textIndex,built.textIndex,'textIndex');
+    const restoredSelection=await sourceSelection(r.page);
+    expect(restoredSelection).toEqual(selectedSource);
+    const workTarget=await r.page.evaluate(()=>(window as unknown as {a2Live:A2LiveApi}).a2Live.sourceTarget());
+    await r.page.evaluate(()=>(window as unknown as {a2Live:A2LiveApi}).a2Live.renderMode());
+    await r.page.mouse.click(workTarget.clientX,workTarget.clientY);
+    const workGate=await r.page.evaluate(()=>(window as unknown as {a2Live:A2LiveApi}).a2Live.probeSceneWorkGate());
+    expect(workGate.blocked).toBe(true);expect(workGate.restored).toBe(3);
+    compareParity(workGate.inventory,restored.inventory,'work-undo-reset');
     const layer=restored.screen.layers.find(x=>x==='LINES')??restored.screen.layers[0];
     const off=await r.page.evaluate(name=>(window as unknown as {a2Live:A2LiveApi}).a2Live.layer(name,false),layer);
     expect(off.matching.length).toBeGreaterThan(0);
@@ -164,7 +214,7 @@ test('F01-F05 independent candidate vs actual live Adapter and fresh live restor
     expect(r.errors).toEqual([]);
     console.info('A2_PARITY_EVIDENCE',JSON.stringify({scope:true,artifact:true,sourceIndex:source.screen.outline.indexState,
       restoredIndex:restored.screen.outline.indexState,textHits:built.textIndex&&typeof built.textIndex==='object'?(built.textIndex as {hits?:unknown[]}).hits?.length:null,
-      sourceCoverage:coverage(built.inventory),restoredShapeClassLoss:shapeClassLoss,restoredMaterialSideLoss:materialSideLoss,
+      sourceCoverage:coverage(built.inventory),restoredShapeClassLoss:0,restoredMaterialSideLoss:0,
       sourceRenderEntities:source.screen.outline.renderIndex,restoredRenderEntities:restored.screen.outline.renderIndex,
       sourceMappedEntities:source.screen.outlineInfo?.exactSourceEntityCount??null}));
   }finally{for(const x of [c,l,r])if(x){await x.context.close().catch(()=>{});await x.browser.close().catch(()=>{});}await rm(dir,{recursive:true,force:true});}

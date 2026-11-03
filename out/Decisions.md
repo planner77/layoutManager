@@ -8,6 +8,14 @@
 
 ---
 
+## ADR-218-FX — Payload v2와 보수적 재감사, P1-B 조건부 보류
+
+사용자는 PR #222 검증 전용 병합, fidelity 수정, sandbox 구성/Node 대안 평가 및 조건 충족 뒤 GO 재판정을 승인했다. #222 Main `2efae76` 병합 후 #218 OPEN을 확인했다. CUSTOM_DTO v2는 렌더·선택 계약을 확장하되 Scene identity와 기존 DB 참조를 유지한다. v1 immutable bytes를 재작성하지 않고 fidelity UNKNOWN으로 구분한다. Shape type 문자열만 바꾸지 않으며 실제 class/parameters를 복원한다. source snapshot은 파생 자료이므로 fresh world bounds와 기존 보수적 coverage로 재감사한다.
+
+격리 실험과 Parser 지원 사실은 [Issue218Sandbox](Issue218Sandbox.md), 최종 실제 결과는 [TestReport](TestReport.md)에 기록한다. 제품 MINOR0.59.0 후보이며 DB migration은 없다. P1-B는 보안·충실도 GO 충족 이후에만 착수한다.
+
+---
+
 ## ADR-218-A2-LIVE-PROCESS — live Adapter 기준과 실제 fault 검증
 
 Manager는 첫 Scene PoC가 의도적으로 첫 Line 스타일을 바꾸고 textIndex를 생략한다는 차이를 확인했다. 그 성공을 실제 Adapter parity로 재사용하는 대신 독립 test-only 후보를 실제 Adapter 계약에 맞춰 비교한다. 원본 class/material은 exact 비교하고, 실제 관측된 ShapeGeometry→BufferGeometry2개와 MeshBasicMaterial.side2→0 네 slot을 먼저 명시적으로 검증한다. 그 clone으로 나머지 모든 buffer/좌표/재질을 비교하되 전체 재질 복원은 PARTIAL/UNMET다. 원본 Entity 매핑 및 원본 선택 인덱스 비복원은 PARTIAL이다.

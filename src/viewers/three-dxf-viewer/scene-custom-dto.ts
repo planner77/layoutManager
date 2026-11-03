@@ -1,6 +1,8 @@
 /** Explicit S2 candidate: supported render primitives as numeric buffers and simple material records. */
 import * as THREE from 'three';
 import {validateSceneAsset,validSceneRef,type SceneAsset} from '../../domain/cad-scene';
+import type {ShapeDto} from '../../domain/scene-shape';
+import {readShapeGeometry,writeShapeGeometry} from './scene-shape';
 // Preserve the storage type: Three.js applies integer normalization from the typed array.
 const attributeConstructors={
  Int8Array,Uint8Array,Uint8ClampedArray,Int16Array,Uint16Array,Int32Array,Uint32Array,Float32Array,Float64Array,
@@ -29,10 +31,11 @@ function restoreAttribute(attribute:Attribute):THREE.BufferAttribute{
  if(Array.from(array).some(value=>!Number.isFinite(value)))throw new Error('CUSTOM_ATTRIBUTE_OVERFLOW');
  return new THREE.BufferAttribute(array,attribute.itemSize,attribute.normalized);
 }
-type Geometry=Readonly<{attributes:Record<string,Attribute>;index:number[]|null;groups:{start:number;count:number;materialIndex:number}[]}>;
-type Material=Readonly<{type:'LineBasicMaterial'|'LineDashedMaterial'|'MeshBasicMaterial'|'PointsMaterial'|'SpriteMaterial';color:number;opacity:number;transparent:boolean;linewidth:number;dashSize:number;gapSize:number}>;
+type Index=Readonly<{arrayType:'Uint16Array'|'Uint32Array';array:number[]}>;
+type Geometry=Readonly<{type:'BufferGeometry'|'ShapeGeometry';attributes:Record<string,Attribute>;index:Index|null;groups:{start:number;count:number;materialIndex:number}[];drawRange:{start:number;count:number|null};shapes?:ShapeDto[];curveSegments?:number}>;
+type Material=Readonly<{type:'LineBasicMaterial'|'LineDashedMaterial'|'MeshBasicMaterial'|'PointsMaterial'|'SpriteMaterial';color:number;opacity:number;transparent:boolean;linewidth:number;dashSize:number;gapSize:number;side:number;depthTest:boolean;depthWrite:boolean;alphaTest:number;blending:number}>;
 export type CustomNode=Readonly<{type:string;name:string;visible:boolean;matrix:number[];ref:unknown;layer?:string;geometry?:Geometry;materials?:Material[];children:CustomNode[]}>;
-export type CustomSceneDto=Readonly<{schema:1;asset:SceneAsset;root:CustomNode}>;
+export type CustomSceneDto=Readonly<{schema:1|2;asset:SceneAsset;root:CustomNode}>;
 const nodeTypes=new Set(['Group','Object3D','Line','LineSegments','LineLoop','Mesh','Points','Sprite']);
 const materialTypes=new Set<Material['type']>(['LineBasicMaterial','LineDashedMaterial','MeshBasicMaterial','PointsMaterial','SpriteMaterial']);
 const attributeNames=new Set(['position','normal','color','uv']);
@@ -40,7 +43,7 @@ function finiteArray(values:readonly number[]){if(values.some(v=>!Number.isFinit
 function writeNode(o:THREE.Object3D):CustomNode{
  if(!nodeTypes.has(o.type))throw new Error('CUSTOM_NODE_UNSUPPORTED:'+o.type);
  o.updateMatrix();const mesh=o as THREE.Mesh;let geometry:Geometry|undefined;
- if(mesh.geometry){if(!((mesh.geometry as THREE.BufferGeometry).isBufferGeometry))throw new Error('CUSTOM_GEOMETRY_UNSUPPORTED');
+ if(mesh.geometry){if(!((mesh.geometry as THREE.BufferGeometry).isBufferGeometry)||!['BufferGeometry','ShapeGeometry'].includes(mesh.geometry.type))throw new Error('CUSTOM_GEOMETRY_UNSUPPORTED');
   const attrs:Record<string,Attribute>={};for(const [name,attribute] of Object.entries(mesh.geometry.attributes)){
    if(!attributeNames.has(name)||!((attribute as THREE.BufferAttribute).isBufferAttribute))throw new Error('CUSTOM_ATTRIBUTE_UNSUPPORTED:'+name);
    // Float16BufferAttribute decodes half floats via a specialized accessor; do not
@@ -52,23 +55,32 @@ function writeNode(o:THREE.Object3D):CustomNode{
    const array=Array.from(attribute.array);finiteArray(array);
    attrs[name]={itemSize:attribute.itemSize,array,normalized:attribute.normalized,arrayType};
   }
-  const index=mesh.geometry.index?Array.from(mesh.geometry.index.array):null;if(index)finiteArray(index);
-  geometry={attributes:attrs,index,groups:mesh.geometry.groups.map(g=>({start:g.start,count:g.count,materialIndex:g.materialIndex??0}))};
+  const rawIndex=mesh.geometry.index;
+  const index=rawIndex?{arrayType:rawIndex.array.constructor.name as Index['arrayType'],array:Array.from(rawIndex.array)}:null;
+  if(index&&!['Uint16Array','Uint32Array'].includes(index.arrayType))throw new Error('CUSTOM_INDEX_STORAGE_UNSUPPORTED');
+  if(index)finiteArray(index.array);
+  const range=mesh.geometry.drawRange;
+  if(!Number.isSafeInteger(range.start)||range.start<0||range.count!==Infinity&&(!Number.isSafeInteger(range.count)||range.count<0))throw new Error('CUSTOM_DRAW_RANGE_INVALID');
+  geometry={type:mesh.geometry.type as Geometry['type'],attributes:attrs,index,
+   groups:mesh.geometry.groups.map(g=>({start:g.start,count:g.count,materialIndex:g.materialIndex??0})),
+   drawRange:{start:range.start,count:range.count===Infinity?null:range.count},
+   ...(mesh.geometry.type==='ShapeGeometry'?writeShapeGeometry(mesh.geometry as THREE.ShapeGeometry):{})};
  }
  const materials=mesh.material?(Array.isArray(mesh.material)?mesh.material:[mesh.material]).map(m=>{
   if(!materialTypes.has(m.type as Material['type']))throw new Error('CUSTOM_MATERIAL_UNSUPPORTED:'+m.type);
   const v=m as THREE.LineDashedMaterial;return {type:m.type as Material['type'],color:v.color?.getHex()??0xffffff,opacity:m.opacity,transparent:m.transparent,
-   linewidth:v.linewidth??1,dashSize:v.dashSize??0,gapSize:v.gapSize??0};
+   linewidth:v.linewidth??1,dashSize:v.dashSize??0,gapSize:v.gapSize??0,
+   side:m.side,depthTest:m.depthTest,depthWrite:m.depthWrite,alphaTest:m.alphaTest,blending:m.blending};
  }):undefined;
  return {type:o.type,name:o.name,visible:o.visible,matrix:o.matrix.toArray(),ref:o.userData.cadSceneRef,
    ...(typeof o.userData.cadLayer==='string'?{layer:o.userData.cadLayer}:{}),
    ...(geometry?{geometry}:{}),...(materials?{materials}:{}),children:o.children.map(writeNode)};
 }
 export function toCustomDto(root:THREE.Object3D,asset:SceneAsset):CustomSceneDto{
- return {schema:1,asset,root:writeNode(root)};
+ return {schema:2,asset,root:writeNode(root)};
 }
 export function fromCustomDto(dto:CustomSceneDto):THREE.Object3D{
- if(dto.schema!==1)throw new Error('CUSTOM_SCHEMA_INVALID');
+ if(dto.schema!==1&&dto.schema!==2)throw new Error('CUSTOM_SCHEMA_INVALID');
  const asset=validateSceneAsset(dto.asset);let index=0;
  const check=(n:CustomNode,path:number[])=>{
    const expected=asset.objects[index++];
@@ -81,18 +93,40 @@ export function fromCustomDto(dto:CustomSceneDto):THREE.Object3D{
  const read=(n:CustomNode):THREE.Object3D=>{
   if(!nodeTypes.has(n.type)||!Array.isArray(n.matrix)||n.matrix.length!==16)throw new Error('CUSTOM_NODE_INVALID');
   finiteArray(n.matrix);let geometry:THREE.BufferGeometry|undefined;
-  if(n.geometry){geometry=new THREE.BufferGeometry();for(const [name,a] of Object.entries(n.geometry.attributes)){
+  if(n.geometry){
+   if(dto.schema===2&&(!['BufferGeometry','ShapeGeometry'].includes(n.geometry.type)||
+      !n.geometry.drawRange||!Number.isSafeInteger(n.geometry.drawRange.start)||n.geometry.drawRange.start<0||
+      n.geometry.drawRange.count!==null&&(!Number.isSafeInteger(n.geometry.drawRange.count)||n.geometry.drawRange.count<0)))
+    throw new Error('CUSTOM_GEOMETRY_INVALID');
+   geometry=dto.schema===2&&n.geometry.type==='ShapeGeometry'?
+    readShapeGeometry(n.geometry.shapes!,n.geometry.curveSegments!):new THREE.BufferGeometry();
+   geometry.setIndex(null);geometry.clearGroups();
+   for(const name of Object.keys(geometry.attributes))geometry.deleteAttribute(name);
+   for(const [name,a] of Object.entries(n.geometry.attributes)){
    if(!attributeNames.has(name))throw new Error('CUSTOM_ATTRIBUTE_INVALID');
    geometry.setAttribute(name,restoreAttribute(a));
   }
-  if(n.geometry.index){finiteArray(n.geometry.index);geometry.setIndex(n.geometry.index);}
+  if(n.geometry.index){
+   if(Array.isArray(n.geometry.index)){ // schema 1 historical reader
+    finiteArray(n.geometry.index);geometry.setIndex(n.geometry.index);
+   }else{
+    const x=n.geometry.index;if(!['Uint16Array','Uint32Array'].includes(x.arrayType)||!Array.isArray(x.array)||
+      x.array.some(v=>!Number.isSafeInteger(v)||v<0||x.arrayType==='Uint16Array'&&v>65535||v>4294967295))throw new Error('CUSTOM_INDEX_INVALID');
+    geometry.setIndex(new THREE.BufferAttribute(x.arrayType==='Uint16Array'?new Uint16Array(x.array):new Uint32Array(x.array),1));
+   }
+  }
   for(const g of n.geometry.groups)geometry.addGroup(g.start,g.count,g.materialIndex);
+  if(dto.schema===2)geometry.setDrawRange(n.geometry.drawRange.start,n.geometry.drawRange.count??Infinity);
   }
   const materials=n.materials?.map(m=>{
    if(!materialTypes.has(m.type)||![m.color,m.opacity,m.linewidth,m.dashSize,m.gapSize].every(Number.isFinite)||
-      !Number.isSafeInteger(m.color)||m.color<0||m.color>0xffffff||typeof m.transparent!=='boolean')throw new Error('CUSTOM_MATERIAL_INVALID');
-   const params={color:m.color,opacity:m.opacity,transparent:m.transparent,linewidth:m.linewidth,dashSize:m.dashSize,gapSize:m.gapSize};
-   switch(m.type){case 'LineDashedMaterial':return new THREE.LineDashedMaterial(params);case 'LineBasicMaterial':return new THREE.LineBasicMaterial(params);
+      !Number.isSafeInteger(m.color)||m.color<0||m.color>0xffffff||typeof m.transparent!=='boolean'||
+      dto.schema===2&&(![0,1,2].includes(m.side)||typeof m.depthTest!=='boolean'||typeof m.depthWrite!=='boolean'||
+        !Number.isFinite(m.alphaTest)||m.alphaTest<0||m.alphaTest>1||![0,1,2,3,4].includes(m.blending)))throw new Error('CUSTOM_MATERIAL_INVALID');
+   const params={color:m.color,opacity:m.opacity,transparent:m.transparent,
+    ...(dto.schema===2?{side:m.side as THREE.Side,depthTest:m.depthTest,depthWrite:m.depthWrite,alphaTest:m.alphaTest,blending:m.blending as THREE.Blending}:{})};
+   switch(m.type){case 'LineDashedMaterial':return new THREE.LineDashedMaterial({...params,linewidth:m.linewidth,dashSize:m.dashSize,gapSize:m.gapSize});
+    case 'LineBasicMaterial':return new THREE.LineBasicMaterial({...params,linewidth:m.linewidth});
     case 'MeshBasicMaterial':return new THREE.MeshBasicMaterial(params);case 'PointsMaterial':return new THREE.PointsMaterial(params);
     case 'SpriteMaterial':return new THREE.SpriteMaterial(params);}
   });

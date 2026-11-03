@@ -1,9 +1,13 @@
 import { expect, test } from '@playwright/test';
 import { readFileSync } from 'node:fs';
+import {createHash} from 'node:crypto';
 import path from 'node:path';
 import {sceneDxf} from '../fixtures/scene-dxf';
+import {withOwnedSessions} from './owned-sessions';
 
-test('#109 initial browser Admin setup requires host code, then redirects to account',async({page,request})=>{
+test('#109 initial browser Admin setup requires host code, then redirects to account',async({page,request,baseURL})=>{
+  await withOwnedSessions(baseURL!,async owned=>{
+  owned.add(page.request);
   const root=process.env.G7_GREENFIELD_E2E_ROOT;
   if(!root)throw new Error('missing isolated first run root');
   await page.goto('/');
@@ -38,17 +42,13 @@ test('#109 initial browser Admin setup requires host code, then redirects to acc
   expect(setup.status()).toBe(404);
   await page.goto('/');
   await expect(page.getByRole('heading',{name:'CAD 도면 목록'})).toBeVisible();
-  // Closing a browser context does not revoke a server session. Leave a slot
-  // for subsequent scenarios while keeping the production three-session cap.
-  const current = await (await page.request.get('/api/g7-runtime/auth/session')).json();
-  const logout = await page.request.post('/api/g7-runtime/auth/logout', {
-    headers: { origin: new URL(page.url()).origin, 'x-csrf-token': current.csrfToken },
   });
-  expect(logout.status()).toBe(200);
 });
 
 test('SC-14–17 authenticated conversion → persisted Scene → independent browser and reload without original GET or parsing',async({page,browser,baseURL})=>{
   test.setTimeout(120_000);
+  await withOwnedSessions(baseURL!,async owned=>{
+  owned.add(page.request);
   await page.goto('/g7-runtime');
   await page.getByLabel('계정').fill('admin');
   await page.getByLabel('비밀번호',{exact:true}).fill('synthetic-changed-password');
@@ -90,8 +90,25 @@ test('SC-14–17 authenticated conversion → persisted Scene → independent br
   expect(stored.asset.objects.length).toBeGreaterThan(5);
   expect(stored.asset.objects.every((o:{ref:{origin:string}})=>o.ref.origin==='DXF_IMPORTED')).toBe(true);
   expect(stored.viewerData.textIndex.hits.length).toBeGreaterThan(0);
+  expect(stored.schema).toBe(2);
+  expect(stored.asset.scope).toEqual(status.manifest.scope);
+  expect(stored.asset.scope.versionId).toBe(version.id);
+  const sourceSha256=createHash('sha256').update(sceneDxf).digest('hex');
+  expect(stored.asset.scope.sourceSha256).toBe(sourceSha256);
+  expect(stored.viewerData.sourceIndex.state).toBe('READY');
+  expect(stored.viewerData.sourceIndex.scope).toEqual(status.manifest.scope);
+  expect(stored.viewerData.sourceIndex.index.versionId).toBe(version.id);
+  expect(stored.viewerData.sourceIndex.index.sourceSha256).toBe(sourceSha256);
+  expect(stored.viewerData.sourceIndex.bindings).toHaveLength(5);
+  const exactMapping='렌더 대상 6개 · 정밀 원본 매핑 5개 · 렌더 관측 5개 · 매핑 제외 1개';
+  await page.getByRole('button',{name:'작업',exact:true}).click();
+  await page.getByTestId('viewer-menu-outline-tool').click();
+  await expect(page.getByTestId('outline-render-mapping')).toHaveText(exactMapping);
+  await page.getByRole('button',{name:'작업',exact:true}).click();
+  await page.getByTestId('viewer-menu-outline-tool').click();
 
   const consumer=await browser.newContext({baseURL,viewport:{width:1440,height:1000}});
+  owned.add(consumer.request,()=>consumer.close());
   await consumer.addInitScript(()=>{
     const counters={workers:0,blobs:0,liveWorkers:0};Object.assign(window,{sceneLoadCounters:counters});
     const NativeWorker=window.Worker;
@@ -118,6 +135,11 @@ test('SC-14–17 authenticated conversion → persisted Scene → independent br
   await expect(fresh.getByRole('status')).toHaveText('도면 표시 완료');
   await expect(fresh.getByTestId('cad-canvas').locator('canvas')).toHaveCount(1);
   await expect(fresh.getByTestId('viewer-layer-dock')).toBeVisible();
+  await fresh.getByRole('button',{name:'작업',exact:true}).click();
+  await fresh.getByTestId('viewer-menu-outline-tool').click();
+  await expect(fresh.getByTestId('outline-render-mapping')).toHaveText(exactMapping);
+  await fresh.getByRole('button',{name:'작업',exact:true}).click();
+  await fresh.getByTestId('viewer-menu-outline-tool').click();
   await fresh.getByRole('button',{name:'작업',exact:true}).click();
   await fresh.getByRole('menuitemcheckbox',{name:'도면 내 텍스트 검색'}).click();
   await fresh.getByRole('searchbox',{name:'도면 텍스트 검색어'}).fill('HELLO');
@@ -146,7 +168,7 @@ test('SC-14–17 authenticated conversion → persisted Scene → independent br
   await fresh.getByRole('button',{name:'작업',exact:true}).click();
   await fresh.getByTestId('viewer-menu-outline-tool').click();
   await expect(fresh.getByTestId('outline-basis')).toHaveValue('render');
-  await expect(fresh.getByTestId('outline-render-mapping')).toContainText('정밀 원본 매핑 0개');
+  await expect(fresh.getByTestId('outline-render-mapping')).toHaveText(exactMapping);
   const s5Canvas=fresh.getByTestId('cad-canvas').locator('canvas');
   const s5Box=(await s5Canvas.boundingBox())!;
   await fresh.mouse.move(s5Box.x+10,s5Box.y+10);await fresh.mouse.down();
@@ -210,11 +232,37 @@ test('SC-14–17 authenticated conversion → persisted Scene → independent br
   await expect(fresh.getByTestId('scene-status')).toContainText('저장된 Scene Asset 복원');
   expect(new URL(fresh.url()).searchParams.get('renderer')).toBe('three-dxf-viewer');
   expect(gets).toBe(getsBeforeReload);
-  for(const api of [consumer.request,page.request]){
-    const active=await (await api.get('/api/g7-runtime/auth/session')).json();
-    expect((await api.post('/api/g7-runtime/auth/logout',{
-      headers:{origin:baseURL!,'x-csrf-token':active.csrfToken},
-    })).status()).toBe(200);
+  });
+});
+
+test('C545 forced body failure revokes two real sessions and preserves the three-session cap',async({browser,request,baseURL})=>{
+  const oldCookies:string[]=[];
+  const primary=new Error('C545_INTENTIONAL_BODY_FAILURE');
+  let caught:unknown;
+  try{await withOwnedSessions(baseURL!,async owned=>{
+    for(let i=0;i<2;i++){
+      const context=await browser.newContext({baseURL});owned.add(context.request,()=>context.close());
+      const login=await context.request.post('/api/g7-runtime/auth/login',{
+        headers:{origin:baseURL!},data:{login:'admin',password:'synthetic-changed-password'},
+      });
+      expect(login.status()).toBe(200);
+      const cookie=(await context.cookies()).find(x=>x.name==='cad_session');
+      expect(cookie?.value).toBeTruthy();oldCookies.push(cookie!.value);
+    }
+    throw primary;
+  });}catch(error){caught=error;}
+  expect(caught).toBe(primary);
+  for(const cookie of oldCookies){
+    const stale=await request.get('/api/g7-runtime/auth/session',{headers:{cookie:`cad_session=${cookie}`}});
+    expect(stale.status()).toBe(401);
   }
-  await consumer.close();
+  await withOwnedSessions(baseURL!,async owned=>{
+    for(let i=0;i<4;i++){
+      const context=await browser.newContext({baseURL});owned.add(context.request,()=>context.close());
+      const login=await context.request.post('/api/g7-runtime/auth/login',{
+        headers:{origin:baseURL!},data:{login:'admin',password:'synthetic-changed-password'},
+      });
+      expect(login.status()).toBe(i<3?200:409);
+    }
+  });
 });

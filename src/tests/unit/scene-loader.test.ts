@@ -113,7 +113,7 @@ describe('SC-14/15/16 Scene loader',()=>{
       line.userData.cadLayer='SAFE_LAYER';
       inner.add(line);block.add(inner);root.add(block);
     }
-    const mesh=new THREE.Mesh(new THREE.BoxGeometry(1,2,3),new THREE.MeshBasicMaterial());
+    const mesh=new THREE.Mesh(new THREE.BufferGeometry().copy(new THREE.BoxGeometry(1,2,3)),new THREE.MeshBasicMaterial());
     mesh.userData.cadLayer='ANOTHER';root.add(mesh);
     const stats=preflightSceneRoot(root);expect(stats).toMatchObject({sceneNodes:11,geometryCount:4,maxDepth:3});
     const asset=tagImportedTree(root,scope);

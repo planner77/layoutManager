@@ -1,3 +1,11 @@
+## DB-218-FX — 0.59.0 JSON 계약 확장, DDL 변경 없음
+
+SceneAsset payload의 CUSTOM_DTO envelope v2를 추가한다. CAD_SCENE_SCHEMA=1, 기존 builder/renderer identity 및 SceneAsset/Version/Current/메모 참조를 보전한다. 기존 v1 bytes/row/READY 저장 상태를 자동 변환하지 않으며 읽기 시 fidelity UNKNOWN과 구분한다. v2 source index는 동일 source/scope의 파생 자료로 실제 복원 객체를 재검증한다. 정본 계약은 [Issue218](Issue218.md) FX01–FX08이다. 향후 P1-B의 idempotency/cache key는 Scene identity의 schema/builder 외에 payload contract version을 포함해야 한다. 이 PR은 Job/cache를 구현하지 않는다.
+
+Prisma/SQL migration/trigger/table은 변경하지 않는다. G7 registry에 동일 baseline/checksum/data/runtime의 정방향0.58.1→0.59.0 COMPATIBLE edge를 추가한다. 이는 DDL 호환이며 v2를 모르는 이전 앱으로의 downgrade 허용이 아니다. 복구는 release backup/recovery set 절차를 따른다. 운영 DB/volume에는 접근하지 않는다.
+
+---
+
 ## #218 P1-A2 — 실험 전용, 운영 DB/Prisma/G7 Release schema 변경 0 (2026-11-03)
 
 A2 Headless CPU 검증은 완전히 독립된 합성 DXF·ephemeral file/브라우저 컨텍스트로만 동작한다. Production `SceneBuildJob`/`SceneBuildAttempt` 테이블 생성, `CadRepository.register` 업로드 트랜잭션 변경, SQLite migration/DDL, SceneRepository publish/Current pointer/CAS, G7 Runtime Schema/Greenfield registry/기존 DB·Volume 변형은 **전혀 수행하지 않는다**.

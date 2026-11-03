@@ -4,6 +4,14 @@
 
 ---
 
+## #218 FX — CUSTOM_DTO v2 및 원본 선택 복원 경계
+
+CAD Scene identity는 기존 schema1/builder/renderer를 유지하고 payload envelope만 v2로 구분한다. Domain validator가 재질·Shape/Curve·원본 index의 닫힌 구조와 자원 상한을 검사한 후 Browser serializer가 실제 Three class를 구성한다. ShapeGeometry는 Shape/Path/Curve constructor로 복원한 뒤 원래 buffer를 적용한다. Live Adapter는 parser 관측 binding을 userData 제거 전에 capture하고, fresh Adapter는 실제 world bounds로 render coverage를 재계산한다. snapshot은 선택의 파생 자료이며 원본 의미의 attestation이 아니다.
+
+v1은 읽기 호환 및 UNKNOWN 경고를 제공한다. DTO 검증/원본 보전/서버 권한·attestation 책임은 기존 계층에 남는다. 영속 Worker·Job·lease·저장 큐는 미구현이다. 상세 계약은 [Issue218](Issue218.md), Chromium/Node 대안은 [Issue218Sandbox](Issue218Sandbox.md)를 따른다.
+
+---
+
 ## #218 A2 후속 검증 경계 — 실제 Adapter와 독립 후보
 
 실제 `ThreeDxfViewerAdapter.load(prepareScene)`→artifact와 test-only `candidate-browser`의 source digest/risk preflight→실 DXFViewer→실제 Adapter와 동일 material 보정→tag/textIndex/CUSTOM_DTO를 독립 Browser process에서 비교한다. 후보를 다시 실제 Adapter.loadScene에 넣어 전체 buffers/행렬/ID/레이어·문자를 비교한다. 일반 Scene PoC의 의도적인 style probe는 기존 시험에 보존한다.
