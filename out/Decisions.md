@@ -1,3 +1,11 @@
+## ADR-218-A2 — Headless SwiftShader 우선 기술 후보, 운영 GO 차단 (2026-11-03)
+
+**결정:** 이미 NO-GO 판정된 `three-dxf-viewer@1.0.44` 직접 Node 호출을 재시도하지 않는다. 기존 Browser #212 변환 API·폰트·CUSTOM_DTO/Stable ID 재사용 가능성을 검증하기 위해 독립 Chromium+software WebGL(A)을 **테스트 우선 후보**로 선정. dxf-parser 등 공식 Node parser(B)는 지원 DXF 구조를 읽어도 Three.js Object3D 생성·폰트·INSERT·WCS·Stable ID를 새로 구현해야 하므로 실제 비교 전 GO로 승격하지 않는다.
+
+**가드레일:** 실 synthetic conversion/whole validator/roundtrip/Source coverage/Browser Adapter 동등성과 UID10001/Debian CPU-only·Cgroup·OOM/kill/restart/async error0 확인 전 **A2 판정 BLOCKED**. Browser 테스트에서 `chromiumSandbox:false`는 프로덕션 격리 보안 승인 증거가 아니며 현재 값으로 운영 허용 불가. #218 AC01–09 전체 미완료, 후속 P1-B/C/D 진입 금지. 기존 32MiB/100k/2M/depth128 및 G7 권한/immutable #216 release 보존. [Issue218](Issue218.md).
+
+---
+
 ## ADR-216-R — 기존 immutable v0.58.1 태그의 source-pinned GHCR 복구 (2026-11-03)
 
 **배경:** v0.58.1 annotated tag는 정확 Main `934e5561...`에 존재하지만 Main CI #138 2회 실패로 이미지 후보/승격이 실행되지 않았다. 단순 새 Main 커밋을 v0.58.1로 태그 이동하거나 그것의 OCI revision을 원본처럼 표시할 수 없음.
