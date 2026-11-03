@@ -1,3 +1,9 @@
+## 현행 정책 우선 — #218 2D·단일 Worker 단계별 GO (2026-11-04)
+
+**[Issue218LeanPolicy.md](Issue218LeanPolicy.md)**가 현재 AC/GO 정본이다. 아래 날짜별 A2-F/S/R09/R10, 직접 Node NO-GO 및 PR #221/#222의 실패·시험 명세는 당시 구현·검증 이력이며 정책의 "P1-B 코딩 금지" 문구는 **이제 GO-DEV를 차단하지 않는다**. DXF→DTO/validator/readback을 server CPU/non-WebGL로 분리해 **P1-B 단일 Worker 구현 착수 허용**, 단 실제 Worker 저장·G7/CAS·브라우저 복원/자원 격리 통과 전 GO-PILOT/READY 선언 금지. 완전 Entity 매핑/서버 strict Viewer WebGL/다중 Worker/3종 현장 DXF는 초기 코드 착수 Gate에서 제외한다. 기존 필수 CI는 YAML 수정 전까지 유지하며, 역사적 실패·PARTIAL을 소급 PASS로 바꾸지 않는다. Issue #218은 신규 L-01~08 구현 전 OPEN 유지.
+
+---
+
 ## 2026-11-03 — CI #545 test-only 수리 최종 수용 (신규 CI 시작 전)
 
 **Manager 판정: 구현 수리 ACCEPT, 추가 재작업 요구0.** C545-01~05는 Developer·독립 QA의 동결 소스 실행과 코드 검토로 충족했다. 원인은 **v1 index 미복원 기대0이 v2의 실제 복원5와 불일치한 시험 결함**, 이어서 **SC-14 assertion 실패가 tail-only logout을 건너뛰어 남긴 Admin 세션2개와 R3 main 세션1개가 기존 cap3을 채워 독립 consumer login409를 유발한 연쇄 시험 결함**이다. 원래3case의 동일2실패 재현, 기대0→5만 바꾼 대조에서 SC-14·후속 consumer 로그인 통과, 실제 session 정리/기존 cap 회귀 및 전체 R2/R3 chain 성공을 종합해 이 인과를 수용한다. CI409 응답 body에서 SESSION_LIMIT 코드 자체를 직접 관측한 것은 아니며, 제품 auth의 cap 분기와 대조·회귀가 근거다. 제품 Auth/runtime 결함으로 분류하지 않는다.

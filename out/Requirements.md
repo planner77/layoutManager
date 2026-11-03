@@ -1,3 +1,20 @@
+## R-218-LEAN — 현행 Owner 요구사항·GO 정본 (2026-11-04)
+
+아래 역사적 R-218-A2/A1·#208 AC 중 P1-B 코딩 전 *전면 운영 승인*을 요구하는 부분은 [Issue218LeanPolicy](Issue218LeanPolicy.md)로 대체한다. 확정 목표는 승인 사내 2D DXF 최초 업로드 직후 브라우저 비의존 **단일 CPU Worker 자동 Scene 생성·영속화**, 최소 상태·재시도다. 기능별 필수 증거는 실제로 개발/변경하는 단계에만 적용한다.
+
+| ID | 현재 필수 구현 범위 | 현재 제외/후속 |
+| --- | --- | --- |
+| FR-218-L01 | 원본 immutable+SHA/Version/Scope, atomic Version+Job 및 중복 방지 | 다중 Worker 경쟁·복수 지역 |
+| FR-218-L02 | WebGL 없는 서버 DXF→Three/DTO v2→manifest/full validator/readback; CPU·RAM·timeout·비루트·파일/네트워크 격리 | 서버에서 GUI/WebGL 복원 |
+| FR-218-L03 | 단일 Worker stale 복구·한정 재시도, 원본/기존 READY 불변, G7 인가/게시 전 재검사·CAS/감사 | 분산 Lease/Fencing/2 Worker 매트릭스 |
+| FR-218-L04 | 2D LINE/(LW)POLYLINE/ARC/CIRCLE/TEXT/MTEXT/BLOCK/INSERT/Layer/WCS 지원 범위·미지원 명시, 검증된 subset 원본 선택 | 원본 Entity 100% 매핑·모든 특수 Entity |
+| FR-218-L05 | QUEUED/RUNNING/READY/FAILED·필요한 RETRY/BLOCKED, 목록/재시도·브라우저 복원/표시 | 3종 실 고객 CAD·GPU/2PC 전체 인수 |
+| NFR-218-L01 | 변경된 실제 기능·직접 연관된 실패를 검사하고 정확 PR HEAD의 현재 repository-required CI 성공. GO-DEV와 GO-PILOT 구분 | 아직 미구현 기능의 full matrix를 GO-DEV 차단으로 사용 |
+
+**현재 구현이 없는 Worker/P1-C/P1-D는 미완료**. 실험 성공을 운영 READY로 기록하지 않고, 기존 CI YAML을 변경하지 않은 상태에서 기존 필수 체크를 건너뛰지 않는다. [Issue218](Issue218.md), [Architecture](Architecture.md), [Decisions](Decisions.md), [TestPlan](TestPlan.md) 참조.
+
+---
+
 ## R-218-FX — Scene Fidelity v2 후속 요구사항
 
 [Issue218](Issue218.md) FX01–FX08이 수용 정본이다. Material 렌더 속성, 실제 Geometry class/parameters·buffer/index/groups/drawRange와 원본 선택 index를 닫힌 DTO 계약으로 보존한다. 원본 index·binding은 동일 scope/source에 한정하고 fresh world bounds로 기존 보수적 coverage를 재평가한다. 저장된 READY·mappedCount·bounds를 신뢰해 선택 가능성을 확대하지 않는다. v1은 immutable legacy UNKNOWN, 지원하지 않는 payload는 fail closed한다. 신규 Writer는 v2, CAD_SCENE_SCHEMA/Builder/Renderer identity는 유지한다.

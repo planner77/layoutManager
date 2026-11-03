@@ -1,3 +1,9 @@
+## #218 현행 경량 아키텍처 — 승인 사내 2D·단일 CPU Worker (2026-11-04)
+
+[현행 정책/GO](Issue218LeanPolicy.md)를 정본으로 한다. 데이터 plane은 `DXF upload→atomic Version+Job→single CPU Worker(non-WebGL)→CUSTOM_DTO/manifest/SHA/full validator→SceneRepository immutable publish/CAS→browser Viewer restore`. 서버 Worker에는 `THREE.WebGLRenderer`/Canvas 복원을 요구하지 않고, 브라우저 Viewer에서만 WebGL을 검증한다. 별도 Worker=1, 멱등·재시작·bounded resource·G7 권한 재확인 및 기존 READY/Source/Audit 보존을 필수로 한다. 원본 ↔ Render 매핑은 안정 handle/type/layer/WCS가 있는 지원 2D subset의 정밀 선택에만 필수이며, 미지원은 `PARTIAL/UNSUPPORTED`로 명시한다. 다중 Worker/2PC/대형 현장/엄격 서버 UI WebGL은 초기 기능의 코드·CI 차단 조건이 아니다. **정책 문서 반영 자체는 생산용 Worker 구현이나 배포 GO가 아님.** 이하 역사적 P1-A2 아키텍처는 당시 시험 계약으로만 참조한다.
+
+---
+
 ## #218 FX — CUSTOM_DTO v2 및 원본 선택 복원 경계
 
 CAD Scene identity는 기존 schema1/builder/renderer를 유지하고 payload envelope만 v2로 구분한다. Domain validator가 재질·Shape/Curve·원본 index의 닫힌 구조와 자원 상한을 검사한 후 Browser serializer가 실제 Three class를 구성한다. ShapeGeometry는 Shape/Path/Curve constructor로 복원한 뒤 원래 buffer를 적용한다. Live Adapter는 parser 관측 binding을 userData 제거 전에 capture하고, fresh Adapter는 실제 world bounds로 render coverage를 재계산한다. snapshot은 선택의 파생 자료이며 원본 의미의 attestation이 아니다.

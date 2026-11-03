@@ -1,3 +1,18 @@
+## TC-218-LEAN — 현행 단계별 필수 검증 매트릭스 (2026-11-04)
+
+[현행 Owner 정책](Issue218LeanPolicy.md)을 우선한다. **테스트를 지우거나 가짜 PASS로 처리하지 않고 GO 판단의 적용 단계를 조정**한다. CI YAML/현재 required checks는 이번 문서 PR에서 변경하지 않는다. 아래 과거 A2 테스트 명세는 실험/회귀 이력이며 GO-DEV 차단 조건이 아니다.
+
+| GO 단계 | 반드시 검증 | 불필요한 선행 게이트 |
+| --- | --- | --- |
+| GO-DEV | 설계·기존 실제 CPU non-WebGL DXF→DTO/full validator/readback 증거, 미해결 실제 실패와 범위 기록 | Headless 서버 WebGL restore, 100% DXF Entity mapping, 다중 Worker |
+| GO-INTEGRATE — Scene 코드 | 변경한 DTO schema, v1/v2 read/restore, Geometry/Material/Source subset, User-browser Viewer 관련 회귀+현재 required PR CI | 3종 현장 실 DXF·엄격 서버 GUI WebGL |
+| GO-INTEGRATE — Worker 코드 | 실제 지원 2D DXF→DTO/검증, atomic Job·멱등, 재시작/timeout, G7/CAS·기존 READY 불변 및 변경분 관련 실패 회귀+required PR CI | 2 Worker/ACK 유실/6 fault 매 PR full matrix |
+| GO-PILOT | 자동 업로드 후 Server READY, 브라우저 종료·재방문 Scene 표시, 상태/안전 재시도, 최소 설치·리커버리, 권한/Source SHA/안전 자원, 정확 GHCR가 필요한 릴리스 | 외부/전체 현장·GPU/2PC·특수 Entity 전면 검증 |
+
+현재 증거: #223 CI #545 Greenfield는 재현/수리되어 #546 정확 HEAD 성공; #222 `process-safety.mjs` 로그 Race P2는 회귀 수리 추적, 연구 strict WebGL 실패는 서버 non-WebGL 경로 필수 대상 아님. 새 Worker 자체는 NOT IMPLEMENTED/NOT RUN. 실제 Worker 오류가 발생하면 해당 범위에서 필수 차단한다. `PASS/PARTIAL/FAIL/NOT RUN` 및 오류 원장 보존.
+
+---
+
 ## TC-C545 — PR #223 Greenfield 기대·세션 수명 회귀
 
 [Issue218](Issue218.md) C545-01~06을 따른다. 동일 production0.59.0에서 기존 RED3case와 기대값 한 줄 개입을 보전하고, R2 prerequisite을 포함한 원래 전체 Greenfield26시험+새 회귀로 최종 수용한다. v2 schema/Scope/SourceSHA와 original/fresh/reload mapping5/render6/observed5/excluded1, 기존 무원본GET·Blob·indexWorker·immutable payload/revision·문자/Layer/Renderer 전환을 유지한다. Handle 없는 S5 fixture의 mapping0 음성 검사는 그대로다.

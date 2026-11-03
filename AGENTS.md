@@ -1,3 +1,9 @@
+## #218 현행 Owner 정책 — 2D·단일 Worker / 단계별 GO (2026-11-04)
+
+**[out/Issue218LeanPolicy.md](out/Issue218LeanPolicy.md)가 신규 GO/AC 정본**이다. 이전 P1-A2의 전면 운영 GO 전 P1-B 코딩 금지, 서버 Headless WebGL 복원, 원본 Entity 100% 매핑, 다중 Worker/실 CAD 3종/2PC/전체 SBOM을 *코딩 착수 게이트*로 묶은 해석은 폐기한다. **GO-DEV(단일 CPU Worker 구현)는 허용**하되 GO-PILOT(실 배포)은 실제 새 Worker·데이터/권한·지원 브라우저 복원·격리·복구 검증 후 판정한다. 기존 CI YAML required jobs는 변경하지 않는다. 기존 원장·과거 테스트의 FAIL/PARTIAL을 소급 수정하지 않는다.
+
+---
+
 ## #218 Fidelity·Sandbox 후속 — 0.59.0 후보
 
 PR #222는 검증 전용으로 Squash 병합됐다(Main `2efae7631b175d25b9c4f961cc1fd0fdc23010f5`). 정확 HEAD `0ade59a`의 [CI #543](https://github.com/planner77/layoutManager/actions/runs/41625577506) 9/9 Job SUCCESS, 미해결 리뷰0/충돌0 및 병합 전후 tree 일치를 확인했고 #218은 OPEN이다.
