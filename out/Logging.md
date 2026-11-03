@@ -1,3 +1,11 @@
+## #218 P1-A2 — CI #485 내부 단계 미관측 timeout을 안전 phase 진단으로 보완 (2026-11-03)
+
+[Run41555129727](https://github.com/planner77/layoutManager/actions/runs/41555129727) CPU proof에서 180s timeout이 발생했지만 기존 합성 DXF 처리 내부 단계는 stdout에 없었다. 원인 파악을 위한 실험성 `A2_HOST_PHASE`와 `A2_PHASE` 마커를 allowlisted SOURCE/WEBGL/DXF_PARSE/SCENE_PREFLIGHT/TAG/TEXT_INDEX/CUSTOM_DTO/FULL_VALIDATOR/RESTORE/RENDER 단계로만 출력한다. Node watchdog은 launch/navigation/evaluate 기한 초과 시 `A2_TIMEOUT:NAME:LAST_PHASE=...` 안전 오류로 실패한다. PageError는 클래스만, resource 실패는 allowlisted 범주만 보고하고 **원본 DXF·소스 SHA·Font bytes·임의 URL·내부 예외/Stack은 출력하지 않는다**.
+
+현재 실제 hang 위치 미확인, 새 CI 미실행. 이 마커는 `SceneBuildJob` 영속 단계 로그나 운영 JobId/requestId/Audit가 아니며 P1-A2 GO 근거로 단독 사용 금지. Deadline/비동기 오류를 없애거나 READY로 간주하는 의미가 아니다. [Issue218](Issue218.md), [FailureLedger](FailureLedger.md).
+
+---
+
 ## #218 P1-A2 — 합성 Headless 실행 증거와 운영 Job 로그 분리 (2026-11-03)
 
 A2 전용 시험은 성공 시 synthetic-only entity/node count, DTO byte length, elapsed parse/serialize, SwiftShader renderer 식별 및 late pageerror count를 출력한다. 실제 CAD bytes/SHA/원본 문장/내부 파일 경로·토큰·세션·사용자 식별정보를 출력하지 않는다. `pageerror`를 600ms 창에서 수집하지만 이것만으로 모든 잠복 unhandled rejection·프로세스 종료 이후 오류를 배제할 수 없다. 타임아웃/컨테이너 실패/검증 불일치는 CI 실패로 남기고 숨기거나 PASS 처리하지 않는다. 실제 로깅 수치와 RUN/HEAD는 실행 후만 원장에 반영.
