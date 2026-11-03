@@ -1,3 +1,11 @@
+## #218 / PR #221 — CI #514 RegExp 초기화 실패 및 Browser provenance 변경(2026-11-03 KST)
+
+- [CI #514 Run41564217739](https://github.com/planner77/layoutManager/actions/runs/41564217739), exact HEAD `ea3145c5b2fa2d55a6b631d45ffbed201937baf3`, FAILURE. Quality/Docker/General Chromium 2 shards/G7 E2E PASS. Test-only CPU Debian/UID10001 Build PASS. A2 핵심 Browser harness 초기화 `A2_HARNESS_PAGEERROR:SYNTAX_INVALID_REGEXP` FAIL, auxiliary 3 PASS, required Verify 종속 FAIL. DXF parser/Scene DTO/Manifest/full Validator/Restore는 본 A2 시험에서 **실행되지 않음**.
+- **비교 증거:** A2 apt Chromium `156.0.8078.73`과 같은 PR의 일반 Browser `scene-poc.spec.ts` PASS에서 Playwright Chromium `153.0.8010.12` 차이 확인. 일반 Scene PoC의 46.7s 통과는 동일 A2 fixture/보안·영속 Worker 증거가 아니며 Chromium 버전이 root cause라고 확정할 수 없다.
+- **보완:** Test-only Debian Dockerfile에서 Playwright npm lockfile에 연동된 Chromium을 이미지 빌드 중 설치하고 runtime `A2_BROWSER_EXPECTED_MAJOR=153` 확인. A2 runtime offline/UID10001/read-only/cgroups, JS 번들 에러 fail-closed, 기존 synthetic DXF→Scene/Validator/Restore 단언 일절 유지. 새 CI exact HEAD 결과 미확인 전 정상 변환/오류 해소 PASS 주장 금지. 실제 #212 Adapter fidelity, untrusted DXF sandbox security, OOM/kill/restart/field #113/#193 미검증.
+
+---
+
 ## #218 / PR #221 — CI #506 브라우저 Bundle SyntaxError 실측 및 대응 상태 (2026-11-03 KST)
 
 [PR CI #506 Run41561632191](https://github.com/planner77/layoutManager/actions/runs/41561632191), HEAD `06d6bda224e74b30e40548184902ec44f518dd6e`, completed/failure. Quality/General Chromium 2 shards/Docker/G7 Greenfield/Signed/Legacy 전체 SUCCESS. P1-A2 Debian Chromium Job `125673426531`에서 합성 4개 중 3 PASS, 실 DXF-to-Scene 1 FAIL, `HARNESS_SCRIPT_REQUESTED → PAGEERROR_SYNTAX → A2_HARNESS_PAGEERROR:SYNTAX`. Node/Font/browser preparation success, DTO/Validator/Restore는 **호출되지 않음**, Required Verify는 mandatory A2 FAIL 때문에 실패.
