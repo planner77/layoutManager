@@ -1,3 +1,12 @@
+## #218 / PR #221 — CI #525 pinned Chromium에서도 RegExp 실패, 검증된 Scene PoC 재사용으로 시험 경로 변경 (2026-11-03 KST)
+
+- **실측:** [PR CI #525 Run41567538237](https://github.com/planner77/layoutManager/actions/runs/41567538237), exact HEAD `8042b1cd0c0ed6913666f93d91ed95f42c9b9b96`, `completed/failure`. Scope `125692699837`, Quality `125692740239`, Docker `125692740127`, General Chromium 2 shards `125693992977/125693993023`, G7 Greenfield `125693992913`, G7 Signed/Legacy `125693992950` SUCCESS. A2 CPU Job `125692740203` 3 보조 시험 PASS, 실제 DXF→Scene 시험 FAIL; Required Verify `125697098561`은 필수 A2 실패로 FAIL. `BROWSER_MAJOR_153→HARNESS_SCRIPT_REQUESTED→PAGEERROR_SYNTAX_INVALID_REGEXP`. DXF 파싱 전에 중단하므로 서버 변환기 GO 미확보.
+- **원인 범위:** Chromium 156→153 변경해도 오류 동일. 브라우저 버전 차이 단독 원인 가설 기각. Bundled JavaScript 초기화의 동적 RegExp 오류는 확인됐지만 원시 식/소스 모듈까지는 추적되지 않아 정확 코드 원인 **UNKNOWN**. 이는 라이브 운영 Viewer/Scene 저장 코드의 실패를 입증하지 않음.
+- **보완:** 기존 `src/tests/e2e/scene-poc-browser.ts`는 같은 PR CI 일반 Chromium에서 `SC-05/06/07` 실 DXF/DTO/Restore E2E를 통과하였으므로, 중복 생성했던 `src/tests/a2/headless-browser.ts`를 제거하고 A2 전용 `headless.spec.ts`가 **동일 검증된 Scene PoC entrypoint**를 번들·CPU Chromium 실행한다. P1-A2는 같은 합성 한국어/nested BLOCK DXF에 대한 sourceSHA/preflight, 실 Nanum TTF, `CUSTOM_DTO` 전체 validator, scope/Layer/WCS/ID/geometry, 파일 저장/재독해, 별도 프로세스 restore 및 비교를 추가 검증. 기존 `scene-poc.spec.ts`/App 코드 수정 없음.
+- **판정:** A2 테스트 작성/원격 커밋은 실행 증거 아님. 기존 PoC 정합성은 live #212 Viewer Adapter/한글 글리프 완전성/프로덕션 G7/Auth/서버 Worker 및 자원 장애 실증과 다름. 새 exact HEAD CI 성공 및 잔여 A2 Gate 전까지 **P1-A2 GO BLOCKED**, #218 OPEN, P1-B/C/D 미착수. CPU2/RAM1536MiB, UID10001/read-only/network-none, 180초 Playwright/15분 컨테이너, 필수 CI 변경·Skip 없음.
+
+---
+
 ## #218 / PR #221 — PR CI #514 INVALID_REGEXP 및 CPU Browser runtime 정렬 (2026-11-03 KST)
 
 - [PR CI #514 Run41564217739](https://github.com/planner77/layoutManager/actions/runs/41564217739), 정확 HEAD `ea3145c5b2fa2d55a6b631d45ffbed201937baf3`, `completed/failure`. Scope `125682086960`, Quality `125682124857`, Docker `125682124880`, 일반 Chromium 2 shard `125684391336/125684391433`, G7 Signed/Legacy `125684391321`, Greenfield `125684391553` SUCCESS. A2 CPU Job `125682124844`는 `BUNDLE_STATIC_SYNTAX_OK → HARNESS_SCRIPT_REQUESTED → PAGEERROR_SYNTAX_INVALID_REGEXP → A2_HARNESS_PAGEERROR:SYNTAX_INVALID_REGEXP`로 핵심 DXF 변환 FAIL; 보조 3 PASS, Verify `125687181424`는 A2 mandatory 종속 FAIL.
