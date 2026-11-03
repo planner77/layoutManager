@@ -3,7 +3,7 @@
  * Evidence is only for synthetic fixtures; no G7, SceneRepository, live
  * client Scene Builder or production worker is mocked/claimed as verified.
  */
-import { test, expect, chromium, type Browser, type BrowserContext, type Page } from '@playwright/test';
+import { test, expect, chromium, type Browser, type BrowserContext, type Page, type ConsoleMessage } from '@playwright/test';
 import { build } from 'esbuild';
 import { createHash } from 'node:crypto';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
@@ -21,6 +21,31 @@ const FIXTURE_VERSION = '11111111-1111-4111-8111-111111111111';
 const bytes = new TextEncoder().encode(a2SyntheticDxf);
 const sha = createHash('sha256').update(bytes).digest('hex');
 const executablePath = process.env.A2_CHROMIUM_EXECUTABLE || undefined;
+// Independent limits are deliberately BELOW the existing 180s test and 15m
+// container limits. An uncompleted conversion must fail, never look READY.
+const A2_LAUNCH_TIMEOUT_MS = 25_000;
+const A2_NAVIGATION_TIMEOUT_MS = 20_000;
+const A2_CONVERTER_TIMEOUT_MS = 60_000;
+async function bounded<T>(
+  name: string, ms: number, action: () => Promise<T>, phase: () => string = () => 'UNOBSERVED',
+): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      action(),
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() =>
+          reject(new Error('A2_TIMEOUT:' + name + ':LAST_PHASE=' + phase())), ms);
+      }),
+    ]);
+  } finally {
+    if (timer !== undefined) clearTimeout(timer);
+  }
+}
+function note(stage: string): void {
+  // Fixed synthetic-only milestones. Do not log CAD payloads, SHA or font paths.
+  console.info('A2_HOST_PHASE:' + stage);
+}
 
 function projectFont(): string {
   // Exact project TTF input and the production scripts/fonts.mjs glyph family.
@@ -45,28 +70,46 @@ function projectFont(): string {
   return JSON.stringify(parsed);
 }
 async function browserFor(software: boolean): Promise<Browser> {
+  note(software ? 'SWIFT_CHROMIUM_LAUNCH' : 'BASELINE_CHROMIUM_LAUNCH');
   // No user session, Next.js request handler, hidden user tab or G7 bypass.
   // Browser sandbox is NOT verified here: the disposable, networkless test
   // container supplies the outer process boundary. Prod sandbox is a GO gate.
-  return chromium.launch({
+  const browser = await bounded('CHROMIUM_LAUNCH', A2_LAUNCH_TIMEOUT_MS, () => chromium.launch({
     headless: true, executablePath,
     chromiumSandbox: false,
     args: software ? ['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader'] : [],
-  });
+  }));
+  note(software ? 'SWIFT_CHROMIUM_STARTED' : 'BASELINE_CHROMIUM_STARTED');
+  return browser;
 }
 async function prepare(context: BrowserContext, script: string, font: string,
   errors: string[]): Promise<Page> {
-  await context.route('**/fonts/CadKorean.typeface.json', r =>
-    r.fulfill({ status: 200, contentType: 'application/json', body: font }));
+  await context.route('**/fonts/CadKorean.typeface.json', r => {
+    note('FONT_RESOURCE_REQUESTED');
+    return r.fulfill({ status: 200, contentType: 'application/json', body: font });
+  });
   await context.route('**/__a2.js', r =>
     r.fulfill({ status: 200, contentType: 'application/javascript', body: script }));
   await context.route('**/__a2', r =>
     r.fulfill({ status: 200, contentType: 'text/html',
       body: '<!doctype html><html><body><script src="/__a2.js"></script></body></html>' }));
   const page = await context.newPage();
-  page.on('pageerror', e => { errors.push(e.name); });
-  await page.goto('http://p1-a2.invalid/__a2');
-  await page.waitForFunction(() => !!window.sceneA2);
+  page.on('pageerror', e => {
+    // Error class only, no upstream message, stack, URL or DXF content.
+    errors.push(e.name);
+    note('PAGEERROR_' + (e.name === 'ReferenceError' ? 'REFERENCE' : 'OTHER'));
+  });
+  page.on('requestfailed', r => {
+    // A route failure is relevant for the offline font/script diagnosis;
+    // never log the original resource URL or browser error text.
+    note(r.url().endsWith('/CadKorean.typeface.json') ? 'FONT_REQUEST_FAILED' : 'RESOURCE_REQUEST_FAILED');
+  });
+  note('HARNESS_NAVIGATE_START');
+  await bounded('HARNESS_NAVIGATE', A2_NAVIGATION_TIMEOUT_MS,
+    () => page.goto('http://p1-a2.invalid/__a2').then(() => undefined));
+  await bounded('HARNESS_READY', A2_NAVIGATION_TIMEOUT_MS,
+    () => page.waitForFunction(() => !!window.sceneA2).then(() => undefined));
+  note('HARNESS_READY');
   return page;
 }
 function sameInventory(a: A2Inventory, b: A2Inventory): void {
@@ -89,25 +132,47 @@ async function runProof(page: Page, software: boolean): Promise<A2Packet> {
     source: Array.from(bytes), expectedSha256: sha,
     versionId: FIXTURE_VERSION, requireSwiftShader: software,
   };
-  return page.evaluate(value => window.sceneA2.run(value), input);
+  let lastPhase = 'BEFORE_BROWSER_START';
+  const onConsole = (message: ConsoleMessage) => {
+    const match = /^A2_PHASE:([A-Z_]+)$/.exec(message.text());
+    if (match) {
+      lastPhase = match[1];
+      // Explicitly named phases only: never echo arbitrary page console text.
+      note('BROWSER_' + lastPhase);
+    }
+  };
+  page.on('console', onConsole);
+  try {
+    return await bounded('DXF_TO_SCENE', A2_CONVERTER_TIMEOUT_MS,
+      () => page.evaluate(value => window.sceneA2.run(value), input), () => lastPhase);
+  } finally {
+    page.off('console', onConsole);
+  }
 }
 test('P1-A2 real synthetic conversion: isolated SwiftShader versus browser baseline, full DTO and restore', async () => {
   test.setTimeout(180_000);
   const limit = preflightA2Dxf(bytes);
   expect(limit).toMatchObject({ model: 7, blocks: 2 });
   expect(limit.expandedBound).toBeGreaterThanOrEqual(7);
+  note('BUNDLE_START');
   const bundle = await build({
     entryPoints: ['tests/a2/headless-browser.ts'], bundle: true,
     platform: 'browser', format: 'iife', write: false, logLevel: 'silent',
   });
+  note('BUNDLE_DONE');
+  note('FONT_PREPARE_START');
   const font = projectFont();
+  note('FONT_PREPARE_DONE');
   const errors: string[] = [];
+  note('SWIFT_TEST_START');
   const headless = await browserFor(true);
   let first: A2Packet;
   try {
     const context = await headless.newContext({ serviceWorkers: 'block' });
     const page = await prepare(context, bundle.outputFiles[0].text, font, errors);
+    note('SWIFT_DXF_CONVERSION_START');
     first = await runProof(page, true);
+    note('SWIFT_DXF_CONVERSION_DONE');
     expect(first.renderer.toLowerCase()).toContain('swiftshader');
     expect(first.fontTextHits).toBeGreaterThanOrEqual(3);
     expect(first.koreanHits).toBeGreaterThanOrEqual(2);
@@ -131,17 +196,21 @@ test('P1-A2 real synthetic conversion: isolated SwiftShader versus browser basel
       validateStoredScenePayload(persisted, first.manifest);
       expect(sceneSha256(persisted)).toBe(first.manifest.sha256);
     } finally { await rm(dir, {recursive: true, force: true}); }
+    note('SWIFT_POST_COMPLETION_ASYNC_WINDOW');
     await page.waitForTimeout(600); // detect late asynchronous page errors
     await context.close();
   } finally { await headless.close(); }
 
   // Launch a completely separate Chromium process: simulated test restart.
   // This is NOT a kill-9, OOM, lease-recovery or operational restart test.
+  note('BASELINE_TEST_START');
   const baseline = await browserFor(false);
   try {
     const context = await baseline.newContext({ serviceWorkers: 'block' });
     const page = await prepare(context, bundle.outputFiles[0].text, font, errors);
+    note('BASELINE_DXF_CONVERSION_START');
     const existingBuilderBaseline = await runProof(page, false);
+    note('BASELINE_DXF_CONVERSION_DONE');
     sameInventory(first.original, existingBuilderBaseline.original);
     expect(existingBuilderBaseline.manifest.scope).toEqual(first.manifest.scope);
     expect(existingBuilderBaseline.manifest.sha256).toBe(first.manifest.sha256);
