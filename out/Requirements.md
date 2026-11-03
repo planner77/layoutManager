@@ -1,3 +1,9 @@
+## R-218-A2 후속 검증 — live Adapter 및 프로세스 안전성
+
+기존 R-218-A2-02/03/04를 [Issue218](Issue218.md)의 A2-F01–F05/S01–S06으로 추적한다. 동일 합성 원본·전체 글꼴·Version/Scope로 실제 Adapter와 독립 후보를 비교하고, 별도 컨테이너의 timeout/SIGKILL/실제 OOM/Node uncaught·unhandled/browser late error 및 각 장애 후 새 변환·복원을 검증한다. 원본 Entity 매핑·복원 선택 인덱스·geometry 클래스 표현 차이는 PARTIAL로 구분한다. 이 요구는 영속 Worker/자동 게시나 sandbox 보안 승인이 아니며 제품0.58.1과 운영 GO 보류를 유지한다. 실제 결과는 [TestReport](TestReport.md)를 따른다.
+
+---
+
 ## R-218-A2 CI 수용 보완 (2026-11-03)
 
 R-218-A2-01/03의 전체 검증·자원 상한은 유지한다. 시험 선택은 실제 Playwright discovery로5+4 전체를 보장하고, 동일 입력/바이트/전체 좌표 검사를 유지하면서 시험 장치의 메모리/보고 비용을 제한한다. AC/TC R09/R10은 [Issue218](Issue218.md)/[TestPlan](TestPlan.md), 실제 증거는 [TestReport](TestReport.md)와 [FailureLedger](FailureLedger.md). 아래 최초 NOT RUN은 당시 상태이며 현재 전체 운영 GO는 여전히 BLOCKED다.

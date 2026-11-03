@@ -1,3 +1,47 @@
+## U-218-A2-FS-20261103 — 실제 Adapter 동등성·프로세스 안전성 후속 PR
+
+- 상태: 최종 구현·독립 QA 및 정확 packaged-image 검증 완료. `gpt-6-astra` Manager가 **검증 전용 후속 PR 수용**을 판정했다. 원격 정확 HEAD CI는 시작만 요청하며 결과 미확인이고 운영 GO는 BLOCKED다. 아래 기존 결과와 별도다. AC/추적: [Issue218](Issue218.md) F01–F05/S01–S06 → candidate/live/parity 및 process-child/supervisor → 추가 필수 A2 CI.
+- 실제 역할: `gpt-6-astra` Manager가 요구·설계/AC 및 pre-QA 검토, `gpt-6-sol` Developer 두 명이 Viewer/proc 경계를 각각 구현, root Codex가 통합/CI/최종 image 검증·문서·게시를 담당. `gpt-6-luna`가 독립 QA와 최종 재검토를 수행했다. 공급된 과거 gpt-5.6 모델 대신 현재 branch AGENTS의 사용 가능한6-series 역할을 실제 수행했다.
+- Developer Viewer: source risk preflight를 실제 candidate entrypoint에 넣고 source SHA mismatch/cyclic BLOCK/폭증/비지원 거절을 font 요청 전에 검증. Host parity2/2 PASS5.6s, typecheck/focused lint PASS. 별도 실제 Adapter source와 독립 후보의 전체 DTO/inventory 일치, full validator/file/readback/fresh live restore, textIndex4 hits, layer off/on/re-entry. 실제 source Worker READY.
+- Fidelity 제한: source semantic instance LINE3/CIRCLE3/LWPOLYLINE1/TEXT3/MTEXT1, drawables3 Line/4 Mesh/4 LineSegments. Source/render/handle 관계는 PARTIAL(exact source mapped3, render index10); 원본 선택 index fresh restore UNAVAILABLE. ShapeGeometry2개는 BufferGeometry로 복원되며 source class 비교 exact·복원 시 canonicalization 및 모든 buffers/좌표 검사를 유지했다. 이를 전체 source fidelity PASS로 기록하지 않는다.
+- 추가 재질 검증: raw restore는 MeshBasicMaterial.side4개(2→0)에서 실패했다. Source/candidate는 side/depthTest/depthWrite/alphaTest/blending 포함 exact. 정확 stable-ref/material slot 및 class2/side4 손실을 검증한 뒤 나머지를 비교한다. 전체 재질·원본 선택 복원은 F03/F04 PARTIAL/UNMET이며 새 손실을 일반적으로 무시하지 않는다.
+- Developer process overlay: 실제 fault6개와 각각 fresh full conversion/validator/file/fresh Adapter restore/inventory/text 비교6개 PASS. OOM은 Docker OOMKilled=true. Strict sandbox launch는 BLOCKED/LAUNCH_REJECTED. 최종 명시 deadline/보고/재질 손실 보완은 아래 정확 최종 이미지로 다시 검증했다.
+- Root discovery: 기존9와 추가parity2 전체 선택 PASS, source/metadata mutation 음성 검사 보존. Node process gate/redaction unit3/3 PASS. 추가 workflow syntax/type actionlint PASS(ShellCheck 통합의 기존 SC1007 경고2건은 이전 원장 그대로).
+- 독립 QA 최종 source 검토: typecheck/lint/build PASS(기존 warning8), parity2/2 PASS7.4초 및 process gate unit3/3 PASS, 추가 discrete path/side/blending/index 부정 회귀 확인. 최초 전체149 files/982:981 PASS/1 FAIL494.26초(기존 Zone15초 timeout), 원래 Zone suite8/8 PASS12.72초, 전체 재시험149/149 files·982/982 PASS262.00초. 제한/기존 제품·시험을 변경하지 않았다. 관련 근거는 FailureLedger에 원래 실패와 함께 보존한다.
+
+### 정확 최종 이미지 및 실제 fault/recovery 결과
+
+`src/tests/a2/Dockerfile` 실제 build exit0. 시험 이미지 ID `sha256:35057e54486a2f1a92a6d4ee2bc1822ba1837ffd6c0460e5e1a9b461bc74604a`, frozen 새 검증 파일10개 모두 이미지의 bytes hash 일치. Test-only이며 Registry 게시/운영 배포 없음. Source/font/helper bind mount 없이 실제 CI body를 적용했다.
+
+| 새 컨테이너 suite | 결과 | Docker postmortem |
+| --- | --- | --- |
+| 기존 P0 |5 PASS/6.9초|exit0/OOMKilled=false/PID0|
+| 기존 P1-A2 required |4 PASS/5.8초|exit0/OOMKilled=false/PID0|
+| 새 actual Adapter parity |2 PASS/6.8초|exit0/OOMKilled=false/PID0|
+
+각 process fault와 recovery는 독립 새 컨테이너다. 모든 recovery가 source digest→실 DXF parse→full DTO validator→file write/read→새 실제 Adapter restore→정확 class/side 손실 확인+전체 나머지 inventory/text→quiet를 완료했다. 각 결과24 nodes/21506 vertices/1890549 bytes, 정상 exit0. 원래 CPU2/RAM1536MiB/swap-total1536MiB/SHM256MiB/PID256/UID10001/read-only/network-none/cap-drop/no-new-privileges/tmp512MiB를 Docker inspect로 검증했다. Child25s launch/20s ready/70s convert·restore/180s 전체 및 outer15m 제한은 그대로다.
+
+| 실제 fault | exit/OOMKilled | converter PID→종료 후 container PID | fault/새 recovery ms |
+| --- | --- | --- | --- |
+| stall/deadline kill |137/false|6→0|4793/4073|
+| converter SIGKILL |137/false|7→0|2510/4080|
+| touched-buffer cgroup OOM |137/**true**|7→0|3018/4147|
+| Node delayed uncaught |40/false|7→0|2462/4101|
+| Node delayed unhandled rejection |40/false|7→0|2461/4084|
+| Browser late pageerror |40/false|6→0|3019/4083|
+
+6종 음성시험과 새 recovery6종 모두 PASS. Source fixture 이미지 hash 불변을 매번 확인했고 정상 recovery 종료 이후에만 accepted marker6개가 생겼다. 최종 run label의 container 잔류0. 원시 자식 로그 대신 안전한 JSON 보고서/분류만 보관했다. 위 millis는 단일 합성 실행이며 실제 고객 성능 SLA가 아니다. production 영속 Worker/lease 복구 시험으로 해석하지 않는다.
+
+Strict `chromiumSandbox:true` capability probe는 동일 무권한 경계에서 **BLOCKED/LAUNCH_REJECTED**, scope `CHROMIUM_LAUNCH_ONLY`. 보안 승인을 뜻하지 않고 실패 syscall의 원인을 추측하지 않는다. Sandbox/SwiftShader untrusted-input·라이선스/SBOM 및 현장 #113/#193, full source/material fidelity는 계속 별도다.
+
+### Manager 수용 및 게시 경계
+
+Manager는 위 frozen source·QA·정확 image 결과를 근거로 검증 전용 PR의 root 통합/commit/게시를 수용했으며 재작업 요구0이다. 원래 Zone timeout 실패/재시험은 위에 모두 보존했다. 정확 원격 HEAD CI 성공·리뷰/병합/GHCR 및 운영 수용은 아직 확인/수행하지 않았다. 새 PR은 Draft로 열고 CI 시작만 확인한 뒤 완료 모니터링을 생략한다.
+
+- 운영 판정: P1-A2 GO BLOCKED, #218 AC01–09 OPEN. 영속 Job/Worker/lease·G7/DB/원본/Current/운영 volume·제품0.58.1/GHCR 불변. 새 CI 완료는 아직 검증 대상이며 시작 이후 모니터링 생략.
+
+---
+
 ## U-218-CI541-20261103 — PR #221 최종 CI 성공 및 테스트 범위 병합
 
 - 검증 소스 `1e3f22c0547c96fd260d022770755c4008bf0a61`; [PR CI #541 / Run41611978658](https://github.com/planner77/layoutManager/actions/runs/41611978658), **9/9 jobs SUCCESS**, A2 CPU Proof Job `125835940366` 및 Required Verify Job `125843402950` 포함. 기존 #540 No tests found 및 #539 OOMKilled 실패는 [FailureLedger](FailureLedger.md)에 역사적으로 보존.

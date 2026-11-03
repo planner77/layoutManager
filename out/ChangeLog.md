@@ -1,3 +1,11 @@
+## 2026-11-03 — #218 P1-A2 live Adapter parity·프로세스 안전성 후속 검증
+
+- Test-only: 실제 Adapter와 독립 CPU 후보의 동일 입력/전체 DTO·기하·재질·텍스트/Layer/fresh restore 비교 및 명시적 PARTIAL matrix.
+- Test-only: 실제 timeout/SIGKILL/OOM/지연 오류와 각 fault 후 독립 새 변환·복원, 고정된 resource/보안 경계 및 안전한 evidence/accepted gate. 기존9+추가parity/process 검증을 필수 CI에 연결.
+- 제품0.58.1/운영 기능/DB/GHCR 무변경. 최종 실행·GO 제한은 [TestReport](TestReport.md) 및 [FailureLedger](FailureLedger.md).
+
+---
+
 ## 2026-11-03 — #218 / PR #221 CI discovery and proof-resource correction (test-only)
 
 - Fix CI #540 zero-test filters with actual exhaustive Playwright discovery5+4 before image build.

@@ -1,3 +1,11 @@
+## ADR-218-A2-LIVE-PROCESS — live Adapter 기준과 실제 fault 검증
+
+Manager는 첫 Scene PoC가 의도적으로 첫 Line 스타일을 바꾸고 textIndex를 생략한다는 차이를 확인했다. 그 성공을 실제 Adapter parity로 재사용하는 대신 독립 test-only 후보를 실제 Adapter 계약에 맞춰 비교한다. 원본 class/material은 exact 비교하고, 실제 관측된 ShapeGeometry→BufferGeometry2개와 MeshBasicMaterial.side2→0 네 slot을 먼저 명시적으로 검증한다. 그 clone으로 나머지 모든 buffer/좌표/재질을 비교하되 전체 재질 복원은 PARTIAL/UNMET다. 원본 Entity 매핑 및 원본 선택 인덱스 비복원은 PARTIAL이다.
+
+실제 OOM은 동일1536MiB/swap1536MiB cgroup의 OOMKilled로, SIGKILL/timeout은 외부 supervisor가 실제 종료 증거로 판정한다. 모든 fault 후 새 변환·복원을 수행한다. 무권한 strict Chromium sandbox launch 거절은 BLOCKED로 기록하며 이를 통과시키기 위한 host 설정/권한 완화는 하지 않는다. 상세 AC·잔여 GO는 [Issue218](Issue218.md), 실행 증거는 [TestReport](TestReport.md)/[FailureLedger](FailureLedger.md).
+
+---
+
 ## ADR-218-A2-BOUNDED-PROOF — 시험 장치 자체 자원 비용 제거 (2026-11-03)
 
 실제 CI discovery0건과 font/packet/comparison 실측에 따라 시험 장치를 보완한다. 원래 전체 DXF/DTO/좌표 검증과 자원·보안 상한은 고정하고, 기존 전체 글꼴 build-time 준비, 완전한 JSON string transport, 모든 유한 scalar의 동일 허용 오차 검사를 선택했다. 근거와 대안 실험은 [FailureLedger](FailureLedger.md), AC는 [Issue218 R09/R10](Issue218.md). 이는 기술 GO/운영 Worker나 제품 릴리스 승인이 아니다.

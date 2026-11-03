@@ -1,3 +1,23 @@
+## #218 A2 후속 — live parity·process safety 구현/검증 원장 (2026-11-03)
+
+기준 Main0c7ab5f, branch feat/218-a2-adapter-safety, 제품0.58.1. 앞선 PR221/CI541 성공은 기존 합성 proof 범위이며 신규 F/S TC 결과로 재사용하지 않는다.
+
+| 발견/시험 | 근거와 조치 | 판정 경계 |
+| --- | --- | --- |
+| 기존 PoC와 live 계약 차이 | PoC의 의도적인 hidden/dashed 스타일 변경과 textIndex 생략 확인. 독립 후보에 실제 Adapter material ownership/black→white·persisted textIndex 계약을 적용; 기존 PoC 불변 | 기존 성공을 live parity로 재명명하지 않음 |
+| 최초 fresh restore 클래스 불일치 | ShapeGeometry2개가 CUSTOM_DTO buffers 복원에서 BufferGeometry가 됨. source class exact 비교를 유지하고 restore 경계만 명시 canonicalize, 모든 attribute/index/group/행렬/BBox 비교 유지 | class metadata 손실을 숨기지 않고 PARTIAL |
+| 추가 raw material 복원 실패 | source/candidate exact 후 `restored.nodes[7].materials[0].side` 불일치. 실제4개 MeshBasicMaterial side2→0, depthTest/depthWrite/alphaTest/blending 차이0 확인. Stable ref/path/material slot과 class2/side4 손실을 정확히 확인하는 helper 및 부정 회귀 추가 | F03 전체 재질 복원 UNMET/PARTIAL, 나머지 검사를 위한 제한된 canonicalization은 full fidelity PASS가 아님 |
+| Source fidelity/선택 인덱스 | 실제 Worker source index READY, exact mapped source3; render entities10. Fresh loadScene source index UNAVAILABLE. Drawable3 Line/4 Mesh/4 LineSegments를 원본 entity 수와 혼동하지 않음 | 원본 Entity 매핑·선택 복원 PARTIAL, 누락0 전체 충실도 PASS 주장 없음 |
+| Manager pre-QA 보완 | candidate의 parser 앞 source-risk preflight 및 cycle/폭증/비지원 음성 호출 추가. 원래25s/20s/70s/180s child 제한, fault gate 판정 전 안전한 current evidence 보존, 정상 exit 후 accepted marker 보완 | 요구/자원/비교 gate 완화 없음 |
+| 실제 fault 초기 overlay | stall·직접 converter SIGKILL·실제 OOM·Node delayed uncaught/unhandled·browser late error,6종과 각 fresh recovery6종 통과. OOMKilled=true 확인, 나머지137을 OOM으로 간주하지 않음 | overlay 결과는 최종 Dockerfile 이미지 증거와 구분 |
+| strict Chromium sandbox 초기 probe | 고정된 비루트/무권한 cgroup에서 launch 거절: BLOCKED/LAUNCH_REJECTED | sandbox 보안 PASS·원인 syscall 추측·운영 GO 승인 없음 |
+
+**독립 QA 전체 시험의 기존 timeout:** 최초 `npm test`149 files/982 중981 PASS/1 FAIL,494.26초. 변경하지 않은 `TC-Z196-RESET-HISTORY`(zone-runtime.test.ts:286)의 `Test timed out in15000ms`였다. 과거 #202/#204에서도 같은 실패가 있었으며 아래 이력을 유지한다. Docker image build 종료 후 원래 Zone suite 단독 **8/8 PASS/12.72초**, 전체 원래149 files/982 **982 PASS/262.00초** 재실행을 확인했다.15초 한도·테스트/제품 코드는 변경하지 않았다. 자원 경합과 일치하는 기존 타이밍 실패로 기록하되 정확한 제품 원인을 확정하지 않는다.
+
+**최종 검증 완료:** 정확 실제 Dockerfile 이미지35057e54…의 frozen10파일 hash 일치. 기존5+4와 새parity2 모두 PASS(각exit0/OOMKilled=false). 실제6fault와 새 full recovery6종 PASS, OOM만OOMKilled=true·다른137은OOMfalse, 종료 후PID0·Source fixture 불변·accepted marker6개는 정상 종료 후 생성·label container 잔류0. Strict sandbox는BLOCKED/LAUNCH_REJECTED. 독립QA149files/982 PASS 및 typecheck/lint/build/parity2/process unit3 통과 후 Manager가 **검증 PR만 수용**했다. 재질side4/class2손실과source/outline한계는여전히PARTIAL/UNMET. 상세 exact image ID/시간·실제 PID·역할은 [TestReport](TestReport.md)에 기록했다. 새 PR/CI는 마지막 한 번에 시작하고 완료 모니터링은 생략한다. P1-A2 운영 GO BLOCKED, #218 OPEN, production Worker/Job/DB/SceneRepository/G7/Compose/GHCR 불변.
+
+---
+
 ## #218 / PR #221 — PR CI #541 9/9 SUCCESS 및 검증 코드 Main 병합 (2026-11-03 KST)
 
 - **정확 소스/CI:** PR #221 source HEAD `1e3f22c0547c96fd260d022770755c4008bf0a61`, [PR CI #541 / Run41611978658](https://github.com/planner77/layoutManager/actions/runs/41611978658) `completed/success`. 확인된 **9/9 SUCCESS**: Scope, A2 독립 Debian/Chromium CPU 합성 검증(Job `125835940366`), Docker runtime, Quality, 일반 Chromium E2E 2 shards, G7 Greenfield, G7 Signed/Legacy, Required Verify(Job `125843402950`). 새 CI의 성공은 이전 실패 실행의 상태를 바꾸지 않는다.
