@@ -1,3 +1,17 @@
+## TC-218-A2-R06 — CI #525 RegExp 재현 후 기존 실증 Scene PoC 재사용 (2026-11-03)
+
+| TC | 수행 계획 | 정확 합격 기준 |
+| --- | --- | --- |
+| A2-R06-01 | `tests/e2e/scene-poc-browser.ts`를 A2 CPU-only 컨테이너에서 **정확 기존** esbuild browser entrypoint/IIFE, 실제 Korean TTF + localhost 가상 route로 구동 | `window.scenePoc.produce` 등록. Browser pageerror/초기화 실패는 FAIL. 기존 오류 범주 분리 유지 |
+| A2-R06-02 | synthetic DXF/SourceSHA 검증, `preflightA2Dxf` BLK 확장·비지원 거절 및 `extractDxfText` 한글 존재 | 실제 모델 LINE/CIRCLE/LWPOLYLINE·TEXT/MTEXT/nested INSERT 소스 사용; SHA mismatch/누락/한글 없음 FAIL |
+| A2-R06-03 | 실 DXF→pinned DXFViewer Three Object3D→원래 `serializeSourceScene` CUSTOM_DTO→Manifest/SHA→`validateStoredScenePayload` 전체 검사→파일 저장/읽기 | 원본 SHA/Scope/Layer/Unit, 32MiB/100k/2M/depth128 불변, 실제 DTO 없거나 실패하면 FAIL |
+| A2-R06-04 | 동일 browser에서 `scenePoc.restore` 실제 WebGL rendering, 새로운 Browser process에서 정확 bytes restore, 별도 build와 WCS/BBox/geometry/Stable-ID matrix 비교 | 모든 Node/Vertex/Material/Layer·ID·transform/BBox ±1e-5, DTO digest/Scope 일치; 오류/비동기 leftover 0. 현재 새 코드 미실행 |
+| A2-R06-05 | Debian/UID10001, pinned Chromium153, CPU2/RAM1536MiB, read-only/network-none, 기존 Quality+E2E+Docker+G7+Required Verify | 적용된 필수 Job 전부 SUCCESS, timeout/숨김/Skip/renderer spoof 불허. CPU-only CI 성공은 **실 사용자 Viewer Adapter / 운영 Worker / G7 게시 GO 대체 아님** |
+
+**범위:** 참조 PoC의 포맷 부가 산출물(THREE_JSON/GLB)은 원래 PoC 동작으로 유지되며 P1-A2는 검증된 `CUSTOM_DTO`만 READY 후보로 검사. text index의 host 추출은 viewerData 저장 동등성 검증이 아니므로 gate 잔여로 기록. 기존 중복 번들 `SYNTAX_INVALID_REGEXP` 원시 pattern은 미확인. P1-B/C/D 입구는 계속 BLOCKED.
+
+---
+
 ## TC-218-A2-R05 — CI #514 Invalid RegExp / pinned Chromium differential (2026-11-03)
 
 | TC | 입력·조건 | 합격/차단 |
