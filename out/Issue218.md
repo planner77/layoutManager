@@ -1,3 +1,12 @@
+## 6. 벤더 공식 문서 확인 및 A 후보 보안 보류 사유
+
+- [Chromium: Using Chromium with SwiftShader](https://chromium.googlesource.com/chromium/src/+/main/docs/gpu/swiftshader.md): CPU software implementation 및 `--use-gl=angle --use-angle=swiftshader` 실험 모드, `--enable-unsafe-swiftshader` 안전 경고. **Chromium은 SwiftShader를 신뢰하지 않는 콘텐츠 처리에 사용하도록 설계된 안전한 프로덕션 격리로 보장하지 않는다.** 별도 sandbox+격리/허용 입력과 취약성 관리 없이 신규 DXF 파일을 production 자동 게시할 수 없으므로 보안 검증을 추가 GO 필수 조건으로 둔다.
+- [gdsestimating/dxf-parser README](https://github.com/gdsestimating/dxf-parser): Node `parseSync` 예제/Node sample, Header/2D Entity/Layer/BLOCK/INSERT/TEXT·일부 MTEXT 지원, 3DSolid·leader 등 미지원, MIT. 이는 **파싱 API 보유 증거**이지 기존 Three.js 변환·Scene Fidelity·운영 안전성 PASS가 아니다.
+- [저장소 font OFL.txt](https://github.com/planner77/layoutManager/blob/main/src/public/fonts/OFL.txt) 추적 파일 존재 확인. 시스템 패키지 Chromium/그 의존성 및 새로운 Node 파서 license inventory/SBOM 검사는 아직 별도 실행 필요. 회사 보안·라이선스 수용 전 worker release 금지.
+
+
+---
+
 # Issue #218 — P1-A2 CPU-only DXF→Scene 변환기 검증 설계·Gate 원장
 
 > 2026-11-03 기준 Main: `55b82cdf35f6d9f606dcab16830cd61ce0098082`; Branch: `feat/218-a2-headless-cpu-gate`.
