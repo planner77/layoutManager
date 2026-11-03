@@ -1,3 +1,13 @@
+## ADR-218-A2-SECURE-ORIGIN — CPU-only test-only virtual loopback Origin (2026-11-03)
+
+**관측:** PR CI #495 synthetic Headless Chromium은 BUNDLE/TTF/launch 완료 후 `PAGEERROR_OTHER`로 `window.sceneA2` 등록에 실패; `HARNESS_READY` 20s timeout. exact root cause는 공개 safe logs로 확인 불가.
+
+**결정(시험 환경 한정):** 기존 `http://p1-a2.invalid`을 `http://localhost`로 대체. [MDN Secure Contexts](https://developer.mozilla.org/en-US/docs/Web/Security/Defenses/Secure_Contexts), [W3C Secure Contexts](https://www.w3.org/TR/secure-contexts/)에 따라 localhost는 potentially trustworthy origin이다. [MDN Crypto.randomUUID](https://developer.mozilla.org/en-US/docs/Web/API/Crypto/randomUUID)는 secure-context-only. 새 시험에서 script-served/`window.isSecureContext`/`crypto.randomUUID` 확인을 명시 필수로 하여 임의 `*.invalid` host 재도입을 막는다. 원래 PAGEERROR_OTHER가 Crypto 때문이라는 **가설은 여전히 미검증**.
+
+**보안·배포 경계:** 모든 HTML/JS/font는 context.route의 합성 응답, Docker `--network none`/non-root/read-only/cgroups 제한 유지. 예외가 발생하면 allowlisted category만 즉시 실패, 원문/원본/개인·사이트 정보 비노출. 브라우저 sandbox:false/SwiftShader 개발 플래그를 운영 보안 PASS로 승격하지 않는다. P1-A2 GO/후속 P1-B/C/D 및 #216 release는 별도 Gate로 차단.
+
+---
+
 ### #218 A2 보안 주의 — 공식 Chromium SwiftShader 경고
 
 [Chromium upstream 문서](https://chromium.googlesource.com/chromium/src/+/main/docs/gpu/swiftshader.md)는 `--enable-unsafe-swiftshader`를 명시적으로 위험 완화 해제 옵션으로 설명하고, 신뢰하지 않는 콘텐츠 처리에는 부적절하다는 취지의 보안 경고를 제공한다. 따라서 현재 `chromiumSandbox:false`/software WebGL은 **격리된 합성 테스트에서만 허용**. 운영 입력 DXF에 대해 신뢰 경계·sandbox·cgroups/비밀 격리 및 독립 위험 승인 근거가 없으면 A 후보는 보안 NO-GO; Node parser+별도 Three 변환 B의 정합성·자원 안전성도 독립 검증 필수.
