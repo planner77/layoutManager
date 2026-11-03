@@ -1,3 +1,13 @@
+## #218 / P1-A2 — 서버 Scene 변환기 분리 경계(2026-11-03)
+
+`P1-A2 synthetic immutable DXF bytes → read/SHA verify → bounded preflight(BLOCK DAG, entity coverage) → independent Chromium(software WebGL) DXFViewer → Three Object3D → #212 preflight/tagImportedTree/extractDxfText → CUSTOM_DTO serializer → manifest SHA/full validate → ephemeral file save → fresh Chromium restore`. 이는 `src/tests/a2/*`에 **기술 검증용**으로만 설치되며 production process/Next.js 요청·브라우저 탭·G7 로그인·SceneRepository가 결합되지 않는다.
+
+선행 Parser A1의 Node direct 비동기 DOM 의존은 NO-GO 불변. 독립 Headless A의 fidelity, Chromium sandbox/process kill/OOM, 1e-5 WCS 합성 기준, korean glyph/INSERT completeness는 **실 CI 미검증**. Node parser B는 Node 실행 가능과 Object3D/Scene 계약 충족이 별개이며 동일 증거 없이는 GO 불가. 서버 Converter 출력이 DTO Validator를 통과하더라도 `SceneRepository.status`의 validated CurrentScene READY와 같지 않다. 소스→서버 READY 운영 경로는 P1-B 별도 계약/인가/비파괴 CAS 후 구현.
+
+변경 없음: `src/Dockerfile`, Compose, Prisma/DB, G7 Actor/Site/Session/Writer, SceneAsset Source SHA·CAS/Revision, APP_CREATED/Memo/Zone/Outline, #216 GHCR immutable release. [Issue218](Issue218.md).
+
+---
+
 ## #216 아키텍처 — immutable 0.58.1 Release / G7 compatible upgrade (2026-11-03)
 
 **릴리스 계층:** 0.58.1 package+lock 버전과 annotated v0.58.1 태그, OCI version/revision 메타데이터를 일치시킨다. 기존 v0.58.0와 App/Migrator digest는 불변. 이 버전은 #212 수동 Scene 생성 오류 단계 진단·#208 Node direct NO-GO fail-closed 결과를 배포 가능하게 하는 목적이며 #218 Worker/Job 기능 구현은 포함하지 않는다.
