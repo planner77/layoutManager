@@ -230,9 +230,10 @@ test('P1-A2 real synthetic conversion: isolated SwiftShader versus browser basel
   note('BUNDLE_START');
   const bundle = await build({
     entryPoints: ['tests/a2/headless-browser.ts'], bundle: true,
-    // Browser system package is Chromium 156 in CI #506. Emit classic-script
-    // syntax supported by a lower bound rather than untransformed "esnext".
-    platform: 'browser', format: 'iife', target: 'chrome115',
+    // Align generated syntax with the lockfile-pinned Chromium 153
+    // which passed scene-poc E2E in CI #514. This must not suppress an
+    // invalid RegExp: an initialization or DXF conversion error still fails.
+    platform: 'browser', format: 'iife', target: 'chrome153',
     write: false, logLevel: 'silent',
   });
   note('BUNDLE_DONE');
