@@ -1,3 +1,11 @@
+## #218 / PR #221 — CI #539 A2 isolated diagnostic results, final cgroup OOM (2026-11-03)
+
+[CI #539](https://github.com/planner77/layoutManager/actions/runs/41578400956) at HEAD 883be4504496bed0e0555bb21dfaff48cc468e06: A2 proof 8/9 PASS. P0-1 SwiftShader WebGL2 PASS; P0-2 tiny LINE actual DTO=5734B, nodes=3, parse=498ms PASS; P0-3 actual Korean/nested INSERT DTO=1886914B, nodes=24, parse=574ms, full Validator PASS; P0-4 comparison DTO_ONLY=5734B vs ALL=15179B for a tiny input, both PASS; P0-5 page close rejects pending evaluate PASS. Final A2 crashed after DTO serialize (Playwright Worker SIGKILL), Docker State.OOMKilled=true, ExitCode=1, so full Validator/File/Fresh Restore NOT VERIFIED. docker stats peak OBSERVED 1.024GiB, not true peak; last memory.events sample preceded OOM.
+
+Next test architecture: separate P0 suite and required A2 suite into fresh non-overlapping containers within the same required A2 job, with identical 1536MiB/CPU2/UID10001/offline/read-only resource policy and independent exit/OOM/artifact. Actual new run NOT VERIFIED. No Scene READY or P1-A2 GO until real full test succeeds and remaining security/operational gates pass.
+
+---
+
 ## #218 / PR #221 — CI #538 real browser crash and unexecuted diagnostic changes (2026-11-03)
 
 [Run41570387391](https://github.com/planner77/layoutManager/actions/runs/41570387391), HEAD 3b1c8c1ff9b1e42bde12af57cfeaf09ead3fa2a0: all ordinary Quality/Docker/General Chromium/G7 checks passed; CPU A2 proof 1 failed, auxiliary 3 passed, Required Verify dependent failed. Error was page.evaluate: Target crashed after REFERENCE_READY and REAL_DXF_PRODUCE_START. There is NO evidence yet to attribute crash to OOM, SwiftShader, DXF parser or GLB.

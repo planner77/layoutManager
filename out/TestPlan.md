@@ -1,3 +1,11 @@
+## TC-218-A2-R08 — distinguish accumulated P0 pressure from independent full A2 OOM (2026-11-03)
+
+[CI #539](https://github.com/planner77/layoutManager/actions/runs/41578400956) proved P0-1..P0-5 and three auxiliary tests pass, but the same resource-bounded container was OOMKilled during subsequent full A2 after DTO serialization. Redesign CI to run TWO separate containers with identical CPU2/RAM1536MiB/SHM256MiB/pids256/rootless/read-only/network-none/15m limits: first --grep ^P0- (5 tests), then --grep ^P1-A2 (4 tests). Each must exit code 0; collect separate Docker OOMKilled/ExitCode/stats/logs before deleting container; any nonzero blocks Verify. Container/Playwright dependency and image build are identical. New result NOT VERIFIED before CI.
+
+**Decision logic:** P0 and fresh A2 both PASS → remaining #218 security/OOM-injection/live-adapter GO gates still open; P0 PASS and fresh A2 OOM → real acceptance resource footprint too high, reduce duplication/heap or isolate browser processes without relaxing cgroup; P0 OOM → focused step-specific leak; any crash not classifiable without exit and resource evidence. P0-5 is browser close, not true Worker OOM/lease/kill-9 restart. Original full test (sourceSHA, DTO/SHA/domain Validator, file readback, SwiftShader and fresh browser restore) remains mandatory.
+
+---
+
 ## TC-218-A2-R07 — phased P0 crash isolation after CI #538 (2026-11-03)
 
 | Gate | Experimental test | Failure rule |

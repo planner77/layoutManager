@@ -1,3 +1,13 @@
+## #218 / PR #221 — CI #539 P0 8/9 PASS, OOMKilled confirmed; isolate diagnostic and acceptance containers (2026-11-03)
+
+**Exact evidence:** [CI #539 Run41578400956](https://github.com/planner77/layoutManager/actions/runs/41578400956), HEAD 883be4504496bed0e0555bb21dfaff48cc468e06. A2 Job 125727283357 P0-1/2/3/4/5 and three auxiliary tests PASS (8/9), mandatory full A2 FAIL immediately after real DXF parse, Scene tagging, CUSTOM_DTO serialization; Playwright worker exited unexpectedly with SIGKILL. Docker post-mortem OOMKilled=true, ExitCode=1. The [synthetic-only artifact](https://github.com/planner77/layoutManager/actions/runs/41578400956/artifacts/13204038188) sampled 239.5MiB to 1.024GiB among eight 2s snapshots within 1.5GiB cap; this is NOT the actual memory peak. cgroup memory.events last sampled zeros, likely before OOM spike, so exact process peak/causation remains unmeasured.
+
+**Isolation change:** One A2 CI Job now launches a fresh bounded container for the five P0 diagnostic tests, destroys it after ExitCode/OOMKilled/stats evidence, then launches a different fresh container for four P1-A2 mandatory tests. Both preserve the same CPU2/RAM1536MiB/SHM256MiB/UID10001/read-only/network-none/pids256/time constraints. All tests remain required, failure in EITHER container is fatal; no false GO. Docker stats now collected host-side at ~1s interval, avoiding docker exec inside near-OOM cgroup. Same 7-day synthetic artifact has separate p0/required evidence.
+
+**Gate:** Existing full A2 SourceSHA/manifest/full Validator/file readback/SwiftShader/restore MUST succeed in the fresh container; independent full Worker kill/OOM/restart/security and live Viewer Adapter still NOT PROVEN. Existing default Scene PoC ALL mode and production/G7/DB/Volume/GHCR unchanged. #218 OPEN, P1-A2 GO BLOCKED, P1-B/C/D prohibited.
+
+---
+
 ## #218 / PR #221 — CI #538 crash isolation and one-batch change (2026-11-03)
 
 **Observed:** [PR CI #538](https://github.com/planner77/layoutManager/actions/runs/41570387391) at HEAD 3b1c8c1ff9b1e42bde12af57cfeaf09ead3fa2a0 failed. All existing Quality, general Chromium (2 shards), Docker, G7 Greenfield and Signed/Legacy passed. New A2 CPU job 125701805501 reported REFERENCE_READY → REAL_DXF_PRODUCE_START → page.evaluate: Target crashed. Required Verify failed because A2 is mandatory. Neither an OOM nor a WebGL or DXF parser root cause has been proven.

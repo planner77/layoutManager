@@ -1,3 +1,9 @@
+## 2026-11-03 — #218 CPU P0 success and isolated required A2 resource retest
+
+CI #539 (exact 883be450...): P0-1 through P0-5 and auxiliary tests PASS, final full source/DTO/restore test FAIL with Playwright Worker SIGKILL and Docker OOMKilled=true. Postmortem artifact confirms cgroup OOM flag, sampled memory up to 1.024GiB/1.5GiB (not true peak). Change A2 workflow to execute P0 five tests and full A2 four tests in two fresh, sequential, equally restricted containers; archive per-phase OOM/status/stats, no docker-exec memory sampling, preserve 1.5GiB cap and full mandatory Verify. Exact new CI results not yet measured. #218 OPEN/P1-A2 GO BLOCKED, no Worker/G7/GHCR release.
+
+---
+
 ## 2026-11-03 — #218 P0 crash isolation and one-commit diagnostic framework
 
 CI #538 (3b1c8c1...) passed application Quality/Docker/Chromium/G7 but failed dedicated A2 CPU test at page.evaluate: Target crashed after reference browser initialization. No OOM/renderer/parser root cause measured. Preserve original E2E mode ALL while adding opt-in actual DTO_ONLY and phase markers; split synthetic P0-1 WebGL-only, P0-2 LINE DTO, P0-3 Korean/nested DTO, P0-4 format-cost comparison, P0-5 page-abort, then required full A2 SourceSHA/manifest/validator/file/fresh restore. Docker wrapper collects exit/OOM/resource evidence prior to cleanup with limits unchanged. Exact new CI outcome NOT VERIFIED; #218 OPEN, P1-A2 GO BLOCKED, no Worker/G7/GHCR release.

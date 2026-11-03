@@ -1,3 +1,11 @@
+## 2026-11-03 — CI #539 measured OOM after successful independent converter proofs
+
+[A2 CPU proof #539](https://github.com/planner77/layoutManager/actions/runs/41578400956) HEAD 883be4504496bed0e0555bb21dfaff48cc468e06: P0-1 WebGL-only, P0-2 minimal real DXF DTO, P0-3 real Korean/nested INSERT DTO, P0-4 DTO/ALL cost and P0-5 fail-closed browser abort ALL PASS (8/9 combined). The final full A2 produced/custom DTO but Playwright worker was SIGKILL, Docker inspect oomKilled=true. An 1.024GiB max 2s memory sample is NOT proof of peak; memory.events last read before OOM reported zeros, Docker postmortem explicitly OOMKilled=true. Root cause class OOM now supported, but exact process/allocation source unknown.
+
+To eliminate memory carry-over from the diagnostic suite, the mandatory CPU job now runs P0 and full A2 in distinct fresh containers under the SAME strict 1536MiB, CPU2, SHM256MiB, UID10001, read-only, offline, PID/timeout controls. Both fail closed and separately archive ExitCode/OOMKilled/1s stats. No tests skipped, no limit increases. If fresh A2 still OOMs, investigate TTF/GLB/DTO copies and isolate actual Worker memory under original cap. #218 OPEN, P1-A2 GO BLOCKED, no P1-B/C/D or GHCR/G7/DB deployment.
+
+---
+
 ## 2026-11-03 — P0 diagnosis after repeated PR CI failures, no GO
 
 Across #221 CI #479–#538: 60 runs, seven failures and 53 cancelled intermediate SHA runs. Quality/Docker/General Chromium/G7 all pass by #538, while required A2 CPU-only job alone fails. [CI #538](https://github.com/planner77/layoutManager/actions/runs/41570387391) HEAD 3b1c8c1ff9b1e42bde12af57cfeaf09ead3fa2a0 shows REFERENCE_READY → REAL_DXF_PRODUCE_START → page.evaluate: Target crashed. Original wrapper combined WebGL2 creation and DXF produce; direct cause unknown and no OOM/exit metrics.
