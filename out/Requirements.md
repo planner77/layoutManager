@@ -1,3 +1,16 @@
+## R-218-P1-A2 — 실제 CPU-only 변환기 선행 검증(2026-11-03)
+
+| ID | 요구사항 | 수용 증거 |
+| --- | --- | --- |
+| R-218-A2-01 | 독립 Chromium SwiftShader 또는 공식 Node parser의 **실제 DXF**→Object3D→CUSTOM_DTO→Manifest/SHA/full validator→Restore | 정확 CI HEAD/컨테이너 실 결과; synthetic Three Group만으로 PASS 불가 |
+| R-218-A2-02 | WCS/BBox·LINE/CIRCLE/LWPOLYLINE/TEXT/MTEXT/한글/중첩 INSERT/Layer/Unit/Origin/Stable ID의 동일 DXF #212 Browser 비교 | 허용 오차(합성 1e-5 단위), 렌더 인스턴스·누락 Entity matrix 및 #113 별도 현장 SLA |
+| R-218-A2-03 | Node/DTO limit 100k/32MiB/2M/depth128, 폭증·비지원/순환 BLOCK fail closed, CPU/RAM/time/UID10001/폐쇄망/async error=0 | 실제 OOM/kill/timeout/restart/late async injection 및 로그 |
+| R-218-A2-04 | 검증되지 않은 경로는 운영 READY 불가. G7/SceneRepository/Current/원본 데이터 불변, #216 immutable release 독립 | 코드 diff/PR Gate 및 후속 P1-B/C/D 분리 |
+
+현재 실험·테스트 코드만 작성, 시험 **NOT RUN**, GO **BLOCKED**. 상세 [Issue218](Issue218.md), [TestPlan](TestPlan.md), [TestReport](TestReport.md).
+
+---
+
 ## R-216 — 0.58.1 release/G7 upgrade acceptance (2026-11-03)
 
 | ID | 요구·차단조건 | 근거/시험 |
