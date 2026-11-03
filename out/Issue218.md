@@ -1,3 +1,13 @@
+## 2026-11-03 — PR #221 CI #485 실제 Timeout·관측 불가 및 진단 보완
+
+[PR CI #485 Run41555129727](https://github.com/planner77/layoutManager/actions/runs/41555129727) HEAD `23d4b8df0948e4ee1d6b3a34dba9673e56136440`: Scope/Quality/General Chromium(2)/G7 Greenfield/G7 Signed-Legacy/Docker SUCCESS. 독립 Debian CPU proof `125652599400`에서 image build/UID10001 성공, 위험 preflight test PASS, **실 synthetic DXF→Scene test가 180000ms timeout**. 이 실행에서 구체적인 장기 대기 단계는 기록되지 않았으므로 원인은 UNKNOWN. Required Verify는 mandatory CPU 실패로 FAILURE. DXF 변환/validator/restore/SwiftShader GO 판정 불가.
+
+보완: `headless-browser.ts`의 SOURCE/WEBGL/DXF_PARSE/SCENE_PREFLIGHT/TAG/TEXT_INDEX/CUSTOM_DTO/FULL_VALIDATOR/RESTORE/RENDER 안전 단계 마커; `headless.spec.ts`의 실행 Host/폰트/브라우저/Resource/오류 단계 및 25s Chromium launch·20s navigation·60s evaluate 독립 timeout(마지막 phase 보고), 정지 Promise fail-closed 회귀. 전체 시험 180s, Docker 15m·UID10001/read-only/network none/cgroup, 실제 renderer/DTO/all validation과 기존 PR CI Gate를 변경 없이 보존. 시간 연장/가짜 READY·skip 없음.
+
+재실행 뒤에도 `#212` 실제 Viewer와의 동등성, 한글/BLOCK fidelity·async-late/OOM/강제 종료/sandbox·현장 #113/#193 **미검증**. P1-A2 GO BLOCKED, 후속 P1-B/C/D·GHCR·G7 게시 금지. [원장](FailureLedger.md), [시험 계획](TestPlan.md), [결과](TestReport.md).
+
+---
+
 ## 2026-11-03 — P1-A2 PR #221 CI #479 1차 실행 실패 및 보완
 
 [Run41551357571](https://github.com/planner77/layoutManager/actions/runs/41551357571) PR HEAD `f40ba4a0dcc6ebe4c5598cf6962e847e81bdfbe3`: Quality Typecheck `TS2322`(TTFLoader metadata string vs nested language map), 독립 A2 CPU Run Playwright output 폴더 `/app/src/test-results` mkdir `ENOENT` (read-only container). Docker/UID10001 및 기존 Runtime smoke 성공, **실 DXF 변환 시험은 미실행**. TypeScript는 `Record<string,unknown>` metadata guard, Playwright 결과 경로는 `/tmp/a2-playwright-results` tmpfs로 수정. 후속 exact HEAD CI 결과 관찰 전 PASS/GO 금지. 기존 required CI·rootfs RO·cgroup·G7 승인 불변. [FailureLedger](FailureLedger.md) 및 [TestReport](TestReport.md).
