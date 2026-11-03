@@ -1,3 +1,11 @@
+## 2026-11-03 — #218 PR #221 CI #479 원인별 수리(TS2322/EROFS 유사 ENOENT)
+
+- Quality `headless.spec.ts:34 TS2322`: TTFLoader 타입 `string`과 브라우저 폰트 생성 정책의 `{en:string}` 간 데이터 모양 불일치. 기존 Node PoC의 guarded record 접근과 일치시키고 기존 Font/한글 정합 시험 보존.
+- CPU-only A2 Docker 이미지/UID10001 검사 통과 후 `read-only` 컨테이너에서 Playwright 기본 artifact `/app/src/test-results` 생성 `ENOENT`; `outputDir:/tmp/a2-playwright-results`로 수정. read-only/비루트/네트워크 차단·자원 제한·Required CI 조건 불변.
+- 실제 synthetic DXF→Scene 시험은 이전 CI에서 실행 전 실패. P1-A2 GO BLOCKED, #218 OPEN, 후속 P1-B/C/D·GHCR/배포 작업 없음. [CI #479](https://github.com/planner77/layoutManager/actions/runs/41551357571), [원장](FailureLedger.md).
+
+---
+
 ## 2026-11-03 — #218 P1-A2 CPU-only Headless DXF→Scene 검증 실험 코드 (GO 대기)
 
 - #208/#217 direct Node NO-GO 후속으로, 운영 기능과 분리된 `src/tests/a2/`에 실제 pinned DXFViewer + Chromium software WebGL(실험) DXF→Object3D→CUSTOM_DTO(full manifest/SHA/domain validator)→file/restore + 동일 synthetic browser 비교 설계와 테스트 추가.
