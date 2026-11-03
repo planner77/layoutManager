@@ -1,3 +1,13 @@
+## ADR-218-LEAN-2D-SINGLE-WORKER — 현행 Owner GO 정책 (2026-11-04)
+
+**Decision: ACCEPT.** 사내 승인 사용자·2D 위주·소규모 동시성에 맞춰 [Issue218LeanPolicy](Issue218LeanPolicy.md)의 GO-DEV / GO-INTEGRATE / GO-PILOT / GO-EXPAND를 분리한다. 독립 CPU `DXF→CUSTOM_DTO→Validator/readback` 경로는 서버 WebGL 없이 시험한다. 기존 strict headless Viewer의 `WEBGL_CONTEXT_UNAVAILABLE`은 현재 *서버 DTO 생성 실패가 아닌 렌더 초기화 실패*이므로 P1-B **구현 착수**를 차단하지 않는다. 실제 저장/권한/복원/격리 실패는 해당 기능 병합·배포 단계에서 차단한다.
+
+기본 단일 Worker(동시성1)와 영속 멱등/재시작·CAS·G7을 유지하고 분산 Lease/Fencing/2 Worker/전체 Source mapping/3종 현장/2PC/전면 SBOM per-PR를 초기 GO-DEV/GO-INTEGRATE 조건에서 분리한다. Source 정확 선택은 검증된 subset만, unsupported는 명시 보고한다. 기존 DTO 32MiB/100k nodes/2M scalars/depth128, CPU·시간·비루트·읽기전용·불필요 네트워크 금지, Owner-approved 배포/백업은 유지한다. 기존 required CI 워크플로 자체는 이번 docs-only 정책에서 변경하지 않는다. 이전 엄격 A2 GO 지시는 현재 범위에서는 본 ADR이 우선하며, 과거 CI/보고는 감사 추적용으로 보존한다.
+
+**Rationale:** #221/#222/#223 증거의 DTO 생성/검증 통과와 strict Viewer WebGL 재생성 실패를 분리하고, 아직 없는 분산 운영 기능의 시험을 개발 선행조건으로 강제하지 않는다. **Risk:** 실제 Worker/미지원 2D 입력의 미검증 위험은 남으며, GO-PILOT의 제한 접근·명확한 상태/실패·검증된 browser 복원·권한/데이터 안전이 필요하다. 0.59.0 DTO v2 단방향 호환 및 별도 #216 릴리스 Gate를 변경하지 않는다.
+
+---
+
 ## ADR-218-A2-LIVE-PROCESS — live Adapter 기준과 실제 fault 검증
 
 Manager는 첫 Scene PoC가 의도적으로 첫 Line 스타일을 바꾸고 textIndex를 생략한다는 차이를 확인했다. 그 성공을 실제 Adapter parity로 재사용하는 대신 독립 test-only 후보를 실제 Adapter 계약에 맞춰 비교한다. 원본 class/material은 exact 비교하고, 실제 관측된 ShapeGeometry→BufferGeometry2개와 MeshBasicMaterial.side2→0 네 slot을 먼저 명시적으로 검증한다. 그 clone으로 나머지 모든 buffer/좌표/재질을 비교하되 전체 재질 복원은 PARTIAL/UNMET다. 원본 Entity 매핑 및 원본 선택 인덱스 비복원은 PARTIAL이다.

@@ -1,3 +1,9 @@
+## #218 현행 Owner 정책 — 2D·단일 Worker / 단계별 GO (2026-11-04)
+
+**[out/Issue218LeanPolicy.md](out/Issue218LeanPolicy.md)가 신규 GO/AC 정본**이다. 이전 P1-A2의 전면 운영 GO 전 P1-B 코딩 금지, 서버 Headless WebGL 복원, 원본 Entity 100% 매핑, 다중 Worker/실 CAD 3종/2PC/전체 SBOM을 *코딩 착수 게이트*로 묶은 해석은 폐기한다. **GO-DEV(단일 CPU Worker 구현)는 허용**하되 GO-PILOT(실 배포)은 실제 새 Worker·데이터/권한·지원 브라우저 복원·격리·복구 검증 후 판정한다. 기존 CI YAML required jobs는 변경하지 않는다. 기존 원장·과거 테스트의 FAIL/PARTIAL을 소급 수정하지 않는다.
+
+---
+
 ## #218 A2 후속 — 실제 Adapter 동등성·프로세스 안전성
 
 A2 parity 또는 프로세스 fault/cleanup/recovery/CI를 변경할 때 [Issue218](out/Issue218.md) 상단 F01–F05/S01–S06, [TestReport](out/TestReport.md), [FailureLedger](out/FailureLedger.md)를 먼저 읽는다. 기존9개와 추가parity/process 검증을 함께 유지하고, PARTIAL·BLOCKED와 실제 정상/음성시험 통과를 구분한다. 검증 PR과 운영 GO·P1-B는 별도다.

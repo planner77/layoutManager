@@ -1,3 +1,9 @@
+## #218 경량 운영·단일 Worker 단계별 도입 정책 (2026-11-04)
+
+[현행 Owner GO 정본](Issue218LeanPolicy.md). **GO-DEV는 단일 CPU Worker 구현 착수 허용**, GO-PILOT은 실제 자동 등록→영속 CPU DTO→검증 저장→지원 브라우저 복원 및 G7·기존 READY/원본 불변·재시작 smoke 후 별도 승인한다. 초기 Worker=1, 내부 인가된 DXF/지원 2D 중심. Docker 실행은 비루트/격리·bounded CPU/RAM/PID·time, 불필요 네트워크·자격증명·호스트 권한 금지. 엄격 Headless 서버에서 WebGL Viewer 생성이 실패해도 DTO 생성 자체 성공과 분리한다. 다중 Worker·대형 실 CAD·3종 현장·2PC는 후속 GO-EXPAND. 기존 v0.58.1 대비 v0.59.0 DTO v2 역호환 미지원이므로 버전 변경/rollback 때 백업·Scene 읽기 가능 여부를 확인한다. 현재 운영 Worker나 GHCR 신규 게시가 완료된 것으로 기록하지 않는다.
+
+---
+
 ## #218 A2 후속 검증 실행 — 운영과 분리
 
 `src/tests/a2/Dockerfile`은 동일0.58.1 기반의 시험 전용 이미지다. root에서 `docker build -f src/tests/a2/Dockerfile -t layoutmanager-a2-proof:local .` 후 동일 원래 resource/security flags로 기존5+4와 `tests/a2/parity.playwright.config.ts`를 각각 새 컨테이너에서 실행한다. Discovery는 root의 `node src/tests/a2/check-discovery.mjs --check` 및 `node src/tests/a2/check-parity-discovery.mjs --check`; process unit은 `node --test src/tests/a2/process-safety.test.mjs`다.
