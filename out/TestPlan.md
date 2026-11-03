@@ -1,3 +1,17 @@
+## TC-218-A2-R03 — CI #495 Harness HTML/JS 초기화 오류 분리 및 trusted origin 검증 (2026-11-03)
+
+| TC | 입력/검증 | 실패·성공 판정 |
+| --- | --- | --- |
+| TC-218-A2-R03-01 | `http://localhost/__a2` (virtual route, Docker `--network none`)에서 번들 HTML/JS response·실 script served, `window.sceneA2` 등록 | HARNESS_SCRIPT_NOT_SERVED, HARNESS_PAGEERROR/category, HARNESS_READY timeout은 모두 FAIL. 실제 성공 전 PASS 기록 불가 |
+| TC-218-A2-R03-02 | 브라우저의 `window.isSecureContext === true`, `typeof crypto.randomUUID === 'function'` 확인 | 비보안/누락이면 `A2_HARNESS_SECURE_CONTEXT_REQUIRED` FAIL; JS/권한 Mock 금지 |
+| TC-218-A2-R03-03 | PAGEERROR_OTHER 원인을 `CRYPTO_RANDOMUUID/INSECURE_CONTEXT/MODULE_SHIM/WEBGL/TYPE/SYNTAX/REFERENCE/OTHER`로 허용 분류, 즉시 중단 및 raw 오류/stack 비공개 | 오류가 발생했는데 HARNESS_READY를 기다리거나 허위 READY/에러 숨김 금지. 정상 Script load 이후에만 본 DXF 시험 수행 |
+| TC-218-A2-R03-04 | 동일 합성 DXF→pinned DXFViewer→Object3D→CUSTOM_DTO→SHA/전체 Validator→file/restore, source-render/한글/중첩 INSERT fidelity | 기존 전부 필수, 실행 후 결과 확인 전 NOT VERIFIED. #212 실 Viewer Adapter 동등성·OOM/kill/restart/운영 G7 별개 |
+| TC-218-A2-R03-05 | CI Quality/Docker/Chromium/G7 + 추가 mandatory CPU proof; uid10001/read-only/CPU2 RAM1536MiB/timeout 전부 불변 | 모든 applicable Job 성공 필요. PR CI fail이면 #218 OPEN/P1-A2 GO 보류, P1-B/C/D 시작 금지 |
+
+**기존 실패:** [CI #495 Run41558698574](https://github.com/planner77/layoutManager/actions/runs/41558698574) 1 failed 2 passed, PAGEERROR_OTHER/20s HARNESS_READY timeout, TYPE 원인 증거 없음. 비신뢰 HTTP host는 [MDN secure contexts](https://developer.mozilla.org/en-US/docs/Web/Security/Defenses/Secure_Contexts)와 [Crypto.randomUUID](https://developer.mozilla.org/en-US/docs/Web/API/Crypto/randomUUID)에 따라 보안 컨텍스트 부족 **가설**을 형성하지만 실제 원인 확정은 CI 재시험의 독립 검증을 기다린다.
+
+---
+
 ## TC-218-A2-R02 — PR CI #485 180초 timeout 이후 단계 계측/격리 재시험 (2026-11-03)
 
 | TC | 요구 검증 | PASS/FAIL 정책 |
