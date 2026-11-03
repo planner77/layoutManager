@@ -1,3 +1,11 @@
+## 2026-11-03 — #221 CI #525 CPU Chromium153에도 RegExp 동일 실패; P1-A2 proof 구현 통합
+
+- [PR CI #525 Run41567538237](https://github.com/planner77/layoutManager/actions/runs/41567538237) exact HEAD `8042b1cd0c0ed6913666f93d91ed95f42c9b9b96`: scope/Quality/Docker/General Chromium 2/G7 전부 SUCCESS, A2 `BROWSER_MAJOR_153→HARNESS_SCRIPT_REQUESTED→PAGEERROR_SYNTAX_INVALID_REGEXP`로 필수 변환 시험 실패. 다른 3개 보조 PASS. Browser 153 동기화가 문제를 해결하지 못했으므로 Chrome 156 전용 원인 가설은 부정. 실제 regex pattern/caller는 문서화 가능한 로그가 없어 UNKNOWN. DXF parser/Scene/DTO/full validator/restore는 미호출.
+- **구현 변경:** 검증 전용 `src/tests/a2/headless-browser.ts`의 중복 브라우저 초기화·변환 구현은 제거. 이미 General Chromium E2E `SC-05/06/07`에서 합성 DXF→3D→Scene 직렬화·복원이 성공하는 `src/tests/e2e/scene-poc-browser.ts`를 A2 CPU proof에서 **직접** import-free bundle entrypoint로 사용한다. A2 host harness가 소스 바이트 SHA, 한글/중첩 BLOCK DXF source preflight, 실제 Korean TTF, `CUSTOM_DTO` manifest bytes/SHA/full validator, temp file write/read, per ID WCS geometry/Layer/Node inventory, 독립 CPU Browser process fresh restore 검증을 추가. 패키지/Prod Builder/G7/API/DB/Prisma/Compose를 변경하지 않고 Required CI도 동일하게 유지한다.
+- **한계·판정:** 기존 성공 Scene PoC E2E는 한국어·대규모 도면/실 사용자 Viewer Adapter Fidelity, server worker sandbox, OOM/kill/restart, G7 Session·Actor 권한 재검증/비파괴 CAS, 업로드→Scene READY 실증의 대체가 아니다. A2 test의 한글 host text-index 검사는 Persisted viewerData의 한글 텍스트 기능을 직접 증명하지 않는다. 새 CI 결과 관측 전 A2 GO **BLOCKED**, #218 OPEN, P1-B/C/D 금지. 해당 PR 병합/GHCR 운영 게시 없음. [원장](FailureLedger.md), [TestReport](TestReport.md), [TestPlan](TestPlan.md).
+
+---
+
 ## 2026-11-03 — PR #221 CI #514 정규식 오류, CPU browser 고정 버전 정합 검증
 
 CI [#514 Run41564217739](https://github.com/planner77/layoutManager/actions/runs/41564217739) HEAD `ea3145c5b2fa2d55a6b631d45ffbed201937baf3`: Scope/Quality/Docker/G7/일반 Chromium 통과, A2 CPU Browser `PAGEERROR_SYNTAX_INVALID_REGEXP`로 actual DXF 변환 미실행, 3/4 tests PASS. Node `vm.Script` 구문 PASS와 브라우저 런타임 정규식 생성의 성공은 별개.
