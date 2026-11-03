@@ -1,3 +1,9 @@
+## #218 P1-A2 — CI #495 시작 시 PAGEERROR_OTHER를 즉시 안전 실패로 보고 (2026-11-03)
+
+[Run41558698574](https://github.com/planner77/layoutManager/actions/runs/41558698574)에서는 Chromium launched 후 `HARNESS_NAVIGATE_START → PAGEERROR_OTHER → A2_TIMEOUT:HARNESS_READY`; 모호한 OTHER만 남고 DXF parser에는 진입하지 않았다. 수리로 pageerror 발생 시 `A2_HARNESS_PAGEERROR:<allowlisted-category>`를 Playwright Host의 `Promise.race`로 즉시 FAIL 전달. `CRYPTO_RANDOMUUID/INSECURE_CONTEXT/MODULE_SHIM/WEBGL/TYPE/SYNTAX/REFERENCE/OTHER`만 출력, Error 원문·stack·URL·DXF bytes/handle/SHA·font/보안 값 노출 금지. `HARNESS_SCRIPT_REQUESTED`, SecureContext/UUID assertion 및 기존 phase/timing, CPU cgroup 제한을 유지. 이 로깅은 실험적 합성 Proof 진단이며 운영 JobLogContext/G7 감사/실질 GO 증거가 아니다.
+
+---
+
 ## #218 P1-A2 — CI #485 내부 단계 미관측 timeout을 안전 phase 진단으로 보완 (2026-11-03)
 
 [Run41555129727](https://github.com/planner77/layoutManager/actions/runs/41555129727) CPU proof에서 180s timeout이 발생했지만 기존 합성 DXF 처리 내부 단계는 stdout에 없었다. 원인 파악을 위한 실험성 `A2_HOST_PHASE`와 `A2_PHASE` 마커를 allowlisted SOURCE/WEBGL/DXF_PARSE/SCENE_PREFLIGHT/TAG/TEXT_INDEX/CUSTOM_DTO/FULL_VALIDATOR/RESTORE/RENDER 단계로만 출력한다. Node watchdog은 launch/navigation/evaluate 기한 초과 시 `A2_TIMEOUT:NAME:LAST_PHASE=...` 안전 오류로 실패한다. PageError는 클래스만, resource 실패는 allowlisted 범주만 보고하고 **원본 DXF·소스 SHA·Font bytes·임의 URL·내부 예외/Stack은 출력하지 않는다**.
