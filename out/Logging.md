@@ -1,3 +1,11 @@
+## #218 P1-A2 — 합성 Headless 실행 증거와 운영 Job 로그 분리 (2026-11-03)
+
+A2 전용 시험은 성공 시 synthetic-only entity/node count, DTO byte length, elapsed parse/serialize, SwiftShader renderer 식별 및 late pageerror count를 출력한다. 실제 CAD bytes/SHA/원본 문장/내부 파일 경로·토큰·세션·사용자 식별정보를 출력하지 않는다. `pageerror`를 600ms 창에서 수집하지만 이것만으로 모든 잠복 unhandled rejection·프로세스 종료 이후 오류를 배제할 수 없다. 타임아웃/컨테이너 실패/검증 불일치는 CI 실패로 남기고 숨기거나 PASS 처리하지 않는다. 실제 로깅 수치와 RUN/HEAD는 실행 후만 원장에 반영.
+
+P1-A1의 [CI #457](https://github.com/planner77/layoutManager/actions/runs/41520729471) Node direct async 4건 NO-GO는 기존 기록 그대로 유지. 현재 `JobLogContext`, requestId↔jobId, lease/attempt 오류 추적, Actor revoke 및 logs:read 공개 정책은 production P1-B/C 책임으로 미구현. [Issue218](Issue218.md), [FailureLedger](FailureLedger.md).
+
+---
+
 ## #208 CI #457 — Promise 완료와 unhandled rejection을 구분한 Scene 진단 계약 (2026-11-03)
 
 `three-dxf-viewer@1.0.44`의 직접 Node `getFromPath`가 962 assertion PASS 상태에서도 WMF/RTF 관련 `window is not defined` 4개의 **unhandled rejection**을 Vitest에 남겼다. 이 비동기 오류는 기존 try/catch의 밖이므로 `ARTIFACT_READY`/DTO SHA만으로 Server Worker's 실제 READY를 주장하지 않는다. `probeNodeScene`은 Node에서 upstream 호출 전에 `DXF_PARSE/SCENE_CONVERTER_UNAVAILABLE`의 안전한 코드로 fail-closed. UI/운영 로그에는 raw stack, Source/CAD/Handle/path/token/글꼴 bytes를 노출하지 않는다.
