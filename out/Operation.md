@@ -1,3 +1,11 @@
+## #218 P1-A2 — CPU-only reference Scene PoC 복수 프로세스 검증 (2026-11-03)
+
+- [CI #525](https://github.com/planner77/layoutManager/actions/runs/41567538237)에서 맞춘 Chromium153로도 중복 A2 Browser entrypoint의 `SYNTAX_INVALID_REGEXP`이 재현됨. 임의 Browser 버전 변경/Regex 예외 무시로 해결하지 않고, 통상 General Chromium E2E에서 검증된 `tests/e2e/scene-poc-browser.ts`를 독립 CPU proof에서 실제 DXF를 변환하는 공통 엔트리로 사용한다.
+- `src/tests/a2/Dockerfile`의 Playwright Chromium 설치 및 `--network none --read-only --user 10001:10001 --cpus 2 --memory 1536m` 등을 유지한다. A2 가상 route는 `http://localhost/__scene-poc`, font은 source NanumGothic TTF에서 변환한 typeface. 실제 CAD·G7 Session/DB/Volume을 컨테이너에 주입하지 않음.
+- 성공 기준은 호스트 `CUSTOM_DTO` full validator, manifest/sha256, temp-file 저장·회수, fresh Browser에 같은 파일 restore(WCS/Layer/ID/Geometry)까지 완료하고 오류/timeout0이므로 테스트 경로를 우회하지 않는다. 새 CI가 통과하지 못하면 정확 마지막 phase와 실제 오류만 기록; #218 A2 GO 판정은 현장/운영 추가 Gate 전 보류.
+
+---
+
 ## #218 P1-A2 — CI #514 이후 CPU-only Browser 검증 이미지 운영 경계 (2026-11-03)
 
 - test-only Dockerfile은 `node:22.14.0-bookworm-slim` + npm lockfile의 Playwright Chromium을 이미지 **빌드 단계에만 다운로드**하여 `/opt/ms-playwright`에 저장한다. 실행 시 `PLAYWRIGHT_BROWSERS_PATH`와 `A2_BROWSER_EXPECTED_MAJOR=153`을 검사. 재현 실험에서 외부 패키지/Chromium apt 156 혼용은 버전 드리프트이므로 차단.
