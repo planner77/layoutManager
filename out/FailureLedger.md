@@ -1,3 +1,12 @@
+## #225 / PR #226 CI #555 — 0.60.0 G7 시험 Async 구문 오류 (2026-11-04)
+
+- [CI #555 / Run41725900643](https://github.com/planner77/layoutManager/actions/runs/41725900643), 정확 HEAD `5e34d49453e8d6958e56439efb2f317addd2f0b8`, Static/Unit/Build Job126230576718의 TypeScript 단계에서 `tests/integration/g7-greenfield-upgrade.test.ts:194:108 TS1109` 및 `:194:109 TS1005`로 실패. Docker 및 다른 Job의 성공/실패는 별도이며 이 파싱 오류로 후속 TS/Unit/Build는 실행되지 않음.
+- 원인: 신규 Migration 테스트의 same-release case를 비동기화하면서 함수 시작을 `()async()=>{`로 잘못 편집함. 제품 G7 DDL이나 실제 Migration 자체의 실패로 판단하지 않음.
+- 보완: 올바른 `async()=>{` 선언, 승인 Upgrade 이후 same-release manifest의 새 Schema ID를 명시하여 신·구 스키마 정합. 임의 Gate Skip/Timeout 완화 없이 정확 수정 HEAD의 새 CI에서 검증.
+- 최초 실패 Run의 실패 이력 보존. 수정 커밋의 검증 결과는 **아직 NOT VERIFIED**이며 #218/#225 GO-PILOT은 여전히 미승인.
+
+---
+
 ## #223 / CI #545 — Greenfield v1 기대값 및 후속 로그인 실패 (2026-11-03 KST)
 
 - **정확 실패:** HEAD `b8f4ebec8231c4fdd3161b1b7c8856df9f586203`, [PR CI #545](https://github.com/planner77/layoutManager/actions/runs/41645624408), Greenfield Job125952595152에서26개 중24 PASS/2 FAIL(3.7m). Required Verify125957890429는 Greenfield 실패를 올바로 전파했다. 나머지7 Job(scope/quality·988tests·build/Docker/general2/runtime-legacy/A2)은 SUCCESS다. A2/Sandbox 실패로 오인하지 않는다.

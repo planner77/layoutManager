@@ -12,7 +12,8 @@ import { applyGreenfieldUpgrade, planGreenfieldUpgrade, restoreGreenfieldUpgrade
   statusGreenfieldUpgrade } from '../../server/g7-operational/greenfield-upgrade-engine';
 import { ddlSha256, resolveUpgradeChain, type UpgradeRegistry } from '../../server/g7-operational/greenfield-upgrade-registry';
 import { G7_GREENFIELD_BASELINE,G7_GREENFIELD_BASELINE_CHECKSUM,
-  G7_PREVIOUS_ZONES_BASELINE,G7_PREVIOUS_ZONES_BASELINE_CHECKSUM } from '../../server/g7-operational/greenfield-schema';
+  G7_PREVIOUS_ZONES_BASELINE,G7_PREVIOUS_ZONES_BASELINE_CHECKSUM,
+  G7_GREENFIELD_SCHEMA_ID } from '../../server/g7-operational/greenfield-schema';
 import { withReadOnlyInspection } from '../../server/g7-operational/greenfield-readonly-inspection';
 
 type Db={prepare:(sql:string)=>{all:()=>Record<string,unknown>[];get:()=>Record<string,unknown>;
@@ -191,11 +192,12 @@ describe('#209 Greenfield release upgrade',()=>{
     expect(()=>planGreenfieldUpgrade(f.env)).toThrow();
   });
 
-  test('same-release identity ignores JSON key order; lock, incomplete setup and changed CAD fail closed',()async()=>{
+  test('same-release identity ignores JSON key order; lock, incomplete setup and changed CAD fail closed',async()=>{
     const a=fixture();
     const approve=planGreenfieldUpgrade(a.env);
     await applyGreenfieldUpgrade(maintenance(a.env),approve.planId);
-    const same={...a.old,version:'0.60.0',appImage:a.env.G7_DEPLOY_APP_IMAGE,
+    const same={...a.old,version:'0.60.0',schemaId:G7_GREENFIELD_SCHEMA_ID,
+      appImage:a.env.G7_DEPLOY_APP_IMAGE,
       migratorImage:a.env.G7_DEPLOY_MIGRATOR_IMAGE,
       sourceCommit:a.env.G7_RELEASE_SOURCE_COMMIT};
     writeFileSync(a.manifest,JSON.stringify(Object.fromEntries(Object.entries(same).reverse())),{mode:0o600});
