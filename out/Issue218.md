@@ -1,3 +1,12 @@
+## 2026-11-03 — PR #221 CI #506 A2 Script SyntaxError 및 Bundle 정합성 검증 수리
+
+[PR CI #506 Run41561632191](https://github.com/planner77/layoutManager/actions/runs/41561632191) HEAD `06d6bda224e74b30e40548184902ec44f518dd6e`, Quality/Docker/General Chromium 2/G7 E2E 성공. CPU proof `125673426531`에서 bundle/TTF/Chromium 준비 및 localhost virtual `HARNESS_SCRIPT_REQUESTED`까지 성공, 직후 `PAGEERROR_SYNTAX`로 `window.sceneA2`가 등록되지 않아 실제 DXF→Object3D/Validator/Restore 미실행. 4개 시험 중 3 PASS, 1 FAIL. 이전 nonsecure-Origin 가설은 localhost 후에도 재현되므로 root cause로 확인되지 않음.
+
+**진단과 수정:** 기존 default `esbuild` JavaScript target이 명시되지 않았으므로 Test 전용 IIFE bundle을 `chrome115`로 고정, 정확 bundle bytes를 Node `vm.Script`로 compile-only 검사, Runtime Browser `SyntaxError`의 허용 lexical category와 synthetic JS line/column만 안전 기록. 이 변경은 실제 오류의 토큰을 찾아 수정했다는 뜻이 아니라 추가 격리/호환 검증이며, 다시 실패하면 그 결과를 fail-closed로 남긴다. 기존 SourceSHA/SceneScope/DTO/full validator/Restore, 32MiB/100k/2M/depth128, read-only Debian UID10001/network none/CPU2/RAM1536MiB/전체 CI Gate 불변.
+
+P1-A2 기술 GO **차단**, #218 OPEN AC01–09, P1-B/C/D 미착수, #216 GHCR immutable 및 운영 DB/Volume/Auth/Current/SceneRepository 무변경. [원장](FailureLedger.md), [시험](TestPlan.md).
+
+---
 ## 2026-11-03 — PR #221 CI #495 HARNESS_READY timeout 및 localhost·오류 분류 보완
 
 [CI #495 Run41558698574](https://github.com/planner77/layoutManager/actions/runs/41558698574), exact HEAD `91509d1dce9522acb2b8a0f934c9b08fa63fa4b8`: Scope/Quality/Docker/Chromium 2/G7 성공. A2 CPU proof 전용 Job `125664254542`에서 Debian 이미지·UID10001 성공, 3 시험 중 watchdog/위험 preflight 2 PASS, 실제 변환 1 FAIL(`BUNDLE_DONE → FONT_PREPARE_DONE → SWIFT_CHROMIUM_STARTED → HARNESS_NAVIGATE_START → PAGEERROR_OTHER → A2_TIMEOUT:HARNESS_READY:LAST_PHASE=UNOBSERVED`). DXF parser·DTO/validator 호출 전 실패하였으므로 Headless 기술 GO는 여전히 불가. 원본 JS 에러는 allowlisted OTHER만 출력되어 root cause UNKNOWN.
