@@ -1,3 +1,15 @@
+## #218 / PR #221 — CI #495 실제 HARNESS_READY 오류·보완 후 검증 상태 (2026-11-03 KST)
+
+[PR CI #495 Run41558698574](https://github.com/planner77/layoutManager/actions/runs/41558698574), exact HEAD `91509d1dce9522acb2b8a0f934c9b08fa63fa4b8`, `completed/failure`. Scope/Quality(typecheck·lint·unit·build)/Docker/General Chromium 1·2/G7 Greenfield/G7 Signed+Legacy SUCCESS. A2 CPU Job `125664254542`: Build/UID10001 성공; test 1/3 핵심 Headless DXF→Scene FAIL(`PAGEERROR_OTHER`, `HARNESS_READY` 20s timeout), Watchdog 단위 + DXF 폭증·비지원 사전검증 2/3 PASS. Required Verify `125669442387` FAILURE는 A2에 종속.
+
+**실패 경계:** Host bundle/TTF/Chromium 시작까지 성공·페이지 초기 JavaScript 오류 감지 이후 sceneA2 미등록. DXF getFromPath/DTO/Validator/Restore 단계에 도달한 증거 없음. 오류 코드는 allowlisted OTHER이므로 실제 내부 예외/보안 origin 원인 확정 불가.
+
+**수정:** 실험 페이지를 기존 브라우저 E2E와 같이 potentially trustworthy `http://localhost`로 변경; 네트워크는 여전히 컨테이너 `none`, 페이지/font/script는 Playwright virtual route로만 충족. 실제 `isSecureContext`, `crypto.randomUUID`, script served 검사 추가. 페이지 JS error는 raw 출력하지 않고 allowlisted category로 즉시 테스트 FAILED. 기존 timeout/cgroups/윤리적 비공개/GO Gate 불변. 추가된 정적 origin 회귀는 **작성했으나 CI 미실행**. 외부 로컬 Chromium 런타임은 관리자 정책에 의한 HTTP 요청 차단으로 이 GitHub CI 환경과 일치하는 독립 시험에 이용 불가.
+
+**현재:** 새 코드의 DXF→Object3D/CUSTOM_DTO/full validator/restore/SwiftShader identity/한글·BLOCK fidelity 성공 **NOT VERIFIED**. PR CI 시작 확인 전·후에도 최종 결과 실제 확인 전 PASS/GO 금지. [FailureLedger](FailureLedger.md), [TestPlan](TestPlan.md), [Issue218](Issue218.md).
+
+---
+
 ## #218 / PR #221 — CI #485 정확 실패 결과·후속 계측 보완 (2026-11-03 KST)
 
 [CI #485 Run41555129727](https://github.com/planner77/layoutManager/actions/runs/41555129727) HEAD `23d4b8df0948e4ee1d6b3a34dba9673e56136440`, 최종 FAILURE. **PASS:** Scope, Quality(TypeScript/Lint/Unit/Build), Docker runtime, General Chromium 2 shards, G7 Greenfield, G7 signed/legacy; A2 Debian image build·UID10001 및 폭발적/비지원 DXF 사전검증 Playwright 1개. **FAIL:** A2 CPU proof의 전체 synthetic DXF→Object3D→CUSTOM_DTO→Validator→Restore 시험 180000ms timeout (1 failed/1 passed). Required Verify는 A2 실패로 FAIL.
