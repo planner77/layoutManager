@@ -13,6 +13,15 @@ import { sceneSha256 } from '../../domain/scene-digest';
 import { extractDxfText } from '../../viewers/core/text-index';
 import type { SceneManifest } from '../../domain/cad-scene';
 
+/** Safe, allowlisted milestones only. Neither original DXF text nor paths are logged. */
+type A2Phase =
+  'SOURCE_VERIFY' | 'SOFTWARE_WEBGL_INIT' | 'SOFTWARE_WEBGL_READY' |
+  'DXF_PARSE_START' | 'DXF_PARSE_DONE' | 'SCENE_PREFLIGHT_DONE' |
+  'SCENE_TAG_DONE' | 'TEXT_INDEX_DONE' | 'CUSTOM_DTO_DONE' |
+  'FULL_VALIDATOR_DONE' | 'RESTORE_DONE' | 'RENDER_DONE' | 'COMPLETE';
+function progress(phase: A2Phase): void {
+  console.info('A2_PHASE:' + phase);
+}
 export type A2Input = {
   source: number[];
   expectedSha256: string;
@@ -122,13 +131,16 @@ function softwareRenderer(): { renderer: THREE.WebGLRenderer; identity: string }
   return { renderer, identity };
 }
 async function run(input: A2Input): Promise<A2Packet> {
+  progress('SOURCE_VERIFY');
   const source = Uint8Array.from(input.source);
   if (!source.length || source.length > 16 * 1024 * 1024) throw new Error('A2_SOURCE_LIMIT');
   if (sceneSha256(source) !== input.expectedSha256) throw new Error('A2_SOURCE_DIGEST_MISMATCH');
   const text = new TextDecoder().decode(source);
   if (!/(?:^|\n)\s*0\s*\r?\nSECTION\s*\r?\n/.test(text) ||
       !/(?:^|\n)\s*0\s*\r?\nEOF\s*$/.test(text)) throw new Error('A2_DXF_INVALID');
+  progress('SOFTWARE_WEBGL_INIT');
   const { renderer, identity } = softwareRenderer();
+  progress('SOFTWARE_WEBGL_READY');
   const url = URL.createObjectURL(new Blob([explicitElevation(text)], { type: 'text/plain' }));
   let root: THREE.Object3D | undefined;
   let restored: THREE.Object3D | undefined;
@@ -138,24 +150,32 @@ async function run(input: A2Input): Promise<A2Packet> {
     const viewer = new DXFViewer();
     viewer.useCache = false;
     const begin = performance.now();
+    progress('DXF_PARSE_START');
     root = (await viewer.getFromPath(url, '/fonts/CadKorean.typeface.json')) ?? undefined;
     const parseMs = performance.now() - begin;
+    progress('DXF_PARSE_DONE');
     if (!root) throw new Error('A2_PARSER_RETURNED_EMPTY');
     const stats = preflightSceneRoot(root);
+    progress('SCENE_PREFLIGHT_DONE');
     if (stats.sceneNodes < 2 || stats.sceneNodes > SCENE_PAYLOAD_LIMITS.nodes)
       throw new Error('A2_NODES_INVALID');
     ownMaterials(root);
     const scope = sceneScope(input.versionId, input.expectedSha256, sourceUnitFromDxf(text));
     const asset = tagImportedTree(root, scope);
+    progress('SCENE_TAG_DONE');
     const original = inventory(root);
     const buffer = new ArrayBuffer(source.length);
     new Uint8Array(buffer).set(source);
     const textIndex = extractDxfText(buffer);
+    progress('TEXT_INDEX_DONE');
     const beginSerialize = performance.now();
     const candidate = await serializeSourceScene(root, asset, 'CUSTOM_DTO', { textIndex });
     const serializeMs = performance.now() - beginSerialize;
+    progress('CUSTOM_DTO_DONE');
     validateStoredScenePayload(candidate.bytes, candidate.manifest);
+    progress('FULL_VALIDATOR_DONE');
     restored = await restoreSourceScene(candidate.bytes, candidate.manifest, candidate.manifest);
+    progress('RESTORE_DONE');
     const restoredInventory = inventory(restored);
     if (stats.sceneNodes !== restoredInventory.nodes) throw new Error('A2_RESTORE_COUNT_MISMATCH');
     const scene = new THREE.Scene();
@@ -164,6 +184,8 @@ async function run(input: A2Input): Promise<A2Packet> {
     camera.position.set(0, 0, 1000);
     camera.lookAt(0, 0, 0);
     renderer.render(scene, camera);
+    progress('RENDER_DONE');
+    progress('COMPLETE');
     return {
       bytes: [...candidate.bytes], manifest: candidate.manifest, original,
       restored: restoredInventory, renderer: identity,
