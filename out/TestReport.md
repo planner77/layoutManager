@@ -1,3 +1,13 @@
+## #218 / PR #221 — CI #525 실패 확인 및 reference Scene PoC 재사용 시험 경로 (2026-11-03)
+
+[PR CI #525 Run41567538237](https://github.com/planner77/layoutManager/actions/runs/41567538237) exact HEAD `8042b1cd0c0ed6913666f93d91ed95f42c9b9b96`, `completed/failure`. 기존 Quality/Docker/일반 Chromium 2 shards/G7 Greenfield/Signed-Legacy **SUCCESS**. 별도 CPU Proof에서 Debian Playwright Chromium major153/TTF/JS 번들 준비 PASS, 보조 3건 PASS, 핵심 브라우저 엔트리 초기화 `PAGEERROR_SYNTAX_INVALID_REGEXP`로 FAIL. 실제 A2 DXF 파싱·DTO·Validator/Restore 결과 **NOT RUN**; Required Verify는 A2 mandatory 종속 FAIL. Chromium 버전 차이를 원인으로 확정했던 것은 부정됨.
+
+**후속 코드 변경(시험 전):** A2 중복 browser bundle 대신 기존 일반 E2E에서 이미 통과한 `scene-poc-browser.ts`를 *그대로* CPU-only Test에 재사용. 합성 한글/nested BLOCK·큰 좌표 DXF와 동일 Source SHA, 실제 TTF, Node text index, strict DTO limit/manifest/SHA/full stored validator, WCS·Layer·Stable ID inventory, 임시 파일 SHA readback 및 fresh Chromium Process restore를 의무 검사. 일반 E2E/운영 code/CI gate 변경 없음. 파일 `src/tests/a2/headless-browser.ts` 삭제(중복 코드); `headless.spec.ts` 교체.
+
+**미확인:** 새 A2 CPU proof가 실제로 구동되는지, 실제 한글 glyph/MTEXT·BLOCK fidelity, full live #212 Viewer Adapter 및 오류·OOM/kill/restart, 생산 G7/Storage/Job/폐쇄망 OCI 운영. 성공한 원래 Scene PoC만으로 #218 자동 Server Worker GO 또는 전체 AC01–09 완료 주장하지 않음. 기존 실패 #525는 FAIL로 보존, 새 CI HEAD 확인 전 새 PASS 수치 없음.
+
+---
+
 ## #218 / PR #221 — CI #514 RegExp 초기화 실패 및 Browser provenance 변경(2026-11-03 KST)
 
 - [CI #514 Run41564217739](https://github.com/planner77/layoutManager/actions/runs/41564217739), exact HEAD `ea3145c5b2fa2d55a6b631d45ffbed201937baf3`, FAILURE. Quality/Docker/General Chromium 2 shards/G7 E2E PASS. Test-only CPU Debian/UID10001 Build PASS. A2 핵심 Browser harness 초기화 `A2_HARNESS_PAGEERROR:SYNTAX_INVALID_REGEXP` FAIL, auxiliary 3 PASS, required Verify 종속 FAIL. DXF parser/Scene DTO/Manifest/full Validator/Restore는 본 A2 시험에서 **실행되지 않음**.
