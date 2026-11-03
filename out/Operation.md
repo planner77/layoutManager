@@ -1,3 +1,12 @@
+## #218 P1-A2 — CI #495 CPU-only 시험 PageError/localhost 진단 재실행 안내 (2026-11-03)
+
+- [PR CI #495](https://github.com/planner77/layoutManager/actions/runs/41558698574): 기존 검증은 전부 성공, CPU Headless synthetic page에서 PAGEERROR_OTHER/HARNESS_READY 20s Timeout. 번들·TTF·Chromium 실행은 성공, DXF parser 미호출. 이는 실제 도면 변환·영속 Worker 게시의 성공 또는 실패를 확정하지 않음.
+- 이후 synthetic page는 루프백 `http://localhost/__a2` virtual Playwright route로 응답하므로 실제 웹서버 기동/네트워크/운영 세션이 필요하지 않다. Docker `--network none`, UID10001, read-only rootfs/cgroup/15m timeout 유지. 외부 접속 혹은 public OAuth/G7 Mock 사용 금지.
+- HARNESS_SCRIPT_REQUESTED, HARNESS_SECURE_CONTEXT_VERIFIED, HARNESS_READY와 오류 발생 시 `A2_HARNESS_PAGEERROR:<safe-code>` 및 기존 단계별 DXF/DTO 검증을 구분한다. ERROR와 새 timeout은 전부 CI FAIL; 내용 확인 후 원장에 정확 Run/HEAD/Job만 추가. 고객 데이터, 운영 .env/DB/Volume/immutable GHCR tag/digest 불변.
+- Chromium secure origin 선택은 아직 PAGEERROR_OTHER의 실제 원인으로 확정된 것이 아니며, untrusted DXF 처리시 SwiftShader sandbox 위험·OOM/kill/restart는 본 실험 성공 후에도 별도 차단 Gate이다.
+
+---
+
 ## #218 P1-A2 — CPU-only Proof 180s timeout의 안전 재실행 기준 (2026-11-03)
 
 - [CI #485 Run41555129727](https://github.com/planner77/layoutManager/actions/runs/41555129727)에서 Debian 컨테이너/UID10001과 전체 일반 CI는 성공했으나 전용 A2 DXF→Scene 시험이 180초 초과로 실패했다. 정확 hang phase는 로그 부족으로 미정이며 Chromium/Font/WebGL/Converter/OOM을 원인으로 단정 금지.
