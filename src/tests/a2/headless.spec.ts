@@ -92,7 +92,9 @@ async function prepare(context: BrowserContext, script: string, font: string,
     note('FONT_RESOURCE_REQUESTED');
     return r.fulfill({ status: 200, contentType: 'application/json', body: font });
   });
+  let scriptServed = false;
   await context.route('**/__a2.js', r => {
+    scriptServed = true;
     note('HARNESS_SCRIPT_REQUESTED');
     return r.fulfill({ status: 200, contentType: 'application/javascript', body: script });
   });
@@ -138,6 +140,7 @@ async function prepare(context: BrowserContext, script: string, font: string,
       initFailure,
     ]));
   rejectDuringInit = undefined;
+  if (!scriptServed) throw new Error('A2_HARNESS_SCRIPT_NOT_SERVED');
   const trust = await page.evaluate(() => ({
     secure: window.isSecureContext, uuid: typeof crypto.randomUUID,
   }));
@@ -264,6 +267,11 @@ test('P1-A2 real synthetic conversion: isolated SwiftShader versus browser basel
     parseMs: Math.round(first.parseMs), serializeMs: Math.round(first.serializeMs),
     latePageErrors: errors.length, compare:'test-harness browser baseline, NOT viewer UI',
   }));
+});
+test('P1-A2 virtual page uses a potentially trustworthy localhost origin', () => {
+  // Static guard complements the real page.isSecureContext check in prepare().
+  expect(new URL(A2_HARNESS_ORIGIN).origin).toBe('http://localhost');
+  expect(new URL(A2_HARNESS_ORIGIN).hostname).toBe('localhost');
 });
 test('P1-A2 watchdog reports a stalled stage as failure, never as READY', async () => {
   // Synthetic never-resolving promise: exercise only the *diagnostic* watchdog.
