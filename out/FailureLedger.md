@@ -1,3 +1,12 @@
+## #218 / PR #221 — PR CI #479 TypeScript TS2322와 read-only Playwright ENOENT (2026-11-03 KST)
+
+- **증거/범위:** [PR CI #479 Run41551357571](https://github.com/planner77/layoutManager/actions/runs/41551357571) 정확 HEAD `f40ba4a0dcc6ebe4c5598cf6962e847e81bdfbe3`, `pull_request/completed/failure`. Scope Job `125639457009` SUCCESS; Quality `125639534190` FAILURE; Docker runtime `125639534249` SUCCESS; A2 CPU `125639534277` FAILURE; Required Verify `125644337801` FAILURE(종속), General Chromium 2 shard·G7 Greenfield·G7 Signed/Legacy SKIPPED.
+- **F1 실제 오류:** Quality `npm run typecheck`: `tests/a2/headless.spec.ts(34,20): error TS2322: Type '{ en: string; }' is not assignable to type 'string'.` TTFLoader의 TypeScript `original_font_information` 모델은 string 필드지만 `src/scripts/fonts.mjs`의 실제 빌드 정책은 언어 map `{en:'CAD Korean'}` 정규화. 이전 실험 경로 `src/server/scene/node-converter-poc.ts`가 `Record<string,unknown>`으로 실제 JSON 영역만 좁히는 것과 일치하도록 바꾸고 `noEmit/strict` 유지. `as any`/gating skip 없음. 이 실패 때문에 Quality Unit/Build 및 일반 Browser 테스트는 수행되지 않았다.
+- **F2 실제 오류:** A2 CPU Job은 Debian+Chromium 컨테이너 Build SUCCESS, `--user 10001:10001`의 UID 확인 SUCCESS. `docker run --read-only`(보안 필수) 후 Playwright 초기화가 출력 폴더 기본값 `/app/src/test-results`를 생성하다 `ENOENT: no such file or directory, mkdir '/app/src/test-results'` (Node `fs.promises.mkdir`, `WorkerHost.start`)로 즉시 종료. 실 합성 DXF/SwiftShader/DTO 시험은 **0건 실행**. `playwright.config.ts`에 `outputDir:'/tmp/a2-playwright-results'`를 설정하여 이미 제한된 `--tmpfs /tmp:rw,nosuid,nodev,size=512m` 내로 artifact 경로만 이동. read-only/rootless/CPU·RAM·PIDs/네트워크 차단 유지; 실패를 PASS 처리하지 않는다.
+- **후속 상태:** 이 원장 수정 당시 추가 커밋은 코드/시험/문서 수리이며 새 CI 결과는 아직 없음. 수정 HEAD의 PR CI 시작/로그는 별도 확인. CPU Headless converter/fidelity/Chromium sandbox/kill·OOM/restart·late async 및 실 #212 Viewer Adapter·#113/#193 현장 증거 미확인. **P1-A2 GO BLOCKED, #218 OPEN, P1-B/C/D 시작 금지.** #216 immutable GHCR/운영 DB/Volume 변경 없음.
+
+---
+
 ## #218 P1-A2 — 신규 미실행 Gate 및 확인된 선행 NO-GO 구분 (2026-11-03)
 
 - **기준:** Main `55b82cdf35f6d9f606dcab16830cd61ce0098082`; A2 branch `feat/218-a2-headless-cpu-gate`. 새로운 P1-A2 Unit/Playwright/Docker는 **작성되었으나 실행되지 않았음**. 신규 CI 실패/성공 Run이 없는 상태에서 확정 원인이나 수리·PASS를 꾸며내지 않는다. PR 생성 이후 CI 실패 시 정확 Run ID/Job/HEAD, 실제 stderr의 안전한 error code, 재현·수정·재시험을 추가한다.
