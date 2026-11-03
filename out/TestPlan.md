@@ -1,3 +1,16 @@
+## TC-218-A2-R05 — CI #514 Invalid RegExp / pinned Chromium differential (2026-11-03)
+
+| TC | 입력·조건 | 합격/차단 |
+| --- | --- | --- |
+| A2-R05-1 | Debian CPU-only Docker image에서 `playwright install --with-deps chromium`으로 lockfile의 browser 설치; PID/사용자/파일권한·runtime offline 검증 | 실제 `browser.version()` major=153 증명, 다르면 `A2_BROWSER_VERSION_MISMATCH` FAIL |
+| A2-R05-2 | A2 전용 `esbuild format:'iife', target:'chrome153'`, browser 실제 실행 및 RegExp startup | JS Error `PAGEERROR_SYNTAX_INVALID_REGEXP` 재발하면 기존처럼 FAIL; 구문/Origin 진단 정상 통과만으로 READY 금지 |
+| A2-R05-3 | 합성 한글 TEXT/MTEXT, nested BLOCK/INSERT, WCS/Layer/Unit, sourceSHA→DXFViewer→Object3D→CUSTOM_DTO→Manifest/SHA/full Validator→temp persistence→fresh restore | 기존 전체 검증 통과·비동기 pageerror0·부하 상한 준수 전 PASS/GO 금지 |
+| A2-R05-4 | CPU2/RAM1536MiB/UID10001/rootfs read-only/network none, Playwright 180s & Docker 15m, Quality/Chromium/G7/Docker/Required Verify | 변경/Skip 불가. vendor Chromium 버전 동결의 향후 보안 업데이트와 폐쇄망 배포는 별도 위험 |
+
+실제 증거: [CI #514](https://github.com/planner77/layoutManager/actions/runs/41564217739)의 A2 apt Chromium156 `PAGEERROR_SYNTAX_INVALID_REGEXP`와 General E2E의 Playwright Chromium153 `scene-poc.spec.ts` SUCCESS. 서로 동일한 테스트 하네스가 아니므로 "버전 차이가 원인"은 아직 미확정. 다음 exact HEAD 전체 CI에서 분리 검증, A2 GO 보류.
+
+---
+
 ## TC-218-A2-R04 — CI #506 Browser SyntaxError 원인 국소화 및 불완전 결과 거절 (2026-11-03)
 
 | TC | 확인 방법 | PASS 조건·주의 |
