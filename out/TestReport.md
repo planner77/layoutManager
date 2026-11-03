@@ -1,3 +1,13 @@
+## #218 / PR #221 — CI #485 정확 실패 결과·후속 계측 보완 (2026-11-03 KST)
+
+[CI #485 Run41555129727](https://github.com/planner77/layoutManager/actions/runs/41555129727) HEAD `23d4b8df0948e4ee1d6b3a34dba9673e56136440`, 최종 FAILURE. **PASS:** Scope, Quality(TypeScript/Lint/Unit/Build), Docker runtime, General Chromium 2 shards, G7 Greenfield, G7 signed/legacy; A2 Debian image build·UID10001 및 폭발적/비지원 DXF 사전검증 Playwright 1개. **FAIL:** A2 CPU proof의 전체 synthetic DXF→Object3D→CUSTOM_DTO→Validator→Restore 시험 180000ms timeout (1 failed/1 passed). Required Verify는 A2 실패로 FAIL.
+
+**원인 범위:** CPU proof의 타입/출력 경로는 CI #479 이슈가 해결된 것으로 관측됨. 하지만 어디서 대기했는지는 기존 테스트에 단계별 진행 진단이 없어 UNKNOWN. Chromium WebGL/Font/파서/OOM 원인은 확정 불가. Actual source→Scene 변환, Manifest/Restore/Fidelity/SwiftShader 최종 판정 및 async error0 **NOT VERIFIED**.
+
+**수정 범위:** 실제 DXF/폰트·전체 validator 테스트를 제거하거나 skip하지 않고 harness/browser phase 로깅, launch/navigation/converter 독립 deadman timeout과 `A2_TIMEOUT:<phase>:LAST_PHASE=<allowlisted>` 안전 코드, never-resolving Promise fail-closed 회귀 추가. Playwright 180s/컨테이너 15m, Debian UID10001 read-only, no-network, CPU/RAM cap 유지. 로컬 npm/Chromium/Docker 명령은 이 원격 GitHub 변경 환경에서 별도 실행하지 않았고 새 PR CI 완료 결과를 확인하기 전 수정 효과 PASS 주장 금지. P1-B/C/D 금지. [원장](FailureLedger.md), [TC](TestPlan.md).
+
+---
+
 ## #218 / PR #221 — CI #479 실패 실측과 수정 후 재시험 경계 (2026-11-03 KST)
 
 - 실패 Run: [CI #479](https://github.com/planner77/layoutManager/actions/runs/41551357571), HEAD `f40ba4a0dcc6ebe4c5598cf6962e847e81bdfbe3`, `completed/failure`. Quality Job `125639534190`: TypeScript `TS2322` `headless.spec.ts:34` (font JSON metadata language map vs string field) — Typecheck FAILURE, Unit/Build 미실행. A2 CPU Job `125639534277`: Debian 컨테이너 빌드 + UID10001 검사 성공, Playwright test 시작 전 default `/app/src/test-results` mkdir `ENOENT`로 FAILURE (read-only rootfs). Docker-runtime Job `125639534249` SUCCESS, UI·G7 E2E SKIPPED, Verify `125644337801` FAILURE(종속).
