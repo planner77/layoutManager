@@ -1,3 +1,13 @@
+## 2026-11-03 — PR #221 CI #495 HARNESS_READY timeout 및 localhost·오류 분류 보완
+
+[CI #495 Run41558698574](https://github.com/planner77/layoutManager/actions/runs/41558698574), exact HEAD `91509d1dce9522acb2b8a0f934c9b08fa63fa4b8`: Scope/Quality/Docker/Chromium 2/G7 성공. A2 CPU proof 전용 Job `125664254542`에서 Debian 이미지·UID10001 성공, 3 시험 중 watchdog/위험 preflight 2 PASS, 실제 변환 1 FAIL(`BUNDLE_DONE → FONT_PREPARE_DONE → SWIFT_CHROMIUM_STARTED → HARNESS_NAVIGATE_START → PAGEERROR_OTHER → A2_TIMEOUT:HARNESS_READY:LAST_PHASE=UNOBSERVED`). DXF parser·DTO/validator 호출 전 실패하였으므로 Headless 기술 GO는 여전히 불가. 원본 JS 에러는 allowlisted OTHER만 출력되어 root cause UNKNOWN.
+
+**수정 방향 및 근거:** `http://p1-a2.invalid`는 일반 비신뢰 HTTP Origin이고 `http://localhost`는 MDN/W3C에서 potentially trustworthy secure context다. Three/WebGL 번들에서 `Crypto.randomUUID` 같은 secure-only API가 필요할 가능성을 우선 확인할 가설로 채택하고, 합성 페이지 Origin만 localhost로 변경(실제 network `--network none`/local route 유지). `HARNESS_SCRIPT_REQUESTED`/script actually served, `window.isSecureContext`/`crypto.randomUUID` 즉시 assert; JS pageerror를 safe category/즉시 fail로 표면화해 다음 근본 원인 식별 가능. 해당 API가 실패 원인인지 CI #495 증거만으로 확정하지 않는다. Test/CPU/timeout/G7/Required Gate 완화 없으며 합성 Scene 검증 결과 미확인. [원장](FailureLedger.md), [TestPlan](TestPlan.md).
+
+P1-A2 GO BLOCKED, #218 OPEN/AC01–09 미완료, P1-B/C/D 미착수. #216 OCI immutable tags/digests·production DB/Volume/APP_CREATED/Memo/Zone/Outline/SceneRepository/G7 Auth 불변.
+
+---
+
 ## 2026-11-03 — PR #221 CI #485 실제 Timeout·관측 불가 및 진단 보완
 
 [PR CI #485 Run41555129727](https://github.com/planner77/layoutManager/actions/runs/41555129727) HEAD `23d4b8df0948e4ee1d6b3a34dba9673e56136440`: Scope/Quality/General Chromium(2)/G7 Greenfield/G7 Signed-Legacy/Docker SUCCESS. 독립 Debian CPU proof `125652599400`에서 image build/UID10001 성공, 위험 preflight test PASS, **실 synthetic DXF→Scene test가 180000ms timeout**. 이 실행에서 구체적인 장기 대기 단계는 기록되지 않았으므로 원인은 UNKNOWN. Required Verify는 mandatory CPU 실패로 FAILURE. DXF 변환/validator/restore/SwiftShader GO 판정 불가.
