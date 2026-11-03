@@ -1,3 +1,13 @@
+## ADR-218-A2-PROOF-REUSE — CPU 변환 기술 시험에서 검증된 기존 Scene PoC 코드 재사용 (2026-11-03)
+
+**근거:** [PR CI #525](https://github.com/planner77/layoutManager/actions/runs/41567538237)에서 A2 브라우저 pinned Chromium 153/TTF/JS 번들 구문 검사까지 통과하지만 Script 평가 중 `SYNTAX_INVALID_REGEXP`로 중단. 버전 차이 원인설 반증. 이 오류의 실제 RegExp 발원 코드는 축약 진단 로그만으로 특정할 수 없다. 별도 작성한 A2 converter/harness entrypoint는 기존 E2E가 이미 검증한 DXF→Three→CUSTOM_DTO 경로와 기능이 중복되며 이 차이를 정당화할 근거가 부족하다.
+
+**선택:** 미검증 A2 browser-specific 중복 소스를 삭제하고 `tests/e2e/scene-poc-browser.ts`를 그대로 재사용하여 CPU-only 독립 Chromium에서 원본 합성 DXF를 처리한다. Node host에서 원본 바이트/SHA, whole DTO Validator, persisted bytes/Manifest, file I/O와 완전한 신규 브라우저 복원·ID/WCS 등을 추가 검증한다. 원래 합성 E2E 스크립트/앱 동작은 수정하지 않으며 CPU-only test를 없애거나 Skip하지 않는다. 완전한 #212 실 Viewer Adapter·S3/G7/권한·영속 Worker 작업은 별도 GO/PR이다.
+
+**위험:** Scene PoC의 synthetic `THREE_JSON/GLB` 추가 시도는 이 실험의 핵심 DTO 산출물이 아니며 사용 가능한 READY 판단은 오직 full-validated `CUSTOM_DTO`에 한정. 원본 RegExp 오류의 정확 코드 위치·dynamic pattern 미확인은 진단 부채로 실패 원장에 보존. 이 결정은 기술 GO나 GHCR 운영 릴리스 승인과 동등하지 않음.
+
+---
+
 ## ADR-218-A2-BROWSER-PIN — 검증된 Browser 런타임 경계 정렬 (2026-11-03)
 
 **동기:** [PR CI #514](https://github.com/planner77/layoutManager/actions/runs/41564217739)에서 custom A2 Debian apt Chromium156 + IIFE bundle이 Browser 초기화 중 `SYNTAX_INVALID_REGEXP` FAIL; 같은 CI의 `scene-poc.spec.ts`은 Playwright Chromium153 PASS. 두 경로의 fixture/실행 조건 차이가 있으므로 Chromium 버전의 원인성은 미확정.
