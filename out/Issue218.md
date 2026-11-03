@@ -1,3 +1,9 @@
+## 현행 정책 우선 — #218 2D·단일 Worker 단계별 GO (2026-11-04)
+
+**[Issue218LeanPolicy.md](Issue218LeanPolicy.md)**가 현재 AC/GO 정본이다. 아래 날짜별 A2-F/S/R09/R10, 직접 Node NO-GO 및 PR #221/#222의 실패·시험 명세는 당시 구현·검증 이력이며 정책의 "P1-B 코딩 금지" 문구는 **이제 GO-DEV를 차단하지 않는다**. DXF→DTO/validator/readback을 server CPU/non-WebGL로 분리해 **P1-B 단일 Worker 구현 착수 허용**, 단 실제 Worker 저장·G7/CAS·브라우저 복원/자원 격리 통과 전 GO-PILOT/READY 선언 금지. 완전 Entity 매핑/서버 strict Viewer WebGL/다중 Worker/3종 현장 DXF는 초기 코드 착수 Gate에서 제외한다. 기존 필수 CI는 YAML 수정 전까지 유지하며, 역사적 실패·PARTIAL을 소급 PASS로 바꾸지 않는다. Issue #218은 신규 L-01~08 구현 전 OPEN 유지.
+
+---
+
 ## 2026-11-03 — 후속 단일 PR: 실제 Viewer Adapter 동등성 및 프로세스 안전성 검증 설계
 
 **최신 판정: 구현·독립 QA·정확 최종 이미지 검증 완료, Manager가 검증 전용 PR을 수용했다. 운영 GO는 BLOCKED, F03/F04 전체 복원은 PARTIAL/UNMET이며 새 원격 HEAD CI 결과는 미확인이다. 아래 설계/AC는 구현 전에 기록했으며 실제 결과 정본은 [TestReport](TestReport.md) 상단이다.** 사용자 승인 범위는 #218 P1-A2의 두 미완료 증거를 하나의 후속 PR에서 검증하는 것이다. 기준 Main `0c7ab5f`(앞선 #221 squash `dc80f88` 및 CI #541 성공 기록 포함), branch `feat/218-a2-adapter-safety`, package **0.58.1 유지**. 아래 AC/TC는 기존 R-218-A2-02/03/04 및 A2-02/04의 추가 시험이며 기존 성공·실패 이력을 덮어쓰지 않는다.
