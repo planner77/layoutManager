@@ -1,3 +1,10 @@
+### #218 A2 보안 주의 — 공식 Chromium SwiftShader 경고
+
+[Chromium upstream 문서](https://chromium.googlesource.com/chromium/src/+/main/docs/gpu/swiftshader.md)는 `--enable-unsafe-swiftshader`를 명시적으로 위험 완화 해제 옵션으로 설명하고, 신뢰하지 않는 콘텐츠 처리에는 부적절하다는 취지의 보안 경고를 제공한다. 따라서 현재 `chromiumSandbox:false`/software WebGL은 **격리된 합성 테스트에서만 허용**. 운영 입력 DXF에 대해 신뢰 경계·sandbox·cgroups/비밀 격리 및 독립 위험 승인 근거가 없으면 A 후보는 보안 NO-GO; Node parser+별도 Three 변환 B의 정합성·자원 안전성도 독립 검증 필수.
+
+
+---
+
 ## ADR-218-A2 — Headless SwiftShader 우선 기술 후보, 운영 GO 차단 (2026-11-03)
 
 **결정:** 이미 NO-GO 판정된 `three-dxf-viewer@1.0.44` 직접 Node 호출을 재시도하지 않는다. 기존 Browser #212 변환 API·폰트·CUSTOM_DTO/Stable ID 재사용 가능성을 검증하기 위해 독립 Chromium+software WebGL(A)을 **테스트 우선 후보**로 선정. dxf-parser 등 공식 Node parser(B)는 지원 DXF 구조를 읽어도 Three.js Object3D 생성·폰트·INSERT·WCS·Stable ID를 새로 구현해야 하므로 실제 비교 전 GO로 승격하지 않는다.
