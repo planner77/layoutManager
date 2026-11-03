@@ -1,3 +1,17 @@
+## TC-218-A2-R02 — PR CI #485 180초 timeout 이후 단계 계측/격리 재시험 (2026-11-03)
+
+| TC | 요구 검증 | PASS/FAIL 정책 |
+| --- | --- | --- |
+| TC-218-A2-R02-1 | 합성 DXF CPU proof의 host BUNDLE/TTF/Chromium/Harness 및 page SOURCE/WEBGL/DXF_PARSE/PREFLIGHT/SERIALIZE/VALIDATE/RESTORE/RENDER 단계별 allowlisted 진행 로그 | 시작·완료 여부가 로그에 나타남; 카운터/경과/마지막 phase가 누락되거나 timeout되면 FAIL, 성공으로 승격 금지 |
+| TC-218-A2-R02-2 | Chromium launch 최대25s, harness navigate/ready 각20s, DXF-to-Scene evaluate 최대60s + 전역 Playwright 180s 및 Docker 15m 상한 불변 | 기한 초과 시 `A2_TIMEOUT:name:LAST_PHASE=phase`; 비동기 지연·프로세스 종료 실패는 FAIL |
+| TC-218-A2-R02-3 | never-resolving synthetic Promise watchdog 단언 | 25ms 후 안전한 `A2_TIMEOUT:SYNTHETIC_STALL:LAST_PHASE=DXF_PARSE_START` reject. 실제 DXF→Scene 변환을 mock하여 PASS 처리 금지 |
+| TC-218-A2-R02-4 | 동일 synthetic DXF→Object3D→CUSTOM_DTO→SHA/full validator→temporary file→Restore 및 baseline 동일 소스 정합성 | 모든 기존 단언 유지·실제 성공 시에만 A2 부분 증거, 현장/운영 GO 별도 |
+| TC-218-A2-R02-5 | Docker UID10001/read-only/network none/CPU2 RAM1536MiB + PR 전체 required CI | 리소스·필수 검증 완화 금지. 실패 시 원장 Run/Job/HEAD와 마지막 관측 phase 추적 |
+
+**선행 실제 관측:** [CI #485 Run41555129727](https://github.com/planner77/layoutManager/actions/runs/41555129727) A2 CPU Job `125652599400`에서 합성 DXF 시험 180s FAIL(내부 phase 미출력), 위험 preflight 시험 PASS; Quality/일반 Chromium/G7/Docker는 통과. 원인 확정 전 기술 A GO 불가, P1-B/C/D 미착수. 이 항목의 새 CI 결과는 **미실행/미검증** 상태로 남기고 실제 결과 관측 후만 갱신.
+
+---
+
 ## TC-218-A2-R01 — CI #479 타입·read-only 실행 경계 회귀 (2026-11-03)
 
 - **기존 실패 재현:** [CI #479](https://github.com/planner77/layoutManager/actions/runs/41551357571) HEAD `f40ba4a0dcc6ebe4c5598cf6962e847e81bdfbe3`. Quality `TS2322` at headless.spec.ts:34, A2 CPU container `ENOENT /app/src/test-results` at Playwright WorkerHost.start. Docker+UID10001 success는 실 converter PASS 근거 아님.
