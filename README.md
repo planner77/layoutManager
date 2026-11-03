@@ -1,3 +1,25 @@
+## #218 / PR #221 CI 보완 (2026-11-03)
+
+CPU 전용 기술 시험의 테스트 선택과 글꼴·packet·좌표 비교 자원 사용을 보완했다. 실제 실패 분석은 [FailureLedger](out/FailureLedger.md), 로컬·컨테이너·독립 QA 결과는 [TestReport](out/TestReport.md)를 따른다. 제품 버전0.58.1과 운영 기능은 그대로이며 #218 기술 GO는 보류다.
+
+---
+
+## #218 / P1-A2 CPU-only proof: 기존 Scene PoC 경로 재사용 (2026-11-03)
+
+CPU-only Headless Chromium 시험은 초기 중복 Browser bundle이 CI #525에서 `SYNTAX_INVALID_REGEXP`로 실행 전 실패한 이력이 있습니다. Test-only A2 코드는 이제 기존 일반 Chromium E2E에서 실제 DXF→Scene 검증된 `src/tests/e2e/scene-poc-browser.ts`를 직접 재사용하고, 같은 합성 한국어/BLOCK DXF의 SourceSHA/CUSTOM_DTO 전체 검증/임시 파일 영속성/서로 다른 Browser 복원과 좌표·객체 ID 비교를 요구합니다. 원래 Reader/Editor/G7/SceneRepository 및 App/Worker는 변경하지 않았습니다.
+
+기술 게이트 **GO 보류**: A2 CPU-only 실제 재시험 결과, live Viewer Adapter의 WCS/한글·BLOCK fidelity, OOM/kill/restart·비동기 오류0, untrusted software WebGL 보안과 #113/#193 현장 수용이 확보되기 전에는 P1-B/C/D로 진행하지 않습니다. [Issue218](out/Issue218.md), [FailureLedger](out/FailureLedger.md), [TestPlan](out/TestPlan.md).
+
+---
+
+## Issue #218 / P1-A2 — CPU-only Headless Scene 변환 검증 후보 (2026-11-03)
+
+[#218](https://github.com/planner77/layoutManager/issues/218)의 첫 번째 단계는 [#208](https://github.com/planner77/layoutManager/issues/208)/[#217](https://github.com/planner77/layoutManager/pull/217) 직접 Node DXF Viewer 기술 NO-GO 이후 **서버 독립 Chromium + software WebGL**이 실제 DXF/한글/BLOCK→Three Object3D→`CUSTOM_DTO`→Manifest/SHA/full validator→Restore를 수행할 수 있는지 확인하는 기술 시험입니다. 별도 시험용 소스/CPU-only Debian 이미지/합성 데이터 및 CI Gate만 추가합니다.
+
+현재 P1-A2는 **시험 미실행·GO 미확정**입니다. 독립 브라우저 실험/SQLite·S3 비연결 임시 파일을 실제 제품의 Scene 자동 생성/저장, G7 인증된 서버 READY, Home 목록 작업 상태라고 간주하지 마세요. 업로드 후 Scene은 기존 수동 Viewer 빌드/저장을 이용하며 P1-B Worker/Queue, P1-C 상태 UI/API, P1-D 운영 배포는 미구현입니다. Release #216 v0.58.1 불변 복구와도 무관합니다. 기술 비교와 한계: [Issue218](out/Issue218.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md).
+
+---
+
 ## #216 — 0.58.1 신규 불변 GHCR 릴리스 후보 (2026-11-03)
 
 #212 PR #214 Scene 진단 및 #208 PR #217 Node-direct NO-GO 코드는 Main에 병합되었지만 기존 0.58.0 App/Migrator pair 존재로 새 이미지 빌드가 생략되었습니다. [Release Issue #216](https://github.com/planner77/layoutManager/issues/216)은 이전 v0.58.0 tag/digest 보존, 새로운 0.58.1 버전, 0.58.0→0.58.1 G7 호환 registry edge 및 App/Migrator OCI pair 게시 게이트를 준비합니다. #218 자동 Scene Worker/Queue는 여전히 별도 미구현입니다.

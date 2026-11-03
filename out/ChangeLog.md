@@ -1,3 +1,79 @@
+## 2026-11-03 — #218 / PR #221 CI discovery and proof-resource correction (test-only)
+
+- Fix CI #540 zero-test filters with actual exhaustive Playwright discovery5+4 before image build.
+- Reuse build-time full Korean font, string packet transport and full finite coordinate comparison with bounded test-report overhead; keep actual converter/manifest/SHA/validator/file/fresh restore and original security/resource limits.
+- Regression/evidence: [TestReport](TestReport.md), [FailureLedger](FailureLedger.md). Package remains0.58.1; no runtime release, #218 GO or new CI success claim.
+
+---
+
+## 2026-11-03 — #218 CPU P0 success and isolated required A2 resource retest
+
+CI #539 (exact 883be450...): P0-1 through P0-5 and auxiliary tests PASS, final full source/DTO/restore test FAIL with Playwright Worker SIGKILL and Docker OOMKilled=true. Postmortem artifact confirms cgroup OOM flag, sampled memory up to 1.024GiB/1.5GiB (not true peak). Change A2 workflow to execute P0 five tests and full A2 four tests in two fresh, sequential, equally restricted containers; archive per-phase OOM/status/stats, no docker-exec memory sampling, preserve 1.5GiB cap and full mandatory Verify. Exact new CI results not yet measured. #218 OPEN/P1-A2 GO BLOCKED, no Worker/G7/GHCR release.
+
+---
+
+## 2026-11-03 — #218 P0 crash isolation and one-commit diagnostic framework
+
+CI #538 (3b1c8c1...) passed application Quality/Docker/Chromium/G7 but failed dedicated A2 CPU test at page.evaluate: Target crashed after reference browser initialization. No OOM/renderer/parser root cause measured. Preserve original E2E mode ALL while adding opt-in actual DTO_ONLY and phase markers; split synthetic P0-1 WebGL-only, P0-2 LINE DTO, P0-3 Korean/nested DTO, P0-4 format-cost comparison, P0-5 page-abort, then required full A2 SourceSHA/manifest/validator/file/fresh restore. Docker wrapper collects exit/OOM/resource evidence prior to cleanup with limits unchanged. Exact new CI outcome NOT VERIFIED; #218 OPEN, P1-A2 GO BLOCKED, no Worker/G7/GHCR release.
+
+---
+
+## 2026-11-03 — #218 PR #221 / CI #525 CPU-only proof의 검증된 Scene PoC 코드 통합
+
+- Source `8042b1cd...`의 CI #525: 앱 Quality/Chromium/G7/Docker PASS, 전용 CPU-only 변환 초기화 `SYNTAX_INVALID_REGEXP` FAIL. Chromium 156→153 변경해도 재현되어 단순 버전 원인설 반증; 보조 3 PASS, 원본 DXF/DTO/fidelity 미실행.
+- 중복 작성된 `src/tests/a2/headless-browser.ts` 삭제, `src/tests/a2/headless.spec.ts`에서 기존 성공 `tests/e2e/scene-poc-browser.ts`를 브라우저 엔트리포인트로 재사용. 동일 합성 한국어·중첩 BLOCK·큰 좌표 DXF, CPU-only SwiftShader, Source SHA/한글 text-index, 정본 CUSTOM_DTO Manifest/SHA/full validator/temporary-file persistence/fresh browser Restore 및 WCS/Layer/Stable ID 비교 추가.
+- 기존 E2E 테스트/프로덕션 업로드·SceneRepository/G7/Prisma/Compose/GHCR 변경 없음. A2 CI 실결과·실 사용자 Builder/현장/OOM/권한 수용 전 GO 금지, #218 OPEN/P1-B/C/D 미착수.
+
+---
+
+## 2026-11-03 — #218 P1-A2 PR #221 CI #514 RegExp runtime 오류 후 Browser 환경 정렬
+
+- 실패 `PAGEERROR_SYNTAX_INVALID_REGEXP`는 synthetic browser bundling startup에서 발생; Node compile pass, 실제 DXF→Scene pipeline 미호출. 다른 앱 CI/일반 Browser/G7/Docker는 성공, CPU A2 mandatory fail과 Verify 종속 fail을 별개로 기록.
+- CI #514 일반 Scene PoC가 Playwright Chromium153에서 성공하였고 A2 Debian apt Chromium156에서 실패한 차이를 확인. 정확한 regex/의존성·버전 원인 미확정이므로 시험용 `Dockerfile` 브라우저만 npm lockfile의 Chromium153으로 정렬, esbuild `target:chrome153`, `browser.version()` Gate 추가. 테스트 조건 완화 없음.
+- AGENTS/FailureLedger/TestReport/TestPlan/Issue218/Decisions/Operation에 근거와 미확인 범위 기록. #218 OPEN, P1-A2 GO 보류, P1-B/C/D/운영 GHCR·G7·DB 미착수.
+
+---
+
+## 2026-11-03 — #218 / PR #221 CI #506 browser SyntaxError 검증·원인 국소화
+
+- 정확 CI #506 (source `06d6bda...`)에서 앱 Quality/General Chromium/G7/Docker 전부 성공. 독립 CPU-only Proof `HARNESS_SCRIPT_REQUESTED → PAGEERROR_SYNTAX → A2_HARNESS_PAGEERROR:SYNTAX`로 Scene 본 시험 실패, 보조 3 PASS. 실제 DXF/DTO/Validator/Restore 미실행.
+- `headless.spec.ts`의 Test-only esbuild IIFE Chromium 호환 `chrome115` target, 정확 bundled JS `vm.Script` syntax-only 체크 및 synthetic JS SyntaxError lexical category/line/column 안전 로그 추가. 기본 시험 실행·원본 Session/Role/Worker/Storage/CI resource/Required tests는 변경하지 않음.
+- 원래 JS SyntaxError 토큰·번들 위치는 이전 로그 부재로 미확정; 새 CI 실행 후만 판정. P1-A2 GO BLOCKED, Issue #218 OPEN/P1-B/C/D 금지, GHCR 운영 게시 없음. [실측 #506](https://github.com/planner77/layoutManager/actions/runs/41561632191), [원장](FailureLedger.md).
+
+---
+## 2026-11-03 — #218 PR #221 CI #495 가상 페이지 Origin·초기화 Error 수리
+
+- CI #495: Quality/Chromium/G7/Docker/UID10001·synthetic watchdog/위험 preflight PASS, CPU Headless 핵심 시험은 BUNDLE/TTF/Chromium 시작 후 `PAGEERROR_OTHER`로 `sceneA2` 미등록, `A2_TIMEOUT:HARNESS_READY` FAIL. 실제 DXF 변환/Validator 미실행.
+- 임의 HTTP `p1-a2.invalid`을 potentially trustworthy `localhost`로 대체하고 script route served·SecureContext/UUID 검증, JS pageerror allowlist 즉시 실패, 정적 host 회귀 추가. 원인은 Crypto 관련 가능성이나 원본 JS 오류 분류 부족으로 확정 불가.
+- Playwright 전체 시험/DTO·원본 파싱/full validator/Rootless CPU Container·read-only/network-none, Required CI 전부 유지. 변경은 시험 파일/문서뿐이며 P1-A2 GO BLOCKED, #218 OPEN/P1-B/C/D/운영 GHCR 미착수. [실측 #495](https://github.com/planner77/layoutManager/actions/runs/41558698574), [원장](FailureLedger.md).
+
+---
+
+## 2026-11-03 — #218 PR #221 CI #485 CPU-only Headless 변환 timeout 진단/안전 차단 개선
+
+- CI #485: Quality/전체 일반 Chromium E2E/G7/Docker SUCCESS. 별도 CPU-only proof는 합성 위험 preflight PASS이나 실제 DXF→Scene 변환·검증 시험 180,000ms timeout FAIL, 내부 어느 단계에서 지연되는지 미관측. A2 GO 불가.
+- 실험 브라우저의 allowlisted SOURCE/WEBGL/DXF_PARSE/SCENE_BUILD/CUSTOM_DTO/VALIDATE/RESTORE/RENDER milestone과 호스트의 Bundle/Font/Browser/Resource 로깅을 추가하고, launch/navigation/converter 비동기 deadline 및 last-phase error를 도입. 정지 Promise가 FAIL되는 회귀 추가.
+- 테스트 skip·전체 timeout 증가·CI Required Gate 완화 없으며 Docker UID10001/read-only/network none/CPU·RAM 상한, 운영 SceneRepository/G7/Prisma/Compose/GHCR 기존 정책 불변. 실패 증거는 [CI #485](https://github.com/planner77/layoutManager/actions/runs/41555129727), [FailureLedger](FailureLedger.md) 참조. #218 OPEN / P1-A2 GO 차단 및 P1-B/C/D 진행 없음.
+
+---
+
+## 2026-11-03 — #218 PR #221 CI #479 원인별 수리(TS2322/EROFS 유사 ENOENT)
+
+- Quality `headless.spec.ts:34 TS2322`: TTFLoader 타입 `string`과 브라우저 폰트 생성 정책의 `{en:string}` 간 데이터 모양 불일치. 기존 Node PoC의 guarded record 접근과 일치시키고 기존 Font/한글 정합 시험 보존.
+- CPU-only A2 Docker 이미지/UID10001 검사 통과 후 `read-only` 컨테이너에서 Playwright 기본 artifact `/app/src/test-results` 생성 `ENOENT`; `outputDir:/tmp/a2-playwright-results`로 수정. read-only/비루트/네트워크 차단·자원 제한·Required CI 조건 불변.
+- 실제 synthetic DXF→Scene 시험은 이전 CI에서 실행 전 실패. P1-A2 GO BLOCKED, #218 OPEN, 후속 P1-B/C/D·GHCR/배포 작업 없음. [CI #479](https://github.com/planner77/layoutManager/actions/runs/41551357571), [원장](FailureLedger.md).
+
+---
+
+## 2026-11-03 — #218 P1-A2 CPU-only Headless DXF→Scene 검증 실험 코드 (GO 대기)
+
+- #208/#217 direct Node NO-GO 후속으로, 운영 기능과 분리된 `src/tests/a2/`에 실제 pinned DXFViewer + Chromium software WebGL(실험) DXF→Object3D→CUSTOM_DTO(full manifest/SHA/domain validator)→file/restore + 동일 synthetic browser 비교 설계와 테스트 추가.
+- 실 synthetic AC1024/한국어 TEXT·MTEXT/2-level BLOCK/INSERT/LINE/CIRCLE/LWPOLYLINE/Unit·WCS, 2^18 확장량·cyclic BLOCK·unsupported Entity의 보수적 fail-closed preflight 및 Vitest 추가.
+- 별도 CPU-only Debian/UID10001 Chromium 시험 이미지와 PR 전용 `a2-cpu-probe` required Verify 의존을 새로 추가. 기존 PR CI/G7/품질 테스트 정책 유지.
+- AGENTS, Issue218, Requirements/Architecture/Decisions/Database/Logging/Operation/TestPlan/TestReport/FailureLedger/README 갱신. 기술 alternative B(Node parser+Three 변환) 미구현, A도 실제 실행/정합성 미검증. Worker/Job/G7/Auth/SceneRepository/Prisma/운영 Compose/GHCR 릴리스 미변경. **P1-A2 BLOCKED, #218 OPEN, 후속 P1-B/C/D 금지.**
+
+---
+
 ## 2026-11-03 — #216 GHCR 복구 PR CI #476 TypeScript 테스트 타입 보완
 
 - `issue216-ghcr-workflow.test.ts`에서 상이한 선택적 key를 가진 오류 주입 input union이 `Record<string,string>`과 호환되지 않아 TS2345. Runtime code/GHCR 검증 수용 실패가 아니라 CI Quality의 테스트 코드 타입 오류.

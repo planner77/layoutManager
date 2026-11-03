@@ -1,3 +1,11 @@
+## #218 P1-A2 — 실험 전용, 운영 DB/Prisma/G7 Release schema 변경 0 (2026-11-03)
+
+A2 Headless CPU 검증은 완전히 독립된 합성 DXF·ephemeral file/브라우저 컨텍스트로만 동작한다. Production `SceneBuildJob`/`SceneBuildAttempt` 테이블 생성, `CadRepository.register` 업로드 트랜잭션 변경, SQLite migration/DDL, SceneRepository publish/Current pointer/CAS, G7 Runtime Schema/Greenfield registry/기존 DB·Volume 변형은 **전혀 수행하지 않는다**.
+
+P1-B가 승인될 경우에만 기존 [Issue208](Issue208.md)의 `SceneBuildJob` transactional enqueue, idempotency key(Version+source SHA+builder+schema), lease/fencing/heartbeat/retry history, G7 Actor/Site/Session revoke 검사와 `SceneOrphanJob` 분리를 별도 설계/구현·Migration/테스트 Gate에 올린다. #209/#211의 승인되지 않은 설치 자동 업그레이드 불허. 현재 신규 Job·Worker DB 행 0. [Issue218](Issue218.md).
+
+---
+
 ## DB-216 — 0.58.1 compatibility-only 릴리스 (DB/DDL 변경 없음)
 
 0.58.1은 0.58.0과 정확히 동일한 G7_GREENFIELD_SCHEMA_ID, G7_GREENFIELD_BASELINE, G7_GREENFIELD_BASELINE_CHECKSUM 및 G7-ZONES-DATA-V1/G7-ZONES-RUNTIME-V1을 사용한다. greenfield-upgrade-registry.ts에 오직 정방향 COMPATIBLE release edge를 추가한다. Prisma schema/SQL migrations/트리거/테이블 및 운영 DB·볼륨·CAD 원본·Version/Current·SceneAsset/메모/외곽선/구역/Auth/Audit는 변경하지 않는다.

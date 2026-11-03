@@ -1,3 +1,89 @@
+## #218 / PR #221 — CI discovery and proof-resource repair (2026-11-03)
+
+A2 필터·글꼴 준비·packet 전달·좌표 비교 또는 PR CI를 수정/재실행할 때 [Issue218 R09/R10](out/Issue218.md), [FailureLedger](out/FailureLedger.md) 최신 항목과 [TestReport](out/TestReport.md)를 먼저 읽는다. 실제 Playwright discovery5+4 전체 일치, 동일 자원 제한의 원본 실패와 보완된 전체 검증을 근거로 판단한다. 기술 합성 시험과 운영 GO를 구분하고 CI 시작 뒤 완료 모니터링은 생략한다.
+
+---
+
+## #218 / PR #221 — CI #539 P0 8/9 PASS, OOMKilled confirmed; isolate diagnostic and acceptance containers (2026-11-03)
+
+**Exact evidence:** [CI #539 Run41578400956](https://github.com/planner77/layoutManager/actions/runs/41578400956), HEAD 883be4504496bed0e0555bb21dfaff48cc468e06. A2 Job 125727283357 P0-1/2/3/4/5 and three auxiliary tests PASS (8/9), mandatory full A2 FAIL immediately after real DXF parse, Scene tagging, CUSTOM_DTO serialization; Playwright worker exited unexpectedly with SIGKILL. Docker post-mortem OOMKilled=true, ExitCode=1. The [synthetic-only artifact](https://github.com/planner77/layoutManager/actions/runs/41578400956/artifacts/13204038188) sampled 239.5MiB to 1.024GiB among eight 2s snapshots within 1.5GiB cap; this is NOT the actual memory peak. cgroup memory.events last sampled zeros, likely before OOM spike, so exact process peak/causation remains unmeasured.
+
+**Isolation change:** One A2 CI Job now launches a fresh bounded container for the five P0 diagnostic tests, destroys it after ExitCode/OOMKilled/stats evidence, then launches a different fresh container for four P1-A2 mandatory tests. Both preserve the same CPU2/RAM1536MiB/SHM256MiB/UID10001/read-only/network-none/pids256/time constraints. All tests remain required, failure in EITHER container is fatal; no false GO. Docker stats now collected host-side at ~1s interval, avoiding docker exec inside near-OOM cgroup. Same 7-day synthetic artifact has separate p0/required evidence.
+
+**Gate:** Existing full A2 SourceSHA/manifest/full Validator/file readback/SwiftShader/restore MUST succeed in the fresh container; independent full Worker kill/OOM/restart/security and live Viewer Adapter still NOT PROVEN. Existing default Scene PoC ALL mode and production/G7/DB/Volume/GHCR unchanged. #218 OPEN, P1-A2 GO BLOCKED, P1-B/C/D prohibited.
+
+---
+
+## #218 / PR #221 — CI #538 crash isolation and one-batch change (2026-11-03)
+
+**Observed:** [PR CI #538](https://github.com/planner77/layoutManager/actions/runs/41570387391) at HEAD 3b1c8c1ff9b1e42bde12af57cfeaf09ead3fa2a0 failed. All existing Quality, general Chromium (2 shards), Docker, G7 Greenfield and Signed/Legacy passed. New A2 CPU job 125701805501 reported REFERENCE_READY → REAL_DXF_PRODUCE_START → page.evaluate: Target crashed. Required Verify failed because A2 is mandatory. Neither an OOM nor a WebGL or DXF parser root cause has been proven.
+
+**Remediation:** Keep default ALL format behavior of the previously successful scene-poc-browser E2E; add a test-only DTO_ONLY mode that still runs actual DXFViewer and CUSTOM_DTO serializer, with safe phase markers. Isolate P0-1 WebGL-only; P0-2 minimal LINE DXF with DTO (no preliminary WebGL); P0-3 Korean/nested INSERT DXF with DTO; P0-4 DTO_ONLY versus ALL cost; P0-5 aborted pending browser call. Full A2 SHA/manifest/domain validator/temp file/fresh-process restore remains mandatory. CI captures container OOMKilled/ExitCode, docker stats and cgroup memory.events when readable before cleanup, and uploads synthetic-only evidence for seven days. Original CPU2/RAM1536MiB, SHM256MiB, UID10001, read-only, network-none, pids/time limits and all required tests remain enforced.
+
+**Gate:** Single final fast-forward branch update, avoiding 53 cancelled redundant workflows seen across 60 prior PR runs. The new tests have NOT YET RUN; a page-close abort is not a Worker kill/OOM/restart test. P1-A2 GO BLOCKED, issue #218 OPEN, P1-B/C/D prohibited, no operational G7/SceneRepository/DB/Volume/GHCR changes.
+
+---
+
+## #218 / PR #221 — CI #525 pinned Chromium에서도 RegExp 실패, 검증된 Scene PoC 재사용으로 시험 경로 변경 (2026-11-03 KST)
+
+- **실측:** [PR CI #525 Run41567538237](https://github.com/planner77/layoutManager/actions/runs/41567538237), exact HEAD `8042b1cd0c0ed6913666f93d91ed95f42c9b9b96`, `completed/failure`. Scope `125692699837`, Quality `125692740239`, Docker `125692740127`, General Chromium 2 shards `125693992977/125693993023`, G7 Greenfield `125693992913`, G7 Signed/Legacy `125693992950` SUCCESS. A2 CPU Job `125692740203` 3 보조 시험 PASS, 실제 DXF→Scene 시험 FAIL; Required Verify `125697098561`은 필수 A2 실패로 FAIL. `BROWSER_MAJOR_153→HARNESS_SCRIPT_REQUESTED→PAGEERROR_SYNTAX_INVALID_REGEXP`. DXF 파싱 전에 중단하므로 서버 변환기 GO 미확보.
+- **원인 범위:** Chromium 156→153 변경해도 오류 동일. 브라우저 버전 차이 단독 원인 가설 기각. Bundled JavaScript 초기화의 동적 RegExp 오류는 확인됐지만 원시 식/소스 모듈까지는 추적되지 않아 정확 코드 원인 **UNKNOWN**. 이는 라이브 운영 Viewer/Scene 저장 코드의 실패를 입증하지 않음.
+- **보완:** 기존 `src/tests/e2e/scene-poc-browser.ts`는 같은 PR CI 일반 Chromium에서 `SC-05/06/07` 실 DXF/DTO/Restore E2E를 통과하였으므로, 중복 생성했던 `src/tests/a2/headless-browser.ts`를 제거하고 A2 전용 `headless.spec.ts`가 **동일 검증된 Scene PoC entrypoint**를 번들·CPU Chromium 실행한다. P1-A2는 같은 합성 한국어/nested BLOCK DXF에 대한 sourceSHA/preflight, 실 Nanum TTF, `CUSTOM_DTO` 전체 validator, scope/Layer/WCS/ID/geometry, 파일 저장/재독해, 별도 프로세스 restore 및 비교를 추가 검증. 기존 `scene-poc.spec.ts`/App 코드 수정 없음.
+- **판정:** A2 테스트 작성/원격 커밋은 실행 증거 아님. 기존 PoC 정합성은 live #212 Viewer Adapter/한글 글리프 완전성/프로덕션 G7/Auth/서버 Worker 및 자원 장애 실증과 다름. 새 exact HEAD CI 성공 및 잔여 A2 Gate 전까지 **P1-A2 GO BLOCKED**, #218 OPEN, P1-B/C/D 미착수. CPU2/RAM1536MiB, UID10001/read-only/network-none, 180초 Playwright/15분 컨테이너, 필수 CI 변경·Skip 없음.
+
+---
+
+## #218 / PR #221 — PR CI #514 INVALID_REGEXP 및 CPU Browser runtime 정렬 (2026-11-03 KST)
+
+- [PR CI #514 Run41564217739](https://github.com/planner77/layoutManager/actions/runs/41564217739), 정확 HEAD `ea3145c5b2fa2d55a6b631d45ffbed201937baf3`, `completed/failure`. Scope `125682086960`, Quality `125682124857`, Docker `125682124880`, 일반 Chromium 2 shard `125684391336/125684391433`, G7 Signed/Legacy `125684391321`, Greenfield `125684391553` SUCCESS. A2 CPU Job `125682124844`는 `BUNDLE_STATIC_SYNTAX_OK → HARNESS_SCRIPT_REQUESTED → PAGEERROR_SYNTAX_INVALID_REGEXP → A2_HARNESS_PAGEERROR:SYNTAX_INVALID_REGEXP`로 핵심 DXF 변환 FAIL; 보조 3 PASS, Verify `125687181424`는 A2 mandatory 종속 FAIL.
+- **검증된 차이:** 해당 A2 테스트 이미지는 Debian apt Chromium **156.0.8078.73** 사용. 같은 소스의 일반 E2E `scene-poc.spec.ts / SC-05/06/07`는 Playwright 설치 Chromium **153.0.8010.12**에서 SUCCESS(일반 E2E shard2 로그, 소요 약 46.7초). 원래 JS 정규식 원문/발생 출처는 비밀 보호로 출력되지 않아 **Chromium 버전이 원인이라고 확정할 수 없음**. Node `vm.Script` pass는 브라우저 동적 `new RegExp`까지 보증하지 않는다.
+- **선택한 실험 경로:** Test-only `src/tests/a2/Dockerfile`의 apt Chromium 156 제거, pinned `@playwright/test`/lockfile에 속한 브라우저를 `playwright install --with-deps chromium`으로 빌드 시 설치(`PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright`). 런타임 `--network none`에서 JS/폰트 자산 가상 라우트만 이용. `A2_BROWSER_EXPECTED_MAJOR=153` 확인 후 CPU+SwiftShader 실제 DXF/DTO/full Validator 시험을 그대로 수행; 버전 다른 경우 FAIL. 브라우저 버전 변경만으로 GO 선언 불가.
+- **불변 조건:** Debian CPU-only, UID10001, read-only Rootfs, CPU2/RAM1536MiB/pids256, 15m container/180s test, 기존 Quality/E2E/G7/Docker/Required Verify 유지. 테스트 Skip/경고 무시/가짜 Scene READY 없음. P1-A2 GO 보류, #218 OPEN, P1-B/C/D 미착수. 라이브러리 `three-dxf-viewer@1.0.44`의 직접 Node NO-GO 유지, 운영 G7/DB/Volume/OCI GHCR 불변. [원장](out/FailureLedger.md), [보고](out/TestReport.md).
+
+---
+
+## #218 / PR #221 — CI #506 A2 JavaScript bundle SyntaxError 및 호환 타깃 사전 검증 (2026-11-03 KST)
+
+- **정확한 실패:** [PR CI #506 Run41561632191](https://github.com/planner77/layoutManager/actions/runs/41561632191), HEAD `06d6bda224e74b30e40548184902ec44f518dd6e`, completed/failure. Scope `125673369154`, Quality `125673426365`, Docker `125673426276`, General Chromium `125675508915/125675508963`, G7 Greenfield `125675508912`, G7 Signed/Legacy `125675508925` SUCCESS. A2 CPU `125673426531`은 합성 4시험 중 3 PASS, 핵심 실제 DXF converter 1 FAIL; Required Verify `125678277041`은 A2 mandatory 실패로 FAIL.
+- **관측·원인 경계:** `BUNDLE_DONE → FONT_PREPARE_DONE → SWIFT_CHROMIUM_STARTED → HARNESS_SCRIPT_REQUESTED → PAGEERROR_SYNTAX → A2_HARNESS_PAGEERROR:SYNTAX`. 즉 합성 페이지가 번들 요청을 처리했지만 JS `SyntaxError`로 `window.sceneA2` 이전 초기화에 실패. 기존 임의 HTTP origin 가설은 localhost에서도 재현되어 **원인 확정 근거 없음**. 실제 SyntaxError의 원문/위치가 출력되지 않아 어떤 토큰/출처가 잘못됐는지는 **UNKNOWN**. DXF parse/Object3D/DTO/Validator/Restore 미실행.
+- **보완:** `src/tests/a2/headless.spec.ts`의 esbuild output을 Chromium 156보다 보수적인 `target:'chrome115'`/IIFE 번들로 명시하고, Node `vm.Script`로 *실제로 전달할 번들 bytes*를 실행 없이 사전 구문 검사. Browser Error는 `HTML_AS_SCRIPT/UNEXPECTED_EXPORT/MODULE_MISMATCH/TRUNCATED_SCRIPT/DUPLICATE_IDENTIFIER/INVALID_REGEXP/UNEXPECTED_IDENTIFIER/INVALID_TOKEN/UNEXPECTED_TOKEN/OTHER_SYNTAX`만 허용 분류하고, synthetic `__a2.js`의 숫자 line/column만 제한 출력. Error 원문/stack·CAD/URL/Secret 미노출; Script/기본 DTO/정합성 검증의 Skip·Mock·timeout 연장 없음.
+- **GO 차단:** 새 CI에서 SyntaxError 재현 시 실제 원본 구문 위치·safe taxonomy를 근거로 추가 진단. `vm.Script` 구문 통과 자체는 브라우저 파싱·소프트웨어 WebGL·DXF READY 증거가 아니므로 P1-A2 BLOCKED, #218 OPEN, P1-B/C/D 미착수. 기존 Rootless/Debian/ReadOnly/Network none/CPU·RAM 및 #216 immutable release/DB·Volume 불변. [FailureLedger](out/FailureLedger.md), [TestReport](out/TestReport.md).
+
+---
+## #218 / PR #221 — PR CI #495 P1-A2 초기 페이지 Error/보안 Origin 진단 수리 (2026-11-03 KST)
+
+- **실제 실패:** [PR CI #495 Run41558698574](https://github.com/planner77/layoutManager/actions/runs/41558698574), HEAD `91509d1dce9522acb2b8a0f934c9b08fa63fa4b8`, `completed/failure`. Scope `125664193250`, Quality `125664254641`, Docker `125664254546`, General Chromium 두 샤드 `125666447788/125666447705`, G7 Greenfield `125666447689`, G7 Signed/Legacy `125666447601` **SUCCESS**. A2 CPU Job `125664254542`은 Debian build/UID10001 및 2개의 독립 시험 PASS, 핵심 DXF→Scene 시험 1개 FAIL; Required Verify `125669442387`은 종속 FAILURE.
+- **확정된 현상:** BUNDLE/TTF 준비·SwiftShader Chromium launch 성공. `HARNESS_NAVIGATE_START → PAGEERROR_OTHER → A2_TIMEOUT:HARNESS_READY:LAST_PHASE=UNOBSERVED` (20s). 아직 `window.sceneA2`가 없으므로 실제 DXF parser/Serializer/Validator 실행 전 실패. JS 예외 전문이 로깅되지 않아 실제 error Type/Message 및 원인 확정은 불가.
+- **수리와 검증 가설:** 기존 브라우저 E2E와 달리 시험이 `http://p1-a2.invalid` 비신뢰 HTTP origin을 사용하는 것이 원인일 가능성: MDN/W3C는 `http://localhost`를 potentially trustworthy/secure context로, `Crypto.randomUUID`를 secure-context-only로 규정한다. **원인 가설이지 CI #495의 원래 JS 예외가 이를 확증한 것은 아님.** 실험용 가상 페이지를 `http://localhost/__a2`로 변경하고 기존 Playwright in-memory 응답 및 Docker `--network none` 보존. Script route가 실제 호출됐는지, `window.isSecureContext`와 `crypto.randomUUID` 사용 가능한지 검증. 페이지 초기화 error 시 allowlisted code를 즉시 실패 처리하여 20초의 맹목적 READY 대기를 제거(문제 숨김/skip 금지).
+- **운영/GO 경계:** A2 source→Scene/DTO/full validator/복원/E2E/실 DXF 성공은 **아직 NOT VERIFIED**, 브라우저 초기화 개선만. 기존 25/20/60초 bounded test, 전체 180초·컨테이너 15분, CPU2/RAM1536MiB, UID10001, read-only/rootless/network-none 및 원래 필수 Quality/Docker/G7/Chromium checks 보존. #218 OPEN/P1-A2 GO BLOCKED/P1-B/C/D 미착수. [FailureLedger](out/FailureLedger.md), [TestReport](out/TestReport.md), [TestPlan](out/TestPlan.md).
+
+---
+
+## #218 / PR #221 — PR CI #485 Headless CPU 180s timeout·단계 증거 보강 (2026-11-03 KST)
+
+- **실제 실패:** [PR CI #485 Run41555129727](https://github.com/planner77/layoutManager/actions/runs/41555129727), 정확 HEAD `23d4b8df0948e4ee1d6b3a34dba9673e56136440`, `completed/failure`. Scope `125652535081`, Quality `125652599410`, Docker `125652599527`, Chromium 2-shard `125654262720/125654262771`, G7 Greenfield `125654262734`, G7 Signed/Legacy `125654262851` **SUCCESS**. 단독 CPU proof Job `125652599400`에서 합성 사전검증 1건 PASS, 실제 DXF→Scene 검증 1건 **180,000ms 초과 FAIL**. Required Verify `125657270237`은 A2 필수 Job 실패로 FAIL.
+- **진단 경계:** 컨테이너 Debian/Chromium 빌드 및 UID10001 확인은 PASS. 그러나 실패 Job에 단계별 진행 로그가 없어 Chromium launch, font, DXFViewer getFromPath, WebGL/Serialize 중 지연 위치·원인 확정 불가. OOM/kill/async 원인으로 추측 금지. 테스트 timeout 자체를 DXF Converter NO-GO 확정이나 GO로 분류하지 않는다.
+- **수리:** 실험 전용 `src/tests/a2/headless-browser.ts`의 SOURCE/WEBGL/DXF_PARSE/PREFLIGHT/TAG/TEXT_INDEX/CUSTOM_DTO/VALIDATE/RESTORE/RENDER allowlisted phase, `headless.spec.ts`의 host/Font route/PageError/Resource 실패 milestone과 단계별 bounded launch 25s/navigation 20s/conversion 60s 실패 코드(`A2_TIMEOUT:...:LAST_PHASE=...`), never-settling Promise 거절 회귀 추가. 기존 Playwright 전체 180s, Docker 15m, CPU2/RAM1536MiB/UID10001/read-only/no-network, 모든 required CI 및 실제 DXF/validator 단언 유지. 시간 상한 증대·skip·ready fake 금지.
+- **후속:** 새 정확 HEAD에서 PR CI 시작만 확인하고 완료는 사용자 요청대로 모니터링하지 않는다. 합성 DXF/브라우저 #212 Adapter fidelity·한글·중첩 INSERT·프로세스 sandbox/OOM·필드 수용은 증거 확보 전 모두 미검증. **P1-A2 BLOCKED, #218 OPEN, P1-B/C/D 착수 금지.** [FailureLedger](out/FailureLedger.md), [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md), [Issue218](out/Issue218.md).
+
+---
+
+## #218 / PR #221 — CI #479 Quality·A2 CPU Fail 원인/경계 및 수리 (2026-11-03 KST)
+
+- **정확한 실패:** [PR CI #479 / Run41551357571](https://github.com/planner77/layoutManager/actions/runs/41551357571), HEAD `f40ba4a0dcc6ebe4c5598cf6962e847e81bdfbe3`, `completed/failure`. Quality Job `125639534190`이 `src/tests/a2/headless.spec.ts:34` `TS2322` (TTF metadata 필드 `string` 타입에 실제 font JSON의 `{en:string}` 대입)로 `typecheck` 실패. A2 CPU Job `125639534277`은 Debian 이미지 빌드·UID10001 검사를 통과했지만, read-only `/app/src` 아래 Playwright 기본 `test-results` 생성에서 `ENOENT`가 발생해 **실 DXF test 실행 전에 실패**.
+- **수정:** 기존 `node-converter-poc.ts`에서 사용한 `Record<string,unknown>`으로 `original_font_information`을 안전하게 좁혀 metadata만 정규화(실 한글 glyph/TTF 변환 삭제 금지). `playwright.config.ts`에 `outputDir:/tmp/a2-playwright-results` 명시하여 CI의 기존 비루트·read-only/사설 tmpfs 보안 경계를 유지한 채 쓰기 경로만 수정. Quality/전용 CPU suite/Required Verify 완화·Skip, rootfs rw 전환 금지.
+- **증거 경계:** Docker Runtime Job `125639534249` SUCCESS; 기존 Browser·G7 E2E는 Quality 실패로 SKIPPED, Verify `125644337801` FAILED(종속). `a2-cpu-probe`에서 실제 DXF→Scene/SwiftShader/full validator는 **아직 실행 전**이므로 GO 아님. 수정 후 정확 HEAD PR CI를 새 synchronize 이벤트로 시작, 완료 결과 모니터링하지 않고 P1-B/C/D 차단. [FailureLedger](out/FailureLedger.md), [TestReport](out/TestReport.md), [Issue218](out/Issue218.md).
+
+## #218 / P1-A2 — CPU-only 독립 DXF Scene Builder 기술 Gate (2026-11-03)
+
+**범위·차단:** #217 P1-A 직접 Node `three-dxf-viewer@1.0.44`는 CI #457의 비동기 `window` 오류 4건으로 NO-GO. #218 후속 첫 PR은 `feat/218-a2-headless-cpu-gate`에서 **서버 독립 Chromium+SwiftShader 실험용 합성 시험과 fail-closed 검증만** 수행한다. 생산용 업로드 Hook, G7/권한/Queue/Worker/DB/SceneRepository/Current/Compose/릴리스 이미지는 변경하지 않는다. P1-A2 GO 입증 없이는 P1-B/C/D 개발·활성화 금지.
+
+**검증:** `out/Issue218.md`의 DXF→실제 Object3D→CUSTOM_DTO→Manifest/SHA/full validator→파일 저장·별도 Browser restore 테스트, 동일 synthetic font·중첩 BLOCK/INSERT/한글/WCS fidelity, 32MiB/100k/2M/depth128 불변, 비지원·폭증 차단을 따른다. 독립 PR CI `a2-cpu-probe`는 CPU-only Debian UID10001/오프라인/메모리·CPU 상한을 검증 대상으로 하고 Required Verify에 추가하되 기존 CI를 Skip/완화하지 않는다. sandbox·OOM/kill/restart/실 현장/전체 #212 Adapter 비교·라이선스/최종 운영 인수는 **아직 미검증**. 현재 로컬/CI 시험 미실행이므로 GO 불가.
+
+**후속 관계:** #212 수동 Browser Scene 정본, #209/#211 G7 릴리스/운영 승인, #216 v0.58.1 불변 복구 독립, #113/#193 고객 DXF·2PC/GPU/업무 필드 수용 OPEN. #218 AC01–09 전체 충족 전 OPEN 유지. [설계/시험/잔여 Gate](out/Issue218.md), [TestPlan](out/TestPlan.md), [FailureLedger](out/FailureLedger.md).
+
+---
+
 ## #216 / PR #220 OCI P1 리뷰 — 단일 플랫폼 Buildx JSON .Image 계약 (2026-11-03)
 
 리뷰 [PR #220](https://github.com/planner77/layoutManager/pull/220)의 OCI 후보 검증에서 `platforms: linux/amd64` **단일 플랫폼**을 생성하는 Buildx `.Image`가 단일 config object임에도 `{{json (index .Image "linux/amd64")}}`를 사용한 문제를 발견했다. 템플릿이 실패하여 정상 image가 `G7_RELEASE_OCI_PAIR_INVALID`로 잘못 차단될 수 있는 P1 리뷰 내용. 공식 Docker `imagetools inspect` JSON 설명과 일치하도록 `{{json .Image}}` 및 `jq .os/.architecture/.config.Labels` 검증으로 정정하고 Unit에서 해당 template 회귀를 검사한다. 단일 OCI role/version/source/amd64 조건과 fail-closed 정책, 원본 tag/source SHA 불변. 실제 신규 PR CI/OCI publish 결과는 **미검증**. [FailureLedger](out/FailureLedger.md).

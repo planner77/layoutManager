@@ -1,3 +1,54 @@
+## ADR-218-A2-BOUNDED-PROOF — 시험 장치 자체 자원 비용 제거 (2026-11-03)
+
+실제 CI discovery0건과 font/packet/comparison 실측에 따라 시험 장치를 보완한다. 원래 전체 DXF/DTO/좌표 검증과 자원·보안 상한은 고정하고, 기존 전체 글꼴 build-time 준비, 완전한 JSON string transport, 모든 유한 scalar의 동일 허용 오차 검사를 선택했다. 근거와 대안 실험은 [FailureLedger](FailureLedger.md), AC는 [Issue218 R09/R10](Issue218.md). 이는 기술 GO/운영 Worker나 제품 릴리스 승인이 아니다.
+
+---
+
+## ADR-218-A2-PROOF-REUSE — CPU 변환 기술 시험에서 검증된 기존 Scene PoC 코드 재사용 (2026-11-03)
+
+**근거:** [PR CI #525](https://github.com/planner77/layoutManager/actions/runs/41567538237)에서 A2 브라우저 pinned Chromium 153/TTF/JS 번들 구문 검사까지 통과하지만 Script 평가 중 `SYNTAX_INVALID_REGEXP`로 중단. 버전 차이 원인설 반증. 이 오류의 실제 RegExp 발원 코드는 축약 진단 로그만으로 특정할 수 없다. 별도 작성한 A2 converter/harness entrypoint는 기존 E2E가 이미 검증한 DXF→Three→CUSTOM_DTO 경로와 기능이 중복되며 이 차이를 정당화할 근거가 부족하다.
+
+**선택:** 미검증 A2 browser-specific 중복 소스를 삭제하고 `tests/e2e/scene-poc-browser.ts`를 그대로 재사용하여 CPU-only 독립 Chromium에서 원본 합성 DXF를 처리한다. Node host에서 원본 바이트/SHA, whole DTO Validator, persisted bytes/Manifest, file I/O와 완전한 신규 브라우저 복원·ID/WCS 등을 추가 검증한다. 원래 합성 E2E 스크립트/앱 동작은 수정하지 않으며 CPU-only test를 없애거나 Skip하지 않는다. 완전한 #212 실 Viewer Adapter·S3/G7/권한·영속 Worker 작업은 별도 GO/PR이다.
+
+**위험:** Scene PoC의 synthetic `THREE_JSON/GLB` 추가 시도는 이 실험의 핵심 DTO 산출물이 아니며 사용 가능한 READY 판단은 오직 full-validated `CUSTOM_DTO`에 한정. 원본 RegExp 오류의 정확 코드 위치·dynamic pattern 미확인은 진단 부채로 실패 원장에 보존. 이 결정은 기술 GO나 GHCR 운영 릴리스 승인과 동등하지 않음.
+
+---
+
+## ADR-218-A2-BROWSER-PIN — 검증된 Browser 런타임 경계 정렬 (2026-11-03)
+
+**동기:** [PR CI #514](https://github.com/planner77/layoutManager/actions/runs/41564217739)에서 custom A2 Debian apt Chromium156 + IIFE bundle이 Browser 초기화 중 `SYNTAX_INVALID_REGEXP` FAIL; 같은 CI의 `scene-poc.spec.ts`은 Playwright Chromium153 PASS. 두 경로의 fixture/실행 조건 차이가 있으므로 Chromium 버전의 원인성은 미확정.
+
+**시험 정책:** 테스트 컨테이너만 기존 Playwright lockfile이 제공하는 Chromium153 build로 동기화하고, Node host는 `browser.version()` 153 major를 요구. 정적 esbuild target도 `chrome153`으로 맞춰 호환성 변수를 줄인다. Browser 자체가 구형인 경우 운영 보안 GO와 별개로 취약점 업데이트·supply-chain/폐쇄망 번들 정책을 별도 검증한다. 실 DXF/Scene DTO/Validator, timeout/cgroup/UID/read-only/no-network/CI 게이트는 수정 없이 남긴다.
+
+**판정:** 브라우저 버전 변경은 **가설에 대한 대조 실험**일 뿐 해결 입증 아님. 고객 입력·untrusted WMF/EMF·Chromium sandbox/late promise와 Stage B/C/D 운영 승인 전에는 #218 OPEN/P1-A2 GO BLOCKED.
+
+---
+
+## ADR-218-A2-SECURE-ORIGIN — CPU-only test-only virtual loopback Origin (2026-11-03)
+
+**관측:** PR CI #495 synthetic Headless Chromium은 BUNDLE/TTF/launch 완료 후 `PAGEERROR_OTHER`로 `window.sceneA2` 등록에 실패; `HARNESS_READY` 20s timeout. exact root cause는 공개 safe logs로 확인 불가.
+
+**결정(시험 환경 한정):** 기존 `http://p1-a2.invalid`을 `http://localhost`로 대체. [MDN Secure Contexts](https://developer.mozilla.org/en-US/docs/Web/Security/Defenses/Secure_Contexts), [W3C Secure Contexts](https://www.w3.org/TR/secure-contexts/)에 따라 localhost는 potentially trustworthy origin이다. [MDN Crypto.randomUUID](https://developer.mozilla.org/en-US/docs/Web/API/Crypto/randomUUID)는 secure-context-only. 새 시험에서 script-served/`window.isSecureContext`/`crypto.randomUUID` 확인을 명시 필수로 하여 임의 `*.invalid` host 재도입을 막는다. 원래 PAGEERROR_OTHER가 Crypto 때문이라는 **가설은 여전히 미검증**.
+
+**보안·배포 경계:** 모든 HTML/JS/font는 context.route의 합성 응답, Docker `--network none`/non-root/read-only/cgroups 제한 유지. 예외가 발생하면 allowlisted category만 즉시 실패, 원문/원본/개인·사이트 정보 비노출. 브라우저 sandbox:false/SwiftShader 개발 플래그를 운영 보안 PASS로 승격하지 않는다. P1-A2 GO/후속 P1-B/C/D 및 #216 release는 별도 Gate로 차단.
+
+---
+
+### #218 A2 보안 주의 — 공식 Chromium SwiftShader 경고
+
+[Chromium upstream 문서](https://chromium.googlesource.com/chromium/src/+/main/docs/gpu/swiftshader.md)는 `--enable-unsafe-swiftshader`를 명시적으로 위험 완화 해제 옵션으로 설명하고, 신뢰하지 않는 콘텐츠 처리에는 부적절하다는 취지의 보안 경고를 제공한다. 따라서 현재 `chromiumSandbox:false`/software WebGL은 **격리된 합성 테스트에서만 허용**. 운영 입력 DXF에 대해 신뢰 경계·sandbox·cgroups/비밀 격리 및 독립 위험 승인 근거가 없으면 A 후보는 보안 NO-GO; Node parser+별도 Three 변환 B의 정합성·자원 안전성도 독립 검증 필수.
+
+
+---
+
+## ADR-218-A2 — Headless SwiftShader 우선 기술 후보, 운영 GO 차단 (2026-11-03)
+
+**결정:** 이미 NO-GO 판정된 `three-dxf-viewer@1.0.44` 직접 Node 호출을 재시도하지 않는다. 기존 Browser #212 변환 API·폰트·CUSTOM_DTO/Stable ID 재사용 가능성을 검증하기 위해 독립 Chromium+software WebGL(A)을 **테스트 우선 후보**로 선정. dxf-parser 등 공식 Node parser(B)는 지원 DXF 구조를 읽어도 Three.js Object3D 생성·폰트·INSERT·WCS·Stable ID를 새로 구현해야 하므로 실제 비교 전 GO로 승격하지 않는다.
+
+**가드레일:** 실 synthetic conversion/whole validator/roundtrip/Source coverage/Browser Adapter 동등성과 UID10001/Debian CPU-only·Cgroup·OOM/kill/restart/async error0 확인 전 **A2 판정 BLOCKED**. Browser 테스트에서 `chromiumSandbox:false`는 프로덕션 격리 보안 승인 증거가 아니며 현재 값으로 운영 허용 불가. #218 AC01–09 전체 미완료, 후속 P1-B/C/D 진입 금지. 기존 32MiB/100k/2M/depth128 및 G7 권한/immutable #216 release 보존. [Issue218](Issue218.md).
+
+---
+
 ## ADR-216-R — 기존 immutable v0.58.1 태그의 source-pinned GHCR 복구 (2026-11-03)
 
 **배경:** v0.58.1 annotated tag는 정확 Main `934e5561...`에 존재하지만 Main CI #138 2회 실패로 이미지 후보/승격이 실행되지 않았다. 단순 새 Main 커밋을 v0.58.1로 태그 이동하거나 그것의 OCI revision을 원본처럼 표시할 수 없음.

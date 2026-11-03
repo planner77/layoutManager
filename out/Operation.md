@@ -1,3 +1,63 @@
+## #218 A2 local proof prerequisites and memory boundary (2026-11-03)
+
+For A2 discovery or resource regressions, follow [Issue218 R09/R10](Issue218.md) and the [FailureLedger](FailureLedger.md) before rerunning CI. The proof Dockerfile prepares the full Korean typeface during build using existing `scripts/fonts.mjs`; rootfs stays read-only at runtime. For a standalone local proof, run from `src`: `node --input-type=module -e "import {prepareFonts} from './scripts/fonts.mjs'; prepareFonts();"` (ordinary production build also prepares it), then use `tests/a2/playwright.config.ts`. Generated JSON remains Git-excluded. Discovery validation needs npm dependencies only and never launches Chromium: `node src/tests/a2/check-discovery.mjs --check` from root.
+
+Node font preparation peak RSS was~941MiB; keep that build-time cost separate from the bounded runtime proof. Runtime reads the exact generated full font, transports whole packets as strings and compares every coordinate without creating per-coordinate Playwright report steps. Original security/cgroup/timeout controls and required Verify remain. Record operator-terminated diagnostics as such; do not classify exit137 alone as OOM.
+
+---
+
+## #218 P0 — CPU-only diagnostic container post-mortem (2026-11-03)
+
+CI #538 reference scene builder initialization worked, but browser target crashed while a single evaluate operation mixed WebGL2 initialization and DXF produce. The a2-cpu-probe job now starts its isolated Docker container detached WITHOUT immediate --rm, waits up to 15m, samples docker stats every ~2s and attempts /sys/fs/cgroup/memory.events, and records State.OOMKilled/ExitCode/Status after exit. Only after recording those is the exact run-named container removed by the existing cleanup step. A synthetic-only artifact is kept for seven days; no real CAD, G7 tokens, operational database or volumes are mounted. CPU2/RAM1536MiB, SHM256MiB, UID10001, read-only rootfs, network none, pids256 and no privileges remain.
+
+Do not infer an actual OOM from Playwright Target crashed unless container/cgroup evidence supports it. P0-5 page.close abort is not kill-9, job recovery, lease or operational restart; these and the production sandbox/real customer DXFs remain blocked gates.
+
+---
+
+## #218 P1-A2 — CPU-only reference Scene PoC 복수 프로세스 검증 (2026-11-03)
+
+- [CI #525](https://github.com/planner77/layoutManager/actions/runs/41567538237)에서 맞춘 Chromium153로도 중복 A2 Browser entrypoint의 `SYNTAX_INVALID_REGEXP`이 재현됨. 임의 Browser 버전 변경/Regex 예외 무시로 해결하지 않고, 통상 General Chromium E2E에서 검증된 `tests/e2e/scene-poc-browser.ts`를 독립 CPU proof에서 실제 DXF를 변환하는 공통 엔트리로 사용한다.
+- `src/tests/a2/Dockerfile`의 Playwright Chromium 설치 및 `--network none --read-only --user 10001:10001 --cpus 2 --memory 1536m` 등을 유지한다. A2 가상 route는 `http://localhost/__scene-poc`, font은 source NanumGothic TTF에서 변환한 typeface. 실제 CAD·G7 Session/DB/Volume을 컨테이너에 주입하지 않음.
+- 성공 기준은 호스트 `CUSTOM_DTO` full validator, manifest/sha256, temp-file 저장·회수, fresh Browser에 같은 파일 restore(WCS/Layer/ID/Geometry)까지 완료하고 오류/timeout0이므로 테스트 경로를 우회하지 않는다. 새 CI가 통과하지 못하면 정확 마지막 phase와 실제 오류만 기록; #218 A2 GO 판정은 현장/운영 추가 Gate 전 보류.
+
+---
+
+## #218 P1-A2 — CI #514 이후 CPU-only Browser 검증 이미지 운영 경계 (2026-11-03)
+
+- test-only Dockerfile은 `node:22.14.0-bookworm-slim` + npm lockfile의 Playwright Chromium을 이미지 **빌드 단계에만 다운로드**하여 `/opt/ms-playwright`에 저장한다. 실행 시 `PLAYWRIGHT_BROWSERS_PATH`와 `A2_BROWSER_EXPECTED_MAJOR=153`을 검사. 재현 실험에서 외부 패키지/Chromium apt 156 혼용은 버전 드리프트이므로 차단.
+- PR CI에 이미 정의된 `docker run --network none --read-only --user 10001:10001 --cpus 2 --memory 1536m --pids-limit 256 --tmpfs /tmp ...`는 유지하고 환경변수·CAD/DB/운영 Volume·G7 Session을 마운트하지 않는다. `playwright install --with-deps`은 **빌드 네트워크 필요**하며 완전 폐쇄망 *이미지 빌드*가 검증됐다고 주장하면 안 된다. 운영 폐쇄망에서는 신뢰된 사전 빌드 digest/SBOM/라이선스·패치 관리 필수.
+- Chromium153는 기존 `scene-poc.spec.ts`에서 성공한 버전이라 테스트 경로 차이를 줄이지만, 소프트웨어 WebGL sandbox 취약점·실 원본 고객 DXF/2PC/G7 인증 게시 GO로 승격하지 않는다. [FailureLedger](FailureLedger.md), [TestPlan](TestPlan.md).
+
+---
+
+## #218 P1-A2 — CI #495 CPU-only 시험 PageError/localhost 진단 재실행 안내 (2026-11-03)
+
+- [PR CI #495](https://github.com/planner77/layoutManager/actions/runs/41558698574): 기존 검증은 전부 성공, CPU Headless synthetic page에서 PAGEERROR_OTHER/HARNESS_READY 20s Timeout. 번들·TTF·Chromium 실행은 성공, DXF parser 미호출. 이는 실제 도면 변환·영속 Worker 게시의 성공 또는 실패를 확정하지 않음.
+- 이후 synthetic page는 루프백 `http://localhost/__a2` virtual Playwright route로 응답하므로 실제 웹서버 기동/네트워크/운영 세션이 필요하지 않다. Docker `--network none`, UID10001, read-only rootfs/cgroup/15m timeout 유지. 외부 접속 혹은 public OAuth/G7 Mock 사용 금지.
+- HARNESS_SCRIPT_REQUESTED, HARNESS_SECURE_CONTEXT_VERIFIED, HARNESS_READY와 오류 발생 시 `A2_HARNESS_PAGEERROR:<safe-code>` 및 기존 단계별 DXF/DTO 검증을 구분한다. ERROR와 새 timeout은 전부 CI FAIL; 내용 확인 후 원장에 정확 Run/HEAD/Job만 추가. 고객 데이터, 운영 .env/DB/Volume/immutable GHCR tag/digest 불변.
+- Chromium secure origin 선택은 아직 PAGEERROR_OTHER의 실제 원인으로 확정된 것이 아니며, untrusted DXF 처리시 SwiftShader sandbox 위험·OOM/kill/restart는 본 실험 성공 후에도 별도 차단 Gate이다.
+
+---
+
+## #218 P1-A2 — CPU-only Proof 180s timeout의 안전 재실행 기준 (2026-11-03)
+
+- [CI #485 Run41555129727](https://github.com/planner77/layoutManager/actions/runs/41555129727)에서 Debian 컨테이너/UID10001과 전체 일반 CI는 성공했으나 전용 A2 DXF→Scene 시험이 180초 초과로 실패했다. 정확 hang phase는 로그 부족으로 미정이며 Chromium/Font/WebGL/Converter/OOM을 원인으로 단정 금지.
+- A2 합성 실험에만 SOURCE/WEBGL/DXF/DTO/VALIDATOR/RESTORE allowlisted 단계 로그와 launch(25s)/navigate(20s)/evaluate(60s) deadline을 도입했다. timeout, 페이지 오류, 리소스 실패는 fail-closed; 기존 Playwright 180s·컨테이너 15m, read-only/UID10001/Network none/CPU·RAM·pids 상한 유지.
+- 재실행 시 마지막 `A2_HOST_PHASE` 및 `A2_PHASE`를 확인해 실제 실패 지점과 리소스/비동기 원인을 분리한다. 합성 컨테이너 운영 데이터 마운트·GHCR 게시·실 DB/Volume/Registry/G7 복구 금지; #218 OPEN 및 P1-B/C/D 차단 유지. 상세 [TestPlan](TestPlan.md), [FailureLedger](FailureLedger.md).
+
+---
+
+## #218 P1-A2 — 실험 CPU-only Debian 컨테이너 실행(운영 배포 아님) (2026-11-03)
+
+1. CI 전용: repository root에서 `docker build --platform linux/amd64 -f src/tests/a2/Dockerfile -t layoutmanager-a2-proof:ci .`. Debian/Chromium/npm 의존성은 CI 빌드 때 외부 패키지 저장소를 통해 설치하고, 실행 시에는 `--network none`을 적용한다. **이 구성이 완전한 사내망 오프라인 이미지 build 실증은 아님**. 글꼴 재배포 라이선스/apt 패키지 SBOM/production sandbox는 별도 검증.
+2. P1-A2 PR CI의 `a2-cpu-probe`가 UID10001, 무볼륨/무비밀/무Network·read-only·cap-drop·no-new-privileges, CPU2/RAM1536MiB/512MiB tmpfs/256 pids/15m timeout 조건으로 `playwright test --config tests/a2/playwright.config.ts`를 실행하도록 추가. 동일 synthetic source와 Browser 비교, DTO manifest/SHA/full validator/temporary persistence/restore 실패시 CI 실패.
+3. `chromiumSandbox:false`를 쓰는 합성 검증 단계는 **운영용 Worker 보안 격리 수용이 아니다**. OOM/kill/restart/host resource exhaustion·real DXF/2PC·브라우저 실 #212 Adapter semantic 비교, closed-network OCI/Worker source revision이 남아 있으므로 P1-A2 GO 불가. 브라우저 탭/유저 로그인/G7 Mock으로 worker를 대체하지 않는다.
+4. 실험 이미지는 GHCR/App/Migrator 태그로 게시하지 않고 운영 `.env`, `CAD_DATA_VOLUME_NAME`, Prisma/Schema, 현장 DB/CAD를 변경하지 않는다. #216 immutable release 복구와 #218 새 Worker 운영 release는 별도 SemVer/G7 승인 후에만 허용.
+
+시험 스크립트와 Gate: [Issue218](Issue218.md), [TestPlan](TestPlan.md), [TestReport](TestReport.md).
+
+---
+
 ## #216 GHCR 0.58.1 실패 복구 Runbook (2026-11-03)
 
 1. [Main CI #138](https://github.com/planner77/layoutManager/actions/runs/41539913477)에서는 `G7_RELEASE_REGISTRY_CHECK_FAILED`로 App/Migrator 후보 Build/Promotion 이전 차단. 기존 `v0.58.1` 태그가 `934e...` source commit에 정합하며 태그 이동·강제 재지정/수동 latest 업데이트를 해서는 안 된다.

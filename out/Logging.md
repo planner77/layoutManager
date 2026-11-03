@@ -1,3 +1,48 @@
+## #218 A2 bounded diagnostics after CI #540 (2026-11-03)
+
+A2_HOST_PHASE now adds numeric Node rssMiB/heapMiB and INVENTORY_COMPARE_START/DONE to distinguish font, browser/packet and comparison phases. These are process snapshots, not container memory peaks. Geometry mismatch reports a fixed label/index, never scalar values. The full synthetic source/DTO bytes, SHA, identities or arbitrary exception text remain outside logs. CI still collects per-container host-side stats and Docker OOMKilled/ExitCode before cleanup; see [FailureLedger](FailureLedger.md) for operator-killed versus OOM evidence.
+
+---
+
+## #218 P0 synthetic Crash telemetry (2026-11-03)
+
+The reference Scene PoC only emits safe A2_BROWSER_PHASE markers for the opt-in DTO_ONLY mode: DXF_PARSE_START, DXF_PARSE_DONE, SCENE_TAGGED, CUSTOM_DTO_START, CUSTOM_DTO_DONE, PRODUCE_COMPLETE. A2 Playwright logs A2_HOST_PHASE, page.on('crash') and a small allowlisted error class. The CI wrapper samples only numeric docker stats, memory.events and inspect OOMKilled/ExitCode/Status, retaining seven-day artifacts for these public synthetic fixtures. Raw DXF bytes, SHA, tokens, user records or arbitrary browser errors are not included; the log is not a production Worker timeline.
+
+---
+
+## #218 / CI #525 — 중복 browser 초기화 RegExp 오류와 재사용 경로 구분 (2026-11-03)
+
+[PR CI #525](https://github.com/planner77/layoutManager/actions/runs/41567538237)에서 `BROWSER_MAJOR_153` 뒤 `SYNTAX_INVALID_REGEXP`이 재발, 기존 RegExp/버전 가설을 수정. 원본 error pattern/소스는 로그 redaction으로 미확정; 실제 DXF 파싱까지 가지 않았다. 신규 A2 harness는 기존 `scene-poc-browser.ts`의 DXFViewer/serializer/restore 코드를 CPU proof 안에서 사용하고, 허용된 `A2_HOST_PHASE` milestone, Source/DTO/node/geometry/latency 등 **공개 합성 데이터 기반 계측만** 출력. 실제 CAD bytes/원본 SHA/경로·Browser error 전문/로그 stack/자격정보는 노출하지 않는다. 이 Test 로그는 운영 requestId/JobId/G7 Audit의 대체가 아니며 기존 READY 후보 검증 계약을 완화하지 않는다.
+
+---
+
+## #218 / CI #506 — Browser SyntaxError 안전 진단 구체화 (2026-11-03)
+
+[PR CI #506](https://github.com/planner77/layoutManager/actions/runs/41561632191) A2 Job에서 `HARNESS_SCRIPT_REQUESTED` 이후 `PAGEERROR_SYNTAX`가 기록되어 브라우저 번들 실행 단계에서 Fail-closed. 원본 JavaScript 에러 문장/stack은 보안상 기록하지 않아 SyntaxError 실제 토큰은 미확정. 신규 계측은 `SYNTAX_HTML_AS_SCRIPT/UNEXPECTED_EXPORT/MODULE_MISMATCH/TRUNCATED_SCRIPT/DUPLICATE_IDENTIFIER/INVALID_REGEXP/UNEXPECTED_IDENTIFIER/INVALID_TOKEN/UNEXPECTED_TOKEN/OTHER_SYNTAX` allowlist 및 *synthetic JS URL `__a2.js`와 일치하는* 숫자 line/column만 출력. `vm.Script` compile-only 실패는 `A2_BUNDLE_STATIC_SYNTAX_INVALID`; UI/Error 텍스트나 실제 CAD·URL·SHA/포맷·로그 원문은 누설 금지. 운영 JobLogContext·S3/Scene Audit와 독립이며 CI PASS/GO 동등 증거 아님.
+
+---
+## #218 P1-A2 — CI #495 시작 시 PAGEERROR_OTHER를 즉시 안전 실패로 보고 (2026-11-03)
+
+[Run41558698574](https://github.com/planner77/layoutManager/actions/runs/41558698574)에서는 Chromium launched 후 `HARNESS_NAVIGATE_START → PAGEERROR_OTHER → A2_TIMEOUT:HARNESS_READY`; 모호한 OTHER만 남고 DXF parser에는 진입하지 않았다. 수리로 pageerror 발생 시 `A2_HARNESS_PAGEERROR:<allowlisted-category>`를 Playwright Host의 `Promise.race`로 즉시 FAIL 전달. `CRYPTO_RANDOMUUID/INSECURE_CONTEXT/MODULE_SHIM/WEBGL/TYPE/SYNTAX/REFERENCE/OTHER`만 출력, Error 원문·stack·URL·DXF bytes/handle/SHA·font/보안 값 노출 금지. `HARNESS_SCRIPT_REQUESTED`, SecureContext/UUID assertion 및 기존 phase/timing, CPU cgroup 제한을 유지. 이 로깅은 실험적 합성 Proof 진단이며 운영 JobLogContext/G7 감사/실질 GO 증거가 아니다.
+
+---
+
+## #218 P1-A2 — CI #485 내부 단계 미관측 timeout을 안전 phase 진단으로 보완 (2026-11-03)
+
+[Run41555129727](https://github.com/planner77/layoutManager/actions/runs/41555129727) CPU proof에서 180s timeout이 발생했지만 기존 합성 DXF 처리 내부 단계는 stdout에 없었다. 원인 파악을 위한 실험성 `A2_HOST_PHASE`와 `A2_PHASE` 마커를 allowlisted SOURCE/WEBGL/DXF_PARSE/SCENE_PREFLIGHT/TAG/TEXT_INDEX/CUSTOM_DTO/FULL_VALIDATOR/RESTORE/RENDER 단계로만 출력한다. Node watchdog은 launch/navigation/evaluate 기한 초과 시 `A2_TIMEOUT:NAME:LAST_PHASE=...` 안전 오류로 실패한다. PageError는 클래스만, resource 실패는 allowlisted 범주만 보고하고 **원본 DXF·소스 SHA·Font bytes·임의 URL·내부 예외/Stack은 출력하지 않는다**.
+
+현재 실제 hang 위치 미확인, 새 CI 미실행. 이 마커는 `SceneBuildJob` 영속 단계 로그나 운영 JobId/requestId/Audit가 아니며 P1-A2 GO 근거로 단독 사용 금지. Deadline/비동기 오류를 없애거나 READY로 간주하는 의미가 아니다. [Issue218](Issue218.md), [FailureLedger](FailureLedger.md).
+
+---
+
+## #218 P1-A2 — 합성 Headless 실행 증거와 운영 Job 로그 분리 (2026-11-03)
+
+A2 전용 시험은 성공 시 synthetic-only entity/node count, DTO byte length, elapsed parse/serialize, SwiftShader renderer 식별 및 late pageerror count를 출력한다. 실제 CAD bytes/SHA/원본 문장/내부 파일 경로·토큰·세션·사용자 식별정보를 출력하지 않는다. `pageerror`를 600ms 창에서 수집하지만 이것만으로 모든 잠복 unhandled rejection·프로세스 종료 이후 오류를 배제할 수 없다. 타임아웃/컨테이너 실패/검증 불일치는 CI 실패로 남기고 숨기거나 PASS 처리하지 않는다. 실제 로깅 수치와 RUN/HEAD는 실행 후만 원장에 반영.
+
+P1-A1의 [CI #457](https://github.com/planner77/layoutManager/actions/runs/41520729471) Node direct async 4건 NO-GO는 기존 기록 그대로 유지. 현재 `JobLogContext`, requestId↔jobId, lease/attempt 오류 추적, Actor revoke 및 logs:read 공개 정책은 production P1-B/C 책임으로 미구현. [Issue218](Issue218.md), [FailureLedger](FailureLedger.md).
+
+---
+
 ## #208 CI #457 — Promise 완료와 unhandled rejection을 구분한 Scene 진단 계약 (2026-11-03)
 
 `three-dxf-viewer@1.0.44`의 직접 Node `getFromPath`가 962 assertion PASS 상태에서도 WMF/RTF 관련 `window is not defined` 4개의 **unhandled rejection**을 Vitest에 남겼다. 이 비동기 오류는 기존 try/catch의 밖이므로 `ARTIFACT_READY`/DTO SHA만으로 Server Worker's 실제 READY를 주장하지 않는다. `probeNodeScene`은 Node에서 upstream 호출 전에 `DXF_PARSE/SCENE_CONVERTER_UNAVAILABLE`의 안전한 코드로 fail-closed. UI/운영 로그에는 raw stack, Source/CAD/Handle/path/token/글꼴 bytes를 노출하지 않는다.
