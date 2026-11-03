@@ -1,3 +1,11 @@
+## 2026-11-04 — #225 B1 자동 Scene Job 저장 준비 (Draft / 미운영)
+
+- 단일 Worker 정책에 따라 Job ID/상태 판단의 pure 계약 다음 단계로 Prisma 모델·후보 G7 SQL 및 기본 OFF의 DXF 업로드 원자적 Enqueue 코드를 준비함.
+- CAS claim/timeout/retry 판정과 독립 SQLite 스키마·모의 트랜잭션 회귀를 추가. 기존 0.59.0 G7 baseline·Registry와 운영 이미지는 변경하지 않음.
+- 신규 G7 release migration/실 Worker/권한 재검사·Scene 저장/목록 UI 미구현; GO-PILOT 미승인. 세부 [Issue225](Issue225.md).
+
+---
+
 ## 0.59.0 — #218 Scene Fidelity 및 Sandbox 후속 후보 (2026-11-03)
 
 - CUSTOM_DTO v2에 material 렌더 속성·실제 ShapeGeometry parameters·index/drawRange 및 원본 선택 index/binding 계약을 추가했다. fresh restore에서 world bounds와 render coverage를 재감사한다. v1은 fidelity UNKNOWN으로 읽는다.

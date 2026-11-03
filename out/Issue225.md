@@ -1,3 +1,16 @@
+## 2026-11-04 — B1 저장 계약 및 G7 릴리스 선행 조건 (Draft)
+
+**부분 구현, GO-PILOT 미승인.** 이 PR은 `SceneBuildJob` Prisma 모델과 `deploy/scene-build-jobs/migration.sql`의 **검토용 전진 DDL**, `scene-build-job-queue.ts`의 트랜잭션 Enqueue·단일 Job CAS 선점·만료 재시도·실패 상태를 추가한다. `CadRepository.register()`는 `SCENE_AUTO_BUILD_ENABLED=true`일 때 승인된 G7 Runtime의 **DXF**에 한해서만 같은 `writeTransaction`으로 Job을 생성한다. 기본값 OFF, 승인되지 않은 Runtime 또는 등록되지 않은 Job 테이블이면 업로드도 fail closed/롤백하도록 설계했다.
+
+- **중요:** 현재 G7 0.59.0 Greenfield baseline의 고정 DDL·fingerprint·Upgrade Registry는 그대로다. SQL은 아직 등록/적용되지 않으며 `SCENE_AUTO_BUILD_ENABLED`를 운영에서 활성화하면 안 된다. 신규 불변 버전 및 승인된 G7 release migration, fingerprint/backup/restore/DB 드리프트 수용이 뒤따라야 한다. 수동 `ALTER/CREATE TABLE`로 현재 설치를 우회하지 않는다.
+- 작업 DB에는 `versionId/sourceSha256/builder/payloadSchema` UNIQUE 및 actorId/siteId/requestId 등 최소 참조만 저장하고 세션 tokenHash·쿠키·암호는 저장하지 않는다. `SceneOrphanJob`은 기존 Storage cleanup 전용으로 유지한다.
+- Claim은 SQLite 트랜잭션 `updateMany` CAS를 이용한다. stale RUNNING의 유한 retry, maxAttempts3, 오류 allowlist는 `SceneRepository` 게시 성공과 구분하며, 이 코드에는 **READY 게시 함수가 없다**.
+- `src/tests/unit/scene-job-schema-b1.test.ts`: 별도 인메모리 SQLite에 DDL을 적용해 FK/유일성/상태 CHECK/롤백 검증. `scene-job-queue-b1.test.ts`: DB-transaction mock의 Enqueue/CAS/stale/retry/실패 경로 검증. 이 시험은 **실 G7 Baseline→새 릴리스 upgrade E2E의 대체가 아니다**.
+- 다음 필수: 신규 SemVer/G7 migration 승인·릴리스 정합화, 실제 G7 DB 영속 transaction 통합 E2E, 독립 CPU non-WebGL converter, background permission 재확인·`SceneRepository` CAS·verified READY, UI/Worker OCI. 이전 READY·원본/메모·구역 데이터 불변.
+- 이전 #225 단일-Worker admission의 순수 상태 판단 코드는 그대로 유지하고, 과거 #221/#222 A2 원본 시험과 실패 원장을 재해석하지 않는다.
+
+---
+
 # Issue #225 — B1 단일 CPU Worker 상태 판정 로직 착수
 
 > Parent: #218 (GO-DEV 승인). 이 PR은 **제품 자동 Scene 생성 구현 완료가 아니다**.

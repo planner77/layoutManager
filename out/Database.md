@@ -1,3 +1,19 @@
+## #225 B1 — 전진 전용 SceneBuildJob 후보 / 기존 G7 0.59.0 불변 (2026-11-04)
+
+| 구분 | 현재 상태 |
+| --- | --- |
+| `SceneBuildJob` Prisma model | 별도 영속 Queue schema 정의 (Version/SHA/Builder/DTO v2 UNIQUE, Actor/Site FK, status/attempt/due) |
+| SQL `deploy/scene-build-jobs/migration.sql` | **미등록 후보**. 별도 메모리 DB에서 FK/UNIQUE/ROLLBACK 시험 |
+| 운영 G7 0.59.0 baseline | **불변**; 기존 DDL fingerprint/릴리스 Registry에 즉시 편입하지 않음 |
+| Enqueue | `SCENE_AUTO_BUILD_ENABLED=true` + 승인 G7 Runtime + DXF일 때만 **Version 등록과 같은 DB transaction**. 기본 OFF; 미등록 Table 시 fail closed |
+| Claim | `status+attempt` CAS, 단일 Worker 고정, stale retry 3회, 서버 READY는 CurrentScene validator만 |
+| 비밀 정보 | Job에 tokenHash/cookie/password 절대 저장 금지 |
+| GO 상태 | GO-DEV 허용 / GO-PILOT 미승인, 실 영속 Worker/배포 미구현 |
+
+**릴리스 선행:** 기존 Greenfield는 정확 단일 기준선과 `sqlite_master` DDL SHA로 보호된다. 신규 릴리스 번호/forward-only migration, `greenfield-install`, `greenfield-schema`, `greenfield-upgrade-registry`, restore/backup/권한 회귀를 함께 처리하고 이전 v0.59.0 이미지/태그를 재지정하지 않는다. 임의 `CREATE TABLE`로 활성 DB를 수정하는 절차는 금지. `SceneOrphanJob`(Storage cleanup)과 `SceneBuildJob`(변환 intent)을 구분한다.
+
+---
+
 ## DB-218-FX — 0.59.0 JSON 계약 확장, DDL 변경 없음
 
 SceneAsset payload의 CUSTOM_DTO envelope v2를 추가한다. CAD_SCENE_SCHEMA=1, 기존 builder/renderer identity 및 SceneAsset/Version/Current/메모 참조를 보전한다. 기존 v1 bytes/row/READY 저장 상태를 자동 변환하지 않으며 읽기 시 fidelity UNKNOWN과 구분한다. v2 source index는 동일 source/scope의 파생 자료로 실제 복원 객체를 재검증한다. 정본 계약은 [Issue218](Issue218.md) FX01–FX08이다. 향후 P1-B의 idempotency/cache key는 Scene identity의 schema/builder 외에 payload contract version을 포함해야 한다. 이 PR은 Job/cache를 구현하지 않는다.

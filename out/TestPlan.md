@@ -1,3 +1,12 @@
+## #225 B1 Schema / CAS / Feature Gate 검증 계획 (2026-11-04)
+
+- **TEST/GO-DEV**: 실제 Prisma 모델과 SQL DDL key/index/foreign keys, invalid digest/status와 중복 key 거절, SQLite Version+Job transaction rollback; 별도 fixture only.
+- **TEST/GO-INTEGRATE**: 승인된 G7 Runtime+DXF에 대해서만 같은 `CadRepository.register` 트랜잭션으로 Job을 기록하고 Job 저장 실패 시 Version·Audit·Current 및 원본 Storage 보상 정책을 지킬 것. 기본 `SCENE_AUTO_BUILD_ENABLED` OFF, 등록 전 schema가 없으면 fail closed. 단일 claim CAS, stale/retry, 오류 allowlist, 권한/세션 토큰 비노출.
+- **TEST/GO-PILOT (현재 NOT RUN)**: 등록된 신규 G7 Migration/Schema fingerprint/백업-복구 및 실 DB Enqueue·Worker restart·DTO non-WebGL 변환·`SceneRepository` Authorize/CAS·브라우저 재접속. 정확 CI HEAD 성공 전 PASS 주장 금지.
+- 이미 합격한 이전 CPU/Adapter 시험을 새 Worker 전체 성공으로 사용하지 않는다. 현재 라이브 `SceneBuildJob` 테이블 없음, Worker/자동 Scene READY 미구현. 원본/기존 READY·G7 권한 안전을 우선.
+
+---
+
 ## TC-218-LEAN — 현행 단계별 필수 검증 매트릭스 (2026-11-04)
 
 [현행 Owner 정책](Issue218LeanPolicy.md)을 우선한다. **테스트를 지우거나 가짜 PASS로 처리하지 않고 GO 판단의 적용 단계를 조정**한다. CI YAML/현재 required checks는 이번 문서 PR에서 변경하지 않는다. 아래 과거 A2 테스트 명세는 실험/회귀 이력이며 GO-DEV 차단 조건이 아니다.

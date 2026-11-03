@@ -1,3 +1,9 @@
+## #225 B1 점진적 구현 — Job 스키마/원자적 Enqueue는 릴리스 등록 전 OFF (2026-11-04)
+
+[Issue #225](https://github.com/planner77/layoutManager/issues/225), [Issue225](out/Issue225.md), [Issue218LeanPolicy](out/Issue218LeanPolicy.md)를 우선한다. `src/prisma/schema.prisma`에 SceneBuildJob 모델, `src/deploy/scene-build-jobs/migration.sql`에는 **미등록 후보 전진 DDL**이 있다. **기존 0.59.0 G7 baseline/registry/checksum은 수정하지 않았으므로 `SCENE_AUTO_BUILD_ENABLED`는 OFF로 둔다.** 신규 승인 릴리스의 Migration/Schema fingerprint/복구 검증 후만 활성화한다. 단일 Worker CAS/Enqueue는 코드가 있어도 **Worker 실행/READY 자동 게시가 아니다**. 기본 G7 토큰·권한/원본/READY 보호 및 기존 required CI를 유지한다.
+
+---
+
 ## #218 현행 Owner 정책 — 2D·단일 Worker / 단계별 GO (2026-11-04)
 
 **[out/Issue218LeanPolicy.md](out/Issue218LeanPolicy.md)가 신규 GO/AC 정본**이다. 이전 P1-A2의 전면 운영 GO 전 P1-B 코딩 금지, 서버 Headless WebGL 복원, 원본 Entity 100% 매핑, 다중 Worker/실 CAD 3종/2PC/전체 SBOM을 *코딩 착수 게이트*로 묶은 해석은 폐기한다. **GO-DEV(단일 CPU Worker 구현)는 허용**하되 GO-PILOT(실 배포)은 실제 새 Worker·데이터/권한·지원 브라우저 복원·격리·복구 검증 후 판정한다. 기존 CI YAML required jobs는 변경하지 않는다. 기존 원장·과거 테스트의 FAIL/PARTIAL을 소급 수정하지 않는다.
