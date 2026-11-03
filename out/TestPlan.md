@@ -1,3 +1,20 @@
+## TC-218-A2 — CPU-only 실제 DXF 변환 Gate (2026-11-03, 시험 실행 전)
+
+| TC | 테스트 방법·입력 | PASS 필요 증거 | 지금 상태 |
+|---|---|---|---|
+| TC-218-A2-01 | 합성 AC1024 DXF LINE/CIRCLE/LWPOLYLINE/TEXT/MTEXT/한글/nested BLOCK/INSERT → Chromium SwiftShader → 실제 Object3D | exact HEAD, SwiftShader identity, geometry/Layer/Unit/Source SHA, unhandled error 0 | NOT RUN |
+| TC-218-A2-02 | `preflightSceneRoot → tagImportedTree → serializeSourceScene(CUSTOM_DTO) → Manifest/SHA/full validate → file write/read → restoreSourceScene` | 32MiB/100k/2M/depth128 불변; 원본·복원 ID/row matrix/WCS BBox ≤1e-5 | NOT RUN |
+| TC-218-A2-03 | 동일 synthetic DXF/실 Nanum TTF를 별도 Chromium process/browser baseline과 비교 | scope/builder/renderer/source SHA/digest 및 geometry/ID/BBox/fresh-process restore | NOT RUN; **실 #212 Adapter E2E 별도 미실행** |
+| TC-218-A2-04 | synthetic BLOCK DAG 2^18 확장, cycle, unsupported Entity, corrupt source, 16MiB cap | 사전 fail-closed, silent missing geometry 0, 노드 폭증 방지 | Unit/Playwright 코드 작성; NOT RUN |
+| TC-218-A2-05 | isolated Debian/UID10001, --network none/read-only/capdrop/cpu2/ram1536m/pids256/tmpfs512m/timeout15m | 리소스 hard limit 안에서 실제 완료 및 late pageerror0 | Config 작성; NOT RUN |
+| TC-218-A2-06 | OOM/kill/restart/subprocess race/late promise, 실제 User browser #212 path/한글 glyph image & unknown entities | 종료 뒤 비동기0, 안전한 실패, source↔render coverage/canonical CAD coordinate/origin/Stable ID 비교 | NOT IMPLEMENTED / NOT RUN |
+| TC-218-A2-07 | PR CI Quality/Unit/Browser 2-shard/Greenfield/Signed/Legacy/Docker + 전용 a2-cpu-probe, required verify | 정확 PR HEAD 전부 SUCCESS, unresolved review0/behind0/mergeable | PR CI 시작 전 NOT RUN |
+| TC-218-A2-08 | 신규 5MiB/20MiB+ 고객 DXF·2PC/GPU/원본/현장 Owner SLA, 외부 반출 금지 | #113/#193 별도 현장 서명/비공개 evidence ID | FIELD BLOCKED |
+
+**GO 금지:** A2-01~08의 범위별 필요한 실제 증거가 확보되지 않음. 1e-5는 **합성 Browser 비교** 기준이지 산업 현장의 정확도 SLA가 아니다. P1-B/C/D 자동 기능/OCI/G7/업로드/권한/목록 기능 구현 0. [Issue218](Issue218.md).
+
+---
+
 ## TC-216-R07 — Docker Buildx single-platform OCI label reader (2026-11-03)
 
 - 기존 linux/amd64-only Buildx candidate `.Image`를 반드시 단일 config object로 파싱한다. `--format '{{json .Image}}'` 및 `jq`의 `.architecture/.os/.config.Labels` 검증 유지. map index `index .Image "linux/amd64"` 사용 금지. source commit·version·app/migrator role·linux-amd64 불일치 및 digest 이상은 공개 tag 승격 전에 HALT. Unit/PR CI + 실제 Main candidate registry 증거로 최종 판정하고 신규 시험 전 PASS 표기 금지.
