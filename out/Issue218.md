@@ -1,13 +1,13 @@
 # Issue #218 — P1-A2 CPU-only DXF→Scene 변환기 검증 설계·Gate 원장
 
-> 2026-11-03 기준 Main: \`55b82cdf35f6d9f606dcab16830cd61ce0098082\`; Branch: \`feat/218-a2-headless-cpu-gate\`.
+> 2026-11-03 기준 Main: `55b82cdf35f6d9f606dcab16830cd61ce0098082`; Branch: `feat/218-a2-headless-cpu-gate`.
 > **판정: GO 보류(BLOCKED / 기술 검증 증거 미완성).** 본 PR은 P1-A2 **실험 장치 및 자동 시험을 추가**할 뿐 서버 Scene 자동 생성·G7 게시·실 배포 기능을 제공하지 않는다. CI/실 도면/현장 수용 전 PASS 선언 금지. #218 AC01~AC09 미완료, Issue OPEN.
 
 ## 1. 증거 및 의존성
 
 - 정본: [#218](https://github.com/planner77/layoutManager/issues/218), 원 요구·이력 [#208](https://github.com/planner77/layoutManager/issues/208), [Issue208.md](Issue208.md), [AGENTS](../AGENTS.md), Architecture/Decisions/Requirements/Database/Logging/Operation/TestPlan/TestReport/FailureLedger.
-- [#217](https://github.com/planner77/layoutManager/pull/217) P1-A1 HEAD \`5501770c6773980672b1e2c6f54ccaaaf21874d4\`, [PR CI #472](https://github.com/planner77/layoutManager/actions/runs/41524840539) 8/8 성공은 **직접 Node 변환 NO-GO + 독립 Three DTO/Restore 부정·기본 검증**까지만 확인. [CI #457](https://github.com/planner77/layoutManager/actions/runs/41520729471)에서 Node \`three-dxf-viewer@1.0.44\` WMF/RTF 분기 \`window is not defined\` **4개 비동기 unhandled rejection** 발생. try/catch 혹은 성공한 DTO만으로 GO 간주할 수 없다.
-- #212: 수동 브라우저 \`ThreeDxfViewerAdapter.load → DXFViewer.getFromPath → preflightSceneRoot → tagImportedTree → extractDxfText → serializeSourceScene(CUSTOM_DTO) → full Validator\` 기준. \`getFromPath\` 화면·렌더링 fallback 성공은 서버 READY가 아니다.
+- [#217](https://github.com/planner77/layoutManager/pull/217) P1-A1 HEAD `5501770c6773980672b1e2c6f54ccaaaf21874d4`, [PR CI #472](https://github.com/planner77/layoutManager/actions/runs/41524840539) 8/8 성공은 **직접 Node 변환 NO-GO + 독립 Three DTO/Restore 부정·기본 검증**까지만 확인. [CI #457](https://github.com/planner77/layoutManager/actions/runs/41520729471)에서 Node `three-dxf-viewer@1.0.44` WMF/RTF 분기 `window is not defined` **4개 비동기 unhandled rejection** 발생. try/catch 혹은 성공한 DTO만으로 GO 간주할 수 없다.
+- #212: 수동 브라우저 `ThreeDxfViewerAdapter.load → DXFViewer.getFromPath → preflightSceneRoot → tagImportedTree → extractDxfText → serializeSourceScene(CUSTOM_DTO) → full Validator` 기준. `getFromPath` 화면·렌더링 fallback 성공은 서버 READY가 아니다.
 - #209/#211: Greenfield/OCI release Registry/명시 승인 Upgrade·Writer0/Volume/백업·복구를 #218에서 수정하지 않는다. #216: immutable v0.58.1 App/Migrator 게시·원본 릴리스 복구와 신규 Worker 이미지는 별개. v0.58.0/v0.58.1 태그나 digest 변경 금지.
 - #113/#193: 승인된 3종 실 DXF 및 실제 PC/GPU/2PC/Memo/Outline/Zone 통합 수용은 공개 합성 코드·CI로 대체 불가. 실제 도면/해시·식별자 GitHub에 반출 금지.
 - Main 조사 시 열린 PR 0건(조회 시점), 이후 Main 변화·PR 신규 발생 시 병합 충돌 재확인. 이번 작업은 AGENTS/설계 정본을 근거로 하며 루트 DESIGN.md는 생성하지 않는다.
@@ -24,24 +24,24 @@
 | P1-A2 선택 | **우선 시험 후보**: 기존 #212 변환 정합성 입증의 출발점. software WebGL identity를 확인하지 못하면 실패 | **현재 대기**: 지원되는 Node parser 자체와 이후 full converter는 실제 변환/비교 시험 전 미검증; 시간·복잡도·fidelity 과제 |
 | 실제 GO | **미확정**: 아래 A2 시험과 격리/현장 경계를 모두 통과해야 함 | **미확정**: 동등한 전체 시험 증거 없이 선택/운영 금지 |
 
-\`three-dxf-viewer@1.0.44\` 직접 Node 호출은 옵션 B가 아니며 앞선 NO-GO를 보존한다. 새로운 Node parser 사용 시 기존 \`sceneScope\`의 \`builder\` 식별을 허위 재사용하거나 READY를 위조할 수 없으므로 schema/호환성 변경 분석·Migration/복원 판정이 선행되어야 한다.
+`three-dxf-viewer@1.0.44` 직접 Node 호출은 옵션 B가 아니며 앞선 NO-GO를 보존한다. 새로운 Node parser 사용 시 기존 `sceneScope`의 `builder` 식별을 허위 재사용하거나 READY를 위조할 수 없으므로 schema/호환성 변경 분석·Migration/복원 판정이 선행되어야 한다.
 
 ## 3. P1-A2 첫 PR 구현 범위
 
-- \`src/tests/a2/headless-browser.ts\`: 실제 원본 바이트 SHA 검증, 소프트웨어 WebGL renderer identity, \`DXFViewer.getFromPath\` 실제 DXF→Object3D, node/scalar preflight, \`tagImportedTree\`, UTF-8 텍스트 인덱스, \`CUSTOM_DTO\` serialize, manifest/SHA/full validator, \`restoreSourceScene\` 검증. 소스·CAD 전문/실 해시/임의 exception을 공개 로그에 내지 않는다.
-- \`src/tests/a2/headless.spec.ts\`: 정확 동일 synthetic DXF+TTF를 독립 Headless SwiftShader와 별도 Chromium 브라우저 프로세스에서 실행해 노드/geometry/Layer/Stable ID/transform/WCS BBox를 비교. DTO byte digest 및 파일 저장·읽기·fresh process restore. **동일 browser test harness 비교이며 실제 #212 Viewer UI end-to-end 판정이 아님**.
-- \`src/tests/a2/fixtures.ts\`: AC1024/한글 TEXT·MTEXT/Layer/INSUNITS/LINE·CIRCLE·LWPOLYLINE/BLOCK·중첩 INSERT/큰 좌표, 2^18 instance 폭증, cyclic BLOCK, 비지원 Entity. 전부 공개 합성 입력이며 실제 고객 도면 아님.
-- \`src/tests/a2/dxf-risk-preflight.ts\`: parser 앞 단계에서 **보수적 합성 fixture 안전 경계** (UTF-8/16MiB, 알 수 없는 Entity, dangling/cycle BLOCK, expanded 100k 초과). 실제 범용 DXF 파서/운영 whitelist가 아니며 비지원 Entity를 조용히 누락하지 않는다. 기존 직렬화 하드 상한 32MiB, 100k nodes, 2M scalars, depth128 **불변**.
-- \`src/tests/unit/scene-a2-risk-preflight.test.ts\`: 위험 검사 회귀. \`src/tests/a2/Dockerfile\` + \`playwright.config.ts\`: Debian Bookworm, apt Chromium, UID 10001, 사내 비밀·운영 volume 불필요 시험 이미지.
-- \`.github/workflows/pr-ci.yml\`: 해당 A2 branch에만 신규 CPU 테스트 잡을 *기존 required Verify에 추가 필수* 의존. 네트워크 none/read-only, no-new-privileges, cap drop, CPU2/RAM1536MiB/pids256/shm256MiB, /tmp512MiB, 최대15분. 미완료/timeout/OOM/crash/비동기 pageerror 발생 시 success 금지. 기존 Quality/Chrome/G7/Docker gate는 유지. 테스트 이미지 GHCR 게시·운영 활성 없음.
+- `src/tests/a2/headless-browser.ts`: 실제 원본 바이트 SHA 검증, 소프트웨어 WebGL renderer identity, `DXFViewer.getFromPath` 실제 DXF→Object3D, node/scalar preflight, `tagImportedTree`, UTF-8 텍스트 인덱스, `CUSTOM_DTO` serialize, manifest/SHA/full validator, `restoreSourceScene` 검증. 소스·CAD 전문/실 해시/임의 exception을 공개 로그에 내지 않는다.
+- `src/tests/a2/headless.spec.ts`: 정확 동일 synthetic DXF+TTF를 독립 Headless SwiftShader와 별도 Chromium 브라우저 프로세스에서 실행해 노드/geometry/Layer/Stable ID/transform/WCS BBox를 비교. DTO byte digest 및 파일 저장·읽기·fresh process restore. **동일 browser test harness 비교이며 실제 #212 Viewer UI end-to-end 판정이 아님**.
+- `src/tests/a2/fixtures.ts`: AC1024/한글 TEXT·MTEXT/Layer/INSUNITS/LINE·CIRCLE·LWPOLYLINE/BLOCK·중첩 INSERT/큰 좌표, 2^18 instance 폭증, cyclic BLOCK, 비지원 Entity. 전부 공개 합성 입력이며 실제 고객 도면 아님.
+- `src/tests/a2/dxf-risk-preflight.ts`: parser 앞 단계에서 **보수적 합성 fixture 안전 경계** (UTF-8/16MiB, 알 수 없는 Entity, dangling/cycle BLOCK, expanded 100k 초과). 실제 범용 DXF 파서/운영 whitelist가 아니며 비지원 Entity를 조용히 누락하지 않는다. 기존 직렬화 하드 상한 32MiB, 100k nodes, 2M scalars, depth128 **불변**.
+- `src/tests/unit/scene-a2-risk-preflight.test.ts`: 위험 검사 회귀. `src/tests/a2/Dockerfile` + `playwright.config.ts`: Debian Bookworm, apt Chromium, UID 10001, 사내 비밀·운영 volume 불필요 시험 이미지.
+- `.github/workflows/pr-ci.yml`: 해당 A2 branch에만 신규 CPU 테스트 잡을 *기존 required Verify에 추가 필수* 의존. 네트워크 none/read-only, no-new-privileges, cap drop, CPU2/RAM1536MiB/pids256/shm256MiB, /tmp512MiB, 최대15분. 미완료/timeout/OOM/crash/비동기 pageerror 발생 시 success 금지. 기존 Quality/Chrome/G7/Docker gate는 유지. 테스트 이미지 GHCR 게시·운영 활성 없음.
 
 ### 범위 밖/잔존 설계 위험
 
-1. 브라우저 하네스와 실제 \`#212 ThreeDxfViewerAdapter\` 동등성은 **추가 구현/통합 E2E 필요**: 기존 Viewer의 렌더 fallback, 선택 인덱스(선택적), TEXT glyph 실제 이미지, opaque/MText style 및 BLOCK 변환 경로 차이를 비교하지 않았다.
-2. Chromium sandbox는 현재 임시 CI 컨테이너에서 \`chromiumSandbox:false\`; 실행 주체 분리를 검증하더라도 production sandbox/프로세스 격리 보장 아님. cgroups OOM/kill/restart/잠긴 subprocess/late async task/no network/filesystem secret redaction 복합 장애 주입 미실행.
+1. 브라우저 하네스와 실제 `#212 ThreeDxfViewerAdapter` 동등성은 **추가 구현/통합 E2E 필요**: 기존 Viewer의 렌더 fallback, 선택 인덱스(선택적), TEXT glyph 실제 이미지, opaque/MText style 및 BLOCK 변환 경로 차이를 비교하지 않았다.
+2. Chromium sandbox는 현재 임시 CI 컨테이너에서 `chromiumSandbox:false`; 실행 주체 분리를 검증하더라도 production sandbox/프로세스 격리 보장 아님. cgroups OOM/kill/restart/잠긴 subprocess/late async task/no network/filesystem secret redaction 복합 장애 주입 미실행.
 3. 합성 한글 glyph count/텍스트 인덱스만으로 실제 글꼴 배치 fidelity가 입증되지 않는다. 5MiB/20MiB+ 실 DXF, nesting 214k 등 현장 위험 및 OCS/ANSI_949, HATCH/SPLINE/치수 비지원/entity coverage은 #113/#193와 별도.
-4. 실제 browser \`DOM\`/WebGL 공급 필요, CPU-only에는 GPU API 없음(software renderer). Memory/CPU/elapsed 실제 수치는 CI 로그로만 수집한 뒤 평가. 같은 입력에서 WCS 허용오차 **합성 시험 1e-5 Drawing Unit**, **Owner 현장 SLA 대체 아님**. Stored Scene Validator은 원본 geometry semantic completeness를 확인하지 않으므로 소스 entity 대비 누락을 판별하는 커버리지 matrix가 추가 필요.
-5. \`SceneRepository.publish\`, CurrentScene CAS/Revision, G7 Actor/Site/Session, Audit, S3 저장, upload hook/영속 Job, Prisma/Compose를 이 PR에서 변경하지 않았으며 운영 READY가 발생하지 않는다.
+4. 실제 browser `DOM`/WebGL 공급 필요, CPU-only에는 GPU API 없음(software renderer). Memory/CPU/elapsed 실제 수치는 CI 로그로만 수집한 뒤 평가. 같은 입력에서 WCS 허용오차 **합성 시험 1e-5 Drawing Unit**, **Owner 현장 SLA 대체 아님**. Stored Scene Validator은 원본 geometry semantic completeness를 확인하지 않으므로 소스 entity 대비 누락을 판별하는 커버리지 matrix가 추가 필요.
+5. `SceneRepository.publish`, CurrentScene CAS/Revision, G7 Actor/Site/Session, Audit, S3 저장, upload hook/영속 Job, Prisma/Compose를 이 PR에서 변경하지 않았으며 운영 READY가 발생하지 않는다.
 
 ## 4. 단계별 Gate 및 후속 PR 설계(허가된 GO 전 실행 금지)
 
@@ -56,12 +56,12 @@
 
 **A2 최종 판정: GO 불가/차단 (insufficient evidence).** 모든 A2-01~06가 확인되기 전 P1-B/C/D 시작, 자동 게시·GHCR release 금지. 기술적 실패는 A 후보 NO-GO로 분리하고 B를 별도 검증 PR로 검토한다. CI pass 하나도 실 고객/현장 수용이 아니다.
 
-- **P1-B 후속**: 정확 A2 GO 후에만 \`CadRepository.register\`와 \`SceneBuildJob\` 동일 SQLite transaction, 영속 worker/lease/fencing/idempotency/heartbeat/retry/restart, 원본 SHA, 실 G7 Actor·Site·Session·Writer 및 권한 회수 재검증, SceneRepository 검증/비파괴 CAS+Audit. READY Scene/Current/원본/APP_CREATED/Memo/Zone/Outline 보존.
+- **P1-B 후속**: 정확 A2 GO 후에만 `CadRepository.register`와 `SceneBuildJob` 동일 SQLite transaction, 영속 worker/lease/fencing/idempotency/heartbeat/retry/restart, 원본 SHA, 실 G7 Actor·Site·Session·Writer 및 권한 회수 재검증, SceneRepository 검증/비파괴 CAS+Audit. READY Scene/Current/원본/APP_CREATED/Memo/Zone/Outline 보존.
 - **P1-C 후속**: 그 다음 홈/Location Version 상태 JOIN/batch, 검증된 CurrentScene READY와 job status 독립, 익명 민감정보 redaction, Editor 재시도/G7 Origin+CSRF, visible pending polling 및 #202 메모 검색/#165 Scene-first 회귀.
 - **P1-D 후속**: 그 다음 별도 worker image/Compose/health, Greenfield·Schema/approved migration, #209/#211 release registry, 2 worker/SQLite busy/ACK loss/S3 503/복구/2PC. #216 immutable 릴리스와 별도 신규 SemVer/OCI provenance/Host plan 필요.
 
 ## 5. 실행·리뷰·CI 기록 규칙
 
 - 이 문서를 작성한 시점에는 로컬 npm/tsc/Vitest/Playwright/Docker 실행 **NOT RUN**. 원격 GitHub 파일 저장은 실행 증거가 아니다. PR CI를 시작한 뒤에도 최종 작업 상태는 정확 HEAD/run/job 결과로만 판정.
-- 검증 스크립트 실행: \`docker build --platform linux/amd64 -f src/tests/a2/Dockerfile -t layoutmanager-a2-proof:ci .\` 후 repository PR CI의 **isolated CPU job**을 사용. 사내망/현장에서는 Docker 바이너리/모델 폰트 라이선스 사전 승인 후 재현해야 하며 운영 volume이나 CAD 원본을 마운트하지 않는다.
+- 검증 스크립트 실행: `docker build --platform linux/amd64 -f src/tests/a2/Dockerfile -t layoutmanager-a2-proof:ci .` 후 repository PR CI의 **isolated CPU job**을 사용. 사내망/현장에서는 Docker 바이너리/모델 폰트 라이선스 사전 승인 후 재현해야 하며 운영 volume이나 CAD 원본을 마운트하지 않는다.
 - 리뷰 unresolved thread 0, base 최신·mergeable, exact SHA, 실패 원장 보완은 **검사 후** 기록. PR CI 성공만으로 A2 GO/전체 #218 AC 완료/운영 GHCR 게시라고 쓰지 않는다.
