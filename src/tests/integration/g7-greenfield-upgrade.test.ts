@@ -10,7 +10,7 @@ import { ensureAutomatedGreenfield, identity,
   validateInstallation } from '../../server/g7-operational/greenfield-auto';
 import { applyGreenfieldUpgrade, planGreenfieldUpgrade, restoreGreenfieldUpgrade,
   statusGreenfieldUpgrade } from '../../server/g7-operational/greenfield-upgrade-engine';
-import { ddlSha256, resolveUpgradeChain, type UpgradeRegistry } from '../../server/g7-operational/greenfield-upgrade-registry';
+import { GREENFIELD_UPGRADE_REGISTRY,resolveUpgradeChain, type UpgradeRegistry } from '../../server/g7-operational/greenfield-upgrade-registry';
 import { G7_GREENFIELD_BASELINE,G7_GREENFIELD_BASELINE_CHECKSUM,
   G7_PREVIOUS_ZONES_BASELINE,G7_PREVIOUS_ZONES_BASELINE_CHECKSUM,
   G7_GREENFIELD_SCHEMA_ID } from '../../server/g7-operational/greenfield-schema';
@@ -97,7 +97,7 @@ describe('#209 Greenfield release upgrade',()=>{
       expect(migrated.prepare('SELECT id FROM "User"').all()).toEqual(userBefore);
       expect(migrated.prepare('SELECT id,sha256,storage_path FROM "CadFileVersion"').all())
         .toEqual(versionBefore);
-      expect(migrated.prepare('SELECT name FROM sqlite_master WHERE name=?').get('SceneBuildJob'))
+      expect(migrated.prepare("SELECT name FROM sqlite_master WHERE name='SceneBuildJob'").get())
         .toMatchObject({name:'SceneBuildJob'});
       expect(migrated.prepare('PRAGMA foreign_key_check').all()).toEqual([]);
     }finally{migrated.close();}

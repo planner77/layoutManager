@@ -1,3 +1,11 @@
+## #225 / PR #226 CI #556 — G7 업그레이드 시험 타입·import 보완 (2026-11-04)
+
+- [CI #556 / Run41726540083](https://github.com/planner77/layoutManager/actions/runs/41726540083), HEAD `b2e3451acdc14cf1888c8ba9000a7448fa3d1b64`, Static Job126233687612의 TypeScript 단계 오류: `tests/integration/g7-greenfield-upgrade.test.ts:100 TS2554`(SQLite 시험 타입의 `get()`은 인자 없음), `:339-340 TS2304`(신규 Migration 테스트에서 `GREENFIELD_UPGRADE_REGISTRY` import 누락), 그 결과 `:340 TS7006`(edge implicit any). 후속 Unit/Build 미실행. Schema(Migration) 실제 실패 증거가 아님.
+- 조치: 동결 SQL 리터럴 조회로 `get()` 타입 정합, 실제 Registry import 추가 및 미사용 `ddlSha256` import 제거; 기존 테스트의 허위 실패 포장/skip/timeout 상향 없이 정정. 같은 신규 HEAD에 실제 Prisma/SQLite B1 job 원자적 등록·롤백·단일 선점/재시도 통합시험을 추가해 검증 범위 강화.
+- 원본 실패 기록 보전; 새 PR CI 종료 전 결과 **NOT VERIFIED**, `#218/#225` 및 GO-PILOT 미승인.
+
+---
+
 ## #225 / PR #226 CI #555 — 0.60.0 G7 시험 Async 구문 오류 (2026-11-04)
 
 - [CI #555 / Run41725900643](https://github.com/planner77/layoutManager/actions/runs/41725900643), 정확 HEAD `5e34d49453e8d6958e56439efb2f317addd2f0b8`, Static/Unit/Build Job126230576718의 TypeScript 단계에서 `tests/integration/g7-greenfield-upgrade.test.ts:194:108 TS1109` 및 `:194:109 TS1005`로 실패. Docker 및 다른 Job의 성공/실패는 별도이며 이 파싱 오류로 후속 TS/Unit/Build는 실행되지 않음.
