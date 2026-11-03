@@ -1,3 +1,11 @@
+## 2026-11-03 — #218 P1-A2 PR #221 CI #514 RegExp runtime 오류 후 Browser 환경 정렬
+
+- 실패 `PAGEERROR_SYNTAX_INVALID_REGEXP`는 synthetic browser bundling startup에서 발생; Node compile pass, 실제 DXF→Scene pipeline 미호출. 다른 앱 CI/일반 Browser/G7/Docker는 성공, CPU A2 mandatory fail과 Verify 종속 fail을 별개로 기록.
+- CI #514 일반 Scene PoC가 Playwright Chromium153에서 성공하였고 A2 Debian apt Chromium156에서 실패한 차이를 확인. 정확한 regex/의존성·버전 원인 미확정이므로 시험용 `Dockerfile` 브라우저만 npm lockfile의 Chromium153으로 정렬, esbuild `target:chrome153`, `browser.version()` Gate 추가. 테스트 조건 완화 없음.
+- AGENTS/FailureLedger/TestReport/TestPlan/Issue218/Decisions/Operation에 근거와 미확인 범위 기록. #218 OPEN, P1-A2 GO 보류, P1-B/C/D/운영 GHCR·G7·DB 미착수.
+
+---
+
 ## 2026-11-03 — #218 / PR #221 CI #506 browser SyntaxError 검증·원인 국소화
 
 - 정확 CI #506 (source `06d6bda...`)에서 앱 Quality/General Chromium/G7/Docker 전부 성공. 독립 CPU-only Proof `HARNESS_SCRIPT_REQUESTED → PAGEERROR_SYNTAX → A2_HARNESS_PAGEERROR:SYNTAX`로 Scene 본 시험 실패, 보조 3 PASS. 실제 DXF/DTO/Validator/Restore 미실행.
