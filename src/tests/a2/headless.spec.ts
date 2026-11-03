@@ -228,7 +228,7 @@ test('P1-A2 real synthetic conversion: isolated SwiftShader versus browser basel
   // Node's V8 parser checks the exact JavaScript bytes served to Chromium.
   // This only verifies syntax; it does NOT execute or replace the actual DXF
   // converter, verify WebGL, or count as a successful browser test.
-  try { new Script(bundle.outputFiles[0].text, {filename:'a2-synthetic-bundle.js'}); }
+  try { void new Script(bundle.outputFiles[0].text, {filename:'a2-synthetic-bundle.js'}); }
   catch { throw new Error('A2_BUNDLE_STATIC_SYNTAX_INVALID'); }
   note('BUNDLE_STATIC_SYNTAX_OK');
   note('FONT_PREPARE_START');
