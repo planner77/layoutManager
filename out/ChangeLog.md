@@ -1,3 +1,10 @@
+## 2026-11-03 — #218 / PR #221 CI #506 browser SyntaxError 검증·원인 국소화
+
+- 정확 CI #506 (source `06d6bda...`)에서 앱 Quality/General Chromium/G7/Docker 전부 성공. 독립 CPU-only Proof `HARNESS_SCRIPT_REQUESTED → PAGEERROR_SYNTAX → A2_HARNESS_PAGEERROR:SYNTAX`로 Scene 본 시험 실패, 보조 3 PASS. 실제 DXF/DTO/Validator/Restore 미실행.
+- `headless.spec.ts`의 Test-only esbuild IIFE Chromium 호환 `chrome115` target, 정확 bundled JS `vm.Script` syntax-only 체크 및 synthetic JS SyntaxError lexical category/line/column 안전 로그 추가. 기본 시험 실행·원본 Session/Role/Worker/Storage/CI resource/Required tests는 변경하지 않음.
+- 원래 JS SyntaxError 토큰·번들 위치는 이전 로그 부재로 미확정; 새 CI 실행 후만 판정. P1-A2 GO BLOCKED, Issue #218 OPEN/P1-B/C/D 금지, GHCR 운영 게시 없음. [실측 #506](https://github.com/planner77/layoutManager/actions/runs/41561632191), [원장](FailureLedger.md).
+
+---
 ## 2026-11-03 — #218 PR #221 CI #495 가상 페이지 Origin·초기화 Error 수리
 
 - CI #495: Quality/Chromium/G7/Docker/UID10001·synthetic watchdog/위험 preflight PASS, CPU Headless 핵심 시험은 BUNDLE/TTF/Chromium 시작 후 `PAGEERROR_OTHER`로 `sceneA2` 미등록, `A2_TIMEOUT:HARNESS_READY` FAIL. 실제 DXF 변환/Validator 미실행.
