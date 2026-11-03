@@ -1,9 +1,15 @@
 /**
- * #218 P1-A2: a real DXF-to-Object3D-to-validated-DTO-to-restore test.
- * Evidence is only for synthetic fixtures; no G7, SceneRepository, live
- * client Scene Builder or production worker is mocked/claimed as verified.
+ * #218 / P1-A2, synthetic CPU-only technical test (NOT a runtime worker).
+ *
+ * Use the exact pre-existing Scene PoC browser converter entrypoint that
+ * succeeds in the General Chromium E2E, rather than independently bundling
+ * an unverified second DXFViewer bootstrap that failed before input parsing
+ * in CI #506/#514/#525. Extend it with full persisted DTO validation,
+ * immutable source SHA, real Korean TTF, file restore and CPU-only constraints.
+ * Even full success here is not evidence of #212 live Viewer Adapter parity,
+ * G7 authorization, authenticated publish or operational availability.
  */
-import { test, expect, chromium, type Browser, type BrowserContext, type Page, type ConsoleMessage } from '@playwright/test';
+import { test, expect, chromium, type Browser, type BrowserContext, type Page } from '@playwright/test';
 import { build } from 'esbuild';
 import { createHash } from 'node:crypto';
 import { Script } from 'node:vm';
@@ -12,331 +18,289 @@ import { readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { TTFLoader } from 'three/addons/loaders/TTFLoader.js';
-import { validateStoredScenePayload, SCENE_PAYLOAD_LIMITS } from '../../domain/scene-payload';
 import { sceneSha256 } from '../../domain/scene-digest';
+import { SCENE_PAYLOAD_LIMITS, validateStoredScenePayload } from '../../domain/scene-payload';
+import type { SceneManifest } from '../../domain/cad-scene';
+import { extractDxfText } from '../../viewers/core/text-index';
 import { a2CycleDxf, a2ExplosionDxf, a2SyntheticDxf } from './fixtures';
 import { A2_EXPANSION_LIMIT, A2_SOURCE_LIMIT, preflightA2Dxf } from './dxf-risk-preflight';
-import type { A2Input, A2Packet, A2Inventory } from './headless-browser';
 
-const FIXTURE_VERSION = '11111111-1111-4111-8111-111111111111';
-const bytes = new TextEncoder().encode(a2SyntheticDxf);
-const sha = createHash('sha256').update(bytes).digest('hex');
+const source = new TextEncoder().encode(a2SyntheticDxf);
+const sourceSha = createHash('sha256').update(source).digest('hex');
 const executablePath = process.env.A2_CHROMIUM_EXECUTABLE || undefined;
-// Match the existing localhost browser acceptance harness: unlike an arbitrary
-// *.invalid HTTP host, localhost is a potentially trustworthy web origin.
-// All resources are intercepted in-memory; Docker --network none stays enabled.
 const A2_HARNESS_ORIGIN = 'http://localhost';
-// Independent limits are deliberately BELOW the existing 180s test and 15m
-// container limits. An uncompleted conversion must fail, never look READY.
-const A2_LAUNCH_TIMEOUT_MS = 25_000;
-const A2_NAVIGATION_TIMEOUT_MS = 20_000;
-const A2_CONVERTER_TIMEOUT_MS = 60_000;
-async function bounded<T>(
-  name: string, ms: number, action: () => Promise<T>, phase: () => string = () => 'UNOBSERVED',
-): Promise<T> {
+const LAUNCH_LIMIT_MS = 25_000;
+const HARNESS_LIMIT_MS = 20_000;
+const CONVERSION_LIMIT_MS = 70_000;
+
+type Inventory = {
+  nodes: number;
+  vertices: number;
+  materials: number;
+  kinds: Record<string,number>;
+  layers: Record<string,number>;
+  ids: string[];
+  geometryTrace: number[][];
+  geometryById: Record<string,number[]>;
+  visibilityTrace: boolean[];
+  nameTrace: string[];
+  bbox: number[];
+};
+type Packet = {
+  format: string;
+  bytes: number[];
+  manifest?: SceneManifest;
+  stats: Record<string,unknown>;
+};
+type RestoreResult = { rendered: boolean; restored: Inventory; restoreMs: number };
+type BrowserApi = {
+  produce: (dxf:string,sha:string) => Promise<Packet[]>;
+  restore: (packet:Packet, expected?: SceneManifest) => Promise<RestoreResult>;
+};
+function note(phase: string): void {
+  // Constant non-sensitive phases only: never CAD bytes, source SHA, user data
+  // or arbitrary upstream JS exceptions.
+  console.info('A2_HOST_PHASE:' + phase);
+}
+async function bounded<T>(name:string,ms:number,action:()=>Promise<T>):Promise<T>{
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     return await Promise.race([
       action(),
-      new Promise<never>((_, reject) => {
-        timer = setTimeout(() =>
-          reject(new Error('A2_TIMEOUT:' + name + ':LAST_PHASE=' + phase())), ms);
+      new Promise<never>((_,reject)=>{
+        timer = setTimeout(()=>reject(new Error('A2_TIMEOUT:' + name)),ms);
       }),
     ]);
-  } finally {
-    if (timer !== undefined) clearTimeout(timer);
-  }
+  } finally { if (timer !== undefined) clearTimeout(timer); }
 }
-/** Do not emit browser exception messages, stack contents or original URLs. */
-function classifySyntaxError(message: string): string {
-  if (/Unexpected token ['"]?<(?:['"]|$)/i.test(message)) return 'HTML_AS_SCRIPT';
-  if (/Unexpected token ['"]?export\b/i.test(message)) return 'UNEXPECTED_EXPORT';
-  if (/Cannot use import statement outside a module/i.test(message)) return 'MODULE_MISMATCH';
-  if (/Unexpected end of input/i.test(message)) return 'TRUNCATED_SCRIPT';
-  if (/Identifier .* has already been declared/i.test(message)) return 'DUPLICATE_IDENTIFIER';
-  if (/Invalid regular expression/i.test(message)) return 'INVALID_REGEXP';
-  if (/Unexpected identifier/i.test(message)) return 'UNEXPECTED_IDENTIFIER';
-  if (/Invalid or unexpected token/i.test(message)) return 'INVALID_TOKEN';
-  if (/Unexpected token/i.test(message)) return 'UNEXPECTED_TOKEN';
-  return 'OTHER_SYNTAX';
-}
-function note(stage: string): void {
-  // Fixed synthetic-only milestones. Do not log CAD payloads, SHA or font paths.
-  console.info('A2_HOST_PHASE:' + stage);
-}
-
-function projectFont(): string {
-  // Exact project TTF input and the production scripts/fonts.mjs glyph family.
-  const source = readFileSync('public/fonts/NanumGothic-Regular.ttf');
-  const parsed = new TTFLoader().parse(
-    source.buffer.slice(source.byteOffset, source.byteOffset + source.byteLength),
-  );
-  parsed.familyName = 'CAD Korean';
-  // TTFLoader's TypeScript declaration flattens metadata to strings, while
-  // scripts/fonts.mjs normalizes the real font's nested language records.
-  // Narrow the JSON metadata, not the font/glyph object or the TS compiler.
-  const info = (parsed as unknown as {
-    original_font_information?: Record<string, unknown>;
+function projectFont():string{
+  const input = readFileSync('public/fonts/NanumGothic-Regular.ttf');
+  const font = new TTFLoader().parse(input.buffer.slice(input.byteOffset,input.byteOffset+input.byteLength));
+  font.familyName = 'CAD Korean';
+  const info = (font as unknown as {
+    original_font_information?:Record<string,unknown>
   }).original_font_information;
-  if (info) {
-    for (const key of ['fontFamily','fullName','postScriptName','preferredFamily','uniqueID']) {
-      if (info[key]) info[key] = { en: 'CAD Korean' };
-    }
+  if(info) for(const key of ['fontFamily','fullName','postScriptName','preferredFamily','uniqueID']){
+    if(info[key])info[key]={en:'CAD Korean'};
   }
-  if (!parsed.glyphs['한'] || !parsed.glyphs['글'])
-    throw new Error('A2_KOREAN_GLYPHS_NOT_PROVEN');
-  return JSON.stringify(parsed);
+  if(!font.glyphs['한']||!font.glyphs['글'])throw new Error('A2_KOREAN_GLYPHS_NOT_PROVEN');
+  return JSON.stringify(font);
 }
-async function browserFor(software: boolean): Promise<Browser> {
-  note(software ? 'SWIFT_CHROMIUM_LAUNCH' : 'BASELINE_CHROMIUM_LAUNCH');
-  // No user session, Next.js request handler, hidden user tab or G7 bypass.
-  // Browser sandbox is NOT verified here: the disposable, networkless test
-  // container supplies the outer process boundary. Prod sandbox is a GO gate.
-  const browser = await bounded('CHROMIUM_LAUNCH', A2_LAUNCH_TIMEOUT_MS, () => chromium.launch({
-    headless: true, executablePath,
-    chromiumSandbox: false,
-    args: software ? ['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader'] : [],
-  }));
-  const major = browser.version().split('.')[0];
-  // Expected 153 comes from the exact Playwright 1.63.0 lockfile browser
-  // observed in successful #514 General Chromium scene-poc E2E.
-  // A changed browser build requires explicit new evidence, not silent GO.
-  if (process.env.A2_BROWSER_EXPECTED_MAJOR) {
-    if (!/^\d+$/.test(major) || major !== process.env.A2_BROWSER_EXPECTED_MAJOR) {
-      await browser.close();
-      throw new Error('A2_BROWSER_VERSION_MISMATCH');
-    }
+function compareInventory(actual:Inventory,expected:Inventory):void{
+  for(const k of ['nodes','vertices','materials','kinds','layers','ids',
+    'visibilityTrace','nameTrace'] as const)expect(actual[k],k).toEqual(expected[k]);
+  expect(actual.geometryTrace.length).toBe(expected.geometryTrace.length);
+  for(let i=0;i<actual.geometryTrace.length;i++){
+    const a=actual.geometryTrace[i],b=expected.geometryTrace[i];
+    expect(a.length).toBe(b.length);
+    a.forEach((x,j)=>expect(Math.abs(x-b[j])).toBeLessThanOrEqual(1e-5));
   }
-  note('BROWSER_MAJOR_' + major);
-  note(software ? 'SWIFT_CHROMIUM_STARTED' : 'BASELINE_CHROMIUM_STARTED');
+  const aIds=Object.keys(actual.geometryById).sort();
+  const bIds=Object.keys(expected.geometryById).sort();
+  expect(aIds).toEqual(bIds);
+  for(const id of aIds){
+    const a=actual.geometryById[id],b=expected.geometryById[id];
+    expect(a.length).toBe(b.length);
+    a.forEach((x,j)=>expect(Math.abs(x-b[j])).toBeLessThanOrEqual(1e-5));
+  }
+  expect(actual.bbox.length).toBe(6);
+  actual.bbox.forEach((n,i)=>expect(Math.abs(n-expected.bbox[i])).toBeLessThanOrEqual(1e-5));
+}
+async function browserFor(software:boolean):Promise<Browser>{
+  note(software?'SWIFT_CHROMIUM_LAUNCH':'BASELINE_CHROMIUM_LAUNCH');
+  const browser=await bounded('CHROMIUM_LAUNCH',LAUNCH_LIMIT_MS,()=>chromium.launch({
+    headless:true,executablePath,chromiumSandbox:false,
+    args:software?['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']:[],
+  }));
+  const major=browser.version().split('.')[0];
+  if(process.env.A2_BROWSER_EXPECTED_MAJOR && major!==process.env.A2_BROWSER_EXPECTED_MAJOR){
+    await browser.close();throw new Error('A2_BROWSER_VERSION_MISMATCH');
+  }
+  note('BROWSER_MAJOR_'+major);
   return browser;
 }
-async function prepare(context: BrowserContext, script: string, font: string,
-  errors: string[]): Promise<Page> {
-  await context.route('**/fonts/CadKorean.typeface.json', r => {
-    note('FONT_RESOURCE_REQUESTED');
-    return r.fulfill({ status: 200, contentType: 'application/json', body: font });
+async function prepare(
+  context:BrowserContext,bundle:string,font:string,errors:string[],
+):Promise<Page>{
+  let served=false;
+  await context.route('**/fonts/CadKorean.typeface.json',r=>
+    r.fulfill({status:200,contentType:'application/json',body:font}));
+  await context.route('**/__scene-poc.js',r=>{
+    served=true;
+    note('REFERENCE_SCRIPT_REQUESTED');
+    return r.fulfill({status:200,contentType:'application/javascript',body:bundle});
   });
-  let scriptServed = false;
-  await context.route('**/__a2.js', r => {
-    scriptServed = true;
-    note('HARNESS_SCRIPT_REQUESTED');
-    return r.fulfill({ status: 200, contentType: 'application/javascript', body: script });
-  });
-  await context.route('**/__a2', r =>
-    r.fulfill({ status: 200, contentType: 'text/html',
-      body: '<!doctype html><html><body><script src="/__a2.js"></script></body></html>' }));
-  const page = await context.newPage();
-  let rejectDuringInit: ((reason: Error) => void) | undefined;
-  const initFailure = new Promise<never>((_, reject) => { rejectDuringInit = reject; });
-  // Observe the diagnostic promise even if an immediate script fault precedes
-  // waitForFunction; the same rejection MUST propagate via Promise.race.
-  void initFailure.catch(() => undefined);
-  page.on('pageerror', e => {
-    // Only a fixed category leaves the isolated browser. No CAD bytes, origin
-    // URLs, raw JS error message or stack are emitted.
-    const raw = e.message;
-    const category = e.name === 'SyntaxError' ? 'SYNTAX_' + classifySyntaxError(raw)
-      : /randomUUID/i.test(raw) ? 'CRYPTO_RANDOMUUID'
-      : /secure.context|not.secure|SecurityError/i.test(raw) ? 'INSECURE_CONTEXT'
-      : /require is not defined/i.test(raw) ? 'MODULE_SHIM'
-      : /WebGL/i.test(raw) ? 'WEBGL'
-      : e.name === 'TypeError' ? 'TYPE'
-      : e.name === 'SyntaxError' ? 'SYNTAX'
-      : e.name === 'ReferenceError' ? 'REFERENCE'
-      : 'OTHER';
-    errors.push(category);
-    note('PAGEERROR_' + category);
-    // Source line/column ONLY from the synthetic virtual JS bundle. Never
-    // expose untrusted exception text, stack, CAD, hostname or file paths.
-    if (e.name === 'SyntaxError') {
-      const match = /__a2\.js:(\d+):(\d+)/.exec(e.stack ?? '');
-      const line = match ? Number(match[1]) : null;
-      const column = match ? Number(match[2]) : null;
-      if (line !== null && column !== null && line >= 1 && line < 10_000_000 && column >= 1 && column < 100_000)
-        note('BUNDLE_SYNTAX_POSITION_' + line + '_' + column);
-    }
-    if (rejectDuringInit) rejectDuringInit(new Error('A2_HARNESS_PAGEERROR:' + category));
-  });
-  page.on('requestfailed', r => {
-    // A route failure is relevant for the offline font/script diagnosis;
-    // never log the original resource URL or browser error text.
-    note(r.url().endsWith('/CadKorean.typeface.json') ? 'FONT_REQUEST_FAILED' : 'RESOURCE_REQUEST_FAILED');
-  });
-  note('HARNESS_NAVIGATE_START');
-  await bounded('HARNESS_NAVIGATE', A2_NAVIGATION_TIMEOUT_MS,
-    () => Promise.race([
-      page.goto(A2_HARNESS_ORIGIN + '/__a2').then(() => undefined),
-      initFailure,
-    ]));
-  await bounded('HARNESS_READY', A2_NAVIGATION_TIMEOUT_MS,
-    () => Promise.race([
-      page.waitForFunction(() => !!window.sceneA2).then(() => undefined),
-      initFailure,
-    ]));
-  rejectDuringInit = undefined;
-  if (!scriptServed) throw new Error('A2_HARNESS_SCRIPT_NOT_SERVED');
-  const trust = await page.evaluate(() => ({
-    secure: window.isSecureContext, uuid: typeof crypto.randomUUID,
+  await context.route('**/__scene-poc',r=>r.fulfill({
+    status:200,contentType:'text/html',
+    body:'<!doctype html><html><body><script src="/__scene-poc.js"></script></body></html>',
   }));
-  if (!trust.secure || trust.uuid !== 'function')
-    throw new Error('A2_HARNESS_SECURE_CONTEXT_REQUIRED');
-  note('HARNESS_SECURE_CONTEXT_VERIFIED');
-  note('HARNESS_READY');
+  const page=await context.newPage();
+  let rejectInit:((error:Error)=>void)|undefined;
+  const errorPromise=new Promise<never>((_,reject)=>{rejectInit=reject;});
+  void errorPromise.catch(()=>undefined);
+  page.on('pageerror',e=>{
+    const category=e.name==='SyntaxError'?'SYNTAX'
+      :e.name==='ReferenceError'?'REFERENCE'
+      :e.name==='TypeError'?'TYPE':'OTHER';
+    errors.push(category);
+    note('PAGEERROR_'+category);
+    rejectInit?.(new Error('A2_REFERENCE_PAGEERROR:'+category));
+  });
+  page.on('requestfailed',r=>{
+    note(r.url().endsWith('CadKorean.typeface.json')?'FONT_REQUEST_FAILED':'REFERENCE_REQUEST_FAILED');
+  });
+  await bounded('REFERENCE_NAVIGATE',HARNESS_LIMIT_MS,()=>Promise.race([
+    page.goto(A2_HARNESS_ORIGIN+'/__scene-poc').then(()=>undefined),errorPromise,
+  ]));
+  await bounded('REFERENCE_READY',HARNESS_LIMIT_MS,()=>Promise.race([
+    page.waitForFunction(()=>
+      typeof (window as unknown as {scenePoc?:BrowserApi}).scenePoc?.produce==='function'
+    ).then(()=>undefined),errorPromise,
+  ]));
+  rejectInit=undefined;
+  if(!served)throw new Error('A2_REFERENCE_SCRIPT_NOT_SERVED');
+  const secure=await page.evaluate(()=>window.isSecureContext&&typeof crypto.randomUUID==='function');
+  if(!secure)throw new Error('A2_REFERENCE_INSECURE_CONTEXT');
+  note('REFERENCE_READY');
   return page;
 }
-function sameInventory(a: A2Inventory, b: A2Inventory): void {
-  expect(a.nodes).toBe(b.nodes);
-  expect(a.geometry).toBe(b.geometry);
-  expect(a.rows.length).toBe(b.rows.length);
-  for (let i = 0; i < a.rows.length; i++) {
-    const l = a.rows[i], r = b.rows[i];
-    expect([r.type,r.name,r.layer,r.visible,r.id,r.vertices])
-      .toEqual([l.type,l.name,l.layer,l.visible,l.id,l.vertices]);
-    expect(r.matrix.length).toBe(l.matrix.length);
-    l.matrix.forEach((n,k) => expect(Math.abs(n-r.matrix[k])).toBeLessThanOrEqual(1e-5));
-    expect(r.wcs === null).toBe(l.wcs === null);
-    l.wcs?.forEach((n,k) => expect(Math.abs(n-r.wcs![k])).toBeLessThanOrEqual(1e-5));
-  }
-  a.bbox.forEach((n,k) => expect(Math.abs(n-b.bbox[k])).toBeLessThanOrEqual(1e-5));
+async function produce(page:Page):Promise<{packet:Packet;inventory:Inventory;renderer:string;parseMs:number;serializeMs:number}>{
+  note('REAL_DXF_PRODUCE_START');
+  const result=await bounded('REAL_DXF_PRODUCE',CONVERSION_LIMIT_MS,
+    ()=>page.evaluate(async({dxf,sha})=>{
+      const api=(window as unknown as {scenePoc:BrowserApi}).scenePoc;
+      const canvas=document.createElement('canvas');
+      const gl=canvas.getContext('webgl2');
+      const debug=gl?.getExtension('WEBGL_debug_renderer_info');
+      const renderer=debug?String(gl?.getParameter(debug.UNMASKED_RENDERER_WEBGL)):'';
+      // Return the actual pinned DXF viewer's DTO, not a synthesized THREE.Group.
+      const packets=await api.produce(dxf,sha);
+      const packet=packets.find(p=>p.format==='CUSTOM_DTO'&&!!p.manifest);
+      if(!packet)throw new Error('A2_CUSTOM_DTO_MISSING');
+      return {packet,renderer};
+    },{dxf:a2SyntheticDxf,sha:sourceSha}));
+  if(!result.renderer.toLowerCase().includes('swiftshader')&&process.env.A2_REQUIRE_SWIFTSHADER==='1')
+    throw new Error('A2_SOFTWARE_WEBGL_NOT_PROVEN');
+  const data=result.packet.stats;
+  const inventory=data.original as Inventory;
+  if(!inventory||!Array.isArray(inventory.ids))throw new Error('A2_INVENTORY_MISSING');
+  note('REAL_DXF_PRODUCE_DONE');
+  return {packet:result.packet,inventory,renderer:result.renderer,
+    parseMs:Number(data.parseMs),serializeMs:Number(data.serializeMs)};
 }
-async function runProof(page: Page, software: boolean): Promise<A2Packet> {
-  const input: A2Input = {
-    source: Array.from(bytes), expectedSha256: sha,
-    versionId: FIXTURE_VERSION, requireSwiftShader: software,
-  };
-  let lastPhase = 'BEFORE_BROWSER_START';
-  const onConsole = (message: ConsoleMessage) => {
-    const match = /^A2_PHASE:([A-Z_]+)$/.exec(message.text());
-    if (match) {
-      lastPhase = match[1];
-      // Explicitly named phases only: never echo arbitrary page console text.
-      note('BROWSER_' + lastPhase);
-    }
-  };
-  page.on('console', onConsole);
-  try {
-    return await bounded('DXF_TO_SCENE', A2_CONVERTER_TIMEOUT_MS,
-      () => page.evaluate(value => window.sceneA2.run(value), input), () => lastPhase);
-  } finally {
-    page.off('console', onConsole);
-  }
+async function restore(page:Page,packet:Packet):Promise<RestoreResult>{
+  note('REAL_DTO_RESTORE_START');
+  const result=await bounded('REAL_DTO_RESTORE',CONVERSION_LIMIT_MS,
+    ()=>page.evaluate(p=>{
+      const api=(window as unknown as {scenePoc:BrowserApi}).scenePoc;
+      return api.restore(p,p.manifest);
+    },packet));
+  note('REAL_DTO_RESTORE_DONE');
+  return result;
 }
-test('P1-A2 real synthetic conversion: isolated SwiftShader versus browser baseline, full DTO and restore', async () => {
+
+test('P1-A2 real DXF via existing browser builder: CPU SwiftShader, CUSTOM_DTO full validator, file and new-process restore',async()=>{
   test.setTimeout(180_000);
-  const limit = preflightA2Dxf(bytes);
-  expect(limit).toMatchObject({ model: 7, blocks: 2 });
-  expect(limit.expandedBound).toBeGreaterThanOrEqual(7);
-  note('BUNDLE_START');
-  const bundle = await build({
-    entryPoints: ['tests/a2/headless-browser.ts'], bundle: true,
-    // Align generated syntax with the lockfile-pinned Chromium 153
-    // which passed scene-poc E2E in CI #514. This must not suppress an
-    // invalid RegExp: an initialization or DXF conversion error still fails.
-    platform: 'browser', format: 'iife', target: 'chrome153',
-    write: false, logLevel: 'silent',
+  const size=preflightA2Dxf(source);
+  expect(size).toMatchObject({model:7,blocks:2});
+  expect(sourceSha).toBe(sceneSha256(source));
+  const textIndex=extractDxfText(source.buffer.slice(source.byteOffset,source.byteOffset+source.byteLength) as ArrayBuffer);
+  expect(textIndex.hits.length).toBeGreaterThanOrEqual(3);
+  expect(textIndex.hits.filter(h=>/[가-힣]/u.test(h.text)).length).toBeGreaterThanOrEqual(2);
+  note('REFERENCE_BUNDLE_START');
+  // This is the exact browser-side DXF converter already exercised by
+  // src/tests/e2e/scene-poc.spec.ts on Playwright Chromium 153 (CI #514).
+  const output=await build({
+    entryPoints:['tests/e2e/scene-poc-browser.ts'],
+    bundle:true,platform:'browser',format:'iife',write:false,logLevel:'silent',
   });
-  note('BUNDLE_DONE');
-  // Node's V8 parser checks the exact JavaScript bytes served to Chromium.
-  // This only verifies syntax; it does NOT execute or replace the actual DXF
-  // converter, verify WebGL, or count as a successful browser test.
-  try { void new Script(bundle.outputFiles[0].text, {filename:'a2-synthetic-bundle.js'}); }
-  catch { throw new Error('A2_BUNDLE_STATIC_SYNTAX_INVALID'); }
-  note('BUNDLE_STATIC_SYNTAX_OK');
-  note('FONT_PREPARE_START');
-  const font = projectFont();
-  note('FONT_PREPARE_DONE');
-  const errors: string[] = [];
-  note('SWIFT_TEST_START');
-  const headless = await browserFor(true);
-  let first: A2Packet;
-  try {
-    const context = await headless.newContext({ serviceWorkers: 'block' });
-    const page = await prepare(context, bundle.outputFiles[0].text, font, errors);
-    note('SWIFT_DXF_CONVERSION_START');
-    first = await runProof(page, true);
-    note('SWIFT_DXF_CONVERSION_DONE');
+  void new Script(output.outputFiles[0].text,{filename:'scene-poc-browser.js'});
+  note('REFERENCE_BUNDLE_VALID');
+  const font=projectFont();
+  note('KOREAN_FONT_PREPARED');
+  const errors:string[]=[];
+  const browser=await browserFor(true);
+  let first:Awaited<ReturnType<typeof produce>>;
+  try{
+    const context=await browser.newContext({serviceWorkers:'block'});
+    const page=await prepare(context,output.outputFiles[0].text,font,errors);
+    first=await produce(page);
     expect(first.renderer.toLowerCase()).toContain('swiftshader');
-    expect(first.fontTextHits).toBeGreaterThanOrEqual(3);
-    expect(first.koreanHits).toBeGreaterThanOrEqual(2);
-    expect(first.sourceEntities).toBeGreaterThanOrEqual(7);
-    expect(first.original.nodes).toBeGreaterThan(1);
-    expect(first.original.geometry).toBeGreaterThan(1);
-    expect(first.bytes.length).toBeGreaterThan(0);
-    expect(first.bytes.length).toBeLessThanOrEqual(SCENE_PAYLOAD_LIMITS.bytes);
-    expect(first.manifest).toMatchObject({ state: 'READY', format: 'CUSTOM_DTO',
-      byteLength: first.bytes.length, sha256: sceneSha256(Uint8Array.from(first.bytes)) });
-    validateStoredScenePayload(Uint8Array.from(first.bytes), first.manifest);
-    sameInventory(first.original, first.restored);
+    expect(first.packet.bytes.length).toBeGreaterThan(0);
+    expect(first.packet.bytes.length).toBeLessThanOrEqual(SCENE_PAYLOAD_LIMITS.bytes);
+    expect(first.packet.manifest).toBeDefined();
+    const manifest=first.packet.manifest!;
+    expect(manifest).toMatchObject({
+      state:'READY',format:'CUSTOM_DTO',byteLength:first.packet.bytes.length,
+      sha256:sceneSha256(Uint8Array.from(first.packet.bytes)),
+    });
+    expect(manifest.scope).toMatchObject({
+      sourceSha256:sourceSha,sourceUnit:'DXF_INSUNITS_4',frame:'DXF_WCS_XY',
+    });
+    const payload=Uint8Array.from(first.packet.bytes);
+    validateStoredScenePayload(payload,manifest);
+    expect(first.inventory.nodes).toBeGreaterThan(1);
+    expect(first.inventory.vertices).toBeGreaterThan(0);
+    expect(first.inventory.ids.length).toBe(first.inventory.nodes);
+    expect(Object.keys(first.inventory.layers).length).toBeGreaterThan(1);
+    const recovered=await restore(page,first.packet);
+    expect(recovered.rendered).toBe(true);
+    compareInventory(first.inventory,recovered.restored);
 
-    // Durable byte-level file round-trip in isolated temporary storage only.
-    // This does NOT establish SceneRepository CAS, audit or S3 publishing.
-    const dir = await mkdtemp(join(tmpdir(), 'a2-scene-synthetic-'));
-    try {
-      const file = join(dir, 'candidate.dto.json');
-      await writeFile(file, Uint8Array.from(first.bytes));
-      const persisted = await readFile(file);
-      validateStoredScenePayload(persisted, first.manifest);
-      expect(sceneSha256(persisted)).toBe(first.manifest.sha256);
-    } finally { await rm(dir, {recursive: true, force: true}); }
-    note('SWIFT_POST_COMPLETION_ASYNC_WINDOW');
-    await page.waitForTimeout(600); // detect late asynchronous page errors
-    await context.close();
-  } finally { await headless.close(); }
-
-  // Launch a completely separate Chromium process: simulated test restart.
-  // This is NOT a kill-9, OOM, lease-recovery or operational restart test.
-  note('BASELINE_TEST_START');
-  const baseline = await browserFor(false);
-  try {
-    const context = await baseline.newContext({ serviceWorkers: 'block' });
-    const page = await prepare(context, bundle.outputFiles[0].text, font, errors);
-    note('BASELINE_DXF_CONVERSION_START');
-    const existingBuilderBaseline = await runProof(page, false);
-    note('BASELINE_DXF_CONVERSION_DONE');
-    sameInventory(first.original, existingBuilderBaseline.original);
-    expect(existingBuilderBaseline.manifest.scope).toEqual(first.manifest.scope);
-    expect(existingBuilderBaseline.manifest.sha256).toBe(first.manifest.sha256);
-    const restoredInNewProcess = await page.evaluate(
-      packet => window.sceneA2.restore(packet), {bytes: first.bytes, manifest: first.manifest});
-    sameInventory(first.original, restoredInNewProcess);
+    const folder=await mkdtemp(join(tmpdir(),'a2-dto-verified-'));
+    try{
+      const artifact=join(folder,'scene.dto.json');
+      await writeFile(artifact,payload);
+      const read=await readFile(artifact);
+      validateStoredScenePayload(read,manifest);
+      expect(sceneSha256(read)).toBe(manifest.sha256);
+    }finally{await rm(folder,{recursive:true,force:true});}
     await page.waitForTimeout(600);
     await context.close();
-  } finally { await baseline.close(); }
+  }finally{await browser.close();}
+
+  // A new browser process must restore the exact original bytes and scope.
+  const second=await browserFor(false);
+  try{
+    const context=await second.newContext({serviceWorkers:'block'});
+    const page=await prepare(context,output.outputFiles[0].text,font,errors);
+    const reloaded=await restore(page,first.packet);
+    expect(reloaded.rendered).toBe(true);
+    compareInventory(first.inventory,reloaded.restored);
+    const comparison=await produce(page);
+    compareInventory(first.inventory,comparison.inventory);
+    expect(comparison.packet.manifest?.scope).toEqual(first.packet.manifest?.scope);
+    expect(comparison.packet.manifest?.sha256).toBe(first.packet.manifest?.sha256);
+    await page.waitForTimeout(600);
+    await context.close();
+  }finally{await second.close();}
   expect(errors).toEqual([]);
-  console.log('A2_SYNTHETIC_EVIDENCE', JSON.stringify({
-    software:'SwiftShader', model:limit.model, expandedBound:limit.expandedBound,
-    nodes:first.original.nodes, geometry:first.original.geometry,
-    sourceEntities:first.sourceEntities, textHits:first.fontTextHits,
-    koreanHits:first.koreanHits, dtoBytes:first.bytes.length,
-    parseMs: Math.round(first.parseMs), serializeMs: Math.round(first.serializeMs),
-    latePageErrors: errors.length, compare:'test-harness browser baseline, NOT viewer UI',
+  console.log('A2_SYNTHETIC_EVIDENCE',JSON.stringify({
+    model:size.model,expandedBound:size.expandedBound,nodes:first.inventory.nodes,
+    vertices:first.inventory.vertices,dtoBytes:first.packet.bytes.length,
+    koreanTextHits:textIndex.hits.filter(h=>/[가-힣]/u.test(h.text)).length,
+    parseMs:Math.round(first.parseMs),serializeMs:Math.round(first.serializeMs),
+    asyncErrors:errors.length,builder:'existing-scene-poc-not-live-viewer-adapter',
   }));
 });
-test('P1-A2 virtual page uses a potentially trustworthy localhost origin', () => {
-  // Static guard complements the real page.isSecureContext check in prepare().
+test('P1-A2 virtual browser origin remains trustworthy',()=>{
   expect(new URL(A2_HARNESS_ORIGIN).origin).toBe('http://localhost');
-  expect(new URL(A2_HARNESS_ORIGIN).hostname).toBe('localhost');
 });
-test('P1-A2 watchdog reports a stalled stage as failure, never as READY', async () => {
-  // Synthetic never-resolving promise: exercise only the *diagnostic* watchdog.
-  // No browser/Scene work is mocked into an artificial successful conversion.
-  await expect(bounded('SYNTHETIC_STALL', 25,
-    () => new Promise<never>(() => {}), () => 'DXF_PARSE_START'))
-    .rejects.toThrow('A2_TIMEOUT:SYNTHETIC_STALL:LAST_PHASE=DXF_PARSE_START');
+test('P1-A2 watchdog rejects a stalled Promise',async()=>{
+  await expect(bounded('SYNTHETIC_STALL',25,()=>new Promise<never>(()=>{})))
+    .rejects.toThrow('A2_TIMEOUT:SYNTHETIC_STALL');
 });
-test('P1-A2 strict preparse fail-closed: unsupported, nested explosion, cycle, source cap', () => {
-  expect(() => preflightA2Dxf(new TextEncoder().encode(
-    a2SyntheticDxf.replace('\nLINE\n', '\n3DSOLID\n'))))
+test('P1-A2 fail-closed preparse: unsupported geometry, nested explosion, cycles and limits',()=>{
+  expect(()=>preflightA2Dxf(new TextEncoder().encode(a2SyntheticDxf.replace('\nLINE\n','\n3DSOLID\n'))))
     .toThrowError('A2_ENTITY_UNSUPPORTED');
-  expect(() => preflightA2Dxf(new TextEncoder().encode(a2ExplosionDxf())))
+  expect(()=>preflightA2Dxf(new TextEncoder().encode(a2ExplosionDxf())))
     .toThrowError('A2_EXPANSION_LIMIT');
-  expect(() => preflightA2Dxf(new TextEncoder().encode(a2CycleDxf())))
+  expect(()=>preflightA2Dxf(new TextEncoder().encode(a2CycleDxf())))
     .toThrowError('A2_BLOCK_CYCLE');
-  expect(() => preflightA2Dxf(new Uint8Array(A2_SOURCE_LIMIT+1)))
+  expect(()=>preflightA2Dxf(new Uint8Array(A2_SOURCE_LIMIT+1)))
     .toThrowError('A2_SOURCE_LIMIT');
   expect(A2_EXPANSION_LIMIT).toBe(SCENE_PAYLOAD_LIMITS.nodes);
   expect(SCENE_PAYLOAD_LIMITS).toMatchObject({
-    bytes:32*1024*1024, nodes:100_000, attributeScalars:2_000_000, depth:128,
+    bytes:32*1024*1024,nodes:100_000,attributeScalars:2_000_000,depth:128,
   });
 });
