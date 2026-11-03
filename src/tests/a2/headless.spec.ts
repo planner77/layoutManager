@@ -6,6 +6,7 @@
 import { test, expect, chromium, type Browser, type BrowserContext, type Page, type ConsoleMessage } from '@playwright/test';
 import { build } from 'esbuild';
 import { createHash } from 'node:crypto';
+import { Script } from 'node:vm';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -45,6 +46,19 @@ async function bounded<T>(
   } finally {
     if (timer !== undefined) clearTimeout(timer);
   }
+}
+/** Do not emit browser exception messages, stack contents or original URLs. */
+function classifySyntaxError(message: string): string {
+  if (/Unexpected token ['"]?<(?:['"]|$)/i.test(message)) return 'HTML_AS_SCRIPT';
+  if (/Unexpected token ['"]?export\b/i.test(message)) return 'UNEXPECTED_EXPORT';
+  if (/Cannot use import statement outside a module/i.test(message)) return 'MODULE_MISMATCH';
+  if (/Unexpected end of input/i.test(message)) return 'TRUNCATED_SCRIPT';
+  if (/Identifier .* has already been declared/i.test(message)) return 'DUPLICATE_IDENTIFIER';
+  if (/Invalid regular expression/i.test(message)) return 'INVALID_REGEXP';
+  if (/Unexpected identifier/i.test(message)) return 'UNEXPECTED_IDENTIFIER';
+  if (/Invalid or unexpected token/i.test(message)) return 'INVALID_TOKEN';
+  if (/Unexpected token/i.test(message)) return 'UNEXPECTED_TOKEN';
+  return 'OTHER_SYNTAX';
 }
 function note(stage: string): void {
   // Fixed synthetic-only milestones. Do not log CAD payloads, SHA or font paths.
@@ -111,7 +125,8 @@ async function prepare(context: BrowserContext, script: string, font: string,
     // Only a fixed category leaves the isolated browser. No CAD bytes, origin
     // URLs, raw JS error message or stack are emitted.
     const raw = e.message;
-    const category = /randomUUID/i.test(raw) ? 'CRYPTO_RANDOMUUID'
+    const category = e.name === 'SyntaxError' ? 'SYNTAX_' + classifySyntaxError(raw)
+      : /randomUUID/i.test(raw) ? 'CRYPTO_RANDOMUUID'
       : /secure.context|not.secure|SecurityError/i.test(raw) ? 'INSECURE_CONTEXT'
       : /require is not defined/i.test(raw) ? 'MODULE_SHIM'
       : /WebGL/i.test(raw) ? 'WEBGL'
@@ -121,6 +136,15 @@ async function prepare(context: BrowserContext, script: string, font: string,
       : 'OTHER';
     errors.push(category);
     note('PAGEERROR_' + category);
+    // Source line/column ONLY from the synthetic virtual JS bundle. Never
+    // expose untrusted exception text, stack, CAD, hostname or file paths.
+    if (e.name === 'SyntaxError') {
+      const match = /__a2\.js:(\d+):(\d+)/.exec(e.stack ?? '');
+      const line = match ? Number(match[1]) : null;
+      const column = match ? Number(match[2]) : null;
+      if (line !== null && column !== null && line >= 1 && line < 10_000_000 && column >= 1 && column < 100_000)
+        note('BUNDLE_SYNTAX_POSITION_' + line + '_' + column);
+    }
     if (rejectDuringInit) rejectDuringInit(new Error('A2_HARNESS_PAGEERROR:' + category));
   });
   page.on('requestfailed', r => {
@@ -195,9 +219,18 @@ test('P1-A2 real synthetic conversion: isolated SwiftShader versus browser basel
   note('BUNDLE_START');
   const bundle = await build({
     entryPoints: ['tests/a2/headless-browser.ts'], bundle: true,
-    platform: 'browser', format: 'iife', write: false, logLevel: 'silent',
+    // Browser system package is Chromium 156 in CI #506. Emit classic-script
+    // syntax supported by a lower bound rather than untransformed "esnext".
+    platform: 'browser', format: 'iife', target: 'chrome115',
+    write: false, logLevel: 'silent',
   });
   note('BUNDLE_DONE');
+  // Node's V8 parser checks the exact JavaScript bytes served to Chromium.
+  // This only verifies syntax; it does NOT execute or replace the actual DXF
+  // converter, verify WebGL, or count as a successful browser test.
+  try { new Script(bundle.outputFiles[0].text, {filename:'a2-synthetic-bundle.js'}); }
+  catch { throw new Error('A2_BUNDLE_STATIC_SYNTAX_INVALID'); }
+  note('BUNDLE_STATIC_SYNTAX_OK');
   note('FONT_PREPARE_START');
   const font = projectFont();
   note('FONT_PREPARE_DONE');
