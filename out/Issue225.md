@@ -1,3 +1,11 @@
+## 2026-11-04 — CI #557 실패 후 수정 / 신규 검증 대기
+
+[CI #557](https://github.com/planner77/layoutManager/actions/runs/41727427960)은 999 PASS / 17 FAIL(Static), Docker real upgrade Smoke FAIL, Required Verify FAIL. 실제 제품 자동 Scene Worker의 동작 검증에 앞서 **기존 버전 업그레이드 fixture의 구 Schema ID 불일치**, **R2 복원 fixture의 SceneBuildJob 테이블 잔존**, **Docker Smoke의 승인 없는 `auto` 실행**이 발견됐다. 구버전 Scheme ID/DDL을 테스트에 정확 복원하고 CI 소유 disposable volume에서 신규 Migration Plan ID의 명시 승인과 백업·복구를 통과시키도록 수정했다. 근거 [FailureLedger](FailureLedger.md).
+
+다음 정확-HEAD CI에서 0.59→0.60 실제 DDL/업무 보전/WAL/복구 및 Docker migration image를 검증한다. Worker, G7 Background 게시, UI, GO-PILOT은 여전히 미완료; 기존 0.59 운영 이미지/데이터는 불변.
+
+---
+
 ## 2026-11-04 — 0.60.0 Job G7 forward-only Migration 후보
 
 - 신규 제품 버전은 0.60.0 (Draft)이며 이전 v0.59.0의 Zone 기준선·이미지는 불변이다. 신규 빈 설치는 Job 기준선 1행, 기존 설치에서 승인 Migration을 거치면 Zone 기준선+Job Migration 2행을 유지한다.

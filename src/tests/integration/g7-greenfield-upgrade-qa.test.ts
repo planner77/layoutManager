@@ -14,7 +14,8 @@ import { applyGreenfieldUpgrade, planGreenfieldUpgrade, restoreGreenfieldUpgrade
 import { assertSpace, verifyRecoverySet } from '../../server/g7-operational/greenfield-upgrade-backup';
 import { GREENFIELD_UPGRADE_REGISTRY,
   type UpgradeRegistry } from '../../server/g7-operational/greenfield-upgrade-registry';
-import {G7_PREVIOUS_ZONES_BASELINE,G7_PREVIOUS_ZONES_BASELINE_CHECKSUM}
+import {G7_PREVIOUS_ZONES_BASELINE,G7_PREVIOUS_ZONES_BASELINE_CHECKSUM,
+  G7_PREVIOUS_ZONES_SCHEMA_ID}
   from '../../server/g7-operational/greenfield-schema';
 
 type Db={prepare:(sql:string)=>{all:(...args:unknown[])=>Record<string,unknown>[];get:(...args:unknown[])=>Record<string,unknown>;
@@ -44,6 +45,7 @@ function fixture(){
   db.close();
   const manifest=path.join(dbDir,'g7-install.json');
   const old=JSON.parse(readFileSync(manifest,'utf8')) as Record<string,string>;
+  old.schemaId=G7_PREVIOUS_ZONES_SCHEMA_ID;
   old.version='0.56.0';old.appImage='ghcr.io/planner77/layoutmanager:0.56.0';
   old.migratorImage=old.appImage+'-migrate';old.sourceCommit='';
   writeFileSync(manifest,JSON.stringify(old),{mode:0o600});

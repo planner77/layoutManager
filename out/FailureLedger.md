@@ -1,3 +1,14 @@
+## #225 / PR #226 — CI #557 실패: G7 기존 Scheme ID fixture + 승인형 Docker Smoke (2026-11-04)
+
+- **확정 실패:** [PR CI #557 / Run41727427960](https://github.com/planner77/layoutManager/actions/runs/41727427960), exact HEAD `d0de48570a03594f4a2c67af6b24f0f7b85d854f`, Static/Unit Job `126236803588` 1016 tests 중 **999 PASS / 17 FAIL**(3 files), Docker Job `126236803630` FAIL, Required Verify `126242792010`가 Quality/Docker 실패를 정상 전파해 FAIL. Typecheck/ESLint 통과. A2 스코프 SKIPPED는 별도이며 Worker 운영 실패로 간주하지 않는다.
+- **원인 A — 테스트 소유 과거 설치 fixture 부정합:** `g7-greenfield-upgrade.test.ts` 및 `-qa.test.ts`는 새 0.60 Greenfield에서 Job 테이블을 제거하고 `_prisma_migrations`를 종전 Zone baseline으로 치환했지만, 설치 메타데이터 `g7-install.json.schemaId`는 **새 0.60 Job Schema ID**로 남겨 0.56~0.59 Zone release registry와 맞지 않았다. `declared()`가 `G7_UPGRADE_UNSUPPORTED_PATH`로 정확히 차단했고 승인/백업/복구/WAL 테스트가 연쇄 실패. SIGKILL checkpoint 이전 자식 종료도 이 fixture 문제의 파생 증상. **조치:** 해당 fixture의 구버전 Schema ID를 `G7_PREVIOUS_ZONES_SCHEMA_ID`로 정확하게 복원하고, 사업 데이터·백업·승인·WAL assertion 유지.
+- **원인 B — R2 downgrade fixture의 DDL drift:** `typed-outline-runtime.test.ts:304`는 0.60 설치에서 Zone/Outline Receipt를 제거했지만 신규 `SceneBuildJob`와 4 인덱스를 남겨 `G7_GREENFIELD_SCENE_JOB_SCHEMA_DRIFT`로 거절됐다. 이는 schema validator가 정상 작동한 사례. **조치:** 소유한 테스트 DB에서 과거 R2 marker로 변경 전 Job 테이블 삭제(연동 인덱스 함께 삭제), strict schema guard 유지.
+- **원인 C — Docker Smoke 실행 정책 불일치:** `smoke_greenfield_upgrade.py`의 0.56→신규0.60 실 이미지 업그레이드 흐름은 이전 `COMPATIBLE` 정책처럼 `helper.main(...,'auto')`를 호출했다. 새 `MIGRATION`은 Plan ID 승인이 필요하므로 `G7_UPGRADE_APPROVAL_REQUIRED`을 반환하고 `G7_209_DISPOSABLE_UPGRADE_SMOKE_FAILED`로 종료. **조치:** CI가 자체 생성·라벨 확인한 disposable volume에서 `plan` receipt의 from/to, requiresApproval, 64-hex planId를 검증한 뒤 `apply --approve-plan <exact-plan-id>`로 실제 승인·백업·DDL·복구 게이트를 실행. 비교 SHA는 오직 의도적으로 달라지는 Job Queue 테이블과 `_prisma_migrations` 이력을 제외하고 기존 업무 데이터+CAD 원본 바이트 전체를 계속 비교한다.
+- **기타 독립 시험 불일치:** same-release forged 0.60 metadata에 종전 Schema ID가 남았던 문제로 기대 오류 종류가 달라짐. 올바른 과거 Schema ID fixture로 원인 제거하며 에러 검증을 완화하지 않는다.
+- **검증 경계:** 원래 CI #557 실패는 그대로 유지. 수정된 신규 SHA의 CI는 시작 후 별도로 확인한다. No CI workflow skip, no timeout/rate-limit relaxation, no Docker permission bypass, no existing v0.59 GHCR/운영 DB/CAD 변경. B1 Draft / GO-DEV만 진행, #218/#225 OPEN, GO-PILOT 미승인.
+
+---
+
 ## #225 / PR #226 CI #556 — G7 업그레이드 시험 타입·import 보완 (2026-11-04)
 
 - [CI #556 / Run41726540083](https://github.com/planner77/layoutManager/actions/runs/41726540083), HEAD `b2e3451acdc14cf1888c8ba9000a7448fa3d1b64`, Static Job126233687612의 TypeScript 단계 오류: `tests/integration/g7-greenfield-upgrade.test.ts:100 TS2554`(SQLite 시험 타입의 `get()`은 인자 없음), `:339-340 TS2304`(신규 Migration 테스트에서 `GREENFIELD_UPGRADE_REGISTRY` import 누락), 그 결과 `:340 TS7006`(edge implicit any). 후속 Unit/Build 미실행. Schema(Migration) 실제 실패 증거가 아님.

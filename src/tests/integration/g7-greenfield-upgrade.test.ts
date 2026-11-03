@@ -13,6 +13,7 @@ import { applyGreenfieldUpgrade, planGreenfieldUpgrade, restoreGreenfieldUpgrade
 import { GREENFIELD_UPGRADE_REGISTRY,resolveUpgradeChain, type UpgradeRegistry } from '../../server/g7-operational/greenfield-upgrade-registry';
 import { G7_GREENFIELD_BASELINE,G7_GREENFIELD_BASELINE_CHECKSUM,
   G7_PREVIOUS_ZONES_BASELINE,G7_PREVIOUS_ZONES_BASELINE_CHECKSUM,
+  G7_PREVIOUS_ZONES_SCHEMA_ID,
   G7_GREENFIELD_SCHEMA_ID } from '../../server/g7-operational/greenfield-schema';
 import { withReadOnlyInspection } from '../../server/g7-operational/greenfield-readonly-inspection';
 
@@ -61,6 +62,7 @@ function fixture(){
   db.prepare('UPDATE "CadLocation" SET current_version_id=?,next_version=2 WHERE id=?').run(version,location);
   db.close();
   const old=JSON.parse(readFileSync(manifest,'utf8')) as Record<string,string>;
+  old.schemaId=G7_PREVIOUS_ZONES_SCHEMA_ID;
   old.version='0.56.0';old.appImage='ghcr.io/planner77/layoutmanager:0.56.0';
   old.migratorImage=old.appImage+'-migrate';old.sourceCommit='';
   writeFileSync(manifest,JSON.stringify(old),{mode:0o600});

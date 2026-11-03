@@ -1,3 +1,12 @@
+## TC-225-B1-G7 / CI #557 실제 회귀 보완 (2026-11-04)
+
+- 구버전 0.56/0.58/0.59로 재구성한 소유 테스트 DB에서 Schema ID=기존 Zone ID + Version/tag/baseline/checksum/SQL 지문 일치 검증; 신규 Job 테이블 삭제 후 기존 History 복원. 불일치 시 `G7_UPGRADE_UNSUPPORTED_PATH` 유지.
+- R2 typed outline 재구성은 Zone/Receipt 및 신규 Job/인덱스 제거 후 과거 R2 baseline을 검증. 조작된 스키마 이력을 승인하지 않는다.
+- Docker smoke 0.56→0.60의 reviewed `MIGRATION`에서 exact plan ID, requiresApproval, 명시적 `apply`, 백업/복구, 신규 Job schema, 로그인·권한·CAD 데이터 무변경을 검증. 신규 Job·migration metadata는 의도된 변경이므로 비즈니스 데이터 동일성 검사만 제외하고 전체 기존 데이터·CAD는 유지.
+- 이 범위의 PR CI는 실제 변경분·기존 실패에 한정, 테스트 skip/timeout 완화 금지. GO-PILOT 별도.
+
+---
+
 ## TC-225-B1-G7 0.60 후보 수용 계획 (2026-11-04)
 
 - Fresh 0.60 Greenfield Job 기준선 1행+Job Table/4 Index, 정확 G7 Runtime Schema PASS. 이전 0.59 Zone baseline 유지.
