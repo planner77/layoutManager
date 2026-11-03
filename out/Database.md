@@ -10,6 +10,8 @@
 | 비밀 정보 | Job에 tokenHash/cookie/password 절대 저장 금지 |
 | GO 상태 | GO-DEV 허용 / GO-PILOT 미승인, 실 영속 Worker/배포 미구현 |
 
+
+**추가 차단:** 0.59.0의 기존 `G7_GREENFIELD_SCHEMA_ID`에서는 `SCENE_JOB_RELEASE_NOT_REGISTERED`(503)을 반환한다. 수동 테이블 생성만으로는 활성화되지 않는다. 승인된 신규 G7 Schema ID `G7-GREENFIELD-SCENE-JOBS-20261104-1`와 등록 Migration/DDL Fingerprint가 모두 반영된 이후에만 기능을 켤 수 있다.
 **릴리스 선행:** 기존 Greenfield는 정확 단일 기준선과 `sqlite_master` DDL SHA로 보호된다. 신규 릴리스 번호/forward-only migration, `greenfield-install`, `greenfield-schema`, `greenfield-upgrade-registry`, restore/backup/권한 회귀를 함께 처리하고 이전 v0.59.0 이미지/태그를 재지정하지 않는다. 임의 `CREATE TABLE`로 활성 DB를 수정하는 절차는 금지. `SceneOrphanJob`(Storage cleanup)과 `SceneBuildJob`(변환 intent)을 구분한다.
 
 ---

@@ -2,6 +2,8 @@
 
 [Issue #225](https://github.com/planner77/layoutManager/issues/225), [Issue225](out/Issue225.md), [Issue218LeanPolicy](out/Issue218LeanPolicy.md)를 우선한다. `src/prisma/schema.prisma`에 SceneBuildJob 모델, `src/deploy/scene-build-jobs/migration.sql`에는 **미등록 후보 전진 DDL**이 있다. **기존 0.59.0 G7 baseline/registry/checksum은 수정하지 않았으므로 `SCENE_AUTO_BUILD_ENABLED`는 OFF로 둔다.** 신규 승인 릴리스의 Migration/Schema fingerprint/복구 검증 후만 활성화한다. 단일 Worker CAS/Enqueue는 코드가 있어도 **Worker 실행/READY 자동 게시가 아니다**. 기본 G7 토큰·권한/원본/READY 보호 및 기존 required CI를 유지한다.
 
+
+**추가 차단:** 0.59.0의 기존 `G7_GREENFIELD_SCHEMA_ID`에서는 `SCENE_JOB_RELEASE_NOT_REGISTERED`(503)을 반환한다. 수동 테이블 생성만으로는 활성화되지 않는다. 승인된 신규 G7 Schema ID `G7-GREENFIELD-SCENE-JOBS-20261104-1`와 등록 Migration/DDL Fingerprint가 모두 반영된 이후에만 기능을 켤 수 있다.
 ---
 
 ## #218 현행 Owner 정책 — 2D·단일 Worker / 단계별 GO (2026-11-04)

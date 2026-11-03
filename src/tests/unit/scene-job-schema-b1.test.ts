@@ -66,9 +66,13 @@ describe('#225 B1 staged G7 schema: offline, no production migration',()=>{
   expect(db.prepare('SELECT 1 FROM "CadFileVersion" WHERE id=?').get('new-version')).toBeUndefined();
   expect(db.prepare('SELECT 1 FROM "SceneBuildJob" WHERE id=?').get('to-rollback')).toBeUndefined();
  });
- it('prevents deleting source rows that are still referenced by jobs',()=>{
+ it('blocks version deletion while a job exists, but terminal cleanup permits it',()=>{
   const {db}=fixture();insert(db);
   expect(()=>db.prepare('DELETE FROM "CadFileVersion" WHERE id=?').run('CadFileVersion'))
     .toThrow(/FOREIGN KEY/);
+  db.prepare('UPDATE "SceneBuildJob" SET status=? WHERE id=?').run('FAILED','job-1');
+  db.prepare('DELETE FROM "SceneBuildJob" WHERE version_id=?').run('CadFileVersion');
+  db.prepare('DELETE FROM "CadFileVersion" WHERE id=?').run('CadFileVersion');
+  expect(db.prepare('SELECT count(*) AS n FROM "CadFileVersion"').get()).toMatchObject({n:0});
  });
 });
