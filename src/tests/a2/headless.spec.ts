@@ -21,6 +21,10 @@ const FIXTURE_VERSION = '11111111-1111-4111-8111-111111111111';
 const bytes = new TextEncoder().encode(a2SyntheticDxf);
 const sha = createHash('sha256').update(bytes).digest('hex');
 const executablePath = process.env.A2_CHROMIUM_EXECUTABLE || undefined;
+// Match the existing localhost browser acceptance harness: unlike an arbitrary
+// *.invalid HTTP host, localhost is a potentially trustworthy web origin.
+// All resources are intercepted in-memory; Docker --network none stays enabled.
+const A2_HARNESS_ORIGIN = 'http://localhost';
 // Independent limits are deliberately BELOW the existing 180s test and 15m
 // container limits. An uncompleted conversion must fail, never look READY.
 const A2_LAUNCH_TIMEOUT_MS = 25_000;
@@ -88,16 +92,34 @@ async function prepare(context: BrowserContext, script: string, font: string,
     note('FONT_RESOURCE_REQUESTED');
     return r.fulfill({ status: 200, contentType: 'application/json', body: font });
   });
-  await context.route('**/__a2.js', r =>
-    r.fulfill({ status: 200, contentType: 'application/javascript', body: script }));
+  await context.route('**/__a2.js', r => {
+    note('HARNESS_SCRIPT_REQUESTED');
+    return r.fulfill({ status: 200, contentType: 'application/javascript', body: script });
+  });
   await context.route('**/__a2', r =>
     r.fulfill({ status: 200, contentType: 'text/html',
       body: '<!doctype html><html><body><script src="/__a2.js"></script></body></html>' }));
   const page = await context.newPage();
+  let rejectDuringInit: ((reason: Error) => void) | undefined;
+  const initFailure = new Promise<never>((_, reject) => { rejectDuringInit = reject; });
+  // Observe the diagnostic promise even if an immediate script fault precedes
+  // waitForFunction; the same rejection MUST propagate via Promise.race.
+  void initFailure.catch(() => undefined);
   page.on('pageerror', e => {
-    // Error class only, no upstream message, stack, URL or DXF content.
-    errors.push(e.name);
-    note('PAGEERROR_' + (e.name === 'ReferenceError' ? 'REFERENCE' : 'OTHER'));
+    // Only a fixed category leaves the isolated browser. No CAD bytes, origin
+    // URLs, raw JS error message or stack are emitted.
+    const raw = e.message;
+    const category = /randomUUID/i.test(raw) ? 'CRYPTO_RANDOMUUID'
+      : /secure.context|not.secure|SecurityError/i.test(raw) ? 'INSECURE_CONTEXT'
+      : /require is not defined/i.test(raw) ? 'MODULE_SHIM'
+      : /WebGL/i.test(raw) ? 'WEBGL'
+      : e.name === 'TypeError' ? 'TYPE'
+      : e.name === 'SyntaxError' ? 'SYNTAX'
+      : e.name === 'ReferenceError' ? 'REFERENCE'
+      : 'OTHER';
+    errors.push(category);
+    note('PAGEERROR_' + category);
+    if (rejectDuringInit) rejectDuringInit(new Error('A2_HARNESS_PAGEERROR:' + category));
   });
   page.on('requestfailed', r => {
     // A route failure is relevant for the offline font/script diagnosis;
@@ -106,9 +128,22 @@ async function prepare(context: BrowserContext, script: string, font: string,
   });
   note('HARNESS_NAVIGATE_START');
   await bounded('HARNESS_NAVIGATE', A2_NAVIGATION_TIMEOUT_MS,
-    () => page.goto('http://p1-a2.invalid/__a2').then(() => undefined));
+    () => Promise.race([
+      page.goto(A2_HARNESS_ORIGIN + '/__a2').then(() => undefined),
+      initFailure,
+    ]));
   await bounded('HARNESS_READY', A2_NAVIGATION_TIMEOUT_MS,
-    () => page.waitForFunction(() => !!window.sceneA2).then(() => undefined));
+    () => Promise.race([
+      page.waitForFunction(() => !!window.sceneA2).then(() => undefined),
+      initFailure,
+    ]));
+  rejectDuringInit = undefined;
+  const trust = await page.evaluate(() => ({
+    secure: window.isSecureContext, uuid: typeof crypto.randomUUID,
+  }));
+  if (!trust.secure || trust.uuid !== 'function')
+    throw new Error('A2_HARNESS_SECURE_CONTEXT_REQUIRED');
+  note('HARNESS_SECURE_CONTEXT_VERIFIED');
   note('HARNESS_READY');
   return page;
 }
