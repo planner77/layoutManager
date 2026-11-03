@@ -1,3 +1,12 @@
+## #218 / PR #221 — CI #506 브라우저 Bundle SyntaxError 실측 및 대응 상태 (2026-11-03 KST)
+
+[PR CI #506 Run41561632191](https://github.com/planner77/layoutManager/actions/runs/41561632191), HEAD `06d6bda224e74b30e40548184902ec44f518dd6e`, completed/failure. Quality/General Chromium 2 shards/Docker/G7 Greenfield/Signed/Legacy 전체 SUCCESS. P1-A2 Debian Chromium Job `125673426531`에서 합성 4개 중 3 PASS, 실 DXF-to-Scene 1 FAIL, `HARNESS_SCRIPT_REQUESTED → PAGEERROR_SYNTAX → A2_HARNESS_PAGEERROR:SYNTAX`. Node/Font/browser preparation success, DTO/Validator/Restore는 **호출되지 않음**, Required Verify는 mandatory A2 FAIL 때문에 실패.
+
+**확실한 결함과 미확정 원인 분리:** 브라우저가 초기화용 JS를 `SyntaxError`로 거절한 사실은 확인. 원문 스택·번들 위치·어떤 의존 코드인지는 미수집, 이전 secure-context 가설은 **확증되지 않음**. DTO/Scene/원본 DXF 문제라고 보고하지 않는다.
+
+**수정:** 시험 번들을 `chrome115`에 맞춰 compile(실 Chromium 156보다 낮은 타깃), Node `vm.Script` 구문만 사전 검사, 클라이언트 pageerror safe code(일반 SyntaxError 외 INVALID_TOKEN/HTML_AS_SCRIPT/MODULE_MISMATCH 등) 및 synthetic 번들 line/column 수치만 기록. 원문/비밀/도면 텍스트 로그 차단, 원래 실제 DXF/한국어/INSERT/SwiftShader/전체 Validator/Fresh process comparison 테스트는 그대로. 새 정확 HEAD npm/test/Docker/PR CI 결과는 실행 관측 전 미확인. 운영 Scene 자동 Worker/권한 처리 없음. P1-A2 GO BLOCKED.
+
+---
 ## #218 / PR #221 — CI #495 실제 HARNESS_READY 오류·보완 후 검증 상태 (2026-11-03 KST)
 
 [PR CI #495 Run41558698574](https://github.com/planner77/layoutManager/actions/runs/41558698574), exact HEAD `91509d1dce9522acb2b8a0f934c9b08fa63fa4b8`, `completed/failure`. Scope/Quality(typecheck·lint·unit·build)/Docker/General Chromium 1·2/G7 Greenfield/G7 Signed+Legacy SUCCESS. A2 CPU Job `125664254542`: Build/UID10001 성공; test 1/3 핵심 Headless DXF→Scene FAIL(`PAGEERROR_OTHER`, `HARNESS_READY` 20s timeout), Watchdog 단위 + DXF 폭증·비지원 사전검증 2/3 PASS. Required Verify `125669442387` FAILURE는 A2에 종속.
