@@ -1,3 +1,15 @@
+## TC-218-A2-R04 — CI #506 Browser SyntaxError 원인 국소화 및 불완전 결과 거절 (2026-11-03)
+
+| TC | 확인 방법 | PASS 조건·주의 |
+| --- | --- | --- |
+| TC-218-A2-R04-1 | 정확 시험 entrypoint를 esbuild `format:'iife', target:'chrome115'`로 Bundle, `vm.Script` compile-only | 구문 오류 시 `A2_BUNDLE_STATIC_SYNTAX_INVALID`로 FAIL; 정적 parse PASS는 브라우저 변환 PASS가 아님 |
+| TC-218-A2-R04-2 | CPU-only Chromium 156에서 virtual JS 요청 후 pageerror, `sceneA2` 등록 및 실제 source verify 시작 | SyntaxError의 허용 lexical subtype, synthetic `__a2.js` line/column만 안전 보고, 모든 오류에서 반드시 FAIL |
+| TC-218-A2-R04-3 | 기존 동일 synthetic DXF/TTF→DXFViewer→Object3D→CUSTOM_DTO→Manifest/SHA→full Validator→file restore→Browser baseline fidelity | 전부 실제 성공/phase/DTO/WCS/Korean/INSERT 증거 필요, 부분 Scene/비동기 오류는 READY 금지 |
+| TC-218-A2-R04-4 | watchdog, BLOCK 확장/비지원 Entity, Rootless+read-only/offline/cgroups, 기존 Quality/Docker/General/G7/Required Verify | 기존 checks Skip·mock·timeout 증가 금지; exact HEAD 전체 확인 전 NOT VERIFIED |
+
+**확정된 선행 장애:** [CI #506](https://github.com/planner77/layoutManager/actions/runs/41561632191)에서 Script Requested 이후 `A2_HARNESS_PAGEERROR:SYNTAX`, 위험 사전검증 등 3 PASS. 정적 번들 오류 여부 및 실제 JS SyntaxError 정체는 현재까지 미확인. #218 OPEN/P1-A2 GO BLOCKED.
+
+---
 ## TC-218-A2-R03 — CI #495 Harness HTML/JS 초기화 오류 분리 및 trusted origin 검증 (2026-11-03)
 
 | TC | 입력/검증 | 실패·성공 판정 |
