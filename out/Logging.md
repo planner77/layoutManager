@@ -1,3 +1,9 @@
+## #218 / CI #525 — 중복 browser 초기화 RegExp 오류와 재사용 경로 구분 (2026-11-03)
+
+[PR CI #525](https://github.com/planner77/layoutManager/actions/runs/41567538237)에서 `BROWSER_MAJOR_153` 뒤 `SYNTAX_INVALID_REGEXP`이 재발, 기존 RegExp/버전 가설을 수정. 원본 error pattern/소스는 로그 redaction으로 미확정; 실제 DXF 파싱까지 가지 않았다. 신규 A2 harness는 기존 `scene-poc-browser.ts`의 DXFViewer/serializer/restore 코드를 CPU proof 안에서 사용하고, 허용된 `A2_HOST_PHASE` milestone, Source/DTO/node/geometry/latency 등 **공개 합성 데이터 기반 계측만** 출력. 실제 CAD bytes/원본 SHA/경로·Browser error 전문/로그 stack/자격정보는 노출하지 않는다. 이 Test 로그는 운영 requestId/JobId/G7 Audit의 대체가 아니며 기존 READY 후보 검증 계약을 완화하지 않는다.
+
+---
+
 ## #218 / CI #506 — Browser SyntaxError 안전 진단 구체화 (2026-11-03)
 
 [PR CI #506](https://github.com/planner77/layoutManager/actions/runs/41561632191) A2 Job에서 `HARNESS_SCRIPT_REQUESTED` 이후 `PAGEERROR_SYNTAX`가 기록되어 브라우저 번들 실행 단계에서 Fail-closed. 원본 JavaScript 에러 문장/stack은 보안상 기록하지 않아 SyntaxError 실제 토큰은 미확정. 신규 계측은 `SYNTAX_HTML_AS_SCRIPT/UNEXPECTED_EXPORT/MODULE_MISMATCH/TRUNCATED_SCRIPT/DUPLICATE_IDENTIFIER/INVALID_REGEXP/UNEXPECTED_IDENTIFIER/INVALID_TOKEN/UNEXPECTED_TOKEN/OTHER_SYNTAX` allowlist 및 *synthetic JS URL `__a2.js`와 일치하는* 숫자 line/column만 출력. `vm.Script` compile-only 실패는 `A2_BUNDLE_STATIC_SYNTAX_INVALID`; UI/Error 텍스트나 실제 CAD·URL·SHA/포맷·로그 원문은 누설 금지. 운영 JobLogContext·S3/Scene Audit와 독립이며 CI PASS/GO 동등 증거 아님.
