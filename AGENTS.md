@@ -1,3 +1,13 @@
+## #218 / P1-A2 — CPU-only 독립 DXF Scene Builder 기술 Gate (2026-11-03)
+
+**범위·차단:** #217 P1-A 직접 Node `three-dxf-viewer@1.0.44`는 CI #457의 비동기 `window` 오류 4건으로 NO-GO. #218 후속 첫 PR은 `feat/218-a2-headless-cpu-gate`에서 **서버 독립 Chromium+SwiftShader 실험용 합성 시험과 fail-closed 검증만** 수행한다. 생산용 업로드 Hook, G7/권한/Queue/Worker/DB/SceneRepository/Current/Compose/릴리스 이미지는 변경하지 않는다. P1-A2 GO 입증 없이는 P1-B/C/D 개발·활성화 금지.
+
+**검증:** `out/Issue218.md`의 DXF→실제 Object3D→CUSTOM_DTO→Manifest/SHA/full validator→파일 저장·별도 Browser restore 테스트, 동일 synthetic font·중첩 BLOCK/INSERT/한글/WCS fidelity, 32MiB/100k/2M/depth128 불변, 비지원·폭증 차단을 따른다. 독립 PR CI `a2-cpu-probe`는 CPU-only Debian UID10001/오프라인/메모리·CPU 상한을 검증 대상으로 하고 Required Verify에 추가하되 기존 CI를 Skip/완화하지 않는다. sandbox·OOM/kill/restart/실 현장/전체 #212 Adapter 비교·라이선스/최종 운영 인수는 **아직 미검증**. 현재 로컬/CI 시험 미실행이므로 GO 불가.
+
+**후속 관계:** #212 수동 Browser Scene 정본, #209/#211 G7 릴리스/운영 승인, #216 v0.58.1 불변 복구 독립, #113/#193 고객 DXF·2PC/GPU/업무 필드 수용 OPEN. #218 AC01–09 전체 충족 전 OPEN 유지. [설계/시험/잔여 Gate](out/Issue218.md), [TestPlan](out/TestPlan.md), [FailureLedger](out/FailureLedger.md).
+
+---
+
 ## #216 / PR #220 OCI P1 리뷰 — 단일 플랫폼 Buildx JSON .Image 계약 (2026-11-03)
 
 리뷰 [PR #220](https://github.com/planner77/layoutManager/pull/220)의 OCI 후보 검증에서 `platforms: linux/amd64` **단일 플랫폼**을 생성하는 Buildx `.Image`가 단일 config object임에도 `{{json (index .Image "linux/amd64")}}`를 사용한 문제를 발견했다. 템플릿이 실패하여 정상 image가 `G7_RELEASE_OCI_PAIR_INVALID`로 잘못 차단될 수 있는 P1 리뷰 내용. 공식 Docker `imagetools inspect` JSON 설명과 일치하도록 `{{json .Image}}` 및 `jq .os/.architecture/.config.Labels` 검증으로 정정하고 Unit에서 해당 template 회귀를 검사한다. 단일 OCI role/version/source/amd64 조건과 fail-closed 정책, 원본 tag/source SHA 불변. 실제 신규 PR CI/OCI publish 결과는 **미검증**. [FailureLedger](out/FailureLedger.md).
