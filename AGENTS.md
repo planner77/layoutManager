@@ -1,3 +1,11 @@
+## #218 / PR #221 — CPU 합성 검증 PR CI #541 성공 및 Main 병합, 운영 GO 별도 (2026-11-03)
+
+[PR CI #541 Run41611978658](https://github.com/planner77/layoutManager/actions/runs/41611978658)에서 PR HEAD `1e3f22c0547c96fd260d022770755c4008bf0a61`의 9/9 Job SUCCESS(A2 CPU Proof/Required Verify 포함)를 확인했다. 리뷰 미해결0/충돌0/Main behind0, Squash Main `dc80f88bc367e5735dc6878a609ab3089b6a4abc`와 원본 Git tree 일치 검증. [Main CI #140](https://github.com/planner77/layoutManager/actions/runs/41615434676)는 시작만 확인하고 사용자 요청에 따라 완료는 모니터링하지 않는다. 테스트 전용 변경이므로 GHCR 신규 게시 없음.
+
+**범위 경계:** 합성 proof/PR CI 성공은 실제 #212 Viewer Adapter 동일성·운영 Chromium sandbox 보안·Job/Worker OOM/kill/restart 및 고객 현장 수용 증거가 아니다. #218 AC01–AC09 OPEN, **P1-A2 운영 GO BLOCKED/P1-B/C/D 금지**. 사후 문서 갱신은 docs-only이다. [FailureLedger](out/FailureLedger.md), [TestReport](out/TestReport.md), [Issue218](out/Issue218.md) 참조.
+
+---
+
 ## #218 / PR #221 — CI discovery and proof-resource repair (2026-11-03)
 
 A2 필터·글꼴 준비·packet 전달·좌표 비교 또는 PR CI를 수정/재실행할 때 [Issue218 R09/R10](out/Issue218.md), [FailureLedger](out/FailureLedger.md) 최신 항목과 [TestReport](out/TestReport.md)를 먼저 읽는다. 실제 Playwright discovery5+4 전체 일치, 동일 자원 제한의 원본 실패와 보완된 전체 검증을 근거로 판단한다. 기술 합성 시험과 운영 GO를 구분하고 CI 시작 뒤 완료 모니터링은 생략한다.

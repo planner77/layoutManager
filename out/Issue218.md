@@ -1,3 +1,11 @@
+## 2026-11-03 — PR #221 CI #541 성공 및 검증 장치 Main 병합; 운영 GO 보류
+
+- Source HEAD `1e3f22c0547c96fd260d022770755c4008bf0a61`의 [PR CI #541 / Run41611978658](https://github.com/planner77/layoutManager/actions/runs/41611978658) 9/9 SUCCESS(독립 A2 CPU/Required Verify 포함). Review thread0, Main behind0/mergeable true; Squash Main `dc80f88bc367e5735dc6878a609ab3089b6a4abc`, 원본/병합 tree 동일. [Main CI #140](https://github.com/planner77/layoutManager/actions/runs/41615434676)는 push 시작만 확인, 완료 미모니터링.
+- 이번 병합은 **test-only 합성 proof·CI 실험 장치 승인**이며 기술 A2-01/03 일부의 추가 증거다. A2-02 실제 #212 Adapter 동일조건 충실도, A2-04 Worker kill/OOM/late async/복구, A2-05 untrusted-input sandbox/라이선스·공급망 및 #113/#193 현장 검증은 여전히 미완료. A2-06 CI는 충족하였으나 **P1-A2 운영 GO는 BLOCKED**, 후속 B/C/D 금지.
+- #218 AC01–AC09 전체 영속 Job/Worker/G7 게시/상태 UI/배포 조건은 미완료이므로 **Issue OPEN 유지**. Production/Version/DB/Volume/OCI 불변이며 GHCR 신규 게시 없음. 정확 실패 이력/증거는 [FailureLedger](FailureLedger.md)/[TestReport](TestReport.md) 참조.
+
+---
+
 ## 2026-11-03 — CI #540 comprehensive repair contract (implemented and locally verified)
 
 Manager scope: repair PR #221 P1-A2 test discovery and investigate unresolved #539 OOM before a single final branch push. Latest failed Run41579326423, source `2ff920a47897472fc78fe801602ae3c261bdf81e`, A2 Job125730647664: both fresh containers exited1 with `No tests found`, OOMKilled=false; other independent jobs SUCCESS, Verify125734431179 dependent FAILURE. Local exact CLI reproduced both zero-test failures; unfiltered discovery lists9. This run did not exercise conversion and cannot establish that container separation fixes #539 OOM.

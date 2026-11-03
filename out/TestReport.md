@@ -1,3 +1,12 @@
+## U-218-CI541-20261103 — PR #221 최종 CI 성공 및 테스트 범위 병합
+
+- 검증 소스 `1e3f22c0547c96fd260d022770755c4008bf0a61`; [PR CI #541 / Run41611978658](https://github.com/planner77/layoutManager/actions/runs/41611978658), **9/9 jobs SUCCESS**, A2 CPU Proof Job `125835940366` 및 Required Verify Job `125843402950` 포함. 기존 #540 No tests found 및 #539 OOMKilled 실패는 [FailureLedger](FailureLedger.md)에 역사적으로 보존.
+- Reviewer inline thread 0/unresolved 0, review submission 0, Main behind0/mergeable true. Owner 코드 병합 지시에 따라 Draft→Ready, Squash Main `dc80f88bc367e5735dc6878a609ab3089b6a4abc`; 원본/병합 Git tree 동일 `3530ff2beb370f108691031d4c3082695ec99b40`.
+- [Main CI #140 / Run41615434676](https://github.com/planner77/layoutManager/actions/runs/41615434676) push 시작 확인, 완료 미모니터링. 이 사후 기록은 docs-only; GHCR 신규 이미지 게시 대상 아님.
+- **판정:** 합성 Debian/Chromium CPU-only 검증 코드·PR CI 범위에 한한 PASS. 실제 #212 Viewer Adapter 충실도, trust/sandbox/Worker 장애 복구와 보안·현장 게이트는 미완료. P1-A2 운영 GO BLOCKED, #218 OPEN(AC01–09 미완료), P1-B/C/D 미착수. 서버 READY·자동 업로드 Worker·실 운영 릴리스 PASS를 주장하지 않음.
+
+---
+
 ## U-218-CI540-20261103 — PR #221 discovery/resource repair
 
 - Requirements/AC: [Issue218](Issue218.md) R09/R10; R-218-A2-01/03 remain unchanged. Failure chronology, observed causes and manually terminated probe qualifications: [FailureLedger](FailureLedger.md) top entry.
