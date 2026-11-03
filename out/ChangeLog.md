@@ -1,3 +1,11 @@
+## 2026-11-03 — #218 PR #221 CI #485 CPU-only Headless 변환 timeout 진단/안전 차단 개선
+
+- CI #485: Quality/전체 일반 Chromium E2E/G7/Docker SUCCESS. 별도 CPU-only proof는 합성 위험 preflight PASS이나 실제 DXF→Scene 변환·검증 시험 180,000ms timeout FAIL, 내부 어느 단계에서 지연되는지 미관측. A2 GO 불가.
+- 실험 브라우저의 allowlisted SOURCE/WEBGL/DXF_PARSE/SCENE_BUILD/CUSTOM_DTO/VALIDATE/RESTORE/RENDER milestone과 호스트의 Bundle/Font/Browser/Resource 로깅을 추가하고, launch/navigation/converter 비동기 deadline 및 last-phase error를 도입. 정지 Promise가 FAIL되는 회귀 추가.
+- 테스트 skip·전체 timeout 증가·CI Required Gate 완화 없으며 Docker UID10001/read-only/network none/CPU·RAM 상한, 운영 SceneRepository/G7/Prisma/Compose/GHCR 기존 정책 불변. 실패 증거는 [CI #485](https://github.com/planner77/layoutManager/actions/runs/41555129727), [FailureLedger](FailureLedger.md) 참조. #218 OPEN / P1-A2 GO 차단 및 P1-B/C/D 진행 없음.
+
+---
+
 ## 2026-11-03 — #218 PR #221 CI #479 원인별 수리(TS2322/EROFS 유사 ENOENT)
 
 - Quality `headless.spec.ts:34 TS2322`: TTFLoader 타입 `string`과 브라우저 폰트 생성 정책의 `{en:string}` 간 데이터 모양 불일치. 기존 Node PoC의 guarded record 접근과 일치시키고 기존 Font/한글 정합 시험 보존.
