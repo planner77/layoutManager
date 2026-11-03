@@ -1,3 +1,17 @@
+## #218 / P1-A2 — CPU-only 서버 변환기 실험 PR (2026-11-03, 시험 전)
+
+**기준 Main:** `55b82cdf35f6d9f606dcab16830cd61ce0098082`; 기술 검증 분리 브랜치 `feat/218-a2-headless-cpu-gate`. 기존 #217의 [CI #457](https://github.com/planner77/layoutManager/actions/runs/41520729471) 직접 Node DXFViewer unhandled rejection 4건 NO-GO 및 [CI #472](https://github.com/planner77/layoutManager/actions/runs/41524840539) 8/8 CI SUCCESS는 **선행 역사적 사실**이며 이 PR의 신기술 GO 증거가 아니다.
+
+- 구현: `src/tests/a2/headless-browser.ts` 실제 DXF Viewer/SwiftShader candidate, `headless.spec.ts` 실 DXF→Object3D→CUSTOM_DTO full manifest/SHA/domain validator→temporary file→Restore와 browser synthetic comparison, `dxf-risk-preflight.ts`의 BLOCK 폭증·cyclic/unsupported fail closed, `fixtures.ts`, `playwright.config.ts`, `Dockerfile`, 독립 Vitest Unit, PR CI 필수 a2-cpu-probe.
+- **실행하지 않은 시험:** npm ci/typecheck/lint/Vitest, 실제 Docker image build, 독립 Chromium/WebGL, PR CI, 대형 DXF 입력, actual #212 Adapter/UI/Server SceneRepository 비교, 영속 Job/Worker, G7 Publisher/Auth, OOM/kill/restart·late async 종료 테스트, real CPU/RSS/p95, 라이선스/SBOM, 현장 #113/#193/2PC/DRM.
+- **실측값 없음:** DTO size, geometry nodes, Bounding Box 오차, renderer identity/SwiftShader 증명, 비동기 에러 count, CPU/RAM/latency는 로그가 생기기 전 수치를 기록하지 않는다.
+- 합성 입력에도 unknown entity·중첩 BLOCK/한글 MTEXT 완전성 보장은 별도 비교 Gate 필요. 동일 Browser harness에서 성공하더라도 실제 #212 UI Builder/외부 고객 도면 비교·프로세스 공격면까지 자동 PASS가 아님.
+- **판정: P1-A2 GO 증거 부족 → BLOCKED / 운영 사용 NO-GO.** P1-B/C/D 시작 불허; #218 OPEN, #216 기존 이미지·tag/digest/운영 DB 불변.
+
+[전체 Gate/대안 비교](Issue218.md), [TC](TestPlan.md), [FailureLedger](FailureLedger.md).
+
+---
+
 ## #216 / PR #220 — 단일 플랫폼 OCI template P1 예방 수정 검증 상태 (2026-11-03)
 
 [PR #220](https://github.com/planner77/layoutManager/pull/220) P1 리뷰: 후보 빌드는 linux/amd64 단일 플랫폼이므로 Buildx `.Image`는 JSON 단일 config; 잘못된 `index .Image "linux/amd64"`는 정상 OCI에서 template 실패를 유발할 수 있다. `{{json .Image}}` + 기존 JSON schema/labels/source 검증으로 수정, unit 문자열 회귀 추가. 현 시점 정적 코드 변경만 적용, 실제 Buildx candidate/OCI Main CI 및 최종 PR CI 성공은 NOT VERIFIED. 원본 #138 failure와 구별한다.
