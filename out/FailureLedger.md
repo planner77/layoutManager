@@ -1,3 +1,14 @@
+## #218 P1-A2 — 신규 미실행 Gate 및 확인된 선행 NO-GO 구분 (2026-11-03)
+
+- **기준:** Main `55b82cdf35f6d9f606dcab16830cd61ce0098082`; A2 branch `feat/218-a2-headless-cpu-gate`. 새로운 P1-A2 Unit/Playwright/Docker는 **작성되었으나 실행되지 않았음**. 신규 CI 실패/성공 Run이 없는 상태에서 확정 원인이나 수리·PASS를 꾸며내지 않는다. PR 생성 이후 CI 실패 시 정확 Run ID/Job/HEAD, 실제 stderr의 안전한 error code, 재현·수정·재시험을 추가한다.
+- **기존 확인된 실패(별건):** #208/#217 [PR CI #457](https://github.com/planner77/layoutManager/actions/runs/41520729471) 소스 `b7909f4c98704fa14d63caf5baa750105af313ac`에서 pinned direct Node `three-dxf-viewer@1.0.44` WMF/RTF `window is not defined` unhandled rejection **4건**. 이후 direct Node 호출 차단은 안전한 NO-GO이며 A2 Headless 성공 증거가 아님.
+- **실측되지 않은 위험/부채:** Headless `chromiumSandbox:false`의 운영 공격면, software WebGL ident/한글 폰트·nested INSERT fidelity, parser unsupported entity 누락, cgroup OOM/kill/restart/async crash, 실 고객 5MiB·20MiB+ DXF, 실제 #212 UI Builder 동일 입력 비교, 기존 Source WCS·Stable ID/Origin 계약, 프로덕션 G7 재인가·저장/원자 CAS·OCI 라이선스. 위험으로만 분류, **실제 발생한 오류로 기록하지 않음**.
+- **통제:** A2 test image는 운영 App/Migrator/Worker 출시 없음, CPU/RAM/시간 상한 실험만. 실패 또는 NOT RUN이면 P1-B/C/D 중단, #218 AC01–09 OPEN. #216 immutable v0.58.1 복구/기존 GHCR digest 변경 0.
+
+[기술 검증 설계](Issue218.md), [TC](TestPlan.md), [TestReport](TestReport.md).
+
+---
+
 ## #216 / PR #220 — OCI 후보 확인 템플릿 P1 리뷰 보완 (2026-11-03)
 
 - **검토된 위험:** PR #220 inline reviewer는 현재 단일 linux/amd64 후보 이미지에 `{{json (index .Image "linux/amd64")}}`를 적용하면 Buildx `.Image`가 단일 config object인 상황에서 잘못된 인덱싱으로 템플릿 실패가 발생한다고 지적. 이는 Main GHCR 후보가 실제 유효해도 `G7_RELEASE_OCI_PAIR_INVALID`로 publish를 멈추는 P1 위험이며, **현재 CI에서 발생한 실패로 단정하지 않는다**.
