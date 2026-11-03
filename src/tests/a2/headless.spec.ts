@@ -22,7 +22,7 @@ import { sceneSha256 } from '../../domain/scene-digest';
 import { SCENE_PAYLOAD_LIMITS, validateStoredScenePayload } from '../../domain/scene-payload';
 import type { SceneManifest } from '../../domain/cad-scene';
 import { extractDxfText } from '../../viewers/core/text-index';
-import { a2CycleDxf, a2ExplosionDxf, a2SyntheticDxf } from './fixtures';
+import { a2LineOnlyDxf, a2CycleDxf, a2ExplosionDxf, a2SyntheticDxf } from './fixtures';
 import { A2_EXPANSION_LIMIT, A2_SOURCE_LIMIT, preflightA2Dxf } from './dxf-risk-preflight';
 
 const source = new TextEncoder().encode(a2SyntheticDxf);
@@ -54,7 +54,7 @@ type Packet = {
 };
 type RestoreResult = { rendered: boolean; restored: Inventory; restoreMs: number };
 type BrowserApi = {
-  produce: (dxf:string,sha:string) => Promise<Packet[]>;
+  produce: (dxf:string,sha:string,mode?:'ALL'|'DTO_ONLY') => Promise<Packet[]>;
   restore: (packet:Packet, expected?: SceneManifest) => Promise<RestoreResult>;
 };
 function note(phase: string): void {
@@ -138,6 +138,8 @@ async function prepare(
   let rejectInit:((error:Error)=>void)|undefined;
   const errorPromise=new Promise<never>((_,reject)=>{rejectInit=reject;});
   void errorPromise.catch(()=>undefined);
+  page.on('crash',()=>{errors.push('CRASH');note('PAGE_CRASH');});
+  page.on('console',m=>{const match=/^A2_BROWSER_PHASE:(DXF_PARSE_START|DXF_PARSE_DONE|SCENE_TAGGED|CUSTOM_DTO_START|CUSTOM_DTO_DONE|PRODUCE_COMPLETE)$/.exec(m.text());if(match)note('BROWSER_'+match[1]);});
   page.on('pageerror',e=>{
     const category=e.name==='SyntaxError'?'SYNTAX'
       :e.name==='ReferenceError'?'REFERENCE'
@@ -164,29 +166,44 @@ async function prepare(
   note('REFERENCE_READY');
   return page;
 }
-async function produce(page:Page):Promise<{packet:Packet;inventory:Inventory;renderer:string;parseMs:number;serializeMs:number}>{
-  note('REAL_DXF_PRODUCE_START');
-  const result=await bounded('REAL_DXF_PRODUCE',CONVERSION_LIMIT_MS,
-    ()=>page.evaluate(async({dxf,sha})=>{
+/** Parse and serialize the actual source before initializing WebGL.
+ * A renderer crash must never be misclassified as a DXF parser failure.
+ */
+async function produce(page:Page,dxf:string=a2SyntheticDxf,phase='REAL_DXF'):Promise<{
+  packet:Packet;inventory:Inventory;parseMs:number;serializeMs:number;
+}>{
+  note(phase+'_DTO_START');
+  const result=await bounded('DXF_TO_CUSTOM_DTO',CONVERSION_LIMIT_MS,
+    ()=>page.evaluate(({dxf,sha})=>{
       const api=(window as unknown as {scenePoc:BrowserApi}).scenePoc;
-      const canvas=document.createElement('canvas');
-      const gl=canvas.getContext('webgl2');
-      const debug=gl?.getExtension('WEBGL_debug_renderer_info');
-      const renderer=debug?String(gl?.getParameter(debug.UNMASKED_RENDERER_WEBGL)):'';
-      // Return the actual pinned DXF viewer's DTO, not a synthesized THREE.Group.
-      const packets=await api.produce(dxf,sha);
-      const packet=packets.find(p=>p.format==='CUSTOM_DTO'&&!!p.manifest);
-      if(!packet)throw new Error('A2_CUSTOM_DTO_MISSING');
-      return {packet,renderer};
-    },{dxf:a2SyntheticDxf,sha:sourceSha}));
-  if(!result.renderer.toLowerCase().includes('swiftshader')&&process.env.A2_REQUIRE_SWIFTSHADER==='1')
-    throw new Error('A2_SOFTWARE_WEBGL_NOT_PROVEN');
-  const data=result.packet.stats;
+      return api.produce(dxf,sha,'DTO_ONLY');
+    },{dxf,sha:createHash('sha256').update(dxf).digest('hex')}));
+  expect(result.map(p=>p.format)).toEqual(['CUSTOM_DTO']);
+  const packet=result[0],data=packet.stats;
   const inventory=data.original as Inventory;
-  if(!inventory||!Array.isArray(inventory.ids))throw new Error('A2_INVENTORY_MISSING');
-  note('REAL_DXF_PRODUCE_DONE');
-  return {packet:result.packet,inventory,renderer:result.renderer,
-    parseMs:Number(data.parseMs),serializeMs:Number(data.serializeMs)};
+  if(!packet.manifest||!inventory||!Array.isArray(inventory.ids))
+    throw new Error('A2_DTO_OR_INVENTORY_MISSING');
+  note(phase+'_DTO_DONE');
+  return {packet,inventory,parseMs:Number(data.parseMs),
+    serializeMs:Number(data.serializeMs)};
+}
+async function softwareIdentity(page:Page):Promise<string>{
+  note('WEBGL2_INIT_START');
+  const renderer=await bounded('WEBGL2_INIT',20_000,()=>page.evaluate(()=>{
+    const canvas=document.createElement('canvas');
+    canvas.width=32;canvas.height=32;
+    const gl=canvas.getContext('webgl2',{antialias:false});
+    if(!gl)throw new Error('A2_WEBGL2_UNAVAILABLE');
+    gl.clearColor(0,0,0,1);gl.clear(gl.COLOR_BUFFER_BIT);
+    const info=gl.getExtension('WEBGL_debug_renderer_info');
+    const name=info?String(gl.getParameter(info.UNMASKED_RENDERER_WEBGL)):'';
+    gl.getExtension('WEBGL_lose_context')?.loseContext();
+    return name;
+  }));
+  note('WEBGL2_INIT_DONE');
+  if(!renderer.toLowerCase().includes('swiftshader'))
+    throw new Error('A2_SOFTWARE_WEBGL_NOT_PROVEN');
+  return renderer;
 }
 async function restore(page:Page,packet:Packet):Promise<RestoreResult>{
   note('REAL_DTO_RESTORE_START');
@@ -199,6 +216,113 @@ async function restore(page:Page,packet:Packet):Promise<RestoreResult>{
   return result;
 }
 
+/** P0-1: isolate software WebGL before loading the DXF converter. */
+test('P0-1 isolated SwiftShader WebGL2 init without DXF',async()=>{
+  test.setTimeout(50_000);
+  const browser=await browserFor(true);
+  try{
+    const context=await browser.newContext({serviceWorkers:'block'});
+    try{
+      await context.route('**/__a2-webgl',r=>r.fulfill({
+        status:200,contentType:'text/html',
+        body:'<!doctype html><title>A2 synthetic WebGL probe</title>',
+      }));
+      const page=await context.newPage();
+      page.on('crash',()=>note('P0_1_PAGE_CRASH'));
+      await page.goto(A2_HARNESS_ORIGIN+'/__a2-webgl');
+      const id=await softwareIdentity(page);
+      expect(id.toLowerCase()).toContain('swiftshader');
+      console.log('A2_P0_1_EVIDENCE',JSON.stringify({webgl2:'swiftshader',dxfLoaded:false}));
+    }finally{await context.close();}
+  }finally{await browser.close();}
+});
+test('P0-2 actual minimal LINE DXF to DTO without preliminary WebGL',async()=>{
+  test.setTimeout(90_000);
+  expect(preflightA2Dxf(new TextEncoder().encode(a2LineOnlyDxf)).model).toBe(1);
+  const browser=await browserFor(true),errors:string[]=[];
+  try{
+    const context=await browser.newContext({serviceWorkers:'block'});
+    try{
+      const page=await prepare(context,await bundleOrThrow(),projectFont(),errors);
+      const data=await produce(page,a2LineOnlyDxf,'P0_LINE');
+      validateStoredScenePayload(Uint8Array.from(data.packet.bytes),data.packet.manifest!);
+      expect(data.inventory.nodes).toBeGreaterThan(1);
+      expect(data.inventory.vertices).toBeGreaterThan(0);
+      await page.waitForTimeout(600);
+      expect(errors).toEqual([]);
+      console.log('A2_P0_2_EVIDENCE',JSON.stringify({nodes:data.inventory.nodes,
+        bytes:data.packet.bytes.length,parseMs:Math.round(data.parseMs)}));
+    }finally{await context.close();}
+  }finally{await browser.close();}
+});
+test('P0-3 Korean TEXT/MTEXT and nested INSERT to DTO without preliminary WebGL',async()=>{
+  test.setTimeout(100_000);
+  expect(preflightA2Dxf(source)).toMatchObject({model:7,blocks:2});
+  const browser=await browserFor(true),errors:string[]=[];
+  try{
+    const context=await browser.newContext({serviceWorkers:'block'});
+    try{
+      const page=await prepare(context,await bundleOrThrow(),projectFont(),errors);
+      const data=await produce(page,a2SyntheticDxf,'P0_COMPLEX');
+      validateStoredScenePayload(Uint8Array.from(data.packet.bytes),data.packet.manifest!);
+      expect(data.inventory.nodes).toBeGreaterThan(1);
+      await page.waitForTimeout(600);
+      expect(errors).toEqual([]);
+      console.log('A2_P0_3_EVIDENCE',JSON.stringify({nodes:data.inventory.nodes,
+        bytes:data.packet.bytes.length,parseMs:Math.round(data.parseMs)}));
+    }finally{await context.close();}
+  }finally{await browser.close();}
+});
+test('P0-4 measure DTO_ONLY vs legacy ALL format cost on the same minimal DXF',async()=>{
+  test.setTimeout(120_000);
+  const browser=await browserFor(true),errors:string[]=[];
+  try{
+    const context=await browser.newContext({serviceWorkers:'block'});
+    try{
+      const page=await prepare(context,await bundleOrThrow(),projectFont(),errors);
+      const t=Date.now();
+      const dto=await produce(page,a2LineOnlyDxf,'P0_DTO_COST');
+      const dtoMs=Date.now()-t;
+      const t2=Date.now();
+      const all=await bounded('LEGACY_FORMATS',CONVERSION_LIMIT_MS,()=>page.evaluate(
+        ({dxf,sha})=>(window as unknown as {scenePoc:BrowserApi}).scenePoc.produce(dxf,sha),
+        {dxf:a2LineOnlyDxf,sha:createHash('sha256').update(a2LineOnlyDxf).digest('hex')},
+      ));
+      expect(all.map(p=>p.format)).toEqual(['THREE_JSON','CUSTOM_DTO','GLB']);
+      expect(all.find(p=>p.format==='CUSTOM_DTO')?.manifest?.sha256)
+        .toEqual(dto.packet.manifest?.sha256);
+      console.log('A2_P0_4_EVIDENCE',JSON.stringify({dtoOnlyMs:dtoMs,allMs:Date.now()-t2,
+        dtoOnlyBytes:dto.packet.bytes.length,allBytes:all.reduce((n,p)=>n+p.bytes.length,0)}));
+      await page.waitForTimeout(600);
+      expect(errors).toEqual([]);
+    }finally{await context.close();}
+  }finally{await browser.close();}
+});
+test('P0-5 terminating a pending browser evaluation rejects instead of READY',async()=>{
+  test.setTimeout(45_000);
+  const browser=await browserFor(false);
+  try{
+    const context=await browser.newContext({serviceWorkers:'block'});
+    try{
+      const page=await context.newPage();
+      await page.goto('about:blank');
+      const pending=page.evaluate(()=>new Promise<string>(()=>{}));
+      const check=expect(pending).rejects.toThrow();
+      await page.close();
+      await check;
+      note('ABORTED_BROWSER_EVALUATION_REJECTED');
+    }finally{await context.close();}
+  }finally{await browser.close();}
+  // This is NOT the production DB-backed Worker lease/OOM/restart gate.
+});
+async function bundleOrThrow():Promise<string>{
+  const output=await build({
+    entryPoints:['tests/e2e/scene-poc-browser.ts'],
+    bundle:true,platform:'browser',format:'iife',write:false,logLevel:'silent',
+  });
+  void new Script(output.outputFiles[0].text,{filename:'a2-scene-poc.js'});
+  return output.outputFiles[0].text;
+}
 test('P1-A2 real DXF via existing browser builder: CPU SwiftShader, CUSTOM_DTO full validator, file and new-process restore',async()=>{
   test.setTimeout(180_000);
   const size=preflightA2Dxf(source);
@@ -225,7 +349,9 @@ test('P1-A2 real DXF via existing browser builder: CPU SwiftShader, CUSTOM_DTO f
     const context=await browser.newContext({serviceWorkers:'block'});
     const page=await prepare(context,output.outputFiles[0].text,font,errors);
     first=await produce(page);
-    expect(first.renderer.toLowerCase()).toContain('swiftshader');
+    // Separate actual DTO production from software-WebGL initialization.
+    const renderer=await softwareIdentity(page);
+    expect(renderer.toLowerCase()).toContain('swiftshader');
     expect(first.packet.bytes.length).toBeGreaterThan(0);
     expect(first.packet.bytes.length).toBeLessThanOrEqual(SCENE_PAYLOAD_LIMITS.bytes);
     expect(first.packet.manifest).toBeDefined();

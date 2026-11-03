@@ -1,3 +1,11 @@
+## #218 / PR #221 — CI #538 real browser crash and unexecuted diagnostic changes (2026-11-03)
+
+[Run41570387391](https://github.com/planner77/layoutManager/actions/runs/41570387391), HEAD 3b1c8c1ff9b1e42bde12af57cfeaf09ead3fa2a0: all ordinary Quality/Docker/General Chromium/G7 checks passed; CPU A2 proof 1 failed, auxiliary 3 passed, Required Verify dependent failed. Error was page.evaluate: Target crashed after REFERENCE_READY and REAL_DXF_PRODUCE_START. There is NO evidence yet to attribute crash to OOM, SwiftShader, DXF parser or GLB.
+
+After this failure, code was authored for: P0-1 WebGL-only, P0-2 minimal LINE DXF→DTO, P0-3 Korean TEXT/MTEXT+nested INSERT→DTO, P0-4 cost of DTO_ONLY against legacy ALL, P0-5 fail-closed page termination. The original A2 full source SHA/custom DTO/manifest/full validator/temp file/independent restore is retained. The CI wrapper now intends to collect container ExitCode/OOMKilled/resources and seven-day synthetic artifact. All new tests/results are NOT VERIFIED until the exact new HEAD CI actually runs. Operational Worker restart/OOM and full #212 live Adapter fidelity remain NOT RUN.
+
+---
+
 ## #218 / PR #221 — CI #525 실패 확인 및 reference Scene PoC 재사용 시험 경로 (2026-11-03)
 
 [PR CI #525 Run41567538237](https://github.com/planner77/layoutManager/actions/runs/41567538237) exact HEAD `8042b1cd0c0ed6913666f93d91ed95f42c9b9b96`, `completed/failure`. 기존 Quality/Docker/일반 Chromium 2 shards/G7 Greenfield/Signed-Legacy **SUCCESS**. 별도 CPU Proof에서 Debian Playwright Chromium major153/TTF/JS 번들 준비 PASS, 보조 3건 PASS, 핵심 브라우저 엔트리 초기화 `PAGEERROR_SYNTAX_INVALID_REGEXP`로 FAIL. 실제 A2 DXF 파싱·DTO·Validator/Restore 결과 **NOT RUN**; Required Verify는 A2 mandatory 종속 FAIL. Chromium 버전 차이를 원인으로 확정했던 것은 부정됨.

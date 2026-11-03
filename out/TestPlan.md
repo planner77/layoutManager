@@ -1,3 +1,19 @@
+## TC-218-A2-R07 — phased P0 crash isolation after CI #538 (2026-11-03)
+
+| Gate | Experimental test | Failure rule |
+| --- | --- | --- |
+| P0-1 | Real SwiftShader WebGL2 init/clear WITHOUT any DXF | Any crash/no SwiftShader => FAIL |
+| P0-2 | Minimal synthetic LINE DXF -> actual DXFViewer Object3D -> DTO_ONLY -> full validator, no preliminary WebGL2 | No DTO, invalid manifest or crash => FAIL |
+| P0-3 | Korean TEXT/MTEXT + nested INSERT DXF -> DTO_ONLY and validator with same bounded container | Missing/lost object or crash => FAIL |
+| P0-4 | Same tiny DXF under DTO_ONLY versus original ALL (THREE_JSON/CUSTOM_DTO/GLB), record elapsed/bytes | Missing format or errors => FAIL; ALL remains default |
+| P0-5 | Close browser during unresolved page.evaluate, ensure rejection and no fabricated READY | Promise completion as READY => FAIL; does NOT prove production Worker kill/OOM/restart |
+| Required A2 | Source SHA -> real CUSTOM_DTO/Manifest/SHA/full validator -> temp file readback -> independent Chromium WebGL/fresh-process restore | All existing assertions, geometry/WCS/Stable ID, late asynchronous errors zero |
+| Resources | Same --network none, --read-only, UID10001, CPU2, RAM1536MiB, SHM256MiB, PID256 and hard time limits | Capture ExitCode/OOMKilled/stats/memory.events prior to cleanup; no disabled required gate |
+
+Exact preceding failure [CI #538](https://github.com/planner77/layoutManager/actions/runs/41570387391) did not separate initial WebGL2 context creation from DXF converter and had no cgroup/OOM metrics. New A2 stages are not PASS until real run evidence is available. A2 GO blocked; #218 OPEN; P1-B/C/D not authorized.
+
+---
+
 ## TC-218-A2-R06 — CI #525 RegExp 재현 후 기존 실증 Scene PoC 재사용 (2026-11-03)
 
 | TC | 수행 계획 | 정확 합격 기준 |

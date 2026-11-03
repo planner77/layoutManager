@@ -1,3 +1,15 @@
+## #218 / PR #221 — PR CI #538 Target crashed with unmeasured CPU/renderer process cause (2026-11-03)
+
+**Exact evidence:** [PR CI #538 Run41570387391](https://github.com/planner77/layoutManager/actions/runs/41570387391), HEAD 3b1c8c1ff9b1e42bde12af57cfeaf09ead3fa2a0, completed/failure. Scope 125701743940, Quality 125701805540, Docker Runtime 125701805489, General Chromium shards 125703807721 and 125703807773, G7 Greenfield 125703807688 and G7 Signed/Legacy 125703807697 SUCCESS. A2 CPU 125701805501 FAIL; Verify 125706904886 dependent FAIL.
+
+**Observed sequence:** Browser 153, Korean font and the original Scene PoC script started normally (REFERENCE_READY). The combined evaluate() first created an extra WebGL2 context, then called the actual DXF converter. Around 1.4 s after REAL_DXF_PRODUCE_START Playwright raised Target crashed. Whether the DXF parser was called, whether the WebGL2 context crashed or whether the cgroup killed a renderer child is UNKNOWN; no OOMKilled, peak RSS, memory.events or renderer core dump from this run. Full DTO/SHA/validator/restore NOT RUN in the failed branch.
+
+**Historical CI:** PR branch #479–#538 has 60 workflow runs: FAILURE=7, CANCELLED=53, SUCCESS=0. Earlier failures: #479 TS2322/ENOENT; #485 180s timeout; #495/506/514/525 bootstrap/invalid regexp; #538 browser target crash. Cancellation stems from successive SHA pushes and cancel-in-progress, not 53 individual product regressions.
+
+**Correction and evidence plan:** Split WebGL from actual DXF/DTO and add five independently named synthetic P0 tests before the required complete A2 proof. Preserve old Scene PoC default ALL outputs; optionally request actual DTO_ONLY, without emitting unused THREE_JSON/GLB. Record safe browser parse/serialize phases; run detached test container with same UID10001, CPU2, 1536MiB RAM, 256MiB SHM, read-only, network-none limits; collect container ExitCode/OOMKilled, docker stats and cgroup memory.events before removal as seven-day synthetic CI artifact. THIS MODIFICATION HAS NOT BEEN EXECUTED. P0-5 browser close is not OOM/kill-9/lease recovery. P1-A2 GO BLOCKED, #218 OPEN and P1-B/C/D not started.
+
+---
+
 ## #218 / PR #221 — CI #525 CPU pinned Chromium 153에서도 SYNTAX_INVALID_REGEXP, 중복 엔트리포인트 제거 (2026-11-03 KST)
 
 - **증거:** [PR CI #525 Run41567538237](https://github.com/planner77/layoutManager/actions/runs/41567538237), HEAD `8042b1cd0c0ed6913666f93d91ed95f42c9b9b96`, `pull_request/completed/failure`. Scope Job `125692699837`, Quality `125692740239`, Docker `125692740127`, General Chromium shard 1 `125693992977`/shard 2 `125693993023`, G7 Greenfield `125693992913`, Signed/Legacy `125693992950` SUCCESS. A2 CPU Job `125692740203` FAILURE, Required Verify `125697098561` FAILURE(종속).

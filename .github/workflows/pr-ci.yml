@@ -660,19 +660,52 @@ jobs:
           observed="$(docker run --rm --network none --user 10001:10001 \
             --entrypoint id layoutmanager-a2-proof:ci -u)"
           test "$observed" = 10001
-      - name: Execute actual DXF conversion, full validator, restore and risk cases
+      - name: Execute staged P0 diagnostics and required A2 CPU converter proof
         shell: bash
         run: |
           set -euo pipefail
-          # No secrets, Docker host sockets, authenticated app, CAD or DB mounts.
-          # Memory/pid/CPU limits are real; timeout is fatal, never treated as PASS.
-          timeout --signal=TERM --kill-after=10s 15m \
-            docker run --rm --init --name "layoutmanager-a2-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
+          # Keep UID10001, offline runtime, read-only rootfs and CPU/RAM limits.
+          # Delay container deletion until real OOM/exit evidence is collected.
+          report="$RUNNER_TEMP/a2-proof"
+          mkdir -p "$report"
+          name="layoutmanager-a2-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          docker run -d --init --name "$name" \
             --network none --read-only --user 10001:10001 \
             --cpus 2 --memory 1536m --memory-swap 1536m --pids-limit 256 \
             --shm-size 256m --cap-drop ALL --security-opt no-new-privileges \
             --tmpfs /tmp:rw,nosuid,nodev,size=512m,mode=1777 \
-            layoutmanager-a2-proof:ci
+            layoutmanager-a2-proof:ci > "$report/container-id.txt"
+          (
+            while [[ "$(docker inspect -f '{{.State.Running}}' "$name" 2>/dev/null || true)" == "true" ]]; do
+              docker stats --no-stream --format '{{json .}}' "$name" >> "$report/docker-stats.jsonl" 2>/dev/null || true
+              docker exec "$name" sh -c 'cat /sys/fs/cgroup/memory.events 2>/dev/null' > "$report/memory-events-last.txt" 2>/dev/null || true
+              sleep 2
+            done
+          ) &
+          sampler=$!
+          set +e
+          exit_code="$(timeout --signal=TERM --kill-after=10s 15m docker wait "$name")"
+          wait_rc=$?
+          set -e
+          if [[ "$wait_rc" -ne 0 ]]; then docker kill "$name" >/dev/null 2>&1 || true; fi
+          kill "$sampler" >/dev/null 2>&1 || true
+          wait "$sampler" 2>/dev/null || true
+          docker logs "$name" 2>&1 | tee "$report/playwright.log"
+          docker inspect --format '{"oomKilled":{{.State.OOMKilled}},"exitCode":{{.State.ExitCode}},"status":"{{.State.Status}}","pid":{{.State.Pid}}}' \
+            "$name" | tee "$report/docker-inspect.json"
+          printf 'wait_rc=%s container_exit=%s\n' "$wait_rc" "$exit_code" | tee "$report/exit-status.txt"
+          if [[ "$wait_rc" -ne 0 || "$exit_code" != "0" ]]; then
+            echo "::error::A2 CPU stage failed; see OOM/state/resource artifact."
+            exit 1
+          fi
+      - name: Archive synthetic-only A2 phases and resource/Crash evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: a2-cpu-proof-${{ github.run_id }}
+          path: ${{ runner.temp }}/a2-proof/
+          if-no-files-found: warn
+          retention-days: 7
       - name: Kill orphan proof container only (never touch production volumes)
         if: always()
         shell: bash

@@ -46,3 +46,12 @@ export function a2CycleDxf(): string {
     ...insert('A'),'0','ENDSEC','0','EOF','',
   ].join('\n');
 }
+
+/** P0-2: independent minimal, deterministic LINE DXF. No CAD/production data. */
+export const a2LineOnlyDxf = [
+  '0','SECTION','2','HEADER','9','$ACADVER','1','AC1024',
+  '9','$INSUNITS','70','4','0','ENDSEC',
+  '0','SECTION','2','ENTITIES',
+  '0','LINE','5','P01','8','BASIC','10','0','20','0','11','12','21','8',
+  '0','ENDSEC','0','EOF','',
+].join('\n');

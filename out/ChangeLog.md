@@ -1,3 +1,9 @@
+## 2026-11-03 — #218 P0 crash isolation and one-commit diagnostic framework
+
+CI #538 (3b1c8c1...) passed application Quality/Docker/Chromium/G7 but failed dedicated A2 CPU test at page.evaluate: Target crashed after reference browser initialization. No OOM/renderer/parser root cause measured. Preserve original E2E mode ALL while adding opt-in actual DTO_ONLY and phase markers; split synthetic P0-1 WebGL-only, P0-2 LINE DTO, P0-3 Korean/nested DTO, P0-4 format-cost comparison, P0-5 page-abort, then required full A2 SourceSHA/manifest/validator/file/fresh restore. Docker wrapper collects exit/OOM/resource evidence prior to cleanup with limits unchanged. Exact new CI outcome NOT VERIFIED; #218 OPEN, P1-A2 GO BLOCKED, no Worker/G7/GHCR release.
+
+---
+
 ## 2026-11-03 — #218 PR #221 / CI #525 CPU-only proof의 검증된 Scene PoC 코드 통합
 
 - Source `8042b1cd...`의 CI #525: 앱 Quality/Chromium/G7/Docker PASS, 전용 CPU-only 변환 초기화 `SYNTAX_INVALID_REGEXP` FAIL. Chromium 156→153 변경해도 재현되어 단순 버전 원인설 반증; 보조 3 PASS, 원본 DXF/DTO/fidelity 미실행.

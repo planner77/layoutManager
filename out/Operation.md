@@ -1,3 +1,11 @@
+## #218 P0 — CPU-only diagnostic container post-mortem (2026-11-03)
+
+CI #538 reference scene builder initialization worked, but browser target crashed while a single evaluate operation mixed WebGL2 initialization and DXF produce. The a2-cpu-probe job now starts its isolated Docker container detached WITHOUT immediate --rm, waits up to 15m, samples docker stats every ~2s and attempts /sys/fs/cgroup/memory.events, and records State.OOMKilled/ExitCode/Status after exit. Only after recording those is the exact run-named container removed by the existing cleanup step. A synthetic-only artifact is kept for seven days; no real CAD, G7 tokens, operational database or volumes are mounted. CPU2/RAM1536MiB, SHM256MiB, UID10001, read-only rootfs, network none, pids256 and no privileges remain.
+
+Do not infer an actual OOM from Playwright Target crashed unless container/cgroup evidence supports it. P0-5 page.close abort is not kill-9, job recovery, lease or operational restart; these and the production sandbox/real customer DXFs remain blocked gates.
+
+---
+
 ## #218 P1-A2 — CPU-only reference Scene PoC 복수 프로세스 검증 (2026-11-03)
 
 - [CI #525](https://github.com/planner77/layoutManager/actions/runs/41567538237)에서 맞춘 Chromium153로도 중복 A2 Browser entrypoint의 `SYNTAX_INVALID_REGEXP`이 재현됨. 임의 Browser 버전 변경/Regex 예외 무시로 해결하지 않고, 통상 General Chromium E2E에서 검증된 `tests/e2e/scene-poc-browser.ts`를 독립 CPU proof에서 실제 DXF를 변환하는 공통 엔트리로 사용한다.

@@ -1,3 +1,13 @@
+## #218 / PR #221 — CI #538 crash isolation and one-batch change (2026-11-03)
+
+**Observed:** [PR CI #538](https://github.com/planner77/layoutManager/actions/runs/41570387391) at HEAD 3b1c8c1ff9b1e42bde12af57cfeaf09ead3fa2a0 failed. All existing Quality, general Chromium (2 shards), Docker, G7 Greenfield and Signed/Legacy passed. New A2 CPU job 125701805501 reported REFERENCE_READY → REAL_DXF_PRODUCE_START → page.evaluate: Target crashed. Required Verify failed because A2 is mandatory. Neither an OOM nor a WebGL or DXF parser root cause has been proven.
+
+**Remediation:** Keep default ALL format behavior of the previously successful scene-poc-browser E2E; add a test-only DTO_ONLY mode that still runs actual DXFViewer and CUSTOM_DTO serializer, with safe phase markers. Isolate P0-1 WebGL-only; P0-2 minimal LINE DXF with DTO (no preliminary WebGL); P0-3 Korean/nested INSERT DXF with DTO; P0-4 DTO_ONLY versus ALL cost; P0-5 aborted pending browser call. Full A2 SHA/manifest/domain validator/temp file/fresh-process restore remains mandatory. CI captures container OOMKilled/ExitCode, docker stats and cgroup memory.events when readable before cleanup, and uploads synthetic-only evidence for seven days. Original CPU2/RAM1536MiB, SHM256MiB, UID10001, read-only, network-none, pids/time limits and all required tests remain enforced.
+
+**Gate:** Single final fast-forward branch update, avoiding 53 cancelled redundant workflows seen across 60 prior PR runs. The new tests have NOT YET RUN; a page-close abort is not a Worker kill/OOM/restart test. P1-A2 GO BLOCKED, issue #218 OPEN, P1-B/C/D prohibited, no operational G7/SceneRepository/DB/Volume/GHCR changes.
+
+---
+
 ## #218 / PR #221 — CI #525 pinned Chromium에서도 RegExp 실패, 검증된 Scene PoC 재사용으로 시험 경로 변경 (2026-11-03 KST)
 
 - **실측:** [PR CI #525 Run41567538237](https://github.com/planner77/layoutManager/actions/runs/41567538237), exact HEAD `8042b1cd0c0ed6913666f93d91ed95f42c9b9b96`, `completed/failure`. Scope `125692699837`, Quality `125692740239`, Docker `125692740127`, General Chromium 2 shards `125693992977/125693993023`, G7 Greenfield `125693992913`, G7 Signed/Legacy `125693992950` SUCCESS. A2 CPU Job `125692740203` 3 보조 시험 PASS, 실제 DXF→Scene 시험 FAIL; Required Verify `125697098561`은 필수 A2 실패로 FAIL. `BROWSER_MAJOR_153→HARNESS_SCRIPT_REQUESTED→PAGEERROR_SYNTAX_INVALID_REGEXP`. DXF 파싱 전에 중단하므로 서버 변환기 GO 미확보.

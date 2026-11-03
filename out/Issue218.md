@@ -1,3 +1,11 @@
+## 2026-11-03 — P0 diagnosis after repeated PR CI failures, no GO
+
+Across #221 CI #479–#538: 60 runs, seven failures and 53 cancelled intermediate SHA runs. Quality/Docker/General Chromium/G7 all pass by #538, while required A2 CPU-only job alone fails. [CI #538](https://github.com/planner77/layoutManager/actions/runs/41570387391) HEAD 3b1c8c1ff9b1e42bde12af57cfeaf09ead3fa2a0 shows REFERENCE_READY → REAL_DXF_PRODUCE_START → page.evaluate: Target crashed. Original wrapper combined WebGL2 creation and DXF produce; direct cause unknown and no OOM/exit metrics.
+
+Remediation is test-only: original Scene PoC default ALL unchanged, optional DTO_ONLY to avoid unrelated GLB/THREE_JSON allocations; P0-1 isolated WebGL2, P0-2 minimal LINE DXF/DTO-only, P0-3 Korean/nested DXF/DTO-only, P0-4 format-cost comparison, P0-5 browser close rejection. A2 full source SHA/manifest/validator/persist/restore remains required. Docker CI captures ExitCode/OOMKilled/docker stats/cgroup memory.events for seven days with original resource/security limits. Commit as one branch update instead of many per-file pushes. New tests not yet executed, do not claim OOM fixed or CPU Builder GO. P1-B/C/D not started and no GHCR/production data changes. #218 OPEN.
+
+---
+
 ## 2026-11-03 — #221 CI #525 CPU Chromium153에도 RegExp 동일 실패; P1-A2 proof 구현 통합
 
 - [PR CI #525 Run41567538237](https://github.com/planner77/layoutManager/actions/runs/41567538237) exact HEAD `8042b1cd0c0ed6913666f93d91ed95f42c9b9b96`: scope/Quality/Docker/General Chromium 2/G7 전부 SUCCESS, A2 `BROWSER_MAJOR_153→HARNESS_SCRIPT_REQUESTED→PAGEERROR_SYNTAX_INVALID_REGEXP`로 필수 변환 시험 실패. 다른 3개 보조 PASS. Browser 153 동기화가 문제를 해결하지 못했으므로 Chrome 156 전용 원인 가설은 부정. 실제 regex pattern/caller는 문서화 가능한 로그가 없어 UNKNOWN. DXF parser/Scene/DTO/full validator/restore는 미호출.

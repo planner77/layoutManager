@@ -1,3 +1,9 @@
+## #218 P0 synthetic Crash telemetry (2026-11-03)
+
+The reference Scene PoC only emits safe A2_BROWSER_PHASE markers for the opt-in DTO_ONLY mode: DXF_PARSE_START, DXF_PARSE_DONE, SCENE_TAGGED, CUSTOM_DTO_START, CUSTOM_DTO_DONE, PRODUCE_COMPLETE. A2 Playwright logs A2_HOST_PHASE, page.on('crash') and a small allowlisted error class. The CI wrapper samples only numeric docker stats, memory.events and inspect OOMKilled/ExitCode/Status, retaining seven-day artifacts for these public synthetic fixtures. Raw DXF bytes, SHA, tokens, user records or arbitrary browser errors are not included; the log is not a production Worker timeline.
+
+---
+
 ## #218 / CI #525 — 중복 browser 초기화 RegExp 오류와 재사용 경로 구분 (2026-11-03)
 
 [PR CI #525](https://github.com/planner77/layoutManager/actions/runs/41567538237)에서 `BROWSER_MAJOR_153` 뒤 `SYNTAX_INVALID_REGEXP`이 재발, 기존 RegExp/버전 가설을 수정. 원본 error pattern/소스는 로그 redaction으로 미확정; 실제 DXF 파싱까지 가지 않았다. 신규 A2 harness는 기존 `scene-poc-browser.ts`의 DXFViewer/serializer/restore 코드를 CPU proof 안에서 사용하고, 허용된 `A2_HOST_PHASE` milestone, Source/DTO/node/geometry/latency 등 **공개 합성 데이터 기반 계측만** 출력. 실제 CAD bytes/원본 SHA/경로·Browser error 전문/로그 stack/자격정보는 노출하지 않는다. 이 Test 로그는 운영 requestId/JobId/G7 Audit의 대체가 아니며 기존 READY 후보 검증 계약을 완화하지 않는다.
