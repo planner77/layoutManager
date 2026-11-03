@@ -1,3 +1,14 @@
+## #218 P1-A2 — 실험 CPU-only Debian 컨테이너 실행(운영 배포 아님) (2026-11-03)
+
+1. CI 전용: repository root에서 `docker build --platform linux/amd64 -f src/tests/a2/Dockerfile -t layoutmanager-a2-proof:ci .`. Debian/Chromium/npm 의존성은 CI 빌드 때 외부 패키지 저장소를 통해 설치하고, 실행 시에는 `--network none`을 적용한다. **이 구성이 완전한 사내망 오프라인 이미지 build 실증은 아님**. 글꼴 재배포 라이선스/apt 패키지 SBOM/production sandbox는 별도 검증.
+2. P1-A2 PR CI의 `a2-cpu-probe`가 UID10001, 무볼륨/무비밀/무Network·read-only·cap-drop·no-new-privileges, CPU2/RAM1536MiB/512MiB tmpfs/256 pids/15m timeout 조건으로 `playwright test --config tests/a2/playwright.config.ts`를 실행하도록 추가. 동일 synthetic source와 Browser 비교, DTO manifest/SHA/full validator/temporary persistence/restore 실패시 CI 실패.
+3. `chromiumSandbox:false`를 쓰는 합성 검증 단계는 **운영용 Worker 보안 격리 수용이 아니다**. OOM/kill/restart/host resource exhaustion·real DXF/2PC·브라우저 실 #212 Adapter semantic 비교, closed-network OCI/Worker source revision이 남아 있으므로 P1-A2 GO 불가. 브라우저 탭/유저 로그인/G7 Mock으로 worker를 대체하지 않는다.
+4. 실험 이미지는 GHCR/App/Migrator 태그로 게시하지 않고 운영 `.env`, `CAD_DATA_VOLUME_NAME`, Prisma/Schema, 현장 DB/CAD를 변경하지 않는다. #216 immutable release 복구와 #218 새 Worker 운영 release는 별도 SemVer/G7 승인 후에만 허용.
+
+시험 스크립트와 Gate: [Issue218](Issue218.md), [TestPlan](TestPlan.md), [TestReport](TestReport.md).
+
+---
+
 ## #216 GHCR 0.58.1 실패 복구 Runbook (2026-11-03)
 
 1. [Main CI #138](https://github.com/planner77/layoutManager/actions/runs/41539913477)에서는 `G7_RELEASE_REGISTRY_CHECK_FAILED`로 App/Migrator 후보 Build/Promotion 이전 차단. 기존 `v0.58.1` 태그가 `934e...` source commit에 정합하며 태그 이동·강제 재지정/수동 latest 업데이트를 해서는 안 된다.
