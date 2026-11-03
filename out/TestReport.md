@@ -1,3 +1,17 @@
+## #223 / CI #545 — Greenfield 회귀 수리·독립 QA 완료 (2026-11-03 KST)
+
+- 원격 정확 HEAD `b8f4ebe`, [CI #545](https://github.com/planner77/layoutManager/actions/runs/41645624408)는 Greenfield24 PASS/2 FAIL 및 Required Verify 종속 FAIL, 다른7 Job은 SUCCESS다. 이전 로컬988/Browser11/fault6 수용이 이 실패를 취소하지 않는다.
+- 실제 RED: owned 임시 root/controlled clock의 초기 Admin·SC14·R3 chain3case는1 PASS/2 FAIL(53.4s)로 같은 mapping0vs5·consumer heading 실패를 재현했다. CI trace login200→409 확인; public body의 SESSION_LIMIT code는 직접 관측하지 않았다.
+- 단일 변수 개입: 매핑0→5 한 줄만 변경하면 SC14 및 후속 login 실패 지점은 통과했다. 전체subset 결과는2 PASS/1 FAIL(1.0m)이며 R2에서 생성하는 r2reader를 제외한 fixture 전제 누락으로 R3 후반에 실패했다. Manager가 C545-05를 실제 prerequisite/full suite 기준으로 정합화했고 이 실행을 GREEN으로 기록하지 않는다.
+- Manager gpt-6-astra 설계 C545-01~06 → Developer gpt-6-sol test-only3파일 수리 완료. 실제 fixture의 v2 scope/독립 sourceSHA/5bindings 및 original·fresh·reload exact render6/mapped5/observed5/excluded1을 검증한다. 기존 원본GET/Blob/indexWorker/liveWorker0·text/Layer·immutable payload/Scene revision·명시 Renderer 전환 단언은 보전했다.
+- Developer 최종 실행: 전체 controlled Greenfield **27/27 PASS(3.8m)**, typecheck/관련 lint/diffcheck PASS, helper unit **3/3 PASS**. 실제2 authenticated context의 본문 예외 후 옛 cookie 각각401·후속3login200/4번째409를 확인했다. Logout은 context close 전에 수행하고 한 정리 실패에도 나머지를 시도하며 primary/cleanup 오류를 함께 보전한다. Manager 직접 소스검토가 독립 QA 착수를 승인했다. 독립 QA gpt-6-luna도 동결 소스의 전체 Greenfield **27/27 PASS(3.2m)**, helper **3/3 PASS**, typecheck PASS, full lint0errors/기존8warnings를 확인했다. SCENE_RECONNECT는 originalGET0/Blob0/indexWorker0/sceneGET4/contexts2이고 R2 prerequisite과 R3까지 통과했다.
+- QA 실행 이력: 최초 잘못된 임시root는 owned-fixture guard가 server/test 전에 거절해 NOT RUN이었다. 다음 유효한 canonical/0700 수동root 실행은 자동root 안내를 재시작 요구로 해석해7개 PASS 후8번째 도중 CANCELLED됐다. 정정 안내 후 자동 owned root의 전체27 PASS를 정본으로 삼고 partial/cancel을 제품 실패나 전체 PASS로 계수하지 않는다. guard와 제품은 변경하지 않았다.
+- 검증 범위: 제품/App/Adapter/auth/DB/package/Docker/CI 설정은 변경0이다. 기존 성공 CI545의 quality/build/Docker/general/runtime/A2는 그 당시 baseline 결과로 보전하고, 새 delta는 관련 helper·type/lint 및 전체 Greenfield로 검증한다. 전체988/build/Docker를 새 delta 통과로 재명명하거나 불필요하게 반복하지 않는다.
+- Manager 최종 판정: C545-01~05 수리 ACCEPT/추가 재작업0. C545-06은 최종 게시·새 정확 HEAD CI 시작 확인을 남긴 상태에서 이 소스 기록을 확정한다. 시작 여부와 새 HEAD는 최종 PR metadata/완료 보고로 확인하며 새 CI 완료 PASS를 미리 쓰지 않는다.
+- 제품 source/version0.59.0·3-session 제한·인가·DB·원본·운영 volume/배포·A2 P1-B NO-GO는 유지한다. 최종 재조회 review threads0/unresolved0·mergeable=true, base Main2efae76/headb8f4ebe 및 Main ancestor를 확인했다. 새 CI는 원장 기록 뒤 시작하고 완료 모니터링은 생략한다.
+
+---
+
 ## #218 FX / Sandbox — 0.59.0 후속 구현·로컬 검증 완료 (2026-11-03 KST)
 
 - **병합 완료:** PR #222 검증 전용 Squash Main `2efae7631b175d25b9c4f961cc1fd0fdc23010f5`. Exact PR HEAD `0ade59a2aa3245c7323963f254ce3f24b3e110db`의 [CI #543](https://github.com/planner77/layoutManager/actions/runs/41625577506) 9/9 Job SUCCESS, review 미해결0/충돌0 및 tree 동일을 확인했다. 병합 후 #218 OPEN. 아래 #222의 CI 미확인 표기는 당시 기록이다.

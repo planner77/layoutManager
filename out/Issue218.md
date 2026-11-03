@@ -1,3 +1,54 @@
+## 2026-11-03 — CI #545 test-only 수리 최종 수용 (신규 CI 시작 전)
+
+**Manager 판정: 구현 수리 ACCEPT, 추가 재작업 요구0.** C545-01~05는 Developer·독립 QA의 동결 소스 실행과 코드 검토로 충족했다. 원인은 **v1 index 미복원 기대0이 v2의 실제 복원5와 불일치한 시험 결함**, 이어서 **SC-14 assertion 실패가 tail-only logout을 건너뛰어 남긴 Admin 세션2개와 R3 main 세션1개가 기존 cap3을 채워 독립 consumer login409를 유발한 연쇄 시험 결함**이다. 원래3case의 동일2실패 재현, 기대0→5만 바꾼 대조에서 SC-14·후속 consumer 로그인 통과, 실제 session 정리/기존 cap 회귀 및 전체 R2/R3 chain 성공을 종합해 이 인과를 수용한다. CI409 응답 body에서 SESSION_LIMIT 코드 자체를 직접 관측한 것은 아니며, 제품 auth의 cap 분기와 대조·회귀가 근거다. 제품 Auth/runtime 결함으로 분류하지 않는다.
+
+독립 QA `gpt-6-luna`가 자동 소유 격리 root의 전체 Greenfield **27/27 PASS(3.2분)**, helper3/3·typecheck·전체 lint(0errors·기존8warnings)를 완료했다. 원본/fresh/reload의 exact render6/mapped5/observed5/excluded1과 v2 Scope/독립 source SHA, fresh 원본GET0/Blob0/indexWorker0(sceneGET4·contexts2), 실제2session 본문 예외→oldcookie401→새3login200/4번째409 및 R2/R3 전체 chain이 통과했다. Developer의 별도 전체27/27(3.8분)과 일치한다. QA 첫 잘못된 root는 guard가 server/test 시작 전에 거절한 **NOT RUN**, 이후 유효 수동 root 실행은7PASS 후 중단한 **CANCELLED**로 보존하며 최종27시험 성공으로 덮어쓰지 않는다. 최초3case 및 중간 fixture/SHA 단언 실패와 수정도 [FailureLedger](FailureLedger.md)에 남기고, 최종 실행 정본은 [TestReport](TestReport.md)다.
+
+변경은 test3파일과 추적 문서에 한정한다. 제품/Adapter/auth/package/schema/DB/Docker/workflow 변경0, 제품0.59.0·cap3·권한·CSRF·clock·timeout/retry·필수 CI를 유지했다. Manager는 이 수리의 root 통합/단일 PR 갱신을 수용한다. **C545-06은 최종 secret/review/conflict/base 검사·push·정확 새 HEAD CI 시작 확인이 남아 있으므로 진행 중**이며 root가 실제 완료를 기록한다. 신규 CI 완료는 사용자 요청대로 모니터링하지 않고, 시작을 성공으로 기록하지 않는다.
+
+**#218 OPEN, A2/P1-B NO-GO·P1-B/C/D 미착수/금지 유지.** 이번 Greenfield 시험 수리는 strict WebGL restore 실패, source PARTIAL, 보안/라이선스/SBOM/현장 수용의 기존 미충족 조건을 해결하거나 완화하지 않는다. 운영 Worker·배포·병합 승인을 의미하지 않는다.
+
+---
+
+## 2026-11-03 — PR #223 CI #545 Greenfield 회귀 수리 설계·AC (구현 전)
+
+**현재: test-only 수리 구현 검토 수용, 독립 QA 실행 승인·결과 대기.** 대상은 `feat/218-a2-fidelity-security-published`, exact HEAD `b8f4ebe`, 제품0.59.0이다. [CI #545 Run41645624408](https://github.com/planner77/layoutManager/actions/runs/41645624408)의 G7 Greenfield Job125952595152는24 PASS/2 FAIL이고 Required Verify가 종속 실패했다. 다른7jobs(A2/fault/strict research probe 포함)는 PASS다. Root 확인 시 review 미해결0·mergeable=true·Main2efae76 일치이며 리뷰/충돌이 있었다고 만들지 않는다. 아래 과거 로컬 수용은 이번 원격 실패를 취소하지 않는다.
+
+**Manager 구현 검토:** `first-install.spec.ts`/`owned-sessions.ts`/`g7-owned-sessions.test.ts` 세 파일을 직접 검토했다. v2의 원본·fresh·reload exact6/5/5/1과 독립 source SHA/Version/Scope, 기존 무파싱·불변 저장 단언을 보존하며 session 소유 등록→logout→context close를 모든 본문 실패 경로에 적용했다. 한 cleanup 실패 뒤에도 나머지 정리를 시도하고 본문 실패와 cleanup 실패를 별도 보존한다. 실제2session 강제 본문 실패→oldcookie401→새3login200/4번째409 회귀는 기존 cap3을 유지한다. Developer 보고는 focused first-install3/3, 전체 Greenfield27/27(3.8분), helper3/3/typecheck/scopedlint/diffcheck PASS다. Manager는 소스 검토 및 diff-check를 완료하고 **독립 QA 착수를 승인**하며, 이 보고를 독립 실행 결과로 대체하지 않는다. 제품/Auth/timeout/retry/버전 변경은 없다.
+
+### 현상·원인 가설 및 제한된 수리 방향
+
+Root가 실행한 `G7_E2E_MONOTONIC_CLOCK=true npx playwright test --config playwright.g7-greenfield.config.ts first-install.spec.ts typed-outlines.spec.ts --grep 'initial browser Admin|SC-14|R3 server-first' --reporter=line`의 실제 로그를 Manager가 확인했다. 합성 최초 설치→SC-14→R3의3시험에서 **1PASS/2FAIL(53.4s)**로 동일 현상이 재현됐다. SC-14는 원본GET/Blob/Worker0을 확인한 뒤 `정밀 원본 매핑 0개` 기대에 실패했고 실제 UI는 **render6/mapped5/observed5/excluded1**이었다. 후속 R3는 독립 consumer 로그인 후 `현재 세션` heading 부재로 실패했다. Root가 제공한 CI trace에서 후속 login200→consumer409를 확인했으나 응답 body에는 code 필드가 없어 SESSION_LIMIT 코드를 직접 관측한 것으로 기록하지 않는다. 원시 trace의 cookie/token/CSRF/password/header는 출력하거나 커밋하지 않는다.
+
+순위 가설과 반증 조건은 다음과 같다. (1) v1 원본 index 미복원에 맞춘 오래된 기대0이 v2의 의도된 snapshot 복원5와 불일치한다. 같은 source fixture의 실제 원본·stored schema2/snapshot·fresh/reload가 동일5라면 기대를 강화해 갱신하고, 서로 다르면 제품 fidelity 문제로 재분류한다. (2) SC-14의 실패가 tail-only logout/consumer.close를 건너뛰어 Admin 세션2개를 남기고, 후속 R3 main 로그인으로 cap3에 도달해 consumer가409가 된다. 실제 auth store의 `active>=3 → SESSION_LIMIT409`와 일치하지만, 정확 code/격리 DB의 session 상태·한 변수 cleanup 대조로 연쇄 원인을 확인한다. (3) 독립 auth/clock 또는 G7 scope 실패라면 앞선 세션을 정상 정리해도 후속 동일 로그인 실패가 남거나401/403 등 다른 분류가 관측될 것이다. 이미 monotonic 격리 시계에서 재현됐다는 사실만으로 모든 clock 문제를 해결했다고 주장하지 않는다.
+
+**수리 범위는 test-only다.** `tests/greenfield-e2e/first-install.spec.ts`의 v2 기대와 session/context 소유·정리, 필요한 작은 test helper/회귀 및 직접 영향을 받는 consumer cleanup만 보완한다. 세션 수용량3, 만료·clock·권한·CSRF·rate limit, 제품 serializer/Adapter/Scene API/G7 auth, timeout/retry/skip/필수 CI는 유지한다. 제품 결함이 별도로 입증되지 않는 한 버전0.59.0/package/lock/registry·DDL·Worker·운영 자산은 변경하지 않는다. 기존 A2/fidelity 전체 검증을 삭제/낮추거나 원본으로 fallback해 테스트를 통과시키지 않는다.
+
+**재현 최소화의 전제조건 보완:** Developer가 기대값0→5만 바꾼 단일개입에서 기존3case는2PASS/1FAIL(약1분)이었다. SC-14가 통과하고 후속 R3의 독립 consumer 로그인도 원래 실패 지점을 통과했으나, 이후 line156에서 `r2reader` fixture 부재로 실패했다. 이 사용자는 subset에서 빠진 R2 global catalogue 시험이 만든다. 따라서 기존3case는 원래 두 증상에 대한 유효한 RED/개입 진단이지만 R3 전체 완료를 판정할 완전한 fixture chain은 아니었다. 새 fixture 실패를 제품 auth 결함으로 분류하거나3case GREEN으로 기록하지 않는다. 기존 관측을 원장에 모두 남기고, R3 source/fixture를 우회하지 않은 의존성 보완4case 또는 원래 전체 Greenfield suite로 후속 검증한다. 최종 수용은 기존26시험과 새 cleanup 회귀 전체 통과를 요구한다.
+
+### Developer 구현 계약
+
+1. `sceneDxf`의 persisted envelope가 `schema:2`, sourceIndex READY이며 같은 Version/원본SHA/전체 SceneScope에 묶였는지 검증한다. 알려진 합성 fixture의 stable source subset과 mapping은 정확5, render6/observed5/excluded1이다. 원본·fresh independent context·reload 결과에서 동일한 매핑을 확인하며 `>0` 또는 임의 범위로 약화하지 않는다. 누락 Handle·미지원 text 등 제외를 전체 source 지원으로 바꾸지 않는다.
+2. Fresh context와 reload 각각에서 원본GET0, parser를 나타내는 Blob URL0, index Worker0/liveWorker0, 문자 검색·Layer·render outline·immutable stored payload/Scene revision·원본 SHA 보존을 유지한다. 이후 **명시적인** dxf-viewer 선택에서만 기존 예상 원본GET 증가를 허용하며 앞선 restore 무파싱 증거와 구별한다.
+3. 로그인 성공 이후의 모든 경로를 `try/finally` 또는 동일한 수명 관리 helper로 감싼다. 생성한 각 authenticated context는 등록 즉시 소유 목록에 넣고, logout은 context를 닫기 전에 실제 session/CSRF로 수행한다. 소비자 생성 전 실패, 로그인 중 실패, assertion throw, 정상 완료 모두 해당된다. Browser context.close만으로 서버 session이 revoked됐다고 간주하지 않는다.
+4. 하나의 logout이 실패해도 나머지 소유 session logout과 consumer.close를 모두 시도한다. Primary assertion 실패를 조용히 성공으로 바꾸거나 cleanup 오류로만 덮어쓰지 않는다. Unexpected logout status/network 실패는 안전한 분류로 별도 보존하고 정상 시에는 cleanup 실패 자체가 시험을 실패시킨다. 활성 세션이 없는 정상 응답(401)은 구별하되 모든 non200을 무조건 무시하지 않는다. Playwright가 소유한 primary context와 시험이 만든 consumer의 close 책임을 구분한다.
+5. 실패 시 실제2개 session을 남기던 패턴을 test seam에 고정한다. 합성 독립 session2개를 열고 본문에서 의도한 예외를 발생시켜 호출자가 그 예외를 확인한 뒤, helper가 둘 다 logout/consumer close했음을 실제 API 또는 read-only 격리 DB로 확인한다. 다음 로그인/독립 consumer가200으로 회복되는지 검증한다. 공유 운영 DB를 수정하거나 테스트 편의를 위해 session table을 직접 삭제·강제 revoke하지 않는다. 의도된 예외는 명시적으로 검증하는 회귀이며 정상 시험 FAIL을 catch하고 PASS로 바꾸는 장치가 아니다. 동일 helper의 logout 한 건 실패 시 나머지 cleanup 계속됨은 작고 결정적인 음성시험으로 보완할 수 있다.
+
+### 수용 기준
+
+| AC / TC | 필수 증거 | 금지/실패 조건 |
+| --- | --- | --- |
+| C545-01 | 기존 controlled3test chain RED1PASS/2FAIL 기록 및 정확 CI545 job/line/응답 분류, session2→3→consumer409 원인 또는 반증을 단일 변수 대조로 확보 | missing heading만 보고 auth 원인 확정 금지; cookie/token/CSRF/trace 전문 출력 금지 |
+| C545-02 | 실제 v2 source snapshot·Version/SHA/Scope, 원본과 independent fresh/reload의 mapped5/render6/observed5/excluded1 exact | v1 기대0 유지·단언삭제·`>0`·원본 fallback·source coverage 확대 금지 |
+| C545-03 | fresh/reload 원본GET0/Blob0/indexWorker0/liveWorker0 및 기존 문자/Layer/outline/저장 bytes/revision/Renderer 전환 회귀 | 무파싱 단언 제거/제품 변경으로 시험 통과 금지 |
+| C545-04 | 실제 authenticated2context 본문 예외→모든 소유 session logout·consumer close→다음 독립 로그인 성공; cleanup1건 실패해도 나머지 정리 시도 | cap3/인가/CSRF/clock/rate-limit 완화·DB session 직접 삭제·정리 실패 은폐 금지 |
+| C545-05 | 누락된 R2 global catalogue 전제조건을 포함한4case(initial Admin→SC-14→R2 global catalogue→R3) 또는 원래 전체 Greenfield suite(기존26시험 및 새 회귀 포함) 전체PASS로 후속 R3 완료까지 검증; 최종 수용에는 전체 suite PASS 필수. 관련 helper unit·typecheck/lint; 제품 source가 동일하면 이미 성공한 CI545 Quality/build/Docker/일반2/legacy/A2 결과를 기존 근거로 사용 | 기존3case RED와 단일개입2PASS/1fixtureFAIL 보존; 불완전 subset을 GREEN으로 만들기 위한 R3 fixture 우회/가짜 사용자/skip 금지; timeout 증가/retry상향/CI선택 축소 금지 |
+| C545-06 | 독립 QA/Manager 재검토, 실제 실패·대조·수리·최종실행을 FailureLedger/TestReport 동기화, 최종 review/conflict/base/secret 검사 후 한 번의 coherent push 및 신규 정확 HEAD CI 시작 확인 | 새 CI 완료를 미확인 상태에서 PASS로 쓰지 않음; 사용자의 완료 모니터링 불요 유지 |
+
+제품 source가 변경되지 않으면 기존 정확0.59.0 standalone을 사용하고 이미 통과한 전체988unit/build/이미지 검사를 불필요하게 반복하지 않는다. 새 source 변경·실패 또는 해결되지 않은 관련 우려가 생기면 필요한 검증 범위를 다시 정한다. Manager 설계 후 Developer가 test-only 수리하고, 완료 소스 검토를 통과한 뒤 독립 QA가 실행한다. Root가 공통 문서/실패 원장·PR 본문·commit/push/CI 시작 확인을 통합한다. 이 작업은 PR #223 회귀 수리이며 **#218 OPEN, A2/P1-B NO-GO·P1-B/C/D 금지**와 보안·license/SBOM·현장/source PARTIAL의 기존 조건을 유지한다. 새 수리 결과는 작성 시 **NOT RUN**이다.
+
+---
+
 ## 2026-11-03 — Manager 최종 판정: fidelity 보완 PR 수용, A2/P1-B NO-GO
 
 **구현 보완 PR은 ACCEPT다.** Manager는 동결 소스 검토, 독립 QA 보고 및 정확 packaged-image 증거를 검토했으며 추가 재작업 요구는 없다. 후보 제품0.59.0의 CUSTOM_DTO v2는 material side 손실4개·ShapeGeometry 클래스 손실2개를 제거하고, 실제 ShapeGeometry/clone·전체 raw buffers/재질/변환/문자 동등성과 원본 선택 snapshot 복원을 검증했다. 동일 합성 원본의 live/fresh source index는 READY·mapped3/render10, text4이며 실제 Canvas 선택/PRECISE 외곽선, Layer, Translate/Rotate 중 source 차단·Undo/reset, fresh source GET/parser/font/index Worker0도 통과했다. **원본 전체 Entity 매핑은 여전히 PARTIAL**이며3/10을 전체 source 지원으로 해석하지 않는다. Legacy v1은 immutable bytes/Scene identity를 유지하며 fidelity UNKNOWN·재생성 필요로 구분한다.

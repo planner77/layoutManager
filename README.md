@@ -4,6 +4,8 @@ PR #222는 검증 전용으로 병합했고 #218은 OPEN이다. 이번 후속 �
 
 설계·수용 기준은 [Issue218](out/Issue218.md), 실제 시험은 [TestReport](out/TestReport.md), 실패는 [FailureLedger](out/FailureLedger.md), 격리 구성·Node Parser의 공식 근거와 한계는 [Issue218Sandbox](out/Issue218Sandbox.md)를 따른다. P1-B는 보안·충실도 GO 전까지 보류한다.
 
+PR #223의 CI #545 Greenfield 회귀는 v2 매핑 기대값과 시험 실패 시 세션 정리를 보완했다. 제품0.59.0·인증 제한은 유지하며 실제 실행 결과와 새 CI 상태는 [TestReport](out/TestReport.md)·[FailureLedger](out/FailureLedger.md)를 따른다.
+
 ---
 
 ## #218 선행 검증과 현재 제공 범위
