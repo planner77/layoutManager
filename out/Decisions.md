@@ -1,3 +1,13 @@
+## ADR-218-A2-BROWSER-PIN — 검증된 Browser 런타임 경계 정렬 (2026-11-03)
+
+**동기:** [PR CI #514](https://github.com/planner77/layoutManager/actions/runs/41564217739)에서 custom A2 Debian apt Chromium156 + IIFE bundle이 Browser 초기화 중 `SYNTAX_INVALID_REGEXP` FAIL; 같은 CI의 `scene-poc.spec.ts`은 Playwright Chromium153 PASS. 두 경로의 fixture/실행 조건 차이가 있으므로 Chromium 버전의 원인성은 미확정.
+
+**시험 정책:** 테스트 컨테이너만 기존 Playwright lockfile이 제공하는 Chromium153 build로 동기화하고, Node host는 `browser.version()` 153 major를 요구. 정적 esbuild target도 `chrome153`으로 맞춰 호환성 변수를 줄인다. Browser 자체가 구형인 경우 운영 보안 GO와 별개로 취약점 업데이트·supply-chain/폐쇄망 번들 정책을 별도 검증한다. 실 DXF/Scene DTO/Validator, timeout/cgroup/UID/read-only/no-network/CI 게이트는 수정 없이 남긴다.
+
+**판정:** 브라우저 버전 변경은 **가설에 대한 대조 실험**일 뿐 해결 입증 아님. 고객 입력·untrusted WMF/EMF·Chromium sandbox/late promise와 Stage B/C/D 운영 승인 전에는 #218 OPEN/P1-A2 GO BLOCKED.
+
+---
+
 ## ADR-218-A2-SECURE-ORIGIN — CPU-only test-only virtual loopback Origin (2026-11-03)
 
 **관측:** PR CI #495 synthetic Headless Chromium은 BUNDLE/TTF/launch 완료 후 `PAGEERROR_OTHER`로 `window.sceneA2` 등록에 실패; `HARNESS_READY` 20s timeout. exact root cause는 공개 safe logs로 확인 불가.
