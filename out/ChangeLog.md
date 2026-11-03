@@ -1,3 +1,11 @@
+## 2026-11-03 — #218 PR #221 / CI #525 CPU-only proof의 검증된 Scene PoC 코드 통합
+
+- Source `8042b1cd...`의 CI #525: 앱 Quality/Chromium/G7/Docker PASS, 전용 CPU-only 변환 초기화 `SYNTAX_INVALID_REGEXP` FAIL. Chromium 156→153 변경해도 재현되어 단순 버전 원인설 반증; 보조 3 PASS, 원본 DXF/DTO/fidelity 미실행.
+- 중복 작성된 `src/tests/a2/headless-browser.ts` 삭제, `src/tests/a2/headless.spec.ts`에서 기존 성공 `tests/e2e/scene-poc-browser.ts`를 브라우저 엔트리포인트로 재사용. 동일 합성 한국어·중첩 BLOCK·큰 좌표 DXF, CPU-only SwiftShader, Source SHA/한글 text-index, 정본 CUSTOM_DTO Manifest/SHA/full validator/temporary-file persistence/fresh browser Restore 및 WCS/Layer/Stable ID 비교 추가.
+- 기존 E2E 테스트/프로덕션 업로드·SceneRepository/G7/Prisma/Compose/GHCR 변경 없음. A2 CI 실결과·실 사용자 Builder/현장/OOM/권한 수용 전 GO 금지, #218 OPEN/P1-B/C/D 미착수.
+
+---
+
 ## 2026-11-03 — #218 P1-A2 PR #221 CI #514 RegExp runtime 오류 후 Browser 환경 정렬
 
 - 실패 `PAGEERROR_SYNTAX_INVALID_REGEXP`는 synthetic browser bundling startup에서 발생; Node compile pass, 실제 DXF→Scene pipeline 미호출. 다른 앱 CI/일반 Browser/G7/Docker는 성공, CPU A2 mandatory fail과 Verify 종속 fail을 별개로 기록.
