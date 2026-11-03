@@ -183,9 +183,16 @@ describe('#209 independent failure and recovery QA',()=>{
     const f=fixture(),writer=new Sqlite(f.dbPath);
     writer.exec('PRAGMA journal_mode=WAL');
     writer.prepare('UPDATE "User" SET login_name=? WHERE id=?').run('wal-committed',f.user);
-    // Keep a real connection open while the upgrade uses SQLite's online backup API.
-    const first=applyGreenfieldUpgrade(maintenance(f.env),planGreenfieldUpgrade(f.env).planId);
-    await expect(applyGreenfieldUpgrade(maintenance(f.env),planGreenfieldUpgrade(f.env).planId)).rejects
+    // Resolve the approved plan before the first apply acquires the durable
+    // lock. Computing planId for the second call while the first is in flight
+    // throws synchronously and abandons the first backup promise, causing an
+    // unhandled rejection during fixture cleanup rather than testing locking.
+    const approvedPlan=planGreenfieldUpgrade(f.env);
+    expect(approvedPlan.decision).toBe('UPGRADE_MIGRATION_REQUIRED');
+    const first=applyGreenfieldUpgrade(maintenance(f.env),approvedPlan.planId);
+    // This second invocation must reject because the first owns the upgrade
+    // lock. It must not replan, bypass approval or leave the first unawaited.
+    await expect(applyGreenfieldUpgrade(maintenance(f.env),approvedPlan.planId)).rejects
       .toThrow('G7_UPGRADE_RESTORE_REQUIRED');
     const result=await first;
     if(!('backupId' in result))throw new Error('expected durable backup id');

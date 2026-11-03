@@ -1,3 +1,11 @@
+## TC-225 CI #558 실제 실패 회귀 (2026-11-04)
+
+- WAL 열린 writer: 하나의 승인 Plan ID를 첫 apply 전 확보하고, 첫 apply 잠금 유지 시 동일 ID의 중복 apply가 `G7_UPGRADE_RESTORE_REQUIRED`를 반환하며 원래 첫 시도는 await되어 Backup/Isolated Restore/Committed User row를 끝까지 검증한다.
+- Docker Readonly WAL: synthetic v0.56 manifest에 정확 Zone schemaId, `preflight/plan/status`는 `UPGRADE_MIGRATION_REQUIRED`; stopped/active WAL 계획 시 DB/manifest side-effect0, 판정 후 승인 Plan ID에 대한 실제 migration apply를 사용. 새 Job DDL+Migration 2행을 strict validator로 확인하고, 기존 User 등 모든 업무 Table row와 원본 bytes의 Hash 보존; 신규 Job Table 및 migration history만 명시적 제외.
+- CI의 품질/스모크 원래 Job과 필수 Required Verify는 유지한다. 현재 미구현 Worker/B2·B3를 허위 READY로 판정 금지. [FailureLedger](FailureLedger.md).
+
+---
+
 ## TC-225-B1-G7 / CI #557 실제 회귀 보완 (2026-11-04)
 
 - 구버전 0.56/0.58/0.59로 재구성한 소유 테스트 DB에서 Schema ID=기존 Zone ID + Version/tag/baseline/checksum/SQL 지문 일치 검증; 신규 Job 테이블 삭제 후 기존 History 복원. 불일치 시 `G7_UPGRADE_UNSUPPORTED_PATH` 유지.

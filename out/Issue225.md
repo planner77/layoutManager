@@ -1,3 +1,11 @@
+## 2026-11-04 — CI #558 WAL 시험 보완 / 승인형 Migration 회귀
+
+[CI #558](https://github.com/planner77/layoutManager/actions/runs/41732045585)은 Test 1015 PASS/1 FAIL + async unhandled, Docker WAL readonly smoke FAIL. `g7-greenfield-upgrade-qa.test.ts`는 첫 `apply`가 잠금을 획득한 뒤 두 번째 `plan` 계산으로 사전 거절돼 pending backup을 정상 await하지 못한 것이 원인. 승인 Plan ID를 최초 시작 전에 계산하고 동일 식별자로 재호출의 잠금 거부와 첫 실행의 백업 완료를 검증하게 했다.
+
+`smoke_greenfield_wal_readonly.py`는 기존 Zone schemaId를 정확 복원하고 `UPGRADE_MIGRATION_REQUIRED`인 Plan을 요구하며, 64-hex planId 승인형 apply, 정확 2행 history/Job DDL 검증을 추가. 기존 업무/사용자 데이터 hash는 유지하며 변경이 의도된 Job Table과 migration ledger만 분리한다. 상세 [FailureLedger](FailureLedger.md). 다음 CI 정확 HEAD 결과는 아직 미확인. B1 Draft/GO-PILOT 미승인, Worker/게시/UI 미구현.
+
+---
+
 ## 2026-11-04 — CI #557 실패 후 수정 / 신규 검증 대기
 
 [CI #557](https://github.com/planner77/layoutManager/actions/runs/41727427960)은 999 PASS / 17 FAIL(Static), Docker real upgrade Smoke FAIL, Required Verify FAIL. 실제 제품 자동 Scene Worker의 동작 검증에 앞서 **기존 버전 업그레이드 fixture의 구 Schema ID 불일치**, **R2 복원 fixture의 SceneBuildJob 테이블 잔존**, **Docker Smoke의 승인 없는 `auto` 실행**이 발견됐다. 구버전 Scheme ID/DDL을 테스트에 정확 복원하고 CI 소유 disposable volume에서 신규 Migration Plan ID의 명시 승인과 백업·복구를 통과시키도록 수정했다. 근거 [FailureLedger](FailureLedger.md).

@@ -111,7 +111,7 @@ process.stdout.write(JSON.stringify({dir:{dev:d.dev,ino:d.ino,mode:d.mode&0o777,
         script = r'''import Database from 'better-sqlite3';import {createHash} from 'node:crypto';
 import {withReadOnlyInspection} from './server/g7-operational/greenfield-readonly-inspection.ts';
 const h=createHash('sha256');withReadOnlyInspection(process.argv[1],file=>{const d=new Database(file,{readonly:true,fileMustExist:true});
-for(const {name} of d.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name").all()){
+for(const {name} of d.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT IN ('_prisma_migrations','SceneBuildJob') ORDER BY name").all()){
 if(!/^[A-Za-z_][A-Za-z_0-9]*$/.test(name))throw Error('schema');h.update(name+'\0');
 for(const r of d.prepare('SELECT * FROM "'+name+'"').all().map(x=>JSON.stringify(x)).sort())h.update(r+'\n');}
 d.close();});process.stdout.write(h.digest('hex'));'''
@@ -138,6 +138,7 @@ d.prepare('INSERT INTO "User"(id,login_name,password_hash,status,must_change_pas
 d.prepare('INSERT INTO "UserRoleGrant"(user_id,role,granted_at) VALUES(?,?,?)').run(id,'Admin',1);
 d.pragma('journal_mode=WAL');d.close();
 const p='/data/db/g7-install.json',m=JSON.parse(fs.readFileSync(p,'utf8'));
+m.schemaId='G7-GREENFIELD-SEMANTIC-ZONES-20261101-1';
 m.version='0.56.0';m.appImage='ghcr.io/planner77/layoutmanager:0.56.0';
 m.migratorImage='ghcr.io/planner77/layoutmanager:0.56.0-migrate';m.sourceCommit='';
 fs.writeFileSync(p,JSON.stringify(m),{mode:0o600});'''
@@ -152,7 +153,7 @@ fs.writeFileSync(p,JSON.stringify(m),{mode:0o600});'''
         PHASE = "stopped-wal-readonly-plan-status"
         for action in ("preflight", "plan", "status"):
             status, payload = cli(owned, action)
-            if status or payload.get("state") not in ("UPGRADE_COMPATIBLE", "UPGRADE_READY"):
+            if status or payload.get("state") != "UPGRADE_MIGRATION_REQUIRED":
                 raise RuntimeError("G7_WAL_RO_SMOKE_STOPPED_WAL_BLOCKED")
             if snapshot(owned) != initial:
                 raise RuntimeError("G7_WAL_RO_SMOKE_READONLY_SOURCE_CHANGED")
@@ -192,7 +193,7 @@ process.stdout.write(String(d.prepare('SELECT COUNT(*) AS n FROM "User"').get().
         output, status = image_command(owned, readonly=True, command=("-e", row_count_script))
         if status == 0 and output == "2":
             status, payload = cli(owned, "plan")
-            if status or payload.get("state") != "UPGRADE_COMPATIBLE":
+            if status or payload.get("state") != "UPGRADE_MIGRATION_REQUIRED":
                 raise RuntimeError("G7_WAL_RO_SMOKE_ACTIVE_WAL_PLAN_FAILED")
         elif status != 0:
             # A read-only SQLite runtime may block explicitly while a writer is
@@ -217,10 +218,44 @@ process.stdout.write(String(d.prepare('SELECT COUNT(*) AS n FROM "User"').get().
             "G7_UPGRADE_MAINTENANCE_ACK": "APP_STOPPED_BY_HOST_HELPER",
             "G7_UPGRADE_PAIR_VERIFIED": "true",
         }
-        status, payload = cli(owned, "apply", readonly=False, env=apply_env)
+        # The candidate adds the Job table to the original frozen zone
+        # baseline. The existing versioned approval policy must remain
+        # enforced even for this fully owned, disposable CI volume.
+        plan_status, approval = cli(owned, "plan")
+        plan_id = approval.get("planId")
+        if (plan_status or approval.get("state") != "UPGRADE_MIGRATION_REQUIRED"
+                or approval.get("requiresApproval") is not True
+                or approval.get("from") != "0.56.0"
+                or approval.get("to") != options.version
+                or not isinstance(plan_id, str)
+                or not re.fullmatch(r"[a-f0-9]{64}", plan_id)):
+            raise RuntimeError("G7_WAL_RO_SMOKE_PLAN_INVALID")
+        status, payload = cli(owned, "apply", ("--approve-plan", plan_id),
+                              readonly=False, env=apply_env)
         backup_id = payload.get("backupId")
         if status or not isinstance(backup_id, str) or not re.fullmatch(r"[0-9a-f-]{36}", backup_id):
             raise RuntimeError("G7_WAL_RO_SMOKE_BACKUP_CREATE_FAILED")
+        # Explicitly validate the complete signed next-release schema; the
+        # logical hash below excludes only expected new Job/history tables,
+        # and still preserves ALL pre-existing business table rows.
+        schema_script = r'''import Database from 'better-sqlite3';
+import {assertDeclaredSchema,GREENFIELD_UPGRADE_REGISTRY} from './server/g7-operational/greenfield-upgrade-registry.ts';
+import {readFileSync} from 'node:fs';
+const info=JSON.parse(readFileSync('/data/db/g7-install.json','utf8'));
+const release=GREENFIELD_UPGRADE_REGISTRY.releases.find(r=>r.version===info.version);
+if(!release||release.schemaId!==info.schemaId)throw Error('release');
+const db=new Database('/data/db/cad.sqlite',{readonly:true,fileMustExist:true});
+try{
+  assertDeclaredSchema(db,release);
+  const history=db.prepare('SELECT migration_name FROM "_prisma_migrations" ORDER BY rowid').all();
+  if(history.length!==2||history[0].migration_name!=='202611010002_greenfield_semantic_zones_baseline'
+    ||history[1].migration_name!=='202611040001_scene_build_job')throw Error('history');
+}finally{db.close();}
+process.stdout.write('G7_210_APPROVED_JOB_SCHEMA_PASS');'''
+        proof, proof_status = image_command(owned, readonly=True,
+            command=("--import", "tsx", "--input-type=module", "-e", schema_script))
+        if proof_status or proof != "G7_210_APPROVED_JOB_SCHEMA_PASS":
+            raise RuntimeError("G7_WAL_RO_SMOKE_MIGRATED_SCHEMA_INVALID")
         upgraded_hash = logical_hash(owned)
         if upgraded_hash != post_writer_hash:
             raise RuntimeError("G7_WAL_RO_SMOKE_UPGRADE_DATA_CHANGED")

@@ -1,3 +1,12 @@
+## #225 / PR #226 CI #558 — WAL 비동기 승인 계획 경합 및 0.60.0 Docker WAL Smoke 계약 (2026-11-04)
+
+- **정확 실패:** PR CI [#558 Run41732045585](https://github.com/planner77/layoutManager/actions/runs/41732045585), HEAD `08181a0baff255c686aacf87a1b372dcee2f38f1`, completed/failure. Static/Unit Job126251686409 TypeScript/Lint 통과 후 **157 test files / 1016 tests 중 156 files 1015 PASS, 1 file 1 FAIL + 1 unhandled rejection**. Docker Job126251686490 FAIL, Required Verify126257119931는 Quality+Docker 실패를 정상 전파했다. A2 scope SKIPPED는 예상 동작.
+- **WAL 통합시험 직접 오류:** `g7-greenfield-upgrade-qa.test.ts:188`의 `WAL with an open writer...`에서 `G7_UPGRADE_RESTORE_REQUIRED` 및 보조 `G7_UPGRADE_BACKUP_REQUIRED` unhandled rejection 관측. 원인: 첫 `applyGreenfieldUpgrade(...,planGreenfieldUpgrade(f.env).planId)`가 안전한 지속 잠금을 생성한 후, 두 번째 호출의 인자를 만드는 데 다시 `planGreenfieldUpgrade(f.env)`를 실행함. 이 호출은 이미 존재하는 잠금으로 **첫 작업과 상관없이 동기 throw**하여 `expect(...).rejects`에 진입하지 못하고 첫 비동기 백업을 await하지 않은 채 fixture 정리를 유발했다. **보조 백업 실패의 독립 원인은 미확인**이며 운영 WAL 백업 성공으로 오인하지 않는다. 조치: 첫 `apply` 전에 **한 번만** planId를 결정해 두 시도에 동일한 실제 승인 식별자를 전달; 두 번째 시도는 잠금 거부를 검사하고 첫 번째 시도의 결과까지 정상 await하여 백업·복구 원본 시험 유지. lock/unhandled를 skip하지 않는다.
+- **Docker WAL Smoke 직접 오류:** `smoke_greenfield_wal_readonly.py`에서 `G7_WAL_RO_SMOKE_FAILED stage=stopped-wal-readonly-plan-status`. 기존 테스트는 새0.60 Greenfield로 만든 synthetic DB의 manifest를0.56으로 위조하면서 schemaId를 여전히 Job ID로 남겼고, 기 승인 `0.59→0.60 MIGRATION`인 경로에서 `UPGRADE_COMPATIBLE`을 기대했다. 또한 나중 `apply`가 exact Plan ID 없이 실행되도록 되어 있었고, full schema logical hash는 의도적으로 새로 생긴 Job/이력 행까지 같다고 가정했다. 조치: 과거 Zone Schema ID 정확 복원, readonly plan/status `UPGRADE_MIGRATION_REQUIRED` 기대, 소유 disposable volume의 `plan`에서 from/to/requiresApproval/64-hex planId 확인 후 `apply --approve-plan <exact-id>`, 실제 Upgrade Registry의 **전체 DDL 및 2행 history** 검사, 기존 모든 업무 테이블 행을 계속 비교하면서 의도된 Job/역사 이력만 비교 제외. 기본 백업·restore/writer guard 유지.
+- **검증 조건:** 기존 0.59.0 릴리스/DB/Volume/보안 정책 변경 없음. 신규 정확 HEAD의 PR CI 성공 전 **결과 NOT VERIFIED**; fail/skip 은폐·timeout 완화/승인 우회 없음. GO-DEV 허용, GO-PILOT 미승인, #218/#225 OPEN.
+
+---
+
 ## #225 / PR #226 — CI #557 실패: G7 기존 Scheme ID fixture + 승인형 Docker Smoke (2026-11-04)
 
 - **확정 실패:** [PR CI #557 / Run41727427960](https://github.com/planner77/layoutManager/actions/runs/41727427960), exact HEAD `d0de48570a03594f4a2c67af6b24f0f7b85d854f`, Static/Unit Job `126236803588` 1016 tests 중 **999 PASS / 17 FAIL**(3 files), Docker Job `126236803630` FAIL, Required Verify `126242792010`가 Quality/Docker 실패를 정상 전파해 FAIL. Typecheck/ESLint 통과. A2 스코프 SKIPPED는 별도이며 Worker 운영 실패로 간주하지 않는다.
