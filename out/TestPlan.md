@@ -1,3 +1,11 @@
+## TC-218-A2-R01 — CI #479 타입·read-only 실행 경계 회귀 (2026-11-03)
+
+- **기존 실패 재현:** [CI #479](https://github.com/planner77/layoutManager/actions/runs/41551357571) HEAD `f40ba4a0dcc6ebe4c5598cf6962e847e81bdfbe3`. Quality `TS2322` at headless.spec.ts:34, A2 CPU container `ENOENT /app/src/test-results` at Playwright WorkerHost.start. Docker+UID10001 success는 실 converter PASS 근거 아님.
+- **수정 재시험:** Quality `npm run typecheck`에서 TTF metadata `Record<string,unknown>` guard를 검증하고 실제 Korean glyph/TTF JSON 생산 계약을 삭제하지 않는다. A2 CPU에서는 `--read-only --user 10001:10001 --network none --tmpfs /tmp`를 그대로 두고 Playwright `outputDir:/tmp/a2-playwright-results`로 실제 fixture/validator/restore를 실행한다. 시험 미실행·Playwright 실패 시 Required Verify SUCCESS 불가. 실패한 본 Run은 원장에 그대로 보존하고 새 Run/Job/HEAD 결과는 관찰 후만 기록.
+- **남은 증거:** 실제 #212 Adapter fidelity/async late failure, sandbox+kill/OOM/restart 및 현장 고객 DXF는 별도 Gate로 유지. A2 GO 미확정 및 P1-B/C/D 차단.
+
+---
+
 ### #218 실험 A 보안 확인 항목
 
 Chromium 공식 SwiftShader 문서의 `--enable-unsafe-swiftshader` 보안 경고에 따라 **sandbox:false를 합성 CI 결과에서 생산용 보안 PASS로 승격하지 않는다.** 프로덕션 untrusted DXF ingestion sandbox isolation/프로세스 권한·비밀 접근/취약점 patch/SBOM/악성 입력 완화 증거가 GO 필수다. 고객 실 DXF·2PC/GPU 필드 AC는 TC-218-A2-08 / #113/#193 별개로 남기며 A2 기술 GO를 필드 수용과 혼동하지 않는다.
