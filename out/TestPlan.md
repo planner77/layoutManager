@@ -1,3 +1,13 @@
+## TC-218-A2-R09/R10 — discovery contract and complete bounded-resource proof
+
+1. Original workflow selectors must reproduce0 tests/exit1 with actual Playwright CLI; shared repaired selectors must discover exactly5+4, unique/disjoint union9. Run `node src/tests/a2/check-discovery.mjs --check` before image build; reject zero/missing/extra/renamed test inventories.
+2. Generate the unchanged full Korean typeface using existing application font preparation at proof-image build. Runtime verifies family/real glyph outlines. Local standalone runs require the same prepared font (see Operation).
+3. Transport complete packets as strings; verify byte/SHA/domain manifest, all inventory/geometry/IDs/WCS/Layer and file/fresh-browser restore. Coordinate comparator must reject a mismatch at the final scalar of a100000-element array and nonfinite/null/sparse/length inputs; keep1e-5 tolerance.
+4. Run all five P0 and all four P1-A2 tests in two successive fresh image containers with the original CPU/RAM/SHM/PID/security/time controls. Collect logs/status/OOM/stats per phase. Any test/discovery/exit failure blocks Verify; no skip or cap increases. A sampled maximum/RSS is not the actual cgroup peak.
+5. Review/test/lint/typecheck/build locally, record actual results/roles in TestReport and exact original Run/Job/HEAD in FailureLedger. Final branch push starts PR CI; completion intentionally unmonitored. Technical proof success alone leaves live adapter, untrusted-input sandbox, operational Worker OOM/kill/restart and field GO gates open.
+
+---
+
 ## TC-218-A2-R08 — distinguish accumulated P0 pressure from independent full A2 OOM (2026-11-03)
 
 [CI #539](https://github.com/planner77/layoutManager/actions/runs/41578400956) proved P0-1..P0-5 and three auxiliary tests pass, but the same resource-bounded container was OOMKilled during subsequent full A2 after DTO serialization. Redesign CI to run TWO separate containers with identical CPU2/RAM1536MiB/SHM256MiB/pids256/rootless/read-only/network-none/15m limits: first --grep ^P0- (5 tests), then --grep ^P1-A2 (4 tests). Each must exit code 0; collect separate Docker OOMKilled/ExitCode/stats/logs before deleting container; any nonzero blocks Verify. Container/Playwright dependency and image build are identical. New result NOT VERIFIED before CI.

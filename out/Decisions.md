@@ -1,3 +1,9 @@
+## ADR-218-A2-BOUNDED-PROOF — 시험 장치 자체 자원 비용 제거 (2026-11-03)
+
+실제 CI discovery0건과 font/packet/comparison 실측에 따라 시험 장치를 보완한다. 원래 전체 DXF/DTO/좌표 검증과 자원·보안 상한은 고정하고, 기존 전체 글꼴 build-time 준비, 완전한 JSON string transport, 모든 유한 scalar의 동일 허용 오차 검사를 선택했다. 근거와 대안 실험은 [FailureLedger](FailureLedger.md), AC는 [Issue218 R09/R10](Issue218.md). 이는 기술 GO/운영 Worker나 제품 릴리스 승인이 아니다.
+
+---
+
 ## ADR-218-A2-PROOF-REUSE — CPU 변환 기술 시험에서 검증된 기존 Scene PoC 코드 재사용 (2026-11-03)
 
 **근거:** [PR CI #525](https://github.com/planner77/layoutManager/actions/runs/41567538237)에서 A2 브라우저 pinned Chromium 153/TTF/JS 번들 구문 검사까지 통과하지만 Script 평가 중 `SYNTAX_INVALID_REGEXP`로 중단. 버전 차이 원인설 반증. 이 오류의 실제 RegExp 발원 코드는 축약 진단 로그만으로 특정할 수 없다. 별도 작성한 A2 converter/harness entrypoint는 기존 E2E가 이미 검증한 DXF→Three→CUSTOM_DTO 경로와 기능이 중복되며 이 차이를 정당화할 근거가 부족하다.

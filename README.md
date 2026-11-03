@@ -1,3 +1,9 @@
+## #218 / PR #221 CI 보완 (2026-11-03)
+
+CPU 전용 기술 시험의 테스트 선택과 글꼴·packet·좌표 비교 자원 사용을 보완했다. 실제 실패 분석은 [FailureLedger](out/FailureLedger.md), 로컬·컨테이너·독립 QA 결과는 [TestReport](out/TestReport.md)를 따른다. 제품 버전0.58.1과 운영 기능은 그대로이며 #218 기술 GO는 보류다.
+
+---
+
 ## #218 / P1-A2 CPU-only proof: 기존 Scene PoC 경로 재사용 (2026-11-03)
 
 CPU-only Headless Chromium 시험은 초기 중복 Browser bundle이 CI #525에서 `SYNTAX_INVALID_REGEXP`로 실행 전 실패한 이력이 있습니다. Test-only A2 코드는 이제 기존 일반 Chromium E2E에서 실제 DXF→Scene 검증된 `src/tests/e2e/scene-poc-browser.ts`를 직접 재사용하고, 같은 합성 한국어/BLOCK DXF의 SourceSHA/CUSTOM_DTO 전체 검증/임시 파일 영속성/서로 다른 Browser 복원과 좌표·객체 ID 비교를 요구합니다. 원래 Reader/Editor/G7/SceneRepository 및 App/Worker는 변경하지 않았습니다.

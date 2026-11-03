@@ -1,3 +1,9 @@
+## R-218-A2 CI 수용 보완 (2026-11-03)
+
+R-218-A2-01/03의 전체 검증·자원 상한은 유지한다. 시험 선택은 실제 Playwright discovery로5+4 전체를 보장하고, 동일 입력/바이트/전체 좌표 검사를 유지하면서 시험 장치의 메모리/보고 비용을 제한한다. AC/TC R09/R10은 [Issue218](Issue218.md)/[TestPlan](TestPlan.md), 실제 증거는 [TestReport](TestReport.md)와 [FailureLedger](FailureLedger.md). 아래 최초 NOT RUN은 당시 상태이며 현재 전체 운영 GO는 여전히 BLOCKED다.
+
+---
+
 ## R-218-P1-A2 — 실제 CPU-only 변환기 선행 검증(2026-11-03)
 
 | ID | 요구사항 | 수용 증거 |

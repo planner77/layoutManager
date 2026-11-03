@@ -1,3 +1,9 @@
+## #218 A2 시험 자원 경계 보완 (2026-11-03)
+
+시험 이미지 build에서 기존 prepareFonts의 전체 글꼴을 준비하고 runtime proof는 완전한 packet 문자열 전달·전체 scalar 검사를 수행한다. 운영 Adapter/SceneRepository/Worker와 기본 Scene PoC는 변경하지 않는다. 설계·AC 정본은 [Issue218 R09/R10](Issue218.md), 실측과 제한은 [FailureLedger](FailureLedger.md)/[TestReport](TestReport.md)를 따른다.
+
+---
+
 ## #218 P1-A2 — CI #525 이후 Scene Builder 시험 엔트리포인트 단일화
 
 **검증 구성 변경:** CPU-only Test entrypoint를 이슈 전용 `tests/a2/headless-browser.ts`에서 이미 CI 합성 E2E 실행 경로가 검증된 `tests/e2e/scene-poc-browser.ts`로 변경. `tests/a2/headless.spec.ts`는 Node-side Source SHA / 한글 text index / BLOCK DAG bound / Test Browser + SwiftShader identity / `CUSTOM_DTO` 전체 Validator / file readback / fresh process `scenePoc.restore` 및 per-ID WCS 비교를 오케스트레이션한다. 삭제된 중복 Browser converter의 코드를 우회/숨기는 것이 아니라, 기존 실제 DXFViewer→Three→serializers 실행 경로를 사용해 안전한 실증 실패 지점을 비교한다. 원래 E2E 구현 및 Production App 기능은 변경하지 않는다.

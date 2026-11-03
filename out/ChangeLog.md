@@ -1,3 +1,11 @@
+## 2026-11-03 — #218 / PR #221 CI discovery and proof-resource correction (test-only)
+
+- Fix CI #540 zero-test filters with actual exhaustive Playwright discovery5+4 before image build.
+- Reuse build-time full Korean font, string packet transport and full finite coordinate comparison with bounded test-report overhead; keep actual converter/manifest/SHA/validator/file/fresh restore and original security/resource limits.
+- Regression/evidence: [TestReport](TestReport.md), [FailureLedger](FailureLedger.md). Package remains0.58.1; no runtime release, #218 GO or new CI success claim.
+
+---
+
 ## 2026-11-03 — #218 CPU P0 success and isolated required A2 resource retest
 
 CI #539 (exact 883be450...): P0-1 through P0-5 and auxiliary tests PASS, final full source/DTO/restore test FAIL with Playwright Worker SIGKILL and Docker OOMKilled=true. Postmortem artifact confirms cgroup OOM flag, sampled memory up to 1.024GiB/1.5GiB (not true peak). Change A2 workflow to execute P0 five tests and full A2 four tests in two fresh, sequential, equally restricted containers; archive per-phase OOM/status/stats, no docker-exec memory sampling, preserve 1.5GiB cap and full mandatory Verify. Exact new CI results not yet measured. #218 OPEN/P1-A2 GO BLOCKED, no Worker/G7/GHCR release.

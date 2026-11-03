@@ -24,7 +24,11 @@ RUN npm ci \
     && ./node_modules/.bin/playwright install --with-deps chromium \
     && chmod -R a+rX /opt/ms-playwright
 COPY src/ ./
-RUN groupadd --system --gid 10001 cad \
+# Reuse the application's exact font preparation at build time. TTFLoader peaks
+# near 941MiB by itself; it must not share the bounded proof worker's heap with
+# Chromium and DTO protocol copies. Keep all glyphs and the original TTF/license.
+RUN node --input-type=module -e "import {prepareFonts} from './scripts/fonts.mjs'; prepareFonts();" \
+    && groupadd --system --gid 10001 cad \
     && useradd --system --uid 10001 --gid cad --home-dir /tmp --shell /usr/sbin/nologin cad \
     && chmod -R a+rX /app/src
 USER 10001:10001

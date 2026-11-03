@@ -648,6 +648,17 @@ jobs:
     steps:
       - name: Checkout exact PR revision
         uses: actions/checkout@v4
+      - name: Set up Node for A2 discovery
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.14.0
+          cache: npm
+          cache-dependency-path: src/package-lock.json
+      - name: Install frozen A2 discovery dependencies
+        working-directory: src
+        run: npm ci
+      - name: Check actual Playwright A2 discovery before image build
+        run: node src/tests/a2/check-discovery.mjs --check
       - name: Build disposable Debian/Chromium/Node proof image (not GHCR)
         shell: bash
         run: |
@@ -674,8 +685,8 @@ jobs:
           for phase in p0 required; do
             name="layoutmanager-a2-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT-$phase"
             mkdir -p "$report/$phase"
-            grep_filter='^P0-'
-            if [[ "$phase" == "required" ]]; then grep_filter='^P1-A2'; fi
+            # Use the exact selectors validated by Playwright discovery above.
+            grep_filter="$(node src/tests/a2/check-discovery.mjs --selector "$phase")"
             echo "## A2 isolated phase $phase (all selected tests required)"
             docker run -d --init --name "$name" \
               --network none --read-only --user 10001:10001 \

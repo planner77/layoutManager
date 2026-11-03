@@ -1,3 +1,11 @@
+## #218 A2 local proof prerequisites and memory boundary (2026-11-03)
+
+For A2 discovery or resource regressions, follow [Issue218 R09/R10](Issue218.md) and the [FailureLedger](FailureLedger.md) before rerunning CI. The proof Dockerfile prepares the full Korean typeface during build using existing `scripts/fonts.mjs`; rootfs stays read-only at runtime. For a standalone local proof, run from `src`: `node --input-type=module -e "import {prepareFonts} from './scripts/fonts.mjs'; prepareFonts();"` (ordinary production build also prepares it), then use `tests/a2/playwright.config.ts`. Generated JSON remains Git-excluded. Discovery validation needs npm dependencies only and never launches Chromium: `node src/tests/a2/check-discovery.mjs --check` from root.
+
+Node font preparation peak RSS was~941MiB; keep that build-time cost separate from the bounded runtime proof. Runtime reads the exact generated full font, transports whole packets as strings and compares every coordinate without creating per-coordinate Playwright report steps. Original security/cgroup/timeout controls and required Verify remain. Record operator-terminated diagnostics as such; do not classify exit137 alone as OOM.
+
+---
+
 ## #218 P0 — CPU-only diagnostic container post-mortem (2026-11-03)
 
 CI #538 reference scene builder initialization worked, but browser target crashed while a single evaluate operation mixed WebGL2 initialization and DXF produce. The a2-cpu-probe job now starts its isolated Docker container detached WITHOUT immediate --rm, waits up to 15m, samples docker stats every ~2s and attempts /sys/fs/cgroup/memory.events, and records State.OOMKilled/ExitCode/Status after exit. Only after recording those is the exact run-named container removed by the existing cleanup step. A synthetic-only artifact is kept for seven days; no real CAD, G7 tokens, operational database or volumes are mounted. CPU2/RAM1536MiB, SHM256MiB, UID10001, read-only rootfs, network none, pids256 and no privileges remain.

@@ -1,3 +1,9 @@
+## #218 / PR #221 — CI discovery and proof-resource repair (2026-11-03)
+
+A2 필터·글꼴 준비·packet 전달·좌표 비교 또는 PR CI를 수정/재실행할 때 [Issue218 R09/R10](out/Issue218.md), [FailureLedger](out/FailureLedger.md) 최신 항목과 [TestReport](out/TestReport.md)를 먼저 읽는다. 실제 Playwright discovery5+4 전체 일치, 동일 자원 제한의 원본 실패와 보완된 전체 검증을 근거로 판단한다. 기술 합성 시험과 운영 GO를 구분하고 CI 시작 뒤 완료 모니터링은 생략한다.
+
+---
+
 ## #218 / PR #221 — CI #539 P0 8/9 PASS, OOMKilled confirmed; isolate diagnostic and acceptance containers (2026-11-03)
 
 **Exact evidence:** [CI #539 Run41578400956](https://github.com/planner77/layoutManager/actions/runs/41578400956), HEAD 883be4504496bed0e0555bb21dfaff48cc468e06. A2 Job 125727283357 P0-1/2/3/4/5 and three auxiliary tests PASS (8/9), mandatory full A2 FAIL immediately after real DXF parse, Scene tagging, CUSTOM_DTO serialization; Playwright worker exited unexpectedly with SIGKILL. Docker post-mortem OOMKilled=true, ExitCode=1. The [synthetic-only artifact](https://github.com/planner77/layoutManager/actions/runs/41578400956/artifacts/13204038188) sampled 239.5MiB to 1.024GiB among eight 2s snapshots within 1.5GiB cap; this is NOT the actual memory peak. cgroup memory.events last sampled zeros, likely before OOM spike, so exact process peak/causation remains unmeasured.

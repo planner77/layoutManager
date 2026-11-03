@@ -1,3 +1,9 @@
+## #218 A2 bounded diagnostics after CI #540 (2026-11-03)
+
+A2_HOST_PHASE now adds numeric Node rssMiB/heapMiB and INVENTORY_COMPARE_START/DONE to distinguish font, browser/packet and comparison phases. These are process snapshots, not container memory peaks. Geometry mismatch reports a fixed label/index, never scalar values. The full synthetic source/DTO bytes, SHA, identities or arbitrary exception text remain outside logs. CI still collects per-container host-side stats and Docker OOMKilled/ExitCode before cleanup; see [FailureLedger](FailureLedger.md) for operator-killed versus OOM evidence.
+
+---
+
 ## #218 P0 synthetic Crash telemetry (2026-11-03)
 
 The reference Scene PoC only emits safe A2_BROWSER_PHASE markers for the opt-in DTO_ONLY mode: DXF_PARSE_START, DXF_PARSE_DONE, SCENE_TAGGED, CUSTOM_DTO_START, CUSTOM_DTO_DONE, PRODUCE_COMPLETE. A2 Playwright logs A2_HOST_PHASE, page.on('crash') and a small allowlisted error class. The CI wrapper samples only numeric docker stats, memory.events and inspect OOMKilled/ExitCode/Status, retaining seven-day artifacts for these public synthetic fixtures. Raw DXF bytes, SHA, tokens, user records or arbitrary browser errors are not included; the log is not a production Worker timeline.

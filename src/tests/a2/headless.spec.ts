@@ -17,11 +17,11 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { TTFLoader } from 'three/addons/loaders/TTFLoader.js';
 import { sceneSha256 } from '../../domain/scene-digest';
 import { SCENE_PAYLOAD_LIMITS, validateStoredScenePayload } from '../../domain/scene-payload';
 import type { SceneManifest } from '../../domain/cad-scene';
 import { extractDxfText } from '../../viewers/core/text-index';
+import { compareCoordinates } from './compare-coordinates';
 import { a2LineOnlyDxf, a2CycleDxf, a2ExplosionDxf, a2SyntheticDxf } from './fixtures';
 import { A2_EXPANSION_LIMIT, A2_SOURCE_LIMIT, preflightA2Dxf } from './dxf-risk-preflight';
 
@@ -60,7 +60,7 @@ type BrowserApi = {
 function note(phase: string): void {
   // Constant non-sensitive phases only: never CAD bytes, source SHA, user data
   // or arbitrary upstream JS exceptions.
-  console.info('A2_HOST_PHASE:' + phase);
+  console.info('A2_HOST_PHASE:' + phase, JSON.stringify({rssMiB:Math.round(process.memoryUsage().rss/1024/1024),heapMiB:Math.round(process.memoryUsage().heapUsed/1024/1024)}));
 }
 async function bounded<T>(name:string,ms:number,action:()=>Promise<T>):Promise<T>{
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -74,37 +74,31 @@ async function bounded<T>(name:string,ms:number,action:()=>Promise<T>):Promise<T
   } finally { if (timer !== undefined) clearTimeout(timer); }
 }
 function projectFont():string{
-  const input = readFileSync('public/fonts/NanumGothic-Regular.ttf');
-  const font = new TTFLoader().parse(input.buffer.slice(input.byteOffset,input.byteOffset+input.byteLength));
-  font.familyName = 'CAD Korean';
-  const info = (font as unknown as {
-    original_font_information?:Record<string,unknown>
-  }).original_font_information;
-  if(info) for(const key of ['fontFamily','fullName','postScriptName','preferredFamily','uniqueID']){
-    if(info[key])info[key]={en:'CAD Korean'};
-  }
-  if(!font.glyphs['한']||!font.glyphs['글'])throw new Error('A2_KOREAN_GLYPHS_NOT_PROVEN');
-  return JSON.stringify(font);
+  const text=readFileSync('public/fonts/CadKorean.typeface.json','utf8');
+  const font=JSON.parse(text) as {familyName?:string;glyphs?:Record<string,{o?:string}>};
+  if(font.familyName!=='CAD Korean'||!font.glyphs?.['한']?.o||!font.glyphs?.['글']?.o)
+    throw new Error('A2_KOREAN_GLYPHS_NOT_PROVEN');
+  return text;
 }
 function compareInventory(actual:Inventory,expected:Inventory):void{
+  note('INVENTORY_COMPARE_START');
   for(const k of ['nodes','vertices','materials','kinds','layers','ids',
     'visibilityTrace','nameTrace'] as const)expect(actual[k],k).toEqual(expected[k]);
   expect(actual.geometryTrace.length).toBe(expected.geometryTrace.length);
   for(let i=0;i<actual.geometryTrace.length;i++){
     const a=actual.geometryTrace[i],b=expected.geometryTrace[i];
-    expect(a.length).toBe(b.length);
-    a.forEach((x,j)=>expect(Math.abs(x-b[j])).toBeLessThanOrEqual(1e-5));
+    compareCoordinates(a,b,'trace-'+i);
   }
   const aIds=Object.keys(actual.geometryById).sort();
   const bIds=Object.keys(expected.geometryById).sort();
   expect(aIds).toEqual(bIds);
   for(const id of aIds){
     const a=actual.geometryById[id],b=expected.geometryById[id];
-    expect(a.length).toBe(b.length);
-    a.forEach((x,j)=>expect(Math.abs(x-b[j])).toBeLessThanOrEqual(1e-5));
+    compareCoordinates(a,b,'by-id');
   }
   expect(actual.bbox.length).toBe(6);
-  actual.bbox.forEach((n,i)=>expect(Math.abs(n-expected.bbox[i])).toBeLessThanOrEqual(1e-5));
+  compareCoordinates(actual.bbox,expected.bbox,'bbox');
+  note('INVENTORY_COMPARE_DONE');
 }
 async function browserFor(software:boolean):Promise<Browser>{
   note(software?'SWIFT_CHROMIUM_LAUNCH':'BASELINE_CHROMIUM_LAUNCH');
@@ -173,11 +167,13 @@ async function produce(page:Page,dxf:string=a2SyntheticDxf,phase='REAL_DXF'):Pro
   packet:Packet;inventory:Inventory;parseMs:number;serializeMs:number;
 }>{
   note(phase+'_DTO_START');
-  const result=await bounded('DXF_TO_CUSTOM_DTO',CONVERSION_LIMIT_MS,
-    ()=>page.evaluate(({dxf,sha})=>{
+  // Transport the complete packet as one string, not millions of protocol scalars.
+  const wire=await bounded('DXF_TO_CUSTOM_DTO',CONVERSION_LIMIT_MS,
+    ()=>page.evaluate(async({dxf,sha})=>{
       const api=(window as unknown as {scenePoc:BrowserApi}).scenePoc;
-      return api.produce(dxf,sha,'DTO_ONLY');
+      return JSON.stringify(await api.produce(dxf,sha,'DTO_ONLY'));
     },{dxf,sha:createHash('sha256').update(dxf).digest('hex')}));
+  const result=JSON.parse(wire) as Packet[];
   expect(result.map(p=>p.format)).toEqual(['CUSTOM_DTO']);
   const packet=result[0],data=packet.stats;
   const inventory=data.original as Inventory;
@@ -207,11 +203,14 @@ async function softwareIdentity(page:Page):Promise<string>{
 }
 async function restore(page:Page,packet:Packet):Promise<RestoreResult>{
   note('REAL_DTO_RESTORE_START');
-  const result=await bounded('REAL_DTO_RESTORE',CONVERSION_LIMIT_MS,
-    ()=>page.evaluate(p=>{
+  // The real restore still receives exactly the same bytes/manifest/inventory.
+  const wire=await bounded('REAL_DTO_RESTORE',CONVERSION_LIMIT_MS,
+    ()=>page.evaluate(async(text:string)=>{
+      const p=JSON.parse(text) as Packet;
       const api=(window as unknown as {scenePoc:BrowserApi}).scenePoc;
-      return api.restore(p,p.manifest);
-    },packet));
+      return JSON.stringify(await api.restore(p,p.manifest));
+    },JSON.stringify(packet)));
+  const result=JSON.parse(wire) as RestoreResult;
   note('REAL_DTO_RESTORE_DONE');
   return result;
 }
