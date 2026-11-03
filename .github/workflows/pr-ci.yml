@@ -636,11 +636,54 @@ jobs:
           docker compose --env-file .env.example -f src/docker-compose.yml logs --tail 80 || true
           docker compose --env-file .env.example -f src/docker-compose.yml down || true
 
+
+  a2-cpu-probe:
+    # Experimental technical GO gate ONLY. No production worker or GHCR image.
+    # Scope to the independent A2 branch; do not tax unrelated PR CI.
+    name: '#218 P1-A2 CPU-only Debian/headless synthetic proof'
+    needs: scope
+    if: ${{ github.event_name == 'pull_request' && startsWith(github.head_ref, 'feat/218-a2-') && needs.scope.outputs.full == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout exact PR revision
+        uses: actions/checkout@v4
+      - name: Build disposable Debian/Chromium/Node proof image (not GHCR)
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker build --platform linux/amd64 -f src/tests/a2/Dockerfile -t layoutmanager-a2-proof:ci .
+      - name: Verify UID10001 without network or site/production mounts
+        shell: bash
+        run: |
+          set -euo pipefail
+          observed="$(docker run --rm --network none --user 10001:10001 \
+            --entrypoint id layoutmanager-a2-proof:ci -u)"
+          test "$observed" = 10001
+      - name: Execute actual DXF conversion, full validator, restore and risk cases
+        shell: bash
+        run: |
+          set -euo pipefail
+          # No secrets, Docker host sockets, authenticated app, CAD or DB mounts.
+          # Memory/pid/CPU limits are real; timeout is fatal, never treated as PASS.
+          timeout --signal=TERM --kill-after=10s 15m \
+            docker run --rm --init --name "layoutmanager-a2-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
+            --network none --read-only --user 10001:10001 \
+            --cpus 2 --memory 1536m --memory-swap 1536m --pids-limit 256 \
+            --shm-size 256m --cap-drop ALL --security-opt no-new-privileges \
+            --tmpfs /tmp:rw,nosuid,nodev,size=512m,mode=1777 \
+            layoutmanager-a2-proof:ci
+      - name: Kill orphan proof container only (never touch production volumes)
+        if: always()
+        shell: bash
+        run: |
+          docker rm -f "layoutmanager-a2-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" >/dev/null 2>&1 || true
+
   verify:
     # Keep the historical required-check name. Jobs may skip only for verified docs-only PRs.
     name: Typecheck, lint, test, build, E2E
     if: always()
-    needs: [scope, quality, e2e, greenfield-e2e, runtime-legacy-e2e, docker-runtime]
+    needs: [scope, quality, e2e, greenfield-e2e, runtime-legacy-e2e, docker-runtime, a2-cpu-probe]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
@@ -651,6 +694,8 @@ jobs:
       GREENFIELD_RESULT: ${{ needs.greenfield-e2e.result }}
       RUNTIME_LEGACY_RESULT: ${{ needs.runtime-legacy-e2e.result }}
       DOCKER_RESULT: ${{ needs.docker-runtime.result }}
+      A2_RESULT: ${{ needs.a2-cpu-probe.result }}
+      A2_REQUIRED: ${{ github.event_name == 'pull_request' && startsWith(github.head_ref, 'feat/218-a2-') && needs.scope.outputs.full == 'true' }}
     steps:
       - name: Require every applicable validation gate (#197)
         shell: bash
@@ -675,6 +720,13 @@ jobs:
               echo "::error::Unknown scope decision"; exit 1
             fi
           done
+          # The dedicated A2 branch must prove its additional CPU job; SKIP is never GO.
+          if [[ "$A2_REQUIRED" == "true" ]]; then
+            [[ "$A2_RESULT" == "success" ]] || { echo "::error::P1-A2 CPU-only validation did not succeed"; exit 1; }
+          else
+            [[ "$A2_RESULT" == "skipped" ]] || { echo "::error::A2 test unexpectedly ran outside its gate"; exit 1; }
+          fi
+          echo "- #218 A2 CPU-only: $A2_RESULT (required=$A2_REQUIRED)" >> "$GITHUB_STEP_SUMMARY"
           if [[ "$FULL" == "false" ]]; then
             echo "- Verified markdown-only: full application suite not required." >> "$GITHUB_STEP_SUMMARY"
           else
