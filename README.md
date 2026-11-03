@@ -1,3 +1,11 @@
+## #218 / P1-A2 CPU-only proof: 기존 Scene PoC 경로 재사용 (2026-11-03)
+
+CPU-only Headless Chromium 시험은 초기 중복 Browser bundle이 CI #525에서 `SYNTAX_INVALID_REGEXP`로 실행 전 실패한 이력이 있습니다. Test-only A2 코드는 이제 기존 일반 Chromium E2E에서 실제 DXF→Scene 검증된 `src/tests/e2e/scene-poc-browser.ts`를 직접 재사용하고, 같은 합성 한국어/BLOCK DXF의 SourceSHA/CUSTOM_DTO 전체 검증/임시 파일 영속성/서로 다른 Browser 복원과 좌표·객체 ID 비교를 요구합니다. 원래 Reader/Editor/G7/SceneRepository 및 App/Worker는 변경하지 않았습니다.
+
+기술 게이트 **GO 보류**: A2 CPU-only 실제 재시험 결과, live Viewer Adapter의 WCS/한글·BLOCK fidelity, OOM/kill/restart·비동기 오류0, untrusted software WebGL 보안과 #113/#193 현장 수용이 확보되기 전에는 P1-B/C/D로 진행하지 않습니다. [Issue218](out/Issue218.md), [FailureLedger](out/FailureLedger.md), [TestPlan](out/TestPlan.md).
+
+---
+
 ## Issue #218 / P1-A2 — CPU-only Headless Scene 변환 검증 후보 (2026-11-03)
 
 [#218](https://github.com/planner77/layoutManager/issues/218)의 첫 번째 단계는 [#208](https://github.com/planner77/layoutManager/issues/208)/[#217](https://github.com/planner77/layoutManager/pull/217) 직접 Node DXF Viewer 기술 NO-GO 이후 **서버 독립 Chromium + software WebGL**이 실제 DXF/한글/BLOCK→Three Object3D→`CUSTOM_DTO`→Manifest/SHA/full validator→Restore를 수행할 수 있는지 확인하는 기술 시험입니다. 별도 시험용 소스/CPU-only Debian 이미지/합성 데이터 및 CI Gate만 추가합니다.
