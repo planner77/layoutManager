@@ -97,6 +97,17 @@ async function browserFor(software: boolean): Promise<Browser> {
     chromiumSandbox: false,
     args: software ? ['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader'] : [],
   }));
+  const major = browser.version().split('.')[0];
+  // Expected 153 comes from the exact Playwright 1.63.0 lockfile browser
+  // observed in successful #514 General Chromium scene-poc E2E.
+  // A changed browser build requires explicit new evidence, not silent GO.
+  if (process.env.A2_BROWSER_EXPECTED_MAJOR) {
+    if (!/^\d+$/.test(major) || major !== process.env.A2_BROWSER_EXPECTED_MAJOR) {
+      await browser.close();
+      throw new Error('A2_BROWSER_VERSION_MISMATCH');
+    }
+  }
+  note('BROWSER_MAJOR_' + major);
   note(software ? 'SWIFT_CHROMIUM_STARTED' : 'BASELINE_CHROMIUM_STARTED');
   return browser;
 }
