@@ -1,3 +1,8 @@
+## #218 / CI #506 — Browser SyntaxError 안전 진단 구체화 (2026-11-03)
+
+[PR CI #506](https://github.com/planner77/layoutManager/actions/runs/41561632191) A2 Job에서 `HARNESS_SCRIPT_REQUESTED` 이후 `PAGEERROR_SYNTAX`가 기록되어 브라우저 번들 실행 단계에서 Fail-closed. 원본 JavaScript 에러 문장/stack은 보안상 기록하지 않아 SyntaxError 실제 토큰은 미확정. 신규 계측은 `SYNTAX_HTML_AS_SCRIPT/UNEXPECTED_EXPORT/MODULE_MISMATCH/TRUNCATED_SCRIPT/DUPLICATE_IDENTIFIER/INVALID_REGEXP/UNEXPECTED_IDENTIFIER/INVALID_TOKEN/UNEXPECTED_TOKEN/OTHER_SYNTAX` allowlist 및 *synthetic JS URL `__a2.js`와 일치하는* 숫자 line/column만 출력. `vm.Script` compile-only 실패는 `A2_BUNDLE_STATIC_SYNTAX_INVALID`; UI/Error 텍스트나 실제 CAD·URL·SHA/포맷·로그 원문은 누설 금지. 운영 JobLogContext·S3/Scene Audit와 독립이며 CI PASS/GO 동등 증거 아님.
+
+---
 ## #218 P1-A2 — CI #495 시작 시 PAGEERROR_OTHER를 즉시 안전 실패로 보고 (2026-11-03)
 
 [Run41558698574](https://github.com/planner77/layoutManager/actions/runs/41558698574)에서는 Chromium launched 후 `HARNESS_NAVIGATE_START → PAGEERROR_OTHER → A2_TIMEOUT:HARNESS_READY`; 모호한 OTHER만 남고 DXF parser에는 진입하지 않았다. 수리로 pageerror 발생 시 `A2_HARNESS_PAGEERROR:<allowlisted-category>`를 Playwright Host의 `Promise.race`로 즉시 FAIL 전달. `CRYPTO_RANDOMUUID/INSECURE_CONTEXT/MODULE_SHIM/WEBGL/TYPE/SYNTAX/REFERENCE/OTHER`만 출력, Error 원문·stack·URL·DXF bytes/handle/SHA·font/보안 값 노출 금지. `HARNESS_SCRIPT_REQUESTED`, SecureContext/UUID assertion 및 기존 phase/timing, CPU cgroup 제한을 유지. 이 로깅은 실험적 합성 Proof 진단이며 운영 JobLogContext/G7 감사/실질 GO 증거가 아니다.
