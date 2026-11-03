@@ -1,3 +1,11 @@
+## #218 P1-A2 — CI #525 이후 Scene Builder 시험 엔트리포인트 단일화
+
+**검증 구성 변경:** CPU-only Test entrypoint를 이슈 전용 `tests/a2/headless-browser.ts`에서 이미 CI 합성 E2E 실행 경로가 검증된 `tests/e2e/scene-poc-browser.ts`로 변경. `tests/a2/headless.spec.ts`는 Node-side Source SHA / 한글 text index / BLOCK DAG bound / Test Browser + SwiftShader identity / `CUSTOM_DTO` 전체 Validator / file readback / fresh process `scenePoc.restore` 및 per-ID WCS 비교를 오케스트레이션한다. 삭제된 중복 Browser converter의 코드를 우회/숨기는 것이 아니라, 기존 실제 DXFViewer→Three→serializers 실행 경로를 사용해 안전한 실증 실패 지점을 비교한다. 원래 E2E 구현 및 Production App 기능은 변경하지 않는다.
+
+**실험과 운영 경계:** CPU A2 테스트에서 `CUSTOM_DTO` 검증에 성공하더라도 실 사용자 `ThreeDxfViewerAdapter`, optional outline index, Korean source/entity fidelity, G7 Editor/Session/Writer·SceneRepository CAS, 별도 영속 Worker와 CPU/OOM isolation은 미검증. 해당 추가 Gate 전 #218 GO와 P1-B 시작 금지. 기존 release #216 App/Migrator/Schema/OCI provenance에 영향 없음.
+
+---
+
 ## #218 / P1-A2 — 서버 Scene 변환기 분리 경계(2026-11-03)
 
 `P1-A2 synthetic immutable DXF bytes → read/SHA verify → bounded preflight(BLOCK DAG, entity coverage) → independent Chromium(software WebGL) DXFViewer → Three Object3D → #212 preflight/tagImportedTree/extractDxfText → CUSTOM_DTO serializer → manifest SHA/full validate → ephemeral file save → fresh Chromium restore`. 이는 `src/tests/a2/*`에 **기술 검증용**으로만 설치되며 production process/Next.js 요청·브라우저 탭·G7 로그인·SceneRepository가 결합되지 않는다.
