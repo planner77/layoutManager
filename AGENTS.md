@@ -1,3 +1,9 @@
+## #218 A2 후속 — 실제 Adapter 동등성·프로세스 안전성
+
+A2 parity 또는 프로세스 fault/cleanup/recovery/CI를 변경할 때 [Issue218](out/Issue218.md) 상단 F01–F05/S01–S06, [TestReport](out/TestReport.md), [FailureLedger](out/FailureLedger.md)를 먼저 읽는다. 기존9개와 추가parity/process 검증을 함께 유지하고, PARTIAL·BLOCKED와 실제 정상/음성시험 통과를 구분한다. 검증 PR과 운영 GO·P1-B는 별도다.
+
+---
+
 ## #218 / PR #221 — CPU 합성 검증 PR CI #541 성공 및 Main 병합, 운영 GO 별도 (2026-11-03)
 
 [PR CI #541 Run41611978658](https://github.com/planner77/layoutManager/actions/runs/41611978658)에서 PR HEAD `1e3f22c0547c96fd260d022770755c4008bf0a61`의 9/9 Job SUCCESS(A2 CPU Proof/Required Verify 포함)를 확인했다. 리뷰 미해결0/충돌0/Main behind0, Squash Main `dc80f88bc367e5735dc6878a609ab3089b6a4abc`와 원본 Git tree 일치 검증. [Main CI #140](https://github.com/planner77/layoutManager/actions/runs/41615434676)는 시작만 확인하고 사용자 요청에 따라 완료는 모니터링하지 않는다. 테스트 전용 변경이므로 GHCR 신규 게시 없음.

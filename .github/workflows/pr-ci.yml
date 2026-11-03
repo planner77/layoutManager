@@ -658,7 +658,10 @@ jobs:
         working-directory: src
         run: npm ci
       - name: Check actual Playwright A2 discovery before image build
-        run: node src/tests/a2/check-discovery.mjs --check
+        run: |
+          node src/tests/a2/check-discovery.mjs --check
+          node src/tests/a2/check-parity-discovery.mjs --check
+          node --test src/tests/a2/process-safety.test.mjs
       - name: Build disposable Debian/Chromium/Node proof image (not GHCR)
         shell: bash
         run: |
@@ -671,7 +674,7 @@ jobs:
           observed="$(docker run --rm --network none --user 10001:10001 \
             --entrypoint id layoutmanager-a2-proof:ci -u)"
           test "$observed" = 10001
-      - name: Execute fresh-container P0 probes then independent required A2 proof
+      - name: Execute fresh-container P0, required A2 and live Adapter parity
         shell: bash
         run: |
           set -euo pipefail
@@ -682,11 +685,17 @@ jobs:
           report="$RUNNER_TEMP/a2-proof"
           mkdir -p "$report"
           failed=0
-          for phase in p0 required; do
+          for phase in p0 required parity; do
             name="layoutmanager-a2-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT-$phase"
             mkdir -p "$report/$phase"
             # Use the exact selectors validated by Playwright discovery above.
-            grep_filter="$(node src/tests/a2/check-discovery.mjs --selector "$phase")"
+            test_config='tests/a2/playwright.config.ts'
+            if [[ "$phase" == "parity" ]]; then
+              test_config='tests/a2/parity.playwright.config.ts'
+              grep_filter='F0[1-5]'
+            else
+              grep_filter="$(node src/tests/a2/check-discovery.mjs --selector "$phase")"
+            fi
             echo "## A2 isolated phase $phase (all selected tests required)"
             docker run -d --init --name "$name" \
               --network none --read-only --user 10001:10001 \
@@ -694,7 +703,7 @@ jobs:
               --shm-size 256m --cap-drop ALL --security-opt no-new-privileges \
               --tmpfs /tmp:rw,nosuid,nodev,size=512m,mode=1777 \
               layoutmanager-a2-proof:ci \
-              ./node_modules/.bin/playwright test --config tests/a2/playwright.config.ts \
+              ./node_modules/.bin/playwright test --config "$test_config" \
               --grep "$grep_filter" > "$report/$phase/container-id.txt"
             (
               while [[ "$(docker inspect -f '{{.State.Running}}' "$name" 2>/dev/null || true)" == "true" ]]; do
@@ -725,6 +734,13 @@ jobs:
             docker rm -f "$name" >/dev/null 2>&1 || true
           done
           if [[ "$failed" -ne 0 ]]; then exit 1; fi
+      - name: Verify real isolated process faults, cleanup and fresh conversion
+        working-directory: src
+        env:
+          A2_PROOF_IMAGE: layoutmanager-a2-proof:ci
+          A2_PROCESS_REPORT_DIR: ${{ runner.temp }}/a2-proof/process-safety
+          A2_PROCESS_RUN_ID: ${{ github.run_id }}-${{ github.run_attempt }}
+        run: node tests/a2/process-safety.mjs
       - name: Archive synthetic-only A2 phases and resource/Crash evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -737,9 +753,14 @@ jobs:
         if: always()
         shell: bash
         run: |
-          for phase in p0 required; do
+          for phase in p0 required parity; do
             docker rm -f "layoutmanager-a2-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT-$phase" >/dev/null 2>&1 || true
           done
+          # Only containers bearing this exact run/attempt's test label.
+          mapfile -t process_containers < <(docker ps -aq --filter "label=io.layoutmanager.a2-process-run=$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT")
+          if (( ${#process_containers[@]} )); then
+            docker rm -f "${process_containers[@]}" >/dev/null 2>&1 || true
+          fi
 
   verify:
     # Keep the historical required-check name. Jobs may skip only for verified docs-only PRs.

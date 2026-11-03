@@ -1,3 +1,11 @@
+## #218 A2 후속 검증 경계 — 실제 Adapter와 독립 후보
+
+실제 `ThreeDxfViewerAdapter.load(prepareScene)`→artifact와 test-only `candidate-browser`의 source digest/risk preflight→실 DXFViewer→실제 Adapter와 동일 material 보정→tag/textIndex/CUSTOM_DTO를 독립 Browser process에서 비교한다. 후보를 다시 실제 Adapter.loadScene에 넣어 전체 buffers/행렬/ID/레이어·문자를 비교한다. 일반 Scene PoC의 의도적인 style probe는 기존 시험에 보존한다.
+
+외부 Node/Docker supervisor가 fault별 임시 CPU 컨테이너를 소유하고 종료·OOM·cleanup·신규 process 변환/복원을 검증한다. accepted receipt는 quiet period와 정상 child exit 이후에만 승인한다. 컨테이너 경계 검증은 production Worker·lease/fencing·G7 게시·Chromium sandbox 보안 승인과 별개다. 설계·PARTIAL 정본 [Issue218](Issue218.md), 실제 결과 [TestReport](TestReport.md).
+
+---
+
 ## #218 A2 시험 자원 경계 보완 (2026-11-03)
 
 시험 이미지 build에서 기존 prepareFonts의 전체 글꼴을 준비하고 runtime proof는 완전한 packet 문자열 전달·전체 scalar 검사를 수행한다. 운영 Adapter/SceneRepository/Worker와 기본 Scene PoC는 변경하지 않는다. 설계·AC 정본은 [Issue218 R09/R10](Issue218.md), 실측과 제한은 [FailureLedger](FailureLedger.md)/[TestReport](TestReport.md)를 따른다.

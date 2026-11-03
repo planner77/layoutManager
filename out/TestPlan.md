@@ -1,3 +1,12 @@
+## TC-218-A2-F01–F05 / S01–S06 — 후속 단일 검증 PR
+
+- 설계/수용 정본: [Issue218](Issue218.md) 상단. 기존 P0 5+P1-A2 4 시험과 discovery는 그대로 필수다. 추가 `parity.playwright.config.ts`의 두 테스트를 실제 CLI JSON discovery로 전체 선택 검증한다. source SHA/cycle/폭증/비지원 거절은 원본 SHA를 맞춘 실제 후보 호출에서 font 요청 전 실패해야 한다.
+- Parity: 별도 candidate/live source/fresh live restore Browser, 동일 전체 글꼴·Version/Source/Scope, 전체 DTO validator와 모든 buffers/행렬/재질/ID/layer/textIndex, file readback, 실제 outline Worker, Layer off/on 및 재진입. Raw class/material을 먼저 비교하여 class2개와 MeshBasicMaterial.side4개(2→0)의 정확 stable-ref/slot 손실만 기록한다. Source class/material은 exact이며 제한된 clone 비교는 나머지 field 검증용이다. 전체 재질 복원은 PARTIAL/UNMET로 유지한다. Source mapping/원본 index 비복원은 PARTIAL로 보고한다.
+- Process: `node --test src/tests/a2/process-safety.test.mjs`는 redaction/OOM 증거/정상 recovery gate를 검사한다. `node tests/a2/process-safety.mjs`(src cwd)는 실제 Docker fault6개와 각 fault 후 fresh 정상 변환6개, 별도 strict sandbox capability probe를 수행한다. 원래 CPU2/RAM1536MiB/swap1536MiB/SHM256MiB/PID256/UID10001/read-only/offline/no privileges/time limit을 inspect로 검증한다.
+- 실행 중 current stage/exit/PID/OOM을 gate 판정 전에 저장하고, 정상 exit+quiet/전체 검증 이전 accepted marker가 없음을 검사한다. 예상 fault nonzero와 시험 자체의 실패를 구분한다. 정확 image·source/frozen QA 결과와 남은 제한은 TestReport, 실패·설계 보완은 FailureLedger에 기록한다.
+
+---
+
 ## TC-218-A2-R09/R10 — discovery contract and complete bounded-resource proof
 
 1. Original workflow selectors must reproduce0 tests/exit1 with actual Playwright CLI; shared repaired selectors must discover exactly5+4, unique/disjoint union9. Run `node src/tests/a2/check-discovery.mjs --check` before image build; reject zero/missing/extra/renamed test inventories.

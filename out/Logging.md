@@ -1,3 +1,11 @@
+## #218 A2 프로세스 검증 보고 경계
+
+새 시험은 `A2_PHASE`, `A2_PROCESS_CASE/RESULT`, `A2_PARITY_EVIDENCE`를 사용한다. 후보·fault·restore·quiet 단계, 정상/신호 종료, 실제 PID·OOMKilled·고정 resource limits와 안전한 count만 공개한다. 감독자는 raw child logs를 저장/출력하지 않고 allowlist 결과만 process-safety.json에 기록한다. accepted marker는 정상 recovery child exit 이후에만 작성한다. 실패 current stage/관측 결과는 gate throw 전에 남겨 이전 timeout의 관측 부재를 반복하지 않는다.
+
+원본·DTO 전문, source/font SHA, Scene UUID·사용자 정보, upstream 임의 exception/stack·credential은 보고하지 않는다. strict sandbox `BLOCKED/LAUNCH_REJECTED`는 오류 원문을 추정하지 않는 capability 결과다. 실제 분류/운영 GO 경계는 [Issue218](Issue218.md)/[TestReport](TestReport.md)를 따른다.
+
+---
+
 ## #218 A2 bounded diagnostics after CI #540 (2026-11-03)
 
 A2_HOST_PHASE now adds numeric Node rssMiB/heapMiB and INVENTORY_COMPARE_START/DONE to distinguish font, browser/packet and comparison phases. These are process snapshots, not container memory peaks. Geometry mismatch reports a fixed label/index, never scalar values. The full synthetic source/DTO bytes, SHA, identities or arbitrary exception text remain outside logs. CI still collects per-container host-side stats and Docker OOMKilled/ExitCode before cleanup; see [FailureLedger](FailureLedger.md) for operator-killed versus OOM evidence.

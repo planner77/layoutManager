@@ -1,3 +1,62 @@
+## 2026-11-03 — 후속 단일 PR: 실제 Viewer Adapter 동등성 및 프로세스 안전성 검증 설계
+
+**최신 판정: 구현·독립 QA·정확 최종 이미지 검증 완료, Manager가 검증 전용 PR을 수용했다. 운영 GO는 BLOCKED, F03/F04 전체 복원은 PARTIAL/UNMET이며 새 원격 HEAD CI 결과는 미확인이다. 아래 설계/AC는 구현 전에 기록했으며 실제 결과 정본은 [TestReport](TestReport.md) 상단이다.** 사용자 승인 범위는 #218 P1-A2의 두 미완료 증거를 하나의 후속 PR에서 검증하는 것이다. 기준 Main `0c7ab5f`(앞선 #221 squash `dc80f88` 및 CI #541 성공 기록 포함), branch `feat/218-a2-adapter-safety`, package **0.58.1 유지**. 아래 AC/TC는 기존 R-218-A2-02/03/04 및 A2-02/04의 추가 시험이며 기존 성공·실패 이력을 덮어쓰지 않는다.
+
+**범위:** `src/tests/a2`, 필요한 test-only browser entrypoint/CI 및 추적 문서. 실제 `ThreeDxfViewerAdapter`를 수정 없이 시험에 import한다. production Worker/Job/lease/fencing, G7/권한, DB/SceneRepository/Current 게시, App/Compose/GHCR 배포는 구현하지 않는다. `도면/보기/작업` 메뉴·Role/Drawer/접근성 동작 변경이 없으므로 새 UI 항목은 불필요하다. Chromium+SwiftShader 격리 실험은 운영 sandbox 승인이나 P1-B 장애 복구의 대체가 아니다.
+
+### 발견된 기준 차이와 구현 지시
+
+실제 Adapter는 생성자 옵션 `prepareScene:true`와 `load(bytes)` 경로에서 원본 SHA 확인, explicit elevation, 실제 DXFViewer, preflight, material 복제 및 black→white 표시 보정, tag, render/선택 초기화, optional outline Worker, `extractDxfText`를 포함한 CUSTOM_DTO를 만든다. `getSceneArtifact()`가 그 결과이다. 기존 `scene-poc-browser.ts`는 첫 Line을 의도적으로 hidden/dashed로 바꾸고 `serializeSourceScene`에 textIndex를 전달하지 않는다. 따라서 기존 PoC 성공을 live parity라고 명명하거나 두 결과를 같게 만들기 위해 비교에서 material/visibility/text를 제거하면 안 된다.
+
+Developer는 test-only 독립 후보 경로를 기존 full font/decoder/serializer와 실제 Adapter 계약에 맞추되, 기존 ALL/DTO_ONLY PoC 시험은 보존한다. 같은 합성 원본 bytes, source SHA, Version ID, INSUNITS, builder/schema/package 및 폰트 bytes를 두 독립 Browser process에 전달한다. 실제 Adapter에서 `load`→`getSceneArtifact`, 후보에서 실제 DXF parse→CUSTOM_DTO를 수행하고 둘 다 full validator를 통과한 뒤 파일 write/read 및 fresh Adapter `loadScene`을 거친다. Worker URL은 test bundling/virtual route로 실제 outline-worker를 실행하도록 연결한다. 공유 시험 인터페이스는 `window.a2Candidate.build({dxf, versionId, sourceSha256})`로 두고 artifact(완전한 bytes/manifest)와 inventory를 JSON 문자열로 전달하여 scalar별 Playwright transport/report 비용을 피한다. Worker failure를 조용히 성공으로 처리하지 않고 정상 index와 명시적 unavailable 경우를 구분한다. 시험용 fake Adapter·DXF parser·수동 DTO/geometry 작성으로 대체하지 않는다.
+
+### 동등성 matrix 및 수용 기준
+
+| AC / TC | 관측·비교 | 통과 조건 / 부정 시험 |
+| --- | --- | --- |
+| A2-F01 / TC-218-A2-F01 | 동일 입력 provenance 및 실제 경로 | 두 실제 process에서 source bytes/SHA·Version·전체 Nanum font bytes·builder/schema/package 일치. source SHA mismatch 거절, resource/font 실패는 FAIL. 동일 구현 결과를 자기 자신과 비교하지 않음 |
+| A2-F02 / TC-218-A2-F02 | 전체 Object3D/DTO 구조, WCS 및 source coverage | 동일 stable ID/Origin/Scope/parent·kind·layer·unit·visibility·name, 모든 geometry attribute/index/group/drawRange와 local/world transform·BBox 비교. 모든 finite scalar ±1e-5 drawing unit; ID/수량/자료형은 exact. 맨 끝 좌표·ID·layer·transform 변조도 탐지. CPU2/RAM1536MiB 내 bounded 비교 유지 |
+| A2-F03 / TC-218-A2-F03 | material 및 TEXT/MTEXT glyph | material 종류/색/opacity/line style와 glyph geometry·placement를 live baseline과 비교. 한글 글꼴 존재/호스트 문자열 검색만으로 glyph fidelity PASS 금지. black→white는 live 계약이며 인위적 PoC hidden/dashed probe는 별도 기존 회귀에 유지 |
+| A2-F04 / TC-218-A2-F04 | persisted viewerData·fresh live restore | 실제 DTO의 textIndex 전체 내용/좌표 및 Korean TEXT/MTEXT/nested INSERT 검색 결과가 live와 동일; 저장 bytes/SHA/manifest/full validator/readback 후 새 Adapter.loadScene에서 getSceneTextIndex/getLayers와 geometry 재확인. textIndex 삭제·변조를 검출 |
+| A2-F05 / TC-218-A2-F05 | outline 및 Layer 동작의 정확한 경계 | source Adapter의 실제 outline Worker index/원본 선택 가용성, restored Adapter의 render outline/레이어 정보 비교. 현재 loadScene은 원본 Entity index를 저장·복구하지 않고 unavailable을 명시하므로 이 차이를 matrix에 PARTIAL로 기록; persisted source outline 지원 PASS 금지. Layer off/on 후 표시 및 dispose/re-entry 확인 |
+
+원본 coverage 정본은 `a2SyntheticDxf`: 직접 LINE 1 + nested 반복 LINE 2, CIRCLE 1 + 반복 BLOCK CIRCLE 2, 닫힌 LWPOLYLINE 1, TEXT 1 + nested 한국어 TEXT 2, MTEXT 1, OUTER INSERT 2와 각각 INNER INSERT 1, mm/$INSUNITS=4 및 비영점 WCS. 각 행에 source 의미 인스턴스 수, 실제 drawable/merged geometry 수, live/candidate/restore 보존 여부를 별도 기록한다. Node 수를 source entity 수라고 간주하지 않는다. 벤더가 합치거나 누락한 경우 구체적으로 PARTIAL/FAIL을 남기며 두 경로가 똑같이 누락해도 source fidelity PASS는 아니다. OCS/CP949/HATCH/SPLINE/DIMENSION·대형 현장 입력은 이 fixture가 검증하지 않는다.
+
+### 실제 재질 손실 관측과 시험 판정 경계
+
+추가 raw material inventory(side/depthTest/depthWrite/alphaTest/blending) 비교에서 source/candidate는 exact였으나 fresh restore의 `nodes[7].materials[0].side`가 먼저 실패했다. 정확히 네 MeshBasicMaterial slot(7:0,8:0,15:0,22:0)에서 side2→0이 관측되었고 다른 네 속성은 일치했다. 이는 **F03 전체 재질 복원 미충족/PARTIAL**이다. 원래 full fidelity 수용 기준을 낮추거나 production DTO를 변경하지 않는다.
+
+검증 helper는 raw source/restore를 보존하고 같은 stable ref/path·material type/slot에 대한 정확한 class loss2개(slot7/8)와 side loss4개만 먼저 assert한다. 이 알려진 손실을 명시한 clone으로 나머지 모든 buffers/행렬/재질/문자를 비교한다. 예상 외 값·개수·위치·depthWrite·class 변화는 실패하며, 이는 전체 복원 PASS의 대체가 아니다. source/class/material identity와 index/path/enum은 exact, 기하 finite scalar만1e-5 허용 오차를 적용한다.
+
+### 실제 프로세스 안전성 AC/TC
+
+Node supervisor는 변환 subprocess 및 Chromium descendants와 분리한다. 각 fault는 실제 converter/browser를 시작하고 확인 가능한 안전 phase 이후 주입한다. 예외를 던지는 unit mock 또는 page.close만으로 아래 gates를 충족하지 않는다. candidate는 전체 검증 및 bounded late-error observation·정상 child exit 확인 전 최종 시험 accepted 파일/marker가 될 수 없다. 임시 디렉터리만 사용하고 source read-only/hash 불변을 검증한다.
+
+| AC / TC | 실제 주입 | 필수 관측 및 수용 조건 |
+| --- | --- | --- |
+| A2-S01 / TC-218-A2-S01 | 실제 변환 자식의 응답 정지·기한 초과 | supervisor deadline 작동, process group/container kill 후 exit 확인, descendants 잔류0, incomplete candidate/accepted marker0, 원본 불변. Promise.race reject만으로 PASS 불가 |
+| A2-S02 / TC-218-A2-S02 | 살아 있는 converter subprocess에 SIGKILL | 실제 pid/signal/exit 증거와 process-tree 정리; 부모 supervisor 생존 및 실패 분류. finally 실행에 의존한 정리 금지 |
+| A2-S03 / TC-218-A2-S03 | 실제 converter가 실행 중인 별도 cgroup/container의 메모리 소진 | 기존 RAM1536MiB/swap1536MiB cap 안에서 실제 pages touch/retain. 외부 supervisor가 종료 전후 Docker OOMKilled 또는 memory.events oom_kill 증가를 확보. exit137/SIGKILL만으로 OOM 주장 금지. 증거 불가 환경은 NOT VERIFIED이며 required gate의 skip/pass 불가 |
+| A2-S04 / TC-218-A2-S04 | candidate 생성 이후 지연 uncaught exception 및 unhandled rejection 각각 주입 | Node child 및 browser late-error 경계를 명시하고 각각 탐지. 초기 변환 resolve만으로 성공 금지, nonzero/allowlisted 실패/accepted0. 실제 upstream 지연 오류를 숨기는 catch·error-handler 성공 처리 금지 |
+| A2-S05 / TC-218-A2-S05 | 각 fault 종료 후 독립 새 process/container로 같은 DXF 재변환 | PID/Browser context 새 생성, 이전 candidate 재사용 없이 parse→DTO→full validator→file readback→fresh restore 실제 성공. 종료 상태·정리·새 결과의 source/Scope/bytes 무결성 확인. 단순 health/ping/start 로그는 restart 성공 증거가 아님 |
+| A2-S06 / TC-218-A2-S06 | CI discovery·격리·증거 fail closed | 기존 P0 5+P1-A2 4 전체 시험 유지하며 추가 suite도 실제 discovery·mandatory Verify에 포함. CPU2/RAM1536MiB/SHM256MiB/PID256/UID10001/read-only/network-none/cap-drop/no-new-privileges 및 기존 deadline 상한 보존. fault별 독립 bounded container 허용, 운영 mount·secret 금지 |
+
+OOM 자식과 supervisor가 같은 cgroup에서 함께 죽는 경우에는 외부 Docker supervisor가 검사·cleanup·fresh conversion까지 수행해야 한다. 예상 fault의 nonzero exit는 **음성시험 통과 여부**와 구분하고 정상 경로 nonzero는 필수 CI 실패다. 로그는 phase/분류/exit/signal/자원/카운터만 allowlist로 남기고 arbitrary exception·CAD·credential·전체 DTO는 게시하지 않는다. 실제 cgroup peak가 읽히지 않으면 sampled maximum만 기록한다.
+
+### 보안 문서 근거와 실제 시험의 구분 (2026-11-03 조회)
+
+[Chromium SwiftShader 문서](https://chromium.googlesource.com/chromium/src/+/main/docs/gpu/swiftshader.md)는 GPU process의 JIT 위험 및 비신뢰 콘텐츠에 대한 사용 목적의 한계를 설명한다. [Playwright Docker 문서](https://playwright.dev/docs/docker#run-the-image)는 비루트 사용자·seccomp를 통한 sandbox 환경 구성을 설명한다. 이는 이 저장소의 현재 무권한 컨테이너에서 sandbox가 실제 작동한다는 증거가 아니다. 이 PR은 host 보안 완화 없이 strict launch capability를 별도 시험해 BLOCKED 또는 관측 범위만 기록하며, runtime/현장 보안 승인은 여전히 별도다.
+
+### 완료 판정 및 남은 GO 조건
+
+Developer 완료 후 독립 QA가 frozen source의 위 TC, 기존 A2/Scene PoC 및 관련 자동 회귀, typecheck/lint/build를 실행·문서화한다. Manager는 positive fidelity, 명시적 PARTIAL/실패, fault/cleanup/restart 증거를 구분해 이 **검증 PR**만 수용 또는 재작업 판정하고 root가 최종 통합·commit/PR을 담당한다. 신규 TC의 실제 실행 결과는 TestReport 상단에 기록했고 아래 과거 CI541 결과를 신규 TC PASS로 재사용하지 않았다.
+
+선택적 `chromiumSandbox:true` 별도 probe는 기존 비특권·seccomp 설정 그대로 실행하고 실제 성공/환경 차단을 기록할 수 있다. 이를 위해 privileged·보안 프로필 완화는 금지하며 성공하더라도 untrusted DXF 보안 수용의 충분조건이 아니다.
+
+모든 신규 합성 TC가 성공해도 운영 P1-A2 GO는 **BLOCKED**다. A2-05 untrusted-input Chromium/SwiftShader sandbox·보안/라이선스/SBOM, 실제 고객 DXF·2PC/현장 #113/#193 수용, source fidelity의 PARTIAL/미지원 범위 해결 또는 명시 승인, 정확 PR HEAD required CI 결과가 별도 필요하다. #218 AC01–AC09 OPEN, P1-B/C/D 미착수. 검증 실패나 persisted outline 제한을 숨기거나 운영 GO 조건을 약화시키는 승인은 이 요청에 포함되지 않는다.
+
+---
+
 ## 2026-11-03 — PR #221 CI #541 성공 및 검증 장치 Main 병합; 운영 GO 보류
 
 - Source HEAD `1e3f22c0547c96fd260d022770755c4008bf0a61`의 [PR CI #541 / Run41611978658](https://github.com/planner77/layoutManager/actions/runs/41611978658) 9/9 SUCCESS(독립 A2 CPU/Required Verify 포함). Review thread0, Main behind0/mergeable true; Squash Main `dc80f88bc367e5735dc6878a609ab3089b6a4abc`, 원본/병합 tree 동일. [Main CI #140](https://github.com/planner77/layoutManager/actions/runs/41615434676)는 push 시작만 확인, 완료 미모니터링.

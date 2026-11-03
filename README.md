@@ -1,3 +1,9 @@
+## #218 A2 후속 — 실제 Adapter 및 프로세스 검증
+
+실제 Viewer Adapter와 독립 CPU 후보를 동일 합성 DXF/전체 글꼴로 비교하고, 컨테이너 timeout·강제 종료·실제 OOM·지연 오류 및 새 변환/복원을 검증한다. 이는 시험 전용 후속 PR이며 제품0.58.1과 운영 기능은 유지한다. Source 매핑/원본 index 비복원/geometry 클래스·material side 손실과 sandbox의 제한을 포함한 실제 결과는 [TestReport](out/TestReport.md), 수용 기준은 [Issue218](out/Issue218.md)를 따른다. P1-A2 운영 GO는 계속 보류다.
+
+---
+
 ## #218 / PR #221 CI 보완 (2026-11-03)
 
 CPU 전용 기술 시험의 테스트 선택과 글꼴·packet·좌표 비교 자원 사용을 보완했다. 실제 실패 분석은 [FailureLedger](out/FailureLedger.md), 로컬·컨테이너·독립 QA 결과는 [TestReport](out/TestReport.md)를 따른다. 제품 버전0.58.1과 운영 기능은 그대로이며 #218 기술 GO는 보류다.

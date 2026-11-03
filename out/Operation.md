@@ -1,3 +1,13 @@
+## #218 A2 후속 검증 실행 — 운영과 분리
+
+`src/tests/a2/Dockerfile`은 동일0.58.1 기반의 시험 전용 이미지다. root에서 `docker build -f src/tests/a2/Dockerfile -t layoutmanager-a2-proof:local .` 후 동일 원래 resource/security flags로 기존5+4와 `tests/a2/parity.playwright.config.ts`를 각각 새 컨테이너에서 실행한다. Discovery는 root의 `node src/tests/a2/check-discovery.mjs --check` 및 `node src/tests/a2/check-parity-discovery.mjs --check`; process unit은 `node --test src/tests/a2/process-safety.test.mjs`다.
+
+프로세스 검증은 src cwd에서 `A2_PROOF_IMAGE=layoutmanager-a2-proof:local A2_PROCESS_REPORT_DIR=/tmp/a2-process-safety node tests/a2/process-safety.mjs`. 외부 Node/Docker supervisor가 원래 제한의 fault6+fresh recovery6 및 sandbox capability 컨테이너를 소유·inspect·정리한다. `A2_PROCESS_RUN_ID`는 CI run/attempt label에 사용하며 취소 시 workflow가 그 정확 label만 정리한다. Docker socket/호스트 디렉터리/운영 DB/실 CAD·자격증명을 컨테이너에 전달하지 않는다. 보고서는 안전한 숫자/phase/분류만 보관한다.
+
+strict sandbox launch 거절은 BLOCKED로 남기고 host user namespace/권한/보안 설정을 자동 변경하지 않는다. 이 검증은 production Worker 재시작/lease·운영 sandbox 승인 절차가 아니다. 실 결과·PARTIAL은 [TestReport](TestReport.md), AC는 [Issue218](Issue218.md)를 따른다.
+
+---
+
 ## #218 A2 local proof prerequisites and memory boundary (2026-11-03)
 
 For A2 discovery or resource regressions, follow [Issue218 R09/R10](Issue218.md) and the [FailureLedger](FailureLedger.md) before rerunning CI. The proof Dockerfile prepares the full Korean typeface during build using existing `scripts/fonts.mjs`; rootfs stays read-only at runtime. For a standalone local proof, run from `src`: `node --input-type=module -e "import {prepareFonts} from './scripts/fonts.mjs'; prepareFonts();"` (ordinary production build also prepares it), then use `tests/a2/playwright.config.ts`. Generated JSON remains Git-excluded. Discovery validation needs npm dependencies only and never launches Chromium: `node src/tests/a2/check-discovery.mjs --check` from root.
