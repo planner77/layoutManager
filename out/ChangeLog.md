@@ -1,3 +1,12 @@
+## 2026-11-03 — #218 P1-A2 CPU-only Headless DXF→Scene 검증 실험 코드 (GO 대기)
+
+- #208/#217 direct Node NO-GO 후속으로, 운영 기능과 분리된 `src/tests/a2/`에 실제 pinned DXFViewer + Chromium software WebGL(실험) DXF→Object3D→CUSTOM_DTO(full manifest/SHA/domain validator)→file/restore + 동일 synthetic browser 비교 설계와 테스트 추가.
+- 실 synthetic AC1024/한국어 TEXT·MTEXT/2-level BLOCK/INSERT/LINE/CIRCLE/LWPOLYLINE/Unit·WCS, 2^18 확장량·cyclic BLOCK·unsupported Entity의 보수적 fail-closed preflight 및 Vitest 추가.
+- 별도 CPU-only Debian/UID10001 Chromium 시험 이미지와 PR 전용 `a2-cpu-probe` required Verify 의존을 새로 추가. 기존 PR CI/G7/품질 테스트 정책 유지.
+- AGENTS, Issue218, Requirements/Architecture/Decisions/Database/Logging/Operation/TestPlan/TestReport/FailureLedger/README 갱신. 기술 alternative B(Node parser+Three 변환) 미구현, A도 실제 실행/정합성 미검증. Worker/Job/G7/Auth/SceneRepository/Prisma/운영 Compose/GHCR 릴리스 미변경. **P1-A2 BLOCKED, #218 OPEN, 후속 P1-B/C/D 금지.**
+
+---
+
 ## 2026-11-03 — #216 GHCR 복구 PR CI #476 TypeScript 테스트 타입 보완
 
 - `issue216-ghcr-workflow.test.ts`에서 상이한 선택적 key를 가진 오류 주입 input union이 `Record<string,string>`과 호환되지 않아 TS2345. Runtime code/GHCR 검증 수용 실패가 아니라 CI Quality의 테스트 코드 타입 오류.
