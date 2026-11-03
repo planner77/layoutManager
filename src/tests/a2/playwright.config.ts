@@ -3,6 +3,10 @@ import { defineConfig } from '@playwright/test';
 export default defineConfig({
   testDir: '.',
   testMatch: 'headless.spec.ts',
+  // CI proof runs with --read-only; Playwright artifacts must remain in the
+  // explicit ephemeral /tmp tmpfs, not the immutable /app/src/test-results.
+  // Do not change production mounts or remove the read-only security gate.
+  outputDir: '/tmp/a2-playwright-results',
   workers: 1,
   retries: 0,
   timeout: 180_000,
