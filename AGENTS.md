@@ -1,3 +1,12 @@
+## #218 / PR #221 — PR CI #514 INVALID_REGEXP 및 CPU Browser runtime 정렬 (2026-11-03 KST)
+
+- [PR CI #514 Run41564217739](https://github.com/planner77/layoutManager/actions/runs/41564217739), 정확 HEAD `ea3145c5b2fa2d55a6b631d45ffbed201937baf3`, `completed/failure`. Scope `125682086960`, Quality `125682124857`, Docker `125682124880`, 일반 Chromium 2 shard `125684391336/125684391433`, G7 Signed/Legacy `125684391321`, Greenfield `125684391553` SUCCESS. A2 CPU Job `125682124844`는 `BUNDLE_STATIC_SYNTAX_OK → HARNESS_SCRIPT_REQUESTED → PAGEERROR_SYNTAX_INVALID_REGEXP → A2_HARNESS_PAGEERROR:SYNTAX_INVALID_REGEXP`로 핵심 DXF 변환 FAIL; 보조 3 PASS, Verify `125687181424`는 A2 mandatory 종속 FAIL.
+- **검증된 차이:** 해당 A2 테스트 이미지는 Debian apt Chromium **156.0.8078.73** 사용. 같은 소스의 일반 E2E `scene-poc.spec.ts / SC-05/06/07`는 Playwright 설치 Chromium **153.0.8010.12**에서 SUCCESS(일반 E2E shard2 로그, 소요 약 46.7초). 원래 JS 정규식 원문/발생 출처는 비밀 보호로 출력되지 않아 **Chromium 버전이 원인이라고 확정할 수 없음**. Node `vm.Script` pass는 브라우저 동적 `new RegExp`까지 보증하지 않는다.
+- **선택한 실험 경로:** Test-only `src/tests/a2/Dockerfile`의 apt Chromium 156 제거, pinned `@playwright/test`/lockfile에 속한 브라우저를 `playwright install --with-deps chromium`으로 빌드 시 설치(`PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright`). 런타임 `--network none`에서 JS/폰트 자산 가상 라우트만 이용. `A2_BROWSER_EXPECTED_MAJOR=153` 확인 후 CPU+SwiftShader 실제 DXF/DTO/full Validator 시험을 그대로 수행; 버전 다른 경우 FAIL. 브라우저 버전 변경만으로 GO 선언 불가.
+- **불변 조건:** Debian CPU-only, UID10001, read-only Rootfs, CPU2/RAM1536MiB/pids256, 15m container/180s test, 기존 Quality/E2E/G7/Docker/Required Verify 유지. 테스트 Skip/경고 무시/가짜 Scene READY 없음. P1-A2 GO 보류, #218 OPEN, P1-B/C/D 미착수. 라이브러리 `three-dxf-viewer@1.0.44`의 직접 Node NO-GO 유지, 운영 G7/DB/Volume/OCI GHCR 불변. [원장](out/FailureLedger.md), [보고](out/TestReport.md).
+
+---
+
 ## #218 / PR #221 — CI #506 A2 JavaScript bundle SyntaxError 및 호환 타깃 사전 검증 (2026-11-03 KST)
 
 - **정확한 실패:** [PR CI #506 Run41561632191](https://github.com/planner77/layoutManager/actions/runs/41561632191), HEAD `06d6bda224e74b30e40548184902ec44f518dd6e`, completed/failure. Scope `125673369154`, Quality `125673426365`, Docker `125673426276`, General Chromium `125675508915/125675508963`, G7 Greenfield `125675508912`, G7 Signed/Legacy `125675508925` SUCCESS. A2 CPU `125673426531`은 합성 4시험 중 3 PASS, 핵심 실제 DXF converter 1 FAIL; Required Verify `125678277041`은 A2 mandatory 실패로 FAIL.
