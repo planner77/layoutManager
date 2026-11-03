@@ -1,3 +1,11 @@
+## #218 P1-A2 — CPU-only Proof 180s timeout의 안전 재실행 기준 (2026-11-03)
+
+- [CI #485 Run41555129727](https://github.com/planner77/layoutManager/actions/runs/41555129727)에서 Debian 컨테이너/UID10001과 전체 일반 CI는 성공했으나 전용 A2 DXF→Scene 시험이 180초 초과로 실패했다. 정확 hang phase는 로그 부족으로 미정이며 Chromium/Font/WebGL/Converter/OOM을 원인으로 단정 금지.
+- A2 합성 실험에만 SOURCE/WEBGL/DXF/DTO/VALIDATOR/RESTORE allowlisted 단계 로그와 launch(25s)/navigate(20s)/evaluate(60s) deadline을 도입했다. timeout, 페이지 오류, 리소스 실패는 fail-closed; 기존 Playwright 180s·컨테이너 15m, read-only/UID10001/Network none/CPU·RAM·pids 상한 유지.
+- 재실행 시 마지막 `A2_HOST_PHASE` 및 `A2_PHASE`를 확인해 실제 실패 지점과 리소스/비동기 원인을 분리한다. 합성 컨테이너 운영 데이터 마운트·GHCR 게시·실 DB/Volume/Registry/G7 복구 금지; #218 OPEN 및 P1-B/C/D 차단 유지. 상세 [TestPlan](TestPlan.md), [FailureLedger](FailureLedger.md).
+
+---
+
 ## #218 P1-A2 — 실험 CPU-only Debian 컨테이너 실행(운영 배포 아님) (2026-11-03)
 
 1. CI 전용: repository root에서 `docker build --platform linux/amd64 -f src/tests/a2/Dockerfile -t layoutmanager-a2-proof:ci .`. Debian/Chromium/npm 의존성은 CI 빌드 때 외부 패키지 저장소를 통해 설치하고, 실행 시에는 `--network none`을 적용한다. **이 구성이 완전한 사내망 오프라인 이미지 build 실증은 아님**. 글꼴 재배포 라이선스/apt 패키지 SBOM/production sandbox는 별도 검증.
