@@ -29,9 +29,16 @@ function projectFont(): string {
     source.buffer.slice(source.byteOffset, source.byteOffset + source.byteLength),
   );
   parsed.familyName = 'CAD Korean';
-  const info = parsed.original_font_information;
-  for (const key of ['fontFamily','fullName','postScriptName','preferredFamily','uniqueID']) {
-    if (info[key]) info[key] = {en: 'CAD Korean'};
+  // TTFLoader's TypeScript declaration flattens metadata to strings, while
+  // scripts/fonts.mjs normalizes the real font's nested language records.
+  // Narrow the JSON metadata, not the font/glyph object or the TS compiler.
+  const info = (parsed as unknown as {
+    original_font_information?: Record<string, unknown>;
+  }).original_font_information;
+  if (info) {
+    for (const key of ['fontFamily','fullName','postScriptName','preferredFamily','uniqueID']) {
+      if (info[key]) info[key] = { en: 'CAD Korean' };
+    }
   }
   if (!parsed.glyphs['한'] || !parsed.glyphs['글'])
     throw new Error('A2_KOREAN_GLYPHS_NOT_PROVEN');
