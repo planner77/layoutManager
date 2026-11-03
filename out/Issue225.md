@@ -1,3 +1,12 @@
+## 2026-11-04 — 0.60.0 Job G7 forward-only Migration 후보
+
+- 신규 제품 버전은 0.60.0 (Draft)이며 이전 v0.59.0의 Zone 기준선·이미지는 불변이다. 신규 빈 설치는 Job 기준선 1행, 기존 설치에서 승인 Migration을 거치면 Zone 기준선+Job Migration 2행을 유지한다.
+- G7 Registry에서 0.59.0→0.60.0은 COMPATIBLE이 아닌 MIGRATION이다. Plan ID 승인/백업/격리복구를 요구하고, Job SQL 원문·checksum·4 인덱스 및 기존 G7 DDL 지문을 검증한다. SQL drift/허위 이력은 차단한다.
+- 기존 Zone/Outline/Memo 기능이 새 2행 이력에서도 동작하도록 스키마 판정 코드를 변경했다. 정확 HEAD CI와 실제 통합 회귀 결과는 아직 NOT VERIFIED.
+- SCENE_AUTO_BUILD_ENABLED 기본 OFF 유지. 새 Job 스키마 등록과 별개로 실제 Background CPU Worker, G7 게시 권한·SceneRepository CAS, 상태 UI는 미구현; GO-PILOT 미승인. GHCR/운영 DB/Volume 변경 금지.
+
+---
+
 ## 2026-11-04 — B1 저장 계약 및 G7 릴리스 선행 조건 (Draft)
 
 

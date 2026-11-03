@@ -1,3 +1,12 @@
+## TC-225-B1-G7 0.60 후보 수용 계획 (2026-11-04)
+
+- Fresh 0.60 Greenfield Job 기준선 1행+Job Table/4 Index, 정확 G7 Runtime Schema PASS. 이전 0.59 Zone baseline 유지.
+- 0.59 데이터→0.60 업그레이드는 MIGRATION_REQUIRED, 유지관리 승인과 Plan ID 없으면 변경0; 승인 후 Job DDL/History 2행+User/Site/Auth/Audit/DXF/Scene/Current/Memo/Zone/Outline 보존, 백업·복구 확인.
+- SQL 파일과 G7 Registry의 reviewed SQL/Checksum 동등성, 불량 인덱스·허위 Migration 이력 차단. Zone/Outline/Memo 읽기·편집 경로 2행 이력 인식.
+- 테스트 실패의 실제 원인과 재검증만 필수 게이트로 취급하며, 미구현 Worker GO-PILOT 증거는 별도.
+
+---
+
 ## #225 B1 Schema / CAS / Feature Gate 검증 계획 (2026-11-04)
 
 

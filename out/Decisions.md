@@ -1,3 +1,9 @@
+## ADR-225-G7-FORWARD-JOBS — 0.60.0 후보로 스키마 변경 분리 (2026-11-04)
+
+결정: 신규 SceneBuildJob DDL은 차기 0.60.0에 MIGRATION으로 등록하고 기존 0.59.0 이미지/Zone 기준선을 절대 변경하지 않는다. 두 기준선의 정확한 History와 DDL을 구별해 임의 수동 테이블·인덱스 우회를 막는다. 기존 데이터와 Audit/CurrentScene를 보존하며 Plan ID/백업/복구를 요구한다. 단일 RUNNING partial index, 복합 멱등키, 비밀정보 미저장 유지. Worker/Scene 게시가 미구현이므로 GO-PILOT 미승인, SCENE_AUTO_BUILD_ENABLED OFF.
+
+---
+
 ## ADR-218-LEAN-2D-SINGLE-WORKER — 현행 Owner GO 정책 (2026-11-04)
 
 **Decision: ACCEPT.** 사내 승인 사용자·2D 위주·소규모 동시성에 맞춰 [Issue218LeanPolicy](Issue218LeanPolicy.md)의 GO-DEV / GO-INTEGRATE / GO-PILOT / GO-EXPAND를 분리한다. 독립 CPU `DXF→CUSTOM_DTO→Validator/readback` 경로는 서버 WebGL 없이 시험한다. 기존 strict headless Viewer의 `WEBGL_CONTEXT_UNAVAILABLE`은 현재 *서버 DTO 생성 실패가 아닌 렌더 초기화 실패*이므로 P1-B **구현 착수**를 차단하지 않는다. 실제 저장/권한/복원/격리 실패는 해당 기능 병합·배포 단계에서 차단한다.

@@ -1,3 +1,9 @@
+## #225 G7 Job 신규 0.60.0 스키마 후보 (2026-11-04)
+
+0.59.0 Zone baseline 기존 DDL/데이터는 불변이며, 새로운 0.60.0에서는 Job 기준선 1행 또는 Zone baseline+Job migration의 승인 2행 이력을 지원한다. 0.59→0.60은 MIGRATION(관리자 승인·백업·격리 복구 필수)으로 등록한다. 기존 G7 DDL SHA 검증 외에 Job Table+4 Index를 이름·type·정규화 SQL로 검증한다. SceneOrphanJob과 SceneBuildJob은 별도이다. 기존 데이터 및 Source/CurrentScene/Audit 불변. 신규 정확 CI 결과 미확인, 기본 SCENE_AUTO_BUILD_ENABLED OFF. 운영 DB의 수동 DDL 적용 금지.
+
+---
+
 ## #225 B1 — 전진 전용 SceneBuildJob 후보 / 기존 G7 0.59.0 불변 (2026-11-04)
 
 

@@ -1,3 +1,9 @@
+## 2026-11-04 — #225 0.60.0 G7 Job 스키마/승격 후보 (Draft)
+
+0.59 Zone 기반 시스템의 불변 태그를 유지하면서 신규 Job DDL을 별도 승인 MIGRATION으로 등록; 신규/승격 이력 및 Zone/Outline/Memo 회귀·SQL 정합성 검증 코드 추가. 아직 배경 Worker/Scene 게시/UI·운영 자동화 미구현, GHCR/실 DB 변경 없음. CI·현장 수용은 별도.
+
+---
+
 ## 2026-11-04 — #225 B1 자동 Scene Job 저장 준비 (Draft / 미운영)
 
 - 단일 Worker 정책에 따라 Job ID/상태 판단의 pure 계약 다음 단계로 Prisma 모델·후보 G7 SQL 및 기본 OFF의 DXF 업로드 원자적 Enqueue 코드를 준비함.

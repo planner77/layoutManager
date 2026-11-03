@@ -1,3 +1,9 @@
+## #225 G7 0.60.0 신규/승격 스키마 계약 (2026-11-04, Draft)
+
+기존 0.59.0 Zone baseline 1행은 불변; 신규 0.60.0 Job baseline은 1행, 0.59.0에서 승격된 DB는 Zone baseline+Job Migration 2행이다. 업그레이드 Registry의 0.59→0.60은 MIGRATION+Plan ID 승인/백업·복구 의무가 있으며 Reviewed DDL을 정확히 검사한다. Zone/Outline/Memo 업무 경로는 두 이력 형태를 인식하고 여전히 서명된 Runtime·권한/Schema 검사에 따른다. 생산용 Worker 미구현; 운영 배포 미승인.
+
+---
+
 ## #218 현행 경량 아키텍처 — 승인 사내 2D·단일 CPU Worker (2026-11-04)
 
 [현행 정책/GO](Issue218LeanPolicy.md)를 정본으로 한다. 데이터 plane은 `DXF upload→atomic Version+Job→single CPU Worker(non-WebGL)→CUSTOM_DTO/manifest/SHA/full validator→SceneRepository immutable publish/CAS→browser Viewer restore`. 서버 Worker에는 `THREE.WebGLRenderer`/Canvas 복원을 요구하지 않고, 브라우저 Viewer에서만 WebGL을 검증한다. 별도 Worker=1, 멱등·재시작·bounded resource·G7 권한 재확인 및 기존 READY/Source/Audit 보존을 필수로 한다. 원본 ↔ Render 매핑은 안정 handle/type/layer/WCS가 있는 지원 2D subset의 정밀 선택에만 필수이며, 미지원은 `PARTIAL/UNSUPPORTED`로 명시한다. 다중 Worker/2PC/대형 현장/엄격 서버 UI WebGL은 초기 기능의 코드·CI 차단 조건이 아니다. **정책 문서 반영 자체는 생산용 Worker 구현이나 배포 GO가 아님.** 이하 역사적 P1-A2 아키텍처는 당시 시험 계약으로만 참조한다.

@@ -1,6 +1,10 @@
 /** Reviewed, bundled Greenfield release declarations. External JSON/env cannot add edges. */
 import { G7_GREENFIELD_BASELINE, G7_GREENFIELD_BASELINE_CHECKSUM,
-  G7_GREENFIELD_SCHEMA_ID, assertG7GreenfieldSchema } from './greenfield-schema';
+  G7_GREENFIELD_SCHEMA_ID, G7_PREVIOUS_ZONES_SCHEMA_ID,
+  G7_PREVIOUS_ZONES_BASELINE, G7_PREVIOUS_ZONES_BASELINE_CHECKSUM,
+  assertG7GreenfieldSchema } from './greenfield-schema';
+import {SCENE_BUILD_JOB_MIGRATION_SQL,SCENE_BUILD_JOB_MIGRATION_CHECKSUM,
+  SCENE_JOB_MIGRATION_NAME} from './scene-job-ddl';
 import { createHash } from 'node:crypto';
 import type { IsolatedDb } from '../g7-staging/g1-store';
 
@@ -19,16 +23,35 @@ export type MigrationEdge = Readonly<{
 }>;
 export type UpgradeRegistry = Readonly<{releases:readonly ReleaseDeclaration[];edges:readonly MigrationEdge[]}>;
 
+/** Existing v0.56.0..v0.59.0 G7 release declarations are immutable. */
 const zones=(version:string):ReleaseDeclaration=>({version,
+  schemaId:G7_PREVIOUS_ZONES_SCHEMA_ID,baseline:G7_PREVIOUS_ZONES_BASELINE,
+  checksum:G7_PREVIOUS_ZONES_BASELINE_CHECKSUM,
+  dataContract:'G7-ZONES-DATA-V1',runtimeContract:'G7-ZONES-RUNTIME-V1'});
+
+/** New schema changes are a signed MIGRATION, never a COMPATIBLE DDL change.
+ * The full verified schema is checked by assertG7GreenfieldSchema, including
+ * the exact allowlisted five Job objects and both approved history forms.
+ */
+const sceneJobs=(version:string):ReleaseDeclaration=>({version,
   schemaId:G7_GREENFIELD_SCHEMA_ID,baseline:G7_GREENFIELD_BASELINE,
   checksum:G7_GREENFIELD_BASELINE_CHECKSUM,
-  dataContract:'G7-ZONES-DATA-V1',runtimeContract:'G7-ZONES-RUNTIME-V1'});
+  dataContract:'G7-SCENE-JOBS-DATA-V1',runtimeContract:'G7-SCENE-JOBS-RUNTIME-V1'});
+const sha=(value:string)=>createHash('sha256').update(value).digest('hex');
 export const GREENFIELD_UPGRADE_REGISTRY:UpgradeRegistry={
-  releases:[zones('0.56.0'),zones('0.57.0'),zones('0.58.0'),zones('0.58.1'),zones('0.59.0')],
+  releases:[zones('0.56.0'),zones('0.57.0'),zones('0.58.0'),
+    zones('0.58.1'),zones('0.59.0'),sceneJobs('0.60.0')],
   edges:[{from:'0.56.0',to:'0.57.0',kind:'COMPATIBLE'},
     {from:'0.57.0',to:'0.58.0',kind:'COMPATIBLE'},
     {from:'0.58.0',to:'0.58.1',kind:'COMPATIBLE'},
-    {from:'0.58.1',to:'0.59.0',kind:'COMPATIBLE'}],
+    {from:'0.58.1',to:'0.59.0',kind:'COMPATIBLE'},
+    {from:'0.59.0',to:'0.60.0',kind:'MIGRATION',
+      sql:SCENE_BUILD_JOB_MIGRATION_SQL,
+      sqlSha256:sha(SCENE_BUILD_JOB_MIGRATION_SQL),
+      migrationName:SCENE_JOB_MIGRATION_NAME,
+      migrationChecksum:SCENE_BUILD_JOB_MIGRATION_CHECKSUM,
+      precondition:"SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM sqlite_master WHERE type='table' AND name='SceneBuildJob') THEN 1 ELSE 0 END AS ok",
+      postcondition:"SELECT CASE WHEN EXISTS(SELECT 1 FROM sqlite_master WHERE type='table' AND name='SceneBuildJob') AND EXISTS(SELECT 1 FROM sqlite_master WHERE type='index' AND name='uq_scene_build_one_running') THEN 1 ELSE 0 END AS ok"}],
 };
 
 function forward(from:string,to:string):boolean {
@@ -65,7 +88,8 @@ export function resolveUpgradeChain(registry:UpgradeRegistry,from:string,to:stri
         a.dataContract!==b.dataContract||
         a.runtimeContract!==b.runtimeContract))throw new Error('G7_UPGRADE_SCHEMA_INCOMPATIBLE');
       if(edge.kind==='MIGRATION' && (!edge.sql||!edge.sqlSha256||!edge.migrationName||
-        !edge.migrationChecksum||!edge.precondition||!edge.postcondition||!b.ddlSha256))
+        !edge.migrationChecksum||!edge.precondition||!edge.postcondition||
+        !b.ddlSha256&&b.schemaId!==G7_GREENFIELD_SCHEMA_ID))
         throw new Error('G7_UPGRADE_UNSUPPORTED_PATH');
       const chain=[...next.chain,edge];
       if(edge.to===to)return chain;
@@ -81,7 +105,26 @@ export function ddlSha256(db:IsolatedDb):string {
     .all().map(row=>[row.type,row.name,normalize(String(row.sql))]);
   return createHash('sha256').update(JSON.stringify(rows)).digest('hex');
 }
-export function assertDeclaredSchema(db:IsolatedDb,release:ReleaseDeclaration):void {
+export function assertDeclaredSchema(db:IsolatedDb,release:ReleaseDeclaration):void{
+  // The new reviewed schema is fully validated by the exact G7 schema object
+  // allowlist rather than a mutable/unknown external DDL digest.
+  // Fresh install: one new baseline; upgrade: old zone baseline + one signed
+  // append-only migration row. Never permit an old 0.59.0 schema for 0.60.0.
+  if(release.schemaId===G7_GREENFIELD_SCHEMA_ID){
+    const history=db.prepare('SELECT migration_name,checksum,finished_at,rolled_back_at FROM "_prisma_migrations" ORDER BY rowid').all();
+    const fresh=history.length===1&&
+      history[0].migration_name===G7_GREENFIELD_BASELINE&&
+      history[0].checksum===G7_GREENFIELD_BASELINE_CHECKSUM;
+    const upgraded=history.length===2&&
+      history[0].migration_name===G7_PREVIOUS_ZONES_BASELINE&&
+      history[0].checksum===G7_PREVIOUS_ZONES_BASELINE_CHECKSUM&&
+      history[1].migration_name===SCENE_JOB_MIGRATION_NAME&&
+      history[1].checksum===SCENE_BUILD_JOB_MIGRATION_CHECKSUM;
+    if(!fresh&&!upgraded||history.some(row=>row.finished_at==null||row.rolled_back_at!=null))
+      throw new Error('G7_UPGRADE_SCHEMA_INCOMPATIBLE');
+    assertG7GreenfieldSchema(db);
+    return;
+  }
   const history=db.prepare('SELECT migration_name,checksum,finished_at,rolled_back_at FROM "_prisma_migrations" ORDER BY rowid').all();
   const expected=release.history??[{name:release.baseline,checksum:release.checksum}];
   if(history.length!==expected.length||history.some((row,i)=>
@@ -95,8 +138,8 @@ export function assertDeclaredSchema(db:IsolatedDb,release:ReleaseDeclaration):v
       db.prepare('PRAGMA foreign_key_check').all().length)
       throw new Error('G7_UPGRADE_SCHEMA_INCOMPATIBLE');
   }else{
-    if(release.baseline!==G7_GREENFIELD_BASELINE||
-      release.checksum!==G7_GREENFIELD_BASELINE_CHECKSUM)
+    if(release.baseline!==G7_PREVIOUS_ZONES_BASELINE||
+      release.checksum!==G7_PREVIOUS_ZONES_BASELINE_CHECKSUM)
       throw new Error('G7_UPGRADE_SCHEMA_INCOMPATIBLE');
     assertG7GreenfieldSchema(db);
   }

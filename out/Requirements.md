@@ -1,3 +1,12 @@
+## FR-225-B1-G7 신규 릴리스 조건 (2026-11-04)
+
+- 신규 0.60.0 스키마 ID·Job 기준선, 0.59→0.60 승인 MIGRATION과 리뷰된 DDL/Checksum/복구 세트가 필수다.
+- Job Version/User/Site FK, 단일 RUNNING partial UNIQUE, 4필드 멱등·CAS/유한 retry 및 업로드 원자적 Enqueue 보전.
+- Zone/Outline/Memo 업무와 기존 Source/Current/메모·구역 데이터가 2행 Migration 이력 이후에도 동일하게 동작해야 한다.
+- 실제 미구현 Worker/사용자 UI는 GO-PILOT 차단이며, 현장/복수 Worker 전체 검증은 GO-DEV를 차단하지 않는다.
+
+---
+
 ## R-218-LEAN — 현행 Owner 요구사항·GO 정본 (2026-11-04)
 
 아래 역사적 R-218-A2/A1·#208 AC 중 P1-B 코딩 전 *전면 운영 승인*을 요구하는 부분은 [Issue218LeanPolicy](Issue218LeanPolicy.md)로 대체한다. 확정 목표는 승인 사내 2D DXF 최초 업로드 직후 브라우저 비의존 **단일 CPU Worker 자동 Scene 생성·영속화**, 최소 상태·재시도다. 기능별 필수 증거는 실제로 개발/변경하는 단계에만 적용한다.
