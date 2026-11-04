@@ -1,3 +1,8 @@
+### #225 추가 테스트: G7 signed multipart service 경로
+
+- `tests/integration/scene-cpu-worker-upload-g7.test.ts`: 독립 승인된 합성 Editor Session, Site Grant, Origin/CSRF를 생성→`uploadCad(Request(FormData))`의 실제 CadStorage receive/publish, CadRepository transaction·CPU Job QUEUED→별도 Node Worker `--once`→Scene immutable READY/readback, CAD_UPLOADED 및 SCENE_PUBLISHED Audit 검증.
+- READY 포인터가 존재하는 경우 `manualRetryCpuSceneJob` 거부, 중복 Worker IDLE, Site grant 취소 후 Worker가 FAILED이되 기존 원본 SHA/실 파일 유지. 실제 HTTP server request routing이나 Docker Compose를 거치지 않으므로 별도 GO-PILOT Gate로 남긴다.
+
 ## #225 GO-PILOT 경계 사전 통합 검증 계획 (2026-11-05, source only)
 
 | 검증 경계 | 자동 시험 소스 | 판정 전제 |
