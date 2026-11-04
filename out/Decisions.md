@@ -1,3 +1,12 @@
+## ADR #225-B3 — 제한 상태 조회 및 이력 보전형 Retry (2026-11-04, Draft)
+
+- Status: public 도면 목록의 Current와 Scene 생성 상태는 독립. Signed G7 Active Reader scope 내 100 Version batch, 권한 외 결과 키 제거, server verified immutable READY만 READY. visible pending만 5초 polling; 네트워크 오류를 Job FAILED로 저장/표시하지 않음.
+- Retry: Editor/Admin+Site G7 CSRF/Origin+권한 재검사, 실패 코드 저장소/Worker/시간 초과와 attempt<3일 때만 Manual Retry. 시작/종료/허가 상태가 변하면 CAS로 거부, CurrentScene pointer 존재 시 거부. 시도 횟수 누적 보존.
+- Audit: 0.61 G7 Audit CHECK는 `SCENE_RETRY_REQUESTED` 미허용. 허용된 `AUTHORIZATION_GRANTED`/VERSION 이벤트로 권한승인 사실을 증빙하고 Job 전이의 actorId/requestId로 연계. 별도 Retry action은 새 승인 스키마 업그레이드가 필요하여 본 PR에 포함하지 않음.
+- 기존 릴리스/#229 출고 보류/#231 관리자 Ruleset/GO-PILOT 정책 불변. 이 기록은 GO-INTEGRATE PASS가 아니다.
+
+---
+
 ## ADR-229 — Main 코드 통합과 정식 GHCR Release 분리 (2026-11-04)
 
 **결정: 비활성 B2-B 개발 기반은 Main에 통합 가능하도록 하되 v0.61.0+ 자동 출고는 지속 HOLD.** PR #228 CI #590은 exact HEAD 소스 검증 성공이지만 독립 CPU Worker 이미지의 정식 GHCR 출고나 GO-PILOT 승인 근거가 아니다. 기존 Main runtime-change 기반 GHCR App/Migrator pair 게시 로직은 별도 Worker가 누락되어 불완전한 v0.61.0 릴리스를 만들 수 있다.

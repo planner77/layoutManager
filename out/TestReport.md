@@ -1,3 +1,9 @@
+## #225 B3 PR #232 — 현재 코드 시험 범위 (2026-11-04, Pending CI)
+
+기존 PR CI #595는 초기 순수 표시 계약 HEAD `24a648a`의 SUCCESS이며 후속 status API/UI/retry 구현을 검증하지 않는다. 새 branch에서 #599/HEAD `26da5c4` Static step은 unit fixture `updateMany` mock에 인자 타입이 없어 TS2352/TS2493 발생; 이후 `_input?:unknown`으로 수정했다. 정확 새 HEAD 필수 CI 성공은 아직 확인 전이다. 모의/순수 테스트로 상태/권한 판단과 CAS 코드 변경을 검증하도록 추가했으나 실제 signed G7 API, Immutable Blob, Browser Viewer 복원, 별도 OCI recovery는 미실행/GO-PILOT BLOCKED다.
+
+---
+
 ## #229 — Main/GHCR 릴리스 영속 HOLD 구현·검증 상태 (2026-11-04)
 
 **구현 소스 작성, 정확 HEAD CI는 아직 NOT VERIFIED.** `.github/scripts/issue229_release_hold.py`를 통해 0.61.0 이상 모든 Main push의 GHCR publish를 보류하고 guarded tag를 차단한다. `docker-publish.yml`은 release-scope와 build-and-push 앞단에서 2중 검사하며, guard-only 변경 경로만 비출고한다. `pr-ci.yml`에서 Python 정책 테스트를 required scope 체크로 실행하고 기존 GHCR Bash fixture 양성·음성 회귀를 추가했다.

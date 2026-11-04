@@ -1,3 +1,9 @@
+## #225 B3 운영 경계 — 출고 및 활성화 금지 (2026-11-04 Draft)
+
+새 화면/API 코드는 Main에 미병합 상태이다. `SCENE_AUTO_BUILD_ENABLED=OFF`, `SCENE_CPU_WORKER_ENABLED=OFF` 유지하고 G7 0.61+ GHCR 자동 게시 금지(#229), 관리자 Tag Ruleset/#231 및 App/Migrator/Worker source/digest 승인 전 버전 태그/운영 설치/업그레이드 금지. 조회는 G7 ACTIVE의 signed Site Reader, 수동 Retry는 Editor/Admin+CSRF 및 시도1~2 transient FAILED만 허용. 무권한 Job 정보/내부 파일경로/토큰을 로그/응답에 노출하지 않는다. 401/403/503이나 Blob 조회 실패를 실제 Job FAILED로 오인하지 않는다. 실 OCI 재시작/백업/복구와 Chromium 신규 세션 Scene 재접속이 GO-PILOT 사전 요건이다.
+
+---
+
 ## #229 — v0.61.0 이상 영속 릴리스 HOLD (2026-11-04)
 
 Main의 package.json 버전이 0.61.0 이상이면 runtime 변경에도 CI는 수행하되 GHCR publish는 시작하지 않는다. 후속 0.61.1/0.62.0 변경도 동일하며 guarded tag push는 명시 차단한다. 기존 #216 source-pinned 불변 복구 및 0.60.0 이하 릴리스는 원래 정책을 유지한다.

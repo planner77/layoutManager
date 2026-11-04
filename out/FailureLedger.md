@@ -1,3 +1,11 @@
+## #225 / PR #232 — PR CI #599 TypeScript mock-call fixture 오류 (2026-11-04)
+
+- **Observed:** [PR CI #599 / run 41842102430](https://github.com/planner77/layoutManager/actions/runs/41842102430), exact source HEAD `26da5c46050d0e286b511f1d02c2f50609b8e041`: Static/Unit build failed at `tests/unit/scene-build-retry-service.test.ts:49` with TS2352/TS2493 because the fixture `vi.fn(async()=>({count:1}))` was inferred as a zero-argument function, but the test reads `mock.calls[0][0]`. Downstream required verify failed; unrelated scheduled jobs did not finish/are not PASS evidence.
+- **Cause/fix:** Test fixture signature error, not production G7 auth or Retry crash. `updateMany:vi.fn(async(_input?:unknown)=>({count:1}))` makes the recorded call shape testable without type assertion misuse. Fixed after #599 on newer PR HEAD; preserved actual status of #599 as FAIL. Exact new HEAD CI remains to be checked.
+- **Audit contract discovery:** G7 0.61 AuditEvent CHECK excludes `SCENE_RETRY_REQUESTED`. Instead of changing frozen DDL or silently inserting a rejected action, use existing truthful `AUTHORIZATION_GRANTED`/VERSION signed-Site event for the authorization decision; correlate requestId/actorId with Job transition. Dedicated retry event is an explicitly tracked future schema change. Operating DB/Volume/immutable GHCR unchanged; GO-PILOT BLOCKED.
+
+---
+
 ## #229 — GHCR v0.61 Main 통합 시 불완전한 이미지쌍 자동 게시 위험 (2026-11-04)
 
 **분류: 사전 예방 위험 / 새로운 실패한 PR CI가 관측된 것은 아님.** PR #228 exact HEAD `fff0b31040af5ec1a571e5b2106686202d4a3140`은 [PR CI #590](https://github.com/planner77/layoutManager/actions/runs/41808588070) 적용 8 Job SUCCESS, 범위 외 A2 1 SKIPPED이다. 그러나 기존 Main `docker-publish.yml`은 runtime-affecting diff + 0.61.0 package를 자동 태그 및 App/Migrator GHCR 게시로 승격하는 반면, CPU Worker 별도 OCI target을 게시하지 않아 불완전한 release 위험이 있다. 실제 v0.61.0 GHCR 게시·무결성 오류가 발생했다는 증거는 없다.

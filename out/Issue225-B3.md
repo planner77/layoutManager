@@ -1,3 +1,16 @@
+## 2026-11-04 — B3 구현 후보 / 정확 HEAD CI 검증 전
+
+PR [#232](https://github.com/planner77/layoutManager/pull/232)은 초기 표시 계약에서 다음 범위까지 확장됨:
+- `GET /api/scene-build-jobs?versionId=<uuid>&versionId=<uuid>`: signed G7 Runtime 및 세션 기반 Site `cad:read` 교집합, 최대 100 ID, 세 번의 batched DB 조회로 Version/CPU Job/CurrentScene를 읽으며 unauthorized Version 키를 응답에서 생략. Server Scene Blob manifest/source SHA/전체 DTO readback만 READY. 응답엔 안전한 `state/phase/errorCode/canRetry`만 담음.
+- `CadTable` 홈/Location에 별도 Scene 상태 열; visible pending만 5초 polling, 탭 hidden/페이지 이탈 시 중단, 네트워크 오류와 Worker FAILED를 분리.
+- `POST /api/cad-files/[versionId]/scene-retry`: G7 로그인+Origin+CSRF, 현재 Editor/Admin+Site `cad:upload`, CPU Builder+schema2+source SHA 일치, 현재 pointer 부재, 일시 장애 FAILED/시도 1~2만 CAS로 QUEUED. attempt 누적 유지(최대3), 반복 요청 멱등, 새로운 요청 Actor/RequestID 기록.
+- G7 v0.61 AuditEvent CHECK는 신규 `SCENE_RETRY_REQUESTED` action을 허용하지 않으므로, 실제 **인가 결정**을 기존 허용 `AUTHORIZATION_GRANTED`/VERSION/Site로 기록하고 Retry 상태는 동일 트랜잭션의 Job RequestID+Actor로 추적. 전용 이벤트 분류는 신규 서명된 G7 마이그레이션이 필요하며 본 PR이 완성하지 않는다.
+- 순수/모의 DB 단위 테스트 보강. **실 DB API·권한·브라우저/Worker E2E, 정확 HEAD CI 결과는 아직 확인/실행 완료 전; GO-PILOT 미승인.**
+
+#229 v0.61+ GHCR HOLD, #231 Tag Ruleset OPEN, 모든 자동 Scene 스위치 OFF, 운영 DB/CAD/.env/Volume/이미지 불변. B3 GO-INTEGRATE는 정확 HEAD CI+리뷰/충돌 및 실제 변경분 검사 후만 판정.
+
+---
+
 # Issue #225 B3 — Scene 상태/진단·재시도 UI 구현 계획
 
 > 기준: Main `e69337af8ea9b3ba4a51d33eb984aadb8aea8e97`, Issue #218 Lean Policy, AGENTS.md, Issue #225. 이 문서는 구현 계획이며 GO-PILOT 승인 또는 완료 보고가 아니다.

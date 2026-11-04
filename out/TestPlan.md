@@ -1,3 +1,13 @@
+## #225 B3 검증 계획 (2026-11-04 Draft)
+
+- Pure: Job READY != verified Scene READY, DWG 무시, stage/code allowlist, hidden/disabled polling, terminal attempt(>=3)/source/auth 오류 수동 Retry 거부.
+- Batch: 100 UUID 최대, 중복/이상 ID 거부, Signed Site Reader/Editor 구분과 비권한 Version 키 누락, DB Version/Job/Scene pointer batch, immutable Blob+manifest/DTO 검증, storage unavailable != job failure.
+- Retry: G7 Active/Origin/CSRF, Reader/타 Site/Session revoke DENY, Editor action 현재 권한 확인, source SHA+builder+schema2, pointer 보호, CAS 중복 요청과 stale status, attempt 누적 상한, 같은 Tx 감사 무결성/rollback, 요청 토큰 미저장.
+- UI/E2E: 홈과 Location Current 별도 열, pending visible polling, 탭 숨김/페이지 이동 종료, failure errorCode만 표시, 실제 지원 브라우저에서 verified Scene 재접속 및 원본/Memo/Zone 회귀.
+- CI: #599 old HEAD 단위 test fixture TypeScript TS2352 FAIL을 source fixture 수정한 새 exact HEAD로 재검증; CI 결과 확인 전 PASS 금지. GO-PILOT은 실제 분리 OCI worker, G7 upgrade, backup/restore + 브라우저 결과 필수.
+
+---
+
 ## #229 — 릴리스 HOLD / GO-INTEGRATE 검증 계획 (2026-11-04)
 
 - Python gate 양성·음성: Main 0.60 legacy 정상 유지, Main 0.61.0·0.61.1·0.62.0 지속 HOLD, v0.61+ tag/다른 ref/손상 버전·package 거부.
