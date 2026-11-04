@@ -84,3 +84,19 @@ test('#202 drawing memo list wrapper denies before repository access and accepts
   await expect(withAuthorizedDrawingMemoList(request(reader.token),action)).rejects.toMatchObject({code:'UNAUTHENTICATED'});
   expect(called).toBe(1);
 });
+
+test('#225/B3 signed CAD Reader vs Editor Site-scoped actions',async()=>{
+  const reader=await actor('Reader',['site-a']);
+  const editor=await actor('Editor',['site-a']);
+  const gate=resolveG7RuntimeGate();
+  expect(gate.state).toBe('ACTIVE');
+  expect(await requireMemoSearchSites(request(reader.token),db,gate,'cad:read'))
+    .toEqual(['site-a']);
+  await expect(requireMemoSearchSites(request(reader.token),db,gate,'cad:upload'))
+    .rejects.toMatchObject({code:'ACCESS_DENIED'});
+  expect(await requireMemoSearchSites(request(editor.token),db,gate,'cad:upload'))
+    .toEqual(['site-a']);
+  await db.userSiteGrant.deleteMany({where:{userId:editor.id,siteId:'site-a'}});
+  await expect(requireMemoSearchSites(request(editor.token),db,gate,'cad:upload'))
+    .rejects.toMatchObject({code:'ACCESS_DENIED'});
+});

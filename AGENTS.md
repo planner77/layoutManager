@@ -1,3 +1,11 @@
+## #225 / B3 PR #232 — G7 Scene 상태 조회·제한적 Retry (2026-11-04, Draft)
+
+[Issue225-B3](out/Issue225-B3.md), [Issue218LeanPolicy](out/Issue218LeanPolicy.md)를 따른다. 현재 PR #232는 홈/Location 도면 목록의 별도 Scene 생성 상태(기존 Current와 분리), 보이는 pending 행만 5초 재조회, signed G7 Site Reader/Editor 한정 최대 100 Version Batch API, validated immutable pointer+DTO readback 기반 READY, CPU Job 오류 allowlist와 Editor/Admin 한정 실패 Job 재시도(CAS, 최대 3시도, SHA·Site·Actor 재검증)를 구현한 **GO-DEV 후보**다. 로그인/권한이 없는 Site의 Version 키·Job ID·Actor·원본 SHA·저장 경로·비밀/스택 노출 금지, 재시도는 기존 Scene pointer를 절대 덮어쓰지 않는다.
+
+**G7 0.61 Audit CHECK:** `SCENE_RETRY_REQUESTED` action은 등록되어 있지 않다. 새 Action을 몰래 INSERT하면 전체 요청 롤백/실패하므로, 현재 허용된 `AUTHORIZATION_GRANTED`(target=VERSION, signed Site)로 재시도 **인가 결정**만 감사하고 Job actor/requestId/status 전이와 연계한다. 전용 Retry action의 스키마 추가는 별도 승인 업그레이드가 필요하며 완료 주장 금지. 기능 플래그 OFF, #229 GHCR >=0.61 HOLD, #231 Tag Ruleset OPEN, #225/#218 OPEN 및 GO-PILOT BLOCKED. 이 HEAD의 CI/실 OCI·브라우저 재접속은 완료 확인 전 PASS가 아니다.
+
+---
+
 ## #229 — GO-INTEGRATE와 GHCR v0.61.0+ 출고 분리 (2026-11-04)
 
 [Issue229](out/Issue229.md), [ADR](out/Decisions.md), [Issue218LeanPolicy](out/Issue218LeanPolicy.md)를 따른다. 별도 Main 기반 PR의 릴리스 게이트는 `src/package.json` SemVer **0.61.0 이상**에 대하여 Main CI 실행과 GHCR 게시를 분리한다. Main의 런타임 변경·후속 0.61.1/0.62.0 변경에도 `publish=false`, guarded tag push는 fail-closed. `build-and-push` 시작 후에도 GHCR 변경 작업 전에 이 정책을 별도 검증한다. 커밋 제목만으로 출고 보류를 우회할 수 없다.

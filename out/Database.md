@@ -1,3 +1,9 @@
+## #225 B3 — 기존 G7 0.61 Schema 사용 (2026-11-04 Draft)
+
+신규 테이블/DDL/기존 Migration history 변경 없음. `SceneBuildJob` unique `versionId/sourceSha256/builder/payloadSchema` 및 `status/attempt/lastCode/actorId/siteId/requestId`를 활용한다. 수동 Retry는 오류 allowlist/attempt<3 및 `RUNNING` 미존재 상태를 확인하고 조건부 UPDATE CAS로 시도 횟수를 유지한다. 파일/Scene 포인터 수정 없음. `AuditEvent` 현재 CHECK는 `SCENE_RETRY_REQUESTED`를 허용하지 않으므로 `AUTHORIZATION_GRANTED`(VERSION/Site)로 **재시도 인가**와 Job의 요청 ID를 상호 참조한다. 독립 Retry 이벤트의 도입은 별도 버전 지정/승인형 migration이 필요하다.
+
+---
+
 ## DB-225-B2B — 0.61.0 G7 CPU Worker 스키마/이력 (2026-11-04)
 
 0.60.0의 `G7-GREENFIELD-SCENE-JOBS-20261104-1`, `202611040002_greenfield_scene_jobs_baseline`, 등록 SQL/checksum은 불변이다. 신규 0.61.0은 `G7-GREENFIELD-CPU-WORKER-20261104-1` + `202611040004_greenfield_cpu_worker_baseline`으로 별도 등록하고 `202611040003_scene_cpu_worker` migration에서 `ix_scene_build_cpu_due(builder,status,due_at)` 인덱스만 추가한다. 정확 이력: fresh 0.61 baseline 1행 / fresh 0.60 baseline+CPU migration 2행 / zones 0.59 baseline+Job migration+CPU migration 3행. 이외 드리프트는 차단. 백업·정지·승인 없는 변경/다운그레이드 금지.

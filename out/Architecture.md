@@ -1,3 +1,11 @@
+## #225 B3 — Scene Job batch read/retry architectural boundary (2026-11-04 Draft)
+
+G7 Active/Signed Site+Session 기반 `GET /api/scene-build-jobs`는 클라이언트가 전달한 UUID(1~100)만 참조한다. 한 번의 Version 조회 후 Site Reader scope로 필터링하고, 한 번의 최신 CPU Job 조회와 Scene pointer+asset batch 조회를 수행한다. READY는 DTO/Manifest/SourceSHA/immutable Blob 전체 검증 후만 가능하며 Job READY만으로 READY라고 주장하지 않는다. 읽기 권한 없는 Version/Job/Actor/locator/SourceSHA 원문을 반환하지 않는다. Blob readback은 100개 이하로 직렬 처리하여 메모리 한도를 둔다.
+
+`POST /api/cad-files/[versionId]/scene-retry`는 서버 측 G7 tokenHash+CSRF/Origin과 현재 Site Editor `cad:upload` 권한, 원본/CPU builder/attempt, 기존 CurrentScene pointer 부재를 최종 트랜잭션에서 검증한다. transient FAILED만 남은 시도 회수 내에서 CAS QUEUED로 이동시키고, 재요청자의 Actor/RequestID 갱신과 인가 감사도 같은 TX에서 처리한다. 기존 Scene/원본은 변경하지 않는다. `AUTHORIZATION_GRANTED` 감사만 현재 0.61 CHECK에 부합하며 전용 Retry event는 신규 스키마 결정 후 추가한다. 기능 OFF/릴리스 HOLD; GO-PILOT 별도.
+
+---
+
 ## #229 Main-통합 / GHCR 출고 오케스트레이션 분리 (2026-11-04)
 
 경로: `PR exact HEAD CI → 코드 Main 병합 → Main CI release-scope → (승인된 출고만) GHCR`. 현재 0.60.0 기반 Main의 `docker-publish.yml`은 runtime 변경만으로 image-pair 게시로 진입하므로 v0.61.0의 CPU Worker 별도 OCI가 누락될 수 있다. 신규 `issue229_release_hold.py`는 Main package SemVer >=0.61.0에서 publication=false를 강제하고 guarded tag를 거부하며, build-and-push에서도 tag 생성·GHCR 쓰기 이전 동일 정책을 재검증한다.
