@@ -46,6 +46,10 @@ describe('#208 P1-A durable job state safety contract', () => {
     // Infrastructure outage is not proof of Scene corruption or Worker failure.
     expect(sceneBuildPublicSummary({ fileFormat: 'DXF', validatedScene: 'UNAVAILABLE',
       jobState: 'READY' })).toMatchObject({ scene: 'UNAVAILABLE' });
+    // A stale BLOCKED job is also not evidence of the Scene pointer's health.
+    expect(sceneBuildPublicSummary({ fileFormat: 'DXF', validatedScene: 'UNAVAILABLE',
+      jobState: 'BLOCKED', stage: 'private/source' }))
+      .toEqual({ scene: 'UNAVAILABLE', build: 'BLOCKED', phase: null });
     // A job saying READY without a verified CurrentScene must never display completion.
     expect(sceneBuildPublicSummary({ fileFormat: 'DXF', validatedScene: 'READY',
       jobState: 'RUNNING', stage: 'DXF_PARSE' }))
