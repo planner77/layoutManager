@@ -1,5 +1,7 @@
 ## #225 실제 OCI Worker 폐기형 통합 시험 (2026-11-05, 신규 PR)
 
+- **컨테이너 기본 실행기 검증:** 단순 `node --once` 뿐 아니라 실제 Dockerfile `ENTRYPOINT sh scripts/scene-cpu-worker-loop.sh`를 사용하여 READY까지 bounded 60초 조회, 컨테이너 stop/start 후 기존 READY가 그대로 유지되고 중복 게시가 없음을 재확인한다. 재시작 후 동일 test-owned 볼륨만 재사용하고 제품 Compose 서비스·운영 볼륨은 만지지 않는다.
+
 - **입력·격리:** GitHub Actions Docker job에서 로컬로 빌드한 `cad-layout-viewer:ci-migrate` 및 `cad-layout-viewer:ci-cpu-worker`만 사용. CI run/attempt당 고유 `layoutmanager-ci-oci-*` 볼륨(없음을 확인하고 생성), 다른 기존 볼륨·제품 `.env`·GHCR·실 원본에 접근 금지. 테스트가 만든 정확 볼륨만 종료 시 삭제.
 - **실제 단일 OCI:** 임시 G7 0.61 Greenfield 신규 설치→승인 synthetic Actor/Site/Version/SourceSHA Job → worker image `node --import tsx ... --once` 실행, READY·SceneAsset+CurrentScene·Audit·원본 SHA·Blob readback, 두 번째 worker IDLE/중복자산 0.
 - **격리 판정:** Docker inspect의 USER10001, nonprivileged, network none, read-only rootfs, cap DROP ALL, no-new-privileges, cgroup CPU1/mem768m/pids64, tmpfs 및 bounded one-job worker 시작/종료 확인. 이 정책을 옵션 없이 실행하는 다른 컨테이너는 시험 대상이 아니다.
