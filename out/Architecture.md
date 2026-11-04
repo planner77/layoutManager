@@ -1,3 +1,9 @@
+## #225 GO-PILOT verification seam — separate process and fresh browser (2026-11-05)
+
+연결 검증 범위를 **서로 다른 증거 층**으로 분리한다: (A) synthetic Greenfield 0.61 + 실제 Prisma/SQLite/CadStorage를 별도 Node Worker CLI에서 열어 `SceneBuildJob → CPU LINE DTO → immutable SceneAsset + CurrentScene CAS + Audit`를 게시하고 별도 DB reader로 확인; (B) 독립 claim 프로세스 실제 SIGKILL·stale row recovery 및 SourceSHA/권한 거절; (C) Node CPU DTO → immutable Blob readback → 새 Chromium context의 `restoreSourceScene` UI 렌더. (A)+(B)+(C)별 통과는 **단일 HTTP Upload/API→OCI Worker→실 사용자 재접속**의 통합 PASS로 추론할 수 없다. 기존 CPU Builder·SourceSHA·G7 Site/Actor 최신 재검사·기존 Scene 포인터 불변 계약은 변경하지 않는다. 출고/GO-PILOT HOLD 유지.
+
+---
+
 ## #225 B3 — Scene Job batch read/retry architectural boundary (2026-11-04 Draft)
 
 G7 Active/Signed Site+Session 기반 `GET /api/scene-build-jobs`는 클라이언트가 전달한 UUID(1~100)만 참조한다. 한 번의 Version 조회 후 Site Reader scope로 필터링하고, 한 번의 최신 CPU Job 조회와 Scene pointer+asset batch 조회를 수행한다. READY는 DTO/Manifest/SourceSHA/immutable Blob 전체 검증 후만 가능하며 Job READY만으로 READY라고 주장하지 않는다. 읽기 권한 없는 Version/Job/Actor/locator/SourceSHA 원문을 반환하지 않는다. Blob readback은 100개 이하로 직렬 처리하여 메모리 한도를 둔다.

@@ -1,8 +1,13 @@
 import {test,expect} from '@playwright/test';
 import {build} from 'esbuild';
-import {createHash} from 'node:crypto';
+import {createHash,randomUUID} from 'node:crypto';
 import {gzipSync} from 'node:zlib';
-import {readFileSync} from 'node:fs';
+import {mkdtempSync,readFileSync,rmSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import path from 'node:path';
+import {buildCpuLineCandidate} from '../../server/scene/cpu-line-candidate';
+import {sceneSha256} from '../../domain/scene-digest';
+import {SceneBlobStorage} from '../../server/storage/scene-storage';
 import type {BrowserContext,Page} from '@playwright/test';
 
 const dxf=[
@@ -123,4 +128,43 @@ test('SC-05/06/07 real converter and fresh-context scene format experiment',asyn
  console.log('SCENE_POC_MANIFEST_NEGATIVES','versionId,sourceSha256,builder,renderer,schema,frame,sourceUnit,sceneId,format,byteLength,sha256');
  console.log('SCENE_POC_SEMANTIC_NEGATIVES',semantic.map(([name])=>name).join(','));
  await consumer.close();
+});
+
+/** #225 P1-C: The packet is created by the Node CPU converter, persisted and
+ * read back from a private immutable SceneBlobStorage. A fresh Chromium
+ * browser restores it without the original DXF, server WebGL or a producer tab.
+ * This is NOT an actual authenticated upload/API/restart/OCI Pilot E2E. */
+test('#225 CPU LINE immutable DTO readback restores in a fresh Chromium context',async({browser,baseURL})=>{
+ test.setTimeout(90_000);
+ const root=mkdtempSync(path.join(tmpdir(),'cpu-scene-chromium-'));
+ const storage=new SceneBlobStorage(root,{CAD_STORAGE_BACKEND:'local'});
+ try{
+  const dxf=Buffer.from(['0','SECTION','2','HEADER','9','$INSUNITS','70','4',
+   '0','ENDSEC','0','SECTION','2','ENTITIES','0','LINE','5','A1','8','0',
+   '10','0','20','0','11','10','21','20','0','ENDSEC','0','EOF',''].join('\n'));
+  const sourceSha256=sceneSha256(dxf),versionId=randomUUID();
+  const candidate=await buildCpuLineCandidate({source:dxf,versionId,sourceSha256});
+  expect(candidate.readbackVerified).toBe(true);
+  expect(candidate.manifest.scope.builder).toContain('node-cpu-line');
+  const assetId=randomUUID(),locator=storage.locator(assetId);
+  await storage.putVerified(locator,candidate.bytes,candidate.manifest.sha256);
+  const bytes=await storage.readVerified(locator,candidate.bytes.length,
+    candidate.manifest.sha256);
+  const packet:Packet={format:'CUSTOM_DTO',bytes:Array.from(bytes),
+    manifest:candidate.manifest as unknown as Record<string,unknown>,stats:{}};
+  const consumer=await browser.newContext({baseURL});
+  try{
+   const page=await harness(consumer);
+   const result=await page.evaluate(({packet,expected})=>
+     window.scenePoc.restore(packet,expected),{packet,expected:packet.manifest});
+   expect(result.rendered).toBe(true);
+   expect(result.restored.vertices).toBe(2);
+   expect(result.restored.kinds).toMatchObject({Line:1});
+   const altered={...packet,bytes:[...packet.bytes]};
+   altered.bytes[20]^=1;
+   await expect(page.evaluate(({packet,expected})=>
+     window.scenePoc.restore(packet,expected),{packet:altered,expected:packet.manifest}))
+     .rejects.toThrow();
+  }finally{await consumer.close();}
+ }finally{storage.close();rmSync(root,{recursive:true,force:true});}
 });

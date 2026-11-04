@@ -1,7 +1,8 @@
 import {afterEach,describe,expect,it,vi} from 'vitest';
 import {randomUUID} from 'node:crypto';
 import {createRequire} from 'node:module';
-import {chmodSync,mkdirSync,mkdtempSync,rmSync,writeFileSync} from 'node:fs';
+import {spawnSync} from 'node:child_process';
+import {chmodSync,mkdirSync,mkdtempSync,readFileSync,rmSync,writeFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {sceneSha256} from '../../domain/scene-digest';
@@ -65,6 +66,22 @@ async function fixture(){
   return {db,root,cad,versionId,actor,site,job,env};
 }
 
+
+/** A new Node process reopens the owned G7 SQLite and local CAD storage.
+ * This is a process boundary test, NOT a Docker/cgroup isolation proof. */
+function childTick():{kind:string;outcome:string;jobId?:string;code?:string}{
+  const result=spawnSync(process.execPath,
+    ['--import','tsx','scripts/scene-cpu-worker.ts','--once'],{
+      cwd:path.resolve(import.meta.dirname,'../..'),
+      env:{...process.env},encoding:'utf8',timeout:90_000,maxBuffer:1024*1024,
+    });
+  if(result.error)throw result.error;
+  expect(result.status,result.stderr).toBe(0);
+  const output=(result.stdout??'').split(/\r?\n/).find(line=>line.includes('"kind":"CPU_SCENE_TICK"'));
+  expect(output,result.stdout).toBeDefined();
+  return JSON.parse(output!) as {kind:string;outcome:string;jobId?:string;code?:string};
+}
+
 describe('#225 CPU-only detached Worker actual G7 0.61 one-job roundtrip',()=>{
   it('uses fresh G7 Actor/Site rights, persists immutable READY and becomes idle on next tick',async()=>{
     const f=await fixture();
@@ -92,6 +109,104 @@ describe('#225 CPU-only detached Worker actual G7 0.61 one-job roundtrip',()=>{
       await f.db.userSiteGrant.deleteMany({where:{userId:f.actor,siteId:f.site}});
       const result=await runCpuWorkerTick();
       expect(result.outcome).not.toBe('PUBLISHED');
+      expect(await f.db.currentScene.count({where:{versionId:f.versionId}})).toBe(0);
+      expect(await f.db.sceneAsset.count({where:{versionId:f.versionId}})).toBe(0);
+    }finally{await f.db.$disconnect();}
+  });
+});
+
+describe('#225 pilot disposable detached-process regressions',()=>{
+  it('detached Node worker reopens synthetic G7 DB, publishes verified READY, and never republishes',async()=>{
+    const f=await fixture();
+    try{
+      const first=childTick();
+      expect(first).toMatchObject({kind:'CPU_SCENE_TICK',outcome:'PUBLISHED',
+        jobId:f.job.jobId});
+      const pointer=await f.db.currentScene.findUnique({where:{versionId:f.versionId}});
+      expect(pointer).toMatchObject({revision:0});
+      const fresh=createDb('file:'+path.join(f.root,'db','cad.sqlite'));
+      const storage=new SceneBlobStorage(f.cad,{CAD_STORAGE_BACKEND:'local'});
+      try{
+        const reader=new SceneRepository(fresh,storage);
+        const status=await reader.status(f.versionId);
+        expect(status).toMatchObject({status:'READY',assetId:pointer?.assetId});
+        if(status.status!=='READY')throw Error('SCENE_PILOT_READBACK_MISSING');
+        expect((await reader.content(f.versionId,status.assetId)).length).toBeGreaterThan(0);
+      }finally{storage.close();await fresh.$disconnect();}
+      expect(childTick()).toMatchObject({outcome:'IDLE'});
+      expect(await f.db.sceneAsset.count({where:{versionId:f.versionId}})).toBe(1);
+      expect(await f.db.auditEvent.count({where:{action:'SCENE_PUBLISHED',
+        targetId:f.versionId}})).toBe(1);
+    }finally{await f.db.$disconnect();}
+  });
+
+  it('separate worker invocation recovers a stale claimed attempt after a simulated stop',async()=>{
+    const f=await fixture();
+    try{
+      // Kill a *real separate* process after its durable claim commits.
+      // Do not kill a Vitest/GitHub runner process or change production code.
+      const script=[
+        "import {createDb} from './server/db.ts';",
+        "import {claimNextCpuSceneJob} from './server/scene/scene-build-job-queue.ts';",
+        "const db=createDb(process.env.DATABASE_URL);",
+        "const claimed=await claimNextCpuSceneJob(db);",
+        "await db.$disconnect();",
+        "if(!claimed)process.exit(5);",
+        "process.kill(process.pid,'SIGKILL');",
+      ].join('\n');
+      const killed=spawnSync(process.execPath,
+        ['--import','tsx','--input-type=module','--eval',script],{
+          cwd:path.resolve(import.meta.dirname,'../..'),
+          env:{...process.env},encoding:'utf8',timeout:45_000,
+        });
+      expect(killed.signal,killed.stderr).toBe('SIGKILL');
+      expect(await f.db.sceneBuildJob.findUniqueOrThrow({where:{id:f.job.jobId}}))
+        .toMatchObject({status:'RUNNING',attempt:1});
+      // Accelerate only the disposable SQLite row clock, not real system time.
+      // The real next worker invocation must recover the SIGKILL orphan.
+      await f.db.sceneBuildJob.update({where:{id:f.job.jobId},data:{
+        startedAt:new Date(Date.now()-210_000),
+      }});
+      expect(childTick()).toMatchObject({outcome:'IDLE'});
+      const waiting=await f.db.sceneBuildJob.findUniqueOrThrow({where:{id:f.job.jobId}});
+      expect(waiting).toMatchObject({status:'RETRY_WAIT',attempt:1,
+        lastCode:'SCENE_BUILD_TIMEOUT'});
+      expect(await f.db.currentScene.count({where:{versionId:f.versionId}})).toBe(0);
+      await f.db.sceneBuildJob.update({where:{id:f.job.jobId},data:{
+        dueAt:new Date(Date.now()-1000),
+      }});
+      expect(childTick()).toMatchObject({outcome:'PUBLISHED',jobId:f.job.jobId});
+      expect(await f.db.sceneBuildJob.findUniqueOrThrow({where:{id:f.job.jobId}}))
+        .toMatchObject({status:'READY',attempt:2});
+      expect(await f.db.sceneAsset.count({where:{versionId:f.versionId}})).toBe(1);
+    }finally{await f.db.$disconnect();}
+  });
+
+  it('a same-length tampered DXF fails SourceSHA without READY or an asset',async()=>{
+    const f=await fixture();
+    try{
+      const version=await f.db.cadFileVersion.findUniqueOrThrow({where:{id:f.versionId}});
+      const original=path.join(f.cad,version.storagePath);
+      const before=readFileSync(original);
+      const tampered=Buffer.from(before);
+      tampered[5]^=1;
+      writeFileSync(original,tampered,{mode:0o600});
+      expect(childTick()).toMatchObject({outcome:'FAILED',jobId:f.job.jobId,
+        code:'SCENE_SOURCE_DIGEST_MISMATCH'});
+      expect(await f.db.sceneBuildJob.findUniqueOrThrow({where:{id:f.job.jobId}}))
+        .toMatchObject({status:'FAILED',lastCode:'SCENE_SOURCE_DIGEST_MISMATCH'});
+      expect(await f.db.currentScene.count({where:{versionId:f.versionId}})).toBe(0);
+      expect(await f.db.sceneAsset.count({where:{versionId:f.versionId}})).toBe(0);
+      expect(version.sha256).toBe(sceneSha256(before));
+    }finally{await f.db.$disconnect();}
+  });
+
+  it('revoked signed Site grant is denied in a newly launched worker process',async()=>{
+    const f=await fixture();
+    try{
+      await f.db.userSiteGrant.deleteMany({where:{userId:f.actor,siteId:f.site}});
+      expect(childTick()).toMatchObject({outcome:'FAILED',jobId:f.job.jobId,
+        code:'SCENE_AUTH_REVOKED'});
       expect(await f.db.currentScene.count({where:{versionId:f.versionId}})).toBe(0);
       expect(await f.db.sceneAsset.count({where:{versionId:f.versionId}})).toBe(0);
     }finally{await f.db.$disconnect();}

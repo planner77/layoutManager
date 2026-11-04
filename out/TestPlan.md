@@ -1,3 +1,23 @@
+### #225 추가 테스트: G7 signed multipart service 경로
+
+- `tests/integration/scene-cpu-worker-upload-g7.test.ts`: 독립 승인된 합성 Editor Session, Site Grant, Origin/CSRF를 생성→`uploadCad(Request(FormData))`의 실제 CadStorage receive/publish, CadRepository transaction·CPU Job QUEUED→별도 Node Worker `--once`→Scene immutable READY/readback, CAD_UPLOADED 및 SCENE_PUBLISHED Audit 검증.
+- READY 포인터가 존재하는 경우 `manualRetryCpuSceneJob` 거부, 중복 Worker IDLE, Site grant 취소 후 Worker가 FAILED이되 기존 원본 SHA/실 파일 유지. 실제 HTTP server request routing이나 Docker Compose를 거치지 않으므로 별도 GO-PILOT Gate로 남긴다.
+
+## #225 GO-PILOT 경계 사전 통합 검증 계획 (2026-11-05, source only)
+
+| 검증 경계 | 자동 시험 소스 | 판정 전제 |
+|---|---|---|
+| G7 실제 0.61 임시 DB + 별도 Node Worker | `tests/integration/scene-cpu-worker-real-g7.test.ts` | 신규 프로세스가 Queue→verified READY·Audit·Blob을 저장하고 신규 DB/Storage에서 재독해; 중복 실행 IDLE/Asset 1 |
+| 비정상 프로세스 종료 및 재기동 | 동일 통합 시험 | 별도 claim 프로세스를 실제 SIGKILL, DB RUNNING 유지, 테스트 소유 `startedAt/dueAt`만 가속, 다음 새 프로세스에서 RETRY_WAIT→READY attempt 2 |
+| 권한 회수·SourceSHA 위변조 | 동일 통합 시험 | 별도 프로세스가 `SCENE_AUTH_REVOKED` / `SCENE_SOURCE_DIGEST_MISMATCH`로 실패, CurrentScene/Asset 0, 원본 DB SHA 불변 |
+| CPU DTO 브라우저 복원 | `tests/e2e/scene-poc.spec.ts` | Node CPU LINE 변환, immutable Blob put/readback, 새 Chromium context에서 WebGL Viewer restore, 변조 DTO 거부 |
+| 작업 상태·Retry 권한·원자성 회귀 | 기존 `scene-build-retry-service`, `scene-build-status-batch`, signed G7 테스트 | 기존 Gate 약화 금지; 단일 Worker 시도 3회·pointer 보존·Site Reader/Editor 분리 |
+| 현장 최종 GO-PILOT | 별도 폐기 가능한 Docker/OCI + 신규 로그인 브라우저 + 백업·격리복원 | **NOT RUN**: HTTP DXF 업로드→실 OCI Worker→signed API READY→새 세션 Viewer, 실제 컨테이너 SIGKILL/cgroup/격리/복구까지 PASS 필요 |
+
+실패는 실제 CI 로그에서 재현·원장 기록·보완하고 정확 PR HEAD CI를 다시 실행한다. 모의/프로세스 시험을 OCI 격리 시험이나 현장 배포 PASS로 대체하지 않는다. Test scope is disposable, source-only until exact-HEAD CI. Production flags SCENE_AUTO_BUILD_ENABLED=OFF / SCENE_CPU_WORKER_ENABLED=OFF; #229 >=0.61 GHCR HOLD, #231 Tag Ruleset OPEN, #225/#218 OPEN, GO-PILOT BLOCKED. No production DB/CAD/Volume/.env, GHCR or tag writes.
+
+---
+
 ## #225 B3 검증 계획 (2026-11-04 Draft)
 
 - Pure: Job READY != verified Scene READY, DWG 무시, stage/code allowlist, hidden/disabled polling, terminal attempt(>=3)/source/auth 오류 수동 Retry 거부.
