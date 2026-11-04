@@ -1,3 +1,9 @@
+## #225 / PR #234 — OCI SIGKILL 실패 조사 시 안전 경계 (2026-11-05)
+
+CI #614에서 불투명했던 내부 self-SIGKILL 결과를 제거하고, **테스트 전용 CID를 호스트가 명시적으로 KILL**한다. `claim-wait`는 유일한 test-owned Volume에 claim 완료 마커를 남긴 후 대기하며 별도 probe가 실제 DB RUNNING 상태를 확인한다. `docker kill --signal=KILL` 호출과 `docker wait`/inspect exit 137 검증 전에는 stale 복구를 실행하지 않는다. kill 대상은 정확히 해당 PR CI가 만든 컨테이너이고 비밀이나 내부 runtime 경로 로그는 출력하지 않는다; 예외 시에도 cleanup은 해당 CID와 이번 Run+Attempt 볼륨만 삭제한다. 운영 Worker/호스트, 서비스, 실 .env, 기존 GHCR 및 release tag는 절대 변경하지 않는다.
+
+---
+
 ## #225 GO-PILOT 준비: OCI CI/운영 격리 (2026-11-05)
 
 - **실제 이미지 기동:** OCI 증거는 `docker create/start/stop/start`로 제품 CPU Worker의 기본 loop entrypoint를 실행한다. 첫 READY를 test-owned DB로 검증하고 같은 container의 stop/start 후에도 데이터·포인터 불변을 확인한다. 이후 실패/권한/복구 시나리오만 한 번 실행하는 `--once` 진단 진입점을 사용한다. Container inspect로 실제 security 옵션을 검사하고 전체 테스트 종료 시 소유 컨테이너·볼륨만 제거한다. 결과는 GitHub Actions 정확 신규 HEAD CI 성공 전 NOT VERIFIED.
