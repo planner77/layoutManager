@@ -1,3 +1,12 @@
+## #225 / PR #226 CI #559 — Docker stopped-WAL fixture mismatch (2026-11-04)
+
+- **확인된 실패:** [PR CI #559 / Run41741458097](https://github.com/planner77/layoutManager/actions/runs/41741458097), exact HEAD `fe77c165c89d7afe4524a110eef9b71204b8bda3`, completed/failure. Quality (typecheck, ESLint, 1016 tests, production build), Greenfield UI, signed G7/legacy, Chromium E2E 2 shards PASS. Docker Job `126283787292`의 `Readonly stopped and active WAL inspection and recovery (#210 P2)` step21 FAIL, Required Verify `126290971423` 는 해당 Docker 실패를 정상 전파. A2 scope SKIPPED.
+- **실제 로그:** `G7_WAL_RO_SMOKE_FAILED` / `stage=stopped-wal-readonly-plan-status` (Docker log 2026-11-03 23:54:35 UTC). `src/scripts/smoke_greenfield_wal_readonly.py`는 후보 0.60.0 fresh install DB를 생성한 후 manifest의 `schemaId/version`만 0.56.0 Zone으로 변경하고 **신규 `SceneBuildJob` 테이블 및 Job baseline migration row는 유지**했다. 기존 G7 릴리스 검사기는 메타데이터뿐 아니라 원본 DDL/기준선 checksum/history까지 검사하므로 이 합성 과거 설치는 유효한 0.56.0이 아니다. 단계 오류와 Fixture 코드를 함께 근거로 한 원인 판단이며 내부 CLI의 세부 반환 code는 CI #559의 기존 로그에 없어 독립 확인은 못했다.
+- **보완:** CI 소유 disposable Docker volume의 초기 seed에서 `SceneBuildJob`을 DROP하고 `_prisma_migrations` 1행을 기존 `202611010002_greenfield_semantic_zones_baseline`과 공식 Zone SHA256으로 복원한 다음 manifest를 과거 0.56.0으로 맞춘다. 이는 기존 `g7-greenfield-upgrade-qa.test.ts`의 유효한 Zone Fixture와 동등한 준비 방식이다. Preflight/Plan/Status의 FAIL 시 **action, exitCode, state, code**만 진단 출력해 원인 재분석을 지원한다(비밀/원본 DB 내용은 출력하지 않음).
+- **안전/검증 상태:** 실제 WAL source read-only, active writer, 64-hex planId 승인형 migration, 백업/격리복구, 모든 기존 업무 행 해시 비교, 신규 Job DDL·2행 역사 검증 및 필수 CI는 그대로 유지. 테스트 skip/timeout/권한/Registry/운영 DB/Volume/GHCR 변경 없음. 수정 커밋 `6b1aec7dc97ef69f1e9b349e87981c901879cf60`은 원격 반영되었으나 **새 정확 HEAD CI 최종 결과는 검증 전**이다. GO-DEV 유지, GO-PILOT BLOCKED, PR Draft, #218/#225 OPEN.
+
+---
+
 ## #225 / PR #226 CI #558 — WAL 비동기 승인 계획 경합 및 0.60.0 Docker WAL Smoke 계약 (2026-11-04)
 
 - **정확 실패:** PR CI [#558 Run41732045585](https://github.com/planner77/layoutManager/actions/runs/41732045585), HEAD `08181a0baff255c686aacf87a1b372dcee2f38f1`, completed/failure. Static/Unit Job126251686409 TypeScript/Lint 통과 후 **157 test files / 1016 tests 중 156 files 1015 PASS, 1 file 1 FAIL + 1 unhandled rejection**. Docker Job126251686490 FAIL, Required Verify126257119931는 Quality+Docker 실패를 정상 전파했다. A2 scope SKIPPED는 예상 동작.
