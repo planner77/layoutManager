@@ -1,3 +1,11 @@
+## #225 B2-A CPU LINE 후보 — 증거 상태 (2026-11-04)
+
+- 원격 Draft branch에 Node의 2D LINE→Three BufferGeometry→CUSTOM_DTO v2→전체 validator→0600 readback 후보 및 양성/음성 Vitest를 작성했다. **코드 게시 ≠ 실제 테스트 실행 성공**이다.
+- 개발·QA의 로컬 TypeScript/Lint/Vitest/Build/Docker/브라우저 실행은 아직 **NOT RUN**. PR CI는 생성 이후 정확 HEAD에 대해 별도 확인해야 한다. 기존 #221/#222 Browser 실험의 PASS를 이번 Node 후보 실행 증거로 전용하지 않는다.
+- Converter는 미지원 Entity/3D/색/Block/비default Layer/encoding을 안전 거절하고 등록되지 않은 CPU Builder provenance/CPU 격리/G7 게시/Auth 문제로 운영 Worker·READY를 구성하지 않는다. 이전 0.60.0 릴리스 image·Main/DB/Volume/GHCR 비변경.
+
+---
+
 ## #223 / CI #545 — Greenfield 회귀 수리·독립 QA 완료 (2026-11-03 KST)
 
 - 원격 정확 HEAD `b8f4ebe`, [CI #545](https://github.com/planner77/layoutManager/actions/runs/41645624408)는 Greenfield24 PASS/2 FAIL 및 Required Verify 종속 FAIL, 다른7 Job은 SUCCESS다. 이전 로컬988/Browser11/fault6 수용이 이 실패를 취소하지 않는다.

@@ -1,3 +1,11 @@
+## TC-225-B2-A — Node CPU LINE DTO 후보 (2026-11-04, Draft)
+
+- **양성:** 합성 HEADER(`$INSUNITS=4`)·ENTITIES LINE 2건 → 독립 순수 THREE Line geometry, `CUSTOM_DTO` schema2, Source SHA/Manifest/전체 `validateStoredScenePayload`, 임시 저장 후 readback SHA, 레이어0 좌표·객체수·`sourceIndex=UNAVAILABLE` 검증. WebGLRenderer/브라우저 생성·운영 Scene 저장 0.
+- **음성:** 원본 SHA 불일치, 잘못된 UTF-8, 16MiB 상한 초과, 미지원 CIRCLE/색/Layer/linetype/중량·임의 code/3D Z·OCS/단위0/BLOCKS, NaN·좌표 범위·퇴화 LINE/중복 handle/EOF 누락을 거부. UNKNOWN Entity/한글/Text/INSERT를 조용히 건너뛰거나 READY로 게시하지 않는다.
+- **GO 범위:** 로컬 실행 증거는 아직 없음. 실제 Branch HEAD TypeScript/Unit/Build/PR CI 결과를 받아야 GO-INTEGRATE를 판정한다. 코드가 통과해도 **GO-PILOT NO**: 비루트 Worker 별도 프로세스 한도, G7 내부 권한 재확인·SourceIndex·새 Builder provenance, SceneRepository CAS/Audit, Browser 새 세션 복원, 목록 상태/retry가 전부 필요하다. 기존 repository-required CI Job/한도는 변경하지 않는다.
+
+---
+
 ## TC-225 CI #558 실제 실패 회귀 (2026-11-04)
 
 - WAL 열린 writer: 하나의 승인 Plan ID를 첫 apply 전 확보하고, 첫 apply 잠금 유지 시 동일 ID의 중복 apply가 `G7_UPGRADE_RESTORE_REQUIRED`를 반환하며 원래 첫 시도는 await되어 Backup/Isolated Restore/Committed User row를 끝까지 검증한다.

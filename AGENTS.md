@@ -1,3 +1,11 @@
+## #225 B2-A — CPU-only LINE 후보 변환기 (2026-11-04, Draft)
+
+현재 B2-A GO-DEV 구현은 `src/server/scene/cpu-line-candidate.ts`의 **오프라인 후보 변환**과 `src/tests/unit/scene-cpu-line-candidate.test.ts`의 유효/거부 시험으로 한정한다. WebGL/DOM/`three-dxf-viewer` 런타임 없이 엄격한 UTF-8 DXF, HEADER `$INSUNITS=4`, ENTITIES `LINE`/기본 레이어0·흰색만 수용한다. 원본 SHA, 16MiB 원본/5000 LINE/좌표 범위, THREE geometry → CUSTOM_DTO v2 전체 Validator 및 독립 임시 파일 readback을 검증한다. 알려지지 않은 Entity/색/계층/표·BLOCK/3D/폴리라인/문자는 **명시적으로 차단**한다.
+
+**안전 경계:** 현재 Scene Scope의 `CAD_SCENE_BUILDER`는 기존 브라우저 변환기 identity이므로 CPU 후보를 **운영 Scene READY로 게시하지 않는다**. 버전이 있는 CPU Builder provenance/새 릴리스 계약, G7 background actor/site 재인가, SceneRepository CurrentScene CAS·감사, 별도 비루트 단일 Worker/CPU·RAM·시간/네트워크 격리, 지원 2D Geometry 확대, 상태·Retry UI는 후속 B2-B/B3에서 구현·검증한다. `SCENE_AUTO_BUILD_ENABLED=OFF` 및 Issue #225/#218 OPEN·GO-PILOT BLOCKED를 유지한다. 기존 0.60.0 릴리스 이미지·운영 DB/Volume/실 `.env`는 이번 Draft에서 변경하지 않는다. [Issue225](out/Issue225.md), [Architecture](out/Architecture.md), [TestPlan](out/TestPlan.md).
+
+---
+
 ## #225 / PR #226 — B1 v0.60.0 Main 병합·GO 경계 (2026-11-04)
 
 [PR #226](https://github.com/planner77/layoutManager/pull/226)은 검증 HEAD `03e21f4242e499a0a8afc834361e625e4433b2c2`의 [PR CI #564](https://github.com/planner77/layoutManager/actions/runs/41753808890) 필수 적용 Job 성공·미해결 리뷰0·충돌0·Main 뒤처짐0 확인 후 **Squash Main `9eb8ac764ddb658bf8f9aaef9f15f18e099f9f63`으로 병합 완료**(원본과 동일 Git tree). 0.60.0 신규 G7 Job 기준선·0.59→0.60 승인형 MIGRATION·`SceneBuildJob` 원자적 Enqueue/멱등/CAS/재시도 B1 범위이다. 변경되지 않은 기존 v0.59.0 릴리스·기존 운영 데이터는 보존한다. [Main CI #145](https://github.com/planner77/layoutManager/actions/runs/41762192190)는 시작했고 `v0.60.0` 태그가 정확 Squash 커밋을 가리킨다. GHCR 0.60.0 App/Migrator 후보 빌드는 진행 중이며 실제 두 버전 태그/다이제스트 게재 성공은 별도 확인 전 **NOT VERIFIED**.

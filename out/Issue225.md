@@ -1,3 +1,11 @@
+## 2026-11-04 — B2-A Node CPU LINE 후보 구현 착수 (별도 Draft PR)
+
+B1 완료(G7 0.60.0 Main 병합/이미지쌍 게시)의 다음 작업으로 `src/server/scene/cpu-line-candidate.ts`와 단위 테스트를 구현한다. 배포를 활성화하지 않고 엄격 UTF-8/16MiB·2D LINE(Layer0/흰색, `$INSUNITS=4`)만 변환한다. 실제 Three Line Geometry → CUSTOM_DTO v2/manifest/SHA/domain full validator/임시 저장·readback을 수행하고 비지원 DXF/중복 handle/3D/규모 상한을 fail-closed한다. 이전 A2 Browser 테스트 코드/직접 Node `DXFViewer` 경로를 운영에 복제하지 않는다.
+
+**지금 구현하지 않는 것:** 신규 CPU Builder Identity 및 릴리스 호환 등록, TEXT/MTEXT/POLYLINE/BLOCK 등 일반 지원 도형, G7 내부 Actor/Site/Writer 재인가, 외부 무권한 환경에서 검증된 CPU/RAM/PID/time 격리, SceneRepository immutable CAS/기존 READY 불변, Worker OCI, 상태·Retry UI/B3. 기존 Scope의 `CAD_SCENE_BUILDER`는 Browser 출처이므로 이 Candidate DTO를 현재 버전의 공개 Scene READY로 게시해서는 안 된다. 이번 산출물은 **OFFLINE_PROOF_ONLY**이며 `SCENE_AUTO_BUILD_ENABLED=OFF`, GO-PILOT BLOCKED, #218/#225 OPEN. 정확 HEAD CI 및 런타임 검증 전 완료로 표기하지 않는다. [ADR](Decisions.md), [TestPlan](TestPlan.md) 참조.
+
+---
+
 ## 2026-11-04 — PR #226 B1 0.60.0 Main 병합 / 후속 B2·B3 OPEN
 
 검증 HEAD `03e21f4242e499a0a8afc834361e625e4433b2c2`의 [PR CI #564](https://github.com/planner77/layoutManager/actions/runs/41753808890) 모든 적용 필수 Job SUCCESS(별도 A2 합성 Job은 변경 범위 밖 Skip). 리뷰 미해결0/충돌0/behind0 확인 후 [PR #226](https://github.com/planner77/layoutManager/pull/226) **Squash Main `9eb8ac764ddb658bf8f9aaef9f15f18e099f9f63` 병합**. 0.60.0 Job 등록·G7 승인형 Zone→Job Migration 및 B1 영속 Queue/멱등/CAS가 구현·검증되었다. [Main CI #145](https://github.com/planner77/layoutManager/actions/runs/41762192190)와 `v0.60.0` tag 시작은 검증했으나 App/Migrator GHCR 최종 2개 digest 게시 여부는 아직 별도 확인 필요. 상세 [FailureLedger](FailureLedger.md).

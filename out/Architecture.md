@@ -1,3 +1,11 @@
+## #225 B2-A CPU-only 후보 파이프라인 — Node/strict LINE (2026-11-04)
+
+`cpu-line-candidate.ts`의 단독 호출만: (1) DXF 원본 SHA 확인, 엄격 UTF-8/16MiB 및 pair/section 구조 상한 (2) 2D LINE/Layer0/흰색/`$INSUNITS=4`만 parse하고 지원하지 않은 기타 record/색/OCS·Z/점 정보가 있으면 fail-closed (3) 순수 `THREE.Group + THREE.Line(BufferGeometry)` 구성 (4) 기존 tag/serialize `CUSTOM_DTO v2` 및 전체 domain Validator (5) 0700 임시 디렉터리/0600 readback, SHA와 DTO 재검증 후 정리. Converter는 원본/기존 Scene/Current/DB에 쓰지 않으며 실제 WebGL/Browser/세션 런타임을 호출하지 않는다.
+
+**설계상 중요한 제한:** 현 `sceneScope`/CAD_SCENE_BUILDER 문자열은 legacy `three-dxf-viewer@1.0.44` 변환 출처이므로 새로운 CPU Parser가 작성한 결과를 동일 Builder의 검증된 Viewer parity/READY로 간주할 수 없다. 이 후보는 OFFLINE_PROOF_ONLY; server publish 경계의 G7 internal actor/site 최신 권한 확인, CAS·Audit, Worker 프로세스 자원/보안/시간 격리, 새로운 versioned builder identity와 브라우저 복원·원본 선택 source index 검증을 B2-B 선행으로 둔다. 지원 2D Line 외 도면은 READY 없이 명시 거절. 운영 0.60.0 이미지/등록 G7 baseline/DB/CAD 불변.
+
+---
+
 ## #225 G7 0.60.0 신규/승격 스키마 계약 (2026-11-04, Draft)
 
 기존 0.59.0 Zone baseline 1행은 불변; 신규 0.60.0 Job baseline은 1행, 0.59.0에서 승격된 DB는 Zone baseline+Job Migration 2행이다. 업그레이드 Registry의 0.59→0.60은 MIGRATION+Plan ID 승인/백업·복구 의무가 있으며 Reviewed DDL을 정확히 검사한다. Zone/Outline/Memo 업무 경로는 두 이력 형태를 인식하고 여전히 서명된 Runtime·권한/Schema 검사에 따른다. 생산용 Worker 미구현; 운영 배포 미승인.
