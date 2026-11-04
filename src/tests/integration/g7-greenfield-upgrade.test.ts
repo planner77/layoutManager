@@ -361,8 +361,9 @@ describe('#209 Greenfield release upgrade',()=>{
     expect(existsSync(detached)).toBe(false);
   });
 
-  test('0.59.0→0.60.0→0.61.0 registered migrations reject broken postcondition',async()=>{
-    const f=fixture(),plan=planGreenfieldUpgrade(f.env);
+  test('0.56.0→0.60.0→0.61.0 broken final postcondition preserves restore hold and prior commit',async()=>{
+    const f=fixture(),manifestBefore=readFileSync(f.manifest);
+    const plan=planGreenfieldUpgrade(f.env);
     expect(plan.decision).toBe('UPGRADE_MIGRATION_REQUIRED');
     expect(plan.chain.at(-1)?.kind).toBe('MIGRATION');
     await expect(applyGreenfieldUpgrade(maintenance(f.env))).rejects
@@ -375,13 +376,38 @@ describe('#209 Greenfield release upgrade',()=>{
     const brokenPlan=planGreenfieldUpgrade(f.env,broken);
     await expect(applyGreenfieldUpgrade(maintenance(f.env),brokenPlan.planId,broken))
       .rejects.toThrow('G7_UPGRADE_MIGRATION_FAILED');
-    expect(statusGreenfieldUpgrade(f.env).state).toBe('UPGRADE_MIGRATION_REQUIRED');
+    // 0.60.0 migration committed before the 0.61.0 postcondition failed:
+    // do NOT advertise a safe re-apply. Operator must restore an isolated backup.
+    const blocked=statusGreenfieldUpgrade(f.env);
+    expect(blocked).toMatchObject({state:'RESTORE_REQUIRED',phase:'RESTORE_REQUIRED'});
+    if(!('backupId' in blocked)||typeof blocked.backupId!=='string')
+      throw new Error('G7_UPGRADE_RECOVERY_SET_REQUIRED');
+    expect(existsSync(path.join(f.dbDir,'g7-upgrade.lock'))).toBe(true);
+    expect(existsSync(path.join(f.dbDir,'g7-runtime-hold.json'))).toBe(true);
+    expect(()=>planGreenfieldUpgrade(f.env)).toThrow('G7_UPGRADE_RESTORE_REQUIRED');
+    expect(readFileSync(f.manifest)).toEqual(manifestBefore);
+    expect(readFileSync(path.join(f.cad,f.ids.location,f.ids.version,'original.dxf'),'utf8'))
+      .toBe(f.content);
     const db=new Sqlite(f.dbPath);
     try {
-      expect(db.prepare("SELECT name FROM sqlite_master WHERE name='SceneBuildJob'").get())
+      expect(db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='SceneBuildJob'").get())
+        .toMatchObject({name:'SceneBuildJob'});
+      expect(db.prepare("SELECT name FROM sqlite_master WHERE type='index' AND name='ix_scene_build_cpu_due'").get())
         .toBeUndefined();
-      expect(db.prepare('SELECT migration_name FROM "_prisma_migrations"').all())
-        .toEqual([{migration_name:G7_PREVIOUS_ZONES_BASELINE}]);
+      expect(db.prepare('SELECT migration_name FROM "_prisma_migrations" ORDER BY rowid').all())
+        .toEqual([{migration_name:G7_PREVIOUS_ZONES_BASELINE},
+          {migration_name:'202611040001_scene_build_job'}]);
+      expect(db.prepare('PRAGMA foreign_key_check').all()).toEqual([]);
     }finally{db.close();}
+    const restoreDb=path.join(f.root,'failed-upgrade-restore-db');
+    const restoreCad=path.join(f.root,'failed-upgrade-restore-cad');
+    mkdirSync(restoreDb,{mode:0o700});mkdirSync(restoreCad,{mode:0o700});
+    const restored=restoreGreenfieldUpgrade(f.env,blocked.backupId,restoreDb,restoreCad);
+    expect(restored).toMatchObject({state:'RESTORED_ISOLATED',sourceVersion:'0.56.0'});
+    expect(readFileSync(path.join(restoreDb,'g7-install.json'))).toEqual(manifestBefore);
+    expect(readFileSync(path.join(restoreCad,f.ids.location,f.ids.version,'original.dxf'),'utf8'))
+      .toBe(f.content);
+    // Recovery is isolated: source remains held rather than auto-restarted.
+    expect(statusGreenfieldUpgrade(f.env).state).toBe('RESTORE_REQUIRED');
   });
 });
