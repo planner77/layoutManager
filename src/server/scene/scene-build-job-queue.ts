@@ -8,7 +8,7 @@ import type {Database} from '@/server/db';
 import {writeTransaction} from '@/server/db';
 import {CAD_SCENE_BUILDER,CAD_SCENE_CPU_BUILDER} from '@/domain/cad-scene';
 import {G7_GREENFIELD_SCHEMA_ID} from '@/server/g7-operational/greenfield-schema';
-import {safeBuildErrorCode,type SceneBuildErrorCode} from '@/domain/scene-build-job';
+import {safeBuildErrorCode,safeBuildStage,type SceneBuildStage,type SceneBuildErrorCode} from '@/domain/scene-build-job';
 import {decideSingleWorkerAction,singleSceneJobKey} from '@/domain/scene-single-worker-admission';
 
 export const SCENE_JOB_PAYLOAD_SCHEMA=2 as const;
@@ -108,10 +108,19 @@ async function claimWithBuilder(db:Database,now:Date,builder?:string){
  * CurrentScene pointer. Timeout classification is safe and persisted.
  */
 export async function recoverStaleSceneJob(db:Database,now=new Date()){
+  return recoverStaleWithBuilder(db,now);
+}
+/** CPU Worker never mutates stale historical Browser Builder jobs. */
+export async function recoverStaleCpuSceneJob(db:Database,now=new Date()){
+  requireCpuSceneWorkerRelease();
+  return recoverStaleWithBuilder(db,now,CAD_SCENE_CPU_BUILDER);
+}
+async function recoverStaleWithBuilder(db:Database,now:Date,builder?:string){
   if(!validTime(now))throw new Error('SCENE_JOB_TIME_INVALID');
   return writeTransaction(db,async tx=>{
     const stale=await tx.sceneBuildJob.findFirst({
-      where:{status:'RUNNING',startedAt:{lte:new Date(now.getTime()-STALE_AFTER_MS)}},
+      where:{status:'RUNNING',startedAt:{lte:new Date(now.getTime()-STALE_AFTER_MS)},
+        ...(builder?{builder,payloadSchema:SCENE_JOB_PAYLOAD_SCHEMA}:{})},
       orderBy:[{startedAt:'asc'},{id:'asc'}],
     });
     if(!stale)return null;
@@ -141,10 +150,18 @@ export async function recoverStaleSceneJob(db:Database,now=new Date()){
 
 /** Moves a due retry back into the claim queue without consuming an attempt. */
 export async function requeueDueSceneJob(db:Database,now=new Date()){
+  return requeueWithBuilder(db,now);
+}
+export async function requeueDueCpuSceneJob(db:Database,now=new Date()){
+  requireCpuSceneWorkerRelease();
+  return requeueWithBuilder(db,now,CAD_SCENE_CPU_BUILDER);
+}
+async function requeueWithBuilder(db:Database,now:Date,builder?:string){
   if(!validTime(now))throw new Error('SCENE_JOB_TIME_INVALID');
   return writeTransaction(db,async tx=>{
     const waiting=await tx.sceneBuildJob.findFirst({
-      where:{status:'RETRY_WAIT',dueAt:{lte:now}},
+      where:{status:'RETRY_WAIT',dueAt:{lte:now},
+        ...(builder?{builder,payloadSchema:SCENE_JOB_PAYLOAD_SCHEMA}:{})},
       orderBy:[{dueAt:'asc'},{id:'asc'}],
     });
     if(!waiting)return null;
@@ -173,6 +190,20 @@ export async function failRunningSceneJob(db:Database,id:string,attempt:number,
       where:{id,status:'RUNNING',attempt},
       data:{status:'FAILED',lastCode:safeBuildErrorCode(code),startedAt:null,finishedAt:now},
     });
+    return changed.count===1;
+  });
+}
+
+/** Non-authorizing stage telemetry for the current claimed CPU attempt only. */
+export async function updateRunningCpuJobStage(db:Database,id:string,attempt:number,
+  stage:SceneBuildStage){
+  requireCpuSceneWorkerRelease();
+  if(!isId(id)||!Number.isSafeInteger(attempt)||attempt<1||
+     safeBuildStage(stage)!==stage)throw new Error('SCENE_CPU_STAGE_INVALID');
+  return writeTransaction(db,async tx=>{
+    const changed=await tx.sceneBuildJob.updateMany({where:{id,status:'RUNNING',attempt,
+      builder:CAD_SCENE_CPU_BUILDER,payloadSchema:SCENE_JOB_PAYLOAD_SCHEMA},
+      data:{stage}});
     return changed.count===1;
   });
 }

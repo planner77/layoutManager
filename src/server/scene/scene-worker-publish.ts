@@ -21,7 +21,9 @@ import {authorizeG7CpuWorkerJobTx} from './scene-worker-g7-authorization';
 const fail=(code:string,status=409)=>
   new CadError(code,'CPU Scene 작업을 검증할 수 없습니다.',status);
 
-async function verifiedOriginal(storage:CadStorage,key:string,fileSize:number,sourceSha256:string){
+/** Bounded read of the database-authoritative original locator. The caller
+ * must independently authorize its owning Job before using these bytes. */
+export async function readVerifiedCpuOriginal(storage:CadStorage,key:string,fileSize:number,sourceSha256:string){
   if(!Number.isSafeInteger(fileSize)||fileSize<1||fileSize>CPU_LINE_LIMITS.sourceBytes)
     throw fail('SCENE_WORKER_SOURCE_LIMIT',413);
   const result=await storage.content(key);
@@ -70,7 +72,7 @@ export async function publishVerifiedCpuSceneJob(input:Readonly<{
     select:{sha256:true,fileSize:true,storagePath:true,fileFormat:true}});
   if(!original||original.fileFormat!=='DXF'||original.sha256!==identity.sourceSha256)
     throw fail('SCENE_WORKER_SOURCE_CHANGED');
-  const bytes=await verifiedOriginal(originalStorage,original.storagePath,
+  const bytes=await readVerifiedCpuOriginal(originalStorage,original.storagePath,
     original.fileSize,identity.sourceSha256);
   // This is a full payload/manifest/source check, not an auth context.
   const receipt=inspectCpuCandidateForJob({job:{
