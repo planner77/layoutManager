@@ -510,6 +510,7 @@ jobs:
         run: |
           set -euo pipefail
           bash -n src/tests/oci/scene-cpu-worker-proof.sh
+          node --check src/tests/oci/scene-cpu-proof-fixture.mjs
           bash src/tests/oci/scene-cpu-worker-proof.sh
       - name: Measure 3 image sizes, layers and directories
         if: needs.scope.outputs.baseline == 'true'
