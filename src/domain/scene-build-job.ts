@@ -73,8 +73,12 @@ export function sceneBuildPublicSummary(input: Readonly<{
   if (input.fileFormat !== 'DXF')
     return { scene: 'NOT_APPLICABLE', build: null, phase: null };
   const jobState = input.jobState ?? null;
+  // Pointer integrity takes priority over a historical Job failure. A broken
+  // immutable CurrentScene cannot be recovered by manually retrying that Job.
   const status = input.validatedScene === 'READY' ? 'READY'
-    : jobState === 'READY' ? (input.validatedScene === 'UNAVAILABLE' ? 'UNAVAILABLE' : 'REBUILD_REQUIRED')
+    : input.validatedScene === 'REBUILD_REQUIRED' ? 'REBUILD_REQUIRED'
+    : input.validatedScene === 'UNAVAILABLE' ? 'UNAVAILABLE'
+    : jobState === 'READY' ? 'REBUILD_REQUIRED'
     : jobState ?? input.validatedScene;
   return { scene: status, build: jobState, phase: jobState === 'RUNNING' ? safeBuildStage(input.stage) : null };
 }
