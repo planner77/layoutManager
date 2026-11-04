@@ -1,4 +1,5 @@
 import {beforeEach,describe,expect,it,vi} from 'vitest';
+import {CadError} from '../../domain/cad';
 import {sceneSha256} from '../../domain/scene-digest';
 import {buildCpuLineCandidate} from '../../server/scene/cpu-line-candidate';
 import {authorizeG7CpuWorkerJobTx} from '../../server/scene/scene-worker-g7-authorization';
@@ -120,7 +121,7 @@ describe('#225/B2-B internal CPU first publish (NOT operational Worker)',()=>{
     }).mockResolvedValueOnce({
       jobId:'job-1',attempt:1,versionId,sourceSha256:sha,
       actorId:'user-1',siteId:'site-1',requestId:'request-1',
-    }).mockRejectedValueOnce(new Error('SCENE_WORKER_ACCESS_REVOKED'));
+    }).mockRejectedValueOnce(new CadError('SCENE_WORKER_ACCESS_REVOKED','Scene Worker access denied.',403));
     await expect(f.run()).rejects.toMatchObject({code:'SCENE_WORKER_ACCESS_REVOKED'});
     expect(f.sceneStorage.putVerified).toHaveBeenCalledTimes(1);
     expect(f.ready).not.toHaveBeenCalled();
