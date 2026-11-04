@@ -1,3 +1,10 @@
+## Unreleased — #225 B2-B guarded future CPU Worker pipeline (Draft, 2026-11-04)
+
+- [PR #228](https://github.com/planner77/layoutManager/pull/228) B2-B: 별도 CPU Builder v1 scope, CPU 전용 Queue Enqueue/Claim/Stale/Retry, G7 Worker 최신 Actor/Site/Role 재인가, 원본 CAD SHA/immutable Scene Blob readback, 초기 CurrentScene CAS+Job READY+Audit 같은 DB Tx, One-tick 내부 실행기와 예외/복구 Unit. 기존 Browser Builder/public Scene publish, v0.60.0 Schema/이미지/운영 데이터는 그대로 유지.
+- `SCENE_CPU_WORKER_ENABLED`는 신규 signed G7 미래 release 전에는 항상 차단; 출시용 독립 CPU Worker OCI/비루트 자원·네트워크 격리/제한된 2D 외 Entity/B3 상태·Retry 및 실제 Pilot 검증 미완료. GO-PILOT 승인하지 않음. 신규 PR CI 정확 HEAD PASS 전 검증 완료 아님.
+
+---
+
 ## 2026-11-04 — #225 0.60.0 G7 Job 스키마/승격 후보 (Draft)
 
 0.59 Zone 기반 시스템의 불변 태그를 유지하면서 신규 Job DDL을 별도 승인 MIGRATION으로 등록; 신규/승격 이력 및 Zone/Outline/Memo 회귀·SQL 정합성 검증 코드 추가. 아직 배경 Worker/Scene 게시/UI·운영 자동화 미구현, GHCR/실 DB 변경 없음. CI·현장 수용은 별도.

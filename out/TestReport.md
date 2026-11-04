@@ -1,3 +1,11 @@
+## #225 B2-B 내부 한 건 Worker 함수·게시 계약 — 원격 구현 상태 (2026-11-04)
+
+[PR #228](https://github.com/planner77/layoutManager/pull/228)에서 작업중인 고유 CPU Builder/Job 데이터 정합성 검사에 다음을 추가했다. 미래 전용 CPU Builder Queue Enqueue/Claim/Stale/Retry/Stage, signed G7 Runtime+현재 Actor/Role/Site/Version 검증, CAD 원본 재읽기·SHA, Blob `putVerified` readback, 최초 CurrentScene+SceneAsset/Job READY+Audit 원자 Tx, 기존 READY 무변경/Orphan safe cleanup, 단일 Job 처리 함수를 구현했다. Unit은 필드·상태/재검증·포인터 경합·저장 실패·CAS·권한 철회·오류 코드/기존 Builder 분리를 대상으로 작성했다.
+
+**실제 검증 구분:** [CI #572](https://github.com/planner77/layoutManager/actions/runs/41776814316)의 TypeScript 2건(TS2367/TS2502)은 [FailureLedger](FailureLedger.md)에 기록 후 수정했다. 추가 변경 HEAD의 전체 CI 최종 결과는 **아직 확인 전이며 PASS 선언하지 않는다**. v0.60.0에서 미래 CPU G7 스키마/OCI Worker/실 runtime 실행/독립 프로세스 cgroup 격리/브라우저 실제 복원은 NOT RUN/NOT IMPLEMENTED다. #225/#218 OPEN, GO-PILOT BLOCKED, 운영 Repo/Main/0.60 App/Migrator·.env·DB·CAD·Volume 불변.
+
+---
+
 ## #225 B2-B Draft — CPU provenance/Job DTO gate 작성, 통합 미검증 (2026-11-04)
 
 B2-A [PR #227](https://github.com/planner77/layoutManager/pull/227) 정확 HEAD `f2ac283c62dc3eaed513d4f67a0b4355adbb3a3c` [PR CI #566](https://github.com/planner77/layoutManager/actions/runs/41768798168) SUCCESS, Main `73957d20295d6300c4f0c9b89ca5032574eb24bc` [Main CI #147](https://github.com/planner77/layoutManager/actions/runs/41771625231) SUCCESS (같은 0.60.0 이미지 중복 게시 생략). B2-B 별도 Draft에서 CPU Builder identity와 Job/DTO match + 단위 음성/양성 시험을 신규 작성. **이 변경의 로컬 typecheck/Vitest/Docker/E2E 또는 정확 HEAD PR CI 결과는 아직 NOT VERIFIED**. 순수 검증 receipt를 G7 재인가·SceneRepository 게시·READY 성공으로 과장하지 않는다. 현재 0.60.0 GHCR·운영 .env/DB/CAD/Volume 비변경, #225/#218 OPEN·GO-PILOT BLOCKED.
