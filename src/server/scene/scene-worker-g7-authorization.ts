@@ -14,11 +14,9 @@ import {AuthorizationError,requireResolvedPermission,type Role,type UserAccess} 
 import {CAD_SCENE_CPU_BUILDER} from '@/domain/cad-scene';
 import {G7_GREENFIELD_SCHEMA_ID} from '@/server/g7-operational/greenfield-schema';
 import {resolveG7RuntimeGate} from '@/server/g7-operational/runtime-gate';
-import {SCENE_JOB_PAYLOAD_SCHEMA} from './scene-build-job-queue';
+import {SCENE_JOB_PAYLOAD_SCHEMA,SCENE_CPU_WORKER_SCHEMA_ID} from './scene-build-job-queue';
 
 type Tx=Prisma.TransactionClient;
-// No 0.60.0 release supports CPU Worker; this future schema ID is not registered.
-const FUTURE_CPU_WORKER_SCHEMA='G7-GREENFIELD-CPU-WORKER-20261104-1';
 const SHA=/^[a-f0-9]{64}$/;
 const ID=/^[A-Za-z0-9_-]{1,128}$/;
 const deny=(code:string,status=403)=>new CadError(code,'Scene Worker 승인이 필요합니다.',status);
@@ -44,7 +42,7 @@ export async function authorizeG7CpuWorkerJobTx(
 ):Promise<G7CpuWorkerIdentity>{
   if(process.env.SCENE_AUTO_BUILD_ENABLED!=='true' ||
      process.env.SCENE_CPU_WORKER_ENABLED!=='true' ||
-     G7_GREENFIELD_SCHEMA_ID!==FUTURE_CPU_WORKER_SCHEMA)
+     G7_GREENFIELD_SCHEMA_ID!==SCENE_CPU_WORKER_SCHEMA_ID)
     throw deny('SCENE_WORKER_RELEASE_NOT_APPROVED',503);
   if(!ID.test(jobId)||!Number.isSafeInteger(attempt)||attempt<1||attempt>3)
     throw deny('SCENE_WORKER_JOB_INVALID');
