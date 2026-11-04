@@ -1,3 +1,13 @@
+## ADR-225-B2A — 오프라인 CPU LINE 후보 먼저, Publish/Auth는 분리 (2026-11-04)
+
+**결정:** 이미 완료된 B1 Queue 위에 생산 Worker를 허위 연결하지 않고, 처음 B2-A에서는 Node의 `three` BufferGeometry로 **지원 범위를 명시한 LINE-only** DXF→CUSTOM_DTO v2 후보를 만든다. Parser의 모든 비지원 Entity/확장 코드/좌표·Layer·색·Block 구조는 fail-closed하며 기존 A2 실험용 DXFViewer/DOM/unsafe SwiftShader를 사용하지 않는다. Source SHA, 16MiB·5000 Entity 제한, 32MiB DTO와 기존 Full Validator, private tempfile readback을 계속 적용한다.
+
+**채택 이유:** 현재 `three-dxf-viewer` 직접 Node 경로는 비동기 `window` NO-GO이고, 실제 Worker G7 세션 토큰 재사용은 권한 경계를 위반한다. 또한 `CAD_SCENE_BUILDER`가 브라우저 기반 출처 identity를 유지해 CPU 결과를 그대로 공개 READY로 게시하면 provenance가 왜곡된다. CPU Builder identity/one-way 릴리스 호환과 SourceIndex parity가 해결될 때까지 **후보만** 생산, Queue 상태 READY 변경 및 `SceneRepository.publish` 연결 금지.
+
+**후속:** B2-B에서 버전 정의된 CPU Builder, 현재 Actor/Site/Writer permission 재검증, 원본 Storage SHA와 CurrentScene CAS/불변 audit, 별도 단일 프로세스 CPU/RAM/PID/time/readonly/no-network 격리 및 실제 브라우저 복원. B3에서 상태/retry/배포 Smoke. GO-DEV 허용, GO-PILOT 미승인, 기존 v0.60.0 App/Migrator/G7 운영 volume 변경 없음.
+
+---
+
 ## ADR-225-G7-FORWARD-JOBS — 0.60.0 후보로 스키마 변경 분리 (2026-11-04)
 
 결정: 신규 SceneBuildJob DDL은 차기 0.60.0에 MIGRATION으로 등록하고 기존 0.59.0 이미지/Zone 기준선을 절대 변경하지 않는다. 두 기준선의 정확한 History와 DDL을 구별해 임의 수동 테이블·인덱스 우회를 막는다. 기존 데이터와 Audit/CurrentScene를 보존하며 Plan ID/백업/복구를 요구한다. 단일 RUNNING partial index, 복합 멱등키, 비밀정보 미저장 유지. Worker/Scene 게시가 미구현이므로 GO-PILOT 미승인, SCENE_AUTO_BUILD_ENABLED OFF.
