@@ -1,3 +1,9 @@
+## #225 B2-B G7 실제 SQLite·0.60.0 하드-OFF 회귀 추가 (2026-11-04)
+
+PR #228의 신규 `scene-cpu-worker-g7.test.ts`는 disposable G7 0.60.0 DB와 소유 CAD 원본·Scene Blob을 만들고 게시·재조회·Audit 실패 롤백을 검사한다. **인가 함수는 이 시험에 한해 모의로 제공**되며, 0.60.0 운영 G7에서 Worker가 켜진다는 의미가 아니다. 추가 `scene-cpu-worker-current-release.test.ts`는 실제 현재 Schema ID와 미래 CPU Worker Schema의 불일치를 검증해, 두 feature flag를 ON으로 설정해도 DB/Job 읽기 전에 차단해야 한다. 명시한 두 파일의 실제 CI 통과는 정확 HEAD 결과 확인 전 미검증. 권한/버전/실 독립 프로세스/지원 도형/브라우저 Pilot은 별도 차단 유지.
+
+---
+
 ## #225 B2-B 내부 한 건 Worker 함수·게시 계약 — 원격 구현 상태 (2026-11-04)
 
 [PR #228](https://github.com/planner77/layoutManager/pull/228)에서 작업중인 고유 CPU Builder/Job 데이터 정합성 검사에 다음을 추가했다. 미래 전용 CPU Builder Queue Enqueue/Claim/Stale/Retry/Stage, signed G7 Runtime+현재 Actor/Role/Site/Version 검증, CAD 원본 재읽기·SHA, Blob `putVerified` readback, 최초 CurrentScene+SceneAsset/Job READY+Audit 원자 Tx, 기존 READY 무변경/Orphan safe cleanup, 단일 Job 처리 함수를 구현했다. Unit은 필드·상태/재검증·포인터 경합·저장 실패·CAS·권한 철회·오류 코드/기존 Builder 분리를 대상으로 작성했다.

@@ -1,3 +1,9 @@
+## 2026-11-04 — B2-B SQLite 통합·현재 릴리스 차단 시험 작성
+
+B2-B 내부 권한·Blob·CurrentScene CAS/Audit 구현에 대한 강한 양/음성 증거를 위해 소유 disposable G7 0.60 DB+실 original/Scene Blob을 사용하는 `scene-cpu-worker-g7.test.ts`를 작성했다. 정상 첫 게시·Current0/Job READY/Audit·조회 가능한 CPU DTO와, 기존 Pointer 보존/2차 게시 거부, Audit SQL trigger 실패의 트랜잭션 롤백·Orphan CLEANUP을 시험한다. 이 시험의 G7 Worker 인가는 **모의**이므로 실제 signed Runtime·보안 승인이 아니다. `scene-cpu-worker-current-release.test.ts`는 실제 v0.60.0에서 CPU Worker Enqueue/Claim/Auth가 future schema ID 불일치 때문에 무조건 차단되는지 확인한다. 실행 성공은 새 CI 완료 전 **미검증**이다. B2 실제 독립 OCI, CPU 자원/네트워크 격리, 지원 DXF 확대, G7 새 버전 및 B3·GO-PILOT은 여전히 미완료. #225/#218 OPEN, 현 0.60.0 GHCR·.env/DB/Volume/CAD 비변경.
+
+---
+
 ## 2026-11-04 — PR #228 B2-B 미래 전용 Worker 파이프라인 코드 추가
 
 [PR #228](https://github.com/planner77/layoutManager/pull/228)의 B2-B 구현을 데이터 출처 검사에서 **미래 서명 G7 릴리스 전용 내부 Worker 함수/안전한 신규 Scene 게시 단계**로 확장했다. 세부 코드는 `src/server/scene/scene-build-job-queue.ts`(CPU Builder 전용 Enqueue/Claim/Stale/Retry/Stage), `scene-worker-g7-authorization.ts`(DB 현 시점 Actor/Site/Role·Version/sha·signed G7 Runtime 재검사), `scene-worker-publish.ts`(권한 재검사, 저장된 원본 재조회/SourceSHA, CUSTOM_DTO v2 검증, immutable Blob readback, **기존 CurrentScene이 없을 때만** Asset+Current 0+Job READY+Audit atomic, Orphan 사후처리), `scene-cpu-worker-once.ts`(한 건 오케스트레이션·오류 allowlist)이다. 새 순수 Unit의 승인/거부/중단/TOCTOU/상태 CAS/원본 불변 경로를 검증하도록 작성했다.

@@ -1,3 +1,11 @@
+## TC-225-B2B-DB — 실제 소유 disposable G7 SQLite 통합 검증 추가 (2026-11-04)
+
+- `src/tests/integration/scene-cpu-worker-g7.test.ts`: G7 0.60.0 Greenfield 소유 0700 임시 DB/CAD 폴더·실 파일·Prisma/SceneBlobStorage를 사용하여 CPU LINE v2 후보의 원본 SHA→Asset immutable 저장/readback→CurrentScene revision0+Job READY+SCENE_PUBLISHED Audit/Orphan 제거를 같은 실제 SQLite commit에서 증명하도록 시험 작성.
+- 기존 CurrentScene이 존재하는 경우 두 번째 게시·추가 Asset 금지 및 첫 Pointer 유지. `AuditEvent` SQL trigger가 실패할 경우 SceneAsset/CurrentScene/Job READY가 롤백되고 Orphan CLEANUP만 남는지 검사한다.
+- 시험은 **CPU Worker G7 Actor/Site 권한을 mock**한다. 따라서 실제 signed runtime 승인, 실제 독립 CPU Worker sandbox/cgroup/브라우저 복원/전체 DXF 지원의 근거가 아니다. `scene-cpu-worker-current-release.test.ts`는 진짜 0.60.0 G7 ID에서 두 env 스위치를 ON으로 변경해도 DB 접근 전 CPU Enqueue/Claim/Auth가 차단되는 음성을 추가한다. CI 종료 전 NOT VERIFIED.
+
+---
+
 ## TC-225-B2B Worker 권한·원본·처음 게시·CAS·감사 / GO-DEV (2026-11-04)
 
 - **권한 양성/음성:** 미래 서명 G7 Runtime mock에서 현재 Actor Editor/Admin+Site Grant, Version→Location→Building→Site 전 체인 활성, 원본 SHA, CPU Builder/schema2, RUNNING attempt1~3만 허용. Reader/비활성 Actor·Site·Building·Location, 제거된 Grant, 바뀐 SourceSHA/Version/Builder/Attempt, Signed Runtime OFF 또는 마지막 검사 시 Site 제외, `SCENE_AUTO_BUILD_ENABLED/SCENE_CPU_WORKER_ENABLED` OFF를 모두 차단. Unit의 미래 Schema mock은 **실 G7 Registry 승인이 아니다.**
