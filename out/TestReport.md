@@ -1,3 +1,14 @@
+## #225 폐기 가능한 통합·브라우저 검증 — 신규 PR 전 증거 상태 (2026-11-05)
+
+**현재 판정: SOURCE ADDED / NOT RUN, GO-PILOT BLOCKED.** 실행 서버에 Docker 및 GitHub DNS가 없어 여기서는 repository unit/integration/Chromium 시험을 실제 실행하지 못했다. 정확 신규 HEAD PR CI 결과가 생성되기 전 성공·실패를 단정하지 않는다. 기존 Main CI 성공은 PR #232 통합 증거이며 이번 신설 테스트에 대한 PASS가 아니다.
+
+- 통합 소스: 실제 폐기 가능한 G7 0.61 SQLite·CAD 디렉터리 생성 → **새 Node 프로세스** 실제 QUEUED Job 선점/DTO·Asset 게시/READY/감사/새 DB readback/중복 IDLE. 다른 자식 프로세스가 claim 후 실제 SIGKILL(후속 stale 시각 가속) → 다음 Worker가 유한 Retry로 게시. 원본 바이트 변조 및 Actor Site grant 삭제 시 무포인터 FAILED.
+- 브라우저 소스: Node CPU LINE DTO를 실제 immutable local Scene Blob에 기록/읽기, 원본 DXF 재파싱 없는 **새 Chromium context**의 렌더 복원 및 바이트 변조 거부.
+- **별도 미수행:** 실제 HTTP multipart 업로드·signed UI API·OCI container worker·실 cgroup CPU/RAM/PIDs, network none, read-only rootfs, 호스트 재기동 및 G7 백업/격리복원, 사용자 브라우저 완전 UI E2E. 이 항목들은 실제 증거 전까지 NOT RUN이며 Pilot 차단을 유지한다.
+- 테스트 컴파일/런타임 실패 발생 시 `out/FailureLedger.md`에 정확 Run/Job/HEAD/로그·원인·수정·재검증을 추가한다. Test scope is disposable, source-only until exact-HEAD CI. Production flags SCENE_AUTO_BUILD_ENABLED=OFF / SCENE_CPU_WORKER_ENABLED=OFF; #229 >=0.61 GHCR HOLD, #231 Tag Ruleset OPEN, #225/#218 OPEN, GO-PILOT BLOCKED. No production DB/CAD/Volume/.env, GHCR or tag writes.
+
+---
+
 ## #225 B3 PR #232 — 현재 코드 시험 범위 (2026-11-04, Pending CI)
 
 기존 PR CI #595는 초기 순수 표시 계약 HEAD `24a648a`의 SUCCESS이며 후속 status API/UI/retry 구현을 검증하지 않는다. 새 branch에서 #599/HEAD `26da5c4` Static step은 unit fixture `updateMany` mock에 인자 타입이 없어 TS2352/TS2493 발생; 이후 `_input?:unknown`으로 수정했다. 정확 새 HEAD 필수 CI 성공은 아직 확인 전이다. 모의/순수 테스트로 상태/권한 판단과 CAS 코드 변경을 검증하도록 추가했으나 실제 signed G7 API, Immutable Blob, Browser Viewer 복원, 별도 OCI recovery는 미실행/GO-PILOT BLOCKED다.
