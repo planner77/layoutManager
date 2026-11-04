@@ -133,6 +133,13 @@ d.close();});process.stdout.write(h.digest('hex'));'''
 
         seed_script = r'''const D=require('better-sqlite3'),fs=require('node:fs'),crypto=require('node:crypto');
 const d=new D('/data/db/cad.sqlite'),id=crypto.randomUUID();
+// This disposable DB was installed by the candidate 0.60 image. Restore the
+// exact frozen 0.56 Zone schema AND migration ledger before setting old metadata.
+// Merely changing g7-install.json falsely presents the new Job DDL as 0.56.
+d.exec('DROP TABLE "SceneBuildJob"');
+d.prepare('UPDATE "_prisma_migrations" SET migration_name=?,checksum=?').run(
+  '202611010002_greenfield_semantic_zones_baseline',
+  crypto.createHash('sha256').update('layoutManager:G7-GREENFIELD-SEMANTIC-ZONES-20261101-1:baseline').digest('hex'));
 d.prepare('INSERT INTO "User"(id,login_name,password_hash,status,must_change_password,created_at,updated_at) VALUES(?,?,?,?,?,?,?)')
 .run(id,'qa-wal-admin','synthetic-hash','ACTIVE',0,1,1);
 d.prepare('INSERT INTO "UserRoleGrant"(user_id,role,granted_at) VALUES(?,?,?)').run(id,'Admin',1);
@@ -154,6 +161,11 @@ fs.writeFileSync(p,JSON.stringify(m),{mode:0o600});'''
         for action in ("preflight", "plan", "status"):
             status, payload = cli(owned, action)
             if status or payload.get("state") != "UPGRADE_MIGRATION_REQUIRED":
+                # Diagnostic is deliberately limited to status/state/code, not
+                # source DB contents, tokens, paths or full subprocess output.
+                print(json.dumps({"action": action, "exitCode": status,
+                                  "state": payload.get("state"),
+                                  "code": payload.get("code")}), file=sys.stderr)
                 raise RuntimeError("G7_WAL_RO_SMOKE_STOPPED_WAL_BLOCKED")
             if snapshot(owned) != initial:
                 raise RuntimeError("G7_WAL_RO_SMOKE_READONLY_SOURCE_CHANGED")
