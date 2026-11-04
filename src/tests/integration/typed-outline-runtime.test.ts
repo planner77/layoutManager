@@ -297,6 +297,11 @@ test('TC-R3-009: 100 tied rows paginate without gaps and the 101st creation is r
 test('TC-R3-001/005: exact R2 schema stays valid but new Version endpoints return 503 without DDL',async()=>{
  const f=setup(),url='/api/cad-files/'+f.versionId,raw=f.open();
  // Reconstruct the historic R2 fingerprint from the fresh R4 baseline.
+ // Current v0.60 fresh installs also contain SceneBuildJob + four associated
+ // indexes. DROP TABLE atomically removes those indexes from this disposable
+ // fixture. Leaving them while forging the old R2 history is schema drift,
+ // correctly rejected by the strict G7 validator.
+ raw.exec('DROP TABLE "SceneBuildJob"');
  raw.exec('DROP TABLE "CadZoneCreateReceipt"; DROP TABLE "CadZoneGeometry"; DROP TABLE "CadZoneAudit"; DROP TABLE "CadZone"; DROP TABLE "ZoneCategory";');
  raw.exec('DROP TABLE "CadOutlineCreateReceipt"');
  raw.prepare('UPDATE "_prisma_migrations" SET migration_name=?,checksum=?')

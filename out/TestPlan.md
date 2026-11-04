@@ -1,3 +1,40 @@
+## TC-225 CI #558 실제 실패 회귀 (2026-11-04)
+
+- WAL 열린 writer: 하나의 승인 Plan ID를 첫 apply 전 확보하고, 첫 apply 잠금 유지 시 동일 ID의 중복 apply가 `G7_UPGRADE_RESTORE_REQUIRED`를 반환하며 원래 첫 시도는 await되어 Backup/Isolated Restore/Committed User row를 끝까지 검증한다.
+- Docker Readonly WAL: synthetic v0.56 manifest에 정확 Zone schemaId, `preflight/plan/status`는 `UPGRADE_MIGRATION_REQUIRED`; stopped/active WAL 계획 시 DB/manifest side-effect0, 판정 후 승인 Plan ID에 대한 실제 migration apply를 사용. 새 Job DDL+Migration 2행을 strict validator로 확인하고, 기존 User 등 모든 업무 Table row와 원본 bytes의 Hash 보존; 신규 Job Table 및 migration history만 명시적 제외.
+- CI의 품질/스모크 원래 Job과 필수 Required Verify는 유지한다. 현재 미구현 Worker/B2·B3를 허위 READY로 판정 금지. [FailureLedger](FailureLedger.md).
+
+---
+
+## TC-225-B1-G7 / CI #557 실제 회귀 보완 (2026-11-04)
+
+- 구버전 0.56/0.58/0.59로 재구성한 소유 테스트 DB에서 Schema ID=기존 Zone ID + Version/tag/baseline/checksum/SQL 지문 일치 검증; 신규 Job 테이블 삭제 후 기존 History 복원. 불일치 시 `G7_UPGRADE_UNSUPPORTED_PATH` 유지.
+- R2 typed outline 재구성은 Zone/Receipt 및 신규 Job/인덱스 제거 후 과거 R2 baseline을 검증. 조작된 스키마 이력을 승인하지 않는다.
+- Docker smoke 0.56→0.60의 reviewed `MIGRATION`에서 exact plan ID, requiresApproval, 명시적 `apply`, 백업/복구, 신규 Job schema, 로그인·권한·CAD 데이터 무변경을 검증. 신규 Job·migration metadata는 의도된 변경이므로 비즈니스 데이터 동일성 검사만 제외하고 전체 기존 데이터·CAD는 유지.
+- 이 범위의 PR CI는 실제 변경분·기존 실패에 한정, 테스트 skip/timeout 완화 금지. GO-PILOT 별도.
+
+---
+
+## TC-225-B1-G7 0.60 후보 수용 계획 (2026-11-04)
+
+- Fresh 0.60 Greenfield Job 기준선 1행+Job Table/4 Index, 정확 G7 Runtime Schema PASS. 이전 0.59 Zone baseline 유지.
+- 0.59 데이터→0.60 업그레이드는 MIGRATION_REQUIRED, 유지관리 승인과 Plan ID 없으면 변경0; 승인 후 Job DDL/History 2행+User/Site/Auth/Audit/DXF/Scene/Current/Memo/Zone/Outline 보존, 백업·복구 확인.
+- SQL 파일과 G7 Registry의 reviewed SQL/Checksum 동등성, 불량 인덱스·허위 Migration 이력 차단. Zone/Outline/Memo 읽기·편집 경로 2행 이력 인식.
+- 테스트 실패의 실제 원인과 재검증만 필수 게이트로 취급하며, 미구현 Worker GO-PILOT 증거는 별도.
+
+---
+
+## #225 B1 Schema / CAS / Feature Gate 검증 계획 (2026-11-04)
+
+
+**동시성 1 보증:** 기존 개별 Job `status+attempt` CAS에 더해, 후보 SQL의 partial UNIQUE `uq_scene_build_one_running`은 전역 `RUNNING` 상태를 하나만 허용한다. Claim은 활성 RUNNING을 먼저 검사하며 경쟁이 발생하면 DB UNIQUE 실패를 숨기지 않는다. 실 Worker가 여러 프로세스로 배포되는 분산 설계의 대체가 아니며, 활성화 전 신규 G7 릴리스 등록과 실제 통합 시험이 필요하다.
+- **TEST/GO-DEV**: 실제 Prisma 모델과 SQL DDL key/index/foreign keys, invalid digest/status와 중복 key 거절, SQLite Version+Job transaction rollback; 별도 fixture only.
+- **TEST/GO-INTEGRATE**: 승인된 G7 Runtime+DXF에 대해서만 같은 `CadRepository.register` 트랜잭션으로 Job을 기록하고 Job 저장 실패 시 Version·Audit·Current 및 원본 Storage 보상 정책을 지킬 것. 기본 `SCENE_AUTO_BUILD_ENABLED` OFF, 등록 전 schema가 없으면 fail closed. 단일 claim CAS, stale/retry, 오류 allowlist, 권한/세션 토큰 비노출.
+- **TEST/GO-PILOT (현재 NOT RUN)**: 등록된 신규 G7 Migration/Schema fingerprint/백업-복구 및 실 DB Enqueue·Worker restart·DTO non-WebGL 변환·`SceneRepository` Authorize/CAS·브라우저 재접속. 정확 CI HEAD 성공 전 PASS 주장 금지.
+- 이미 합격한 이전 CPU/Adapter 시험을 새 Worker 전체 성공으로 사용하지 않는다. 현재 라이브 `SceneBuildJob` 테이블 없음, Worker/자동 Scene READY 미구현. 원본/기존 READY·G7 권한 안전을 우선.
+
+---
+
 ## TC-218-LEAN — 현행 단계별 필수 검증 매트릭스 (2026-11-04)
 
 [현행 Owner 정책](Issue218LeanPolicy.md)을 우선한다. **테스트를 지우거나 가짜 PASS로 처리하지 않고 GO 판단의 적용 단계를 조정**한다. CI YAML/현재 required checks는 이번 문서 PR에서 변경하지 않는다. 아래 과거 A2 테스트 명세는 실험/회귀 이력이며 GO-DEV 차단 조건이 아니다.

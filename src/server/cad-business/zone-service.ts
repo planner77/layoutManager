@@ -9,7 +9,7 @@ import {writeTransaction,type Database} from '@/server/db';
 import {requireSceneRead} from '@/server/scene/scene-context';
 import {requireG7CadPermission,requireG7RuntimeWrite,type G7CadWrite} from '@/server/g7-operational/cad-guard';
 import {assertRuntimeApprovalCurrent} from '@/server/g7-operational/runtime-handler';
-import {G7_GREENFIELD_BASELINE} from '@/server/g7-operational/greenfield-schema';
+import {hasG7FeatureSchemaHistory} from '@/server/g7-operational/greenfield-schema';
 import type {G7RuntimeActiveGate} from '@/server/g7-operational/runtime-gate';
 
 type Tx=Prisma.TransactionClient;
@@ -61,7 +61,7 @@ function stable(value:unknown):string{
 }
 async function schema(tx:Tx):Promise<void>{
  const rows=await tx.$queryRawUnsafe<{migration_name:string}[]>('SELECT migration_name FROM "_prisma_migrations"');
- if(rows.length!==1||rows[0].migration_name!==G7_GREENFIELD_BASELINE)fail('ZONE_SCHEMA_UNAVAILABLE',503);
+ if(!hasG7FeatureSchemaHistory(rows,'zone'))fail('ZONE_SCHEMA_UNAVAILABLE',503);
 }
 async function version(tx:Tx,versionId:string){
  const v=await tx.cadFileVersion.findUnique({where:{id:versionId},

@@ -1,3 +1,17 @@
+## #225 B1 G7 0.60.0 후보 스키마·업그레이드 (2026-11-04, Draft)
+
+현행 Owner 정책은 GO-DEV 허용/GO-PILOT 미승인. 신규 후보 0.60.0은 G7-GREENFIELD-SCENE-JOBS-20261104-1 기준선을 선언한다. 기존 0.59.0 Zone 기준선과 GHCR 이미지 태그는 불변이며 0.59.0→0.60.0은 승인·백업·복구를 요구하는 MIGRATION이다. 새 SceneBuildJob DDL과 2행 업그레이드 이력·Zone/Outline/Memo read/write 회귀는 정확 HEAD CI로 검증한다. 실제 CPU Worker·G7 배경 게시·목록 UI 미구현, 자동 생성 환경변수는 OFF 유지. [Issue225](out/Issue225.md).
+
+---
+
+## #225 B1 점진적 구현 — Job 스키마/원자적 Enqueue는 릴리스 등록 전 OFF (2026-11-04)
+
+[Issue #225](https://github.com/planner77/layoutManager/issues/225), [Issue225](out/Issue225.md), [Issue218LeanPolicy](out/Issue218LeanPolicy.md)를 우선한다. `src/prisma/schema.prisma`에 SceneBuildJob 모델, `src/deploy/scene-build-jobs/migration.sql`에는 **미등록 후보 전진 DDL**이 있다. **기존 0.59.0 G7 baseline/registry/checksum은 수정하지 않았으므로 `SCENE_AUTO_BUILD_ENABLED`는 OFF로 둔다.** 신규 승인 릴리스의 Migration/Schema fingerprint/복구 검증 후만 활성화한다. 단일 Worker CAS/Enqueue는 코드가 있어도 **Worker 실행/READY 자동 게시가 아니다**. 기본 G7 토큰·권한/원본/READY 보호 및 기존 required CI를 유지한다.
+
+
+**추가 차단:** 0.59.0의 기존 `G7_GREENFIELD_SCHEMA_ID`에서는 `SCENE_JOB_RELEASE_NOT_REGISTERED`(503)을 반환한다. 수동 테이블 생성만으로는 활성화되지 않는다. 승인된 신규 G7 Schema ID `G7-GREENFIELD-SCENE-JOBS-20261104-1`와 등록 Migration/DDL Fingerprint가 모두 반영된 이후에만 기능을 켤 수 있다.
+---
+
 ## #218 현행 Owner 정책 — 2D·단일 Worker / 단계별 GO (2026-11-04)
 
 **[out/Issue218LeanPolicy.md](out/Issue218LeanPolicy.md)가 신규 GO/AC 정본**이다. 이전 P1-A2의 전면 운영 GO 전 P1-B 코딩 금지, 서버 Headless WebGL 복원, 원본 Entity 100% 매핑, 다중 Worker/실 CAD 3종/2PC/전체 SBOM을 *코딩 착수 게이트*로 묶은 해석은 폐기한다. **GO-DEV(단일 CPU Worker 구현)는 허용**하되 GO-PILOT(실 배포)은 실제 새 Worker·데이터/권한·지원 브라우저 복원·격리·복구 검증 후 판정한다. 기존 CI YAML required jobs는 변경하지 않는다. 기존 원장·과거 테스트의 FAIL/PARTIAL을 소급 수정하지 않는다.

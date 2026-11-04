@@ -10,7 +10,7 @@ import {businessSchema} from './service';
 import {hasAnchorSchema} from './anchor-service';
 import {isSiteMemoAdmin} from './memo-policy';
 import {keys,revision,sourceSha} from './validation';
-import {G7_GREENFIELD_BASELINE} from '@/server/g7-operational/greenfield-schema';
+import {hasG7FeatureSchemaHistory} from '@/server/g7-operational/greenfield-schema';
 function reject(code:string,status=409):never {throw new CadError(code,'현재 도면의 업무 객체가 변경되었습니다. 다시 조회한 후 확인하세요.',status);}
 export async function resetBusinessVersion(db:Database,versionId:string,raw:unknown,proof:G7CadWrite){
  const b=keys(raw,['mode','sourceSha256','expectedSceneRevision','outlines','memos']);
@@ -29,7 +29,7 @@ export async function resetBusinessVersion(db:Database,versionId:string,raw:unkn
     reject('RESET_ACTOR_CONFLICT',403);
   const marker=await tx.$queryRawUnsafe<{migration_name:string}[]>(
    'SELECT migration_name FROM "_prisma_migrations"');
-  const zoneAvailable=marker.length===1&&marker[0].migration_name===G7_GREENFIELD_BASELINE;
+  const zoneAvailable=hasG7FeatureSchemaHistory(marker,'zone');
   if(zoneAvailable){
    const zoneActor=await requireG7CadPermission(tx,proof,'zone:write',{kind:'version',versionId});
    if(zoneActor.actorId!==outlineActor.actorId||zoneActor.siteId!==outlineActor.siteId)

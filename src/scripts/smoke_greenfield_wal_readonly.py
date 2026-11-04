@@ -18,6 +18,22 @@ PHASE = "arguments"
 
 def call(command, *, image_run=False, allow_failure=False):
     result = subprocess.run(command, capture_output=True, text=True, check=False)
+    if result.returncode and allow_failure:
+        # g7-greenfield.ts emits fixed JSON error codes to stderr. Retain
+        # only that allowlisted code; never print raw Docker stderr, paths,
+        # database content, credentials, or a signed plan identifier.
+        for line in reversed(result.stderr.splitlines()):
+            try:
+                payload = json.loads(line)
+            except (ValueError, TypeError):
+                continue
+            if not isinstance(payload, dict):
+                continue
+            code = payload.get("code")
+            if isinstance(code, str) and re.fullmatch(r"G7_[A-Z0-9_]{1,100}", code):
+                print(json.dumps({"stage": PHASE, "cliCode": code,
+                                  "exitCode": result.returncode}), file=sys.stderr)
+                break
     if result.returncode and not allow_failure:
         raise RuntimeError("G7_WAL_RO_SMOKE_COMMAND_FAILED")
     return result.stdout.strip(), result.returncode
@@ -111,7 +127,7 @@ process.stdout.write(JSON.stringify({dir:{dev:d.dev,ino:d.ino,mode:d.mode&0o777,
         script = r'''import Database from 'better-sqlite3';import {createHash} from 'node:crypto';
 import {withReadOnlyInspection} from './server/g7-operational/greenfield-readonly-inspection.ts';
 const h=createHash('sha256');withReadOnlyInspection(process.argv[1],file=>{const d=new Database(file,{readonly:true,fileMustExist:true});
-for(const {name} of d.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name").all()){
+for(const {name} of d.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT IN ('_prisma_migrations','SceneBuildJob') ORDER BY name").all()){
 if(!/^[A-Za-z_][A-Za-z_0-9]*$/.test(name))throw Error('schema');h.update(name+'\0');
 for(const r of d.prepare('SELECT * FROM "'+name+'"').all().map(x=>JSON.stringify(x)).sort())h.update(r+'\n');}
 d.close();});process.stdout.write(h.digest('hex'));'''
@@ -133,11 +149,19 @@ d.close();});process.stdout.write(h.digest('hex'));'''
 
         seed_script = r'''const D=require('better-sqlite3'),fs=require('node:fs'),crypto=require('node:crypto');
 const d=new D('/data/db/cad.sqlite'),id=crypto.randomUUID();
+// This disposable DB was installed by the candidate 0.60 image. Restore the
+// exact frozen 0.56 Zone schema AND migration ledger before setting old metadata.
+// Merely changing g7-install.json falsely presents the new Job DDL as 0.56.
+d.exec('DROP TABLE "SceneBuildJob"');
+d.prepare('UPDATE "_prisma_migrations" SET migration_name=?,checksum=?').run(
+  '202611010002_greenfield_semantic_zones_baseline',
+  crypto.createHash('sha256').update('layoutManager:G7-GREENFIELD-SEMANTIC-ZONES-20261101-1:baseline').digest('hex'));
 d.prepare('INSERT INTO "User"(id,login_name,password_hash,status,must_change_password,created_at,updated_at) VALUES(?,?,?,?,?,?,?)')
 .run(id,'qa-wal-admin','synthetic-hash','ACTIVE',0,1,1);
 d.prepare('INSERT INTO "UserRoleGrant"(user_id,role,granted_at) VALUES(?,?,?)').run(id,'Admin',1);
 d.pragma('journal_mode=WAL');d.close();
 const p='/data/db/g7-install.json',m=JSON.parse(fs.readFileSync(p,'utf8'));
+m.schemaId='G7-GREENFIELD-SEMANTIC-ZONES-20261101-1';
 m.version='0.56.0';m.appImage='ghcr.io/planner77/layoutmanager:0.56.0';
 m.migratorImage='ghcr.io/planner77/layoutmanager:0.56.0-migrate';m.sourceCommit='';
 fs.writeFileSync(p,JSON.stringify(m),{mode:0o600});'''
@@ -152,7 +176,12 @@ fs.writeFileSync(p,JSON.stringify(m),{mode:0o600});'''
         PHASE = "stopped-wal-readonly-plan-status"
         for action in ("preflight", "plan", "status"):
             status, payload = cli(owned, action)
-            if status or payload.get("state") not in ("UPGRADE_COMPATIBLE", "UPGRADE_READY"):
+            if status or payload.get("state") != "UPGRADE_MIGRATION_REQUIRED":
+                # Diagnostic is deliberately limited to status/state/code, not
+                # source DB contents, tokens, paths or full subprocess output.
+                print(json.dumps({"action": action, "exitCode": status,
+                                  "state": payload.get("state"),
+                                  "code": payload.get("code")}), file=sys.stderr)
                 raise RuntimeError("G7_WAL_RO_SMOKE_STOPPED_WAL_BLOCKED")
             if snapshot(owned) != initial:
                 raise RuntimeError("G7_WAL_RO_SMOKE_READONLY_SOURCE_CHANGED")
@@ -192,7 +221,7 @@ process.stdout.write(String(d.prepare('SELECT COUNT(*) AS n FROM "User"').get().
         output, status = image_command(owned, readonly=True, command=("-e", row_count_script))
         if status == 0 and output == "2":
             status, payload = cli(owned, "plan")
-            if status or payload.get("state") != "UPGRADE_COMPATIBLE":
+            if status or payload.get("state") != "UPGRADE_MIGRATION_REQUIRED":
                 raise RuntimeError("G7_WAL_RO_SMOKE_ACTIVE_WAL_PLAN_FAILED")
         elif status != 0:
             # A read-only SQLite runtime may block explicitly while a writer is
@@ -212,15 +241,74 @@ process.stdout.write(String(d.prepare('SELECT COUNT(*) AS n FROM "User"').get().
             raise RuntimeError("G7_WAL_RO_SMOKE_STOPPED_SIDECAR_PRESENT")
         post_writer_hash = logical_hash(owned)
 
-        PHASE = "backup-apply"
+        PHASE = "backup-plan"
         apply_env = settings() | {
             "G7_UPGRADE_MAINTENANCE_ACK": "APP_STOPPED_BY_HOST_HELPER",
             "G7_UPGRADE_PAIR_VERIFIED": "true",
         }
-        status, payload = cli(owned, "apply", readonly=False, env=apply_env)
+        # The candidate adds the Job table to the original frozen zone
+        # baseline. The existing versioned approval policy must remain
+        # enforced even for this fully owned, disposable CI volume.
+        plan_status, approval = cli(owned, "plan")
+        plan_id = approval.get("planId")
+        if (plan_status or approval.get("state") != "UPGRADE_MIGRATION_REQUIRED"
+                or approval.get("requiresApproval") is not True
+                or approval.get("from") != "0.56.0"
+                or approval.get("to") != options.version
+                or not isinstance(plan_id, str)
+                or not re.fullmatch(r"[a-f0-9]{64}", plan_id)):
+            print(json.dumps({"stage": PHASE, "exitCode": plan_status,
+                              "state": approval.get("state"),
+                              "from": approval.get("from"), "to": approval.get("to"),
+                              "requiresApproval": approval.get("requiresApproval"),
+                              "planIdFormatValid": isinstance(plan_id, str) and bool(re.fullmatch(r"[a-f0-9]{64}", plan_id))}),
+                  file=sys.stderr)
+            raise RuntimeError("G7_WAL_RO_SMOKE_PLAN_INVALID")
+        PHASE = "backup-apply-execute"
+        status, payload = cli(owned, "apply", ("--approve-plan", plan_id),
+                              readonly=False, env=apply_env)
         backup_id = payload.get("backupId")
         if status or not isinstance(backup_id, str) or not re.fullmatch(r"[0-9a-f-]{36}", backup_id):
+            print(json.dumps({"stage": PHASE, "exitCode": status,
+                              "returnedStateValid": payload.get("state") == "G7_GREENFIELD_READY",
+                              "backupIdFormatValid": isinstance(backup_id, str) and bool(re.fullmatch(r"[0-9a-f-]{36}", backup_id))}),
+                  file=sys.stderr)
             raise RuntimeError("G7_WAL_RO_SMOKE_BACKUP_CREATE_FAILED")
+        PHASE = "backup-schema-verify"
+        # Explicitly validate the complete signed next-release schema; the
+        # logical hash below excludes only expected new Job/history tables,
+        # and still preserves ALL pre-existing business table rows.
+        schema_script = r'''import Database from 'better-sqlite3';
+import {assertDeclaredSchema,GREENFIELD_UPGRADE_REGISTRY} from './server/g7-operational/greenfield-upgrade-registry.ts';
+import {withReadOnlyInspection} from './server/g7-operational/greenfield-readonly-inspection.ts';
+import {readFileSync} from 'node:fs';
+const info=JSON.parse(readFileSync('/data/db/g7-install.json','utf8'));
+const release=GREENFIELD_UPGRADE_REGISTRY.releases.find(r=>r.version===info.version);
+if(!release||release.schemaId!==info.schemaId)throw Error('release');
+// A cleanly closed WAL database may have no -shm/-wal sidecars. On a
+// read-only Docker volume SQLite must inspect the verified private copy,
+// not attempt to create shared-memory sidecars on the source.
+withReadOnlyInspection('/data/db/cad.sqlite',inspectedPath=>{
+  const db=new Database(inspectedPath,{readonly:true,fileMustExist:true});
+  try{
+    assertDeclaredSchema(db,release);
+    const history=db.prepare('SELECT migration_name FROM "_prisma_migrations" ORDER BY rowid').all();
+    if(history.length!==2||history[0].migration_name!=='202611010002_greenfield_semantic_zones_baseline'
+      ||history[1].migration_name!=='202611040001_scene_build_job')throw Error('history');
+  }finally{db.close();}
+});
+process.stdout.write('G7_210_APPROVED_JOB_SCHEMA_PASS');'''
+        before_schema_inspection = snapshot(owned)
+        proof, proof_status = image_command(owned, readonly=True,
+            command=("--import", "tsx", "--input-type=module", "-e", schema_script))
+        if proof_status or proof != "G7_210_APPROVED_JOB_SCHEMA_PASS":
+            print(json.dumps({"stage": PHASE, "exitCode": proof_status,
+                              "schemaProofMarkerMatches": proof == "G7_210_APPROVED_JOB_SCHEMA_PASS"}),
+                  file=sys.stderr)
+            raise RuntimeError("G7_WAL_RO_SMOKE_MIGRATED_SCHEMA_INVALID")
+        if snapshot(owned) != before_schema_inspection:
+            raise RuntimeError("G7_WAL_RO_SMOKE_READONLY_SOURCE_CHANGED")
+        PHASE = "backup-business-preservation"
         upgraded_hash = logical_hash(owned)
         if upgraded_hash != post_writer_hash:
             raise RuntimeError("G7_WAL_RO_SMOKE_UPGRADE_DATA_CHANGED")

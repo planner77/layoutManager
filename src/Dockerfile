@@ -104,6 +104,7 @@ COPY --from=builder /app/src/server/cad-business/anchor-ddl.ts ./server/cad-busi
 COPY --from=builder /app/src/server/cad-business/memo-feature-ddl.ts ./server/cad-business/memo-feature-ddl.ts
 COPY --from=builder /app/src/server/cad-business/zone-ddl.ts ./server/cad-business/zone-ddl.ts
 COPY --from=builder /app/src/server/g7-operational/greenfield-schema.ts ./server/g7-operational/greenfield-schema.ts
+COPY --from=builder /app/src/server/g7-operational/scene-job-ddl.ts ./server/g7-operational/scene-job-ddl.ts
 COPY --from=builder /app/src/server/g7-operational/greenfield-install.ts ./server/g7-operational/greenfield-install.ts
 COPY --from=builder /app/src/server/g7-operational/greenfield-auto.ts ./server/g7-operational/greenfield-auto.ts
 COPY --from=builder /app/src/server/g7-operational/greenfield-upgrade-registry.ts ./server/g7-operational/greenfield-upgrade-registry.ts
@@ -120,6 +121,7 @@ COPY --from=builder /app/src/server/g7-operational/disposable-target.ts ./server
 COPY --from=builder /app/src/server/g7-operational/preflight.ts ./server/g7-operational/preflight.ts
 COPY --from=builder /app/src/deploy/g7-s3 ./deploy/g7-s3
 COPY --from=builder /app/src/deploy/scene-assets ./deploy/scene-assets
+COPY --from=builder /app/src/deploy/scene-build-jobs ./deploy/scene-build-jobs
 COPY --from=builder /app/src/deploy/g7-runtime ./deploy/g7-runtime
 COPY --from=builder /app/src/domain/auth.ts ./domain/auth.ts
 USER cad

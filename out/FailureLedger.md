@@ -1,3 +1,77 @@
+## #225 / PR #226 CI #563 — 320px Viewer 모바일 모달 전환 경합 (2026-11-04)
+
+- **실제 실패:** [PR CI #563 / Run41750908638](https://github.com/planner77/layoutManager/actions/runs/41750908638), exact HEAD `9a4db5ed4fdf19ee21b4f9e8e569faf8735625e5`, completed/failure. Scope/Quality(TypeScript/ESLint/Unit/Integration/Build)/Docker 이미지·실 0.56→0.60 Migration/readonly WAL·백업·복구/Greenfield UI/Signed+Legacy/Chromium shard1 SUCCESS. Chromium shard2 Job `126317928488`의 `tests/e2e/issue91-memo-export.spec.ts:122`에서 **73 중 72 PASS, 1 FAIL**, 120,000ms 테스트 시간 초과. Required Verify Job `126321806243`는 이 실패를 전파했다. A2 CPU-only job은 경로 스코프상 SKIPPED. 따라서 **이 CI의 실패를 Docker/WAL 마이그레이션 실패로 분류하지 않는다.**
+- **실제 로그/현상:** `issue91-memo-export.spec.ts:131`의 `clickViewerCommand(page,'view','브라우저 전체 화면')` 시 `viewer-menu-helper.ts:27`의 `[data-viewer-group="view"]` 실제 클릭을 `[data-testid="cad-viewer-shell"][data-fullscreen="true"][data-native-fullscreen="false"]`이 225회 가로챘다. Playwright는 메뉴 버튼 visible/enabled/stable로 판단했지만 클릭은 120s 동안 실패했다. **native fullscreen 진입 전**에 중단된 것이며, GLB 내보내기·메모 높이 검증 실패의 증거는 없다.
+- **코드 근거/원인 판단:** 테스트는 데스크톱에서 Memo 생성 도구를 연 상태로 `page.setViewportSize({width:320,height:740})` 직후 새 메뉴를 클릭한다. `viewer-app-state.ts`의 `compact-exclusive`와 `ViewerAppShell`의 미디어쿼리·모바일 drawer 전환은 React effect 후에 적용되고, 활성 모바일 모달 중 header는 의도적으로 `inert`이다. 공통 `openViewerMenu` helper는 모달이 가시화되기 전에 한 번만 `isVisible()`을 확인하므로 전환 경합을 놓칠 수 있다. 해당 설명은 로그의 shell pointer interception과 코드 상태 전환으로 뒷받침되지만, 원격 trace 기반 상세 시점/재현은 미검증이므로 **가능성이 높은 테스트 동기화 원인**으로 기록한다.
+- **보완:** `src/tests/e2e/issue91-memo-export.spec.ts` 한 파일에서 (1) 두 번째 Memo 저장 상태 `2/100` 확인, (2) 320px 전환 후 실제 `viewer-tools-dock`이 `role=dialog` 모바일 모달로 나타날 때까지 기다림, (3) 사용자에게 보이는 `도구 닫기` 버튼 클릭 및 모달 unmount·상단 header `inert` 해제를 기다림, (4) 원래 `브라우저 전체 화면` 메뉴를 실 클릭해 `document.fullscreenElement`가 CAD Shell과 동일하며 `data-native-fullscreen=true`임을 추가 검증. 이후 기존 320px 교환 모달/키보드 포커스, AUTO/수동 높이, 전체·선택 Memo, GLB 다운·private metadata 거부 등 전체 assertion은 유지한다.
+- **정책/검증 한계:** E2E 테스트 동기화만 수정. `force:true`, JS click, 테스트 skip, retry/timeouts 증가, CI 게이트 변경, 개발/운영 G7/Migration/백업·원본 CAD/0.59 GHCR 조정 없음. 수정은 새 HEAD CI 이전에 로컬 Full Playwright/Docker 실행으로 검증하지 않았고 신규 CI 최종 결과는 미확정. PR Draft, GO-DEV만 허용, GO-PILOT BLOCKED, #218/#225 OPEN.
+
+---
+
+## #225 / PR #226 CI #562 — 승인형 Migration 이후 WAL readonly 스키마 증명 실패 (2026-11-04)
+
+- **정확한 실패:** [PR CI #562 / Run41748309671](https://github.com/planner77/layoutManager/actions/runs/41748309671), exact HEAD `18f4e3aad534e25e7406edcfb7cc273f39968322`, completed/failure. Quality/TypeScript/ESLint/Unit/Integration/Build, G7 Greenfield UI, Signed/Legacy, Chromium 2 shards SUCCESS. Docker Job `126306862216`의 필수 `Readonly stopped and active WAL inspection and recovery (#210 P2)` 단계가 `G7_WAL_RO_SMOKE_FAILED stage=backup-schema-verify`로 종료; Required Verify `126313199069` 종속 FAIL. #218 A2 test Job은 스코프 분류상 SKIPPED. 이 결과는 운영 G7 migration의 실패가 아니라 CI 합성 검증 실패 증거이다.
+- **원인 분석:** 정확 `backup-schema-verify`까지 진행하여 `backup-plan` 및 승인형 `backup-apply-execute`/유효한 backupId가 선행 검사를 통과했다. 그런데 smoke의 독립 `schema_script`는 원본 `/data/db/cad.sqlite`를 **readonly Docker volume**에서 `new Database(source,{readonly:true,fileMustExist:true})`로 직접 열었다. 기존 [#210 P2 WAL 원장](FailureLedger.md)의 clean-close WAL/no-sidecar 조건에서는 SQLite가 `-shm`을 생성하려다 읽기 전용 volume에 막힐 수 있으며, 같은 Smoke의 `logical_hash()`와 실제 Upgrade Engine은 이미 검증된 `withReadOnlyInspection()`을 사용한다. 따라서 테스트 전용 DB-open 경로의 불일치가 강하게 의심된다. 이 실행은 하위 Node stderr를 내보내지 않았으므로 **정확한 SQLite 오류명은 미확인**, 후속 CI로 검증한다.
+- **보완:** Smoke 독립 업그레이드 스키마 검증을 `withReadOnlyInspection('/data/db/cad.sqlite', cb)`에 감싸고 private copy 또는 정상 readonly source에서 **변경하지 않은 `assertDeclaredSchema` 전체 G7 DDL/신규 Job 4 index + 정확 2행 `_prisma_migrations`**를 검증하도록 했다. 해당 호출 전·후 `snapshot(owned)`를 비교해 원본 DB/manifest dev·ino·size·mode·uid·SHA 및 DB directory 목록 불변성을 추가 검사. 실패 시 exitCode와 marker-match만 출력하며 소스·계정·백업 식별자 출력 금지.
+- **보전·게이트:** 승인 `--approve-plan` 및 64hex Plan ID, 실 WAL stopped/active writer/사이드카, 실제 backup/rehearsal 및 isolated restore, 기존 업무 테이블 전체 행 hash 비교, 전체 required CI 유지; test skip/timeouts/유효성 범위 완화 없음. 운영 DB/Volume/GHCR·0.59.0 릴리스/기존 CAD·G7 보안 미변경. 현 HEAD 변경은 Smoke/문서에만 제한; 새 정확 HEAD CI 결과 미검증. PR Draft/GO-DEV만 허용, GO-PILOT BLOCKED, #218/#225 OPEN.
+
+---
+
+## #225 / PR #226 CI #561 — WAL backup-apply 세부 실패 판정 보완 (2026-11-04)
+
+- **실제 실패:** [PR CI #561 / Run41745346723](https://github.com/planner77/layoutManager/actions/runs/41745346723), exact HEAD `28203b5204cbb3f055b8c5fe5b183f5285d6633a`, completed/failure. Docker Job `126297636657`, mandatory step `Readonly stopped and active WAL inspection and recovery (#210 P2)` 에서 `G7_WAL_RO_SMOKE_FAILED stage=backup-apply` (2026-11-04 00:25:15 UTC). Required Verify `126303491037` 종속 실패. Scope/Quality(Typecheck/Lint/Unit/Integration/Build)/Greenfield E2E/Signed+Legacy/Chromium shards 1·2는 SUCCESS; #218 A2는 경로 기준 SKIPPED.
+- **현상 변화:** 이전 [#559](https://github.com/planner77/layoutManager/actions/runs/41741458097)의 `stopped-wal-readonly-plan-status` 실패는 #561에서 재발하지 않았다. 즉, 현재 합성 Zone 0.56 Fixture 복원으로 stopped/active WAL 검증을 진행한 뒤 승인형 migration의 Plan/Apply/backup/schema/hash 구간까지 진입했다. 하지만 기존 스크립트가 이 전 구간을 `backup-apply` 한 단계로 표기하고 `cli()`가 Docker의 안전한 JSON stderr를 폐기하므로 실패한 **정확한 내부 하위 검사와 CLI code는 이 실행의 로그만으로 판단 불가능**하다. 임의의 `G7_UPGRADE_BACKUP_REQUIRED`, Plan 불일치 또는 운영 migration 결함으로 단정하지 않는다.
+- **보완/재검증:** `src/scripts/smoke_greenfield_wal_readonly.py`의 책임 구간을 `backup-plan`, `backup-apply-execute`, `backup-schema-verify`, `backup-business-preservation`으로 분리한다. CLI 실패는 allowlisted `G7_[A-Z0-9_]` 계열 고정 코드와 exitCode만 표준 JSON으로 출력하고 전체 stderr/Plan ID/DB 경로·행/인증값은 출력하지 않는다. Plan/from/to/approval/hex format 및 apply backup ID 유무를 비밀 없는 불리언·식별 상태로 보고한다. 정확 실패 지점이 확인되기 전 제품 migration/backup/lock 코드를 추측 수정하지 않는다.
+- **불변 정책:** 0.60.0 승인 Plan ID 정합·64hex 확인, stopped/active WAL read-only/sidecar/source-SHA, 실제 승인형 apply+backup+restore, 완전한 Job DDL/2 history, 모든 기존 업무 테이블 행 보존 비교를 **삭제·skip·완화하지 않는다**. Docker/Runtime/G7 권한·보안·원본 CAD/운영 DB/Volume/현행 0.59.0 GHCR 비변경. 수정은 CI test observability로 분류; 로컬 Docker는 사용 불가하므로 새 exact HEAD CI의 최종 판정은 **미검증**. PR Draft, GO-DEV만 허용, GO-PILOT BLOCKED, #218/#225 OPEN.
+
+---
+
+## #225 / PR #226 CI #559 — Docker stopped-WAL fixture mismatch (2026-11-04)
+
+- **확인된 실패:** [PR CI #559 / Run41741458097](https://github.com/planner77/layoutManager/actions/runs/41741458097), exact HEAD `fe77c165c89d7afe4524a110eef9b71204b8bda3`, completed/failure. Quality (typecheck, ESLint, 1016 tests, production build), Greenfield UI, signed G7/legacy, Chromium E2E 2 shards PASS. Docker Job `126283787292`의 `Readonly stopped and active WAL inspection and recovery (#210 P2)` step21 FAIL, Required Verify `126290971423` 는 해당 Docker 실패를 정상 전파. A2 scope SKIPPED.
+- **실제 로그:** `G7_WAL_RO_SMOKE_FAILED` / `stage=stopped-wal-readonly-plan-status` (Docker log 2026-11-03 23:54:35 UTC). `src/scripts/smoke_greenfield_wal_readonly.py`는 후보 0.60.0 fresh install DB를 생성한 후 manifest의 `schemaId/version`만 0.56.0 Zone으로 변경하고 **신규 `SceneBuildJob` 테이블 및 Job baseline migration row는 유지**했다. 기존 G7 릴리스 검사기는 메타데이터뿐 아니라 원본 DDL/기준선 checksum/history까지 검사하므로 이 합성 과거 설치는 유효한 0.56.0이 아니다. 단계 오류와 Fixture 코드를 함께 근거로 한 원인 판단이며 내부 CLI의 세부 반환 code는 CI #559의 기존 로그에 없어 독립 확인은 못했다.
+- **보완:** CI 소유 disposable Docker volume의 초기 seed에서 `SceneBuildJob`을 DROP하고 `_prisma_migrations` 1행을 기존 `202611010002_greenfield_semantic_zones_baseline`과 공식 Zone SHA256으로 복원한 다음 manifest를 과거 0.56.0으로 맞춘다. 이는 기존 `g7-greenfield-upgrade-qa.test.ts`의 유효한 Zone Fixture와 동등한 준비 방식이다. Preflight/Plan/Status의 FAIL 시 **action, exitCode, state, code**만 진단 출력해 원인 재분석을 지원한다(비밀/원본 DB 내용은 출력하지 않음).
+- **안전/검증 상태:** 실제 WAL source read-only, active writer, 64-hex planId 승인형 migration, 백업/격리복구, 모든 기존 업무 행 해시 비교, 신규 Job DDL·2행 역사 검증 및 필수 CI는 그대로 유지. 테스트 skip/timeout/권한/Registry/운영 DB/Volume/GHCR 변경 없음. 수정 커밋 `6b1aec7dc97ef69f1e9b349e87981c901879cf60`은 원격 반영되었으나 **새 정확 HEAD CI 최종 결과는 검증 전**이다. GO-DEV 유지, GO-PILOT BLOCKED, PR Draft, #218/#225 OPEN.
+
+---
+
+## #225 / PR #226 CI #558 — WAL 비동기 승인 계획 경합 및 0.60.0 Docker WAL Smoke 계약 (2026-11-04)
+
+- **정확 실패:** PR CI [#558 Run41732045585](https://github.com/planner77/layoutManager/actions/runs/41732045585), HEAD `08181a0baff255c686aacf87a1b372dcee2f38f1`, completed/failure. Static/Unit Job126251686409 TypeScript/Lint 통과 후 **157 test files / 1016 tests 중 156 files 1015 PASS, 1 file 1 FAIL + 1 unhandled rejection**. Docker Job126251686490 FAIL, Required Verify126257119931는 Quality+Docker 실패를 정상 전파했다. A2 scope SKIPPED는 예상 동작.
+- **WAL 통합시험 직접 오류:** `g7-greenfield-upgrade-qa.test.ts:188`의 `WAL with an open writer...`에서 `G7_UPGRADE_RESTORE_REQUIRED` 및 보조 `G7_UPGRADE_BACKUP_REQUIRED` unhandled rejection 관측. 원인: 첫 `applyGreenfieldUpgrade(...,planGreenfieldUpgrade(f.env).planId)`가 안전한 지속 잠금을 생성한 후, 두 번째 호출의 인자를 만드는 데 다시 `planGreenfieldUpgrade(f.env)`를 실행함. 이 호출은 이미 존재하는 잠금으로 **첫 작업과 상관없이 동기 throw**하여 `expect(...).rejects`에 진입하지 못하고 첫 비동기 백업을 await하지 않은 채 fixture 정리를 유발했다. **보조 백업 실패의 독립 원인은 미확인**이며 운영 WAL 백업 성공으로 오인하지 않는다. 조치: 첫 `apply` 전에 **한 번만** planId를 결정해 두 시도에 동일한 실제 승인 식별자를 전달; 두 번째 시도는 잠금 거부를 검사하고 첫 번째 시도의 결과까지 정상 await하여 백업·복구 원본 시험 유지. lock/unhandled를 skip하지 않는다.
+- **Docker WAL Smoke 직접 오류:** `smoke_greenfield_wal_readonly.py`에서 `G7_WAL_RO_SMOKE_FAILED stage=stopped-wal-readonly-plan-status`. 기존 테스트는 새0.60 Greenfield로 만든 synthetic DB의 manifest를0.56으로 위조하면서 schemaId를 여전히 Job ID로 남겼고, 기 승인 `0.59→0.60 MIGRATION`인 경로에서 `UPGRADE_COMPATIBLE`을 기대했다. 또한 나중 `apply`가 exact Plan ID 없이 실행되도록 되어 있었고, full schema logical hash는 의도적으로 새로 생긴 Job/이력 행까지 같다고 가정했다. 조치: 과거 Zone Schema ID 정확 복원, readonly plan/status `UPGRADE_MIGRATION_REQUIRED` 기대, 소유 disposable volume의 `plan`에서 from/to/requiresApproval/64-hex planId 확인 후 `apply --approve-plan <exact-id>`, 실제 Upgrade Registry의 **전체 DDL 및 2행 history** 검사, 기존 모든 업무 테이블 행을 계속 비교하면서 의도된 Job/역사 이력만 비교 제외. 기본 백업·restore/writer guard 유지.
+- **검증 조건:** 기존 0.59.0 릴리스/DB/Volume/보안 정책 변경 없음. 신규 정확 HEAD의 PR CI 성공 전 **결과 NOT VERIFIED**; fail/skip 은폐·timeout 완화/승인 우회 없음. GO-DEV 허용, GO-PILOT 미승인, #218/#225 OPEN.
+
+---
+
+## #225 / PR #226 — CI #557 실패: G7 기존 Scheme ID fixture + 승인형 Docker Smoke (2026-11-04)
+
+- **확정 실패:** [PR CI #557 / Run41727427960](https://github.com/planner77/layoutManager/actions/runs/41727427960), exact HEAD `d0de48570a03594f4a2c67af6b24f0f7b85d854f`, Static/Unit Job `126236803588` 1016 tests 중 **999 PASS / 17 FAIL**(3 files), Docker Job `126236803630` FAIL, Required Verify `126242792010`가 Quality/Docker 실패를 정상 전파해 FAIL. Typecheck/ESLint 통과. A2 스코프 SKIPPED는 별도이며 Worker 운영 실패로 간주하지 않는다.
+- **원인 A — 테스트 소유 과거 설치 fixture 부정합:** `g7-greenfield-upgrade.test.ts` 및 `-qa.test.ts`는 새 0.60 Greenfield에서 Job 테이블을 제거하고 `_prisma_migrations`를 종전 Zone baseline으로 치환했지만, 설치 메타데이터 `g7-install.json.schemaId`는 **새 0.60 Job Schema ID**로 남겨 0.56~0.59 Zone release registry와 맞지 않았다. `declared()`가 `G7_UPGRADE_UNSUPPORTED_PATH`로 정확히 차단했고 승인/백업/복구/WAL 테스트가 연쇄 실패. SIGKILL checkpoint 이전 자식 종료도 이 fixture 문제의 파생 증상. **조치:** 해당 fixture의 구버전 Schema ID를 `G7_PREVIOUS_ZONES_SCHEMA_ID`로 정확하게 복원하고, 사업 데이터·백업·승인·WAL assertion 유지.
+- **원인 B — R2 downgrade fixture의 DDL drift:** `typed-outline-runtime.test.ts:304`는 0.60 설치에서 Zone/Outline Receipt를 제거했지만 신규 `SceneBuildJob`와 4 인덱스를 남겨 `G7_GREENFIELD_SCENE_JOB_SCHEMA_DRIFT`로 거절됐다. 이는 schema validator가 정상 작동한 사례. **조치:** 소유한 테스트 DB에서 과거 R2 marker로 변경 전 Job 테이블 삭제(연동 인덱스 함께 삭제), strict schema guard 유지.
+- **원인 C — Docker Smoke 실행 정책 불일치:** `smoke_greenfield_upgrade.py`의 0.56→신규0.60 실 이미지 업그레이드 흐름은 이전 `COMPATIBLE` 정책처럼 `helper.main(...,'auto')`를 호출했다. 새 `MIGRATION`은 Plan ID 승인이 필요하므로 `G7_UPGRADE_APPROVAL_REQUIRED`을 반환하고 `G7_209_DISPOSABLE_UPGRADE_SMOKE_FAILED`로 종료. **조치:** CI가 자체 생성·라벨 확인한 disposable volume에서 `plan` receipt의 from/to, requiresApproval, 64-hex planId를 검증한 뒤 `apply --approve-plan <exact-plan-id>`로 실제 승인·백업·DDL·복구 게이트를 실행. 비교 SHA는 오직 의도적으로 달라지는 Job Queue 테이블과 `_prisma_migrations` 이력을 제외하고 기존 업무 데이터+CAD 원본 바이트 전체를 계속 비교한다.
+- **기타 독립 시험 불일치:** same-release forged 0.60 metadata에 종전 Schema ID가 남았던 문제로 기대 오류 종류가 달라짐. 올바른 과거 Schema ID fixture로 원인 제거하며 에러 검증을 완화하지 않는다.
+- **검증 경계:** 원래 CI #557 실패는 그대로 유지. 수정된 신규 SHA의 CI는 시작 후 별도로 확인한다. No CI workflow skip, no timeout/rate-limit relaxation, no Docker permission bypass, no existing v0.59 GHCR/운영 DB/CAD 변경. B1 Draft / GO-DEV만 진행, #218/#225 OPEN, GO-PILOT 미승인.
+
+---
+
+## #225 / PR #226 CI #556 — G7 업그레이드 시험 타입·import 보완 (2026-11-04)
+
+- [CI #556 / Run41726540083](https://github.com/planner77/layoutManager/actions/runs/41726540083), HEAD `b2e3451acdc14cf1888c8ba9000a7448fa3d1b64`, Static Job126233687612의 TypeScript 단계 오류: `tests/integration/g7-greenfield-upgrade.test.ts:100 TS2554`(SQLite 시험 타입의 `get()`은 인자 없음), `:339-340 TS2304`(신규 Migration 테스트에서 `GREENFIELD_UPGRADE_REGISTRY` import 누락), 그 결과 `:340 TS7006`(edge implicit any). 후속 Unit/Build 미실행. Schema(Migration) 실제 실패 증거가 아님.
+- 조치: 동결 SQL 리터럴 조회로 `get()` 타입 정합, 실제 Registry import 추가 및 미사용 `ddlSha256` import 제거; 기존 테스트의 허위 실패 포장/skip/timeout 상향 없이 정정. 같은 신규 HEAD에 실제 Prisma/SQLite B1 job 원자적 등록·롤백·단일 선점/재시도 통합시험을 추가해 검증 범위 강화.
+- 원본 실패 기록 보전; 새 PR CI 종료 전 결과 **NOT VERIFIED**, `#218/#225` 및 GO-PILOT 미승인.
+
+---
+
+## #225 / PR #226 CI #555 — 0.60.0 G7 시험 Async 구문 오류 (2026-11-04)
+
+- [CI #555 / Run41725900643](https://github.com/planner77/layoutManager/actions/runs/41725900643), 정확 HEAD `5e34d49453e8d6958e56439efb2f317addd2f0b8`, Static/Unit/Build Job126230576718의 TypeScript 단계에서 `tests/integration/g7-greenfield-upgrade.test.ts:194:108 TS1109` 및 `:194:109 TS1005`로 실패. Docker 및 다른 Job의 성공/실패는 별도이며 이 파싱 오류로 후속 TS/Unit/Build는 실행되지 않음.
+- 원인: 신규 Migration 테스트의 same-release case를 비동기화하면서 함수 시작을 `()async()=>{`로 잘못 편집함. 제품 G7 DDL이나 실제 Migration 자체의 실패로 판단하지 않음.
+- 보완: 올바른 `async()=>{` 선언, 승인 Upgrade 이후 same-release manifest의 새 Schema ID를 명시하여 신·구 스키마 정합. 임의 Gate Skip/Timeout 완화 없이 정확 수정 HEAD의 새 CI에서 검증.
+- 최초 실패 Run의 실패 이력 보존. 수정 커밋의 검증 결과는 **아직 NOT VERIFIED**이며 #218/#225 GO-PILOT은 여전히 미승인.
+
+---
+
 ## #223 / CI #545 — Greenfield v1 기대값 및 후속 로그인 실패 (2026-11-03 KST)
 
 - **정확 실패:** HEAD `b8f4ebec8231c4fdd3161b1b7c8856df9f586203`, [PR CI #545](https://github.com/planner77/layoutManager/actions/runs/41645624408), Greenfield Job125952595152에서26개 중24 PASS/2 FAIL(3.7m). Required Verify125957890429는 Greenfield 실패를 올바로 전파했다. 나머지7 Job(scope/quality·988tests·build/Docker/general2/runtime-legacy/A2)은 SUCCESS다. A2/Sandbox 실패로 오인하지 않는다.

@@ -10,8 +10,11 @@ import { ensureAutomatedGreenfield, identity,
   validateInstallation } from '../../server/g7-operational/greenfield-auto';
 import { applyGreenfieldUpgrade, planGreenfieldUpgrade, restoreGreenfieldUpgrade,
   statusGreenfieldUpgrade } from '../../server/g7-operational/greenfield-upgrade-engine';
-import { ddlSha256, resolveUpgradeChain, type UpgradeRegistry } from '../../server/g7-operational/greenfield-upgrade-registry';
-import { G7_GREENFIELD_BASELINE,G7_GREENFIELD_BASELINE_CHECKSUM } from '../../server/g7-operational/greenfield-schema';
+import { GREENFIELD_UPGRADE_REGISTRY,resolveUpgradeChain, type UpgradeRegistry } from '../../server/g7-operational/greenfield-upgrade-registry';
+import { G7_GREENFIELD_BASELINE,G7_GREENFIELD_BASELINE_CHECKSUM,
+  G7_PREVIOUS_ZONES_BASELINE,G7_PREVIOUS_ZONES_BASELINE_CHECKSUM,
+  G7_PREVIOUS_ZONES_SCHEMA_ID,
+  G7_GREENFIELD_SCHEMA_ID } from '../../server/g7-operational/greenfield-schema';
 import { withReadOnlyInspection } from '../../server/g7-operational/greenfield-readonly-inspection';
 
 type Db={prepare:(sql:string)=>{all:()=>Record<string,unknown>[];get:()=>Record<string,unknown>;
@@ -25,7 +28,7 @@ function fixture(){
   const dbDir=path.join(root,'db'),cad=path.join(root,'cad');
   mkdirSync(dbDir,{mode:0o700});mkdirSync(cad,{mode:0o700});
   const dbPath=path.join(dbDir,'cad.sqlite'),manifest=path.join(dbDir,'g7-install.json');
-  const release='ghcr.io/planner77/layoutmanager:0.59.0';
+  const release='ghcr.io/planner77/layoutmanager:0.60.0';
   const env={G7_GREENFIELD_MODE:'true',G7_GREENFIELD_AUTOMATED:'true',
     G7_AUTH_ENABLED:'false',G7_CAD_WRITE_CUTOVER_ENABLED:'false',
     CAD_STORAGE_BACKEND:'local',CAD_STORAGE_PATH:cad,DATABASE_URL:'file:'+dbPath,
@@ -33,6 +36,11 @@ function fixture(){
     G7_RELEASE_SOURCE_COMMIT:'1'.repeat(40)};
   ensureAutomatedGreenfield(env);
   const db=new Sqlite(dbPath);
+  // Produce an authentic old-zone-schema fixture from an isolated newly
+  // installed 0.60.0 database. No operational DB is used or modified.
+  db.exec('DROP TABLE "SceneBuildJob"');
+  db.prepare('UPDATE "_prisma_migrations" SET migration_name=?,checksum=?')
+    .run(G7_PREVIOUS_ZONES_BASELINE,G7_PREVIOUS_ZONES_BASELINE_CHECKSUM);
   const user=randomUUID(),bu=randomUUID(),product=randomUUID(),site=randomUUID(),
     building=randomUUID(),location=randomUUID(),version=randomUUID();
   const content='0\nSECTION\n2\nENTITIES\n0\nENDSEC\n0\nEOF\n';
@@ -54,6 +62,7 @@ function fixture(){
   db.prepare('UPDATE "CadLocation" SET current_version_id=?,next_version=2 WHERE id=?').run(version,location);
   db.close();
   const old=JSON.parse(readFileSync(manifest,'utf8')) as Record<string,string>;
+  old.schemaId=G7_PREVIOUS_ZONES_SCHEMA_ID;
   old.version='0.56.0';old.appImage='ghcr.io/planner77/layoutmanager:0.56.0';
   old.migratorImage=old.appImage+'-migrate';old.sourceCommit='';
   writeFileSync(manifest,JSON.stringify(old),{mode:0o600});
@@ -65,33 +74,36 @@ function maintenance(env:ReturnType<typeof fixture>['env']){
 }
 
 describe('#209 Greenfield release upgrade',()=>{
-  test('0.58.1 to 0.59.0 is compatible, preserving exact release baseline and data',async()=>{
+  test('0.58.1 to 0.60.0 needs explicit approved DDL migration, preserving business rows and recovery',async()=>{
     const f=fixture(),prior={...f.old,version:'0.58.1',
       appImage:'ghcr.io/planner77/layoutmanager:0.58.1',
       migratorImage:'ghcr.io/planner77/layoutmanager:0.58.1-migrate'};
     writeFileSync(f.manifest,JSON.stringify(prior),{mode:0o600});
-    const before=readFileSync(f.dbPath),oldManifest=readFileSync(f.manifest);
+    const oldManifest=readFileSync(f.manifest),dbBefore=new Sqlite(f.dbPath);
+    const userBefore=dbBefore.prepare('SELECT id FROM "User"').all();
+    const versionBefore=dbBefore.prepare('SELECT id,sha256,storage_path FROM "CadFileVersion"').all();
+    dbBefore.close();
     const plan=planGreenfieldUpgrade(f.env);
-    expect(plan.decision).toBe('UPGRADE_COMPATIBLE');
-    expect(plan.requiresApproval).toBe(false);
-    expect([plan.from,plan.to]).toEqual(['0.58.1','0.59.0']);
-    expect(plan.chain).toEqual([{from:'0.58.1',to:'0.59.0',kind:'COMPATIBLE'}]);
-    expect(plan.declarations.map(d=>[d.schemaId,d.baseline,d.checksum,
-      d.dataContract,d.runtimeContract])).toEqual([
-        [plan.declarations[0].schemaId,plan.declarations[0].baseline,
-          plan.declarations[0].checksum,plan.declarations[0].dataContract,
-          plan.declarations[0].runtimeContract],
-        [plan.declarations[0].schemaId,plan.declarations[0].baseline,
-          plan.declarations[0].checksum,plan.declarations[0].dataContract,
-          plan.declarations[0].runtimeContract]]);
+    expect(plan.decision).toBe('UPGRADE_MIGRATION_REQUIRED');
+    expect(plan.requiresApproval).toBe(true);
+    expect([plan.from,plan.to]).toEqual(['0.58.1','0.60.0']);
+    expect(plan.chain.map(e=>[e.from,e.to,e.kind]))
+      .toEqual([['0.58.1','0.59.0','COMPATIBLE'],['0.59.0','0.60.0','MIGRATION']]);
     expect(readFileSync(f.manifest)).toEqual(oldManifest);
-    await expect(applyGreenfieldUpgrade(f.env)).rejects.toThrow('G7_UPGRADE_MAINTENANCE_REQUIRED');
+    await expect(applyGreenfieldUpgrade(maintenance(f.env))).rejects
+      .toThrow('G7_UPGRADE_APPROVAL_REQUIRED');
     const result=await applyGreenfieldUpgrade(maintenance(f.env),plan.planId);
     expect(result.mode).toBe('UPGRADE');
-    expect(readFileSync(f.dbPath)).toEqual(before);
-    const manifest=JSON.parse(readFileSync(f.manifest,'utf8')) as Record<string,string>;
-    expect(manifest.version).toBe('0.59.0');
-    expect(manifest.installId).toBe(f.old.installId);
+    const migrated=new Sqlite(f.dbPath);
+    try {
+      expect(migrated.prepare('SELECT id FROM "User"').all()).toEqual(userBefore);
+      expect(migrated.prepare('SELECT id,sha256,storage_path FROM "CadFileVersion"').all())
+        .toEqual(versionBefore);
+      expect(migrated.prepare("SELECT name FROM sqlite_master WHERE name='SceneBuildJob'").get())
+        .toMatchObject({name:'SceneBuildJob'});
+      expect(migrated.prepare('PRAGMA foreign_key_check').all()).toEqual([]);
+    }finally{migrated.close();}
+    expect(JSON.parse(readFileSync(f.manifest,'utf8')).version).toBe('0.60.0');
     expect(statusGreenfieldUpgrade(f.env).state).toBe('RESTART_SAME_RELEASE');
   });
 
@@ -101,9 +113,9 @@ describe('#209 Greenfield release upgrade',()=>{
     const pair=(app:string,migrator:string,source=f.env.G7_RELEASE_SOURCE_COMMIT)=>({
       ...f.env,G7_DEPLOY_APP_IMAGE:app,G7_DEPLOY_MIGRATOR_IMAGE:migrator,
       G7_RELEASE_SOURCE_COMMIT:source});
-    const app=`${repo}:0.59.0@${appDigest}`;
-    const migrator=`${repo}:0.59.0-migrate@${migratorDigest}`;
-    expect(identity(pair(app,migrator))).toMatchObject({version:'0.59.0',appImage:app,
+    const app=`${repo}:0.60.0@${appDigest}`;
+    const migrator=`${repo}:0.60.0-migrate@${migratorDigest}`;
+    expect(identity(pair(app,migrator))).toMatchObject({version:'0.60.0',appImage:app,
       migratorImage:migrator});
     expect(validateInstallation({...identity(pair(app,migrator)),installId:f.old.installId})
       .installId).toBe(f.old.installId);
@@ -111,31 +123,31 @@ describe('#209 Greenfield release upgrade',()=>{
     expect(identity(pair(app,`${repo}@${migratorDigest}`)).migratorImage)
       .toBe(`${repo}@${migratorDigest}`);
     expect(()=>identity(pair(`${repo}:0.57.0@${appDigest}`,migrator))).toThrow();
-    expect(()=>identity(pair(app,`${repo}:0.59.0@${migratorDigest}`))).toThrow();
-    expect(()=>identity(pair(app,`ghcr.io/other/layoutmanager:0.59.0-migrate@${migratorDigest}`)))
+    expect(()=>identity(pair(app,`${repo}:0.60.0@${migratorDigest}`))).toThrow();
+    expect(()=>identity(pair(app,`ghcr.io/other/layoutmanager:0.60.0-migrate@${migratorDigest}`)))
       .toThrow();
-    expect(()=>identity(pair(app,`${repo}:0.59.0-migrate@${appDigest}`))).toThrow();
+    expect(()=>identity(pair(app,`${repo}:0.60.0-migrate@${appDigest}`))).toThrow();
     expect(()=>identity(pair(`${repo}:@${appDigest}`,migrator))).toThrow();
     expect(()=>identity(pair(`${repo}@${appDigest}`,`${repo}@${migratorDigest}`,'')))
       .toThrow('G7_AUTO_IMAGE_PAIR_INVALID');
     expect(()=>validateInstallation({...f.old,appImage:`${repo}@${appDigest}`,
       migratorImage:`${repo}@${migratorDigest}`})).toThrow('G7_AUTO_INSTALL_INVALID');
   });
-  test('0.56→0.59.0 approved chain retains DB/CAD/IDs and restart is idempotent',async()=>{
-    const f=fixture(),before=readFileSync(f.dbPath);
+  test('0.56→0.60.0 approved migration retains DB/CAD/IDs and restart is idempotent',async()=>{
+    const f=fixture();
     expect(()=>ensureAutomatedGreenfield(f.env)).toThrow('G7_AUTO_RELEASE_MISMATCH');
     const plan=planGreenfieldUpgrade(f.env);
-    expect(plan.decision).toBe('UPGRADE_COMPATIBLE');
-    expect(plan.chain.map(e=>e.to)).toEqual(['0.57.0','0.58.0','0.58.1','0.59.0']);
-    expect(plan.requiresApproval).toBe(false);
+    expect(plan.decision).toBe('UPGRADE_MIGRATION_REQUIRED');
+    expect(plan.chain.map(e=>e.to)).toEqual(['0.57.0','0.58.0','0.58.1','0.59.0','0.60.0']);
+    expect(plan.requiresApproval).toBe(true);
     await expect(applyGreenfieldUpgrade(f.env)).rejects.toThrow('G7_UPGRADE_MAINTENANCE_REQUIRED');
-    const result=await applyGreenfieldUpgrade(maintenance(f.env));
+    const result=await applyGreenfieldUpgrade(maintenance(f.env),plan.planId);
     expect(result.mode).toBe('UPGRADE');
     if(!('backupId' in result)||typeof result.backupId!=='string')
       throw new Error('missing recovery set');
     const installed=JSON.parse(readFileSync(f.manifest,'utf8')) as Record<string,string>;
     expect(installed.installId).toBe(f.old.installId);
-    expect(installed.version).toBe('0.59.0');
+    expect(installed.version).toBe('0.60.0');
     expect(readFileSync(path.join(f.cad,f.ids.location,f.ids.version,'original.dxf'),'utf8')).toBe(f.content);
     const db=new Sqlite(f.dbPath);
     try{
@@ -144,7 +156,6 @@ describe('#209 Greenfield release upgrade',()=>{
         .toBe(f.ids.version);
       expect(db.prepare('PRAGMA foreign_key_check').all()).toEqual([]);
     }finally{db.close();}
-    expect(readFileSync(f.dbPath)).toEqual(before);
     expect(statusGreenfieldUpgrade(f.env).state).toBe('RESTART_SAME_RELEASE');
     expect((await applyGreenfieldUpgrade(f.env)).mode).toBe('RESTART');
     const restoredDb=path.join(f.root,'restored-db'),restoredCad=path.join(f.root,'restored-cad');
@@ -170,10 +181,10 @@ describe('#209 Greenfield release upgrade',()=>{
   test('unknown/downgrade/same-version source mismatch and drift are blocked',()=>{
     const f=fixture();
     expect(()=>planGreenfieldUpgrade({...f.env,G7_DEPLOY_APP_IMAGE:'ghcr.io/planner77/layoutmanager:0.57.0'})).toThrow();
-    const edited={...f.old,version:'0.59.0',appImage:f.env.G7_DEPLOY_APP_IMAGE,
+    const edited={...f.old,version:'0.60.0',appImage:f.env.G7_DEPLOY_APP_IMAGE,
       migratorImage:f.env.G7_DEPLOY_MIGRATOR_IMAGE};
     writeFileSync(f.manifest,JSON.stringify(edited),{mode:0o600});
-    expect(()=>planGreenfieldUpgrade(f.env)).toThrow('G7_UPGRADE_PAIR_MISMATCH');
+    expect(()=>planGreenfieldUpgrade(f.env)).toThrow('G7_UPGRADE_UNSUPPORTED_PATH');
     writeFileSync(f.manifest,JSON.stringify({...f.old,version:'0.55.0',
       appImage:'ghcr.io/planner77/layoutmanager:0.55.0',
       migratorImage:'ghcr.io/planner77/layoutmanager:0.55.0-migrate'}),{mode:0o600});
@@ -183,9 +194,12 @@ describe('#209 Greenfield release upgrade',()=>{
     expect(()=>planGreenfieldUpgrade(f.env)).toThrow();
   });
 
-  test('same-release identity ignores JSON key order; lock, incomplete setup and changed CAD fail closed',()=>{
+  test('same-release identity ignores JSON key order; lock, incomplete setup and changed CAD fail closed',async()=>{
     const a=fixture();
-    const same={...a.old,version:'0.59.0',appImage:a.env.G7_DEPLOY_APP_IMAGE,
+    const approve=planGreenfieldUpgrade(a.env);
+    await applyGreenfieldUpgrade(maintenance(a.env),approve.planId);
+    const same={...a.old,version:'0.60.0',schemaId:G7_GREENFIELD_SCHEMA_ID,
+      appImage:a.env.G7_DEPLOY_APP_IMAGE,
       migratorImage:a.env.G7_DEPLOY_MIGRATOR_IMAGE,
       sourceCommit:a.env.G7_RELEASE_SOURCE_COMMIT};
     writeFileSync(a.manifest,JSON.stringify(Object.fromEntries(Object.entries(same).reverse())),{mode:0o600});
@@ -248,7 +262,7 @@ describe('#209 Greenfield release upgrade',()=>{
     const plan=invoke('plan');
     expect(plan.status).toBe(0);
     const view=JSON.parse(plan.stdout) as Record<string,unknown>;
-    expect(view.state).toBe('UPGRADE_COMPATIBLE');
+    expect(view.state).toBe('UPGRADE_MIGRATION_REQUIRED');
     expect(String(view.planId)).toMatch(/^[a-f0-9]{64}$/);
     expect(plan.stdout).not.toContain(f.dbPath);
     const blocked=invoke('apply');
@@ -287,8 +301,8 @@ describe('#209 Greenfield release upgrade',()=>{
     const before=createHash('sha256').update(header).digest('hex');
     chmodSync(f.dbDir,0o500);
     try{
-      expect(planGreenfieldUpgrade(f.env).decision).toBe('UPGRADE_COMPATIBLE');
-      expect(statusGreenfieldUpgrade(f.env).state).toBe('UPGRADE_COMPATIBLE');
+      expect(planGreenfieldUpgrade(f.env).decision).toBe('UPGRADE_MIGRATION_REQUIRED');
+      expect(statusGreenfieldUpgrade(f.env).state).toBe('UPGRADE_MIGRATION_REQUIRED');
       expect(readdirSync(f.dbDir).sort()).toEqual(names);
       expect(createHash('sha256').update(readFileSync(f.dbPath)).digest('hex')).toBe(before);
     }finally{chmodSync(f.dbDir,0o700);}
@@ -317,46 +331,27 @@ describe('#209 Greenfield release upgrade',()=>{
     expect(existsSync(detached)).toBe(false);
   });
 
-  test('generic migration edge requires exact plan approval and verified postcondition',async()=>{
-    const f=fixture();
-    const sql='CREATE TABLE "UpgradeProbe"("id" TEXT NOT NULL PRIMARY KEY)';
-    const db=new Sqlite(f.dbPath);db.exec(sql);const ddl=ddlSha256(db as never);db.exec('DROP TABLE "UpgradeProbe"');db.close();
-    const registry:UpgradeRegistry={releases:[
-      {version:'0.56.0',schemaId:f.old.schemaId,baseline:G7_GREENFIELD_BASELINE,
-        checksum:G7_GREENFIELD_BASELINE_CHECKSUM,dataContract:'V1',runtimeContract:'V1'},
-      {version:'0.59.0',schemaId:f.old.schemaId,baseline:G7_GREENFIELD_BASELINE,
-        checksum:G7_GREENFIELD_BASELINE_CHECKSUM,dataContract:'V2',runtimeContract:'V2',ddlSha256:ddl,
-        history:[{name:G7_GREENFIELD_BASELINE,checksum:G7_GREENFIELD_BASELINE_CHECKSUM},
-          {name:'synthetic_upgrade_probe',checksum:hash('probe')}]}],edges:[
-      {from:'0.56.0',to:'0.59.0',kind:'MIGRATION',sql,sqlSha256:hash(sql),
-        migrationName:'synthetic_upgrade_probe',migrationChecksum:hash('probe'),
-        precondition:'SELECT 1 AS ok',postcondition:'SELECT 1 AS ok'}]};
-    expect(()=>resolveUpgradeChain(registry,'0.56.0','0.59.0')).not.toThrow();
-    const plan=planGreenfieldUpgrade(f.env,registry);
+  test('registered 0.59.0→0.60.0 Job migration demands exact approval and rejects broken postcondition',async()=>{
+    const f=fixture(),plan=planGreenfieldUpgrade(f.env);
     expect(plan.decision).toBe('UPGRADE_MIGRATION_REQUIRED');
-    await expect(applyGreenfieldUpgrade(maintenance(f.env),undefined,registry))
-      .rejects.toThrow('G7_UPGRADE_APPROVAL_REQUIRED');
-    expect(statusGreenfieldUpgrade(f.env).state).toBe('UPGRADE_COMPATIBLE');
-    const result=await applyGreenfieldUpgrade(maintenance(f.env),plan.planId,registry);
-    expect(result.mode).toBe('UPGRADE');
-    const migrated=new Sqlite(f.dbPath);
-    try{
-      expect(migrated.prepare('SELECT name FROM sqlite_master WHERE name=\'UpgradeProbe\'').get()?.name)
-        .toBe('UpgradeProbe');
-      expect(migrated.prepare('SELECT migration_name FROM "_prisma_migrations" ORDER BY rowid').all())
-        .toEqual([{migration_name:G7_GREENFIELD_BASELINE},{migration_name:'synthetic_upgrade_probe'}]);
-    }finally{migrated.close();}
-    const b=fixture();
-    const broken:UpgradeRegistry={...registry,edges:[{...registry.edges[0],
-      postcondition:'SELECT 0 AS ok'}]};
-    const brokenPlan=planGreenfieldUpgrade(b.env,broken);
-    await expect(applyGreenfieldUpgrade(maintenance(b.env),brokenPlan.planId,broken))
+    expect(plan.chain.at(-1)?.kind).toBe('MIGRATION');
+    await expect(applyGreenfieldUpgrade(maintenance(f.env))).rejects
+      .toThrow('G7_UPGRADE_APPROVAL_REQUIRED');
+    const broken:UpgradeRegistry={
+      ...GREENFIELD_UPGRADE_REGISTRY,
+      edges:GREENFIELD_UPGRADE_REGISTRY.edges.map(edge=>edge.to==='0.60.0'
+        ? {...edge,postcondition:'SELECT 0 AS ok'}:edge),
+    };
+    const brokenPlan=planGreenfieldUpgrade(f.env,broken);
+    await expect(applyGreenfieldUpgrade(maintenance(f.env),brokenPlan.planId,broken))
       .rejects.toThrow('G7_UPGRADE_MIGRATION_FAILED');
-    expect(statusGreenfieldUpgrade(b.env).state).toBe('UPGRADE_COMPATIBLE');
-    expect(JSON.parse(readFileSync(path.join(b.dbDir,'g7-upgrade-journal.json'),'utf8')).phase)
-      .toBe('FAILED_PREWRITE');
-    const db2=new Sqlite(b.dbPath);
-    try{expect(db2.prepare('SELECT name FROM sqlite_master WHERE name=\'UpgradeProbe\'').get())
-      .toBeUndefined();}finally{db2.close();}
+    expect(statusGreenfieldUpgrade(f.env).state).toBe('UPGRADE_MIGRATION_REQUIRED');
+    const db=new Sqlite(f.dbPath);
+    try {
+      expect(db.prepare("SELECT name FROM sqlite_master WHERE name='SceneBuildJob'").get())
+        .toBeUndefined();
+      expect(db.prepare('SELECT migration_name FROM "_prisma_migrations"').all())
+        .toEqual([{migration_name:G7_PREVIOUS_ZONES_BASELINE}]);
+    }finally{db.close();}
   });
 });

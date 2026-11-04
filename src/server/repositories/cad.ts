@@ -3,6 +3,8 @@ import { CadError, resolvedDrawingName, type Registration } from "@/domain/cad";
 import { type Database, writeTransaction } from "../db";
 import { hashDeletePassword, verifyDeletePassword } from "../password";
 import { appendG7CadAudit, requireG7CadPermission, type G7CadWrite } from "../g7-operational/cad-guard";
+import { enqueueSceneBuildTx } from "../scene/scene-build-job-queue";
+import { G7_GREENFIELD_SCHEMA_ID } from "../g7-operational/greenfield-schema";
 export type FileRecord = {
   originalFilename: string;
   fileFormat: "DXF" | "DWG";
@@ -104,6 +106,29 @@ export class CadRepository {
       });
       if (auth && allowed) await appendG7CadAudit(
         tx, auth, allowed.actorId, allowed.siteId, 'CAD_UPLOADED', id, null, next);
+      // #225: The feature is OFF unless explicitly configured after a registered
+      // G7 schema upgrade. Never commit a DXF Version without its durable intent
+      // when the feature is enabled; a failed enqueue rolls this transaction back.
+      let sceneBuild: Awaited<ReturnType<typeof enqueueSceneBuildTx>> | undefined;
+      if(process.env.SCENE_AUTO_BUILD_ENABLED==='true' && file.fileFormat==='DXF'){
+        if(!auth?.runtime || !allowed)
+          throw new CadError('SCENE_JOB_RUNTIME_REQUIRED',
+            'Scene 자동 생성은 승인된 G7 Runtime에서만 사용할 수 있습니다.',503);
+        // The existing 0.59.0 G7 baseline does not contain this table.
+        // Even a manually created table is NOT an approved release migration.
+        if(String(G7_GREENFIELD_SCHEMA_ID)!=='G7-GREENFIELD-SCENE-JOBS-20261104-1')
+          throw new CadError('SCENE_JOB_RELEASE_NOT_REGISTERED',
+            'Scene 작업 스키마 릴리스가 승인되지 않았습니다.',503);
+        const registered=await tx.$queryRawUnsafe<{name:string}[]>(
+          "SELECT name FROM sqlite_master WHERE type='table' AND name='SceneBuildJob'");
+        if(registered.length!==1)
+          throw new CadError('SCENE_JOB_SCHEMA_NOT_REGISTERED',
+            'Scene 작업 저장 스키마가 등록되지 않았습니다.',503);
+        sceneBuild=await enqueueSceneBuildTx(tx,{
+          versionId:id,sourceSha256:file.sha256,actorId:allowed.actorId,
+          siteId:allowed.siteId,requestId:auth.requestId,
+        });
+      }
       const names = locationDto(floor);
       return {
         id,
@@ -117,6 +142,7 @@ export class CadRepository {
         originalFilename: version.originalFilename,
         duplicateCount,
         description: version.description,
+        ...(sceneBuild ? {sceneBuild} : {}),
       };
     });
   }
@@ -212,6 +238,19 @@ export class CadRepository {
           storagePath: current.storagePath,
         },
       });
+      // #225 B1: a live conversion must not race Version deletion. A failed
+      // or completed job has no independent business retention beyond Audit,
+      // so remove terminal intents before deleting their immutable Version.
+      // In the old baseline no Job table exists; leave historical behavior alone.
+      const sceneJobTables=await tx.$queryRawUnsafe<{name:string}[]>(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='SceneBuildJob'");
+      if(sceneJobTables.length){
+        const live=await tx.sceneBuildJob.count({where:{versionId:id,
+          status:{in:['QUEUED','RUNNING','RETRY_WAIT']}}});
+        if(live>0)throw new CadError('SCENE_JOB_IN_PROGRESS',
+          'Scene 자동 생성 중인 도면은 작업 종료 후 삭제할 수 있습니다.',409);
+        await tx.sceneBuildJob.deleteMany({where:{versionId:id}});
+      }
       const sceneTables=await tx.$queryRawUnsafe<{name:string}[]>(
         "SELECT name FROM sqlite_master WHERE type='table' AND name='SceneAsset'");
       if(sceneTables.length){

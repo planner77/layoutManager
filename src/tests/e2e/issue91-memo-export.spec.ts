@@ -127,8 +127,22 @@ test('TC-R5B-07/09: active and inactive Memo settings are whitelisted; 320px foc
  await clickViewerTestCommand(page,'viewer-menu-memo-add');
  await page.getByTestId('cad-memo-title').fill('비활성 메모');await page.getByTestId('cad-memo-content').fill('hidden metadata');await page.getByTestId('cad-memo-x').fill('50');await page.getByTestId('cad-memo-y').fill('50');
  await page.getByTestId('cad-memo-coordinate-place').click();await page.getByTestId('cad-memo-create').click();
+ // Confirm the second Memo was committed before switching to compact layout.
+ await expect(page.getByTestId('cad-memo-status')).toContainText('2/100');
  await page.setViewportSize({width:320,height:740});
- await clickViewerCommand(page,'view','브라우저 전체 화면');await expect.poll(()=>page.evaluate(()=>document.fullscreenElement!==null)).toBe(true);
+ // The open desktop Memo tool becomes a modal mobile drawer after the
+ // media-query effect. The header is intentionally inert until it is closed.
+ // Use the visible close control rather than force-clicking through the modal.
+ const mobileTools=page.getByTestId('viewer-tools-dock');
+ await expect(mobileTools).toHaveAttribute('role','dialog');
+ await expect(mobileTools).toBeVisible();
+ await mobileTools.getByRole('button',{name:'도구 닫기'}).click();
+ await expect(mobileTools).toHaveCount(0);
+ await expect(page.locator('[data-testid="cad-viewer-shell"] > header')).not.toHaveAttribute('inert','');
+ await clickViewerCommand(page,'view','브라우저 전체 화면');
+ await expect.poll(()=>page.evaluate(()=>
+  document.fullscreenElement===document.querySelector('[data-testid="cad-viewer-shell"]'))).toBe(true);
+ await expect(page.getByTestId('cad-viewer-shell')).toHaveAttribute('data-native-fullscreen','true');
  const dialog=await openExport(page);const box=await dialog.boundingBox();expect(box).not.toBeNull();expect(box!.x).toBeGreaterThanOrEqual(0);expect(box!.x+box!.width).toBeLessThanOrEqual(320);
  const first=dialog.locator('input').first();await first.focus();await page.keyboard.press('Shift+Tab');await expect(dialog.locator(':focus')).toHaveCount(1);
  await dialog.getByTestId('cad-exchange-source-enable').uncheck();await dialog.getByTestId('cad-exchange-memos-enable').check();

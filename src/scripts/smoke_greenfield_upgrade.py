@@ -97,7 +97,7 @@ def main():
             # publish row values, password hashes, CAD or session content.
             script = """const D=require('better-sqlite3'),f=require('fs'),c=require('crypto');
 const d=new D('/data/db/cad.sqlite',{readonly:true}),h=c.createHash('sha256');
-for(const {name} of d.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name").all()){
+// Compare business/data rows, not intentionally different schema histories.\nfor(const {name} of d.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT IN ('_prisma_migrations','SceneBuildJob') ORDER BY name").all()){
 if(!/^[A-Za-z_][A-Za-z_0-9]*$/.test(name))throw Error('schema');h.update(name);
 for(const r of d.prepare('SELECT * FROM "'+name+'"').all().map(x=>JSON.stringify(x)).sort())h.update(r);}
 d.close();function walk(p){for(const n of f.readdirSync(p).sort()){const q=p+'/'+n,s=f.lstatSync(q);
@@ -130,9 +130,30 @@ process.stdout.write(h.digest('hex'));"""
             env_file.chmod(0o600)
             # Host assertions, real backup and actual native SQLite CLI run.
             PHASE = "upgrade-plan-apply"
+            # Real 0.60 migration changes DDL and therefore requires an
+            # operator-style explicit approved plan. This uniquely owned,
+            # disposable CI volume may approve exactly the plan it inspected.
+            # Never bypass the engine or disable its backup/restore gate.
+            plan_output = io.StringIO()
+            with contextlib.redirect_stdout(plan_output):
+                if helper.main([str(env_file), "plan", "--project-name", owned]) != 0:
+                    raise RuntimeError("G7_209_SMOKE_PLAN_FAILED")
+            lines = [line for line in plan_output.getvalue().splitlines() if line.strip()]
+            if len(lines) != 1:
+                raise RuntimeError("G7_209_SMOKE_PLAN_INVALID")
+            plan = json.loads(lines[0])
+            plan_id = plan.get("planId")
+            if (plan.get("state") != "UPGRADE_MIGRATION_REQUIRED"
+                    or plan.get("requiresApproval") is not True
+                    or plan.get("from") != "0.56.0"
+                    or plan.get("to") != "0.60.0"
+                    or not isinstance(plan_id, str)
+                    or not re.fullmatch(r"[a-f0-9]{64}", plan_id)):
+                raise RuntimeError("G7_209_SMOKE_PLAN_INVALID")
             with contextlib.redirect_stdout(io.StringIO()):
-                helper.main([str(env_file), "plan", "--project-name", owned])
-                helper.main([str(env_file), "auto", "--project-name", owned])
+                if helper.main([str(env_file), "apply", "--approve-plan",
+                                plan_id, "--project-name", owned]) != 0:
+                    raise RuntimeError("G7_209_SMOKE_APPLY_FAILED")
             after = fingerprint(options.migrator)
             if before != after:
                 raise RuntimeError("G7_209_SMOKE_DATA_CHANGED")

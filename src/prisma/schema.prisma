@@ -41,6 +41,7 @@ model CadSite {
   siteGrants UserSiteGrant[]
   auditEvents AuditEvent[]
   businessAudits CadBusinessAudit[]
+  sceneBuildJobs SceneBuildJob[]
   @@unique([productId, name], map: "uq_site_parent_name")
   @@index([productId], map: "ix_site_product")
 }
@@ -91,6 +92,7 @@ model CadFileVersion {
   location CadLocation @relation("OwnedVersions", fields: [locationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   currentFor CadLocation? @relation("CurrentVersion")
   sceneAssets SceneAsset[]
+  sceneBuildJobs SceneBuildJob[]
   currentScene CurrentScene?
   outlines CadOutline[]
   outlineCreateReceipts CadOutlineCreateReceipt[]
@@ -181,6 +183,7 @@ model User {
   memoGroupsUpdated CadMemoGroup[] @relation("MemoGroupUpdated")
   memoGroupsDeleted CadMemoGroup[] @relation("MemoGroupDeleted")
   businessAudits CadBusinessAudit[]
+  sceneBuildJobs SceneBuildJob[]
   outlineTypesCreated OutlineType[] @relation("OutlineTypeCreated")
   outlineTypesUpdated OutlineType[] @relation("OutlineTypeUpdated")
   outlineTypeAudits OutlineTypeAudit[]
@@ -530,4 +533,33 @@ model CadZoneAudit {
  requestId String @map("request_id")
  timestampUtc String @map("timestamp_utc")
  @@index([siteId,timestampUtc],map:"ix_cad_zone_audit_site_time")
+}
+
+// #225 B1: conversion intent distinct from blob cleanup's SceneOrphanJob.
+// Install only using a registered, approved forward G7 schema migration.
+model SceneBuildJob {
+  id String @id
+  versionId String @map("version_id")
+  sourceSha256 String @map("source_sha256")
+  builder String
+  payloadSchema Int @map("payload_schema")
+  actorId String @map("actor_id")
+  siteId String @map("site_id")
+  requestId String @map("request_id")
+  status String @default("QUEUED")
+  stage String?
+  attempt Int @default(0)
+  dueAt DateTime @default(now()) @map("due_at")
+  startedAt DateTime? @map("started_at")
+  finishedAt DateTime? @map("finished_at")
+  lastCode String? @map("last_code")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  version CadFileVersion @relation(fields:[versionId], references:[id], onDelete:NoAction, onUpdate:NoAction)
+  actor User @relation(fields:[actorId], references:[id], onDelete:NoAction, onUpdate:NoAction)
+  site CadSite @relation(fields:[siteId], references:[id], onDelete:NoAction, onUpdate:NoAction)
+  @@unique([versionId,sourceSha256,builder,payloadSchema],map:"uq_scene_build_identity")
+  @@index([status,dueAt,createdAt],map:"ix_scene_build_due")
+  @@index([versionId,status],map:"ix_scene_build_version")
+  @@map("SceneBuildJob")
 }
