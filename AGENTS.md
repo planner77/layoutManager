@@ -1,3 +1,13 @@
+## #229 — GO-INTEGRATE와 GHCR v0.61.0+ 출고 분리 (2026-11-04)
+
+[Issue229](out/Issue229.md), [ADR](out/Decisions.md), [Issue218LeanPolicy](out/Issue218LeanPolicy.md)를 따른다. 별도 Main 기반 PR의 릴리스 게이트는 `src/package.json` SemVer **0.61.0 이상**에 대하여 Main CI 실행과 GHCR 게시를 분리한다. Main의 런타임 변경·후속 0.61.1/0.62.0 변경에도 `publish=false`, guarded tag push는 fail-closed. `build-and-push` 시작 후에도 GHCR 변경 작업 전에 이 정책을 별도 검증한다. 커밋 제목만으로 출고 보류를 우회할 수 없다.
+
+0.60.0 및 이전 #216 immutable App/Migrator 릴리스·source-pinned recovery와 required PR CI는 보존한다. 이 브랜치가 출시용 3-image Worker GHCR 게시를 구현했다는 뜻이 아니다. 해당 출고는 App/Migrator/CPU Worker role/version/revision/digest 검증과 별도 Owner GO 이후 후속 PR로 구현한다. 과거 commit의 workflow로 태그하는 우회는 GitHub tag ruleset/패키지 쓰기 권한으로 별도 보호해야 하며 이번 코드만으로 이를 완전히 보장하지 않는다.
+
+이번 #229는 운영 DB/CAD/Volume/.env 및 이전 GHCR tag/digest를 수정하지 않는다. #228 Draft/GO-INTEGRATE HOLD, #225/#218 OPEN, GO-PILOT BLOCKED. 테스트 코드는 작성했지만 **정확 새 PR HEAD CI 완료 전에는 PASS라고 주장하지 않는다**.
+
+---
+
 ## #225 / PR #228 — CI #589 multi-edge migration failure contract (2026-11-04)
 
 [CI #589](https://github.com/planner77/layoutManager/actions/runs/41803028915), exact HEAD `4d8d510d6dc6390d4243f31891fcdcd1ef4274bd`, Scope/Docker smoke PASS, Unit/Integration 1 FAIL (1,066 PASS), Required Verify FAIL by dependency. A deliberately broken final 0.61.0 postcondition occurs **after** an earlier 0.60.0 schema transaction committed; the expected state is `RESTORE_REQUIRED` with persistent hold/lock and isolated recovery, **not** retryable `UPGRADE_MIGRATION_REQUIRED`. The test now checks committed SceneBuildJob, rolled-back CPU index, source data preservation and isolated restore without changing production fail-closed behavior. New exact HEAD CI is still required. Keep #225/#218 OPEN, Draft/GO-PILOT BLOCKED; do not edit operating DB, .env or immutable GHCR. See [FailureLedger](out/FailureLedger.md).

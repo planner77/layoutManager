@@ -427,6 +427,36 @@ jobs:
             echo "::error::G7-S1 exact squash subject required" >&2
             exit 1
           fi
+          # #229: permanent version hold independent of commit subject/paths.
+          # A protected tagged release fails before the publishing job exists.
+          release_hold="$(python3 .github/scripts/issue229_release_hold.py "$GITHUB_REF" src/package.json)" || {
+            echo "::error::G7_RELEASE_HOLD_SCOPE_DENIED" >&2
+            exit 1
+          }
+          case "$release_hold" in
+            HOLD_MAIN) publish=false
+              reason="Issue #229: >=0.61.0 code integration, GHCR release on HOLD" ;;
+            ALLOW_LEGACY) ;;
+            *) echo "::error::G7_RELEASE_HOLD_RESULT_INVALID" >&2; exit 1 ;;
+          esac
+
+          # This exact set is release-guard infrastructure, not product runtime.
+          # It does not rely on a specially chosen commit subject.
+          if [[ "$GITHUB_REF" == "refs/heads/main" && "$publish" == true ]]; then
+            guard_only=true
+            for file in ${changed[@]}; do
+              case "$file" in
+                .github/workflows/docker-publish.yml|.github/workflows/pr-ci.yml|.github/scripts/issue229_release_hold.py|.github/scripts/test_issue229_release_hold.py|src/tests/unit/g7-staging-ghcr-guard.test.ts|AGENTS.md|out/Issue229.md|out/Architecture.md|out/ChangeLog.md|out/Decisions.md|out/FailureLedger.md|out/Operation.md|out/TestPlan.md|out/TestReport.md)
+                  ;;
+                *) guard_only=false; break ;;
+              esac
+            done
+            if [[ "$guard_only" == true ]]; then
+              publish=false
+              reason="Issue #229: release-guard-only change, GHCR stays untouched"
+            fi
+          fi
+
           echo "publish=$publish" >> "$GITHUB_OUTPUT"
           echo "Release scope: $reason"
           {
@@ -454,6 +484,20 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      # #229: independent preflight even if future job wiring is changed.
+      - name: Block unapproved candidate release before GHCR mutation (#229)
+        shell: bash
+        run: |
+          set -euo pipefail
+          candidate="$(python3 .github/scripts/issue229_release_hold.py "$GITHUB_REF" src/package.json)" || {
+            echo "::error::G7_RELEASE_HOLD_BUILD_DENIED" >&2
+            exit 1
+          }
+          if [[ "$candidate" != ALLOW_LEGACY ]]; then
+            echo "::error::G7_RELEASE_HOLD_BUILD_DENIED" >&2
+            exit 1
+          fi
 
       - name: Read application version
         id: version

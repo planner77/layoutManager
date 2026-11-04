@@ -1,3 +1,11 @@
+## #229 — Main/GHCR 릴리스 영속 HOLD 구현·검증 상태 (2026-11-04)
+
+**구현 소스 작성, 정확 HEAD CI는 아직 NOT VERIFIED.** `.github/scripts/issue229_release_hold.py`를 통해 0.61.0 이상 모든 Main push의 GHCR publish를 보류하고 guarded tag를 차단한다. `docker-publish.yml`은 release-scope와 build-and-push 앞단에서 2중 검사하며, guard-only 변경 경로만 비출고한다. `pr-ci.yml`에서 Python 정책 테스트를 required scope 체크로 실행하고 기존 GHCR Bash fixture 양성·음성 회귀를 추가했다.
+
+예상 검증: Main 0.61/0.61.1/0.62 HOLD, tag 거부, malformed package/ref 거부, 기존 0.60과 #216 source-pinned pair 보존. 실제 배포·태그·기존 GHCR alias·운영 DB/CAD/Volume/.env 변경은 수행하지 않았다. 코드를 작성했다는 사실을 CI PASS 또는 완전한 tag ruleset 보호로 주장하지 않는다. #228 GO-INTEGRATE HOLD, #225/#218 OPEN, GO-PILOT BLOCKED.
+
+---
+
 ## #225 / PR #228 — PR CI #589 failed integration test; G7 restore semantics corrected (2026-11-04)
 
 [CI #589](https://github.com/planner77/layoutManager/actions/runs/41803028915) exact HEAD `4d8d510d6dc6390d4243f31891fcdcd1ef4274bd`: Scope/Docker-G7 smoke **PASS**; Unit/Integration **FAIL** (1 of 1,067: `g7-greenfield-upgrade.test.ts:378` asserted retryable plan after intentionally broken final 0.61 postcondition); Required Verify **FAIL**, G7/Chromium E2E **NOT RUN**. Upgrade engine deliberately holds `RESTORE_REQUIRED` after the first migration commits and the final migration rolls back. Test amended to check persistent lock/hold, first migration history, absent last CPU index, untouched source CAD/manifest and isolated backup restore. **New HEAD CI NOT YET VERIFIED.** No weakening of recovery policy or Worker rollout.

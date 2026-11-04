@@ -1,3 +1,13 @@
+## #229 — v0.61.0 이상 영속 릴리스 HOLD (2026-11-04)
+
+Main의 package.json 버전이 0.61.0 이상이면 runtime 변경에도 CI는 수행하되 GHCR publish는 시작하지 않는다. 후속 0.61.1/0.62.0 변경도 동일하며 guarded tag push는 명시 차단한다. 기존 #216 source-pinned 불변 복구 및 0.60.0 이하 릴리스는 원래 정책을 유지한다.
+
+향후 정식 릴리스에는 별도 검토 PR, App/Migrator/CPU Worker 3-role OCI 버전·revision·digest·amd64 검증, 보존/복구 계획 및 Owner Release GO가 필요하다. GitHub 태그 Ruleset과 GHCR 쓰기 권한 제약은 별도 관리자 작업이며 과거 커밋에서 실행하는 태그 워크플로에 새 Gate가 소급 적용되지는 않는다. 실 운영 DB/CAD/Volume/.env 및 기존 GHCR 이미지·태그 수정 금지.
+
+구체적 정책·검증: [Issue229](Issue229.md), [Decisions](Decisions.md), [TestPlan](TestPlan.md). PR #228 GO-INTEGRATE HOLD·GO-PILOT BLOCKED, CI 결과는 새 HEAD에서 별도 확인.
+
+---
+
 ## #225 / 0.61.0 CPU Worker 배포 후보 — DO NOT ACTIVATE (2026-11-04)
 
 현재 0.60.0 App/Migrator 태그·digest, DB/CAD/Volume/.env는 변경하지 않는다. 새 `cpu-worker` Docker 타깃과 `scene-cpu-worker` opt-in Compose profile은 아직 CI·GHCR 검증/게시 전이다. `SCENE_AUTO_BUILD_ENABLED`와 `SCENE_CPU_WORKER_ENABLED` 모두 기본 **false**. 운영 배포/프로필 실행 금지.

@@ -49,6 +49,8 @@ jobs:
           fetch-depth: 0
       - name: Check fail-closed scope classifier (#197)
         run: python3 .github/scripts/test_pr_ci_scope.py
+      - name: Check Issue #229 persistent release hold
+        run: python3 .github/scripts/test_issue229_release_hold.py
       - name: Determine required CI scope
         id: classify
         env:

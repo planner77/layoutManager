@@ -1,3 +1,11 @@
+## #229 — GHCR v0.61 Main 통합 시 불완전한 이미지쌍 자동 게시 위험 (2026-11-04)
+
+**분류: 사전 예방 위험 / 새로운 실패한 PR CI가 관측된 것은 아님.** PR #228 exact HEAD `fff0b31040af5ec1a571e5b2106686202d4a3140`은 [PR CI #590](https://github.com/planner77/layoutManager/actions/runs/41808588070) 적용 8 Job SUCCESS, 범위 외 A2 1 SKIPPED이다. 그러나 기존 Main `docker-publish.yml`은 runtime-affecting diff + 0.61.0 package를 자동 태그 및 App/Migrator GHCR 게시로 승격하는 반면, CPU Worker 별도 OCI target을 게시하지 않아 불완전한 release 위험이 있다. 실제 v0.61.0 GHCR 게시·무결성 오류가 발생했다는 증거는 없다.
+
+**수정 후보:** Main(0.60.0) 기반 별도 #229 PR에서 0.61+ 영속 release hold(`src/package.json` 정확 SemVer), 후보 tag 선행 차단, `build-and-push` GHCR 변경 이전 이중 검증, #229 guard-only Main 변경의 좁은 경로 비출고, 기존 v0.60 이하 및 #216 source-pinned immutable 보전을 구현한다. 테스트·정확 HEAD CI는 최종 검증 전 NOT RUN/NOT VERIFIED이며 실패 결과를 임의 PASS로 재분류하지 않는다. 태그의 과거 커밋 workflow 우회는 GitHub ruleset/권한 별도 통제 필요. 운영 .env/DB/CAD/Volume과 기존 GHCR 불변, PR #228 HOLD, GO-PILOT BLOCKED.
+
+---
+
 ## #225 / PR #228 — PR CI #589 failure: multi-edge migration postcondition/restore test (2026-11-04)
 
 - **Verified failure:** [PR CI #589 / run 41803028915](https://github.com/planner77/layoutManager/actions/runs/41803028915), exact HEAD `4d8d510d6dc6390d4243f31891fcdcd1ef4274bd`, completed/failure. Scope SUCCESS; Docker image, migration and runtime smoke SUCCESS; Static/Unit/Integration job `126483252833` failed during `Unit 및 Integration 테스트`: **1 failed, 1,066 passed (168 files: 1 failed, 167 passed)**. The failing test `tests/integration/g7-greenfield-upgrade.test.ts:378` expected `UPGRADE_MIGRATION_REQUIRED` but actual state was `RESTORE_REQUIRED` after a deliberately invalid 0.61.0 postcondition. TypeScript validation progressed past the previous #588 TS2352 issue; Required Verify `126487896152` failed transitively, G7 and Chromium E2E were not run, and scoped #218 CPU synthetic check was skipped.

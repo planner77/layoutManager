@@ -1,3 +1,9 @@
+## 2026-11-04 — Issue #229 GHCR publish hold (개발 후보)
+
+PR #228의 비활성 B2-B 코드를 Main에 통합할 때 발생할 수 있는 v0.61.0 자동 App/Migrator GHCR 게시를 차단하도록 버전 기반 지속 릴리스 HOLD를 도입. Main CI 자체는 유지, candidate tag는 fail-closed, 기존 #216 출처 고정 복구·0.60.0 이하 출고 유지. 별도 정식 CPU Worker 3-image Release GO가 승인되기 전까지 hold 해제 금지. 정확 새 PR CI 최종 결과는 아직 미검증.
+
+---
+
 ## 2026-11-04 — #225 B2-B CPU Worker 0.61.0 release (Draft)
 
 독립 CPU Worker CLI/강제 시간 제한 및 비루트 OCI, Compose opt-in 보안 제약, 0.61 G7 CPU schema/승인형 additive migration, 관련 회귀 및 PR CI Worker image smoke 정의를 추가. 기존 0.60 이미지/운영 DB·CAD 불변. GO-PILOT과 CI 결과 별도 검증 필요.

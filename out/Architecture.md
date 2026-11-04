@@ -1,3 +1,11 @@
+## #229 Main-통합 / GHCR 출고 오케스트레이션 분리 (2026-11-04)
+
+경로: `PR exact HEAD CI → 코드 Main 병합 → Main CI release-scope → (승인된 출고만) GHCR`. 현재 0.60.0 기반 Main의 `docker-publish.yml`은 runtime 변경만으로 image-pair 게시로 진입하므로 v0.61.0의 CPU Worker 별도 OCI가 누락될 수 있다. 신규 `issue229_release_hold.py`는 Main package SemVer >=0.61.0에서 publication=false를 강제하고 guarded tag를 거부하며, build-and-push에서도 tag 생성·GHCR 쓰기 이전 동일 정책을 재검증한다.
+
+CPU Worker 포함 3-role OCI 정식 출고와 tag 규칙 정책은 후속 Release GO에서 별도 구현한다. 이미 게시된 0.60 및 과거 불변 이미지·운영 DB/CAD/Volume은 변경하지 않는다. 코드가 없는 과거 commit의 태그는 최신 branch workflow로 소급 제어되지 않으므로 운영 태그 Ruleset이 필수이다.
+
+---
+
 ## #225 B2-B 독립 CPU Worker 설계 (2026-11-04 / 증거 대기)
 
 G7 0.61.0 신규 CPU Schema와 두 가지 기본 OFF 플래그를 요구한다. DXF 업로드 Version+CPU Builder Job은 동일 DB TX에서 enqueue되고, 별도 OCI Worker(Next request/브라우저 타이머 무관)는 단일 tick마다 별도 Node 프로세스를 120초로 제한한다. SIGKILL/비정상 종료 시 180초 stale recovery·3회 유한 재시도. UID10001, read-only rootfs, network none, local-only storage, CPU1·RAM768MiB·PIDs64·tmpfs96MiB. Fresh G7 Runtime/Actor/Site/Version 검증 뒤 SourceSHA/DTO full validator/Blob readback/CurrentScene CAS/Job READY/Audit 원자적 게시를 유지한다. CPU와 기존 Browser Builder identity는 분리. 신규 Worker는 LINE-only fail-closed이며 광범위 2D/브라우저 Viewer 복원 및 현장 수용은 미완료다.

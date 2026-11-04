@@ -1,3 +1,14 @@
+## #229 — 릴리스 HOLD / GO-INTEGRATE 검증 계획 (2026-11-04)
+
+- Python gate 양성·음성: Main 0.60 legacy 정상 유지, Main 0.61.0·0.61.1·0.62.0 지속 HOLD, v0.61+ tag/다른 ref/손상 버전·package 거부.
+- 실제 workflow scope Bash를 임시 Git repo에서 실행: PR #228과 같은 runtime 변경에 publish=false, 무관한 후속 main runtime 변경에도 false, #229 정확 guard 파일만 변경할 때 false, guard 파일과 production 코드 동시 변경에서 과도한 무출고 예외 없음.
+- build-and-push의 별도 정책 검사가 tag 생성·GHCR 로그인·image push 이전에 있고, 기존 #216 immutable source/tag/pair 정책이 불변인지 검증.
+- 정확 새 PR HEAD required CI와 리뷰 스레드/충돌·Main behind 확인 전에는 GO-INTEGRATE 완료 또는 GHCR 배포 성공으로 기록하지 않는다. 운영 환경·태그를 실제로 수정해 검증하지 않는다.
+
+검증 명령: `python3 .github/scripts/test_issue229_release_hold.py`, `cd src && npm test -- tests/unit/g7-staging-ghcr-guard.test.ts` 및 repository-required PR CI. 미실행은 NOT RUN으로 표시.
+
+---
+
 ## TP-225-B2-B — CPU Worker·G7 0.61 검증 (2026-11-04)
 
 - 0.60 Schema/Builder/checksum 불변, 0.61 CPU SQL/Checksum/Greenfield 1/2/3행 이력, 0.60→0.61 승인·드리프트·롤백.
