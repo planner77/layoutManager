@@ -1,3 +1,11 @@
+## #225 / PR #228 — CI #572 TypeScript compile error, B2-B Worker authorizer / test-only (2026-11-04)
+
+- **원인 관측:** [PR CI #572 / Run41776814316](https://github.com/planner77/layoutManager/actions/runs/41776814316), HEAD `88f9809860472a9b9303c427f265d890bfc5894b`; Static/Unit Job `126399359663`의 **TypeScript 검사 실패**. `scene-worker-g7-authorization.ts:47` TS2367 (현재 G7 Schema ID와 미래 Worker Schema ID의 서로 다른 literal 타입을 직접 비교), `scene-worker-publish.test.ts:31` TS2502 (콜백 매개변수 `tx`가 자기 자신의 타입 주석에서 `typeof tx`를 참조). 이 실패는 **현재 G7 실 배포 마이그레이션/Worker 기능 실패의 증거가 아니며**, CI 소스 타입 검증 실패로 분류한다.
+- **보완:** 실제 값 비교를 `String(G7_GREENFIELD_SCHEMA_ID)!==SCENE_CPU_WORKER_SCHEMA_ID`로 명확화해 기존 0.60.0에는 항상 Release NOT APPROVED가 유지되도록 한다. 같은 유형이 발생할 수 있는 신규 CPU Queue 모듈의 버전 비교도 함께 수정. Stubbed Transaction 테스트의 콜백 인자를 `arg`로 변경하여 자기참조 타입 추론을 제거한다. 비동기 Reject 단언은 `await expect(...).rejects.toThrow(...)`로 정정. Writer 권한·DTO·원본 SHA·Audit/CurrentScene CAS·원본 READY 보호, CI required checks는 생략·완화하지 않는다.
+- **검증 범위:** 이 커밋은 실제 Worker의 독립 비루트 실행, CPU/RAM/PID/timeout/네트워크/파일 격리, 신규 0.61 G7 Release 등록 또는 진짜 DXF 2D 기능 확대를 의미하지 않는다. 이전 #569/#570은 HEAD 업데이트로 취소된 중간 CI이며 성공으로 소급하지 않는다. 현재 HEAD의 새 CI 최종 결과는 미검증; #225/#218 OPEN, GO-PILOT BLOCKED, `SCENE_AUTO_BUILD_ENABLED=OFF`; 운영 v0.60.0 GHCR/DB/Volume/.env 불변.
+
+---
+
 ## #225 / PR #226 — PR CI #564 SUCCESS·Squash Main·GHCR 후보 게시 시작 (2026-11-04)
 
 - **정확 검증:** [PR CI #564 Run41753808890](https://github.com/planner77/layoutManager/actions/runs/41753808890), HEAD `03e21f4242e499a0a8afc834361e625e4433b2c2`, `completed/success`. Scope, Quality/TypeScript/ESLint/Unit/Integration/Build, Docker 실 0.56→0.60 G7 승인형 Upgrade/readonly WAL·backup/restore 및 마이그레이션 이력, G7 Greenfield UI, G7 Signed Runtime/Legacy, General Chromium shard 1/2 및 2/2, Required Verify 모두 SUCCESS. A2 CPU-only 합성 시험은 이 PR의 변경 범위 밖으로 **SKIPPED**, 운영 B2 증거로 간주하지 않는다.

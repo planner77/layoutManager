@@ -23,7 +23,7 @@ function fixture(row?:Record<string,unknown>){
   });
   const updateMany=vi.fn(async()=>({count:1}));
   const tx={sceneBuildJob:{create,findFirst,updateMany}};
-  const db={$transaction:vi.fn(async(fn:(tx:typeof tx)=>Promise<unknown>)=>fn(tx))};
+  const db={$transaction:vi.fn(async(fn:(arg:typeof tx)=>Promise<unknown>)=>fn(tx))};
   return {tx,db,create,findFirst,updateMany};
 }
 describe('#225 B2-B CPU queued job transition in a future signed G7 release',()=>{
@@ -33,7 +33,8 @@ describe('#225 B2-B CPU queued job transition in a future signed G7 release',()=
     await expect(enqueueCpuSceneBuildTx(f.tx as never,intent))
       .rejects.toThrow('SCENE_CPU_QUEUE_RELEASE_NOT_APPROVED');
     expect(f.create).not.toHaveBeenCalled();
-    expect(()=>claimNextCpuSceneJob(f.db as never)).toThrow();
+    await expect(claimNextCpuSceneJob(f.db as never))
+      .rejects.toThrow('SCENE_CPU_QUEUE_RELEASE_NOT_APPROVED');
   });
   it('enqueues only exact CPU identity without any request/session credentials',async()=>{
     allow();const f=fixture();

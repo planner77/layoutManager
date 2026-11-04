@@ -28,7 +28,7 @@ async function fixture(){
     sceneOrphanJob:{delete:vi.fn(async()=>({}))},
   };
   const db={
-    $transaction:vi.fn(async(fn:(tx:typeof tx)=>Promise<unknown>)=>fn(tx)),
+    $transaction:vi.fn(async(fn:(arg:typeof tx)=>Promise<unknown>)=>fn(tx)),
     cadFileVersion:{findUnique:vi.fn(async()=>version)},
     sceneOrphanJob:{create:vi.fn(async()=>({})),
       update:vi.fn(async()=>({}))},

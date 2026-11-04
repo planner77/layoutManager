@@ -42,7 +42,7 @@ export async function authorizeG7CpuWorkerJobTx(
 ):Promise<G7CpuWorkerIdentity>{
   if(process.env.SCENE_AUTO_BUILD_ENABLED!=='true' ||
      process.env.SCENE_CPU_WORKER_ENABLED!=='true' ||
-     G7_GREENFIELD_SCHEMA_ID!==SCENE_CPU_WORKER_SCHEMA_ID)
+     String(G7_GREENFIELD_SCHEMA_ID)!==SCENE_CPU_WORKER_SCHEMA_ID)
     throw deny('SCENE_WORKER_RELEASE_NOT_APPROVED',503);
   if(!ID.test(jobId)||!Number.isSafeInteger(attempt)||attempt<1||attempt>3)
     throw deny('SCENE_WORKER_JOB_INVALID');

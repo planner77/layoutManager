@@ -18,7 +18,7 @@ export const SCENE_CPU_WORKER_SCHEMA_ID='G7-GREENFIELD-CPU-WORKER-20261104-1' as
 export function requireCpuSceneWorkerRelease():void{
   if(process.env.SCENE_AUTO_BUILD_ENABLED!=='true'||
      process.env.SCENE_CPU_WORKER_ENABLED!=='true'||
-     G7_GREENFIELD_SCHEMA_ID!==SCENE_CPU_WORKER_SCHEMA_ID)
+     String(G7_GREENFIELD_SCHEMA_ID)!==SCENE_CPU_WORKER_SCHEMA_ID)
     throw new Error('SCENE_CPU_QUEUE_RELEASE_NOT_APPROVED');
 }
 const MAX_ATTEMPTS=3;
