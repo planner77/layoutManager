@@ -182,7 +182,7 @@ async function claimAndWaitForHostKill(){
   // The host may kill ONLY after a separate OCI observes this durable marker
   // and confirms the SQLite RUNNING row. Never self-kill or hide an assertion.
   writeFileSync(claimMarker,'CLAIMED:'+row.jobId,{flag:'wx',mode:0o600});
-  process.stdout.write('OCI_CPU_CLAIM_READY\\n');
+  process.stdout.write('OCI_CPU_CLAIM_READY\n');
   await new Promise(()=>{setInterval(()=>{},30_000);});
 }
 async function changeClock(kind){
