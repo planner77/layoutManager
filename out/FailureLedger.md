@@ -1,3 +1,11 @@
+## #225 / PR #228 CI #581 — G7 Worker revoked Actor 단위시험의 오류 타입 불일치 (2026-11-04)
+
+- **확인된 실패:** [PR CI #581 / Run41778751303](https://github.com/planner77/layoutManager/actions/runs/41778751303), exact HEAD `2b6fdb64fe5389646d6481edb804e17c440ce1e7`, completed/failure. Static/Unit Job `126405521743`에서 **165 files 중 164 PASS/1 FAIL, 1,055 tests 중 1,054 PASS/1 FAIL**. 실패는 `src/tests/unit/scene-worker-publish.test.ts:124`의 "denies a revoked Actor during the final commit after blob write". `expected Error: SCENE_WORKER_ACCESS_REVOKED to match object { code:'SCENE_WORKER_ACCESS_REVOKED' }`; Required Verify 종속 FAIL. TypeScript·ESLint 및 Docker smoke는 PASS; 나머지 Chromium/G7 E2E는 Static 선행 실패로 SKIPPED. A2 Job은 변경 scope상 SKIPPED.
+- **근거 및 수정:** `authorizeG7CpuWorkerJobTx()`의 실 접근 거부 계약은 `new CadError('SCENE_WORKER_ACCESS_REVOKED',...,403)`를 통해 `code`를 제공하지만, 해당 단위시험의 마지막 재인가 mock만 `new Error('SCENE_WORKER_ACCESS_REVOKED')`를 던져 `message`만 가진 상태였다. 테스트가 잘못된 오류 형태를 만든 것이므로 mock을 실제 제품과 동일한 `CadError`로 수정하고, `rejects.toMatchObject({code:...})` 및 사전 Blob 저장·Job 미 READY 단언은 **유지**한다. 제품 G7 Auth·Worker/SceneRepository/Queue/Publisher, CI gate, timeout은 변경하지 않는다.
+- **범위:** 이는 mock 계약 오류이므로 생산용 Background Worker 또는 현장 권한 취소가 재현됐다는 증거가 아니다. v0.60.0 Runtime Worker는 의도적 **hard OFF**이고, 신규 Release/CPU 프로세스 자원 격리·고객 DXF 지원·B3 UI 미완료. 이 조치의 정확 HEAD PR CI는 별도 확인 필요, 이전 실패는 성공으로 소급하지 않는다. #225/#218 OPEN, Draft/GO-PILOT BLOCKED, `SCENE_AUTO_BUILD_ENABLED=OFF`, GHCR v0.60.0/운영 DB·CAD·Volume/.env 불변.
+
+---
+
 ## #225 / PR #228 — CI #572 TypeScript compile error, B2-B Worker authorizer / test-only (2026-11-04)
 
 - **원인 관측:** [PR CI #572 / Run41776814316](https://github.com/planner77/layoutManager/actions/runs/41776814316), HEAD `88f9809860472a9b9303c427f265d890bfc5894b`; Static/Unit Job `126399359663`의 **TypeScript 검사 실패**. `scene-worker-g7-authorization.ts:47` TS2367 (현재 G7 Schema ID와 미래 Worker Schema ID의 서로 다른 literal 타입을 직접 비교), `scene-worker-publish.test.ts:31` TS2502 (콜백 매개변수 `tx`가 자기 자신의 타입 주석에서 `typeof tx`를 참조). 이 실패는 **현재 G7 실 배포 마이그레이션/Worker 기능 실패의 증거가 아니며**, CI 소스 타입 검증 실패로 분류한다.
