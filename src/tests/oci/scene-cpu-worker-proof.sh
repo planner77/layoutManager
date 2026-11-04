@@ -170,16 +170,41 @@ assert_output "$output" '"code":"SCENE_SOURCE_DIGEST_MISMATCH"'
 fixture_step verify-tamper
 
 fixture_step prepare-crash
-# Real SIGKILL of a separate, owned OCI process after an atomic claim.
-# Unlike an OOM/in-parser crash, this only exercises stale-claim recovery.
-set +e
-fixture_step claim-kill > /dev/null 2>&1
-kill_rc=$?
-set -e
-if [[ "$kill_rc" -ne 137 ]]; then
-  echo "::error::Expected disposable Worker SIGKILL exit 137, got $kill_rc" >&2
+# A real Docker HOST-initiated SIGKILL after the claim is durably verified.
+# The prior self-kill test masked stderr and required an unproven 137 result.
+cid="$(docker create "${security[@]}" "${file_mount[@]}" "${worker_env[@]}" \
+  --entrypoint node "$cpu_image" --import tsx \
+  scripts/ci-scene-proof-fixture.mjs claim-wait)"
+docker start "$cid" >/dev/null
+claim_ready=false
+for ((poll=0;poll<30;poll++)); do
+  if fixture_step claim-marker >/dev/null 2>&1; then
+    claim_ready=true
+    break
+  fi
+  if [[ "$(docker inspect -f '{{.State.Running}}' "$cid")" != true ]]; then
+    echo "::error::OCI owned claim worker exited before durable claim" >&2
+    docker logs "$cid" 2>&1 | grep -E 'OCI_CPU_PROOF_FAILED|OCI_CPU_CLAIM_READY' >&2 || true
+    exit 1
+  fi
+  sleep 1
+done
+if [[ "$claim_ready" != true ]]; then
+  echo "::error::OCI owned claim worker failed durable claim assertion" >&2
+  docker logs "$cid" 2>&1 | grep -E 'OCI_CPU_PROOF_FAILED|OCI_CPU_CLAIM_READY' >&2 || true
   exit 1
 fi
+docker kill --signal=KILL "$cid" >/dev/null
+kill_rc="$(docker wait "$cid")"
+inspected_rc="$(docker inspect -f '{{.State.ExitCode}}' "$cid")"
+if [[ "$kill_rc" != 137 || "$inspected_rc" != 137 ]]; then
+  echo "::error::OCI owned Worker SIGKILL result invalid: wait=$kill_rc inspect=$inspected_rc" >&2
+  exit 1
+fi
+# On-disk Job RUNNING/attempt 1 plus the durable marker must survive SIGKILL.
+fixture_step claim-marker
+docker rm "$cid" >/dev/null
+cid=""
 fixture_step stale
 output="$(worker_tick)"
 assert_output "$output" '"outcome":"IDLE"'
