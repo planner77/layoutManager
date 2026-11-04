@@ -75,7 +75,7 @@ async function fixture(){
     tokenHash:session.session.tokenHash,issuedAt:BigInt(now),lastSeenAt:BigInt(now),
     expiresAt:BigInt(session.session.expiresAt)}});
   const form=new FormData();
-  form.set('file',new File([dx],'pilot.dxf',{type:'application/dxf'}));
+  form.set('file',new File([dx.toString('utf8')],'pilot.dxf',{type:'application/dxf'}));
   for(const [key,value] of Object.entries({
     businessUnitId:bu,productId:prod,siteId:site,buildingId:building,floorId:floor,
     registeredAt:'2026-11-05',makeCurrent:'true',deletePassword:'1234',
