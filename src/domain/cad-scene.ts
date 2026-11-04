@@ -33,6 +33,19 @@ export function sceneScope(versionId:string,sourceSha256:string,sourceUnit='UNSP
 export function cpuSceneScope(versionId:string,sourceSha256:string,sourceUnit='UNSPECIFIED'):SceneScope{
   return scopeForBuilder(versionId,sourceSha256,sourceUnit,CAD_SCENE_CPU_BUILDER);
 }
+/** Reconstruct a strictly allowlisted stored Scene identity. Used by read-only
+ * status/content inspection; it is NOT a publish permission. Legacy clients
+ * still create browser scope by default.
+ */
+export function storedSceneScope(versionId:string,sourceSha256:string,raw:unknown):SceneScope{
+  if(!record(raw)||typeof raw.sourceUnit!=='string'||!safe(raw.sourceUnit))
+    throw new Error('SCENE_SCOPE_INVALID');
+  if(raw.builder===CAD_SCENE_BUILDER)
+    return sceneScope(versionId,sourceSha256,raw.sourceUnit);
+  if(raw.builder===CAD_SCENE_CPU_BUILDER)
+    return cpuSceneScope(versionId,sourceSha256,raw.sourceUnit);
+  throw new Error('SCENE_SCOPE_INVALID');
+}
 const SHA=/^[a-f0-9]{64}$/;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const safe=(v:unknown):v is string=>typeof v==='string'&&v.length>0&&v.length<=256&&!/[\x00-\x1f]/.test(v);

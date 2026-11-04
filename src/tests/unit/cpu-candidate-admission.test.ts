@@ -1,6 +1,6 @@
 import {describe,expect,it} from 'vitest';
 import {
-  CAD_SCENE_BUILDER,CAD_SCENE_CPU_BUILDER,cpuSceneScope,sceneScope,
+  CAD_SCENE_BUILDER,CAD_SCENE_CPU_BUILDER,cpuSceneScope,sceneScope,storedSceneScope,
   validateSceneManifest,validSceneScope,
 } from '../../domain/cad-scene';
 import {sceneSha256} from '../../domain/scene-digest';
@@ -32,6 +32,15 @@ describe('#225 B2-B CPU provenance and Job/candidate read-only matching',()=>{
     expect(()=>validateSceneManifest(candidate.manifest,{scope:browser,format:'CUSTOM_DTO',
       byteLength:candidate.bytes.length,sha256:candidate.manifest.sha256}))
       .toThrow('SCENE_MANIFEST_MISMATCH');
+  });
+  it('recognizes only known browser or CPU stored scopes without granting publish',async()=>{
+    const {candidate}=await fixture();
+    const browser=sceneScope(versionId,sourceSha256,'DXF_INSUNITS_4');
+    expect(storedSceneScope(versionId,sourceSha256,candidate.manifest.scope))
+      .toEqual(cpuSceneScope(versionId,sourceSha256,'DXF_INSUNITS_4'));
+    expect(storedSceneScope(versionId,sourceSha256,browser)).toEqual(browser);
+    expect(()=>storedSceneScope(versionId,sourceSha256,
+      {...candidate.manifest.scope,builder:'unreviewed'})).toThrow('SCENE_SCOPE_INVALID');
   });
   it('only reports immutable data matching, not an authorization or READY',async()=>{
     const {candidate,job}=await fixture();
