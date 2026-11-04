@@ -1,3 +1,11 @@
+## #225 / PR #226 — B1 v0.60.0 Main 병합·GO 경계 (2026-11-04)
+
+[PR #226](https://github.com/planner77/layoutManager/pull/226)은 검증 HEAD `03e21f4242e499a0a8afc834361e625e4433b2c2`의 [PR CI #564](https://github.com/planner77/layoutManager/actions/runs/41753808890) 필수 적용 Job 성공·미해결 리뷰0·충돌0·Main 뒤처짐0 확인 후 **Squash Main `9eb8ac764ddb658bf8f9aaef9f15f18e099f9f63`으로 병합 완료**(원본과 동일 Git tree). 0.60.0 신규 G7 Job 기준선·0.59→0.60 승인형 MIGRATION·`SceneBuildJob` 원자적 Enqueue/멱등/CAS/재시도 B1 범위이다. 변경되지 않은 기존 v0.59.0 릴리스·기존 운영 데이터는 보존한다. [Main CI #145](https://github.com/planner77/layoutManager/actions/runs/41762192190)는 시작했고 `v0.60.0` 태그가 정확 Squash 커밋을 가리킨다. GHCR 0.60.0 App/Migrator 후보 빌드는 진행 중이며 실제 두 버전 태그/다이제스트 게재 성공은 별도 확인 전 **NOT VERIFIED**.
+
+**중요:** GO-DEV/B1 완료는 자동 Scene 생성 사용 승인과 무관하다. B2 실제 non-WebGL CPU Worker 변환·G7 배경 Actor/Site 재인가·SceneRepository verified READY/CAS 및 B3 최소 상태·retry UI·Worker OCI/restart/실제 업로드→READY 흐름은 **미구현**. #225/#218 OPEN, **GO-PILOT BLOCKED**, `SCENE_AUTO_BUILD_ENABLED=OFF` 유지. 운영 `.env`·DB·Volume·원본 CAD 변경/자동 Upgrade 금지. 아래 과거 Draft/후보 항목은 당시 기록이며 이 최신 현황이 우선한다.
+
+---
+
 ## #225 B1 G7 0.60.0 후보 스키마·업그레이드 (2026-11-04, Draft)
 
 현행 Owner 정책은 GO-DEV 허용/GO-PILOT 미승인. 신규 후보 0.60.0은 G7-GREENFIELD-SCENE-JOBS-20261104-1 기준선을 선언한다. 기존 0.59.0 Zone 기준선과 GHCR 이미지 태그는 불변이며 0.59.0→0.60.0은 승인·백업·복구를 요구하는 MIGRATION이다. 새 SceneBuildJob DDL과 2행 업그레이드 이력·Zone/Outline/Memo read/write 회귀는 정확 HEAD CI로 검증한다. 실제 CPU Worker·G7 배경 게시·목록 UI 미구현, 자동 생성 환경변수는 OFF 유지. [Issue225](out/Issue225.md).

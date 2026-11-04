@@ -1,3 +1,11 @@
+## 2026-11-04 — PR #226 B1 0.60.0 Main 병합 / 후속 B2·B3 OPEN
+
+검증 HEAD `03e21f4242e499a0a8afc834361e625e4433b2c2`의 [PR CI #564](https://github.com/planner77/layoutManager/actions/runs/41753808890) 모든 적용 필수 Job SUCCESS(별도 A2 합성 Job은 변경 범위 밖 Skip). 리뷰 미해결0/충돌0/behind0 확인 후 [PR #226](https://github.com/planner77/layoutManager/pull/226) **Squash Main `9eb8ac764ddb658bf8f9aaef9f15f18e099f9f63` 병합**. 0.60.0 Job 등록·G7 승인형 Zone→Job Migration 및 B1 영속 Queue/멱등/CAS가 구현·검증되었다. [Main CI #145](https://github.com/planner77/layoutManager/actions/runs/41762192190)와 `v0.60.0` tag 시작은 검증했으나 App/Migrator GHCR 최종 2개 digest 게시 여부는 아직 별도 확인 필요. 상세 [FailureLedger](FailureLedger.md).
+
+**잔여:** B2 실제 CPU non-WebGL DXF→CUSTOM_DTO 변환·제한/인가·SceneRepository 검증 게시 및 B3 상태/재시도 UI, Worker OCI·재기동/브라우저 종료 후 실제 READY는 **미완료**. #225/#218 OPEN, GO-PILOT BLOCKED, `SCENE_AUTO_BUILD_ENABLED=OFF`, 실 운영 `.env`/DB/Volume/CAD 변경 금지. 기존 이 문서의 미완료 시점 기록은 이력으로 보존한다.
+
+---
+
 ## 2026-11-04 — CI #563 Docker WAL 성공, 320px Memo E2E 경쟁 조건 보완
 
 [PR CI #563](https://github.com/planner77/layoutManager/actions/runs/41750908638)은 실제 0.56→0.60 업그레이드 및 readonly WAL/백업/복구 Docker 필수 Job을 통과했으나, unrelated `issue91-memo-export.spec.ts`의 320px 모바일 모달 전환 중 헤더 클릭이 막혀 General Chromium shard2/Required Verify FAIL로 종료됐다. 실제 메뉴 헤더의 모바일 drawer `inert` 해제 후 사용자 메뉴를 클릭하도록 테스트 순서를 보완하고, Native fullscreen 및 Memo 내보내기 전체 검증을 유지한다. 정확 실패 로그와 경계는 [FailureLedger](FailureLedger.md) 참조. 새 exact-HEAD CI는 미검증이며 GO-PILOT은 계속 차단한다.
