@@ -104,8 +104,7 @@ assert_output(){
 fixture_step setup
 
 # Inspect the actual Docker HostConfig, not merely a Compose YAML string.
-cid="$(docker create "${security[@]}" "${worker_env[@]}" \
-  --entrypoint node "$cpu_image" --import tsx scripts/scene-cpu-worker.ts --once)"
+cid="$(docker create "${security[@]}" "${worker_env[@]}" "$cpu_image")"
 docker inspect "$cid" | python3 -c '
 import json,sys
 x=json.load(sys.stdin)[0]
@@ -113,6 +112,7 @@ h=x["HostConfig"]
 c=x["Config"]
 assert c["User"]=="10001:10001"
 assert c["Labels"]["com.planner77.g7.image-role"]=="cpu-worker"
+assert c["Entrypoint"]==["sh","scripts/scene-cpu-worker-loop.sh"]
 assert h["NetworkMode"]=="none"
 assert h["ReadonlyRootfs"] is True
 assert h["Privileged"] is False
@@ -125,12 +125,37 @@ assert "/tmp" in h.get("Tmpfs",{})
 assert not h.get("PortBindings")
 assert not any(m.get("Destination")=="/var/run/docker.sock" for m in x["Mounts"])
 '
-output="$(docker start -a "$cid")"
-assert_output "$output" '"outcome":"PUBLISHED"'
-test "$(docker inspect -f '{{.State.ExitCode}}' "$cid")" = 0
+# Exercise the ACTUAL OCI entrypoint/timeout supervisor, not just node --once.
+docker start "$cid" >/dev/null
+ready=0
+for ((poll=0;poll<30;poll++)); do
+  if fixture_step verify-ready >/dev/null 2>&1; then
+    ready=1
+    break
+  fi
+  if [[ "$(docker inspect -f '{{.State.Running}}' "$cid")" != true ]]; then
+    echo "::error::OCI CPU Worker entrypoint terminated before READY" >&2
+    docker logs "$cid" 2>&1 | tail -n 30 >&2
+    exit 1
+  fi
+  sleep 2
+done
+if [[ "$ready" -ne 1 ]]; then
+  echo "::error::OCI CPU Worker did not reach READY within bounded polling" >&2
+  docker logs "$cid" 2>&1 | tail -n 30 >&2
+  exit 1
+fi
+docker logs "$cid" 2>&1 | grep -F '"outcome":"PUBLISHED"' >/dev/null
+docker stop --time 15 "$cid" >/dev/null
+test "$(docker inspect -f '{{.State.Running}}' "$cid")" = false
+# Restart exactly this test-owned OCI, with all security settings unchanged.
+docker start "$cid" >/dev/null
+sleep 5
+test "$(docker inspect -f '{{.State.Running}}' "$cid")" = true
+fixture_step verify-ready
+docker stop --time 15 "$cid" >/dev/null
 docker rm "$cid" >/dev/null
 cid=""
-fixture_step verify-ready
 output="$(worker_tick)"
 assert_output "$output" '"outcome":"IDLE"'
 
