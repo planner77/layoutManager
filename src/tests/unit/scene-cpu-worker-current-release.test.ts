@@ -1,7 +1,7 @@
 import {afterEach,describe,expect,it,vi} from 'vitest';
 import {G7_GREENFIELD_SCHEMA_ID} from '../../server/g7-operational/greenfield-schema';
 import {
-  SCENE_CPU_WORKER_SCHEMA_ID,requireCpuSceneWorkerRelease,
+  SCENE_CPU_WORKER_SCHEMA_ID,requireCpuSceneWorkerRelease,selectSceneEnqueueMode,
   enqueueCpuSceneBuildTx,claimNextCpuSceneJob,
 } from '../../server/scene/scene-build-job-queue';
 import {authorizeG7CpuWorkerJobTx} from '../../server/scene/scene-worker-g7-authorization';
@@ -15,6 +15,11 @@ describe('#225/B2-B real v0.60.0 CPU Worker hard-off gate',()=>{
     expect(String(G7_GREENFIELD_SCHEMA_ID)).not.toBe(SCENE_CPU_WORKER_SCHEMA_ID);
     expect(()=>requireCpuSceneWorkerRelease())
       .toThrow('SCENE_CPU_QUEUE_RELEASE_NOT_APPROVED');
+    expect(()=>selectSceneEnqueueMode())
+      .toThrow('SCENE_CPU_QUEUE_RELEASE_NOT_APPROVED');
+    vi.stubEnv('SCENE_CPU_WORKER_ENABLED','false');
+    expect(selectSceneEnqueueMode()).toBe('BROWSER');
+    vi.stubEnv('SCENE_CPU_WORKER_ENABLED','true');
     const create=vi.fn();
     await expect(enqueueCpuSceneBuildTx({
       sceneBuildJob:{create},

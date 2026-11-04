@@ -1,3 +1,9 @@
+## TC-225-B2B-Q-Retry — 2026-11-04 추가
+
+Q01 현행 0.60.0 Browser Builder 유지 및 CPU flag 강제시 거부; 미래 G7+2 flags만 CPU Builder 선택. Q02 transient 저장 실패 attempt1/2 RetryWait 30s/60s, attempt3 terminal. Q03 auth revoked/source change/publish conflict terminal. Q04 CPU Builder+schema2+RUNNING+attempt CAS 실패면 READY 보호 및 CAS_LOST. Q05 실제 G7 승인 업그레이드·Worker OCI 배포/복원은 후속 단계 증거 필요. 기존 필수 CI 그대로 유지.
+
+---
+
 ## TC-225-B2B-DB — 실제 소유 disposable G7 SQLite 통합 검증 추가 (2026-11-04)
 
 - `src/tests/integration/scene-cpu-worker-g7.test.ts`: G7 0.60.0 Greenfield 소유 0700 임시 DB/CAD 폴더·실 파일·Prisma/SceneBlobStorage를 사용하여 CPU LINE v2 후보의 원본 SHA→Asset immutable 저장/readback→CurrentScene revision0+Job READY+SCENE_PUBLISHED Audit/Orphan 제거를 같은 실제 SQLite commit에서 증명하도록 시험 작성.

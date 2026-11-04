@@ -15,14 +15,16 @@ import {CpuLineCandidateError,buildCpuLineCandidate} from './cpu-line-candidate'
 import {authorizeG7CpuWorkerJobTx} from './scene-worker-g7-authorization';
 import {
   requireCpuSceneWorkerRelease,claimNextCpuSceneJob,recoverStaleCpuSceneJob,
-  requeueDueCpuSceneJob,updateRunningCpuJobStage,failRunningSceneJob,
+  requeueDueCpuSceneJob,updateRunningCpuJobStage,settleRunningCpuSceneJobError,
 } from './scene-build-job-queue';
 import {readVerifiedCpuOriginal,publishVerifiedCpuSceneJob} from './scene-worker-publish';
 
 export type CpuWorkerTickResult=
   |Readonly<{outcome:'IDLE'}>
   |Readonly<{outcome:'PUBLISHED';jobId:string;assetId:string}>
-  |Readonly<{outcome:'FAILED';jobId:string;code:SceneBuildErrorCode}>;
+  |Readonly<{outcome:'FAILED';jobId:string;code:SceneBuildErrorCode}>
+  |Readonly<{outcome:'RETRY_WAIT';jobId:string;code:SceneBuildErrorCode}>
+  |Readonly<{outcome:'CAS_LOST';jobId:string}>;
 
 function classify(error:unknown):SceneBuildErrorCode{
   if(error instanceof CpuLineCandidateError)return safeBuildErrorCode(error.code);
@@ -36,6 +38,13 @@ function classify(error:unknown):SceneBuildErrorCode{
     if(error.code==='SCENE_WORKER_POINTER_EXISTS'||error.code==='SCENE_WORKER_JOB_RACE')
       return 'SCENE_PUBLISH_CONFLICT';
     if(error.code.startsWith('SCENE_STORAGE_'))return 'SCENE_STORAGE_FAILED';
+  }
+  if(error instanceof Error){
+    if(error.message==='SCENE_CPU_SOURCE_MISMATCH')
+      return 'SCENE_SOURCE_DIGEST_MISMATCH';
+    if(error.message==='SCENE_CPU_CANDIDATE_INVALID'||
+       error.message==='SCENE_CPU_PAYLOAD_VERSION_UNSUPPORTED')
+      return 'SCENE_VALIDATE_FAILED';
   }
   return 'UNKNOWN';
 }
@@ -78,8 +87,9 @@ export async function runOneCpuSceneJob(input:Readonly<{
     return {outcome:'PUBLISHED',jobId:claimed.id,assetId:published.assetId};
   }catch(error){
     const code=classify(error);
-    // CAS prevents a concurrent success from being reclassified as failed.
-    await failRunningSceneJob(db,claimed.id,claimed.attempt,code);
-    return {outcome:'FAILED',jobId:claimed.id,code};
+    // A stale/committed attempt cannot overwrite READY or report a false FAILED.
+    const settled=await settleRunningCpuSceneJobError(db,claimed.id,claimed.attempt,code);
+    if(settled===null)return {outcome:'CAS_LOST',jobId:claimed.id};
+    return {outcome:settled,jobId:claimed.id,code};
   }
 }

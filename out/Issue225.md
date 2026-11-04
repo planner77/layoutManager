@@ -1,3 +1,9 @@
+## 2026-11-04 — PR #228 CPU Job 릴리스 라우팅·bounded recovery (Draft)
+
+신규 G7 CPU schema+Feature flag에서만 Version 등록 → CPU Builder Queue를 한 DB TX에서 연결하도록 분기 추가. 0.60.0은 기존 Browser enqueue 유지하고 잘못 설정된 CPU 플래그를 차단한다. transient error RetryWait 30s/60s, attempt3 FAILED, auth/source/pointer 등 terminal, CAS lost는 거짓 실패를 피한다. 단위시험 3곳 보강. CI 확인 전 UNVERIFIED; 신규 G7 schema/실제 별도 CPU Worker OCI/배포·B3·브라우저 복원 미완료, #225/#218 OPEN.
+
+---
+
 ## 2026-11-04 — B2-B SQLite 통합·현재 릴리스 차단 시험 작성
 
 B2-B 내부 권한·Blob·CurrentScene CAS/Audit 구현에 대한 강한 양/음성 증거를 위해 소유 disposable G7 0.60 DB+실 original/Scene Blob을 사용하는 `scene-cpu-worker-g7.test.ts`를 작성했다. 정상 첫 게시·Current0/Job READY/Audit·조회 가능한 CPU DTO와, 기존 Pointer 보존/2차 게시 거부, Audit SQL trigger 실패의 트랜잭션 롤백·Orphan CLEANUP을 시험한다. 이 시험의 G7 Worker 인가는 **모의**이므로 실제 signed Runtime·보안 승인이 아니다. `scene-cpu-worker-current-release.test.ts`는 실제 v0.60.0에서 CPU Worker Enqueue/Claim/Auth가 future schema ID 불일치 때문에 무조건 차단되는지 확인한다. 실행 성공은 새 CI 완료 전 **미검증**이다. B2 실제 독립 OCI, CPU 자원/네트워크 격리, 지원 DXF 확대, G7 새 버전 및 B3·GO-PILOT은 여전히 미완료. #225/#218 OPEN, 현 0.60.0 GHCR·.env/DB/Volume/CAD 비변경.

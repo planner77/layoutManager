@@ -3,8 +3,7 @@ import { CadError, resolvedDrawingName, type Registration } from "@/domain/cad";
 import { type Database, writeTransaction } from "../db";
 import { hashDeletePassword, verifyDeletePassword } from "../password";
 import { appendG7CadAudit, requireG7CadPermission, type G7CadWrite } from "../g7-operational/cad-guard";
-import { enqueueSceneBuildTx } from "../scene/scene-build-job-queue";
-import { G7_GREENFIELD_SCHEMA_ID } from "../g7-operational/greenfield-schema";
+import { enqueueSceneBuildTx, enqueueCpuSceneBuildTx, selectSceneEnqueueMode } from "../scene/scene-build-job-queue";
 export type FileRecord = {
   originalFilename: string;
   fileFormat: "DXF" | "DWG";
@@ -114,20 +113,23 @@ export class CadRepository {
         if(!auth?.runtime || !allowed)
           throw new CadError('SCENE_JOB_RUNTIME_REQUIRED',
             'Scene 자동 생성은 승인된 G7 Runtime에서만 사용할 수 있습니다.',503);
-        // The existing 0.59.0 G7 baseline does not contain this table.
-        // Even a manually created table is NOT an approved release migration.
-        if(String(G7_GREENFIELD_SCHEMA_ID)!=='G7-GREENFIELD-SCENE-JOBS-20261104-1')
+        // Select Builder from reviewed G7 schema, never merely from .env.
+        let enqueueMode:'BROWSER'|'CPU';
+        try{enqueueMode=selectSceneEnqueueMode();}
+        catch{
           throw new CadError('SCENE_JOB_RELEASE_NOT_REGISTERED',
             'Scene 작업 스키마 릴리스가 승인되지 않았습니다.',503);
+        }
         const registered=await tx.$queryRawUnsafe<{name:string}[]>(
           "SELECT name FROM sqlite_master WHERE type='table' AND name='SceneBuildJob'");
         if(registered.length!==1)
           throw new CadError('SCENE_JOB_SCHEMA_NOT_REGISTERED',
             'Scene 작업 저장 스키마가 등록되지 않았습니다.',503);
-        sceneBuild=await enqueueSceneBuildTx(tx,{
-          versionId:id,sourceSha256:file.sha256,actorId:allowed.actorId,
-          siteId:allowed.siteId,requestId:auth.requestId,
-        });
+        const intent={versionId:id,sourceSha256:file.sha256,actorId:allowed.actorId,
+          siteId:allowed.siteId,requestId:auth.requestId};
+        sceneBuild=enqueueMode==='CPU'
+          ?await enqueueCpuSceneBuildTx(tx,intent)
+          :await enqueueSceneBuildTx(tx,intent);
       }
       const names = locationDto(floor);
       return {

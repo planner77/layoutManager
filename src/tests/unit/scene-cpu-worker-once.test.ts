@@ -5,14 +5,14 @@ import {authorizeG7CpuWorkerJobTx} from '../../server/scene/scene-worker-g7-auth
 import {publishVerifiedCpuSceneJob,readVerifiedCpuOriginal} from '../../server/scene/scene-worker-publish';
 import {
   claimNextCpuSceneJob,recoverStaleCpuSceneJob,requeueDueCpuSceneJob,
-  updateRunningCpuJobStage,failRunningSceneJob,requireCpuSceneWorkerRelease,
+  updateRunningCpuJobStage,settleRunningCpuSceneJobError,requireCpuSceneWorkerRelease,
 } from '../../server/scene/scene-build-job-queue';
 import {runOneCpuSceneJob} from '../../server/scene/scene-cpu-worker-once';
 
 vi.mock('../../server/scene/scene-build-job-queue',()=>({
   claimNextCpuSceneJob:vi.fn(),recoverStaleCpuSceneJob:vi.fn(),
   requeueDueCpuSceneJob:vi.fn(),updateRunningCpuJobStage:vi.fn(),
-  failRunningSceneJob:vi.fn(),requireCpuSceneWorkerRelease:vi.fn(),
+  settleRunningCpuSceneJobError:vi.fn(),requireCpuSceneWorkerRelease:vi.fn(),
 }));
 vi.mock('../../server/scene/scene-worker-g7-authorization',()=>({
   authorizeG7CpuWorkerJobTx:vi.fn(),
@@ -52,7 +52,7 @@ beforeEach(()=>{
   vi.mocked(recoverStaleCpuSceneJob).mockResolvedValue(null);
   vi.mocked(requeueDueCpuSceneJob).mockResolvedValue(null);
   vi.mocked(updateRunningCpuJobStage).mockResolvedValue(true);
-  vi.mocked(failRunningSceneJob).mockResolvedValue(true);
+  vi.mocked(settleRunningCpuSceneJobError).mockResolvedValue('FAILED');
   vi.mocked(authorizeG7CpuWorkerJobTx).mockResolvedValue(identity);
   vi.mocked(readVerifiedCpuOriginal).mockResolvedValue(Buffer.from([1,2,3]));
   vi.mocked(buildCpuLineCandidate).mockResolvedValue({
@@ -78,7 +78,7 @@ describe('#225/B2-B dormant one-tick CPU runner',()=>{
       expect.anything(),'loc/ver/original.dxf',10,sha);
     expect(updateRunningCpuJobStage).toHaveBeenCalledTimes(3);
     expect(publishVerifiedCpuSceneJob).toHaveBeenCalledTimes(1);
-    expect(failRunningSceneJob).not.toHaveBeenCalled();
+    expect(settleRunningCpuSceneJobError).not.toHaveBeenCalled();
   });
   it('persists an allowlisted converter failure and never calls publisher',async()=>{
     vi.mocked(buildCpuLineCandidate).mockRejectedValueOnce(
@@ -87,7 +87,7 @@ describe('#225/B2-B dormant one-tick CPU runner',()=>{
       outcome:'FAILED',jobId:'job-1',code:'SCENE_CONVERTER_UNAVAILABLE',
     });
     expect(publishVerifiedCpuSceneJob).not.toHaveBeenCalled();
-    expect(failRunningSceneJob).toHaveBeenCalledWith(expect.anything(),
+    expect(settleRunningCpuSceneJobError).toHaveBeenCalledWith(expect.anything(),
       'job-1',1,'SCENE_CONVERTER_UNAVAILABLE');
   });
   it('classifies revoked G7 authorization without exposing any session data',async()=>{
@@ -106,12 +106,27 @@ describe('#225/B2-B dormant one-tick CPU runner',()=>{
     });
     expect(publishVerifiedCpuSceneJob).not.toHaveBeenCalled();
   });
+  it('retries a transient storage failure without returning FAILED',async()=>{
+    vi.mocked(publishVerifiedCpuSceneJob).mockRejectedValueOnce(
+      new CadError('SCENE_STORAGE_UNAVAILABLE','storage',503));
+    vi.mocked(settleRunningCpuSceneJobError).mockResolvedValueOnce('RETRY_WAIT');
+    await expect(fixture().run()).resolves.toEqual({
+      outcome:'RETRY_WAIT',jobId:'job-1',code:'SCENE_STORAGE_FAILED'});
+    expect(settleRunningCpuSceneJobError).toHaveBeenCalledWith(
+      expect.anything(),'job-1',1,'SCENE_STORAGE_FAILED');
+  });
+  it('does not report FAILED after its attempt CAS has been lost',async()=>{
+    vi.mocked(updateRunningCpuJobStage).mockResolvedValueOnce(false);
+    vi.mocked(settleRunningCpuSceneJobError).mockResolvedValueOnce(null);
+    await expect(fixture().run()).resolves.toEqual({outcome:'CAS_LOST',jobId:'job-1'});
+    expect(publishVerifiedCpuSceneJob).not.toHaveBeenCalled();
+  });
   it('never claims work if the future release gate rejects',async()=>{
     vi.mocked(requireCpuSceneWorkerRelease).mockImplementationOnce(()=>{
       throw new Error('SCENE_CPU_QUEUE_RELEASE_NOT_APPROVED');
     });
     await expect(fixture().run()).rejects.toThrow('SCENE_CPU_QUEUE_RELEASE_NOT_APPROVED');
     expect(claimNextCpuSceneJob).not.toHaveBeenCalled();
-    expect(failRunningSceneJob).not.toHaveBeenCalled();
+    expect(settleRunningCpuSceneJobError).not.toHaveBeenCalled();
   });
 });

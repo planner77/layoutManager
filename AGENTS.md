@@ -1,3 +1,11 @@
+## #225 / PR #228 — G7 CPU Queue 경로·실패 복구 Draft 추가 (2026-11-04)
+
+- `CadRepository.register`의 Version+Job 동일 트랜잭션에서 Builder 라우팅을 추가했다. v0.60.0 G7에서 기존 Browser Builder 불변, CPU flag 설정 시 fail-closed; 신규 미등록 `G7-GREENFIELD-CPU-WORKER-20261104-1`과 두 feature gate가 충족되는 **미래** 릴리스에서만 CPU Job을 만들 수 있다.
+- CPU Worker 실패 `RUNNING+builder+schema+attempt` CAS를 추가했다. 저장소/Worker 일시 장애·timeout만 30s/60s backoff 최대 3회 재시도, 권한/원본/변환/포인터 오류는 terminal FAILED. CAS 소실이면 `CAS_LOST`로 기록해 이전 READY를 잘못 실패로 보고하지 않는다.
+- 여전히 실제 새 G7 Migration/독립 OCI 비루트 Worker/CPU·RAM·PID·시간·Network·FS 격리, 광범위 Entity 지원, Viewer 재접속 및 B3 상태 UI는 미구현. v0.60.0 GHCR·운영 DB/Volume/CAD/.env 불변, GO-PILOT BLOCKED, #225/#218 OPEN. 새 HEAD CI는 완료 확인 전 UNVERIFIED.
+
+---
+
 ## #225 B2-B — 단일 CPU Job의 미래 릴리스 전용 인가·저장·READY 파이프라인 초안 (2026-11-04)
 
 [PR #228](https://github.com/planner77/layoutManager/pull/228)은 기존 검증된 B2-A/CPU Builder 계약 다음으로 **미래 전용** `enqueueCpuSceneBuildTx`·Builder-filtered Claim/Stale Recovery/Retry, 현재 상태를 DB에서 재조회하는 `authorizeG7CpuWorkerJobTx`, 원본 CAD 저장소 재읽기/SourceSHA 비교, CUSTOM_DTO v2 전체 재검증+immutable Blob `putVerified`/readback, CurrentScene 0→Job READY→SCENE_PUBLISHED Audit를 하나의 DB transaction으로 처리하는 `publishVerifiedCpuSceneJob` 및 한 건 처리 함수 `runOneCpuSceneJob`를 추가했다. Browser Builder 기반 기존 0.60.0 B1 enqueue 및 수동 `SceneRepository.publish(G7CadWrite)`를 변경하지 않는다. 기존 CurrentScene이 있으면 덮어쓰기 없이 거절한다. 원본·기존 READY·Worker Job 신원/Attempt CAS·site/role·runtime 검증을 보전하며 Cookie/SessionTokenHash를 Job에 사용하지 않는다.

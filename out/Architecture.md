@@ -1,3 +1,9 @@
+## #225 B2-B — upload→CPU queue와 fail/retry (2026-11-04)
+
+Version 등록 TX는 릴리스가 허용할 때만 Builder를 선택한다. v0.60.0=Browser, 미래 승인 G7+2 flags=CPU. 기존 `claimNextCpuSceneJob` → `runOneCpuSceneJob` → 기존 validated Scene CAS pipeline과 연결되는 오류 종결 경로는 `settleRunningCpuSceneJobError` (CPU Job identity·attempt CAS; transient RETRY_WAIT/terminal FAILED; CAS_LOST). 저장/권한/READY 코드의 실행은 현재 G7 schema로는 차단되며 외부 Worker 프로세스와 격리는 후속.
+
+---
+
 ## #225 B2-B — CPU 단일 Job 처리 구성 초안 (2026-11-04)
 
 오프라인 `CPU LINE Candidate` → 현 시점 `G7 Runtime/Actor/Site/Role` 재인가 → 원본 저장소에서 Byte 수신·SourceSHA 확인 → `CUSTOM_DTO v2 / manifest / payload SHA` 교차검증 → `SceneBlobStorage.putVerified`의 immutable bytes + readback → **단일 DB 트랜잭션**(`SceneAsset` 신규·`CurrentScene` 최초 Revision 0·`SceneBuildJob` RUNNING+attempt CAS→READY·SCENE_PUBLISHED Audit·Orphan 정리)로 구성했다. Blob 실패는 UNCERTAIN, DB 확정 실패는 CLEANUP 후보로만 기록하고 기존 Scene/원본은 불변. CurrentScene 선행 존재 시 실패를 반환하고 *절대로 자동 교체하지 않는다*. 내부 Worker는 토큰·쿠키/세션 해시를 보관하거나 public `SceneRepository.publish`를 가장하지 않는다.

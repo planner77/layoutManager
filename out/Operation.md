@@ -1,3 +1,9 @@
+## #225 CPU Queue 및 retry — 운영 금지 경계 (2026-11-04)
+
+v0.60.0은 CPU flag만 켜도 CPU Queue를 실행하지 않는다. AUTO_BUILD+CPU_WORKER flag 동시 설정 시 기존 G7에서는 업로드를 거절한다. 신규 승인 G7 릴리스와 안전한 별도 Worker 프로세스/OCI가 준비되기 전 feature flag를 활성화하지 않는다. 일시 실패는 30/60초 backoff 후 다음 tick에서만 처리한다. Worker OCI/리소스 격리/운영 migration 미구현.
+
+---
+
 ## #225 B2-B CPU Worker 운영 차단·후속 릴리스 체크리스트 (2026-11-04)
 
 **현재 사용 금지:** v0.60.0은 Job 기본 Builder가 Browser이고 G7 스키마 `G7-GREENFIELD-SCENE-JOBS-20261104-1`이다. 새 CPU Worker 경로가 요구하는 `G7-GREENFIELD-CPU-WORKER-20261104-1`은 **미등록**이므로 `SCENE_AUTO_BUILD_ENABLED`, `SCENE_CPU_WORKER_ENABLED`을 `true`로 임의 변경하지 않는다. 이번 소스의 `runOneCpuSceneJob`은 호출 가능한 내부 함수일 뿐 OCI 실행기/안전한 별도 프로세스/Restart controller/서비스로 등록되어 있지 않다. 이 함수 호출을 앱 request/background timer에 직접 연결하거나 수동으로 운영 DB에서 READY를 갱신하는 것은 금지. 기존 `v0.60.0` App/Migrator image/digest와 Runtime trust/approval, .env, CAD/DB/Volume은 유지한다.

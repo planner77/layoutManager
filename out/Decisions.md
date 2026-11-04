@@ -1,3 +1,9 @@
+## ADR-225-B2B-RETRY — 새 릴리스에서만 CPU Builder 선택, 실패 CAS (2026-11-04)
+
+기존 0.60.0 Browser Builder identity/immutable release를 변경하지 않는다. 미등록 미래 G7 CPU Worker schema와 명시적 스위치 두 개가 충족될 때 CPU Queue를 사용한다. CPU transient `SCENE_STORAGE_FAILED`/`SCENE_WORKER_UNAVAILABLE`/`SCENE_BUILD_TIMEOUT`만 30/60초·최대 3회 재시도하고, revoked/grant/source/unsupported/pointer 오류는 즉시 최종 실패한다. 이미 READY이거나 stale attempt인 경우 CAS를 잃고 종료하며 READY를 복구·수정하지 않는다. G7 신규 migration, 독립 Worker OCI/격리, 브라우저 복원은 별도 GO 전 필요.
+
+---
+
 ## ADR-225-B2B-ONE-TICK — Worker 데이터/권한/게시 분리와 0.60.0 하드 차단 (2026-11-04)
 
 **결정:** 기존 B1의 `CAD_SCENE_BUILDER`/0.60.0 Job 이력은 변경하지 않는다. 미래 전용 `node-cpu-line@1.0.0+cad-scene-1` Builder에 대해서만 별도 Queue 필터·Actor/Site 최신 권한 검사·DATA/Source SHA 검증/immutable Blob readback/최초 CurrentScene 0 생성/Job READY·Audit 같은 트랜잭션 기능을 추가한다. 현 G7 스키마 ID와 정확 일치하지 않는 미래 Worker 스키마 ID를 코드 상수로 두고 `SCENE_AUTO_BUILD_ENABLED` 및 `SCENE_CPU_WORKER_ENABLED` 두 명시 스위치와 signed G7 ACTIVE CAD Writer 조건을 **동시에** 요구한다. 현재 0.60.0에서는 두 스위치를 수동으로 바꿔도 Worker는 시작/Enqueue/Claim할 수 없다.

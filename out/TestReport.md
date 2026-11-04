@@ -1,3 +1,9 @@
+## #225 / PR #228 Queue/Retry 추가 변경 (2026-11-04)
+
+코드+단위시험 작성, **신규 HEAD CI 결과는 아직 미검증**. 이전 CI #583 PASS는 이전 HEAD에만 해당. 정확 HEAD에서 미래 Builder 분기/현행 Browser 보존, transient retry/terminal/CAS_LOST를 재확인한다. 실제 new-release G7 통합/별도 비루트 프로세스/브라우저 복원 미완료. GO-PILOT BLOCKED.
+
+---
+
 ## #225 B2-B G7 실제 SQLite·0.60.0 하드-OFF 회귀 추가 (2026-11-04)
 
 PR #228의 신규 `scene-cpu-worker-g7.test.ts`는 disposable G7 0.60.0 DB와 소유 CAD 원본·Scene Blob을 만들고 게시·재조회·Audit 실패 롤백을 검사한다. **인가 함수는 이 시험에 한해 모의로 제공**되며, 0.60.0 운영 G7에서 Worker가 켜진다는 의미가 아니다. 추가 `scene-cpu-worker-current-release.test.ts`는 실제 현재 Schema ID와 미래 CPU Worker Schema의 불일치를 검증해, 두 feature flag를 ON으로 설정해도 DB/Job 읽기 전에 차단해야 한다. 명시한 두 파일의 실제 CI 통과는 정확 HEAD 결과 확인 전 미검증. 권한/버전/실 독립 프로세스/지원 도형/브라우저 Pilot은 별도 차단 유지.

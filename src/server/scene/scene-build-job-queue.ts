@@ -8,7 +8,7 @@ import type {Database} from '@/server/db';
 import {writeTransaction} from '@/server/db';
 import {CAD_SCENE_BUILDER,CAD_SCENE_CPU_BUILDER} from '@/domain/cad-scene';
 import {G7_GREENFIELD_SCHEMA_ID} from '@/server/g7-operational/greenfield-schema';
-import {safeBuildErrorCode,safeBuildStage,type SceneBuildStage,type SceneBuildErrorCode} from '@/domain/scene-build-job';
+import {safeBuildErrorCode,safeBuildStage,sceneRetryDelayMs,type SceneBuildStage,type SceneBuildErrorCode} from '@/domain/scene-build-job';
 import {decideSingleWorkerAction,singleSceneJobKey} from '@/domain/scene-single-worker-admission';
 
 export const SCENE_JOB_PAYLOAD_SCHEMA=2 as const;
@@ -20,6 +20,19 @@ export function requireCpuSceneWorkerRelease():void{
      process.env.SCENE_CPU_WORKER_ENABLED!=='true'||
      String(G7_GREENFIELD_SCHEMA_ID)!==SCENE_CPU_WORKER_SCHEMA_ID)
     throw new Error('SCENE_CPU_QUEUE_RELEASE_NOT_APPROVED');
+}
+/** Future CPU enqueue requires a reviewed G7 release and both explicit gates.
+ * Existing v0.60.0 Browser Builder records are never relabelled.
+ */
+export function selectSceneEnqueueMode(): 'BROWSER'|'CPU'{
+  const schema=String(G7_GREENFIELD_SCHEMA_ID);
+  if(schema===SCENE_CPU_WORKER_SCHEMA_ID){
+    requireCpuSceneWorkerRelease();
+    return 'CPU';
+  }
+  if(schema==='G7-GREENFIELD-SCENE-JOBS-20261104-1'&&
+     process.env.SCENE_CPU_WORKER_ENABLED!=='true')return 'BROWSER';
+  throw new Error('SCENE_CPU_QUEUE_RELEASE_NOT_APPROVED');
 }
 const MAX_ATTEMPTS=3;
 const STALE_AFTER_MS=180_000;
@@ -191,6 +204,31 @@ export async function failRunningSceneJob(db:Database,id:string,attempt:number,
       data:{status:'FAILED',lastCode:safeBuildErrorCode(code),startedAt:null,finishedAt:now},
     });
     return changed.count===1;
+  });
+}
+
+/** Retry only transient infrastructure errors; auth, source and format errors
+ * terminate. A late failure cannot change a READY/recovered claim (CAS).
+ */
+const CPU_RETRYABLE_CODES=new Set<SceneBuildErrorCode>([
+  'SCENE_STORAGE_FAILED','SCENE_WORKER_UNAVAILABLE','SCENE_BUILD_TIMEOUT',
+]);
+export async function settleRunningCpuSceneJobError(db:Database,id:string,attempt:number,
+  code:SceneBuildErrorCode,now=new Date()):Promise<'RETRY_WAIT'|'FAILED'|null>{
+  requireCpuSceneWorkerRelease();
+  if(!isId(id)||!Number.isSafeInteger(attempt)||attempt<1||attempt>MAX_ATTEMPTS||
+     !validTime(now)||safeBuildErrorCode(code)!==code)
+    throw new Error('SCENE_CPU_SETTLEMENT_INVALID');
+  const retry=attempt<MAX_ATTEMPTS&&CPU_RETRYABLE_CODES.has(code);
+  return writeTransaction(db,async tx=>{
+    const changed=await tx.sceneBuildJob.updateMany({
+      where:{id,status:'RUNNING',attempt,builder:CAD_SCENE_CPU_BUILDER,
+        payloadSchema:SCENE_JOB_PAYLOAD_SCHEMA},
+      data:retry?{status:'RETRY_WAIT',dueAt:new Date(now.getTime()+sceneRetryDelayMs(attempt)),
+        lastCode:code,startedAt:null,finishedAt:null}:
+        {status:'FAILED',lastCode:code,startedAt:null,finishedAt:now},
+    });
+    return changed.count===1?(retry?'RETRY_WAIT':'FAILED'):null;
   });
 }
 

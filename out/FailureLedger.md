@@ -1,3 +1,11 @@
+## #225 / PR #228 — CI #583 기준선 이후 추가 변경 검증 미완료 (2026-11-04)
+
+- 변경 전 정확 HEAD `f275eeeb2d939e0e289e8948bb87da80e83c6348`의 [PR CI #583](https://github.com/planner77/layoutManager/actions/runs/41781385753)는 SUCCESS. 이 성공을 신규 커밋의 PASS로 사용하지 않는다.
+- 새 위험/재검증 대상: 0.60.0 Browser vs 미래 CPU enqueue 분기·원자적 rollback, 30/60초 transient backoff·3회, revoked/unsupported terminal, `RUNNING+CPU identity+attempt` CAS 및 late READY 보호. 새 단위시험과 정확 HEAD 필수 CI 결과를 확인해야 한다.
+- 새 G7/OCI/자원 격리/브라우저 재접속은 여전히 구현 전. GO-PILOT BLOCKED, 운영 DB/.env/CAD/Volume·기존 GHCR 불변.
+
+---
+
 ## #225 / PR #228 CI #581 — G7 Worker revoked Actor 단위시험의 오류 타입 불일치 (2026-11-04)
 
 - **확인된 실패:** [PR CI #581 / Run41778751303](https://github.com/planner77/layoutManager/actions/runs/41778751303), exact HEAD `2b6fdb64fe5389646d6481edb804e17c440ce1e7`, completed/failure. Static/Unit Job `126405521743`에서 **165 files 중 164 PASS/1 FAIL, 1,055 tests 중 1,054 PASS/1 FAIL**. 실패는 `src/tests/unit/scene-worker-publish.test.ts:124`의 "denies a revoked Actor during the final commit after blob write". `expected Error: SCENE_WORKER_ACCESS_REVOKED to match object { code:'SCENE_WORKER_ACCESS_REVOKED' }`; Required Verify 종속 FAIL. TypeScript·ESLint 및 Docker smoke는 PASS; 나머지 Chromium/G7 E2E는 Static 선행 실패로 SKIPPED. A2 Job은 변경 scope상 SKIPPED.
