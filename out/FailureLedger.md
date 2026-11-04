@@ -1,3 +1,11 @@
+## #229 — GHCR v0.61 Main 통합 시 불완전한 이미지쌍 자동 게시 위험 (2026-11-04)
+
+**분류: 사전 예방 위험 / 새로운 실패한 PR CI가 관측된 것은 아님.** PR #228 exact HEAD `fff0b31040af5ec1a571e5b2106686202d4a3140`은 [PR CI #590](https://github.com/planner77/layoutManager/actions/runs/41808588070) 적용 8 Job SUCCESS, 범위 외 A2 1 SKIPPED이다. 그러나 기존 Main `docker-publish.yml`은 runtime-affecting diff + 0.61.0 package를 자동 태그 및 App/Migrator GHCR 게시로 승격하는 반면, CPU Worker 별도 OCI target을 게시하지 않아 불완전한 release 위험이 있다. 실제 v0.61.0 GHCR 게시·무결성 오류가 발생했다는 증거는 없다.
+
+**수정 후보:** Main(0.60.0) 기반 별도 #229 PR에서 0.61+ 영속 release hold(`src/package.json` 정확 SemVer), 후보 tag 선행 차단, `build-and-push` GHCR 변경 이전 이중 검증, #229 guard-only Main 변경의 좁은 경로 비출고, 기존 v0.60 이하 및 #216 source-pinned immutable 보전을 구현한다. 테스트·정확 HEAD CI는 최종 검증 전 NOT RUN/NOT VERIFIED이며 실패 결과를 임의 PASS로 재분류하지 않는다. 태그의 과거 커밋 workflow 우회는 GitHub ruleset/권한 별도 통제 필요. 운영 .env/DB/CAD/Volume과 기존 GHCR 불변, PR #228 HOLD, GO-PILOT BLOCKED.
+
+---
+
 ## #225 / PR #226 — PR CI #564 SUCCESS·Squash Main·GHCR 후보 게시 시작 (2026-11-04)
 
 - **정확 검증:** [PR CI #564 Run41753808890](https://github.com/planner77/layoutManager/actions/runs/41753808890), HEAD `03e21f4242e499a0a8afc834361e625e4433b2c2`, `completed/success`. Scope, Quality/TypeScript/ESLint/Unit/Integration/Build, Docker 실 0.56→0.60 G7 승인형 Upgrade/readonly WAL·backup/restore 및 마이그레이션 이력, G7 Greenfield UI, G7 Signed Runtime/Legacy, General Chromium shard 1/2 및 2/2, Required Verify 모두 SUCCESS. A2 CPU-only 합성 시험은 이 PR의 변경 범위 밖으로 **SKIPPED**, 운영 B2 증거로 간주하지 않는다.
