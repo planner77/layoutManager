@@ -1,3 +1,13 @@
+## #225 실제 OCI Worker 폐기형 통합 시험 (2026-11-05, 신규 PR)
+
+- **입력·격리:** GitHub Actions Docker job에서 로컬로 빌드한 `cad-layout-viewer:ci-migrate` 및 `cad-layout-viewer:ci-cpu-worker`만 사용. CI run/attempt당 고유 `layoutmanager-ci-oci-*` 볼륨(없음을 확인하고 생성), 다른 기존 볼륨·제품 `.env`·GHCR·실 원본에 접근 금지. 테스트가 만든 정확 볼륨만 종료 시 삭제.
+- **실제 단일 OCI:** 임시 G7 0.61 Greenfield 신규 설치→승인 synthetic Actor/Site/Version/SourceSHA Job → worker image `node --import tsx ... --once` 실행, READY·SceneAsset+CurrentScene·Audit·원본 SHA·Blob readback, 두 번째 worker IDLE/중복자산 0.
+- **격리 판정:** Docker inspect의 USER10001, nonprivileged, network none, read-only rootfs, cap DROP ALL, no-new-privileges, cgroup CPU1/mem768m/pids64, tmpfs 및 bounded one-job worker 시작/종료 확인. 이 정책을 옵션 없이 실행하는 다른 컨테이너는 시험 대상이 아니다.
+- **음성·복구:** Site 권한 삭제 후 새 Job 게시 거부/기존 READY 유지, 파일 같은 길이 원본 SHA 변조 후 게시 거부, 새 Job을 선점한 별도 프로세스 SIGKILL 후 status RUNNING→(소유 DB 시각 가속) RETRY_WAIT→READY attempt 2 및 중복 Asset 0. 합성 DB와 CAD Blob을 별도 경로에 복사/복원해 Scene readback 재검증.
+- **필수 보류:** 실 HTTP listener→signed multipart→실 OCI Worker→실 앱 Browser 신규 로그인/Viewer 단일 E2E, 실제 OOM/120초 timeout, 전체 G7 upgrade+recovery/실 운영 호스트·실 CAD, 3-role release source/digest+Tag Ruleset. 새 CI 결과는 완료 전 NOT RUN, GO-PILOT BLOCKED. 이전 CI #612와 Main #152는 확정 PASS.
+
+---
+
 ### #225 추가 테스트: G7 signed multipart service 경로
 
 - `tests/integration/scene-cpu-worker-upload-g7.test.ts`: 독립 승인된 합성 Editor Session, Site Grant, Origin/CSRF를 생성→`uploadCad(Request(FormData))`의 실제 CadStorage receive/publish, CadRepository transaction·CPU Job QUEUED→별도 Node Worker `--once`→Scene immutable READY/readback, CAD_UPLOADED 및 SCENE_PUBLISHED Audit 검증.
