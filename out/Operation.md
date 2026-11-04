@@ -1,3 +1,11 @@
+## #225 GO-PILOT 준비: OCI CI/운영 격리 (2026-11-05)
+
+CI OCI proof는 `src/tests/oci/scene-cpu-worker-proof.sh`가 **새로 생성하는 정확 볼륨만** 소유하며 `docker run --network none --read-only --user 10001:10001 --cap-drop ALL --security-opt no-new-privileges --pids-limit 64 --memory 768m --cpus 1 --tmpfs /tmp...`로 실행한다. Container image는 PR exact source의 로컬 `ci-migrate`/`ci-cpu-worker`이며 GHCR 게시가 아니다. synthetic G7 입력·SHA·Actor/Site 권한 및 Scene 파일은 고유 volume 안에 한정. SIGKILL도 해당 proof 자식 컨테이너에만 적용. 실제 운영 Compose/profile/host cgroup/제품 `.env`/기존 Named Volume 수정 금지. 실패해도 기존 제품 volume을 삭제하지 않음.
+
+여기에서 `SCENE_AUTO_BUILD_ENABLED=true`·`SCENE_CPU_WORKER_ENABLED=true`는 이 고립된 CI run의 Node proof 안에서만 사용한다. **운영·소스 기본 OFF**, #229 GHCR HOLD, #231 Tag Ruleset OPEN, GO-PILOT BLOCKED. 계측 실패·OCI 시작 실패·복원 실패는 실제 CI Job 실패로 기록하고 PASS로 추측하지 않는다.
+
+---
+
 ## #225 Pilot 검증 운영 분리 — 폐기 가능한 자원만 사용 (2026-11-05)
 
 `tests/integration/scene-cpu-worker-real-g7.test.ts`는 임시 디렉터리·0.61 G7 synthetic DB를 생성/삭제한다. 실제 사용자 세션/실 CAD/운영 `.env`·Named Volume을 참조하지 않는다. 별도 Node 프로세스 SIGKILL은 테스트 소유 자식 프로세스에만 적용하고, 180초 Stale/30초 Retry 대기는 임시 SQLite의 시각 필드 조작으로 가속한다. 실제 Docker/Compose의 한도나 운영 재시작 안전성을 입증하는 시험으로 해석하지 않는다. Chromium 시험은 synthetic CPU LINE DTO의 Blob readback·새 브라우저 Session만 측정하며 정식 API 로그인/Viewer 복원을 대신하지 않는다.
