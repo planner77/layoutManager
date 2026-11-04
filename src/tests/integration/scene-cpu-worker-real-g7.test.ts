@@ -70,8 +70,8 @@ describe('#225 CPU-only detached Worker actual G7 0.61 one-job roundtrip',()=>{
     const f=await fixture();
     try{
       const result=await runCpuWorkerTick();
-      expect(result).toMatchObject({outcome:'PUBLISHED',jobId:f.job.id});
-      expect(await f.db.sceneBuildJob.findUnique({where:{id:f.job.id}}))
+      expect(result).toMatchObject({outcome:'PUBLISHED',jobId:f.job.jobId});
+      expect(await f.db.sceneBuildJob.findUnique({where:{id:f.job.jobId}}))
         .toMatchObject({status:'READY'});
       expect(await f.db.auditEvent.count({where:{action:'SCENE_PUBLISHED',
         targetId:f.versionId}})).toBe(1);
