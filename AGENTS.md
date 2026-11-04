@@ -1,3 +1,11 @@
+## #225/B3 PR #232 — Main GO-INTEGRATE 완료, GHCR·GO-PILOT HOLD (2026-11-05)
+
+- 검증 소스 HEAD `e5747e4ecfd391912d79e61362b51c4ab9f5aa87`의 [PR CI #610](https://github.com/planner77/layoutManager/actions/runs/41903521695): 대상 8 Job **SUCCESS**, #218 A2 synthetic 1 Job **SKIPPED**. 미해결 리뷰0/충돌0/Main behind0 후 Draft 해제·[PR #232](https://github.com/planner77/layoutManager/pull/232) Squash Main `e71d3c2e421d3931024676bb54a751b05d43a091` 병합. #599/#604/#607의 실패 원인은 [FailureLedger](out/FailureLedger.md)에 역사적 FAIL로 보존한다.
+- **B3 코드만 GO-INTEGRATE**: signed G7 Site Reader 100 Version batch, immutable Scene manifest/DTO/blob 검증 READY, 홈/Location Scene 상태+visible pending polling, Editor/Admin의 transient FAILED 재시도·CSRF·actor/site 재검사·CAS/attempt/포인터 불변·정책 내 인가 Audit. 변경분 단위/통합 및 필수 G7/Chromium 회귀 확인. 선행 Draft 기술 기록은 당시 이력이며 이 최신 상태가 우선한다.
+- **GO-PILOT 여전히 BLOCKED**: 실제 별도 Worker OCI restart/kill, 신규 DXF→영속 READY, 새 브라우저 세션 Scene 복원, 운영 설치/백업/복구 및 image source/digest 확인을 완료했다고 주장하지 않는다. #225/#218 계속 OPEN. `SCENE_AUTO_BUILD_ENABLED=OFF`, `SCENE_CPU_WORKER_ENABLED=OFF`, #229 v0.61+ **GHCR HOLD**, #231 Tag Ruleset 관리자 작업 OPEN; 릴리스 태그/GHCR 게시/운영 DB·CAD·Volume·.env 변경 금지. 이번 문서 업데이트는 GO-PILOT/출고 승인이 아니다.
+
+---
+
 ## #225 / B3 PR #232 — G7 Scene 상태 조회·제한적 Retry (2026-11-04, Draft)
 
 [Issue225-B3](out/Issue225-B3.md), [Issue218LeanPolicy](out/Issue218LeanPolicy.md)를 따른다. 현재 PR #232는 홈/Location 도면 목록의 별도 Scene 생성 상태(기존 Current와 분리), 보이는 pending 행만 5초 재조회, signed G7 Site Reader/Editor 한정 최대 100 Version Batch API, validated immutable pointer+DTO readback 기반 READY, CPU Job 오류 allowlist와 Editor/Admin 한정 실패 Job 재시도(CAS, 최대 3시도, SHA·Site·Actor 재검증)를 구현한 **GO-DEV 후보**다. 로그인/권한이 없는 Site의 Version 키·Job ID·Actor·원본 SHA·저장 경로·비밀/스택 노출 금지, 재시도는 기존 Scene pointer를 절대 덮어쓰지 않는다.
