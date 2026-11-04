@@ -8,12 +8,12 @@ describe('#225 isolated CPU Worker launch boundary',()=>{
       G7_GREENFIELD_MODE:'true',G7_GREENFIELD_AUTOMATED:'true',
       CAD_STORAGE_BACKEND:'local',SCENE_AUTO_BUILD_ENABLED:'false',
       SCENE_CPU_WORKER_ENABLED:'true',
-    })).rejects.toThrow('SCENE_CPU_WORKER_CONFIGURATION_DENIED');
+    } as NodeJS.ProcessEnv)).rejects.toThrow('SCENE_CPU_WORKER_CONFIGURATION_DENIED');
     await expect(runCpuWorkerTick({
       G7_GREENFIELD_MODE:'true',G7_GREENFIELD_AUTOMATED:'true',
       CAD_STORAGE_BACKEND:'s3',SCENE_AUTO_BUILD_ENABLED:'true',
       SCENE_CPU_WORKER_ENABLED:'true',
-    })).rejects.toThrow('SCENE_CPU_WORKER_CONFIGURATION_DENIED');
+    } as NodeJS.ProcessEnv)).rejects.toThrow('SCENE_CPU_WORKER_CONFIGURATION_DENIED');
   });
   it('keeps Worker opt-in, bounded, unprivileged and without a network',()=>{
     const compose=readFileSync(new URL('../../docker-compose.yml',import.meta.url),'utf8');
