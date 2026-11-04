@@ -1,3 +1,7 @@
+### #225 실제 multipart G7 업로드 검증 범위 추가 (2026-11-05)
+
+새 `src/tests/integration/scene-cpu-worker-upload-g7.test.ts`에서 disposable G7 Editor/AuthSession + Origin/CSRF 검사를 거친 `FormData` `uploadCad` 경로를 추가해 Version+Job QUEUED·새 Worker CLI READY·동일 원본 SHA·감사·재시도 거절·Site Grant 취소를 검증하도록 했다. 현재 소스는 **미실행**, 실제 HTTP 서버/OCI/Viewer API E2E를 대체하지 않는다. 기본 OFF·GHCR HOLD·GO-PILOT BLOCKED 불변.
+
 ## #225 — GO-PILOT 준비용 폐기 가능 통합 테스트 추가 (2026-11-05, 신규 PR 검증 전)
 
 이번 `feat/225-pilot-disposable-integration`은 이전 #232 코드 GO-INTEGRATE 이후 실제 검증 증거의 공백을 좁힌다. `src/tests/integration/scene-cpu-worker-real-g7.test.ts`는 synthetic G7 0.61 임시 DB/원본/Scene 파일을 열어 분리된 Node CLI Worker 정상→verified READY·Audit·새 Reader·중복 IDLE, 별도 claim 프로세스 SIGKILL→stale 재시작(임시 DB 시각 가속), Original SHA 변조 및 Site grant 철회 시 실패·포인터 미생성을 검증하도록 확장. `src/tests/e2e/scene-poc.spec.ts`는 Node CPU LINE DTO의 immutable Blob put/readback→**새 Chromium context** 렌더 및 변조 거부를 추가. 변경 소스의 정확 PR HEAD CI 결과는 아직 **NOT RUN / NOT VERIFIED**이며 합성 시험과 GO-PILOT 운영 증거를 혼동하지 않는다.
