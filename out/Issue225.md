@@ -1,3 +1,7 @@
+### 2026-11-05 — signed multipart Service 업로드 연결 시험 소스 추가
+
+`src/tests/integration/scene-cpu-worker-upload-g7.test.ts`는 일회용 G7 0.61 DB에 실제 Editor/AuthSession/Site Grant를 발급하고 `prepareG7CadWrite`의 Origin/CSRF 검사를 통과한 multipart `uploadCad` 호출을 통해 원본 SHA·Version·Job QUEUED를 생성한 뒤 분리된 Node Worker 실행→READY·SceneRepository readback/Audit·중복 Retry 거절, 권한 철회 후 FAILED/원본 보존을 검증하도록 작성됨. 이는 실제 제품 HTTP listener/프록시, 별도 OCI 및 사용자 Viewer 새 로그인 전체 E2E가 아니며 CI 실행 전 **NOT VERIFIED**.
+
 ## 2026-11-05 — GO-PILOT 검증 준비 PR (실행 증거 보류)
 
 - 이전 PR #232의 GO-INTEGRATE는 완료. 신규 `feat/225-pilot-disposable-integration`에서 합성 G7 0.61.0 소유 임시 DB/로컬 CAD에 한정해 별도 Node Worker 실행→verified READY→신규 DB 읽기, Job 선점 후 실제 SIGKILL→stale 180s 후 회복(임시 Row 시각만 가속), 원본 동일 길이 변조→SHA 실패, Site 권한 회수 차단을 검증하도록 테스트 소스 추가.
