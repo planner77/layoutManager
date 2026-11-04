@@ -1,3 +1,7 @@
+### 2026-11-05 — multipart 서비스 경로 검증 추가 (SOURCE ONLY)
+
+새 `scene-cpu-worker-upload-g7.test.ts`는 합성 G7 사용자 세션과 진짜 multipart Request, `prepareG7CadWrite`/Origin/CSRF, `uploadCad`·원본 저장·영속 Queue, 별도 Node 프로세스의 verified READY·Audit/Asset 불변 및 권한 취소 거부를 연결한다. **PR CI 미실행/결과 미확인**, HTTP listening server/App UI/실 OCI 환경에서 통과했다고 단정하지 않는다.
+
 ## #225 폐기 가능한 통합·브라우저 검증 — 신규 PR 전 증거 상태 (2026-11-05)
 
 **현재 판정: SOURCE ADDED / NOT RUN, GO-PILOT BLOCKED.** 실행 서버에 Docker 및 GitHub DNS가 없어 여기서는 repository unit/integration/Chromium 시험을 실제 실행하지 못했다. 정확 신규 HEAD PR CI 결과가 생성되기 전 성공·실패를 단정하지 않는다. 기존 Main CI 성공은 PR #232 통합 증거이며 이번 신설 테스트에 대한 PASS가 아니다.
