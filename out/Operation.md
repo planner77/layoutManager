@@ -1,3 +1,11 @@
+## #225 Pilot 검증 운영 분리 — 폐기 가능한 자원만 사용 (2026-11-05)
+
+`tests/integration/scene-cpu-worker-real-g7.test.ts`는 임시 디렉터리·0.61 G7 synthetic DB를 생성/삭제한다. 실제 사용자 세션/실 CAD/운영 `.env`·Named Volume을 참조하지 않는다. 별도 Node 프로세스 SIGKILL은 테스트 소유 자식 프로세스에만 적용하고, 180초 Stale/30초 Retry 대기는 임시 SQLite의 시각 필드 조작으로 가속한다. 실제 Docker/Compose의 한도나 운영 재시작 안전성을 입증하는 시험으로 해석하지 않는다. Chromium 시험은 synthetic CPU LINE DTO의 Blob readback·새 브라우저 Session만 측정하며 정식 API 로그인/Viewer 복원을 대신하지 않는다.
+
+실제 GO-PILOT 실증은 **별도 승인 후** 격리된 Docker/Volume과 허용된 임시 G7 승인·백업 복원으로 수행한다. 사전 조건: 비루트 UID, network none, read-only root, tmpfs, CPU1/RAM768MiB/PIDs64/120s timeout, image role/source/digest 확인, 단일 Worker, 원본·기존 READY·Audit 보존, 정상 업로드→READY 및 SIGKILL/OOM/restart 검증. 명시적 Owner GO 전 제품 `.env` 플래그를 활성화하지 않는다. Test scope is disposable, source-only until exact-HEAD CI. Production flags SCENE_AUTO_BUILD_ENABLED=OFF / SCENE_CPU_WORKER_ENABLED=OFF; #229 >=0.61 GHCR HOLD, #231 Tag Ruleset OPEN, #225/#218 OPEN, GO-PILOT BLOCKED. No production DB/CAD/Volume/.env, GHCR or tag writes.
+
+---
+
 ## #225 B3 운영 경계 — 출고 및 활성화 금지 (2026-11-04 Draft)
 
 새 화면/API 코드는 Main에 미병합 상태이다. `SCENE_AUTO_BUILD_ENABLED=OFF`, `SCENE_CPU_WORKER_ENABLED=OFF` 유지하고 G7 0.61+ GHCR 자동 게시 금지(#229), 관리자 Tag Ruleset/#231 및 App/Migrator/Worker source/digest 승인 전 버전 태그/운영 설치/업그레이드 금지. 조회는 G7 ACTIVE의 signed Site Reader, 수동 Retry는 Editor/Admin+CSRF 및 시도1~2 transient FAILED만 허용. 무권한 Job 정보/내부 파일경로/토큰을 로그/응답에 노출하지 않는다. 401/403/503이나 Blob 조회 실패를 실제 Job FAILED로 오인하지 않는다. 실 OCI 재시작/백업/복구와 Chromium 신규 세션 Scene 재접속이 GO-PILOT 사전 요건이다.
