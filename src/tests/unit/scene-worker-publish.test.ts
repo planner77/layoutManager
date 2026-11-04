@@ -17,7 +17,7 @@ async function fixture(){
   const candidate=await buildCpuLineCandidate({source,versionId,sourceSha256:sha});
   const version={sha256:sha,fileSize:source.length,storagePath:'loc/version/original.dxf',
     fileFormat:'DXF'};
-  const finds=vi.fn(async()=>null);
+  const finds=vi.fn(async():Promise<{assetId:string}|null>=>null);
   const audit=vi.fn(async()=>({id:'audit'})),ready=vi.fn(async()=>({count:1}));
   const tx={
     cadFileVersion:{findUnique:vi.fn(async()=>version)},
@@ -75,7 +75,7 @@ describe('#225/B2-B internal CPU first publish (NOT operational Worker)',()=>{
   it('refuses any preexisting CurrentScene without touching storage',async()=>{
     const f=await fixture();
     f.finds.mockResolvedValue({assetId:'old'});
-    await expect(f.run()).rejects.toThrow('SCENE_WORKER_POINTER_EXISTS');
+    await expect(f.run()).rejects.toMatchObject({code:'SCENE_WORKER_POINTER_EXISTS'});
     expect(f.sceneStorage.putVerified).not.toHaveBeenCalled();
     expect(f.ready).not.toHaveBeenCalled();
   });
@@ -83,7 +83,7 @@ describe('#225/B2-B internal CPU first publish (NOT operational Worker)',()=>{
     const f=await fixture();
     f.originalStorage.content.mockResolvedValue({size:source.length+1,
       stream:new ReadableStream<Uint8Array>({start(controller){controller.close();}})});
-    await expect(f.run()).rejects.toThrow('SCENE_WORKER_SOURCE_CHANGED');
+    await expect(f.run()).rejects.toMatchObject({code:'SCENE_WORKER_SOURCE_CHANGED'});
     expect(f.sceneStorage.putVerified).not.toHaveBeenCalled();
     expect(f.ready).not.toHaveBeenCalled();
   });
@@ -98,7 +98,7 @@ describe('#225/B2-B internal CPU first publish (NOT operational Worker)',()=>{
   it('preserves previous READY and quarantines prepared blob on a pointer race',async()=>{
     const f=await fixture();
     f.finds.mockResolvedValueOnce(null).mockResolvedValueOnce({assetId:'another'});
-    await expect(f.run()).rejects.toThrow('SCENE_WORKER_POINTER_EXISTS');
+    await expect(f.run()).rejects.toMatchObject({code:'SCENE_WORKER_POINTER_EXISTS'});
     expect(f.sceneStorage.putVerified).toHaveBeenCalledTimes(1);
     expect(f.db.sceneOrphanJob.update).toHaveBeenCalledWith(
       expect.objectContaining({data:expect.objectContaining({state:'CLEANUP'})}));
@@ -107,7 +107,7 @@ describe('#225/B2-B internal CPU first publish (NOT operational Worker)',()=>{
   it('rejects a stale attempt CAS rather than marking an unverified READY',async()=>{
     const f=await fixture();
     f.ready.mockResolvedValue({count:0});
-    await expect(f.run()).rejects.toThrow('SCENE_WORKER_JOB_RACE');
+    await expect(f.run()).rejects.toMatchObject({code:'SCENE_WORKER_JOB_RACE'});
     expect(f.audit).not.toHaveBeenCalled();
     expect(f.db.sceneOrphanJob.update).toHaveBeenCalledWith(
       expect.objectContaining({data:expect.objectContaining({state:'CLEANUP'})}));
@@ -121,7 +121,7 @@ describe('#225/B2-B internal CPU first publish (NOT operational Worker)',()=>{
       jobId:'job-1',attempt:1,versionId,sourceSha256:sha,
       actorId:'user-1',siteId:'site-1',requestId:'request-1',
     }).mockRejectedValueOnce(new Error('SCENE_WORKER_ACCESS_REVOKED'));
-    await expect(f.run()).rejects.toThrow('SCENE_WORKER_ACCESS_REVOKED');
+    await expect(f.run()).rejects.toMatchObject({code:'SCENE_WORKER_ACCESS_REVOKED'});
     expect(f.sceneStorage.putVerified).toHaveBeenCalledTimes(1);
     expect(f.ready).not.toHaveBeenCalled();
   });

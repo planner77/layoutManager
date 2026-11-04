@@ -8,7 +8,7 @@
  */
 import {randomUUID} from 'node:crypto';
 import {CadError} from '@/domain/cad';
-import {cpuSceneScope,validateSceneManifest,type SceneManifest} from '@/domain/cad-scene';
+import {cpuSceneScope,validateSceneManifest} from '@/domain/cad-scene';
 import {sceneSha256} from '@/domain/scene-digest';
 import {validateStoredScenePayload} from '@/domain/scene-payload';
 import {type Database,writeTransaction} from '@/server/db';

@@ -6,7 +6,7 @@ import {authorizeG7CpuWorkerJobTx} from '../../server/scene/scene-worker-g7-auth
 // Simulate a hypothetical future reviewed schema ONLY in this unit suite.
 // The real current 0.60.0 constant deliberately blocks runtime activation.
 vi.mock('../../server/g7-operational/greenfield-schema',()=>({
-  G7_GREENFIELD_SCHEMA_ID:'G7-GREENFIELD-CPU-WORKER-FUTURE-REVIEWED',
+  G7_GREENFIELD_SCHEMA_ID:'G7-GREENFIELD-CPU-WORKER-20261104-1',
 }));
 vi.mock('../../server/g7-operational/runtime-gate',()=>({
   resolveG7RuntimeGate:vi.fn(),
@@ -57,7 +57,7 @@ describe('#225 B2-B internal Worker live authorization (future release mock only
     ]){vi.stubEnv(key,value);
       const f=fixture();
       await expect(authorizeG7CpuWorkerJobTx(f.tx as never,'job-001',1))
-        .rejects.toThrow('SCENE_WORKER_RELEASE_NOT_APPROVED');
+        .rejects.toMatchObject({code:'SCENE_WORKER_RELEASE_NOT_APPROVED'});
       expect(f.findJob).not.toHaveBeenCalled();
       vi.stubEnv(key,'true');
     }
@@ -65,12 +65,12 @@ describe('#225 B2-B internal Worker live authorization (future release mock only
   it('requires a signed ACTIVE write runtime and the current authorised Site',async()=>{
     mocked.mockReturnValueOnce({state:'OFF'} as never);
     await expect(authorizeG7CpuWorkerJobTx(fixture().tx as never,'job-001',1))
-      .rejects.toThrow('SCENE_WORKER_RUNTIME_DENIED');
+      .rejects.toMatchObject({code:'SCENE_WORKER_RUNTIME_DENIED'});
     mocked.mockReturnValue(active as never);
     mocked.mockReturnValueOnce(active as never)
       .mockReturnValueOnce({...active,siteIds:['other']} as never);
     await expect(authorizeG7CpuWorkerJobTx(fixture().tx as never,'job-001',1))
-      .rejects.toThrow('SCENE_WORKER_RUNTIME_DENIED');
+      .rejects.toMatchObject({code:'SCENE_WORKER_RUNTIME_DENIED'});
   });
   it('denies status/attempt/Builder/schema tampering',async()=>{
     for(const mutation of [
@@ -78,7 +78,7 @@ describe('#225 B2-B internal Worker live authorization (future release mock only
       {builder:CAD_SCENE_BUILDER},{payloadSchema:1},{startedAt:null},
     ]){
       await expect(authorizeG7CpuWorkerJobTx(fixture({job:mutation}).tx as never,'job-001',1))
-        .rejects.toThrow('SCENE_WORKER_JOB_INVALID');
+        .rejects.toMatchObject({code:'SCENE_WORKER_JOB_INVALID'});
     }
   });
   it('denies changed Source, another Site, inactive hierarchy and an inactive Actor',async()=>{
@@ -96,7 +96,7 @@ describe('#225 B2-B internal Worker live authorization (future release mock only
       {actor:{sites:[{siteId:'other'}]}},
     ]){
       await expect(authorizeG7CpuWorkerJobTx(fixture(changes).tx as never,'job-001',1))
-        .rejects.toThrow('SCENE_WORKER_ACCESS_REVOKED');
+        .rejects.toMatchObject({code:'SCENE_WORKER_ACCESS_REVOKED'});
     }
   });
 });
