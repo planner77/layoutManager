@@ -1,3 +1,11 @@
+## #225 GO-PILOT 통합 검증 소스 추가 — 아직 CI 관측 실패 아님 (2026-11-05)
+
+- **Observed:** 기존 Main CI 완료 및 PR #232의 [CI #610](https://github.com/planner77/layoutManager/actions/runs/41903521695) 성공은 과거 코드 HEAD 증거다. 신규 `feat/225-pilot-disposable-integration`의 테스트 코드에는 **아직 새로운 PR CI 실행/결과가 없다**. 이번 항목은 실패 보고가 아닌 검증 추적/실행 범위 기록이며 과거 #599/#604/#607 실패는 그대로 FAIL로 보존한다.
+- **Work:** 별도 Node Worker 프로세스 + synthetic real G7 DB/Blob READY·새 DB readback/중복 IDLE, 실제 자식 SIGKILL 후 유한 stale recovery, SHA tamper 및 Site grant revocation 실패 거부, CPU 후보 immutable blob→새 Chromium context 복원·손상 거부를 검증하도록 소스 추가. 프로덕션 동작 결함은 아직 관측/확정하지 않았다.
+- **Pending:** 실제 CI 로그의 상태/Run/Job 정확 식별자 확인 이후 실패만 별도 기록하여 수리하고 재실행한다. 현 작업 환경은 Docker 실행 불가·GitHub DNS 차단이므로 로컬 OCI/Playwright/Prisma PASS 주장 없음. 실제 signed 업로드 API·OCI limits·backup/restore/현장 DXF 미실행, GO-PILOT BLOCKED. #229 GHCR HOLD/#231 OPEN, 제품 Flag OFF/운영 파일 불변.
+
+---
+
 ## #225 / PR #232 — PR CI #607 public status precedence fixture mismatch (2026-11-05 KST)
 
 - **Observed:** [PR CI #607 / run 41901711112](https://github.com/planner77/layoutManager/actions/runs/41901711112), exact source HEAD `545569bb50559b9f1fc485eeebc9e4a71a3ba91a`, completed/failure. PR scope classifier and Docker migration/runtime smoke succeeded. Static/unit Job `126826637680` failed at Unit/Integration with **1 failure and 1091 passes (172 files: 1 failed, 171 passed)**. `src/tests/unit/scene-build-display.test.ts`, test `does not leak arbitrary diagnostic strings into the public label`, expected `BLOCKED` but received `UNAVAILABLE` for `validatedScene='UNAVAILABLE', jobState='BLOCKED'`. Required Verify `126829767503` failed as a downstream dependency; applicable G7/Chromium E2E checks were skipped, not passed. A2 check was scope-skipped.
