@@ -1,3 +1,9 @@
+## #225 / PR #228 — 독립 CPU Worker + G7 0.61.0 릴리스 연결 (2026-11-04 / CI 미검증)
+
+B2-B에 별도 비루트 `cpu-worker` OCI 타깃, opt-in Compose profile, network none/read-only rootfs/1CPU·768MiB·PIDs64/tmpfs 및 단일 Job별 120초 제한 실행기를 추가했다. 신규 **0.61.0** G7 CPU Schema ID+Greenfield baseline 및 **0.60→0.61** 승인형 additive index migration을 등록한다. 과거 0.60.0 Schema/SQL/이미지/Browser Builder Job은 불변. `SCENE_AUTO_BUILD_ENABLED`와 `SCENE_CPU_WORKER_ENABLED`은 모두 기본 OFF. 실행 전/게시 시 현재 G7 Runtime·Actor·Site 권한 재검사 필수.
+
+**GO-DEV 코드만:** 새 정확 HEAD CI/OCI 실기동, LINE 이외 Entity 확장, 실제 브라우저 재접속/복원, B3 UI·재시도, 신규 Worker GHCR role/source/digest 검증/운영 배포는 아직 미완료. #225/#218 OPEN, GO-PILOT BLOCKED. 운영 `.env`·CAD·DB·Volume·v0.60.0 digest 변경 금지.
+
 ## #225 / PR #228 — G7 CPU Queue 경로·실패 복구 Draft 추가 (2026-11-04)
 
 - `CadRepository.register`의 Version+Job 동일 트랜잭션에서 Builder 라우팅을 추가했다. v0.60.0 G7에서 기존 Browser Builder 불변, CPU flag 설정 시 fail-closed; 신규 미등록 `G7-GREENFIELD-CPU-WORKER-20261104-1`과 두 feature gate가 충족되는 **미래** 릴리스에서만 CPU Job을 만들 수 있다.

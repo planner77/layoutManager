@@ -1,3 +1,7 @@
+## 2026-11-04 — PR #228 B2-B 분리 Worker/G7 0.61.0 코드 (CI 미검증)
+
+`scene-cpu-worker.ts` 단일 Job CLI, 120초 강제종료 supervisor loop, `cpu-worker` OCI 타깃과 opt-in Compose 보안 제한(UID10001/read-only/network-none/CPU1·RAM768MiB/PID64)을 추가했다. 신규 0.61.0 G7 CPU 스키마, Greenfield 새 기준선 및 0.60→0.61 additive index migration을 등록한다. 기존 v0.60.0 Browser Builder Job 및 운영 데이터·이미지 불변; 기능 플래그 둘 다 기본 OFF. 새 HEAD CI·실 OCI·마이그레이션·브라우저 복원 검증 미완료. LINE 외 2D Entity, B3 상태/retry UI, GHCR Worker 이미지 검증 및 제한 Pilot은 후속. #225/#218 OPEN, GO-PILOT BLOCKED.
+
 ## 2026-11-04 — PR #228 CPU Job 릴리스 라우팅·bounded recovery (Draft)
 
 신규 G7 CPU schema+Feature flag에서만 Version 등록 → CPU Builder Queue를 한 DB TX에서 연결하도록 분기 추가. 0.60.0은 기존 Browser enqueue 유지하고 잘못 설정된 CPU 플래그를 차단한다. transient error RetryWait 30s/60s, attempt3 FAILED, auth/source/pointer 등 terminal, CAS lost는 거짓 실패를 피한다. 단위시험 3곳 보강. CI 확인 전 UNVERIFIED; 신규 G7 schema/실제 별도 CPU Worker OCI/배포·B3·브라우저 복원 미완료, #225/#218 OPEN.

@@ -1,3 +1,9 @@
+## #225 / 0.61.0 CPU Worker 배포 후보 — DO NOT ACTIVATE (2026-11-04)
+
+현재 0.60.0 App/Migrator 태그·digest, DB/CAD/Volume/.env는 변경하지 않는다. 새 `cpu-worker` Docker 타깃과 `scene-cpu-worker` opt-in Compose profile은 아직 CI·GHCR 검증/게시 전이다. `SCENE_AUTO_BUILD_ENABLED`와 `SCENE_CPU_WORKER_ENABLED` 모두 기본 **false**. 운영 배포/프로필 실행 금지.
+
+향후 GO-PILOT 전 필수: 0.61 App/Migrator/Worker image role/source/version/arch/digest 검증, 승인된 G7 0.60→0.61 계획·백업·격리복구·서명/권한 재검증, 비루트/CPU·RAM·PID·시간·네트워크/파일 격리와 kill/restart, 실제 신규 DXF→Job→verified READY 및 브라우저 재접속·이전 READY/원본 보존 실증. 복구 준비 전 flag 활성화나 수동 DB 변조 금지.
+
 ## #225 CPU Queue 및 retry — 운영 금지 경계 (2026-11-04)
 
 v0.60.0은 CPU flag만 켜도 CPU Queue를 실행하지 않는다. AUTO_BUILD+CPU_WORKER flag 동시 설정 시 기존 G7에서는 업로드를 거절한다. 신규 승인 G7 릴리스와 안전한 별도 Worker 프로세스/OCI가 준비되기 전 feature flag를 활성화하지 않는다. 일시 실패는 30/60초 backoff 후 다음 tick에서만 처리한다. Worker OCI/리소스 격리/운영 migration 미구현.

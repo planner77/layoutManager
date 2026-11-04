@@ -146,7 +146,7 @@ process.stdout.write(h.digest('hex'));"""
             if (plan.get("state") != "UPGRADE_MIGRATION_REQUIRED"
                     or plan.get("requiresApproval") is not True
                     or plan.get("from") != "0.56.0"
-                    or plan.get("to") != "0.60.0"
+                    or plan.get("to") != "0.61.0"
                     or not isinstance(plan_id, str)
                     or not re.fullmatch(r"[a-f0-9]{64}", plan_id)):
                 raise RuntimeError("G7_209_SMOKE_PLAN_INVALID")

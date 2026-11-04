@@ -1,3 +1,7 @@
+## ADR #225-B2-B — 독립 CPU Worker/G7 release 분리 (2026-11-04)
+
+**결정:** 0.60.0 G7 Scene Job 스키마와 Browser Job을 소급 변경하지 않는다. 0.61.0 전용 CPU Schema+새 기준선/등록된 추가 index MIGRATION을 도입하고, 독립 OCI 프로세스에서만 CPU Queue를 처리한다. 앱의 숨은 background timer/API request/cookie를 이용한 Worker 실행 금지. 기본 플래그 OFF; 1 CPU/768MiB/PID64/network none/read-only/120초 timeout, 수동 복제 금지. 신규 Main/GHCR 공개, 승인된 운영 업그레이드, 브라우저 복원 등은 GO-PILOT 별도 판정이며 현재 미승인. #225/#218 OPEN.
+
 ## ADR-225-B2B-RETRY — 새 릴리스에서만 CPU Builder 선택, 실패 CAS (2026-11-04)
 
 기존 0.60.0 Browser Builder identity/immutable release를 변경하지 않는다. 미등록 미래 G7 CPU Worker schema와 명시적 스위치 두 개가 충족될 때 CPU Queue를 사용한다. CPU transient `SCENE_STORAGE_FAILED`/`SCENE_WORKER_UNAVAILABLE`/`SCENE_BUILD_TIMEOUT`만 30/60초·최대 3회 재시도하고, revoked/grant/source/unsupported/pointer 오류는 즉시 최종 실패한다. 이미 READY이거나 stale attempt인 경우 CAS를 잃고 종료하며 READY를 복구·수정하지 않는다. G7 신규 migration, 독립 Worker OCI/격리, 브라우저 복원은 별도 GO 전 필요.

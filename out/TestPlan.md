@@ -1,3 +1,10 @@
+## TP-225-B2-B — CPU Worker·G7 0.61 검증 (2026-11-04)
+
+- 0.60 Schema/Builder/checksum 불변, 0.61 CPU SQL/Checksum/Greenfield 1/2/3행 이력, 0.60→0.61 승인·드리프트·롤백.
+- CPU 두 flag 기본 OFF, local-only signed G7 Runtime 확인 전 Job 미수행, 직전 Actor/Site revocation/SourceSHA/CAS 재검증.
+- PR CI에서 exact HEAD Static/Unit/Integration/E2E·App/Migrator/Worker OCI Build + nonroot/offline fail-closed smoke. Docker cgroup/RAM/PID/time 제한 검증.
+- Pilot: 실제 업로드→Job→READY/재접속, kill/restart/rollback 및 원본·기존 READY 불변, TEXT/MTEXT/BLOCK 등 수용 범위와 GHCR Worker role/digest source 확인. 미실행은 PASS로 표시 금지.
+
 ## TC-225-B2B-Q-Retry — 2026-11-04 추가
 
 Q01 현행 0.60.0 Browser Builder 유지 및 CPU flag 강제시 거부; 미래 G7+2 flags만 CPU Builder 선택. Q02 transient 저장 실패 attempt1/2 RetryWait 30s/60s, attempt3 terminal. Q03 auth revoked/source change/publish conflict terminal. Q04 CPU Builder+schema2+RUNNING+attempt CAS 실패면 READY 보호 및 CAS_LOST. Q05 실제 G7 승인 업그레이드·Worker OCI 배포/복원은 후속 단계 증거 필요. 기존 필수 CI 그대로 유지.

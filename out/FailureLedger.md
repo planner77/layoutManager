@@ -1,3 +1,7 @@
+## #225 / PR #228 — CI #584 성공 이후 신규 HEAD 검증 대기 (2026-11-04)
+
+[PR CI #584](https://github.com/planner77/layoutManager/actions/runs/41785081044) 정확 HEAD `f6a746198cabcef2c0b0e4e9468c899567c56d58` SUCCESS (8 Job 성공, A2 1 scoped skip), 리뷰 미해결 0/충돌 0. 그 후 신규 Worker OCI + G7 0.61 릴리스 코드 변경은 다른 HEAD이므로 CI **NOT VERIFIED**. 기존 #572/#581 실패 기록 보존, 새로운 실제 실패는 로그·단계·재현 범위를 추가 기록 후 보완. 병합·GO-PILOT·운영 배포 보류.
+
 ## #225 / PR #228 — CI #583 기준선 이후 추가 변경 검증 미완료 (2026-11-04)
 
 - 변경 전 정확 HEAD `f275eeeb2d939e0e289e8948bb87da80e83c6348`의 [PR CI #583](https://github.com/planner77/layoutManager/actions/runs/41781385753)는 SUCCESS. 이 성공을 신규 커밋의 PASS로 사용하지 않는다.

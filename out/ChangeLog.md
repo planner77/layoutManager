@@ -1,3 +1,7 @@
+## 2026-11-04 — #225 B2-B CPU Worker 0.61.0 release (Draft)
+
+독립 CPU Worker CLI/강제 시간 제한 및 비루트 OCI, Compose opt-in 보안 제약, 0.61 G7 CPU schema/승인형 additive migration, 관련 회귀 및 PR CI Worker image smoke 정의를 추가. 기존 0.60 이미지/운영 DB·CAD 불변. GO-PILOT과 CI 결과 별도 검증 필요.
+
 ## Unreleased — #225 B2-B guarded future CPU Worker pipeline (Draft, 2026-11-04)
 
 - [PR #228](https://github.com/planner77/layoutManager/pull/228) B2-B: 별도 CPU Builder v1 scope, CPU 전용 Queue Enqueue/Claim/Stale/Retry, G7 Worker 최신 Actor/Site/Role 재인가, 원본 CAD SHA/immutable Scene Blob readback, 초기 CurrentScene CAS+Job READY+Audit 같은 DB Tx, One-tick 내부 실행기와 예외/복구 Unit. 기존 Browser Builder/public Scene publish, v0.60.0 Schema/이미지/운영 데이터는 그대로 유지.

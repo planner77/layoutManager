@@ -1,3 +1,7 @@
+## #225 B2-B 독립 CPU Worker 설계 (2026-11-04 / 증거 대기)
+
+G7 0.61.0 신규 CPU Schema와 두 가지 기본 OFF 플래그를 요구한다. DXF 업로드 Version+CPU Builder Job은 동일 DB TX에서 enqueue되고, 별도 OCI Worker(Next request/브라우저 타이머 무관)는 단일 tick마다 별도 Node 프로세스를 120초로 제한한다. SIGKILL/비정상 종료 시 180초 stale recovery·3회 유한 재시도. UID10001, read-only rootfs, network none, local-only storage, CPU1·RAM768MiB·PIDs64·tmpfs96MiB. Fresh G7 Runtime/Actor/Site/Version 검증 뒤 SourceSHA/DTO full validator/Blob readback/CurrentScene CAS/Job READY/Audit 원자적 게시를 유지한다. CPU와 기존 Browser Builder identity는 분리. 신규 Worker는 LINE-only fail-closed이며 광범위 2D/브라우저 Viewer 복원 및 현장 수용은 미완료다.
+
 ## #225 B2-B — upload→CPU queue와 fail/retry (2026-11-04)
 
 Version 등록 TX는 릴리스가 허용할 때만 Builder를 선택한다. v0.60.0=Browser, 미래 승인 G7+2 flags=CPU. 기존 `claimNextCpuSceneJob` → `runOneCpuSceneJob` → 기존 validated Scene CAS pipeline과 연결되는 오류 종결 경로는 `settleRunningCpuSceneJobError` (CPU Job identity·attempt CAS; transient RETRY_WAIT/terminal FAILED; CAS_LOST). 저장/권한/READY 코드의 실행은 현재 G7 schema로는 차단되며 외부 Worker 프로세스와 격리는 후속.

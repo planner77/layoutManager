@@ -12,10 +12,13 @@ import {CAD_ZONE_DDL,CAD_ZONE_OBJECT_NAMES} from '../cad-business/zone-ddl';
 import type { IsolatedDb } from '../g7-staging/g1-store';
 import {SCENE_BUILD_JOB_DDL, SCENE_BUILD_JOB_OBJECT_NAMES,
   SCENE_JOB_MIGRATION_NAME, SCENE_BUILD_JOB_MIGRATION_CHECKSUM} from './scene-job-ddl';
+import {SCENE_CPU_INDEX_DDL,SCENE_CPU_OBJECT_NAMES,
+  SCENE_CPU_MIGRATION_NAME,SCENE_CPU_MIGRATION_CHECKSUM} from './scene-cpu-ddl';
 
 export const G7_GREENFIELD_CAPABILITY = 'G7-GREENFIELD-AUTH-V1' as const;
 export const G7_PREVIOUS_ZONES_SCHEMA_ID='G7-GREENFIELD-SEMANTIC-ZONES-20261101-1' as const;
-export const G7_GREENFIELD_SCHEMA_ID='G7-GREENFIELD-SCENE-JOBS-20261104-1' as const;
+export const G7_PREVIOUS_SCENE_JOB_SCHEMA_ID='G7-GREENFIELD-SCENE-JOBS-20261104-1' as const;
+export const G7_GREENFIELD_SCHEMA_ID='G7-GREENFIELD-CPU-WORKER-20261104-1' as const;
 export const G7_PREVIOUS_TYPED_OUTLINES_BASELINE = '202611010001_greenfield_typed_outlines_baseline' as const;
 export const G7_PREVIOUS_TYPED_OUTLINES_CHECKSUM = createHash('sha256').update('layoutManager:G7-GREENFIELD-TYPED-OUTLINES-20261101-1:baseline').digest('hex');
 export const G7_PREVIOUS_TYPES_SCHEMA_ID = 'G7-GREENFIELD-OUTLINE-TYPES-20261031-1' as const;
@@ -25,7 +28,8 @@ export const G7_PREVIOUS_ANCHOR_CHECKSUM=createHash('sha256').update('layoutMana
 export const G7_PREVIOUS_MEMO_BASELINE = '202610310002_greenfield_memo_m45_baseline' as const;
 export const G7_PREVIOUS_TYPES_BASELINE = '202610310003_greenfield_outline_types_baseline' as const;
 export const G7_PREVIOUS_ZONES_BASELINE='202611010002_greenfield_semantic_zones_baseline' as const;
-export const G7_GREENFIELD_BASELINE='202611040002_greenfield_scene_jobs_baseline' as const;
+export const G7_PREVIOUS_SCENE_JOB_BASELINE='202611040002_greenfield_scene_jobs_baseline' as const;
+export const G7_GREENFIELD_BASELINE='202611040004_greenfield_cpu_worker_baseline' as const;
 export const G7_PREVIOUS_BUSINESS_BASELINE='202610300002_greenfield_business_baseline' as const;
 export const G7_PREVIOUS_BUSINESS_CHECKSUM=createHash('sha256').update('layoutManager:G7-GREENFIELD-BUSINESS-20261030-1:baseline').digest('hex');
 export const G7_SCENE_GREENFIELD_BASELINE = '202610300001_greenfield_scene_baseline' as const;
@@ -36,8 +40,10 @@ export const G7_PREVIOUS_TYPES_CHECKSUM =
   createHash('sha256').update('layoutManager:G7-GREENFIELD-OUTLINE-TYPES-20261031-1:baseline').digest('hex');
 export const G7_PREVIOUS_ZONES_BASELINE_CHECKSUM=
   createHash('sha256').update('layoutManager:G7-GREENFIELD-SEMANTIC-ZONES-20261101-1:baseline').digest('hex');
-export const G7_GREENFIELD_BASELINE_CHECKSUM=
+export const G7_PREVIOUS_SCENE_JOB_BASELINE_CHECKSUM=
   createHash('sha256').update('layoutManager:G7-GREENFIELD-SCENE-JOBS-20261104-1:baseline').digest('hex');
+export const G7_GREENFIELD_BASELINE_CHECKSUM=
+  createHash('sha256').update('layoutManager:G7-GREENFIELD-CPU-WORKER-20261104-1:baseline').digest('hex');
 export const G7_OLD_GREENFIELD_BASELINE = '202610290001_greenfield_baseline' as const;
 export const G7_OLD_GREENFIELD_BASELINE_CHECKSUM =
   createHash('sha256').update('layoutManager:G7-GREENFIELD-20261029-1:baseline').digest('hex');
@@ -72,12 +78,25 @@ export function assertG7GreenfieldSchema(db:IsolatedDb):void{
   const previousTypes=one&&history[0].migration_name===G7_PREVIOUS_TYPES_BASELINE;
   const previousTyped=one&&history[0].migration_name===G7_PREVIOUS_TYPED_OUTLINES_BASELINE;
   const previousZones=one&&history[0].migration_name===G7_PREVIOUS_ZONES_BASELINE;
-  const freshJobs=one&&history[0].migration_name===G7_GREENFIELD_BASELINE;
+  const freshJobs=one&&history[0].migration_name===G7_PREVIOUS_SCENE_JOB_BASELINE;
+  const freshCpu=one&&history[0].migration_name===G7_GREENFIELD_BASELINE;
   const upgradedJobs=history.length===2 &&
     history[0].migration_name===G7_PREVIOUS_ZONES_BASELINE &&
     history[0].checksum===G7_PREVIOUS_ZONES_BASELINE_CHECKSUM &&
     history[1].migration_name===SCENE_JOB_MIGRATION_NAME &&
     history[1].checksum===SCENE_BUILD_JOB_MIGRATION_CHECKSUM;
+  const upgradedCpuJobs=history.length===2 &&
+    history[0].migration_name===G7_PREVIOUS_SCENE_JOB_BASELINE &&
+    history[0].checksum===G7_PREVIOUS_SCENE_JOB_BASELINE_CHECKSUM &&
+    history[1].migration_name===SCENE_CPU_MIGRATION_NAME &&
+    history[1].checksum===SCENE_CPU_MIGRATION_CHECKSUM;
+  const upgradedCpuZones=history.length===3 &&
+    history[0].migration_name===G7_PREVIOUS_ZONES_BASELINE &&
+    history[0].checksum===G7_PREVIOUS_ZONES_BASELINE_CHECKSUM &&
+    history[1].migration_name===SCENE_JOB_MIGRATION_NAME &&
+    history[1].checksum===SCENE_BUILD_JOB_MIGRATION_CHECKSUM &&
+    history[2].migration_name===SCENE_CPU_MIGRATION_NAME &&
+    history[2].checksum===SCENE_CPU_MIGRATION_CHECKSUM;
   const expectedChecksum=old?G7_OLD_GREENFIELD_BASELINE_CHECKSUM:
     scene?G7_SCENE_GREENFIELD_BASELINE_CHECKSUM:
     business?G7_PREVIOUS_BUSINESS_CHECKSUM:
@@ -86,9 +105,10 @@ export function assertG7GreenfieldSchema(db:IsolatedDb):void{
     previousTypes?G7_PREVIOUS_TYPES_CHECKSUM:
     previousTyped?G7_PREVIOUS_TYPED_OUTLINES_CHECKSUM:
     previousZones?G7_PREVIOUS_ZONES_BASELINE_CHECKSUM:
-    freshJobs?G7_GREENFIELD_BASELINE_CHECKSUM:'';
+    freshJobs?G7_PREVIOUS_SCENE_JOB_BASELINE_CHECKSUM:
+    freshCpu?G7_GREENFIELD_BASELINE_CHECKSUM:'';
   if(!(old||scene||business||anchor||memo||previousTypes||previousTyped||
-       previousZones||freshJobs||upgradedJobs) ||
+       previousZones||freshJobs||upgradedJobs||freshCpu||upgradedCpuJobs||upgradedCpuZones) ||
      one&&history[0].checksum!==expectedChecksum ||
      history.some(row=>row.finished_at==null||row.rolled_back_at!=null))
     throw new Error('G7_GREENFIELD_INSTALL_HISTORY');
@@ -103,13 +123,13 @@ export function assertG7GreenfieldSchema(db:IsolatedDb):void{
     !CAD_BUSINESS_OBJECT_NAMES.has(row.name)&&!CAD_ANCHOR_OBJECT_NAMES.has(row.name)&&
     !CAD_MEMO_FEATURE_OBJECT_NAMES.has(row.name)&&!OUTLINE_TYPE_OBJECT_NAMES.has(row.name)&&
     !CAD_OUTLINE_RECEIPT_OBJECT_NAMES.has(row.name)&&!CAD_ZONE_OBJECT_NAMES.has(row.name)&&
-    !SCENE_BUILD_JOB_OBJECT_NAMES.has(row.name))
+    !SCENE_BUILD_JOB_OBJECT_NAMES.has(row.name)&&!SCENE_CPU_OBJECT_NAMES.has(row.name))
     .map(row=>[row.type,row.name,normalize(row.sql)]);
   if(createHash('sha256').update(JSON.stringify(normal)).digest('hex')!==
      (old?G7_BASE_DDL_SHA256:G7_SCENE_DDL_SHA256))
     throw new Error('G7_GREENFIELD_SCHEMA_DRIFT');
 
-  const modern=previousZones||freshJobs||upgradedJobs;
+  const modern=previousZones||freshJobs||upgradedJobs||freshCpu||upgradedCpuJobs||upgradedCpuZones;
   const businessRows=rows.filter(row=>CAD_BUSINESS_OBJECT_NAMES.has(row.name))
     .map(row=>[row.type,row.name,normalize(row.sql)].join('|')).sort();
   const expectedBusiness=(modern||previousTyped||previousTypes
@@ -155,10 +175,16 @@ export function assertG7GreenfieldSchema(db:IsolatedDb):void{
 
   const presentJobs=rows.filter(row=>SCENE_BUILD_JOB_OBJECT_NAMES.has(row.name))
     .map(row=>[row.type,row.name,normalize(row.sql)].join('|')).sort();
-  const expectedJobs=(freshJobs||upgradedJobs?SCENE_BUILD_JOB_DDL:[])
+  const expectedJobs=(freshJobs||upgradedJobs||freshCpu||upgradedCpuJobs||upgradedCpuZones?SCENE_BUILD_JOB_DDL:[])
     .map(row=>[row.type,row.name,normalize(row.sql)].join('|')).sort();
   if(JSON.stringify(presentJobs)!==JSON.stringify(expectedJobs))
     throw new Error('G7_GREENFIELD_SCENE_JOB_SCHEMA_DRIFT');
+  const presentCpu=rows.filter(row=>SCENE_CPU_OBJECT_NAMES.has(row.name))
+    .map(row=>[row.type,row.name,normalize(row.sql)].join('|')).sort();
+  const expectedCpu=(freshCpu||upgradedCpuJobs||upgradedCpuZones?[SCENE_CPU_INDEX_DDL]:[])
+    .map(row=>[row.type,row.name,normalize(row.sql)].join('|')).sort();
+  if(JSON.stringify(presentCpu)!==JSON.stringify(expectedCpu))
+    throw new Error('G7_GREENFIELD_CPU_WORKER_SCHEMA_DRIFT');
 
   const check=db.prepare('PRAGMA quick_check').all();
   if(check.length!==1||Object.values(check[0])[0]!=='ok'||
@@ -178,8 +204,15 @@ export function hasG7FeatureSchemaHistory(
   const upgraded=rows.length===2 &&
     rows[0].migration_name===G7_PREVIOUS_ZONES_BASELINE &&
     rows[1].migration_name===SCENE_JOB_MIGRATION_NAME;
-  const modern=upgraded||single===G7_GREENFIELD_BASELINE||
-    single===G7_PREVIOUS_ZONES_BASELINE;
+  const cpuJobs=rows.length===2 &&
+    rows[0].migration_name===G7_PREVIOUS_SCENE_JOB_BASELINE &&
+    rows[1].migration_name===SCENE_CPU_MIGRATION_NAME;
+  const cpuZones=rows.length===3 &&
+    rows[0].migration_name===G7_PREVIOUS_ZONES_BASELINE &&
+    rows[1].migration_name===SCENE_JOB_MIGRATION_NAME &&
+    rows[2].migration_name===SCENE_CPU_MIGRATION_NAME;
+  const modern=upgraded||cpuJobs||cpuZones||single===G7_GREENFIELD_BASELINE||
+    single===G7_PREVIOUS_SCENE_JOB_BASELINE||single===G7_PREVIOUS_ZONES_BASELINE;
   if(feature==='zone')return modern;
   if(feature==='typed-outline')return modern||single===G7_PREVIOUS_TYPED_OUTLINES_BASELINE;
   return modern||single===G7_PREVIOUS_TYPED_OUTLINES_BASELINE||

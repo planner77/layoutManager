@@ -1,3 +1,7 @@
+## #225 / PR #228 — 0.61.0 + 독립 Worker 코드/검증 상태 (2026-11-04)
+
+신규 CLI, OCI/Compose 격리, 0.61 G7 migration 및 테스트를 작성했으나 **정확한 새 HEAD의 Typecheck/Lint/Prisma/Worker OCI/E2E는 NOT RUN/NOT VERIFIED**. [#584](https://github.com/planner77/layoutManager/actions/runs/41785081044) SUCCESS는 이전 HEAD 결과다. 실제 실 도면, Worker 권한/재시작, 브라우저 재접속, GHCR image/digest/GO-PILOT 증거는 미완료.
+
 ## #225 / PR #228 Queue/Retry 추가 변경 (2026-11-04)
 
 코드+단위시험 작성, **신규 HEAD CI 결과는 아직 미검증**. 이전 CI #583 PASS는 이전 HEAD에만 해당. 정확 HEAD에서 미래 Builder 분기/현행 Browser 보존, transient retry/terminal/CAS_LOST를 재확인한다. 실제 new-release G7 통합/별도 비루트 프로세스/브라우저 복원 미완료. GO-PILOT BLOCKED.

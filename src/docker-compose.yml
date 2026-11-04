@@ -66,6 +66,8 @@ services:
       NODE_ENV: production
       G7_AUTH_ENABLED: "true"
       G7_CAD_WRITE_CUTOVER_ENABLED: "true"
+      SCENE_AUTO_BUILD_ENABLED: "${SCENE_AUTO_BUILD_ENABLED:-false}"
+      SCENE_CPU_WORKER_ENABLED: "${SCENE_CPU_WORKER_ENABLED:-false}"
       G7_RUNTIME_ORIGIN: "${G7_RUNTIME_ORIGIN:-http://localhost:3000}"
       # HTTP is permitted only on an Owner-approved, firewalled internal LAN.
       # Set G7_RUNTIME_ALLOW_HTTP=false when using HTTPS.
@@ -95,6 +97,44 @@ services:
       options:
         max-size: "10m"
         max-file: "5"
+
+  # #225/B2-B: opt-in only after 0.61.0 approval and exact image-pair checks.
+  # The Worker has NO HTTP port and NO external network. Do not scale >1.
+  cpu-worker:
+    profiles: ["scene-cpu-worker"]
+    image: "${GHCR_CPU_WORKER_IMAGE:-cad-layout-viewer:local-cpu-worker}"
+    build:
+      context: ..
+      dockerfile: src/Dockerfile
+      target: cpu-worker
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: "on-failure:3"
+    init: true
+    read_only: true
+    network_mode: none
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 64
+    mem_limit: 768m
+    cpus: 1.0
+    stop_grace_period: 15s
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=96m,uid=10001,gid=10001
+    environment:
+      <<: *g7-identity
+      NODE_ENV: production
+      G7_AUTH_ENABLED: "true"
+      G7_CAD_WRITE_CUTOVER_ENABLED: "true"
+      G7_RUNTIME_ORIGIN: "${G7_RUNTIME_ORIGIN:-http://localhost:3000}"
+      G7_RUNTIME_ALLOW_HTTP: "${G7_RUNTIME_ALLOW_HTTP:-true}"
+      SCENE_AUTO_BUILD_ENABLED: "${SCENE_AUTO_BUILD_ENABLED:-false}"
+      SCENE_CPU_WORKER_ENABLED: "${SCENE_CPU_WORKER_ENABLED:-false}"
+    volumes:
+      - type: volume
+        source: cad-layout-viewer-data
+        target: /data
 
 volumes:
   cad-layout-viewer-data:

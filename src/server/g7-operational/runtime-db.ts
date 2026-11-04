@@ -1,8 +1,9 @@
 /** Live schema validation for #153. No DDL or repair is performed here. */
 import { createHash } from 'node:crypto';
 import { assertG7GreenfieldSchema, G7_GREENFIELD_BASELINE, G7_PREVIOUS_TYPED_OUTLINES_BASELINE, G7_PREVIOUS_TYPES_BASELINE, G7_PREVIOUS_MEMO_BASELINE, G7_PREVIOUS_ANCHOR_BASELINE, G7_PREVIOUS_BUSINESS_BASELINE, G7_SCENE_GREENFIELD_BASELINE, G7_OLD_GREENFIELD_BASELINE,
-  G7_PREVIOUS_ZONES_BASELINE } from './greenfield-schema';
+  G7_PREVIOUS_ZONES_BASELINE,G7_PREVIOUS_SCENE_JOB_BASELINE } from './greenfield-schema';
 import {SCENE_JOB_MIGRATION_NAME} from './scene-job-ddl';
+import {SCENE_CPU_MIGRATION_NAME} from './scene-cpu-ddl';
 import { createRequire } from 'node:module';
 import { lstatSync, realpathSync } from 'node:fs';
 import path from 'node:path';
@@ -30,7 +31,16 @@ export function assertG7RuntimeSchema(db: IsolatedDb): void {
   const migratedSceneJobs=rows.length===2 &&
     rows[0].migration_name===G7_PREVIOUS_ZONES_BASELINE &&
     rows[1].migration_name===SCENE_JOB_MIGRATION_NAME;
-  if (migratedSceneJobs || rows.length === 1 && (rows[0].migration_name === G7_GREENFIELD_BASELINE ||
+  const migratedCpu=rows.length===2 &&
+    rows[0].migration_name===G7_PREVIOUS_SCENE_JOB_BASELINE&&
+    rows[1].migration_name===SCENE_CPU_MIGRATION_NAME;
+  const migratedFromZones=rows.length===3 &&
+    rows[0].migration_name===G7_PREVIOUS_ZONES_BASELINE&&
+    rows[1].migration_name===SCENE_JOB_MIGRATION_NAME&&
+    rows[2].migration_name===SCENE_CPU_MIGRATION_NAME;
+  if (migratedSceneJobs||migratedCpu||migratedFromZones||
+      rows.length === 1 && (rows[0].migration_name === G7_GREENFIELD_BASELINE ||
+       rows[0].migration_name === G7_PREVIOUS_SCENE_JOB_BASELINE ||
        rows[0].migration_name === G7_PREVIOUS_ZONES_BASELINE ||
        rows[0].migration_name === G7_PREVIOUS_TYPED_OUTLINES_BASELINE ||
        rows[0].migration_name === G7_PREVIOUS_TYPES_BASELINE ||
