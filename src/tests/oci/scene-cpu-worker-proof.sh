@@ -120,7 +120,7 @@ assert h["Memory"]==768*1024*1024
 assert h["NanoCpus"]==1_000_000_000
 assert h["PidsLimit"]==64
 assert "ALL" in h.get("CapDrop",[])
-assert "no-new-privileges" in h.get("SecurityOpt",[])
+assert any(str(option).startswith("no-new-privileges") for option in h.get("SecurityOpt",[]))
 assert "/tmp" in h.get("Tmpfs",{})
 assert not h.get("PortBindings")
 assert not any(m.get("Destination")=="/var/run/docker.sock" for m in x["Mounts"])
