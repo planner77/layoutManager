@@ -1,3 +1,13 @@
+## ADR-225-B2B-ONE-TICK — Worker 데이터/권한/게시 분리와 0.60.0 하드 차단 (2026-11-04)
+
+**결정:** 기존 B1의 `CAD_SCENE_BUILDER`/0.60.0 Job 이력은 변경하지 않는다. 미래 전용 `node-cpu-line@1.0.0+cad-scene-1` Builder에 대해서만 별도 Queue 필터·Actor/Site 최신 권한 검사·DATA/Source SHA 검증/immutable Blob readback/최초 CurrentScene 0 생성/Job READY·Audit 같은 트랜잭션 기능을 추가한다. 현 G7 스키마 ID와 정확 일치하지 않는 미래 Worker 스키마 ID를 코드 상수로 두고 `SCENE_AUTO_BUILD_ENABLED` 및 `SCENE_CPU_WORKER_ENABLED` 두 명시 스위치와 signed G7 ACTIVE CAD Writer 조건을 **동시에** 요구한다. 현재 0.60.0에서는 두 스위치를 수동으로 바꿔도 Worker는 시작/Enqueue/Claim할 수 없다.
+
+**원본·기존 READY 정책:** 원본 DXF는 DB 소유 `storagePath`에서 실제 재읽어 크기·SHA를 확인; Candidate/SourceSHA/Version/Builder/schema2/Manifest는 별도로 전체 검증한다. `CurrentScene`이 존재하면 무조건 중단해 기존 Scene Asset/Pointer를 덮어쓰지 않는다. 두 번째 권한 재평가는 저장된 원본·Blob을 신뢰하기 전에/마지막 트랜잭션 안에서 수행한다. 실패한 remote Blob은 Orphan 정책으로 보존하고 안전한 명시 GC만 허용한다. Job READY는 Blob 검증 후 Scene+Pointer+Audit가 같은 트랜잭션에 완료될 때에만 가능하다.
+
+**미승인:** 현재 구현된 `runOneCpuSceneJob`는 호출 가능한 내부 함수이지 실제 배포 가능한 격리 프로세스가 아니다. 새 immutable SemVer, forward G7 registry/DDL/Plan·백업·복구, 별도 Worker OCI·비루트/자원 격리/네트워크/파일 제한, 브라우저 실제 복원, 지원 도형 확대(Polyline/Arc/Circle/Text/Block), B3 상태 UI/운영/Retry, QA 실격리 검증은 반드시 후속. `SCENE_AUTO_BUILD_ENABLED=OFF`, GO-PILOT 차단, #225/#218 OPEN. v0.60.0 GHCR tag/digest 및 실제 DB/CAD 변경 없음.
+
+---
+
 ## ADR-225-B2B — CPU Builder identity 분리, 데이터 검증과 Worker 권한 구별 (2026-11-04)
 
 **결정:** `CAD_SCENE_BUILDER`와 Browser `sceneScope()` 기본값은 보존하고 CPU `CAD_SCENE_CPU_BUILDER=node-cpu-line@1.0.0+cad-scene-1` 및 `cpuSceneScope()`를 명시적으로 추가한다. `validSceneScope`는 두 가지 **정확한 Builder만** 허용하며 임의 문자열은 거절한다. Legacy 수동 SceneRepository 게시/조회 기본 builder는 유지되어 CPU candidate에 대한 자동 READY 또는 권한 확장이 없다. 순수 `inspectCpuCandidateForJob`은 Job 상태/시도·Source SHA·Manifest/DTO/Builder를 비교하지만 쿠키/세션/Auth·Storage/Scene pointer를 다루지 않는다.

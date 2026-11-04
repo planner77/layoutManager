@@ -1,3 +1,13 @@
+## #225 B2-B — CPU 단일 Job 처리 구성 초안 (2026-11-04)
+
+오프라인 `CPU LINE Candidate` → 현 시점 `G7 Runtime/Actor/Site/Role` 재인가 → 원본 저장소에서 Byte 수신·SourceSHA 확인 → `CUSTOM_DTO v2 / manifest / payload SHA` 교차검증 → `SceneBlobStorage.putVerified`의 immutable bytes + readback → **단일 DB 트랜잭션**(`SceneAsset` 신규·`CurrentScene` 최초 Revision 0·`SceneBuildJob` RUNNING+attempt CAS→READY·SCENE_PUBLISHED Audit·Orphan 정리)로 구성했다. Blob 실패는 UNCERTAIN, DB 확정 실패는 CLEANUP 후보로만 기록하고 기존 Scene/원본은 불변. CurrentScene 선행 존재 시 실패를 반환하고 *절대로 자동 교체하지 않는다*. 내부 Worker는 토큰·쿠키/세션 해시를 보관하거나 public `SceneRepository.publish`를 가장하지 않는다.
+
+분리 모듈: `scene-build-job-queue.ts`는 레거시 Browser Job과 향후 CPU Builder 전용 Enqueue/Claim/Stale/Retry/Stage를 구별한다. `scene-worker-g7-authorization.ts`는 signed Runtime Active/CAD write 및 현재 Version/Source SHA/Site hierarchy/Actor Editor·Admin Role+Site Grant를 트랜잭션 내 재조회하며 게시 직전에 다시 검사한다. `scene-worker-publish.ts`는 검증 저장+CAS/Audit, `scene-cpu-worker-once.ts`는 one-tick 상태/오류 taxonomy를 소유한다. CPU Asset의 안전한 읽기만 `SceneRepository.status/content`의 Builder allowlist에서 인식; 기존 manual publish는 Browser Builder만 인가한다.
+
+**출시 전제/실행 금지:** `G7-GREENFIELD-CPU-WORKER-20261104-1`는 현재 G7 미등록 미래 schema. v0.60.0의 실제 Queue 등록은 Browser Builder이며 runtime CPU Job은 항상 차단된다. Worker 실행기/독립 OCI, UID·CPU/RAM/PID/time/read-only/network 실제 격리, 2D TEXT/MTEXT/BLOCK 등 범위, 새 이력/버전+OCI Pair/업그레이드, 브라우저 실제 Scene 복원, 데이터 있는 DB 권한/재시작/중단 시험은 아직 없다. B3 목록 상태·Retry/운영/배포 후속. **GO-DEV 코드·단위 검증과 GO-PILOT을 혼동하지 않는다.**
+
+---
+
 ## #225 B2-B CPU Builder/Job 데이터 출처 (Draft, 2026-11-04)
 
 기존 Browser `sceneScope(versionId,sourceSha,unit)`의 Builder/ID는 불변이다. 별도 `cpuSceneScope`는 `node-cpu-line@1.0.0+cad-scene-1` 출처를 SceneScope와 imported Scene identity에 포함한다. `inspectCpuCandidateForJob({job,source,candidate})`은 RUNNING·attempt1~3·CPU Builder·payloadSchema2·원본 SHA·manifest/version/unit·CUSTOM_DTO v2 Full Validator 및 payload SHA를 확인하고 **데이터 매칭 receipt만 반환**한다. G7 Actor·Site·Writer의 인증이나 실제 durable readback/READY는 증명하지 않는다. 기존 manual `SceneRepository.publish`는 legacy Browser Scope를 요구해 CPU candidate 게시를 거부한다.

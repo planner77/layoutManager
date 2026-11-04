@@ -1,3 +1,12 @@
+## TC-225-B2B Worker 권한·원본·처음 게시·CAS·감사 / GO-DEV (2026-11-04)
+
+- **권한 양성/음성:** 미래 서명 G7 Runtime mock에서 현재 Actor Editor/Admin+Site Grant, Version→Location→Building→Site 전 체인 활성, 원본 SHA, CPU Builder/schema2, RUNNING attempt1~3만 허용. Reader/비활성 Actor·Site·Building·Location, 제거된 Grant, 바뀐 SourceSHA/Version/Builder/Attempt, Signed Runtime OFF 또는 마지막 검사 시 Site 제외, `SCENE_AUTO_BUILD_ENABLED/SCENE_CPU_WORKER_ENABLED` OFF를 모두 차단. Unit의 미래 Schema mock은 **실 G7 Registry 승인이 아니다.**
+- **원본/저장/권한 경계:** DB가 소유한 original locator를 `CadStorage`에서 읽어 파일 크기와 SHA를 재검사; Candidate는 strict CPU Builder/DTO schema2/Manifest/Full Validator. 기존 CurrentScene이 있으면 외부 Blob 쓰기 전에 차단한다. 최초 게시라면 Scene Orphan PREPARING→putVerified(readback)→VERIFIED, 내부 Tx의 재인가/원본 Version 동일성/Current 0/SceneAsset/Job READY attempt CAS/Audit/Orphan 삭제를 확인한다.
+- **음성/롤백:** 원본 변경/절단, Blob PUT·readback 실패→UNCERTAIN, 저장 후 포인터 경합/Job attempt 바뀜/권한 철회/감사 실패→해당 트랜잭션 실패와 CLEANUP 후보로 추적. 기존 READY 포인터와 원본 바이트 불변. One-tick Runner는 실패 코드 allowlist만 기록하고 부정확한 READY로 전이하지 않는다. Browser manual Scene 게시/기존 Builder identity·E2E 회귀 유지. Queue CPU 별도 필터는 기존 Browser Job의 Claim/Stale/Retry를 건드리지 않는다.
+- **실행 미완료 Gate:** 현재는 unit stub·미래 스키마 mock/DB 트랜잭션 계약 수준만 코딩. 실제 독립 Worker OCI의 비루트·CPU/RAM/PID/시간/network·read-only 제한, 실제 signed G7/DB Actor 권한 재검증과 서비스 시작·자동 업로드→READY·중단/재시작, 한글/BLOCK 등 복합 DXF, 새 브라우저 복원/Render fidelity·실 Pilot, 새 SemVer G7 migration+GHCR Pair는 **NOT RUN/NOT IMPLEMENTED**. PR CI 성공이 있더라도 위 미구현은 GO-PILOT 차단. 기존 required CI는 유지.
+
+---
+
 ## TC-225-B2B CPU Builder 출처 및 Job/DTO match (Draft, 2026-11-04)
 
 - **양성:** versioned CPU LINE 후보의 `manifest.scope.builder=node-cpu-line@1.0.0+cad-scene-1`와 기존 Browser Builder scope/Scene Identity 분리, Source SHA/Version/Unit/Payload SHA/Manifest/Full CUSTOM_DTO v2 Validator를 모두 검사하여 `RUNNING`, attempt1~3, CPU Builder, payloadSchema2인 Job의 데이터 일치 receipt 생성. 이 receipt는 인증·영속 게시가 아닌 구조적 데이터 정합성이다.
