@@ -33,13 +33,17 @@ function write(root: string, filename: string, value: string) {
   mkdirSync(path.dirname(full), { recursive: true });
   writeFileSync(full, value);
 }
-function runScope(changes: string[], subject: string, gitRef = 'refs/heads/main') {
+function runScope(changes: string[], subject: string, gitRef = 'refs/heads/main',
+  packageVersion = '0.60.0') {
   const root = mkdtempSync(path.join(tmpdir(), 'g7-scope-fixture-'));
   tmpRoots.push(root);
   git(root, 'init', '-q');
   write(root, '.github/workflows/pr-ci.yml', 'name: PR CI\n');
   write(root, '.github/workflows/docker-publish.yml', 'name: Main CI\n');
   write(root, 'AGENTS.md', '# AGENTS\n');
+  write(root, 'src/package.json', JSON.stringify({version:packageVersion})+'\n');
+  write(root, '.github/scripts/issue229_release_hold.py',
+    readFileSync(new URL('../../../.github/scripts/issue229_release_hold.py',import.meta.url),'utf8'));
   git(root, 'add', '.');
   git(root, '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
     'commit', '-q', '-m', 'initial fixture');
@@ -861,5 +865,62 @@ describe('#216 exact immutable GHCR recovery source/scope (no alternate runtime 
       expect(result.status).not.toBe(0);
       expect(result.stderr).toContain('G7_RECOVERY_SCOPE_FORBIDDEN');
     }
+  });
+});
+
+
+describe('#229 persistent B2-B release hold: executing real Main scope',()=>{
+  test('Main 0.61 runtime diff is nonpublishing for any ordinary subject',()=>{
+    for(const subject of ['#225 | B2-B integration','#100 | unrelated runtime change',
+      'NO-ISSUE | source update']){
+      const result=runScope(['src/server/scene/scene-cpu-worker-once.ts',
+        'src/Dockerfile','src/docker-compose.yml'],subject,'refs/heads/main','0.61.0');
+      expect(result.status,result.stderr).toBe(0);
+      expect(result.values).toContain('publish=false');
+      expect(result.values).not.toContain('publish=true');
+    }
+  });
+  test('later 0.61.1/0.62.0 main changes remain on hold',()=>{
+    for(const v of ['0.61.1','0.62.0']){
+      const result=runScope(['src/server/scene/scene-worker-publish.ts'],
+        '#225 | next feature','refs/heads/main',v);
+      expect(result.status,result.stderr).toBe(0);
+      expect(result.values).toContain('publish=false');
+    }
+  });
+  test('candidate tag push is refused before any release output',()=>{
+    for(const v of ['0.61.0','0.61.1']){
+      const result=runScope(['src/server/scene/scene-worker-publish.ts'],
+        '#225 | release attempt','refs/tags/v'+v,v);
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toContain('G7_RELEASE_HOLD_SCOPE_DENIED');
+      expect(result.values).toBe('');
+    }
+  });
+  test('historical 0.60 runtime and tag release behavior unchanged',()=>{
+    const main=runScope(['src/app/api/cad-files/route.ts'],
+      '#211 | production runtime fix','refs/heads/main','0.60.0');
+    expect(main.status,main.stderr).toBe(0);
+    expect(main.values).toContain('publish=true');
+    const tag=runScope(['src/app/api/cad-files/route.ts'],
+      '#211 | released code','refs/tags/v0.60.0','0.60.0');
+    expect(tag.status,tag.stderr).toBe(0);
+    expect(tag.values).toContain('publish=true');
+  });
+  test('guard-only Main change skips GHCR but a product path cannot hide inside',()=>{
+    const safe=runScope(['.github/scripts/test_issue229_release_hold.py',
+      'out/Issue229.md'],'#229 | release guard','refs/heads/main','0.60.0');
+    expect(safe.status,safe.stderr).toBe(0);
+    expect(safe.values).toContain('publish=false');
+    const unsafe=runScope(['.github/scripts/test_issue229_release_hold.py',
+      'src/app/api/cad-files/route.ts'],'#229 | release guard','refs/heads/main','0.60.0');
+    expect(unsafe.status,unsafe.stderr).toBe(0);
+    expect(unsafe.values).toContain('publish=true');
+  });
+  test('malformed package fails closed rather than defaulting to the old release',()=>{
+    const bad=runScope(['src/package.json'],'#229 | bad version',
+      'refs/heads/main','0.61.0');
+    expect(bad.status).not.toBe(0);
+    expect(bad.values).toBe('');
   });
 });

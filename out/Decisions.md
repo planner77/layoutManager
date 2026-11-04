@@ -1,3 +1,13 @@
+## ADR-229 — Main 코드 통합과 정식 GHCR Release 분리 (2026-11-04)
+
+**결정: 비활성 B2-B 개발 기반은 Main에 통합 가능하도록 하되 v0.61.0+ 자동 출고는 지속 HOLD.** PR #228 CI #590은 exact HEAD 소스 검증 성공이지만 독립 CPU Worker 이미지의 정식 GHCR 출고나 GO-PILOT 승인 근거가 아니다. 기존 Main runtime-change 기반 GHCR App/Migrator pair 게시 로직은 별도 Worker가 누락되어 불완전한 v0.61.0 릴리스를 만들 수 있다.
+
+**선택한 구현:** `.github/scripts/issue229_release_hold.py`가 실제 `src/package.json.version`을 파싱해 0.61.0 이상일 때 Main CI는 `publish=false`, tag 이벤트는 fail-closed. Main `release-scope`와 실제 GHCR side effect 이전 `build-and-push`에 이중 확인. 커밋 제목만을 허용 근거로 삼지 않으며, #229 guard-only 변경은 정확한 변경 경로 allowlist로 분리한다. 0.60.0 이하 정상 릴리스 및 #216 immutable recovery·태그-원천 검증·기존 CI 전부 유지.
+
+**위험 수용/잔여:** GitHub Actions는 보호 게이트가 없는 과거 커밋을 tag하면 과거 Workflow로 실행될 수 있으므로 GitHub 관리자 tag ruleset과 GHCR package write 권한이 필수이며 코드만으로 완전 방어를 주장하지 않는다. 정식 0.61+ 릴리스는 후속 승인 PR에서 CPU Worker가 포함된 3-image OCI role/digest/source/amd64 확인과 alias/rollback 정책을 구현한 후에만 HOLD 해제. 실제 운영·태그·GHCR 변경 0, #228 GO-INTEGRATE 재판정은 #229 exact HEAD CI 결과 확인 후 별도.
+
+---
+
 ## ADR-225-B2A — 오프라인 CPU LINE 후보 먼저, Publish/Auth는 분리 (2026-11-04)
 
 **결정:** 이미 완료된 B1 Queue 위에 생산 Worker를 허위 연결하지 않고, 처음 B2-A에서는 Node의 `three` BufferGeometry로 **지원 범위를 명시한 LINE-only** DXF→CUSTOM_DTO v2 후보를 만든다. Parser의 모든 비지원 Entity/확장 코드/좌표·Layer·색·Block 구조는 fail-closed하며 기존 A2 실험용 DXFViewer/DOM/unsafe SwiftShader를 사용하지 않는다. Source SHA, 16MiB·5000 Entity 제한, 32MiB DTO와 기존 Full Validator, private tempfile readback을 계속 적용한다.

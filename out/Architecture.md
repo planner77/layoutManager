@@ -1,3 +1,11 @@
+## #229 Main-통합 / GHCR 출고 오케스트레이션 분리 (2026-11-04)
+
+경로: `PR exact HEAD CI → 코드 Main 병합 → Main CI release-scope → (승인된 출고만) GHCR`. 현재 0.60.0 기반 Main의 `docker-publish.yml`은 runtime 변경만으로 image-pair 게시로 진입하므로 v0.61.0의 CPU Worker 별도 OCI가 누락될 수 있다. 신규 `issue229_release_hold.py`는 Main package SemVer >=0.61.0에서 publication=false를 강제하고 guarded tag를 거부하며, build-and-push에서도 tag 생성·GHCR 쓰기 이전 동일 정책을 재검증한다.
+
+CPU Worker 포함 3-role OCI 정식 출고와 tag 규칙 정책은 후속 Release GO에서 별도 구현한다. 이미 게시된 0.60 및 과거 불변 이미지·운영 DB/CAD/Volume은 변경하지 않는다. 코드가 없는 과거 commit의 태그는 최신 branch workflow로 소급 제어되지 않으므로 운영 태그 Ruleset이 필수이다.
+
+---
+
 ## #225 B2-A CPU-only 후보 파이프라인 — Node/strict LINE (2026-11-04)
 
 `cpu-line-candidate.ts`의 단독 호출만: (1) DXF 원본 SHA 확인, 엄격 UTF-8/16MiB 및 pair/section 구조 상한 (2) 2D LINE/Layer0/흰색/`$INSUNITS=4`만 parse하고 지원하지 않은 기타 record/색/OCS·Z/점 정보가 있으면 fail-closed (3) 순수 `THREE.Group + THREE.Line(BufferGeometry)` 구성 (4) 기존 tag/serialize `CUSTOM_DTO v2` 및 전체 domain Validator (5) 0700 임시 디렉터리/0600 readback, SHA와 DTO 재검증 후 정리. Converter는 원본/기존 Scene/Current/DB에 쓰지 않으며 실제 WebGL/Browser/세션 런타임을 호출하지 않는다.
