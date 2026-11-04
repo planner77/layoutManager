@@ -1,3 +1,11 @@
+## ADR #225-PILOT-PREP — 단계별 실증, 운영 분리 (2026-11-05)
+
+**결정:** 현재 통합 완료된 B1/B2/B3 코드에 별도 **실행 증거**를 추가한다. 먼저 synthetic 0.61 G7 DB/원본/Blob만 소유한 disposable fixture를 만들어 child Node Worker 프로세스의 정상·실제 SIGKILL 후 재진입·SHA 변조·Site grant 회수를 검사한다. Chromium은 이 CPU 후보의 Blob readback을 fresh context에서 복원해 형상과 조작된 데이터 거부를 확인한다. 기존 unit/mocked 권한·Retry 검사도 유지한다.
+
+**제한:** 테스트가 무조건 통과했다는 보고 금지. 프로세스 경계와 VM/OCI 격리는 다르며, SIGKILL-after-claim은 converter 중간 kill/OOM fault가 아니다. 임시 row time travel은 실제 180초 wall-clock 증거가 아니다. 정식 signed HTTP 업로드/별도 OCI 이미지/자원 격리·브라우저 실제 Viewer/API·운영 백업·복구는 GO-PILOT까지 미검증. 두 제품 Scene 플래그 기본 OFF, #229 GHCR v0.61+ HOLD, #231 Tag Ruleset OPEN, #225/#218 OPEN 및 GO-PILOT BLOCKED. 운영 DB/CAD/Volume/.env/Tag/GHCR 변경 금지.
+
+---
+
 ## ADR #225-B3 — 제한 상태 조회 및 이력 보전형 Retry (2026-11-04, Draft)
 
 - Status: public 도면 목록의 Current와 Scene 생성 상태는 독립. Signed G7 Active Reader scope 내 100 Version batch, 권한 외 결과 키 제거, server verified immutable READY만 READY. visible pending만 5초 polling; 네트워크 오류를 Job FAILED로 저장/표시하지 않음.
