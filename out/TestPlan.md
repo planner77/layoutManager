@@ -1,3 +1,12 @@
+## #225 / PR #234 — OCI Kill 검증 보완·실패 재현 요구 (2026-11-05)
+
+- CI #614에서 최초 READY·권한/SHA 거부와 `prepare-crash`까지 통과했지만 `claim-kill` exit1(137 예상)로 실패. 기존 STDERR/STDOUT 전체 숨김으로 원인 판별 불가. 실패를 프로덕션 Worker 오작동 또는 SIGKILL PASS로 추정하지 않는다.
+- 새 방식은 테스트 이미지 `claim-wait`가 실제 `SceneBuildJob`를 원자 선점한 뒤 `/data/ci-scene-oci-claimed.marker`(테스트 전용, 0600)를 기록하고 대기. 다른 **별도 OCI**에서 마커+DB `RUNNING, attempt=1, CurrentScene 없음`을 입증한 후 호스트가 동일 CID에 `docker kill --signal=KILL`. `docker wait`와 `docker inspect State.ExitCode` 양쪽 137, 재조회 DB RUNNING 입증을 모두 필수로 한다.
+- 그 후 기존 test-owned DB의 `startedAt`만 210s 과거, 새로운 별도 Worker가 `RETRY_WAIT`; test-owned `dueAt`만 과거로 가속해 새 Worker로 `READY/attempt2` 저장 및 기존 READY·Audit·Asset 불변 확인. isolated SQLite 백업+CAD 복원·readback까지 반드시 재실행. CI 증거 없으면 **NOT VERIFIED**.
+- 오직 이번 PR이 만든 Docker CID/volume에만 kill/삭제를 적용하며 CI fail closed. 필수 Docker Job/기본 보안 한도 및 제품 Scene OFF/0.61+ GHCR HOLD/GO-PILOT BLOCKED 변경 금지.
+
+---
+
 ## #225 실제 OCI Worker 폐기형 통합 시험 (2026-11-05, 신규 PR)
 
 - **컨테이너 기본 실행기 검증:** 단순 `node --once` 뿐 아니라 실제 Dockerfile `ENTRYPOINT sh scripts/scene-cpu-worker-loop.sh`를 사용하여 READY까지 bounded 60초 조회, 컨테이너 stop/start 후 기존 READY가 그대로 유지되고 중복 게시가 없음을 재확인한다. 재시작 후 동일 test-owned 볼륨만 재사용하고 제품 Compose 서비스·운영 볼륨은 만지지 않는다.
