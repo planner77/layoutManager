@@ -1,3 +1,11 @@
+## 2026-11-04 — PR #228 B2-B 미래 전용 Worker 파이프라인 코드 추가
+
+[PR #228](https://github.com/planner77/layoutManager/pull/228)의 B2-B 구현을 데이터 출처 검사에서 **미래 서명 G7 릴리스 전용 내부 Worker 함수/안전한 신규 Scene 게시 단계**로 확장했다. 세부 코드는 `src/server/scene/scene-build-job-queue.ts`(CPU Builder 전용 Enqueue/Claim/Stale/Retry/Stage), `scene-worker-g7-authorization.ts`(DB 현 시점 Actor/Site/Role·Version/sha·signed G7 Runtime 재검사), `scene-worker-publish.ts`(권한 재검사, 저장된 원본 재조회/SourceSHA, CUSTOM_DTO v2 검증, immutable Blob readback, **기존 CurrentScene이 없을 때만** Asset+Current 0+Job READY+Audit atomic, Orphan 사후처리), `scene-cpu-worker-once.ts`(한 건 오케스트레이션·오류 allowlist)이다. 새 순수 Unit의 승인/거부/중단/TOCTOU/상태 CAS/원본 불변 경로를 검증하도록 작성했다.
+
+**잔여 필수:** B2-B는 현재 `G7-GREENFIELD-CPU-WORKER-20261104-1`이 릴리스 registry/G7 baseline에 **등록되지 않았기 때문에 운영/스테이징에서 실행 불가**. 기존 0.60.0 Queue/Schema·GHCR 그대로. 향후 새 SemVer+정확 G7 schema/OCI App/Migrator 승인, 실 독립 CPU Worker OCI의 비루트 cgroup·시간·pids·read-only·network 격리, LINE 외 실제 제조 도면 2D 도형(Text/Block 포함), 원본 출처 및 브라우저 restore, 장애/재시작/권한 변경 실 DB·파일/배포 통합 시험 필수. `SCENE_AUTO_BUILD_ENABLED=OFF`, `SCENE_CPU_WORKER_ENABLED` 미설정, GO-PILOT BLOCKED; #225/#218 OPEN. 현 Branch CI의 최종 성공 여부는 정확 HEAD 검증 전 미확정. 이전 #572 TypeScript 오류는 별도 FailureLedger에 보존한다.
+
+---
+
 ## 2026-11-04 — B2-A Main 병합·B2-B 별도 Draft 시작
 
 [PR #227](https://github.com/planner77/layoutManager/pull/227)은 PR HEAD `f2ac283c62dc3eaed513d4f67a0b4355adbb3a3c`의 [CI #566](https://github.com/planner77/layoutManager/actions/runs/41768798168) 적용 필수 Job SUCCESS, review0/충돌0/behind0 확인 후 **Main `73957d20295d6300c4f0c9b89ca5032574eb24bc` Squash 병합**, [Main CI #147](https://github.com/planner77/layoutManager/actions/runs/41771625231) 성공. 기존 0.60.0 immutable GHCR Pair가 있어 중복 빌드 생략. B2-A는 LINE 오프라인 후보 완료이지 운영 자동 Scene 구축 완료가 아니다.

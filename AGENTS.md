@@ -1,3 +1,11 @@
+## #225 B2-B — 단일 CPU Job의 미래 릴리스 전용 인가·저장·READY 파이프라인 초안 (2026-11-04)
+
+[PR #228](https://github.com/planner77/layoutManager/pull/228)은 기존 검증된 B2-A/CPU Builder 계약 다음으로 **미래 전용** `enqueueCpuSceneBuildTx`·Builder-filtered Claim/Stale Recovery/Retry, 현재 상태를 DB에서 재조회하는 `authorizeG7CpuWorkerJobTx`, 원본 CAD 저장소 재읽기/SourceSHA 비교, CUSTOM_DTO v2 전체 재검증+immutable Blob `putVerified`/readback, CurrentScene 0→Job READY→SCENE_PUBLISHED Audit를 하나의 DB transaction으로 처리하는 `publishVerifiedCpuSceneJob` 및 한 건 처리 함수 `runOneCpuSceneJob`를 추가했다. Browser Builder 기반 기존 0.60.0 B1 enqueue 및 수동 `SceneRepository.publish(G7CadWrite)`를 변경하지 않는다. 기존 CurrentScene이 있으면 덮어쓰기 없이 거절한다. 원본·기존 READY·Worker Job 신원/Attempt CAS·site/role·runtime 검증을 보전하며 Cookie/SessionTokenHash를 Job에 사용하지 않는다.
+
+**실행 금지 경계:** G7 `G7_GREENFIELD_SCHEMA_ID`는 v0.60.0의 `G7-GREENFIELD-SCENE-JOBS-20261104-1`이고, CPU Worker 허용 ID `G7-GREENFIELD-CPU-WORKER-20261104-1`은 현재 **미등록 미래 ID**이다. `SCENE_AUTO_BUILD_ENABLED=true`와 신규 `SCENE_CPU_WORKER_ENABLED=true`를 임의로 설정해도 현재 릴리스에서 CPU Enqueue/Claim/Worker/Auth는 차단된다. **실제 OCI/별도 비루트 프로세스/CPU·RAM·PID·시간/읽기전용 FS/Network isolation은 아직 미구현·미검증**, 이 코드는 자체 타이머/Next API/서비스로 등록되지 않음. LINE-only 2D 후보, 한글 TEXT/MTEXT·ARC/CIRCLE·POLYLINE·BLOCK/INSERT 확장 및 browser 새 세션 복원도 잔여다. 위 함수가 있다고 기능 전체 완료나 운영 READY를 선언하지 않는다. #225/#218 OPEN, GO-PILOT BLOCKED, v0.60.0 App/Migrator GHCR 및 운영 `.env`/DB/Volume/원본 CAD 불변. [FailureLedger](out/FailureLedger.md)에서 PR CI #572 타입 오류/후속 검증 상태를 확인한다.
+
+---
+
 ## #225 B2-B Draft — CPU Builder 출처 고정·Job/DTO 검증 (2026-11-04)
 
 B2-A [PR #227](https://github.com/planner77/layoutManager/pull/227)은 정확 HEAD [CI #566](https://github.com/planner77/layoutManager/actions/runs/41768798168) 성공 후 Main `73957d20295d6300c4f0c9b89ca5032574eb24bc`에 병합됐고 [Main CI #147](https://github.com/planner77/layoutManager/actions/runs/41771625231)은 성공했다(기존 0.60.0 GHCR 쌍 중복 게시 생략). B2-B 새 Draft는 Browser `CAD_SCENE_BUILDER`를 불변 유지하며 오프라인 CPU LINE 후보만 `CAD_SCENE_CPU_BUILDER=node-cpu-line@1.0.0+cad-scene-1`로 명시한다. `cpuSceneScope`와 `inspectCpuCandidateForJob`은 `RUNNING` Job, attempt, CPU Builder, schema2, 원본 SourceSHA, Version·Manifest·DTO v2 Full Validator 및 payload SHA를 재확인하는 **데이터 정합성 검증**만 수행한다. 기존 `SceneRepository.publish`는 Browser 기본 scope만 기대하므로 CPU DTO를 그 경로로 게시할 수 없다.

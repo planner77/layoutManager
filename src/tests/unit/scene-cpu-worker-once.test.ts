@@ -54,7 +54,7 @@ beforeEach(()=>{
   vi.mocked(updateRunningCpuJobStage).mockResolvedValue(true);
   vi.mocked(failRunningSceneJob).mockResolvedValue(true);
   vi.mocked(authorizeG7CpuWorkerJobTx).mockResolvedValue(identity);
-  vi.mocked(readVerifiedCpuOriginal).mockResolvedValue(Uint8Array.from([1,2,3]));
+  vi.mocked(readVerifiedCpuOriginal).mockResolvedValue(Buffer.from([1,2,3]));
   vi.mocked(buildCpuLineCandidate).mockResolvedValue({
     bytes:Uint8Array.from([4]),manifest:{},
   } as never);
