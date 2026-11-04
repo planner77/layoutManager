@@ -188,13 +188,13 @@ export async function requireG7CadPermission(
 }
 export async function appendG7CadAudit(tx: Tx, proof: G7CadWrite,
   actorId: string, siteId: string,
-  action: 'CAD_UPLOADED' | 'CAD_CURRENT_CHANGED' | 'CAD_VERSION_DELETED' | 'SCENE_PUBLISHED' | 'SCENE_RETRY_REQUESTED',
+  action: 'CAD_UPLOADED' | 'CAD_CURRENT_CHANGED' | 'CAD_VERSION_DELETED' | 'SCENE_PUBLISHED',
   versionId: string, beforeRevision: number | null,
   afterRevision: number | null): Promise<void> {
   // Storage publication may await I/O inside this transaction. Recheck the
   // gate/session clock before the final atomic business+Audit commit.
   const authorized = await requireG7CadPermission(tx,proof,
-    action === 'CAD_UPLOADED' || action === 'SCENE_PUBLISHED' || action === 'SCENE_RETRY_REQUESTED' ? 'cad:upload' : action === 'CAD_CURRENT_CHANGED' ? 'cad:current' : 'cad:delete',
+    action === 'CAD_UPLOADED' || action === 'SCENE_PUBLISHED' ? 'cad:upload' : action === 'CAD_CURRENT_CHANGED' ? 'cad:current' : 'cad:delete',
     {kind:'site',siteId},siteId);
   if (authorized.actorId !== actorId) throw fail('UNAUTHENTICATED',401);
   // If INSERT is rejected (Append-only/FK/DB busy), the CAD mutation MUST roll back.
@@ -204,6 +204,26 @@ export async function appendG7CadAudit(tx: Tx, proof: G7CadWrite,
     beforeRevision, afterRevision,
     timestampUtc: new Date().toISOString(), requestId: proof.requestId,
   } });
+}
+
+/** A v0.61 G7 AuditEvent CHECK does not permit SCENE_RETRY_REQUESTED.
+ * Record the actual permission decision with the signed AUTHORIZATION_GRANTED
+ * /VERSION action and correlate requestId with the atomic SceneBuildJob actor
+ * and status transition. A dedicated retry action needs future G7 DDL.
+ */
+export async function appendG7SceneRetryAuthorizationAudit(
+  tx:Tx,proof:G7CadWrite,actorId:string,siteId:string,versionId:string,
+):Promise<void>{
+  const allowed=await requireG7CadPermission(tx,proof,'cad:upload',
+    {kind:'version',versionId});
+  if(allowed.actorId!==actorId||allowed.siteId!==siteId)
+    throw fail('UNAUTHENTICATED',401);
+  await tx.auditEvent.create({data:{
+    id:randomUUID(),actorUserId:actorId,affectedUserId:actorId,siteId,
+    action:'AUTHORIZATION_GRANTED',targetKind:'VERSION',targetId:versionId,
+    outcome:'SUCCESS',beforeRevision:null,afterRevision:null,
+    timestampUtc:new Date().toISOString(),requestId:proof.requestId,
+  }});
 }
 
 /** Master mutations require current Admin plus every authoritative affected Site.

@@ -84,7 +84,9 @@ export async function readSceneBuildBatch(db:Database,storage:SceneBlobStorage,
       validatedScene:validated,jobState,stage:job?.stage});
     rows[version.id]={...badge,
       errorCode:jobState==='FAILED'?safeBuildErrorCode(job?.lastCode):null,
-      canRetry:version.fileFormat==='DXF'&&!pointer&&
+      canRetry:process.env.SCENE_AUTO_BUILD_ENABLED==='true'&&
+        process.env.SCENE_CPU_WORKER_ENABLED==='true'&&
+        version.fileFormat==='DXF'&&!pointer&&
         writeSites.includes(version.location.building.siteId)&&!!job&&
         job.sourceSha256===version.sha256&&canManualRetrySceneJob(job),
     };

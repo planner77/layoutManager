@@ -5,7 +5,7 @@ import {CadError,validateId} from '@/domain/cad';
 import {CAD_SCENE_CPU_BUILDER} from '@/domain/cad-scene';
 import {canManualRetrySceneJob} from '@/domain/scene-build-retry';
 import {writeTransaction,type Database} from '@/server/db';
-import {appendG7CadAudit,requireG7CadPermission,type G7CadWrite}
+import {appendG7SceneRetryAuthorizationAudit,requireG7CadPermission,type G7CadWrite}
   from '@/server/g7-operational/cad-guard';
 import {requireCpuSceneWorkerRelease} from './scene-build-job-queue';
 
@@ -49,8 +49,8 @@ export async function manualRetryCpuSceneJob(
     });
     if(changed.count!==1)throw new CadError('SCENE_RETRY_CONFLICT',
       '상태가 변경되었습니다. 목록을 새로고침해주세요.',409);
-    await appendG7CadAudit(tx,proof,approved.actorId,approved.siteId,
-      'SCENE_RETRY_REQUESTED',versionId,null,null);
+    await appendG7SceneRetryAuthorizationAudit(tx,proof,approved.actorId,
+      approved.siteId,versionId);
     return {status:'QUEUED'};
   });
 }

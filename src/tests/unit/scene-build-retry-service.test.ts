@@ -2,7 +2,7 @@ import {beforeEach,describe,expect,it,vi} from 'vitest';
 import {CadError} from '../../domain/cad';
 import {manualRetryCpuSceneJob} from '../../server/scene/scene-build-retry-service';
 import {requireCpuSceneWorkerRelease} from '../../server/scene/scene-build-job-queue';
-import {requireG7CadPermission,appendG7CadAudit} from '../../server/g7-operational/cad-guard';
+import {requireG7CadPermission,appendG7SceneRetryAuthorizationAudit} from '../../server/g7-operational/cad-guard';
 
 vi.mock('../../server/db',()=>({
   writeTransaction:vi.fn(async(db:{tx:unknown},fn:(tx:unknown)=>Promise<unknown>)=>fn(db.tx)),
@@ -11,7 +11,7 @@ vi.mock('../../server/scene/scene-build-job-queue',()=>({
   requireCpuSceneWorkerRelease:vi.fn(),
 }));
 vi.mock('../../server/g7-operational/cad-guard',()=>({
-  requireG7CadPermission:vi.fn(),appendG7CadAudit:vi.fn(),
+  requireG7CadPermission:vi.fn(),appendG7SceneRetryAuthorizationAudit:vi.fn(),
 }));
 const versionId='11111111-1111-4111-8111-111111111111';
 const sha='a'.repeat(64);
@@ -26,14 +26,14 @@ function fixture(overrides:Record<string,unknown>={}){
   const tx={cadFileVersion:{findUnique:vi.fn(async()=>({id:versionId,
     sha256:sha,fileFormat:'DXF'}))},
     sceneBuildJob:{findFirst:vi.fn(async()=>job),
-      updateMany:vi.fn(async()=>({count:1}))},
+      updateMany:vi.fn(async(_input?:unknown)=>({count:1}))},
     currentScene:{findUnique:vi.fn(async()=>null)}};
   return {db:{tx},tx,job};
 }
 beforeEach(()=>{
   vi.resetAllMocks();
   vi.mocked(requireG7CadPermission).mockResolvedValue({actorId:'editor-2',siteId:'site-1'});
-  vi.mocked(appendG7CadAudit).mockResolvedValue();
+  vi.mocked(appendG7SceneRetryAuthorizationAudit).mockResolvedValue();
 });
 describe('#225/B3 signed and audited retry CAS',()=>{
   it('requeues eligible FAILED job, updates actor without cookie, preserves attempt',async()=>{
@@ -50,15 +50,15 @@ describe('#225/B3 signed and audited retry CAS',()=>{
     expect(update.data).toMatchObject({actorId:'editor-2',siteId:'site-1',
       requestId:'retry-request',lastCode:null,startedAt:null});
     expect(JSON.stringify(update.data)).not.toContain('hidden');
-    expect(appendG7CadAudit).toHaveBeenCalledWith(
-      f.tx,proof,'editor-2','site-1','SCENE_RETRY_REQUESTED',versionId,null,null);
+    expect(appendG7SceneRetryAuthorizationAudit).toHaveBeenCalledWith(
+      f.tx,proof,'editor-2','site-1',versionId);
   });
   it('makes duplicate retry idempotent without duplicate audit',async()=>{
     const f=fixture({status:'QUEUED'});
     await expect(manualRetryCpuSceneJob(f.db as never,versionId,proof as never))
       .resolves.toEqual({status:'QUEUED'});
     expect(f.tx.sceneBuildJob.updateMany).not.toHaveBeenCalled();
-    expect(appendG7CadAudit).not.toHaveBeenCalled();
+    expect(appendG7SceneRetryAuthorizationAudit).not.toHaveBeenCalled();
   });
   it('refuses an existing READY pointer, foreign Site and exhausted attempts',async()=>{
     const f=fixture();
@@ -71,7 +71,7 @@ describe('#225/B3 signed and audited retry CAS',()=>{
     const finished=fixture({attempt:3});
     await expect(manualRetryCpuSceneJob(finished.db as never,versionId,proof as never))
       .rejects.toMatchObject({code:'SCENE_RETRY_NOT_ALLOWED'});
-    expect(appendG7CadAudit).not.toHaveBeenCalled();
+    expect(appendG7SceneRetryAuthorizationAudit).not.toHaveBeenCalled();
   });
   it('denies revoked Site authorization and CAS-lost mutation',async()=>{
     const f=fixture();
@@ -85,7 +85,7 @@ describe('#225/B3 signed and audited retry CAS',()=>{
     retry.tx.sceneBuildJob.updateMany.mockResolvedValueOnce({count:0});
     await expect(manualRetryCpuSceneJob(retry.db as never,versionId,proof as never))
       .rejects.toMatchObject({code:'SCENE_RETRY_CONFLICT'});
-    expect(appendG7CadAudit).not.toHaveBeenCalled();
+    expect(appendG7SceneRetryAuthorizationAudit).not.toHaveBeenCalled();
   });
   it('fails closed when CPU release is not approved',async()=>{
     vi.mocked(requireCpuSceneWorkerRelease).mockImplementationOnce(()=>{
