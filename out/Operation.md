@@ -1,5 +1,7 @@
 ## #225 GO-PILOT 준비: OCI CI/운영 격리 (2026-11-05)
 
+- **실제 이미지 기동:** OCI 증거는 `docker create/start/stop/start`로 제품 CPU Worker의 기본 loop entrypoint를 실행한다. 첫 READY를 test-owned DB로 검증하고 같은 container의 stop/start 후에도 데이터·포인터 불변을 확인한다. 이후 실패/권한/복구 시나리오만 한 번 실행하는 `--once` 진단 진입점을 사용한다. Container inspect로 실제 security 옵션을 검사하고 전체 테스트 종료 시 소유 컨테이너·볼륨만 제거한다. 결과는 GitHub Actions 정확 신규 HEAD CI 성공 전 NOT VERIFIED.
+
 CI OCI proof는 `src/tests/oci/scene-cpu-worker-proof.sh`가 **새로 생성하는 정확 볼륨만** 소유하며 `docker run --network none --read-only --user 10001:10001 --cap-drop ALL --security-opt no-new-privileges --pids-limit 64 --memory 768m --cpus 1 --tmpfs /tmp...`로 실행한다. Container image는 PR exact source의 로컬 `ci-migrate`/`ci-cpu-worker`이며 GHCR 게시가 아니다. synthetic G7 입력·SHA·Actor/Site 권한 및 Scene 파일은 고유 volume 안에 한정. SIGKILL도 해당 proof 자식 컨테이너에만 적용. 실제 운영 Compose/profile/host cgroup/제품 `.env`/기존 Named Volume 수정 금지. 실패해도 기존 제품 volume을 삭제하지 않음.
 
 여기에서 `SCENE_AUTO_BUILD_ENABLED=true`·`SCENE_CPU_WORKER_ENABLED=true`는 이 고립된 CI run의 Node proof 안에서만 사용한다. **운영·소스 기본 OFF**, #229 GHCR HOLD, #231 Tag Ruleset OPEN, GO-PILOT BLOCKED. 계측 실패·OCI 시작 실패·복원 실패는 실제 CI Job 실패로 기록하고 PASS로 추측하지 않는다.
