@@ -1,3 +1,11 @@
+## #229 — Main/GHCR 릴리스 영속 HOLD 구현·검증 상태 (2026-11-04)
+
+**구현 소스 작성, 정확 HEAD CI는 아직 NOT VERIFIED.** `.github/scripts/issue229_release_hold.py`를 통해 0.61.0 이상 모든 Main push의 GHCR publish를 보류하고 guarded tag를 차단한다. `docker-publish.yml`은 release-scope와 build-and-push 앞단에서 2중 검사하며, guard-only 변경 경로만 비출고한다. `pr-ci.yml`에서 Python 정책 테스트를 required scope 체크로 실행하고 기존 GHCR Bash fixture 양성·음성 회귀를 추가했다.
+
+예상 검증: Main 0.61/0.61.1/0.62 HOLD, tag 거부, malformed package/ref 거부, 기존 0.60과 #216 source-pinned pair 보존. 실제 배포·태그·기존 GHCR alias·운영 DB/CAD/Volume/.env 변경은 수행하지 않았다. 코드를 작성했다는 사실을 CI PASS 또는 완전한 tag ruleset 보호로 주장하지 않는다. #228 GO-INTEGRATE HOLD, #225/#218 OPEN, GO-PILOT BLOCKED.
+
+---
+
 ## #225 B2-A CPU LINE 후보 — 증거 상태 (2026-11-04)
 
 - 원격 Draft branch에 Node의 2D LINE→Three BufferGeometry→CUSTOM_DTO v2→전체 validator→0600 readback 후보 및 양성/음성 Vitest를 작성했다. **코드 게시 ≠ 실제 테스트 실행 성공**이다.
