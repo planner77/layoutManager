@@ -42,7 +42,10 @@ describe('#225/B3 safe Scene status presentation',()=>{
   it('does not leak arbitrary diagnostic strings into the public label',()=>{
     const view=sceneStatusBadge({fileFormat:'DXF',validatedScene:'UNAVAILABLE',
       jobState:'BLOCKED',stage:'password=secret'});
-    expect(view).toMatchObject({state:'BLOCKED',tone:'warning',polling:false,phase:null});
+    // Scene verification is unavailable; a historical blocked Job does not
+    // prove the immutable pointer's health. Preserve the safe public label.
+    expect(view).toMatchObject({state:'UNAVAILABLE',label:'상태 확인 불가',
+      tone:'warning',polling:false,phase:null});
     expect(JSON.stringify(view)).not.toContain('secret');
   });
 });
