@@ -280,22 +280,34 @@ process.stdout.write(String(d.prepare('SELECT COUNT(*) AS n FROM "User"').get().
         # and still preserves ALL pre-existing business table rows.
         schema_script = r'''import Database from 'better-sqlite3';
 import {assertDeclaredSchema,GREENFIELD_UPGRADE_REGISTRY} from './server/g7-operational/greenfield-upgrade-registry.ts';
+import {withReadOnlyInspection} from './server/g7-operational/greenfield-readonly-inspection.ts';
 import {readFileSync} from 'node:fs';
 const info=JSON.parse(readFileSync('/data/db/g7-install.json','utf8'));
 const release=GREENFIELD_UPGRADE_REGISTRY.releases.find(r=>r.version===info.version);
 if(!release||release.schemaId!==info.schemaId)throw Error('release');
-const db=new Database('/data/db/cad.sqlite',{readonly:true,fileMustExist:true});
-try{
-  assertDeclaredSchema(db,release);
-  const history=db.prepare('SELECT migration_name FROM "_prisma_migrations" ORDER BY rowid').all();
-  if(history.length!==2||history[0].migration_name!=='202611010002_greenfield_semantic_zones_baseline'
-    ||history[1].migration_name!=='202611040001_scene_build_job')throw Error('history');
-}finally{db.close();}
+// A cleanly closed WAL database may have no -shm/-wal sidecars. On a
+// read-only Docker volume SQLite must inspect the verified private copy,
+// not attempt to create shared-memory sidecars on the source.
+withReadOnlyInspection('/data/db/cad.sqlite',inspectedPath=>{
+  const db=new Database(inspectedPath,{readonly:true,fileMustExist:true});
+  try{
+    assertDeclaredSchema(db,release);
+    const history=db.prepare('SELECT migration_name FROM "_prisma_migrations" ORDER BY rowid').all();
+    if(history.length!==2||history[0].migration_name!=='202611010002_greenfield_semantic_zones_baseline'
+      ||history[1].migration_name!=='202611040001_scene_build_job')throw Error('history');
+  }finally{db.close();}
+});
 process.stdout.write('G7_210_APPROVED_JOB_SCHEMA_PASS');'''
+        before_schema_inspection = snapshot(owned)
         proof, proof_status = image_command(owned, readonly=True,
             command=("--import", "tsx", "--input-type=module", "-e", schema_script))
         if proof_status or proof != "G7_210_APPROVED_JOB_SCHEMA_PASS":
+            print(json.dumps({"stage": PHASE, "exitCode": proof_status,
+                              "schemaProofMarkerMatches": proof == "G7_210_APPROVED_JOB_SCHEMA_PASS"}),
+                  file=sys.stderr)
             raise RuntimeError("G7_WAL_RO_SMOKE_MIGRATED_SCHEMA_INVALID")
+        if snapshot(owned) != before_schema_inspection:
+            raise RuntimeError("G7_WAL_RO_SMOKE_READONLY_SOURCE_CHANGED")
         PHASE = "backup-business-preservation"
         upgraded_hash = logical_hash(owned)
         if upgraded_hash != post_writer_hash:
