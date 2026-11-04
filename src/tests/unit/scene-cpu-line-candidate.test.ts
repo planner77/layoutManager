@@ -1,5 +1,6 @@
 import {describe,expect,it} from 'vitest';
 import {sceneSha256} from '../../domain/scene-digest';
+import {CAD_SCENE_CPU_BUILDER} from '../../domain/cad-scene';
 import {validateStoredScenePayload} from '../../domain/scene-payload';
 import {buildCpuLineCandidate,parseCpuLineOnlyDxf,CPU_LINE_LIMITS} from '../../server/scene/cpu-line-candidate';
 
@@ -21,6 +22,7 @@ describe('#225 B2-A Node CPU-only bounded LINE DXF candidate',()=>{
     expect(candidate.readbackVerified).toBe(true);
     expect(candidate.manifest.format).toBe('CUSTOM_DTO');
     expect(candidate.manifest.scope.sourceUnit).toBe('DXF_INSUNITS_4');
+    expect(candidate.manifest.scope.builder).toBe(CAD_SCENE_CPU_BUILDER);
     expect(candidate.manifest.sha256).toBe(sceneSha256(candidate.bytes));
     expect(()=>validateStoredScenePayload(candidate.bytes,candidate.manifest)).not.toThrow();
     const parsed=JSON.parse(new TextDecoder().decode(candidate.bytes)) as {

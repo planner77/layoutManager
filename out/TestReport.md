@@ -1,3 +1,9 @@
+## #225 B2-B Draft — CPU provenance/Job DTO gate 작성, 통합 미검증 (2026-11-04)
+
+B2-A [PR #227](https://github.com/planner77/layoutManager/pull/227) 정확 HEAD `f2ac283c62dc3eaed513d4f67a0b4355adbb3a3c` [PR CI #566](https://github.com/planner77/layoutManager/actions/runs/41768798168) SUCCESS, Main `73957d20295d6300c4f0c9b89ca5032574eb24bc` [Main CI #147](https://github.com/planner77/layoutManager/actions/runs/41771625231) SUCCESS (같은 0.60.0 이미지 중복 게시 생략). B2-B 별도 Draft에서 CPU Builder identity와 Job/DTO match + 단위 음성/양성 시험을 신규 작성. **이 변경의 로컬 typecheck/Vitest/Docker/E2E 또는 정확 HEAD PR CI 결과는 아직 NOT VERIFIED**. 순수 검증 receipt를 G7 재인가·SceneRepository 게시·READY 성공으로 과장하지 않는다. 현재 0.60.0 GHCR·운영 .env/DB/CAD/Volume 비변경, #225/#218 OPEN·GO-PILOT BLOCKED.
+
+---
+
 ## #225 B2-A CPU LINE 후보 — 증거 상태 (2026-11-04)
 
 - 원격 Draft branch에 Node의 2D LINE→Three BufferGeometry→CUSTOM_DTO v2→전체 validator→0600 readback 후보 및 양성/음성 Vitest를 작성했다. **코드 게시 ≠ 실제 테스트 실행 성공**이다.

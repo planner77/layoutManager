@@ -9,7 +9,7 @@ import {mkdtemp,readFile,rm,writeFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {sceneSha256} from '../../domain/scene-digest';
-import {sceneScope,type SceneManifest} from '../../domain/cad-scene';
+import {cpuSceneScope,type SceneManifest} from '../../domain/cad-scene';
 import {validateStoredScenePayload} from '../../domain/scene-payload';
 import {type SceneBuildErrorCode} from '../../domain/scene-build-job';
 import {tagImportedTree} from '../../viewers/three-dxf-viewer/scene-tags';
@@ -150,9 +150,8 @@ export type CpuLineCandidate=Readonly<{
   bytes:Uint8Array;manifest:SceneManifest;lineCount:number;readbackVerified:true;
 }>;
 /** Candidate conversion + an actual private tempfile readback.
- * The current Scene scope still names the historic browser builder. Until a
- * distinct versioned CPU builder identity is registered and reviewed, never
- * treat this DTO as publishable production READY.
+ * This offline candidate uses the versioned CPU identity. Existing B1 Job
+ * enqueue still uses the browser Builder; no actual publish/READY is wired.
  */
 export async function buildCpuLineCandidate(input:Readonly<{
   source:Uint8Array;versionId:string;sourceSha256:string;
@@ -173,7 +172,7 @@ export async function buildCpuLineCandidate(input:Readonly<{
       segment.userData.cadLayer='0';
       root.add(segment);
     }
-    const scope=sceneScope(input.versionId,input.sourceSha256,parsed.sourceUnit);
+    const scope=cpuSceneScope(input.versionId,input.sourceSha256,parsed.sourceUnit);
     const asset=tagImportedTree(root,scope);
     const candidate=await serializeSourceScene(root,asset,'CUSTOM_DTO');
     validateStoredScenePayload(candidate.bytes,candidate.manifest);

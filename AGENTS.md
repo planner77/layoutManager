@@ -1,3 +1,11 @@
+## #225 B2-B Draft — CPU Builder 출처 고정·Job/DTO 검증 (2026-11-04)
+
+B2-A [PR #227](https://github.com/planner77/layoutManager/pull/227)은 정확 HEAD [CI #566](https://github.com/planner77/layoutManager/actions/runs/41768798168) 성공 후 Main `73957d20295d6300c4f0c9b89ca5032574eb24bc`에 병합됐고 [Main CI #147](https://github.com/planner77/layoutManager/actions/runs/41771625231)은 성공했다(기존 0.60.0 GHCR 쌍 중복 게시 생략). B2-B 새 Draft는 Browser `CAD_SCENE_BUILDER`를 불변 유지하며 오프라인 CPU LINE 후보만 `CAD_SCENE_CPU_BUILDER=node-cpu-line@1.0.0+cad-scene-1`로 명시한다. `cpuSceneScope`와 `inspectCpuCandidateForJob`은 `RUNNING` Job, attempt, CPU Builder, schema2, 원본 SourceSHA, Version·Manifest·DTO v2 Full Validator 및 payload SHA를 재확인하는 **데이터 정합성 검증**만 수행한다. 기존 `SceneRepository.publish`는 Browser 기본 scope만 기대하므로 CPU DTO를 그 경로로 게시할 수 없다.
+
+**안전 경계:** 0.60.0 B1 Queue Job `builder`는 여전히 기존 Browser ID이다. CPU Job Gate와 불일치해 자동 연결되지 않으며 CPU 출처 계약이 허가를 대체하지 않는다. 신규 불변 릴리스의 Queue Builder 전환/호환, G7 현재 Actor·Site·Writer 재인가, verified immutable SceneRepository CAS/Audit, 비루트 독립 Worker의 CPU·RAM·시간·Network/파일 격리 및 B3 UI는 **미구현**이다. `SCENE_AUTO_BUILD_ENABLED=OFF`, #225/#218 OPEN, GO-PILOT BLOCKED. 0.60.0 이미지, 운영 DB/Volume/CAD/실 .env 변경 금지. 정확 PR CI 성공 전 PASS 주장 없음.
+
+---
+
 ## #225 B2-A — CPU-only LINE 후보 변환기 (2026-11-04, Draft)
 
 현재 B2-A GO-DEV 구현은 `src/server/scene/cpu-line-candidate.ts`의 **오프라인 후보 변환**과 `src/tests/unit/scene-cpu-line-candidate.test.ts`의 유효/거부 시험으로 한정한다. WebGL/DOM/`three-dxf-viewer` 런타임 없이 엄격한 UTF-8 DXF, HEADER `$INSUNITS=4`, ENTITIES `LINE`/기본 레이어0·흰색만 수용한다. 원본 SHA, 16MiB 원본/5000 LINE/좌표 범위, THREE geometry → CUSTOM_DTO v2 전체 Validator 및 독립 임시 파일 readback을 검증한다. 알려지지 않은 Entity/색/계층/표·BLOCK/3D/폴리라인/문자는 **명시적으로 차단**한다.

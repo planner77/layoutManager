@@ -1,3 +1,11 @@
+## 2026-11-04 — B2-A Main 병합·B2-B 별도 Draft 시작
+
+[PR #227](https://github.com/planner77/layoutManager/pull/227)은 PR HEAD `f2ac283c62dc3eaed513d4f67a0b4355adbb3a3c`의 [CI #566](https://github.com/planner77/layoutManager/actions/runs/41768798168) 적용 필수 Job SUCCESS, review0/충돌0/behind0 확인 후 **Main `73957d20295d6300c4f0c9b89ca5032574eb24bc` Squash 병합**, [Main CI #147](https://github.com/planner77/layoutManager/actions/runs/41771625231) 성공. 기존 0.60.0 immutable GHCR Pair가 있어 중복 빌드 생략. B2-A는 LINE 오프라인 후보 완료이지 운영 자동 Scene 구축 완료가 아니다.
+
+별도 B2-B Draft 첫 구현: 기존 Browser Builder 식별자를 유지하고 CPU 후보를 `node-cpu-line@1.0.0+cad-scene-1`의 고유 출처로 분리한다. 순수 `inspectCpuCandidateForJob`은 RUNNING Job·attempt·Builder/schema2·원본 SHA·manifest·DTO 전체 Validator와 payload SHA의 정합성만 확인한다. **기존 v0.60.0 Queue의 Browser Builder Job은 CPU 검증에서 거부**되며, SceneRepository 수동 게시 경로는 CPU 출처를 거절한다. B2-B 안에서 2D geometry 확대, 버전 등록·Queue 전환, 독립 non-WebGL CPU Worker, G7 Actor/Site/Writer 최신 권한 재검증, 검증된 SceneRepository immutable 게시/CurrentScene CAS/Audit 및 기존 READY 보호를 이어서 구현한다. B3 목록 상태/UI/retry/배포 Smoke는 미완료. #225/#218 OPEN, GO-PILOT BLOCKED, `SCENE_AUTO_BUILD_ENABLED=OFF`, 0.60.0 배포·운영 DB/CAD/Volume 변경 금지. 이 Draft 변경의 정확 CI 결과는 확인 전 미검증.
+
+---
+
 ## 2026-11-04 — B2-A Node CPU LINE 후보 구현 착수 (별도 Draft PR)
 
 B1 완료(G7 0.60.0 Main 병합/이미지쌍 게시)의 다음 작업으로 `src/server/scene/cpu-line-candidate.ts`와 단위 테스트를 구현한다. 배포를 활성화하지 않고 엄격 UTF-8/16MiB·2D LINE(Layer0/흰색, `$INSUNITS=4`)만 변환한다. 실제 Three Line Geometry → CUSTOM_DTO v2/manifest/SHA/domain full validator/임시 저장·readback을 수행하고 비지원 DXF/중복 handle/3D/규모 상한을 fail-closed한다. 이전 A2 Browser 테스트 코드/직접 Node `DXFViewer` 경로를 운영에 복제하지 않는다.

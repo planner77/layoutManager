@@ -1,3 +1,11 @@
+## ADR-225-B2B — CPU Builder identity 분리, 데이터 검증과 Worker 권한 구별 (2026-11-04)
+
+**결정:** `CAD_SCENE_BUILDER`와 Browser `sceneScope()` 기본값은 보존하고 CPU `CAD_SCENE_CPU_BUILDER=node-cpu-line@1.0.0+cad-scene-1` 및 `cpuSceneScope()`를 명시적으로 추가한다. `validSceneScope`는 두 가지 **정확한 Builder만** 허용하며 임의 문자열은 거절한다. Legacy 수동 SceneRepository 게시/조회 기본 builder는 유지되어 CPU candidate에 대한 자동 READY 또는 권한 확장이 없다. 순수 `inspectCpuCandidateForJob`은 Job 상태/시도·Source SHA·Manifest/DTO/Builder를 비교하지만 쿠키/세션/Auth·Storage/Scene pointer를 다루지 않는다.
+
+**필수 차단:** 현재 v0.60.0 Queue의 Browser Builder 값은 CPU Builder와 다르므로 신규 릴리스의 Queue/Job 호환 정책과 Background G7 Actor/Site/Writer 재인증·SceneRepository CAS/Audit가 없는 상태에서 Worker나 `SCENE_AUTO_BUILD_ENABLED`를 ON으로 전환하지 않는다. 현장·유형 확장, 단일 프로세스 안전 한도 및 B3 상태 UI는 후속 단계로 유지. #225/#218 OPEN, GO-PILOT BLOCKED.
+
+---
+
 ## ADR-225-B2A — 오프라인 CPU LINE 후보 먼저, Publish/Auth는 분리 (2026-11-04)
 
 **결정:** 이미 완료된 B1 Queue 위에 생산 Worker를 허위 연결하지 않고, 처음 B2-A에서는 Node의 `three` BufferGeometry로 **지원 범위를 명시한 LINE-only** DXF→CUSTOM_DTO v2 후보를 만든다. Parser의 모든 비지원 Entity/확장 코드/좌표·Layer·색·Block 구조는 fail-closed하며 기존 A2 실험용 DXFViewer/DOM/unsafe SwiftShader를 사용하지 않는다. Source SHA, 16MiB·5000 Entity 제한, 32MiB DTO와 기존 Full Validator, private tempfile readback을 계속 적용한다.

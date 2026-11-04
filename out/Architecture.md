@@ -1,3 +1,11 @@
+## #225 B2-B CPU Builder/Job 데이터 출처 (Draft, 2026-11-04)
+
+기존 Browser `sceneScope(versionId,sourceSha,unit)`의 Builder/ID는 불변이다. 별도 `cpuSceneScope`는 `node-cpu-line@1.0.0+cad-scene-1` 출처를 SceneScope와 imported Scene identity에 포함한다. `inspectCpuCandidateForJob({job,source,candidate})`은 RUNNING·attempt1~3·CPU Builder·payloadSchema2·원본 SHA·manifest/version/unit·CUSTOM_DTO v2 Full Validator 및 payload SHA를 확인하고 **데이터 매칭 receipt만 반환**한다. G7 Actor·Site·Writer의 인증이나 실제 durable readback/READY는 증명하지 않는다. 기존 manual `SceneRepository.publish`는 legacy Browser Scope를 요구해 CPU candidate 게시를 거부한다.
+
+B2-B 후속: 새로운 불변 릴리스의 B1 Job Builder/전진 호환, 독립 CPU Worker 1개(비루트/CPU/RAM/PID/time/network/read-only 파일 통제), 최신 Storage bytes/SHA, 현재 G7 Actor/Site/Writer 재인가, 내부 검증 저장·CurrentScene CAS/Audit, 실패 후 기존 READY·원본 유지, 브라우저 Scene 복원. B3에서 상태 UI/Retry/재기동·배포 Smoke를 완료한다. 현재 `SCENE_AUTO_BUILD_ENABLED=OFF`; 미구현에 READY·GO-PILOT 주장 금지.
+
+---
+
 ## #225 B2-A CPU-only 후보 파이프라인 — Node/strict LINE (2026-11-04)
 
 `cpu-line-candidate.ts`의 단독 호출만: (1) DXF 원본 SHA 확인, 엄격 UTF-8/16MiB 및 pair/section 구조 상한 (2) 2D LINE/Layer0/흰색/`$INSUNITS=4`만 parse하고 지원하지 않은 기타 record/색/OCS·Z/점 정보가 있으면 fail-closed (3) 순수 `THREE.Group + THREE.Line(BufferGeometry)` 구성 (4) 기존 tag/serialize `CUSTOM_DTO v2` 및 전체 domain Validator (5) 0700 임시 디렉터리/0600 readback, SHA와 DTO 재검증 후 정리. Converter는 원본/기존 Scene/Current/DB에 쓰지 않으며 실제 WebGL/Browser/세션 런타임을 호출하지 않는다.

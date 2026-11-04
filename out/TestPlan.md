@@ -1,3 +1,11 @@
+## TC-225-B2B CPU Builder 출처 및 Job/DTO match (Draft, 2026-11-04)
+
+- **양성:** versioned CPU LINE 후보의 `manifest.scope.builder=node-cpu-line@1.0.0+cad-scene-1`와 기존 Browser Builder scope/Scene Identity 분리, Source SHA/Version/Unit/Payload SHA/Manifest/Full CUSTOM_DTO v2 Validator를 모두 검사하여 `RUNNING`, attempt1~3, CPU Builder, payloadSchema2인 Job의 데이터 일치 receipt 생성. 이 receipt는 인증·영속 게시가 아닌 구조적 데이터 정합성이다.
+- **음성:** B1(0.60.0) Browser Builder Job/임의 Builder/Unknown Scope, payloadSchema1, QUEUED/FAILED/READY·attempt0/4, 원본 바이트 변조·SHA 불일치, 다른 Version/Browser Scope로 바뀐 Manifest, 손상된 DTO, 내부 JSON schema1의 digest를 재계산한 가짜 후보까지 정확 거부. Legacy Browser Scene scope를 기존 Repository 수동 게시에서 보전.
+- **후속 GO-INTEGRATE/GO-PILOT:** Queue Builder/등록 Release 전진 호환, 실제 Worker의 CPU·RAM·PID·시간·비루트·read-only·network 격리, 지원 2D 입력 확대, G7 현재 Actor/Site/Writer 최신 인증/승인, immutable 저장/SceneRepository pointer CAS/Audit 및 rollback, 새 Browser 세션 Scene restore, B3 조회·Retry/재기동. `SCENE_AUTO_BUILD_ENABLED=OFF` 및 필수 CI 유지. Draft 정확 HEAD CI 종료 전 PASS 주장 금지.
+
+---
+
 ## TC-225-B2-A — Node CPU LINE DTO 후보 (2026-11-04, Draft)
 
 - **양성:** 합성 HEADER(`$INSUNITS=4`)·ENTITIES LINE 2건 → 독립 순수 THREE Line geometry, `CUSTOM_DTO` schema2, Source SHA/Manifest/전체 `validateStoredScenePayload`, 임시 저장 후 readback SHA, 레이어0 좌표·객체수·`sourceIndex=UNAVAILABLE` 검증. WebGLRenderer/브라우저 생성·운영 Scene 저장 0.
