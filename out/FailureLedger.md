@@ -1,3 +1,10 @@
+## #225 PR #233 CI/Main 성공 → 신규 OCI 실증 시작 (2026-11-05, 신규 실패 관측 아님)
+
+- **확인된 이전 검증:** [PR CI #612](https://github.com/planner77/layoutManager/actions/runs/41920944913) exact HEAD `2b1cb5bef3a011e9b31eeafc508aec90051b2754` 8 applicable jobs SUCCESS, A2 1 scope SKIPPED, Vitest 1,098 PASS(173 files), [Main CI #152](https://github.com/planner77/layoutManager/actions/runs/41924479834) exact squash SHA `b33945d7ee80946950f8debfd04ce080af6e7105` SUCCESS, GHCR job SKIPPED. 당시 PR #233 source-only/NOT RUN 이력은 작성 시점 기록이며 결과 재분류가 아니다.
+- **신규 작업·실패와 구분:** isolated G7 0.61 OCI worker proof 및 VM/Compose 단위 실제 resource 격리를 추가하되 실제 CI 수행 결과는 **미확인**이다. 새 PR HEAD CI에서 실패 확인 시 Run/Job/실패 단계, 원인·보완과 재실행 이력을 별도 기록해야 한다. 제품 두 Scene flag OFF, v0.61+ GHCR HOLD, GO-PILOT BLOCKED.
+
+---
+
 ## #225 GO-PILOT 통합 검증 소스 추가 — 아직 CI 관측 실패 아님 (2026-11-05)
 
 - **Observed:** 기존 Main CI 완료 및 PR #232의 [CI #610](https://github.com/planner77/layoutManager/actions/runs/41903521695) 성공은 과거 코드 HEAD 증거다. 신규 `feat/225-pilot-disposable-integration`의 테스트 코드에는 **아직 새로운 PR CI 실행/결과가 없다**. 이번 항목은 실패 보고가 아닌 검증 추적/실행 범위 기록이며 과거 #599/#604/#607 실패는 그대로 FAIL로 보존한다.
