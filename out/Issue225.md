@@ -1,3 +1,9 @@
+## 2026-11-04 — CI #563 Docker WAL 성공, 320px Memo E2E 경쟁 조건 보완
+
+[PR CI #563](https://github.com/planner77/layoutManager/actions/runs/41750908638)은 실제 0.56→0.60 업그레이드 및 readonly WAL/백업/복구 Docker 필수 Job을 통과했으나, unrelated `issue91-memo-export.spec.ts`의 320px 모바일 모달 전환 중 헤더 클릭이 막혀 General Chromium shard2/Required Verify FAIL로 종료됐다. 실제 메뉴 헤더의 모바일 drawer `inert` 해제 후 사용자 메뉴를 클릭하도록 테스트 순서를 보완하고, Native fullscreen 및 Memo 내보내기 전체 검증을 유지한다. 정확 실패 로그와 경계는 [FailureLedger](FailureLedger.md) 참조. 새 exact-HEAD CI는 미검증이며 GO-PILOT은 계속 차단한다.
+
+---
+
 ## 2026-11-04 — CI #562 WAL Schema proof 보완
 
 [PR CI #562](https://github.com/planner77/layoutManager/actions/runs/41748309671)에서 Plan·승인형 Apply/Backup은 진행됐으나 Docker WAL Smoke의 `backup-schema-verify`가 실패했다. 기존 #210 P2와 달리 업그레이드 후 합성 검증만 WAL readonly 원본을 직접 열고 있었으므로, 서버에 이미 있는 `withReadOnlyInspection` adapter로 검증을 정렬한다. schema DDL/4 indexes/2-history의 엄격 검증과 원본 DB·manifest SHA/권한/소유권/파일 목록 불변성 및 기존 업무 데이터 보전은 유지·강화한다. 정확한 내부 SQLite 오류는 이전 Run 로그에 없어 추론으로 분류하며 다음 exact-HEAD CI 통과 전 GO-PILOT 미승인. [FailureLedger](FailureLedger.md) 참조.
