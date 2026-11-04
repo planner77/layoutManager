@@ -1,3 +1,11 @@
+## ADR #225-OCI-PILOT-EVIDENCE — PR #233 이후 독립 OCI 실증 (2026-11-05)
+
+**확정:** PR #233 exact HEAD/CI #612 + Main CI #152 성공, GHCR job SKIPPED. 다음 GO-PILOT 사전 증거는 CI 내 임시 고유 Docker volume과 로컬 `cpu-worker` OCI target으로 범위를 한정한다. 외부 GHCR 푸시/운영 이미지 사용 없이 동일 Dockerfile로 빌드한 image `cad-layout-viewer:ci-cpu-worker`에서 nonroot/네트워크 없음/읽기전용 루트·cgroup 상한 및 실제 Worker DB/Blob 상태를 검증한다. 파일/네트워크/권한 교차 검증은 실패 시 fail closed. 기존 제품 두 Scene 플래그 OFF, 테스트 전용 컨테이너 안에서만 ON. `#229` 영속 Release HOLD·#231 관리자 규칙·#225/#218 OPEN·GO-PILOT BLOCKED는 변하지 않는다.
+
+**증거 한계:** 별도 CI Worker 컨테이너가 READY를 만든다고 현장 실제 로그인 HTTP→Viewer 복원, 실제 OOM·긴 시간 경과, 출시용 3 OCI source/digest·운영 G7 업그레이드·복구가 증명되는 것은 아니다. PR HEAD CI 확인 전 통과로 기재하지 않는다.
+
+---
+
 ## ADR #225-PILOT-PREP — 단계별 실증, 운영 분리 (2026-11-05)
 
 **결정:** 현재 통합 완료된 B1/B2/B3 코드에 별도 **실행 증거**를 추가한다. 먼저 synthetic 0.61 G7 DB/원본/Blob만 소유한 disposable fixture를 만들어 child Node Worker 프로세스의 정상·실제 SIGKILL 후 재진입·SHA 변조·Site grant 회수를 검사한다. Chromium은 이 CPU 후보의 Blob readback을 fresh context에서 복원해 형상과 조작된 데이터 거부를 확인한다. 기존 unit/mocked 권한·Retry 검사도 유지한다.
