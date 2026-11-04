@@ -503,6 +503,14 @@ jobs:
             echo "::error::CPU Worker accepted an unapproved release gate"
             exit 1
           fi
+      # #225: true OCI (same local cpu-worker target), not a mock child process.
+      # Uses only a test-run-unique Docker volume and has a mandatory cleanup trap.
+      - name: Verify disposable CPU Worker OCI security, READY, SIGKILL and restore
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash -n src/tests/oci/scene-cpu-worker-proof.sh
+          bash src/tests/oci/scene-cpu-worker-proof.sh
       - name: Measure 3 image sizes, layers and directories
         if: needs.scope.outputs.baseline == 'true'
         run: bash src/scripts/measure-images.sh cad-layout-viewer:baseline cad-layout-viewer:phase1 cad-layout-viewer:ci "$GITHUB_STEP_SUMMARY"
