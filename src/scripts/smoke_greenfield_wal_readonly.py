@@ -18,6 +18,22 @@ PHASE = "arguments"
 
 def call(command, *, image_run=False, allow_failure=False):
     result = subprocess.run(command, capture_output=True, text=True, check=False)
+    if result.returncode and allow_failure:
+        # g7-greenfield.ts emits fixed JSON error codes to stderr. Retain
+        # only that allowlisted code; never print raw Docker stderr, paths,
+        # database content, credentials, or a signed plan identifier.
+        for line in reversed(result.stderr.splitlines()):
+            try:
+                payload = json.loads(line)
+            except (ValueError, TypeError):
+                continue
+            if not isinstance(payload, dict):
+                continue
+            code = payload.get("code")
+            if isinstance(code, str) and re.fullmatch(r"G7_[A-Z0-9_]{1,100}", code):
+                print(json.dumps({"stage": PHASE, "cliCode": code,
+                                  "exitCode": result.returncode}), file=sys.stderr)
+                break
     if result.returncode and not allow_failure:
         raise RuntimeError("G7_WAL_RO_SMOKE_COMMAND_FAILED")
     return result.stdout.strip(), result.returncode
@@ -225,7 +241,7 @@ process.stdout.write(String(d.prepare('SELECT COUNT(*) AS n FROM "User"').get().
             raise RuntimeError("G7_WAL_RO_SMOKE_STOPPED_SIDECAR_PRESENT")
         post_writer_hash = logical_hash(owned)
 
-        PHASE = "backup-apply"
+        PHASE = "backup-plan"
         apply_env = settings() | {
             "G7_UPGRADE_MAINTENANCE_ACK": "APP_STOPPED_BY_HOST_HELPER",
             "G7_UPGRADE_PAIR_VERIFIED": "true",
@@ -241,12 +257,24 @@ process.stdout.write(String(d.prepare('SELECT COUNT(*) AS n FROM "User"').get().
                 or approval.get("to") != options.version
                 or not isinstance(plan_id, str)
                 or not re.fullmatch(r"[a-f0-9]{64}", plan_id)):
+            print(json.dumps({"stage": PHASE, "exitCode": plan_status,
+                              "state": approval.get("state"),
+                              "from": approval.get("from"), "to": approval.get("to"),
+                              "requiresApproval": approval.get("requiresApproval"),
+                              "planIdFormatValid": isinstance(plan_id, str) and bool(re.fullmatch(r"[a-f0-9]{64}", plan_id))}),
+                  file=sys.stderr)
             raise RuntimeError("G7_WAL_RO_SMOKE_PLAN_INVALID")
+        PHASE = "backup-apply-execute"
         status, payload = cli(owned, "apply", ("--approve-plan", plan_id),
                               readonly=False, env=apply_env)
         backup_id = payload.get("backupId")
         if status or not isinstance(backup_id, str) or not re.fullmatch(r"[0-9a-f-]{36}", backup_id):
+            print(json.dumps({"stage": PHASE, "exitCode": status,
+                              "returnedStateValid": payload.get("state") == "G7_GREENFIELD_READY",
+                              "backupIdFormatValid": isinstance(backup_id, str) and bool(re.fullmatch(r"[0-9a-f-]{36}", backup_id))}),
+                  file=sys.stderr)
             raise RuntimeError("G7_WAL_RO_SMOKE_BACKUP_CREATE_FAILED")
+        PHASE = "backup-schema-verify"
         # Explicitly validate the complete signed next-release schema; the
         # logical hash below excludes only expected new Job/history tables,
         # and still preserves ALL pre-existing business table rows.
@@ -268,6 +296,7 @@ process.stdout.write('G7_210_APPROVED_JOB_SCHEMA_PASS');'''
             command=("--import", "tsx", "--input-type=module", "-e", schema_script))
         if proof_status or proof != "G7_210_APPROVED_JOB_SCHEMA_PASS":
             raise RuntimeError("G7_WAL_RO_SMOKE_MIGRATED_SCHEMA_INVALID")
+        PHASE = "backup-business-preservation"
         upgraded_hash = logical_hash(owned)
         if upgraded_hash != post_writer_hash:
             raise RuntimeError("G7_WAL_RO_SMOKE_UPGRADE_DATA_CHANGED")

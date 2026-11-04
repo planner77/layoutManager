@@ -1,3 +1,12 @@
+## #225 / PR #226 CI #561 — WAL backup-apply 세부 실패 판정 보완 (2026-11-04)
+
+- **실제 실패:** [PR CI #561 / Run41745346723](https://github.com/planner77/layoutManager/actions/runs/41745346723), exact HEAD `28203b5204cbb3f055b8c5fe5b183f5285d6633a`, completed/failure. Docker Job `126297636657`, mandatory step `Readonly stopped and active WAL inspection and recovery (#210 P2)` 에서 `G7_WAL_RO_SMOKE_FAILED stage=backup-apply` (2026-11-04 00:25:15 UTC). Required Verify `126303491037` 종속 실패. Scope/Quality(Typecheck/Lint/Unit/Integration/Build)/Greenfield E2E/Signed+Legacy/Chromium shards 1·2는 SUCCESS; #218 A2는 경로 기준 SKIPPED.
+- **현상 변화:** 이전 [#559](https://github.com/planner77/layoutManager/actions/runs/41741458097)의 `stopped-wal-readonly-plan-status` 실패는 #561에서 재발하지 않았다. 즉, 현재 합성 Zone 0.56 Fixture 복원으로 stopped/active WAL 검증을 진행한 뒤 승인형 migration의 Plan/Apply/backup/schema/hash 구간까지 진입했다. 하지만 기존 스크립트가 이 전 구간을 `backup-apply` 한 단계로 표기하고 `cli()`가 Docker의 안전한 JSON stderr를 폐기하므로 실패한 **정확한 내부 하위 검사와 CLI code는 이 실행의 로그만으로 판단 불가능**하다. 임의의 `G7_UPGRADE_BACKUP_REQUIRED`, Plan 불일치 또는 운영 migration 결함으로 단정하지 않는다.
+- **보완/재검증:** `src/scripts/smoke_greenfield_wal_readonly.py`의 책임 구간을 `backup-plan`, `backup-apply-execute`, `backup-schema-verify`, `backup-business-preservation`으로 분리한다. CLI 실패는 allowlisted `G7_[A-Z0-9_]` 계열 고정 코드와 exitCode만 표준 JSON으로 출력하고 전체 stderr/Plan ID/DB 경로·행/인증값은 출력하지 않는다. Plan/from/to/approval/hex format 및 apply backup ID 유무를 비밀 없는 불리언·식별 상태로 보고한다. 정확 실패 지점이 확인되기 전 제품 migration/backup/lock 코드를 추측 수정하지 않는다.
+- **불변 정책:** 0.60.0 승인 Plan ID 정합·64hex 확인, stopped/active WAL read-only/sidecar/source-SHA, 실제 승인형 apply+backup+restore, 완전한 Job DDL/2 history, 모든 기존 업무 테이블 행 보존 비교를 **삭제·skip·완화하지 않는다**. Docker/Runtime/G7 권한·보안·원본 CAD/운영 DB/Volume/현행 0.59.0 GHCR 비변경. 수정은 CI test observability로 분류; 로컬 Docker는 사용 불가하므로 새 exact HEAD CI의 최종 판정은 **미검증**. PR Draft, GO-DEV만 허용, GO-PILOT BLOCKED, #218/#225 OPEN.
+
+---
+
 ## #225 / PR #226 CI #559 — Docker stopped-WAL fixture mismatch (2026-11-04)
 
 - **확인된 실패:** [PR CI #559 / Run41741458097](https://github.com/planner77/layoutManager/actions/runs/41741458097), exact HEAD `fe77c165c89d7afe4524a110eef9b71204b8bda3`, completed/failure. Quality (typecheck, ESLint, 1016 tests, production build), Greenfield UI, signed G7/legacy, Chromium E2E 2 shards PASS. Docker Job `126283787292`의 `Readonly stopped and active WAL inspection and recovery (#210 P2)` step21 FAIL, Required Verify `126290971423` 는 해당 Docker 실패를 정상 전파. A2 scope SKIPPED.
