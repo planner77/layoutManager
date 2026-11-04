@@ -152,18 +152,38 @@ async function tamper(){
   assert(altered.length===original.length,'OCI_PROOF_TAMPER_LENGTH_CHANGED');
   writeFileSync(row.original,altered,{mode:0o600});
 }
-async function claimAndKill(){
+const claimMarker='/data/ci-scene-oci-claimed.marker';
+async function verifyClaimMarker(){
+  const state=stored(),row=state.versions.crash;
+  assert(row,'OCI_PROOF_CRASH_NOT_PREPARED');
+  assert(existsSync(claimMarker),'OCI_PROOF_CLAIM_NOT_DURABLE');
+  assert(readFileSync(claimMarker,'utf8')==='CLAIMED:'+row.jobId,
+    'OCI_PROOF_CLAIM_MARKER_INVALID');
+  const db=rawDb();
+  try{
+    const job=db.prepare('SELECT status,attempt,started_at FROM "SceneBuildJob" WHERE id=?')
+      .get(row.jobId);
+    assert(job?.status==='RUNNING'&&job.attempt===1&&job.started_at,
+      'OCI_PROOF_CLAIM_NOT_RUNNING');
+    assert(db.prepare('SELECT count(*) AS n FROM "CurrentScene" WHERE version_id=?')
+      .get(row.versionId).n===0,'OCI_PROOF_CLAIM_PREMATURE_POINTER');
+  }finally{db.close();}
+}
+async function claimAndWaitForHostKill(){
   const state=stored(),row=state.versions.crash;
   assert(row,'OCI_PROOF_CRASH_NOT_PREPARED');
   const {createDb}=await import('../server/db.ts');
   const {claimNextCpuSceneJob}=await import('../server/scene/scene-build-job-queue.ts');
   const db=createDb('file:'+dbPath);
-  const claimed=await claimNextCpuSceneJob(db);
-  assert(claimed?.id===row.jobId&&claimed.attempt===1,'OCI_PROOF_CLAIM_MISMATCH');
-  await db.$disconnect();
-  // ONLY kills this disposable Docker worker process, after durable claim.
-  process.kill(process.pid,'SIGKILL');
-  die('OCI_PROOF_SIGKILL_NOT_DELIVERED');
+  try{
+    const claimed=await claimNextCpuSceneJob(db);
+    assert(claimed?.id===row.jobId&&claimed.attempt===1,'OCI_PROOF_CLAIM_MISMATCH');
+  }finally{await db.$disconnect();}
+  // The host may kill ONLY after a separate OCI observes this durable marker
+  // and confirms the SQLite RUNNING row. Never self-kill or hide an assertion.
+  writeFileSync(claimMarker,'CLAIMED:'+row.jobId,{flag:'wx',mode:0o600});
+  process.stdout.write('OCI_CPU_CLAIM_READY\\n');
+  await new Promise(()=>{setInterval(()=>{},30_000);});
 }
 async function changeClock(kind){
   const state=stored(),row=state.versions.crash;
@@ -230,7 +250,8 @@ async function main(){
   else if(action==='tamper')await tamper();
   else if(action==='verify-tamper')await denied(state,'tampered','SCENE_SOURCE_DIGEST_MISMATCH');
   else if(action==='prepare-crash')await queue(state,'crash');
-  else if(action==='claim-kill')await claimAndKill();
+  else if(action==='claim-wait')await claimAndWaitForHostKill();
+  else if(action==='claim-marker')await verifyClaimMarker();
   else if(action==='stale'||action==='due')await changeClock(action);
   else if(action==='verify-wait')await verifyWait();
   else if(action==='verify-recovered'){
