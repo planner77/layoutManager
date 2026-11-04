@@ -141,7 +141,7 @@ test('#225 CPU LINE immutable DTO readback restores in a fresh Chromium context'
  try{
   const dxf=Buffer.from(['0','SECTION','2','HEADER','9','$INSUNITS','70','4',
    '0','ENDSEC','0','SECTION','2','ENTITIES','0','LINE','5','A1','8','0',
-   '10','0','20','0','11','10','21','20','0','ENDSEC','0','EOF',''].join('\\n'));
+   '10','0','20','0','11','10','21','20','0','ENDSEC','0','EOF',''].join('\n'));
   const sourceSha256=sceneSha256(dxf),versionId=randomUUID();
   const candidate=await buildCpuLineCandidate({source:dxf,versionId,sourceSha256});
   expect(candidate.readbackVerified).toBe(true);
