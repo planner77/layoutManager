@@ -158,20 +158,6 @@ export function assertDeclaredSchema(db:IsolatedDb,release:ReleaseDeclaration):v
     return;
   }
   const history=db.prepare('SELECT migration_name,checksum,finished_at,rolled_back_at FROM "_prisma_migrations" ORDER BY rowid').all();
-    const fresh=history.length===1&&
-      history[0].migration_name===G7_GREENFIELD_BASELINE&&
-      history[0].checksum===G7_GREENFIELD_BASELINE_CHECKSUM;
-    const upgraded=history.length===2&&
-      history[0].migration_name===G7_PREVIOUS_ZONES_BASELINE&&
-      history[0].checksum===G7_PREVIOUS_ZONES_BASELINE_CHECKSUM&&
-      history[1].migration_name===SCENE_JOB_MIGRATION_NAME&&
-      history[1].checksum===SCENE_BUILD_JOB_MIGRATION_CHECKSUM;
-    if(!fresh&&!upgraded||history.some(row=>row.finished_at==null||row.rolled_back_at!=null))
-      throw new Error('G7_UPGRADE_SCHEMA_INCOMPATIBLE');
-    assertG7GreenfieldSchema(db);
-    return;
-  }
-  const history=db.prepare('SELECT migration_name,checksum,finished_at,rolled_back_at FROM "_prisma_migrations" ORDER BY rowid').all();
   const expected=release.history??[{name:release.baseline,checksum:release.checksum}];
   if(history.length!==expected.length||history.some((row,i)=>
     row.migration_name!==expected[i].name||row.checksum!==expected[i].checksum||
