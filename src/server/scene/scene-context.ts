@@ -83,6 +83,7 @@ export async function requireSceneRead(request:Request,db:Database|Prisma.Transa
 // active Site state, and revocation. A global Admin without Site Grant cannot search.
 export async function requireMemoSearchSites(
   request:Request,db:Database,gate:G7RuntimeGate,
+  action:'memo:read'|'cad:read'|'cad:upload'='memo:read',
 ):Promise<string[]>{
   if(gate.state!=='ACTIVE')throw deny('G7_RUNTIME_BLOCKED',503);
   const raw=cookie(request);
@@ -109,7 +110,7 @@ export async function requireMemoSearchSites(
   const sites:string[]=[];
   for(const site of active){
     try{
-      requireResolvedPermission(actor,'memo:read',{kind:'site',siteId:site.id},site.id);
+      requireResolvedPermission(actor,action,{kind:'site',siteId:site.id},site.id);
       sites.push(site.id);
     }catch{/* Do not reveal unauthorized Site identities or counts. */}
   }
