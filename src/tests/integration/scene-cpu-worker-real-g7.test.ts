@@ -8,7 +8,7 @@ import path from 'node:path';
 import {sceneSha256} from '../../domain/scene-digest';
 import {ensureAutomatedGreenfield} from '../../server/g7-operational/greenfield-auto';
 import {createDb,writeTransaction} from '../../server/db';
-import {claimNextCpuSceneJob,enqueueCpuSceneBuildTx} from '../../server/scene/scene-build-job-queue';
+import {enqueueCpuSceneBuildTx} from '../../server/scene/scene-build-job-queue';
 import {runCpuWorkerTick} from '../../scripts/scene-cpu-worker';
 import {SceneRepository} from '../../server/scene/scene-repository';
 import {SceneBlobStorage} from '../../server/storage/scene-storage';
@@ -143,10 +143,27 @@ describe('#225 pilot disposable detached-process regressions',()=>{
   it('separate worker invocation recovers a stale claimed attempt after a simulated stop',async()=>{
     const f=await fixture();
     try{
-      const claimed=await claimNextCpuSceneJob(f.db);
-      expect(claimed).toMatchObject({id:f.job.jobId,attempt:1,status:'RUNNING'});
-      // A simulated process stop leaves a RUNNING claim in durable SQLite.
-      // Advance only the disposable fixture's clock/row, never a real host clock.
+      // Kill a *real separate* process after its durable claim commits.
+      // Do not kill a Vitest/GitHub runner process or change production code.
+      const script=[
+        "import {createDb} from './server/db.ts';",
+        "import {claimNextCpuSceneJob} from './server/scene/scene-build-job-queue.ts';",
+        "const db=createDb(process.env.DATABASE_URL);",
+        "const claimed=await claimNextCpuSceneJob(db);",
+        "await db.$disconnect();",
+        "if(!claimed)process.exit(5);",
+        "process.kill(process.pid,'SIGKILL');",
+      ].join('\n');
+      const killed=spawnSync(process.execPath,
+        ['--import','tsx','--input-type=module','--eval',script],{
+          cwd:path.resolve(import.meta.dirname,'../..'),
+          env:{...process.env},encoding:'utf8',timeout:45_000,
+        });
+      expect(killed.signal,killed.stderr).toBe('SIGKILL');
+      expect(await f.db.sceneBuildJob.findUniqueOrThrow({where:{id:f.job.jobId}}))
+        .toMatchObject({status:'RUNNING',attempt:1});
+      // Accelerate only the disposable SQLite row clock, not real system time.
+      // The real next worker invocation must recover the SIGKILL orphan.
       await f.db.sceneBuildJob.update({where:{id:f.job.jobId},data:{
         startedAt:new Date(Date.now()-210_000),
       }});
