@@ -1,3 +1,11 @@
+## #225 — GO-PILOT 준비용 폐기 가능 통합 테스트 추가 (2026-11-05, 신규 PR 검증 전)
+
+이번 `feat/225-pilot-disposable-integration`은 이전 #232 코드 GO-INTEGRATE 이후 실제 검증 증거의 공백을 좁힌다. `src/tests/integration/scene-cpu-worker-real-g7.test.ts`는 synthetic G7 0.61 임시 DB/원본/Scene 파일을 열어 분리된 Node CLI Worker 정상→verified READY·Audit·새 Reader·중복 IDLE, 별도 claim 프로세스 SIGKILL→stale 재시작(임시 DB 시각 가속), Original SHA 변조 및 Site grant 철회 시 실패·포인터 미생성을 검증하도록 확장. `src/tests/e2e/scene-poc.spec.ts`는 Node CPU LINE DTO의 immutable Blob put/readback→**새 Chromium context** 렌더 및 변조 거부를 추가. 변경 소스의 정확 PR HEAD CI 결과는 아직 **NOT RUN / NOT VERIFIED**이며 합성 시험과 GO-PILOT 운영 증거를 혼동하지 않는다.
+
+**남은 필수:** signed HTTP DXF upload→앱 Job→실 독립 OCI Worker→persisted READY→신규 브라우저 Viewer 재접속 단일 흐름, 실제 Docker security/cgroup/kill/OOM/restart, 백업·격리 복구, 3-role source/digest 확인. 제품 `SCENE_AUTO_BUILD_ENABLED=OFF`, `SCENE_CPU_WORKER_ENABLED=OFF`, #229 v0.61+ **GHCR HOLD**, #231 Tag Ruleset OPEN, #225/#218 OPEN, **GO-PILOT BLOCKED**. 운영 DB/CAD/Volume/.env/Tag/GHCR 무변경. [TestPlan](out/TestPlan.md), [TestReport](out/TestReport.md), [FailureLedger](out/FailureLedger.md), [ADR](out/Decisions.md) 참조.
+
+---
+
 ## #225/B3 PR #232 — Main GO-INTEGRATE 완료, GHCR·GO-PILOT HOLD (2026-11-05)
 
 - 검증 소스 HEAD `e5747e4ecfd391912d79e61362b51c4ab9f5aa87`의 [PR CI #610](https://github.com/planner77/layoutManager/actions/runs/41903521695): 대상 8 Job **SUCCESS**, #218 A2 synthetic 1 Job **SKIPPED**. 미해결 리뷰0/충돌0/Main behind0 후 Draft 해제·[PR #232](https://github.com/planner77/layoutManager/pull/232) Squash Main `e71d3c2e421d3931024676bb54a751b05d43a091` 병합. #599/#604/#607의 실패 원인은 [FailureLedger](out/FailureLedger.md)에 역사적 FAIL로 보존한다.
