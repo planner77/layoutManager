@@ -14,6 +14,8 @@ import { GREENFIELD_UPGRADE_REGISTRY,resolveUpgradeChain, type UpgradeRegistry }
 import { G7_GREENFIELD_BASELINE,G7_GREENFIELD_BASELINE_CHECKSUM,
   G7_PREVIOUS_ZONES_BASELINE,G7_PREVIOUS_ZONES_BASELINE_CHECKSUM,
   G7_PREVIOUS_ZONES_SCHEMA_ID,
+  G7_PREVIOUS_SCENE_JOB_SCHEMA_ID,G7_PREVIOUS_SCENE_JOB_BASELINE,
+  G7_PREVIOUS_SCENE_JOB_BASELINE_CHECKSUM,
   G7_GREENFIELD_SCHEMA_ID } from '../../server/g7-operational/greenfield-schema';
 import { withReadOnlyInspection } from '../../server/g7-operational/greenfield-readonly-inspection';
 
@@ -23,7 +25,7 @@ const Sqlite=createRequire(import.meta.url)('better-sqlite3') as new(file:string
 const roots:string[]=[];
 afterEach(()=>{vi.unstubAllEnvs();for(const root of roots.splice(0))rmSync(root,{recursive:true,force:true});});
 const hash=(bytes:string)=>createHash('sha256').update(bytes).digest('hex');
-function fixture(){
+function fixture(source:'ZONES'|'JOBS'='ZONES'){
   const root=mkdtempSync(path.join(tmpdir(),'g7-upgrade-'));roots.push(root);chmodSync(root,0o700);
   const dbDir=path.join(root,'db'),cad=path.join(root,'cad');
   mkdirSync(dbDir,{mode:0o700});mkdirSync(cad,{mode:0o700});
@@ -38,9 +40,11 @@ function fixture(){
   const db=new Sqlite(dbPath);
   // Produce an authentic old-zone-schema fixture from an isolated newly
   // installed 0.61.0 database. No operational DB is used or modified.
-  db.exec('DROP TABLE "SceneBuildJob"');
+  if(source==='ZONES')db.exec('DROP TABLE "SceneBuildJob"');
+  else db.exec('DROP INDEX "ix_scene_build_cpu_due"');
   db.prepare('UPDATE "_prisma_migrations" SET migration_name=?,checksum=?')
-    .run(G7_PREVIOUS_ZONES_BASELINE,G7_PREVIOUS_ZONES_BASELINE_CHECKSUM);
+    .run(source==='ZONES'?G7_PREVIOUS_ZONES_BASELINE:G7_PREVIOUS_SCENE_JOB_BASELINE,
+      source==='ZONES'?G7_PREVIOUS_ZONES_BASELINE_CHECKSUM:G7_PREVIOUS_SCENE_JOB_BASELINE_CHECKSUM);
   const user=randomUUID(),bu=randomUUID(),product=randomUUID(),site=randomUUID(),
     building=randomUUID(),location=randomUUID(),version=randomUUID();
   const content='0\nSECTION\n2\nENTITIES\n0\nENDSEC\n0\nEOF\n';
@@ -62,8 +66,9 @@ function fixture(){
   db.prepare('UPDATE "CadLocation" SET current_version_id=?,next_version=2 WHERE id=?').run(version,location);
   db.close();
   const old=JSON.parse(readFileSync(manifest,'utf8')) as Record<string,string>;
-  old.schemaId=G7_PREVIOUS_ZONES_SCHEMA_ID;
-  old.version='0.56.0';old.appImage='ghcr.io/planner77/layoutmanager:0.56.0';
+  old.schemaId=source==='ZONES'?G7_PREVIOUS_ZONES_SCHEMA_ID:G7_PREVIOUS_SCENE_JOB_SCHEMA_ID;
+  old.version=source==='ZONES'?'0.56.0':'0.60.0';
+  old.appImage='ghcr.io/planner77/layoutmanager:'+old.version;
   old.migratorImage=old.appImage+'-migrate';old.sourceCommit='';
   writeFileSync(manifest,JSON.stringify(old),{mode:0o600});
   return {root,dbDir,cad,dbPath,manifest,env,old,ids:{user,site,location,version},content};
@@ -74,6 +79,31 @@ function maintenance(env:ReturnType<typeof fixture>['env']){
 }
 
 describe('#209 Greenfield release upgrade',()=>{
+  test('approved 0.60.0→0.61.0 additive index migration preserves CAD/Job identities',async()=>{
+    const f=fixture('JOBS'),before=readFileSync(f.manifest,'utf8');
+    const plan=planGreenfieldUpgrade(f.env);
+    expect(plan.decision).toBe('UPGRADE_MIGRATION_REQUIRED');
+    expect(plan.chain.map(e=>[e.from,e.to,e.kind]))
+      .toEqual([['0.60.0','0.61.0','MIGRATION']]);
+    expect(readFileSync(f.manifest,'utf8')).toBe(before);
+    await expect(applyGreenfieldUpgrade(maintenance(f.env)))
+      .rejects.toThrow('G7_UPGRADE_APPROVAL_REQUIRED');
+    const upgraded=await applyGreenfieldUpgrade(maintenance(f.env),plan.planId);
+    expect(upgraded.mode).toBe('UPGRADE');
+    const db=new Sqlite(f.dbPath);
+    try{
+      expect(db.prepare("SELECT name FROM sqlite_master WHERE type='index' AND name='ix_scene_build_cpu_due'").get())
+        .toMatchObject({name:'ix_scene_build_cpu_due'});
+      expect(db.prepare('SELECT id,sha256 FROM "CadFileVersion"').get())
+        .toMatchObject({id:f.ids.version,sha256:hash(f.content)});
+      expect(db.prepare('SELECT COUNT(*) AS n FROM "SceneBuildJob"').get()).toMatchObject({n:0});
+      expect(db.prepare('PRAGMA foreign_key_check').all()).toEqual([]);
+    }finally{db.close();}
+    expect(readFileSync(path.join(f.cad,f.ids.location,f.ids.version,'original.dxf'),'utf8'))
+      .toBe(f.content);
+    expect(statusGreenfieldUpgrade(f.env).state).toBe('RESTART_SAME_RELEASE');
+  });
+
   test('0.58.1 to 0.61.0 needs explicit approved DDL migration, preserving business rows and recovery',async()=>{
     const f=fixture(),prior={...f.old,version:'0.58.1',
       appImage:'ghcr.io/planner77/layoutmanager:0.58.1',
