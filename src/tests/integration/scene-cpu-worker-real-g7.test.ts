@@ -80,7 +80,8 @@ describe('#225 CPU-only detached Worker actual G7 0.61 one-job roundtrip',()=>{
         const repo=new SceneRepository(f.db,storage);
         const status=await repo.status(f.versionId);
         expect(status).toMatchObject({status:'READY',revision:0});
-        expect(await repo.content(f.versionId,status.assetId!)).toBeTruthy();
+        if(status.status!=='READY')throw new Error('SCENE_CPU_INTEGRATION_NOT_READY');
+        expect(await repo.content(f.versionId,status.assetId)).toBeTruthy();
       }finally{storage.close();}
       expect(await runCpuWorkerTick()).toEqual({outcome:'IDLE'});
     }finally{await f.db.$disconnect();}
