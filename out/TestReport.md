@@ -1,3 +1,7 @@
+## #225 / PR #228 — PR CI #588 exact HEAD failure and test fixture repair (2026-11-04)
+
+[PR CI #588 / Run41800458837](https://github.com/planner77/layoutManager/actions/runs/41800458837), HEAD `129707d75295b3c833eda714ecedb85e25328ad2`: Scope SUCCESS, Docker/G7 Migration/WAL smoke SUCCESS, **TypeScript FAIL** (two TS2352 errors in `scene-cpu-worker-launch-contract.test.ts`; required `NODE_ENV` missing from test-only `NodeJS.ProcessEnv` assertions), Required Verify FAIL by dependency. G7/Chromium E2E NOT RUN. Repair: add explicit `NODE_ENV:'test'`, remove unsafe assertions; preserve denied-config expectations and required gates. **Post-fix CI not yet proven**; this is not GO-PILOT or an OCI/scene restoration acceptance result. See [FailureLedger](FailureLedger.md).
+
 ## #225 / PR #228 — 0.61.0 + 독립 Worker 코드/검증 상태 (2026-11-04)
 
 신규 CLI, OCI/Compose 격리, 0.61 G7 migration 및 테스트를 작성했으나 **정확한 새 HEAD의 Typecheck/Lint/Prisma/Worker OCI/E2E는 NOT RUN/NOT VERIFIED**. [#584](https://github.com/planner77/layoutManager/actions/runs/41785081044) SUCCESS는 이전 HEAD 결과다. 실제 실 도면, Worker 권한/재시작, 브라우저 재접속, GHCR image/digest/GO-PILOT 증거는 미완료.

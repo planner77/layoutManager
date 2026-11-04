@@ -1,3 +1,7 @@
+## #225 / PR #228 — PR CI #588 test fixture type correction (2026-11-04)
+
+CI #588 [Run41800458837](https://github.com/planner77/layoutManager/actions/runs/41800458837), HEAD `129707d75295b3c833eda714ecedb85e25328ad2`: Docker/G7 runtime smoke PASS, TypeScript TS2352 twice in `scene-cpu-worker-launch-contract.test.ts` because `NodeJS.ProcessEnv` requires `NODE_ENV`; downstream required gate failed and E2E was not run. Test fixtures now specify `NODE_ENV:'test'` and do not use unsafe `as NodeJS.ProcessEnv` casts. Keep strict typecheck, original Worker security rejection assertions and all CI gates. This source correction needs exact new HEAD PR CI; **GO-PILOT BLOCKED**, Draft PR and #225/#218 OPEN. See [FailureLedger](out/FailureLedger.md) and [TestReport](out/TestReport.md).
+
 ## #225 / PR #228 — 독립 CPU Worker + G7 0.61.0 릴리스 연결 (2026-11-04 / CI 미검증)
 
 B2-B에 별도 비루트 `cpu-worker` OCI 타깃, opt-in Compose profile, network none/read-only rootfs/1CPU·768MiB·PIDs64/tmpfs 및 단일 Job별 120초 제한 실행기를 추가했다. 신규 **0.61.0** G7 CPU Schema ID+Greenfield baseline 및 **0.60→0.61** 승인형 additive index migration을 등록한다. 과거 0.60.0 Schema/SQL/이미지/Browser Builder Job은 불변. `SCENE_AUTO_BUILD_ENABLED`와 `SCENE_CPU_WORKER_ENABLED`은 모두 기본 OFF. 실행 전/게시 시 현재 G7 Runtime·Actor·Site 권한 재검사 필수.
