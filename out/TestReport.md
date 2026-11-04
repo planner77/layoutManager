@@ -1,3 +1,11 @@
+## #225 / PR #234 — CI #614 OCI SIGKILL 경계 실패 및 검증 보완 (2026-11-05)
+
+[PR CI #614](https://github.com/planner77/layoutManager/actions/runs/41931040058) source HEAD `9361d920ca53bdbc9d9a5ce8e807a9408806d3d1`: Static/Unit/Build, Docker 기존 smoke 및 G7/Chromium E2E 성공. **신규 OCI proof는 부분 PASS / 전체 FAIL:** 최초 READY/readback, 자원 격리 Docker 검사, Site grant 철회, 동일 길이 원본 SHA 변조, crash 사전 Job 생성까지 실행 완료. `claim-kill` 컨테이너가 예측 137이 아닌 **exit 1**로 반환되어 required Docker Job 실패. 원래 `docker run --rm` 로그가 숨겨져 있으므로 child code의 정확 실패 원인은 이 Run에서 확인 불가. 실제 컨테이너 SIGKILL 완료, stale 복구, isolated restore는 #614에서 PASS 증거 없음.
+
+변경 소스는 **실제 별도 컨테이너의 영속 Claim 확인 후 Docker 호스트가 SIGKILL**하고 `wait/inspect` exit 137, DB RUNNING 재확인 뒤 기존 상태 전이·복구 검사로 진행하도록 수정했다. 제약·시간/보안 조건 완화 없음. 새로운 정확 HEAD CI는 미실행/결과 미확인; GO-PILOT BLOCKED.
+
+---
+
 ## #225 PR #233 확정 결과 및 OCI 신규 증거 구분 (2026-11-05)
 
 - **OCI CLI·Supervisor 층위 차이:** 신규 시험은 실제 이미지 기본 `scene-cpu-worker-loop.sh` ENTRYPOINT로 게시하고 stop/start 후 READY 불변을 확인하도록 작성했다. 부정 시나리오는 격리 OCI에서 `--once` 실행. 아직 CI 미실행, Docker 속성/실 Worker 결과 PASS 미선언.
