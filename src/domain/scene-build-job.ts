@@ -74,6 +74,7 @@ export function sceneBuildPublicSummary(input: Readonly<{
     return { scene: 'NOT_APPLICABLE', build: null, phase: null };
   const jobState = input.jobState ?? null;
   const status = input.validatedScene === 'READY' ? 'READY'
-    : jobState === 'READY' ? 'REBUILD_REQUIRED' : jobState ?? input.validatedScene;
+    : jobState === 'READY' ? (input.validatedScene === 'UNAVAILABLE' ? 'UNAVAILABLE' : 'REBUILD_REQUIRED')
+    : jobState ?? input.validatedScene;
   return { scene: status, build: jobState, phase: jobState === 'RUNNING' ? safeBuildStage(input.stage) : null };
 }
