@@ -1,3 +1,13 @@
+## #229 — v0.61.0 이상 영속 릴리스 HOLD (2026-11-04)
+
+Main의 package.json 버전이 0.61.0 이상이면 runtime 변경에도 CI는 수행하되 GHCR publish는 시작하지 않는다. 후속 0.61.1/0.62.0 변경도 동일하며 guarded tag push는 명시 차단한다. 기존 #216 source-pinned 불변 복구 및 0.60.0 이하 릴리스는 원래 정책을 유지한다.
+
+향후 정식 릴리스에는 별도 검토 PR, App/Migrator/CPU Worker 3-role OCI 버전·revision·digest·amd64 검증, 보존/복구 계획 및 Owner Release GO가 필요하다. GitHub 태그 Ruleset과 GHCR 쓰기 권한 제약은 별도 관리자 작업이며 과거 커밋에서 실행하는 태그 워크플로에 새 Gate가 소급 적용되지는 않는다. 실 운영 DB/CAD/Volume/.env 및 기존 GHCR 이미지·태그 수정 금지.
+
+구체적 정책·검증: [Issue229](Issue229.md), [Decisions](Decisions.md), [TestPlan](TestPlan.md). PR #228 GO-INTEGRATE HOLD·GO-PILOT BLOCKED, CI 결과는 새 HEAD에서 별도 확인.
+
+---
+
 ## #218 경량 운영·단일 Worker 단계별 도입 정책 (2026-11-04)
 
 [현행 Owner GO 정본](Issue218LeanPolicy.md). **GO-DEV는 단일 CPU Worker 구현 착수 허용**, GO-PILOT은 실제 자동 등록→영속 CPU DTO→검증 저장→지원 브라우저 복원 및 G7·기존 READY/원본 불변·재시작 smoke 후 별도 승인한다. 초기 Worker=1, 내부 인가된 DXF/지원 2D 중심. Docker 실행은 비루트/격리·bounded CPU/RAM/PID·time, 불필요 네트워크·자격증명·호스트 권한 금지. 엄격 Headless 서버에서 WebGL Viewer 생성이 실패해도 DTO 생성 자체 성공과 분리한다. 다중 Worker·대형 실 CAD·3종 현장·2PC는 후속 GO-EXPAND. 기존 v0.58.1 대비 v0.59.0 DTO v2 역호환 미지원이므로 버전 변경/rollback 때 백업·Scene 읽기 가능 여부를 확인한다. 현재 운영 Worker나 GHCR 신규 게시가 완료된 것으로 기록하지 않는다.
