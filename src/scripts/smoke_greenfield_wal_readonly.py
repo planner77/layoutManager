@@ -293,8 +293,9 @@ withReadOnlyInspection('/data/db/cad.sqlite',inspectedPath=>{
   try{
     assertDeclaredSchema(db,release);
     const history=db.prepare('SELECT migration_name FROM "_prisma_migrations" ORDER BY rowid').all();
-    if(history.length!==2||history[0].migration_name!=='202611010002_greenfield_semantic_zones_baseline'
-      ||history[1].migration_name!=='202611040001_scene_build_job')throw Error('history');
+    const expected=['202611010002_greenfield_semantic_zones_baseline','202611040001_scene_build_job'];
+    if(release.version==='0.61.0')expected.push('202611040003_scene_cpu_worker');
+    if(history.length!==expected.length||history.some((row,i)=>row.migration_name!==expected[i]))throw Error('history');
   }finally{db.close();}
 });
 process.stdout.write('G7_210_APPROVED_JOB_SCHEMA_PASS');'''

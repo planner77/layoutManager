@@ -1,3 +1,35 @@
+## 2026-11-04 — PR #228 B2-B 분리 Worker/G7 0.61.0 코드 (CI 미검증)
+
+`scene-cpu-worker.ts` 단일 Job CLI, 120초 강제종료 supervisor loop, `cpu-worker` OCI 타깃과 opt-in Compose 보안 제한(UID10001/read-only/network-none/CPU1·RAM768MiB/PID64)을 추가했다. 신규 0.61.0 G7 CPU 스키마, Greenfield 새 기준선 및 0.60→0.61 additive index migration을 등록한다. 기존 v0.60.0 Browser Builder Job 및 운영 데이터·이미지 불변; 기능 플래그 둘 다 기본 OFF. 새 HEAD CI·실 OCI·마이그레이션·브라우저 복원 검증 미완료. LINE 외 2D Entity, B3 상태/retry UI, GHCR Worker 이미지 검증 및 제한 Pilot은 후속. #225/#218 OPEN, GO-PILOT BLOCKED.
+
+## 2026-11-04 — PR #228 CPU Job 릴리스 라우팅·bounded recovery (Draft)
+
+신규 G7 CPU schema+Feature flag에서만 Version 등록 → CPU Builder Queue를 한 DB TX에서 연결하도록 분기 추가. 0.60.0은 기존 Browser enqueue 유지하고 잘못 설정된 CPU 플래그를 차단한다. transient error RetryWait 30s/60s, attempt3 FAILED, auth/source/pointer 등 terminal, CAS lost는 거짓 실패를 피한다. 단위시험 3곳 보강. CI 확인 전 UNVERIFIED; 신규 G7 schema/실제 별도 CPU Worker OCI/배포·B3·브라우저 복원 미완료, #225/#218 OPEN.
+
+---
+
+## 2026-11-04 — B2-B SQLite 통합·현재 릴리스 차단 시험 작성
+
+B2-B 내부 권한·Blob·CurrentScene CAS/Audit 구현에 대한 강한 양/음성 증거를 위해 소유 disposable G7 0.60 DB+실 original/Scene Blob을 사용하는 `scene-cpu-worker-g7.test.ts`를 작성했다. 정상 첫 게시·Current0/Job READY/Audit·조회 가능한 CPU DTO와, 기존 Pointer 보존/2차 게시 거부, Audit SQL trigger 실패의 트랜잭션 롤백·Orphan CLEANUP을 시험한다. 이 시험의 G7 Worker 인가는 **모의**이므로 실제 signed Runtime·보안 승인이 아니다. `scene-cpu-worker-current-release.test.ts`는 실제 v0.60.0에서 CPU Worker Enqueue/Claim/Auth가 future schema ID 불일치 때문에 무조건 차단되는지 확인한다. 실행 성공은 새 CI 완료 전 **미검증**이다. B2 실제 독립 OCI, CPU 자원/네트워크 격리, 지원 DXF 확대, G7 새 버전 및 B3·GO-PILOT은 여전히 미완료. #225/#218 OPEN, 현 0.60.0 GHCR·.env/DB/Volume/CAD 비변경.
+
+---
+
+## 2026-11-04 — PR #228 B2-B 미래 전용 Worker 파이프라인 코드 추가
+
+[PR #228](https://github.com/planner77/layoutManager/pull/228)의 B2-B 구현을 데이터 출처 검사에서 **미래 서명 G7 릴리스 전용 내부 Worker 함수/안전한 신규 Scene 게시 단계**로 확장했다. 세부 코드는 `src/server/scene/scene-build-job-queue.ts`(CPU Builder 전용 Enqueue/Claim/Stale/Retry/Stage), `scene-worker-g7-authorization.ts`(DB 현 시점 Actor/Site/Role·Version/sha·signed G7 Runtime 재검사), `scene-worker-publish.ts`(권한 재검사, 저장된 원본 재조회/SourceSHA, CUSTOM_DTO v2 검증, immutable Blob readback, **기존 CurrentScene이 없을 때만** Asset+Current 0+Job READY+Audit atomic, Orphan 사후처리), `scene-cpu-worker-once.ts`(한 건 오케스트레이션·오류 allowlist)이다. 새 순수 Unit의 승인/거부/중단/TOCTOU/상태 CAS/원본 불변 경로를 검증하도록 작성했다.
+
+**잔여 필수:** B2-B는 현재 `G7-GREENFIELD-CPU-WORKER-20261104-1`이 릴리스 registry/G7 baseline에 **등록되지 않았기 때문에 운영/스테이징에서 실행 불가**. 기존 0.60.0 Queue/Schema·GHCR 그대로. 향후 새 SemVer+정확 G7 schema/OCI App/Migrator 승인, 실 독립 CPU Worker OCI의 비루트 cgroup·시간·pids·read-only·network 격리, LINE 외 실제 제조 도면 2D 도형(Text/Block 포함), 원본 출처 및 브라우저 restore, 장애/재시작/권한 변경 실 DB·파일/배포 통합 시험 필수. `SCENE_AUTO_BUILD_ENABLED=OFF`, `SCENE_CPU_WORKER_ENABLED` 미설정, GO-PILOT BLOCKED; #225/#218 OPEN. 현 Branch CI의 최종 성공 여부는 정확 HEAD 검증 전 미확정. 이전 #572 TypeScript 오류는 별도 FailureLedger에 보존한다.
+
+---
+
+## 2026-11-04 — B2-A Main 병합·B2-B 별도 Draft 시작
+
+[PR #227](https://github.com/planner77/layoutManager/pull/227)은 PR HEAD `f2ac283c62dc3eaed513d4f67a0b4355adbb3a3c`의 [CI #566](https://github.com/planner77/layoutManager/actions/runs/41768798168) 적용 필수 Job SUCCESS, review0/충돌0/behind0 확인 후 **Main `73957d20295d6300c4f0c9b89ca5032574eb24bc` Squash 병합**, [Main CI #147](https://github.com/planner77/layoutManager/actions/runs/41771625231) 성공. 기존 0.60.0 immutable GHCR Pair가 있어 중복 빌드 생략. B2-A는 LINE 오프라인 후보 완료이지 운영 자동 Scene 구축 완료가 아니다.
+
+별도 B2-B Draft 첫 구현: 기존 Browser Builder 식별자를 유지하고 CPU 후보를 `node-cpu-line@1.0.0+cad-scene-1`의 고유 출처로 분리한다. 순수 `inspectCpuCandidateForJob`은 RUNNING Job·attempt·Builder/schema2·원본 SHA·manifest·DTO 전체 Validator와 payload SHA의 정합성만 확인한다. **기존 v0.60.0 Queue의 Browser Builder Job은 CPU 검증에서 거부**되며, SceneRepository 수동 게시 경로는 CPU 출처를 거절한다. B2-B 안에서 2D geometry 확대, 버전 등록·Queue 전환, 독립 non-WebGL CPU Worker, G7 Actor/Site/Writer 최신 권한 재검증, 검증된 SceneRepository immutable 게시/CurrentScene CAS/Audit 및 기존 READY 보호를 이어서 구현한다. B3 목록 상태/UI/retry/배포 Smoke는 미완료. #225/#218 OPEN, GO-PILOT BLOCKED, `SCENE_AUTO_BUILD_ENABLED=OFF`, 0.60.0 배포·운영 DB/CAD/Volume 변경 금지. 이 Draft 변경의 정확 CI 결과는 확인 전 미검증.
+
+---
+
 ## 2026-11-04 — B2-A Node CPU LINE 후보 구현 착수 (별도 Draft PR)
 
 B1 완료(G7 0.60.0 Main 병합/이미지쌍 게시)의 다음 작업으로 `src/server/scene/cpu-line-candidate.ts`와 단위 테스트를 구현한다. 배포를 활성화하지 않고 엄격 UTF-8/16MiB·2D LINE(Layer0/흰색, `$INSUNITS=4`)만 변환한다. 실제 Three Line Geometry → CUSTOM_DTO v2/manifest/SHA/domain full validator/임시 저장·readback을 수행하고 비지원 DXF/중복 handle/3D/규모 상한을 fail-closed한다. 이전 A2 Browser 테스트 코드/직접 Node `DXFViewer` 경로를 운영에 복제하지 않는다.

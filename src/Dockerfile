@@ -105,6 +105,7 @@ COPY --from=builder /app/src/server/cad-business/memo-feature-ddl.ts ./server/ca
 COPY --from=builder /app/src/server/cad-business/zone-ddl.ts ./server/cad-business/zone-ddl.ts
 COPY --from=builder /app/src/server/g7-operational/greenfield-schema.ts ./server/g7-operational/greenfield-schema.ts
 COPY --from=builder /app/src/server/g7-operational/scene-job-ddl.ts ./server/g7-operational/scene-job-ddl.ts
+COPY --from=builder /app/src/server/g7-operational/scene-cpu-ddl.ts ./server/g7-operational/scene-cpu-ddl.ts
 COPY --from=builder /app/src/server/g7-operational/greenfield-install.ts ./server/g7-operational/greenfield-install.ts
 COPY --from=builder /app/src/server/g7-operational/greenfield-auto.ts ./server/g7-operational/greenfield-auto.ts
 COPY --from=builder /app/src/server/g7-operational/greenfield-upgrade-registry.ts ./server/g7-operational/greenfield-upgrade-registry.ts
@@ -122,6 +123,7 @@ COPY --from=builder /app/src/server/g7-operational/preflight.ts ./server/g7-oper
 COPY --from=builder /app/src/deploy/g7-s3 ./deploy/g7-s3
 COPY --from=builder /app/src/deploy/scene-assets ./deploy/scene-assets
 COPY --from=builder /app/src/deploy/scene-build-jobs ./deploy/scene-build-jobs
+COPY --from=builder /app/src/deploy/scene-cpu-worker ./deploy/scene-cpu-worker
 COPY --from=builder /app/src/deploy/g7-runtime ./deploy/g7-runtime
 COPY --from=builder /app/src/domain/auth.ts ./domain/auth.ts
 USER cad
@@ -155,3 +157,25 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD ["node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
 CMD ["node", "server.js"]
+
+# #225/B2-B: separate CPU-only Worker runtime (not a Next.js handler).
+# Reuse the checked-in dependency closure while the isolated Worker is still
+# limited to the verified LINE subset. Future image slimming is independent.
+FROM runtime-base AS cpu-worker
+LABEL com.planner77.g7.image-role="cpu-worker"
+ENV NODE_ENV=production
+COPY --from=dependencies --chown=cad:cad /app/src/node_modules ./node_modules
+COPY --from=builder --chown=cad:cad /app/src/package.json ./package.json
+COPY --from=builder --chown=cad:cad /app/src/tsconfig.json ./tsconfig.json
+COPY --from=builder --chown=cad:cad /app/src/generated ./generated
+COPY --from=builder --chown=cad:cad /app/src/prisma ./prisma
+COPY --from=builder --chown=cad:cad /app/src/server ./server
+COPY --from=builder --chown=cad:cad /app/src/domain ./domain
+COPY --from=builder --chown=cad:cad /app/src/viewers ./viewers
+COPY --from=builder --chown=cad:cad /app/src/lib ./lib
+COPY --from=builder --chown=cad:cad /app/src/scripts ./scripts
+RUN test -f node_modules/.bin/tsx && test -f scripts/scene-cpu-worker-loop.sh \
+    && node -e "const sqlite=require('better-sqlite3');new sqlite(':memory:').close()"
+USER cad
+# Enforce wall-time and reaping outside the synchronous converter process.
+ENTRYPOINT ["sh", "scripts/scene-cpu-worker-loop.sh"]

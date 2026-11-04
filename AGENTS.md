@@ -8,6 +8,44 @@
 
 ---
 
+## #225 / PR #228 — CI #589 multi-edge migration failure contract (2026-11-04)
+
+[CI #589](https://github.com/planner77/layoutManager/actions/runs/41803028915), exact HEAD `4d8d510d6dc6390d4243f31891fcdcd1ef4274bd`, Scope/Docker smoke PASS, Unit/Integration 1 FAIL (1,066 PASS), Required Verify FAIL by dependency. A deliberately broken final 0.61.0 postcondition occurs **after** an earlier 0.60.0 schema transaction committed; the expected state is `RESTORE_REQUIRED` with persistent hold/lock and isolated recovery, **not** retryable `UPGRADE_MIGRATION_REQUIRED`. The test now checks committed SceneBuildJob, rolled-back CPU index, source data preservation and isolated restore without changing production fail-closed behavior. New exact HEAD CI is still required. Keep #225/#218 OPEN, Draft/GO-PILOT BLOCKED; do not edit operating DB, .env or immutable GHCR. See [FailureLedger](out/FailureLedger.md).
+
+## #225 / PR #228 — PR CI #588 test fixture type correction (2026-11-04)
+
+CI #588 [Run41800458837](https://github.com/planner77/layoutManager/actions/runs/41800458837), HEAD `129707d75295b3c833eda714ecedb85e25328ad2`: Docker/G7 runtime smoke PASS, TypeScript TS2352 twice in `scene-cpu-worker-launch-contract.test.ts` because `NodeJS.ProcessEnv` requires `NODE_ENV`; downstream required gate failed and E2E was not run. Test fixtures now specify `NODE_ENV:'test'` and do not use unsafe `as NodeJS.ProcessEnv` casts. Keep strict typecheck, original Worker security rejection assertions and all CI gates. This source correction needs exact new HEAD PR CI; **GO-PILOT BLOCKED**, Draft PR and #225/#218 OPEN. See [FailureLedger](out/FailureLedger.md) and [TestReport](out/TestReport.md).
+
+## #225 / PR #228 — 독립 CPU Worker + G7 0.61.0 릴리스 연결 (2026-11-04 / CI 미검증)
+
+B2-B에 별도 비루트 `cpu-worker` OCI 타깃, opt-in Compose profile, network none/read-only rootfs/1CPU·768MiB·PIDs64/tmpfs 및 단일 Job별 120초 제한 실행기를 추가했다. 신규 **0.61.0** G7 CPU Schema ID+Greenfield baseline 및 **0.60→0.61** 승인형 additive index migration을 등록한다. 과거 0.60.0 Schema/SQL/이미지/Browser Builder Job은 불변. `SCENE_AUTO_BUILD_ENABLED`와 `SCENE_CPU_WORKER_ENABLED`은 모두 기본 OFF. 실행 전/게시 시 현재 G7 Runtime·Actor·Site 권한 재검사 필수.
+
+**GO-DEV 코드만:** 새 정확 HEAD CI/OCI 실기동, LINE 이외 Entity 확장, 실제 브라우저 재접속/복원, B3 UI·재시도, 신규 Worker GHCR role/source/digest 검증/운영 배포는 아직 미완료. #225/#218 OPEN, GO-PILOT BLOCKED. 운영 `.env`·CAD·DB·Volume·v0.60.0 digest 변경 금지.
+
+## #225 / PR #228 — G7 CPU Queue 경로·실패 복구 Draft 추가 (2026-11-04)
+
+- `CadRepository.register`의 Version+Job 동일 트랜잭션에서 Builder 라우팅을 추가했다. v0.60.0 G7에서 기존 Browser Builder 불변, CPU flag 설정 시 fail-closed; 신규 미등록 `G7-GREENFIELD-CPU-WORKER-20261104-1`과 두 feature gate가 충족되는 **미래** 릴리스에서만 CPU Job을 만들 수 있다.
+- CPU Worker 실패 `RUNNING+builder+schema+attempt` CAS를 추가했다. 저장소/Worker 일시 장애·timeout만 30s/60s backoff 최대 3회 재시도, 권한/원본/변환/포인터 오류는 terminal FAILED. CAS 소실이면 `CAS_LOST`로 기록해 이전 READY를 잘못 실패로 보고하지 않는다.
+- 여전히 실제 새 G7 Migration/독립 OCI 비루트 Worker/CPU·RAM·PID·시간·Network·FS 격리, 광범위 Entity 지원, Viewer 재접속 및 B3 상태 UI는 미구현. v0.60.0 GHCR·운영 DB/Volume/CAD/.env 불변, GO-PILOT BLOCKED, #225/#218 OPEN. 새 HEAD CI는 완료 확인 전 UNVERIFIED.
+
+---
+
+## #225 B2-B — 단일 CPU Job의 미래 릴리스 전용 인가·저장·READY 파이프라인 초안 (2026-11-04)
+
+[PR #228](https://github.com/planner77/layoutManager/pull/228)은 기존 검증된 B2-A/CPU Builder 계약 다음으로 **미래 전용** `enqueueCpuSceneBuildTx`·Builder-filtered Claim/Stale Recovery/Retry, 현재 상태를 DB에서 재조회하는 `authorizeG7CpuWorkerJobTx`, 원본 CAD 저장소 재읽기/SourceSHA 비교, CUSTOM_DTO v2 전체 재검증+immutable Blob `putVerified`/readback, CurrentScene 0→Job READY→SCENE_PUBLISHED Audit를 하나의 DB transaction으로 처리하는 `publishVerifiedCpuSceneJob` 및 한 건 처리 함수 `runOneCpuSceneJob`를 추가했다. Browser Builder 기반 기존 0.60.0 B1 enqueue 및 수동 `SceneRepository.publish(G7CadWrite)`를 변경하지 않는다. 기존 CurrentScene이 있으면 덮어쓰기 없이 거절한다. 원본·기존 READY·Worker Job 신원/Attempt CAS·site/role·runtime 검증을 보전하며 Cookie/SessionTokenHash를 Job에 사용하지 않는다.
+
+**실행 금지 경계:** G7 `G7_GREENFIELD_SCHEMA_ID`는 v0.60.0의 `G7-GREENFIELD-SCENE-JOBS-20261104-1`이고, CPU Worker 허용 ID `G7-GREENFIELD-CPU-WORKER-20261104-1`은 현재 **미등록 미래 ID**이다. `SCENE_AUTO_BUILD_ENABLED=true`와 신규 `SCENE_CPU_WORKER_ENABLED=true`를 임의로 설정해도 현재 릴리스에서 CPU Enqueue/Claim/Worker/Auth는 차단된다. **실제 OCI/별도 비루트 프로세스/CPU·RAM·PID·시간/읽기전용 FS/Network isolation은 아직 미구현·미검증**, 이 코드는 자체 타이머/Next API/서비스로 등록되지 않음. LINE-only 2D 후보, 한글 TEXT/MTEXT·ARC/CIRCLE·POLYLINE·BLOCK/INSERT 확장 및 browser 새 세션 복원도 잔여다. 위 함수가 있다고 기능 전체 완료나 운영 READY를 선언하지 않는다. #225/#218 OPEN, GO-PILOT BLOCKED, v0.60.0 App/Migrator GHCR 및 운영 `.env`/DB/Volume/원본 CAD 불변. [FailureLedger](out/FailureLedger.md)에서 PR CI #572 타입 오류/후속 검증 상태를 확인한다.
+
+---
+
+## #225 B2-B Draft — CPU Builder 출처 고정·Job/DTO 검증 (2026-11-04)
+
+B2-A [PR #227](https://github.com/planner77/layoutManager/pull/227)은 정확 HEAD [CI #566](https://github.com/planner77/layoutManager/actions/runs/41768798168) 성공 후 Main `73957d20295d6300c4f0c9b89ca5032574eb24bc`에 병합됐고 [Main CI #147](https://github.com/planner77/layoutManager/actions/runs/41771625231)은 성공했다(기존 0.60.0 GHCR 쌍 중복 게시 생략). B2-B 새 Draft는 Browser `CAD_SCENE_BUILDER`를 불변 유지하며 오프라인 CPU LINE 후보만 `CAD_SCENE_CPU_BUILDER=node-cpu-line@1.0.0+cad-scene-1`로 명시한다. `cpuSceneScope`와 `inspectCpuCandidateForJob`은 `RUNNING` Job, attempt, CPU Builder, schema2, 원본 SourceSHA, Version·Manifest·DTO v2 Full Validator 및 payload SHA를 재확인하는 **데이터 정합성 검증**만 수행한다. 기존 `SceneRepository.publish`는 Browser 기본 scope만 기대하므로 CPU DTO를 그 경로로 게시할 수 없다.
+
+**안전 경계:** 0.60.0 B1 Queue Job `builder`는 여전히 기존 Browser ID이다. CPU Job Gate와 불일치해 자동 연결되지 않으며 CPU 출처 계약이 허가를 대체하지 않는다. 신규 불변 릴리스의 Queue Builder 전환/호환, G7 현재 Actor·Site·Writer 재인가, verified immutable SceneRepository CAS/Audit, 비루트 독립 Worker의 CPU·RAM·시간·Network/파일 격리 및 B3 UI는 **미구현**이다. `SCENE_AUTO_BUILD_ENABLED=OFF`, #225/#218 OPEN, GO-PILOT BLOCKED. 0.60.0 이미지, 운영 DB/Volume/CAD/실 .env 변경 금지. 정확 PR CI 성공 전 PASS 주장 없음.
+
+---
+
 ## #225 B2-A — CPU-only LINE 후보 변환기 (2026-11-04, Draft)
 
 현재 B2-A GO-DEV 구현은 `src/server/scene/cpu-line-candidate.ts`의 **오프라인 후보 변환**과 `src/tests/unit/scene-cpu-line-candidate.test.ts`의 유효/거부 시험으로 한정한다. WebGL/DOM/`three-dxf-viewer` 런타임 없이 엄격한 UTF-8 DXF, HEADER `$INSUNITS=4`, ENTITIES `LINE`/기본 레이어0·흰색만 수용한다. 원본 SHA, 16MiB 원본/5000 LINE/좌표 범위, THREE geometry → CUSTOM_DTO v2 전체 Validator 및 독립 임시 파일 readback을 검증한다. 알려지지 않은 Entity/색/계층/표·BLOCK/3D/폴리라인/문자는 **명시적으로 차단**한다.

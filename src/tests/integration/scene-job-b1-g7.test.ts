@@ -24,7 +24,7 @@ function fixture(){
  const database=path.join(root,'db'),cad=path.join(root,'cad');
  mkdirSync(database,{mode:0o700});mkdirSync(cad,{mode:0o700});
  const dbPath=path.join(database,'cad.sqlite');
- const img='ghcr.io/planner77/layoutmanager:0.60.0';
+ const img='ghcr.io/planner77/layoutmanager:0.61.0';
  ensureAutomatedGreenfield({G7_GREENFIELD_MODE:'true',G7_GREENFIELD_AUTOMATED:'true',
   G7_AUTH_ENABLED:'false',G7_CAD_WRITE_CUTOVER_ENABLED:'false',
   CAD_STORAGE_BACKEND:'local',CAD_STORAGE_PATH:cad,DATABASE_URL:'file:'+dbPath,
@@ -45,7 +45,7 @@ function fixture(){
  const db=createDb('file:'+dbPath);fixtures.push({root,db});
  return {db,root,actorId:u,siteId:site,versionId:v,locationId:loc};
 }
-describe('#225 B1 actual Prisma/SQLite G7 0.60.0 queue integration',()=>{
+describe('#225 B1 actual Prisma/SQLite G7 0.61.0 queue integration',()=>{
  test('enqueues durable intent in an actual transaction and rejects duplicate identity',async()=>{
   const f=fixture();
   const input={versionId:f.versionId,sourceSha256:SHA,actorId:f.actorId,

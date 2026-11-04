@@ -466,6 +466,43 @@ jobs:
             org.opencontainers.image.version=${{ steps.image-version.outputs.version }}
           cache-from: type=gha,scope=layoutmanager-migrator
           cache-to: type=gha,scope=layoutmanager-migrator,mode=max,ignore-error=true
+      # #225/B2-B verify the actual OCI target, not only TS functions.
+      - name: Build standalone CPU Worker with GHA cache
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: src/Dockerfile
+          target: cpu-worker
+          platforms: linux/amd64
+          load: true
+          tags: cad-layout-viewer:ci-cpu-worker
+          labels: |
+            org.opencontainers.image.source=https://github.com/planner77/layoutManager
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ steps.image-version.outputs.version }}
+          cache-from: type=gha,scope=layoutmanager-cpu-worker
+          cache-to: type=gha,scope=layoutmanager-cpu-worker,mode=max,ignore-error=true
+      - name: Verify CPU Worker nonroot/offline fail-closed image
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(docker image inspect cad-layout-viewer:ci-cpu-worker --format '{{ index .Config.Labels "com.planner77.g7.image-role" }}')" = cpu-worker
+          docker run --rm --entrypoint sh cad-layout-viewer:ci-cpu-worker -c '
+            test "$(id -u)" = 10001
+            test -f scripts/scene-cpu-worker.ts
+            test -f node_modules/.bin/tsx
+            node -e "const Db=require(\"better-sqlite3\");new Db(\":memory:\").close()"
+          '
+          if docker run --rm --network none --read-only --cap-drop ALL \
+            --security-opt no-new-privileges --pids-limit 64 --memory 768m --cpus 1 \
+            --tmpfs /tmp:rw,nosuid,nodev,noexec,size=96m,uid=10001,gid=10001 \
+            -e G7_GREENFIELD_MODE=true -e G7_GREENFIELD_AUTOMATED=true \
+            -e CAD_STORAGE_BACKEND=local -e SCENE_AUTO_BUILD_ENABLED=false \
+            -e SCENE_CPU_WORKER_ENABLED=false --entrypoint node \
+            cad-layout-viewer:ci-cpu-worker --import tsx scripts/scene-cpu-worker.ts --once; then
+            echo "::error::CPU Worker accepted an unapproved release gate"
+            exit 1
+          fi
       - name: Measure 3 image sizes, layers and directories
         if: needs.scope.outputs.baseline == 'true'
         run: bash src/scripts/measure-images.sh cad-layout-viewer:baseline cad-layout-viewer:phase1 cad-layout-viewer:ci "$GITHUB_STEP_SUMMARY"

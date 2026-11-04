@@ -6,6 +6,54 @@
 
 ---
 
+## #225 / PR #228 — PR CI #589 failure: multi-edge migration postcondition/restore test (2026-11-04)
+
+- **Verified failure:** [PR CI #589 / run 41803028915](https://github.com/planner77/layoutManager/actions/runs/41803028915), exact HEAD `4d8d510d6dc6390d4243f31891fcdcd1ef4274bd`, completed/failure. Scope SUCCESS; Docker image, migration and runtime smoke SUCCESS; Static/Unit/Integration job `126483252833` failed during `Unit 및 Integration 테스트`: **1 failed, 1,066 passed (168 files: 1 failed, 167 passed)**. The failing test `tests/integration/g7-greenfield-upgrade.test.ts:378` expected `UPGRADE_MIGRATION_REQUIRED` but actual state was `RESTORE_REQUIRED` after a deliberately invalid 0.61.0 postcondition. TypeScript validation progressed past the previous #588 TS2352 issue; Required Verify `126487896152` failed transitively, G7 and Chromium E2E were not run, and scoped #218 CPU synthetic check was skipped.
+- **Root cause:** the test fixture begins at frozen 0.56.0 Zone schema and performs the two-step forward migration (0.59→0.60 SceneBuildJob then 0.60→0.61 CPU index). The first transaction commits, the second deliberately throws `G7_UPGRADE_MIGRATION_FAILED` and rolls back its own transaction. Upgrade engine `applyGreenfieldUpgrade` safely persists `RESTORE_REQUIRED` and retains maintenance hold/lock when the original source schema can no longer be proved unchanged. The old test incorrectly assumed **every** step was rolled back, source Job table absent, and plan could be rerun. Engine behavior is fail-closed as designed; it is not a CPU Worker failure or evidence of broken actual 0.61 migration.
+- **Targeted repair:** update only the integration test to require `RESTORE_REQUIRED` + persistent hold/lock + blocked new plan + backup ID; assert original manifest/DXF unchanged, **first** SceneBuildJob migration committed, **second** CPU index/migration absent, FK intact, and isolated backup restore reconstructs the previous 0.56 source without modifying the held volume. Keep all negative postcondition checks and exact schema/approval/restore requirements; do not clear lock or downgrade `RESTORE_REQUIRED` to retryable. No production migration engine, CI YAML, timeouts, gate, or operating data changes.
+- **Verification:** source edits are NOT a passed CI result; run required PR CI on the new exact HEAD once. Review threads **0**, reviews **0**, merge conflicts **0**, main behind **0** at triage. PR remains Draft, #225/#218 OPEN, GO-DEV only and GO-PILOT BLOCKED. Existing 0.60 image/digest and operating `.env`/DB/CAD/Volumes unchanged; no GHCR or Main merge.
+
+## #225 / PR #228 — PR CI #588: test-only NodeJS.ProcessEnv TS2352 (2026-11-04)
+
+- **Actual failure:** [PR CI #588 / run 41800458837](https://github.com/planner77/layoutManager/actions/runs/41800458837), exact HEAD `129707d75295b3c833eda714ecedb85e25328ad2`, `completed/failure`. Scope classification **SUCCESS**, Docker image / G7 migration & runtime smoke **SUCCESS** (including corrected #210 WAL schema history). Static/unit/benchmark/production-build job `126475394296` **FAIL** at `npm run typecheck`, step 6: `src/tests/unit/scene-cpu-worker-launch-contract.test.ts:7:35` and `:12:35` each report **TS2352**. Required Verify `126480946570` failed transitively. G7 and Chromium E2E jobs were skipped due to the failed static prerequisite; scoped #218 A2 test was also skipped. Do not treat skipped checks as PASS or as a production Worker failure.
+- **Evidence / root cause:** the test explicitly asserted an incomplete object (`G7_GREENFIELD_MODE`, `G7_GREENFIELD_AUTOMATED`, `CAD_STORAGE_BACKEND`, `SCENE_AUTO_BUILD_ENABLED`, `SCENE_CPU_WORKER_ENABLED`) `as NodeJS.ProcessEnv`; the application's `ProcessEnv` typing requires `NODE_ENV`. An assertion does not supply the missing property; TypeScript rejects the structurally insufficient cast. This is the test fixture/type contract, **not** evidence of a failing Worker, Scene CAS, or G7 upgrade at runtime.
+- **Repair:** add `NODE_ENV:'test'` to both negative configuration fixtures and remove both `as NodeJS.ProcessEnv` assertions. The tests still require `SCENE_CPU_WORKER_CONFIGURATION_DENIED` before DB access for disabled auto build and non-local storage. Keep TypeScript strict, CI required jobs, OCI limits, G7 checks, and production code untouched. Do not use `as unknown as`, `any`, skip or timeout extensions to silence the error.
+- **Verification boundary:** fix was committed as source, not proof of execution. Await **exact new HEAD** PR CI; no assertion of green, no operating deployment, no GHCR publication, no merge. Review threads 0, reviews 0, merge conflict 0; branch was `main` behind 0 before the fix. PR remains Draft; #225/#218 OPEN, GO-DEV only and GO-PILOT BLOCKED. Historical #585/#581/#572 entries remain intact.
+
+## #225 / PR #228 — PR CI #585 failures and corrective changes (2026-11-04)
+
+- [PR CI #585 / Run41797474438](https://github.com/planner77/layoutManager/actions/runs/41797474438), exact HEAD `b32a71b6b22e46810ee40b88b2cc81cc1395047b`, **completed/failure**. Static/unit/production build Job `126464953749` TypeScript 검사 FAILED: integration `scene-cpu-worker-real-g7.test.ts` references missing `job.id` twice (enqueue API returns `jobId`); launch contract test supplies plain env objects without `NodeJS.ProcessEnv` compatibility (two TS2345). Corrected tests to use `job.jobId` and explicit `NodeJS.ProcessEnv` type.
+- Docker migration/runtime Job `126464953687` fails at existing #210 WAL read-only smoke `backup-schema-verify` (exit 1); its exact history assertion expects only two rows after 0.56→0.60 upgrade, whereas candidate 0.61 correctly appends `202611040003_scene_cpu_worker` as a **third** signed forward migration. Updated the smoke to expect three history rows **only for 0.61.0**, keeping 0.60.0 assertion intact. The stage output alone cannot establish all other 0.61 integration behavior; rerun required.
+- Required Verify failed transitively; G7/Chromium downstream E2E skipped, #218 scoped CPU synthetic job skipped by classifier. No test skip, Gate removal, timeout relaxation or operating volume modifications were introduced. Fix commits `ef074aea`, `1d0532fd`, `ffe60671`; latest exact HEAD requires independent PR CI. PR remains Draft; GO-PILOT BLOCKED and #225/#218 OPEN. Do not deploy 0.61.0 or change operating `.env` until independent migration, OCI and browser acceptance.
+
+## #225 / PR #228 — CI #584 성공 이후 신규 HEAD 검증 대기 (2026-11-04)
+
+[PR CI #584](https://github.com/planner77/layoutManager/actions/runs/41785081044) 정확 HEAD `f6a746198cabcef2c0b0e4e9468c899567c56d58` SUCCESS (8 Job 성공, A2 1 scoped skip), 리뷰 미해결 0/충돌 0. 그 후 신규 Worker OCI + G7 0.61 릴리스 코드 변경은 다른 HEAD이므로 CI **NOT VERIFIED**. 기존 #572/#581 실패 기록 보존, 새로운 실제 실패는 로그·단계·재현 범위를 추가 기록 후 보완. 병합·GO-PILOT·운영 배포 보류.
+
+## #225 / PR #228 — CI #583 기준선 이후 추가 변경 검증 미완료 (2026-11-04)
+
+- 변경 전 정확 HEAD `f275eeeb2d939e0e289e8948bb87da80e83c6348`의 [PR CI #583](https://github.com/planner77/layoutManager/actions/runs/41781385753)는 SUCCESS. 이 성공을 신규 커밋의 PASS로 사용하지 않는다.
+- 새 위험/재검증 대상: 0.60.0 Browser vs 미래 CPU enqueue 분기·원자적 rollback, 30/60초 transient backoff·3회, revoked/unsupported terminal, `RUNNING+CPU identity+attempt` CAS 및 late READY 보호. 새 단위시험과 정확 HEAD 필수 CI 결과를 확인해야 한다.
+- 새 G7/OCI/자원 격리/브라우저 재접속은 여전히 구현 전. GO-PILOT BLOCKED, 운영 DB/.env/CAD/Volume·기존 GHCR 불변.
+
+---
+
+## #225 / PR #228 CI #581 — G7 Worker revoked Actor 단위시험의 오류 타입 불일치 (2026-11-04)
+
+- **확인된 실패:** [PR CI #581 / Run41778751303](https://github.com/planner77/layoutManager/actions/runs/41778751303), exact HEAD `2b6fdb64fe5389646d6481edb804e17c440ce1e7`, completed/failure. Static/Unit Job `126405521743`에서 **165 files 중 164 PASS/1 FAIL, 1,055 tests 중 1,054 PASS/1 FAIL**. 실패는 `src/tests/unit/scene-worker-publish.test.ts:124`의 "denies a revoked Actor during the final commit after blob write". `expected Error: SCENE_WORKER_ACCESS_REVOKED to match object { code:'SCENE_WORKER_ACCESS_REVOKED' }`; Required Verify 종속 FAIL. TypeScript·ESLint 및 Docker smoke는 PASS; 나머지 Chromium/G7 E2E는 Static 선행 실패로 SKIPPED. A2 Job은 변경 scope상 SKIPPED.
+- **근거 및 수정:** `authorizeG7CpuWorkerJobTx()`의 실 접근 거부 계약은 `new CadError('SCENE_WORKER_ACCESS_REVOKED',...,403)`를 통해 `code`를 제공하지만, 해당 단위시험의 마지막 재인가 mock만 `new Error('SCENE_WORKER_ACCESS_REVOKED')`를 던져 `message`만 가진 상태였다. 테스트가 잘못된 오류 형태를 만든 것이므로 mock을 실제 제품과 동일한 `CadError`로 수정하고, `rejects.toMatchObject({code:...})` 및 사전 Blob 저장·Job 미 READY 단언은 **유지**한다. 제품 G7 Auth·Worker/SceneRepository/Queue/Publisher, CI gate, timeout은 변경하지 않는다.
+- **범위:** 이는 mock 계약 오류이므로 생산용 Background Worker 또는 현장 권한 취소가 재현됐다는 증거가 아니다. v0.60.0 Runtime Worker는 의도적 **hard OFF**이고, 신규 Release/CPU 프로세스 자원 격리·고객 DXF 지원·B3 UI 미완료. 이 조치의 정확 HEAD PR CI는 별도 확인 필요, 이전 실패는 성공으로 소급하지 않는다. #225/#218 OPEN, Draft/GO-PILOT BLOCKED, `SCENE_AUTO_BUILD_ENABLED=OFF`, GHCR v0.60.0/운영 DB·CAD·Volume/.env 불변.
+
+---
+
+## #225 / PR #228 — CI #572 TypeScript compile error, B2-B Worker authorizer / test-only (2026-11-04)
+
+- **원인 관측:** [PR CI #572 / Run41776814316](https://github.com/planner77/layoutManager/actions/runs/41776814316), HEAD `88f9809860472a9b9303c427f265d890bfc5894b`; Static/Unit Job `126399359663`의 **TypeScript 검사 실패**. `scene-worker-g7-authorization.ts:47` TS2367 (현재 G7 Schema ID와 미래 Worker Schema ID의 서로 다른 literal 타입을 직접 비교), `scene-worker-publish.test.ts:31` TS2502 (콜백 매개변수 `tx`가 자기 자신의 타입 주석에서 `typeof tx`를 참조). 이 실패는 **현재 G7 실 배포 마이그레이션/Worker 기능 실패의 증거가 아니며**, CI 소스 타입 검증 실패로 분류한다.
+- **보완:** 실제 값 비교를 `String(G7_GREENFIELD_SCHEMA_ID)!==SCENE_CPU_WORKER_SCHEMA_ID`로 명확화해 기존 0.60.0에는 항상 Release NOT APPROVED가 유지되도록 한다. 같은 유형이 발생할 수 있는 신규 CPU Queue 모듈의 버전 비교도 함께 수정. Stubbed Transaction 테스트의 콜백 인자를 `arg`로 변경하여 자기참조 타입 추론을 제거한다. 비동기 Reject 단언은 `await expect(...).rejects.toThrow(...)`로 정정. Writer 권한·DTO·원본 SHA·Audit/CurrentScene CAS·원본 READY 보호, CI required checks는 생략·완화하지 않는다.
+- **검증 범위:** 이 커밋은 실제 Worker의 독립 비루트 실행, CPU/RAM/PID/timeout/네트워크/파일 격리, 신규 0.61 G7 Release 등록 또는 진짜 DXF 2D 기능 확대를 의미하지 않는다. 이전 #569/#570은 HEAD 업데이트로 취소된 중간 CI이며 성공으로 소급하지 않는다. 현재 HEAD의 새 CI 최종 결과는 미검증; #225/#218 OPEN, GO-PILOT BLOCKED, `SCENE_AUTO_BUILD_ENABLED=OFF`; 운영 v0.60.0 GHCR/DB/Volume/.env 불변.
+
+---
+
 ## #225 / PR #226 — PR CI #564 SUCCESS·Squash Main·GHCR 후보 게시 시작 (2026-11-04)
 
 - **정확 검증:** [PR CI #564 Run41753808890](https://github.com/planner77/layoutManager/actions/runs/41753808890), HEAD `03e21f4242e499a0a8afc834361e625e4433b2c2`, `completed/success`. Scope, Quality/TypeScript/ESLint/Unit/Integration/Build, Docker 실 0.56→0.60 G7 승인형 Upgrade/readonly WAL·backup/restore 및 마이그레이션 이력, G7 Greenfield UI, G7 Signed Runtime/Legacy, General Chromium shard 1/2 및 2/2, Required Verify 모두 SUCCESS. A2 CPU-only 합성 시험은 이 PR의 변경 범위 밖으로 **SKIPPED**, 운영 B2 증거로 간주하지 않는다.

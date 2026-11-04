@@ -6,6 +6,44 @@
 
 ---
 
+## #225 / PR #228 — PR CI #589 failed integration test; G7 restore semantics corrected (2026-11-04)
+
+[CI #589](https://github.com/planner77/layoutManager/actions/runs/41803028915) exact HEAD `4d8d510d6dc6390d4243f31891fcdcd1ef4274bd`: Scope/Docker-G7 smoke **PASS**; Unit/Integration **FAIL** (1 of 1,067: `g7-greenfield-upgrade.test.ts:378` asserted retryable plan after intentionally broken final 0.61 postcondition); Required Verify **FAIL**, G7/Chromium E2E **NOT RUN**. Upgrade engine deliberately holds `RESTORE_REQUIRED` after the first migration commits and the final migration rolls back. Test amended to check persistent lock/hold, first migration history, absent last CPU index, untouched source CAD/manifest and isolated backup restore. **New HEAD CI NOT YET VERIFIED.** No weakening of recovery policy or Worker rollout.
+
+## #225 / PR #228 — PR CI #588 exact HEAD failure and test fixture repair (2026-11-04)
+
+[PR CI #588 / Run41800458837](https://github.com/planner77/layoutManager/actions/runs/41800458837), HEAD `129707d75295b3c833eda714ecedb85e25328ad2`: Scope SUCCESS, Docker/G7 Migration/WAL smoke SUCCESS, **TypeScript FAIL** (two TS2352 errors in `scene-cpu-worker-launch-contract.test.ts`; required `NODE_ENV` missing from test-only `NodeJS.ProcessEnv` assertions), Required Verify FAIL by dependency. G7/Chromium E2E NOT RUN. Repair: add explicit `NODE_ENV:'test'`, remove unsafe assertions; preserve denied-config expectations and required gates. **Post-fix CI not yet proven**; this is not GO-PILOT or an OCI/scene restoration acceptance result. See [FailureLedger](FailureLedger.md).
+
+## #225 / PR #228 — 0.61.0 + 독립 Worker 코드/검증 상태 (2026-11-04)
+
+신규 CLI, OCI/Compose 격리, 0.61 G7 migration 및 테스트를 작성했으나 **정확한 새 HEAD의 Typecheck/Lint/Prisma/Worker OCI/E2E는 NOT RUN/NOT VERIFIED**. [#584](https://github.com/planner77/layoutManager/actions/runs/41785081044) SUCCESS는 이전 HEAD 결과다. 실제 실 도면, Worker 권한/재시작, 브라우저 재접속, GHCR image/digest/GO-PILOT 증거는 미완료.
+
+## #225 / PR #228 Queue/Retry 추가 변경 (2026-11-04)
+
+코드+단위시험 작성, **신규 HEAD CI 결과는 아직 미검증**. 이전 CI #583 PASS는 이전 HEAD에만 해당. 정확 HEAD에서 미래 Builder 분기/현행 Browser 보존, transient retry/terminal/CAS_LOST를 재확인한다. 실제 new-release G7 통합/별도 비루트 프로세스/브라우저 복원 미완료. GO-PILOT BLOCKED.
+
+---
+
+## #225 B2-B G7 실제 SQLite·0.60.0 하드-OFF 회귀 추가 (2026-11-04)
+
+PR #228의 신규 `scene-cpu-worker-g7.test.ts`는 disposable G7 0.60.0 DB와 소유 CAD 원본·Scene Blob을 만들고 게시·재조회·Audit 실패 롤백을 검사한다. **인가 함수는 이 시험에 한해 모의로 제공**되며, 0.60.0 운영 G7에서 Worker가 켜진다는 의미가 아니다. 추가 `scene-cpu-worker-current-release.test.ts`는 실제 현재 Schema ID와 미래 CPU Worker Schema의 불일치를 검증해, 두 feature flag를 ON으로 설정해도 DB/Job 읽기 전에 차단해야 한다. 명시한 두 파일의 실제 CI 통과는 정확 HEAD 결과 확인 전 미검증. 권한/버전/실 독립 프로세스/지원 도형/브라우저 Pilot은 별도 차단 유지.
+
+---
+
+## #225 B2-B 내부 한 건 Worker 함수·게시 계약 — 원격 구현 상태 (2026-11-04)
+
+[PR #228](https://github.com/planner77/layoutManager/pull/228)에서 작업중인 고유 CPU Builder/Job 데이터 정합성 검사에 다음을 추가했다. 미래 전용 CPU Builder Queue Enqueue/Claim/Stale/Retry/Stage, signed G7 Runtime+현재 Actor/Role/Site/Version 검증, CAD 원본 재읽기·SHA, Blob `putVerified` readback, 최초 CurrentScene+SceneAsset/Job READY+Audit 원자 Tx, 기존 READY 무변경/Orphan safe cleanup, 단일 Job 처리 함수를 구현했다. Unit은 필드·상태/재검증·포인터 경합·저장 실패·CAS·권한 철회·오류 코드/기존 Builder 분리를 대상으로 작성했다.
+
+**실제 검증 구분:** [CI #572](https://github.com/planner77/layoutManager/actions/runs/41776814316)의 TypeScript 2건(TS2367/TS2502)은 [FailureLedger](FailureLedger.md)에 기록 후 수정했다. 추가 변경 HEAD의 전체 CI 최종 결과는 **아직 확인 전이며 PASS 선언하지 않는다**. v0.60.0에서 미래 CPU G7 스키마/OCI Worker/실 runtime 실행/독립 프로세스 cgroup 격리/브라우저 실제 복원은 NOT RUN/NOT IMPLEMENTED다. #225/#218 OPEN, GO-PILOT BLOCKED, 운영 Repo/Main/0.60 App/Migrator·.env·DB·CAD·Volume 불변.
+
+---
+
+## #225 B2-B Draft — CPU provenance/Job DTO gate 작성, 통합 미검증 (2026-11-04)
+
+B2-A [PR #227](https://github.com/planner77/layoutManager/pull/227) 정확 HEAD `f2ac283c62dc3eaed513d4f67a0b4355adbb3a3c` [PR CI #566](https://github.com/planner77/layoutManager/actions/runs/41768798168) SUCCESS, Main `73957d20295d6300c4f0c9b89ca5032574eb24bc` [Main CI #147](https://github.com/planner77/layoutManager/actions/runs/41771625231) SUCCESS (같은 0.60.0 이미지 중복 게시 생략). B2-B 별도 Draft에서 CPU Builder identity와 Job/DTO match + 단위 음성/양성 시험을 신규 작성. **이 변경의 로컬 typecheck/Vitest/Docker/E2E 또는 정확 HEAD PR CI 결과는 아직 NOT VERIFIED**. 순수 검증 receipt를 G7 재인가·SceneRepository 게시·READY 성공으로 과장하지 않는다. 현재 0.60.0 GHCR·운영 .env/DB/CAD/Volume 비변경, #225/#218 OPEN·GO-PILOT BLOCKED.
+
+---
+
 ## #225 B2-A CPU LINE 후보 — 증거 상태 (2026-11-04)
 
 - 원격 Draft branch에 Node의 2D LINE→Three BufferGeometry→CUSTOM_DTO v2→전체 validator→0600 readback 후보 및 양성/음성 Vitest를 작성했다. **코드 게시 ≠ 실제 테스트 실행 성공**이다.

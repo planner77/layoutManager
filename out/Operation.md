@@ -8,6 +8,26 @@ Main의 package.json 버전이 0.61.0 이상이면 runtime 변경에도 CI는 �
 
 ---
 
+## #225 / 0.61.0 CPU Worker 배포 후보 — DO NOT ACTIVATE (2026-11-04)
+
+현재 0.60.0 App/Migrator 태그·digest, DB/CAD/Volume/.env는 변경하지 않는다. 새 `cpu-worker` Docker 타깃과 `scene-cpu-worker` opt-in Compose profile은 아직 CI·GHCR 검증/게시 전이다. `SCENE_AUTO_BUILD_ENABLED`와 `SCENE_CPU_WORKER_ENABLED` 모두 기본 **false**. 운영 배포/프로필 실행 금지.
+
+향후 GO-PILOT 전 필수: 0.61 App/Migrator/Worker image role/source/version/arch/digest 검증, 승인된 G7 0.60→0.61 계획·백업·격리복구·서명/권한 재검증, 비루트/CPU·RAM·PID·시간·네트워크/파일 격리와 kill/restart, 실제 신규 DXF→Job→verified READY 및 브라우저 재접속·이전 READY/원본 보존 실증. 복구 준비 전 flag 활성화나 수동 DB 변조 금지.
+
+## #225 CPU Queue 및 retry — 운영 금지 경계 (2026-11-04)
+
+v0.60.0은 CPU flag만 켜도 CPU Queue를 실행하지 않는다. AUTO_BUILD+CPU_WORKER flag 동시 설정 시 기존 G7에서는 업로드를 거절한다. 신규 승인 G7 릴리스와 안전한 별도 Worker 프로세스/OCI가 준비되기 전 feature flag를 활성화하지 않는다. 일시 실패는 30/60초 backoff 후 다음 tick에서만 처리한다. Worker OCI/리소스 격리/운영 migration 미구현.
+
+---
+
+## #225 B2-B CPU Worker 운영 차단·후속 릴리스 체크리스트 (2026-11-04)
+
+**현재 사용 금지:** v0.60.0은 Job 기본 Builder가 Browser이고 G7 스키마 `G7-GREENFIELD-SCENE-JOBS-20261104-1`이다. 새 CPU Worker 경로가 요구하는 `G7-GREENFIELD-CPU-WORKER-20261104-1`은 **미등록**이므로 `SCENE_AUTO_BUILD_ENABLED`, `SCENE_CPU_WORKER_ENABLED`을 `true`로 임의 변경하지 않는다. 이번 소스의 `runOneCpuSceneJob`은 호출 가능한 내부 함수일 뿐 OCI 실행기/안전한 별도 프로세스/Restart controller/서비스로 등록되어 있지 않다. 이 함수 호출을 앱 request/background timer에 직접 연결하거나 수동으로 운영 DB에서 READY를 갱신하는 것은 금지. 기존 `v0.60.0` App/Migrator image/digest와 Runtime trust/approval, .env, CAD/DB/Volume은 유지한다.
+
+**향후 배포 GO 전에 필요한 작업:** (1) 새 immutable SemVer 및 G7 schema/forward Migration·History·hash/rollback(기존 0.60.0 불변), App/Migrator pair Git source/digest/amd64 검증, 새 CPU Job Builder 사용 Enqueue 연결 (2) 별도 Worker 이미지의 비루트 UID/읽기전용 루트/격리된 승인 원본·Scene 스토리지/Network 차단·cgroup CPU2/RAM/PID/시간/작업 1개 보호 및 실제 SIGKILL·OOM/restart 상태 확인 (3) Actor/Site/Role/Writer 변경, Original SHA·Blob 실패/Orphan cleanup, CurrentScene 기존 READY 불변, Audit·Atomic CAS 실제 DB 회귀 (4) LINE 외 지원 DXF Entity·한글 텍스트·중첩 Block과 sourceIndex 정확도, 브라우저 새로운 세션의 Scene read/render/restore (5) 목록 pending/실패 사유·Editor/Admin retry/B3. 신규 릴리스 승인/백업·복구와 GO-PILOT을 각각 별도 검증한다. 단순 소스 병합·CI 성공만으로 운영 자동 Scene 생성을 선언하지 않는다.
+
+---
+
 ## #218 경량 운영·단일 Worker 단계별 도입 정책 (2026-11-04)
 
 [현행 Owner GO 정본](Issue218LeanPolicy.md). **GO-DEV는 단일 CPU Worker 구현 착수 허용**, GO-PILOT은 실제 자동 등록→영속 CPU DTO→검증 저장→지원 브라우저 복원 및 G7·기존 READY/원본 불변·재시작 smoke 후 별도 승인한다. 초기 Worker=1, 내부 인가된 DXF/지원 2D 중심. Docker 실행은 비루트/격리·bounded CPU/RAM/PID·time, 불필요 네트워크·자격증명·호스트 권한 금지. 엄격 Headless 서버에서 WebGL Viewer 생성이 실패해도 DTO 생성 자체 성공과 분리한다. 다중 Worker·대형 실 CAD·3종 현장·2PC는 후속 GO-EXPAND. 기존 v0.58.1 대비 v0.59.0 DTO v2 역호환 미지원이므로 버전 변경/rollback 때 백업·Scene 읽기 가능 여부를 확인한다. 현재 운영 Worker나 GHCR 신규 게시가 완료된 것으로 기록하지 않는다.

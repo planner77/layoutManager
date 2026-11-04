@@ -18,6 +18,7 @@ import {CAD_ZONE_DDL} from '../cad-business/zone-ddl';
 import { G7_GREENFIELD_BASELINE, G7_GREENFIELD_BASELINE_CHECKSUM,
   G7_DELETE_PASSWORD_TRIGGERS, assertG7GreenfieldSchema } from './greenfield-schema';
 import {SCENE_JOB_MIGRATION_NAME, SCENE_BUILD_JOB_MIGRATION_SQL} from './scene-job-ddl';
+import {SCENE_CPU_MIGRATION_NAME,SCENE_CPU_MIGRATION_SQL} from './scene-cpu-ddl';
 
 type Db = IsolatedDb & { close(): void };
 const Sqlite = createRequire(import.meta.url)('better-sqlite3') as new (
@@ -34,6 +35,7 @@ const MIGRATIONS = [
   '202610260002_g7_operational_auth',
   '202610300001_scene_asset',
   SCENE_JOB_MIGRATION_NAME,
+  SCENE_CPU_MIGRATION_NAME,
 ] as const;
 const SCHEMA_QUERY = "SELECT type,name,sql FROM sqlite_master WHERE sql IS NOT NULL AND name NOT LIKE 'sqlite_%' AND name<>'_prisma_migrations' ORDER BY type,name";
 const blocked = (): never => {throw new Error('G7_GREENFIELD_SETUP_BLOCKED');};
@@ -68,6 +70,7 @@ function schemaSql(name:string): string {
   // Canonical, reviewed forward-only Job DDL; the published 0.59.0 image
   // and all previously installed Greenfield baselines remain immutable.
   if(name===SCENE_JOB_MIGRATION_NAME)return SCENE_BUILD_JOB_MIGRATION_SQL;
+  if(name===SCENE_CPU_MIGRATION_NAME)return SCENE_CPU_MIGRATION_SQL;
   // The Scene candidate is intentionally outside the seven-history Prisma
   // migration root. Only a fresh one-row Greenfield baseline consumes it.
   const filename = name === '202610300001_scene_asset'

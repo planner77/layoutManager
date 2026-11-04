@@ -1,3 +1,7 @@
+## DB-225-B2B — 0.61.0 G7 CPU Worker 스키마/이력 (2026-11-04)
+
+0.60.0의 `G7-GREENFIELD-SCENE-JOBS-20261104-1`, `202611040002_greenfield_scene_jobs_baseline`, 등록 SQL/checksum은 불변이다. 신규 0.61.0은 `G7-GREENFIELD-CPU-WORKER-20261104-1` + `202611040004_greenfield_cpu_worker_baseline`으로 별도 등록하고 `202611040003_scene_cpu_worker` migration에서 `ix_scene_build_cpu_due(builder,status,due_at)` 인덱스만 추가한다. 정확 이력: fresh 0.61 baseline 1행 / fresh 0.60 baseline+CPU migration 2행 / zones 0.59 baseline+Job migration+CPU migration 3행. 이외 드리프트는 차단. 백업·정지·승인 없는 변경/다운그레이드 금지.
+
 ## #225 G7 Job 신규 0.60.0 스키마 후보 (2026-11-04)
 
 0.59.0 Zone baseline 기존 DDL/데이터는 불변이며, 새로운 0.60.0에서는 Job 기준선 1행 또는 Zone baseline+Job migration의 승인 2행 이력을 지원한다. 0.59→0.60은 MIGRATION(관리자 승인·백업·격리 복구 필수)으로 등록한다. 기존 G7 DDL SHA 검증 외에 Job Table+4 Index를 이름·type·정규화 SQL로 검증한다. SceneOrphanJob과 SceneBuildJob은 별도이다. 기존 데이터 및 Source/CurrentScene/Audit 불변. 신규 정확 CI 결과 미확인, 기본 SCENE_AUTO_BUILD_ENABLED OFF. 운영 DB의 수동 DDL 적용 금지.

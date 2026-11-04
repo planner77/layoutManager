@@ -3,6 +3,8 @@ import type {CanvasObjectRef,CanvasObjectScope} from './canvas-object-selection'
 
 export const CAD_SCENE_SCHEMA=1;
 export const CAD_SCENE_BUILDER='three-dxf-viewer@1.0.44+explicitElevation-v1+cad-scene-1';
+// Offline-only Node CPU Builder identity; not an authorization to publish.
+export const CAD_SCENE_CPU_BUILDER='node-cpu-line@1.0.0+cad-scene-1';
 export const CAD_SCENE_RENDERER='three@0.171.0';
 export type SceneOrigin='DXF_IMPORTED'|'APP_CREATED';
 export type SceneScope=Readonly<CanvasObjectScope & {schema:1;builder:string;renderer:string;frame:'DXF_WCS_XY';sourceUnit:string}>;
@@ -18,10 +20,31 @@ export function validateSceneManifest(input:unknown,expected:Readonly<{scope:Sce
   return input as SceneManifest;
 }
 export type SceneAsset=Readonly<{scope:SceneScope;sceneId:string;state:'BUILDING'|'READY'|'FAILED'|'REBUILD_REQUIRED';revision:number;objects:readonly SceneObject[]}>;
-export function sceneScope(versionId:string,sourceSha256:string,sourceUnit='UNSPECIFIED'):SceneScope{
-  const scope:SceneScope={versionId,sourceSha256:sourceSha256.toLowerCase(),schema:CAD_SCENE_SCHEMA,builder:CAD_SCENE_BUILDER,renderer:CAD_SCENE_RENDERER,frame:'DXF_WCS_XY',sourceUnit};
+function scopeForBuilder(versionId:string,sourceSha256:string,sourceUnit:string,builder:string):SceneScope{
+  const scope:SceneScope={versionId,sourceSha256:sourceSha256.toLowerCase(),schema:CAD_SCENE_SCHEMA,builder,renderer:CAD_SCENE_RENDERER,frame:'DXF_WCS_XY',sourceUnit};
   if(!validSceneScope(scope))throw new Error('SCENE_SCOPE_INVALID');
   return scope;
+}
+/** Browser default is unchanged for existing SceneRepository publish/read. */
+export function sceneScope(versionId:string,sourceSha256:string,sourceUnit='UNSPECIFIED'):SceneScope{
+  return scopeForBuilder(versionId,sourceSha256,sourceUnit,CAD_SCENE_BUILDER);
+}
+/** CPU LINE provenance is separate. This is data identity, not G7 authority. */
+export function cpuSceneScope(versionId:string,sourceSha256:string,sourceUnit='UNSPECIFIED'):SceneScope{
+  return scopeForBuilder(versionId,sourceSha256,sourceUnit,CAD_SCENE_CPU_BUILDER);
+}
+/** Reconstruct a strictly allowlisted stored Scene identity. Used by read-only
+ * status/content inspection; it is NOT a publish permission. Legacy clients
+ * still create browser scope by default.
+ */
+export function storedSceneScope(versionId:string,sourceSha256:string,raw:unknown):SceneScope{
+  if(!record(raw)||typeof raw.sourceUnit!=='string'||!safe(raw.sourceUnit))
+    throw new Error('SCENE_SCOPE_INVALID');
+  if(raw.builder===CAD_SCENE_BUILDER)
+    return sceneScope(versionId,sourceSha256,raw.sourceUnit);
+  if(raw.builder===CAD_SCENE_CPU_BUILDER)
+    return cpuSceneScope(versionId,sourceSha256,raw.sourceUnit);
+  throw new Error('SCENE_SCOPE_INVALID');
 }
 const SHA=/^[a-f0-9]{64}$/;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -36,7 +59,7 @@ function validImportedId(scope:SceneScope,id:unknown):id is string{
 }
 export function validSceneScope(v:unknown):v is SceneScope{
   return record(v)&&safe(v.versionId)&&typeof v.sourceSha256==='string'&&SHA.test(v.sourceSha256)&&
-    v.schema===1&&v.builder===CAD_SCENE_BUILDER&&v.renderer===CAD_SCENE_RENDERER&&
+    v.schema===1&&(v.builder===CAD_SCENE_BUILDER||v.builder===CAD_SCENE_CPU_BUILDER)&&v.renderer===CAD_SCENE_RENDERER&&
     v.frame==='DXF_WCS_XY'&&safe(v.sourceUnit);
 }
 /** Tree occurrence, not a DXF Handle or Object3D.uuid. */

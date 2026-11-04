@@ -6,6 +6,34 @@ CPU Worker 포함 3-role OCI 정식 출고와 tag 규칙 정책은 후속 Releas
 
 ---
 
+## #225 B2-B 독립 CPU Worker 설계 (2026-11-04 / 증거 대기)
+
+G7 0.61.0 신규 CPU Schema와 두 가지 기본 OFF 플래그를 요구한다. DXF 업로드 Version+CPU Builder Job은 동일 DB TX에서 enqueue되고, 별도 OCI Worker(Next request/브라우저 타이머 무관)는 단일 tick마다 별도 Node 프로세스를 120초로 제한한다. SIGKILL/비정상 종료 시 180초 stale recovery·3회 유한 재시도. UID10001, read-only rootfs, network none, local-only storage, CPU1·RAM768MiB·PIDs64·tmpfs96MiB. Fresh G7 Runtime/Actor/Site/Version 검증 뒤 SourceSHA/DTO full validator/Blob readback/CurrentScene CAS/Job READY/Audit 원자적 게시를 유지한다. CPU와 기존 Browser Builder identity는 분리. 신규 Worker는 LINE-only fail-closed이며 광범위 2D/브라우저 Viewer 복원 및 현장 수용은 미완료다.
+
+## #225 B2-B — upload→CPU queue와 fail/retry (2026-11-04)
+
+Version 등록 TX는 릴리스가 허용할 때만 Builder를 선택한다. v0.60.0=Browser, 미래 승인 G7+2 flags=CPU. 기존 `claimNextCpuSceneJob` → `runOneCpuSceneJob` → 기존 validated Scene CAS pipeline과 연결되는 오류 종결 경로는 `settleRunningCpuSceneJobError` (CPU Job identity·attempt CAS; transient RETRY_WAIT/terminal FAILED; CAS_LOST). 저장/권한/READY 코드의 실행은 현재 G7 schema로는 차단되며 외부 Worker 프로세스와 격리는 후속.
+
+---
+
+## #225 B2-B — CPU 단일 Job 처리 구성 초안 (2026-11-04)
+
+오프라인 `CPU LINE Candidate` → 현 시점 `G7 Runtime/Actor/Site/Role` 재인가 → 원본 저장소에서 Byte 수신·SourceSHA 확인 → `CUSTOM_DTO v2 / manifest / payload SHA` 교차검증 → `SceneBlobStorage.putVerified`의 immutable bytes + readback → **단일 DB 트랜잭션**(`SceneAsset` 신규·`CurrentScene` 최초 Revision 0·`SceneBuildJob` RUNNING+attempt CAS→READY·SCENE_PUBLISHED Audit·Orphan 정리)로 구성했다. Blob 실패는 UNCERTAIN, DB 확정 실패는 CLEANUP 후보로만 기록하고 기존 Scene/원본은 불변. CurrentScene 선행 존재 시 실패를 반환하고 *절대로 자동 교체하지 않는다*. 내부 Worker는 토큰·쿠키/세션 해시를 보관하거나 public `SceneRepository.publish`를 가장하지 않는다.
+
+분리 모듈: `scene-build-job-queue.ts`는 레거시 Browser Job과 향후 CPU Builder 전용 Enqueue/Claim/Stale/Retry/Stage를 구별한다. `scene-worker-g7-authorization.ts`는 signed Runtime Active/CAD write 및 현재 Version/Source SHA/Site hierarchy/Actor Editor·Admin Role+Site Grant를 트랜잭션 내 재조회하며 게시 직전에 다시 검사한다. `scene-worker-publish.ts`는 검증 저장+CAS/Audit, `scene-cpu-worker-once.ts`는 one-tick 상태/오류 taxonomy를 소유한다. CPU Asset의 안전한 읽기만 `SceneRepository.status/content`의 Builder allowlist에서 인식; 기존 manual publish는 Browser Builder만 인가한다.
+
+**출시 전제/실행 금지:** `G7-GREENFIELD-CPU-WORKER-20261104-1`는 현재 G7 미등록 미래 schema. v0.60.0의 실제 Queue 등록은 Browser Builder이며 runtime CPU Job은 항상 차단된다. Worker 실행기/독립 OCI, UID·CPU/RAM/PID/time/read-only/network 실제 격리, 2D TEXT/MTEXT/BLOCK 등 범위, 새 이력/버전+OCI Pair/업그레이드, 브라우저 실제 Scene 복원, 데이터 있는 DB 권한/재시작/중단 시험은 아직 없다. B3 목록 상태·Retry/운영/배포 후속. **GO-DEV 코드·단위 검증과 GO-PILOT을 혼동하지 않는다.**
+
+---
+
+## #225 B2-B CPU Builder/Job 데이터 출처 (Draft, 2026-11-04)
+
+기존 Browser `sceneScope(versionId,sourceSha,unit)`의 Builder/ID는 불변이다. 별도 `cpuSceneScope`는 `node-cpu-line@1.0.0+cad-scene-1` 출처를 SceneScope와 imported Scene identity에 포함한다. `inspectCpuCandidateForJob({job,source,candidate})`은 RUNNING·attempt1~3·CPU Builder·payloadSchema2·원본 SHA·manifest/version/unit·CUSTOM_DTO v2 Full Validator 및 payload SHA를 확인하고 **데이터 매칭 receipt만 반환**한다. G7 Actor·Site·Writer의 인증이나 실제 durable readback/READY는 증명하지 않는다. 기존 manual `SceneRepository.publish`는 legacy Browser Scope를 요구해 CPU candidate 게시를 거부한다.
+
+B2-B 후속: 새로운 불변 릴리스의 B1 Job Builder/전진 호환, 독립 CPU Worker 1개(비루트/CPU/RAM/PID/time/network/read-only 파일 통제), 최신 Storage bytes/SHA, 현재 G7 Actor/Site/Writer 재인가, 내부 검증 저장·CurrentScene CAS/Audit, 실패 후 기존 READY·원본 유지, 브라우저 Scene 복원. B3에서 상태 UI/Retry/재기동·배포 Smoke를 완료한다. 현재 `SCENE_AUTO_BUILD_ENABLED=OFF`; 미구현에 READY·GO-PILOT 주장 금지.
+
+---
+
 ## #225 B2-A CPU-only 후보 파이프라인 — Node/strict LINE (2026-11-04)
 
 `cpu-line-candidate.ts`의 단독 호출만: (1) DXF 원본 SHA 확인, 엄격 UTF-8/16MiB 및 pair/section 구조 상한 (2) 2D LINE/Layer0/흰색/`$INSUNITS=4`만 parse하고 지원하지 않은 기타 record/색/OCS·Z/점 정보가 있으면 fail-closed (3) 순수 `THREE.Group + THREE.Line(BufferGeometry)` 구성 (4) 기존 tag/serialize `CUSTOM_DTO v2` 및 전체 domain Validator (5) 0700 임시 디렉터리/0600 readback, SHA와 DTO 재검증 후 정리. Converter는 원본/기존 Scene/Current/DB에 쓰지 않으며 실제 WebGL/Browser/세션 런타임을 호출하지 않는다.

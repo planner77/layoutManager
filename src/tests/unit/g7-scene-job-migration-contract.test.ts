@@ -2,6 +2,7 @@ import {describe,expect,test} from 'vitest';
 import {createHash} from 'node:crypto';
 import {readFileSync} from 'node:fs';
 import {G7_GREENFIELD_SCHEMA_ID, G7_GREENFIELD_BASELINE,
+  G7_PREVIOUS_SCENE_JOB_SCHEMA_ID,G7_PREVIOUS_SCENE_JOB_BASELINE,
   G7_PREVIOUS_ZONES_SCHEMA_ID, G7_PREVIOUS_ZONES_BASELINE,
   hasG7FeatureSchemaHistory} from '../../server/g7-operational/greenfield-schema';
 import {GREENFIELD_UPGRADE_REGISTRY,resolveUpgradeChain} from
@@ -29,8 +30,10 @@ describe('#225 B1 G7 migration registration — 0.59 immutable / 0.60 candidate'
   const next=GREENFIELD_UPGRADE_REGISTRY.releases.find(x=>x.version==='0.60.0')!;
   expect(old.schemaId).toBe(G7_PREVIOUS_ZONES_SCHEMA_ID);
   expect(old.baseline).toBe(G7_PREVIOUS_ZONES_BASELINE);
-  expect(next.schemaId).toBe(G7_GREENFIELD_SCHEMA_ID);
-  expect(next.baseline).toBe(G7_GREENFIELD_BASELINE);
+  expect(next.schemaId).toBe(G7_PREVIOUS_SCENE_JOB_SCHEMA_ID);
+  expect(next.baseline).toBe(G7_PREVIOUS_SCENE_JOB_BASELINE);
+  expect(GREENFIELD_UPGRADE_REGISTRY.releases.find(x=>x.version==='0.61.0'))
+    .toMatchObject({schemaId:G7_GREENFIELD_SCHEMA_ID,baseline:G7_GREENFIELD_BASELINE});
   const chain=resolveUpgradeChain(GREENFIELD_UPGRADE_REGISTRY,'0.59.0','0.60.0');
   expect(chain).toHaveLength(1);
   expect(chain[0]).toMatchObject({kind:'MIGRATION',
@@ -43,9 +46,10 @@ describe('#225 B1 G7 migration registration — 0.59 immutable / 0.60 candidate'
  test('business feature gates recognize prior and migrated markers without accepting drift shapes',()=>{
   const prev=[{migration_name:G7_PREVIOUS_ZONES_BASELINE}];
   const fresh=[{migration_name:G7_GREENFIELD_BASELINE}];
+  const previousFresh=[{migration_name:G7_PREVIOUS_SCENE_JOB_BASELINE}];
   const migrated=[...prev,{migration_name:SCENE_JOB_MIGRATION_NAME}];
   for(const feature of ['zone','typed-outline','outline-type'] as const){
-   for(const history of [prev,fresh,migrated])
+   for(const history of [prev,fresh,previousFresh,migrated])
     expect(hasG7FeatureSchemaHistory(history,feature)).toBe(true);
    expect(hasG7FeatureSchemaHistory([...migrated,{migration_name:'evil'}],feature)).toBe(false);
    expect(hasG7FeatureSchemaHistory(migrated.slice().reverse(),feature)).toBe(false);

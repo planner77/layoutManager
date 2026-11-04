@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { CadError } from '@/domain/cad';
-import { sceneScope, validateSceneManifest, type SceneManifest } from '@/domain/cad-scene';
+import { sceneScope, storedSceneScope, validateSceneManifest, type SceneManifest } from '@/domain/cad-scene';
 import { validateStoredScenePayload } from '@/domain/scene-payload';
 import { type Database, writeTransaction } from '@/server/db';
 import { appendG7CadAudit, requireG7CadPermission, type G7CadWrite } from '@/server/g7-operational/cad-guard';
@@ -41,7 +41,7 @@ export class SceneRepository {
     try{
       const version=await this.version(versionId),asset=pointer.asset;
       const parsed:unknown=JSON.parse(asset.manifestJson);
-      const expected=sceneScope(versionId,version.sha256,(parsed as SceneManifest).scope.sourceUnit);
+      const expected=storedSceneScope(versionId,version.sha256,(parsed as SceneManifest).scope);
       const manifest=validateSceneManifest(parsed,{scope:expected,format:'CUSTOM_DTO',
         byteLength:asset.byteLength,sha256:asset.digest});
       if(asset.sourceSha256!==version.sha256||asset.format!=='CUSTOM_DTO'||
@@ -62,7 +62,7 @@ export class SceneRepository {
     if(!asset||asset.versionId!==versionId)throw new CadError('SCENE_NOT_FOUND','Scene을 찾을 수 없습니다.',404);
     try{
       const parsed:unknown=JSON.parse(asset.manifestJson);
-      const scope=sceneScope(versionId,version.sha256,(parsed as SceneManifest).scope.sourceUnit);
+      const scope=storedSceneScope(versionId,version.sha256,(parsed as SceneManifest).scope);
       const manifest=validateSceneManifest(parsed,{scope,format:'CUSTOM_DTO',byteLength:asset.byteLength,sha256:asset.digest});
       if(asset.sourceSha256!==version.sha256||!this.storage.owns(asset.storageLocator,asset.id))throw malformed();
       const bytes=await this.storage.readVerified(asset.storageLocator,asset.byteLength,asset.digest);
