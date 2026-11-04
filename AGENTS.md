@@ -1,3 +1,13 @@
+## #229 — GO-INTEGRATE와 GHCR v0.61.0+ 출고 분리 (2026-11-04)
+
+[Issue229](out/Issue229.md), [ADR](out/Decisions.md), [Issue218LeanPolicy](out/Issue218LeanPolicy.md)를 따른다. 별도 Main 기반 PR의 릴리스 게이트는 `src/package.json` SemVer **0.61.0 이상**에 대하여 Main CI 실행과 GHCR 게시를 분리한다. Main의 런타임 변경·후속 0.61.1/0.62.0 변경에도 `publish=false`, guarded tag push는 fail-closed. `build-and-push` 시작 후에도 GHCR 변경 작업 전에 이 정책을 별도 검증한다. 커밋 제목만으로 출고 보류를 우회할 수 없다.
+
+0.60.0 및 이전 #216 immutable App/Migrator 릴리스·source-pinned recovery와 required PR CI는 보존한다. 이 브랜치가 출시용 3-image Worker GHCR 게시를 구현했다는 뜻이 아니다. 해당 출고는 App/Migrator/CPU Worker role/version/revision/digest 검증과 별도 Owner GO 이후 후속 PR로 구현한다. 과거 commit의 workflow로 태그하는 우회는 GitHub tag ruleset/패키지 쓰기 권한으로 별도 보호해야 하며 이번 코드만으로 이를 완전히 보장하지 않는다.
+
+이번 #229는 운영 DB/CAD/Volume/.env 및 이전 GHCR tag/digest를 수정하지 않는다. #228 Draft/GO-INTEGRATE HOLD, #225/#218 OPEN, GO-PILOT BLOCKED. 테스트 코드는 작성했지만 **정확 새 PR HEAD CI 완료 전에는 PASS라고 주장하지 않는다**.
+
+---
+
 ## #225 B2-A — CPU-only LINE 후보 변환기 (2026-11-04, Draft)
 
 현재 B2-A GO-DEV 구현은 `src/server/scene/cpu-line-candidate.ts`의 **오프라인 후보 변환**과 `src/tests/unit/scene-cpu-line-candidate.test.ts`의 유효/거부 시험으로 한정한다. WebGL/DOM/`three-dxf-viewer` 런타임 없이 엄격한 UTF-8 DXF, HEADER `$INSUNITS=4`, ENTITIES `LINE`/기본 레이어0·흰색만 수용한다. 원본 SHA, 16MiB 원본/5000 LINE/좌표 범위, THREE geometry → CUSTOM_DTO v2 전체 Validator 및 독립 임시 파일 readback을 검증한다. 알려지지 않은 Entity/색/계층/표·BLOCK/3D/폴리라인/문자는 **명시적으로 차단**한다.
