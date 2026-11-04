@@ -50,8 +50,10 @@ describe('#208 P1-A durable job state safety contract', () => {
     expect(sceneBuildPublicSummary({ fileFormat: 'DXF', validatedScene: 'READY',
       jobState: 'RUNNING', stage: 'DXF_PARSE' }))
       .toEqual({ scene: 'READY', build: 'RUNNING', phase: 'DXF_PARSE' });
+    // Verified corrupt immutable pointer outranks historical Worker FAILED;
+    // the Job status remains available to the server but is not Scene health.
     expect(sceneBuildPublicSummary({ fileFormat: 'DXF', validatedScene: 'REBUILD_REQUIRED',
       jobState: 'FAILED', stage: 'private/stack' }))
-      .toEqual({ scene: 'FAILED', build: 'FAILED', phase: null });
+      .toEqual({ scene: 'REBUILD_REQUIRED', build: 'FAILED', phase: null });
   });
 });
