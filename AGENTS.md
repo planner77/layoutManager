@@ -1,3 +1,11 @@
+## #225 — Signed Release Proof CLI 불투명 오류 차등 검증 (2026-11-06)
+
+이 단계는 기존 PR #241/Main CI #162의 코드 통합 이후 **test-only** 서명 검증 진단을 보강한다. 고정 `gh 2.103.3`은 Sigstore 내부 실패 원인을 issuer 오류로 축약할 수 있으므로, 실패 코드·임의 문자열만으로 원인별 음성시험 PASS를 인정하지 않는다. 실제 검증된 서명 원본의 positive 결과를 같은 bundle에서 음성 실행 전후에 확인하고, 정확한 1개 정책값 또는 signed subject 한 바이트만 변경하며, source-pinned 제한 형태의 불투명 실패만 `BRACKETED_CLI_REJECTION_CAUSE_OPAQUE`로 분류한다. 이는 실제 내부 오류 원인 확인이 아니라 차등 거부 증거다. 기타 인프라·인증·사용법 오류, 범위 밖 stderr, 양쪽 정상 검증 실패는 FAIL CLOSED한다. 기준은 [TestPlan OP-01~06](out/TestPlan.md), 근거·한계는 [TestReport](out/TestReport.md)/[FailureLedger](out/FailureLedger.md).
+
+실제 [Signed Release Proof #2](https://github.com/planner77/layoutManager/actions/runs/42092820405)는 **Step16 타임아웃 FAIL**이며 OIDC/CLI는 미실행, `.dockerbuild` 3건도 별도 경계 실패로 보존한다. 이 수정의 PR CI·실제 새 proof 결과는 확인 전 PASS 아님. 제품 두 Scene 플래그 OFF, >=0.61 GHCR HOLD, #225/#218/#231 OPEN, GO-PILOT BLOCKED; 운영 DB/CAD/Volume/.env/GHCR/tag와 정책 변경·출고 승인 없음.
+
+---
+
 ## #225 / PR #236 — GO-INTEGRATE 완료 (2026-11-05)
 
 사용자의 이번 통합 승인으로 아래 TP-225-UPGRADE-RECOVERY의 기존 UR-07 `CI 시작까지만` 경계를 **PR #236 통합에 한해** 확장했다. [PR #236](https://github.com/planner77/layoutManager/pull/236)의 정확 HEAD `893ec1b0e6c30e41c7bebc9d60448252ae95a990`는 [PR CI #634](https://github.com/planner77/layoutManager/actions/runs/42005042169) 적용 8개 Job SUCCESS 뒤 Squash Main `323fa4b0a0c8b69ab158fdf18a8363ba9e16c6ca`에 병합됐다. [Main CI #156](https://github.com/planner77/layoutManager/actions/runs/42009205686)도 같은 merge SHA에서 SUCCESS이며 >=0.61.0 GHCR 출고는 HOLD로 skip됐다. 상세 증거와 GO-PILOT 잔여는 [TestReport](out/TestReport.md)를 따른다. 제품 Scene flags OFF, #225/#218/#231 OPEN, GO-PILOT BLOCKED; 운영·GHCR·태그 변경 없음. 아래 당시 NOT VERIFIED 기록은 역사적 시점의 상태다.
