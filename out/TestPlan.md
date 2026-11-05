@@ -1,3 +1,20 @@
+## TP-225-RP-OPAQUE-CLI — pinned gh 2.103.3의 내부 원인 비노출 계약 (2026-11-06)
+
+**문제 및 근거:** 공식 CLI \`cli/cli@v2.103.3\`의 \`pkg/cmd/attestation/verification/sigstore.go\`는 \`verifier.Verify\` 내부 오류를 \`verifying with issuer "…"\`로 축약하고, \`pkg/cmd/attestation/verify/attestation.go\`는 상위 실패를 \`Sigstore verification failed\`로 표시한다. 따라서 명시적인 \`SourceRepositoryDigest\`/SAN 실패 문구가 보이지 않을 수 있다. 기존 RP2 실행 42092820405에서는 서명 단계가 **SKIPPED**였으므로 이 현상이 실제 RP2의 실패 원인이라고 주장하지 않는다.
+
+| AC | 구현 및 검증 기준 |
+| --- | --- |
+| OP-01 | 기존 \`negative_cause\`의 정확 원인 문자열 검사와 infra/usage/무인증·타임아웃 거부를 유지한다. 불일치 원인이 직접 노출되지 않을 때 임의 stderr/exit1만으로 PASS하지 않는다. |
+| OP-02 | 공개 4개 Subject의 signed positive mapping과 승인된 source/workflow/run/certificate를 같은 bundle의 실제 pinned gh 성공 JSON으로 **negative 호출 직전** 확인한다. 파일 SHA가 signed subject digest와 일치해야 한다. |
+| OP-03 | negative 입력은 정상 검증 명령의 정확 **단일 변경**이어야 한다: source SHA, signer commit, workflow 경로, source ref, 또는 subject 한 바이트 flip. 임의 flag/파일/bundle/CLI 경로 변경, 정책 완화 거부. |
+| OP-04 | 내부 원인 비노출 fallback은 source-pinned **Sigstore verification failed + verifying with issuer**의 제한된 stderr와 \`exit=1/stdout=empty\`만 인정하고, 동일 원본/동일 bundle의 실제 \`gh\` positive를 negative **직후에도** 재검증한다. 그 결과는 \`BRACKETED_CLI_REJECTION_CAUSE_OPAQUE\`; **실제 내부 원인 확인**으로 기록하지 않는다. |
+| OP-05 | synthetic 회귀: 정상 비교 1개, 비브래킷·다중 변경·위조 positive·기준 원본 SHA 불일치·통상 인프라/사용법 오류·다른 issuer·exit0/2·stdout 비어있지 않음·파일 변조 부정 등을 FAIL CLOSED. synthetic 값은 실제 서명이 아님. |
+| OP-06 | 변경은 test-only RP Python과 해당 집중 회귀·문서에 한정. 기존 4 positive + 6 negative 전부 필수, 제품/OCI/권한·GHCR 게시/timeout·HOLD 불변. 정확 PR HEAD의 hosted 필수 CI 및 Reviewer/충돌 검증 후만 GO-INTEGRATE 판정. 새로운 signed proof 실제 실행은 정상 Main/별도 승인 이후에만 하고 종료 뒤 API artifact inventory로 무허용 \`.dockerbuild\`=0 확인한다. |
+
+**검증 한계:** 정상 서명된 cert의 identity와 정확 mutation을 사전·사후에 확인하면 불투명한 CLI 호출의 *차등 거부*는 입증할 수 있으나, CLI가 버린 세부 오류/실제 내부 원인을 확정한 것은 아니다. 유형이 다르거나 정상 대조가 실패하면 전체 RP는 FAIL이고 출고 승인으로 승격하지 않는다. RP2 historical FAILED, #225/#218/#231 OPEN, GO-PILOT BLOCKED, Scene 양 플래그 OFF, >=0.61 GHCR HOLD.
+
+---
+
 ## TP-225-RP-EXECUTION-FIX — 실제 RP2 timeout·암묵 artifact 업로드 재작업 (2026-11-06)
 
 실제 trusted Main `4fd0b32e82bd89f8056becd9e3dabea69a6b5e00`/tree e004의 RP run2 `42092820405`는 step16 direct timeout probe에서 FAIL했다. childObserved=false, cleanup=PASS, RR2_COMMAND_TIMEOUT이 관측됐고 exact cause는 UNKNOWN이다(약4초 timer에 startup이 포함됐다는 code 관측과 원인 추정을 구별). 3-role/RR1/old0.60pair는 통과했지만 full RR2/export/OIDC/CLI는 NOT RUN이다. 독립 QA도 실패·partial cleanup을 확인했다. 별도로 API metadata에서 기본 build-push post action의 .dockerbuild artifact3개를 관측했으므로 RP05 boundary도 미수용이다. 내용/credential/CAD 유출 여부는 검사하지 않았고 단정하지 않는다.
