@@ -1,0 +1,263 @@
+name: Issue 225 signed release proof (no publication)
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_commit:
+        description: Exact Main source and workflow commit SHA
+        required: true
+        type: string
+      expected_tree:
+        description: Exact Git tree SHA of source_commit
+        required: true
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: issue225-release-proof-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  signed-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+      attestations: write
+    env:
+      RP_SOURCE_COMMIT: ${{ inputs.source_commit }}
+      RP_EXPECTED_TREE: ${{ inputs.expected_tree }}
+    steps:
+      - name: Checkout exact dispatch commit without persisted Git credentials
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Initialize proof paths from the allocated runner
+        id: paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PYENV'
+          import os
+          from pathlib import Path
+          root = os.environ.get('RUNNER_TEMP', '')
+          env_file = os.environ.get('GITHUB_ENV', '')
+          if (not root or not Path(root).is_absolute() or
+              any(char in root for char in ('\n', '\r')) or
+              not env_file or not Path(env_file).is_absolute()):
+              raise SystemExit('RP_RUNNER_PATH_INIT_INVALID')
+          with Path(env_file).open('a', encoding='utf-8') as stream:
+              stream.write('RP_PROOF_DIR=' + str(Path(root) / 'issue225-proof-private') + '\n')
+              stream.write('RP_PUBLIC_DIR=' + str(Path(root) / 'issue225-proof-public') + '\n')
+          PYENV
+
+      - name: Reject wrong dispatch identity, ref, source, workflow, or tree
+        run: python3 src/tests/oci/rp-provenance.py guard
+
+      - name: Check proof schema and public artifact contracts without signatures
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile src/tests/oci/rp-provenance.py
+          python3 src/tests/oci/test_rp_provenance.py
+
+      - name: Prepare exact Git archive for three OCI roles
+        run: python3 src/tests/oci/rr1-ci-source.py prepare --out-dir "$RP_PROOF_DIR"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build App from exact source archive
+        uses: docker/build-push-action@v7
+        with:
+          context: ${{ runner.temp }}/issue225-proof-private/source
+          file: ${{ runner.temp }}/issue225-proof-private/source/src/Dockerfile
+          target: runtime
+          platforms: linux/amd64
+          load: true
+          tags: cad-layout-viewer:ci
+          labels: |
+            org.opencontainers.image.source=https://github.com/planner77/layoutManager
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=0.61.0
+
+      - name: Build Migrator from exact source archive
+        uses: docker/build-push-action@v7
+        with:
+          context: ${{ runner.temp }}/issue225-proof-private/source
+          file: ${{ runner.temp }}/issue225-proof-private/source/src/Dockerfile
+          target: migrator
+          platforms: linux/amd64
+          load: true
+          tags: cad-layout-viewer:ci-migrate
+          labels: |
+            org.opencontainers.image.source=https://github.com/planner77/layoutManager
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=0.61.0
+
+      - name: Build CPU Worker from exact source archive
+        uses: docker/build-push-action@v7
+        with:
+          context: ${{ runner.temp }}/issue225-proof-private/source
+          file: ${{ runner.temp }}/issue225-proof-private/source/src/Dockerfile
+          target: cpu-worker
+          platforms: linux/amd64
+          load: true
+          tags: cad-layout-viewer:ci-cpu-worker
+          labels: |
+            org.opencontainers.image.source=https://github.com/planner77/layoutManager
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=0.61.0
+
+      - name: Finish exact archive build receipt and verify retained registry bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 src/tests/oci/rr1-ci-source.py finish --out-dir "$RP_PROOF_DIR"
+          docker pull registry@sha256:a3d8aaa63ed8681a604f1dea0aa03f100d5895b6a58ace528858a7b332415373
+          python3 src/tests/oci/rr1-registry-proof.py \
+            --build-receipt "$RP_PROOF_DIR/rr1-input.json" \
+            --output-receipt "$RP_PROOF_DIR/rr1-registry-receipt.json" \
+            --retain-for-r2
+
+      - name: Install test-only Chromium client
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.14.0
+          cache: npm
+          cache-dependency-path: src/package-lock.json
+
+      - name: Install exact test dependencies and browser
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd src
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Authenticate for read-only old private GHCR pair
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Verify immutable published old App and Migrator pair
+        run: >-
+          python3 src/tests/oci/rr2-old-pair.py
+          --output-receipt "$RP_PROOF_DIR/rr2-old-pair.json"
+
+      - name: Prove direct and host-helper timeout cleanup on owned fixtures
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 src/tests/oci/rr2-timeout-probe.py \
+            --triplet-receipt "$RP_PROOF_DIR/rr1-registry-receipt.json"
+          python3 src/tests/oci/rr2-timeout-probe.py --host-helper \
+            --triplet-receipt "$RP_PROOF_DIR/rr1-registry-receipt.json"
+
+      - name: Actual same-run old install, upgrade, Worker, Viewer, restore, and readback
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 src/tests/oci/rr2-journey.py \
+            --old-pair-receipt "$RP_PROOF_DIR/rr2-old-pair.json" \
+            --new-triplet-receipt "$RP_PROOF_DIR/rr1-registry-receipt.json" \
+            --output-receipt "$RP_PROOF_DIR/rr2-journey.json"
+
+      - name: Revalidate and export actual raw registry manifests while registry lives
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 src/tests/oci/rp-provenance.py export \
+            --rr1 "$RP_PROOF_DIR/rr1-registry-receipt.json" \
+            --rr2 "$RP_PROOF_DIR/rr2-journey.json" \
+            --build "$RP_PROOF_DIR/rr1-input.json" \
+            --public "$RP_PUBLIC_DIR"
+
+      - name: Verify owned cleanup and create four sanitized subject checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 src/tests/oci/rp-provenance.py finalize \
+            --rr1 "$RP_PROOF_DIR/rr1-registry-receipt.json" \
+            --rr2 "$RP_PROOF_DIR/rr2-journey.json" \
+            --build "$RP_PROOF_DIR/rr1-input.json" \
+            --old "$RP_PROOF_DIR/rr2-old-pair.json" \
+            --public "$RP_PUBLIC_DIR"
+
+      - name: Sign four actual same-run subjects with GitHub OIDC
+        id: attest
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-checksums: ${{ runner.temp }}/issue225-proof-public/SHA256SUMS
+          push-to-registry: false
+          create-storage-record: false
+
+      - name: Copy only the Sigstore bundle to the public artifact allowlist
+        env:
+          RP_ACTION_BUNDLE: ${{ steps.attest.outputs.bundle-path }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f "$RP_ACTION_BUNDLE"
+          cp -- "$RP_ACTION_BUNDLE" "$RP_PUBLIC_DIR/proof-bundle.sigstore.json"
+
+      - name: Install official GitHub CLI 2.103.3 by pinned checksum
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fLsS -o "$RP_PROOF_DIR/gh.tar.gz" \
+            https://github.com/cli/cli/releases/download/v2.103.3/gh_2.103.3_linux_amd64.tar.gz
+          printf '%s  %s\n' \
+            4c806978ffce1cec70853302a56d70ac6da4f19bae7adca4e1a8ab00633dd91d \
+            "$RP_PROOF_DIR/gh.tar.gz" | sha256sum --check --status
+          tar -xzf "$RP_PROOF_DIR/gh.tar.gz" -C "$RP_PROOF_DIR" \
+            gh_2.103.3_linux_amd64/bin/gh
+          test -x "$RP_PROOF_DIR/gh_2.103.3_linux_amd64/bin/gh"
+
+      - name: Verify every signed subject, immutable certificate IDs, and actual negatives
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 src/tests/oci/rp-provenance.py verify \
+            --public "$RP_PUBLIC_DIR" \
+            --gh "$RP_PROOF_DIR/gh_2.103.3_linux_amd64/bin/gh"
+
+      - name: Check public artifact allowlist even after a failed stage
+        id: allowlist
+        if: always() && steps.paths.outcome == 'success'
+        shell: bash
+        run: python3 src/tests/oci/rp-provenance.py allowlist --public "$RP_PUBLIC_DIR"
+
+      - name: Upload only sanitized proof subjects, bundle, and verification metadata
+        if: always() && steps.paths.outcome == 'success' && steps.allowlist.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue225-signed-proof-${{ github.run_id }}-${{ github.run_attempt }}
+          if-no-files-found: ignore
+          path: |
+            ${{ runner.temp }}/issue225-proof-public/proof-app-manifest.json
+            ${{ runner.temp }}/issue225-proof-public/proof-migrator-manifest.json
+            ${{ runner.temp }}/issue225-proof-public/proof-cpu-worker-manifest.json
+            ${{ runner.temp }}/issue225-proof-public/proof-receipt.json
+            ${{ runner.temp }}/issue225-proof-public/SHA256SUMS
+            ${{ runner.temp }}/issue225-proof-public/proof-bundle.sigstore.json
+            ${{ runner.temp }}/issue225-proof-public/verification.json
+
+      - name: Always retry exact receipt-bound disposable resource cleanup
+        if: always() && steps.paths.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 src/tests/oci/rp-provenance.py cleanup \
+            --rr1 "$RP_PROOF_DIR/rr1-registry-receipt.json" \
+            --rr2 "$RP_PROOF_DIR/rr2-journey.json" \
+            --old "$RP_PROOF_DIR/rr2-old-pair.json"
