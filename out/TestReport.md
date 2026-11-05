@@ -1,3 +1,75 @@
+## RR2/RR3 RX11 — 최종 source 독립 full journey QA (2026-11-06)
+
+**Manager 로컬 수용·게시 GO:** Manager 대행 `gpt-6.1-sol`은 아래 독립 QA의 frozen 29-path/8단계 실제 실행·소유 정리와 재사용한 동일 core의 집중/timeout 근거를 검토했다. 최종 receipt의 backup `1278d28a-9584-47ea-90d1-8bf0f9adca1e`, 복원 App 기동 전 전체 baseline 일치, 기동 후 historical business/files/manifest 보존을 직접 대조했다. Root의 TypeScript·lint(0 errors/기존12 warnings)·production build와 최종 test-only 변경 검사를 근거로 **로컬 기능·복구 proof를 수용하고 독립 PR 게시 및 새 exact-HEAD required CI 실행을 승인**한다. Root는 최종 staged/secret/remote/expected-parent 검사를 마친 뒤 commit/push한다. 과거 CSRF/Viewer 실패 원인은 UNKNOWN이며 안정성/SLA·hosted RR2·merge·정식 출고/정책 적용/Owner GO를 수용한 판정이 아니다. 전체 RR1–RR5 목표와 OFF/HOLD·GO-PILOT BLOCKED를 유지한다.
+
+**판정: 로컬 폐기형 RR2/RR3 full journey PASS.** 새 고유 nonce `413860e4309a14b5`로 `rr2-journey.py`를 정확 한 번 실행했고 `RR2_RR3_ACTUAL_OCI_JOURNEY_PASS`를 받았다. 테스트 전후 [final source manifest](../data/release-proof/rr2-rx09-rx11-final-source.sha256)의 29개 경로 SHA-256이 모두 일치했다. Worktree/harness HEAD `68c0c951126dbfe9e0c3072982afd502b8443262`, 과거 게시 GHCR pair source `9eb8ac764ddb658bf8f9aaef9f15f18e099f9f63`, RR1 candidate source `d5ea04daa2573c7f8e2f0f2ee14c3ad53cf23389`는 각각 구분한다. 실행 입력은 기존 read-only GHCR0.60 pair receipt 및 기존 retained RR1 three-role registry receipt다.
+
+**8단계 실제 증거:** `prepare → old_install → old_business → upgrade → current_start → current_http_worker_viewer → formal_restore → old_digest_readback` 모두 통과했다. 이전 GHCR digest의 실제 0.60 App/Migrator로 소유된 격리 설치를 만들고 Browser READY 및 QUEUED 작업, Current, Audit, Source/Scene 파일 snapshot을 준비했다(시작 snapshot: 2 Version, 2 Job, 1 SceneAsset, 1 CurrentScene, FK 0, 3 files). 기존 0.60 설치 setup/Admin/Editor/Site Grant와 두 DXF HTTP/Current/source 흐름이 완료됐다. 잘못된 upgrade approval은 `G7_DEPLOY_STALE_PLAN`으로 거부됐고 source snapshot은 불변이었다. 정확 승인으로 0.61 migration/backup 1건을 적용한 뒤 App은 STOPPED 상태로 확인했고, 별도 승인된 candidate App start가 통과했다.
+
+Signed HTTP flow에서 Origin/CSRF 잘못된 요청 2개는 403, 정상 DXF upload는 QUEUED가 됐다. 독립 digest-pinned CPU Worker가 이를 PUBLISHED했고 새 Editor 세션의 Viewer가 저장 Scene Asset의 LINE을 복원했다. Viewer reload 뒤에도 정상 렌더와 의도된 정밀 선택 한계 경고가 있었고 원본 CAD GET은 0이었다. 이전 Browser READY Job/Scene/Current/Audit/Source 불변 prefix를 비교했으며 CPU 게시 뒤 후보 snapshot은 3 Version/3 Job/2 SceneAsset/2 CurrentScene였다. 같은 upgrade backup을 빈 소유 restore volume으로 복구한 직후, 0.60 manifest·DB business/Job/Scene/Current/Audit prefix·원본/Scene 파일·FK 상태가 old baseline과 일치했고 backup 뒤 CPU writes는 복구본에 없었다. 실제 이전 0.60 digest App을 별도로 기동한 뒤 기존 Editor HTTP login/session, Current/두 source SHA, 기존 Browser READY Scene/asset readback이 통과했다. 그 후 기대한 새 AuthSession 및 로그인 AuditEvent 한 건만 생겼으며 나머지 historical rows/files는 유지됐다.
+
+**RX11 및 과거 실패 구분:** RX11 변경은 `rr2-old-install.spec.ts` 하나이며 업데이트된 테스트는 setup 요청의 available headers를 수동 관측하고 기존 first-admin 성공 assertion을 유지한 채 전체 업무 fixture까지 완료했다. 이전 fresh QA nonce `b0ba7283e6d6dab2`의 `old_business`/`RR2_PLAYWRIGHT_FAILED` 결과는 그대로 FAILED로 보존한다. 그 실행에서 setup UI alert의 안전한 code `SETUP_CSRF_DENIED`가 보존돼 있으나 원래 HTTP status/order는 확보되지 않았으므로 그 원인은 여전히 **UNKNOWN**이다. RX11의 다른 bounded first-setup-only receipt `96454df...`에서 기록된 GET 200/POST 201, cookie/header boolean 일치는 그 분리 probe 결과로만 취급한다. 새 full journey가 성공했다고 앞선 실패 원인을 소급 설명하지 않는다. 이전 `07cb` Viewer reload failure도 UNKNOWN 그대로 남는다.
+
+**재사용과 신규 실행:** 이전 RX09–10 QA의 cleanup regression 3/3, RR1 identity 10/10, Python compile/diff 검사 및 실제 child timeout와 host-helper process-group/CID timeout cleanup probe는 새/이전 manifest 공통 22 source 경로 중 21개가 byte 동일하고 `rr2-old-install.spec.ts` 하나만 바뀐 것을 비교해 재사용했다(이전 manifest에만 있던 경로 1개는 RX11 source에 포함되지 않음). RX11가 바꾼 Browser spec은 이번 전체 journey에서 실제 실행·통과했다. 이 네 묶음은 이번 turn에 재실행한 것으로 계산하지 않는다.
+
+**정리 및 격리:** 새 journey receipt의 정확 소유 host/child container와 live/restore volume은 모두 부재를 읽기 전용 확인했다. 보존 대상 수동 `3e3a31b81ee965a2` namespace는 그대로 존재했다(기존 live App stopped, 기존 restore App running); retained R1 registry는 기존 container ID로 계속 running이었다. 운영 `cad-layout-viewer-app` ID/image/running/StartedAt 및 `/data` mount는 실행 전 fingerprint와 일치했다. 운영 CAD/DB를 열거나 내용을 수집하지 않았다. 이번 실행의 receipt/result와 비공개 fixture는 Git 제외 `data/release-proof/rr2-413860e4309a14b5/`와 `data/release-proof/rr2-rx11-qa-final.json`에 있다. `git diff --check` PASS.
+
+**완료 경계:** 이는 수동 Compose namespace clone·loopback retained registry를 사용한 새 로컬 RR2/RR3 실제 Docker/HTTP/Browser 통합 증거다. 기존 production Compose 자체의 namespace 안전성, hosted RR2, 실제 현장 복구, GHCR3-image provenance/publication, RR4 effective protection/RR5 Owner GO는 입증하지 않는다. 제품 version/flags/HOLD, 운영 자원, package/tag/policy를 바꾸지 않았다. CI/review/merge/commit/push는 수행하지 않았다.
+
+## RR2 RX09–10 독립 QA — 2026-11-06
+
+**판정: 당시 독립 QA FAILED / 후속 수정 뒤 별도 재시험 통과.** QA 대상 worktree HEAD는 `68c0c951126dbfe9e0c3072982afd502b8443262`이며 RX09–10 시험 bytes는 `data/release-proof/rr2-rx09-rx10-final-source.sha256`의 SHA-256 manifest를 시험 전후 모두 검증해 전부 일치했다. 이 harness HEAD, 실제 old GHCR pair source `9eb8ac764ddb658bf8f9aaef9f15f18e099f9f63`, RR1 candidate/build source `d5ea04daa2573c7f8e2f0f2ee14c3ad53cf23389`는 서로 다른 증거 식별자다. 기존 GHCR0.60 App/Migrator digest receipt와 retained RR1 3-role receipt를 그대로 사용했다. 그때 보존된 Browser alert code `SETUP_CSRF_DENIED`는 UI 관측값이며 실제 HTTP status/order와 root cause는 UNKNOWN이다. 최신 RX11 결과는 위 별도 항목에 기록했고 이 실패 row/verdict는 history로 보존한다.
+
+**독립 정적·집중 시험:** `test_rr2_cleanup.py` 3/3 PASS, `rr1-image-identity.test.py` 10/10 PASS, 대상 Python harness 4개 `py_compile` PASS, final source manifest 20 paths 전부 PASS. 실제 Docker timeout probe도 새 nonce로 직접 두 번 수행했다. Docker 자식 실행은 `RR2_COMMAND_TIMEOUT`, child 관측 및 owned cleanup PASS (`efc3b4ec34d14c18`); byte-identical host helper의 Docker CLI 자식 실행은 `RR2_HOST_COMMAND_TIMEOUT`, child 관측·process group 종료·owned cleanup PASS (`ee3cf5c6488644d7`).
+
+**최종 source의 단일 fresh full journey:** `rr2-journey.py`를 기존 old pair 및 RR1 triplet receipt로 한 번 실행했다. 신규 nonce `b0ba7283e6d6dab2`; 명령 결과는 `RR2_RR3_JOURNEY_FAILED stage=old_business code=RR2_PLAYWRIGHT_FAILED`다. Journey는 old OCI 설치 단계까지 진행했으나, 최초 관리자 등록 버튼 클릭 뒤 20초 내 `최초 관리자가 등록되었습니다.` 성공 문구가 나타나지 않아 기존 0.60 App의 authenticated business fixture로 진입하지 못했다. 안전하게 남긴 Playwright trace는 해당 assertion과 element 미발견만 기록하며 HTTP 응답 상태/원인은 계측되지 않아 **원인 UNKNOWN**이다. 이 실패를 관리자 등록 자체의 성공이나 실패로 추정하지 않는다. 정식 upgrade plan/wrong-approval 불변성/실행/backup, RR3 signed HTTP→CPU Worker→fresh Viewer, same-backup restore, restored old-digest authenticated readback은 이 journey에서 **NOT RUN**이다. 자동 전체 재시도는 하지 않았다.
+
+**Owned cleanup·운영 불변:** Receipt-bound cleanup PASS; 해당 nonce가 기록한 host helper child 3개, live 및 restore volume은 모두 부재를 확인했다. 운영 `cad-layout-viewer-app`의 기존 container ID `876103488dcefeeb38cb73261168835f589ab7733dec1d4d2ca41a5bb473c6a4`, image digest, running 상태, StartedAt 및 `/data`의 `cad-layout-viewer-g7` mount가 사전 fingerprint와 일치했다. 이전 RR1 registry container `91f9faedde46ae773427ba19d48d0619dfea4dd1cadc6c85b2eaf61c4cdb9a5a`도 계속 running이었다. 최종 source manifest 전부 재검증 PASS. 운영 App/volume/CAD/DB에는 read-only inspect 외 접근하지 않았다.
+
+세부 실패 산출물은 Git 제외 `data/release-proof/rr2-qa-rx09-rx10-final.json` 및 `data/release-proof/rr2-b0ba7283e6d6dab2/` 아래 receipt/log다. Manager/Root에 정확 실패 단계와 원인 미확인을 보고했다. 재시험 전 최소 다음 조치가 필요하다: disposable 0.60 first-admin POST의 응답 status 및 공개 error code를 비밀/본문 없이 안전하게 포착하여 registration success 문구가 없는 원인을 확인하고, Manager 검토·재승인 후 새 source hash 및 새 nonce로 전체 journey를 처음부터 한 번 실행한다. 이번 결과는 journey PASS, RR2/RR3 완료, hosted RR2 검증으로 승격하지 않는다.
+
+**보존 산출물의 후속 판독:** 재실행 없이 root가 같은 `rr2-b0ba7283e6d6dab2/playwright-results/`의 보존 `error-context.md`에서 role=alert의 고정 code만 안전하게 추출해 **`SETUP_CSRF_DENIED`**를 확인했다. 이는 앞선 QA 보고 뒤 추가된 UI 관측이며 실제 POST status·GET/POST 순서·token/cookie 상태나 근본 원인을 측정한 것으로 소급하지 않는다. 값/body/cookie를 출력하지 않았다. Manager는 TestPlan RX-11의 bounded old-install→first-admin CSRF transport/order 진단만 승인했으며 전체 재시도·assertion 완화·제품/과거 이미지 변경은 승인하지 않았다.
+
+## RR2 RX09–10 — 보완 및 독립 QA 준비 중 (2026-11-06)
+
+Typed old/current image binding·strict inspect·소유 child 추적·cleanup 뒤 최종 PASS·필수 CI 연결을 test-only로 보완하고 있다. 초기 local fresh case3개는 실패/ownedCleanup PASS, 네 번째는 실제8단계/정리 PASS였으나 prelaunch hash가 없어 최종 frozen proof로 승격하지 않는다. 첫 Viewer reload 인증 실패 원인은 UNKNOWN이며 후속 통과로 지우지 않는다. 정확 case/코드·알려진 harness 인자 결함·별도 직접 child timeout 범위는 [FailureLedger](FailureLedger.md)의 RX09–10 기록을 따른다.
+
+현재 host helper→Docker CLI grandchild의 timeout 종료를 owned process group으로 보완 중이다. 이 경로와 최종 byte hash·새 nonce 전체 flow·실제 group/CID timeout은 Manager source review 뒤 독립 QA가 검증해야 한다. 필수 Docker CI에 새 runner를 연결하는 source/YAML/bash 검사는 실제 hosted RR2 PASS가 아니다. 제품/Schema/버전/기능 default·운영 data·GHCR/정책은 변경하지 않는다.
+
+---
+
+## PR238 RR1 통합 — CI639 containerd·Main159·HOLD 확인 (2026-11-06)
+
+**최신 수용:** [CI639](https://github.com/planner77/layoutManager/actions/runs/42053794252)의 적용8 checks SUCCESS/A2 scope SKIP, review/thread0·mergeableclean·behind0를 확인했다. Manager `gpt-6.1-sol`의 RR1 코드 통합 GO 뒤 root가14 paths의 secret/runtime/remote/expected-head/tree를 재감사하고 Draft 해제→예상 HEAD6dba의 squash merge를 수행했다. Main `68c0c951126dbfe9e0c3072982afd502b8443262`, parentd5e/tree2872는 PR source tree와 정확히 같고 제목1줄/본문빈값이다. [Main CI159/run42058616805](https://github.com/planner77/layoutManager/actions/runs/42058616805)은 같은 merge SHA에서 SUCCESS. Scope job127353761069의 실제 `>=0.61.0 code integration, GHCR release on HOLD`, GHCR build/push127353875117 SKIPPED를 확인했다. 준비 전환이 새로 시작한 동일 HEAD의 CI640/run42058611660은 마지막 조회 시 in_progress로 별도이며 성공 근거로 계산하지 않는다.
+
+Root와 독립 QA `gpt-6-luna`가 [CI #639/run42053794252](https://github.com/planner77/layoutManager/actions/runs/42053794252)의 완료된 Docker job127336691625 SUCCESS 및 실제 로그를 각각 조회했다. PR HEAD는 `6dba66ff802a63d14947205bccde23818e3106e1`; archive/build source는 Actions merge commit `9605fd8c7dc84b00db84cd4bf8c62e571d9abc59`다. tree `2872b49d1434687008d5f15c6ec95f0f9f103591`가 PR HEAD tree와 일치한다. 실제 Docker29.4.2/overlayfs/`io.containerd.snapshotter.v1`에서 10 focused tests, 세 role의 `CONTAINERD_TARGET`, `RR1_REGISTRY_PROOF_PASS negatives=6 retained=false` 및 runtime/정리 경로가 통과했다.
+
+| Role | Manifest / engine target ID | Raw config digest |
+| --- | --- | --- |
+| App | `sha256:c0091e3d576d5afb0c04daaa1a50f44cc1363b5259542851ddee45177287fbec` | `sha256:880b73b2abba2178d08c28aa944815362bca3f9f10ac14e6b08b0436bc83a6d9` |
+| Migrator | `sha256:d3238328c9ebeb2ecfa19899eb88ab4cca72fd153bf7d08fbee838bb8b212880` | `sha256:71e6fe2356fd6fa40ea1b3a16c9a90afec2929086dfc712d60f36395c3f98ca2` |
+| CPU Worker | `sha256:43d838b47e1e26cd328367c634a9bdaed747a2a3e3a5897e126e02b9042d4a21` | `sha256:4a1491958b243d7a110c408108f2dcb2256690ce021c5376a34acf730e0e447d` |
+
+이 실제 실행은 engine target ID와 config digest를 같은 값으로 취급할 수 없음을 확인했다. 각 값을 typed descriptor→검증 raw manifest/config→RootFS로 연결한 수정이 실제 containerd에서 동작했다. CI638의 당시 inspect 세 값은 여전히 수집되지 않았으며 이 표를 그 과거 실행값으로 소급하지 않는다. 이번 digest는 폐기 가능한 CI loopback registry의 증거이며 GHCR 게시/서명 provenance가 아니다.
+
+후속 actual converter KILL은137/OOMKilled=false, 주입 cgroup OOM은137/OOMKilled=true 및 복구로 통과했다. `OCI_CPU_PROOF_PASS`, `P1D_HTTP_OCI_VIEWER_PASS`의 scenes1/denied3/originalGets0/sceneGets4/freshSessionstrue를 확인했다. Static job127336691503도174 files/1,102 tests·production build SUCCESS다. 중간 관측 시 Chromium shard1 및 aggregate는 미완료였고, 이후 둘 다 SUCCESS로 완료돼 위 통합 수용으로 이어졌다.
+
+Manager `gpt-6.1-sol`은 이 실제 identity 의존 증거를 근거로 최소 RR2 RX09–10 구현→Manager 검토→새 nonce 독립 QA를 조건부 재개했다. 나중에 필수 체크가 실패하면 새 의존 작업은 다시 HOLD하고 이미 시작한 소유 cleanup만 안전하게 마무리한다. Root는 successor를6dba로 fast-forward하고 RF/RP/RX 문서·untracked 코드·시험 자원을 보존했다. Main 통합 후 같은 worktree에 새 `test/issue225-deploy-recovery-main` branch를68c0에서 만들었으며, 두 base tree가 같음을 확인하고18개 tracked/untracked WIP 파일의 전후 SHA256을 대조해 보존했다. 기존6dba branch는 남겼고 원 운영 App의 ID/image/start/running/selected Mounts도 이전 snapshot과 같았다. 원래4개 문서 snapshot과 stash `e37dadbf70dd2d9dc51307d44df624e82148e486`는 남겼으며 원래 사용자 worktree는 변경하지 않았다. 제품0.61.0/flags OFF/GHCR HOLD/GO-PILOT BLOCKED를 유지한다.
+
+---
+
+## RR4 actual inventory — 현재 저장소 actor/workflow와 미확인 package ACL (2026-11-06)
+
+읽기 전용 API 관측 시각은2026-11-05T15:29:57–15:30:43 UTC(2026-11-06 KST)다. 연결 도구가 collaborator/workflow 목록 endpoint를 지원하지 않아 기존 동일 작업의 host registry credential을 메모리 안에서만 사용했다. credential 값·헤더·token은 출력/저장/앱 전달하지 않았고 설정 변경도 하지 않았다. `/user`의 실제 actor는 planner77/id45478892였다.
+
+`GET /repos/planner77/layoutManager/collaborators?affiliation=all&per_page=100&page=1`은200이며 pagination이 종료됐다. 목록은 planner77 한 명, roleadmin/pushtrue였다. 연결 도구의 해당 Owner repository permission도admin이다. 이는 **저장소 collaborator 관측**이며 package의 모든 writer가 Owner뿐이라는 증거는 아니다.
+
+`GET /repos/planner77/layoutManager/actions/workflows?per_page=100`은200/total2/pagination 종료. 당시 정확 Main source `d5ea04daa2573c7f8e2f0f2ee14c3ad53cf23389` 파일과 대조했다. Active355693716 `docker-publish.yml`은 push(main,`v*.*.*`)만 지원하고 workflow_dispatch는 없다. release-scope job은 contentsread, 실제 build-and-push job은 contentswrite/packageswrite이며 scope/HOLD 뒤 실행한다. Active360238531 `pr-ci.yml`은 PR 및 workflow_dispatch를 지원하며 jobs는 contentsread, Docker job만 추가 packagesread다. 임의 oldref dispatch422를 package ACL 거절로 해석하지 않는다.
+
+package14938097의 granular ACL·권한 상속·다른 repository Actions grants·일반 PAT/app writer는 여전히 **NOT VERIFIED**다. 현재 두 workflow/Owner-only collaborator/defaultREAD만으로 이를 채우지 않는다. 사용자에게 현재 package 설정의 상속/Write·Admin/Actions access 목록을 정보 요청했으며 아직 답변 전이다. 실제 우회 주체/trigger가 확인되지 않은 상태에서 신규 PAT/ACL 변경을 필수 작업으로 단정하지 않는다. 정책 초기/최종 JSON은 검토안만 준비했으며 서버 적용0. 근거 receipt는 Git 제외 `publisher-collaborator-readback.json`, `publisher-workflow-inventory.json`, `policy-payload-review.json`; 외부 적용 전 같은 source/actor/설정을 다시 확인한다.
+
+---
+
 ## RR1 ID01–06 — 로컬 수정·독립 QA 수용 및 재게시 (2026-11-06)
 
 Manager 대행 `gpt-6.1-sol`은 Developer `gpt-6-sol`의 strict identity/inspect classifier 수정, 집중10 tests, 독립 QA `gpt-6-luna`의 최종 frozen bytes 실제 classic 3-role roundtrip·6음성·3runtime·소유 정리/기존 retained registry 보존을 검토해 추가 로컬 재작업 없이 수용했다. root의 staged/secret/remote/expected-parent 감사 후 Conventional repair commit과 PR #238 fast-forward 게시·새 정확 HEAD CI를 진행하도록 승인했다. 이는 게시/시험의 수용이며 hosted containerd 성공·병합·RR2 재개나 GO-PILOT/출고/정책 적용/Owner GO가 아니다.

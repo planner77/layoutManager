@@ -1,3 +1,26 @@
+## #225 RX11 — 독립 full QA PASS와 미확정 실패 보존 (2026-11-06)
+
+최종 frozen source의 새 독립 QA nonce `413860e4309a14b5`는 실제 RR2/RR3 8단계 및 exact owned cleanup을 통과했다. 과거 QA `b0ba7283e6d6dab2`의 first-admin `SETUP_CSRF_DENIED`와 `07cb07036d93a370`의 Viewer reload 실패 원인은 여전히 UNKNOWN이다. 후속 성공을 안정성 입증이나 앞선 실패의 원인 설명으로 사용하지 않는다. 첫 bounded setup 관측의 request cookie/Origin은 Playwright `headers()` 생략으로 UNAVAILABLE이며, 수정한 `allHeaders()`의 두 번째 bounded 성공과 최종 full QA를 구별한다. 실제 receipt·source 연속성·기존 timeout probe 재사용 근거 및 제한은 [TestReport](TestReport.md)가 정본이다. 새 exact HEAD hosted CI·서명 provenance·출고·Owner GO는 별도다.
+
+---
+
+## #225 RX09–10 — 로컬 fresh flow 실패·임시 PASS와 정리 (2026-11-06)
+
+Main68c0 기반 uncommitted test harness의 실험이다. 실제 product image source는d5e, old GHCR source는9eb8ac이며 새 harness HEAD로 재표시하지 않는다. 각 case의 source byte 연속성을 소급 추정하지 않는다.
+
+| Case / nonce | 실제 결과 | 구분 |
+| --- | --- | --- |
+| `07cb07036d93a370` | `current_http_worker_viewer`에서 `RR2_PLAYWRIGHT_FAILED`, ownedCleanup PASS, JOURNEY_PASS 없음 | 초기 Viewer는 렌더 후 reload에서 scene-status 부재/읽기 승인 요구·로그아웃 header. 당시 cookie/session 상세는 미수집으로 원인 UNKNOWN |
+| `b3f42e801da3e860` | Viewer/reload 통과 후 `formal_restore`에서 `RR2_STAGE_COMMAND_FAILED`, ownedCleanup PASS | target volume 생성 전 중단. 이후 코드 검토에서 host_run의 미지원 allow_failure 인자가 확인됐으나 이 case의 내부 예외 원문은 미수집 |
+| `b45be6249fdd4a4f` | Viewer 통과 후 `formal_restore`에서 `RR2_INVALID_INPUT`, ownedCleanup PASS | 정확 예외/호출 당시 byte snapshot 미수집. 앞 case와 같은 원인으로 단정하지 않음 |
+| `edd2edf557232ed5` | 8 stages PASS, ownedCleanup PASS 후 JOURNEY_PASS | restore helper rc0/RESTORED_ISOLATED/HOST_COMPLETE, direct12/host-helper54 children. prelaunch hash 부재로 source 연속성은 UNVERIFIED, 최종 frozen QA를 대신하지 않음 |
+
+구체적인 test-harness 인자 결함을 수정하고 빠른 host_run signature 회귀를 추가했다. 실패 후 Viewer 통과만으로 첫 인증 실패를 harmless/stable로 재분류하지 않는다. 관측은 HTTP status/안전 코드/cookie 존재와 속성/요청 시각만 추가하며 값·인증 헤더·CAD/세션 body dump는 공개하지 않는다. 제품 변경은 이 실패들에서 승인하지 않았다.
+
+별도 실제 bounded timeout case `cdd5bdb8016f62f2`는 RR2_COMMAND_TIMEOUT·child 관측·정확 owned cleanup·journeyPass=false로 PASS였다. 이는 직접 Docker child의 합성 timeout이며 자연 Worker 장애나 host-helper grandchild 정리 증거가 아니다. 이후 검토에서 helper PID timeout 뒤 Docker CLI grandchild가 남을 수 있는 범위를 확인해, Manager는 test-only owned process group 종료/대기 후 receipt-bound CID 정리를 지시했다. 최종 frozen helper→CLI→container timeout과 fresh flow는 독립 QA에서 별도 검증해야 한다. 상세 최신 결과는 [TestReport](TestReport.md), 기준은 TestPlan RX09–10을 따른다.
+
+---
+
 ## #225 RR1 — PR238 CI638 registry identity 실패 (2026-11-05)
 
 - **관측:** HEADf886af25 / merge-ref sourceb57f703d / treef5c4088의 실제 [CI638](https://github.com/planner77/layoutManager/actions/runs/42046556655)은 FAIL. Docker127311079287 Step14 첫 App에서 `RR1_PULL_CONFIG_ID_MISMATCH`; 세 이미지 build 및 CPU fail-closed guard는 성공, 후속 converter/P1D는 미실행.

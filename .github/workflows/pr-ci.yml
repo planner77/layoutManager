@@ -521,7 +521,8 @@ jobs:
           docker pull registry@sha256:a3d8aaa63ed8681a604f1dea0aa03f100d5895b6a58ace528858a7b332415373
           python3 src/tests/oci/rr1-registry-proof.py \
             --build-receipt "$RUNNER_TEMP/rr1-release/rr1-input.json" \
-            --output-receipt "$RUNNER_TEMP/rr1-release/rr1-registry-receipt.json"
+            --output-receipt "$RUNNER_TEMP/rr1-release/rr1-registry-receipt.json" \
+            --retain-for-r2
       # #225: true OCI (same local cpu-worker target), not a mock child process.
       # Uses only a test-run-unique Docker volume and has a mandatory cleanup trap.
       - name: Verify disposable CPU Worker OCI security, converter faults and restore
@@ -659,6 +660,55 @@ jobs:
             --old-migrator ghcr.io/planner77/layoutmanager:0.56.0-migrate \
             --app "cad-layout-viewer:${VERSION}" --migrator "cad-layout-viewer:${VERSION}-migrate" \
             --source "${{ github.sha }}"
+      # RR2 consumes the retained RR1 digest-pulled triplet and published 0.60
+      # pair. These are actual images; no source retag can replace either input.
+      - name: RR2 actual OCI upgrade, recovery, Worker and Viewer journey
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile src/tests/oci/rr2-*.py src/tests/oci/test_rr2_cleanup.py
+          python3 -m unittest src/tests/oci/test_rr2_cleanup.py
+          python3 src/tests/oci/rr2-timeout-probe.py \
+            --triplet-receipt "$RUNNER_TEMP/rr1-release/rr1-registry-receipt.json"
+          python3 src/tests/oci/rr2-timeout-probe.py --host-helper \
+            --triplet-receipt "$RUNNER_TEMP/rr1-release/rr1-registry-receipt.json"
+          python3 src/tests/oci/rr2-old-pair.py \
+            --output-receipt "$RUNNER_TEMP/rr1-release/rr2-old-pair.json"
+          python3 src/tests/oci/rr2-journey.py \
+            --old-pair-receipt "$RUNNER_TEMP/rr1-release/rr2-old-pair.json" \
+            --new-triplet-receipt "$RUNNER_TEMP/rr1-release/rr1-registry-receipt.json" \
+            --output-receipt "$RUNNER_TEMP/rr1-release/rr2-journey.json"
+      - name: Clean exact RR2 namespaces and retained RR1 registry
+        if: always()
+        shell: bash
+        run: |
+          set -uo pipefail
+          failed=0
+          old="$RUNNER_TEMP/rr1-release/rr2-old-pair.json"
+          new="$RUNNER_TEMP/rr1-release/rr1-registry-receipt.json"
+          for receipt in data/release-proof/rr2-*/receipt.json; do
+            [ -f "$receipt" ] || continue
+            if [[ "$(basename "$(dirname "$receipt")")" =~ ^rr2-timeout-[0-9a-f]{16}$ ]]; then
+              if ! python3 src/tests/oci/rr2-timeout-probe.py --cleanup-receipt "$receipt"; then
+                failed=1
+              fi
+              continue
+            fi
+            if [[ ! "$(basename "$(dirname "$receipt")")" =~ ^rr2-[0-9a-f]{16}$ ]]; then
+              failed=1
+              continue
+            fi
+            if ! RR2_OLD_PAIR_RECEIPT="$old" RR2_CURRENT_TRIPLET_RECEIPT="$new" \
+              python3 src/tests/oci/rr2-recovery-proof.py cleanup --receipt "$receipt"; then
+              failed=1
+            fi
+          done
+          if [ -f "$new" ]; then
+            if ! python3 src/tests/oci/rr1-registry-proof.py --cleanup-receipt "$new"; then
+              failed=1
+            fi
+          fi
+          exit "$failed"
       - name: Readonly stopped and active WAL inspection and recovery (#210 P2)
         shell: bash
         run: |
