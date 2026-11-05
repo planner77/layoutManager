@@ -1,3 +1,9 @@
+## ADR #225-P1D — PR 전용 HTTP→OCI→인증 Viewer 전구간 검증 (2026-11-05)
+
+#234 OCI Worker 검증과 #233 Node/브라우저 별도 검증을 단일 성공으로 합치지 않는다. 신규 P1-D는 오직 새 GitHub PR CI run/attempt의 고유 Docker Volume·로컬 OCI 3대상으로 합성 LINE DXF를 등록하고 실제 Origin·CSRF HTTP, Editor 로그인, 독립 Worker의 영속 READY, 새 브라우저 Context 복원까지 시도한다. 실 운영 `.env`, tag, GHCR, 볼륨은 변경하지 않으며 앱 loopback/Worker network none·UID10001/read-only·자원 제한·테스트 소유 marker를 검사한다. 변환 중 OOM/kill, 진짜 승인형 운영 migration/restore 및 3-image 출고는 후속 GO-PILOT/Release Gate. 새 CI 통과 전 NOT RUN. #225/#218 OPEN, 제품 Scene 두 스위치 OFF, #229 GHCR >=0.61 HOLD, #231 관리자 Ruleset OPEN.
+
+---
+
 ## ADR #225-OCI-PILOT-EVIDENCE — PR #233 이후 독립 OCI 실증 (2026-11-05)
 
 **확정:** PR #233 exact HEAD/CI #612 + Main CI #152 성공, GHCR job SKIPPED. 다음 GO-PILOT 사전 증거는 CI 내 임시 고유 Docker volume과 로컬 `cpu-worker` OCI target으로 범위를 한정한다. 외부 GHCR 푸시/운영 이미지 사용 없이 동일 Dockerfile로 빌드한 image `cad-layout-viewer:ci-cpu-worker`에서 nonroot/네트워크 없음/읽기전용 루트·cgroup 상한 및 실제 Worker DB/Blob 상태를 검증한다. 파일/네트워크/권한 교차 검증은 실패 시 fail closed. 기존 제품 두 Scene 플래그 OFF, 테스트 전용 컨테이너 안에서만 ON. `#229` 영속 Release HOLD·#231 관리자 규칙·#225/#218 OPEN·GO-PILOT BLOCKED는 변하지 않는다.
