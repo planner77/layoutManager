@@ -66,7 +66,81 @@ def save_receipt(receipt):
     path.write_text(json.dumps(receipt, indent=2) + "\n")
 
 
-def run_owned_child(receipt, args, *, kind, volume, image, timeout=120):
+def stop_probe_group(process):
+    """Only the optional timeout fixture seam uses this isolated process group."""
+    try:
+        os.killpg(process.pid, signal.SIGTERM)
+    except ProcessLookupError:
+        pass
+    try:
+        process.communicate(timeout=5)
+    except subprocess.TimeoutExpired:
+        pass
+    try:
+        os.killpg(process.pid, signal.SIGKILL)
+    except ProcessLookupError:
+        pass
+    try:
+        process.communicate(timeout=5)
+    except subprocess.TimeoutExpired as error:
+        raise Blocked('RR2_HOST_GROUP_REAP_FAILED') from error
+
+
+def ready_process(process, readiness, *, startup_timeout, timeout, stop, timeout_code,
+                  clock=time.monotonic, sleep=time.sleep):
+    """Probe-only: independently bound startup, arm execution after real readiness.
+
+    Default journey callers never enter this seam. Diagnostics contain only
+    phases/elapsed/exit classes and booleans, never child output/credentials.
+    """
+    started = clock(); diag = readiness.diagnostics
+    diag.update(phase='STARTUP', exitClass='NOT_OBSERVED', startupElapsedMs=0,
+                executionElapsedMs=0, executionArmed=False)
+    try:
+        check(type(startup_timeout) in (int, float) and 0 < startup_timeout <= 60,
+              'RR2_PROBE_STARTUP_BOUND_INVALID')
+        readiness.startup_started = started
+        readiness.startup_deadline = started + startup_timeout
+        while True:
+            elapsed = clock() - started
+            diag['startupElapsedMs'] = int(elapsed * 1000)
+            if process.poll() is not None:
+                diag['phase'] = 'EARLY_EXIT'
+                diag['exitClass'] = 'ZERO_EXIT' if process.returncode == 0 else 'NONZERO_EXIT'
+                raise Blocked('RR2_PROBE_EARLY_EXIT')
+            if elapsed >= startup_timeout:
+                diag['phase'] = ('READINESS_MISSING' if diag.get('identityVerified') and diag.get('childRunning')
+                                 and not diag.get('readinessObserved') else 'STARTUP_DEADLINE')
+                raise Blocked('RR2_PROBE_' + diag['phase'])
+            ready = readiness(process, startup_timeout - elapsed)
+            # A slow inspect/log command cannot silently extend the startup gate.
+            if ready and clock() - started < startup_timeout:
+                check(process.poll() is None and diag.get('identityVerified')
+                      and diag.get('childRunning') and diag.get('readinessObserved'),
+                      'RR2_PROBE_READY_STATE_UNPROVEN')
+                break
+            sleep(min(0.1, max(0, startup_timeout - (clock() - started))))
+        diag.update(phase='EXECUTION', executionArmed=True, runningAtArm=True,
+                    startupElapsedMs=int((clock() - started) * 1000))
+        armed = clock()
+        try:
+            stdout, stderr = process.communicate(timeout=timeout)
+        except subprocess.TimeoutExpired as error:
+            diag['executionElapsedMs'] = int((clock() - armed) * 1000)
+            diag.update(phase='EXECUTION_TIMEOUT', exitClass='TIMEOUT')
+            raise Blocked(timeout_code) from error
+        diag['executionElapsedMs'] = int((clock() - armed) * 1000)
+        diag.update(phase='EXECUTION_COMPLETED', exitClass='ZERO_EXIT' if process.returncode == 0 else 'NONZERO_EXIT')
+        return subprocess.CompletedProcess(process.args, process.returncode, stdout, stderr)
+    except BaseException:
+        if not diag['executionArmed']:
+            diag['startupElapsedMs'] = max(0, int((clock() - started) * 1000))
+        stop()
+        raise
+
+
+def run_owned_child(receipt, args, *, kind, volume, image, timeout=120,
+                    readiness=None, startup_timeout=30):
     """Name and label disposable Docker runs before a CLI timeout can orphan them."""
     check(args[:2] == ["docker", "run"] and "--rm" in args and
           volume in (receipt["liveVolume"], receipt["restoreVolume"]),
@@ -86,10 +160,15 @@ def run_owned_child(receipt, args, *, kind, volume, image, timeout=120):
     decorated = args[:2] + ["--name", name, "--cidfile", str(cidfile),
         "--label", "com.planner77.purpose=" + PURPOSE,
         "--label", "com.planner77.rr2.nonce=" + receipt["nonce"]] + args[2:]
-    return run(decorated, timeout=timeout)
+    if readiness is None:
+        return run(decorated, timeout=timeout)
+    process = subprocess.Popen(decorated, cwd=ROOT, start_new_session=True,
+                               stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    return ready_process(process, readiness, startup_timeout=startup_timeout, timeout=timeout,
+                         stop=lambda: stop_probe_group(process), timeout_code='RR2_COMMAND_TIMEOUT')
 
 
-def host_run(receipt, command, *, timeout=600):
+def host_run(receipt, command, *, timeout=600, readiness=None, startup_timeout=30):
     """Track Docker children without editing the copied production helper."""
     binary = shutil.which("docker")
     check(binary is not None and Path(binary).is_absolute(), "RR2_DOCKER_MISSING")
@@ -122,6 +201,9 @@ def host_run(receipt, command, *, timeout=600):
             process.communicate(timeout=5)
         except subprocess.TimeoutExpired as error:
             raise Blocked("RR2_HOST_GROUP_REAP_FAILED") from error
+    if readiness is not None:
+        return ready_process(process, readiness, startup_timeout=startup_timeout, timeout=timeout,
+                             stop=stop_owned_group, timeout_code='RR2_HOST_COMMAND_TIMEOUT')
     try:
         stdout, stderr = process.communicate(timeout=timeout)
     except subprocess.TimeoutExpired as error:

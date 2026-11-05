@@ -1,3 +1,11 @@
+## 2026-11-06 — 실제 RP2 실패 및 artifact boundary 재작업
+
+Main4fd의 첫 실제 proof run2는 direct timeout에서 childObserved=false로 실패했고 cause는 UNKNOWN이다. full RR2/서명/CLI는 미실행이다. 동시에 기본 build-push post action이 만든 .dockerbuild artifact3개를 metadata로 확인해 explicit artifact boundary도 미수용이다(내용/유출 여부 미검사). [TestPlan TP-225-RP-EXECUTION-FIX](TestPlan.md) RE01–07에 startup/readiness와 execution timeout의 분리, ownership/cleanup 유지, 암묵 build-record upload 해제 및 job 종료 후 actual artifact inventory를 정의했다. 새 actual dispatch는 수정 QA/CI/Main 뒤 별도 GO 전 금지하며 기존 failure/cleanup/원인 미확정 이력을 보존한다.
+
+첫 repair 독립 QA의 direct/host tiny timeout은 PASS했으나 controlled startup negative는 INSPECT_UNAVAILABLE로 fail closed되어 deadline proof는 미수용이다. TestPlan RE 보완 AC에 관측 subprocess timeout과 실제 startup budget 소진을 함께 확인하는 최소 분류·진단 회귀를 먼저 기록했다. 기존 실패를 소급 재해석하거나 timer/검증을 낮추지 않는다.
+
+---
+
 ## 2026-11-06 — PR240 합산 verification 준비
 
 Manager가 RP/SAN 최소 수정과 이미 수용한 CP/RT local source를 PR240의 다음 head에 함께 포함하도록 결정했다. pure28·세 Actions workflow·fresh frozen QA/required CI를 확인한 뒤에만 정상 통합한다. 기존 source/모델/실패/QA 이력은 보존하며 actual signed provenance·effective policy/ref actor·GHCR·Owner GO는 미실행이다. LP 초안은 포함하지 않고 별도 검토한다. 세부 기준과 실제 결과는 TestPlan/TestReport가 정본이다.

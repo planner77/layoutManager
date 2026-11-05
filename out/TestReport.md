@@ -1,3 +1,68 @@
+## RP execution repair — Manager 로컬 수용·Draft PR 게시 GO (2026-11-06)
+
+Manager 대행 `gpt-6.1-sol`은 최종 frozen5 hash(core760a8a1f/probe1491a236/tests0c129991/proof a543b3c9/pr-ci158aef3b), 독립50/static 결과 및 아래 corrected 실제3-probe/보호/정리 보고를 검토했다. Manager 직접19+3/actionlint/diff와 current5 hash도 PASS다. 새 direct `cd90e1f152447dbd`/actual copied g7 command host `35ea208023d6855d`의 readiness→4s timeout/소유 정리, startup negative `d3bb65db3e7b9d40`의 no-arm READINESS_MISSING/정리, 전후 selected production/R1 보존을 로컬 AC로 수용한다. 늦은 관측 budget 분류는 실제 TimeoutExpired cause와 absolute deadline 소진을 모두 요구하며 임의 오류를 absence/실행 성공으로 승격하지 않는다.
+
+Root는 expected parent `4fd0b32e82bd89f8056becd9e3dabea69a6b5e00`와 reviewed12 paths에 대해 remote/secret/runtime/원본 사용자 변경/최종 tree를 감사한 뒤 정상 Conventional commit 및 독립 Draft PR 게시·새 exact-head required CI를 진행할 수 있다. RF/LP source는 이 수리에 포함하지 않는다. 통합은 실제 새 required CI/검토 뒤 별도 판정한다. 새 actual proof dispatch는 그 뒤 정상 Main/Main CI와 별도 GO가 필요하며 같은 실패 source4fd의 blind 재실행을 승인하지 않는다.
+
+원 hosted RP2 cause UNKNOWN·pre-sign 미실행·unexpected build-record3 metadata, 초기 guard sequencing/전사 오류, original-revision 미분류 negative 및 잘못된 receipt invocation/미보존 stderr 이력을 유지한다. 현재 build-record off는 source/static 검증이며 실제 job 종료 뒤 artifact API inventory·genuine OIDC/cert/CLI·GHCR/정책/Owner release GO와 전체 RR1–RR5 완료는 아직 아니다. 제품0.61.0/flags OFF/GHCR HOLD·GO-PILOT BLOCKED를 유지한다.
+
+---
+
+## RP2 corrected-invocation bounded QA — same frozen revision (2026-11-06)
+
+**판정: 최종 frozen revision의 bounded local QA PASS.** 앞선 partial attempt는 승인된 triplet receipt argument를 빠뜨린 invocation 오류로 그대로 보존한다. 이 QA는 source를 수정하지 않고 Manager가 승인한 절대 경로를 명시한 corrected invocation만 한 번 수행했다. 현재 frozen source 5개 SHA-256은 실행 전/후 Manager freeze와 일치했다. 동일 hashes로 이미 실행한 독립 50-test/compile/actionlint/YAML/bash/diff 결과를 재사용했으며, 이 corrected turn에서 테스트를 재실행하지 않았다. 상세 기록은 ignored `data/release-proof/rp-execution-corrected-qa-live.json`이다.
+
+**Guard와 actual fixture 결과:** 하나의 fail-fast preguard가 preserved original production 및 retained R1 snapshot의 selected metadata와 일치했다. Direct probe의 approved CPU image fixture nonce `cd90e1f152447dbd`는 explicit absolute triplet receipt 입력으로 실행됐다. Identity/readiness/running-at-arm/child observation은 true, startup 438 ms, execution 4004 ms 뒤 `RR2_COMMAND_TIMEOUT`, cleanup PASS였다. Exact child `layoutmanager-rr2-child-cd90e1f152447dbd-1fc74447`와 volume `layoutmanager-rr2-timeout-cd90e1f152447dbd`는 종료 후 부재를 확인했다.
+
+Host probe nonce `35ea208023d6855d`도 explicit receipt 입력으로 실행됐다. Host path는 `g7-deploy.py`를 owned namespace에 복사해 production `command()` helper를 호출했고 copied bytes 및 receipt SHA-256이 source와 일치했다. Identity/readiness/running-at-arm/child observation true, startup 546 ms, execution 4001 ms, `RR2_HOST_COMMAND_TIMEOUT`, groupStopped=true, cleanup PASS였다. Exact child `layoutmanager-rr2-host-35ea208023d6855d-1951a234`와 volume `layoutmanager-rr2-timeout-35ea208023d6855d`는 부재했다.
+
+Controlled marker-delay3s/startup1s negative nonce `d3bb65db3e7b9d40`는 exit 1, `RR2_PROBE_READINESS_MISSING`, phase `READINESS_MISSING`, startup 1001 ms, child identity/running true, readiness false, executionArmed=false/0 ms, cleanup PASS였다. Exact child `layoutmanager-rr2-child-d3bb65db3e7b9d40-789d106f` 및 volume `layoutmanager-rr2-timeout-d3bb65db3e7b9d40`도 부재했다. 이것은 승인된 unarmed startup deadline 결과이며 timeout execution 성공으로 기록하지 않는다. 전체 세 probe 뒤 postguard가 production/retained R1 selected metadata 불변 및 frozen hashes unchanged를 확인했다.
+
+**제한:** 기존 hosted RP2 원인은 계속 **UNKNOWN**이다. 이 bounded local result는 full journey, 실제 signing/OIDC, workflow dispatch, GHCR/API/policy, post-job artifact inventory, 새 exact-head CI 또는 Owner GO가 아니다. 원 revision의 독립 QA 기록과 corrected QA 전에 발생한 invocation 오류는 아래 역사 로그대로 보존한다. Release/overall external acceptance와 publication은 계속 HOLD다.
+
+---
+
+## RP2 final repair revision — 독립 로컬 QA (2026-11-06)
+
+**판정: 로컬 source 및 회귀 PASS, actual bounded probe 수용은 PARTIAL.** Worktree `/home/planner/Dev/layoutManager-issue225-proof-execution-fix`, base `4fd0b32e82bd89f8056becd9e3dabea69a6b5e00`의 Manager frozen 5개 SHA-256을 probe 전 독립 계산해 모두 일치시켰고, 정적/회귀 확인 이후에도 동일함을 확인했다. 실제 QA 실행은 새19 + cleanup3 + 기존 RP7/CP6/RT15 = 50/50 tests PASS, Python compile, actionlint 1.7.12 (`release-proof.yml`, `pr-ci.yml`), 두 workflow YAML parse, inline Bash 84 blocks의 `bash -n`, `git diff --check` PASS다. 새 회귀는 build-record 차단 및 deadline/observer 실패 경계를 포함한다.
+
+**코드 검토:** observer deadline 분류는 `PROOF.run`이 발생시킨 실제 `subprocess.TimeoutExpired`를 cause로 가진 `RR2_COMMAND_TIMEOUT`과 동일 absolute startup deadline 초과를 모두 확인해야 한다. deadline 이전 timeout, cause 없는 timeout, auth/nonzero/malformed 응답은 `INSPECT_UNAVAILABLE`/`READINESS_UNAVAILABLE`에 남는다. deadline은 외부 readiness gate의 absolute deadline과 min 처리되어 callback에서 재구성해 늘어나지 않는다. 실행 timeout 4초, 기본 direct 120초 및 host 600초 경로는 유지된다. proof workflow는 3개 `docker/build-push-action` 모두에 job-level `DOCKER_BUILD_RECORD_UPLOAD: 'false'`를 상속하고 step/runtime override와 미검토 action producer를 거부한다. 이는 정적/source 근거이며 실제 post-job artifact inventory가 아니다.
+
+**보호 상태 및 실제 실행 한계:** 보존된 production snapshot 및 selected retained R1 metadata를 비교하는 fail-fast preguard PASS 후 direct timeout 한 번을 시도했다. 이 실행은 exit 1로 끝났고 nonce `4b1bbd1fd1c21402` 디렉터리만 생성했다. QA invocation에 승인된 triplet receipt의 `--triplet-receipt` 절대 경로를 넘기지 않아 probe가 repair worktree 기본 경로를 사용했다. 후속 read-only 확인에서 그 기본 파일은 없고 승인된 외부 receipt는 존재했다. 실행 코드 순서상 `checked_input`의 `Path.read_text()`에서 `FileNotFoundError`가 예상되지만 stderr/exception object를 보존하지 않았으므로 이는 정황 기반 분류이며 정확한 exception output은 NOT RECOVERABLE이다. 이 단계는 receipt 저장/volume 생성 전이라 receipt/result 또는 owned volume/container가 만들어지지 않았다. 이 실패를 timeout PASS로 보지 않았고 재시도하지 않았다. 따라서 이번 revision의 host helper 및 controlled startup-negative 실제 probe는 **NOT RUN**이다. 동일 selected production/retained R1 id/image/running/start/configured image/mount names는 postguard에서 불변이었고, frozen source hash도 probe attempt 후 일치했다.
+
+**한계 / 다음:** 원 hosted RP2 실패 원인은 계속 UNKNOWN이며 이 수리는 local synthetic/source 경계만 검증했다. 새 direct probe PASS, host probe의 actual copied `g7.command`, 새 controlled negative의 `READINESS_MISSING`/`STARTUP_DEADLINE`/`STARTUP_OBSERVATION_DEADLINE` 성공, exact owned resource absence는 입증되지 않았다. Signed OCI/CLI, OIDC, workflow dispatch, GHCR/API/policy, full journey, new exact-head CI 및 post-job artifact inventory는 NOT RUN. 원 revision의 독립46/static 미복구 기록과 최초 QA 결과는 아래 역사 보고를 보존한다. 이 partial QA는 release/overall QA acceptance 또는 Owner GO가 아니며 publication HOLD를 유지한다. 전체 실제 실행 및 frozen-hash-after 기록은 ignored `data/release-proof/rp-execution-final-qa-live.json`에 있다.
+
+---
+
+## RP2 execution-fix — 독립 QA original-revision bounded evidence (2026-11-06)
+
+**범위와 판정:** 이는 source snapshot `4fd0b32e82bd89f8056becd9e3dabea69a6b5e00` / tree `e004fb393d7b0e72fa6e2fdd7ef7d036715131f2` 위에서 QA가 수행한 제한된 로컬 실행 근거다. QA가 당시 확인해 Manager에 보낸 frozen source 5개 SHA-256은 handoff 값과 일치했고, probe 이후 동일하다고 보고했다. 현재 수정 중인 파일을 다시 검사하지 않았다. actual hosted RP2 cause는 **UNKNOWN**이다.
+
+**실제 QA probe:** Direct timeout nonce `7d72389e56666925`는 identity/readiness 확인, startup 관측 138 ms, 실행 timeout 4003 ms, child 관측 및 cleanup PASS였다. Host timeout nonce `fc8568f2315adc05`는 startup 224 ms, 실행 timeout 4003 ms, child 관측, process group stopped 및 cleanup PASS였다. Controlled startup-negative nonce `6a11884d72af939f`는 exit 1 / `RR2_PROBE_INSPECT_UNAVAILABLE`, phase `STARTUP`, elapsed 952 ms, identity verified 및 child running이었으나 readiness 미관측·executionArmed=false·execution 0 ms, cleanup PASS였다. 이 negative는 기대한 readiness deadline 결과로 분류되지 않았다. inner cause는 UNKNOWN이며 이 결과를 성공적인 startup-deadline 시험으로 표현하지 않는다. 전체는 허가된 bounded local probe이며 product journey 성공이나 hosted 원인 재현이 아니다.
+
+**보호 상태:** probe 전에 수행한 fail-fast guard는 PASS였다. probe 후 selected production 및 retained R1의 id/image/running/start/mount metadata가 불변이고 정확히 세 nonce 소유 container/volume 세트가 부재함을 확인했다. QA가 당시 보고한 frozen source 5개 hash도 probe 후 변하지 않았다. preserved before/after metadata와 세 개 result/receipt는 ignored `data/release-proof` evidence로 남아 있다. 초기에 별도로 실패한 literal-transcription guard와 그 뒤 direct probe가 shell sequencing상 먼저 발생한 이력은 이전 checkpoint에서 그대로 보존한다. 이를 PASS로 재분류하지 않는다.
+
+**회귀/정적 시험 범위:** QA의 이 revision에 대한 이전 독립 46-test/static 결과는 context reset 전 Manager에게 보고되지 않았고 recover 가능한 실행 기록에서도 찾지 못했다. 따라서 이 보고서에서 미확인 QA 시험 수나 결과를 주장하지 않는다. Developer handoff에 기록된 46-test/compile/YAML/bash 결과와 Manager의 별도 15+3/actionlint/diff 결과는 각 역할의 별도 보고다. 이 QA turn에서는 재실행하지 않았다.
+
+**한계 / 미실행:** actual OCI signing/CLI, OIDC, dispatch, GHCR/API/policy, full journey, 후속 exact-head CI 및 post-job artifact inventory는 NOT RUN이다. 기존 hosted run의 3개 unexpected build-record artifacts 관측과 원인 UNKNOWN을 유지하며, 내용 다운로드/삭제/검사나 데이터 유출 판단을 하지 않았다. Source repair 후 fresh independent QA와 새 승인된 hosted proof가 필요하다. 이 기록은 release/overall QA acceptance나 Owner GO가 아니며 publication hold를 유지한다.
+
+
+---
+
+## RP2 actual 실패 및 execution/artifact 수리 checkpoint (2026-11-06)
+
+**실제 실패 보존:** trusted Main `4fd0b32e82bd89f8056becd9e3dabea69a6b5e00`/tree `e004fb393d7b0e72fa6e2fdd7ef7d036715131f2`의 [RP run2/42092820405](https://github.com/planner77/layoutManager/actions/runs/42092820405), job127475057679 step16은 direct timeout fixture에서 `RR2_COMMAND_TIMEOUT`, childObserved=false, cleanup=PASS였다. 원인은 UNKNOWN이며 startup latency 가설을 입증하지 못했다. 3-role build/RR1/old0.60 pair는 성공했지만 full RR2/export/finalize/OIDC/CLI는 SKIPPED/NOT RUN이다. always cleanup은 partial owned cleanup 성공이며 signed completion이 아니다. Root와 독립 QA가 API metadata로 관측한 build-record artifact3개는 `13446786446`/61270bytes, `13446666472`/64291bytes, `13444864759`/35479bytes다. 이들은 explicit public allowlist 밖 `.dockerbuild`이며 artifact boundary FAIL이다. 내용은 내려받거나 검사하지 않았고 CAD/DB/credential 유출 여부를 단정하지 않는다.
+
+**Developer 수리:** Manager RE01–07 이후 실제 대행 `gpt-6.1-sol`이 별도 repair worktree에서 optional readiness seam을 추가했다. 기존 일반 journey의 direct120s/host600s와 실행 proof4s는 유지하며 fixture startup/readiness만 독립30s로 제한한다. exact CID/name/engine/nonce/labels·readonly volume·running 및 fixed Node marker를 확인한 뒤 실행 timer를 arm한다. deadline/early-exit/readiness-missing/inspect-unavailable/execution-timeout은 별도 phase/code이고 stdout/env 원문은 diagnostics에 넣지 않는다. host fixture는 이제 소유 경로에 byte-identical 복사한 `g7-deploy.py`의 `command(dummy Docker argv)`만 호출한다(실제 deployment main/upgrade 실행 아님). default caller 경로와 receipt-owned cleanup/process-group TERM/wait/KILL/reap를 보존한다.
+
+**로컬 시험:** 새 집중15/기존 cleanup3/기존 RP7+CP6+RT15=총46 tests PASS; Python compile, default actionlint1.7.12의 proof/pr-ci, YAML/bash syntax 및 diff PASS. build-record 회귀는 기존 source에서 job flag 누락으로 RED 후 `DOCKER_BUILD_RECORD_UPLOAD='false'`를 proof job에 설정해 GREEN이다. 3 build·step/runtime true override·알 수 없는 implicit producer를 검사한다. `DOCKER_BUILD_SUMMARY` 설정과 artifact upload를 혼동하지 않는다. 필수 scope job에 새 집중 시험을 연결했고 실제 post-action artifact 부재는 다음 approved run 종료 후 Root/독립 QA API inventory가 확인해야 한다.
+
+**허용된 tiny 실제 시험:** Root가 제공한 existing loopback CPU ref `sha256:2c49b5640913ff3a72232426877e92d213424386ef18c9d50586195979072e3e`, config `sha256:2b933b2fd1442ba73e54cb7fa428e5ee0e53408734dff8ddfd74b94f333ff8dc`, image source `d5ea04daa2573c7f8e2f0f2ee14c3ad53cf23389`/0.61.0만 사용했다. harness는 Main4fd 기반 WIP 수리 bytes이며 image source를 현재 harness/source라고 바꾸지 않았다. build/pull/registry write/whole journey를 실행하지 않았다. preliminary direct nonce `6827ea58ef799508`: identity/readiness/runningAtArm=true, startup poll elapsed120ms, execution timeout4004ms, cleanup PASS. 이후 receipt read/finally 경계를 보강했으므로 이 preliminary probe를 최종 frozen probe bytes의 재실행으로 기록하지 않는다. 최종 helper/core bytes의 host nonce `9eb81597430de70c`: readiness=true, startup poll222ms, timeout4011ms, groupStopped=true, cleanup PASS. controlled startup negative `e30ab723ff56bb2e`: marker를3s 지연하고 별도 startup1s에서 READINESS_MISSING, executionArmed=false/0ms·childObserved=false·exit1, cleanup PASS. 미관측 child를 timeout PASS로 바꾸지 않았다. 이들은 synthetic bounded local fixture이며 hosted RP2 원인/SLA나 full journey 성공 증거가 아니다.
+
+**Guard 실패도 보존:** 첫 optional protected-metadata guard는 전달된 image ID literal의 전사 오류 때문에 FAIL했다. Developer shell이 실패 뒤 독립 newline의 authorized direct probe까지 진행한 sequencing 실수가 있었다. 이를 guard PASS로 기록하지 않는다. Manager가 보존 baseline과 실제 selected ID/image/running/start/mount를 독립 대조해 전사 오류임을 확인한 뒤, 남은 host/negative는 한 Python fail-fast guard→dependent invocation으로 실행했다. 이 경계의 전후 production 및 retainedR1 selected metadata는 동일했다. operational App/DB/CAD/volume, held R1 registry와 manual R2 namespace는 변경하지 않았으며 final independent QA의 새 guard 확인이 남는다.
+
+**제한/다음:** 다음 실제 proof dispatch·job 종료 후 artifact inventory·OIDC/cert/CLI 검증·새 exact-head required CI/독립 QA는 미완료다. RF/LP source는 frozen 그대로이며 candidate build flag 보완은 별도 refreeze한다. GHCR/정책/Owner GO·전체 RR5 완료를 부여하지 않는다. 새 commit/push·artifact download/delete·credential/API/dispatch 작업은 하지 않았다.
+
 ## PR240 combined Manager 로컬 수용·게시 GO (2026-11-06)
 
 Manager 대행 `gpt-6.1-sol`은 아래 새 합산 독립 QA와 frozen11 hash를 검토했고 직접 RP7+CP6+RT15 회귀·세 workflow actionlint·initializer bash·diff를 통과했다. SAN의 pinned-source-shaped causal 거부 분류, 수용한 CP/RT 원본 byte 보존 및 기존 scope job의 명시적 28-test wiring을 수용한다. Root는 expected parent `874f1a3c506a3db35e588b882924d55d4e4050ab`·secret/runtime/remote/tree를 최종 감사한 뒤 기존 PR240에 정상 후속 commit/push하고 제목·본문을 최종 combined 범위로 정리할 수 있다. 새 exact-head required CI/검토 뒤 통합은 별도 판정한다. 이전644는 과거 baseline이며 actual OIDC/정책·actor denial/GHCR·Owner GO는 NOT RUN/PENDING이다. LP source는 이 head에 포함하지 않았고 외부 실행·권한 변경은 승인하지 않는다. 전체 RR1–RR5는 진행 중이다.

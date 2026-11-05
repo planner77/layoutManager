@@ -1,3 +1,31 @@
+## #225 RP2 — 실제 실행의 timeout 사전 시험·암묵 artifact 실패 (2026-11-06)
+
+[PR240](https://github.com/planner77/layoutManager/pull/240)은 정확 head8c04의 CI645 및 Main4fd의 Main161 SUCCESS/GHCR HOLD skip으로 코드 통합했다. 이후 승인된 첫 실제 [proof run2/42092820405](https://github.com/planner77/layoutManager/actions/runs/42092820405), source `4fd0b32e82bd89f8056becd9e3dabea69a6b5e00`/tree e004/attempt1/job127475057679는 step16 direct timeout probe에서 exit1이었다. nonce `afdf37e08f8c1af1`의 `RR2_COMMAND_TIMEOUT`, childObserved=false, cleanup=PASS가 실제 관측됐다. 약4초 제한에 Docker 기동이 포함된 것은 코드 관측이며, 원래 실패의 기동 지연·조기 종료/CID 상태는 미수집이라 정확 원인은 **UNKNOWN**이다. 후속 성공이나 분리한 기동 deadline으로 이 원인을 소급 확정하지 않는다.
+
+앞선 실제 guard/init/schema/archive·3-role build/RR1 및 게시0.60 pair 검증은 통과했지만 전체 RR2/export/finalize/OIDC 서명/CLI는 SKIPPED/NOT RUN이다. always 단계의 partial owned cleanup은 성공했고 signing completion marker를 만들지 않았다. 별도 보충 CI646 SUCCESS는 같은 PR head의 일반 CI 결과이며 RP2 실패나 genuine signature를 대신하지 않는다. 실제 로그·원시 artifact metadata를 독립 QA가 대조했으며 상세 판정은 [TestReport](TestReport.md)를 따른다.
+
+실제 artifact API에는 기본 build-push post action의 `.dockerbuild`3건이 있었다: `13446786446`(61,270B), `13446666472`(64,291B), `13444864759`(35,479B). 정제 public 디렉터리의 allowlist가 빈 상태에서 PASS해도 post action의 기본 업로드까지 통제한 것은 아니다. 네 signed subject나 정제 proof artifact로 간주하지 않는다. 내용 다운로드·삭제·CAD/DB/credential 유출 판정은 하지 않았다. [Docker 공식 action 문서](https://github.com/docker/build-push-action/blob/c3c9e263c25d99ce0380d002d59b67737d91b0dc/README.md#environment-variables)는 build record upload 기본값 true와 명시적 false 설정을 설명한다. 수정은 해당 업로드를 차단하고 새 실제 job 종료 뒤 API inventory를 다시 검증해야 수용한다.
+
+---
+
+## #225 RE 최초 독립 QA — startup 관측 오류의 분류 미완료 (2026-11-06)
+
+첫 frozen core `75279364…87aef7`/probe `b27854a5…3ac5c`의 독립 QA에서 새 direct·실제 copied g7 command host timeout/정리는 통과했지만, 준비 신호를 주지 않는 음성 사례 `6a11884d72af939f`는 `RR2_PROBE_INSPECT_UNAVAILABLE`로 끝났다. 기록된 phase는 STARTUP/약952ms, executionArmed=false/실행0, cleanup=PASS였다. 기대한 startup deadline 분류를 입증한 PASS로 세지 않는다. 실제 내부 오류·원인은 미수집으로 UNKNOWN이며 pre/post 보호 검사와 세 소유 namespace 부재의 관측은 별도다.
+
+이후 로컬 seam 재현은 실제 `subprocess.TimeoutExpired`의 PROOF.run 예외 chain도 기존 catch에서 일반 inspect unavailable로 묶는 경로를 확인했다. 이는 원래 QA 사례의 내부 원인을 증명하지 않는다. 보완 AC는 실제 timeout chain과 monotonic startup budget 소진이 함께 확인될 때만 별도 startup 관측 deadline으로 분류하고, 기한 내 timeout·Docker nonzero/auth/비정상 응답은 계속 unavailable로 거부하도록 한정했다. bound 연장·readiness/실행 PASS 승격·blind retry는 하지 않는다. 새 source의 독립 QA와 hosted 검증은 별도 판정이다.
+
+QA 문맥 reset 뒤 과거 결과를 보고할 때는 보존된 실제 QA 메시지와 receipt만 사용한다. 당시 QA가 독립46/static 완료를 보고하지 않은 상태에서 assignment의 예정 수를 실행 결과로 추정하지 않는다. 상세 역할·hash·제한과 후속 결과는 [TestReport](TestReport.md)를 따른다.
+
+---
+
+## #225 RE 로컬 보존 검사 — 전달 해시 오기와 fail-fast 누락 (2026-11-06)
+
+Root가 전달한 운영 이미지 해시 문자열에 오기가 있어 첫 선택 메타데이터 검사는 실패했다. Developer의 독립 newline 실행 때문에 그 뒤 direct tiny probe `6827ea58ef799508`가 실행된 순서 오류도 보존한다. 이를 보호 검사 PASS나 최종 frozen probe 실행으로 기록하지 않는다. 원래 보존한 `operational-container-before.json`과 `rr2-prod-before.json`, 새 선택 메타데이터 조회의 ID/이미지/running/StartedAt은 실제로 일치했다. 원본 baseline을 덮어쓰거나 실제 운영 변경으로 해석하지 않았다. mounts는 선택 필드만 확인했으며 불명확한 과거 직렬화 hash를 재구성했다고 주장하지 않는다. Env/DB/CAD는 읽지 않았다.
+
+이후 검사는 보존 원본 파일을 직접 읽는 단일 fail-fast 경로에서 성공해야만 후속 시험을 허용했다. 현재 frozen source의 독립 QA는 같은 보호 조건 아래 새 direct/실제 copied g7 command host/준비 실패의 작은 소유 시험을 따로 수행한다. 기존 이미지 sourceD5e와 repair harness parent4fd+WIP bytes를 구별하며 초기 direct의 실행 당시 hash 미수집·사후 재구성 한계를 유지한다. 실제 결과·hash·역할은 [TestReport](TestReport.md)가 정본이다.
+
+---
+
 ## #225 RP SAN 분류 — pinned diagnostic 합성 RED (2026-11-06)
 
 Source874f의 wrongSignerWorkflow 분류는 literal wrong.yml을 요구했으나 pinned gh2.103.3은 regexp.QuoteMeta가 적용된 wrong\.yml을 포함하는 SAN regex 진단을 만든다. Manager의 source-shaped 합성 주입은 RP_NEGATIVE_CAUSE_UNPROVEN_WRONGSIGNERWORKFLOW로 실패했다. 실제 Sigstore/CLI execution 실패가 아니며 actual OIDC는 NOT RUN이다. fallback Developer gpt-6.1-sol은 exact escaped pattern+승인 actual SAN+contiguous causal mismatch로만 분류하도록 수정하고 기존7 집중 회귀/compile/diff를 통과했다. generic/infra/다른 pattern·SAN은 계속 거부한다. Source/wiring import 뒤 합산 독립 QA와 새 exact HEAD CI 전 통합 HOLD이며, 완료644는 이전874f의 일반 baseline 근거다.

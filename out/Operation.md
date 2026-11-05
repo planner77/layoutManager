@@ -1,3 +1,13 @@
+## #225 RP timeout fixture readiness·build-record 경계 (2026-11-06)
+
+`rr2-timeout-probe.py`는 소유 disposable child의 CID/name/engine/nonce/labels·readonly volume·running과 fixed fixture marker를 먼저 확인한다. startup/readiness는 기본30s의 별도 유한 gate이며 execution timeout4s는 성공적인 readiness 뒤에만 arm한다. `RR2_PROBE_STARTUP_DEADLINE`, `RR2_PROBE_EARLY_EXIT`, `RR2_PROBE_READINESS_MISSING`, `RR2_PROBE_STARTUP_OBSERVATION_DEADLINE`, inspect/readiness unavailable과 실제 execution timeout을 구별한다. 관측 deadline은 실제 wrapped `subprocess.TimeoutExpired` 원인과 공유한 원래 monotonic startup 기한 소진이 함께 확인될 때만 분류한다. 기한 내 timeout·auth/명령 nonzero·비정상 응답은 unavailable로 유지하며 기한을 늘리거나 readiness/실행 PASS로 승격하지 않는다. 이 분류 보완은 과거 실제 실패의 내부 원인을 소급 증명하지 않는다. phase/elapsed/exit class·boolean만 남기며 원본 child stdout/env는 출력하지 않는다. `--startup-delay-seconds`/`--startup-seconds`는 새로 만든 fixture의 음성시험용으로만 쓰며 일반 journey direct120s/host600s를 바꾸지 않는다. 실제 timeout PASS에는 observed running/readiness·executionArmed·exact-owned cleanup이 모두 필요하다.
+
+`--host-helper`는 이제 byte-identical `src/scripts/g7-deploy.py` 복사본의 `command()`에 exact dummy Docker argv만 전달한다. deployment main, .env, upgrade/start는 호출하지 않는다. host process group TERM/wait/KILL/reap와 receipt child cleanup을 확인한다. 입력 CPU image의 원래 source/version/role·classic config 또는 검증된 typed descriptor를 유지하며 harness commit과 image source가 다르면 별도 기록한다. 기존 retained R1 registry나 운영/다른 R2 namespace를 cleanup input으로 삼지 않는다.
+
+docker/build-push-action v7의 [공식 README](https://github.com/docker/build-push-action/blob/c3c9e263c25d99ce0380d002d59b67737d91b0dc/README.md#environment-variables)는 build-record artifact upload가 기본 true이며 `DOCKER_BUILD_RECORD_UPLOAD=false`로 꺼진다고 설명한다. proof job은 이 값을 문자열 false로 고정하고 3 build 및 override/새 implicit producer를 regression으로 검사한다. build summary on/off는 별도 설정이다. explicit public directory 검사나 정상 step의 allowlist만으로 이후 post action artifact가 없다고 판단하지 않는다. 다음 approved actual run이 **완전히 종료된 뒤** Root/독립 QA가 API artifact inventory로 허용된 sanitized proof artifact만 존재하는지(실패 전 subject 미생성이면 artifact0)를 확인해야 한다. 기존 RP2의 `.dockerbuild`3개는 metadata만 보존하며 자동 삭제·내용 다운로드·유출 단정은 하지 않는다. 실제 실패/unknown cause·새 local probe 범위는 [TestReport](TestReport.md)에 둔다.
+
+---
+
 ## #225 실제 배포·복구 및 릴리스 통제 준비 (2026-11-05)
 
 현재 RR1–RR5의 정본은 [TestPlan](TestPlan.md)의 TP-225-RELEASE-RECOVERY다. 새 후보는 고정 Git commit/tree의 archive로 세 OCI target을 빌드하고, 소유 loopback registry의 manifest/config/layer raw bytes를 검증한 digest ref로만 실행한다. 같은 소유 registry receipt는 실제 게시된 GHCR0.60 pair로 시작하는 업그레이드·원래 이미지 롤백 시험에 전달한다. 이 receipt는 로컬 실행 근거이며 독립 서명 provenance나 GHCR 출고 승인이 아니다. 실제 실행 상태·hash는 [TestReport](TestReport.md)에만 기록한다.
