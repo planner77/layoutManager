@@ -1,3 +1,11 @@
+## 2026-11-06 — RP CLI 불투명 Sigstore 거부에 대한 독립 검증 계약 보완
+
+#241 CI #648/Main #162 성공으로 timeout readiness와 기본 build-record upload 제한이 코드에 통합되었으나, 실제 proof Run #2는 실패로 보존되며 서명/OIDC는 미실행이다. 고정된 gh 2.103.3은 내부 Sigstore 오류를 축약하므로, 원인별 stderr만 요구하던 검증은 실패 원인을 식별하지 못할 수 있다.
+
+다음 test-only 단계는 실제 서명된 positive 결과·동일 bundle·원본 SHA 및 정확 단일 policy/subject 변경을 negative 전후에 대조한다. 제한된 gh issuer 오류일 때에만 \`BRACKETED_CLI_REJECTION_CAUSE_OPAQUE\`로 기록하고 내부 원인이라고 주장하지 않는다. \`TestPlan TP-225-RP-OPAQUE-CLI\`가 기준이며 다음 실제 proof 실행·GO-PILOT/릴리스 출고는 여전히 독립 승인 사항이다. 제품 Scene flags OFF, >=0.61 GHCR HOLD, #225/#218/#231 OPEN.
+
+---
+
 ## 2026-11-06 — 실제 RP2 실패 및 artifact boundary 재작업
 
 Main4fd의 첫 실제 proof run2는 direct timeout에서 childObserved=false로 실패했고 cause는 UNKNOWN이다. full RR2/서명/CLI는 미실행이다. 동시에 기본 build-push post action이 만든 .dockerbuild artifact3개를 metadata로 확인해 explicit artifact boundary도 미수용이다(내용/유출 여부 미검사). [TestPlan TP-225-RP-EXECUTION-FIX](TestPlan.md) RE01–07에 startup/readiness와 execution timeout의 분리, ownership/cleanup 유지, 암묵 build-record upload 해제 및 job 종료 후 actual artifact inventory를 정의했다. 새 actual dispatch는 수정 QA/CI/Main 뒤 별도 GO 전 금지하며 기존 failure/cleanup/원인 미확정 이력을 보존한다.
