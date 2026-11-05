@@ -1,3 +1,9 @@
+## #225 실 OCI proof 경계 (2026-11-05)
+
+기존 구조: signed G7 App upload/Version+Job 원자성→single CPU Builder job→분리 Node Worker→SourceSHA+DTO+immutable Blob readback→CurrentScene CAS+Audit→Browser Viewer. PR #233은 signed multipart 서비스와 분리 Node 프로세스, 새 Chromium Context를 **독립된 양성·음성 시험으로** 검증했다 (CI #612/Main #152 PASS). 이번 소유 CI volume 기반 신규 proof는 동일 `cpu-worker` OCI target의 보안 자원·프로세스 경계를 실제 Docker로 검사하지만 *현장에 배포된* OCI/App/Auth/Viewer E2E를 대신하지 않는다. 0.61 schema/Worker 출시 및 기존 GHCR 태그는 불변; #229 release HOLD, #231 권한 설정은 독립 Gate다.
+
+---
+
 ## #225 GO-PILOT verification seam — separate process and fresh browser (2026-11-05)
 
 연결 검증 범위를 **서로 다른 증거 층**으로 분리한다: (A) synthetic Greenfield 0.61 + 실제 Prisma/SQLite/CadStorage를 별도 Node Worker CLI에서 열어 `SceneBuildJob → CPU LINE DTO → immutable SceneAsset + CurrentScene CAS + Audit`를 게시하고 별도 DB reader로 확인; (B) 독립 claim 프로세스 실제 SIGKILL·stale row recovery 및 SourceSHA/권한 거절; (C) Node CPU DTO → immutable Blob readback → 새 Chromium context의 `restoreSourceScene` UI 렌더. (A)+(B)+(C)별 통과는 **단일 HTTP Upload/API→OCI Worker→실 사용자 재접속**의 통합 PASS로 추론할 수 없다. 기존 CPU Builder·SourceSHA·G7 Site/Actor 최신 재검사·기존 Scene 포인터 불변 계약은 변경하지 않는다. 출고/GO-PILOT HOLD 유지.

@@ -1,3 +1,11 @@
+## 2026-11-05 — PR #233/Main CI #152 확정 및 실제 OCI 검증 착수
+
+[PR #233](https://github.com/planner77/layoutManager/pull/233) source HEAD `2b1cb5bef3a011e9b31eeafc508aec90051b2754`: [PR CI #612](https://github.com/planner77/layoutManager/actions/runs/41920944913) 8개 applicable SUCCESS(A2 scope SKIPPED), Vitest 1,098/1,098 PASS, 별도 Node Worker·G7 multipart·Chromium 회귀 PASS. Squash Main `b33945d7ee80946950f8debfd04ce080af6e7105` / [Main CI #152](https://github.com/planner77/layoutManager/actions/runs/41924479834) SUCCESS, GHCR publish SKIPPED. 이전 검증 대기 문구는 작성 시점 이력으로 보존.
+
+후속 `feat/225-disposable-oci-proof`는 **새 실제 Docker OCI 환경**의 소유 ephemeral volume + worker runtime·격리·SIGKILL/retry·권한·원본 SHA·복원을 required PR CI에 연결하는 시험 후보. 새 HEAD CI 확인 전 GO-PILOT 증거 미완료. 제품 기능 플래그 OFF, #229 GHCR HOLD, #231 Tag Ruleset OPEN, #225/#218 OPEN, GO-PILOT BLOCKED. 운영 데이터·태그 불변.
+
+---
+
 ### 2026-11-05 — signed multipart Service 업로드 연결 시험 소스 추가
 
 `src/tests/integration/scene-cpu-worker-upload-g7.test.ts`는 일회용 G7 0.61 DB에 실제 Editor/AuthSession/Site Grant를 발급하고 `prepareG7CadWrite`의 Origin/CSRF 검사를 통과한 multipart `uploadCad` 호출을 통해 원본 SHA·Version·Job QUEUED를 생성한 뒤 분리된 Node Worker 실행→READY·SceneRepository readback/Audit·중복 Retry 거절, 권한 철회 후 FAILED/원본 보존을 검증하도록 작성됨. 이는 실제 제품 HTTP listener/프록시, 별도 OCI 및 사용자 Viewer 새 로그인 전체 E2E가 아니며 CI 실행 전 **NOT VERIFIED**.

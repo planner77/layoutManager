@@ -1,3 +1,19 @@
+## #225 / PR #234 — OCI SIGKILL 실패 조사 시 안전 경계 (2026-11-05)
+
+CI #614에서 불투명했던 내부 self-SIGKILL 결과를 제거하고, **테스트 전용 CID를 호스트가 명시적으로 KILL**한다. `claim-wait`는 유일한 test-owned Volume에 claim 완료 마커를 남긴 후 대기하며 별도 probe가 실제 DB RUNNING 상태를 확인한다. `docker kill --signal=KILL` 호출과 `docker wait`/inspect exit 137 검증 전에는 stale 복구를 실행하지 않는다. kill 대상은 정확히 해당 PR CI가 만든 컨테이너이고 비밀이나 내부 runtime 경로 로그는 출력하지 않는다; 예외 시에도 cleanup은 해당 CID와 이번 Run+Attempt 볼륨만 삭제한다. 운영 Worker/호스트, 서비스, 실 .env, 기존 GHCR 및 release tag는 절대 변경하지 않는다.
+
+---
+
+## #225 GO-PILOT 준비: OCI CI/운영 격리 (2026-11-05)
+
+- **실제 이미지 기동:** OCI 증거는 `docker create/start/stop/start`로 제품 CPU Worker의 기본 loop entrypoint를 실행한다. 첫 READY를 test-owned DB로 검증하고 같은 container의 stop/start 후에도 데이터·포인터 불변을 확인한다. 이후 실패/권한/복구 시나리오만 한 번 실행하는 `--once` 진단 진입점을 사용한다. Container inspect로 실제 security 옵션을 검사하고 전체 테스트 종료 시 소유 컨테이너·볼륨만 제거한다. 결과는 GitHub Actions 정확 신규 HEAD CI 성공 전 NOT VERIFIED.
+
+CI OCI proof는 `src/tests/oci/scene-cpu-worker-proof.sh`가 **새로 생성하는 정확 볼륨만** 소유하며 `docker run --network none --read-only --user 10001:10001 --cap-drop ALL --security-opt no-new-privileges --pids-limit 64 --memory 768m --cpus 1 --tmpfs /tmp...`로 실행한다. Container image는 PR exact source의 로컬 `ci-migrate`/`ci-cpu-worker`이며 GHCR 게시가 아니다. synthetic G7 입력·SHA·Actor/Site 권한 및 Scene 파일은 고유 volume 안에 한정. SIGKILL도 해당 proof 자식 컨테이너에만 적용. 실제 운영 Compose/profile/host cgroup/제품 `.env`/기존 Named Volume 수정 금지. 실패해도 기존 제품 volume을 삭제하지 않음.
+
+여기에서 `SCENE_AUTO_BUILD_ENABLED=true`·`SCENE_CPU_WORKER_ENABLED=true`는 이 고립된 CI run의 Node proof 안에서만 사용한다. **운영·소스 기본 OFF**, #229 GHCR HOLD, #231 Tag Ruleset OPEN, GO-PILOT BLOCKED. 계측 실패·OCI 시작 실패·복원 실패는 실제 CI Job 실패로 기록하고 PASS로 추측하지 않는다.
+
+---
+
 ## #225 Pilot 검증 운영 분리 — 폐기 가능한 자원만 사용 (2026-11-05)
 
 `tests/integration/scene-cpu-worker-real-g7.test.ts`는 임시 디렉터리·0.61 G7 synthetic DB를 생성/삭제한다. 실제 사용자 세션/실 CAD/운영 `.env`·Named Volume을 참조하지 않는다. 별도 Node 프로세스 SIGKILL은 테스트 소유 자식 프로세스에만 적용하고, 180초 Stale/30초 Retry 대기는 임시 SQLite의 시각 필드 조작으로 가속한다. 실제 Docker/Compose의 한도나 운영 재시작 안전성을 입증하는 시험으로 해석하지 않는다. Chromium 시험은 synthetic CPU LINE DTO의 Blob readback·새 브라우저 Session만 측정하며 정식 API 로그인/Viewer 복원을 대신하지 않는다.

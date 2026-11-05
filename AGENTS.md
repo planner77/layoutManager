@@ -1,3 +1,21 @@
+## #225 / PR #234 — OCI SIGKILL CI #614 실패 및 검증 보완 (2026-11-05)
+
+[CI #614](https://github.com/planner77/layoutManager/actions/runs/41931040058) exact HEAD `9361d920ca53bdbc9d9a5ce8e807a9408806d3d1`: 신규 Docker OCI proof에서 실 G7 설치·READY·revoke·SHA tamper·prepare-crash 모두 진행했으나 self-SIGKILL 테스트 컨테이너의 `docker run --rm` 종료 코드가 **1**(예상 137)이라 required Docker/Verify 실패. 자식 STDERR가 폐기돼 **구체적인 내부 원인은 관측 불가**이며 이전 단계 PASS를 SIGKILL/복구 PASS로 확대하지 않는다. 적용 Unit/G7/Chromium 회귀는 SUCCESS, A2 scope SKIPPED. 상세 [FailureLedger](out/FailureLedger.md).
+
+**보완:** 전용 테스트 컨테이너가 Job을 실제 선점한 뒤 별도 OCI에서 마커+DB `RUNNING/attempt=1` 확인, GitHub CI 호스트가 해당 CID에 `docker kill --signal=KILL` 실행하고 `docker wait`와 `inspect` 양쪽 Exit 137을 요구한다. 이후 stale/Retry/READY/격리 복원 검증은 그대로 필수. 구동 제한·CI 필수 Gate 완화 없음. 신규 정확 HEAD CI **미확인**. PR #234 Draft, #225/#218 OPEN, GO-PILOT BLOCKED, 두 제품 Scene flag OFF, #229 >=0.61 GHCR HOLD, #231 Tag Ruleset OPEN, 운영 DB/CAD/Volume/.env·기존 이미지·태그 불변.
+
+---
+
+## #225 — PR #233/Main CI 확정 및 폐기 가능한 OCI Worker 검증 착수 (2026-11-05)
+
+**완료 증거:** [PR #233](https://github.com/planner77/layoutManager/pull/233) source HEAD `2b1cb5bef3a011e9b31eeafc508aec90051b2754`, [PR CI #612](https://github.com/planner77/layoutManager/actions/runs/41920944913) **8/8 applicable SUCCESS**, A2 scope SKIPPED. 173개 Vitest 파일/1,098개 테스트 PASS(그중 실제 G7 별도 Node Worker 6건, signed multipart 서비스 2건), G7/Chromium required 회귀 PASS. Squash Main `b33945d7ee80946950f8debfd04ce080af6e7105`, [Main CI #152](https://github.com/planner77/layoutManager/actions/runs/41924479834) SUCCESS, Release Scope SUCCESS, GHCR Build/Push SKIPPED. 이전 '미실행/CI 미확인' 문구는 작성 당시 이력이며 최신 증거에 의해 대체한다.
+
+**이번 단계:** Docker `cpu-worker` OCI 실기동을 기존 required Docker CI에 **폐기 가능한 단독 이름의 볼륨/이미지**로 검증한다. 새 버전/이미지/운영 Compose/기존 원본은 수정하지 않는다. 원자 Job 선점→Scene READBACK, 컨테이너 내 비루트·CPU/RAM/PIDs·network none·read-only·no-new-privileges, 별도 컨테이너 SIGKILL 후 stale 복구, Source SHA/권한 거부·기존 READY 보존, 격리된 DB+CAD 복구를 소스 검증 범위로 한다. 새 정확 PR HEAD CI가 완료되기 전 OCI 결과는 **NOT VERIFIED**.
+
+**고정 Gate:** `SCENE_AUTO_BUILD_ENABLED=OFF`, `SCENE_CPU_WORKER_ENABLED=OFF` (제품/운영; 테스트용 격리 컨테이너에서만 일시 true), #229 v0.61+ GHCR HOLD, #231 Tag Ruleset OPEN, #225/#218 OPEN, GO-PILOT BLOCKED. 운영 `.env`·DB/CAD/Volume 및 기존 GHCR·태그 변경 금지. OCI 시험 통과만으로 HTTP signed upload→실 배포 CPU Worker→실 사용자 Viewer 재접속 단일 E2E 또는 정식 Release GO를 승인하지 않는다.
+
+---
+
 ### #225 실제 multipart G7 업로드 검증 범위 추가 (2026-11-05)
 
 새 `src/tests/integration/scene-cpu-worker-upload-g7.test.ts`에서 disposable G7 Editor/AuthSession + Origin/CSRF 검사를 거친 `FormData` `uploadCad` 경로를 추가해 Version+Job QUEUED·새 Worker CLI READY·동일 원본 SHA·감사·재시도 거절·Site Grant 취소를 검증하도록 했다. 현재 소스는 **미실행**, 실제 HTTP 서버/OCI/Viewer API E2E를 대체하지 않는다. 기본 OFF·GHCR HOLD·GO-PILOT BLOCKED 불변.

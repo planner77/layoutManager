@@ -1,3 +1,21 @@
+## #225 / PR #234 — CI #614 OCI SIGKILL 경계 실패 및 검증 보완 (2026-11-05)
+
+[PR CI #614](https://github.com/planner77/layoutManager/actions/runs/41931040058) source HEAD `9361d920ca53bdbc9d9a5ce8e807a9408806d3d1`: Static/Unit/Build, Docker 기존 smoke 및 G7/Chromium E2E 성공. **신규 OCI proof는 부분 PASS / 전체 FAIL:** 최초 READY/readback, 자원 격리 Docker 검사, Site grant 철회, 동일 길이 원본 SHA 변조, crash 사전 Job 생성까지 실행 완료. `claim-kill` 컨테이너가 예측 137이 아닌 **exit 1**로 반환되어 required Docker Job 실패. 원래 `docker run --rm` 로그가 숨겨져 있으므로 child code의 정확 실패 원인은 이 Run에서 확인 불가. 실제 컨테이너 SIGKILL 완료, stale 복구, isolated restore는 #614에서 PASS 증거 없음.
+
+변경 소스는 **실제 별도 컨테이너의 영속 Claim 확인 후 Docker 호스트가 SIGKILL**하고 `wait/inspect` exit 137, DB RUNNING 재확인 뒤 기존 상태 전이·복구 검사로 진행하도록 수정했다. 제약·시간/보안 조건 완화 없음. 새로운 정확 HEAD CI는 미실행/결과 미확인; GO-PILOT BLOCKED.
+
+---
+
+## #225 PR #233 확정 결과 및 OCI 신규 증거 구분 (2026-11-05)
+
+- **OCI CLI·Supervisor 층위 차이:** 신규 시험은 실제 이미지 기본 `scene-cpu-worker-loop.sh` ENTRYPOINT로 게시하고 stop/start 후 READY 불변을 확인하도록 작성했다. 부정 시나리오는 격리 OCI에서 `--once` 실행. 아직 CI 미실행, Docker 속성/실 Worker 결과 PASS 미선언.
+
+[PR CI #612](https://github.com/planner77/layoutManager/actions/runs/41920944913) 정확 HEAD `2b1cb5bef3a011e9b31eeafc508aec90051b2754`: applicable 8 Job SUCCESS(A2 scoped SKIPPED); Static/Unit 173 files, **1,098/1,098 tests PASS**, 실제 synthetic G7 Node Worker `scene-cpu-worker-real-g7.test.ts` 6건 PASS, signed G7 multipart `scene-cpu-worker-upload-g7.test.ts` 2건 PASS, General Chromium E2E 2 shards 및 G7 signed/Greenfield E2E SUCCESS. [PR #233](https://github.com/planner77/layoutManager/pull/233) Squash Main `b33945d7ee80946950f8debfd04ce080af6e7105`; [Main CI #152](https://github.com/planner77/layoutManager/actions/runs/41924479834) SUCCESS, release-scope SUCCESS, GHCR publish SKIPPED. 아래 시점별 'NOT RUN'은 해당 작성 당시의 이전 기록이며 이 확정 결과가 우선한다.
+
+**신규 OCI 경계:** 현재 PR은 같은 `cpu-worker` Dockerfile target을 실제 별도 컨테이너에서 실행하며 비루트/network none/read-only/CPU1·RAM768MiB/PIDs64, disposable G7 Greenfield DB/원본/immutable Scene과 정상 READY·Audit/readback/중복 IDLE, 권한·SourceSHA 거부, SIGKILL 후 시각 가속 유한 복구, 격리 복사 복원을 확인하도록 테스트를 작성한다. **새 PR의 정확 HEAD CI가 성공하기 전까지 모든 신규 OCI 결과는 NOT VERIFIED**. 단일 signed 실제 사용자 HTTP 업로드→실 OCI Worker→App Viewer 신규 로그인 E2E, 실제 OOM 및 운영 백업·복구는 미실행/GO-PILOT BLOCKED.
+
+---
+
 ### 2026-11-05 — multipart 서비스 경로 검증 추가 (SOURCE ONLY)
 
 새 `scene-cpu-worker-upload-g7.test.ts`는 합성 G7 사용자 세션과 진짜 multipart Request, `prepareG7CadWrite`/Origin/CSRF, `uploadCad`·원본 저장·영속 Queue, 별도 Node 프로세스의 verified READY·Audit/Asset 불변 및 권한 취소 거부를 연결한다. **PR CI 미실행/결과 미확인**, HTTP listening server/App UI/실 OCI 환경에서 통과했다고 단정하지 않는다.

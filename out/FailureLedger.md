@@ -1,3 +1,19 @@
+## #225 / PR #234 — PR CI #614 owned OCI SIGKILL probe exit mismatch (2026-11-05 KST)
+
+- **Observed, not inferred:** [PR CI #614 / run 41931040058](https://github.com/planner77/layoutManager/actions/runs/41931040058), exact source HEAD `9361d920ca53bdbc9d9a5ce8e807a9408806d3d1`, completed/**FAILURE**. Scope `126927685778`, Static/Unit/Build `126927778139`, both General Chromium shards, G7 signed/Greenfield E2E **SUCCESS**. A2 scope SKIPPED. Required Docker runtime job `126927778252` failed only at `Verify disposable CPU Worker OCI security, READY, SIGKILL and restore` (step 13), Required Verify `126935243556` failed transitively. OCI Greenfield NEW_INSTALL, fixture `setup`, `verify-ready`, `revoke`, `verify-revoked`, `tamper`, `verify-tamper`, `prepare-crash` each printed PASS. At the subsequent crash probe: **`Expected disposable Worker SIGKILL exit 137, got 1`**. Crash/recovery, restored snapshot checks did **NOT RUN**; do not mark these PASS.
+- **Confirmed defect of proof observability:** the old `fixture_step claim-kill > /dev/null 2>&1` swallowed all child diagnostics and expected `docker run --rm` exit 137 after calling `process.kill(process.pid,'SIGKILL')` *inside* a disposable worker. The logged exit 1 does not prove a SIGKILL occurred; it could also be a failed claim/assertion or Docker invocation. Therefore precise underlying sub-error is **UNKNOWN in #614 logs**, not proof of actual OCI Worker recovery failure. We must not relax the required SIGKILL or resource/security checks.
+- **Correction:** replace the self-kill with `claim-wait` which atomically claims and writes a test-volume-only marker, while remaining alive. A second independent owned OCI verifies both marker and real SQLite `RUNNING/attempt=1/no pointer`; the CI host then sends `docker kill --signal=KILL` to **that exact owned container**, checks `docker wait` **and** Docker inspect exit 137, rechecks the persistent claim, and only then runs the unchanged stale/retry/READY/restoration assertions. Diagnostic on early exit is restricted to allowlisted fixture codes, and cleanup owns the exact container+unique volume. No skip, assertion suppression, timeout/cgroup loosening, or production code change.
+- **Verification status:** repair commits are source-only; exact new PR HEAD required CI is **NOT VERIFIED** until run. Review threads 0, mergeable true, main behind 0 at initial triage. PR #234 remains Draft, #225/#218 OPEN, GO-PILOT BLOCKED, two product Scene flags OFF; #229 0.61+ GHCR HOLD, #231 tag ruleset OPEN. No operation DB/CAD/Volume/.env, GHCR, tag, or existing data was changed.
+
+---
+
+## #225 PR #233 CI/Main 성공 → 신규 OCI 실증 시작 (2026-11-05, 신규 실패 관측 아님)
+
+- **확인된 이전 검증:** [PR CI #612](https://github.com/planner77/layoutManager/actions/runs/41920944913) exact HEAD `2b1cb5bef3a011e9b31eeafc508aec90051b2754` 8 applicable jobs SUCCESS, A2 1 scope SKIPPED, Vitest 1,098 PASS(173 files), [Main CI #152](https://github.com/planner77/layoutManager/actions/runs/41924479834) exact squash SHA `b33945d7ee80946950f8debfd04ce080af6e7105` SUCCESS, GHCR job SKIPPED. 당시 PR #233 source-only/NOT RUN 이력은 작성 시점 기록이며 결과 재분류가 아니다.
+- **신규 작업·실패와 구분:** isolated G7 0.61 OCI worker proof 및 VM/Compose 단위 실제 resource 격리를 추가하되 실제 CI 수행 결과는 **미확인**이다. 새 PR HEAD CI에서 실패 확인 시 Run/Job/실패 단계, 원인·보완과 재실행 이력을 별도 기록해야 한다. 제품 두 Scene flag OFF, v0.61+ GHCR HOLD, GO-PILOT BLOCKED.
+
+---
+
 ## #225 GO-PILOT 통합 검증 소스 추가 — 아직 CI 관측 실패 아님 (2026-11-05)
 
 - **Observed:** 기존 Main CI 완료 및 PR #232의 [CI #610](https://github.com/planner77/layoutManager/actions/runs/41903521695) 성공은 과거 코드 HEAD 증거다. 신규 `feat/225-pilot-disposable-integration`의 테스트 코드에는 **아직 새로운 PR CI 실행/결과가 없다**. 이번 항목은 실패 보고가 아닌 검증 추적/실행 범위 기록이며 과거 #599/#604/#607 실패는 그대로 FAIL로 보존한다.
