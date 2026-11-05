@@ -1,3 +1,22 @@
+## #225 / TP-225-UPGRADE-RECOVERY — 독립 QA 결과 (2026-11-05)
+
+- **역할:** Manager `gpt-6-astra`가 UR-01–UR-07 요구/설계/AC를 기록하고 Developer `gpt-6-sol`의 test-only 변경을 검토·QA 승인했다. QA `gpt-6-luna`가 소스/기준을 독립 대조하고 실행했다. 지침에 기재된 `gpt-5.6-sol`/`gpt-5.6-luna` 모델은 이번 세션에서 사용할 수 없어 실제 사용 모델을 기록한다.
+- **변경 검토:** 유일한 코드 변경은 `src/tests/integration/g7-scene-worker-upgrade-recovery.test.ts`다. 두 테스트가 UR-01–06의 populated Browser QUEUED/READY 데이터 보존, 승인된 정확 0.60→0.61 migration 및 checksum history, 격리된 CPU Worker 처리, 같은 backup의 isolated restore, corrupt backup/nonempty target 거절을 확인한다. Scene READY의 기존 데이터는 유효한 v1 empty Group scene이므로 DXF geometry 보존 주장을 하지 않는다. fixture는 현재 설치에서 구성한 synthetic 0.60 상태이며 역사적 OCI 설치나 실제 운영 환경이 아니다. 제품/Schema/flag/CI/package 변경은 없다.
+- **독립 실행:** `src/`에서 `npx vitest run tests/integration/g7-scene-worker-upgrade-recovery.test.ts tests/integration/g7-greenfield-upgrade.test.ts tests/integration/g7-greenfield-upgrade-qa.test.ts tests/integration/scene-cpu-worker-real-g7.test.ts tests/integration/scene-persistence.test.ts` — **5 files / 42 tests PASS**, Vitest duration 32.90s (실행 벽시계 31.83s). `npx tsc --noEmit` PASS (3.70s), 변경 테스트 `npx eslint tests/integration/g7-scene-worker-upgrade-recovery.test.ts` PASS (1.58s). 전체 ESLint는 root 실행에서 **0 errors / 기존 12 warnings**이며, production build PASS로 root가 확인했다. 실행 로그는 Git 제외 `data/225-upgrade-verification/qa-related-42.log`, `qa-typecheck.log`, `qa-changed-lint.log`, `lint.log`, `build.log`와 Developer 집중 실행 `developer-focused-final.log`에 있다.
+- **한계/게이트:** 이 source-level 시험은 실제 이전 OCI 이미지 기동·운영자 승인·현장 복구, HTTP/Viewer, 변환 중 KILL/OOM, 3-image 출고를 검증하지 않는다. 이 QA는 기존 관련 40 tests에 신규 2 tests를 더한 범위이며 전체 1,100여 테스트나 Docker 시험은 실행하지 않았다. exact 새 HEAD hosted CI는 아직 시작/결과가 없고 QA 범위 밖이다. 제품 `SCENE_AUTO_BUILD_ENABLED=OFF`, `SCENE_CPU_WORKER_ENABLED=OFF`, #229 >=0.61 GHCR HOLD, #225/#218/#231 OPEN, GO-PILOT BLOCKED를 유지한다. QA 보고 시점에는 Manager 최종 수용 및 root 후속 commit/push/PR CI 시작 전이었다.
+- **Manager 최종 수용:** `gpt-6-astra`는 UR-01–06 구현 및 독립 QA 근거를 수용하고 추가 재작업 없이 root의 staged/secret 감사·commit·새 Draft PR 게시·UR-07 CI 시작을 승인했다. 이는 hosted CI SUCCESS/GO-INTEGRATE·병합·GO-PILOT 승인이 아니다. 새 정확 HEAD CI는 시작까지만 확인하고 모니터링하지 않으며 실제 식별자는 최종 인계에서 제공한다. 버전 0.61.0 유지, 기존 root 작업 폴더의 변경은 별도 worktree로 보존했다.
+- **문서 영향:** 기존 요구 FR-218-L01/L03/L07/L08의 검증을 보강하며 제품 요구·API·DB Schema·배포 구조 변경은 없다. 따라서 Requirements/Architecture/Database/Decisions의 계약 수정은 N/A다. 설계·AC 정본은 TestPlan/Issue225, 실행 방법은 Operation, 원격 성공/실패 구분은 FailureLedger, 재개 요약은 AGENTS/README, 변경 이력은 ChangeLog에 연결했다. Git 제외 테스트 자료·DB/CAD·빌드·로그를 게시하지 않으며 `.env`가 지정한 동일 repository의 연결 GitHub 도구로 검토한 tree와 expected parent를 검증해 새 branch/commit을 게시한다.
+
+---
+
+## #225 / PR #235 — PR CI 성공 및 Main 통합 확정 (2026-11-05)
+
+- 검증 source HEAD: `baf2ec6a582b12f6eb036ba2855289fc05c6101d`. [PR CI #632 / Run 41979343017](https://github.com/planner77/layoutManager/actions/runs/41979343017)와 [#633 / Run 41981622771](https://github.com/planner77/layoutManager/actions/runs/41981622771) completed/SUCCESS 확인. #632의 적용 8개 Job SUCCESS, A2는 범위 외 SKIPPED이며 성공 시험으로 세지 않는다.
+- [PR #235](https://github.com/planner77/layoutManager/pull/235) merged/closed, Squash Main `e9eb2e93ff8e8d2f967de30200ee6da6459c5cc4`. G7 signed HTTP→OCI CPU Worker→새 Viewer/reload와 음성 검증의 GO-INTEGRATE 완료다. 아래 제출 당시 NOT VERIFIED는 당시 상태이며 최신 원격 성공으로 대체한다. 과거 FAIL/CANCELLED·로컬 전체 실행 중단은 삭제하지 않는다.
+- 이후 TP-225-UPGRADE-RECOVERY는 기존 데이터가 있는 0.60→0.61와 독립 CPU·원래 백업 복구를 연결하는 별도 합성 시험이다. 이번 원격 성공은 후속 시험/새 PR CI, 실제 운영 설치·복구·중간 변환 KILL/OOM·3-image 출고·#231 완료의 근거가 아니다. GO-PILOT BLOCKED, 제품 두 flags OFF, GHCR HOLD, #225/#218/#231 OPEN 유지. Main CI/정식 출고 결과는 이 기록에서 확인하지 않았다.
+
+---
+
 ## #225 / PR #235 — 제출 전 독립 QA 및 로컬 P1-D 검증 (2026-11-05)
 
 **역할·변경 검토:** Manager `gpt-6-astra`가 범위와 C06 fixture 조정을 검토·수용했고 Developer `gpt-6-sol`이 변경했다. QA `gpt-6-luna`가 독립 검토했다. PR #631 구문 수정은 malformed 중첩 DTO assertion을 named `CpuLineDto`로 옮겼다. schema v2, asset object, `INDEX_ABSENT`, LINE 좌표, 새 Viewer의 부분 정밀도 경고·reload·원본 GET 0 및 세 음성 경로의 assertions는 남아 있다. 별도 C06은 실제 201개 Zone/Geometry 쌍 fixture 준비가 15초 timeout의 원인임을 계측해 준비 루프만 `BEGIN IMMEDIATE`/`COMMIT`으로 묶고 실패 시 `ROLLBACK`한다. 202개 mapping, 201 tombstone MAPPED, live revision 3 UNMAPPED, SOURCE_ONLY/ALL 검증, 원래 15초 timeout은 유지한다. QA는 중간 native `.transaction()` 제안의 TS2339를 발견했다. 최종 코드는 선언된 `IsolatedDb.exec` API만 사용한다.

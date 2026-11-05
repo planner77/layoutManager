@@ -1,3 +1,11 @@
+## 2026-11-05 — 다음 최소 Unit: populated G7 upgrade/recovery source rehearsal
+
+Manager는 기존 0.60→0.61 시험의 **빈 Job 테이블**과 새 0.61 Worker fixture 사이의 공백을 다음 범위로 선택한다. 정식 upgrade engine의 정확 plan 승인/backup/isolated restore를 재사용해 기존 Browser Job·유효 READY Scene·Current/원본/Audit가 보존되고, upgrade 이후 새 CPU Job만 별도 Node Worker가 처리함을 검증한다. 요구/설계/AC는 [TP-225-UPGRADE-RECOVERY](TestPlan.md#tp-225-upgrade-recovery--populated-060061-disposable-rehearsal)가 단일 기준이다. 제품/Schema/버전 변경 없는 test source Unit이며 실제 구현·검증 결과는 [TestReport](TestReport.md)의 최신 기록을 따른다.
+
+실제 변환 도중 KILL/OOM은 현재 `DXF_PARSE` 기록과 converter 실행 사이 경계가 있어 claim-wait 또는 DB stage 관측으로 합격 처리할 수 없다. 이 작업에서 test hook을 제품에 추가하지 않고 별도 잔여로 유지한다. Disposable engine 승인 인자는 현장 Owner 승인·실 3-image provenance/rollback을 대체하지 않는다. 제품 두 Scene flag OFF, >=0.61 GHCR HOLD, #225/#218/#231 OPEN, GO-PILOT BLOCKED. 운영 데이터/환경·이미지/태그 무변경; 이번 진행 끝은 새 PR CI **시작**, 성공 모니터링·병합 없음.
+
+---
+
 ## 2026-11-05 — P1-D PR #235 CI #624/#625/#626 반복 실패 총괄 및 Viewer fidelity 검증 보완
 
 - [PR CI #624](https://github.com/planner77/layoutManager/actions/runs/41948139879): 최초 Admin 로그인 동기화/시험 계측 실패. [#625](https://github.com/planner77/layoutManager/actions/runs/41965842513): CPU Builder SourceScope와 브라우저 SceneScope 검증 불일치. [#626](https://github.com/planner77/layoutManager/actions/runs/41969752102) HEAD `798b7162a806d03e1d538bea634ee86b7a614254`: G7 signed HTTP→QUEUED→분리 OCI CPU Worker PUBLISHED/verified READY→별도 Editor 브라우저 저장 Scene 복원까지 진행 후 화면 **`도면 일부 표시 완료`**를 시험이 `도면 표시 완료`로 요구하여 FAIL. 필수 Docker Job `127055021259`, Required Verify 종속 FAIL; 일반 Static/G7/Chromium PASS. 이전 #624/#625/#626은 모두 역사적 **FAIL**로 보존.

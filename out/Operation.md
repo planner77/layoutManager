@@ -1,3 +1,11 @@
+## #225 — 합성 G7 업그레이드·복구 시험 (2026-11-05)
+
+`npm --prefix src test -- tests/integration/g7-scene-worker-upgrade-recovery.test.ts`는 테스트가 생성한 고유 임시 root 안에서만 등록된 0.60 baseline의 Browser Job/유효 Scene과 원본을 준비하고, 기존 업그레이드 엔진의 정확 plan 승인·복구 세트 검증·새 CPU 자식 프로세스·빈 격리 디렉터리 복구를 연결한다. 운영 `.env`나 서비스 DB/CAD/Volume을 입력으로 받지 않는다. 실제 0.60 OCI 설치·이미지 출처·운영자 승인·기존 이미지로 rollback/start를 검증하는 명령이 아니다. 실제 결과와 적용 한계는 [TestReport](TestReport.md), AC는 [TestPlan](TestPlan.md)의 TP-225-UPGRADE-RECOVERY를 따른다.
+
+제품 기능 플래그 OFF, >=0.61 GHCR HOLD 및 GO-PILOT BLOCKED는 유지한다. 시험 완료만으로 기존 운영 업그레이드/복구 절차를 실행하거나 보류를 해제하지 않는다.
+
+---
+
 ## #225/P1-D CI #626 — CPU Viewer 제한 표시 경고의 운영 해석 (2026-11-05)
 
 실제 HTTP Editor 로그인·원본 SHA/Scene READY·새 브라우저 저장 Asset 복원 후 **`도면 일부 표시 완료`**가 나타나더라도 별도 `Scene Status=READY`와 `ViewerSource`의 무결성/DTO/형상 검증이 통과했다면 Renderer 자체 오류로 단정하지 않는다. 좁은 CPU LINE Builder에는 `sourceIndex:UNAVAILABLE/INDEX_ABSENT`가 저장되어 있어 원본 Handle/정밀 선택·원본 정밀 외곽선은 제공되지 않으며, 현재 Viewer는 `render:FULL_V2`라도 그 제한을 **부분 표시 경고**로 노출한다. 이 경고를 무조건 `도면 표시 완료`로 치환하거나 자동 DXF GET/재변환하여 숨기지 않는다. P1-D 합성 도면의 Scene READY/캔버스 렌더 성공과 원본 정밀 매핑 미제공을 사용자·운영자가 구별하도록 유지한다. 실제 현장 도면/지원 외 Entity의 완전 렌더링 수용은 별도 검증.

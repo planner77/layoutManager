@@ -1,3 +1,9 @@
+## #225 — 기존 데이터 업그레이드·복구 검증 (0.61.0, 2026-11-05)
+
+PR #235는 PR CI #632/#633 성공 후 Main에 통합됐다. 다음 검증은 기존 Browser Job과 유효 READY Scene이 있는 합성 0.60 설치에서 0.61 업그레이드·독립 CPU 처리·동일 백업의 격리 복구를 연결한다. 범위와 AC는 [TestPlan](out/TestPlan.md), 실제 결과는 [TestReport](out/TestReport.md)를 따른다. 운영 DB·CAD·배포를 변경하는 작업이 아니며 제품 Scene flags OFF, >=0.61 GHCR HOLD 및 GO-PILOT BLOCKED를 유지한다.
+
+---
+
 ## PR #235 — 누적 CI 회귀 보완 (0.61.0, 2026-11-05)
 
 #624~#631의 실패·취소 이력과 관련 인증/CPU Scene/Viewer 코드를 대조하고, 최신 P1-D 시험의 DTO 타입 구문 오류를 수정했다. 로컬 구역 이력 시험은 준비 데이터를 한 transaction에 넣어 기존 검증·timeout을 보존했다. 제출 전 정적 검사와 Playwright 시험 발견을 함께 확인한다. 실행별 원인과 검증 범위는 [FailureLedger](out/FailureLedger.md), 실제 로컬 결과·역할 수용은 [TestReport](out/TestReport.md)를 따른다. 새 PR CI는 시작 후 모니터링하지 않으며 결과는 NOT VERIFIED다. 제품 Scene flags OFF, GO-PILOT BLOCKED 및 >=0.61 GHCR HOLD를 유지한다.
