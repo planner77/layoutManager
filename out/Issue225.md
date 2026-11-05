@@ -1,3 +1,28 @@
+## 2026-11-05 — P1-D PR #235 CI #624/#625/#626 반복 실패 총괄 및 Viewer fidelity 검증 보완
+
+- [PR CI #624](https://github.com/planner77/layoutManager/actions/runs/41948139879): 최초 Admin 로그인 동기화/시험 계측 실패. [#625](https://github.com/planner77/layoutManager/actions/runs/41965842513): CPU Builder SourceScope와 브라우저 SceneScope 검증 불일치. [#626](https://github.com/planner77/layoutManager/actions/runs/41969752102) HEAD `798b7162a806d03e1d538bea634ee86b7a614254`: G7 signed HTTP→QUEUED→분리 OCI CPU Worker PUBLISHED/verified READY→별도 Editor 브라우저 저장 Scene 복원까지 진행 후 화면 **`도면 일부 표시 완료`**를 시험이 `도면 표시 완료`로 요구하여 FAIL. 필수 Docker Job `127055021259`, Required Verify 종속 FAIL; 일반 Static/G7/Chromium PASS. 이전 #624/#625/#626은 모두 역사적 **FAIL**로 보존.
+- **원인:** CPU LINE `CUSTOM_DTO v2`의 형상은 실제 렌더링 가능하나 `sourceIndex:{state:'UNAVAILABLE',reason:'INDEX_ABSENT'}`로 원본 정밀 Handle 연결은 없다. `storedSceneFidelityProfile`에서 `render=FULL_V2`와 `action=REBUILD_REQUIRED`가 공존하며 Viewer가 의도적인 부분 표시 경고를 반환한다. 이는 거짓 FULL 표시로 덮거나 안전 Gate를 완화할 사항이 아니다. `P1-D` E2E에 정확한 원본 인덱스 상태·지원 LINE geometry/canvas·새 로그인 Scene 복원/reload/원본 GET=0·정확한 부분 표시 경고를 동시에 검증하도록 보강하고 CPU DTO 단위 회귀를 추가했다.
+- #626에서 이른 status 실패로 미실행됐던 Site revoke, SourceSHA 변조, CIRCLE 미지원 및 기존 READY immutable 보존의 음성시험은 **새 HEAD CI 검증 전 NOT RUN/NOT VERIFIED**. 제품 Scene 플래그 두 개 OFF, #229 GHCR >=0.61 HOLD, #225/#218/#231 OPEN, GO-PILOT BLOCKED; 운영 DB/CAD/Volume/.env·이미지/태그 불변.
+
+---
+
+## 2026-11-05 — PR #235 CI #625 Viewer CPU Scene persisted builder mismatch
+
+[CI #625](https://github.com/planner77/layoutManager/actions/runs/41965842513) at HEAD `cf6dfab3596cd9738c29aeab5a85f136953a1443` failed on first fresh signed Editor Viewer (`scene-status` absent), after real HTTP upload→Queue→independent OCI Worker PUBLISHED and verified Scene READY; Viewer reload and negative tail NOT RUN. Server `SceneRepository.status/content` accepted allowlisted CPU builder via `storedSceneScope`, while browser `ViewerSource.readScene` reconstructed only browser `sceneScope`. Align read-only Viewer to exact known persisted Builder allowlist while preserving immutable Version/SHA/Manifest/DTO digest and no original DXF fallback. Add direct CPU positive plus unapproved Builder/Version/SHA negative regression. New exact HEAD CI pending; historical #625 failure immutable, #225/#218/#231 OPEN, #229 GHCR >=0.61 HOLD, product flags OFF and GO-PILOT BLOCKED.
+
+---
+
+## 2026-11-05 — PR #235 CI #624 P1-D 신규 로그인 단계 FAIL / 시험 순서 보완
+
+[CI #624](https://github.com/planner77/layoutManager/actions/runs/41948139879) HEAD `2ce84bf322e2b76867bb777efa94f62c51fb1131`: 최초 Admin password-change 후 로그인 화면 `현재 세션` 확인 20초 timeout으로 Docker required Job 및 downstream Verify FAIL. 기존 Docker OCI proof 단계 PASS였지만 HTTP 업로드·Worker·새 Viewer 연속 경로는 미진행. 비동기 초기 변경 완료를 기다리지 않고 navigate하는 테스트 경쟁 조건을 후보 원인으로 보고 `initial-change` success 문구·Login HTTP 200·Session HTTP 200·heading 순서로 보완. 정확 실패 HTTP 상태는 미관측이므로 제품 Auth 결함으로 단정하지 않는다. 새 HEAD required CI 전 P1-D NOT VERIFIED. 기존 #622/#153/#154 성공은 이전 증거로 보존; GO-PILOT BLOCKED, #225/#218/#231 OPEN, 제품 플래그 OFF, v0.61+ GHCR HOLD, 운영 자료·태그 불변.
+
+---
+## 2026-11-05 — P1-D signed HTTP→분리 CPU OCI→신규 인증 Viewer E2E 소스·CI 단계
+
+기존 #234 CI #622의 실제 CI 전용 OCI Worker 격리/READY·revoke·SHA·SIGKILL·복구 성공과 Main CI #153/#154 SUCCESS는 확정 증거다. 새 `feat/225-p1d-http-oci-viewer-e2e`는 `src/tests/oci/scene-p1d-journey.sh`, `scene-p1d-probe.mjs`, `src/playwright.scene-p1d.config.ts`, `src/tests/p1d-e2e/scene-http-oci-viewer.spec.ts`로 진짜 G7 Editor UI/Origin/CSRF의 HTTP DXF 등록→Version/Queue→독립 실제 OCI Worker READY/불변 Scene→새 로그인 Browser에서 원본 재파싱 없이 Viewer 복원 및 negative auth/SHA/unsupported 기존 READY 보전까지 PR CI 필수 단계에서 검증하도록 준비했다. **현재 새 PR CI 미확인/실증 PASS 주장 없음**. 실 변환 도중 OOM/kill, 운영 G7 upgrade/restore, 3-image release 및 #231 GitHub Tag Ruleset은 별도; GO-PILOT BLOCKED, #225/#218 OPEN, 제품 플래그 OFF, #229 0.61+ GHCR HOLD 및 운영 데이터 불변.
+
+---
+
 ## 2026-11-05 — PR #234 OCI CI #622 통과 및 GO-INTEGRATE Main 완료
 
 [PR #234](https://github.com/planner77/layoutManager/pull/234) source HEAD `aa0c4622e912c7ad048c481c4aa153c86124d79c` [PR CI #622](https://github.com/planner77/layoutManager/actions/runs/41935291475) 8 applicable jobs SUCCESS(A2 SKIPPED), OCI 실 컨테이너 security + Loop/READY/stop/start, revoke/SHA tamper, 소유 CID SIGKILL/지속 Job→시각 가속 retry→READY, 격리 SQLite/CAD 복원·재독해 PASS. 이전 #614 SIGKILL exit1 FAIL 이력 보존. Review0/충돌0 뒤 Squash Main `edb3ecb3a17a25cbc88d63b2cc8b911cba3bbcd5` 병합. 이것은 **실제 OCI 증거의 GO-INTEGRATE 완료**이지 제품 GO-PILOT/배포 승인 아님. User HTTP→실 OCI→Viewer 로그인 E2E 및 mid-conversion crash/OOM, real G7 업그레이드/복구, 정식 3-image 검증은 잔여. #225/#218 OPEN, 제품 2 flag OFF, #229 GHCR HOLD/#231 Tag Ruleset OPEN, 실 운영 자료/태그/이미지 변경 없음.

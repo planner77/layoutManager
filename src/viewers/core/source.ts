@@ -1,6 +1,6 @@
 import type { CadTextIndex } from './text-index';
 import { ViewerLoadError } from './viewer-load-error';
-import {sceneScope,validateSceneManifest,type SceneManifest} from '../../domain/cad-scene';
+import {storedSceneScope,validateSceneManifest,type SceneManifest} from '../../domain/cad-scene';
 import {validateStoredScenePayload} from '../../domain/scene-payload';
 export type ReadyScene = Readonly<{bytes:Uint8Array;manifest:SceneManifest;assetId:string;revision:number}>;
 /** One immutable download per mounted version, shared by renderer attempts. */
@@ -21,7 +21,10 @@ export class ViewerSource {
       if(value.status==='LEGACY_DISABLED')return null;
       if(value.status!=='READY')throw new ViewerLoadError('scene',value.status==='MISSING'?'UNAVAILABLE':'REBUILD_REQUIRED','저장된 Scene Asset이 없거나 호환되지 않습니다. 원본 재변환은 도면 메뉴에서 명시적으로 실행하세요.');
       const manifest=value.manifest as SceneManifest;
-      const scope=sceneScope(versionId,sourceSha256,manifest?.scope?.sourceUnit);
+      // Accept only server-approved persisted Builder identities, reconstructed
+      // from the requested Version and trusted Source SHA; never trust a free-form
+      // builder string or skip full manifest/DTO integrity validation.
+      const scope=storedSceneScope(versionId,sourceSha256,manifest?.scope);
       validateSceneManifest(manifest,{scope,format:'CUSTOM_DTO',byteLength:manifest.byteLength,sha256:manifest.sha256});
       if(manifest.byteLength>32*1024*1024||!Number.isSafeInteger(value.revision)||value.revision<0||
         typeof value.assetId!=='string'||!/^[a-f0-9-]{36}$/.test(value.assetId)||

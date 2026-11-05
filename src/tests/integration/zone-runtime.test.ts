@@ -292,9 +292,13 @@ test('TC-Z196-RESET-HISTORY: 201 deleted mappings do not consume the 200 live Zo
   SELECT ?,location_id,site_id,?,?,NULL,description,code,tags_json,sort_order,NULL,references_json,1,created_by_id,updated_by_id,created_by_id,created_at,updated_at,updated_at FROM "CadZone" WHERE id=?`);
  const insertGeometry=raw.prepare(`INSERT INTO "CadZoneGeometry" (zone_id,location_id,version_id,source_sha256,scene_revision,polygon_json,bounds_json,area,state,reason,revision,created_at,updated_at)
   SELECT ?,location_id,version_id,source_sha256,scene_revision,polygon_json,bounds_json,area,state,reason,1,created_at,updated_at FROM "CadZoneGeometry" WHERE zone_id=?`);
- for(let i=0;i<201;i++){
-  const zoneId=randomUUID();insertZone.run(zoneId,'Deleted '+i,'deleted '+i,live.id);insertGeometry.run(zoneId,live.id);
- }
+ raw.exec('BEGIN IMMEDIATE');
+ try{
+  for(let i=0;i<201;i++){
+   const zoneId=randomUUID();insertZone.run(zoneId,'Deleted '+i,'deleted '+i,live.id);insertGeometry.run(zoneId,live.id);
+  }
+  raw.exec('COMMIT');
+ }catch(error){raw.exec('ROLLBACK');throw error;}
  expect(raw.prepare('SELECT COUNT(*) AS n FROM "CadZoneGeometry"').get()).toMatchObject({n:202});raw.close();
  const proof=requireBusinessWrite(request('POST',url+'/reset',f.tokens.editor,{mode:'SOURCE_ONLY'}),'zone-reset-history');
  for(const mode of ['SOURCE_ONLY','ALL']){

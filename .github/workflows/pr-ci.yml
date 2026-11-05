@@ -512,6 +512,29 @@ jobs:
           bash -n src/tests/oci/scene-cpu-worker-proof.sh
           node --check src/tests/oci/scene-cpu-proof-fixture.mjs
           bash src/tests/oci/scene-cpu-worker-proof.sh
+      # #225/P1-D: actual G7 App HTTP + distinct CPU OCI + fresh authenticated Chromium.
+      # Uses only a new CI-owned Docker volume and locally built images;
+      # never pulls/publishes GHCR or touches an operational .env/volume.
+      - name: Setup Node for isolated P1-D Chromium
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.14.0
+          cache: npm
+          cache-dependency-path: src/package-lock.json
+      - name: Install Playwright test client for P1-D
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd src
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: P1-D signed HTTP upload to OCI Worker and fresh Viewer browser
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash -n src/tests/oci/scene-p1d-journey.sh
+          node --check src/tests/oci/scene-p1d-probe.mjs
+          bash src/tests/oci/scene-p1d-journey.sh
       - name: Measure 3 image sizes, layers and directories
         if: needs.scope.outputs.baseline == 'true'
         run: bash src/scripts/measure-images.sh cad-layout-viewer:baseline cad-layout-viewer:phase1 cad-layout-viewer:ci "$GITHUB_STEP_SUMMARY"

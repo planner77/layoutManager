@@ -1,3 +1,25 @@
+## ADR #225/P1-D — Server READY vs Browser Source Fidelity 경고를 분리 (2026-11-05)
+
+**관측:** PR #235 CI #626의 P1-D 사용자 Viewer는 server verified CPU Scene READY를 실제 로드했으나 `도면 일부 표시 완료`를 반환했다. 소형 LINE CPU Builder는 전체 지원 geometry를 검증된 `CUSTOM_DTO v2`로 저장하되 정밀 Original Entity mapping `sourceIndex` 생성 기능은 아직 없다. `storedSceneFidelityProfile`의 `render=FULL_V2`와 `sourceIndex=UNAVAILABLE:INDEX_ABSENT`, `action=REBUILD_REQUIRED`는 의도적 분리이며 `three-dxf-viewer/adapter`가 경고를 내보낸다. 시험에서 '도면 표시 완료'를 강제하거나 반대로 SourceIndex gate를 무시하면 현행 #218 Lean Policy의 미지원 기능 명시·원본 정밀 선택 금지를 위반한다.
+
+**결정:** 제품의 경고 및 SourceIndex 안전 제한은 그대로 유지. E2E는 실 geometry/Canvas/저장 Scene 복원·원본 GET=0을 성공 근거로 검사하면서 동일 경로의 **정확한 부분 표시 경고**를 반드시 검사한다. 단위시험은 복원 LINE 좌표 및 sourceIndex reason을 일치시켜 future fidelity drift 감지. #624/#625/#626 FAIL 과거 원장은 보존, 변경된 HEAD 결과 확인 전 PASS 주장 금지. #225/#218 OPEN·GO-PILOT BLOCKED, 제품 Scene flags OFF, #229 GHCR >=0.61 HOLD, #231 Tag Ruleset OPEN 유지. 정밀 SourceIndex 생성은 별도 설계/지원 검증 및 승인이 필요한 기능으로 표시한다.
+
+---
+
+## ADR #225-P1D-READ — Browser may read verified CPU Scene immutable payload (2026-11-05)
+
+- **Evidence:** #625 P1-D HTTP+OCI returned validated CPU READY, fresh authenticated Viewer failed to expose Scene status. Source inspection confirmed server `storedSceneScope` accepts exactly the approved CPU/Browser builders, but browser `ViewerSource.readScene` used browser-only `sceneScope`. UI log did not expose the private browser exception; mismatch is a deterministic source-level finding.
+- **Decision:** Use `storedSceneScope(versionId,sourceSha256,manifest.scope)` only for client persisted Scene READ, followed by unchanged `validateSceneManifest`, byte/content SHA and full CUSTOM_DTO validation. Unknown builder, wrong Version/SourceSHA, malformed manifests or assets fail closed; no original DXF automatic fallback. This does not authorize client scene publishing or new CPU builders and changes no runtime flags or G7 authorization.
+- **Verification:** CPU LINE positive ViewerManager+no original GET and hostile Builder/Version/SHA negative unit; actual new signed Viewer/reload and later revocation/SHA/unsupported negatives need fresh required P1-D CI. Existing #625 remains FAIL. GO-PILOT BLOCKED, product flags OFF, v0.61+ GHCR HOLD, #225/#218/#231 OPEN.
+
+---
+
+## ADR #225-P1D — PR 전용 HTTP→OCI→인증 Viewer 전구간 검증 (2026-11-05)
+
+#234 OCI Worker 검증과 #233 Node/브라우저 별도 검증을 단일 성공으로 합치지 않는다. 신규 P1-D는 오직 새 GitHub PR CI run/attempt의 고유 Docker Volume·로컬 OCI 3대상으로 합성 LINE DXF를 등록하고 실제 Origin·CSRF HTTP, Editor 로그인, 독립 Worker의 영속 READY, 새 브라우저 Context 복원까지 시도한다. 실 운영 `.env`, tag, GHCR, 볼륨은 변경하지 않으며 앱 loopback/Worker network none·UID10001/read-only·자원 제한·테스트 소유 marker를 검사한다. 변환 중 OOM/kill, 진짜 승인형 운영 migration/restore 및 3-image 출고는 후속 GO-PILOT/Release Gate. 새 CI 통과 전 NOT RUN. #225/#218 OPEN, 제품 Scene 두 스위치 OFF, #229 GHCR >=0.61 HOLD, #231 관리자 Ruleset OPEN.
+
+---
+
 ## ADR #225-OCI-PILOT-EVIDENCE — PR #233 이후 독립 OCI 실증 (2026-11-05)
 
 **확정:** PR #233 exact HEAD/CI #612 + Main CI #152 성공, GHCR job SKIPPED. 다음 GO-PILOT 사전 증거는 CI 내 임시 고유 Docker volume과 로컬 `cpu-worker` OCI target으로 범위를 한정한다. 외부 GHCR 푸시/운영 이미지 사용 없이 동일 Dockerfile로 빌드한 image `cad-layout-viewer:ci-cpu-worker`에서 nonroot/네트워크 없음/읽기전용 루트·cgroup 상한 및 실제 Worker DB/Blob 상태를 검증한다. 파일/네트워크/권한 교차 검증은 실패 시 fail closed. 기존 제품 두 Scene 플래그 OFF, 테스트 전용 컨테이너 안에서만 ON. `#229` 영속 Release HOLD·#231 관리자 규칙·#225/#218 OPEN·GO-PILOT BLOCKED는 변하지 않는다.

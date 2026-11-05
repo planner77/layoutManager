@@ -1,3 +1,59 @@
+## #225 / PR #235 — 누적 CI 실패·코드 교차 점검 및 제출 전 검증 (2026-11-05)
+
+**요구/설계:** NFR-218-L01과 [Issue218LeanPolicy](Issue218LeanPolicy.md)의 변경분 검증 원칙을 적용한다. #624 인증 완료 경합 가설, #625 CPU storedSceneScope 계약 결함, #626 올바른 부분 표시 경고와 시험 기대 불일치를 별도 실패로 유지한다. 최신 #631/run 41973555282의 `scene-http-oci-viewer.spec.ts:237` nested DTO type 구문 오류는 정적 검사와 Playwright discovery를 함께 막는 독립 회귀다. 중첩 inline 타입을 기존 DTO 계약 또는 명시적 이름의 읽기 쉬운 타입으로 정리하되, 실제 payload/sourceIndex/LINE geometry 검사는 보존한다. 누적 Run/HEAD/Job의 관측과 원인 추정은 [FailureLedger](FailureLedger.md)에서 분리한다.
+
+| AC/TC | 제출 전 수용 기준 | 증거 경계 |
+| --- | --- | --- |
+| PR235-C01 | 전체 PR source 변경과 누적 CI 실패를 대조해 각 실패의 수정·미검증 후속을 확인 | 역사적 실패를 PASS로 바꾸지 않음; 취소/미실행도 별도 기록 |
+| PR235-C02 | Type Check, Lint, Build, 관련 CPU/Viewer 단위 회귀 및 P1-D Playwright `--list` 성공 | discovery는 실제 E2E 성공을 뜻하지 않음 |
+| PR235-C03 | 가능하면 동일 required Docker P1-D harness를 로컬 폐기형 볼륨/이미지에서 실행해 초기 Admin→signed upload→OCI→fresh Viewer/reload→revoke/SHA/CIRCLE/READY 보전까지 확인 | 환경 제약/실패는 정확히 기록, 로컬 PASS를 exact HEAD CI PASS로 대체하지 않음 |
+| PR235-C04 | 초기 변경 완료/세션200, allowlisted CPU Builder와 Version/SHA fail-closed, v2 INDEX_ABSENT·LINE 좌표, 정확한 부분 표시 경고·원본 GET0·reload, 세 음성 경로와 기존 READY 불변 유지 | assert 삭제·skip·timeout/권한/자원/required gate 완화 금지 |
+| PR235-C05 | Developer 결과를 QA가 검증·문서화하고 Manager가 수정 범위 수용 여부 판단, root가 commit/push 후 새 PR CI 시작 | 사용자 요청으로 새 CI 모니터링하지 않음; 새 exact HEAD 결과는 NOT VERIFIED로 인계, GO-INTEGRATE 보류 |
+| PR235-C06 | 로컬 `TC-Z196-RESET-HISTORY`의 15초 timeout은 별도 실패로 보존하고, 계측으로 fixture seed 병목이 확인되면 201 Zone/Geometry 쌍의 준비만 단일 transaction으로 묶어 재검증 | 202개 mapping·201 tombstone MAPPED·live revision3 UNMAPPED·SOURCE_ONLY/ALL 양쪽 assertion과 원래 timeout 유지. 제품 reset 코드·CI Gate 변경 금지 |
+
+**불변:** 제품 두 Scene flags OFF, #225/#218/#231 OPEN, >=0.61 GHCR HOLD, GO-PILOT BLOCKED. 운영 DB/CAD/Volume/.env/기존 이미지·태그는 변경하지 않는다. 새 기능·Schema·제품 버전 변경은 이번 시험 회귀 수정 범위에 포함하지 않는다.
+
+---
+
+## #225/P1-D CI #624→#626 전구간 회귀 보강 계획 (2026-11-05)
+
+- **실제 실패 순서:** #624 Admin initial-change 완료 동기화; #625 새 Viewer CPU Builder `storedSceneScope` 검증 호환; #626 CPU LINE persisted READY Scene 복원 후 의도된 `도면 일부 표시 완료`가 E2E `도면 표시 완료` 기대와 불일치. 전체 실패 단계와 증거 범위는 [FailureLedger](FailureLedger.md) 최신 표 참조. 이전 실패를 PASS로 변경하지 않는다.
+- **양성/정확한 제한 경고:** 독립 OCI 게시 후 HTTP Scene Status/manifest 검증, `CUSTOM_DTO v2` Blob digest, `asset.objects`, 실제 `Line` object·position `[0,0,0,15,20,0]`를 검증한다. `viewerData.sourceIndex={state:'UNAVAILABLE',reason:'INDEX_ABSENT'}` 상태를 명시한 뒤 **새 인증 Chromium**의 `저장된 Scene Asset 복원`, three-dxf-viewer Renderer/캔버스 및 **`도면 일부 표시 완료`**의 정밀 선택 한계 경고를 요구한다. reload 후 동일 경고·실제 Scene fetch·DXF original GET 0을 함께 요구한다. 이것은 2D LINE 형상 READY와 원본 정밀 mapping 미지원의 공존이지 렌더 실패를 허용하는 느슨한 assertion이 아니다.
+- **단위 양·음성:** 실제 CPU Candidate의 `CUSTOM_DTO v2`/source index absent reason 및 `storedSceneFidelityProfile={render:'FULL_V2',sourceIndex:'UNAVAILABLE',action:'REBUILD_REQUIRED'}`, `restoreSourceScene` 실제 정점 좌표를 재현. CPU Builder allowlist strict Version/SHA 및 unknown Builder 검증은 #625부터 유지.
+- **음성 후속 필수:** Origin·CSRF 403, Site Grant revoke→무게시 FAILED, Source SHA tamper→무게시 FAILED, unsupported CIRCLE→무게시 FAILED, 매 단계 기존 READY immutable asset/원본 보존·끝 Worker IDLE. #626은 status assertion에서 멈췄으므로 이 후속이 검증됐다고 주장하지 않는다. 새로운 정확 HEAD 필수 CI 성공 전 **NOT VERIFIED**. GO-PILOT과 GHCR 출고 별도 승인, 모든 기준/timeout/권한/자원 Gate 유지.
+
+---
+
+## #225 / PR #235 — CI #625 CPU Builder Scene load regression (2026-11-05)
+
+- Keep all P1-D requirements: actual signed Editor multipart upload, Origin+CSRF failures, Version/CPU Job QUEUED, separate constrained Worker OCI PUBLISHED, immutable READY/Audit/bytes and new authenticated Viewer without original DXF GET, page reload, Site revoke/SourceSHA tamper/CIRCLE rejection and prior READY preservation.
+- On the *read path only*, test approved CPU Builder `node-cpu-line@1.0.0+cad-scene-1` as well as historical Browser Builder. Use `storedSceneScope(requestedVersionId,trustedSourceSha,manifest.scope)` then strict Manifest and DTO integrity; demonstrate CPU LINE candidate `ViewerManager.getLoadStrategy()===READY_SCENE`, adapter `loadScene`, original DXF GET=0.
+- Check unapproved Builder, wrong Version, forged SourceSHA and wrong caller expected SourceSHA all fail-closed *before Blob GET*, retaining existing Browser tests and no automatic original DXF fallback.
+- CI #625 is failure evidence only; corrected exact HEAD must pass all required CI before GO-INTEGRATE claim. Product Scene flags OFF, GHCR>=0.61 HOLD, GO-PILOT BLOCKED unchanged.
+
+---
+
+## #225 / PR #235 — CI #624에 따른 인증 전환 E2E 계획 보강 (2026-11-05)
+
+- 최초 Admin UI 생성 후 `auth/initial-change` 성공 문구를 실제로 관측하기 전에는 리다이렉트·재로그인을 시작하지 않는다. 이전 페이지의 POST가 비동기 실행 중인 상태에서 탐색하면 요청 완료를 보장할 수 없다.
+- Admin/Editor/새 Viewer 브라우저의 로그인은 각각 POST `/api/g7-runtime/auth/login` 200 → 신규 signed `/api/g7-runtime/auth/session` 200 → `현재 세션` heading 순서로 확인한다. 실패 관측은 코드·HTTP 상태로 제한하고 쿠키·CSRF·패스워드·response body/trace를 원장에 기록하지 않는다.
+- #624는 이 기준을 충족하지 못해 **P1-D 연속 통합 시험 FAIL**, 앞 단계의 독립 OCI proof 성공을 전체 HTTP→OCI→Viewer PASS로 승격하지 않는다. 수정 HEAD에서 기존 양성·음성, 필수 gate를 전부 다시 실행한다.
+
+---
+## #225/P1-D 실제 HTTP→OCI CPU Worker→새 인증 Viewer 단일 E2E 시험 계획 (2026-11-05)
+
+**환경:** GitHub PR에만 허용되는 `src/tests/oci/scene-p1d-journey.sh`가 실제 HEAD label이 일치한 로컬 App/Migrator/Worker OCI와 새로운 `layoutmanager-ci-p1d-<run>-<attempt>` Volume 생성. App loopback 포트·Worker UID10001/network none/RO root/caps drop/CPU1·RAM768MiB/PID64. 테스트 종료 시 만든 정확 CID+Volume만 제거. App/Worker 플래그 true는 테스트 컨테이너 내부 한정, 제품 소스 기본 OFF.
+
+1. **G7 실제 인증:** 최초 Admin UI·설정 코드·초기 암호 변경→Admin 로그인→Master 계층 생성/Site grant→Editor 발급/Role+Site·최초 암호 교체→Editor UI 로그인.
+2. **Origin/CSRF 차단:** 위 Editor의 위조 Origin·CSRF multipart POST는 403, 정상 `POST /api/cad-files`의 2D LINE DXF는 201/영속 Version+QUEUED/sha256 및 CAD_UPLOADED Audit.
+3. **서버/Worker:** 별도 OCI `scene-cpu-worker.ts --once` 결과 PUBLISHED, server signed batch/Scene READY, CurrentScene Revision0/immutable Asset1/Audit1, CPU manifest DTO v2 digest·SourceSHA 일치.
+4. **신규 로그인 Viewer:** 원 Editor와 서로 다른 세션 토큰을 보유한 새 Chromium Editor 컨텍스트에서 원본 `GET /api/cad-files/[id]/content`를 강제 abort하고 `저장된 Scene Asset 복원`, 렌더 캔버스, `도면 표시 완료`, 새로고침 후 원본 GET=0을 검사.
+5. **음성·보전:** 새 queued Job을 업로드 후 Editor Site revoke→SCENE_AUTH_REVOKED/포인터 0; 재grant 후 test-owned 원본 같은 길이 변조→SCENE_SOURCE_DIGEST_MISMATCH/포인터0; CIRCLE unsupported→SCENE_CONVERTER_UNAVAILABLE/포인터0; 매 단계 기존 정상 READY assetId/digest/Audit·source 불변/Worker 최종 IDLE. 현재 미지원 입력을 silent PARTIAL READY로 처리 금지.
+
+**Evidence:** 신규 CI HEAD 실행 전 NOT VERIFIED. 기존 #234 CI #622 PASS는 실행 환경과 격리 테스트까지의 증거이며 본 새 App HTTP→OCI→Viewer 통합증거를 대체하지 않는다. 실제 현장 DXF, 변환 중 OOM, 정식 G7 upgrade/backups, 3-image release/tag Ruleset은 GO-PILOT/Release 잔여다.
+
+---
+
 ## #225 / PR #234 — OCI Kill 검증 보완·실패 재현 요구 (2026-11-05)
 
 - CI #614에서 최초 READY·권한/SHA 거부와 `prepare-crash`까지 통과했지만 `claim-kill` exit1(137 예상)로 실패. 기존 STDERR/STDOUT 전체 숨김으로 원인 판별 불가. 실패를 프로덕션 Worker 오작동 또는 SIGKILL PASS로 추정하지 않는다.

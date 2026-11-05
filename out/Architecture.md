@@ -1,3 +1,21 @@
+## #225/P1-D — CPU Scene 형상/정밀 원본 매핑/표시 판정 분리 (2026-11-05)
+
+G7 signed HTTP 업로드→G7 0.61 CPU Queue→독립 OCI `CUSTOM_DTO v2` immutable Scene READY→signed Scene API→새 Chromium Viewer의 저장 Scene복원 경로 중 CPU LINE은 원본 Handle 기반 `SceneSourceIndex READY`를 생성하지 않는다. `serializeSourceScene`은 `sourceIndex:UNAVAILABLE/INDEX_ABSENT`를 검증한 DTO에 기록하고 `storedSceneFidelityProfile`은 `render:FULL_V2`와 `sourceIndex:UNAVAILABLE`를 별개로 제공한다. `three-dxf-viewer/adapter.loadScene`은 화면의 제한을 `warning`으로 전달하고 `viewer.tsx`는 `도면 일부 표시 완료`로 표시한다. 이는 본 CPU Builder가 Scene을 게시하지 못한 것과 다르고 정밀 원본 선택이 가능한 것과도 다르다. 신규 E2E는 실제 geometry와 이 warning을 동시에 요구, 원본 DXF 자동 GET·재파싱/임의 SourceIndex 복구 금지. **현재 GO-PILOT에서 정밀 Handle/SOURCE 작업은 미지원**. #218 단계별 GO, 출시 HOLD/운영 분리 유지.
+
+---
+
+## #225 / PR #235 — CPU READY persisted Scene browser read compatibility (2026-11-05)
+
+The signed P1-D path emits CPU Builder `node-cpu-line@1.0.0+cad-scene-1` via the independent OCI Worker. `SceneRepository.status/content` already validates both exact known Browser/CPU Builder identities with `storedSceneScope`. `ViewerSource.readScene` was still reconstructing only Browser `sceneScope`, thus strict manifest comparison rejected a genuine CPU READY record (consistent with CI #625 missing success UI). Browser read now reconstructs expected identity from the request's Version+SourceSHA and the manifest's Builder via the same domain `storedSceneScope` allowlist, still enforcing strict Manifest equality, byte SHA and full DTO checks. Unknown identities, cross-Version/SHA and source-free parser fallback remain blocked; CPU publish G7 authorization/CAS and manual browser publishing unaffected.
+
+---
+
+## #225/P1-D — 실제 App HTTP와 독립 CPU OCI Viewer 연결 (2026-11-05)
+
+진짜 `POST /api/cad-files`의 G7 Editor Session/Origin/CSRF → `CadRepository.register` Version+CPU Job의 동일 DB TX → 독립 nonroot/NetworkNone CPU Worker OCI `--once` → Verified CUSTOM_DTO v2 + immutable SceneAsset/CurrentScene/SCENE_PUBLISHED Audit → `GET /api/scene-build-jobs` 및 `GET /api/cad-files/[versionId]/scene/content` → **새 인증 Chromium context**의 실제 Viewer Scene 복원·새로고침을 하나의 PR 전용 G7 Docker Volume에서 검사한다. 테스트는 `127.0.0.1`에만 App을 노출하고 Worker에 Docker socket/외부 네트워크를 전달하지 않는다. 음성시험은 Origin/CSRF 오류, Site grant 철회 후 실패, test-owned 원본 SHA 변조, 미지원 CIRCLE 허위 READY 차단 및 기존 READY 보호. 새 PR CI가 완료될 때까지 NOT VERIFIED. 제품 기능 OFF·GHCR HOLD·GO-PILOT BLOCKED는 독립 정책이다.
+
+---
+
 ## #225 실 OCI proof 경계 (2026-11-05)
 
 기존 구조: signed G7 App upload/Version+Job 원자성→single CPU Builder job→분리 Node Worker→SourceSHA+DTO+immutable Blob readback→CurrentScene CAS+Audit→Browser Viewer. PR #233은 signed multipart 서비스와 분리 Node 프로세스, 새 Chromium Context를 **독립된 양성·음성 시험으로** 검증했다 (CI #612/Main #152 PASS). 이번 소유 CI volume 기반 신규 proof는 동일 `cpu-worker` OCI target의 보안 자원·프로세스 경계를 실제 Docker로 검사하지만 *현장에 배포된* OCI/App/Auth/Viewer E2E를 대신하지 않는다. 0.61 schema/Worker 출시 및 기존 GHCR 태그는 불변; #229 release HOLD, #231 권한 설정은 독립 Gate다.

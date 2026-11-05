@@ -1,3 +1,37 @@
+## #225/P1-D PR #235 — CI #624/#625/#626 연속 실패 전체 원인 분석 및 보완 (2026-11-05)
+
+- **검증된 관측:** [#624](https://github.com/planner77/layoutManager/actions/runs/41948139879) 최초 Admin 변경/로그인 완료 동기화 실패(이전 Test 수정); [#625](https://github.com/planner77/layoutManager/actions/runs/41965842513) CPU Builder `storedSceneScope`가 브라우저 전용 `sceneScope`로 거절되는 Viewer load 경로 결함 수정; [#626](https://github.com/planner77/layoutManager/actions/runs/41969752102) HEAD `798b7162a806d03e1d538bea634ee86b7a614254`의 required Docker job `127055021259`는 서버 signed HTTP·Editor·QUEUE→독립 OCI Worker PUBLISHED·Scene READY·새 Editor 로그인/Scene 복원까지 도달했으나 Viewer status는 실제 `도면 일부 표시 완료`, 새 E2E는 `도면 표시 완료`를 요구해 실패. #624/#625/#626 모두 Docker CI FAIL(Required Verify 종속 FAIL), 단위/G7/일반 Chromium은 SUCCESS. 실패 이력은 모두 유지.
+- **코드 계약 검증:** CPU LINE Candidate는 `CUSTOM_DTO v2`의 형상을 완전 복원하지만 `viewerData.sourceIndex={state:'UNAVAILABLE',reason:'INDEX_ABSENT'}`이므로 `storedSceneFidelityProfile`은 `render:'FULL_V2',sourceIndex:'UNAVAILABLE',action:'REBUILD_REQUIRED'`를 반환한다. `three-dxf-viewer/adapter.loadScene()`은 이것을 **의도적 정밀 원본 매핑 제한 경고**로 전달하고 `viewer.tsx`는 `도면 일부 표시 완료`를 표시한다. #626은 서버 READY/DTO 무결성 실패가 아니라 **잘못된 시험 표시 상태 기대값**이다.
+- **수정:** 제품 경고·원본 매핑 Gate·적용 CI를 약화하거나 거짓 `도면 표시 완료`를 표시하지 않는다. P1-D E2E는 CPU DTO `INDEX_ABSENT`, 실제 2D LINE geometry, immutable Blob SHA, 별도 로그인 후 Viewer 복원, **정확한 '도면 일부 표시 완료' 경고와 reload 시 동일 경고**, no original GET·캔버스·READY 보존을 함께 검증한다. CPU Candidate unit에는 source-index/형상 별도 계약 회귀를 추가한다. Origin/CSRF/권한 회수/SourceSHA/CIRCLE/READY 음성 시험은 삭제·Skip 없이 유지. 현재 source 변경의 정확 HEAD CI 결과는 **NOT VERIFIED**.
+- **불변:** #225/#218/#231 OPEN, GO-PILOT BLOCKED, 제품 `SCENE_AUTO_BUILD_ENABLED=OFF`·`SCENE_CPU_WORKER_ENABLED=OFF`, #229 v0.61+ GHCR HOLD. 테스트 소유 폐기 Docker Volume 외 운영 DB/CAD/Volume/.env/기존 이미지·태그 변경 없음. 진짜 원본 정밀 매핑 기능 제공은 별도 지원/승인까지 제한되며 합성 LINE Renderer PASS가 그 기능의 GO 근거가 아님.
+
+---
+
+## #225 / PR #235 — CI #625 CPU Scene Builder Viewer 불일치·보완 (2026-11-05, 신규 HEAD CI 미검증)
+
+- [PR CI #625/run 41965842513](https://github.com/planner77/layoutManager/actions/runs/41965842513), exact HEAD `cf6dfab3596cd9738c29aeab5a85f136953a1443`: required Docker Job `127042583269` P1-D Viewer `scene-status` 20s timeout (`scene-http-oci-viewer.spec.ts:254`), Required Verify `127047016160` dependent FAIL; Scope, Static/Unit/Build, Greenfield, Signed G7, Chromium shards 1/2·2/2 SUCCESS, A2 scope SKIPPED. Actual signed HTTP upload/Origin+CSRF/Version QUEUED/independent OCI Worker PUBLISHED/immutable Scene READY+manifest/blob SHA, distinct Editor session were exercised before the failure; new Viewer render/reload and subsequent Site revoke/SHA/unsupported negatives were NOT RUN.
+- **원인:** Client `ViewerSource.readScene`의 browser-only `sceneScope` vs server `SceneRepository.status/content`의 allowlisted browser+CPU `storedSceneScope` mismatch. Real CPU Builder `node-cpu-line@1.0.0+cad-scene-1` manifest는 client browser scope 비교에서 거부될 수밖에 없음. CI는 nested browser exception을 공개하지 않았으므로 exact browser trace-level error code는 미확인.
+- **보완:** Browser READ만 기존 domain `storedSceneScope(versionId,sourceSha256,manifest.scope)`로 재구성한 후 변경 없는 full `validateSceneManifest`, byte length/sha256 및 DTO 검사. CPU positive ViewerManager READY_SCENE/원본 GET=0, unknown Builder/cross-Version/wrong SHA rejection 단위 회귀 추가. Browser manual publish, G7 Auth, Worker, CI required gate, timeout, 보안·운영 정책 변경 없음.
+- PR Draft, review thread 0, conflict 0/Main behind 0 triage. #625 historical FAIL 보존, 새 exact HEAD CI PASS 전 P1-D NOT VERIFIED. #225/#218/#231 OPEN, #229 >=0.61 GHCR HOLD, 제품 Scene flags OFF, GO-PILOT BLOCKED, 운영 DB/CAD/Volume/.env/GHCR/tag 불변.
+
+---
+
+## #225 / PR #235 — CI #624 로그인 전환 검증 실패 및 보완 (2026-11-05, 새 HEAD CI 미확인)
+
+- **실측:** [PR CI #624 / run 41948139879](https://github.com/planner77/layoutManager/actions/runs/41948139879), HEAD `2ce84bf322e2b76867bb777efa94f62c51fb1131`, Docker Job `126985423451`의 P1-D signed HTTP→OCI→Viewer 단계에서 `현재 세션` heading 20초 대기 실패(`scene-http-oci-viewer.spec.ts:95`, 최초 Admin 로그인 경로). Required Verify `126991134370`은 선행 Job 실패로 FAIL. Scope/Static·Unit·Build/G7 Greenfield/G7 Signed 및 Chromium 2개 샤드는 SUCCESS, A2 scope SKIPPED. 기존 OCI proof는 Docker Job의 앞 단계에서 SUCCESS였으나 신규 P1-D 전체는 **FAIL**이며 실제 DXF HTTP 업로드·Worker·신규 Viewer 후속 시나리오는 실행되지 않았다.
+- **분석 경계:** 새 시험은 최초 Admin 초기 암호 변경 버튼을 누른 직후 성공 응답을 기다리지 않고 `/g7-runtime`으로 다시 이동했다. 기존 성공한 Greenfield 테스트는 변경 완료 메시지를 기다린다. 비동기 요청 취소/미완료와 다음 로그인 실패가 합리적 원인 후보이나, #624 로그에는 로그인 POST의 HTTP 상태/응답이 없어 취소 또는 운영 Auth 결함은 확정할 수 없다.
+- **보완:** 초기 비밀번호 변경의 서버 처리 완료 UI 메시지와 로그인 화면 전환을 필수로 기다린 후 재로그인. 로그인 POST 상태 200과 신규 signed Session GET 200을 먼저 확인하고 마지막에 `현재 세션` 화면을 검증해 향후 실패를 HTTP/Session/UI 단계로 구분한다. 민감한 암호·세션 쿠키·CSRF/본문/원시 trace를 출력하지 않는다. 테스트 실패를 skip하거나 권한/CSRF·Worker/CI 보안 게이트를 느슨하게 하지 않고 제품 코드도 변경하지 않는다.
+- **Gate:** 수정 소스는 새 정확 HEAD CI가 성공하기 전 **NOT VERIFIED**. PR Draft, #225/#218/#231 OPEN, 두 제품 Scene flag OFF, #229 v0.61+ GHCR HOLD, GO-PILOT BLOCKED, 운영 DB/CAD/Volume/.env·GHCR·tag 불변.
+
+---
+## #225/P1-D — Signed HTTP 업로드→분리 OCI CPU Worker→신규 인증 Viewer 단일 E2E (2026-11-05, CI 미검증)
+
+현재 Main의 #233 CI #612, #234 CI #622 및 Main CI #153/#154 성공은 완료 증거이나, 실제 App HTTP→Worker OCI→새 로그인 Viewer 전 구간 통과를 의미하지 않는다. 이번 브랜치의 `src/tests/oci/scene-p1d-journey.sh`, `scene-p1d-probe.mjs`, `src/playwright.scene-p1d.config.ts`, `src/tests/p1d-e2e/scene-http-oci-viewer.spec.ts`가 처음부터 폐기 가능한 CI 고유 G7 Docker Volume에서 App/Migrator/Worker 로컬 OCI 이미지(정확 PR SHA label 검증)를 사용해 실제 관리자 초기 설정→Editor Role/Site 발급·로그인→CSRF/Origin HTTP multipart LINE DXF 업로드→Version/Job QUEUED→독립 Worker READY/manifest·DTO·Blob readback→새 Editor 로그인 Chromium Context에서 원본 GET 금지 상태의 Scene 복원 및 reload를 검증하도록 추가됐다. 권한 회수, SourceSHA 변조, 미지원 CIRCLE 실패 및 이전 READY 무변경을 함께 확인한다.
+
+**실증 경계:** 이번 새 P1-D 검증 소스는 **CI 결과 확인 전 NOT VERIFIED**. 테스트 코드에서만 `SCENE_AUTO_BUILD_ENABLED=true`/`SCENE_CPU_WORKER_ENABLED=true`를 주입하며 제품/운영 설정의 기본값은 **OFF**. 실제 변환 중 kill/OOM, 현장 G7 upgrade/restore, 정식 3-image source/role/digest·GHCR/Tag Ruleset 관리자의 GO는 별도다. #225/#218 OPEN, **GO-PILOT BLOCKED**, #229 >=0.61 GHCR HOLD, #231 OPEN. 운영 CAD/DB/Volume/.env·기존 GHCR/태그 불변, 실패 시 FailureLedger 실제 Run/Job/수정 기록 필수.
+
+---
+
 ## #225 / PR #234 — OCI GO-INTEGRATE 최종 완료 (2026-11-05)
 
 - [PR #234](https://github.com/planner77/layoutManager/pull/234) 검증 HEAD `aa0c4622e912c7ad048c481c4aa153c86124d79c`, [PR CI #622](https://github.com/planner77/layoutManager/actions/runs/41935291475): **8/8 적용 Job SUCCESS**, #218 A2 synthetic은 범위 외 SKIPPED. Vitest **173 files / 1,098 tests PASS**, Docker OCI, G7 Signed/Greenfield 및 Chromium shards 회귀 성공. 리뷰 스레드 0·충돌 0·Main behind 0에서 Draft 해제 후 **Squash Main `edb3ecb3a17a25cbc88d63b2cc8b911cba3bbcd5` 병합**.

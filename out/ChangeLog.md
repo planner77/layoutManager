@@ -1,3 +1,11 @@
+## Unreleased — PR #235 CI 회귀 보완 (2026-11-05, 0.61.0 유지)
+
+- Test: P1-D E2E의 잘못 닫힌 중첩 DTO 타입을 명시적인 `CpuLineDto`로 정리해 TypeScript/Playwright 구문 오류를 수정했다. 기존 로그인 완료 대기, CPU Builder allowlist·Version/SHA, 부분 표시 경고·실제 LINE 형상·원본 GET0·reload와 세 음성 경로 검증은 유지한다.
+- Test: 로컬 구역 이력 시험의 201 Zone/Geometry 쌍 준비를 단일 transaction으로 묶어 준비 시간을 26,716ms에서 114ms로 줄였다. 두 reset 모드·보존 행 수·revision 및 15초 timeout은 유지한다.
+- Validation: 전체 PR 커밋에 연결된 #624~#631 실패·취소 기록을 [FailureLedger](FailureLedger.md)에 보존한다. 제출 전 실제 검증은 [TestReport](TestReport.md), 새 exact HEAD CI 결과는 모니터링하지 않아 NOT VERIFIED다. 시험/문서만 변경하며 제품 버전·기능 플래그·GHCR HOLD는 유지한다.
+
+---
+
 ## 2026-11-04 — #225/B3 Draft PR #232
 
 Signed G7 Site-authorization batch Scene status/verified immutable READY, separate Home/Location Scene status+visible pending polling, bounded transient-failure manual Retry with Actor/Site/CSRF/CAS and permitted authorization audit added as Draft. Existing immutable G7 schema/release unchanged, flags OFF, GHCR HOLD. GO-INTEGRATE/GO-PILOT not yet approved; real OCI/Viewer restore pending.
