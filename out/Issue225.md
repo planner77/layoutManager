@@ -2,7 +2,7 @@
 
 #241 CI #648/Main #162 성공으로 timeout readiness와 기본 build-record upload 제한이 코드에 통합되었으나, 실제 proof Run #2는 실패로 보존되며 서명/OIDC는 미실행이다. 고정된 gh 2.103.3은 내부 Sigstore 오류를 축약하므로, 원인별 stderr만 요구하던 검증은 실패 원인을 식별하지 못할 수 있다.
 
-다음 test-only 단계는 실제 서명된 positive 결과·동일 bundle·원본 SHA 및 정확 단일 policy/subject 변경을 negative 전후에 대조한다. 제한된 gh issuer 오류일 때에만 \`BRACKETED_CLI_REJECTION_CAUSE_OPAQUE\`로 기록하고 내부 원인이라고 주장하지 않는다. \`TestPlan TP-225-RP-OPAQUE-CLI\`가 기준이며 다음 실제 proof 실행·GO-PILOT/릴리스 출고는 여전히 독립 승인 사항이다. 제품 Scene flags OFF, >=0.61 GHCR HOLD, #225/#218/#231 OPEN.
+다음 test-only 단계는 실제 서명된 positive 결과·동일 bundle·원본 SHA 및 정확 단일 policy/subject 변경을 negative 전후에 대조한다. 제한된 gh issuer 오류일 때에만 `BRACKETED_CLI_REJECTION_CAUSE_OPAQUE`로 기록하고 내부 원인이라고 주장하지 않는다. `TestPlan TP-225-RP-OPAQUE-CLI`가 기준이며 다음 실제 proof 실행·GO-PILOT/릴리스 출고는 여전히 독립 승인 사항이다. 제품 Scene flags OFF, >=0.61 GHCR HOLD, #225/#218/#231 OPEN.
 
 ---
 
