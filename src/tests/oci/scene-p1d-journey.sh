@@ -117,7 +117,7 @@ export G7_P1D_ORIGIN="$origin"
 export G7_P1D_VOLUME="$volume"
 export G7_P1D_PROBE="$PWD/src/tests/oci/scene-p1d-probe.mjs"
 export G7_P1D_SOURCE_SHA="$GITHUB_SHA"
-npx playwright test --config playwright.scene-p1d.config.ts --reporter=line
+(cd src && npx playwright test --config playwright.scene-p1d.config.ts --reporter=line)
 
 # The proof was allowed only in a closed test volume. No PROD settings changed.
 echo "P1D_HTTP_OCI_VIEWER_PROOF_PASS: isolated signed upload, worker and new-session viewer"
