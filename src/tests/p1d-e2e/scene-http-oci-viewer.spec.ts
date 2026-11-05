@@ -89,9 +89,17 @@ async function grant(admin:APIRequestContext,headers:Record<string,string>,userI
 }
 async function signIn(page:Page,login:string,password:string){
   await page.goto('/g7-runtime');
+  await expect(page.getByRole('heading',{name:'로그인',exact:true})).toBeVisible();
   await page.getByLabel('계정',{exact:true}).fill(login);
   await page.getByLabel('비밀번호',{exact:true}).fill(password);
+  // Observe only the response status; never log credentials, cookies or CSRF.
+  const loginResponse=page.waitForResponse(response=>
+    response.request().method()==='POST'&&
+    new URL(response.url()).pathname==='/api/g7-runtime/auth/login');
   await page.getByRole('button',{name:'로그인',exact:true}).click();
+  expect((await loginResponse).status(),'P1D_LOGIN_HTTP_STATUS').toBe(200);
+  const signedSession=await page.request.get('/api/g7-runtime/auth/session');
+  expect(signedSession.status(),'P1D_LOGIN_SESSION_HTTP_STATUS').toBe(200);
   await expect(page.getByRole('heading',{name:'현재 세션'})).toBeVisible();
 }
 type Keys={bu:string;product:string;site:string;building:string;floor:string};
@@ -152,6 +160,9 @@ test('#225 P1-D G7 Editor HTTP upload -> detached OCI Worker -> new authenticate
   await page.getByLabel('초기 비밀번호',{exact:true}).fill('p1d-admin-initial-secret');
   await page.getByLabel('새 비밀번호',{exact:true}).fill(adminPassword);
   await page.getByRole('button',{name:'비밀번호 변경'}).click();
+  // Do not navigate away while initial-change POST is still in flight.
+  await expect(page.getByText('비밀번호를 변경했습니다. 새 비밀번호로 로그인하세요.')).toBeVisible();
+  await expect(page.getByRole('heading',{name:'로그인',exact:true})).toBeVisible();
   await signIn(page,'admin',adminPassword);
 
   const adminSession=await (await page.request.get('/api/g7-runtime/auth/session')).json() as Access;

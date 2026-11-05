@@ -1,3 +1,10 @@
+## #225 / PR #235 — CI #624에 따른 인증 전환 E2E 계획 보강 (2026-11-05)
+
+- 최초 Admin UI 생성 후 `auth/initial-change` 성공 문구를 실제로 관측하기 전에는 리다이렉트·재로그인을 시작하지 않는다. 이전 페이지의 POST가 비동기 실행 중인 상태에서 탐색하면 요청 완료를 보장할 수 없다.
+- Admin/Editor/새 Viewer 브라우저의 로그인은 각각 POST `/api/g7-runtime/auth/login` 200 → 신규 signed `/api/g7-runtime/auth/session` 200 → `현재 세션` heading 순서로 확인한다. 실패 관측은 코드·HTTP 상태로 제한하고 쿠키·CSRF·패스워드·response body/trace를 원장에 기록하지 않는다.
+- #624는 이 기준을 충족하지 못해 **P1-D 연속 통합 시험 FAIL**, 앞 단계의 독립 OCI proof 성공을 전체 HTTP→OCI→Viewer PASS로 승격하지 않는다. 수정 HEAD에서 기존 양성·음성, 필수 gate를 전부 다시 실행한다.
+
+---
 ## #225/P1-D 실제 HTTP→OCI CPU Worker→새 인증 Viewer 단일 E2E 시험 계획 (2026-11-05)
 
 **환경:** GitHub PR에만 허용되는 `src/tests/oci/scene-p1d-journey.sh`가 실제 HEAD label이 일치한 로컬 App/Migrator/Worker OCI와 새로운 `layoutmanager-ci-p1d-<run>-<attempt>` Volume 생성. App loopback 포트·Worker UID10001/network none/RO root/caps drop/CPU1·RAM768MiB/PID64. 테스트 종료 시 만든 정확 CID+Volume만 제거. App/Worker 플래그 true는 테스트 컨테이너 내부 한정, 제품 소스 기본 OFF.

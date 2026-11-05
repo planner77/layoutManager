@@ -1,3 +1,8 @@
+## 2026-11-05 — PR #235 CI #624 P1-D 신규 로그인 단계 FAIL / 시험 순서 보완
+
+[CI #624](https://github.com/planner77/layoutManager/actions/runs/41948139879) HEAD `2ce84bf322e2b76867bb777efa94f62c51fb1131`: 최초 Admin password-change 후 로그인 화면 `현재 세션` 확인 20초 timeout으로 Docker required Job 및 downstream Verify FAIL. 기존 Docker OCI proof 단계 PASS였지만 HTTP 업로드·Worker·새 Viewer 연속 경로는 미진행. 비동기 초기 변경 완료를 기다리지 않고 navigate하는 테스트 경쟁 조건을 후보 원인으로 보고 `initial-change` success 문구·Login HTTP 200·Session HTTP 200·heading 순서로 보완. 정확 실패 HTTP 상태는 미관측이므로 제품 Auth 결함으로 단정하지 않는다. 새 HEAD required CI 전 P1-D NOT VERIFIED. 기존 #622/#153/#154 성공은 이전 증거로 보존; GO-PILOT BLOCKED, #225/#218/#231 OPEN, 제품 플래그 OFF, v0.61+ GHCR HOLD, 운영 자료·태그 불변.
+
+---
 ## 2026-11-05 — P1-D signed HTTP→분리 CPU OCI→신규 인증 Viewer E2E 소스·CI 단계
 
 기존 #234 CI #622의 실제 CI 전용 OCI Worker 격리/READY·revoke·SHA·SIGKILL·복구 성공과 Main CI #153/#154 SUCCESS는 확정 증거다. 새 `feat/225-p1d-http-oci-viewer-e2e`는 `src/tests/oci/scene-p1d-journey.sh`, `scene-p1d-probe.mjs`, `src/playwright.scene-p1d.config.ts`, `src/tests/p1d-e2e/scene-http-oci-viewer.spec.ts`로 진짜 G7 Editor UI/Origin/CSRF의 HTTP DXF 등록→Version/Queue→독립 실제 OCI Worker READY/불변 Scene→새 로그인 Browser에서 원본 재파싱 없이 Viewer 복원 및 negative auth/SHA/unsupported 기존 READY 보전까지 PR CI 필수 단계에서 검증하도록 준비했다. **현재 새 PR CI 미확인/실증 PASS 주장 없음**. 실 변환 도중 OOM/kill, 운영 G7 upgrade/restore, 3-image release 및 #231 GitHub Tag Ruleset은 별도; GO-PILOT BLOCKED, #225/#218 OPEN, 제품 플래그 OFF, #229 0.61+ GHCR HOLD 및 운영 데이터 불변.

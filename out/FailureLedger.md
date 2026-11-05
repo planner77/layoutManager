@@ -1,3 +1,11 @@
+## #225 / PR #235 — P1-D CI #624 최초 Admin 로그인 실패 (2026-11-05)
+
+- **Run:** [#624, 41948139879](https://github.com/planner77/layoutManager/actions/runs/41948139879), source HEAD `2ce84bf322e2b76867bb777efa94f62c51fb1131`. Docker Job `126985423451` P1-D 브라우저 스텝 FAIL: Playwright `getByRole('heading',{name:'현재 세션'})` 20s timeout, helper line 95 / callsite 155. Required Verify Job `126991134370` downstream FAIL. Scope/Static·Unit·Build/G7 Greenfield/Signed/Chromium 2 shards PASS(6 jobs), A2 scope SKIPPED(1); Docker earlier OCI independent proof PASS but **single HTTP→OCI→Viewer journey FAIL**. HTTP CAD upload/Queue/Worker/Viewer/음성 3종은 해당 Run에서 NOT RUN.
+- **Cause classification:** P1-D test orchestration flaw suspected: initial Admin password-change submit was followed by immediate `page.goto('/g7-runtime')` without waiting for the async change success message. Existing verified `first-install.spec.ts` explicitly waits; abrupt navigation could cancel or race the request. Actual login POST status and server-side response were not printed in #624, so cancellation/HTTP Auth bug cannot be declared confirmed.
+- **Targeted fix:** assert password-change success before navigating; on login capture only POST HTTP status=200, signed Session GET status=200, then page heading. No logging of credentials/Session/CSRF; no runtime changes, skip/xfail, broadened gate or timeout increase.
+- **Historical truth:** #624 remains FAILED; #622 OCI and Main #153/#154 remain prior PASS only. New exact-HEAD CI required for any P1-D PASS/GO-INTEGRATE claim. Review threads 0, mergeable=true and Main behind 0 at triage; Draft/OPEN/HOLD and production Scene flags OFF remain unchanged.
+
+---
 ## #225/P1-D HTTP App→OCI Worker→Viewer E2E 작성 (2026-11-05, 새로운 실패 관측 없음)
 
 - 기존 [PR #234](https://github.com/planner77/layoutManager/pull/234) 정확 HEAD `aa0c4622e912c7ad048c481c4aa153c86124d79c` [CI #622](https://github.com/planner77/layoutManager/actions/runs/41935291475) OCI PASS 및 Main CI #153/#154 SUCCESS/GHCR SKIPPED는 별도로 확인된 과거 증거. 이전 #614 실패 기록은 FAIL 보존.

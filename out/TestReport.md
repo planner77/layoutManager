@@ -1,3 +1,10 @@
+## #225 / PR #235 — P1-D CI #624 E2E 로그인 관측 및 한정 보완 (2026-11-05)
+
+[PR CI #624](https://github.com/planner77/layoutManager/actions/runs/41948139879) exact HEAD `2ce84bf322e2b76867bb777efa94f62c51fb1131`: required Docker Job `126985423451`의 독립 OCI 이전 스텝까지 SUCCESS이나 새 연속 P1-D 시험에서 최초 Admin 재로그인 후 `현재 세션` heading 20초 timeout으로 실패. Required Verify 종속 실패, 다른 적용 6 Job SUCCESS, A2 SKIPPED. 따라서 #624에서 HTTP DXF 업로드→Worker READY→새 Viewer 복원 및 음성 검증 **완료 증거 없음**.
+
+**시험 수리:** 실제 `auth/initial-change` 완료 메시지를 확인한 뒤에만 페이지 이동; UI 로그인 POST 상태 200 및 signed Session 조회 상태 200과 화면 heading을 단계별 확인한다. 이전 Run에서 로그인 상태 코드가 관측되지 않아 경쟁 상태는 **원인 가설**이며 제품 인증 불량 확정이 아니다. UI timeout·CSRF·site 권한·Worker 설정·CI 필수 검증은 완화하지 않는다. 수정 HEAD는 CI 통과 전 NOT VERIFIED; #225/#218/#231 OPEN, GO-PILOT BLOCKED, 제품 플래그 OFF, v0.61+ GHCR HOLD, 운영 데이터/배포 불변.
+
+---
 ## #225/P1-D — 단일 signed HTTP→OCI→Viewer E2E 신규 시험 (2026-11-05 / NOT VERIFIED)
 
 `src/tests/p1d-e2e/scene-http-oci-viewer.spec.ts` 및 격리 Docker App/Migrator/CPU Worker harness를 작성했다. 실제 Editor UI 로그인·Origin/CSRF multipart POST, DB Job QUEUED, 별도 CPU OCI `PUBLISHED`, 서버 Asset/Scene API DTO v2 readback, 별도 인증 Context의 Viewer render/reload·원본 GET 0, revoked Site/SourceSHA 변조/미지원 Entity 음성 경로·기존 READY 보전을 하나의 시나리오로 연결한다. 신규 정확 HEAD의 GitHub CI가 아직 없으므로 **PASS 주장 금지**. #234 CI #622의 OCI 단위 PASS와 Main CI #153/#154 성공은 이전 증거로만 보존. 운영 G7 업그레이드·중간 OOM/실 현장 DXF·정식 3-image GHCR 출고 GO는 미검증이며 GO-PILOT BLOCKED/두 제품 플래그 OFF/#225/#218/#231 OPEN 및 >=0.61 GHCR HOLD.

@@ -1,3 +1,11 @@
+## #225 / PR #235 — CI #624 로그인 전환 검증 실패 및 보완 (2026-11-05, 새 HEAD CI 미확인)
+
+- **실측:** [PR CI #624 / run 41948139879](https://github.com/planner77/layoutManager/actions/runs/41948139879), HEAD `2ce84bf322e2b76867bb777efa94f62c51fb1131`, Docker Job `126985423451`의 P1-D signed HTTP→OCI→Viewer 단계에서 `현재 세션` heading 20초 대기 실패(`scene-http-oci-viewer.spec.ts:95`, 최초 Admin 로그인 경로). Required Verify `126991134370`은 선행 Job 실패로 FAIL. Scope/Static·Unit·Build/G7 Greenfield/G7 Signed 및 Chromium 2개 샤드는 SUCCESS, A2 scope SKIPPED. 기존 OCI proof는 Docker Job의 앞 단계에서 SUCCESS였으나 신규 P1-D 전체는 **FAIL**이며 실제 DXF HTTP 업로드·Worker·신규 Viewer 후속 시나리오는 실행되지 않았다.
+- **분석 경계:** 새 시험은 최초 Admin 초기 암호 변경 버튼을 누른 직후 성공 응답을 기다리지 않고 `/g7-runtime`으로 다시 이동했다. 기존 성공한 Greenfield 테스트는 변경 완료 메시지를 기다린다. 비동기 요청 취소/미완료와 다음 로그인 실패가 합리적 원인 후보이나, #624 로그에는 로그인 POST의 HTTP 상태/응답이 없어 취소 또는 운영 Auth 결함은 확정할 수 없다.
+- **보완:** 초기 비밀번호 변경의 서버 처리 완료 UI 메시지와 로그인 화면 전환을 필수로 기다린 후 재로그인. 로그인 POST 상태 200과 신규 signed Session GET 200을 먼저 확인하고 마지막에 `현재 세션` 화면을 검증해 향후 실패를 HTTP/Session/UI 단계로 구분한다. 민감한 암호·세션 쿠키·CSRF/본문/원시 trace를 출력하지 않는다. 테스트 실패를 skip하거나 권한/CSRF·Worker/CI 보안 게이트를 느슨하게 하지 않고 제품 코드도 변경하지 않는다.
+- **Gate:** 수정 소스는 새 정확 HEAD CI가 성공하기 전 **NOT VERIFIED**. PR Draft, #225/#218/#231 OPEN, 두 제품 Scene flag OFF, #229 v0.61+ GHCR HOLD, GO-PILOT BLOCKED, 운영 DB/CAD/Volume/.env·GHCR·tag 불변.
+
+---
 ## #225/P1-D — Signed HTTP 업로드→분리 OCI CPU Worker→신규 인증 Viewer 단일 E2E (2026-11-05, CI 미검증)
 
 현재 Main의 #233 CI #612, #234 CI #622 및 Main CI #153/#154 성공은 완료 증거이나, 실제 App HTTP→Worker OCI→새 로그인 Viewer 전 구간 통과를 의미하지 않는다. 이번 브랜치의 `src/tests/oci/scene-p1d-journey.sh`, `scene-p1d-probe.mjs`, `src/playwright.scene-p1d.config.ts`, `src/tests/p1d-e2e/scene-http-oci-viewer.spec.ts`가 처음부터 폐기 가능한 CI 고유 G7 Docker Volume에서 App/Migrator/Worker 로컬 OCI 이미지(정확 PR SHA label 검증)를 사용해 실제 관리자 초기 설정→Editor Role/Site 발급·로그인→CSRF/Origin HTTP multipart LINE DXF 업로드→Version/Job QUEUED→독립 Worker READY/manifest·DTO·Blob readback→새 Editor 로그인 Chromium Context에서 원본 GET 금지 상태의 Scene 복원 및 reload를 검증하도록 추가됐다. 권한 회수, SourceSHA 변조, 미지원 CIRCLE 실패 및 이전 READY 무변경을 함께 확인한다.
