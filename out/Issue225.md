@@ -1,3 +1,23 @@
+## 2026-11-05 — RR5 실제 OIDC provenance의 구현 전 범위
+
+Manager fallback은 [TestPlan TP-225-RR5-PROVENANCE](TestPlan.md)의 RP-01–08을 기록했다. 다음 proof-only workflow는 정확 Main source/workflow/tree의 archive에서 RR1·RR2/RR3을 실행하고 실제 GitHub OIDC/Sigstore로3-role manifest digest와 최소 receipt를 서명·독립 검증한다. 공개 artifact는 manifest·정제 receipt·bundle metadata만 허용하며 private OCI layer/archive·DB·CAD·인증정보를 업로드하지 않는다. 실제 서명/hosted 실행은 NOT RUN이고 RR2 구현 완료·Manager 검토·독립 QA 뒤 Developer에게 인계한다. 새 전체 목표에서 필요한 code-only 통합과 proof dispatch를 진행 대상으로 판단하며 GHCR 게시·tag/정책 변경·운영 배포·Owner release GO로 확대하지 않는다. RR1–RR5 전체 잔여와 OFF/HOLD는 유지한다.
+
+---
+
+## 2026-11-05 — RR1 독립 QA 수용 / RR2 실제 이미지 복구 착수
+
+RR1 actual registry manifest/config/layer digest·3-role runtime closure·6개 음성시험·정리의 독립 QA를 Manager가 수용했다. source receipt는 unsigned local observation이며 정식 GHCR 출고·업무 배포 완료가 아니다. RR2는 실제 게시 GHCR0.60 pair와 후보 digest3-image를 사용한 install→populated upgrade→HTTP/Worker/Viewer→정식 restore→old App 재기동이다. 기존 운영0.58 App과 고정 Compose 이름이 충돌하므로 변경 없는 helper bytes와 시험 전용 namespace Compose clone으로 격리한다. 정확 기준은 [TestPlan](TestPlan.md)의 **TP-225-RR2-EXECUTION RX-01–08**이며 현행 helper의 Worker 미관리 경계도 명시한다. RR2–RR5 진행 중, 제품 OFF/HOLD·GO-PILOT BLOCKED 유지.
+
+---
+
+## 2026-11-05 — 활성 목표: 실제 배포·복구·릴리스 통제 입증
+
+PR #237의 실제 converter fault 증거는 exact HEAD CI #636 SUCCESS와 Main 통합으로 확인됐다. 새 사용자 목표는 남은 **실제 OCI 배포·기존 게시 이미지로 복구·릴리스 통제**를 입증하는 것이다. 전체 잔여 Gate RR1–RR5 및 구현 AC RR-01–10은 [TestPlan](TestPlan.md)의 **TP-225-RELEASE-RECOVERY**가 정본이다. 첫 실행은 소유 loopback registry의 실제3-image manifest/digest roundtrip과 source build receipt, 이어서 기존 GHCR0.60 digest pair로 시작한 설치의 승인 upgrade·현재 후보 HTTP/Worker/Viewer·정식 backup restore·이전 App 실제 재기동이다. 기존 source-level Schema 시험만으로 이 잔여를 닫지 않는다.
+
+#231 effective Tag Ruleset/우회·게시 권한과 HOLD는 실제 관측으로 판정한다. 읽기 불가 항목은 근거를 분리하고 실행 가능한 시험을 계속한다. 정식 GHCR3-image 게시/외부 정책 활성화/Owner release GO는 준비된 검토 결과와 별도 권한·승인이 필요하며 loopback registry 성공이 이를 대체하지 않는다. 구현 전 신규 RR 결과는 NOT RUN. 제품0.61.0/flags OFF/>=0.61 GHCR HOLD/#225·#218·#231 OPEN/GO-PILOT BLOCKED 유지.
+
+---
+
 ## 2026-11-05 — 잔여 GO-PILOT 독립 PR: converter 실제 중단/주입 cgroup OOM
 
 사용자 요청에 따라 #236 이후 남은 converter fault 증거를 소유 disposable OCI 환경에서 검증한다. 요구/설계/AC 정본은 [TestPlan TP-225-CONVERTER-FAULT](TestPlan.md#tp-225-converter-fault--실제-converter-중단cgroup-oom-폐기-시험-2026-11-05)이다. 실제 parser 반환 직전(DTO 생성 전)의 LINE 처리·호출 frame 증거를 먼저 확보한 KILL과 test-only 메모리 압박에 의한 cgroup OOM, 각각의 durable Job/retry/READY 복구를 구분한다. 제품 hook 없이 시험 전용 계측을 사용하며 claim-wait 또는 DXF_PARSE stage만으로 변환 도중 장애 PASS를 주장하지 않는다.

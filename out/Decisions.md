@@ -1,3 +1,11 @@
+## #225 RR4 — 실제 source-ref/registry 권한과 HOLD 정책안 (2026-11-05)
+
+새 목표의 외부 통제 증거를 수집한 결과 Main 보호와 release environment가 없는 상태가 관측됐다. 따라서 최신 source의 HOLD 코드만으로 과거 workflow 및 승인되지 않은 source 이동의 통제를 완료했다고 할 수 없다. `release-control/`의 두 ruleset payload는 검토용 HOLD/source 정책이며 **미적용**이다. Tag bypass는 비워 두고 source ref는 현재 실제 aggregate CI app/context에 묶는다. 향후 승인 publisher identity나 release environment 검토 없이 임의 bypass를 추가하지 않는다.
+
+Root는 연결 도구의 지원 범위를 확인한 뒤 기존 host registry credential을 메모리 안에서만 사용해 같은 GHCR package와 저장소의 read-only API를 확인했다. credential 값·헤더·인증 응답 token은 출력/저장하거나 앱에 전달하지 않았다. 이 경로의 조회 성공은 기존 `.env` Git 인증 401을 고쳤거나 GHCR push를 수행했다는 의미가 아니다. 새 실제 관측은 [TestReport](TestReport.md), 승인·적용·rollback 절차는 [Operation](Operation.md)에 분리한다. 제품0.61.0/flags OFF/GHCR HOLD는 그대로다.
+
+---
+
 ## #225 — converter fault 증거를 제품 hook 없이 분리 (2026-11-05)
 
 TP-225-CONVERTER-FAULT는 기존 claim-only SIGKILL과 구별해 실제 CPU parser 호출 프레임/완료 LINE을 확인하는 시험 전용 inspector를 사용한다. 제품 sleep/fault hook·메모리/권한 제한 완화는 도입하지 않는다. 주입 cgroup OOM의 합격에는 실제 Docker OOMKilled=true가 필요하며, 자연 발생 parser OOM·실 CAD 용량 수용을 주장하지 않는다. 소스 위치 변화는 시험 수정과 재검증이 필요한 fail-closed 조건이다.

@@ -1,3 +1,11 @@
+## #225 — 실제 배포·복구·릴리스 통제 검증 진행 중 (0.61.0, 2026-11-05)
+
+PR #237은 CI #636과 Main CI #158 성공 후 통합됐다. 현재는 고정 Git archive에서 만든 App/Migrator/CPU Worker의 실제 registry digest 전달·실행, 기존 게시 GHCR0.60 이미지의 설치→승인 업그레이드→동일 백업 복원→원래 App 재기동, 외부 릴리스 정책/권한을 검증한다. 전체 기준은 [TestPlan](out/TestPlan.md)의 RR1–RR5, 최신 실제 결과와 제한은 [TestReport](out/TestReport.md)를 따른다.
+
+소유 loopback registry의3-image proof는 독립 QA를 통과했으며, 실제0.60 설치·업무/복구 흐름은 진행 중이다. 정책 JSON은 검토안이며 서버에 적용하지 않았다. 서명 provenance/정식 GHCR3-image 출고·Owner GO는 별도다. 제품 두 Scene flag OFF, >=0.61 GHCR HOLD 및 GO-PILOT BLOCKED를 유지한다. 운영 중인 App과 원본/DB는 시험 대상에 포함하지 않는다.
+
+---
+
 ## #225 — 변환 실행 중 KILL/OOM 검증 (0.61.0, 2026-11-05)
 
 독립 PR에서 실제 CPU parser 프레임을 확인한 뒤 테스트 컨테이너의 KILL·주입 cgroup OOM과 영속 Job 재시도/Scene 복구를 검증한다. 제품 소스나 설정을 바꾸지 않고 폐기 가능한 OCI 시험만 확장한다. 수용 기준은 [TestPlan](out/TestPlan.md)의 TP-225-CONVERTER-FAULT, 실행 결과와 미검증 항목은 [TestReport](out/TestReport.md)를 따른다. 주입 OOM은 자연 발생 parser 메모리 소진의 증거가 아니다. 정식 3-image registry 출처·digest/rollback과 #231 권한 Gate는 남아 있으며, 제품 flags OFF·GHCR HOLD·GO-PILOT BLOCKED를 유지한다.

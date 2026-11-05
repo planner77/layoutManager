@@ -1,3 +1,17 @@
+## #225 실제 배포·복구 및 릴리스 통제 준비 (2026-11-05)
+
+현재 RR1–RR5의 정본은 [TestPlan](TestPlan.md)의 TP-225-RELEASE-RECOVERY다. 새 후보는 고정 Git commit/tree의 archive로 세 OCI target을 빌드하고, 소유 loopback registry의 manifest/config/layer raw bytes를 검증한 digest ref로만 실행한다. 같은 소유 registry receipt는 실제 게시된 GHCR0.60 pair로 시작하는 업그레이드·원래 이미지 롤백 시험에 전달한다. 이 receipt는 로컬 실행 근거이며 독립 서명 provenance나 GHCR 출고 승인이 아니다. 실제 실행 상태·hash는 [TestReport](TestReport.md)에만 기록한다.
+
+외부 적용 전 검토할 payload는 `src/deploy/release-control/issue231-tag-hold.ruleset.json`과 `issue225-main-source.ruleset.json`이다. **파일 작성만 했으며 서버에 적용하지 않았다.** Tag HOLD는 `v*`와 전용 `issue225-control-*` Tag의 생성·갱신·삭제를 bypass 없이 제한한다. 기존 release tag를 이동/삭제하지 않지만, 새 정상 release tag도 별도 승인 publisher 정책을 정하기 전 생성할 수 없다. Main 정책은 Main 및 전용 control branch의 삭제/비 fast-forward를 제한하고, PR·미해결 대화 해소·GitHub Actions(App15368)의 실제 aggregate check `Typecheck, lint, test, build, E2E`와 최신 Main 기준 검증을 요구한다. formal GitHub reviewer 수는 0이며 현재 Manager/QA 내부 검토를 GitHub 사람 승인으로 위장하지 않는다.
+
+정책 적용은 현재 설정·bypass readback 저장 → 검토한 payload/hash에 대한 Owner 승인 → 고유 control ref만 준비 → 정확 정책 적용/readback → 일반 사용자 및 Actions actor의 전용 ref 거절 증거 → 정책을 유지한 채 control fixture 정리 순서다. production Main 또는 기존 `v*` tag를 고의로 수정해 시험하지 않는다. 거절 HTTP 상태만으로 PASS 처리하지 않고 실제 Rule violation·변하지 않은 ref·가능한 rule suite 평가를 확인한다. 실패 시 source/기존 tag 불변을 먼저 확인하며 정책을 자동 disabled/delete하지 않는다. 승인된 이전 JSON 복구도 별도 Owner 조치다. bypass 목록이 응답에서 생략되면 빈 배열로 간주하지 않는다.
+
+현재 workflow 기본 token이 read인 것만으로 명시적인 과거 workflow의 `packages:write`를 차단했다고 주장하지 않는다. GHCR package의 상속/Manage Actions access·일반 token writer·승인 publisher identity와 protected release environment는 실제 권한 readback/격리된 거부·허용 증거가 필요하다. 현재 package visibility를 바꾸거나 기존 credential을 회수/재발급하지 않는다. `>=0.61` GHCR HOLD와 제품 두 Scene flag OFF를 유지한다.
+
+정책 schema·권한·bypass 해석은 [GitHub Rules REST](https://docs.github.com/en/rest/repos/rules), package 역할/Actions access는 [GitHub Packages access control](https://docs.github.com/en/packages/learn-github-packages/configuring-a-packages-access-control-and-visibility), 서명된 provenance와 로컬 receipt의 구별은 [GitHub artifact attestations](https://docs.github.com/en/actions/concepts/security/artifact-attestations)를 근거로 한다. 이 링크의 지원 설명을 실제 적용 PASS로 옮기지 않는다.
+
+---
+
 ## #225 converter 장애 시험의 실행·증거 경계 (2026-11-05)
 
 기존 필수 PR Docker 단계의 `src/tests/oci/scene-cpu-worker-proof.sh`가 시험 소유 volume에서 정상 Worker·claim-only 중단·권한/SHA 거부에 이어 converter 내부 KILL과 주입 cgroup OOM을 실행한다. `scene-cpu-converter-inspector.mjs`는 해당 컨테이너에만 읽기 전용 mount되며 컨테이너 내부의 별도 controller process와 loopback inspector로 실제 parser의 반환 직전 실행 위치(완료 LINE 확인, DTO 생성 전)를 확인한다. host inspector port나 제품 fault hook은 추가하지 않는다. 소스 anchor/실행 위치가 달라지면 시험은 실패해야 한다.

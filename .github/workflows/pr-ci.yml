@@ -424,12 +424,17 @@ jobs:
           docker buildx build --load --platform linux/amd64 --target migrator -f "$RUNNER_TEMP/issue28-baseline.Dockerfile" -t cad-layout-viewer:baseline-migrate .
       # Buildx action supplies authenticated GHA cache parameters; separate target scopes
       # prevent phase1/runtime/migrator cache overwrites. Cache faults are non-fatal.
+      - name: Prepare exact Git archive for three release-role builds
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 src/tests/oci/rr1-ci-source.py prepare --out-dir "$RUNNER_TEMP/rr1-release"
       - name: Build phase1 for baseline comparison (when packaging changed)
         if: needs.scope.outputs.baseline == 'true'
         uses: docker/build-push-action@v7
         with:
-          context: .
-          file: src/Dockerfile
+          context: ${{ runner.temp }}/rr1-release/source
+          file: ${{ runner.temp }}/rr1-release/source/src/Dockerfile
           target: phase1
           platforms: linux/amd64
           load: true
@@ -439,8 +444,8 @@ jobs:
       - name: Build standalone web runtime with GHA cache
         uses: docker/build-push-action@v7
         with:
-          context: .
-          file: src/Dockerfile
+          context: ${{ runner.temp }}/rr1-release/source
+          file: ${{ runner.temp }}/rr1-release/source/src/Dockerfile
           target: runtime
           platforms: linux/amd64
           load: true
@@ -454,8 +459,8 @@ jobs:
       - name: Build dedicated migrator with GHA cache
         uses: docker/build-push-action@v7
         with:
-          context: .
-          file: src/Dockerfile
+          context: ${{ runner.temp }}/rr1-release/source
+          file: ${{ runner.temp }}/rr1-release/source/src/Dockerfile
           target: migrator
           platforms: linux/amd64
           load: true
@@ -470,8 +475,8 @@ jobs:
       - name: Build standalone CPU Worker with GHA cache
         uses: docker/build-push-action@v7
         with:
-          context: .
-          file: src/Dockerfile
+          context: ${{ runner.temp }}/rr1-release/source
+          file: ${{ runner.temp }}/rr1-release/source/src/Dockerfile
           target: cpu-worker
           platforms: linux/amd64
           load: true
@@ -503,6 +508,19 @@ jobs:
             echo "::error::CPU Worker accepted an unapproved release gate"
             exit 1
           fi
+      # RR1 verifies actual Registry V2 manifest/config/layer bytes and pulls
+      # all three roles by digest from a unique loopback-only registry. The
+      # source context above is one exact Git archive, not a dirty checkout.
+      - name: Verify immutable three-role OCI registry roundtrip
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile src/tests/oci/rr1-ci-source.py src/tests/oci/rr1-registry-proof.py
+          python3 src/tests/oci/rr1-ci-source.py finish --out-dir "$RUNNER_TEMP/rr1-release"
+          docker pull registry@sha256:a3d8aaa63ed8681a604f1dea0aa03f100d5895b6a58ace528858a7b332415373
+          python3 src/tests/oci/rr1-registry-proof.py \
+            --build-receipt "$RUNNER_TEMP/rr1-release/rr1-input.json" \
+            --output-receipt "$RUNNER_TEMP/rr1-release/rr1-registry-receipt.json"
       # #225: true OCI (same local cpu-worker target), not a mock child process.
       # Uses only a test-run-unique Docker volume and has a mandatory cleanup trap.
       - name: Verify disposable CPU Worker OCI security, converter faults and restore
