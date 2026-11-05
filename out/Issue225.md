@@ -1,3 +1,9 @@
+## 2026-11-05 — PR #234 OCI CI #622 통과 및 GO-INTEGRATE Main 완료
+
+[PR #234](https://github.com/planner77/layoutManager/pull/234) source HEAD `aa0c4622e912c7ad048c481c4aa153c86124d79c` [PR CI #622](https://github.com/planner77/layoutManager/actions/runs/41935291475) 8 applicable jobs SUCCESS(A2 SKIPPED), OCI 실 컨테이너 security + Loop/READY/stop/start, revoke/SHA tamper, 소유 CID SIGKILL/지속 Job→시각 가속 retry→READY, 격리 SQLite/CAD 복원·재독해 PASS. 이전 #614 SIGKILL exit1 FAIL 이력 보존. Review0/충돌0 뒤 Squash Main `edb3ecb3a17a25cbc88d63b2cc8b911cba3bbcd5` 병합. 이것은 **실제 OCI 증거의 GO-INTEGRATE 완료**이지 제품 GO-PILOT/배포 승인 아님. User HTTP→실 OCI→Viewer 로그인 E2E 및 mid-conversion crash/OOM, real G7 업그레이드/복구, 정식 3-image 검증은 잔여. #225/#218 OPEN, 제품 2 flag OFF, #229 GHCR HOLD/#231 Tag Ruleset OPEN, 실 운영 자료/태그/이미지 변경 없음.
+
+---
+
 ## 2026-11-05 — PR #233/Main CI #152 확정 및 실제 OCI 검증 착수
 
 [PR #233](https://github.com/planner77/layoutManager/pull/233) source HEAD `2b1cb5bef3a011e9b31eeafc508aec90051b2754`: [PR CI #612](https://github.com/planner77/layoutManager/actions/runs/41920944913) 8개 applicable SUCCESS(A2 scope SKIPPED), Vitest 1,098/1,098 PASS, 별도 Node Worker·G7 multipart·Chromium 회귀 PASS. Squash Main `b33945d7ee80946950f8debfd04ce080af6e7105` / [Main CI #152](https://github.com/planner77/layoutManager/actions/runs/41924479834) SUCCESS, GHCR publish SKIPPED. 이전 검증 대기 문구는 작성 시점 이력으로 보존.

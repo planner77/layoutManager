@@ -1,3 +1,12 @@
+## #225 / PR #234 — CI #614 실패에서 CI #622 복구, Main 병합 완료 (2026-11-05)
+
+- **Historical failure retained:** [PR CI #614 / run 41931040058](https://github.com/planner77/layoutManager/actions/runs/41931040058), HEAD `9361d920ca53bdbc9d9a5ce8e807a9408806d3d1`, Docker Job `126927778252`에서 `Expected disposable Worker SIGKILL exit 137, got 1`로 실패; Required Verify도 선행 의존성 실패. 당시 `claim-kill`의 자식 stderr가 숨겨져 내부 오류는 특정 불가. 초기에 성공한 READY/revoke/tamper 시험을 후속 SIGKILL/recovery/restore PASS로 확대하지 않는다.
+- **Correction applied:** 자기 SIGKILL + `docker run --rm` Exit 137 추정 대신, 별도 테스트용 OCI가 소유 볼륨의 marker와 SQLite `RUNNING/attempt=1/no pointer`를 확인한 뒤 GitHub 호스트에서 **해당 CID에만** `docker kill --signal=KILL` 후 `docker wait`·`inspect` 137, Job 영속성 및 stale/retry/복원 단계를 검사. 보안 격리나 CI 필수 Gate 완화/Skip 없음.
+- **Verified repair:** [PR CI #622 / run 41935291475](https://github.com/planner77/layoutManager/actions/runs/41935291475) exact HEAD `aa0c4622e912c7ad048c481c4aa153c86124d79c`: 8 applicable Job SUCCESS(A2 scope SKIPPED), 173 Vitest files/1,098 tests PASS, required Docker Job `126942947861`에서 `OCI_CPU_PROOF_PASS`, `verify-recovered`, `restore` PASS. Review threads 0/conflicts 0/Main behind 0; [PR #234](https://github.com/planner77/layoutManager/pull/234) Squash Main `edb3ecb3a17a25cbc88d63b2cc8b911cba3bbcd5` 병합. #614는 여전히 FAIL 이력이며 #622 성공과 구별한다.
+- **Unverified:** 실제 signed HTTP→배포 OCI→User Viewer 단일 E2E, converter 실행 중 kill/OOM, 실 운영 upgrade/restore 및 3-image GHCR release/digest. #225/#218 OPEN, GO-PILOT BLOCKED, 제품 두 Scene flags OFF, #229 GHCR v0.61+ HOLD, #231 Tag Ruleset OPEN, 운영 자료·이미지·태그 불변.
+
+---
+
 ## #225 / PR #234 — PR CI #614 owned OCI SIGKILL probe exit mismatch (2026-11-05 KST)
 
 - **Observed, not inferred:** [PR CI #614 / run 41931040058](https://github.com/planner77/layoutManager/actions/runs/41931040058), exact source HEAD `9361d920ca53bdbc9d9a5ce8e807a9408806d3d1`, completed/**FAILURE**. Scope `126927685778`, Static/Unit/Build `126927778139`, both General Chromium shards, G7 signed/Greenfield E2E **SUCCESS**. A2 scope SKIPPED. Required Docker runtime job `126927778252` failed only at `Verify disposable CPU Worker OCI security, READY, SIGKILL and restore` (step 13), Required Verify `126935243556` failed transitively. OCI Greenfield NEW_INSTALL, fixture `setup`, `verify-ready`, `revoke`, `verify-revoked`, `tamper`, `verify-tamper`, `prepare-crash` each printed PASS. At the subsequent crash probe: **`Expected disposable Worker SIGKILL exit 137, got 1`**. Crash/recovery, restored snapshot checks did **NOT RUN**; do not mark these PASS.

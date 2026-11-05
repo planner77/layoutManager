@@ -1,3 +1,11 @@
+## #225 / PR #234 — OCI GO-INTEGRATE 최종 완료 (2026-11-05)
+
+- [PR #234](https://github.com/planner77/layoutManager/pull/234) 검증 HEAD `aa0c4622e912c7ad048c481c4aa153c86124d79c`, [PR CI #622](https://github.com/planner77/layoutManager/actions/runs/41935291475): **8/8 적용 Job SUCCESS**, #218 A2 synthetic은 범위 외 SKIPPED. Vitest **173 files / 1,098 tests PASS**, Docker OCI, G7 Signed/Greenfield 및 Chromium shards 회귀 성공. 리뷰 스레드 0·충돌 0·Main behind 0에서 Draft 해제 후 **Squash Main `edb3ecb3a17a25cbc88d63b2cc8b911cba3bbcd5` 병합**.
+- **실제 OCI 증거:** CI 전용 새 G7 0.61 볼륨과 로컬 `cpu-worker` Docker image의 비루트 UID 10001·network none·read-only root·CPU 1/RAM 768MiB/PIDs64/cap drop/no-new-privileges 확인. 기본 Worker loop READY·stop/start·immutable Asset/Audit, Site Grant revocation 및 original SourceSHA tamper의 fail-closed, 정확한 OCI CID host SIGKILL 후 Job RUNNING 확인 → **테스트 소유 DB 시각 가속** stale/retry/READY attempt2, 소유 DB+CAD 복원/readback을 [Docker Job](https://github.com/planner77/layoutManager/actions/runs/41935291475)에서 PASS. #614의 self-SIGKILL exit 1은 **실패로 보존**, 원인 관측 한계와 보완은 [FailureLedger](out/FailureLedger.md)에 기록.
+- **승인 경계:** 이번 PASS는 **GO-INTEGRATE만** 해당. 실제 배포된 사용자 signed HTTP upload→별도 OCI→새 로그인 Viewer 화면 단일 E2E, mid-conversion crash/OOM, 실제 G7 업그레이드·운영 복구, App/Migrator/Worker 3-image 정식 출고/source/digest 검증은 **GO-PILOT 전에 별도 필요**. #225/#218 OPEN, GO-PILOT BLOCKED, 제품 `SCENE_AUTO_BUILD_ENABLED=OFF`·`SCENE_CPU_WORKER_ENABLED=OFF`, #229 v0.61+ GHCR HOLD, #231 Tag Ruleset OPEN 유지. 배포/태그/GHCR/운영 DB·CAD·Volume·.env 변경 승인 아님.
+
+---
+
 ## #225 / PR #234 — OCI SIGKILL CI #614 실패 및 검증 보완 (2026-11-05)
 
 [CI #614](https://github.com/planner77/layoutManager/actions/runs/41931040058) exact HEAD `9361d920ca53bdbc9d9a5ce8e807a9408806d3d1`: 신규 Docker OCI proof에서 실 G7 설치·READY·revoke·SHA tamper·prepare-crash 모두 진행했으나 self-SIGKILL 테스트 컨테이너의 `docker run --rm` 종료 코드가 **1**(예상 137)이라 required Docker/Verify 실패. 자식 STDERR가 폐기돼 **구체적인 내부 원인은 관측 불가**이며 이전 단계 PASS를 SIGKILL/복구 PASS로 확대하지 않는다. 적용 Unit/G7/Chromium 회귀는 SUCCESS, A2 scope SKIPPED. 상세 [FailureLedger](out/FailureLedger.md).

@@ -1,3 +1,13 @@
+## #225 / PR #234 — 정확 HEAD OCI 통합 검증 PASS (2026-11-05)
+
+[PR CI #622](https://github.com/planner77/layoutManager/actions/runs/41935291475), HEAD `aa0c4622e912c7ad048c481c4aa153c86124d79c`, completed/**SUCCESS**: 8 applicable CI jobs PASS, A2 CPU synthetic job 범위 외 SKIPPED, Vitest **173 files / 1,098 tests PASS**, G7 Signed/Greenfield 및 Chromium 두 샤드 PASS. Docker Job `126942947861` 로그에 `G7_GREENFIELD_READY / NEW_INSTALL`, `setup`, `verify-ready`, `revoke`, `verify-revoked`, `tamper`, `verify-tamper`, `prepare-crash`, `claim-marker`, `stale`, `verify-wait`, `due`, `verify-recovered`, `restore` 및 최종 **`OCI_CPU_PROOF_PASS`** 확인. Docker Worker 기본 루프/stop/start와 비루트·무네트워크·읽기전용 RootFS·CPU/RAM/PIDs/Capability 제한 등 실제 컨테이너 시험 통과.
+
+이전 [CI #614](https://github.com/planner77/layoutManager/actions/runs/41931040058)는 SIGKILL 테스트 exit1로 실패했으며 과거 기록을 삭제/성공으로 수정하지 않는다. 원인 관측 한계 보완 후 위 새로운 CI #622에서 통과했다. [PR #234](https://github.com/planner77/layoutManager/pull/234) Main Squash `edb3ecb3a17a25cbc88d63b2cc8b911cba3bbcd5` 완료.
+
+**실행 증거 한계:** CI 전용 synthetic G7와 실제 테스트 OCI에서 claim 후 KILL / 시각 가속 stale·retry를 검증한 것이며, 현장 원본 DXF의 전체 Entity 변환이나 실 사용자 signed HTTP App→프로덕션 OCI→Viewer 새로운 로그인 전체 연속 경로, converter 처리 도중 OOM/kill, 실제 배포·복구는 검증되지 않았다. **GO-INTEGRATE PASS ≠ GO-PILOT GO**. #218/#225 OPEN, 두 Scene 제품 flags OFF, v0.61+ GHCR HOLD, #231 OPEN.
+
+---
+
 ## #225 / PR #234 — CI #614 OCI SIGKILL 경계 실패 및 검증 보완 (2026-11-05)
 
 [PR CI #614](https://github.com/planner77/layoutManager/actions/runs/41931040058) source HEAD `9361d920ca53bdbc9d9a5ce8e807a9408806d3d1`: Static/Unit/Build, Docker 기존 smoke 및 G7/Chromium E2E 성공. **신규 OCI proof는 부분 PASS / 전체 FAIL:** 최초 READY/readback, 자원 격리 Docker 검사, Site grant 철회, 동일 길이 원본 SHA 변조, crash 사전 Job 생성까지 실행 완료. `claim-kill` 컨테이너가 예측 137이 아닌 **exit 1**로 반환되어 required Docker Job 실패. 원래 `docker run --rm` 로그가 숨겨져 있으므로 child code의 정확 실패 원인은 이 Run에서 확인 불가. 실제 컨테이너 SIGKILL 완료, stale 복구, isolated restore는 #614에서 PASS 증거 없음.
