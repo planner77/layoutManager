@@ -1,3 +1,11 @@
+## #225 VN — 검증된 material의 자체 정책과 CLI 거부 경계 분리 (2026-11-06)
+
+**결정:** 두 고정 RP/candidate verifier는 pinned CLI가 성공적으로 검증한 같은 bundle의 certificate·정확4-subject map과 원본 bytes를 각 negative 전후에 확인한다. 고정 wrong-workflow 요청과 verified signer URI의 불일치, tampered manifest/receipt의 실제 SHA와 signed map의 불일치를 typed own-policy evidence로 계산한다. 이 projection은 독립 서명 검증기나 Owner 승인 증거가 아니다.
+
+정확 issuer-only wrapper/exit1/빈 stdout은 세 planned workflow/tamper case에서만 이 witness·의도한 argv 차이와 함께 수용한다. 공개 metadata의 `cliRejectionBoundary`, `cliInternalCause=UNOBSERVABLE`, `ownPolicyMismatch`를 구별하며 CLI 내부 원인을 관측했다고 쓰지 않는다. source/signer-digest/ref는 기존 specific cause를 계속 요구한다. generic/auth/network/TUF/usage 오류·missing witness·변경된 material·후속 positive 실패는 metadata 생성 없이 거부한다. 신뢰 Root·권한·CLI/library·flags를 완화하지 않는다. upstream control과 합성 로컬 시험은 project genuine signature/출고 GO가 아니며 [TestPlan](TestPlan.md)의 VN01–08과 후속 독립 QA/실제 proof를 따른다.
+
+---
+
 ## #225 RR1 CI638 — Docker identity 표현과 콘텐츠 증명을 분리 (2026-11-05)
 
 실제 hosted registry roundtrip의 `RR1_PULL_CONFIG_ID_MISMATCH`를 근거로 통합을 HOLD한다. classic image ID와 containerd target descriptor ID의 표현 차이를 조사하되, 다른 digest 중 하나와 일치하면 통과하는 완화는 허용하지 않는다. raw manifest/config/layer SHA, typed descriptor 연결, RootFS DiffIDs, 고정 source/role/version/arch 및 실제 runtime identity를 함께 검증한다. 최소 수정은 test-only이며 runner daemon/storage 설정이나 제품 코드를 바꾸지 않는다. 실제 관측·미확정 원인·재개 기준은 [TestReport](TestReport.md)의 PR238/CI638 기록을 따른다. Manager는 최종 frozen bytes의 독립 classic QA를 수용해 PR238의 정상 fast-forward 수정 게시와 새 hosted 시험을 승인했다. hosted containerd 성공 전 통합/RR2 재개 HOLD는 유지한다.

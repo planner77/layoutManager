@@ -1,3 +1,19 @@
+## #225 VN source review — opaque issuer 인용부호 누락 (2026-11-06)
+
+Manager는 보존된 upstream control의 알려진 안전 stderr 한 줄이 정확히 `Error: verifying with issuer "sigstore.dev"`임을 확인했다. 첫 VN draft의 production literal에는 인용부호가 없어 실제 형식과 일치하지 않았다. 새 합성 fixture도 production 상수에서 문자열을 만들었으므로 앞선99 PASS는 이 형식 오류를 놓쳤다. 아래 과거 기록의 unquoted error 표기는 실제 원문의 정확 전사가 아니며 이 항목으로 정정한다. 과거 SAN/상세 진단의 합성 이력과 원본 freeze/handoff는 보존한다.
+
+수정 전 실제 형식을 독립 literal로 강한 합성 witness seam에 주입해 `RP_NEGATIVE_CAUSE_UNPROVEN_WRONGSIGNERWORKFLOW` RED를 재현했다. 최소 수정은 quoted literal과 production 상수를 참조하지 않는 독립 fixture, unquoted/malformed/infra 변형 거부다. 새 전체99 + 별도LP17 및 정적 검사는 PASS지만 이는 로컬 합성 시험이며 upstream 한 줄을 project cryptographic proof로 재표시하지 않는다. 실제 project CLI/OIDC·외부 실행은 NOT RUN이고 Manager/독립 QA를 기다린다.
+
+---
+
+## #225 VN — lastError 보존 추정 철회와 issuer-only 실제 control (2026-11-06)
+
+과거 SAN source-shaped 회귀는 pinned policy의 escaped regex 진단을 합성한 시험이었다. pinned CLI의 `v.verify`가 inner error를 외부 wrapper로 전달하지 않는 경로 때문에 내부 `lastError`가 실제 command stderr까지 남을 것이라는 추정은 철회한다. Root의 기존 public upstream signed-artifact control에서 online/same-bundle positive 전후는 exit0였고 source/signer-digest/ref는 specific mismatch였지만 wrong-workflow/tampered-file은 exit1/빈 stdout과 `Error: verifying with issuer sigstore.dev`만 보였다. 실제 내부 cause는 UNOBSERVABLE이다. upstream identity는 project identity가 아니며 실제 project OIDC는 여전히 NOT RUN이다. 앞선 SAN 합성 결과/수리 이력은 삭제하거나 genuine crypto PASS로 재표시하지 않는다.
+
+VN Developer의 base907d RP source 격리 replay는 같은 실제 형식의 **합성** wrapper에서 `RP_NEGATIVE_CAUSE_UNPROVEN_WRONGSIGNERWORKFLOW`로 거부됨을 재현했다. draft 구현 뒤 원본 Git object를 읽어 수행한 RED이며 구현 전 실행으로 주장하지 않는다. 새 경로는 실제 CLI 성공 출력의 고정 cert/subject·same-bundle/bytes 전후 검증과 typed 자체 정책 mismatch를 결합하며 wrapper 단독/generic nonzero는 계속 거부한다. 로컬 fixture는 실제 서명이 아니며 후속 actual project proof와 job 종료 뒤 artifact inventory가 필요하다. 실제 명령/역할·검증은 [TestReport](TestReport.md)에 둔다.
+
+---
+
 ## #225 RP2 — 실제 실행의 timeout 사전 시험·암묵 artifact 실패 (2026-11-06)
 
 [PR240](https://github.com/planner77/layoutManager/pull/240)은 정확 head8c04의 CI645 및 Main4fd의 Main161 SUCCESS/GHCR HOLD skip으로 코드 통합했다. 이후 승인된 첫 실제 [proof run2/42092820405](https://github.com/planner77/layoutManager/actions/runs/42092820405), source `4fd0b32e82bd89f8056becd9e3dabea69a6b5e00`/tree e004/attempt1/job127475057679는 step16 direct timeout probe에서 exit1이었다. nonce `afdf37e08f8c1af1`의 `RR2_COMMAND_TIMEOUT`, childObserved=false, cleanup=PASS가 실제 관측됐다. 약4초 제한에 Docker 기동이 포함된 것은 코드 관측이며, 원래 실패의 기동 지연·조기 종료/CID 상태는 미수집이라 정확 원인은 **UNKNOWN**이다. 후속 성공이나 분리한 기동 deadline으로 이 원인을 소급 확정하지 않는다.

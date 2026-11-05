@@ -1,4 +1,14 @@
+## Unreleased — #225 레거시 publisher 제어 검증 도구 (2026-11-06, 0.61.0 유지)
+
+- CI/검증: contents:read Main HOLD workflow와 기본0HTTP·정확 packet/source/run에 결합된 operator helper를 준비했다. 수정된 affirmative disabled-cause 판정과 stale accepted-attempt PENDING 경계를 포함한 독립 로컬17회귀·Vitest bridge·정적 검사는 PASS다.
+- 범위: 실제 Owner 승인, legacy disable/readback, 안전 HOLD run의 실제 rerun denial 및 package 통제는 NOT RUN이다. 기존 publisher·정책·GHCR·운영 자료는 변경하지 않았으며 전체 GO-PILOT BLOCKED·출고 HOLD를 유지한다.
+
+---
+
 ## Unreleased — #225 실제 배포·복구·릴리스 통제 입증 (2026-11-05, 0.61.0 유지)
+
+- RF-A/B candidate preparation: 고정 Owner/source/environment review·packet/run/job 결합, clean archive3-role/RR1/RR2·소유 정리 뒤에만 bounded private candidate 업로드, 실제 graph/digest runtime·별도 candidate OIDC verifier 경로를 추가했다. default plan은0HTTP, 환경 payload는 미적용 검토안이다. required scope CI에 focused fake 시험을 추가하며 실제 candidate/API/OIDC/Owner GO·최종 승격은 NOT RUN/PENDING이다. RP/CP/RT 계약과 기존28 회귀를 유지한다.
+- RF bounded review repair: completion marker의 exact receipt/owned-set 재검증과 registry CID/name 양쪽 absence, NO_OP의 최종3-ref readback을 추가했다. candidate build-record post upload는 false로 고정한다. local fake/static 검증이며 actual post-job artifact inventory와 플랫폼 environment 생성 시점은 미관측이다.
 
 - RP2 execution repair: 실제 childObserved=false timeout 실패/UNKNOWN 원인 및 implicit `.dockerbuild` artifact metadata를 보존한다. timeout fixture만 별도 startup/readiness gate 뒤4s timer를 arm하며 일반 journey timeout/ownership은 유지한다. byte-identical g7 helper command fixture·cleanup 및 artifact-upload-off 회귀를 추가하고 proof job build record upload를 끈다. 로컬 tiny-owned/정적 성공은 새 hosted proof/OIDC·post-job artifact 검증을 대신하지 않는다.
 

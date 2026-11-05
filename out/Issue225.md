@@ -1,3 +1,23 @@
+## 2026-11-06 — verified-material 기반 negative proof 사전 설계
+
+Root의 public upstream genuine signature control은 pinned CLI가 wrong-workflow/tamper의 구체 cause를 숨김을 실제 확인했다. [TestPlan TP-225-VERIFIED-NEGATIVE-PROOF](TestPlan.md)의 VN01–08에 genuine positive 전후 검증·같은 bundle/원본 SHA·검증된 cert/subject에서 계산한 typed own-policy mismatch와 실제 CLI 거부 경계를 분리하는 계약을 먼저 기록했다. generic nonzero/인프라 오류는 계속 거부하고 project 고정 source/Owner/signer 정책·권한을 유지한다. upstream 실적은 project OIDC PASS가 아니며 새 source QA/CI/Main/actual proof가 필요하다.
+
+---
+
+## 2026-11-06 — RF-A/B 실제 private 후보 publisher의 구현 전 범위
+
+Manager는 [TestPlan TP-225-RF-CANDIDATE](TestPlan.md) RA-01–10에 기본0HTTP plan과 실제 Owner-reviewed environment의 fresh Main dispatch, 같은 run의3-role/RR1/RR2 proof 및 소유 정리, 고유 private candidate3개만의 게시·GHCR raw graph 확인·별도 candidate OIDC signer/receipt 검증을 정의했다. source는 게시된 combined8c04에서 분리한다. Owner-only 구성을 정직하게 보고 prevent_self_review=false를 허용하며 새 principal/PAT를 기본 요구하지 않는다. 실제 환경/권한·GHCR 쓰기/dispatch는 아직 승인하지 않았고 RP 서명을 GHCR proof로 relabel하지 않는다. 최종 version/alias/Git tag·Owner exact-digest release GO/RF-C·운영 start는 별도다.
+
+RF Manager source review의 code-only 보완은 TestPlan RA의 수리 AC를 따른다: candidate implicit build record 업로드를 끄고, cleanup completion marker의 exact receipt hash 집합과 registry CID/name 양쪽 absence를 검증한다. all-existing NO_OP도 검증 뒤 최종3-ref readback을 요구하여 관측 중 변경을 fail closed한다. RF QA의 추가 static child-env finding에 따라 ACTIONS_RUNTIME_TOKEN도 scrub/direct-runtime 거부 목록에 포함하는 최소 보완이 필요하다(실제 존재/유출 미관측). local fake replay에서 관측한 결함이며 실제 registry/서명·Owner 승인 근거는 아니다. 기존 frozen handoff는 과거 revision으로 보존하고 수정 후 재동결·독립 QA가 필요하다.
+
+---
+
+## 2026-11-06 — 기존 publisher rerun 경로의 별도 최소 통제 준비
+
+읽기 전용 legacy run/source inventory에서 과거 `packages:write` publisher의 재실행 가능 경로를 발견했다. push Main/v* 정책이나 dispatch422만으로 이 경로가 차단됐다고 기록하지 않는다. Manager는 [TestPlan TP-225-RR4-LEGACY-PUBLISHER](TestPlan.md)의 LP-01–06에 새 read-only Main HOLD workflow, 정확 legacy ID355693716의 server-disable/readback 준비, active publisher 부재 선행 조건 및 safe-HOLD Main160 하나의 후속 거부 시험을 먼저 정의했다. Root draft assistance는 코드 준비만 담당하며 실제 disable/rerun은 미실행·별도 Owner 승인 대기다. 새로운 PAT/ACL 강화를 기본 선행 조건으로 추가하지 않고 package의 다른 writer/Actions grant는 미확인으로 유지한다.
+
+---
+
 ## 2026-11-06 — 실제 RP2 실패 및 artifact boundary 재작업
 
 Main4fd의 첫 실제 proof run2는 direct timeout에서 childObserved=false로 실패했고 cause는 UNKNOWN이다. full RR2/서명/CLI는 미실행이다. 동시에 기본 build-push post action이 만든 .dockerbuild artifact3개를 metadata로 확인해 explicit artifact boundary도 미수용이다(내용/유출 여부 미검사). [TestPlan TP-225-RP-EXECUTION-FIX](TestPlan.md) RE01–07에 startup/readiness와 execution timeout의 분리, ownership/cleanup 유지, 암묵 build-record upload 해제 및 job 종료 후 actual artifact inventory를 정의했다. 새 actual dispatch는 수정 QA/CI/Main 뒤 별도 GO 전 금지하며 기존 failure/cleanup/원인 미확정 이력을 보존한다.

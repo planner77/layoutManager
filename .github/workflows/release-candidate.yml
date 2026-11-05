@@ -1,0 +1,259 @@
+name: Issue 225 private candidate publisher
+run-name: CANDIDATE ${{ inputs.mode == 'publish' && 'PUBLISH' || 'PLAN' }} | ${{ inputs.packet_sha256 }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Plan is local only; publish requires separately reviewed Owner authorization
+        type: choice
+        options: [plan, publish]
+        default: plan
+        required: true
+      packet_json:
+        description: Exact reviewed candidate-prefix packet JSON bytes (no credentials)
+        type: string
+        required: true
+      packet_sha256:
+        description: SHA256 of exact packet_json bytes
+        type: string
+        required: true
+      environment_ui_json:
+        description: Separate actual Owner UI observation if admin-bypass boolean is unavailable from API
+        type: string
+        default: ''
+        required: false
+
+permissions: {}
+
+concurrency:
+  group: issue225-candidate-publish
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    if: inputs.mode == 'plan'
+    name: Candidate local plan (zero HTTP)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Validate explicit packet without token or HTTP
+        env:
+          CA_PACKET_JSON: ${{ inputs.packet_json }}
+          CA_PACKET_SHA256: ${{ inputs.packet_sha256 }}
+        run: |
+          python3 - <<'PY'
+          import os, sys
+          sys.path.insert(0, 'src/tests/oci')
+          import candidate_policy as policy
+          policy.packet(os.environ['CA_PACKET_JSON'].encode(), os.environ['CA_PACKET_SHA256'])
+          print('CA_PLAN_ONLY HTTP=0 CREDENTIALS=0 MUTATIONS=0 OWNER_AUTHORITY=NOT_VERIFIED')
+          PY
+
+  environment-readback:
+    if: >-
+      inputs.mode == 'publish' && github.event_name == 'workflow_dispatch' &&
+      github.ref == 'refs/heads/main' && github.actor_id == '45478892' &&
+      github.event.sender.id == 45478892 && github.run_attempt == 1
+    name: Read existing candidate environment (no approval or registry writes)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+    env:
+      CA_PACKET_JSON: ${{ inputs.packet_json }}
+      CA_PACKET_SHA256: ${{ inputs.packet_sha256 }}
+      CA_UI_JSON: ${{ inputs.environment_ui_json }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - run: python3 src/tests/oci/candidate_publish.py init
+      - name: Refuse missing or unprotected environment before referencing it
+        env:
+          CA_JOB_TOKEN: ${{ github.token }}
+        run: python3 src/tests/oci/candidate_publish.py environment
+
+  publish:
+    needs: environment-readback
+    if: >-
+      inputs.mode == 'publish' && github.event_name == 'workflow_dispatch' &&
+      github.ref == 'refs/heads/main' && github.actor_id == '45478892' &&
+      github.event.sender.id == 45478892 && github.run_attempt == 1
+    name: Candidate publish | ${{ inputs.packet_sha256 }}
+    environment: issue225-candidate-publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+      actions: read
+    env:
+      DOCKER_BUILD_RECORD_UPLOAD: 'false'
+      CA_PACKET_JSON: ${{ inputs.packet_json }}
+      CA_PACKET_SHA256: ${{ inputs.packet_sha256 }}
+      CA_UI_JSON: ${{ inputs.environment_ui_json }}
+    steps:
+      - name: Checkout exact fresh Main source without persisted Git credentials
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate Owner sender, packet, exact source and fresh attempt; isolate paths
+        id: paths
+        run: python3 src/tests/oci/candidate_publish.py init
+
+      - name: Read actual environment, Owner review, run/job packet binding and required CI
+        env:
+          CA_JOB_TOKEN: ${{ github.token }}
+        run: python3 src/tests/oci/candidate_publish.py gate
+
+      - name: Prepare same-run clean Git archive
+        run: |
+          unset ACTIONS_ID_TOKEN_REQUEST_TOKEN ACTIONS_RUNTIME_TOKEN GITHUB_TOKEN GH_TOKEN CA_JOB_TOKEN
+          python3 src/tests/oci/rr1-ci-source.py prepare --out-dir "$CA_PRIVATE/build"
+
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+      - name: Build App from the exact archive
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
+        with:
+          context: ${{ runner.temp }}/issue225-candidate-private/build/source
+          file: ${{ runner.temp }}/issue225-candidate-private/build/source/src/Dockerfile
+          target: runtime
+          platforms: linux/amd64
+          load: true
+          tags: cad-layout-viewer:ci
+          labels: |
+            org.opencontainers.image.source=https://github.com/planner77/layoutManager
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=0.61.0
+
+      - name: Build Migrator from the exact archive
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
+        with:
+          context: ${{ runner.temp }}/issue225-candidate-private/build/source
+          file: ${{ runner.temp }}/issue225-candidate-private/build/source/src/Dockerfile
+          target: migrator
+          platforms: linux/amd64
+          load: true
+          tags: cad-layout-viewer:ci-migrate
+          labels: |
+            org.opencontainers.image.source=https://github.com/planner77/layoutManager
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=0.61.0
+
+      - name: Build CPU Worker from the exact archive
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
+        with:
+          context: ${{ runner.temp }}/issue225-candidate-private/build/source
+          file: ${{ runner.temp }}/issue225-candidate-private/build/source/src/Dockerfile
+          target: cpu-worker
+          platforms: linux/amd64
+          load: true
+          tags: cad-layout-viewer:ci-cpu-worker
+          labels: |
+            org.opencontainers.image.source=https://github.com/planner77/layoutManager
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=0.61.0
+
+      - name: Verify three-role RR1 raw graph and digest runtime
+        run: |
+          set -euo pipefail
+          unset ACTIONS_ID_TOKEN_REQUEST_TOKEN ACTIONS_RUNTIME_TOKEN GITHUB_TOKEN GH_TOKEN CA_JOB_TOKEN
+          python3 src/tests/oci/rr1-ci-source.py finish --out-dir "$CA_PRIVATE/build"
+          docker pull registry@sha256:a3d8aaa63ed8681a604f1dea0aa03f100d5895b6a58ace528858a7b332415373
+          python3 src/tests/oci/rr1-registry-proof.py \
+            --build-receipt "$CA_PRIVATE/build/rr1-input.json" \
+            --output-receipt "$CA_PRIVATE/build/rr1-registry-receipt.json" --retain-for-r2
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22.14.0
+          cache: npm
+          cache-dependency-path: src/package-lock.json
+
+      - name: Install locked test dependencies and Chromium without registry token
+        run: |
+          set -euo pipefail
+          unset ACTIONS_ID_TOKEN_REQUEST_TOKEN ACTIONS_RUNTIME_TOKEN GITHUB_TOKEN GH_TOKEN CA_JOB_TOKEN
+          cd src
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Authenticate builtin token in this run's isolated Docker config
+        env:
+          CA_JOB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$CA_JOB_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin > /dev/null
+
+      - name: Verify old immutable 0.60 pair and execute actual eight-stage RR2/RR3 journey
+        run: |
+          set -euo pipefail
+          unset ACTIONS_ID_TOKEN_REQUEST_TOKEN ACTIONS_RUNTIME_TOKEN GITHUB_TOKEN GH_TOKEN CA_JOB_TOKEN
+          python3 src/tests/oci/rr2-old-pair.py --output-receipt "$CA_PRIVATE/rr2-old-pair.json"
+          python3 src/tests/oci/rr2-journey.py \
+            --old-pair-receipt "$CA_PRIVATE/rr2-old-pair.json" \
+            --new-triplet-receipt "$CA_PRIVATE/build/rr1-registry-receipt.json" \
+            --output-receipt "$CA_PRIVATE/rr2-journey.json"
+
+      - name: Export proved bytes, verify cleanup, publish bounded candidates and prove digest runtime
+        env:
+          CA_JOB_TOKEN: ${{ github.token }}
+        run: python3 src/tests/oci/candidate_publish.py publish
+
+      - name: Sign genuine GHCR candidate subjects and candidate receipt with OIDC
+        id: attest
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-checksums: ${{ runner.temp }}/issue225-candidate-private/SHA256SUMS
+          push-to-registry: false
+          create-storage-record: false
+
+      - name: Retain only candidate bundle in public allowlist and install checksum-pinned verifier
+        env:
+          CA_BUNDLE_PATH: ${{ steps.attest.outputs.bundle-path }}
+        run: |
+          set -euo pipefail
+          test -f "$CA_BUNDLE_PATH"
+          cp -- "$CA_BUNDLE_PATH" "$CA_PUBLIC/candidate-bundle.sigstore.json"
+          curl -fLsS -o "$CA_PRIVATE/gh.tar.gz" https://github.com/cli/cli/releases/download/v2.103.3/gh_2.103.3_linux_amd64.tar.gz
+          printf '%s  %s\n' 4c806978ffce1cec70853302a56d70ac6da4f19bae7adca4e1a8ab00633dd91d "$CA_PRIVATE/gh.tar.gz" | sha256sum --check --status
+          tar -xzf "$CA_PRIVATE/gh.tar.gz" -C "$CA_PRIVATE" gh_2.103.3_linux_amd64/bin/gh
+
+      - name: Verify exact candidate signer, all subjects and actual cryptographic/policy negatives
+        id: verify
+        env:
+          CA_JOB_TOKEN: ${{ github.token }}
+        run: python3 src/tests/oci/candidate_publish.py verify --gh "$CA_PRIVATE/gh_2.103.3_linux_amd64/bin/gh"
+
+      - name: Check public allowlist even after failure
+        id: allowlist
+        if: always() && steps.paths.outcome == 'success'
+        run: python3 src/tests/oci/candidate_publish.py allowlist
+
+      - name: Upload only successfully verified sanitized candidate metadata and bundle
+        if: steps.verify.outcome == 'success' && steps.allowlist.outcome == 'success'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: issue225-candidate-proof-${{ github.run_id }}-1
+          path: |
+            ${{ runner.temp }}/issue225-candidate-public/candidate-receipt.json
+            ${{ runner.temp }}/issue225-candidate-public/candidate-bundle.sigstore.json
+            ${{ runner.temp }}/issue225-candidate-public/verification.json
+            ${{ runner.temp }}/issue225-candidate-public/SHA256SUMS
+          if-no-files-found: error
+
+      - name: Always clean only receipt-bound local fixtures and isolated Docker credential
+        if: always() && steps.paths.outcome == 'success'
+        run: python3 src/tests/oci/candidate_publish.py cleanup
