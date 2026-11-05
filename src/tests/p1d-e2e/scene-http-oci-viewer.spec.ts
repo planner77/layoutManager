@@ -229,9 +229,17 @@ test('#225 P1-D G7 Editor HTTP upload -> detached OCI Worker -> new authenticate
     expect(contentResponse.status()).toBe(200);
     const bytes=await contentResponse.body();
     expect(sha(bytes)).toBe(status.manifest.sha256);
-    const dto=JSON.parse(bytes.toString('utf8')) as {schema:number;asset:{objects:unknown[]}};
+    const dto=JSON.parse(bytes.toString('utf8')) as {
+      schema:number;asset:{objects:unknown[]};
+      viewerData:{sourceIndex:{state:string;reason:string}};
+    };
     expect(dto.schema).toBe(2);
     expect(dto.asset.objects.length).toBeGreaterThan(1);
+    // The CPU LINE subset is geometry-complete but lacks a verified
+    // original-source selection index. This MUST remain visible to users.
+    expect(dto.viewerData.sourceIndex).toEqual({
+      state:'UNAVAILABLE',reason:'INDEX_ABSENT',
+    });
 
     // A distinct real signed Editor login: persisted CPU DTO must render without
     // any original DXF network fetch or original parser execution.
