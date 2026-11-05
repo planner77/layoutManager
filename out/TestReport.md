@@ -1,3 +1,48 @@
+## RP01–08 local independent QA — 2026-11-06
+
+**Manager 로컬 수용·게시 GO:** Manager 대행 `gpt-6.1-sol`은 frozen source 4개 hash와 아래 독립 QA 보고를 검토하고, 직접 6개 집중 시험·Python compile·diff 검사를 통과했다. case별 causal mismatch 분류와 실패/partial cleanup의 scope·marker·반복 absence 계약을 수용하여 Root의 최종 secret/remote/parent/tree 감사 후 독립 PR 게시 및 exact-HEAD required CI를 승인한다. 실제 서명·CLI live 검증은 아직 NOT RUN이며 통합은 완료된 required CI/검토 후 별도 판정한다. trusted Main의 실제 proof dispatch는 그 이후 단계이고 GHCR 게시·정책/legacy workflow state 변경·운영 실행·Owner release GO는 승인하지 않는다. 전체 RR1–RR5 목표는 진행 중이다.
+
+**판정: 로컬 schema/workflow QA PASS, 실제 OIDC/attestation은 NOT RUN.** 대상 worktree는 `test/issue225-proof-provenance-main`, HEAD `476b686a7b9bb1ff9c691a71f895bd833311e090`이다. QA 시작 시 지정된 workflow/source/test/Operation SHA-256 4개가 모두 Manager 제공 값과 일치했다. 완료 뒤 `git diff --check` PASS; 새로 변경한 파일은 이 TestReport 기록뿐이다.
+
+| Check | 결과 | 범위 |
+| --- | --- | --- |
+| RP-01 exact dispatch guard | PASS — synthetic context regression 1종·10 wrong-context 변형 | 정확 repo/repository ID/owner ID/Main ref/workflow ref·SHA/source/tree/run ID 및 hosted runner 조건. 로컬 Git 검사 stub이며 실제 GitHub context 또는 Main dispatch 아님 |
+| RP-02 permission/publication review | PASS — static workflow review | workflow top-level permissions empty, proof job에 contents/read, packages/read, id-token/write, attestations/write만 부여. GHCR publish/package tag/policy 권한이나 별도 PAT 경로는 없음. 실제 effective GitHub permission 조회는 NOT RUN |
+| RP-03 same-run chain | PASS — code contract review + synthetic schema | 실제 workflow는 same-run archive→three-role OCI/RR1→old GHCR pair→RR2/RR3 journey→export/finalize→cleanup→sign 순서를 요구한다. 합성 receipt는 스키마 검증이며 실제 같은 run 시험 증거가 아님 |
+| RP-04 action/subject construction | PASS — static workflow review + schema tests | `actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6` pin, `push-to-registry:false`, `create-storage-record:false`, 3 manifest와 1 sanitized receipt subject를 checksum input으로 구성. 실제 attestation 생성 NOT RUN |
+| RP-05 public artifact boundary | PASS — allowlist tests + workflow review | allowlist는 세 manifest/receipt/checksum/Sigstore bundle/verification metadata만 허용하며 테스트가 extra file, symlink, 누락 role을 거부했다. OCI layer/config dump·DB/CAD/backup/credential 경로 업로드 없음 |
+| RP-06 verification identity | PASS — schema-only synthetic certificate tests | immutable repository/owner ID, source/workflow digest/ref, signer URI, hosted runner, issuer/run URI 및 4 subject digest 검증을 테스트. CLI 실 checksum·실제 인증서/API 대조는 NOT RUN |
+| RP-07 negative causal classification | PASS — synthetic output classifier tests | wrong source/workflow commit/ref, wrong workflow, tampered manifest/receipt별 허용 진단을 분류하고 generic/network/TUF/auth/timeout/parser/usage/empty output 및 잘못된 exit를 거부했다. 실제 Sigstore/GitHub negative verification NOT RUN |
+| RP-08 readiness and reporting | PARTIAL | local QA 기록 완료. exact Main CI, trusted dispatch, hosted OIDC execution과 root 통합은 별도 후속 |
+
+**실행:** `python3 -m py_compile src/tests/oci/rp-provenance.py src/tests/oci/test_rp_provenance.py` PASS; `python3 src/tests/oci/test_rp_provenance.py -v` 6/6 PASS; `git diff --check` PASS. 별도 mock-only probe에서 (1) 하나의 정확 owned RR2 receipt가 있고 result summary가 사라진 경우 RR2와 retained RR1 cleanup만 호출하고 completion marker를 만들지 않음, (2) wrong source 및 추가 owned receipt를 어떤 Docker inspect/helper 호출 전 거부, (3) marker 재호출마다 실제 absence/project를 재검사하고 helper를 반복 실행하지 않음, (4) 외부 replacement와 Docker inspect 오류를 각각 `RP_RR2_RESOURCE_REAPPEARED` 및 원래 safe lookup error로 fail-closed 처리함을 확인했다. 모든 probe는 임시 디렉터리·mock Docker adapter/helper 사용이며 실제 Docker/registry/resource를 만지지 않았다.
+
+**기록한 source SHA-256:** `.github/workflows/release-proof.yml` `a7cad34305a3606a18e69e3552f3018f44bb7e22ee4bbe9933ab6fcbbb628648`; `src/tests/oci/rp-provenance.py` `1d9d4e6d1c421ca97de7cea9a5c0764aa715a125b83c1d0def5474fe5da818f7`; `src/tests/oci/test_rp_provenance.py` `54a69dca14625b089dde3fe9e2fa5d0aba8a55f0e8fdc62939aaccbd3eacbcb5`; `out/Operation.md` `c1704f923258d251ead4d05f6116e07daa8d8719951e131327fe2a672009c15f`. Synthetic certificate/result JSON exists only in unit fixtures and is not signed evidence.
+
+**제한:** 실제 trusted Main dispatch, exact-hosted workflow run, GitHub OIDC token, Sigstore signature/bundle, pinned GitHub CLI download/checksum and live positive/negative `gh attestation verify`, GitHub effective permissions 및 immutable certificate IDs의 API 대조는 모두 **NOT RUN**이다. 이 PASS는 local implementation/schema review만 의미하며 source provenance, formal GHCR release, RR5 completion 또는 Owner GO를 입증하지 않는다. 이 QA는 직전 완료된 CI641/Main160 및 prior UNKNOWN historical failures의 verdict를 대체하거나 수정하지 않는다. No dispatch, external write, Docker journey/build, source change, commit, or push was performed.
+
+## PR239 RR2/RR3 통합 — CI641 실제 OCI 복구·Main160 HOLD (2026-11-06)
+
+**수용:** [PR #239](https://github.com/planner77/layoutManager/pull/239)의 source HEAD `a7d1075c8b2585a2994b7d45214f41e0eee6c2e2`는 [CI #641/run42071344678](https://github.com/planner77/layoutManager/actions/runs/42071344678)의 aggregate `127414170533`를 포함한 적용 8개 Job 모두 SUCCESS, A2만 기존 scope 정책에 따른 SKIPPED였다. Root와 독립 QA가 완료된 Docker `127399887867` 및 Static `127399888357`의 원시 로그와 PR/tree/review/behind를 각각 확인했다. Static은 174 files/1,102 tests·TypeScript·production build PASS, lint 0 errors/기존 12 warnings이며 두 Chromium shard/G7 signed/Greenfield도 PASS다.
+
+**출처 구분:** hosted archive/build source는 Actions merge commit `191a35795d5e19b62d49ce2815c5dfc83c248066`이다. GitHub commit API로 parent Main68c0+PRa7d 및 tree `74a8972940cf8d33c7712cb084536a92e9d0650e`가 PR tree와 같음을 확인했다. 아래 세 역할은 실제 runner의 `CONTAINERD_TARGET`이며 engine ID=검증된 manifest target, config digest는 별도다. 이전 로컬 QA의 product source d5e/old pair source9eb와 hosted191a를 재표시하거나 섞지 않는다.
+
+| Role | 실제 manifest / engine target | Config SHA-256 |
+| --- | --- | --- |
+| app | `sha256:457b8ca2f71ce697d2891a2ce82caf0a75a60b3f9534ec9b069ed0c27d698e1e` | `sha256:bc72e321e67163fbc33fb579d2c6865525d256a9f974cfc3f790f19fa1d200e5` |
+| migrator | `sha256:11810622217905c89ab6fc87444b7d945ac58efc882909168323407bde6fef55` | `sha256:0099d7e196611f14fb45075f9e9c44f5d16d4573d29cb90511c8bce74a553df2` |
+| cpu-worker | `sha256:98903fdaea8aadf6a25546b915d4c935a74885181c33d7d70b57f778d38edde8` | `sha256:2d8ce471fb0aa8d758cf965cbdbcc83a3325e0a61a4f8f4ed4d96bbbc53b4b30` |
+
+**실제 hosted 실행:** RR1 `negatives=6 retained=true`, converter KILL wait/inspect137·OOMKilled=false 및 별도 주입 OOM137·OOMKilled=true와 각각 READY 복구, `OCI_CPU_PROOF_PASS`가 확인됐다. P1-D는 scenes1/denied3/originalGets0/sceneGets4/freshSessions=true였다. RR2 cleanup 집중3, 실제 direct timeout `834806dcd2b9d6be`의 childObserved/cleanup PASS와 host-helper timeout `9e446cadaff24adf`의 childObserved/groupStopped/cleanup PASS, 실제 게시 과거 pair `RR2_OLD_GHCR_PAIR_PASS`가 확인됐다. 이 timeout들은 합성 bounded timeout이며 자연 장애/SLA 증거가 아니다.
+
+새 hosted nonce `8e3eb54b7037476b`는 동일 source의 8단계 assertion을 모두 지난 뒤 `RR2_RR3_ACTUAL_OCI_JOURNEY_PASS`를 출력했다. 이는 실제0.60 설치·업무 snapshot→잘못된 승인 거부/정확 upgrade·별도 start→signed HTTP/독립 CPU/fresh Viewer→같은 backup의 빈 volume 정식 restore·old digest 인증 readback 및 owned cleanup을 검증한 코드의 exit0/marker다. CI의 개별 DB/backup/세션 receipt는 공개 artifact로 올리지 않았으므로 로컬 QA의 UUID/행 수를 hosted 값으로 복제하지 않는다. 이어 always `Clean exact RR2 namespaces and retained RR1 registry` 단계도 SUCCESS, `RR2_OWNED_NAMESPACE_CLEANED`와 두 `RR2_TIMEOUT_OWNED_RESOURCES_REMOVED`를 확인했다.
+
+**통합/출고 분리:** Manager 대행 `gpt-6.1-sol`이 로컬 frozen29 QA와 위 독립 hosted 검토에 근거해 code-only 통합 GO를 냈다. Root는25 paths의 현재 secret/runtime/CAD/DB 제외·configured remote 일치·정확 parent/tree/head를 재감사한 뒤 Draft 해제→expected a7d squash merge를 수행했다. Main `476b686a7b9bb1ff9c691a71f895bd833311e090`의 단일 parent68c0/tree74a는 PR과 정확히 같고 제목1줄/본문빈값이다. [Main CI #160/run42075718479](https://github.com/planner77/layoutManager/actions/runs/42075718479)은 이 SHA에서 SUCCESS, scope `127415246808`의 실제 `>=0.61.0 code integration, GHCR release on HOLD`와 GHCR build/push `127415328601` SKIPPED를 확인했다. Ready event로 시작한 동일 PR HEAD [CI #642/run42075709858](https://github.com/planner77/layoutManager/actions/runs/42075709858)는 이 기록 시 in_progress이며 통합 근거인 완료641과 구분한다.
+
+**후속/제한:** 원인 미확정 과거 setup CSRF/Viewer reload 실패는 아래 원장에 그대로 남으며 이번 성공은 안정성/SLA나 현장0.58 복구 보증이 아니다. RP/CP 작업은 같은 tree의 Main476b에 새 branch를 만들어4개/3개 WIP 파일의 전후 hash를 대조·보존했고 기존a7d branch/ignored receipt는 남겼다. 원 사용자 worktree와 운영 App/CAD/DB는 변경하지 않았다. 제품0.61.0/Scene flags OFF/>=0.61 GHCR HOLD, #225/#218/#231 OPEN·GO-PILOT BLOCKED 유지. 실제 OIDC 서명/RR4 effective 보호·정식3-role GHCR·Owner GO는 미완료다.
+
+---
+
 ## RR2/RR3 RX11 — 최종 source 독립 full journey QA (2026-11-06)
 
 **Manager 로컬 수용·게시 GO:** Manager 대행 `gpt-6.1-sol`은 아래 독립 QA의 frozen 29-path/8단계 실제 실행·소유 정리와 재사용한 동일 core의 집중/timeout 근거를 검토했다. 최종 receipt의 backup `1278d28a-9584-47ea-90d1-8bf0f9adca1e`, 복원 App 기동 전 전체 baseline 일치, 기동 후 historical business/files/manifest 보존을 직접 대조했다. Root의 TypeScript·lint(0 errors/기존12 warnings)·production build와 최종 test-only 변경 검사를 근거로 **로컬 기능·복구 proof를 수용하고 독립 PR 게시 및 새 exact-HEAD required CI 실행을 승인**한다. Root는 최종 staged/secret/remote/expected-parent 검사를 마친 뒤 commit/push한다. 과거 CSRF/Viewer 실패 원인은 UNKNOWN이며 안정성/SLA·hosted RR2·merge·정식 출고/정책 적용/Owner GO를 수용한 판정이 아니다. 전체 RR1–RR5 목표와 OFF/HOLD·GO-PILOT BLOCKED를 유지한다.
@@ -40,7 +85,7 @@ Typed old/current image binding·strict inspect·소유 child 추적·cleanup �
 
 ## PR238 RR1 통합 — CI639 containerd·Main159·HOLD 확인 (2026-11-06)
 
-**최신 수용:** [CI639](https://github.com/planner77/layoutManager/actions/runs/42053794252)의 적용8 checks SUCCESS/A2 scope SKIP, review/thread0·mergeableclean·behind0를 확인했다. Manager `gpt-6.1-sol`의 RR1 코드 통합 GO 뒤 root가14 paths의 secret/runtime/remote/expected-head/tree를 재감사하고 Draft 해제→예상 HEAD6dba의 squash merge를 수행했다. Main `68c0c951126dbfe9e0c3072982afd502b8443262`, parentd5e/tree2872는 PR source tree와 정확히 같고 제목1줄/본문빈값이다. [Main CI159/run42058616805](https://github.com/planner77/layoutManager/actions/runs/42058616805)은 같은 merge SHA에서 SUCCESS. Scope job127353761069의 실제 `>=0.61.0 code integration, GHCR release on HOLD`, GHCR build/push127353875117 SKIPPED를 확인했다. 준비 전환이 새로 시작한 동일 HEAD의 CI640/run42058611660은 마지막 조회 시 in_progress로 별도이며 성공 근거로 계산하지 않는다.
+**최신 수용:** [CI639](https://github.com/planner77/layoutManager/actions/runs/42053794252)의 적용8 checks SUCCESS/A2 scope SKIP, review/thread0·mergeableclean·behind0를 확인했다. Manager `gpt-6.1-sol`의 RR1 코드 통합 GO 뒤 root가14 paths의 secret/runtime/remote/expected-head/tree를 재감사하고 Draft 해제→예상 HEAD6dba의 squash merge를 수행했다. Main `68c0c951126dbfe9e0c3072982afd502b8443262`, parentd5e/tree2872는 PR source tree와 정확히 같고 제목1줄/본문빈값이다. [Main CI159/run42058616805](https://github.com/planner77/layoutManager/actions/runs/42058616805)은 같은 merge SHA에서 SUCCESS. Scope job127353761069의 실제 `>=0.61.0 code integration, GHCR release on HOLD`, GHCR build/push127353875117 SKIPPED를 확인했다. 준비 전환이 새로 시작한 동일 HEAD의 CI640/run42058611660은 마지막 조회 시 in_progress로 별도이며 성공 근거로 계산하지 않는다. 이후 Root의 API 재조회에서 CI640도 completed/SUCCESS로 확인했지만, 위 통합은 먼저 완료된639와 Main159에 근거하며640 개별 로그를 추가 감사한 것으로 기록하지 않는다.
 
 Root와 독립 QA `gpt-6-luna`가 [CI #639/run42053794252](https://github.com/planner77/layoutManager/actions/runs/42053794252)의 완료된 Docker job127336691625 SUCCESS 및 실제 로그를 각각 조회했다. PR HEAD는 `6dba66ff802a63d14947205bccde23818e3106e1`; archive/build source는 Actions merge commit `9605fd8c7dc84b00db84cd4bf8c62e571d9abc59`다. tree `2872b49d1434687008d5f15c6ec95f0f9f103591`가 PR HEAD tree와 일치한다. 실제 Docker29.4.2/overlayfs/`io.containerd.snapshotter.v1`에서 10 focused tests, 세 role의 `CONTAINERD_TARGET`, `RR1_REGISTRY_PROOF_PASS negatives=6 retained=false` 및 runtime/정리 경로가 통과했다.
 
