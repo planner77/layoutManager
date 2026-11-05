@@ -1,3 +1,17 @@
+## #225/P1-D 실제 HTTP→OCI CPU Worker→새 인증 Viewer 단일 E2E 시험 계획 (2026-11-05)
+
+**환경:** GitHub PR에만 허용되는 `src/tests/oci/scene-p1d-journey.sh`가 실제 HEAD label이 일치한 로컬 App/Migrator/Worker OCI와 새로운 `layoutmanager-ci-p1d-<run>-<attempt>` Volume 생성. App loopback 포트·Worker UID10001/network none/RO root/caps drop/CPU1·RAM768MiB/PID64. 테스트 종료 시 만든 정확 CID+Volume만 제거. App/Worker 플래그 true는 테스트 컨테이너 내부 한정, 제품 소스 기본 OFF.
+
+1. **G7 실제 인증:** 최초 Admin UI·설정 코드·초기 암호 변경→Admin 로그인→Master 계층 생성/Site grant→Editor 발급/Role+Site·최초 암호 교체→Editor UI 로그인.
+2. **Origin/CSRF 차단:** 위 Editor의 위조 Origin·CSRF multipart POST는 403, 정상 `POST /api/cad-files`의 2D LINE DXF는 201/영속 Version+QUEUED/sha256 및 CAD_UPLOADED Audit.
+3. **서버/Worker:** 별도 OCI `scene-cpu-worker.ts --once` 결과 PUBLISHED, server signed batch/Scene READY, CurrentScene Revision0/immutable Asset1/Audit1, CPU manifest DTO v2 digest·SourceSHA 일치.
+4. **신규 로그인 Viewer:** 원 Editor와 서로 다른 세션 토큰을 보유한 새 Chromium Editor 컨텍스트에서 원본 `GET /api/cad-files/[id]/content`를 강제 abort하고 `저장된 Scene Asset 복원`, 렌더 캔버스, `도면 표시 완료`, 새로고침 후 원본 GET=0을 검사.
+5. **음성·보전:** 새 queued Job을 업로드 후 Editor Site revoke→SCENE_AUTH_REVOKED/포인터 0; 재grant 후 test-owned 원본 같은 길이 변조→SCENE_SOURCE_DIGEST_MISMATCH/포인터0; CIRCLE unsupported→SCENE_CONVERTER_UNAVAILABLE/포인터0; 매 단계 기존 정상 READY assetId/digest/Audit·source 불변/Worker 최종 IDLE. 현재 미지원 입력을 silent PARTIAL READY로 처리 금지.
+
+**Evidence:** 신규 CI HEAD 실행 전 NOT VERIFIED. 기존 #234 CI #622 PASS는 실행 환경과 격리 테스트까지의 증거이며 본 새 App HTTP→OCI→Viewer 통합증거를 대체하지 않는다. 실제 현장 DXF, 변환 중 OOM, 정식 G7 upgrade/backups, 3-image release/tag Ruleset은 GO-PILOT/Release 잔여다.
+
+---
+
 ## #225 / PR #234 — OCI Kill 검증 보완·실패 재현 요구 (2026-11-05)
 
 - CI #614에서 최초 READY·권한/SHA 거부와 `prepare-crash`까지 통과했지만 `claim-kill` exit1(137 예상)로 실패. 기존 STDERR/STDOUT 전체 숨김으로 원인 판별 불가. 실패를 프로덕션 Worker 오작동 또는 SIGKILL PASS로 추정하지 않는다.
