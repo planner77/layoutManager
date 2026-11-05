@@ -1314,3 +1314,7 @@ Root에서 `docker compose --env-file .env -f src/docker-compose.yml build` 후 
 - 배포 범위: Linux native SQLite와 단일 app instance를 먼저 검증한다. 여러 replica, 자동 TLS/인증/공개 인터넷 운영, 기존 데이터 migration은 별도 요구 없이는 추가하지 않는다.
 
 공식 근거: [GitHub Container Registry 인증·push/pull](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry), [Compose service/port/container 설정](https://docs.docker.com/reference/compose-file/services/), [Compose project name](https://docs.docker.com/reference/compose-file/version-and-name/). 실제 설치/실행 결과와 공식 지원 설명은 TestReport에서 구분한다.
+
+## #225 RP workflow context 재검증
+
+Runner 경로는 job.env에서 runner context로 계산하지 않고, 초기 step에서 RUNNER_TEMP의 절대 경로를 검사해 GITHUB_ENV에 전달한다. 초기화 실패/미실행 시 always cleanup·allowlist·artifact upload는 실행하지 않는다. PyYAML/Bash parse 외에 actionlint1.7.12의 Actions context 검증을 수행한다(공식 archive SHA-256 `8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8`). optional analyzer 설치 여부와 실제 실행 범위는 TestReport를 따른다. 이는 local workflow 준비이며 실제 dispatch/OIDC PASS가 아니다.

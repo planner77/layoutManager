@@ -47,6 +47,40 @@ def verified_result(mapping):
             'statement':{'subject':subjects,'predicateType':'https://slsa.dev/provenance/v1'}}}]
 
 class Contract(unittest.TestCase):
+    def test_runner_path_initialization_and_never_initialized_guards(self):
+        workflow = (RP.ROOT / '.github/workflows/release-proof.yml').read_text()
+        job_env = workflow.split('    env:\n', 1)[1].split('    steps:\n', 1)[0]
+        self.assertNotIn('runner.', job_env)
+        path_step = workflow.split('      - name: Initialize proof paths from the allocated runner\n', 1)[1]
+        body = path_step.split('        run: |\n', 1)[1].split('\n      - name:', 1)[0]
+        script = '\n'.join(line[10:] if line.startswith('          ') else line
+                           for line in body.splitlines())
+        always = [line.strip() for line in workflow.splitlines() if 'if: always()' in line]
+        self.assertEqual(len(always), 3)
+        self.assertTrue(all("steps.paths.outcome == 'success'" in line for line in always))
+        self.assertNotIn('if [[ -f "$RP_PROOF_DIR/rr1-registry-receipt.json" ]]', workflow)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            env_file = root / 'environment'
+            env_file.touch()
+            environment = {'PATH': os.environ['PATH'], 'RUNNER_TEMP': str(root),
+                           'GITHUB_ENV': str(env_file)}
+            good = subprocess.run(['bash', '-euo', 'pipefail', '-c', script],
+                                  env=environment, capture_output=True, text=True)
+            self.assertEqual(good.returncode, 0, good.stderr)
+            self.assertEqual(env_file.read_text().splitlines(), [
+                'RP_PROOF_DIR=' + str(root / 'issue225-proof-private'),
+                'RP_PUBLIC_DIR=' + str(root / 'issue225-proof-public')])
+            self.assertEqual(list(root.iterdir()), [env_file])
+            for invalid in ('', 'relative', '/tmp/invalid\npath', '/tmp/invalid\rpath'):
+                env_file.write_text('')
+                bad = subprocess.run(['bash', '-euo', 'pipefail', '-c', script],
+                    env=dict(environment, RUNNER_TEMP=invalid), capture_output=True, text=True)
+                self.assertNotEqual(bad.returncode, 0)
+                self.assertIn('RP_RUNNER_PATH_INIT_INVALID', bad.stderr)
+                self.assertEqual(env_file.read_text(), '')
+                self.assertEqual(list(root.iterdir()), [env_file])
+
     def test_negative_cause_requires_specific_verified_mismatch(self):
         samples={
             'wrongSource':'expected SourceRepositoryDigest to be '+('0'*40)+', got '+SOURCE,

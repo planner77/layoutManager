@@ -1,3 +1,11 @@
+## #225 PR240 — job-level runner context의 pre-job validation 실패 (2026-11-06)
+
+게시 source `ef434df8110da27106ce9308113594aa290d2555`의 [workflow validation run1](https://github.com/planner77/layoutManager/actions/runs/42079592176)은 push event에서 failure/0초/jobs0이었다. 실제 workflow_dispatch·Docker·OIDC·서명 시험은 NOT RUN이다. 로컬 PyYAML/shell 및 synthetic QA6은 Actions 표현식의 위치 유효성을 검사하지 못했다.
+
+공식 context availability와 격리된 공식 actionlint1.7.12의 동일 파일 RED가 job.env 33/34행 `runner.temp` 금지를 확인했다. API asset archive SHA-256 `8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8`를 검증했다. GitHub API jobs0 및 화면 failure와 이 로컬 진단을 구분하며 플랫폼 annotation 원문을 확보한 것으로 기록하지 않는다. Root가 Manager RV01–03에 따라 경로 설정을 runner step/GITHUB_ENV로 옮기고 초기화 전 always 정리·업로드를 막았다. 같은 actionlint GREEN·집중7·compile/YAML/bash PASS는 최소 수정의 로컬 결과이며 새 exact HEAD 플랫폼 검증·독립 QA/CI·실제 OIDC는 별도다. 상세 최신 판정은 [TestReport](TestReport.md)를 따른다.
+
+---
+
 ## #225 RX11 — 독립 full QA PASS와 미확정 실패 보존 (2026-11-06)
 
 최종 frozen source의 새 독립 QA nonce `413860e4309a14b5`는 실제 RR2/RR3 8단계 및 exact owned cleanup을 통과했다. 과거 QA `b0ba7283e6d6dab2`의 first-admin `SETUP_CSRF_DENIED`와 `07cb07036d93a370`의 Viewer reload 실패 원인은 여전히 UNKNOWN이다. 후속 성공을 안정성 입증이나 앞선 실패의 원인 설명으로 사용하지 않는다. 첫 bounded setup 관측의 request cookie/Origin은 Playwright `headers()` 생략으로 UNAVAILABLE이며, 수정한 `allHeaders()`의 두 번째 bounded 성공과 최종 full QA를 구별한다. 실제 receipt·source 연속성·기존 timeout probe 재사용 근거 및 제한은 [TestReport](TestReport.md)가 정본이다. 새 exact HEAD hosted CI·서명 provenance·출고·Owner GO는 별도다.

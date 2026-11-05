@@ -30,14 +30,31 @@ jobs:
     env:
       RP_SOURCE_COMMIT: ${{ inputs.source_commit }}
       RP_EXPECTED_TREE: ${{ inputs.expected_tree }}
-      RP_PROOF_DIR: ${{ runner.temp }}/issue225-proof-private
-      RP_PUBLIC_DIR: ${{ runner.temp }}/issue225-proof-public
     steps:
       - name: Checkout exact dispatch commit without persisted Git credentials
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           persist-credentials: false
+
+      - name: Initialize proof paths from the allocated runner
+        id: paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PYENV'
+          import os
+          from pathlib import Path
+          root = os.environ.get('RUNNER_TEMP', '')
+          env_file = os.environ.get('GITHUB_ENV', '')
+          if (not root or not Path(root).is_absolute() or
+              any(char in root for char in ('\n', '\r')) or
+              not env_file or not Path(env_file).is_absolute()):
+              raise SystemExit('RP_RUNNER_PATH_INIT_INVALID')
+          with Path(env_file).open('a', encoding='utf-8') as stream:
+              stream.write('RP_PROOF_DIR=' + str(Path(root) / 'issue225-proof-private') + '\n')
+              stream.write('RP_PUBLIC_DIR=' + str(Path(root) / 'issue225-proof-public') + '\n')
+          PYENV
 
       - name: Reject wrong dispatch identity, ref, source, workflow, or tree
         run: python3 src/tests/oci/rp-provenance.py guard
@@ -216,12 +233,12 @@ jobs:
 
       - name: Check public artifact allowlist even after a failed stage
         id: allowlist
-        if: always()
+        if: always() && steps.paths.outcome == 'success'
         shell: bash
         run: python3 src/tests/oci/rp-provenance.py allowlist --public "$RP_PUBLIC_DIR"
 
       - name: Upload only sanitized proof subjects, bundle, and verification metadata
-        if: always() && steps.allowlist.outcome == 'success'
+        if: always() && steps.paths.outcome == 'success' && steps.allowlist.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: issue225-signed-proof-${{ github.run_id }}-${{ github.run_attempt }}
@@ -236,7 +253,7 @@ jobs:
             ${{ runner.temp }}/issue225-proof-public/verification.json
 
       - name: Always retry exact receipt-bound disposable resource cleanup
-        if: always()
+        if: always() && steps.paths.outcome == 'success'
         shell: bash
         run: |
           set -euo pipefail

@@ -1,3 +1,15 @@
+## TP-225-RP-WORKFLOW-CONTEXT — PR240 pre-job validation 실패 재작업 (2026-11-06)
+
+새 proof workflow의 push validation run `42079592176`은 jobs 0개/0초로 실패했다. 실제 dispatch·Docker/OIDC/서명 실행 실패가 아니다. GitHub 공식 [context availability](https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#context-availability)는 job-level env에서 runner context를 허용하지 않지만 초안은 RP private/public 경로에 이를 사용했다. PyYAML/shell 검사와 이전 local QA는 이 semantic defect를 잡지 못했다. 실제 플랫폼 diagnostic과 문서상 결함의 근거를 구별한다.
+
+| AC / TC | 최소 수정·재검증 기준 |
+| --- | --- |
+| RV-01 | invalid job.env runner 표현을 제거하고 지원되는 step context 또는 초기 RUNNER_TEMP/GITHUB_ENV 경로 설정만 사용. 기존 build/action inputs·private/public/export/cleanup 경로가 동일 절대 runner-temp 위치를 유지하고 source/permission/assertion/45분 PR gate·HOLD/버전 변경 0 |
+| RV-02 | Actions-aware validator로 원본 workflow의 해당 위치 오류를 먼저 재현하고 수정 후 같은 검사를 통과. YAML parse를 Actions semantic 검증으로 부르지 않음. 검토한 도구/version/checksum·오류 종류를 기록하고 unrelated 경고를 숨기거나 보안 검사를 낮추지 않음 |
+| RV-03 | source/guard·private/public allowlist·partial cleanup 6개 회귀와 경로 초기화/실패 경계를 Manager 및 독립 QA가 확인. 초기화 전 실패 시 소유 자원 생성 0·미설정 경로로 임의 cleanup/업로드 금지. fixed exact HEAD의 플랫폼 validation 및 required CI가 통과하기 전 RP merge/dispatch HOLD. 실제 OIDC는 계속 NOT RUN |
+
+---
+
 ## TP-225-RR1-IDENTITY — CI638 containerd identity 재작업 AC (2026-11-06)
 
 Manager 구현 전 최소 수정 범위다. 실제 CI638 Docker step14는 `RR1_PULL_CONFIG_ID_MISMATCH`로 실패했다. CI는 Docker29.4.2/containerd snapshotter이고 로컬은 classic overlay2다. hosted App build 로그의 image ID는 manifest digest이며 config digest는 별도다. 세 비교 피연산자의 정확한 실패 조합은 로그에 없으므로 안전한 진단을 보강하고 실제 graph를 검증한다. prior 로컬 PASS와 hosted FAIL은 모두 보존하며 새 hosted 성공 전 RR1 통합·새 RR2 실행은 HOLD다.
