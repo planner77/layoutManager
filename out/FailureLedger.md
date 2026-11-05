@@ -1,3 +1,11 @@
+## #225 / PR #235 — 수정 HEAD의 필수 CI 성공·통합 확정 (2026-11-05)
+
+검증 HEAD `baf2ec6a582b12f6eb036ba2855289fc05c6101d`의 [PR CI #632 / 41979343017](https://github.com/planner77/layoutManager/actions/runs/41979343017)와 [#633 / 41981622771](https://github.com/planner77/layoutManager/actions/runs/41981622771)는 completed/SUCCESS다. #632는 Scope·Quality/Build·Docker·G7 Signed/Legacy·Greenfield·Chromium 2 shards·Required Verify의 적용 8개 Job SUCCESS, A2는 기존 범위 정책에 따른 SKIPPED다. PR #235는 Main `e9eb2e93ff8e8d2f967de30200ee6da6459c5cc4`에 병합됐다. 이는 P1-D GO-INTEGRATE 증거이며 운영 GO-PILOT/출고가 아니다.
+
+아래 #624/#625/#626/#631 FAIL과 #627–#630 CANCELLED 및 로컬 fixture timeout/중단은 당시 이력으로 보존한다. 이번 후속 Unit의 업그레이드·복구 결과나 새 CI는 위 과거 성공에 합산하지 않는다. 제품 Scene flags OFF, #229 GHCR >=0.61 HOLD, #225/#218/#231 OPEN, GO-PILOT BLOCKED 유지. 완료 근거와 후속 시험 실제 결과는 TestReport 최신 기록을 따른다.
+
+---
+
 ## #225 / PR #235 — 전체 커밋 CI 대조 및 #631 구문 회귀 (2026-11-05)
 
 PR base `12e7adcc4dca558c08817d09bddf7f19f650ac15`부터 source HEAD `591c7e7e76f424bb58b70cc613e70046f1c192bf`까지 **22개 커밋 각각의 PR workflow run**을 조회했다. 8개 실행과 각 Job/step을 대조하고, #624/#625/#626 Docker 원시 로그 및 #631 Static/Docker 원시 로그를 확인했다. 초기 14개 커밋에는 연결된 PR run이 없으며 시험 성공으로 간주하지 않는다.

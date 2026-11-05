@@ -1,3 +1,9 @@
+## #225 — P1-D 통합 완료와 업그레이드·복구 후속 (2026-11-05)
+
+PR #235의 검증 HEAD `baf2ec6`는 PR CI #632/#633 SUCCESS 후 Main `e9eb2e9`에 병합됐다. 이전 FAIL/CANCELLED는 [FailureLedger](out/FailureLedger.md), 완료 근거는 [TestReport](out/TestReport.md)를 따른다. 다음 최소 Unit은 [TestPlan](out/TestPlan.md)의 TP-225-UPGRADE-RECOVERY: 기존 Job/유효 Scene을 가진 합성 G7 0.60→0.61 업그레이드·새 CPU 처리·동일 백업의 격리 복구다. 운영 배포·mid-conversion KILL/OOM·정식 3-image 출고 증거는 별도다. 제품 Scene flags OFF, >=0.61 GHCR HOLD, GO-PILOT BLOCKED, #225/#218/#231 OPEN 유지.
+
+---
+
 ## #225/P1-D PR #235 — CI #624/#625/#626 연속 실패 전체 원인 분석 및 보완 (2026-11-05)
 
 - **검증된 관측:** [#624](https://github.com/planner77/layoutManager/actions/runs/41948139879) 최초 Admin 변경/로그인 완료 동기화 실패(이전 Test 수정); [#625](https://github.com/planner77/layoutManager/actions/runs/41965842513) CPU Builder `storedSceneScope`가 브라우저 전용 `sceneScope`로 거절되는 Viewer load 경로 결함 수정; [#626](https://github.com/planner77/layoutManager/actions/runs/41969752102) HEAD `798b7162a806d03e1d538bea634ee86b7a614254`의 required Docker job `127055021259`는 서버 signed HTTP·Editor·QUEUE→독립 OCI Worker PUBLISHED·Scene READY·새 Editor 로그인/Scene 복원까지 도달했으나 Viewer status는 실제 `도면 일부 표시 완료`, 새 E2E는 `도면 표시 완료`를 요구해 실패. #624/#625/#626 모두 Docker CI FAIL(Required Verify 종속 FAIL), 단위/G7/일반 Chromium은 SUCCESS. 실패 이력은 모두 유지.

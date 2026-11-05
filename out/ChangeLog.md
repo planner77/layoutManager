@@ -1,3 +1,11 @@
+## Unreleased — #225 업그레이드·복구 검증 (2026-11-05, 0.61.0 유지)
+
+- Verified: PR #235 HEAD `baf2ec6`의 PR CI #632/#633 SUCCESS와 Squash Main `e9eb2e9` 통합을 확인했다. 과거 실패·취소는 보존한다.
+- Tests: 합성 G7 0.60의 기존 Browser Job/유효 READY Scene을 대상으로 정확 계획 승인 0.61 업그레이드·독립 CPU Job·같은 백업의 격리 복구 및 거절 경로를 연결한다. 구현·실측은 TestPlan/TestReport를 따르며 새 exact HEAD CI 결과는 별도다.
+- Scope: 시험/문서만 변경한다. 제품 버전·Schema·Worker·CI Gate·Scene flags OFF·GHCR HOLD 및 운영 자료는 유지한다.
+
+---
+
 ## Unreleased — PR #235 CI 회귀 보완 (2026-11-05, 0.61.0 유지)
 
 - Test: P1-D E2E의 잘못 닫힌 중첩 DTO 타입을 명시적인 `CpuLineDto`로 정리해 TypeScript/Playwright 구문 오류를 수정했다. 기존 로그인 완료 대기, CPU Builder allowlist·Version/SHA, 부분 표시 경고·실제 LINE 형상·원본 GET0·reload와 세 음성 경로 검증은 유지한다.

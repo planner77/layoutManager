@@ -1,3 +1,27 @@
+## TP-225-UPGRADE-RECOVERY — populated 0.60→0.61 disposable rehearsal
+
+설계·AC 기록: 2026-11-05, 구현 전 Manager 작성. 아래는 계획이며 실제 로컬 실행·독립 QA 및 새 exact HEAD CI 상태는 [TestReport](TestReport.md)의 최신 TP-225-UPGRADE-RECOVERY 기록을 따른다.
+
+**선택 근거:** 기존 `g7-greenfield-upgrade.test.ts`의 0.60→0.61 시험은 Job 행이 0이고, `scene-cpu-worker-real-g7.test.ts`/OCI proof는 새 0.61 설치에서 시작한다. 이번 최소 Unit은 **기존 Browser Job/유효 READY Scene을 보유한 0.60 DB → 정확 plan 승인 upgrade/백업 → 새 CPU Job 처리 → 같은 backup의 격리 restore** 사이 데이터 보존 공백을 검증한다. 이전 0.56 upgrade 시험의 임의 Scene bytes를 유효 READY readback 증거로 재사용하지 않는다.
+
+**구현 경계:** `src/tests/integration/`에 집중한 자동 시험과 필요한 test-only fixture/helper. 기존 정식 `planGreenfieldUpgrade`, `applyGreenfieldUpgrade`, `verifyRecoverySet`, `restoreGreenfieldUpgrade`, detached Node `scene-cpu-worker.ts --once`, `SceneRepository`를 사용한다. 운영 코드·DDL/registry·package version·Docker/GHCR/CI Gate 변경은 필요하지 않다. 실제 제품 결함이 발견되면 Manager에게 근거와 최소 수정 범위를 먼저 보고한다. 생성한 고유 임시 root 외 접근/정리 금지, 모든 DB/Storage handle과 자식을 종료한 뒤 정리한다.
+
+| AC / TC | 수용 기준 | 증거 제한 |
+| --- | --- | --- |
+| UR-01 | 기존 등록된 0.60 baseline/schema/checksum과 installation manifest에 맞는 폐기 fixture. 실제 합성 LINE 원본, 서로 구별되는 Browser QUEUED 및 READY Job, 유효 Browser Scene manifest/DTO/blob/CurrentScene, Site Actor/Grant 및 감사행을 준비하고 baseline 검증을 통과 | 현재 설치에서 테스트 소유 index 제거/정식 과거 metadata 구성은 허용하되 실제 과거 OCI 설치로 주장하지 않음 |
+| UR-02 | plan은 정확 0.60→0.61 MIGRATION. 승인 없음/틀린 plan 거절 후 installation, Job/Scene/business rows, 원본/Scene bytes 불변. 정확 planId+기존 maintenance 계약으로만 upgrade 성공 | 테스트의 maintenance/pair ACK는 운영자 승인·실 OCI digest 검사 증거가 아님 |
+| UR-03 | upgrade 후 CPU index/정식 migration history/FK 정합성과 Browser Job의 모든 필드(Builder/status/attempt/stage/timestamp), Current/SceneAsset/Audit·Version/Source bytes가 동일. backupId와 verifyRecoverySet을 검증 | SQL count=0만으로 보존을 판정하지 않음; 이전 Browser Job을 CPU Builder로 재작성 금지 |
+| UR-04 | upgraded DB에서만 별도 신규 Version/CPU Job을 기존 enqueue 경로로 생성, 실제 G7 Actor/Site 검사를 수행하는 새 Node CLI가 PUBLISHED. 새 DB/Storage handle의 SceneRepository가 READY manifest/DTO/blob readback; 두 번째 CLI IDLE/추가 게시0 | 기존 Browser QUEUED는 계속 그대로이며 READY asset/digest/pointer/audit 불변. Node process 증거이며 OCI/HTTP/Viewer 증거 아님 |
+| UR-05 | upgrade가 만든 동일 backup을 새 빈 DB/CAD 디렉터리로 restore. sourceVersion0.60/schema/index부재/원래 manifest·Job 전체 행·Current/Scene/Audit/business snapshot/원본 및 Scene bytes 동일; 기존 유효 READY를 fresh readback. 업그레이드 이후 CPU Job/Asset은 restored snapshot에 없음 | live upgraded DB/CAD는 restore 전후 불변. 실제 이전 OCI rollback/start는 미검증으로 유지 |
+| UR-06 | 별도 disposable case에서 손상 recovery set 또는 nonempty restore target 거절, 대상 sentinel과 live DB/CAD 불변 | 기존 engine 거절을 우회하거나 복구를 live 경로에 수행하지 않음 |
+| UR-07 | Type Check/Lint/Build/관련 upgrade·Worker·Scene regression 및 전체 필수 로컬 검사, QA 독립 검증/문서화 후 Manager 수용. Root commit/push/새 Draft PR CI 시작 | 새 exact HEAD CI는 시작까지만, 모니터링/성공 선언/병합하지 않음 |
+
+**후속으로 남기는 fault 증거:** `runOneCpuSceneJob`의 `DXF_PARSE` DB stage는 실제 `buildCpuLineCandidate` 호출 직전 기록되므로 stage 관측만으로 변환 내부 KILL/OOM을 입증하지 못한다. 기존 claim-wait SIGKILL+테스트 DB 시각 가속은 그 제한을 유지한다. 이번 Unit에서 제품 sleep/fault injection 훅이나 인위 메모리 폭증을 넣지 않으며 mid-conversion KILL/OOM은 **NOT RUN / GO-PILOT 잔여**로 둔다.
+
+**고정 Gate:** 제품 `SCENE_AUTO_BUILD_ENABLED=OFF`, `SCENE_CPU_WORKER_ENABLED=OFF`; 테스트 자식 env 안에서만 기존 signed G7·Worker 조건 설정. #225/#218/#231 OPEN, #229 >=0.61 GHCR HOLD, GO-PILOT BLOCKED. 운영 `.env`/DB/CAD/Volume/이미지/태그/배포 무변경. 이 시험은 source-level upgrade/recovery rehearsal이며 현장 승인 upgrade/restore, 3-image provenance/digest/rollback 또는 Tag Ruleset 완료를 뜻하지 않는다.
+
+---
+
 ## #225 / PR #235 — 누적 CI 실패·코드 교차 점검 및 제출 전 검증 (2026-11-05)
 
 **요구/설계:** NFR-218-L01과 [Issue218LeanPolicy](Issue218LeanPolicy.md)의 변경분 검증 원칙을 적용한다. #624 인증 완료 경합 가설, #625 CPU storedSceneScope 계약 결함, #626 올바른 부분 표시 경고와 시험 기대 불일치를 별도 실패로 유지한다. 최신 #631/run 41973555282의 `scene-http-oci-viewer.spec.ts:237` nested DTO type 구문 오류는 정적 검사와 Playwright discovery를 함께 막는 독립 회귀다. 중첩 inline 타입을 기존 DTO 계약 또는 명시적 이름의 읽기 쉬운 타입으로 정리하되, 실제 payload/sourceIndex/LINE geometry 검사는 보존한다. 누적 Run/HEAD/Job의 관측과 원인 추정은 [FailureLedger](FailureLedger.md)에서 분리한다.
