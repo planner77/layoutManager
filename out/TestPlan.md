@@ -1,3 +1,22 @@
+## TP-225-LP-INVENTORY-PAGINATION — 크기 제한을 유지한 실제 inventory 복구 (2026-11-06)
+
+Root의 승인된 GET-only Owner packet 준비에서 Main11532의 LP `no_active_runs → all_rows(per_page=100) → GitHub.request`가 `LP_RESPONSE_TOO_LARGE`로 중단됐다. packet 작성/disable/probe/원격 mutation 이전 실패다. 실제100/30 응답의 길이·건수·status·digest 측정 전에는 payload 크기가 원인이라는 가설과 최소 page 선택을 확정하지 않는다. 진행 중 proof4 source11532/tree2423 및 다른 frozen worktree는 변경하지 않는다.
+
+**실제 측정 후 구현 GO:** Root의 GET-only receipt `owner-control/data/release-proof/legacy-response-size-diagnosis.json`에서 동일 source11532/helperc849 기준 total164, page100=100rows/1,267,824bytes(기존cap 초과), page30=30rows/379,253bytes(cap 이내)를 확인했다. 전체inventory 완료는 아니다. 따라서 고정30 pagination·정확route·same-client regression의 최소 구현만 승인한다. 기존1MiB cap을 유지한다.
+
+| AC / TC | 범위와 검증 |
+| --- | --- |
+| LI-01 | 실제 실패 명령/단계/code와 미실행 packet·mutation 상태를 ignored 안전 receipt에 보존. Root의 고정 legacy GET100(max4MiB 진단 cap)/GET30(max1MiB) 측정은 raw payload/credential 없이 status·byte length·count·total·digest만 기록. actual30 응답이 기존1MiB 내인 경우에만 작은 고정 page 수리 구현 |
+| LI-02 | isolated Main11532 기준 LP helper/test만 최소 변경. 기존 `GitHub.request`의1,048,576-byte cap·read(cap+1)·timeout·redirect/auth/endpoint allowlist·고정 disable/SAFEHOLD probe·Owner 승인 경계를 유지. cap 증가, bypass/helper 교체, packet 값 fabrication, 실제 disable/probe0 |
+| LI-03 | 측정에 맞는 고정 bounded page size30을 all_rows와 정확 GET route allowlist에 함께 적용. workflow runs와 jobs의 호출도 일관되게 처리하며 허용되지 않은 query/foreignworkflow/verb/body는 계속 거부. loop는 기존100pages 제한을 유지(최대3000 rows에서 부족하면 FAIL, inventory 완전성으로 오기록0). page별 list길이≤30/안정 total_count/최종 실제 합계·exhaustion·safe run 포함·중복·모든 run completed 검사는 보존 |
+| LI-04 | edit 전 실제 `GitHub.request`를 거치는 fake opener+full LP inventory seam으로 production100-page 초과1MiB를 RED 재현. 동일 유한 데이터의30-page 전체 traversal은 GREEN. transport/read cap은 mock override하지 않고 응답 framing/정확 query/pagination exhaustion·총count/digest를 검증. 정확30 배수는 다음 빈 page를 읽어 완료를 증명 |
+| LI-05 | page30도 cap초과/total 변경/조기 truncated/중복·active·unknown/safe run 누락/비정상 page 또는 pagebound 도달은 mutation0으로 FAIL. mutation transport 호출기록으로 GET-only 거부를 검증. 기존LP17·Vitest bridge/관련 compile/type/lint 및 전체 focused union 회귀; 실제 외부 API/Owner 통제 결과로 승격0 |
+| LI-06 | Developer handoff/frozen bytes 후 Manager source review→독립 QA. Root의 actual GET-only repaired inventory 재검증은 별도 명시 승인·측정 receipt 기반이며 disable/probe/packet 승인과 분리. 코드 PR/CI/Main gate는 별도. proof4는 실제 source11532의 증거로 유지하고 후속 LP source의 genuine signing PASS로 재표시0; unchanged proof dependency bytes와 source lineage를 대조해 후속 Owner packet에서 분리 |
+
+기존 product0.61.0/flags OFF/GHCR HOLD·GO-PILOT BLOCKED, production/held R1/manual R2 resources와 사용자 원본 변경은 유지한다. 추가 principal/PAT·권한/환경/정책 변경은 요구하지 않는다.
+
+---
+
 ## TP-225-PROJECT-NEGATIVE-DIAGNOSTIC — 실제 proof3 실패의 read-only 분류 (2026-11-06)
 
 trusted Main146204d0effe59df430c1d4d6e89ff023faece2d/tree3a2c의 실제 run3 `42114901223`은 attestation4-subject 생성 뒤 wrong-workflow negative에서 `RP_NEGATIVE_CAUSE_UNPROVEN_WRONGSIGNERWORKFLOW`로 실패했다. 독립 QA는 guard/archive/build3/RR1/timeout/fullRR2/cleanup·signing step 성공과 wrongSource specific 검증을 확인했다. 6 negative/최종 verification metadata는 미완료이며 full genuine proof PASS가 아니다. 실제 해당 stderr는 수집되지 않아 issuer/형식 차이는 아직 가설이다.

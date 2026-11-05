@@ -1,3 +1,9 @@
+## #225 LI — legacy inventory page 크기 최소 수리 준비 (2026-11-06)
+
+Owner packet의 GET-only LP inventory가 `LP_RESPONSE_TOO_LARGE`로 packet/remote mutation 전에 중단됐다. Root의100/30 안전 metadata 측정으로 page30 feasibility를 먼저 확인하고 isolated Main11532 LP helper/tests만 수정한다. 기존1MiB cap·Owner/경로/완전 pagination/active run/고정 mutation guard는 유지하며 새로운 권한·PAT·실제 disable/probe는 승인하지 않는다. 요구사항/TC는 [TestPlan LI01–06](TestPlan.md), 실제 결과는 [TestReport](TestReport.md)에 기록한다. 실행 중 proof4의 실제source는11532이며 후속LP코드source와 구별한다.
+
+---
+
 ## 2026-11-06 — 실제 project proof3의 partial signing 및 negative 실패 진단
 
 Main146/tree3a2c의 run42114901223은 attestation4-subject 생성까지 진행한 뒤 wrong-workflow 음성의 cause 분류에서 실패했다. 실제 stderr/issuer shape는 아직 UNKNOWN이며 source/인프라를 추정으로 바꾸지 않는다. [TestPlan TP-225-PROJECT-NEGATIVE-DIAGNOSTIC](TestPlan.md) PN01–06을 새 isolated Main146 worktree에 먼저 기록했다. 정확1 artifact의 safe6-file/hash 확인과 independent4positive/ONEwrongworkflow paired read-only 검증만 허용하며 새 dispatch/signing/registry/control/권한 변경은 없다. RC244와 published242는 동결하고 실제 관측 뒤 최소 수리·독립 QA/CI/Main/새 proof를 따로 판정한다.

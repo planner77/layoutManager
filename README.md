@@ -1,3 +1,17 @@
+## #225 — publisher 목록 조회 수리의 독립 QA·실제 읽기 통과 (2026-11-06)
+
+LP25·별도 proof118·새 LP25 child의 실제 Vitest bridge/targetedTS/ESLint·정적 검사와 source2/protected52 독립 QA를 통과했다. Root의 단일 GET-only 재확인도 실제164개를6페이지(30×5+14)로 끝까지 읽고 전부 completed임을 확인했다. 최대 응답385,683bytes로 기존1MiB cap을 유지했다. 이 실제 진단은 baseMain11532에서 아직 Main에 게시되지 않은 frozen helper bytes3867587의 결과이며 packet/통제/Owner 승인이 아니다. 새 source CI/Main 뒤 실제 clean-source operator preflight와 fresh inventory가 필요하다. Source11532의 별도 RP4 수용·기존 실패 이력과 전체 잔여는 아래와 [TestReport](out/TestReport.md)를 따른다.
+
+---
+
+## #225 — 실제 서명 proof 수용·publisher inventory 읽기 수리 (2026-11-06, 0.61.0)
+
+[실제 project proof4](https://github.com/planner77/layoutManager/actions/runs/42123080929)는 Main `11532c8`에서 같은-run3-role/RR1·기존0.60 설치→업그레이드→Worker/Viewer→동일 백업 복원·정리와 GitHub OIDC4-subject 서명/6negative를 완료했다. 독립 QA와 Root의 별도 ZIP digest/정확7-file·pinned CLI4-subject/certificate 검증을 Manager가 수용했다. opaque3의 CLI 내부 원인은 UNOBSERVABLE이며 검증된 material/typed policy mismatch로 구별한다. 실제 private GHCR 출고·Owner GO로 확대하지 않는다. 상세 근거는 [TestReport](out/TestReport.md)에 보존한다.
+
+후속 Owner packet의 실제 읽기 검사에서는 legacy 실행100개 응답1,267,824bytes가 기존1MiB cap을 넘었다. 실측30개379,253bytes에 따라 operator helper의 페이지 크기/정확 route/list bound만30으로 줄이고1MiB·100pages·authority guard는 유지한다. 독립 QA·새 source CI/Main·실제 전체 pagination readback은 별도다. proof4의 source11532와 향후 operator code source를 구분하며 코드/설정/권한·운영 배포를 서명으로 대신 증명하지 않는다. 제품0.61.0/flags OFF/GHCR HOLD·GO-PILOT BLOCKED 유지.
+
+---
+
 ## #225 — 실제 CLI 오류 줄바꿈의 최소 수리 준비 (2026-11-06)
 
 실제 project proof3는 네 subject 서명 생성·배포/복구·정리를 마친 뒤 wrong-workflow 거부 시험에서 실패했다. 정제6-file artifact의 ZIP digest를 확인하고 별도 pinned CLI로 네 subject와 고정 project certificate, 같은 원본의 전후 positive를 검증했다. 실제 오류는 정확 `LF + Error: verifying with issuer "sigstore.dev" + LF`45바이트였으며 기존 검증기가 leading LF를 놓쳤다. 공개 control 원문에도 같은 형식이 있었음을 확인했고 이전 오류행 projection/strip review·합성 fixture의 누락을 이력으로 보존한다.

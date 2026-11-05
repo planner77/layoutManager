@@ -1,3 +1,71 @@
+## U-225-LI-MANAGER-ACTUAL-READBACK — 실제 전체 GET inventory 수용·초안 게시 GO (2026-11-06)
+
+Manager 대행 `gpt-6.1-sol`은 승인된 Root의 단일 live GET-only 결과를 직접 검토해 **LI의 한정 실제 pagination readback을 수용**했다. base Main `11532c8f22791e5b3e365f8340610cc0ce83fb51`에서 별도 로컬 수리 helper SHA `3867587176f96215b3ac272a15128adfb548b3b3c788a0b2c623f91dd3513de5`를 사용했으며 `helperOnMain=false`다. legacy355의 실제164 unique/completed runs가6pages `[30,30,30,30,30,14]`로 소진됐고 안정 total164·각응답1MiB 이하(최대385683B)·normalized inventory SHA `f60b8c4c2dda73a18030ad3a19cfb887a9d44f0bce6c1156db8190f5e9c4bf43`를 확인했다. actualMain pre-GET은11532였고 지속적인 Main lock이나 전체 operator preflight를 증명한 것은 아니다.
+
+source2/protected52 전후 동일, 원문payload·credential 저장/출력0, packet생성0·mutation0·Ownerapproval=false다. 근거는 ignored `li-root-live-readback.json`이며 실제164 traversal을 이전 actual100/30 두 응답 측정 및 로컬 synthetic164/LP25 회귀와 구별한다. 실제 controls/disable/probe 결과는 여전히 미실행이다.
+
+독립 QA LP25/별도proof118·actual bridge1(LP25 child)/targeted TS·ESLint·정적 검사와 이번 한정 readback을 바탕으로 **정상 새 Draft PR publication GO**다. Root는 frozen source2/protected52·QA·stagedsecret/runtime/remote/정확부모11532/tree 감사를 거쳐 Conventional Commit/새 정상 branch게시만 진행한다. README/ChangeLog의 실제164 관측 상태 보완은 문서만 허용하며 앱/의존성/기타 source를 수정하지 않는다. 새 exact CI·독립 hosted QA·별도 Manager Main gate가 계속 필요하다.
+
+후속 full operator packet/observe는 새 clean Main source와 그 시점의 fresh 전체 inventory/현재Main·replacement run/helper hashes로 다시 검증해야 한다. 이후 Main165 등이 추가되면 count/hash가 바뀌므로 이164 snapshot을 승인 packet의 fresh inventory로 재사용하지 않는다. 수용된 RP4는 source11532의 genuine proof이며 새LI source의 서명·release로 재표시하지 않는다. Owner 정책/환경/legacy·GHCR candidate/final·운영 배포/전체RR1–RR5는 계속 ACTIVE·미완료, 제품0.61.0/flags OFF/HOLD·GO-PILOT BLOCKED 유지다.
+
+---
+
+## U-225-LI-MANAGER-LOCAL — 로컬 수용·한정 GET-only readback GO (2026-11-06)
+
+Manager 대행 `gpt-6.1-sol`은 별도 independent QA의 LP25/별도proof118, actual Vitestbridge1(LP25 child)/targeted TypeScript·ESLint, compile2/actionlint7/YAML7/Bash123/classifier7/HOLD6·명시적 PATH-only plan/diff 및 source2/protected52 before/after 일치를 검토해 LI 로컬 구현을 수용했다. Manager의 직접 source diff·다른 helper AST·25회귀 검토도 PASS다. Root의 bounded RP4 canonical 문서 prefix는 실제 proof11532/opaque internalUNOBSERVABLE·실제/합성/이전 실패를 유지하며 새LP서명 또는 controls GO로 확대하지 않는다.
+
+별도 검토한 ignored `li-root-live-readback.py`에 한해 Root의 **한 차례 bounded GET-only repaired pagination 확인 GO**다. 고정 source2/protected52 및 helper386758…3de5를 전후 확인하고 현재Main11532를 GET 대조한 뒤 unchanged1MiB client/NoRedirect·GET-only wrapper로 legacy355의30-row 전체 목록을 소진한다. 안전 count/length/status/hash/inventorydigest만 보존하며 rawbody/credential은 출력하지 않는다. 실패·상태변동·active/unknown·누락·overflow는 그대로 FAIL이고 blind retry하지 않는다. 이 실행은 helperOnMain=false인 새 로컬 bytes의 관측이며 cleanMain source/packet/Owner control 검증이나 disable/probe 승인이 아니다.
+
+근거 `li-independent-qa-final.json`, `li-manager-local-accept-readback-go.json`은 ignored에 보존한다. 실제 readback 결과 검토와 별도 publication/CI/Main이 필요하며, 전체RR1–RR5/Owner 정책·환경·legacy·candidate/final GHCR·release GO는 미완료다. 운영/보존 자원과 product0.61.0/flags OFF/HOLD·GO-PILOT BLOCKED를 유지한다.
+
+---
+
+## U-225-LI-INDEPENDENT-QA — page30와 unchanged transport 전체 합성 검증 (2026-11-06)
+
+별도 independent QA 대행 `gpt-6.1-sol`이 LI/base11532 worktree에서 **LP25 PASS**, **proof118 별도 PASS**를 실제 실행했다. 변경된 Python을 반영한 기존 Vitest bridge **1file/1test PASS**(내부 LP25 child), targeted TypeScript/ESLint PASS를 독립 재실행했으며 oldLP17 bridge 실행을 재사용하지 않았다. bridge 내부25를 별도 추가25로 합산하지 않는다. compile2/actionlint7/YAML7/Bash123/classifier7/HOLD6/diff PASS. 첫 default plan 무인자 호출은 필수 packet/output 누락으로 usage exit2였고 보존했다. 명시적 synthetic packet/hash/output 및 PATH-only 환경으로 올바르게 재실행해 PLAN_ONLY/NOT_SENT exit0을 확인했다. 코드 오류가 아니다.
+
+source2/protected52 SHA는 시험 전후 freeze와 일치했다. production diff는 정확5개100→30 literal이며 allowed_route/all_rows 외 helper AST는 동일하다. 실제 GitHub.request 코드를 override하지 않은 fake opener full observe seam에서 **synthetic164 rows/6 inventory pages/16GETs**, cap+1 read1048577/timeout30/응답 최대378429B·normalized inventory digest를 독립 관측했다. 정확30 배수의 추가빈page, jobs30, 100page의 exact3000도 INCOMPLETE, page30 cap초과/total변동/truncated/duplicate/active/unknown/foreign/safeRun부재/auth/malformed/잘못된query·route·verb·body는 mutation0 거부 회귀를 통과했다. cap/redirect/status/Owner/disable/probe 경계는 완화되지 않았다.
+
+실제 명령/exit/count/hash와 전체 합성 traversal은 Git 제외 `data/release-proof/li-independent-qa-final.json`, `li-qa-tests.json`, `li-qa-static.json`, `li-qa-traversal.json`에 기록했다. Root가 명시적으로 연결한 local dependency symlink는 config/package/lock5 hash를 대조했으며 설치하지 않았고 commit 대상이 아니다. Root의 허용된 README/ChangeLog/TestReport prefix 보완은 과거 suffix를 유지하며, 기존 freeze의 doc SHA를 새 source 불일치로 오인하지 않는다.
+
+**범위:** Root의 actual100/30 두 응답 size 측정과 이번 synthetic164 전체 traversal을 구분한다. 실제 repaired full GET inventory는 아직 이 QA 결과가 아니며 별도 Manager GO 후 Root read-only 시험이 필요하다. 수용된 RP4는 실제 source11532의 signature/runtime 근거이지 변경된 미래LP operator source의 새 genuine signing 증거가 아니다. proof3 FAIL/이전 역사와 Owner control 미완료를 보존한다. live API/CLI/network/Docker/credential/probe/dispatch/build/install/settings/ref/GHCR 변경·source edit·commit/push는 수행하지 않았다. 새 blocking finding은 없으며 full app build/typecheck 또는 Owner GO를 주장하지 않는다.
+
+---
+
+## U-225-LI-ROOT-DOC-PREP — 실제 RP4 기록과 로컬 의존성 연결 (2026-11-06)
+
+Root(Codex)는 Manager가 수용한 실제 RP4의 canonical-ready 문서를 그대로 prefix로 가져와 아래 LI/RP 기존 이력을 보존했고 README/ChangeLog 현황을 보완했다. source11532의 실제 signature/old pair/runtime 근거와 이후 LI helper source/fullCI/readback을 구별한다. 코드 source2/protected52는 변경하지 않았다. package/lock/TypeScript/Vitest/ESLint config5개가 기존 검증 dependency tree와 byte 동일함을 확인한 뒤 로컬 src/node_modules symlink만 만들었다. 설치나 Root 테스트 실행은 없으며 symlink는 untracked로 보일 수 있어 commit 대상에서 명시 제외한다. 독립 QA가 새 LP25 child를 실제 bridge로 실행해야 하며 기존 LP17 실행을 새 결과로 재사용하지 않는다.
+
+---
+
+## U-225-RP4-MANAGER-ACCEPT — 실제 동일-run 서명·검증 수용 (2026-11-06)
+
+Manager 대행 `gpt-6.1-sol`은 별도 독립 QA 대행 `gpt-6.1-sol`의 실제 hosted raw log/완료 후 inventory와 Root의 별도 read-only bundle 검증을 대조하여 **RP proof-only unit을 실제 수용**했다. 실제 run4 `42123080929`, attempt1, trusted Main `11532c8f22791e5b3e365f8340610cc0ce83fb51`/tree `2423681b10e5db8bee9fcf9d5961bcb67babf90c`의 workflow_dispatch는 COMPLETED SUCCESS다. 동일 archive의 App/Migrator/CPU Worker3개, typed registry graph/digest pull/negative6, 실제 old0.60 pair·준비 완료 후 direct/byte-identical host-helper4004ms timeout/group stop/정리, 실제 old install→upgrade→HTTP Worker/Viewer→same-backup restore/readback journey nonce `2464fd367954578c`, receipt-bound cleanup을 통과했다. full journey marker는 실제 harness 완료 근거이며 개별8stage receipt 값은 로그에 없는 값을 꾸미지 않는다.
+
+실제 GitHub OIDC로 raw manifest3개와 정제receipt1개가 서명됐고 fixed verifier의 actual4 positive/고정 certificate/6 negative가 모두 완료됐다. wrongSource/wrongSignerCommit/wrongRef는 specific CLI policy rejection이다. wrongSignerWorkflow/tamperedManifest/tamperedReceipt는 exact known opaque wrapper 거부 및 crypto-verified material·typed own-policy mismatch·전후 positive/argv/hash guards의 결합이다. 이 세 CLI 내부 cause는 계속 **UNOBSERVABLE**이며 내부 SAN/서명 원인 자체를 관측한 것으로 쓰지 않는다.
+
+완료 후 전체 artifact는 정확1개 `issue225-signed-proof-42123080929-1`/ID13460800017/15127bytes/ZIP sha256 `18ada29499fc1fe87946c27485b271fa47f62e430a9683f267426488f7232e8b`이며 `.dockerbuild`는0이다. Root는 credential-free bounded archive 다운로드의 server digest와 정확7-file allowlist(SHA256SUMS, manifest3, receipt, Sigstore bundle, verification metadata)를 별도 확인했다. 공식 pinned tar와 동일한 gh2.103.3 binary SHA `b768184570b12536be4ac1528893f6340d1c6a7b40b56ad45bca9cd0e87ad34d`로 네 same-bundle positive와 cryptographically verified project repo1359528829/Owner45478892·source/workflow11532·Mainref·run4/attempt1·github-hosted 및 정확4-subject map을 독립 검증했다. Root는 negative CLI를 추가 실행했다고 주장하지 않으며6negative 근거는 독립 QA가 감사한 실제 hosted 실행이다.
+
+실제 signed subject digest는 App `fbc5b20ab3e244978061d453786b9bef0e850d00487c04e795be9ad9cfb1f3f6`, Migrator `ef8e46751c0edca3301d380fcaa08c5bc84dac2714c88f02e403d8ff26791802`, CPU Worker `d1d163b0fa1c16520bb124b6714d77c30ab487275c5fac3f2c0c3316f064bc78`, 정제receipt `6ccddb336b76b14e67de5e01712e845cc8b798fb2b2adbb555086032a33555eb`다. 원문 bundle/CLI JSON/ZIP과 private자료는 ignored에만 보존하고 canonical 문서에는 이 정제 근거만 기록한다.
+
+근거: `release-promote/data/release-proof/rp4-qa-final.json`, `release/data/release-proof/rp4-root-independent-crypto/summary.json` 및 Owner review worktree의 `rp4-manager-acceptance.json`. proof3 FAILED/Root 제한된4positive 진단·framing 관측 누락, old652 CANCELLED, proof2 timeout UNKNOWN/build-record metadata 이력은 삭제하지 않는다. 이번 expected7 inventory는 과거 미검사 artifact의 내용이나 포괄적인 유출 여부를 판정하지 않는다.
+
+**남은 전체 목표와 권한:** 이번 근거는 source11532의 loopback same-run signed proof다. 실제 private GHCR 후보/최종3-ref 승격·전체 writer/Actions grants·실제 정책/환경/legacy disable·Owner exact-source/prefix 및 별도 exact-digest release GO·운영 배포/production0.58 rollback을 완료한 결과가 아니다. Owner approval 전 외부 변경0, 제품0.61.0/flags OFF/GHCR HOLD·GO-PILOT BLOCKED·전체RR1–RR5 목표 ACTIVE를 유지한다. 완료된 proof4 때문에 Main의 실행 중 source freeze는 해제할 수 있으나 후속 LI 코드 source를 source11532의 genuine signature로 재표시하지 않는다. 새 source/fullCI와 변하지 않은 proof dependency bytes/lineage는 Owner packet에서 별도로 대조한다.
+
+---
+
+## LI Developer 대행 — cap 유지·inventory30 pagination 최소 수리 (2026-11-06)
+
+**판정: local code/checks PASS, Manager review→독립 QA 대기.** 실제 Developer 대행 `gpt-6.1-sol`은 새 `fix/issue225-legacy-inventory-pagination`/base11532c8f22791e5b3e365f8340610cc0ce83fb51에서 LP helper/test 두 파일만 수정했다. Manager LI01–06은 edit 전에 기록돼 있었다. helper는 allowed_route/all_rows의 per_page와 row 길이 관련 다섯100→30 literal만 바꿨고100-page loop·1MiB cap/`read(cap+1)`·timeout/redirect/Owner/source/fixed mutations/기존 전체 inventory·safe-run/active guard를 유지했다. 나머지 helper AST와52 protected source/workflow/package/bridge bytes는 HEAD와 동일하다.
+
+**실제 근거와 RED/GREEN 구분:** Root의 existing GET-only safe measurement는 total164, page100=1,267,824B/page30=379,253B와 actual full inventory NOT COMPLETED·mutation0을 기록했다. Developer는 이 receipt hash를 확인했으며 actual API를 호출하지 않았다. edit 전 실제 `GitHub.request`/`no_active_runs` fake opener seam은 synthetic page100=1,261,339B에서 LP_RESPONSE_TOO_LARGE/`read(1_048_577)`/GET-only/timeout30 RED였다. cap/transport를 override하지 않은 같은164-row fixture의 수정 후 full observe는16 GET·inventory6 pages(30/30/30/30/30/14), normalized164 rows·SHAa2966913d72c94e924a7c0ef18dabc6e62073ff2b637dd4d094334de237838a5·mutation0 GREEN이다. synthetic page bytes는378429×5/176621이며 Root의 실제 payload와 동일 bytes라고 주장하지 않는다.
+
+**실행:** LP **25 PASS**(기존17+신규8)를 직접 실행했다. 신규8은 same-real-client164 traversal/digest, exact60+empty page3, jobs30 pagination, page30도1MiB 초과, changed/truncated/malformed/auth 페이지, duplicate/active/unknown/foreign workflow/safe-run 누락, exact3000에서100-page bound FAIL, 엄격 query/body/verb 거부 및 GET-only를 검사한다. 기존 changed-pagination fixture도 첫 full page30으로 갱신해 원 total-change 검사의 의미를 유지했다. 별도 unchanged proof union **118 PASS**(RP7/CP6/RT15/RE19/cleanup3/candidate39/VN11/RC18), classifier7/HOLD6, Python2 compile, actionlint1.7.12 workflow7/YAML7/Bash123·diff PASS다. 새 worktree에 node_modules/Vitest/TypeScript/ESLint가 없어 bridge/targeted TS/lint는 **NOT RUN**이며 설치/링크/복사하지 않았다. bridge source/package/lock bytes는 보존했고 직접 Python25를 bridge 실행으로 재표시하지 않는다. expensive build도 실행하지 않았다.
+
+**범위·후속:** 실제 repaired GitHub inventory/Owner packet approval/disable/probe·network/API/credential·Docker/GHCR/dispatch/settings/ref 동작은 NOT RUN이다. Root proof4는 source11532의 독립 증거이며 이 수정 helper나 future source의 genuine signing 결과가 아니다. frozen244/promote/owner-control/사용자 원본 worktree와 진행 중 proof 자원은 변경하지 않았다. Root의 future GET-only readback은 별도 Manager 승인이고 실제 전체 inventory/Owner controls PASS는 그 결과 뒤에 판단한다. code PR/CI/Main·권한/환경/legacy·출고/Owner release GO는 계속 별도다. commit/push는 수행하지 않았다. exact source/docs/protected hash·actual commands/RED/GREEN/한계는 ignored `data/release-proof/li-developer-handoff.json`/`li-source-freeze.json`에 보존한다.
+
+---
+
 ## U-225-PN-RC-MANAGER-PUBLICATION — 합산 로컬 수용·정상 후속 게시 GO (2026-11-06)
 
 Manager 대행 `gpt-6.1-sol`은 별도 독립 QA 대행 `gpt-6.1-sol`의 fresh combined118/별도LP17, compile5/actionlint7/YAML7/Bash123/default PATH-only NOT_READY·HTTP0 plan/diff PASS와 before/after source7/protected38 일치를 검토했다. Manager도 현재 parent `d0865a52d8415ba2e941c70c3fdf4ae31a78a0d0` 및 frozen7+38 SHA·최소 finite tuple diff·문서의 실제/합성 경계를 직접 재확인했다. LP bridge/targeted TS/ESLint는 동일 LP4/package/config의 이전 독립 근거만 재사용했다. 새로운 앱 build나 genuine full proof를 실행한 주장은 없다.

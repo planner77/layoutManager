@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Local injected transport tests; never evidence of a real disabled workflow."""
 import hashlib
+import io
 import importlib.util
 import json
 import os
@@ -8,6 +9,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 import unittest
+import urllib.parse
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -83,6 +85,148 @@ class Fake:
                          'path': LP.REPLACEMENT_PATH, 'event': 'push',
                          'status': 'completed', 'conclusion': 'success'}
         raise AssertionError('Unexpected fake route')
+
+
+class InventoryOpener:
+    """Fake urllib opener; the actual GitHub.request cap/decoder is untouched."""
+    def __init__(self, count=164, padding=12_500):
+        self.runs = [{'id': LP.SAFE_RUN + index, 'workflow_id': LP.LEGACY,
+            'status': 'completed', 'run_attempt': 1, 'synthetic_padding': 'x' * padding}
+            for index in range(count)]
+        self.calls = []; self.read_limits = []; self.pages = []; self.change = None
+        self.status = 200; self.raw_override = None; self.job_rows = {}; self.metadata = Fake()
+
+    def open(self, request, timeout):
+        split = urllib.parse.urlsplit(request.full_url)
+        path = split.path + ('?' + split.query if split.query else '')
+        self.calls.append((request.method, path, timeout))
+        if request.method != 'GET' or request.data is not None:
+            raise AssertionError('Mutation reached synthetic GET-only inventory opener')
+        assert split.scheme == 'https' and split.netloc == 'api.github.com'
+        if split.query:
+            query = urllib.parse.parse_qs(split.query)
+            size = int(query['per_page'][0]); page = int(query['page'][0])
+            if split.path.endswith('/runs'):
+                rows, field = self.runs, 'workflow_runs'
+            else:
+                identifier = int(split.path.split('/')[-2]); field = 'jobs'
+                if identifier in self.job_rows:
+                    rows = self.job_rows[identifier]
+                else:
+                    _, value = self.metadata.request('GET', path); rows = value[field]
+            value = {'total_count': len(rows), field: rows[(page-1)*size:page*size]}
+            if self.change:
+                self.change(page, value)
+        else:
+            _, value = self.metadata.request('GET', path)
+        raw = self.raw_override if self.raw_override is not None else json.dumps(value).encode()
+        self.pages.append({'path': path, 'bytes': len(raw), 'sha256': hashlib.sha256(raw).hexdigest()})
+        opener = self
+        class Response(io.BytesIO):
+            status = opener.status
+            def read(self, count=-1):
+                opener.read_limits.append(count)
+                return super().read(count)
+        return Response(raw)
+
+
+class InventoryClientTest(unittest.TestCase):
+    def api(self, opener):
+        return LP.GitHub('synthetic-only-not-a-credential', opener)
+
+    def assert_get_only(self, opener):
+        self.assertTrue(opener.calls)
+        self.assertTrue(all(method == 'GET' and timeout == 30 for method, _, timeout in opener.calls))
+        self.assertEqual(opener.read_limits, [1_048_577] * len(opener.calls))
+
+    def test_real_client_164_run_full_observe_traversal_and_inventory_digest(self):
+        opener = InventoryOpener(); report = {}
+        LP.perform(self.api(opener), packet(), 'observe', report)
+        self.assertEqual(report['result'], 'READ_ONLY_OBSERVATIONS_NOT_CONTROL_ACCEPTANCE')
+        expected = [{'id': row['id'], 'attempt': 1, 'status': 'completed'} for row in opener.runs]
+        self.assertEqual(report['before']['inventory'], expected)
+        self.assertEqual(report['freshInventorySha256'], LP.inventory_digest(expected))
+        pages = [path for _, path, _ in opener.calls if '/workflows/' in path and '/runs?' in path]
+        self.assertEqual(pages, [LP.BASE + f'/actions/workflows/{LP.LEGACY}/runs?per_page=30&page={n}' for n in range(1,7)])
+        self.assertTrue(all('?per_page=30&page=' in path for _, path, _ in opener.calls if '?' in path))
+        self.assertTrue(all(row['bytes'] <= 1_048_576 for row in opener.pages))
+        self.assert_get_only(opener)
+
+    def test_exact30_multiple_requires_extra_empty_page(self):
+        opener = InventoryOpener(60, 0)
+        self.assertEqual(len(LP.no_active_runs(self.api(opener))), 60)
+        self.assertEqual([path.rsplit('page=',1)[1] for _, path, _ in opener.calls], ['1','2','3'])
+        self.assert_get_only(opener)
+
+    def test_jobs_use_same30_page_and_exhaustion_contract(self):
+        opener = InventoryOpener(1,0); opener.job_rows[999] = [{'id': n} for n in range(60)]
+        rows = LP.all_rows(self.api(opener), LP.BASE + '/actions/runs/999/jobs', 'jobs')
+        self.assertEqual(rows, opener.job_rows[999])
+        self.assertEqual([path for _,path,_ in opener.calls], [LP.BASE + f'/actions/runs/999/jobs?per_page=30&page={n}' for n in range(1,4)])
+        self.assert_get_only(opener)
+
+    def test_30_row_response_can_still_exceed_unchanged_cap(self):
+        opener = InventoryOpener(164,40_000)
+        with self.assertRaisesRegex(LP.Blocked, 'LP_RESPONSE_TOO_LARGE'):
+            LP.perform(self.api(opener), packet(), 'disable', {})
+        self.assertGreater(opener.pages[-1]['bytes'], 1_048_576)
+        self.assertTrue(opener.calls[-1][1].endswith('per_page=30&page=1'))
+        self.assert_get_only(opener)
+
+    def test_changed_truncated_and_malformed_pages_block_before_mutation(self):
+        cases = [
+            ('changed', lambda page,v: v.__setitem__('total_count',165) if page==2 else None, 'INVENTORY_CHANGED'),
+            ('truncated', lambda page,v: v.__setitem__('workflow_runs',[]) if page==2 else None, 'INVENTORY_TRUNCATED'),
+            ('overfull', lambda page,v: v['workflow_runs'].append(v['workflow_runs'][0]), 'INVENTORY_INVALID'),
+            ('boolean-total', lambda page,v: v.__setitem__('total_count',True), 'INVENTORY_INVALID'),
+            ('missing-rows', lambda page,v: v.pop('workflow_runs'), 'INVENTORY_INVALID'),
+        ]
+        for name, change, code in cases:
+            with self.subTest(name=name):
+                opener = InventoryOpener(164,0)
+                opener.change = lambda page,v: change(page,v) if 'workflow_runs' in v else None
+                with self.assertRaisesRegex(LP.Blocked, code):
+                    LP.perform(self.api(opener), packet(), 'disable', {})
+                self.assert_get_only(opener)
+        for status, raw, code in ((403,None,'READBACK_UNAVAILABLE'),(200,b'not-json','RESPONSE_INVALID')):
+            with self.subTest(status=status, raw=raw):
+                opener = InventoryOpener(164,0); opener.status = status; opener.raw_override = raw
+                with self.assertRaisesRegex(LP.Blocked, code): LP.no_active_runs(self.api(opener))
+                self.assert_get_only(opener)
+
+    def test_duplicate_active_unknown_wrongworkflow_and_safe_run_absence_block(self):
+        for mode in ('duplicate','in_progress','queued','waiting','unknown','foreign-workflow','missing-safe'):
+            with self.subTest(mode=mode):
+                opener = InventoryOpener(164,0)
+                if mode == 'duplicate': opener.runs[100]['id'] = opener.runs[0]['id']; code = 'DUPLICATE_RUN'
+                elif mode == 'foreign-workflow': opener.runs[100]['workflow_id'] = 1; code = 'ACTIVE_OR_UNKNOWN'
+                elif mode == 'missing-safe': opener.runs[0]['id'] = LP.SAFE_RUN+1000; code = 'SAFE_RUN_NOT_IN_INVENTORY'
+                else: opener.runs[100]['status'] = mode; code = 'ACTIVE_OR_UNKNOWN'
+                with self.assertRaisesRegex(LP.Blocked, code): LP.perform(self.api(opener), packet(), 'disable', {})
+                self.assert_get_only(opener)
+
+    def test_100_page_limit_stays_fail_closed_even_at_exact3000(self):
+        opener = InventoryOpener(3000,0)
+        with self.assertRaisesRegex(LP.Blocked,'LP_INVENTORY_INCOMPLETE'): LP.no_active_runs(self.api(opener))
+        self.assertEqual(len(opener.calls),100)
+        self.assertTrue(opener.calls[-1][1].endswith('per_page=30&page=100'))
+        self.assert_get_only(opener)
+
+    def test_strict30_get_queries_reject_before_open_and_mutations_are_unchanged(self):
+        opener = InventoryOpener(1,0); api = self.api(opener)
+        base = LP.BASE + f'/actions/workflows/{LP.LEGACY}/runs'
+        denied = [base+q for q in ('?per_page=100&page=1','?per_page=31&page=1','?page=1&per_page=30',
+            '?per_page=30&page=0','?per_page=30&page=01','?per_page=30&page=-1','?per_page=30&page=1&extra=1',
+            '?per_page=30&page=1&page=2','?per_page=30&page=1#fragment')]
+        denied += [LP.BASE+'/actions/workflows/1/runs?per_page=30&page=1',
+            LP.BASE+f'/actions/runs/{LP.SAFE_RUN}/jobs?per_page=100&page=1']
+        for path in denied:
+            with self.subTest(path=path), self.assertRaisesRegex(LP.Blocked,'ENDPOINT_NOT_ALLOWED'): api.request('GET',path)
+        for method,body in (('GET',b'{}'),('POST',None),('DELETE',None)):
+            with self.assertRaisesRegex(LP.Blocked,'ENDPOINT_NOT_ALLOWED'): api.request(method,base+'?per_page=30&page=1',body)
+        self.assertEqual(opener.calls,[])
+        self.assertTrue(LP.allowed_route('PUT',LP.BASE+f'/actions/workflows/{LP.LEGACY}/disable'))
+        self.assertTrue(LP.allowed_route('POST',LP.BASE+f'/actions/runs/{LP.SAFE_RUN}/rerun'))
 
 
 class ControlTest(unittest.TestCase):
@@ -171,8 +315,8 @@ class ControlTest(unittest.TestCase):
             def __init__(self): self.page = 0
             def request(self, *args):
                 self.page += 1
-                return 200, {'total_count': 101 if self.page == 1 else 102,
-                             'workflow_runs': [{}] * 100 if self.page == 1 else [{}]}
+                return 200, {'total_count': 31 if self.page == 1 else 32,
+                             'workflow_runs': [{}] * 30 if self.page == 1 else [{}]}
         with self.assertRaisesRegex(LP.Blocked, 'INVENTORY_CHANGED'):
             LP.all_rows(Changed(), '/ignored-fixture', 'workflow_runs')
 
