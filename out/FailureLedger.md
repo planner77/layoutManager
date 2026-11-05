@@ -1,3 +1,11 @@
+## #225 RP opaque CLI — 아직 실제 서명 실패 아님, 차등 거부 증명 보완 (2026-11-06)
+
+앞선 [실제 RP2 run 42092820405](https://github.com/planner77/layoutManager/actions/runs/42092820405)의 Step16 FAILURE·\`childObserved=false\`·부분 cleanup PASS·후속 OIDC/Sigstore/gh CLI SKIPPED와 기본 \`.dockerbuild\` 아티팩트 3건은 그대로 보존한다. **RP2에서 gh CLI 불투명 오류가 발생한 것은 아니다.** 고정 cli/cli v2.103.3의 소스상 \`verifier.Verify\` 오류가 issuer 오류로 축약되는 경로를 확인했다. 이 원인을 현재 실제 인증 오류로 단정하지 않는다.
+
+별도 test-only 보완은 임의 generic CLI exit1을 거부하고, 실제 signed positive 검증을 negative 양쪽에서 확인한 정확 단일 policy/file mutation만 source-pinned opaque rejection으로 **차등 분류**한다. 해당 분류는 내부 Crypto 오류 원문 또는 실제 원인 증명이 아니며, 브래킷·정확 delta·거부 형식 불충족 시 FAIL CLOSED한다. 변경 소스 CI와 새 실제 Signed Release Proof는 아직 결과를 확인하지 않았고, 통합 전 PASS를 기록하지 않는다. \`out/TestPlan.md\` OP-01~06과 \`out/TestReport.md\`를 따른다. 운영 Scene flags OFF / GHCR HOLD / #225·#218·#231 OPEN, GO-PILOT BLOCKED.
+
+---
+
 ## #225 RP2 — 실제 실행의 timeout 사전 시험·암묵 artifact 실패 (2026-11-06)
 
 [PR240](https://github.com/planner77/layoutManager/pull/240)은 정확 head8c04의 CI645 및 Main4fd의 Main161 SUCCESS/GHCR HOLD skip으로 코드 통합했다. 이후 승인된 첫 실제 [proof run2/42092820405](https://github.com/planner77/layoutManager/actions/runs/42092820405), source `4fd0b32e82bd89f8056becd9e3dabea69a6b5e00`/tree e004/attempt1/job127475057679는 step16 direct timeout probe에서 exit1이었다. nonce `afdf37e08f8c1af1`의 `RR2_COMMAND_TIMEOUT`, childObserved=false, cleanup=PASS가 실제 관측됐다. 약4초 제한에 Docker 기동이 포함된 것은 코드 관측이며, 원래 실패의 기동 지연·조기 종료/CID 상태는 미수집이라 정확 원인은 **UNKNOWN**이다. 후속 성공이나 분리한 기동 deadline으로 이 원인을 소급 확정하지 않는다.
