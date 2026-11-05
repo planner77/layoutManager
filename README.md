@@ -1,3 +1,9 @@
+## #225 / PR #236 — GO-INTEGRATE 완료 (0.61.0, 2026-11-05)
+
+기존 Browser Job과 READY Scene을 가진 합성 0.60 설치의 0.61 업그레이드·CPU 처리·격리 복구 시험을 [PR #236](https://github.com/planner77/layoutManager/pull/236)으로 Main에 통합했다. 정확 HEAD PR CI #634와 merge SHA Main CI #156은 SUCCESS다. 수용 범위와 미완료 현장 검증은 [TestReport](out/TestReport.md), AC는 [TestPlan](out/TestPlan.md)을 따른다. 제품 flags OFF, >=0.61 GHCR HOLD, GO-PILOT BLOCKED, #225/#218/#231 OPEN이다. 아래 PR #235 기록은 당시 이력이다.
+
+---
+
 ## #225 — 기존 데이터 업그레이드·복구 검증 (0.61.0, 2026-11-05)
 
 PR #235는 PR CI #632/#633 성공 후 Main에 통합됐다. 다음 검증은 기존 Browser Job과 유효 READY Scene이 있는 합성 0.60 설치에서 0.61 업그레이드·독립 CPU 처리·동일 백업의 격리 복구를 연결한다. 범위와 AC는 [TestPlan](out/TestPlan.md), 실제 결과는 [TestReport](out/TestReport.md)를 따른다. 운영 DB·CAD·배포를 변경하는 작업이 아니며 제품 Scene flags OFF, >=0.61 GHCR HOLD 및 GO-PILOT BLOCKED를 유지한다.

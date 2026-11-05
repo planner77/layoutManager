@@ -1,3 +1,9 @@
+## 2026-11-05 — PR #236 populated G7 upgrade/recovery GO-INTEGRATE 완료
+
+[PR #236](https://github.com/planner77/layoutManager/pull/236)의 합성 source-level 시험을 정확 HEAD CI #634 성공 후 Main `323fa4b0a0c8b69ab158fdf18a8363ba9e16c6ca`에 통합했고 Main CI #156도 성공했다. 이번 사용자 승인은 아래 원 계획의 `CI 시작까지만` 경계를 **이 통합에 한해** 확장한다. AC와 실제 검증은 [TestPlan](TestPlan.md), [TestReport](TestReport.md)의 최신 기록을 따른다. 실제 과거 OCI/운영 upgrade·복구, mid-conversion KILL/OOM, 정식 3-image 출고는 미검증이다. 제품 flags OFF, >=0.61 GHCR HOLD, GO-PILOT BLOCKED, #225/#218/#231 OPEN. 아래 계획과 당시 NOT VERIFIED는 역사적 기록이다.
+
+---
+
 ## 2026-11-05 — 다음 최소 Unit: populated G7 upgrade/recovery source rehearsal
 
 Manager는 기존 0.60→0.61 시험의 **빈 Job 테이블**과 새 0.61 Worker fixture 사이의 공백을 다음 범위로 선택한다. 정식 upgrade engine의 정확 plan 승인/backup/isolated restore를 재사용해 기존 Browser Job·유효 READY Scene·Current/원본/Audit가 보존되고, upgrade 이후 새 CPU Job만 별도 Node Worker가 처리함을 검증한다. 요구/설계/AC는 [TP-225-UPGRADE-RECOVERY](TestPlan.md#tp-225-upgrade-recovery--populated-060061-disposable-rehearsal)가 단일 기준이다. 제품/Schema/버전 변경 없는 test source Unit이며 실제 구현·검증 결과는 [TestReport](TestReport.md)의 최신 기록을 따른다.

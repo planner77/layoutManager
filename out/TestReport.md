@@ -1,3 +1,26 @@
+## PR236-GI — #225 populated G7 upgrade/recovery GO-INTEGRATE 확정 (2026-11-05)
+
+**역할과 승인:** 이번 통합은 사용자가 명시적으로 승인해 기존 TP-225-UPGRADE-RECOVERY UR-07의 `새 CI 시작까지만` 제한을 **PR #236에 한해** 확장했다. Manager `gpt-6-astra`가 GI-01–06 범위·AC를 정하고 병합 전 근거를 수용했다. Developer `gpt-6-sol`이 이 문서 변경을 기록한다. 독립 QA의 이번 통합 판정은 별도 결과로 기록한다. 지침의 `gpt-5.6-sol`/`gpt-5.6-luna`는 제공되지 않아 실행하지 않았으며 이전 Unit QA 기록은 그대로다.
+
+| AC | 실제 근거·판정 |
+| --- | --- |
+| GI-01 | [PR #236](https://github.com/planner77/layoutManager/pull/236) exact source HEAD `893ec1b0e6c30e41c7bebc9d60448252ae95a990`, [PR CI #634/run 42005042169](https://github.com/planner77/layoutManager/actions/runs/42005042169) completed/SUCCESS. 9개 check 중 적용 8개 SUCCESS, #218 A2 scope SKIPPED. Static Job `127169616270`: 174 files/1,102 tests PASS(신규 2 포함), TypeScript/Lint/Build/benchmark SUCCESS. Docker Job `127169616069`: `OCI_CPU_PROOF_PASS`, `P1D_HTTP_OCI_VIEWER_PASS`; scenes=1, denied=3, originalGets=0, sceneGets=4, freshSessions=true. **PASS** |
+| GI-02 | review 0, 미해결 thread 0, conflict 없음/mergeable clean, Main behind 0. **PASS** |
+| GI-03 | 9 paths = 신규 test 1 + Markdown 8; secret/runtime 위반 0, diff check PASS. **PASS** |
+| GI-04 | Draft 해제 후 예상 HEAD `893ec1b...`를 squash 병합. Main merge commit `323fa4b0a0c8b69ab158fdf18a8363ba9e16c6ca`, parent `e9eb2e93ff8e8d2f967de30200ee6da6459c5cc4`; Main tree `745dc5f2563cf591ae05bb890ccffe689099210f`는 PR HEAD tree와 일치. **PASS** |
+| GI-05 | [Main CI #156/run 42009205686](https://github.com/planner77/layoutManager/actions/runs/42009205686) exact merge SHA `323fa4b...` completed/SUCCESS. Release scope Job `127183595453`의 `Issue #229: >=0.61.0 code integration, GHCR release on HOLD`; Build and push to GHCR Job `127183672098` SKIPPED. 이는 GHCR 게시 성공을 뜻하지 않는다. **PASS** |
+| GI-06 | 제품 버전 0.61.0, `SCENE_AUTO_BUILD_ENABLED=OFF`, `SCENE_CPU_WORKER_ENABLED=OFF`, >=0.61 GHCR HOLD, #225/#218/#231 OPEN, GO-PILOT BLOCKED. 기존 실패·취소/당시 NOT VERIFIED 기록을 보존. 제품·Schema·운영 `.env`/DB/CAD/Volume/GHCR/tag/release 및 GitHub issue 상태 변경 없음. **PASS** |
+
+**동시 실행 상태:** Draft 해제의 `ready_for_review` 이벤트가 같은 HEAD에서 [PR CI #635/run 42009186819](https://github.com/planner77/layoutManager/actions/runs/42009186819)를 추가로 시작했다. 기록 시점에는 **in_progress / NOT VERIFIED**다. #634의 완료 결과로 승인 병합했으며 #635를 성공 또는 실패로 계산하지 않는다.
+
+**독립 QA — PR236-GI (gpt-6-luna, 2026-11-05):** GI-01–06 기록을 로컬 merge/source tree와 GitHub read-only 근거에 대조했다. PR #236은 `893ec1b...`를 source HEAD로 `323fa4b...`에 병합됐고 양쪽 tree hash는 `745dc5f...`로 같다. PR CI #634의 9개 job 중 적용 8개가 SUCCESS, A2 scope는 SKIPPED; Main CI #156의 정확 merge SHA job은 SUCCESS이며 release-scope log에 `>=0.61.0 code integration, GHCR release on HOLD`, GHCR build/push job은 SKIPPED로 확인했다. PR은 merged/closed, reviews 0, unresolved review threads 0이며 #225/#218/#231은 OPEN이다. 현재 worktree 차이는 문서 6개뿐이고 `git diff --check` PASS다. 새 제품 테스트는 문서 전용 변경에 불필요하여 실행하지 않았다. #635는 조회 시 여전히 in_progress로 확인해 완료 판정에 포함하지 않는다. **문서 QA PASS; 독립적으로 재확인하지 못한 과거 pre-merge behind/conflict snapshot은 기존 GI-02 기록을 근거로 삼았다.**
+
+**Manager 최종 수용 (gpt-6-astra):** root의 정확 HEAD·병합·Main CI 근거와 Developer 문서 변경, 독립 QA PASS를 검토해 GI-01–06 및 문서 6개를 추가 재작업 없이 수용했다. #635는 별도 진행 중 실행으로 판정에서 제외하며 기존 GHCR HOLD·GO-PILOT BLOCKED를 유지한다. root가 최종 staged/secret 감사를 마친 뒤 문서 commit/push를 수행한다.
+
+**증거 경계:** 이 통합은 합성 0.60 populated source fixture의 실제 plan/backup·0.61 migration·Node Worker·격리 restore를 다루는 test-only 코드다. 실제 과거 OCI 0.60 설치/현장 승인 upgrade·restore, 변환 내부 mid-conversion KILL/OOM, 공식 App/Migrator/Worker 3-image provenance/digest/rollback 및 Tag Ruleset 완료는 검증하지 않았다. #229 이슈 상태와 별개로 >=0.61 GHCR HOLD 정책은 유효하다. `Requirements`, `Architecture`, `Database`, `Operation` 계약 변경은 N/A. 아래 TP-225-UPGRADE-RECOVERY QA의 당시 `exact 새 HEAD CI 아직 없음`과 UR-07 계획은 작성 시점의 사실이며 이번 완료 기록이 최신 판정이다.
+
+---
+
 ## #225 / TP-225-UPGRADE-RECOVERY — 독립 QA 결과 (2026-11-05)
 
 - **역할:** Manager `gpt-6-astra`가 UR-01–UR-07 요구/설계/AC를 기록하고 Developer `gpt-6-sol`의 test-only 변경을 검토·QA 승인했다. QA `gpt-6-luna`가 소스/기준을 독립 대조하고 실행했다. 지침에 기재된 `gpt-5.6-sol`/`gpt-5.6-luna` 모델은 이번 세션에서 사용할 수 없어 실제 사용 모델을 기록한다.

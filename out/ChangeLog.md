@@ -1,3 +1,10 @@
+## Unreleased — PR #236 GO-INTEGRATE 확정 (2026-11-05, 0.61.0 유지)
+
+- 합성 populated G7 0.60→0.61 upgrade/CPU 처리/격리 restore의 test-only 변경을 [PR #236](https://github.com/planner77/layoutManager/pull/236)으로 통합. 정확 PR HEAD CI #634와 merge SHA Main CI #156 SUCCESS; 적용 Job과 출고 HOLD의 상세는 [TestReport](TestReport.md).
+- 제품/Schema/flags/운영 자료 변경 없음. #225/#218/#231 OPEN, GO-PILOT BLOCKED, >=0.61 GHCR HOLD; 이전 실패와 당시 NOT VERIFIED 기록은 역사적 사실로 유지.
+
+---
+
 ## Unreleased — #225 업그레이드·복구 검증 (2026-11-05, 0.61.0 유지)
 
 - Verified: PR #235 HEAD `baf2ec6`의 PR CI #632/#633 SUCCESS와 Squash Main `e9eb2e9` 통합을 확인했다. 과거 실패·취소는 보존한다.

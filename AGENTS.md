@@ -1,3 +1,9 @@
+## #225 / PR #236 — GO-INTEGRATE 완료 (2026-11-05)
+
+사용자의 이번 통합 승인으로 아래 TP-225-UPGRADE-RECOVERY의 기존 UR-07 `CI 시작까지만` 경계를 **PR #236 통합에 한해** 확장했다. [PR #236](https://github.com/planner77/layoutManager/pull/236)의 정확 HEAD `893ec1b0e6c30e41c7bebc9d60448252ae95a990`는 [PR CI #634](https://github.com/planner77/layoutManager/actions/runs/42005042169) 적용 8개 Job SUCCESS 뒤 Squash Main `323fa4b0a0c8b69ab158fdf18a8363ba9e16c6ca`에 병합됐다. [Main CI #156](https://github.com/planner77/layoutManager/actions/runs/42009205686)도 같은 merge SHA에서 SUCCESS이며 >=0.61.0 GHCR 출고는 HOLD로 skip됐다. 상세 증거와 GO-PILOT 잔여는 [TestReport](out/TestReport.md)를 따른다. 제품 Scene flags OFF, #225/#218/#231 OPEN, GO-PILOT BLOCKED; 운영·GHCR·태그 변경 없음. 아래 당시 NOT VERIFIED 기록은 역사적 시점의 상태다.
+
+---
+
 ## #225 — P1-D 통합 완료와 업그레이드·복구 후속 (2026-11-05)
 
 PR #235의 검증 HEAD `baf2ec6`는 PR CI #632/#633 SUCCESS 후 Main `e9eb2e9`에 병합됐다. 이전 FAIL/CANCELLED는 [FailureLedger](out/FailureLedger.md), 완료 근거는 [TestReport](out/TestReport.md)를 따른다. 다음 최소 Unit은 [TestPlan](out/TestPlan.md)의 TP-225-UPGRADE-RECOVERY: 기존 Job/유효 Scene을 가진 합성 G7 0.60→0.61 업그레이드·새 CPU 처리·동일 백업의 격리 복구다. 운영 배포·mid-conversion KILL/OOM·정식 3-image 출고 증거는 별도다. 제품 Scene flags OFF, >=0.61 GHCR HOLD, GO-PILOT BLOCKED, #225/#218/#231 OPEN 유지.

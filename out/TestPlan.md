@@ -1,3 +1,18 @@
+## PR236-GI — GO-INTEGRATE 사후 수용 기준 (2026-11-05)
+
+사용자는 이번 PR #236의 CI 검증·병합을 승인해 아래 UR-07의 원래 `CI 시작까지만` 경계를 **이 통합에 한해** 확장했다. 아래 UR-01–07은 작성 당시 계획으로 보존한다. 실제 판정은 [TestReport](TestReport.md)의 PR236-GI 결과를 따른다.
+
+| AC | 확인 기준 |
+| --- | --- |
+| GI-01 | 정확 PR HEAD와 CI #634/run 42005042169의 완료 SUCCESS, 적용 Job 8개 SUCCESS 및 범위 외 A2 SKIPPED를 구분 |
+| GI-02 | review/미해결 thread 0, conflict 없음, Main behind 0에서 병합 준비 |
+| GI-03 | 1 test + 8 Markdown 변경, secret/runtime 자료 위반 0, diff check PASS |
+| GI-04 | Draft 해제 후 예상 HEAD에서 squash merge, Main parent 및 source tree 일치 |
+| GI-05 | Main CI #156이 정확 merge SHA에서 SUCCESS, release scope의 >=0.61 GHCR HOLD와 build/push skip 확인 |
+| GI-06 | 과거 NOT VERIFIED·FAIL 기록과 0.61.0/flags OFF/GHCR HOLD/GO-PILOT BLOCKED/#225·#218·#231 OPEN 보존; 실제 현장·출고 검증은 별도 |
+
+---
+
 ## TP-225-UPGRADE-RECOVERY — populated 0.60→0.61 disposable rehearsal
 
 설계·AC 기록: 2026-11-05, 구현 전 Manager 작성. 아래는 계획이며 실제 로컬 실행·독립 QA 및 새 exact HEAD CI 상태는 [TestReport](TestReport.md)의 최신 TP-225-UPGRADE-RECOVERY 기록을 따른다.
