@@ -1,3 +1,10 @@
+## Unreleased — #225 converter 장애·복구 검증 (2026-11-05, 0.61.0 유지)
+
+- Test: 기존 필수 OCI proof에 실제 parser 실행 프레임을 검증하는 시험 전용 inspector와 KILL/주입 cgroup OOM 후 영속 Job 재시도·Scene 복구를 추가한다. 기존 READY·원본·Audit 보존과 로컬 세 이미지 source/role/version/ID 확인을 보강한다.
+- Scope: 제품 소스·Schema·Dockerfile·버전·자원 제한은 유지한다. 새 시험의 실제 결과·역할 검토·#231 읽기 전용 관측은 [TestReport](TestReport.md), 기준은 [TestPlan](TestPlan.md)을 따른다. 정식 registry 출고/운영 수용은 미완료이며 Scene flags OFF·GHCR HOLD·GO-PILOT BLOCKED다.
+
+---
+
 ## Unreleased — PR #236 GO-INTEGRATE 확정 (2026-11-05, 0.61.0 유지)
 
 - 합성 populated G7 0.60→0.61 upgrade/CPU 처리/격리 restore의 test-only 변경을 [PR #236](https://github.com/planner77/layoutManager/pull/236)으로 통합. 정확 PR HEAD CI #634와 merge SHA Main CI #156 SUCCESS; 적용 Job과 출고 HOLD의 상세는 [TestReport](TestReport.md).

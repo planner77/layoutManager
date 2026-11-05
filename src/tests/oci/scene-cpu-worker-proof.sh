@@ -16,8 +16,10 @@ fi
 
 volume="layoutmanager-ci-oci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
 fixture="$PWD/src/tests/oci/scene-cpu-proof-fixture.mjs"
+inspector="$PWD/src/tests/oci/scene-cpu-converter-inspector.mjs"
 cpu_image="cad-layout-viewer:ci-cpu-worker"
 migrate_image="cad-layout-viewer:ci-migrate"
+app_image="cad-layout-viewer:ci"
 owned=false
 cid=""
 cleanup(){
@@ -39,9 +41,17 @@ if docker volume inspect "$volume" >/dev/null 2>&1; then
   echo "::error::OCI proof refuses an existing volume" >&2
   exit 1
 fi
-test "$(docker image inspect "$cpu_image" --format '{{index .Config.Labels "com.planner77.g7.image-role"}}')" = cpu-worker
-test "$(docker image inspect "$migrate_image" --format '{{index .Config.Labels "com.planner77.g7.image-role"}}')" = migrator
-test "$(docker image inspect "$cpu_image" --format '{{index .Config.Labels "org.opencontainers.image.revision"}}')" = "$GITHUB_SHA"
+for pair in "$app_image:app" "$migrate_image:migrator" "$cpu_image:cpu-worker"; do
+  image="${pair%:*}"
+  role="${pair##*:}"
+  test "$(docker image inspect "$image" --format '{{index .Config.Labels "com.planner77.g7.image-role"}}')" = "$role"
+  test "$(docker image inspect "$image" --format '{{index .Config.Labels "org.opencontainers.image.revision"}}')" = "$GITHUB_SHA"
+  test "$(docker image inspect "$image" --format '{{index .Config.Labels "org.opencontainers.image.source"}}')" = 'https://github.com/planner77/layoutManager'
+  test "$(docker image inspect "$image" --format '{{index .Config.Labels "org.opencontainers.image.version"}}')" = "$(node -p 'require("./src/package.json").version')"
+  test -n "$(docker image inspect "$image" --format '{{.Id}}')"
+  echo "OCI_IMAGE_LOCAL role=$role id=$(docker image inspect "$image" --format '{{.Id}}') revision=$GITHUB_SHA"
+done
+test -f "$inspector"
 docker volume create --label com.planner77.purpose=ci-scene-oci-proof "$volume" >/dev/null
 owned=true
 
@@ -56,6 +66,9 @@ security=(
 )
 file_mount=(
   --mount "type=bind,src=$fixture,dst=/app/src/scripts/ci-scene-proof-fixture.mjs,readonly"
+)
+inspector_mount=(
+  --mount "type=bind,src=$inspector,dst=/app/src/scripts/ci-scene-converter-inspector.mjs,readonly"
 )
 g7_env=(
   -e NODE_ENV=production
@@ -213,6 +226,78 @@ fixture_step due
 output="$(worker_tick)"
 assert_output "$output" '"outcome":"PUBLISHED"'
 fixture_step verify-recovered
+
+# Two new jobs, each paused inside the actual parser after one completed LINE.
+# The debugger uses only container loopback; Docker publishes no inspector port.
+for fault in kill oom; do
+  fixture_step "prepare-converter-$fault"
+  cid="$(docker create "${security[@]}" "${inspector_mount[@]}" "${worker_env[@]}" \
+    -e "CI_CONVERTER_FAULT_MODE=$fault" --entrypoint node "$cpu_image" \
+    --import tsx scripts/ci-scene-converter-inspector.mjs)"
+  docker start "$cid" >/dev/null
+  observed=false
+  for ((poll=0;poll<40;poll++)); do
+    if fixture_step "converter-$fault:running" >/dev/null 2>&1; then
+      observed=true
+      break
+    fi
+    if [[ "$(docker inspect -f '{{.State.Running}}' "$cid")" != true ]]; then
+      break
+    fi
+    sleep 1
+  done
+  if [[ "$observed" != true ]] && fixture_step "converter-$fault:running" >/dev/null 2>&1; then
+    observed=true
+  fi
+  if [[ "$observed" != true ]]; then
+    echo "::error::Converter $fault frame was not verified within bounded polling" >&2
+    docker logs "$cid" 2>&1 | grep -E 'OCI_INSPECTOR_|OCI_CONVERTER_|SCENE_CPU_WORKER_PROCESS_FAILED' >&2 || true
+    exit 1
+  fi
+  if [[ "$fault" == kill ]]; then
+    test "$(docker inspect -f '{{.State.Running}}' "$cid")" = true
+    docker kill --signal=KILL "$cid" >/dev/null
+  fi
+  # OOM is only accepted when the exact owned container's cgroup reports it.
+  # Polling is bounded; cleanup force-removes the CID on any stalled path.
+  stopped=false
+  for ((poll=0;poll<30;poll++)); do
+    if [[ "$(docker inspect -f '{{.State.Running}}' "$cid")" == false ]]; then
+      stopped=true
+      break
+    fi
+    sleep 1
+  done
+  if [[ "$stopped" != true ]]; then
+    echo "::error::Converter $fault container failed to stop" >&2
+    exit 1
+  fi
+  wait_rc="$(docker wait "$cid")"
+  inspected_rc="$(docker inspect -f '{{.State.ExitCode}}' "$cid")"
+  oom_killed="$(docker inspect -f '{{.State.OOMKilled}}' "$cid")"
+  expected_oom=false
+  [[ "$fault" == oom ]] && expected_oom=true
+  if [[ "$wait_rc" != 137 || "$inspected_rc" != 137 || "$oom_killed" != "$expected_oom" ]]; then
+    echo "::error::Converter $fault exit/cgroup mismatch: wait=$wait_rc inspect=$inspected_rc oom=$oom_killed" >&2
+    exit 1
+  fi
+  echo "OCI_CONVERTER_FAULT mode=$fault wait=$wait_rc inspect=$inspected_rc OOMKilled=$oom_killed"
+  fixture_step "converter-$fault:running"
+  docker rm "$cid" >/dev/null
+  cid=""
+  fixture_step "converter-$fault:stale"
+  output="$(worker_tick)"
+  assert_output "$output" '"outcome":"IDLE"'
+  fixture_step "converter-$fault:wait"
+  fixture_step "converter-$fault:due"
+  output="$(worker_tick)"
+  assert_output "$output" '"outcome":"PUBLISHED"'
+  fixture_step "converter-$fault:ready"
+  output="$(worker_tick)"
+  assert_output "$output" '"outcome":"IDLE"'
+done
+
+# Restore includes both recovered converter jobs and the older control cases.
 fixture_step restore
 
 echo "OCI_CPU_PROOF_PASS: test-owned volume; Node CPU Worker and G7 recovery checks succeeded"

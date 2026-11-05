@@ -1,3 +1,13 @@
+## #225 converter 장애 시험의 실행·증거 경계 (2026-11-05)
+
+기존 필수 PR Docker 단계의 `src/tests/oci/scene-cpu-worker-proof.sh`가 시험 소유 volume에서 정상 Worker·claim-only 중단·권한/SHA 거부에 이어 converter 내부 KILL과 주입 cgroup OOM을 실행한다. `scene-cpu-converter-inspector.mjs`는 해당 컨테이너에만 읽기 전용 mount되며 컨테이너 내부의 별도 controller process와 loopback inspector로 실제 parser의 반환 직전 실행 위치(완료 LINE 확인, DTO 생성 전)를 확인한다. host inspector port나 제품 fault hook은 추가하지 않는다. 소스 anchor/실행 위치가 달라지면 시험은 실패해야 한다.
+
+KILL은 정확히 생성한 CID에만 수행하고 wait/inspect exit137 및 OOMKilled=false를 요구한다. OOM은 같은 RAM768MiB/CPU1/PIDs64·비루트/network-none/read-only 제한에서 paused converter process에 debugger 평가로 주입한 한정된 메모리 압력으로 유발하며 exit137과 OOMKilled=true를 모두 요구한다. 정상 parser의 자연 메모리 요구량 시험이 아니다. stale/retry 시간 가속은 해당 임시 DB에만 적용한다. 실패·종료 cleanup도 해당 CID/volume으로 한정한다. 운영 Worker나 DB/CAD/.env·기존 이미지·태그에 이 명령을 적용하지 않는다.
+
+로컬 세 이미지의 source/role/version/ID 비교는 registry manifest digest·attestation·과거 OCI rollback 검증을 대신하지 않는다. #231의 실제 Ruleset/쓰기 권한 및 정식 출고·Owner 수용은 [TestReport](TestReport.md)와 별도 Gate를 따른다. 제품 flags OFF, >=0.61 GHCR HOLD 및 GO-PILOT BLOCKED를 유지한다.
+
+---
+
 ## #225 — 합성 G7 업그레이드·복구 시험 (2026-11-05)
 
 `npm --prefix src test -- tests/integration/g7-scene-worker-upgrade-recovery.test.ts`는 테스트가 생성한 고유 임시 root 안에서만 등록된 0.60 baseline의 Browser Job/유효 Scene과 원본을 준비하고, 기존 업그레이드 엔진의 정확 plan 승인·복구 세트 검증·새 CPU 자식 프로세스·빈 격리 디렉터리 복구를 연결한다. 운영 `.env`나 서비스 DB/CAD/Volume을 입력으로 받지 않는다. 실제 0.60 OCI 설치·이미지 출처·운영자 승인·기존 이미지로 rollback/start를 검증하는 명령이 아니다. 실제 결과와 적용 한계는 [TestReport](TestReport.md), AC는 [TestPlan](TestPlan.md)의 TP-225-UPGRADE-RECOVERY를 따른다.

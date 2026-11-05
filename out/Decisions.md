@@ -1,3 +1,11 @@
+## #225 — converter fault 증거를 제품 hook 없이 분리 (2026-11-05)
+
+TP-225-CONVERTER-FAULT는 기존 claim-only SIGKILL과 구별해 실제 CPU parser 호출 프레임/완료 LINE을 확인하는 시험 전용 inspector를 사용한다. 제품 sleep/fault hook·메모리/권한 제한 완화는 도입하지 않는다. 주입 cgroup OOM의 합격에는 실제 Docker OOMKilled=true가 필요하며, 자연 발생 parser OOM·실 CAD 용량 수용을 주장하지 않는다. 소스 위치 변화는 시험 수정과 재검증이 필요한 fail-closed 조건이다.
+
+로컬 App/Migrator/Worker label·image ID의 일치는 정식 registry provenance/digest·과거 OCI rollback·#231 보호 정책 검증과 별개다. 이번 독립 PR 승인으로 운영 Scene flags나 GHCR HOLD를 해제하지 않는다. 설계·AC 정본은 [TestPlan](TestPlan.md), 실제 근거는 [TestReport](TestReport.md)이며 기존 실패 이력은 보존한다.
+
+---
+
 ## ADR #225/P1-D — Server READY vs Browser Source Fidelity 경고를 분리 (2026-11-05)
 
 **관측:** PR #235 CI #626의 P1-D 사용자 Viewer는 server verified CPU Scene READY를 실제 로드했으나 `도면 일부 표시 완료`를 반환했다. 소형 LINE CPU Builder는 전체 지원 geometry를 검증된 `CUSTOM_DTO v2`로 저장하되 정밀 Original Entity mapping `sourceIndex` 생성 기능은 아직 없다. `storedSceneFidelityProfile`의 `render=FULL_V2`와 `sourceIndex=UNAVAILABLE:INDEX_ABSENT`, `action=REBUILD_REQUIRED`는 의도적 분리이며 `three-dxf-viewer/adapter`가 경고를 내보낸다. 시험에서 '도면 표시 완료'를 강제하거나 반대로 SourceIndex gate를 무시하면 현행 #218 Lean Policy의 미지원 기능 명시·원본 정밀 선택 금지를 위반한다.

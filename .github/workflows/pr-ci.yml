@@ -505,12 +505,13 @@ jobs:
           fi
       # #225: true OCI (same local cpu-worker target), not a mock child process.
       # Uses only a test-run-unique Docker volume and has a mandatory cleanup trap.
-      - name: Verify disposable CPU Worker OCI security, READY, SIGKILL and restore
+      - name: Verify disposable CPU Worker OCI security, converter faults and restore
         shell: bash
         run: |
           set -euo pipefail
           bash -n src/tests/oci/scene-cpu-worker-proof.sh
           node --check src/tests/oci/scene-cpu-proof-fixture.mjs
+          node --check src/tests/oci/scene-cpu-converter-inspector.mjs
           bash src/tests/oci/scene-cpu-worker-proof.sh
       # #225/P1-D: actual G7 App HTTP + distinct CPU OCI + fresh authenticated Chromium.
       # Uses only a new CI-owned Docker volume and locally built images;

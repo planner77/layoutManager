@@ -1,3 +1,22 @@
+## #225 TP-225-CONVERTER-FAULT — 기존 G7 전체 Unit 실패와 분리 재실행 (2026-11-05)
+
+Root `npm --prefix src test`는 174 files/1,102 tests 중 **173 files/1,101 tests PASS, 1 FAIL**, exit1(639.25초)이었다. `g7-greenfield-auto.test.ts:113`의 최초 잘못된 owner code 요청은 예상403 대신503을 반환했다. 제품/해당 테스트 소스는 base와 동일하며, handler의 공개503은 내부 예외를 구분하지 않으므로 근본 원인은 **UNKNOWN**이다. 동시에 실행하던 다른 시험이나 부하를 확정 원인으로 기록하지 않는다.
+
+같은 파일의 별도 `npx vitest run tests/integration/g7-greenfield-auto.test.ts --reporter=verbose` 재실행은 **3/3 PASS, 1.74초**였고 소스/timeout/assertion 변경은 없었다. 이는 최초 전체 실패를 PASS로 바꾸거나 전체 재실행 성공을 의미하지 않는다. 로그는 Git 제외 `unit-full.log`, `g7-auto-isolated.log`에 보존한다. Manager는 근거 없는 Auth 수정/제한 완화를 허용하지 않았고, 독립 QA의 관련 G7 재검증 및 정확 PR HEAD 필수 CI 성공 전 전체 수용/GO-INTEGRATE를 보류했다.
+
+---
+
+## #225 TP-225-CONVERTER-FAULT — 로컬 inspector 초기화·breakpoint 실패 (2026-11-05)
+
+- **관측:** local CI 모사 run `202611050225`, product base `23c161b43d0776ee3f98fda50d2847a20dc08443` + uncommitted test snapshot. `scene-cpu-worker-proof.sh`의 최초 정상 READY·stop/start, 권한 회수, 원본 SHA 변조 거부, claim-only KILL 및 stale/retry 복구는 진행됐으나 새 `converter-kill` 준비 후 `OCI_INSPECTOR_SETUP_TIMEOUT`(10초)으로 전체 exit1. converter KILL/OOM·해당 복구는 이 실행에서 **NOT RUN**. GitHub Actions 실패가 아니라 로컬 시험 실패다.
+- **분석/수정:** Developer는 Node22 `Session.connectToMainThread()`의 `Debugger.enable` 응답이 main 초기화 대기 중 완료되지 않는 것을 관측했다. 시험 전용 controller를 소유 컨테이너의 `127.0.0.1` inspector WebSocket 연결로 조정했다. network none·host port 미공개·동일 자원/보안 제한 및 제품 코드를 유지한다. 계측 handshake의 별도 probe 성공은 전체 converter 장애·복구 성공을 뜻하지 않는다.
+- **두 번째 실행:** local CI 모사 run `202611050226`도 기존 시나리오 후 `converter-kill` marker를 확인하지 못해 exit1. 계측 entrypoint가 breakpoint 전에 반환했으므로 실제 converter KILL/OOM은 이 실행에서도 NOT RUN이다. `developer-oci-rerun.log`에 보존한다. Developer는 Node22/tsx의 한 줄 V8 script에 대한 `beforeScriptExecution` pause를 관측하지 못했다. 이후 생성 script의 정확 return 위치를 직접 bind하고 ARMED 확인 후 실제 tick을 호출하도록 변경했다. 별도 부팅 probe의 ARMED/의도된 no-G7 실패는 전체 장애 시험 PASS로 세지 않는다. 디버거 연결 종료도 명시해 오류 경로가 종료되도록 보완했다.
+- **세 번째 실행:** `developer-oci-final.log`에서 breakpoint ARMED 후 `NO_BREAKPOINT`로 실패했고 실제 fault는 미실행이었다. Manager의 직접 LINE parser probe에서 V8은 return 시작점에 breakpoint 설치 성공을 응답하지만 멈추지 않았으며, 같은 return 구문 내부 마지막 유효 `type:return` 위치에서는 실제 parser frame이 포착됐다. 최종 계측은 `getPossibleBreakpoints`로 해당 구문 안의 위치만 선택하고 frame/LINE 검사를 유지한다. Developer는 paused target의 CDP 이벤트 수신을 위해 controller를 별도 child process로 분리하고, OOM 압박은 debugger 평가로 실제 converter process에 주입하도록 조정했다. focused FRAME_READY는 소유 G7 OCI의 fault/retry 전체 성공을 대신하지 않는다.
+- **후속 재검증:** local CI 모사 run `202611050228`의 `developer-oci-228.log`는 실제 converter KILL wait/inspect137·OOMKilled=false와 별도 주입 OOM wait/inspect137·OOMKilled=true, 각각 durable RUNNING/재시도/attempt2 READY, 기존 행·blob·원본 보존, 네 Scene의 격리 복원과 종료 cleanup까지 PASS였다. 앞선 세 실패는 그대로 보존한다. 이 결과는 로컬 시험이며 정확 PR HEAD hosted CI 성공이나 GO-PILOT GO가 아니다.
+- **증거/정리:** Git 제외 `data/go-pilot-verification/developer-oci.log`에 최초 실패 보존. Root가 해당 실행 후 proof CID/volume 잔여 0을 확인했다. 최종 재시험과 독립 QA 결과는 [TestReport](TestReport.md)에서 별도로 판정한다. 기존 CI 실패 이력·GO-PILOT BLOCKED·제품 flags OFF·GHCR HOLD를 보존한다.
+
+---
+
 ## #225 / PR #235 — 수정 HEAD의 필수 CI 성공·통합 확정 (2026-11-05)
 
 검증 HEAD `baf2ec6a582b12f6eb036ba2855289fc05c6101d`의 [PR CI #632 / 41979343017](https://github.com/planner77/layoutManager/actions/runs/41979343017)와 [#633 / 41981622771](https://github.com/planner77/layoutManager/actions/runs/41981622771)는 completed/SUCCESS다. #632는 Scope·Quality/Build·Docker·G7 Signed/Legacy·Greenfield·Chromium 2 shards·Required Verify의 적용 8개 Job SUCCESS, A2는 기존 범위 정책에 따른 SKIPPED다. PR #235는 Main `e9eb2e93ff8e8d2f967de30200ee6da6459c5cc4`에 병합됐다. 이는 P1-D GO-INTEGRATE 증거이며 운영 GO-PILOT/출고가 아니다.
