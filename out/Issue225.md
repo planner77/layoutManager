@@ -1,6 +1,22 @@
+## 2026-11-06 — RR1 통합 완료 / RR2·RR3 독립 로컬 QA PASS
+
+PR #238의 typed OCI identity repair는 정확 HEAD CI #639 및 Main CI #159 SUCCESS 후 Main `68c0c95`로 통합됐고 GHCR 게시는 HOLD로 skip됐다. 후속 RR2/RR3는 frozen 29개 경로의 독립 로컬 QA에서 실제 과거0.60 설치→승인 upgrade→HTTP/CPU Worker/Viewer→같은 백업 restore→이전 digest App readback 8단계와 exact owned cleanup을 통과했다. 새 독립 PR의 exact HEAD hosted CI는 대기 중이다. 이전 setup CSRF·Viewer reload 실패는 원인 UNKNOWN 이력으로 보존하며 최신 실제 결과는 [TestReport](TestReport.md)를 따른다. 정책·서명 provenance·정식3-role GHCR·Owner GO는 미완료이며 flags OFF/HOLD·GO-PILOT BLOCKED를 유지한다.
+
+---
+
 ## 2026-11-06 — RR1 CI638 실패·typed OCI identity 재작업
 
 PR238 CI638의 Docker registry roundtrip이 `RR1_PULL_CONFIG_ID_MISMATCH`로 실패했다. 로컬 classic config-ID와 hosted containerd target-ID를 혼동하는 equality seam을 [TestPlan TP-225-RR1-IDENTITY](TestPlan.md)의 ID-01–06에 따라 strict Descriptor→manifest/index-child→config/RootFS 연결로 수정·검증한다. assertion 삭제/무타입 digest OR/runner daemon 변경은 허용하지 않는다. 기존 로컬 PASS와 hosted FAIL을 보존하고 fixed exact-head hosted CI 및 독립 QA 전 RR1 통합·새 RR2 실행은 HOLD다. 이미 시작된 소유 RR2 journey는 안전 cleanup 경계까지 완료했으며 그 결과를 새로운 hosted 성공으로 간주하지 않는다.
+
+---
+
+## 2026-11-05 — RR5 정식3-role 출고/rollback/Owner GO 설계 준비
+
+기존 Main publisher는 App/Migrator pair만 다루므로 proof-only 서명을 마쳐도 실제 GHCR3-image 출고 경로는 남는다. Manager fallback은 [TestPlan TP-225-RR5-FORMAL](TestPlan.md)의 RF-01–11에 정확 source/workflow·3 digest·package visibility/writer·정책/bypass·rollback·Owner 승인 packet, 고유 private 후보 게시의 별도 쓰기 승인, 실제 registry/서명 검증 후 receipt에 결합된 release GO,3-role version 승격의 partial-failure HALT와 alias 기본 유지 기준을 먼저 기록했다. 실제 운영0.58과 RR2의0.60 rollback 근거를 구별하며 운영 upgrade/start는 별도 승인이다. 현재는 설계안 준비만 진행했고 기존 workflow·HOLD·정책·GHCR/tag/alias·운영 자원은 변경하지 않았다. RF 구현/외부 적용/출고/Owner GO는 미실행·승인 대기이며 전체 RR1–RR5는 계속 ACTIVE다.
+
+2026-11-06 정책 정리 계획 보완: 보호된 control-ref는 active/no-bypass 상태에서 삭제할 수 없으므로 initial/final payload를 함께 사전 승인하고, 거부 시험 후 control-prefix include만 제거한 final 정책의 정확 delta를 확인한 뒤 기록된 exact owned ref/SHA를 정리한다. Main/v* 보호·규칙·active/no-bypass는 유지하며 final 적용·소유 확인 실패 시 inert fixture/PENDING을 공개한다. 정책 일시 해제·삭제·우회 추가나 외부 실행은 승인하지 않았다.
+
+같은 날 package writer 검토는 실제 workflow trigger/ref/event·non-Owner writer·package 권한의 inventory부터 수행한다. 현재 publisher는 main/v* push-only이며 dispatch422를 ACL 거부로 기록하지 않는다. package Actions access READ cap+전용 승인 credential은 실제 ordinary writer 우회 또는 Owner가 선택한 강화 요구가 있을 때 검토하는 선택지로 두며 새 PAT/ACL provisioning을 MVP의 기본 선행 조건으로 추가하지 않는다. default token READ만으로 explicit write 제한을 주장하지 않고 Owner/admin의 관리 권한과 실제 ordinary workflow 우회 경로를 구별한다.
 
 ---
 
