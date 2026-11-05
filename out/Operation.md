@@ -1,3 +1,11 @@
+## #225/P1-D CI #626 — CPU Viewer 제한 표시 경고의 운영 해석 (2026-11-05)
+
+실제 HTTP Editor 로그인·원본 SHA/Scene READY·새 브라우저 저장 Asset 복원 후 **`도면 일부 표시 완료`**가 나타나더라도 별도 `Scene Status=READY`와 `ViewerSource`의 무결성/DTO/형상 검증이 통과했다면 Renderer 자체 오류로 단정하지 않는다. 좁은 CPU LINE Builder에는 `sourceIndex:UNAVAILABLE/INDEX_ABSENT`가 저장되어 있어 원본 Handle/정밀 선택·원본 정밀 외곽선은 제공되지 않으며, 현재 Viewer는 `render:FULL_V2`라도 그 제한을 **부분 표시 경고**로 노출한다. 이 경고를 무조건 `도면 표시 완료`로 치환하거나 자동 DXF GET/재변환하여 숨기지 않는다. P1-D 합성 도면의 Scene READY/캔버스 렌더 성공과 원본 정밀 매핑 미제공을 사용자·운영자가 구별하도록 유지한다. 실제 현장 도면/지원 외 Entity의 완전 렌더링 수용은 별도 검증.
+
+CI #624/#625/#626 실패 원인은 각각 초기 로그인 경합 추정·CPU Builder 호환 코드 경계·expected FULL vs actual partial warning으로 구분한다. 요구된 부정 경로(권한회수, SHA 변조, CIRCLE 실패 및 이전 READY 보존)는 #626에서 **NOT RUN**, 새 정확 HEAD CI 결과에 따라 별도로 판정. 기존 production 두 Scene flag OFF, GHCR >=0.61 HOLD, #225/#218/#231 OPEN/GO-PILOT BLOCKED 및 운영 DB/CAD/Volume/.env 불변.
+
+---
+
 ## #225/P1-D 폐기 가능한 Docker App/Worker/Playwright 운영 수칙 (2026-11-05)
 
 `scene-p1d-journey.sh`는 `GITHUB_ACTIONS=true`, PR Event, 정확 `planner77/layoutManager` Repository만 허용하며 로컬 image role/revision을 비교하고 **기존 같은 이름의 Volume/CID가 있으면 거부**한다. 새 run/attempt별 Volume에 G7 0.61 초기 설치 후 최초 관리자 코드를 CI 소유 Volume에서만 읽어 Playwright 환경에 전달하고 로그에 공개하지 않는다. App 포트는 `127.0.0.1`로 제한, Worker/DB Probe는 동일 소유 Volume을 `--network none --user 10001:10001 --read-only --cap-drop ALL --pids-limit 64 --memory 768m --cpus 1`로 실행하며 Docker 소켓을 mount하지 않는다. `scene-p1d-probe.mjs`는 소유 marker와 Version DB authoritative 원본 locator를 검사한 뒤에만 테스트 파일 변조가 가능하다. `trap EXIT`에서 정확히 본 Run이 소유한 App Container 및 Volume만 제거한다.

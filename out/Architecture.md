@@ -1,3 +1,9 @@
+## #225/P1-D — CPU Scene 형상/정밀 원본 매핑/표시 판정 분리 (2026-11-05)
+
+G7 signed HTTP 업로드→G7 0.61 CPU Queue→독립 OCI `CUSTOM_DTO v2` immutable Scene READY→signed Scene API→새 Chromium Viewer의 저장 Scene복원 경로 중 CPU LINE은 원본 Handle 기반 `SceneSourceIndex READY`를 생성하지 않는다. `serializeSourceScene`은 `sourceIndex:UNAVAILABLE/INDEX_ABSENT`를 검증한 DTO에 기록하고 `storedSceneFidelityProfile`은 `render:FULL_V2`와 `sourceIndex:UNAVAILABLE`를 별개로 제공한다. `three-dxf-viewer/adapter.loadScene`은 화면의 제한을 `warning`으로 전달하고 `viewer.tsx`는 `도면 일부 표시 완료`로 표시한다. 이는 본 CPU Builder가 Scene을 게시하지 못한 것과 다르고 정밀 원본 선택이 가능한 것과도 다르다. 신규 E2E는 실제 geometry와 이 warning을 동시에 요구, 원본 DXF 자동 GET·재파싱/임의 SourceIndex 복구 금지. **현재 GO-PILOT에서 정밀 Handle/SOURCE 작업은 미지원**. #218 단계별 GO, 출시 HOLD/운영 분리 유지.
+
+---
+
 ## #225 / PR #235 — CPU READY persisted Scene browser read compatibility (2026-11-05)
 
 The signed P1-D path emits CPU Builder `node-cpu-line@1.0.0+cad-scene-1` via the independent OCI Worker. `SceneRepository.status/content` already validates both exact known Browser/CPU Builder identities with `storedSceneScope`. `ViewerSource.readScene` was still reconstructing only Browser `sceneScope`, thus strict manifest comparison rejected a genuine CPU READY record (consistent with CI #625 missing success UI). Browser read now reconstructs expected identity from the request's Version+SourceSHA and the manifest's Builder via the same domain `storedSceneScope` allowlist, still enforcing strict Manifest equality, byte SHA and full DTO checks. Unknown identities, cross-Version/SHA and source-free parser fallback remain blocked; CPU publish G7 authorization/CAS and manual browser publishing unaffected.

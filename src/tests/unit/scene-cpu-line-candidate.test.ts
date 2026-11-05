@@ -2,7 +2,7 @@ import {describe,expect,it} from 'vitest';
 import {sceneSha256} from '../../domain/scene-digest';
 import {CAD_SCENE_CPU_BUILDER} from '../../domain/cad-scene';
 import {validateStoredScenePayload} from '../../domain/scene-payload';
-import {storedSceneFidelityProfile} from '../../viewers/three-dxf-viewer/scene-serialization';
+import {storedSceneFidelityProfile,restoreSourceScene} from '../../viewers/three-dxf-viewer/scene-serialization';
 import {buildCpuLineCandidate,parseCpuLineOnlyDxf,CPU_LINE_LIMITS} from '../../server/scene/cpu-line-candidate';
 
 const line=(x:string,y:string)=>['0','LINE','8','0','10',x,'20',y,'11','10','21','20'];
@@ -31,6 +31,13 @@ describe('#225 B2-A Node CPU-only bounded LINE DXF candidate',()=>{
     });
     expect(stored.root.children).toHaveLength(2);
     expect(()=>validateStoredScenePayload(candidate.bytes,candidate.manifest)).not.toThrow();
+    // Rebuild the real object tree, not just an inventory count. CPU LINE
+    // geometry must survive serialization while SourceIndex stays absent.
+    const restored=await restoreSourceScene(candidate.bytes,candidate.manifest,candidate.manifest);
+    expect(restored.children).toHaveLength(2);
+    const line=restored.children[0] as import('three').Line;
+    const points=(line.geometry as import('three').BufferGeometry).getAttribute('position');
+    expect(Array.from(points.array)).toEqual([1,2,0,10,20,0]);
   });
 
   it('creates real THREE geometry, v2 DTO and immutable tempfile readback without a browser',async()=>{

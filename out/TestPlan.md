@@ -1,3 +1,12 @@
+## #225/P1-D CI #624→#626 전구간 회귀 보강 계획 (2026-11-05)
+
+- **실제 실패 순서:** #624 Admin initial-change 완료 동기화; #625 새 Viewer CPU Builder `storedSceneScope` 검증 호환; #626 CPU LINE persisted READY Scene 복원 후 의도된 `도면 일부 표시 완료`가 E2E `도면 표시 완료` 기대와 불일치. 전체 실패 단계와 증거 범위는 [FailureLedger](FailureLedger.md) 최신 표 참조. 이전 실패를 PASS로 변경하지 않는다.
+- **양성/정확한 제한 경고:** 독립 OCI 게시 후 HTTP Scene Status/manifest 검증, `CUSTOM_DTO v2` Blob digest, `asset.objects`, 실제 `Line` object·position `[0,0,0,15,20,0]`를 검증한다. `viewerData.sourceIndex={state:'UNAVAILABLE',reason:'INDEX_ABSENT'}` 상태를 명시한 뒤 **새 인증 Chromium**의 `저장된 Scene Asset 복원`, three-dxf-viewer Renderer/캔버스 및 **`도면 일부 표시 완료`**의 정밀 선택 한계 경고를 요구한다. reload 후 동일 경고·실제 Scene fetch·DXF original GET 0을 함께 요구한다. 이것은 2D LINE 형상 READY와 원본 정밀 mapping 미지원의 공존이지 렌더 실패를 허용하는 느슨한 assertion이 아니다.
+- **단위 양·음성:** 실제 CPU Candidate의 `CUSTOM_DTO v2`/source index absent reason 및 `storedSceneFidelityProfile={render:'FULL_V2',sourceIndex:'UNAVAILABLE',action:'REBUILD_REQUIRED'}`, `restoreSourceScene` 실제 정점 좌표를 재현. CPU Builder allowlist strict Version/SHA 및 unknown Builder 검증은 #625부터 유지.
+- **음성 후속 필수:** Origin·CSRF 403, Site Grant revoke→무게시 FAILED, Source SHA tamper→무게시 FAILED, unsupported CIRCLE→무게시 FAILED, 매 단계 기존 READY immutable asset/원본 보존·끝 Worker IDLE. #626은 status assertion에서 멈췄으므로 이 후속이 검증됐다고 주장하지 않는다. 새로운 정확 HEAD 필수 CI 성공 전 **NOT VERIFIED**. GO-PILOT과 GHCR 출고 별도 승인, 모든 기준/timeout/권한/자원 Gate 유지.
+
+---
+
 ## #225 / PR #235 — CI #625 CPU Builder Scene load regression (2026-11-05)
 
 - Keep all P1-D requirements: actual signed Editor multipart upload, Origin+CSRF failures, Version/CPU Job QUEUED, separate constrained Worker OCI PUBLISHED, immutable READY/Audit/bytes and new authenticated Viewer without original DXF GET, page reload, Site revoke/SourceSHA tamper/CIRCLE rejection and prior READY preservation.

@@ -1,3 +1,11 @@
+## #225 P1-D CI #626 Viewer CPU fidelity 경고 관측 및 검증 강화 (2026-11-05)
+
+**정확 관측:** [PR CI #626/run 41969752102](https://github.com/planner77/layoutManager/actions/runs/41969752102) HEAD `798b7162a806d03e1d538bea634ee86b7a614254`: 실제 HTTP Origin/CSRF/Editor 등록→Version+QUEUED→별도 Docker Worker PUBLISHED→서버 verified READY/immutable DTO→새 Editor 로그인/Scene restore 경로 도달. Viewer `scene-status`는 저장 Scene 복원을 표시하나 `cad-viewer-shell` 최종 status가 **`도면 일부 표시 완료`**, 테스트의 `도면 표시 완료` 기대와 불일치해 required Docker Job/Verify 실패. Chromium reload·revocation·SHA·unsupported negative는 시험이 그 지점에서 종료돼 NOT RUN. #624 Admin 로그인 시험 경합, #625 CPU Builder manifest 호환 오류는 앞선 증거/원장 참조.
+
+**Root and repaired assertion:** CPU LINE converter는 `CUSTOM_DTO v2` 지원 LINE geometry 완전 복원·원본 무변조를 수행하지만 `viewerData.sourceIndex={state:'UNAVAILABLE',reason:'INDEX_ABSENT'}`이며 정밀 원본 Handle 매핑 불가를 UI가 경고하는 것이 정상. `storedSceneFidelityProfile`은 `render:'FULL_V2'`와 `action:'REBUILD_REQUIRED'`를 동시에 유지한다(정밀 sourceIndex 미검증). P1-D E2E에서 **완전한 소스 매핑을 거짓 주장하지 않고** exact 경고·복원 geometry/Canvas·원본 GET=0·reload/status·negative 후 READY 불변을 함께 요구한다. 단위시험으로 프로필/형상 복원을 재현. 새 HEAD CI **NOT VERIFIED**, FAIL 이력은 덮어쓰지 않는다.
+
+---
+
 ## #225 / PR #235 — CI #625 신규 Viewer 실패 / Client Builder identity fix (2026-11-05)
 
 [PR CI #625](https://github.com/planner77/layoutManager/actions/runs/41965842513) HEAD `cf6dfab3596cd9738c29aeab5a85f136953a1443`: required Docker Job `127042583269`에서 새 signed Editor Browser의 `scene-status` 20s timeout. 실제 signed HTTP 업로드/CSRF/QUEUED, 독립 OCI Worker PUBLISHED 및 immutable Scene READY·Manifest/Blob digest 검증은 단계 도달; 새 Viewer 복원/reload와 Site revoke/SourceSHA/미지원 CIRCLE 음성은 NOT RUN. 다른 6개 적용 Job SUCCESS, A2 scope SKIPPED, downstream Required Verify FAIL.

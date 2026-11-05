@@ -1,3 +1,11 @@
+## ADR #225/P1-D — Server READY vs Browser Source Fidelity 경고를 분리 (2026-11-05)
+
+**관측:** PR #235 CI #626의 P1-D 사용자 Viewer는 server verified CPU Scene READY를 실제 로드했으나 `도면 일부 표시 완료`를 반환했다. 소형 LINE CPU Builder는 전체 지원 geometry를 검증된 `CUSTOM_DTO v2`로 저장하되 정밀 Original Entity mapping `sourceIndex` 생성 기능은 아직 없다. `storedSceneFidelityProfile`의 `render=FULL_V2`와 `sourceIndex=UNAVAILABLE:INDEX_ABSENT`, `action=REBUILD_REQUIRED`는 의도적 분리이며 `three-dxf-viewer/adapter`가 경고를 내보낸다. 시험에서 '도면 표시 완료'를 강제하거나 반대로 SourceIndex gate를 무시하면 현행 #218 Lean Policy의 미지원 기능 명시·원본 정밀 선택 금지를 위반한다.
+
+**결정:** 제품의 경고 및 SourceIndex 안전 제한은 그대로 유지. E2E는 실 geometry/Canvas/저장 Scene 복원·원본 GET=0을 성공 근거로 검사하면서 동일 경로의 **정확한 부분 표시 경고**를 반드시 검사한다. 단위시험은 복원 LINE 좌표 및 sourceIndex reason을 일치시켜 future fidelity drift 감지. #624/#625/#626 FAIL 과거 원장은 보존, 변경된 HEAD 결과 확인 전 PASS 주장 금지. #225/#218 OPEN·GO-PILOT BLOCKED, 제품 Scene flags OFF, #229 GHCR >=0.61 HOLD, #231 Tag Ruleset OPEN 유지. 정밀 SourceIndex 생성은 별도 설계/지원 검증 및 승인이 필요한 기능으로 표시한다.
+
+---
+
 ## ADR #225-P1D-READ — Browser may read verified CPU Scene immutable payload (2026-11-05)
 
 - **Evidence:** #625 P1-D HTTP+OCI returned validated CPU READY, fresh authenticated Viewer failed to expose Scene status. Source inspection confirmed server `storedSceneScope` accepts exactly the approved CPU/Browser builders, but browser `ViewerSource.readScene` used browser-only `sceneScope`. UI log did not expose the private browser exception; mismatch is a deterministic source-level finding.

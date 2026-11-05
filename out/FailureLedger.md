@@ -1,3 +1,21 @@
+## #225/PR #235 — PR CI #624→#625→#626 연속 실패 원인 교차 분석·Fidelity 계약 보완 (2026-11-05)
+
+**Failure matrix / 정확한 Run·HEAD:**
+
+| Run | source HEAD | required Docker Job | 관측 실패 단계 | 확인된 성공 범위/미실행 |
+|---|---|---|---|---|
+| [#624/41948139879](https://github.com/planner77/layoutManager/actions/runs/41948139879) | `2ce84bf322e2b76867bb777efa94f62c51fb1131` | `126985423451` | 최초 Admin 비밀번호 변경→로그인 후 `현재 세션` heading 20s 미노출 | Signed DXF/Queue/Worker/Viewer/negative는 NOT RUN. 비동기 완료 대기 추가 후 #625에서 진행 |
+| [#625/41965842513](https://github.com/planner77/layoutManager/actions/runs/41965842513) | `cf6dfab3596cd9738c29aeab5a85f136953a1443` | `127042583269` | 별도 인증 Browser의 `scene-status` 20s 미노출 (line254) | 실제 HTTP Auth/QUEUED/OCI Worker PUBLISHED/READY와 새 세션까지 진행. Browser-only Builder `sceneScope` vs CPU `storedSceneScope` 불일치가 코드상 확인돼 allowlist 수정/단위 회귀 추가. 정확 브라우저 에러 원문은 해당 Run에서 관측되지 않음 |
+| [#626/41969752102](https://github.com/planner77/layoutManager/actions/runs/41969752102) | `798b7162a806d03e1d538bea634ee86b7a614254` | `127055021259` | E2E line255 expected `도면 표시 완료`, actual **`도면 일부 표시 완료`**; 20s 불일치 | 이전 모든 단계·실제 저장 Scene 복원은 진행. Viewer reload 및 권한 회수/SourceSHA/CIRCLE 음성은 NOT RUN. 정적·Unit/G7/General Chromium Job은 PASS. Required Verify 종속 실패 |
+
+**Cross-case diagnosis:** 각 수정이 E2E를 한 단계 더 진행시킨 *서로 다른* 실패다. #624는 로그인 비동기 완료/계측 부족(원인 추정), #625는 저장 Scene의 CPU builder 허용 계약 불일치(코드상 결정적인 호환 경로 결함), #626은 통합 테스트의 **표시 충실도** 기대가 잘못됐다. `CpuLineCandidate`는 소형 지원 LINE의 `CUSTOM_DTO v2` geometry를 복원하지만 현재 `sourceIndex`는 `UNAVAILABLE:INDEX_ABSENT`, `storedSceneFidelityProfile`의 `render=FULL_V2,sourceIndex=UNAVAILABLE,action=REBUILD_REQUIRED` 때문에 Viewer가 정확한 **부분 표시 경고**를 낸다. 이 상태를 무조건 FULL 표시로 고치면 정밀 DXF Handle/원본 선택 지원에 대해 허위 확증을 만들고 기존 #218 정책에 반한다.
+
+**Corrective changes (new head CI NOT VERIFIED):** E2E DTO parser에서 `sourceIndex:UNAVAILABLE/INDEX_ABSENT`를 확인하고 정확한 LINE geometry/Canvas·`READY_SCENE` 복원·새 인증 Context/원본 GET=0·reload 후에도 `도면 일부 표시 완료` 메시지를 필수로 검증한다. CPU 단위시험에 같은 fidelity profile과 DTO restored vertices를 재현한다. 제품 Scene loader/매니페스트 validator, source mapping 정책, 기존 READY, 보안, Retry, CI required gates 및 timeout을 완화하지 않는다. 오류 재발 시 후속 Run/Job/로그에서 별도 근거를 기록할 것.
+
+**History and gates:** #624/#625/#626은 모두 **FAIL**로 유지, #622의 OCI proof PASS와 혼동 금지. PR #235 Draft·GO-INTEGRATE 미승인, #225/#218 OPEN, GO-PILOT BLOCKED, 제품 두 flags OFF, #229 v0.61+ GHCR HOLD, #231 Tag Ruleset OPEN, 운영 .env/DB/CAD/Volume/GHCR/tag 불변. 이번 소스의 새 CI 실행 결과는 확인 전.
+
+---
+
 ## #225 / PR #235 — P1-D CI #625 CPU READY Scene Viewer mismatch (2026-11-05)
 
 - **Observed:** [Run 41965842513, #625](https://github.com/planner77/layoutManager/actions/runs/41965842513) HEAD `cf6dfab3596cd9738c29aeab5a85f136953a1443`; Docker Job `127042583269` step 16 failed at `scene-http-oci-viewer.spec.ts:254`: fresh signed Editor Viewer `getByTestId('scene-status')` not found in 20 seconds. Required Verify `127047016160` failed transitively. Scope/Static-Unit-Build/G7 Greenfield/G7 Signed/Chromium two shards succeeded (6); A2 scope SKIPPED. Real Auth/Origin-CSRF/HTTP upload→QUEUED, independent Docker CPU Worker PUBLISHED, READY pointer and blob SHA, separate authenticated browser were checked before failure. Viewer render/reload and revoke/SourceSHA/CIRCLE negatives were NOT RUN.

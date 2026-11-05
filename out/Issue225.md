@@ -1,3 +1,11 @@
+## 2026-11-05 — P1-D PR #235 CI #624/#625/#626 반복 실패 총괄 및 Viewer fidelity 검증 보완
+
+- [PR CI #624](https://github.com/planner77/layoutManager/actions/runs/41948139879): 최초 Admin 로그인 동기화/시험 계측 실패. [#625](https://github.com/planner77/layoutManager/actions/runs/41965842513): CPU Builder SourceScope와 브라우저 SceneScope 검증 불일치. [#626](https://github.com/planner77/layoutManager/actions/runs/41969752102) HEAD `798b7162a806d03e1d538bea634ee86b7a614254`: G7 signed HTTP→QUEUED→분리 OCI CPU Worker PUBLISHED/verified READY→별도 Editor 브라우저 저장 Scene 복원까지 진행 후 화면 **`도면 일부 표시 완료`**를 시험이 `도면 표시 완료`로 요구하여 FAIL. 필수 Docker Job `127055021259`, Required Verify 종속 FAIL; 일반 Static/G7/Chromium PASS. 이전 #624/#625/#626은 모두 역사적 **FAIL**로 보존.
+- **원인:** CPU LINE `CUSTOM_DTO v2`의 형상은 실제 렌더링 가능하나 `sourceIndex:{state:'UNAVAILABLE',reason:'INDEX_ABSENT'}`로 원본 정밀 Handle 연결은 없다. `storedSceneFidelityProfile`에서 `render=FULL_V2`와 `action=REBUILD_REQUIRED`가 공존하며 Viewer가 의도적인 부분 표시 경고를 반환한다. 이는 거짓 FULL 표시로 덮거나 안전 Gate를 완화할 사항이 아니다. `P1-D` E2E에 정확한 원본 인덱스 상태·지원 LINE geometry/canvas·새 로그인 Scene 복원/reload/원본 GET=0·정확한 부분 표시 경고를 동시에 검증하도록 보강하고 CPU DTO 단위 회귀를 추가했다.
+- #626에서 이른 status 실패로 미실행됐던 Site revoke, SourceSHA 변조, CIRCLE 미지원 및 기존 READY immutable 보존의 음성시험은 **새 HEAD CI 검증 전 NOT RUN/NOT VERIFIED**. 제품 Scene 플래그 두 개 OFF, #229 GHCR >=0.61 HOLD, #225/#218/#231 OPEN, GO-PILOT BLOCKED; 운영 DB/CAD/Volume/.env·이미지/태그 불변.
+
+---
+
 ## 2026-11-05 — PR #235 CI #625 Viewer CPU Scene persisted builder mismatch
 
 [CI #625](https://github.com/planner77/layoutManager/actions/runs/41965842513) at HEAD `cf6dfab3596cd9738c29aeab5a85f136953a1443` failed on first fresh signed Editor Viewer (`scene-status` absent), after real HTTP upload→Queue→independent OCI Worker PUBLISHED and verified Scene READY; Viewer reload and negative tail NOT RUN. Server `SceneRepository.status/content` accepted allowlisted CPU builder via `storedSceneScope`, while browser `ViewerSource.readScene` reconstructed only browser `sceneScope`. Align read-only Viewer to exact known persisted Builder allowlist while preserving immutable Version/SHA/Manifest/DTO digest and no original DXF fallback. Add direct CPU positive plus unapproved Builder/Version/SHA negative regression. New exact HEAD CI pending; historical #625 failure immutable, #225/#218/#231 OPEN, #229 GHCR >=0.61 HOLD, product flags OFF and GO-PILOT BLOCKED.

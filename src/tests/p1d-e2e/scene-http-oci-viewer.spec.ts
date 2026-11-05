@@ -234,6 +234,7 @@ test('#225 P1-D G7 Editor HTTP upload -> detached OCI Worker -> new authenticate
     const dto=JSON.parse(bytes.toString('utf8')) as {
       schema:number;asset:{objects:unknown[]};
       viewerData:{sourceIndex:{state:string;reason:string}};
+      root:{children:Array<{type:string;geometry:{attributes:{position:{array:number[]}}}}>}>;
     };
     expect(dto.schema).toBe(2);
     expect(dto.asset.objects.length).toBeGreaterThan(1);
@@ -242,6 +243,12 @@ test('#225 P1-D G7 Editor HTTP upload -> detached OCI Worker -> new authenticate
     expect(dto.viewerData.sourceIndex).toEqual({
       state:'UNAVAILABLE',reason:'INDEX_ABSENT',
     });
+    // A Scene notice alone is insufficient: require the actual persisted
+    // CPU-supported geometry to match the uploaded LINE endpoints.
+    expect(dto.root.children).toHaveLength(1);
+    expect(dto.root.children[0].type).toBe('Line');
+    expect(dto.root.children[0].geometry.attributes.position.array)
+      .toEqual([0,0,0,15,20,0]);
     console.info('P1D_PHASE:OCI_READY_VERIFIED');
 
     // A distinct real signed Editor login: persisted CPU DTO must render without
