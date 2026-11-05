@@ -1,4 +1,4 @@
-import {expect,test,type APIRequestContext,type Browser,type BrowserContext,type Page} from '@playwright/test';
+import {expect,test,type APIRequestContext,type BrowserContext,type Page} from '@playwright/test';
 import {createHash} from 'node:crypto';
 import {spawnSync} from 'node:child_process';
 
@@ -19,7 +19,7 @@ const unsupported=Buffer.from([
   '0','SECTION','2','ENTITIES','0','CIRCLE','5','AC','8','0',
   '10','0','20','0','40','10','0','ENDSEC','0','EOF','',
 ].join('\n'));
-const sha=bytes=>createHash('sha256').update(bytes).digest('hex');
+const sha=(bytes:Buffer)=>createHash('sha256').update(bytes).digest('hex');
 
 function requireOwned():void{
   if(process.env.GITHUB_ACTIONS!=='true'||
