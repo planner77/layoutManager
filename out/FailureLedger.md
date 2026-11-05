@@ -1,3 +1,11 @@
+## #225/P1-D HTTP App→OCI Worker→Viewer E2E 작성 (2026-11-05, 새로운 실패 관측 없음)
+
+- 기존 [PR #234](https://github.com/planner77/layoutManager/pull/234) 정확 HEAD `aa0c4622e912c7ad048c481c4aa153c86124d79c` [CI #622](https://github.com/planner77/layoutManager/actions/runs/41935291475) OCI PASS 및 Main CI #153/#154 SUCCESS/GHCR SKIPPED는 별도로 확인된 과거 증거. 이전 #614 실패 기록은 FAIL 보존.
+- 새 P1-D 변경은 진짜 localhost HTTP Origin/CSRF Editor 업로드→분리된 CPU OCI Job READY→새 인증 Chromium Viewer의 원본 없는 재접속/음성 3종을 **동일 실행에서** 확인하기 위한 source/required CI wiring이다. 아직 새 PR exact HEAD CI 결과 없음. 따라서 Runtime 결함·실패 또는 성공을 임의 단정하지 않음.
+- CI가 실패하면 실제 Run/Job/trace·원인·보완 및 새 HEAD CI를 별도 불변 기록한다. #225/#218 OPEN, GO-PILOT BLOCKED, 제품 Scene 기본 OFF, #229 >=0.61 GHCR HOLD, #231 Tag Ruleset OPEN, 운영 데이터 및 이미지/태그 불변.
+
+---
+
 ## #225 / PR #234 — CI #614 실패에서 CI #622 복구, Main 병합 완료 (2026-11-05)
 
 - **Historical failure retained:** [PR CI #614 / run 41931040058](https://github.com/planner77/layoutManager/actions/runs/41931040058), HEAD `9361d920ca53bdbc9d9a5ce8e807a9408806d3d1`, Docker Job `126927778252`에서 `Expected disposable Worker SIGKILL exit 137, got 1`로 실패; Required Verify도 선행 의존성 실패. 당시 `claim-kill`의 자식 stderr가 숨겨져 내부 오류는 특정 불가. 초기에 성공한 READY/revoke/tamper 시험을 후속 SIGKILL/recovery/restore PASS로 확대하지 않는다.
