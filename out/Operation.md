@@ -1,3 +1,11 @@
+## #225/P1-D 폐기 가능한 Docker App/Worker/Playwright 운영 수칙 (2026-11-05)
+
+`scene-p1d-journey.sh`는 `GITHUB_ACTIONS=true`, PR Event, 정확 `planner77/layoutManager` Repository만 허용하며 로컬 image role/revision을 비교하고 **기존 같은 이름의 Volume/CID가 있으면 거부**한다. 새 run/attempt별 Volume에 G7 0.61 초기 설치 후 최초 관리자 코드를 CI 소유 Volume에서만 읽어 Playwright 환경에 전달하고 로그에 공개하지 않는다. App 포트는 `127.0.0.1`로 제한, Worker/DB Probe는 동일 소유 Volume을 `--network none --user 10001:10001 --read-only --cap-drop ALL --pids-limit 64 --memory 768m --cpus 1`로 실행하며 Docker 소켓을 mount하지 않는다. `scene-p1d-probe.mjs`는 소유 marker와 Version DB authoritative 원본 locator를 검사한 뒤에만 테스트 파일 변조가 가능하다. `trap EXIT`에서 정확히 본 Run이 소유한 App Container 및 Volume만 제거한다.
+
+제품 기본 `SCENE_AUTO_BUILD_ENABLED=OFF`, `SCENE_CPU_WORKER_ENABLED=OFF` 및 운영 `.env`/실 DB/CAD/Volume/이미지/tag 변경 금지. P1-D 합성 작은 LINE 도면의 통과 결과는 실 운영 환경 배포·중간 OOM/kill·정식 업그레이드/backup·rollback/3-image digest 인증까지 보증하지 않는다. 새 CI 미확인 → GO-PILOT BLOCKED, #225/#218/#231 OPEN, #229 GHCR HOLD.
+
+---
+
 ## #225 / PR #234 — OCI SIGKILL 실패 조사 시 안전 경계 (2026-11-05)
 
 CI #614에서 불투명했던 내부 self-SIGKILL 결과를 제거하고, **테스트 전용 CID를 호스트가 명시적으로 KILL**한다. `claim-wait`는 유일한 test-owned Volume에 claim 완료 마커를 남긴 후 대기하며 별도 probe가 실제 DB RUNNING 상태를 확인한다. `docker kill --signal=KILL` 호출과 `docker wait`/inspect exit 137 검증 전에는 stale 복구를 실행하지 않는다. kill 대상은 정확히 해당 PR CI가 만든 컨테이너이고 비밀이나 내부 runtime 경로 로그는 출력하지 않는다; 예외 시에도 cleanup은 해당 CID와 이번 Run+Attempt 볼륨만 삭제한다. 운영 Worker/호스트, 서비스, 실 .env, 기존 GHCR 및 release tag는 절대 변경하지 않는다.
