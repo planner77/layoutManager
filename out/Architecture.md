@@ -1,3 +1,11 @@
+## #225 RF-C — candidate provenance A와 promotion operation B (code-only 준비)
+
+새 `release-promote.yml`/`promotion_policy.py`/`release_promote.py`는 기존 candidate/RP/VN/RT bytes를 바꾸지 않는 별도 실행 경로다. source A의 성공 candidate run·고정 signer/4-subject·download artifact ID/서버 digest/실제 file SHA와 GHCR full graph를 재검증하고, source B의 Main/workflow/tree/full CI·새 run/title/job/packetSHA·실제 Owner 환경 review를 따로 검증한다. 기존 환경은 새 review에 재사용하고 candidate approval을 승계하지 않는다. packet/control hash는 외부 증거의 검토 연결이며 인증/실효 policy 또는 전체 writer 검증 결과가 아니다. UNKNOWN controls는 packet readiness를 차단한다.
+
+RT의 injection contract는 실제 crypto/graph 및 새 approval gate 뒤에만 구성한다. reader는 기존 fixed GHCR의 인증/one-hop blob-CDN 규칙을 재사용하되 write를 거부하고 별도 adapter만 exact final3 raw manifest PUT을 허용한다. fsync journal과 typed absence·전/직전/최종 readback은 변경 탐지이며 CAS/원자성이나 외부 writer 배제가 아니다. 새 operation receipt는 A의 기존 provenance와 B의 promotion 관측을 구별하며 재빌드/새 서명/새 runtime proof가 아니다. private journal은 runner-local이고 정제 failure progress는 별도 artifact 경계로 보존한다.
+
+---
+
 ## #225 VN — 고정 signer의 검증 material projection (2026-11-06)
 
 `verified_negative.py`는 두 명시 RP/candidate entrypoint만의 순수 정책 projection이다. 실제 서명 검증은 기존 pinned CLI가 담당하고 각 verifier가 동일 binary/bundle·원본의 성공 출력을 negative 전후에 직접 획득한다. 모듈은 고정 project cert identity와4-subject/role·실제 byte SHA 및 intended argv 차이를 다시 검사한다. 공개 evidence는 observable CLI rejection과 verified material의 own-policy mismatch를 분리하며 opaque wrapper의 내부 cause는 UNOBSERVABLE로 남긴다. caller boolean/receipt 또는 임의 signer 입력으로 검증/Owner authority를 만들지 않는다. raw diagnostics는 private이며 세부 운영/실측은 Operation/TestReport를 따른다.

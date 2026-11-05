@@ -1,3 +1,19 @@
+## #225 — 실제 CLI 오류 줄바꿈의 최소 수리 준비 (2026-11-06)
+
+실제 project proof3는 네 subject 서명 생성·배포/복구·정리를 마친 뒤 wrong-workflow 거부 시험에서 실패했다. 정제6-file artifact의 ZIP digest를 확인하고 별도 pinned CLI로 네 subject와 고정 project certificate, 같은 원본의 전후 positive를 검증했다. 실제 오류는 정확 `LF + Error: verifying with issuer "sigstore.dev" + LF`45바이트였으며 기존 검증기가 leading LF를 놓쳤다. 공개 control 원문에도 같은 형식이 있었음을 확인했고 이전 오류행 projection/strip review·합성 fixture의 누락을 이력으로 보존한다.
+
+수리는 두 고정 검증 진입점의 shared helper에 관측된 한 형식만 추가한다. 독립 PN 로컬100회귀와 별도 LP17은 PASS이며, 기존 RF-C 준비에 합친118회귀·새 exact-head CI는 별도다. full proof3는 계속 FAILED이며 여섯 negative 전체·최종 verification metadata·출고/Owner GO는 미완료다. [수용·실제 결과](out/TestReport.md), [줄바꿈/승인 절차](out/Operation.md)를 따른다. 제품0.61.0/flags OFF/HOLD·GO-PILOT BLOCKED 유지.
+
+---
+
+## #225 — 검증된 후보 digest의 최종3-ref 승격 준비 (0.61.0, 2026-11-06)
+
+별도 RF-C 경로에 고정3개 version ref만 raw manifest bytes로 승격하는 workflow와 검토 packet builder를 준비했다. 실제 후보 서명·GHCR graph와 새 promotion source/완료 CI, 같은 환경의 별도 fresh Owner review를 결합한다. 부분 게시·불확실한 응답은 HALT하며 자동 덮어쓰기·재시도·삭제를 수행하지 않는다. 독립 로컬117 proof 회귀와 별도 LP17·정적 검사는 PASS다. 실제 candidate·권한·환경·Owner 승인과 최종 출고는 미실행이며, 세부 기준과 절차는 [TestPlan](out/TestPlan.md), [Operation](out/Operation.md), 실제 결과는 [TestReport](out/TestReport.md)를 따른다.
+
+[PR #242](https://github.com/planner77/layoutManager/pull/242)는 정확 HEAD [CI649](https://github.com/planner77/layoutManager/actions/runs/42110026312)와 Main163 SUCCESS로 Main `146204d`에 통합됐다. 175개 test file/1,103 tests·typecheck/build와 실제 Docker 복구·정리를 통과했고 GHCR 게시는 HOLD로 skip됐다. 이 Main의 실제 [서명 proof run3](https://github.com/planner77/layoutManager/actions/runs/42114901223)은 이 기록 시점에 RUNNING이며, 성공·artifact 검증 완료로 처리하지 않는다. 이전 RP2 실패와 원인 미확정 이력은 보존한다. 제품0.61.0/flags OFF/GHCR HOLD·GO-PILOT BLOCKED 유지.
+
+---
+
 ## #225 — 레거시 게시 제어 검증 준비 (0.61.0, 2026-11-06)
 
 별도 PR에서 읽기 전용 Main HOLD 관측과 레거시 publisher의 정확 disable/readback·안전한 HOLD run 재실행 거부 시험 도구를 준비한다. 독립 로컬 QA는 17개 Python 회귀·Vitest bridge·정적 검사를 통과했다. 실제 Owner 승인·workflow 상태 변경·재실행/거부는 NOT RUN이며, 서버 권한·package 게시 통제를 입증한 결과는 아니다. 실제 근거와 경계는 [TestReport](out/TestReport.md), 절차는 [Operation](out/Operation.md)을 따른다. 제품0.61.0/flags OFF/GHCR HOLD·GO-PILOT BLOCKED 유지.

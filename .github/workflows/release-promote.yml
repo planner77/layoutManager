@@ -1,0 +1,144 @@
+name: Issue 225 exact digest promotion
+run-name: PROMOTION ${{ inputs.mode == 'publish' && 'PUBLISH' || 'PLAN' }} | ${{ inputs.packet_sha256 }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Plan only by default; actual release requires separate exact-digest Owner review
+        type: choice
+        options: [plan, publish]
+        default: plan
+        required: true
+      packet_json:
+        description: Reviewed exact packet bytes; unresolved template is NOT_READY
+        type: string
+        required: true
+      packet_sha256:
+        description: SHA256 of exact packet_json bytes
+        type: string
+        required: true
+      environment_ui_json:
+        description: Actual Owner UI readback only if API bypass boolean is unavailable
+        type: string
+        default: ''
+        required: false
+
+permissions: {}
+concurrency:
+  group: issue225-candidate-publish
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    if: inputs.mode == 'plan'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Initialize this job's explicit local packet and plan without credentials or HTTP
+        env:
+          RC_PACKET_JSON: ${{ inputs.packet_json }}
+          RC_PACKET_SHA256: ${{ inputs.packet_sha256 }}
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, os, sys
+          sys.path.insert(0, 'src/tests/oci')
+          import promotion_policy as policy
+          raw = os.environ['RC_PACKET_JSON'].encode()
+          policy.need(hashlib.sha256(raw).hexdigest() == os.environ['RC_PACKET_SHA256'], 'RC_PACKET_HASH_INVALID')
+          print(json.dumps(policy.plan(json.loads(raw)), sort_keys=True))
+          PY
+
+  environment-readback:
+    if: >-
+      inputs.mode == 'publish' && github.event_name == 'workflow_dispatch' &&
+      github.ref == 'refs/heads/main' && github.actor_id == '45478892' &&
+      github.event.sender.id == 45478892 && github.run_attempt == 1
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+    env:
+      RC_PACKET_JSON: ${{ inputs.packet_json }}
+      RC_PACKET_SHA256: ${{ inputs.packet_sha256 }}
+      RC_UI_JSON: ${{ inputs.environment_ui_json }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Initialize this job's own private paths
+        run: python3 src/tests/oci/release_promote.py init
+      - name: Require the actual existing protected environment before protected job
+        env:
+          RC_JOB_TOKEN: ${{ github.token }}
+        run: python3 src/tests/oci/release_promote.py environment
+
+  promote:
+    needs: environment-readback
+    if: >-
+      inputs.mode == 'publish' && github.event_name == 'workflow_dispatch' &&
+      github.ref == 'refs/heads/main' && github.actor_id == '45478892' &&
+      github.event.sender.id == 45478892 && github.run_attempt == 1
+    name: Promote exact digests | ${{ inputs.packet_sha256 }}
+    environment: issue225-candidate-publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      actions: read
+      packages: write
+    env:
+      RC_PACKET_JSON: ${{ inputs.packet_json }}
+      RC_PACKET_SHA256: ${{ inputs.packet_sha256 }}
+      RC_UI_JSON: ${{ inputs.environment_ui_json }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Independently initialize protected job paths
+        id: paths
+        run: python3 src/tests/oci/release_promote.py init
+      - name: Verify actual fresh Owner review and successful candidate artifact metadata
+        id: metadata
+        env:
+          RC_JOB_TOKEN: ${{ github.token }}
+        run: python3 src/tests/oci/release_promote.py metadata
+      - name: Download only the exact reviewed artifact from the approved candidate run
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          artifact-ids: ${{ steps.metadata.outputs.artifact_id }}
+          run-id: ${{ steps.metadata.outputs.run_id }}
+          repository: planner77/layoutManager
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/issue225-promotion-input
+          merge-multiple: true
+      - name: Install the existing checksum-pinned verifier without registry or host credentials
+        run: |
+          set -euo pipefail
+          curl -fLsS -o "$RC_PRIVATE/gh.tar.gz" https://github.com/cli/cli/releases/download/v2.103.3/gh_2.103.3_linux_amd64.tar.gz
+          printf '%s  %s\n' 4c806978ffce1cec70853302a56d70ac6da4f19bae7adca4e1a8ab00633dd91d "$RC_PRIVATE/gh.tar.gz" | sha256sum --check --status
+          tar -xzf "$RC_PRIVATE/gh.tar.gz" -C "$RC_PRIVATE" gh_2.103.3_linux_amd64/bin/gh
+      - name: Reverify genuine candidate and actual GHCR graph then execute the one RT attempt
+        env:
+          RC_JOB_TOKEN: ${{ github.token }}
+        run: python3 src/tests/oci/release_promote.py publish --gh "$RC_PRIVATE/gh_2.103.3_linux_amd64/bin/gh"
+      - name: Always preserve sanitized progress for read-only reconciliation
+        id: progress
+        if: always() && steps.paths.outcome == 'success'
+        run: python3 src/tests/oci/release_promote.py progress
+      - name: Upload only sanitized operation progress and optional completed receipt
+        if: always() && steps.progress.outcome == 'success'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: issue225-promotion-progress-${{ github.run_id }}-1
+          path: |
+            ${{ runner.temp }}/issue225-promotion-public/progress.json
+            ${{ runner.temp }}/issue225-promotion-public/operation-receipt.json
+          if-no-files-found: error

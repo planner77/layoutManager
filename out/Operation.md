@@ -1,3 +1,29 @@
+## #225 PN — 실제 opaque stderr의 정확 framing 보존 (2026-11-06)
+
+실제 proof3 실패와 Root의 별도 read-only failure control은 구별한다. run42114901223은4-subject signing 뒤 wrong-workflow negative에서 실패했고 full6 negative/최종 verification metadata는 미완료다. Root는 exact6-file ZIP/hash를 확인한 뒤 실제 project4 same-bundle positives와 app before/after, ONE wrong-workflow의 exit1/빈 stdout을 독립 관측했다. 전체 proof/출고 GO는 아니다.
+
+확인된 전체 stderr는 정확45 bytes `b'\nError: verifying with issuer "sigstore.dev"\n'`, SHA-256 `486941643d59bcaec905305a9ad2843539956d60f735745f77a05db562cfda19`다. public upstream 원본도 byte-identical이며 issuer 차이 가설은 반증됐다. Root의 safe-line 전달과 Manager의 splitlines/strip 비교가 leading LF를 버렸고 이전 독립 fixture도 실제 전체 stderr 대신 한 줄만 보존했다. 진단 요약을 actual full-byte 계약으로 간주하지 않는다. 원 raw material/CLI output은 ignored private 경로에 유지하고 공개 문서에는 이 알려진 안전 frame·길이/hash·제한만 남긴다.
+
+verifier는 기존 bare/단일 trailing LF 형식과 **leading1 LF+quoted wrapper+trailing1 LF**의 세 유한 exact형식만 받는다. strip/lstrip/rstrip·정규식 whitespace 정규화/임의 issuer/generic nonzero fallback은 없다. 두 고정 signer·certificate/4-subject·binary/bundle/original/probe·intended argv/mismatch·전후 positive gate는 그대로다. 실제 source 수리의 local fake PASS 뒤 Manager/독립 QA/새 combined CI/Main 및 별도 proof GO가 필요하며 동일146 source의 blind 재dispatch·재서명은 이번 범위에 없다.
+
+---
+
+## #225 RF-C — exact-digest packet·승격·부분 상태 대응 (준비, 실제 실행 미승인)
+
+로컬 `python3 src/tests/oci/release_promote.py`는 credential/HTTP0의 NOT_READY plan이다. `template`은 unknown slot을 포함한 검토용 JSON을 출력한다. `build --input <explicit-local-preparation.json>`은 명시한 candidate artifactDirectory의4개 file SHA/receipt와 별도 artifactMetadata·roles·promotion·environment·controls·rollbackBaseline·nonce에서 packet을 만든다. `plan --input <explicit-local-packet.json>`의 REVIEWABLE_PACKET_ONLY도 Owner GO가 아니다. 실제 candidate/controls/환경/CI/rollback 값이 없으면 NOT_READY로 남기며 future promotion runId를 꾸미지 않는다.
+
+실행 전 별도 Owner packet에는 candidate source/tree/workflow A와 성공 attempt1 run/artifact ID·server digest·정확4 files SHA,3-role top media/size/raw digest/config/platform digest, promotion Main/source/tree/workflow B/full CI·same-tree archive 관계, 기존 환경 ID/config/API-vs-UI bypass evidence와 controls/rollback baseline을 넣는다. package inheritance YES/no explicit users는 사용자 정보이며 Actions grants UNKNOWN은 readiness blocker다. controls hash/`INCLUDED_IN_OWNER_REVIEWED_WRITER_INVENTORY`는 **외부 자료를 Owner가 검토할 연결 상태**이지 helper의 live policy/모든 writer 검증이 아니다. 실제 legacy ID355693716 disabled_manually와 모든 보존 run completed는 별도로 GET한다. 새 PAT/principal·환경/정책 설정을 자동 요구/변경하지 않는다.
+
+나중의 승인된 dispatcher는 POST 전에 실제 existing protected environment GET를 확인해야 한다. workflow는 별도 readonly 환경 preread job과 각 job의 독립 init 뒤 기존 `issue225-candidate-publish`를 **새 promotion run의 Owner review**에 사용한다. contents:read/actions:read/packages:write만 두며 id-token/attestations write는 없다. exact artifact ID/run/repository를 pinned download-artifact로 private 경로에 받고 네 파일 allowlist/hash·고정 candidate crypto/VN와 GHCR config/layer/raw SHA graph를 다시 확인한다. ZIP server digest는 API 값과 packet의 일치를 검증하며 다운로드 SDK 경고만을 cryptographic proof로 취급하지 않는다. 개별 파일 SHA+진짜 서명 검증이 별도로 필요하다. 실제 필드가 미노출/다르면 FAIL/PENDING이다. 기존 pinned gh archive/checksum을 사용하며 builtin token은 지정 API/registry/CLI 단계와 isolated GH_TOKEN 경로에만 전달한다.
+
+final App0.61.0/Migrator0.61.0-migrate/Worker0.61.0-cpu-worker만 대상이다. all absent는 graph/crypto 이후 새 exclusive/fsync attempt로 raw bytes/Content-Type을 복사하고 all exact는 검증과 최종3-ref readback 뒤 NO_OP다. partial/unknown/rewrite/ambiguous PUT/readback/journal 실패는 후속 PUT 없이 HALT/PARTIAL/UNCERTAIN으로 남긴다. source/digest 재빌드, blob upload/by-digest manifest PUT·delete/overwrite/retry/alias/Git tag/deploy/자동 rollback은 없다. 순차 관측은 CAS가 아니며 외부 writer 경쟁은 별도 통제다.
+
+실패 후 always artifact의 `progress.json`에는 packetSHA/actual promotion run, A/B source, expected final refs/digests 및 journal의 attempted/confirmed만 남긴다. 이는 새 registry readback이 아니며 private journal을 외부 영구 ledger라고 부르지 않는다. operation receipt는 성공/NO_OP 때만 closed schema로 추가한다. partial이면 기존0.60/운영/alias·HOLD를 그대로 유지하고 **정확3 final을 읽기 전용으로 재조회**하여 packet/보존 progress와 대조한다. 자동 누락 채우기/삭제/되돌리기를 실행하지 않는다. runner-local journal 유실·writer/권한·rollback baseline 미확정이면 복구 승인도 보류하고 새 변경은 별도 Owner 승인으로 분리한다. job가 강제 종료되면 always artifact 보존도 보장할 수 없으므로 Owner의 원 packet과 기존 baseline을 별도로 보관해야 한다.
+
+이번 검증은 local fake/static뿐이다. 실제 candidate receipt/환경 review·GHCR/정식 승격·복구/Owner GO는 이후 Manager→독립 QA→fresh CI/Main 및 별도 exact packet 승인 전 NOT RUN이다.
+
+---
+
 ## #225 VN — 두 고정 verifier의 negative evidence 운영 경계 (2026-11-06)
 
 RP/candidate는 기존 고정 signer/source/Owner/role guard와 pinned gh2.103.3 검증을 유지한다. 각 negative 직전·직후 원본을 같은 bundle로 실제 CLI 검증하고 certificate의 immutable IDs/source/workflow/ref/run/attempt/github-hosted·정확4-subject map을 다시 확인한다. binary/bundle/original/probe SHA와 정확 argv 차이를 결합하고 마지막 metadata 전 전체 원본 subject bytes도 다시 확인한다. 성공 receipt/predicate/boolean은 signature witness나 Owner 승인이 아니다. 별도 genuine positive가 실패하거나 material이 달라지면 verification metadata를 새로 만들지 않는다.
