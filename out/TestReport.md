@@ -1,3 +1,59 @@
+## PR240 combined Manager 로컬 수용·게시 GO (2026-11-06)
+
+Manager 대행 `gpt-6.1-sol`은 아래 새 합산 독립 QA와 frozen11 hash를 검토했고 직접 RP7+CP6+RT15 회귀·세 workflow actionlint·initializer bash·diff를 통과했다. SAN의 pinned-source-shaped causal 거부 분류, 수용한 CP/RT 원본 byte 보존 및 기존 scope job의 명시적 28-test wiring을 수용한다. Root는 expected parent `874f1a3c506a3db35e588b882924d55d4e4050ab`·secret/runtime/remote/tree를 최종 감사한 뒤 기존 PR240에 정상 후속 commit/push하고 제목·본문을 최종 combined 범위로 정리할 수 있다. 새 exact-head required CI/검토 뒤 통합은 별도 판정한다. 이전644는 과거 baseline이며 actual OIDC/정책·actor denial/GHCR·Owner GO는 NOT RUN/PENDING이다. LP source는 이 head에 포함하지 않았고 외부 실행·권한 변경은 승인하지 않는다. 전체 RR1–RR5는 진행 중이다.
+
+---
+
+## PR240 Combined RP/CP/RT — Independent local source QA (2026-11-06)
+
+**Result: frozen combined source QA PASS, local only.** Worktree `/home/planner/Dev/layoutManager-issue225-provenance`, branch `test/issue225-proof-provenance-main`, HEAD `874f1a3c506a3db35e588b882924d55d4e4050ab`. QA read `combined-source-freeze.json` and `combined-import.json` first, then independently recalculated all 11 frozen hashes; every file matched the freeze receipt. Focused tests passed: RP 7/7, CP 6/6, RT 15/15 (28 total). Python compile passed for all six helper/test files. actionlint 1.7.12 passed on `release-proof.yml`, `control-proof.yml`, and `pr-ci.yml`; all three workflows parsed as YAML, all 88 inline Bash `run` blocks passed `bash -n` after GitHub expressions were replaced for syntax checking, `cp-init-paths.sh` passed `bash -n`, and `git diff --check` passed.
+
+**Workflow review:** `pr-ci.yml` scope job now invokes the 28 focused proof tests and compile. Its diff from parent adds only that test step; existing aggregate and Docker job assertions remain unchanged. Existing CI644 success is for old HEAD `874f1a3c506a3db35e588b882924d55d4e4050ab`, so it does not verify these combined source changes.
+
+**Limits / NOT RUN:** all RP/CP/RT checks were local fixture/mock/static checks. No live network/API/CLI crypto, OIDC attestation, workflow dispatch, Docker, GHCR operation, credentials, policy/ref changes, or Owner approval was performed. Actual OIDC, CP policy enforcement, RT registry promotion, and Owner GO remain NOT RUN/PENDING. LP is excluded from this worktree and QA. No source edits, commit, or push were made; this report records only local evidence.
+
+---
+
+## PR240 combined RP/CP/RT 준비 — Root import 검증 (2026-11-06, 합산 독립 QA 대기)
+
+Manager TP-225-CONTROL-COMBINED 결정에 따라 parent874f 위에 SAN 최소 수정과 기존 CP/RT의 수용된 source를 복사했다. helper/workflow/init 파일은 원본과 byte 일치를 확인하고 pr-ci.yml의 기존 scope job만 RP7+CP6+RT15 및 compile로 명시 확장했다. 이전CP476b/RT874f와 Root·지정 Developer/fallback gpt-6.1-sol·QA·용량 오류 이력은 아래 원문 prefix로 보존했다. 최신 RP07/SAN/RV/combined AC를 CP의 과거 문서 전체로 덮어쓰지 않았다. LP source는 포함하지 않았다.
+
+Root 합산 실행은 pure28/28, 세 workflow(release-proof/control-proof/pr-ci)의 default actionlint1.7.12, compile/YAML/bash/diff PASS다. 새로운 외부 IO/서명·Owner 권한을 입증한 결과가 아니며 합산 frozen bytes의 독립 QA·새 exact HEAD CI는 아직 별도다. CP actor/schema/정책·RT 실제 registry/Owner approval·actual OIDC/live CLI/GHCR/정식 release GO는 NOT RUN/PENDING이다. 원 source backup·정확 hash·문서 prefix delta는 Git 제외 data/release-proof/combined-import-before 및 combined-import.json에 보존했다.
+
+이전 [CI644](https://github.com/planner77/layoutManager/actions/runs/42082185357)는 source874f/tree8dc에서 all8 SUCCESS/A2 SKIP였다. 독립 QA와 Root가 archive01e47d6d13c4b452280cd6203fe2f247d600f5d0/tree 일치,174files/1102tests, actual typed RR1/old GHCR/RR2 nonce4fe6562dedeecbd3/timeout/converter/P1D/cleanup을 확인했다. 그 scope/static/docker 로그는 새 Python RP tests/actionlint를 실행한 것이 아니며 실제 release-proof dispatch도 아니다. 새 합산 head의 PASS·서명 증거로 재표시하지 않는다. PR240 Draft/전체 GO-PILOT BLOCKED·0.61.0/flags OFF/HOLD·외부 미적용을 유지한다.
+
+---
+
+## CP01–08 — 독립 로컬 QA 및 외부 실행 경계 (2026-11-06)
+
+**Manager 로컬 수용·게시 GO:** Manager 대행 `gpt-6.1-sol`은 아래 독립 QA·frozen6 hash와 전체 fake-verifier 경로를 검토하고, 직접 6개 집중 시험·compile·initializer bash·두 workflow actionlint·diff를 통과했다. Root는 최신 code base/문서 이력과 기존 변경을 보존하고 secret/remote/parent/tree를 감사한 뒤 독립 Draft PR 게시·exact HEAD required CI를 진행할 수 있다. 실제 actor/정책 거부·Owner 승인·외부 실행은 미실행이며 통합은 완료된 CI/검토 뒤 별도 판정한다. 승인 packet 없이 refs/PR/정책/dispatch/GHCR/운영 쓰기는 허용하지 않는다.
+
+**역할 경계:** Manager 대행 `gpt-6.1-sol`은 CP01–08 사전 AC를 작성하고 Root의 별도 controls-worktree 초기 draft assistance를 지정했다. Root 초기 검사는 Python compile뿐이며 Developer/QA 완료로 간주하지 않는다. 지정 Developer 대행 `gpt-6-sol`이 코드 작업을 마쳤고, 해당 turn의 모델 capacity 오류 1회와 Manager bounded retry 1회 뒤 재개·WIP 보존 사실을 기록했다. 이번 독립 QA는 아래 로컬 근거만 판정한다.
+
+**판정: CP01–08 로컬 mock/정적 QA PASS.** Worktree `/home/planner/Dev/layoutManager-issue225-controls`, branch `test/issue225-control-proof-main`, frozen HEAD `476b686a7b9bb1ff9c691a71f895bd833311e090`에서 수행했다. handoff receipt의 helper, tests, initializer, 두 workflow, Operation 문서 등 6개 SHA-256을 독립 재계산해 모두 일치시켰다. CP 집중 회귀 6/6, Python compile, initializer `bash -n`, actionlint 1.7.12의 `control-proof.yml` 및 수정 `pr-ci.yml` 검사, 두 workflow YAML parse, 두 파일의 명시 bash step 4개/27개 `bash -n`, `git diff --check`가 PASS했다.
+
+CLI plan은 token 없이 격리 임시 packet/output으로 실행해 `PLAN_ONLY`, 두 예정 denial case, `ownerApproval=NOT_ATTESTED`, `policyEnforcement=NOT_VERIFIED`를 확인했다. 이는 helper의 기본 plan 경로이며 실제 HTTP/API 호출이 없었다. initializer의 정상 경로는 두 고정 출력 경로만 GITHUB_ENV에 기록했고, RUNNER_TEMP 부재/nonexistent 실패 경로에서는 env file을 바꾸거나 소유 결과물을 만들지 않았다. workflow의 artifact upload는 initializer success 및 execute mode에만 제한된다.
+
+Fake transport에서는 `verify_denials`의 전체 3-case 성공 경로(branch update, tag delete, missing-required-CI merge)를 통과시켰다. merge preflight는 packet에 묶인 PR/base/head/fixture-only compare와 check-runs·legacy statuses의 빈 페이지를 읽었고, expected aggregate check가 존재하는 경우 거부됨을 확인했다. 개별 suite 목록·detail·actor·시각·active ruleset/revision match에 대한 기존 음성 회귀와 함께 generic 403 without matching suite 및 unknown readback을 policy denial로 승격하지 않았다. actions attempt의 다른 run/source/workflow/attempt/event 및 case time-window 오류, capability 순서·시각 검증도 집중 테스트에 포함된다. 요청된 `actorMode`는 실행 자격 경로 선택자일 뿐 실제 ref actor 증명이 아니다. helper는 독립 rule-suite의 정확 actor ID/name/ref/SHA/time을 조회해 요청 actor 및 기대 ruleset과 대조하도록 구성돼 있다. 테스트 fixture 결과는 실제 ref operation actor를 입증하지 않는다.
+
+**한계 / NOT RUN:** 전 과정은 임시 파일과 fake transport/local validator만 사용했다. `--execute`, live read-only verifier, workflow dispatch, GitHub API mutation/readback, actual rule-suite actor/result, Owner approval, control refs/PR/status, ruleset apply/final update/delete, Actions run은 수행하지 않았다. 실제 rejection은 HTTP status만으로 판정할 수 없고 exact rule-suite·ref immutability·effective ruleset readback이 필요하다. 결과는 검토 준비용 로컬 적합성만 보여주며 실제 보호/거부/권한/Owner 승인이 아니다. Main branch policy에는 explicit creation rule이 없으므로 이 QA는 branch creation을 차단한다고 주장하지 않는다. tag create/update/delete 및 branch PR/delete/non-fast-forward/required-CI 케이스 역시 실제 증거가 아니라 packet-bound 준비 코드다. 기존 RP, frozen R2, 제품 OFF/HOLD, release/production 상태는 이 worktree에서 변경하지 않았다.
+
+---
+
+## RT01–06 Developer 대행 전환 및 독립 로컬 QA — 2026-11-06
+
+**Manager 로컬 수용·게시 GO:** Manager 대행 `gpt-6.1-sol`은 frozen2 source와 아래 독립 QA의 15개 fake-registry 회귀·compile·diff를 검토했고 직접 같은 검사를 통과했다. raw byte 보존·partial/uncertain 중단·concurrent-change 탐지의 로컬 계약을 수용한다. Root는 최신 base/문서 이력 보존과 secret/remote/parent/tree 감사 후 code-only PR/required CI에 포함할 수 있다. 실제 client/Owner verifier·서명/GHCR/권한·출고는 미실행이며 CI wiring도 후속이다. 이 판정은 실제 승격/Owner GO나 전체 RF/RR5 완료가 아니다.
+
+기존 Developer 대행 `gpt-6-sol`은 앞선 CP turn의 capacity 오류 뒤 bounded retry로 CP를 마쳤고 CP 독립 로컬 QA는 별도 PASS로 유지한다. 새 RT turn은 다시 `Selected model is at capacity`로 실패했다. Manager는 RT worktree가 사전 TestPlan/Issue225 수정만 있고 구현은 미착수임을 확인한 뒤, AGENTS의 역할 실행 불가 시 대행·실제 근거 기록 규칙에 따라 별도 Developer 대행 `gpt-6.1-sol`을 명시 배정했다. 실제 task는 `/root/manager_fallback/developer_rt_fallback`이며 지정된 별도 Developer가 구현·재시도 검증을 완료했다. Manager는 수정된 frozen source를 검토했고 QA를 요청했다. Manager와 Developer가 같은 모델을 쓰더라도 별도 agent/역할이며 독립 QA는 별도로 수행한다.
+
+**독립 QA 판정: RT01–06 local fake transport/static checks PASS.** Worktree `/home/planner/Dev/layoutManager-issue225-registry-promotion`, branch `test/issue225-registry-promotion-transport`, HEAD `874f1a3c506a3db35e588b882924d55d4e4050ab` / tree `8dc72a44221e0d842fd85b60c190f4ecf1b01d8b`. `rt-developer-handoff.json`의 helper/test 두 SHA-256을 독립 재계산해 각각 `759b968bcf6dddb3955e817ef459b0cf8b1b4968b9aa665de476a848e39bc73b` 및 `7e55885740e8b202d40ddaa7a98ac70db3e1cdb9c9a1753813c421f49c93c40f`와 일치시켰다. `python3 -B src/tests/oci/test_registry_promotion.py -v` 15/15, `py_compile`, `git diff --check`를 독립 재실행해 PASS했다. 별도 실험은 하지 않았다.
+
+**소스·시험 경계:** 고정 package/version, 3-role candidate/final refs, source/workflow/tree/receipt packet 연결, reserved `.github/workflows/release-candidate.yml` 경로와 RP loopback release-proof 거부를 검토했다. 모듈 import/무입력 기본 plan은 adapter/network/token/I/O를 만들지 않고 explicit fixture CLI는 `PLAN_ONLY`/`httpRequests=0`/`authority=NOT_VERIFIED`를 반환한다. Tests cover all-absent byte-preserving copy, exact triplet NO_OP, partial/different/typed-unknown target HALT, raw/media/size/index-child/blob graph preflight, all-three-final reads, same-package blob HEAD, per-PUT typed absence, journal PUT-intent-before-mutation ordering, tag/digest readback and final full-set reread. Fake concurrency covers target appearance during preflight, after first confirmed role, earlier final replacement before completion, plus unknown immediate recheck. Candidate preflight, journal-intent, PUT timeout, rewrite/ambiguous readback and journal failures stop subsequent PUTs; tests assert no automatic retry/overwrite/delete/rollback/alias operation. Fixed final tags are only the three explicit `0.61.0` role refs.
+
+**한계 / NOT RUN:** `VerifiedCandidateContract`, typed `AuthenticatedManifestAbsent`, and `MemoryJournal` are synthetic injection/test contracts; no authenticated client, credential discovery, durable journal adapter, workflow/Owner-environment verifier or CI wiring is present. No GitHub/GHCR API, Docker, credential, workflow or Owner operation was performed. Raw parent/linked child manifest bytes and descriptor media/digest/size are checked; blobs are HEAD availability/digest/size checks only. This does not verify full config/layer bytes, platform/role/source signature or release provenance, package permissions, external-writer exclusion, CAS/atomicity, or actual tag readback. Actual GHCR promotion, signed candidate verification, and Owner release GO are **NOT RUN**. No product/policy/version/RP/CP/LP/frozen-R2 or source file was changed by QA; TestReport received this QA result only. No commit/push.
+
+---
+
 ## PR240 RV — Actions context RED/GREEN 최소 수정 (2026-11-06, 독립 QA 로컬 PASS)
 
 **Manager 수정 게시 GO:** Manager 대행 `gpt-6.1-sol`은 아래 최종 QA와 frozen hash를 검토하고 동일 actionlint·7개 회귀·compile·diff를 직접 통과했다. Root는 기존 owned CI cleanup 경계와 secret/remote/expected parent `ef434df`·tree 감사를 마친 뒤 PR240에 정상 후속 commit/push할 수 있다. fixed exact-HEAD required CI와 workflow validation 전 merge/실제 dispatch HOLD, 실제 OIDC NOT RUN을 유지한다.

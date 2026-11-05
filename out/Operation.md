@@ -1318,3 +1318,7 @@ Root에서 `docker compose --env-file .env -f src/docker-compose.yml build` 후 
 ## #225 RP workflow context 재검증
 
 Runner 경로는 job.env에서 runner context로 계산하지 않고, 초기 step에서 RUNNER_TEMP의 절대 경로를 검사해 GITHUB_ENV에 전달한다. 초기화 실패/미실행 시 always cleanup·allowlist·artifact upload는 실행하지 않는다. PyYAML/Bash parse 외에 actionlint1.7.12의 Actions context 검증을 수행한다(공식 archive SHA-256 `8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8`). optional analyzer 설치 여부와 실제 실행 범위는 TestReport를 따른다. 이는 local workflow 준비이며 실제 dispatch/OIDC PASS가 아니다.
+
+## #225 CP control proof 코드 전용 경계 (2026-11-06)
+
+`src/tests/oci/cp-control-proof.py`는 기본 `plan`에서 HTTP 요청을 만들지 않는다. 별도 Owner 검토·승인된 exact packet이 있은 뒤에만 Root가 Main 전용 `.github/workflows/control-proof.yml`의 Owner-sender dispatch를 요청한다. `execute` 입력이나 packet hash 자체는 승인 증거가 아니다. 워크플로는 built-in `GITHUB_TOKEN`의 `contents:write`/`actions:read`만 사용하고 packet에 열거된 전용 `issue225-control-*` ref·verb·body만 시도한다. capability의 branch/tag별 create→update→delete receipt와 같은 source/packet/credential 경로가 없는 denial은 실행 전 차단한다. 응답은 관측값으로만 남기며, 별도 `--verify-observations` 읽기 전용 실행이 rule suite의 정확 ref/SHA/actor/시각/실패 규칙과 Actions run/attempt, capability 완료가 denial보다 앞섰는지를 확인해야 `DENIED_BY_POLICY`로 기록한다. Actions case 시각은 완료된 정확 run의 시작·갱신 시간에 30초 허용 오차로 결합하며 벗어나면 PENDING이다. rule suite/actor/API readback 미확인은 PENDING이다. 현재 실제 dispatch·정책 적용·ref 쓰기·Owner 승인은 **NOT RUN**이며 계획과 합성 테스트를 실제 보호 증거로 취급하지 않는다.

@@ -1,3 +1,55 @@
+## TP-225-CONTROL-COMBINED — PR240 서명·정책 proof 준비의 합산 검증 (2026-11-06)
+
+Manager는 같은 #225 전체 목표의 다음 PR240 head에 SAN 최소 수정과 이미 독립 로컬 QA를 통과한 CP01–08/RT01–06 source를 함께 포함하도록 결정했다. LP Root draft는 제외한다. CP frozen6/RT frozen2 source byte·unit별 실제 모델/QA/실패 이력과 원래 harness base를 보존하며 현재 source로 과거 실행을 재표시하지 않는다. TestPlan의 CP/RT/SAN/RV 및 RP07 refinements를 모두 보존하고 이전 문서 전체로 최신 이력을 덮어쓰지 않는다.
+
+기존 PR scope/classify job에서 RP7+CP6+RT15 pure 회귀와 compile을 실행하도록 wiring하되 기존 required aggregate/45분 Docker gate·runtime assertion·권한·HOLD를 낮추지 않는다. 현재 실제 외부 동작은 없으며 새 CP workflow는 Owner-sender 수동 packet 실행 준비만, RT는 fake transport module만이다. import/wiring 뒤 새 frozen source hash와 28개 회귀·세 workflow Actions-aware 검사·Python/bash/YAML·diff/secret audit를 독립 QA가 다시 확인한 뒤 새 exact-head required CI를 실행한다. 이전 CI644/874f는 과거 baseline 근거이며 새 head의 통과나 실제 OIDC/정책/GHCR/Owner GO로 치환하지 않는다. 실제 dispatch는 최종 정상 Main 통합 뒤 별도 단계다.
+
+---
+
+## TP-225-RR4-CONTROL-PROOF — 정책·actor·독립 required-CI 거부 증거의 사전 설계 (2026-11-06)
+
+Manager fallback의 다음 최소 Unit이다. 별도 controls worktree에서 코드·검토 가능한 승인 packet을 준비하며 RP signed-provenance와 R2 frozen source를 변경하지 않는다. 현재 관측은 effective Main rules API200/[] 및 rule suites200/[], repo collaborator는 Owner 한 명, current publisher는 main/v* push-only다. package granular ACL/other-repo Actions grants는 UNKNOWN이다. 이 계획이나 mock 회귀는 정책 적용·보호·Owner 승인 PASS가 아니다.
+
+| AC / TC | 구현·검토·실행 기준 |
+| --- | --- |
+| CP-01 | 기본 실행은 plan/dry-run/read-only. 실제 control refs/commit/PR/status·workflow dispatch·ruleset 생성/수정/삭제는 정확 packet에 대한 별도 Owner 승인 전 0. packet은 repo/Owner ID, 승인 source/workflow commit, exact owned ref/nonce/SHA/허용 verb, initial/final 네 payload hash, 기존 정책 snapshot, actor별 phase·기대 결과·중단/복구 절차를 포함. 입력 boolean/자가 서명을 실제 Owner 승인으로 간주하지 않음 |
+| CP-02 | 모든 fixture는 `refs/heads/issue225-control-*` 또는 `refs/tags/issue225-control-*` 아래의 packet에 열거된 exact 이름만 사용하며 기존 자원이 있으면 거부. Main/v*·기존 업무 branch/tag 변경 0. control head는 승인된 기존 test 파일의 harmless marker 등 최소 fixture-only commit으로 base보다 앞서되 실제 PR이 성립해야 함. force/non-fast-forward 시도는 별도 명시 승인에 포함된 소유 ref에서만 가능하며 기본 동작으로 추가하지 않음 |
+| CP-03 | initial 적용 전 동일 credential 경로의 bounded owned positive write로 capability를 확인하고 이후 creation/update/deletion 거부를 비교. 401/403 권한 부족·미지원/네트워크 오류와 policy-specific 거부를 구별. `DENIED_BY_POLICY`는 exact 요청/ref/예상 SHA, matching rule/context 또는 rule-suite evidence, 사후 ref 불변/부재가 함께 있을 때만 기록. 일반 non-fast-forward API 오류·권한 오류·generic PR violation을 특정 ruleset PASS로 대체 금지 |
+| CP-04 | 실제 Actions actor case는 새 main-only workflow의 제한된 `contents:write` job과 built-in GITHUB_TOKEN 경로로 준비. 정확 repo ID/Main/source/workflow SHA·packet hash·owned refs/verbs를 검증하고 승인 전 dispatch 0. `github.actor`는 dispatch initiator이며 ref-operation actor가 아님. 실제 response/rule-suite actor/application과 exact run/ref/token 경로를 연결하고 없으면 해당 actor identity는 NOT VERIFIED. job 이름/context는 기존 required aggregate를 흉내 내지 않으며 fake green status/check를 만들지 않음 |
+| CP-05 | 독립 required-CI 거부는 initial 정책 전 만든 owned control base/head와 실제 owned PR을 사용. base `issue225-control-*`는 현재 PR CI의 main/feat base filter 밖이며 head에 예상 aggregate check가 없는지 exact SHA API로 확인. 유효 PR·허용 squash method·expected HEAD에서 merge를 시도하고 **required_status_checks 또는 정확 required context의 명시 거부** 및 base 불변을 확인. generic direct-push PR 거부는 이 증거가 아님. legacy commit-status pending/0 statuses와 check-runs를 구분하고 pagination을 끝까지 확인 |
+| CP-06 | Main/source 조건·strict latest-base·GitHub Actions app15368 pin은 exact effective readback으로 기록. CP05의 missing-check 거부는 wrong-app/stale-head/latest-base 음성 실행을 대신하지 않으며 실행하지 않은 조합은 NOT RUN. 추가 실제 CI/behind 검증이 필요하면 기존 진짜 PR CI를 사용하고 승인된 controlled PR 범위에서 별도 설계; fake aggregate workflow나 Main 정책을 만족시키는 테스트 전용 우회 경로 추가 금지 |
+| CP-07 | initial/final payload를 함께 검토·승인: 소유 refs 준비→control prefix 포함 initial 정책→증거 수집→같은 ruleset ID에서 control-prefix include만 제거한 final 정책→정확 delta/effective readback→기록된 exact ref/SHA·owned PR 정리. Main/v* rules·active·no-bypass 불변. 적용·readback·소유 SHA/actor가 불확실하면 inert fixtures/PENDING을 공개하고 정책 disable/delete·우회 추가·기존 ref 삭제로 정리하지 않음 |
+| CP-08 | packet/ref/source/actor/verb/hash mismatch, unexpected mutation, auth-vs-policy 오분류, missing required-CI-specific evidence, unsafe initial→final delta, unavailable readback을 focused fake-transport 회귀로 fail closed. 코드/워크플로 검토·독립 QA·required CI 뒤에만 Root가 실제 적용 승인 요청을 준비. Secret/token/header·운영 CAD/DB·OCI payload는 artifact/log 0. mock/local 준비·실제 API readback·실제 denial·관리 Owner 권한·package publisher 권한을 따로 보고 |
+
+**구현 검토 보완 AC (2026-11-06):** 새 CP workflow도 Actions-aware validator로 검사하고 job.env의 미지원 runner context를 지원되는 초기 step 경로 설정으로 바꾼다. branch direct-update의 pull_request와 tag HOLD update rule을 구별하며 미지원 ref-family/verb 조합을 거부한다. prior capability interval은 유효·유한·순서대로이며 denial 이전이어야 하고, 독립 Actions 검증은 정확 completed-success attempt의 실제 시작/종료 구간에 case 시간을 결합한다(자기 실행 preflight의 in-progress와 구별). 같은 source의 다른 run/시간 혼합·나중 capability·비정상 시간·rule-suite list/detail result 불일치를 focused 음성으로 거부한다. 아직 실제 Actions/API/정책 시험 근거가 아니다.
+
+**범위:** 신규 PAT/ACL 강화를 기본 선행 조건으로 추가하지 않고 실제 writer/trigger inventory와 Owner 선택에 따른다. 이 Unit은 Git ref/required-CI 통제 proof 준비이며 GHCR 게시·운영 App/flags·RP 서명·formal release Owner GO를 수행하지 않는다. Root의 draft 코드 보조가 있으면 실제 작성/검토 역할을 TestReport에 기록하고 실행하지 않은 지정 역할을 수행한 것으로 기록하지 않는다.
+
+---
+
+## TP-225-RF-TRANSPORT — 실제 출고 전 raw manifest 승격 알고리즘 준비 (2026-11-06)
+
+Manager 구현 전 최소 code-only Unit이다. RF01–11의 실제 후보 게시/서명/Owner GO와 별도로, 동일 private package 안에서 검증된 후보 digest를 최종3-ref로 복사할 때의 byte 보존·부분 실패 계약을 먼저 구현한다. 새 worktree는 공개된 RP 수정 source `874f1a3`에서 분리하며 RP/CP/LP 또는 운영 자원을 변경하지 않는다. 실제 GHCR/Owner 승인·서명 API 형식은 여기서 입증하지 않는다.
+
+| AC / TC | 최소 구현·검증 기준 |
+| --- | --- |
+| RT-01 | 신규 `src/tests/oci/` Python helper/module과 집중 시험으로 한정. 기본 CLI는 strict packet/관측 fixture를 읽는 PLAN_ONLY이며 transport/token 생성·HTTP·쓰기 0. import도 I/O 0. 실제 인증/GHCR client·publisher workflow·Owner/environment 승인 구현은 별도 Unit이며 기존 Docker credential/env를 자동 채택하지 않음 |
+| RT-02 | transport는 주입 가능한 GET/HEAD/PUT protocol로 격리. 정확 고정 package `ghcr.io/planner77/layoutmanager`, source/workflow/tree·candidate receipt SHA, App/Migrator/CPU3-role과 고유 source/run 후보 ref 및 최종 `0.61.0`, `0.61.0-migrate`, `0.61.0-cpu-worker`만 packet에 결합. missing/duplicate role·cross-role/source·임의 URL/ref/alias/삭제·credential 입력은 거부. packet/boolean/자가 receipt가 Owner 권위를 증명한다고 기록하지 않음 |
+| RT-03 | 최종3-ref를 모두 읽고 나서 결정: 전부 명확 absent일 때만 복사 계획; 전부 expected raw digest/source에 정확 일치하면 read-only NO_OP; 일부 존재/다른 digest/불명확 auth·404·network/readback이면 HALT하고 PUT0. typed absence는 adapter가 인증·해당 manifest의 명시적 absence를 확인한 결과여야 하며 generic exception/status를 absence로 바꾸지 않음 |
+| RT-04 | 첫 PUT 전 후보3-role 원본 manifest raw byte SHA·media type·size 및 필요한 동일 repository child manifest/blob availability를 모두 재검사. 동일 bytes/Content-Type을 exact 최종 ref에 PUT하며 JSON 재직렬화/manifest 재작성 금지. index이면 실제 linked child manifest의 byte digest·size와 descriptor를 확인. full config/layer byte proof·서명/role/source 검증은 승인된 candidate verifier의 별도 책임이며 transport 결과를 그 전체 출처 증거로 승격하지 않음 |
+| RT-05 | PUT intent를 소유 journal에 먼저 기록하고 매 PUT 뒤 tag/digest raw GET으로 검증. 첫 변이 후 또는 요청 전송 뒤 ambiguous timeout/readback 실패는 PARTIAL_RELEASE 또는 UNCERTAIN/HALT로 남기고 모든 후속 PUT 중지. 자동 retry/overwrite/delete/rollback/alias 변경 0. concurrency·다른 writer 배제는 별도 실제 publisher 통제이며 이 알고리즘의 원자성으로 주장하지 않음 |
+| RT-06 | fake registry/transport로 all-absent/same-triplet-noop/partial/mismatch, rewritten raw manifest/잘못된 media/size·child linkage/없는 blob, GET·PUT timeout/모호한 결과·후속 readback 실패·journal intent와 후속 mutation0, wrong role/source/refs/packet, default0HTTP를 검증. 실제 사용 전 signed-candidate/Owner GO verifier와 workflow에 연결·독립 QA·required CI 및 별도 Owner 승인 필요. 현재 모든 실행은 local fake이며 실제 GHCR 출고/RR5 완료 아님 |
+
+**소스 검토 보완:** 미래 candidate signer의 예약 path는 `.github/workflows/release-candidate.yml`이며 현재 RP `release-proof.yml` receipt를 실제 candidate로 수용하지 않는다(새 workflow 생성 아님). 각 PUT 직전 target의 typed absence를 재확인하고 마지막 PUT 뒤 최종3-ref 전체 raw digest를 다시 검증한 후에만 COMPLETE를 기록한다. preflight 중 tag 출현·중간 외부 변경은 HALT/PARTIAL이며 overwrite하지 않는다. 이 검사는 atomic CAS/외부 writer 배제를 보증하지 않는다.
+
+---
+
+## TP-225-RP-SAN-CLASSIFIER — pinned signer regex 진단의 최소 수정 (2026-11-06)
+
+Manager는 pinned gh2.103.3 [signerWorkflowSANPattern](https://raw.githubusercontent.com/cli/cli/v2.103.3/pkg/cmd/attestation/verify/policy.go)의 regexp.QuoteMeta 처리와 현재 helper의 literal wrong.yml 검사 불일치를 발견했다. 실제 source가 만드는 escaped wrong-workflow regex의 합성 진단을 주입한 fast RED에서 `RP_NEGATIVE_CAUSE_UNPROVEN_WRONGSIGNERWORKFLOW`를 관측했다. 실제 CLI/Sigstore 실행 결과는 아니다. helper/test만 수정하여 **정확 escaped 예상 regex + 승인된 실제 SAN + 해당 causal identity mismatch**를 검사한다. generic/다른 pattern·actual SAN·infra 실패는 계속 거부하며 nonzero-only 수용 금지. current7 집중 회귀/compile/diff·Manager/독립 QA 후 새 exact-head CI가 필요하고 실제 OIDC는 아직 NOT RUN이다.
+
+---
+
 ## TP-225-RP-WORKFLOW-CONTEXT — PR240 pre-job validation 실패 재작업 (2026-11-06)
 
 새 proof workflow의 push validation run `42079592176`은 jobs 0개/0초로 실패했다. 실제 dispatch·Docker/OIDC/서명 실행 실패가 아니다. GitHub 공식 [context availability](https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#context-availability)는 job-level env에서 runner context를 허용하지 않지만 초안은 RP private/public 경로에 이를 사용했다. PyYAML/shell 검사와 이전 local QA는 이 semantic defect를 잡지 못했다. 실제 플랫폼 diagnostic과 문서상 결함의 근거를 구별한다.

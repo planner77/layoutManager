@@ -6,6 +6,8 @@
 - RR2/RR3: 실제 GHCR0.60 pair 설치부터 승인 업그레이드, 독립 CPU Worker·새 Viewer, 동일 백업 정식 복구 및 이전 digest App의 인증 readback을 mandatory OCI CI에 연결했다. 최종 29개 경로 frozen source의 독립 로컬 8단계 QA와 exact owned cleanup, PR #239의 정확 HEAD hosted CI #641 및 Main CI #160이 PASS로 통합됐다. 실제 hosted nonce/출처/정리와 별도 진행 중인 duplicate CI #642는 TestReport를 따른다. GHCR 출고는 HOLD로 skip됐다. 이전 인증 실패 원인 UNKNOWN과 관측 한계를 보존한다.
 - RP 준비: exact Main source/workflow/tree의 동일-run RR1–RR3 후 cleanup→4 subjects OIDC→GitHub CLI certificate/subject/원인별 음성시험을 연결하는 proof 전용 workflow를 추가한다. 독립 local synthetic 6/6 및 mock cleanup/schema QA는 PASS, 실제 OIDC·live cryptographic verification은 NOT RUN이다. 공개 allowlist와 코드/실제 proof/정식 출고 경계를 유지한다.
 - RP RV: PR240 첫 source의 GitHub workflow pre-job validation 실패를 보존하고 job.env의 runner context를 초기 runner step/GITHUB_ENV로 이동한다. 같은 Actions-aware validator RED/GREEN과 초기화 실패 경계·집중7은 로컬 PASS이며 독립 QA/새 exact HEAD CI 및 실제 OIDC는 별도다.
+- Combined CP/RT: CP 기본0HTTP·Owner-sender 수동 control-ref 관측과 별도 actor/run/rule-suite verifier, RT 실제 client 없는3-ref raw manifest 승격 알고리즘을 검증 준비에 포함한다. Source와 모델/QA/실패 이력을 보존하고 RP7+CP6+RT15를 필수 scope job에 연결한다. LP 제외, actual external API/signature/publication/Owner GO는 NOT RUN이다.
+- SAN: pinned gh signer regex의 escaped dot 진단을 literal filename으로 검사하던 false rejection을 최소 수정한다. exact pattern/actual SAN 및 causal mismatch만 허용하고 generic/infra 오류 거부는 유지한다. 이는 합성 RED/GREEN이며 실제 CLI crypto 증거는 아니다.
 - Control: 현재 source ref·Tag Ruleset·package/environment 권한을 읽기 전용 확인하고 검토 가능한 미적용 policy JSON을 준비했다. 실제 실행 결과는 [TestReport](TestReport.md), 전체 AC는 [TestPlan](TestPlan.md)의 RR1–RR5를 따른다. 제품/Schema/버전/flags/HOLD·운영 자원·기존 release tag와 alias는 유지한다.
 
 ---

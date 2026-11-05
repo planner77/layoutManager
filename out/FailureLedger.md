@@ -1,3 +1,9 @@
+## #225 RP SAN 분류 — pinned diagnostic 합성 RED (2026-11-06)
+
+Source874f의 wrongSignerWorkflow 분류는 literal wrong.yml을 요구했으나 pinned gh2.103.3은 regexp.QuoteMeta가 적용된 wrong\.yml을 포함하는 SAN regex 진단을 만든다. Manager의 source-shaped 합성 주입은 RP_NEGATIVE_CAUSE_UNPROVEN_WRONGSIGNERWORKFLOW로 실패했다. 실제 Sigstore/CLI execution 실패가 아니며 actual OIDC는 NOT RUN이다. fallback Developer gpt-6.1-sol은 exact escaped pattern+승인 actual SAN+contiguous causal mismatch로만 분류하도록 수정하고 기존7 집중 회귀/compile/diff를 통과했다. generic/infra/다른 pattern·SAN은 계속 거부한다. Source/wiring import 뒤 합산 독립 QA와 새 exact HEAD CI 전 통합 HOLD이며, 완료644는 이전874f의 일반 baseline 근거다.
+
+---
+
 ## #225 PR240 — job-level runner context의 pre-job validation 실패 (2026-11-06)
 
 게시 source `ef434df8110da27106ce9308113594aa290d2555`의 [workflow validation run1](https://github.com/planner77/layoutManager/actions/runs/42079592176)은 push event에서 failure/0초/jobs0이었다. 실제 workflow_dispatch·Docker·OIDC·서명 시험은 NOT RUN이다. 로컬 PyYAML/shell 및 synthetic QA6은 Actions 표현식의 위치 유효성을 검사하지 못했다.

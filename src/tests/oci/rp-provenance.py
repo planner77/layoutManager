@@ -461,9 +461,15 @@ def negative_cause(label, result, approved):
         require(phrase in stderr, 'RP_NEGATIVE_CAUSE_UNPROVEN_' + label.upper())
         return cause
     if label == 'wrongSignerWorkflow':
-        require('expected SAN value to match regex ' in stderr and
-                'wrong.yml' in stderr and 'got "' + SIGNER_URI + '"' in stderr and
-                'no matching CertificateIdentity found' in stderr,
+        # gh 2.103.3 policy.go signerWorkflowSANPattern uses regexp.QuoteMeta
+        # plus an anchored optional ref. Match its exact wrong-workflow probe
+        # pattern and approved actual SAN, not an arbitrary regex mentioning it.
+        wrong_pattern = (r'^https://github\.com/' + REPO +
+                         r'/\.github/workflows/wrong\.yml(@(refs/.*|[0-9a-fA-F]+))?$')
+        mismatch = ('no matching CertificateIdentity found, last error: '
+                    'expected SAN value to match regex "' + wrong_pattern +
+                    '", got "' + SIGNER_URI + '"')
+        require(mismatch in stderr,
                 'RP_NEGATIVE_CAUSE_UNPROVEN_WRONGSIGNERWORKFLOW')
         return 'SIGNER_WORKFLOW_SAN_MISMATCH'
     if label in ('tamperedManifest', 'tamperedReceipt'):

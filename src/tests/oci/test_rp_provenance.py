@@ -82,12 +82,18 @@ class Contract(unittest.TestCase):
                 self.assertEqual(list(root.iterdir()), [env_file])
 
     def test_negative_cause_requires_specific_verified_mismatch(self):
+        # Source-shaped gh 2.103.3 policy.go diagnostic, NOT a real CLI run or
+        # signature proof: Go regexp.QuoteMeta escapes dots but preserves slashes.
+        wrong_pattern = (r'^https://github\.com/planner77/layoutManager/'
+                         r'\.github/workflows/wrong\.yml(@(refs/.*|[0-9a-fA-F]+))?$')
+        wrong_workflow = ('no matching CertificateIdentity found, last error: '
+                         'expected SAN value to match regex "' + wrong_pattern +
+                         '", got "' + RP.SIGNER_URI + '"')
         samples={
             'wrongSource':'expected SourceRepositoryDigest to be '+('0'*40)+', got '+SOURCE,
             'wrongSignerCommit':'expected BuildSignerDigest to be '+('0'*40)+', got '+SOURCE,
             'wrongRef':'expected SourceRepositoryRef to be refs/heads/wrong, got refs/heads/main',
-            'wrongSignerWorkflow':('no matching CertificateIdentity found, last error: '
-                'expected SAN value to match regex "wrong.yml", got "'+RP.SIGNER_URI+'"'),
+            'wrongSignerWorkflow':wrong_workflow,
             'tamperedManifest':'provided artifact digest does not match any digest in statement',
             'tamperedReceipt':'provided artifact digest does not match any digest in statement'}
         for label,diagnostic in samples.items():
@@ -108,6 +114,21 @@ class Contract(unittest.TestCase):
                 with self.assertRaises(RP.Blocked):
                     RP.negative_cause(label,SimpleNamespace(
                         returncode=1,stdout='unexpected',stderr=diagnostic),expected())
+        for bad in (
+            wrong_workflow.replace(wrong_pattern, 'wrong.yml'),
+            wrong_workflow.replace(wrong_pattern, wrong_pattern.replace(r'wrong\.yml', r'other\.yml')),
+            wrong_workflow.replace(wrong_pattern, wrong_pattern[1:]),
+            wrong_workflow.replace(wrong_pattern, wrong_pattern[:-1]),
+            wrong_workflow.replace(wrong_pattern, wrong_pattern.replace(r'wrong\.yml', 'wrong.yml')),
+            wrong_workflow.replace(RP.SIGNER_URI, RP.SIGNER_URI + '-other'),
+            wrong_workflow.replace(RP.SIGNER_URI, RP.SIGNER_URI.replace('refs/heads/main', 'refs/heads/other')),
+            wrong_workflow.replace('no matching CertificateIdentity found, last error: ', ''),
+            wrong_workflow + '\nnetwork is unreachable',
+        ):
+            with self.subTest(wrongWorkflowDiagnostic=bad):
+                with self.assertRaises(RP.Blocked):
+                    RP.negative_cause('wrongSignerWorkflow', SimpleNamespace(
+                        returncode=1, stdout='', stderr=bad), expected())
         with tempfile.TemporaryDirectory() as directory,\
              patch.dict(os.environ,{'RP_PROOF_DIR':directory}),\
              patch.object(RP.subprocess,'run',side_effect=subprocess.TimeoutExpired('gh',120)):

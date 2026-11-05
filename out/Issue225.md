@@ -1,3 +1,21 @@
+## 2026-11-06 — PR240 합산 verification 준비
+
+Manager가 RP/SAN 최소 수정과 이미 수용한 CP/RT local source를 PR240의 다음 head에 함께 포함하도록 결정했다. pure28·세 Actions workflow·fresh frozen QA/required CI를 확인한 뒤에만 정상 통합한다. 기존 source/모델/실패/QA 이력은 보존하며 actual signed provenance·effective policy/ref actor·GHCR·Owner GO는 미실행이다. LP 초안은 포함하지 않고 별도 검토한다. 세부 기준과 실제 결과는 TestPlan/TestReport가 정본이다.
+
+---
+
+## 2026-11-06 — RR4 control proof의 별도 사전 설계
+
+정확 published R2 source `a7d1075`에서 분리한 controls worktree에 [TestPlan TP-225-RR4-CONTROL-PROOF](TestPlan.md)의 CP-01–08을 먼저 기록했다. 승인 전에는 plan/dry-run/read-only만 수행하며 외부 control refs·PR/commit·workflow dispatch·정책 쓰기 0이다. 실제 actor와 dispatcher를 구별하고, valid owned PR의 required-status-check-specific 거부를 generic PR 거부와 분리한다. fake green aggregate/context를 추가하지 않는다. initial→final 정책은 control prefix만 제거하여 Main/v* active/no-bypass를 유지하고 exact owned ref/SHA만 정리한다. RP/R2 source·GHCR·운영 자원·정식 Owner GO는 별도이며 현재는 설계/코드 검토 준비다.
+
+---
+
+## 2026-11-06 — 정식3-image 출고의 byte 보존 transport 준비
+
+[TP-225-RF-TRANSPORT](TestPlan.md)의 RT-01–06에 따라 동일 private package의 검증된 후보 manifest를 정확3-release-ref로 복사하는 알고리즘만 별도 준비한다. 기본 plan/import는 0 HTTP이고 실제 credential/registry client·publisher workflow·Owner/environment 승인은 구현하지 않는다. 전체 absent/동일 NO_OP/partial HALT, raw byte 보존과 ambiguous write 후 중단을 fake transport로 검증하며 실제 GHCR/서명/Owner GO나 전체 RR5 완료로 기록하지 않는다. RP/CP/LP는 별도 유지한다.
+
+---
+
 ## 2026-11-06 — RR1 통합 완료 / RR2·RR3 독립 로컬 QA PASS
 
 PR #238의 typed OCI identity repair는 정확 HEAD CI #639 및 Main CI #159 SUCCESS 후 Main `68c0c95`로 통합됐고 GHCR 게시는 HOLD로 skip됐다. 후속 RR2/RR3는 frozen 29개 경로의 독립 로컬 QA에서 실제 과거0.60 설치→승인 upgrade→HTTP/CPU Worker/Viewer→같은 백업 restore→이전 digest App readback 8단계와 exact owned cleanup을 통과했다. 새 독립 PR의 exact HEAD hosted CI는 대기 중이다. 이전 setup CSRF·Viewer reload 실패는 원인 UNKNOWN 이력으로 보존하며 최신 실제 결과는 [TestReport](TestReport.md)를 따른다. 정책·서명 provenance·정식3-role GHCR·Owner GO는 미완료이며 flags OFF/HOLD·GO-PILOT BLOCKED를 유지한다.

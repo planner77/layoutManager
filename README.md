@@ -4,6 +4,8 @@ PR #237에 이어 [PR #238](https://github.com/planner77/layoutManager/pull/238)
 
 실제0.60 이미지 설치·업그레이드·동일 백업/이전 App 복구의 로컬 전체 시험은 통과했다. RR2/RR3 최종 frozen source의 독립 로컬 QA도 실제 8단계와 실패 시 소유 자원 정리를 통과했다. [PR #239](https://github.com/planner77/layoutManager/pull/239)의 정확 HEAD CI #641과 Main CI #160도 SUCCESS로 통합됐으며 GHCR 출고는 HOLD로 skip됐다. 남은 실제 OIDC 서명과 실효 정책/출고 승인 검증을 별도 진행한다. 이전 setup CSRF/Viewer reload 실패의 원인은 미확정으로 보존한다. 정책 JSON은 검토안이며 서버에 적용하지 않았다. 서명 provenance/정식 GHCR3-image 출고·Owner GO는 별도다. 제품 두 Scene flag OFF, >=0.61 GHCR HOLD 및 GO-PILOT BLOCKED를 유지한다. 운영 중인 App과 원본/DB는 시험 대상에 포함하지 않는다.
 
+[PR #240](https://github.com/planner77/layoutManager/pull/240)의 다음 head는 서명 proof와 CP controlled-ref 관측/독립 rule-suite 검증, RT raw-manifest 승격 알고리즘 준비를 함께 검증한다. 순수 회귀28개는 필수 scope job에 연결하며 외부 OIDC·정책/ref/legacy disable·GHCR·Owner GO는 실행 전이다. LP read-only Main/legacy 제어 초안은 이 PR에 포함하지 않는다.
+
 ---
 
 ## #225 — 변환 실행 중 KILL/OOM 검증 (0.61.0, 2026-11-05)

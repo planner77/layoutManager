@@ -1,0 +1,113 @@
+name: Issue 225 controlled ref proof (Owner packet only)
+
+on:
+  workflow_dispatch:
+    inputs:
+      packet_json:
+        description: Reviewed exact CP packet JSON (external Owner approval prerequisite)
+        required: true
+        type: string
+      packet_sha256:
+        description: SHA-256 of the exact reviewed packet bytes
+        required: true
+        type: string
+      mode:
+        description: Plan makes zero mutations; execute requires prior exact Owner approval
+        required: true
+        default: plan
+        type: choice
+        options: [plan, execute]
+      phase:
+        description: Capability first, then denial with its exact prior run artifact
+        required: true
+        default: capability
+        type: choice
+        options: [capability, denial]
+      capability_run_id:
+        description: Required for execute denial; exact prior capability run ID
+        required: false
+        type: string
+
+permissions: {}
+
+jobs:
+  controlled-proof:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      actions: read
+    env:
+      CP_PACKET_JSON: ${{ inputs.packet_json }}
+      CP_PACKET_SHA256: ${{ inputs.packet_sha256 }}
+      CP_MODE: ${{ inputs.mode }}
+      CP_PHASE: ${{ inputs.phase }}
+      CP_CAPABILITY_RUN_ID: ${{ inputs.capability_run_id }}
+      GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout exact Main source without persisted credentials
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.2.2
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Initialize exact private output paths
+        id: init
+        shell: bash
+        run: bash src/tests/oci/cp-init-paths.sh
+
+      - name: Validate packet bytes and dispatch inputs before any operation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib,re
+          raw=os.environ['CP_PACKET_JSON'].encode()
+          assert len(raw)<=65536 and re.fullmatch('[0-9a-f]{64}',os.environ['CP_PACKET_SHA256'])
+          assert hashlib.sha256(raw).hexdigest()==os.environ['CP_PACKET_SHA256']
+          assert os.environ['CP_MODE'] in ('plan','execute')
+          assert os.environ['CP_PHASE'] in ('capability','denial')
+          if os.environ['CP_MODE']=='execute' and os.environ['CP_PHASE']=='denial':
+              assert re.fullmatch('[1-9][0-9]*',os.environ['CP_CAPABILITY_RUN_ID'])
+          pathlib.Path(os.environ['CP_PACKET_PATH']).write_bytes(raw)
+          PY
+
+      - name: Download only exact previous capability observation for denial
+        if: inputs.mode == 'execute' && inputs.phase == 'denial'
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: issue225-cp-capability-${{ github.sha }}-${{ inputs.capability_run_id }}
+          run-id: ${{ inputs.capability_run_id }}
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/issue225-cp-capability
+
+      - name: Default plan, zero HTTP
+        if: inputs.mode == 'plan'
+        shell: bash
+        run: >-
+          python3 src/tests/oci/cp-control-proof.py
+          --packet "$CP_PACKET_PATH" --packet-sha256 "$CP_PACKET_SHA256"
+          --actor actions --phase "$CP_PHASE" --output "$CP_RESULT_PATH"
+
+      - name: Exact Owner-dispatched bounded attempt (prior external approval required)
+        if: inputs.mode == 'execute'
+        shell: bash
+        run: |
+          set -euo pipefail
+          args=()
+          if [[ "$CP_PHASE" == denial ]]; then
+            args+=(--capability-receipt "$RUNNER_TEMP/issue225-cp-capability/issue225-cp-observations.json")
+          fi
+          python3 src/tests/oci/cp-control-proof.py \
+            --packet "$CP_PACKET_PATH" --packet-sha256 "$CP_PACKET_SHA256" \
+            --actor actions --phase "$CP_PHASE" --output "$CP_RESULT_PATH" \
+            --execute "${args[@]}"
+
+      - name: Upload only bounded observation receipt
+        if: always() && steps.init.outcome == 'success' && inputs.mode == 'execute'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: issue225-cp-${{ inputs.phase }}-${{ github.sha }}-${{ github.run_id }}
+          if-no-files-found: ignore
+          path: ${{ runner.temp }}/issue225-cp-observations.json
