@@ -1,3 +1,22 @@
+## TP-225-PROJECT-NEGATIVE-DIAGNOSTIC — 실제 proof3 실패의 read-only 분류 (2026-11-06)
+
+trusted Main146204d0effe59df430c1d4d6e89ff023faece2d/tree3a2c의 실제 run3 `42114901223`은 attestation4-subject 생성 뒤 wrong-workflow negative에서 `RP_NEGATIVE_CAUSE_UNPROVEN_WRONGSIGNERWORKFLOW`로 실패했다. 독립 QA는 guard/archive/build3/RR1/timeout/fullRR2/cleanup·signing step 성공과 wrongSource specific 검증을 확인했다. 6 negative/최종 verification metadata는 미완료이며 full genuine proof PASS가 아니다. 실제 해당 stderr는 수집되지 않아 issuer/형식 차이는 아직 가설이다.
+
+| AC / TC | 후속 진단/수리 경계 |
+| --- | --- |
+| PN-01 | 현재 Main146/proof3·기존 failure/control 자료와 공개 PR242/RC244 source/docs를 보존. 새 isolated proof-negative-repair worktree만 계획/후속 수리 대상. 같은 source 재dispatch/재서명·Main 이동·권한/버전/HOLD/운영/registry/control 변경0. 기존 success-only7-file reader는 실행/수정하지 않고 별도 failure-control helper로 분리 |
+| PN-02 | 완료 FAILED run3/정확 Main/tree/workflow/attempt1 및 fresh 전체 artifact inventory를 GET로 대조. expected1 artifact ID13457446073/name issue225-signed-proof-42114901223-1/13542B/server SHA256 c2e44d8445f685ea594e6b80b28733a7089ed38d685de667172b795fc71cae78만 대상. 인증 redirect 금지, signed archive download는 credential-free/고정허용 host/유한 크기·시간으로 처리하고 URL/query/token을 공개/보존하지 않음. ZIP whole hash·중복/경로탈출/symlink/확장 크기 검사 뒤 정확6 files(3 manifest+정제receipt+SHA256SUMS+bundle)만 허용; verification.json 부재와 .dockerbuild0을 구별. metadata/allowlist/hash 하나라도 다르면 즉시 STOP |
+| PN-03 | 기존 checksum 검증 공식gh2.103.3 binary를 사용하고 raw material/CLI output은 ignored private 경로에만 보존. 정확 project1359528829/Owner45478892·source/workflow146/Mainref/run3/attempt1/hosted·4-subject file hash mapping을 독립 검증. 4개 same-bundle positives 및 원본App의 ONE wrong-workflow를 positive-before/after로 감싼 read-only 재현만 허용. 모든 argv/exit/private stderr/file/bundle/binary SHA를 기록하며 Root auth는 기존 메모리 credential의 GET/CLI read 전용. 새로운 signing/OIDC/dispatch/원격 mutation0 |
+| PN-04 | 실제 negative의 정확 stderr/issuer boundary와 정상 baseline certificate/bundle material을 대조하여 가설을 판정. 공개upstream control의 sigstore.dev 형식을 project에 그대로 가정하지 않음. positive 전후 실패/infra/unknown이면 실제 cause UNKNOWN으로 남기며 또 재시도하거나 generic wrapper 허용0. 실제4 positive의 성공은 attested subjects/source의 제한된 cryptographic 근거로만 보고하고 전체6 negative/전체run/정식GHCR·OwnerGO로 승격0 |
+| PN-05 | Root의 sanitized 결과·보존된 실제 raw형식 및 독립 QA review를 받은 뒤에만 Manager가 최소 code repair AC를 확정. exact known wrapper 확장은 실제 crypto-verified issuer/material과 강한 기존 VN witness/argv/subject/Root 정책을 결합해야 하며 임의 issuer/regex/문자제거/generic nonzero/인프라 fallback 금지. actual-shaped 독립 fixture RED→GREEN·기존99/RF/LP/RE/RC byte 보존과 fresh QA/CI/Main 뒤 별도 single proof GO |
+| PN-06 | 실패run3/partial signed artifact·초기RP2/quoting 합성 이력·actualupstream/project 차이·metadata 부재를 canonical FailureLedger/TestReport/Decisions에 보존. 이 단계는 진단 승인만이며 Root의 actualgenuine4positive가 성공해도 전체RR1–RR5·제어/출고/환경/legacy/Owner release GO는 계속 미완료 |
+
+**PN-07 — 관측 후 확정한 최소 framing 수리 AC:** Root의 실제 project failure control은 exact zip6/hash를 검증하고 actual4 same-bundle/project cert/subject positives 및 app before/after를 통과했다. ONEwrong-workflow의 실제 stderr는 정확45 bytes `b'\nError: verifying with issuer "sigstore.dev"\n'`이다. 이전 public upstream 원본도 동일 SHA486941643d59bcaec905305a9ad2843539956d60f735745f77a05db562cfda19/동일bytes여서 issuer 차이 가설은 반증됐다. safe errorline 출력과 Manager의 strip 비교가 blank framing을 버렸고 fixture도 full stderr 대신 한 줄을 모사했다. 이 관측 누락을 기존 review/실패와 함께 보존한다.
+
+shared verified_negative의 기존 bare/단일 trailing LF exact형식에 **정확한 leading1 LF+wrapper+trailing1 LF 한 형태만** 추가한다. strip/lstrip/rstrip/정규식 whitespace 정규화·임의 prefix/suffix/issuer·generic nonzero 허용0. 독립 literal fixture는 전체45bytes를 보존하고 강한 witness/두 고정 signer/argv/4-subject/전후 positive gates를 그대로 통과해야 한다. malformed quote·2개 leading/trailing LF·CR/tab·auth/TUF/network·wrongissuer·missingwitness/mismatch/postpositive 실패는 계속 거부. 실제 byteform의 real two-entrypoint seam 합성 RED→GREEN 및 별도 regression, 기존99+별도LP17/관련 compile/actionlint/diff·sourcehash로 검증한다. CLI 원본/partial signed artifact는 ignored만 유지하고 live CLI/재서명/재dispatch/registry 변화0. 수용 뒤 RC244에 minimal2 source+정확 doc delta만 정상FF 합산할 수 있으나 freshcombinedQA/새exactCI/Main/별도proofGO가 계속 필요하다.
+
+---
+
 ## TP-225-RF-PROMOTION — RF-C exact-digest 실행 경로의 code-only 준비 (2026-11-06)
 
 PR242/e20c248의 frozen source를 수정하지 않는 새 worktree에서 Manager가 먼저 기록한 AC다. 기존 RT15는 injected transport 알고리즘뿐이며 실제 candidate provenance/Owner GO·registry adapter/workflow가 없다. 현재 RF-A/B도 고유 후보까지이며 version3-ref 승격을 수행하지 않는다. 원 RA10의 실제 candidate 확인 후 RF-C 순서는 **실행 의존성**으로 유지한다. 이번 부모 task의 명시적 지시에 따라 schema/mock/code 준비는 지금 진행하되 실제 source/digest/run/env·approval 값을 꾸미거나 외부 실행하지 않는다.

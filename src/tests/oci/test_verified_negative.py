@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Synthetic real-format CLI seams. No genuine signatures or live CLI calls."""
 import copy
+import hashlib
 from contextlib import contextmanager
 import importlib.util
 import json
@@ -133,6 +134,59 @@ class Entrypoints(unittest.TestCase):
                 for index, event in enumerate(state.events):
                     if event == 'negative':
                         self.assertEqual(state.events[index-1:index+2], ['positive','negative','positive'])
+
+    def test_exact_45byte_frame_both_entrypoints_and_narrow_denials_synthetic(self):
+        # Independently transcribed FULL stderr, not a normalized error line or
+        # anything derived from production WRAPPER. Root's genuine control and
+        # the old upstream bytes share this SHA; these witnesses remain fake.
+        raw = b'\nError: verifying with issuer "sigstore.dev"\n'
+        self.assertEqual(len(raw), 45)
+        self.assertEqual(hashlib.sha256(raw).hexdigest(),
+            '486941643d59bcaec905305a9ad2843539956d60f735745f77a05db562cfda19')
+        def framed(phase, state, args, result):
+            if phase == 'negative' and result.stderr == 'Error: verifying with issuer "sigstore.dev"\n':
+                result.stderr = raw.decode()
+                state.pn_framed_negative = True
+        bad = (raw[:-1], b'\n' + raw, raw + b'\n', raw.replace(b'\n', b'\r\n'),
+            b'\t' + raw, raw[:-1] + b'\t\n', b'prefix' + raw, raw + b'suffix',
+            raw.replace(b'sigstore.dev', b'other'), raw.replace(b'"sigstore.dev"',b'sigstore.dev'),
+            raw.replace(b'"sigstore.dev"',b'""sigstore.dev""'), raw + b'network timeout',
+            raw + b'authentication failed', raw + b'TUF root unavailable')
+        for kind in ('rp', 'candidate'):
+            project = vn.rp_negative if kind == 'rp' else vn.candidate_negative
+            with self.subTest(kind=kind, case='full-entrypoint'), fixture(kind, framed) as state:
+                state.perform()
+                evidence = json.loads((state.public / 'verification.json').read_bytes())['negativeEvidence']
+                self.assertEqual(sum(e['cliInternalCause'] == 'UNOBSERVABLE' for e in evidence), 3)
+                self.assertEqual(len(state.negatives), 6)
+                for index, event in enumerate(state.events):
+                    if event == 'negative':
+                        self.assertEqual(state.events[index-1:index+2], ['positive','negative','positive'])
+            for label in ('wrongSignerWorkflow','tamperedManifest','tamperedReceipt'):
+                args = Projection().material(label, kind); args[10].stderr = raw.decode()
+                self.assertEqual(project(*args)['cliInternalCause'], 'UNOBSERVABLE')
+                args[7] = None
+                with self.subTest(kind=kind, label=label, case='missing-witness'), self.assertRaises(vn.Rejected): project(*args)
+                args = Projection().material(label, kind); args[10].stderr = raw.decode()
+                if label == 'wrongSignerWorkflow':
+                    args[9][args[9].index('--signer-workflow')+1] = rp.REPO + '/' + (rp.WORKFLOW if kind=='rp' else policy.WORKFLOW)
+                else:
+                    role = 'receipt' if label == 'tamperedReceipt' else 'app'
+                    args[7]['hashes']['probe'] = args[8]['hashes']['probe'] = args[2][role]
+                with self.subTest(kind=kind, label=label, case='no-intended-mismatch'), self.assertRaises(vn.Rejected): project(*args)
+            for diagnostic in bad:
+                args = Projection().material(kind=kind); args[10].stderr = diagnostic.decode()
+                with self.subTest(kind=kind, diagnostic=repr(diagnostic)), self.assertRaises((vn.Rejected,rp.Blocked,policy.Pending)): project(*args)
+            for label in ('wrongSource','wrongSignerCommit','wrongRef'):
+                args = Projection().material(label,kind); args[10].stderr = raw.decode()
+                with self.subTest(kind=kind, label=label), self.assertRaises(vn.Rejected): project(*args)
+            def post_failure(phase,state,args,result):
+                framed(phase,state,args,result)
+                if phase == 'positive' and getattr(state,'pn_framed_negative',False):
+                    raise rp.Blocked('PN_SYNTHETIC_POSTPOSITIVE_FAILURE') if kind=='rp' else policy.Pending('PN_SYNTHETIC_POSTPOSITIVE_FAILURE')
+            with self.subTest(kind=kind, case='post-positive'), fixture(kind,post_failure) as state:
+                with self.assertRaises((rp.Blocked,policy.Pending)): state.perform()
+                self.assertFalse((state.public / 'verification.json').exists())
 
     def test_postpositive_failure_never_writes_metadata(self):
         def change(phase, state, args, result):

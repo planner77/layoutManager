@@ -127,7 +127,7 @@ def _project(prefix, workflow, label, expected, mapping, original, probe, gh, bu
                     'verified': certs[0][field], 'requested': wrong}
     need(result.returncode == 1 and result.stdout == '' and type(result.stderr) is str and
          len(result.stderr) < 16384 and '\x00' not in result.stderr, 'NEGATIVE_RESULT_INVALID')
-    opaque = result.stderr in (WRAPPER, WRAPPER + '\n')
+    opaque = result.stderr in (WRAPPER, WRAPPER + '\n', '\n' + WRAPPER + '\n')
     if opaque:
         need(label in ('wrongSignerWorkflow', 'tamperedManifest', 'tamperedReceipt'),
              'OPAQUE_LABEL_INVALID')

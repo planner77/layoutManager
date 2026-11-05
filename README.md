@@ -1,3 +1,11 @@
+## #225 — 실제 CLI 오류 줄바꿈의 최소 수리 준비 (2026-11-06)
+
+실제 project proof3는 네 subject 서명 생성·배포/복구·정리를 마친 뒤 wrong-workflow 거부 시험에서 실패했다. 정제6-file artifact의 ZIP digest를 확인하고 별도 pinned CLI로 네 subject와 고정 project certificate, 같은 원본의 전후 positive를 검증했다. 실제 오류는 정확 `LF + Error: verifying with issuer "sigstore.dev" + LF`45바이트였으며 기존 검증기가 leading LF를 놓쳤다. 공개 control 원문에도 같은 형식이 있었음을 확인했고 이전 오류행 projection/strip review·합성 fixture의 누락을 이력으로 보존한다.
+
+수리는 두 고정 검증 진입점의 shared helper에 관측된 한 형식만 추가한다. 독립 PN 로컬100회귀와 별도 LP17은 PASS이며, 기존 RF-C 준비에 합친118회귀·새 exact-head CI는 별도다. full proof3는 계속 FAILED이며 여섯 negative 전체·최종 verification metadata·출고/Owner GO는 미완료다. [수용·실제 결과](out/TestReport.md), [줄바꿈/승인 절차](out/Operation.md)를 따른다. 제품0.61.0/flags OFF/HOLD·GO-PILOT BLOCKED 유지.
+
+---
+
 ## #225 — 검증된 후보 digest의 최종3-ref 승격 준비 (0.61.0, 2026-11-06)
 
 별도 RF-C 경로에 고정3개 version ref만 raw manifest bytes로 승격하는 workflow와 검토 packet builder를 준비했다. 실제 후보 서명·GHCR graph와 새 promotion source/완료 CI, 같은 환경의 별도 fresh Owner review를 결합한다. 부분 게시·불확실한 응답은 HALT하며 자동 덮어쓰기·재시도·삭제를 수행하지 않는다. 독립 로컬117 proof 회귀와 별도 LP17·정적 검사는 PASS다. 실제 candidate·권한·환경·Owner 승인과 최종 출고는 미실행이며, 세부 기준과 절차는 [TestPlan](out/TestPlan.md), [Operation](out/Operation.md), 실제 결과는 [TestReport](out/TestReport.md)를 따른다.

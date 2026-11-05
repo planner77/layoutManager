@@ -1,3 +1,9 @@
+## 2026-11-06 — 실제 project proof3의 partial signing 및 negative 실패 진단
+
+Main146/tree3a2c의 run42114901223은 attestation4-subject 생성까지 진행한 뒤 wrong-workflow 음성의 cause 분류에서 실패했다. 실제 stderr/issuer shape는 아직 UNKNOWN이며 source/인프라를 추정으로 바꾸지 않는다. [TestPlan TP-225-PROJECT-NEGATIVE-DIAGNOSTIC](TestPlan.md) PN01–06을 새 isolated Main146 worktree에 먼저 기록했다. 정확1 artifact의 safe6-file/hash 확인과 independent4positive/ONEwrongworkflow paired read-only 검증만 허용하며 새 dispatch/signing/registry/control/권한 변경은 없다. RC244와 published242는 동결하고 실제 관측 뒤 최소 수리·독립 QA/CI/Main/새 proof를 따로 판정한다.
+
+---
+
 ## 2026-11-06 — RF-C 승격 실행 경로의 별도 code-only 준비
 
 RT는 pure transport 계약이고 RF-A/B는 후보 게시/서명까지여서 실제 version3-ref 승격 workflow·signed-candidate/Owner packet 검증·narrow final-tag adapter가 남아 있다. [TestPlan TP-225-RF-PROMOTION](TestPlan.md) RC01–10을 새 e20c 기반 worktree에 먼저 기록했다. candidate source A와 promotion workflow source B를 구별하고 별도 fresh Owner review/정확 digest packet 뒤에만 동일 raw bytes를 승격한다. 기존 환경을 별도 run의 검토로 재사용해 새 principal/PAT/settings를 기본 요구하지 않는다. 원 RA10의 실제 candidate 확인/승인 뒤 실행 의존성은 유지하며 지금은 reversible code/mock/packet 준비만 수행한다. PR242·실제 proof·정책/환경/legacy/GHCR/운영 자원은 변경하지 않는다.

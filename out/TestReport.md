@@ -1,3 +1,75 @@
+## U-225-PN-RC-MANAGER-PUBLICATION — 합산 로컬 수용·정상 후속 게시 GO (2026-11-06)
+
+Manager 대행 `gpt-6.1-sol`은 별도 독립 QA 대행 `gpt-6.1-sol`의 fresh combined118/별도LP17, compile5/actionlint7/YAML7/Bash123/default PATH-only NOT_READY·HTTP0 plan/diff PASS와 before/after source7/protected38 일치를 검토했다. Manager도 현재 parent `d0865a52d8415ba2e941c70c3fdf4ae31a78a0d0` 및 frozen7+38 SHA·최소 finite tuple diff·문서의 실제/합성 경계를 직접 재확인했다. LP bridge/targeted TS/ESLint는 동일 LP4/package/config의 이전 독립 근거만 재사용했다. 새로운 앱 build나 genuine full proof를 실행한 주장은 없다.
+
+**로컬 합산 수용 및 기존 Draft PR244의 정상 후속 commit/publication GO**다. Root의 최종 staged secret/runtime/remote/parent/tree 감사 후 현재 d086을 정확 부모로 하는 non-force fast-forward만 허용한다. old CI652 Docker job127553928370의 COMPLETED SUCCESS와 실제 RR1/RR2·후속 Compose 시험/정리 완료 경계가 확인돼 실행 중인 소유 Docker 작업을 취소하지 않는다. 이 시점 old Chromium1은 pending이므로 old652 전체 PASS가 아니며, 후속 push로 발생할 실제 최종 상태를 별도로 남긴다. old652는 새 source의 CI 근거가 아니다.
+
+근거는 Git 제외 `pn-combined-independent-qa-final.json`, `pn-combined-source-freeze.json`, `ci652-qa-partial.json`이다. 새 exact-head required CI와 독립 hosted 감사·별도 Manager merge 판단이 필요하다. proof3 전체 FAILED, Root의 제한된 실제4 positive/ONEwrongworkflow 진단과 exact6 artifact 검증, 이전 framing 관측 누락을 보존한다. 실제 새 proof dispatch·환경/정책/legacy 상태 변경·GHCR 후보/최종3-ref 게시·Owner release GO는 이번 게시 GO에 포함되지 않는다. 제품0.61.0/flags OFF/HOLD·GO-PILOT BLOCKED 및 운영/보존 자원은 유지한다.
+
+---
+
+## U-ISSUE225-PN-RC-COMBINED-INDEPENDENT-QA — full frame와 RC 합산 (2026-11-06)
+
+별도 독립 QA 대행 `gpt-6.1-sol`이 parentd086의 frozen combined tree에서 **118 PASS**(RP7/CP6/RT15/RE19/cleanup3/candidate39/VN11/RC18), **LP17 별도 PASS**를 새로 실행했다. compile5/actionlint7/YAML7/Bash123/default PATH-only NOT_READY·HTTP0 plan/diff PASS다. source7/protected38 SHA는 시험 전후 assignment와 동일했다. 실제 명령/exit/count/hash는 Git 제외 `data/release-proof/pn-combined-independent-qa-final.json`, `pn-combined-qa-checks.json`에 기록했다.
+
+PN production은 exact leading1LF+기존quotedwrapper+trailing1LF 추가만이며 full45 literal/SHA486941…fda19와 malformed/infra/missingwitness/mismatch/postpositive 거부를 합산 실행했다. 강한 두 fixed signer/cert/4-subject/argv/material 전후·final gates와 accepted RC5 bytes는 그대로다. LP4/package/lock/TS/Vitest/ESLint config의 부모와 exact bytes를 확인하여 이전 독립 LPbridge1/targetedTS/ESLint만 출처대로 재사용했다. Node/앱build를 새로 실행한 주장은 없다.
+
+문서는 actual project4 positive+appbefore/after+ONEwrongworkflow 부분 control과 FAILED fullrun3/미완료6negative/verification metadata 부재를 구분한다. 이번 exact6 artifact/hash/no.dockerbuild는 oldRP2 미검사 record 내용에 대한 blanket leak 주장이 아니다. issuer 가설 반증·safe-line/strip/이전fixture 관측 누락 이력은 보존했다. local verifier marker는 mock이며 genuine proof PASS/Owner GO가 아니다.
+
+CI652의 d086 감사/ownedcleanup SUCCESS는 별도 유지하며 새 combined source의 hosted PASS로 대체하지 않는다. 이번 local 작업은 live CLI/network/API/Docker/probe/build/install/credential/dispatch/env/settings/GHCR/ref 변경 없이 TestReport prepend와 ignored evidence만 작성했다. fresh exact CI/Main/별도 proof GO는 계속 필요하다.
+
+---
+
+## U-225-PN-ROOT-COMBINED-PREP — PR244 최소 수리 합산 준비 (2026-11-06)
+
+Root(Codex)는 Manager의 PN 독립 QA100/LP17 수용 후 정확 source2를 현재 PR244 head `d0865a52d8415ba2e941c70c3fdf4ae31a78a0d0` 위에 복사했다. RC source5와 나머지 protected38은 byte/hash가 유지됐다. PN 문서6개는 기준 Main146의 suffix를 확인한 prefix delta만 합쳐 기존 RC/Root/QA 이력을 보존했다. README/ChangeLog의 사실 안내도 Root가 보완했다. source7/protected38 합산 QA118/LP17·새 head CI·Main은 이 기록 시점 대기 중이다. 기존 CI652의 성공한 부분은 source d086의 결과이며 새 수리의 hosted 성공으로 쓰지 않는다. Docker exact owned cleanup boundary 확인 전 head push를 보류한다.
+
+Root의 실제 read-only 진단은 proof3 run42114901223의 expected sanitized6-file artifact13457446073/ZIP sha256:c2e44d8445f685ea594e6b80b28733a7089ed38d685de667172b795fc71cae78만 내려받아 수행했다. official pinned gh2.103.3의 네 same-bundle positive와 project repo1359528829/Owner45478892/source·workflow146204d/run3 attempt1/github-hosted/정확4-subject를 직접 검증했다. 단일 wrong-workflow의 app 원본 before/after도 성공했으며 실제 stderr45바이트는 leading LF+quoted sigstore.dev wrapper+trailing LF, SHA486941643d59bcaec905305a9ad2843539956d60f735745f77a05db562cfda19다. Root가 실행한 negative는 이 한 건이며 나머지 원인별 검증을 새로 실행했다고 주장하지 않는다. hosted proof3 전체는 FAILED/negative6 미완료/verification metadata 미생성으로 유지한다. 완료 후 artifact inventory는 expected1개와 `.dockerbuild` 없음만 증명하며 과거 build-record 내용·포괄적인 유출 여부를 판정하지 않는다. 실제 원문/bundle/CLI JSON은 Git 제외 진단 저장소에만 보존했다.
+
+---
+
+## PN Manager 로컬 수용·RC244 합산 준비 GO (2026-11-06)
+
+Manager 대행 gpt-6.1-sol은 아래 독립100/별도LP17·source2/protected46·full45-byte two-entrypoint RED/GREEN과 실제 오류 프레임/가설 반증 기록을 검토했다. 직접 VN11·diff/current2+46 hash도 PASS다. production 한 tuple 항목만 추가하고 exact quoted wrapper/typed own-policy mismatch/실제 CLI-success witness·전후/argv/subject/binary/bundle/final-byte 검증을 그대로 유지한 최소 수리를 수용한다.
+
+Root는 PN2 source(688ee28b…01cfdb/2d4bb4c1…a912ef)와 정확 PN 문서 prefix만 기존 Draft RC244 head d0865a52d8415ba2e941c70c3fdf4ae31a78a0d0 위로 가져오는 정상 후속 commit을 준비할 수 있다. RC5 source는 불변이며 protected38+PN2를 새 합산 freeze로 구분한다. Root의 README/0.61 ChangeLog/current report 사실 요약은 허용하되 actual4 project positives·ONEwrong-workflow 진단과 FAILED fullrun3·metadata 부재/남은 negative 미완료를 구별한다. artifact 증거는 정확6 허용 파일/ZIP hash·.dockerbuild0 관측이며, 미검사인 옛RP2 build records에 대한 무유출 판정이 아니다.
+
+합산118+별도LP17 및 새 frozen7/protected38 독립 QA 뒤 final staging/normalFF publication은 별도 판정한다. 이전652는 이전head 근거이고 owned Docker 유지보수/cleanup 종료를 확인한 뒤에만 새 head push로 자동취소 경계를 넘는다. force/historyrewrite/branch삭제/Main 직접이동·같은146 재dispatch·새서명·권한/정책/GHCR 변화는 없다. 새exactCI/Main/별도 singleproof GO 및 actualfull6negative/완료 후 artifact inventory 전 전체RR1–RR5/Ownerrelease 수용은 보류다.
+
+---
+
+## U-ISSUE225-PN-INDEPENDENT-QA — full45-byte stderr framing 최소 수리 (2026-11-06)
+
+독립 QA 대행 `gpt-6.1-sol`이 isolated PN/base146204에서 **100 PASS**(기존99+PN1), **별도 LP17 PASS**를 실제 실행했다. VN은11이며 기존99/이전100을 새 combined118로 재분류하지 않는다. compile2/actionlint6/YAML6/Bash115/default PATH-only HTTP0 plan/diff PASS, source2/protected46 SHA는 전후 모두 freeze와 일치했다. 실제 명령·exit·hash·독립 RED 결과는 Git 제외 `data/release-proof/pn-independent-qa-final.json`, `pn-qa-tests.json`, `pn-qa-static.json`에 기록했다.
+
+production diff는 기존 finite tuple에 leading1 LF+quoted wrapper+trailing1 LF 한 형태만 추가한다. 독립 full45-byte literal SHA `486941643d59bcaec905305a9ad2843539956d60f735745f77a05db562cfda19`를 확인하고, Git base의 old module로 두 fixed entrypoint RED(각 metadata0)를 독립 재현한 뒤 현재 두 entrypoint GREEN을 확인했다. double LF/CR/tab/quote/issuer/prefix/suffix/infra·missing witness/mismatch·postpositive 실패는 계속 거부되며 cert4-subject/argv/material 전후 SHA/final reread와 specific3 경계는 그대로다. normalization 또는 generic fallback은 없다.
+
+이전 upstream/project raw가 동일하고 issuer 차이 가설이 반증됐다는 Root 관측을 보존한다. Root safe-line와 Manager strip이 LF를 버렸고 이전 독립 QA fixture도 전체 stderr 대신 한 줄 형태여서 누락을 잡지 못했다. 이번 local fixture는 synthetic이며 Root의 실제4 positives+ONEwrong-workflow 부분 진단을 새로 실행한 것이 아니다. 전체 proof3는 계속 FAILED다.
+
+live CLI/crypto/network/API/Docker/probe/build/install/credential/dispatch/원격 변경/commit/push는 수행하지 않았다. 수정은 PN TestReport prepend뿐이다. primaryCI652 별도 monitoring과 기존 partial 결과는 유지하며, 후속 combined118+LP17/fresh exact CI/Main/별도 proof GO가 필요하다. 실제 full project proof 또는 Owner GO PASS가 아니다.
+
+---
+
+## PN Developer 대행 — 실제45-byte stderr framing 최소 수리 (2026-11-06)
+
+**판정: local source repair/checks PASS, Manager review→독립 QA 대기.** Developer 대행 `gpt-6.1-sol`은 새 `test/issue225-proof-negative-repair`, Main base146204d0effe59df430c1d4d6e89ff023faece2d/tree3a2c에서 오직 shared verifier의 유한 tuple 한 항목과 독립 regression을 수정했다. frozen242/244/RC/기존 RF·LP·repair/사용자 worktree는 수정하지 않았다. 실제 CLI/네트워크·서명/dispatch/GHCR/Docker/probe/build·credential/정책 변경, commit/push는 수행하지 않았다.
+
+**관측 정정:** Root의 기존 read-only failure control은 exact6-file ZIP/hash와 실제 project4 same-bundle positives·app before/after를 통과했고 ONE wrong-workflow에서 exit1/빈 stdout 및 정확45 bytes `b'\nError: verifying with issuer "sigstore.dev"\n'`(SHA486941643d59bcaec905305a9ad2843539956d60f735745f77a05db562cfda19)를 관측했다. public upstream 원본도 동일bytes여서 project issuer 차이 가설은 **반증**됐다. Root의 safe-line 출력과 Manager의 strip 비교가 LF framing을 빠뜨렸고, 이전 quoted fixture도 독립 literal이지만 한 줄만 모사해 실제 전체 stderr를 놓쳤다. 아래 과거 UNKNOWN/issuer 가설·quote/SAN review/실패 이력은 삭제하지 않고 이 최신 결과로 정정한다. Root의 실제4 positive는 제한된 project cryptographic 증거이며 run3 자체는 FAILED/최종 verification metadata 부재·전체6 negative 미완료다.
+
+**Developer 실행:** production edit 전에 독립 full45 literal의 길이/SHA를 검사하고 두 실제 entrypoint를 합성 CLI/cert/registry witness로 실행했다. RP는 negative2의 `RP_NEGATIVE_CAUSE_UNPROVEN_WRONGSIGNERWORKFLOW`, candidate는 negative3의 `CA_NEGATIVE_CAUSE_UNPROVEN`으로 각각 RED/metadata0이었다. 이후 exact leading1+trailing1 LF 형태 한 개만 추가했고, 새 한 테스트가 full-seam GREEN과 강한 witness/mismatch/postpositive 실패 및 누락 trailing LF·double LF·CR/tab·잘못된 quote/issuer·prefix/suffix·infra·잘못된 negative label의 거부를 검사한다. 기존 bare/trailing LF·모든 cert/source/role/argv/token/artifact/timer guard를 유지했다. 이 RED/GREEN은 합성 local test이고 actual crypto 재실행이 아니다.
+
+현재 **기존99+신규1=100 PASS**, **LP17 별도 PASS**다. 세부 수는 RP7/CP6/RT15/RE19/cleanup3/candidate39/VN11이다. 변경 Python2 compile, classifier7/HOLD6, actionlint1.7.12 전체6 workflows/YAML6/Bash115·diff PASS이며 다른 기존 source46개는 HEAD와 byte-identical이다. workflow/권한·제품/flags/version0.61.0/HOLD 변경0. Node/TS/build/Vitest bridge/actual CLI는 이번 최소 Python 수리에서 새로 실행하지 않았다. 초기 RED·final commands/logs·source/docs hashes는 ignored `data/release-proof/pn-developer-handoff.json`/`pn-source-freeze.json`에 보존한다.
+
+후속 수용은 Manager→독립 QA 뒤 Root가 PN2 source/doc delta만 정상적으로 RC244에 합산하고 새118+별도LP17/required CI/Main을 검증하는 범위다. 기존 CI652/실패 source146/부분 cryptographic control을 새 source 또는 전체 proof PASS로 재사용하지 않는다. 이후 실제 proof/환경·정책/legacy/GHCR·Owner release GO는 계속 별도다.
+
+---
+
+## Proof3 Manager 실패 수용·진단 사전 경계 (2026-11-06)
+
+독립 QA의 실제 run42114901223 FAILED/`RP_NEGATIVE_CAUSE_UNPROVEN_WRONGSIGNERWORKFLOW`와4-subject attestation 생성·앞선 actual execution/cleanup 성공, wrongSource specific 검증을 근거로 전체 proof 수용을 보류했다. 실제 wrong-workflow stderr는 미수집으로 UNKNOWN이며 project/public-upstream issuer 차이는 가설이다. 정확1 sanitized artifact metadata와 .dockerbuild0 관측은 내용·독립 cryptography 검증과 구별한다. PN01–06 뒤 Root가 별도 read-only failure control을 수행할 수 있으나 이는 full proof/Owner GO가 아니다. 실제 모델은 Manager 대행 gpt-6.1-sol, QA 대행 별도 gpt-6.1-sol이며 미실행 역할/검증을 수행했다고 기록하지 않는다.
+
+---
+
 ## U-225-RC-ROOT-PUBLICATION-PREP — Main 정렬·문서 보완 (2026-11-06)
 
 실제 수행자는 Root(Codex)다. Manager의 code-only publication GO에 따라 기존 e20c branch를 보존하고 동일 tree `3a2cc97da54e50e13c482531f2995405cf464ef8`의 Main `146204d0effe59df430c1d4d6e89ff023faece2d`에서 새 `test/issue225-release-promote-main` branch를 만들었다. 전후 WIP11개 bytes·source5/protected40 hash가 모두 일치했다. reset/rebase/force/delete 없이 정렬했으며 새 테스트 실행 또는 독립 QA라고 주장하지 않는다. Root는 README/ChangeLog의 현황 안내만 보완했고 아래 Manager/Developer/독립 QA 결과를 보존했다.

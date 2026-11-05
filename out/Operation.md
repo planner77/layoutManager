@@ -1,3 +1,13 @@
+## #225 PN — 실제 opaque stderr의 정확 framing 보존 (2026-11-06)
+
+실제 proof3 실패와 Root의 별도 read-only failure control은 구별한다. run42114901223은4-subject signing 뒤 wrong-workflow negative에서 실패했고 full6 negative/최종 verification metadata는 미완료다. Root는 exact6-file ZIP/hash를 확인한 뒤 실제 project4 same-bundle positives와 app before/after, ONE wrong-workflow의 exit1/빈 stdout을 독립 관측했다. 전체 proof/출고 GO는 아니다.
+
+확인된 전체 stderr는 정확45 bytes `b'\nError: verifying with issuer "sigstore.dev"\n'`, SHA-256 `486941643d59bcaec905305a9ad2843539956d60f735745f77a05db562cfda19`다. public upstream 원본도 byte-identical이며 issuer 차이 가설은 반증됐다. Root의 safe-line 전달과 Manager의 splitlines/strip 비교가 leading LF를 버렸고 이전 독립 fixture도 실제 전체 stderr 대신 한 줄만 보존했다. 진단 요약을 actual full-byte 계약으로 간주하지 않는다. 원 raw material/CLI output은 ignored private 경로에 유지하고 공개 문서에는 이 알려진 안전 frame·길이/hash·제한만 남긴다.
+
+verifier는 기존 bare/단일 trailing LF 형식과 **leading1 LF+quoted wrapper+trailing1 LF**의 세 유한 exact형식만 받는다. strip/lstrip/rstrip·정규식 whitespace 정규화/임의 issuer/generic nonzero fallback은 없다. 두 고정 signer·certificate/4-subject·binary/bundle/original/probe·intended argv/mismatch·전후 positive gate는 그대로다. 실제 source 수리의 local fake PASS 뒤 Manager/독립 QA/새 combined CI/Main 및 별도 proof GO가 필요하며 동일146 source의 blind 재dispatch·재서명은 이번 범위에 없다.
+
+---
+
 ## #225 RF-C — exact-digest packet·승격·부분 상태 대응 (준비, 실제 실행 미승인)
 
 로컬 `python3 src/tests/oci/release_promote.py`는 credential/HTTP0의 NOT_READY plan이다. `template`은 unknown slot을 포함한 검토용 JSON을 출력한다. `build --input <explicit-local-preparation.json>`은 명시한 candidate artifactDirectory의4개 file SHA/receipt와 별도 artifactMetadata·roles·promotion·environment·controls·rollbackBaseline·nonce에서 packet을 만든다. `plan --input <explicit-local-packet.json>`의 REVIEWABLE_PACKET_ONLY도 Owner GO가 아니다. 실제 candidate/controls/환경/CI/rollback 값이 없으면 NOT_READY로 남기며 future promotion runId를 꾸미지 않는다.

@@ -1,3 +1,9 @@
+## D-225-PN-FRAME — opaque 오류의 유한 exact framing 확장 (2026-11-06)
+
+실제 project 진단 및 보존 upstream 원본의 동일45 bytes를 근거로 leading1 LF+기존 quoted wrapper+trailing1 LF의 유한한 한 형태만 허용하기로 했다. 기존 한 줄/단일 trailing LF 계약을 유지하며 strip·정규식 whitespace 확장·임의 issuer/인프라 fallback은 도입하지 않는다. cryptographically verified material/witness·typed policy mismatch·전후positive/argv/subject 정책은 유지한다. Root/Manager의 safe-line normalization 때문에 원 framing을 누락한 이력을 기록하고 actual4 positive와 실패한 전체run을 구별한다. 합산RC244는 정상 후속commit/새QA/CI로만 게시하며 old652나 actual146 partialproof를 새 source PASS로 재사용하지 않는다.
+
+---
+
 ## #225 RF-C 구현 선택 — 기존 kernel 보존과 실제 실행 경계
 
 기존 RT는 test-seam 이름/계약을 포함한 bytes를 보존하고 새 promotion entrypoint가 actual source/run/Owner review·candidate signature/full graph 검증 뒤에만 VerifiedCandidateContract를 구성한다. 이 생성자/hash 자체를 권위로 취급하지 않는다. 기존 protected 환경은 새 run/title/job/packet review에만 재사용한다. reader는 GHCR blob redirect 정책을 그대로 재사용하지만 기존 upload 경로를 모두 거부하고 별도 exact-final3 PUT adapter만 둔다. 새 provenance/OIDC 서명이나 fresh runtime 실행은 추가하지 않으며 source A/B는 operation receipt에서 구별한다.

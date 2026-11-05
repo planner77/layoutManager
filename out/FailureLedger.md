@@ -1,3 +1,13 @@
+## #225 actual proof3 — full stderr framing 누락 (2026-11-06)
+
+Main146/tree3a2c run42114901223은 signing4-subject 생성 뒤 wrong-workflow에서 실패했다. Root의 exact6-file/hash failure control은 actual4 same-bundle project-positive와 app before/after를 독립 통과했고, ONEwrong-workflow stderr가 정확45bytes `b'\nError: verifying with issuer "sigstore.dev"\n'`임을 확인했다. full hosted6 negative/전체proof는 FAIL이며 이 부분 crypto 근거를 전체PASS로 바꾸지 않는다.
+
+보존된 이전 public upstream stderr도 byte-identical이다. Root의 safe 한 줄 전달과 Manager의 splitlines/strip 비교가 leading blank LF를 제거했고 quoted 한 줄 fixture는 전체 실제 형식을 잡지 못했다. 새 project issuer 차이는 가설로만 제시됐고 이 결과로 반증됐다. 이전 raw/summary/review를 덮어쓰지 않는다. exact 하나의 leading+trailing LF frame만 강한 기존VN witness에 추가하며 arbitrary whitespace/generic rejection은 수용하지 않는다. fixture는 별도 전체byte literal/부정 whitespace subcases로 검증하고 로컬합성 결과를 actualproject6-negative PASS라고 기록하지 않는다.
+
+Developer 대행의 최소 수리는 유한 exact tuple 한 항목/독립 full45 regression 한 개뿐이다. edit 전 두 전체 verifier seam의 합성 RED/metadata0, edit 후 local100+별도LP17/static PASS를 보존한다. 실제 control4 positive와 이 local 수리의 합성 결과는 별도이며 fullproof3는 계속 FAILED다. exact commands/hash/역할·후속 QA 경계는 [TestReport](TestReport.md)를 따른다.
+
+---
+
 ## #225 VN source review — opaque issuer 인용부호 누락 (2026-11-06)
 
 Manager는 보존된 upstream control의 알려진 안전 stderr 한 줄이 정확히 `Error: verifying with issuer "sigstore.dev"`임을 확인했다. 첫 VN draft의 production literal에는 인용부호가 없어 실제 형식과 일치하지 않았다. 새 합성 fixture도 production 상수에서 문자열을 만들었으므로 앞선99 PASS는 이 형식 오류를 놓쳤다. 아래 과거 기록의 unquoted error 표기는 실제 원문의 정확 전사가 아니며 이 항목으로 정정한다. 과거 SAN/상세 진단의 합성 이력과 원본 freeze/handoff는 보존한다.

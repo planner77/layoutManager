@@ -1,3 +1,11 @@
+## Unreleased — #225 실제 proof3 오류 framing 최소 수리 (2026-11-06, 0.61.0 유지)
+
+- 검증기: 관측된 leading1LF+기존 quoted issuer wrapper+trailing1LF 한 형식만 finite whitelist에 추가한다. `.strip()`·임의 whitespace/issuer 허용은 도입하지 않고 genuine pre/post positive·project cert/4-subject/argv/hash·typed mismatch guard를 유지한다. 독립 원문45바이트/SHA 회귀와 두 full verifier seam의 RED/metadata0→GREEN을 추가했다.
+- 실제 결과: proof3는4-subject 서명 생성 뒤 wrong-workflow 단계에서 FAILED다. Root의 별도 genuine4-subject/원본 전후 검증 및 단일 wrong-workflow 진단, expected6-file artifact1개의 ZIP digest·완료 후 `.dockerbuild` 없음은 확인했다. 전체 negative6 성공·verification metadata·최종 출고 근거는 아니다. 과거 RP2 build records 내용은 계속 미검사다.
+- 역할·검증: 독립 PN 로컬100+별도 LP17·정적 검사 수용 후 RC5 bytes를 보존해 기존 PR244에 합친다. 합산118 및 새 exact-head CI/Main/actual proof는 별도이며, 앱 버전/flags/HOLD·운영 자원은 유지한다. 기존 원문 framing을 누락한 Root/Manager/fixture 검토 이력을 보존한다.
+
+---
+
 ## Unreleased — #225 exact-digest 최종 승격 실행 경로 준비 (2026-11-06, 0.61.0 유지)
 
 - RF-C: 고정 package의 최종3-ref만 허용하는 promotion workflow·packet builder·narrow registry adapter와 fsync intent journal을 추가한다. candidate provenance source A와 promotion code B/실제 fresh Owner review를 구분하고 pinned candidate verifier·raw graph·RT 승격 계약을 재사용한다. partial/unknown/HALT와 NO_OP 최종 readback, 정제 progress/receipt를 검사한다.
