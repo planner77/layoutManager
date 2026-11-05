@@ -1,3 +1,52 @@
+## U-225-RC-ROOT-PUBLICATION-PREP — Main 정렬·문서 보완 (2026-11-06)
+
+실제 수행자는 Root(Codex)다. Manager의 code-only publication GO에 따라 기존 e20c branch를 보존하고 동일 tree `3a2cc97da54e50e13c482531f2995405cf464ef8`의 Main `146204d0effe59df430c1d4d6e89ff023faece2d`에서 새 `test/issue225-release-promote-main` branch를 만들었다. 전후 WIP11개 bytes·source5/protected40 hash가 모두 일치했다. reset/rebase/force/delete 없이 정렬했으며 새 테스트 실행 또는 독립 QA라고 주장하지 않는다. Root는 README/ChangeLog의 현황 안내만 보완했고 아래 Manager/Developer/독립 QA 결과를 보존했다.
+
+선행 실제 결과는 PR242 primary649 SUCCESS(8 applicable/A2 skip), source e20c/tree3a2c와 같은 Main146204d/parent907d, Main163 SUCCESS·GHCR SKIPPED 및 새 read-only HOLD1 SUCCESS다. 실제 project proof3 `42114901223` attempt1은 정확 Main146204d로 한 번 dispatch되어 이 기록 시점 RUNNING이다. 아직 실제 서명 positive/negative·post-job artifact 판정을 하지 않는다. package 상속/개별 Write·Admin 사용자 없음은 사용자 진술이며, Root의 별도 read-only collaborators 전체 조회200/exhausted에서는 Owner45478892 한 명만 관측됐다. package의 다른 저장소 Actions grants는 UNKNOWN으로 유지한다. 이 관측·로컬 RC 수용은 외부 설정/후보 게시/Owner release GO가 아니다.
+
+---
+
+## RF-C Manager ロ컬 수용·독립 Draft PR 게시 GO (2026-11-06)
+
+Manager 대행 `gpt-6.1-sol`은 RC01–10 source와 아래 fresh independent117/별도LP17·static7/YAML123·source5/protected40 결과를 검토했다. 직접 RC18/RT15·diff/hash 검사도 PASS다. 후보 source A와 승격 코드 B, 새 exact-digest packet/run/실제 Owner review·same existing environment의 재사용 경계를 분리하고, successful candidate artifact/4-file hashes/full graph/고정 crypto/VN 이후에만 RT final3 raw PUT을 허용하는 흐름을 로컬 code-only 준비로 수용한다. narrow adapter/fsync intent·partial/unknown HALT·NO_OP 최종 조회·journal-only progress 및 closed operation receipt를 확인했다.
+
+Root는 현재 e20c base와 byte-identical tree인 통합 Main146204d0effe59df430c1d4d6e89ff023faece2d에서 **새 branch로만** ancestry를 맞출 수 있다. 기존 branch/WIP를 보존하고 before/after source5/protected40·문서 hash가 같음을 확인하며 reset/rebase/force/delete를 하지 않는다. 이 metadata alignment만으로 기존 검사를 새로 실행했다고 하지 않는다. 최종 remote/secret/runtime/source/docs 감사 뒤 정상 Conventional commit 및 별도 Draft PR 게시·새 exact-head required CI를 진행할 수 있다. 실제 project proof source146/tree3a2c가 완료되기 전 Main을 추가 이동하지 않으므로 RC merge는 별도 후속 판정이다.
+
+이는 code publication GO이며 실제 env/정책/legacy/GHCR/version/alias/Git tags/운영·Owner exact-digest release GO가 아니다. 실제 successful genuine candidate A·권한/writer/control/rollback evidence와 별도 Owner packet/review가 준비되기 전 실행0이며 user info·plan/hash가 authority가 아니다. 현재 actual project proof와 로컬 mock117은 구별하고 전체 RR1–RR5/GO-PILOT BLOCKED·flags OFF/HOLD는 유지한다.
+
+---
+
+## U-ISSUE225-RC-INDEPENDENT-QA — exact-digest promotion code-only 준비 (2026-11-06)
+
+별도 independent QA agent `gpt-6.1-sol`이 promote worktree/base `e20c24835c283902778700388287d0ccce1ae0da`에서 실행했다. 기존 QA backend의 context 손실 보고에 따른 실제 대행이며, 이전 local/primary CI649 결과를 덮어쓰거나 중복 실행하지 않았다. 실제 명령·exit·suite count·source 전후 SHA·재사용 근거는 Git 제외 `data/release-proof/rc-independent-qa-final.json`, `rc-qa-tests.json`, `rc-qa-static.json`에 기록했다.
+
+- 독립 **117 PASS**: 기존99(RP7/CP6/RT15/RE19/cleanup3/candidate39/VN10) + 새 RC18. **LP17 PASS는 별도**다. signature/API/registry는 모두 mock이며 실제 project signature 또는 Owner GO가 아니다.
+- compile3, actionlint7/YAML7, Bash123 `bash -n`, 빈 환경/PATH-only 기본 plan `NOT_READY`/`NOT_VERIFIED`/HTTP0, diff 검사 PASS. 새 frozen source5 및 protected existing40 SHA는 시험 전후 동일하고 assignment와 일치했다. 기존 tracked `src/` diff는 없다.
+- LP4·package/lock·tsconfig/Vitest/ESLint config의 exact e20 bytes를 비교한 근거로 이전 **독립 combined** LP bridge1/targeted TypeScript/ESLint PASS를 재사용한다. 이번 RC tree에서 Node/bridge를 새로 실행했다고 기록하지 않으며 dependencies 설치/복사도 하지 않았다. 전체 앱 build/typecheck의 새 실행 주장은 없다.
+- candidate provenance/source A와 promotion code/Main/full CI B, fresh promotion Owner run/review·기존 environment readback의 별도 결합을 검토했다. candidate 완료 run 및 exact1 artifact metadata→exact4 file/hash/size/symlink→full GHCR graph/config/layer→기존 고정 candidate CLI/VN 재검증→VerifiedCandidateContract→최종3 manifest PUT 순서를 확인했다. 다운로드 ZIP API digest만으로 genuine proof를 대체하지 않는다.
+- GET/HEAD-only reader와 final3 raw PUT adapter의 경계를 확인했다. digest/media/size와 fsync 완료 intent에 묶인 mutation, 기존 RT의 partial/unknown/ambiguous HALT·후속 write0·전체 final set readback 및 NO_OP 마지막 재조회, exclusive local journal과 closed progress/operation receipt 구분을 검토했다. progress는 `JOURNAL_ONLY_NOT_NEW_REGISTRY_READBACK`이며 외부 영구 저장·CAS·hostile writer 배제·자동 복구를 보증하지 않는다.
+- 외부 policy/writer/Actions-grant/rollback hash link는 실제 live 검증·승인이 아님을 명시하고 UNKNOWN은 readiness를 막는다. 실제 legacy355 disabled 상태와 모든 run 완료 API gate를 요구한다. Git PATH-only 및 CLI explicit builtin token 최소 환경·six host credential 비상속·job별 init·artifact allowlist를 확인했다. 새 blocking finding은 없다.
+
+**한계:** 실제 API/서명/registry 결과, candidate publication, Owner exact-digest release GO는 NOT RUN이다. live HTTP/API/CLI crypto/Docker/probe/build/install/pull/credential/dispatch/env/policy/GHCR/ref 변경이나 commit/push는 수행하지 않았다. Root의 실제 project proof 경로와 primary CI649 감사는 별도이며 이 code-only 준비가 그 작업을 막거나 실제 완료를 대신하지 않는다. fresh required CI/Main 및 실제 candidate evidence와 별도 Owner GO는 계속 필요하다.
+
+---
+
+## RF-C Developer 대행 — exact-digest promotion code-only 준비 (2026-11-06)
+
+**판정: 로컬 구현/검사 PASS, Manager source review→독립 QA 대기.** 실제 Developer 대행 `gpt-6.1-sol`은 새 `test/issue225-release-promote` worktree, base `e20c24835c283902778700388287d0ccce1ae0da`/tree `3a2cc97da54e50e13c482531f2995405cf464ef8`에서 작업했다. frozen PR242와 기존 RF/LP/repair/사용자 worktree는 수정하지 않았다. 새 workflow/packet policy/실행 helper/테스트와 pr-ci 두 wiring line만 source delta다. 기존 RP/candidate/RT/VN/LP/RE 및 helper/workflow40개는 HEAD와 byte-identical임을 확인했다.
+
+기본 plan/template/build는 명시한 local input만 다루고 HTTP/credential0이다. 실제 값 없는 template는 NOT_READY이고 hash/입력 boolean은 Owner 승인/실효 controls 검증이 아니다. candidate source A의 성공 run/attempt1·artifact ID/server digest·정확4 file SHA·3-role media/size/config/platform/raw digest와 promotion code B의 Main/tree/workflow/full CI·새 run/title/job/packetSHA/actual Owner review를 분리한다. 같은 환경을 새 review에 사용하고 실제 API bypass=false/UI fallback·Owner-only secondHuman=false를 유지한다. legacy exact ID disabled_manually/모든 runs completed는 실제 read gate이며, 전체 policy/모든 writer·Actions grants/rollback controls는 별도 Owner-reviewed external hash links다. UNKNOWN은 packet readiness를 막고 helper가 전부 live 검증했다고 주장하지 않는다.
+
+다운로드 후 GHCR full graph/config/layer SHA와 기존 고정 candidate verifier/VN의 실제 CLI 경로를 연결하고, 이 gate 뒤에만 RT contract를 구성한다. adapter는 final3 raw PUT 외의 writes를 거부하며 original bytes/Content-Type과 fsync intent·exclusive attempt·typed absence/직전 및 최종 readback을 보존한다. NO_OP도 full graph/crypto와 마지막3-ref readback을 수행한다. failure progress는 journal-only observation임을 명시하고 packet/A/B/expected finals/attempted/confirmed만 공개한다. success operation receipt는 closed schema이며 candidate provenance A를 새 signature/runtime proof로 부르지 않는다. partial 자동 완성/삭제/rollback/alias/deploy는 없다.
+
+**실행:** 기존99 + 신규 RF-C18 = **117 PASS**, LP17은 별도 PASS다. 신규18은 actual-shaped fake API/HTTP/CLI seams에서 A/B 분리·packet builder/unknown blockers·fresh Owner/Main/fullCI/environment/legacy·candidate success/artifact/hash/file/symlink/privacy·RP signer/wrong identity·Worker/graph/layer·all-absent byte-identical3PUT·all-exact NO_OP·partial/unknown·ambiguous write/rewritten readback/journal-intent failure 후 추가 PUT0·동시 target/NO_OP 마지막 read race·closed progress/receipt·host credential6 제거 및 isolated explicit GH_TOKEN을 검사했다. crypto fixture는 **합성**이며 실제 signature 성공이 아니다. 기존99의 의미/검사도 유지했다. classifier7/HOLD6, 새 Python3 compile, actionlint1.7.12 전체7 workflows/YAML7/Bash123, PATH-only NOT_READY plan·diff check PASS다. 마지막 progress 필드/음성 subcase 변경 뒤 새18/compile/diff를 다시 실행했고 기존99/source는 변경하지 않았다.
+
+**한계:** 실제 HTTP/API field shape·environment/review/정책/권한·artifact download/SDK·CLI crypto/OIDC·GHCR read/PUT, Docker/runtime/build/probe/registry/CDN/dispatch·외부 변경은 NOT RUN이다. 새 Node/TS/Build/Vitest bridge는 실행하지 않았고 dependency를 복사/설치하지 않았다. source40 보존은 코드 byte 비교이며 actual effective controls 증명이 아니다. server artifact ZIP digest는 향후 API packet binding이고 SDK warning 단독으로 archive proof를 삼지 않으며 개별 SHA+실제 crypto가 필수다. 실제 extra CLI/network 비용은 미측정이며45분 gate/기존 timers는 유지한다. journal/progress는 CAS·원자성/외부 writer 배제·강제 종료 때 외부 durability를 보장하지 않는다. 실제 candidate와 별도 완성된 exact-digest Owner GO 전에는 실행0이며 전체 Issue225/RF-C 실제 완료·출고 GO가 아니다. Root의 PR242 CI649/별도 Main proof와 결과를 혼합하지 않는다. commit/push는 수행하지 않았다.
+
+Exact commands/logs/source/docs hash와 미확정 사항은 ignored `data/release-proof/rc-developer-handoff.json`/`rc-source-freeze.json`에 보존한다. 다음은 Manager source review→독립 QA→fresh required CI/Main이며 실제 candidate-prefix/최종 exact-digest Owner GO는 계속 분리한다.
+
+---
+
 ## Combined VN/RF/LP — Manager 로컬 수용·Draft PR 게시 GO (2026-11-06)
 
 실제 Manager 대행 `gpt-6.1-sol`은 아래 fresh independent QA와 현재 frozen6/protected15 hash를 검토했다. 직접99 proof tests 및 별도LP17, six-workflow actionlint·diff·hash 검사, 보존된 실제 quoted wrapper와의 일치도 PASS다. 두 고정 verifier의 genuine CLI-success 출력에 대한 기존 certificate/4-subject 정책, 같은 bundle/binary/원본/probe 및 intended argv, 전후 positive/최종4-byte readback을 확인했다. opaque CLI 내부 원인의 비노출과 별도 검증 material의 own-policy mismatch를 구별하는 VN 계약 및 runtime token/cleanup/artifact 통제 보완을 로컬 source 준비로 수용한다. raw generic failure·untrusted receipt/boolean을 증거로 사용하지 않는다.

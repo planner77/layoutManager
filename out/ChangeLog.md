@@ -1,3 +1,11 @@
+## Unreleased — #225 exact-digest 최종 승격 실행 경로 준비 (2026-11-06, 0.61.0 유지)
+
+- RF-C: 고정 package의 최종3-ref만 허용하는 promotion workflow·packet builder·narrow registry adapter와 fsync intent journal을 추가한다. candidate provenance source A와 promotion code B/실제 fresh Owner review를 구분하고 pinned candidate verifier·raw graph·RT 승격 계약을 재사용한다. partial/unknown/HALT와 NO_OP 최종 readback, 정제 progress/receipt를 검사한다.
+- 검증: 독립 로컬117 focused proof 및 별도 LP17, actionlint7/YAML7/Bash123·compile·default0HTTP 계획·frozen source5/protected40은 PASS다. 실제 후보 증거·환경/권한·Owner exact-digest GO·출고는 NOT RUN이며, 새 principal/PAT를 기본 요구하지 않는다. 제품/Schema/버전/flags/HOLD·운영 자원은 유지한다.
+- 선행 통합: PR #242의 primary CI649(175files/1,103tests·실제 Docker 복구/정리)와 Main163/HOLD SUCCESS, GHCR SKIPPED를 확인했다. 실제 project proof3는 이 기록 시점 RUNNING으로 별도 판정하며 기존 proof2 실패/UNKNOWN 원인을 보존한다.
+
+---
+
 ## Unreleased — #225 레거시 publisher 제어 검증 도구 (2026-11-06, 0.61.0 유지)
 
 - CI/검증: contents:read Main HOLD workflow와 기본0HTTP·정확 packet/source/run에 결합된 operator helper를 준비했다. 수정된 affirmative disabled-cause 판정과 stale accepted-attempt PENDING 경계를 포함한 독립 로컬17회귀·Vitest bridge·정적 검사는 PASS다.

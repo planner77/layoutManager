@@ -1,3 +1,9 @@
+## 2026-11-06 — RF-C 승격 실행 경로의 별도 code-only 준비
+
+RT는 pure transport 계약이고 RF-A/B는 후보 게시/서명까지여서 실제 version3-ref 승격 workflow·signed-candidate/Owner packet 검증·narrow final-tag adapter가 남아 있다. [TestPlan TP-225-RF-PROMOTION](TestPlan.md) RC01–10을 새 e20c 기반 worktree에 먼저 기록했다. candidate source A와 promotion workflow source B를 구별하고 별도 fresh Owner review/정확 digest packet 뒤에만 동일 raw bytes를 승격한다. 기존 환경을 별도 run의 검토로 재사용해 새 principal/PAT/settings를 기본 요구하지 않는다. 원 RA10의 실제 candidate 확인/승인 뒤 실행 의존성은 유지하며 지금은 reversible code/mock/packet 준비만 수행한다. PR242·실제 proof·정책/환경/legacy/GHCR/운영 자원은 변경하지 않는다.
+
+---
+
 ## 2026-11-06 — verified-material 기반 negative proof 사전 설계
 
 Root의 public upstream genuine signature control은 pinned CLI가 wrong-workflow/tamper의 구체 cause를 숨김을 실제 확인했다. [TestPlan TP-225-VERIFIED-NEGATIVE-PROOF](TestPlan.md)의 VN01–08에 genuine positive 전후 검증·같은 bundle/원본 SHA·검증된 cert/subject에서 계산한 typed own-policy mismatch와 실제 CLI 거부 경계를 분리하는 계약을 먼저 기록했다. generic nonzero/인프라 오류는 계속 거부하고 project 고정 source/Owner/signer 정책·권한을 유지한다. upstream 실적은 project OIDC PASS가 아니며 새 source QA/CI/Main/actual proof가 필요하다.

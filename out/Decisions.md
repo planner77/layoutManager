@@ -1,3 +1,17 @@
+## #225 RF-C 구현 선택 — 기존 kernel 보존과 실제 실행 경계
+
+기존 RT는 test-seam 이름/계약을 포함한 bytes를 보존하고 새 promotion entrypoint가 actual source/run/Owner review·candidate signature/full graph 검증 뒤에만 VerifiedCandidateContract를 구성한다. 이 생성자/hash 자체를 권위로 취급하지 않는다. 기존 protected 환경은 새 run/title/job/packet review에만 재사용한다. reader는 GHCR blob redirect 정책을 그대로 재사용하지만 기존 upload 경로를 모두 거부하고 별도 exact-final3 PUT adapter만 둔다. 새 provenance/OIDC 서명이나 fresh runtime 실행은 추가하지 않으며 source A/B는 operation receipt에서 구별한다.
+
+정식 실행의 누락된 실제 candidate, Actions grants/전체 writer/control 증거, 환경·fresh Owner review, 정확 rollback baseline은 plan/packet에서 보류한다. 같은 runner의 fsync journal과 정제 always progress는 복구 근거일 뿐 원자성/외부 durability·자동 rollback을 보장하지 않는다. partial은 inert/HOLD/기존 alias·배포 유지와 read-only3-ref 대조를 선택하며 추가 변경은 별도 승인이다. 이 code-only 준비의 local PASS는 실제 release GO가 아니다.
+
+---
+
+## D-225-RF-C-PREP — release packet과 promotion Source의 분리 (2026-11-06)
+
+Manager는 실제 후보가 나오기 전에 RF-C의 code/mock/검토 가능한 packet 경로만 준비하기로 했다. 실제 실행은 원 RA10대로 genuine candidate receipt 및 별도 exact-digest Owner GO 후다. 새 고정 promotion workflow는 source B의 코드로 source A의 검증된 기존 bytes만 태그에 복사하며 rebuild/새 provenance로 바꾸지 않는다. 기존 protected candidate 환경을 새 promotion run의 실제 Owner 검토로 재사용할 수 있고 이전 candidate approval은 재사용하지 않는다. 최소 job 권한에는 package write/read API만 두며 새 principal/PAT·추가 OIDC/환경 설정을 기본 요구하지 않는다. 계획 JSON/hash는 승인이나 통제 PASS가 아니다. partial release는 inert/HOLD·정제 progress/readback을 보존하고 자동 완성/삭제/alias/deploy를 하지 않는다. 실제 writer inventory/권한·Owner 설정·GHCR 결과는 별도 미완료다.
+
+---
+
 ## #225 VN — 검증된 material의 자체 정책과 CLI 거부 경계 분리 (2026-11-06)
 
 **결정:** 두 고정 RP/candidate verifier는 pinned CLI가 성공적으로 검증한 같은 bundle의 certificate·정확4-subject map과 원본 bytes를 각 negative 전후에 확인한다. 고정 wrong-workflow 요청과 verified signer URI의 불일치, tampered manifest/receipt의 실제 SHA와 signed map의 불일치를 typed own-policy evidence로 계산한다. 이 projection은 독립 서명 검증기나 Owner 승인 증거가 아니다.
