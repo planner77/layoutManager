@@ -252,10 +252,21 @@ test('#225 P1-D G7 Editor HTTP upload -> detached OCI Worker -> new authenticate
     expect(freshCookie).not.toBe(sourceCookie);
     await fresh.goto('/cad/versions/'+good.id+'/viewer?renderer=three-dxf-viewer');
     await expect(fresh.getByTestId('scene-status')).toContainText('저장된 Scene Asset 복원');
-    await expect(fresh.getByTestId('cad-viewer-shell').getByRole('status')).toContainText('도면 표시 완료');
+    // P1-D CPU LINE validates/paints the complete supported LINE geometry but
+    // deliberately has no canonical DXF source/handle index. The viewer must
+    // preserve this visible precision warning, not claim full source mapping.
+    // #626: "도면 일부 표시 완료" is the correct UI result for this subset.
+    await expect(fresh.getByTestId('cad-viewer-shell').getByRole('status'))
+      .toHaveText('도면 일부 표시 완료');
+    await expect(fresh.getByTestId('viewer-coverage'))
+      .toContainText('원본 정밀 선택 인덱스를 사용할 수 없습니다');
     await expect(fresh.getByTestId('cad-canvas').locator('canvas')).toHaveCount(1);
     await fresh.reload();
     await expect(fresh.getByTestId('scene-status')).toContainText('저장된 Scene Asset 복원');
+    await expect(fresh.getByTestId('cad-viewer-shell').getByRole('status'))
+      .toHaveText('도면 일부 표시 완료');
+    await expect(fresh.getByTestId('viewer-coverage'))
+      .toContainText('원본 정밀 선택 인덱스를 사용할 수 없습니다');
     expect(sceneGets).toBeGreaterThanOrEqual(2);
     expect(originalGets).toBe(0);
 
