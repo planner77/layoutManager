@@ -1,3 +1,16 @@
+## #225 RP opaque CLI diagnostic — source-only 보완 후보 (2026-11-06)
+
+**상태: 새 PR HEAD 필수 CI 미확인, 실제 OIDC/서명 NOT RUN.** 앞선 [PR #241](https://github.com/planner77/layoutManager/pull/241)은 PR CI #647/#648과 Main CI #162 성공으로 timeout readiness/기본 build-record upload 설정을 통합했지만 실제 signed proof Run #2는 Step16 FAIL이었다. 다음 실제 project proof가 CLI 내부 원인 비노출을 거짓 PASS로 만들지 않도록 test-only RP의 검증 계약을 보강한다.
+
+- 확인 가능한 **upstream pinned source**: [sigstore.go v2.103.3](https://github.com/cli/cli/blob/v2.103.3/pkg/cmd/attestation/verification/sigstore.go), [attestation.go v2.103.3](https://github.com/cli/cli/blob/v2.103.3/pkg/cmd/attestation/verify/attestation.go). 원인이 상위 에러에서 축약됨을 코드로 확인; 실제 Github Actions의 CLI 출력과 동일하다는 증거는 아직 없음.
+- 코드 변경: 원본 검증 command의 signed 4-subject/Actor/Run identity 결과를 negative 전후에 확인하고 정확 1-flag 또는 1-byte mutation만 수용. 기존 strict \`negative_cause\`를 보존하고 source-pinned 좁은 opaque issuer 실패에만 차등 거부 \`BRACKETED_CLI_REJECTION_CAUSE_OPAQUE\`로 제한. 원인 확정 표현 금지, 다른 stderr/인프라/사용법/무인증·호출 타임아웃은 여전히 Fail closed.
+- 회귀: mock CLI JSON/과거 오류·정확 변경·브래킷/비브래킷·tamper 비교를 확대. 이것은 mocked \`gh\` 호출 테스트이며 정식 OIDC·Sigstore·실제 업그레이드 증거가 아니다.
+- 후속: exact HEAD scope/unit/Docker/G7/Chromium 등 repository-required CI와 리뷰·Behind·충돌을 확인한 후 별도 GO-INTEGRATE. 정상 Main에서 새 RP dispatch GO 이후 실제 성공·실패 및 전체 artifact API inventory를 분리 확인한다. 앞선 Run #2는 FAILURE/원인 UNKNOWN 및 unexpected 3 build-records로 보존한다.
+
+**불변:** #225/#218/#231 OPEN, GO-PILOT BLOCKED, 제품 \`SCENE_AUTO_BUILD_ENABLED=OFF\`/\`SCENE_CPU_WORKER_ENABLED=OFF\`, >=0.61 GHCR HOLD, 운영 데이터/원본/tag/권한 설정 불변. 새로운 실제 proof, 정책 적용, GHCR 출고, Owner release GO 없음.
+
+---
+
 ## RP execution repair — Manager 로컬 수용·Draft PR 게시 GO (2026-11-06)
 
 Manager 대행 `gpt-6.1-sol`은 최종 frozen5 hash(core760a8a1f/probe1491a236/tests0c129991/proof a543b3c9/pr-ci158aef3b), 독립50/static 결과 및 아래 corrected 실제3-probe/보호/정리 보고를 검토했다. Manager 직접19+3/actionlint/diff와 current5 hash도 PASS다. 새 direct `cd90e1f152447dbd`/actual copied g7 command host `35ea208023d6855d`의 readiness→4s timeout/소유 정리, startup negative `d3bb65db3e7b9d40`의 no-arm READINESS_MISSING/정리, 전후 selected production/R1 보존을 로컬 AC로 수용한다. 늦은 관측 budget 분류는 실제 TimeoutExpired cause와 absolute deadline 소진을 모두 요구하며 임의 오류를 absence/실행 성공으로 승격하지 않는다.
