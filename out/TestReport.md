@@ -1,3 +1,13 @@
+## #225 / PR #235 — CI #625 신규 Viewer 실패 / Client Builder identity fix (2026-11-05)
+
+[PR CI #625](https://github.com/planner77/layoutManager/actions/runs/41965842513) HEAD `cf6dfab3596cd9738c29aeab5a85f136953a1443`: required Docker Job `127042583269`에서 새 signed Editor Browser의 `scene-status` 20s timeout. 실제 signed HTTP 업로드/CSRF/QUEUED, 독립 OCI Worker PUBLISHED 및 immutable Scene READY·Manifest/Blob digest 검증은 단계 도달; 새 Viewer 복원/reload와 Site revoke/SourceSHA/미지원 CIRCLE 음성은 NOT RUN. 다른 6개 적용 Job SUCCESS, A2 scope SKIPPED, downstream Required Verify FAIL.
+
+서버 `storedSceneScope`는 승인된 CPU와 Browser Builder의 저장 Scene을 검증하지만 Browser `ViewerSource.readScene`은 browser-only `sceneScope`를 요구하여 CPU Builder Manifest가 충돌. 소스에서 계약 불일치를 확인했고 CI browser 내부 예외는 직접 수집되지 않았음. Browser read-only expected Builder를 Server의 `storedSceneScope`와 일치시켜 strict Manifest/byte/digest/DTO 및 Version/SourceSHA 검사 유지. 새 UNIT은 실제 CPU 후보의 ViewerManager LOAD READY_SCENE+DXF GET 0과 unknown builder/foreign Version/SHA fail-closed. 제품 Source/Worker/보안/CI timeout 바꾸지 않음.
+
+**검증 대기:** 수정 HEAD exact PR CI 성공 이전 새 Viewer E2E 통과 주장 금지. 이전 #624/#625 FAIL 이력 보존, #225/#218/#231 OPEN, GO-PILOT BLOCKED, 제품 2 flag OFF, #229 GHCR HOLD, 운영 데이터·GHCR·tag 무변경.
+
+---
+
 ## #225 / PR #235 — P1-D CI #624 E2E 로그인 관측 및 한정 보완 (2026-11-05)
 
 [PR CI #624](https://github.com/planner77/layoutManager/actions/runs/41948139879) exact HEAD `2ce84bf322e2b76867bb777efa94f62c51fb1131`: required Docker Job `126985423451`의 독립 OCI 이전 스텝까지 SUCCESS이나 새 연속 P1-D 시험에서 최초 Admin 재로그인 후 `현재 세션` heading 20초 timeout으로 실패. Required Verify 종속 실패, 다른 적용 6 Job SUCCESS, A2 SKIPPED. 따라서 #624에서 HTTP DXF 업로드→Worker READY→새 Viewer 복원 및 음성 검증 **완료 증거 없음**.

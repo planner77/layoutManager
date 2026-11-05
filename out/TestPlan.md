@@ -1,3 +1,12 @@
+## #225 / PR #235 — CI #625 CPU Builder Scene load regression (2026-11-05)
+
+- Keep all P1-D requirements: actual signed Editor multipart upload, Origin+CSRF failures, Version/CPU Job QUEUED, separate constrained Worker OCI PUBLISHED, immutable READY/Audit/bytes and new authenticated Viewer without original DXF GET, page reload, Site revoke/SourceSHA tamper/CIRCLE rejection and prior READY preservation.
+- On the *read path only*, test approved CPU Builder `node-cpu-line@1.0.0+cad-scene-1` as well as historical Browser Builder. Use `storedSceneScope(requestedVersionId,trustedSourceSha,manifest.scope)` then strict Manifest and DTO integrity; demonstrate CPU LINE candidate `ViewerManager.getLoadStrategy()===READY_SCENE`, adapter `loadScene`, original DXF GET=0.
+- Check unapproved Builder, wrong Version, forged SourceSHA and wrong caller expected SourceSHA all fail-closed *before Blob GET*, retaining existing Browser tests and no automatic original DXF fallback.
+- CI #625 is failure evidence only; corrected exact HEAD must pass all required CI before GO-INTEGRATE claim. Product Scene flags OFF, GHCR>=0.61 HOLD, GO-PILOT BLOCKED unchanged.
+
+---
+
 ## #225 / PR #235 — CI #624에 따른 인증 전환 E2E 계획 보강 (2026-11-05)
 
 - 최초 Admin UI 생성 후 `auth/initial-change` 성공 문구를 실제로 관측하기 전에는 리다이렉트·재로그인을 시작하지 않는다. 이전 페이지의 POST가 비동기 실행 중인 상태에서 탐색하면 요청 완료를 보장할 수 없다.

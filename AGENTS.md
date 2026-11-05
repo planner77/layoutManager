@@ -1,3 +1,12 @@
+## #225 / PR #235 — CI #625 CPU Scene Builder Viewer 불일치·보완 (2026-11-05, 신규 HEAD CI 미검증)
+
+- [PR CI #625/run 41965842513](https://github.com/planner77/layoutManager/actions/runs/41965842513), exact HEAD `cf6dfab3596cd9738c29aeab5a85f136953a1443`: required Docker Job `127042583269` P1-D Viewer `scene-status` 20s timeout (`scene-http-oci-viewer.spec.ts:254`), Required Verify `127047016160` dependent FAIL; Scope, Static/Unit/Build, Greenfield, Signed G7, Chromium shards 1/2·2/2 SUCCESS, A2 scope SKIPPED. Actual signed HTTP upload/Origin+CSRF/Version QUEUED/independent OCI Worker PUBLISHED/immutable Scene READY+manifest/blob SHA, distinct Editor session were exercised before the failure; new Viewer render/reload and subsequent Site revoke/SHA/unsupported negatives were NOT RUN.
+- **원인:** Client `ViewerSource.readScene`의 browser-only `sceneScope` vs server `SceneRepository.status/content`의 allowlisted browser+CPU `storedSceneScope` mismatch. Real CPU Builder `node-cpu-line@1.0.0+cad-scene-1` manifest는 client browser scope 비교에서 거부될 수밖에 없음. CI는 nested browser exception을 공개하지 않았으므로 exact browser trace-level error code는 미확인.
+- **보완:** Browser READ만 기존 domain `storedSceneScope(versionId,sourceSha256,manifest.scope)`로 재구성한 후 변경 없는 full `validateSceneManifest`, byte length/sha256 및 DTO 검사. CPU positive ViewerManager READY_SCENE/원본 GET=0, unknown Builder/cross-Version/wrong SHA rejection 단위 회귀 추가. Browser manual publish, G7 Auth, Worker, CI required gate, timeout, 보안·운영 정책 변경 없음.
+- PR Draft, review thread 0, conflict 0/Main behind 0 triage. #625 historical FAIL 보존, 새 exact HEAD CI PASS 전 P1-D NOT VERIFIED. #225/#218/#231 OPEN, #229 >=0.61 GHCR HOLD, 제품 Scene flags OFF, GO-PILOT BLOCKED, 운영 DB/CAD/Volume/.env/GHCR/tag 불변.
+
+---
+
 ## #225 / PR #235 — CI #624 로그인 전환 검증 실패 및 보완 (2026-11-05, 새 HEAD CI 미확인)
 
 - **실측:** [PR CI #624 / run 41948139879](https://github.com/planner77/layoutManager/actions/runs/41948139879), HEAD `2ce84bf322e2b76867bb777efa94f62c51fb1131`, Docker Job `126985423451`의 P1-D signed HTTP→OCI→Viewer 단계에서 `현재 세션` heading 20초 대기 실패(`scene-http-oci-viewer.spec.ts:95`, 최초 Admin 로그인 경로). Required Verify `126991134370`은 선행 Job 실패로 FAIL. Scope/Static·Unit·Build/G7 Greenfield/G7 Signed 및 Chromium 2개 샤드는 SUCCESS, A2 scope SKIPPED. 기존 OCI proof는 Docker Job의 앞 단계에서 SUCCESS였으나 신규 P1-D 전체는 **FAIL**이며 실제 DXF HTTP 업로드·Worker·신규 Viewer 후속 시나리오는 실행되지 않았다.

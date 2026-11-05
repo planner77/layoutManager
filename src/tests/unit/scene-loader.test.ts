@@ -2,11 +2,13 @@ import {afterEach,describe,expect,it,vi} from 'vitest';
 import {createHash,randomBytes} from 'node:crypto';
 import * as THREE from 'three';
 import {sceneSha256} from '../../domain/scene-digest';
+import {CAD_SCENE_CPU_BUILDER,validateSceneManifest} from '../../domain/cad-scene';
+import {buildCpuLineCandidate} from '../../server/scene/cpu-line-candidate';
 import {validateStoredScenePayload} from '../../domain/scene-payload';
 import {sceneScope,tagImportedTree} from '../../viewers/three-dxf-viewer/scene-tags';
 import {preflightSceneRoot,serializeSourceScene,restoreSourceScene} from '../../viewers/three-dxf-viewer/scene-serialization';
 import {sceneOutlineProjection} from '../../viewers/three-dxf-viewer/scene-projection';
-import {ViewerSource} from '../../viewers/core/source';
+import {ViewerSource,type ReadyScene} from '../../viewers/core/source';
 import {ViewerManager,type CadViewerAdapter} from '../../viewers/core/adapter';
 const versionId='16400000-0000-4000-8000-000000000001';
 const assetId='16400000-0000-4000-8000-000000000002';
@@ -45,6 +47,57 @@ describe('SC-14/15/16 Scene loader',()=>{
     expect(load).not.toHaveBeenCalled();expect(loadScene).toHaveBeenCalledOnce();expect(manager.getLoadStrategy()).toBe('READY_SCENE');
     manager.dispose();expect(dispose).toHaveBeenCalledOnce();
   });
+
+  it('#225 P1-D: CPU persisted READY loads; unknown Builder/foreign Version/SHA fail closed',async()=>{
+    const original=new TextEncoder().encode([
+      '0','SECTION','2','HEADER','9','$INSUNITS','70','4','0','ENDSEC',
+      '0','SECTION','2','ENTITIES','0','LINE','8','0',
+      '10','0','20','0','11','15','21','20','0','ENDSEC','0','EOF','',
+    ].join('\n'));
+    const originalSha=sceneSha256(original);
+    const cpu=await buildCpuLineCandidate({source:original,versionId,sourceSha256:originalSha});
+    const endpoint=`/api/cad-files/${versionId}/scene`;
+    const blob=`${endpoint}/content?assetId=${assetId}`;
+    const ready=(manifest:typeof cpu.manifest)=>({status:'READY',manifest,assetId,revision:0,contentUrl:blob});
+    // Old browser-only scope is demonstrably incompatible with a valid CPU manifest.
+    expect(()=>validateSceneManifest(cpu.manifest,{
+      scope:sceneScope(versionId,originalSha,cpu.manifest.scope.sourceUnit),
+      format:'CUSTOM_DTO',byteLength:cpu.bytes.length,sha256:cpu.manifest.sha256,
+    })).toThrow('SCENE_MANIFEST_MISMATCH');
+    const fetcher=vi.fn(async(url:string)=>url===endpoint
+      ?Response.json(ready(cpu.manifest)):new Response(cpu.bytes as BodyInit));
+    vi.stubGlobal('fetch',fetcher);
+    const source=new ViewerSource();
+    const load=vi.fn(),loadScene=vi.fn(async(_scene:ReadyScene)=>({empty:false}));
+    const factory=async():Promise<CadViewerAdapter>=>({
+      load,loadScene,dispose:vi.fn(),fitToView(){},zoomIn(){},zoomOut(){},
+    });
+    const manager=new ViewerManager(factory,source,undefined,'DXF',
+      {...cpu.manifest.scope,mode:'scene-first'});
+    await manager.load(`/api/cad-files/${versionId}/content`,'DXF');
+    expect(manager.getLoadStrategy()).toBe('READY_SCENE');
+    expect(loadScene).toHaveBeenCalledOnce();expect(load).not.toHaveBeenCalled();
+    expect(loadScene.mock.calls[0][0].manifest.scope.builder).toBe(CAD_SCENE_CPU_BUILDER);
+    expect(fetcher.mock.calls.map(call=>call[0])).toEqual([endpoint,blob]);
+    manager.dispose();
+    for(const manifest of [
+      {...cpu.manifest,scope:{...cpu.manifest.scope,builder:'not-approved'}},
+      {...cpu.manifest,scope:{...cpu.manifest.scope,versionId:'foreign-version'}},
+      {...cpu.manifest,scope:{...cpu.manifest.scope,sourceSha256:'f'.repeat(64)}},
+    ]){
+      const failFetch=vi.fn(async()=>Response.json(ready(manifest)));
+      vi.stubGlobal('fetch',failFetch);
+      await expect(new ViewerSource().readScene(versionId,originalSha,new AbortController().signal))
+        .rejects.toMatchObject({stage:'scene',reasonCode:'REBUILD_REQUIRED'});
+      expect(failFetch).toHaveBeenCalledOnce();
+    }
+    const foreignSha=vi.fn(async()=>Response.json(ready(cpu.manifest)));
+    vi.stubGlobal('fetch',foreignSha);
+    await expect(new ViewerSource().readScene(versionId,'e'.repeat(64),new AbortController().signal))
+      .rejects.toMatchObject({stage:'scene',reasonCode:'REBUILD_REQUIRED'});
+    expect(foreignSha).toHaveBeenCalledOnce();
+  });
+
   it.each(['MISSING','REBUILD_REQUIRED','FAILED'])('does not fall back to source for %s',async(status)=>{
     const fetcher=vi.fn(async()=>Response.json({status}));vi.stubGlobal('fetch',fetcher);
     const factory=vi.fn();const manager=new ViewerManager(factory,undefined,undefined,'DXF',{...scope,mode:'scene-first'});

@@ -1,3 +1,9 @@
+## 2026-11-05 — PR #235 CI #625 Viewer CPU Scene persisted builder mismatch
+
+[CI #625](https://github.com/planner77/layoutManager/actions/runs/41965842513) at HEAD `cf6dfab3596cd9738c29aeab5a85f136953a1443` failed on first fresh signed Editor Viewer (`scene-status` absent), after real HTTP upload→Queue→independent OCI Worker PUBLISHED and verified Scene READY; Viewer reload and negative tail NOT RUN. Server `SceneRepository.status/content` accepted allowlisted CPU builder via `storedSceneScope`, while browser `ViewerSource.readScene` reconstructed only browser `sceneScope`. Align read-only Viewer to exact known persisted Builder allowlist while preserving immutable Version/SHA/Manifest/DTO digest and no original DXF fallback. Add direct CPU positive plus unapproved Builder/Version/SHA negative regression. New exact HEAD CI pending; historical #625 failure immutable, #225/#218/#231 OPEN, #229 GHCR >=0.61 HOLD, product flags OFF and GO-PILOT BLOCKED.
+
+---
+
 ## 2026-11-05 — PR #235 CI #624 P1-D 신규 로그인 단계 FAIL / 시험 순서 보완
 
 [CI #624](https://github.com/planner77/layoutManager/actions/runs/41948139879) HEAD `2ce84bf322e2b76867bb777efa94f62c51fb1131`: 최초 Admin password-change 후 로그인 화면 `현재 세션` 확인 20초 timeout으로 Docker required Job 및 downstream Verify FAIL. 기존 Docker OCI proof 단계 PASS였지만 HTTP 업로드·Worker·새 Viewer 연속 경로는 미진행. 비동기 초기 변경 완료를 기다리지 않고 navigate하는 테스트 경쟁 조건을 후보 원인으로 보고 `initial-change` success 문구·Login HTTP 200·Session HTTP 200·heading 순서로 보완. 정확 실패 HTTP 상태는 미관측이므로 제품 Auth 결함으로 단정하지 않는다. 새 HEAD required CI 전 P1-D NOT VERIFIED. 기존 #622/#153/#154 성공은 이전 증거로 보존; GO-PILOT BLOCKED, #225/#218/#231 OPEN, 제품 플래그 OFF, v0.61+ GHCR HOLD, 운영 자료·태그 불변.

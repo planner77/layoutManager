@@ -1,3 +1,11 @@
+## ADR #225-P1D-READ — Browser may read verified CPU Scene immutable payload (2026-11-05)
+
+- **Evidence:** #625 P1-D HTTP+OCI returned validated CPU READY, fresh authenticated Viewer failed to expose Scene status. Source inspection confirmed server `storedSceneScope` accepts exactly the approved CPU/Browser builders, but browser `ViewerSource.readScene` used browser-only `sceneScope`. UI log did not expose the private browser exception; mismatch is a deterministic source-level finding.
+- **Decision:** Use `storedSceneScope(versionId,sourceSha256,manifest.scope)` only for client persisted Scene READ, followed by unchanged `validateSceneManifest`, byte/content SHA and full CUSTOM_DTO validation. Unknown builder, wrong Version/SourceSHA, malformed manifests or assets fail closed; no original DXF automatic fallback. This does not authorize client scene publishing or new CPU builders and changes no runtime flags or G7 authorization.
+- **Verification:** CPU LINE positive ViewerManager+no original GET and hostile Builder/Version/SHA negative unit; actual new signed Viewer/reload and later revocation/SHA/unsupported negatives need fresh required P1-D CI. Existing #625 remains FAIL. GO-PILOT BLOCKED, product flags OFF, v0.61+ GHCR HOLD, #225/#218/#231 OPEN.
+
+---
+
 ## ADR #225-P1D — PR 전용 HTTP→OCI→인증 Viewer 전구간 검증 (2026-11-05)
 
 #234 OCI Worker 검증과 #233 Node/브라우저 별도 검증을 단일 성공으로 합치지 않는다. 신규 P1-D는 오직 새 GitHub PR CI run/attempt의 고유 Docker Volume·로컬 OCI 3대상으로 합성 LINE DXF를 등록하고 실제 Origin·CSRF HTTP, Editor 로그인, 독립 Worker의 영속 READY, 새 브라우저 Context 복원까지 시도한다. 실 운영 `.env`, tag, GHCR, 볼륨은 변경하지 않으며 앱 loopback/Worker network none·UID10001/read-only·자원 제한·테스트 소유 marker를 검사한다. 변환 중 OOM/kill, 진짜 승인형 운영 migration/restore 및 3-image 출고는 후속 GO-PILOT/Release Gate. 새 CI 통과 전 NOT RUN. #225/#218 OPEN, 제품 Scene 두 스위치 OFF, #229 GHCR >=0.61 HOLD, #231 관리자 Ruleset OPEN.

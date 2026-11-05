@@ -1,3 +1,9 @@
+## #225 / PR #235 — CPU READY persisted Scene browser read compatibility (2026-11-05)
+
+The signed P1-D path emits CPU Builder `node-cpu-line@1.0.0+cad-scene-1` via the independent OCI Worker. `SceneRepository.status/content` already validates both exact known Browser/CPU Builder identities with `storedSceneScope`. `ViewerSource.readScene` was still reconstructing only Browser `sceneScope`, thus strict manifest comparison rejected a genuine CPU READY record (consistent with CI #625 missing success UI). Browser read now reconstructs expected identity from the request's Version+SourceSHA and the manifest's Builder via the same domain `storedSceneScope` allowlist, still enforcing strict Manifest equality, byte SHA and full DTO checks. Unknown identities, cross-Version/SHA and source-free parser fallback remain blocked; CPU publish G7 authorization/CAS and manual browser publishing unaffected.
+
+---
+
 ## #225/P1-D — 실제 App HTTP와 독립 CPU OCI Viewer 연결 (2026-11-05)
 
 진짜 `POST /api/cad-files`의 G7 Editor Session/Origin/CSRF → `CadRepository.register` Version+CPU Job의 동일 DB TX → 독립 nonroot/NetworkNone CPU Worker OCI `--once` → Verified CUSTOM_DTO v2 + immutable SceneAsset/CurrentScene/SCENE_PUBLISHED Audit → `GET /api/scene-build-jobs` 및 `GET /api/cad-files/[versionId]/scene/content` → **새 인증 Chromium context**의 실제 Viewer Scene 복원·새로고침을 하나의 PR 전용 G7 Docker Volume에서 검사한다. 테스트는 `127.0.0.1`에만 App을 노출하고 Worker에 Docker socket/외부 네트워크를 전달하지 않는다. 음성시험은 Origin/CSRF 오류, Site grant 철회 후 실패, test-owned 원본 SHA 변조, 미지원 CIRCLE 허위 READY 차단 및 기존 READY 보호. 새 PR CI가 완료될 때까지 NOT VERIFIED. 제품 기능 OFF·GHCR HOLD·GO-PILOT BLOCKED는 독립 정책이다.
