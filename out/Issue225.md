@@ -1,3 +1,9 @@
+## 2026-11-05 — P1-D signed HTTP→분리 CPU OCI→신규 인증 Viewer E2E 소스·CI 단계
+
+기존 #234 CI #622의 실제 CI 전용 OCI Worker 격리/READY·revoke·SHA·SIGKILL·복구 성공과 Main CI #153/#154 SUCCESS는 확정 증거다. 새 `feat/225-p1d-http-oci-viewer-e2e`는 `src/tests/oci/scene-p1d-journey.sh`, `scene-p1d-probe.mjs`, `src/playwright.scene-p1d.config.ts`, `src/tests/p1d-e2e/scene-http-oci-viewer.spec.ts`로 진짜 G7 Editor UI/Origin/CSRF의 HTTP DXF 등록→Version/Queue→독립 실제 OCI Worker READY/불변 Scene→새 로그인 Browser에서 원본 재파싱 없이 Viewer 복원 및 negative auth/SHA/unsupported 기존 READY 보전까지 PR CI 필수 단계에서 검증하도록 준비했다. **현재 새 PR CI 미확인/실증 PASS 주장 없음**. 실 변환 도중 OOM/kill, 운영 G7 upgrade/restore, 3-image release 및 #231 GitHub Tag Ruleset은 별도; GO-PILOT BLOCKED, #225/#218 OPEN, 제품 플래그 OFF, #229 0.61+ GHCR HOLD 및 운영 데이터 불변.
+
+---
+
 ## 2026-11-05 — PR #234 OCI CI #622 통과 및 GO-INTEGRATE Main 완료
 
 [PR #234](https://github.com/planner77/layoutManager/pull/234) source HEAD `aa0c4622e912c7ad048c481c4aa153c86124d79c` [PR CI #622](https://github.com/planner77/layoutManager/actions/runs/41935291475) 8 applicable jobs SUCCESS(A2 SKIPPED), OCI 실 컨테이너 security + Loop/READY/stop/start, revoke/SHA tamper, 소유 CID SIGKILL/지속 Job→시각 가속 retry→READY, 격리 SQLite/CAD 복원·재독해 PASS. 이전 #614 SIGKILL exit1 FAIL 이력 보존. Review0/충돌0 뒤 Squash Main `edb3ecb3a17a25cbc88d63b2cc8b911cba3bbcd5` 병합. 이것은 **실제 OCI 증거의 GO-INTEGRATE 완료**이지 제품 GO-PILOT/배포 승인 아님. User HTTP→실 OCI→Viewer 로그인 E2E 및 mid-conversion crash/OOM, real G7 업그레이드/복구, 정식 3-image 검증은 잔여. #225/#218 OPEN, 제품 2 flag OFF, #229 GHCR HOLD/#231 Tag Ruleset OPEN, 실 운영 자료/태그/이미지 변경 없음.
