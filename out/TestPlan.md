@@ -1,3 +1,21 @@
+## TP-225-RP-EXECUTION-FIX — 실제 RP2 timeout·암묵 artifact 업로드 재작업 (2026-11-06)
+
+실제 trusted Main `4fd0b32e82bd89f8056becd9e3dabea69a6b5e00`/tree e004의 RP run2 `42092820405`는 step16 direct timeout probe에서 FAIL했다. childObserved=false, cleanup=PASS, RR2_COMMAND_TIMEOUT이 관측됐고 exact cause는 UNKNOWN이다(약4초 timer에 startup이 포함됐다는 code 관측과 원인 추정을 구별). 3-role/RR1/old0.60pair는 통과했지만 full RR2/export/OIDC/CLI는 NOT RUN이다. 독립 QA도 실패·partial cleanup을 확인했다. 별도로 API metadata에서 기본 build-push post action의 .dockerbuild artifact3개를 관측했으므로 RP05 boundary도 미수용이다. 내용/credential/CAD 유출 여부는 검사하지 않았고 단정하지 않는다.
+
+| AC / TC | 최소 수정·검증 기준 |
+| --- | --- |
+| RE-01 | 독립 Main4fd repair worktree의 timeout-probe 및 필요한 test-only optional runner seam, proof workflow/config 회귀와 관련 문서만 수정. RF/LP frozen source·제품/Schema/버전/flags/HOLD/기존 ownership guard·일반 journey timeout/45분 gate 변경0. childObserved=false를 PASS로 바꾸거나 단순4→큰값 retry로 startup 가설을 해결했다고 주장 금지 |
+| RE-02 | owned child startup/readiness를 별도 유한 deadline으로 확인한 뒤 짧은 execution timeout을 arm. exact CID/name/nonce/engine·volume/labels 및 실제 running fixture readiness가 확인돼야 actual-running-child timeout proof. startup deadline/command early exit/missing readiness/real execution timeout을 구별하며 안전한 phase/elapsed/exit-class·boolean만 기록. 값/원본 로그/env/credential 출력0 |
+| RE-03 | direct와 byte-identical host-helper→Docker CLI 모두 같은 준비/실행 구분을 검사. host process-group TERM/wait/KILL/reap 및 receipt-owned container cleanup 보존. startup/early exit/timeout/unknown inspect/late child 등 모든 경로는 exact-owned cleanup·명시 absence 확인 후만 verdict. daemon/auth/ownership 오류 또는 추적 불확실성을 absence/PASS로 숨기지 않음 |
+| RE-04 | targeted regression으로 startup 지연·deadline·early-exit·readiness missing·wrong CID/label/image·timeout 이후 cleanup·group stop를 분리. 관련 optional seam을 추가하면 default 기존 journey 호출의 timeout/ownership 의미가 동일함을 검증. 가능하면 고유 disposable local namespace에서 실제 direct/host timeout+cleanup 및 제어한 startup 실패를 시험하되 원 운영·기존 retainedR1/R2 자원·CAD/DB 접근/정리0; input image/harness source 차이를 정확 보고 |
+| RE-05 | official docker/build-push-action v7의 기본 build record upload를 proof job의 DOCKER_BUILD_RECORD_UPLOAD='false'로 끄고 모든3 build step이 그 값을 유지함을 static 회귀로 검사. 다른 step-level true override·implicit artifact producer를 놓치지 않음. 실제 future candidate workflow도 별도 refreeze 때 같은 계약을 적용. allowlist/upload 일반 step 이전 검사는 post action 이후 artifact 부재를 증명하지 않음 |
+| RE-06 | 다음 실제 proof job 종료 후 Root/독립 QA가 API artifact inventory를 확인해 허용한 sanitized proof artifact만 있는지 판정(또는 실패 전 subject 미생성 시 artifact0). 현재3 .dockerbuild IDs/size/run metadata는 보존하고 서명subject4개와 혼동하지 않음. 자동 삭제/내용 다운로드/유출 단정/새 actual dispatch0. explicit build summary on/off와 artifact upload를 구별 |
+| RE-07 | focused tests·Python compile·actionlint/YAML/bash·diff·실제 tiny-owned probe의 허용 범위→Manager→독립 QA→exact-head required CI/정상Main→새 별도 proof dispatch GO 순서. 기존 RP2 failure·UNKNOWN cause·unexpected artifact metadata/partial cleanup과 actual OIDC NOT RUN 보존. source fix/local pass만으로 RP/RR5 완료나 GHCR/Owner GO를 부여하지 않음 |
+
+**독립 QA 보완 AC (2026-11-06, 추가 구현 전):** 첫 frozen repair의 새 direct/host actual timeout은 PASS했으나 controlled marker-delay3/startup1 negative `6a11884d72af939f`는 executionArmed=false/cleanup PASS/exit1에도 `RR2_PROBE_INSPECT_UNAVAILABLE`여서 startup-deadline proof가 아니다. 근접 deadline의 in-flight Docker 관측 timeout을 generic inspect 오류와 구별하는 최소 회귀/진단을 보강한다. 실제 subprocess timeout이고 monotonic startup deadline 소진이 확인된 경우에만 별도 startup-observation deadline phase/code로 남긴다. daemon/auth/nonzero/malformed/예산 내 timeout 등 미확인 오류는 계속 UNAVAILABLE로 fail closed하며 typed absence·readiness·execution timeout PASS로 바꾸지 않는다. 짧은 관측 budget 소진을 missing-readiness의 실제 원인이나 과거 hosted 실패 원인으로 소급 단정하지 않는다. 늦은 callback/관측 I/O도 전체 startup bound를 연장하지 않으며 exact cleanup·기존 default timer·4s execution을 유지한다. 합성 timeout-before/after-deadline/unknown-negative 회귀와 새 frozen hash 후 독립 QA의 새 보호 guard/tiny 시험만 수행하며 Developer blind live retry·whole journey·새 dispatch는 하지 않는다. 첫 QA direct/host와 미분류 negative/보호 결과는 그대로 보존한다.
+
+---
+
 ## TP-225-CONTROL-COMBINED — PR240 서명·정책 proof 준비의 합산 검증 (2026-11-06)
 
 Manager는 같은 #225 전체 목표의 다음 PR240 head에 SAN 최소 수정과 이미 독립 로컬 QA를 통과한 CP01–08/RT01–06 source를 함께 포함하도록 결정했다. LP Root draft는 제외한다. CP frozen6/RT frozen2 source byte·unit별 실제 모델/QA/실패 이력과 원래 harness base를 보존하며 현재 source로 과거 실행을 재표시하지 않는다. TestPlan의 CP/RT/SAN/RV 및 RP07 refinements를 모두 보존하고 이전 문서 전체로 최신 이력을 덮어쓰지 않는다.

@@ -1,10 +1,12 @@
 ## #225 — 실제 배포·복구·릴리스 통제 검증 진행 중 (0.61.0, 2026-11-06)
 
+실제 RP2 proof는 timeout fixture에서 실패했고 원인은 UNKNOWN이다. 서명 단계는 실행되지 않았으며 기본 build-record artifact3개도 explicit allowlist 밖에서 관측됐다(내용 미검사). 최소 수리는 별도 readiness 뒤 execution timer를 arm하고 proof build-record upload를 끄는 범위다. 로컬 시험/guard sequencing 실패·실제 결과와 다음 hosted 검증은 [TestReport](out/TestReport.md), 실행 경계는 [Operation](out/Operation.md)을 따른다. 정식 출고·Owner GO를 부여하지 않는다.
+
 PR #237에 이어 [PR #238](https://github.com/planner77/layoutManager/pull/238)의 실제3-image registry/identity 검증을 통합했다. PR CI #639와 Main CI #159는 SUCCESS이며 GHCR 출고는 HOLD로 skip됐다. 현재는 고정 Git archive에서 만든 App/Migrator/CPU Worker의 실제 registry digest 전달·실행, 기존 게시 GHCR0.60 이미지의 설치→승인 업그레이드→동일 백업 복원→원래 App 재기동, 외부 릴리스 정책/권한을 검증한다. 전체 기준은 [TestPlan](out/TestPlan.md)의 RR1–RR5, 최신 실제 결과와 제한은 [TestReport](out/TestReport.md)를 따른다.
 
 실제0.60 이미지 설치·업그레이드·동일 백업/이전 App 복구의 로컬 전체 시험은 통과했다. RR2/RR3 최종 frozen source의 독립 로컬 QA도 실제 8단계와 실패 시 소유 자원 정리를 통과했다. [PR #239](https://github.com/planner77/layoutManager/pull/239)의 정확 HEAD CI #641과 Main CI #160도 SUCCESS로 통합됐으며 GHCR 출고는 HOLD로 skip됐다. 남은 실제 OIDC 서명과 실효 정책/출고 승인 검증을 별도 진행한다. 이전 setup CSRF/Viewer reload 실패의 원인은 미확정으로 보존한다. 정책 JSON은 검토안이며 서버에 적용하지 않았다. 서명 provenance/정식 GHCR3-image 출고·Owner GO는 별도다. 제품 두 Scene flag OFF, >=0.61 GHCR HOLD 및 GO-PILOT BLOCKED를 유지한다. 운영 중인 App과 원본/DB는 시험 대상에 포함하지 않는다.
 
-[PR #240](https://github.com/planner77/layoutManager/pull/240)의 다음 head는 서명 proof와 CP controlled-ref 관측/독립 rule-suite 검증, RT raw-manifest 승격 알고리즘 준비를 함께 검증한다. 순수 회귀28개는 필수 scope job에 연결하며 외부 OIDC·정책/ref/legacy disable·GHCR·Owner GO는 실행 전이다. LP read-only Main/legacy 제어 초안은 이 PR에 포함하지 않는다.
+[PR #240](https://github.com/planner77/layoutManager/pull/240)의 RP 서명 proof·CP controlled-ref 관측/독립 rule-suite 검증·RT raw-manifest 승격 알고리즘 준비 코드는 정확 HEAD CI #645와 Main CI #161 SUCCESS로 Main `4fd0b32`에 통합했다. 순수 회귀28개는 필수 scope job에서 통과했다. 통합 후 실제 proof run2는 서명 전 timeout 사전 시험에서 실패했으며 상세 관측·UNKNOWN 원인은 위와 TestReport를 따른다. 실제 OIDC 서명·정책/ref/legacy disable·GHCR·Owner GO는 NOT RUN이다. LP read-only Main/legacy 제어 초안은 PR240에 포함하지 않았다.
 
 ---
 

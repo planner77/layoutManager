@@ -28,6 +28,7 @@ jobs:
       id-token: write
       attestations: write
     env:
+      DOCKER_BUILD_RECORD_UPLOAD: 'false'
       RP_SOURCE_COMMIT: ${{ inputs.source_commit }}
       RP_EXPECTED_TREE: ${{ inputs.expected_tree }}
     steps:
