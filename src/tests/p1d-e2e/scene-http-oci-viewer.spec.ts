@@ -189,6 +189,7 @@ test('#225 P1-D G7 Editor HTTP upload -> detached OCI Worker -> new authenticate
     const editorSession=await (await editor.request.get('/api/g7-runtime/auth/session')).json() as Access;
     expect(editorSession.actor.id).toBe(editorId);
     const headers={origin,'x-csrf-token':editorSession.csrfToken};
+    console.info('P1D_PHASE:AUTH_READY');
 
     // Real HTTP origin and CSRF failures must reject before receiving a file.
     for(const denied of [
@@ -209,6 +210,7 @@ test('#225 P1-D G7 Editor HTTP upload -> detached OCI Worker -> new authenticate
     const pre=probe(good.id);
     expect(pre).toMatchObject({job:{status:'QUEUED',attempt:0},pointer:null,assets:0,originalShaValid:true});
     expect(pre.uploaded).toBe(1);
+    console.info('P1D_PHASE:HTTP_UPLOAD_QUEUED');
     const worker=workerTick();
     expect(worker).toMatchObject({outcome:'PUBLISHED',jobId:good.sceneBuild!.jobId});
     expect(await state(editor.request,good.id)).toBe('READY');
@@ -240,6 +242,7 @@ test('#225 P1-D G7 Editor HTTP upload -> detached OCI Worker -> new authenticate
     expect(dto.viewerData.sourceIndex).toEqual({
       state:'UNAVAILABLE',reason:'INDEX_ABSENT',
     });
+    console.info('P1D_PHASE:OCI_READY_VERIFIED');
 
     // A distinct real signed Editor login: persisted CPU DTO must render without
     // any original DXF network fetch or original parser execution.
@@ -277,6 +280,7 @@ test('#225 P1-D G7 Editor HTTP upload -> detached OCI Worker -> new authenticate
       .toContainText('원본 정밀 선택 인덱스를 사용할 수 없습니다');
     expect(sceneGets).toBeGreaterThanOrEqual(2);
     expect(originalGets).toBe(0);
+    console.info('P1D_PHASE:VIEWER_PARTIAL_PRECISION_WARNING_VERIFIED');
 
     // Negative: new queued version loses Editor's Site grant after upload.
     const revoked=await upload(editor.request,headers,keys,'p1d-revoke',dx);
@@ -287,6 +291,7 @@ test('#225 P1-D G7 Editor HTTP upload -> detached OCI Worker -> new authenticate
       lastCode:'SCENE_AUTH_REVOKED'},pointer:null,assets:0,originalShaValid:true});
     // A historical READY pointer/asset remains unchanged after denial.
     expect(probe(good.id).pointer?.assetId).toBe(status.assetId);
+    console.info('P1D_PHASE:REVOKED_PUBLISH_DENIED');
 
     await grant(page.request,adminHeaders,editorId,'site',keys.site,'grant');
     const altered=await upload(editor.request,headers,keys,'p1d-sha',dx);
@@ -296,6 +301,7 @@ test('#225 P1-D G7 Editor HTTP upload -> detached OCI Worker -> new authenticate
     expect(probe(altered.id)).toMatchObject({job:{status:'FAILED',
       lastCode:'SCENE_SOURCE_DIGEST_MISMATCH'},pointer:null,assets:0,originalShaValid:false});
     expect(probe(good.id).pointer?.assetId).toBe(status.assetId);
+    console.info('P1D_PHASE:SOURCE_SHA_TAMPER_DENIED');
 
     const invalid=await upload(editor.request,headers,keys,'p1d-unsupported-circle',unsupported);
     expect(invalid.sceneBuild?.status).toBe('QUEUED');
@@ -305,6 +311,7 @@ test('#225 P1-D G7 Editor HTTP upload -> detached OCI Worker -> new authenticate
     expect(probe(good.id)).toMatchObject({pointer:{assetId:status.assetId},
       assets:1,published:1,originalShaValid:true});
     expect(workerTick().outcome).toBe('IDLE');
+    console.info('P1D_PHASE:UNSUPPORTED_ENTITY_DENIED_READY_PRESERVED');
 
     console.log('P1D_HTTP_OCI_VIEWER_PASS',JSON.stringify({
       scenes:1,denied:3,originalGets,sceneGets,freshSessions:true,
