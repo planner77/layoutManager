@@ -213,9 +213,12 @@ class Contract(unittest.TestCase):
                     RP.negative_probe('gh', changed, 'wrongSource', expected(),
                                       baseline=baseline, mapping=mapping)
                 negative.assert_not_called()
-            with patch.dict(os.environ,{'RP_PROOF_DIR':str(private)}),\
+            unbracketed = root / 'private-unbracketed'
+            unbracketed.mkdir()
+            with patch.dict(os.environ,{'RP_PROOF_DIR':str(unbracketed)}),\
                  patch.object(RP.subprocess,'run',return_value=result):
-                with self.assertRaises(RP.Blocked):
+                with self.assertRaisesRegex(RP.Blocked,
+                                            'RP_NEGATIVE_CAUSE_UNPROVEN_WRONGSOURCE'):
                     RP.negative_probe('gh', changed, 'wrongSource', expected())
 
     def test_cleanup_marker_binds_same_run_receipts_and_rechecks_absence(self):
