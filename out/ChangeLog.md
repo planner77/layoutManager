@@ -1,3 +1,18 @@
+## Unreleased — #225 LI 독립 QA·실제 pagination 읽기 수용 (2026-11-06, 0.61.0 유지)
+
+- 검증: LP25/별도 proof118, 실제 bridge1(newLP25 child)·targetedTS/ESLint/static/source2protected52는 독립 PASS. Root의 실제 frozen local helper readback도164completed/unique·6page30×5+14·최대385,683bytes<1MiB로 완료했고 Manager가 제한된 읽기 단위를 수용했다. 원문 응답은 저장하지 않고 정제 metadata만 보존했다.
+- 경계: code bytes3867587은 이 관측 시점 Main에 미게시이며 base/source11532의 RP4 signature와 후속 operator code/fullCI·새 Main preflight를 구분한다. packet생성/disable/rerun/Owner 승인·GHCR출고/운영 변경0. 기존100개1,267,824bytes 실패·처음30개 단일page379,253bytes 관측과 실제 전체164 traversal을 분리한다. freshCI/통합/clean-source preflight는 별도다.
+
+---
+
+## Unreleased — #225 실제 signed proof 수용·legacy inventory pagination (2026-11-06, 0.61.0 유지)
+
+- 실제 RP4: source11532/run42123080929의 same-run registry/runtime/recovery/cleanup·OIDC4subjects/negative6와 완료 후 expected artifact1개를 독립 QA가 확인했다. Root도 server ZIP digest·정확7-file·pinned CLI4same-bundle/certID/subject map을 검증했고 Manager는 이 proof-only unit을 수용했다. 과거 proof2/3 실패·652 취소와 opaque internalUNOBSERVABLE 경계는 보존한다.
+- LI: 실제 GET-only operator preflight의 LP_RESPONSE_TOO_LARGE를 보존하고 기존1MiB/100pages cap 아래에서 정확30-row pagination을 사용한다. helper의 route/query/listbound5literal만 바꾸고 full164·exactmultiple60·oversize30·변경/잘림/중복/active/권한 및 false-readiness 방지를 검사한다. source2 외 proof 의존성은 보존하고 실제 이후 source의 증거는 별도로 기록한다.
+- 상태: 개발자 LP25+별도 proof118/static은 PASS, 독립QA·브리지·freshCI/Main·수리 코드의 실제 전체 GET 읽기는 이 기록 시점 대기다. 실제 정책/환경/legacy disable/rerun·candidate/final GHCR·Owner release GO·운영 배포는 승인하지 않았다. 제품/Schema/버전/flags/HOLD는 유지한다.
+
+---
+
 ## Unreleased — #225 실제 proof3 오류 framing 최소 수리 (2026-11-06, 0.61.0 유지)
 
 - 검증기: 관측된 leading1LF+기존 quoted issuer wrapper+trailing1LF 한 형식만 finite whitelist에 추가한다. `.strip()`·임의 whitespace/issuer 허용은 도입하지 않고 genuine pre/post positive·project cert/4-subject/argv/hash·typed mismatch guard를 유지한다. 독립 원문45바이트/SHA 회귀와 두 full verifier seam의 RED/metadata0→GREEN을 추가했다.

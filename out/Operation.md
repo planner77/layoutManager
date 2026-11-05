@@ -1,3 +1,13 @@
+## #225 LI — LP inventory 고정30 pagination·bounded read 유지 (2026-11-06)
+
+기존 LP helper의 실제 GET-only inventory 준비는 Main11532/helperc849에서 page100 응답이1MiB를 넘어 packet 작성/disable/probe 전 `LP_RESPONSE_TOO_LARGE`로 중단됐다. Root의 별도 안전 측정은 total164/page100=1,267,824B, page30=379,253B를 관측했으며 **전체 actual inventory는 완료하지 않았다**. 새 source는 workflow-run/job 목록 모두 정확 `?per_page=30&page=N`으로 나누며 client의1,048,576B cap·`read(1_048_577)`·timeout30s·redirect 거부와 route/Owner/source·두 fixed mutation 경계를 유지한다.
+
+page별≤30 rows/안정 total_count·실제 합계/최종 short page를 모두 확인한다. 정확30 배수는 다음 빈 page까지 읽고, 기존100-page bound에서 끝나지 않으면 INCOMPLETE다(3000 rows가 정확 full100 pages여도 추가 exhaustion을 관측하지 못했으므로 FAIL). page30도 cap을 넘거나 total 변경/truncation/duplicate/active·unknown/safe-run 누락이 있으면 inventory/Owner-control PASS를 만들지 않는다. cap 증가·자동 page fallback/retry·disable/probe/추가 credential 설정은 없다.
+
+로컬 synthetic client regression은 실제 `GitHub.request`의 cap/decoder를 그대로 통과하지만 live GitHub inventory나 Owner approval의 증거가 아니다. 후속 Root의 repaired GET-only inventory는 별도 Manager 승인/readback이며 packet 승인/disable/probe와 분리한다. Root proof4의 source11532는 고정돼 있고 미래 수정 LP helper를 attestation한 것으로 재표시하지 않는다. 후속 Owner packet은 실제 사용 helper/source/hash와 변경하지 않은 proof dependency의 lineage를 구별하고 정상 code/QA/CI/Main gate를 따른다. 실제 controls/Actions grants·환경/GHCR·Owner release GO는 계속 별도다.
+
+---
+
 ## #225 PN — 실제 opaque stderr의 정확 framing 보존 (2026-11-06)
 
 실제 proof3 실패와 Root의 별도 read-only failure control은 구별한다. run42114901223은4-subject signing 뒤 wrong-workflow negative에서 실패했고 full6 negative/최종 verification metadata는 미완료다. Root는 exact6-file ZIP/hash를 확인한 뒤 실제 project4 same-bundle positives와 app before/after, ONE wrong-workflow의 exit1/빈 stdout을 독립 관측했다. 전체 proof/출고 GO는 아니다.

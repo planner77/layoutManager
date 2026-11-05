@@ -93,9 +93,9 @@ def allowed_route(method, path, body=None):
         return True
     patterns = [
         BASE + r'/actions/workflows/[1-9][0-9]*',
-        BASE + rf'/actions/workflows/{LEGACY}/runs\?per_page=100&page=[1-9][0-9]*',
+        BASE + rf'/actions/workflows/{LEGACY}/runs\?per_page=30&page=[1-9][0-9]*',
         BASE + r'/actions/runs/[1-9][0-9]*',
-        BASE + r'/actions/runs/[1-9][0-9]*/jobs\?per_page=100&page=[1-9][0-9]*',
+        BASE + r'/actions/runs/[1-9][0-9]*/jobs\?per_page=30&page=[1-9][0-9]*',
     ]
     return any(re.fullmatch(pattern, path) for pattern in patterns)
 
@@ -143,16 +143,16 @@ def all_rows(api, path, field):
     rows = []
     expected = None
     for page in range(1, 101):
-        data = get(api, path + f'?per_page=100&page={page}')
+        data = get(api, path + f'?per_page=30&page={page}')
         part = data.get(field)
         total = data.get('total_count')
-        require(isinstance(part, list) and len(part) <= 100
+        require(isinstance(part, list) and len(part) <= 30
                 and type(total) is int and total >= 0, 'LP_INVENTORY_INVALID')
         if expected is None:
             expected = total
         require(total == expected, 'LP_INVENTORY_CHANGED_DURING_PAGINATION')
         rows.extend(part)
-        if len(part) < 100:
+        if len(part) < 30:
             require(len(rows) == expected, 'LP_INVENTORY_TRUNCATED')
             return rows
     raise Blocked('LP_INVENTORY_INCOMPLETE')

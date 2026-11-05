@@ -1,3 +1,11 @@
+## #225 LI — LP GET100 응답이 기존1MiB cap 초과 (2026-11-06)
+
+Root의 승인된 GET-only 준비가 Main11532/helperc849의 `no_active_runs → all_rows(per_page=100) → GitHub.request`에서 `LP_RESPONSE_TOO_LARGE`로 중단됐다. packet 생성/disable/probe·원격 mutation 이전이다. Root의 별도 bounded 측정은 total164, 실제100rows=1,267,824B(cap 초과)와 실제30rows=379,253B(cap 이내)를 확인했다. 두 응답 측정은 전체 inventory 완료/전체 writer 또는 legacy 차단 PASS가 아니다. 원 raw payload/credential은 공개하지 않고 안전 receipt의 count/length/hash만 보존한다.
+
+Developer 대행은 edit 전 unmodified c849 client/no_active_runs와 fake opener의164-row synthetic JSON에서 page100=1,261,339B·`read(1_048_577)`/timeout30/GET-only·mutation0 RED를 재현했다. 이 합성 길이를 실제 Root 측정값으로 재표시하지 않는다. 최소 page30 route/query/길이 guard 수리 뒤 같은 dataset은6 pages/164 normalized rows로 완료했으며 실제 client cap은 바꾸지 않았다. page30 overflow·truncation/total 변경/duplicate/active/unknown/safe-run 부재·100-page exhaustion 실패도 mutation0으로 검사했다. local 결과는 향후 Root actual readback/Owner 승인과 별도이며 proof4 source11532와 future LP helper를 혼동하지 않는다. 실제 역할/명령/수와 한계는 [TestReport](TestReport.md)에 둔다.
+
+---
+
 ## #225 actual proof3 — full stderr framing 누락 (2026-11-06)
 
 Main146/tree3a2c run42114901223은 signing4-subject 생성 뒤 wrong-workflow에서 실패했다. Root의 exact6-file/hash failure control은 actual4 same-bundle project-positive와 app before/after를 독립 통과했고, ONEwrong-workflow stderr가 정확45bytes `b'\nError: verifying with issuer "sigstore.dev"\n'`임을 확인했다. full hosted6 negative/전체proof는 FAIL이며 이 부분 crypto 근거를 전체PASS로 바꾸지 않는다.
