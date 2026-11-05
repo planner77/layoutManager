@@ -1,3 +1,12 @@
+## Unreleased — #225 실제 배포·복구·릴리스 통제 입증 (2026-11-05, 0.61.0 유지)
+
+- Verified baseline: PR #237 exact HEAD CI #636(1,102 tests 포함)와 Main CI #158 SUCCESS 및 Main 통합을 현재 외부 상태로 재확인했다. 이전 로컬 실패 기록은 보존한다.
+- Test/CI: 세 기존 OCI target을 정확 Git archive에서 빌드하는 receipt와 실제 loopback registry의 raw manifest/config/layer SHA·digest pull/run·거부·정리 시험을 추가한다. 실제 과거 GHCR0.60 pair로부터 승인 upgrade/복원·기동을 검증하는 후속 흐름을 진행한다.
+- RR1 repair: PR #238/CI #638의 identity 비교 실패를 보존하고 classic config ID와 containerd target ID를 검증된 descriptor→manifest→config→RootFS 연결로 구분한다. 집중10 회귀와 최종 frozen bytes의 독립 actual classic roundtrip/정리 검증은 통과했으며, 새 정확 HEAD hosted/containerd 검증은 대기 중이다.
+- Control: 현재 source ref·Tag Ruleset·package/environment 권한을 읽기 전용 확인하고 검토 가능한 미적용 policy JSON을 준비했다. 실제 실행 결과는 [TestReport](TestReport.md), 전체 AC는 [TestPlan](TestPlan.md)의 RR1–RR5를 따른다. 제품/Schema/버전/flags/HOLD·운영 자원·기존 release tag와 alias는 유지한다.
+
+---
+
 ## Unreleased — #225 converter 장애·복구 검증 (2026-11-05, 0.61.0 유지)
 
 - Test: 기존 필수 OCI proof에 실제 parser 실행 프레임을 검증하는 시험 전용 inspector와 KILL/주입 cgroup OOM 후 영속 Job 재시도·Scene 복구를 추가한다. 기존 READY·원본·Audit 보존과 로컬 세 이미지 source/role/version/ID 확인을 보강한다.

@@ -1,3 +1,93 @@
+## TP-225-RR1-IDENTITY — CI638 containerd identity 재작업 AC (2026-11-06)
+
+Manager 구현 전 최소 수정 범위다. 실제 CI638 Docker step14는 `RR1_PULL_CONFIG_ID_MISMATCH`로 실패했다. CI는 Docker29.4.2/containerd snapshotter이고 로컬은 classic overlay2다. hosted App build 로그의 image ID는 manifest digest이며 config digest는 별도다. 세 비교 피연산자의 정확한 실패 조합은 로그에 없으므로 안전한 진단을 보강하고 실제 graph를 검증한다. prior 로컬 PASS와 hosted FAIL은 모두 보존하며 새 hosted 성공 전 RR1 통합·새 RR2 실행은 HOLD다.
+
+| AC / TC | 수정·검증 기준 |
+| --- | --- |
+| ID-01 | 기존 `pulled Id == clean-build Id == config digest` seam을 classic config-ID 사례와 관측된 containerd target-ID 사례로 재현하여 원래 식의 containerd 실패를 먼저 확인. 실제 source/version/role/arch 검사와 raw manifest/config/layer byte SHA·size 검증을 유지하고 Docker daemon/store 변경이나 gate/assertion 삭제로 우회 금지 |
+| ID-02 | engine image ID와 OCI config digest를 별도 의미/필드로 기록. classic은 실제 config SHA와 Id 일치; containerd는 Descriptor의 허용 mediaType/digest/size와 Id가 검증된 동일 manifest(또는 실제 검증한 index→linux/amd64 child) graph에 정확 결합되어야 함. 무타입 digest OR·미검증 descriptor·임의 label로 출처 인정 금지. config raw SHA 및 source/pulled RootFS diffIDs·OS/arch/role/version/source 연결을 검증 |
+| ID-03 | receipt prepare/finish, build receipt 재검증, registry digest pull, runtime create/start/inspect와 cleanup 전체에서 같은 identity 의미를 유지. runtime `container.Image`/manifest descriptor는 실제 엔진이 반환한 의미에 따라 검증된 동일 config/manifest graph에 결합하며 `image inspect Id`와 무조건 같다고 가정하지 않음. cleanup은 정확 ref와 검증된 engine ID/소유 자원만 허용. absence/cleanup의 inspect nonzero는 요청 자원의 명시적 not-found일 때만 부재로 인정하고 daemon/auth/timeout/비정상 출력은 safe error로 실패; focused 회귀로 이 구분을 검증 |
+| ID-04 | classic·containerd 허용 사례와 wrong descriptor digest/mediaType/size, unknown engine Id, raw manifest/config hash 변조, RootFS mismatch, cross-role/source/runtime node 혼동을 focused negative로 거부. index는 실제 linkage를 검증하는 경우만 허용하고 자료 부족 시 fail closed. 다중 role·운영 pair validator·기존6개 음성시험을 보존 |
+| ID-05 | 실패 진단은 role와3개 비교 digest, Descriptor digest/mediaType·RootFS 일치 boolean 및 engine/store 식별만 출력. config/env/history·layer payload·credential·CAD/DB dump 0. 새 실제 classic registry roundtrip+cleanup·focused regression·독립 QA 후 fixed exact-head hosted containerd roundtrip을 통과해야 통합/의존성 재개를 판정 |
+| ID-06 | test-only RR1 helper/집중 회귀/필수 workflow 진단과 관련 문서로 한정. 제품/Schema/버전/flags/HOLD·운영 Docker/기존 이미지·태그 변경 0. RR2 test-consumer가 config-ID 동일 가정을 갖는다는 후속 연결점을 공개하고 RR1 identity 계약 확정 뒤에만 반영. CI638 실패를 삭제하거나 합성 containerd fixture PASS를 실제 hosted PASS로 기록 금지 |
+
+공식 containerd [Moby ImageInspect](https://github.com/moby/moby/blob/master/daemon/containerd/image_inspect.go)는 target descriptor digest를 Id로 반환한다. [Docker containerd store](https://docs.docker.com/engine/storage/containerd)는 classic과 저장소 구분을 설명한다. 실제 runner의 반환값과 schema를 별도 확인하며 현재 master 설명을 runner의 모든 필드/실행값으로 추정하지 않는다.
+
+---
+
+## TP-225-RR5-PROVENANCE — GitHub OIDC 서명 출처의 사전 설계 (2026-11-05)
+
+Manager fallback 구현 전 AC다. RR1의 registry byte 검증과 RR2/RR3의 실제 실행을 **실제 GitHub OIDC/Sigstore 서명**에 연결한다. 로컬 키/자가 서명/label을 독립 출처로 승격하지 않는다. 이 Unit은 RR5 중 출처 검증의 일부이며 정식 GHCR3-image 게시·#231 정책 적용·Owner release GO를 대신하지 않는다. 구현·hosted 실행·독립 QA는 아직 NOT RUN이다.
+
+**구조:** 새 proof-only `.github/workflows/release-proof.yml`은 `workflow_dispatch`만 사용한다. 정확 저장소의 `refs/heads/main`에서 입력 source commit과 workflow/source SHA 및 예상 Git tree가 모두 일치할 때만 빌드한다. 기존 RR1 archive→3-role build→소유 registry digest 검증과 RR2/RR3 엔진/업무 proof를 재사용하고 그 실행의 최소 receipt와 각 OCI manifest digest를 서명한다. 공개 저장소에서는 서명 metadata가 공개될 수 있으므로 private GHCR image payload를 artifact로 내보내지 않는다. 현재 Main 보호가 없다는 RR4 관측도 유지하며 Main 실행 자체를 보호 정책의 증명으로 부르지 않는다.
+
+| AC / TC | 구현·검증 기준 |
+| --- | --- |
+| RP-01 | `workflow_dispatch`, 정확 `planner77/layoutManager`, `github.ref=refs/heads/main`, `source_commit == GITHUB_SHA == GITHUB_WORKFLOW_SHA`, `expected_tree == git rev-parse <source>^{tree}`를 fail-closed 검사. 임의 ref/source checkout·PR/pull_request_target 서명 금지. 입력은 env/구조화 인자로 전달하고 shell 구문에 직접 보간하지 않음 |
+| RP-02 | job 권한은 `contents:read`, 기존 private0.60 pair 조회에 필요한 `packages:read`, `id-token:write`, `attestations:write`로 한정. GHCR push/login write·tag/release write·repository policy write·PAT/app credential 사용 0. 새 권한은 proof job에만 주고 기존 required CI 보안·45분 gate·업무 assertion을 낮추지 않음 |
+| RP-03 | RR1의 고정 source archive/lockfile/Dockerfile 및 실제3-role manifest/config/layer digest 검증을 재사용. RR2/RR3의 old0.60 설치→승인 upgrade→후보 HTTP/Worker/fresh Viewer→같은 backup restore→old App readback이 동일 hosted run에서 성공해야 최종 proof receipt 서명. private package read 차단/시간 초과/일부 실패는 명시 FAIL/BLOCKED이며 로컬 결과로 대체하지 않음 |
+| RP-04 | `actions/attest@v4`의 검토한 immutable SHA를 pin하고 기본 SLSA provenance로 각 role의 실제 registry manifest digest와 정제 receipt digest를 서명. `push-to-registry:false`, `create-storage-record:false`를 명시. subject name은 고유 proof role 이름이며 미게시 GHCR tag/image라고 주장하지 않음. receipt는 source/tree/workflow SHA·role/version/platform·manifest/config digest·실행 판정과 제한만 허용 |
+| RP-05 | raw manifest3개/정제 receipt/checksums/Sigstore bundle 및 최소 검증 metadata만 allowlist 경로에서 업로드. OCI archive/layer/config dump·DB·CAD·backup·cookie·setup code·credential·전체 작업 디렉터리 업로드 금지. private old release는 공개 digest/source/role metadata만 기록. 실패 시에도 artifact upload가 이 경계를 넘지 않음 |
+| RP-06 | 공식 checksum으로 확인한 GitHub CLI에서 raw manifest bytes와 receipt 각각 `gh attestation verify --repo planner77/layoutManager --signer-workflow planner77/layoutManager/.github/workflows/release-proof.yml --signer-digest <expected workflow SHA> --source-digest <expected source SHA> --source-ref refs/heads/main --deny-self-hosted-runners --format json` 실행. 기대 SHA는 검증할 bundle에서 역으로 채택하지 않고 승인된 exact run/source에서 고정. 서명된 subject digest/name·3 role/source/tree/version 연결과 receipt의 전 시험 성공을 별도 검사 |
+| RP-07 | 동일 실제 bundle/subject에 wrong source SHA, wrong signer workflow/SHA, wrong source ref, 변조 manifest bytes, 변조 receipt bytes를 적용하여 모두 nonzero 거부. missing/duplicate role·role mapping 변경·다른 run receipt 혼합도 거부. negative 성공은 GitHub/Sigstore 서명 검증 실제 거부와 로컬 schema 검사 거부를 구분 |
+| RP-08 | Developer 구현→Manager review→독립 QA·exact HEAD required CI→Root 정상 통합 순서 후 Main exact source에서 dispatch·원격 결과 검증. 현재 전체 목표상 code-only 통합/시험 dispatch가 필요한 후속 작업인 것으로 판단하되 외부 정책 활성화/GHCR 게시/tag 변경/운영 배포는 별도 경계다. 최종 TestReport는 signer workflow/source SHA, run URL, 원본 manifest/receipt digest, CLI/action 버전, 각 음성시험과 공개 범위를 기록. 성공해도 정식 GHCR3-image·관리 정책·Owner GO는 별도 잔여로 유지 |
+
+**공식 근거와 한계:** [actions/attest](https://github.com/actions/attest)의 OIDC·attestation 권한 및 registry/storage-record opt-out, [GitHub CLI verify](https://cli.github.com/manual/gh_attestation_verify)의 signer/source/ref·hosted-runner 제약을 기준으로 한다. [GitHub artifact attestations](https://docs.github.com/en/actions/concepts/security/artifact-attestations)는 서명을 출처·빌드 절차의 연결로 설명하며 소프트웨어 안전성 보증으로 보지 않는다. 공개 metadata와 private image payload를 구별한다. 공식 지원 설명은 실제 성공 기록이 아니다.
+
+---
+
+## TP-225-RR2-EXECUTION — 실제 과거 OCI upgrade/rollback 격리 설계 (2026-11-05)
+
+**선행 수용:** Manager는 RR1의 실제 registry digest roundtrip·6개 음성시험·기본 정리 및 독립 QA를 수용했다. CI archive prepare/finish와 release-contract 4 files/6 tests PASS는 별도 기록이며 새 exact HEAD hosted CI는 아직 미확인이다. RR2–RR5 전체 목표는 계속 진행 중이다.
+
+**중요 발견:** 현행 Compose의 고정 `container_name=cad-layout-viewer-app`, network 이름과 `host_ip=0.0.0.0` 때문에 `--project-name`만으로는 시험이 격리되지 않는다. 기존 실행 중인 **0.58.0 운영 App/네트워크/volume에는 어떤 stop/start/recreate/write도 하지 않는다**. 시험은 새 임시 디렉터리에 `g7-deploy.py`/`g7-upgrade.py`를 **byte 동일하게 복사**하고 두 helper가 상대 위치에서 읽는 Compose만 별도의 test-only namespace clone으로 제공한다. 이는 변경 없는 host 엔진을 실제 Docker로 시험하는 구성 변환이며 shipped Compose 그대로의 안전성을 증명하지 않는다.
+
+| AC / TC | 실행 기준 |
+| --- | --- |
+| RX-01 | 각 helper 원본/복사 SHA 동일 확인. 사전에 test env로 해석한 Compose와 clone의 구조 diff가 명시된 고유 project/container_name/network.name/127.0.0.1 host binding/독립 port/새 volume.name 및 시험 소유 label만 포함함을 assert. image digest·source·schema·security·command/entrypoint·healthcheck·mount target·depends_on은 보존. runtime env는 실제 해당 old/new release와 소유 origin/volume로 별도 작성하며 Git/GHCR credential 미전달 |
+| RX-02 | receipt nonce로 모든 대상 container/network/volume을 추적; 기존 자원·운영 고정 이름·운영 volume·비loopback port 거부. 실행 전후 운영 App ID/Image/start time/running 및 mount identity를 읽기 전용 비교하여 시험이 이를 변경하지 않았음을 확인. 기존 운영 CAD/DB의 hash를 위해 파일을 열거나 private 내용을 수집하지 않음 |
+| RX-03 | root가 검증한 실제 GHCR0.60 App/Migrator digest/source/tag 연결 receipt와 RR1 현재3-image receipt 검증. 정식 old image 설치·App startup 후 HTTP setup/Admin/Editor/Site Grant와 DXF upload/Current/source GET. Browser QUEUED·유효 READY Scene은 실제 지원 경로 우선; 시험 fixture 필요 시 명시하고 old 설치 metadata/schema를 SQL로 바꾸지 않음 |
+| RX-04 | 업그레이드 전 기존 business/Job/Scene/Current/Audit 전체 행 및 원본/Scene bytes snapshot. 같은 volume에서 기존 host helper 정확 plan→잘못된 승인 거부/불변→정확 execute→실 backupId/registered migration/STOPPED→별도 start 승인. immutable 행은 이후 의도적 인증/Audit/CPU write 전에 비교하여 기대되는 새 기록과 불변 위반을 구별 |
+| RX-05 | 현행 host helper는 App/Migrator만 검증·시작한다. Worker는 RR1 triplet/digest 검사를 먼저 통과한 후 명시된 test-owned operator 절차로 기동하고 실제 signed HTTP→CPU OCI→새 Viewer를 검증. maintenance 전 Worker도 명시적으로 중지하며 writer0 검사는 유지. helper가 Worker 자동 orchestration 또는 full3-image release gate를 제공한다고 주장하지 않음 |
+| RX-06 | 기존 P1-D 동작 재사용은 검증된 RR2 receipt/고유 nonce·volume·digest ref·기존 Admin/Origin 입력을 받는 시험 전용 helper로 분리한다. 기존 P1-D 소유권 검사 regex/고정 volume 보호를 arbitrary volume 허용으로 완화 금지. 새 Viewer는 원본 GET 없이 기존/신규 Scene readback과 정확 fidelity 경고 확인 |
+| RX-07 | 같은 backup의 정식 `restore`를 새 빈 소유 volume로 수행. old0.60 manifest/business/Job/Scene/Audit/원본 snapshot을 **old App 기동 전** 비교. 이후 실제 old digest App을 별도 프로젝트·loopback port에서 기동, 기존 계정 HTTP login·인가·목록/Current/sourceSHA/저장 READY Scene을 확인. 새 인증/Audit 발생은 snapshot 이후 정상 변화로 구별하고 post-backup CPU writes 유실은 예상 복구 시점으로 공개 |
+| RX-08 | 실제 등록 이미지/engine/HTTP/Worker/Browser 증거만 PASS. namespace clone 제한·수동 Worker orchestration·loopback unsigned registry와 정식 GHCR provenance 차이를 보고. CI 기존 required45분/보안/업무 assertion을 완화하지 않고 단계별 재사용; 소스 결함 발견 시 증거·최소 제품 수정 필요성을 먼저 Manager에게 보고. 종료 시 receipt 기반으로 시험 소유 자원만 정리 |
+
+기본 제품0.61.0/flags OFF/GHCR HOLD와 외부 정책 미적용을 유지한다. 실제 운영 장소 승인·정식 publisher/provenance/Owner release GO는 RR4/RR5에서 계속 추적한다.
+
+---
+
+## TP-225-RELEASE-RECOVERY — 배포·실 OCI 복구·릴리스 통제 입증 (2026-11-05)
+
+Manager 구현 전 요구/설계/AC. 새 사용자 목표는 개발·통합 증거를 넘어 **실제 배포 가능성·복구 가능성·릴리스 통제**를 입증하는 것이다. PR #237 exact HEAD CI #636 SUCCESS 및 Main 통합은 root가 확인했으며 converter fault 검증을 재구현하지 않는다. 아래 전체 잔여 matrix를 추적하고 실행 가능한 Unit을 순서대로 완료한다. 로컬 metadata 검사나 합성 과거 Schema만으로 전체 목표 완료를 선언하지 않는다.
+
+| Gate / Unit | 필요한 실제 증거 | 완료를 대체하지 못하는 증거 |
+| --- | --- | --- |
+| RR1 — immutable 3-image 배포 | 정확 Git commit/tree로 생성한 App/Migrator/CPU Worker OCI를 소유 registry에 push, 실제 manifest/config/layer digest 연결 확인, digest ref로 pull·실행 및 역할/version/source/linux-amd64 검증 | 로컬 image ID·자가 label만, tag 문자열, registry 쓰기 없는 Docker build |
+| RR2 — 실제 이전 OCI 복구 | 기존 게시 GHCR0.60 App/Migrator 원본 pair를 읽기 전용 조회/pull하여 digest 고정. 이 이미지로 생성·사용한 populated 설치→정식0.61 upgrade backup→같은 backup 격리 restore→**기존0.60 digest App 실제 기동과 인증·업무 readback** | 최신 소스로 과거 Schema 재현, 재빌드0.60, DB checksum만, rollback 컨테이너 health만 |
+| RR3 — 현재 후보 배포 업무 | RR1의 digest 고정 후보에서 실제 signed HTTP 업로드→Job→독립 CPU OCI→새 인증 Viewer Scene 복원, 기존 Browser Job/READY/Current/원본/Audit 보존, 정확 upgrade/start 승인 거부·허용 | 새로운 빈 설치만, 서비스 함수 호출만, 원본 재파싱 fallback |
+| RR4 — 릴리스 통제 | >=0.61 HOLD의 실제 gate 거부, 잘못된 role/source/version/digest/partial set 거부, #231 effective Tag Ruleset·Main 삭제/non-fast-forward/필수 CI 통제·우회 주체/패키지 게시 권한 및 승인 경로의 실제 readback | 저장소 admin:true, 빈 Ruleset을 보호 PASS로 해석, 설정 초안만, 401/403을 권한 없음으로 단정 |
+| RR5 — 정식 출고/Owner GO | 승인된 immutable release의 실제 GHCR3-image manifest·source provenance와 rollback pair, 검토된 관리 정책 적용 readback, 릴리스별 Owner GO | loopback registry 성공, synthetic Owner 서명, 로컬 build receipt. 별도 외부 쓰기/운영 승인 전 BLOCKED |
+
+**실행 설계:** RR1→RR2/RR3→RR4의 독립 구현·검증 단계를 진행한다. RR5와 외부 관리 권한을 요하는 항목은 완성된 후보/정확 변경안/실측 차이를 준비한 다음 필요한 권한·승인을 특정한다. 시험 registry는 127.0.0.1에만 노출한 고유 Docker 자원이고 운영 registry·GHCR/기존 tags에는 쓰지 않는다. registry 자체도 image digest/소유 receipt를 기록한다. 현행 제품/Schema/버전·기능 기본값·출고 HOLD는 변경하지 않는다. clean commit/tree 빌드와 Dockerfile/lockfile·빌드 명령·결과 manifest의 추적 receipt를 남기되 자가 receipt를 독립 서명 attestation이라 부르지 않는다. 필요 시 원격 provenance는 별도 검증한다.
+
+| AC / TC | 구현·수용 기준 |
+| --- | --- |
+| RR-01 | 새 고유 registry/container/network/volume/port 이름과 소유 receipt, 기존 자원 거부, loopback 노출, 운영 경로/credential 미전달, 실패 포함 정확 자원 cleanup. 최소 image metadata/공개 digest만 기록하고 실제 CAD/DB/인증정보 artifact 업로드 0 |
+| RR-02 | 소스 commit/tree와 version0.61.0를 빌드 전에 고정; 임의 label만으로 출처 인정 금지. 3 role별 실제 registry manifest raw bytes SHA256==요청 digest, config digest 및 필요시 index→linux/amd64 child linkage, pulled image/config ID·실제 실행 Image ID가 연결됨. 유일한 공통 source/version, 올바른 role·arch, 서로 다른 image를 확인 |
+| RR-03 | role swap/source mismatch/version mismatch/missing Worker 또는 tampered manifest/digest는 배포 전 거부. 운영 pair validator `g7-upgrade.py.inspect_pair`와 별도 후보3-image 증거 검사를 재사용/보완하며 더 약한 중복 validator로 대체 금지 |
+| RR-04 | 기존 GHCR0.60 App/Migrator의 실제 manifest·source·role·arch·동일 source 및 tag/commit 근거를 읽기 전용 수집하고 digest로 pull. 불가하면 정확 endpoint/상태/부족 증거를 BLOCKED로 기록하고 가능한 RR1/RR3/RR4는 계속한다. 재빌드를 기존 게시 artifact로 표기 금지 |
+| RR-05 | 실제0.60 digest pair와 소유 빈 volume에서 정식 설치, 실제 Editor/Grant/원본/Current 및 유효 Browser READY·QUEUED Job을 준비. 인증·업무 HTTP로 가동 확인 후 snapshot 기록; fixture로 부족한 행을 준비한 경우 그 범위를 명시하고 SQL로 과거 설치 identity를 위조하지 않음 |
+| RR-06 | `g7-deploy.py`의 status/plan→정확 approve-plan execute→STOPPED→별도 start plan/승인을 사용. 기존 `g7-upgrade.py`/정식 engine의 writer0/backupId/verifyRecoverySet/migration 적용 및 구 Browser Job·Scene/Current/Version/Audit·원본 hash 보존. 잘못된 plan/실행 중 writer/identity mismatch는 불변 상태로 거부 |
+| RR-07 | 업그레이드된 실제 후보 digest App/Worker에서 기존 P1-D signed Origin/CSRF HTTP→Queue→OCI→새 로그인 Viewer 검증 재사용. 원본 GET fallback 0·정확 부분 fidelity 경고·새 CPU Job READY readback·이전 READY immutable, retry/권한음성 경계 유지. 시험에만 flags를 opt-in하며 운영 기본 OFF |
+| RR-08 | upgrade가 만든 동일 backup을 `g7-upgrade.py restore --backup ... --restore-volume <새 빈 소유 volume>`로 복원; live upgraded source readonly/불변. 복원된 **기존0.60 manifest와 실제0.60 digest pair**로 별도 프로젝트·포트 App start, 로그인/권한·기존 Current/원본 SHA·READY scene readback·Job/Audit snapshot·FK검증. backup 이후 CPU writes가 복구본에서 사라지는 시점과 손실 범위를 명시. old App/new Schema 혼용은 허용하지 않음 |
+| RR-09 | 기존 release HOLD script 및 required workflow 경로의 유효/잘못된 tag/source·partial image set 거부를 실제 실행 검증. #231 repo+inherited effective rulesets, Main 삭제/non-fast-forward/필수 CI source-ref 통제, bypass actors, environment approval/workflow/package 쓰기 권한은 읽기 전용 확인; default workflow READ가 과거 workflow의 explicit packages:write를 제한한다는 가정 금지; 읽기 불가와 보호 부재를 구분. 외부 정책 쓰기 전 적용할 정확 ruleset/권한 변경안과 rollback/영향을 검토 가능하게 준비 |
+| RR-10 | Typecheck/Lint/관련 자동 시험/Build와 실제 OCI registry·배포·복구를 독립 QA가 검증. source/source-tree/manifest/실행 시점·시험 환경을 구분해 TestReport에 기록; 미실행/차단/실패를 보존. exact HEAD 필수 CI와 로컬 결과 구분. 결과가 부족한 gate는 계속 OPEN/BLOCKED이며 전체 GO를 조기 선언하지 않음 |
+
+**명확한 경계:** 운영 DB/CAD/Volume/.env, GHCR push/tag promotion, 외부 security policy 활성화는 이 시험의 자동 부수효과가 아니다. 제품0.61.0, Scene flags OFF, >=0.61 GHCR HOLD 및 #225/#218/#231 OPEN은 릴리스별 별도 수용 전 유지한다. 새 목표는 증거 확보의 지속 작업을 승인하지만 source 시험 성공을 운영자 GO로 변환하지 않는다. Manager→Developer→Manager review→독립 QA→root 게시 순서를 적용한다.
+
+---
+
 ## TP-225-CONVERTER-FAULT — 실제 converter 중단·cgroup OOM 폐기 시험 (2026-11-05)
 
 Manager 구현 전 요구/설계/AC. 사용자 요청은 #225 잔여 GO-PILOT 검증의 **독립 PR**이며 병합·운영 배포/활성화 승인이 아니다. #236 populated upgrade/restore는 완료 증거로 재사용하고 반복 구현하지 않는다. 이번 최소 Unit은 converter 실제 실행 도중 장애와 durable recovery를 검증하며, 정식 3-image 출고 및 #231 관리 권한은 읽기 전용 확인 범위다.

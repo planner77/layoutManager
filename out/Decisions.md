@@ -1,3 +1,17 @@
+## #225 RR1 CI638 — Docker identity 표현과 콘텐츠 증명을 분리 (2026-11-05)
+
+실제 hosted registry roundtrip의 `RR1_PULL_CONFIG_ID_MISMATCH`를 근거로 통합을 HOLD한다. classic image ID와 containerd target descriptor ID의 표현 차이를 조사하되, 다른 digest 중 하나와 일치하면 통과하는 완화는 허용하지 않는다. raw manifest/config/layer SHA, typed descriptor 연결, RootFS DiffIDs, 고정 source/role/version/arch 및 실제 runtime identity를 함께 검증한다. 최소 수정은 test-only이며 runner daemon/storage 설정이나 제품 코드를 바꾸지 않는다. 실제 관측·미확정 원인·재개 기준은 [TestReport](TestReport.md)의 PR238/CI638 기록을 따른다. Manager는 최종 frozen bytes의 독립 classic QA를 수용해 PR238의 정상 fast-forward 수정 게시와 새 hosted 시험을 승인했다. hosted containerd 성공 전 통합/RR2 재개 HOLD는 유지한다.
+
+---
+
+## #225 RR4 — 실제 source-ref/registry 권한과 HOLD 정책안 (2026-11-05)
+
+새 목표의 외부 통제 증거를 수집한 결과 Main 보호와 release environment가 없는 상태가 관측됐다. 따라서 최신 source의 HOLD 코드만으로 과거 workflow 및 승인되지 않은 source 이동의 통제를 완료했다고 할 수 없다. `release-control/`의 두 ruleset payload는 검토용 HOLD/source 정책이며 **미적용**이다. Tag bypass는 비워 두고 source ref는 현재 실제 aggregate CI app/context에 묶는다. 향후 승인 publisher identity나 release environment 검토 없이 임의 bypass를 추가하지 않는다.
+
+Root는 연결 도구의 지원 범위를 확인한 뒤 기존 host registry credential을 메모리 안에서만 사용해 같은 GHCR package와 저장소의 read-only API를 확인했다. credential 값·헤더·인증 응답 token은 출력/저장하거나 앱에 전달하지 않았다. 이 경로의 조회 성공은 기존 `.env` Git 인증 401을 고쳤거나 GHCR push를 수행했다는 의미가 아니다. 새 실제 관측은 [TestReport](TestReport.md), 승인·적용·rollback 절차는 [Operation](Operation.md)에 분리한다. 제품0.61.0/flags OFF/GHCR HOLD는 그대로다.
+
+---
+
 ## #225 — converter fault 증거를 제품 hook 없이 분리 (2026-11-05)
 
 TP-225-CONVERTER-FAULT는 기존 claim-only SIGKILL과 구별해 실제 CPU parser 호출 프레임/완료 LINE을 확인하는 시험 전용 inspector를 사용한다. 제품 sleep/fault hook·메모리/권한 제한 완화는 도입하지 않는다. 주입 cgroup OOM의 합격에는 실제 Docker OOMKilled=true가 필요하며, 자연 발생 parser OOM·실 CAD 용량 수용을 주장하지 않는다. 소스 위치 변화는 시험 수정과 재검증이 필요한 fail-closed 조건이다.
