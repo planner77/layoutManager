@@ -137,6 +137,87 @@ class Contract(unittest.TestCase):
             diagnostic=json.loads((Path(directory)/'rp-negative-wrongSource.json').read_text())
             self.assertEqual(diagnostic['class'],'COMMAND_UNAVAILABLE_OR_TIMEOUT')
 
+    def test_opaque_cli_is_never_an_unbracketed_or_generic_policy_pass(self):
+        # Synthetic process output: pinned gh 2.103.3 source, NOT an OIDC run.
+        hidden = ('✗ Sigstore verification failed\n'
+                  'verifying with issuer "https://token.actions.githubusercontent.com"')
+        denied = SimpleNamespace(returncode=1, stdout='', stderr=hidden)
+        self.assertTrue(RP.opaque_sigstore_failure(denied))
+        with self.assertRaises(RP.Blocked):
+            RP.negative_cause('wrongSource', denied, expected())
+        for message in ('generic Sigstore failure', 'authentication failed',
+                        '✗ Sigstore verification failed\nnetwork is unreachable',
+                        '✗ Sigstore verification failed\n'
+                        'verifying with issuer "https://other.example"'):
+            self.assertFalse(RP.opaque_sigstore_failure(
+                SimpleNamespace(returncode=1, stdout='', stderr=message)))
+        self.assertFalse(RP.opaque_sigstore_failure(
+            SimpleNamespace(returncode=0, stdout='', stderr=hidden)))
+        self.assertFalse(RP.opaque_sigstore_failure(
+            SimpleNamespace(returncode=1, stdout='unexpected', stderr=hidden)))
+
+    def test_opaque_cli_differential_has_genuine_positive_brackets_and_exact_delta(self):
+        # The positive JSON below is a mock of *successful* gh verification.
+        # This unit proves the fail-closed caller contract, not real signatures.
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            private = root / 'private'
+            private.mkdir()
+            artifact = root / 'proof-app-manifest.json'
+            artifact.write_bytes(b'original-signed-artifact')
+            bundle = root / 'proof-bundle.sigstore.json'
+            bundle.write_bytes(b'synthetic-not-a-real-bundle')
+            mapping = {'app':RP.sha(artifact.read_bytes()),
+                       'migrator':'2'*64, 'cpu-worker':'3'*64, 'receipt':'4'*64}
+            flags = ['--repo',RP.REPO,'--signer-workflow',RP.SIGNER,
+                     '--signer-digest',SOURCE,'--source-digest',SOURCE,
+                     '--source-ref','refs/heads/main',
+                     '--deny-self-hosted-runners','--format','json']
+            baseline = [str(artifact), *flags, '--bundle', str(bundle)]
+            changed = baseline.copy()
+            changed[changed.index('--source-digest') + 1] = '0' * 40
+            result = SimpleNamespace(
+                returncode=1, stdout='',
+                stderr=('✗ Sigstore verification failed\n'
+                        'verifying with issuer "https://token.actions.githubusercontent.com"'))
+            with patch.dict(os.environ, {'RP_PROOF_DIR':str(private)}),\
+                 patch.object(RP,'run',
+                              return_value=json.dumps(verified_result(mapping))) as positive,\
+                 patch.object(RP.subprocess,'run',return_value=result) as negative:
+                self.assertEqual(
+                    RP.negative_probe('gh',changed,'wrongSource',expected(),
+                                      baseline=baseline,mapping=mapping),
+                    'BRACKETED_CLI_REJECTION_CAUSE_OPAQUE')
+                self.assertEqual(positive.call_count, 2)
+                self.assertEqual(negative.call_count, 1)
+            self.assertTrue((private / 'rp-negative-wrongSource.json').is_file())
+            forged = changed.copy()
+            forged[forged.index('--source-digest') + 1] = 'f' * 40
+            with self.assertRaises(RP.Blocked):
+                RP.negative_delta('wrongSource',forged,baseline,expected(),mapping)
+            with self.assertRaises(RP.Blocked):
+                RP.negative_delta('wrongSignerCommit',changed,baseline,expected(),mapping)
+            altered = root / 'tamper' / artifact.name
+            altered.parent.mkdir()
+            raw = artifact.read_bytes()
+            altered.write_bytes(bytes([raw[0] ^ 1]) + raw[1:])
+            tampered_args = [str(altered), *flags, '--bundle', str(bundle)]
+            RP.negative_delta('tamperedManifest',tampered_args,baseline,expected(),mapping)
+            altered.write_bytes(raw)
+            with self.assertRaises(RP.Blocked):
+                RP.negative_delta('tamperedManifest',tampered_args,baseline,expected(),mapping)
+            with patch.dict(os.environ,{'RP_PROOF_DIR':str(private)}),\
+                 patch.object(RP,'run',return_value='[]'),\
+                 patch.object(RP.subprocess,'run',return_value=result) as negative:
+                with self.assertRaises(RP.Blocked):
+                    RP.negative_probe('gh', changed, 'wrongSource', expected(),
+                                      baseline=baseline, mapping=mapping)
+                negative.assert_not_called()
+            with patch.dict(os.environ,{'RP_PROOF_DIR':str(private)}),\
+                 patch.object(RP.subprocess,'run',return_value=result):
+                with self.assertRaises(RP.Blocked):
+                    RP.negative_probe('gh', changed, 'wrongSource', expected())
+
     def test_cleanup_marker_binds_same_run_receipts_and_rechecks_absence(self):
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory)
