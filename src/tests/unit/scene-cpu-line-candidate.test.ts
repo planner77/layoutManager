@@ -2,6 +2,7 @@ import {describe,expect,it} from 'vitest';
 import {sceneSha256} from '../../domain/scene-digest';
 import {CAD_SCENE_CPU_BUILDER} from '../../domain/cad-scene';
 import {validateStoredScenePayload} from '../../domain/scene-payload';
+import {storedSceneFidelityProfile} from '../../viewers/three-dxf-viewer/scene-serialization';
 import {buildCpuLineCandidate,parseCpuLineOnlyDxf,CPU_LINE_LIMITS} from '../../server/scene/cpu-line-candidate';
 
 const line=(x:string,y:string)=>['0','LINE','8','0','10',x,'20',y,'11','10','21','20'];
@@ -13,6 +14,25 @@ function fixture(entities:readonly string[] = [...line('1','2'),...line('3','4')
 }
 const versionId='11111111-1111-4111-8111-111111111111';
 describe('#225 B2-A Node CPU-only bounded LINE DXF candidate',()=>{
+  it('#225 P1-D: CPU LINE geometry READY retains explicit missing precise-source-index warning',async()=>{
+    const source=fixture();
+    const candidate=await buildCpuLineCandidate({source,versionId,
+      sourceSha256:sceneSha256(source)});
+    // A verified v2 DTO and renderable geometry do not create an exact
+    // original DXF Handle/source index by implication. #626 must NOT turn
+    // this into a false full-fidelity/precise-selection success.
+    expect(storedSceneFidelityProfile(candidate.bytes)).toEqual({
+      render:'FULL_V2',sourceIndex:'UNAVAILABLE',action:'REBUILD_REQUIRED',
+    });
+    const stored=JSON.parse(new TextDecoder().decode(candidate.bytes)) as
+      {viewerData:{sourceIndex:{state:string;reason:string}};root:{children:unknown[]}};
+    expect(stored.viewerData.sourceIndex).toEqual({
+      state:'UNAVAILABLE',reason:'INDEX_ABSENT',
+    });
+    expect(stored.root.children).toHaveLength(2);
+    expect(()=>validateStoredScenePayload(candidate.bytes,candidate.manifest)).not.toThrow();
+  });
+
   it('creates real THREE geometry, v2 DTO and immutable tempfile readback without a browser',async()=>{
     const source=fixture();
     const candidate=await buildCpuLineCandidate({
