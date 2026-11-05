@@ -110,10 +110,22 @@ async function assertReady(state,name,attempt){
     assert(bytes.byteLength>0,'OCI_PROOF_SCENE_EMPTY');
     assert(await db.sceneAsset.count({where:{versionId:row.versionId}})===1,
       'OCI_PROOF_DUPLICATE_SCENE');
-    assert(await db.auditEvent.count({where:{action:'SCENE_PUBLISHED',
-      targetId:row.versionId}})===1,'OCI_PROOF_AUDIT_MISSING');
+    const audits=await db.auditEvent.findMany({where:{action:'SCENE_PUBLISHED',
+      targetId:row.versionId},select:{id:true}});
+    assert(audits.length===1,'OCI_PROOF_AUDIT_MISSING');
     assert(hash(readFileSync(row.original))===row.sha,'OCI_PROOF_SOURCE_CHANGED');
-    return status.assetId;
+    const rows={
+      current:await db.currentScene.findMany({where:{versionId:row.versionId}}),
+      asset:await db.sceneAsset.findMany({where:{versionId:row.versionId}}),
+      audit:await db.auditEvent.findMany({where:{action:'SCENE_PUBLISHED',targetId:row.versionId}}),
+    };
+    const rowsSha=hash(Buffer.from(JSON.stringify(rows,(_key,value)=>
+      typeof value==='bigint'?value.toString():value)));
+    const snapshot={assetId:status.assetId,blobSha:hash(bytes),auditId:audits[0].id,rowsSha};
+    if(state.snapshots?.[name])
+      assert(Object.entries(state.snapshots[name]).every(([key,value])=>snapshot[key]===value),
+        'OCI_PROOF_PRIOR_READY_CHANGED');
+    return snapshot;
   }finally{storage.close();await db.$disconnect();}
 }
 async function denied(state,name,code){
@@ -153,6 +165,36 @@ async function tamper(){
   writeFileSync(row.original,altered,{mode:0o600});
 }
 const claimMarker='/data/ci-scene-oci-claimed.marker';
+const faultNames=['converter-kill','converter-oom'];
+function faultRow(state,name){
+  assert(faultNames.includes(name),'OCI_PROOF_FAULT_NAME_INVALID');
+  const row=state.versions[name];
+  assert(row,'OCI_PROOF_FAULT_NOT_PREPARED');
+  return row;
+}
+async function verifyConverterRunning(name){
+  const state=stored(),row=faultRow(state,name);
+  const marker='/data/ci-scene-converter-'+name.slice('converter-'.length)+'.marker';
+  assert(existsSync(marker),'OCI_PROOF_CONVERTER_FRAME_MISSING');
+  assert(readFileSync(marker,'utf8')==='PARSED_LINE:'+name.slice('converter-'.length),
+    'OCI_PROOF_CONVERTER_FRAME_INVALID');
+  const db=rawDb();
+  try{
+    const job=db.prepare('SELECT status,attempt,started_at FROM "SceneBuildJob" WHERE id=?').get(row.jobId);
+    assert(job?.status==='RUNNING'&&job.attempt===1&&job.started_at,
+      'OCI_PROOF_CONVERTER_NOT_RUNNING');
+    assert(db.prepare('SELECT count(*) AS n FROM "CurrentScene" WHERE version_id=?').get(row.versionId).n===0,
+      'OCI_PROOF_CONVERTER_PREMATURE_POINTER');
+    assert(db.prepare('SELECT count(*) AS n FROM "SceneAsset" WHERE version_id=?').get(row.versionId).n===0,
+      'OCI_PROOF_CONVERTER_PREMATURE_ASSET');
+    assert(db.prepare('SELECT count(*) AS n FROM "AuditEvent" WHERE action=? AND target_id=?').get('SCENE_PUBLISHED',row.versionId).n===0,
+      'OCI_PROOF_CONVERTER_PREMATURE_AUDIT');
+    assert(hash(readFileSync(row.original))===row.sha,'OCI_PROOF_CONVERTER_SOURCE_CHANGED');
+  }finally{db.close();}
+  await assertReady(state,'ready',1);
+  await assertReady(state,'crash',2);
+  for(const prior of faultNames)if(state.snapshots?.[prior])await assertReady(state,prior,2);
+}
 async function verifyClaimMarker(){
   const state=stored(),row=state.versions.crash;
   assert(row,'OCI_PROOF_CRASH_NOT_PREPARED');
@@ -203,6 +245,39 @@ async function changeClock(kind){
     }else die('OCI_PROOF_CLOCK_ACTION');
   }finally{await db.$disconnect();}
 }
+async function changeFaultClock(name,kind){
+  const state=stored(),row=faultRow(state,name);
+  const {createDb}=await import('../server/db.ts');
+  const db=createDb('file:'+dbPath);
+  try{
+    const job=await db.sceneBuildJob.findUniqueOrThrow({where:{id:row.jobId}});
+    if(kind==='stale'){
+      assert(job.status==='RUNNING'&&job.attempt===1,'OCI_PROOF_FAULT_NOT_RUNNING');
+      await db.sceneBuildJob.update({where:{id:row.jobId},data:{startedAt:new Date(Date.now()-210_000)}});
+    }else if(kind==='due'){
+      assert(job.status==='RETRY_WAIT'&&job.attempt===1&&job.lastCode==='SCENE_BUILD_TIMEOUT',
+        'OCI_PROOF_FAULT_NOT_RETRY_WAIT');
+      await db.sceneBuildJob.update({where:{id:row.jobId},data:{dueAt:new Date(Date.now()-10_000)}});
+    }else die('OCI_PROOF_FAULT_CLOCK_ACTION');
+  }finally{await db.$disconnect();}
+}
+async function verifyFaultWait(name){
+  const state=stored(),row=faultRow(state,name);
+  const {createDb}=await import('../server/db.ts');
+  const db=createDb('file:'+dbPath);
+  try{
+    const job=await db.sceneBuildJob.findUniqueOrThrow({where:{id:row.jobId}});
+    assert(job.status==='RETRY_WAIT'&&job.attempt===1&&job.lastCode==='SCENE_BUILD_TIMEOUT',
+      'OCI_PROOF_FAULT_RETRY_WAIT_REQUIRED');
+    assert(await db.currentScene.count({where:{versionId:row.versionId}})===0,
+      'OCI_PROOF_FAULT_PREMATURE_READY');
+    assert(await db.sceneAsset.count({where:{versionId:row.versionId}})===0,
+      'OCI_PROOF_FAULT_PREMATURE_ASSET');
+    await assertReady(state,'ready',1);
+    await assertReady(state,'crash',2);
+    for(const prior of faultNames)if(state.snapshots?.[prior])await assertReady(state,prior,2);
+  }finally{await db.$disconnect();}
+}
 async function verifyWait(){
   const state=stored(),row=state.versions.crash;
   const {createDb}=await import('../server/db.ts');
@@ -231,7 +306,7 @@ async function restore(){
   const db=createDb('file:'+path.join(dir,'db','cad.sqlite'));
   const storage=new SceneBlobStorage(path.join(dir,'cad'),{CAD_STORAGE_BACKEND:'local'});
   try{
-    for(const name of ['ready','crash']){
+    for(const name of ['ready','crash',...faultNames]){
       const row=state.versions[name];
       const repo=new SceneRepository(db,storage);
       const scene=await repo.status(row.versionId);
@@ -244,7 +319,11 @@ async function restore(){
 async function main(){
   const action=process.argv[2],state=action==='setup'?null:stored();
   if(action==='setup')await setup();
-  else if(action==='verify-ready')await assertReady(state,'ready',1);
+  else if(action==='verify-ready'){
+    state.snapshots??={};
+    state.snapshots.ready=await assertReady(state,'ready',1);
+    save(state);
+  }
   else if(action==='revoke')await revoke();
   else if(action==='verify-revoked')await denied(state,'revoked','SCENE_AUTH_REVOKED');
   else if(action==='tamper')await tamper();
@@ -256,7 +335,28 @@ async function main(){
   else if(action==='verify-wait')await verifyWait();
   else if(action==='verify-recovered'){
     await assertReady(state,'ready',1);
-    await assertReady(state,'crash',2);
+    state.snapshots??={};
+    state.snapshots.crash=await assertReady(state,'crash',2);
+    save(state);
+  }
+  else if(action==='prepare-converter-kill')await queue(state,'converter-kill');
+  else if(action==='prepare-converter-oom')await queue(state,'converter-oom');
+  else if(action.startsWith('converter-')){
+    const parts=action.split(':');
+    assert(parts.length===2,'OCI_PROOF_FAULT_ACTION_INVALID');
+    const name=parts[0];
+    if(parts[1]==='running')await verifyConverterRunning(name);
+    else if(parts[1]==='stale'||parts[1]==='due')await changeFaultClock(name,parts[1]);
+    else if(parts[1]==='wait')await verifyFaultWait(name);
+    else if(parts[1]==='ready'){
+      state.snapshots??={};
+      state.snapshots[name]=await assertReady(state,name,2);
+      save(state);
+      await assertReady(state,'ready',1);
+      await assertReady(state,'crash',2);
+      for(const prior of faultNames)if(prior!==name&&state.snapshots?.[prior])
+        await assertReady(state,prior,2);
+    }else die('OCI_PROOF_FAULT_ACTION_INVALID');
   }
   else if(action==='restore')await restore();
   else die('OCI_PROOF_UNKNOWN_ACTION');

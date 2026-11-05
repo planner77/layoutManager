@@ -1,3 +1,24 @@
+## TP-225-CONVERTER-FAULT — 실제 converter 중단·cgroup OOM 폐기 시험 (2026-11-05)
+
+Manager 구현 전 요구/설계/AC. 사용자 요청은 #225 잔여 GO-PILOT 검증의 **독립 PR**이며 병합·운영 배포/활성화 승인이 아니다. #236 populated upgrade/restore는 완료 증거로 재사용하고 반복 구현하지 않는다. 이번 최소 Unit은 converter 실제 실행 도중 장애와 durable recovery를 검증하며, 정식 3-image 출고 및 #231 관리 권한은 읽기 전용 확인 범위다.
+
+**설계:** 기존 OCI proof의 소유 disposable G7 DB/CAD fixture·단일 실제 Worker·정식 recovery/retry 경로를 재사용한다. 새 test-only preload/inspector/helper로 `parseCpuLineOnlyDxf` 내부에서 실제 LINE 처리 이후 call frame/실행 위치를 검증한 뒤 장애를 주입한다. `DXF_PARSE` DB stage 또는 claim marker만으로 converter 실행을 주장하지 않는다. 제품 소스·패키지·Dockerfile·운영 설정 변경 없이 시험 mount만 사용한다. Inspector는 프로세스 내부 또는 소유 컨테이너 내부 전용이며 host port/network 공개 금지. 위치 변화/동기화 실패는 fail-closed, bounded timeout·정확 CID cleanup 필수다.
+
+| AC / TC | 수용 기준 |
+| --- | --- |
+| CF-01 | 고유 폐기 volume과 정확 source revision의 로컬 OCI를 사용. UID10001/network none/read-only/cap-drop/no-new-privileges/CPU1/RAM768MiB/PIDs64 보존. 기존 volume 재사용·운영 .env/DB/CAD 접근 0 |
+| CF-02 | 새 CPU Job의 실제 converter call frame와 적어도 한 LINE 처리 증거를 먼저 확보. 같은 소유 CID를 host SIGKILL하고 wait/inspect exit137, OOMKilled=false, durable RUNNING attempt1 확인. claim-wait 결과를 대체 증거로 사용 금지 |
+| CF-03 | 별도 새 Job에서 동일 converter 진입 증거 후 test-only 메모리 압박으로 실제 cgroup OOM 유발. exit137 **및 OOMKilled=true** 필수; 단순 V8 heap abort/timeout/host kill은 OOM PASS 아님. 메모리 할당은 해당 제한 컨테이너에 한정·유한 시간으로 제어. 이는 **변환 도중 주입한 cgroup OOM**이며 자연 발생 parser memory exhaustion/정상 도면 용량 증거가 아님을 명시 |
+| CF-04 | 두 장애 각각 Job RUNNING/attempt1·기존 READY pointer/Asset/Audit·원본 SHA 불변, 부분 READY 0. 테스트 소유 timestamp만 가속하는 기존 stale→RETRY_WAIT→due→새 정상 Worker attempt2 READY 경로. fresh SceneRepository readback·한 번 게시·추가 tick IDLE 확인 |
+| CF-05 | 기존 READY/Current/source 및 이전 성공 fixture 불변, 위 장애 후 정상 Worker 복구. 실패 시 safe stage/code만 출력하고 secret/원본/세션 dump 0. 모든 소유 CID/volume cleanup 확인 |
+| CF-06 | 로컬 App/Migrator/Worker의 정확 source·role·image ID를 검증하고 registry manifest digest/provenance/과거 호환 rollback과 구분. 기존 release HOLD를 풀거나 GHCR/tag 쓰기 금지. 실제 registry 증거가 없으면 정식 3-image gate BLOCKED 유지 |
+| CF-07 | #231 Ruleset/권한/환경/GHCR의 읽기 전용 API 결과는 endpoint·HTTP 상태·시각·확인 범위만 기록. 401/403/미지원은 NOT VERIFIED이며 설정 부재나 안전 PASS로 해석 금지 |
+| CF-08 | Typecheck/Lint/관련 자동 시험/Build·실 OCI rehearsal 및 기존 required PR CI 연결. 정확 HEAD 새 PR CI 상태와 로컬 증거를 분리; 미실행 PASS 금지. 제품0.61.0/Scene 두 flag OFF/>=0.61 GHCR HOLD/#225·#218·#231 OPEN/GO-PILOT BLOCKED 유지. 독립 PR 생성 후 병합·배포 없음 |
+
+**역할:** Manager 요구/설계·Developer 구현·Manager 검토 후 QA 독립 검증 순서. 사용자 제공 이전 5.6 Developer/QA는 사용 가능한 모델 목록에 없어 현재 저장소 역할 매핑의 gpt-6-sol/gpt-6-luna로 대행하고 실제 역할·검증 근거를 TestReport에 기록한다. 새 시험이 소스의 취약점이나 필수 제품 수정을 드러내면 범위를 숨겨 넓히지 말고 Manager에게 보고한다. 실제 자연 OOM, 정식 registry 3-image/과거 OCI rollback, 현장 Owner 수용은 이 합성 시험으로 완료되지 않는다.
+
+---
+
 ## PR236-GI — GO-INTEGRATE 사후 수용 기준 (2026-11-05)
 
 사용자는 이번 PR #236의 CI 검증·병합을 승인해 아래 UR-07의 원래 `CI 시작까지만` 경계를 **이 통합에 한해** 확장했다. 아래 UR-01–07은 작성 당시 계획으로 보존한다. 실제 판정은 [TestReport](TestReport.md)의 PR236-GI 결과를 따른다.

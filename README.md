@@ -1,3 +1,9 @@
+## #225 — 변환 실행 중 KILL/OOM 검증 (0.61.0, 2026-11-05)
+
+독립 PR에서 실제 CPU parser 프레임을 확인한 뒤 테스트 컨테이너의 KILL·주입 cgroup OOM과 영속 Job 재시도/Scene 복구를 검증한다. 제품 소스나 설정을 바꾸지 않고 폐기 가능한 OCI 시험만 확장한다. 수용 기준은 [TestPlan](out/TestPlan.md)의 TP-225-CONVERTER-FAULT, 실행 결과와 미검증 항목은 [TestReport](out/TestReport.md)를 따른다. 주입 OOM은 자연 발생 parser 메모리 소진의 증거가 아니다. 정식 3-image registry 출처·digest/rollback과 #231 권한 Gate는 남아 있으며, 제품 flags OFF·GHCR HOLD·GO-PILOT BLOCKED를 유지한다.
+
+---
+
 ## #225 / PR #236 — GO-INTEGRATE 완료 (0.61.0, 2026-11-05)
 
 기존 Browser Job과 READY Scene을 가진 합성 0.60 설치의 0.61 업그레이드·CPU 처리·격리 복구 시험을 [PR #236](https://github.com/planner77/layoutManager/pull/236)으로 Main에 통합했다. 정확 HEAD PR CI #634와 merge SHA Main CI #156은 SUCCESS다. 수용 범위와 미완료 현장 검증은 [TestReport](out/TestReport.md), AC는 [TestPlan](out/TestPlan.md)을 따른다. 제품 flags OFF, >=0.61 GHCR HOLD, GO-PILOT BLOCKED, #225/#218/#231 OPEN이다. 아래 PR #235 기록은 당시 이력이다.

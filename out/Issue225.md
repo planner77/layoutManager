@@ -1,3 +1,11 @@
+## 2026-11-05 — 잔여 GO-PILOT 독립 PR: converter 실제 중단/주입 cgroup OOM
+
+사용자 요청에 따라 #236 이후 남은 converter fault 증거를 소유 disposable OCI 환경에서 검증한다. 요구/설계/AC 정본은 [TestPlan TP-225-CONVERTER-FAULT](TestPlan.md#tp-225-converter-fault--실제-converter-중단cgroup-oom-폐기-시험-2026-11-05)이다. 실제 parser 반환 직전(DTO 생성 전)의 LINE 처리·호출 frame 증거를 먼저 확보한 KILL과 test-only 메모리 압박에 의한 cgroup OOM, 각각의 durable Job/retry/READY 복구를 구분한다. 제품 hook 없이 시험 전용 계측을 사용하며 claim-wait 또는 DXF_PARSE stage만으로 변환 도중 장애 PASS를 주장하지 않는다.
+
+로컬 3-image source/role/image ID와 정식 registry digest·provenance·과거 OCI rollback은 별도 판정한다. #231 관리 설정은 읽기 전용으로만 확인하며 권한/API 미확인은 BLOCKED로 남긴다. Developer의 local CI 모사 run `202611050228`은 실제 KILL/주입 OOM·재시도·격리 복원/정리를 통과했다. 독립 QA와 정확 PR HEAD 필수 CI는 별도이며, 기존 G7 전체 시험의 503 실패(개별 재실행 성공, 원인 UNKNOWN)는 [TestReport](TestReport.md)/[FailureLedger](FailureLedger.md)에 보존한다. 제품0.61.0/두 Scene flags OFF/>=0.61 GHCR HOLD/#225·#218·#231 OPEN/GO-PILOT BLOCKED 유지. 이번 범위는 독립 PR 작성이며 merge·운영 배포·GHCR/tag/설정 변경 승인이 아니다.
+
+---
+
 ## 2026-11-05 — PR #236 populated G7 upgrade/recovery GO-INTEGRATE 완료
 
 [PR #236](https://github.com/planner77/layoutManager/pull/236)의 합성 source-level 시험을 정확 HEAD CI #634 성공 후 Main `323fa4b0a0c8b69ab158fdf18a8363ba9e16c6ca`에 통합했고 Main CI #156도 성공했다. 이번 사용자 승인은 아래 원 계획의 `CI 시작까지만` 경계를 **이 통합에 한해** 확장한다. AC와 실제 검증은 [TestPlan](TestPlan.md), [TestReport](TestReport.md)의 최신 기록을 따른다. 실제 과거 OCI/운영 upgrade·복구, mid-conversion KILL/OOM, 정식 3-image 출고는 미검증이다. 제품 flags OFF, >=0.61 GHCR HOLD, GO-PILOT BLOCKED, #225/#218/#231 OPEN. 아래 계획과 당시 NOT VERIFIED는 역사적 기록이다.
