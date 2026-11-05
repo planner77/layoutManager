@@ -92,6 +92,7 @@ jobs:
     permissions:
       contents: read
       actions: read
+      attestations: read
       packages: write
     env:
       RC_PACKET_JSON: ${{ inputs.packet_json }}
