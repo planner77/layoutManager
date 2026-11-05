@@ -1,3 +1,32 @@
+## #225 / PR #235 — 전체 커밋 CI 대조 및 #631 구문 회귀 (2026-11-05)
+
+PR base `12e7adcc4dca558c08817d09bddf7f19f650ac15`부터 source HEAD `591c7e7e76f424bb58b70cc613e70046f1c192bf`까지 **22개 커밋 각각의 PR workflow run**을 조회했다. 8개 실행과 각 Job/step을 대조하고, #624/#625/#626 Docker 원시 로그 및 #631 Static/Docker 원시 로그를 확인했다. 초기 14개 커밋에는 연결된 PR run이 없으며 시험 성공으로 간주하지 않는다.
+
+| PR CI / Run | source HEAD | 관측 결과와 수정 연결 |
+| --- | --- | --- |
+| [#624 / 41948139879](https://github.com/planner77/layoutManager/actions/runs/41948139879) | `2ce84bf322e2b76867bb777efa94f62c51fb1131` | FAIL. Docker `126985423451`: 최초 Admin 로그인 `현재 세션` heading timeout. 암호 변경 완료 전 탐색은 경합 가설이며 당시 HTTP 증거 부족. 변경 완료 문구와 login/session HTTP 200 대기 유지. |
+| [#625 / 41965842513](https://github.com/planner77/layoutManager/actions/runs/41965842513) | `cf6dfab3596cd9738c29aeab5a85f136953a1443` | FAIL. Docker `127042583269`: 새 Viewer `scene-status` 부재. Browser-only `sceneScope`와 승인 CPU Builder의 저장 계약 불일치는 코드로 확인. strict `storedSceneScope` 및 Version/SHA/unknown Builder 음성 회귀 유지. |
+| [#626 / 41969752102](https://github.com/planner77/layoutManager/actions/runs/41969752102) | `798b7162a806d03e1d538bea634ee86b7a614254` | FAIL. Docker `127055021259`: expected `도면 표시 완료`, actual `도면 일부 표시 완료`. CPU LINE의 INDEX_ABSENT에 따른 정상 정밀 선택 제한 경고이므로 정확한 부분 표시·LINE 형상·reload·원본 GET0 검증 유지. |
+| [#627 / 41972554354](https://github.com/planner77/layoutManager/actions/runs/41972554354) | `a474601625a7e6b660afd5041047b88e0a702bd6` | CANCELLED. 중간 실행이며 최종 성공 아님. Required Verify의 선행 미완료에 따른 FAIL도 보존. |
+| [#628 / 41972610777](https://github.com/planner77/layoutManager/actions/runs/41972610777) | `e471eabdc7d1d4bb0d75fefd48ae10e91a332f80` | CANCELLED. Unit/Docker 중단·후속 미실행, Required Verify 종속 FAIL. |
+| [#629 / 41972841681](https://github.com/planner77/layoutManager/actions/runs/41972841681) | `79e8796608a45d77c0d2ef74b1addb7231f9f7c8` | CANCELLED. Job 목록 없음; 실행 증거 없음. |
+| [#630 / 41972988555](https://github.com/planner77/layoutManager/actions/runs/41972988555) | `20ee5b7e0a9b5b15b177fb330dde1f95ea54b610` | CANCELLED. Unit/Docker 중단·후속 미실행, Required Verify 종속 FAIL. |
+| [#631 / 41973555282](https://github.com/planner77/layoutManager/actions/runs/41973555282) | `591c7e7e76f424bb58b70cc613e70046f1c192bf` | FAIL. Static `127067381223`: E2E line237 TS1005/TS1109에서 시작한 구문 오류 6건. Docker `127067381399`의 Playwright도 같은 line237 parse error / No tests found. Required Verify `127070808386` 종속 FAIL; G7/General Chromium SKIPPED. |
+
+**새 원인과 보완:** #626 대응으로 추가한 `root.children[].geometry.attributes.position` inline type에 닫는 괄호가 잘못 들어갔다. TypeScript parser로 실제 source를 읽어 CI와 동일한 6개 진단을 로컬 재현했다. 읽기 쉬운 named `CpuLineDto`로 선언을 분리하고 실제 v2/sourceIndex/LINE 좌표 검증은 모두 유지한다. #631은 로그인·Worker·Viewer runtime 재실행 결과가 아니라 **시험 발견 이전의 구문 실패**다. Docker 이미지 빌드 성공도 테스트 파일 구문 검증을 대신하지 못했다. 제출 전 typecheck와 실제 Playwright discovery를 함께 실행한다.
+
+**전구간 검토:** 초기 암호 변경→login/session, signed Origin/CSRF upload→QUEUE→독립 OCI publish→immutable manifest/blob/source SHA→CPU allowlisted Viewer restore→정밀 선택 제한 경고→reload/original GET0→Site revoke/Source SHA 변조/unsupported CIRCLE→이전 READY·감사·원본 보전의 관련 코드를 함께 대조했다. 이번 변경에서 권한/validator/자원/timeout/required CI gate 완화나 product runtime 변경은 없다. 로컬 실측과 역할별 수용은 [TestReport](TestReport.md)의 최신 PR #235 항목에 기록한다.
+
+**별도 로컬 fixture 실패(C06):** 전체 시험의 `TC-Z196-RESET-HISTORY`는 16,873ms, 별도 재실행은 22,527ms로 기존 15초 timeout을 넘었다. 계측 재현에서는 setup 1,253ms / 201 Zone+Geometry 쌍 준비 26,716ms / 두 reset 396ms여서 단순한 부하 추정을 넘어 **402개 개별 autocommit의 준비 비용**을 확인했다. 준비 루프만 단일 SQLite transaction으로 묶은 후 setup 1,560ms / 준비 114ms / reset 431ms, 5.03초 PASS. 202개 mapping·201 tombstone·live revision3 및 SOURCE_ONLY/ALL 검증과 원래 timeout은 유지했다. 계측을 제거한 최종 targeted 시험도 PASS. 기존 전체 실행은 이전 fixture를 이미 실행한 상태여서 Manager 수용 후 SIGINT/exit130으로 중단했으며 **전체 PASS 아님**, 잔여 전체 시험은 로컬 미검증이다. 이것은 #631의 구문 오류와 다른 로컬 시험 준비 결함이며 과거 CI 원인으로 소급하지 않는다.
+
+계측한 114ms 중간형은 native `.transaction()`을 사용했다. QA가 시험 래퍼 `IsolatedDb`의 선언에 해당 메서드가 없는 TS2339를 발견해, 최종 소스는 기존 선언 API인 `exec`의 `BEGIN IMMEDIATE`/`COMMIT`/오류 시 `ROLLBACK`으로 같은 준비 경계를 구성했다. 최종 typecheck와 비계측 targeted 시험은 PASS(3.91초); 중간형의 세부 시간을 최종 exec 형태의 직접 계측으로 오인하지 않는다.
+
+**로컬 연속 경로 실측:** 새 App/Migrator/CPU Worker 이미지 3개를 로컬에서 빌드하고, CI 입력을 명시적으로 모사한 환경에서 기존 `scene-p1d-journey.sh`를 실제 Docker/HTTP/Chromium으로 실행해 **1 test PASS / 35.2초 / exit0**를 확인했다. 로그인부터 Viewer 복원·reload와 revoke/SHA/CIRCLE 후속까지 전부 도달했고 `originalGets=0,sceneGets=4,freshSessions=true`, 최종 기존 READY 보전과 Worker IDLE을 검증했다. 테스트 소유 container/volume은 종료 후 부재 확인. 이 실행의 이미지는 `591c7e7` 기반 uncommitted 시험 변경 snapshot이며, **GitHub exact 새 HEAD CI나 운영 배포의 PASS가 아니다**. 상세 역할·명령·수용 결과는 TestReport 최신 항목을 따른다.
+
+**진실성/인계:** 모든 과거 FAIL/CANCELLED는 그대로 유지한다. 새 source의 CI는 시작 후 모니터링하지 않으며 **NOT VERIFIED**, GO-INTEGRATE 보류다. 제품 Scene 두 flags OFF, #225/#218/#231 OPEN, GO-PILOT BLOCKED, >=0.61 GHCR HOLD. 기존 운영 DB/CAD/Volume/.env/이미지/태그 불변.
+
+---
+
 ## #225/PR #235 — PR CI #624→#625→#626 연속 실패 원인 교차 분석·Fidelity 계약 보완 (2026-11-05)
 
 **Failure matrix / 정확한 Run·HEAD:**

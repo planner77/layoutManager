@@ -1,3 +1,20 @@
+## #225 / PR #235 — 누적 CI 실패·코드 교차 점검 및 제출 전 검증 (2026-11-05)
+
+**요구/설계:** NFR-218-L01과 [Issue218LeanPolicy](Issue218LeanPolicy.md)의 변경분 검증 원칙을 적용한다. #624 인증 완료 경합 가설, #625 CPU storedSceneScope 계약 결함, #626 올바른 부분 표시 경고와 시험 기대 불일치를 별도 실패로 유지한다. 최신 #631/run 41973555282의 `scene-http-oci-viewer.spec.ts:237` nested DTO type 구문 오류는 정적 검사와 Playwright discovery를 함께 막는 독립 회귀다. 중첩 inline 타입을 기존 DTO 계약 또는 명시적 이름의 읽기 쉬운 타입으로 정리하되, 실제 payload/sourceIndex/LINE geometry 검사는 보존한다. 누적 Run/HEAD/Job의 관측과 원인 추정은 [FailureLedger](FailureLedger.md)에서 분리한다.
+
+| AC/TC | 제출 전 수용 기준 | 증거 경계 |
+| --- | --- | --- |
+| PR235-C01 | 전체 PR source 변경과 누적 CI 실패를 대조해 각 실패의 수정·미검증 후속을 확인 | 역사적 실패를 PASS로 바꾸지 않음; 취소/미실행도 별도 기록 |
+| PR235-C02 | Type Check, Lint, Build, 관련 CPU/Viewer 단위 회귀 및 P1-D Playwright `--list` 성공 | discovery는 실제 E2E 성공을 뜻하지 않음 |
+| PR235-C03 | 가능하면 동일 required Docker P1-D harness를 로컬 폐기형 볼륨/이미지에서 실행해 초기 Admin→signed upload→OCI→fresh Viewer/reload→revoke/SHA/CIRCLE/READY 보전까지 확인 | 환경 제약/실패는 정확히 기록, 로컬 PASS를 exact HEAD CI PASS로 대체하지 않음 |
+| PR235-C04 | 초기 변경 완료/세션200, allowlisted CPU Builder와 Version/SHA fail-closed, v2 INDEX_ABSENT·LINE 좌표, 정확한 부분 표시 경고·원본 GET0·reload, 세 음성 경로와 기존 READY 불변 유지 | assert 삭제·skip·timeout/권한/자원/required gate 완화 금지 |
+| PR235-C05 | Developer 결과를 QA가 검증·문서화하고 Manager가 수정 범위 수용 여부 판단, root가 commit/push 후 새 PR CI 시작 | 사용자 요청으로 새 CI 모니터링하지 않음; 새 exact HEAD 결과는 NOT VERIFIED로 인계, GO-INTEGRATE 보류 |
+| PR235-C06 | 로컬 `TC-Z196-RESET-HISTORY`의 15초 timeout은 별도 실패로 보존하고, 계측으로 fixture seed 병목이 확인되면 201 Zone/Geometry 쌍의 준비만 단일 transaction으로 묶어 재검증 | 202개 mapping·201 tombstone MAPPED·live revision3 UNMAPPED·SOURCE_ONLY/ALL 양쪽 assertion과 원래 timeout 유지. 제품 reset 코드·CI Gate 변경 금지 |
+
+**불변:** 제품 두 Scene flags OFF, #225/#218/#231 OPEN, >=0.61 GHCR HOLD, GO-PILOT BLOCKED. 운영 DB/CAD/Volume/.env/기존 이미지·태그는 변경하지 않는다. 새 기능·Schema·제품 버전 변경은 이번 시험 회귀 수정 범위에 포함하지 않는다.
+
+---
+
 ## #225/P1-D CI #624→#626 전구간 회귀 보강 계획 (2026-11-05)
 
 - **실제 실패 순서:** #624 Admin initial-change 완료 동기화; #625 새 Viewer CPU Builder `storedSceneScope` 검증 호환; #626 CPU LINE persisted READY Scene 복원 후 의도된 `도면 일부 표시 완료`가 E2E `도면 표시 완료` 기대와 불일치. 전체 실패 단계와 증거 범위는 [FailureLedger](FailureLedger.md) 최신 표 참조. 이전 실패를 PASS로 변경하지 않는다.

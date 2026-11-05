@@ -70,6 +70,15 @@ function workerTick():Tick{
 type Probe={action:string;job:{status:string;attempt:number;lastCode:string|null}|null;
   pointer:{assetId:string;revision:number}|null;assets:number;uploaded:number;
   published:number;originalShaValid:boolean};
+type CpuLineDto={
+  schema:number;
+  asset:{objects:unknown[]};
+  viewerData:{sourceIndex:{state:string;reason:string}};
+  root:{children:Array<{
+    type:string;
+    geometry:{attributes:{position:{array:number[]}}};
+  }>};
+};
 function probe(versionId:string,action:'inspect'|'tamper'='inspect'):Probe{
   const output=dockerRun([
     '--mount','type=bind,src='+probeSource+',dst=/app/src/scripts/ci-scene-p1d-probe.mjs,readonly',
@@ -231,11 +240,7 @@ test('#225 P1-D G7 Editor HTTP upload -> detached OCI Worker -> new authenticate
     expect(contentResponse.status()).toBe(200);
     const bytes=await contentResponse.body();
     expect(sha(bytes)).toBe(status.manifest.sha256);
-    const dto=JSON.parse(bytes.toString('utf8')) as {
-      schema:number;asset:{objects:unknown[]};
-      viewerData:{sourceIndex:{state:string;reason:string}};
-      root:{children:Array<{type:string;geometry:{attributes:{position:{array:number[]}}}}>}>;
-    };
+    const dto=JSON.parse(bytes.toString('utf8')) as CpuLineDto;
     expect(dto.schema).toBe(2);
     expect(dto.asset.objects.length).toBeGreaterThan(1);
     // The CPU LINE subset is geometry-complete but lacks a verified
