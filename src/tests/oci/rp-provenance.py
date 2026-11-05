@@ -478,11 +478,75 @@ def negative_cause(label, result, approved):
         return 'SUBJECT_DIGEST_MISMATCH'
     raise Blocked('RP_NEGATIVE_CASE_INVALID')
 
-def negative_probe(gh, args, label, approved):
+def opaque_sigstore_failure(result):
+    """Recognize only the cause-erasing failure shape in pinned gh 2.103.3."""
+    issuer = 'verifying with issuer "https://token.actions.githubusercontent.com"'
+    lines = [line.strip() for line in result.stderr.strip().splitlines() if line.strip()]
+    return (result.returncode == 1 and not result.stdout.strip() and
+            lines in (['✗ Sigstore verification failed', issuer],
+                      ['✗ Sigstore verification failed', 'error: ' + issuer],
+                      ['✗ Sigstore verification failed', 'Error: ' + issuer]))
+
+
+def negative_delta(label, args, baseline, approved, mapping):
+    """Bind the negative to one precise mutation of an actually signed subject."""
+    require(isinstance(args, list) and isinstance(baseline, list) and
+            len(args) == len(baseline) and len(args) >= 3 and
+            baseline.count('--bundle') == 1 and baseline.count('--format') == 1 and
+            baseline[baseline.index('--format') + 1] == 'json' and
+            baseline.count('--repo') == 1 and
+            baseline[baseline.index('--repo') + 1] == REPO,
+            'RP_NEGATIVE_DELTA_INVALID')
+    role = 'receipt' if label == 'tamperedReceipt' else 'app'
+    original = Path(baseline[0])
+    require(original.is_file() and not original.is_symlink() and
+            sha(original.read_bytes()) == mapping[role],
+            'RP_NEGATIVE_BASELINE_BYTES_INVALID')
+    mutation = {
+        'wrongSource': ('--source-digest', approved['sourceCommit'], '0' * 40),
+        'wrongSignerCommit': ('--signer-digest', approved['workflowCommit'], '0' * 40),
+        'wrongRef': ('--source-ref', 'refs/heads/main', 'refs/heads/wrong'),
+        'wrongSignerWorkflow': ('--signer-workflow', SIGNER,
+                                REPO + '/.github/workflows/wrong.yml'),
+    }
+    expected = baseline.copy()
+    if label in mutation:
+        flag, good, bad = mutation[label]
+        require(expected.count(flag) == 1 and
+                expected[expected.index(flag) + 1] == good and good != bad,
+                'RP_NEGATIVE_BASELINE_POLICY_INVALID')
+        expected[expected.index(flag) + 1] = bad
+    elif label in ('tamperedManifest', 'tamperedReceipt'):
+        changed = Path(args[0])
+        raw = original.read_bytes()
+        require(changed.is_file() and not changed.is_symlink() and
+                changed.resolve() != original.resolve() and
+                changed.name == original.name and len(raw) > 0 and
+                changed.read_bytes() == bytes([raw[0] ^ 1]) + raw[1:] and
+                sha(changed.read_bytes()) != mapping[role],
+                'RP_NEGATIVE_TAMPER_DELTA_INVALID')
+        expected[0] = args[0]
+    else:
+        raise Blocked('RP_NEGATIVE_CASE_INVALID')
+    require(args == expected, 'RP_NEGATIVE_DELTA_INVALID')
+
+
+def checked_positive_bracket(gh, baseline, approved, mapping):
+    result = run([gh, 'attestation', 'verify', *baseline], timeout=120)
+    checked_certificate(json.loads(result), approved, mapping)
+
+
+def negative_probe(gh, args, label, approved, *, baseline=None, mapping=None):
     require(re.fullmatch(r'[A-Za-z]+', label), 'RP_NEGATIVE_LABEL_INVALID')
     private = Path(os.environ.get('RP_PROOF_DIR', ''))
     require(private.is_dir() and not private.is_symlink(),
             'RP_NEGATIVE_PRIVATE_DIR_INVALID')
+    if baseline is not None:
+        require(mapping is not None, 'RP_NEGATIVE_BASELINE_MISSING')
+        negative_delta(label, args, baseline, approved, mapping)
+        # An independent, genuine successful verification must precede the
+        # negative on the same pinned bundle, not a fabricated positive result.
+        checked_positive_bracket(gh, baseline, approved, mapping)
     try:
         result = subprocess.run([gh, 'attestation', 'verify', *args],
                                 capture_output=True, text=True, timeout=120)
@@ -495,7 +559,19 @@ def negative_probe(gh, args, label, approved):
               (json.dumps({'label':label,'exit':result.returncode,
                            'stdout':result.stdout,'stderr':result.stderr},
                           sort_keys=True)+'\n').encode())
-    cause = negative_cause(label, result, approved)
+    try:
+        cause = negative_cause(label, result, approved)
+    except Blocked as error:
+        # gh 2.103.3 sigstore.go intentionally loses the underlying verify
+        # error. Only its pinned opaque issuer failure, an exact single delta,
+        # and successful genuine verification on BOTH sides of that failure
+        # establish a differential rejection. Never claim its hidden cause.
+        if (not str(error).startswith('RP_NEGATIVE_CAUSE_UNPROVEN_') or
+                baseline is None or mapping is None or
+                not opaque_sigstore_failure(result)):
+            raise
+        checked_positive_bracket(gh, baseline, approved, mapping)
+        cause = 'BRACKETED_CLI_REJECTION_CAUSE_OPAQUE'
     print('RP_NEGATIVE_REJECTED case=' + label + ' class=' + cause +
           ' exit=' + str(result.returncode))
     return cause
@@ -563,12 +639,15 @@ def verify(public_dir, gh, context):
         'wrongSignerCommit': ['--signer-digest', '0' * 40],
         'wrongRef': ['--source-ref', 'refs/heads/wrong'],
     }
+    negative_classes = {}
     for label, replacement in negative.items():
         changed = flags.copy()
         index = changed.index(replacement[0])
         changed[index + 1] = replacement[1]
-        negative_probe(gh, [str(representative), *changed, '--bundle', str(bundle)],
-                       label, expected)
+        negative_classes[label] = negative_probe(
+            gh, [str(representative), *changed, '--bundle', str(bundle)],
+            label, expected, baseline=[str(representative), *flags,
+                                       '--bundle', str(bundle)], mapping=mapping)
     with tempfile.TemporaryDirectory(prefix='rp-tamper-') as directory:
         for role in ('app','receipt'):
             original = public / SUBJECTS[role]
@@ -577,8 +656,10 @@ def verify(public_dir, gh, context):
             require(raw, 'RP_SUBJECT_EMPTY')
             altered.write_bytes(bytes([raw[0] ^ 1]) + raw[1:])
             label = 'tamperedManifest' if role == 'app' else 'tamperedReceipt'
-            negative_probe(gh, [str(altered), *flags, '--bundle', str(bundle)],
-                           label, expected)
+            negative_classes[label] = negative_probe(
+                gh, [str(altered), *flags, '--bundle', str(bundle)],
+                label, expected, baseline=[str(original), *flags,
+                                           '--bundle', str(bundle)], mapping=mapping)
     metadata = {'kind':'RP_VERIFICATION_METADATA', 'sourceCommit':expected['sourceCommit'],
                 'workflowCommit':expected['workflowCommit'], 'sourceTree':expected['sourceTree'],
                 'runId':expected['runId'], 'runAttempt':expected['runAttempt'],
@@ -593,6 +674,8 @@ def verify(public_dir, gh, context):
                 'actualNegativeChecks':['wrongSource','wrongSignerWorkflow',
                                         'wrongSignerCommit','wrongRef',
                                         'tamperedManifest','tamperedReceipt'],
+                'negativeCheckClasses':negative_classes,
+                'negativeEvidenceScope':'SIGNED_BASELINE_EXACT_DELTA_PINNED_CLI',
                 'verdict':'SIGNED_PROOF_VERIFIED_NOT_RELEASE_GO'}
     write_new(public / 'verification.json',
               (json.dumps(metadata, sort_keys=True, separators=(',', ':')) + '\n').encode())
