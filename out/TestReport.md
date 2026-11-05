@@ -1,3 +1,9 @@
+## #225/P1-D — 단일 signed HTTP→OCI→Viewer E2E 신규 시험 (2026-11-05 / NOT VERIFIED)
+
+`src/tests/p1d-e2e/scene-http-oci-viewer.spec.ts` 및 격리 Docker App/Migrator/CPU Worker harness를 작성했다. 실제 Editor UI 로그인·Origin/CSRF multipart POST, DB Job QUEUED, 별도 CPU OCI `PUBLISHED`, 서버 Asset/Scene API DTO v2 readback, 별도 인증 Context의 Viewer render/reload·원본 GET 0, revoked Site/SourceSHA 변조/미지원 Entity 음성 경로·기존 READY 보전을 하나의 시나리오로 연결한다. 신규 정확 HEAD의 GitHub CI가 아직 없으므로 **PASS 주장 금지**. #234 CI #622의 OCI 단위 PASS와 Main CI #153/#154 성공은 이전 증거로만 보존. 운영 G7 업그레이드·중간 OOM/실 현장 DXF·정식 3-image GHCR 출고 GO는 미검증이며 GO-PILOT BLOCKED/두 제품 플래그 OFF/#225/#218/#231 OPEN 및 >=0.61 GHCR HOLD.
+
+---
+
 ## #225 / PR #234 — 정확 HEAD OCI 통합 검증 PASS (2026-11-05)
 
 [PR CI #622](https://github.com/planner77/layoutManager/actions/runs/41935291475), HEAD `aa0c4622e912c7ad048c481c4aa153c86124d79c`, completed/**SUCCESS**: 8 applicable CI jobs PASS, A2 CPU synthetic job 범위 외 SKIPPED, Vitest **173 files / 1,098 tests PASS**, G7 Signed/Greenfield 및 Chromium 두 샤드 PASS. Docker Job `126942947861` 로그에 `G7_GREENFIELD_READY / NEW_INSTALL`, `setup`, `verify-ready`, `revoke`, `verify-revoked`, `tamper`, `verify-tamper`, `prepare-crash`, `claim-marker`, `stale`, `verify-wait`, `due`, `verify-recovered`, `restore` 및 최종 **`OCI_CPU_PROOF_PASS`** 확인. Docker Worker 기본 루프/stop/start와 비루트·무네트워크·읽기전용 RootFS·CPU/RAM/PIDs/Capability 제한 등 실제 컨테이너 시험 통과.
