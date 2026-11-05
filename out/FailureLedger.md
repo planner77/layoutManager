@@ -1,3 +1,11 @@
+## #225 RR1 — PR238 CI638 registry identity 실패 (2026-11-05)
+
+- **관측:** HEADf886af25 / merge-ref sourceb57f703d / treef5c4088의 실제 [CI638](https://github.com/planner77/layoutManager/actions/runs/42046556655)은 FAIL. Docker127311079287 Step14 첫 App에서 `RR1_PULL_CONFIG_ID_MISMATCH`; 세 이미지 build 및 CPU fail-closed guard는 성공, 후속 converter/P1D는 미실행.
+- **미확정:** 실패한 pulled/build/config 세 값 자체는 당시 로그에 없다. CI containerd와 로컬 classic의 차이 및 build action의 manifest/config digest 차이는 관측했으나 원인으로 확정하지 않는다.
+- **조치/재개:** Manager가 strict identity graph 검증의 최소 수정·빠른 재현·actual classic/독립 QA·새 hosted containerd proof를 요구했다. RR1 통합/새 RR2 수용 HOLD. 과거 로컬 PASS 및 전체 Unit 실패 UNKNOWN은 보존. 자세한 시각·SHA·checks는 [TestReport](TestReport.md)의 PR238/CI638 기록을 정본으로 한다.
+
+---
+
 ## #225 TP-225-CONVERTER-FAULT — 기존 G7 전체 Unit 실패와 분리 재실행 (2026-11-05)
 
 Root `npm --prefix src test`는 174 files/1,102 tests 중 **173 files/1,101 tests PASS, 1 FAIL**, exit1(639.25초)이었다. `g7-greenfield-auto.test.ts:113`의 최초 잘못된 owner code 요청은 예상403 대신503을 반환했다. 제품/해당 테스트 소스는 base와 동일하며, handler의 공개503은 내부 예외를 구분하지 않으므로 근본 원인은 **UNKNOWN**이다. 동시에 실행하던 다른 시험이나 부하를 확정 원인으로 기록하지 않는다.

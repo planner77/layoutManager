@@ -2,7 +2,7 @@
 
 PR #237은 CI #636과 Main CI #158 성공 후 통합됐다. 현재는 고정 Git archive에서 만든 App/Migrator/CPU Worker의 실제 registry digest 전달·실행, 기존 게시 GHCR0.60 이미지의 설치→승인 업그레이드→동일 백업 복원→원래 App 재기동, 외부 릴리스 정책/권한을 검증한다. 전체 기준은 [TestPlan](out/TestPlan.md)의 RR1–RR5, 최신 실제 결과와 제한은 [TestReport](out/TestReport.md)를 따른다.
 
-소유 loopback registry의3-image proof는 독립 QA를 통과했으며, 실제0.60 설치·업무/복구 흐름은 진행 중이다. 정책 JSON은 검토안이며 서버에 적용하지 않았다. 서명 provenance/정식 GHCR3-image 출고·Owner GO는 별도다. 제품 두 Scene flag OFF, >=0.61 GHCR HOLD 및 GO-PILOT BLOCKED를 유지한다. 운영 중인 App과 원본/DB는 시험 대상에 포함하지 않는다.
+소유 loopback registry의3-image proof를 [Draft PR #238](https://github.com/planner77/layoutManager/pull/238)로 게시했다. 로컬 독립 QA는 통과했으나 [CI #638](https://github.com/planner77/layoutManager/actions/runs/42046556655)의 Docker identity 비교가 실패했다. 최소 수정과 최종 독립 classic QA는 통과했으며 새 hosted/containerd 검증 전이다. 실제0.60 설치·업그레이드·동일 백업/이전 App 복구의 로컬 전체 시험은 통과했으며, 후속 CI 연결·독립 QA 수용은 RR1 결함 해결까지 HOLD다. 정책 JSON은 검토안이며 서버에 적용하지 않았다. 서명 provenance/정식 GHCR3-image 출고·Owner GO는 별도다. 제품 두 Scene flag OFF, >=0.61 GHCR HOLD 및 GO-PILOT BLOCKED를 유지한다. 운영 중인 App과 원본/DB는 시험 대상에 포함하지 않는다.
 
 ---
 

@@ -1,3 +1,20 @@
+## TP-225-RR1-IDENTITY — CI638 containerd identity 재작업 AC (2026-11-06)
+
+Manager 구현 전 최소 수정 범위다. 실제 CI638 Docker step14는 `RR1_PULL_CONFIG_ID_MISMATCH`로 실패했다. CI는 Docker29.4.2/containerd snapshotter이고 로컬은 classic overlay2다. hosted App build 로그의 image ID는 manifest digest이며 config digest는 별도다. 세 비교 피연산자의 정확한 실패 조합은 로그에 없으므로 안전한 진단을 보강하고 실제 graph를 검증한다. prior 로컬 PASS와 hosted FAIL은 모두 보존하며 새 hosted 성공 전 RR1 통합·새 RR2 실행은 HOLD다.
+
+| AC / TC | 수정·검증 기준 |
+| --- | --- |
+| ID-01 | 기존 `pulled Id == clean-build Id == config digest` seam을 classic config-ID 사례와 관측된 containerd target-ID 사례로 재현하여 원래 식의 containerd 실패를 먼저 확인. 실제 source/version/role/arch 검사와 raw manifest/config/layer byte SHA·size 검증을 유지하고 Docker daemon/store 변경이나 gate/assertion 삭제로 우회 금지 |
+| ID-02 | engine image ID와 OCI config digest를 별도 의미/필드로 기록. classic은 실제 config SHA와 Id 일치; containerd는 Descriptor의 허용 mediaType/digest/size와 Id가 검증된 동일 manifest(또는 실제 검증한 index→linux/amd64 child) graph에 정확 결합되어야 함. 무타입 digest OR·미검증 descriptor·임의 label로 출처 인정 금지. config raw SHA 및 source/pulled RootFS diffIDs·OS/arch/role/version/source 연결을 검증 |
+| ID-03 | receipt prepare/finish, build receipt 재검증, registry digest pull, runtime create/start/inspect와 cleanup 전체에서 같은 identity 의미를 유지. runtime `container.Image`/manifest descriptor는 실제 엔진이 반환한 의미에 따라 검증된 동일 config/manifest graph에 결합하며 `image inspect Id`와 무조건 같다고 가정하지 않음. cleanup은 정확 ref와 검증된 engine ID/소유 자원만 허용. absence/cleanup의 inspect nonzero는 요청 자원의 명시적 not-found일 때만 부재로 인정하고 daemon/auth/timeout/비정상 출력은 safe error로 실패; focused 회귀로 이 구분을 검증 |
+| ID-04 | classic·containerd 허용 사례와 wrong descriptor digest/mediaType/size, unknown engine Id, raw manifest/config hash 변조, RootFS mismatch, cross-role/source/runtime node 혼동을 focused negative로 거부. index는 실제 linkage를 검증하는 경우만 허용하고 자료 부족 시 fail closed. 다중 role·운영 pair validator·기존6개 음성시험을 보존 |
+| ID-05 | 실패 진단은 role와3개 비교 digest, Descriptor digest/mediaType·RootFS 일치 boolean 및 engine/store 식별만 출력. config/env/history·layer payload·credential·CAD/DB dump 0. 새 실제 classic registry roundtrip+cleanup·focused regression·독립 QA 후 fixed exact-head hosted containerd roundtrip을 통과해야 통합/의존성 재개를 판정 |
+| ID-06 | test-only RR1 helper/집중 회귀/필수 workflow 진단과 관련 문서로 한정. 제품/Schema/버전/flags/HOLD·운영 Docker/기존 이미지·태그 변경 0. RR2 test-consumer가 config-ID 동일 가정을 갖는다는 후속 연결점을 공개하고 RR1 identity 계약 확정 뒤에만 반영. CI638 실패를 삭제하거나 합성 containerd fixture PASS를 실제 hosted PASS로 기록 금지 |
+
+공식 containerd [Moby ImageInspect](https://github.com/moby/moby/blob/master/daemon/containerd/image_inspect.go)는 target descriptor digest를 Id로 반환한다. [Docker containerd store](https://docs.docker.com/engine/storage/containerd)는 classic과 저장소 구분을 설명한다. 실제 runner의 반환값과 schema를 별도 확인하며 현재 master 설명을 runner의 모든 필드/실행값으로 추정하지 않는다.
+
+---
+
 ## TP-225-RR5-PROVENANCE — GitHub OIDC 서명 출처의 사전 설계 (2026-11-05)
 
 Manager fallback 구현 전 AC다. RR1의 registry byte 검증과 RR2/RR3의 실제 실행을 **실제 GitHub OIDC/Sigstore 서명**에 연결한다. 로컬 키/자가 서명/label을 독립 출처로 승격하지 않는다. 이 Unit은 RR5 중 출처 검증의 일부이며 정식 GHCR3-image 게시·#231 정책 적용·Owner release GO를 대신하지 않는다. 구현·hosted 실행·독립 QA는 아직 NOT RUN이다.

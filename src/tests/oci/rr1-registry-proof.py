@@ -162,10 +162,43 @@ def check_image_metadata(image, role, sha, version):
             "RR1_IMAGE_METADATA_MISMATCH")
 
 
+def docker_optional_inspect(kind, name):
+    """Only a typed, exact daemon not-found response means absence."""
+    require(kind in ("container", "image", "network", "volume") and
+            isinstance(name, str) and
+            re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_./:@-]{0,255}", name),
+            "RR1_DOCKER_INSPECT_ARGUMENT_INVALID")
+    try:
+        result = subprocess.run(["docker", kind, "inspect", name], cwd=ROOT,
+                                capture_output=True, text=True, timeout=30,
+                                check=False)
+    except (subprocess.TimeoutExpired, OSError) as error:
+        raise ProofError("RR1_DOCKER_INSPECT_UNAVAILABLE") from error
+    if result.returncode == 0:
+        require(not result.stderr.strip(), "RR1_DOCKER_INSPECT_OUTPUT_INVALID")
+        try:
+            rows = json.loads(result.stdout)
+        except ValueError as error:
+            raise ProofError("RR1_DOCKER_INSPECT_OUTPUT_INVALID") from error
+        require(isinstance(rows, list) and len(rows) == 1 and isinstance(rows[0], dict),
+                "RR1_DOCKER_INSPECT_OUTPUT_INVALID")
+        return rows[0]
+    prefix = "Error response from daemon: "
+    expected = {
+        "container": "No such container: " + name,
+        "image": "No such image: " + name,
+        "network": "network " + name + " not found",
+        "volume": "get " + name + ": no such volume",
+    }[kind]
+    require(result.returncode == 1 and result.stdout.strip() in ("", "[]") and
+            result.stderr.strip() == prefix + expected,
+            "RR1_DOCKER_INSPECT_UNAVAILABLE")
+    return None
+
+
 def docker_absent(kind, name):
-    result = subprocess.run(["docker", kind, "inspect", name], cwd=ROOT,
-                            capture_output=True, timeout=20, check=False)
-    require(result.returncode != 0, "RR1_EXISTING_RESOURCE_DENIED")
+    require(docker_optional_inspect(kind, name) is None,
+            "RR1_EXISTING_RESOURCE_DENIED")
 
 
 def request_bytes(url, *, accept=None, expected_size=None, collect=True):
@@ -214,37 +247,51 @@ def manifest_json(base, repository, reference, expected=None):
     require(isinstance(obj, dict) and obj.get("schemaVersion") == 2,
             "RR1_MANIFEST_INVALID")
     require(obj.get("mediaType", media) == media, "RR1_MANIFEST_MEDIA_MISMATCH")
-    return actual, obj, size
+    return actual, obj, size, media
 
 
 def verify_registry_image(base, repository, tag, blob_cache):
-    top_digest, top, _ = manifest_json(base, repository, tag)
+    top_digest, top, top_size, top_media = manifest_json(base, repository, tag)
     # The tag resolves to raw immutable bytes, not just a Docker CLI string.
     manifest_json(base, repository, top_digest, top_digest)
     children = top.get("manifests")
     if children is not None:
+        require(top_media in ("application/vnd.oci.image.index.v1+json",
+                              "application/vnd.docker.distribution.manifest.list.v2+json"),
+                "RR1_INDEX_MEDIA_INVALID")
         matches = [item for item in children if item.get("platform", {}).get("os") == "linux"
                    and item.get("platform", {}).get("architecture") == "amd64" and
                    item.get("platform", {}).get("variant") in (None, "")]
         require(len(matches) == 1, "RR1_PLATFORM_CHILD_AMBIGUOUS")
         child = matches[0]
         require(DIGEST.fullmatch(child.get("digest", "")), "RR1_CHILD_DIGEST_INVALID")
-        manifest_digest, manifest, child_size = manifest_json(
+        manifest_digest, manifest, child_size, manifest_media = manifest_json(
             base, repository, child["digest"], child["digest"])
-        require(child_size == child.get("size"), "RR1_CHILD_SIZE_MISMATCH")
+        require(child_size == child.get("size") and
+                manifest_media == child.get("mediaType"), "RR1_CHILD_DESCRIPTOR_MISMATCH")
     else:
-        manifest_digest, manifest = top_digest, top
+        manifest_digest, manifest, child_size, manifest_media = (
+            top_digest, top, top_size, top_media)
+    require(manifest_media in ("application/vnd.oci.image.manifest.v1+json",
+                               "application/vnd.docker.distribution.manifest.v2+json"),
+            "RR1_MANIFEST_MEDIA_INVALID")
     require("config" in manifest and isinstance(manifest.get("layers"), list) and
             len(manifest["layers"]) > 0, "RR1_IMAGE_MANIFEST_INVALID")
     config = manifest["config"]
     require(DIGEST.fullmatch(config.get("digest", "")), "RR1_CONFIG_DIGEST_INVALID")
+    require(config.get("mediaType") in (
+        "application/vnd.oci.image.config.v1+json",
+        "application/vnd.docker.container.image.v1+json"), "RR1_CONFIG_MEDIA_INVALID")
     config_sha, _, _, config_raw, _ = registry_object(
         base, repository, "blobs", config["digest"], size=config.get("size"))
     require(config_sha == config["digest"], "RR1_CONFIG_BYTES_MISMATCH")
     config_json = json.loads(config_raw)
-    require(config_json.get("os") == "linux" and
+    require(config_json.get("rootfs", {}).get("type") == "layers" and
+            config_json.get("os") == "linux" and
             config_json.get("architecture") == "amd64" and
-            len(config_json.get("rootfs", {}).get("diff_ids", [])) == len(manifest["layers"]),
+            len(config_json.get("rootfs", {}).get("diff_ids", [])) == len(manifest["layers"]) and
+            all(DIGEST.fullmatch(d or "") for d in
+                config_json.get("rootfs", {}).get("diff_ids", [])),
             "RR1_CONFIG_PLATFORM_OR_LAYERS_INVALID")
     for layer in manifest["layers"]:
         layer_digest = layer.get("digest", "")
@@ -260,6 +307,10 @@ def verify_registry_image(base, repository, tag, blob_cache):
                     "RR1_REUSED_LAYER_SIZE_MISMATCH")
     return {"digest": top_digest, "manifestDigest": manifest_digest,
             "configDigest": config["digest"],
+            "topDescriptor": {"mediaType": top_media, "digest": top_digest,
+                              "size": top_size},
+            "manifestDescriptor": {"mediaType": manifest_media,
+                                   "digest": manifest_digest,"size": child_size},
             "layers": [layer["digest"] for layer in manifest["layers"]],
             "config": config_json}
 
@@ -312,7 +363,51 @@ def negative_proofs(records, refs, source, version):
     return list(cases)
 
 
-def smoke_digest(ref, role, expected_id, name):
+def verify_runtime_identity(created, inspected, ref, verified):
+    require(created.get("Image") == inspected.get("Id") and
+            created.get("Config", {}).get("Image") == ref,
+            "RR1_CREATED_IMAGE_ID_MISMATCH")
+    manifest_descriptor = created.get("ImageManifestDescriptor")
+    if inspected.get("Descriptor") is not None:
+        require(isinstance(manifest_descriptor, dict) and
+                all(manifest_descriptor.get(key) == verified["manifestDescriptor"][key]
+                    for key in ("mediaType", "digest", "size")),
+                "RR1_RUNTIME_MANIFEST_DESCRIPTOR_MISMATCH")
+    else:
+        require(manifest_descriptor is None,
+                "RR1_CLASSIC_RUNTIME_DESCRIPTOR_UNEXPECTED")
+    return True
+
+
+def safe_runtime_diagnostic(role, created, inspected, ref, verified):
+    descriptor = created.get("ImageManifestDescriptor") or {}
+    safe_digest = lambda value: value if isinstance(value, str) and DIGEST.fullmatch(value) else "INVALID"
+    safe_media = lambda value: value if isinstance(value, str) and re.fullmatch(r"[a-z0-9./+_-]{1,100}", value) else "INVALID"
+    size = descriptor.get("size")
+    return {"role": role, "inspectedEngineId": safe_digest(inspected.get("Id")),
+            "containerImage": safe_digest(created.get("Image")),
+            "verifiedManifestDigest": safe_digest(verified.get("manifestDigest")),
+            "verifiedConfigDigest": safe_digest(verified.get("configDigest")),
+            "runtimeDescriptorMediaType": safe_media(descriptor.get("mediaType")),
+            "runtimeDescriptorDigest": safe_digest(descriptor.get("digest")),
+            "runtimeDescriptorSize": size if type(size) is int and size >= 0 else "INVALID",
+            "immutableRefMatches": created.get("Config", {}).get("Image") == ref}
+
+
+def remove_owned_smoke(name, ref, nonce):
+    item = docker_optional_inspect("container", name)
+    if item is None:
+        return
+    labels = item.get("Config", {}).get("Labels") or {}
+    require(item.get("Name", "").lstrip("/") == name and
+            labels.get("com.planner77.purpose") == PURPOSE and
+            labels.get("com.planner77.rr1.nonce") == nonce and
+            item.get("Config", {}).get("Image") == ref,
+            "RR1_SMOKE_CLEANUP_OWNERSHIP_MISMATCH")
+    command(["docker", "rm", "-f", item["Id"]], timeout=30)
+
+
+def smoke_digest(ref, role, expected_id, name, verified, nonce):
     # The actual container is created FROM the immutable digest, and runs a
     # role-specific local runtime closure probe. RR2/RR3 exercise HTTP/Worker.
     checks = {
@@ -320,16 +415,28 @@ def smoke_digest(ref, role, expected_id, name):
         "migrator": "require('fs').accessSync('scripts/g7-greenfield.ts');new (require('better-sqlite3'))(':memory:').close()",
         "cpu-worker": "require('fs').accessSync('scripts/scene-cpu-worker.ts');new (require('better-sqlite3'))(':memory:').close()",
     }
-    cid = command(["docker", "create", "--name", name, "--network", "none",
-                   "--read-only", "--user", "10001:10001", "--cap-drop", "ALL",
-                   "--security-opt", "no-new-privileges", "--pids-limit", "64",
-                   "--memory", "768m", "--cpus", "1.0",
-                   "--tmpfs", "/tmp:rw,noexec,nosuid,nodev,size=96m,uid=10001,gid=10001",
-                   "--entrypoint", "node", ref, "-e", checks[role]], timeout=30)
+    require(re.fullmatch(r"[0-9a-f]{16}", nonce), "RR1_SMOKE_NONCE_INVALID")
+    docker_absent("container", name)
     try:
+        cid = command(["docker", "create", "--name", name,
+                       "--label", "com.planner77.purpose=" + PURPOSE,
+                       "--label", "com.planner77.rr1.nonce=" + nonce,
+                       "--network", "none", "--read-only", "--user", "10001:10001",
+                       "--cap-drop", "ALL", "--security-opt", "no-new-privileges",
+                       "--pids-limit", "64", "--memory", "768m", "--cpus", "1.0",
+                       "--tmpfs", "/tmp:rw,noexec,nosuid,nodev,size=96m,uid=10001,gid=10001",
+                       "--entrypoint", "node", ref, "-e", checks[role]], timeout=30)
         created = docker_json("inspect", cid)
-        require(created["Image"] == expected_id and created["Config"]["Image"] == ref,
-                "RR1_CREATED_IMAGE_ID_MISMATCH")
+        inspected = docker_json("image", "inspect", ref)
+        require(inspected.get("Id") == expected_id,
+                "RR1_RUNTIME_IMAGE_CHANGED")
+        try:
+            verify_runtime_identity(created, inspected, ref, verified)
+        except ProofError:
+            print("RR1_RUNTIME_IDENTITY_DIAGNOSTIC " + json.dumps(
+                safe_runtime_diagnostic(role, created, inspected, ref, verified),
+                sort_keys=True), file=sys.stderr)
+            raise
         host = created["HostConfig"]
         require(created["Config"]["User"] == "10001:10001" and
                 host["NetworkMode"] == "none" and host["ReadonlyRootfs"] is True and
@@ -340,11 +447,78 @@ def smoke_digest(ref, role, expected_id, name):
         finished = docker_json("inspect", cid)
         require(finished["State"]["ExitCode"] == 0 and not finished["State"]["OOMKilled"],
                 "RR1_DIGEST_RUNTIME_FAILED")
-        return {"containerId": cid, "imageId": created["Image"],
+        return {"containerId": cid, "engineImageId": created["Image"],
+                "configDigest": verified["configDigest"],
+                "manifestDigest": verified["manifestDigest"],
                 "configImage": created["Config"]["Image"], "exitCode": 0,
                 "networkMode": "none", "readonlyRootfs": True}
     finally:
-        command(["docker", "rm", "-f", cid], timeout=30)
+        remove_owned_smoke(name, ref, nonce)
+
+
+def descriptor_matches(candidate, verified):
+    if not isinstance(candidate, dict):
+        return False
+    fields = (candidate.get("mediaType"), candidate.get("digest"), candidate.get("size"))
+    allowed = [verified["topDescriptor"], verified["manifestDescriptor"]]
+    return any(fields == (item["mediaType"], item["digest"], item["size"])
+               for item in allowed)
+
+
+def verify_pulled_identity(pulled, built_id, verified, ref):
+    """Bind engine target ID to verified registry graph and raw config contents."""
+    engine_id = pulled.get("Id")
+    config_digest = verified["configDigest"]
+    require(DIGEST.fullmatch(engine_id or "") and engine_id == built_id,
+            "RR1_PULL_ENGINE_ID_MISMATCH")
+    require(ref in (pulled.get("RepoDigests") or []),
+            "RR1_PULL_REPO_DIGEST_MISMATCH")
+    descriptor = pulled.get("Descriptor")
+    if descriptor is None:
+        require(engine_id == config_digest, "RR1_CLASSIC_CONFIG_ID_MISMATCH")
+        identity_kind = "CLASSIC_CONFIG"
+    else:
+        require(descriptor_matches(descriptor, verified) and
+                engine_id == descriptor["digest"],
+                "RR1_TARGET_DESCRIPTOR_MISMATCH")
+        identity_kind = "CONTAINERD_TARGET"
+    config = verified["config"]
+    expected_layers = config.get("rootfs", {}).get("diff_ids")
+    rootfs = pulled.get("RootFS") or {}
+    require(rootfs.get("Type") == "layers" and
+            rootfs.get("Layers") == expected_layers,
+            "RR1_ROOTFS_CONFIG_MISMATCH")
+    require(pulled.get("Os") == config.get("os") and
+            pulled.get("Architecture") == config.get("architecture"),
+            "RR1_PLATFORM_CONFIG_MISMATCH")
+    image_config = pulled.get("Config") or {}
+    raw_config = config.get("config") or {}
+    for key in ("User", "WorkingDir", "Entrypoint", "Cmd", "Env", "Labels"):
+        require(image_config.get(key) == raw_config.get(key),
+                "RR1_IMAGE_CONFIG_CONTENT_MISMATCH")
+    return {"engineImageId": engine_id, "configDigest": config_digest,
+            "identityKind": identity_kind}
+
+
+def safe_identity_diagnostic(role, built_id, pulled, verified):
+    """Only known scalar identifiers; never emit Config/Env/History payloads."""
+    descriptor = pulled.get("Descriptor") or {}
+    rootfs = pulled.get("RootFS") or {}
+    config = verified.get("config") or {}
+    image_store = (pulled.get("Storage") or {}).get("RootFS") or {}
+    engine_store = ((image_store.get("Snapshot") or {}).get("Name") or
+                    (pulled.get("GraphDriver") or {}).get("Name") or "UNKNOWN")
+    safe_digest = lambda value: value if isinstance(value, str) and DIGEST.fullmatch(value) else "INVALID"
+    safe_media = lambda value: value if isinstance(value, str) and re.fullmatch(r"[a-z0-9./+_-]{1,100}", value) else "INVALID"
+    safe_store = lambda value: value if isinstance(value, str) and re.fullmatch(r"[a-zA-Z0-9_.-]{1,80}", value) else "UNKNOWN"
+    return {"role": role, "builtEngineId": safe_digest(built_id),
+            "pulledEngineId": safe_digest(pulled.get("Id")),
+            "verifiedConfigDigest": safe_digest(verified.get("configDigest")),
+            "descriptorDigest": safe_digest(descriptor.get("digest")),
+            "descriptorMediaType": safe_media(descriptor.get("mediaType")),
+            "rootfsMatches": rootfs.get("Layers") ==
+                config.get("rootfs", {}).get("diff_ids"),
+            "engineStore": safe_store(engine_store)}
 
 
 def cleanup_owned(resources, *, verify=True):
@@ -378,6 +552,7 @@ def cleanup_registry_refs(receipt):
             re.fullmatch(r"[0-9a-f]{16}", nonce), "RR1_IMAGE_CLEANUP_RECEIPT_INVALID")
     refs = receipt.get("refs", {})
     manifests = receipt.get("manifests", {})
+    local_refs = receipt.get("localRefEngineIds", {})
     require(set(refs) == set(ROLES) and set(manifests) == set(ROLES),
             "RR1_IMAGE_CLEANUP_RECEIPT_INVALID")
     for role in ROLES:
@@ -386,18 +561,17 @@ def cleanup_registry_refs(receipt):
         require(digest_ref.startswith(host + "/rr1-release@") and
                 digest_ref.endswith(manifests[role]["digest"]),
                 "RR1_IMAGE_CLEANUP_RECEIPT_INVALID")
-        expected_id = manifests[role]["configDigest"]
         for ref in (tag, digest_ref):
+            expected_id = local_refs.get(ref, manifests[role]["configDigest"])
+            require(DIGEST.fullmatch(expected_id or ""),
+                    "RR1_IMAGE_CLEANUP_ID_INVALID")
             remove_ref_if_owned(ref, expected_id)
 
 
 def remove_ref_if_owned(ref, expected_id):
-    probe = subprocess.run(["docker", "image", "inspect", ref],
-                           cwd=ROOT, capture_output=True, text=True,
-                           timeout=30, check=False)
-    if probe.returncode != 0:
+    image = docker_optional_inspect("image", ref)
+    if image is None:
         return
-    image = json.loads(probe.stdout)[0]
     require(image["Id"] == expected_id, "RR1_IMAGE_CLEANUP_ID_MISMATCH")
     command(["docker", "image", "rm", "--no-prune", ref], timeout=60)
 
@@ -418,6 +592,7 @@ def run_proof(options):
     output = None
     host = None
     refs = {}
+    local_ref_engine_ids = {}
     try:
         command(["docker", "network", "create", *labels, network], timeout=30)
         command(["docker", "volume", "create", *labels, volume], timeout=30)
@@ -451,23 +626,36 @@ def run_proof(options):
             tag = role.replace("-", "") + "-" + nonce
             push_ref = host + "/" + repository + ":" + tag
             command(["docker", "tag", build["images"][role]["tag"], push_ref], timeout=30)
+            local_ref_engine_ids[push_ref] = docker_json("image", "inspect", push_ref)["Id"]
             command(["docker", "push", push_ref], timeout=1200)
             verified = verify_registry_image(base, repository, tag, blob_cache)
             ref = host + "/" + repository + "@" + verified["digest"]
             command(["docker", "pull", "--platform", "linux/amd64", ref], timeout=1200)
             pulled = docker_json("image", "inspect", ref)
-            require(pulled["Id"] == build["images"][role]["id"] == verified["configDigest"],
-                    "RR1_PULL_CONFIG_ID_MISMATCH")
+            local_ref_engine_ids[ref] = pulled["Id"]
+            # Track the exact owned digest reference before identity checks so
+            # a rejected pull is still removed during partial failure cleanup.
+            refs[role] = ref
+            try:
+                identity = verify_pulled_identity(
+                    pulled, build["images"][role]["id"], verified, ref)
+            except ProofError:
+                print("RR1_IDENTITY_DIAGNOSTIC " + json.dumps(
+                    safe_identity_diagnostic(role, build["images"][role]["id"],
+                                             pulled, verified), sort_keys=True),
+                    file=sys.stderr)
+                raise
             check_image_metadata(pulled, role, build["sourceCommit"], build["version"])
             config_labels = verified["config"].get("config", {}).get("Labels") or {}
             require(config_labels == pulled["Config"].get("Labels"),
                     "RR1_REGISTRY_CONFIG_LABELS_MISMATCH")
-            refs[role] = ref
             raw[role] = {key: value for key, value in verified.items() if key != "config"}
             records[ref] = {"role": role, "source": build["sourceCommit"],
-                            "version": build["version"], "id": pulled["Id"]}
+                            "version": build["version"], "id": identity["engineImageId"]}
             print("RR1_REGISTRY_ROLE role=" + role + " manifest=" + verified["digest"] +
-                  " config=" + verified["configDigest"] + " imageId=" + pulled["Id"], flush=True)
+                  " config=" + verified["configDigest"] +
+                  " engineId=" + identity["engineImageId"] +
+                  " identity=" + identity["identityKind"], flush=True)
         validate_release_set(records, refs, build["sourceCommit"], build["version"])
         negatives = negative_proofs(records, refs, build["sourceCommit"], build["version"])
         bad_digest = raw["cpu-worker"]["digest"][:-1] + (
@@ -483,7 +671,8 @@ def run_proof(options):
         for role in ROLES:
             runtime_smokes[role] = smoke_digest(
                 refs[role], role, records[refs[role]]["id"],
-                "layoutmanager-rr1-smoke-" + role.replace("-", "") + "-" + nonce)
+                "layoutmanager-rr1-smoke-" + role.replace("-", "") + "-" + nonce,
+                raw[role], nonce)
         output = {
             "kind": "RR1_LOCAL_UNSIGNED_REGISTRY_RECEIPT", "sourceCommit": build["sourceCommit"],
             "sourceTree": build["sourceTree"], "version": build["version"],
@@ -492,6 +681,7 @@ def run_proof(options):
             "registryRef": REGISTRY_REF, "registryImageId": registry["Image"],
             "resources": resources,
             "host": host, "refs": refs, "manifests": raw,
+            "localRefEngineIds": local_ref_engine_ids,
             "negativeCases": negatives, "runtimeSmokes": runtime_smokes,
             "retainedForR2": options.retain_for_r2,
         }
@@ -515,31 +705,27 @@ def run_proof(options):
                     for role in ROLES:
                         expected = build["images"][role]["id"]
                         tag = host + "/rr1-release:" + role.replace("-", "") + "-" + nonce
-                        remove_ref_if_owned(tag, expected)
+                        remove_ref_if_owned(tag, local_ref_engine_ids.get(tag, expected))
                         if role in refs:
-                            remove_ref_if_owned(refs[role], expected)
+                            remove_ref_if_owned(refs[role],
+                                                local_ref_engine_ids.get(refs[role], expected))
             finally:
                 cleanup_owned(resources)
         elif not success:
             # docker run can create a stopped container before returning error.
             # Clean it only when its exact nonce and purpose prove ownership.
-            probe = subprocess.run(["docker", "container", "inspect", name],
-                                   capture_output=True, check=False)
-            if probe.returncode == 0:
-                rows = json.loads(probe.stdout)
-                labels = rows[0].get("Config", {}).get("Labels", {}) if len(rows) == 1 else {}
+            container = docker_optional_inspect("container", name)
+            if container is not None:
+                labels = container.get("Config", {}).get("Labels", {})
                 require(labels.get("com.planner77.purpose") == PURPOSE and
                         labels.get("com.planner77.rr1.nonce") == nonce,
                         "RR1_PARTIAL_CLEANUP_OWNERSHIP_MISMATCH")
-                command(["docker", "rm", "-f", rows[0]["Id"]], timeout=30)
+                command(["docker", "rm", "-f", container["Id"]], timeout=30)
             for kind, resource in (("network", network), ("volume", volume)):
-                result = subprocess.run(["docker", kind, "inspect", resource],
-                                        capture_output=True, check=False)
-                if result.returncode == 0:
-                    rows = json.loads(result.stdout)
-                    require(len(rows) == 1 and
-                            rows[0].get("Labels", {}).get("com.planner77.purpose") == PURPOSE and
-                            rows[0].get("Labels", {}).get("com.planner77.rr1.nonce") == nonce,
+                item = docker_optional_inspect(kind, resource)
+                if item is not None:
+                    require(item.get("Labels", {}).get("com.planner77.purpose") == PURPOSE and
+                            item.get("Labels", {}).get("com.planner77.rr1.nonce") == nonce,
                             "RR1_PARTIAL_CLEANUP_OWNERSHIP_MISMATCH")
                     command(["docker", kind, "rm", resource], timeout=30)
 

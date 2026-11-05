@@ -516,6 +516,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 -m py_compile src/tests/oci/rr1-ci-source.py src/tests/oci/rr1-registry-proof.py
+          python3 src/tests/oci/rr1-image-identity.test.py
           python3 src/tests/oci/rr1-ci-source.py finish --out-dir "$RUNNER_TEMP/rr1-release"
           docker pull registry@sha256:a3d8aaa63ed8681a604f1dea0aa03f100d5895b6a58ace528858a7b332415373
           python3 src/tests/oci/rr1-registry-proof.py \

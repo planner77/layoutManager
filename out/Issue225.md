@@ -1,3 +1,9 @@
+## 2026-11-06 — RR1 CI638 실패·typed OCI identity 재작업
+
+PR238 CI638의 Docker registry roundtrip이 `RR1_PULL_CONFIG_ID_MISMATCH`로 실패했다. 로컬 classic config-ID와 hosted containerd target-ID를 혼동하는 equality seam을 [TestPlan TP-225-RR1-IDENTITY](TestPlan.md)의 ID-01–06에 따라 strict Descriptor→manifest/index-child→config/RootFS 연결로 수정·검증한다. assertion 삭제/무타입 digest OR/runner daemon 변경은 허용하지 않는다. 기존 로컬 PASS와 hosted FAIL을 보존하고 fixed exact-head hosted CI 및 독립 QA 전 RR1 통합·새 RR2 실행은 HOLD다. 이미 시작된 소유 RR2 journey는 안전 cleanup 경계까지 완료했으며 그 결과를 새로운 hosted 성공으로 간주하지 않는다.
+
+---
+
 ## 2026-11-05 — RR5 실제 OIDC provenance의 구현 전 범위
 
 Manager fallback은 [TestPlan TP-225-RR5-PROVENANCE](TestPlan.md)의 RP-01–08을 기록했다. 다음 proof-only workflow는 정확 Main source/workflow/tree의 archive에서 RR1·RR2/RR3을 실행하고 실제 GitHub OIDC/Sigstore로3-role manifest digest와 최소 receipt를 서명·독립 검증한다. 공개 artifact는 manifest·정제 receipt·bundle metadata만 허용하며 private OCI layer/archive·DB·CAD·인증정보를 업로드하지 않는다. 실제 서명/hosted 실행은 NOT RUN이고 RR2 구현 완료·Manager 검토·독립 QA 뒤 Developer에게 인계한다. 새 전체 목표에서 필요한 code-only 통합과 proof dispatch를 진행 대상으로 판단하며 GHCR 게시·tag/정책 변경·운영 배포·Owner release GO로 확대하지 않는다. RR1–RR5 전체 잔여와 OFF/HOLD는 유지한다.
