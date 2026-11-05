@@ -1,0 +1,18 @@
+{
+  "kind": "REVIEW_ONLY_NOT_APPLIED",
+  "repository": "planner77/layoutManager",
+  "environmentName": "issue225-candidate-publish",
+  "environmentPutProposal": {
+    "reviewers": [{"type": "User", "id": 45478892}],
+    "prevent_self_review": false,
+    "can_admins_bypass": false,
+    "deployment_branch_policy": {"protected_branches": false, "custom_branch_policies": true}
+  },
+  "branchPolicyPostProposal": {"name": "main", "type": "branch"},
+  "runtimeEnvironmentId": "PENDING_ACTUAL_APPROVED_CONFIGURATION_AND_READBACK",
+  "limitations": [
+    "Owner-only review is not independent second-human review",
+    "SDK-supported can_admins_bypass field is absent from current public OpenAPI schema; actual GET boolean false is preferred, actual true blocks, absent/unknown requires separate actual Owner UI readback",
+    "Payload is not state, approval or permission to apply; publisher has no environment-write API"
+  ]
+}

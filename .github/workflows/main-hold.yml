@@ -1,0 +1,63 @@
+name: Main CI read-only release HOLD
+run-name: >-
+  ${{ github.event_name == 'workflow_dispatch'
+      && 'MAIN CI | #225 | read-only release HOLD'
+      || (contains(github.event.head_commit.message || '', fromJSON('"\n"'))
+          && format('MAIN CI | SUBJECT-ONLY-REQUIRED | run {0}', github.run_number)
+          || ((startsWith(github.event.head_commit.message, '#') || startsWith(github.event.head_commit.message, 'NO-ISSUE |'))
+              && format('MAIN CI | {0}', github.event.head_commit.message)
+              || format('MAIN CI | ISSUE-UNKNOWN | {0}', github.sha))) }}
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  observe-hold:
+    name: Verify read-only GHCR release HOLD
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact source without persisted credentials
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Record exact Main source and existing persistent HOLD
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          import re
+          import subprocess
+
+          source = os.environ.get('GITHUB_SHA', '')
+          if (os.environ.get('GITHUB_REPOSITORY') != 'planner77/layoutManager' or
+              os.environ.get('GITHUB_REPOSITORY_ID') != '1359528829' or
+              os.environ.get('GITHUB_REPOSITORY_OWNER_ID') != '45478892' or
+              os.environ.get('GITHUB_REF') != 'refs/heads/main' or
+              os.environ.get('GITHUB_EVENT_NAME') not in ('push', 'workflow_dispatch') or
+              re.fullmatch('[0-9a-f]{40}', source) is None):
+              raise SystemExit('LP_MAIN_IDENTITY_INVALID')
+          head = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+          if head != source:
+              raise SystemExit('LP_MAIN_SOURCE_MISMATCH')
+          decision = subprocess.check_output([
+              'python3', '.github/scripts/issue229_release_hold.py',
+              'refs/heads/main', 'src/package.json'], text=True).strip()
+          if decision != 'HOLD_MAIN':
+              raise SystemExit('LP_READ_ONLY_HOLD_REQUIRED')
+          tree = subprocess.check_output(['git', 'rev-parse', source + '^{tree}'], text=True).strip()
+          version = json.loads(Path('src/package.json').read_text())['version']
+          print('LP_MAIN_READ_ONLY_HOLD source=' + source + ' tree=' + tree + ' version=' + version)
+          with Path(os.environ['GITHUB_STEP_SUMMARY']).open('a', encoding='utf-8') as summary:
+              summary.write('Main read-only check: **HOLD_MAIN**; no publication job.\n')
+              summary.write('Source `' + source + '`, tree `' + tree + '`, version `' + version + '`.\n')
+          PY

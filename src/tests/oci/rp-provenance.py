@@ -14,6 +14,8 @@ import re
 import subprocess
 import sys
 import tempfile
+
+import verified_negative as vn
 from urllib.request import Request, urlopen
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -478,7 +480,7 @@ def negative_cause(label, result, approved):
         return 'SUBJECT_DIGEST_MISMATCH'
     raise Blocked('RP_NEGATIVE_CASE_INVALID')
 
-def negative_probe(gh, args, label, approved):
+def negative_probe(gh, args, label, approved, classify=True):
     require(re.fullmatch(r'[A-Za-z]+', label), 'RP_NEGATIVE_LABEL_INVALID')
     private = Path(os.environ.get('RP_PROOF_DIR', ''))
     require(private.is_dir() and not private.is_symlink(),
@@ -495,6 +497,8 @@ def negative_probe(gh, args, label, approved):
               (json.dumps({'label':label,'exit':result.returncode,
                            'stdout':result.stdout,'stderr':result.stderr},
                           sort_keys=True)+'\n').encode())
+    if not classify:
+        return result
     cause = negative_cause(label, result, approved)
     print('RP_NEGATIVE_REJECTED case=' + label + ' class=' + cause +
           ' exit=' + str(result.returncode))
@@ -540,6 +544,7 @@ def verify(public_dir, gh, context):
     bundle = public / 'proof-bundle.sigstore.json'
     require(bundle.is_file() and bundle.stat().st_size < 2 * 1024 * 1024,
             'RP_BUNDLE_MISSING')
+    locked = {'binary': sha(Path(gh).read_bytes()), 'bundle': sha(bundle.read_bytes())}
     require(run([gh, '--version'], timeout=10).splitlines()[0].startswith('gh version 2.103.3 '),
             'RP_GH_VERSION_INVALID')
     flags = ['--repo', REPO, '--signer-workflow', SIGNER,
@@ -554,8 +559,35 @@ def verify(public_dir, gh, context):
     checked_certificate(json.loads(run([gh, 'attestation', 'verify',
         str(public / SUBJECTS['app']), *flags, '--bundle', str(bundle)], timeout=120)),
         expected, mapping)
-    # The same genuine bundle is also used for all negative checks. They must
-    # fail cryptographically or by the CLI's signer/source policy, not by a mock.
+    # Both successful positives come from the same CLI/bundle around each
+    # negative. Receipt predicates/booleans never establish this witness.
+    evidence = []
+    def reject(label, original, artifact, changed):
+        positive_argv = [gh, 'attestation', 'verify', str(original), *flags, '--bundle', str(bundle)]
+        negative_argv = [gh, 'attestation', 'verify', str(artifact), *changed, '--bundle', str(bundle)]
+        def snapshot():
+            paths = {'binary': Path(gh), 'bundle': bundle, 'original': original, 'probe': artifact}
+            require(all(p.is_file() and not p.is_symlink() for p in paths.values()),
+                    'RP_NEGATIVE_MATERIAL_PATH_INVALID')
+            hashes = {k: sha(p.read_bytes()) for k, p in paths.items()}
+            require(all(hashes[k] == v for k, v in locked.items()), 'RP_NEGATIVE_MATERIAL_CHANGED')
+            return hashes
+        def positive():
+            before = snapshot()
+            output = run(positive_argv, timeout=120)
+            checked_certificate(json.loads(output), expected, mapping)
+            require(snapshot() == before, 'RP_POSITIVE_MATERIAL_CHANGED')
+            return {'argv': positive_argv, 'exit': 0, 'stdout': output, 'hashes': before}
+        before = positive()
+        result = negative_probe(gh, negative_argv[3:], label, expected, classify=False)
+        after = positive()
+        try:
+            projected = vn.rp_negative(label, expected, mapping, str(original), str(artifact),
+                gh, str(bundle), before, after, negative_argv, result, negative_cause)
+        except vn.Rejected as error:
+            raise Blocked(str(error)) from None
+        evidence.append(projected)
+        print('RP_NEGATIVE_VERIFIED case=' + label + ' boundary=' + projected['cliRejectionBoundary'])
     representative = public / SUBJECTS['app']
     negative = {
         'wrongSource': ['--source-digest', '0' * 40],
@@ -567,8 +599,7 @@ def verify(public_dir, gh, context):
         changed = flags.copy()
         index = changed.index(replacement[0])
         changed[index + 1] = replacement[1]
-        negative_probe(gh, [str(representative), *changed, '--bundle', str(bundle)],
-                       label, expected)
+        reject(label, representative, representative, changed)
     with tempfile.TemporaryDirectory(prefix='rp-tamper-') as directory:
         for role in ('app','receipt'):
             original = public / SUBJECTS[role]
@@ -577,8 +608,11 @@ def verify(public_dir, gh, context):
             require(raw, 'RP_SUBJECT_EMPTY')
             altered.write_bytes(bytes([raw[0] ^ 1]) + raw[1:])
             label = 'tamperedManifest' if role == 'app' else 'tamperedReceipt'
-            negative_probe(gh, [str(altered), *flags, '--bundle', str(bundle)],
-                           label, expected)
+            reject(label, original, altered, flags)
+    require(all(sha((public / SUBJECTS[r]).read_bytes()) == mapping[r]
+                for r in (*ROLES, 'receipt')) and
+            sha(bundle.read_bytes()) == locked['bundle'] and
+            sha(Path(gh).read_bytes()) == locked['binary'], 'RP_FINAL_VERIFIED_MATERIAL_CHANGED')
     metadata = {'kind':'RP_VERIFICATION_METADATA', 'sourceCommit':expected['sourceCommit'],
                 'workflowCommit':expected['workflowCommit'], 'sourceTree':expected['sourceTree'],
                 'runId':expected['runId'], 'runAttempt':expected['runAttempt'],
@@ -590,6 +624,8 @@ def verify(public_dir, gh, context):
                             for role in (*ROLES,'receipt')},
                 'certificateRepositoryId':REPO_ID, 'certificateOwnerId':OWNER_ID,
                 'positiveSubjects':4,
+                'negativeEvidence':evidence,
+                'negativeEvidenceMeaning':'CLI rejection boundary plus verified-material own-policy projection',
                 'actualNegativeChecks':['wrongSource','wrongSignerWorkflow',
                                         'wrongSignerCommit','wrongRef',
                                         'tamperedManifest','tamperedReceipt'],

@@ -1,3 +1,23 @@
+## #225 VN — 고정 signer의 검증 material projection (2026-11-06)
+
+`verified_negative.py`는 두 명시 RP/candidate entrypoint만의 순수 정책 projection이다. 실제 서명 검증은 기존 pinned CLI가 담당하고 각 verifier가 동일 binary/bundle·원본의 성공 출력을 negative 전후에 직접 획득한다. 모듈은 고정 project cert identity와4-subject/role·실제 byte SHA 및 intended argv 차이를 다시 검사한다. 공개 evidence는 observable CLI rejection과 verified material의 own-policy mismatch를 분리하며 opaque wrapper의 내부 cause는 UNOBSERVABLE로 남긴다. caller boolean/receipt 또는 임의 signer 입력으로 검증/Owner authority를 만들지 않는다. raw diagnostics는 private이며 세부 운영/실측은 Operation/TestReport를 따른다.
+
+---
+
+## #225 RF-A/B — 후보 proof와 정식 승격의 책임 분리 (2026-11-06 설계)
+
+`release-candidate.yml`은 고정 Main/Owner/environment 계약에서 clean3-role bytes의 기존 RR1/RR2 실행·소유 정리를 연결하고 고유 private GHCR candidate만 다룬다. operator/helper는 plan, 승인 run/config readback, bounded registry IO, graph/provenance 검증과 private journal 책임을 격리한다. 원격 adapter는 explicit job credential만 받아 host credentials를 탐색하지 않는다. 실제 Owner approval의 review 이력과 source/run/packet 연결은 입력 boolean과 구별하며 미확인은 PENDING이다.
+
+RP `release-proof.yml`의 loopback signer/receipt와 candidate signer/receipt는 별도다. 공통 guard/certificate/cleanup 로직이 필요하면 고정된 두 entrypoint/policy로 재사용하고 RP의 현재 read-only 권한/의미를 유지한다. 임의 signer URI를 입력받아 RP를 실제 candidate로 승격하는 경로는 허용하지 않는다. RT raw-copy 알고리즘은 후속 RF-C의 최종3-ref 승격에 사용하며 candidate-prefix 허용이 exact-digest release GO를 대신하지 않는다. 이는 아직 code-only 설계이며 실제 환경·정책·GHCR·운영 변경은 미실행이다.
+
+---
+
+## #225 LP — read-only Main 관측과 legacy publisher server state 분리 (준비)
+
+새 main-hold.yml은 기존 persistent HOLD 결정을 읽고 source/tree/version을 기록하는 전용 Main workflow다. contents:read만 있으며 package/build/tag/release/policy write가 없다. 기존 docker-publish.yml은 그대로 두고, LP operator helper가 승인 packet에 결합된 legacy ID355693716의 disable/readback 및 고정 safe-HOLD160 rerun-denial만 준비한다. 기본 plan은 HTTP가 없고 실제 관리 작업은 별도 Owner 승인 뒤다. 현재 server state와 코드/mock 결과를 혼동하지 않으며 다른 package writer 통제나 정식3-role publisher를 대체하지 않는다. 세부 AC/운영/실측은 TestPlan·Operation·TestReport를 따른다.
+
+---
+
 ## #225/P1-D — CPU Scene 형상/정밀 원본 매핑/표시 판정 분리 (2026-11-05)
 
 G7 signed HTTP 업로드→G7 0.61 CPU Queue→독립 OCI `CUSTOM_DTO v2` immutable Scene READY→signed Scene API→새 Chromium Viewer의 저장 Scene복원 경로 중 CPU LINE은 원본 Handle 기반 `SceneSourceIndex READY`를 생성하지 않는다. `serializeSourceScene`은 `sourceIndex:UNAVAILABLE/INDEX_ABSENT`를 검증한 DTO에 기록하고 `storedSceneFidelityProfile`은 `render:FULL_V2`와 `sourceIndex:UNAVAILABLE`를 별개로 제공한다. `three-dxf-viewer/adapter.loadScene`은 화면의 제한을 `warning`으로 전달하고 `viewer.tsx`는 `도면 일부 표시 완료`로 표시한다. 이는 본 CPU Builder가 Scene을 게시하지 못한 것과 다르고 정밀 원본 선택이 가능한 것과도 다르다. 신규 E2E는 실제 geometry와 이 warning을 동시에 요구, 원본 DXF 자동 GET·재파싱/임의 SourceIndex 복구 금지. **현재 GO-PILOT에서 정밀 Handle/SOURCE 작업은 미지원**. #218 단계별 GO, 출시 HOLD/운영 분리 유지.

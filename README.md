@@ -1,4 +1,12 @@
+## #225 — 레거시 게시 제어 검증 준비 (0.61.0, 2026-11-06)
+
+별도 PR에서 읽기 전용 Main HOLD 관측과 레거시 publisher의 정확 disable/readback·안전한 HOLD run 재실행 거부 시험 도구를 준비한다. 독립 로컬 QA는 17개 Python 회귀·Vitest bridge·정적 검사를 통과했다. 실제 Owner 승인·workflow 상태 변경·재실행/거부는 NOT RUN이며, 서버 권한·package 게시 통제를 입증한 결과는 아니다. 실제 근거와 경계는 [TestReport](out/TestReport.md), 절차는 [Operation](out/Operation.md)을 따른다. 제품0.61.0/flags OFF/GHCR HOLD·GO-PILOT BLOCKED 유지.
+
+---
+
 ## #225 — 실제 배포·복구·릴리스 통제 검증 진행 중 (0.61.0, 2026-11-06)
+
+RF-A/B의 별도 candidate publisher 실행 경로를 code-only로 준비했다. 고정 Owner/Main/environment의 실제 review readback, 같은-run clean3-build/RR1/RR2·정리, private GHCR 후보3개와 별도 candidate signer를 연결한다. 로컬 fake 시험과 실제 출고를 구별하며 이 candidate 경로의 인증/API·환경 설정·dispatch/GHCR/OIDC는 아직 미실행이다. [수용 기준](out/TestPlan.md), [운영·승인 경계](out/Operation.md), [실제 시험](out/TestReport.md)을 따른다. 0.61.0/flags OFF/HOLD는 유지하며 최종 version 승격·운영 배포는 별도이다.
 
 실제 RP2 proof는 timeout fixture에서 실패했고 원인은 UNKNOWN이다. 서명 단계는 실행되지 않았으며 기본 build-record artifact3개도 explicit allowlist 밖에서 관측됐다(내용 미검사). 최소 수리는 별도 readiness 뒤 execution timer를 arm하고 proof build-record upload를 끄는 범위다. 로컬 시험/guard sequencing 실패·실제 결과와 다음 hosted 검증은 [TestReport](out/TestReport.md), 실행 경계는 [Operation](out/Operation.md)을 따른다. 정식 출고·Owner GO를 부여하지 않는다.
 

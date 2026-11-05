@@ -1,3 +1,157 @@
+## Combined VN/RF/LP — Manager 로컬 수용·Draft PR 게시 GO (2026-11-06)
+
+실제 Manager 대행 `gpt-6.1-sol`은 아래 fresh independent QA와 현재 frozen6/protected15 hash를 검토했다. 직접99 proof tests 및 별도LP17, six-workflow actionlint·diff·hash 검사, 보존된 실제 quoted wrapper와의 일치도 PASS다. 두 고정 verifier의 genuine CLI-success 출력에 대한 기존 certificate/4-subject 정책, 같은 bundle/binary/원본/probe 및 intended argv, 전후 positive/최종4-byte readback을 확인했다. opaque CLI 내부 원인의 비노출과 별도 검증 material의 own-policy mismatch를 구별하는 VN 계약 및 runtime token/cleanup/artifact 통제 보완을 로컬 source 준비로 수용한다. raw generic failure·untrusted receipt/boolean을 증거로 사용하지 않는다.
+
+Root는 expected parent `907d338295da8353b23c19a77d4d32903e7c1c01`에서 최종 source/docs/remote/secret/runtime·원본 사용자 변경 보존을 감사한 뒤 정상 Conventional commit 및 독립 Draft PR 게시·새 exact-head required CI를 진행할 수 있다. untracked `src/node_modules` symlink와 Git 제외 raw control/CLI/bundle/runtime/DB/CAD/credential은 stage하지 않는다. 정상 Main 통합은 실제 required CI/검토 뒤 별도 판정한다.
+
+이는 코드 준비 게시 GO이며 actual project proof dispatch, environment/정책/legacy disable, GHCR candidate/최종ref/alias·Owner release GO가 아니다. 새 trusted Main의 별도 proof 및 실제 positive/negative·종료 후 artifact inventory가 필요하다. upstream 실제 control과 local mock signed markers를 project crypto PASS로 바꾸지 않으며 원 RP2·review quoting·기존 미확정 실패/역할 이력을 유지한다. 전체 Issue225/RR1–RR5·0.61.0/flags OFF/GHCR HOLD/GO-PILOT BLOCKED는 계속 진행 중이다.
+
+---
+
+## U-ISSUE225-VN-RF-LP-INDEPENDENT-QA — quoted wrapper 수정 후 fresh combined 검증 (2026-11-06)
+
+실제 독립 QA 대행은 별도 agent의 `gpt-6.1-sol`이다. 이전 QA backend의 task/context 손실 보고에 따라 대행했고 기존 실제 QA 결과와 quoting RED 이력은 보존했다. 대상은 combined base `907d338295da8353b23c19a77d4d32903e7c1c01`이며, 수정 후 frozen source 6개와 protected import 15개의 SHA-256은 시험 전후 모두 assignment와 일치했다. 실제 명령·exit·각 suite 수·전후 hash는 Git 제외 `data/release-proof/vn-independent-qa-final.json`, `vn-qa-fallback-tests.json`, `vn-qa-fallback-static.json`에 기록했다.
+
+- 독립 실행 **99 PASS**: RP7 + CP6 + registry15 + execution-fix19 + cleanup3 + candidate39 + VN10. **LP Python17 PASS는 별도**이며 99에 합산하지 않는다.
+- combined tree에서 LP Vitest bridge **1 file/1 test PASS**, targeted TypeScript 및 ESLint PASS를 독립 재실행했다. bridge가 호출하는 LP17은 추가17회계가 아니다. Root의 이전 결과를 독립 실행으로 바꾸지 않았으며 package/lock hash 일치도 확인했다.
+- workflow6 actionlint/YAML PASS, Bash script115 `bash -n` PASS, 관련 OCI Python 및 LP helper compile PASS, 빈 환경/PATH-only 기본 plan PASS(`HTTP=0`, credential/mutation0), `git diff --check` PASS. candidate의 실제 no-HTTP transport mock 회귀도 포함한다. 전체 앱 build/typecheck를 새로 실행했다는 뜻은 아니다.
+- 실제 형태를 독립 literal로 전사한 **quoted** issuer wrapper를 확인했다. unquoted/malformed/prefix/suffix/infra/잘못된 stdout·exit는 거부된다. 두 고정 entrypoint의 성공 CLI certificate/4-subject witness, project repo/Owner/source/workflow/ref/run/attempt/hosted 정책, binary/bundle/original/probe hash와 정확 argv, 각 negative 전후 positive 및 마지막4 subject byte 재조회 경계를 확인했다. opaque3개는 내부 원인 `UNOBSERVABLE`과 검증 material의 typed own-policy mismatch를 구별하며 source/signer/ref3개는 specific CLI cause를 유지한다. 후속 positive 실패·material 변경은 metadata 없이 거부된다.
+- RF Owner/environment/registry/5 credential scrub/runtime guard/cleanup/artifact/NO_OP 최종 readback, LP4 및 repair 경계는 protected hash와 candidate39/LP17 회귀로 보존했다. 새 blocking finding은 없으며 이전 quoted-wrapper RED는 삭제·재분류하지 않았다.
+
+**범위 한계:** 모든 local witness는 synthetic이다. mocked full seam에서 production signed-proof marker가 출력되어도 실제 project crypto PASS가 아니다. Root의 public upstream genuine control도 project signature가 아니다. 실제 project manual OIDC/서명/certificate/CLI/private candidate/policy/Owner GO는 여전히 **NOT RUN**이다. live CLI crypto/HTTP/API/Docker/probe/build/install/pull/dispatch/GHCR/credential·환경·정책·ref 변경, commit/push는 수행하지 않았다. 이 결과는 local code QA 통과이며 publication 또는 Owner GO가 아니다.
+
+---
+
+## VN source-review 최소 수리 — 정확 quoted issuer wrapper (2026-11-06)
+
+Manager source review는 첫 VN draft의 opaque wrapper에서 issuer 인용부호가 빠진 경계를 발견했다. 보존된 upstream control의 안전 한 줄은 `Error: verifying with issuer "sigstore.dev"`이다. 앞선 fixture가 production 상수를 사용해 형식 오류를 놓쳤다는 점을 보존하며 원본 VN freeze/handoff는 old revision으로 남긴다. Developer 대행 gpt-6.1-sol은 수정 전에 독립 actual-shaped literal을 합성 witness seam에 주입하여 `RP_NEGATIVE_CAUSE_UNPROVEN_WRONGSIGNERWORKFLOW` RED를 재현했다.
+
+**수정/실행:** production exact quoted literal과 독립 fixture만 변경하고 unquoted/malformed/prefix/suffix/infra 오류 거부 subcase를 추가했다. 현재 source의 기존89+VN10=99 PASS, 별도LP17 PASS; 변경 Python2 compile, actionlint 전체6 workflows/YAML6/Bash115, PATH-only default0HTTP plan·diff check PASS다. strong witness·두 고정 signer·unknown fail-closed 및 기존 보호 source는 유지했다. 새 freeze/handoff는 ignored `vn-review-fix-source-freeze.json`/`vn-review-fix-handoff.json`이다. 기존 classifier7/HOLD6은 변경하지 않았고 이번 최소 수리에서 재실행하지 않았다.
+
+실제 수행은 기존 안전 upstream error 한 줄의 읽기와 local synthetic/static 검사뿐이다. 새 live CLI cryptography/네트워크/API/GHCR/Docker/probe/build/credentials/dispatch·정책/권한 변경, commit/push는 없다. upstream control은 project OIDC/서명 PASS가 아니며 Manager→독립 QA와 후속 fresh CI/Main/별도 실제 proof GO는 계속 대기다.
+
+---
+
+## VN Developer 대행 — 검증 material 기반 negative proof 로컬 구현 (2026-11-06)
+
+**판정: code-only Developer checks PASS, Manager source review/독립 QA 대기.** 실제 Developer 대행은 별도 agent `gpt-6.1-sol`이며 지정 원 모델을 실행했다고 기록하지 않는다. combined `test/issue225-candidate-controls-main`, base907d/treefrozen df575에서 작업했다. RP/candidate 두 고정 entrypoint와 순수 `verified_negative.py`는 pinned CLI의 각 negative 전후 positive 출력·project certificate/정확4-subject map·binary/bundle/original/probe SHA·intended argv 차이를 결합한다. 마지막에는 전체4-subject 원본 bytes를 다시 확인한다. 공개 `negativeEvidence`는 CLI rejection boundary와 `UNOBSERVABLE` 내부 cause, 별도 typed `ownPolicyMismatch`를 구별한다. raw diagnostics는 private이며 receipt/boolean이 cryptographic witness 또는 Owner approval을 대신하지 않는다.
+
+**실행한 로컬 검사:** 기존89(RP7/CP6/RT15/repair19/cleanup3/candidate39) + 새 VN10 = **99 PASS**; LP17은 별도 PASS다. 전부 합성 fixture/local fake이며 live CLI/서명을 실행하지 않았다. 신규10은 두 전체 verifier seam의 실제 형식 wrapper 수용과 wrong IDs/source/signer/run/role, missing/self-receipt witness, argv/issuer/exit/stdout/infra/generic 실패, binary/bundle/원본/probe/다른 role 변경, mismatch 부재, post-positive 실패 시 metadata 미생성을 검사한다. source/signer-digest/ref의 기존 specific cause 회귀도 유지한다. 별도 scope classifier7/HOLD6 PASS, 변경 Python5 compile, actionlint1.7.12 전체 workflow6/YAML 및 inline Bash115 `bash -n`, PATH-only default0HTTP plan·diff check PASS다. 제품 TS/Build·Vitest bridge는 이번 Python verifier 변경에서 새로 실행하지 않았으며 기존 실제 결과와 구별한다.
+
+**RED와 호출 수:** draft 뒤 원본 base907d RP Git object를 격리 로드한 실제 catch-seam 합성 replay는 wrong-workflow의 issuer-only 오류에서 `RP_NEGATIVE_CAUSE_UNPROVEN_WRONGSIGNERWORKFLOW`/metadata0을 재현했다. 원본과 현재 fixture를 비교한 RED/GREEN이며 구현 전 실행이나 actual crypto 실패가 아니다. RP 성공 경로의 signature CLI positive는 online4 + same-bundle13 =17, candidate는 online4 + same-bundle16 =20이며 각각 version1/negative6 호출이 별도다. 이 수는 mock command accounting이며 실제 프로젝트 CLI 성능/서명 결과는 NOT RUN이다. 초기 fixture 개발 오류는 ignored 개발 로그에 보존하고 최종99와 혼합하지 않는다.
+
+**보존·미실행:** LP4/repair 및 기존 runner helpers, candidate signer/environment/source/Owner/registry/cleanup/5-credential/artifact flags·default timers/HOLD는 유지했다. exact frozen hash·명령/로그와 replay는 ignored `data/release-proof/vn-developer-handoff.json` 및 source freeze가 정본이다. Root가 별도로 확인한 기존 CI647은 이전 repair source의 scope50·static174 files/1102 tests/실제 Docker proof 성공이며 이번 VN99 또는 project signature 성공이 아니다. Main907d의 Main162는 HOLD 관측 성공/GHCR SKIPPED다. 새 독립 QA 대행도 별도 `gpt-6.1-sol`이며 이전 QA 실적을 소급 이전하지 않는다.
+
+Root의 기존 genuine upstream control에서 전후 positive 및3 specific/2 opaque negative가 관측됐으나 upstream identity는 project가 아니다. **이번 project actual OIDC/서명/CLI cryptography, network/API/GHCR/Docker/build/probe/dispatch, environment/policy/legacy disable·Owner review·후속 post-job artifact inventory는 NOT RUN**이다. 사용자가 알린 package inheritance YES/explicit users 없음은 사용자 정보이며 Actions repository grants는 UNKNOWN; 직접 API 검증이나 쓰기 승인이 아니다. Manager→독립 QA→fresh combined CI/Main 후 별도 실제 proof GO가 필요하고 전체 Issue225/RF/Owner release GO는 계속 미완료다. commit/push는 수행하지 않았다.
+
+---
+
+## QA 역할 대행 갱신 — CI647 이후 (2026-11-06)
+
+기존 QA 대행 gpt-6-luna가 history/backend·context reset으로 현재 task/cwd를 반복 보존하지 못해 Root가 해당 agent를 중단하고 새 `/root/qa_fallback` gpt-6.1-sol을 fork-none으로 배정했다. 새 QA의 첫 범위는 CI647 scope/static/source graph의 읽기 전용 부분 감사이며 아직 전체 CI/출고 결과를 주장하지 않는다. 이전 QA의 실제50/67 회귀·bounded probe·source hash·오류/복구 보고는 원 기록대로 유지하고 새 QA가 수행한 것으로 재표시하지 않는다. Manager/Developer의 gpt-6.1-sol 대행도 별도 agent/역할이며, 실행하지 않은 지정 gpt-6-astra/5.6 모델을 실행했다고 기록하지 않는다. 이후 각 실제 결과는 수행 주체와 근거를 따로 기록한다.
+
+---
+
+## RF credential-boundary 수용 / CLI 부정 증거 계약 보류 (2026-11-06)
+
+Manager 대행 `gpt-6.1-sol`은 아래 최종 독립67 및 frozen7 hash, 직접39/hash/diff 결과를 검토하여 ACTIONS_RUNTIME_TOKEN의 child scrub/direct-runtime 거부 보완을 수용한다. 실제 token 존재나 유출을 관측한 것은 아니다. Root는 새 repair source 기반 private combined worktree에 최종 RF/LP 및 문서 delta를 보존해 import 준비할 수 있다. 새 source의 합산 QA/required CI·Main 통합 및 publisher 실행 승인은 별도다.
+
+**남은 구체적 계약:** pinned gh2.103.3 [LiveSigstoreVerifier.verify source](https://raw.githubusercontent.com/cli/cli/v2.103.3/pkg/cmd/attestation/verification/sigstore.go)는 내부 verifier 오류를 issuer-only 오류로 바꾸며 underlying error를 포함하지 않는다. 뒤의 lastError 반환만으로 SAN/subject-digest causal 진단을 확보한다고 볼 수 없다. 기존 wrong-workflow/tamper classifier는 특정 causal 문자열을 요구하므로 실제 CLI 부정 증거 경로가 충족되는지 확인·설계 보완이 필요하다. Root의 public upstream signed-artifact 진단은 실제 응답 형식의 별도 control이며 project OIDC/PASS가 아니다. generic nonzero 수용으로 바꾸지 않으며, 실제 검증된 cert/subject에 기반한 명시적 mismatch와 관측 CLI 거부 원인을 구별하는 전략은 별도 AC/검토 후 결정한다. full RF publisher/Owner GO는 이 경계가 해결되기 전 부여하지 않는다.
+
+---
+
+## RF credential-boundary targeted final QA — 2026-11-06
+
+**판정: 최소 ACTIONS runtime token 수정의 독립 로컬 QA PASS; 전체 RF publisher/external acceptance는 미완료.** Worktree `/home/planner/Dev/layoutManager-issue225-candidate-publish`, base `8c04f559e829d9f9546a40b603399f9b6f46a5c1`에서 frozen source 7개 SHA-256을 전/후 검증했고 모두 새 handoff 값과 일치했다. 후보39 + RP7/CP6/RT15 = 67/67 tests PASS, 변경된 Python 두 파일 `py_compile`, `git diff --check` PASS다. Unchanged workflow bytes에 한해 이전 exact-hash QA의 actionlint1.7.12 (`release-candidate.yml`, `pr-ci.yml`), YAML parse/83 inline Bash `bash -n` 결과를 재사용했다. 수정 revision의 PATH-only default plan을 다시 실행해 `CA_PLAN_ONLY HTTP=0 CREDENTIALS=0 MUTATIONS=0 OWNER_AUTHORITY=NOT_VERIFIED`를 확인했다.
+
+**Credential fix 확인:** `candidate_publish.command()` child environment에서 `CA_JOB_TOKEN`, `GH_TOKEN`, `GITHUB_TOKEN`, `ACTIONS_ID_TOKEN_REQUEST_TOKEN`, `ACTIONS_RUNTIME_TOKEN` 다섯 key를 제거한다. 39개 candidate regressions의 mocked subprocess test가 synthetic token 다섯 개가 모두 제거됨을 확인한다. 별도 direct-runtime negative는 각 key마다 runtime entrypoint가 `CA_RUNTIME_TOKEN_ENV_REFUSED`로 거부하고 `runtime_only()`를 호출하지 않으며, credential-free 경로는 허용됨을 확인했다. Verifier 경로의 subprocess env는 정확히 `PATH`, explicit `GH_TOKEN`, isolated `GH_CONFIG_DIR`만 포함함을 mocked runner/probe로 확인했다. 이 QA에서 실제 runner credential의 존재·사용·유출은 **관측하지 않았다**; subprocess/network는 mock뿐이다.
+
+**보존/범위:** 이전 66-test QA 및 synthetic `ACTIONS_RUNTIME_TOKEN` inheritance RED는 별도 이력으로 유지한다. 그 당시의 apparent cross-job initialization finding은 frozen workflow line111–118의 same-job `init`→`gate`를 확인한 뒤 **retracted**되어 최종 blocker로 남지 않았다. 이번 revision은 오직 `candidate_publish.py`와 `test_candidate_publish.py`를 변경했고 다른 source5개/workflow는 기존 frozen hash와 일치했다. Durable execution output은 ignored `data/release-proof/rf-credential-final-qa-live.json`에 있다.
+
+**잔여 한계 / NOT RUN:** pinned `gh` CLI positive verifier는 내부 Sigstore 실패 사유를 보존하지 않고 `CA_CLI_VERIFICATION_FAILED`로 fail-close한다. 실제 wrong-workflow/tampered-artifact causal negative의 CLI 출력 계약은 별도 Root 검토가 남았다. Actual API/environment/certificate shape, OIDC/signature, GHCR reads/writes, workflow dispatch, post-job artifact inventory, actual Owner approval 및 exact-head required CI는 NOT RUN. 따라서 이 targeted credential fix QA는 full publisher readiness, release GO 또는 Owner GO가 아니다; 전체 RF acceptance와 publication은 별도 검토/검증 대기다.
+
+---
+
+## RF-A/B child credential 최소 수정 — 새 local freeze (2026-11-06)
+
+독립 QA의 원66-test/hash report와 finding은 아래에 그대로 보존한다. Manager 보완 AC 이후 Developer 대행 `gpt-6.1-sol`이 `command()` scrub 및 direct runtime refusal의 기존4-key 목록에 `ACTIONS_RUNTIME_TOKEN`만 추가했다. 실제 command의 mocked subprocess seam에 synthetic5 credentials를 주입하고 direct runtime entry를 각 key로 호출한 RED에서 runtime token 누락2건을 재현한 뒤 GREEN을 확인했다. credential 없는 runtime 경로와 verifier의 별도 최소 `GH_TOKEN` 경로는 유지한다. 실제 token 존재/사용/유출을 관측한 것은 아니다.
+
+현재 focused39 + 기존RP7/CP6/RT15=67 tests, compile/actionlint/YAML/bash/default0HTTP/diff는 로컬 PASS다. 새7-source freeze와 별도 handoff를 남기며 원 source correction/QA66 이력은 덮어쓰지 않는다. 독립 targeted final QA/required CI·실제 candidate 실행 GO는 미완료다. frozen repair/PR241 source는 변경하지 않았고 live Docker/API/registry/dispatch·credential/환경/정책·commit/push는 실행하지 않았다.
+
+---
+
+## RF-A/B — 독립 code-only QA (2026-11-06)
+
+**판정: 66개 로컬 회귀와 정적 검사는 PASS; child-token 경계 수정 전까지 source acceptance 보류.** Worktree `/home/planner/Dev/layoutManager-issue225-candidate-publish`, branch `test/issue225-candidate-publish`, base `8c04f559e829d9f9546a40b603399f9b6f46a5c1`. Developer handoff의 7개 frozen SHA-256은 QA 전/후 assignment와 일치했고 source 변경은 없었다. 새 후보38 + 기존 RP7/CP6/RT15 = 66/66 tests PASS; Python compile, actionlint 1.7.12 (`release-candidate.yml`, `pr-ci.yml`), YAML parse, inline Bash 83 blocks `bash -n`, `git diff --check` PASS다. `candidate_publish.py` default plan은 credential 없는 PATH-only env에서 `CA_PLAN_ONLY HTTP=0 CREDENTIALS=0 MUTATIONS=0 OWNER_AUTHORITY=NOT_VERIFIED`를 출력했다. Code path는 plan 반환 전에 HTTP transport/API나 credential lookup을 호출하지 않는다. 실제 fake/local 시험 및 source review 외부 동작은 수행하지 않았다.
+
+**검토한 source contract:** exact Owner sender/Main/source/tree/workflow/run/attempt/packet binding, required CI/source archive relation, existing-environment readback과 Owner-only review의 실제 승인/API-vs-UI bypass 구분, same-run proof cleanup을 remote client 생성 전에 수행, 4개 proof receipt hash와 owned RR2 receipt set/source/R1-R2 linkage 검증, CID 및 registry name/ref/tag absence를 반복 확인, strict private GHCR origin/scope와 raw manifest/blob digest/size/platform graph 검증, intent-before-write/no-retry, all-existing three-ref final digest reread, fixed signer/certificate identity·subject mapping·synthetic causal negatives, public artifact allowlist 및 child environment 최소화. Workflow의 세 build는 job-scope `DOCKER_BUILD_RECORD_UPLOAD='false'`를 상속하며 override/unknown producer 회귀가 있다. Static guard는 실제 post-job artifact absence나 실제 API/certificate 형식을 입증하지 않는다. Registry final reread는 외부 writer와 원자성을 보증하지 않는다는 한계를 남긴다.
+
+**재작업 finding — `ACTIONS_RUNTIME_TOKEN`:** `candidate_publish.command()`는 child env를 복사한 뒤 `CA_JOB_TOKEN`, `GH_TOKEN`, `GITHUB_TOKEN`, `ACTIONS_ID_TOKEN_REQUEST_TOKEN`을 제거하지만 `ACTIONS_RUNTIME_TOKEN`은 제거하지 않는다. Workflow는 archive/build/RR proof helper를 실행할 때 이 변수를 명시적으로 unset하고 있어 이를 child에 전달하지 않는 의도가 보인다. 독립 mock-subprocess RED는 synthetic `ACTIONS_RUNTIME_TOKEN`이 `command()`가 만든 child environment에 남는 것을 확인했다. 이는 bounded environment-contract defect이며 실제 runner token이 주입되거나 사용됐다는 관측은 **없다**. Manager도 동일한 fake seam을 독립 확인했고 RA 수정 항목으로 넘겼다. 현 source를 고치거나 그 새 revision을 시험하지 않았다.
+
+**한계 / NOT RUN:** actual workflow dispatch, GHCR candidate write/readback, actual environment/API shape, Owner approval, OIDC/certificate format/signature, live CLI causal negatives, post-job artifact inventory, exact-head required CI 및 release GO는 NOT RUN. 실제 publisher 실행이나 운영/정책/credential/ref 변경은 없었다. Repair QA worktree와 source는 변경하지 않았다. 새 source fix와 frozen hash를 가진 후속 independent QA가 필요하다. Code-only RF-A/B는 **rework required** 상태이며 publication/Owner GO가 아니다. 상세 실행 결과와 mock finding은 ignored `data/release-proof/rf-independent-qa-live.json`에 기록했다.
+
+---
+
+## RF-A/B Manager source review — 독립 QA 대기 (2026-11-06)
+
+실제 Manager 대행 `gpt-6.1-sol`은 새 correction handoff의7 source SHA를 직접 대조하고 fixed Main/Owner/packet/run·실제 environment review/CI·private package gate, 동일-run raw graph/cleanup 전 remote client 생성 금지, 고정 namespace/realm·한 번의 credential-free CDN blob GET, intent-before-write/no retry, digest runtime·서명 subject/certificate 및 공개 allowlist 경로를 검토했다. 빈 marker/registryName 누락과 NO_OP 중간 변경의 local fake seam을 재현했고 수정된 complete receipt/owned set·CID/name/tags absence 및 final-triplet readback을 수용한다. 직접38+RP7+CP6+RT15=66 tests, 두 workflow actionlint, frozen7 hash, diff 검사를 PASS했다.
+
+이는 source review의 로컬 통과이며 독립 QA/required CI·Main 통합·actual environment/API/GHCR/OIDC/CLI·Owner candidate/release GO가 아니다. 기존 RF base8c04와 이후 RP repair source를 같은 revision으로 표시하지 않으며 후속 import는 repair의 변경과 gate를 보존해야 한다. repair QA와 충돌하지 않도록 새 RF 독립 QA는 별도 과제로 진행한다. 실제 publisher 권한·API/cert 형식·post-job artifacts·비원자적 외부 writer 통제는 미검증 제한을 유지한다. Manager 검토 근거는 ignored `data/release-proof/rf-manager-source-review.json`에 보존했다.
+
+---
+
+## RF-A/B bounded source-review corrections — 새 local freeze (2026-11-06)
+
+Manager의 구현 전 보완 AC에 따라 같은 candidate worktree에서 대행 Developer `gpt-6.1-sol`이 세 code-only 결함을 수정했다. 기존7-source/7-doc hash와 `rf-developer-handoff.json`은 과거31-test revision으로 보존한다. 중간 RF WIP는 repair QA 우선 작업 동안 별도 paused manifest에 남겼으며 paused37 중36 PASS/1 shorthand-action audit FAIL도 숨기지 않는다.
+
+실제 `Runner.cleanup`을 호출한 synthetic RED에서 빈 receipts marker와 absent registry CID 뒤 foreign registryName이 수용됐고, all-existing `publish_set` 마지막-role callback이 첫 ref를 변경/삭제/unknown으로 만든 RED도 NO_OP를 반환했다. 수정 뒤 marker는 exact4 receipt/hash와 owned hash/source/run/set을 재검증하며 반복 cleanup은 read-only로 CID/name·원래 자원/refs/tags를 모두 확인한다. NO_OP도 전체3-ref digest를 마지막으로 조회하고 changed/missing/unknown은 write0/HALT다. 순차 readback의 한계와 외부 writer/CAS/원자성 미보증은 유지한다.
+
+Candidate3 build의 record upload를 job 문자열 false로 끄고 true/step/runtime override 및 shorthand `- uses`를 포함한 unknown producer 회귀를 통과했다. 현재 focused38 + 기존RP7/CP6/RT15=66 tests, compile/actionlint/YAML/bash/default0HTTP/diff가 로컬 PASS다. 이는 실제 Docker/API/registry/Owner approval/암호 검증이 아닌 fake/static 결과다. 실제 post-job artifact inventory는 NOT RUN이다. environment 선행 GET는 보호의 사전 조건이며 실제 플랫폼의 생성 시점을 관측하지 않았으므로 auto-create 차단 보증으로 쓰지 않는다. 후속 승인된 dispatch POST 전에 actual existing environment GET/config 확인이 필요하다.
+
+원 제품·0.61.0/flags OFF/HOLD·기존 source guards와 RP/CP/RT·frozen repair/QA source는 변경하지 않았다. 새 RF freeze의 Manager full review/독립 QA/required CI 및 실제 candidate 실행 GO는 아직 미완료다.
+
+---
+
+## RF-A/B candidate publisher — Developer local source-review checkpoint (2026-11-06)
+
+Manager가 기록한 RA01–10 이후 `gpt-6.1-sol` Developer fallback이 별도 worktree/base `8c04f559e829d9f9546a40b603399f9b6f46a5c1`/tree `e004fb393d7b0e72fa6e2fdd7ef7d036715131f2`에서 작성했다. 실제 기존 designated 모델을 실행했다고 기록하지 않는다. 구현은 새 고정 candidate workflow, policy/API approval gate, bounded registry client, clean-proof/cleanup orchestrator와 별도 candidate certificate/CLI verifier, 환경 설정 검토 JSON 및 required scope wiring이다. RP signer/permissions/receipt 의미나 CP/RT source는 변경하지 않았다.
+
+**로컬 관측:** 새 Python31 tests PASS, 기존 RP7+CP6+RT15=28 PASS, 변경 Python compile와 candidate/pr-ci workflow의 default actionlint1.7.12 PASS, diff check PASS다. 새 시험은 실제 client 코드를 injected fake HTTP로 실행해 blob init/finish·child/parent raw manifest·graph readback과 fsync intent 순서를 확인했고, authority/config/actual-review/run/job/hash/CI-tree 혼합, private package/role/source 오류, partial/rewrite/timeout 이후 mutation 중단, cleanup 실패0client, exact CDN one-hop/header 제거와 bad host/size/digest/second-hop, signer/RP relabel·subject/receipt·public leak 거부를 검사했다. pinned verifier wrapper는 synthetic certificate/CLI responses로 positive8와 negative6 호출 구조를 검증했으며 암호 검증 실적이 아니다. 기존28 및 새31은 required scope job에 함께 연결한다.
+
+**공식 형식과 실제 관측의 구별:** public OpenAPI JSON에서 admin-bypass property 누락을 확인했으나 Root가 확인한 pinned go-github/Terraform client는 해당 REST field를 read/write한다. 실제 boolean false를 우선 수용하고 true는 거부하며 unknown만 별도 Owner-observed UI evidence로 보완한다. 이 Unit의 실제 environment/API 응답은 조회하지 않았다. review history에 없는 approval timestamp/inputs도 만들지 않는다. Owner-only `prevent_self_review=false`를 허용하고 second-human 독립성을 주장하지 않는다. CDN 지원은 Manager가 승인한 exact blob-only/header-free/one-hop 계약이며 실제 GHCR/CDN 응답 시험은 아니다. 상세 공식 source와 관측 경계는 [Operation](Operation.md)에 둔다.
+
+**NOT RUN / 후속:** candidate 실제 인증/API·environment 설정/UI 관측/Owner review·GHCR write·Docker build/journey·candidate OIDC/실 pinned CLI verification·새 exact-head required CI와 독립 QA는 실행 전이다. 제품 TypeScript/build/browser 실행을 이 Python/workflow local 시험의 결과로 복제하지 않는다. 기존 operational0.58 App/DB/CAD/volume·제품/Schema/0.61.0/flags OFF/HOLD·기존 refs는 변경하지 않았다. public primary source read 외 외부 동작, credential read/provisioning, commit/push는 없다. 현재 단계는 Manager source review checkpoint이며 실제 출고/RR5 완료·RF-C exact-digest release GO·운영 upgrade/start가 아니다.
+
+---
+
+**Root 게시 전 확인:** 로컬 의존성 `src/node_modules`는 symlink라 현재 Git untracked이며 directory ignore 적용을 받지 않는다. 위/아래의 “ignored 링크” 표현은 실제 ignore 판정이 아니었다. 이 런타임 링크는 유지하되 명시 게시 목록에서 제외한다. package/lock 파일은 변경하지 않았다.
+
+## LP01–06 Manager 로컬 수용·게시 GO (2026-11-06)
+
+Manager 대행 `gpt-6.1-sol`은 Root 초안과 별도 지정 Developer 대행 `gpt-6.1-sol`의 실제 검토·두 최소 수정, 아래 최종 independent QA를 검토했다. negated disabled-cause false PASS는 full-perform 회귀로 거부되고 accepted202의 원래 snapshot은 새 attempt/safety 확인으로 승격하지 않는다. frozen4 hash가 일치하며 Manager도 17개 Python·compile·actionlint·diff를 직접 통과했다. Root는 네 source bytes를 보존하고 README/ChangeLog 등 최신 상태를 정리한 뒤 최종 source/base/secret/remote/tree 감사와 code-only PR/required CI를 진행할 수 있다. helper의 hash/execute flag는 Owner 승인 증거가 아니며 실제 packet 승인·disable/rerun·관리 권한/실제 API·출고는 PENDING/NOT RUN이다. 해당 외부 실행은 별도 실제 Owner 승인 전 허용하지 않는다.
+
+---
+
+## LP01–06 Root 초안 검증 (2026-11-06, Developer/Manager/독립 QA 대기)
+
+**추가 독립 QA 확인 — 2026-11-06, frozen HEAD `476b686a7b9bb1ff9c691a71f895bd833311e090`:** QA가 이 worktree에서 final 4 source hash를 직접 재계산해 assignment와 일치함을 확인했다. 별도 실행에서도 focused Python 17/17, `py_compile`, bridge Vitest 1/1, targeted ESLint/TypeScript, actionlint 1.7.12, YAML 권한/checkout 속성 확인, workflow Bash `bash -n`, `git diff --check`가 모두 통과했다. 기본 helper를 임시 valid-shaped packet으로 실제 로컬 실행하여 `LP_PLAN_ONLY`, `mutationAttempt=NOT_SENT`, HTTP 0을 확인했다. 이는 fake/local 검증이다. Manager confirmed that the helper intentionally does not authenticate Owner approval: `--execute`, packet hash, and an Owner ID/admin readback are execution controls, not approval proof. Root must enforce the separately recorded Owner approval before any future operator call; that approval and any live action remain PENDING/NOT RUN. No fake approval flag or signature was added. 어떤 live action도 하지 않았다.
+
+Manager가 LP AC를 먼저 기록하고 Root에게 별도 초안 보조를 명시 배정했다. Root는 contents:read Main HOLD workflow, packet/source/hash/Owner/run/inventory에 결합된 기본0HTTP operator helper와 두 고정 mutation endpoint를 작성했다. 실제 disable/rerun/정책/refs/GHCR/운영 변경은 NOT RUN이다. 보존 run160/문서상 후보141/이전 write+push source126 및 미확인source2의 읽기 inventory는 실제 실행 권한·거부 시험으로 수용하지 않는다.
+
+13개 Python fake/local 테스트가 PASS다: default0HTTP, exact endpoint와 unsafe route 거부, repo/run/hash/source/dirty mismatch, waiting/requested/pending 등 미완료 상태, pagination 누락/변경, disabled readback, generic/auth refusal 오분류, 예상 외 accepted 시 HALT/새 attempt 관측 및 no-cancel/no-enable를 검사했다. 새 read-only Main step은 synthetic GitHub env/소유 summary 파일로 실제 실행해 현 source/HOLD 및 wrong-ref 거부를 확인했다. 이것은 GitHub Main 실행 증거가 아니다. 기존 required Vitest에 Python suite를 연결하는 얇은 bridge 1file/1test PASS, targeted TypeScript·ESLint PASS, Python compile/default actionlint1.7.12/diff PASS다. 첫 local dependency 연결 명령은 cwd 착오로 src/package.json을 찾지 못해 테스트가 실행되지 않았고, 올바른 cwd/동일 lock 확인 뒤 ignored node_modules 링크로 실행했다. 제품·lock/version·원 사용자 worktree는 변경하지 않았다.
+
+현재 초안은 실제 지정 Developer 검토→Manager→독립 QA·required CI 뒤에만 게시/실행 packet으로 수용한다. Root의 실행을 지정 Developer나 실 서버 검증으로 기록하지 않는다. package 다른 writer/Owner 관리 권한·실제 disabled API 형식·Owner GO는 미확인으로 남긴다.
+
+**독립 QA — 수정된 Developer source 최종 4 hash, local only:** 별도 worktree `/home/planner/Dev/layoutManager-issue225-legacy-publisher-control`, branch `test/issue225-legacy-publisher-control`, HEAD `476b686a7b9bb1ff9c691a71f895bd833311e090`에서 수행했다. `lp-developer-repair-handoff.json`의 helper `c849a1aad337be1c37e07d1880095c9ca2e655f8457d608103915e2df3912c1d`, Python tests `219334ed87b19244e45127e6626422b4065dfd7bd935d7f5b6772376f0048018`, workflow `aea0385b036eacd6cc3d41f5aeb5c98ed0a41d55289b4166c13ea8906083a2eb`, TS bridge `1331f6b8c45021c941c8f851affa3bb48a5be4fc4c2d4630a32f80306670b4d7` hashes were all independently recalculated and matched.
+
+**판정: LP01–06 local fake/static regression PASS.** `python3 -B src/tests/oci/test_legacy_publisher_control.py -v` 17/17 PASS; Python compile and official actionlint1.7.12 on `main-hold.yml` PASS; bridge Vitest 1/1, targeted ESLint, targeted TypeScript compile, workflow YAML parse and its one Bash `run` block `bash -n`, and `git diff --check` PASS. An initial combined YAML check was invoked from `src/` and could not locate the repository-relative workflow; the same check was rerun from the worktree root and passed. No source, workflow, helper, or node_modules symlink was modified by QA.
+
+검토한 fake regressions include default plan without HTTP client construction; exact packet repo/Owner/workflow/source/tree/hash/run bindings and current-Main/local-content pins; page-complete no-active-run inventory where waiting/requested/pending/in-progress/unknown states or unstable/truncated pagination block both mutations; exact legacy-disable and single safe-run rerun routes; required readback; affirmative anchored disabled messages versus negated/auth/generic/qualified/unknown refusal; and unexpected accepted rerun responses. A stale 202 readback remains `NEW_ATTEMPT_NOT_YET_OBSERVED`/safety `PENDING`; even a new attempt with unexpected source is not accepted as safe, and no cancel, retry, enable, or follow-up mutation is sent. The new workflow has `contents:read` only and performs source/HOLD observation; its successful synthetic Main step is not a GitHub-hosted Main execution or publisher-block proof.
+
+**NOT RUN / residual limits:** no helper `observe`, `disable`, `probe`, `--execute`, live GitHub API, credentials, workflow dispatch, Docker, GHCR, or external mutation was performed. Legacy workflow ID `355693716` was not disabled; safe-HOLD run `42075718479` was not rerun. Real API response wording, permissions, Owner approval, package publisher restrictions and actual rerun denial remain unverified. The local helper's accepted response strings and fake transport are contracts only. Main HOLD observability does not prevent an administrator from re-enabling the old publisher or establish that all package writers are blocked. Existing Root draft 13-test run/cwd history above is preserved separately from this final 17-test independent QA. No commit or push.
+
+---
+
 ## RP execution repair — Manager 로컬 수용·Draft PR 게시 GO (2026-11-06)
 
 Manager 대행 `gpt-6.1-sol`은 최종 frozen5 hash(core760a8a1f/probe1491a236/tests0c129991/proof a543b3c9/pr-ci158aef3b), 독립50/static 결과 및 아래 corrected 실제3-probe/보호/정리 보고를 검토했다. Manager 직접19+3/actionlint/diff와 current5 hash도 PASS다. 새 direct `cd90e1f152447dbd`/actual copied g7 command host `35ea208023d6855d`의 readiness→4s timeout/소유 정리, startup negative `d3bb65db3e7b9d40`의 no-arm READINESS_MISSING/정리, 전후 selected production/R1 보존을 로컬 AC로 수용한다. 늦은 관측 budget 분류는 실제 TimeoutExpired cause와 absolute deadline 소진을 모두 요구하며 임의 오류를 absence/실행 성공으로 승격하지 않는다.
