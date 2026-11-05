@@ -1,3 +1,11 @@
+## #225/P1-D — Signed HTTP 업로드→분리 OCI CPU Worker→신규 인증 Viewer 단일 E2E (2026-11-05, CI 미검증)
+
+현재 Main의 #233 CI #612, #234 CI #622 및 Main CI #153/#154 성공은 완료 증거이나, 실제 App HTTP→Worker OCI→새 로그인 Viewer 전 구간 통과를 의미하지 않는다. 이번 브랜치의 `src/tests/oci/scene-p1d-journey.sh`, `scene-p1d-probe.mjs`, `src/playwright.scene-p1d.config.ts`, `src/tests/p1d-e2e/scene-http-oci-viewer.spec.ts`가 처음부터 폐기 가능한 CI 고유 G7 Docker Volume에서 App/Migrator/Worker 로컬 OCI 이미지(정확 PR SHA label 검증)를 사용해 실제 관리자 초기 설정→Editor Role/Site 발급·로그인→CSRF/Origin HTTP multipart LINE DXF 업로드→Version/Job QUEUED→독립 Worker READY/manifest·DTO·Blob readback→새 Editor 로그인 Chromium Context에서 원본 GET 금지 상태의 Scene 복원 및 reload를 검증하도록 추가됐다. 권한 회수, SourceSHA 변조, 미지원 CIRCLE 실패 및 이전 READY 무변경을 함께 확인한다.
+
+**실증 경계:** 이번 새 P1-D 검증 소스는 **CI 결과 확인 전 NOT VERIFIED**. 테스트 코드에서만 `SCENE_AUTO_BUILD_ENABLED=true`/`SCENE_CPU_WORKER_ENABLED=true`를 주입하며 제품/운영 설정의 기본값은 **OFF**. 실제 변환 중 kill/OOM, 현장 G7 upgrade/restore, 정식 3-image source/role/digest·GHCR/Tag Ruleset 관리자의 GO는 별도다. #225/#218 OPEN, **GO-PILOT BLOCKED**, #229 >=0.61 GHCR HOLD, #231 OPEN. 운영 CAD/DB/Volume/.env·기존 GHCR/태그 불변, 실패 시 FailureLedger 실제 Run/Job/수정 기록 필수.
+
+---
+
 ## #225 / PR #234 — OCI GO-INTEGRATE 최종 완료 (2026-11-05)
 
 - [PR #234](https://github.com/planner77/layoutManager/pull/234) 검증 HEAD `aa0c4622e912c7ad048c481c4aa153c86124d79c`, [PR CI #622](https://github.com/planner77/layoutManager/actions/runs/41935291475): **8/8 적용 Job SUCCESS**, #218 A2 synthetic은 범위 외 SKIPPED. Vitest **173 files / 1,098 tests PASS**, Docker OCI, G7 Signed/Greenfield 및 Chromium shards 회귀 성공. 리뷰 스레드 0·충돌 0·Main behind 0에서 Draft 해제 후 **Squash Main `edb3ecb3a17a25cbc88d63b2cc8b911cba3bbcd5` 병합**.
