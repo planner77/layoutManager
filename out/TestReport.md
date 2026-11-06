@@ -1,3 +1,15 @@
+## #231 live Ruleset readback and isolated protected-Main PR smoke (2026-11-07)
+
+**Live GET evidence before smoke PR:** Repository `planner77/layoutManager` `main=e10783febd2606dbff5c16258ac5b7b8f01bee71`, `branches/main.protected=true`. [Main Ruleset #26731716](https://github.com/planner77/layoutManager/rules/26731716) is `active`, `target=branch`, exactly `refs/heads/main`, `bypass_actors=[]` and `current_user_can_bypass=never`. It reports `deletion`, `non_fast_forward`, `pull_request` (squash only, approval count0, stale-review dismissal, conversation resolution, no extra unattributed approval) and `required_status_checks` (`Typecheck, lint, test, build, E2E`, GitHub Actions integration 15368, strict/current-base, `do_not_enforce_on_create=false`). These match the reviewed final Main JSON; the additional explicit UI-only default fields are recorded rather than silently equated to an unspecified setting.
+
+[Tag Ruleset #26731135](https://github.com/planner77/layoutManager/rules/26731135) is separately `active`, `target=tag`, exactly `refs/tags/v*`, `creation/update/deletion`, `bypass_actors=[]`, `current_user_can_bypass=never`. This matches the intended release-tag HOLD. Historical `[]` Ruleset readbacks on 2026-11-04 are no longer current. **This API readback establishes configured policy, NOT demonstrated denial** of unauthorised tag create/rewrite/delete or ordinary package write; live enforcement denial and rule-suite evidence are still missing.
+
+**Protected-Main integration smoke:** This docs-only isolated PR records the actual initial Ruleset readback and updates the runbook with live state. The pass condition is exact-head required PR CI from App 15368, no unresolved review/conflict, Main behind0, Squash Merge under the active Main Ruleset, resulting Main SHA readback, new Main CI and GHCR HOLD/publish SKIPPED. Until those events are observed they are **NOT RUN / NOT VERIFIED**; this document does not grant a bypass, change policy, dispatch control-proof, disable legacy publisher, publish candidate/final GHCR, or claim GO-PILOT.
+
+#225/#218/#231 OPEN, `SCENE_AUTO_BUILD_ENABLED=OFF`, `SCENE_CPU_WORKER_ENABLED=OFF`, >=0.61 GHCR HOLD. No production DB/CAD/Volumes/.env, existing image/tag, package ACL or Ruleset mutation by this PR.
+
+---
+
 ## #225 P1 release promotion attestation read regression — source correction candidate (2026-11-06)
 
 **Scope:** [PR #244 review](https://github.com/planner77/layoutManager/pull/244#discussion_r4486906552) on already merged source `11532c8` identified a missing Job-level token permission. The private `gh attestation verify --repo` online path is implemented in `release_promote.verify_material()`/`candidate_publish.verify()`, but the `promote` job lacked `attestations: read`. This is an actionable static permission defect; **the actual promotion has NOT RUN**, and `RC_CRYPTO_VERIFICATION_FAILED` is not claimed as an observed run failure.
