@@ -1,3 +1,11 @@
+## #225 P1 release promotion attestation read regression — source correction candidate (2026-11-06)
+
+**Scope:** [PR #244 review](https://github.com/planner77/layoutManager/pull/244#discussion_r4486906552) on already merged source `11532c8` identified a missing Job-level token permission. The private `gh attestation verify --repo` online path is implemented in `release_promote.verify_material()`/`candidate_publish.verify()`, but the `promote` job lacked `attestations: read`. This is an actionable static permission defect; **the actual promotion has NOT RUN**, and `RC_CRYPTO_VERIFICATION_FAILED` is not claimed as an observed run failure.
+
+**Patch/test contract:** Change only the protected `promote` Job from 3 to 4 explicit permissions by adding `attestations: read`; keep plan/readback/top-level permissions and Owner packet, environment, immutable role/digest, offline/online cryptographic checks and fail-closed behavior unchanged. Existing `test_workflow_fixed_permissions_actions_and_each_job_initialization` now enforces the exact four-value permission list, exactly one `attestations: read` occurrence located after the `promote` job boundary, and forbids `attestations: write`, `id-token` and preexisting unsafe workflow actions. No actual private verification, publication, dispatch, production deployment, or Owner GO has been performed. New exact HEAD CI is required for acceptance; **not verified until GitHub reports success**. Historical Signed Release Proof #4 remains scoped to its original source `11532c8`, not this change.
+
+---
+
 ## U-225-LI-MANAGER-ACTUAL-READBACK — 실제 전체 GET inventory 수용·초안 게시 GO (2026-11-06)
 
 Manager 대행 `gpt-6.1-sol`은 승인된 Root의 단일 live GET-only 결과를 직접 검토해 **LI의 한정 실제 pagination readback을 수용**했다. base Main `11532c8f22791e5b3e365f8340610cc0ce83fb51`에서 별도 로컬 수리 helper SHA `3867587176f96215b3ac272a15128adfb548b3b3c788a0b2c623f91dd3513de5`를 사용했으며 `helperOnMain=false`다. legacy355의 실제164 unique/completed runs가6pages `[30,30,30,30,30,14]`로 소진됐고 안정 total164·각응답1MiB 이하(최대385683B)·normalized inventory SHA `f60b8c4c2dda73a18030ad3a19cfb887a9d44f0bce6c1156db8190f5e9c4bf43`를 확인했다. actualMain pre-GET은11532였고 지속적인 Main lock이나 전체 operator preflight를 증명한 것은 아니다.

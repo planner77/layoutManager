@@ -375,12 +375,14 @@ class Promotion(unittest.TestCase):
         job=text.split('  promote:\n',1)[1]
         self.assertIn('environment: '+ca.ENVIRONMENT,job);self.assertIn('timeout-minutes: 45',job)
         permissions=job.split('    permissions:\n',1)[1].split('    env:\n',1)[0]
-        self.assertEqual([line.strip() for line in permissions.splitlines()],['contents: read','actions: read','packages: write'])
+        self.assertEqual([line.strip() for line in permissions.splitlines()],['contents: read','actions: read','attestations: read','packages: write'])
         self.assertNotIn('RC_JOB_TOKEN',job.split('    env:\n',1)[1].split('    steps:\n',1)[0])
         self.assertEqual(text.count('run: python3 src/tests/oci/release_promote.py init'),2)
         self.assertIn('uses: '+release.DOWNLOAD_ACTION,text)
         self.assertIn('artifact-ids: ${{ steps.metadata.outputs.artifact_id }}',text)
-        for denied in ('id-token:','attestations:','docker/build','docker/login','gh workflow run','--retry'):
+        self.assertEqual(text.count('      attestations: read\n'),1)
+        self.assertNotIn('attestations:',text.split('  promote:\n',1)[0])
+        for denied in ('id-token:','attestations: write','docker/build','docker/login','gh workflow run','--retry'):
             self.assertNotIn(denied,text)
 
 
