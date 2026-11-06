@@ -1,3 +1,13 @@
+## #231 current GitHub protection state and protected-Main smoke (2026-11-07)
+
+The current API readback supersedes older historical paragraphs below that said the Ruleset payloads had not been applied. [Main Ruleset #26731716](https://github.com/planner77/layoutManager/rules/26731716) and [Tag Ruleset #26731135](https://github.com/planner77/layoutManager/rules/26731135) are now both **ACTIVE**, with exact `main` and `v*` target patterns, no configured bypass actors, and branch `protected=true`. The exact live Main required status is `Typecheck, lint, test, build, E2E` (GitHub Actions App 15368, strict up-to-date), PR conversation resolution and squash merge, force-push/deletion restrictions. Actual readback, including both live rule IDs and scope, is documented in [TestReport](TestReport.md).
+
+Before treating #231 as complete: require a minimal documentation-only PR with actual hosted CI, live Squash Merge under the newly ACTIVE Main rule, Main CI plus GHCR HOLD skip, and separate Owner-approved isolated control-ref denial evidence for protected tags/Main operations. Existing final JSON excludes the `issue225-control-*` fixture prefix; to test denial there, obtain a *new* explicit Owner approval for a controlled initial-prefix ruleset update and subsequent exact final-pattern restoration. Never mutate real `main` or release `v*` refs as test probes. Exact ruleset readback alone, 403, or a local mock is not a denial proof.
+
+Existing package/Actions writer inventory, legacy Workflow disable/rerun-denial, candidate Environment effective approval and release GO remain separate and **UNVERIFIED**. No automatic change to GitHub policies, GHCR, tags, feature flags or operation data is authorized by this docs-only smoke. Keep #225/#218/#231 OPEN, GO-PILOT BLOCKED, both product Scene flags OFF and v0.61+ GHCR HOLD.
+
+---
+
 ## #225 LI — LP inventory 고정30 pagination·bounded read 유지 (2026-11-06)
 
 기존 LP helper의 실제 GET-only inventory 준비는 Main11532/helperc849에서 page100 응답이1MiB를 넘어 packet 작성/disable/probe 전 `LP_RESPONSE_TOO_LARGE`로 중단됐다. Root의 별도 안전 측정은 total164/page100=1,267,824B, page30=379,253B를 관측했으며 **전체 actual inventory는 완료하지 않았다**. 새 source는 workflow-run/job 목록 모두 정확 `?per_page=30&page=N`으로 나누며 client의1,048,576B cap·`read(1_048_577)`·timeout30s·redirect 거부와 route/Owner/source·두 fixed mutation 경계를 유지한다.
