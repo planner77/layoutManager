@@ -1,3 +1,44 @@
+## #225 FUP2 설계 — 다음 최소 CPU primitive 후보와 실제 파일 미지원 경계 (2026-11-08)
+
+**결정 상태: 후속 구현 설계만 수용, 현재 FUP1은 test-only이며 앱 버전0.61.0/제품 Builder/Schema 변경0.** 최종 inventory source `2a36a9e9712016a4545fb911c75fbf10d0937001e19debc08aa119012317361c`의 10개 시험을 Manager가 재실행했다. shared DAG의 memo subtree도 `현재 depth + cached depth - 1` 상한을 검사한다. 실제 sanitized inventory `37cf146b8915e3b1e179b6aa5b1b82efb9c1add9d0459f5469f2a58db1a28027`은 ENTITIES970/BLOCKS2690, BLOCK 정의147개, 최대 BLOCK 경로3, layer24/style8이다. 이전 depth2 서술은 사용하지 않는다.
+
+다음 최소 Unit은 **offline primitive 후보**다: default XY 평면의 LINE/CIRCLE/ARC와 bulge=0·width=0인 LWPOLYLINE의 열린/닫힌 straight segment만 지원한다. 기존 strict LINE parser를 완화하지 않고 별도 module/실험 identity `node-cpu-primitives@0.1.0+cad-scene-1`로 분리한다. 이 identity는 제안된 offline 식별자이며 production Builder allowlist/Queue/manifest 수용 목록에 추가하지 않는다. 모든 primitive의 입력 source SHA는 원래 bytes에 결합하고, 지원하지 않는 record/field/section semantics가 있으면 전체 문서를 UNSUPPORTED로 끝낸다. 실제 파일에서 일부 entity를 추출한 결과를 전체 파일 후보라고 반환하지 않는다. 실제 파일은 이 Unit 이후에도 미지원이다.
+
+| 영역 / 실제 요구 | 다음 최소 Unit | 이후 지원 수용에 필요한 의미·시험 |
+| --- | --- | --- |
+| Encoding: AC1018 / ANSI_1252 선언 / nonASCII | group code/numeric 구조와 선언을 보존. 명시 ANSI_1252만 엄격 policy로 메모리 decode하며 불명·충돌·미정의 byte/replacement는 거부; 원본 재인코딩 저장0. TEXT는 여전히 미지원 | header1252가 의도한 한글을 입증하지 않음. CP949/다른 encoding 추측0. 사용자가 제공하는 실제 문자 baseline·원본 표시와 별도 비교 후 text decoding fidelity 판정; 선언 decode 성공과 의미 정확성 분리 |
+| Units / 좌표 | INSUNITS4, finite XY, Z0/default extrusion, 기존 coordinate 상한 유지 | 다른 단위·큰 좌표·정밀도 손실은 별도 설계; source double→Float32 오차 한도와 bbox/길이 검증 |
+| LINE / CIRCLE / ARC | 기본 layer0/continuous/bylayer 제한. radius>0, ARC degree/wrap/sweep, bounded chord tessellation으로만 후보 | center/radius/endpoint/bbox/chord error 양성·음성 및 fresh DTO restore 비교. ARC start=end의 fullcircle 해석은 추측하지 않고 거부 |
+| LWPOLYLINE | bulge0/width0/default extrusion/Z0, 유효 vertex count, 열린/닫힘 flag만 | 반복/zero-length/부족 vertex/미지원 flag 거부. bulge/width/곡선 연결은 후속 exact sweep·join 시험 |
+| POINT / 기타 primitives | 미지원 | POINT의 PDMODE/PDSIZE 표시는 점 하나로 임의 축소 금지. SPLINE/ELLIPSE 등은 별도 수치오차·단위 semantics |
+| Layer24 / Style8 | default layer0와 제한 style만; 임의 TABLES를 무시하여 통과0 | frozen/off/visibility·ACI/truecolor·BYLAYER/BYBLOCK·linetype/weight 상속 및 block layer0 규칙, 실제 layer 조합 비교 |
+| OCS / Z / thickness | default normal(0,0,1), zero elevation/Z/thickness만; 이외 전체 거부 | arbitrary-axis OCS→WCS·normal·elevation·negative/mirrored scale·3D flatten 정책 별도. 기존 default-only 결과를 3D 지원으로 확대0 |
+| BLOCK147 / INSERT285 / depth3 | 전부 미지원; BLOCKS를 건너뛰지 않음 | base point→scale→rotation→translation, nested/mirrored/nonuniform transforms, MINSERT 배열, cycle/missing/depth/expanded-entity caps. raw 정의2690개와 실제 instance expanded count를 구분 |
+| ATTRIB8 / ATTDEF2 / SEQEND4 | 전부 미지원 | insert별 override/default/invisible/constant/position/alignment/SEQEND 소유 관계; 손실 없는 attribute provenance와 text baseline |
+| TEXT169 / MTEXT144 | 전부 미지원 | 정식 font/shape/style/height/width/rotation/alignment·MTEXT control/spacing/wrapping·한글 glyph baseline과 텍스트 source mapping. placeholder/빈 glyph를 FULL 표시0 |
+| DIMENSION126 | 전부 미지원 | anonymous block/기하·dimension style/units·override text·arrow semantics와 중복 표시 차단; block만 렌더하고 semantic completeness 주장0 |
+| HATCH26 | 전부 미지원 | boundary loops/islands/bulge/associativity/pattern/solid fills 및 winding/tessellation caps; 외곽선만으로 hatch 지원 주장0 |
+| LEADER12 | 전부 미지원 | vertex/arrow/annotation linkage/style/OCS, TEXT와의 관계 비교 |
+| VIEWPORT3 / layout | 전부 미지원 | model/paper space, viewport transform/clipping/visibility와 전체 도면 표시범위의 명시적 설계; 화면에 안 보인다고 자동 제외0 |
+
+FUP2 의미 시험(구현 전): **P01** 원래 bytes SHA·strict declaration/no guessing·미정의 legacy byte·잘못된 UTF8·conflict 거부; **P02** LINE/CIRCLE/ARC endpoint·sweep·bbox·chord 오차와 닫힌/열린 polyline golden geometry; **P03** mixed 지원+미지원 문서와 미지원 layer/table/field/Z/block/text에서 payload0/READY0, silent skip0; **P04** source16MiB/pairs300000/output segment5000/coordinate1000000 기존 상한을 유지하고 tessellation 확장도 segment 예산에 포함, Node120초/cgroup768MiB/pids64/network-none에서 실제 timeout/kill와 private tempfile readback; **P05** versioned identity/SourceSHA/DTO validator·fresh restore 및 geometry 비교, old builder와 unknown builder 오인 수용0; **P06** 실제 DXF 전체 입력은 UNSUPPORTED가 기대값이며 원본 hash 보존. 정확 chord error는 구현 전에 millimetre 단위0.1mm 최대값으로 고정하고 segment budget을 초과하면 오차를 늘려 맞추지 않고 거부한다. 구현에서 새 public 지원을 출고하려면 별도 SemVer MINOR/제품 admission·권한·회귀/릴리스 검토가 필요하다.
+
+PARTIAL preview/READY 의미 변경은 이 최소 Unit에 없다. 향후 필요하면 누락 entity·의존 block·text·layout coverage를 사용자에게 표시하는 DTO/UI/상태 계약을 먼저 구체화하고 Manager/사용자에게 업무 의미 변경을 확인한다. 현재 READY/FULL을 재정의하거나 기존 실패를 성공으로 바꾸지 않는다.
+
+---
+
+## #225 FUP1 — CPU 확장 사전 분석과 clone 로그인 경계 (2026-11-08, Manager 설계)
+
+현재 `cpu-line-candidate.ts`는 fatal UTF-8, HEADER/ENTITIES, millimetre/평면 LINE·제한 layer/style만 허용한다. 미지원 실도면을 통과시키려고 section/entity를 생략하거나 원본을 transcode/filter하지 않는다. 첫 구현은 source SHA/byte length에 결합된 제한형 offline inventory다. ASCII group-code/structure와 선언 metadata를 원본 byte에서 분석하고 비ASCII value는 원문 출력 없이 분리한다. 선언 codepage 불명/충돌/비지원이면 UNKNOWN 또는 UNSUPPORTED로 끝내며 replacement decoding/추측 encoding으로 지원을 주장하지 않는다. Entity 이름·count와 closed vocabulary feature flags만 공개 가능하고 layer/text/handle/원본 경로/좌표는 private로 유지한다. 실제 inventory 뒤 Manager가 구현할 가장 작은 완전지원 subset을 명시한다. 이후 converter는 새 builder identity로 격리하며 기존 node-cpu-line@1.0.0 계약·저장 Scene 허용 목록을 소급 변경하지 않는다. PARTIAL 미리보기 도입이 필요하면 현재 READY/FULL 의미를 바꾸기 전에 별도 구체 설계/AC를 기록한다.
+
+인증 준비는 immutable backup→fresh owned clone에 한정한다. 우선 기존 internal network·host 공개0을 유지하는 사용자 접근 가능 Browser 경로를 확인한다. 접근 불가이면 정상 브라우저 로그인을 위해 exact clone에만 연결되는 별도 nonce-owned bridge의 `127.0.0.1:<unused-port>` 공개를 제한적으로 허용하는 설계다. bridge/clone의 수명·목적·CID/network/port를 기록하고 외부 bind/다른 upstream/credential logging을 금지한다. 원래 운영0.58의 origin과 세션을 재사용하지 않으며 clone의 실제 허용 origin과 Browser Origin/Host/CSRF를 일치시킨다. signed runtime origin이 별도 Owner-signed artifact를 요구하면 그 합법적 provisioning 없이 proxy Header rewrite/검증 disable로 우회하지 않고 AUTH_PENDING으로 남긴다. 별도 변경 필요성은 실제 gate 검토 결과로 root에 보고한다.
+
+구체 선택은 fresh headed Chromium 전용 localhost SOCKS5 tunnel이다. 허용 목적지는 Browser의 `127.0.0.1:3000` 하나이며 정확 clone internal IP:3000으로만 opaque bytes를 전달한다. Browser URL/Host/Origin은 clone 설정의 `http://127.0.0.1:3000`과 일치하고 HTTP header rewrite가 없다. clone App 자체는 host port 공개0, bridge는 localhost만 bind하며 원래 Browser context/운영 서비스 경로를 변경하지 않는다. 시작 전·사용 중 CID/image/volume/internal network/IP를 확인하고 변화 시 tunnel을 닫는다. proxy-bypass loopback 설정은 fresh context에만 적용한다. Chromium의 loopback proxy 동작은 [공식 proxy 문서](https://chromium.googlesource.com/chromium/src/+/HEAD/net/docs/proxy.md)를 참조하며 실제 접속 성공은 별도 관측으로 기록한다. routing 관측은 URL/method metadata만 허용하며 credential/body/header 로깅0; 정상 login/logout 외 업무 write는 차단한다. 최초 anonymous session401→사용자 직접 login→clone session/read 확인을 구분한다.
+
+사용자는 fresh browser context에서 clone에 직접 로그인한다. 정상 로그인에 따른 clone Session/Audit 변경은 허용된 인증 부수효과이며 CAD/Version/Current/Scene 업무 데이터 변경과 구분한다. 인증 후 허용된 조회만 시험한다. 원래 context cookie·session/DB hash·setup code·credentials를 읽거나 내보내지 않는다. clone 정상 인증·CPU 변환·READY/파일럿 판정은 각각 별도 증거다.
+
+---
+
 ## #225 실제 출고 경계 확인 (2026-11-08)
 
 source A와 promotion code B는 모두 Main33f377이며, 실제 candidate3에서 동일-run build/RR1/RR2/RR3/GHCR 원문 graph/digest runtime/OIDC 검증을 완료했다. 별도 protected promotion은 다시 graph/서명을 검증한 뒤 이미 존재하는3개 manifest의 원문만 고정3개 version ref로 복사했다. 별도 Root 검증도 candidate/final raw bytes 동일·config/role/source/platform/User를 확인했다. 새 build/blob/서명으로 재포장하거나 latest/Git tag/운영 상태를 변경하지 않았다. 증거·digest 정본은 TestReport다. 외부 registry 다중 tag 관측은 원자적 transaction이나 타 writer 완전 배제 증명이 아니다.

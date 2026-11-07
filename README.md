@@ -1,3 +1,9 @@
+## #225 — 실도면 분석·격리 복원본 로그인 후 조회 (2026-11-08)
+
+새 복원본의 사용자 정상 로그인 후 Location/Current·원본 size/SHA·dxf-viewer 표시를 확인하고 선택 업무 데이터/CAD 보존과 소유 검증 자원 정리를 수행했다. 실도면은 ENTITIES970/BLOCKS2690·BLOCK147/최대 경로3으로 분석됐으며 전체 CPU 변환은 여전히 미지원이다. 다음 primitive 후보의 지원 matrix·오차·거부 조건을 구체화했다. 소스0.61.0/운영0.58.0과 파일럿 NO-GO를 유지한다. 실제 결과와 검증 한계는 [TestReport](out/TestReport.md), 다음 설계는 [Architecture](out/Architecture.md)를 따른다.
+
+---
+
 ## #225 — 로그인 후 기존 도면 조회 검증 완료 (2026-11-08)
 
 사용자 직접 로그인 뒤 운영0.58의 세션·목록·Location/Current·원본 조회와 `dxf-viewer` 표시 완료를 확인했다. 원본1,117,143bytes의 SHA가 backup과 같고 Viewer 관측47GET/쓰기0이다. 이는 기존 공개 CAD 읽기 정책의 기능 검증이며 격리 복원 clone의 인증 UI 검증이나 기하 정확도 수용을 대신하지 않는다. 실제 도면은 현재0.61 CPU strict subset에 부적합하여 READY 생성은 미실행이고 파일럿 NO-GO를 유지한다. 상세 근거는 [TestReport](out/TestReport.md)의 ARV 기록을 따른다.

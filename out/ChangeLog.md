@@ -1,3 +1,11 @@
+## 0.61.0 검증 도구 — DXF capability·격리 clone 정상 인증 (2026-11-08)
+
+- 원본 bytes/SHA를 보존하는 bounded DXF inventory와 malformed/encoding/finite vocabulary/graph depth·시간 상한 시험을 추가했다. 실제 파일의 entity/blocks/layers/styles와 지원 확대의 누락 범위를 구체화했다. 결과는 INVENTORY_ONLY다.
+- fresh 복원 volume/exact0.58 App/internal network·단일 목적지 localhost tunnel로 사용자 정상 clone 로그인 후 Current/원본/Viewer 및 선택 업무 데이터/CAD 보존을 확인했다. 검증 자원은 정리하고 detached 복원 volume을 보존했다. 정상 UI logout 미완료와 초기 fingerprint/umask 보완은 TestReport·FailureLedger에 기록했다.
+- 새 합성 시험을 PR CI scope job에 연결했다. 앱 버전·제품 parser/Builder/Worker/Schema·운영 배포/flags·registry/tag/latest를 변경하지 않았고 READY/파일럿 GO를 주장하지 않는다.
+
+---
+
 ## 0.61.0 검증 — 실제 도면 CPU eligibility와 인증 조회 (2026-11-08)
 
 - 공개된33f377 source와 동일 parser로 실제 backup 도면의 지원 조건을 조사했다. LINE2 대조군 처리/실제 DXF의 parse 거부를 독립 재현하고 실제 CAD·계정·권한·운영 설정은 변경하지 않았다.

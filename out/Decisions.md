@@ -1,3 +1,13 @@
+## #225 FUP2 결정 — primitive offline 확장부터, 실도면 전체 지원은 보류 (2026-11-08)
+
+FUP1 실제 inventory와 최종 10개 scanner 시험을 근거로 다음 최소 범위를 default XY LINE/CIRCLE/ARC 및 bulge0/width0 LWPOLYLINE의 **별도 versioned offline 후보**로 결정한다. exact matrix·오차·resource cap·P01–P06 의미 시험은 Architecture FUP2가 단일 정본이다. FUP1 제품 버전/Builder/Schema는 바꾸지 않는다.
+
+선택 이유: 실제 파일에는 147 BLOCK 정의/최대 경로3, 24 layers/8 styles, text·attributes·dimension·hatch·leader·viewport와 OCS/Z가 있어 primitive만 추가해 전체 지원으로 표시할 수 없다. 의도한 한글은 ANSI_1252 header만으로 입증할 수 없으므로 CP949 추정이나 원본 transcode/filter를 하지 않는다. 선언 decode와 문자 fidelity는 별도 판정이다. 지금 단계에서는 전체 파일 UNSUPPORTED를 유지하고 부분 payload를 READY로 게시하지 않는다.
+
+정상 clone 인증은 source 인증과 별도다. 사용자가 로그인했다고 알려도 실제 clone Session401/loginPosts0이면 AUTH_PENDING을 유지한다. fresh clone 사용자가 직접 로그인한 후에만 인증 조회를 검증하며 source cookie·DB auth material 재사용/권한 변경으로 대신하지 않는다. 이 설계 수용은 production deploy/flags·registry/latest/tag 변경·pilot GO 승인이 아니다.
+
+---
+
 ## #225 ARV — 실제 도면 eligibility와 정상 인증 경로 (2026-11-08)
 
 검증 요청은 지원 여부를 실제 데이터와 정상 계정 경로로 확인하는 범위다. actual DXF는 strict UTF-8 조건에서 실패했고 geometry/section도 현재 CPU LINE subset을 벗어나므로 원본 변환·entity 삭제·직접 DB READY 삽입으로 통과시키지 않는다. 독립 동일 parser 재현을 read-only eligibility 근거로 수용하고 실제 READY를 주장하지 않는다. 기존 계정은 사용자 직접 로그인만 사용하며 cookie/session/setup 복구 우회·계정/권한 변경은 하지 않는다. 사용자 직접 로그인 후 원래 운영 서비스의 Session/공개 CAD 업무·원본 일치/Current·명시적 dxf Viewer 표시 완료를 확인했다. 공개 CAD 계약의 기능 검증만 수용하며 Site 접근 차단·기하 정확도·격리 restore clone 인증 UI 성공으로 확대하지 않는다. 앱0.61 배포/flags/운영 Scene 생성은 별도 범위이며 파일럿 NO-GO를 유지한다.
