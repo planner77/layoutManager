@@ -1,3 +1,9 @@
+## TP-248-FL1 — browser tooltip hydration/focus regression after PR #249 CI #662 (2026-11-07)
+
+Exact hosted failing case: `TC-DESC-005` at `src/tests/e2e/upload.spec.ts:511`, Chromium shard2/2 (`73 passed / 1 failed`), after Viewer reload focus did not yield a Tooltip within the original 5000ms. This is separate from the synthetic Control Proof suite (PASS). The amended focused E2E must keep registration/search/persisted multiline description and both Viewer focus/tooltip checks, and after reload first wait for `도면 표시 완료`, require a new blur→focus transition and the exact existing Tooltip text/visibility. No retry, skip, timeout increase, product Tooltip rewrite or CI gate bypass. Full `General Chromium E2E 1/2 + 2/2`, Docker, Greenfield, static and required aggregate must pass on the **new exact HEAD** before further integration; earlier CI #662 remains FAIL.
+
+---
+
 ## TP-248 — independent Rule Suite readiness and ruleset GET readback (2026-11-07)
 
 **Pre-change live evidence:** Main Ruleset26731716 ACTIVE for `refs/heads/main`; Tag Ruleset26731135 ACTIVE for `refs/tags/v*`, both `bypass_actors=[]`. `GET /repos/planner77/layoutManager/rulesets/rule-suites?per_page=20` returned integration 403; this is a **reader capability failure**, not a denied Git operation. Current Main `e602bd78549722a29f89a2b1c38a162d91c6be89`, historical v0.60 annotated tag unmodified, no control-* refs.
