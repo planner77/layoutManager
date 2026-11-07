@@ -398,6 +398,19 @@ class CPContracts(unittest.TestCase):
             with self.assertRaises(CP.RefProofError):
                 CP.owner_independent_reader(packet)
 
+    def test_owner_preflight_rejects_source_drift_before_network(self):
+        packet,_=sample()
+        with unittest.mock.patch.dict(os.environ, {
+                'GITHUB_ACTIONS':'', 'CP_READ_TOKEN':'synthetic-read-only-token'},
+                clear=False):
+            with unittest.mock.patch.object(
+                    CP,'execution_context',side_effect=CP.RefProofError('CP_LOCAL_SOURCE_MISMATCH')):
+                with unittest.mock.patch.object(
+                        CP,'GitHub',side_effect=AssertionError('network must not start')) as api:
+                    with self.assertRaisesRegex(CP.RefProofError,'CP_LOCAL_SOURCE_MISMATCH'):
+                        CP.owner_independent_reader(packet)
+                    api.assert_not_called()
+
     def test_readiness_cli_fails_before_attempting_any_ref_mutation(self):
         packet,h=sample()
         with tempfile.TemporaryDirectory() as d:
