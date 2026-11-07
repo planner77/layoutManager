@@ -1,3 +1,31 @@
+## TP-248-FL2 — full Viewer rendering of description fixture after #666 (2026-11-07)
+
+**Observed:** CI #666 run42320485967 browser trace confirms client `TypeError: e.entities is not iterable` in DXF parser `_FetchFonts`; `upload.spec.ts:513` Viewer status `표시 실패` instead of ready. Fixture `0\\nEOF\\n` had no DXF `SECTION/ENTITIES`. Prior focus/hydration race remains an unproven alternative, not the observed root cause. Chromium2 73 PASS/1 FAIL; aggregate FAIL.
+
+**AC:** Change only `TC-DESC-005` upload buffer to minimal valid `SECTION/ENTITIES/LINE/ENDSEC/EOF` fixture already supported by G7 browser tests; retain registration and percent/underscore/newline literal description, current/list search and reload, Viewer status `도면 표시 완료` on initial and reloaded load, focus/tooltip exact text/visibility. Keep original 5000ms assertions, no skip/retry/timing workaround; do not weaken renderer's failure behavior for malformed inputs or change other three EOF-only fixtures, product/CI/security logic. Require new exact HEAD Chromium shard2 and aggregate PASS before integration; no regression claim on old #666.
+
+---
+
+## TP-248-FL1 — browser tooltip hydration/focus regression after PR #249 CI #662 (2026-11-07)
+
+Exact hosted failing case: `TC-DESC-005` at `src/tests/e2e/upload.spec.ts:511`, Chromium shard2/2 (`73 passed / 1 failed`), after Viewer reload focus did not yield a Tooltip within the original 5000ms. This is separate from the synthetic Control Proof suite (PASS). The amended focused E2E must keep registration/search/persisted multiline description and both Viewer focus/tooltip checks, and after reload first wait for `도면 표시 완료`, require a new blur→focus transition and the exact existing Tooltip text/visibility. No retry, skip, timeout increase, product Tooltip rewrite or CI gate bypass. Full `General Chromium E2E 1/2 + 2/2`, Docker, Greenfield, static and required aggregate must pass on the **new exact HEAD** before further integration; earlier CI #662 remains FAIL.
+
+---
+
+## TP-248 — independent Rule Suite readiness and ruleset GET readback (2026-11-07)
+
+**Pre-change live evidence:** Main Ruleset26731716 ACTIVE for `refs/heads/main`; Tag Ruleset26731135 ACTIVE for `refs/tags/v*`, both `bypass_actors=[]`. `GET /repos/planner77/layoutManager/rulesets/rule-suites?per_page=20` returned integration 403; this is a **reader capability failure**, not a denied Git operation. Current Main `e602bd78549722a29f89a2b1c38a162d91c6be89`, historical v0.60 annotated tag unmodified, no control-* refs.
+
+| AC | Required source/test behavior |
+| --- | --- |
+| 248-R1 | `--readiness-check` (Owner local, no `--execute`) checks exact current clean source/policy bytes, repo/Owner identity and bounded independent `CP_READ_TOKEN` list+detail Rule Suite 200; returns sanitized `READ_ONLY_READINESS_NOT_OWNER_APPROVAL` only. 403/401, empty list, nonmatching repo, incomplete detail/actor/ref, pagination uncertainty, token missing or source drift reject with **zero write routes**. It does not grant external policy mutations. |
+| 248-R2 | Local Owner `--execute` requires same independent GET preflight **before** its first ref write. No `CP_READ_TOKEN` inside GitHub Actions; Actions dispatch remains separately Owner-preflight/approved, not auto-authorized by workflow token or an untrusted receipt. |
+| 248-R3 | GitHub Rules REST validates exact names/targets/conditions/active/bypass/issuer, unique type set, exact PR semantics plus *explicit* `required_reviewers=[]` and extra approval false; no inferred missing false. Tag-only update omits documented branch-upstream field; no unknown parameter accepted. Rule order irrelevant; unknown/missing/duplicate rules/parameters or drift reject. |
+| 248-R4 | Actual-shaped independent fixtures, positive tagged/branch GET, negative nonempty reviewers/extra approval/changed required CI/actor/bypass/order/fields, Rule Suite 403/empty/invalid source/detail, local token/source failure and mutation0. Existing CP suite and repository-required CI must pass on exact PR HEAD, independent QA and Main Ruleset integration remain mandatory. |
+| 248-R5 | No real Owner control packet, Ruleset prefix edit, Ref/tag write, workflow dispatch, legacy disable, GHCR publish or pilot GO until separate approval. Final denial PASS requires actual ruleset evaluation and unmodified ref; 403 alone is PENDING. |
+
+---
+
 ## TP-225-LP-INVENTORY-PAGINATION — 크기 제한을 유지한 실제 inventory 복구 (2026-11-06)
 
 Root의 승인된 GET-only Owner packet 준비에서 Main11532의 LP `no_active_runs → all_rows(per_page=100) → GitHub.request`가 `LP_RESPONSE_TOO_LARGE`로 중단됐다. packet 작성/disable/probe/원격 mutation 이전 실패다. 실제100/30 응답의 길이·건수·status·digest 측정 전에는 payload 크기가 원인이라는 가설과 최소 page 선택을 확정하지 않는다. 진행 중 proof4 source11532/tree2423 및 다른 frozen worktree는 변경하지 않는다.

@@ -1,3 +1,17 @@
+## #248 / PR #249 — repeated hosted E2E failure evidence boundary (2026-11-07)
+
+CI #662 first failed `TC-DESC-005` after Viewer reload with no tooltip; #666's new ready assertion observed actual `표시 실패`. Read the preserved [FailureLedger](out/FailureLedger.md) and [TestReport](out/TestReport.md) before changing this test. Actual #666 Playwright trace Console `TypeError: e.entities is not iterable` in DXF `_FetchFonts` corresponds to the test's EOF-only `0\\nEOF\\n` buffer. Correct only the malformed fixture to valid minimal SECTION/ENTITIES/LINE, keeping strict Viewer ready and tooltip checks; previous focus/hydration explanation remains UNPROVEN, do not relax timeout/retries or product parser/CI gates. Exact new-HEAD hosted result is pending; #225/#218/#231/#248 remain OPEN, flags OFF, GHCR HOLD, GO-PILOT BLOCKED.
+
+---
+
+## #248 / #231 — Rule Suite reader readiness and exact Ruleset GET boundary (2026-11-07)
+
+The controlled-ref proof MUST remain a separate Owner-approved operation. Before local Owner `--execute`, `src/tests/oci/cp-control-proof.py` now uses an independently supplied `CP_READ_TOKEN` in a local, outside-Actions, GET-only client. It validates clean exact source/policy SHA, repository/Owner IDs and bounded Rule Suite list **and** detailed rule evaluations, then fails closed if any evidence is missing (including 403 or no suite). `--readiness-check` writes a sanitized `READ_ONLY_READINESS_NOT_OWNER_APPROVAL` receipt; it is neither an Owner signature nor permission for any mutation. Do not put `CP_READ_TOKEN` in `control-proof.yml` or reuse its Actions `GITHUB_TOKEN` as independent reader proof. For Actions actor mutations, Owner must separately complete and review the external readiness preflight **before dispatch**; the workflow itself has no privileged independent read credential. Without that evidence, do not dispatch. Exact current policy readback and unmet local integration-403 are preserved in [TestReport](out/TestReport.md); actual rejection evidence is NOT RUN.
+
+Ruleset detail comparison remains strict on exact policy/issuer/Repo/source/active/bypass; only two observed GitHub GET differences are considered: explicit empty `required_reviewers` + `require_extra_approval_for_unattributed_changes=false` for branch PR, and tag-update's omission of the *branch-only* `update_allows_fetch_and_merge` input. Rules are matched by unique type (not array order); missing/unknown fields, changed protection, extra rule/actors or absent independent Rule Suite evidence fail closed. No Ruleset/tag/ref/GHCR/Environment/legacy mutation is part of #248. #225/#218/#231 OPEN, GO-PILOT BLOCKED, flags OFF and >=0.61 GHCR HOLD.
+
+---
+
 ## #225 / PR #236 — GO-INTEGRATE 완료 (2026-11-05)
 
 사용자의 이번 통합 승인으로 아래 TP-225-UPGRADE-RECOVERY의 기존 UR-07 `CI 시작까지만` 경계를 **PR #236 통합에 한해** 확장했다. [PR #236](https://github.com/planner77/layoutManager/pull/236)의 정확 HEAD `893ec1b0e6c30e41c7bebc9d60448252ae95a990`는 [PR CI #634](https://github.com/planner77/layoutManager/actions/runs/42005042169) 적용 8개 Job SUCCESS 뒤 Squash Main `323fa4b0a0c8b69ab158fdf18a8363ba9e16c6ca`에 병합됐다. [Main CI #156](https://github.com/planner77/layoutManager/actions/runs/42009205686)도 같은 merge SHA에서 SUCCESS이며 >=0.61.0 GHCR 출고는 HOLD로 skip됐다. 상세 증거와 GO-PILOT 잔여는 [TestReport](out/TestReport.md)를 따른다. 제품 Scene flags OFF, #225/#218/#231 OPEN, GO-PILOT BLOCKED; 운영·GHCR·태그 변경 없음. 아래 당시 NOT VERIFIED 기록은 역사적 시점의 상태다.

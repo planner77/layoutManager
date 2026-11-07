@@ -9,6 +9,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 import unittest
+import unittest.mock
 
 SPEC=importlib.util.spec_from_file_location('cp',Path(__file__).with_name('cp-control-proof.py'))
 CP=importlib.util.module_from_spec(SPEC);SPEC.loader.exec_module(CP)
@@ -54,6 +55,57 @@ class Fake:
         self.calls.append((method,path,body))
         if method!='GET' or path not in self.data: raise AssertionError(path)
         return 200,self.data[path],'REQ-READ'
+
+# These literals reproduce sanitized, independently observed GitHub GET rule
+# shapes on 2026-11-07; they are intentionally NOT generated from the
+# proposed policy JSON or implementation normalization.
+REAL_MAIN_RULES = [
+    {'type':'deletion'},
+    {'type':'non_fast_forward'},
+    {'type':'pull_request','parameters':{
+        'required_approving_review_count':0,
+        'dismiss_stale_reviews_on_push':True,
+        'required_reviewers':[],
+        'require_code_owner_review':False,
+        'require_last_push_approval':False,
+        'required_review_thread_resolution':True,
+        'require_extra_approval_for_unattributed_changes':False,
+        'allowed_merge_methods':['squash']}},
+    {'type':'required_status_checks','parameters':{
+        'strict_required_status_checks_policy':True,
+        'do_not_enforce_on_create':False,
+        'required_status_checks':[{
+            'context':'Typecheck, lint, test, build, E2E',
+            'integration_id':15368}]}}
+]
+REAL_TAG_RULES = [
+    {'type':'deletion'}, {'type':'creation'}, {'type':'update'}
+]
+
+
+def observed_ruleset(planned, identifier):
+    # The initial control-ref scope has not been applied. Only the conditions
+    # are substituted in this isolated future-policy fixture, not API rules.
+    return {'id':identifier, 'name':planned['name'], 'target':planned['target'],
+            'source':'planner77/layoutManager', 'source_type':'Repository',
+            'current_user_can_bypass':'never',
+            'enforcement':'active','bypass_actors':[],
+            'conditions':planned['conditions'],
+            'rules':json.loads(json.dumps(
+                REAL_MAIN_RULES if planned['target']=='branch' else REAL_TAG_RULES))}
+
+
+class ReaderFake:
+    """Independent Reader transport; does not allow any mutation."""
+    def __init__(self, routes):
+        self.routes=routes;self.calls=[]
+    def request(self, method, path, body=None):
+        self.calls.append((method,path,body))
+        if method!='GET' or body is not None or path not in self.routes:
+            raise AssertionError('unexpected read route or mutation')
+        status, payload = self.routes[path]
+        return status,payload,'REQ-READ'
+
 
 class CPContracts(unittest.TestCase):
     def test_actual_initializer_and_exact_compare_transport(self):
@@ -127,7 +179,8 @@ class CPContracts(unittest.TestCase):
         tag_policy=json.loads(Path('src/deploy/release-control/issue231-tag-hold.ruleset.json').read_text())
         self.assertIn('update',[rule['type'] for rule in tag_policy['rules']])
         self.assertEqual(CP.validated_live_ruleset(Fake({
-            CP.BASE+'/rulesets/9':{'id':9,**tag_policy}}),tag_packet,9,tag_update)['id'],9)
+            CP.BASE+'/rulesets/9':observed_ruleset(tag_policy,9)
+        }),tag_packet,9,tag_update)['id'],9)
         tag_packet['cases'][-1]['expectedRule']='pull_request'
         with self.assertRaises(CP.RefProofError):
             CP.validate_packet(CP.canonical(tag_packet),
@@ -185,7 +238,7 @@ class CPContracts(unittest.TestCase):
               '/users/planner77':{'id':CP.OWNER_ID,'login':'planner77'},
               CP.BASE+'/rulesets/rule-suites?per_page=100&page=1':[summary],
               CP.BASE+'/rulesets/rule-suites/42?include_metadata=true':detail,
-              CP.BASE+'/rulesets/7':{'id':7,**planned}}
+              CP.BASE+'/rulesets/7':observed_ruleset(planned,7)}
         observation=row(case,'PENDING_RULE_EVALUATION',403,A)
         self.assertEqual(CP.verify_denial_case(Fake(data),packet,case,observation,
                                                {'mode':'owner'})['verdict'],'DENIED_BY_POLICY')
@@ -232,5 +285,154 @@ class CPContracts(unittest.TestCase):
             wrong={**run,field:value}
             with self.assertRaises(CP.RefProofError):
                 CP.verify_actions_attempt(Fake({path:wrong}),packet,ctx)
+
+    def test_real_shaped_policy_readbacks_are_bounded_and_fail_closed(self):
+        packet,_=sample()
+        folder=Path('src/deploy/release-control')
+        main=json.loads((folder/'issue225-main-source.ruleset.json').read_text())
+        tag=json.loads((folder/'issue231-tag-hold.ruleset.json').read_text())
+        for desired,observed in ((main,REAL_MAIN_RULES),(tag,REAL_TAG_RULES)):
+            self.assertTrue(CP.validated_rule_readback(desired,observed))
+            duplicate=json.loads(json.dumps(observed))
+            duplicate.append(json.loads(json.dumps(observed[0])))
+            with self.assertRaises(CP.RefProofError):
+                CP.validated_rule_readback(desired,duplicate)
+            extra=json.loads(json.dumps(observed))
+            extra.append({'type':'creation' if desired['target']=='branch' else 'pull_request'})
+            with self.assertRaises(CP.RefProofError):
+                CP.validated_rule_readback(desired,extra)
+        extra_cases=[
+            lambda x:x[2]['parameters'].__setitem__('required_reviewers',[{'reviewer':{'id':100,'type':'Team'}}]),
+            lambda x:x[2]['parameters'].__setitem__('require_extra_approval_for_unattributed_changes',True),
+            lambda x:x[2]['parameters'].pop('required_reviewers'),
+            lambda x:x[2]['parameters'].pop('require_extra_approval_for_unattributed_changes'),
+            lambda x:x[2]['parameters'].__setitem__('allowed_merge_methods',['merge']),
+            lambda x:x[3]['parameters']['required_status_checks'][0].__setitem__('integration_id',0),
+            lambda x:x[2]['parameters'].__setitem__('unexpected_security_field',False),
+        ]
+        for change in extra_cases:
+            modified=json.loads(json.dumps(REAL_MAIN_RULES))
+            change(modified)
+            with self.subTest(change=change.__code__.co_firstlineno):
+                with self.assertRaises(CP.RefProofError):
+                    CP.validated_rule_readback(main,modified)
+        for mutation in (
+                {'type':'update','parameters':{'update_allows_fetch_and_merge':True}},
+                {'type':'update','parameters':{'unknown':False}},
+                {'type':'update','parameters':None},
+                {'type':'update','unexpected':False},
+                {'type':'update','parameters':{'update_allows_fetch_and_merge':False,'unknown':True}}):
+            modified=json.loads(json.dumps(REAL_TAG_RULES));modified[-1]=mutation
+            with self.subTest(mutation=mutation):
+                with self.assertRaises(CP.RefProofError):
+                    CP.validated_rule_readback(tag,modified)
+        no_wrapper=json.loads(json.dumps(REAL_TAG_RULES))
+        no_wrapper[-1]={'type':'update','parameters':{'update_allows_fetch_and_merge':False}}
+        self.assertTrue(CP.validated_rule_readback(tag,no_wrapper))
+
+    def test_exact_live_rule_identity_rejects_bypass_and_scope_drift(self):
+        packet,_=sample()
+        folder=Path('src/deploy/release-control')
+        for policy_name,case in (
+                ('issue225-main-source.ruleset.json',packet['cases'][-2]),
+                ('issue231-tag-hold.ruleset.json',packet['cases'][-1])):
+            planned=json.loads((folder/policy_name).read_text())
+            live=observed_ruleset(planned,17)
+            self.assertEqual(CP.validated_live_ruleset(Fake({
+                CP.BASE+'/rulesets/17':live}),packet,17,case),live)
+            changes=[
+                lambda v:v.__setitem__('bypass_actors',[{'actor_id':CP.OWNER_ID}]),
+                lambda v:v.__setitem__('current_user_can_bypass','always'),
+                lambda v:v.__setitem__('source','another/repo'),
+                lambda v:v.__setitem__('enforcement','disabled'),
+                lambda v:v['conditions']['ref_name'].__setitem__('include',['refs/heads/main']),
+                lambda v:v['rules'].append({'type':'required_signatures'}),
+            ]
+            for change in changes:
+                broken=json.loads(json.dumps(live));change(broken)
+                with self.subTest(policy=policy_name,change=change.__code__.co_firstlineno):
+                    with self.assertRaises(CP.RefProofError):
+                        CP.validated_live_ruleset(Fake({
+                            CP.BASE+'/rulesets/17':broken}),packet,17,case)
+
+    def test_independent_reader_preflight_rejects_403_missing_and_changed_detail(self):
+        repository=CP.BASE
+        list_path=CP.BASE+'/rulesets/rule-suites?per_page=100&page=1'
+        detail_path=CP.BASE+'/rulesets/rule-suites/47?include_metadata=true'
+        summary={'id':47,'repository_id':CP.REPO_ID,
+                 'ref':'refs/heads/sandbox','before_sha':A,'after_sha':B,
+                 'actor_id':CP.OWNER_ID}
+        detail={**summary,'rule_evaluations':[{'rule_type':'deletion','result':'pass'}]}
+        base={repository:(200,{'id':CP.REPO_ID,'owner':{'id':CP.OWNER_ID}}),
+              list_path:(200,[summary]),detail_path:(200,detail)}
+        api=ReaderFake(base)
+        self.assertEqual(CP.independent_rule_suite_readiness(api),
+                         {'repositoryId':CP.REPO_ID,'sampleSuiteId':47,
+                          'listAndDetail':'READABLE','writeAuthorization':'NOT_VERIFIED'})
+        self.assertEqual({m for m,_,_ in api.calls},{'GET'})
+        for name,edits in [
+                ('list403',{list_path:(403,{'message':'Resource not accessible by integration'})}),
+                ('listempty',{list_path:(200,[])}),
+                ('listshape',{list_path:(200,{'total_count':1})}),
+                ('listforeign',{list_path:(200,[{**summary,'repository_id':0}])}),
+                ('listbadid',{list_path:(200,[{**summary,'id':False}])}),
+                ('detail403',{detail_path:(403,{'message':'Resource not accessible by integration'})}),
+                ('detailmissing',{detail_path:(200,{k:v for k,v in detail.items() if k!='rule_evaluations'})}),
+                ('detailforeign',{detail_path:(200,{**detail,'repository_id':0})}),
+                ('detailchanged',{detail_path:(200,{**detail,'ref':'refs/heads/unrelated'})}),
+                ('repoforeign',{repository:(200,{'id':0,'owner':{'id':CP.OWNER_ID}})}),
+                ('repo403',{repository:(403,{'message':'Resource not accessible by integration'})}),
+        ]:
+            routes={**base,**edits}
+            fake=ReaderFake(routes)
+            with self.subTest(name=name):
+                with self.assertRaises(CP.RefProofError):
+                    CP.independent_rule_suite_readiness(fake)
+                self.assertEqual({m for m,_,_ in fake.calls},{'GET'})
+                self.assertLessEqual(len(fake.calls),3)
+        packet,_=sample()
+        with unittest.mock.patch.dict(os.environ,{'GITHUB_ACTIONS':'true','CP_READ_TOKEN':'synthetic'},clear=False):
+            with self.assertRaises(CP.RefProofError):
+                CP.owner_independent_reader(packet)
+        with unittest.mock.patch.dict(os.environ,{'GITHUB_ACTIONS':'','CP_READ_TOKEN':''},clear=False):
+            with self.assertRaises(CP.RefProofError):
+                CP.owner_independent_reader(packet)
+
+    def test_owner_preflight_rejects_source_drift_before_network(self):
+        packet,_=sample()
+        with unittest.mock.patch.dict(os.environ, {
+                'GITHUB_ACTIONS':'', 'CP_READ_TOKEN':'synthetic-read-only-token'},
+                clear=False):
+            with unittest.mock.patch.object(
+                    CP,'execution_context',side_effect=CP.RefProofError('CP_LOCAL_SOURCE_MISMATCH')):
+                with unittest.mock.patch.object(
+                        CP,'GitHub',side_effect=AssertionError('network must not start')) as api:
+                    with self.assertRaisesRegex(CP.RefProofError,'CP_LOCAL_SOURCE_MISMATCH'):
+                        CP.owner_independent_reader(packet)
+                    api.assert_not_called()
+
+    def test_readiness_cli_fails_before_attempting_any_ref_mutation(self):
+        packet,h=sample()
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d);p=root/'packet.json';p.write_bytes(CP.canonical(packet))
+            for args in [
+                ('--readiness-check','--actor','owner'),
+                ('--execute','--actor','owner'),
+                ('--readiness-check','--actor','actions'),
+            ]:
+                result=subprocess.run([
+                    'python3','src/tests/oci/cp-control-proof.py',
+                    '--packet',str(p),'--packet-sha256',h,
+                    '--phase','capability','--output',str(root/'receipt.json'),
+                    *args],env={**os.environ,'CP_READ_TOKEN':'','CP_GITHUB_TOKEN':''},
+                    text=True,capture_output=True)
+                self.assertNotEqual(result.returncode,0)
+                if '--execute' in args:
+                    self.assertEqual(json.loads((root/'receipt.json').read_text())['result'],
+                                     'FAILED_OR_PARTIAL_REVIEW_REQUIRED')
+                    (root/'receipt.json').unlink()
+                else:
+                    self.assertFalse((root/'receipt.json').exists())
+                self.assertNotIn('synthetic',result.stderr)
 
 if __name__=='__main__':unittest.main()

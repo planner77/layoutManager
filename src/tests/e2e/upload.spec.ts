@@ -465,7 +465,13 @@ test("TC-DESC-005: description registration, literal search and viewer display",
     .setInputFiles({
       name: "description-only.dxf",
       mimeType: "application/octet-stream",
-      buffer: Buffer.from("0\nEOF\n"),
+      // An EOF-only file passes upload/description storage, but the Viewer
+      // cannot build a DXF with no ENTITIES. Exercise a renderable LINE.
+      buffer: Buffer.from(
+        ['0','SECTION','2','ENTITIES',
+         '0','LINE','8','0','10','0','20','0','11','100','21','100',
+         '0','ENDSEC','0','EOF',''].join('\n'),
+      ),
     });
   await page.getByLabel("삭제 비밀번호", { exact: true }).fill("1234");
   await page
@@ -503,11 +509,18 @@ test("TC-DESC-005: description registration, literal search and viewer display",
     .getByRole("link", { name: "도면 보기", exact: true })
     .click();
   const name = page.getByRole('heading', { level: 1 }).getByRole('button');
+  // The test must prove both actual Viewer loads as well as metadata text.
+  await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
   await name.focus();
   await expect(page.getByRole('tooltip')).toHaveText(description);
   await expect(page.getByRole('tooltip')).toBeVisible();
   await page.reload();
+  // Confirm successful rendering after reload; a persisted description
+  // alone does not mean the DXF has loaded. Exercise a fresh keyboard focus.
+  await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
+  await name.blur();
   await name.focus();
+  await expect(name).toBeFocused();
   await expect(page.getByRole('tooltip')).toHaveText(description);
   await expect(page.getByRole('tooltip')).toBeVisible();
   expect(await page.getByRole('tooltip').textContent()).toBe(description);
