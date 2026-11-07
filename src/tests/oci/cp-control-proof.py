@@ -739,7 +739,7 @@ def main():
                   'actor':'independent-owner-reader',
                   'result':'READ_ONLY_READINESS_NOT_OWNER_APPROVAL', **evidence}
         options.output.parent.mkdir(parents=True, exist_ok=True)
-        options.output.write_text(json.dumps(record,sort_keys=True)+'\\n')
+        options.output.write_text(json.dumps(record,sort_keys=True)+'\n')
         print('CP_INDEPENDENT_READER_PREFLIGHT_PASS')
         return
     if options.verify_observations:
