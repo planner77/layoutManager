@@ -488,7 +488,11 @@ def independent_rule_suite_readiness(api):
             'CP_INDEPENDENT_SUITE_LIST_UNAVAILABLE')
     matches = [row for row in rows if type(row) is dict
                and type(row.get('id')) is int and row['id'] > 0
-               and row.get('repository_id') == REPO_ID]
+               and row.get('repository_id') == REPO_ID
+               and type(row.get('ref')) is str
+               and re.fullmatch(r'refs/(heads|tags)/[^\\s]{1,200}', row['ref'])
+               and sha(row.get('before_sha')) and sha(row.get('after_sha'))
+               and type(row.get('actor_id')) is int and row['actor_id'] > 0]
     require(bool(matches), 'CP_INDEPENDENT_SUITE_SAMPLE_MISSING')
     candidate = matches[0]
     detail_path = BASE + '/rulesets/rule-suites/' + str(candidate['id']) + '?include_metadata=true'
@@ -500,7 +504,12 @@ def independent_rule_suite_readiness(api):
             and detail.get('before_sha') == candidate.get('before_sha')
             and detail.get('after_sha') == candidate.get('after_sha')
             and detail.get('actor_id') == candidate.get('actor_id')
-            and type(detail.get('rule_evaluations')) is list,
+            and type(detail.get('rule_evaluations')) is list
+            and bool(detail['rule_evaluations'])
+            and all(type(item) is dict
+                    and type(item.get('rule_type')) is str
+                    and item.get('result') in ('pass', 'fail', 'bypass')
+                    for item in detail['rule_evaluations']),
             'CP_INDEPENDENT_SUITE_DETAIL_UNAVAILABLE')
     return {'repositoryId':REPO_ID, 'sampleSuiteId':candidate['id'],
             'listAndDetail':'READABLE', 'writeAuthorization':'NOT_VERIFIED'}
