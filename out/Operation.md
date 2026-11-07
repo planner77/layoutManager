@@ -1,3 +1,25 @@
+## #248 / #231 — Controlled-ref independent Rule Suite reader preflight (2026-11-07)
+
+Before an Owner-approved controlled-ref mutation, a **local Owner outside Actions** with an existing GitHub credential that can read repository Rule Suites executes the separate GET-only preflight. It uses `CP_READ_TOKEN` only in the Owner's secured shell, not a Workflow secret, artifact, code, public log or the Actions `GITHUB_TOKEN`. `CP_READ_TOKEN` may be an already-authorized credential; do not create or paste a new PAT by default. The packet must first be finalized/reviewed with actual source/tree/initial/final policy SHA and approved exact ref names.
+
+```bash
+# From a clean checkout at the packet's exact, approved source commit.
+# Set CP_READ_TOKEN securely in the local environment without echoing it.
+python3 src/tests/oci/cp-control-proof.py \\
+  --packet /secure/issue225-control-packet.json \\
+  --packet-sha256 '<exact-packet-sha256>' \\
+  --actor owner --phase capability \\
+  --output /secure/issue225-control-readiness.json --readiness-check
+```
+
+This request uses only bounded GET of repository identity and Rule Suite first page+exact sample detail. It must report `CP_INDEPENDENT_READER_PREFLIGHT_PASS`; a 401/403, empty/incomplete list, missing detail, local source drift, wrong repo/Owner or absent token fails without any Ref write. Sanitize before retaining only `packetSha256`, `sourceCommit`, sample suite ID and `READ_ONLY_READINESS_NOT_OWNER_APPROVAL`. This is *reader capability*, never Owner approval, rule-denial PASS, or permission to alter current Rulesets.
+
+The local Owner `--execute` path repeats independent readback before its first write. **Actions proof workflow does not receive this privileged reader token**; its separate Owner predispatch check/receipt and exact external approval are mandatory operational gates. Inability to obtain independent Admin:read evidence means keep Actions dispatch **HALTED**; do not work around via higher write permissions on `GITHUB_TOKEN`. Actual Rule Suite list/detail/ref actor/time/rule evaluation and unchanged Ref remain required after any independently approved denial attempt. The current GitHub connector has returned 403 and cannot complete this step; obtain read access via existing authorized Owner local CLI or approved narrowly scoped integration permission first.
+
+The API may reorder rules; exact unique `type` rather than list position is compared. GitHub branch PR GET must explicitly prove `required_reviewers=[]` and extra unattributed approval false; Tag update's omitted branch-only upstream property is permitted but its type/target and any extra parameters are not presumed safe. Unknowns still HALT. No Ruleset/initial-prefix edits, test refs, GHCR/Tag/legacy/Environment/publish/Owner GO are performed by this source repair; #231/#225/#218 remain OPEN, Scene flags OFF and v0.61+ HOLD.
+
+---
+
 ## #231 current GitHub protection state and protected-Main smoke (2026-11-07)
 
 The current API readback supersedes older historical paragraphs below that said the Ruleset payloads had not been applied. [Main Ruleset #26731716](https://github.com/planner77/layoutManager/rules/26731716) and [Tag Ruleset #26731135](https://github.com/planner77/layoutManager/rules/26731135) are now both **ACTIVE**, with exact `main` and `v*` target patterns, no configured bypass actors, and branch `protected=true`. The exact live Main required status is `Typecheck, lint, test, build, E2E` (GitHub Actions App 15368, strict up-to-date), PR conversation resolution and squash merge, force-push/deletion restrictions. Actual readback, including both live rule IDs and scope, is documented in [TestReport](TestReport.md).
