@@ -1,6 +1,6 @@
 ## TP-225-OR58 — 실제 운영 0.58 복원 검증 AC/TC (2026-11-08, Manager 설계 AC)
 
-RF-09의 운영 baseline 잔여를 최소 범위로 검증한다. 기존 registry 출고 수용과 GO-PILOT NO-GO는 유지한다. 읽기 전용 사전 검사 결과는 TestReport에 기록하며, 실제 운영 stop/capture/restore/startup TC는 NOT RUN이다.
+RF-09의 운영 baseline 잔여를 최소 범위로 검증한다. 기존 registry 출고 수용과 GO-PILOT NO-GO는 유지한다. 실제 사용자 유지보수 응답 후 운영 stop/capture/restore/startup·보존 관측을 실행했다. TC별 관측 성공과 host writer 독립 배제·인증 HTTP/READY의 미검증을 구분하며 TestReport U-225-OR58-ACTUAL-20261108을 따른다. 모든 AC를 일괄 PASS로 바꾸지 않는다.
 
 | AC / TC | 실행·수용 조건 |
 | --- | --- |

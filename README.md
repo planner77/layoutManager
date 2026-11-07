@@ -1,3 +1,9 @@
+## #225 — 운영 0.58 실제 백업·격리 복원 확인 (2026-11-08)
+
+실제 운영 백업을 캡처한 뒤 원래 앱이8.55초에 정상 복귀했다. 별도 볼륨의6개 파일·33개 테이블/설치 정보·도면 SHA와 기존0.58 앱의 내부 HTTP200, 시작 후 데이터 보존을 확인했다. 독립 읽기 전용 QA와 Root의 관측 범위 수용을 마쳤으며, host writer 독립 배제·인증된 업무 조회·READY Scene은 미검증이다. 파일럿 NO-GO를 유지한다. 상세 관측·RPO/시간 범위·비공개 보관 기준은 [TestReport](out/TestReport.md)와 [Operation](out/Operation.md)를 따른다. 아래는 준비 당시 이력이다.
+
+---
+
 ## #225 — 운영 0.58 검증 도구 독립 시험 수용 (2026-11-08)
 
 기존 운영 0.58의 DB·도면·설치 identity 보존 도구는 합성 데이터의 실제 Docker 복원·내부 HTTP·시작 후 DB 보존·두 실패 상황 시험을 통과했다. [PR259](https://github.com/planner77/layoutManager/pull/259)의 [최종 CI687](https://github.com/planner77/layoutManager/actions/runs/42409757779) 필수8개 검증 후 정상 Main으로 통합했다. 읽기 전용 사전 검사와 운영 스냅샷을 구별하며, 실제 서비스 중지·백업·복원은 아직 수행하지 않았다. 요구사항·시험 범위는 [TestPlan](out/TestPlan.md), 결과와 한계는 [TestReport](out/TestReport.md), 실행 절차는 [Operation](out/Operation.md)를 따른다. 소스 버전0.61.0과 파일럿 NO-GO를 유지한다.

@@ -1,6 +1,6 @@
-## #225 OR58 — 운영 0.58 복원 근거 확보 (2026-11-08, 운영 실행 전)
+## #225 OR58 — 운영 0.58 복원 근거 확보 (2026-11-08, 요구사항·관측 추적)
 
-사용자가 다음 작업으로 운영 0.58의 동일 스냅샷 backup/schema/RPO/restore/old App startup 검증을 요청했다. FR-225-OR58은 실제 설치·정확 기존 이미지와 DB/CAD/G7 identity의 일관된 recovery point를 결합하고, 새 빈 소유 volume에서 기존 App만 시작하여 데이터/조회 보존을 검증한다. 업그레이드·운영 volume 덮어쓰기·flags/설정 변경·latest/Git tag·issue 종료는 범위 밖이다. RF-09를 운영 baseline에 적용하며 실행 AC/TC는 TestPlan OR58, 절차·중단 경계는 Operation OR58을 정본으로 한다. 도구 구현과 운영 실행 결과를 구분하며 현재 실제 복원 PASS가 아니다.
+사용자가 다음 작업으로 운영 0.58의 동일 스냅샷 backup/schema/RPO/restore/old App startup 검증을 요청했다. FR-225-OR58은 실제 설치·정확 기존 이미지와 DB/CAD/G7 identity의 일관된 recovery point를 결합하고, 새 빈 소유 volume에서 기존 App만 시작하여 데이터/조회 보존을 검증한다. 업그레이드·운영 volume 덮어쓰기·flags/설정 변경·latest/Git tag·issue 종료는 범위 밖이다. RF-09를 운영 baseline에 적용하며 실행 AC/TC는 TestPlan OR58, 절차·중단 경계는 Operation OR58을 정본으로 한다. 도구/임시 시험과 실제 운영 관측을 구분한다. 실제 운영 capture/복원·old startup의 관측 결과와 독립 writer/인증 조회의 미충족은 TestReport U-225-OR58-ACTUAL-20261108을 따른다.
 
 
 OR58 startup 보완: host port publish에 의존하지 않고 internal network와 host 공개0을 유지한 채 컨테이너 내부 loopback HTTP를 검사한다. 실제 port-validator HALT와 capture/restore 성공을 구분하고 보호 규칙을 낮춰 통과시키지 않는다.
