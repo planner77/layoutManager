@@ -1,3 +1,18 @@
+## Unreleased — #225 CI678 실패 관측 누락 보완 (2026-11-07, 0.61.0 유지)
+
+- Test diagnostics: 실패한 PR CI-owned App의 고정 상태·health와 Admin Site revoke의 route/시각을 cleanup 전에 bounded 출력한다. 조회/출력 실패가 원래 오류·정리를 바꾸지 않으며 POST 재시도·assertion/timeout 완화는 없다.
+- Verification: 기존 CI678은 FAILURE/원인UNKNOWN으로 보존한다. 로컬3회 전 구간 PASS는 미재현 근거이며 실제 CI 성공이 아니다. 고의 실패 주입5건과 독립 QA의 exit/cleanup/redaction·전체 TypeScript·syntax·diff 검사를 통과했으며 새 전체 CI를 요구한다.
+
+---
+
+## Unreleased — #225 실제 출시 통제 검증·GHCR root 응답 호환성 (2026-11-07, 0.61.0 유지)
+
+- Verification: Owner/Actions 기본 권한12 + 보호 ref 거부14의 실제 규칙 평가 증거를 조회 전용 감사와 독립 QA로 수용했다. strict helper PENDING/원래 directFF PR 기대 불충족을 보존하고, 동일 ID final 보호 복원·시험 자원 정리·legacy disabled·writer/Environment readback을 기록했다.
+- Fixed: GHCR root의 관측된 정확 placeholder challenge 하나를 허용하되 고정 token URL/service/실제 package scope와 credential 전달 제한을 유지한다. 아직 새 full CI/Main·private 후보/정식 게시 결과는 별도다.
+- Scope: 미게시 0.61.0의 release-tool 호환성 수리이며 기능·Schema·운영 데이터/flags 변경은 없다.
+
+---
+
 ## Unreleased — #225 merge-only server proposal 증거 연결 (2026-11-07, 0.61.0 유지)
 
 - Fixed: squash 거부 Suite의 server proposal SHA를 exact PR metadata·before-parent·head tree와 연결하는 merge-only 검증을 보완한다. 일반 Ref exact after-SHA와 기존 인가·active rule·context·time·source 검증은 유지하며 임의 Git commit 조회를 허용하지 않는다.

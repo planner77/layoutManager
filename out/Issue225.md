@@ -1,3 +1,11 @@
+## 2026-11-07 — 승인된 출시 작업1–3 실제 통제 증거 수용 / 작업4 게시 전 수리
+
+[PR250](https://github.com/planner77/layoutManager/pull/250) 정상 병합 Main `62dcd3b5` 및 [CI676](https://github.com/planner77/layoutManager/actions/runs/42368191670)의 전체 적용 Job 성공을 확인했다. 독립 Rule Suite reader, Owner/Actions capability12건과 실제 거부14건의 규칙 평가를 조회 전용 감사·독립 QA로 수용하고, 최종 Main/v* 보호와 시험 자원 정리를 확인했다. 원래 strict helper는 PENDING이며 직접FF의 PR-fail 기대값 불충족/공동 rule 실패의 인과 한계를 보존한다. legacy 비활성·권한/Environment readback 및 기존0.60/별칭 불변도 확인했다.
+
+GHCR root 응답 호환성의 최소 수리는 새 QA/full CI/Main이 필요하다. 아직 private3 후보·정식0.61 태그3 게시0이며 실제 플랫폼의 후보/승격별 review는 후속이다. [TestReport](TestReport.md)의 U-225-CONTROLS-20261107이 실제 결과 정본이다. #225/#218 OPEN, GO-PILOT BLOCKED, 두 Scene flags OFF/자동 GHCR HOLD, 운영 DB/CAD/Volume/.env/기존 이미지 불변.
+
+---
+
 ## #225 LI — legacy inventory page 크기 최소 수리 준비 (2026-11-06)
 
 Owner packet의 GET-only LP inventory가 `LP_RESPONSE_TOO_LARGE`로 packet/remote mutation 전에 중단됐다. Root의100/30 안전 metadata 측정으로 page30 feasibility를 먼저 확인하고 isolated Main11532 LP helper/tests만 수정한다. 기존1MiB cap·Owner/경로/완전 pagination/active run/고정 mutation guard는 유지하며 새로운 권한·PAT·실제 disable/probe는 승인하지 않는다. 요구사항/TC는 [TestPlan LI01–06](TestPlan.md), 실제 결과는 [TestReport](TestReport.md)에 기록한다. 실행 중 proof4의 실제source는11532이며 후속LP코드source와 구별한다.

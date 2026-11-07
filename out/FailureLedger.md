@@ -1,3 +1,21 @@
+## #225 CI678 — Admin 권한 회수 POST transport 실패 (2026-11-07)
+
+[PR253 CI678](https://github.com/planner77/layoutManager/actions/runs/42373629270)는 source `cbebce9de7e2c47d975982080389951566009ef1`, archive `722d0e5ba7cdd9119ad0a25dad7322b5daea4a9f`/동일 tree `ed05eb7aad69af4dbed316e1703679d25a2d5386`에서 **FAILURE**. 적용8개 중6 SUCCESS, Docker runtime smoke FAIL 및 종합 required gate FAIL; A2 범위 외 SKIPPED. Static175 files/1103 tests·build와 General Chromium2/G7 UI/G7 runtime E2E는 모두 SUCCESS다.
+
+실패는 P1-D AUTH_READY→HTTP_UPLOAD_QUEUED→OCI_READY_VERIFIED→VIEWER_PARTIAL_PRECISION_WARNING_VERIFIED 및 두 번째 Editor upload 성공 뒤 Admin `POST /api/g7-runtime/access/grant` Site revoke(`scene-http-oci-viewer.spec.ts:94`, 호출300)의 `socket hang up`이다. 별도 Worker fault proof kill/OOM 성공을 이 App의 상태 증거로 사용하지 않는다. 해당 App inspect/OOM/restart/fatal log는 기존 cleanup trap 뒤 남지 않았고 P1-D 진단 artifact도 없어 **원인 UNKNOWN**이다. 이후 Docker release/recovery 단계는 SKIPPED/미실행이며 전체 PASS가 아니다. 동일 tree의 local SIMULATED_P1D 3회는 전 구간 PASS였으나 CI 실패를 재현하지 못했고 원인은 계속 UNKNOWN이다. Main 병합/후보·정식 게시0. Manager FD01–04 아래 격리 local feedback loop와 필요한 최소 진단을 수행하며 blind rerun·POST retry·timeout/보안/assertion 완화는 허용하지 않는다.
+
+---
+
+## #225 Work1–4 — 실제 실행 중 발견한 계약·fixture 오류 (2026-11-07)
+
+- Actions 첫 capability run42370502358은 `CP_POLICY_BASELINE_CHANGED`로 **0건 실행/FAIL**. Root readonly diagnostic run42371634227에서 Owner +09:00 vs GITHUB_TOKEN Z의 시각 문자열만 다르고 실제4 instant와 나머지 전체 필드가 같음을 확인했다. source/hash 검증 완화 없이 actor별 exact packet으로 분리하고 새 B run42372382795의 실제6건을 확인했다. 실패 run은 성공 증거에서 제외한다.
+- 첫 initial Main policy PUT200에서 생략된 `require_extra_approval_for_unattributed_changes`가 기존 false 대신 true가 되어 `CP_EFFECTIVE_PR_DEFAULTS_UNVERIFIED`로 **시험 전 HALT**. Manager 검토 후 기존 false/required_reviewers=[]를 명시한 별도 exact wire payload로 동일 ID를 수정, 원래 source payload hash 및 실패를 보존했다. 이후 initial/final GET은 정확 semantics로 확인했다.
+- 실제 Owner7/Actions7 변경 시도는 전부 거부·ref 불변이나 strict helper는 **PENDING**. directFF가 열린 fixture PR과 연결되어 expected PR-fail은 없고 CI-fail이었으며, merge의 넓은 시간창에 directFF와 실제 squash 후보가 함께 들어왔다. 보안 우회를 주장하지 않는다. 조회 전용 외부 감사/독립 QA가 exact PR/parent/tree/유일 squash 후보 및 좁은 시각을 검증하고, nonFF Suite에서 active PR+nonFF 두 실패를 함께 확인하여 실제26건의 규칙 평가 범위를 수용했다. 원래 예상 실패와 단독 인과 미증명은 그대로 남긴다. 추가 mutation probe0.
+- GHCR root GET401 실제 응답의 고정 placeholder scope가 기존 candidate client finite allowlist 밖이라 게시 전 reader assertion이 실패(쓰기0)했다. 관측 literal 하나만 추가하고 고정 token endpoint/actual package scope와 credential-free root GET을 유지하는 최소 source repair를 별도 QA/CI로 검증한다. local 관측을 GitHub runner의 실제 publish 결과로 대신하지 않는다.
+- 과거 legacy 첫403/원인UNKNOWN과 두 번째 진단403/helper 미분류를 보존한다. 저장된 두 번째 정확 disabled 메시지 + fresh GET 감사만 수용했으며 세 번째 rerun POST0. runtime/DB/CAD/Volume/.env 변경0.
+
+---
+
 ## #225 MS — rejected squash proposal differs from PR head (2026-11-07, before controlled-ref writes)
 
 - **Actual existing evidence:** Failed Suite4964214924 for PR249 records before `e602bd78549722a29f89a2b1c38a162d91c6be89`, after `fe314edfd6abf4ea5c1bc21614829527361c9f4a`, required-status-check failure and active PR metadata id5196717411/number249. The PR head was `cbb3810b88193dadc37ec5d9c15f5749cfea7776`; the suite after-SHA is a server-created squash proposal. Root GET of that proposal returned exact SHA, one parent equal to before, and tree `e0b4375bf2ea317a56092adc369e25b6cc598a79`, matching the exact PR head tree. This is a historical readback; no new controlled Ref/PR request caused this finding.

@@ -684,6 +684,39 @@ class CandidateTests(unittest.TestCase):
                 r.GHCR('synthetic-job-token', 'planner77', expected(), MemoryJournal(), http)
             self.assertEqual(len(http.calls), 1)
 
+    def test_observed_root_placeholder_challenge_never_controls_token_scope(self):
+        literal = 'Bearer realm="https://ghcr.io/token",service="ghcr.io",scope="repository:user/image:pull"'
+        http = FakeHTTP([result(401, headers={'www-authenticate': literal}),
+                         result(raw=b'{"token":"synthetic-bearer"}')])
+        client = r.GHCR('synthetic-job-token', 'planner77', expected(), MemoryJournal(), http)
+        self.assertEqual(client.bearer, 'synthetic-bearer')
+        self.assertEqual(http.calls[0], ('GET', 'https://ghcr.io/v2/', {}, None))
+        self.assertEqual(http.calls[1][0:2], ('GET',
+            'https://ghcr.io/token?service=ghcr.io&scope=repository%3Aplanner77%2Flayoutmanager%3Apull%2Cpush'))
+        self.assertEqual(set(http.calls[1][2]), {'Authorization'})
+        self.assertTrue(http.calls[1][2]['Authorization'].startswith('Basic '))
+        self.assertNotIn('user%2Fimage', http.calls[1][1])
+        self.assertIsNone(http.calls[1][3])
+        for bad in (
+            literal.replace('https://ghcr.io/token', 'https://evil.example/token'),
+            literal.replace('service="ghcr.io"', 'service="evil.example"'),
+            literal.replace('repository:user/image:pull', 'repository:user/image:pull,push'),
+            literal.replace('repository:user/image:pull', 'repository:planner77/layoutmanager:pull'),
+            literal + ',extra="value"',
+            'bearer' + literal[len('Bearer'):],
+            ' ' + literal,
+            literal + ' ',
+        ):
+            denied = FakeHTTP([result(401, headers={'www-authenticate': bad})])
+            with self.subTest(challenge=bad), self.assertRaises(p.Pending):
+                r.GHCR('synthetic-job-token', 'planner77', expected(), MemoryJournal(), denied)
+            self.assertEqual(denied.calls, [('GET', 'https://ghcr.io/v2/', {}, None)])
+        for status in (200, 301, 403, 429):
+            denied = FakeHTTP([result(status, headers={'www-authenticate': literal})])
+            with self.subTest(status=status), self.assertRaises(p.Pending):
+                r.GHCR('synthetic-job-token', 'planner77', expected(), MemoryJournal(), denied)
+            self.assertEqual(denied.calls, [('GET', 'https://ghcr.io/v2/', {}, None)])
+
     def test_authenticated_explicit_manifest_unknown_only_and_digest_header_raw_binding(self):
         for status, headers, raw in (
             (404, {}, b'{"errors":[{"code":"MANIFEST_UNKNOWN"}]}'),

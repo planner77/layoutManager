@@ -1,3 +1,96 @@
+## TP-225-P1D-FAILURE-OBSERVABILITY — 미재현 CI 실패의 정제 관측 (2026-11-07)
+
+실제678 실패는 두 번째 upload 성공 뒤 spec300 revokeSite의 Admin grant() POST이며 원인은 UNKNOWN이다. 기존 owned cleanup이 App을 먼저 제거해 해당 App state/log 증거가 없었다. Worker Kill/OOM proof의 metric은 이 App 실패 원인으로 재사용하지 않는다. 첫 exact-tree local loop는43.2초 PASS이며 SIMULATED_CI_CONTEXT로 실제 GitHub Actions proof가 아니다. bounded 최대3 local loops로 재현을 시도하되 통과를 원인 해결로 쓰지 않는다.
+
+세 local loops에서 실제 실패가 재현되지 않으면 Manager는 **failure-only diagnostic test change**를 허용한다. existing cleanup 직전에 owned App의 allowlisted state/running/exit/OOM/restart/health 및 안전한 route-phase timestamp를 제한된 크기로 기록한다. raw env/dockerinspect/token/cookie/session/requestbody/DB/CAD/full logs dump0; 필요한 로그는 고정 안전 필드만 정제한다. 진단 실패가 원 테스트 exit/failure를 가리거나 cleanup을 막지 않도록 하고 성공 경로의 behavior/POST횟수/assertion/timeout/retry는 바꾸지 않는다.
+
+Developer는 의도적 실패 주입으로 기록-before-cleanup 순서·allowlist·원 실패 exit 보존·cleanup을 검증하고 Manager review→독립 QA 뒤 단일 fresh full CI를 실행한다. 이는 관측을 추가한 새 source 시험이며 blind rerun이나 socket hang up fix가 아니다. 실제 새 실패면 새 관측으로 다음 가설을 정하고 자동 반복 CI0. exact 새head의8 required jobs가 모두 성공하면 통상의 보호 Main/release material gate를 진행할 수 있으나678 원인은 계속 UNKNOWN/NOT_REPRODUCED로 보존한다. 과거 실패의 위험/증거 한계를 숨기지 않는다.
+
+---
+
+## TP-225-CI678-P1D-DIAG — socket hang up 실제 원인 진단 (2026-11-07)
+
+PR253/sourcecbeb의 CI678 Docker P1-D는 AUTH_READY/HTTP_UPLOAD_QUEUED/OCI_READY_VERIFIED/VIEWER_PARTIAL_PRECISION_WARNING_VERIFIED 뒤 apiRequestContext.post socket hang up으로 실패했다. 선행 build/security/RR1/KillOOM 성공과 이후 skipped는 구별하며 전체 Docker/PR PASS로 기록하지 않는다. Main merge/candidate dispatch0, blind rerun0.
+
+| AC | bounded 진단 및 최소 수리 |
+| --- | --- |
+| FD-01 | QA는 exact run/job/head/attempt와 actual stack/실패 POST endpoint·fixture 단계·timestamp를 확인한다. 해당 시점 컨테이너 exit/restart/OOM/health와 서버/worker의 bounded sanitized logs를 대조한다. token/session/cookie/DB/CAD 원문을 문서·artifact에 노출하지 않는다. 다른 작업의 Kill/OOM 결과를 해당 실패 원인으로 단정하지 않는다. |
+| FD-02 | 진단 skill의 red-capable loop로 원 실패 조건을 재현하거나 기존 실패를 명확히 판별하는 좁은 관측을 먼저 만든다. 한 가설씩 실제 PID/port/request/server lifetime·동기화 증거로 검증하며 가설과 관측을 구별한다. 재현 불가이면 관측 부족으로 남기고 flaky라는 이름으로 성공 처리하지 않는다. |
+| FD-03 | Root/Manager는 evidence로 테스트 lifecycle/race 결함이 확인된 경우에만 해당 fixture/동기화의 최소 test-only 수리를 허용한다. arbitrary sleep/timeout증가/retry/attempt확대·assertion삭제/skip/보안정책완화0. 실제 앱 결함이면 test-only로 숨기지 말고 원인·영향을 보고하고 별도 최소 구현 AC를 정한다. |
+| FD-04 | 같은 red-capable loop에서 수정 전 실패/후 통과 또는 직접 원인 증거와 bounded 회귀를 남긴다. Developer→Manager→독립 QA 뒤 정상 PR 추가 commit/fresh full CI를 요구한다. old678 실패는 보존하고 부분성공/다른head결과를 합쳐 PASS로 만들지 않는다. full requiredCI/보호Main 이전 candidate/final 게시0. |
+
+이 단계는 실패 진단/증거 수집 승인이다. 원인을 확인하기 전 구현 방식이나 특정 fix를 확정하지 않는다.
+
+---
+
+## TP-225-GHCR-ROOT-CHALLENGE — 고정 root challenge compatibility (2026-11-07)
+
+Root의 publication 전 pull-only GET https://ghcr.io/v2/는401 및 정확 `Bearer realm="https://ghcr.io/token",service="ghcr.io",scope="repository:user/image:pull"`을 반환했다. 현 GHCR constructor는 이 root placeholder 표현을 허용하지 않아 credential 교환/registry write 전에 중단한다. 실제 response receipt를 보존하고 as-is publish dispatch를 하지 않는다.
+
+Manager는 observed exact root challenge 문자열 하나를 기존 유한 allowlist에 추가하는 최소 수리를 허용한다. realm/service/token URL은 계속 pinned ghcr.io이며 실제 token 요청 scope는 기존 고정 planner77/layoutmanager scope를 그대로 사용한다. 응답 challenge의 placeholder 또는 임의 scope/URL을 credential 요청에 복사하지 않는다. substring/regex wildcard/임의 host·service·scope 허용 및 redirect0. positive fixture와 wrong realm/service/scope/lookalike/suffix/status 음성을 추가하고, 성공 token GET의 exact URL/service/scope 및 root GET 무credential·거부 challenge 후 credential전송0을 검증한다.
+
+Developer→Manager review→독립 QA→정상 PR/full required CI→새 Main 뒤 candidate source/tree/workflow/CI packet을 새로 고정한다. 이전Main62d의 실제26 CP 증거는 helper/policy 바이트 및 실제 권한 상태 불변을 검토하면 별도 prior-source controls lineage로 재사용할 수 있으며 새 source에서 재실행했다고 표시하지 않는다. 기존 CP QA/restoration/cleanup 수용은 별도로 완료하고 blind proof/publish 반복0. registry write가 없는 초기 실패를 실제 publish 실패/성공으로 과장하지 않는다.
+
+---
+
+## TP-225-EXISTING-EVIDENCE-COVERAGE — 추가 probe 없는 규칙별 감사 수용 (2026-11-07)
+
+Root는 기존 non-fast-forward 거부 suite4968896261(Owner)/4968899714(Actions)에 같은 active Ruleset의 non_fast_forward FAIL과 pull_request FAIL이 함께 존재함을 확인했다. Manager는 exact actor/ref/SHA/time/source와 actual evaluations를 독립 감사하는 조건으로 기존 증거만으로 규칙 coverage를 완성할 수 있다고 판정한다. CP AC는 PR-only 단독 인과 실험을 요구하지 않으며, 별도로 필요한 required-CI-specific 증거는 유효 owned PR의 실제 merge 거부와 exact context/servercandidate 결합으로 입증해야 한다.
+
+최종 matrix는 실제12 capability+14 denial=26 attempts를 유지한다. 하나의 nonFF suite가 두 규칙 평가 FAIL을 증명해도 두 번의 시도로 세지 않는다. 공동 실패는 두 규칙이 실제 적용돼 FAIL임을 보일 뿐 PR 규칙 단독의 반사실적 인과성을 주장하지 않는다. 기존 directFF의 expected pull_request 미충족 및 strict helper PENDING은 보존하고 실제 required-CI failure로만 분류한다. merge는 독립 read-only audit의 유일한 exact candidate/PR/parent/tree 결합을 요구한다.
+
+이 evidence-only audit의 코드/actual material과 실패·모호성 음성을 독립 QA한 뒤 별도 audited acceptance로 수용한다. 앞선 C2 supplemental 계획은 필요 없어 NOT_RUN으로 남기며 추가 probe/object publication/workflow mutation0. 불충분한 관측이 있으면 자동 추가 실험 대신 PENDING으로 보고한다. 원 final policy restoration/readback 및 owned cleanup은 계속 필요하다.
+
+---
+
+## TP-225-DENIAL-AUDIT-SUPPLEMENT — 실제 PR 연계 결과의 구별 및 보완 (2026-11-07)
+
+Root는 Owner/Actions 각7개 총14 실제 거부 응답과 ref 불변을 관측했고 Actions run42372614042는 SUCCESS다. 그러나 직접 FF M→C가 열린 owned PR의 head와 같아 actual pull_request는 PASS, required CI는 FAIL이었다. 동일 시간창에 directFF와 squash 후보 suite가 같은 PR metadata를 가져 기존 helper는 merge uniqueness를 거부했다. 이는 기대한 rule/fixture 결합의 실패이며 generic403 또는 helper run success만으로 기대 규칙 PASS를 선언하지 않는다.
+
+Manager는 별도 read-only audit 및 supplemental **준비**를 허용한다. 원14 case/response/packet/receipt와 helper 실패를 보존한다. 직접 FF는 실제 CI denial로만 분류하며 PR denial로 재표시하지 않는다. merge 감사는 exact actor/ref/before/result/active rule/context/PR와 servercandidate!=requestedC, 단일parentM/treeC를 함께 검증하여 유일한 후보를 선택한다. chronology는 보조 증거이고 가까운 시간만으로 선택하지 않는다. actual oldcase를 재시도하지 않는다.
+
+보완 C2는 M의 단일 marker-only child로 C와 commit/tree 모두 다르고 matching open PR가 없어야 한다. 현재 prefix 정책 하의 정확 object publication route/bytes/hash를 Root가 제시하고 Manager/독립 QA가 검토하기 전 remote write0. 두 actor의 owned targetM→C2 directFF만 보완 계획에 포함한다. 새 packet은 기존 capability의 packetSHA/receiptSHA/actor credential path/source/ref family/prior interval을 명시적으로 cross-bind하며 기존 receipt를 새 packet 성공으로 꾸미지 않는다. helper의 same-packet 검증을 우회해 helperPASS라 기록하지 않고 별도 audited protocol acceptance로 구별한다. compatibility 또는 current actor/path/state를 입증하지 못하면 PENDING이다.
+
+최종 수용은 독립 QA가 감사 코드/정확 material·경로/negative regressions를 검토한 뒤 각 rule 증거를 새 matrix로 제시한다. old14 attempted, oldexpected-rule 미충족, supplemental actual 결과와 external audited acceptance를 분리한다. 실제 응답이 예상과 다르면 HALT하며 새 반복 probe를 자동 추가하지 않는다. proof 후 원 final policy 의미 복구 및 exact owned fixture 정리가 여전히 필수다.
+
+---
+
+## TP-225-EXPLICIT-PR-DEFAULTS — PUT 시 기존 보안 의미 보존 (2026-11-07)
+
+Root의 Main Ruleset26731716 initial PUT200은 control prefix를 추가했으나 생략된 require_extra_approval_for_unattributed_changes를 실제 기존 false에서 true로 바꿨다. helper는 CP_EFFECTIVE_PR_DEFAULTS_UNVERIFIED로 중단했다. Tag initial PUT/denial은 실행하지 않았고 실제 실패 readback을 보존한다.
+
+Manager는 동일 Main ID의 기존 검토 initial/final payload 의미를 유지하면서 wire PUT의 pull_request.parameters에 `required_reviewers: []`, `require_extra_approval_for_unattributed_changes: false`를 명시하는 교정을 허용한다. 정확 wire bytes/hash 및 원 reviewed payload와의 두 필드 delta를 독립 기록하고 원 packet/source 네 policy hash는 그대로 보존한다. 이는 기존 관측된 false 복구이며 권한/우회/요구 규칙 추가완화가 아니다. PUT 전 exactwire 검토, PUT 후 original false/empty reviewers·예정 prefix·전체 rule semantics·active/no-bypass readback과 helper 검증이 모두 필요하다. 다른 차이는 HALT이다. Main 교정 PASS 후에만 기존 reviewed tag initial을 적용하고 denial 단계로 진행한다. final restoration에서도 두 기본값을 명시해 original baseline을 복원한다. source/helper 완화 및 CI 수정은 하지 않는다.
+
+---
+
+## TP-225-ACTOR-PACKETS — 실제 timezone 표현 차이의 actor별 exact packet (2026-11-07)
+
+Root 진단 run42371634227/sourceD8fd는 repo GET1/list GET1만 수행했고 단일 artifact13573737269의 ZIP SHA66b2f9d7928ee86ad141be83a8cdf29bb6a4534d9adfe18c37a118d9fd9fd839를 검증했다. Owner/Actions list는 같은 순서·키·모든 비시간 필드이며 created_at/updated_at 네 값만 +09:00/Z 표기가 달랐다. timezone-aware 비교에서 정밀도 손실 없이 네 instant가 같고 재구성 Actions raw canonical hash d9234eb861b73d9adf4776664b37fd55c168dc685d3d7369175a380b7286ea7e는 실제 캡처와 일치한다. Owner hasha6ec는 불변이다.
+
+Manager는 **코드/정책 정규화 없이 actor별 packet** 준비를 수용한다. Owner packetA069400c293afef2539060aca2d341e0231f48c0f9228705eaae4290ba5d94d24 및 실제 Owner capability6을 그대로 보존하고 Owner13 cases만 A로 수행한다. Actions packetB는 sameMain62d/nonce0415acde3fe92cb1/four policy hashes/C/PR252와 Actions13 cases/6refs만 포함하고 실제 Actions raw snapshotd923을 고정한다. A의 실패 Actions run42370502358은 FAIL/0cases 그대로 남기며 A receipt를 B로 재표시하지 않는다.
+
+B schema/hash/default plan·exact material과 독립 QA 후 새 B-bound reader preflight 및 새 Actions capability6을 수행할 수 있다. 각 actor 내부 capability/denial은 동일 packetSHA와 credential path를 유지한다. 최종 shared matrix는 A Owner13+B Actions13=26 actual cases와 각 packet/receipt/hash를 연결하며 A의 사용하지 않은 Actions entries와 실패 run은 별도 기록한다. helper의 exact snapshot check는 변경하지 않는다. unknown/security field·membership·시간 instant 차이가 새로 관측되면 HALT, 편의상 normalize/drop 금지다.
+
+Manager는 SHA D8fd41f92e166d3737406612cfa9bfe134b4311de와 fresh GET가 일치할 때 단일 owned refs/heads/issue225-control-0415acde3fe92cb1-baseline-diagnostic 삭제를 허용한다. 진단 artifact/source 근거를 먼저 보존하고 삭제 readback404를 기록한다. Main/다른 branch/fixture refs는 그대로 유지한다. 두 actor capability의 actual 성공·최종 refs 부재와 policy/detail readback 전 initial prefix 적용/denial0.
+
+---
+
+## TP-225-ACTIONS-SNAPSHOT-DIAG — actor별 Ruleset list 실제 shape 진단 (2026-11-07)
+
+실제 Actions capability run42370502358/job128397473382는 case 실행 전 CP_POLICY_BASELINE_CHANGED로 실패했다. Owner capability6건은 실제 PASS이나 정책 prefix/denial은 아직 실행하지 않았다. Root의 fresh Owner list hash a6ec는 packet과 같으므로 Actions failure를 실제 policy drift 또는 알려진 원인으로 단정하지 않는다. 실패 artifact13572979419(567B/digest2e4392b28b5bcb512412ee6b778d2a442e156d21bbee300492e2b679015c976e)를 보존하고 blind capability rerun0.
+
+| AC | read-only 원인 관측의 허용 범위 |
+| --- | --- |
+| SD-01 | Developer가 Main62d의 새 단일 owned diagnostic branch에서 기존 .github/workflows/control-proof.yml 경로의 branch-only 진단 job을 준비한다. Root network write 전 exact ref/source/tree/workflow/helper bytes와 diff를 Manager/독립 QA가 검토한다. default Main/기존 control refs/policies 변경0. helper 원본은 변경하지 않는다. |
+| SD-02 | 실제 실패 actor와 같은 built-in GITHUB_TOKEN permission 구성(contents:write/actions:read)을 유지하되 진단 source는 unchanged CP.GitHub(token,packet,cases=()) 및 고정 repo GET/CP.paginated Ruleset list GET만 사용한다. token/credential/header/raw transport/debug출력0, credential checkout persistence0, shell tracing0. mutation case/--execute 및 다른 API route0. elevated permission/Admin/newPAT0. |
+| SD-03 | 정확 diagnostic branch/source/tree/workflow hash와 Owner dispatcher, attempt1, nonce, packetSHA를 검증한 단일 dispatch만 허용한다. 허용 출력은 repo identity, 유한 Ruleset list의 public-field allowlist 및 원 list canonical hash, 안전한 actor/run/source context의 JSON 한 개다. 임의 error body/URL/token/header를 출력·artifact에 넣지 않는다. complete pagination/size cap은 기존 helper를 유지한다. artifact path/name/파일수/hash를 사전 고정하고 실패 시 sanitized code만 보존한다. |
+| SD-04 | 준비 단계에서 import/mock GET 및 mutation call 거부/allowlist 검증을 독립 QA한다. hosted 진단 완료 후 exact run/source/attempt/artifact inventory/hash를 확인하고 Owner와 Actions의 실제 list bytes/순서/필드 차이를 비교한다. actor-dependent 차이는 관측 후에만 주장하며 security field의 차이를 무시하는 수정은 금지한다. |
+| SD-05 | 실제 차이에 따른 최소 canonical-security-snapshot 수리 또는 actor별 packet 설계는 별도 AC→Developer→Manager→QA→정상 CI/Main을 따른다. 기존packet069/Owner receipt를 다른 packet hash로 재사용하거나 hash compare 제거/완화하지 않는다. 현재 seeded refs/PR251252는 inert 유지하고 진단은 capability/denial proof로 집계하지 않는다. |
+
+Manager는 이 범위의 진단 source **준비만 GO**로 판정한다. concrete source/hash/branch와 QA 검토 뒤 Root가 별도 단일 진단 dispatch를 실행한다. 실패 capability run을 자동 재실행하지 않는다.
+
+---
+
 ## TP-225-MERGE-SUITE-BINDING — 실제 squash 후보 SHA 결합 수리 (2026-11-07)
 
 **구현 전 Manager AC:** Root가 기존 실제 suite4964214924의 merge 요청 PR249 headcbb3810b/beforee602와 suite.after_sha fe314edfd6abf4ea5c1bc21614829527361c9f4a의 차이를 관측했다. 고정 repo commit GET200은 해당 server squash 후보가 head와 동일 treee0b4, 단일 parent e602임을 보여준다. 이는 새로운 controlled denial 시험이 아니며 기존 after_sha=head 강제 조건의 실제 계약 불일치다. PR250의 기존 CI 결과는 당시 source에 보존하고 이 수리 이후 별도 fresh CI를 필요로 한다. 수정 Main 통합 전 live fullproof0.

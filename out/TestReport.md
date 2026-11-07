@@ -1,3 +1,38 @@
+## U-225-P1D-OBS — CI678 미재현 및 실패 진단 검증 (2026-11-07)
+
+동일 tree의 격리 로컬 App/Migrator/Worker와 실제 HTTP→Viewer→권한 회수·변조·미지원 경로를 세 차례 실행해 모두 통과했다. `LOCAL_SIMULATED_P1D`이며 GitHub-hosted CI/후보 게시/운영 시험이 아니다. CI678 `socket hang up`은 **CAUSE UNKNOWN / NOT REPRODUCED**로 남긴다. 재시도나 제품 수리를 했다고 주장하지 않는다.
+
+다음 실패의 관측 누락만 보완한다. 실패한 소유 App의 status/running/OOM/restart/exit allowlist와 health HTTP 상태만 정리 전에 남기고, 조회별2초·출력128자 및 원래 실패/cleanup을 유지한다. 권한 회수 POST는 한번 그대로 호출하고 literal route/시각만 추가한 뒤 원래 오류를 던진다. Developer의 실제 trap seam 고의 실패5건은 정상/inspect실패+canary/과대출력/진단출력실패/inspect timeout에서 원래42·App→Volume 정리를 보존했다. 독립 QA도 source hash 보존·고의 실패5건·bash syntax·전체 TypeScript·diff 검사를 통과했다. 새 full CI는 아직 미실행이다. 기존 실패와 로컬 정제 요약/명령은 Git 제외 증거에 보존한다.
+
+---
+
+## U-225-CI678 — 게시 전 required CI 실패 (2026-11-07)
+
+[PR253 CI678](https://github.com/planner77/layoutManager/actions/runs/42373629270)는 head `cbebce9d`/동일 head·archive tree `ed05eb7a`에서 FAILURE다. 적용8개 중6 SUCCESS, Docker P1-D 및 종합 gate FAIL; A2 범위 외 SKIPPED. Static175 files/1103 tests·build 및 브라우저/G7 E2E4개는 SUCCESS다. 실패 단계는 Admin Site revoke POST의 `socket hang up`; App process 원인은 UNKNOWN이다. 이후 Docker 단계는 미실행이고 Main/후보·정식 게시0. 정제된 callsite·시각·진단 누락과 승인된 재현 경계는 [FailureLedger](FailureLedger.md)의 CI678이 정본이다. 다음 source의 독립 QA와 새 전체 CI가 필요하다.
+
+---
+
+## U-225-CONTROLS-20261107 — 승인된 Work 1–3 실제 통제 검증과 게시 전 점검
+
+**기준 source:** PR250 정상 병합 Main `62dcd3b5f7f78e37841bc14b5ca48f6c038e68f8` / tree `bf2980ce5dc16d89c5ca8957a89eb6497bbb5766`. 최종 head `286dff51`의 [PR CI676](https://github.com/planner77/layoutManager/actions/runs/42368191670)는 적용8개 Job SUCCESS/A2 범위 외 SKIPPED; archive `6c427851`은 같은 tree와 정확 parent 관계다. Main HOLD run42369529538 SUCCESS. 기존 CI674/취소675와 실패 이력은 보존한다.
+
+| Work / 근거 | 실제 결과 및 한계 |
+| --- | --- |
+| 1 독립 조회 | Owner 인증/관리 권한 및 source-bound Rule Suite list+detail reader PASS. 조회 성공을 정책 차단이나 새 승인으로 부르지 않는다. |
+| 2 기본 권한 | Owner packetA `069400c2` 6건, Actions 전용 packetB `9e4d998e` [run42372382795](https://github.com/planner77/layoutManager/actions/runs/42372382795) 6건 모두 실제 생성→FF갱신→삭제 성공. Actions API의 시각 표기가 UTC이고 Owner는 +09:00이지만 4개 시각 instant/나머지 전체 필드가 동일해 exact raw snapshot hash를 actor별로 보존했다. |
+| 2 보호 규칙 | Owner7 + [Actions7/run42372614042](https://github.com/planner77/layoutManager/actions/runs/42372614042) 모두 거부·ref 불변. 조회 전용 외부 감사와 독립 QA가 **실행26건(기본12+거부14)**의 규칙 평가 증거를 수용했다. 원래 strict helper는 PENDING이며 아래 한계를 유지한다. |
+| 거부 증거 | 직접FF는 열린 시험 PR과 연결되어 PR 평가 PASS/정확 required CI FAIL이다. 원래 예상 PR-fail 주장은 UNSATISFIED. nonFF에서는 active PR와 nonFF가 둘 다 FAIL이며 어느 하나만의 차단 원인이라는 주장은 하지 않는다. PR251/252의 실제 squash 후보는 각각 `db90045f`/`0df1e021`: exact PR, 단일 parent Main, head와 같은 tree, 직접FF 후보 제외, actual merge 요청 시각 ±1초와 일치해 CI 차단을 독립 확인했다. |
+| 정책/정리 | 동일 Ruleset26731716/26731135의 임시 prefix만 제거하고 Main/v* active/우회자0/Owner never를 실제 GET으로 확인했다. 생략된 PR 옵션의 서버 default가 true로 바뀐 첫 PUT 실패를 보존하고, 기존 false와 required_reviewers=[]를 명시한 별도 wire hash로 복구·확인했다. 소스의 4 payload/hash는 불변. 소유 PR251/252 종료 및 전체12 fixture ref·별도 진단 ref 부재 확인. |
+| 3 publisher | 기존355693716 실제 disabled_manually 및 기존168 run completed inventory 보존. 별도 2번째 진단403의 정확 `Unable to retry disabled workflow`를 source M classifier와 fresh GET으로 감사 수용했다. 첫403 원인은 UNKNOWN, 과거 helper 실패를 PASS로 바꾸지 않았고 세 번째 POST는 없다. |
+| 3 writer / 환경 | package14938097 private, linked repo 확인. Owner UI 보고: layoutManager Actions Admin, 저장소 권한 상속 체크, members 없음. API collaborators Owner만/team0. Environment26560473351은 Owner reviewer/main only/admin bypass false. 실제 candidate/promotion run review는 아직 미실행. |
+| 4 게시 전 조회 | 실제 pull-only 재조회에서 0.60 App/Migrator 및 latest 별칭 digest·source9eb8 불변, 정식0.61 태그3개 authenticated absent. 운영 복구를 수행했다는 뜻이 아니다. 후보·정식 게시 및 GO-PILOT은 미완료. |
+
+정제된 로컬 증거는 Git 제외 `data/release-proof/issue225-execution-resume-20261107/`에 보관한다. 전체 control receipt SHA256 `1ad3138b9841113009fe5dc9477457735955e1ce62f42cc5eea56e08abde3ee5`, 독립 QA receipt `0b523b9d…`. Source M에 대한 실제 통제 증거이며 이후 Main의 CP helper/정책 byte 동일성 및 live control 재조회를 확인해야 한다. 지정 5.6 역할 모델은 제공되지 않아 Manager gpt-6-astra/Developer gpt-6-sol/QA gpt-6-luna가 대행하고 Root가 외부 변경을 실행했다.
+
+**별도 게시 도구 호환성 수리:** Root의 실제 GHCR root GET401은 고정 placeholder scope `repository:user/image:pull`을 포함했다. 기존 client가 이를 허용하지 않아 사전 조회가 중단(쓰기0)됐다. 고정된 실제 응답 하나만 허용하며 token endpoint/service/실제 package scope는 변경하지 않는 최소 수리를 준비한다. Developer synthetic security regression40 PASS; 독립 QA candidate40+promotion18+registry15=73 PASS, compile/diff/source hash 보존을 확인했다. 새 full CI/Main은 별도로 기록한다. 운영0.58 복구·현장 CAD·실 배포는 미실행, 제품 Scene flags OFF/자동 출고 HOLD/#225·#218 OPEN/GO-PILOT BLOCKED.
+
+---
+
 ## #225 MS — source-bound CI674 pass and further merge-proposal readiness repair (2026-11-07)
 
 Independent QA read completed PR250 CI674/run42365892136 at exact head `8b1b95b10ae8b9efa997e50922a34e1bd9dcafbd`/tree `551b44d209353062230c5efbe2c6eacf82bfd5e7`: all eight applicable jobs and required aggregate SUCCESS; A2 scope SKIPPED. Static175 files/1,103 tests PASS, type/build PASS, ESLint0 errors/12 existing warnings. Docker verified exact three-role archive/registry roundtrip, nonroot/offline Worker, converter KILL/OOM recovery, signed HTTP→OCI→fresh Viewer and actual0.60 upgrade/same-backup recovery/owned cleanup. This is success for that source, not future modified source or GO-PILOT.

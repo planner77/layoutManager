@@ -1,3 +1,20 @@
+## #225 P1-D — 실패 직후의 bounded 진단 (2026-11-07)
+
+PR CI-owned App에서 시험이 실패하면 정리 전에 `P1D_DIAG:APP_STATE`의 고정 status/running/OOM/restart/exit와 health HTTP 상태를 확인한다. inspect와 health는 각2초로 제한하며 임의 필드·env·본문·log dump를 출력하지 않는다. Admin Site revoke 실패 시 `P1D_DIAG:ADMIN_SITE_REVOKE_FAILED`에는 고정 route와 UTC 시작/실패 시각만 남고 기존 오류·POST 횟수·보안/수용 assertion은 유지한다. 진단 실패가 정리를 막지 않는다. CI678 원인 UNKNOWN과 로컬 미재현의 실제 근거는 [FailureLedger](FailureLedger.md), 검증 결과는 [TestReport](TestReport.md)를 따른다.
+
+---
+
+## #225 — 실제 통제 검증 완료 범위와 게시 전 호환성 수리 (2026-11-07)
+
+Work1–3의 실제 결과·원장·26건의 조회 전용 감사 수용 한계는 [TestReport](TestReport.md)의 U-225-CONTROLS-20261107이 정본이다. Main `62dcd3b5`에서 Owner/Actions 기본 권한12건과 실제 거부14건을 관측했고, 같은 Ruleset ID의 최종 Main/v* 보호 및 소유 fixture 정리를 완료했다. strict helper PENDING을 PASS로 바꾸지 않는다. 이후 source에서 CP helper/정책 byte 동일성과 live final policy를 확인하며 이미 수행한 변경 요청을 재실행하지 않는다.
+
+- 패키지 UI의 Actions Admin/상속/members 없음은 Owner 보고이고 API 응답과 구별한다. 기존 publisher disabled/고정 inventory 및 accepted diagnostic witness를 유지한다.
+- 후보와 승격은 서로 다른 fresh attempt1 run/packet/job/source/Environment review를 실제 API로 연결해야 한다. 기존 Work1–4 승인 아래 concrete packet 검토 후 Root가 Owner credential로 플랫폼 review를 수행할 수 있지만 **Owner 위임 agent action**으로 기록하며 새 인간 클릭이나 독립2인 승인이라고 부르지 않는다. 후보 review를 승격에 재사용하지 않는다.
+- GHCR root의 정확 placeholder challenge를 허용해도 실제 token URL/realm/service/요청 package pull,push scope는 고정한다. 임의 challenge-derived URL/scope, header 전달·credential fallback을 허용하지 않는다.
+- 0.60 App/Migrator 실제 registry readback과 historical signed loopback recovery는 **registry-only** 출고 중단 기준 자료다. 운영0.58의 실제 동일 snapshot 복구 증거가 아니며, candidate/final manifest 게시를 운영 deployment/rollback 또는 GO-PILOT으로 대체하지 않는다. 부분/불확실 결과에는 자동 retry/delete/overwrite/rollback을 하지 않는다. 현재 정식0.61 3태그는 부재, 후보 게시0.
+
+---
+
 ## #225 MS — PR 병합 거부의 server proposal 검증 경계 (2026-11-07)
 
 Squash merge 거부의 Rule Suite after-SHA는 요청한 PR head가 아니라 GitHub가 만든 후보 commit일 수 있다. 실제 PR249 실패 Suite/후보 Git commit readback을 FailureLedger/TestReport에 보존했다. merge case에서만 정확 live PR id/number/base/head·원래 actor/ref/before/time/active expected-rule/context·suite PR metadata를 먼저 확인하고, 해당 관측 후보 SHA의 고정 repository GET을 좁게 허용한다. 후보 returned SHA/단일 before-parent/exact head tree를 검증하며, 일반 Ref 작업의 exact after-SHA 규칙은 그대로다. 알 수 없는 후보/부모/내용/PR 연결이나 모호한 여러 Suite는 PASS로 만들지 않는다. 이전 source CI674 성공과 새 변경 source의 required CI를 구별한다.

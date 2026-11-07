@@ -24,6 +24,16 @@ cleanup(){
   local rc=$?
   trap - EXIT
   unset G7_P1D_SETUP_CODE
+  if [[ "$rc" -ne 0 && "$app_owned" == true ]]; then
+    local state health
+    state="$(timeout 2s docker inspect "$app" --format '{{.State.Status}} {{.State.Running}} {{.State.OOMKilled}} {{.RestartCount}} {{.State.ExitCode}}' 2>/dev/null)" || state=UNAVAILABLE
+    if [[ ${#state} -gt 128 || ! "$state" =~ ^(running|exited|created|restarting|paused|dead)[[:space:]](true|false)[[:space:]](true|false)[[:space:]][0-9]+[[:space:]][0-9]+$ ]]; then
+      state=UNAVAILABLE
+    fi
+    health="$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 2 "$origin/api/health" 2>/dev/null)" || health=UNAVAILABLE
+    if [[ ! "$health" =~ ^[0-9]{3}$ ]]; then health=UNAVAILABLE; fi
+    echo "P1D_DIAG:APP_STATE status_running_oom_restart_exit=$state health_http=$health at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >&2 || true
+  fi
   if [[ "$app_owned" == true ]]; then
     docker rm -f "$app" >/dev/null 2>&1 || rc=1
   fi

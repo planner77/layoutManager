@@ -1,3 +1,9 @@
+## #225 — 실제 출시 통제 시험 26건 감사 완료 (2026-11-07, 0.61.0 유지)
+
+Owner/Actions 기본 권한12건과 보호 ref 거부14건을 실제 관측하고 독립 QA가 규칙 평가 증거를 수용했다. 원래 strict helper의 기대값 불일치·모호성은 PENDING으로 보존한다. Main/v* 보호 복원과 시험 자원 정리를 완료했으며, 기존 publisher 비활성·package 권한·보호 Environment를 확인했다. GHCR 인증 응답 호환성과 CI 실패 진단을 보완하고 새 full CI 후 private 3-image 후보·정식 승격을 진행한다. 아직 게시 완료나 GO-PILOT이 아니다. 실제 결과·한계는 [TestReport](out/TestReport.md), 실행 경계는 [Operation](out/Operation.md)를 따른다. 운영 Scene flags OFF/자동 출고 HOLD를 유지한다.
+
+---
+
 ## #225 — 인증 복구·실제 reader/출시 통제 검증 진행 (2026-11-07, 0.61.0 유지)
 
 Owner 인증 복구 후 독립 Rule Suite list/detail 사전검사를 통과했다. 기존 제안의 보호 Environment 설정을 적용하고 legacy publisher를 비활성화했다. Environment의 실제 run review는 미실행이다. 선택 API 필드/disabled 응답 보완은 이전 head의 CI674를 통과했고, squash 후보 SHA/PR 연결 검증까지 포함한 최종 source는 독립38시험을 통과했다. 새 exact-head CI/Main은 별도다. 원래 실패와 저장된 진단 증거를 구분한다. 전체 Owner/Actions 보호 규칙 시험과 private3-image 후보/승격·GO-PILOT은 아직 미완료다. 정확 결과·현재 외부 변경과 잔여는 [TestReport](out/TestReport.md)를 따른다. 제품 flags OFF와 정식 출고 HOLD를 유지한다.
