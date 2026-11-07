@@ -1,3 +1,9 @@
+## #225 FUP2 — 초기 probe와 최종 source 구분 (2026-11-08)
+
+초기 Playwright CLI 실행문에서 target URL 치환이 `URL` 생성자 토큰에도 적용되는 오류가 있었고 Session closed 응답을 받았다. 토큰을 분리하고 fresh context에서 정상 실행했으며 해당 실패를 렌더링 PASS로 기록하지 않는다. Node source의 unused helper/test binding을 제거한 뒤 새 regression·resource/Browser proof를 최종 source hash로 다시 실행했다. 이전 source의 실제 proof는 비공개 이력으로 남기고 hash를 바꿔 재사용하지 않는다. 기능/허용 목록·원본·운영에는 변경이 없다.
+
+---
+
 ## #225 FUP1 — 검증 환경·보존 쿼리 보완 (2026-11-08)
 
 - 초기 read-only 보존 fingerprint의 `CadFileVersion SELECT *`는 삭제 비밀번호 해시 열도 메모리의 aggregate digest에 포함했다. 값 출력·내보내기·인증 사용은 없었고 User/AuthSession/복구/로그인 시도 행은 조회하지 않았다. Manager 검토 뒤 Version의 비인증13열을 명시하고 SQL `LIMIT 100001`을 적용했다. 초기 digest는 superseded로 구분하고 보완된24개 업무 table/선택 열이 immutable backup과 같은지 재검사했다. 전체 이력의 인증 자료 읽기0 또는 전체 DB 보존을 주장하지 않는다.

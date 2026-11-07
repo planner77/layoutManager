@@ -1,3 +1,11 @@
+## 0.61.0 실험 — offline CPU primitive candidate (2026-11-08)
+
+- test-only Node 후보에서 LINE/CIRCLE/ARC/straight LWPOLYLINE을 strict encoding·default XY/layer/style·유한 geometry/precision/resource 조건으로 처리한다. 별도 offline DTO/CANDIDATE와 full structural validator/restorer·fsynced private readback을 추가했다.
+- synthetic5 primitives/58segments·fresh Browser의 buffer/analytic geometry/pixel·실제 120초 watchdog/부분결과 거부·kernel resource 제한을 검증했다. 기존 제품 admission은 새 builder를 거부하며 실제 전체 도면은 원본 불변/payload0으로 거부한다.
+- 새 합성/guard 검사를 CI scope gate에 연결했다. 앱 버전·runtime parser/Builder allowlist·Worker/DB/Schema/운영 설정·이미지 게시를 변경하지 않았고 실제 READY/GO를 주장하지 않는다.
+
+---
+
 ## 0.61.0 검증 도구 — DXF capability·격리 clone 정상 인증 (2026-11-08)
 
 - 원본 bytes/SHA를 보존하는 bounded DXF inventory와 malformed/encoding/finite vocabulary/graph depth·시간 상한 시험을 추가했다. 실제 파일의 entity/blocks/layers/styles와 지원 확대의 누락 범위를 구체화했다. 결과는 INVENTORY_ONLY다.

@@ -1,4 +1,26 @@
+## #225 FUP2 구현 계약 — offline CANDIDATE와 제품 READY 분리 (2026-11-08, Manager 구현 전)
+
+FUP2 closure 정책 확정: open group70=0과 closed group70=1 모두 explicit terminal vertex==first vertex를 거부하는 conservative canonical subset을 유지한다. open polyline이 기하적으로 출발점으로 돌아오는 표현 자체를 DXF 전체에서 잘못된 데이터라고 주장하지 않는다. 이번 offline DTO의 `closed`는 이 subset에서 closure flag와 geometry closure가 일치함을 보장하며 원본 flag를 normalize하거나 중복 terminal을 제거하지 않는다. 거부 오류명(DXF_DEGENERATE 등)은 내부 후보 경계이고 public 문서에서는 UNSUPPORTED로 설명한다. 이후 이런 입력을 지원하려면 source flag와 기하적 closure를 구별하는 별도 DTO 의미·시험을 먼저 설계한다.
+
+이 절은 아래 FUP2 설계의 P05를 명확히 한다. 제품 `validateStoredScenePayload`는 실제 허용 Builder와 asset READY를 요구하므로 새 실험 후보를 직접 통과시킬 수 없다. 해결은 제품 검증을 완화하거나 기존 Builder 문자열로 바꾸는 것이 아니라 `src/tests` 전용 parser→primitive geometry→offline envelope→full validator→별도 restorer 경로다. production module에 runtime import/등록을 추가하지 않는다. 기존 validator를 사용하는 시험은 새 identity를 **거부함**을 요구한다.
+
+Envelope는 명시 schema `offline-cpu-primitives@1`, state `CANDIDATE`, builder `node-cpu-primitives@0.1.0+cad-scene-1`, 원본 SHA256/bytes, units `mm`, supported primitive 개수/segment 수, deterministic primitive ID/order/type와 명시 closed boolean, Float32 XYZ segment buffers와 오차 근거를 포함한다. READY/SceneManifest/CurrentScene/Job/제품 SceneRef를 만들지 않는다. full validator는 정확 key/type/identity/hash·finite Float32 representability·Z0·좌표/총 segment 상한·buffer 차원/길이·ID uniqueness/order·primitive count 대응·오차값 범위와 source binding을 모두 검사한다. 오류 record/unknown key/type/NaN/Infinity/truncation/false count/foreign SHA·builder/state는 거부한다. 오차 claim은 scalar를 신뢰하는 것으로 충분하지 않고 converter 생성 원기하와 저장 후 buffer를 비교한 독립 analytic 시험으로 뒷받침한다. restorer는 먼저 이 validator를 호출하고 제한된 Three LineSegments만 생성한다. production serializer/ref를 재사용하려고 provenance를 대체하지 않는다.
+
+정밀도 정책은 source double 원기하→분할 chord의 최대 sagitta **0.05mm**와 각 Float32 vertex의 원 double 위치 대비 Euclidean 이동 **0.05mm** 이하를 각각 검증하여 총0.1mm를 보장한다. source/파생 endpoint·circle extent는 각 XY 절댓값1000000 이하, Z0이고 quantization 후 segment collapse는 거부한다. LINE/straight polyline은 chord 오차0이다. circle은 CCW 닫힌2π 및 최소3 segments, ARC는 start/end degree를0..360 범위에서 normalize하고 CCW positive sweep `(end-start+360)%360`을 사용한다. 같은 각도(0/360 포함)는 full-circle로 추측하지 않고 거부한다. wrap350→10/반대10→350을 별도로 시험한다. radius>0이며 segment budget을 넘으면 chord 허용오차를 늘리지 않고 거부한다. LWPOLYLINE은 count와 실제 vertex가 일치하고 open>=2/closed>=3, flags0/1만 허용한다. bulge/constant·per-vertex width/elevation/thickness0/default extrusion만, 연속 중복·닫힘의 중복 terminal vertex·zero-length/collapse는 거부한다.
+
+Parser는 HEADER/ENTITIES만 허용하며 $INSUNITS4·ACADVER·명시 $DWGCODEPAGE의 UTF8/UTF-8 또는 ANSI_1252를 지원한다. HEADER의 다른 변수/unknown group/entity/section/layer/style는 전체 UNSUPPORTED이며 주석·확장자료도 임의 생략하지 않는다. UTF8은 fatal decoding, ANSI_1252는 정의된 byte mapping만 사용하고0x81/8D/8F/90/9D·replacement/NUL은 거부한다. 선언 누락/충돌/unsupported codepage를 감으로 선택하지 않는다. 실제 ANSI_1252 header는 의도한 한글 입증이 아니며 TEXT 미지원·원본 재인코딩 저장0이다. layer0/ACI7 또는 BYLAYER256/CONTINUOUS 또는 BYLAYER/default lineweight만 허용하며 table 의존 style을 가정하지 않는다.
+
+상한: 원본16MiB/pairs300000/전체 output segments5000/coordinate1000000, candidate serialized32MiB 이하. input count뿐 아니라 tessellation 확장 전에 잔여 budget을 검사한다. 수치 parse/geometry/validation 전체의 cooperative deadline과 독립 parent120초 강제 종료를 함께 둔다. private tempfile0700/0600 exclusive write→fsync→readback SHA/fullvalidate→owned cleanup을 실행한다. Root의 실제 격리 CPU proof는 network-none/UID10001/read-only root/768MiB/pids64/유한 tmpfs/CPU1과 exact owned resources에서만 실행하며 운영/보존 restore volume을 mount하지 않는다. resource/kill 실패 후 불완전 후보는 미수용이다.
+
+Browser proof는 synthetic 후보만 fresh context/process에 전달하고 별도 restorer로 표시한다. 독립 golden endpoint/bbox/radius/sweep/closed path와 원래 analytic geometry 대비 오차를 검사하고 readback bytes SHA·visible canvas·pageerror/async failure0을 확인한다. screenshot/display ready만 geometry fidelity PASS로 쓰지 않는다. 실제 private DXF는 같은 parser의 전체거부/원본 SHA 보존만 검사하며 subset 추출·변환파일/real CAD screenshot/public artifact0이다. FUP2 test-only code·schema는 앱 SemVer 변경 대상이 아니고 실험 identity를 명시한다.
+
+---
+
+FUP2 primary references: [CIRCLE group codes](https://help.autodesk.com/cloudhelp/2024/ENU/AutoCAD-DXF/files/GUID-8663262B-222C-414D-B133-4A8506A27C18.htm), [ARC group codes](https://help.autodesk.com/cloudhelp/2024/ENU/AutoCAD-DXF/files/GUID-0B14D8F1-0EBA-44BF-9108-57D8CE614BC8.htm), [LWPOLYLINE fields/flags/width/bulge](https://help.autodesk.com/cloudhelp/2020/ENU/AutoCAD-DXF/files/GUID-748FC305-F3F2-4F74-825A-61F04D757A50.htm), [numeric group-code angle units](https://help.autodesk.com/cloudhelp/2024/ENU/AutoCAD-DXF/files/GUID-3F0380A5-1C15-464D-BC66-2C5F094BCFB9.htm), [ObjectARX ARC OCS/CCW semantics](https://help.autodesk.com/cloudhelp/2027/ENU/OARX-RefGuide/files/OARX-RefGuide-__MEMBERTYPE_Methods_AcDbArc.html). 공식 format 정의와 이 구현의 더 좁은 admission/실측 proof를 구별한다.
+
 ## #225 FUP2 설계 — 다음 최소 CPU primitive 후보와 실제 파일 미지원 경계 (2026-11-08)
+
+아래는 FUP1 완료 시 확정한 구현 전 설계 이력이다. 현재 구현·실제 실행·수용은 위 FUP2 구현 계약과 TestReport FUP2를 따른다.
 
 **결정 상태: 후속 구현 설계만 수용, 현재 FUP1은 test-only이며 앱 버전0.61.0/제품 Builder/Schema 변경0.** 최종 inventory source `2a36a9e9712016a4545fb911c75fbf10d0937001e19debc08aa119012317361c`의 10개 시험을 Manager가 재실행했다. shared DAG의 memo subtree도 `현재 depth + cached depth - 1` 상한을 검사한다. 실제 sanitized inventory `37cf146b8915e3b1e179b6aa5b1b82efb9c1add9d0459f5469f2a58db1a28027`은 ENTITIES970/BLOCKS2690, BLOCK 정의147개, 최대 BLOCK 경로3, layer24/style8이다. 이전 depth2 서술은 사용하지 않는다.
 

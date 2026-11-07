@@ -1,3 +1,13 @@
+## #225 FUP2 — 승인된 offline primitive 후보 구현 (2026-11-08)
+
+FUP2 canonical subset 보완: LWPOLYLINE은 open/closed flag 모두 첫 vertex를 마지막에 반복하는 표현을 지원하지 않는다. group70=0이더라도 동일 좌표로 되돌아오는 유효 DXF가 존재할 수 있으며, 이 후보의 거부는 제한된 canonical subset의 UNSUPPORTED 판정이다. 전체 DXF 형식의 invalid 판정으로 확대하지 않는다. 원래 flag를 바꾸거나 terminal vertex를 삭제하여 통과시키지 않는다.
+
+사용자의 다음 단계 구현 요청에 따라 LINE/CIRCLE/ARC/straight LWPOLYLINE의 제한된 offline 후보를 구현한다. 파일 전체를 검증하고 원본 bytes/SHA를 보존하며, 미지원 의미가 하나라도 있으면 후보 payload를 반환하지 않는다. 실제 실도면 전체는 여전히 UNSUPPORTED가 기대값이다.
+
+FR-FUP2-IDENTITY: 새 `node-cpu-primitives@0.1.0+cad-scene-1`은 test-only `CANDIDATE` identity다. 제품 `SceneManifest`/READY DTO가 아니며 기존 `validSceneScope`·저장 payload validator·Worker/Queue/Schema/Builder allowlist를 변경하거나 기존 LINE Builder로 위장하지 않는다. 별도 offline full validator/restorer와 fresh Browser geometry 검증을 구현한다. FR-FUP2-PRECISION: millimetre 기준 tessellation+Float32 변환 합산 오차 최대0.1mm, 기존 입력/segment/resource 상한을 유지한다. FR-FUP2-BOUNDARY: src/tests 아래 실험 도구만 추가하고 앱 버전0.61.0·운영0.58을 유지한다. 공개 제품 기능/릴리스는 별도 MINOR/수용 절차다. 상세 의미/AC는 Architecture/TestPlan FUP2 구현 계약을 따른다.
+
+---
+
 ## #225 FUP1 — 실제 DXF CPU 확장과 격리 clone 정상 인증 (2026-11-08, 요구사항)
 
 사용자는 실도면 CPU 지원 확장과 복원 clone의 정상 인증 후속 작업을 승인했다. 첫 최소 Unit은 원본 bytes를 변경하지 않는 제한된 DXF capability inventory와 fresh clone의 합법적인 로그인 경로 준비다. 실제 파일은 strict UTF-8/LINE-only 조건 밖이며, 선언 encoding·Entity·layer/block/text/좌표 특성을 먼저 측정한 뒤 가장 작은 renderer 지원 집합을 결정한다. 이 Unit의 분석 성공은 변환/READY 성공이 아니다. 지원 확대는 별도 versioned builder와 기존 identity 보존을 요구하며 silent omission·부분 결과를 FULL/READY로 게시하지 않는다.

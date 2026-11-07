@@ -74,6 +74,11 @@ jobs:
           PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s src/tests/oci -p 'test_*clone*.py'
           node --test src/tests/oci/dxf-capability-inventory.test.mjs
           node --check src/tests/oci/clone-business-fingerprint.mjs
+          node --test src/tests/oci/offline-cpu-primitives.test.mjs
+          PYTHONDONTWRITEBYTECODE=1 python3 src/tests/oci/test_offline_cpu_primitives_resource.py
+          node --check src/tests/oci/offline-cpu-primitives-browser-entry.mjs
+          node --check src/tests/oci/offline-cpu-primitives-browser-server.mjs
+          node --check src/tests/oci/offline-cpu-primitives-resource-child.mjs
       - name: Determine required CI scope
         id: classify
         env:
