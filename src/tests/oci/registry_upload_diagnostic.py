@@ -17,7 +17,7 @@ import urllib.parse
 import urllib.request
 
 import candidate_policy as policy
-from candidate_registry import GitHubReadOnly
+from candidate_registry import GitHubReadOnly, UPLOAD_PATH
 
 WORKFLOW = '.github/workflows/registry-upload-diagnostic.yml'
 SIGNER = policy.REPO + '/' + WORKFLOW
@@ -260,9 +260,7 @@ def candidate_components(location):
                      noFragment=not raw.fragment and not parsed.fragment,
                      rawPathSafe='%' not in raw.path
                                  and not any(v in ('.', '..') for v in raw.path.split('/')),
-                     pathPattern=re.fullmatch(
-                         r'/v2/planner77/layoutmanager/blobs/(?:upload|uploads)/[A-Za-z0-9_-]{1,200}',
-                         parsed.path) is not None,
+                     pathPattern=UPLOAD_PATH.fullmatch(parsed.path) is not None,
                      strictQueryParse=re.search(r'%(?![0-9A-Fa-f]{2})', query) is None
                                       and (not query or ('&' not in query and query.startswith('_state=')
                                                         and len(query) > len('_state='))),

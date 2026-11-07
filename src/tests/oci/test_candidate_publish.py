@@ -300,6 +300,38 @@ class CandidateTests(unittest.TestCase):
         self.assertEqual(http.calls[-1][1], r.ORIGIN + location + '&digest=' +
                          urllib.parse.quote(descriptor['digest'], safe=''))
 
+    def test_dot01_observed_class_identifier_preserves_single_use_upload(self):
+        raw = b'observed-class synthetic blob'; descriptor = desc(raw, next(iter(r.LAYERS)))
+        identifier = '0a1b2c3d-4e5f-6789-abcd-0123456789ab.zz'
+        self.assertEqual(len(identifier), 39)  # Synthetic shape, never the actual opaque ID.
+        location = r.PREFIX + '/blobs/upload/' + identifier + '?_state=AB%2fC+%3D'
+        http = FakeHTTP([result(404), result(202, headers={'location': location}),
+                         result(201, headers={'docker-content-digest': descriptor['digest']})])
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / 'blob'; path.write_bytes(raw)
+            client = blob_client(http, descriptor, path); client.upload_blob(descriptor, path)
+            self.assertIsNone(client._upload_session)
+            with self.assertRaises(p.Pending):
+                client.request('PUT', r.upload_target(location, descriptor['digest']), data=path,
+                               media='application/octet-stream')
+        self.assertEqual([call[0] for call in http.calls], ['HEAD', 'POST', 'PUT'])
+        self.assertIn('/blobs/upload/' + identifier + '?_state=AB%2fC+%3D&digest=', http.calls[-1][1])
+        self.assertNotIn(identifier, str(client.journal.events))
+
+    def test_dot02_identifier_positions_bounds_and_plural_restriction(self):
+        digest = 'sha256:' + 'a' * 64
+        for identifier in ('.a', 'a.b', 'a.', 'a..b', 'a' * 199 + '.'):
+            self.assertIn('/blobs/upload/' + identifier + '?digest=',
+                          r.upload_target(r.PREFIX + '/blobs/upload/' + identifier, digest))
+        for location in (r.PREFIX + '/blobs/upload/.', r.PREFIX + '/blobs/upload/..',
+                         r.PREFIX + '/blobs/upload/a%2eb', r.PREFIX + '/blobs/upload/a/../b',
+                         r.PREFIX + '/blobs/upload/' + 'a' * 200 + '.',
+                         r.PREFIX + '/blobs/uploads/a.b', r.PREFIX + '/manifests/a.b',
+                         '/v2/other/repo/blobs/upload/a.b',
+                         'https://evil.invalid' + r.PREFIX + '/blobs/upload/a.b'):
+            with self.subTest(location=location[:60]), self.assertRaises(p.Pending):
+                r.upload_target(location, digest)
+
     def test_fs02_plural_relative_and_raw_query_bytes_survive_one_put(self):
         raw = b'blob bytes'; descriptor = desc(raw, next(iter(r.LAYERS)))
         for location in (r.PREFIX + '/blobs/uploads/session_1?_state=AB%2fC+%3D',
@@ -326,7 +358,7 @@ class CandidateTests(unittest.TestCase):
             '/v2/other/repo/blobs/upload/session_1',
             r.PREFIX + '/manifests/session_1', r.PREFIX + '/blobs/upload/../upload/session_1',
             r.PREFIX + '/blobs/upload/%2Fsecret', r.PREFIX + '/blobs/upload/%2e%2e',
-            r.PREFIX + '/blobs/upload/session.1', r.PREFIX + '/blobs/upload/' + 'x' * 201,
+            r.PREFIX + '/blobs/uploads/session.1', r.PREFIX + '/blobs/upload/' + 'x' * 201,
             good + '\\other', good + '#fragment', good + '#',
             good + '?_state=opaque#',
             r.PREFIX + '/blobs/uploads/session_1#',

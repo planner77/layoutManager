@@ -1,3 +1,25 @@
+## U-225-DOT-LOCAL — Root 대행의 관측 기반 최소 수리 (2026-11-08)
+
+Manager가 DOT01–05 요구사항/AC를 먼저 기록했고, 기존 Developer의 반복 context 복구 실패/source 변경0을 근거로 Root가 구현 대행을 계속했다. fixed singular ID 문자에만 dot을 추가하고 기존 plural charset·raw dot-segment/인코딩/경로 이동·다른 repo/origin 거부·한 번 소비하는 descriptor session을 유지했다. diagnostic은 공통 UPLOAD_PATH를 참조한다.
+
+실제 관측과 같은39자/문자 분류의 합성 fixture에서 기존 source는 CA_UPLOAD_LOCATION_REFUSED로 RED였고 수정 후 GREEN이었다. 원 실제 token이나 UUID suffix를 재구성한 fixture가 아니다. Root의 candidate47/diagnostic13/registry15/release18=93 로컬 시험·compile/diff PASS. source SHA256은 candidate helper `5d0012c4c2921a02edbe8be93f2a3b59ae4c54213a5ccc8b71c23cf7094b4847`, test `3bc713064e0396e6ff59b5fb63989e9b1490d31ffd51ab63451223e2895f02cd`; diagnostic helper `a1b4eb3bfcdcac465f3182a6ca5e4f3a56e3415317d1a9bae4500ec0a8b56186`, test `54b937031724d510fd8ad1a4bae11151bf353dcd459d58f09ddb7b2672bb4a36`.
+
+Manager는 최소 diff를 수용했다. 독립 QA receipt `7a457be495e26e08804a3573dc11939aa7cd6d771fde214f683f48de64f55d49`는 최종4파일 hash/old RED→new GREEN, 네트워크를 차단한93시험 PASS 및 별도57개 입력의 predicate 동치·compile/diff PASS를 확인했다. full CI/Main·새 실제 candidate는 아직 대기다. 로컬 성공을 실제 게시 성공으로 기록하지 않는다.
+
+---
+
+## U-225-TAX-ACTUAL — 구조 진단의 실제 단일 관측 (2026-11-08)
+
+[PR256](https://github.com/planner77/layoutManager/pull/256) head `74a9c8cd7a207015a073fbb16b79fd4de3484dba`/tree `41cafba11d521e9d33e3ef40ba316ae3ed2efd61`의 [CI682](https://github.com/planner77/layoutManager/actions/runs/42390455739)는 적용8/8 SUCCESS/A2 scope SKIP다. 실제 Docker archive `925dfa839e9bb65f3a07a812397f4dad0426a2a1`/동일 tree/정확 [Main319,head74] parents와 당시 진단12회귀를 독립 확인했다. CI receipt SHA256 `b7def1a9fff92d4362046522fc96cfad1bde58c638fbcb92dab70606b719d1a2`; 정상 Main `72181f4af810321f743e3a4fca251094b4c79a1a`를 확정했다.
+
+새 packet `97218a2dc5c6a9de6cc3a5ac19275260e1180a747f4ea180efb874472e92cd48`를 Manager/QA가 검토하고 즉시 source/policy/environment/legacy/privatepackage/registry를 재조회했다. [실제 taxonomy2](https://github.com/planner77/layoutManager/actions/runs/42392837552) attempt1/job128463876336은 환경26560473351의 별도 실제 승인 기록 뒤 POST1회/202/SUCCESS를 남겼다. Root의 기존 작업1–4 범위 Owner 대행 행위이며 독립 두 번째 사람의 승인이 아니다.
+
+정확1 artifact13581359468/ZIP `sha256:a4d604e25341c810b897e5d67e323db6fe468120a99d7374aea4b5acb93b4e0c`/정확result.json SHA256 `20cbbaa4034a1a0cbb8ce3e3aa8b4ee35683c007b7fd52b6f930a8a7d34baa29`를 확인했다. raw/resolved fixedSingularPrefix=true/segment7/최종opaqueID39자 alpha·digit·hyphen·dot이며 pathPattern만 false, 다른 현행 조건은 모두 true다. query/normalization/traversal/encoding 이상은 관측되지 않았다. 이는 한 ID의 dot 존재만 증명하며 원문·dot 위치/개수·UUID suffix/과거 실패 URI는 UNKNOWN이다. 독립 실제 artifact QA receipt `feda89e8d197e7201760acc857dc2ca1b15b9ced7ffcd3d9f9376f47704551d7`.
+
+Location follow/PUT/manifest/tag/delete/cancel/retry0이며 이 진단의 budget도 소진됐다. 진단 후 pull-only receipt `d1a79c0cb6f0bd6e204dd940e8c3b061f8baf64cd352c5be68354e6adcb9a53e`는 정식0.61태그3 absent·기존0.60/latest 불변을 확인했다. 성공한 빈 blob-init 관측은 후보/정식 게시가 아니다. 운영 flags OFF/자동 HOLD/GO-PILOT BLOCKED 유지.
+
+---
+
 ## U-225-TAX-LOCAL — Root 역할 대행과 구조 진단 로컬 검증 (2026-11-08)
 
 기존 Developer에게 Manager 지시를 전달했으나 완료 agent를 깨우지 못한 지연이 있었고, 재개 후에도 Developer가 context reset/private recovery 실패를 보고했다. Developer는 source 변경0을 확인했다. Root가 실제 구현을 대행했으며 Manager가 두 source의 diff/hash를 검토·수용했다. 기존 Developer가 구현했다고 기록하지 않는다.

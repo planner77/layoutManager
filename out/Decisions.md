@@ -1,3 +1,9 @@
+## #225 실제 singular upload ID의 dot 허용 (2026-11-08)
+
+taxonomy2의 실제 값 없는 구조 증거는 fixed singular upload 경로의 하나의 ID segment에 dot가 포함돼 기존 charset에만 실패했음을 보여준다. Manager는 singular route에 한해 literal dot를 추가하고 plural의 기존 charset은 유지하기로 했다. 원문 ID/UUID suffix를 추정하지 않으며 raw '.'/'..'와 encoded traversal 거부, exact descriptor session·원query 보존·singlePUT 및 protected release gates를 유지한다. 상세 AC/TC는 [TestPlan](TestPlan.md)의 DOT01–05다. Root가 구현 대행하고 독립 Manager/QA/fullCI를 거쳐 새 candidate run에서 실제 호환성을 검증한다. 추가 진단 POST는 하지 않는다.
+
+---
+
 ## #225 두 번째 upload 실패 이후 generic taxonomy 관측 (2026-11-08)
 
 candidate2 run42388044377은 current finite upload|uploads parser에서도 실제 CA_UPLOAD_LOCATION_REFUSED로 실패했다. 공개 singular route 근거는 지원 가능한 유한 경로의 compatibility 근거로 유지하지만 현재 GHCR 응답이 그 경로였다는 증거는 아니다. 실제 candidate3/final3 ref 부재와 old0.60/latest 불변, OIDC/artifact 부재 및 opaque202 session unknown을 보존한다.

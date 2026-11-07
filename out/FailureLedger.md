@@ -1,3 +1,11 @@
+## #225 taxonomy2 실제 관측 — dot 포함 opaque ID (2026-11-08)
+
+run42392837552/Main72181/packet97218의 별도 실제 환경 review 후 빈 POST1/202/SUCCESS, exact1result artifact와 ZIP SHA 검증을 완료했다. result SHA256 `20cbbaa4034a1a0cbb8ce3e3aa8b4ee35683c007b7fd52b6f930a8a7d34baa29`, 독립 QA `feda89e8d197e7201760acc857dc2ca1b15b9ced7ffcd3d9f9376f47704551d7`. raw/resolved fixed singular prefix·7segments·39자 finalID의 alpha/digit/hyphen/dot 분류를 관측했고 pathPattern만 false였다. 다른 조건/query/정규화/encoding/traversal 이상은 없었다.
+
+관측은 현재 한 응답의 dot 존재에 한정한다. 실제 token·점 위치/개수·UUID suffix 의미·이전 실패 URI는 미확인이다. URI값 비저장/후속PUT·follow·delete·retry0이며 두 진단 budget은 모두 소진됐다. 후속은 singular bounded ID의 점 허용만 보완하는 DOT 수리이며 다른 route/권한·session은 유지한다. 새 실제 candidate가 성공하기 전 실제 호환/게시 PASS로 기록하지 않는다. 기존 두 후보 실패도 보존한다.
+
+---
+
 ## #225 candidate2 42388044377 — finite 경로 수리 후 실제 거부 (2026-11-08)
 
 - source Main31998d6/tree818d, 새 packetfdfd9020/실제 환경 review 후 build3/RR1/RR2/RR3 PASS, publish CA_UPLOAD_LOCATION_REFUSED FAILED.

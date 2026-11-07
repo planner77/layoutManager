@@ -1,3 +1,9 @@
+## #225 DOT — 관측한 단일 segment 및 공통 grammar (2026-11-08)
+
+실제 구조 진단에서 fixed singular path의 단일 opaque segment에 점이 포함된 것을 확인했다. singular route의 bounded ID charset만 보완하고 raw dot-segment/traversal/encoding/다른 경로 거부와 descriptor 단일 session을 유지한다. diagnostic은 publisher의 공통 UPLOAD_PATH를 참조하여 path 조건의 복제·노후화를 막는다. 원문과 token 의미를 추측하지 않으며 actual candidate 호환은 후속 검증이다.
+
+---
+
 ## #225 TAX — 진단과 publisher 경계 유지 (2026-11-08)
 
 유한 upload session의 단위/CI 성공은 실제 server URL 호환을 증명하지 못했다. candidate2의 실제 Location 거부 후 diagnostic은 raw/resolved path의 제한된 구조만 출력하도록 보완한다. publisher allowlist·권한·동작과 구분하고 새 구조 관측 전 임의 route를 허용하지 않는다. 실제 결과는 TestReport, AC는 TestPlan의 TAX가 정본이다.

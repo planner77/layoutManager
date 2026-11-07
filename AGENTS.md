@@ -1,3 +1,9 @@
+## #225 DOT 재개 — 실제 식별자 문자만 최소 수리 (2026-11-08)
+
+출고 재개 시 [TestReport](out/TestReport.md)의 U-225-TAX-ACTUAL 및 U-225-DOT-LOCAL, [TestPlan](out/TestPlan.md)의 DOT01–05를 먼저 읽는다. 실제 한 응답의 singular upload 식별자에서 점을 관측했으며 원문·점 위치/개수·UUID 의미는 미확인이다. 두 진단 budget은 소진됐고 추가 진단은 없다. 새 source/QA/CI/Main/packet/별도 실제 환경 review 뒤 새 candidate를 수행한다. 기존 두 후보 실패·운영 flags OFF/자동 HOLD/GO-PILOT BLOCKED를 유지한다.
+
+---
+
 ## #225 TAX 재개 — 후보2 실패와 구조 진단 (2026-11-08)
 
 출고 재개 시 [TestReport](out/TestReport.md)의 U-225-CANDIDATE2-FAIL, [FailureLedger](out/FailureLedger.md), [TestPlan](out/TestPlan.md)의 TP-225-UPLOAD-TAXONOMY를 먼저 읽는다. FS의 로컬/CI 성공과 실제 candidate2의 Location 거부를 구별한다. 이전 후보·진단 packet은 재생하지 않고 새 source/QA/full CI/Main/packet/실제 환경 review 뒤 구조 진단을 진행한다. 운영 flags OFF/자동 HOLD/GO-PILOT BLOCKED를 유지한다.

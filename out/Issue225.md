@@ -1,3 +1,9 @@
+## 2026-11-08 — 실제 singular ID의 dot 관측과 수리
+
+PR256/CI682 적용8/8 및 Main72181f4 뒤 별도 실제 환경 review를 거친 taxonomy42392837552가 POST1회·202·정제 artifact를 남겼다. fixed singular upload ID의 한 segment에 dot이 포함됐으며 나머지 현행 조건은 모두 참이었다. 주소 원문·token 구조·과거 실패 URI를 복원하지 않는다. bounded singular ID 문자 허용만 보완하고 새 QA/full CI/Main/candidate packet/실제 review 뒤 게시를 검증한다. 이전 후보 실패2건·소진 진단 budget2건을 보존하며 정식 승격/운영 시작은 아직 없다. TestReport가 정본, #225/#218 OPEN/GO-PILOT BLOCKED 유지.
+
+---
+
 ## 2026-11-08 — 후보2 실제 Location 거부, 구조 진단으로 전환
 
 [CI681](https://github.com/planner77/layoutManager/actions/runs/42385929264) 적용8개 성공 및 PR255 정상 Main31998d6 뒤 새 candidate42388044377을 실행했다. 실제 보호 환경의 별도 Owner 대행 승인 기록과 build/RR1/RR2 성공은 확인했으나 publish는 다시 CA_UPLOAD_LOCATION_REFUSED로 실패했다. 서명·artifact·정식 승격은 없고 후보/정식 태그 부재·기존0.60/latest 불변을 조회했다. 공개 두 route 수리가 실제 서버 URL을 해결했다는 주장은 하지 않는다. 새 taxonomy source/QA/CI/Main/packet/실제 환경 review 후 구조를 관측하며 기존 실행은 재시도하지 않는다. TestReport/FailureLedger가 실제 결과 정본이며 #225/#218 OPEN/GO-PILOT BLOCKED를 유지한다.

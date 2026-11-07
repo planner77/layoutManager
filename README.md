@@ -1,3 +1,9 @@
+## #225 — 실제 업로드 식별자의 점 관측 및 최소 수리 (2026-11-08)
+
+[PR256](https://github.com/planner77/layoutManager/pull/256)/CI682의 필수8개 성공 뒤 보호된 단일 구조 진단을 완료했다. 고정 singular upload 경로의 한 식별자에서 점을 관측해 해당 경로의 문자 허용만 보완한다. 주소 원문·토큰 형식은 복원하지 않으며 기존 경로 이동/권한/한 번 업로드 제한은 유지한다. 새 실제 후보 게시와 정식 승격은 아직 미완료다. 결과는 [TestReport](out/TestReport.md), 실행 기준은 [TestPlan](out/TestPlan.md)을 따른다. 기존0.60/latest 유지·운영 활성화와 파일럿 보류를 계속 적용한다.
+
+---
+
 ## #225 — 실제 후보2 실패 및 주소 구조 진단 준비 (2026-11-08)
 
 [PR255](https://github.com/planner77/layoutManager/pull/255)와 [CI681](https://github.com/planner77/layoutManager/actions/runs/42385929264)의 적용8개 성공으로 Main `31998d6`를 확정했다. 새 실제 후보 실행은 세 이미지/RR1/RR2를 통과했지만 업로드 주소 검증에서 다시 거부됐다. 서명·후보 artifact·정식 승격은 없다. 기존0.60/latest는 유지됐고 후보·정식 태그 부재를 재조회했다. 추측으로 경로를 추가하지 않고 값 없는 구조 진단을 준비한다. 실제 근거와 제약은 [TestReport](out/TestReport.md), 후속 기준은 [TestPlan](out/TestPlan.md)을 따른다. 운영 활성화·GO-PILOT은 보류다.

@@ -1,3 +1,19 @@
+## TP-225-OBSERVED-DOTTED-UPLOAD-ID — 실제 singular 세션 ID 문자 보완 (2026-11-08)
+
+실제 protected taxonomy2 run42392837552/source72181/packet97218의 결과 SHA20cbbaa4034a1a0cbb8ce3e3aa8b4ee35683c007b7fd52b6f930a8a7d34baa29를 Manager가 확인했다. 단일POST202 응답의 raw/resolved path는 동일 fixed singular `/v2/planner77/layoutmanager/blobs/upload/` prefix이며 마지막 단일 segment length39/classes alpha,digit,hyphen,dot, query0이었다. 모든 currentFS 조건이 true이고 pathPattern만 false다. dot 위치/개수/UUID 또는 숫자 suffix 의미는 미관측이며 원문 ID는 미보존이다. 이 정보로 추가 diagnostic POST 없이 최소 실제 문자 보완을 수행한다.
+
+| AC / TC | 최소 범위 |
+| --- | --- |
+| DOT-01 | **singular upload 경로에만** 기존 ASCII ID charset에 literal dot를 추가해 `[A-Za-z0-9_.-]{1,200}`를 허용한다. plural uploads 경로는 기존 `[A-Za-z0-9_-]{1,200}` 그대로 유지한다. 관측39길이나 UUID+'.digits'로 임의 schema를 만들지 않는다. fixedrepo/origin과 단일segment/bounds는 동일하다. |
+| DOT-02 | raw 단독 '.'/'..' segment 거부를 URL resolution 전에 유지한다. percentencodedpath/encoded dot·separator, slash/backslash/control/nonASCII/다른repo/manifest/userinfo/fragment/port 변형 등 기존 거부는 그대로다. opaque ID 내부 dot은 path traversal segment와 구별한다. session descriptor/digest/size/path·durable intent·singleuse·uncertainnoRetry·rawquery bytes 보존은 변경하지 않는다. |
+| DOT-03 | 합성 length39 alpha/digit/hyphen/dot 단일segment로 oldRED/newGREEN을 재현한다(실제ID 복원/출력0). dot 위치가 다른 허용 사례·1/200 bounds 및 plural-dot 거부, singular '.'/'..'/traversal/encoding/201길이/기타문자 음성을 추가한다. 실제 runtime upload 성공은 후속 candidate에서만 관측한다. |
+| DOT-04 | diagnostic currentCandidatePredicate의 pathPattern을 정확한 새 singular/plural grammar와 동기화하고 실제 upload_target과 deterministic adversarial equivalence를 검증한다. taxonomy 출력/네트워크/protocol/workflow 권한 및 protectedreview gates는 바꾸지 않는다. source는 candidate_registry.py/test_candidate_publish.py/registry_upload_diagnostic.py/test_registry_upload_diagnostic.py 네 파일의 최소 변경만 허용한다. |
+| DOT-05 | 실제 구현 주체는 Root Developer fallback으로 기록한다. Manager review→독립 QA candidate/diagnostic/registry/promotion 전체 관련 회귀→정상 fullCI/Main→새candidate3packet/nonce/freshattempt1/실제delegatedOwnerreview를 따른다. 후보70/fdfd 실패 및 진단7f/97218 소진 budget은 불변이며 반복POST/운영변경0. |
+
+Manager는 위 bounded source 구현 GO를 판정한다. dot 클래스의 실제 관측과 원문token의 미확인을 구별하며 제3후보 성공을 선행 주장하지 않는다.
+
+---
+
 ## TP-225-UPLOAD-TAXONOMY — 두 번째 실제 후보 실패의 최소 경로 관측 (2026-11-08)
 
 candidate2 run42388044377/source31998d6/packetfdfd9020은 실제 CA_UPLOAD_LOCATION_REFUSED로 실패했다. 3-role build/RR1/RR2 및 cleanup 성공은 publish/OIDC/서명/artifact 성공이 아니다. 기존 finite 두 경로는 실제 응답을 수용하지 못했으며 old진단7f의 path 정보 부족과 소진 budget을 보존한다. 추가실행은 oldrun/packet retry가 아닌 별도 검토된 source/새packet/freshattempt1의 새 진단이다.
