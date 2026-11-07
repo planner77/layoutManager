@@ -414,7 +414,12 @@ class CPContracts(unittest.TestCase):
                     *args],env={**os.environ,'CP_READ_TOKEN':'','CP_GITHUB_TOKEN':''},
                     text=True,capture_output=True)
                 self.assertNotEqual(result.returncode,0)
-                self.assertFalse((root/'receipt.json').exists())
+                if '--execute' in args:
+                    self.assertEqual(json.loads((root/'receipt.json').read_text())['result'],
+                                     'FAILED_OR_PARTIAL_REVIEW_REQUIRED')
+                    (root/'receipt.json').unlink()
+                else:
+                    self.assertFalse((root/'receipt.json').exists())
                 self.assertNotIn('synthetic',result.stderr)
 
 if __name__=='__main__':unittest.main()
