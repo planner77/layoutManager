@@ -587,8 +587,8 @@ def verify_denial_case(api, packet, case, row, context):
                and s.get('after_sha') == expected_after
                and s.get('actor_id') == actor['id']
                and s.get('actor_name') == actor['login']
-               and s.get('evaluation_result') == 'fail'
-               and s.get('result') in ('fail', 'failed')
+               and s.get('result') == 'fail'
+               and ('evaluation_result' not in s or s['evaluation_result'] == 'fail')
                and start - dt.timedelta(seconds=60) <= instant(s.get('pushed_at')) <=
                    end + dt.timedelta(seconds=60)]
     require(len(matches) == 1 and type(matches[0].get('id')) is int,
@@ -598,6 +598,8 @@ def verify_denial_case(api, packet, case, row, context):
     require(all(suite.get(k) == matches[0].get(k) for k in
                 ('id','repository_id','ref','before_sha','after_sha','actor_id',
                  'actor_name','pushed_at','evaluation_result','result')),
+            'CP_RULE_SUITE_DETAIL_CHANGED')
+    require(('evaluation_result' in suite) == ('evaluation_result' in matches[0]),
             'CP_RULE_SUITE_DETAIL_CHANGED')
     failed = [r for r in suite.get('rule_evaluations', [])
               if r.get('rule_type') == case['expectedRule'] and

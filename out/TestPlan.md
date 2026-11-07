@@ -1,3 +1,78 @@
+## TP-225-LP-EXACT-CAUSE — 실제 disabled-workflow 문구 최소 수리 (2026-11-07)
+
+별도 허용된 두 번째 진단 probe의 실제403 message는 정확 `Unable to retry disabled workflow`, SHA256 `aec1d32332e7e83267548dabeff7cfc4e0237f6b6ad2910c28b5df866828d597`이며 requestID `14AB:151D8E:32703F:579A58:6AEF00AE`다. unchanged helper는 여전히 LP_RERUN_REFUSAL_UNCLASSIFIED로 실패했다. Root post-GET는 disabled workflow355693716, safe run42075718479 attempt1/completed/success 및168-row inventory7c9f0db645a5299734ef0bfbe6117704df8b66d76798b8f9c88f1144d09dd9aa 불변을 확인했다. 첫403은 message 없는 UNKNOWN으로 계속 보존한다.
+
+| AC | 최소 수정 및 최종 수용 |
+| --- | --- |
+| LC-01 | Developer는 기존 유한 classifier에 관측한 정확 단일 문구만 추가한다. 해당 새 문구의 원본 exact bytes를 비교하고 기존 허용 형식/거부 조건을 유지한다. wildcard/substring/일반 retry 거부/다른 원인·상태 허용 확대0. |
+| LC-02 | exact observed403 message positive 및 message hash fixture, 다른status·negation·suffix/prefix·permission/auth cause·유사 retry 문구 음성을 검증한다. 전체 perform 회귀로 같은 disabled workflow/safe source/attempt/inventory가 필요함을 확인하고 accepted/changed-state 음성도 유지한다. 합성 fixture PASS는 실제 helper 실행 성공으로 표시하지 않는다. |
+| LC-03 | CP repair와 함께 Manager source review→독립 QA→정확 PR CI→정상 Main 뒤 새 classifier로 **저장된 두 번째 witness만** 검증한다. 세 번째 probe/추가 LP mutation0. 원 receipt/helper failure를 수정하거나 소급 PASS로 덮어쓰지 않는다. |
+| LC-04 | 별도 acceptance receipt는 original diagnostic receipt SHA, exact packet/source/helper SHA, response status/message SHA/requestID/time, 전후 동일 disabled state/safe run source·attempt1/completed/전체inventory hash, 새 classifier source/hash 및 검증 결과를 연결한다. 판정명은 stored diagnostic witness의 disabled-cause 수용이며 당시 unchanged-helper 결과와 구별한다. 원 witness가 exact pre/post와 요청 한 번을 입증하지 못하면 PENDING이다. 첫 unknown probe나 실제 unsafe historical publisher 재실행 차단 전체를 입증한 것으로 확대하지 않는다. |
+
+이 수정은 기존 Work3 진단의 관측 가능한 실제 원인 분류를 완성하는 최소 범위이며 새 permission/principal 또는 추가 mutation 승인이 아니다. package writer/Actions grants 및 candidate/promotion/Owner platform review는 별도 미완료다.
+
+---
+
+## TP-225-LP-DIAGNOSTIC-OBSERVATION — unclassified403 원인 관측 (2026-11-07)
+
+Root의 실제 legacy disable은204 및 workflow355693716 disabled_manually/동일 inventory로 성공했다. 첫 safe run42075718479 rerun probe는403/LP_RERUN_REFUSAL_UNCLASSIFIED였고 response message/requestID가 기존 helper receipt에 없어 원인은 UNKNOWN이다. 이 실패를 보존하고 blind retry나 classifier 완화를 하지 않는다.
+
+Manager는 기존 Work3 승인 아래 **별도 진단 시도 한 번**을 허용한다. exact e800 packet/source/helper, fresh disabled state/complete unchanged inventory, safe run attempt1/source/HOLD skip를 preflight한 뒤 같은 endpoint만 호출한다. wrapper는 allowlisted bounded response message/status/requestID/hash를 비밀정보 없이 보존하고 원 transport 및 unchanged classifier에 한 번 전달한다. helper가 unclassified로 조기 종료해도 별도 post-GET로 actual attempt/state를 기록한다. accepted/uncertain/drift는 HALT이며 추가 probe/retry/cancel/re-enable0. 새 실제 message가 확인돼야 별도 최소 classifier 수리 AC를 논의하며 과거403을 소급 PASS로 바꾸지 않는다.
+
+---
+
+## TP-225-ACTIVE-SUITE-CONTRACT — 실제 active Rule Suite 응답 최소 수리 (2026-11-07)
+
+**구현 전 Manager AC:** Root의 기존 Owner 인증 복구 후 CP reader는 실제 sample4964400827로 PASS했다. 실제 failed suite4964214924는 top-level `result=fail`, nested active required_status_checks failure/정확 context를 제공하지만 optional `evaluation_result`는 없다. 현 verifier가 필수 `evaluation_result=fail`을 요구하여 실제 active denial을 분류할 수 없는 계약 결함이다. Root가 확인한 GitHub 공식 Rule Suite API 예시와 actual sanitized list/detail을 근거로 하며 새 controlled denial은 아직 수행하지 않았다.
+
+| AC | 최소 구현/검증 범위 |
+| --- | --- |
+| AS-01 | active denial의 필수 authoritative 결과는 list/detail의 정확 `result=fail`과 nested expected rule의 `result=fail`, `enforcement=active`, ruleset source다. `evaluation_result` 부재만으로 거부하지 않는다. present unknown/conflicting 값 또는 list/detail 불일치는 fail closed; evaluate-mode 실패만으로 active denial PASS를 만들지 않는다. |
+| AS-02 | exact repository/actor/ref/before/after/time, unique suite, same detail identity, live ruleset/source/payload/expected context, prior capability와 전후 unchanged ref 조건을 모두 유지한다. 허용 범위를 generic403/failed 문자열·평가모드·다른 rule/source로 확대하지 않는다. |
+| AS-03 | 실제 응답 shape의 sanitized list/detail fixture로 optional field 없는 active fail positive를 추가하고, active pass+evaluate fail·nested inactive/wrong expected rule·present unknown/conflicting field·list/detail mismatch 음성을 검증한다. fixture는 historical shape이며 새 실제 denial 증거로 기록하지 않는다. |
+| AS-04 | Developer의 isolated branch 최소 helper/test 수정→Manager review→독립 QA focused regressions와 관련 required checks→정상 PR CI/Main 통합 뒤에만 full controlled proof를 실행한다. 새 Main에서 fixture commit/source/tree/정책 packet을 재고정하고 old e723 staging/9ee4 reader 결과를 역사로 보존한다. Root만 network writes를 담당한다. |
+
+**독립 Work3 진행:** Root가 실제 protected environment26560473351/Owner45478892 only/main branch policy65838705/can_admins_bypass=false를 readback했다. 이는 같은-run candidate/promotion review가 아니다. LP packet e800a3a7aaa8d311be6c14898d4374a2e8e2e8523839d337ebf92fe31f7f0762는 sourcee723/legacy355693716/replacement408674805/run42329339528/safe HOLD42075718479를 고정하고 실제 observe에서168 completed·inventory7c9f0db645a5299734ef0bfbe6117704df8b66d76798b8f9c88f1144d09dd9aa를 확인했다. Manager는 기존 사용자 Work3 승인 내에서 helper의 fresh preflight를 다시 통과하는 해당 ID disable→정확 safe run probe만 진행 가능으로 판정한다. unexpected accepted/unknown이면 HALT, 자동 retry/cancel/re-enable0; 명시 disabled-cause와 readback 전 denial PASS0. source 또는 inventory drift는 재고정 후 검토한다. Package API403/read:packages 부족은 별도 미확인으로 남기며 LP/env 완료로 대체하지 않는다.
+
+---
+
+## TP-225-AUTHENTICATED-RESUME — Work 1–4 인증 복구 후 실행 AC (2026-11-07)
+
+사용자의 기존 Work1–4 진행 승인 아래 재개한다. Root는 기존 Owner 인증 복구 후 `/user`200(Owner45478892), repository200(id1359528829/admin true), Rule Suite list200/nonempty, environments200/empty를 실제 보고했다. 이전401/403 실패 이력은 보존한다. token retrieval, 인증 성공, 독립 list+detail readiness와 실제 policy denial은 서로 다른 결과다. 아래 이전 “현재 인증 장애” 표현은 당시 상태이며 현재 reader helper 성공은 별도 실제 실행으로 확인한다.
+
+| AC | 실제 실행 경계 |
+| --- | --- |
+| AR-01 | Root만 network mutation을 수행한다. pristine source e723d989/source tree 및 현재 Main을 다시 읽고 기존9ee4 packet의 네 policy bytes·live snapshot·세 exact ref 부재·독립 suite list+matching detail을 fresh 검증한다. drift는 재고정/재검토하며 과거 packet/receipt를 새 source의 근거로 재표시하지 않는다. 실제 실패는 요청 단계·safe error code·mutation 수와 함께 기록한다. |
+| AR-02 | Developer는 full Owner+Actions capability/denial와 required-CI PR fixture의 실행 순서 및 helper/API 계약을 분석하고 검토 가능한 packet material을 준비한다. future PR/run ID는 unknown으로 남기며 fixture 생성 후 실제 값으로 고정한다. 최종 packet 이전 준비 fixture는 별도 exact ref/SHA/verb plan에 한정하고 독립 reader 성공 이후만 실행한다. parent→child fast-forward capability, 실제 actor 구별, Actions run/attempt/time, required-check-specific 거부와 exact unchanged ref를 모두 확인한다. Main/v* probe·fake green·권한확대0. |
+| AR-03 | fresh environment GET에서 부재를 확인한 뒤 Work3의 필수 설정으로 기존 issue225-candidate-environment.review.json의 **정확한** owner-only proposal을 Root가 적용할 수 있다. 이름 issue225-candidate-publish, reviewer45478892, prevent_self_review=false, can_admins_bypass=false, custom branch policy의 main/branch 한 개만 허용한다. 새 principal/PAT·다른 environment 변경0. PUT→branch-policy POST→실제 ID/config/reviewer/main/admin-bypass readback 완료 전 dispatch0. partial/unknown이면 HALT; 실제 true를 UI receipt로 덮어쓰지 않는다. |
+| AR-04 | 실제 플랫폼 environment review는 broad 진행 승인이나 packet hash로 대체하지 않는다. exact candidate packet 및 이후 별도 promotion packet/run을 준비한 다음 각각 같은 run의 실제 approved review history/Owner/environment ID를 확인한다. 자동 대리 수행을 독립 인간 검토로 기록하지 않으며 human UI 관측을 만들지 않는다. Owner-only/self-review 허용은 second-human independence가 아니다. |
+| AR-05 | legacy bounded30 inventory·safe HOLD run/source/jobs·replacement HOLD·package inheritance/users/Actions grants를 실제 확인 후 고정된 disable/probe 경로만 사용한다. missing/unsupported field는 UNKNOWN이며 실제 API와 helper 계약 차이는 실패로 기록하고 우회하지 않는다. 필요 수리는 최소 AC→Developer→Manager→독립 QA→required CI/정상 Main 경로로 수행한다. |
+| AR-06 | three-role candidate와 exact-digest promotion은 실제 controls/legacy/writer inventory/environment/CI/archive/rollback material이 완성된 경우에만 진행한다. 후보와 승격의 source/run/review 구별 및 partial HALT를 유지한다. 현장/runtime 근거 없는 pilot GO·Scene flag 활성화·운영 deploy0. 준비 완료와 live 완료를 따로 보고한다. |
+
+이 재개는 blanket 재승인 요청 사유가 아니다. 정확 material 부족과 실제 platform review 대기는 필요한 gate로 명시하고 독립적으로 가능한 준비/GET는 계속한다. 이전 QA의 PR CI head cbb3810와 Main e723d989는 같은 tree이며 같은 commit이 아니다; 관련 보고서도 이 구별을 유지한다.
+
+---
+
+## TP-225-AUTHORIZED-EXECUTION — Work 1–4 승인 실행·정확 증거 경계 (2026-11-07)
+
+Manager의 이번 실행 요구사항/AC다. 사용자는 **1) 독립 Rule Suite reader readiness, 2) exact Owner packet 및 실제 denial proof, 3) legacy publisher/GHCR/environment authority, 4) three-image candidate 및 exact-digest promotion/pilot 판단**의 진행을 승인했다. 이 승인은 아래 과거 기록의 포괄적인 “실행 미승인/별도 승인 대기” 상태를 이번 범위에 한해 갱신한다. 동일 범위를 반복 승인 요청하지 않는다. 다만 아직 없는 exact material, Owner 서명/검토 사실, 같은 run의 실제 플랫폼 environment review 또는 runtime GO를 만들어 기록하지 않는다. packet hash·실행 flag·로컬 plan은 승인 증거가 아니다.
+
+**착수 시 실제 장애(2026-11-07):** Root가 기존 `.env` credential 및 기존 Git helper credential의 GitHub 인증 401, connector Rule Suite 접근 403, `CP_READ_TOKEN` 부재를 보고했다. 이는 인증/reader capability 실패이며 Ruleset의 Git 작업 거부 PASS가 아니다. 기존 Owner 인증 복구 안내를 이미 전달했으므로 중복 질문하지 않는다. 새 PAT/principal 생성이나 Actions token 권한 확대를 기본 해결책으로 요구하지 않는다. 현재는 정확 source의 로컬 준비와 가능한 connector GET 증거 확보를 진행하며, 독립 reader의 실제 list/detail 성공 전 외부 mutation/controlled Actions dispatch는 수행하지 않는다.
+
+| AC / TC | 실행 요구 및 수용 기준 |
+| --- | --- |
+| EX-01 | 정확 clean Main/source/workflow와 repo1359528829/Owner45478892를 고정한다. 이미 허용된 Owner credential만 secured local process에서 사용하고 credential/header/URL을 출력·artifact·commit에 남기지 않는다. 독립 reader는 bounded repository GET 및 nonempty Rule Suite list와 동일 sample detail의 actor/ref/SHA/evaluation을 실제 검증해야 한다. 401/403/empty/불완전 detail은 PENDING/FAIL이며 mutation0. Git 인증 성공 자체는 Admin:read 증거가 아니다. |
+| EX-02 | CP packet에 exact source/workflow, nonce·owned ref/SHA·허용 verb/actor/phase, 네 initial/final payload hash와 fresh policy snapshot을 결합한다. 로컬 schema/hash/clean-source/plan 검사는 실제 승인·denial로 표시하지 않는다. 아직 모르는 PR 번호/run ID/관측 SHA는 꾸미지 않으며 실제 값 없이는 관련 packet 실행을 준비 완료로 판정하지 않는다. |
+| EX-03 | reader 성공 후 승인 범위의 각 actor/credential 경로에서 prior positive capability→initial-prefix policy→denial→independent readback을 순서대로 수행한다. 실제 rule evaluation/actor/time/exact ref 및 ref 불변을 함께 확인해야 DENIED_BY_POLICY다. required-CI는 실제 owned PR/expected HEAD와 explicit required context 거부가 필요하다. real main/v* probe0, fake green0. 같은 Ruleset ID의 final pattern 복구와 exact delta/readback 뒤 확인된 owned fixtures만 정리한다. 불확실 시 HALT/PENDING, 우회·정책 disable/delete0. |
+| EX-04 | legacy workflow355693716의 bounded30 pagination inventory와 active-run 부재·source/hash를 실제 확인한다. disable은 해당 ID만, deny probe는 safe HOLD run42075718479/source476b686a7b9bb1ff9c691a71f895bd833311e090만 허용한다. disabled_manually와 explicit disabled cause/새 attempt 부재까지 확인한다. unexpected accepted rerun은 PASS 금지/HALT 및 안전 상태 관측, 자동 cancel/re-enable/retry0. GHCR package writer·다른 repo Actions grants·기존 환경 ID/config/branch policy/reviewer/admin-bypass는 실제 API 또는 구별된 Owner UI 증거로 기록하며 UNKNOWN을 해소한 것으로 쓰지 않는다. |
+| EX-05 | candidate는 full required CI의 정확 source tree와 actual environment·controls·rollback evidence를 포함한 packet, fresh Owner dispatch attempt1 및 같은 run의 실제 environment review 후에만 three-role candidate prefix에 게시한다. 미래 run ID를 미리 만들지 않는다. 기존0.60/latest/기타 alias/Git tag 변경0. 실제 종료 run/artifact inventory·file hash·signed subjects·GHCR graph/digest를 검증한다. |
+| EX-06 | promotion은 성공 candidate source A/run/artifact 및 promotion source B/CI, three-role exact digest, writer/legacy/environment/rollback evidence를 별도 packet에 결합하고 fresh promotion run의 실제 review를 확인한다. candidate review를 재사용하지 않는다. final0.61.0/0.61.0-migrate/0.61.0-cpu-worker raw-manifest만 허용; partial/unknown/ambiguous PUT는 후속 PUT 없이 HALT, 자동 rebuild/overwrite/delete/retry/rollback/deploy0. Pilot 판단은 실제 출고·복구·현장/runtime 근거와 연결하며 로컬 준비 성공을 GO로 바꾸지 않는다. |
+| EX-07 | Developer는 sanitized evidence/packet의 source/hash/schema/unknown 구별과 default non-mutating plan을 검증하고 Manager에게 보고한다. Manager review 뒤 독립 QA가 동일 material을 검사한다. 실제 실행 주체/대행 모델과 실행·미실행을 구별하며 Root가 최종 문서/commit/push를 담당한다. 소스 수정이 필요하면 별도 최소 구현 AC를 먼저 보완하고 기존 회귀/required CI를 따른다. |
+
+**완료 판정:** 로컬 준비 완료는 exact source-bound packet draft, sanitized evidence inventory, 검증 결과 및 남은 unknown 목록을 검토할 수 있다는 의미다. Live 완료는 EX-01–06의 실제 관측과 independent 검증까지 필요하다. 현재 authentication/reader 장애 때문에 live Work1–4는 미완료이며 #225/#218/#231 OPEN, Scene flags OFF, GO-PILOT BLOCKED와 기존 HOLD를 실제 수용 전 유지한다. 과거 PASS/FAIL/NOT RUN 기록은 아래에 그대로 보존한다.
+
+---
+
 ## TP-248-FL2 — full Viewer rendering of description fixture after #666 (2026-11-07)
 
 **Observed:** CI #666 run42320485967 browser trace confirms client `TypeError: e.entities is not iterable` in DXF parser `_FetchFonts`; `upload.spec.ts:513` Viewer status `표시 실패` instead of ready. Fixture `0\\nEOF\\n` had no DXF `SECTION/ENTITIES`. Prior focus/hydration race remains an unproven alternative, not the observed root cause. Chromium2 73 PASS/1 FAIL; aggregate FAIL.

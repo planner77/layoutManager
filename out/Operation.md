@@ -1,3 +1,27 @@
+## #225 — 인증 복구 후 실제 실행 상태와 API 계약 보완 (2026-11-07)
+
+기존 Owner 로그인과 package read scope가 복구됐고 독립 Rule Suite reader는 실제 list/detail을 통과했다. Environment `issue225-candidate-publish`(26560473351)는 기존 제안의 설정을 적용해 실제 Owner 단독 승인/Main branch 전용/관리자 우회 금지로 구성됐다. 생성된 설정은 같은-run 실제 review를 대신하지 않는다. 패키지14938097은 private이며 metadata GET은 writer/다른 repo Actions grants 전체 목록을 제공하지 않는다. Owner의 화면 확인 보고에는 Manage Actions access `layoutManager=Admin`, source repository inheritance checked, Inherit Access members empty가 포함된다. REST의 repository collaborator Owner1/teams0/default workflow read와 이 UI 보고를 구별해 writer inventory에 결합한다. Owner 관리자 재활성화 권한·독립 두 번째 사람 부재는 유지되는 한계다.
+
+Legacy publisher355693716은 실제 `disabled_manually`로 전환됐다. 과거 Main160 run42075718479만 대상으로 한 첫403 probe의 사유는 미보존/UNKNOWN이고, 별도 단일 진단은403 `Unable to retry disabled workflow`와 unchanged attempt1/source/inventory를 보존했다. 변경 전 helper는 둘 다 미분류 실패다. 새 exact-message classifier를 검증·통합한 뒤 저장된 두 번째 진단만 별도 수용 receipt로 대조한다. 세 번째 probe/자동 retry/re-enable/cancel은 수행하지 않는다. read-only `main-hold.yml`은 유지되며 legacy publisher가 disabled이므로 해당 publisher Main workflow의 새 실행을 기대하지 않는다. 새 PR required CI 및 별도 Main HOLD 결과를 구분한다.
+
+Rule Suite의 최상위 `result`가 active suite 판정이며 `evaluation_result`는 별도 선택 필드다. 실제 active failed Suite에는 후자가 없을 수 있다. 이번 보완은 exact fail/기존 actor·ref·SHA·time·expected active rule·live Ruleset을 모두 유지하고 선택 필드의 absence만 허용하며, present conflict/unknown/list-detail mismatch는 계속 실패한다. full controlled-ref proof는 새 source의 QA·required CI/Main 통합 후 fixture/packet/source/policy/ref/readiness를 다시 고정한 뒤 진행한다. 과거 e723의 child commit/26-case staging은 미래 Main의 실행 자료로 재사용하지 않는다. 상세 실제 근거/문제는 TestReport/FailureLedger를 따른다.
+
+---
+
+## #225 — 승인된 Work 1–4 실행 재개와 실제 인증 장애 (2026-11-07)
+
+사용자가 Work 1–4 진행을 승인했다. 현재 실행 기준은 Main `e723d98905953298a9cb5b080a9081b72d963f87` / tree `e0b4375bf2ea317a56092adc369e25b6cc598a79`이며, TC/완료 경계는 TestPlan `TP-225-AUTHORIZED-EXECUTION`을 따른다. 실제 관측은 TestReport와 FailureLedger가 정본이다. 과거의 포괄적인 실행 미승인 문구를 반복 승인 사유로 사용하지 않는다. 아직 없는 exact candidate digest, signed packet 또는 플랫폼의 실제 Environment review를 승인된 것으로 만들지 않는다.
+
+실행 환경에서 기존 `.env`와 Git credential helper의 인증은 GitHub REST에서 각각 HTTP401이었다. `gh`의 Owner 로그인과 `CP_READ_TOKEN`은 없었고, 연결 앱의 Rule Suite GET은 HTTP403이었다. 연결 앱은 Environment 및 Workflow metadata endpoint를 지원하지 않았다. 이 결과는 보호 규칙에 의한 Ref 거부나 GHCR 권한 검증 결과가 아니다. 인증정보 원문·header·credential URL은 출력하거나 보관하지 않았다.
+
+재개에는 **기존 Owner 인증**이 필요하다. 이 환경을 사용할 경우 Owner가 `gh auth login --hostname github.com --git-protocol https --web`으로 로그인한 뒤 실제 repository identity 및 Rule Suite list/detail을 확인한다. 토큰을 채팅·명령 인수·문서에 넣지 않고, 이미 권한 있는 credential만 secured process의 `CP_READ_TOKEN`으로 전달한다. 로그인 성공만으로 Administration:read 또는 package/Actions/Environment 권한 성공을 주장하지 않는다. Owner 로컬 PC에서 수행할 경우에도 packet의 정확 clean source와 네 policy hash를 먼저 검증한다.
+
+Root는 원래 작업 폴더의 미커밋 변경을 보존하고 별도 documentation worktree 및 정확 Main의 clean source worktree를 만들었다. 무비밀 packet/GET 증거/검증 영수증은 원래 저장소의 Git 제외 `data/release-proof/issue225-execution-20261107/`에 보관한다. 이 자료는 draft/로컬 준비이며 full control proof 또는 release packet이 아니다. required-CI denial의 실제 PR 번호, fresh legacy inventory, 실제 Environment ID/설정·writer inventory·candidate receipt/digest 등 미관측 값은 PENDING으로 남긴다.
+
+인증 복구 후에는 현재 Main·policy snapshot·owned ref 부재를 다시 GET하고 packet을 재검증한다. 성공적인 independent reader 이후에만 capability→controlled denial→같은 Ruleset의 final 복원·정리를 수행한다. 그 다음 legacy publisher/권한/Environment 검증, candidate 및 별도 exact-digest promotion/run review를 순서대로 진행한다. 실제 출고 수용 전 제품 Scene flags OFF, >=0.61 GHCR HOLD와 GO-PILOT BLOCKED를 유지한다. 운영 upgrade/start는 이 로컬 준비의 결과로 실행하지 않는다.
+
+---
+
 ## #248 / #231 — Controlled-ref independent Rule Suite reader preflight (2026-11-07)
 
 Before an Owner-approved controlled-ref mutation, a **local Owner outside Actions** with an existing GitHub credential that can read repository Rule Suites executes the separate GET-only preflight. It uses `CP_READ_TOKEN` only in the Owner's secured shell, not a Workflow secret, artifact, code, public log or the Actions `GITHUB_TOKEN`. `CP_READ_TOKEN` may be an already-authorized credential; do not create or paste a new PAT by default. The packet must first be finalized/reviewed with actual source/tree/initial/final policy SHA and approved exact ref names.

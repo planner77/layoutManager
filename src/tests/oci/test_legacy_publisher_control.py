@@ -426,6 +426,43 @@ class ControlTest(unittest.TestCase):
                 self.assertEqual(report['result'], 'SAFE_HOLD_RERUN_DENIED_BY_DISABLED_WORKFLOW')
                 self.assertEqual(report['before']['safeRun'], report['after']['safeRun'])
 
+    def test_observed_exact_disabled_retry_message_requires_403_and_full_readback(self):
+        message = 'Unable to retry disabled workflow'
+        self.assertEqual(hashlib.sha256(message.encode()).hexdigest(),
+                         'aec1d32332e7e83267548dabeff7cfc4e0237f6b6ad2910c28b5df866828d597')
+        self.assertTrue(LP.disabled_cause(403, {'message': message}))
+        for status in (200, 201, 202, 400, 401, 404, 422, 429, 500):
+            with self.subTest(status=status):
+                self.assertFalse(LP.disabled_cause(status, {'message': message}))
+        for near in ('unable to retry disabled workflow',
+                     'Unable to retry disabled workflow.',
+                     'Unable to retry disabled workflow ',
+                     ' Unable to retry disabled workflow',
+                     'Unable to retry disabled workflow because permission is denied',
+                     'Unable to retry disabled workflow: authentication failed',
+                     'Unable to retry workflow',
+                     'Unable to retry not disabled workflow'):
+            with self.subTest(message=near):
+                self.assertFalse(LP.disabled_cause(403, {'message': near}))
+        api = Fake(); api.state = 'disabled_manually'
+        api.reply_status = 403; api.reply_message = message
+        report = {}
+        LP.perform(api, packet(), 'probe', report)
+        self.assertEqual(report['result'], 'SAFE_HOLD_RERUN_DENIED_BY_DISABLED_WORKFLOW')
+        self.assertEqual(report['before']['safeRun'], report['after']['safeRun'])
+        self.assertEqual(report['before']['inventory'], report['after']['inventory'])
+        self.assertEqual([method for method, _, _ in api.calls if method != 'GET'], ['POST'])
+        for changed in ('active', 'wrongSafeAttempt', 'staleInventory'):
+            api = Fake(); api.state = 'disabled_manually'
+            api.reply_status = 403; api.reply_message = message
+            p = packet()
+            if changed == 'active': api.active = True
+            if changed == 'wrongSafeAttempt': p['safeRunAttempt'] = 2
+            if changed == 'staleInventory': p['inventorySha256'] = '0' * 64
+            with self.subTest(changed=changed), self.assertRaises(LP.Blocked):
+                LP.perform(api, p, 'probe', {})
+            self.assertTrue(all(method == 'GET' for method, _, _ in api.calls))
+
     def test_unexpected_accepted_attempt_halts_without_cancel_or_enable(self):
         api = Fake(); api.state = 'disabled_manually'; api.reply_status = 201
         report = {}

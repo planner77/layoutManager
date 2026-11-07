@@ -236,6 +236,8 @@ def disabled_cause(status, data):
     message = data.get('message')
     if not isinstance(message, str) or len(message) > 1000:
         return False
+    if message == 'Unable to retry disabled workflow':
+        return status == 403
     message = message.lower()
     if any(word in message for word in (
         'authenticat', 'credential', 'permission', 'not accessible', 'rate limit',

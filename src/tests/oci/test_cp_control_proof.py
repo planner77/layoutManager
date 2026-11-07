@@ -229,8 +229,7 @@ class CPContracts(unittest.TestCase):
         stamp='2026-11-06T00:00:00Z'
         summary={'id':42,'repository_id':CP.REPO_ID,'ref':case['ref'],
                  'before_sha':A,'after_sha':B,'actor_id':CP.OWNER_ID,
-                 'actor_name':'planner77','pushed_at':stamp,
-                 'evaluation_result':'fail','result':'fail'}
+                 'actor_name':'planner77','pushed_at':stamp,'result':'fail'}
         detail={**summary,'rule_evaluations':[{'rule_type':'pull_request',
             'result':'fail','enforcement':'active',
             'rule_source':{'type':'ruleset','id':7}}]}
@@ -242,8 +241,20 @@ class CPContracts(unittest.TestCase):
         observation=row(case,'PENDING_RULE_EVALUATION',403,A)
         self.assertEqual(CP.verify_denial_case(Fake(data),packet,case,observation,
                                                {'mode':'owner'})['verdict'],'DENIED_BY_POLICY')
+        with_evaluation=dict(data)
+        with_evaluation[CP.BASE+'/rulesets/rule-suites?per_page=100&page=1']=[
+            {**summary,'evaluation_result':'fail'}]
+        with_evaluation[CP.BASE+'/rulesets/rule-suites/42?include_metadata=true']={
+            **detail,'evaluation_result':'fail'}
+        self.assertEqual(CP.verify_denial_case(Fake(with_evaluation),packet,case,
+            observation,{'mode':'owner'})['verdict'],'DENIED_BY_POLICY')
         for changed in ({**summary,'actor_id':0},{**summary,'before_sha':B},
-                        {**summary,'pushed_at':'2026-11-07T00:00:00Z'}):
+                        {**summary,'pushed_at':'2026-11-07T00:00:00Z'},
+                        {**summary,'result':'pass','evaluation_result':'fail'},
+                        {**summary,'result':'bypass','evaluation_result':'fail'},
+                        {**summary,'evaluation_result':'pass'},
+                        {**summary,'evaluation_result':'unknown'},
+                        {**summary,'evaluation_result':None}):
             bad=dict(data);bad[CP.BASE+'/rulesets/rule-suites?per_page=100&page=1']=[changed]
             with self.assertRaises(CP.RefProofError):
                 CP.verify_denial_case(Fake(bad),packet,case,observation,{'mode':'owner'})
@@ -252,11 +263,26 @@ class CPContracts(unittest.TestCase):
                 'enforcement':'active','rule_source':{'type':'ruleset','id':7}}]}
         with self.assertRaises(CP.RefProofError):
             CP.verify_denial_case(Fake(generic),packet,case,observation,{'mode':'owner'})
+        for rule in ({'rule_type':'pull_request','result':'fail',
+                      'enforcement':'evaluate','rule_source':{'type':'ruleset','id':7}},
+                     {'rule_type':'required_status_checks','result':'fail',
+                      'enforcement':'active','rule_source':{'type':'ruleset','id':7}}):
+            bad=dict(data)
+            bad[CP.BASE+'/rulesets/rule-suites/42?include_metadata=true']={
+                **detail,'rule_evaluations':[rule]}
+            with self.assertRaises(CP.RefProofError):
+                CP.verify_denial_case(Fake(bad),packet,case,observation,{'mode':'owner'})
         changed_detail=dict(data)
         changed_detail[CP.BASE+'/rulesets/rule-suites/42?include_metadata=true']={
             **detail,'result':'pass'}
         with self.assertRaises(CP.RefProofError):
             CP.verify_denial_case(Fake(changed_detail),packet,case,observation,{'mode':'owner'})
+        for mismatch in ({**detail,'evaluation_result':'fail'},
+                         {**detail,'actor_id':0}):
+            changed_detail=dict(data)
+            changed_detail[CP.BASE+'/rulesets/rule-suites/42?include_metadata=true']=mismatch
+            with self.assertRaises(CP.RefProofError):
+                CP.verify_denial_case(Fake(changed_detail),packet,case,observation,{'mode':'owner'})
         changed=dict(data);changed[CP.BASE+'/git/ref/'+case['ref'][5:]]={
             'ref':case['ref'],'object':{'sha':B}}
         with self.assertRaises(CP.RefProofError):

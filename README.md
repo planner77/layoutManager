@@ -1,3 +1,15 @@
+## #225 — 인증 복구·실제 reader/출시 통제 검증 진행 (2026-11-07, 0.61.0 유지)
+
+Owner 인증 복구 후 독립 Rule Suite list/detail 사전검사를 통과했다. 기존 제안의 보호 Environment 설정을 적용하고 legacy publisher를 비활성화했다. Environment의 실제 run review는 미실행이다. 실제 API의 선택 필드와 disabled 응답 문구에 대한 최소 helper 보완은 독립 집중 시험37개를 통과했으며 새 required CI/Main은 별도다. 원래 실패와 저장된 진단 증거를 구분한다. 전체 Owner/Actions 보호 규칙 시험과 private3-image 후보/승격·GO-PILOT은 아직 미완료다. 정확 결과·현재 외부 변경과 잔여는 [TestReport](out/TestReport.md)를 따른다. 제품 flags OFF와 정식 출고 HOLD를 유지한다.
+
+---
+
+## #225 — 승인된 출시 검증 진행 현황 (2026-11-07, 0.61.0 유지)
+
+사용자가 독립 Rule Suite 조회·보호 규칙 실증·publisher/게시 권한·3-image 출고 검증의 진행을 승인했다. 최신 Main `e723d989`의 로컬 실행 패킷과 정제된 읽기 증거를 준비했으나, 기존 인증의 REST401 및 연결 앱 Rule Suite403으로 실제 통제 시험·후보 게시·승격은 미완료다. 재개 방법은 [Operation](out/Operation.md), 실제 결과와 한계는 [TestReport](out/TestReport.md)를 따른다. 제품 Scene flags OFF, >=0.61 GHCR HOLD와 GO-PILOT BLOCKED를 유지한다.
+
+---
+
 ## #225 — publisher 목록 조회 수리의 독립 QA·실제 읽기 통과 (2026-11-06)
 
 LP25·별도 proof118·새 LP25 child의 실제 Vitest bridge/targetedTS/ESLint·정적 검사와 source2/protected52 독립 QA를 통과했다. Root의 단일 GET-only 재확인도 실제164개를6페이지(30×5+14)로 끝까지 읽고 전부 completed임을 확인했다. 최대 응답385,683bytes로 기존1MiB cap을 유지했다. 이 실제 진단은 baseMain11532에서 아직 Main에 게시되지 않은 frozen helper bytes3867587의 결과이며 packet/통제/Owner 승인이 아니다. 새 source CI/Main 뒤 실제 clean-source operator preflight와 fresh inventory가 필요하다. Source11532의 별도 RP4 수용·기존 실패 이력과 전체 잔여는 아래와 [TestReport](out/TestReport.md)를 따른다.
