@@ -14,15 +14,12 @@ import select
 import re
 import secrets
 import shutil
-import socket
 import sqlite3
 import subprocess
 import sys
 import tarfile
 import tempfile
 import time
-import urllib.error
-import urllib.request
 
 ROOT = Path(__file__).resolve().parents[3]
 EVIDENCE = ROOT / "data/release-proof/or58"
@@ -697,7 +694,7 @@ def installation_from_archive(archive_path, expected_sha):
     return manifest
 
 
-def clone_env(original_app, port, installation):
+def clone_env(original_app, installation):
     env = dict(item.split("=", 1) for item in original_app["Config"].get("Env", [])
                if "=" in item)
     require(installation.get("appImage") == OLD_APP_REF and
@@ -713,12 +710,77 @@ def clone_env(original_app, port, installation):
                "G7_RELEASE_SOURCE_COMMIT"}
     safe = {key: value for key, value in env.items() if key in allowed}
     safe.update(DATABASE_URL="file:/data/db/cad.sqlite", CAD_STORAGE_PATH="/data/cad",
-                CAD_STORAGE_BACKEND="local", G7_RUNTIME_ORIGIN=f"http://127.0.0.1:{port}",
+                CAD_STORAGE_BACKEND="local", G7_RUNTIME_ORIGIN="http://127.0.0.1:3000",
                 SCENE_AUTO_BUILD_ENABLED="false", LOG_STORE_ENABLED="false",
                 G7_DEPLOY_APP_IMAGE=OLD_APP_REF,
                 G7_DEPLOY_MIGRATOR_IMAGE=OLD_MIGRATOR_REF,
                 G7_RELEASE_SOURCE_COMMIT="")
     return safe
+
+
+def validate_isolated_clone(row, network_row, *, cid, name, network_name,
+                            network_id, volume, nonce):
+    require(row.get("Id") == cid and row.get("Name") == "/" + name and
+            row.get("Image") == IMAGE_ID and row.get("State", {}).get("Running") is True and
+            row.get("Config", {}).get("Labels", {}).get(OWNER_LABEL) == nonce and
+            row.get("Config", {}).get("Labels", {}).get("com.planner77.purpose") ==
+                "or58-restore-proof" and
+            any(m.get("Type") == "volume" and m.get("Name") == volume and
+                m.get("Destination") == "/data" for m in row.get("Mounts", [])),
+            "OR58_CLONE_IDENTITY_INVALID")
+    networks = row.get("NetworkSettings", {}).get("Networks") or {}
+    require(set(networks) == {network_name} and
+            networks[network_name].get("NetworkID") == network_id and
+            row.get("HostConfig", {}).get("NetworkMode") == network_name and
+            network_row.get("Id") == network_id and
+            network_row.get("Name") == network_name and
+            network_row.get("Internal") is True and
+            network_row.get("Labels", {}).get(OWNER_LABEL) == nonce and
+            network_row.get("Labels", {}).get("com.planner77.purpose") ==
+                "or58-restore-proof", "OR58_CLONE_NETWORK_INVALID")
+    bindings = row.get("HostConfig", {}).get("PortBindings")
+    ports = row.get("NetworkSettings", {}).get("Ports") or {}
+    require(bindings in (None, {}) and
+            all(value in (None, []) for value in ports.values()),
+            "OR58_CLONE_PORT_PUBLISHED")
+
+
+INTERNAL_HTTP_PROBE = r'''
+const routes = ['/api/health', '/api/g7-runtime/status'];
+const result = {};
+for (const route of routes) {
+  try {
+    const response = await fetch('http://127.0.0.1:3000' + route,
+      {signal: AbortSignal.timeout(3000), redirect: 'manual'});
+    result[route] = response.status;
+    await response.body?.cancel();
+  } catch {
+    result[route] = 'REQUEST_FAILED';
+  }
+}
+process.stdout.write(JSON.stringify(result) + '\n');
+'''
+
+
+def internal_http(cid):
+    try:
+        raw = docker("exec", "--user", "10001:10001", cid, "node", "--input-type=module",
+                     "-e", INTERNAL_HTTP_PROBE, timeout=12)
+    except Blocked as exc:
+        if str(exc) == "OR58_DOCKER_TIMEOUT":
+            raise Blocked("OR58_INTERNAL_HTTP_TIMEOUT") from exc
+        raise
+    try:
+        result = json.loads(raw)
+    except (ValueError, TypeError) as exc:
+        raise Blocked("OR58_INTERNAL_HTTP_INVALID") from exc
+    routes = {"/api/health", "/api/g7-runtime/status"}
+    require(isinstance(result, dict) and set(result) == routes and
+            all(type(result[route]) is int for route in routes),
+            "OR58_INTERNAL_HTTP_INVALID")
+    require(all(result[route] == 200 for route in routes),
+            "OR58_INTERNAL_HTTP_NOT_200")
+    return result
 
 
 def restore(packet, args):
@@ -817,20 +879,15 @@ def startup(packet, args):
     require(re.fullmatch(r"[0-9a-f]{64}", network_id), "OR58_NETWORK_ID_INVALID")
     write_json(root / "startup-network.json", {"id": network_id, "name": network,
                "nonce": packet["nonce"], "timeUnix": time.time()})
-    # Docker allocates an unused host port; publication is loopback only.
-    with socket.socket() as reservation:
-        reservation.bind(("127.0.0.1", 0))
-        host_port = reservation.getsockname()[1]
     installation = installation_from_archive(root / "capture.tar",
                                                packet["installation"]["manifestSha256"])
-    env = clone_env(app, host_port, installation)
+    env = clone_env(app, installation)
     cidfile = root / "startup-clone.cid"
     write_json(root / "startup-clone-intent.json", {"name": clone,
                "networkId": network_id, "volume": target, "cidfile": str(cidfile)})
     command = ["run", "-d", "--name", clone, "--cidfile", str(cidfile),
                "--network", network,
-               "-p", f"127.0.0.1:{host_port}:3000", "--mount",
-               f"type=volume,source={target},target=/data", "--label", PURPOSE_LABEL,
+               "--mount", f"type=volume,source={target},target=/data", "--label", PURPOSE_LABEL,
                "--label", f"{OWNER_LABEL}={packet['nonce']}",
                "--cap-drop", "ALL", "--security-opt", "no-new-privileges"]
     for key, value in sorted(env.items()):
@@ -841,34 +898,21 @@ def startup(packet, args):
             "OR58_CLONE_CIDFILE_MISMATCH")
     write_json(root / "startup-clone.json", {"id": cid, "name": clone,
                "networkId": network_id, "volume": target, "nonce": packet["nonce"]})
-    row = inspect("container", cid)
-    require(row.get("Id") == cid and row.get("Image") == IMAGE_ID and
-            row.get("Config", {}).get("Labels", {}).get(OWNER_LABEL) == packet["nonce"],
-            "OR58_CLONE_IDENTITY_INVALID")
     wait_healthy(cid)
-    ports = row.get("NetworkSettings", {}).get("Ports", {}).get("3000/tcp") or []
-    require(len(ports) == 1 and ports[0].get("HostIp") == "127.0.0.1" and
-            str(ports[0].get("HostPort", "")).isdigit() and
-            int(ports[0]["HostPort"]) == host_port, "OR58_CLONE_PORT_INVALID")
-    port = int(ports[0]["HostPort"])
-    # No credentials are supplied. A protected reader is a documented NOT RUN.
-    http = {}
-    for route in ("/api/health", "/api/g7-runtime/status"):
-        try:
-            response = urllib.request.urlopen(f"http://127.0.0.1:{port}{route}", timeout=5)
-            http[route] = response.status
-            response.close()
-        except urllib.error.HTTPError as exc:
-            http[route] = exc.code
-        except (urllib.error.URLError, TimeoutError):
-            http[route] = "NOT_RUN"
+    row = inspect("container", cid)
+    network_row = inspect("network", network_id)
+    validate_isolated_clone(row, network_row, cid=cid, name=clone,
+                            network_name=network, network_id=network_id,
+                            volume=target, nonce=packet["nonce"])
+    # Fixed, credential-free GETs run inside the exact clone namespace only.
+    http = internal_http(cid)
     write_json(root / "startup.json", {"status": "EXACT_IMAGE_HEALTHY", "cloneId": cid,
-               "clone": clone, "network": network, "volume": target, "loopbackPort": port,
-               "httpStatus": http, "businessReader": "NOT_RUN",
+               "clone": clone, "network": network, "volume": target,
+               "internalHttpStatus": http, "businessReader": "NOT_RUN",
                "sourceCurrentReady": "NOT_RUN", "postStartupDbIntegrity": "NOT_RUN",
                "timeUnix": time.time()})
     return {"status": "EXACT_IMAGE_HEALTHY", "clone": clone,
-            "httpStatus": http, "authenticatedReader": "NOT_RUN",
+            "internalHttpStatus": http, "authenticatedReader": "NOT_RUN",
             "sourceCurrentReady": "NOT_RUN", "postStartupDbIntegrity": "NOT_RUN"}
 
 

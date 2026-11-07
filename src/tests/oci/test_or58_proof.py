@@ -180,11 +180,11 @@ class OR58Test(unittest.TestCase):
                                   "CAD_S3_SECRET_ACCESS_KEY=SECRET", "G7_RUNTIME_ORIGIN=https://private"]}}
         install = {"appImage": PROOF.OLD_APP_REF,
                    "migratorImage": PROOF.OLD_MIGRATOR_REF, "sourceCommit": ""}
-        safe = PROOF.clone_env(app, 31822, install)
+        safe = PROOF.clone_env(app, install)
         serialized = json.dumps(safe)
         self.assertNotIn("SECRET", serialized)
         self.assertEqual(safe["G7_DEPLOY_APP_IMAGE"], PROOF.OLD_APP_REF)
-        self.assertEqual(safe["G7_RUNTIME_ORIGIN"], "http://127.0.0.1:31822")
+        self.assertEqual(safe["G7_RUNTIME_ORIGIN"], "http://127.0.0.1:3000")
         self.assertEqual(safe["SCENE_AUTO_BUILD_ENABLED"], "false")
 
     def test_clone_rejects_mismatched_old_image_pair(self):
@@ -193,7 +193,56 @@ class OR58Test(unittest.TestCase):
         install = {"appImage": PROOF.OLD_APP_REF,
                    "migratorImage": PROOF.OLD_MIGRATOR_REF, "sourceCommit": ""}
         with self.assertRaisesRegex(PROOF.Blocked, "OR58_CLONE_PAIR_MISMATCH"):
-            PROOF.clone_env(app, 31822, install)
+            PROOF.clone_env(app, install)
+
+    def isolated_clone_rows(self):
+        nonce = "a" * 32; target = "or58-" + nonce; cid = "c" * 64; nid = "d" * 64
+        network_name = target + "-net"
+        row = {"Id": cid, "Name": "/" + target + "-app", "Image": PROOF.IMAGE_ID,
+               "State": {"Running": True},
+               "Config": {"Labels": {PROOF.OWNER_LABEL: nonce,
+                                     "com.planner77.purpose": "or58-restore-proof"}},
+               "Mounts": [{"Type": "volume", "Name": target, "Destination": "/data"}],
+               "HostConfig": {"NetworkMode": network_name, "PortBindings": {}},
+               "NetworkSettings": {"Networks": {network_name: {"NetworkID": nid}},
+                                   "Ports": {"3000/tcp": None}}}
+        network = {"Id": nid, "Name": network_name, "Internal": True,
+                   "Labels": {PROOF.OWNER_LABEL: nonce,
+                              "com.planner77.purpose": "or58-restore-proof"}}
+        kwargs = {"cid": cid, "name": target + "-app", "network_name": network_name,
+                  "network_id": nid, "volume": target, "nonce": nonce}
+        return row, network, kwargs
+
+    def test_internal_only_clone_accepts_null_port_mapping(self):
+        row, network, kwargs = self.isolated_clone_rows()
+        PROOF.validate_isolated_clone(row, network, **kwargs)
+        with patch.object(PROOF, "docker", return_value=b'{"/api/health":200,"/api/g7-runtime/status":200}') as docker:
+            result = PROOF.internal_http(kwargs["cid"])
+        self.assertEqual(result["/api/health"], 200)
+        command = docker.call_args.args
+        self.assertEqual(command[:4], ("exec", "--user", "10001:10001", kwargs["cid"]))
+        self.assertEqual(docker.call_args.kwargs["timeout"], 12)
+        self.assertIn("AbortSignal.timeout(3000)", command[-1])
+
+    def test_unexpected_host_port_publication_is_rejected(self):
+        row, network, kwargs = self.isolated_clone_rows()
+        row["HostConfig"]["PortBindings"] = {"3000/tcp": [{"HostIp": "127.0.0.1",
+                                                               "HostPort": "49973"}]}
+        with self.assertRaisesRegex(PROOF.Blocked, "OR58_CLONE_PORT_PUBLISHED"):
+            PROOF.validate_isolated_clone(row, network, **kwargs)
+        row["HostConfig"]["PortBindings"] = {}
+        row["NetworkSettings"]["Ports"] = {"3000/tcp": [{"HostIp": "127.0.0.1",
+                                                              "HostPort": "49973"}]}
+        with self.assertRaisesRegex(PROOF.Blocked, "OR58_CLONE_PORT_PUBLISHED"):
+            PROOF.validate_isolated_clone(row, network, **kwargs)
+
+    def test_internal_http_non200_and_timeout_halt(self):
+        with patch.object(PROOF, "docker", return_value=b'{"/api/health":200,"/api/g7-runtime/status":403}'):
+            with self.assertRaisesRegex(PROOF.Blocked, "OR58_INTERNAL_HTTP_NOT_200"):
+                PROOF.internal_http("c" * 64)
+        with patch.object(PROOF, "docker", side_effect=PROOF.Blocked("OR58_DOCKER_TIMEOUT")):
+            with self.assertRaisesRegex(PROOF.Blocked, "OR58_INTERNAL_HTTP_TIMEOUT"):
+                PROOF.internal_http("c" * 64)
 
     def test_plan_is_private_and_redacts_full_container_config(self):
         with tempfile.TemporaryDirectory() as tmp:

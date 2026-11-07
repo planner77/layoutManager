@@ -12,6 +12,10 @@ Developer는 보완 후 Docker 쓰기 없는23개 시험과 compile/node 구문 
 
 읽기 전용 계획 packet `606edd414a1830b4af9d1e938cca7c3293c4fb53074e4ca90195fbcaee433e83`를 실제 대상/설치 identity로 생성했다. packet0700 parent/0600 file, READINESS_ONLY이고 운영 중지 authorization은 생성하지 않았다. 이 계획은 backup이나 운영 실행 수용이 아니다.
 
+**실제 임시 QA의 첫 결과:** 선행1b8에서 plan/capture/restore PASS, 원래 fixture App 재개7.91초, archive583,680bytes/4 files·33 tables raw/logical/schema/install/CAD 참조 일치. startup은 healthy clone의 실제 published port가 null이어서 `OR58_CLONE_PORT_INVALID` HALT, 지원 cleanup PASS였다. post-start logical 및 actual fault injections는 이 시도에서 NOT RUN이다. QA report SHA256 `d1c91aa776dafe9cfdf469a0c43cd94025fb6e30671ef116fc1e714600b0fbbf`; 원인·준비 진단은 [FailureLedger](FailureLedger.md)를 따른다.
+
+Root 대행 Manager가 OR58-06을 internal network/host 공개0/컨테이너 내부 HTTP로 먼저 갱신한 뒤 Developer가 최소 수리했다. 최종 controller SHA256 `3481eeb0b549f3cebbcdaeaf1264af438376b3b8f8fb2468152650af2160a2a2`, tests `6c0828719c452f78ee8b811370cb2d25634de854d1b9b99440436df0e93863bb`, inventory157d8e는 동일하다. Root는28 fake·compile/node/diff PASS와 diff를 검토해 새 packet의 독립 QA만 승인했다(receipt `8e37b773ad5cd91d6f11b6b50911af0c0f48332c9a021cb341f6e308bb7d41f6`). 새 실제 QA/새 source CI는 이전 실패·CI685와 별개다.
+
 기존 helper에는 backup-only 경로가 없어 별도 도구를 준비한다. Manager의 첫 구현 검토에서 전체 중지 시간 제한, 실패 helper 정리, 복원 volume 소유권, 부분 startup 정리 보완을 요청했다. 구현·독립 QA·임시 Docker 리허설·운영 실행은 각각 구별해 후속 기록한다. 현재 운영 stop/start/capture/restore0이며 actual RPO/RTO/조회 보존은 NOT RUN이다. 운영 0.61 배포·flags 변경·Git tag/latest 변경·issue 종료는 수행하지 않는다. 파일럿 NO-GO를 유지한다.
 
 ---
