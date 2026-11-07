@@ -1,3 +1,23 @@
+## U-225-TAX-LOCAL — Root 역할 대행과 구조 진단 로컬 검증 (2026-11-08)
+
+기존 Developer에게 Manager 지시를 전달했으나 완료 agent를 깨우지 못한 지연이 있었고, 재개 후에도 Developer가 context reset/private recovery 실패를 보고했다. Developer는 source 변경0을 확인했다. Root가 실제 구현을 대행했으며 Manager가 두 source의 diff/hash를 검토·수용했다. 기존 Developer가 구현했다고 기록하지 않는다.
+
+이전 source에서 새 rawPath 구조 시험은 KeyError로 RED였고 Root 구현의 선행 pair에서 diagnostic12/candidate45/registry15/release18=90 로컬 시험 및 compile/diff 검사가 통과했다. 필드 이름 명확화 뒤 diagnostic12를 다시 통과한 최종 helper SHA256 `9835429f701979501eff3d6d4afaba74e4af88577e0a5bde9b0dfd878982fab6`, test `72db8d76cdea5425c59eb57fa95ace1da0148805673f66398bfc83f70660c40c`. 독립 QA receipt `120218394edac95689f0843352e255fc9962f4069f280243389aeaae25145932`는 선행 pair의90회귀와, 필드 이름만 명확히 한 최종 pair의 diagnostic12/8,899개 실제 upload_target 비교(불일치0)/compile/diff PASS를 구별해 수용했다. 최대 관측 shape는4,213bytes이며 cap6,144bytes를 유지했다. full CI/Main·새 실제 구조 진단은 대기이며 로컬 성공을 실제 server URI 관측으로 기록하지 않는다. 프로토콜·publisher·권한·운영 기능은 변경하지 않았다.
+
+---
+
+## U-225-CANDIDATE2-FAIL — 실제 두 번째 후보의 경로 거부 (2026-11-08)
+
+[PR255](https://github.com/planner77/layoutManager/pull/255) source `0050e94836cc6d4acaefc6cdbe948a9d02613674`/tree `818d5abfa778e0ed83c77fd0a537467be5bd709d`는 [CI681](https://github.com/planner77/layoutManager/actions/runs/42385929264)의 적용8/8 SUCCESS/A2 scope SKIP를 통과했다. archive `2c8fabcd2253c16a7cd13035be791f4b999b6341`의 동일 tree와 정확 [base d19, head0050] parent를 독립 확인했고 정상 squash Main `31998d6fb466ff97153cf3153480edc515121ca5`를 확정했다. 독립 CI receipt SHA256 `f64240aa68a64e7c2adac11bff8e8a561dc94ed445cf0448933f75b82baec242`. 후보45/registry15/release18 및 type/lint/unit1103/build/Docker/E2E 통과와 실제 GHCR 호환을 구별한다.
+
+새 packet `fdfd9020a7ceac8f4ac57549be39b91fcf4437af52b94b3f4d529c4964617572`는 별도 Manager/QA 검토와 즉시 Main/policy/environment/legacy/registry readback 뒤 [candidate2](https://github.com/planner77/layoutManager/actions/runs/42388044377) attempt1에서 실행됐다. 실제 환경26560473351의 승인 API/승인 history를 확인했다. Root agent의 기존 작업1–4 범위 Owner 대행 행위이며 독립 두 번째 사람의 승인이 아니다.
+
+세 이미지 build/RR1/실제 RR2/RR3는 PASS였지만 publish step에서 `CA_UPLOAD_LOCATION_REFUSED`로 FAILED했다. OIDC·subject 검증·artifact 업로드는 SKIPPED, 실제 artifact inventory0, allowlist/receipt-bound cleanup은 SUCCESS다. 독립 runtime receipt `7fb591cfdeaed9a47a576108340cb2dc8dd2ce48eea64b02b0ff0965566a8a96`. pull-only 후속 조회 receipt `c66de7991834346c758a0c335e18b5435528fe0f38740d791de8264729840c1b`는 해당 후보3/정식3 authenticated absent와 기존0.60/latest 불변을 확인했다. opaque202 session 자체는 unknown이며 삭제·재시도하지 않았다.
+
+이전 실패70c2/진단7f의 budget 소진과 이번 실패fdfd를 보존한다. 공개 route 기반 FS 수리는 local/CI PASS이나 실제 호환은 실패했다. 원문 Location은 미저장으로 정확 URI는 여전히 UNKNOWN이다. 새 taxonomy의 구조 관측·새 후보·정식 승격은 미실행이고 운영 flags OFF/자동 HOLD/GO-PILOT BLOCKED를 유지한다.
+
+---
+
 ## U-225-FS-LOCAL — 유한 upload session의 독립 검증 (2026-11-08)
 
 기존 uploader에 공개 단수형 합성 fixture를 넣은 RED는 CA_UPLOAD_LOCATION_REFUSED를 재현했다. 수리 후 독립 QA에서 candidate45/registry15/release18=78개 시험, compile/diff 검사가 통과했다. 고정 repo의 두 route, raw query byte 보존, descriptor/path/size/hash, 실제202 뒤 durable intent와 단일 소비, 다른 route·repo·manifest·재생·journal 실패·불확실 response를 검증했다. QA가 찾은 빈 fragment `#` 허용은 literal 구분자 거부와 singular/plural·query 유무 음성시험으로 보완·재검증했다.

@@ -1,3 +1,9 @@
+## #225 TAX — 진단과 publisher 경계 유지 (2026-11-08)
+
+유한 upload session의 단위/CI 성공은 실제 server URL 호환을 증명하지 못했다. candidate2의 실제 Location 거부 후 diagnostic은 raw/resolved path의 제한된 구조만 출력하도록 보완한다. publisher allowlist·권한·동작과 구분하고 새 구조 관측 전 임의 route를 허용하지 않는다. 실제 결과는 TestReport, AC는 TestPlan의 TAX가 정본이다.
+
+---
+
 ## #225 FS — server-issued upload URI의 한 번만 쓰는 capability (2026-11-08)
 
 candidate registry adapter는 고정 package의 실제202가 발급한 URL을 메모리에서 descriptor digest·size·검증된 로컬 파일과 결합한다. 두 유한 upload 경로에서만 blob PUT을 허용하고, transport 진입 전 소비해 성공·실패·불확실 결과 모두 재사용을 막는다. manifest writer와 일반 PUT의 경계는 그대로다. raw path/query를 재조립하지 않고 URI resolution과 기대 digest 추가만 수행한다. 입력 grammar는 공개 GHCR 실측, 현재 경로 조건 불일치는 별도 실제 진단 근거이며 두 사실을 구별한다. opaque URL·token은 journal/artifact에 쓰지 않는다. 추가 진단 POST는 없다.

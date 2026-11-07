@@ -1,3 +1,13 @@
+## #225 candidate2 42388044377 — finite 경로 수리 후 실제 거부 (2026-11-08)
+
+- source Main31998d6/tree818d, 새 packetfdfd9020/실제 환경 review 후 build3/RR1/RR2/RR3 PASS, publish CA_UPLOAD_LOCATION_REFUSED FAILED.
+- OIDC/verification/artifact upload SKIP, artifact0, allowlist/소유 cleanup SUCCESS. 독립 runtime receipt SHA256 `7fb591cfdeaed9a47a576108340cb2dc8dd2ce48eea64b02b0ff0965566a8a96`.
+- pull-only 조회에서 후보3/정식3 absent, 기존0.60/latest 불변. receipt SHA256 `c66de7991834346c758a0c335e18b5435528fe0f38740d791de8264729840c1b`. 원202 upload session은 unknown이며 cancel/delete/retry0.
+- 공개 단수/복수 경로의 로컬 RED→GREEN/CI681 성공은 실제 버려진 URI의 형식·호환을 증명하지 못했다. 해당 호환 추정은 실제 거부로 미수용이며 URI 원문은 UNKNOWN이다.
+- 후속은 raw/resolved path의 비밀 값 없는 generic taxonomy다. 기존 진단7f budget/후보70c2·fdfd는 재생하지 않고 새 source/QA/full CI/Main/packet/별도 실제 review 뒤에만 새 단일 진단을 수행한다. publisher 허용 범위를 추측으로 넓히지 않는다.
+
+---
+
 ## #225 FS 로컬 QA — 빈 fragment 경계 보완 (2026-11-08)
 
 초기 FS source의 urlsplit fragment truthiness는 끝의 빈 `#`를 허용했다. 실제 redirect나 registry 요청은 아니지만 FS01의 fragment 거부 AC에 맞지 않았다. 독립 QA의 합성 재현을 보존하고 입력의 literal `#`를 parse 전에 거부하도록 최소 보완했다. singular/plural과 `_state` 유무별 음성 사례 및 78개 회귀·compile/diff를 독립 재검증했다. 이 로컬 경계 수정은 폐기한 실제 GHCR URI나 실제 후보 게시 성공의 증거가 아니다.

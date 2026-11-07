@@ -220,7 +220,7 @@ class UploadDiagnosticTest(unittest.TestCase):
             ('port444', prefix.replace('ghcr.io/', 'ghcr.io:444/') + 'opaque-canary', False, None),
             ('querykey', prefix + 'opaque-canary?token=secret-canary', False, None),
             ('querymalformed', prefix + 'opaque-canary?bad-canary', False, None),
-            ('duplicate', prefix + 'opaque-canary?_state=one-canary&_state=two-canary', True, None),
+            ('duplicate', prefix + 'opaque-canary?_state=one-canary&_state=two-canary', False, None),
         ]
         for name, location, accepted, label in cases:
             with self.subTest(name=name):
@@ -240,6 +240,62 @@ class UploadDiagnosticTest(unittest.TestCase):
                     self.assertFalse(value['currentCandidatePredicate']['strictQueryParse'])
                 if name == 'querykey':
                     self.assertFalse(value['currentCandidatePredicate']['queryKeysAllowed'])
+
+    def test_taxonomy_unknown_path_retains_structure_without_values(self):
+        opaque = '12345678-1234-1234-1234-123456789abc'
+        for middle in ('upload', 'uploads'):
+            location = '/v2/planner77/layoutmanager/blobs/' + middle + '/7/' + opaque + '/'
+            result = ul.shape(location)
+            for key in ('rawPath', 'resolvedPath'):
+                path = result[key]
+                self.assertEqual(path['leadingSlashes'], 1)
+                self.assertEqual(path['trailingSlashes'], 1)
+                self.assertFalse(path['segmentsTruncated'])
+                self.assertEqual(path['segments'][-2]['length'], 36)
+                self.assertTrue(path['lastNonEmptyUuidShape'])
+                self.assertEqual(path['segments'][-3]['length'], 1)
+            text = json.dumps(result)
+            self.assertNotIn(opaque, text)
+            self.assertNotIn('"7"', text)
+            self.assertFalse(result['currentCandidatePredicate']['allComponents'])
+
+    def test_taxonomy_raw_resolution_slashes_encoding_and_bounds(self):
+        value = ul.shape('/v2/planner77/layoutmanager/blobs/upload/../opaque-canary//42')
+        self.assertTrue(value['rawPath']['dotSegmentPresent'])
+        self.assertFalse(value['resolvedPath']['dotSegmentPresent'])
+        self.assertTrue(value['rawPath']['repeatedSlash'])
+        self.assertTrue(value['rawPath']['lastNonEmptyDecimalOnly'])
+        encoded = ul.shape('/v2/%2fopaque-canary/%5C?bad-canary=value-canary')
+        self.assertTrue(encoded['rawPath']['encodedSeparator'])
+        self.assertNotIn('canary', json.dumps(encoded))
+        worst = ul.shape('/' + '/'.join(['opaque-canary'] * 500) + '?' +
+                         '&'.join('key-canary' + str(i) + '=value-canary' for i in range(64)))
+        self.assertLessEqual(len(cp.canonical(worst)), 6144)
+        self.assertTrue(worst['rawPath']['segmentsTruncated'])
+        self.assertTrue(worst['queryKeysTruncated'])
+        self.assertNotIn('canary', json.dumps(worst))
+
+    def test_taxonomy_projection_matches_actual_finite_uploader(self):
+        from candidate_registry import upload_target
+        prefix = '/v2/planner77/layoutmanager/blobs/'
+        cases = [None, 12, '', 'a' * 16385, '//evil-canary.invalid/x',
+                 'https://user-canary@ghcr.io' + prefix + 'upload/x',
+                 'https://ghcr.io:443' + prefix + 'upload/x',
+                 prefix + 'upload/../x', prefix + 'upload/%2fx', prefix + 'upload/x\\canary',
+                 prefix + 'upload/x\t', prefix + 'upload/canãry']
+        for middle in ('upload', 'uploads'):
+            for suffix in ('x', 'x#', 'x#fragment', 'x?', 'x?_state=abc%2F%3d+X',
+                           'x?_state=', 'x?_state=abc%', 'x?digest=bad',
+                           'x?_state=a&_state=b', 'x?_state=a&digest=b', 'x?bad'):
+                cases.append(prefix + middle + '/' + suffix)
+        for location in cases:
+            with self.subTest(location=repr(location)[:30]):
+                try:
+                    upload_target(location, 'sha256:' + 'a' * 64)
+                    accepted = True
+                except cp.Pending:
+                    accepted = False
+                self.assertEqual(ul.candidate_components(location)['allComponents'], accepted)
 
     def test_one_post_intent_then_redacted_result_and_uncertain_no_resend(self):
         with tempfile.TemporaryDirectory() as td, mock.patch.dict(os.environ, {'GITHUB_ACTOR': 'planner77'}):
