@@ -420,6 +420,102 @@ def verify_actions_attempt(api, packet, context, *, completed=False, intervals=(
     return run
 
 
+def validated_rule_readback(planned, observed):
+    """Compare a GitHub GET, not a fabricated PUT payload. Unknowns fail closed.
+
+    Order of independent rules is immaterial. The two additional PR response
+    fields must be explicitly observed as []/false; absence is not presumed.
+    update_allows_fetch_and_merge is branch-only per GitHub Rules REST; its
+    absence for a TAG update is not evidence of an update bypass.
+    """
+    require(type(planned) is dict and planned.get('target') in ('branch', 'tag')
+            and type(planned.get('rules')) is list and type(observed) is list,
+            'CP_EFFECTIVE_RULE_SHAPE_INVALID')
+
+    def by_type(items):
+        mapped = {}
+        for item in items:
+            require(type(item) is dict and type(item.get('type')) is str
+                    and set(item) <= {'type', 'parameters'}
+                    and item['type'] not in mapped, 'CP_EFFECTIVE_RULE_FIELDS_INVALID')
+            mapped[item['type']] = item
+        return mapped
+
+    expected, actual = by_type(planned['rules']), by_type(observed)
+    require(expected.keys() == actual.keys(), 'CP_EFFECTIVE_RULE_SET_MISMATCH')
+    for kind, wanted in expected.items():
+        given = actual[kind]
+        if kind == 'pull_request' and planned['target'] == 'branch':
+            p = given.get('parameters')
+            require(type(p) is dict and
+                    set(p) == set(wanted['parameters']) |
+                        {'required_reviewers', 'require_extra_approval_for_unattributed_changes'}
+                    and p.get('required_reviewers') == []
+                    and p.get('require_extra_approval_for_unattributed_changes') is False,
+                    'CP_EFFECTIVE_PR_DEFAULTS_UNVERIFIED')
+            given = {'type':kind, 'parameters':{
+                key:value for key,value in p.items()
+                if key not in ('required_reviewers',
+                               'require_extra_approval_for_unattributed_changes')}}
+        elif kind == 'update' and planned['target'] == 'tag':
+            require(wanted == {'type':'update',
+                               'parameters':{'update_allows_fetch_and_merge':False}},
+                    'CP_TAG_PLAN_UNEXPECTED')
+            # The API identifies this field as branch-upstream only; the
+            # current tag GET reports a parameterless update rule. Never
+            # default a missing branch/unknown parameter to false.
+            require(given in ({'type':'update'}, wanted),
+                    'CP_TAG_UPDATE_READBACK_UNKNOWN')
+            continue
+        require(given == wanted, 'CP_EFFECTIVE_RULE_MISMATCH')
+    return True
+
+
+def independent_rule_suite_readiness(api):
+    """Bounded GET-only proof that the independent reader can list AND inspect.
+
+    A public 403, an empty first page or a 200 with incomplete detail is NOT
+    permission evidence. Return only sanitized identifiers, never a token.
+    """
+    status, repository, _ = api.request('GET', BASE)
+    require(status == 200 and type(repository) is dict and
+            repository.get('id') == REPO_ID and
+            repository.get('owner', {}).get('id') == OWNER_ID,
+            'CP_INDEPENDENT_REPOSITORY_UNVERIFIED')
+    path = BASE + '/rulesets/rule-suites?per_page=100&page=1'
+    status, rows, _ = api.request('GET', path)
+    require(status == 200 and type(rows) is list and 0 < len(rows) <= 100,
+            'CP_INDEPENDENT_SUITE_LIST_UNAVAILABLE')
+    matches = [row for row in rows if type(row) is dict
+               and type(row.get('id')) is int and row['id'] > 0
+               and row.get('repository_id') == REPO_ID]
+    require(bool(matches), 'CP_INDEPENDENT_SUITE_SAMPLE_MISSING')
+    candidate = matches[0]
+    detail_path = BASE + '/rulesets/rule-suites/' + str(candidate['id']) + '?include_metadata=true'
+    status, detail, _ = api.request('GET', detail_path)
+    require(status == 200 and type(detail) is dict
+            and detail.get('id') == candidate['id']
+            and detail.get('repository_id') == REPO_ID
+            and detail.get('ref') == candidate.get('ref')
+            and detail.get('before_sha') == candidate.get('before_sha')
+            and detail.get('after_sha') == candidate.get('after_sha')
+            and detail.get('actor_id') == candidate.get('actor_id')
+            and type(detail.get('rule_evaluations')) is list,
+            'CP_INDEPENDENT_SUITE_DETAIL_UNAVAILABLE')
+    return {'repositoryId':REPO_ID, 'sampleSuiteId':candidate['id'],
+            'listAndDetail':'READABLE', 'writeAuthorization':'NOT_VERIFIED'}
+
+
+def owner_independent_reader(packet):
+    require(os.environ.get('GITHUB_ACTIONS') != 'true',
+            'CP_READER_IN_ACTIONS_REFUSED')
+    token = os.environ.get('CP_READ_TOKEN')
+    require(type(token) is str and bool(token),
+            'CP_INDEPENDENT_READ_TOKEN_MISSING')
+    # No mutation cases are permitted for this independent API client.
+    return independent_rule_suite_readiness(GitHub(token, packet))
+
+
 def validated_live_ruleset(api, packet, rule_id, case):
     require(type(rule_id) is int and rule_id > 0, 'CP_RULESET_ID_INVALID')
     name = ('issue225-main-source.ruleset.json' if family(case['ref']) == 'heads'
@@ -433,15 +529,15 @@ def validated_live_ruleset(api, packet, rule_id, case):
     live = get(api, BASE + '/rulesets/' + str(rule_id))
     require(live.get('id') == rule_id and live.get('name') == planned['name']
             and live.get('target') == planned['target']
+            and live.get('source_type') == 'Repository' and live.get('source') == REPO
+            and live.get('current_user_can_bypass') == 'never'
             and live.get('enforcement') == 'active'
             and live.get('bypass_actors') == []
             and live.get('conditions') == planned['conditions'],
             'CP_EFFECTIVE_RULESET_MISMATCH')
-    normalized = [{'type':r.get('type'), **({'parameters':r.get('parameters')}
-                   if 'parameters' in r else {})} for r in live.get('rules', [])]
-    require(normalized == planned['rules'] and
-            any(r['type'] == case['expectedRule'] for r in normalized),
-            'CP_EFFECTIVE_RULE_MISMATCH')
+    validated_rule_readback(planned, live.get('rules'))
+    require(any(rule['type'] == case['expectedRule']
+                for rule in live['rules']), 'CP_EXPECTED_RULE_MISSING')
     return live
 
 
@@ -612,9 +708,27 @@ def main():
     parser.add_argument('--capability-receipt', type=Path)
     parser.add_argument('--verify-observations', type=Path)
     parser.add_argument('--execute', action='store_true')
+    parser.add_argument('--readiness-check', action='store_true',
+                        help='GET-only independent Rule Suite list/detail preflight')
     options = parser.parse_args()
     packet = validate_packet(options.packet.read_bytes(), options.packet_sha256)
     require(not options.output.exists(), 'CP_OUTPUT_EXISTS')
+    if options.readiness_check:
+        require(not options.execute and not options.verify_observations
+                and not options.capability_receipt and options.actor == 'owner',
+                'CP_READINESS_ARGUMENTS_INVALID')
+        # A check result is capability to read historical evidence, NOT a
+        # cryptographic Owner approval or authorization for any write.
+        evidence = owner_independent_reader(packet)
+        record = {'kind':'ISSUE225_INDEPENDENT_READER_PREFLIGHT',
+                  'packetSha256':options.packet_sha256,
+                  'sourceCommit':packet['sourceCommit'],
+                  'actor':'independent-owner-reader',
+                  'result':'READ_ONLY_READINESS_NOT_OWNER_APPROVAL', **evidence}
+        options.output.parent.mkdir(parents=True, exist_ok=True)
+        options.output.write_text(json.dumps(record,sort_keys=True)+'\\n')
+        print('CP_INDEPENDENT_READER_PREFLIGHT_PASS')
+        return
     if options.verify_observations:
         require(not options.execute and options.phase == 'denial' and
                 options.capability_receipt and options.capability_receipt.is_file(),
@@ -664,6 +778,12 @@ def main():
         save()
     try:
         if options.execute:
+            # Local owner mutations are gated on an independently readable
+            # Rule Suite first. Actions must obtain separately reviewed Owner
+            # preflight evidence BEFORE dispatch; never export CP_READ_TOKEN
+            # to the Actions GITHUB_TOKEN execution environment.
+            if options.actor == 'owner':
+                report['independentReader'] = owner_independent_reader(packet)
             report['result'] = 'EXECUTION_IN_PROGRESS_NOT_OWNER_APPROVAL'
             save()
             report['context'] = execution_context(packet, options.actor)
