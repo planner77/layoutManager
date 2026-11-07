@@ -1,3 +1,9 @@
+## #225 ARV — 인증 업무 조회·READY 검증 (2026-11-08, 시작)
+
+사용자의 `검증 진행하세요`에 따라 실제 운영0.58의 기존 계정으로 허용된 읽기 전용 업무/Location·Current·원본 조회와 READY 잔여를 검증한다. 정상 사용자 로그인만 사용하며 비밀번호/쿠키/session/setup code를 DB·로그에서 가져오거나 계정·권한을 변경하지 않는다. 운영 배포·0.61 upgrade·flags ON·신규 운영 도면/Scene 생성은 승인 범위에 포함하지 않는다. READY는 실제0.58 schema/데이터·0.61 Worker 지원 범위를 먼저 확인하고 격리 시험·기존 CI·운영 미실행을 구분한다. 세부 AC는 TestPlan ARV, 실제 결과는 TestReport가 정본이다.
+
+---
+
 ## #225 OR58 — 운영 0.58 복원 근거 확보 (2026-11-08, 요구사항·관측 추적)
 
 사용자가 다음 작업으로 운영 0.58의 동일 스냅샷 backup/schema/RPO/restore/old App startup 검증을 요청했다. FR-225-OR58은 실제 설치·정확 기존 이미지와 DB/CAD/G7 identity의 일관된 recovery point를 결합하고, 새 빈 소유 volume에서 기존 App만 시작하여 데이터/조회 보존을 검증한다. 업그레이드·운영 volume 덮어쓰기·flags/설정 변경·latest/Git tag·issue 종료는 범위 밖이다. RF-09를 운영 baseline에 적용하며 실행 AC/TC는 TestPlan OR58, 절차·중단 경계는 Operation OR58을 정본으로 한다. 도구/임시 시험과 실제 운영 관측을 구분한다. 실제 운영 capture/복원·old startup의 관측 결과와 독립 writer/인증 조회의 미충족은 TestReport U-225-OR58-ACTUAL-20261108을 따른다.

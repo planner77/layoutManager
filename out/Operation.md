@@ -1,3 +1,9 @@
+## ARV 검증 재개 상태 (2026-11-08)
+
+실도면의 CPU eligibility 부적합 결과와 정상 LINE 대조는 TestReport ARV를 따른다. 정상 로그인 창은 private 별도 browser session으로 준비했으며 사용자 직접 로그인 완료 전 인증된 업무 읽기를 PASS로 기록하지 않는다. 비밀번호/쿠키/session/setup code·요청 credential header/body를 수집하지 않는다. 원본을 읽는 기존 Viewer 경로는 old release의 `renderer=dxf-viewer`를 사용하며 Scene save/build/retry/edit 같은 쓰기 동작을 검증에 섞지 않는다. 현재 정상 로그인은 대기 상태이고, 기존 운영0.58·기존 private backup 보존을 유지한다.
+
+---
+
 ## OR58 실제 실행·보관 상태 (2026-11-08)
 
 사용자의 실제 유지보수 응답 후 source0.58을 readonly 캡처하고 같은 App을8.545초에 healthy로 재개했다. 격리 restore/정확oldimage 내부 HTTP·시작 후 보존과 지원 cleanup을 수행했다. private recovery set은 source Docker volume 밖에 보관하며 원본으로 자동 복원하지 않는다. archive SHA256/시각/관측 제한은 TestReport U-225-OR58-ACTUAL-20261108을 정본으로 한다. backup/DB/CAD/authority/row 자료는 private0700/0600·Git/응답/CI artifact 제외를 유지한다. 검증된 detached restore volume과 private archive는 보존한다. archive/필요 receipt의 SHA 검증 사본은 원래 프로젝트의 ignored private data recovery 디렉터리에도 저장하여 feature worktree 정리와 분리했다.
