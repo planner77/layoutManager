@@ -159,6 +159,7 @@ class GitHub:
         self.token = token
         self.packet = packet
         self.cases = tuple(cases)
+        self.merge_candidate_sha = None
         self.opener = urllib.request.build_opener(NoRedirect())
 
     def request(self, method, path, body=None):
@@ -172,7 +173,8 @@ class GitHub:
             require(any((method, path, body) == item for item in permitted),
                     'CP_MUTATION_NOT_IN_PACKET')
         else:
-            require(body is None and read_route(self.packet, path), 'CP_READ_ROUTE_INVALID')
+            require(body is None and read_route(self.packet, path, self.merge_candidate_sha),
+                    'CP_READ_ROUTE_INVALID')
         request = urllib.request.Request('https://api.github.com' + path, method=method,
             data=None if body is None else canonical(body), headers={
                 'Accept': 'application/vnd.github+json', 'Authorization': 'Bearer ' + self.token,
@@ -217,7 +219,7 @@ def case_route(case):
     return method, path, body
 
 
-def read_route(packet, path):
+def read_route(packet, path, merge_candidate_sha=None):
     refs = {BASE + '/git/ref/' + x['name'].removeprefix('refs/') for x in packet['refs']}
     cases = packet['cases']
     prs = {BASE + '/pulls/' + str(c['pullRequest']) for c in cases
@@ -225,13 +227,16 @@ def read_route(packet, path):
     compares = {BASE + '/compare/' + c['beforeSha'] + '...' + c['afterSha']
                 for c in cases if c['operation'] == 'merge'}
     shas = {c['afterSha'] for c in cases if c['operation'] == 'merge'}
+    head_commits = {BASE + '/git/commits/' + value for value in shas}
+    if (sha(merge_candidate_sha) and path == BASE + '/git/commits/' + merge_candidate_sha):
+        return True
     paged = {BASE + '/commits/' + value + '/' + kind for value in shas
              for kind in ('check-runs', 'statuses')}
     bare = path.split('?', 1)[0]
     if bare in paged:
         return re.fullmatch(r'per_page=100&page=([1-9]|[1-9][0-9]|100)',
                             path.partition('?')[2]) is not None
-    if path in ({BASE, BASE + '/rulesets/rule-suites'} | refs | prs | compares):
+    if path in ({BASE, BASE + '/rulesets/rule-suites'} | refs | prs | compares | head_commits):
         return True
     if path.startswith(BASE + '/rulesets/rule-suites?'):
         return re.fullmatch(r'per_page=100&page=([1-9]|[1-9][0-9]|100)',
@@ -295,6 +300,7 @@ def check_missing_ci_pr(api, case):
     statuses = paginated(api, BASE + '/commits/' + case['afterSha'] + '/statuses')
     require(not any(x.get('name') == CONTEXT for x in checks)
             and not any(x.get('context') == CONTEXT for x in statuses), 'CP_EXPECTED_CHECK_PRESENT')
+    return pr
 
 
 def attempt(api, case, journal=lambda row: None):
@@ -579,26 +585,51 @@ def verify_denial_case(api, packet, case, row, context):
     if case['actor'] == 'actions':
         verify_actions_attempt(api, packet, context, completed=True,
                                intervals=[(row['startedUTC'],row['endedUTC'])])
+    pr = check_missing_ci_pr(api, case) if case['operation'] == 'merge' else None
+    if pr is not None:
+        require(type(pr.get('id')) is int and pr['id'] > 0, 'CP_PR_IDENTITY_MISMATCH')
     suites = paginated(api, BASE + '/rulesets/rule-suites')
     expected_after = case['afterSha'] or ZERO
     matches = [s for s in suites if s.get('repository_id') == REPO_ID
                and s.get('ref') == case['ref']
                and s.get('before_sha') == (case['beforeSha'] or ZERO)
-               and s.get('after_sha') == expected_after
+               and (case['operation'] == 'merge' or s.get('after_sha') == expected_after)
                and s.get('actor_id') == actor['id']
                and s.get('actor_name') == actor['login']
-               and s.get('evaluation_result') == 'fail'
-               and s.get('result') in ('fail', 'failed')
+               and s.get('result') == 'fail'
+               and ('evaluation_result' not in s or s['evaluation_result'] == 'fail')
                and start - dt.timedelta(seconds=60) <= instant(s.get('pushed_at')) <=
                    end + dt.timedelta(seconds=60)]
-    require(len(matches) == 1 and type(matches[0].get('id')) is int,
+    require(1 <= len(matches) <= (20 if pr is not None else 1)
+            and all(type(s.get('id')) is int and s['id'] > 0 for s in matches),
             'CP_EXACT_RULE_SUITE_UNAVAILABLE')
-    suite = get(api, BASE + '/rulesets/rule-suites/' +
-                str(matches[0]['id']) + '?include_metadata=true')
-    require(all(suite.get(k) == matches[0].get(k) for k in
-                ('id','repository_id','ref','before_sha','after_sha','actor_id',
-                 'actor_name','pushed_at','evaluation_result','result')),
-            'CP_RULE_SUITE_DETAIL_CHANGED')
+    selected = []
+    for summary in matches:
+        detail = get(api, BASE + '/rulesets/rule-suites/' +
+                     str(summary['id']) + '?include_metadata=true')
+        require(all(detail.get(k) == summary.get(k) for k in
+                    ('id','repository_id','ref','before_sha','after_sha','actor_id',
+                     'actor_name','pushed_at','evaluation_result','result'))
+                and ('evaluation_result' in detail) == ('evaluation_result' in summary),
+                'CP_RULE_SUITE_DETAIL_CHANGED')
+        evaluations = detail.get('rule_evaluations')
+        require(isinstance(evaluations, list) and len(evaluations) <= 50
+                and all(isinstance(r, dict) for r in evaluations),
+                'CP_RULE_SUITE_EVALUATIONS_INVALID')
+        if pr is None:
+            selected.append(detail)
+            continue
+        pulls = [r for r in evaluations if r.get('rule_type') == 'pull_request']
+        if (len(pulls) == 1 and pulls[0].get('result') == 'pass'
+                and pulls[0].get('enforcement') == 'active'
+                and pulls[0].get('rule_source', {}).get('type') == 'ruleset'
+                and isinstance(pulls[0].get('metadata'), dict)
+                and isinstance(pulls[0]['metadata'].get('pull_request'), dict)
+                and pulls[0]['metadata']['pull_request'].get('id') == pr['id']
+                and pulls[0]['metadata']['pull_request'].get('number') == case['pullRequest']):
+            selected.append(detail)
+    require(len(selected) == 1, 'CP_EXACT_PR_RULE_SUITE_UNAVAILABLE')
+    suite = selected[0]
     failed = [r for r in suite.get('rule_evaluations', [])
               if r.get('rule_type') == case['expectedRule'] and
               r.get('result') == 'fail' and r.get('enforcement') == 'active' and
@@ -607,14 +638,39 @@ def verify_denial_case(api, packet, case, row, context):
     source_id = failed[0]['rule_source'].get('id')
     validated_live_ruleset(api, packet, source_id, case)
     if case['operation'] == 'merge':
+        pull = next(r for r in suite['rule_evaluations'] if r['rule_type'] == 'pull_request')
+        require(pull['rule_source'].get('id') == source_id,
+                'CP_PR_RULE_SOURCE_MISMATCH')
         require(case['expectedRule'] == 'required_status_checks' and
                 CONTEXT in json.dumps(failed[0], sort_keys=True),
                 'CP_REQUIRED_CI_SPECIFIC_FAILURE_MISSING')
+        proposed = suite.get('after_sha')
+        require(sha(proposed), 'CP_MERGE_PROPOSAL_SHA_INVALID')
+        head = get(api, BASE + '/git/commits/' + case['afterSha'])
+        require(head.get('sha') == case['afterSha'] and
+                sha(head.get('tree', {}).get('sha')), 'CP_MERGE_HEAD_COMMIT_MISMATCH')
+        api.merge_candidate_sha = proposed
+        try:
+            candidate = get(api, BASE + '/git/commits/' + proposed)
+        finally:
+            api.merge_candidate_sha = None
+        require(candidate.get('sha') == proposed and
+                candidate.get('tree', {}).get('sha') == head['tree']['sha'] and
+                isinstance(candidate.get('parents'), list) and
+                len(candidate['parents']) == 1 and
+                candidate['parents'][0].get('sha') == case['beforeSha'],
+                'CP_MERGE_PROPOSAL_COMMIT_MISMATCH')
+        final_pr = check_missing_ci_pr(api, case)
+        require(final_pr.get('id') == pr['id'], 'CP_PR_IDENTITY_CHANGED')
     require(ref_sha(api, case['ref']) == case['beforeSha'],
             'CP_DENIAL_REF_CHANGED_AFTER_VERIFICATION')
-    return {'caseId':case['id'],'verdict':'DENIED_BY_POLICY',
+    result = {'caseId':case['id'],'verdict':'DENIED_BY_POLICY',
             'ruleSuiteId':suite['id'],'rulesetId':source_id,
             'refOperationActorId':actor['id'],'ruleType':case['expectedRule']}
+    if case['operation'] == 'merge':
+        result.update(requestedHeadSha=case['afterSha'], proposedCommitSha=proposed,
+                      pullRequestId=pr['id'], pullRequestNumber=case['pullRequest'])
+    return result
 
 
 def require_capability_before_denial(capability_rows, denial_rows):

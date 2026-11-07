@@ -229,8 +229,7 @@ class CPContracts(unittest.TestCase):
         stamp='2026-11-06T00:00:00Z'
         summary={'id':42,'repository_id':CP.REPO_ID,'ref':case['ref'],
                  'before_sha':A,'after_sha':B,'actor_id':CP.OWNER_ID,
-                 'actor_name':'planner77','pushed_at':stamp,
-                 'evaluation_result':'fail','result':'fail'}
+                 'actor_name':'planner77','pushed_at':stamp,'result':'fail'}
         detail={**summary,'rule_evaluations':[{'rule_type':'pull_request',
             'result':'fail','enforcement':'active',
             'rule_source':{'type':'ruleset','id':7}}]}
@@ -242,8 +241,21 @@ class CPContracts(unittest.TestCase):
         observation=row(case,'PENDING_RULE_EVALUATION',403,A)
         self.assertEqual(CP.verify_denial_case(Fake(data),packet,case,observation,
                                                {'mode':'owner'})['verdict'],'DENIED_BY_POLICY')
+        with_evaluation=dict(data)
+        with_evaluation[CP.BASE+'/rulesets/rule-suites?per_page=100&page=1']=[
+            {**summary,'evaluation_result':'fail'}]
+        with_evaluation[CP.BASE+'/rulesets/rule-suites/42?include_metadata=true']={
+            **detail,'evaluation_result':'fail'}
+        self.assertEqual(CP.verify_denial_case(Fake(with_evaluation),packet,case,
+            observation,{'mode':'owner'})['verdict'],'DENIED_BY_POLICY')
         for changed in ({**summary,'actor_id':0},{**summary,'before_sha':B},
-                        {**summary,'pushed_at':'2026-11-07T00:00:00Z'}):
+                        {**summary,'after_sha':'c'*40},
+                        {**summary,'pushed_at':'2026-11-07T00:00:00Z'},
+                        {**summary,'result':'pass','evaluation_result':'fail'},
+                        {**summary,'result':'bypass','evaluation_result':'fail'},
+                        {**summary,'evaluation_result':'pass'},
+                        {**summary,'evaluation_result':'unknown'},
+                        {**summary,'evaluation_result':None}):
             bad=dict(data);bad[CP.BASE+'/rulesets/rule-suites?per_page=100&page=1']=[changed]
             with self.assertRaises(CP.RefProofError):
                 CP.verify_denial_case(Fake(bad),packet,case,observation,{'mode':'owner'})
@@ -252,15 +264,147 @@ class CPContracts(unittest.TestCase):
                 'enforcement':'active','rule_source':{'type':'ruleset','id':7}}]}
         with self.assertRaises(CP.RefProofError):
             CP.verify_denial_case(Fake(generic),packet,case,observation,{'mode':'owner'})
+        for rule in ({'rule_type':'pull_request','result':'fail',
+                      'enforcement':'evaluate','rule_source':{'type':'ruleset','id':7}},
+                     {'rule_type':'required_status_checks','result':'fail',
+                      'enforcement':'active','rule_source':{'type':'ruleset','id':7}}):
+            bad=dict(data)
+            bad[CP.BASE+'/rulesets/rule-suites/42?include_metadata=true']={
+                **detail,'rule_evaluations':[rule]}
+            with self.assertRaises(CP.RefProofError):
+                CP.verify_denial_case(Fake(bad),packet,case,observation,{'mode':'owner'})
         changed_detail=dict(data)
         changed_detail[CP.BASE+'/rulesets/rule-suites/42?include_metadata=true']={
             **detail,'result':'pass'}
         with self.assertRaises(CP.RefProofError):
             CP.verify_denial_case(Fake(changed_detail),packet,case,observation,{'mode':'owner'})
+        for mismatch in ({**detail,'evaluation_result':'fail'},
+                         {**detail,'actor_id':0}):
+            changed_detail=dict(data)
+            changed_detail[CP.BASE+'/rulesets/rule-suites/42?include_metadata=true']=mismatch
+            with self.assertRaises(CP.RefProofError):
+                CP.verify_denial_case(Fake(changed_detail),packet,case,observation,{'mode':'owner'})
         changed=dict(data);changed[CP.BASE+'/git/ref/'+case['ref'][5:]]={
             'ref':case['ref'],'object':{'sha':B}}
         with self.assertRaises(CP.RefProofError):
             CP.verify_denial_case(Fake(changed),packet,case,observation,{'mode':'owner'})
+
+    def test_merge_suite_binds_actual_pr_and_server_proposal_not_head_sha(self):
+        packet,_=sample();target=packet['cases'][-2]['ref']
+        headref='refs/heads/issue225-control-'+NONCE+'-pr-head'
+        packet['refs'].append({'name':headref,'initialSha':B})
+        case={'id':'deny-merge','actor':'owner','phase':'denial','operation':'merge',
+              'ref':target,'beforeSha':A,'afterSha':B,
+              'expectedRule':'required_status_checks','pullRequest':42,'headRef':headref}
+        packet['cases'].append(case)
+        proposal='f'*40;tree='e'*40;stamp='2026-11-06T00:00:00Z'
+        planned=json.loads(Path('src/deploy/release-control/issue225-main-source.ruleset.json').read_text())
+        summary={'id':43,'repository_id':CP.REPO_ID,'ref':target,
+                 'before_sha':A,'after_sha':proposal,'actor_id':CP.OWNER_ID,
+                 'actor_name':'planner77','pushed_at':stamp,'result':'fail'}
+        direct={**summary,'id':41,'after_sha':B}
+        failed={'rule_type':'required_status_checks','result':'fail','enforcement':'active',
+                'details':'Required status check "'+CP.CONTEXT+'" is expected.',
+                'rule_source':{'type':'ruleset','id':7}}
+        pull={'rule_type':'pull_request','result':'pass','enforcement':'active',
+              'rule_source':{'type':'ruleset','id':7},
+              'metadata':{'pull_request':{'id':777,'number':42,
+                  'user':{'id':CP.OWNER_ID,'login':'planner77','type':'User'},
+                  'reviews':[],'proof_of_presence':None}}}
+        detail={**summary,'rule_evaluations':[failed,pull]}
+        pr={'id':777,'number':42,'state':'open','draft':False,'mergeable':True,
+            'base':{'repo':{'id':CP.REPO_ID},'ref':target.removeprefix('refs/heads/'),'sha':A},
+            'head':{'repo':{'id':CP.REPO_ID},'ref':headref.removeprefix('refs/heads/'),'sha':B}}
+        suite_path=CP.BASE+'/rulesets/rule-suites?per_page=100&page=1'
+        detail_path=CP.BASE+'/rulesets/rule-suites/43?include_metadata=true'
+        candidate_path=CP.BASE+'/git/commits/'+proposal
+        head_path=CP.BASE+'/git/commits/'+B
+        data={CP.BASE+'/git/ref/'+target.removeprefix('refs/'): {'ref':target,'object':{'sha':A}},
+              CP.BASE+'/git/ref/'+headref.removeprefix('refs/'): {'ref':headref,'object':{'sha':B}},
+              '/users/planner77':{'id':CP.OWNER_ID,'login':'planner77'},
+              CP.BASE+'/pulls/42':pr,
+              CP.BASE+'/compare/'+A+'...'+B:{'status':'ahead','total_commits':1,
+                  'files':[{'filename':'src/tests/fixtures/issue225-control-marker.json'}]},
+              CP.BASE+'/commits/'+B+'/check-runs?per_page=100&page=1':{'check_runs':[]},
+              CP.BASE+'/commits/'+B+'/statuses?per_page=100&page=1':[],
+              suite_path:[direct,summary],
+              CP.BASE+'/rulesets/rule-suites/41?include_metadata=true':{
+                  **direct,'rule_evaluations':[{'rule_type':'pull_request','result':'fail',
+                      'enforcement':'active','rule_source':{'type':'ruleset','id':7}}]},
+              detail_path:detail,
+              CP.BASE+'/rulesets/7':observed_ruleset(planned,7),
+              head_path:{'sha':B,'tree':{'sha':tree}},
+              candidate_path:{'sha':proposal,'tree':{'sha':tree},'parents':[{'sha':A}]}}
+        observation=row(case,'PENDING_RULE_EVALUATION',403,A)
+        api=Fake(data)
+        result=CP.verify_denial_case(api,packet,case,observation,{'mode':'owner'})
+        self.assertEqual((result['requestedHeadSha'],result['proposedCommitSha'],
+                          result['pullRequestId']),(B,proposal,777))
+        self.assertIn(('GET',candidate_path,None),api.calls)
+        self.assertFalse(CP.read_route(packet,candidate_path))
+        self.assertTrue(CP.read_route(packet,head_path))
+        self.assertTrue(CP.read_route(packet,candidate_path,proposal))
+        self.assertFalse(CP.read_route(packet,CP.BASE+'/git/commits/'+'9'*40,proposal))
+        self.assertFalse(CP.read_route(packet,CP.BASE+'/git/commits/not-a-sha',proposal))
+        for changed in ({**summary,'repository_id':0},
+                        {**summary,'actor_id':0},
+                        {**summary,'ref':headref},
+                        {**summary,'before_sha':B},
+                        {**summary,'pushed_at':'2026-11-07T00:00:00Z'}):
+            bad=dict(data);bad[suite_path]=[direct,changed];fake=Fake(bad)
+            with self.subTest(primary=changed), self.assertRaises(CP.RefProofError):
+                CP.verify_denial_case(fake,packet,case,observation,{'mode':'owner'})
+            self.assertNotIn(('GET',candidate_path,None),fake.calls)
+        for path,value in (
+            (CP.BASE+'/pulls/42',{**pr,'id':778}),
+            (CP.BASE+'/pulls/42',{**pr,'head':{**pr['head'],'sha':'c'*40}}),
+            (detail_path,{**detail,'rule_evaluations':[failed]}),
+            (detail_path,{**detail,'rule_evaluations':[None]}),
+            (detail_path,{**detail,'rule_evaluations':['invalid']}),
+            (detail_path,{**detail,'rule_evaluations':[failed,{**pull,
+                'metadata':{'pull_request':{'id':778,'number':42}}}]}),
+            (detail_path,{**detail,'rule_evaluations':[failed,pull,pull]}),
+            (detail_path,{**detail,'rule_evaluations':[failed,{**pull,
+                'rule_source':{'type':'ruleset','id':8}}]}),
+            (detail_path,{**detail,'rule_evaluations':[{**failed,'details':'Other check'},pull]}),
+            (candidate_path,{'sha':'9'*40,'tree':{'sha':tree},'parents':[{'sha':A}]}),
+            (candidate_path,{'sha':proposal,'tree':{'sha':'9'*40},'parents':[{'sha':A}]}),
+            (candidate_path,{'sha':proposal,'tree':{'sha':tree},'parents':[{'sha':B}]}),
+            (candidate_path,{'sha':proposal,'tree':{'sha':tree},'parents':[{'sha':A},{'sha':B}]}),
+        ):
+            bad=dict(data);bad[path]=value;fake=Fake(bad)
+            with self.subTest(path=path,value=value), self.assertRaises(CP.RefProofError):
+                CP.verify_denial_case(fake,packet,case,observation,{'mode':'owner'})
+            if path in (CP.BASE+'/pulls/42',detail_path):
+                self.assertNotIn(('GET',candidate_path,None),fake.calls)
+        ambiguous=dict(data)
+        ambiguous[suite_path]=[direct,summary,{**summary,'id':44}]
+        ambiguous[CP.BASE+'/rulesets/rule-suites/44?include_metadata=true']={
+            **detail,'id':44}
+        with self.assertRaises(CP.RefProofError):
+            CP.verify_denial_case(Fake(ambiguous),packet,case,observation,{'mode':'owner'})
+        malformed=dict(data);malformed[suite_path]=[direct,{**summary,'after_sha':'invalid'}]
+        malformed[detail_path]={**detail,'after_sha':'invalid'}
+        with self.assertRaises(CP.RefProofError):
+            CP.verify_denial_case(Fake(malformed),packet,case,observation,{'mode':'owner'})
+        class ChangingPRFake(Fake):
+            def __init__(self, routes, later_pr):
+                super().__init__(routes);self.later_pr=later_pr;self.pr_reads=0
+            def request(self, method, path, body=None):
+                if method == 'GET' and path == CP.BASE+'/pulls/42':
+                    self.pr_reads += 1
+                    if self.pr_reads == 2:
+                        self.calls.append((method,path,body))
+                        return 200,self.later_pr,'REQ-READ'
+                return super().request(method,path,body)
+        for changed_pr in ({**pr,'head':{**pr['head'],'sha':'c'*40}},
+                           {**pr,'base':{**pr['base'],'sha':'c'*40}},
+                           {**pr,'id':778}):
+            fake=ChangingPRFake(data,changed_pr)
+            with self.subTest(later_pr=changed_pr), self.assertRaises(CP.RefProofError):
+                CP.verify_denial_case(fake,packet,case,observation,{'mode':'owner'})
+            self.assertEqual(fake.pr_reads,2)
+            self.assertIn(('GET',candidate_path,None),fake.calls)
 
     def test_actions_run_requires_exact_attempt_source_path_sender(self):
         packet,_=sample();ctx={'runId':42,'runAttempt':2,

@@ -1,3 +1,24 @@
+## Unreleased — #225 merge-only server proposal 증거 연결 (2026-11-07, 0.61.0 유지)
+
+- Fixed: squash 거부 Suite의 server proposal SHA를 exact PR metadata·before-parent·head tree와 연결하는 merge-only 검증을 보완한다. 일반 Ref exact after-SHA와 기존 인가·active rule·context·time·source 검증은 유지하며 임의 Git commit 조회를 허용하지 않는다.
+- Verification: 실제 기존 Suite/후보 GET으로 확인한 계약 차이이며 새 controlled-ref 요청은 없었다. 최종 source는 독립 CP12+LP26=38 PASS, compile4/diff PASS와 실제 저장 형상의 old8b RED→current GREEN 로컬 재현을 통과했다. 이전 CI674는 head8b1b95b의 전체 PASS이며 추가 source의 새 required CI/Main은 별도다.
+
+---
+
+## Unreleased — #225 실제 Rule Suite/disabled 응답 계약 보완 (2026-11-07, 0.61.0 유지)
+
+- Fixed: active Suite의 선택 `evaluation_result` absence를 허용하되 exact fail/active expected rule/identity·immutable Ref·source 검증을 유지한다. 실제403의 원문 `Unable to retry disabled workflow`만 finite classifier에 추가한다. unknown/auth/near message와 evaluate-only 실패는 거부한다.
+- Verification: 독립 reader 실제 PASS, 보호 Environment 생성/readback 및 legacy publisher disable·별도 bounded diagnostic의 실제 범위와 source QA/CI 결과는 TestReport를 따른다. 원래 helper 실패를 새 성공으로 바꾸지 않으며 세 번째 probe를 실행하지 않는다. 제품/Schema/버전/Scene flags·운영 데이터·기존 image/tag/alias는 그대로이며 full control proof/private candidate/promotion은 미완료다.
+
+---
+
+## Unreleased — #225 승인된 Work 1–4 실행 준비 및 인증 장애 (2026-11-07, 0.61.0 유지)
+
+- 문서: 사용자 승인 범위·TC EX-01–07, 실제 인증 장애와 재개 순서, packet 검토 및 실제/로컬 증거 경계를 기록했다. 제품 코드·Schema·버전·Scene flags를 변경하지 않았다.
+- 결과: 정확 Main의 bounded packet/default plan과 독립 검증의 실제 범위는 TestReport를 따른다. 기존 credential401·연결 앱 Rule Suite403으로 live control proof/legacy 차단·GHCR 권한·candidate/promotion은 미완료다. 운영 데이터·정책·이미지·태그를 변경하지 않았으며 HOLD/GO-PILOT BLOCKED를 유지한다.
+
+---
+
 ## Unreleased — #225 LI 독립 QA·실제 pagination 읽기 수용 (2026-11-06, 0.61.0 유지)
 
 - 검증: LP25/별도 proof118, 실제 bridge1(newLP25 child)·targetedTS/ESLint/static/source2protected52는 독립 PASS. Root의 실제 frozen local helper readback도164completed/unique·6page30×5+14·최대385,683bytes<1MiB로 완료했고 Manager가 제한된 읽기 단위를 수용했다. 원문 응답은 저장하지 않고 정제 metadata만 보존했다.
