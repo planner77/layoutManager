@@ -1,3 +1,11 @@
+## TP-248-FL2 — full Viewer rendering of description fixture after #666 (2026-11-07)
+
+**Observed:** CI #666 run42320485967 browser trace confirms client `TypeError: e.entities is not iterable` in DXF parser `_FetchFonts`; `upload.spec.ts:513` Viewer status `표시 실패` instead of ready. Fixture `0\\nEOF\\n` had no DXF `SECTION/ENTITIES`. Prior focus/hydration race remains an unproven alternative, not the observed root cause. Chromium2 73 PASS/1 FAIL; aggregate FAIL.
+
+**AC:** Change only `TC-DESC-005` upload buffer to minimal valid `SECTION/ENTITIES/LINE/ENDSEC/EOF` fixture already supported by G7 browser tests; retain registration and percent/underscore/newline literal description, current/list search and reload, Viewer status `도면 표시 완료` on initial and reloaded load, focus/tooltip exact text/visibility. Keep original 5000ms assertions, no skip/retry/timing workaround; do not weaken renderer's failure behavior for malformed inputs or change other three EOF-only fixtures, product/CI/security logic. Require new exact HEAD Chromium shard2 and aggregate PASS before integration; no regression claim on old #666.
+
+---
+
 ## TP-248-FL1 — browser tooltip hydration/focus regression after PR #249 CI #662 (2026-11-07)
 
 Exact hosted failing case: `TC-DESC-005` at `src/tests/e2e/upload.spec.ts:511`, Chromium shard2/2 (`73 passed / 1 failed`), after Viewer reload focus did not yield a Tooltip within the original 5000ms. This is separate from the synthetic Control Proof suite (PASS). The amended focused E2E must keep registration/search/persisted multiline description and both Viewer focus/tooltip checks, and after reload first wait for `도면 표시 완료`, require a new blur→focus transition and the exact existing Tooltip text/visibility. No retry, skip, timeout increase, product Tooltip rewrite or CI gate bypass. Full `General Chromium E2E 1/2 + 2/2`, Docker, Greenfield, static and required aggregate must pass on the **new exact HEAD** before further integration; earlier CI #662 remains FAIL.
