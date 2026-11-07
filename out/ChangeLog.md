@@ -1,7 +1,7 @@
 ## 0.61.0 검증 — 실제 도면 CPU eligibility와 인증 조회 (2026-11-08)
 
 - 공개된33f377 source와 동일 parser로 실제 backup 도면의 지원 조건을 조사했다. LINE2 대조군 처리/실제 DXF의 parse 거부를 독립 재현하고 실제 CAD·계정·권한·운영 설정은 변경하지 않았다.
-- 인증된 업무 조회는 기존 사용자의 직접 로그인이 필요해 AUTH_PENDING이다. 이번 parser 대조를 READY 생성/게시 성공으로 기록하지 않는다. 앱 코드/버전·배포·flags·태그 변경0이다.
+- 사용자 직접 로그인 후 운영0.58의 Session/목록/Location·Current·원본 size/SHA와 명시적 dxf Viewer 표시 완료를 확인했다. Viewer47GET/비GET0이며 기존 공개 CAD 정책의 기능 검증으로 한정한다. 격리 restore clone의 인증 UI는 미실행이다. 이번 parser 대조를 READY 생성/게시 성공으로 기록하지 않는다. 앱 코드/버전·배포·flags·태그 변경0이다.
 
 ---
 

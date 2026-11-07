@@ -1,6 +1,6 @@
-## #225 — 실도면 CPU 지원 검증·인증 조회 대기 (2026-11-08)
+## #225 — 로그인 후 기존 도면 조회 검증 완료 (2026-11-08)
 
-실제 도면은 공개된0.61 CPU 변환기의 strict UTF-8/2D LINE subset 조건을 충족하지 않아 `SCENE_DXF_PARSE_FAILED`로 거부됐고, 같은 parser의 정상 LINE2 대조군은 처리됐다. 독립 재검증도 일치했다. 기존 운영 계정의 정상 로그인을 기다리고 있어 인증된 Location/Current/원본/Viewer 조회는 아직 미실행이다. 운영0.58과 backup은 보존했으며 파일럿 NO-GO를 유지한다. 상세 근거는 [TestReport](out/TestReport.md)의 ARV 기록을 따른다.
+사용자 직접 로그인 뒤 운영0.58의 세션·목록·Location/Current·원본 조회와 `dxf-viewer` 표시 완료를 확인했다. 원본1,117,143bytes의 SHA가 backup과 같고 Viewer 관측47GET/쓰기0이다. 이는 기존 공개 CAD 읽기 정책의 기능 검증이며 격리 복원 clone의 인증 UI 검증이나 기하 정확도 수용을 대신하지 않는다. 실제 도면은 현재0.61 CPU strict subset에 부적합하여 READY 생성은 미실행이고 파일럿 NO-GO를 유지한다. 상세 근거는 [TestReport](out/TestReport.md)의 ARV 기록을 따른다.
 
 ---
 

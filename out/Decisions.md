@@ -1,6 +1,6 @@
 ## #225 ARV — 실제 도면 eligibility와 정상 인증 경로 (2026-11-08)
 
-검증 요청은 지원 여부를 실제 데이터와 정상 계정 경로로 확인하는 범위다. actual DXF는 strict UTF-8 조건에서 실패했고 geometry/section도 현재 CPU LINE subset을 벗어나므로 원본 변환·entity 삭제·직접 DB READY 삽입으로 통과시키지 않는다. 독립 동일 parser 재현을 read-only eligibility 근거로 수용하고 실제 READY를 주장하지 않는다. 기존 계정은 사용자 직접 로그인만 사용하며 cookie/session/setup 복구 우회·계정/권한 변경은 하지 않는다. 인증 업무/원본/Current·Viewer의 실제 읽기는 로그인 이후에 확인한다. 앱0.61 배포/flags/운영 Scene 생성은 별도 범위이며 파일럿 NO-GO를 유지한다.
+검증 요청은 지원 여부를 실제 데이터와 정상 계정 경로로 확인하는 범위다. actual DXF는 strict UTF-8 조건에서 실패했고 geometry/section도 현재 CPU LINE subset을 벗어나므로 원본 변환·entity 삭제·직접 DB READY 삽입으로 통과시키지 않는다. 독립 동일 parser 재현을 read-only eligibility 근거로 수용하고 실제 READY를 주장하지 않는다. 기존 계정은 사용자 직접 로그인만 사용하며 cookie/session/setup 복구 우회·계정/권한 변경은 하지 않는다. 사용자 직접 로그인 후 원래 운영 서비스의 Session/공개 CAD 업무·원본 일치/Current·명시적 dxf Viewer 표시 완료를 확인했다. 공개 CAD 계약의 기능 검증만 수용하며 Site 접근 차단·기하 정확도·격리 restore clone 인증 UI 성공으로 확대하지 않는다. 앱0.61 배포/flags/운영 Scene 생성은 별도 범위이며 파일럿 NO-GO를 유지한다.
 
 ---
 
