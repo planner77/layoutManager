@@ -490,7 +490,7 @@ def independent_rule_suite_readiness(api):
                and type(row.get('id')) is int and row['id'] > 0
                and row.get('repository_id') == REPO_ID
                and type(row.get('ref')) is str
-               and re.fullmatch(r'refs/(heads|tags)/[^\\s]{1,200}', row['ref'])
+               and re.fullmatch(r'refs/(heads|tags)/[^\s]{1,200}', row['ref'])
                and sha(row.get('before_sha')) and sha(row.get('after_sha'))
                and type(row.get('actor_id')) is int and row['actor_id'] > 0]
     require(bool(matches), 'CP_INDEPENDENT_SUITE_SAMPLE_MISSING')
