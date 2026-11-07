@@ -521,6 +521,10 @@ def owner_independent_reader(packet):
     token = os.environ.get('CP_READ_TOKEN')
     require(type(token) is str and bool(token),
             'CP_INDEPENDENT_READ_TOKEN_MISSING')
+    # Even a reader-only capability receipt must be bound to the immutable
+    # local Main code/tree and all four exact, pre-reviewed policy payloads.
+    # This function is pure local verification before the first network GET.
+    execution_context(packet, 'owner')
     # No mutation cases are permitted for this independent API client.
     return independent_rule_suite_readiness(GitHub(token, packet))
 
