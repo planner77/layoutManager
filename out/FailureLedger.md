@@ -1,3 +1,19 @@
+## #225 FS 로컬 QA — 빈 fragment 경계 보완 (2026-11-08)
+
+초기 FS source의 urlsplit fragment truthiness는 끝의 빈 `#`를 허용했다. 실제 redirect나 registry 요청은 아니지만 FS01의 fragment 거부 AC에 맞지 않았다. 독립 QA의 합성 재현을 보존하고 입력의 literal `#`를 parse 전에 거부하도록 최소 보완했다. singular/plural과 `_state` 유무별 음성 사례 및 78개 회귀·compile/diff를 독립 재검증했다. 이 로컬 경계 수정은 폐기한 실제 GHCR URI나 실제 후보 게시 성공의 증거가 아니다.
+
+---
+
+## #225 UL 관측 — 경로 조건 불일치 확인, 원문 경로는 미확인 (2026-11-08)
+
+[보호 진단42383905261](https://github.com/planner77/layoutManager/actions/runs/42383905261)은 Main `d19d045b`/tree `c839976f`의 별도 packet `7f1256a8`과 실제 delegated Owner 환경 review 뒤 **빈 POST1회**를 수행했다. HTTP202·단일 정제 artifact13578558214를 확인했고 ZIP 서버 SHA256 `621099c1e3a75622df8a7cebff15653b49abb791f651b59957b4fcc35d830db3`, JSON SHA256 `832acef25af51317e86be53e04fbb3fbcff051d3147031e72f7f1f982d30adef`를 검증했다. 반환값은 상대 URI/길이79/query0이며 origin resolution 뒤 HTTPS·exact netloc·fragment·strict query·query key 조건은 맞고 기존 path pattern만 false였다.
+
+원본 Location/opaque ID는 저장하지 않았고 기존 prefix가 다를 때 remainder를 분류하지 않아 이 자료만으로 정확한 namespace/단수형 route를 단정할 수 없다. 빈 업로드 세션은 뒤따르거나 삭제하지 않았고 old7f budget은 소진됐다. 이 결과는 업로드/이미지 게시/후보 서명 성공이 아니다.
+
+[OCI 규격](https://github.com/opencontainers/distribution-spec/blob/main/spec.md#post-then-put)은 반환 upload URI를 사용하는 흐름을 정의하며, [직접 GHCR 실측](https://gist.github.com/shizhMSFT/b77f2d7f993268a1bdd45a7462866906)과 [Jib 프로젝트의 직접 보고](https://github.com/GoogleContainerTools/jib/issues/4301)는 단수형 `blobs/upload` 경로를 보여준다. 이 1차 근거로 고정 repo의 두 유한 경로만 호환하고 단일 descriptor-bound PUT으로 수리한다. 이는 폐기한 실제 주소를 복원했다는 주장이 아니다. 추가 live probe0; 기존 candidate42378293644 실패와 6 ref 부재/기존 alias 불변 근거는 보존한다.
+
+---
+
 ## #225 candidate42378293644 — 실제 GHCR upload Location 검증 중단 (2026-11-07)
 
 Main `b8c8ee5ee2d4d550119a102eb9f5c9ab82f1865c`/tree `1534fe96`, reviewed packet `70c2eb90`의 [candidate run42378293644](https://github.com/planner77/layoutManager/actions/runs/42378293644)는 **FAILURE**다. 실제 별도 Environment 검토는 Owner를 대행한 Root API action으로 승인·history를 확인했으며 새로운 인간/독립2인 승인은 아니다. 3-role build/RR1 graph/digest·6 negatives와 RR2/RR3 journey는 성공했지만, publish step의 `CA_UPLOAD_LOCATION_REFUSED`로 exit1이었다. OIDC 서명·검증·후보 artifact upload는 SKIPPED, artifact inventory0, 소유 local cleanup은 SUCCESS다.

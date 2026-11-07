@@ -1,3 +1,9 @@
+## #225 — GHCR 업로드 경로 조건 확인 및 최소 호환 수리 (2026-11-08)
+
+CI680 적용8개 성공 뒤 보호된 단일 요청 진단으로 기존 업로드 path 조건 불일치를 확인했다. 주소 원문은 저장하지 않아 정확한 폐기 URI를 단정하지 않으며, 공개 GHCR 실측의 두 유한 경로를 지원하는 descriptor session 수리를 준비한다. 진단·수리와 실제 후보/정식 게시를 구별한다. 결과·제약은 [TestReport](out/TestReport.md), 실행 경계는 [Operation](out/Operation.md)를 따른다. 운영 활성화와 GO-PILOT은 계속 보류다.
+
+---
+
 ## #225 — 후보 게시 중단 및 보호된 업로드 형식 진단 준비 (2026-11-07)
 
 [CI679](https://github.com/planner77/layoutManager/actions/runs/42376036144)의 적용8개 Job을 통과해 Main `b8c8ee5e`를 확정했다. 실제 후보 실행은 build/RR1/RR2 후 업로드 Location guard에서 중단됐고 서명/후보 artifact는 생성되지 않았다. 재조회에서 후보·정식0.61 태그는 모두 부재, 기존0.60/latest는 유지됐다. 원본 주소·credential을 남기지 않는 별도 protected 단일 요청 진단을 준비한다. 실제 결과·한계는 [TestReport](out/TestReport.md), 후속 실행 경계는 [Operation](out/Operation.md)를 따른다. 운영 활성화와 GO-PILOT은 계속 보류다.

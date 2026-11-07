@@ -1,3 +1,9 @@
+## NFR-225-FS — 유한 업로드 경로와 단일 descriptor session (2026-11-08)
+
+고정 GHCR package의 실제202 응답으로 발급된 세션만 해당 로컬 blob의 digest/size/검증 경로에 결합해 한 번 소비한다. 허용 origin/namespace는 기존과 같고 공개 1차 실측이 보여주는 `blobs/upload` 및 `blobs/uploads` 두 경로만 지원한다. raw query byte를 보존해 기대 digest만 덧붙이며 임의 URL·다른 repo·manifest·중복/충돌 query와 세션 재생은 거부한다. 현재 진단은 경로 조건 실패만 증명하므로 실제 폐기된 URI가 단수형이었다고 주장하지 않는다. 구현/TC는 TestPlan의 FS01–05, 실제 결과는 TestReport가 정본이다.
+
+---
+
 ## NFR-225-UL — 보호된 레지스트리 업로드 형식 진단 (2026-11-07)
 
 후보 게시가 실제 registry 응답 형식 검증에서 중단되면, 기존 데이터·태그를 읽기 전용으로 확인하고 원인 규명 전 허용 형식을 확대하지 않는다. 기존 push 권한을 증명하지 못한 로컬 인증에 새 권한을 요구하는 대신, exact source/full CI·Owner Main attempt1·실제 환경 검토에 묶인 별도 진단으로 고정 package의 빈 blob-init POST를 한 번만 관측할 수 있다. 원본 URL·opaque ID/query 값·credential은 메모리 밖으로 남기지 않고, 제한된 구조·길이·hash만 산출한다. 후보·정식 이미지 게시 및 운영 승인으로 해석하지 않는다. 상세 AC/TC는 [TestPlan](TestPlan.md)의 TP-225-PROTECTED-UPLOAD-DIAGNOSTIC, 실제 실행 여부는 [TestReport](TestReport.md)를 따른다.

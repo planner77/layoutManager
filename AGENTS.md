@@ -1,3 +1,9 @@
+## #225 FS 재개 — 관측과 추정을 구별 (2026-11-08)
+
+출고 재개 시 [TestReport](out/TestReport.md)의 U-225-UL-OBS와 [FailureLedger](out/FailureLedger.md)의 UL 관측, [TestPlan](out/TestPlan.md)의 FS01–05를 먼저 읽는다. 단일 진단은 기존 path 조건 실패만 증명했고 실제 URI 원문은 없다. 공개 단수형 route 근거는 호환 수리의 입력이며 실제 폐기 URI의 복원 증거가 아니다. 이전7f 진단 budget/70c2 후보는 재생하지 않고, 새 source/full CI/Main 뒤 새 candidate packet·run attempt1·별도 실제 환경 review를 적용한다. 운영 flags OFF/자동 HOLD/GO-PILOT BLOCKED를 유지한다.
+
+---
+
 ## #225 — 실제 후보 실패 이후 재개 위치 (2026-11-07)
 
 #225 출고/진단을 재개할 때 [TestReport](out/TestReport.md)의 U-225-CANDIDATE-FAIL → [FailureLedger](out/FailureLedger.md)의 candidate42378293644 → [TestPlan](out/TestPlan.md)의 TP-225-PROTECTED-UPLOAD-DIAGNOSTIC 순서로 현재 근거·목적·AC를 확인한다. Mainb8/CI679 적용8개 성공과, 실제 candidate의 upload Location 실패·서명/artifact 부재는 구별한다. 아래 과거의 미실행/원인 추정 문구는 작성 당시 기록이다.

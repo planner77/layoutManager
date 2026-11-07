@@ -1,3 +1,10 @@
+## Unreleased — #225 finite GHCR upload-session compatibility (2026-11-08, 0.61.0 유지)
+
+- Fixed: 고정 repo의 공개 단수/복수 upload 경로와 descriptor-bound 한 번만 쓰는 세션을 준비한다. origin/namespace/manifest 경계와 stop 정책을 유지하고 raw query를 보존한다.
+- Evidence: 실제 진단202는 기존 path 조건 실패를 확인했지만 원문 route는 미확인이다. 공개 1차 근거·합성 RED를 별도 기록한다. 추가 POST0. 독립 QA78/compile/diff 및 빈 fragment 경계 보완을 통과했으며 full CI·새 Main/후보는 후속이다.
+
+---
+
 ## Unreleased — #225 protected upload-location diagnostic (2026-11-07, 0.61.0 유지)
 
 - Added: exact source/CI/Owner run/실제 환경 review에 묶인 고정 package blob-init 1회 진단 경로를 준비한다. 원본 Location·opaque 값·credential 대신 bounded 구조/hash만 산출하며 parser 허용 범위나 이미지 태그를 바꾸지 않는다.

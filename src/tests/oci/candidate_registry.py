@@ -27,6 +27,35 @@ ACCEPT = ', '.join(sorted(IMAGES | INDEXES))
 CONFIGS = {'application/vnd.oci.image.config.v1+json', 'application/vnd.docker.container.image.v1+json'}
 LAYERS = {'application/vnd.oci.image.layer.v1.tar', 'application/vnd.oci.image.layer.v1.tar+gzip',
           'application/vnd.oci.image.layer.v1.tar+zstd', 'application/vnd.docker.image.rootfs.diff.tar.gzip'}
+UPLOAD_PATH = re.compile(re.escape(PREFIX) + r'/blobs/(?:upload|uploads)/[A-Za-z0-9_-]{1,200}')
+
+
+def upload_target(location, digest):
+    """Validate one fixed-repository server URL without rewriting its opaque query."""
+    need(type(location) is str and 0 < len(location) <= 16384 and location.isascii()
+         and '#' not in location and not re.search(r'[\x00-\x20\x7f\\]', location),
+         'CA_UPLOAD_LOCATION_REFUSED')
+    try:
+        raw = urllib.parse.urlsplit(location)
+        need(not raw.fragment and not raw.username and not raw.password
+             and '%' not in raw.path and not any(part in ('.', '..') for part in raw.path.split('/')),
+             'CA_UPLOAD_LOCATION_REFUSED')
+        absolute = urllib.parse.urljoin(ORIGIN, location)
+        parsed = urllib.parse.urlsplit(absolute)
+        need(parsed.scheme == 'https' and parsed.netloc == 'ghcr.io'
+             and parsed.username is None and parsed.password is None and not parsed.fragment
+             and UPLOAD_PATH.fullmatch(parsed.path), 'CA_UPLOAD_LOCATION_REFUSED')
+        query = parsed.query
+        need(not re.search(r'%(?![0-9A-Fa-f]{2})', query), 'CA_UPLOAD_LOCATION_REFUSED')
+        if query:
+            # One literal key and an opaque nonempty value. Keep the raw bytes in
+            # memory; decode/re-encode can change an issued session capability.
+            need('&' not in query and query.startswith('_state=') and len(query) > len('_state='),
+                 'CA_UPLOAD_LOCATION_REFUSED')
+        return parsed.path + ('?' + query + '&' if query else '?') + 'digest=' + \
+            urllib.parse.quote(digest, safe='')
+    except (ValueError, UnicodeError):
+        raise Pending('CA_UPLOAD_LOCATION_REFUSED') from None
 
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -133,6 +162,7 @@ class GHCR:
         self.allowed_tags = set(tags(expected).values())
         self.bound_objects = {}
         self.bound_tags = {}
+        self._upload_session = None
         self.journal = journal
         self.http = http or HTTP()
         status, headers, _, _, _ = self.http.request('GET', ORIGIN + '/v2/')
@@ -151,6 +181,9 @@ class GHCR:
         self.bearer = data['token']
 
     def request(self, method, path, *, data=None, media=None, destination=None, limit=2 * 1024 * 1024):
+        session = self._upload_session if method == 'PUT' else None
+        if method == 'PUT':
+            self._upload_session = None  # Any attempted PUT consumes the issued capability.
         need(path.startswith(PREFIX + '/') and '\\' not in path and '\n' not in path
              and '\r' not in path and '#' not in path, 'CA_REGISTRY_ROUTE_REFUSED')
         parsed = urllib.parse.urlsplit(path)
@@ -169,12 +202,12 @@ class GHCR:
             allowed = bool(locked and type(data) is bytes and locked['kind'] == 'manifest'
                            and 'sha256:' + sha(data) == locked['digest'] and media == locked['mediaType'])
         elif method == 'PUT':
-            query = urllib.parse.parse_qs(parsed.query, strict_parsing=True)
-            digest = query.get('digest', [None])
-            locked = self.bound_objects.get(digest[0]) if len(digest) == 1 else None
-            allowed = bool(re.fullmatch(re.escape(PREFIX) + r'/blobs/uploads/[A-Za-z0-9_-]{1,200}', parsed.path)
-                           and set(query) <= {'digest', '_state'} and locked and locked['kind'] == 'blob'
-                           and isinstance(data, Path) and str(data) == locked['path'])
+            locked = self.bound_objects.get(session['digest']) if session else None
+            allowed = bool(session and path == session['target'] and locked and locked['kind'] == 'blob'
+                           and locked['digest'] == session['digest'] and locked['size'] == session['size']
+                           and locked['path'] == session['path'] and media == 'application/octet-stream'
+                           and isinstance(data, Path) and str(data) == session['path']
+                           and data.stat().st_size == session['size'])
         need(allowed, 'CA_REGISTRY_ROUTE_REFUSED')
         headers = {'Authorization': 'Bearer ' + self.bearer,
                    'Accept': ACCEPT if manifest else 'application/octet-stream, application/json'}
@@ -234,6 +267,14 @@ class GHCR:
 
     def upload_blob(self, descriptor, path):
         digest = descriptor['digest']
+        path = Path(path)
+        locked = self.bound_objects.get(digest)
+        need(self._upload_session is None and DIGEST.fullmatch(digest) and locked
+             and locked['kind'] == 'blob' and locked['digest'] == digest
+             and locked['size'] == descriptor['size'] and locked['mediaType'] == descriptor['mediaType']
+             and locked['path'] == str(path) and path.is_file()
+             and path.stat().st_size == descriptor['size'] and file_digest(path) == digest,
+             'CA_LOCAL_BLOB_CHANGED')
         status, headers, _, _, _ = self.request('HEAD', PREFIX + '/blobs/' + digest)
         if status == 200:
             need(headers.get('docker-content-digest') == digest
@@ -243,17 +284,10 @@ class GHCR:
         self.journal.intent('POST', 'blob-upload-init', digest)
         status, headers, _, _, _ = self.request('POST', PREFIX + '/blobs/uploads/', data=b'')
         need(status == 202, 'CA_BLOB_UPLOAD_INIT_UNCERTAIN')
-        location = headers.get('location', '')
-        absolute = urllib.parse.urljoin(ORIGIN, location)
-        parsed = urllib.parse.urlsplit(absolute)
-        need(parsed.scheme == 'https' and parsed.netloc == 'ghcr.io' and not parsed.fragment
-             and re.fullmatch(re.escape(PREFIX) + r'/blobs/uploads/[A-Za-z0-9_-]{1,200}', parsed.path)
-             and set(urllib.parse.parse_qs(parsed.query, strict_parsing=True)) <= {'_state'},
-             'CA_UPLOAD_LOCATION_REFUSED')
-        query = urllib.parse.parse_qsl(parsed.query, strict_parsing=True)
-        query.append(('digest', digest))
-        target = parsed.path + '?' + urllib.parse.urlencode(query)
+        target = upload_target(headers.get('location', ''), digest)
         self.journal.intent('PUT', 'blob-by-digest', digest)
+        self._upload_session = {'target': target, 'digest': digest,
+                                'size': descriptor['size'], 'path': str(path)}
         status, headers, _, _, _ = self.request('PUT', target, data=Path(path), media='application/octet-stream')
         need(status == 201 and headers.get('docker-content-digest') == digest, 'CA_BLOB_UPLOAD_UNCERTAIN')
 
