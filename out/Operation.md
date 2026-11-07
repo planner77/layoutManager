@@ -5,10 +5,10 @@ Before an Owner-approved controlled-ref mutation, a **local Owner outside Action
 ```bash
 # From a clean checkout at the packet's exact, approved source commit.
 # Set CP_READ_TOKEN securely in the local environment without echoing it.
-python3 src/tests/oci/cp-control-proof.py \\
-  --packet /secure/issue225-control-packet.json \\
-  --packet-sha256 '<exact-packet-sha256>' \\
-  --actor owner --phase capability \\
+python3 src/tests/oci/cp-control-proof.py \
+  --packet /secure/issue225-control-packet.json \
+  --packet-sha256 '<exact-packet-sha256>' \
+  --actor owner --phase capability \
   --output /secure/issue225-control-readiness.json --readiness-check
 ```
 
