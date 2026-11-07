@@ -1,3 +1,9 @@
+## #225 UL — publisher와 분리한 보호된 단일 요청 진단 (2026-11-07)
+
+`registry-upload-diagnostic.yml`과 `registry_upload_diagnostic.py`는 독립 closed packet/run/job/approval 검증을 사용하는 진단 경로다. 환경 readback은 쓰기 권한 없는 Job에서 수행하고, 같은 Main-only/Owner reviewer 환경의 보호 Job만 packages:write를 받는다. 기존 candidate signer/packet을 투영하거나 전역 policy를 바꾸지 않는다. 고정 repo의 인증·빈 blob-init 단일 POST 뒤 URL 구조를 순수 sanitizer로 투영하며 원본 Location·opaque 값은 저장하지 않는다. intent journal은 중복 실행을 차단하고 artifact는 단일 정제 JSON으로 제한한다. 이 경로에는 blob bytes/PUT/manifest/tag/Location-follow/삭제·재시도가 없다. 관측 결과를 근거로 한 후속 publisher 수리는 별도 source/QA/CI/packet을 요구한다. 상세 운영·실제 상태는 Operation/TestReport가 정본이다.
+
+---
+
 ## #225 RF-C — candidate provenance A와 promotion operation B (code-only 준비)
 
 새 `release-promote.yml`/`promotion_policy.py`/`release_promote.py`는 기존 candidate/RP/VN/RT bytes를 바꾸지 않는 별도 실행 경로다. source A의 성공 candidate run·고정 signer/4-subject·download artifact ID/서버 digest/실제 file SHA와 GHCR full graph를 재검증하고, source B의 Main/workflow/tree/full CI·새 run/title/job/packetSHA·실제 Owner 환경 review를 따로 검증한다. 기존 환경은 새 review에 재사용하고 candidate approval을 승계하지 않는다. packet/control hash는 외부 증거의 검토 연결이며 인증/실효 policy 또는 전체 writer 검증 결과가 아니다. UNKNOWN controls는 packet readiness를 차단한다.

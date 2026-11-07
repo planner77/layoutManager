@@ -1,3 +1,9 @@
+## 2026-11-07 — Main/CI679 검증 후 실제 candidate 실패
+
+Main `b8c8ee5e` / CI679 적용8개 SUCCESS를 확인했다. 실제 candidate42378293644는 build/RR1/RR2 뒤 upload Location guard에서 실패했으며 서명·artifact가 없으므로 승격 입력이 아니다. 후보3/정식3 ref 부재와 기존0.60/latest 불변을 실제 pull-only로 확인했다. 보호된 단일 요청 진단은 아직 구현 준비다. [TestReport](TestReport.md)의 U-225-CANDIDATE-FAIL과 [FailureLedger](FailureLedger.md)가 정본이다. #225/#218 OPEN, GO-PILOT BLOCKED, 제품 Scene flags OFF/자동 출고 HOLD와 운영 데이터 불변을 유지한다.
+
+---
+
 ## 2026-11-07 — 승인된 출시 작업1–3 실제 통제 증거 수용 / 작업4 게시 전 수리
 
 [PR250](https://github.com/planner77/layoutManager/pull/250) 정상 병합 Main `62dcd3b5` 및 [CI676](https://github.com/planner77/layoutManager/actions/runs/42368191670)의 전체 적용 Job 성공을 확인했다. 독립 Rule Suite reader, Owner/Actions capability12건과 실제 거부14건의 규칙 평가를 조회 전용 감사·독립 QA로 수용하고, 최종 Main/v* 보호와 시험 자원 정리를 확인했다. 원래 strict helper는 PENDING이며 직접FF의 PR-fail 기대값 불충족/공동 rule 실패의 인과 한계를 보존한다. legacy 비활성·권한/Environment readback 및 기존0.60/별칭 불변도 확인했다.

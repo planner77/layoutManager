@@ -1,3 +1,31 @@
+## TP-225-PROTECTED-UPLOAD-DIAGNOSTIC — 권한·검토를 유지한 단일 세션 관측 (2026-11-07)
+
+Root의 실제 postfailure registry GET는 candidate3/final3 모두 authenticated absent, 기존0.60/latest 불변이다. 기존 Owner OAuth는 read:packages만 확인되고 write:packages가 없으며 token 교환200만으로 push claim을 증명하지 못했다. 따라서 local POST0이며 원202 upload session의 상태는 unknown으로 보존한다.
+
+Developer는 sourceb8 기반 새 `.github/workflows/registry-upload-diagnostic.yml`과 필요한 최소 helper/tests를 구현할 수 있다. default plan은 credential/HTTP/mutation0. 실행은 고정 repo/Owner/Main source/tree/workflow와 fresh attempt1, exact closed packet/nonce/목적, fullCI8/head/archive 동일tree, environment26560473351/config hash 및 같은run/job/title의 실제 approved review를 먼저 검증한다. diagnostic 고유 schema를 쓰며 candidate packet으로 위장하지 않는다. protected job만 packages:write, contents/actions:read를 사용하고 OIDC/attestation/권한확대0. environment preread 및 main/custombranch/soleOwner/falsebypass gate는 기존 정책과 같고 actual delegatedOwner action은 human independent review가 아니다.
+
+검토된 실행은 fixedpackage blob-init endpoint에 빈 body POST **한 번**만 가능하다. pinnedrealm/service/token endpoint 및 고정pull,push scope를 유지하며 Location follow/PUT/blob bytes/tag/manifest/delete/cancel/retry0. POST 전 exclusive journal intent를 남기고 uncertain이면 HALT한다. 원 response Location/opaque segment/query값은 메모리만 사용하고 UL allowlist의 shape/길이/안전querykey/hash만 public artifact에 출력한다. raw exception/header/errorbody/log dump0. 최대응답크기/timeout/redirect거부와 단일파일/출력크기 한계를 고정한다.
+
+Developer→Manager→독립 QA는 zeroHTTPdefault, wrongpacket/source/run/review/CI/env 거부, 악성Location 정제·canary비노출, 단일POST와 뒤따르는write없음/uncertainnoRetry를 검증한다. 정상 fullCI/Main 통합 뒤 actual resultingMain로 concrete packet을 검토하고 새run의 실제environment review를 수행한다. 이 진단은 parser repair·candidate publish가 아니며 결과는 후속 최소 수리의 관측 근거로만 쓴다.
+
+---
+
+## TP-225-UPLOAD-LOCATION-DIAG — 실제 registry upload Location 실패 진단 (2026-11-07)
+
+실제 candidate run42378293644/packet70c2는 blob-init POST202 뒤 CA_UPLOAD_LOCATION_REFUSED로 실패했다. 3-role build/RR1/RR2 성공과 artifact0·cleanup 성공은 구별하며 실제 게시/서명 성공으로 기록하지 않는다. 원 Location은 의도적으로 보존하지 않아 실패 필드를 아직 알 수 없다. old/candidate/final tags의 GET-only readback으로 원격 상태를 분류하고 candidate packet 재사용/자동 retry/승격0.
+
+| AC | 실제 응답 관측 및 후속 수리 |
+| --- | --- |
+| UL-01 | 먼저 기존 Owner credential의 scope/고정package GHCR auth allowed actions를 GET-only로 확인한다. token/bearer/credential/url query값을 출력하지 않는다. 실제 package push authority가 확인돼야 별도 진단의 단일 POST blob-init을 검토한다. 권한이 없으면 새PAT/principal/권한확대나 unprotected branch로 우회하지 않는다. protected Main·같은 Owner environment gate를 갖춘 최소 진단 source/정상CI 및 별도 actual delegated review 경로를 준비한다. |
+| UL-02 | exact source/diagnostic code·fixed ghcr.io/v2/planner77/layoutmanager/blobs/uploads/ endpoint·단일POST 횟수·기존credentialpath를 Manager/QA가 검토한 뒤 실행한다. blob bytes/manifest/final tags/delete/cancel/follow Location 요청0. uncertain response면 재시도0. 진단은 새 upload session 가능성을 기록하되 완성 blob/image 게시로 표시하지 않는다. |
+| UL-03 | bounded response Location은 메모리에서만 파싱하고 공개 출력은 scheme/hostname/port 존재·허용 여부, fixed repository path prefix 여부/나머지 path 형태와 길이, 전체길이, query key 이름·개수, fragment/userinfo 존재 여부, 원문SHA256 및 status/requestID의 안전한 형식만 허용한다. 원Location/path opaque ID/query값/bearer/header dump0. querykey도 짧은 안전 문자 allowlist 아니면 이름 대신 length/hash만 기록한다. parsing/size/형식 실패는 safe code로 남긴다. |
+| UL-04 | synthetic malicious host/userinfo/fragment/encodedpath/duplicatequery/oversize/opaque canary로 정제 출력·redirect부재·단일POST/후속write0을 검증한다. 실제 shape와 공식 protocol 근거가 확인된 후에만 최소 parser 수리 AC를 별도 정한다. generic relativeURL/임의 query/다른host 허용으로 원인없이 완화하지 않는다. |
+| UL-05 | 수리는 Developer→Manager→독립QA→freshfullCI/정상Main 후 새 candidate source/packet/run/실제platform review로 실행한다. 실패run42378293644/oldpacket70c2와 artifact0는 보존하며 promotion 입력으로 사용하지 않는다. fixedpackage/credentialhost·no automatic retry/overwrite/delete·finaltag absence 및 oldalias 보존 gate를 유지한다. |
+
+이 단계는 진단 source/material 준비와 GET-only 확인 GO다. 구체적 진단코드/hash/권한증거·QA 이후 단일 POST에 대한 Manager gate를 적용하며 기존실패 run을 blind rerun하지 않는다.
+
+---
+
 ## TP-225-P1D-FAILURE-OBSERVABILITY — 미재현 CI 실패의 정제 관측 (2026-11-07)
 
 실제678 실패는 두 번째 upload 성공 뒤 spec300 revokeSite의 Admin grant() POST이며 원인은 UNKNOWN이다. 기존 owned cleanup이 App을 먼저 제거해 해당 App state/log 증거가 없었다. Worker Kill/OOM proof의 metric은 이 App 실패 원인으로 재사용하지 않는다. 첫 exact-tree local loop는43.2초 PASS이며 SIMULATED_CI_CONTEXT로 실제 GitHub Actions proof가 아니다. bounded 최대3 local loops로 재현을 시도하되 통과를 원인 해결로 쓰지 않는다.

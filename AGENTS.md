@@ -1,3 +1,11 @@
+## #225 — 실제 후보 실패 이후 재개 위치 (2026-11-07)
+
+#225 출고/진단을 재개할 때 [TestReport](out/TestReport.md)의 U-225-CANDIDATE-FAIL → [FailureLedger](out/FailureLedger.md)의 candidate42378293644 → [TestPlan](out/TestPlan.md)의 TP-225-PROTECTED-UPLOAD-DIAGNOSTIC 순서로 현재 근거·목적·AC를 확인한다. Mainb8/CI679 적용8개 성공과, 실제 candidate의 upload Location 실패·서명/artifact 부재는 구별한다. 아래 과거의 미실행/원인 추정 문구는 작성 당시 기록이다.
+
+후속 진단은 같은 protected Main/Owner 환경의 별도 closed packet과 실제 run review에 묶인 고정 blob-init 1회만 관측한다. 원본 Location/opaque 값/credential을 기록하거나 실패한 candidate packet을 재생하지 않는다. 실제 관측 전 parser 허용 확대나 후보/정식 게시 성공을 선언하지 않는다. 운영 Scene flags OFF/자동 GHCR HOLD/GO-PILOT BLOCKED 경계를 유지한다.
+
+---
+
 ## #248 / PR #249 — repeated hosted E2E failure evidence boundary (2026-11-07)
 
 CI #662 first failed `TC-DESC-005` after Viewer reload with no tooltip; #666's new ready assertion observed actual `표시 실패`. Read the preserved [FailureLedger](out/FailureLedger.md) and [TestReport](out/TestReport.md) before changing this test. Actual #666 Playwright trace Console `TypeError: e.entities is not iterable` in DXF `_FetchFonts` corresponds to the test's EOF-only `0\\nEOF\\n` buffer. Correct only the malformed fixture to valid minimal SECTION/ENTITIES/LINE, keeping strict Viewer ready and tooltip checks; previous focus/hydration explanation remains UNPROVEN, do not relax timeout/retries or product parser/CI gates. Exact new-HEAD hosted result is pending; #225/#218/#231/#248 remain OPEN, flags OFF, GHCR HOLD, GO-PILOT BLOCKED.

@@ -62,6 +62,8 @@ jobs:
           python3 src/tests/oci/test_rr2_cleanup.py
           python3 -m py_compile src/tests/oci/candidate_policy.py src/tests/oci/candidate_registry.py src/tests/oci/candidate_publish.py src/tests/oci/test_candidate_publish.py
           python3 src/tests/oci/test_candidate_publish.py
+          python3 -m py_compile src/tests/oci/registry_upload_diagnostic.py src/tests/oci/test_registry_upload_diagnostic.py
+          python3 src/tests/oci/test_registry_upload_diagnostic.py
           python3 -m py_compile src/tests/oci/verified_negative.py src/tests/oci/test_verified_negative.py
           python3 src/tests/oci/test_verified_negative.py
           python3 -m py_compile src/tests/oci/promotion_policy.py src/tests/oci/release_promote.py src/tests/oci/test_release_promote.py
