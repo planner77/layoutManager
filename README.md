@@ -1,3 +1,9 @@
+## #225 — 실도면 CPU 지원 검증·인증 조회 대기 (2026-11-08)
+
+실제 도면은 공개된0.61 CPU 변환기의 strict UTF-8/2D LINE subset 조건을 충족하지 않아 `SCENE_DXF_PARSE_FAILED`로 거부됐고, 같은 parser의 정상 LINE2 대조군은 처리됐다. 독립 재검증도 일치했다. 기존 운영 계정의 정상 로그인을 기다리고 있어 인증된 Location/Current/원본/Viewer 조회는 아직 미실행이다. 운영0.58과 backup은 보존했으며 파일럿 NO-GO를 유지한다. 상세 근거는 [TestReport](out/TestReport.md)의 ARV 기록을 따른다.
+
+---
+
 ## #225 — 운영 0.58 실제 백업·격리 복원 확인 (2026-11-08)
 
 실제 운영 백업을 캡처한 뒤 원래 앱이8.55초에 정상 복귀했다. 별도 볼륨의6개 파일·33개 테이블/설치 정보·도면 SHA와 기존0.58 앱의 내부 HTTP200, 시작 후 데이터 보존을 확인했다. 독립 읽기 전용 QA와 Root의 관측 범위 수용을 마쳤으며, host writer 독립 배제·인증된 업무 조회·READY Scene은 미검증이다. 파일럿 NO-GO를 유지한다. 상세 관측·RPO/시간 범위·비공개 보관 기준은 [TestReport](out/TestReport.md)와 [Operation](out/Operation.md)를 따른다. 아래는 준비 당시 이력이다.

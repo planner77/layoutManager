@@ -1,3 +1,9 @@
+## #225 ARV — 실제 도면 eligibility와 정상 인증 경로 (2026-11-08)
+
+검증 요청은 지원 여부를 실제 데이터와 정상 계정 경로로 확인하는 범위다. actual DXF는 strict UTF-8 조건에서 실패했고 geometry/section도 현재 CPU LINE subset을 벗어나므로 원본 변환·entity 삭제·직접 DB READY 삽입으로 통과시키지 않는다. 독립 동일 parser 재현을 read-only eligibility 근거로 수용하고 실제 READY를 주장하지 않는다. 기존 계정은 사용자 직접 로그인만 사용하며 cookie/session/setup 복구 우회·계정/권한 변경은 하지 않는다. 인증 업무/원본/Current·Viewer의 실제 읽기는 로그인 이후에 확인한다. 앱0.61 배포/flags/운영 Scene 생성은 별도 범위이며 파일럿 NO-GO를 유지한다.
+
+---
+
 ## #225 OR58 실제 관측과 파일럿 판정의 범위 (2026-11-08)
 
 사용자가 구체 유지보수 질문에 실행을 지시하여 실제0.58의 캡처·동일 App 재개·별도 빈 volume 복원·정확old App 내부 HTTP·시작 후 보존을 실행했다. 현재 원래 서비스는 healthy이며 원본 데이터/설정/이미지의 자동 교체는 없다. 관측된6files/33tables/도면·설치 동등성은 실제 복원 근거로 기록하되 host 외부 writer 배제는 Root attestation이고 독립 증명으로 격상하지 않는다. 인증된 업무 조회/실제 READY 및 별도 파일럿 승인 전 NO-GO를 유지한다. 독립 actual QA와 Root 대행 Manager는 관측된 backup/restore/startup/보존만 제한부 수용했으며 실제 근거는 TestReport를 따른다.
