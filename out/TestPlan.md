@@ -1,3 +1,19 @@
+## TP-225-MERGE-SUITE-BINDING — 실제 squash 후보 SHA 결합 수리 (2026-11-07)
+
+**구현 전 Manager AC:** Root가 기존 실제 suite4964214924의 merge 요청 PR249 headcbb3810b/beforee602와 suite.after_sha fe314edfd6abf4ea5c1bc21614829527361c9f4a의 차이를 관측했다. 고정 repo commit GET200은 해당 server squash 후보가 head와 동일 treee0b4, 단일 parent e602임을 보여준다. 이는 새로운 controlled denial 시험이 아니며 기존 after_sha=head 강제 조건의 실제 계약 불일치다. PR250의 기존 CI 결과는 당시 source에 보존하고 이 수리 이후 별도 fresh CI를 필요로 한다. 수정 Main 통합 전 live fullproof0.
+
+| AC | 최소 변경 및 fail-closed 결합 |
+| --- | --- |
+| MS-01 | direct create/update/delete/non-fast-forward는 기존 exact after SHA 비교를 그대로 유지한다. merge case에 한해서 suite server candidate SHA와 requested PR head SHA를 구별하며 result=fail, repo/actor/ref/before/time/unique-suite 및 nested active expected required_status_checks/source/context를 모두 먼저 검증한다. 기존 check_missing_ci_pr와 전후 ref 불변 검증도 유지한다. |
+| MS-02 | suite의 실제 PR metadata number/id가 live exact owned PR과 일치하고 PR base/head ref·expected head SHA가 packet과 일치해야 한다. metadata 부재·모호함·다른 PR·stale head는 거부한다. 서버 후보는 관측된 suite.after_sha의 유효 SHA 한 개만 대상으로 고정 repository GET를 허용한다. 임의 입력 commit URL/다른 repo/broad SHA route 확장0. |
+| MS-03 | 서버 후보 commit의 returned SHA가 관측 SHA와 일치하고 parents가 정확 한 개이며 parent SHA=packet before/base SHA, tree SHA=실제 expected PR head commit tree여야 한다. head commit도 exact requested head SHA에만 GET하여 검증한다. merge metadata/list-detail 신원 확인 뒤에만 후보 GET를 수행하고 candidate identity를 receipt에서 requested head와 구별한다. 부모 없음/여럿/다른 부모·다른 tree·wrong returned SHA·metadata mismatch는 모두 FAIL. |
+| MS-04 | Root sanitized actual response shape로 server candidate!=head positive를 추가하고 동일 tree/parent만 같지만 다른 PR인 사례, nested required context 부재, metadata mismatch, wrongcandidate parent/tree/SHA, stale head, malformed SHA/route, direct ref unequal-after 음성을 검증한다. approved GET route의 범위를 테스트하고 auth/network 실패를 denial PASS로 바꾸지 않는다. historical fixture/local tests와 새 live denial을 구별한다. |
+| MS-05 | Developer 최소 helper/test 수정→Manager review→독립 QA 전체 CP/LP focused 회귀→정상 same PR250 추가 commit/fresh required CI→보호 Main 통합 후에만 fullproof source/fixture/packet 재고정. 기존 CI674 성공은 이전 source 결과로 보존하며 새 변경 PASS로 재사용하지 않는다. Root만 network writes; 현재 controlled refs/Ruleset mutation0을 유지한다. |
+
+실제 PR metadata shape가 없거나 helper의 좁은 권한으로 후보/head commit 결합을 증명할 수 없으면 구현이 추정 필드를 만들지 않고 PENDING한다. 이 수리는 generic merge refusal을 required-CI 증거로 바꾸는 승인이 아니다.
+
+---
+
 ## TP-225-LP-EXACT-CAUSE — 실제 disabled-workflow 문구 최소 수리 (2026-11-07)
 
 별도 허용된 두 번째 진단 probe의 실제403 message는 정확 `Unable to retry disabled workflow`, SHA256 `aec1d32332e7e83267548dabeff7cfc4e0237f6b6ad2910c28b5df866828d597`이며 requestID `14AB:151D8E:32703F:579A58:6AEF00AE`다. unchanged helper는 여전히 LP_RERUN_REFUSAL_UNCLASSIFIED로 실패했다. Root post-GET는 disabled workflow355693716, safe run42075718479 attempt1/completed/success 및168-row inventory7c9f0db645a5299734ef0bfbe6117704df8b66d76798b8f9c88f1144d09dd9aa 불변을 확인했다. 첫403은 message 없는 UNKNOWN으로 계속 보존한다.

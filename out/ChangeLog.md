@@ -1,3 +1,10 @@
+## Unreleased — #225 merge-only server proposal 증거 연결 (2026-11-07, 0.61.0 유지)
+
+- Fixed: squash 거부 Suite의 server proposal SHA를 exact PR metadata·before-parent·head tree와 연결하는 merge-only 검증을 보완한다. 일반 Ref exact after-SHA와 기존 인가·active rule·context·time·source 검증은 유지하며 임의 Git commit 조회를 허용하지 않는다.
+- Verification: 실제 기존 Suite/후보 GET으로 확인한 계약 차이이며 새 controlled-ref 요청은 없었다. 최종 source는 독립 CP12+LP26=38 PASS, compile4/diff PASS와 실제 저장 형상의 old8b RED→current GREEN 로컬 재현을 통과했다. 이전 CI674는 head8b1b95b의 전체 PASS이며 추가 source의 새 required CI/Main은 별도다.
+
+---
+
 ## Unreleased — #225 실제 Rule Suite/disabled 응답 계약 보완 (2026-11-07, 0.61.0 유지)
 
 - Fixed: active Suite의 선택 `evaluation_result` absence를 허용하되 exact fail/active expected rule/identity·immutable Ref·source 검증을 유지한다. 실제403의 원문 `Unable to retry disabled workflow`만 finite classifier에 추가한다. unknown/auth/near message와 evaluate-only 실패는 거부한다.

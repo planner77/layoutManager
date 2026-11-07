@@ -1,6 +1,6 @@
 ## #225 — 인증 복구·실제 reader/출시 통제 검증 진행 (2026-11-07, 0.61.0 유지)
 
-Owner 인증 복구 후 독립 Rule Suite list/detail 사전검사를 통과했다. 기존 제안의 보호 Environment 설정을 적용하고 legacy publisher를 비활성화했다. Environment의 실제 run review는 미실행이다. 실제 API의 선택 필드와 disabled 응답 문구에 대한 최소 helper 보완은 독립 집중 시험37개를 통과했으며 새 required CI/Main은 별도다. 원래 실패와 저장된 진단 증거를 구분한다. 전체 Owner/Actions 보호 규칙 시험과 private3-image 후보/승격·GO-PILOT은 아직 미완료다. 정확 결과·현재 외부 변경과 잔여는 [TestReport](out/TestReport.md)를 따른다. 제품 flags OFF와 정식 출고 HOLD를 유지한다.
+Owner 인증 복구 후 독립 Rule Suite list/detail 사전검사를 통과했다. 기존 제안의 보호 Environment 설정을 적용하고 legacy publisher를 비활성화했다. Environment의 실제 run review는 미실행이다. 선택 API 필드/disabled 응답 보완은 이전 head의 CI674를 통과했고, squash 후보 SHA/PR 연결 검증까지 포함한 최종 source는 독립38시험을 통과했다. 새 exact-head CI/Main은 별도다. 원래 실패와 저장된 진단 증거를 구분한다. 전체 Owner/Actions 보호 규칙 시험과 private3-image 후보/승격·GO-PILOT은 아직 미완료다. 정확 결과·현재 외부 변경과 잔여는 [TestReport](out/TestReport.md)를 따른다. 제품 flags OFF와 정식 출고 HOLD를 유지한다.
 
 ---
 

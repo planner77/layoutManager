@@ -1,3 +1,9 @@
+## #225 MS — PR 병합 거부의 server proposal 검증 경계 (2026-11-07)
+
+Squash merge 거부의 Rule Suite after-SHA는 요청한 PR head가 아니라 GitHub가 만든 후보 commit일 수 있다. 실제 PR249 실패 Suite/후보 Git commit readback을 FailureLedger/TestReport에 보존했다. merge case에서만 정확 live PR id/number/base/head·원래 actor/ref/before/time/active expected-rule/context·suite PR metadata를 먼저 확인하고, 해당 관측 후보 SHA의 고정 repository GET을 좁게 허용한다. 후보 returned SHA/단일 before-parent/exact head tree를 검증하며, 일반 Ref 작업의 exact after-SHA 규칙은 그대로다. 알 수 없는 후보/부모/내용/PR 연결이나 모호한 여러 Suite는 PASS로 만들지 않는다. 이전 source CI674 성공과 새 변경 source의 required CI를 구별한다.
+
+---
+
 ## #225 — 인증 복구 후 실제 실행 상태와 API 계약 보완 (2026-11-07)
 
 기존 Owner 로그인과 package read scope가 복구됐고 독립 Rule Suite reader는 실제 list/detail을 통과했다. Environment `issue225-candidate-publish`(26560473351)는 기존 제안의 설정을 적용해 실제 Owner 단독 승인/Main branch 전용/관리자 우회 금지로 구성됐다. 생성된 설정은 같은-run 실제 review를 대신하지 않는다. 패키지14938097은 private이며 metadata GET은 writer/다른 repo Actions grants 전체 목록을 제공하지 않는다. Owner의 화면 확인 보고에는 Manage Actions access `layoutManager=Admin`, source repository inheritance checked, Inherit Access members empty가 포함된다. REST의 repository collaborator Owner1/teams0/default workflow read와 이 UI 보고를 구별해 writer inventory에 결합한다. Owner 관리자 재활성화 권한·독립 두 번째 사람 부재는 유지되는 한계다.
