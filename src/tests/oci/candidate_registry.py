@@ -139,6 +139,7 @@ class GHCR:
         challenge = headers.get('www-authenticate', '')
         need(status == 401 and challenge in (
             'Bearer realm="https://ghcr.io/token",service="ghcr.io"',
+            'Bearer realm="https://ghcr.io/token",service="ghcr.io",scope="repository:user/image:pull"',
             'Bearer realm="https://ghcr.io/token",service="ghcr.io",scope="' + SCOPE + '"'),
             'CA_GHCR_TOKEN_REALM_PENDING')
         credentials = base64.b64encode((actor + ':' + token).encode()).decode()

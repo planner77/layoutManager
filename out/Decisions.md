@@ -1,3 +1,18 @@
+## #225 실행 통제의 실제 증거·권한 범위 판단 (2026-11-07)
+
+사용자의 Work1–4 승인 범위에서 Manager는 다음 결정을 내렸으며 구현/검증 기준은 [TestPlan](TestPlan.md)의 해당 TP-225 항목, 실제 결과는 [TestReport](TestReport.md)를 따른다. 이전 source/시도 실패를 새 성공으로 덮어쓰지 않는다.
+
+- **Actor별 exact packet:** 실제 Owner/Actions Ruleset list의 네 timestamp는 +09:00/Z 문자열만 다르고 instant·순서·나머지 필드는 동일했다. helper hash 비교를 정규화하지 않고 Owner A069400c2와 Actions B9e4d998e를 별도로 고정했다. 각 actor의 capability/denial은 동일 packet/credential path에 결합하며 A의 초기 Actions 실패0건은 보존한다.
+- **명시적 wire 기본값:** initial PUT의 생략 필드가 기존 false에서 true로 바뀐 실제 실패 뒤, Main initial/final wire에 required_reviewers=[]와 require_extra_approval_for_unattributed_changes=false만 명시해 원 의미를 보존했다. 검토 source payload hash와 wire hash는 별도로 추적하고 다른 정책/우회 변경을 허용하지 않는다.
+- **기존26 attempts의 외부 감사:** 12 capability와14 denial의 실제 evidence-only matrix를 독립 QA했다. directFF의 expected PR failure 미충족 및 strict helper PENDING은 유지하고 actual CI failure로 기록한다. nonFF suite의 active PR+nonFF 공동 실패는 두 규칙 적용 증거이며 PR 단독 반사실적 인과 증거는 아니다. 같은 시도를 이중 집계하지 않는다. merge는 실제 server candidate의 exact PR/actor/time/parent/tree로 구별한다. 추가 C2 probe는 NOT_RUN이다. final policy restoration/owned cleanup까지 확인한 뒤 최종 control receipt를 수용한다.
+- **실제 environment review의 위임:** 사용자가 publication/promotion 진행을 승인했으므로 exact packet·fresh waiting run/job/environment와 모든 선행조건을 Manager/Root가 확인한 뒤 Root는 기존 Owner credential로 실제 pending-deployment review를 수행할 수 있다. 이는 Owner를 대행하는 agent 행위이며 새로운 인간 검토나 독립 second-human review가 아니다. candidate와 promotion은 각각 실제 플랫폼 승인 이력을 갖고 재사용하지 않는다.
+- **Registry-only rollback 범위:** 실제 기존0.60 App/Migrator digest 및 이전 signed synthetic recovery lineage는 private candidate/final manifest 게시의 보존 baseline으로 수용했다. 별도 scoped receipt a6eeaf2a는 자동 rollback/delete/overwrite/retry/운영 deploy를 허용하지 않는다. operating0.58/실DB·CAD·volume 복구 미검증은 계속 pilot/deploy를 막지만 registry-only 게시의 허위 운영 전제조건으로 추가하지 않는다.
+- **GHCR root challenge 최소 수리:** 실제 root401의 고정 user/image:pull placeholder 문자열만 유한 allowlist에 추가한다. credential endpoint/service와 요청하는 planner package scope는 고정하고 challenge로부터 확장하지 않는다. 새 source는 독립 QA/full CI/Main을 거친 뒤 후보 packet에 재결합한다. 이전 CP source62d evidence는 helper/policy 바이트·실제 state 불변을 재확인한 prior-source lineage로만 사용한다.
+
+현재 candidate/promotion 완료·운영 GO를 이 결정으로 선행 선언하지 않는다. 불확실한 원격 응답은 readback과 증거를 보존하며 blind retry/권한 확대를 하지 않는다.
+
+---
+
 ## D-225-PN-FRAME — opaque 오류의 유한 exact framing 확장 (2026-11-06)
 
 실제 project 진단 및 보존 upstream 원본의 동일45 bytes를 근거로 leading1 LF+기존 quoted wrapper+trailing1 LF의 유한한 한 형태만 허용하기로 했다. 기존 한 줄/단일 trailing LF 계약을 유지하며 strip·정규식 whitespace 확장·임의 issuer/인프라 fallback은 도입하지 않는다. cryptographically verified material/witness·typed policy mismatch·전후positive/argv/subject 정책은 유지한다. Root/Manager의 safe-line normalization 때문에 원 framing을 누락한 이력을 기록하고 actual4 positive와 실패한 전체run을 구별한다. 합산RC244는 정상 후속commit/새QA/CI로만 게시하며 old652나 actual146 partialproof를 새 source PASS로 재사용하지 않는다.
