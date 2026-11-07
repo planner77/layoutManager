@@ -1,3 +1,9 @@
+## #225 — 운영 0.58 복원 시험 준비 (2026-11-08)
+
+기존 운영 0.58의 DB·도면·설치 identity를 함께 보존하고 새 격리 볼륨에서 같은 이미지를 시작하는 검증 도구를 준비한다. 읽기 전용 사전 검사와 운영 스냅샷을 구별하며, 실제 서비스 중지·백업·복원은 아직 수행하지 않았다. 요구사항·시험 범위는 [TestPlan](out/TestPlan.md), 결과와 한계는 [TestReport](out/TestReport.md), 실행 절차는 [Operation](out/Operation.md)를 따른다. 소스 버전0.61.0과 파일럿 NO-GO를 유지한다.
+
+---
+
 ## #225 — 비공개 0.61.0 이미지3개 게시·승격 검증 (2026-11-08)
 
 App `0.61.0`, Migrator `0.61.0-migrate`, CPU Worker `0.61.0-cpu-worker`를 `ghcr.io/planner77/layoutmanager`에 비공개로 게시했다. [실제 후보](https://github.com/planner77/layoutManager/actions/runs/42396085571)와 [별도 승격](https://github.com/planner77/layoutManager/actions/runs/42398185878)에서 동일 manifest 원문/digest, 실제 서명·실행·복구 및 정리 근거를 확인했다. 기존0.60/latest는 유지했다. 정확 digest·source·검증 한계는 [TestReport](out/TestReport.md), 실행 경계는 [Operation](out/Operation.md)를 따른다.

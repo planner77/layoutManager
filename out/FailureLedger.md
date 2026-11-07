@@ -1,3 +1,15 @@
+## #225 OR58 — 격리 네트워크의 startup port 가정 실패 (2026-11-08)
+
+[Draft PR259](https://github.com/planner77/layoutManager/pull/259) 선행 source `a9bf65e`/controller `1b8d5504`의 [CI685](https://github.com/planner77/layoutManager/actions/runs/42406110983)는 적용8개 SUCCESS/A2 scope SKIP였다. 독립 실제 Docker QA의 별도 synthetic0.58 시험에서는 plan/capture/restore가 성공했고 정확 원래 fixture App이7.91초에 healthy로 재개됐다. archive583,680bytes/4files·33tables의 raw/logical/schema/install/CAD reference가 일치했다. 이 결과는 운영 데이터나 미래 RPO0의 근거가 아니다.
+
+startup은 정확 old image에서 healthy였지만 `OR58_CLONE_PORT_INVALID`로 HALT했다. HostConfig에는 요청한127.0.0.1 binding이 있었으나 실제 NetworkSettings.Ports는 null이었다. 원인은 이번 daemon의 internal-only network에서 실제 publish가 없는 상태를 코드가 host-loopback 접근 가능으로 전제한 계약 불일치다. 특정 daemon 관측을 모든 Docker 버전의 보장으로 일반화하지 않는다. 지원 cleanup은 정확 clone/network를 제거했고 fixture 원래 App은 healthy, archive/restore volume은 보존했다. post-start logical 보존과 실제 fault injection은 이 시도에서 NOT RUN이다. private QA report SHA256 `d1c91aa776dafe9cfdf469a0c43cd94025fb6e30671ef116fc1e714600b0fbbf`.
+
+Root 대행 Manager는 구현 전에 OR58-06을 host port 공개0/internal network 유지·정확 CID의 비루트 exec로 내부127.0.0.1:3000 health/status HTTP 검사로 갱신했다. Developer는 socket/-p/host urllib를 제거하고 identity/network/no-publication 확인과 bounded status200 probe를 구현했다. Root가28 fake/compile/node/diff PASS와 diff를 검토했다. 새 독립 actual QA와 새 source full CI는 후속으로 구분하며 이전1b8의 startup을 소급 PASS로 바꾸지 않는다. 운영 stop/backup/restore0·파일럿 NO-GO를 유지한다.
+
+fixture 준비 중 권한/필수 seed acknowledgement·삭제 hash/인증 flags/표시용 truncated ID 오류는 synthetic setup 진단으로 보존했다. auth-off/automated-off 진단은 성공 근거에서 제외하고, 대표 auto/auth/cutover=true·정확 old pair·빈 source·일반 도면1건/Current로 다시 검사했다. 실제 운영 설정이나 credential을 읽어 대체하지 않았다.
+
+---
+
 ## #225 실제 게시·승격으로 후속 DOT 수리 확인 (2026-11-08)
 
 Main33f377/CI683 뒤 새 candidate42396085571은 build3/RR1/RR2/RR3/실제 GHCR publish·digest runtime/OIDC4-subject/6negative/allowlist/cleanup을 완료했다. 별도 promotion42398185878도 재검증 후 고정3개 version raw manifest를 승격했다. 독립 Root 암호8회 및 최종 원문/digest/config/기존 버전·별칭/보호·legacy 보존 조회를 확인했다.

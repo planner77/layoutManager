@@ -68,6 +68,9 @@ jobs:
           python3 src/tests/oci/test_verified_negative.py
           python3 -m py_compile src/tests/oci/promotion_policy.py src/tests/oci/release_promote.py src/tests/oci/test_release_promote.py
           python3 src/tests/oci/test_release_promote.py
+          python3 -m py_compile src/tests/oci/or58-proof.py src/tests/oci/test_or58_proof.py
+          python3 src/tests/oci/test_or58_proof.py
+          node --check src/tests/oci/or58-volume-inspect.mjs
       - name: Determine required CI scope
         id: classify
         env:

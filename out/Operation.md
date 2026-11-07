@@ -1,3 +1,23 @@
+## OR58 — 운영 0.58 동일 스냅샷과 격리 복원 계획 (2026-11-08)
+
+새 사용자 요청은 RF-09의 실제 운영 baseline 검증이다. 현재 준비 단계에서 stop/start 및 운영 데이터 변경은 수행하지 않는다. 정확 실행 packet은 실제 image/container/volume/install/schema, owned destinations, 시간 상한과 원래 서비스 재개 절차에 결합해야 한다.
+
+기존 helper 검토: `g7-upgrade.py`에는 backup-only action이 없다. auto/apply/restore는 실제 Compose App stop과 모든 running volume mount 검사를 수행한다. upgrade engine은 live DB 디렉터리에 hold/lock/journal/backup을 기록하고 대상에 따라 SQL/manifest를 바꾼다. `createRecoverySet`의 SQLite backup은 CAD/manifest와의 live atomic snapshot을 제공하지 않는다. `g7-deploy.py`의 same-release 실행은 NOOP/restart이며 독립 backup이 아니다. 따라서 이번 작업을 위해 upgrade/apply 또는 live restore helper를 호출하지 않는다.
+
+최소 절차는 (1) 정확 inventory/공간/비공개 evidence와 독립 resource 계획 검토 (2) 짧은 maintenance에서 기존 App graceful stop, 다른 source-volume writer 없음과 host writer 경계 확인 (3) readonly source mount로 DB/WAL/SHM+CAD/Scene+설치 identity를 private 외부 capture에 보존·전후 hash 비교 (4) 정확 같은 original container 즉시 재시작·healthy 확인 (5) 새로운 빈 owned volume에서 capture 복원 및 DB/파일 비교 (6) 정확 old image ID를 새 namespace/internal network에서 host port 공개 없이 시작하고 허용된 readonly HTTP 비교 (7) QA/Manager 수용이다. snapshot copy/recovery는 original volume에서 수행하지 않으며 old App/new schema 혼용0이다.
+
+`src/tests/oci/or58-proof.py`는 이 운영 대상에 한정한 시험 도구다. 기본 `plan`은 읽기 전용 helper로 현재 설치를 검사하고 private `packet.json`과 hash를 만든다. App stop20초/capture30초/healthy 확인60초, 전체120초 예산 중 재시작70초를 우선 확보한다. 정상 실행 예산이며 Docker daemon/호스트 장애에도 가용성을 보장한다는 뜻이 아니다. `capture`는 해당 packet hash·별도 Root maintenance authorization·host writer attestation을 모두 요구하고 한 번만 시도한다. 성공·실패 모두 같은 original container 재개를 우선하며, 복원은 서비스가 healthy인 뒤 별도 action으로 수행한다. 재개 확인 실패 시 실제 상태를 보고하고 임의 교체·자동 원본 복원은 하지 않는다.
+
+이후 `restore`→`startup`→`cleanup`은 같은 packet에 결합한다. fresh volume은 nocopy/명시적 UID10001로 초기화하며, captured historical App/Migrator tag 쌍과 빈 sourceCommit을 검증해 old App에 전달한다. helper/부분 startup 자원은 CID·nonce journal을 근거로 정리하고 외부 자원을 추정 이름으로 삭제하지 않는다. cleanup은 검증 clone/network를 제거하고 private backup과 restored volume은 독립 검토를 위해 보존한다. 인증된 업무 조회 및 startup 후 logical readback은 별도 결과로 기록한다. 시험은 `python3 src/tests/oci/test_or58_proof.py`이며 fake-only 결과를 실제 Docker/운영 결과로 대체하지 않는다.
+
+OR58 startup의 호스트 loopback publish 가정은 실제 임시 시험에서 실패했다: 요청한 HostConfig.PortBindings는 있었으나 NetworkSettings.Ports는 null이었다. 이 결과를 HALT로 보존하고 외부 연결 차단을 완화하지 않는다. startup은 internal network·host port 공개0을 검증한 후 정확 clone CID에서 비루트 `docker exec node`로 `127.0.0.1:3000/api/health`와 `/api/g7-runtime/status`를 요청한다. 이는 컨테이너 내부 HTTP 시험이며 호스트 경유 접근이나 인증된 업무 조회 성공을 뜻하지 않는다. [Docker exec](https://docs.docker.com/reference/cli/docker/container/exec/)와 [internal network](https://docs.docker.com/reference/cli/docker/network/create/)의 공식 계약을 참고하며, 특정 daemon의 port 동작은 이번 관측 범위로만 기록한다.
+
+일관성은 writer0 epoch와 전체 capture 동등성으로 입증한다. 정지 상태 raw DB/WAL/SHM을 함께 보존한 뒤 disposable copy에서 SQLite recovery/backup을 수행할 수 있지만 live source checkpoint나 파일 정리로 대체하지 않는다. 중간 실패 때 불완전 capture는 미수용으로 남기고 원래 서비스 재개를 우선한다. 예기치 않은 writer/설치·이미지 변화/부족한 공간/원래 restart 실패는 HALT 및 실제 상태 보고이며 임의 수정·자동 upgrade·원본 restore0이다.
+
+현재 새 요청은 복원 시험 자체를 승인하지만 정지 시간/구체 capture packet은 아직 미정이다. 기존 운영 절차의 별도 운영 승인 문구와 실제 서비스 중단 영향을 root가 검토하여, 실행 가능한 packet 준비 후 짧은 maintenance 구간 승인 필요 여부를 판단한다. 기존 요청에 이미 해당 interruption 승인이 있으면 중복 승인하지 않는다. 새로운 승인 대기 자체를 시험 성공이나 영구 차단으로 기록하지 않는다. TC와 RPO 표현 기준은 TestPlan OR58을 따른다.
+
+---
+
 ## #225 검증된 이미지 조회 및 운영 HOLD (2026-11-08)
 
 비공개 `ghcr.io/planner77/layoutmanager`의 `0.61.0`/`0.61.0-migrate`/`0.61.0-cpu-worker`를 실제 게시·승격했다. source A와 code B는33f377이며 정확 immutable digest는 TestReport U-225-REGISTRY-20261108의 단일 표를 기준으로 한다. 후보의 원문 graph/서명/digest runtime을 검증했고 version3개는 같은 raw manifest bytes를 가리킨다. 최신 source 문서 commit과 이미지 source commit을 혼동하지 않는다.

@@ -1,3 +1,11 @@
+## 0.61.0 시험 도구 — 운영 0.58 백업·격리 복원 준비 (2026-11-08)
+
+- FR-225-OR58/TP-225-OR58을 추가하고 정확 기존 image/container/volume·설치 identity에 결합한 별도 plan/capture/restore/startup/cleanup 도구를 준비한다. 원래 App 재시작 시간을 확보하는 120초 실행 예산, readonly 원본, 새 빈 소유 볼륨, 실패 자원 정리와 비공개 결과를 적용한다.
+- 실제 임시 startup의 host port 가정 HALT를 보존하고 internal network/host 공개0·정확 clone의 내부 HTTP 검사로 보완한다.
+- PR CI에 Docker 쓰기 없는 OR58 회귀·구문 검사를 연결한다. 운영 실행·독립 QA·임시 Docker 시험 결과는 TestReport에서 구분한다. 앱 기능/DB Schema/버전 변경·이미지 게시·운영 업그레이드는 없다.
+
+---
+
 ## 0.61.0 — 승인된 private 3-image 출고 검증 완료 (2026-11-08)
 
 - Source Main33f377/CI683 필수8개 PASS에서 candidate42396085571의 세 이미지/GHCR graph·digest runtime/RR1/RR2/RR3/정리 및 OIDC4-subject/6negative 검증을 완료했다. Root도 고정 CLI로 online/bundle8회 실제 암호 검증을 수행했다.

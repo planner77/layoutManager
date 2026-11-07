@@ -1,3 +1,20 @@
+## TP-225-OR58 — 실제 운영 0.58 복원 검증 AC/TC (2026-11-08, Manager 설계 AC)
+
+RF-09의 운영 baseline 잔여를 최소 범위로 검증한다. 기존 registry 출고 수용과 GO-PILOT NO-GO는 유지한다. 읽기 전용 사전 검사 결과는 TestReport에 기록하며, 실제 운영 stop/capture/restore/startup TC는 NOT RUN이다.
+
+| AC / TC | 실행·수용 조건 |
+| --- | --- |
+| OR58-01 inventory | 정확 original App/Migrator container ID, local immutable image ID/RepoDigest(존재 여부), source/version/role/platform, volume mount, install manifest/schema/migration history/health를 비밀 값 없이 결합. 이미지 label은 signed provenance로 표현하지 않는다. `.env`/원본/DB/credentials 출력·커밋0. |
+| OR58-02 preflight | private ignored 0700 evidence/0600 files, 충분한 공간과 owned resource nonce, 정확 source volume 및 모든 mount/writer inventory, bounded capture/start timeout와 fail-safe original restart 계획을 실행 전에 검토. unrelated RR2/registry 자원 접근·정리0. |
+| OR58-03 snapshot | 승인된 짧은 maintenance에서 정확 기존 App graceful stop 및 exit/volume writer0를 실제 관측. source를 readonly mount하여 DB+잔존 WAL/SHM+CAD/Scene+G7 identity를 하나의 capture epoch로 외부 private recovery set에 보존하고 전후 inventory/hash 일치 확인. live tar/순차 online DB+CAD copy를 같은 snapshot으로 주장하지 않는다. host 외부 writer 배제 근거가 없으면 한계/미확인을 명시하고 same-snapshot PASS 보류. |
+| OR58-04 recovery point | writer0 확인 시각, capture 시작/완료, original restart/healthy 시각과 정지 시간을 기록. freeze 시점까지 committed data loss0을 검증한 범위에서만 주장. 재개 후 실제 장애 시 잠재 손실은 snapshot 이후이며 목표 RPO와 관측 elapsed age를 구별; 미래 사고 RPO0 주장0. |
+| OR58-05 isolated restore | 새 empty nonce-owned volume에 동일 recovery set을 실제 복원. 원본 volume readonly/덮어쓰기0. recovery set 및 restored copy에서 SQLite integrity/FK/exact schema·installation/migration identity, 모든 business table logical rows/hash, Current/Version/Job/Scene/Audit 및 CAD/Scene bytes/size/SHA를 비교. WAL 복구·정규화는 disposable copy에서만 수행. |
+| OR58-06 exact old startup | 실제 operating image ID0.58만 pull/build/migrator/upgrade 없이 새 namespace/internal network에 시작하며 host port 공개0. 외부 통신·worker/자동 job·실 secret 전달 차단을 유지하고, 정확 clone CID 안에서 `docker exec`로 `127.0.0.1:3000`의 health/status HTTP 응답을 실제 검사한다. old schema+old App 일치 및 권한상 허용된 기존 HTTP 조회/source/Current/READY를 검증. 인증 부재는 NOT RUN으로 남기며 계정 생성·권한 변경·운영 token 탈취0. |
+| OR58-07 preservation | capture 후 원래 container/image ID/volume/config/port/healthy 보존. 원래 서비스는 capture 직후 재개하고 격리 restore 동안 정지 유지하지 않는다. immutable captured state와 restored business state 보존을 확인하되 재개된 운영 DB의 정당한 후속 변경을 실패나 freeze 증거로 오인하지 않는다. |
+| OR58-08 acceptance | Developer 구현·실제 실행 증거→독립 QA→Manager 수용. 실제 stop/start/backup/restore/HTTP/negative 미실행을 PASS 금지. public docs는 정제 hash/count/result만; DB/CAD/사용자 행/원본 이름/auth material은 private 유지. 복원 근거 수용이 자동 pilot/deploy/flags GO는 아니다. |
+
+---
+
 ## #225 실제 완료 추적 — registry와 운영 수용의 분리 (2026-11-08)
 
 | 요구사항/AC | 구현 또는 실제 통제 | 검증/실제 결과 |
