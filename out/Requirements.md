@@ -1,3 +1,9 @@
+## #225 TAX — 미관측 경로의 비밀 값 없는 분류 (2026-11-08)
+
+candidate2의 실제 업로드 주소 거부로 유한 두 경로의 호환 가정은 검증되지 않았다. 후속 진단은 고정 vocabulary 일치/segment 길이·문자 분류 등 bounded raw/resolved 구조와 현재 FS predicate 조건을 관측하며 URI·UUID·unknown segment·query 값은 공개하지 않는다. 기존 fixed POST/별도 보호 환경/단일 요청·재시도0 경계를 유지하고 publisher는 변경하지 않는다. 상세 AC/TC는 TestPlan의 TP-225-UPLOAD-TAXONOMY를 따른다.
+
+---
+
 ## NFR-225-FS — 유한 업로드 경로와 단일 descriptor session (2026-11-08)
 
 고정 GHCR package의 실제202 응답으로 발급된 세션만 해당 로컬 blob의 digest/size/검증 경로에 결합해 한 번 소비한다. 허용 origin/namespace는 기존과 같고 공개 1차 실측이 보여주는 `blobs/upload` 및 `blobs/uploads` 두 경로만 지원한다. raw query byte를 보존해 기대 digest만 덧붙이며 임의 URL·다른 repo·manifest·중복/충돌 query와 세션 재생은 거부한다. 현재 진단은 경로 조건 실패만 증명하므로 실제 폐기된 URI가 단수형이었다고 주장하지 않는다. 구현/TC는 TestPlan의 FS01–05, 실제 결과는 TestReport가 정본이다.

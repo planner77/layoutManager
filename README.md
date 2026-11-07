@@ -1,3 +1,9 @@
+## #225 — 실제 후보2 실패 및 주소 구조 진단 준비 (2026-11-08)
+
+[PR255](https://github.com/planner77/layoutManager/pull/255)와 [CI681](https://github.com/planner77/layoutManager/actions/runs/42385929264)의 적용8개 성공으로 Main `31998d6`를 확정했다. 새 실제 후보 실행은 세 이미지/RR1/RR2를 통과했지만 업로드 주소 검증에서 다시 거부됐다. 서명·후보 artifact·정식 승격은 없다. 기존0.60/latest는 유지됐고 후보·정식 태그 부재를 재조회했다. 추측으로 경로를 추가하지 않고 값 없는 구조 진단을 준비한다. 실제 근거와 제약은 [TestReport](out/TestReport.md), 후속 기준은 [TestPlan](out/TestPlan.md)을 따른다. 운영 활성화·GO-PILOT은 보류다.
+
+---
+
 ## #225 — GHCR 업로드 경로 조건 확인 및 최소 호환 수리 (2026-11-08)
 
 CI680 적용8개 성공 뒤 보호된 단일 요청 진단으로 기존 업로드 path 조건 불일치를 확인했다. 주소 원문은 저장하지 않아 정확한 폐기 URI를 단정하지 않으며, 공개 GHCR 실측의 두 유한 경로를 지원하는 descriptor session 수리를 준비한다. 진단·수리와 실제 후보/정식 게시를 구별한다. 결과·제약은 [TestReport](out/TestReport.md), 실행 경계는 [Operation](out/Operation.md)를 따른다. 운영 활성화와 GO-PILOT은 계속 보류다.

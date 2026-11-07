@@ -1,3 +1,19 @@
+## TP-225-UPLOAD-TAXONOMY — 두 번째 실제 후보 실패의 최소 경로 관측 (2026-11-08)
+
+candidate2 run42388044377/source31998d6/packetfdfd9020은 실제 CA_UPLOAD_LOCATION_REFUSED로 실패했다. 3-role build/RR1/RR2 및 cleanup 성공은 publish/OIDC/서명/artifact 성공이 아니다. 기존 finite 두 경로는 실제 응답을 수용하지 못했으며 old진단7f의 path 정보 부족과 소진 budget을 보존한다. 추가실행은 oldrun/packet retry가 아닌 별도 검토된 source/새packet/freshattempt1의 새 진단이다.
+
+Manager는 protected upload diagnostic의 **sanitizer-only taxonomy 설계/구현 준비 GO**를 판정한다. 기존 exactOwner/Main/CI8/env265/실제platform review 및 single fixedrepo emptyPOST budget·fsyncintent·noPUT/follow/retry/redirect/opaque값보존금지를 그대로 유지한다. publisher allowlist/권한/credentialscope를 변경하지 않는다. 먼저 candidate/final/oldalias GET-only 상태와 실패run artifact inventory를 기록한다.
+
+새 taxonomy는 원path 값 대신 bounded segment count와 순서별 length/character-class flags/hash, 고정 vocabulary(v2/planner77/layoutmanager/blobs/upload/uploads)의 exact 일치 label만 제공한다. unknown segment 원문은 절대 출력하지 않는다. terminal decimal-only/UUID-shape, leading slash·trailing slash count, 반복slash/dotsegment/percentescape/encodedseparator 존재 및 exactfixedrepo singular/plural prefix 여부를 포함한다. finite parser의 원문에서의 조건별 boolean 결과(scheme/netloc/userinfo/fragment/control/ascii/path grammar/query key/percent)도 출력하여 어떤 조건이 실패했는지 구별한다. decimal/UUID classification은 값·순서추정·서버의 identity 의미를 선언하지 않는다.
+
+원Location은 ≤기존cap, segment count/각length/총artifact크기 bounded를 유지하고 unknownquerykey는 hash/length만 기록한다. known vocabulary외 raw host/path/query/opaque ID, 번호값, URI/credential/error dump0. emptyfragment/bare?#·trailing slash·중복/encodedsegment·malicious canary·긴path를 fake 응답으로 검사해 정보 충분성과 비노출을 확인한다. original rawpath와 resolvedpath taxonomy를 구별하되 URLfollow하지 않는다.
+
+Developer→Manager→독립 QA가 exactsource/hash 및 protocolparity(기존fixedAccept/zero-body/auth)를 검토한 뒤 정상 fullCI/Main을 거친 actualnewMain/newpacket에만 단일POST 검토를 적용한다. 추가실제POST의 현재 권한은 아직 준비단계이며 concretepacket/QA/실제waitingrunreview 전0. 결과가 불충분/새로운 route이면 임의 sameorigin 허용으로 전환하지 않고 PENDING이다. 두 candidate실패와 이전publicroute inference를 정확히 보존한다.
+
+**이번 구현의 TC:** (TAX-01) actual current FS upload_target의 모든 거부 조건과 진단 predicate booleans의 fake-input 동치(기존 plural-only predicate를 최신 finite upload|uploads/no-literal# 의미로 교체); (TAX-02) unknown path의 bounded raw/resolved segment taxonomy·leading/trailing/repeated slash 및 decimal/UUID/encoding 분류; (TAX-03) 고정 vocabulary외 opaque path/query/host/userinfo canary 비노출·최대출력/segment 수 제한; (TAX-04) 기존 단일POST/intent/uncertainnoRetry/redirect거부/actualOwner·CI8·envreview guard 회귀. 이 changeset은 `registry_upload_diagnostic.py`와 `test_registry_upload_diagnostic.py` 두 source/test만 변경하며 publisher upload_target·workflow권한·POST protocol은 바꾸지 않는다. 임의 URI의 원인 분류를 가짜 namespace 추정으로 대체하지 않는다.
+
+---
+
 ## TP-225-FINITE-UPLOAD-SESSION — 공개 GHCR 경로의 최소 compatibility 수리 (2026-11-08)
 
 Manager는 [직접 GHCR protocol 관측](https://gist.github.com/shizhMSFT/b77f2d7f993268a1bdd45a7462866906)과 [Jib 실제 PUT 사례](https://github.com/GoogleContainerTools/jib/issues/4301)의 singular `/blobs/upload/<uuid>` 및 OCI server-issued URL 계약을 확인했다. 이는 public route 근거이며 이번 실제 opaque Location이 singular였다는 관측은 아니다. 실제 run42383905261은 기존 path predicate 실패까지만 증명했다. 추가 진단 POST 없이 finite compatibility 수리를 진행한다.

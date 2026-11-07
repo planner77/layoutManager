@@ -1,3 +1,11 @@
+## #225 TAX 실행 경계 — 새 후보2도 실패 (2026-11-08)
+
+candidate42388044377/packetfdfd9020은 CA_UPLOAD_LOCATION_REFUSED로 실패해 재생·승격 입력으로 사용하지 않는다. 실제 후보/정식 태그 부재 및 기존0.60/latest 불변을 재조회했지만 원202 upload session의 상태는 unknown이며 삭제·재시도하지 않았다. 이전 diagnostic7f의 단일 budget도 소진됐다.
+
+후속 taxonomy는 새 source/독립 QA/필수 CI/Main/구체 packet/별도 실제 환경 review를 요구하는 새 진단이다. 같은 고정 endpoint의 빈 POST1회만 허용하며 PUT/follow/tag/delete/retry0, opaque 값 비저장을 유지한다. 지금은 코드 준비이며 추가 요청은 미실행이다. TestPlan의 TAX AC와 TestReport 실제 근거를 따른다. 운영 변경과 파일럿은 계속 보류다.
+
+---
+
 ## #225 FS — URI 보존과 descriptor에 묶인 업로드 (2026-11-08)
 
 기존 단일 진단 packet7f/run42383905261은 소진됐고 재실행하지 않는다. 관측과 공개 GHCR route 근거를 구별해 최소 호환 수리 후 전체 CI/Main을 다시 검증한다. 발급된 raw URL은 메모리에서만 한 blob과 결합해 한 번 소비하며 `_state` 등을 decode→encode로 바꾸지 않는다. fragment/userinfo/다른 origin·repo·manifest/모호한 query와 재생은 거부한다. 새 후보는 실패한70c2와 별개의 nonce/packet/source/run **attempt1**로 검토한다. 기존0.60/latest와 정식3 ref를 사전·사후 재조회하고, 부분/불확실 결과는 원장 보존 후 HALT한다. 운영 배포/자동 rollback의 권한이 아니다.

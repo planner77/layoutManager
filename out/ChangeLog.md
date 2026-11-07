@@ -1,3 +1,11 @@
+## 0.61.0 진행 — 실제 후보2 실패 보존 및 구조 진단 준비 (2026-11-08)
+
+- FS 수리는 PR255/CI681 적용8개 SUCCESS로 Main31998d6에 통합됐다. candidate45 등 독립78회귀와 실제 게시 결과를 구별한다.
+- 새 candidate42388044377은 build/RR1/RR2 뒤 CA_UPLOAD_LOCATION_REFUSED로 실패했다. OIDC/verification/artifact/정식 승격은 미실행이며 기존0.60/latest 불변·후보/정식 태그 부재를 재확인했다.
+- 경로 값을 노출하지 않는 taxonomy 진단을 준비한다. 추가 요청은 새 source/QA/full CI/Main/packet/실제 환경 review 뒤에만 수행한다. 운영 flags OFF/자동 HOLD/GO-PILOT BLOCKED 유지.
+
+---
+
 ## Unreleased — #225 finite GHCR upload-session compatibility (2026-11-08, 0.61.0 유지)
 
 - Fixed: 고정 repo의 공개 단수/복수 upload 경로와 descriptor-bound 한 번만 쓰는 세션을 준비한다. origin/namespace/manifest 경계와 stop 정책을 유지하고 raw query를 보존한다.

@@ -1,3 +1,9 @@
+## 2026-11-08 — 후보2 실제 Location 거부, 구조 진단으로 전환
+
+[CI681](https://github.com/planner77/layoutManager/actions/runs/42385929264) 적용8개 성공 및 PR255 정상 Main31998d6 뒤 새 candidate42388044377을 실행했다. 실제 보호 환경의 별도 Owner 대행 승인 기록과 build/RR1/RR2 성공은 확인했으나 publish는 다시 CA_UPLOAD_LOCATION_REFUSED로 실패했다. 서명·artifact·정식 승격은 없고 후보/정식 태그 부재·기존0.60/latest 불변을 조회했다. 공개 두 route 수리가 실제 서버 URL을 해결했다는 주장은 하지 않는다. 새 taxonomy source/QA/CI/Main/packet/실제 환경 review 후 구조를 관측하며 기존 실행은 재시도하지 않는다. TestReport/FailureLedger가 실제 결과 정본이며 #225/#218 OPEN/GO-PILOT BLOCKED를 유지한다.
+
+---
+
 ## 2026-11-08 — 단일 진단으로 path 조건 불일치 확인
 
 CI680 적용8/8과 Main d19를 확인한 뒤 실제 protected diagnostic42383905261에서 빈 POST1회·202·정제 artifact를 관측했다. 원문 URI는 미저장으로 exact route는 미확인이다. 공개 GHCR 1차 route 자료를 근거로 유한 경로/단일 descriptor session 호환 수리를 준비하며 추가 진단 POST는 없다. 실제 candidate42378293644 실패·서명/artifact 부재는 보존한다. [TestReport](TestReport.md)와 [FailureLedger](FailureLedger.md)가 정본이고 #225/#218 OPEN/GO-PILOT BLOCKED·운영 불변을 유지한다.

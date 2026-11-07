@@ -240,26 +240,61 @@ def classes(value):
 
 
 def candidate_components(location):
-    """Report existing candidate predicate components; never accept a route here."""
+    """Project the current finite uploader conditions, without following its URL."""
+    names = ('sizeValid', 'asciiValid', 'noControlOrBackslash', 'noLiteralFragment',
+             'httpsScheme', 'exactNetloc', 'noUserInfo', 'noFragment',
+             'rawPathSafe', 'pathPattern', 'strictQueryParse', 'queryKeysAllowed')
+    parts = dict.fromkeys(names, False)
+    if type(location) is not str:
+        return {**parts, 'allComponents': False}
+    parts.update(sizeValid=0 < len(location) <= 16384, asciiValid=location.isascii(),
+                 noControlOrBackslash=re.search(r'[\x00-\x20\x7f\\]', location) is None,
+                 noLiteralFragment='#' not in location)
     try:
-        absolute = urllib.parse.urljoin('https://ghcr.io', location)
-        parsed = urllib.parse.urlsplit(absolute)
+        raw = urllib.parse.urlsplit(location)
+        parsed = urllib.parse.urlsplit(urllib.parse.urljoin('https://ghcr.io', location))
+        query = parsed.query
+        parts.update(httpsScheme=parsed.scheme == 'https', exactNetloc=parsed.netloc == 'ghcr.io',
+                     noUserInfo=raw.username is None and raw.password is None
+                                and parsed.username is None and parsed.password is None,
+                     noFragment=not raw.fragment and not parsed.fragment,
+                     rawPathSafe='%' not in raw.path
+                                 and not any(v in ('.', '..') for v in raw.path.split('/')),
+                     pathPattern=re.fullmatch(
+                         r'/v2/planner77/layoutmanager/blobs/(?:upload|uploads)/[A-Za-z0-9_-]{1,200}',
+                         parsed.path) is not None,
+                     strictQueryParse=re.search(r'%(?![0-9A-Fa-f]{2})', query) is None
+                                      and (not query or ('&' not in query and query.startswith('_state=')
+                                                        and len(query) > len('_state='))),
+                     queryKeysAllowed=not query or ('&' not in query and query.startswith('_state=')
+                                                   and len(query) > len('_state=')))
     except (ValueError, UnicodeError):
-        return {'httpsScheme': False, 'exactNetloc': False, 'noFragment': False,
-                'pathPattern': False, 'strictQueryParse': False, 'queryKeysAllowed': False,
-                'allComponents': False}
-    try:
-        keys = urllib.parse.parse_qs(parsed.query, strict_parsing=True)
-        strict = True
-    except (ValueError, UnicodeError):
-        keys = {}
-        strict = False
-    parts = {'httpsScheme': parsed.scheme == 'https', 'exactNetloc': parsed.netloc == 'ghcr.io',
-             'noFragment': not parsed.fragment,
-             'pathPattern': re.fullmatch(r'/v2/planner77/layoutmanager/blobs/uploads/[A-Za-z0-9_-]{1,200}',
-                                         parsed.path) is not None,
-             'strictQueryParse': strict, 'queryKeysAllowed': strict and set(keys) <= {'_state'}}
+        return {**parts, 'allComponents': False}
     return {**parts, 'allComponents': all(parts.values())}
+
+
+def path_taxonomy(path):
+    """Describe arbitrary path segments; unknown bytes never leave this function."""
+    segments = path.split('/')
+    rows = []
+    vocabulary = {'v2', 'planner77', 'layoutmanager', 'blobs', 'upload', 'uploads'}
+    for segment in segments[:10]:
+        rows.append({'length': len(segment), 'sha256': policy.sha(segment.encode()),
+                     'classes': classes(segment),
+                     'vocabulary': segment if segment in vocabulary else 'unknown'})
+    terminal = next((value for value in reversed(segments) if value), '')
+    return {'length': len(path), 'segmentCount': len(segments), 'segments': rows,
+            'segmentsTruncated': len(segments) > len(rows),
+            'leadingSlashes': len(path) - len(path.lstrip('/')),
+            'trailingSlashes': len(path) - len(path.rstrip('/')),
+            'repeatedSlash': '//' in path, 'dotSegmentPresent': any(v in ('.', '..') for v in segments),
+            'percentEscapePresent': '%' in path,
+            'encodedSeparator': re.search(r'%(?:2f|5c)', path, re.IGNORECASE) is not None,
+            'lastNonEmptyDecimalOnly': bool(re.fullmatch(r'[0-9]+', terminal)),
+            'lastNonEmptyUuidShape': bool(re.fullmatch(
+                r'[0-9A-Fa-f]{8}(?:-[0-9A-Fa-f]{4}){3}-[0-9A-Fa-f]{12}', terminal)),
+            'fixedSingularPrefix': path.startswith('/v2/planner77/layoutmanager/blobs/upload/'),
+            'fixedPluralPrefix': path.startswith('/v2/planner77/layoutmanager/blobs/uploads/')}
 
 
 def shape(location):
@@ -284,7 +319,7 @@ def shape(location):
     prefix = '/v2/planner77/layoutmanager/blobs/uploads/'
     tail = parsed.path[len(prefix):] if parsed.path.startswith(prefix) else ''
     keys = []
-    for key, _ in query:
+    for key, _ in query[:8]:
         if key in ('_state', 'digest', 'mount', 'from', 'uuid', 'ns'):
             keys.append({'name': key})
         else:
@@ -297,14 +332,30 @@ def shape(location):
             'portPresent': port is not None, 'portClass': 'none' if port is None else ('443' if port == 443 else 'other'),
             'rawNetlocClass': netloc_class,
             'userInfoPresent': parsed.username is not None or parsed.password is not None,
-            'fragmentPresent': bool(parsed.fragment), 'fixedPathPrefix': parsed.path.startswith(prefix),
+            'fragmentPresent': bool(parsed.fragment), 'literalFragmentDelimiter': '#' in location,
+            'fixedPathPrefix': parsed.path.startswith(prefix),
             'remainderLength': len(tail), 'remainderSegments': len(tail.split('/')) if tail else 0,
             'remainderClasses': classes(tail), 'queryCount': len(query), 'queryKeys': keys,
+            'queryKeysTruncated': len(query) > len(keys),
+            'rawPath': path_taxonomy(parsed.path),
+            'resolvedPath': path_taxonomy(urllib.parse.urlsplit(
+                urllib.parse.urljoin('https://ghcr.io', location)).path),
             'duplicateQueryKeys': len(query) != len({key for key, _ in query}),
             'currentCandidatePredicate': candidate_components(location)}
     if netloc_class == 'other-hash':
         result['rawNetlocSha256'] = policy.sha(parsed.netloc.encode())
         result['rawNetlocLength'] = len(parsed.netloc)
+    # Leave room for the existing result envelope under its unchanged 8192-byte cap.
+    while len(policy.canonical(result)) > 6144:
+        largest = max((result['rawPath'], result['resolvedPath']), key=lambda v: len(v['segments']))
+        if largest['segments']:
+            largest['segments'].pop()
+            largest['segmentsTruncated'] = True
+        elif result['queryKeys']:
+            result['queryKeys'].pop()
+            result['queryKeysTruncated'] = True
+        else:
+            return {'parseCode': 'TAXONOMY_SIZE_LIMIT', 'length': len(location), 'sha256': digest}
     return result
 
 

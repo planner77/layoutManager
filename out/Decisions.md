@@ -1,3 +1,11 @@
+## #225 두 번째 upload 실패 이후 generic taxonomy 관측 (2026-11-08)
+
+candidate2 run42388044377은 current finite upload|uploads parser에서도 실제 CA_UPLOAD_LOCATION_REFUSED로 실패했다. 공개 singular route 근거는 지원 가능한 유한 경로의 compatibility 근거로 유지하지만 현재 GHCR 응답이 그 경로였다는 증거는 아니다. 실제 candidate3/final3 ref 부재와 old0.60/latest 불변, OIDC/artifact 부재 및 opaque202 session unknown을 보존한다.
+
+추가 추정 경로 수리 대신 protected diagnostic helper의 값 없는 generic raw/resolved path taxonomy와 **현행 FS parser 조건**별 booleans를 보강한다. 기존 singlePOST/OwnerMain/fullCI/envreview/opaque값비노출을 유지하고 새 source/packet 검토 뒤에만 새 한 번의 관측을 수행한다. 원packet budget 재사용/기존run retry/issuer·권한 확대/임의 sameorigin route허용/운영변경은 하지 않는다. 정확 AC/TC는 [TestPlan](TestPlan.md)의 TP-225-UPLOAD-TAXONOMY를 따른다.
+
+---
+
 ## #225 GHCR finite upload-session compatibility 결정 (2026-11-08)
 
 실제 protected 진단은 단일 POST202의 relative Location에서 기존 path predicate 불일치만 입증했다. 원 URI는 저장하지 않았으므로 이번 응답이 singular upload 경로라는 주장은 하지 않는다. 공개 firsthand GHCR/Jib 사례와 OCI server-issued URL 계약을 근거로 fixed repository의 `/blobs/upload/<id>` 및 기존 `/blobs/uploads/<id>` 두 유한 route만 수용하는 최소 구현을 계획했다. id bounds/origin/credential scope를 유지하고 실제202에서만 발급한 transient session을 exact blob digest/size/localPath에 결합해 단일 PUT 후 폐기한다. 원querybytes를 보존하고 unknown/duplicate/malformed query, 임의URL/다른repo/manifestroute 및 session재사용을 거부한다. 상세 AC는 [TestPlan](TestPlan.md)의 FS01–05다.
