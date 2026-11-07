@@ -1,3 +1,10 @@
+## Unreleased — #225 protected upload-location diagnostic (2026-11-07, 0.61.0 유지)
+
+- Added: exact source/CI/Owner run/실제 환경 review에 묶인 고정 package blob-init 1회 진단 경로를 준비한다. 원본 Location·opaque 값·credential 대신 bounded 구조/hash만 산출하며 parser 허용 범위나 이미지 태그를 바꾸지 않는다.
+- Verification: Mainb8/CI679 적용8개 성공 뒤 candidate42378293644는 publish Location guard에서 실패했다. build/RR1/RR2 성공과 서명·artifact 미실행, ref 재조회 및 opaque session unknown을 분리해 기록한다. 독립 predecessor82 guard와 최종 fixed-Accept delta의 진단9/compile/diff를 통과했다. 새 전체 CI/Main·실제 진단은 별도다.
+
+---
+
 ## Unreleased — #225 CI678 실패 관측 누락 보완 (2026-11-07, 0.61.0 유지)
 
 - Test diagnostics: 실패한 PR CI-owned App의 고정 상태·health와 Admin Site revoke의 route/시각을 cleanup 전에 bounded 출력한다. 조회/출력 실패가 원래 오류·정리를 바꾸지 않으며 POST 재시도·assertion/timeout 완화는 없다.

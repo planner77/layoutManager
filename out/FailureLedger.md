@@ -1,3 +1,11 @@
+## #225 candidate42378293644 — 실제 GHCR upload Location 검증 중단 (2026-11-07)
+
+Main `b8c8ee5ee2d4d550119a102eb9f5c9ab82f1865c`/tree `1534fe96`, reviewed packet `70c2eb90`의 [candidate run42378293644](https://github.com/planner77/layoutManager/actions/runs/42378293644)는 **FAILURE**다. 실제 별도 Environment 검토는 Owner를 대행한 Root API action으로 승인·history를 확인했으며 새로운 인간/독립2인 승인은 아니다. 3-role build/RR1 graph/digest·6 negatives와 RR2/RR3 journey는 성공했지만, publish step의 `CA_UPLOAD_LOCATION_REFUSED`로 exit1이었다. OIDC 서명·검증·후보 artifact upload는 SKIPPED, artifact inventory0, 소유 local cleanup은 SUCCESS다.
+
+이는 blob-init POST202 뒤 Location의 고정 origin/path/query 제약 중 하나가 맞지 않았다는 경계다. 실제 원본 Location은 기록되지 않아 실패한 필드를 추정하지 않는다. Root의 실제 pull-only 재조회는 candidate3/final3 모두 authenticated absent, 기존0.60/latest digest 불변이다. 원202의 opaque upload-session 상태는 unknown이며 자동 delete/cancel/retry를 하지 않았다. 기존 Owner OAuth는 read:packages만 확인돼 local POST0이다. 같은 protected Main/Owner environment에서 제한된 안전 구조만 관측하는 별도 진단을 준비한다. 실제 진단 또는 parser 수리·게시 성공으로 이 실패를 재분류하지 않는다. 정제된 근거는 Git 제외 `candidate-42378293644-failure-audit.json`, `candidate-run42378293644-postfailure-registry-readback.json`, `upload-location-existing-authority-readiness.json`이다.
+
+---
+
 ## #225 CI678 — Admin 권한 회수 POST transport 실패 (2026-11-07)
 
 [PR253 CI678](https://github.com/planner77/layoutManager/actions/runs/42373629270)는 source `cbebce9de7e2c47d975982080389951566009ef1`, archive `722d0e5ba7cdd9119ad0a25dad7322b5daea4a9f`/동일 tree `ed05eb7aad69af4dbed316e1703679d25a2d5386`에서 **FAILURE**. 적용8개 중6 SUCCESS, Docker runtime smoke FAIL 및 종합 required gate FAIL; A2 범위 외 SKIPPED. Static175 files/1103 tests·build와 General Chromium2/G7 UI/G7 runtime E2E는 모두 SUCCESS다.

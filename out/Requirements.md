@@ -1,3 +1,9 @@
+## NFR-225-UL — 보호된 레지스트리 업로드 형식 진단 (2026-11-07)
+
+후보 게시가 실제 registry 응답 형식 검증에서 중단되면, 기존 데이터·태그를 읽기 전용으로 확인하고 원인 규명 전 허용 형식을 확대하지 않는다. 기존 push 권한을 증명하지 못한 로컬 인증에 새 권한을 요구하는 대신, exact source/full CI·Owner Main attempt1·실제 환경 검토에 묶인 별도 진단으로 고정 package의 빈 blob-init POST를 한 번만 관측할 수 있다. 원본 URL·opaque ID/query 값·credential은 메모리 밖으로 남기지 않고, 제한된 구조·길이·hash만 산출한다. 후보·정식 이미지 게시 및 운영 승인으로 해석하지 않는다. 상세 AC/TC는 [TestPlan](TestPlan.md)의 TP-225-PROTECTED-UPLOAD-DIAGNOSTIC, 실제 실행 여부는 [TestReport](TestReport.md)를 따른다.
+
+---
+
 ## FR-225-B1-G7 신규 릴리스 조건 (2026-11-04)
 
 - 신규 0.60.0 스키마 ID·Job 기준선, 0.59→0.60 승인 MIGRATION과 리뷰된 DDL/Checksum/복구 세트가 필수다.

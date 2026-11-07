@@ -1,3 +1,9 @@
+## #225 — 후보 게시 중단 및 보호된 업로드 형식 진단 준비 (2026-11-07)
+
+[CI679](https://github.com/planner77/layoutManager/actions/runs/42376036144)의 적용8개 Job을 통과해 Main `b8c8ee5e`를 확정했다. 실제 후보 실행은 build/RR1/RR2 후 업로드 Location guard에서 중단됐고 서명/후보 artifact는 생성되지 않았다. 재조회에서 후보·정식0.61 태그는 모두 부재, 기존0.60/latest는 유지됐다. 원본 주소·credential을 남기지 않는 별도 protected 단일 요청 진단을 준비한다. 실제 결과·한계는 [TestReport](out/TestReport.md), 후속 실행 경계는 [Operation](out/Operation.md)를 따른다. 운영 활성화와 GO-PILOT은 계속 보류다.
+
+---
+
 ## #225 — 실제 출시 통제 시험 26건 감사 완료 (2026-11-07, 0.61.0 유지)
 
 Owner/Actions 기본 권한12건과 보호 ref 거부14건을 실제 관측하고 독립 QA가 규칙 평가 증거를 수용했다. 원래 strict helper의 기대값 불일치·모호성은 PENDING으로 보존한다. Main/v* 보호 복원과 시험 자원 정리를 완료했으며, 기존 publisher 비활성·package 권한·보호 Environment를 확인했다. GHCR 인증 응답 호환성과 CI 실패 진단을 보완하고 새 full CI 후 private 3-image 후보·정식 승격을 진행한다. 아직 게시 완료나 GO-PILOT이 아니다. 실제 결과·한계는 [TestReport](out/TestReport.md), 실행 경계는 [Operation](out/Operation.md)를 따른다. 운영 Scene flags OFF/자동 출고 HOLD를 유지한다.

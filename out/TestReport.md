@@ -1,3 +1,19 @@
+## U-225-UL-LOCAL — 보호된 단일 POST 진단의 로컬 검증 (2026-11-07)
+
+Developer의 새 진단/CI 연결 4개 source를 Manager가 검토했고 독립 QA가 사전 source의 진단9+기존 candidate40/registry15/promotion18=82개 offline guard를 통과했다. 이어 실제 후보와 같은 고정 Accept 헤더만 추가한 최종 source는 독립 진단9/compile/diff를 다시 통과했으며 이전 82개 근거는 predecessor hash로 구분해 보존했다. YAML2개 파싱·inline plan 유효/무효 packet, 기존 Location predicate와 10개 합성 URI의 동등 비교·canary 비노출도 확인했다.
+
+최종 helper SHA256 `4d9dac256c2af682aa5cf18c899a7d3795b99e0bdb94f1be620cf41251214d80`, test `db5c994e0667860a23525f38569b8cf7f06b44bc3f866eb64b0aefba824d7e65`; 독립 QA receipt `dc59f7c6d4e82481cf51d1dc897a62780299e9bb41d498f090e854198ec0c837`. 순수 정제 결과는 문자·포트 분류와 현재 publisher 조건별 bool만 보존한다. 실제 GHCR POST/진단 실행0이며 새 full CI/Main·concrete packet·actual platform review 전 실행하지 않는다. 이 시험은 Location 허용 확대나 후보 게시의 성공 증거가 아니다.
+
+---
+
+## U-225-CANDIDATE-FAIL — 승인된 후보 실행의 실제 실패 (2026-11-07)
+
+[PR253](https://github.com/planner77/layoutManager/pull/253)의 최종 source `5096b2e1` / [CI679](https://github.com/planner77/layoutManager/actions/runs/42376036144)는 적용8/8 SUCCESS, A2 scope SKIP다. archive `152132fd`와 정상 Squash Main `b8c8ee5e`는 모두 tree `1534fe96`이며 정확 source/parent 관계를 확인했다. 기존 CI678 UNKNOWN 실패는 보존한다.
+
+이 Main의 실제 protected candidate run42378293644는 build/RR1/RR2를 통과했으나 publish Location guard에서 실패했다. 서명/검증 및 artifact는 없으므로 승격 입력이 아니다. 후보·정식6 ref는 실제 재조회에서 모두 부재, 기존0.60/latest는 불변이다. 정확 실패·불명 session 상태와 승인 범위는 [FailureLedger](FailureLedger.md)의 candidate42378293644가 정본이다. 다음 protected one-POST 진단은 구현 준비이며 실제 실행0, parser 변경0, 후보 재시도0이다. 운영 배포·DB/CAD/Volume/.env/플래그 변경0, GO-PILOT BLOCKED.
+
+---
+
 ## U-225-P1D-OBS — CI678 미재현 및 실패 진단 검증 (2026-11-07)
 
 동일 tree의 격리 로컬 App/Migrator/Worker와 실제 HTTP→Viewer→권한 회수·변조·미지원 경로를 세 차례 실행해 모두 통과했다. `LOCAL_SIMULATED_P1D`이며 GitHub-hosted CI/후보 게시/운영 시험이 아니다. CI678 `socket hang up`은 **CAUSE UNKNOWN / NOT REPRODUCED**로 남긴다. 재시도나 제품 수리를 했다고 주장하지 않는다.

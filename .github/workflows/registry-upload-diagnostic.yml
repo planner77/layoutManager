@@ -1,0 +1,150 @@
+name: Issue 225 protected GHCR upload Location diagnostic
+run-name: UPLOAD DIAGNOSTIC | ${{ inputs.packet_sha256 }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        type: choice
+        options: [plan, diagnose]
+        default: plan
+        required: true
+      packet_json:
+        type: string
+        required: true
+      packet_sha256:
+        type: string
+        required: true
+      environment_ui_json:
+        type: string
+        default: ''
+        required: false
+
+permissions: {}
+concurrency:
+  group: issue225-upload-diagnostic
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    if: inputs.mode == 'plan'
+    name: Upload diagnostic plan (zero HTTP)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Verify the packet hash without credentials or HTTP
+        env:
+          UL_PACKET_JSON: ${{ inputs.packet_json }}
+          UL_PACKET_SHA256: ${{ inputs.packet_sha256 }}
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, os, re
+          raw=os.environ['UL_PACKET_JSON'].encode()
+          digest=os.environ['UL_PACKET_SHA256']
+          if len(raw)>16384 or not re.fullmatch('[0-9a-f]{64}',digest) or hashlib.sha256(raw).hexdigest()!=digest:
+              raise SystemExit('UL_PLAN_PACKET_INVALID')
+          def unique(pairs):
+              value={}
+              for key,item in pairs:
+                  if key in value: raise ValueError('duplicate')
+                  value[key]=item
+              return value
+          try:
+              p=json.loads(raw,object_pairs_hook=unique)
+              keys={'kind','repository','repositoryId','ownerId','package','packageId','sourceCommit',
+                    'sourceTree','workflowCommit','workflowPath','environmentId',
+                    'environmentConfigSha256','environmentUiObservationSha256','requiredCi',
+                    'nonce','purpose','fixedEndpoint','postBudget'}
+              ci=p['requiredCi']
+              valid=(type(p) is dict and set(p)==keys and
+                     p['kind']=='GHCR_UPLOAD_LOCATION_DIAGNOSTIC_V1' and
+                     p['repository']=='planner77/layoutManager' and p['repositoryId']==1359528829 and
+                     p['ownerId']==45478892 and p['package']=='ghcr.io/planner77/layoutmanager' and
+                     p['packageId']==14938097 and
+                     re.fullmatch('[0-9a-f]{40}',p['sourceCommit']) and
+                     re.fullmatch('[0-9a-f]{40}',p['sourceTree']) and
+                     p['workflowCommit']==p['sourceCommit'] and
+                     p['workflowPath']=='.github/workflows/registry-upload-diagnostic.yml' and
+                     p['environmentId']==26560473351 and
+                     p['environmentConfigSha256']=='fe77c0935872e85218b9d6af8ae034ed8c63e2c90526f5c7154057ea7dbb90d3' and
+                     (p['environmentUiObservationSha256'] is None or
+                      re.fullmatch('[0-9a-f]{64}',p['environmentUiObservationSha256'])) and
+                     re.fullmatch('[0-9a-f]{16}',p['nonce']) and
+                     p['purpose']=='observe-one-zero-byte-blob-init-location-no-follow-no-publish' and
+                     p['fixedEndpoint']=='https://ghcr.io/v2/planner77/layoutmanager/blobs/uploads/' and
+                     type(p['postBudget']) is int and p['postBudget']==1 and type(ci) is dict and
+                     set(ci)=={'runId','headSha','archiveSha','treeSha','workflowId','runAttempt'} and
+                     all(type(ci[k]) is int and ci[k]>0 for k in ('runId','workflowId','runAttempt')) and
+                     re.fullmatch('[0-9a-f]{40}',ci['headSha']) and
+                     re.fullmatch('[0-9a-f]{40}',ci['archiveSha']) and ci['treeSha']==p['sourceTree'])
+          except (KeyError,TypeError,ValueError,AttributeError):
+              valid=False
+          if not valid: raise SystemExit('UL_PLAN_PACKET_INVALID')
+          print('UL_PLAN_ONLY HTTP=0 CREDENTIALS=0 MUTATIONS=0 APPROVAL=NOT_VERIFIED')
+          PY
+
+  environment-readback:
+    if: >-
+      inputs.mode == 'diagnose' && github.event_name == 'workflow_dispatch' &&
+      github.ref == 'refs/heads/main' && github.actor_id == '45478892' &&
+      github.event.sender.id == 45478892 && github.run_attempt == 1
+    name: Read protected upload diagnostic environment
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+    env:
+      UL_PACKET_JSON: ${{ inputs.packet_json }}
+      UL_PACKET_SHA256: ${{ inputs.packet_sha256 }}
+      UL_UI_JSON: ${{ inputs.environment_ui_json }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Read only the existing protected Main environment
+        env:
+          UL_JOB_TOKEN: ${{ github.token }}
+        run: python3 src/tests/oci/registry_upload_diagnostic.py preread
+
+  diagnose:
+    needs: environment-readback
+    if: >-
+      inputs.mode == 'diagnose' && github.event_name == 'workflow_dispatch' &&
+      github.ref == 'refs/heads/main' && github.actor_id == '45478892' &&
+      github.event.sender.id == 45478892 && github.run_attempt == 1
+    name: Upload diagnostic | ${{ inputs.packet_sha256 }}
+    environment: issue225-candidate-publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+      packages: write
+    env:
+      UL_PACKET_JSON: ${{ inputs.packet_json }}
+      UL_PACKET_SHA256: ${{ inputs.packet_sha256 }}
+      UL_UI_JSON: ${{ inputs.environment_ui_json }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Recheck exact source, protection, approval and eight CI jobs
+        env:
+          UL_JOB_TOKEN: ${{ github.token }}
+        run: python3 src/tests/oci/registry_upload_diagnostic.py gate
+      - name: Observe one zero-byte fixed-package blob-init response
+        env:
+          UL_JOB_TOKEN: ${{ github.token }}
+        run: python3 src/tests/oci/registry_upload_diagnostic.py observe
+      - name: Upload the sole safe diagnostic JSON
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: issue225-upload-diagnostic-${{ github.run_id }}
+          path: ${{ runner.temp }}/issue225-upload-diagnostic-public/result.json
+          if-no-files-found: ignore
+          retention-days: 7
