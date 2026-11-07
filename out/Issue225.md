@@ -1,3 +1,11 @@
+## 2026-11-08 — 승인된 통제·registry 출고 검증 완료 / 파일럿 NO-GO
+
+Main33f377/CI683 적용8개 PASS의 [candidate42396085571](https://github.com/planner77/layoutManager/actions/runs/42396085571)과 별도 실제 review의 [promotion42398185878](https://github.com/planner77/layoutManager/actions/runs/42398185878)을 완료했다. private3개의 원문·digest·서명·실행 및 최종0.61태그3 동일성, 기존396버전/0.60/latest와 보호 설정·legacy 보존을 확인했다. reader/실제26case 외부 감사 수용과 registry 출고 근거를 묶되 strict helper PENDING/기대값 불충족을 PASS로 바꾸지 않는다.
+
+승인된 작업1–4의 registry 검증과 판정은 마쳤지만 운영0.58의 동일 스냅샷 backup/schema/RPO/restore/old App start가 미확인으로 GO-PILOT NO-GO다. 운영 배포·flags 활성화/latest/Git tag/issue 종료는 하지 않는다. #225/#218 OPEN, 자동 publisher HOLD/Scene flags OFF를 유지한다. 상세 source/실행/digest/실제 한계는 TestReport가 정본이다.
+
+---
+
 ## 2026-11-08 — 실제 singular ID의 dot 관측과 수리
 
 PR256/CI682 적용8/8 및 Main72181f4 뒤 별도 실제 환경 review를 거친 taxonomy42392837552가 POST1회·202·정제 artifact를 남겼다. fixed singular upload ID의 한 segment에 dot이 포함됐으며 나머지 현행 조건은 모두 참이었다. 주소 원문·token 구조·과거 실패 URI를 복원하지 않는다. bounded singular ID 문자 허용만 보완하고 새 QA/full CI/Main/candidate packet/실제 review 뒤 게시를 검증한다. 이전 후보 실패2건·소진 진단 budget2건을 보존하며 정식 승격/운영 시작은 아직 없다. TestReport가 정본, #225/#218 OPEN/GO-PILOT BLOCKED 유지.

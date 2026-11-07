@@ -1,3 +1,11 @@
+## #225 — 비공개 0.61.0 이미지3개 게시·승격 검증 (2026-11-08)
+
+App `0.61.0`, Migrator `0.61.0-migrate`, CPU Worker `0.61.0-cpu-worker`를 `ghcr.io/planner77/layoutmanager`에 비공개로 게시했다. [실제 후보](https://github.com/planner77/layoutManager/actions/runs/42396085571)와 [별도 승격](https://github.com/planner77/layoutManager/actions/runs/42398185878)에서 동일 manifest 원문/digest, 실제 서명·실행·복구 및 정리 근거를 확인했다. 기존0.60/latest는 유지했다. 정확 digest·source·검증 한계는 [TestReport](out/TestReport.md), 실행 경계는 [Operation](out/Operation.md)를 따른다.
+
+운영 배포는 수행하지 않았고 Scene flags OFF/자동 publisher HOLD를 유지한다. 파일럿은 운영0.58 백업·복구 근거 부족으로 NO-GO이며 두 이슈는 열어 둔다.
+
+---
+
 ## #225 — 실제 업로드 식별자의 점 관측 및 최소 수리 (2026-11-08)
 
 [PR256](https://github.com/planner77/layoutManager/pull/256)/CI682의 필수8개 성공 뒤 보호된 단일 구조 진단을 완료했다. 고정 singular upload 경로의 한 식별자에서 점을 관측해 해당 경로의 문자 허용만 보완한다. 주소 원문·토큰 형식은 복원하지 않으며 기존 경로 이동/권한/한 번 업로드 제한은 유지한다. 새 실제 후보 게시와 정식 승격은 아직 미완료다. 결과는 [TestReport](out/TestReport.md), 실행 기준은 [TestPlan](out/TestPlan.md)을 따른다. 기존0.60/latest 유지·운영 활성화와 파일럿 보류를 계속 적용한다.

@@ -1,3 +1,11 @@
+## #225 승인된 작업1–4의 충족 범위 (2026-11-08)
+
+독립 reader·Owner/Actions capability12/거부14의 실제 외부 감사 수용·최종 보호/시험 자원 정리·legacy disable/거부·권한/보호 Environment·private candidate3와 exact final3 승격의 실제 근거를 확보했다. 원 strict helper의 PENDING/directFF 기대값 불충족 및 공동 rule 실패의 인과 한계는 소급 PASS로 바꾸지 않는다.
+
+충족 범위는 승인된 통제·registry 출고 검증과 정직한 파일럿 판정이다. 실제0.58 운영 DB의 동일 스냅샷/schema/RPO/restore/old App start 근거는 미확인이고 GO-PILOT NO-GO다. 실도면·운영 배포·flags 활성화·latest/Git tag 변경·issue 종료는 별도다. 추적 관계와 실제 수치는 TestPlan/TestReport가 정본이다.
+
+---
+
 ## #225 DOT — 실제 문자 분류에 따른 bounded ID 호환 (2026-11-08)
 
 actual taxonomy2의 fixed singular upload prefix/식별자39자 alpha·digit·hyphen·dot/기타 조건 참을 근거로 singular ID1–200자에 literal dot을 허용한다. plural charset은 그대로 두며 raw 단독 . 또는 ..·encoded path·traversal·다른 repo/origin/route 거부와 raw query/단일 descriptor session을 유지한다. UUID suffix·점 위치/개수 등의 형식은 확정하지 않는다. 상세 AC/TC는 TestPlan DOT01–05, 실제 결과는 TestReport가 정본이다.

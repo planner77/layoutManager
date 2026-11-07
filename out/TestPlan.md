@@ -1,3 +1,17 @@
+## #225 실제 완료 추적 — registry와 운영 수용의 분리 (2026-11-08)
+
+| 요구사항/AC | 구현 또는 실제 통제 | 검증/실제 결과 |
+| --- | --- | --- |
+| reader/CP | M62 helper·Owner/Actions matrix·같은 ID의 최종 Main/v* 정책 | 실제12 capability+14거부 외부 감사/독립 QA 수용, 최종 복원·own fixtures 정리; strict PENDING/직접FF 기대값 미충족과 공동실패 한계 보존 |
+| LP/writer/environment | legacy355693716 disabled·168완료·safe probe 거부·Owner 보고 패키지 ACL·환경265 | 실제 disabled-rerun403/3번째 rerun POST0, 최종 private399/기존396불변, main-only/sole Owner/false admin bypass; 새 API grant attestation은 없음 |
+| DOT01–05/RA | singular ID dot·공통 grammar·bounded session·fresh source33/CI683/candidate5283 | 로컬독립93+추가57, 실제 CI47/13·Vitest1103/필수8개, candidate42396085571의 graph/runtime/복구/OIDC4/negative6/정리 PASS |
+| RF-C/RC | signed candidate 원문을 exact3 final ref로 복사 | promotion42398185878의 별도 실제 review·fresh crypto/graph·COMPLETE3/3 및 독립 최종 raw bytes/digest/config/기존 별칭 보존 |
+| 파일럿/운영 수용 | registry-only baselinea6와 operating0.58을 구별 | 운영 동일 snapshot/schema/RPO/restore/old App start 미확인으로 NO-GO; 배포/flags/latest/Git tag/issue 종료0 |
+
+결과 정본과 exact digest는 TestReport U-225-REGISTRY-20261108이다. 순차 registry 관측은 atomic 변경·외부 writer 완전 배제 증거가 아니다.
+
+---
+
 ## TP-225-OBSERVED-DOTTED-UPLOAD-ID — 실제 singular 세션 ID 문자 보완 (2026-11-08)
 
 실제 protected taxonomy2 run42392837552/source72181/packet97218의 결과 SHA20cbbaa4034a1a0cbb8ce3e3aa8b4ee35683c007b7fd52b6f930a8a7d34baa29를 Manager가 확인했다. 단일POST202 응답의 raw/resolved path는 동일 fixed singular `/v2/planner77/layoutmanager/blobs/upload/` prefix이며 마지막 단일 segment length39/classes alpha,digit,hyphen,dot, query0이었다. 모든 currentFS 조건이 true이고 pathPattern만 false다. dot 위치/개수/UUID 또는 숫자 suffix 의미는 미관측이며 원문 ID는 미보존이다. 이 정보로 추가 diagnostic POST 없이 최소 실제 문자 보완을 수행한다.

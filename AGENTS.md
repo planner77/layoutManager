@@ -1,3 +1,9 @@
+## #225 출고 검증 완료 후 재개 (2026-11-08)
+
+최신 실제 결과는 [TestReport](out/TestReport.md)의 U-225-REGISTRY-20261108을 먼저 읽는다. 승인된 candidate/promotion에서 비공개0.61 이미지3개와 원문·서명·기존0.60/latest 보존을 검증했다. 아래 미게시/태그 부재 문구는 당시 이력이다. 자동 publisher HOLD/Scene flags OFF는 유지하며 이 명시적3태그 승격과 구별한다. GO-PILOT은 운영0.58의 동일 스냅샷 백업/schema/RPO/restore 근거가 없어 NO-GO이고 #225/#218은 OPEN이다. 운영 배포·Git tag·latest 교체는 수행하지 않았다.
+
+---
+
 ## #225 DOT 재개 — 실제 식별자 문자만 최소 수리 (2026-11-08)
 
 출고 재개 시 [TestReport](out/TestReport.md)의 U-225-TAX-ACTUAL 및 U-225-DOT-LOCAL, [TestPlan](out/TestPlan.md)의 DOT01–05를 먼저 읽는다. 실제 한 응답의 singular upload 식별자에서 점을 관측했으며 원문·점 위치/개수·UUID 의미는 미확인이다. 두 진단 budget은 소진됐고 추가 진단은 없다. 새 source/QA/CI/Main/packet/별도 실제 환경 review 뒤 새 candidate를 수행한다. 기존 두 후보 실패·운영 flags OFF/자동 HOLD/GO-PILOT BLOCKED를 유지한다.

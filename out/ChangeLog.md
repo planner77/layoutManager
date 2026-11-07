@@ -1,3 +1,11 @@
+## 0.61.0 — 승인된 private 3-image 출고 검증 완료 (2026-11-08)
+
+- Source Main33f377/CI683 필수8개 PASS에서 candidate42396085571의 세 이미지/GHCR graph·digest runtime/RR1/RR2/RR3/정리 및 OIDC4-subject/6negative 검증을 완료했다. Root도 고정 CLI로 online/bundle8회 실제 암호 검증을 수행했다.
+- 별도 실제 Environment review의 promotion42398185878에서 원문을 재생성하지 않고 App0.61.0/Migrator0.61.0-migrate/CPU Worker0.61.0-cpu-worker를 승격했다. 후보와 최종 raw bytes/digest 동일·private399(기존396불변+신규3)·기존0.60/latest·보호 설정/legacy 보존을 조회했다.
+- 이전 실패2건과 진단 budget2건은 이력으로 유지한다. 자동 publisher HOLD/Scene flags OFF·GO-PILOT NO-GO·운영 배포0/두 이슈 OPEN을 유지한다. 정확 digest와 한계는 TestReport를 따른다.
+
+---
+
 ## 0.61.0 진행 — 실제 점 포함 업로드 ID의 최소 수리 (2026-11-08)
 
 - PR256/CI682 필수8개 PASS/Main72181f4 뒤 새 protected taxonomy 진단42392837552에서 빈 POST1회·202·정제 artifact를 확인했다. fixed singular upload ID의 dot 분류를 실제 관측했으며 원문·토큰 형식은 미확인이다.

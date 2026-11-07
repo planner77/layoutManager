@@ -1,3 +1,29 @@
+## U-225-REGISTRY-20261108 — 실제 private 3-image 게시·승격 및 판정
+
+**결과:** 승인된 reader/통제/registry 작업1–4의 실행·검증과 판정을 완료했다. 파일럿은 **NO-GO**다. 운영0.58의 동일 스냅샷 backup/schema/RPO/restore/old App start 근거가 미확인이고 운영 DB/CAD/Volume/.env·배포·flags·latest/Git tag를 변경하지 않았다. #225/#218은 OPEN, 자동 publisher HOLD/두 Scene flags OFF를 유지한다. 아래 과거의 미게시/태그 부재 기록은 당시 상태다.
+
+**Source/CI:** [PR257](https://github.com/planner77/layoutManager/pull/257) head `d9f6c440503b2db552c0ee9cac96eee8c8585f01`/tree `12be28269cd0114f194fbf088e4a25632347c34b`의 [CI683](https://github.com/planner77/layoutManager/actions/runs/42393724364)는 적용8/8 SUCCESS/A2 scope SKIP다. 실제 archive `0a415176ba96528ea6b6ee31c3dd7072030540af`/동일tree/정확[Main721,headD9] 부모를 독립 확인했고 정상 Main `33f377c3282e99b87aa487b9924edf305ca1753b`를 확정했다. CI receipt `5d25e4463d22054fde1599635fda1fd60ee3a44f37e8938c176cc2f9e085a418`. 로컬독립93/추가57 및 실제 classifier candidate47/diagnostic13·Vitest175files/1103tests, type/lint/build/Docker/E2E가 PASS다.
+
+**실제 후보:** packet `52838e3ff34dc880701a595583f31aaab521f31ae45d53ab02db7dff13a2516b`의 [run42396085571](https://github.com/planner77/layoutManager/actions/runs/42396085571) attempt1/job128473662769은 fresh live preflight와 별도 실제 환경265 review 뒤 build3/RR1/RR2/RR3/GHCR graph/digest runtime/정리/OIDC4-subject/6negative를 완료했다. Root는 담당 Developer의 반복 context 복구 실패에 따른 구현 대행과 실제 run 모니터링을 수행했다. QA는 source/CI/구체 artifact를 독립 검토했으며 연속 runtime 모니터링이나 별도 CLI 실행을 했다고 기록하지 않는다.
+
+정확1 artifact13583673541/ZIP `sha256:4a699fe36226ce388941aeb8607cba0ac3d9c1b1e30795aed8f8b4f5591fec36`/정확4파일(candidate-receipt.json, candidate-bundle.sigstore.json, verification.json, SHA256SUMS)을 확인했다. receipt `5875396cee73ae772879510649725a4fd737af07a68819728814b66d3213ab62`, bundle `fbe7f2ceadefa2baafc15eb4e88873ad9768116352f78f8e9c660901aeb07428`, verification `71beb3c682d83d9d685321c2a27e2e9d6be206d66a54508ce3cb6a4d7f2b9444`, sums `3d0e445a177d580db8635d65656cf1a8f3be49a9cbe1b8e96e04d053a65ce1a1`. 독립 artifact QA `13860098f8d92b6194f419a9b4e0c3a7aa6bb0c24787942934d55880ca3bd103`는 DSSE/subject/source/실제 job28단계/4파일/승인/control을 수용했다. Root도 checksum 고정 gh2.103.3으로 각3 manifest와 receipt를 online/bundle8회 실제 검증하고 certificate의 Owner/repo ID/source/signer/ref/run/hosted/SLSAv1/정확4subject map을 확인했다. 독립 암호 receipt `1755282d6cda2884cd10b00e0fa90aff9c25f0a954364e4db82f01831cfe24a4`; 별도 음성6건은 실제 workflow의 paired positive/CLI 거부/verified-material policy 근거로 구별한다.
+
+**별도 승격:** packet `9f4bf0fb2b5b4878bd4d06de3a9c00f90ec815847884ed720391c6b2e04e4af4`의 [run42398185878](https://github.com/planner77/layoutManager/actions/runs/42398185878) attempt1/job128480035670은 별도 실제 환경 review와 fresh graph/crypto 검증 후 exact3 final manifest만 승격했다. source A/code B는 모두33f377/tree12be/CI683이며 재빌드/blob PUT/새 provenance·latest/Git tag/rollback/deploy는 없다. candidate와 promotion의 actual review는 Root가 기존 사용자 승인 작업1–4에서 Owner를 대행해 API/approval history로 확인했으며 **독립 두 번째 사람은 아니다**.
+
+정확1 promotion artifact13584725743/ZIP `sha256:52f6447a2bdd1aaf6c3dd74c3a46cdaa6a3e2a4b9220dd50911233af2bc8811f`/정확2파일을 확인했다. progress `5134d1b58b4b8aad5e1e8095113555bf348430014ab84a1ce6e4d5ca0fff1c71`, operation receipt `63b81ba993031e18ff60f836d844032ed30644dbe665abde09e4b5b0eb90a1a0`는 COMPLETE/attempted3/confirmed3이다. 단순 journal과 별도 authenticated 실제 readback을 구별했다.
+
+| 역할 | 정식 private image tag | 후보와 동일한 manifest digest |
+| --- | --- | --- |
+| app | `ghcr.io/planner77/layoutmanager:0.61.0` | `sha256:c4f8b576278067d990856c4f908a32982f8cbe0d2b1e96969a428472456d19ba` |
+| migrator | `ghcr.io/planner77/layoutmanager:0.61.0-migrate` | `sha256:cc40e88172685694306686d521e439ecb058a1a79267ab862a6ddbf5ebf74269` |
+| cpu-worker | `ghcr.io/planner77/layoutmanager:0.61.0-cpu-worker` | `sha256:b97a58c964af766ad7fa9b4b2c7b5db526cf3e55faeb371f7444fd42aefed92b` |
+
+**최종 읽기 검증:** config/platform/user/source/role·old0.60/latest readback `1b48970a667a441c48b5d8bb443baaa537b78be33cfdfd492a94b1c94025cc14`와 별도 postrelease audit `7114209c186a048c98b5ba51a0931fc581c6d826950019a9996774e5ed071c46`는 세 raw manifest bytes/digest/media/size의 후보·final 일치, config source33/version0.61/role/linux-amd64/Usercad, private399(기존396전부불변+새3개 각candidate/final2태그), Main/v* 정책26731716/26731135 active/no bypass·Owner never, 환경fe77/main-only/sole Owner/false bypass, legacy355693716 disabled/168완료 불변·repo Owner-only/team0/defaultread를 확인했다. 최종 독립 QA receipt `06011e4d5cdf1e4fa64e0792da043be51e4189b10df40ab4cc6ebbed02c671d2`의15/15 검증과 Manager completion receipt `1966e3074ae31106620845c5ee4e46d5f209a21b5e18d13751922f3208909db8`가 scoped registry publication을 수용했다. GO-PILOT은 운영 근거 부족으로 NO-GO다.
+
+**통제/한계/다음 Unit:** reader·실제Owner/Actions12capability+14거부 외부 감사/독립QA 수용·최종정책복원·own fixture정리의 receipt1ad/Manager3f 및 legacy496을 유지한다. 원 strict helper PENDING, 직접FF의 PR-fail 기대값 불충족과 공동 rule 실패의 인과 한계를 소급 PASS로 바꾸지 않는다. 이전 후보70c2/fdfd FAILED/artifact0와 두 진단7f/972의 소진 budget도 보존한다. 패키지 Actions grant는 기존 Owner UI 보고(layoutManager Admin/상속 체크/members 없음)를 유지하며 새 API/UI grant attestation이 아니다. 실제 protected job의 후보·승격 쓰기는 증명됐지만 Root OAuth를 packages writer로 relabel하지 않는다. 순차 readback은 atomic multi-tag transaction·외부 writer 완전 배제 보장이 아니다. baselinea6는 registry-only이며 운영0.58 근거를 대체하지 않는다. 다음 최소 Unit은 해당 운영 동일 스냅샷/backup/schema/RPO/restore/old App start를 검증한 뒤 파일럿을 재판정하는 것이다. 이 문서 기록 commit/push는 실제 이미지 source33과 별도다.
+
+---
+
 ## U-225-DOT-LOCAL — Root 대행의 관측 기반 최소 수리 (2026-11-08)
 
 Manager가 DOT01–05 요구사항/AC를 먼저 기록했고, 기존 Developer의 반복 context 복구 실패/source 변경0을 근거로 Root가 구현 대행을 계속했다. fixed singular ID 문자에만 dot을 추가하고 기존 plural charset·raw dot-segment/인코딩/경로 이동·다른 repo/origin 거부·한 번 소비하는 descriptor session을 유지했다. diagnostic은 공통 UPLOAD_PATH를 참조한다.

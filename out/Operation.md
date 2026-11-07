@@ -1,3 +1,11 @@
+## #225 검증된 이미지 조회 및 운영 HOLD (2026-11-08)
+
+비공개 `ghcr.io/planner77/layoutmanager`의 `0.61.0`/`0.61.0-migrate`/`0.61.0-cpu-worker`를 실제 게시·승격했다. source A와 code B는33f377이며 정확 immutable digest는 TestReport U-225-REGISTRY-20261108의 단일 표를 기준으로 한다. 후보의 원문 graph/서명/digest runtime을 검증했고 version3개는 같은 raw manifest bytes를 가리킨다. 최신 source 문서 commit과 이미지 source commit을 혼동하지 않는다.
+
+기존0.60/latest 및 자동 publisher HOLD/보호 정책/legacy disable을 유지한다. 현재 이미지 출고는 운영 배포·flags 활성화·Git tag/latest 교체·rollback 실행 승인이 아니다. 다음 최소 단계는 운영0.58의 동일 스냅샷 backup/schema/RPO/restore/old App start 근거 확보와 파일럿 재판정이다. 현재 GO-PILOT NO-GO·운영 DB/CAD/Volume/.env 변경0/두 이슈 OPEN을 유지한다. 기존 실패 후보나 소진된 두 진단 packet은 재생하지 않는다.
+
+---
+
 ## #225 DOT — 구조 진단 완료 후 실행 경계 (2026-11-08)
 
 새 taxonomy diagnostic42392837552/packet97218a2d는 실제 환경 review 후 POST1회·202·정제 artifact를 남겼다. singular prefix의 opaque ID에서 dot 분류를 관측했지만 URI 원문·식별자 의미/점 위치/개수는 미확인이다. 이 budget과 이전7f는 소진됐으며 follow/PUT/cancel/delete/retry0을 유지한다. 추가 진단 POST는 필요하지 않다.
