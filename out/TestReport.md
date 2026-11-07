@@ -2,7 +2,7 @@
 
 기존 Developer에게 Manager 지시를 전달했으나 완료 agent를 깨우지 못한 지연이 있었고, 재개 후에도 Developer가 context reset/private recovery 실패를 보고했다. Developer는 source 변경0을 확인했다. Root가 실제 구현을 대행했으며 Manager가 두 source의 diff/hash를 검토·수용했다. 기존 Developer가 구현했다고 기록하지 않는다.
 
-이전 source에서 새 rawPath 구조 시험은 KeyError로 RED였고 Root 구현의 선행 pair에서 diagnostic12/candidate45/registry15/release18=90 로컬 시험 및 compile/diff 검사가 통과했다. 필드 이름 명확화 뒤 diagnostic12를 다시 통과한 최종 helper SHA256 `9835429f701979501eff3d6d4afaba74e4af88577e0a5bde9b0dfd878982fab6`, test `72db8d76cdea5425c59eb57fa95ace1da0148805673f66398bfc83f70660c40c`. 독립 QA receipt `120218394edac95689f0843352e255fc9962f4069f280243389aeaae25145932`는 선행 pair의90회귀와, 필드 이름만 명확히 한 최종 pair의 diagnostic12/8,899개 실제 upload_target 비교(불일치0)/compile/diff PASS를 구별해 수용했다. 최대 관측 shape는4,213bytes이며 cap6,144bytes를 유지했다. full CI/Main·새 실제 구조 진단은 대기이며 로컬 성공을 실제 server URI 관측으로 기록하지 않는다. 프로토콜·publisher·권한·운영 기능은 변경하지 않았다.
+이전 source에서 새 rawPath 구조 시험은 KeyError로 RED였고 Root 구현의 선행 pair에서 diagnostic12/candidate45/registry15/release18=90 로컬 시험 및 compile/diff 검사가 통과했다. 필드 이름 명확화 뒤 diagnostic12를 다시 통과한 최종 helper SHA256 `9835429f701979501eff3d6d4afaba74e4af88577e0a5bde9b0dfd878982fab6`, test `72db8d76cdea5425c59eb57fa95ace1da0148805673f66398bfc83f70660c40c`. 독립 QA receipt `f5d7bc655d39f67afa9cafff80ac3731c6595492f5c6830955d0f9ae8739e872`는 선행 pair의90회귀와, 필드 이름만 명확히 한 최종 pair의 diagnostic12/8,899개 실제 upload_target 비교(불일치0)/compile/diff PASS를 구별해 수용했다. 최대 관측 shape는4,912bytes이며 cap6,144bytes를 유지했다. full CI/Main·새 실제 구조 진단은 대기이며 로컬 성공을 실제 server URI 관측으로 기록하지 않는다. 프로토콜·publisher·권한·운영 기능은 변경하지 않았다.
 
 ---
 
