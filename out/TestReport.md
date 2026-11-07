@@ -1,3 +1,19 @@
+## U-225-FS-LOCAL — 유한 upload session의 독립 검증 (2026-11-08)
+
+기존 uploader에 공개 단수형 합성 fixture를 넣은 RED는 CA_UPLOAD_LOCATION_REFUSED를 재현했다. 수리 후 독립 QA에서 candidate45/registry15/release18=78개 시험, compile/diff 검사가 통과했다. 고정 repo의 두 route, raw query byte 보존, descriptor/path/size/hash, 실제202 뒤 durable intent와 단일 소비, 다른 route·repo·manifest·재생·journal 실패·불확실 response를 검증했다. QA가 찾은 빈 fragment `#` 허용은 literal 구분자 거부와 singular/plural·query 유무 음성시험으로 보완·재검증했다.
+
+최종 helper SHA256 `995c001e0c6c64d814eedd911d410a2ab912ab0589984e537cc2526e8b5a7ee5`, test `711f137ff768414e77c94a0d11f7620f5ae2302ffcb3f048ebbc13a038a2e5dc`; 독립 receipt `01568d0bde4d34de496d77d07696b094a33e790661f14ac5017dfd76d5a0a765`. 실제 네트워크 수리 검증·새 full CI/Main·fresh candidate·정식 승격은 아직 미실행이다. 공개 route 호환과 원문 미확인의 차이를 유지한다.
+
+---
+
+## U-225-UL-OBS — 실제 단일 요청과 후속 유한 경로 수리 (2026-11-08)
+
+PR254 source424dc8/treec839의 [CI680](https://github.com/planner77/layoutManager/actions/runs/42381506929)는 적용8/8 SUCCESS/A2 scope SKIP이며 archive2cdde359와 정상 Main `d19d045b`의 동일 tree/정확 parent 관계를 독립 확인했다. protected diagnostic42383905261은 별도 실제 환경 review 뒤 HTTP202·정제 artifact1개를 남겼다. 주소 원문/opaque 값 미저장·POST1·follow/PUT/manifest/tag/delete/retry0 범위의 관측이다. 결과는 현재 publisher의 path 조건만 불일치함을 보여주며 정확한 폐기 URI는 미확인이다. 상세 hash/한계·1차 규격 자료는 [FailureLedger](FailureLedger.md)가 정본이다.
+
+후속 FS 수리는 고정 repo의 문서화된 단수/복수 route와 한 번 소비하는 descriptor session을 준비한다. 기존 코드에 공개 단수형 합성 fixture를 넣은 RED 시험은 같은 CA_UPLOAD_LOCATION_REFUSED를 재현했다. 실제 네트워크를 이용한 추가 진단은 없고 새 source QA/full CI/Main·fresh candidate packet/run/별도 실제 환경 review가 필요하다. 이 수리나 이전 진단을 후보 게시·정식 승격 성공으로 기록하지 않는다. 제품/운영 데이터·플래그 불변, GO-PILOT BLOCKED.
+
+---
+
 ## U-225-UL-LOCAL — 보호된 단일 POST 진단의 로컬 검증 (2026-11-07)
 
 Developer의 새 진단/CI 연결 4개 source를 Manager가 검토했고 독립 QA가 사전 source의 진단9+기존 candidate40/registry15/promotion18=82개 offline guard를 통과했다. 이어 실제 후보와 같은 고정 Accept 헤더만 추가한 최종 source는 독립 진단9/compile/diff를 다시 통과했으며 이전 82개 근거는 predecessor hash로 구분해 보존했다. YAML2개 파싱·inline plan 유효/무효 packet, 기존 Location predicate와 10개 합성 URI의 동등 비교·canary 비노출도 확인했다.

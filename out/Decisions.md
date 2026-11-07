@@ -1,3 +1,11 @@
+## #225 GHCR finite upload-session compatibility 결정 (2026-11-08)
+
+실제 protected 진단은 단일 POST202의 relative Location에서 기존 path predicate 불일치만 입증했다. 원 URI는 저장하지 않았으므로 이번 응답이 singular upload 경로라는 주장은 하지 않는다. 공개 firsthand GHCR/Jib 사례와 OCI server-issued URL 계약을 근거로 fixed repository의 `/blobs/upload/<id>` 및 기존 `/blobs/uploads/<id>` 두 유한 route만 수용하는 최소 구현을 계획했다. id bounds/origin/credential scope를 유지하고 실제202에서만 발급한 transient session을 exact blob digest/size/localPath에 결합해 단일 PUT 후 폐기한다. 원querybytes를 보존하고 unknown/duplicate/malformed query, 임의URL/다른repo/manifestroute 및 session재사용을 거부한다. 상세 AC는 [TestPlan](TestPlan.md)의 FS01–05다.
+
+추가 진단 POST나 실패run 재실행 없이 Developer→Manager→독립 QA→full CI/Main을 거친 새 source/새 candidate packet/실제 delegated environment review에서 runtime compatibility를 검증한다. oldcandidate70c2의 실패와 diagnostic7f의 소진된 단일POST budget은 불변 이력으로 남긴다. 두 번째 candidate 시도는 별도 fresh run의 run_attempt=1이며 이전run attempt2 재실행이 아니다. 이 계획은 parser 성공이나 게시/운영 GO의 실제 증거가 아니다.
+
+---
+
 ## #225 실행 통제의 실제 증거·권한 범위 판단 (2026-11-07)
 
 사용자의 Work1–4 승인 범위에서 Manager는 다음 결정을 내렸으며 구현/검증 기준은 [TestPlan](TestPlan.md)의 해당 TP-225 항목, 실제 결과는 [TestReport](TestReport.md)를 따른다. 이전 source/시도 실패를 새 성공으로 덮어쓰지 않는다.

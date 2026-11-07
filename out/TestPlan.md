@@ -1,3 +1,31 @@
+## TP-225-FINITE-UPLOAD-SESSION — 공개 GHCR 경로의 최소 compatibility 수리 (2026-11-08)
+
+Manager는 [직접 GHCR protocol 관측](https://gist.github.com/shizhMSFT/b77f2d7f993268a1bdd45a7462866906)과 [Jib 실제 PUT 사례](https://github.com/GoogleContainerTools/jib/issues/4301)의 singular `/blobs/upload/<uuid>` 및 OCI server-issued URL 계약을 확인했다. 이는 public route 근거이며 이번 실제 opaque Location이 singular였다는 관측은 아니다. 실제 run42383905261은 기존 path predicate 실패까지만 증명했다. 추가 진단 POST 없이 finite compatibility 수리를 진행한다.
+
+| AC | 최소 구현 및 회귀 |
+| --- | --- |
+| FS-01 | fixed ghcr.io HTTPS/exact netloc와 fixed repository 아래 `/blobs/upload/<id>` 또는 `/blobs/uploads/<id>` 두 grammar만 허용한다. 기존 id charset `[A-Za-z0-9_-]`/1–200 bounds를 유지한다. userinfo/fragment/controls/backslash/dot traversal/encoded separator/다른 repo/manifest/tag/arbitrary URL/redirect는 거부한다. |
+| FS-02 | 실제 fixed repo init202가 반환한 URL만 transient session capability로 등록하고 원 resolvedpath/rawquery를 exact descriptor digest/size/검증 localPath와 결합한다. schema에 없는 URI를 caller가 임의로 PUT할 수 없고 session은 동일 blob에 한 번만 소비되며 성공/실패/uncertain 모두 재사용 불가다. generic request route를 broad하게 열지 않는다. |
+| FS-03 | raw query는 기존 허용키 범위/유한개수/중복 및 기존digest없음/정상 encoding을 검증하되 원 bytes를 decode-reencode하지 않는다. 원 query 끝에 expected digest 한 개만 붙이고 session path를 재구성하지 않는다. unexpected key/duplicate/state ambiguity/malformed percentencoding은 FAIL. URL/token/opaqueID/query값은 로그·journal·artifact에 남기지 않는다. |
+| FS-04 | test-first singular knownshape RED→GREEN, 기존 plural·relative·원querybytes보존 positive 및 hostile origin/repo/manifest/traversal/encoding/query/replay/wrong descriptor·size/localPath/unsolicitedPUT 음성을 검증한다. uncertain201 아닌 응답/transporterror 뒤 retry0과 sessioninvalidate, fixedtoken scope·journalintent·boundblob201digest검증도 유지한다. |
+| FS-05 | Developer→Manager review→독립 QA candidate/promotion/registry 회귀→정상 fullCI/Main→새candidatepacket+실제environment review 후 genuine runtime verification을 수행한다. 이번 수리의 성공 예상은 inference이며 실제 URI 확인/게시 성공으로 선행 기록하지 않는다. oldcandidate70c2 FAIL/artifact0 및 diagnostic7f budget 소진을 보존한다. |
+
+Manager는 위 bounded source 수정 GO를 판정한다. 추가POST/원진단재실행은 허용하지 않으며 product flags/policy/권한/운영deploy는 변경하지 않는다.
+
+---
+
+## TP-225-OPAQUE-UPLOAD-URI — 실제 path 가정 불일치와 후속 설계 (2026-11-08)
+
+실제 단일 진단 run42383905261은202/Location length79/relative·query0·fragment0를 관측했다. 기존 predicate의 https/exactnetloc/query 허용은 모두 true이나 pathPattern/fixedrepo upload prefix만 false였다. 원 URI는 보존하지 않았으므로 새 public path grammar는 아직 UNKNOWN이다. 진단 artifact 및 packet7f125의 POST budget 소진을 보존하고 추가 POST/재시도0.
+
+[OCI Distribution POST-then-PUT](https://github.com/opencontainers/distribution-spec/blob/main/spec.md#post-then-put)는 relative server-issued upload URL을 허용하고 관례적 경로를 의무 namespace로 규정하지 않는다. PUT URL은 반환 URI를 보존하면서 필요한 resolution/digest만 추가해야 한다. 이 공식 계약과 실제 GHCR 관측을 구별하며 spec만으로 임의 endpoint를 허용하지 않는다.
+
+후속 최소 설계는 fixedorigin/fixedrepo-init의 실제202에 대응하는 transient session capability를 exact local blob descriptor(digest/size)와 연결하고 단일 PUT에만 소비한다. credential은 fixed ghcr.io에만 전달하고 redirect/follow·manifest/tag/다른repo/임의 write URL0, location/opaque ID/query값 persist0, uncertainretry0을 유지한다. raw path/query를 parse후 재직렬화해 token semantics를 바꾸지 않는다. malicious userinfo/host/port/controlchar/dotsegment/encodedseparator/fragment/duplicate-digest/다른API route와 descriptor/session재사용은 거부하는 테스트가 필요하다.
+
+현재 GO는 primary-source read-only 조사와 설계 준비뿐이다. 공개적으로 확인된 GHCR finite upload-route grammar 또는 명시적으로 검토된 opaque endpoint 신뢰 경계를 확보한 뒤 Manager/QA가 정확 허용 범위를 결정한다. sameorigin만으로 임의 URL을 수용하는 수정은 미승인이다. 추가 관측이 꼭 필요하면 opaque값을 숨기고 fixedpath taxonomy만 관측하는 별도 packet/normalMain/실제environment review/단일 budget을 다시 검토하며 기존 진단을 자동 반복하지 않는다. parser수리 후 독립QA/fullCI/newMain/newcandidatepacket이 필요하고 이전 실패candidate는 promotion 입력이 아니다.
+
+---
+
 ## TP-225-PROTECTED-UPLOAD-DIAGNOSTIC — 권한·검토를 유지한 단일 세션 관측 (2026-11-07)
 
 Root의 실제 postfailure registry GET는 candidate3/final3 모두 authenticated absent, 기존0.60/latest 불변이다. 기존 Owner OAuth는 read:packages만 확인되고 write:packages가 없으며 token 교환200만으로 push claim을 증명하지 못했다. 따라서 local POST0이며 원202 upload session의 상태는 unknown으로 보존한다.

@@ -258,8 +258,14 @@ class DistributionHTTP:
 def bare_client(http):
     value = object.__new__(r.GHCR); value.http = http; value.bearer = 'synthetic-token'
     value.allowed_tags = set(p.tags(expected()).values()); value.journal = MemoryJournal()
-    value.bound_objects = {}; value.bound_tags = {}
+    value.bound_objects = {}; value.bound_tags = {}; value._upload_session = None
     return value
+
+
+def blob_client(http, descriptor, path):
+    client = bare_client(http)
+    client.bound_objects[descriptor['digest']] = {**descriptor, 'kind': 'blob', 'path': str(path)}
+    return client
 
 
 def build_records_disabled(text):
@@ -280,6 +286,118 @@ def build_records_disabled(text):
 
 
 class CandidateTests(unittest.TestCase):
+    def test_fs01_singular_fixed_repo_upload_session_red(self):
+        raw = b'synthetic blob bytes'
+        descriptor = desc(raw, next(iter(r.LAYERS)))
+        location = r.PREFIX + '/blobs/upload/session_1?_state=opaque'
+        http = FakeHTTP([result(404), result(202, headers={'location': location}),
+                         result(201, headers={'docker-content-digest': descriptor['digest']})])
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / 'blob'; path.write_bytes(raw)
+            client = blob_client(http, descriptor, path)
+            client.upload_blob(descriptor, path)
+        self.assertEqual([call[0] for call in http.calls], ['HEAD', 'POST', 'PUT'])
+        self.assertEqual(http.calls[-1][1], r.ORIGIN + location + '&digest=' +
+                         urllib.parse.quote(descriptor['digest'], safe=''))
+
+    def test_fs02_plural_relative_and_raw_query_bytes_survive_one_put(self):
+        raw = b'blob bytes'; descriptor = desc(raw, next(iter(r.LAYERS)))
+        for location in (r.PREFIX + '/blobs/uploads/session_1?_state=AB%2fC+%3D',
+                         'v2/planner77/layoutmanager/blobs/upload/session_1?_state=AB%2fC+%3D',
+                         'https://ghcr.io' + r.PREFIX + '/blobs/upload/session_1'):
+            with tempfile.TemporaryDirectory() as temp, self.subTest(location=location):
+                path = Path(temp) / 'blob'; path.write_bytes(raw)
+                http = FakeHTTP([result(404), result(202, headers={'location': location}),
+                                 result(201, headers={'docker-content-digest': descriptor['digest']})])
+                client = blob_client(http, descriptor, path)
+                client.upload_blob(descriptor, path)
+                self.assertEqual([call[0] for call in http.calls], ['HEAD', 'POST', 'PUT'])
+                self.assertEqual(http.calls[-1][1], r.ORIGIN + r.upload_target(location, descriptor['digest']))
+                if '_state=' in location:
+                    self.assertIn('_state=AB%2fC+%3D&digest=', http.calls[-1][1])
+                self.assertEqual(client._upload_session, None)
+
+    def test_fs03_hostile_location_never_reaches_put_or_journal(self):
+        raw = b'blob bytes'; descriptor = desc(raw, next(iter(r.LAYERS)))
+        good = r.PREFIX + '/blobs/upload/session_1'
+        hostile = (
+            'https://evil.example' + good, 'https://ghcr.io:443' + good,
+            'http://ghcr.io' + good, 'https://user:pass@ghcr.io' + good,
+            '/v2/other/repo/blobs/upload/session_1',
+            r.PREFIX + '/manifests/session_1', r.PREFIX + '/blobs/upload/../upload/session_1',
+            r.PREFIX + '/blobs/upload/%2Fsecret', r.PREFIX + '/blobs/upload/%2e%2e',
+            r.PREFIX + '/blobs/upload/session.1', r.PREFIX + '/blobs/upload/' + 'x' * 201,
+            good + '\\other', good + '#fragment', good + '#',
+            good + '?_state=opaque#',
+            r.PREFIX + '/blobs/uploads/session_1#',
+            r.PREFIX + '/blobs/uploads/session_1?_state=opaque#', good + '\n',
+            good + '?_state=a&_state=b', good + '?digest=sha256%3Aabc',
+            good + '?_state=a&digest=sha256%3Aabc', good + '?_state=%XX',
+            good + '?_state=', good + '?other=x', good + '?_state=x&bad',
+        )
+        for location in hostile:
+            with tempfile.TemporaryDirectory() as temp, self.subTest(case=location[:65]):
+                path = Path(temp) / 'blob'; path.write_bytes(raw)
+                http = FakeHTTP([result(404), result(202, headers={'location': location})])
+                client = blob_client(http, descriptor, path)
+                with self.assertRaises(p.Pending): client.upload_blob(descriptor, path)
+                self.assertEqual([call[0] for call in http.calls], ['HEAD', 'POST'])
+                self.assertEqual(client._upload_session, None)
+                self.assertNotIn('session_1', str(client.journal.events))
+
+    def test_fs04_wrong_blob_descriptor_path_and_unsolicited_put_are_refused(self):
+        raw = b'blob bytes'; descriptor = desc(raw, next(iter(r.LAYERS)))
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / 'blob'; path.write_bytes(raw)
+            alternate = Path(temp) / 'other'; alternate.write_bytes(raw)
+            http = FakeHTTP([]); client = blob_client(http, descriptor, path)
+            target = r.PREFIX + '/blobs/upload/session_1?digest=' + urllib.parse.quote(descriptor['digest'], safe='')
+            with self.assertRaises(p.Pending): client.request('PUT', target, data=path, media='application/octet-stream')
+            wrong = {**descriptor, 'size': descriptor['size'] + 1}
+            with self.assertRaises(p.Pending): client.upload_blob(wrong, path)
+            with self.assertRaises(p.Pending): client.upload_blob(descriptor, alternate)
+            self.assertEqual(http.calls, [])
+            client._upload_session = {'target': target, 'digest': descriptor['digest'],
+                'size': descriptor['size'], 'path': str(path)}
+            with self.assertRaises(p.Pending):
+                client.request('PUT', target + '&other=x', data=path, media='application/octet-stream')
+            self.assertIsNone(client._upload_session)
+            client._upload_session = {'target': target, 'digest': descriptor['digest'],
+                'size': descriptor['size'], 'path': str(path)}
+            with self.assertRaises(p.Pending):
+                client.request('PUT', '/v2/other/repo/blobs/upload/session_1',
+                               data=path, media='application/octet-stream')
+            self.assertIsNone(client._upload_session)
+            self.assertEqual(http.calls, [])
+
+    def test_fs05_put_session_consumed_on_error_and_uncertain_transport(self):
+        raw = b'blob bytes'; descriptor = desc(raw, next(iter(r.LAYERS)))
+        location = r.PREFIX + '/blobs/upload/session_1?_state=opaque'
+        for response in (result(500), result(201, headers={'docker-content-digest': 'sha256:' + '0' * 64}),
+                         p.Pending('SYNTHETIC_UNCERTAIN')):
+            with tempfile.TemporaryDirectory() as temp, self.subTest(response=type(response).__name__):
+                path = Path(temp) / 'blob'; path.write_bytes(raw)
+                http = FakeHTTP([result(404), result(202, headers={'location': location}), response])
+                client = blob_client(http, descriptor, path)
+                with self.assertRaises(p.Pending): client.upload_blob(descriptor, path)
+                target = r.upload_target(location, descriptor['digest'])
+                with self.assertRaises(p.Pending):
+                    client.request('PUT', target, data=path, media='application/octet-stream')
+                self.assertEqual([call[0] for call in http.calls], ['HEAD', 'POST', 'PUT'])
+                self.assertEqual(client._upload_session, None)
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / 'blob'; path.write_bytes(raw)
+            http = FakeHTTP([result(404), result(202, headers={'location': location})])
+            client = blob_client(http, descriptor, path)
+            original_intent = client.journal.intent
+            def fail_put_intent(method, kind, reference):
+                if method == 'PUT': raise p.Pending('SYNTHETIC_JOURNAL_FAILURE')
+                original_intent(method, kind, reference)
+            client.journal.intent = fail_put_intent
+            with self.assertRaises(p.Pending): client.upload_blob(descriptor, path)
+            self.assertIsNone(client._upload_session)
+            self.assertEqual([call[0] for call in http.calls], ['HEAD', 'POST'])
+
     def cleanup_fixture(self, root):
         private = root / 'private'; (private / 'build').mkdir(parents=True)
         runner = c.Runner(private, expected())

@@ -1,3 +1,9 @@
+## #225 FS — URI 보존과 descriptor에 묶인 업로드 (2026-11-08)
+
+기존 단일 진단 packet7f/run42383905261은 소진됐고 재실행하지 않는다. 관측과 공개 GHCR route 근거를 구별해 최소 호환 수리 후 전체 CI/Main을 다시 검증한다. 발급된 raw URL은 메모리에서만 한 blob과 결합해 한 번 소비하며 `_state` 등을 decode→encode로 바꾸지 않는다. fragment/userinfo/다른 origin·repo·manifest/모호한 query와 재생은 거부한다. 새 후보는 실패한70c2와 별개의 nonce/packet/source/run **attempt1**로 검토한다. 기존0.60/latest와 정식3 ref를 사전·사후 재조회하고, 부분/불확실 결과는 원장 보존 후 HALT한다. 운영 배포/자동 rollback의 권한이 아니다.
+
+---
+
 ## #225 UL — 업로드 Location 거부 후의 진단 경계 (2026-11-07)
 
 실패한 candidate42378293644와 packet70c2를 재사용하지 않는다. 먼저 derived candidate3와 final3의 실제 ref 및 기존0.60/latest를 pull-only로 확인한다. Root가 관측한 기존 OAuth는 조회 권한만 있어 local POST를 수행하지 않았다. 새 protected Main 진단은 같은 환경의 실제 run/job/packet review 후 고정 blob-init POST를 한 번만 전송하고 원본 주소를 따라가지 않는다. 원본 Location/opaque path/query 값/인증은 기록하지 않으며 정제 metadata 한 파일만 검토한다. 이 자료는 후보 artifact·서명·이미지 출고의 대체물이 아니다. 목적·AC는 TestPlan, 실제 실패/관측은 FailureLedger/TestReport를 따른다. 정식 manifest·별칭·운영 데이터 변경은 이 진단 범위가 아니다. 기본 `registry_upload_diagnostic.py plan`은 전달된 packet의 로컬 검증만 수행하며 credential/HTTP0이다. workflow의 diagnose 실행에는 새 exact Main/full CI packet 및 해당 run의 별도 실제 환경 review가 필요하다. artifact의 RESPONSE_OBSERVED/PASS는 구조 관측 성공이며 실제 upload-valid/publish 판정이 아니다.

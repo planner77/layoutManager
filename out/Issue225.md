@@ -1,3 +1,9 @@
+## 2026-11-08 — 단일 진단으로 path 조건 불일치 확인
+
+CI680 적용8/8과 Main d19를 확인한 뒤 실제 protected diagnostic42383905261에서 빈 POST1회·202·정제 artifact를 관측했다. 원문 URI는 미저장으로 exact route는 미확인이다. 공개 GHCR 1차 route 자료를 근거로 유한 경로/단일 descriptor session 호환 수리를 준비하며 추가 진단 POST는 없다. 실제 candidate42378293644 실패·서명/artifact 부재는 보존한다. [TestReport](TestReport.md)와 [FailureLedger](FailureLedger.md)가 정본이고 #225/#218 OPEN/GO-PILOT BLOCKED·운영 불변을 유지한다.
+
+---
+
 ## 2026-11-07 — Main/CI679 검증 후 실제 candidate 실패
 
 Main `b8c8ee5e` / CI679 적용8개 SUCCESS를 확인했다. 실제 candidate42378293644는 build/RR1/RR2 뒤 upload Location guard에서 실패했으며 서명·artifact가 없으므로 승격 입력이 아니다. 후보3/정식3 ref 부재와 기존0.60/latest 불변을 실제 pull-only로 확인했다. 보호된 단일 요청 진단은 아직 구현 준비다. [TestReport](TestReport.md)의 U-225-CANDIDATE-FAIL과 [FailureLedger](FailureLedger.md)가 정본이다. #225/#218 OPEN, GO-PILOT BLOCKED, 제품 Scene flags OFF/자동 출고 HOLD와 운영 데이터 불변을 유지한다.

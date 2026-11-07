@@ -1,3 +1,9 @@
+## #225 FS — server-issued upload URI의 한 번만 쓰는 capability (2026-11-08)
+
+candidate registry adapter는 고정 package의 실제202가 발급한 URL을 메모리에서 descriptor digest·size·검증된 로컬 파일과 결합한다. 두 유한 upload 경로에서만 blob PUT을 허용하고, transport 진입 전 소비해 성공·실패·불확실 결과 모두 재사용을 막는다. manifest writer와 일반 PUT의 경계는 그대로다. raw path/query를 재조립하지 않고 URI resolution과 기대 digest 추가만 수행한다. 입력 grammar는 공개 GHCR 실측, 현재 경로 조건 불일치는 별도 실제 진단 근거이며 두 사실을 구별한다. opaque URL·token은 journal/artifact에 쓰지 않는다. 추가 진단 POST는 없다.
+
+---
+
 ## #225 UL — publisher와 분리한 보호된 단일 요청 진단 (2026-11-07)
 
 `registry-upload-diagnostic.yml`과 `registry_upload_diagnostic.py`는 독립 closed packet/run/job/approval 검증을 사용하는 진단 경로다. 환경 readback은 쓰기 권한 없는 Job에서 수행하고, 같은 Main-only/Owner reviewer 환경의 보호 Job만 packages:write를 받는다. 기존 candidate signer/packet을 투영하거나 전역 policy를 바꾸지 않는다. 고정 repo의 인증·빈 blob-init 단일 POST 뒤 URL 구조를 순수 sanitizer로 투영하며 원본 Location·opaque 값은 저장하지 않는다. intent journal은 중복 실행을 차단하고 artifact는 단일 정제 JSON으로 제한한다. 이 경로에는 blob bytes/PUT/manifest/tag/Location-follow/삭제·재시도가 없다. 관측 결과를 근거로 한 후속 publisher 수리는 별도 source/QA/CI/packet을 요구한다. 상세 운영·실제 상태는 Operation/TestReport가 정본이다.
