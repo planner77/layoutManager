@@ -1,3 +1,29 @@
+## U-225-OR58-ACTUAL-20261108 — 실제 운영 0.58 백업·격리 복원 관측
+
+**관측 결과:** 사용자가 구체 유지보수 질문에 `진행하세요`로 답한 뒤 실제 운영 source를 한 번 캡처했다. 원래 App은 같은 container/image/config/volume에서8.545초에 healthy로 재개됐고, 별도 새 빈 volume의 실제 복원·정확 old App 시작·내부 HTTP200/200·지원 cleanup·시작 후 데이터 보존을 확인했다. 아래 준비/NOT RUN 문구는 당시 이력이다. 독립 실제 데이터의 읽기 전용 QA가 PASS_WITH_LIMITS로 판정했고 Root 대행 Manager가 관측된 복구·데이터 보존을 제한부 수용했다. 이 관측을 host 외부 writer의 독립 배제나 전체 파일럿 GO로 확대하지 않는다.
+
+| 실제 운영 관측 | 결과 |
+| --- | --- |
+| release / identity | operating0.58.0 / OCI source de92be0 / pinned App6abdef·Migrator0f2d21, historical tag pair와 빈 manifest sourceCommit 보존 |
+| capture | raw6files, archive1,751,040bytes, SHA256 `625e6b36e2bcb9c94e5e1d7bba735c7f26323ee963f212b58121f5d6a5ef1057` |
+| freeze / capture (KST) | 2026-11-08 05:45:59.022 writer0 관측, 05:45:59.656–59.990 archive stream; UTC는 전일20:45:59.022/656–990 |
+| original healthy (KST) | 2026-11-08 05:46:06.984, total outage8.545초/120초 예산; 동일 CID/image/설정/volume·원래서비스 보존 |
+| restore / DB | 새 빈 owned volume, raw6files 일치; integrity/FK 검사통과·33tables의 모든 logical rows/schema/migration/install identity와 CAD 참조1건 size/SHA 일치 |
+| old App / HTTP | exact0.58 image·소유 internal network·host port 공개0·비루트 exec 내부 health/status HTTP200/200 |
+| post-start / cleanup | clone/network 제거 후6rawfiles·모든33table rows/schema/install/CAD SHA 그대로 일치, restored volume detached, 원래 App healthy |
+
+schema fingerprint SHA256 `eb07b73207cdd9d962185fe2e68ef70d5a837fd9294dfc9214829a8bbf059109`, manifest `f6af12c119fe8c9e953eb42eccf55eb0293c3f8b5b43f2f5d115d73b558af2b2`, migration history1건 fingerprint `cd1b2be7bf82e4863ea424802a017760e0aab6050b5e7c3081e1fd9b6b35ba8e`. CadFileVersion1/CadLocation1·User1/AuditEvent22·SceneAsset0/CurrentScene0을 포함해 전체 행 동등성을 비교했으며 행/사용자/원본 이름은 공개하지 않는다. post-start receipt SHA256 `51a51e8fef880e492a0b036829c4b224bf1cfc138879edd55ef68a80c27144d6`.
+
+**RPO/시간의 범위:** 복구 지점은 위 quiescent capture의 보존된 상태다. 서비스 healthy 재개 시 capture 완료로부터6.994초가 지났으며 미래 장애 손실은 이 snapshot 이후 변경에 달린다. 미래 RPO0이나 목표 SLA 충족을 주장하지 않는다. disposable restore-attempt→검증1.758초, startup-attempt→HTTP200 6.647초, restore-attempt→HTTP200 24.063초(호스트 호출 간 간격 포함)는 격리 시험 계측이며 운영 장애 RTO가 아니다.
+
+독립 QA report SHA256 `622eedd1f569e37c92e943ad46fbcefc32176053dcb0597c0b9a915edff0944b`는 실제 capture/restore/post-start의 별도 DB 사본에서 integrity OK/FK0·33table row fingerprint/schema/install/CAD hash를 재검사하고 정확 원래 CID/image/mount healthy·복원 volume detached·clone/network 부재를 확인했다. Root 대행 Manager 수용 SHA256 `3ddebed20af2499a6671b50b085811bd34c88001113d6ffc3d52c48df2675dd9`. source controller3481/소스0.61.0은 변경하지 않았다.
+
+worktree 정리와 분리하여 원래 프로젝트의 ignored private data recovery 디렉터리에도 archive를 포함한 필수 파일12개를 별도 복사·fsync·전후 SHA 검증했다. recovery manifest SHA256 `3d86a7b6f7190786d562a81ea94cadbe9106688b4592f1b52c6adb97d2e2b811`, archive SHA는 위625e6b와 같다. feature worktree와 persistent private 보관본 및 detached actual restore volume은 유지하며 Git/CI/public artifact로 반출하지 않았다.
+
+**수용 근거/제한:** running Docker writer0·graceful-stop guard·readonly 원본의 capture 전후/복원 파일 hash 동일성과 실제 사용자 quiet-window 승인은 기록했다. host 외부 writer 배제는 `ROOT_ATTESTED_NOT_INDEPENDENTLY_PROVEN`이며 완전한 독립 same-snapshot PASS는 보류한다. 인증된 업무/source/Current HTTP는 NOT RUN, 실제 READY Scene 데이터0이다. backup은 Docker source volume 밖의 private host filesystem에 보존하며 off-host 내구성은 미검증이다. 자동 publisher HOLD/Scene flags OFF/파일럿 NO-GO·이슈 OPEN 유지, 0.61 배포·원본 volume 덮어쓰기·Git tag/latest·registry 쓰기0. 소스0.61.0/운영0.58.0은 유지했다.
+
+---
+
 ## U-225-OR58-DISPOSABLE-20261108 — 독립 복원 검증 수용, 운영 실행 대기
 
 **판정:** controller3481의 독립 실제 Docker happy path·두 실패 주입과 Root의 별도 데이터 재조회가 통과했다. 이는 합성 도면1건/Current·Scene0의 임시 시험이다. 실제 운영0.58의 stop/capture/restore는0이며 운영 RPO/RTO 수용이나 파일럿 GO가 아니다. 다음 단계는 구체 유지보수 시점 확인 후 실제 운영 recovery point를 검증하는 것이다.

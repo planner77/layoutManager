@@ -1,3 +1,9 @@
+## #225 OR58 실제 관측과 파일럿 판정의 범위 (2026-11-08)
+
+사용자가 구체 유지보수 질문에 실행을 지시하여 실제0.58의 캡처·동일 App 재개·별도 빈 volume 복원·정확old App 내부 HTTP·시작 후 보존을 실행했다. 현재 원래 서비스는 healthy이며 원본 데이터/설정/이미지의 자동 교체는 없다. 관측된6files/33tables/도면·설치 동등성은 실제 복원 근거로 기록하되 host 외부 writer 배제는 Root attestation이고 독립 증명으로 격상하지 않는다. 인증된 업무 조회/실제 READY 및 별도 파일럿 승인 전 NO-GO를 유지한다. 독립 actual QA와 Root 대행 Manager는 관측된 backup/restore/startup/보존만 제한부 수용했으며 실제 근거는 TestReport를 따른다.
+
+---
+
 ## #225 OR58 — 운영 복원 근거의 별도 검증 (2026-11-08)
 
 새 요청에 따라 운영0.58의 recovery point를 검증하되 기존 upgrade/apply/restore 도구를 백업 전용으로 호출하지 않는다. 해당 도구는 live lock/journal/manifest 또는 SQL을 기록하므로, 정확 기존 App의 짧은 중지→readonly 전체 capture→같은 container 즉시 재개→새 소유 볼륨 복원의 절차를 별도로 검증한다. 실제 internal-network publish 부재를 확인했으므로 외부 연결을 열지 않고 정확 clone CID의 내부 loopback HTTP를 검사한다. 세부 실행 예산·중단 경계는 Operation OR58, AC와 실제 결과는 TestPlan/TestReport가 정본이다. 등록된 historical tag 쌍과 빈 manifest sourceCommit을 보존하며 registry-only 출고·임시 fixture·운영 결과를 혼용하지 않는다. 실제 합성 복원/HTTP/데이터 보존과 두 실패 주입은 독립 QA·Root 재조회로 수용했다. 현재 운영 실행 미완료와 파일럿 NO-GO를 유지한다.

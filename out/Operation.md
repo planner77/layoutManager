@@ -1,6 +1,14 @@
-## OR58 — 운영 0.58 동일 스냅샷과 격리 복원 계획 (2026-11-08)
+## OR58 실제 실행·보관 상태 (2026-11-08)
 
-새 사용자 요청은 RF-09의 실제 운영 baseline 검증이다. 현재 준비 단계에서 stop/start 및 운영 데이터 변경은 수행하지 않는다. 정확 실행 packet은 실제 image/container/volume/install/schema, owned destinations, 시간 상한과 원래 서비스 재개 절차에 결합해야 한다.
+사용자의 실제 유지보수 응답 후 source0.58을 readonly 캡처하고 같은 App을8.545초에 healthy로 재개했다. 격리 restore/정확oldimage 내부 HTTP·시작 후 보존과 지원 cleanup을 수행했다. private recovery set은 source Docker volume 밖에 보관하며 원본으로 자동 복원하지 않는다. archive SHA256/시각/관측 제한은 TestReport U-225-OR58-ACTUAL-20261108을 정본으로 한다. backup/DB/CAD/authority/row 자료는 private0700/0600·Git/응답/CI artifact 제외를 유지한다. 검증된 detached restore volume과 private archive는 보존한다. archive/필요 receipt의 SHA 검증 사본은 원래 프로젝트의 ignored private data recovery 디렉터리에도 저장하여 feature worktree 정리와 분리했다.
+
+이 snapshot 이후의 운영 변경을 backup 동등성 실패나 미래 RPO0으로 해석하지 않는다. 복구 시 해당 historical image pair·빈 source identity·schema/전체 hash와 새 목적지를 다시 검토한다. 이번 검증은 원본 덮어쓰기/0.61 upgrade/자동 rollback/flags 활성화 승인이 아니다. 독립 actual QA의 관측 범위 수용과 잔여 host-writer/업무 HTTP/READY/Owner 파일럿 판정은 분리한다.
+
+---
+
+## OR58 — 운영 0.58 동일 스냅샷과 격리 복원 계획 (2026-11-08, 실행 전 이력)
+
+이 블록은 실행 전 작성한 계획의 이력이며, 현재 실제 실행·보관 상태는 맨 위 OR58 실제 실행 절과 TestReport ACTUAL 기록을 따른다. 준비 당시에는 stop/start 및 운영 데이터 변경을 수행하지 않았다. 당시 정의한 실행 packet의 실제 image/container/volume/install/schema·owned destinations·시간 상한·같은 원래 서비스 재개 결합 기준은 유지한다.
 
 기존 helper 검토: `g7-upgrade.py`에는 backup-only action이 없다. auto/apply/restore는 실제 Compose App stop과 모든 running volume mount 검사를 수행한다. upgrade engine은 live DB 디렉터리에 hold/lock/journal/backup을 기록하고 대상에 따라 SQL/manifest를 바꾼다. `createRecoverySet`의 SQLite backup은 CAD/manifest와의 live atomic snapshot을 제공하지 않는다. `g7-deploy.py`의 same-release 실행은 NOOP/restart이며 독립 backup이 아니다. 따라서 이번 작업을 위해 upgrade/apply 또는 live restore helper를 호출하지 않는다.
 
@@ -16,7 +24,7 @@ OR58 startup의 호스트 loopback publish 가정은 실제 임시 시험에서 
 
 도구의 합성 actual happy path와 두 실패 주입은 수용됐으며 실제 운영 snapshot을 대신하지 않는다. 검증된 restore1개/private 증거를 보존하고 임시 실행 자원은 exact ID/nonce로 정리했다.
 
-현재 새 요청은 복원 시험 자체를 승인하지만 정지 시간/구체 capture packet은 아직 미정이다. 기존 운영 절차의 별도 운영 승인 문구와 실제 서비스 중단 영향을 root가 검토하여, 실행 가능한 packet 준비 후 짧은 maintenance 구간 승인 필요 여부를 판단한다. 기존 요청에 이미 해당 interruption 승인이 있으면 중복 승인하지 않는다. 새로운 승인 대기 자체를 시험 성공이나 영구 차단으로 기록하지 않는다. TC와 RPO 표현 기준은 TestPlan OR58을 따른다.
+계획 당시에는 정지 시간/구체 capture packet이 미정이었다. 이후 실행 가능한 packet·독립 검증·정상 소스 통합을 완료하고 사용자에게 중지 구간을 확인했으며, 실제 `진행하세요` 응답 뒤 한 번 실행했다. 이 과거 승인 대기를 현재 미정 상태로 읽거나 같은 실행에 중복 승인을 요구하지 않는다. 후속 별도 운영 변경은 그때의 범위/시점을 검토하며 TC와 RPO 표현 기준은 TestPlan OR58을 따른다.
 
 ---
 

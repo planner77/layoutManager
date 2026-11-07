@@ -1,3 +1,11 @@
+## 0.61.0 검증 — 운영 0.58 실제 백업·격리 복원 (2026-11-08)
+
+- 사용자 유지보수 시점 승인 후 실제6file/1,751,040byte recovery archive를 보존하고 같은 원래 App을8.545초에 healthy로 재개했다.
+- 새 빈 owned volume의 raw/33table 전체 logical rows·schema/migration/install/CAD SHA 복원, 정확oldimage/internal HTTP200·cleanup·시작 후 보존을 확인했다. 독립 actual QA 및 Root 대행 Manager가 관측 범위를 제한부 수용했다. private 보관본을 feature worktree 밖에도 SHA 검증하여 보존했다.
+- host 외부 writer 독립 배제·인증된 업무 HTTP·READY Scene/off-host 내구성·미래 RPO0은 미검증이다. 소스/운영 버전·flags·배포·태그·registry를 변경하지 않았으며 파일럿 NO-GO를 유지한다.
+
+---
+
 ## 0.61.0 시험 도구 — 운영 0.58 백업·격리 복원 준비 (2026-11-08)
 
 - FR-225-OR58/TP-225-OR58을 추가하고 정확 기존 image/container/volume·설치 identity에 결합한 별도 plan/capture/restore/startup/cleanup 도구를 준비한다. 원래 App 재시작 시간을 확보하는 120초 실행 예산, readonly 원본, 새 빈 소유 볼륨, 실패 자원 정리와 비공개 결과를 적용한다.
