@@ -1,3 +1,11 @@
+## #225 실제 게시·승격으로 후속 DOT 수리 확인 (2026-11-08)
+
+Main33f377/CI683 뒤 새 candidate42396085571은 build3/RR1/RR2/RR3/실제 GHCR publish·digest runtime/OIDC4-subject/6negative/allowlist/cleanup을 완료했다. 별도 promotion42398185878도 재검증 후 고정3개 version raw manifest를 승격했다. 독립 Root 암호8회 및 최종 원문/digest/config/기존 버전·별칭/보호·legacy 보존 조회를 확인했다.
+
+이 성공은 과거 candidate70c2/run42378293644와 fdfd/run42388044377의 FAILED·artifact0를 소급 PASS로 바꾸지 않는다. 원문 미저장에 따른 과거 URI unknown과 최초 public-route 추정의 미해결 이력, 성공한 두 singlePOST 진단 budget 소진도 보존한다. 새 actual candidate가 관측한 현재 dot ID 수리의 실제 호환을 검증한 것이며 전체 GHCR 미래 URI 형식을 보장하지 않는다. 세부 근거는 TestReport를 따른다.
+
+---
+
 ## #225 taxonomy2 실제 관측 — dot 포함 opaque ID (2026-11-08)
 
 run42392837552/Main72181/packet97218의 별도 실제 환경 review 후 빈 POST1/202/SUCCESS, exact1result artifact와 ZIP SHA 검증을 완료했다. result SHA256 `20cbbaa4034a1a0cbb8ce3e3aa8b4ee35683c007b7fd52b6f930a8a7d34baa29`, 독립 QA `feda89e8d197e7201760acc857dc2ca1b15b9ced7ffcd3d9f9376f47704551d7`. raw/resolved fixed singular prefix·7segments·39자 finalID의 alpha/digit/hyphen/dot 분류를 관측했고 pathPattern만 false였다. 다른 조건/query/정규화/encoding/traversal 이상은 없었다.

@@ -1,3 +1,9 @@
+## #225 실제 출고 경계 확인 (2026-11-08)
+
+source A와 promotion code B는 모두 Main33f377이며, 실제 candidate3에서 동일-run build/RR1/RR2/RR3/GHCR 원문 graph/digest runtime/OIDC 검증을 완료했다. 별도 protected promotion은 다시 graph/서명을 검증한 뒤 이미 존재하는3개 manifest의 원문만 고정3개 version ref로 복사했다. 별도 Root 검증도 candidate/final raw bytes 동일·config/role/source/platform/User를 확인했다. 새 build/blob/서명으로 재포장하거나 latest/Git tag/운영 상태를 변경하지 않았다. 증거·digest 정본은 TestReport다. 외부 registry 다중 tag 관측은 원자적 transaction이나 타 writer 완전 배제 증명이 아니다.
+
+---
+
 ## #225 DOT — 관측한 단일 segment 및 공통 grammar (2026-11-08)
 
 실제 구조 진단에서 fixed singular path의 단일 opaque segment에 점이 포함된 것을 확인했다. singular route의 bounded ID charset만 보완하고 raw dot-segment/traversal/encoding/다른 경로 거부와 descriptor 단일 session을 유지한다. diagnostic은 publisher의 공통 UPLOAD_PATH를 참조하여 path 조건의 복제·노후화를 막는다. 원문과 token 의미를 추측하지 않으며 actual candidate 호환은 후속 검증이다.

@@ -1,3 +1,11 @@
+## #225 registry 완료와 파일럿 NO-GO의 구분 (2026-11-08)
+
+사용자가 승인한 작업1–4에 따라 구체 packet·독립 QA·실제 protected run마다 별도 Owner 대행 review를 수행했다. 후보와 version3태그의 실제 원문·서명·실행·최종 상태 근거는 registry 작업의 완료 근거다. 자동 publisher HOLD는 계속 적용하며 이번 고정3태그의 명시적 승격을 자동 출고 허용으로 확대하지 않는다.
+
+운영0.58의 동일 스냅샷 backup/schema/RPO/restore/old App start는 미확인으로 GO-PILOT NO-GO를 유지한다. registry-only rollback baselinea6는 이 운영 수용을 대체하지 않는다. Owner-only review는 실제 플랫폼에 기록된 Root 대행 행위이며 독립 두 번째 사람이 아니다. 패키지 Actions grant는 기존 Owner UI 보고를 유지하며 새 API/UI grant attestation으로 바꾸지 않는다. strict helper PENDING과 외부 matrix26 수용·순차 관측/타 writer 배제 한계도 함께 보존한다. 최종 검토 수용은 TestReport를 따른다.
+
+---
+
 ## #225 실제 singular upload ID의 dot 허용 (2026-11-08)
 
 taxonomy2의 실제 값 없는 구조 증거는 fixed singular upload 경로의 하나의 ID segment에 dot가 포함돼 기존 charset에만 실패했음을 보여준다. Manager는 singular route에 한해 literal dot를 추가하고 plural의 기존 charset은 유지하기로 했다. 원문 ID/UUID suffix를 추정하지 않으며 raw '.'/'..'와 encoded traversal 거부, exact descriptor session·원query 보존·singlePUT 및 protected release gates를 유지한다. 상세 AC/TC는 [TestPlan](TestPlan.md)의 DOT01–05다. Root가 구현 대행하고 독립 Manager/QA/fullCI를 거쳐 새 candidate run에서 실제 호환성을 검증한다. 추가 진단 POST는 하지 않는다.
