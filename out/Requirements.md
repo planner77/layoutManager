@@ -1,3 +1,9 @@
+## #225 OR58 — 운영 0.58 복원 근거 확보 (2026-11-08, 운영 실행 전)
+
+사용자가 다음 작업으로 운영 0.58의 동일 스냅샷 backup/schema/RPO/restore/old App startup 검증을 요청했다. FR-225-OR58은 실제 설치·정확 기존 이미지와 DB/CAD/G7 identity의 일관된 recovery point를 결합하고, 새 빈 소유 volume에서 기존 App만 시작하여 데이터/조회 보존을 검증한다. 업그레이드·운영 volume 덮어쓰기·flags/설정 변경·latest/Git tag·issue 종료는 범위 밖이다. RF-09를 운영 baseline에 적용하며 실행 AC/TC는 TestPlan OR58, 절차·중단 경계는 Operation OR58을 정본으로 한다. 도구 구현과 운영 실행 결과를 구분하며 현재 실제 복원 PASS가 아니다.
+
+---
+
 ## #225 승인된 작업1–4의 충족 범위 (2026-11-08)
 
 독립 reader·Owner/Actions capability12/거부14의 실제 외부 감사 수용·최종 보호/시험 자원 정리·legacy disable/거부·권한/보호 Environment·private candidate3와 exact final3 승격의 실제 근거를 확보했다. 원 strict helper의 PENDING/directFF 기대값 불충족 및 공동 rule 실패의 인과 한계는 소급 PASS로 바꾸지 않는다.

@@ -1,3 +1,9 @@
+## #225 OR58 — 운영 복원 근거의 별도 검증 (2026-11-08)
+
+새 요청에 따라 운영0.58의 recovery point를 검증하되 기존 upgrade/apply/restore 도구를 백업 전용으로 호출하지 않는다. 해당 도구는 live lock/journal/manifest 또는 SQL을 기록하므로, 정확 기존 App의 짧은 중지→readonly 전체 capture→같은 container 즉시 재개→새 소유 볼륨 복원의 절차를 별도로 검증한다. 세부 실행 예산·중단 경계는 Operation OR58, AC와 실제 결과는 TestPlan/TestReport가 정본이다. 등록된 historical tag 쌍과 빈 manifest sourceCommit을 보존하며 registry-only 출고·임시 fixture·운영 결과를 혼용하지 않는다. 현재 운영 실행 미완료와 파일럿 NO-GO를 유지한다.
+
+---
+
 ## #225 registry 완료와 파일럿 NO-GO의 구분 (2026-11-08)
 
 사용자가 승인한 작업1–4에 따라 구체 packet·독립 QA·실제 protected run마다 별도 Owner 대행 review를 수행했다. 후보와 version3태그의 실제 원문·서명·실행·최종 상태 근거는 registry 작업의 완료 근거다. 자동 publisher HOLD는 계속 적용하며 이번 고정3태그의 명시적 승격을 자동 출고 허용으로 확대하지 않는다.

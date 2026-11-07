@@ -1,3 +1,21 @@
+## U-225-OR58-PREP — 운영 0.58 복원 검증 준비 (2026-11-08, 진행 중)
+
+FR-225-OR58/TP-225-OR58의 Manager 요구사항·AC를 먼저 기록하고 전용 검증 도구를 준비한다. 운영 App은 기존 0.58.0/image `sha256:6abdef1ede21fd9a84a41d3c49621a9657ac0a10a23057f7f7b3f27515b62a50`이며 OCI revision은 `de92be0ea3a5de38008a57e8c29013d19667f11e`다. App/Migrator의 기존 registry graph와 실제 로컬 image를 조회로 연결했으며 signed provenance로 부르지 않는다. 조회 receipt SHA256은 `bab045de19b82d3a5c4458a19f0c1b06cd8a73c4783fcc5d5145314e45b5d5ab`이다.
+
+Root의 격리된 readonly inventory에서는 일반 파일6개/1,741,401bytes, SQLite integrity OK/FK 오류0/journal mode DELETE를 관측했다. 설치 version0.58.0/schema `G7-GREENFIELD-SEMANTIC-ZONES-20261101-1`, manifest SHA256 `f6af12c119fe8c9e953eb42eccf55eb0293c3f8b5b43f2f5d115d73b558af2b2`이며 historical manifest sourceCommit은 비어 있다. OCI label로 이를 채우지 않는다. CadFileVersion1/CadLocation1/SceneAsset0/CurrentScene0을 관측했으며 실제 READY Scene 복원 범위는 없다. 전체 private inventory receipt SHA256 `edb99d37905f16a8f772e05ab9369cfba8007be1404d6da7ebb617a026617205`. 이 조회는 일관된 recovery snapshot이나 backup이 아니다.
+
+추가 readonly 설치 식별자 조회에서 App `0.58.0`/Migrator `0.58.0-migrate`의 역사적 tag 쌍과 빈 sourceCommit을 직접 확인했다(receipt SHA256 `d86cdf7812aad3e43815be551f2dd0c1ef48d0b41ca80d89737f71a75d9e9c1b`). 기존0.58 gate가 이 쌍을 요구하므로 clone에도 검증된 설치 identity를 전달한다. 임의 환경변수 복제나 OCI revision으로 빈 값을 보완하지 않는다.
+
+Developer는 보완 후 Docker 쓰기 없는23개 시험과 compile/node 구문 검사를 통과했다. Root가 packet의 inventorySource 표기 및 전체120초/재시작70초 예산 필드만 보완하고23개 시험을 다시 통과했다. 독립 QA는 선행 controller727의23 fake PASS 뒤 network-create 응답/receipt 유실의 정리 누락을 발견했다. Developer가 durable pre-create intent의 exact nonce name·purpose·internal·빈 attachment를 검증한 후 실제 ID로 정리하도록 보완하고, HTTP probe를 health/status로 한정했다. 최종25 fake PASS를 Root도 재실행했다. 최종 controller SHA256 `1b8d5504a28b656a079ff2ca4b5c9b3217a5985fa98ea0bccd02954d86db85f1`, inventory `157d8eda956114bb959636737c368a3afd6dd61ca1e96d6e41e1aba9a4b258b2`, test `8d8b77238ac028ca8684c2e4ad3c408ff64c875af4b29ec69333290b0a30dd76`. Root의 typecheck PASS/lint0 errors·기존12 warnings/Vitest175 files·1,103 tests PASS/production build PASS, 최종 inventory 파일 targeted ESLint·CI YAML parse·scope7/hold6·diff 검사도 PASS다. 앞선 빌드 세션의 최종 종료 상태를 회수할 수 없어 재실행한 빌드의 durable exit0을 기준으로 했다.
+
+기존 Manager는 요구사항/AC 작성과 첫 구현 검토를 수행했으나 최종 재검토 시 agent가 `pending_init`에 머물러 응답을 제공하지 못했다. 모델 제한 등 원인은 미확정이다. Root가 실제 최종 기술 검토를 대행하고 독립 QA의 임시 Docker 시험 진행만 승인했다(receipt SHA256 `c77b651dec2d0bd44f536e0286c0fc00cd713a596847a2d67a912420a6d1d146`). 원래 지정5.6 Developer/QA 모델을 실행했다고 기록하지 않으며 가용 기존 역할 agent의 실제 구현·검증을 사용했다. 운영 실행 승인을 대신한 검토가 아니다.
+
+읽기 전용 계획 packet `606edd414a1830b4af9d1e938cca7c3293c4fb53074e4ca90195fbcaee433e83`를 실제 대상/설치 identity로 생성했다. packet0700 parent/0600 file, READINESS_ONLY이고 운영 중지 authorization은 생성하지 않았다. 이 계획은 backup이나 운영 실행 수용이 아니다.
+
+기존 helper에는 backup-only 경로가 없어 별도 도구를 준비한다. Manager의 첫 구현 검토에서 전체 중지 시간 제한, 실패 helper 정리, 복원 volume 소유권, 부분 startup 정리 보완을 요청했다. 구현·독립 QA·임시 Docker 리허설·운영 실행은 각각 구별해 후속 기록한다. 현재 운영 stop/start/capture/restore0이며 actual RPO/RTO/조회 보존은 NOT RUN이다. 운영 0.61 배포·flags 변경·Git tag/latest 변경·issue 종료는 수행하지 않는다. 파일럿 NO-GO를 유지한다.
+
+---
+
 ## U-225-REGISTRY-20261108 — 실제 private 3-image 게시·승격 및 판정
 
 **결과:** 승인된 reader/통제/registry 작업1–4의 실행·검증과 판정을 완료했다. 파일럿은 **NO-GO**다. 운영0.58의 동일 스냅샷 backup/schema/RPO/restore/old App start 근거가 미확인이고 운영 DB/CAD/Volume/.env·배포·flags·latest/Git tag를 변경하지 않았다. #225/#218은 OPEN, 자동 publisher HOLD/두 Scene flags OFF를 유지한다. 아래 과거의 미게시/태그 부재 기록은 당시 상태다.
