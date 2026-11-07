@@ -1,3 +1,11 @@
+## #248 / #231 — Rule Suite 403 and planned/live Ruleset representation mismatch (2026-11-07)
+
+Actual `GET /repos/planner77/layoutManager/rulesets/rule-suites?per_page=20` through the current GitHub integration returned HTTP403 `Resource not accessible by integration` before any controlled ref mutation; repository Rule Suite API requires Administration:read. Do **not** interpret generic 403 as Ruleset policy-denial evidence or propose unreviewed PAT. The original `validated_live_ruleset()` compared ordered Ruleset rule arrays and exact PUT-vs-GET parameter maps; the live Main returned explicit `required_reviewers=[]`, `require_extra_approval_for_unattributed_changes=false` while source JSON omitted these, and live Tag GET omitted branch-only `update_allows_fetch_and_merge=false`. Historical synthetic test fixtures reused proposal-shaped readback and failed to expose this false negative. Initial/final policy payloads are unchanged and existing Main/Tag Rulesets remain ACTIVE.
+
+Narrow source repair adds independent Reader GET list+detail capability preflight and exact observed-shape normalizer with unknown fields/rules, unexpected actors/bypass, modified checks/approvals, token/source mismatch and Rule Suite incomplete evidence fail closed. Existing actual denial test remains **NOT RUN**; newly authored source's hosted CI results require subsequent observation. No production/policy/tag/GHCR mutation.
+
+---
+
 ## #225 / PR #244 P1 review — promotion job missing attestations:read (2026-11-06)
 
 - **Grounded finding (not an executed promotion failure):** [PR #244 review](https://github.com/planner77/layoutManager/pull/244#discussion_r4486906552) reported that the `release-promote.yml` protected `promote` job declares `contents: read`, `actions: read`, `packages: write` but omits `attestations: read`. `release_promote.verify_material()` calls `candidate_publish.verify()`, which performs `gh attestation verify --repo` **without `--bundle`** and therefore fetches attestations through GitHub's repository API; [official endpoint](https://docs.github.com/en/rest/repos/attestations) requires repository Attestations read for private access. No actual promotion run failed with `RC_CRYPTO_VERIFICATION_FAILED` in this report; it was a potential blocking permission defect detected in review.
