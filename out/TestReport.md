@@ -1,3 +1,28 @@
+## U-225-OR58-DISPOSABLE-20261108 — 독립 복원 검증 수용, 운영 실행 대기
+
+**판정:** controller3481의 독립 실제 Docker happy path·두 실패 주입과 Root의 별도 데이터 재조회가 통과했다. 이는 합성 도면1건/Current·Scene0의 임시 시험이다. 실제 운영0.58의 stop/capture/restore는0이며 운영 RPO/RTO 수용이나 파일럿 GO가 아니다. 다음 단계는 구체 유지보수 시점 확인 후 실제 운영 recovery point를 검증하는 것이다.
+
+**Source/통합:** [PR259](https://github.com/planner77/layoutManager/pull/259) head `63efa743c3540421bbc9addd9f47bb03380ebd0d`/tree `ffb3a9b5b16119289889135fee623460adef8bef`. 최종 [CI687](https://github.com/planner77/layoutManager/actions/runs/42409757779)는 적용8개 SUCCESS/A2 scope SKIP다. CI receipt SHA256 `94af23d2bf9bcda0867c41748b91e2317f1e53853dd02ad7426bd428543e0dfe`이며 실제 synthetic merge `cc9439f9fb611ae83217f4400e0d90a81b4d7d14`의 정확[Main5cd,head63] 부모·동일 tree를 별도 확인했다. 선행 a9/CI685의8개 성공은 그 source만의 결과이며 새 source로 이전하지 않는다. 63의 CI686은 Draft→Ready 이벤트에 따른 같은 head의 최종 실행으로 대체됐다. 충돌/미해결 리뷰0과 exact head를 확인하고 정상 squash Main `5836d66e48f6f42f51ee82e8f7b8c3c8151a349f`로 통합했다. Main의 단일 이전 부모5cd와 동일 treeffb3를 재조회했으며 bypass/branch 삭제/force push0이다. merge receipt SHA256 `92a6fb767034f389cff48858037a024dc66dd3cbb602291d2e06fc5ef5fe3399`.
+
+| 실제 임시 시험 | 결과 |
+| --- | --- |
+| snapshot·원래 App 재개 | exact old0.58 immutable image, 같은 source fixture CID healthy 재개7.888초/120초 예산, archive583,680bytes·4files |
+| 새 빈 volume 복원 | 33 tables의 모든 logical rows/schema/install identity 및 CAD 참조1건(67bytes)/bytes/SHA·raw files 일치 |
+| old App startup | 소유 internal network, host port 공개0, 정확 CID의 비루트 exec 내부 health/status HTTP200/200 |
+| startup 이후 보존·정리 | 지원 cleanup으로 clone/network 제거 후 모든 파일·설치 identity·33 tables/도면 SHA 일치 |
+| 실제 helper 응답 지연 | real start-ai 호출 뒤 CLI 응답을 지연하여10초 subprocess timeout 유도, capture 성공 receipt0·finally 같은 App healthy 재개16.91초; daemon 장애 시험은 아님 |
+| 실제 network receipt 유실 | 실제 internal network 생성 직후 로컬 receipt write OSError 주입, durable intent로 ID/nonce 회수·해당 빈 network만 제거 |
+
+**독립 근거:** QA report SHA256 `05a8f4e452b76b70a0f573974085c11915838eb9045753828f65986b0b728b44`; Root의 detached restore4files·33table fingerprint/CAD1 재조회 `40bc7429c6bac9c602fccde674e73f54f294dc4789b42a65b1ab6c097fefaccc`; Root 대행 Manager 수용 `cf867086be26e592eb138b8768a755ff27b8e4321dfb13ba78156c0a7f3a4786`. 실제 역할은 앞선 PREP 기록을 따르며 기존 Manager가 수행하지 못한 최종 검토를 수행했다고 부르지 않는다.
+
+QA 임시 App/Migrator/source volume 및 불필요 restore2개는 exact ID/image/nonce/mount·0attachment 확인 후 정리했다. 검증된 happy restore1개와 private archive/report는 보존한다. cleanup manifest SHA256 `5836dfa5a9ab1eb7a45a0b1fb4b76214b443a649d38c1470730833d8015c4752`; global prune/기존 운영·RR2 자원 접근0. 앞선1b8 startup HALT(report `d1c91aa7…b0fbbf`)는 그대로 보존한다.
+
+최종 code3481·기본 Docker context·DOCKER_HOST override 없음에서 새 readonly readiness packet `f6d750dd562eaa2fb7a336180077774e3a0da93d337e31e7550c9f6ba7b1371d`를 생성해 동일 운영 CID/image/version/설치 identity·6files를 확인했다. private0700/0600이며 실제 유지보수 authorization은 생성하지 않았다. 정상 실행120초 예산 중 재시작70초를 확보한 계획이다.
+
+**운영 사전 검사:** 별도 readonly 원본 도면 참조1건의 local locator·실제 size/SHA도 일치했다(receipt SHA256 `2bd740839dd46da1bfc79c6bc59dc229b62ca1e36822256443351d4e159d8c26`). 기존6files/1,741,401bytes·integrity/FK·설치 정보 inventory와 마찬가지로 동시점 backup이 아니다. 인증된 업무/source/Current HTTP는 NOT RUN, 실제 READY Scene 데이터0, host 외부 writer 배제는 독립 증명되지 않았다. 유지보수에서 writer 경계를 확인하기 전 same-snapshot PASS를 선언하지 않는다. 자동 publisher HOLD/운영 Scene flags OFF/파일럿 NO-GO·이슈 OPEN을 유지한다. 소스0.61.0/운영0.58.0이며 배포·Git tag/latest·registry 추가 쓰기0이다.
+
+---
+
 ## U-225-OR58-PREP — 운영 0.58 복원 검증 준비 (2026-11-08, 진행 중)
 
 FR-225-OR58/TP-225-OR58의 Manager 요구사항·AC를 먼저 기록하고 전용 검증 도구를 준비한다. 운영 App은 기존 0.58.0/image `sha256:6abdef1ede21fd9a84a41d3c49621a9657ac0a10a23057f7f7b3f27515b62a50`이며 OCI revision은 `de92be0ea3a5de38008a57e8c29013d19667f11e`다. App/Migrator의 기존 registry graph와 실제 로컬 image를 조회로 연결했으며 signed provenance로 부르지 않는다. 조회 receipt SHA256은 `bab045de19b82d3a5c4458a19f0c1b06cd8a73c4783fcc5d5145314e45b5d5ab`이다.

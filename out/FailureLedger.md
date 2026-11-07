@@ -6,6 +6,8 @@ startup은 정확 old image에서 healthy였지만 `OR58_CLONE_PORT_INVALID`로 
 
 Root 대행 Manager는 구현 전에 OR58-06을 host port 공개0/internal network 유지·정확 CID의 비루트 exec로 내부127.0.0.1:3000 health/status HTTP 검사로 갱신했다. Developer는 socket/-p/host urllib를 제거하고 identity/network/no-publication 확인과 bounded status200 probe를 구현했다. Root가28 fake/compile/node/diff PASS와 diff를 검토했다. 새 독립 actual QA와 새 source full CI는 후속으로 구분하며 이전1b8의 startup을 소급 PASS로 바꾸지 않는다. 운영 stop/backup/restore0·파일럿 NO-GO를 유지한다.
 
+후속 controller3481에서는 실제 새 packet으로 내부 HTTP200/200·시작 후33 tables/raw4files 보존·정리 및 helper응답 timeout/finally 재개·network receipt write 유실의 실제 Docker 시험을 모두 통과했다. 독립 QA와 Root 재조회는 TestReport U-225-OR58-DISPOSABLE-20261108을 따른다. 선행 startup HALT는 변경하지 않는다.
+
 fixture 준비 중 권한/필수 seed acknowledgement·삭제 hash/인증 flags/표시용 truncated ID 오류는 synthetic setup 진단으로 보존했다. auth-off/automated-off 진단은 성공 근거에서 제외하고, 대표 auto/auth/cutover=true·정확 old pair·빈 source·일반 도면1건/Current로 다시 검사했다. 실제 운영 설정이나 credential을 읽어 대체하지 않았다.
 
 ---

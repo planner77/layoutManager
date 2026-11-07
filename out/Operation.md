@@ -14,6 +14,8 @@ OR58 startup의 호스트 loopback publish 가정은 실제 임시 시험에서 
 
 일관성은 writer0 epoch와 전체 capture 동등성으로 입증한다. 정지 상태 raw DB/WAL/SHM을 함께 보존한 뒤 disposable copy에서 SQLite recovery/backup을 수행할 수 있지만 live source checkpoint나 파일 정리로 대체하지 않는다. 중간 실패 때 불완전 capture는 미수용으로 남기고 원래 서비스 재개를 우선한다. 예기치 않은 writer/설치·이미지 변화/부족한 공간/원래 restart 실패는 HALT 및 실제 상태 보고이며 임의 수정·자동 upgrade·원본 restore0이다.
 
+도구의 합성 actual happy path와 두 실패 주입은 수용됐으며 실제 운영 snapshot을 대신하지 않는다. 검증된 restore1개/private 증거를 보존하고 임시 실행 자원은 exact ID/nonce로 정리했다.
+
 현재 새 요청은 복원 시험 자체를 승인하지만 정지 시간/구체 capture packet은 아직 미정이다. 기존 운영 절차의 별도 운영 승인 문구와 실제 서비스 중단 영향을 root가 검토하여, 실행 가능한 packet 준비 후 짧은 maintenance 구간 승인 필요 여부를 판단한다. 기존 요청에 이미 해당 interruption 승인이 있으면 중복 승인하지 않는다. 새로운 승인 대기 자체를 시험 성공이나 영구 차단으로 기록하지 않는다. TC와 RPO 표현 기준은 TestPlan OR58을 따른다.
 
 ---
