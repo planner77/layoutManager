@@ -507,7 +507,13 @@ test("TC-DESC-005: description registration, literal search and viewer display",
   await expect(page.getByRole('tooltip')).toHaveText(description);
   await expect(page.getByRole('tooltip')).toBeVisible();
   await page.reload();
+  // A reload can resolve before the Viewer has hydrated, or preserve focus
+  // on the name button without dispatching a fresh React focus event.
+  // Wait for actual Viewer readiness and require a new focus transition.
+  await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
+  await name.blur();
   await name.focus();
+  await expect(name).toBeFocused();
   await expect(page.getByRole('tooltip')).toHaveText(description);
   await expect(page.getByRole('tooltip')).toBeVisible();
   expect(await page.getByRole('tooltip').textContent()).toBe(description);
