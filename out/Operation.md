@@ -1,3 +1,11 @@
+## FUP1 격리 복원본 검증·보관 (2026-11-08)
+
+기존 immutable archive에서 새 nonce-owned volume을 복원해 exact0.58 App/internal network/host port0으로 검증했다. fresh browser에만 singleton localhost SOCKS를 적용하고 실제 사용자 직접 로그인으로 source와 분리된 clone Session/업무 읽기를 확인했다. bridge는 HTTP header/body를 파싱·로깅하지 않으며 다른 목적지·source cookie 재사용을 허용하지 않는다. 브라우저 요청은 같은 origin의 GET와 정상 login/logout POST만 허용했다. 해당 origin을 일반 운영 App 접속으로 오해하지 않도록 검증 창에 임시 식별 안내를 표시했다.
+
+현재 dedicated browser/bridge/clone App/network는 닫고 새 restore volume은 detached private 보관했다. 정상 UI logout은 완료되지 않아 clone DB 세션 폐기를 주장하지 않는다. 운영 브라우저·원래 App·기존 restore/backup은 유지했다. 재개는 보존 archive/hash·새 목적·소유 자원을 다시 검토하고 정상 계정 경로를 사용한다. 상세 결과·선택-column 비교와 초기 보완은 TestReport/FailureLedger를 따른다. CPU inventory CLI/시험은 test-only이며 production Worker/Builder/Schema 변경이나 배포·flags 승인이 아니다.
+
+---
+
 ## ARV 검증 완료·재개 경계 (2026-11-08)
 
 실도면 CPU eligibility와 정상 사용자 로그인 후 운영0.58 조회 결과는 TestReport ARV를 따른다. 사용자가 직접 로그인한 기존 browser context로 공개 CAD 목록·Location/Current·원본 일치·명시적 `renderer=dxf-viewer`의 표시 완료를 확인했다. 비밀번호/쿠키/session/setup code·credential header/body를 수집하지 않는다. Scene save/build/retry/edit는 실행하지 않았다. 운영0.58·기존 private backup과 detached restore volume을 보존한다. 원래 운영 서비스의 로그인 후 읽기 성공을 격리 restore clone의 인증 UI 성공으로 확대하지 않는다. CPU 지원 확대/READY 생성·0.61 배포·flags 변경은 별도 설계와 검증 대상이며 파일럿 NO-GO를 유지한다.

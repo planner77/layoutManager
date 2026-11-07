@@ -1,3 +1,39 @@
+## U-225-FUP1-20261108 — 실도면 capability 분석·격리 복원본 정상 인증 조회
+
+**현재 판정:** 실도면 inventory와 새 복원본의 사용자 정상 로그인 후 조회를 관측 범위에서 확인했다. CPU 전체 파일 변환은 여전히 UNSUPPORTED이며 payload/READY 생성0·파일럿 NO-GO다. 운영0.58과 보존된 기존 restore volume은 변경하지 않았고 앱 소스0.61.0/제품 Parser·Builder·Worker·Schema를 유지했다. 아래 ARV의 clone 인증 NOT RUN은 당시 상태이며 이번 실제 실행으로 보완한다.
+
+Manager가 FUP1 요구사항/설계/AC를 먼저 기록했다. Developer가 test-only raw-byte scanner를 구현하고, Root가 clone/transport/업무 fingerprint 도구와 실제 브라우저 시험을 수행했다. Manager는 구현의 tuple 처리·원자 receipt·부분 cleanup·bounded identity 및 scanner finite vocabulary/시간·공유 DAG depth를 검토해 재작업 뒤 수용했다. 지정된 과거5.6 모델을 실행했다고 기록하지 않으며 현재 가용 역할 agent가 실제 업무를 수행했다.
+
+| 실제 분석 | 결과 |
+| --- | --- |
+| 원본 binding | immutable archive SHA `625e6b36e2bcb9c94e5e1d7bba735c7f26323ee963f212b58121f5d6a5ef1057` 유지, 실제 DXF1,117,143bytes·63,050pairs |
+| 선언 / 구조 | AC1018 / ANSI_1252 선언 / INSUNITS4, HEADER·CLASSES·TABLES·BLOCKS·ENTITIES·OBJECTS, UTF-8 지원을 뜻하지 않음 |
+| entity 범위 | ENTITIES970 + BLOCKS2690 =3660. 기존 기타3은 VIEWPORT3; raw 정의 개수이며 instance 확장 도형 수가 아님 |
+| 의존 특성 | BLOCK147 / 최대 경로3(정의 node 기준·top-level INSERT 제외), layer24/style8, text/attributes/dimension/hatch/leader/OCS·Z 존재. cycle/missing reference 관측0 |
+| 결과 의미 | finite entity/category/선언 vocabulary·source SHA·flag/count만 반환하는 INVENTORY_ONLY. 원본 이름/문자/handle/좌표를 공개하지 않고 원본 transcode/filter0 |
+
+최종 scanner SHA256 `2a36a9e9712016a4545fb911c75fbf10d0937001e19debc08aa119012317361c`, test source `59261fb0477cf41e1b00da6a0a9d8eddcb836d2a27254ea67464c8f75e1ee022`. 실제 sanitized inventory SHA256 `37cf146b8915e3b1e179b6aa5b1b82efb9c1add9d0459f5469f2a58db1a28027`. Developer receipt `bafb2fa0358fd352c3daea37d49940993e4c5566f6f4b4e9e8a277b7918cc183`. 이전 depth2/hash는 superseded이며 최종 결과로 사용하지 않는다. 다음 CPU 후보의 정확 subset·누락 의미·P01–P06·0.1mm 오차/segment 상한은 Architecture FUP2가 정본이며 실제 파일 전체는 그 primitive 후보에도 미지원이다.
+
+| 새 격리 복원본 관측 | 실제 결과 |
+| --- | --- |
+| 복원·기동 | 기존 immutable archive를 새 nonce-owned empty volume에 복원, raw6files 일치, exact old0.58 image·설치 identity·healthy |
+| 접근 경계 | internal network/App host port0, localhost-only SOCKS를 exact clone IP:3000 하나로 제한. Browser127:3000 URL/Host/Origin 유지, HTTP rewrite/packet logging0. 시작·연결 전·bounded 주기 identity 확인은 연속 race 배제 증명이 아님 |
+| 정상 인증 | fresh context 최초 Session401/login POST0. 첫 사용자 완료 응답 뒤에도401/POST0이어서 올바른 clone 창을 식별; 그 창의 사용자 직접 로그인 후 Session200/actor 존재. UI login POST4건 관측, 자동 credential 입력/원래 cookie 복사0 |
+| 업무 조회 | Session/목록/Location/원본 각각200; 기존 Version1/Current pointer·목록 Current가 backup과 일치. Location 화면 Current/Version row1/Viewer 링크 확인 |
+| 원본·Viewer | 원본1,117,143bytes·SHA가 backup과 동일. explicit dxf-viewer SSR200·도면 표시 완료·visible canvas1425×1542, 해당 Viewer 구간46GET/비GET0/source200 1회/Scene GET0 |
+| 선택 업무 보존 | 비인증13 Version열을 포함한24개 업무 table/선택 열 및 CAD tree bytes가 backup·조회 전후와 일치. User/AuthSession/복구/로그인 시도 행 및 삭제 비밀번호 해시는 최종 비교에서 제외. 전체 DB/Auth/Audit 보존·atomic DB+CAD snapshot 주장이 아님 |
+| 종료·보관 | dedicated browser context 닫음, exact bridge PID/loopback listener 종료, 소유 clone/network 제거, 새 restore volume detached 보관. 기존 backup/운영 image·healthy 유지 |
+
+**로그아웃 제한:** 정상 UI 로그아웃을 시도했지만 account 이동 직후 확보한 snapshot에 해당 control이 없어 완료하지 못했다(last Session200/logout POST0). 이를 로그아웃 성공/세션 폐기로 기록하지 않는다. browser context·transport·clone App 종료로 실행 경계를 닫았으며, 새 detached clone DB의 정상 AuthSession 행은 남을 수 있다. cookie 복구·DB 세션 삭제·원래 사용자 세션 변경으로 보완하지 않았다.
+
+**실패·보완:** 초기 `CadFileVersion SELECT *`는 삭제 비밀번호 hash 열도 aggregate digest에 읽었다. raw 값 출력/전달/인증 사용은 없었다. Manager 검토 후 명시13열·SQL LIMIT로 좁히고 초기 digest를 제외해 backup과 다시 비교했다. 전체 이력의 인증 자료 읽기0을 주장하지 않는다. 최초 전체 Vitest는 private077 umask 상속으로 unsafe644 lock fixture가600이 되어 실패했고240초에 미완료 timeout됐다. 같은 시험은 child077에서 실패/022에서 통과했다. 앱/시험 assertion을 바꾸지 않고 child022로 전체 재실행한다. 세부 실패 이력은 FailureLedger를 따른다.
+
+**검증 상태:** scanner10/clone protocol·fault14 PASS, 타입 검사·Lint0 errors/기존12 warnings·production build PASS. 정상 child umask022의 전체 Vitest175 files/1103 tests PASS(420.4초), private log0600을 확인했다. 독립 QA는 scanner10/clone14를 직접 실행하고 immutable 원본 분석을 재현했으며 actual clone receipt/선택 비교/종료·문서를 감사해 PASS_WITH_LIMITS로 판정했다. Root의 전체 앱 검사는 QA 재실행으로 기록하지 않았다. 최종 QA SHA256 `591bf7665cf5147ae5dbf47a43e03b42fce1d8a96b81ccb7f5cb4c6ef966d5c7`(중간 receipt hash 오기 보완 뒤11개 binding 재확인), Manager ACCEPT_WITH_LIMITS SHA256 `9c41d2236e74cc09b5e455760d0b8f1df775cc714edafadcff5e58de7684ae16`다. 이 변경 PR의 정확 head에 적용되는 필수 CI를 최종 통합 gate로 사용한다. CI scope job에 새 scanner/clone 시험과 fingerprint 구문 검사를 연결했으며 외부 Docker/registry 쓰기 없는 합성 시험이다. Root 실제 관측 receipt SHA256 `1b0e758ade1d098bc2624e9cff54596d0c518d4bbdb2756df48581183efa00cf`.
+
+기존 공개 CAD 읽기 계약의 정상 기능 시험이다. Site 인가 차단·메모/외곽선 권한·기하/문자 정확도·host 외부 writer 독립 배제·off-host 내구성·미래 RPO0·운영 READY/GO를 대신 증명하지 않는다. 신규 배포/flags·권한·registry/tag/latest 변경 및 이슈 종료0이다.
+
+---
+
 ## U-225-ARV-20261108 — 실도면 CPU eligibility·로그인 후 운영 조회 검증
 
 **판정:** 실제 도면의 published0.61 CPU 변환기 지원 조건은 NOT_ELIGIBLE이며, 기존 운영0.58 계정의 정상 로그인 후 업무 읽기는 관측 범위 PASS다. 이 결과는 운영 READY 생성/게시 성공이 아니다. 실제 운영 배포·flags/계정/권한/원본/Scene 변경 없이 private backup 사본을 읽어 검사했다. 기존 OR58 backup·복원 관측 수용은 유지하며 파일럿 NO-GO다.

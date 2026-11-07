@@ -1,3 +1,10 @@
+## #225 FUP1 — 검증 환경·보존 쿼리 보완 (2026-11-08)
+
+- 초기 read-only 보존 fingerprint의 `CadFileVersion SELECT *`는 삭제 비밀번호 해시 열도 메모리의 aggregate digest에 포함했다. 값 출력·내보내기·인증 사용은 없었고 User/AuthSession/복구/로그인 시도 행은 조회하지 않았다. Manager 검토 뒤 Version의 비인증13열을 명시하고 SQL `LIMIT 100001`을 적용했다. 초기 digest는 superseded로 구분하고 보완된24개 업무 table/선택 열이 immutable backup과 같은지 재검사했다. 전체 이력의 인증 자료 읽기0 또는 전체 DB 보존을 주장하지 않는다.
+- 최초 전체 Vitest는 private 산출물용 `umask077`이 child에도 상속돼 의도적인644 unsafe-lock fixture가600으로 생성됐고 throw 기대가 실패했다. 전체 실행은240초 timeout으로 완료되지 않았다. 동일 잠금 시험은 child077에서 실패/022에서 통과했다. 앱·시험 assertion은 바꾸지 않고 로그를 여전히0600으로 보관하면서 child만022로 재실행한다. 최종 전체 결과는 TestReport FUP1을 따른다.
+
+---
+
 ## #225 OR58 — 격리 네트워크의 startup port 가정 실패 (2026-11-08)
 
 [Draft PR259](https://github.com/planner77/layoutManager/pull/259) 선행 source `a9bf65e`/controller `1b8d5504`의 [CI685](https://github.com/planner77/layoutManager/actions/runs/42406110983)는 적용8개 SUCCESS/A2 scope SKIP였다. 독립 실제 Docker QA의 별도 synthetic0.58 시험에서는 plan/capture/restore가 성공했고 정확 원래 fixture App이7.91초에 healthy로 재개됐다. archive583,680bytes/4files·33tables의 raw/logical/schema/install/CAD reference가 일치했다. 이 결과는 운영 데이터나 미래 RPO0의 근거가 아니다.

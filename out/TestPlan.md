@@ -1,3 +1,17 @@
+## TP-225-FUP1 — 최소 후속 Unit AC/TC (2026-11-08, Manager 구현 전)
+
+| TC | 수용 조건 |
+| --- | --- |
+| FUP1-01 original binding | immutable backup SHA와 실제 DXF SHA/byte length를 private evidence에 결합하고 전후 원본 hash 동일. 원래 operating/보존 restore volume 미변경. 실 CAD/DB/text/path/auth material 커밋·public 출력0. |
+| FUP1-02 bounded inventory | bytes/pairs/section/entity/depth/시간·메모리 한도, truncated/odd group/duplicate section/invalid code/EOF/binary DXF/encoding conflict 음성. 엄격 LINE synthetic positive와 실제 파일 결과 구분. 선언 ACADVER/codepage/units, closed entity-count 및 layer/style/extrusion/block/text feature flag를 분석; unknown을 silent ignore 금지. |
+| FUP1-03 renderer decision | 실제 inventory 결과로 다음 smallest converter subset/encoding policy·추가 TC를 명시. FUP1 자체 READY/지원 PASS0. 지원 확장 시 새 builder identity·원본 bytes SHA·geometry/units/layer/style/text/block 근거와 unsupported fail-closed 필요; 기존 builder/Job/Schema 의미 변경0. |
+| FUP1-04 fresh clone authority | 새 nonce-owned empty volume·정확 old image/설치 identity·기존 backup만 사용. retained restore/운영 volume 재사용0. internal no-host 기본; 필요 시 별도 localhost-only bridge의 upstream/CID/network/port·Origin/Host/CSRF 정합성과 소유 cleanup을 검증. signed origin 요구를 약화하지 않음. |
+| FUP1-05 legitimate user auth | 사용자 직접 clone 정상 로그인, fresh browser context, source cookie/session export·DBauth material 읽기·계정/role 변경0. 사용자 입력 전 AUTH_PENDING. clone 로그인만 clone auth PASS; source 로그인 성공을 재사용 증거로 표시0. |
+| FUP1-06 protected reads | 인증 후 허용 Location/Version/Current·원본 size/SHA·Viewer 조회; HTTP origin/CSRF/auth 결과와 정상 auth/audit 부수효과 구분. 업무 row/원본 불변, Scene0이면 READY 관측 NOT RUN. 기존 공개 CAD 계약은 별도 보호 인가 증명으로 확대하지 않음. |
+| FUP1-07 validation | Developer 구현→Manager source review→독립 QA; 실제 offline 파일 분석·clone route/login 실행별 상태와 한계 기록. 테스트용 synthetic provenance와 실제 파일을 구분. 운영 배포/flags/registry/latest/Git tag/issue closure0; GO-PILOT 자동 승격0. |
+
+---
+
 ## TP-225-ARV — 인증 업무 조회·READY 검증 (2026-11-08, Root 대행 Manager 설계)
 
 | TC | 조건 |
