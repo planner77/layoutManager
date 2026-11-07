@@ -1,3 +1,11 @@
+## #248 / PR #249 — CI #666 actual trace confirms EOF-only DXF parser failure (2026-11-07)
+
+[CI #666/run42320485967](https://github.com/planner77/layoutManager/actions/runs/42320485967), exact head `213a8f827e14104b94de6b1f2ca431f9d9bb2076`, failed Chromium shard2 job128245490386 `TC-DESC-005`, 73 PASS/1 FAIL. The new readiness check in `upload.spec.ts:513` observed `도면 로딩 중…` then `표시 실패` instead of `도면 표시 완료`. Actual Playwright `playwright-general-2-1` artifact13553606944 browser console reported `TypeError: e.entities is not iterable` in `_FetchFonts → Build → _Load`, while the HTTP source GET `/api/cad-files/:versionId/content` returned 200. The test uploaded only `0\\nEOF\\n` (no `ENTITIES` section). This materially supersedes the earlier unconfirmed focus/hydration explanation; both #662 and #666 remain historic failures.
+
+Minimal remediation: replace **only** this metadata/viewer test's malformed source with a valid `SECTION/ENTITIES` DXF containing one LINE, as existing successful browser fixtures already do. Keep exact description persistence, search and tooltip assertions; add required Viewer-ready status before first focus and retain post-reload ready/blur/focus checks. No product renderer/parser or other EOF-only test cases altered. Full new exact-head CI is **PENDING** (not claimed successful). GHCR/operating state, Rulesets and feature gates unchanged.
+
+---
+
 ## #248 / PR #249 — failed CI #662 and bounded browser synchronization repair (2026-11-07)
 
 [PR CI #662/run42318249059](https://github.com/planner77/layoutManager/actions/runs/42318249059) on exact HEAD `66c64a80f6fb213aa8365988e701741ab927e948` ended **FAILURE**: successful scope/CP regression/Static+Build/Docker/G7/Chromium1 and Greenfield; Chromium2 job128238049621 failed `TC-DESC-005` post-reload Tooltip `getByRole('tooltip')` 5000ms timeout at `upload.spec.ts:511` (73 browser cases passed, 1 failed). Required aggregate job128241617652 failed with `Required general-e2e did not succeed`. Earlier #661 on superseded HEAD was **CANCELLED**, not PASS.
