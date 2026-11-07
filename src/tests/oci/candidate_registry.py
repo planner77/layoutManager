@@ -27,7 +27,8 @@ ACCEPT = ', '.join(sorted(IMAGES | INDEXES))
 CONFIGS = {'application/vnd.oci.image.config.v1+json', 'application/vnd.docker.container.image.v1+json'}
 LAYERS = {'application/vnd.oci.image.layer.v1.tar', 'application/vnd.oci.image.layer.v1.tar+gzip',
           'application/vnd.oci.image.layer.v1.tar+zstd', 'application/vnd.docker.image.rootfs.diff.tar.gzip'}
-UPLOAD_PATH = re.compile(re.escape(PREFIX) + r'/blobs/(?:upload|uploads)/[A-Za-z0-9_-]{1,200}')
+UPLOAD_PATH = re.compile(re.escape(PREFIX) +
+                         r'/blobs/(?:upload/[A-Za-z0-9_.-]{1,200}|uploads/[A-Za-z0-9_-]{1,200})')
 
 
 def upload_target(location, digest):

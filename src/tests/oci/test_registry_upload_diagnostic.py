@@ -275,6 +275,19 @@ class UploadDiagnosticTest(unittest.TestCase):
         self.assertTrue(worst['queryKeysTruncated'])
         self.assertNotIn('canary', json.dumps(worst))
 
+    def test_dot_projection_accepts_observed_singular_class_only(self):
+        from candidate_registry import upload_target
+        for route, accepted in (('upload', True), ('uploads', False)):
+            location = '/v2/planner77/layoutmanager/blobs/' + route + '/a.b-c_1'
+            summary = ul.shape(location)
+            self.assertEqual(summary['currentCandidatePredicate']['pathPattern'], accepted)
+            self.assertEqual(summary['currentCandidatePredicate']['allComponents'], accepted)
+            if accepted:
+                self.assertIn('/a.b-c_1?digest=', upload_target(location, 'sha256:' + 'a' * 64))
+        for suffix in ('.', '..', '%2e', 'x/../a.b'):
+            self.assertFalse(ul.candidate_components(
+                '/v2/planner77/layoutmanager/blobs/upload/' + suffix)['allComponents'])
+
     def test_taxonomy_projection_matches_actual_finite_uploader(self):
         from candidate_registry import upload_target
         prefix = '/v2/planner77/layoutmanager/blobs/'

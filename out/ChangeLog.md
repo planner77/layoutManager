@@ -1,3 +1,11 @@
+## 0.61.0 진행 — 실제 점 포함 업로드 ID의 최소 수리 (2026-11-08)
+
+- PR256/CI682 필수8개 PASS/Main72181f4 뒤 새 protected taxonomy 진단42392837552에서 빈 POST1회·202·정제 artifact를 확인했다. fixed singular upload ID의 dot 분류를 실제 관측했으며 원문·토큰 형식은 미확인이다.
+- singular bounded ID에만 점을 허용하고 plural·traversal·session/권한 보호를 유지한다. diagnostic은 공통 path grammar를 참조한다.
+- 기존 두 candidate 실패와 소진된 두 진단 budget을 보존한다. 새 source QA/full CI/Main·새 candidate packet/run/실제 환경 review 후에만 게시를 검증한다. 0.61 태그3 absent/기존0.60/latest 불변·운영 flags OFF/자동 HOLD/GO-PILOT BLOCKED 유지.
+
+---
+
 ## 0.61.0 진행 — 실제 후보2 실패 보존 및 구조 진단 준비 (2026-11-08)
 
 - FS 수리는 PR255/CI681 적용8개 SUCCESS로 Main31998d6에 통합됐다. candidate45 등 독립78회귀와 실제 게시 결과를 구별한다.

@@ -1,3 +1,9 @@
+## #225 DOT — 실제 문자 분류에 따른 bounded ID 호환 (2026-11-08)
+
+actual taxonomy2의 fixed singular upload prefix/식별자39자 alpha·digit·hyphen·dot/기타 조건 참을 근거로 singular ID1–200자에 literal dot을 허용한다. plural charset은 그대로 두며 raw 단독 . 또는 ..·encoded path·traversal·다른 repo/origin/route 거부와 raw query/단일 descriptor session을 유지한다. UUID suffix·점 위치/개수 등의 형식은 확정하지 않는다. 상세 AC/TC는 TestPlan DOT01–05, 실제 결과는 TestReport가 정본이다.
+
+---
+
 ## #225 TAX — 미관측 경로의 비밀 값 없는 분류 (2026-11-08)
 
 candidate2의 실제 업로드 주소 거부로 유한 두 경로의 호환 가정은 검증되지 않았다. 후속 진단은 고정 vocabulary 일치/segment 길이·문자 분류 등 bounded raw/resolved 구조와 현재 FS predicate 조건을 관측하며 URI·UUID·unknown segment·query 값은 공개하지 않는다. 기존 fixed POST/별도 보호 환경/단일 요청·재시도0 경계를 유지하고 publisher는 변경하지 않는다. 상세 AC/TC는 TestPlan의 TP-225-UPLOAD-TAXONOMY를 따른다.

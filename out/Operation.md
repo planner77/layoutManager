@@ -1,3 +1,11 @@
+## #225 DOT — 구조 진단 완료 후 실행 경계 (2026-11-08)
+
+새 taxonomy diagnostic42392837552/packet97218a2d는 실제 환경 review 후 POST1회·202·정제 artifact를 남겼다. singular prefix의 opaque ID에서 dot 분류를 관측했지만 URI 원문·식별자 의미/점 위치/개수는 미확인이다. 이 budget과 이전7f는 소진됐으며 follow/PUT/cancel/delete/retry0을 유지한다. 추가 진단 POST는 필요하지 않다.
+
+수리는 singular ID의 bounded 문자 허용만 보완한다. 새 source QA/필수 CI/정상 Main 뒤 새 candidate packet과 별도 실제 protected 환경 review로 게시를 검증한다. 실패70c2/fdfd의 재생·승격0, 자동 latest/Git tag·운영 배포/rollback0. 기존0.60/latest 불변 및 정식3태그 부재를 진단 후 pull-only로 재확인했다. 정확 근거는 TestReport, DOT AC는 TestPlan을 따른다.
+
+---
+
 ## #225 TAX 실행 경계 — 새 후보2도 실패 (2026-11-08)
 
 candidate42388044377/packetfdfd9020은 CA_UPLOAD_LOCATION_REFUSED로 실패해 재생·승격 입력으로 사용하지 않는다. 실제 후보/정식 태그 부재 및 기존0.60/latest 불변을 재조회했지만 원202 upload session의 상태는 unknown이며 삭제·재시도하지 않았다. 이전 diagnostic7f의 단일 budget도 소진됐다.
