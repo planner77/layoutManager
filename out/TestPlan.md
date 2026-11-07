@@ -1,3 +1,17 @@
+## TP-248 — independent Rule Suite readiness and ruleset GET readback (2026-11-07)
+
+**Pre-change live evidence:** Main Ruleset26731716 ACTIVE for `refs/heads/main`; Tag Ruleset26731135 ACTIVE for `refs/tags/v*`, both `bypass_actors=[]`. `GET /repos/planner77/layoutManager/rulesets/rule-suites?per_page=20` returned integration 403; this is a **reader capability failure**, not a denied Git operation. Current Main `e602bd78549722a29f89a2b1c38a162d91c6be89`, historical v0.60 annotated tag unmodified, no control-* refs.
+
+| AC | Required source/test behavior |
+| --- | --- |
+| 248-R1 | `--readiness-check` (Owner local, no `--execute`) checks exact current clean source/policy bytes, repo/Owner identity and bounded independent `CP_READ_TOKEN` list+detail Rule Suite 200; returns sanitized `READ_ONLY_READINESS_NOT_OWNER_APPROVAL` only. 403/401, empty list, nonmatching repo, incomplete detail/actor/ref, pagination uncertainty, token missing or source drift reject with **zero write routes**. It does not grant external policy mutations. |
+| 248-R2 | Local Owner `--execute` requires same independent GET preflight **before** its first ref write. No `CP_READ_TOKEN` inside GitHub Actions; Actions dispatch remains separately Owner-preflight/approved, not auto-authorized by workflow token or an untrusted receipt. |
+| 248-R3 | GitHub Rules REST validates exact names/targets/conditions/active/bypass/issuer, unique type set, exact PR semantics plus *explicit* `required_reviewers=[]` and extra approval false; no inferred missing false. Tag-only update omits documented branch-upstream field; no unknown parameter accepted. Rule order irrelevant; unknown/missing/duplicate rules/parameters or drift reject. |
+| 248-R4 | Actual-shaped independent fixtures, positive tagged/branch GET, negative nonempty reviewers/extra approval/changed required CI/actor/bypass/order/fields, Rule Suite 403/empty/invalid source/detail, local token/source failure and mutation0. Existing CP suite and repository-required CI must pass on exact PR HEAD, independent QA and Main Ruleset integration remain mandatory. |
+| 248-R5 | No real Owner control packet, Ruleset prefix edit, Ref/tag write, workflow dispatch, legacy disable, GHCR publish or pilot GO until separate approval. Final denial PASS requires actual ruleset evaluation and unmodified ref; 403 alone is PENDING. |
+
+---
+
 ## TP-225-LP-INVENTORY-PAGINATION — 크기 제한을 유지한 실제 inventory 복구 (2026-11-06)
 
 Root의 승인된 GET-only Owner packet 준비에서 Main11532의 LP `no_active_runs → all_rows(per_page=100) → GitHub.request`가 `LP_RESPONSE_TOO_LARGE`로 중단됐다. packet 작성/disable/probe/원격 mutation 이전 실패다. 실제100/30 응답의 길이·건수·status·digest 측정 전에는 payload 크기가 원인이라는 가설과 최소 page 선택을 확정하지 않는다. 진행 중 proof4 source11532/tree2423 및 다른 frozen worktree는 변경하지 않는다.
