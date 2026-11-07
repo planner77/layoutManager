@@ -1,6 +1,6 @@
-## #225 ARV — 인증 업무 조회·READY 검증 (2026-11-08, 시작)
+## #225 ARV — 인증 업무 조회·READY 검증 (2026-11-08)
 
-사용자의 `검증 진행하세요`에 따라 실제 운영0.58의 기존 계정으로 허용된 읽기 전용 업무/Location·Current·원본 조회와 READY 잔여를 검증한다. 정상 사용자 로그인만 사용하며 비밀번호/쿠키/session/setup code를 DB·로그에서 가져오거나 계정·권한을 변경하지 않는다. 운영 배포·0.61 upgrade·flags ON·신규 운영 도면/Scene 생성은 승인 범위에 포함하지 않는다. READY는 실제0.58 schema/데이터·0.61 Worker 지원 범위를 먼저 확인하고 격리 시험·기존 CI·운영 미실행을 구분한다. 세부 AC는 TestPlan ARV, 실제 결과는 TestReport가 정본이다.
+사용자의 `검증 진행하세요`에 따라 실제 운영0.58의 기존 계정으로 허용된 읽기 전용 업무/Location·Current·원본 조회와 READY 잔여를 검증한다. 정상 사용자 로그인만 사용하며 비밀번호/쿠키/session/setup code를 DB·로그에서 가져오거나 계정·권한을 변경하지 않는다. 운영 배포·0.61 upgrade·flags ON·신규 운영 도면/Scene 생성은 승인 범위에 포함하지 않는다. READY는 실제0.58 schema/데이터·0.61 Worker 지원 범위를 먼저 확인하고 격리 시험·기존 CI·운영 미실행을 구분한다. 기존 공개 CAD 읽기 계약(FR-P4-G0-BIZ-01)을 유지하며 로그인 후 기능 관측과 접근 인가 차단 시험을 구분한다. 운영 source와 격리 restore clone의 관측을 합치지 않는다. 세부 AC는 TestPlan ARV, 실제 결과는 TestReport가 정본이다.
 
 ---
 

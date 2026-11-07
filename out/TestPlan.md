@@ -4,7 +4,7 @@
 | --- | --- |
 | ARV-01 identity | 실제 source0.58·기존 image/config/volume healthy를 읽기 전용 확인하고 backup 보존·원래 사용자 변경 보존. 실 운영 중지/배포/flags·계정/권한 변경0. |
 | ARV-02 legitimate auth | 기존 계정의 정상 로그인/현재 승인된 browser context만 사용. 사용자가 직접 비밀번호 입력, 채팅/로그/명령·스크린샷으로 수집0, DB session 재사용/위조/계정 복구 우회0. 접근 경로가 없으면 필요한 사용자 동작을 요청하고 AUTH_PENDING 표시. |
-| ARV-03 business reads | 로그인 뒤 허용된 Location/Version/Current 표시, 원본 GET/size/SHA, Viewer 읽기를 기존 데이터로 검증. 토큰/개인정보/원본 내용은 public 출력0; 정상 Auth/Audit 변화와 업무 데이터 변경 구분. 쓰기·권한변경·재시도/업로드 없음. |
+| ARV-03 business reads | 로그인 뒤 허용된 Location/Version/Current 표시, 원본 GET/size/SHA, Viewer 읽기를 기존 데이터로 검증. 기존 공개 CAD 계약의 기능 관측이며 보호된 Site 읽기 인가 증명으로 확대하지 않는다. 원래 운영 source와 격리 clone 결과를 구분한다. 토큰/개인정보/원본 내용은 public 출력0; 정상 Auth/Audit 변화와 업무 데이터 변경 구분. 쓰기·권한변경·재시도/업로드 없음. |
 | ARV-04 READY eligibility | 실제0.58의 Scene/Job schema·READY0과 제품 flags OFF의 의미, published0.61 CPU converter의 지원 조건을 primary code/이미지로 확인. 운영에 새로운 READY를 만들지 않으며 기존 CI/합성 proof를 실제 dataset READY로 relabel 금지. |
 | ARV-05 isolated verification | 추가 READY 시험이 필요하면 새로운 owned namespace/빈 테스트 데이터·정확 승인 이미지·테스트용 정상 로그인 경로로만 실행하고 실제 운영·백업복사본의 계정/권한/원본은 변경하지 않는다. eligible subset/unsupported/미실행을 구분하고 owned cleanup. |
 | ARV-06 acceptance | 실제 실행/Actor/범위·한계를 기록하고 독립 QA→Root 대행 Manager 수용. 미실행 PASS/무조건 pilot GO0. 문서·정상 commit/push/필요한 scoped CI를 완료. |

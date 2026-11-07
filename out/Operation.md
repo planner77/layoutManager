@@ -1,6 +1,6 @@
-## ARV 검증 재개 상태 (2026-11-08)
+## ARV 검증 완료·재개 경계 (2026-11-08)
 
-실도면의 CPU eligibility 부적합 결과와 정상 LINE 대조는 TestReport ARV를 따른다. 정상 로그인 창은 private 별도 browser session으로 준비했으며 사용자 직접 로그인 완료 전 인증된 업무 읽기를 PASS로 기록하지 않는다. 비밀번호/쿠키/session/setup code·요청 credential header/body를 수집하지 않는다. 원본을 읽는 기존 Viewer 경로는 old release의 `renderer=dxf-viewer`를 사용하며 Scene save/build/retry/edit 같은 쓰기 동작을 검증에 섞지 않는다. 현재 정상 로그인은 대기 상태이고, 기존 운영0.58·기존 private backup 보존을 유지한다.
+실도면 CPU eligibility와 정상 사용자 로그인 후 운영0.58 조회 결과는 TestReport ARV를 따른다. 사용자가 직접 로그인한 기존 browser context로 공개 CAD 목록·Location/Current·원본 일치·명시적 `renderer=dxf-viewer`의 표시 완료를 확인했다. 비밀번호/쿠키/session/setup code·credential header/body를 수집하지 않는다. Scene save/build/retry/edit는 실행하지 않았다. 운영0.58·기존 private backup과 detached restore volume을 보존한다. 원래 운영 서비스의 로그인 후 읽기 성공을 격리 restore clone의 인증 UI 성공으로 확대하지 않는다. CPU 지원 확대/READY 생성·0.61 배포·flags 변경은 별도 설계와 검증 대상이며 파일럿 NO-GO를 유지한다.
 
 ---
 

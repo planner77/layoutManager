@@ -1,6 +1,6 @@
-## U-225-ARV-20261108 — 실도면 CPU eligibility 검증·인증 조회 대기
+## U-225-ARV-20261108 — 실도면 CPU eligibility·로그인 후 운영 조회 검증
 
-**판정:** 실제 도면의 published0.61 CPU 변환기 지원 조건은 NOT_ELIGIBLE이며, 기존 운영0.58 계정의 인증 업무 조회는 AUTH_PENDING이다. 이 결과는 운영 READY 생성/게시 성공이 아니다. 실제 운영 배포·flags/계정/권한/원본/Scene 변경 없이 private backup 사본을 읽어 검사했다. 기존 OR58 backup·복원 관측 수용은 유지하며 파일럿 NO-GO다.
+**판정:** 실제 도면의 published0.61 CPU 변환기 지원 조건은 NOT_ELIGIBLE이며, 기존 운영0.58 계정의 정상 로그인 후 업무 읽기는 관측 범위 PASS다. 이 결과는 운영 READY 생성/게시 성공이 아니다. 실제 운영 배포·flags/계정/권한/원본/Scene 변경 없이 private backup 사본을 읽어 검사했다. 기존 OR58 backup·복원 관측 수용은 유지하며 파일럿 NO-GO다.
 
 | 관측 | 실제 결과 |
 | --- | --- |
@@ -12,11 +12,24 @@
 
 Developer의 read-only assessment SHA256 `bae8d8a1705a748c68f0151d11040e2c7680ebc397ae471fd61c5440d5f17da1`, exact parser 대조 결과 `74e831324b4c43442a07da0c00bbfe50db95bfc13538da1324e32162b818df17`. 독립 QA는 archive의 집계·decoder 조건·published/current source SHA를 확인하고 기존 source worktree의 동일 hash parser/dependencies로 대조군·실제 파일을 직접 재실행했다. 최종 QA report SHA256 `7a03d56ed981f018ab358d0858ad96bf04479c617b6acbc315fa588d597b9552`, PASS_WITH_LIMITS다. 결과 worktree에 tsx가 없어 최초 재실행을 못 한 상태는 기존 source worktree의 설치된 동일 코드로 해결했으며 새 설치/코드 수정은 없었다. Root 대행 Manager는 이 read-only eligibility 결과만 수용했다.
 
-**인증/Viewer:** 운영0.58의 정상 로그인 화면을 별도 headed Chromium에 열고 사용자가 직접 기존 계정으로 로그인하도록 요청했다. agent는 비밀번호·cookie/session·setup code를 읽거나 전달하지 않았고 계정/권한을 변경하지 않았다. 현재 로그인 form이 남아 있고 로그아웃 control이 없는 상태여서 Location/Version/Current/원본 GET·Viewer의 인증 조회는 NOT RUN이다. 브라우저 산출물은 private이며 로그인 입력 중 snapshot/trace/credential 수집을 하지 않는다.
+**정상 로그인/업무 조회:** 사용자가 별도 headed Chromium에서 기존 계정으로 직접 로그인한 후 Session GET200/actor 존재를 확인했다. agent는 비밀번호·cookie/session·setup code·credential header/body를 읽거나 복사하지 않았고 계정/권한을 변경하지 않았다. 계정 화면의 비밀번호 변경 입력칸 존재는 로그아웃 상태의 증거가 아니며 실제 Session200과 로그아웃 control을 기준으로 했다.
 
-old de92 Viewer 코드의 read-only 조사에서는 default scene-first가 Scene MISSING일 때 UNAVAILABLE이고 자동 Scene POST는 없으며, Scene 저장은 명시적 saveScene 메뉴만 호출했다. `viewer?renderer=dxf-viewer`는 원본 content GET 경로를 선택한다. 이는 static safety 확인이며 로그인 뒤 실제 렌더링/조회 PASS가 아니다. `source=build`/save/retry/edit는 실행하지 않았다.
+| 실제 운영0.58 읽기 | 관측 결과 |
+| --- | --- |
+| 목록·Location API | 각각200; 기존 Version1건·Location1건, Current pointer/목록 Current가 backup과 일치 |
+| Location 화면 | 기존 정상 목록→Location 링크로 이동, Version row1/Current 표시/Viewer 링크 확인 |
+| 원본 GET | 200·1,117,143bytes; backup의 size/SHA256과 일치, 원본 이름/내용 공개0 |
+| Version/Viewer 화면 | SSR Viewer200, 명시적 `renderer=dxf-viewer`, `도면 표시 완료`, visible canvas1425×1542 |
+| Viewer 요청 관측 | 탐색 직전부터47GET/비GET0, 원본200 1회·Scene GET0. save/build/retry/edit 실행0 |
+| 운영 보존 | 같은 기존 container/image/volume·healthy, 사용자 원래 worktree의 두 변경 보존 |
 
-**구분/남은 범위:** OR58의67byte dummy는 backup 검증용이며 CPU READY 대조군이 아니다. 이번 LINE2 parser 대조도 Job/Asset/READY 게시 성공이 아니다. 운영0.58의 SceneAsset0/CurrentScene0·이전 flags 상태는 OR58 관측을 인용하며 이 단위에서 실시간으로 독립 재조회하지 않았다. 운영0.61 upgrade/flags/Scene 생성을 하지 않았고, 실제 도면을 현재 CPU 지원 범위로 READY라 부르지 않는다. 정상 로그인 후 인증 조회가 남아 있으며, 이 도면의 CPU 지원 확대는 별도 설계·구현·검증 대상이다. host writer 독립 배제/off-host 내구성·별도 파일럿 판정의 기존 한계도 유지한다.
+Root 결과 receipt SHA256 `de739e9b95eac33b72e037dc0094e7841036789c3025d391c240ecd2d67b16b8`. `GET /api/cad-files/{versionId}` 사전 probe는405였다. 해당 route에 GET handler가 없고 Version 조회는 SSR Viewer가 수행하므로 이를 데이터/인증 실패로 분류하지 않았으며 SSR200을 별도로 확인했다. 초기 합성 결과가 아닌 실제 사용자 브라우저의 정상 context를 사용했다.
+
+독립 QA는 private 결과/로그 hash·승인된 공개 CAD 정책·old de92 primary source와 변경 Markdown7개를 대조해 PASS_WITH_LIMITS로 판정했다. QA가 사용자 세션으로 브라우저를 재실행한 것은 아니며, 보고된 관측과 문서의 일치성 감사다. QA receipt SHA256 `8ee65087fdb47a7f7edd842e750537ae0dadd401dd0536b85fb5c263033388a5`. 기존 Manager agent의 pending_init 상태로 Root가 실제 최종 수용을 대행했고, 수용 receipt SHA256 `3717d21812d608cf2bc14157af3c5f49403a3f42da919680ec181d0923301908`다. 운영 source 읽기 관측만 수용하며 아래 미실행 범위는 유지한다.
+
+**정책/범위:** FR-P4-G0-BIZ-01의 기존 CAD 목록·Location·Version·Current·Viewer·원본은 사내망 공개 읽기다. 이번 로그인 후200을 Site별 접근 차단이나 보호된 메모/외곽선 읽기 인가 증거로 해석하지 않는다. old de92 primary source의 공개 GET/SSR 및 explicit dxf 원본 경로와 일치한다. 기본 scene-first 경로는 이번 실제 브라우저 시험에 포함하지 않았다. 표시 상태·캔버스는 로딩 완료 근거이며 실도면의 도형/텍스트/측정 정확도 검수가 아니다.
+
+**구분/남은 범위:** OR58의67byte dummy는 backup 검증용이며 CPU READY 대조군이 아니다. 이번 LINE2 parser 대조도 Job/Asset/READY 게시 성공이 아니다. 운영0.58의 SceneAsset0/CurrentScene0·이전 flags 상태는 OR58 관측을 인용하며 이 단위에서 실시간으로 독립 재조회하지 않았다. 운영0.61 upgrade/flags/Scene 생성을 하지 않았고, 실제 도면을 현재 CPU 지원 범위로 READY라 부르지 않는다. 기존 AUTH_PENDING은 운영 source의 위 실제 조회로 해소했다. 이번 로그인/Viewer는 재개된 원래 운영 서비스에서 수행했으므로, 보존된 격리 restore clone의 인증 UI 조회는 여전히 NOT RUN이다. 이 도면의 CPU 지원 확대는 별도 설계·구현·검증 대상이다. host writer 독립 배제/off-host 내구성·별도 파일럿 판정의 기존 한계도 유지한다.
 
 ---
 
