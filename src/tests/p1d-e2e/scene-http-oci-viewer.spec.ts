@@ -297,7 +297,16 @@ test('#225 P1-D G7 Editor HTTP upload -> detached OCI Worker -> new authenticate
     // Negative: new queued version loses Editor's Site grant after upload.
     const revoked=await upload(editor.request,headers,keys,'p1d-revoke',dx);
     expect(revoked.sceneBuild?.status).toBe('QUEUED');
-    await grant(page.request,adminHeaders,editorId,'site',keys.site,'revoke');
+    const revokeStartedAt=new Date().toISOString();
+    try{
+      await grant(page.request,adminHeaders,editorId,'site',keys.site,'revoke');
+    }catch(error){
+      console.error('P1D_DIAG:ADMIN_SITE_REVOKE_FAILED',JSON.stringify({
+        route:'/api/g7-runtime/access/grant',startedAt:revokeStartedAt,
+        failedAt:new Date().toISOString(),
+      }));
+      throw error;
+    }
     expect(workerTick().code).toBe('SCENE_AUTH_REVOKED');
     expect(probe(revoked.id)).toMatchObject({job:{status:'FAILED',
       lastCode:'SCENE_AUTH_REVOKED'},pointer:null,assets:0,originalShaValid:true});

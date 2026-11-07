@@ -1,3 +1,11 @@
+## #225 CI678 — Admin 권한 회수 POST transport 실패 (2026-11-07)
+
+[PR253 CI678](https://github.com/planner77/layoutManager/actions/runs/42373629270)는 source `cbebce9de7e2c47d975982080389951566009ef1`, archive `722d0e5ba7cdd9119ad0a25dad7322b5daea4a9f`/동일 tree `ed05eb7aad69af4dbed316e1703679d25a2d5386`에서 **FAILURE**. 적용8개 중6 SUCCESS, Docker runtime smoke FAIL 및 종합 required gate FAIL; A2 범위 외 SKIPPED. Static175 files/1103 tests·build와 General Chromium2/G7 UI/G7 runtime E2E는 모두 SUCCESS다.
+
+실패는 P1-D AUTH_READY→HTTP_UPLOAD_QUEUED→OCI_READY_VERIFIED→VIEWER_PARTIAL_PRECISION_WARNING_VERIFIED 및 두 번째 Editor upload 성공 뒤 Admin `POST /api/g7-runtime/access/grant` Site revoke(`scene-http-oci-viewer.spec.ts:94`, 호출300)의 `socket hang up`이다. 별도 Worker fault proof kill/OOM 성공을 이 App의 상태 증거로 사용하지 않는다. 해당 App inspect/OOM/restart/fatal log는 기존 cleanup trap 뒤 남지 않았고 P1-D 진단 artifact도 없어 **원인 UNKNOWN**이다. 이후 Docker release/recovery 단계는 SKIPPED/미실행이며 전체 PASS가 아니다. 동일 tree의 local SIMULATED_P1D 3회는 전 구간 PASS였으나 CI 실패를 재현하지 못했고 원인은 계속 UNKNOWN이다. Main 병합/후보·정식 게시0. Manager FD01–04 아래 격리 local feedback loop와 필요한 최소 진단을 수행하며 blind rerun·POST retry·timeout/보안/assertion 완화는 허용하지 않는다.
+
+---
+
 ## #225 Work1–4 — 실제 실행 중 발견한 계약·fixture 오류 (2026-11-07)
 
 - Actions 첫 capability run42370502358은 `CP_POLICY_BASELINE_CHANGED`로 **0건 실행/FAIL**. Root readonly diagnostic run42371634227에서 Owner +09:00 vs GITHUB_TOKEN Z의 시각 문자열만 다르고 실제4 instant와 나머지 전체 필드가 같음을 확인했다. source/hash 검증 완화 없이 actor별 exact packet으로 분리하고 새 B run42372382795의 실제6건을 확인했다. 실패 run은 성공 증거에서 제외한다.

@@ -1,3 +1,9 @@
+## #225 P1-D — 실패 직후의 bounded 진단 (2026-11-07)
+
+PR CI-owned App에서 시험이 실패하면 정리 전에 `P1D_DIAG:APP_STATE`의 고정 status/running/OOM/restart/exit와 health HTTP 상태를 확인한다. inspect와 health는 각2초로 제한하며 임의 필드·env·본문·log dump를 출력하지 않는다. Admin Site revoke 실패 시 `P1D_DIAG:ADMIN_SITE_REVOKE_FAILED`에는 고정 route와 UTC 시작/실패 시각만 남고 기존 오류·POST 횟수·보안/수용 assertion은 유지한다. 진단 실패가 정리를 막지 않는다. CI678 원인 UNKNOWN과 로컬 미재현의 실제 근거는 [FailureLedger](FailureLedger.md), 검증 결과는 [TestReport](TestReport.md)를 따른다.
+
+---
+
 ## #225 — 실제 통제 검증 완료 범위와 게시 전 호환성 수리 (2026-11-07)
 
 Work1–3의 실제 결과·원장·26건의 조회 전용 감사 수용 한계는 [TestReport](TestReport.md)의 U-225-CONTROLS-20261107이 정본이다. Main `62dcd3b5`에서 Owner/Actions 기본 권한12건과 실제 거부14건을 관측했고, 같은 Ruleset ID의 최종 Main/v* 보호 및 소유 fixture 정리를 완료했다. strict helper PENDING을 PASS로 바꾸지 않는다. 이후 source에서 CP helper/정책 byte 동일성과 live final policy를 확인하며 이미 수행한 변경 요청을 재실행하지 않는다.

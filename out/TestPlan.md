@@ -1,3 +1,28 @@
+## TP-225-P1D-FAILURE-OBSERVABILITY — 미재현 CI 실패의 정제 관측 (2026-11-07)
+
+실제678 실패는 두 번째 upload 성공 뒤 spec300 revokeSite의 Admin grant() POST이며 원인은 UNKNOWN이다. 기존 owned cleanup이 App을 먼저 제거해 해당 App state/log 증거가 없었다. Worker Kill/OOM proof의 metric은 이 App 실패 원인으로 재사용하지 않는다. 첫 exact-tree local loop는43.2초 PASS이며 SIMULATED_CI_CONTEXT로 실제 GitHub Actions proof가 아니다. bounded 최대3 local loops로 재현을 시도하되 통과를 원인 해결로 쓰지 않는다.
+
+세 local loops에서 실제 실패가 재현되지 않으면 Manager는 **failure-only diagnostic test change**를 허용한다. existing cleanup 직전에 owned App의 allowlisted state/running/exit/OOM/restart/health 및 안전한 route-phase timestamp를 제한된 크기로 기록한다. raw env/dockerinspect/token/cookie/session/requestbody/DB/CAD/full logs dump0; 필요한 로그는 고정 안전 필드만 정제한다. 진단 실패가 원 테스트 exit/failure를 가리거나 cleanup을 막지 않도록 하고 성공 경로의 behavior/POST횟수/assertion/timeout/retry는 바꾸지 않는다.
+
+Developer는 의도적 실패 주입으로 기록-before-cleanup 순서·allowlist·원 실패 exit 보존·cleanup을 검증하고 Manager review→독립 QA 뒤 단일 fresh full CI를 실행한다. 이는 관측을 추가한 새 source 시험이며 blind rerun이나 socket hang up fix가 아니다. 실제 새 실패면 새 관측으로 다음 가설을 정하고 자동 반복 CI0. exact 새head의8 required jobs가 모두 성공하면 통상의 보호 Main/release material gate를 진행할 수 있으나678 원인은 계속 UNKNOWN/NOT_REPRODUCED로 보존한다. 과거 실패의 위험/증거 한계를 숨기지 않는다.
+
+---
+
+## TP-225-CI678-P1D-DIAG — socket hang up 실제 원인 진단 (2026-11-07)
+
+PR253/sourcecbeb의 CI678 Docker P1-D는 AUTH_READY/HTTP_UPLOAD_QUEUED/OCI_READY_VERIFIED/VIEWER_PARTIAL_PRECISION_WARNING_VERIFIED 뒤 apiRequestContext.post socket hang up으로 실패했다. 선행 build/security/RR1/KillOOM 성공과 이후 skipped는 구별하며 전체 Docker/PR PASS로 기록하지 않는다. Main merge/candidate dispatch0, blind rerun0.
+
+| AC | bounded 진단 및 최소 수리 |
+| --- | --- |
+| FD-01 | QA는 exact run/job/head/attempt와 actual stack/실패 POST endpoint·fixture 단계·timestamp를 확인한다. 해당 시점 컨테이너 exit/restart/OOM/health와 서버/worker의 bounded sanitized logs를 대조한다. token/session/cookie/DB/CAD 원문을 문서·artifact에 노출하지 않는다. 다른 작업의 Kill/OOM 결과를 해당 실패 원인으로 단정하지 않는다. |
+| FD-02 | 진단 skill의 red-capable loop로 원 실패 조건을 재현하거나 기존 실패를 명확히 판별하는 좁은 관측을 먼저 만든다. 한 가설씩 실제 PID/port/request/server lifetime·동기화 증거로 검증하며 가설과 관측을 구별한다. 재현 불가이면 관측 부족으로 남기고 flaky라는 이름으로 성공 처리하지 않는다. |
+| FD-03 | Root/Manager는 evidence로 테스트 lifecycle/race 결함이 확인된 경우에만 해당 fixture/동기화의 최소 test-only 수리를 허용한다. arbitrary sleep/timeout증가/retry/attempt확대·assertion삭제/skip/보안정책완화0. 실제 앱 결함이면 test-only로 숨기지 말고 원인·영향을 보고하고 별도 최소 구현 AC를 정한다. |
+| FD-04 | 같은 red-capable loop에서 수정 전 실패/후 통과 또는 직접 원인 증거와 bounded 회귀를 남긴다. Developer→Manager→독립 QA 뒤 정상 PR 추가 commit/fresh full CI를 요구한다. old678 실패는 보존하고 부분성공/다른head결과를 합쳐 PASS로 만들지 않는다. full requiredCI/보호Main 이전 candidate/final 게시0. |
+
+이 단계는 실패 진단/증거 수집 승인이다. 원인을 확인하기 전 구현 방식이나 특정 fix를 확정하지 않는다.
+
+---
+
 ## TP-225-GHCR-ROOT-CHALLENGE — 고정 root challenge compatibility (2026-11-07)
 
 Root의 publication 전 pull-only GET https://ghcr.io/v2/는401 및 정확 `Bearer realm="https://ghcr.io/token",service="ghcr.io",scope="repository:user/image:pull"`을 반환했다. 현 GHCR constructor는 이 root placeholder 표현을 허용하지 않아 credential 교환/registry write 전에 중단한다. 실제 response receipt를 보존하고 as-is publish dispatch를 하지 않는다.

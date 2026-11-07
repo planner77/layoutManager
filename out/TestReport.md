@@ -1,3 +1,17 @@
+## U-225-P1D-OBS — CI678 미재현 및 실패 진단 검증 (2026-11-07)
+
+동일 tree의 격리 로컬 App/Migrator/Worker와 실제 HTTP→Viewer→권한 회수·변조·미지원 경로를 세 차례 실행해 모두 통과했다. `LOCAL_SIMULATED_P1D`이며 GitHub-hosted CI/후보 게시/운영 시험이 아니다. CI678 `socket hang up`은 **CAUSE UNKNOWN / NOT REPRODUCED**로 남긴다. 재시도나 제품 수리를 했다고 주장하지 않는다.
+
+다음 실패의 관측 누락만 보완한다. 실패한 소유 App의 status/running/OOM/restart/exit allowlist와 health HTTP 상태만 정리 전에 남기고, 조회별2초·출력128자 및 원래 실패/cleanup을 유지한다. 권한 회수 POST는 한번 그대로 호출하고 literal route/시각만 추가한 뒤 원래 오류를 던진다. Developer의 실제 trap seam 고의 실패5건은 정상/inspect실패+canary/과대출력/진단출력실패/inspect timeout에서 원래42·App→Volume 정리를 보존했다. 독립 QA도 source hash 보존·고의 실패5건·bash syntax·전체 TypeScript·diff 검사를 통과했다. 새 full CI는 아직 미실행이다. 기존 실패와 로컬 정제 요약/명령은 Git 제외 증거에 보존한다.
+
+---
+
+## U-225-CI678 — 게시 전 required CI 실패 (2026-11-07)
+
+[PR253 CI678](https://github.com/planner77/layoutManager/actions/runs/42373629270)는 head `cbebce9d`/동일 head·archive tree `ed05eb7a`에서 FAILURE다. 적용8개 중6 SUCCESS, Docker P1-D 및 종합 gate FAIL; A2 범위 외 SKIPPED. Static175 files/1103 tests·build 및 브라우저/G7 E2E4개는 SUCCESS다. 실패 단계는 Admin Site revoke POST의 `socket hang up`; App process 원인은 UNKNOWN이다. 이후 Docker 단계는 미실행이고 Main/후보·정식 게시0. 정제된 callsite·시각·진단 누락과 승인된 재현 경계는 [FailureLedger](FailureLedger.md)의 CI678이 정본이다. 다음 source의 독립 QA와 새 전체 CI가 필요하다.
+
+---
+
 ## U-225-CONTROLS-20261107 — 승인된 Work 1–3 실제 통제 검증과 게시 전 점검
 
 **기준 source:** PR250 정상 병합 Main `62dcd3b5f7f78e37841bc14b5ca48f6c038e68f8` / tree `bf2980ce5dc16d89c5ca8957a89eb6497bbb5766`. 최종 head `286dff51`의 [PR CI676](https://github.com/planner77/layoutManager/actions/runs/42368191670)는 적용8개 Job SUCCESS/A2 범위 외 SKIPPED; archive `6c427851`은 같은 tree와 정확 parent 관계다. Main HOLD run42369529538 SUCCESS. 기존 CI674/취소675와 실패 이력은 보존한다.

@@ -1,3 +1,10 @@
+## Unreleased — #225 CI678 실패 관측 누락 보완 (2026-11-07, 0.61.0 유지)
+
+- Test diagnostics: 실패한 PR CI-owned App의 고정 상태·health와 Admin Site revoke의 route/시각을 cleanup 전에 bounded 출력한다. 조회/출력 실패가 원래 오류·정리를 바꾸지 않으며 POST 재시도·assertion/timeout 완화는 없다.
+- Verification: 기존 CI678은 FAILURE/원인UNKNOWN으로 보존한다. 로컬3회 전 구간 PASS는 미재현 근거이며 실제 CI 성공이 아니다. 고의 실패 주입5건과 독립 QA의 exit/cleanup/redaction·전체 TypeScript·syntax·diff 검사를 통과했으며 새 전체 CI를 요구한다.
+
+---
+
 ## Unreleased — #225 실제 출시 통제 검증·GHCR root 응답 호환성 (2026-11-07, 0.61.0 유지)
 
 - Verification: Owner/Actions 기본 권한12 + 보호 ref 거부14의 실제 규칙 평가 증거를 조회 전용 감사와 독립 QA로 수용했다. strict helper PENDING/원래 directFF PR 기대 불충족을 보존하고, 동일 ID final 보호 복원·시험 자원 정리·legacy disabled·writer/Environment readback을 기록했다.
