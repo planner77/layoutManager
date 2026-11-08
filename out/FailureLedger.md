@@ -1,3 +1,13 @@
+## #225 G3 사전 검사 — 이전 정지 Migrator 부재·사용하지 않는 이미지 정리 (2026-11-08)
+
+새 운영 capture 준비의 기존 `or58-proof.plan()`은 **`OR58_ATTACHMENT_SET_CHANGED`**로 stop/capture 전에 중단됐다. 실제 기존0.58 App은 같은 CID/image/volume에서 healthy였으며 이전에 정지됐던 구 Migrator container만 없어지고, 사용하지 않던 old Migrator와 target3 로컬 이미지도 정리된 상태였다. 정리 주체/근본 원인은 UNKNOWN이다. 운영 변경이나 백업 성공으로 기록하지 않는다.
+
+Root는 기존 검증된 digest의 이미지를 다시 pull하고 old Migrator engine ID가 이전 readiness와 같음을 검사했다. Manager 검토 후 private operator adapter에만 **현재 exact one original App attachment**를 적용했다. `original()`의 모든 identity/config/volume/port 검사와 각 `validate_original`의 attachment 동등성, capture/restart/epoch/hash/budget/권한 검사는 유지했다. 존재하지 않는 Migrator container를 만들거나 repository/runtime guard를 완화하지 않았다. fresh nonce·read-only file inventory·sealed packet/authority는 기존 사용자 G3 승인에 결합했다. 모든 추가 attachment는 거부한다.
+
+재검증은 fresh capture/구 앱 재개13.572초·별도 raw/logical restore·old App healthy/HTTP200·공식0.61 migration/데이터 보존 및 단일 Worker 활성화까지 통과했다(TestReport U-225-G3-20261108). 전환 중 no-data image lease5개를 잠시 유지했고 정확 소유 확인 후 제거했다. metadata-only host `/proc` 열린 FD 검사는 정상 App writer positive control과 capture 두 경계 writer0/denied0을 관측했으며 절대적인 미래/비관측 writer 부재 증명으로 확대하지 않는다. historical `ROOT_ATTESTED_NOT_INDEPENDENTLY_PROVEN` capture label을 그대로 보존한다.
+
+---
+
 ## #225 G2 actual attempt1 — CREATED network identity 검사 시점 (2026-11-08)
 
 Root의 첫 실제 격리 실행은 13.724초 뒤 `NEW_APP_READBACK/G2_NEW_APP_IDENTITY`로 HALT했다. 정확0.58 archive 복원·공식0.61 migration/업무 및 CAD 비교 단계 뒤 새 App은 CREATED에서 멈췄고 start/HTTP 시험은 미실행이다. 전체 G2 PASS로 기록하지 않는다.

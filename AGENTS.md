@@ -1,3 +1,11 @@
+## #225 운영 전환 완료 후 재개 위치 (2026-11-08)
+
+사용자의 **운영 전환·Worker 활성화 승인**을 실행했다. 소스/운영0.61.0, Scene flags2개 ON, 검증된 제한 LINE subset의 CPU Worker1개가 현행이다. 현재 결과는 [TestReport](out/TestReport.md)의 U-225-G3-20261108, 재기동·장애·복구점/신규 데이터 보존은 [Operation](out/Operation.md)을 먼저 확인한다. 기존 사용자 dirty Compose/next-env와 원래 `.env`는 보존했으므로 이전 작업 위치의 Compose로 운영을 덮어쓰지 않는다.
+
+운영 확대·기존 도면 backfill은 별도 범위이며 #218/#268은 독립 OPEN이다. 자동 publisher HOLD·Git tag/latest 불변, 수치 RPO/RTO SLA 없음. 아래 승인 전0.58/flags OFF/NO-GO는 당시 이력이다. #225 종료/최종 문서 통합 상태는 GitHub와 최신 TestReport를 확인한다.
+
+---
+
 ## #225 잔여 완료 재개 — 실제 snapshot의0.61 검증 (2026-11-08)
 
 현재 사용자 요청은 이전 `CI 시작까지만` 범위를 대체한다. PR269는 exact HEAD CI699 SUCCESS 후 Maincf2427f로 통합됐고 CI698 취소 이력은 FailureLedger에 보완했다. 다음 작업은 [Issue225](out/Issue225.md)의 G2와 [TestPlan](out/TestPlan.md)의 G2C01–07이다. 실제0.58 archive는 새 소유 복제본에서만 업그레이드하며 정식3digest 및 signed RR2/RR3 근거를 재사용한다.

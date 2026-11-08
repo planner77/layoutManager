@@ -1,3 +1,10 @@
+## 0.61.0 운영 — #225 승인 파일럿 전환 (2026-11-08)
+
+- Owner의 운영 전환·Worker 활성화 승인을 받아 새 일관0.58 백업과 별도 복원·구 앱 기동을 확인한 뒤 정식0.58→0.61 migration을 적용했다. 기존 업무 행/CAD·설치 ID 보존,0.61 App ACTIVE/health/기존 원본 SHA 및 단일 CPU Worker의 실제 격리·IDLE 동작을 검증했다.
+- Scene flags2개 ON, 지원 LINE subset에 한정, 기존 Version backfill0. 새 앱 기능/DDL/패키지 버전/registry 게시·tag/latest 변경은 없다. 실제 측정·독립 QA·검증 한계는 TestReport, 실행/복구는 Operation, 사전 검사 중단과 보완은 FailureLedger를 따른다. #218/#268 및 자동 publisher HOLD는 독립 유지한다.
+
+---
+
 ## 0.61.0 검증 도구 — 실제 snapshot 기반0.61 호환성 (2026-11-08)
 
 - 실제0.58 OR58 archive를 새 소유 격리 자원으로 복원해 정식3digest·공식 upgrade·기존 데이터/CAD 및 앱 실행을 검증했다. 이후 동일 백업의 새0.58 복원·앱 기동과33table 보존/원본 SHA 조회도 통과했다. 기존 signed Worker/Viewer 근거는 재사용한다. 제품 schema/버전·운영 설정 변경이 아니다.

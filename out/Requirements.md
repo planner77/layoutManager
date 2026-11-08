@@ -1,3 +1,9 @@
+## #225 G3 — 승인 범위와 실제 파일럿 전환 (2026-11-08)
+
+Owner의 **운영 전환·Worker 활성화 승인**을 실행해 검증된 제한 LINE subset의0.61 단일 CPU Worker 파일럿을 활성화했다. 수치 RPO/RTO SLA 없이 새 복구점/실측 시간·백업 데이터 보존·전환 쓰기 중단·신규 성공 데이터 선보존을 적용한다. 기존 도면 backfill/계정·권한 변경/전체 도면 지원 확대는 범위에 포함하지 않는다. TestPlan G3A01–06과 TestReport U-225-G3-20261108이 실제 수용 근거이며 #218/#268은 독립이다.
+
+---
+
 ## #225 G2 — 실제0.58 복제본의0.61 호환성·측정 (2026-11-08)
 
 FR-225-G2-CLONE: immutable 실제 OR58 archive를 새 private nonce-owned 복제본으로만 복원하고, 정식 App/Migrator/CPU Worker3digest를 고정하여 등록된 공식0.58→0.61 migration/상태/앱 실행과 기존 업무 행·CAD 보존을 확인한다. 원래 운영 자원·archive·계정/권한을 변경하지 않는다. signed candidate의 동일3digest RR2/RR3 근거와 신규 actual-clone 시험을 구분한다. 구현/AC 정본은 Issue225 및 TestPlan G2C01–07이다.

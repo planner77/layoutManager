@@ -1,3 +1,15 @@
+## #225 G3 — Owner의 운영 전환·Worker 활성화 승인 (2026-11-08)
+
+**실제 결과 수용:** Owner GO 뒤 Root의 fresh0.58 backup/독립 restore, 공식0.61 migration·flags OFF smoke·두 flags ON/단일 격리 Worker 활성화와 기존 데이터 보존을 수행했다. 독립 QA의32-file closure·DB/archive/실행·정리 검토 후 Manager는 **ACCEPT_LIMITED_PILOT**으로 수용한다. 기존 signed exact-digest E2E는 재사용하며 새 운영 인증 Scene journey를 실행한 것으로 표현하지 않는다. fresh archive/old rollback volume 보존과 read-only/no-App24h lease를 기록하되 감시/재시작·수치 SLA·미관측 host writer 전면 배제를 보증하지 않는다. 다음은 승인된 완료 범위의 최종 문서 CI/정상 통합·#225 종료이며 같은 운영 GO를 다시 요청하지 않는다. 자동 publisher HOLD/#218·#268 독립 범위는 유지한다.
+
+**G3 사전 inventory 조정:** fresh plan은 운영 stop/capture 전에 `OR58_ATTACHMENT_SET_CHANGED`로 중단됐다. 과거 정지 migrator container와 미사용 old image가 사라졌고 원인은 UNKNOWN이며, 현재 정확한 기존 App 하나만 volume에 연결되어 있다. Manager는 동일 G3 승인 아래 Root의 private operator adapter가 attachment를 그 full App CID 한 개로 고정하고 새 nonce/현재 inventory/packet hash를 만드는 최소 조정을 수용했다. known immutable old Migrator digest를 다시 읽어 이전 image ID와 비교하고 `original()`의 App/image/config/volume/port/source, 모든 `validate_original`의 정확 attachment 집합 및 예산/승인/capture/hash/restart 검사는 유지한다. unknown attachment는 계속 거부하며 가짜 legacy container를 만들지 않는다. adapter source hash·새 packet·사전 HALT는 private 근거에 보존하고 repository/runtime 코드나 사용자 승인 범위를 변경하지 않는다.
+
+사용자는 구체적 PR270 전환안에 **“운영 전환·Worker 활성화 승인”**으로 응답했다. 따라서 기존 G3 미승인 경계는 승인된 짧은 maintenance/fresh backup·0.58→0.61·Scene flags ON/단일 Worker·기존 데이터 보존·0.58 복구 및 신규 쓰기 선보존 범위에서 해제한다. NO_NUMERIC_SLA는 유지하며 새 수치 기준을 요청하지 않는다. Root는 반복 승인 없이 Operation의 실행안을 진행한다.
+
+승인은 실제 성공을 뜻하지 않는다. exact source/3digest·fresh 복구점·정식 plan/apply·flags OFF smoke→제한 flags ON·실제 readback을 TestPlan G3A01–06에 따라 구분 기록하고 독립 QA/Manager가 관측 결과를 수용한다. 새 계정/권한 변경·기존 원본 backfill·지원 범위 확대·추가 GHCR/tag/latest 변경은 이번 승인에 포함되지 않는다. 원래 .env와 사용자 dirty Compose를 유지하고 별도 private 실행 설정을 사용한다.
+
+---
+
 ## #225 G2 — 실제 clone 리허설과 최종 운영 GO 분리 (2026-11-08)
 
 사용자의 잔여 완료 요청에 따라 이전 CI 시작까지만의 인계 경계는 대체되었다. 기존 실제 OR58/FUP1 복원과 signed candidate/final3digest RR2/RR3를 재사용하고, 부족했던 실제0.58 snapshot→0.61 migration/App compatibility 및 같은 archive의 이후0.58 replacement-volume 복귀만 추가 검증한다. 기존 계정·password·session을 변경/추출해 인증을 우회하지 않고 actual-clone auth NOT RUN을 명시한다. FUP5/#268은 별도이며 새 광범위 검증 framework를 만들지 않는다.

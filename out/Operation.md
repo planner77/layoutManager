@@ -1,3 +1,19 @@
+## #225 — 승인된0.61 파일럿의 현재 실행·복구 (2026-11-08)
+
+Owner가 PR270의 계획에 **“운영 전환·Worker 활성화 승인”**으로 답한 뒤 Root가 실제 전환했다. 현재 기존 `cad-layout-viewer-g7` volume과3000 port/Origin/인증·권한을 유지한0.61.0 App 및 CPU Worker1개다. App/Worker의 두 Scene flags는 ON, 기존 Version backfill은0이다. 지원 범위는 검증된 LINE subset이며 전체 실제 도면/BLOCK/INSERT 지원을 확대하지 않았다. 실제 receipt/시간/독립 QA는 TestReport **U-225-G3-20261108**을 따른다. 아래 G3 승인 전 계획은 역사적 기록이다.
+
+**실행 설정 정본:** 기존 사용자 `.env`와 dirty `src/docker-compose.yml`/`src/next-env.d.ts`를 덮어쓰지 않았다. 실제 Compose는 `/home/planner/Dev/layoutManager-issue225-completion/src/docker-compose.yml`, private server-only 설정은 기존 root의 `data/release-proof/issue225-completion-20261108/target-0.61-pilot.env`다. 두 경로는 운영 재기동 전에 확인하고 유지한다. Git credential을 App/Worker에 전달하지 않는다. 소스/설정 이동이 필요하면 같은 이미지·volume·port·Origin·flags를 검사해 운영 설정을 인계한다.
+
+이번에는 `g7-deploy.py`의 fresh plan→정확 plan 승인 execute→별도 start plan/start로0.58→0.61을 적용했고, flags OFF에서 health/ACTIVE/기존 CAD SHA를 확인한 후 **같은 검증된0.61 release**에 한해 private pilot 설정과 Compose `--profile scene-cpu-worker up -d --no-deps --no-build --pull never app cpu-worker`로 승인된 flags를 적용했다. 해당 명령은 다음 버전 upgrade용 명령이 아니다. 재기동 전 Compose project/service 기준 Worker가1개인지, 현재0.61 schema/설치 및 App/Migrator/Worker3digest가 TestReport REGISTRY와 같은지 확인한다. 운영 Worker는 UID10001/CPU1/RAM768MiB/PID64/network none/read-only root/NNP/cap-drop ALL/tmpfs96MiB다.
+
+**보존 복구점:** private evidence root는 `data/release-proof/issue225-completion-20261108/`, fresh0.58 archive/packet/authority/restore/startup receipt는 하위 `g3-fresh-or58/029010effd0c11e52251cb4f2797e330/`다. archive SHA256 `39b4fee737c493a54f3364a696bd51f27b9ae341095ead310380a29b0c403978`와 검증된 old0.58 복원 volume `or58-029010effd0c11e52251cb4f2797e330`을 보존했다. 별도 no-app/nonroot/network-none/read-only volume lease는24시간 후 종료하며 재시작/감시하지 않는다. Docker 외부 private archive가 지속 복구 기준이다. 전환용 임시 이미지 lease5개와 소유 복원 clone/network는 제거했다. 원래0.58 설정/이미지와 교체 전 로그는 private 보존했고 공식 upgrade recovery set도 운영 volume에 남아 있다. archive/설정은0700 root/0600 파일로 보관하고 CAD·DB를 Git/이미지에 포함하지 않는다.
+
+장애 시 App/Worker 쓰기를 정지하고 현재 설치/스키마와 새 성공 쓰기를 먼저 판별한다. 신규 성공 데이터가 있거나 불명확하면 현재 DB/WAL/CAD/Scene/감사를 먼저 별도 일관 보존한다. 검증된0.58 복구점을 **새 목적지**에 복원·검사한 뒤 정확 old App/설정으로 복귀한다. 현재0.61 DB에0.58 App을 붙이거나 snapshot으로 새 데이터를 덮어쓰지 않는다. old0.58 manifest의 literal image pair/빈 historical sourceCommit을 임의로 고치지 않는다. 이번 실제 전환은 정상 완료했으므로 production rollback은 미실행이다. 수치 SLA 없이 실제 복구점·복구 시간을 보고한다.
+
+현재 운영의 신규 정상 사용자 로그인/Scene 업로드 시험은 NOT RUN이다. 계정/세션을 변경하거나 임의로 추출하지 않았으며 출고된 동일3digest의 signed HTTP→Worker→fresh Viewer 검증 근거를 별도로 재사용했다. 실제 Worker는 큐0/IDLE이며 기존 원본 SHA/업무 보존이 확인됐다. 자동 publisher HOLD·Git tag/latest는 유지한다.
+
+---
+
 ## #225 G2 완료 후 G3 제한 파일럿 전환 계획 (2026-11-08, 승인 전)
 
 실제0.58 archive의 새 격리 복제본에서 정식0.61 migration·기존 데이터/CAD 보존·새 App 기동/공개 원본 SHA 조회와, 이후 별도 새 볼륨의0.58 교체 복구를 검증했다. 실제 TC/시간/첫 실패·수리·정리는 TestReport G2와 FailureLedger를 따른다. 이 결과는 운영 전환 자체나 실제 clone의 signed login을 수행했다는 뜻이 아니다. 동일 정식3digest의 signed HTTP/CPU/Viewer 근거는 기존 REGISTRY candidate와 RR2/RR3로 구분해 재사용한다.

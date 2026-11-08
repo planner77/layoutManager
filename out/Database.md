@@ -1,3 +1,9 @@
+## #225 G3 — 승인된 운영0.58→0.61 적용 (2026-11-08)
+
+새 DDL/마이그레이션을 추가하지 않고 기존 등록 경로(호환2+MIGRATION2)를 실제 운영에 적용했다. fresh 백업과 정지 직전33 tables/51 logical rows/CAD1이 같았고,0.61 전환 후 기존 업무 열/행 SHA·설치 ID·CAD를 보존했다. 등록 history2개 추가와34 tables/빈 `SceneBuildJob`, integrity/FK0을 확인했다. flags ON 및 Worker 기동 후에도 전환 직후34 tables/manifest/CAD가 같았다. 단일 기준은 본 문서의 기존0.61 schema 계약이며 실제 결과/한계는 TestReport U-225-G3-20261108을 따른다.
+
+---
+
 ## #225 G2 — 등록 0.58→0.61 경로의 실제 격리 검증 (2026-11-08)
 
 새 DDL/Table/Column/Index/Migration 변경 없음. 기존 registry의0.58→0.58.1→0.59→0.60→0.61 (`COMPATIBLE`, `COMPATIBLE`, `MIGRATION`, `MIGRATION`)와 정식 plan/apply를 새 archive clone에서 검증한다. migration 전33개 application/history table의 기존 열/행 해시와 CAD bytes를 비교하고 `_prisma_migrations` 변경은 등록된 이력 검사로 따로 수용한다. 새0.61 schema/manifest/installId/image pair/source는 정식 status/validator 및 readback으로 확인한다. 실제0.61의34 tables와 이후 동일 archive를 복원한0.58의33 tables 관측은 TestReport G2가 정본이다. 운영 DB나 기존0.58 schema를 수정한 증거가 아니다.
