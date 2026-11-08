@@ -1,3 +1,9 @@
+## #225 G2 — 등록 0.58→0.61 경로의 실제 격리 검증 (2026-11-08)
+
+새 DDL/Table/Column/Index/Migration 변경 없음. 기존 registry의0.58→0.58.1→0.59→0.60→0.61 (`COMPATIBLE`, `COMPATIBLE`, `MIGRATION`, `MIGRATION`)와 정식 plan/apply를 새 archive clone에서 검증한다. migration 전33개 application/history table의 기존 열/행 해시와 CAD bytes를 비교하고 `_prisma_migrations` 변경은 등록된 이력 검사로 따로 수용한다. 새0.61 schema/manifest/installId/image pair/source는 정식 status/validator 및 readback으로 확인한다. 실제0.61의34 tables와 이후 동일 archive를 복원한0.58의33 tables 관측은 TestReport G2가 정본이다. 운영 DB나 기존0.58 schema를 수정한 증거가 아니다.
+
+---
+
 ## #225 G1 — 등록 0.58 schema의 archive preflight (2026-11-08)
 
 별도 DB 정본을 만들지 않는다. OR58 disposable archive copy에서 `GREENFIELD_UPGRADE_REGISTRY`의 0.58 release에 `assertDeclaredSchema`를 실행하고 등록 application DDL 및 migration name/checksum/completion/rollback history를 검사한다. Manifest의 version/schemaId/image pair도 등록 declaration과 일치해야 한다. Exact 범위는 application schema 및 승인 이력이며 SQLite `sqlite_%` 내부 객체나 `_prisma_migrations` 테이블 자체 DDL의 전체 열 모양까지 뜻하지 않는다. 운영 Prisma schema/migration, DB 및 버전은 불변이다.

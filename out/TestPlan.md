@@ -1,3 +1,21 @@
+## TP-225-G2-CLONE — 실제 snapshot 업그레이드 및 제한 LINE 검증 (2026-11-08, Manager)
+
+| TC | Acceptance Criteria |
+| --- | --- |
+| G2C01 | immutable archive625e6b…의 hash/exact registered0.58/schema/manifest를 재확인하고 새 nonce-owned private empty volume만 복원. 기존 OR58 old App/auth restore 근거 재사용; 원본 archive/운영 volume 불변. |
+| G2C02 | 승인 게시된0.61 App/Migrator/Worker3 manifest digest/source/role을 pin. 실제 clone에서 정식 upgrade 경로를 실행하고0.61 schema/install state 및 기존 business rows/CAD/Current 보존 비교. 구버전 App/new schema 혼용0. 이후 새0.61 App을 exact image ID/source/nonce/mount/internal network/host port0에 결합하여 flags OFF로 시작하고 bounded health/status 및 정책상 공개 허용 CAD 조회·원본 SHA를 확인. 시작 전 전체 행 보존, 시작 후 선택 business/CAD 보존을 구별. |
+| G2C03 | 게시된 정확3digest에 결합된 기존 signed candidate RR2/RR3의 지원 LINE HTTP upload→자동 QUEUED→분리 CPU Worker READY/immutable DTO→fresh authenticated Viewer/reload/원본 GET0 근거를 재사용. 결합이 불충분하면 기존 경로의 별도 synthetic 재검증. synthetic 설치와 actual snapshot clone의 증거를 명시적으로 구분. |
+| G2C04 | 실제 clone 인증은 사용자 정상 로그인만. 기존 password/hash/session reset/copy/extraction0; 권한·Site 수정0. 인증 미확보는 해당 actual-clone 경로 NOT RUN으로 유지하고 독립 synthetic journey 진행. |
+| G2C05 | Worker nonroot/read-only/resource/network isolation 및 exact owned cleanup을 검증. G2 업그레이드 관측 뒤 의도적 baseline 복귀 리허설은 기존 FUP1 helper로 동일 immutable625e archive를 또 다른 새 empty owned volume에 복원하고 exact0.58 App/HTTP·business/CAD hash를 확인한다. 새 스키마 in-place downgrade나0.61 생성 backup의 정식 restore PASS로 확대하지 않는다. 새 테스트만을 위해 기존 운영 stop/capture/start0. immutable archive 최종 hash 동일. |
+| G2C06 | Developer→Manager review→독립 QA→Manager 수용. 관련 자동검사와 exact-HEAD required CI 통과; source0.61.0 유지. 실패/한계 및 실제 TC별 결과를 TestReport/FailureLedger에 기록. |
+| G2C07 | 사용자 “소규모 조직에서 내부적으로 운영할 예정이라 딱히 기준이 없습니다.”에 따라 NO_NUMERIC_SLA. 숫자 목표 부재를 blocker로 두거나 임의 목표 생성0. 실제 백업 시점/복구 경과시간·freeze 수락쓰기0·백업 기준 손실0을 보고하고 rollback 전 신규 쓰기를 보존한다. G1 historical writer 한계와 G3 exact maintenance/flags GO는 별도. 구체적인 digest/복구점/실행·중단·복구 절차 준비 뒤 승인 요청; 자동 GO-PILOT/이슈 종료0. |
+
+**실행 판정:** G2C01/02/05 실제 격리 upgrade·App public readback·이후 같은 archive의0.58 replacement-volume 복귀/cleanup 및 독립 fingerprint 확인을 수용했다. G2C03은 정확 출고3digest의 기존 signed candidate 근거 재사용이고 G2C04의 actual-clone 정상 인증은 NOT RUN이다. G2C06 로컬 검증/독립 QA 완료와 새 exact-HEAD CI를 구별하며, G2C07의 Owner 운영 GO는 아직 별도다. 실제 수치/한계는 TestReport U-225-G2-ACTUAL을 따른다.
+
+**G2 attempt1 실제 lifecycle 수리:** 새 App의 Docker CREATED 상태에서 `NetworkID`가 빈 값인 관측으로 start 전 identity 검사가 실패했다. network object의 정확 ID/name/internal/nonce·container network mode/name 집합은 시작 전에 확인하고, CREATED의 빈 runtime ID만 허용한다. 다른 비빈 ID는 거부하며 start 이후 HTTP/health 성공 전에는 정확 runtime NetworkID를 요구한다. created-empty 양성·wrong-ID 음성·started-empty 음성 회귀를 추가하고 이전 실패/미시작을 보존한다. 새 nonce 재시도와 독립 QA 전 full G2 PASS로 기록하지 않는다.
+
+---
+
 ## TP-225-G1-SCHEMA — 기존 OR58 exact 0.58 검증 보완 (2026-11-08, Manager)
 
 Issue225의 G1 최소 구현: 기존0.58 실제 복원 결과는 보존하고, 두 복사본의 동등성과 등록 release/schema 적합성을 구별한다. 제품/운영 변경 없이 기존 OR58 archive verifier에서 G7 schema/release 정본을 재사용한다.

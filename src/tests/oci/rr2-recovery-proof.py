@@ -168,7 +168,8 @@ def run_owned_child(receipt, args, *, kind, volume, image, timeout=120,
                          stop=lambda: stop_probe_group(process), timeout_code='RR2_COMMAND_TIMEOUT')
 
 
-def host_run(receipt, command, *, timeout=600, readiness=None, startup_timeout=30):
+def host_run(receipt, command, *, timeout=600, readiness=None, startup_timeout=30,
+             base_env=None):
     """Track Docker children without editing the copied production helper."""
     binary = shutil.which("docker")
     check(binary is not None and Path(binary).is_absolute(), "RR2_DOCKER_MISSING")
@@ -178,7 +179,8 @@ def host_run(receipt, command, *, timeout=600, readiness=None, startup_timeout=3
     source = ROOT / "src/tests/oci/rr2-docker-wrapper.py"
     shutil.copyfile(source, wrapper)
     wrapper.chmod(0o700)
-    env = dict(os.environ, PATH=str(wrapper_dir) + os.pathsep + os.environ["PATH"],
+    source_env = os.environ if base_env is None else base_env
+    env = dict(source_env, PATH=str(wrapper_dir) + os.pathsep + source_env["PATH"],
                RR2_REAL_DOCKER=binary,
                RR2_WRAPPER_RECEIPT=str(Path(receipt["root"]) / "receipt.json"))
     process = subprocess.Popen(command, cwd=ROOT, env=env, start_new_session=True,

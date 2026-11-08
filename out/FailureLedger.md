@@ -1,3 +1,25 @@
+## #225 G2 actual attempt1 — CREATED network identity 검사 시점 (2026-11-08)
+
+Root의 첫 실제 격리 실행은 13.724초 뒤 `NEW_APP_READBACK/G2_NEW_APP_IDENTITY`로 HALT했다. 정확0.58 archive 복원·공식0.61 migration/업무 및 CAD 비교 단계 뒤 새 App은 CREATED에서 멈췄고 start/HTTP 시험은 미실행이다. 전체 G2 PASS로 기록하지 않는다.
+
+별도 읽기 전용 진단에서 name/CID/image/nonce/purpose/단일 data mount/networkMode·network name set/no ports는 맞았고 정확 network object의 ID/internal/nonce도 일치했다. 단, CREATED container의 runtime `NetworkID`는 빈 값이었다. 코드는 start 이전에 runtime NetworkID 동일성을 요구해 정상 생성 단계를 거부했다. pre-start의 정확 network object/요청 binding과 post-start runtime ID 검증을 분리하는 최소 수리를 수행하며 wrong network/foreign resource/no-port guard는 유지한다. 같은 actual owned 자원을 지원 cleanup으로 제거했고 원본 archive/운영 자원은 유지했다. 수정 후 새 소유 namespace에서 재검증하며 이전 실패를 소급 PASS하지 않는다. 후속 새 namespace는21.261초에 실제0.61 App/기존 CAD SHA까지 PASS했고 소유 자원을 정리했다. 이후 별도0.58 복귀는 healthy8.208초/전체10.517초·33 tables/35 rows 동등성으로 독립 QA 수용됐다. 최초 실패 자체는 유지한다.
+
+---
+
+## #225 G2 재개 — 로컬 검증 실행 환경 유실 (2026-11-08)
+
+전체 Vitest와 build를 시작했으나 durable exit 파일이 생기기 전에 두 실행 session이 Unknown process로 사라졌다. /proc의 호스트 uptime이 두 로그의 시작 이후 경과보다 짧고 이전 PID 세대와 달라 재시작 정황을 관측했다. 구체적인 재시작 근본 원인은 미확정이다. 작업 디렉터리에 해당 검증 프로세스가 없음을 확인했다. 제품 실패/PASS로 분류하지 않고 두 실행을 결과 미확인으로 보존한 뒤 재검증한다. 운영은 같은 container/image의 healthy이며 기존 dirty 파일·백업·소스를 보존했다.
+
+---
+
+## #225 / PR269 CI698 — 취소와 종합 Gate 실패 이력 (2026-11-08)
+
+[CI698/run42444176376](https://github.com/planner77/layoutManager/actions/runs/42444176376)의 source는 b2cbbb6이며 conclusion은 CANCELLED다. scope Job128619522576은 SUCCESS, quality Job128619572992는 npm ci 중 취소됐고 신규 OR58 schema/타입/단위/build는 SKIPPED다. Docker128619573036은 baseline build 중 취소, G7/Chromium도 취소됐다. required aggregate128619789065는 종속 quality 취소를 성공으로 수용하지 않아 FAILURE다. 취소 근본 원인은 미확정이며 제품 실패나 schema 회귀로 단정하지 않는다.
+
+같은 exact HEAD의 CI697은 SUCCESS, 이후 [CI699/run42444634110](https://github.com/planner77/layoutManager/actions/runs/42444634110) SUCCESS를 확인한 뒤 PR269가 Maincf2427f로 정상 squash 병합됐다. PR269의 최초 required status expected/다음 merge HTTP405는 이슈 댓글6717177800의 관측을 인용하며 새 독립 재현이 아니다. 실패/취소를 성공으로 소급하지 않는다.
+
+---
+
 ## #225 G1 exact 0.58 schema static-verifier gap (2026-11-08)
 
 - **발견 유형:** 기존 검증기의 coverage gap이며 관측된 제품/CI 실패가 아니다. `sqlite_fingerprint`의 integrity/FK와 동일 schema/row hash만으로는 양쪽 archive가 똑같이 drift한 등록 schema/history를 걸러내지 못했다.

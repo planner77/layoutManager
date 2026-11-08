@@ -1,3 +1,22 @@
+## #225 G2 완료 후 G3 제한 파일럿 전환 계획 (2026-11-08, 승인 전)
+
+실제0.58 archive의 새 격리 복제본에서 정식0.61 migration·기존 데이터/CAD 보존·새 App 기동/공개 원본 SHA 조회와, 이후 별도 새 볼륨의0.58 교체 복구를 검증했다. 실제 TC/시간/첫 실패·수리·정리는 TestReport G2와 FailureLedger를 따른다. 이 결과는 운영 전환 자체나 실제 clone의 signed login을 수행했다는 뜻이 아니다. 동일 정식3digest의 signed HTTP/CPU/Viewer 근거는 기존 REGISTRY candidate와 RR2/RR3로 구분해 재사용한다.
+
+소규모 내부 운영에 수치 RPO/RTO SLA는 두지 않는다(사용자 답변). 실제 복구점·복구 시간을 기록하며, 백업 시점 데이터 보존과 전환 중 accepted write0을 확인한다. 새 성공 데이터가 있는 상태에서 snapshot을 덮어써 rollback하지 않는다. 필요하면 새 상태의 DB/CAD/감사를 먼저 별도 보존한 뒤 구버전 복구·재조정 범위를 결정한다.
+
+**G3 실행 범위:** TestReport REGISTRY의 불변 App/Migrator/CPU Worker3digest와 공통 source33f377을 사용한다. 같은 기존 운영 volume·port·Origin·G7 인증/권한을 유지하며 검증된 DXF subset의 신규 업로드에만 단일 Worker를 허용한다. 기존 도면 backfill/원본 수정·계정/권한 변경·추가 registry 게시/태그/latest 이동은 포함하지 않는다. 기존 미지원 실제 도면을 CPU READY로 간주하지 않는다.
+
+1. exact source/필수 CI·검토·3image identity 및 현 운영0.58 상태를 재확인하고 구체 유지보수/GO를 Owner에게 제시한다. 별도 승인 전 운영0.58·Scene flags OFF를 유지한다.
+2. 승인된 quiet window에서 사용자/외부 writer를 중단하고, Docker writer0·원래 App/volume identity·DB/WAL/CAD/필수 복원 설정을 확인한다. 기존 OR58 도구의 fresh read-only plan/capture와 정식 upgrade의 recovery set을 구별해 기록하고 검증한다. 중간 실패는 원래 release/schema 상태를 판별해 재개/중단하며 추측으로 서비스를 기동하지 않는다.
+3. 운영 `.env`/사용자 dirty Compose를 덮어쓰지 않고 검토된 최신 Compose와 별도 private server-only 설정을 사용한다. 원래 설정/이미지/복구점을 보존하고, 공식 `g7-deploy.py`/`g7-upgrade.py`의 현재 계획 지문으로0.58→0.61을 적용한다. migration 전/후 기존 업무 행·원본/Scene SHA·Schema/history/Current를 확인하며 구버전 App을 새 schema에 붙이지 않는다.
+4. 먼저 flags OFF인0.61 App의 health/G7/기존 조회를 확인한다. 승인한 범위에서만 `SCENE_AUTO_BUILD_ENABLED=true`, `SCENE_CPU_WORKER_ENABLED=true`와 Worker profile을 적용한다. Worker는1개, UID10001·CPU1·RAM768MiB·PID64·read-only root·network none이며 같은 검증된 volume에 연결한다.
+5. 실제 설정·App/Worker 실행·지원 subset의 기능/오류 경계와 롤백 경로를 readback한다. 승인 범위 밖 상태나 원본/기존 READY 손상은 HALT한다. 신규 성공 쓰기 전 장애는 검증된 복구점을 새 목적지로 복원해 old0.58 App으로 돌아가며, 신규 쓰기가 있으면 먼저 해당 상태를 보존한다.
+6. 실제 결과/복구·Owner 판정을 문서와 receipt에 남긴 뒤에만 #225 종료를 판정한다. 상위 #218과 #268은 독립 AC로 유지한다. source0.61.0·자동 publisher HOLD 및 Git tag/latest 불변이다.
+
+Root의 별도 private target 설정은 현재 flags OFF의 읽기 전용 공식 plan에서0.58→0.61 경로(호환2+MIGRATION2), blockers0을 확인했다. plan ID는 DB/설정 상태에 종속되므로 실제 실행 직전 새 계획을 확인하고 stale ID를 재생하지 않는다. 준비된 파일이나 READINESS_ONLY packet은 운영 실행 승인이 아니다.
+
+---
+
 ## #225 G1 — OR58 exact schema 검사 경계 (2026-11-08)
 
 `or58-proof.py`는 private disposable extraction에서 readonly SQLite bridge로 source-registered 0.58 release/schema validator를 호출한다. 실제 archive는 읽기 전용이며 WAL은 추출 복사본에서만 처리한다. bridge 부재/오류/timeout/비정상 출력은 실패 처리한다. Root의 historical immutable archive offline 재검사는 PASS했으나 새 운영 capture/restore/live start는 없었다. 기존 OR58-ACTUAL/FUP1 복원 및 old App/인증 조회 evidence는 기존 TestReport 결과를 따른다. 이 schema 확인은 host-writer 독립 배제나 합의 RPO/RTO를 증명하지 않으며 GO-PILOT NO-GO를 유지한다. FUP5/#268 별도다.
