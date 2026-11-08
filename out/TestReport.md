@@ -1,3 +1,20 @@
+## U-225-G1-SCHEMA-20261108 — 독립 exact 0.58 schema QA
+
+**판정: 독립 QA PASS_WITH_LIMITS; Manager 최종 ACCEPT_WITH_LIMITS.** 역할은 지정 모델 경계에 따라 gpt-6-astra Manager, gpt-6-sol Developer, gpt-6-luna QA로 기록한다. 이번 QA에서 허용된 소유 synthetic 검증만 수행했으며 제품 코드·운영 schema·버전 0.61.0은 바꾸지 않았다.
+
+| TC | 실제 결과 |
+| --- | --- |
+| G1S01 | PASS — synthetic archive는 production 0.58 release declaration 및 full application schema/history를 통과했고 CAD/Scene local byte refs를 확인했다. |
+| G1S02 | PASS — 같은 DB의 추가 table/index/trigger, column drift, 등록 index 누락을 거부했다. restore preflight 거부 시 Docker와 `validate_original` 호출 0. |
+| G1S03 | PASS — migration 누락/extra, checksum, completion, rollback, newer migration 및 manifest version/schema/image 불일치를 거부했다. |
+| G1S04 | PASS — WAL을 disposable extracted copy에서만 처리했고 archive hash 불변, CAD/Scene mismatch와 참조 오류를 거부하는 기존 제어를 보존했다. 운영 Docker/network/.env 접근 0. |
+| G1S05 | PASS — 검사기 부재, 비정상 종료, 잘못된 stdout, stderr, timeout 및 runtime 예외를 fail closed; bridge 출력은 고정 성공 토큰뿐이다. |
+| G1S06 | PASS_WITH_LIMITS — 기존 OR58 proof suite 28 + 신규 schema suite 6 = 34 tests PASS (14.760s); 기존 auth-clone 회귀 5 tests PASS (0.062s). PR CI는 npm ci 이후 신규 schema suite를 실행한다. |
+
+Root가 별도 수행한 immutable historical archive offline recheck도 PASS다. 원본 archive `625e6b36e2bcb9c94e5e1d7bba735c7f26323ee963f212b58121f5d6a5ef1057` 전후 동일, 등록 0.58 schema fingerprint `eb07b73207cdd9d962185fe2e68ef70d5a837fd9294dfc9214829a8bbf059109` 및 33 tables, CAD ref 1/Scene ref 0/orphan 0/deletion 0 확인. Receipt는 private 경로에 보관되며 SHA256 `5ec301576a8295c1e0be115f3e8596d87cc461237084fe14666b225bc463d4c1`. Docker 호출은 throw로 봉쇄했고 신규 capture/restore/live start는 없다. 이는 immutable historical archive의 offline schema 확인이며 새 동일-snapshot 운영 capture/restore, 독립 host-writer 배제, RPO/RTO 수용, Owner GO를 입증하지 않는다.
+
+기존 TestReport OR58-ACTUAL/FUP1의 실제 backup·독립 volume 복원·정확 old App 및 정상 인증 조회 관측은 기존 증거로 유지하며 이번에 반복하지 않았다. GO-PILOT은 NO-GO. host-writer 독립 증명/RPO/RTO acceptance는 미완료다. FUP5/#268은 별도 후속이다. Root 별도 전체 검증은 build/typecheck/lint 모두 exit 0 (lint 기존 warning 12, error 0), Vitest 177 files / 1,108 tests PASS (422.12s), release scope classifier 7 및 release hold 6 PASS. 이 결과는 QA가 직접 실행한 Python suite와 구분한다. QA 기록 시점에는 commit/push 전이며 최종 source commit·PR CI 시작 정보는 해당 PR을 따른다. 새 hosted CI 결과는 미확인이며 모니터링·병합하지 않는다.
+
 ## U-225-FUP4-20261108 — 미지원 section/table·BLOCK/INSERT 지원 설계 검토
 
 **판정: DESIGN_ONLY, 독립 QA PASS_WITH_LIMITS·Manager ACCEPTED_DESIGN_WITH_LIMITS.** 이번 산출물은 다음 최소 구현 Unit과 후속 범위의 계약·시험 계획이다. 추적되는 converter/scanner/fixture/code·dependency/package/CI·제품 parser/Builder/admission/Worker/Queue/DB/flags 변경0이며 앱0.61.0/운영0.58.0을 유지한다. 실제 전체 도면은 기존 FUP3에서 UNSUPPORTED·payload0이고 이번에 runtime 지원을 추가하거나 실제 도면을 변환하지 않았다. 요구사항 FR-FUP4, 수용 기준 FUP4-D01–08 및 수학/의미의 단일 정본 Architecture FUP4를 따른다.

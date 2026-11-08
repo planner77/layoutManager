@@ -157,6 +157,9 @@ jobs:
       - name: 의존성 설치
         run: npm ci
 
+      - name: OR58 registered schema archive preflight
+        run: PYTHONDONTWRITEBYTECODE=1 python3 tests/oci/test_or58_schema.py
+
       - name: Prisma Client 생성
         run: npm run db:generate
 

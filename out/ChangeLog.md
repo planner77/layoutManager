@@ -1,3 +1,10 @@
+## 0.61.0 검증 도구 — OR58 등록 스키마 확인 (2026-11-08)
+
+- 기존 OR58 archive 검증에서 복원 사본 간 동등성과 정확한 등록0.58 스키마·마이그레이션 이력 적합성을 함께 확인하도록 보완한다. DDL/history drift·잘못된 release/manifest·검사기 실패의 거부 회귀를 추가한다.
+- 앱 기능·DB schema·package version은 유지한다. 기존 실제 capture/restore/old App·인증 조회와3-image 출고 근거는 재사용하고, BLOCK/INSERT 후속은 #268로 분리한다. 실제 검증·실패/재검증·잔여 GO-PILOT Gate는 TestReport/FailureLedger를 따른다.
+
+---
+
 ## 0.61.0 문서 — section/table·BLOCK/INSERT 후속 지원 설계 (2026-11-08)
 
 - 불변 실제 DXF 집계와 Autodesk primary references를 근거로 최소 `FUP5-STATIC-XY`와 이후 metadata/affine/text 등 Unit의 경계를 정했다. 변환 순서·nonzero base/nesting, recursive layer/style/visibility, world-space precision·graph/확장 budgets와 양성/음성 시험 설계를 Architecture 정본에 기록했다.

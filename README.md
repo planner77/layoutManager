@@ -1,3 +1,11 @@
+## #225 — 운영 복원 검증기의 0.58 기준 검사 (2026-11-08)
+
+기존 OR58 archive 검증에 등록된 G7 0.58 스키마·마이그레이션 이력 검사를 추가한다. 복원 전후 데이터가 같아도 기준 스키마와 다르면 복원을 차단한다. 실제 운영 백업·독립 복원·구버전 앱 및 인증 조회의 기존 근거는 재사용하며, 이번 코드 검증과 구분한다. [TestPlan](out/TestPlan.md)의 G1S01–06과 [TestReport](out/TestReport.md)가 수용 기준과 실제 결과다.
+
+#225는 제한된 기존 DXF subset의 GO-PILOT을 대상으로 유지한다. BLOCK/INSERT 후속 구현은 별도 #268이며 종료 선행조건이 아니다. 제품 Scene flags OFF·자동 publisher HOLD·파일럿 NO-GO를 유지한다. 앱 소스0.61.0/운영0.58.0이며 운영 업그레이드는 별도 승인 단계다.
+
+---
+
 ## #225 — 미지원 section/table·BLOCK/INSERT 지원 설계 (2026-11-08)
 
 실제 DXF의 집계 gap과 공식 format 근거를 대조하여 다음 `FUP5-STATIC-XY` 구현의 지원/거부·변환·상속·자원·시험 기준을 설계했다. 정적 이름 블록과 양수 균일 XY 배율의 중첩 INSERT를 최소 범위로 정하고, 비균일·반전·속성·배열·비어 있지 않은 CLASSES/OBJECTS 등은 후속 범위로 구분한다. 현재는 DESIGN_ONLY이며 converter·제품 지원·앱0.61.0/운영0.58.0·flags·배포를 변경하지 않았다. 실제 전체 도면은 계속 미지원·payload0/파일럿 NO-GO다. 독립 QA와 Manager가 설계를 제한부 수용했으며 정본은 [Architecture](out/Architecture.md), 조사·검토 결과는 [TestReport](out/TestReport.md)를 따른다.

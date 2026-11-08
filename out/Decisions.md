@@ -1,3 +1,11 @@
+## #225 G1 — 기존 복원 근거 재사용과 최소 검증 보완 (2026-11-08)
+
+OR58-ACTUAL의 실제0.58 backup/격리 restore/old App과 FUP1의 clone 정상 인증 조회는 완료된 관측으로 재사용한다. Owner 범위 댓글의 과거 미실행 요약 때문에 다시 운영 중지·캡처하지 않는다. 현재 최소 작업은 기존 OR58 archive verifier가 두 복사본의 schema 동등성 외에 등록0.58 schema/history 적합성을 확인하도록 보완하는 것이다. 기존 G7 validator를 재사용하여 중복 schema 정본을 피한다.
+
+소스/시험만으로 host writer 독립 배제·합의된 RPO/RTO·운영 READY/GO-PILOT을 만들지 않는다. 실제 archive를 새 verifier로 검증할 경우에도 historical snapshot 적합성의 추가 근거일 뿐 새 capture/복원 또는 현재 운영 상태의 검증이 아니다. FUP5/#268은 #225 종료 선행 조건이 아니며, 이번 작업은 PR CI 시작까지만 진행한다. merge·운영 변경·registry/tag/flags 승인은 포함되지 않는다. Manager AC는 Issue225/TestPlan, 실행 수용은 TestReport를 따른다.
+
+---
+
 ## #225 FUP4 — 실제 gap에 근거한 BLOCK/INSERT 후속 범위 설계 (2026-11-08)
 
 이번 요청은 지원 범위의 **설계만** 수행한다. 불변 실제 source의 집계 분석, 공식 primary format 조사, synthetic transform 손계산과 독립 QA 검토를 근거로 다음 최소 offline Unit을 정한다. 현재 converter를 고치거나 시험용으로 실제 원본을 축약·변환하지 않는다. 분석·수학 검토의 통과를 runtime/geometry/실도면 fidelity PASS로 기록하지 않는다.

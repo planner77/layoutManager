@@ -1,3 +1,18 @@
+## TP-225-G1-SCHEMA — 기존 OR58 exact 0.58 검증 보완 (2026-11-08, Manager)
+
+Issue225의 G1 최소 구현: 기존0.58 실제 복원 결과는 보존하고, 두 복사본의 동등성과 등록 release/schema 적합성을 구별한다. 제품/운영 변경 없이 기존 OR58 archive verifier에서 G7 schema/release 정본을 재사용한다.
+
+| TC | 수용 기준 |
+| --- | --- |
+| G1S01 | repository-registered0.58의 실제 full schema/history와 local CAD/asset를 가진 소유 synthetic archive 통과. exact validator가 fingerprint/restore preflight 경로에서 호출됨을 검증한다. 단순4table fixture 통과는 더 이상 exact-schema 근거가 아니다. |
+| G1S02 | 등록 application table/column/index/trigger drift 또는 추가 application object는 두 archive에서 동일해도 거부. SQLite 내부 object와 migration 메타 테이블 자체 DDL은 기존 validator의 범위를 따른다. 검증 실패는 restore volume create 전에 발생한다. |
+| G1S03 | migration 누락/extra row/잘못된 checksum/미완료 또는 rolled-back history 및 newer0.60/0.61 baseline 거부. source0.58 declaration/schema ID/manifest 불일치를 거부한다. |
+| G1S04 | 기존 integrity/FK/local CAD/Scene bytes mismatch/S3 locator 거부 및 WAL disposable-copy 처리 보존. DB/CAD/archive 원본 hash 불변, 운영 Docker/network/.env 접근0인 synthetic 시험. |
+| G1S05 | bridge가 필요하면 bounded subprocess, 실패/잘못된 출력 fail closed, stdout/stderr에 DB행·원본 경로·credentials 유출0. 검사 런타임/의존성 부재는 성공으로 fallback하지 않는다. |
+| G1S06 | 독립 QA→Manager, 관련 자동 테스트·typecheck/lint/build 및 CI 기존 scope 연결 확인. 실제 operating archive 재검사/운영 중지·복원/독립 writer 증명/RPO·RTO 수용은 실행되지 않았다면 NOT RUN. GO-PILOT NO-GO와 FUP5/#268 독립 범위 유지. |
+
+---
+
 ## TP-225-FUP4 — 지원 범위 설계 수용 기준 (2026-11-08, DESIGN_ONLY)
 
 현재 수용 대상은 조사·설계·독립 검토다. 아래 future implementation 시험 설계는 실행 PASS가 아니며 converter 구현과 runtime proof는 다음 별도 Unit이다. 정확 semantics/reference의 정본은 Architecture FUP4다.
