@@ -1,3 +1,11 @@
+## #225 FUP4 — 미지원 section/table 및 BLOCK/INSERT 지원 범위 설계 (2026-11-08)
+
+**현재 작업은 DESIGN_ONLY다.** FR-FUP4-DESIGN은 불변 실제 DXF의 집계 관측과 공식 format 근거를 구분하여, 다음 최소 offline 구현 Unit과 후속 Unit의 정확한 수용/거부 경계를 정한다. 새 converter·scanner·fixture 코드, dependency/package/CI, 제품 parser/Builder/admission/Worker/Schema/flags, 운영 배포는 이번 작업에서 변경하지 않는다. 기존 FUP3의 전체 실제 도면 UNSUPPORTED·payload0과 source0.61.0/operating0.58.0·pilot NO-GO를 유지한다.
+
+FR-FUP4-COVERAGE: 첫 DXF_SECTION 거부에서 멈추지 않고 section/header/table vocabulary와 BLOCK/INSERT 의존 관계의 bounded aggregate gap을 조사한다. structural metadata 수용과 geometry/text 의미 지원을 구별하고 unknown 항목은 임의 무시하지 않는다. private 불변 archive 사본과 허용된 CAD metadata3열만 사용하며 공개 문서에는 원본 이름·handle·text·font·좌표를 넣지 않는다. FR-FUP4-SEMANTICS: local block base→scale→rotation→insertion, nested composition, layer0/BYLAYER/BYBLOCK 및 visibility/weight 상속, mirrored/nonuniform/zero scales, attribute/array/OCS/Z/xref/layout 경계, graph·확장 budget·precision·새 source-bound identity를 implementation-ready 계약으로 정한다. canonical 계약/primary references는 Architecture FUP4 한 곳에 두고 이 절과 TestPlan은 추적만 유지한다.
+
+---
+
 ## #225 FUP3 — HEADER/TABLES·layer/style offline 후보 (2026-11-08, 구현 전)
 
 사용자의 다음 작업 요청에 따라 기존 primitive geometry에 제한된 HEADER/TABLES·layer/style 의미를 연결하는 별도 offline 실험을 구현한다. FR-FUP3-STYLE은 기본색/truecolor·BYLAYER·layer off/frozen/locked·entity visibility·continuous linetype·lineweight resolution을 명시적으로 처리한다. 미지원 의미를 숨김/metadata로 간주하여 생략하지 않는다. STYLE table의 존재/제한된 record 검증은 TEXT/font 렌더링 지원과 다르다.

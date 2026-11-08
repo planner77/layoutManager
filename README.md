@@ -1,6 +1,12 @@
+## #225 — 미지원 section/table·BLOCK/INSERT 지원 설계 (2026-11-08)
+
+실제 DXF의 집계 gap과 공식 format 근거를 대조하여 다음 `FUP5-STATIC-XY` 구현의 지원/거부·변환·상속·자원·시험 기준을 설계했다. 정적 이름 블록과 양수 균일 XY 배율의 중첩 INSERT를 최소 범위로 정하고, 비균일·반전·속성·배열·비어 있지 않은 CLASSES/OBJECTS 등은 후속 범위로 구분한다. 현재는 DESIGN_ONLY이며 converter·제품 지원·앱0.61.0/운영0.58.0·flags·배포를 변경하지 않았다. 실제 전체 도면은 계속 미지원·payload0/파일럿 NO-GO다. 독립 QA와 Manager가 설계를 제한부 수용했으며 정본은 [Architecture](out/Architecture.md), 조사·검토 결과는 [TestReport](out/TestReport.md)를 따른다.
+
+---
+
 ## #225 — HEADER/TABLES·layer/style offline 후보 (2026-11-08)
 
-기존 primitive 실험을 확장해 제한된 layer 색상·가시성·선종류·선가중치와 dormant STYLE metadata를 별도 `CANDIDATE`로 검사했다. 새 parser/DTO는 `src/tests` 전용이며 기존 FUP2 도구와 제품 Scene/Builder/admission/Worker/Schema를 유지한다. synthetic golden·resource/watchdog·fresh Browser·실제 immutable 도면 전체 거부를 검증했고 독립 QA는 PASS_WITH_LIMITS다. 실제 전체 도면은 계속 미지원이며 앱0.61.0/운영0.58.0·flags·파일럿 NO-GO는 유지한다. 실제 수치와 검증 한계는 [TestReport](out/TestReport.md), 계약은 [Architecture](out/Architecture.md)를 따른다. Manager는 offline 범위를 제한부 수용했다. Exact-head PR CI와 Root 통합은 남아 있다.
+기존 primitive 실험을 확장해 제한된 layer 색상·가시성·선종류·선가중치와 dormant STYLE metadata를 별도 `CANDIDATE`로 검사했다. 새 parser/DTO는 `src/tests` 전용이며 기존 FUP2 도구와 제품 Scene/Builder/admission/Worker/Schema를 유지한다. synthetic golden·resource/watchdog·fresh Browser·실제 immutable 도면 전체 거부를 검증했고 독립 QA는 PASS_WITH_LIMITS다. 실제 전체 도면은 계속 미지원이며 앱0.61.0/운영0.58.0·flags·파일럿 NO-GO는 유지한다. 실제 수치와 검증 한계는 [TestReport](out/TestReport.md), 계약은 [Architecture](out/Architecture.md)를 따른다. Manager는 offline 범위를 제한부 수용했다. [PR #266](https://github.com/planner77/layoutManager/pull/266)은 [CI #695](https://github.com/planner77/layoutManager/actions/runs/42432263382)의 적용 대상8개 성공 후 Main `059d070`에 통합됐다. 아래 수용 시점의 CI 대기 문구는 당시 이력이다.
 
 ---
 

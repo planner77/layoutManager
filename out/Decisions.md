@@ -1,3 +1,13 @@
+## #225 FUP4 — 실제 gap에 근거한 BLOCK/INSERT 후속 범위 설계 (2026-11-08)
+
+이번 요청은 지원 범위의 **설계만** 수행한다. 불변 실제 source의 집계 분석, 공식 primary format 조사, synthetic transform 손계산과 독립 QA 검토를 근거로 다음 최소 offline Unit을 정한다. 현재 converter를 고치거나 시험용으로 실제 원본을 축약·변환하지 않는다. 분석·수학 검토의 통과를 runtime/geometry/실도면 fidelity PASS로 기록하지 않는다.
+
+다음 최소 Unit은 static named BLOCK/BLOCK_RECORD의 정확한 소유·참조와 default XY/Z0의 positive planar-uniform INSERT, 기존 primitives 및 recursive layer/property context를 함께 다루는 방향으로 제한한다. 단순히 CLASSES/TABLES/BLOCKS를 건너뛰어 첫 거부를 없애지 않는다. negative/nonuniform transforms·array/attributes·OCS/3D·text·layout/xref 등은 별도 bounded 후속 Unit으로 구분한다. 실제 source에는 독립적인 header/table/record 의미 gap이 남으므로 이 최소 Unit을 구현해도 전체 파일 지원을 약속하지 않는다. 정확한 허용 field/default/transform/상속/한도/후속 순서와 공식 근거의 단일 기준은 Architecture FUP4, 현재 설계 수용 기준은 TestPlan FUP4, 실제 수행 결과는 TestReport FUP4다.
+
+기존 FUP3 identity와 제품 Builder/admission/Worker/Schema/DB/flags, source0.61.0/operating0.58.0·pilot NO-GO를 유지한다. 미래 구현은 새 offline CANDIDATE identity와 원본 SHA 결합을 사용하고 기존 계약을 소급 완화하지 않는다. Manager는 독립 QA·공식 조사·집계·수학 검토를 근거로 이 설계만 제한부 수용했다. 다음 converter 구현과 실제 지원 검증은 별도 Unit이며 Root exact-head docs CI/통합은 남은 gate다.
+
+---
+
 ## #225 FUP3 — HEADER/TABLES layer/style semantics 별도 offline identity (2026-11-08)
 
 FUP2 primitive identity를 변경하지 않고 AC1018/INSUNITS4의 제한된 HEADER/TABLES/LAYER/LTYPE 및 optional dormant STYLE 의미를 새 `offline-cpu-styled-primitives@1 / node-cpu-styled-primitives@0.1.0+cad-scene-1 / CANDIDATE`로 검증한다. Header/layer/entity color, off/frozen/locked/entity visibility, plot metadata, continuous linetype와 entity/layer/default lineweight precedence를 명시적으로 보존하고, hidden geometry도 검사·segment count에 포함한다. 비지원 table/ref/style/text/font/section은 전체 문서 거부다.

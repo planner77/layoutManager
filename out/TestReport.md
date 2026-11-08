@@ -1,4 +1,35 @@
+## U-225-FUP4-20261108 — 미지원 section/table·BLOCK/INSERT 지원 설계 검토
+
+**판정: DESIGN_ONLY, 독립 QA PASS_WITH_LIMITS·Manager ACCEPTED_DESIGN_WITH_LIMITS.** 이번 산출물은 다음 최소 구현 Unit과 후속 범위의 계약·시험 계획이다. 추적되는 converter/scanner/fixture/code·dependency/package/CI·제품 parser/Builder/admission/Worker/Queue/DB/flags 변경0이며 앱0.61.0/운영0.58.0을 유지한다. 실제 전체 도면은 기존 FUP3에서 UNSUPPORTED·payload0이고 이번에 runtime 지원을 추가하거나 실제 도면을 변환하지 않았다. 요구사항 FR-FUP4, 수용 기준 FUP4-D01–08 및 수학/의미의 단일 정본 Architecture FUP4를 따른다.
+
+Manager가 요구사항·8개 설계 AC를 먼저 기록하고 Developer가 허용된 immutable archive의 집계 gap을 분석했다. fresh primary-research agent가 Autodesk 공식 문서24개를 확인해 Architecture 한 곳에 사실·설계 선택·미확인 사항을 구별해 기록했다. Manager가 설계를 검토하고 현재 가용 독립 QA agent가 source/집계/수학 근거를 대조한다. 과거 지정 모델을 실행했다고 기록하지 않는다.
+
+| 실제 집계 관측 | 결과와 해석 |
+| --- | --- |
+| 원본 결합 | immutable archive SHA `625e6b36e2bcb9c94e5e1d7bba735c7f26323ee963f212b58121f5d6a5ef1057` 전후 동일, source1,117,143bytes/SHA `6d761ecb1ab59664425eb1dcc6837a12611536c8e03e3f7855951a76786d159c` 일치. 최종 verifier는 snapshot의 CadFileVersion에서 storage_path/sha256/file_size3열만 LIMIT100001로 읽고 source16MiB 상한을 확인. 원본 재인코딩·도형 subset 추출·CAD artifact0 |
+| section/header/table gap |6sections, nonempty CLASSES98records/OBJECTS114records. HEADER213variables 중203개가 FUP3 whitelist 밖, required LWDEFAULT 부재.9tables 중 LTYPE26/LAYER24/STYLE8/APPID28/DIMSTYLE16/VPORT1/BLOCK_RECORD147 및 empty UCS/VIEW. 이는 format invalid 판정이 아닌 현재 후보의 지원 범위 gap |
+| primitive type와 지원 구별 |2503 LINE/CIRCLE/ARC/LWPOLYLINE typed records 모두 FUP3 제외5/330 존재. geometry/type 개수만으로 지원 수를 계산하지 않음. noncontinuous LTYPE·plot style·STYLE1071 등 별도 의미도 남아 있음 |
+| block/INSERT |147definitions, anonymous flag70 bit1=128; 별도 name class는 reserved-system2/other-star128/plain-ASCII17.285INSERT(root10/nested275), defaultscale20/positive3Duniform252/negative-or-mirrored13, nondefault normal9/attribute chain(group66)=4. rootINSERT에서 reachable7definitions·anonymous0. flags/name분류와 scale-compatible/실제전체수용을 혼동하지 않음 |
+| 실제 한계 |실제 BLOCK_RECORD147개 모두 LAYOUT340 존재·record70은 부재로 독립 확인했다. group70 존재 개수0을 wire값0으로 해석하지 않는다. nonempty sections/추가headers/tables·anonymous/text/attributes/OCS 등으로 최소 후속 후보가 구현되어도 전체파일은 계속 거부 대상. raw record 추정은 world segment5000·fidelity/runtime 입증이 아님 |
+
+Developer 최종 분석 `developer-analysis-v2.json` SHA256 `08344e0527d8d2ad7d5c5d7c10531edcd8c5d1a189114d6c58135b71b82b3ffe`, 선택-source verifier `developer-verify.py` SHA256 `49290e6c76505cab4d0031b8ac2376dc43b7dd2cbf30a5cf052cecc8cd6d286b`, 최종 v4 관측 SHA256 `a10e4d6e17360965f726392356b43f0083b395ddb0e69a58eb0e637c8f0532f6`다. 최초 상세 census는 inline 실행으로 script artifact가 없었음을 분석 receipt에 명시했고, 선택-source/추가 집계 verifier는 보관했다. 독립 QA의 재집계 여부와 범위를 별도 receipt로 확인한다. 이 도구는 고정된 private source의 관측용이며 재사용 가능한 DXF admission validator가 아니다.
+
+| 설계 검토 대상 | 계약/향후 수용 조건 |
+| --- | --- |
+| 최소 구현 |FUP5-STATIC-XY: named static blocks, reserved empty space containers, 정확 BLOCK_RECORD·owner/ref, default OCS/모든Z0/thickness0, Sx=Sy=s>0/Sz∈{1,s}. 배열이 아닌 INSERT와 기존4primitive만. 행렬·style·count를 재검증하는 새 source-bound offline CANDIDATE identity를 제안했으며 아직 미구현 |
+| 변환/상속 |nonzero base→scale→rotation→translation과 nested 순서, effective layer0/BYLAYER/BYBLOCK, ancestor visibility conjunction·lock/plot provenance, unresolved root BYBLOCK 정책. G1/G2/G3/G3b/G4/G5는 합성 손계산 및 future fixture 계획이며 converter 실행 PASS가 아님 |
+| 정밀도/자원 |world chord0.05mm+Float32 Euclidean0.05mm, scaling후 재검증/세계 좌표 segment5000 상한 유지. cycle/missing/depth-aware memo/shared DAG·확장instance/leaf 한도와 hidden/unused 검증 계획. σ만으로 world buffer를 재사용하지 않음 |
+| 미지원/미확인 |nonempty CLASSES/OBJECTS·추가headers/tables, affine/reflection, attribute/text/font/array/OCS/3D/xref/dynamic 등은 별도 후속 Unit. BLOCK_RECORD280/281 numeric wire/default를 추정하지 않고 최소profile에서 presence 거부 |
+
+Primary research receipt `primary-research.json` SHA256 `5d3549fb0fe5ab33506261d0af435c6721ab242afd8123ae72065be702301ad8`는 official URL24개·실제 확인 범위·미실행·비차단 미결 및 Architecture SHA256 `fbd2d965e9664126a049d6b50d378cf493c2e478c97f4e3bbc37bf0f60d78109`/FUP4 section SHA256 `a66caf72a57b70934a3841a190ad45487269dd8cff46d14d5ddbc7684c1b410e`를 결합한다. 개별 spec 주장 링크는 Architecture에만 둔다. 실제 이름·handle·text·font·좌표는 공개 문서/commit에 넣지 않으며 private evidence는0700/0600으로 보관한다.
+
+**이번 실행과 미실행:** read-only 집계·공식 source 조사·설계 계산·문서 검토를 수행했다. 새 converter·app build/type/lint/앱 전체 unit/browser/CPU resource/120s/OOM/runtime Scene 시험은 이번 docs-only Unit에서 미실행이며 PASS로 수용하지 않는다. 기존 FUP3 CI/테스트는 아래 별도 완료 이력이다. Root는 Markdown-only diff·link/hash·whitespace·비밀/산출물 제외 및 PR CI를 최종 통합 gate로 확인한다. 독립 QA receipt `qa-independent.json` SHA256 `f9187473e10da3df87d124e7c73305d7cac94bfca760884f0f45cfe2450919d6`(0600)는 최종 Architecture/section·primary research·Developer 근거를 결합한다. QA는 실제 source gap과 합성 손계산을 독립 확인하고 필드 부재와 값0을 구별했으며 blocking finding0으로 설계를 제한부 수용했다. 최초 기준점을 빼는 평행이동값을 기준점 자체로 해석한 golden 검토 우려는 원식과 별도 계산으로 해소됐다. Manager receipt `manager-acceptance.json` SHA256 `a4aa188e71aee06aea67b4c546516d800715ab26d85e2a23168896cb26ab025b`(0600)는 이들 최종 근거와 설계 정본을 결합하여 DESIGN_ONLY 범위를 제한부 수용했다. 구현 재작업은 없으며 다음 FUP5 converter 구현·runtime proof·제품 지원과 실제파일 수용은 별도 작업이다.
+
+---
+
 ## U-225-FUP3-20261108 — HEADER/TABLES·layer/style offline 후보 구현·검증
+
+**후속 통합 완료:** [PR #266](https://github.com/planner77/layoutManager/pull/266) exact HEAD `3235f5836391a762cd7de7919ff8b653f2ad6b6c`는 [CI #695](https://github.com/planner77/layoutManager/actions/runs/42432263382) 적용8개 SUCCESS/별도 A2 SKIPPED 뒤 Main `059d0701381a9182595a4d03cebc66c9e5e21ac7`로 정상 squash 병합됐다. Main tree는 시험 HEAD와 동일한 `d33d2a0cd56ffb5fcf6b717985441396cb0a0be4`이고 이전 Main 단일 parent를 확인했다. Draft 개방의 CI694는 ready_for_review 전환으로 취소됐으며 PASS로 수용하지 않았다. 아래 CI/Root 통합 대기는 당시 source 수용 시점 기록이다. 운영 배포·flags·registry/tag 변경0, 원래 dirty2개와 운영 이미지 healthy 보존 및 소유 검증 자원 정리는 최종 private receipt SHA256 `6bf8d9a82b0aba0fb3dbe71c03aa51f979427c941f4ccfe541821caed038666f`에 기록했다. 이번 FUP4의 새 runtime 시험으로 재사용하지 않는다.
 
 **판정:** 독립 QA `PASS_WITH_LIMITS`. AC1018/INSUNITS4의 좁은 HEADER·TABLES·LAYER·LTYPE 및 optional dormant STYLE semantics를 기존 primitive geometry에 결합한 별도 `offline-cpu-styled-primitives@1 / node-cpu-styled-primitives@0.1.0+cad-scene-1 / CANDIDATE`를 시험했다. 제품 Scene/READY/Worker로 수용하지 않는다. 앱0.61.0·운영0.58.0, 제품 parser/Builder/admission/Worker/Queue/DB/Schema/flags 및 운영 배포를 변경하지 않았다. Root local checks/actual proof는 완료했다. Manager는 아래 근거로 offline 범위를 `ACCEPTED_WITH_LIMITS` 수용했다. Exact-head PR CI와 Root 통합은 남은 gate다.
 

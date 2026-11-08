@@ -1,3 +1,20 @@
+## TP-225-FUP4 — 지원 범위 설계 수용 기준 (2026-11-08, DESIGN_ONLY)
+
+현재 수용 대상은 조사·설계·독립 검토다. 아래 future implementation 시험 설계는 실행 PASS가 아니며 converter 구현과 runtime proof는 다음 별도 Unit이다. 정확 semantics/reference의 정본은 Architecture FUP4다.
+
+| TC | 현재 설계 수용 조건 |
+| --- | --- |
+| FUP4-D01 boundary | docs-only diff, source0.61/operating0.58·product/CI/code 변경0. 현재 actual fullfile UNSUPPORTED/NO-GO와 미래 지원 설계를 구별 |
+| FUP4-D02 observed coverage | immutable archive/source SHA 결합, selected metadata3열만, section/header/table/record/unsupported vocabulary aggregate와 BLOCK graph/INSERT 형태를 조사. 이전 inventory 추정과 새 관측을 구별; 실제값 공개0/원본 변환0 |
+| FUP4-D03 primary meaning | Autodesk primary sources로 section/table/BLOCK_RECORD/BLOCK/INSERT common fields·transform·inheritance의 사실 확인. format 사실·이번 좁은 정책·미확인 의미를 명시; unknown/metadata blanket skip 금지 |
+| FUP4-D04 transforms | basepoint/scale/rotation/insertion 및 nested 행렬 순서의 손계산 golden. 음수/mirror·nonuniform circle/arc·zero·OCS/Z·array·attribute 정책과 각각 양성/음성 계획이 빠짐없음 |
+| FUP4-D05 inheritance | layer0 및 named layer, BYLAYER/BYBLOCK color/linetype/weight·visibility/locked/plot에 대해 context와 resolution 순서 및 block 밖 BYBLOCK 정책 명시; 숨겨진 unsupported geometry도 전체 거부 |
+| FUP4-D06 graph/resources | unique symbol/handle·BLOCK_RECORD owner/ref·missing/cycle/depth/shared DAG 규칙, instance/expanded primitive/segment/time/memory/DTO 한도, transform후 좌표·정밀도0.05+0.05mm cap·failclosed 계획. raw definition수와 expansion수 구별 |
+| FUP4-D07 smallest unit | 실제 전체파일 통과를 약속하지 않는 최소 구현 Unit, 선행 metadata와 geometry 의미 범위, 후속 bounded Units, 새 offline identity와 기존 FUP3/product admission 보존을 명시 |
+| FUP4-D08 review | Manager 요구/AC→Developer aggregate 분석+primary research→Manager 설계검토→독립 QA source/math/evidence 검토→Manager 제한부 설계수용. 실행하지 않은 app/runtime/browser 테스트 PASS0; Root docs 검사/PR CI/merge 별도 |
+
+---
+
 ## TP-225-FUP3 — HEADER/TABLES·layer/style 후보 AC/TC (2026-11-08, 구현 전)
 
 아래 항목은 구현 전에 확정한 수용 기준이다. 실제 실행 결과와 제한은 TestReport FUP3를 따른다. Architecture FUP3 canonical contract가 의미 정본이다.
