@@ -1,3 +1,11 @@
+## #225 — 승인된 단일 CPU Worker 파일럿 운영 (2026-11-08)
+
+사용자의 **“운영 전환·Worker 활성화 승인”**에 따라 운영을0.58.0에서0.61.0으로 전환했다. 새 일관 백업·별도0.58 복원 및 등록된 업그레이드를 검증했고, 기존 업무 데이터·CAD 원본을 보존했다. 현재 Scene 자동 생성 플래그2개와 CPU Worker1개가 활성화되어 있다. 지원 범위는 검증된 제한 2D DXF LINE subset이며 기존 도면 자동 backfill은 없다. 실제 전체 도면의 BLOCK/INSERT 등 확대는 별도 #268, 상위 #218도 독립 완료 대상이다.
+
+수치 RPO/RTO SLA는 두지 않는다. 실제 백업·복구/중단 측정과 한계는 [TestReport](out/TestReport.md)의 U-225-G3-20261108, 현재 실행 설정·보존된 복구점과 신규 데이터 보호 절차는 [Operation](out/Operation.md)이 정본이다. 운영 신규 인증 업로드→Scene 시험은 미실행이며, 출고된 동일3digest의 signed Worker/Viewer 근거를 구분해 재사용했다. 소스/운영 버전은0.61.0, 자동 publisher HOLD 및 Git tag/latest는 유지한다. 아래 승인 전 NO-GO·0.58 문구는 당시 이력이다.
+
+---
+
 ## #225 — 실제 백업 복제본의 업그레이드·복구 검증 (2026-11-08)
 
 등록0.58 스키마 검사는 PR269/CI699 통과 후 Main에 통합됐다. 보존된 실제0.58 백업의 새 격리 복제본에서 정식0.61 업그레이드·기존 데이터/원본·앱 기동과 이후0.58 교체 복구를 확인했다. 출고된3digest의 Worker/Viewer 연속 검증은 기존 서명 근거와 결합해 재사용한다. 실제 결과는 [TestReport](out/TestReport.md), 실행/복구와 최종 승인 경계는 [Operation](out/Operation.md)을 따른다.

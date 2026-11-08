@@ -1,3 +1,17 @@
+## 2026-11-08 — G3 Owner 명시 승인 및 제한 파일럿 실행 (Manager)
+
+**Manager 최종 판정: ACCEPT_LIMITED_PILOT.** 명시된 Owner GO에 따른 실제 전환 및 독립 읽기 전용 QA를 수용한다. fresh0.58 archive `39b4fee7…`의 복원·등록 schema와 기존33 tables/51 rows/CAD1 일치를 확인했고, 정식0.58→0.61 migration 뒤 기존 업무·CAD·install ID를 보존했다. 새 운영 App/단일 CPU Worker는 승인된 출고 digest/source로 실행되며 두 Scene flags ON, 지정 격리·자원 제한, ACTIVE/health200 및 기존 공개 원본 SHA를 확인했다. 최종34 tables/manifest/CAD는 migration 직후 기준과 같고 관측 시 신규 business writes/jobs/backfill0이다.
+
+독립 QA는32개 파일의 실제 근거 closure와 보존/정리를 검토했다. 임시 image lease5개를 제거했고 original dirty 파일 hash를 유지했다. fresh archive와 검증된 old0.58 rollback volume은 보존하며 read-only/no-App24h lease는 별도 보관 상태다(감시/재시작을 약속하지 않음). 실제 운영의 새 인증 upload→Scene journey는 NOT RUN이고 정확 출고3digest의 기존 signed candidate E2E를 승인 범위대로 재사용한다. host FD 관측은 해당 epoch의 유한 metadata 증거이며 `ROOT_ATTESTED_NOT_INDEPENDENTLY_PROVEN` 한계를 삭제하지 않는다.
+
+더 이상의 운영 승인이나 수치 SLA는 요구하지 않는다. 자동 publisher HOLD·Git tag/latest 불변, #218/#268 독립 AC를 유지한다. Root는 최종 문서의 required CI/정상 통합 후 #225 종료를 처리한다. 승인·실제 근거·측정값의 정본은 TestReport G3/Operation이며 과거 NO-GO/flags OFF 기록은 당시 이력이다.
+
+사용자가 PR270의 구체적 전환안에 **“운영 전환·Worker 활성화 승인”**으로 답했다. 승인 범위는 짧은 중단과 fresh coherent0.58 백업, 검증된 불변3digest의0.58→0.61 전환, 기존 데이터 보존, Scene flags ON 및 단일 CPU Worker, 문제 시0.58 replacement-volume 복구와 새 쓰기 선보존이다. NO_NUMERIC_SLA를 유지한다. 같은 범위의 반복 승인을 요구하지 않는다.
+
+PR270은 CI700 적용8개 SUCCESS/A2 범위 외 SKIP 및 리뷰/충돌/behind0 확인 후 Main `365ebe578cb82e27f7eaf2bad9c6a138377a9f04`로 정상 병합됐다. 이전 G3 승인 대기 문구는 당시 이력이다. Root가 [Operation](Operation.md)의 기존 실행안을 수행하고, Manager/독립 QA는 비밀 값 없이 receipt와 보존·실행 결과를 검토한다. 에이전트의 별도 운영 조작이나 새 승인 framework를 추가하지 않는다. 정확한6개 수용 기준은 TestPlan G3A01–06이며, 승인과 실제 완료는 구분한다. 실제 결과를 확인하기 전 #225 종료를 선언하지 않는다.
+
+---
+
 ## 2026-11-08 — G2 실제 0.58 snapshot 격리 업그레이드·제한 LINE 검증 (Manager 설계)
 
 **Manager 최종 G2 판정: ACCEPT_WITH_LIMITS.** 교체 Developer 완료·집중 회귀 및 독립 QA의 실제 receipt/source closure·archive fingerprint 감사를 수용한다. 첫 실제 시도는 CREATED NetworkID 검사로 중단되어 실패를 보존했고, 최소 수리 후 새 namespace 재시도는21.261초에0.58→0.61 migration·기존33 tables/CAD1 보존·새 App ACTIVE/HTTP200·공개 원본 SHA readback·소유 cleanup을 통과했다. 이후 동일 archive의 새0.58 replacement-volume 복귀는 healthy8.208초/전체10.517초이며 독립 QA가 원본과 복귀 사본의33 tables/35 rows·schema/install/CAD ref1 fingerprint 일치를 재확인했다. 이 시간은 격리 리허설 측정값이며 운영 outage/SLA가 아니다.

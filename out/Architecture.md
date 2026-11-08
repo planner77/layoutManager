@@ -1,3 +1,9 @@
+## #225 G3 — 기존0.61 구조의 승인 운영 적용 (2026-11-08)
+
+제품 module/interface·Builder/admission·DB 계약 변경 없이 고정된 정식0.61 App/Migrator/CPU Worker를 기존 volume에 적용했다. 현재 App의 두 Scene flags ON 및 별도 CPU Worker1개의 기존 격리 계약을 실제로 확인했다. 기존 Version backfill0이며 실제 지원 범위/운영 검증 한계는 TestReport U-225-G3-20261108, 재기동과 별도 목적지 복구는 Operation이 정본이다.
+
+---
+
 ## #225 G2 — 실제 archive 기반 격리 upgrade/readback 도구 (2026-11-08)
 
 제품 구조·Scene/Builder/admission은 변경하지 않는다. `src/tests/oci/or58-g2-upgrade.py`는 기존 OR58/FUP1 복원·G7 정식 upgrade helper·RR2 named/CID child journal을 재사용한다. immutable0.58 archive를 등록 schema로 검사한 뒤 새 소유 volume에서 고정된 출고3digest의0.61 migration, 시작 전 전체 business/CAD 보존, 새 App의 내부 HTTP/원본 SHA 및 정지 후 선택 business 보존을 검사한다. `g2-volume-snapshot.mjs`는 nonroot/read-only 원본에서 행/CAD 해시만 반환하며 이전 열 이름만 bounded env로 받는다. host0600 private baseline을 컨테이너 UID10001에 직접 읽히지 않는다.

@@ -1,3 +1,20 @@
+## TP-225-G3-ACTUAL — 승인된 제한 파일럿 전환 (2026-11-08, Manager)
+
+사용자 명시 응답 **“운영 전환·Worker 활성화 승인”**과 Operation의 구체 전환안에 따른다. 추가 숫자 SLA/기능 범위를 승인 조건으로 만들지 않는다. Root만 운영 작업을 수행하며 독립 QA는 실제 receipt를 읽기 전용으로 검증한다.
+
+**실행 수용:** G3A01–06의 승인된 운영 작업과 읽기 전용 독립 QA를 근거로 Manager는 **ACCEPT_LIMITED_PILOT**으로 판정했다. Fresh capture/old restore, 공식 migration/flags OFF smoke, 실제 flags ON 단일 Worker·기존 business/CAD 보존과 소유 정리/rollback 보관을 확인했다. 실제 운영 인증 Scene journey 미실행과 signed candidate E2E 재사용, 유한 host metadata 관측, NO_NUMERIC_SLA를 구분한다. 정확 측정/receipt/hash와 사전 HALT 이력은 TestReport G3 및 FailureLedger가 정본이다. 최종 문서 required CI/통합·이슈 종료는 Root의 후속 처리이며 운영 재승인 단계가 아니다.
+
+| TC | 수용 기준 |
+| --- | --- |
+| G3A01 승인·identity | PR270/Main365ebe/CI700 적용8개 성공과 사용자 GO를 기록. 기존 운영 App/volume/port/Origin/G7 정책 및 승인 불변 App/Migrator/Worker3digest/source33f377을 확인. 기존 사용자 dirty Compose/.env·Git tag/latest/추가 GHCR 쓰기0. |
+| G3A02 fresh 복구점 | 승인 quiet window에 현재 writer/정확 App을 확인하고 새 동일 epoch DB/WAL/CAD/설치·필수 복원 설정을 private 보관. freeze의 수락 쓰기0·source identity·hash/정합성 및 fail-safe 재개를 실제 관측 범위대로 기록. historical archive를 fresh capture로 재명명0. |
+| G3A03 rollback 준비 | fresh 복구점의 등록0.58 schema/history·전체 기존 행/Current/원본 SHA·설치 identity를 독립 복원/readback으로 확인. 백업/원래 old image·설정을 유지. 새 쓰기 발생 뒤 rollback은 새 DB/CAD/감사 상태를 먼저 보존하고 새 목적지에0.58을 복원; 기존 live volume 덮어쓰기0. |
+| G3A04 정식 전환 | 별도 private 설정·검토된 Compose와 fresh 공식 plan 지문으로0.58→0.61 apply/start. 먼저 flags OFF에서 exact App·health/G7/기존 조회·schema와 기존 business/CAD 보존 확인. old App/new schema 혼용0·stale plan 재생0. |
+| G3A05 제한 활성화 | 승인 범위에서 Scene 두 flags ON, 정확 단일 CPU Worker1개·UID10001/CPU1/RAM768MiB/PID64/read-only root/network none/같은 volume을 readback. 기존 backfill·계정/권한 변경0. 지원 subset/미지원·SourceIndex 경고를 유지하며 기존 signed exact-digest E2E와 새 운영 상태 관측을 구별. |
+| G3A06 실제 판정 | 실행/중단·복구점/경과시간·보존·cleanup을 private receipt와 정제 문서에 기록하고 독립 QA→Manager 수용. 운영 실패/미실행은 숨기지 않음. NO_NUMERIC_SLA, 자동 publisher HOLD, #218/#268 독립 AC 유지. 완료 근거 확인 후 Root가 #225 종료를 판정. |
+
+---
+
 ## TP-225-G2-CLONE — 실제 snapshot 업그레이드 및 제한 LINE 검증 (2026-11-08, Manager)
 
 | TC | Acceptance Criteria |
