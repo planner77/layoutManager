@@ -69,7 +69,7 @@ describe('#225/B3 scoped batch summary',()=>{
         storageLocator:'asset-1',
       }}]});
     expect((await f.run(['site-1'],['site-1'])).rows[id]).toMatchObject({
-      state:'REBUILD_REQUIRED',canRetry:false,
+      state:'REBUILD_REQUIRED',canRetry:false,errorCode:null,
     });
     expect(f.storage.readVerified).not.toHaveBeenCalled();
   });
@@ -80,6 +80,20 @@ describe('#225/B3 scoped batch summary',()=>{
     expect((await f.run()).rows[id]).toMatchObject({state:'FAILED',canRetry:false});
     expect((await f.run(['site-1'],['site-1'])).rows[id]).toMatchObject({
       state:'FAILED',errorCode:'SCENE_STORAGE_FAILED',canRetry:true,
+    });
+  });
+  it('projects only allowlisted BLOCKED and RETRY_WAIT reasons, and no historical reason on missing verified READY',async()=>{
+    const blocked=fixture({jobs:[job('BLOCKED','SCENE_AUTH_REVOKED')]});
+    expect((await blocked.run()).rows[id]).toMatchObject({
+      state:'BLOCKED',errorCode:'SCENE_AUTH_REVOKED',canRetry:false,
+    });
+    const waiting=fixture({jobs:[job('RETRY_WAIT','private/path/token')]});
+    expect((await waiting.run()).rows[id]).toMatchObject({
+      state:'RETRY_WAIT',errorCode:'UNKNOWN',polling:true,
+    });
+    const historical=fixture({jobs:[job('READY','SCENE_AUTH_REVOKED')]});
+    expect((await historical.run()).rows[id]).toMatchObject({
+      state:'REBUILD_REQUIRED',errorCode:null,
     });
   });
   it('returns an unavailable state on legacy missing tables without SQL exceptions',async()=>{

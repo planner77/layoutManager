@@ -9,7 +9,7 @@ import {SCENE_BUILD_JOB_MIGRATION_SQL, SCENE_JOB_MIGRATION_NAME,
 
 describe('#218/#225 Scene v2 → durable Job forward G7 release',()=>{
   test('0.60.0 remains immutable and 0.61.0 is a separate reviewed CPU migration',()=>{
-    expect(packageInfo.version).toBe('0.61.0');
+    expect(packageInfo.version).toBe('0.61.1');
     expect(lock.version).toBe(packageInfo.version);
     expect(lock.packages[''].version).toBe(packageInfo.version);
     const previous=registry.releases.find(r=>r.version==='0.58.1')!;
@@ -34,6 +34,20 @@ describe('#218/#225 Scene v2 → durable Job forward G7 release',()=>{
     const cpuChain=resolveUpgradeChain(registry,'0.60.0','0.61.0');
     expect(cpuChain).toHaveLength(1);
     expect(cpuChain[0]).toMatchObject({from:'0.60.0',to:'0.61.0',kind:'MIGRATION'});
+    const v61=registry.releases.find(r=>r.version==='0.61.0')!;
+    expect(next).toEqual({...v61,version:'0.61.1'});
+    expect(resolveUpgradeChain(registry,'0.61.0','0.61.1'))
+      .toEqual([{from:'0.61.0',to:'0.61.1',kind:'COMPATIBLE'}]);
+    expect(resolveUpgradeChain(registry,'0.60.0','0.61.1'))
+      .toEqual([...cpuChain,{from:'0.61.0',to:'0.61.1',kind:'COMPATIBLE'}]);
+    expect(()=>resolveUpgradeChain(registry,'0.61.1','0.61.0'))
+      .toThrow('G7_UPGRADE_UNSUPPORTED_PATH');
+    for(const key of ['schemaId','baseline','checksum','dataContract','runtimeContract'] as const){
+      const drift={...registry,releases:registry.releases.map(r=>r.version==='0.61.1'
+        ?{...r,[key]:r[key]+'-DRIFT'}:r)};
+      expect(()=>resolveUpgradeChain(drift,'0.61.0','0.61.1'))
+        .toThrow('G7_UPGRADE_SCHEMA_INCOMPATIBLE');
+    }
     expect(()=>resolveUpgradeChain(registry,'0.60.0','0.59.0'))
       .toThrow('G7_UPGRADE_UNSUPPORTED_PATH');
     expect(()=>resolveUpgradeChain(registry,'0.59.0','0.58.1'))

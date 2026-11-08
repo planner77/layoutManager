@@ -1,3 +1,20 @@
+## TP-218-L05 — Scene 목록 조회 결함 회귀 (2026-11-08, 구현 전)
+
+선행 설계/AC는 [Issue218](Issue218.md) 최신 LS01–07이다. 아래 L05-01–06은 같은 요구의 검증 묶음이며 최종 결과는 LS01–07로 추적한다. 기존 #225 signed 업로드→독립 CPU Worker→verified Scene·새 Viewer, KILL/OOM·복구/운영 근거는 해당 기능의 기존 증거로 재사용하며 이번 상태 UI 시험과 구별한다.
+
+| TC | 필수 검증 |
+| --- | --- |
+| L05-01 | 0/1/100/101/201개·중복 ID·DWG에서 모든 표시 DXF를100개 이하 순차 batch로 누락 없이 조회; per-row 요청 금지 |
+| L05-02 | 실제 React layout-effect commit probe의 disabled→enabled/A→B→A 및 취소를 무시한 늦은 응답/오류, 탭 숨김→재개·목록 변경·수동 갱신·해제에서 이전 generation state/timer/retry 권한 복원0 |
+| L05-03 | pending만 polling; known pending의 연속 통신 실패 유한 복구, 초기/terminal 실패 자동 loop0·명시 상태 갱신; HTTP 오류를 Job 실패로 바꾸지 않음 |
+| L05-04 | FAILED/BLOCKED/RETRY_WAIT allowlisted 사유/phase의 한글·일반 fallback; private 값 미노출·DWG 해당없음·원본 성공과 Scene 실패 구별 |
+| L05-05 | 실제 React/Browser에서 상태/갱신/재시도 버튼·키보드/오류·좁은 화면 검증; 기존 signed G7 재시도 정책·READY 검증 회귀 |
+| L05-06 | package/lock0.61.1, 기존0.61.0 identity 보존·같은 schema COMPATIBLE edge·다운그레이드 거부·release HOLD; build/type/lint/관련·전체 unit·필수 PR CI 시작 |
+
+실제 FAIL/미실행은 FailureLedger/TestReport에 분리한다. 이번 인계는 PR CI 시작 확인까지만 수행하고 모니터링·병합·운영 배포는 수행하지 않는다.
+
+---
+
 ## TP-225-G3-ACTUAL — 승인된 제한 파일럿 전환 (2026-11-08, Manager)
 
 사용자 명시 응답 **“운영 전환·Worker 활성화 승인”**과 Operation의 구체 전환안에 따른다. 추가 숫자 SLA/기능 범위를 승인 조건으로 만들지 않는다. Root만 운영 작업을 수행하며 독립 QA는 실제 receipt를 읽기 전용으로 검증한다.

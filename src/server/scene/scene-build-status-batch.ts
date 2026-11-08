@@ -83,7 +83,8 @@ export async function readSceneBuildBatch(db:Database,storage:SceneBlobStorage,
     const badge=sceneStatusBadge({fileFormat:version.fileFormat,
       validatedScene:validated,jobState,stage:job?.stage});
     rows[version.id]={...badge,
-      errorCode:jobState==='FAILED'?safeBuildErrorCode(job?.lastCode):null,
+      errorCode:['FAILED','BLOCKED','RETRY_WAIT'].includes(badge.state)
+        ?safeBuildErrorCode(job?.lastCode):null,
       canRetry:process.env.SCENE_AUTO_BUILD_ENABLED==='true'&&
         process.env.SCENE_CPU_WORKER_ENABLED==='true'&&
         version.fileFormat==='DXF'&&!pointer&&

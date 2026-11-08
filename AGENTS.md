@@ -1,3 +1,9 @@
+## #218 L-05 재개 — Scene 목록 상태 조회 (2026-11-08)
+
+현재 작업은 [Issue218](out/Issue218.md) 최신 LS01–07과 [TestPlan](out/TestPlan.md)의 TP-218-L05를 따른다. 기존 #225 단일 Worker/저장·인증·운영 근거는 재사용하고 표시 DXF100개 초과 누락·늦은 응답·오류 polling·안전 사유를 수정한다. 개발 소스0.61.1 PATCH와 현재 운영0.61.0을 구별한다. 실제 결과/실패는 TestReport/FailureLedger가 정본이다. 사용자 범위는 PR CI 시작 확인까지이며 완료 감시·병합·운영 변경은 하지 않는다. 원래 dirty Compose/next-env 및 운영 설정을 보존한다.
+
+---
+
 ## #225 운영 전환 완료 후 재개 위치 (2026-11-08)
 
 사용자의 **운영 전환·Worker 활성화 승인**을 실행했다. 소스/운영0.61.0, Scene flags2개 ON, 검증된 제한 LINE subset의 CPU Worker1개가 현행이다. 현재 결과는 [TestReport](out/TestReport.md)의 U-225-G3-20261108, 재기동·장애·복구점/신규 데이터 보존은 [Operation](out/Operation.md)을 먼저 확인한다. 기존 사용자 dirty Compose/next-env와 원래 `.env`는 보존했으므로 이전 작업 위치의 Compose로 운영을 덮어쓰지 않는다.

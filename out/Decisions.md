@@ -1,3 +1,11 @@
+## #218 L-05 — 기존 상태 계약의 PATCH 수리 (2026-11-08)
+
+Manager는 최신 #218 L-01–08을 #225 구현/시험·제한 파일럿과 대조하고 목록 상태의 실제 결함을 다음 Unit으로 지정했다.0.61.1은 호환 bug fix로,100개 초과 표시 행은 API 상한을 유지한 순차 batch로 조회하며 요청 세대/취소로 늦은 응답을 격리한다. 초기/terminal 오류의 무한 polling 대신 명시 복구를 제공하고 pending 통신 실패만 유한 재조회한다. 설계와 LS01–07은 구현 전 Issue218에 기록했다.
+
+등록0.61.0 declaration·migration/history·Worker/G7·Scene 검증은 재사용한다.0.61.1 같은 schema/data/runtime의 forward COMPATIBLE edge 외에 DB 변화는 없다. 새 Viewer 메뉴는 목록 상태 변경에 불필요하며 기존 Canvas/Drawer 경계를 유지한다. #268 Entity 확대, #218 전체 수용·운영 신규 인증 journey는 이번 수리의 완료로 간주하지 않는다. 독립 QA 뒤 Manager가 결과를 판정하고 Root가 commit/push/PR CI 시작만 수행한다.
+
+---
+
 ## #225 G3 — Owner의 운영 전환·Worker 활성화 승인 (2026-11-08)
 
 **실제 결과 수용:** Owner GO 뒤 Root의 fresh0.58 backup/독립 restore, 공식0.61 migration·flags OFF smoke·두 flags ON/단일 격리 Worker 활성화와 기존 데이터 보존을 수행했다. 독립 QA의32-file closure·DB/archive/실행·정리 검토 후 Manager는 **ACCEPT_LIMITED_PILOT**으로 수용한다. 기존 signed exact-digest E2E는 재사용하며 새 운영 인증 Scene journey를 실행한 것으로 표현하지 않는다. fresh archive/old rollback volume 보존과 read-only/no-App24h lease를 기록하되 감시/재시작·수치 SLA·미관측 host writer 전면 배제를 보증하지 않는다. 다음은 승인된 완료 범위의 최종 문서 CI/정상 통합·#225 종료이며 같은 운영 GO를 다시 요청하지 않는다. 자동 publisher HOLD/#218·#268 독립 범위는 유지한다.

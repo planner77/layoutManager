@@ -1,3 +1,23 @@
+## #218 L-05 — 목록 상태 조회 결함 및 검증 실행 이력 (2026-11-08)
+
+**발견:** 기존 Provider가 `slice(0,100)`으로 대상 ID를 잘라 Location101번째 이후 DXF 상태를 요청하지 않는다. visibility/reload 이후 이미 완료된 이전 JSON 처리는 같은 effect의 alive만으로 격리되지 않는다. 최초/terminal 통신 오류도 무한 재조회하며 BLOCKED/RETRY_WAIT 사유가 누락되고 verified READY와 함께 과거 FAILED errorCode가 DTO에 남을 수 있다. 이는 코드 검사에서 확인한 결함이며 운영 데이터 손상/새 CI 실패를 관측했다는 뜻이 아니다. 재현·수리·재검증은 TestReport의 LS01–07에 연결한다.
+
+**버전 회귀 실패:** 최초 전체 Vitest에서 `g7-greenfield-upgrade.test.ts`13/13 FAIL을 관측했고 별도 집중 실행에서도13/13 FAIL을 재현했다. 첫 공통 실패는 신규 disposable fixture의 `ensureAutomatedGreenfield → identity → G7_AUTO_IMAGE_PAIR_INVALID`다. source0.61.1인데 현재 실행 이미지 fixture가0.61.0에 고정되어 엄격 identity gate가 정상 거부했다. 일곱 개 current integration fixture의 합성 이미지/최종 manifest 기대를 package version에 결합하고 현재 upgrade chain에 정확0.61.0→0.61.1 COMPATIBLE을 추가한다. 과거 migration/fault injection·원본/복구·실제 게시 proof는 보존하며 runtime gate를 완화하지 않는다. 수리 후 집중/전체 재검증 결과는 TestReport가 정본이다.
+
+**미완료 실행과 fixture 수리:** 최초 전체 suite는 위 실패가 남아 있고 후속 controller/fixture 수정 전 소스이므로 Root가 해당 worktree의 정확 Vitest PID/cwd를 확인해 SIGINT로 중단했다. 완료/전체 PASS로 수용하지 않는다. 수리 후 업그레이드·복구3파일24tests는34.48초에 PASS했고 최종 동결 source의 전체 suite/build를 새로 시작했다. Developer의 strict DTO label 검사를 추가한 첫 집중 재실행은 합성 row fixture가 영문 상태를 label로 사용하여8 FAIL이었다. 고정 한국어 label로 fixture를 수정한 뒤17/17 PASS이며 이 일시 실패도 보존한다.
+
+**Manager 구현 리뷰 보완:** 새 UI의 DWG 행에도 DXF 조회 오류가 표시되는 분기, prototype 이름의 알 수 없는 errorCode를 plain object에서 조회하는 경계, Browser 전역 선택자/정책과 다른 재시도 mock을 코드 리뷰에서 발견했다. enabled DXF로 복구 표시를 제한하고 code를 allowlist로 정규화했으며 Version 행 선택자·실제 retryable 저장 오류 fixture로 수리했다. prototype 진단 회귀를 포함한18/18 집중 시험이 통과했다. 이는 운영 장애/CI 실패 관측과 구별한 리뷰 결함/수리 기록이다.
+
+**독립 QA LS02 경계:** Controller 회귀가 통과한 뒤 실제 Provider의 scope-key 비교가 disabled→enabled 같은 ID 및 응답 전 A→B→A 전환에서 이전 snapshot을 다시 노출할 수 있음을 발견했다. Manager가 keyed inner-provider로 React state/ref/effect 수명을 scope별로 새로 만들고 실제 React 전환의 commit 시점 검사로 재검증하도록 지시했다. 앞선18개 unit/홈·Location2개 Browser PASS는 이 새 경계 수용 증거로 확대하지 않으며 최종 수리는 TestReport에 연결한다. 같은 React layout-effect observer와 임시 esbuild override로 HEAD의 기존 Provider를 실행한 대조는 두 전환 모두 retry=1을 관측해2/2 expected RED였다. keyed Provider는 두 commit의 retry=0으로2/2 GREEN(3.7초)을 확인했다. 대조 실행은 제품 파일을 되돌리지 않았고 임시 probe는 제거했다. 최초 대조 시도는 진행 중 Build가 `.next/standalone`을 교체하는 동안 Greenfield 서버가 시작하지 못해 NOT RUN이며, 앱 Build와 독립된 임시 standalone probe config로 재실행했다. 새 browser 회귀를 Unit suite에 두고 로컬 Chromium 절대 경로를 쓰던 미완성 초안은 Root/Manager 리뷰로 제거하고 기존 required Greenfield suite의 page/config를 재사용했다. CI 게이트/설치 경로를 수정하거나 skip하지 않았다.
+
+**최종 Lint 파일 경쟁:** QA의 임시 `.qa218-playwright.config.ts`가 ESLint 파일 목록 수집 뒤 제거되어 해당 실행은 ENOENT/exit2였다. 제품 lint 오류나 CI 결과가 아니며 PASS로 세지 않는다. 임시 probe 제거·src 임시 파일 생성 중단을 조율한 뒤 안정된 최종 source의 Lint가 exit0/오류0·기존 경고12건으로 통과했다. 최종 typecheck도 exit0이다.
+
+**로컬 실행 착오:** Root의 최초 version 변경 스크립트가 src 작업 디렉터리에서 root 상대 경로를 사용하여 `FileNotFoundError: src/package.json`으로 첫 읽기에서 종료됐다. 파일 변경0이며 루트에서 다시 실행해 수정했다. 이 호출 뒤 수행된 baseline 검사는 제품 수리 결과로 수용하지 않고 별도의 변경 후 검사 결과로 확인한다. 의존성 설치의 기존 deprecated warning은 제품 실패가 아니다. 이후 추가 release-scope Python 검사 파일명을 추정한 호출은 파일 부재로 실행되지 않았다. 실제 존재하는 PR scope7개·release HOLD6개와 G7 upgrade11개 검사는 각각 통과했으며, 부재 파일을 검사 PASS로 세지 않는다.
+
+최종 보완 뒤 전체 unit178files/1120tests PASS458.88초, UI delta 관련 targeted31tests와 최종 Build/typecheck/Lint·독립 Browser4tests 및 강화 observer2tests가 각각 통과했다(실행 주체·소스 범위는 TestReport 참조). 열린 PR0/기존 미해결 review 대상0, latest main 기준 behind0/local 충돌0이며 secret/runtime 산출물 제외 검사도 통과했다. 새 exact HEAD PR CI 결과는 아직 미확인이다. 사용자 요청대로 시작 확인 뒤 감시·성공 확정·병합 없이 인계한다. 과거 #225 실패/취소 원장은 그대로 보존한다.
+
+---
+
 ## #225 G3 사전 검사 — 이전 정지 Migrator 부재·사용하지 않는 이미지 정리 (2026-11-08)
 
 새 운영 capture 준비의 기존 `or58-proof.plan()`은 **`OR58_ATTACHMENT_SET_CHANGED`**로 stop/capture 전에 중단됐다. 실제 기존0.58 App은 같은 CID/image/volume에서 healthy였으며 이전에 정지됐던 구 Migrator container만 없어지고, 사용하지 않던 old Migrator와 target3 로컬 이미지도 정리된 상태였다. 정리 주체/근본 원인은 UNKNOWN이다. 운영 변경이나 백업 성공으로 기록하지 않는다.

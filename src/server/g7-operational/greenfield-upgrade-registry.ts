@@ -48,7 +48,7 @@ const cpuWorker=(version:string):ReleaseDeclaration=>({version,
 const sha=(value:string)=>createHash('sha256').update(value).digest('hex');
 export const GREENFIELD_UPGRADE_REGISTRY:UpgradeRegistry={
   releases:[zones('0.56.0'),zones('0.57.0'),zones('0.58.0'),
-    zones('0.58.1'),zones('0.59.0'),sceneJobs('0.60.0'),cpuWorker('0.61.0')],
+    zones('0.58.1'),zones('0.59.0'),sceneJobs('0.60.0'),cpuWorker('0.61.0'),cpuWorker('0.61.1')],
   edges:[{from:'0.56.0',to:'0.57.0',kind:'COMPATIBLE'},
     {from:'0.57.0',to:'0.58.0',kind:'COMPATIBLE'},
     {from:'0.58.0',to:'0.58.1',kind:'COMPATIBLE'},
@@ -64,7 +64,8 @@ export const GREENFIELD_UPGRADE_REGISTRY:UpgradeRegistry={
       sql:SCENE_CPU_MIGRATION_SQL,sqlSha256:sha(SCENE_CPU_MIGRATION_SQL),
       migrationName:SCENE_CPU_MIGRATION_NAME,migrationChecksum:SCENE_CPU_MIGRATION_CHECKSUM,
       precondition:"SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM sqlite_master WHERE name='ix_scene_build_cpu_due') AND EXISTS(SELECT 1 FROM sqlite_master WHERE name='SceneBuildJob') THEN 1 ELSE 0 END AS ok",
-      postcondition:"SELECT CASE WHEN EXISTS(SELECT 1 FROM sqlite_master WHERE type='index' AND name='ix_scene_build_cpu_due') THEN 1 ELSE 0 END AS ok"}],
+      postcondition:"SELECT CASE WHEN EXISTS(SELECT 1 FROM sqlite_master WHERE type='index' AND name='ix_scene_build_cpu_due') THEN 1 ELSE 0 END AS ok"},
+    {from:'0.61.0',to:'0.61.1',kind:'COMPATIBLE'}],
 };
 
 function forward(from:string,to:string):boolean {

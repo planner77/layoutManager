@@ -1,3 +1,4 @@
+import packageInfo from '../../package.json';
 import {afterEach,describe,expect,test,vi} from 'vitest';
 import {createHash,randomUUID} from 'node:crypto';
 import {spawnSync} from 'node:child_process';
@@ -71,7 +72,7 @@ async function fixture(){
   const dbDir=path.join(root,'db'),cad=path.join(root,'cad');
   mkdirSync(dbDir,{mode:0o700});mkdirSync(cad,{mode:0o700});
   const dbPath=path.join(dbDir,'cad.sqlite'),manifestPath=path.join(dbDir,'g7-install.json');
-  const image='ghcr.io/planner77/layoutmanager:0.61.0';
+  const image='ghcr.io/planner77/layoutmanager:'+packageInfo.version;
   const env={G7_GREENFIELD_MODE:'true',G7_GREENFIELD_AUTOMATED:'true',
     DATABASE_URL:'file:'+dbPath,CAD_STORAGE_BACKEND:'local',CAD_STORAGE_PATH:cad,
     G7_DEPLOY_APP_IMAGE:image,G7_DEPLOY_MIGRATOR_IMAGE:image+'-migrate',
@@ -164,8 +165,8 @@ describe('#225 populated Browser 0.60 to CPU 0.61 upgrade and isolated recovery'
       originals=[f.ids.queued,f.ids.ready].map(id=>readFileSync(path.join(f.cad,f.original(id))));
     await readReady(f.dbPath,f.cad,f.ids.ready,f.ids.readyAsset,f.bytes);
     const plan=planGreenfieldUpgrade(f.env);
-    expect(plan).toMatchObject({decision:'UPGRADE_MIGRATION_REQUIRED',from:'0.60.0',to:'0.61.0',requiresApproval:true});
-    expect(plan.chain.map(x=>[x.from,x.to,x.kind])).toEqual([['0.60.0','0.61.0','MIGRATION']]);
+    expect(plan).toMatchObject({decision:'UPGRADE_MIGRATION_REQUIRED',from:'0.60.0',to:packageInfo.version,requiresApproval:true});
+    expect(plan.chain.map(x=>[x.from,x.to,x.kind])).toEqual([['0.60.0','0.61.0','MIGRATION'],['0.61.0','0.61.1','COMPATIBLE']]);
     const approved={...f.env,G7_UPGRADE_MAINTENANCE_ACK:'APP_STOPPED_BY_HOST_HELPER',
       G7_UPGRADE_PAIR_VERIFIED:'true'};
     await expect(applyGreenfieldUpgrade(approved)).rejects.toThrow('G7_UPGRADE_APPROVAL_REQUIRED');

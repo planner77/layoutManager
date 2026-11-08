@@ -13,7 +13,7 @@ describe('#216 immutable 0.58.1 release',()=>{
     expect(GREENFIELD_UPGRADE_REGISTRY.releases.some(r=>r.version===pkg.version)).toBe(true);
     expect(lock.version).toBe(pkg.version);
     expect(lock.packages?.['']?.version).toBe(pkg.version);
-    expect(GREENFIELD_UPGRADE_REGISTRY.releases.filter(r=>!['0.59.0','0.60.0','0.61.0'].includes(r.version)).map(r=>r.version))
+    expect(GREENFIELD_UPGRADE_REGISTRY.releases.filter(r=>!['0.59.0','0.60.0','0.61.0','0.61.1'].includes(r.version)).map(r=>r.version))
       .toEqual(['0.56.0','0.57.0','0.58.0','0.58.1']);
     expect(resolveUpgradeChain(GREENFIELD_UPGRADE_REGISTRY,'0.56.0','0.58.1'))
       .toEqual([{from:'0.56.0',to:'0.57.0',kind:'COMPATIBLE'},

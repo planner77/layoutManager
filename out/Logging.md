@@ -1,3 +1,9 @@
+## #218 L-05 — 목록 상태 공개 진단 (2026-11-08)
+
+목록 UI는 표시 상태 FAILED/BLOCKED/RETRY_WAIT일 때 서버 allowlist의 code를 고정 한국어 사유로 바꿔 보여준다. READY/REBUILD_REQUIRED/UNAVAILABLE에 과거 Job 오류를 붙이지 않는다. 알 수 없는 값은 일반 안내이며 원시 code/exception/stack·actor/job/source 식별자·저장 locator/credential을 출력하지 않는다. 통신 오류는 조회 실패/갱신 지연으로 구분하며 Job 상태를 수정하지 않는다. 기존 요청 ID 서버 로깅 및 재시도 권한/감사 경로는 유지한다. 실제 시험 결과는 TestReport TP-218-L05를 따른다.
+
+---
+
 ## #218 A2 프로세스 검증 보고 경계
 
 새 시험은 `A2_PHASE`, `A2_PROCESS_CASE/RESULT`, `A2_PARITY_EVIDENCE`를 사용한다. 후보·fault·restore·quiet 단계, 정상/신호 종료, 실제 PID·OOMKilled·고정 resource limits와 안전한 count만 공개한다. 감독자는 raw child logs를 저장/출력하지 않고 allowlist 결과만 process-safety.json에 기록한다. accepted marker는 정상 recovery child exit 이후에만 작성한다. 실패 current stage/관측 결과는 gate throw 전에 남겨 이전 timeout의 관측 부재를 반복하지 않는다.

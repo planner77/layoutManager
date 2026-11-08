@@ -1,3 +1,21 @@
+## U-218-L05-20261108 — 목록 Scene 상태 조회와 복구 UI 독립 QA
+
+**독립 QA 판정: PASS_WITH_LIMITS.** Manager `gpt-6-astra`의 L-05 재작업 수용 뒤 QA `gpt-6-luna`가 controller/server/release 회귀와 지원 Chromium UI를 확인했다. Developer `gpt-6-sol`이 구현했고 Root가 통합·최종 Build/Type Check를 수행했다. 이전 Unit 이력과 미실행 경계는 변경하지 않는다. 요구·AC 정본은 [Issue218 LS01–07](Issue218.md), 요구/추적은 [Requirements](Requirements.md)·[TestPlan](TestPlan.md)이다.
+
+| 검증 | 실제 결과 |
+| --- | --- |
+| Controller, batch projection, display/retry/service, release contract, populated upgrade recovery | QA 명령 `npx vitest run tests/unit/scene-status-controller.test.ts tests/unit/scene-build-status-batch.test.ts tests/unit/scene-build-display.test.ts tests/unit/scene-build-retry.test.ts tests/unit/scene-build-retry-service.test.ts tests/unit/issue218-release-contract.test.ts tests/integration/g7-scene-worker-upgrade-recovery.test.ts`: **7 files / 33 tests PASS**, 7.80s. 205 unique ID 직렬 100개 batch, late success/error, hidden/dispose, pending-only polling, 누락 제거, 실패 budget/수동 회복, 403 row clear, safe diagnostics, retry/release path를 확인했다. 401 clearing is covered by the shared status-code branch, not by a separate focused assertion. |
+| Greenfield UI / browser lifecycle | QA 독립 명령 `env -u G7_GREENFIELD_E2E_ROOT G7_GREENFIELD_E2E_PORT=3335 PLAYWRIGHT_CHROMIUM_EXECUTABLE=/home/planner/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome npx playwright test --config=playwright.g7-greenfield.config.ts --grep '#109 initial|L05 actual|L05 React'`: **4/4 PASS**, 14.8s. #109 first-install setup, 실제 synthetic home/Location 화면에서 상태 조회 오류→키보드 수동 확인→Scene 재시도→완료와 Current/메모 검색 유지, 그리고 React committed false→true same IDs 및 A→B→A stale Retry 회귀를 포함한다. Developer가 stale row text, Retry presence, enabled Retry를 layout commit에서 함께 관찰하도록 보강한 최종 React suite도 QA가 별도 실행해 **2/2 PASS**, 3.1s를 확인했다. |
+| Stale Retry regression | Developer `gpt-6-sol`의 test-only esbuild override로 옛 unkeyed Provider를 재현한 두 committed-layout probe는 **2/2 RED**였고, true:A commit에 enabled Retry 1개가 관측됐다(`/tmp/layoutmanager-218-old-provider-red-final.log`). QA가 보강된 최종 keyed-source Greenfield React suite를 **2/2 GREEN**으로 실행했다. Deferred B/새 A 결과는 이전 scope를 복원하지 않았다. |
+| 전체 unit/build 근거 | Root 실행 전체 suite **178 files / 1,120 tests PASS, 458.88s**는 keyed Provider UI-only delta 전 source 기준이다. keyed delta에는 Root가 마지막으로 **6 files / 31 tests PASS, 1.39s**, final Build 및 Type Check exit0를 보고했다. Final stable lint도 exit0, 0 errors, 12 pre-existing warnings로 통과했다. Full suite 결과를 final keyed source 전체 검증으로 확대하지 않는다. |
+| 문서/범위 | QA `git diff --check` PASS. schema/worker/retry authorization 계약을 변경한 증거는 없으며, release contract 테스트에서 0.61.0→0.61.1 compatible edge와 schema drift/downgrade 거부를 확인했다. |
+
+**제한 및 미완료 gate:** 브라우저 상태 조회와 retry 응답은 route-mocked synthetic data다. 브라우저 시험은 actual React/목록 DOM 및 authenticated synthetic upload 경로를 확인하지만 운영 CPU Worker의 새 Job→READY나 Browser를 통한 실제 G7 batch/retry service 실행을 증명하지 않는다. 기존 서버/retry/Worker 증거는 해당 unit/integration 시험으로만 기록한다. 390px Location 화면은 기존 표의 가로 스크롤을 유지하며 상태와 Current를 확인할 수 있었다. 운영 0.61.0/flags ON, DB·CAD·Worker, schema, registry/tag를 QA가 변경하지 않았다. PR/정확 HEAD CI는 아직 시작되지 않았고 CI는 **NOT VERIFIED**다. LS07 원격/PR 및 CI 시작 결과는 Root 통합 기록에 추가한다. 이 QA는 PR 게시·CI 시작·모니터링·병합을 수행하지 않았다.
+
+**Root 통합 전 검사:** 최종 source Build/Type Check exit0, 안정된 파일 집합의 ESLint exit0/오류0·기존 warning12다. G7 업그레이드·복구 집중3files/24tests PASS(34.48s), PR scope7/release HOLD6/Python G7 upgrade11 PASS도 확인했다. 원격 main `1f64808` 기반/behind0, 현재 open PR0으로 기존 미해결 review 대상이 없고 local 충돌0이다. 원래 작업 폴더의 dirty Compose/next-env2개를 보존했으며 새 worktree의 Secret/runtime 산출물 제외 검사를 통과했다. 정상 commit/push/새 PR와 정확 HEAD CI 시작은 이어서 수행하며 새 hosted CI 성공은 아직 확인하지 않았다.
+
+---
+
 ## U-225-G3-20261108 — 승인된 제한 파일럿 운영 전환 독립 QA (2026-11-08)
 
 **판정: 독립 QA `PASS_WITH_LIMITS`; Manager `ACCEPT_LIMITED_PILOT`.** 사용자 명시 GO는 PR270/Main `365ebe578cb82e27f7eaf2bad9c6a138377a9f04`의 짧은 maintenance/fresh backup, exact 0.61.0 transition, Scene flags ON, 단일 CPU Worker, 데이터 보존/복구 계획에 한정된다. NO_NUMERIC_SLA를 유지한다. 운영 작업은 Root만 수행했고 QA는 receipt, source, archive 및 disposable fingerprint를 읽기 전용으로 검토했다.

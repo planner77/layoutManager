@@ -1,3 +1,10 @@
+## 0.61.1 — #218 Scene 목록 상태 조회 수정 (2026-11-08)
+
+- 표시 DXF100개 초과 시 상태 누락, 탭·목록·수동 갱신 사이 늦은 응답과 stale 재시도 권한, terminal/초기 조회의 무한 오류 polling을 수정한다. allowlisted 차단·재시도 대기 사유와 명시 상태 갱신을 제공한다.
+- 0.61.0과 같은 G7 schema/data/runtime의 COMPATIBLE PATCH이며 기존 CPU Worker·READY 검증·G7 재시도 정책을 재사용한다. DDL/지원 Entity·운영 배포·이미지/tag 변경 없음. 실제 검사와 CI 미확인 경계는 TestReport/FailureLedger를 따른다.
+
+---
+
 ## 0.61.0 운영 — #225 승인 파일럿 전환 (2026-11-08)
 
 - Owner의 운영 전환·Worker 활성화 승인을 받아 새 일관0.58 백업과 별도 복원·구 앱 기동을 확인한 뒤 정식0.58→0.61 migration을 적용했다. 기존 업무 행/CAD·설치 ID 보존,0.61 App ACTIVE/health/기존 원본 SHA 및 단일 CPU Worker의 실제 격리·IDLE 동작을 검증했다.

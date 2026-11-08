@@ -1,3 +1,4 @@
+import packageInfo from '../../package.json';
 import {afterEach,describe,expect,test} from 'vitest';
 import {randomUUID} from 'node:crypto';
 import {createRequire} from 'node:module';
@@ -24,7 +25,7 @@ function fixture(){
  const database=path.join(root,'db'),cad=path.join(root,'cad');
  mkdirSync(database,{mode:0o700});mkdirSync(cad,{mode:0o700});
  const dbPath=path.join(database,'cad.sqlite');
- const img='ghcr.io/planner77/layoutmanager:0.61.0';
+ const img='ghcr.io/planner77/layoutmanager:'+packageInfo.version;
  ensureAutomatedGreenfield({G7_GREENFIELD_MODE:'true',G7_GREENFIELD_AUTOMATED:'true',
   G7_AUTH_ENABLED:'false',G7_CAD_WRITE_CUTOVER_ENABLED:'false',
   CAD_STORAGE_BACKEND:'local',CAD_STORAGE_PATH:cad,DATABASE_URL:'file:'+dbPath,

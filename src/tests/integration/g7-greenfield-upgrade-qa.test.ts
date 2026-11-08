@@ -1,3 +1,4 @@
+import packageInfo from '../../package.json';
 import { afterEach, describe, expect, test } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { createRequire } from 'node:module';
@@ -28,7 +29,7 @@ function fixture(){
   const dbDir=path.join(root,'db'),cad=path.join(root,'cad');
   mkdirSync(dbDir,{mode:0o700});mkdirSync(cad,{mode:0o700});
   const dbPath=path.join(dbDir,'cad.sqlite');
-  const release='ghcr.io/planner77/layoutmanager:0.61.0';
+  const release='ghcr.io/planner77/layoutmanager:'+packageInfo.version;
   const env={G7_GREENFIELD_MODE:'true',G7_GREENFIELD_AUTOMATED:'true',G7_AUTH_ENABLED:'false',
     G7_CAD_WRITE_CUTOVER_ENABLED:'false',CAD_STORAGE_BACKEND:'local',CAD_STORAGE_PATH:cad,
     DATABASE_URL:'file:'+dbPath,G7_DEPLOY_APP_IMAGE:release,G7_DEPLOY_MIGRATOR_IMAGE:release+'-migrate',
@@ -154,7 +155,7 @@ describe('#209 independent failure and recovery QA',()=>{
       expect(journal.backupId).toMatch(/^[0-9a-f-]{36}$/);
       expect(statusGreenfieldUpgrade(f.env).state).toBe('RESTORE_REQUIRED');
       const liveManifest=JSON.parse(readFileSync(f.manifest,'utf8')) as Record<string,string>;
-      expect(liveManifest.version).toBe(phase==='MANIFEST_COMMITTED'?'0.61.0':'0.56.0');
+      expect(liveManifest.version).toBe(phase==='MANIFEST_COMMITTED'?packageInfo.version:'0.56.0');
       const live=new Sqlite(f.dbPath,{readonly:true});
       try{expect(live.prepare('SELECT name FROM sqlite_master WHERE name=\'SceneBuildJob\'').get()?.name)
         .toBe('SceneBuildJob');}finally{live.close();}
@@ -267,7 +268,7 @@ describe('#209 independent failure and recovery QA',()=>{
     const backup=path.join(f.dbDir,'g7-upgrade-backups',result.backupId!,'cad.sqlite');
     writeFileSync(backup,'tampered',{mode:0o600});
     expect(()=>verifyRecoverySet(f.dbDir,result.backupId!)).toThrow('G7_UPGRADE_BACKUP_INVALID');
-    expect(readFileSync(f.manifest).toString()).toContain('0.61.0');
+    expect(readFileSync(f.manifest).toString()).toContain(packageInfo.version);
   });
 
   test('existing lock blocks planning and a SIGKILL at durable BACKED_UP leaves restore gate and permits isolated recovery',async()=>{

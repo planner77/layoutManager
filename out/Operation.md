@@ -1,3 +1,11 @@
+## #218 L-05 — 목록 Scene 상태 수동 복구 (2026-11-08)
+
+상태 조회 통신 실패는 원본 등록 실패나 Scene Job 실패를 뜻하지 않는다. 목록은 기존 상태와 갱신 지연을 구분하고 상태 갱신 동작으로 현재 권한/서버 상태를 다시 확인한다. pending만 자동 조회하며 연속 오류 budget이 소진되면 수동 갱신한다. 상태 갱신은 읽기 요청이며 Scene 재시도 POST와 구별한다. 실제 지원/시험 범위는 Issue218 및 TestReport L05를 따른다.
+
+개발 소스는0.61.1 PATCH, 현재 승인된 운영은 아래0.61.0/flags ON·단일 Worker다. 새 버전 배포/자동 publisher·GHCR·tag/latest 또는 기존 복구점을 변경하지 않는다.0.61.1의 같은 schema 호환 등록은 실제 이미지 출고·업그레이드 실행 증거가 아니다.
+
+---
+
 ## #225 — 승인된0.61 파일럿의 현재 실행·복구 (2026-11-08)
 
 Owner가 PR270의 계획에 **“운영 전환·Worker 활성화 승인”**으로 답한 뒤 Root가 실제 전환했다. 현재 기존 `cad-layout-viewer-g7` volume과3000 port/Origin/인증·권한을 유지한0.61.0 App 및 CPU Worker1개다. App/Worker의 두 Scene flags는 ON, 기존 Version backfill은0이다. 지원 범위는 검증된 LINE subset이며 전체 실제 도면/BLOCK/INSERT 지원을 확대하지 않았다. 실제 receipt/시간/독립 QA는 TestReport **U-225-G3-20261108**을 따른다. 아래 G3 승인 전 계획은 역사적 기록이다.
