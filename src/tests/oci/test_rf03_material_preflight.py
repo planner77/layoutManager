@@ -105,5 +105,18 @@ class MaterialTests(unittest.TestCase):
                 material.check(root, packet, plan)
 
 
+    def test_json_rejection_reason_is_not_masked(self):
+        for raw, code in (
+            (b'{"x":1,"x":2}', "RF03_DUPLICATE_JSON_KEY"),
+            (b'{"broken":', "RF03_MATERIAL_JSON_INVALID"),
+            (b'{"number":NaN}', "RF03_MATERIAL_JSON_INVALID"),
+            (b'{"number":Infinity}', "RF03_MATERIAL_JSON_INVALID"),
+        ):
+            with self.subTest(raw=raw), self.assertRaisesRegex(
+                    rf.Blocked, "^" + code + "$"):
+                material.parse_json(raw)
+
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -40,7 +40,14 @@ def sha(raw):
 
 def parse_json(raw):
     try:
-        value = json.loads(raw, object_pairs_hook=handoff.unique)
+        value = json.loads(
+            raw, object_pairs_hook=handoff.unique,
+            parse_constant=lambda _: (_ for _ in ()).throw(
+                rf.Blocked("RF03_MATERIAL_JSON_INVALID")))
+    except rf.Blocked:
+        # Duplicate keys and strict-JSON policy rejections are already safe
+        # allowlisted codes; do not mask them as malformed syntax.
+        raise
     except (ValueError, UnicodeError, RecursionError, TypeError):
         raise rf.Blocked("RF03_MATERIAL_JSON_INVALID") from None
     need(type(value) is dict, "RF03_MATERIAL_JSON_INVALID")

@@ -1,3 +1,9 @@
+## #273 / PR #277 — PR CI #729 error classification fix (2026-11-09)
+
+Run [42524339759](https://github.com/planner77/layoutManager/actions/runs/42524339759) failed at required scope RF-03 material preflight: `Blocked(ValueError)` was converted by a broad `except ValueError`, masking the expected `RF03_DUPLICATE_JSON_KEY` as `RF03_MATERIAL_JSON_INVALID`. Preserve `rf.Blocked` before syntax-error normalization; reject nonstandard NaN/Infinity. Regression test and [FailureLedger](out/FailureLedger.md) updated in one atomic PR #277 source change. New exact-HEAD CI success must be observed separately. Draft/Issue OPEN, #229 HOLD, no GHCR/tag/deploy/Issue-close permissions or writes. Do not infer real Sigstore/OCI/Owner proof from the local byte preflight.
+
+---
+
 ## RF-03 material byte preflight follow-up (2026-11-09)
 
 - PR #277 CI #718 / run 42521782477: exact prior HEAD `ea17b29c60b2ee1ba00f4597feb794029b01653d`, eight applicable jobs SUCCESS, one A2 scoped SKIP, unresolved review threads 0. **This evidence applies to the prior HEAD only.**
