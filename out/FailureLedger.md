@@ -1,3 +1,20 @@
+## #273 / RF-02 PR #276 — Ready P1 두 건·해결 소스 CI 재검증 대기 (2026-11-09)
+
+- **최초 CI는 SUCCESS이며 신규 실패가 아님:** exact HEAD `92927197947c435ffd7d91bc25e90da1ac49c16b`, [PR CI 42490605691](https://github.com/planner77/layoutManager/actions/runs/42490605691) 8 applicable SUCCESS/A2 scoped SKIP. Draft 해제 후 새 [PR CI 42512889704](https://github.com/planner77/layoutManager/actions/runs/42512889704) 시작, 리뷰 2개 P1 unresolved로 Merge HOLD.
+- **정적 원인:** `release-finalizer-integrate.yml` integrate job의 `contents:read`는 GitHub REST PR merge의 Contents write 요구와 불일치. 또 Actions `GITHUB_TOKEN`에 의해 발생한 push는 다른 push Actions run을 자동 트리거하지 않으므로 `main-hold.yml`이 자동 실행되지 않고 기존 RF02 readback은 `event=push`만 찾는다.
+- **보완:** integrate job만 contents/pull-requests/actions write; normal GitHub protected squash exact SHA, then one explicit `main-hold.yml` workflow_dispatch with SHA+packet SHA256, read-only HOLD check, RFC run-name-bound readback+pending/failure/attempt2/other-source 거부. Unknown dispatch no retry. PLAN/readback GHCR/Issue write0.
+- **검증 한계:** 새 Source HEAD CI 성공 전 조치는 코드 변경이지 실제 integration PASS 아님. P1 사유/최종 CI는 각각 보존. RF-03/04 미구현; #229 Main/tag HOLD, 기존 immutable 0.61.0 3digest/Tag/latest 및 운영 DB/CAD/Worker/Volume/.env/백업 불변.
+
+---
+
+## #273 / RF-01 Main 성공 및 RF-02 미검증 작업 경계 (2026-11-08)
+
+- **선행 성공, 실패 아님:** [PR #274 CI 42487447127](https://github.com/planner77/layoutManager/actions/runs/42487447127) attempt1 HEAD `697cfe3ef551aaa7583a7dac4d5b5790316e1a97` SUCCESS (8 적용 Job, A2 scoped SKIP). 리뷰 스레드0/충돌0/Main behind0. Squash [Main `9635b153`](https://github.com/planner77/layoutManager/commit/9635b153a9c28f365b2485abb5d76d32f5be62ac) tree `fdb2396c455a744919be6a4fa8d9f96387e8c2ae`, parent `42a370c`, Main ref readback. [Main CI 42489515024](https://github.com/planner77/layoutManager/actions/runs/42489515024) exact SHA attempt1 read-only HOLD SUCCESS.
+- **RF-02 설계/구현 경계:** 후속 `release_finalizer_integrate.py` owner-scoped normal squash orchestration은 GitHub actual Ruleset/GraphQL thread/required CI/issue와 main base exact 검증 후에만 PUT 1회. GitHub merge 응답 불명확·timeout이면 결코 재시도하지 않음. Main incomplete/queued/in-progress와 success 구분. 실 workflow merge/Source CI는 아직 미실행, 이번 작성만으로 PASS 주장 금지.
+- **불변:** #229 v0.61+ Main/tag HOLD, Candidate/Promotion 독립 2 Owner approvals 및 기존 0.61.0 GHCR/태그/이미지/운영 Worker/DB/CAD/Volume/.env·복구점. Issue #273 OPEN. RF-03/04 및 RF-01 durable checkpoint/nonce NOT IMPLEMENTED. 이전 실패 원장 #702~705 포함 삭제 금지.
+
+---
+
 ## #273 / PR #274 — Ready 리뷰 P2 보안 경계, 기존 CI 성공·수정 후 재검증 필요 (2026-11-08)
 
 - **CI 자체 실패는 관측하지 않음**: [PR CI 42485818897](https://github.com/planner77/layoutManager/actions/runs/42485818897), HEAD `f88198dfccf0940b3ab3c95947928033b65b9bfe`, attempt1: 적용8/8 SUCCESS, A2 scoped SKIP. Ready 이벤트 직후 Codex 리뷰에서 unresolved P2 1건이 발생해 Ruleset의 review resolution gate에서 병합을 중단했다.

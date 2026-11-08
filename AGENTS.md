@@ -1,3 +1,19 @@
+## #273 / RF-02 PR #276 — Ready P1 리뷰 권한·Main CI 재트리거 수리 (2026-11-09)
+
+[PR #276](https://github.com/planner77/layoutManager/pull/276) 최초 HEAD `92927197947c435ffd7d91bc25e90da1ac49c16b` [PR CI 42490605691](https://github.com/planner77/layoutManager/actions/runs/42490605691)은 8 applicable SUCCESS / A2 scoped SKIP. Draft→Ready 시 새 [PR CI 42512889704](https://github.com/planner77/layoutManager/actions/runs/42512889704) 시작 후 P1 리뷰 2건: (1) squash REST merge에는 `contents:write`가 필요하나 integrate job에 `contents:read`만 있음, (2) `GITHUB_TOKEN` merger의 push는 GitHub가 Actions 재트리거를 억제하므로 `event=push` 전용 Main proof가 영구 WAIT. P1을 해결하지 않고 CI 녹색만으로 병합 불가.
+
+수리: integrate job에만 `contents:write + pull-requests:write + actions:write`를 부여, plan/readback GET-only 유지. 정확 merge SHA/tree/parent readback 후 ref=main CAS 검증, 고정 `main-hold.yml` workflow_dispatch 한 번 요청(`rf02_merge_sha`, `rf02_packet_sha256`); 불명확한 API 응답 자동 재시도 금지. Main-HOLD workflow는 정확 SHA와 64hex packet input을 자체 검증하여 동일 packet/commit의 run-name 증거를 남긴다. RF-02 readback은 event=push 기존 증거와 새 event=workflow_dispatch 증거를 **서로 별도로**, 정확 이름·source SHA·Repo·Run attempt1·실 Job SUCCESS로 확인하며 Pending/Fail/Cancel을 성공으로 처리하지 않는다. #229 HOLD, RF-03 두 Owner protected 승인·RF-04 AC, GHCR/Tag/운영 상태 무변경. 신규 HEAD CI 이전 NOT VERIFIED.
+
+---
+
+## #273 — RF-02 Owner protected integration 후속 PR 착수 (2026-11-08)
+
+[PR #274](https://github.com/planner77/layoutManager/pull/274) exact HEAD `697cfe3ef551aaa7583a7dac4d5b5790316e1a97` [PR CI 42487447127](https://github.com/planner77/layoutManager/actions/runs/42487447127) required SUCCESS, 리뷰 thread0, squash Main `9635b153a9c28f365b2485abb5d76d32f5be62ac` tree `fdb2396c455a744919be6a4fa8d9f96387e8c2ae`, [Main read-only CI 42489515024](https://github.com/planner77/layoutManager/actions/runs/42489515024) SUCCESS 확정. 이는 GO-INTEGRATE만이며 #273은 OPEN.
+
+후속 RF-02는 기존 RF-01 packet/source/CI 검증을 재사용하여 Owner `workflow_dispatch`의 `plan/integrate/readback`을 분리한다. `integrate`만 scoped `pull-requests:write`로 검증된 PR 1건을 정상 Ruleset 하에 squash한다. Repo·Owner·정확 HEAD/tree/base/PR Issue association/실제 적용 Job/Ready/리뷰 thread/active main Ruleset·bypass0/동일 Main SHA를 실행 직전 재검사한다. merge API 결과가 불명확하면 **재시도하지 않고 HALT**. 성공 후 actual merge SHA/tree/단일 parent 및 Main read-only CI를 독립 판정하여 `MERGED_WAITING_MAIN_CI`와 `MAIN_VERIFIED`를 구분한다. 새 Head CI 전 실행 결과 NOT VERIFIED. 기존 #229 HOLD, 3-role 출고 독립 두 Owner 승인·Issue AC 종료 Gate, 현행0.61.0 운영 데이터·Worker·GHCR 태그/digest 불변. [Issue273](out/Issue273.md), [TestPlan](out/TestPlan.md), [FailureLedger](out/FailureLedger.md) 참조.
+
+---
+
 ## #273 / PR #274 — 동일 브랜치 다른 PR CI 연관 오류 수정 (2026-11-08)
 
 [PR CI run42485818897](https://github.com/planner77/layoutManager/actions/runs/42485818897)은 exact HEAD `f88198dfccf0940b3ab3c95947928033b65b9bfe`에서 적용 8개 Job SUCCESS/A2 scoped SKIP. Ready 직후 Codex [PR #274 Review](https://github.com/planner77/layoutManager/pull/274)에서 **P2 unresolved thread** 확인: 동일 SHA·브랜치의 다른 PR에 명시적으로 연관된 최신 CI가 올바른 PR의 실패를 가릴 위험. `read_run`의 branch fallback은 **실제로 병합된 PR + GitHub pull_requests가 빈 배열**인 경우로만 제한하며 비어 있지 않은 다른 PR 연관은 항상 제외. Open PR의 연관 빈 run도 거부. 해당 소스는 새 exact HEAD PR CI 전 NOT VERIFIED, 재검증 후 review resolve/병합. #229 HOLD, RF-02/03/04 미구현·독립 Owner 승인 불변.

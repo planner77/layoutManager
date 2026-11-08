@@ -1,0 +1,110 @@
+name: Release Finalizer protected PR integration
+run-name: FINALIZER RF02 ${{ inputs.mode }} | ${{ inputs.packet_sha256 }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Read-only plan/readback, or one protected Owner-authorized squash'
+        required: true
+        type: choice
+        options: [plan, integrate, readback]
+        default: plan
+      packet_json:
+        description: 'Reviewed exact RELEASE_FINALIZER_REQUEST_V1 JSON; no secrets'
+        required: true
+        type: string
+      packet_sha256:
+        description: 'SHA256 of exact UTF-8 packet_json bytes'
+        required: true
+        type: string
+
+# RF-02 never publishes GHCR or closes an Issue. Ruleset/admin bypass forbidden.
+# RF-03 Candidate and Promotion retain two separate protected Owner approvals.
+permissions: {}
+concurrency:
+  group: release-finalizer-protected-integration
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      github.event_name == 'workflow_dispatch' &&
+      github.actor_id == '45478892' &&
+      github.event.sender.id == 45478892 &&
+      github.repository_id == 1359528829 &&
+      github.run_attempt == 1 &&
+      inputs.mode != 'integrate'
+    name: RF-02 exact evidence plan/readback — ZERO WRITES
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+      actions: read
+    steps:
+      - name: Checkout exact Main workflow source without credentials
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Validate packet, Ruleset, CI and read-only evidence
+        env:
+          RF02_MODE: ${{ inputs.mode }}
+          RF_PACKET_JSON: ${{ inputs.packet_json }}
+          RF_PACKET_SHA256: ${{ inputs.packet_sha256 }}
+          RF_JOB_TOKEN: ${{ github.token }}
+          RF_SENDER_ID: ${{ github.event.sender.id }}
+        run: |
+          set -euo pipefail
+          python3 src/tests/oci/release_finalizer_integrate.py
+      - name: Never infer release approval from a PLAN
+        run: |
+          echo 'RF02_PLAN_OR_READBACK_ONLY'
+          echo 'MERGE=NOT_RUN GHCR=NOT_RUN ISSUE_CLOSE=NOT_RUN'
+
+  integrate:
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      github.event_name == 'workflow_dispatch' &&
+      github.actor_id == '45478892' &&
+      github.event.sender.id == 45478892 &&
+      github.repository_id == 1359528829 &&
+      github.run_attempt == 1 &&
+      inputs.mode == 'integrate'
+    name: RF-02 Owner GO — protected squash + exact Main HOLD dispatch
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: read
+      actions: write
+    steps:
+      - name: Checkout exact Main workflow source without persisted credentials
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Independently verify owner, exact source/tree, CI, reviews and Ruleset before merge
+        env:
+          RF02_MODE: integrate
+          RF_PACKET_JSON: ${{ inputs.packet_json }}
+          RF_PACKET_SHA256: ${{ inputs.packet_sha256 }}
+          RF_JOB_TOKEN: ${{ github.token }}
+          RF_SENDER_ID: ${{ github.event.sender.id }}
+          RF02_RECEIPT_FILE: ${{ runner.temp }}/rf02-integration-receipt.json
+        run: |
+          set -euo pipefail
+          python3 src/tests/oci/release_finalizer_integrate.py
+      - name: Record sanitized successful integration receipt for later read-only reconciliation
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-finalizer-integration-${{ github.run_id }}-1
+          path: ${{ runner.temp }}/rf02-integration-receipt.json
+          if-no-files-found: error
+          retention-days: 90
+      - name: Never publish GHCR or close Issue from the merge job
+        run: |
+          echo 'RF02_INTEGRATE_ONLY'
+          echo 'GHCR=NOT_RUN ISSUE_CLOSE=NOT_RUN'

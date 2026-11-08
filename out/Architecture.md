@@ -1,3 +1,15 @@
+## #273 RF-02 exact Main dispatch after GITHUB_TOKEN squash (2026-11-09)
+
+GitHub Actions `GITHUB_TOKEN`으로 수행한 merge의 push는 다른 Actions push workflow를 자동 트리거하지 않는다. RF-02 Owner integration workflow는 **merge writer job에만** contents:write/pull-requests:write/actions:write를 부여한다. 성공한 protected squash의 PR/sha/tree/one parent readback 후 Main branch ref==mergeSHA를 재확인하고 별도 `main-hold.yml` workflow_dispatch를 SHA+packetSHA256 입력으로 한 번 호출한다(원격 응답 불확실→HALT, 재호출 금지). HOLD workflow는 정확 source SHA와 Packet hash 형식을 확인하며 기존 Main push/Owner manual 사용도 보존한다. RF02 readback은 기존 exact push run 및 별도 exact dispatch run을 다른 타입으로 검사, full name+head SHA+repo ID+branch main+attempt1+HOLD Job SUCCESS를 요구한다. Pending/Cancel/Skip/Failure는 MAIN_VERIFIED 불가. RF-03/04 authorization과 무관.
+
+---
+
+## #273 RF-02 protected integrate workflow (2026-11-08)
+
+기존 RF-01 `parse_packet/plan/read_run/check_jobs`를 공유하는 후속 `release_finalizer_integrate.py`: owner-dispatch identity → exact packet + Main SHA/CAS → strict ruleset 26731716 (squash only, thread resolution, no bypass, required aggregate strict) → GraphQL read-only review-thread pagination + REST reviews → GitHub job evidence / files scope → 정상 PR squash API 요청(정확 HEAD) → actual squash tree/parent readback → Main push `main-hold.yml` exact run·attempt1 proof. POST GraphQL은 쿼리 전용, mutation 아님; 실제 저장소 변경은 integrate 모드의 단일 protected squash뿐. PLAN/readback jobs get-only, integrate job만 `pull-requests:write`. Uncertain PUT 상태는 자동 반복하지 않음. Main run pending과 SUCCESS 명시 구분, GHCR/Issue Closure 격리. 지속 nonce/checkpoint는 후속 RF-01 수리 필요.
+
+---
+
 ## #273 RF-01 request scope hardening (2026-11-08)
 
 읽기 전용 Packet V1에 exact GHCR `releaseTarget`, 최대 24h issued/expiry epoch, 고유 AC ID 목록, integration/release/closure Owner Intent를 필수화한다. Owner Intent와 SHA256은 실제 Owner 승인/권한 증명이 아니다. PR/Main workflow와 필수 Job은 attempt1만 PASS로 재사용하며 변경된 source HEAD는 별도 CI가 필요하다. Persistent nonce·checkpoint·protected merge/출고/Close는 미구현; #229 Main/tag HOLD 및 기존 두 보호 환경 승인 유지.

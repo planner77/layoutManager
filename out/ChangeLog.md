@@ -1,3 +1,18 @@
+## 2026-11-09 — #273 RF-02 PR276 P1 review fixes
+
+- GitHub REST protected merge token Contents write 및 GITHUB_TOKEN push event workflow-suppression 확인. Integrate job에만 contents/pulls/actions write 부여; exact merge SHA/packet bound main-hold workflow_dispatch를 추가하고 Main workflow run-name/독립 readback 성공 Gate 구현.
+- Read-only PLAN/Readback와 #229 HOLD, 기존 Candidate/Promotion Owner protected approvals, GHCR/Tag/Issue Close 비변경. New exact HEAD hosted CI 이전 NOT VERIFIED.
+
+---
+
+## 2026-11-08 — #273 RF-01 Main verified, RF-02 protected integration candidate
+
+- [PR #274](https://github.com/planner77/layoutManager/pull/274) CI42487447127 SUCCESS, squash Main `9635b153a9c28f365b2485abb5d76d32f5be62ac` + Main HOLD CI42489515024 SUCCESS.
+- 신규 RF-02 Owner workflow `plan/integrate/readback`와 exact Ruleset/PR/CI/Review/Head/Base 검증, protected squash API, merge/Main readback, no-auto-retry, Fake API negative regressions·PR Scope 연결. 신규 HEAD CI 완료 전 NOT VERIFIED.
+- RF-03 GHCR/Owner approval, RF-04 Issue closure, RF-01 durable nonce/checkpoint 추가 필요. #229 HOLD 유지; 운영/기존 Registry 불변.
+
+---
+
 ## 2026-11-08 — #273 Release Finalizer RF-01 packet/CI identity hardening
 
 - PR274 기존 HEAD CI42481792421 성공 확인. 이후 read-only plan의 exact target, scoped AC/Owner Intent, 최대24h 유효시간, PR/Main run과 필수 Job attempt1 검증 및 workflow Owner/repo identity 제약 강화. 신규 HEAD CI는 미확인. RF02/03/04 실제 병합·GHCR·Issue 종료는 미구현, #229 HOLD 보호 유지.

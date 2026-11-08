@@ -1,3 +1,21 @@
+## U-273-RF02-P1 — CI-success지만 Ready 리뷰 P1 2건 발견 (2026-11-09)
+
+[PR #276](https://github.com/planner77/layoutManager/pull/276) 첫 HEAD `92927197947c435ffd7d91bc25e90da1ac49c16b`의 [CI 42490605691](https://github.com/planner77/layoutManager/actions/runs/42490605691) 적용8 SUCCESS/A2 scoped SKIP은 기존 소스에 대해서만 유효. Draft→Ready 후 [CI 42512889704](https://github.com/planner77/layoutManager/actions/runs/42512889704) 실행 중 Codex P1 리뷰 2건이 등장: token의 Contents merge 권한 누락, GitHub_TOKEN suppress push로 Main proof dead-end. 실제 merge 실패/GHCR 실패는 관측하지 않았으며 코드·공식 GitHub Actions 동작에 근거한 리뷰다.
+
+이번 보완은 integration job permission, 명시적 exact Main HOLD workflow_dispatch, SHA+packet run-name 결합 및 dispatch proof 검사, synthetic fake API dispatch+negative+wrong attempt/packet/source/cancel/skip 후속 회귀를 포함한다. **변경 소스 Local Python/Hosted CI/실 workflow Main dispatch는 아직 NOT VERIFIED/NOT RUN**. 기존 CI 성공을 신규 HEAD에 소급하지 않는다. #229 HOLD·운영0.61.0·GHCR/Tag 불변.
+
+---
+
+## U-273-RF02-20261108 — 첫 protected integration 코드, Hosted CI 전 증거 (2026-11-08)
+
+**선행 증거 확정:** [PR #274 CI 42487447127](https://github.com/planner77/layoutManager/actions/runs/42487447127) exact HEAD `697cfe3ef551aaa7583a7dac4d5b5790316e1a97`, 적용8 SUCCESS/A2 scope SKIP, unresolved review0/Main behind0 → protected squash [Main 9635b153](https://github.com/planner77/layoutManager/commit/9635b153a9c28f365b2485abb5d76d32f5be62ac), source tree `fdb2396c455a744919be6a4fa8d9f96387e8c2ae`, parent `42a370c`; [Main hold CI 42489515024](https://github.com/planner77/layoutManager/actions/runs/42489515024) exact Main SHA Attempt1 SUCCESS. GHCR publish/Issue closure 없음.
+
+**RF-02 새 구현:** read-only plan+readback 및 Owner 단일 protected squash에 대해 REST Ruleset/Main-ref/CI job/PR identity/Review와 GraphQL Review Threads Gate, single merge CAS/단일 parent/tree readback, Main pending/성공 분리. Python fake API에서 success, conflicting PR association, stale/skip CI, Main drift, disabled Ruleset, bypass, unresolved review, exact 3-role release NOT VERIFIED 음성 시험을 포함한 **코드를 작성**했다. 작성/원격 blob 저장은 실행 검증이 아님. 로컬 Python/Hosted CI 및 실제 GitHub workflow 실행 **NOT RUN/NOT VERIFIED**. PR 작성 및 정확 HEAD CI 실행 후 별도로 재판정.
+
+기존 HOLD, 운영0.61.0 Worker/DB/CAD/Volume/.env 및 0.61.0 GHCR/Tag/digest 불변. RF-03/04와 RF-01 durable checkpoint/nonce 미구현.
+
+---
+
 ## U-273-PR274-REVIEW-P2 — CI SUCCESS 후 리뷰 보안 보완 (2026-11-08)
 
 - 수정 전 HEAD `f88198dfccf0940b3ab3c95947928033b65b9bfe`, [PR CI 42485818897](https://github.com/planner77/layoutManager/actions/runs/42485818897), attempt1, **8 applicable SUCCESS**, 1 A2 scoped SKIPPED. Ready로 인한 재실행이었고 해당 소스가 검증됐다.
