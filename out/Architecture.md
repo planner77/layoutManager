@@ -1,3 +1,9 @@
+## #273 RF-02 protected integrate workflow (2026-11-08)
+
+기존 RF-01 `parse_packet/plan/read_run/check_jobs`를 공유하는 후속 `release_finalizer_integrate.py`: owner-dispatch identity → exact packet + Main SHA/CAS → strict ruleset 26731716 (squash only, thread resolution, no bypass, required aggregate strict) → GraphQL read-only review-thread pagination + REST reviews → GitHub job evidence / files scope → 정상 PR squash API 요청(정확 HEAD) → actual squash tree/parent readback → Main push `main-hold.yml` exact run·attempt1 proof. POST GraphQL은 쿼리 전용, mutation 아님; 실제 저장소 변경은 integrate 모드의 단일 protected squash뿐. PLAN/readback jobs get-only, integrate job만 `pull-requests:write`. Uncertain PUT 상태는 자동 반복하지 않음. Main run pending과 SUCCESS 명시 구분, GHCR/Issue Closure 격리. 지속 nonce/checkpoint는 후속 RF-01 수리 필요.
+
+---
+
 ## #273 RF-01 request scope hardening (2026-11-08)
 
 읽기 전용 Packet V1에 exact GHCR `releaseTarget`, 최대 24h issued/expiry epoch, 고유 AC ID 목록, integration/release/closure Owner Intent를 필수화한다. Owner Intent와 SHA256은 실제 Owner 승인/권한 증명이 아니다. PR/Main workflow와 필수 Job은 attempt1만 PASS로 재사용하며 변경된 source HEAD는 별도 CI가 필요하다. Persistent nonce·checkpoint·protected merge/출고/Close는 미구현; #229 Main/tag HOLD 및 기존 두 보호 환경 승인 유지.

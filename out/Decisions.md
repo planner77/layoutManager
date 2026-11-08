@@ -1,3 +1,9 @@
+## ADR-273-RF02 Owner 통합 Gate 분리 (2026-11-08)
+
+결정: 실제 PR squash writer는 별도 Owner `workflow_dispatch`의 `integrate` 모드에만 두고, `plan/readback`은 zero mutation. GitHub ruleset의 native enforcement를 우회하지 않으며 서버의 merge 권한 외 secret 없이 정확 HEAD·base/sha CAS, 비어 있지 않은 다른 PR CI association 거부, read-only GraphQL thread·review, 전체 적용 CI, 필요한 0.61+ HOLD 고정을 독립 검사. Main CI push 자동 실행을 새로 dispatch하지 않음; Main 증거가 없거나 in-progress라면 WAIT, 성공을 위조하지 않음. Owner intent/Packet hash만으로 Release/Issue 승인하지 않는다. 현재 RF-02는 CI 결과 확인 전 candidate 구현이며 실제 GHCR/Issue 작업 없음.
+
+---
+
 ## ADR-273-RF01 — 요청 재사용 범위·CI attempt 보강 (2026-11-08)
 
 결정: 목표 패키지/버전 태그, AC ID, Owner 의도, 24h 내 만료를 닫힌 Packet V1에 포함한다. PR/Main run과 필수 Job attempt2 이상은 기존 성공의 재사용 근거가 아니다. 자가 선언 Intent/Packet SHA는 권한 증명이 아니므로 `releaseAuthorization=NOT_VERIFIED`, `issueAcceptance=NOT_VERIFIED`를 계속 출력한다. 기존 CI42481792421의 성공은 그 HEAD만 증명한다. #229 HOLD와 독립 보호 환경 승인 필수 정책은 변경하지 않는다.

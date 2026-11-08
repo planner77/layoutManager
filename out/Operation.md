@@ -1,3 +1,11 @@
+## #273 RF-02 protected integration 운영 절차 (2026-11-08)
+
+`.github/workflows/release-finalizer-integrate.yml`은 Main 적용/PR CI 검증 후에만 사용한다. Owner가 reviewed `RELEASE_FINALIZER_REQUEST_V1` packet 원문 JSON 및 exact SHA256을 생성하고 **같은 packet**으로 `mode=plan` 실행해 목표 PR/Issue/source tree/base SHA/CI Job/thread/Ruleset을 확인한다. 통합 의도 승인 후 `mode=integrate` 수동 dispatch; Owner actor/sender/repository/ref/runAttempt1 필수. Normal GitHub squash API에 정확 HEAD만 전달; policy drift, Ready 해제, 취소/failed CI, unresolved review, source SHA drift, GitHub merge 거부면 STOP. 자동 bypass/재시도 없음.
+
+합병 자체 성공 후 Main `main-hold.yml` push CI는 **기존 GitHub 흐름에 의해 시작**된다. Pending이면 `MERGED_WAITING_MAIN_CI` receipt이며 Main 성공/출고/이슈 종료로 해석하지 않는다. Owner는 완료된 Main run을 확인한 뒤 새 유효 packet의 `readback`으로 exact SHA/Job Success를 별도 검증한다. `readback`과 `plan`은 GET + GraphQL read-only이고 GitHub mutation0. `integrate` 작업만 `pull-requests:write` token, 컨텐츠 권한 read; GHCR/Issue write 불가. 장애 후 POST/PUT 불확실 시 자동 재시도하지 말고 remote PR/Main SHA 확인 및 readback. 미승인 RF-03 Candidate/Promotion publish는 별도의 두 실제 보호 환경 Owner 승인 필수. 0.61.0 운영/Tags/digests 및 #229 HOLD 불변.
+
+---
+
 ## #273 RF-01 Packet V1 필수 추가 입력 (2026-11-08)
 
 기존 Packet 외 `releaseTarget`(exact `ghcr.io/planner77/layoutmanager:v<version>`), `acceptanceIds`(고유 AC ID 배열), `ownerIntent`(`integrate`, `release`, `closeIssue` Boolean), `issuedAtEpoch`/`expiresAtEpoch`(UTC Unix seconds, 최대24h)를 넣고 원문 JSON bytes를 SHA256 하여 `packet_sha256`을 입력한다. `closeIssue=true`라면 AC ID가 최소 1개 필요하다. 읽기 전용 워크플로는 Owner actor/repo ID와 Main ref를 확인한 뒤 GET/PLAN만 한다. intent/hash는 Owner/Environment 승인 증명이 아니다. 만료되거나 CI attempt>1인 경우 HALT. 자동 merge·3-image publish·Issue Close 및 0.61.1 운영 배포는 후속 보호된 별도 구현/승인이 없으면 불가. #229 HOLD 불변.

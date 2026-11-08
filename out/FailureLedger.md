@@ -1,3 +1,11 @@
+## #273 / RF-01 Main 성공 및 RF-02 미검증 작업 경계 (2026-11-08)
+
+- **선행 성공, 실패 아님:** [PR #274 CI 42487447127](https://github.com/planner77/layoutManager/actions/runs/42487447127) attempt1 HEAD `697cfe3ef551aaa7583a7dac4d5b5790316e1a97` SUCCESS (8 적용 Job, A2 scoped SKIP). 리뷰 스레드0/충돌0/Main behind0. Squash [Main `9635b153`](https://github.com/planner77/layoutManager/commit/9635b153a9c28f365b2485abb5d76d32f5be62ac) tree `fdb2396c455a744919be6a4fa8d9f96387e8c2ae`, parent `42a370c`, Main ref readback. [Main CI 42489515024](https://github.com/planner77/layoutManager/actions/runs/42489515024) exact SHA attempt1 read-only HOLD SUCCESS.
+- **RF-02 설계/구현 경계:** 후속 `release_finalizer_integrate.py` owner-scoped normal squash orchestration은 GitHub actual Ruleset/GraphQL thread/required CI/issue와 main base exact 검증 후에만 PUT 1회. GitHub merge 응답 불명확·timeout이면 결코 재시도하지 않음. Main incomplete/queued/in-progress와 success 구분. 실 workflow merge/Source CI는 아직 미실행, 이번 작성만으로 PASS 주장 금지.
+- **불변:** #229 v0.61+ Main/tag HOLD, Candidate/Promotion 독립 2 Owner approvals 및 기존 0.61.0 GHCR/태그/이미지/운영 Worker/DB/CAD/Volume/.env·복구점. Issue #273 OPEN. RF-03/04 및 RF-01 durable checkpoint/nonce NOT IMPLEMENTED. 이전 실패 원장 #702~705 포함 삭제 금지.
+
+---
+
 ## #273 / PR #274 — Ready 리뷰 P2 보안 경계, 기존 CI 성공·수정 후 재검증 필요 (2026-11-08)
 
 - **CI 자체 실패는 관측하지 않음**: [PR CI 42485818897](https://github.com/planner77/layoutManager/actions/runs/42485818897), HEAD `f88198dfccf0940b3ab3c95947928033b65b9bfe`, attempt1: 적용8/8 SUCCESS, A2 scoped SKIP. Ready 이벤트 직후 Codex 리뷰에서 unresolved P2 1건이 발생해 Ruleset의 review resolution gate에서 병합을 중단했다.

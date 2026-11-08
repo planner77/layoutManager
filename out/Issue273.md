@@ -1,3 +1,13 @@
+## RF-02 후속 Unit — 보호된 PR 통합 및 Main CI 증거 (2026-11-08)
+
+**선행 완료:** PR #274 source HEAD `697cfe3ef551aaa7583a7dac4d5b5790316e1a97`, [PR CI 42487447127](https://github.com/planner77/layoutManager/actions/runs/42487447127) (8 applicable SUCCESS/A2 scoped SKIP), squash [Main 9635b153](https://github.com/planner77/layoutManager/commit/9635b153a9c28f365b2485abb5d76d32f5be62ac), tree `fdb2396c455a744919be6a4fa8d9f96387e8c2ae`, [Main CI 42489515024](https://github.com/planner77/layoutManager/actions/runs/42489515024) read-only HOLD SUCCESS. Issue #273은 아직 OPEN.
+
+**이번 Unit 구현:** `release_finalizer_integrate.py`와 read-only GraphQL review-thread 조회/Ruleset 검증/기존 RF01 exact packet·CI·source 재사용, `release-finalizer-integrate.yml`에서 Owner 수동 `plan`·`integrate`·`readback` 분리. Normal REST merge `sha=prHeadSha`, `merge_method=squash` 외 Repo/Issue/GHCR/Tag mutation0; Main exact base CAS·thread resolution·실제 적용 CI·Review requested changes·ruleset 정책/관리자 bypass 부재 필요. Merge 뒤 Main push CI 실행은 GitHub 기존 workflow에 맡기고 **감시·성공 자동 승격 없음**. Main 미완료는 `MERGED_WAITING_MAIN_CI`로만 남기고, 재사용/최종 release는 별도 검증한다. API merge timeout/unknown은 자동 재시도/롤백 금지. 외부 write 경로는 Owner dispatch+GitHub Ruleset으로 제한.
+
+**이후:** RF-01 durable checkpoint/nonce, RF-03 `0.61.1+` exact App/Migrator/CPU Worker candidate/promotion 2독립 Owner Environment 승인, RF-04 전체 AC 승인·Issue Close는 미구현/NOT VERIFIED. 보존: #229 HOLD_MAIN/TAG_BLOCKED, 기존 0.61.0 3digest/Tag/latest·운영 Worker/데이터/복구점. 새 Unit의 exact HEAD CI는 아직 NOT VERIFIED.
+
+---
+
 ## RF-01 PR #274 리뷰 보완 — PR CI association 강제 (2026-11-08)
 
 GitHub [PR CI run42485818897](https://github.com/planner77/layoutManager/actions/runs/42485818897)은 HEAD `f88198dfccf0940b3ab3c95947928033b65b9bfe`의 요구 Job SUCCESS였지만 Ready 이벤트 후 P2 review 1건이 신규 등록됐다. `workflow_run.pull_requests`가 다른 PR 번호를 포함하면 같은 `head_sha`·`head_branch`여도 **해당 PR의 성공 증거가 아니다**. 기존 fallback은 이미 **squash merged**이고 연관 배열이 완전히 빈 경우에만 허용한다. Open PR association 공백은 `WAITING_EXACT_PR_CI`. 자기 PR 실패 + 더 최신 다른 PR 성공은 `RF_LATEST_CI_NOT_SUCCESS`로 중단하며 기존 성공을 대체하지 않는다. 패치 후 CI는 별도 새 HEAD 검증 필요. Release/Issue writer, #229 HOLD 보존.

@@ -1,3 +1,19 @@
+## TP-273-RF02 — protected owner integration exact-source 검증 (2026-11-08)
+
+| ID | Gate / Negative |
+|---|---|
+| RF02-01 | Main 및 packet exact base SHA, 정확 PR Head·Tree·Package Version·Issue Open·Ready·mergeable True, Main ref 일치; drift·Draft·Issue Closed 거부 |
+| RF02-02 | GitHub active ruleset ID/branch scope, squash-only, required aggregate strict, review thread resolution, bypass actors0/current user bypass=never. 규칙 변경·불확실 응답 fail closed |
+| RF02-03 | GraphQL read-only Review Thread pagination+PR HEAD identity/모두 resolved. REST CHANGES_REQUESTED 거부·page overflow 거부 |
+| RF02-04 | 정확 PR의 최신 HEAD CI attempt1/실제 적용 Job 전체 Success; A2 scoped Skip만 허용, doc-only PR은 필수 aggregate/scope 성공. Foreign PR association·CI FAIL/CANCEL/SKIP 거부 |
+| RF02-05 | plan/readback 명령 외부 writes0, integrate Owner actual actor+sender/repo ID/attempt1 검증, 단일 정확 HEAD squash; API unknown/timeout no auto-retry |
+| RF02-06 | Merge readback 실제 SHA/tree/단일 parent 및 Main push run/attempt1. 없거나 pending이면 MERGED_WAITING_MAIN_CI로 분리, FAIL은 성공 아닌 HALT. 성공한 Main 정확 run만 MAIN_VERIFIED |
+| RF02-07 | RF-03/04 미구현 중 GHCR/Tag/Issue write0, #229 HOLD 유지. 새로운 HEAD Python unit/필수 Scope 및 full PR CI 확인 전 PASS/병합 주장 금지 |
+
+Synthetic Python fake API 테스트는 `test_release_finalizer_integrate.py`에 배치한다. 실제 GitHub merge/dry-run 검증과 hosted CI 결과는 별도. Legacy #229 HOLD, 0.61.0 기존 digest/운영 상태와 분리.
+
+---
+
 ## TP-273-PR274-REVIEW-P2 — 다른 PR CI evidence spoof 거부 (2026-11-08)
 
 - P2-01 Open PR에서 `pull_requests=[{number:other}]` + 동일 HEAD/branch/same repo면 `WAITING_EXACT_PR_CI` 반환.

@@ -1,3 +1,11 @@
+## #273 — RF-02 Owner protected integration 후속 PR 착수 (2026-11-08)
+
+[PR #274](https://github.com/planner77/layoutManager/pull/274) exact HEAD `697cfe3ef551aaa7583a7dac4d5b5790316e1a97` [PR CI 42487447127](https://github.com/planner77/layoutManager/actions/runs/42487447127) required SUCCESS, 리뷰 thread0, squash Main `9635b153a9c28f365b2485abb5d76d32f5be62ac` tree `fdb2396c455a744919be6a4fa8d9f96387e8c2ae`, [Main read-only CI 42489515024](https://github.com/planner77/layoutManager/actions/runs/42489515024) SUCCESS 확정. 이는 GO-INTEGRATE만이며 #273은 OPEN.
+
+후속 RF-02는 기존 RF-01 packet/source/CI 검증을 재사용하여 Owner `workflow_dispatch`의 `plan/integrate/readback`을 분리한다. `integrate`만 scoped `pull-requests:write`로 검증된 PR 1건을 정상 Ruleset 하에 squash한다. Repo·Owner·정확 HEAD/tree/base/PR Issue association/실제 적용 Job/Ready/리뷰 thread/active main Ruleset·bypass0/동일 Main SHA를 실행 직전 재검사한다. merge API 결과가 불명확하면 **재시도하지 않고 HALT**. 성공 후 actual merge SHA/tree/단일 parent 및 Main read-only CI를 독립 판정하여 `MERGED_WAITING_MAIN_CI`와 `MAIN_VERIFIED`를 구분한다. 새 Head CI 전 실행 결과 NOT VERIFIED. 기존 #229 HOLD, 3-role 출고 독립 두 Owner 승인·Issue AC 종료 Gate, 현행0.61.0 운영 데이터·Worker·GHCR 태그/digest 불변. [Issue273](out/Issue273.md), [TestPlan](out/TestPlan.md), [FailureLedger](out/FailureLedger.md) 참조.
+
+---
+
 ## #273 / PR #274 — 동일 브랜치 다른 PR CI 연관 오류 수정 (2026-11-08)
 
 [PR CI run42485818897](https://github.com/planner77/layoutManager/actions/runs/42485818897)은 exact HEAD `f88198dfccf0940b3ab3c95947928033b65b9bfe`에서 적용 8개 Job SUCCESS/A2 scoped SKIP. Ready 직후 Codex [PR #274 Review](https://github.com/planner77/layoutManager/pull/274)에서 **P2 unresolved thread** 확인: 동일 SHA·브랜치의 다른 PR에 명시적으로 연관된 최신 CI가 올바른 PR의 실패를 가릴 위험. `read_run`의 branch fallback은 **실제로 병합된 PR + GitHub pull_requests가 빈 배열**인 경우로만 제한하며 비어 있지 않은 다른 PR 연관은 항상 제외. Open PR의 연관 빈 run도 거부. 해당 소스는 새 exact HEAD PR CI 전 NOT VERIFIED, 재검증 후 review resolve/병합. #229 HOLD, RF-02/03/04 미구현·독립 Owner 승인 불변.
