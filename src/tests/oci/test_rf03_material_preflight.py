@@ -8,6 +8,8 @@ import unittest
 
 import release_finalizer as rf
 import rf03_material_preflight as material
+import rf03_release_handoff as handoff
+import candidate_policy as candidate
 from test_rf03_release_handoff import receipt
 
 
@@ -21,8 +23,11 @@ class MaterialTests(unittest.TestCase):
         }
         for name, raw in values.items():
             (root / name).write_bytes(raw)
-        sums = "".join(material.sha(raw) + "  " + name + "\n"
-                       for name, raw in sorted(values.items()))
+        sums = "".join(
+            (packet["roles"][role]["manifestDigest"][7:] if role != "receipt"
+             else material.sha(values["candidate-receipt.json"])) +
+            "  " + candidate.SUBJECTS[role] + "\n"
+            for role in (*handoff.ROLES, "receipt"))
         (root / "SHA256SUMS").write_text(sums)
         packet["artifact"]["candidateReceiptSha256"] = material.sha(values["candidate-receipt.json"])
         packet["artifact"]["signatureBundleSha256"] = material.sha(values["candidate-bundle.sigstore.json"])
@@ -89,8 +94,10 @@ class MaterialTests(unittest.TestCase):
             (root / "verification.json").write_bytes(raw)
             packet["artifact"]["verificationSha256"] = material.sha(raw)
             (root / "SHA256SUMS").write_text("".join(
-                material.sha((root / n).read_bytes()) + "  " + n + "\n"
-                for n in sorted(set(material.FILES) - {"SHA256SUMS"})))
+                (packet["roles"][role]["manifestDigest"][7:] if role != "receipt"
+                 else material.sha((root / "candidate-receipt.json").read_bytes())) +
+                "  " + candidate.SUBJECTS[role] + "\n"
+                for role in (*handoff.ROLES, "receipt")))
             with self.assertRaisesRegex(rf.Blocked, "RF03_DUPLICATE_JSON_KEY"):
                 material.check(root, packet, plan)
             packet["version"] = "0.61.0"
