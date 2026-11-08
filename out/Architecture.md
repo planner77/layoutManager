@@ -1,3 +1,48 @@
+## #225 FUP3 구현 계약 — 제한된 table/style 의미와 별도 offline identity (2026-11-08)
+
+**상태: test-only 구현·독립 QA 완료(PASS_WITH_LIMITS), Manager 제한부 수용 완료; exact-head PR CI와 Root 통합 대기.** 현재 실제 가용 역할 agent가 Manager/Developer/QA를 담당하며 과거 지정5.6 모델 실행을 주장하지 않는다. 기존 FUP2 파일·identity를 보존하고 별도 src/tests/oci module/DTO/proof를 만든다. 재사용하면 읽기 전용 pure geometry helper만 사용하고 새로운 resource receipt에는 전체 transitive import source hash를 결합한다. 원본을 임시 축약 DXF로 재작성해 legacy parser에 통과시키는 방식과 old builder provenance 사용은 금지한다. 실제 검증 결과와 범위는 TestReport FUP3를 따른다.
+
+### 문법·문서 경계
+
+정확 SECTION HEADER→TABLES→ENTITIES 순서만 수용한다. 각1개, EOF1개/후행값0/정상종료 필수. CLASSES/BLOCKS/OBJECTS/THUMBNAILIMAGE/unknown section은 비어 있어도 전체 UNSUPPORTED다. UTF8/UTF-8·ANSI_1252 명시 선언과 원본 bytes binding/미정의byte 거부는 FUP2를 유지한다. symbol 이름은 ASCII `[A-Za-z0-9_$-]{1,64}` 또는 layer `0`, case-insensitive uppercase key로 매칭하되 case collision/중복 정의 거부; Unicode 이름/xref separator/공백 등은 이번 subset에서 거부한다. 이는 전체 DXF invalid 판정이 아니다.
+
+FUP3 ACADVER는 실제 baseline의 AC1018만 수용하며 다른 revision은 거부한다. HEADER는 기존 required ACADVER/codepage/INSUNITS4에 **required $LWDISPLAY(290)=0, $LWDEFAULT(370)=공식 nonnegative lineweight enum**를 추가한다. optional $LTSCALE(40), $CELTSCALE(40)은 absent 또는1만, $CECOLOR(62)은 absent 또는256, $CELTYPE(6)은 absent 또는BYLAYER, $CELWEIGHT(370)은 absent 또는-1, $CLAYER(8)은 absent 또는 실제 LAYER reference만 허용한다. 이 current-entity 설정은 기존 entity의 omitted BYLAYER property를 덮어쓰지 않는다. 나머지 header는 전체 거부. $LWDISPLAY1은 실제 두께 renderer가 없으므로 거부한다.
+
+TABLES 내부 TABLE/ENDTAB nesting을 엄격 검사하고 LTYPE/LAYER는 각 required1개, STYLE은 optional1개, 다른 table/record는 전부 거부한다. TABLE header group2=name,70=0..256 maximum capacity, optional100=AcDbSymbolTable, optional5 canonical hexhandle(1..16, `^[1-9A-Fa-f][A-Fa-f0-9]{0,15}$`)가 유일한 허용값이다. handle0/leading-zero 표현은 UNSUPPORTED이며 대소문자를 uppercase로 비교해 문서 전체 중복과 owner330 equality를 검사한다. 원래 raw handle을 private metadata에 보존할 수 있으나 비교 key는 일관되게 canonical uppercase를 사용한다. 01과1을 서로 다른 ID로 인정하지 않는다. 실제 record수<=70을 요구하며70과 실제수가 반드시 같다고 가정하지 않는다. table별 최대256/총record768이다. 각 record optional5 handle은 문서 내 유일해야 하고 optional330은 해당 TABLE의 실제5 handle과 일치해야 한다(없는owner를 추측0). optional100은 AcDbSymbolTableRecord 및 해당 record subclass만 중복 없이 허용. 각 record의 아래 나머지 field는 중복 금지, listed optional 외 required다. record 내부 field 순서에는 의존하지 않되 LWPOLYLINE vertex10/20 결합과 HEADER variable9/value 결합은 원래 구조를 유지한다. 동일 single field 중복은 값이 같아도 거부한다.
+
+| Record | 정확 지원 field/의미 |
+| --- | --- |
+| LTYPE | 2=CONTINUOUS 하나만,70=0 또는64,3=bounded ASCII description(0..256),72=65,73=0,40=0. dash49/complex74/STYLE pointer340 등은 거부. BYLAYER/BYBLOCK은 entity 특수값이며 별도 LTYPE 정의를 만들지 않음 |
+| LAYER | 2=name,70=flags subset1(frozen)+4(locked)+64(referenced),62=±ACI1..7 또는 optional420=0..0xFFFFFF일 때 ±ACI1..255 허용,6=CONTINUOUS,370=공식nonnegative enum 또는-3. optional420 truecolor,290=0/1(plot metadata) 허용. bit2(new viewport)/xref16/32/unknownflags 및390/347 등 미지원ref 거부. layer0 정의 required |
+| STYLE | dormant text style만:2=name,70=0/64,40=0,41=1,50=0,71=0,42=finite0..1e6,3=ASCII basenamefont `[A-Za-z0-9_-]{1,64}\.(ttf|shx)`(case-insensitive),4=empty. 파일 접근/폰트 로드0. shape/vertical/xref/backward/bigfont/1071 등은 거부. 정의를 private DTO에 보존하되 TEXT/MTEXT/ATTRIB/ATTDEF/shape는 항상 미지원 |
+
+### Entity style resolution
+
+Geometry/precision/closure는 FUP2의 LINE/CIRCLE/ARC/straight LWPOLYLINE contract를 그대로 구현한다. 새 common field는8(layer,absent0),62(color,absent256),420(optional RGB24),6(linetype,absentBYLAYER),370(weight,absent-1),60(visibility,absent0;0/1),67(space,absent0;0만),48(scale,absent1;1만)이다. Geometry/subclass 외 unknown common field/handle/ref는 거부한다. group7 text style은 primitive에 의미가 없어 미지원이며 받아서 무시하지 않는다.
+
+1. 해당 layer가 존재해야 한다. 색은 entity420가 있으면 우선한다. 없으면 entity62=1..7을 명시RGB(red/yellow/green/cyan/blue/magenta/white)로, absent/256이면 layer420 또는 abs(layer62)의1..7 palette로 해결한다. entity420가 있으면 fallback62는1..255 또는256만 검증·보존하고 palette8..255를 별도 계산하지 않는다. entity62=0 BYBLOCK/음수는 이번 subset에서 항상 거부한다. layer62<0의 off는 truecolor가 있어도 유지한다. palette7은 검증 Browser의 고정 black 배경에 white; 임의 배경적응 지원 주장은 하지 않는다.
+2. `visible = !layer.off && !layer.frozen && entity60!=1`. locked는 독립 metadata로 보존하고 화면을 숨기거나 fade하지 않는다. plot290은 interactive 표시와 별도 metadata다. hidden primitive도 geometry/style/refs를 모두 검증하고 전체segment budget에 포함하며 DTO에 retained visible=false로 남긴다. hidden unsupported entity를 건너뛰지 않는다.
+3. entity6=BYLAYER이면 layer6, CONTINUOUS이면 직접continuous; BYBLOCK/다른 linetype는 거부한다. HEADER/entity scale은1만. dash를 continuous로 대체하지 않는다.
+4. 공식 weight enum `{0,5,9,13,15,18,20,25,30,35,40,50,53,60,70,80,90,100,106,120,140,158,200,211}`만. entity>=0 직접, entity-1→layer, entity-3→header LWDEFAULT; layer-3→header. -2 BYBLOCK 또는 그 밖 값 거부. resolved hundredths-mm와 origin ENTITY/LAYER/DEFAULT를 DTO에 남기되 LWDISPLAY0의 **고정 1px hairline**으로만 표시한다. 물리두께/plot fidelity를 주장하지 않는다.
+
+### DTO·검증·proof
+
+새 exact schema `offline-cpu-styled-primitives@1`, builder `node-cpu-styled-primitives@0.1.0+cad-scene-1`, state CANDIDATE. source SHA/bytes·units/precision/전체 primitive·segment count와 deterministic table/record ID 및 layer/style metadata·primitive declared style+resolved colorRGB/visibility/locked/linetype/weight+resolution origins를 보존한다. 이름/fontmetadata는 private 후보에서만 유지하고 정제 receipt에는 counts/hashes만 반환한다. validator는 exact key/type/bounds/uniqueness/reference·geometry 연결/closed/Float32·source binding을 검사하고 **표의 선언값에서 resolved 값을 재계산**하여 거짓 RGB/visible/locked/weight를 거부한다. count/segment는 hidden 포함, visible count 별도. restorer는 새 DTO만 수용하고 material color/node visible에 resolved 값을 실제 사용한다. FUP2 DTO나 생산 SceneManifest/READY로 변환하지 않는다.
+
+기존16MiB/300k pairs/5000segments/coord1e6/payload32MiB/chord0.05+FloatEuclidean0.05mm/15s cooperative+120s parent·private fsync readback/resource boundary를 유지한다. source byte/pair bounds는 입력 구조가 커지기 전에 적용하고 TABLE record count는 제한을 넘기기 전에 검사한다. symbol/description 길이와 의미는 후보를 내기 전에 검증한다. 새 source-bound normal/stall/probe 및 fresh Browser proof는 새 fixtures/materials/hidden pixel을 검사하고 source import closure hashes를 포함한다. 실제 전체파일 거부는 예상한 새 오류 단계만 기록하며 특정 layer/style까지 지원됐다고 추론하지 않는다.
+
+### 공식 조사와 이번 선택의 구별
+
+공식 LAYER 문서는 frozen/locked/off/plot/lineweight field를 정의한다. 위 flag 제한과 hidden data retained 계약은 이번 실험의 좁은 선택이다. [Autodesk LAYER](https://help.autodesk.com/cloudhelp/2015/ENU/AutoCAD-DXF/files/GUID-D94802B0-8BE8-4AC9-8054-17197688AFDB.htm)
+
+Entity BYLAYER/BYBLOCK·visibility와 property code는 공식 공통 field이고, paper-space/BYBLOCK을 거부하는 것은 현재 scope다. [Autodesk entity codes](https://help.autodesk.com/cloudhelp/2023/ENU/AutoCAD-DXF/files/GUID-3610039E-27D1-4E23-B6D3-7E60B22BB5BD.htm) truecolor420은 충돌하는62보다 우선한다. [Autodesk color precedence](https://help.autodesk.com/cloudhelp/2019/ENU/AutoCAD-AutoLISP-Reference/files/GUID-C7D27797-247E-49B9-937C-0D8C58F4C832.htm)
+
+TABLE70은 최대record수이며 실count 등식이 아니다. [Autodesk table structure](https://help.autodesk.com/cloudhelp/2017/ENU/AutoCAD-DXF/files/GUID-5AB9300F-F0AC-4ADE-89EA-A9D1D152D8B8.htm) continuous-only record의pattern0/element0 조건은 공식 LTYPE field에 근거한 본 subset이다. [Autodesk LTYPE](https://help.autodesk.com/cloudhelp/2026/ENU/AutoCAD-DXF/files/GUID-F57A316C-94A2-416C-8280-191E34B182AC.htm)
+
+STYLE은 font/height/width/flags를 담지만 이를 읽는 것만으로 text fidelity를 얻지 않는다. [Autodesk STYLE](https://help.autodesk.com/cloudhelp/2018/ENU/AutoCAD-DXF/files/GUID-EF68AF7C-13EF-45A1-8175-ED6CE66C8FC9.htm) lineweight negative enum과0.01mm 단위는 공식 정의를 사용한다. [Autodesk lineweight enum](https://help.autodesk.com/cloudhelp/2027/ENU/OARX-RefGuide/files/OARX-RefGuide-AcDb__LineWeight.html) HEADER LWDISPLAY와 current defaults는 [Autodesk HEADER](https://help.autodesk.com/cloudhelp/2023/ENU/AutoCAD-DXF/files/GUID-A85E8E67-27CD-4C59-BE61-4DC9FADBE74A.htm), ACI1–7/배경색 의미는 [Autodesk colors](https://help.autodesk.com/cloudhelp/2020/ENU/AutoCAD-MAC-Core/files/GUID-05EE10BB-DD4D-45CC-96EC-0C7611739D1D.htm)를 참조한다. 링크는 공식 주장 근거이며 실제 구현/시험 PASS는 TestReport만 기록한다.
+
+---
+
 ## #225 FUP2 구현 계약 — offline CANDIDATE와 제품 READY 분리 (2026-11-08, Manager 구현 전)
 
 FUP2 closure 정책 확정: open group70=0과 closed group70=1 모두 explicit terminal vertex==first vertex를 거부하는 conservative canonical subset을 유지한다. open polyline이 기하적으로 출발점으로 돌아오는 표현 자체를 DXF 전체에서 잘못된 데이터라고 주장하지 않는다. 이번 offline DTO의 `closed`는 이 subset에서 closure flag와 geometry closure가 일치함을 보장하며 원본 flag를 normalize하거나 중복 terminal을 제거하지 않는다. 거부 오류명(DXF_DEGENERATE 등)은 내부 후보 경계이고 public 문서에서는 UNSUPPORTED로 설명한다. 이후 이런 입력을 지원하려면 source flag와 기하적 closure를 구별하는 별도 DTO 의미·시험을 먼저 설계한다.

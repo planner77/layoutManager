@@ -1,3 +1,11 @@
+## FUP3 offline layer/style 후보 검증 (2026-11-08)
+
+FUP3는 `src/tests/oci/offline-cpu-styled-primitives*.mjs`의 test-only 도구다. resource/Browser proof 입력은 synthetic 전용이며, 실제 DXF는 별도 bounded replay에서 전체 거부와 hash 보존만 확인한다. 기존 앱 경로·계정 인증·도면 등록/READY에 연결하지 않는다. `src/`에서 focused Node 시험은 `node --test tests/oci/offline-cpu-styled-primitives.test.mjs`, Docker 없는 resource controller guard는 `PYTHONDONTWRITEBYTECODE=1 python3 tests/oci/test_offline_cpu_styled_primitives_resource.py`, 새 제품 admission 거부와 FUP2 회귀는 `npx vitest run tests/unit/offline-cpu-styled-primitives-admission.test.ts tests/unit/offline-cpu-primitives-admission.test.ts`로 실행한다.
+
+실제 isolated resource 증명은 source 파일을 freeze한 뒤 새 private0700 evidence directory에서 `python3 tests/oci/offline-cpu-styled-primitives-resource-proof.py normal --evidence <private-dir>`와 `stall`을 각 한 번 실행한다. 고정 image의 Node 실행 harness만 사용하며 network/port/App/Worker/운영·restore volume은 전달하지 않는다. 실행 전후 image·source hashes·nonce/CID·read-only bind/tmpfs/cgroup을 확인하고 owner 자원만 정리한다. Stall은 120초 이후 kill overhead가 더해질 수 있으며 exit137만으로 OOM을 주장하지 않는다. 입력은 synthetic fixture이고 actual DXF 검사는 immutable backup 사본 전체 거부만 수행한다. Root 실제 browser/watchdog·전체 앱 검사와 independent QA 실행은 TestReport FUP3에서 구별한다. Manager 수용은 offline 검증 범위로 한정하며 exact-head PR CI와 Root 통합은 별도 gate다. 이 수용을 공개 제품 지원이나 pilot GO로 확대하지 않는다.
+
+---
+
 ## FUP2 offline 후보 검증 도구 (2026-11-08)
 
 새 도구는 `src/tests/oci/offline-cpu-primitives*.mjs` 및 `offline-cpu-primitives-resource-proof.py`이며 제품 upload/Worker/Scene 경로에서 호출하지 않는다. Node focused 시험은 `node --test src/tests/oci/offline-cpu-primitives.test.mjs`, resource controller의 Docker 없는 guard 시험은 `PYTHONDONTWRITEBYTECODE=1 python3 src/tests/oci/test_offline_cpu_primitives_resource.py`다. 생산 경로 admission regression은 기존 Vitest suite에 포함된다.

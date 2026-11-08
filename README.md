@@ -1,3 +1,9 @@
+## #225 — HEADER/TABLES·layer/style offline 후보 (2026-11-08)
+
+기존 primitive 실험을 확장해 제한된 layer 색상·가시성·선종류·선가중치와 dormant STYLE metadata를 별도 `CANDIDATE`로 검사했다. 새 parser/DTO는 `src/tests` 전용이며 기존 FUP2 도구와 제품 Scene/Builder/admission/Worker/Schema를 유지한다. synthetic golden·resource/watchdog·fresh Browser·실제 immutable 도면 전체 거부를 검증했고 독립 QA는 PASS_WITH_LIMITS다. 실제 전체 도면은 계속 미지원이며 앱0.61.0/운영0.58.0·flags·파일럿 NO-GO는 유지한다. 실제 수치와 검증 한계는 [TestReport](out/TestReport.md), 계약은 [Architecture](out/Architecture.md)를 따른다. Manager는 offline 범위를 제한부 수용했다. Exact-head PR CI와 Root 통합은 남아 있다.
+
+---
+
 ## #225 — offline CPU 도형 변환 후보 구현 (2026-11-08)
 
 제한된 LINE·CIRCLE·ARC·직선 LWPOLYLINE을 원본 bytes/SHA에 결합한 별도 `CANDIDATE`로 변환하고, 0.1mm 합산 오차 상한·private readback·격리 resource/120초 watchdog·새 브라우저의 형상 복원을 검증했다. 제품 Scene 허용 목록과 기존 LINE 변환기는 유지했으며, 실제 전체 도면은 미지원 구간에서 거부한다. 소스0.61.0/운영0.58.0·파일럿 NO-GO를 유지한다. 실제 수치와 수용 한계는 [TestReport](out/TestReport.md), 지원 계약은 [Architecture](out/Architecture.md)를 따른다.
