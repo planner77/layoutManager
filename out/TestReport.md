@@ -1,3 +1,13 @@
+## RF-03 material byte preflight follow-up (2026-11-09)
+
+- PR #277 CI #718 / run 42521782477: exact prior HEAD `ea17b29c60b2ee1ba00f4597feb794029b01653d`, eight applicable jobs SUCCESS, one A2 scoped SKIP, unresolved review threads 0. **This evidence applies to the prior HEAD only.**
+- New `src/tests/oci/rf03_material_preflight.py` performs **GET-independent local byte checks**, on a private downloaded artifact directory, restricting file names to receipt, Sigstore bundle, verification JSON and SHA256SUMS; rejects symlinks, unknown/missing names, duplicate checksum subjects, unsafe paths, changed byte hashes, duplicate JSON keys and malformed material. The handoff and original RF-01 plan are rechecked before accepting any bytes.
+- `test_rf03_material_preflight.py` covers positive byte bindings and negative tampering/path/legacy release cases and is in mandatory `pr-ci.yml` scope. This is a **non-network, non-publisher, non-cryptographic preflight**. A supplied bundle or `verification.json` containing an assertion of success is never sufficient to verify Signer identity, OIDC subject, Rekor/Sigstore contents, GHCR manifest/config/platform or actual Owner authority.
+- All successful outputs remain `BLOCKED_INDEPENDENT_SIGSTORE_AND_OCI_PROOF_REQUIRED`, `externalWrites=0`, `signatureVerification=NOT_VERIFIED`, `ociGraphReadback=NOT_VERIFIED`. Next required unit: reuse existing `release_promote.verify_material`/candidate registry and checksum-pinned gh verifier in a separately reviewed version-generic RF-03 verifier; authenticate actual GitHub downloaded bytes and independent protected Owner approvals; then implement version-generic Candidate/Promotion writers with no-overwrite/partial-state proof.
+- Keep PR **Draft**, #273 **OPEN**, #229 HOLD, existing 0.61.0 GHCR/image/tag/latest and operating DB/CAD/Worker/backups unchanged. No GHCR/Tag/Issue writer or deployment introduced. New HEAD CI is required; prior CI #718 MUST NOT be reused for the new source.
+
+---
+
 ## U-273-RF03-LIVE-20261109 — CI #717 선행 증거와 새 source 미검증 (2026-11-09)
 
 - [PR CI #717/run42518993315](https://github.com/planner77/layoutManager/actions/runs/42518993315), HEAD `da5c8782fc04008c94bcb41f676fe58b640c6ce3`, attempt1 `completed/success`, 적용8 Job SUCCESS/A2 scoped SKIP. 리뷰0, Draft, Main behind0. 이 결과는 version+3-role structural handoff 코드 전용.
