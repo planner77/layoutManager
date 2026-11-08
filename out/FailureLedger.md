@@ -1,3 +1,9 @@
+## RF-03 #718 follow-up — no observed CI failure; evidence and scope ledger (2026-11-09)
+
+CI #718 succeeded at prior HEAD ea17b29c; no failure to misclassify. New unverified HEAD adds candidate material byte preflight and negative tests, remains blocked pending independent Sigstore/OCI and Owner proof. New mandatory PR CI result must be recorded separately; no GHCR writer, #229 HOLD intact.
+
+---
+
 ## #273 / PR #277 CI #717 SUCCESS, RF-03 live readback Source 변경 전 이력 (2026-11-09)
 
 - **CI 성공:** [run42518993315/#717](https://github.com/planner77/layoutManager/actions/runs/42518993315), exact HEAD `da5c8782fc04008c94bcb41f676fe58b640c6ce3`, attempt1 applied8 SUCCESS, scoped A2 SKIP, review thread0/Main behind0. 실 승인 증거가 아닌 이전 handoff 구조 계약 검증만 완료. 새 live-readback source의 성공으로 소급하지 않는다.
