@@ -1,3 +1,13 @@
+## #273 / PR #277 — CI #717 SUCCESS 후 RF-03 실제 GitHub 승인·Artifact metadata readback (2026-11-09)
+
+[PR CI #717/run42518993315](https://github.com/planner77/layoutManager/actions/runs/42518993315), 정확 HEAD `da5c8782fc04008c94bcb41f676fe58b640c6ce3`, attempt1 적용8 Job SUCCESS/A2 scoped SKIP. 이전 구조적 Candidate→Promotion packet 검증의 성공이지 실제 Owner 승인이 아니다.
+
+후속 Unit `rf03_live_evidence.py`는 GitHub **GET only** 응답을 사용해 Candidate와 Promotion의 별도 `workflow_dispatch` Run(Owner actor/trigger, 정확 workflow/source SHA/attempt1/성공), 실제 protected publish Job ID/name/status, 각 별도의 environment approval history(approved/Owner/environment ID), SHA256으로 정규화한 승인 이력 receipt, Candidate GitHub Artifact ID/name/digest/size/source/만료·목록 유일성, A/B 코드의 commit tree와 package version 및 Promotion B가 실제 Main HEAD인지 검증한다. 구조 검증 `RF03_RELEASE_HANDOFF_V1`과 일치하지 않으면 fail-closed. `rf03_readback.py` + `release-finalizer-rf03-readback.yml`은 Owner 수동 dispatch, `contents/actions/pulls:read`만 허용, 허용된 GitHub REST GET 경로만 사용하고 redirect 거부, 본인 Run attempt1/checkout Main source 검증. 모든 정상 readback도 `BLOCKED_CRYPTOGRAPHIC_OCI_AND_REGISTRY_PROOF_REQUIRED`이며 `ownerAuthority/signatureVerification/ociGraphReadback=NOT_VERIFIED`, GHCR/Issue write 0.
+
+특별히 GitHub environment API에서 `can_admins_bypass`가 반환되지 않으면 false로 추측하지 않고 `RF03_ENV_ADMIN_BYPASS_UNKNOWN`로 HALT. 실제 보호 환경 Owner UI 관측/정책 정본을 후속에 묶어야 한다. API readback이 확보돼도 원본 RF-01 plan의 진위·실제 Sigstore 증명/Registry OCI graph 출고·롤백 증거·RF-04 AC를 대체하지 못한다. 기존 `0.61.0` Candidate/Promotion publisher, #229 HOLD_MAIN/TAG_BLOCKED, 세 역할 immutable GHCR/운영 data 전혀 변경하지 않음. Draft #277·Issue #273 OPEN, 새 정확 HEAD CI 전 NOT VERIFIED. [Issue273](out/Issue273.md), [TestPlan](out/TestPlan.md), [FailureLedger](out/FailureLedger.md) 기준.
+
+---
+
 ## #273 / PR #277 — CI #716 성공 후 RF-03 3-role Candidate/Promotion 증거 인계 계약 확장 (2026-11-09)
 
 [PR CI #716 / run42516241424](https://github.com/planner77/layoutManager/actions/runs/42516241424)은 PR #277 **이전 HEAD** `d068d637c90c3b1b995ec6e2595760531503d5e3`에서 적용 8 Job SUCCESS·A2 scoped SKIP·run attempt1이다. 코드 리뷰 thread0, main behind0, PR Draft. 이 성공은 지금 추가한 RF-03 증거 인계 소스의 검증 결과가 아니다.

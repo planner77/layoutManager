@@ -1,3 +1,9 @@
+## ADR-273-RF03-LIVE-META — read-only GitHub 승인 이력과 실제 출고 승인 분리 (2026-11-09)
+
+결정: RF-03 Handoff의 sha256 packet은 사용자의 주장 값이므로 구조 통과만으로 GO-RELEASE/Owner 승인이라 주장하지 않는다. 다음 단계는 `actions/runs/{id}/attempts/1`, job, `/approvals`, artifact GET/metadata 및 Git commit-tree/버전 검증으로 **독립 두 실제 approval history**를 read-only로 관측한다. 상태 `OBSERVED_NOT_RELEASE_AUTHORITY`를 명시하고, 환경 `can_admins_bypass`가 REST에서 누락되거나 true이면 실제 Owner UI 증빙 없이는 fail closed 한다. Readback workflow에는 GET + `contents/actions/pulls:read`만; 서비스 토큰 유출 방지를 위해 고정 REST path·리다이렉트 금지. OIDC signed artifact bytes/OCI 3-role Registry final readback/원문 보존, Source-plan 독립 검증 및 안정적 배포 Writer를 구현하기 전 어떠한 GHCR/Issue write도 하지 않는다. 기존 0.61.0 고정 publisher 유지.
+
+---
+
 ## ADR-273-RF03-HANDOFF — 임의 packet 해시를 출고 승인으로 인정하지 않음 (2026-11-09)
 
 설계 결정: RF-03를 먼저 **버전 범용 순수 검증 계약**과 실제 protected 출고 집행으로 분리한다. 첫 Unit은 같은 PR #277에 `RF03_RELEASE_HANDOFF_V1`를 추가해 source commit/tree/version/roles/rollback baseline·Candidate/Promotion 별도 workflow/run/승인증거 ID 및 digest 일치 여부를 정적 판정한다. No external writes, 결과는 반드시 BLOCKED (실제 Owner·OIDC·Registry 미검증). 이 계약의 PASS를 GHCR GO/Issue AC로 승격하는 정책을 금지한다. 실제 승인과 signed candidate proof는 기존 `candidate_publish.py`/promotion verifier가 실행하는 live 검증과 동등 이상의 근거가 반드시 필요하며 0.61.1+ 별도 publisher 구현까지 구 0.61.0 pin을 제거하지 않는다.

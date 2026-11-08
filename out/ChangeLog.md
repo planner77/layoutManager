@@ -1,3 +1,11 @@
+## 2026-11-09 — #273 PR #277 RF-03 live Github evidence audit candidate
+
+- [PR CI #717/run42518993315](https://github.com/planner77/layoutManager/actions/runs/42518993315), previous exact HEAD `da5c8782fc04008c94bcb41f676fe58b640c6ce3`, applied8 SUCCESS / scoped SKIP.
+- Added GET-only real GitHub run/attempt/job, independent Owner environment approval-history, environment admin bypass strict, artifact/source metadata and code tree/version/current Main checks, bounded paths+no redirects, manual read-only workflow, mock negative regression tests and PR Scope. New HEAD CI not yet verified.
+- No Sigstore cryptography, authenticated OCI digest/Registry publication, GHCR release approval, Issue close or existing 0.61.0 publisher modification. Keep #229 HOLD and prod data immutable.
+
+---
+
 ## 2026-11-09 — #273 PR #277 RF-03 handoff evidence contract
 
 - 기존 PR CI #716 exact HEAD `d068d637c90c3b1b995ec6e2595760531503d5e3` SUCCESS 확인 (8 적용 Job/A2 scoped SKIP).

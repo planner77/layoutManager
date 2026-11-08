@@ -1,3 +1,11 @@
+## #273 / PR #277 CI #717 SUCCESS, RF-03 live readback Source 변경 전 이력 (2026-11-09)
+
+- **CI 성공:** [run42518993315/#717](https://github.com/planner77/layoutManager/actions/runs/42518993315), exact HEAD `da5c8782fc04008c94bcb41f676fe58b640c6ce3`, attempt1 applied8 SUCCESS, scoped A2 SKIP, review thread0/Main behind0. 실 승인 증거가 아닌 이전 handoff 구조 계약 검증만 완료. 새 live-readback source의 성공으로 소급하지 않는다.
+- **새 CI 실패 관측 없음(실행 전/결과 미확인):** Owner API actual approvals/run/job/artifact GET-only verifier, current Promotion B Main SHA, source A/B tree/package version, `can_admins_bypass` missing/true strict reject, fixed-route GET/no-redirect client, synthetic negative tests 신규 작성. 이것은 계획된 API 확인 경로이며 아직 실제 Github 보호 환경 승인, OIDC cryptography, GHCR 3-role readback을 실행·검증하지 않음. 내용이 미검증일 때 실제 GO/Issue 종료 불허.
+- **차단 유지:** 기존 `candidate_policy.py`·`promotion_policy.py`·`registry_promotion.py` 및 `release-candidate.yml` OCI labels/rr2 runtime의 `0.61.0` pin, 버전별 새 protected writer·Owner two independent actual approvals·Sigstore signature·OCI three-role digest/partial handling·RF-01 nonce/receipt·RF-04 all AC closure 미구현. #229 HOLD_MAIN/G7_RELEASE_HOLD_TAG_BLOCKED, 역사적0.61.0 GHCR/digest/tag, 현 운영 DB/CAD/Volume/.env/Worker/백업 보존. Issue #273 OPEN.
+
+---
+
 ## #273 / PR #277 — CI #716 성공·신규 handoff evidence 검증 전 (2026-11-09)
 
 - **확인된 CI 성공:** [PR CI #716 / 42516241424](https://github.com/planner77/layoutManager/actions/runs/42516241424), PR #277 기존 HEAD `d068d637c90c3b1b995ec6e2595760531503d5e3`, 8 applicable SUCCESS, 1 A2 scoped SKIP. 기존 Draft 유지, unresolved review0, Main behind0. 이 성공을 추가된 RF03 handoff 소스에 소급 적용하지 않는다.

@@ -1,0 +1,66 @@
+name: Release Finalizer RF-03 GitHub evidence readback (NO RELEASE)
+run-name: RF03 EVIDENCE READBACK | ${{ inputs.handoff_sha256 }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      handoff_json:
+        description: 'Reviewed RF03_RELEASE_HANDOFF_V1 packet JSON (no secrets)'
+        required: true
+        type: string
+      handoff_sha256:
+        description: 'SHA256 of exact handoff JSON bytes'
+        required: true
+        type: string
+      prior_plan_json:
+        description: 'Archived RF03_EXACT_VERSION_PLAN_V1 from verified source/Main'
+        required: true
+        type: string
+      prior_plan_sha256:
+        description: 'SHA256 of exact archived RF03 plan JSON'
+        required: true
+        type: string
+
+# No mutation grant, no GHCR credentials, no environment approvals or issues write.
+permissions: {}
+concurrency:
+  group: release-finalizer-rf03-evidence
+  cancel-in-progress: false
+
+jobs:
+  evidence:
+    name: Verify exact GitHub runs, reviews, artifacts — no GHCR publish
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      github.event_name == 'workflow_dispatch' &&
+      github.repository_id == 1359528829 &&
+      github.actor_id == '45478892' &&
+      github.event.sender.id == 45478892 &&
+      github.run_attempt == 1
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+    steps:
+      - name: Checkout exact current Main without credentials
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Read actual GitHub run/job/Owner review and artifact metadata
+        env:
+          RF03_HANDOFF_JSON: ${{ inputs.handoff_json }}
+          RF03_HANDOFF_SHA256: ${{ inputs.handoff_sha256 }}
+          RF03_PRIOR_PLAN_JSON: ${{ inputs.prior_plan_json }}
+          RF03_PRIOR_PLAN_SHA256: ${{ inputs.prior_plan_sha256 }}
+          RF_READ_TOKEN: ${{ github.token }}
+          RF03_SENDER_ID: ${{ github.event.sender.id }}
+        run: |
+          set -euo pipefail
+          python3 src/tests/oci/rf03_readback.py readback
+      - name: Report stop boundary
+        run: |
+          echo 'RF03_GITHUB_METADATA_ONLY'
+          echo 'SIGNATURE=NOT_VERIFIED OCI=NOT_VERIFIED GHCR=NOT_RUN'
+          echo 'OWNER_RELEASE_GO=NOT_VERIFIED ISSUE_CLOSE=NOT_RUN'

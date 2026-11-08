@@ -1,3 +1,13 @@
+## RF-03 실 GitHub 메타데이터 readback 확장 — PR #277 계속 사용 (2026-11-09)
+
+[CI #717/42518993315](https://github.com/planner77/layoutManager/actions/runs/42518993315): HEAD `da5c8782fc04008c94bcb41f676fe58b640c6ce3` attempt1, 적용8 Job SUCCESS, A2 scoped SKIP. 이 증거는 handoff packet 구조 계약까지만 검증한다. 같은 PR에 신규 `rf03_live_evidence.py`/ `rf03_readback.py`, Owner manual GET-only `release-finalizer-rf03-readback.yml`, synthetic API 부정 테스트 및 required PR Scope 연결.
+
+Readback은 **실제** GitHub workflow run attempt1·correct actor/trigger/source/path/branch, publish job success/name/id, 각 독립 protected environment Owner 승인 이력, canonical approval receipt hash, Candidate Artifact 메타데이터(만료/정확 소스/ID/SHA256 digest) 및 promotion-code current Main SHA/tree/package version을 read-only 대조한다. 통신 인터페이스는 fixed `/git/ref`·`/git/commits`·`/contents/src/package.json`·`/actions/runs`·`/actions/artifacts`·`/environments` GET만 허용하고 리다이렉트/허용 외 경로 거부. `can_admins_bypass` 정보 없거나 true면 fail-closed(Owner UI 근거 없이는 승인으로 취급하지 않음).
+
+**게이트 경계:** 승인 이력과 artifact metadata의 검증은 OIDC/Sigstore 서명 주체·원문 파일·OCI config/manifest bytes·GHCR Registry authenticated readback/유일한 writer·구 릴리스 태그 보존을 증명하지 않는다. `BLOCKED_CRYPTOGRAPHIC_OCI_AND_REGISTRY_PROOF_REQUIRED`, `ownerAuthority=NOT_VERIFIED`, `externalWrites=0`만 반환. `RF03_EXACT_VERSION_PLAN_V1`도 외부에서 공급된 선행 계획이므로 라이브 PR/Main 정본을 다시 독립 검증하기 전에는 release receipt가 아니다. 실제 새 버전 출고기/두 Fresh Owner protected approval/서명·OCI/GT rollout/잔여 AC는 미구현·미실행, #229 HOLD 및 0.61.0 기존 GHCR/운영 불변. 새 Head CI 전 Draft 유지.
+
+---
+
 ## RF-03 증거 인계 계약 확장 — PR #277 계속 사용 (2026-11-09)
 
 [PR #277](https://github.com/planner77/layoutManager/pull/277)의 first HEAD `d068d637c90c3b1b995ec6e2595760531503d5e3` [PR CI #716](https://github.com/planner77/layoutManager/actions/runs/42516241424)은 8 applicable SUCCESS/1 A2 scope SKIP/attempt1. 이 증거는 첫 read-only PLAN까지만 해당한다.

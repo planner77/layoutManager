@@ -1,3 +1,11 @@
+## U-273-RF03-LIVE-20261109 — CI #717 선행 증거와 새 source 미검증 (2026-11-09)
+
+- [PR CI #717/run42518993315](https://github.com/planner77/layoutManager/actions/runs/42518993315), HEAD `da5c8782fc04008c94bcb41f676fe58b640c6ce3`, attempt1 `completed/success`, 적용8 Job SUCCESS/A2 scoped SKIP. 리뷰0, Draft, Main behind0. 이 결과는 version+3-role structural handoff 코드 전용.
+- 후속 코드 작성: `rf03_live_evidence.py`(GitHub actual run/job/Owner approval history/Artifact metadata/read-only environment/Source tree+version)와 `rf03_readback.py`(owner manual fixed repo GET allowlist·no redirects), `release-finalizer-rf03-readback.yml`(GET-only job), fake-API 양·음성 회귀 `test_rf03_live_evidence.py`, 필수 PR Scope 연결 및 AGENTS/Issue273/Architecture/Decisions/TestPlan/TestReport/FailureLedger/Operation/ChangeLog 갱신. **본 신규 source에 대한 local Python/Hosted CI, 실 Github run approvals/실 Registry release proof는 아직 NOT VERIFIED/NOT RUN.** 작성·blob/commit은 테스트 완료 증거가 아니다.
+- 환경 설정 `can_admins_bypass` 미노출 시 안전한 fail-closed. 실제 승인 이력 metadata를 읽어도 서명/OCI registry/Owner GO를 증명하지 않으므로 `BLOCKED_CRYPTOGRAPHIC_OCI_AND_REGISTRY_PROOF_REQUIRED`. #229 HOLD 및 운영0.61.0 DB/CAD/Worker/Volume/.env/태그/복구점 불변.
+
+---
+
 ## U-273-RF03-HANDOFF — PR #277 CI #716 후속 코드 검증 경계 (2026-11-09)
 
 - [PR CI #716 / run42516241424](https://github.com/planner77/layoutManager/actions/runs/42516241424): exact HEAD `d068d637c90c3b1b995ec6e2595760531503d5e3`, attempt1 completed SUCCESS, 적용 8 Jobs SUCCESS, A2 scope SKIPPED. Review thread0·Main behind0·Draft. 이는 RF-03 read-only source- and version-bound PLAN만 검증하며 실제 Candidate/Promotion을 검증한 것이 아니다.

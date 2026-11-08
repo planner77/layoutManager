@@ -1,3 +1,21 @@
+## TP-273-RF03-LIVE — 실제 GitHub read-only evidence gate (2026-11-09)
+
+| 항목 | Positive/Negative |
+|---|---|
+| L01 | handoff 구조+정확 Candidate/Promotion 각각 workflow_dispatch run metadata; repo ID, Owner/trigger actor, Main branch, attempt1, 성공/정확 package Source/Tree/Version |
+| L02 | 각 publish Job id/name/status SUCCESS와 다른 run/job ID, expired/cancelled/skipped/re-run/foreign workflow/actor/SHAs 배제 |
+| L03 | run별 실제 GitHub `/approvals` 1개 approved + Owner ID + exact existing protected environment ID/name. 제출 approvalEvidenceSHA가 canonical API-fields receipt와 일치하는지 확인; 위조 hash/다른 env/이벤트 거부 |
+| L04 | GitHub `/environments/issue225-candidate-publish` 기존 보호 환경 reviewer/branch/no-admin-bypass. `can_admins_bypass` true 또는 미노출은 `RF03_ENV_ADMIN_BYPASS_UNKNOWN`로 STOP; 허위 false 추론 불가 |
+| L05 | Candidate Artifact GET ID/name/size/digest/expired false/정확 run repo/source 및 inventory 유일성. missing/bad digest/foreign/expired/partial/다중 artifact reject |
+| L06 | Candidate source A와 Promotion source B의 Git tree, `src/package.json` version, 현재 Main ref==Promotion B; source drift/old package refuse |
+| L07 | fixed GitHub API GET allowlist, no redirect, Owner-only workflow_dispatch/attempt1/checkout source, SHA256 input. foreign/ISSUE/merge/PUT/path traversal/unknown params reject |
+| L08 | 정상 fake API에서도 `BLOCKED_CRYPTOGRAPHIC_OCI_AND_REGISTRY_PROOF_REQUIRED`, Owner/Sigstore/OCI/GHCR=NOT_VERIFIED/NOT_RUN, externalWrites0. PR #277 새 HEAD CI/리뷰/충돌 분리 검증 |
+| L09 | 아직 미충족: RF-03 실제 버전-범용 protected Candidate/Promotion, two independent Owner GO, OIDC/Sigstore artifact bytes verification, OCI role/source/platform/config bytes, authenticated GHCR final digest and legacy alias/no-retry readback, RF-01 durable nonce, RF-04 AC closure |
+
+Fake API는 실제 Owner 승인이나 라이브 환경 성공을 증명하지 않는다. Python 테스트 `test_rf03_live_evidence.py`; 우선 Github CI Scope 실행.
+
+---
+
 ## TP-273-RF03-HANDOFF — Candidate→Promotion 구조적 증거 계약 (2026-11-09)
 
 | ID | 검증 내용 |

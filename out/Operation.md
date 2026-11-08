@@ -1,3 +1,11 @@
+## #273 RF-03 Owner-only read-only evidence readback 운영 가이드 (2026-11-09)
+
+새 `.github/workflows/release-finalizer-rf03-readback.yml`은 Owner `workflow_dispatch`에 정확 `RF03_RELEASE_HANDOFF_V1` packet JSON/SHA256 및 선행 `RF03_EXACT_VERSION_PLAN_V1` JSON/SHA256을 제출하여 GitHub API의 Candidate/Promotion별 fresh run/job/review history, artifact metadata, code/source/Main을 **GET only**로 대조한다. JSON에는 credential/토큰/개인 데이터/운영 환경 값 금지. Job token 권한 `contents:read/actions:read/pull-requests:read`, GHCR 권한 없음. `rf03_readback.py`에서 승인 받은 Owner/attempt1, `GITHUB_SHA=promotionSourceCommit`와 workflow SHA, 고정 Repo GET path만 허용하고 redirect를 거부한다. 기존 Candidate/Promotion live run이 실제 없으면 정상적으로 HALT. GitHub API admin bypass 설정이 노출되지 않아 false로 검증할 수 없다면 `RF03_ENV_ADMIN_BYPASS_UNKNOWN`로 차단하고 추후 Owner UI 증빙 검토 필요. 이는 실제 환경에 조작을 하거나 승인을 생성하지 않는다.
+
+Readback 결과가 메타데이터 일치이더라도 반드시 `BLOCKED_CRYPTOGRAPHIC_OCI_AND_REGISTRY_PROOF_REQUIRED` 상태. OIDC 서명진위·3-role config/manifest/digest/legacy Tag/Registry live readback은 여전히 미검증이며 GHCR 출고/Issue Close/운영 배포 절대 실행 불가. 기존 `0.61.0` publisher pinned, #229 HOLD 및 운영 App/Worker/DB/CAD/Volume/.env/복구점 불변. Source PLAN도 외부 입력이므로 원래 PR/Main 증거의 라이브 독립 재대조는 후속 안전 필수 Gate.
+
+---
+
 ## #273 RF-03 handoff packet 사전 확인(실제 게시 권한 없음) (2026-11-09)
 
 신규 `RF03_RELEASE_HANDOFF_V1`은 release source/PR 및 Main first-attempt CI, Candidate run/packet/environment·review job·candidate artifact, Promotion 별도 run/packet/environment·review job 및 **서로 다른 proof SHA**를 바인딩한다. 각 role Candidate `:candidate-<source>-<run>-1-<role>` 및 실제 `:<version>`, `:<version>-migrate`, `:<version>-cpu-worker`는 엄격히 분리되며 `releaseTarget=:v<version>`은 RF-01 요청 레이블일 뿐이다. old0.61.0 3role digest baseline 및 no automatic rollback 필요. 이 모듈은 구조 확인만 지원하며 Owner가 화면에서 승인하거나 새 GitHub Actions를 실행한 것으로 간주하면 안 된다. 서명/Owner/UI 검증·GHCR registry readback은 추가 live verifier가 담당해야 한다. 현재 `BLOCKED_LIVE_OWNER_CRYPTO_REGISTRY_PROOF_REQUIRED`·externalWrites0가 정상 상태이며 이 값의 변화 없이 출고를 시작해서는 안 된다. 기존 `release-candidate.yml`/`release-promote.yml`는 여전히 0.61.0 고정, 임의 개조/구 릴리스 재실행 금지. 제품/운영 DB/CAD/Volume/.env·GHCR/Tag/latest 및 #229 HOLD 불변.
