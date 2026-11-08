@@ -1,3 +1,11 @@
+## #273 RF-03 version contract 읽기 전용 운영 절차 (2026-11-09)
+
+RF-02 Main `bd03e6fb601c02e5d2f74dd2d97f0c850b3b695f` [HOLD CI 42515467033](https://github.com/planner77/layoutManager/actions/runs/42515467033) first-attempt SUCCESS 이후에도, RF-03 게시 권한은 별도로 승인되지 않았다. 신규 `.github/workflows/release-finalizer-rf03-plan.yml`은 Owner `workflow_dispatch` + SHA256-bound RF-01 Packet만 받아 GitHub read-only Main/PR/CI evidence를 검증하고 실제 version/tag schema를 출력한다. 민감한 비밀번호·GHCR token·실 CAD/환경 값을 Packet에 넣지 말 것. 결과 `BLOCKED_LEGACY_WRITER_VERSION_PIN`은 기존 Candidate/Promotion 버전0.61.0 고정에 의한 설계상 차단이며 runtime 실패·게시 준비 완료를 뜻하지 않음. GHCR/Issue write 권한0.
+
+실제 GHCR release 승격은 `:0.61.1`, `:0.61.1-migrate`, `:0.61.1-cpu-worker` 세 role의 immutable Main source/OCI digest, signatures/OIDC, 두 분리 Owner Environment 승인 및 `latest`/기존0.61.0 보존을 검증하는 후속 구현/수동 승인 후에만 허용한다. RF-01 `releaseTarget=:v0.61.1`은 승인 요청 범위, **실 final tag가 아님**. 등록된 GitHub PR 연동으로 Issue가 예상 밖 CLOSED 될 수 있으니 RF-04 전체 AC 완료 전에는 다시 OPEN 확인. 운영 0.61.0 Worker/App·Volume/DB/CAD/.env·복구점 불변.
+
+---
+
 ## #273 RF-02 GitHub_TOKEN merge 이후 Main HOLD 수동 dispatch 계약 (2026-11-09)
 
 `integrate`는 Owner 수동 실행+정확 CI/Ruleset/Review/Base CAS 검증 후 Github Merge API 1회(작업 job contents:write). `GITHUB_TOKEN`으로 머지된 push 이벤트가 Main workflow를 다시 호출하지 않으므로 merge 결과 SHA/tree/parent readback+Main ref CAS 후 **고정된** `.github/workflows/main-hold.yml`에 `workflow_dispatch` 1회(`ref=main`, `rf02_merge_sha`, `rf02_packet_sha256`)를 호출한다(actions:write). 204 성공은 실행 요청 수용만 의미하며 Main CI 성공이 아니다. timeout/401/403/unknown은 중단·자동 재시도/롤백 금지, 외부 상태는 READBACK으로 조사한다.

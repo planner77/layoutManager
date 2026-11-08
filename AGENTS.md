@@ -1,3 +1,13 @@
+## #273 — PR #276 RF-02 Main 검증 및 RF-03 exact-release 사전 계약 (2026-11-09)
+
+[PR #276](https://github.com/planner77/layoutManager/pull/276) HEAD `9682291b5c46b64992b8504ef914d8fc7b471e3c` [PR CI 42513847448](https://github.com/planner77/layoutManager/actions/runs/42513847448) 8 applicable SUCCESS/A2 scope SKIP, 리뷰 unresolved0·conflicts0·Main behind0. Squash [Main bd03e6fb](https://github.com/planner77/layoutManager/commit/bd03e6fb601c02e5d2f74dd2d97f0c850b3b695f), tree `5c58b4369d74b4cad5694f6df46eadaf6d662990`, parent `9635b153`, [Main HOLD CI 42515467033](https://github.com/planner77/layoutManager/actions/runs/42515467033) exact SHA/attempt1 SUCCESS. 기존 `issue229_release_hold.py` blob SHA `71289df819f4bc3017bbcf358ecd3c5de82f073c` 불변.
+
+PR #276 직후 이슈 #273이 GitHub timeline의 `closed` 이벤트(merge+2초)로 의도치 않게 CLOSED 됨. RF-03 Candidate/Promotion·RF-04 전체 AC Closure 미충족을 확인해 즉시 OPEN 복구; 자동 종료의 정확 트리거는 불명이며 다음 병합 후 재확인한다. [Issue #273](https://github.com/planner77/layoutManager/issues/273) 정본.
+
+신규 RF-03에서는 `rf03_exact_release.py` PLAN의 **read-only** source/Main/버전·3-role canonical GHCR tag 계약만 선행 구현한다. 현행 publisher `candidate_policy.py`/promotion/registry/워크플로의 `0.61.0` 고정 및 실제 Owner protected environment 승인/OCI OIDC 증거는 그대로 유지한다. `0.61.1+`의 실제 출고는 아직 `BLOCKED_LEGACY_WRITER_VERSION_PIN`; `releaseTarget=:vX`는 RF-01 요청 식별자이며 **실제 게시 tag는 `:X`, `:X-migrate`, `:X-cpu-worker`**. 이를 구분하지 않으면 허위 alias/tag 권한 위험. RF-03 정식 writer 파라미터화, 두 독립 Owner 승인, RF-01 영속 receipt/nonce 및 RF-04 AC 종료는 미구현·미승인. 기존 GHCR immutable 0.61.0, #229 HOLD, 운영0.61.0 Worker/DB/CAD/Volume/.env/복구점 보존; 새 HEAD CI 전 PASS 아님.
+
+---
+
 ## #273 / RF-02 PR #276 — Ready P1 리뷰 권한·Main CI 재트리거 수리 (2026-11-09)
 
 [PR #276](https://github.com/planner77/layoutManager/pull/276) 최초 HEAD `92927197947c435ffd7d91bc25e90da1ac49c16b` [PR CI 42490605691](https://github.com/planner77/layoutManager/actions/runs/42490605691)은 8 applicable SUCCESS / A2 scoped SKIP. Draft→Ready 시 새 [PR CI 42512889704](https://github.com/planner77/layoutManager/actions/runs/42512889704) 시작 후 P1 리뷰 2건: (1) squash REST merge에는 `contents:write`가 필요하나 integrate job에 `contents:read`만 있음, (2) `GITHUB_TOKEN` merger의 push는 GitHub가 Actions 재트리거를 억제하므로 `event=push` 전용 Main proof가 영구 WAIT. P1을 해결하지 않고 CI 녹색만으로 병합 불가.

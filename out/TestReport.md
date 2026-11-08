@@ -1,3 +1,12 @@
+## U-273-RF03-PRE-20261109 — Main integration confirmed, release PLAN-only code (2026-11-09)
+
+- [PR #276 CI 42513847448](https://github.com/planner77/layoutManager/actions/runs/42513847448) exact HEAD `9682291b5c46b64992b8504ef914d8fc7b471e3c`: 적용8 SUCCESS, 범위 외 A2 SKIP, thread0, conflicts0, behind0. Squash Main `bd03e6fb601c02e5d2f74dd2d97f0c850b3b695f`, tree `5c58b4369d74b4cad5694f6df46eadaf6d662990`, parent `9635b153`. [Main CI 42515467033](https://github.com/planner77/layoutManager/actions/runs/42515467033) event push exact SHA/attempt1 `Verify read-only GHCR release HOLD` SUCCESS.
+- GitHub Issue #273 timeline에서 병합 직후 자동/외부 경로의 `closed`(actor planner77) 관측. RF-03/04 미완료이므로 OPEN 복구하고 verified state open. Closure trigger 자체는 관측만으로 확정 불가.
+- RF-03 version-generic target/immutable legacy/matched source+Main CI를 정적으로 평가하는 정책·테스트·GET-only workflow를 새 브랜치에 작성; **작성 사실은 테스트 성공 증거가 아님**. 신규 Hosted PR CI 및 단위 테스트 결과는 NOT VERIFIED. 실제 Owner-approved Candidate/Promotion, OIDC 서명 검증, GHCR 게시, Tag/alias update, rollback, Issue Close 전부 NOT RUN/NOT IMPLEMENTED.
+- 기존 0.61.0 3-digest immutable/운영 Worker/DB/CAD/Volume/.env/복구점 및 #229 HOLD 코드 불변.
+
+---
+
 ## U-273-RF02-P1 — CI-success지만 Ready 리뷰 P1 2건 발견 (2026-11-09)
 
 [PR #276](https://github.com/planner77/layoutManager/pull/276) 첫 HEAD `92927197947c435ffd7d91bc25e90da1ac49c16b`의 [CI 42490605691](https://github.com/planner77/layoutManager/actions/runs/42490605691) 적용8 SUCCESS/A2 scoped SKIP은 기존 소스에 대해서만 유효. Draft→Ready 후 [CI 42512889704](https://github.com/planner77/layoutManager/actions/runs/42512889704) 실행 중 Codex P1 리뷰 2건이 등장: token의 Contents merge 권한 누락, GitHub_TOKEN suppress push로 Main proof dead-end. 실제 merge 실패/GHCR 실패는 관측하지 않았으며 코드·공식 GitHub Actions 동작에 근거한 리뷰다.

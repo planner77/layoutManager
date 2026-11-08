@@ -1,3 +1,13 @@
+## RF-03 첫 Unit — 0.61.1+ 정확한 릴리스 대상 계약 (2026-11-09)
+
+RF-02 선행: PR #276 CI [42513847448](https://github.com/planner77/layoutManager/actions/runs/42513847448) exact HEAD `9682291b` SUCCESS→ Squash Main `bd03e6fb601c02e5d2f74dd2d97f0c850b3b695f` tree `5c58b4369d74b4cad5694f6df46eadaf6d662990` parent `9635b153`→ Main CI [42515467033](https://github.com/planner77/layoutManager/actions/runs/42515467033) first-attempt HOLD SUCCESS. 병합 직후 GitHub timeline의 `closed`로 #273이 조기 종료돼 **OPEN 재전환**. RF-03/04 미완료라 Issue Close 승인이 아니다.
+
+이번 RF-03 Unit은 기존 `RF-01`의 exact PR/merge SHA/tree/Main CI를 재사용하는 `rf03_exact_release.py`와 negative fake API 테스트, Owner `workflow_dispatch` 읽기 전용 PLAN, 필수 PR Scope 연결이다. `0.61.0` 역사적 출고를 재게시하거나 자동 승인하지 않고, 최소 `0.61.1+` 범위에 canonical 3-role tag `X`/`X-migrate`/`X-cpu-worker`를 구성한다. RF-01 `releaseTarget=...:vX`와 실제 GHCR `:X`는 **서로 다른 역할**; 신규 v-tag/alias를 생성하지 않는다. Main head와 squash SHA/CI identity가 일치하지 않으면 HALT. 결과는 의도적으로 `BLOCKED_LEGACY_WRITER_VERSION_PIN`, `externalWrites=0`이며 실제 Candidate/Promotion/Issue 수용은 모두 `NOT_VERIFIED`.
+
+**잔여 필수 단계**: 기존 0.61.0 고정 Candidate/Promotion의 안전한 source-version 파라미터화(특히 build OCI labels, RR1/RR2 runtime/version, registry plan/manifest, rollback), 실제 깨끗한 source/Owner 2독립 보호 환경 승인, OIDC signed artifact/3 exact digest/role/platform/config/provenance/registry readback, no overwrite/latest/partial reuse, checkpoint/nonce 및 RF-04 full AC Issue Close. 기존 #229 HOLD/운영 배포 금지. PLAN 구현만으로 #273 완료/0.61.1 출고 승인 아님.
+
+---
+
 ## RF-02 PR #276 — P1 권한/트리거 리뷰 보완 (2026-11-09)
 
 Ready 이벤트로 정확 기존 HEAD `92927197947c435ffd7d91bc25e90da1ac49c16b`의 새 PR CI [42512889704](https://github.com/planner77/layoutManager/actions/runs/42512889704) 시작. 리뷰 P1 두 건: 기존 integrate workflow token `contents:read`만으로 실제 PR merge 불가; `GITHUB_TOKEN`으로 merge된 push는 GitHub Actions가 후속 push CI를 실행하지 않음. 기존 RF-02 `event=push` readback만으로는 Main CI 검증 불가. 수정한 코드에서는 only integrate job에 contents/pulls/actions write를 허용하며 정상 GitHub Ruleset/Owner/HEAD CAS를 우회하지 않는다. Merge 성공 → 실제 tree/parent/PR readback → Main ref SHA CAS → 기존 `main-hold.yml` workflow_dispatch(고정 ref=main + exact merge SHA + packet SHA256)를 **한 번만** 호출한다. 204 응답 확인·비정상/timeout Unknown은 fail closed/no retry. Main workflow는 기존 HOLD_MAIN 강제 및 SHA/packet 확인을 유지하고 run-name `MAIN CI | RF02 | <SHA> | <packetSHA>`를 제공한다. RF-02는 이 정확 실행의 run attempt1·full required Job SUCCESS를 바인딩하거나 `MERGED_WAITING_MAIN_CI`로 남긴다. 실제 출고/Issue Close는 분리, RF-03/04 미구현, #273 OPEN. 변경 신규 HEAD CI 전 NOT VERIFIED.

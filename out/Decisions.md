@@ -1,3 +1,9 @@
+## ADR-273-RF03 — immutable legacy 0.61.0과 generic 3-role target 분리 (2026-11-09)
+
+결정: 역사적 0.61.0 candidate/promote workflow, signed receipt, GHCR tag/digest는 비가역 보존한다. 새 version `>=0.61.1` canonical final tag `version`, `version-migrate`, `version-cpu-worker`이며 RF-01 Packet의 `...:v<version>` releaseTarget은 Owner 요청 범위/의도 식별자일 뿐 실 출고 tag가 아니다. 하위 실 publisher는 이전 source·role·OCI platform/manifest/config/verification/rollback 근거를 정확 비교해야 한다. 현재 generic PLAN 단계는 출고 또는 승인 권한을 부여하지 않으며 기존 `0.61.0` 고정 writer를 변경하지 않는다. 실제 Candidate/Promotion은 서로 독립된 fresh Owner protected approval/attempt1/OIDC+immutable digest readback 없이는 실행하지 않는다. #229 HOLD_MAIN/G7_RELEASE_HOLD_TAG_BLOCKED 불변. RF-04 Issue Close는 자체 AC Gate로 분리하며 조기 GitHub auto-close 발생 시 수동으로 재열어 미완료를 보존한다.
+
+---
+
 ## ADR-273-RF02-P1 — GitHub token merge와 명시적 Main CI dispatch (2026-11-09)
 
 확정: 보호된 PR merge API는 Contents write가 요구되므로 RF02 `integrate`에 한정하여 GitHub_TOKEN `contents:write`와 `actions:write`를 추가한다. Job은 정확 Repo/Owner/CI/RuleSet/HEAD 검사 및 PUT merge 1회와 지정 `main-hold.yml` workflow_dispatch POST 1회만 수행, plan/readback은 read-only. GitHub_TOKEN push 자체를 Main CI 시작 증거로 삼지 않으며, dispatch의 exact SHA/packet hash를 `run-name`와 Main-HOLD 검증에 명시한다. 기존 event=push와 별개로 event=workflow_dispatch run identity를 fail-closed 확인한다. 재시도/alias/latest/2-role 자동 publisher 금지. P1 보완 신규 PR CI 이전 미검증.

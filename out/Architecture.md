@@ -1,3 +1,9 @@
+## #273 RF-03 exact release read-only planning boundary (2026-11-09)
+
+입력은 RF-01 SHA256-bound Packet, 실제 PR HEAD/tree/merge SHA/Main CI first-attempt GET evidence와 현재 Main ref이다. 정책 출력은 3-role final tags `ghcr.io/planner77/layoutmanager:<semver>` 및 `-migrate`/`-cpu-worker`, linux/amd64 expectation만 구성한다. RF-01 `releaseTarget`의 `v<semver>` 접두사는 **요청 식별자**이며 실제 registry final tag와 구분한다; 새로운 alias 작성 금지. 기존 candidate/promotion 0.61.0 코드·기존 signed artifact/digest·GHCR writer 그대로 보존하고, 0.61.1+ 실제 쓰기 경로는 blocked. `rf03_exact_release.py`/read-only workflow는 GET/PLAN만, `ownerAuthority/candidateSignedArtifact/ociRoleDigests/registryReadback/issueAcceptance=NOT_VERIFIED`. Main ref drift, old version, foreign evidence, CI missing/attempt2은 fail-closed. RF-03 후속은 기존 verification pipeline에 version validated from immutable source만 주입하고 두 별도 protected Owner reviews/attestation/serialized publisher/unknown state STOP 후 실제 registry readback으로 승인 증거를 생성해야 한다.
+
+---
+
 ## #273 RF-02 exact Main dispatch after GITHUB_TOKEN squash (2026-11-09)
 
 GitHub Actions `GITHUB_TOKEN`으로 수행한 merge의 push는 다른 Actions push workflow를 자동 트리거하지 않는다. RF-02 Owner integration workflow는 **merge writer job에만** contents:write/pull-requests:write/actions:write를 부여한다. 성공한 protected squash의 PR/sha/tree/one parent readback 후 Main branch ref==mergeSHA를 재확인하고 별도 `main-hold.yml` workflow_dispatch를 SHA+packetSHA256 입력으로 한 번 호출한다(원격 응답 불확실→HALT, 재호출 금지). HOLD workflow는 정확 source SHA와 Packet hash 형식을 확인하며 기존 Main push/Owner manual 사용도 보존한다. RF02 readback은 기존 exact push run 및 별도 exact dispatch run을 다른 타입으로 검사, full name+head SHA+repo ID+branch main+attempt1+HOLD Job SUCCESS를 요구한다. Pending/Cancel/Skip/Failure는 MAIN_VERIFIED 불가. RF-03/04 authorization과 무관.

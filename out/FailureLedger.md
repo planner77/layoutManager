@@ -1,3 +1,11 @@
+## #273 — PR #276 성공 직후 조기 이슈 종료, RF-03 승인 차단 (2026-11-09)
+
+- **CI 실패가 아니라 이슈 상태 이상:** PR #276 exact HEAD `9682291b5c46b64992b8504ef914d8fc7b471e3c` [PR CI 42513847448](https://github.com/planner77/layoutManager/actions/runs/42513847448) 성공; Squash [Main bd03e6fb](https://github.com/planner77/layoutManager/commit/bd03e6fb601c02e5d2f74dd2d97f0c850b3b695f); [Main CI 42515467033](https://github.com/planner77/layoutManager/actions/runs/42515467033) exact push attempt1 HOLD Job SUCCESS. GitHub issue timeline에 Main 병합 직후 `closed` by planner77 `2026-11-08T19:31:26Z`, state_reason `completed`가 기록됐으나 release/AC 증거 없이 완료로 판단할 수 없음. Root가 `state=open`, reason `reopened`로 복구, readback OPEN. Closure 이벤트의 직접 원인(연관 PR 자동 종료 설정인지 별도 조작인지)은 현 API 기록만으로 미확정.
+- **RFC 정본 유지:** [Issue273](Issue273.md)의 RF-03 separate Candidate/Promotion Owner protected approvals 및 exact 3-role signed digest/RF-04 full AC 아직 없음. 기존 release `0.61.0` immutables과 G7 HOLD 유지; GHCR/Tag/latest/운영 DB/CAD/Volume/.env/Worker/복구점에 수동 변경 없음.
+- **RF-03 사전 정책 경계:** 기존 `candidate_policy.py`, `registry_promotion.py`, CI OCI labels/runtime 각 `0.61.0` 고정 계약이므로 0.61.1을 단순 문자열 교체해 출시할 수 없음. 읽기 전용 `rf03_exact_release.py`는 실제 Main CI와 version/tag scheme만 점검하고 `BLOCKED_LEGACY_WRITER_VERSION_PIN`을 명확히 반환. 새로운 Source의 CI/local Python 실증 미확인/개발 중, 실제 out-of-band publisher 변경 없음.
+
+---
+
 ## #273 / RF-02 PR #276 — Ready P1 두 건·해결 소스 CI 재검증 대기 (2026-11-09)
 
 - **최초 CI는 SUCCESS이며 신규 실패가 아님:** exact HEAD `92927197947c435ffd7d91bc25e90da1ac49c16b`, [PR CI 42490605691](https://github.com/planner77/layoutManager/actions/runs/42490605691) 8 applicable SUCCESS/A2 scoped SKIP. Draft 해제 후 새 [PR CI 42512889704](https://github.com/planner77/layoutManager/actions/runs/42512889704) 시작, 리뷰 2개 P1 unresolved로 Merge HOLD.

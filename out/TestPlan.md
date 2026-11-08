@@ -1,3 +1,15 @@
+## TP-273-RF03-PRE — exact source-bound 3-role release PLAN 음성 검증 (2026-11-09)
+
+- R3P01 정상 RF-01 Packet/Main first-attempt CI verified, Main ref==실제 Squash SHA, source tree+release version 일치 시 **읽기 전용** `BLOCKED_LEGACY_WRITER_VERSION_PIN`만 출력. Candidate/Promotion/Issue 인수 증거는 NOT_VERIFIED, externalWrites0.
+- R3P02 `0.61.0` 역사적 배포 버전·구버전 재게시 거부. 범용 SemVer `0.61.1/0.61.2/0.62.0/1.0.0` 구성을 검증하되 prerelease/leading zero/int overflow 거부.
+- R3P03 실제 GHCR 대상은 `:version`, `:version-migrate`, `:version-cpu-worker` 정확 3개; RF-01 Packet `:v<version>`은 release 요청 의도이며 tag 생성이 아님. 별도 최신 alias 자동 승격 금지.
+- R3P04 wrong Issue/PR SHA/tree/source/version, Owner/Repo, Main CI 미완료·재시도, releaseRequired false, wrong release target, Main ref drift·wrong type, 모든 부정 케이스 fail-closed.
+- R3P05 기존 `registry_promotion.VERSION=0.61.0`, `candidate_policy.ROLES`, `promotion_policy.template().version=0.61.0` 불변/기존 #229 HOLD regression. 새 workflow GitHub GET 최소권한, GHCR/write/Issue 닫기 금지.
+- R3P06 새 정확 PR HEAD required Scope/전체 applicable CI PASS 및 Codex review0, Ruleset 충족 전 merge/0.61.1 GHCR 게시 금지.
+- R3P07 실제 protected Candidate/Promotion 코드 version-parameterization과 각각 **독립 승인** OIDC/3 role OCI digest/rollback·registry readback은 후속 RF-03 구현 필수(이번 PLAN은 이를 수행하지 않음).
+
+---
+
 ## TP-273-RF02-P1 — 권한·후속 Main CI trigger 검증 (2026-11-09)
 
 - P1-A: 실제 GitHub REST squash에 필요한 `contents:write`, Main dispatch `actions:write`는 **integrate job만**; plan/readback job은 read-only. Token scope가 넓어도 코드가 임의 Repo/Issue/GHCR write하지 않도록 fixed routes 검증.

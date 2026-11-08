@@ -1,3 +1,11 @@
+## 2026-11-09 — Issue #273 RF-02 Main + RF-03 read-only release version plan
+
+- PR #276 final exact SHA PR CI 42513847448 PASS, squash Main `bd03e6fb601c02e5d2f74dd2d97f0c850b3b695f` tree `5c58b4369d74b4cad5694f6df46eadaf6d662990` parent `9635b153`; Main CI 42515467033 read-only HOLD SUCCESS.
+- GitHub issue #273 조기 CLOSED 감지·RF-03/04 AC 미완료 근거로 OPEN 복구, 원인은 아직 미확정.
+- RF-03의 source-bound read-only exact version/three-role GHCR tag plan, legacy0.61.0 immutable 거부, Main ref/CI/Owner source negative tests, owner PLAN workflow 추가. 실제 0.61.1 publisher 코드와 두 보호 환경 승인/서명/이미지 게시/Issue Close는 미구현·미실행. #229 HOLD 그대로.
+
+---
+
 ## 2026-11-09 — #273 RF-02 PR276 P1 review fixes
 
 - GitHub REST protected merge token Contents write 및 GITHUB_TOKEN push event workflow-suppression 확인. Integrate job에만 contents/pulls/actions write 부여; exact merge SHA/packet bound main-hold workflow_dispatch를 추가하고 Main workflow run-name/독립 readback 성공 Gate 구현.
