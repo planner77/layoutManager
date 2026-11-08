@@ -88,6 +88,16 @@ def same_baseline(old,new):
               ('tables','files','manifestSha','manifestVersion','manifestSchemaId',
                'foreignKeys','prefixHashes')), 'RR2_RESTORED_SNAPSHOT_MISMATCH')
 
+def require_upgrade_plan(plan):
+    """Exact reviewed 0.60.0 -> 0.61.0 MIGRATION -> 0.61.1 COMPATIBLE path."""
+    check(isinstance(plan, dict)
+          and plan.get('decision') == 'UPGRADE_MIGRATION_REQUIRED'
+          and plan.get('installedVersion') == '0.60.0'
+          and plan.get('targetVersion') == CURRENT_VERSION
+          and plan.get('registryChain') == ['MIGRATION', 'COMPATIBLE'],
+          'RR2_UPGRADE_PLAN_INVALID')
+
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--old-pair-receipt',required=True,type=Path)
@@ -137,8 +147,7 @@ def main():
         status=proof(receipt_path,'status',release='new',env=env)
         check(status['decision']=='UPGRADE_MIGRATION_REQUIRED','RR2_UPGRADE_STATUS_INVALID')
         plan=proof(receipt_path,'plan',release='new',env=env)
-        check(plan['decision']=='UPGRADE_MIGRATION_REQUIRED' and
-              plan['registryChain']==['MIGRATION'],'RR2_UPGRADE_PLAN_INVALID')
+        require_upgrade_plan(plan)
         bad=proof(receipt_path,'execute',release='new',approve='0'*64,env=env,
                   expect_failure=True)
         check(bad.get('code')=='G7_DEPLOY_STALE_PLAN','RR2_UPGRADE_WRONG_APPROVAL_INVALID')

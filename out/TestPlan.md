@@ -1,3 +1,18 @@
+## TP-218-RR2-PATCH — source0.61.1 업그레이드 경로/선행 실패 (2026-11-08)
+
+기준: `src/server/g7-operational/greenfield-upgrade-registry.ts`의 등록 경로와 `src/tests/integration/g7-greenfield-upgrade.test.ts`. 단일 운영 source0.61.0은 유지, 해당 proof는 **폐기 가능한 테스트 전용** old0.60.0→candidate0.61.1 경로다.
+
+| Test | 검증 조건 |
+| --- | --- |
+| R2P01 | Scope 선행 Python `test_rr2_cleanup.py`가 실제 `require_upgrade_plan`의 `decision=UPGRADE_MIGRATION_REQUIRED`, `installedVersion=0.60.0`, `targetVersion=CURRENT_VERSION`, `registryChain=['MIGRATION','COMPATIBLE']`를 PASS로 검증 |
+| R2P02 | 누락된 COMPATIBLE, 역순, 추가 MIGRATION, 추가 COMPATIBLE, 잘못된 installed/target version, `UPGRADE_COMPATIBLE` 결정은 모두 `RR2_UPGRADE_PLAN_INVALID`로 fail-closed |
+| R2P03 | 기존 실제 Docker RR2는 정확 old GHCR pair/source/digest와 후보3-image/role/manifest identity, owned timeout/cleanup, wrong-plan approval 거부, 정상 마이그레이션 후 STOPPED readback, CPU Worker·Viewer, immutable backup/restore·cleanup을 기존 Gate 그대로 확인 |
+| R2P04 | Scope·G7/Chromium·Static/Unit/Build·Docker·Required Verify가 정확 **새 PR HEAD**에서 성공하기 전 이 Unit/PR/Issue 또는 GO 확대를 PASS라고 기록하지 않음 |
+
+실제 CI #704의 단계별 결과·오류는 FailureLedger/TestReport의 U-218-CI704에 보존하며, 이 문서는 시험 완료 증거가 아니다. 새 PR CI는 시작 확인 후 완료 모니터링하지 않는다.
+
+---
+
 ## TP-218-L05 — Scene 목록 조회 결함 회귀 (2026-11-08, 구현 전)
 
 선행 설계/AC는 [Issue218](Issue218.md) 최신 LS01–07이다. 아래 L05-01–06은 같은 요구의 검증 묶음이며 최종 결과는 LS01–07로 추적한다. 기존 #225 signed 업로드→독립 CPU Worker→verified Scene·새 Viewer, KILL/OOM·복구/운영 근거는 해당 기능의 기존 증거로 재사용하며 이번 상태 UI 시험과 구별한다.

@@ -1,3 +1,13 @@
+## U-218-CI704-20261108 — PR #272 RR2 OCI 계획 단계 실패/수리 검증 경계
+
+**관측:** [CI #704 run42467199034](https://github.com/planner77/layoutManager/actions/runs/42467199034) exact HEAD `bfc38049ba51198fc2ae8789203a92458880fba6`에서 Docker job `128689404614`이 `RR2_UPGRADE_PLAN_INVALID` (stage=upgrade)로 실패했다. 전체 Required Verify FAIL. Scope, Static/Unit/Build, G7 signed-runtime/Greenfield, Chromium 일반 두 shards PASS, A2 scoped SKIP. 기존 0.60 GHCR pair 검증과 두 disposable timeout·cleanup probe 통과, 실제 upgrade 실행·신규 Worker·Browser/restore 후속은 해당 실패로 NOT VERIFIED.
+
+**근거/수정:** `greenfield-upgrade-registry.ts`에 `0.60.0→0.61.0 MIGRATION` 및 `0.61.0→0.61.1 COMPATIBLE`이 등록되고 `g7-greenfield-upgrade.test.ts`에서 동일 두 단계가 검증된다. RR2 journey의 구 `['MIGRATION']` 조건만 오래돼 정확히 등록된 계획을 거부했다. Source의 `require_upgrade_plan`은 현재 릴리스 버전·기존 0.60.0 버전과 승인-required decision 및 정확 두 단계만 수용하도록 수정했다. 선행 Scope에서 이 동일 함수를 직접 테스트하는 Python 회귀를 추가하고 7종 잘못된 plan 변형을 거부하게 했다. 실제 OCI identity, Source SHA, 기존 READY/DB, 승인/CAS, mutable/immutable 이미지·복구 계약은 변경하지 않았다.
+
+**검증 상태:** 실패한 기존 CI 704를 성공으로 승격하지 않는다. 정적 source/registry/test 계약 비교는 수행했지만 수정 소스의 실제 Python unit/OCI/Browser full execution은 새 exact HEAD CI 전 **NOT VERIFIED**이며, 운영 전환·GHCR·Tag·승인 상태 변경은 없음. PR CI를 시작한 뒤 완료는 모니터링하지 않는다.
+
+---
+
 ## U-218-CI703-20261108 — PR #272 Scope regression version fixture 보완
 
 [CI #703/run42466803358](https://github.com/planner77/layoutManager/actions/runs/42466803358) exact HEAD `33557f568456a9dbd038325ce823203037ab35e4`는 Scope Check Issue에서 `test_rp_execution_fix.py` 19개 중 1개가 `RR2_PROBE_INPUT_RECEIPT_INVALID`로 ERROR를 발생시켜 실패했다. 과거 `0.61.0`으로 고정된 synthetic RR1 receipt와 OCI version label이 새 검증 함수가 강제하는 현재 source `0.61.1` 버전 계약과 충돌했다. Scope 초기 PR classifier7 / release HOLD6 및 RP7/CP12/Registry15 성공 결과는 Scope 전체 PASS가 아니다. Docker, Greenfield, G7 runtime, Static/Unit/Build, Chromium Job들은 Scope 의존성으로 SKIP이었다.

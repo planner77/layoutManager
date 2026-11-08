@@ -127,5 +127,34 @@ class CleanupTest(unittest.TestCase):
                         probe.checked_input(path)
 
 
+    def test_rr2_upgrade_plan_exact_migration_then_compatible(self):
+        """Check the same plan gate before an expensive disposable Docker journey."""
+        spec = importlib.util.spec_from_file_location(
+            "rr2_journey", Path(__file__).with_name("rr2-journey.py"))
+        journey = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(journey)
+        correct = {
+            "decision": "UPGRADE_MIGRATION_REQUIRED",
+            "installedVersion": "0.60.0",
+            "targetVersion": journey.CURRENT_VERSION,
+            "registryChain": ["MIGRATION", "COMPATIBLE"],
+        }
+        journey.require_upgrade_plan(correct)
+        rejected = (
+            ("missing-patch", {"registryChain": ["MIGRATION"]}),
+            ("wrong-order", {"registryChain": ["COMPATIBLE", "MIGRATION"]}),
+            ("extra-migration", {"registryChain": ["MIGRATION", "MIGRATION"]}),
+            ("extra-edge", {"registryChain": ["MIGRATION", "COMPATIBLE", "COMPATIBLE"]}),
+            ("wrong-source", {"installedVersion": "0.59.0"}),
+            ("wrong-target", {"targetVersion": "0.61.0"}),
+            ("no-approval-required", {"decision": "UPGRADE_COMPATIBLE"}),
+        )
+        for name, changes in rejected:
+            with self.subTest(name=name):
+                with self.assertRaisesRegex(journey.JourneyFailure,
+                                            "^RR2_UPGRADE_PLAN_INVALID$"):
+                    journey.require_upgrade_plan({**correct, **changes})
+
+
 if __name__ == "__main__":
     unittest.main()

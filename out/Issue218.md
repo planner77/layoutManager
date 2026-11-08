@@ -1,3 +1,9 @@
+## 2026-11-08 — PR #272 CI #704 RR2 업그레이드 계획 기대값 정합화
+
+현재 후보 source `0.61.1`의 기존 `0.60.0` 업그레이드는 등록된 `MIGRATION→COMPATIBLE` 두 단계이나 PR CI #704의 RR2 synthetic OCI journey는 이전 `MIGRATION` 1단계만 허용했다. 결과 `RR2_RR3_JOURNEY_FAILED stage=upgrade code=RR2_UPGRADE_PLAN_INVALID`. [FailureLedger](FailureLedger.md), [TestReport](TestReport.md) U-218-CI704, [TestPlan](TestPlan.md) TP-218-RR2-PATCH를 따른다. 엄격한 source/target/step 계약과 선행 음성 테스트를 보강하며 실제 업그레이드·Worker·Viewer 후속 미검증은 유지한다. CI 필수 Job 및 보호 정책 축소 없음. PR Draft/Issue OPEN, 운영0.61.0과 GHCR/tag 불변.
+
+---
+
 ## 2026-11-08 — PR #272 CI #703 Scope fixture 잔여 불일치
 
 CI #703의 `test_rp_execution_fix.py` 양성 synthetic receipt·OCI label이 `0.61.0`으로 고정된 채 새 RR2 `0.61.1` strict verifier를 호출해 `RR2_PROBE_INPUT_RECEIPT_INVALID`가 발생했다. 기존 provenance/identity 음성 검증을 보존하며 현재 candidate source version에만 fixture를 결합한다. [FailureLedger](FailureLedger.md) #218/CI703 및 [TestReport](TestReport.md) U-218-CI703을 따른다. 새 exact HEAD hosted CI는 시작 후 완료를 감시하지 않는다. #218 OPEN/PR Draft, 운영0.61.0의 활성 Worker·Scene flags 및 기존 자료/배포 불변.

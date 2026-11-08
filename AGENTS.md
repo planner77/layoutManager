@@ -1,3 +1,9 @@
+## #218 / PR #272 — CI #704 RR2 upgrade 계획 검증 수리 (2026-11-08)
+
+[FailureLedger](out/FailureLedger.md)의 CI704, [TestReport](out/TestReport.md) U-218-CI704, [TestPlan](out/TestPlan.md) TP-218-RR2-PATCH 순서로 확인한다. CI #704의 Source `bfc38049`에서 RR2 actual 0.60.0→0.61.1의 등록 경로는 `MIGRATION → COMPATIBLE`이나 `rr2-journey.py`가 `['MIGRATION']`만 허용해 `RR2_UPGRADE_PLAN_INVALID`가 발생했다. 현재 릴리스 Registry 및 G7 통합 테스트와 일치하도록 **정확한 두 단계와 기존/대상 버전**을 확인한다. 필수 Scope에서 실제 validator를 사용하는 단위 음성 회귀를 추가해 미래 경로 누락·순서 변경을 Docker 실기동 전에 거부한다. 기존 구 OCI 이미지·backup·권한·CAS·감사·실 Viewer Gate는 완화하지 않는다. PR #272 Draft 및 Issue #218 OPEN, 운영0.61.0 flags ON/단일 CPU Worker/DB·CAD·Volume/.env/Tag/GHCR/자동 publisher HOLD 보존. 이 Source의 CI는 시작 확인 후 완료 모니터링하지 않는다.
+
+---
+
 ## #218 / PR #272 — CI #703 Scope fixture 후속 수리 (2026-11-08)
 
 CI #703/run42466803358: Scope Job128688083320에서 `test_rp_execution_fix.py`의 synthetic RR1 receipt/OCI image label이 `0.61.0` 고정값을 사용하여 source0.61.1의 `current_candidate_version()` 검증에 거부됐다. 필수 downstream Job은 SKIPPED. `out/FailureLedger.md`의 #218 CI703 및 `out/TestReport.md`의 U-218-CI703을 참조하고, 양성 test fixture만 source 현재 버전에 결합해 provenance/negative assertions·required gates를 보존한다. 미해결 리뷰/충돌/behind0 확인 후 정확 HEAD PR CI를 시작만 확인하고 결과 감시는 하지 않는다. 운영0.61.0/flags ON/단일 Worker·원본·볼륨·GHCR/tag 불변, #218 OPEN, PR272 Draft 유지.
