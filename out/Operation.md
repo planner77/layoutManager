@@ -1,3 +1,9 @@
+## #273 RF-01 Packet V1 필수 추가 입력 (2026-11-08)
+
+기존 Packet 외 `releaseTarget`(exact `ghcr.io/planner77/layoutmanager:v<version>`), `acceptanceIds`(고유 AC ID 배열), `ownerIntent`(`integrate`, `release`, `closeIssue` Boolean), `issuedAtEpoch`/`expiresAtEpoch`(UTC Unix seconds, 최대24h)를 넣고 원문 JSON bytes를 SHA256 하여 `packet_sha256`을 입력한다. `closeIssue=true`라면 AC ID가 최소 1개 필요하다. 읽기 전용 워크플로는 Owner actor/repo ID와 Main ref를 확인한 뒤 GET/PLAN만 한다. intent/hash는 Owner/Environment 승인 증명이 아니다. 만료되거나 CI attempt>1인 경우 HALT. 자동 merge·3-image publish·Issue Close 및 0.61.1 운영 배포는 후속 보호된 별도 구현/승인이 없으면 불가. #229 HOLD 불변.
+
+---
+
 ## #273 — Release Finalizer RF-01 사용 범위 및 운영 보호 (2026-11-08)
 
 `.github/workflows/release-finalizer.yml`은 **workflow_dispatch PLAN 전용**이다. 입력 `packet_json`은 `RELEASE_FINALIZER_REQUEST_V1`의 닫힌 구조이며 owner/repo id, 실제 PR head SHA/tree/base, Issue, version, 고정 `[app,migrator,cpu-worker]`, nonce, stopPolicy를 포함한다. `packet_sha256`은 전송한 정확 UTF-8 JSON bytes에 대한 해시이며 승인 서명이 아니다. 민감한 token/password/환경/실 CAD 데이터는 Packet에 넣지 않는다.

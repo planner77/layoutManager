@@ -1,3 +1,11 @@
+## #273 / PR #274 — 기존 CI 성공 재사용 경계, 후속 소스 증거 미확인 (2026-11-08)
+
+- **새 실패 관측 없음.** [PR CI 42481792421](https://github.com/planner77/layoutManager/actions/runs/42481792421)의 정확 HEAD `e4926f3fbbab0d59bc7141e1dd6f56aadbd0f80e`: Scope·Static/Build·Docker·G7/E2E·aggregate 등 적용 Job **8/8 SUCCESS**, A2 scoped Job **SKIPPED**. 리뷰 스레드0, mergeable true, main behind0.
+- **원인/재사용:** 기존의 그린 결과는 구 RF-01 Source 전용. 최신 packet target·TTL·AC·Owner intent·attempt1 보완을 거친 새 소스의 PR CI는 **NOT VERIFIED**이며 과거 성공을 신규 HEAD로 소급하지 않는다. Request 해시는 Owner 인증이 아님.
+- **보호:** 기존 CI #702~705 실패 이력 보존. 신규 CI 완료 감시하지 않음. #229 HOLD_MAIN/TAG_BLOCKED, 독립 Candidate/Promotion Owner 승인, 현행 운영 DB/CAD/Volume/.env/Worker/Tag/복구점 불변. RF-02/03/04 writer **NOT RUN**.
+
+---
+
 ## #273 / Release Finalizer RF-01 — 보호 경계 및 아직 미검증 항목 (2026-11-08)
 
 - **새 CI 실패는 관측하지 않음.** 이번 Issue는 기존 여러 번의 PR→Main→GHCR→Issue 종료 지시와 #229 2-image 자동 게시 위험을 줄이는 공통 개선이다. #229 구현은 `>=0.61.0` Main `HOLD_MAIN`, Tag `G7_RELEASE_HOLD_TAG_BLOCKED`를 강제하며, existing candidate/promote는 0.61.0 exact-version·Owner 별도 Environment review가 필요하다. 단순 자동화로 동일 승인 간주 금지.

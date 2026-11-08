@@ -1,3 +1,9 @@
+## #273 — RF-01 exact packet·CI attempt 보완 (2026-11-08)
+
+기존 [PR #274 CI run 42481792421](https://github.com/planner77/layoutManager/actions/runs/42481792421)은 HEAD `e4926f3fbbab0d59bc7141e1dd6f56aadbd0f80e`의 **적용 Job 8개 SUCCESS**, scoped A2 1개 SKIPPED. 그 결과는 변경 전 소스만 검증한다. RF-01에 exact releaseTarget, AC ID 범위, 자가 선언 Owner intent(승인 증명 아님), 24시간 이내 만료, PR/Main run·required job attempt1 검증, dispatch Owner/Repo identity를 추가한다. 새 정확 HEAD CI 전 NOT VERIFIED; RF-02/03/04 writer는 아직 NOT IMPLEMENTED. #229 HOLD와 Owner 보호 환경 두 승인, 운영0.61.0과 기존 GHCR/Volume 변경 금지. [Issue273](out/Issue273.md), [FailureLedger](out/FailureLedger.md) 기준.
+
+---
+
 ## #273 — Release Finalizer RF-01 안전한 사전 계획 구현 (2026-11-08)
 
 Owner 요청은 GHCR RELEASE와 Issue Close까지 one-shot 완료를 향하지만 **승인과 검증을 생략하지 않는다**. [Issue #273](https://github.com/planner77/layoutManager/issues/273), [Issue273](out/Issue273.md), [TestPlan](out/TestPlan.md) TP-273, [FailureLedger](out/FailureLedger.md) RF-01을 참조한다. 이번 PR에는 읽기 전용 `release_finalizer.py plan` 및 `release-finalizer.yml`만 구현했다. GITHUB_TOKEN은 GET 최소 권한이며 원격 쓰기0. 현재 `0.61.0` 고정된 #225 candidate/promote와 `#229 HOLD_MAIN/G7_RELEASE_HOLD_TAG_BLOCKED`는 수정·완화하지 않는다. RF-02 merge/Main orchestrator, RF-03 0.61.1+ 승인된 3-image publication, RF-04 이슈 AC closure는 후속 구현 전 **NOT RUN**이다. PR CI 성공 전 릴리스가 성공했다고 말하지 않는다. 운영0.61.0 단일 Worker·사용자 .env/DB/CAD/Volume/복구점/태그 불변. 과거 CI #702~#705 기록 보존, PR #272 Main 병합 성공 증거를 재사용하며 새 코드의 exact HEAD CI를 별도로 검증한다.

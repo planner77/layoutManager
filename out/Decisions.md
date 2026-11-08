@@ -1,3 +1,9 @@
+## ADR-273-RF01 — 요청 재사용 범위·CI attempt 보강 (2026-11-08)
+
+결정: 목표 패키지/버전 태그, AC ID, Owner 의도, 24h 내 만료를 닫힌 Packet V1에 포함한다. PR/Main run과 필수 Job attempt2 이상은 기존 성공의 재사용 근거가 아니다. 자가 선언 Intent/Packet SHA는 권한 증명이 아니므로 `releaseAuthorization=NOT_VERIFIED`, `issueAcceptance=NOT_VERIFIED`를 계속 출력한다. 기존 CI42481792421의 성공은 그 HEAD만 증명한다. #229 HOLD와 독립 보호 환경 승인 필수 정책은 변경하지 않는다.
+
+---
+
 ## #273 — One-shot Finalizer의 승인/릴리스 분리 (2026-11-08)
 
 **결정:** 사용자의 통합 완료 요청은 실행 및 근거 재사용을 자동화하지만 보안·Issue 완료 정책을 우회하지 않는다. `#229`의 `HOLD_MAIN`(>=0.61.0) 및 tag blocked 정책은 그대로 유지한다. 기존 0.61.0 fixed Candidate/Promotion을 새 버전인 것처럼 재생하지 않는다. 0.61.1+ 실제 GHCR 출고는 실제 Owner 승인 2단계/정확 SHA·3-role Digest·OIDC/OCI/rollback baseline과 보호 환경 확인을 사용하는 별도 RF-03 승인 절차에서만 구현한다. PR/Merge/Release/Issue-close는 독립 verdict이며 Issue #218의 L-01~08을 PR 단위로 자동 완료시키지 않는다.

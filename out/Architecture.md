@@ -1,3 +1,9 @@
+## #273 RF-01 request scope hardening (2026-11-08)
+
+읽기 전용 Packet V1에 exact GHCR `releaseTarget`, 최대 24h issued/expiry epoch, 고유 AC ID 목록, integration/release/closure Owner Intent를 필수화한다. Owner Intent와 SHA256은 실제 Owner 승인/권한 증명이 아니다. PR/Main workflow와 필수 Job은 attempt1만 PASS로 재사용하며 변경된 source HEAD는 별도 CI가 필요하다. Persistent nonce·checkpoint·protected merge/출고/Close는 미구현; #229 Main/tag HOLD 및 기존 두 보호 환경 승인 유지.
+
+---
+
 ## #273 — Release Finalizer 단계별 아키텍처 (2026-11-08)
 
 **외부 요청 1회 ≠ 자동 승인 1회.** `Release Finalizer Request V1`은 저장소 ID, Owner, PR/Issue, source SHA/tree/base, semver, 3 OCI 역할, nonce, stop policy 및 SHA256으로 요청을 고정한다. RF-01은 trusted GitHub API GET의 정확 PR/Source/CI/Main/Squash identity를 read-only로 조회하고, 부족한 증거는 WAIT/HALT로 분류한다. Packet hash는 승인 서명이 아니고 PR CI 성공 역시 GHCR 권한이 아니다. `release-finalizer.yml`은 `workflow_dispatch` PLAN 전용, job read-only token; mutable workflow 없음.

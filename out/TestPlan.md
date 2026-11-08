@@ -1,3 +1,13 @@
+## TP-273-RF01-HARDEN — exact target·expiry·AC·CI attempt 회귀 (2026-11-08)
+
+- HR01 `releaseTarget`은 `ghcr.io/planner77/layoutmanager:v<version>`만 수용. 외부 Registry/`latest` 거부.
+- HR02 `issuedAtEpoch`≤현재≤`expiresAtEpoch`, TTL≤24h; 만료·초과 기간 거부.
+- HR03 `ownerIntent` 세 Bool과 요청의 일치, 고유 AC ID, Close 시 AC 목록 필수. Intent는 실제 Owner 권한 증명이 아니다.
+- HR04 PR/Main run 및 필수 Job `run_attempt=1` 확인; 재실행 attempt2를 PASS로 간주 금지.
+- HR05 baseline PR CI 42481792421은 이전 HEAD 전용. 새로운 Hosted PR CI는 수정 소스 기준 별도 시작·완료 근거로만 기록.
+
+---
+
 ## TP-273 — Release Finalizer 공통 기능 단계별 검증 (2026-11-08)
 
 | Test | 필수 계약 |

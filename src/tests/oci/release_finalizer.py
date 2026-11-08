@@ -13,10 +13,12 @@ import json
 import os
 import re
 import sys
+import time
 import urllib.error
 import urllib.request
 
 REPO = "planner77/layoutManager"
+PACKAGE = "ghcr.io/planner77/layoutmanager"
 REPO_ID = 1359528829
 OWNER_ID = 45478892
 PR_WORKFLOW = ".github/workflows/pr-ci.yml"
@@ -50,7 +52,7 @@ def unique(pairs):
     return result
 
 
-def parse_packet(raw: bytes, digest: str) -> dict:
+def parse_packet(raw: bytes, digest: str, now: int | None = None) -> dict:
     need(type(raw) is bytes and len(raw) <= MAX_PACKET
          and type(digest) is str and HEX64.fullmatch(digest) is not None
          and hashlib.sha256(raw).hexdigest() == digest, "RF_PACKET_HASH_INVALID")
@@ -61,7 +63,9 @@ def parse_packet(raw: bytes, digest: str) -> dict:
         raise Blocked("RF_JSON_INVALID") from None
     keys = {"kind", "repository", "repositoryId", "ownerId", "issueNumber",
             "prNumber", "prHeadSha", "prTreeSha", "baseSha", "version",
-            "releaseRequired", "closeIssue", "roles", "nonce", "stopPolicy"}
+            "releaseRequired", "closeIssue", "roles", "nonce", "stopPolicy",
+            "releaseTarget", "acceptanceIds", "ownerIntent", "issuedAtEpoch",
+            "expiresAtEpoch"}
     need(type(p) is dict and set(p) == keys, "RF_PACKET_FIELDS_INVALID")
     need(p["kind"] == "RELEASE_FINALIZER_REQUEST_V1"
          and p["repository"] == REPO and type(p["repositoryId"]) is int
@@ -74,12 +78,40 @@ def parse_packet(raw: bytes, digest: str) -> dict:
              for k in ("prHeadSha", "prTreeSha", "baseSha"))
          and len({p["prHeadSha"], p["baseSha"]}) == 2, "RF_SHA_INVALID")
     match = VERSION.fullmatch(p["version"]) if type(p["version"]) is str else None
-    need(match is not None and (tuple(map(int, match.groups())) >= (0, 61, 0)),
+    need(match is not None and len(p["version"]) <= 32
+         and (0, 61, 0) <= tuple(map(int, match.groups()))
+         and all(int(part) <= 2147483647 for part in match.groups()),
          "RF_VERSION_INVALID")
     need(type(p["releaseRequired"]) is bool and type(p["closeIssue"]) is bool
          and p["roles"] == list(ROLES) and
          type(p["nonce"]) is str and HEX32.fullmatch(p["nonce"]) is not None
          and p["stopPolicy"] == STOP, "RF_SCOPE_INVALID")
+    # Packet intent is not protected Owner authority or a release approval.
+    need(type(p["releaseTarget"]) is str
+         and p["releaseTarget"] == PACKAGE + ":v" + p["version"],
+         "RF_RELEASE_TARGET_INVALID")
+    instant = int(time.time()) if now is None else now
+    need(type(instant) is int
+         and type(p["issuedAtEpoch"]) is int
+         and type(p["expiresAtEpoch"]) is int
+         and 0 < p["issuedAtEpoch"] <= instant <= p["expiresAtEpoch"]
+         and 0 <= p["expiresAtEpoch"] - p["issuedAtEpoch"] <= 86400,
+         "RF_PACKET_EXPIRED_OR_CLOCK_INVALID")
+    intent = p["ownerIntent"]
+    need(type(intent) is dict
+         and set(intent) == {"integrate", "release", "closeIssue"}
+         and all(type(value) is bool for value in intent.values())
+         and intent["integrate"] is True
+         and intent["release"] is p["releaseRequired"]
+         and intent["closeIssue"] is p["closeIssue"],
+         "RF_OWNER_INTENT_INVALID")
+    ac = p["acceptanceIds"]
+    need(type(ac) is list and len(ac) <= 64
+         and all(type(name) is str and
+                 re.fullmatch(r"[A-Z][A-Z0-9_-]{1,31}", name) for name in ac)
+         and len(set(ac)) == len(ac)
+         and (not p["closeIssue"] or bool(ac)),
+         "RF_ACCEPTANCE_SCOPE_INVALID")
     return p
 
 
@@ -111,6 +143,8 @@ def read_run(rows: dict, head: str, workflow: str, event: str,
     latest = max(candidates, key=lambda x: x["run_number"])
     need(sum(r.get("run_number") == latest["run_number"] for r in candidates) == 1,
          "RF_RUN_AMBIGUOUS")
+    need(type(latest.get("run_attempt")) is int
+         and latest["run_attempt"] == 1, "RF_RUN_REATTEMPT_BLOCKED")
     need(latest.get("status") == "completed" and latest.get("conclusion") == "success",
          "RF_LATEST_CI_NOT_SUCCESS")
     return latest
@@ -125,6 +159,7 @@ def check_jobs(payload: dict, run_id: int, required: tuple[str, ...]) -> None:
         matches = [j for j in payload["jobs"]
                    if type(j) is dict and j.get("name") == name]
         need(len(matches) == 1 and matches[0].get("run_id") == run_id
+             and matches[0].get("run_attempt") == 1
              and matches[0].get("status") == "completed"
              and matches[0].get("conclusion") == "success",
              "RF_REQUIRED_JOB_NOT_SUCCESS")
@@ -172,7 +207,9 @@ def plan(p: dict, api) -> dict:
     output = {"kind": "RELEASE_FINALIZER_PLAN_V1", "repository": REPO,
               "issueNumber": p["issueNumber"], "prNumber": p["prNumber"],
               "sourceSha": p["prHeadSha"], "sourceTree": p["prTreeSha"],
-              "version": p["version"], "externalWrites": 0,
+              "version": p["version"], "releaseTarget": p["releaseTarget"],
+              "acceptanceScopeCount": len(p["acceptanceIds"]), "externalWrites": 0,
+              "ownerAuthority": "NOT_VERIFIED",
               "releaseAuthorization": "NOT_VERIFIED",
               "issueAcceptance": "NOT_VERIFIED"}
     if pr_run is None:
@@ -180,6 +217,7 @@ def plan(p: dict, api) -> dict:
     check_jobs(api.get(f"/actions/runs/{pr_run['id']}/jobs?per_page=100"),
                pr_run["id"], REQUIRED)
     output["prCiRunId"] = pr_run["id"]
+    output["prCiAttempt"] = 1
     if not pr.get("merged"):
         need(pr.get("state") == "open", "RF_PR_CLOSED_UNMERGED")
         return {**output, "state": "WAITING_READY_CI" if pr.get("draft")
@@ -204,6 +242,7 @@ def plan(p: dict, api) -> dict:
     check_jobs(api.get(f"/actions/runs/{main_run['id']}/jobs?per_page=100"),
                main_run["id"], ("Verify read-only GHCR release HOLD",))
     output["mainCiRunId"] = main_run["id"]
+    output["mainCiAttempt"] = 1
     # Neither a request packet nor CI success is an Owner release or AC proof.
     # RF-03 must bind actual signed three-role promotion to this exact source.
     if p["releaseRequired"]:
@@ -238,6 +277,9 @@ class ReadOnlyGitHub:
 def main() -> int:
     try:
         need(sys.argv[1:] == ["plan"] and os.getenv("GITHUB_REPOSITORY") == REPO
+             and os.getenv("GITHUB_REPOSITORY_ID") == str(REPO_ID)
+             and os.getenv("GITHUB_REPOSITORY_OWNER_ID") == str(OWNER_ID)
+             and os.getenv("GITHUB_ACTOR_ID") == str(OWNER_ID)
              and os.getenv("GITHUB_REF") == "refs/heads/main"
              and os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
              and os.getenv("GITHUB_RUN_ATTEMPT") == "1",

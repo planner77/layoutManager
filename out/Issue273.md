@@ -1,3 +1,9 @@
+## RF-01 추가 안전 계약 — Release Target·AC·TTL·CI Attempt (2026-11-08)
+
+기존 PR274 HEAD `e4926f3f`의 CI [42481792421](https://github.com/planner77/layoutManager/actions/runs/42481792421)은 적용 8개 Job 성공/A2 scoped SKIP(신규 HEAD 증거 아님). `RELEASE_FINALIZER_REQUEST_V1`에 필수 필드를 추가한다: `releaseTarget=ghcr.io/planner77/layoutmanager:v<version>`, `acceptanceIds`(고유·대문자 AC 식별자 목록, closeIssue=true면 최소 1개), `ownerIntent={integrate,release,closeIssue}`(요청 의도만 표시), `issuedAtEpoch`/`expiresAtEpoch`(UTC seconds; 발급≤현재≤만료, 기간≤24h). Hash/intent는 Owner 승인 서명이 아니다. PR/Main workflow와 필수 Job의 `run_attempt=1`만 증거로 인정; attempt2+ 거부. PLAN workflow Owner actor/repo ID 제한 및 GET-only 유지. RF-01 checkpoint/nonce 영속 재사용 차단과 RF-02~04 실제 writer는 별도 구현이 필요하며 이 변경으로 최종화 완료를 주장하지 않는다. 보호된 두 Owner Environment 및 #229 HOLD 불변.
+
+---
+
 # Issue #273 — Release Finalizer 공통 기능 (정확한 Release만, #229 HOLD 유지)
 
 - GitHub: https://github.com/planner77/layoutManager/issues/273

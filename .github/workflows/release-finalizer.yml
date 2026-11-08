@@ -23,6 +23,9 @@ jobs:
     if: >-
       github.ref == 'refs/heads/main' &&
       github.event_name == 'workflow_dispatch' &&
+      github.actor_id == '45478892' &&
+      github.event.sender.id == 45478892 &&
+      github.repository_id == 1359528829 &&
       github.run_attempt == 1
     runs-on: ubuntu-latest
     timeout-minutes: 5

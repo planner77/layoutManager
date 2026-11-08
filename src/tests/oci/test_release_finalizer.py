@@ -5,6 +5,7 @@ import copy
 import hashlib
 import importlib.util
 import json
+import time
 from pathlib import Path
 import unittest
 
@@ -29,6 +30,11 @@ def packet():
         "releaseRequired": True, "closeIssue": True,
         "roles": list(RF.ROLES), "nonce": "e" * 32,
         "stopPolicy": RF.STOP,
+        "releaseTarget": RF.PACKAGE + ":v" + VERSION,
+        "acceptanceIds": ["RF01", "RF02", "RF03", "RF04", "RF05"],
+        "ownerIntent": {"integrate": True, "release": True, "closeIssue": True},
+        "issuedAtEpoch": int(time.time()) - 20,
+        "expiresAtEpoch": int(time.time()) + 3600,
     }
 
 
@@ -38,7 +44,7 @@ def parse(p):
 
 
 def job(name, run_id):
-    return {"name": name, "run_id": run_id,
+    return {"name": name, "run_id": run_id, "run_attempt": 1,
             "status": "completed", "conclusion": "success"}
 
 
@@ -53,13 +59,13 @@ class API:
                        "repo": {"id": RF.REPO_ID}}}
         ci = {"id": 701, "run_number": 701, "head_sha": HEAD,
               "event": "pull_request", "path": RF.PR_WORKFLOW,
-              "status": "completed", "conclusion": "success",
+              "run_attempt": 1, "status": "completed", "conclusion": "success",
               "pull_requests": [{"number": 272}],
               "head_branch": "feat/release-test",
               "head_repository": {"id": RF.REPO_ID}}
         main = {"id": 26, "run_number": 26, "head_sha": MERGE,
                 "event": "push", "path": RF.MAIN_WORKFLOW,
-                "status": "completed", "conclusion": "success"}
+                "run_attempt": 1, "status": "completed", "conclusion": "success"}
         encoded = base64.b64encode(json.dumps({"version": VERSION}).encode()).decode()
         self.values = {
             "/pulls/272": pr,
@@ -90,6 +96,34 @@ class API:
 
 
 class PolicyTest(unittest.TestCase):
+    def test_packet_rejects_wrong_target_clock_owner_and_ac(self):
+        for label, change, code in (
+            ("foreign-target", {"releaseTarget": "ghcr.io/other/app:v0.61.1"}, "RF_RELEASE_TARGET_INVALID"),
+            ("wrong-tag", {"releaseTarget": RF.PACKAGE + ":latest"}, "RF_RELEASE_TARGET_INVALID"),
+            ("expired", {"expiresAtEpoch": int(time.time()) - 1}, "RF_PACKET_EXPIRED_OR_CLOCK_INVALID"),
+            ("too-long", {"expiresAtEpoch": int(time.time()) + 86401}, "RF_PACKET_EXPIRED_OR_CLOCK_INVALID"),
+            ("intent", {"ownerIntent": {"integrate": True, "release": False, "closeIssue": True}}, "RF_OWNER_INTENT_INVALID"),
+            ("missing-ac", {"acceptanceIds": []}, "RF_ACCEPTANCE_SCOPE_INVALID"),
+            ("duplicate-ac", {"acceptanceIds": ["RF01", "RF01"]}, "RF_ACCEPTANCE_SCOPE_INVALID"),
+        ):
+            with self.subTest(label=label), self.assertRaisesRegex(RF.Blocked, "^" + code + "$"):
+                parse({**packet(), **change})
+
+    def test_attempt_two_never_reuses_pr_main_or_required_job(self):
+        key = "/actions/runs?head_sha=" + HEAD + "&event=pull_request&per_page=100"
+        api = API()
+        api.values[key]["workflow_runs"][0]["run_attempt"] = 2
+        with self.assertRaisesRegex(RF.Blocked, "^RF_RUN_REATTEMPT_BLOCKED$"):
+            RF.plan(parse(packet()), api)
+        api = API()
+        api.values["/actions/runs/701/jobs?per_page=100"]["jobs"][0]["run_attempt"] = 2
+        with self.assertRaisesRegex(RF.Blocked, "^RF_REQUIRED_JOB_NOT_SUCCESS$"):
+            RF.plan(parse(packet()), api)
+        api = API(merged=True)
+        api.values["/actions/runs?head_sha=" + MERGE + "&event=push&per_page=100"]["workflow_runs"][0]["run_attempt"] = 2
+        with self.assertRaisesRegex(RF.Blocked, "^RF_RUN_REATTEMPT_BLOCKED$"):
+            RF.plan(parse(packet()), api)
+
     def test_packet_is_strict_and_sha_bound(self):
         self.assertEqual(parse(packet())["version"], VERSION)
         raw = json.dumps(packet()).encode()
@@ -197,9 +231,11 @@ class PolicyTest(unittest.TestCase):
         self.assertEqual(RF.plan(parse(packet()), api)["releaseAuthorization"],
                          "NOT_VERIFIED")
         p = packet(); p["releaseRequired"] = False
+        p["ownerIntent"]["release"] = False
         self.assertEqual(RF.plan(parse(p), API(merged=True))["state"],
                          "AWAITING_INDEPENDENT_ISSUE_ACCEPTANCE")
         p["closeIssue"] = False
+        p["ownerIntent"]["closeIssue"] = False
         self.assertNotEqual(RF.plan(parse(p), API(merged=True))["state"], "ISSUE_CLOSED")
 
     def test_main_hold_failure_and_missing_do_not_allow_release(self):

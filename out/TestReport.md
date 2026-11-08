@@ -1,3 +1,11 @@
+## U-273-RF01-HARDEN — baseline와 신규 변경 증거 분리 (2026-11-08)
+
+- [PR #274 CI 42481792421](https://github.com/planner77/layoutManager/actions/runs/42481792421), 정확 HEAD `e4926f3fbbab0d59bc7141e1dd6f56aadbd0f80e`: **적용 8개 Job SUCCESS**, 범위 외 A2 1개 SKIPPED. 리뷰 thread0·mergeable true·Main behind0 당시 확인.
+- 본 수정은 exact Release Target/TTL/AC/Owner Intent와 PR/Main workflow·필수 Job attempt1 엄격 검증을 추가한다. 새로운 HEAD의 실제 Hosted 결과는 **NOT VERIFIED**(시작 후에도 완료 감시하지 않음).
+- 기존 #229 HOLD·0.61.0 3-digest/Tag/운영 불변. RF-02/03/04 protected merge·GHCR·Issue Close **NOT IMPLEMENTED/NOT RUN**.
+
+---
+
 ## U-273-RF01-20261108 — Release Finalizer 읽기 전용 사전 검증 구현
 
 **소스 구현:** `src/tests/oci/release_finalizer.py` (엄격 packet SHA256/Source/PR CI 및 Squash/Main HOLD read-only 판정), `test_release_finalizer.py` (positive/negative fake API), `.github/workflows/release-finalizer.yml` (workflow_dispatch PLAN-only/read permissions), `pr-ci.yml` 선행 RF-01 Python 검사. Issue #273 정책 정본; `#229 issue229_release_hold.py`, 기존 Candidate/Promotion 및 사용자 운영/registry writer는 **변경0**.
