@@ -1,3 +1,13 @@
+## #273 — RF-03 signed Candidate subject verification test plan (2026-11-09)
+
+1. Verify strict RF03 handoff source/version/run/role identities; existing downloaded `candidate-receipt.json`, `candidate-bundle.sigstore.json`, `verification.json`, `SHA256SUMS` SHA256 binding; top raw 3-role manifest files from private `rf03_oci_readback.check` workspace, distinct digest/config/platform.
+2. Verify the exact `gh v2.103.3` executable is byte-identical to the selected member in the **SHA256-pinned** official tar archive. Reject wrong archive, changed binary, symlinked file and wrong executable.
+3. In a future approved real read-only run, verify four subjects online **and** against the candidate bundle with fixed `--repo`, signer workflow digest, source commit/ref, GitHub-hosted runner only; compare full SLSA subjects/issuer/repo/Owner/run attempt1 certificate using the existing #225 policy.
+4. Synthetic regressions: Source/Tree/version/run/role drift, missing/tampered top Manifest, changed receipt/bundle, bad signer workflow/issuer/OIDC source/run, malformed/duplicate verification JSON, pinned archive/member mismatch and fail-closed no-secret diagnostics. No synthetic check counts as real cryptographic proof.
+5. Required PR CI must compile and run the new synthetic tests on the exact HEAD; no write privileges added. Even valid Candidate proof is `BLOCKED_INDEPENDENT_OWNER_PROMOTION_AND_REGISTRY_PROOF`; Owner approvals, Promotion verification, actual GHCR final role digests and RF-04 closure are separate.
+
+---
+
 ## #273 — RF-03 GHCR root challenge cross-mode regression test (2026-11-09)
 
 Preflight must preserve `candidate_registry.GHCR` default publisher `pull,push` scoped challenge allowlist (including original unspecific and fixed root placeholder realms). New `pull_only=True` client must request only `repository:planner77/layoutmanager:pull` scope. Positive tests: exact realm in each mode produces an exact mode-specific token URL. Negative tests: legacy publisher refuses `pull` realm and RF-03 read-only refuses `pull,push` realm, with exactly one unauthenticated root GET and no token request. Reuse unchanged historical `test_candidate_publish.py`. Required PR CI Scope exercises both suites, and former CI #731 failure is not proof of the revised source.

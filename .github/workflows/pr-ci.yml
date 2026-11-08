@@ -70,6 +70,8 @@ jobs:
           python3 src/tests/oci/test_rf03_material_preflight.py
           python3 -m py_compile src/tests/oci/rf03_oci_readback.py src/tests/oci/test_rf03_oci_readback.py
           python3 src/tests/oci/test_rf03_oci_readback.py
+          python3 -m py_compile src/tests/oci/rf03_signed_candidate.py src/tests/oci/test_rf03_signed_candidate.py
+          python3 src/tests/oci/test_rf03_signed_candidate.py
       - name: Check Issue #225 proof contracts without external writes
         run: |
           python3 -m py_compile src/tests/oci/rp-provenance.py src/tests/oci/test_rp_provenance.py src/tests/oci/cp-control-proof.py src/tests/oci/test_cp_control_proof.py src/tests/oci/registry_promotion.py src/tests/oci/test_registry_promotion.py

@@ -1,3 +1,11 @@
+## #273 / PR #277 — PR CI #732 PASS, RF-03 signed artifact unit pending hosted CI (2026-11-09)
+
+- Verified prior [PR CI #732/run42528404780](https://github.com/planner77/layoutManager/actions/runs/42528404780) `62107e83e0a5caf9d4b960ff4c288f625f6fa99d`, attempt1: 8 applicable SUCCESS, one #218 scoped SKIP; no unresolved review threads. Prior GHCR token challenge cross-scope failure (#731) is repaired on that source. No new hosted CI failure for current unit observed at authoring.
+- New module `rf03_signed_candidate.py` supplies a **read-only, explicit-token** actual gh/Sigstore candidate verifier path based on strict RF03 handoff, downloaded Artifact SHA bytes, private authenticated OCI subject files and pinned gh archive/member; 4 subjects are checked via fresh online and bundle CLI, with certificate identity/SLSA mapping reusing #225 `candidate_policy.certificate`. New synthetic negative tests are required in PR scope. The code does not download/approve/publish/deploy, and cannot establish independent live Owner candidate and promotion proof by synthetic tests.
+- New source **NOT VERIFIED** until exact-head PR CI completion; no real GHCR v0.61.1+ artifacts, signatures, Owner protected environment approvals or final release receipts have been observed here. Existing release FINALIZER state HOLD; PR #277 Draft, #273 OPEN, production DB/CAD/.env/Worker/old immutable 0.61.0 GHCR roles/tag/latest unchanged. External publication and Issue writes 0.
+
+---
+
 ## #273 / PR #277 — CI #731 GHCR auth challenge scope regression repair (2026-11-09)
 
 - Observed [PR CI #731 / run 42527748418](https://github.com/planner77/layoutManager/actions/runs/42527748418) at exact previous HEAD `b2372a5201105014eeb29130973d98df33f07cb2`: status completed, conclusion **failure**, run attempt 1. The required `Classify PR scope and audit merge defaults` job (128875023742) failed during the candidate OCI regression suite; `test_candidate_publish.py` ran 47 tests, 1 FAIL + 1 ERROR in `test_observed_root_placeholder_challenge_never_controls_token_scope`. The required aggregate failed by dependency; other workloads were SKIPPED, not independently proven failed.

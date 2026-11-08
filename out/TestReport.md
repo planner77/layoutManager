@@ -1,3 +1,11 @@
+## #273 / PR #277 — CI #732 and new signature-unit evidence (2026-11-09)
+
+- **Actual hosted prior:** PR CI #732 [42528404780](https://github.com/planner77/layoutManager/actions/runs/42528404780) on exact HEAD `62107e83e0a5caf9d4b960ff4c288f625f6fa99d` completed SUCCESS, 8 applicable jobs/1 scoped SKIP, review threads0.
+- **New source static implementation only:** `rf03_signed_candidate.py` + synthetic `test_rf03_signed_candidate.py` + required scope step. The real pinned gh executable and protected 0.61.1+ candidate signed artifact were **not** invoked, so `actualSignatureVerification=NOT_RUN`, `liveOciGraphAndOwnerProof=NOT_VERIFIED`, `releaseWriter=NOT_RUN`. New exact HEAD PR CI result pending.
+- **Safety preserved:** #229 HOLD, historical 0.61.0 immutable roles, tag/latest and operating Worker/DB/CAD/.env/backup unmodified, PR Draft and Issue #273 OPEN.
+
+---
+
 ## #273 / PR #277 — CI #731 failure and targeted GHCR realm repair (2026-11-09)
 
 - Hosted failed job ID `128875023742` in [PR CI 42527748418](https://github.com/planner77/layoutManager/actions/runs/42527748418), HEAD `b2372a5201105014eeb29130973d98df33f07cb2`: `test_candidate_publish.py` 47 tests / 1 failure / 1 error, both in old negative challenge test. Aggregate failed; downstream skipped because of dependency. New patch limits challenge to selected mode, retains old test, adds two positive token-scope and two negative cross-mode cases.
