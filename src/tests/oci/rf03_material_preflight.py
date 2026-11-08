@@ -13,6 +13,7 @@ from pathlib import Path
 
 import release_finalizer as rf
 import rf03_release_handoff as handoff
+import candidate_policy as candidate
 
 FILES = ("candidate-receipt.json", "candidate-bundle.sigstore.json",
          "verification.json", "SHA256SUMS")
@@ -68,23 +69,18 @@ def check(directory, packet, original_plan):
     need(sha(data["verification.json"]) ==
          expected["verificationSha256"],
          "RF03_MATERIAL_VERIFICATION_HASH_INVALID")
-    # Restrict the checksum manifest to exactly the three JSON subjects.
+    # Existing #225 signer subjects are three immutable OCI manifests and
+    # the receipt, not the public bundle/verification metadata JSON.
+    mapping = {role: packet["roles"][role]["manifestDigest"][7:]
+               for role in handoff.ROLES}
+    mapping["receipt"] = sha(data["candidate-receipt.json"])
+    expected_sums = "".join(mapping[role] + "  " + candidate.SUBJECTS[role] +
+                            "\n" for role in (*handoff.ROLES, "receipt"))
     try:
-        lines = data["SHA256SUMS"].decode("ascii").splitlines()
+        actual_sums = data["SHA256SUMS"].decode("ascii")
     except UnicodeError:
         raise rf.Blocked("RF03_MATERIAL_SUMS_INVALID") from None
-    expected_subjects = set(FILES) - {"SHA256SUMS"}
-    observed = {}
-    for line in lines:
-        need(len(line) > 66 and line[64:66] == "  " and
-             handoff.sha64(line[:64]), "RF03_MATERIAL_SUMS_INVALID")
-        name = line[66:]
-        need(name in expected_subjects and name not in observed,
-             "RF03_MATERIAL_SUMS_INVALID")
-        observed[name] = line[:64]
-    need(set(observed) == expected_subjects and all(
-        observed[name] == sha(data[name]) for name in observed),
-        "RF03_MATERIAL_SUMS_INVALID")
+    need(actual_sums == expected_sums, "RF03_MATERIAL_SUMS_INVALID")
     # Require explicit shape only; never accept claimed 'verified' as crypto.
     need(all(type(value) is dict for value in (receipt, bundle, verification)),
          "RF03_MATERIAL_JSON_INVALID")
