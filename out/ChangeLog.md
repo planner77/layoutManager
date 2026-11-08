@@ -1,3 +1,9 @@
+## #273 RF-03 OCI read-only unit after CI #730 (2026-11-09)
+
+The exact previous PR #277 HEAD `b7116c6c889d291b0222a618b85ca11fe38026c1` passed [PR CI #730/run42525255763](https://github.com/planner77/layoutManager/actions/runs/42525255763) (8 applicable SUCCESS, 1 #218 scope SKIPPED). Next implementation reuses `candidate_registry.collect_graph` in `rf03_oci_readback.py` for exact three-role OCI candidate digest/media/size/config/platform/source/version readbacks. A keyword-only version override does not change the legacy default `0.61.0` pinned by #225. ReadOnlyGHCR requests a GHCR **pull-only token**, permits only GET/HEAD, and has no release/tag/Issue writer. Synthetic tests cover OCI manifest/index and fail-closed mismatches. No actual version-generic Candidate/Promotion executed, no real newer-version signer/Owner approvals/OCI live readback, no protected final tag. All verification remains NOT_RELEASE_GO and `externalWrites=0`; #229 HOLD and historical images/operations remain unchanged. PR Draft/Issue OPEN, new exact HEAD CI still required.
+
+---
+
 ## 2026-11-09 — #273 PR #277 RF-03 live Github evidence audit candidate
 
 - [PR CI #717/run42518993315](https://github.com/planner77/layoutManager/actions/runs/42518993315), previous exact HEAD `da5c8782fc04008c94bcb41f676fe58b640c6ce3`, applied8 SUCCESS / scoped SKIP.

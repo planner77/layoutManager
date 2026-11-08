@@ -1,3 +1,9 @@
+## #273 RF-03 OCI read-only unit after CI #730 (2026-11-09)
+
+The exact previous PR #277 HEAD `b7116c6c889d291b0222a618b85ca11fe38026c1` passed [PR CI #730/run42525255763](https://github.com/planner77/layoutManager/actions/runs/42525255763) (8 applicable SUCCESS, 1 #218 scope SKIPPED). Next implementation reuses `candidate_registry.collect_graph` in `rf03_oci_readback.py` for exact three-role OCI candidate digest/media/size/config/platform/source/version readbacks. A keyword-only version override does not change the legacy default `0.61.0` pinned by #225. ReadOnlyGHCR requests a GHCR **pull-only token**, permits only GET/HEAD, and has no release/tag/Issue writer. Synthetic tests cover OCI manifest/index and fail-closed mismatches. No actual version-generic Candidate/Promotion executed, no real newer-version signer/Owner approvals/OCI live readback, no protected final tag. All verification remains NOT_RELEASE_GO and `externalWrites=0`; #229 HOLD and historical images/operations remain unchanged. PR Draft/Issue OPEN, new exact HEAD CI still required.
+
+---
+
 ## #273 RF-03 Owner-only read-only evidence readback 운영 가이드 (2026-11-09)
 
 새 `.github/workflows/release-finalizer-rf03-readback.yml`은 Owner `workflow_dispatch`에 정확 `RF03_RELEASE_HANDOFF_V1` packet JSON/SHA256 및 선행 `RF03_EXACT_VERSION_PLAN_V1` JSON/SHA256을 제출하여 GitHub API의 Candidate/Promotion별 fresh run/job/review history, artifact metadata, code/source/Main을 **GET only**로 대조한다. JSON에는 credential/토큰/개인 데이터/운영 환경 값 금지. Job token 권한 `contents:read/actions:read/pull-requests:read`, GHCR 권한 없음. `rf03_readback.py`에서 승인 받은 Owner/attempt1, `GITHUB_SHA=promotionSourceCommit`와 workflow SHA, 고정 Repo GET path만 허용하고 redirect를 거부한다. 기존 Candidate/Promotion live run이 실제 없으면 정상적으로 HALT. GitHub API admin bypass 설정이 노출되지 않아 false로 검증할 수 없다면 `RF03_ENV_ADMIN_BYPASS_UNKNOWN`로 차단하고 추후 Owner UI 증빙 검토 필요. 이는 실제 환경에 조작을 하거나 승인을 생성하지 않는다.

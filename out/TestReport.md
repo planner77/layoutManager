@@ -1,3 +1,13 @@
+## #273 / PR #277 RF-03 next unit: PR CI #730 success and exact-version OCI readback (2026-11-09)
+
+- [PR CI #730 / run 42525255763](https://github.com/planner77/layoutManager/actions/runs/42525255763) **SUCCESS** on previous exact HEAD `b7116c6c889d291b0222a618b85ca11fe38026c1` (attempt1, 8 applicable SUCCESS, 1 scope SKIPPED). PR #277 remains Draft/OPEN with zero unresolved review threads. This is not a pass for the new code.
+- New `rf03_oci_readback.py` uses the existing #225 `candidate_registry.collect_graph` to read 3 exact Candidate OCI graphs and independently check top digest/media/size, platform manifest, config, source, role, linux/amd64 and version. Legacy default remains `0.61.0`; only strict RF03 handoff supplies `version>=0.61.1`. `ReadOnlyGHCR` reuses bounded GHCR Distribution reads but requests a **pull-only token**, refuses all HTTP mutation verbs and restricts tags to the 3 exact Candidate identities. A final tag readback detects sequential drift, not a registry CAS.
+- New required PR CI unit `test_rf03_oci_readback.py` uses only synthetic fixture registry and exercises direct manifests/OCI index, legacy version pin, wrong label/digest/platform, missing manifest, final-tag drift, private workspace reuse and POST/PUT rejection. Synthetic success is NOT live GHCR proof.
+- Even authenticated matching OCI graphs are **not** Sigstore/OIDC signer proof, two fresh protected Owner approvals, release GO, final GHCR publication, rollback-baseline readback, or RF-04 AC closure. Output stays `BLOCKED_OWNER_SIGSTORE_AND_RELEASE_AUTHORITY_REQUIRED`, `signatureVerification/ownerAuthority=NOT_VERIFIED`, `registryPublication=NOT_RUN`, `externalWrites=0`. Existing Candidate/Promotion writers remain pinned at 0.61.0 and were not modified/executed.
+- Preserve #229 HOLD_MAIN/G7_RELEASE_HOLD_TAG_BLOCKED, historical 0.61.0 three immutable images, tags/latest and production App/Worker/DB/CAD/Volume/.env/backups. PR #277 **Draft**, Issue #273 **OPEN**, no release/Issue close/operation. New HEAD PR CI must be checked separately. Next: actual signed artifact bytes + independent Owner protected Candidate and Promotion verification, then protected writer, RF-01 checkpoint and RF-04 AC.
+
+---
+
 ## RF-03 material byte preflight follow-up (2026-11-09)
 
 - PR #277 CI #718 / run 42521782477: exact prior HEAD `ea17b29c60b2ee1ba00f4597feb794029b01653d`, eight applicable jobs SUCCESS, one A2 scoped SKIP, unresolved review threads 0. **This evidence applies to the prior HEAD only.**

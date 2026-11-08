@@ -1,3 +1,11 @@
+## #273 / PR #277 — CI #730 successful; new RF-03 OCI read-only code not yet CI-verified (2026-11-09)
+
+- Exact prior PR #277 HEAD `b7116c6c889d291b0222a618b85ca11fe38026c1` [PR CI #730/run42525255763](https://github.com/planner77/layoutManager/actions/runs/42525255763): run completed SUCCESS, 8 applicable jobs SUCCESS, #218 scoped A2 SKIPPED, unresolved review 0. CI #729's `RF03_DUPLICATE_JSON_KEY` handling failure has been repaired and the repair is verified by #730. No new failure at this checkpoint.
+- New source adds separate version-generic `collect_graph(..., version=...)` **read-only** verification while preserving default `0.61.0` and old publisher. An authenticated GET/HEAD-only pull-scoped candidate graph reader and synthetic negative suite are required by PR CI. No actual 0.61.1 Candidate or Promotion has been executed, no OIDC/Sigstore or Owner protected approvals observed for this version. New exact HEAD CI not yet observed: do NOT reuse #730 as proof for the new source.
+- Safety: Issue #273 OPEN, PR #277 Draft, #229 HOLD intact, 0.61.0 digests/tag/latest/production data unchanged; external GHCR/Issue writes 0. No GO-RELEASE or AC closure from this check.
+
+---
+
 ## #273 / PR #277 — PR CI #729 JSON error taxonomy regression (2026-11-09)
 
 - **Actual failed run:** [PR CI #729 / run 42524339759](https://github.com/planner77/layoutManager/actions/runs/42524339759), prior exact PR HEAD `0f66351cb3a0eb2b53427125acb1024786207869`, run attempt1. `Classify PR scope and audit merge defaults` job 128864465082 FAILED in `Check RF-03 exact release plan, independent handoff, live GitHub evidence (GET only)`. `test_rf03_material_preflight.py`: 4 executed / 1 FAIL; `test_duplicate_json_field_and_legacy_version_rejected` expected `RF03_DUPLICATE_JSON_KEY`, observed `RF03_MATERIAL_JSON_INVALID`. Aggregate `Typecheck, lint, test, build, E2E` FAILED as a consequence; downstream job scope SKIPPED, not independently proven failure.

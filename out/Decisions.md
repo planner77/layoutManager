@@ -1,3 +1,9 @@
+## #273 RF-03 OCI read-only unit after CI #730 (2026-11-09)
+
+The exact previous PR #277 HEAD `b7116c6c889d291b0222a618b85ca11fe38026c1` passed [PR CI #730/run42525255763](https://github.com/planner77/layoutManager/actions/runs/42525255763) (8 applicable SUCCESS, 1 #218 scope SKIPPED). Next implementation reuses `candidate_registry.collect_graph` in `rf03_oci_readback.py` for exact three-role OCI candidate digest/media/size/config/platform/source/version readbacks. A keyword-only version override does not change the legacy default `0.61.0` pinned by #225. ReadOnlyGHCR requests a GHCR **pull-only token**, permits only GET/HEAD, and has no release/tag/Issue writer. Synthetic tests cover OCI manifest/index and fail-closed mismatches. No actual version-generic Candidate/Promotion executed, no real newer-version signer/Owner approvals/OCI live readback, no protected final tag. All verification remains NOT_RELEASE_GO and `externalWrites=0`; #229 HOLD and historical images/operations remain unchanged. PR Draft/Issue OPEN, new exact HEAD CI still required.
+
+---
+
 ## ADR-273-RF03-LIVE-META — read-only GitHub 승인 이력과 실제 출고 승인 분리 (2026-11-09)
 
 결정: RF-03 Handoff의 sha256 packet은 사용자의 주장 값이므로 구조 통과만으로 GO-RELEASE/Owner 승인이라 주장하지 않는다. 다음 단계는 `actions/runs/{id}/attempts/1`, job, `/approvals`, artifact GET/metadata 및 Git commit-tree/버전 검증으로 **독립 두 실제 approval history**를 read-only로 관측한다. 상태 `OBSERVED_NOT_RELEASE_AUTHORITY`를 명시하고, 환경 `can_admins_bypass`가 REST에서 누락되거나 true이면 실제 Owner UI 증빙 없이는 fail closed 한다. Readback workflow에는 GET + `contents/actions/pulls:read`만; 서비스 토큰 유출 방지를 위해 고정 REST path·리다이렉트 금지. OIDC signed artifact bytes/OCI 3-role Registry final readback/원문 보존, Source-plan 독립 검증 및 안정적 배포 Writer를 구현하기 전 어떠한 GHCR/Issue write도 하지 않는다. 기존 0.61.0 고정 publisher 유지.
