@@ -1,3 +1,13 @@
+## FUP2 offline 후보 검증 도구 (2026-11-08)
+
+새 도구는 `src/tests/oci/offline-cpu-primitives*.mjs` 및 `offline-cpu-primitives-resource-proof.py`이며 제품 upload/Worker/Scene 경로에서 호출하지 않는다. Node focused 시험은 `node --test src/tests/oci/offline-cpu-primitives.test.mjs`, resource controller의 Docker 없는 guard 시험은 `PYTHONDONTWRITEBYTECODE=1 python3 src/tests/oci/test_offline_cpu_primitives_resource.py`다. 생산 경로 admission regression은 기존 Vitest suite에 포함된다.
+
+실제 resource proof는 별도 private0700 evidence에서 `normal`/`stall`을 각각 한 번 실행하고120초 watchdog을 관측한다. exact local image는 Node harness이며 App을 시작하거나 live env/DB/volume/socket/port를 전달하지 않는다. source4개를 freeze하고 digest·nonce/CID·mount/cgroup·receipt를 확인한다. image VOLUME/data는 empty readonly tmpfs로 덮어 anonymous volume을 만들지 않는다. timeout은120초 trigger와 bounded Docker kill overhead를 구별하며137만으로 OOM을 주장하지 않는다. owned container만 정리한다.
+
+`offline-cpu-primitives-browser-server.mjs --evidence <private-directory>`는 설치된 dev dependency(esbuild)를 사용해 공개 synthetic fixture의 저장 후보와 세 고정 GET 파일만 localhost 임의 port에 제공한다. private 디렉터리는 새로 준비하고 Source DXF를 제공하지 않는다. fresh Playwright CLI context로 `window.offlinePrimitiveProof.restore`를 검사한 뒤 context·정확 server PID/loopback listener를 닫는다. 인증·계정 복구·원래 browser storage 재사용은 필요하지 않다. 실제 도면은 backup 사본의 전체 거부만 시험하며 변환된 CAD artifact/스크린샷을 만들지 않는다. 실제 결과/한계는 TestReport를 따른다.
+
+---
+
 ## FUP1 격리 복원본 검증·보관 (2026-11-08)
 
 기존 immutable archive에서 새 nonce-owned volume을 복원해 exact0.58 App/internal network/host port0으로 검증했다. fresh browser에만 singleton localhost SOCKS를 적용하고 실제 사용자 직접 로그인으로 source와 분리된 clone Session/업무 읽기를 확인했다. bridge는 HTTP header/body를 파싱·로깅하지 않으며 다른 목적지·source cookie 재사용을 허용하지 않는다. 브라우저 요청은 같은 origin의 GET와 정상 login/logout POST만 허용했다. 해당 origin을 일반 운영 App 접속으로 오해하지 않도록 검증 창에 임시 식별 안내를 표시했다.

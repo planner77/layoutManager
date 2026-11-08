@@ -1,3 +1,22 @@
+## TP-225-FUP2 — offline primitive 후보 구현 AC/TC (2026-11-08, 요구사항·결과 추적)
+
+FUP2-02/04 closure 추가 음성: 유효하게 표현될 수 있는 group70=0 open polyline `[A,B,C,A]`도 이 canonical subset에서는 전체 후보 payload0으로 거부한다. closed flag의 repeated terminal과 별도 fixture로 검증하고, 입력 bytes/hash·flag 불변을 확인한다. 이는 문서 전체 DXF invalid 증명이 아닌 UNSUPPORTED 범위 검사다. FUP2-05에는 fake clock으로 parser/geometry cooperative deadline 거부를 재현하는 회귀를 추가하고 실제120초 parent watchdog 실행과 구별한다.
+
+아래는 구현 전에 확정한 승인 AC이며 실제 실행·한계·최종 수용은 TestReport FUP2를 따른다. Architecture FUP2 구현 계약의 offline CANDIDATE를 검사하고 제품 READY 수용을 요구하지 않는다.
+
+| TC | 실제 수용 조건 |
+| --- | --- |
+| FUP2-01 byte/parser | UTF8와 explicit1252 synthetic positive, source bytes/SHA 불변; 미정의1252 bytes·malformed UTF8·누락/충돌 codepage·odd/truncated pairs·NUL/EOF·중복 section/field·unknown header/entity/field/section 음성. 임의 skip/추측 encoding0. |
+| FUP2-02 primitive golden | LINE, CIRCLE, ARC350→10/10→350/사분면 boundary, open/closed straight LWPOLYLINE. endpoint/bbox/radius/orientation/closed connectivity를 독립 analytic golden과 비교. same-angle ARC·radius<=0·invalid vertexcount/flags·bulge/width·nondefault normal/Z/layer/style·duplicate/zero-length 음성. |
+| FUP2-03 precision | tessellation sagitta<=0.05mm 및 원 double→Float32 vertex Euclidean<=0.05mm, 합산<=0.1mm. 큰 양/음 좌표·작은 radius·극단 sweep·float collapse·segment cap 초과 음성. 저장후 실제 buffer/연결을 검사하고 self-reported bound만 신뢰0. |
+| FUP2-04 envelope boundary | exact offline schema/state CANDIDATE/builder/source·units·ID/order/count·buffer key/type/finite/length/caps full validation. unknown key/builder/state/foreignSHA/duplicateID/late scalarNaN/falsecount/truncated buffer 거부. 제품 validSceneScope/Manifest/payload 경로는 새 Builder를 거부; old Builder로 임시 relabel0. |
+| FUP2-05 durable bounded runtime | private exclusive tempfile fsync/readback byteSHA/fullvalidation·owned cleanup; input16MiB/pairs300000/segments5000/coord1e6/payload32MiB 경계. 실제 parent120s 강제timeout/kill와 resource-restricted synthetic 실행·부분결과 미수용을 기록. Docker fixture와 제품/운영 자원을 구별. |
+| FUP2-06 fresh Browser | synthetic saved candidate bytes를 fresh Browser 별도 restorer에 전달; golden geometry/Float32buffers/segments/bbox 동일, canvas visible/pageerror0. Node generation과 별도 Browser reconstruction을 구분하고 production Viewer READY라고 표시0. |
+| FUP2-07 mixed/actual unsupported | 지원 LINE과 unsupported entity/section을 혼합하면 전체 후보 payload0. 실제 immutable DXF 전체는 UNSUPPORTED·원본 SHA 보존이 기대값; 일부 entity만 빼내 성공 처리0/real source artifact0. |
+| FUP2-08 isolation/regression | test-only src paths·앱0.61.0 유지, production import/admission/Builder/Worker/Schema/DB/flags 변경0을 검토. 기존 strictLINE 양성/음성·unknownBuilder rejection 회귀. Developer→Manager review→독립 QA→실제 TC별 PASS/NOT RUN 수용, 원래 dirty tree·auth material 접근0. |
+
+---
+
 ## TP-225-FUP1 — 최소 후속 Unit AC/TC (2026-11-08, Manager 구현 전)
 
 | TC | 수용 조건 |

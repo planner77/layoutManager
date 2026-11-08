@@ -1,3 +1,40 @@
+## U-225-FUP2-20261108 — offline CPU primitive 후보 구현·검증
+
+**판정:** default XY/기본 layer·style/INSUNITS4의 LINE·CIRCLE·ARC·straight LWPOLYLINE을 별도 test-only 후보로 구현했다. 결과는 `offline-cpu-primitives@1 / CANDIDATE / node-cpu-primitives@0.1.0+cad-scene-1`이며 제품 SceneManifest/READY가 아니다. 기존 parser·Builder allowlist·Worker/Queue·DB/Schema·Viewer·flags는 변경하지 않았고 소스0.61.0/운영0.58.0을 유지했다. 실제 전체 DXF는 여전히 미지원이며 파일럿 NO-GO다.
+
+Manager가 요구사항/구현 계약/8개 AC를 먼저 기록하고 Developer가 Node parser·별도 DTO validator/restorer·semantic tests를 구현했다. Manager source review에서 type별 closed/연결 의미·남은 예산 선검사·전체 loop deadline·private owner/path/fsync를 보완했다. Root가 생산 경로 거부 시험·별도 synthetic Browser/서버·resource supervisor와 실제 검증을 수행했다. 현재 가용 Manager/Developer/QA 역할 agent와 Root의 실제 수행을 기록하며 과거 지정5.6 모델을 실행했다고 부르지 않는다.
+
+| 구현 / 경계 | 결과 |
+| --- | --- |
+| 지원 subset | LINE, radius>0 CIRCLE, canonical degree/CCW wrap ARC(동일 start/end 거부), bulge0/width0인 open/closed LWPOLYLINE. 임의 section/header/record/field·TEXT/BLOCK/TABLES·비기본 style/normal/Z는 전체 거부 |
+| canonical polyline | open70=0/closed70=1 모두 마지막 vertex=첫 vertex 입력을 거부. 유효 DXF일 수 있으나 이 후보의 UNSUPPORTED이며 원본 normalization/flag 수정으로 통과시키지 않음 |
+| encoding | 원본 bytes/SHA 유지, explicit UTF8 또는 ANSI_1252만 decode. malformed UTF8/미정의1252 byte·누락/충돌 선언 거부. text/한글 의미 정확도 수용이 아님 |
+| precision / limits | chord sagitta<=0.05mm + Float32 vertex Euclidean<=0.05mm, 합산<=0.1mm; source16MiB/pairs300000/output segments5000/coordinate1e6/payload32MiB. 예산 초과 시 오차를 늘리거나 entity를 생략하지 않음 |
+| offline DTO / 저장 | exact key/schema/state/builder/source/count/ID/order/Float32 finite buffer/연결·closed·size 검사. 0700 parent·0600 exclusive tempfile/file+dir fsync/readback SHA/full validation, owned tempfile 정리 |
+| 제품 경계 | 새 builder의 validSceneScope/storedSceneScope/Manifest/payload 수용 거부, 기존 strict LINE 양성·CIRCLE 거부 유지. 다른 Builder로 relabel하지 않음 |
+
+최종 Node source SHA256 `e181a0448a527e7d4388d1ca7c4d26485eaefad9adc2e26130e9ea73278e4e4a`, portable DTO `3028656f5a64827edf505f024a979dc119d74b5a2e506a65274eddc4568083cb`, focused tests `41563a56d4581a05ec7f7a2b4e8b6a006dca003609fc6a3f37aaff7286b9260c`. unused helper/binding 제거 후 최종 source로 focused8 및 아래 resource/Browser proof를 다시 실행했다. 이전 source의 positive proof는 이력이며 최종 hash로 바꿔 부르지 않는다.
+
+| 최종 source 실제 시험 | 관측 |
+| --- | --- |
+| 정상 resource 실행 | 5 primitives/58segments, CANDIDATE/private readback·temp cleanup, clean exit0,0.453초. exact0.58 immutable image는 Node 실행 harness로만 사용했고 App/운영 Worker를 시작하지 않음 |
+| 실제 제한 | UID10001·rootfs RO·network none·port0·RO test source bind·CPU1·768MiB/no swap·pids64·cap drop·NNP; image의 기본 VOLUME/data는 empty readonly tmpfs로 가려 anonymous/runtime volume0 |
+| kernel 관측 | 같은 소유 stall CID의 cgroup memory.max/swap.max/cpu.max/pids.max와 PID1 UID/CapEff/NoNewPrivs를 별도 readonly exec로 확인. 설정값만의 추정과 구별 |
+| 실제 watchdog | valid-looking readback receipt 뒤 고의 late hang. parent120초 trigger→bounded Docker 확인/kill, 실제120.177초·exit137·OOMKilled false; partial candidate 미수용. process lifetime<=120초/SLA나 OOM injection을 증명하지 않음 |
+| resource 정리 | 각 exact image/CID/nonce/name/mount 확인 후 owned container 제거. 실제 운영·보존 restore/DB/CAD/auth mount0 |
+| fresh Browser 복원 | 별도 isolated Chromium에 원본 DXF 없이 저장 후보 bytes 전달. Node container/host readback SHA 동일, 5 ordered primitives/58segments의 실제 Float32 buffers·모든 LINE/polyline segment·독립 analytic curve/CCW/bbox golden 일치 |
+| 정량 Browser 결과 | analytic vertex Euclidean max0.000002071mm, actual curve midpoint error max0.048642090mm, 800×640 canvas·nonblack1556pixels/네 종류 색상 표시, GL/page/console/request error0. 화면만 보고 fidelity PASS를 붙이지 않음 |
+| Browser 음성 / 정리 | digest·state READY·builder·foreign source·late invalid scalar·연결 파손·extra URL field 7건 거부. source DXF 전송0, localhost synthetic server/context 종료. 제품 Viewer READY/UI 수용 시험은 아님 |
+| 실제 전체 파일 | immutable archive의 Version metadata3열(storage_path/sha256/file_size)만 참조하여 원본1,117,143bytes를 전체 입력. 최종 source에서 `DXF_SECTION`으로 거부·payload0·source/archive SHA 그대로. 일부 geometry 추출/원본 transcode0 |
+
+Root 최종 관측 receipt SHA256 `21ec2464b7ae52be62b33ca562d3e0367bc63b2cf6c5863ed724873fd30b8b43`. 실제 resource metadata·cgroup·원본 replay·Browser receipts/실행 화면은 private0700/0600으로 보관하며 실제 사용자 CAD/이름/handle/좌표/텍스트를 public artifact에 넣지 않았다. 공식 group-code 근거와 범위·거부 의미는 Architecture FUP2가 정본이다.
+
+**검증/수용:** focused Node8/Python resource guard6/생산 경로 admission Vitest3 PASS. Root 타입 검사·Lint0 errors/기존12 warnings·production build 및 전체 Vitest176files/1106tests PASS(451.53초, child umask022). 실행 중 test-only dead helper/binding과 regression만 보완됐고 제품·admission import graph는 불변이다. 최종 Node focused/source-bound actual proof와 최종 exact-head PR CI를 별도 gate로 사용한다. 독립 QA는 최종 Node8/guard6/admission3을 직접 실행하고 최종 source의 실제 archive 전체 거부를 재현했으며, source8개/receipt13개의 hash 및 resource/Browser·문서를 감사해 PASS_WITH_LIMITS로 판정했다. Root 전체 앱 검사/실제 Browser·120초 시험을 QA 재실행으로 부르지 않았다. QA SHA256 `1b914b5a954ebe6cb74a0a963c48533ecdd3f69051fca9149b3b5af9fa56b64f`, 독립 실제 replay `23bfd7db3cca1ef9ace0ce1616d73ebcda80b6874e96486d3bd405ef4bf26a47`, Manager ACCEPT_WITH_LIMITS `d3ac0d796b989d8a777d8a845580bef2d799f4d8ff3ab100f321ae1eac70f919`다. 중간 checkpoint의 축약 hash는 최종 파일별 계산·일치 확인으로 보완했으며 이 변경의 exact-head 필수 CI를 최종 통합 gate로 사용한다.
+
+**남은 범위:** 실제 전체 도면의 TABLES/layers/styles·BLOCK/INSERT·TEXT/attributes·dimension/hatch/leader/layout/OCS·Z 지원은 없다. SourceIndex/정밀 원본 선택·실도면 문자/기하 검수·운영 durable Job/READY·실 hardware/2PC/파일럿 GO로 확대하지 않는다. 운영 배포/flags·계정/권한·registry/tag/latest·issue 종료0이다.
+
+---
+
 ## U-225-FUP1-20261108 — 실도면 capability 분석·격리 복원본 정상 인증 조회
 
 **현재 판정:** 실도면 inventory와 새 복원본의 사용자 정상 로그인 후 조회를 관측 범위에서 확인했다. CPU 전체 파일 변환은 여전히 UNSUPPORTED이며 payload/READY 생성0·파일럿 NO-GO다. 운영0.58과 보존된 기존 restore volume은 변경하지 않았고 앱 소스0.61.0/제품 Parser·Builder·Worker·Schema를 유지했다. 아래 ARV의 clone 인증 NOT RUN은 당시 상태이며 이번 실제 실행으로 보완한다.

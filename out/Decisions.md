@@ -1,3 +1,11 @@
+## #225 FUP2 구현 — 별도 offline DTO와 제품 admission 분리 (2026-11-08)
+
+확정된 primitive subset을 test-only Node/별도 DTO validator·restorer로 구현한다. 기존 제품 Scene의 READY schema/allowlist를 확장하거나 LINE Builder로 위장하지 않는다. 별도 schema/state CANDIDATE/new builder와 source byte binding을 사용하고 제품 경로의 명시 거부 회귀를 유지한다. 구조·byte 일치 검증과 실제 geometry/encoding 의미를 구별한다.
+
+고정 오차/segment·source·시간·메모리 조건을 넘거나 미지원 의미가 있으면 전체 후보를 거부한다. open/closed polyline의 반복 terminal도 이 canonical subset 밖이며 유효 DXF 자체를 잘못됐다고 판단하지 않는다. 실제 전체 도면은 미지원이고 운영 버전/flags·DB/Worker/이미지 출고는 유지한다. 최종 실제 시험·제한부 QA/Manager 수용은 TestReport FUP2를 따른다. 다음 단계의 layer/style·block/text 또는 제품 admission 확대는 별도 구체 AC와 versioned identity/제품 MINOR 검토 대상이다.
+
+---
+
 ## #225 FUP2 결정 — primitive offline 확장부터, 실도면 전체 지원은 보류 (2026-11-08)
 
 FUP1 실제 inventory와 최종 10개 scanner 시험을 근거로 다음 최소 범위를 default XY LINE/CIRCLE/ARC 및 bulge0/width0 LWPOLYLINE의 **별도 versioned offline 후보**로 결정한다. exact matrix·오차·resource cap·P01–P06 의미 시험은 Architecture FUP2가 단일 정본이다. FUP1 제품 버전/Builder/Schema는 바꾸지 않는다.
