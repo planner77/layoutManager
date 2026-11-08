@@ -1,3 +1,9 @@
+## #273 — RF-03 evidence chain design boundary (2026-11-09)
+
+After prior PR CI #733 SUCCESS at `2b39cc872c33d476355b5dd62adc110de4fe4afb`, add a **read-only Candidate-first gate** reusing existing GitHub GET run/Owner review/artifact metadata validators without requiring Promotion completion; full post-Promotion `audit` remains unchanged. GitHub readback Owner workflow explicitly selects `candidate` or existing `all`, both GET only. Original GitHub ZIP content SHA256+size is validated before bounded four-name extraction; downloaded JSON claims/receipt cannot substitute an actual Sigstore/OCI proof. Only after real candidate metadata, raw ZIP, authenticated three-role registry GET and pinned gh candidate signatures match may a Stage-A **checksum** be emitted; stage remains blocked until independent protected Promotion Owner approval, immutable final registry readback, durable nonce and RF-04 AC. Synthetic evidence always blocked with `SYNTHETIC_NOT_LIVE`. No release writer, env/permissions, GHCR/Tag/latest or production App/Worker/DB/CAD changes. New exact HEAD CI needed.
+
+---
+
 ## #273 / PR #277 — CI #732 successful; RF-03 signed Candidate subject readback unit (2026-11-09)
 
 - **Prerequisite:** [PR CI #732/run42528404780](https://github.com/planner77/layoutManager/actions/runs/42528404780) for exact previous HEAD `62107e83e0a5caf9d4b960ff4c288f625f6fa99d`: completed SUCCESS, 8 applicable successful jobs and 1 #218 scoped SKIP; unresolved review threads0, Draft/open and mergeable at check. This success cannot be reused as new-code CI evidence.

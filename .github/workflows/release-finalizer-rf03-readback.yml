@@ -4,6 +4,12 @@ run-name: RF03 EVIDENCE READBACK | ${{ inputs.handoff_sha256 }}
 on:
   workflow_dispatch:
     inputs:
+      stage:
+        description: 'Candidate-only GitHub metadata or full post-Promotion metadata'
+        type: choice
+        options: [all, candidate]
+        default: all
+        required: true
       handoff_json:
         description: 'Reviewed RF03_RELEASE_HANDOFF_V1 packet JSON (no secrets)'
         required: true
@@ -58,7 +64,11 @@ jobs:
           RF03_SENDER_ID: ${{ github.event.sender.id }}
         run: |
           set -euo pipefail
-          python3 src/tests/oci/rf03_readback.py readback
+          if [[ "${{ inputs.stage }}" == "candidate" ]]; then
+            python3 src/tests/oci/rf03_readback.py candidate
+          else
+            python3 src/tests/oci/rf03_readback.py readback
+          fi
       - name: Report stop boundary
         run: |
           echo 'RF03_GITHUB_METADATA_ONLY'

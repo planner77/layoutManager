@@ -1,3 +1,9 @@
+## #273 / PR #277 — #733 PASS and new Candidate evidence chain status (2026-11-09)
+
+Previous actual hosted [PR CI #733/run42532181978](https://github.com/planner77/layoutManager/actions/runs/42532181978), exact HEAD `2b39cc872c33d476355b5dd62adc110de4fe4afb`, 8 applicable SUCCESS/1 scoped SKIP, review threads0. New `audit_candidate`, original ZIP byte verifier, integrated OCI/Signer Candidate chain, synthetic negative tests and read-only Owner candidate-stage dispatch were added **after** that PASS. New source Hosted result NOT VERIFIED until exact HEAD CI completes. In particular actual 0.61.1+ GitHub Artifact ZIP download/Sigstore signature, live GHCR role graph, real Owner environment review and final protected publication were NOT RUN. No GHCR/Tag/Issue/operational writes; #229 HOLD, historical 0.61.0 three-role digests/Worker/DB/CAD/.env/backups unchanged.
+
+---
+
 ## #273 / PR #277 — CI #732 and new signature-unit evidence (2026-11-09)
 
 - **Actual hosted prior:** PR CI #732 [42528404780](https://github.com/planner77/layoutManager/actions/runs/42528404780) on exact HEAD `62107e83e0a5caf9d4b960ff4c288f625f6fa99d` completed SUCCESS, 8 applicable jobs/1 scoped SKIP, review threads0.

@@ -1,3 +1,11 @@
+## #273 / PR #277 — #733 SUCCESS source reused, new Candidate evidence chain pending CI (2026-11-09)
+
+- [PR CI #733 / run 42532181978](https://github.com/planner77/layoutManager/actions/runs/42532181978) `2b39cc872c33d476355b5dd62adc110de4fe4afb` completed SUCCESS, 8 applicable success plus scoped A2 SKIP; unresolved reviews0. Prior #731 GHCR challenge failure resolved by #732 and persisted through #733. This is only the **previous source** proof.
+- New source: `rf03_live_evidence.audit_candidate` and readback Owner `stage=candidate` reuse original GET-only run/review/artifact validators; `rf03_candidate_archive.verify_and_extract` binds exact SHA256 original ZIP and four safe members; `rf03_candidate_evidence.audit` chains live metadata, ZIP bytes, OCI, pinned gh signer and final GET/tag drift recheck. New synthetic negative suites registered in required PR scope. No actual 0.61.1+ protected Candidate/Promotion run, original live ZIP download, registry readback, cryptographic signer proof or release GO performed; new exact HEAD hosted CI **NOT VERIFIED**. No new failure observed prior to CI start.
+- Boundary: metadata-only candidate approval history is not Owner release GO. A handoff checksum is not a signature. Fake API/OCI/signer tests cannot become real proof. Existing #225 `0.61.0` Candidate/Promotion and #229 HOLD remain immutable; 0.61.0 image/tag/latest and production DB/CAD/Worker/.env/backups unchanged, GHCR/Tag/Issue write0. Issue #273 OPEN, PR #277 Draft. RF-03 protected new-version writer and promotion/final OCI proof, RF-01 nonce and RF-04 AC closure still pending.
+
+---
+
 ## #273 / PR #277 — PR CI #732 PASS, RF-03 signed artifact unit pending hosted CI (2026-11-09)
 
 - Verified prior [PR CI #732/run42528404780](https://github.com/planner77/layoutManager/actions/runs/42528404780) `62107e83e0a5caf9d4b960ff4c288f625f6fa99d`, attempt1: 8 applicable SUCCESS, one #218 scoped SKIP; no unresolved review threads. Prior GHCR token challenge cross-scope failure (#731) is repaired on that source. No new hosted CI failure for current unit observed at authoring.

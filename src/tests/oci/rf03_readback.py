@@ -95,11 +95,15 @@ class SafeReadOnlyGitHub:
 
 def main():
     try:
-        rf.need(sys.argv[1:] == ["readback"], "RF03_EVIDENCE_MODE_INVALID")
+        mode = sys.argv[1:]
+        rf.need(mode in (["readback"], ["candidate"]),
+                "RF03_EVIDENCE_MODE_INVALID")
         check_context(os.environ)
         packet, original_plan = parse_inputs(os.environ)
-        result = live.audit(packet, original_plan,
-                            SafeReadOnlyGitHub(os.getenv("RF_READ_TOKEN", "")))
+        api = SafeReadOnlyGitHub(os.getenv("RF_READ_TOKEN", ""))
+        result = (live.audit_candidate(packet, original_plan, api)
+                  if mode == ["candidate"]
+                  else live.audit(packet, original_plan, api))
         print(json.dumps(result, sort_keys=True, separators=(",", ":")))
         return 0
     except rf.Blocked as exc:

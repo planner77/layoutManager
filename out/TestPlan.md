@@ -1,3 +1,13 @@
+## #273 — RF-03 Candidate-first evidence-chain tests (2026-11-09)
+
+1. **Source/approval metadata:** exact RF-03 handoff, current Main B ref and source A/B tree+package version, Candidate Owner/manual run attempt1, matching environment policy/actual Owner reviewer and run+job, Artifact inventory ID/name/source/size/digest/expiry. Promotion run may be absent; no acceptance of Promotion approval by proxy.
+2. **Original Artifact ZIP:** require externally supplied original GitHub Archive bytes, exact metadata SHA256/size, four exact safe root filenames, no duplicate/missing/extra/traversal/directory/symlink/unsupported compression/encryption/oversized/decompression-bomb payload. Extract only new private directory, rehash archive and all receipt/bundle/verification files, bind SHA256SUMS of 3 OCI manifests plus receipt.
+3. **OCI/Sigstore chain:** compare 3-role, source, version, sha256 manifest/config/platform with actual authenticated GHCR GET-only readback; run pinned gh v2.103.3 proof for 4 subjects online and with bundle using existing signer/SLSA certificate guards, then independent metadata and Candidate tag recheck for drift. No reused signature/approval or synthetic result should produce GO.
+4. **Negative tests:** changed Main/Owner/run/job/approval, expired/wrong Artifact, wrong ZIP digest, unsafe ZIP paths/modes/sizes/CRC, tampered OCI and signer, changing registry tag during verification, changed GitHub metadata during signed verification. Independent (run ID + SHA + digest + role) required for all.
+5. **Stop boundary:** even all Candidate evidence matching cannot authorize Promotion or final 3-image GHCR publication. Signature result remains `CANDIDATE_SUBJECTS_CLI_CHECKED_NOT_RELEASE_GO`; Owner GO/Promotion/latest/Issue closure NOT_VERIFIED. Synthetic readers produce `BLOCKED_SYNTHETIC_NOT_LIVE_EVIDENCE`. New exact-HEAD required PR CI must pass; do not reuse #733.
+
+---
+
 ## #273 — RF-03 signed Candidate subject verification test plan (2026-11-09)
 
 1. Verify strict RF03 handoff source/version/run/role identities; existing downloaded `candidate-receipt.json`, `candidate-bundle.sigstore.json`, `verification.json`, `SHA256SUMS` SHA256 binding; top raw 3-role manifest files from private `rf03_oci_readback.check` workspace, distinct digest/config/platform.

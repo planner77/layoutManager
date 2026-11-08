@@ -244,3 +244,49 @@ def audit(packet, original_plan, api):
             "ociGraphReadback": "NOT_VERIFIED",
             "registryPublication": "NOT_RUN",
             "externalWrites": 0}
+
+
+def audit_candidate(packet, original_plan, api):
+    """Candidate-only GitHub metadata gate, before separate Promotion exists.
+
+    Reuse the original strict run/approval/environment/artifact validators.
+    Promotion run/job/review are intentionally NOT asserted to have happened.
+    This is read-only metadata, not downloaded archive bytes or Owner GO.
+    """
+    shape = handoff.check(packet, original_plan)
+    main = api.get("/git/ref/heads/main")
+    require(type(main) is dict and main.get("ref") == "refs/heads/main"
+            and type(main.get("object")) is dict
+            and main["object"].get("type") == "commit"
+            and main["object"].get("sha") == packet["promotionSourceCommit"],
+            "RF03_CANDIDATE_MAIN_DRIFT")
+    version = packet["version"]
+    check_source(api, packet["sourceCommit"], packet["sourceTree"], version)
+    check_source(api, packet["promotionSourceCommit"],
+                 packet["promotionSourceTree"], version)
+    candidate_run = check_run(api, "candidate", packet["candidate"])
+    environment = check_environment(api, {
+        packet["candidate"]["environmentId"],
+        packet["promotion"]["environmentId"]})
+    artifact = check_artifact(api, packet)
+    return {
+        "kind": "RF03_CANDIDATE_METADATA_READBACK_V1",
+        "state": "BLOCKED_CANDIDATE_BYTES_SIGNATURE_AND_PROMOTION_REQUIRED",
+        "version": version,
+        "sourceCommit": shape["sourceCommit"],
+        "sourceTree": packet["sourceTree"],
+        "promotionCodeSource": packet["promotionSourceCommit"],
+        "candidateRunId": candidate_run["runId"],
+        "candidateApprovalJobId": candidate_run["jobId"],
+        "candidateReviewEvidenceSha256": candidate_run["evidenceSha256"],
+        "environmentPolicy": environment["policy"],
+        "artifactId": artifact["id"],
+        "artifactDigest": artifact["digest"],
+        "candidateReviewHistory": "OBSERVED_NOT_RELEASE_AUTHORITY",
+        "promotionReviewHistory": "NOT_VERIFIED",
+        "archiveBytes": "NOT_VERIFIED",
+        "signatureVerification": "NOT_VERIFIED",
+        "ownerAuthority": "NOT_VERIFIED",
+        "registryPublication": "NOT_RUN",
+        "externalWrites": 0,
+    }
