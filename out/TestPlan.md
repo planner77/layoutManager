@@ -1,3 +1,13 @@
+## TP-273-PR274-REVIEW-P2 — 다른 PR CI evidence spoof 거부 (2026-11-08)
+
+- P2-01 Open PR에서 `pull_requests=[{number:other}]` + 동일 HEAD/branch/same repo면 `WAITING_EXACT_PR_CI` 반환.
+- P2-02 Merged PR도 **비어 있지 않은 다른 PR association**은 branch fallback을 허용하지 않는다.
+- P2-03 Open PR의 빈 association은 성공으로 재사용하지 않고 정확 CI 대기; Merged PR의 빈 association + 같은 repo/branch/HEAD는 기존 squash 후 readback 호환 PASS 유지.
+- P2-04 자기 PR의 최신 CI 실패를 다른 PR의 더 최신 CI 성공이 가리지 못하고 `RF_LATEST_CI_NOT_SUCCESS`로 중단.
+- P2-05 Hosted 정확 신규 HEAD의 required Scope/aggregate SUCCESS 및 PR review thread 해결 전 병합 금지. 기존 CI 42485818897 성공은 이전 HEAD 근거로만 보존.
+
+---
+
 ## TP-273-RF01-HARDEN — exact target·expiry·AC·CI attempt 회귀 (2026-11-08)
 
 - HR01 `releaseTarget`은 `ghcr.io/planner77/layoutmanager:v<version>`만 수용. 외부 Registry/`latest` 거부.

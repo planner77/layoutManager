@@ -172,6 +172,35 @@ class PolicyTest(unittest.TestCase):
         api.values[key]["workflow_runs"][0]["head_branch"] = "feat/foreign"
         self.assertEqual(RF.plan(parse(packet()), api)["state"], "WAITING_EXACT_PR_CI")
 
+    def test_other_pr_association_is_not_same_pr_ci_evidence(self):
+        key = "/actions/runs?head_sha=" + HEAD + "&event=pull_request&per_page=100"
+        for merged in (False, True):
+            with self.subTest(merged=merged):
+                api = API(merged=merged)
+                # The same source branch and SHA must not override a
+                # nonempty GitHub association to another PR.
+                api.values[key]["workflow_runs"][0]["pull_requests"] = [{"number": 999}]
+                self.assertEqual(RF.plan(parse(packet()), api)["state"],
+                                 "WAITING_EXACT_PR_CI")
+        api = API()
+        api.values[key]["workflow_runs"][0]["pull_requests"] = []
+        self.assertEqual(RF.plan(parse(packet()), api)["state"],
+                         "WAITING_EXACT_PR_CI")
+
+    def test_newer_foreign_pr_success_cannot_mask_own_failed_ci(self):
+        api = API()
+        key = "/actions/runs?head_sha=" + HEAD + "&event=pull_request&per_page=100"
+        runs = api.values[key]
+        own = runs["workflow_runs"][0]
+        own["conclusion"] = "failure"
+        foreign = copy.deepcopy(own)
+        foreign.update(id=702, run_number=702, conclusion="success",
+                       pull_requests=[{"number": 999}])
+        runs["workflow_runs"].append(foreign)
+        runs["total_count"] = 2
+        with self.assertRaisesRegex(RF.Blocked, "^RF_LATEST_CI_NOT_SUCCESS$"):
+            RF.plan(parse(packet()), api)
+
     def test_newer_ci_failure_cannot_reuse_older_success(self):
         api = API()
         runs = api.values["/actions/runs?head_sha=" + HEAD

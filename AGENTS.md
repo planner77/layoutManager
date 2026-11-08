@@ -1,3 +1,9 @@
+## #273 / PR #274 — 동일 브랜치 다른 PR CI 연관 오류 수정 (2026-11-08)
+
+[PR CI run42485818897](https://github.com/planner77/layoutManager/actions/runs/42485818897)은 exact HEAD `f88198dfccf0940b3ab3c95947928033b65b9bfe`에서 적용 8개 Job SUCCESS/A2 scoped SKIP. Ready 직후 Codex [PR #274 Review](https://github.com/planner77/layoutManager/pull/274)에서 **P2 unresolved thread** 확인: 동일 SHA·브랜치의 다른 PR에 명시적으로 연관된 최신 CI가 올바른 PR의 실패를 가릴 위험. `read_run`의 branch fallback은 **실제로 병합된 PR + GitHub pull_requests가 빈 배열**인 경우로만 제한하며 비어 있지 않은 다른 PR 연관은 항상 제외. Open PR의 연관 빈 run도 거부. 해당 소스는 새 exact HEAD PR CI 전 NOT VERIFIED, 재검증 후 review resolve/병합. #229 HOLD, RF-02/03/04 미구현·독립 Owner 승인 불변.
+
+---
+
 ## #273 — RF-01 exact packet·CI attempt 보완 (2026-11-08)
 
 기존 [PR #274 CI run 42481792421](https://github.com/planner77/layoutManager/actions/runs/42481792421)은 HEAD `e4926f3fbbab0d59bc7141e1dd6f56aadbd0f80e`의 **적용 Job 8개 SUCCESS**, scoped A2 1개 SKIPPED. 그 결과는 변경 전 소스만 검증한다. RF-01에 exact releaseTarget, AC ID 범위, 자가 선언 Owner intent(승인 증명 아님), 24시간 이내 만료, PR/Main run·required job attempt1 검증, dispatch Owner/Repo identity를 추가한다. 새 정확 HEAD CI 전 NOT VERIFIED; RF-02/03/04 writer는 아직 NOT IMPLEMENTED. #229 HOLD와 Owner 보호 환경 두 승인, 운영0.61.0과 기존 GHCR/Volume 변경 금지. [Issue273](out/Issue273.md), [FailureLedger](out/FailureLedger.md) 기준.

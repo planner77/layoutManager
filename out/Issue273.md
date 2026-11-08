@@ -1,3 +1,9 @@
+## RF-01 PR #274 리뷰 보완 — PR CI association 강제 (2026-11-08)
+
+GitHub [PR CI run42485818897](https://github.com/planner77/layoutManager/actions/runs/42485818897)은 HEAD `f88198dfccf0940b3ab3c95947928033b65b9bfe`의 요구 Job SUCCESS였지만 Ready 이벤트 후 P2 review 1건이 신규 등록됐다. `workflow_run.pull_requests`가 다른 PR 번호를 포함하면 같은 `head_sha`·`head_branch`여도 **해당 PR의 성공 증거가 아니다**. 기존 fallback은 이미 **squash merged**이고 연관 배열이 완전히 빈 경우에만 허용한다. Open PR association 공백은 `WAITING_EXACT_PR_CI`. 자기 PR 실패 + 더 최신 다른 PR 성공은 `RF_LATEST_CI_NOT_SUCCESS`로 중단하며 기존 성공을 대체하지 않는다. 패치 후 CI는 별도 새 HEAD 검증 필요. Release/Issue writer, #229 HOLD 보존.
+
+---
+
 ## RF-01 추가 안전 계약 — Release Target·AC·TTL·CI Attempt (2026-11-08)
 
 기존 PR274 HEAD `e4926f3f`의 CI [42481792421](https://github.com/planner77/layoutManager/actions/runs/42481792421)은 적용 8개 Job 성공/A2 scoped SKIP(신규 HEAD 증거 아님). `RELEASE_FINALIZER_REQUEST_V1`에 필수 필드를 추가한다: `releaseTarget=ghcr.io/planner77/layoutmanager:v<version>`, `acceptanceIds`(고유·대문자 AC 식별자 목록, closeIssue=true면 최소 1개), `ownerIntent={integrate,release,closeIssue}`(요청 의도만 표시), `issuedAtEpoch`/`expiresAtEpoch`(UTC seconds; 발급≤현재≤만료, 기간≤24h). Hash/intent는 Owner 승인 서명이 아니다. PR/Main workflow와 필수 Job의 `run_attempt=1`만 증거로 인정; attempt2+ 거부. PLAN workflow Owner actor/repo ID 제한 및 GET-only 유지. RF-01 checkpoint/nonce 영속 재사용 차단과 RF-02~04 실제 writer는 별도 구현이 필요하며 이 변경으로 최종화 완료를 주장하지 않는다. 보호된 두 Owner Environment 및 #229 HOLD 불변.

@@ -116,7 +116,7 @@ def parse_packet(raw: bytes, digest: str, now: int | None = None) -> dict:
 
 
 def read_run(rows: dict, head: str, workflow: str, event: str,
-             pr_number=None, pr_branch=None):
+             pr_number=None, pr_branch=None, pr_merged=False):
     need(type(rows) is dict and type(rows.get("workflow_runs")) is list
          and type(rows.get("total_count")) is int
          and 0 <= rows["total_count"] <= 100
@@ -125,16 +125,25 @@ def read_run(rows: dict, head: str, workflow: str, event: str,
                   if type(r) is dict and r.get("head_sha") == head
                   and r.get("path") == workflow and r.get("event") == event]
     if pr_number is not None:
-        # GitHub may clear workflow_run.pull_requests after a successful
-        # squash. Bind the exact same-repo branch AND SHA as an alternative.
-        candidates = [r for r in candidates
-                      if (type(r.get("pull_requests")) is list
-                          and any(type(q) is dict and q.get("number") == pr_number
-                                  for q in r["pull_requests"]))
-                      or (type(pr_branch) is str and pr_branch != ""
-                          and r.get("head_branch") == pr_branch
-                          and type(r.get("head_repository")) is dict
-                          and r["head_repository"].get("id") == REPO_ID)]
+        # Association with a *different* PR must never satisfy this PR's
+        # required CI, even if a same-repo branch/commit is reused.
+        # GitHub can clear associations after squash; only then, and only
+        # for an actually merged PR, allow exact same-repo branch+SHA.
+        candidates = [
+            r for r in candidates
+            if type(r.get("pull_requests")) is list
+            and (
+                any(type(q) is dict and type(q.get("number")) is int
+                    and q["number"] == pr_number for q in r["pull_requests"])
+                or (
+                    pr_merged is True and r["pull_requests"] == []
+                    and type(pr_branch) is str and bool(pr_branch)
+                    and r.get("head_branch") == pr_branch
+                    and type(r.get("head_repository")) is dict
+                    and r["head_repository"].get("id") == REPO_ID
+                )
+            )
+        ]
     if not candidates:
         return None
     need(all(type(r.get("run_number")) is int and
@@ -203,7 +212,8 @@ def plan(p: dict, api) -> dict:
     runs = api.get("/actions/runs?head_sha=" + p["prHeadSha"]
                    + "&event=pull_request&per_page=100")
     pr_run = read_run(runs, p["prHeadSha"], PR_WORKFLOW,
-                      "pull_request", p["prNumber"], pr.get("head", {}).get("ref"))
+                      "pull_request", p["prNumber"], pr.get("head", {}).get("ref"),
+                      pr_merged=pr.get("merged") is True)
     output = {"kind": "RELEASE_FINALIZER_PLAN_V1", "repository": REPO,
               "issueNumber": p["issueNumber"], "prNumber": p["prNumber"],
               "sourceSha": p["prHeadSha"], "sourceTree": p["prTreeSha"],

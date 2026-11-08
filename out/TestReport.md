@@ -1,3 +1,11 @@
+## U-273-PR274-REVIEW-P2 — CI SUCCESS 후 리뷰 보안 보완 (2026-11-08)
+
+- 수정 전 HEAD `f88198dfccf0940b3ab3c95947928033b65b9bfe`, [PR CI 42485818897](https://github.com/planner77/layoutManager/actions/runs/42485818897), attempt1, **8 applicable SUCCESS**, 1 A2 scoped SKIPPED. Ready로 인한 재실행이었고 해당 소스가 검증됐다.
+- 이후 자동 리뷰가 PR CI 동일 브랜치/다른 PR run association의 부정확한 fallback(P2)을 지적했다. 이는 코드 분석으로 확인한 **신뢰 경계 결함**이며 hosted CI 실패는 아님.
+- 개선: 빈 연관 배열이면서 실제 PR merged인 경우로 fallback 제한. 다른 PR 명시 연관·open PR 빈 연관·자기 PR 최신 CI 실패와 foreign 최신 성공의 음성 테스트 추가. 신규 HEAD 정확 hosted CI는 **NOT VERIFIED**, review thread 해결/merge/Main은 **NOT RUN**. 기존 #229 HOLD/보호 승인 불변.
+
+---
+
 ## U-273-RF01-HARDEN — baseline와 신규 변경 증거 분리 (2026-11-08)
 
 - [PR #274 CI 42481792421](https://github.com/planner77/layoutManager/actions/runs/42481792421), 정확 HEAD `e4926f3fbbab0d59bc7141e1dd6f56aadbd0f80e`: **적용 8개 Job SUCCESS**, 범위 외 A2 1개 SKIPPED. 리뷰 thread0·mergeable true·Main behind0 당시 확인.

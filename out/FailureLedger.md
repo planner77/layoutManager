@@ -1,3 +1,12 @@
+## #273 / PR #274 — Ready 리뷰 P2 보안 경계, 기존 CI 성공·수정 후 재검증 필요 (2026-11-08)
+
+- **CI 자체 실패는 관측하지 않음**: [PR CI 42485818897](https://github.com/planner77/layoutManager/actions/runs/42485818897), HEAD `f88198dfccf0940b3ab3c95947928033b65b9bfe`, attempt1: 적용8/8 SUCCESS, A2 scoped SKIP. Ready 이벤트 직후 Codex 리뷰에서 unresolved P2 1건이 발생해 Ruleset의 review resolution gate에서 병합을 중단했다.
+- **원인:** `src/tests/oci/release_finalizer.py`의 `read_run`에서 동일 branch/SHA + repo ID만으로 PR CI fallback을 unconditional 허용. `workflow_run.pull_requests`가 **다른 PR을 명시**해도 최신 성공 후보로 선택해 해당 PR의 과거 실패를 숨길 수 있는 정확 PR association 보안 결함.
+- **보완:** PR 번호 명시 일치 우선; fallback은 `pr_merged=True` + `pull_requests=[]` + 동일 repo/branch/SHA에만 허용. Open PR association 빈 경우 및 다른 PR association은 제외. 자기 PR 실패+다른 PR 성공 오인 회귀 포함. 기존 merged-empty branch fallback은 유지. 새 정확 HEAD Hosted CI/리뷰 해결 **NOT VERIFIED**, 기존 CI 성공을 신규 HEAD로 확대 금지.
+- **보호:** #229 HOLD_MAIN/G7_RELEASE_HOLD_TAG_BLOCKED, 기존 GHCR와 운영0.61.0 Worker/DB/CAD/Volume/.env/복구점 보존. RF-02/03/04 writer NOT IMPLEMENTED, Issue #273 OPEN.
+
+---
+
 ## #273 / PR #274 — 기존 CI 성공 재사용 경계, 후속 소스 증거 미확인 (2026-11-08)
 
 - **새 실패 관측 없음.** [PR CI 42481792421](https://github.com/planner77/layoutManager/actions/runs/42481792421)의 정확 HEAD `e4926f3fbbab0d59bc7141e1dd6f56aadbd0f80e`: Scope·Static/Build·Docker·G7/E2E·aggregate 등 적용 Job **8/8 SUCCESS**, A2 scoped Job **SKIPPED**. 리뷰 스레드0, mergeable true, main behind0.
