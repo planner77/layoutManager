@@ -1,3 +1,9 @@
+## #218 / PR #272 — CI #705 웹 기준 이미지 수리 (2026-11-08)
+
+재개 시 [FailureLedger](out/FailureLedger.md)의 CI705 → [TestReport](out/TestReport.md)의 U-218-CI705 → [TestPlan](out/TestPlan.md)의 TP-218-CI705를 확인한다. 웹 비교 기준 이미지는 `runtime` 단계와 `app` 역할을 명시한다. 전체 package 경로/SHA·native·중복 layer 검증을 유지하며 실제 Docker 결과와 원인 미확정 범위는 TestReport를 따른다. PR272 Draft/Issue218 OPEN, 소스0.61.1과 운영0.61.0을 구별한다. 사용자 범위는 새 PR CI 시작 확인까지이며 완료 감시·병합·운영 변경은 수행하지 않는다.
+
+---
+
 ## #218 / PR #272 — CI #704 RR2 upgrade 계획 검증 수리 (2026-11-08)
 
 [FailureLedger](out/FailureLedger.md)의 CI704, [TestReport](out/TestReport.md) U-218-CI704, [TestPlan](out/TestPlan.md) TP-218-RR2-PATCH 순서로 확인한다. CI #704의 Source `bfc38049`에서 RR2 actual 0.60.0→0.61.1의 등록 경로는 `MIGRATION → COMPATIBLE`이나 `rr2-journey.py`가 `['MIGRATION']`만 허용해 `RR2_UPGRADE_PLAN_INVALID`가 발생했다. 현재 릴리스 Registry 및 G7 통합 테스트와 일치하도록 **정확한 두 단계와 기존/대상 버전**을 확인한다. 필수 Scope에서 실제 validator를 사용하는 단위 음성 회귀를 추가해 미래 경로 누락·순서 변경을 Docker 실기동 전에 거부한다. 기존 구 OCI 이미지·backup·권한·CAS·감사·실 Viewer Gate는 완화하지 않는다. PR #272 Draft 및 Issue #218 OPEN, 운영0.61.0 flags ON/단일 CPU Worker/DB·CAD·Volume/.env/Tag/GHCR/자동 publisher HOLD 보존. 이 Source의 CI는 시작 확인 후 완료 모니터링하지 않는다.

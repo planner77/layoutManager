@@ -1,5 +1,7 @@
 ## #218 — Scene 목록 상태 조회 보완 (소스0.61.1)
 
+PR CI 웹 레이어 비교는 `runtime` 이미지와 `app` 역할을 확인합니다. CI 실패·보완과 실제 검증 범위는 [TestReport](out/TestReport.md)의 U-218-CI705와 [FailureLedger](out/FailureLedger.md)를 참조하세요.
+
 홈과 Location 목록의 표시된 DXF를100개씩 조회해100개 초과 행도 상태를 확인합니다. 탭·목록·갱신 전환 시 이전 응답을 무효화하고, 통신 오류는 생성 실패와 구분합니다. 자동 조회는 진행 중인 작업에 한정하며 반복 통신 오류 후에는 상태 갱신으로 복구합니다. 실패·차단·재시도 대기의 안전한 사유를 표시하고 기존 권한 검증을 거쳐 Scene을 재시도합니다.
 
 이번 PATCH는 목록 상태 동작의 수정입니다. 현재 운영0.61.0의 단일 CPU Worker·지원 LINE subset과 기존 검증 근거를 재사용합니다. 실제 검증 결과/미실행 범위는 [TestReport](out/TestReport.md), 설계·잔여 AC는 [Issue218](out/Issue218.md)을 따릅니다. #218은 진행 중이며 BLOCK/INSERT 확대는 #268입니다.

@@ -1,3 +1,12 @@
+## TP-218-CI705 — native package 비교 재현/수리 (2026-11-08)
+
+- C705-T01: 실패한 Docker audit의 실제 baseline/current 파일 집합·SHA 차이 및 각 build context/dependency/cache 입력을 대조한다. 가설과 관측을 분리한다.
+- C705-T02: 기존 audit의 파일 누락·SHA 변조·native binding 부재·중복 layer·크기 gate 음성 시험을 유지하고 재현된 원인에 대한 최소 회귀를 추가한다.
+- C705-T03: 수정된 동일 source baseline/current의 실제 Docker layer audit와 native SQLite smoke를 실행한다. 환경상 미실행이면 NOT RUN과 대체 증거를 기록하며 remote 성공을 추정하지 않는다.
+- C705-T04: 관련 선행 Python/CI 계약 회귀·필요한 build/type/lint 검사, Developer 완료 검토 후 독립 QA 문서/검증, root 최종 review/conflict/secret 확인을 수행한다. 새 exact HEAD PR CI는 시작만 확인하며 완료 감시/병합/배포하지 않는다.
+
+---
+
 ## TP-218-RR2-PATCH — source0.61.1 업그레이드 경로/선행 실패 (2026-11-08)
 
 기준: `src/server/g7-operational/greenfield-upgrade-registry.ts`의 등록 경로와 `src/tests/integration/g7-greenfield-upgrade.test.ts`. 단일 운영 source0.61.0은 유지, 해당 proof는 **폐기 가능한 테스트 전용** old0.60.0→candidate0.61.1 경로다.

@@ -1,3 +1,25 @@
+## 2026-11-08 — CI #705 수리 최종 Manager 판정
+
+**ACCEPT_WITH_LIMITS — root commit/push 및 새 PR CI 시작 인계 수용.** Manager는 Developer의 runtime target·app-role guard와 선행 RED/회귀, 독립 QA의 **14건 중13 PASS/1 Python-version SKIP** 및 PASS_WITH_LIMITS를 검토했다. Root 실제 same-source/same-dependency Docker 시험에서 잘못된 Worker baseline의78개 regular-file inventory와 web runtime81개의 차이로 기존 오류가 재현됐고, 차이3경로는 Worker TAR hardlink였다. runtime을 명시한 기준/후보는81개 경로/모든 SHA·중복0·native SQLite smoke를 통과했다. SHA/native/중복/size gate 완화와 캐시 정책 변경은 없다. 상세 수치와 실행 주체는 [TestReport U-218-CI705](TestReport.md), 실패 이력은 [FailureLedger](FailureLedger.md)가 정본이다.
+
+C705-01~03은 로컬 재현·수리·독립 QA로 수용한다. Root fresh build/typecheck/lint와 scope/HOLD/RR2cleanup 회귀 성공, 최종 review0·mergeable·behind0·충돌0 보고를 확인했다. C705-04의 staged/secret 검사·commit/push·새 exact HEAD CI 시작은 root 최종 작업이며 **완료 모니터링하지 않는다**. 기존 CI #705 FAIL은 이력 그대로 유지하고 새 CI를 PASS로 예고하지 않는다. source0.61.1, PR Draft/Issue218 OPEN·잔여 기능 범위와 운영/GHCR/tag는 불변이다. Manager/Developer/QA 변경은 동결하며 추가 제품 재작업은 없다.
+
+---
+
+## 2026-11-08 — CI #705 native package 비교 실패 설계 (Manager, 구현 전)
+
+CI #705/run42469008037 Docker job128695196064가 standalone layer audit의 `Final better-sqlite3 file paths or SHA256 changed`로 실패했다. 실제 차이 파일·원인은 아직 미확정이며 캐시/빌드 입력 불일치는 조사 가설이다. 동일 source의 기준/후보 Dockerfile 비교에서 native package 최종 경로·SHA와 중복 layer 검증을 그대로 유지하고, 재현으로 확인한 빌드 입력 또는 비교 준비 결함만 최소 수리한다. baseline은 현재 checkout, release-role은 exact Git archive를 사용한다는 차이와 dependency install/cache 경로를 먼저 조사한다.
+
+추가 확인: baseline build 명령에 `--target`이 없고 Dockerfile의 마지막 stage는 `cpu-worker`다. 실제 #705 hosted Docker 로그도 baseline에서 `[cpu-worker 1/11] COPY ... /node_modules`를 실행했다. 웹 baseline 역할 대신 Worker를 비교한 준비 결함은 확정됐다. 수리는 웹 baseline의 `--target runtime` 명시와 잘못된 역할을 조기에 거부하는 회귀를 우선한다. 이 역할 불일치가 관측 SHA 실패의 전부인지는 동일 dependency 실제 이미지 비교 후 판정하며 캐시 비결정성을 확정 원인으로 기록하지 않는다.
+
+실제 재현 결과(root): exact `aff7263`의 동일 dependency 출력으로 기본 Worker와 runtime을 빌드하자 기존 auditor가 동일 오류를 재현했다. Worker는 regular-file inventory78개, runtime은81개이며 차이는 native build alias3경로, 공통 경로의 SHA 차이는0이다. `--target runtime`을 명시한 기준/후보는 동일 image ID·81경로/모든 SHA·중복0, native SQLite smoke를 통과했다. 따라서 이번 수리는 역할 선택 결함만 수정하며 캐시/설치 정책은 변경하지 않는다. 세부 수치·hardlink 표현 및 QA 검토는 TestReport/FailureLedger가 정본이다.
+
+AC C705-01: 원격 실패와 로컬 재현/증거에서 경로·바이트 차이를 구분하고 원인을 확정하거나 미확정 한계를 명시한다. C705-02: 동일 의존성 입력을 사용하는 공정한 비교를 준비하고 hash/path/native/duplicate/size gate 완화 없이 오류를 수리한다. C705-03: 선행 회귀가 기존 결함을 잡고 수정 후 통과하며 독립 QA가 관련 Python/정적 계약과 실제 Docker 근거를 확인한다. C705-04: FailureLedger/TestReport에 실제 실패·조치·미실행을 남기고 root가 review0/충돌·diff/secret 검사 후 commit/push/새 PR CI 시작만 수행한다. 완료 모니터링은 하지 않는다.
+
+제품 Viewer·메뉴/Role/Renderer/Drawer/Canvas 동작과 DB/Worker/G7·운영0.61.0·GHCR/tag·승인 범위는 변경하지 않으므로 신규 Viewer 메뉴 항목은 불필요하다. source0.61.1 유지, #218 OPEN/PR Draft. Manager→Developer→독립 QA 순서로 검증한다.
+
+---
+
 ## 2026-11-08 — PR #272 CI #704 RR2 업그레이드 계획 기대값 정합화
 
 현재 후보 source `0.61.1`의 기존 `0.60.0` 업그레이드는 등록된 `MIGRATION→COMPATIBLE` 두 단계이나 PR CI #704의 RR2 synthetic OCI journey는 이전 `MIGRATION` 1단계만 허용했다. 결과 `RR2_RR3_JOURNEY_FAILED stage=upgrade code=RR2_UPGRADE_PLAN_INVALID`. [FailureLedger](FailureLedger.md), [TestReport](TestReport.md) U-218-CI704, [TestPlan](TestPlan.md) TP-218-RR2-PATCH를 따른다. 엄격한 source/target/step 계약과 선행 음성 테스트를 보강하며 실제 업그레이드·Worker·Viewer 후속 미검증은 유지한다. CI 필수 Job 및 보호 정책 축소 없음. PR Draft/Issue OPEN, 운영0.61.0과 GHCR/tag 불변.
