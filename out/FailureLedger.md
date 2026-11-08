@@ -1,3 +1,29 @@
+## #273 / PR #274 — Ready 리뷰 P2 보안 경계, 기존 CI 성공·수정 후 재검증 필요 (2026-11-08)
+
+- **CI 자체 실패는 관측하지 않음**: [PR CI 42485818897](https://github.com/planner77/layoutManager/actions/runs/42485818897), HEAD `f88198dfccf0940b3ab3c95947928033b65b9bfe`, attempt1: 적용8/8 SUCCESS, A2 scoped SKIP. Ready 이벤트 직후 Codex 리뷰에서 unresolved P2 1건이 발생해 Ruleset의 review resolution gate에서 병합을 중단했다.
+- **원인:** `src/tests/oci/release_finalizer.py`의 `read_run`에서 동일 branch/SHA + repo ID만으로 PR CI fallback을 unconditional 허용. `workflow_run.pull_requests`가 **다른 PR을 명시**해도 최신 성공 후보로 선택해 해당 PR의 과거 실패를 숨길 수 있는 정확 PR association 보안 결함.
+- **보완:** PR 번호 명시 일치 우선; fallback은 `pr_merged=True` + `pull_requests=[]` + 동일 repo/branch/SHA에만 허용. Open PR association 빈 경우 및 다른 PR association은 제외. 자기 PR 실패+다른 PR 성공 오인 회귀 포함. 기존 merged-empty branch fallback은 유지. 새 정확 HEAD Hosted CI/리뷰 해결 **NOT VERIFIED**, 기존 CI 성공을 신규 HEAD로 확대 금지.
+- **보호:** #229 HOLD_MAIN/G7_RELEASE_HOLD_TAG_BLOCKED, 기존 GHCR와 운영0.61.0 Worker/DB/CAD/Volume/.env/복구점 보존. RF-02/03/04 writer NOT IMPLEMENTED, Issue #273 OPEN.
+
+---
+
+## #273 / PR #274 — 기존 CI 성공 재사용 경계, 후속 소스 증거 미확인 (2026-11-08)
+
+- **새 실패 관측 없음.** [PR CI 42481792421](https://github.com/planner77/layoutManager/actions/runs/42481792421)의 정확 HEAD `e4926f3fbbab0d59bc7141e1dd6f56aadbd0f80e`: Scope·Static/Build·Docker·G7/E2E·aggregate 등 적용 Job **8/8 SUCCESS**, A2 scoped Job **SKIPPED**. 리뷰 스레드0, mergeable true, main behind0.
+- **원인/재사용:** 기존의 그린 결과는 구 RF-01 Source 전용. 최신 packet target·TTL·AC·Owner intent·attempt1 보완을 거친 새 소스의 PR CI는 **NOT VERIFIED**이며 과거 성공을 신규 HEAD로 소급하지 않는다. Request 해시는 Owner 인증이 아님.
+- **보호:** 기존 CI #702~705 실패 이력 보존. 신규 CI 완료 감시하지 않음. #229 HOLD_MAIN/TAG_BLOCKED, 독립 Candidate/Promotion Owner 승인, 현행 운영 DB/CAD/Volume/.env/Worker/Tag/복구점 불변. RF-02/03/04 writer **NOT RUN**.
+
+---
+
+## #273 / Release Finalizer RF-01 — 보호 경계 및 아직 미검증 항목 (2026-11-08)
+
+- **새 CI 실패는 관측하지 않음.** 이번 Issue는 기존 여러 번의 PR→Main→GHCR→Issue 종료 지시와 #229 2-image 자동 게시 위험을 줄이는 공통 개선이다. #229 구현은 `>=0.61.0` Main `HOLD_MAIN`, Tag `G7_RELEASE_HOLD_TAG_BLOCKED`를 강제하며, existing candidate/promote는 0.61.0 exact-version·Owner 별도 Environment review가 필요하다. 단순 자동화로 동일 승인 간주 금지.
+- **설계상 차단:** RF-01은 read-only GET/plan 전용이며 release authorization과 Issue acceptance를 `NOT_VERIFIED`로 남긴다. Signed 3-image packet/Owner approval 없는 GHCR 게시 및 #218 AC 최종 대조 없는 Close를 시도할 수 없다. 이는 새 실제 실패 기록이 아니라 의도적 정책이다.
+- **미실행:** 새로운 소스의 Python/Hosted CI 통과, 실제 API 실행/merging/release GHCR/issue closure는 확인 전 `NOT VERIFIED/NOT RUN`. 향후 CI 실패를 역사 원장에 정확 run/HEAD로 누적, 기존 #702~#705 FAIL 기록 삭제 금지.
+- **운영:** Main42a370c, 운영0.61.0 단일 Worker·flags ON, DB/CAD/Volume/.env, 기존 digest/tag/복구점 불변. 출시를 무승인 재시도하지 않음.
+
+---
+
 ## #218 / PR #272 — PR CI #705 standalone layer audit role mismatch (2026-11-08)
 
 - **Hosted 관측:** [PR CI #705 / run 42469008037](https://github.com/planner77/layoutManager/actions/runs/42469008037), exact HEAD `aff7263b811a0c365cea27b61855e8c0cd5e2765`. Docker job `128695196064` **FAIL** at audit `Final better-sqlite3 file paths or SHA256 changed`; Required Verify aggregate `128698837254` failed by dependency. Other applicable jobs succeeded; A2 scoped was SKIPPED (not PASS).

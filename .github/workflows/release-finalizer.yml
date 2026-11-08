@@ -1,0 +1,53 @@
+name: Release Finalizer exact-source read-only preflight
+run-name: FINALIZER PLAN | ${{ inputs.packet_sha256 }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      packet_json:
+        description: 'Reviewed exact RELEASE_FINALIZER_REQUEST_V1 JSON; no secrets'
+        required: true
+        type: string
+      packet_sha256:
+        description: 'SHA256 of exact packet_json bytes'
+        required: true
+        type: string
+
+# RF-01 only. No merge, write, environment approval, GHCR or Issue mutation.
+# RF-02/03/04 require their own reviewed protected implementation.
+permissions: {}
+
+jobs:
+  plan:
+    name: Exact PR/Main evidence plan — ZERO WRITES
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      github.event_name == 'workflow_dispatch' &&
+      github.actor_id == '45478892' &&
+      github.event.sender.id == 45478892 &&
+      github.repository_id == 1359528829 &&
+      github.run_attempt == 1
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+      actions: read
+    steps:
+      - name: Checkout source without persistent credentials
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Validate exact packet and read only GitHub evidence
+        env:
+          RF_PACKET_JSON: ${{ inputs.packet_json }}
+          RF_PACKET_SHA256: ${{ inputs.packet_sha256 }}
+          RF_READ_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python3 src/tests/oci/release_finalizer.py plan
+      - name: State boundary — never publish or close from a plan
+        run: |
+          echo 'RELEASE_FINALIZER_RF01_PLAN_ONLY'
+          echo 'MERGE=NOT_RUN GHCR=NOT_RUN ISSUE_CLOSE=NOT_RUN'

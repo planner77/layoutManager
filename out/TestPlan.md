@@ -1,3 +1,40 @@
+## TP-273-PR274-REVIEW-P2 — 다른 PR CI evidence spoof 거부 (2026-11-08)
+
+- P2-01 Open PR에서 `pull_requests=[{number:other}]` + 동일 HEAD/branch/same repo면 `WAITING_EXACT_PR_CI` 반환.
+- P2-02 Merged PR도 **비어 있지 않은 다른 PR association**은 branch fallback을 허용하지 않는다.
+- P2-03 Open PR의 빈 association은 성공으로 재사용하지 않고 정확 CI 대기; Merged PR의 빈 association + 같은 repo/branch/HEAD는 기존 squash 후 readback 호환 PASS 유지.
+- P2-04 자기 PR의 최신 CI 실패를 다른 PR의 더 최신 CI 성공이 가리지 못하고 `RF_LATEST_CI_NOT_SUCCESS`로 중단.
+- P2-05 Hosted 정확 신규 HEAD의 required Scope/aggregate SUCCESS 및 PR review thread 해결 전 병합 금지. 기존 CI 42485818897 성공은 이전 HEAD 근거로만 보존.
+
+---
+
+## TP-273-RF01-HARDEN — exact target·expiry·AC·CI attempt 회귀 (2026-11-08)
+
+- HR01 `releaseTarget`은 `ghcr.io/planner77/layoutmanager:v<version>`만 수용. 외부 Registry/`latest` 거부.
+- HR02 `issuedAtEpoch`≤현재≤`expiresAtEpoch`, TTL≤24h; 만료·초과 기간 거부.
+- HR03 `ownerIntent` 세 Bool과 요청의 일치, 고유 AC ID, Close 시 AC 목록 필수. Intent는 실제 Owner 권한 증명이 아니다.
+- HR04 PR/Main run 및 필수 Job `run_attempt=1` 확인; 재실행 attempt2를 PASS로 간주 금지.
+- HR05 baseline PR CI 42481792421은 이전 HEAD 전용. 새로운 Hosted PR CI는 수정 소스 기준 별도 시작·완료 근거로만 기록.
+
+---
+
+## TP-273 — Release Finalizer 공통 기능 단계별 검증 (2026-11-08)
+
+| Test | 필수 계약 |
+| --- | --- |
+| RF01-01 | Packet SHA256/닫힌 Schema/정확 Repo+Owner/PR+Issue/HEAD+tree+base/version>=0.61/3role/nonce/stopPolicy. 중복 키·추가 필드·임의 version·잘못된 타입 거부 |
+| RF01-02 | 정확 PR source/tree/package version, latest PR CI/필수 aggregate+scope SUCCESS만 재사용. Ready 새 run FAIL·SKIP·취소·미완료·페이지 초과/중복 RUN 거부 |
+| RF01-03 | PR Open/Draft 별도 상태; Squash merge의 실제 tree·단일 parent==승인된 base와 Main push release-HOLD Job 정확 SHA 성공만 수용; base pointer의 병합 후 자연 진행은 허용 |
+| RF01-04 | Issue/PR 혼동 거부, live API timeout/잘못된 응답/비정상 token은 HALT. GitHub workflow PLAN은 contents/pulls/issues/actions read만, GHCR·Issue write0 |
+| RF01-05 | releaseRequired/closeIssue 요청만으로 외부 GHCR 게시·Issue 완료를 인정하지 않음. signed 3role release/명시 AC receipt 미검증은 `NOT_VERIFIED` |
+| RF02 | Ruleset/미해결 리뷰·Draft→Ready 재검증/충돌/merge CAS 및 Main CI exact SHA, merge 후 최신 Main drift에 대한 재확인. 후속, NOT IMPLEMENTED |
+| RF03 | 기존 #229 Main/tag HOLD positive+negative, exact protected Candidate/Promotion 3-digest/OIDC/2 fresh Owner review/release version, old alias no overwrite, unknown partial fail-closed. 후속, NOT IMPLEMENTED |
+| RF04 | Issue 전체 AC 충족/후속 분리·Owner GO/실제 release receipt 결합 후 딱 1회 close, 중복 호출 안전·source drift 거부. 후속, NOT IMPLEMENTED |
+
+RF-01 CI Scope에 `src/tests/oci/test_release_finalizer.py`를 연결한다. 실제 Python 및 Hosted CI **결과 확인 전 NOT VERIFIED**. Read-only plan 성공은 출고/Issue 종료 성공이 아니다.
+
+---
+
 ## TP-218-CI705 — native package 비교 재현/수리 (2026-11-08)
 
 - C705-T01: 실패한 Docker audit의 실제 baseline/current 파일 집합·SHA 차이 및 각 build context/dependency/cache 입력을 대조한다. 가설과 관측을 분리한다.

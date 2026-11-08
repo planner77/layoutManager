@@ -1,3 +1,17 @@
+## ADR-273-RF01 — 요청 재사용 범위·CI attempt 보강 (2026-11-08)
+
+결정: 목표 패키지/버전 태그, AC ID, Owner 의도, 24h 내 만료를 닫힌 Packet V1에 포함한다. PR/Main run과 필수 Job attempt2 이상은 기존 성공의 재사용 근거가 아니다. 자가 선언 Intent/Packet SHA는 권한 증명이 아니므로 `releaseAuthorization=NOT_VERIFIED`, `issueAcceptance=NOT_VERIFIED`를 계속 출력한다. 기존 CI42481792421의 성공은 그 HEAD만 증명한다. #229 HOLD와 독립 보호 환경 승인 필수 정책은 변경하지 않는다.
+
+---
+
+## #273 — One-shot Finalizer의 승인/릴리스 분리 (2026-11-08)
+
+**결정:** 사용자의 통합 완료 요청은 실행 및 근거 재사용을 자동화하지만 보안·Issue 완료 정책을 우회하지 않는다. `#229`의 `HOLD_MAIN`(>=0.61.0) 및 tag blocked 정책은 그대로 유지한다. 기존 0.61.0 fixed Candidate/Promotion을 새 버전인 것처럼 재생하지 않는다. 0.61.1+ 실제 GHCR 출고는 실제 Owner 승인 2단계/정확 SHA·3-role Digest·OIDC/OCI/rollback baseline과 보호 환경 확인을 사용하는 별도 RF-03 승인 절차에서만 구현한다. PR/Merge/Release/Issue-close는 독립 verdict이며 Issue #218의 L-01~08을 PR 단위로 자동 완료시키지 않는다.
+
+**구현 승인 범위:** 이번 RF-01은 read-only PLAN, 외부 write0, 자동 Main 병합/태그/실 GHCR 출고/이슈 종료는 구현하지 않는다. 후속 RF-02~04 완료 전 단일 요청으로 전 과정을 수행한다는 주장 금지. 과거 성공 근거는 일치하는 HEAD/tree/run/role digest에 한정하여 재사용. 참조 Issue #273.
+
+---
+
 ## #218 L-05 — 기존 상태 계약의 PATCH 수리 (2026-11-08)
 
 Manager는 최신 #218 L-01–08을 #225 구현/시험·제한 파일럿과 대조하고 목록 상태의 실제 결함을 다음 Unit으로 지정했다.0.61.1은 호환 bug fix로,100개 초과 표시 행은 API 상한을 유지한 순차 batch로 조회하며 요청 세대/취소로 늦은 응답을 격리한다. 초기/terminal 오류의 무한 polling 대신 명시 복구를 제공하고 pending 통신 실패만 유한 재조회한다. 설계와 LS01–07은 구현 전 Issue218에 기록했다.

@@ -1,3 +1,27 @@
+## U-273-PR274-REVIEW-P2 — CI SUCCESS 후 리뷰 보안 보완 (2026-11-08)
+
+- 수정 전 HEAD `f88198dfccf0940b3ab3c95947928033b65b9bfe`, [PR CI 42485818897](https://github.com/planner77/layoutManager/actions/runs/42485818897), attempt1, **8 applicable SUCCESS**, 1 A2 scoped SKIPPED. Ready로 인한 재실행이었고 해당 소스가 검증됐다.
+- 이후 자동 리뷰가 PR CI 동일 브랜치/다른 PR run association의 부정확한 fallback(P2)을 지적했다. 이는 코드 분석으로 확인한 **신뢰 경계 결함**이며 hosted CI 실패는 아님.
+- 개선: 빈 연관 배열이면서 실제 PR merged인 경우로 fallback 제한. 다른 PR 명시 연관·open PR 빈 연관·자기 PR 최신 CI 실패와 foreign 최신 성공의 음성 테스트 추가. 신규 HEAD 정확 hosted CI는 **NOT VERIFIED**, review thread 해결/merge/Main은 **NOT RUN**. 기존 #229 HOLD/보호 승인 불변.
+
+---
+
+## U-273-RF01-HARDEN — baseline와 신규 변경 증거 분리 (2026-11-08)
+
+- [PR #274 CI 42481792421](https://github.com/planner77/layoutManager/actions/runs/42481792421), 정확 HEAD `e4926f3fbbab0d59bc7141e1dd6f56aadbd0f80e`: **적용 8개 Job SUCCESS**, 범위 외 A2 1개 SKIPPED. 리뷰 thread0·mergeable true·Main behind0 당시 확인.
+- 본 수정은 exact Release Target/TTL/AC/Owner Intent와 PR/Main workflow·필수 Job attempt1 엄격 검증을 추가한다. 새로운 HEAD의 실제 Hosted 결과는 **NOT VERIFIED**(시작 후에도 완료 감시하지 않음).
+- 기존 #229 HOLD·0.61.0 3-digest/Tag/운영 불변. RF-02/03/04 protected merge·GHCR·Issue Close **NOT IMPLEMENTED/NOT RUN**.
+
+---
+
+## U-273-RF01-20261108 — Release Finalizer 읽기 전용 사전 검증 구현
+
+**소스 구현:** `src/tests/oci/release_finalizer.py` (엄격 packet SHA256/Source/PR CI 및 Squash/Main HOLD read-only 판정), `test_release_finalizer.py` (positive/negative fake API), `.github/workflows/release-finalizer.yml` (workflow_dispatch PLAN-only/read permissions), `pr-ci.yml` 선행 RF-01 Python 검사. Issue #273 정책 정본; `#229 issue229_release_hold.py`, 기존 Candidate/Promotion 및 사용자 운영/registry writer는 **변경0**.
+
+**증거 제한:** Github 파일 작성 확인은 코드 검증·실제 runner 성공과 다르다. Local Python 실행, 실제 GitHub API PLAN, Hosted PR CI의 source 변경 이후 결과는 이 작성 시점에 **NOT RUN / NOT VERIFIED**. 실제 protected merge, 0.61.1 GHCR Candidate/Promotion 및 Issue AC 자동 close는 **미구현/미실행**. 후속 RF-02~04 Gate를 skip하지 않는다. 기존 PR272 CI706/707 성공과 Main42a370c/읽기 전용 Main HOLD #26은 관련 현행 환경 근거로만 재사용하며 이번 RF-01 추가 코드의 성공 증거로 확대하지 않는다.
+
+---
+
 ## U-218-CI705-20261108 — PR #272 Docker layer audit role-match proof
 
 **QA 판정: PASS_WITH_LIMITS.** [PR CI #705 / run 42469008037](https://github.com/planner77/layoutManager/actions/runs/42469008037), exact source HEAD `aff7263b811a0c365cea27b61855e8c0cd5e2765`: Docker job `128695196064` failed on `Final better-sqlite3 file paths or SHA256 changed`; Required Verify `128698837254` failed by dependency. All other applicable jobs succeeded; A2 scoped was SKIPPED, not PASS. CI #705 remains a historical failure; any new-head hosted CI result is a separate pending gate.

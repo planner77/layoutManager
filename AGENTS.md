@@ -1,3 +1,21 @@
+## #273 / PR #274 — 동일 브랜치 다른 PR CI 연관 오류 수정 (2026-11-08)
+
+[PR CI run42485818897](https://github.com/planner77/layoutManager/actions/runs/42485818897)은 exact HEAD `f88198dfccf0940b3ab3c95947928033b65b9bfe`에서 적용 8개 Job SUCCESS/A2 scoped SKIP. Ready 직후 Codex [PR #274 Review](https://github.com/planner77/layoutManager/pull/274)에서 **P2 unresolved thread** 확인: 동일 SHA·브랜치의 다른 PR에 명시적으로 연관된 최신 CI가 올바른 PR의 실패를 가릴 위험. `read_run`의 branch fallback은 **실제로 병합된 PR + GitHub pull_requests가 빈 배열**인 경우로만 제한하며 비어 있지 않은 다른 PR 연관은 항상 제외. Open PR의 연관 빈 run도 거부. 해당 소스는 새 exact HEAD PR CI 전 NOT VERIFIED, 재검증 후 review resolve/병합. #229 HOLD, RF-02/03/04 미구현·독립 Owner 승인 불변.
+
+---
+
+## #273 — RF-01 exact packet·CI attempt 보완 (2026-11-08)
+
+기존 [PR #274 CI run 42481792421](https://github.com/planner77/layoutManager/actions/runs/42481792421)은 HEAD `e4926f3fbbab0d59bc7141e1dd6f56aadbd0f80e`의 **적용 Job 8개 SUCCESS**, scoped A2 1개 SKIPPED. 그 결과는 변경 전 소스만 검증한다. RF-01에 exact releaseTarget, AC ID 범위, 자가 선언 Owner intent(승인 증명 아님), 24시간 이내 만료, PR/Main run·required job attempt1 검증, dispatch Owner/Repo identity를 추가한다. 새 정확 HEAD CI 전 NOT VERIFIED; RF-02/03/04 writer는 아직 NOT IMPLEMENTED. #229 HOLD와 Owner 보호 환경 두 승인, 운영0.61.0과 기존 GHCR/Volume 변경 금지. [Issue273](out/Issue273.md), [FailureLedger](out/FailureLedger.md) 기준.
+
+---
+
+## #273 — Release Finalizer RF-01 안전한 사전 계획 구현 (2026-11-08)
+
+Owner 요청은 GHCR RELEASE와 Issue Close까지 one-shot 완료를 향하지만 **승인과 검증을 생략하지 않는다**. [Issue #273](https://github.com/planner77/layoutManager/issues/273), [Issue273](out/Issue273.md), [TestPlan](out/TestPlan.md) TP-273, [FailureLedger](out/FailureLedger.md) RF-01을 참조한다. 이번 PR에는 읽기 전용 `release_finalizer.py plan` 및 `release-finalizer.yml`만 구현했다. GITHUB_TOKEN은 GET 최소 권한이며 원격 쓰기0. 현재 `0.61.0` 고정된 #225 candidate/promote와 `#229 HOLD_MAIN/G7_RELEASE_HOLD_TAG_BLOCKED`는 수정·완화하지 않는다. RF-02 merge/Main orchestrator, RF-03 0.61.1+ 승인된 3-image publication, RF-04 이슈 AC closure는 후속 구현 전 **NOT RUN**이다. PR CI 성공 전 릴리스가 성공했다고 말하지 않는다. 운영0.61.0 단일 Worker·사용자 .env/DB/CAD/Volume/복구점/태그 불변. 과거 CI #702~#705 기록 보존, PR #272 Main 병합 성공 증거를 재사용하며 새 코드의 exact HEAD CI를 별도로 검증한다.
+
+---
+
 ## #218 / PR #272 — CI #705 웹 기준 이미지 수리 (2026-11-08)
 
 재개 시 [FailureLedger](out/FailureLedger.md)의 CI705 → [TestReport](out/TestReport.md)의 U-218-CI705 → [TestPlan](out/TestPlan.md)의 TP-218-CI705를 확인한다. 웹 비교 기준 이미지는 `runtime` 단계와 `app` 역할을 명시한다. 전체 package 경로/SHA·native·중복 layer 검증을 유지하며 실제 Docker 결과와 원인 미확정 범위는 TestReport를 따른다. PR272 Draft/Issue218 OPEN, 소스0.61.1과 운영0.61.0을 구별한다. 사용자 범위는 새 PR CI 시작 확인까지이며 완료 감시·병합·운영 변경은 수행하지 않는다.

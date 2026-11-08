@@ -1,3 +1,19 @@
+## #273 RF-01 request scope hardening (2026-11-08)
+
+읽기 전용 Packet V1에 exact GHCR `releaseTarget`, 최대 24h issued/expiry epoch, 고유 AC ID 목록, integration/release/closure Owner Intent를 필수화한다. Owner Intent와 SHA256은 실제 Owner 승인/권한 증명이 아니다. PR/Main workflow와 필수 Job은 attempt1만 PASS로 재사용하며 변경된 source HEAD는 별도 CI가 필요하다. Persistent nonce·checkpoint·protected merge/출고/Close는 미구현; #229 Main/tag HOLD 및 기존 두 보호 환경 승인 유지.
+
+---
+
+## #273 — Release Finalizer 단계별 아키텍처 (2026-11-08)
+
+**외부 요청 1회 ≠ 자동 승인 1회.** `Release Finalizer Request V1`은 저장소 ID, Owner, PR/Issue, source SHA/tree/base, semver, 3 OCI 역할, nonce, stop policy 및 SHA256으로 요청을 고정한다. RF-01은 trusted GitHub API GET의 정확 PR/Source/CI/Main/Squash identity를 read-only로 조회하고, 부족한 증거는 WAIT/HALT로 분류한다. Packet hash는 승인 서명이 아니고 PR CI 성공 역시 GHCR 권한이 아니다. `release-finalizer.yml`은 `workflow_dispatch` PLAN 전용, job read-only token; mutable workflow 없음.
+
+후속 RF-02는 리뷰 thread/Ruleset/필수 PR Check와 HEAD CAS를 검증한 뒤에만 Squash 및 Main exact SHA 확인한다(현재 GitHub auto-merge OFF). RF-03은 기존 독립 protected Candidate/Promotion의 Owner review·OIDC+digest proof를 **정확 release에만** 연결하고 기존 #229 자동 Main/Tag HOLD를 변경하지 않는다. 기존 publisher는 2-image이므로 0.61.1 auto-publish 경로에 사용하지 않는다. RF-04는 근거가 일치하는 Issue AC 완료를 별도 Owner GO로 확인한 뒤만 종료한다. 변이 단계에는 재사용 증거/부분 성공/재시도/동시 Writer/애매한 registry 결과를 fail closed로 처리하는 영속 checkpoint가 필요하다.
+
+구현 상태: RF-01 read-only source+tests 추가; RF-02/03/04 **미구현**, 이를 one-shot 출고 성공으로 취급 금지. [Issue273](Issue273.md), [TestPlan](TestPlan.md) TP-273 참조.
+
+---
+
 ## #218 L-05 — 목록 상태 조회 수명주기 (2026-11-08)
 
 기존 `CadTable → SceneStatusProvider → /api/scene-build-jobs → readSceneBuildBatch`를 재사용한다. 서버의 signed Site filtering·페이지 batch SQL·immutable manifest/full DTO/blob 검증이 READY의 기준이며 Job READY만 신뢰하지 않는다. 클라이언트는 화면 DXF ID를 중복 제거하고100개 이하로 나눈 요청을 순차 실행한다. 외부 Provider가 enabled+ID scope별 key로 내부 Provider를 새로 생성해 disabled→enabled와 A→B→A의 commit에서도 이전 상태/Retry를 재사용하지 않는다. 요청 generation/AbortSignal과 현재 목록 identity로 늦은 성공·실패·finally·timer를 무효화하고 이전 목록의 retry 권한을 노출하지 않는다. 최초·수동 갱신·탭 복귀는 전체 목록, 자동 tick은 pending ID만 조회한다. 자동 응답은 요청 ID만 교체/제거하고 다른 terminal 행은 보존한다. 연속 전송 오류의 자동 복구에는 유한 budget을 둔다. 초기/terminal 오류는 별도 상태 갱신으로 복구하고 Job 실패로 재해석하지 않는다.

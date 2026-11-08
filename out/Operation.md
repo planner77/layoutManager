@@ -1,3 +1,19 @@
+## #273 RF-01 Packet V1 필수 추가 입력 (2026-11-08)
+
+기존 Packet 외 `releaseTarget`(exact `ghcr.io/planner77/layoutmanager:v<version>`), `acceptanceIds`(고유 AC ID 배열), `ownerIntent`(`integrate`, `release`, `closeIssue` Boolean), `issuedAtEpoch`/`expiresAtEpoch`(UTC Unix seconds, 최대24h)를 넣고 원문 JSON bytes를 SHA256 하여 `packet_sha256`을 입력한다. `closeIssue=true`라면 AC ID가 최소 1개 필요하다. 읽기 전용 워크플로는 Owner actor/repo ID와 Main ref를 확인한 뒤 GET/PLAN만 한다. intent/hash는 Owner/Environment 승인 증명이 아니다. 만료되거나 CI attempt>1인 경우 HALT. 자동 merge·3-image publish·Issue Close 및 0.61.1 운영 배포는 후속 보호된 별도 구현/승인이 없으면 불가. #229 HOLD 불변.
+
+---
+
+## #273 — Release Finalizer RF-01 사용 범위 및 운영 보호 (2026-11-08)
+
+`.github/workflows/release-finalizer.yml`은 **workflow_dispatch PLAN 전용**이다. 입력 `packet_json`은 `RELEASE_FINALIZER_REQUEST_V1`의 닫힌 구조이며 owner/repo id, 실제 PR head SHA/tree/base, Issue, version, 고정 `[app,migrator,cpu-worker]`, nonce, stopPolicy를 포함한다. `packet_sha256`은 전송한 정확 UTF-8 JSON bytes에 대한 해시이며 승인 서명이 아니다. 민감한 token/password/환경/실 CAD 데이터는 Packet에 넣지 않는다.
+
+작업은 main 고정 읽기 전용 GET으로 PR/CI/Issue/Source/Main readback 결과만 PLAN 상태로 보고한다. `WAITING_EXACT_PR_CI`, `WAITING_READY_CI`, `AWAITING_REVIEW_AND_PROTECTED_MERGE`, `WAITING_EXACT_MAIN_CI`, `AWAITING_PROTECTED_THREE_ROLE_RELEASE`, `AWAITING_INDEPENDENT_ISSUE_ACCEPTANCE`는 모두 **문서화·계획 상태**이며 자동 변이 이벤트가 아니다. `externalWrites=0`, `releaseAuthorization=NOT_VERIFIED`, `issueAcceptance=NOT_VERIFIED`가 항상 유지된다. 실패 시 무분별한 새 실행/자동 재시도 하지 않으며 source/packet drift를 다시 검토한다.
+
+정식 0.61.1 GHCR release, GHCR tag/latest 이동, Docker 배포/flags 변경, Issue 종료는 **이번 Workflow 실행 범위 아님**. 별도 RF-03/04 구현과 보호 환경·Owner 승인 필요. 기존 #229 `HOLD_MAIN` 및 Tag 차단은 비활성화하지 않는다. 기존0.61.0/Worker1/DB/CAD·복구점/사용자 dirty config는 유지한다.
+
+---
+
 ## #218 L-05 — 목록 Scene 상태 수동 복구 (2026-11-08)
 
 상태 조회 통신 실패는 원본 등록 실패나 Scene Job 실패를 뜻하지 않는다. 목록은 기존 상태와 갱신 지연을 구분하고 상태 갱신 동작으로 현재 권한/서버 상태를 다시 확인한다. pending만 자동 조회하며 연속 오류 budget이 소진되면 수동 갱신한다. 상태 갱신은 읽기 요청이며 Scene 재시도 POST와 구별한다. 실제 지원/시험 범위는 Issue218 및 TestReport L05를 따른다.
