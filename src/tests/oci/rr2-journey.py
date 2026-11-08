@@ -17,6 +17,7 @@ import urllib.error
 import urllib.request
 
 ROOT=Path(__file__).resolve().parents[3]
+CURRENT_VERSION=json.loads((ROOT/'src/package.json').read_text())['version']
 PROOF=ROOT/'src/tests/oci/rr2-recovery-proof.py'
 
 class JourneyFailure(Exception):
@@ -145,7 +146,7 @@ def main():
         done=proof(receipt_path,'execute',release='new',approve=plan['planId'],env=env)
         check(done['state']=='UPGRADED_APP_STOPPED','RR2_UPGRADE_NOT_STOPPED')
         upgraded=proof(receipt_path,'snapshot',release='new',env=env)
-        check(upgraded['manifestVersion']=='0.61.0' and upgraded['files']==old['files'] and
+        check(upgraded['manifestVersion']==CURRENT_VERSION and upgraded['files']==old['files'] and
               upgraded['foreignKeys']==0 and
               len(upgraded['backupIds'])==1 and
               all(old['tables'][name]==upgraded['tables'][name]

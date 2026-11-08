@@ -1,3 +1,9 @@
+## 2026-11-08 — PR #272 CI #702 실패 triage / 검증 단계 분리
+
+CI #702(run42462441494)의 source `2ffe33d`는 RR2 검증 드라이버의 신규 후보 버전 `0.61.0` 하드코딩과 L05 UI 시험이 Scene 없는 도면을 공용 fixture 목록 첫 항목에 추가한 뒤 기존 R3/Zone 테스트가 그 행을 READY 대상으로 사용한 문제로 실패했다. [FailureLedger](FailureLedger.md) 및 [TestReport](TestReport.md) U-218-CI702에 실제 Job/artifact 근거·미실행 범위가 있다. source0.61.1의 RR2 receipt/OCI label/manifest 정확 검증 및 Greenfield READY fixture 명시 선택을 보완한다. 신규 HEAD CI 성공 판정·GO-PILOT 확대 불가, PR #272 Draft·#218 OPEN 유지, 운영0.61.0(flags ON, Worker1)/CAD/DB/기존 GHCR 불변.
+
+---
+
 ## 2026-11-08 — L-05 최종 Manager 판정 및 PR 인계 경계
 
 **판정: ACCEPT_WITH_LIMITS — 최종 observer 강화2case의 독립 QA 재실행2/2 PASS(3.1s)로 조건 충족, root commit/push/PR CI 시작 인계 수용.** 제품 재작업은 없다. Manager는 Developer 구현·재작업, root release/fixture 변경과 독립 QA의 [U-218-L05-20261108](TestReport.md)을 검토했다. 독립 QA는 집중7files/33tests와 최종 keyed source의 Greenfield4/4를 통과했다. 후속 test-only observer가 row text·Retry 존재·enabledRetry를 추가 확인하며 Developer는 같은 old Provider2/2 RED(enabledRetry1)/patched2/2 GREEN을 보고했다. 독립 QA가 최종 강화2case를 다시 실행해2/2 PASS(3.1s), 두 commit 경계의 이전 상태 text·Retry 존재·enabledRetry0을 확인했고 추가 발견0건을 보고했다. QA의 최종 PASS_WITH_LIMITS를 수용하며 남은 로컬 구현·QA 재작업은 없다.

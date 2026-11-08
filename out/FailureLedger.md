@@ -1,3 +1,13 @@
+## #218 / PR #272 — CI #702 hosted 실패·원인·보완 (2026-11-08)
+
+- **관측:** [PR CI #702/run42462441494](https://github.com/planner77/layoutManager/actions/runs/42462441494) exact HEAD `2ffe33d37e55cbbaedc9c59ca8c93c8f460549eb`는 FAILURE. Docker Job `128674486264`와 G7 Greenfield Job `128676025851` 실패; Required Verify `128677544748` 종속 실패. Scope/Static·Unit·Build/G7 signed-runtime/일반 Chromium shards1·2 SUCCESS. #218 A2 scoped job SKIPPED(해당 scope 미적용, PASS 아님).
+- **RR2 직접 원인:** Docker RR1 disposable 3-image candidate는 source `0.61.1`이지만 `rr2-timeout-probe.py:checked_input`의 receipt·OCI version label이 `0.61.0`으로 고정되어 `RR2_PROBE_INPUT_RECEIPT_INVALID` (Job 로그 L6707–6728). `rr2-recovery-proof.py`의 3-role receipt/복구 전 스냅샷 및 `rr2-journey.py` 업그레이드 스냅샷에도 같은 고정값이 있었다. RR2 후속 upgrade/Viewer stage는 NOT RUN; 실제 운영 Worker 실패 아님.
+- **Greenfield 직접 원인:** 신규 `scene-status-list.spec.ts`의 L05는 테스트 공용 fixture DB에 `l05-status.dxf`를 등록했으나 UI status만 mocked 검증하고 실제 READY Scene을 저장하지 않았다. 기존 `typed-outlines`·`typed-outline-races`·`semantic-zones` E2E가 `/api/cad-files`의 `items[0]`을 READY로 가정해 L05 Version `aa789ae1-bc9d-4ebc-a320-88e240d0d5c5`를 선택했다. CI artifact `playwright-greenfield-1`의 실제 trace/error-context에는 원본 `l05-status.dxf`, `scene:UNAVAILABLE`을 명시. 다섯 건은 Viewer `scene-status` 미발견, 한 건은 READY가 아닌 원본에 Outline POST HTTP422(예상201). 전체 Greenfield 24 PASS/6 FAIL. Viewer/Zone 런타임 회귀 단정 불가.
+- **보완 설계 및 코드:** RR2 신규 릴리스 버전은 package.json의 엄격한 정규 SemVer(`>=0.61.0`)에서 결정하고 receipt·OCI label, source revision·role·manifest/digest/engine identity 정확 검증을 유지한다. 구 0.60.0 baseline, old digest 및 RR1 provenance guard는 그대로 유지한다. 잘못된 release/receipt/OCI label을 거부하는 Python unit을 기존 필수 RR2 unit 파일에 추가한다. Greenfield E2E는 정확한 `synthetic-scene.dxf` 1건과 실제 Scene API READY를 확인한 뒤 기존 외곽선·구역 시나리오를 수행한다. 신규 L05 UI mock 시험 자체의 동작·판정은 변경하지 않는다. 검증 gate/timeout/재시도/권한을 완화하지 않는다.
+- **보존·검증 구분:** 소스 변경은 시험/OCI 검증 드라이버와 문서에 한정. CI #702의 실패/성공 Job은 변경 전 HEAD 이력이며 신규 HEAD CI 성공으로 소급하지 않는다. 변경 소스 전체 CI는 새 Run 결과 확인 전 NOT VERIFIED. 미해결 review thread0, GitHub mergeable true, main behind0은 변경 전 triage 관측. PR #272 Draft, #218 OPEN. 운영0.61.0 flags ON/단일 CPU Worker, .env·DB·CAD·Volume·복구점 및 GHCR/tag/자동 publisher HOLD 그대로 보존한다. 새 CI는 시작 확인까지만 하고 결과를 모니터링하지 않는다.
+
+---
+
 ## #218 L-05 — 목록 상태 조회 결함 및 검증 실행 이력 (2026-11-08)
 
 **발견:** 기존 Provider가 `slice(0,100)`으로 대상 ID를 잘라 Location101번째 이후 DXF 상태를 요청하지 않는다. visibility/reload 이후 이미 완료된 이전 JSON 처리는 같은 effect의 alive만으로 격리되지 않는다. 최초/terminal 통신 오류도 무한 재조회하며 BLOCKED/RETRY_WAIT 사유가 누락되고 verified READY와 함께 과거 FAILED errorCode가 DTO에 남을 수 있다. 이는 코드 검사에서 확인한 결함이며 운영 데이터 손상/새 CI 실패를 관측했다는 뜻이 아니다. 재현·수리·재검증은 TestReport의 LS01–07에 연결한다.

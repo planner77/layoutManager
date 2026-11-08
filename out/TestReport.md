@@ -1,3 +1,13 @@
+## U-218-CI702-20261108 — PR #272 hosted 실패 및 보완 후 재검증 경계
+
+**실패 근거:** [PR CI #702/run42462441494](https://github.com/planner77/layoutManager/actions/runs/42462441494), exact HEAD `2ffe33d37e55cbbaedc9c59ca8c93c8f460549eb`: Docker RR2 FAIL(`RR2_PROBE_INPUT_RECEIPT_INVALID`; 0.61.0 고정 vs source0.61.1), Greenfield FAIL(24 PASS/6 FAIL; Scene 없는 신규 L05 Version을 기존 `items[0]` E2E가 선택), Required Verify FAIL. Static/Unit/Build·G7 signed-runtime·일반 Chromium 두 shards는 원래 HEAD에서 성공, A2 scoped는 SKIP. Playwright artifact의 실패 snapshot에서 `l05-status.dxf`·`scene:UNAVAILABLE`을 확인했다.
+
+**보완:** RR2 신규 source package 버전을 정규 SemVer로 확인해 receipt/OCI label/digest/revision/role 정확 대조를 유지했다. 임의·구버전 release 선언, 잘못된 receipt 버전 및 OCI version label을 거부하는 focused Python unit을 추가했고 recovery/upgrade snapshot version도 현재 source를 따르도록 했다. 기존 구 0.60.0 실제 이미지의 provenance/fingerprint 검사는 보존한다. Greenfield 외곽선/구역 테스트의 목록 선두 선택을 정확한 `synthetic-scene.dxf`·실제 Scene API READY 선행 확인으로 대체했다. CI 필수 gate·runtime Worker 구현·L05 mocked UI 동작은 변경하지 않았다.
+
+**시험 상태:** #702의 성공 범위는 이전 HEAD 증거로만 기록한다. 이번 수정된 source에 대한 로컬 full Python/Node/Docker/Chromium 실행은 현재 연결 환경의 전체 repository 실행 worktree 부재로 **NOT RUN**이며, 새로운 exact HEAD hosted CI 역시 완료 확인 전 **NOT VERIFIED**다. 시험 누락·미완료 단계를 PASS로 표현하지 않는다. 이전 실패 원장은 불변 보존. 운영0.61.0의 Scene flags ON/1 Worker와 data/image/tag는 변경하지 않는다.
+
+---
+
 ## U-218-L05-20261108 — 목록 Scene 상태 조회와 복구 UI 독립 QA
 
 **독립 QA 판정: PASS_WITH_LIMITS.** Manager `gpt-6-astra`의 L-05 재작업 수용 뒤 QA `gpt-6-luna`가 controller/server/release 회귀와 지원 Chromium UI를 확인했다. Developer `gpt-6-sol`이 구현했고 Root가 통합·최종 Build/Type Check를 수행했다. 이전 Unit 이력과 미실행 경계는 변경하지 않는다. 요구·AC 정본은 [Issue218 LS01–07](Issue218.md), 요구/추적은 [Requirements](Requirements.md)·[TestPlan](TestPlan.md)이다.
