@@ -1,3 +1,11 @@
+## #225 G2 — 실제 archive 기반 격리 upgrade/readback 도구 (2026-11-08)
+
+제품 구조·Scene/Builder/admission은 변경하지 않는다. `src/tests/oci/or58-g2-upgrade.py`는 기존 OR58/FUP1 복원·G7 정식 upgrade helper·RR2 named/CID child journal을 재사용한다. immutable0.58 archive를 등록 schema로 검사한 뒤 새 소유 volume에서 고정된 출고3digest의0.61 migration, 시작 전 전체 business/CAD 보존, 새 App의 내부 HTTP/원본 SHA 및 정지 후 선택 business 보존을 검사한다. `g2-volume-snapshot.mjs`는 nonroot/read-only 원본에서 행/CAD 해시만 반환하며 이전 열 이름만 bounded env로 받는다. host0600 private baseline을 컨테이너 UID10001에 직접 읽히지 않는다.
+
+Docker CREATED의 빈 runtime NetworkID와 실제 network object identity를 구별한다. 시작 전에 exact network object/name/internal/nonce 및 mount/port/image를 검사하고, 시작 후에는 exact runtime NetworkID를 필수로 한다. 오류는 제한된 stage/code만 공개하며 자원 정리는 durable CID/nonce 소유권으로 한정한다. 실제 첫 실패와 수정·재시도는 TestReport/FailureLedger를 따른다. 실제 clone 정상 인증/Viewer는 이번에 실행하지 않았고 출고 digest에 결합된 기존 signed RR2/RR3 E2E 근거와 분리한다. 이후 동일 immutable archive의 새0.58 replacement-volume 복원은 in-place downgrade와 다르다. 수용 기준은 TestPlan G2C01–07이다.
+
+---
+
 ## #225 G1 — OR58 등록 schema와 복사본 동등성 분리 (2026-11-08)
 
 기존 OR58 `sqlite_fingerprint`의 동일 schema/전체 row hash 비교는 복원 충실도이며 등록0.58 schema 적합성과 별개다. G1은 기존 private disposable SQLite extraction에서 등록 release0.58의 `assertDeclaredSchema`를 재사용하여 exact migration history와 허용 DDL/guard를 검증한다. G7 validator의 SQL normalization을 유지하고 별도 Python DDL 정본을 만들지 않는다. exact의 범위는 등록된 application DDL 및 승인된 migration name/checksum/completion/rollback 필드다. 기존 validator가 제외하는 `sqlite_%` 내부 object와 `_prisma_migrations` 자체 DDL의 모든 열까지 검증했다는 뜻은 아니다. manifest의 release/schema/image pair와 빈 historical sourceCommit도 함께 확인한다. 기존 raw DB/WAL/SHM+CAD/asset hash 비교와 local locator 검사 책임은 OR58에 남는다.

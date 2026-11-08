@@ -1,3 +1,11 @@
+## #225 잔여 완료 재개 — 실제 snapshot의0.61 검증 (2026-11-08)
+
+현재 사용자 요청은 이전 `CI 시작까지만` 범위를 대체한다. PR269는 exact HEAD CI699 SUCCESS 후 Maincf2427f로 통합됐고 CI698 취소 이력은 FailureLedger에 보완했다. 다음 작업은 [Issue225](out/Issue225.md)의 G2와 [TestPlan](out/TestPlan.md)의 G2C01–07이다. 실제0.58 archive는 새 소유 복제본에서만 업그레이드하며 정식3digest 및 signed RR2/RR3 근거를 재사용한다.
+
+사용자는 소규모 내부 운영에 별도 RPO/RTO 수치 기준이 없다고 답했다. 숫자 SLA 부재를 새로운 차단 조건으로 만들지 않고 실제 측정·백업 보존/복구·전환 쓰기 중단을 기록한다. 실제 결과와 G3의 구체 운영 GO/복구 경계는 TestReport/Operation을 확인한다. 이전 승인·실패·관측은 당시 이력으로 보존한다.
+
+---
+
 ## #225 G1 재개 — 정확 0.58 스키마 검증 (2026-11-08)
 
 #225 재개 시 [Issue225](out/Issue225.md)의 G1-SCHEMA와 [TestPlan](out/TestPlan.md)의 G1S01–06을 먼저 읽는다. Owner [A안 결정](https://github.com/planner77/layoutManager/issues/225#issuecomment-6716368983)에 따라 제한된 기존 DXF subset의 GO-PILOT을 판정하고 BLOCK/INSERT FUP5는 #268로 분리한다. 기존 OR58-ACTUAL/FUP1의 실제 백업·독립 복원·old App·인증 조회와 REGISTRY의 3이미지 출고 근거를 재사용한다. 아래 과거의 미실행 문구는 당시 상태다.

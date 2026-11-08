@@ -1,3 +1,11 @@
+## #225 G2 — 실제0.58 복제본의0.61 호환성·측정 (2026-11-08)
+
+FR-225-G2-CLONE: immutable 실제 OR58 archive를 새 private nonce-owned 복제본으로만 복원하고, 정식 App/Migrator/CPU Worker3digest를 고정하여 등록된 공식0.58→0.61 migration/상태/앱 실행과 기존 업무 행·CAD 보존을 확인한다. 원래 운영 자원·archive·계정/권한을 변경하지 않는다. signed candidate의 동일3digest RR2/RR3 근거와 신규 actual-clone 시험을 구분한다. 구현/AC 정본은 Issue225 및 TestPlan G2C01–07이다.
+
+최신 사용자 답변은 “소규모 조직에서 내부적으로 운영할 예정이라 딱히 기준이 없습니다.”이다. 이에 수치 RPO/RTO 목표를 임의 설정하지 않고 실제 백업 지점과 복구 소요를 보고한다. 백업 시점 데이터 보존/복구, 전환 중 accepted write0, 신규 성공 데이터를 지우는 단순 rollback 방지는 유지한다. 정량 SLA 준수나 임의 데이터 손실 수용으로 해석하지 않는다. G3 운영 GO는 구체 검증/계획 검토 뒤 별도다.
+
+---
+
 ## #225 G1-SCHEMA — 복원 동등성과 등록 스키마 구분 (2026-11-08)
 
 FR-225-G1-SCHEMA: OR58 복원 archive의 DB는 기존 integrity/FK·전체 행/파일 동등성에 더해 repository에 등록된 정확한0.58 release/schema·migration history와 일치해야 한다. 두 사본에 같은 DDL drift가 있어도 복원 대상으로 수용하지 않는다. 검사 실패는 대상 volume 생성 전에 차단하고 검사 런타임 부재·잘못된 결과를 성공으로 대체하지 않는다. 구현 설계/AC는 Issue225 G1-SCHEMA와 TestPlan G1S01–06을 따른다.

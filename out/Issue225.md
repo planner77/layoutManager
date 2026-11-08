@@ -1,3 +1,19 @@
+## 2026-11-08 — G2 실제 0.58 snapshot 격리 업그레이드·제한 LINE 검증 (Manager 설계)
+
+**Manager 최종 G2 판정: ACCEPT_WITH_LIMITS.** 교체 Developer 완료·집중 회귀 및 독립 QA의 실제 receipt/source closure·archive fingerprint 감사를 수용한다. 첫 실제 시도는 CREATED NetworkID 검사로 중단되어 실패를 보존했고, 최소 수리 후 새 namespace 재시도는21.261초에0.58→0.61 migration·기존33 tables/CAD1 보존·새 App ACTIVE/HTTP200·공개 원본 SHA readback·소유 cleanup을 통과했다. 이후 동일 archive의 새0.58 replacement-volume 복귀는 healthy8.208초/전체10.517초이며 독립 QA가 원본과 복귀 사본의33 tables/35 rows·schema/install/CAD ref1 fingerprint 일치를 재확인했다. 이 시간은 격리 리허설 측정값이며 운영 outage/SLA가 아니다.
+
+출고된 동일3digest의 signed candidate LINE→CPU→fresh Viewer/reload 근거를 별도로 재사용한다. 이번 actual-clone 인증/Viewer는 NOT RUN이고 새0.61 recovery-set restore/in-place downgrade를 수행한 것으로 기록하지 않는다. 운영0.58/flags OFF/자동 publisher HOLD와 #225/#218 OPEN을 유지한다. 남은 최종 단계는 정확 HEAD 필수 CI/통합과 Operation의 구체적 제한 파일럿·fresh capture/rollback 실행안에 대한 Owner G3 GO다. 이 판정은 운영 stop/upgrade/flags ON 승인이 아니다. 실제 상세와 증거 hash는 TestReport가 정본이다.
+
+사용자의 잔여 완료 요청은 이전 CI 시작까지만의 인계 범위를 대체한다. Owner A안의 G1→G2→G3 순서와 별도 유지보수/운영 GO는 유지한다. FUP5/#268은 종료 선행조건이 아니다. 기존 OR58-ACTUAL/FUP1과 REGISTRY의 실제 근거를 재사용하고 새로운 증거를 혼합하지 않는다.
+
+**최소 설계:** immutable OR58 archive를 새 private nonce-owned 자원으로만 복원하여 등록0.58 검증→실제 게시된 App/Migrator/Worker3 digest를 고정한0.61 upgrade→business/CAD 보존을 검증한다. 이어서 정확한 새0.61 App image ID를 같은 소유 internal network/host port0에서 flags OFF로 기동해 health/status와 현행 공개 읽기 정책상 허용된 기존 CAD 조회·원본 SHA를 확인한다. 인증 우회0이며 App 시작 전 전체 행 보존, 시작 후 선택 business/CAD 보존을 구분한다. 기존 RR2/RR3 helper 및 게시된 정확3digest에 결합된 signed candidate의 HTTP/CPU/fresh-Viewer 근거를 재사용하며 불필요한 전체 재실행은 하지 않는다. 실제 clone의 기존 인증계정·hash·session을 변경/복사하여 자동 로그인하지 않는다. 정상 사용자 로그인이 필요한 경로는 분리해 인계하고, 별도 synthetic 설치의 새 시험계정으로 검증한 LINE journey를 실제 clone 인증 PASS로 대체하지 않는다. 실제 clone에 새 계정/Site를 만드는 일도 승인 없이 수행하지 않는다.
+
+**경계:** 운영 App/volume/env/flags/accounts·GHCR/tag 쓰기0, public port0, 보호된 실제 DB/CAD/credential 출력0. archive 원본 불변과 정확 owned cleanup을 확인한다. historical external-host writer 배제 근거를 소급 제조하지 않는다. 사용자는 “소규모 조직에서 내부적으로 운영할 예정이라 딱히 기준이 없습니다.”라고 답했으므로 숫자 SLA 부재를 blocker로 삼거나 목표를 임의 설정하지 않는다(NO_NUMERIC_SLA). 실제 백업 시점·복구 경과시간을 보고하고 freeze 중 수락된 쓰기0/백업 기준 데이터 손실0, rollback 전 업그레이드 후 신규 쓰기 보존을 요구한다. 정확 유지보수·flags G3 GO는 별도 결정이다. 결과가 미완료면 이슈 종료/GO-PILOT PASS로 표시하지 않는다. 소스0.61.0 유지. G2 이후 baseline 복귀는 기존 FUP1로 같은 immutable archive를 별도 새 volume에 복원해 exact0.58 App·기존 CAD를 재확인하는 최소 리허설로 수행한다. in-place downgrade나0.61 정식 recovery-set restore로 표현하지 않는다. AC는 TestPlan G2C01–07, 실제 결과는 TestReport에 기록한다.
+
+**Manager 소스 판정:** 교체 Developer의 완료 보고와 독립 gpt-6-luna QA의 신규8/기존 clone22·RR2 cleanup3·OR58 proof28/schema6 통과, 제한된 clone 안전성 검토를 근거로 `ACCEPTED_FOR_ISOLATED_G2_TRIAL`. 관측된 host restart로 최초 Developer가 완료 보고 없이 사라져 gpt-6-sol 교체 Developer가 실제 구현·집중 검증을 마쳤다. 실제 G2/후속0.58 복귀·hosted CI는 이 소스 수용 시점에 NOT RUN이며 Root 실행 후 별도 판정한다. G3 운영 GO가 아니다.
+
+---
+
 ## 2026-11-08 — G1 exact 0.58 archive schema readiness (Manager 설계)
 
 Owner [최신 범위](https://github.com/planner77/layoutManager/issues/225#issuecomment-6716368983)의 #225 종료 기준은 지원 2D DXF의 좁은 GO-PILOT이다. BLOCK/INSERT FUP5는 #268의 별도 후속이며 선행 조건이 아니다. B1/B2/B3/E2E/KILL/OOM·3-image registry의 기존 근거를 재실행하지 않는다. 이후 기록된 TestReport OR58-ACTUAL 및 FUP1의 실제 snapshot/독립 volume 복원/exact old App/정상 인증 조회는 이미 관측된 근거로 재사용한다. 과거의 “복원 미실행” 문구는 당시 이력이다.

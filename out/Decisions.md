@@ -1,3 +1,13 @@
+## #225 G2 — 실제 clone 리허설과 최종 운영 GO 분리 (2026-11-08)
+
+사용자의 잔여 완료 요청에 따라 이전 CI 시작까지만의 인계 경계는 대체되었다. 기존 실제 OR58/FUP1 복원과 signed candidate/final3digest RR2/RR3를 재사용하고, 부족했던 실제0.58 snapshot→0.61 migration/App compatibility 및 같은 archive의 이후0.58 replacement-volume 복귀만 추가 검증한다. 기존 계정·password·session을 변경/추출해 인증을 우회하지 않고 actual-clone auth NOT RUN을 명시한다. FUP5/#268은 별도이며 새 광범위 검증 framework를 만들지 않는다.
+
+사용자 답변 “소규모 조직에서 내부적으로 운영할 예정이라 딱히 기준이 없습니다.”를 **NO_NUMERIC_SLA**로 반영한다. 숫자 RPO/RTO 목표 부재는 blocker가 아니며 임의 목표를 생성하지 않는다. 실제 백업 시점·복구 경과시간을 보고하고, 유지보수 freeze의 수락 쓰기0 및 backup 기준 데이터 보존을 요구한다. rollback 전에 새 쓰기가 존재하면 새 volume/DB/CAD를 별도 보존하며 임의 데이터 손실을 승인으로 해석하지 않는다.
+
+G2의 private clone 실행 수용은 운영0.58 upgrade·Scene flags ON을 승인하지 않는다. Owner A안 G3의 정확한 subset/Site/Actor/1 Worker/복구점/flags GO가 필요하다. Root는 모든 독립 준비와 CI를 마친 뒤 Operation의 구체적 실행안을 제시한다. 과거 host-writer 한계를 소급 PASS하지 않으며 fresh maintenance capture의 현재 writer 확인과 구별한다. 실제 source·QA·재시도/복귀 결과 및 Manager 판정은 TestReport/Issue225가 정본이다.
+
+---
+
 ## #225 G1 — 기존 복원 근거 재사용과 최소 검증 보완 (2026-11-08)
 
 OR58-ACTUAL의 실제0.58 backup/격리 restore/old App과 FUP1의 clone 정상 인증 조회는 완료된 관측으로 재사용한다. Owner 범위 댓글의 과거 미실행 요약 때문에 다시 운영 중지·캡처하지 않는다. 현재 최소 작업은 기존 OR58 archive verifier가 두 복사본의 schema 동등성 외에 등록0.58 schema/history 적합성을 확인하도록 보완하는 것이다. 기존 G7 validator를 재사용하여 중복 schema 정본을 피한다.

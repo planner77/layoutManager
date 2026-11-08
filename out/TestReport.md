@@ -1,3 +1,48 @@
+## U-225-G2-ACTUAL — retry와 독립 복구 fingerprint QA (2026-11-08)
+
+**판정: actual isolated clone/recovery evidence PASS_WITH_LIMITS.** Root의 immutable archive retry evidence와 별도 baseline-recovery receipt를 read-only로 검사했다. 실행은 독립 QA가 아니라 Root가 수행했으며 receipt에 기록된 네 helper source의 SHA256이 검토한 source와 모두 일치한다. retry execution `exit=0`, 21.261s, `operatingActions=false`; helper 결과는 archive SHA `625e6b36e2bcb9c94e5e1d7bba735c7f26323ee963f212b58121f5d6a5ef1057`에서 0.58.0→0.61.0, 33 tables/CAD 1개 보존, App healthy·ACTIVE/status 200, 공개 CAD 1개 SHA 일치, host port 0, probe 후 stopped를 보고한다. Retry cleanup `exit=0` 및 owned volume 제거 결과를 확인했다. Attempt 1의 network-ID halt와 별도 cleanup receipt는 실패 이력으로 유지한다.
+
+독립 복구 재검사는 원본 `capture.tar`의 실제 SHA가 위 immutable hash와 일치함을 확인하고, 기존 `sqlite_fingerprint`로 원본과 private `after-old-app.tar`를 각각 별도 disposable temp extraction에 읽었다. 33개 table, 35 logical rows, 전체 per-table row fingerprint, registered schema hash, install manifest hash, CAD/Scene/orphan/deletion reference 집계가 두 archive에서 일치했다(CAD 1, 나머지 0). 복구 receipt도 PASS: 정확 old App image ID, restore→healthy 8.208s/전체 10.517s, health/status HTTP 200, CAD content 1개 SHA 일치, owned clone/network/volume 제거 및 같은 archive hash를 확인했다. 이는 실제 clone 신규 실행과 별도 volume의 기존 0.58 baseline 복귀 rehearsal이며 in-place downgrade나 0.61 recovery set restore가 아니다.
+
+G2C03은 exact three-role digest에 결합된 기존 signed RR2/RR3 candidate artifact binding preflight를 재사용했다. artifact·verification·independent crypto·postrelease audit hash가 보고와 일치하고 role digest가 확인된다. 이는 이번 snapshot clone의 새 HTTP/Worker/Viewer run이 아니다. G2C04 실제 clone 정상 사용자 auth journey는 **NOT RUN**이고 계정/hash/session 변경은 없었다. Scene flags `SCENE_AUTO_BUILD_ENABLED`/`SCENE_CPU_WORKER_ENABLED`는 OFF, 공개 host port 0; App의 기존 auth/CAD runtime status는 true로 확인됐다. Attempt 1 failure는 FailureLedger에, retry/recovery private receipts는 `data/release-proof/issue225-completion-20261108/`에 보관한다.
+
+관측한 21.261s trial 및 8.208s/10.517s restore 시간은 격리 시험 측정값이며 운영 outage/SLA 수치가 아니다. NO_NUMERIC_SLA를 유지한다. 이 clone은 과거 archive를 재현한 것으로서 historical host-writer 배제, backup 시점 이후 실제 운영 write 수락 0, rollback 전 upgrade 후 신규 write 보존, auth/Viewer clone journey, Owner GO-PILOT을 입증하지 않는다. 운영 App/volume/flags/계정/registry/tag를 변경하거나 운영을 중지하지 않았다. 이 QA는 evidence audit/fingerprint만 수행했고 Docker 동작·cleanup을 재실행하지 않았다.
+
+---
+
+
+Root의 최종 로컬 검사는 build/typecheck/lint exit0(기존 warning12/error0), Vitest177files/1108tests PASS415.47초다. 재시작으로 결과를 회수하지 못한 선행 실행은 성공으로 수용하지 않고 별도 보존했다. 현재 required clone 자동 discovery는 새9개 집중 가드를 포함하며 기존 CI YAML/게이트는 변경하지 않았다. 정확 HEAD의 필수 CI/통합은 이 기록 시점 다음 단계다.
+
+---
+
+## U-225-G2-ACTUAL-ATTEMPT1 — 격리 업그레이드 후 App 생성 검사 HALT (2026-11-08)
+
+첫 실제 helper 실행은 exit1/13.724초, stage NEW_APP_READBACK/code G2_NEW_APP_IDENTITY다. 소유 복제본의0.58→0.61 migration/data 비교 경로 이후 새 App start 전에 멈췄다. 생성 전 network object는 정확하지만 CREATED container runtime NetworkID가 비어 있는 실제 관측을 FailureLedger에 보존했다. App 기동/조회·전체 G2는 FAIL/NOT RUN 경계이며 migration 관측을 전체 성공으로 확대하지 않는다. 지원 cleanup exit0/소유 volume 제거·immutable archive SHA 보존을 확인했고 운영 App/volume에는 쓰지 않았다. 수리/독립 회귀 후 새 namespace의 재시험이 필요하다.
+
+---
+
+## U-225-RESUME-20261108 — PR269 통합 및 잔여 Gate 재개
+
+GitHub readback에서 PR269 exact HEAD b2cbbb6의 CI697/699 SUCCESS, CI698 CANCELLED 및 종속 required FAILURE를 확인했다. Maincf2427ff7f65d1e9ab7b8e5ba87dbeb2d87c13db로 정상 squash 병합됐으며 앞선 PR CI 시작/미병합 문구는 당시 이력이다. 취소 원인은 미확정이고 FailureLedger에 실제 Job 경계를 추가했다. 기존 사용자 원래 dirty2개와 운영0.58 healthy를 보존한 최신 Main 별도 worktree에서 잔여 작업을 재개한다.
+
+사용자는 소규모 내부 운영에 별도 RPO/RTO 수치 기준이 없다고 답했다. 수치 SLA를 만들지 않고 실제 측정·백업 보존/복구·전환 쓰기 중단을 기록한다. 기존 OR58-ACTUAL/FUP1 및 G1 schema·REGISTRY 근거는 재사용한다. 실제 운영 snapshot 복제본의0.58→0.61 호환성/실증과 최종 Owner GO는 아직 신규 실행/수용 전이다. 새 운영 stop/start/capture/restore·배포·flags/태그/registry 쓰기는 수행하지 않았다. GO-PILOT NO-GO·#225/#218 OPEN이다.
+
+## U-225-G2 — 독립 로컬 QA 초기 결과 (2026-11-08)
+
+**초기 판정: 로컬 가드 QA PASS_WITH_LIMITS.** 현재 동기화된 source를 별도 QA 역할로 직접 검증했다. 앞선 host restart로 인해 이전 Developer 완료 기록을 전제하지 않았다. 당시 Root actual attempt 1은 immutable archive를 복원하고 upgrade migration 뒤 새 App 시작 전까지 진행했으나, Docker CREATED container의 runtime `NetworkID`가 아직 빈 값이라 post-create check가 중단했다. 실제 post-upgrade App health/status/CAD readback 및 auth journey는 완료되지 않았고 이 attempt를 PASS로 세지 않는다. 당시 Root는 실패한 소유 자원을 정리하고 재시도를 준비 중이었다. 후속 retry 결과는 최신 `U-225-G2-ACTUAL`에 별도로 기록한다. Attempt diagnostic은 private `data/release-proof/issue225-completion-20261108/actual-g2-network-diagnostic.json`에 보관된다.
+
+| TC/검증 | 실제 결과 |
+| --- | --- |
+| G2C01 | PASS — 신규 g2 clone guard 8개 중 registered schema bridge가 restore 전에 거부되는지, 잘못된 image digest가 clone 생성 전에 차단되는지 확인. 실제 immutable archive 재확인/restore는 미실행. |
+| G2C02 | PARTIAL / RETRY REQUIRED — attempt 1은 clone restore 및 official plan/apply migration 뒤 CREATED container의 아직 미할당 runtime network ID에서 halt. Manager-reviewed fix now checks owned internal network object and permits only empty-or-exact ID pre-start, requiring exact runtime ID during post-start health polling. 실제 post-start verification은 미완료. |
+| G2C03/C04 | NOT RUN — 기존 exact-digest RR2/RR3 candidate 근거를 재사용하도록 경계되어 있으나 candidate-bound upload/Worker/Viewer나 actual clone 정상 사용자 인증을 재실행하지 않음. |
+| G2C05 | PASS — durable child journal reload, create-timeout cleanup intent, foreign CID removal 거부, nonroot snapshot 입력을 bounded table/column names로 제한하는 신규 가드 PASS. Existing RR2 cleanup 3/3, OR58 auth-clone 5/5 PASS. 실제 runtime isolation/cleanup은 미실행. |
+| G2C06 | PASS — initial G2 guards 8/8; focused updated G2 guards 9/9; initial required clone discovery 22/22; RR2 cleanup 3/3; OR58 auth-clone 5/5; OR58 proof 28/28; registered OR58 schema 6/6. Python compile, Node syntax check, `git diff --check` PASS. |
+| G2C07 | PASS_WITH_LIMITS — 사용자 답변에 따라 NO_NUMERIC_SLA를 유지. 실제 recovery elapsed time, freeze 중 수락 쓰기, rollback 전 신규 쓰기 보존은 NOT RUN. |
+
+코드/수명주기 검토에서 QA는 Docker clone을 실행하지 않았다. 정해진 archive/published digest/source, 공식 plan/apply, schema preflight, named nonce ownership 및 exact cleanup, 새 App의 내부 network와 host port 미게시, readback 뒤 App 정지, CAD content endpoint의 DB SHA 일치 검증을 검토했다. 공개 CAD 조회는 일반 endpoint를 사용하고 인증 우회는 추가하지 않는다. Snapshot child는 nonroot이며 baseline으로 table/column 이름만 64 KiB 이내 전달한다. helper 출력에는 CAD/row bytes와 credential이 포함되지 않는다. 기존 candidate 증거는 actual clone 증거와 혼합하지 않는다. 새 network guard fix의 독립 focused 9개 시험은 PASS이며 Docker 재시도/운영 clone은 이 재확인에서 수행하지 않았다. NO_NUMERIC_SLA는 blocker가 아니다. QA는 code edit, Docker mutation, commit, push를 수행하지 않았다.
+
+
 ## U-225-G1-SCHEMA-20261108 — 독립 exact 0.58 schema QA
 
 **판정: 독립 QA PASS_WITH_LIMITS; Manager 최종 ACCEPT_WITH_LIMITS.** 역할은 지정 모델 경계에 따라 gpt-6-astra Manager, gpt-6-sol Developer, gpt-6-luna QA로 기록한다. 이번 QA에서 허용된 소유 synthetic 검증만 수행했으며 제품 코드·운영 schema·버전 0.61.0은 바꾸지 않았다.
