@@ -1,3 +1,33 @@
+## #218 / PR #272 — CI #705 웹 기준 이미지 수리 (2026-11-08)
+
+재개 시 [FailureLedger](out/FailureLedger.md)의 CI705 → [TestReport](out/TestReport.md)의 U-218-CI705 → [TestPlan](out/TestPlan.md)의 TP-218-CI705를 확인한다. 웹 비교 기준 이미지는 `runtime` 단계와 `app` 역할을 명시한다. 전체 package 경로/SHA·native·중복 layer 검증을 유지하며 실제 Docker 결과와 원인 미확정 범위는 TestReport를 따른다. PR272 Draft/Issue218 OPEN, 소스0.61.1과 운영0.61.0을 구별한다. 사용자 범위는 새 PR CI 시작 확인까지이며 완료 감시·병합·운영 변경은 수행하지 않는다.
+
+---
+
+## #218 / PR #272 — CI #704 RR2 upgrade 계획 검증 수리 (2026-11-08)
+
+[FailureLedger](out/FailureLedger.md)의 CI704, [TestReport](out/TestReport.md) U-218-CI704, [TestPlan](out/TestPlan.md) TP-218-RR2-PATCH 순서로 확인한다. CI #704의 Source `bfc38049`에서 RR2 actual 0.60.0→0.61.1의 등록 경로는 `MIGRATION → COMPATIBLE`이나 `rr2-journey.py`가 `['MIGRATION']`만 허용해 `RR2_UPGRADE_PLAN_INVALID`가 발생했다. 현재 릴리스 Registry 및 G7 통합 테스트와 일치하도록 **정확한 두 단계와 기존/대상 버전**을 확인한다. 필수 Scope에서 실제 validator를 사용하는 단위 음성 회귀를 추가해 미래 경로 누락·순서 변경을 Docker 실기동 전에 거부한다. 기존 구 OCI 이미지·backup·권한·CAS·감사·실 Viewer Gate는 완화하지 않는다. PR #272 Draft 및 Issue #218 OPEN, 운영0.61.0 flags ON/단일 CPU Worker/DB·CAD·Volume/.env/Tag/GHCR/자동 publisher HOLD 보존. 이 Source의 CI는 시작 확인 후 완료 모니터링하지 않는다.
+
+---
+
+## #218 / PR #272 — CI #703 Scope fixture 후속 수리 (2026-11-08)
+
+CI #703/run42466803358: Scope Job128688083320에서 `test_rp_execution_fix.py`의 synthetic RR1 receipt/OCI image label이 `0.61.0` 고정값을 사용하여 source0.61.1의 `current_candidate_version()` 검증에 거부됐다. 필수 downstream Job은 SKIPPED. `out/FailureLedger.md`의 #218 CI703 및 `out/TestReport.md`의 U-218-CI703을 참조하고, 양성 test fixture만 source 현재 버전에 결합해 provenance/negative assertions·required gates를 보존한다. 미해결 리뷰/충돌/behind0 확인 후 정확 HEAD PR CI를 시작만 확인하고 결과 감시는 하지 않는다. 운영0.61.0/flags ON/단일 Worker·원본·볼륨·GHCR/tag 불변, #218 OPEN, PR272 Draft 유지.
+
+---
+
+## #218 / PR #272 — CI #702 실패 후 검증 재개 (2026-11-08)
+
+[FailureLedger](out/FailureLedger.md) #218/CI702 및 [TestReport](out/TestReport.md) U-218-CI702, [Issue218](out/Issue218.md)의 triage를 우선 참조한다. 새 source0.61.1과 RR2 OCI 검증의 버전0.61.0 고정 계약 불일치가 Docker를, Scene READY가 없는 L05 등록 Version이 Greenfield R3/Zone fixture의 `items[0]` 가정을 깨뜨려 E2E6건을 실패시켰다. 실패한 Job과 이전 성공 Job은 과거 source 증거로 유지하고 보완 후 새 exact HEAD PR CI를 시작하되 완료는 모니터링하지 않는다. PR Draft/Issue OPEN, 운영0.61.0의 Scene flags ON/Worker1·복구점과 원본/DB/.env/dirty 설정/GHCR/tag는 보존한다.
+
+---
+
+## #218 L-05 재개 — Scene 목록 상태 조회 (2026-11-08)
+
+현재 작업은 [Issue218](out/Issue218.md) 최신 LS01–07과 [TestPlan](out/TestPlan.md)의 TP-218-L05를 따른다. 기존 #225 단일 Worker/저장·인증·운영 근거는 재사용하고 표시 DXF100개 초과 누락·늦은 응답·오류 polling·안전 사유를 수정한다. 개발 소스0.61.1 PATCH와 현재 운영0.61.0을 구별한다. 실제 결과/실패는 TestReport/FailureLedger가 정본이다. 사용자 범위는 PR CI 시작 확인까지이며 완료 감시·병합·운영 변경은 하지 않는다. 원래 dirty Compose/next-env 및 운영 설정을 보존한다.
+
+---
+
 ## #225 운영 전환 완료 후 재개 위치 (2026-11-08)
 
 사용자의 **운영 전환·Worker 활성화 승인**을 실행했다. 소스/운영0.61.0, Scene flags2개 ON, 검증된 제한 LINE subset의 CPU Worker1개가 현행이다. 현재 결과는 [TestReport](out/TestReport.md)의 U-225-G3-20261108, 재기동·장애·복구점/신규 데이터 보존은 [Operation](out/Operation.md)을 먼저 확인한다. 기존 사용자 dirty Compose/next-env와 원래 `.env`는 보존했으므로 이전 작업 위치의 Compose로 운영을 덮어쓰지 않는다.

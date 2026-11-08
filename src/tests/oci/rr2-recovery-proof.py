@@ -40,6 +40,20 @@ def check(value, code):
         raise Blocked(code)
 
 
+def current_candidate_version():
+    """Bind RR2 proof to this source release; never trust an arbitrary receipt version."""
+    try:
+        package = json.loads((ROOT / "src/package.json").read_text())
+    except (OSError, ValueError) as error:
+        raise Blocked("RR2_CURRENT_RELEASE_VERSION_INVALID") from error
+    version = package.get("version") if isinstance(package, dict) else None
+    check(isinstance(version, str)
+          and re.fullmatch(r"(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})", version) is not None
+          and tuple(map(int, version.split("."))) >= (0, 61, 0),
+          "RR2_CURRENT_RELEASE_VERSION_INVALID")
+    return version
+
+
 def run(args, *, timeout=180, allow_failure=False, env=None):
     try:
         result = subprocess.run(args, cwd=ROOT, env=env, capture_output=True, text=True,
@@ -295,7 +309,7 @@ def image_preflight(old, new):
                        for role in ("app", "migrator")),
           "RR2_OLD_PAIR_ID_MISMATCH")
     check(new.get("kind") == "RR1_LOCAL_UNSIGNED_REGISTRY_RECEIPT" and
-          new.get("retainedForR2") is True and new.get("version") == "0.61.0" and
+          new.get("retainedForR2") is True and new.get("version") == current_candidate_version() and
           set(new.get("refs", {})) == {"app", "migrator", "cpu-worker"},
           "RR2_NEW_TRIPLET_RECEIPT_INVALID")
     registry = docker_one("inspect", new["resources"]["registryCid"])
@@ -839,7 +853,7 @@ def main():
                 image_preflight(old, new)
                 before = snapshot_volume(receipt, receipt["liveVolume"])
                 check(before.get("backupIds") == [args.backup] and
-                      before.get("manifestVersion") == "0.61.0",
+                      before.get("manifestVersion") == current_candidate_version(),
                       "RR2_BACKUP_ID_INVALID")
                 worker = run(["docker", "ps", "--quiet", "--filter",
                               "volume=" + receipt["liveVolume"]]).stdout.splitlines()

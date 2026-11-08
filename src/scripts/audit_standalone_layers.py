@@ -80,6 +80,9 @@ def inspect(image):
     data = json.loads(subprocess.check_output(["docker", "image", "inspect", image], text=True))
     if len(data) != 1 or (data[0]["Os"], data[0]["Architecture"]) != ("linux", "amd64"):
         raise ValueError("Unexpected image count/platform for " + image)
+    labels = (data[0].get("Config") or {}).get("Labels") or {}
+    if labels.get("com.planner77.g7.image-role") != "app":
+        raise ValueError("Expected web app role for " + image)
     return data[0]
 
 

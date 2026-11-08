@@ -1,3 +1,13 @@
+## #218 L-05 — Scene 목록 상태 조회·재시도 보완 (2026-11-08)
+
+**FR-218-L05-LIST:** 기존 #225 자동 Job/단일 CPU Worker·G7 게시·검증된 Scene 복원과 승인된0.61.0 운영 근거를 재사용한다. 이번 Unit은 홈/Location의 상태 조회 결함을 수정한다. 표시된 DXF ID는 중복 제거 후 누락 없이 API 상한100개 단위로 순차 조회하며 DWG는 제외한다. 탭 숨김·목록 변경·수동 갱신·해제 이후 이전 응답/오류/타이머가 새 상태 또는 재시도 권한을 되살리지 않아야 한다.
+
+**FR-218-L05-RECOVERY:** 알려진 pending 행만 제한된 자동 polling/통신 오류 복구를 허용한다. 초기·terminal 조회 오류는 명시적인 상태 갱신으로 복구하며 통신 실패를 Job FAILED로 바꾸지 않는다. 서버가 반환하는 allowlisted 실패·차단·재시도 대기 사유만 표시하고 Worker 내부 stage/code의 사용자 문구를 제공한다. 재시도 POST의 기존 G7·Site·Origin/CSRF·멱등 조건을 유지한다. 정확한 AC/설계는 [Issue218](Issue218.md) 최신 L05 절, 실제 결과는 TestReport를 따른다.
+
+소스0.61.1 PATCH와 기존0.61.0의 같은 schema/data/runtime 계약을 등록한다. 새 Entity/Worker/DDL·운영 배포·registry/tag 변경은 포함하지 않으며 #218 전체 완료와 #268 지원 확대는 별도다.
+
+---
+
 ## #225 G3 — 승인 범위와 실제 파일럿 전환 (2026-11-08)
 
 Owner의 **운영 전환·Worker 활성화 승인**을 실행해 검증된 제한 LINE subset의0.61 단일 CPU Worker 파일럿을 활성화했다. 수치 RPO/RTO SLA 없이 새 복구점/실측 시간·백업 데이터 보존·전환 쓰기 중단·신규 성공 데이터 선보존을 적용한다. 기존 도면 backfill/계정·권한 변경/전체 도면 지원 확대는 범위에 포함하지 않는다. TestPlan G3A01–06과 TestReport U-225-G3-20261108이 실제 수용 근거이며 #218/#268은 독립이다.

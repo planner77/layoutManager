@@ -1,4 +1,5 @@
 import {expect,test,type Page} from '@playwright/test';
+import {readyGreenfieldSceneVersion} from './ready-scene-fixture';
 import {randomUUID,createHash} from 'node:crypto';
 import type {CadZoneDto,ZoneListDto} from '../../domain/cad-zone';
 async function work(page:Page,id:string){
@@ -14,8 +15,7 @@ test('TC-Z196-GREENFIELD: real Zone persistence, three-level tree, CAS, focus, r
  await expect(page.getByRole('heading',{name:'현재 세션'})).toBeVisible();
  const session=await (await page.request.get('/api/g7-runtime/auth/session')).json();
  const headers={origin:baseURL!,'x-csrf-token':session.csrfToken};
- const files=await (await page.request.get('/api/cad-files')).json();
- const versionId=files.items[0].id as string,url=`/api/cad-files/${versionId}/zones`;
+ const versionId=await readyGreenfieldSceneVersion(page.request),url=`/api/cad-files/${versionId}/zones`;
  const beforeBytes=await (await page.request.get(`/api/cad-files/${versionId}/content`)).body();
  const beforeSha=createHash('sha256').update(beforeBytes).digest('hex');
  const before=await (await page.request.get(url)).json() as ZoneListDto;

@@ -1,4 +1,5 @@
 import { expect, test, type Page, type APIRequestContext } from '@playwright/test';
+import {readyGreenfieldSceneVersion} from './ready-scene-fixture';
 import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
 import { createHash, randomUUID } from 'node:crypto';
@@ -49,7 +50,7 @@ test('R3 server-first render confirmation, lost response replay, typed groups, R
   try{
     const session=await (await page.request.get('/api/g7-runtime/auth/session')).json();
     const headers={origin:baseURL!,'x-csrf-token':session.csrfToken};
-    const files=await (await page.request.get('/api/cad-files')).json();const versionId=files.items[0].id;
+    const versionId=await readyGreenfieldSceneVersion(page.request);
     const initialDb=fixtureDb();let initialCreates:number,initialReceipts:number;
     try{
       initialCreates=(initialDb.prepare("SELECT COUNT(*) AS n FROM CadBusinessAudit WHERE version_id=? AND target_kind='OUTLINE' AND action='CREATE'").get(versionId) as {n:number}).n;
@@ -186,7 +187,7 @@ test('R3 canonical Source UI, renamed/inactive references and same-WCS Scene rep
   try{
     const session=await (await page.request.get('/api/g7-runtime/auth/session')).json();
     const headers={origin:baseURL!,'x-csrf-token':session.csrfToken};
-    const files=await (await page.request.get('/api/cad-files')).json();const versionId=files.items[0].id;
+    const versionId=await readyGreenfieldSceneVersion(page.request);
     const viewer=`/cad/versions/${versionId}/viewer`;
     const catalogue=await (await page.request.get('/api/outline-types?q='+encodeURIComponent('R3 타입 A'))).json();
     const type=catalogue.items[0];expect(type).toBeTruthy();
@@ -294,7 +295,7 @@ test('R3 paged catalogue beyond 100, bounded server snapshots and 200 mixed keyb
   try{
     const session=await (await page.request.get('/api/g7-runtime/auth/session')).json();
     const headers={origin:baseURL!,'x-csrf-token':session.csrfToken};
-    const files=await (await page.request.get('/api/cad-files')).json();const versionId=files.items[0].id;
+    const versionId=await readyGreenfieldSceneVersion(page.request);
     const seeded:{id:string;name:string}[]=[];
     for(let i=1;i<=101;i++){
       const response=await page.request.post('/api/outline-types',{headers,data:{name:'R3 PAGE '+String(i).padStart(3,'0'),sortOrder:0}});

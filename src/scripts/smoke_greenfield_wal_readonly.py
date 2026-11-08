@@ -279,6 +279,7 @@ process.stdout.write(String(d.prepare('SELECT COUNT(*) AS n FROM "User"').get().
         # logical hash below excludes only expected new Job/history tables,
         # and still preserves ALL pre-existing business table rows.
         schema_script = r'''import Database from 'better-sqlite3';
+import {G7_GREENFIELD_SCHEMA_ID} from './server/g7-operational/greenfield-schema.ts';
 import {assertDeclaredSchema,GREENFIELD_UPGRADE_REGISTRY} from './server/g7-operational/greenfield-upgrade-registry.ts';
 import {withReadOnlyInspection} from './server/g7-operational/greenfield-readonly-inspection.ts';
 import {readFileSync} from 'node:fs';
@@ -294,7 +295,7 @@ withReadOnlyInspection('/data/db/cad.sqlite',inspectedPath=>{
     assertDeclaredSchema(db,release);
     const history=db.prepare('SELECT migration_name FROM "_prisma_migrations" ORDER BY rowid').all();
     const expected=['202611010002_greenfield_semantic_zones_baseline','202611040001_scene_build_job'];
-    if(release.version==='0.61.0')expected.push('202611040003_scene_cpu_worker');
+    if(release.schemaId===G7_GREENFIELD_SCHEMA_ID)expected.push('202611040003_scene_cpu_worker');
     if(history.length!==expected.length||history.some((row,i)=>row.migration_name!==expected[i]))throw Error('history');
   }finally{db.close();}
 });

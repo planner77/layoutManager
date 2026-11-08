@@ -17,6 +17,7 @@ import urllib.error
 import urllib.request
 
 ROOT=Path(__file__).resolve().parents[3]
+CURRENT_VERSION=json.loads((ROOT/'src/package.json').read_text())['version']
 PROOF=ROOT/'src/tests/oci/rr2-recovery-proof.py'
 
 class JourneyFailure(Exception):
@@ -87,6 +88,16 @@ def same_baseline(old,new):
               ('tables','files','manifestSha','manifestVersion','manifestSchemaId',
                'foreignKeys','prefixHashes')), 'RR2_RESTORED_SNAPSHOT_MISMATCH')
 
+def require_upgrade_plan(plan):
+    """Exact reviewed 0.60.0 -> 0.61.0 MIGRATION -> 0.61.1 COMPATIBLE path."""
+    check(isinstance(plan, dict)
+          and plan.get('decision') == 'UPGRADE_MIGRATION_REQUIRED'
+          and plan.get('installedVersion') == '0.60.0'
+          and plan.get('targetVersion') == CURRENT_VERSION
+          and plan.get('registryChain') == ['MIGRATION', 'COMPATIBLE'],
+          'RR2_UPGRADE_PLAN_INVALID')
+
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--old-pair-receipt',required=True,type=Path)
@@ -136,8 +147,7 @@ def main():
         status=proof(receipt_path,'status',release='new',env=env)
         check(status['decision']=='UPGRADE_MIGRATION_REQUIRED','RR2_UPGRADE_STATUS_INVALID')
         plan=proof(receipt_path,'plan',release='new',env=env)
-        check(plan['decision']=='UPGRADE_MIGRATION_REQUIRED' and
-              plan['registryChain']==['MIGRATION'],'RR2_UPGRADE_PLAN_INVALID')
+        require_upgrade_plan(plan)
         bad=proof(receipt_path,'execute',release='new',approve='0'*64,env=env,
                   expect_failure=True)
         check(bad.get('code')=='G7_DEPLOY_STALE_PLAN','RR2_UPGRADE_WRONG_APPROVAL_INVALID')
@@ -145,7 +155,7 @@ def main():
         done=proof(receipt_path,'execute',release='new',approve=plan['planId'],env=env)
         check(done['state']=='UPGRADED_APP_STOPPED','RR2_UPGRADE_NOT_STOPPED')
         upgraded=proof(receipt_path,'snapshot',release='new',env=env)
-        check(upgraded['manifestVersion']=='0.61.0' and upgraded['files']==old['files'] and
+        check(upgraded['manifestVersion']==CURRENT_VERSION and upgraded['files']==old['files'] and
               upgraded['foreignKeys']==0 and
               len(upgraded['backupIds'])==1 and
               all(old['tables'][name]==upgraded['tables'][name]

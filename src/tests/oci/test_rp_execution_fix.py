@@ -268,13 +268,14 @@ class ExecutionFix(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             image = '127.0.0.1:12345/rr1-release@sha256:' + 'a' * 64
             source = 'd' * 40; engine = 'sha256:' + 'b' * 64
-            receipt = {'kind': 'RR1_LOCAL_UNSIGNED_REGISTRY_RECEIPT', 'version': '0.61.0',
+            candidate_version = PROBE.PROOF.current_candidate_version()
+            receipt = {'kind': 'RR1_LOCAL_UNSIGNED_REGISTRY_RECEIPT', 'version': candidate_version,
                 'sourceCommit': source, 'refs': {'cpu-worker': image},
                 'manifests': {'cpu-worker': {'digest': 'sha256:' + 'a' * 64, 'configDigest': engine}}}
             path = Path(directory) / 'triplet.json'; path.write_text(json.dumps(receipt))
             observed = {'Id': engine, 'RepoDigests': [image], 'Os': 'linux', 'Architecture': 'amd64',
                 'Config': {'Labels': {'org.opencontainers.image.source': 'https://github.com/planner77/layoutManager',
-                    'org.opencontainers.image.revision': source, 'org.opencontainers.image.version': '0.61.0',
+                    'org.opencontainers.image.revision': source, 'org.opencontainers.image.version': candidate_version,
                     'com.planner77.g7.image-role': 'cpu-worker'}}}
             with patch.object(PROBE.PROOF, 'docker_one', return_value=observed):
                 self.assertEqual(PROBE.checked_input(path), (image, engine))

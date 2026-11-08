@@ -1,3 +1,9 @@
+## #218 L-05 — 0.61.1 호환 PATCH (2026-11-08)
+
+DDL/Table/Column/Index/Prisma migration 변경 없음. 기존0.61.0 declaration은 보존하고0.61.1을 같은 CPU Worker schema/baseline/checksum/data/runtime 계약으로 등록하며0.61.0→0.61.1은 forward `COMPATIBLE`이다. 기존0.60→0.61 migration SQL/history를 유지한다. 운영0.61.0 설치/manifest를 변경하거나 자동 업그레이드하지 않는다. 실제 검증은 TestReport L05를 따른다.
+
+---
+
 ## #225 G3 — 승인된 운영0.58→0.61 적용 (2026-11-08)
 
 새 DDL/마이그레이션을 추가하지 않고 기존 등록 경로(호환2+MIGRATION2)를 실제 운영에 적용했다. fresh 백업과 정지 직전33 tables/51 logical rows/CAD1이 같았고,0.61 전환 후 기존 업무 열/행 SHA·설치 ID·CAD를 보존했다. 등록 history2개 추가와34 tables/빈 `SceneBuildJob`, integrity/FK0을 확인했다. flags ON 및 Worker 기동 후에도 전환 직후34 tables/manifest/CAD가 같았다. 단일 기준은 본 문서의 기존0.61 schema 계약이며 실제 결과/한계는 TestReport U-225-G3-20261108을 따른다.

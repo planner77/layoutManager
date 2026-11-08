@@ -3,12 +3,15 @@
 import io
 import gzip
 import json
+import re
+import shlex
 import sys
 from pathlib import Path
 import tarfile
 import tempfile
 import unittest
-from audit_standalone_layers import inventory, compare_inventories, validate_image_size
+from unittest.mock import patch
+from audit_standalone_layers import inventory, compare_inventories, validate_image_size, inspect
 
 NATIVE = "app/src/node_modules/better-sqlite3/build/Release/better_sqlite3.node"
 JS = "app/src/node_modules/better-sqlite3/lib/database.js"
@@ -36,6 +39,32 @@ def make_archive(path, files_by_layer, *, compression=None, override_first_layer
 
 
 class TestAudit(unittest.TestCase):
+    def test_baseline_build_explicitly_selects_web_runtime(self):
+        workflow = (Path(__file__).resolve().parents[2] / ".github/workflows/pr-ci.yml").read_text()
+        start = workflow.index("      - name: Build pre-change baseline (same source, original Dockerfile)")
+        end = workflow.index("\n      - name:", start + 1)
+        step = workflow[start:end]
+        builds = re.findall(r"^\s*docker buildx build .* -t cad-layout-viewer:baseline \.\s*$", step, re.M)
+        self.assertEqual(len(builds), 1)
+        args = shlex.split(builds[0])
+        self.assertEqual(args.count("--target"), 1)
+        self.assertEqual(args[args.index("--target") + 1], "runtime")
+
+    def test_image_inspection_requires_web_app_role(self):
+        image = {"Os": "linux", "Architecture": "amd64",
+                 "Config": {"Labels": {"com.planner77.g7.image-role": "app"}}}
+        with patch("audit_standalone_layers.subprocess.check_output", return_value=json.dumps([image])):
+            self.assertEqual(inspect("web:valid"), image)
+        for role in ("cpu-worker", "migrator", None):
+            with self.subTest(role=role):
+                if role is None:
+                    image["Config"]["Labels"].pop("com.planner77.g7.image-role", None)
+                else:
+                    image["Config"]["Labels"]["com.planner77.g7.image-role"] = role
+                with patch("audit_standalone_layers.subprocess.check_output", return_value=json.dumps([image])):
+                    with self.assertRaisesRegex(ValueError, "web app role"):
+                        inspect("wrong:role")
+
     def test_duplicate_copy_with_identical_sha_and_single_optimized_copy(self):
         package = {NATIVE: b"native", JS: b"module"}
         with tempfile.TemporaryDirectory() as tmp:
@@ -90,6 +119,13 @@ class TestAudit(unittest.TestCase):
     def test_reject_missing_native(self):
         with self.assertRaisesRegex(ValueError, "paths or SHA256 changed"):
             compare_inventories({NATIVE: [(1, 1, "a")]}, {JS: [(1, 1, "b")]})
+
+    def test_reject_changed_native_sha256_at_same_path(self):
+        with self.assertRaisesRegex(ValueError, "paths or SHA256 changed"):
+            compare_inventories(
+                {NATIVE: [(1, 6, "native-before")], JS: [(1, 6, "js-same")]},
+                {NATIVE: [(1, 6, "native-after")], JS: [(1, 6, "js-same")]},
+            )
 
     def test_reject_baseline_not_identical(self):
         with self.assertRaisesRegex(ValueError, "Nonidentical"):

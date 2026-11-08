@@ -1,3 +1,4 @@
+import packageInfo from '../../package.json';
 import {afterEach,describe,expect,it,vi} from 'vitest';
 import {randomUUID} from 'node:crypto';
 import {createRequire} from 'node:module';
@@ -25,7 +26,7 @@ async function fixture(){
   const root=mkdtempSync(path.join(tmpdir(),'cpu-worker-g7-real-'));roots.push(root);chmodSync(root,0o700);
   const dbdir=path.join(root,'db'),cad=path.join(root,'cad');
   mkdirSync(dbdir,{mode:0o700});mkdirSync(cad,{mode:0o700});
-  const dbfile=path.join(dbdir,'cad.sqlite'),img='ghcr.io/planner77/layoutmanager:0.61.0';
+  const dbfile=path.join(dbdir,'cad.sqlite'),img='ghcr.io/planner77/layoutmanager:'+packageInfo.version;
   const env={
     G7_GREENFIELD_MODE:'true',G7_GREENFIELD_AUTOMATED:'true',
     DATABASE_URL:'file:'+dbfile,CAD_STORAGE_BACKEND:'local',CAD_STORAGE_PATH:cad,

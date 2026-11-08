@@ -51,6 +51,7 @@ def main():
         parser.add_argument("--" + option, required=True)
     parser.add_argument("--port", type=int, default=3197)
     options = parser.parse_args()
+    target_version = json.loads((Path(__file__).resolve().parents[1] / "package.json").read_text())["version"]
     if not re.fullmatch(r"[a-f0-9]{40}", options.source):
         raise RuntimeError("G7_209_SMOKE_SOURCE_INVALID")
     old_images = [json.loads(call(["docker", "image", "inspect", ref]))[0]
@@ -146,7 +147,7 @@ process.stdout.write(h.digest('hex'));"""
             if (plan.get("state") != "UPGRADE_MIGRATION_REQUIRED"
                     or plan.get("requiresApproval") is not True
                     or plan.get("from") != "0.56.0"
-                    or plan.get("to") != "0.61.0"
+                    or plan.get("to") != target_version
                     or not isinstance(plan_id, str)
                     or not re.fullmatch(r"[a-f0-9]{64}", plan_id)):
                 raise RuntimeError("G7_209_SMOKE_PLAN_INVALID")

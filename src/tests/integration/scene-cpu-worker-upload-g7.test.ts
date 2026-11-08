@@ -1,3 +1,4 @@
+import packageInfo from '../../package.json';
 /** #225 disposable actual HTTP-multipart service -> signed G7 enqueue -> separate
  * Node CPU worker -> verified immutable Scene. Never touches a real volume.
  * This is not a Docker/OCI or full browser authenticated application test. */
@@ -36,7 +37,7 @@ async function fixture(){
   const directory=path.join(root,'db'),cad=path.join(root,'cad');
   mkdirSync(directory,{mode:0o700});mkdirSync(cad,{mode:0o700});
   const dbPath=path.join(directory,'cad.sqlite');
-  const img='ghcr.io/planner77/layoutmanager:0.61.0';
+  const img='ghcr.io/planner77/layoutmanager:'+packageInfo.version;
   const env={
     G7_GREENFIELD_MODE:'true',G7_GREENFIELD_AUTOMATED:'true',
     DATABASE_URL:'file:'+dbPath,CAD_STORAGE_BACKEND:'local',CAD_STORAGE_PATH:cad,

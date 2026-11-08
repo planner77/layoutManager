@@ -139,10 +139,11 @@ class Readiness:
 
 
 def checked_input(path):
+    expected_version = PROOF.current_candidate_version()
     triplet = json.loads(path.read_text())
     image = triplet['refs']['cpu-worker']; entry = triplet['manifests']['cpu-worker']
     PROOF.check(triplet.get('kind') == 'RR1_LOCAL_UNSIGNED_REGISTRY_RECEIPT'
-                and triplet.get('version') == '0.61.0'
+                and triplet.get('version') == expected_version
                 and re.fullmatch('[0-9a-f]{40}', triplet.get('sourceCommit', ''))
                 and re.fullmatch(r'127\.0\.0\.1:[0-9]{4,5}/rr1-release@sha256:[0-9a-f]{64}', image)
                 and image.endswith('@' + entry['digest']), 'RR2_PROBE_INPUT_RECEIPT_INVALID')
@@ -152,7 +153,7 @@ def checked_input(path):
                 and observed.get('Architecture') == 'amd64'
                 and labels.get('org.opencontainers.image.source') == 'https://github.com/planner77/layoutManager'
                 and labels.get('org.opencontainers.image.revision') == triplet['sourceCommit']
-                and labels.get('org.opencontainers.image.version') == '0.61.0'
+                and labels.get('org.opencontainers.image.version') == expected_version
                 and labels.get('com.planner77.g7.image-role') == 'cpu-worker', 'RR2_PROBE_IMAGE_SOURCE_MISMATCH')
     descriptor = observed.get('Descriptor')
     if descriptor is None:

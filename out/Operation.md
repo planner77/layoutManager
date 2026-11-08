@@ -1,3 +1,11 @@
+## #218 L-05 — 목록 Scene 상태 수동 복구 (2026-11-08)
+
+상태 조회 통신 실패는 원본 등록 실패나 Scene Job 실패를 뜻하지 않는다. 목록은 기존 상태와 갱신 지연을 구분하고 상태 갱신 동작으로 현재 권한/서버 상태를 다시 확인한다. pending만 자동 조회하며 연속 오류 budget이 소진되면 수동 갱신한다. 상태 갱신은 읽기 요청이며 Scene 재시도 POST와 구별한다. 실제 지원/시험 범위는 Issue218 및 TestReport L05를 따른다.
+
+개발 소스는0.61.1 PATCH, 현재 승인된 운영은 아래0.61.0/flags ON·단일 Worker다. 새 버전 배포/자동 publisher·GHCR·tag/latest 또는 기존 복구점을 변경하지 않는다.0.61.1의 같은 schema 호환 등록은 실제 이미지 출고·업그레이드 실행 증거가 아니다.
+
+---
+
 ## #225 — 승인된0.61 파일럿의 현재 실행·복구 (2026-11-08)
 
 Owner가 PR270의 계획에 **“운영 전환·Worker 활성화 승인”**으로 답한 뒤 Root가 실제 전환했다. 현재 기존 `cad-layout-viewer-g7` volume과3000 port/Origin/인증·권한을 유지한0.61.0 App 및 CPU Worker1개다. App/Worker의 두 Scene flags는 ON, 기존 Version backfill은0이다. 지원 범위는 검증된 LINE subset이며 전체 실제 도면/BLOCK/INSERT 지원을 확대하지 않았다. 실제 receipt/시간/독립 QA는 TestReport **U-225-G3-20261108**을 따른다. 아래 G3 승인 전 계획은 역사적 기록이다.
@@ -1255,6 +1263,7 @@ curl -fsS -H 'Accept: application/vnd.github+json' \
 ## Issue #67 / v0.38.1 — Standalone 웹 중복 SQLite layer 검증 및 운영 절차 (2026-10-25)
 
 - **동일 소스/플랫폼 기준선:** PR CI는 `git show <PR_BASE_SHA>:src/Dockerfile`로 기존 Dockerfile을 복원해 현재 PR HEAD와 같은 Source/Node22.14/linux-amd64로 `runtime` 빌드. 현재 Dockerfile은 `docker buildx build --load --platform linux/amd64 --target runtime -f src/Dockerfile -t cad-layout-viewer:ci .`로 빌드한다. 이전 #28 pre-standalone / #66 migrator 이미지 크기를 비교 분모로 쓰지 않는다.
+- **기준 이미지 역할:** 웹 baseline에는 `--target runtime`을 명시한다. 마지막 Docker stage가 CPU Worker여도 웹으로 비교해야 하며 `audit_standalone_layers.py`는 baseline/후보 모두 `com.planner77.g7.image-role=app`을 요구한다. 전체 파일 경로·SHA/native·중복 검사는 유지한다. CI705 실패/실제 검증은 TestReport와 FailureLedger를 따른다.
 - **재현 및 실측:** `python3 src/scripts/test_audit_standalone_layers.py` → `python3 src/scripts/audit_standalone_layers.py cad-layout-viewer:baseline cad-layout-viewer:ci [summary.md]`. 실제 `docker save` TAR 각 layer의 `better-sqlite3` SHA256/파일 경로/ordinal/diffID, final 파일 동일성 및 기존 중복/new 중복 없음/네이티브 .node 존재를 검사한다. 오류 또는 saving 증거 부재 시 fail-closed. `bash src/scripts/measure-images.sh cad-layout-viewer:baseline cad-layout-viewer:phase1 cad-layout-viewer:ci [summary.md]`에서는 `docker inspect .Size` 비압축 image bytes, `docker history --no-trunc`, `du`, TTF/typeface·LibreDWG JS/WASM 개별 raw/gzip(proxy), 서버 추적 대형 파일 top20을 확인. gzip TAR/파일 압축은 실제 GHCR OCI 전송 크기 아님.
 - **런타임 검사:** `docker run --rm --entrypoint sh cad-layout-viewer:ci -c 'id -u; node -e "const DB=require(\"better-sqlite3\");new DB(\":memory:\").close()"'`. PR CI Docker Compose는 **disposable** `/data`에서 migrate exit0 후 app health 200, Master 5단계→DXF 업로드, 원본/Current/Version, app stop+재migration+restart, read/delete/404, 원본 Nanum TTF/파생 typeface/LibreDWG WASM 정적 200 확인. 실제 운영 DB/CAD/S3 볼륨과 분리한다. 기존 Browser/Legacy E2E 검증이 별도로 필요.
 - **정식 GHCR 게시 후 OCI 확인:** `docker buildx imagetools inspect --raw ghcr.io/planner77/layoutmanager:0.38.1` 및 `:0.38.1-migrate`의 정확한 app+migrator image digest를 읽는다. immutable digest별 linux/amd64 OCI `layers[].size` 합/공유 digest를 `node src/scripts/measure-ghcr-pair.mjs ghcr.io/planner77/layoutmanager:0.38.1 ghcr.io/planner77/layoutmanager:0.38.1-migrate`로 측정. attestation `unknown/unknown`, index/config bytes와 `docker save|gzip` proxy를 제외. PR CI에는 GHCR public tag publish 권한 요구 금지. 고정 digest/OS/arch는 해당 릴리스 증거로만 기록.

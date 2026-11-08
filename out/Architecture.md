@@ -1,3 +1,11 @@
+## #218 L-05 — 목록 상태 조회 수명주기 (2026-11-08)
+
+기존 `CadTable → SceneStatusProvider → /api/scene-build-jobs → readSceneBuildBatch`를 재사용한다. 서버의 signed Site filtering·페이지 batch SQL·immutable manifest/full DTO/blob 검증이 READY의 기준이며 Job READY만 신뢰하지 않는다. 클라이언트는 화면 DXF ID를 중복 제거하고100개 이하로 나눈 요청을 순차 실행한다. 외부 Provider가 enabled+ID scope별 key로 내부 Provider를 새로 생성해 disabled→enabled와 A→B→A의 commit에서도 이전 상태/Retry를 재사용하지 않는다. 요청 generation/AbortSignal과 현재 목록 identity로 늦은 성공·실패·finally·timer를 무효화하고 이전 목록의 retry 권한을 노출하지 않는다. 최초·수동 갱신·탭 복귀는 전체 목록, 자동 tick은 pending ID만 조회한다. 자동 응답은 요청 ID만 교체/제거하고 다른 terminal 행은 보존한다. 연속 전송 오류의 자동 복구에는 유한 budget을 둔다. 초기/terminal 오류는 별도 상태 갱신으로 복구하고 Job 실패로 재해석하지 않는다.
+
+상태/allowlisted 사유의 순수 표시 계약은 domain, 전송·취소/타이머는 client controller, React UI는 상태·오류·갱신 동작을 담당한다. API 권한·원본/Worker·Scene publisher는 기존 경계를 유지한다. 정확 AC/구현 추적은 Issue218 L05, 실행 결과는 TestReport를 따른다. 소스0.61.1은 등록0.61.0과 같은 G7 schema/data/runtime 계약의 forward COMPATIBLE edge이며 SQL/migration은 없다.
+
+---
+
 ## #225 G3 — 기존0.61 구조의 승인 운영 적용 (2026-11-08)
 
 제품 module/interface·Builder/admission·DB 계약 변경 없이 고정된 정식0.61 App/Migrator/CPU Worker를 기존 volume에 적용했다. 현재 App의 두 Scene flags ON 및 별도 CPU Worker1개의 기존 격리 계약을 실제로 확인했다. 기존 Version backfill0이며 실제 지원 범위/운영 검증 한계는 TestReport U-225-G3-20261108, 재기동과 별도 목적지 복구는 Operation이 정본이다.

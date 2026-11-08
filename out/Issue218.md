@@ -1,3 +1,125 @@
+## 2026-11-08 — CI #705 수리 최종 Manager 판정
+
+**ACCEPT_WITH_LIMITS — root commit/push 및 새 PR CI 시작 인계 수용.** Manager는 Developer의 runtime target·app-role guard와 선행 RED/회귀, 독립 QA의 **14건 중13 PASS/1 Python-version SKIP** 및 PASS_WITH_LIMITS를 검토했다. Root 실제 same-source/same-dependency Docker 시험에서 잘못된 Worker baseline의78개 regular-file inventory와 web runtime81개의 차이로 기존 오류가 재현됐고, 차이3경로는 Worker TAR hardlink였다. runtime을 명시한 기준/후보는81개 경로/모든 SHA·중복0·native SQLite smoke를 통과했다. SHA/native/중복/size gate 완화와 캐시 정책 변경은 없다. 상세 수치와 실행 주체는 [TestReport U-218-CI705](TestReport.md), 실패 이력은 [FailureLedger](FailureLedger.md)가 정본이다.
+
+C705-01~03은 로컬 재현·수리·독립 QA로 수용한다. Root fresh build/typecheck/lint와 scope/HOLD/RR2cleanup 회귀 성공, 최종 review0·mergeable·behind0·충돌0 보고를 확인했다. C705-04의 staged/secret 검사·commit/push·새 exact HEAD CI 시작은 root 최종 작업이며 **완료 모니터링하지 않는다**. 기존 CI #705 FAIL은 이력 그대로 유지하고 새 CI를 PASS로 예고하지 않는다. source0.61.1, PR Draft/Issue218 OPEN·잔여 기능 범위와 운영/GHCR/tag는 불변이다. Manager/Developer/QA 변경은 동결하며 추가 제품 재작업은 없다.
+
+---
+
+## 2026-11-08 — CI #705 native package 비교 실패 설계 (Manager, 구현 전)
+
+CI #705/run42469008037 Docker job128695196064가 standalone layer audit의 `Final better-sqlite3 file paths or SHA256 changed`로 실패했다. 실제 차이 파일·원인은 아직 미확정이며 캐시/빌드 입력 불일치는 조사 가설이다. 동일 source의 기준/후보 Dockerfile 비교에서 native package 최종 경로·SHA와 중복 layer 검증을 그대로 유지하고, 재현으로 확인한 빌드 입력 또는 비교 준비 결함만 최소 수리한다. baseline은 현재 checkout, release-role은 exact Git archive를 사용한다는 차이와 dependency install/cache 경로를 먼저 조사한다.
+
+추가 확인: baseline build 명령에 `--target`이 없고 Dockerfile의 마지막 stage는 `cpu-worker`다. 실제 #705 hosted Docker 로그도 baseline에서 `[cpu-worker 1/11] COPY ... /node_modules`를 실행했다. 웹 baseline 역할 대신 Worker를 비교한 준비 결함은 확정됐다. 수리는 웹 baseline의 `--target runtime` 명시와 잘못된 역할을 조기에 거부하는 회귀를 우선한다. 이 역할 불일치가 관측 SHA 실패의 전부인지는 동일 dependency 실제 이미지 비교 후 판정하며 캐시 비결정성을 확정 원인으로 기록하지 않는다.
+
+실제 재현 결과(root): exact `aff7263`의 동일 dependency 출력으로 기본 Worker와 runtime을 빌드하자 기존 auditor가 동일 오류를 재현했다. Worker는 regular-file inventory78개, runtime은81개이며 차이는 native build alias3경로, 공통 경로의 SHA 차이는0이다. `--target runtime`을 명시한 기준/후보는 동일 image ID·81경로/모든 SHA·중복0, native SQLite smoke를 통과했다. 따라서 이번 수리는 역할 선택 결함만 수정하며 캐시/설치 정책은 변경하지 않는다. 세부 수치·hardlink 표현 및 QA 검토는 TestReport/FailureLedger가 정본이다.
+
+AC C705-01: 원격 실패와 로컬 재현/증거에서 경로·바이트 차이를 구분하고 원인을 확정하거나 미확정 한계를 명시한다. C705-02: 동일 의존성 입력을 사용하는 공정한 비교를 준비하고 hash/path/native/duplicate/size gate 완화 없이 오류를 수리한다. C705-03: 선행 회귀가 기존 결함을 잡고 수정 후 통과하며 독립 QA가 관련 Python/정적 계약과 실제 Docker 근거를 확인한다. C705-04: FailureLedger/TestReport에 실제 실패·조치·미실행을 남기고 root가 review0/충돌·diff/secret 검사 후 commit/push/새 PR CI 시작만 수행한다. 완료 모니터링은 하지 않는다.
+
+제품 Viewer·메뉴/Role/Renderer/Drawer/Canvas 동작과 DB/Worker/G7·운영0.61.0·GHCR/tag·승인 범위는 변경하지 않으므로 신규 Viewer 메뉴 항목은 불필요하다. source0.61.1 유지, #218 OPEN/PR Draft. Manager→Developer→독립 QA 순서로 검증한다.
+
+---
+
+## 2026-11-08 — PR #272 CI #704 RR2 업그레이드 계획 기대값 정합화
+
+현재 후보 source `0.61.1`의 기존 `0.60.0` 업그레이드는 등록된 `MIGRATION→COMPATIBLE` 두 단계이나 PR CI #704의 RR2 synthetic OCI journey는 이전 `MIGRATION` 1단계만 허용했다. 결과 `RR2_RR3_JOURNEY_FAILED stage=upgrade code=RR2_UPGRADE_PLAN_INVALID`. [FailureLedger](FailureLedger.md), [TestReport](TestReport.md) U-218-CI704, [TestPlan](TestPlan.md) TP-218-RR2-PATCH를 따른다. 엄격한 source/target/step 계약과 선행 음성 테스트를 보강하며 실제 업그레이드·Worker·Viewer 후속 미검증은 유지한다. CI 필수 Job 및 보호 정책 축소 없음. PR Draft/Issue OPEN, 운영0.61.0과 GHCR/tag 불변.
+
+---
+
+## 2026-11-08 — PR #272 CI #703 Scope fixture 잔여 불일치
+
+CI #703의 `test_rp_execution_fix.py` 양성 synthetic receipt·OCI label이 `0.61.0`으로 고정된 채 새 RR2 `0.61.1` strict verifier를 호출해 `RR2_PROBE_INPUT_RECEIPT_INVALID`가 발생했다. 기존 provenance/identity 음성 검증을 보존하며 현재 candidate source version에만 fixture를 결합한다. [FailureLedger](FailureLedger.md) #218/CI703 및 [TestReport](TestReport.md) U-218-CI703을 따른다. 새 exact HEAD hosted CI는 시작 후 완료를 감시하지 않는다. #218 OPEN/PR Draft, 운영0.61.0의 활성 Worker·Scene flags 및 기존 자료/배포 불변.
+
+---
+
+## 2026-11-08 — PR #272 CI #702 실패 triage / 검증 단계 분리
+
+CI #702(run42462441494)의 source `2ffe33d`는 RR2 검증 드라이버의 신규 후보 버전 `0.61.0` 하드코딩과 L05 UI 시험이 Scene 없는 도면을 공용 fixture 목록 첫 항목에 추가한 뒤 기존 R3/Zone 테스트가 그 행을 READY 대상으로 사용한 문제로 실패했다. [FailureLedger](FailureLedger.md) 및 [TestReport](TestReport.md) U-218-CI702에 실제 Job/artifact 근거·미실행 범위가 있다. source0.61.1의 RR2 receipt/OCI label/manifest 정확 검증 및 Greenfield READY fixture 명시 선택을 보완한다. 신규 HEAD CI 성공 판정·GO-PILOT 확대 불가, PR #272 Draft·#218 OPEN 유지, 운영0.61.0(flags ON, Worker1)/CAD/DB/기존 GHCR 불변.
+
+---
+
+## 2026-11-08 — L-05 최종 Manager 판정 및 PR 인계 경계
+
+**판정: ACCEPT_WITH_LIMITS — 최종 observer 강화2case의 독립 QA 재실행2/2 PASS(3.1s)로 조건 충족, root commit/push/PR CI 시작 인계 수용.** 제품 재작업은 없다. Manager는 Developer 구현·재작업, root release/fixture 변경과 독립 QA의 [U-218-L05-20261108](TestReport.md)을 검토했다. 독립 QA는 집중7files/33tests와 최종 keyed source의 Greenfield4/4를 통과했다. 후속 test-only observer가 row text·Retry 존재·enabledRetry를 추가 확인하며 Developer는 같은 old Provider2/2 RED(enabledRetry1)/patched2/2 GREEN을 보고했다. 독립 QA가 최종 강화2case를 다시 실행해2/2 PASS(3.1s), 두 commit 경계의 이전 상태 text·Retry 존재·enabledRetry0을 확인했고 추가 발견0건을 보고했다. QA의 최종 PASS_WITH_LIMITS를 수용하며 남은 로컬 구현·QA 재작업은 없다.
+
+수용 범위는 LS01~06의 목록 상태 결함과 회귀, 소스0.61.1 same-schema PATCH다. root 전체178files/1,120tests PASS는 keyed UI delta 전 실행이며, 이후 최종 source의 focused31·build/typecheck/lint(0errors/기존12warnings) 및 실제 React/Chromium 시험으로 변경 경계를 확인했다. Manager가 이 시험들을 직접 실행한 것으로 표현하지 않는다. 처음13 fixture 실패, strict label fixture 실패, 기존 Provider의 의도된 RED와 QA 발견/재작업은 FailureLedger에 보존한다.
+
+LS07은 root의 최종 staged/secret/산출물·base/review/충돌 검사와 Conventional commit/push/PR·정확 HEAD CI 시작 확인으로 마무리한다. 원격 CI 완료는 감시하지 않으며 시작을 SUCCESS로 기록하지 않는다. **#218 OPEN, #268 별도, L-06/전체 Entity·실도면 확대와 실제 신규 운영 Scene journey는 이번 수리로 완료하지 않는다.** 현재 운영0.61.0·flags ON/단일 Worker·DB/CAD·기존 복구점·자동 publisher HOLD·registry/tag는 변경하지 않는다. UI route mock은 실제 Worker/G7 Retry journey 증거가 아니다.
+
+---
+
+## 2026-11-08 — LS02 실제 React 회귀 수용
+
+**Manager: LS02 재작업 ACCEPT_FOR_QA.** 최종 keyed inner provider가 enabled+deduped ID scope별 snapshot/ref/effect를 remount하는지 검토했다. `tests/fixtures/scene-status-react-browser.tsx`는 실제 제품 Component를 import하고 child `useLayoutEffect`에서 passive effect 이전 commit의 Retry 버튼 유무를 기록한다. 동일 observer 시험의 old HEAD Provider 임시 bundle은 false→true/A→B→A 두 경계 모두 expected0/actual1로 실패했음을 실제 RED 로그에서 확인했다. Developer의 최종 keyed Provider는 두 경계0으로2/2 PASS 보고다.
+
+회귀는 `tests/greenfield-e2e/scene-status-provider.spec.ts`의 기존 필수 Greenfield Playwright `{page}`를 사용한다. 최초 임시 Vitest browser 검사·특정 사용자 Chromium 절대경로는 최종 파일에서 제거됐으며, ephemeral localhost 시험용 bundle server만 사용한다. 제품 route/dependency/CI gate 변경은 없다. temporary RED probe는 제거했고 실패는 regression의 의도된 RED로 보존한다. Manager의 최종 source/test diff-check는 PASS이며 독립 QA의 최종4case Browser/전체 결과와 root 최종 build/type/lint 확인 전 전체 완료로 기록하지 않는다.
+
+---
+
+## 2026-11-08 — 독립 QA의 Provider 재활성화 경계 보완
+
+**Manager: LS02 재작업 필요.** QA는 `SceneStatusProvider`가 disabled 동안 기존 state를 유지하므로 같은 ID로 재활성화할 때 새 effect 전에 이전 `rows/canRetry`를 다시 표시할 수 있음을 지적했다. Manager도 코드 수명주기로 확인했다. 새 목록이 아직 응답하지 않은 A→B→A 역시 같은 위험이다. controller의 generation 검사는 단일 instance 안의 늦은 응답을 막지만 React가 이전 snapshot을 재사용하는 이 경계는 막지 못한다. 이전 ACCEPT_FOR_QA는 시험 진입 판정이며 이 발견으로 최종 수용을 보류한다.
+
+수리는 outer provider에서 deduped IDs+enabled를 key로 inner provider를 remount하여 snapshot/ref/effect의 수명을 scope 전환과 일치시키는 최소 변경이다. 실제 React/Chromium에서 false→true 같은 ID 및 A→B→A, B/복귀 응답을 지연한 상태의 이전 Retry 재노출0을 회귀로 고정한다. 시험용 bundling/harness는 가능하나 제품 route나 새 dependency는 추가하지 않는다. root/QA/Developer와 조율했고 재검증 전 완료로 표시하지 않는다.
+
+---
+
+## 2026-11-08 — L-05 재작업 수용 및 독립 QA 진입
+
+**Manager: ACCEPT_FOR_QA, 남은 코드 재작업0건.** enabled DXF에만 조회 오류/복구 UI를 표시하고, controller와 UI가 `safeBuildErrorCode`로 `__proto__`/`constructor`/원시 진단을 UNKNOWN에 정규화하는 수정 및 회귀를 확인했다. Browser 시험은 업로드 Version row로 상태·Current·복구/재시도 동작을 한정하고 실제 재시도 정책에 맞는 `SCENE_STORAGE_FAILED` fixture를 사용한다. 앞선 핵심 controller/서버 projection·same-schema0.61.1 및 current-version fixture 검토도 수용한다. `git diff --check` PASS.
+
+Developer는 최종 focused18/18·typecheck·scopedlint 성공을 보고했다. 이는 Developer 실행이며 Manager 독립 실행 결과로 표현하지 않는다. 독립 QA 및 root 최종 build/전체 unit/Chromium 결과 대기이며, mocked Scene status/retry API의 실제 React/Browser 시험은 생산 Worker/운영 인증 journey의 새 증거가 아니다. QA가 실패를 발견하면 근거를 남겨 수리하고, 최종 수용/CI 시작은 별도 기록한다.
+
+---
+
+## 2026-11-08 — L-05 구현 1차 Manager 검토
+
+**판정: 좁은 재작업3건 후 독립 QA.** 요청 세대·순차 batch·pending ID만 polling·성공 시 scoped merge/누락 제거·연속3실패 상한 및 displayed state 기준 안전 code projection은 설계와 일치한다. root의 current synthetic image fixture7개가 package0.61.1을 따르도록 바뀐 점도 수용한다. exact upgrade chain에 호환 edge만 추가했고 기존0.61.0 migration/postcondition failure·원본/manifest/복구·인가 gate는 보존했다.
+
+재작업은 (1) DXF 상태 조회 실패가 DWG의 `해당 없음` 뒤에 오류/복구 버튼을 표시하지 않도록 enabled DXF에 한정, (2) 알 수 없는 errorCode가 `__proto__`/`constructor`일 때에도 prototype 값이 아닌 UNKNOWN 안전 문구로 표시되도록 정규화, (3) 새 browser 시험의 상태/Current/버튼을 업로드한 Version row에 한정하여 기존 Greenfield 데이터가 있는 전체 suite에서 strict locator 충돌을 방지하는 것이다. Developer 보고 focused17시험/typecheck/scopedlint 성공은 보고 증거이며 Manager 독립 실행은 아니다. Browser 시험과 최종 QA/CI는 아직 미실행·미수용이다. 실제 실패/재검증은 TestReport/FailureLedger 정본을 따른다.
+
+---
+
+## 2026-11-08 — L-05 목록 Scene 상태 누락·수명주기 보완 (구현 전 설계)
+
+**Manager: GO-DEV, 구현/시험 결과는 아직 NOT RUN.** 기준 Main `1f64808`, 소스/운영0.61.0이다. #225는 제한 LINE subset의 단일 CPU Worker와 승인된 운영 파일럿을 제공했고 최신 [TestReport](TestReport.md)의 U-225-G3-20261108을 재사용한다. 아래 2026-11-04의 Worker 미구현/flags OFF 및 P1-B 금지는 당시 상태다. #218의 잔여 AC를 확인하는 이번 Unit은 기존 최소 목록 상태의 실제 결함을 수정한다. Worker·Job·Scene DTO·Viewer를 새로 구현하거나 #268 BLOCK/INSERT 범위를 가져오지 않는다. 운영 자원·flags·DB·원본·이미지/registry/tag는 변경하지 않는다.
+
+### L-01~08 현행 근거와 이번 범위
+
+| AC | 확인한 근거/현행 판단 | 이번 조치 |
+| --- | --- | --- |
+| L-01~04 | #225 B1/B2/B3/P1-D의 atomic enqueue, 제한 CPU LINE 변환, 멱등/중단·복구, signed G7/권한 재검사/Scene CAS를 구현·검증했다. 실제 운영 신규 인증 업로드/READY는 G3에서 NOT RUN이며 기존 signed candidate 근거와 구별한다. | 기존 근거 재사용; Worker 재구현 없음 |
+| L-05 | 홈/Location에 `SceneStatusProvider`/`SceneBuildStatusCell`, 서버 verified batch 및 안전 Retry가 존재한다. 그러나 client `slice(0,100)`은 Location 전체 version 목록의101번째 이후 DXF를 요청하지 않는다. BLOCKED/RETRY_WAIT 원인은 server/client가 FAILED에만 노출한다. 같은 effect에서 visibility 요청을 교체할 때 `alive`만 검사하여 이미 완료된 늦은 JSON 응답의 stale 반영을 막지 못한다. 초기/terminal 조회 실패도 catch에서 무한 polling한다. | 이 Unit의 실제 수정 대상. 아래 LS01~07로 추적 |
+| L-06 | 기존 signed CPU LINE→fresh authenticated Viewer/reload, 원본 GET0 및 실제 geometry 복원을 재사용한다. `INDEX_ABSENT`에 따른 `도면 일부 표시 완료`는 정밀 source mapping 미지원의 의도된 경고이며 저장 실패가 아니다. Layer/Text/지원 subset 확대와 실도면 전체 수용은 별도 증거가 필요하다. | Viewer/메뉴/Canvas 변경 없음; 상태 수리를 전체 L-06 PASS로 확대하지 않음 |
+| L-07 | #225 REGISTRY/G2/G3의 exact3digest, 실제 업그레이드/backup/독립 복원/제한 파일럿 근거를 재사용한다. 수치 SLA는 없고 신규 운영 Scene journey는 미실행이다. | 배포·복구 재실행 없음 |
+| L-08 | 기존 실패/미검증 경계 보존, 이번 변경 관련 테스트와 독립 QA, 문서·리뷰/충돌 확인 및 정확 PR HEAD CI 시작 필요. | CI 시작까지만; 완료 감시·병합·#218 종료 없음 |
+
+### 구현 계약
+
+1. `src/features/cad-list/scene-build-status.tsx`의 표시 대상 DXF ID를 중복 제거하되 버리지 않는다. 100개 이하의 순차 batch로 현재 목록 전체를 조회한다. 서버 `SCENE_BATCH_LIMIT=100`과 권한별 누락 계약은 유지하며 동시 요청/무제한 Promise fan-out을 도입하지 않는다. API limit을 늘리거나 Location/검색 결과를 잘라 해결하지 않는다.
+2. Provider의 목록·enabled·reload 및 visibility 전환마다 현재 요청 세대를 식별한다. Abort 이후에도 완료될 수 있는 fetch/JSON의 결과·오류·finally는 현재 세대에서만 반영한다. 숨김/unmount/disabled/목록 변경 시 timer와 요청을 종료한다. 목록 전환/권한 오류의 오래된 row와 `canRetry`를 재사용하지 않는다. 새 조회 또는 갱신 실패 동안 stale 승인으로 Retry 버튼을 활성화하지 않는다.
+3. 최초 조회·명시 `상태 다시 확인`·탭 복귀는 현재 표시 목록 전체를 확인하고, 자동 polling은 visible/enabled이며 마지막 유효 결과의 pending ID만 요청한다. 자동 응답은 요청한 ID만 교체하고 그중 서버가 누락한 ID는 제거하며, 나머지 terminal row를 보존한다. 응답의 미요청 key는 반영하지 않는다. 다음 pending 집합은 합쳐진 유효 결과에서 계산하고 모두 terminal이면 중지한다. 이는 매 tick마다 terminal READY의 전체 Blob을 재검증하는 비용을 피하면서 권한 누락을 재사용하지 않는 계약이다. 최초 또는 terminal-only 조회 실패는 자동 무한 재요청하지 않는다. pending 조회 중 transport 실패는 연속 최대3회 실패 후 중지하고 수동 확인 경로를 제공한다. 401/403은 즉시 자동 조회 중지/기존 권한 row 제거. 조회 오류를 Job FAILED 또는 권한 없음으로 단정하지 않는다. 서버가 정상 응답에서 누락한 비인가 ID만 기존 권한 확인 안내를 따른다.
+4. `src/server/scene/scene-build-status-batch.ts`는 표시 상태가 FAILED/BLOCKED/RETRY_WAIT인 경우에만 allowlisted safe errorCode를 제공한다. verified READY·REBUILD_REQUIRED·UNAVAILABLE에 과거 실패 코드를 표시하지 않는다. Client는 알려진 모든 code의 안전한 한국어 안내와 UNKNOWN 일반 안내를 사용하며 raw 예외·credential·locator·actor/source/job ID를 화면에 출력하지 않는다. 재시도 가능 조건/시도 budget/G7 권한·Origin·CSRF/CAS는 기존 서버 계약을 유지한다.
+5. 변경 seam은 작은 client 조회 controller/helper로 추출할 수 있다. UI에서 DB/파일 I/O·비즈니스 인가 판단을 추가하지 않는다. 역할별 표시는 기존 signed Reader 조회/Editor 재시도이며 readonly/권한 회수는 서버가 최종 판정한다. 버튼은 설명적 이름·키보드 focus·busy/disabled 상태를 제공하고 상태는 text로 구별한다. UI/UX skill의 focused `error feedback retry loading` 지침(접근 가능한 busy 상태, 명확한 복구 경로)을 적용한다.
+
+**Viewer 확장 계약(ADR-127/FR-MENU-EXT):** 변경 위치는 홈/Location 목록의 기존 `Scene 생성` 열과 상태 조회 복구 버튼이다. Viewer `도면/보기/작업` 실행 항목·Drawer·Canvas·Renderer 수명주기는 변경하지 않으므로 새 Viewer 메뉴는 불필요하다. G7 비활성/DWG 조회 제외, Reader/Editor 구분은 유지한다. 기존 색상/테이블 구조를 보존한다.
+
+### Acceptance Criteria / Test Cases (구현 전에 고정)
+
+| TC | 수용 기준 및 검사 위치 |
+| --- | --- |
+| LS01 | 실제 Provider 또는 Provider가 사용하는 controller에서101/205 unique DXF가 모두 요청·표시되고 각 batch<=100·동시<=1, 중복 ID는 한번만 요청. API의 초과/중복 거절과 비인가 ID 누락 회귀 유지. 기존 cutoff가 이 경계에서 RED가 되는 증거를 기록. |
+| LS02 | deferred fetch/JSON에서 숨김→복귀 또는 목록 A→B/reload 후 늦은 A 성공·실패가 B row/error/loading/timer를 덮지 않음. unmount/disabled 때 후속 request/timer0. 옛 `canRetry`가 새 목록/권한 실패에 남지 않음. |
+| LS03 | fake clock/visibility로 pending ID만5초 polling(READY+QUEUED의 다음 요청은 QUEUED ID만 포함), terminal 결과 보존·서버 누락 pending 제거, terminal/hidden/disabled0, 초기 오류 자동반복0, pending transport 연속3실패 후 중지 및 수동 확인 회복. 401/403 즉시 중지·기존 row 제거. 잘못된 응답은 안전한 조회 실패로 처리. |
+| LS04 | batch/domain unit 및 UI에서 BLOCKED auth/source 오류·RETRY_WAIT 안전 사유, UNKNOWN fallback 확인. verified READY 우선·historical 실패 사유 미표시·원시 진단 미노출. 기존 Reader/Editor/Site/flag/시도상한·pointer Retry 회귀 PASS. |
+| LS05 | 지원 Chromium에서 실제 홈/Location의 상태 표기·키보드 수동 확인/Retry 복구·목록 이동 및 메모 검색/Current 열 보존. API를 route mock한 UI 증거는 실제 Worker 실행/G7 인가 증거와 구별; 필요한 기존 signed batch/retry 서버 unit을 함께 실행. |
+| LS06 | typecheck/lint/build·전체 unit·관련 E2E, Developer 보고 검토→독립 QA→Manager 판정. 실행 실패·중단은 FailureLedger에 원인/수리/재검증을 연결하고 미실행을 PASS로 쓰지 않음. |
+| LS07 | root의 최신 base·미해결 review·충돌/secret/산출물 diff 검사, Conventional commit/push/PR 및 정확 HEAD CI 시작 확인. 사용자 범위상 CI 완료 감시·병합 없음. #218 OPEN, #268 별도, 운영0.61.0/flags ON 현황 보존. |
+
+기존 계약의 호환 버그 수정이므로 소스 후보는 **0.61.1 PATCH**로 결정했다. Manager는 root의 package/lock, 기존0.61.0 declaration을 보존한 같은 schema/baseline/checksum/data/runtime의 forward COMPATIBLE edge, drift5종·downgrade 거부 시험 및 일반 upgrade/WAL smoke의 대상 버전·정확 schema/history 검사를 검토하여 수용했다. 기존0.61.0 출고/OR58/G2 증거와 release HOLD는 변경하지 않는다. 이는 코드 검토 판정이며 실제 배포 또는 새 smoke 실행 성공을 의미하지 않는다. 상세 결과 정본은 [TestReport](TestReport.md), 실패는 [FailureLedger](FailureLedger.md), 공통 요구/검증 추적은 [Requirements](Requirements.md)/[TestPlan](TestPlan.md)다.
+
+---
+
 ## 현행 정책 우선 — #218 2D·단일 Worker 단계별 GO (2026-11-04)
 
 **[Issue218LeanPolicy.md](Issue218LeanPolicy.md)**가 현재 AC/GO 정본이다. 아래 날짜별 A2-F/S/R09/R10, 직접 Node NO-GO 및 PR #221/#222의 실패·시험 명세는 당시 구현·검증 이력이며 정책의 "P1-B 코딩 금지" 문구는 **이제 GO-DEV를 차단하지 않는다**. DXF→DTO/validator/readback을 server CPU/non-WebGL로 분리해 **P1-B 단일 Worker 구현 착수 허용**, 단 실제 Worker 저장·G7/CAS·브라우저 복원/자원 격리 통과 전 GO-PILOT/READY 선언 금지. 완전 Entity 매핑/서버 strict Viewer WebGL/다중 Worker/3종 현장 DXF는 초기 코드 착수 Gate에서 제외한다. 기존 필수 CI는 YAML 수정 전까지 유지하며, 역사적 실패·PARTIAL을 소급 PASS로 바꾸지 않는다. Issue #218은 신규 L-01~08 구현 전 OPEN 유지.

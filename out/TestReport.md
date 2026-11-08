@@ -1,3 +1,61 @@
+## U-218-CI705-20261108 — PR #272 Docker layer audit role-match proof
+
+**QA 판정: PASS_WITH_LIMITS.** [PR CI #705 / run 42469008037](https://github.com/planner77/layoutManager/actions/runs/42469008037), exact source HEAD `aff7263b811a0c365cea27b61855e8c0cd5e2765`: Docker job `128695196064` failed on `Final better-sqlite3 file paths or SHA256 changed`; Required Verify `128698837254` failed by dependency. All other applicable jobs succeeded; A2 scoped was SKIPPED, not PASS. CI #705 remains a historical failure; any new-head hosted CI result is a separate pending gate.
+
+**원인 및 수용 근거:** Hosted log baseline command selected the final default `cpu-worker` stage; candidate was the web app runtime. Root's independently inspected same-source/same-dependency Docker proof at `/tmp/layoutmanager-218-ci705-proof/inventory-result.json` reproduces this role mismatch: default image `cpu-worker`, 18 layers, 1,355,981,973 bytes, 78 regular package files; runtime baseline/candidate are `app`, 9 layers, 390,540,548 bytes, 81 files. The default comparison fails with exactly three candidate-only regular paths—`build/Release/obj.target/better_sqlite3.node`, `build/Release/sqlite3.a`, and `build/Release/test_extension.node`—and no shared-file SHA changes. `/tmp/layoutmanager-218-ci705-proof/default-hardlinks.json` confirms those three entries are hardlinks in default worker layer 8. `inventory()` counts only regular files (`item.isfile()`), so it omits worker TAR hardlinks but counts the standalone runtime's materialized regular files; this exactly explains the local 78-versus-81 discrepancy. The explicit-runtime matched baseline/candidate comparison passes with 81 identical path/SHA entries including `.node`, 0 duplicated package paths, identical image ID, and identical size. `matched-audit.md` confirms the old auditor passes this already-deduplicated baseline with size delta informational. Root additionally reports a `SELECT 1` native smoke result `SQLITE_NATIVE_OK`. This confirms role mismatch and its hardlink representation account for the reproduced failure. Hosted raw per-path artifact is unavailable, so local same-source reproduction grounds the cause; cold npm/GHA cache is unnecessary to explain it.
+
+**실행 역할과 범위:** Manager `gpt-6-astra`는 AC/구현 검토를 조정했고 Developer `gpt-6-sol`이 workflow/audit/회귀 테스트를 변경했으며 QA `gpt-6-luna`가 독립 소스 및 focused 테스트를 수행했다. Root가 실제 same-dependency Docker 재현·app build를 수행했다. Developer 최초 focused 실행은 13 tests 중 4 FAIL로 RED였고, target/role 검사 및 native SHA regression 테스트를 마친 동결본은 **14 total, 13 passed, 1 skipped** (Python <3.14의 Zstandard TAR 미지원)이다. QA의 `py_compile`, focused run, `git diff --check` 모두 PASS. 회귀 케이스는 target 파싱, role 거부, path drift, 같은 native 경로의 SHA drift, native 존재, duplicate 및 size gate를 확인한다. Root reports app build exit0, typecheck exit0, lint exit0/errors0 with 12 warnings; scope 7/7, release HOLD 6/6, RR2 cleanup 6/6 PASS. Source version is 0.61.1. Temporary proof scripts/artifacts are under `/tmp`, not source changes.
+
+Local source and role-matched Docker verification are **PASS**. The corrected hosted CI for a new HEAD remains **NOT VERIFIED**; CI #705's original failure stays historical. Root reports final review state: submissions 0, threads 0, mergeable true, Draft, behind 0, merge-tree 0. No later RR2 journey PASS was observed. No release/publish/operating image or data action occurred. This entry records local results without changing hosted history.
+
+---
+
+## U-218-CI704-20261108 — PR #272 RR2 OCI 계획 단계 실패/수리 검증 경계
+
+**관측:** [CI #704 run42467199034](https://github.com/planner77/layoutManager/actions/runs/42467199034) exact HEAD `bfc38049ba51198fc2ae8789203a92458880fba6`에서 Docker job `128689404614`이 `RR2_UPGRADE_PLAN_INVALID` (stage=upgrade)로 실패했다. 전체 Required Verify FAIL. Scope, Static/Unit/Build, G7 signed-runtime/Greenfield, Chromium 일반 두 shards PASS, A2 scoped SKIP. 기존 0.60 GHCR pair 검증과 두 disposable timeout·cleanup probe 통과, 실제 upgrade 실행·신규 Worker·Browser/restore 후속은 해당 실패로 NOT VERIFIED.
+
+**근거/수정:** `greenfield-upgrade-registry.ts`에 `0.60.0→0.61.0 MIGRATION` 및 `0.61.0→0.61.1 COMPATIBLE`이 등록되고 `g7-greenfield-upgrade.test.ts`에서 동일 두 단계가 검증된다. RR2 journey의 구 `['MIGRATION']` 조건만 오래돼 정확히 등록된 계획을 거부했다. Source의 `require_upgrade_plan`은 현재 릴리스 버전·기존 0.60.0 버전과 승인-required decision 및 정확 두 단계만 수용하도록 수정했다. 선행 Scope에서 이 동일 함수를 직접 테스트하는 Python 회귀를 추가하고 7종 잘못된 plan 변형을 거부하게 했다. 실제 OCI identity, Source SHA, 기존 READY/DB, 승인/CAS, mutable/immutable 이미지·복구 계약은 변경하지 않았다.
+
+**검증 상태:** 실패한 기존 CI 704를 성공으로 승격하지 않는다. 정적 source/registry/test 계약 비교는 수행했지만 수정 소스의 실제 Python unit/OCI/Browser full execution은 새 exact HEAD CI 전 **NOT VERIFIED**이며, 운영 전환·GHCR·Tag·승인 상태 변경은 없음. PR CI를 시작한 뒤 완료는 모니터링하지 않는다.
+
+---
+
+## U-218-CI703-20261108 — PR #272 Scope regression version fixture 보완
+
+[CI #703/run42466803358](https://github.com/planner77/layoutManager/actions/runs/42466803358) exact HEAD `33557f568456a9dbd038325ce823203037ab35e4`는 Scope Check Issue에서 `test_rp_execution_fix.py` 19개 중 1개가 `RR2_PROBE_INPUT_RECEIPT_INVALID`로 ERROR를 발생시켜 실패했다. 과거 `0.61.0`으로 고정된 synthetic RR1 receipt와 OCI version label이 새 검증 함수가 강제하는 현재 source `0.61.1` 버전 계약과 충돌했다. Scope 초기 PR classifier7 / release HOLD6 및 RP7/CP12/Registry15 성공 결과는 Scope 전체 PASS가 아니다. Docker, Greenfield, G7 runtime, Static/Unit/Build, Chromium Job들은 Scope 의존성으로 SKIP이었다.
+
+**수정 코드:** `test_rp_execution_fix.py`의 단 한 양성 Fixture에 `candidate_version = PROBE.PROOF.current_candidate_version()`를 도입해 receipt와 OCI label을 동일 현재 source 버전에 묶었다. revision mismatch/descriptor mismatch 음성 assertions, 별도 RR2 receipt/label mismatch negative regression, 운영 프로덕션 보호 및 required CI gates는 그대로 두었다. 새 source의 정확 HEAD 검증은 **NOT VERIFIED**이며 새 PR CI는 시작 이후 완료 감시하지 않는다. 로컬 전체 테스트는 이 도구 환경에서 NOT RUN, 이전 CI 실패를 성공으로 바꾸지 않는다.
+
+---
+
+## U-218-CI702-20261108 — PR #272 hosted 실패 및 보완 후 재검증 경계
+
+**실패 근거:** [PR CI #702/run42462441494](https://github.com/planner77/layoutManager/actions/runs/42462441494), exact HEAD `2ffe33d37e55cbbaedc9c59ca8c93c8f460549eb`: Docker RR2 FAIL(`RR2_PROBE_INPUT_RECEIPT_INVALID`; 0.61.0 고정 vs source0.61.1), Greenfield FAIL(24 PASS/6 FAIL; Scene 없는 신규 L05 Version을 기존 `items[0]` E2E가 선택), Required Verify FAIL. Static/Unit/Build·G7 signed-runtime·일반 Chromium 두 shards는 원래 HEAD에서 성공, A2 scoped는 SKIP. Playwright artifact의 실패 snapshot에서 `l05-status.dxf`·`scene:UNAVAILABLE`을 확인했다.
+
+**보완:** RR2 신규 source package 버전을 정규 SemVer로 확인해 receipt/OCI label/digest/revision/role 정확 대조를 유지했다. 임의·구버전 release 선언, 잘못된 receipt 버전 및 OCI version label을 거부하는 focused Python unit을 추가했고 recovery/upgrade snapshot version도 현재 source를 따르도록 했다. 기존 구 0.60.0 실제 이미지의 provenance/fingerprint 검사는 보존한다. Greenfield 외곽선/구역 테스트의 목록 선두 선택을 정확한 `synthetic-scene.dxf`·실제 Scene API READY 선행 확인으로 대체했다. CI 필수 gate·runtime Worker 구현·L05 mocked UI 동작은 변경하지 않았다.
+
+**시험 상태:** #702의 성공 범위는 이전 HEAD 증거로만 기록한다. 이번 수정된 source에 대한 로컬 full Python/Node/Docker/Chromium 실행은 현재 연결 환경의 전체 repository 실행 worktree 부재로 **NOT RUN**이며, 새로운 exact HEAD hosted CI 역시 완료 확인 전 **NOT VERIFIED**다. 시험 누락·미완료 단계를 PASS로 표현하지 않는다. 이전 실패 원장은 불변 보존. 운영0.61.0의 Scene flags ON/1 Worker와 data/image/tag는 변경하지 않는다.
+
+---
+
+## U-218-L05-20261108 — 목록 Scene 상태 조회와 복구 UI 독립 QA
+
+**독립 QA 판정: PASS_WITH_LIMITS.** Manager `gpt-6-astra`의 L-05 재작업 수용 뒤 QA `gpt-6-luna`가 controller/server/release 회귀와 지원 Chromium UI를 확인했다. Developer `gpt-6-sol`이 구현했고 Root가 통합·최종 Build/Type Check를 수행했다. 이전 Unit 이력과 미실행 경계는 변경하지 않는다. 요구·AC 정본은 [Issue218 LS01–07](Issue218.md), 요구/추적은 [Requirements](Requirements.md)·[TestPlan](TestPlan.md)이다.
+
+| 검증 | 실제 결과 |
+| --- | --- |
+| Controller, batch projection, display/retry/service, release contract, populated upgrade recovery | QA 명령 `npx vitest run tests/unit/scene-status-controller.test.ts tests/unit/scene-build-status-batch.test.ts tests/unit/scene-build-display.test.ts tests/unit/scene-build-retry.test.ts tests/unit/scene-build-retry-service.test.ts tests/unit/issue218-release-contract.test.ts tests/integration/g7-scene-worker-upgrade-recovery.test.ts`: **7 files / 33 tests PASS**, 7.80s. 205 unique ID 직렬 100개 batch, late success/error, hidden/dispose, pending-only polling, 누락 제거, 실패 budget/수동 회복, 403 row clear, safe diagnostics, retry/release path를 확인했다. 401 clearing is covered by the shared status-code branch, not by a separate focused assertion. |
+| Greenfield UI / browser lifecycle | QA 독립 명령 `env -u G7_GREENFIELD_E2E_ROOT G7_GREENFIELD_E2E_PORT=3335 PLAYWRIGHT_CHROMIUM_EXECUTABLE=/home/planner/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome npx playwright test --config=playwright.g7-greenfield.config.ts --grep '#109 initial|L05 actual|L05 React'`: **4/4 PASS**, 14.8s. #109 first-install setup, 실제 synthetic home/Location 화면에서 상태 조회 오류→키보드 수동 확인→Scene 재시도→완료와 Current/메모 검색 유지, 그리고 React committed false→true same IDs 및 A→B→A stale Retry 회귀를 포함한다. Developer가 stale row text, Retry presence, enabled Retry를 layout commit에서 함께 관찰하도록 보강한 최종 React suite도 QA가 별도 실행해 **2/2 PASS**, 3.1s를 확인했다. |
+| Stale Retry regression | Developer `gpt-6-sol`의 test-only esbuild override로 옛 unkeyed Provider를 재현한 두 committed-layout probe는 **2/2 RED**였고, true:A commit에 enabled Retry 1개가 관측됐다(`/tmp/layoutmanager-218-old-provider-red-final.log`). QA가 보강된 최종 keyed-source Greenfield React suite를 **2/2 GREEN**으로 실행했다. Deferred B/새 A 결과는 이전 scope를 복원하지 않았다. |
+| 전체 unit/build 근거 | Root 실행 전체 suite **178 files / 1,120 tests PASS, 458.88s**는 keyed Provider UI-only delta 전 source 기준이다. keyed delta에는 Root가 마지막으로 **6 files / 31 tests PASS, 1.39s**, final Build 및 Type Check exit0를 보고했다. Final stable lint도 exit0, 0 errors, 12 pre-existing warnings로 통과했다. Full suite 결과를 final keyed source 전체 검증으로 확대하지 않는다. |
+| 문서/범위 | QA `git diff --check` PASS. schema/worker/retry authorization 계약을 변경한 증거는 없으며, release contract 테스트에서 0.61.0→0.61.1 compatible edge와 schema drift/downgrade 거부를 확인했다. |
+
+**제한 및 미완료 gate:** 브라우저 상태 조회와 retry 응답은 route-mocked synthetic data다. 브라우저 시험은 actual React/목록 DOM 및 authenticated synthetic upload 경로를 확인하지만 운영 CPU Worker의 새 Job→READY나 Browser를 통한 실제 G7 batch/retry service 실행을 증명하지 않는다. 기존 서버/retry/Worker 증거는 해당 unit/integration 시험으로만 기록한다. 390px Location 화면은 기존 표의 가로 스크롤을 유지하며 상태와 Current를 확인할 수 있었다. 운영 0.61.0/flags ON, DB·CAD·Worker, schema, registry/tag를 QA가 변경하지 않았다. PR/정확 HEAD CI는 아직 시작되지 않았고 CI는 **NOT VERIFIED**다. LS07 원격/PR 및 CI 시작 결과는 Root 통합 기록에 추가한다. 이 QA는 PR 게시·CI 시작·모니터링·병합을 수행하지 않았다.
+
+**Root 통합 전 검사:** 최종 source Build/Type Check exit0, 안정된 파일 집합의 ESLint exit0/오류0·기존 warning12다. G7 업그레이드·복구 집중3files/24tests PASS(34.48s), PR scope7/release HOLD6/Python G7 upgrade11 PASS도 확인했다. 원격 main `1f64808` 기반/behind0, 현재 open PR0으로 기존 미해결 review 대상이 없고 local 충돌0이다. 원래 작업 폴더의 dirty Compose/next-env2개를 보존했으며 새 worktree의 Secret/runtime 산출물 제외 검사를 통과했다. 정상 commit/push/새 PR와 정확 HEAD CI 시작은 이어서 수행하며 새 hosted CI 성공은 아직 확인하지 않았다.
+
+---
+
 ## U-225-G3-20261108 — 승인된 제한 파일럿 운영 전환 독립 QA (2026-11-08)
 
 **판정: 독립 QA `PASS_WITH_LIMITS`; Manager `ACCEPT_LIMITED_PILOT`.** 사용자 명시 GO는 PR270/Main `365ebe578cb82e27f7eaf2bad9c6a138377a9f04`의 짧은 maintenance/fresh backup, exact 0.61.0 transition, Scene flags ON, 단일 CPU Worker, 데이터 보존/복구 계획에 한정된다. NO_NUMERIC_SLA를 유지한다. 운영 작업은 Root만 수행했고 QA는 receipt, source, archive 및 disposable fingerprint를 읽기 전용으로 검토했다.

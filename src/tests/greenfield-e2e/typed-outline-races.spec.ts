@@ -1,4 +1,5 @@
 import { expect, test, type APIRequestContext, type Page, type Route } from '@playwright/test';
+import {readyGreenfieldSceneVersion} from './ready-scene-fixture';
 import { createRequire } from 'node:module';
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
@@ -113,7 +114,7 @@ test('R3 typed create: an older in-flight list response cannot erase a just-crea
   try{
     const session=await (await page.request.get('/api/g7-runtime/auth/session')).json();
     const headers={origin:baseURL!,'x-csrf-token':session.csrfToken};
-    const files=await (await page.request.get('/api/cad-files')).json();versionId=files.items[0].id;
+    versionId=await readyGreenfieldSceneVersion(page.request);
     const typeName='R3 race type '+randomUUID().slice(0,8);
     const typeResponse=await page.request.post('/api/outline-types',{headers,data:{name:typeName,sortOrder:0}});
     expect(typeResponse.status()).toBe(201);const type=(await typeResponse.json()).item;
@@ -187,7 +188,7 @@ test('R3 delayed legacy PATCH response from a prior actor cannot replace the cur
   try{
     const adminSession=await (await page.request.get('/api/g7-runtime/auth/session')).json();
     const adminHeaders={origin:baseURL!,'x-csrf-token':adminSession.csrfToken};
-    const files=await (await page.request.get('/api/cad-files')).json();versionId=files.items[0].id;
+    versionId=await readyGreenfieldSceneVersion(page.request);
     const siteDb=fixtureDb();let siteId:string;
     try{
       siteId=(siteDb.prepare('SELECT b.site_id AS id FROM CadFileVersion v JOIN CadLocation l ON l.id=v.location_id JOIN Building b ON b.id=l.building_id WHERE v.id=?').get(versionId) as {id:string}).id;

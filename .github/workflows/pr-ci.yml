@@ -456,7 +456,7 @@ jobs:
               position = anchors[0].end()
               baseline.write_bytes(source[:position] + dependency + source[position:])
           PY
-          docker buildx build --load --platform linux/amd64 -f "$RUNNER_TEMP/issue28-baseline.Dockerfile" -t cad-layout-viewer:baseline .
+          docker buildx build --load --platform linux/amd64 --target runtime -f "$RUNNER_TEMP/issue28-baseline.Dockerfile" -t cad-layout-viewer:baseline .
           docker buildx build --load --platform linux/amd64 --target migrator -f "$RUNNER_TEMP/issue28-baseline.Dockerfile" -t cad-layout-viewer:baseline-migrate .
       # Buildx action supplies authenticated GHA cache parameters; separate target scopes
       # prevent phase1/runtime/migrator cache overwrites. Cache faults are non-fatal.
