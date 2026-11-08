@@ -59,10 +59,11 @@ jobs:
         run: |
           python3 -m py_compile src/tests/oci/release_finalizer_integrate.py src/tests/oci/test_release_finalizer_integrate.py
           python3 src/tests/oci/test_release_finalizer_integrate.py
-      - name: Check RF-03 exact versioned three-role release plan without writes
+      - name: Check RF-03 exact release plan and independent Candidate/Promotion handoff
         run: |
-          python3 -m py_compile src/tests/oci/rf03_exact_release.py src/tests/oci/test_rf03_exact_release.py
+          python3 -m py_compile src/tests/oci/rf03_exact_release.py src/tests/oci/test_rf03_exact_release.py src/tests/oci/rf03_release_handoff.py src/tests/oci/test_rf03_release_handoff.py
           python3 src/tests/oci/test_rf03_exact_release.py
+          python3 src/tests/oci/test_rf03_release_handoff.py
       - name: Check Issue #225 proof contracts without external writes
         run: |
           python3 -m py_compile src/tests/oci/rp-provenance.py src/tests/oci/test_rp_provenance.py src/tests/oci/cp-control-proof.py src/tests/oci/test_cp_control_proof.py src/tests/oci/registry_promotion.py src/tests/oci/test_registry_promotion.py

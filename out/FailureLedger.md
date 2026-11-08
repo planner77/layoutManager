@@ -1,3 +1,11 @@
+## #273 / PR #277 — CI #716 성공·신규 handoff evidence 검증 전 (2026-11-09)
+
+- **확인된 CI 성공:** [PR CI #716 / 42516241424](https://github.com/planner77/layoutManager/actions/runs/42516241424), PR #277 기존 HEAD `d068d637c90c3b1b995ec6e2595760531503d5e3`, 8 applicable SUCCESS, 1 A2 scoped SKIP. 기존 Draft 유지, unresolved review0, Main behind0. 이 성공을 추가된 RF03 handoff 소스에 소급 적용하지 않는다.
+- **새 실제 CI 실패 없음(아직 결과 미확인):** `RF03_RELEASE_HANDOFF_V1`의 Candidate/Promotion run/job/approval 증거 독립성, OCI roles/manifest/config/platform/digest, baseline/rollback 구조를 확인하는 순수 Python 모듈과 음성 테스트 추가. `approvalEvidenceSha256`, `signatureBundleSha256` 등은 사용자 제공 값의 형식일 뿐 실제 GitHub Owner 승인·암호학적 검증이나 registry receipt가 아니다. 그래서 `BLOCKED_LIVE_OWNER_CRYPTO_REGISTRY_PROOF_REQUIRED` 고정, 성공 출고로 기록 불가.
+- **남은 blocker:** 기존 0.61.0 pinned writer, CI source archive/runtime/upgrade 버전 정합, 0.61.1+ two actual independent protected Owner approval/OIDC Sigstore/3 role GHCR digest proof/partial/unknown recovery, 영속 nonce·RF04 all AC closure. #229 Main/Tag HOLD, 기존 immutable image/aliases/digest/운영0.61.0 Worker/DB/CAD/Volume/.env·복구점 불변. 변경 HEAD CI·리뷰 해결 전 PR 병합 금지.
+
+---
+
 ## #273 — PR #276 성공 직후 조기 이슈 종료, RF-03 승인 차단 (2026-11-09)
 
 - **CI 실패가 아니라 이슈 상태 이상:** PR #276 exact HEAD `9682291b5c46b64992b8504ef914d8fc7b471e3c` [PR CI 42513847448](https://github.com/planner77/layoutManager/actions/runs/42513847448) 성공; Squash [Main bd03e6fb](https://github.com/planner77/layoutManager/commit/bd03e6fb601c02e5d2f74dd2d97f0c850b3b695f); [Main CI 42515467033](https://github.com/planner77/layoutManager/actions/runs/42515467033) exact push attempt1 HOLD Job SUCCESS. GitHub issue timeline에 Main 병합 직후 `closed` by planner77 `2026-11-08T19:31:26Z`, state_reason `completed`가 기록됐으나 release/AC 증거 없이 완료로 판단할 수 없음. Root가 `state=open`, reason `reopened`로 복구, readback OPEN. Closure 이벤트의 직접 원인(연관 PR 자동 종료 설정인지 별도 조작인지)은 현 API 기록만으로 미확정.

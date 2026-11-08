@@ -1,3 +1,11 @@
+## U-273-RF03-HANDOFF — PR #277 CI #716 후속 코드 검증 경계 (2026-11-09)
+
+- [PR CI #716 / run42516241424](https://github.com/planner77/layoutManager/actions/runs/42516241424): exact HEAD `d068d637c90c3b1b995ec6e2595760531503d5e3`, attempt1 completed SUCCESS, 적용 8 Jobs SUCCESS, A2 scope SKIPPED. Review thread0·Main behind0·Draft. 이는 RF-03 read-only source- and version-bound PLAN만 검증하며 실제 Candidate/Promotion을 검증한 것이 아니다.
+- 추가 구현: `rf03_release_handoff.py`의 generic candidate/promote structural handoff와 `test_rf03_release_handoff.py`의 packet SHA/JSON duplicate, owner/source/role/tag/OCI digest/media/size/amd64, baseline, approval/run/job 증거 재사용, Main CI drift 음성 회귀. `.github/workflows/pr-ci.yml` 필수 Scope에 연결. 이 변경 후 **아직 신규 HEAD CI 검증 전 NOT VERIFIED**이며, local Python/실 Github 승인/코드 공개/Registry 실 출고 시험은 별도다.
+- 구조적으로 옳은 packet도 authenticated approval/cryptographic signed evidence/real OCI runtime 증거를 제공하지 않으므로 결과는 의도적으로 `BLOCKED_LIVE_OWNER_CRYPTO_REGISTRY_PROOF_REQUIRED`, real GHCR write0, Issue Close0. legacy 0.61.0 actual candidate/promotion/3digest 및 #229 HOLD 불변. RF03 및 RF04 완료 전 #273 OPEN.
+
+---
+
 ## U-273-RF03-PRE-20261109 — Main integration confirmed, release PLAN-only code (2026-11-09)
 
 - [PR #276 CI 42513847448](https://github.com/planner77/layoutManager/actions/runs/42513847448) exact HEAD `9682291b5c46b64992b8504ef914d8fc7b471e3c`: 적용8 SUCCESS, 범위 외 A2 SKIP, thread0, conflicts0, behind0. Squash Main `bd03e6fb601c02e5d2f74dd2d97f0c850b3b695f`, tree `5c58b4369d74b4cad5694f6df46eadaf6d662990`, parent `9635b153`. [Main CI 42515467033](https://github.com/planner77/layoutManager/actions/runs/42515467033) event push exact SHA/attempt1 `Verify read-only GHCR release HOLD` SUCCESS.

@@ -1,3 +1,11 @@
+## 2026-11-09 — #273 PR #277 RF-03 handoff evidence contract
+
+- 기존 PR CI #716 exact HEAD `d068d637c90c3b1b995ec6e2595760531503d5e3` SUCCESS 확인 (8 적용 Job/A2 scoped SKIP).
+- RF03 generic Candidate/Promotion handoff closed packet 검증 모듈, two-run/job/approval-proof separation, 3role manifest/config/platform/digest and old immutable baseline, no approval claims, fail closed. Negative unittest + required Scope step. Source 변경 후 CI 미확인.
+- Writer/Owner protected approval/Sigstore OIDC/OCI verification은 기존 0.61.0 pin을 그대로 보존한 후속 RF-03 작업이며 actual GHCR/Tag/Issue Close 불변.
+
+---
+
 ## 2026-11-09 — Issue #273 RF-02 Main + RF-03 read-only release version plan
 
 - PR #276 final exact SHA PR CI 42513847448 PASS, squash Main `bd03e6fb601c02e5d2f74dd2d97f0c850b3b695f` tree `5c58b4369d74b4cad5694f6df46eadaf6d662990` parent `9635b153`; Main CI 42515467033 read-only HOLD SUCCESS.

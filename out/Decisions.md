@@ -1,3 +1,9 @@
+## ADR-273-RF03-HANDOFF — 임의 packet 해시를 출고 승인으로 인정하지 않음 (2026-11-09)
+
+설계 결정: RF-03를 먼저 **버전 범용 순수 검증 계약**과 실제 protected 출고 집행으로 분리한다. 첫 Unit은 같은 PR #277에 `RF03_RELEASE_HANDOFF_V1`를 추가해 source commit/tree/version/roles/rollback baseline·Candidate/Promotion 별도 workflow/run/승인증거 ID 및 digest 일치 여부를 정적 판정한다. No external writes, 결과는 반드시 BLOCKED (실제 Owner·OIDC·Registry 미검증). 이 계약의 PASS를 GHCR GO/Issue AC로 승격하는 정책을 금지한다. 실제 승인과 signed candidate proof는 기존 `candidate_publish.py`/promotion verifier가 실행하는 live 검증과 동등 이상의 근거가 반드시 필요하며 0.61.1+ 별도 publisher 구현까지 구 0.61.0 pin을 제거하지 않는다.
+
+---
+
 ## ADR-273-RF03 — immutable legacy 0.61.0과 generic 3-role target 분리 (2026-11-09)
 
 결정: 역사적 0.61.0 candidate/promote workflow, signed receipt, GHCR tag/digest는 비가역 보존한다. 새 version `>=0.61.1` canonical final tag `version`, `version-migrate`, `version-cpu-worker`이며 RF-01 Packet의 `...:v<version>` releaseTarget은 Owner 요청 범위/의도 식별자일 뿐 실 출고 tag가 아니다. 하위 실 publisher는 이전 source·role·OCI platform/manifest/config/verification/rollback 근거를 정확 비교해야 한다. 현재 generic PLAN 단계는 출고 또는 승인 권한을 부여하지 않으며 기존 `0.61.0` 고정 writer를 변경하지 않는다. 실제 Candidate/Promotion은 서로 독립된 fresh Owner protected approval/attempt1/OIDC+immutable digest readback 없이는 실행하지 않는다. #229 HOLD_MAIN/G7_RELEASE_HOLD_TAG_BLOCKED 불변. RF-04 Issue Close는 자체 AC Gate로 분리하며 조기 GitHub auto-close 발생 시 수동으로 재열어 미완료를 보존한다.

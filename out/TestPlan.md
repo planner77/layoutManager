@@ -1,3 +1,20 @@
+## TP-273-RF03-HANDOFF — Candidate→Promotion 구조적 증거 계약 (2026-11-09)
+
+| ID | 검증 내용 |
+|---|---|
+| H01 | source-bound RF03 PLAN과 RF03_RELEASE_HANDOFF_V1 packet의 strict sha256/중복 JSON key·unknown field·repo/owner/packageId·version>0.61.0·PR/Main runAttempt1 |
+| H02 | Candidate vs Promotion distinct run ID/job ID/packet SHA256/approval Evidence SHA256; 개별 workflow path, SHA/tree/code source, Owner ID, attempt1 |
+| H03 | artifact Id/size/reviewed candidate receipt SHA, signatureBundle/verification checksum 64hex 형태. 단 해시는 Owner authorization·OIDC signature verification이 아님 |
+| H04 | 3-role App/Migrator/CPU Worker exact candidate ref + release final tag, source/role/platform linux/amd64/media type/digest/config/platform manifest/size 검증, role manifest digest 중복 거부 |
+| H05 | old0.61.0 immutable rollback baseline 3 role digest, no automaticRollback; alias/latest/old target·cross source·tag collision/unknown extra 필드 거부 |
+| H06 | fake claimed approval/digest를 제시해도 결과 `BLOCKED_LIVE_OWNER_CRYPTO_REGISTRY_PROOF_REQUIRED`, Owner/Sigstore/Registry NOT_VERIFIED, externalWrites0 |
+| H07 | existing 0.61.0 Candidate/Promotion pin 및 #229 HOLD 회귀, CI Scope Python compile + negative unit, 변경 HEAD의 새로운 required CI 성공 및 리뷰/충돌 없음 |
+| H08 | 실제 0.61.1+ protected writer·독립 두 실제 Owner approval·signed OIDC·OCI readback·partial/unknown·no retry는 별도 RF-03 남은 acceptance |
+
+테스트 파일: `src/tests/oci/test_rf03_release_handoff.py`; synthetic 형식 검증을 실제 GHCR 출고 증거로 사용할 수 없다.
+
+---
+
 ## TP-273-RF03-PRE — exact source-bound 3-role release PLAN 음성 검증 (2026-11-09)
 
 - R3P01 정상 RF-01 Packet/Main first-attempt CI verified, Main ref==실제 Squash SHA, source tree+release version 일치 시 **읽기 전용** `BLOCKED_LEGACY_WRITER_VERSION_PIN`만 출력. Candidate/Promotion/Issue 인수 증거는 NOT_VERIFIED, externalWrites0.

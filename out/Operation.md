@@ -1,3 +1,9 @@
+## #273 RF-03 handoff packet 사전 확인(실제 게시 권한 없음) (2026-11-09)
+
+신규 `RF03_RELEASE_HANDOFF_V1`은 release source/PR 및 Main first-attempt CI, Candidate run/packet/environment·review job·candidate artifact, Promotion 별도 run/packet/environment·review job 및 **서로 다른 proof SHA**를 바인딩한다. 각 role Candidate `:candidate-<source>-<run>-1-<role>` 및 실제 `:<version>`, `:<version>-migrate`, `:<version>-cpu-worker`는 엄격히 분리되며 `releaseTarget=:v<version>`은 RF-01 요청 레이블일 뿐이다. old0.61.0 3role digest baseline 및 no automatic rollback 필요. 이 모듈은 구조 확인만 지원하며 Owner가 화면에서 승인하거나 새 GitHub Actions를 실행한 것으로 간주하면 안 된다. 서명/Owner/UI 검증·GHCR registry readback은 추가 live verifier가 담당해야 한다. 현재 `BLOCKED_LIVE_OWNER_CRYPTO_REGISTRY_PROOF_REQUIRED`·externalWrites0가 정상 상태이며 이 값의 변화 없이 출고를 시작해서는 안 된다. 기존 `release-candidate.yml`/`release-promote.yml`는 여전히 0.61.0 고정, 임의 개조/구 릴리스 재실행 금지. 제품/운영 DB/CAD/Volume/.env·GHCR/Tag/latest 및 #229 HOLD 불변.
+
+---
+
 ## #273 RF-03 version contract 읽기 전용 운영 절차 (2026-11-09)
 
 RF-02 Main `bd03e6fb601c02e5d2f74dd2d97f0c850b3b695f` [HOLD CI 42515467033](https://github.com/planner77/layoutManager/actions/runs/42515467033) first-attempt SUCCESS 이후에도, RF-03 게시 권한은 별도로 승인되지 않았다. 신규 `.github/workflows/release-finalizer-rf03-plan.yml`은 Owner `workflow_dispatch` + SHA256-bound RF-01 Packet만 받아 GitHub read-only Main/PR/CI evidence를 검증하고 실제 version/tag schema를 출력한다. 민감한 비밀번호·GHCR token·실 CAD/환경 값을 Packet에 넣지 말 것. 결과 `BLOCKED_LEGACY_WRITER_VERSION_PIN`은 기존 Candidate/Promotion 버전0.61.0 고정에 의한 설계상 차단이며 runtime 실패·게시 준비 완료를 뜻하지 않음. GHCR/Issue write 권한0.

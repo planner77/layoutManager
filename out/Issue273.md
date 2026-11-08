@@ -1,3 +1,13 @@
+## RF-03 증거 인계 계약 확장 — PR #277 계속 사용 (2026-11-09)
+
+[PR #277](https://github.com/planner77/layoutManager/pull/277)의 first HEAD `d068d637c90c3b1b995ec6e2595760531503d5e3` [PR CI #716](https://github.com/planner77/layoutManager/actions/runs/42516241424)은 8 applicable SUCCESS/1 A2 scope SKIP/attempt1. 이 증거는 첫 read-only PLAN까지만 해당한다.
+
+추가 `rf03_release_handoff.py`는 `RF03_RELEASE_HANDOFF_V1`의 후보/승격 간 **정확한 release-source vs promotion-code source**, 각기 다른 workflow/run/attempt1/Owner-review-job/approval receipt SHA, OIDC 서명 bundle/후보 artifact checksum(해시 **형태만 검증**), 3 role digest/config/platform-manifest/OCI media/size/amd64, immutable 기존0.61.0 3 digest baseline과 canonical final refs를 구조적으로 결합한다. 원래 `rf03_exact_release.evaluate`의 Source/Main CI와 비교하며 unknown field/old version/role mismatch/approval reuse/source drift/failed proof를 거부하는 synthetic 테스트를 추가했다. **이 단계는 운영 출고를 하지 못한다.** 입력이 주장한 `approved`·hash 값은 허가도 암호학적 검증도 아니며, 결과는 `BLOCKED_LIVE_OWNER_CRYPTO_REGISTRY_PROOF_REQUIRED`만 허용한다. `0.61.0` pinned legacy Candidate/Promotion/Tag/OCI writer, #229 HOLD, historical image/digest 보호 불변.
+
+잔여 RF-03 완료 작업: 구0.61.0 계약을 파괴하지 않는 별도 version-generic Candidate/PROMOTION 실제 protected writer, source archive/OCI label/runtime/upgrade 검증, 실제 두 개의 독립 환경 Owner 승인에 대한 GitHub API readback, attestation OIDC verified mapping, registry digest readback·no-overwrite/no-alias/no-retry/partial handling, 실제0.61.1 release 승인·증거 저장. RF-01 영속 nonce/checkpoint와 RF-04 all AC Issue 종료도 후속이다. 이번 추가 HEAD PR CI 성공/리뷰 재검증 전 PR Draft 유지.
+
+---
+
 ## RF-03 첫 Unit — 0.61.1+ 정확한 릴리스 대상 계약 (2026-11-09)
 
 RF-02 선행: PR #276 CI [42513847448](https://github.com/planner77/layoutManager/actions/runs/42513847448) exact HEAD `9682291b` SUCCESS→ Squash Main `bd03e6fb601c02e5d2f74dd2d97f0c850b3b695f` tree `5c58b4369d74b4cad5694f6df46eadaf6d662990` parent `9635b153`→ Main CI [42515467033](https://github.com/planner77/layoutManager/actions/runs/42515467033) first-attempt HOLD SUCCESS. 병합 직후 GitHub timeline의 `closed`로 #273이 조기 종료돼 **OPEN 재전환**. RF-03/04 미완료라 Issue Close 승인이 아니다.

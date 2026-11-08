@@ -1,3 +1,11 @@
+## #273 / PR #277 — CI #716 성공 후 RF-03 3-role Candidate/Promotion 증거 인계 계약 확장 (2026-11-09)
+
+[PR CI #716 / run42516241424](https://github.com/planner77/layoutManager/actions/runs/42516241424)은 PR #277 **이전 HEAD** `d068d637c90c3b1b995ec6e2595760531503d5e3`에서 적용 8 Job SUCCESS·A2 scoped SKIP·run attempt1이다. 코드 리뷰 thread0, main behind0, PR Draft. 이 성공은 지금 추가한 RF-03 증거 인계 소스의 검증 결과가 아니다.
+
+이번 후속 Unit `src/tests/oci/rf03_release_handoff.py`: RF03_RELEASE_HANDOFF_V1 strict SHA256 JSON/닫힌 필드·repo/Owner/package/OCI role 3개, exact immutable PR/Main CI run, Candidate와 Promotion의 **서로 다른 run/job/approval-evidence 및 packet**, 후보 OCI digest/config/platform-manifest/media/size, `candidate-<source>-<run>-1-<role>`/최종 `:version{-migrate,-cpu-worker}` mapping, 0.61.0 이전 3-role digest rollback baseline 금지를 구조적으로 검증한다. `promotionSourceCommit/Tree`는 Candidate source와 별도로 묶고 source drift/role 혼합/ambiguous digest를 거부한다. 단 이 필드는 **외부 출처의 진짜 승인·서명·OCI readback을 증명하지 않는 주장 값**이므로 검증 결과는 반드시 `BLOCKED_LIVE_OWNER_CRYPTO_REGISTRY_PROOF_REQUIRED`, `externalWrites=0`, `ownerAuthority/signature/OCI=NOT_VERIFIED`, `registryPublication=NOT_RUN`이다. Fake API/증거 음성 테스트를 필수 Scope에 연결. 실제 Candidate/Promotion writer(기존0.61.0 pin)와 #229 HOLD, 운영/태그/복구점 불변; PR Draft 유지, 새 HEAD CI 전 NOT VERIFIED. [Issue273](out/Issue273.md)/[TestPlan](out/TestPlan.md)/[FailureLedger](out/FailureLedger.md) 참조.
+
+---
+
 ## #273 — PR #276 RF-02 Main 검증 및 RF-03 exact-release 사전 계약 (2026-11-09)
 
 [PR #276](https://github.com/planner77/layoutManager/pull/276) HEAD `9682291b5c46b64992b8504ef914d8fc7b471e3c` [PR CI 42513847448](https://github.com/planner77/layoutManager/actions/runs/42513847448) 8 applicable SUCCESS/A2 scope SKIP, 리뷰 unresolved0·conflicts0·Main behind0. Squash [Main bd03e6fb](https://github.com/planner77/layoutManager/commit/bd03e6fb601c02e5d2f74dd2d97f0c850b3b695f), tree `5c58b4369d74b4cad5694f6df46eadaf6d662990`, parent `9635b153`, [Main HOLD CI 42515467033](https://github.com/planner77/layoutManager/actions/runs/42515467033) exact SHA/attempt1 SUCCESS. 기존 `issue229_release_hold.py` blob SHA `71289df819f4bc3017bbcf358ecd3c5de82f073c` 불변.
