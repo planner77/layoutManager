@@ -174,8 +174,9 @@ class GHCR:
         need(status == 401 and challenge in (
             'Bearer realm="https://ghcr.io/token",service="ghcr.io"',
             'Bearer realm="https://ghcr.io/token",service="ghcr.io",scope="repository:user/image:pull"',
-            'Bearer realm="https://ghcr.io/token",service="ghcr.io",scope="' + SCOPE + '"',
-            'Bearer realm="https://ghcr.io/token",service="ghcr.io",scope="' + PULL_SCOPE + '"'),
+            # Never expand the historical publisher's realm allowlist when
+            # RF-03 adds a separate pull-only, GET/HEAD reader.
+            'Bearer realm="https://ghcr.io/token",service="ghcr.io",scope="' + scope + '"'),
             'CA_GHCR_TOKEN_REALM_PENDING')
         credentials = base64.b64encode((actor + ':' + token).encode()).decode()
         token_url = ORIGIN + '/token?' + urllib.parse.urlencode({'service': 'ghcr.io', 'scope': scope})

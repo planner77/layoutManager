@@ -134,6 +134,55 @@ class OCITests(unittest.TestCase):
                     rf.Blocked, "RF03_OCI_WRITE_REFUSED"):
                 reader.request(method, cr.PREFIX + "/manifests/latest")
 
+    def test_scope_challenges_are_isolated_between_writer_and_reader(self):
+        from test_candidate_publish import FakeHTTP, result, expected, MemoryJournal
+        packet, plan, _ = fixture()
+        prefix = 'Bearer realm="https://ghcr.io/token",service="ghcr.io",scope="'
+        def client(root_scope, *, read_only):
+            http = FakeHTTP([
+                result(401, headers={"www-authenticate": prefix + root_scope + '"'}),
+                result(raw=b'{"token":"synthetic-bearer"}'),
+            ])
+            if read_only:
+                created = oci.ReadOnlyGHCR(
+                    "synthetic-job-token", "planner77", packet, plan, http)
+            else:
+                created = cr.GHCR(
+                    "synthetic-job-token", "planner77", expected(),
+                    MemoryJournal(), http)
+            self.assertEqual(created.bearer, "synthetic-bearer")
+            self.assertEqual(len(http.calls), 2)
+            return http.calls[1][1]
+
+        pull_url = client(cr.PULL_SCOPE, read_only=True)
+        self.assertEqual(
+            pull_url, "https://ghcr.io/token?service=ghcr.io&scope="
+            "repository%3Aplanner77%2Flayoutmanager%3Apull")
+        publish_url = client(cr.SCOPE, read_only=False)
+        self.assertEqual(
+            publish_url, "https://ghcr.io/token?service=ghcr.io&scope="
+            "repository%3Aplanner77%2Flayoutmanager%3Apull%2Cpush")
+        # Any challenge claiming the OTHER mode must stop before requesting
+        # a token; legacy publisher negative tests must remain unchanged.
+        for root_scope, read_only in (
+            (cr.PULL_SCOPE, False), (cr.SCOPE, True)):
+            with self.subTest(root_scope=root_scope, read_only=read_only):
+                denied = FakeHTTP([
+                    result(401, headers={
+                        "www-authenticate": prefix + root_scope + '"'})])
+                with self.assertRaisesRegex(
+                        ca.Pending, "CA_GHCR_TOKEN_REALM_PENDING"):
+                    if read_only:
+                        oci.ReadOnlyGHCR(
+                            "synthetic-job-token", "planner77",
+                            packet, plan, denied)
+                    else:
+                        cr.GHCR(
+                            "synthetic-job-token", "planner77", expected(),
+                            MemoryJournal(), denied)
+                self.assertEqual(denied.calls, [
+                    ("GET", "https://ghcr.io/v2/", {}, None)])
+
     def test_pull_only_scope_and_writer_default_are_distinct(self):
         import inspect
         self.assertEqual(cr.PULL_SCOPE, "repository:planner77/layoutmanager:pull")

@@ -1,3 +1,9 @@
+## #273 — RF-03 GHCR root challenge cross-mode regression test (2026-11-09)
+
+Preflight must preserve `candidate_registry.GHCR` default publisher `pull,push` scoped challenge allowlist (including original unspecific and fixed root placeholder realms). New `pull_only=True` client must request only `repository:planner77/layoutmanager:pull` scope. Positive tests: exact realm in each mode produces an exact mode-specific token URL. Negative tests: legacy publisher refuses `pull` realm and RF-03 read-only refuses `pull,push` realm, with exactly one unauthenticated root GET and no token request. Reuse unchanged historical `test_candidate_publish.py`. Required PR CI Scope exercises both suites, and former CI #731 failure is not proof of the revised source.
+
+---
+
 ## #273 / PR #277 RF-03 next unit: PR CI #730 success and exact-version OCI readback (2026-11-09)
 
 - [PR CI #730 / run 42525255763](https://github.com/planner77/layoutManager/actions/runs/42525255763) **SUCCESS** on previous exact HEAD `b7116c6c889d291b0222a618b85ca11fe38026c1` (attempt1, 8 applicable SUCCESS, 1 scope SKIPPED). PR #277 remains Draft/OPEN with zero unresolved review threads. This is not a pass for the new code.

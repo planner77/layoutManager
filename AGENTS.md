@@ -1,3 +1,9 @@
+## #273 / PR #277 — CI #731 scoped GHCR realm regression (2026-11-09)
+
+[PR CI #731/run42527748418](https://github.com/planner77/layoutManager/actions/runs/42527748418) failed on exact prior HEAD `b2372a5201105014eeb29130973d98df33f07cb2`. Shared GHCR constructor unintentionally admitted RF-03 `pull` challenge to existing `pull,push` writer; legacy `test_observed_root_placeholder_challenge_never_controls_token_scope` failed with 1 FAIL and 1 ERROR (47 cases), required aggregate failed and downstream scoped jobs skipped. Fix is **conditional challenge allowlist on already-selected `scope`**, not a broader token or changed default. Preserve existing legacy test unmodified; add reader-vs-writer positive/negative synthetic scopes to mandatory RF-03 suite. See [FailureLedger](out/FailureLedger.md). New HEAD PR CI required; previous CI #730 success applies only to prior source. Keep PR Draft, Issue #273 OPEN, #229 HOLD and immutable historic0.61.0/production assets, no publisher/OCI/Issue writes.
+
+---
+
 ## #273 / PR #277 RF-03 next unit: PR CI #730 success and exact-version OCI readback (2026-11-09)
 
 - [PR CI #730 / run 42525255763](https://github.com/planner77/layoutManager/actions/runs/42525255763) **SUCCESS** on previous exact HEAD `b7116c6c889d291b0222a618b85ca11fe38026c1` (attempt1, 8 applicable SUCCESS, 1 scope SKIPPED). PR #277 remains Draft/OPEN with zero unresolved review threads. This is not a pass for the new code.

@@ -1,3 +1,10 @@
+## #273 / PR #277 — CI #731 failure and targeted GHCR realm repair (2026-11-09)
+
+- Hosted failed job ID `128875023742` in [PR CI 42527748418](https://github.com/planner77/layoutManager/actions/runs/42527748418), HEAD `b2372a5201105014eeb29130973d98df33f07cb2`: `test_candidate_publish.py` 47 tests / 1 failure / 1 error, both in old negative challenge test. Aggregate failed; downstream skipped because of dependency. New patch limits challenge to selected mode, retains old test, adds two positive token-scope and two negative cross-mode cases.
+- **Validation evidence:** prior CI #730 passed old source; new hosted CI not yet verified. Added synthetic test is not real GHCR proof. Existing #225 release, #229 HOLD, protected Owner/Sigstore/OCI gates, 0.61.0 images and operational App/Worker/DB/CAD untouched.
+
+---
+
 ## #273 / PR #277 RF-03 next unit: PR CI #730 success and exact-version OCI readback (2026-11-09)
 
 - [PR CI #730 / run 42525255763](https://github.com/planner77/layoutManager/actions/runs/42525255763) **SUCCESS** on previous exact HEAD `b7116c6c889d291b0222a618b85ca11fe38026c1` (attempt1, 8 applicable SUCCESS, 1 scope SKIPPED). PR #277 remains Draft/OPEN with zero unresolved review threads. This is not a pass for the new code.
