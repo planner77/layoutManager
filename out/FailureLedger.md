@@ -1,3 +1,9 @@
+## RF-03 new HEAD CI handoff (2026-11-09)
+
+PR #277 exact HEAD `9160c4dc08a8166410c6bc1973912b7e2e4f7032`: [PR CI #728 / run 42524297551](https://github.com/planner77/layoutManager/actions/runs/42524297551) **queued** at observation. CI success/failure NOT VERIFIED; no monitoring requested. Earlier #718 success belongs to old HEAD. During implementation, existing candidate `SHA256SUMS` contract was verified to bind 3 OCI manifest subjects plus receipt (not bundle/verification JSON); new material preflight and fixture corrected before final HEAD. No external GHCR/Issue/Tag mutation, #229 HOLD retained.
+
+---
+
 ## RF-03 #718 follow-up — no observed CI failure; evidence and scope ledger (2026-11-09)
 
 CI #718 succeeded at prior HEAD ea17b29c; no failure to misclassify. New unverified HEAD adds candidate material byte preflight and negative tests, remains blocked pending independent Sigstore/OCI and Owner proof. New mandatory PR CI result must be recorded separately; no GHCR writer, #229 HOLD intact.
