@@ -1,3 +1,11 @@
+## #273 RF-02 GitHub_TOKEN merge 이후 Main HOLD 수동 dispatch 계약 (2026-11-09)
+
+`integrate`는 Owner 수동 실행+정확 CI/Ruleset/Review/Base CAS 검증 후 Github Merge API 1회(작업 job contents:write). `GITHUB_TOKEN`으로 머지된 push 이벤트가 Main workflow를 다시 호출하지 않으므로 merge 결과 SHA/tree/parent readback+Main ref CAS 후 **고정된** `.github/workflows/main-hold.yml`에 `workflow_dispatch` 1회(`ref=main`, `rf02_merge_sha`, `rf02_packet_sha256`)를 호출한다(actions:write). 204 성공은 실행 요청 수용만 의미하며 Main CI 성공이 아니다. timeout/401/403/unknown은 중단·자동 재시도/롤백 금지, 외부 상태는 READBACK으로 조사한다.
+
+`readback`은 Main hold exact source/packet run-name/first attempt/HOLD required job SUCCESS를 독립 확인한 뒤만 MAIN_VERIFIED. Pending은 MERGED_WAITING_MAIN_CI, failure/cancel/attempt2는 거부. 기존 main push event 근거도 같은 SHA일 때만 재사용. 기존 0.61.0 출고 이미지, 3digest/Tag/latest, DB/CAD/Worker/Volume/.env/복구점과 GHCR HOLD, RF03/04 승인 경계는 유지. 새 Hosted CI 성공 전 운영에서 RF02 integrate 금지.
+
+---
+
 ## #273 RF-02 protected integration 운영 절차 (2026-11-08)
 
 `.github/workflows/release-finalizer-integrate.yml`은 Main 적용/PR CI 검증 후에만 사용한다. Owner가 reviewed `RELEASE_FINALIZER_REQUEST_V1` packet 원문 JSON 및 exact SHA256을 생성하고 **같은 packet**으로 `mode=plan` 실행해 목표 PR/Issue/source tree/base SHA/CI Job/thread/Ruleset을 확인한다. 통합 의도 승인 후 `mode=integrate` 수동 dispatch; Owner actor/sender/repository/ref/runAttempt1 필수. Normal GitHub squash API에 정확 HEAD만 전달; policy drift, Ready 해제, 취소/failed CI, unresolved review, source SHA drift, GitHub merge 거부면 STOP. 자동 bypass/재시도 없음.

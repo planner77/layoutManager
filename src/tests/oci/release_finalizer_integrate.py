@@ -162,7 +162,7 @@ def premerge(packet: dict, api, workflow_sha: str) -> dict:
             "mergeMethod": "squash", "externalWrites": 0}
 
 
-def readback(packet: dict, api, merge_sha=None) -> dict:
+def readback(packet: dict, api, merge_sha=None, packet_sha=None) -> dict:
     """Prove exactly one squash and same tree/base; Main CI may be pending."""
     pr = api.get("/pulls/" + str(packet["prNumber"]))
     sha = pr.get("merge_commit_sha")
@@ -211,6 +211,7 @@ def readback(packet: dict, api, merge_sha=None) -> dict:
                     "RF02_READBACK_UNVERIFIED")
             return {**evidence, "kind": "RELEASE_FINALIZER_INTEGRATION_V1",
                     "mergeMethod": "squash", "stage": "MERGED_WAITING_MAIN_CI",
+                    "mainCiPendingRunId": latest["id"],
                     "releaseAuthorization": "NOT_VERIFIED",
                     "issueAcceptance": "NOT_VERIFIED",
                     "ghcrWrites": 0, "issueWrites": 0}
@@ -221,6 +222,57 @@ def readback(packet: dict, api, merge_sha=None) -> dict:
                 "AWAITING_PROTECTED_THREE_ROLE_RELEASE",
                 "AWAITING_INDEPENDENT_ISSUE_ACCEPTANCE"),
             "RF02_READBACK_UNVERIFIED")
+    # GITHUB_TOKEN merge suppresses push-triggered GitHub Actions by design.
+    # The merge job separately dispatches main-hold.yml with exact SHA and
+    # packet hash; only a matching, first-attempt, successful read-only run
+    # can count as Main proof. Never fabricate a push event.
+    if evidence.get("state") == "WAITING_EXACT_MAIN_CI" and packet_sha is not None:
+        rf.need(type(packet_sha) is str and rf.HEX64.fullmatch(packet_sha),
+                "RF02_PACKET_SHA_INVALID")
+        dispatch_query = ("/actions/runs?head_sha=" + sha +
+                          "&event=workflow_dispatch&per_page=100")
+        data = api.get(dispatch_query)
+        rf.need(type(data) is dict and type(data.get("workflow_runs")) is list
+                and type(data.get("total_count")) is int
+                and 0 <= data["total_count"] <= 100
+                and len(data["workflow_runs"]) == data["total_count"],
+                "RF02_DISPATCH_RUN_PAGE_UNVERIFIED")
+        expected_title = "MAIN CI | RF02 | " + sha + " | " + packet_sha
+        candidates = [r for r in data["workflow_runs"]
+                      if type(r) is dict and r.get("path") == rf.MAIN_WORKFLOW
+                      and r.get("event") == "workflow_dispatch"
+                      and r.get("head_sha") == sha and r.get("head_branch") == "main"
+                      and r.get("repository", {}).get("id") == rf.REPO_ID
+                      and r.get("display_title") == expected_title]
+        if candidates:
+            rf.need(all(type(r.get("run_number")) is int
+                        and type(r.get("id")) is int and r["id"] > 0
+                        for r in candidates), "RF02_DISPATCH_RUN_INVALID")
+            latest = max(candidates, key=lambda r: r["run_number"])
+            rf.need(sum(r.get("run_number") == latest["run_number"]
+                        for r in candidates) == 1,
+                    "RF02_DISPATCH_RUN_AMBIGUOUS")
+            rf.need(latest.get("run_attempt") == 1,
+                    "RF02_MAIN_REATTEMPT_BLOCKED")
+            if latest.get("status") in (
+                    "queued", "in_progress", "waiting", "requested", "pending"):
+                rf.need(latest.get("conclusion") is None,
+                        "RF02_MAIN_STATE_UNVERIFIED")
+                evidence["mainCiPendingRunId"] = latest["id"]
+            else:
+                rf.need(latest.get("status") == "completed"
+                        and latest.get("conclusion") == "success",
+                        "RF02_MAIN_DISPATCH_NOT_SUCCESS")
+                rf.check_jobs(api.get(
+                    "/actions/runs/" + str(latest["id"]) + "/jobs?per_page=100"),
+                    latest["id"], ("Verify read-only GHCR release HOLD",))
+                evidence["mainCiRunId"] = latest["id"]
+                evidence["mainCiAttempt"] = 1
+                evidence["mainCiEvent"] = "workflow_dispatch"
+                evidence["state"] = (
+                    "AWAITING_PROTECTED_THREE_ROLE_RELEASE"
+                    if packet["releaseRequired"]
+                    else "AWAITING_INDEPENDENT_ISSUE_ACCEPTANCE")
     return {**evidence, "kind": "RELEASE_FINALIZER_INTEGRATION_V1",
             "mergeMethod": "squash",
             "stage": ("MAIN_VERIFIED" if evidence.get("mainCiRunId")
@@ -230,8 +282,10 @@ def readback(packet: dict, api, merge_sha=None) -> dict:
             "ghcrWrites": 0, "issueWrites": 0}
 
 
-def integrate(packet: dict, api, workflow_sha: str) -> dict:
-    """Single merge mutation under Owner workflow_dispatch and normal Ruleset."""
+def integrate(packet: dict, api, workflow_sha: str, packet_sha: str) -> dict:
+    """One protected squash, then one exact Main HOLD workflow dispatch."""
+    rf.need(type(packet_sha) is str and rf.HEX64.fullmatch(packet_sha),
+            "RF02_PACKET_SHA_INVALID")
     verified = premerge(packet, api, workflow_sha)
     # Re-read immutable identity immediately before server-enforced protected merge.
     pr = api.get("/pulls/" + str(packet["prNumber"]))
@@ -247,8 +301,18 @@ def integrate(packet: dict, api, workflow_sha: str) -> dict:
             and type(result.get("sha")) is str
             and rf.HEX40.fullmatch(result["sha"]),
             "RF02_MERGE_RESULT_UNVERIFIED")
-    return {**readback(packet, api, merge_sha=result["sha"]),
-            "prCiRunId": verified["prCiRunId"],
+    evidence = readback(packet, api, merge_sha=result["sha"],
+                        packet_sha=packet_sha)
+    if not evidence.get("mainCiRunId") and not evidence.get("mainCiPendingRunId"):
+        rf.need(type(packet_sha) is str and rf.HEX64.fullmatch(packet_sha),
+                "RF02_PACKET_SHA_INVALID")
+        # Exactly one explicit dispatch is required after a GITHUB_TOKEN squash.
+        # A timeout/unknown remote state is fatal, never an automatic retry.
+        api.dispatch_main(result["sha"], packet_sha)
+        evidence = readback(packet, api, merge_sha=result["sha"],
+                            packet_sha=packet_sha)
+        evidence["mainDispatch"] = "REQUESTED"
+    return {**evidence, "prCiRunId": verified["prCiRunId"],
             "mergeMutation": "ONE_PROTECTED_SQUASH"}
 
 
@@ -303,6 +367,34 @@ class GitHubAPI(rf.ReadOnlyGitHub):
                     "RF02_THREAD_PAGE_UNVERIFIED")
         raise rf.Blocked("RF02_THREAD_PAGE_OVERFLOW")
 
+    def dispatch_main(self, merge_sha: str, packet_sha: str) -> None:
+        rf.need(type(merge_sha) is str and rf.HEX40.fullmatch(merge_sha)
+                and type(packet_sha) is str and rf.HEX64.fullmatch(packet_sha),
+                "RF02_DISPATCH_ARGUMENT_INVALID")
+        main = self.get("/git/ref/heads/main")
+        rf.need(main.get("ref") == "refs/heads/main"
+                and main.get("object", {}).get("sha") == merge_sha
+                and main.get("object", {}).get("type") == "commit",
+                "RF02_MAIN_SHA_DRIFT_BEFORE_DISPATCH")
+        url = ("https://api.github.com/repos/" + rf.REPO +
+               "/actions/workflows/main-hold.yml/dispatches")
+        payload = {"ref": "main", "inputs": {
+            "rf02_merge_sha": merge_sha,
+            "rf02_packet_sha256": packet_sha}}
+        req = urllib.request.Request(
+            url, data=json.dumps(payload, sort_keys=True).encode("utf-8"),
+            headers={"Accept": "application/vnd.github+json",
+                     "Authorization": "Bearer " + self.token,
+                     "Content-Type": "application/json",
+                     "X-GitHub-Api-Version": "2022-11-28"},
+            method="POST")
+        try:
+            with urllib.request.urlopen(req, timeout=20) as response:
+                rf.need(response.status == 204 and response.read(1) == b"",
+                        "RF02_MAIN_DISPATCH_UNVERIFIED")
+        except (OSError, ValueError, UnicodeError):
+            raise rf.Blocked("RF02_MAIN_DISPATCH_UNKNOWN_NO_RETRY") from None
+
     def merge(self, pr_num: int, head: str, title: str, issue: int) -> dict:
         path = "/pulls/" + str(pr_num) + "/merge"
         url = "https://api.github.com/repos/" + rf.REPO + path
@@ -335,9 +427,10 @@ def main() -> int:
         if mode == "plan":
             result = premerge(p, api, os.environ["GITHUB_SHA"])
         elif mode == "readback":
-            result = readback(p, api)
+            result = readback(p, api, packet_sha=os.environ.get("RF_PACKET_SHA256"))
         else:
-            result = integrate(p, api, os.environ["GITHUB_SHA"])
+            result = integrate(p, api, os.environ["GITHUB_SHA"],
+                               packet_sha=os.environ.get("RF_PACKET_SHA256"))
         print(json.dumps(result, sort_keys=True, separators=(",", ":")))
         if os.environ.get("RF02_RECEIPT_FILE"):
             with open(os.environ["RF02_RECEIPT_FILE"], "w", encoding="utf-8") as output:

@@ -73,14 +73,14 @@ jobs:
       github.repository_id == 1359528829 &&
       github.run_attempt == 1 &&
       inputs.mode == 'integrate'
-    name: RF-02 Owner GO — one normal protected squash only
+    name: RF-02 Owner GO — protected squash + exact Main HOLD dispatch
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
-      contents: read
+      contents: write
       pull-requests: write
       issues: read
-      actions: read
+      actions: write
     steps:
       - name: Checkout exact Main workflow source without persisted credentials
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4

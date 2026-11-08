@@ -1,3 +1,14 @@
+## TP-273-RF02-P1 — 권한·후속 Main CI trigger 검증 (2026-11-09)
+
+- P1-A: 실제 GitHub REST squash에 필요한 `contents:write`, Main dispatch `actions:write`는 **integrate job만**; plan/readback job은 read-only. Token scope가 넓어도 코드가 임의 Repo/Issue/GHCR write하지 않도록 fixed routes 검증.
+- P1-B: GitHub_TOKEN merge 뒤 push 재트리거 없는 상태에서 정확 Main ref SHA CAS 후 `workflow_dispatch` 1회 요청. 이벤트에 정확 `rf02_merge_sha`와 `rf02_packet_sha256` 입력, 오류/timeout/no HTTP204은 HALT no-retry.
+- P1-C: Main hold workflow는 기존 push 회귀 유지하고 dispatch input SHA==GITHUB_SHA, packet sha256=64 lowercase hex 검증; `HOLD_MAIN` 강제 불변.
+- P1-D: Readback 동일 packet SHA+merge SHA인 dispatch run, `head_branch=main`, repo ID, workflow path, attempt1 및 required HOLD Job SUCCESS일 때만 `MAIN_VERIFIED`; 최신 pending은 `MERGED_WAITING_MAIN_CI`. Wrong SHA/packet/title/source/repo, retry/cancel/FAIL/SKIP은 성공 불가.
+- P1-E: 자기 PR CI success/리뷰0/mergeability/ruleset 기존 Gate 유지; 중복 integrate는 정상 protected merge가 거부, remote timeout/unknown도 자동 재시도/rollback 금지.
+- P1-F: 새 정확 HEAD hosted CI 및 리뷰 해결 전 Main 병합 금지; #229 HOLD/GHCR/tag/Issue Close 불변.
+
+---
+
 ## TP-273-RF02 — protected owner integration exact-source 검증 (2026-11-08)
 
 | ID | Gate / Negative |

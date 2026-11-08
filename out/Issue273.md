@@ -1,3 +1,9 @@
+## RF-02 PR #276 — P1 권한/트리거 리뷰 보완 (2026-11-09)
+
+Ready 이벤트로 정확 기존 HEAD `92927197947c435ffd7d91bc25e90da1ac49c16b`의 새 PR CI [42512889704](https://github.com/planner77/layoutManager/actions/runs/42512889704) 시작. 리뷰 P1 두 건: 기존 integrate workflow token `contents:read`만으로 실제 PR merge 불가; `GITHUB_TOKEN`으로 merge된 push는 GitHub Actions가 후속 push CI를 실행하지 않음. 기존 RF-02 `event=push` readback만으로는 Main CI 검증 불가. 수정한 코드에서는 only integrate job에 contents/pulls/actions write를 허용하며 정상 GitHub Ruleset/Owner/HEAD CAS를 우회하지 않는다. Merge 성공 → 실제 tree/parent/PR readback → Main ref SHA CAS → 기존 `main-hold.yml` workflow_dispatch(고정 ref=main + exact merge SHA + packet SHA256)를 **한 번만** 호출한다. 204 응답 확인·비정상/timeout Unknown은 fail closed/no retry. Main workflow는 기존 HOLD_MAIN 강제 및 SHA/packet 확인을 유지하고 run-name `MAIN CI | RF02 | <SHA> | <packetSHA>`를 제공한다. RF-02는 이 정확 실행의 run attempt1·full required Job SUCCESS를 바인딩하거나 `MERGED_WAITING_MAIN_CI`로 남긴다. 실제 출고/Issue Close는 분리, RF-03/04 미구현, #273 OPEN. 변경 신규 HEAD CI 전 NOT VERIFIED.
+
+---
+
 ## RF-02 후속 Unit — 보호된 PR 통합 및 Main CI 증거 (2026-11-08)
 
 **선행 완료:** PR #274 source HEAD `697cfe3ef551aaa7583a7dac4d5b5790316e1a97`, [PR CI 42487447127](https://github.com/planner77/layoutManager/actions/runs/42487447127) (8 applicable SUCCESS/A2 scoped SKIP), squash [Main 9635b153](https://github.com/planner77/layoutManager/commit/9635b153a9c28f365b2485abb5d76d32f5be62ac), tree `fdb2396c455a744919be6a4fa8d9f96387e8c2ae`, [Main CI 42489515024](https://github.com/planner77/layoutManager/actions/runs/42489515024) read-only HOLD SUCCESS. Issue #273은 아직 OPEN.

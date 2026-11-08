@@ -1,3 +1,10 @@
+## 2026-11-09 — #273 RF-02 PR276 P1 review fixes
+
+- GitHub REST protected merge token Contents write 및 GITHUB_TOKEN push event workflow-suppression 확인. Integrate job에만 contents/pulls/actions write 부여; exact merge SHA/packet bound main-hold workflow_dispatch를 추가하고 Main workflow run-name/독립 readback 성공 Gate 구현.
+- Read-only PLAN/Readback와 #229 HOLD, 기존 Candidate/Promotion Owner protected approvals, GHCR/Tag/Issue Close 비변경. New exact HEAD hosted CI 이전 NOT VERIFIED.
+
+---
+
 ## 2026-11-08 — #273 RF-01 Main verified, RF-02 protected integration candidate
 
 - [PR #274](https://github.com/planner77/layoutManager/pull/274) CI42487447127 SUCCESS, squash Main `9635b153a9c28f365b2485abb5d76d32f5be62ac` + Main HOLD CI42489515024 SUCCESS.

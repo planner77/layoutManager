@@ -1,3 +1,9 @@
+## ADR-273-RF02-P1 — GitHub token merge와 명시적 Main CI dispatch (2026-11-09)
+
+확정: 보호된 PR merge API는 Contents write가 요구되므로 RF02 `integrate`에 한정하여 GitHub_TOKEN `contents:write`와 `actions:write`를 추가한다. Job은 정확 Repo/Owner/CI/RuleSet/HEAD 검사 및 PUT merge 1회와 지정 `main-hold.yml` workflow_dispatch POST 1회만 수행, plan/readback은 read-only. GitHub_TOKEN push 자체를 Main CI 시작 증거로 삼지 않으며, dispatch의 exact SHA/packet hash를 `run-name`와 Main-HOLD 검증에 명시한다. 기존 event=push와 별개로 event=workflow_dispatch run identity를 fail-closed 확인한다. 재시도/alias/latest/2-role 자동 publisher 금지. P1 보완 신규 PR CI 이전 미검증.
+
+---
+
 ## ADR-273-RF02 Owner 통합 Gate 분리 (2026-11-08)
 
 결정: 실제 PR squash writer는 별도 Owner `workflow_dispatch`의 `integrate` 모드에만 두고, `plan/readback`은 zero mutation. GitHub ruleset의 native enforcement를 우회하지 않으며 서버의 merge 권한 외 secret 없이 정확 HEAD·base/sha CAS, 비어 있지 않은 다른 PR CI association 거부, read-only GraphQL thread·review, 전체 적용 CI, 필요한 0.61+ HOLD 고정을 독립 검사. Main CI push 자동 실행을 새로 dispatch하지 않음; Main 증거가 없거나 in-progress라면 WAIT, 성공을 위조하지 않음. Owner intent/Packet hash만으로 Release/Issue 승인하지 않는다. 현재 RF-02는 CI 결과 확인 전 candidate 구현이며 실제 GHCR/Issue 작업 없음.

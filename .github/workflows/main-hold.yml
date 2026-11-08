@@ -1,7 +1,9 @@
 name: Main CI read-only release HOLD
 run-name: >-
-  ${{ github.event_name == 'workflow_dispatch'
-      && 'MAIN CI | #225 | read-only release HOLD'
+  ${{ github.event_name == 'workflow_dispatch' && inputs.rf02_merge_sha != ''
+      && format('MAIN CI | RF02 | {0} | {1}', inputs.rf02_merge_sha, inputs.rf02_packet_sha256)
+      || (github.event_name == 'workflow_dispatch'
+      && 'MAIN CI | #225 | read-only release HOLD')
       || (contains(github.event.head_commit.message || '', fromJSON('"\n"'))
           && format('MAIN CI | SUBJECT-ONLY-REQUIRED | run {0}', github.run_number)
           || ((startsWith(github.event.head_commit.message, '#') || startsWith(github.event.head_commit.message, 'NO-ISSUE |'))
@@ -12,6 +14,17 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      rf02_merge_sha:
+        description: 'RF-02 exact completed squash SHA, optional; read-only'
+        required: false
+        type: string
+        default: ''
+      rf02_packet_sha256:
+        description: 'RF-02 reviewed integration packet SHA256, optional'
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -29,6 +42,9 @@ jobs:
 
       - name: Record exact Main source and existing persistent HOLD
         shell: bash
+        env:
+          RF02_EXPECTED_MAIN_SHA: ${{ inputs.rf02_merge_sha || '' }}
+          RF02_EXPECTED_PACKET_SHA256: ${{ inputs.rf02_packet_sha256 || '' }}
         run: |
           set -euo pipefail
           python3 - <<'PY'
@@ -49,6 +65,13 @@ jobs:
           head = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
           if head != source:
               raise SystemExit('LP_MAIN_SOURCE_MISMATCH')
+          rf02_sha = os.environ.get('RF02_EXPECTED_MAIN_SHA', '')
+          rf02_packet = os.environ.get('RF02_EXPECTED_PACKET_SHA256', '')
+          if rf02_sha or rf02_packet:
+              if (os.environ.get('GITHUB_EVENT_NAME') != 'workflow_dispatch' or
+                  rf02_sha != source or
+                  re.fullmatch('[0-9a-f]{64}', rf02_packet) is None):
+                  raise SystemExit('LP_RF02_DISPATCH_PACKET_OR_SHA_INVALID')
           decision = subprocess.check_output([
               'python3', '.github/scripts/issue229_release_hold.py',
               'refs/heads/main', 'src/package.json'], text=True).strip()
