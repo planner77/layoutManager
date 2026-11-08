@@ -1,3 +1,62 @@
+## U-225-FUP3-20261108 — HEADER/TABLES·layer/style offline 후보 구현·검증
+
+**판정:** 독립 QA `PASS_WITH_LIMITS`. AC1018/INSUNITS4의 좁은 HEADER·TABLES·LAYER·LTYPE 및 optional dormant STYLE semantics를 기존 primitive geometry에 결합한 별도 `offline-cpu-styled-primitives@1 / node-cpu-styled-primitives@0.1.0+cad-scene-1 / CANDIDATE`를 시험했다. 제품 Scene/READY/Worker로 수용하지 않는다. 앱0.61.0·운영0.58.0, 제품 parser/Builder/admission/Worker/Queue/DB/Schema/flags 및 운영 배포를 변경하지 않았다. Root local checks/actual proof는 완료했다. Manager는 아래 근거로 offline 범위를 `ACCEPTED_WITH_LIMITS` 수용했다. Exact-head PR CI와 Root 통합은 남은 gate다.
+
+Manager가 범위·AC/TC와 Architecture contract를 기록하고 Developer가 별도 parser/DTO/restorer·fixture·시험을 구현했다. Manager는 source를 검토했고 blocking finding이 없었다. Root가 source-frozen resource/browser/actual archive proof와 전체 app checks를 실행했다. 현재 가용 QA agent가 focused tests와 실제 immutable archive replay, source/evidence hash, production 경계와 문서를 독립 확인했다. 과거 지정5.6 모델을 실행했다고 주장하지 않는다.
+
+| 구현·경계 | 실제 결과 |
+| --- | --- |
+| HEADER·structure | AC1018, explicit UTF8/UTF-8/ANSI_1252, INSUNITS4, LWDISPLAY0, 제한된 current defaults만. HEADER→TABLES→ENTITIES 순서/유일성/EOF를 지키며 unknown section/table/header/field는 전체 거부 |
+| TABLES·symbol | 필수 LTYPE CONTINUOUS/LAYER, 선택 STYLE; capacity70은 실제 record count의 상한이며 equality 가정은 하지 않음. ASCII case-insensitive symbol/handle collision, canonical nonzero hex handle, table owner330, required layer0·linetype reference 검증 |
+| color·visibility | entity/layer ACI와 RGB420 precedence 재계산; layer off/frozen 및 entity visibility는 숨김으로 보존하되 geometry와 전체 segment 예산을 계속 검사. locked는 visible/nonfade metadata, plot은 interactive visibility와 별도 |
+| linetype·lineweight | BYLAYER 또는 continuous만; entity→layer→header DEFAULT precedence와 origin 보존. LWDISPLAY0의 fixed 1px hairline로 렌더하며 physical-width/plot fidelity는 주장하지 않음 |
+| dormant STYLE | 제한된 finite STYLE metadata·basename font string만 검증·보존, font file I/O/로드0. TEXT/MTEXT/ATTRIB/ATTDEF/shape는 계속 미지원 |
+| DTO·product boundary | exact schema/state/builder/source/count/refs/declared+resolved key/type 검증; RGB/visible/locked/plot/weight를 symbol tables에서 재계산. 새 identity scope/manifest/stored payload 거부, 기존 FUP2 strict LINE path 유지 |
+
+### 최종 source와 focused 회귀
+
+최종 source closure의 10개 파일 SHA256은 현재 worktree와 Root의 actual/final verification receipts가 모두 일치했다.
+
+| Source | SHA256 |
+| --- | --- |
+| `src/tests/oci/offline-cpu-styled-primitives-browser-entry.mjs` | `a9de78af31094676cbc3b44cdc6ea6921d9b528ad14a163d34ca62f885cf61d3` |
+| `src/tests/oci/offline-cpu-styled-primitives-browser-server.mjs` | `a2937d7e2d34eaa29b20f792aaf01936f0ca7ad141cf84a998390f660e615dba` |
+| `src/tests/oci/offline-cpu-styled-primitives-dto.mjs` | `face506ae4350ae6e4e444062d64873bc83a87837dd16aff3d85cd4ef22dc59b` |
+| `src/tests/oci/offline-cpu-styled-primitives-proof-fixtures.mjs` | `253d94d3b35a7b4284ff710b298bc273f74c9af0a84d8c0f69a59b6584a14b62` |
+| `src/tests/oci/offline-cpu-styled-primitives-resource-child.mjs` | `4449a9b6b3da279f5d1980bf678c33542a7151138d5c7dba01c75f90086b0bbd` |
+| `src/tests/oci/offline-cpu-styled-primitives-resource-proof.py` | `0ad3ab827929d8393b4a9b8e86d53c32210fd23545d7d8e378ea84139565a87b` |
+| `src/tests/oci/offline-cpu-styled-primitives.mjs` | `8eed54d958cf06e80ab686b0bae62b2a8dfa1513a3ed318d9abf48e7197fccf0` |
+| `src/tests/oci/offline-cpu-styled-primitives.test.mjs` | `6a98d07be9276b90a176fad2b78769e7284defc479edd642ee3876619e5ec421` |
+| `src/tests/oci/test_offline_cpu_styled_primitives_resource.py` | `2b9efb984990970e170bcaf3a86b8f81cafb325d2d74562a5b3151dd43d4980d` |
+| `src/tests/unit/offline-cpu-styled-primitives-admission.test.ts` | `bc6401eba4dd49562a42a087c601be5dedc0432be4eb1aed1737c4fd666ae022` |
+
+독립 QA 실행 결과:
+
+- `node --test tests/oci/offline-cpu-styled-primitives.test.mjs`: 9/9 PASS.
+- `PYTHONDONTWRITEBYTECODE=1 python3 tests/oci/test_offline_cpu_styled_primitives_resource.py`: 7/7 PASS.
+- `npx vitest run tests/unit/offline-cpu-styled-primitives-admission.test.ts tests/unit/offline-cpu-primitives-admission.test.ts`: 5/5 PASS(신규 admission2, 기존 FUP2 admission3).
+- `node --test tests/oci/offline-cpu-primitives.test.mjs`: 기존 FUP2 8/8 PASS. 추가 static syntax check 7개 JS/2개 Python PASS.
+
+### Root source-bound 실제 proof
+
+| 시험 | 관측 |
+| --- | --- |
+| normal resource | 6 primitives/57 segments/3 visible, readback·temp cleanup, exit0, 0.654s; payload `5456006c84e092df245cb0e8316011f053549cbc8545e285b4af81cad2d7ecc6` |
+| resource boundary | digest-pinned Node harness만 실행; network none/port0/UID10001/read-only root·source bind/cap drop/NNP/CPU1/768MiB/swap0/pids64, empty read-only `/data` tmpfs. 운영 App/Worker/DB/CAD/restore volume mount0 |
+| kernel probe | 동일 stall CID/cgroup에서 UID10001/CapEff 0000000000000000/NoNewPrivs 1/memory.max 805306368/swap.max 0/cpu.max `100000 100000`/pids.max 64 관측 |
+| watchdog | 고의 late hang을 120.213s에 종료, exit137, OOMKilled=false, partial receipt 거부·후보 미수용; exact owned containers 모두 제거. OOM injection·120초 이하 실행 SLA는 주장하지 않음 |
+| fresh Browser | synthetic readback payload `5456006c84e092df245cb0e8316011f053549cbc8545e285b4af81cad2d7ecc6`를 fresh context에 전달, source DXF request0. 6 primitives/57 segments/3 visible, buffers/analytic geometry/bbox/CCW goldens 일치. source chord max 0.048308472057mm, vertex Euclidean max 0.000001573597mm, quantized midpoint combined max 0.048309385273mm(합산 cap0.1mm 안) |
+| Browser pixels/negative | visible red/yellow/green 180/406/209 pixels; off/frozen/entity-hidden regions 0/0/0 pixels. page/console/request errors0. 12 negative DTO cases reject, semantic packet digest 재계산 후 valid positive 복원도 확인. dedicated browser/server/listener/container cleanup PASS |
+| 실제 immutable DXF | 독립 및 Root replay 모두 원본 1,117,143 bytes 전체를 `DXF_SECTION`으로 거부, payload0, 원본 SHA 불변. immutable archive SHA `625e6b36e2bcb9c94e5e1d7bba735c7f26323ee963f212b58121f5d6a5ef1057`는 실행 전후 동일. copied snapshot의 `CadFileVersion`에서 `storage_path`, `sha256`, `file_size`만 읽었고 원본 CAD/변환 artifact를 저장하지 않음 |
+
+Root actual receipt SHA256 `85ed52608f1e17e947b7b3f053dd9e4e09a59ee38c96ccb3e6b10235d58b1f73`(10 source binding), Root final local verification SHA256 `46bb846d0817b11c20fe6e6896bc9a2e9ff6804dcf7c0af415641e87dfa88a3c`. Root typecheck/build PASS, lint0 errors/12 baseline warnings, Vitest177 files/1108 tests PASS( 413.94s). Root가 수행한 전체 checks/browser/watchdog는 independent QA 재실행으로 기록하지 않는다. Independent whole-DXF replay receipt (private local evidence under `/home/planner/Dev/layoutManager/data/release-proof/issue225-tables-20261108/`) SHA256 `a13315b60b9950fd189cc4175c52148cf54954b560353feb0a2aacb38700b4e9`; Independent QA receipt (private local evidence under `/home/planner/Dev/layoutManager/data/release-proof/issue225-tables-20261108/`) SHA256 `c0e3af44f7785d948a54295f4eb2e80bf86fb96dbb97b57251d3937198372e99` (mode0600).
+
+**수용 한계:** actual drawing은 새 TABLES/header semantics 적용 전 단계에서 UNSUPPORTED이며 이 결과는 layer/style 실도면 fidelity를 검증하지 않는다. font/text rendering, full file, production READY, OOM injection, production deployment, flags, pilot GO를 주장하지 않는다. Source0.61.0/operating0.58.0·기존 dirty worktree를 보존했고 Manager 제한부 수용 완료이며 exact-head CI/Root 통합은 대기다.
+
+Manager final receipt SHA256 `83b33acd93f54844c0b32c91f101017bf80d9e2712c9e0cf6021275a0837dc97`: source10·Root actual/final·independent QA/replay receipt hash를 결합하고 제한부 offline 범위만 수용했다. 구현 재작업은 없으며 제품 지원·배포·GO를 승인한 결과가 아니다.
+
+---
+
 ## U-225-FUP2-20261108 — offline CPU primitive 후보 구현·검증
 
 **판정:** default XY/기본 layer·style/INSUNITS4의 LINE·CIRCLE·ARC·straight LWPOLYLINE을 별도 test-only 후보로 구현했다. 결과는 `offline-cpu-primitives@1 / CANDIDATE / node-cpu-primitives@0.1.0+cad-scene-1`이며 제품 SceneManifest/READY가 아니다. 기존 parser·Builder allowlist·Worker/Queue·DB/Schema·Viewer·flags는 변경하지 않았고 소스0.61.0/운영0.58.0을 유지했다. 실제 전체 DXF는 여전히 미지원이며 파일럿 NO-GO다.

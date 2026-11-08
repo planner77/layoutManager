@@ -1,3 +1,11 @@
+## #225 FUP3 — HEADER/TABLES·layer/style offline 후보 (2026-11-08, 구현 전)
+
+사용자의 다음 작업 요청에 따라 기존 primitive geometry에 제한된 HEADER/TABLES·layer/style 의미를 연결하는 별도 offline 실험을 구현한다. FR-FUP3-STYLE은 기본색/truecolor·BYLAYER·layer off/frozen/locked·entity visibility·continuous linetype·lineweight resolution을 명시적으로 처리한다. 미지원 의미를 숨김/metadata로 간주하여 생략하지 않는다. STYLE table의 존재/제한된 record 검증은 TEXT/font 렌더링 지원과 다르다.
+
+새 `offline-cpu-styled-primitives@1 / node-cpu-styled-primitives@0.1.0+cad-scene-1 / CANDIDATE`를 사용하고 FUP2 identity/tool/DTO 및 제품 parser/Builder/admission/Worker/Queue/Schema/DB/flags를 유지한다. src/tests 전용이며 앱0.61.0/운영0.58.0은 바꾸지 않는다. 실제 전체 도면의 CLASSES/BLOCKS/TEXT 등은 여전히 전체거부·payload0이며 원본 bytes/SHA를 보존한다. 정확 문법·resolution·DTO 계약은 Architecture FUP3가 단일 기준이고 AC/TC는 TestPlan FUP3를 따른다.
+
+---
+
 ## #225 FUP2 — 승인된 offline primitive 후보 구현 (2026-11-08)
 
 FUP2 canonical subset 보완: LWPOLYLINE은 open/closed flag 모두 첫 vertex를 마지막에 반복하는 표현을 지원하지 않는다. group70=0이더라도 동일 좌표로 되돌아오는 유효 DXF가 존재할 수 있으며, 이 후보의 거부는 제한된 canonical subset의 UNSUPPORTED 판정이다. 전체 DXF 형식의 invalid 판정으로 확대하지 않는다. 원래 flag를 바꾸거나 terminal vertex를 삭제하여 통과시키지 않는다.

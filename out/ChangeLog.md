@@ -1,3 +1,11 @@
+## 0.61.0 실험 — offline styled primitive candidate (2026-11-08)
+
+- test-only 새 identity/schema에서 제한된 HEADER/TABLES, LAYER 색·off/frozen/locked/plot, BYLAYER/continuous, 공식 lineweight resolution과 dormant STYLE metadata를 기존 LINE/CIRCLE/ARC/LWPOLYLINE geometry에 결합했다. UTF8/명시1252·AC1018·INSUNITS4 제한과 미지원 semantics의 전체 거부를 유지한다.
+- source-bound DTO validator/restorer는 선언 style에서 RGB·가시성·lock·lineweight resolution을 다시 계산한다. Browser synthetic proof는 hidden geometry 보존·색 pixel·curve/Float32 bounds를 확인했다. 실제 전체 DXF는 `DXF_SECTION`에서 payload 없이 거부됐다.
+- FUP3는 앱 0.61.0 package/제품 parser·Builder admission/Worker·DB/Schema/flags/운영 이미지를 바꾸지 않는 검증 도구다. Root local full suite와 제한부 QA는 PASS; Manager 제한부 수용 완료, exact-head CI/Root 통합 대기. 실도면 지원·READY·pilot GO를 의미하지 않는다. 세부 결과는 TestReport FUP3를 따른다.
+
+---
+
 ## 0.61.0 실험 — offline CPU primitive candidate (2026-11-08)
 
 - test-only Node 후보에서 LINE/CIRCLE/ARC/straight LWPOLYLINE을 strict encoding·default XY/layer/style·유한 geometry/precision/resource 조건으로 처리한다. 별도 offline DTO/CANDIDATE와 full structural validator/restorer·fsynced private readback을 추가했다.

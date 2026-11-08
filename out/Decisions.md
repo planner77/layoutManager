@@ -1,3 +1,11 @@
+## #225 FUP3 — HEADER/TABLES layer/style semantics 별도 offline identity (2026-11-08)
+
+FUP2 primitive identity를 변경하지 않고 AC1018/INSUNITS4의 제한된 HEADER/TABLES/LAYER/LTYPE 및 optional dormant STYLE 의미를 새 `offline-cpu-styled-primitives@1 / node-cpu-styled-primitives@0.1.0+cad-scene-1 / CANDIDATE`로 검증한다. Header/layer/entity color, off/frozen/locked/entity visibility, plot metadata, continuous linetype와 entity/layer/default lineweight precedence를 명시적으로 보존하고, hidden geometry도 검사·segment count에 포함한다. 비지원 table/ref/style/text/font/section은 전체 문서 거부다.
+
+선택 이유: 실제 도면의 TABLES/layer/style 의미를 단계적으로 검증하되 제품 FULL/READY 의미를 넓히지 않는다. RGB/visibility/lineweight는 stored DTO self-claim을 신뢰하지 않고 선언 표에서 다시 계산한다. STYLE record를 읽어도 TEXT/font rendering fidelity는 없다. 기존 FUP2 tool/DTO·strict product admission·앱/운영0.61/0.58·flags OFF·pilot NO-GO를 유지한다. 실제 AC/수용은 Architecture/TestPlan/TestReport FUP3가 정본이다.
+
+---
+
 ## #225 FUP2 구현 — 별도 offline DTO와 제품 admission 분리 (2026-11-08)
 
 확정된 primitive subset을 test-only Node/별도 DTO validator·restorer로 구현한다. 기존 제품 Scene의 READY schema/allowlist를 확장하거나 LINE Builder로 위장하지 않는다. 별도 schema/state CANDIDATE/new builder와 source byte binding을 사용하고 제품 경로의 명시 거부 회귀를 유지한다. 구조·byte 일치 검증과 실제 geometry/encoding 의미를 구별한다.

@@ -79,6 +79,11 @@ jobs:
           node --check src/tests/oci/offline-cpu-primitives-browser-entry.mjs
           node --check src/tests/oci/offline-cpu-primitives-browser-server.mjs
           node --check src/tests/oci/offline-cpu-primitives-resource-child.mjs
+          node --test src/tests/oci/offline-cpu-styled-primitives.test.mjs
+          PYTHONDONTWRITEBYTECODE=1 python3 src/tests/oci/test_offline_cpu_styled_primitives_resource.py
+          node --check src/tests/oci/offline-cpu-styled-primitives-browser-entry.mjs
+          node --check src/tests/oci/offline-cpu-styled-primitives-browser-server.mjs
+          node --check src/tests/oci/offline-cpu-styled-primitives-resource-child.mjs
       - name: Determine required CI scope
         id: classify
         env:

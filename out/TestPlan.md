@@ -1,3 +1,21 @@
+## TP-225-FUP3 — HEADER/TABLES·layer/style 후보 AC/TC (2026-11-08, 구현 전)
+
+아래 항목은 구현 전에 확정한 수용 기준이다. 실제 실행 결과와 제한은 TestReport FUP3를 따른다. Architecture FUP3 canonical contract가 의미 정본이다.
+
+| TC | 수용 조건 |
+| --- | --- |
+| FUP3-01 structure | required HEADER/TABLES/ENTITIES·종료/유일성, TABLE/ENDTAB nesting·capacity70(actual<=capacity)·256/table768total·name/handle/case collisions·canonical nonzero/no-leadingzero hex handle·A/a duplicate 및01/000A rejection·cross-table owner330 mismatch·owner330 일치·missing layer/continuous refs·unknown table/section/header/field 음성. 순서변경 가능한 record field는 중복검사로 처리 |
+| FUP3-02 color | layer ACI1–7/BYLAYER, entity explicit override, entity/layer RGB420 precedence(충돌62포함), 24bit 경계. unsigned misuse/unknownACIwithout420/BYBLOCK/negativeentity/colorbook 음성. independent RGBgolden 비교 |
+| FUP3-03 visibility | off/frozen/entity60 hidden, locked visible/nonfade, plot0 interactivevisible. hidden geometry/segment retained 및 full validation; hidden invalid/unsupported input 전체reject. Browser hidden-fixture 영역 pixel0, visible/locked expectedcolorpixel>0 |
+| FUP3-04 linetype/weight | continuous only·missing ref/BYBLOCK/dash/complex record 거부; entity/LAYER/DEFAULT weight precedence와 공식enum·LWDISPLAY0/hairline metadata 비교, display1/invalidenum/xrefreject. actualwidth fidelity 주장0 |
+| FUP3-05 dormant STYLE | finite metadata/no externalfontread/defaultmetrics/stylecount 보존; unknownflags/shape/vertical/bigfont/invalidfontpath/unknown1071reject. STYLE있어도 TEXT/MTEXT/ATTRIB payload0. 현재 style/header 읽기가 fullfile지원 증거아님 |
+| FUP3-06 DTO | newidentity/exactkeys/source/count/declared+resolved 재검증; forgedRGB/visibility/locked/weight/origin/ref/duplicateID/lateNaN 거부. FUP2 tool/DTO회귀·제품newbuilderManifest/admissionreject·oldLINEcontract 유지 |
+| FUP3-07 actual proof | private durable readback·전체 geometry/precision/resource caps 유지; 전체importclosure hash bound actualnormal+120s stall partialreject/kernel limits/ownedcleanup; newfreshBrowser numeric/material/color/hiddengoldens+pixels/errors0. 기존FUP2proof 재명명0 |
+| FUP3-08 actual unsupported/privacy | immutablewholeDXF finalsource replaypayload0/hash보존·새rejectstage만 기록, 원본transcode/filter/authread0. publicnames/handles/font/text/coords0, selectedmetadata3columns만. 원래 dirty 내용 불변, operating/retained volume data 미mount·미변경, 앱/운영버전·제품변경0 |
+| FUP3-09 acceptance | Developer→Manager source review→독립QA→Manageractualscope 수용. test-only버전0.61유지; fullCADREADY/pilot/OOM미실행claim0; Rootfullchecks와exactheadCI별도 |
+
+---
+
 ## TP-225-FUP2 — offline primitive 후보 구현 AC/TC (2026-11-08, 요구사항·결과 추적)
 
 FUP2-02/04 closure 추가 음성: 유효하게 표현될 수 있는 group70=0 open polyline `[A,B,C,A]`도 이 canonical subset에서는 전체 후보 payload0으로 거부한다. closed flag의 repeated terminal과 별도 fixture로 검증하고, 입력 bytes/hash·flag 불변을 확인한다. 이는 문서 전체 DXF invalid 증명이 아닌 UNSUPPORTED 범위 검사다. FUP2-05에는 fake clock으로 parser/geometry cooperative deadline 거부를 재현하는 회귀를 추가하고 실제120초 parent watchdog 실행과 구별한다.
