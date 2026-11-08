@@ -1,3 +1,17 @@
+## 2026-11-08 — G1 exact 0.58 archive schema readiness (Manager 설계)
+
+Owner [최신 범위](https://github.com/planner77/layoutManager/issues/225#issuecomment-6716368983)의 #225 종료 기준은 지원 2D DXF의 좁은 GO-PILOT이다. BLOCK/INSERT FUP5는 #268의 별도 후속이며 선행 조건이 아니다. B1/B2/B3/E2E/KILL/OOM·3-image registry의 기존 근거를 재실행하지 않는다. 이후 기록된 TestReport OR58-ACTUAL 및 FUP1의 실제 snapshot/독립 volume 복원/exact old App/정상 인증 조회는 이미 관측된 근거로 재사용한다. 과거의 “복원 미실행” 문구는 당시 이력이다.
+
+**확인한 코드 gap:** `or58-proof.py:sqlite_fingerprint`는 integrity/FK, 전체 schema/row hash 및 local CAD/asset 참조를 비교하지만, 두 복사본이 동일하게 drift한 schema/migration이어도 등록된0.58 계약을 별도로 확인하지 않는다. manifest의 schemaId 자체는 exact DDL 검증을 대신하지 않는다.
+
+**최소 구현:** 기존 OR58 archive 검증 경로에 저장소의 G7 release/schema validator를 재사용하는 exact0.58 검사 추가. 새로운 운영 실행기/승인 framework를 만들지 않는다. SQLite/WAL 처리는 기존 private disposable extraction 안에서만 수행하고, 기존 원본·archive는 읽기 전용이다. source code의 등록0.58 선언과 실제 schema/history/manifest를 결합하며 후속0.60/0.61 schema를 old App restore로 수용하지 않는다. 제품 Schema/Worker/admission/버전/flags 변경0; 검증 도구 및 소유 synthetic fixture만 수정한다.
+
+**한계/완료:** 독립 QA 후 Manager는 코드 수준 exact-schema readiness만 수용한다. 기존 실제 백업을 새 validator로 재검사하지 않았다면 NOT RUN으로 남긴다. host writer 독립 배제·합의된 RPO/RTO 및 GO-PILOT 승인은 아직 별도이며 synthetic PASS/이전 복원 성공으로 충족시키지 않는다. 운영 stop/start/capture/restore/migration/flags/GHCR/tag는 이번 범위에 없고 PR CI 시작 후 감시·merge하지 않는다. AC/TC는 TestPlan G1S01–06, 실제 결과는 TestReport가 정본이다.
+
+**Manager 최종 판정 — ACCEPT_WITH_LIMITS:** Developer 구현 검토와 독립 QA의 OR58 34개·auth-clone 5개 PASS, Root 전체 검사 및 기존 immutable archive의 등록0.58 재검증을 근거로 코드/복구 준비 범위를 수용한다. 재작업 blocker는 없으며 실제 source/운영0.61.0/0.58.0 및 GO-PILOT NO-GO를 유지한다. 새 운영 capture/restore·CI 완료·merge를 수용했다는 뜻은 아니다. Root의 최종 commit/push·PR CI 시작은 후속이며 CI 감시/merge는 요청 범위 밖이다.
+
+---
+
 ## 2026-11-08 — 승인된 통제·registry 출고 검증 완료 / 파일럿 NO-GO
 
 Main33f377/CI683 적용8개 PASS의 [candidate42396085571](https://github.com/planner77/layoutManager/actions/runs/42396085571)과 별도 실제 review의 [promotion42398185878](https://github.com/planner77/layoutManager/actions/runs/42398185878)을 완료했다. private3개의 원문·digest·서명·실행 및 최종0.61태그3 동일성, 기존396버전/0.60/latest와 보호 설정·legacy 보존을 확인했다. reader/실제26case 외부 감사 수용과 registry 출고 근거를 묶되 strict helper PENDING/기대값 불충족을 PASS로 바꾸지 않는다.

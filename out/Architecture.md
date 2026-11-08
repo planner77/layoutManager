@@ -1,3 +1,11 @@
+## #225 G1 — OR58 등록 schema와 복사본 동등성 분리 (2026-11-08)
+
+기존 OR58 `sqlite_fingerprint`의 동일 schema/전체 row hash 비교는 복원 충실도이며 등록0.58 schema 적합성과 별개다. G1은 기존 private disposable SQLite extraction에서 등록 release0.58의 `assertDeclaredSchema`를 재사용하여 exact migration history와 허용 DDL/guard를 검증한다. G7 validator의 SQL normalization을 유지하고 별도 Python DDL 정본을 만들지 않는다. exact의 범위는 등록된 application DDL 및 승인된 migration name/checksum/completion/rollback 필드다. 기존 validator가 제외하는 `sqlite_%` 내부 object와 `_prisma_migrations` 자체 DDL의 모든 열까지 검증했다는 뜻은 아니다. manifest의 release/schema/image pair와 빈 historical sourceCommit도 함께 확인한다. 기존 raw DB/WAL/SHM+CAD/asset hash 비교와 local locator 검사 책임은 OR58에 남는다.
+
+검사 실패는 새 restore volume 생성 전 차단한다. 이는 test-only 복구 준비 검증 경로이며 production validator/DB schema·Worker/Scene 또는 운영 백업 실행을 변경하지 않는다. bridge 실패/의존성 부재를 성공으로 간주하지 않는다. 구체 AC는 TestPlan G1S01–06, 실제 실행·기존 archive 재검사 결과는 TestReport가 정본이다. 제품 범위는 지원2D DXF의 좁은 #225 GO-PILOT이며 FUP5 BLOCK/INSERT 구현은 #268의 별도 후속이다.
+
+---
+
 ## #225 FUP4 설계 정본 — section/table 경계와 제한된 BLOCK/INSERT (2026-11-08)
 
 **DESIGN_ONLY. 아래 수용은 향후 최소 구현 Unit FUP5의 설계 수용 범위이며 현재 runtime 지원이 아니다.** 현재 FUP3는 아래 기존 계약만 구현했고 실제 전체 DXF는 UNSUPPORTED·payload0이다. 이번에는 converter/fixture/runtime·제품 admission·Builder/Worker/DB/flags·앱0.61.0/운영0.58.0을 변경하지 않는다. Requirements FR-FUP4와 TestPlan TP-225-FUP4가 이 절을 참조한다. 공식 format 사실, 본 실험의 보수적 선택, 추가 검증이 필요한 사항을 구별한다.

@@ -1,3 +1,11 @@
+## #225 G1 — OR58 exact schema 검사 경계 (2026-11-08)
+
+`or58-proof.py`는 private disposable extraction에서 readonly SQLite bridge로 source-registered 0.58 release/schema validator를 호출한다. 실제 archive는 읽기 전용이며 WAL은 추출 복사본에서만 처리한다. bridge 부재/오류/timeout/비정상 출력은 실패 처리한다. Root의 historical immutable archive offline 재검사는 PASS했으나 새 운영 capture/restore/live start는 없었다. 기존 OR58-ACTUAL/FUP1 복원 및 old App/인증 조회 evidence는 기존 TestReport 결과를 따른다. 이 schema 확인은 host-writer 독립 배제나 합의 RPO/RTO를 증명하지 않으며 GO-PILOT NO-GO를 유지한다. FUP5/#268 별도다.
+
+검사 호스트에는 프로젝트가 지원하는 Node.js와 `npm --prefix src ci`로 설치한 `tsx`·`better-sqlite3`가 필요하다. 의존성이나 bridge가 없으면 restore preflight는 차단되며 별도 검사 없이 진행하지 않는다. Root에서 `PYTHONDONTWRITEBYTECODE=1 python3 src/tests/oci/test_or58_schema.py`로 Docker 없는 전체 schema archive 회귀를 실행한다. 기존 `test_or58_proof.py`의 mock 제어 시험은 npm 설치 전 CI scope에서도 실행되며, 실제 bridge 회귀는 설치 후 별도 필수 단계다.
+
+---
+
 ## FUP3 offline layer/style 후보 검증 (2026-11-08)
 
 FUP3는 `src/tests/oci/offline-cpu-styled-primitives*.mjs`의 test-only 도구다. resource/Browser proof 입력은 synthetic 전용이며, 실제 DXF는 별도 bounded replay에서 전체 거부와 hash 보존만 확인한다. 기존 앱 경로·계정 인증·도면 등록/READY에 연결하지 않는다. `src/`에서 focused Node 시험은 `node --test tests/oci/offline-cpu-styled-primitives.test.mjs`, Docker 없는 resource controller guard는 `PYTHONDONTWRITEBYTECODE=1 python3 tests/oci/test_offline_cpu_styled_primitives_resource.py`, 새 제품 admission 거부와 FUP2 회귀는 `npx vitest run tests/unit/offline-cpu-styled-primitives-admission.test.ts tests/unit/offline-cpu-primitives-admission.test.ts`로 실행한다.

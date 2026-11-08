@@ -2,6 +2,12 @@
 
 > **현행 Owner 정책 (2026-11-04).** 이전 #208/#218 A2-01~06, AC01~09 및 PR #221/#222/#223의 *GO 선행조건 해석*보다 이 문서를 우선 적용한다. 이전 요구·시험·실패 원장은 과거 증거로 보존하며 삭제하거나 성공으로 재분류하지 않는다. 이 정책은 **기존 CI YAML을 즉시 완화하거나 구현되지 않은 Worker가 이미 동작한다는 선언이 아니다**.
 
+## 2026-11-08 — #225 종료 범위와 잔여 Gate
+
+Owner [A안 결정](https://github.com/planner77/layoutManager/issues/225#issuecomment-6716368983)은 #225를 현재 검증된 좁은2D DXF subset의 단일 CPU Worker GO-PILOT으로 한정한다. BLOCK/INSERT FUP5-STATIC-XY는 별도 #268이며 #225 종료 선행조건이 아니다. 상위 #218의 독립 AC와 #231 정책 Gate는 유지한다.
+
+B1/B2/B3·signed HTTP/OCI/Viewer·KILL/OOM 및 REGISTRY의 실제3-image 출고 근거와, OR58-ACTUAL/FUP1의 실제 backup/restore/old App·인증 조회를 재사용한다. 기존 OR58 검증기의 정확0.58 등록 스키마 검사 보완은 G1S01–06으로 추적한다. 독립 writer 배제·승인 RPO/RTO 및 제한된0.61 호환성/G2·명시적 Owner GO/G3는 미충족이면 NO-GO다. 이 절이 아래 역사적 미구현/미게시 문구보다 최신이며, 운영 flags OFF/자동 publisher HOLD·#225/#218 OPEN을 유지한다.
+
 ## 1. 적용 범위와 결정
 
 - 대상: 사내망에서 승인된 사용자만 업로드하는 **2D 중심 DXF**, 소규모 동시 사용자, 단일 서버/단일 Worker(기본 동시 실행 1). DWG/레거시 Version 자동 변환 제외.

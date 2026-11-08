@@ -1,3 +1,7 @@
+## #225 G1 — 등록 0.58 schema의 archive preflight (2026-11-08)
+
+별도 DB 정본을 만들지 않는다. OR58 disposable archive copy에서 `GREENFIELD_UPGRADE_REGISTRY`의 0.58 release에 `assertDeclaredSchema`를 실행하고 등록 application DDL 및 migration name/checksum/completion/rollback history를 검사한다. Manifest의 version/schemaId/image pair도 등록 declaration과 일치해야 한다. Exact 범위는 application schema 및 승인 이력이며 SQLite `sqlite_%` 내부 객체나 `_prisma_migrations` 테이블 자체 DDL의 전체 열 모양까지 뜻하지 않는다. 운영 Prisma schema/migration, DB 및 버전은 불변이다.
+
 ## #225 B3 — 기존 G7 0.61 Schema 사용 (2026-11-04 Draft)
 
 신규 테이블/DDL/기존 Migration history 변경 없음. `SceneBuildJob` unique `versionId/sourceSha256/builder/payloadSchema` 및 `status/attempt/lastCode/actorId/siteId/requestId`를 활용한다. 수동 Retry는 오류 allowlist/attempt<3 및 `RUNNING` 미존재 상태를 확인하고 조건부 UPDATE CAS로 시도 횟수를 유지한다. 파일/Scene 포인터 수정 없음. `AuditEvent` 현재 CHECK는 `SCENE_RETRY_REQUESTED`를 허용하지 않으므로 `AUTHORIZATION_GRANTED`(VERSION/Site)로 **재시도 인가**와 Job의 요청 ID를 상호 참조한다. 독립 Retry 이벤트의 도입은 별도 버전 지정/승인형 migration이 필요하다.

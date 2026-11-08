@@ -17,6 +17,13 @@ SPEC.loader.exec_module(PROOF)
 
 
 class OR58Test(unittest.TestCase):
+    def setUp(self):
+        # Four-table fixtures below isolate local-reference controls. The full
+        # release/schema integration lives in test_or58_schema.py after npm ci.
+        checker = patch.object(PROOF, "assert_registered_058_schema")
+        checker.start()
+        self.addCleanup(checker.stop)
+
     def packet(self, root):
         packet = {"purpose": "OR58", "nonce": "a" * 32,
                   "appId": "876103488dce" + "a" * 52,
@@ -494,7 +501,13 @@ class OR58Test(unittest.TestCase):
         archive_path = root / "fixture.tar"
         with tarfile.open(archive_path, "w") as archive:
             for name, data in (("db/cad.sqlite", dbpath.read_bytes()),
-                               ("db/g7-install.json", b'{}'),
+                               ("db/g7-install.json", json.dumps({
+                                   "appImage": PROOF.OLD_APP_REF,
+                                   "installId": "a" * 8 + "-aaaa-4aaa-8aaa-" + "a" * 12,
+                                   "migratorImage": PROOF.OLD_MIGRATOR_REF,
+                                   "schemaId": "G7-GREENFIELD-SEMANTIC-ZONES-20261101-1",
+                                   "sourceCommit": "", "version": PROOF.VERSION,
+                               }).encode()),
                                ("cad/" + local, cad_bytes)):
                 info = tarfile.TarInfo(name); info.size = len(data)
                 archive.addfile(info, io.BytesIO(data))

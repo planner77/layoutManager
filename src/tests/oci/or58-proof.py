@@ -42,6 +42,7 @@ START_BUDGET = 60
 OUTAGE_BUDGET = 120
 RESTART_RESERVE = 70
 MAX_ARCHIVE = 256 * 1024 * 1024
+SCHEMA_CHECK = ROOT / "src/tests/oci/or58-schema-check.ts"
 
 
 class Blocked(Exception):
@@ -597,6 +598,22 @@ def init_empty_target(root, nonce, target):
         cleanup_helper(cid, nonce=nonce, volume=target, deadline=deadline)
 
 
+def assert_registered_058_schema(dbpath, manifest_path):
+    """Check the disposable SQLite copy with the production 0.58 declaration."""
+    node = shutil.which("node")
+    require(node is not None and SCHEMA_CHECK.is_file(), "OR58_SCHEMA_CHECK_UNAVAILABLE")
+    try:
+        result = subprocess.run((node, "--import", "tsx", str(SCHEMA_CHECK),
+                                 str(dbpath), str(manifest_path)),
+                                cwd=ROOT / "src", env={"PATH": os.environ.get("PATH", "")},
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                timeout=30, check=False)
+    except (OSError, subprocess.TimeoutExpired):
+        raise Blocked("OR58_SCHEMA_CHECK_FAILED") from None
+    require(result.returncode == 0 and result.stdout == b"OR58_SCHEMA_OK\n" and
+            result.stderr == b"", "OR58_SCHEMA_CHECK_FAILED")
+
+
 def sqlite_fingerprint(archive_path, *, raw_file_hashes=None):
     """Normalize WAL only in a disposable extracted copy; never touch source volume."""
     file_hashes = raw_file_hashes if raw_file_hashes is not None else tar_file_hashes(archive_path)
@@ -621,6 +638,22 @@ def sqlite_fingerprint(archive_path, *, raw_file_hashes=None):
             require(integrity == [("ok",)], "OR58_DB_INTEGRITY_FAILED")
             require(not connection.execute("PRAGMA foreign_key_check").fetchall(),
                     "OR58_DB_FOREIGN_KEY_FAILED")
+            manifest_path = target / "db/g7-install.json"
+            require(manifest_path.is_file(), "OR58_INSTALL_MANIFEST_MISSING")
+            require(manifest_path.stat().st_size <= 4096, "OR58_INSTALL_PAIR_MISMATCH")
+            try:
+                manifest = json.loads(manifest_path.read_bytes())
+            except (ValueError, UnicodeDecodeError):
+                raise Blocked("OR58_INSTALL_PAIR_MISMATCH") from None
+            require(isinstance(manifest, dict) and
+                    set(manifest) == {"appImage", "installId", "migratorImage",
+                                      "schemaId", "sourceCommit", "version"} and
+                    re.fullmatch(r"[0-9a-f-]{36}", str(manifest["installId"])) and
+                    manifest["version"] == VERSION and
+                    manifest["appImage"] == OLD_APP_REF and
+                    manifest["migratorImage"] == OLD_MIGRATOR_REF and
+                    manifest["sourceCommit"] == "", "OR58_INSTALL_PAIR_MISMATCH")
+            assert_registered_058_schema(dbpath, manifest_path)
             schema = connection.execute("SELECT type,name,tbl_name,sql FROM sqlite_master "
                                         "ORDER BY type,name,tbl_name").fetchall()
             tables = [row[1] for row in schema if row[0] == "table" and

@@ -1,3 +1,11 @@
+## #225 G1-SCHEMA — 복원 동등성과 등록 스키마 구분 (2026-11-08)
+
+FR-225-G1-SCHEMA: OR58 복원 archive의 DB는 기존 integrity/FK·전체 행/파일 동등성에 더해 repository에 등록된 정확한0.58 release/schema·migration history와 일치해야 한다. 두 사본에 같은 DDL drift가 있어도 복원 대상으로 수용하지 않는다. 검사 실패는 대상 volume 생성 전에 차단하고 검사 런타임 부재·잘못된 결과를 성공으로 대체하지 않는다. 구현 설계/AC는 Issue225 G1-SCHEMA와 TestPlan G1S01–06을 따른다.
+
+Owner A안에 따라 #225 종료 범위는 현재 검증된 좁은2D DXF subset의 단일 Worker GO-PILOT이다. FUP5-STATIC-XY는 별도 #268로 추적한다. OR58-ACTUAL/FUP1/REGISTRY의 기존 완료 증거를 재사용하되 독립 writer 배제·RPO/RTO 기준 수용·G2/G3는 별도 판정한다. 운영 변경·flags 활성화·새 출고 승인이 아니다.
+
+---
+
 ## #225 FUP4 — 미지원 section/table 및 BLOCK/INSERT 지원 범위 설계 (2026-11-08)
 
 **현재 작업은 DESIGN_ONLY다.** FR-FUP4-DESIGN은 불변 실제 DXF의 집계 관측과 공식 format 근거를 구분하여, 다음 최소 offline 구현 Unit과 후속 Unit의 정확한 수용/거부 경계를 정한다. 새 converter·scanner·fixture 코드, dependency/package/CI, 제품 parser/Builder/admission/Worker/Schema/flags, 운영 배포는 이번 작업에서 변경하지 않는다. 기존 FUP3의 전체 실제 도면 UNSUPPORTED·payload0과 source0.61.0/operating0.58.0·pilot NO-GO를 유지한다.

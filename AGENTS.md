@@ -1,3 +1,11 @@
+## #225 G1 재개 — 정확 0.58 스키마 검증 (2026-11-08)
+
+#225 재개 시 [Issue225](out/Issue225.md)의 G1-SCHEMA와 [TestPlan](out/TestPlan.md)의 G1S01–06을 먼저 읽는다. Owner [A안 결정](https://github.com/planner77/layoutManager/issues/225#issuecomment-6716368983)에 따라 제한된 기존 DXF subset의 GO-PILOT을 판정하고 BLOCK/INSERT FUP5는 #268로 분리한다. 기존 OR58-ACTUAL/FUP1의 실제 백업·독립 복원·old App·인증 조회와 REGISTRY의 3이미지 출고 근거를 재사용한다. 아래 과거의 미실행 문구는 당시 상태다.
+
+이번 Unit은 기존 OR58 검증기에 등록된0.58 스키마/마이그레이션 기준 검사를 추가한다. 실제 결과와 잔여 독립 writer/RPO·RTO/Owner GO는 [TestReport](out/TestReport.md)가 정본이다. 운영 stop/start/capture/restore·upgrade/flags·registry/tag 쓰기를 이 코드 작업으로 승인하지 않는다. PR CI는 시작 확인까지만 수행하고 모니터링·병합 없이 인계한다.
+
+---
+
 ## #225 출고 검증 완료 후 재개 (2026-11-08)
 
 최신 실제 결과는 [TestReport](out/TestReport.md)의 U-225-REGISTRY-20261108을 먼저 읽는다. 승인된 candidate/promotion에서 비공개0.61 이미지3개와 원문·서명·기존0.60/latest 보존을 검증했다. 아래 미게시/태그 부재 문구는 당시 이력이다. 자동 publisher HOLD/Scene flags OFF는 유지하며 이 명시적3태그 승격과 구별한다. GO-PILOT은 운영0.58의 동일 스냅샷 백업/schema/RPO/restore 근거가 없어 NO-GO이고 #225/#218은 OPEN이다. 운영 배포·Git tag·latest 교체는 수행하지 않았다.

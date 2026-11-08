@@ -1,3 +1,9 @@
+## #225 G1 exact 0.58 schema static-verifier gap (2026-11-08)
+
+- **발견 유형:** 기존 검증기의 coverage gap이며 관측된 제품/CI 실패가 아니다. `sqlite_fingerprint`의 integrity/FK와 동일 schema/row hash만으로는 양쪽 archive가 똑같이 drift한 등록 schema/history를 걸러내지 못했다.
+- **보완 및 검증:** production registered release validator를 disposable archive DB에 적용하고 manifest pair/history를 확인하도록 연결. 신규 negative tests가 drift/history/newer release를 예상대로 거부했다. 이 기대된 거부는 제품 실패로 분류하지 않는다. OR58 28 + schema 6 tests 및 auth-clone 5 tests PASS; 추가 CI failure 관측 없음.
+- **경계:** `sqlite_%` internal objects 및 `_prisma_migrations` 자체 DDL의 모든 열은 exact application DDL 범위에 포함되지 않는다. 운영 중지/capture/restore 및 host-writer/RPO/RTO 증명은 이번에 수행하지 않음.
+
 ## #225 FUP2 — 초기 probe와 최종 source 구분 (2026-11-08)
 
 초기 Playwright CLI 실행문에서 target URL 치환이 `URL` 생성자 토큰에도 적용되는 오류가 있었고 Session closed 응답을 받았다. 토큰을 분리하고 fresh context에서 정상 실행했으며 해당 실패를 렌더링 PASS로 기록하지 않는다. Node source의 unused helper/test binding을 제거한 뒤 새 regression·resource/Browser proof를 최종 source hash로 다시 실행했다. 이전 source의 실제 proof는 비공개 이력으로 남기고 hash를 바꿔 재사용하지 않는다. 기능/허용 목록·원본·운영에는 변경이 없다.
