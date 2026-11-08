@@ -1,3 +1,11 @@
+## U-273-RF01-20261108 — Release Finalizer 읽기 전용 사전 검증 구현
+
+**소스 구현:** `src/tests/oci/release_finalizer.py` (엄격 packet SHA256/Source/PR CI 및 Squash/Main HOLD read-only 판정), `test_release_finalizer.py` (positive/negative fake API), `.github/workflows/release-finalizer.yml` (workflow_dispatch PLAN-only/read permissions), `pr-ci.yml` 선행 RF-01 Python 검사. Issue #273 정책 정본; `#229 issue229_release_hold.py`, 기존 Candidate/Promotion 및 사용자 운영/registry writer는 **변경0**.
+
+**증거 제한:** Github 파일 작성 확인은 코드 검증·실제 runner 성공과 다르다. Local Python 실행, 실제 GitHub API PLAN, Hosted PR CI의 source 변경 이후 결과는 이 작성 시점에 **NOT RUN / NOT VERIFIED**. 실제 protected merge, 0.61.1 GHCR Candidate/Promotion 및 Issue AC 자동 close는 **미구현/미실행**. 후속 RF-02~04 Gate를 skip하지 않는다. 기존 PR272 CI706/707 성공과 Main42a370c/읽기 전용 Main HOLD #26은 관련 현행 환경 근거로만 재사용하며 이번 RF-01 추가 코드의 성공 증거로 확대하지 않는다.
+
+---
+
 ## U-218-CI705-20261108 — PR #272 Docker layer audit role-match proof
 
 **QA 판정: PASS_WITH_LIMITS.** [PR CI #705 / run 42469008037](https://github.com/planner77/layoutManager/actions/runs/42469008037), exact source HEAD `aff7263b811a0c365cea27b61855e8c0cd5e2765`: Docker job `128695196064` failed on `Final better-sqlite3 file paths or SHA256 changed`; Required Verify `128698837254` failed by dependency. All other applicable jobs succeeded; A2 scoped was SKIPPED, not PASS. CI #705 remains a historical failure; any new-head hosted CI result is a separate pending gate.

@@ -1,3 +1,9 @@
+## #273 — Release Finalizer RF-01 안전한 사전 계획 구현 (2026-11-08)
+
+Owner 요청은 GHCR RELEASE와 Issue Close까지 one-shot 완료를 향하지만 **승인과 검증을 생략하지 않는다**. [Issue #273](https://github.com/planner77/layoutManager/issues/273), [Issue273](out/Issue273.md), [TestPlan](out/TestPlan.md) TP-273, [FailureLedger](out/FailureLedger.md) RF-01을 참조한다. 이번 PR에는 읽기 전용 `release_finalizer.py plan` 및 `release-finalizer.yml`만 구현했다. GITHUB_TOKEN은 GET 최소 권한이며 원격 쓰기0. 현재 `0.61.0` 고정된 #225 candidate/promote와 `#229 HOLD_MAIN/G7_RELEASE_HOLD_TAG_BLOCKED`는 수정·완화하지 않는다. RF-02 merge/Main orchestrator, RF-03 0.61.1+ 승인된 3-image publication, RF-04 이슈 AC closure는 후속 구현 전 **NOT RUN**이다. PR CI 성공 전 릴리스가 성공했다고 말하지 않는다. 운영0.61.0 단일 Worker·사용자 .env/DB/CAD/Volume/복구점/태그 불변. 과거 CI #702~#705 기록 보존, PR #272 Main 병합 성공 증거를 재사용하며 새 코드의 exact HEAD CI를 별도로 검증한다.
+
+---
+
 ## #218 / PR #272 — CI #705 웹 기준 이미지 수리 (2026-11-08)
 
 재개 시 [FailureLedger](out/FailureLedger.md)의 CI705 → [TestReport](out/TestReport.md)의 U-218-CI705 → [TestPlan](out/TestPlan.md)의 TP-218-CI705를 확인한다. 웹 비교 기준 이미지는 `runtime` 단계와 `app` 역할을 명시한다. 전체 package 경로/SHA·native·중복 layer 검증을 유지하며 실제 Docker 결과와 원인 미확정 범위는 TestReport를 따른다. PR272 Draft/Issue218 OPEN, 소스0.61.1과 운영0.61.0을 구별한다. 사용자 범위는 새 PR CI 시작 확인까지이며 완료 감시·병합·운영 변경은 수행하지 않는다.

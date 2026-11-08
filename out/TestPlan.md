@@ -1,3 +1,20 @@
+## TP-273 — Release Finalizer 공통 기능 단계별 검증 (2026-11-08)
+
+| Test | 필수 계약 |
+| --- | --- |
+| RF01-01 | Packet SHA256/닫힌 Schema/정확 Repo+Owner/PR+Issue/HEAD+tree+base/version>=0.61/3role/nonce/stopPolicy. 중복 키·추가 필드·임의 version·잘못된 타입 거부 |
+| RF01-02 | 정확 PR source/tree/package version, latest PR CI/필수 aggregate+scope SUCCESS만 재사용. Ready 새 run FAIL·SKIP·취소·미완료·페이지 초과/중복 RUN 거부 |
+| RF01-03 | PR Open/Draft 별도 상태; Squash merge의 실제 tree·단일 parent==승인된 base와 Main push release-HOLD Job 정확 SHA 성공만 수용; base pointer의 병합 후 자연 진행은 허용 |
+| RF01-04 | Issue/PR 혼동 거부, live API timeout/잘못된 응답/비정상 token은 HALT. GitHub workflow PLAN은 contents/pulls/issues/actions read만, GHCR·Issue write0 |
+| RF01-05 | releaseRequired/closeIssue 요청만으로 외부 GHCR 게시·Issue 완료를 인정하지 않음. signed 3role release/명시 AC receipt 미검증은 `NOT_VERIFIED` |
+| RF02 | Ruleset/미해결 리뷰·Draft→Ready 재검증/충돌/merge CAS 및 Main CI exact SHA, merge 후 최신 Main drift에 대한 재확인. 후속, NOT IMPLEMENTED |
+| RF03 | 기존 #229 Main/tag HOLD positive+negative, exact protected Candidate/Promotion 3-digest/OIDC/2 fresh Owner review/release version, old alias no overwrite, unknown partial fail-closed. 후속, NOT IMPLEMENTED |
+| RF04 | Issue 전체 AC 충족/후속 분리·Owner GO/실제 release receipt 결합 후 딱 1회 close, 중복 호출 안전·source drift 거부. 후속, NOT IMPLEMENTED |
+
+RF-01 CI Scope에 `src/tests/oci/test_release_finalizer.py`를 연결한다. 실제 Python 및 Hosted CI **결과 확인 전 NOT VERIFIED**. Read-only plan 성공은 출고/Issue 종료 성공이 아니다.
+
+---
+
 ## TP-218-CI705 — native package 비교 재현/수리 (2026-11-08)
 
 - C705-T01: 실패한 Docker audit의 실제 baseline/current 파일 집합·SHA 차이 및 각 build context/dependency/cache 입력을 대조한다. 가설과 관측을 분리한다.

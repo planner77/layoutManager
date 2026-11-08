@@ -1,3 +1,11 @@
+## 2026-11-08 — #273 Release Finalizer RF-01 사전 계획 기능
+
+- GitHub issue #273 등록. SHA256-binding 요청 packet, 정확 PR CI/Source tree/Squash/Main read-only HOLD 증거 판정, API GET-only PLAN Workflow와 선행 Python 회귀 테스트 추가.
+- 기존 #229 Main/Tag GHCR HOLD, 0.61.0 signed 3-role Candidate/Promotion, 운영0.61.0은 변경하지 않음.
+- 자동 protected squash/Main orchestration, 0.61.1+ 3-role GHCR publish 및 Issue AC closure는 RF-02~04 후속. 출고/종료 성공이라고 주장하지 않음.
+
+---
+
 ## 0.61.1 — #218 Scene 목록 상태 조회 수정 (2026-11-08)
 
 - CI: 웹 baseline 빌드에 `--target runtime`을 명시하고 레이어 검사에서 `app` 역할을 확인한다. 기존 전체 package SHA/native/중복 검증을 유지하며 CI705 실패·후속 실제 결과는 TestReport/FailureLedger에 기록한다.

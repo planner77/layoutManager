@@ -51,6 +51,10 @@ jobs:
         run: python3 .github/scripts/test_pr_ci_scope.py
       - name: Check Issue #229 persistent release hold
         run: python3 .github/scripts/test_issue229_release_hold.py
+      - name: Check Release Finalizer RF-01 exact-source read-only policy
+        run: |
+          python3 -m py_compile src/tests/oci/release_finalizer.py src/tests/oci/test_release_finalizer.py
+          python3 src/tests/oci/test_release_finalizer.py
       - name: Check Issue #225 proof contracts without external writes
         run: |
           python3 -m py_compile src/tests/oci/rp-provenance.py src/tests/oci/test_rp_provenance.py src/tests/oci/cp-control-proof.py src/tests/oci/test_cp_control_proof.py src/tests/oci/registry_promotion.py src/tests/oci/test_registry_promotion.py

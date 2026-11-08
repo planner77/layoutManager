@@ -1,3 +1,12 @@
+## #273 / Release Finalizer RF-01 — 보호 경계 및 아직 미검증 항목 (2026-11-08)
+
+- **새 CI 실패는 관측하지 않음.** 이번 Issue는 기존 여러 번의 PR→Main→GHCR→Issue 종료 지시와 #229 2-image 자동 게시 위험을 줄이는 공통 개선이다. #229 구현은 `>=0.61.0` Main `HOLD_MAIN`, Tag `G7_RELEASE_HOLD_TAG_BLOCKED`를 강제하며, existing candidate/promote는 0.61.0 exact-version·Owner 별도 Environment review가 필요하다. 단순 자동화로 동일 승인 간주 금지.
+- **설계상 차단:** RF-01은 read-only GET/plan 전용이며 release authorization과 Issue acceptance를 `NOT_VERIFIED`로 남긴다. Signed 3-image packet/Owner approval 없는 GHCR 게시 및 #218 AC 최종 대조 없는 Close를 시도할 수 없다. 이는 새 실제 실패 기록이 아니라 의도적 정책이다.
+- **미실행:** 새로운 소스의 Python/Hosted CI 통과, 실제 API 실행/merging/release GHCR/issue closure는 확인 전 `NOT VERIFIED/NOT RUN`. 향후 CI 실패를 역사 원장에 정확 run/HEAD로 누적, 기존 #702~#705 FAIL 기록 삭제 금지.
+- **운영:** Main42a370c, 운영0.61.0 단일 Worker·flags ON, DB/CAD/Volume/.env, 기존 digest/tag/복구점 불변. 출시를 무승인 재시도하지 않음.
+
+---
+
 ## #218 / PR #272 — PR CI #705 standalone layer audit role mismatch (2026-11-08)
 
 - **Hosted 관측:** [PR CI #705 / run 42469008037](https://github.com/planner77/layoutManager/actions/runs/42469008037), exact HEAD `aff7263b811a0c365cea27b61855e8c0cd5e2765`. Docker job `128695196064` **FAIL** at audit `Final better-sqlite3 file paths or SHA256 changed`; Required Verify aggregate `128698837254` failed by dependency. Other applicable jobs succeeded; A2 scoped was SKIPPED (not PASS).
