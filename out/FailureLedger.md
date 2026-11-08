@@ -1,3 +1,12 @@
+## #218 / PR #272 — PR CI #703 Scope/RE01 고정 버전 시험 실패 (2026-11-08)
+
+- **Hosted 관측:** [PR CI #703/run 42466803358](https://github.com/planner77/layoutManager/actions/runs/42466803358), exact PR HEAD `33557f568456a9dbd038325ce823203037ab35e4`는 **FAILURE**. Scope Job `128688083320`의 Check Issue 단계가 종료 코드1로 실패했다. `.github/scripts/test_pr_ci_scope.py` 7/7 및 `test_issue229_release_hold.py` 6/6은 성공했고 `test_rp_provenance.py` 7/7, `test_cp_control_proof.py` 12/12, `test_registry_promotion.py` 15/15을 통과한 후 `src/tests/oci/test_rp_execution_fix.py` 19건 중 1건 ERROR(나머지 18건은 해당 suite 종료 기준 오류 없음). Docker/G7/Static/Chromium은 선행 Scope 실패로 SKIPPED, Required Verify는 종속 FAILURE. 후속 Job의 제품/OCI 검증 실패를 관측한 것으로 기록하지 않는다.
+- **직접 원인:** `test_input_image_source_role_and_typed_identity_stay_receipt_bound`의 synthetic RR1 receipt `version` 및 OCI `org.opencontainers.image.version` 두 문자열만 `0.61.0`으로 남았다(원본 test 271/277행). 지난 CI #702 수리로 RR2 `checked_input()`의 기대 버전은 `PROOF.current_candidate_version()`(현재 package=0.61.1)이 되었고, 로그 `RR2_PROBE_INPUT_RECEIPT_INVALID`가 정확히 이를 거부했다. 기존 증거 검증 코드를 완화해서 통과시키는 것은 잘못이다.
+- **수리:** Synthetic receipt와 image-label 버전을 동일 `candidate_version = PROBE.PROOF.current_candidate_version()`에 결합한다. 기존 source revision 조작 시 `IMAGE_SOURCE_MISMATCH` 거부, descriptor 위조 시 `TARGET_IDENTITY_UNPROVEN` 거부 assertions는 불변이다. 별도 `test_rr2_cleanup.py`의 old/invalid package version·receipt/image label mismatch negative 테스트도 유지한다. 실 Worker/OCI/제품·CI required-gate·타임아웃·재시도·인가 조건을 변경하지 않는다.
+- **검증·경계:** 이 수정에 대해 GitHub hosted CI는 새 정확 HEAD 기준으로 재실행해야 하며 이전 #703 실패/Skip을 PASS로 소급하지 않는다. 도구 접속 환경에서 프로젝트 전체 소스 기반 로컬 Python/Node/Docker 실행은 **NOT RUN**이다. 코드·fixture 정적 대조와 GitHub 리뷰/충돌/behind 재확인을 한 다음 새 PR CI를 **시작만** 확인하고 완료 감시는 하지 않는다. 기존 #702 실패와 이번 #703 실패를 모두 누적 보존한다. PR #272 Draft, Issue #218 OPEN. 운영0.61.0의 두 Scene flags ON, 단일 CPU Worker·DB/CAD/Volume/복구점·.env·기존 GHCR/Tag 및 자동 Publisher HOLD는 변경하지 않는다.
+
+---
+
 ## #218 / PR #272 — CI #702 hosted 실패·원인·보완 (2026-11-08)
 
 - **관측:** [PR CI #702/run42462441494](https://github.com/planner77/layoutManager/actions/runs/42462441494) exact HEAD `2ffe33d37e55cbbaedc9c59ca8c93c8f460549eb`는 FAILURE. Docker Job `128674486264`와 G7 Greenfield Job `128676025851` 실패; Required Verify `128677544748` 종속 실패. Scope/Static·Unit·Build/G7 signed-runtime/일반 Chromium shards1·2 SUCCESS. #218 A2 scoped job SKIPPED(해당 scope 미적용, PASS 아님).

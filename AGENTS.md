@@ -1,3 +1,9 @@
+## #218 / PR #272 — CI #703 Scope fixture 후속 수리 (2026-11-08)
+
+CI #703/run42466803358: Scope Job128688083320에서 `test_rp_execution_fix.py`의 synthetic RR1 receipt/OCI image label이 `0.61.0` 고정값을 사용하여 source0.61.1의 `current_candidate_version()` 검증에 거부됐다. 필수 downstream Job은 SKIPPED. `out/FailureLedger.md`의 #218 CI703 및 `out/TestReport.md`의 U-218-CI703을 참조하고, 양성 test fixture만 source 현재 버전에 결합해 provenance/negative assertions·required gates를 보존한다. 미해결 리뷰/충돌/behind0 확인 후 정확 HEAD PR CI를 시작만 확인하고 결과 감시는 하지 않는다. 운영0.61.0/flags ON/단일 Worker·원본·볼륨·GHCR/tag 불변, #218 OPEN, PR272 Draft 유지.
+
+---
+
 ## #218 / PR #272 — CI #702 실패 후 검증 재개 (2026-11-08)
 
 [FailureLedger](out/FailureLedger.md) #218/CI702 및 [TestReport](out/TestReport.md) U-218-CI702, [Issue218](out/Issue218.md)의 triage를 우선 참조한다. 새 source0.61.1과 RR2 OCI 검증의 버전0.61.0 고정 계약 불일치가 Docker를, Scene READY가 없는 L05 등록 Version이 Greenfield R3/Zone fixture의 `items[0]` 가정을 깨뜨려 E2E6건을 실패시켰다. 실패한 Job과 이전 성공 Job은 과거 source 증거로 유지하고 보완 후 새 exact HEAD PR CI를 시작하되 완료는 모니터링하지 않는다. PR Draft/Issue OPEN, 운영0.61.0의 Scene flags ON/Worker1·복구점과 원본/DB/.env/dirty 설정/GHCR/tag는 보존한다.

@@ -1,3 +1,9 @@
+## 2026-11-08 — PR #272 CI #703 Scope fixture 잔여 불일치
+
+CI #703의 `test_rp_execution_fix.py` 양성 synthetic receipt·OCI label이 `0.61.0`으로 고정된 채 새 RR2 `0.61.1` strict verifier를 호출해 `RR2_PROBE_INPUT_RECEIPT_INVALID`가 발생했다. 기존 provenance/identity 음성 검증을 보존하며 현재 candidate source version에만 fixture를 결합한다. [FailureLedger](FailureLedger.md) #218/CI703 및 [TestReport](TestReport.md) U-218-CI703을 따른다. 새 exact HEAD hosted CI는 시작 후 완료를 감시하지 않는다. #218 OPEN/PR Draft, 운영0.61.0의 활성 Worker·Scene flags 및 기존 자료/배포 불변.
+
+---
+
 ## 2026-11-08 — PR #272 CI #702 실패 triage / 검증 단계 분리
 
 CI #702(run42462441494)의 source `2ffe33d`는 RR2 검증 드라이버의 신규 후보 버전 `0.61.0` 하드코딩과 L05 UI 시험이 Scene 없는 도면을 공용 fixture 목록 첫 항목에 추가한 뒤 기존 R3/Zone 테스트가 그 행을 READY 대상으로 사용한 문제로 실패했다. [FailureLedger](FailureLedger.md) 및 [TestReport](TestReport.md) U-218-CI702에 실제 Job/artifact 근거·미실행 범위가 있다. source0.61.1의 RR2 receipt/OCI label/manifest 정확 검증 및 Greenfield READY fixture 명시 선택을 보완한다. 신규 HEAD CI 성공 판정·GO-PILOT 확대 불가, PR #272 Draft·#218 OPEN 유지, 운영0.61.0(flags ON, Worker1)/CAD/DB/기존 GHCR 불변.

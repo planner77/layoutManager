@@ -1,3 +1,11 @@
+## U-218-CI703-20261108 — PR #272 Scope regression version fixture 보완
+
+[CI #703/run42466803358](https://github.com/planner77/layoutManager/actions/runs/42466803358) exact HEAD `33557f568456a9dbd038325ce823203037ab35e4`는 Scope Check Issue에서 `test_rp_execution_fix.py` 19개 중 1개가 `RR2_PROBE_INPUT_RECEIPT_INVALID`로 ERROR를 발생시켜 실패했다. 과거 `0.61.0`으로 고정된 synthetic RR1 receipt와 OCI version label이 새 검증 함수가 강제하는 현재 source `0.61.1` 버전 계약과 충돌했다. Scope 초기 PR classifier7 / release HOLD6 및 RP7/CP12/Registry15 성공 결과는 Scope 전체 PASS가 아니다. Docker, Greenfield, G7 runtime, Static/Unit/Build, Chromium Job들은 Scope 의존성으로 SKIP이었다.
+
+**수정 코드:** `test_rp_execution_fix.py`의 단 한 양성 Fixture에 `candidate_version = PROBE.PROOF.current_candidate_version()`를 도입해 receipt와 OCI label을 동일 현재 source 버전에 묶었다. revision mismatch/descriptor mismatch 음성 assertions, 별도 RR2 receipt/label mismatch negative regression, 운영 프로덕션 보호 및 required CI gates는 그대로 두었다. 새 source의 정확 HEAD 검증은 **NOT VERIFIED**이며 새 PR CI는 시작 이후 완료 감시하지 않는다. 로컬 전체 테스트는 이 도구 환경에서 NOT RUN, 이전 CI 실패를 성공으로 바꾸지 않는다.
+
+---
+
 ## U-218-CI702-20261108 — PR #272 hosted 실패 및 보완 후 재검증 경계
 
 **실패 근거:** [PR CI #702/run42462441494](https://github.com/planner77/layoutManager/actions/runs/42462441494), exact HEAD `2ffe33d37e55cbbaedc9c59ca8c93c8f460549eb`: Docker RR2 FAIL(`RR2_PROBE_INPUT_RECEIPT_INVALID`; 0.61.0 고정 vs source0.61.1), Greenfield FAIL(24 PASS/6 FAIL; Scene 없는 신규 L05 Version을 기존 `items[0]` E2E가 선택), Required Verify FAIL. Static/Unit/Build·G7 signed-runtime·일반 Chromium 두 shards는 원래 HEAD에서 성공, A2 scoped는 SKIP. Playwright artifact의 실패 snapshot에서 `l05-status.dxf`·`scene:UNAVAILABLE`을 확인했다.
