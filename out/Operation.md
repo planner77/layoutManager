@@ -1,3 +1,21 @@
+## #273 RF-01/RF-04 요청 nonce 재발행·복원 운영 규칙 보완 (2026-11-09)
+
+원격 checkpoint `requestNonceSha256`는 각 Owner packet의 **원래 요청 nonce를 직접 해시**한 값이다. `stage_nonce`와 `packetSha256`는 서로 다른 필드이며 하나로 대체할 수 없다. 같은 Owner run/packet에서 Candidate/Promotion/CLOSE_INTENT처럼 여러 stage를 작성할 때에만 같은 request nonce 해시가 허용된다. 타임스탬프·공백·정렬만 변경하여 같은 nonce를 재발행하면 거부한다. 비종료 단계 실패 후 재개는 매번 **새 nonce**·완전한 신규 Owner packet·정확 predecessor checkpoint SHA + 재검증된 Owner 보호 승인을 사용한다. 모호한 GitHub POST/PATCH 및 CLOSE_INTENT 재발행은 계속 금지한다. 이 값은 Owner 승인 증명이 아닌 재사용 차단용 결합 증거다.
+
+---
+
+## #273 RF01 durable checkpoint and RF04 AC close operator procedure (2026-11-09)
+
+**Preflight (no writes):** from exact Main with verified PR/Main required CI create fresh `RELEASE_FINALIZER_REQUEST_V1` (Owner intent integrate/release/closeIssue true, exact Issue, PR, Source SHA/tree, version, every AC ID, unique 32-hex nonce, 24h expiry), canonical JSON+SHA256. Owner dispatch `release-finalizer-finish.yml` `mode=plan` (default; GET only). Record actual previous checkpoint SHA if any. A new request source/version or nonce never auto-authorizes release.
+
+**Record Main:** after correct Main CI/HOLD, Owner dispatch `mode=record-main` with exact request packet/SHA and blank predecessor only if none exists. A separately reviewed protected `issue225-candidate-publish` environment job appends one `MAIN_VERIFIED` SHA-bound comment and GET readback. No GHCR tag or deployment occurs.
+
+**Release proofs then Close:** First complete actual RF03 Candidate and Promotion through their **separate** Owner protected manual workflows with signed Candidate artifact and Promotion operation receipt (not this Finalizer). Mark every Issue AC `[x]` only after inspecting evidence. Create a fresh (not reused) RF01 request packet and `RF04_EXACT_CLOSE_INPUT_V1` bundle with `handoff`, `originalPlan`, canonical `promotionPacket`, `promotionPacketSha256`, SHA256 of exact current Issue body, and `ownerIssueClose=true`; SHA-bind bundle and supply exact last checkpoint hash. Run `mode=close`, requiring **third fresh Owner protected approval**. This job downloads the genuine original Candidate+Promotion artifacts, rechecks GitHub run/approval history, SHA256/Sigstore certificate/OCI 3-role, final GHCR tags and historical0.61.0/latest unchanged, then verifies all AC IDs and latest Issue body before appending `CANDIDATE_VERIFIED`, `PROMOTION_VERIFIED`, `CLOSE_INTENT` and issuing ONE Issue state=closed PATCH+readback.
+
+**Recovery/limits:** If a nonterminal checkpoint was durably written before a failure, inspect last comment/digest and read-only report; after independent evidence review issue a **new** fresh packet/nonce binding the previous hash, and resume only the next stage. If `CLOSE_INTENT` exists, if GitHub POST/PATCH is uncertain, or if Issue already closed, **STOP**; compare actual issue state and evidence manually, never automatically retry. GitHub Issue comments are hash-linked but not tamper-proof against repo admins. Existing #229 HOLD, 0.61.0 three role digests/latest, App/Worker/DB/CAD/Volumes/.env/backups and deployment state remain unchanged. PR CI success only proves code, not completed live release/Issue closure.
+
+---
+
 ## #273 — RF-03 Promotion 결과 모순 방지 및 장애 복구 절차 (2026-11-09)
 
 - Owner protected Promotion 중 세 final digest가 정상 게시되었거나 이미 존재하더라도, **마지막 historical 0.61.0 three-role/latest baseline 재검증** 또는 `operation-receipt.json` 무결성/영속화가 실패하면 release를 `COMPLETE`/`NO_OP`으로 간주하지 않는다. Journal `HALT` 또는 receipt 미확인 기반의 sanitized progress `PARTIAL_RELEASE/UNCERTAIN/HALT`는 공개 성공 증거가 아니다.

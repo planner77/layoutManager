@@ -1,3 +1,13 @@
+## RF-01/RF-04 single-PR continuation after verified PR #277/Main (2026-11-09)
+
+PR #277 CI #737/run42556272169 SUCCESS at `a26b336c`; squash Main `8a5e4370`; Main HOLD CI #29/run42558420936 SUCCESS. These historical exact-source/CI proofs are reusable only for the corresponding source and never replace new exact-head PR CI or live RF03 0.61.1+ protected release proof.
+
+RF-01: new `release_finalizer_checkpoint.py` + `release-finalizer-finish.yml` use existing RF01 request packet, owner run attempt1, protected manual dispatch, issue-comment durable hash chain `MAIN_VERIFIED/CANDIDATE_VERIFIED/PROMOTION_VERIFIED/CLOSE_INTENT`, predecessor hash and stage nonce replay guard, and readback after each write. A distinct fresh packet/nonce and explicit current checkpoint hash are required for resume; uncertain remote writes and close intent require manual reconciliation, no auto replay.
+
+RF-04: `release_finalizer_release_proof.py` independently repeats RF03 actual Owner two-run review, original Candidate ZIP/Sigstore/OCI and final three immutable GHCR role digest+old0.61.0/latest baseline; independently validates successful original Promotion operation receipt. `release_finalizer_finish.py` requires exact checked AC IDs in Issue body and SHA256-bound body review plus a fresh third Owner close approval before one guarded Issue `closed` PATCH, after durable CLOSE_INTENT; cannot close on refs/pr/main success alone. No live GHCR/Issue write performed by authoring or tests. New PR must pass exact-hosted CI; original Issue #273 remains OPEN until real acceptance/release. #229 HOLD unchanged.
+
+---
+
 ## #273 / PR #277 — RF-03 version-generic protected Candidate + Promotion integrated implementation (2026-11-09)
 
 - **Baseline verified:** [PR CI #734 / run42535216277](https://github.com/planner77/layoutManager/actions/runs/42535216277) SUCCESS on exact previous HEAD `df9a7de8b6b86930516fc5aa3c61ddec7713455d`, 8 applicable jobs SUCCESS, #218 P1-A2 scoped SKIP, unresolved review threads0 and Draft/open/mergeable. This success is old-source proof only.

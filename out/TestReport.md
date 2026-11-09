@@ -1,3 +1,36 @@
+## U-273-RF01-RF04-CI741 — 구 synthetic fixture 계약 불일치 보완, 신규 CI 결과 미검증 (2026-11-09)
+
+- 실제 [PR CI #741/run42572495438](https://github.com/planner77/layoutManager/actions/runs/42572495438) HEAD `1d3331addbc6a39b09f02afa2b9832d565725ceb`, attempt1 completed FAILURE. Required Scope Job 129012807453: 기존 `test_release_finalizer_finish.py` 8 tests 중 2 ERROR (`test_sequential_sha_chain_and_readable_recovery`, `test_issue_store_single_append_and_exact_close_patch`), 둘 다 정상 보안거부 `RFCP_NONCE_OR_RUN_REUSED`. 필수 aggregate 129012880389 종속 FAILURE, 후속 Job SKIPPED. GHCR 문제 아님.
+- 새 nonce replay P2 정책은 의도대로 작동했으나 이전 양성 fixture가 Owner run이 달라질 때 nonce를 갱신하지 않았다. 구 소스 PASS #739/#740와 #741 FAIL 기록을 유지하면서, 양성 테스트에서 독립 run마다 새 `packet nonce`와 그 packet의 SHA256을 생성하도록 수정. `requestNonceSha256` 및 프로덕션 구현은 변경하지 않았으며 기존 음성 테스트 그대로.
+- 신규 수정 HEAD exact CI는 **NOT VERIFIED**. 직접 GHCR/Issue/운영 write0; 기존 #229 HOLD/이미지/태그/latest/운영 자산과 Issue #273 OPEN 유지.
+
+---
+
+## U-273-RF01-RF04-REPLAY — Ready #740 성공 이후 P2 코드 보완 (2026-11-09)
+
+- 기존 `920c0fc9f70db4810c89206850fc335420e1a792`의 PR CI #740/run42566617481 attempt1 **SUCCESS**(적용8개, scoped A2 SKIPPED), 리뷰 1건 P2 unresolved. 이 성공을 nonce 보완 소스의 검증으로 소급하지 않는다.
+- P2 정적·synthetic 원인: `stage_nonce` 파생 nonce가 stage별로 달라지고 기존 RF04는 packetSha256만 비교하므로 같은 Owner 원본 nonce를 다른 timestamp가 포함된 packet의 새 SHA로 재사용할 수 있다. GHCR/실 Issue 종료는 수행하지 않았다.
+- 신규 코드: durable `requestNonceSha256` 필수 스키마와 체인/제안/append/close 사전 게이트; 동일 dispatch의 복수 stage만 허용. 필수 `test_release_finalizer_finish.py`에 타임스탬프 변경·동일 nonce 재발행 거부, 위조 원격 댓글, 동일 dispatch stage 양성, 새 nonce 진행 양성 테스트 추가. 정확 HEAD CI 전 **NOT VERIFIED**.
+- 현재 #229 HOLD, 기존 0.61.0 이미지/태그/latest 및 운영 데이터 무변경. 리뷰 thread는 보완된 정확 HEAD에 대한 확인 후 resolve, 신규 required PR CI 성공 후 보호 Squash.
+
+---
+
+## U-273-RF01-RF04-CI738 — real required Scope failure and scoped repair (2026-11-09)
+
+- Hosted [PR CI #738/run42561800674](https://github.com/planner77/layoutManager/actions/runs/42561800674), old exact HEAD `76d497007590d2b8e15d44cb5906d54badfdddff`, attempt1: required Scope job 128979631504 FAILED; `test_release_finalizer_finish.py`: **7 total / 1 FAIL**, stale predecessor negative expected `release_finalizer.Blocked` but function returned. Aggregate required verification failed from dependency; downstream E2E/OCI and quality skipped. Earlier RF01/02/03 and #229 Scope checks passed.
+- Source inspection found `proposed_event` missing direct comparison of supplied previous hash with canonical prior event, though `IssueStore.append` did remote validation. Repair requires prior event validation and same release identity/Main before proposal; negative test unchanged.
+- This checkpoint records a prior failed source and an authored fix, not a successful retry. New exact HEAD PR CI NOT VERIFIED until the host actually finishes it. No GHCR/Image/Issue/operational writes; #229 HOLD unchanged.
+
+---
+
+## U-273-RF01-RF04 — implementation checkpoint, hosted CI pending (2026-11-09)
+
+- **Trusted prior baseline:** PR #277 exact HEAD `a26b336c93f371364afc986fc9dbfa3273429d98`, PR CI #737/run42556272169 completed SUCCESS, 8 applicable SUCCESS, 1 scoped SKIP. Main Squash `8a5e437011238d11694d5c9df2d220871e66f7ec`, tree `5172ccb1ac1fb43b65365a0bcab718814f2fc0d1`, single parent `bd03e6fb`. Main push HOLD CI #29/run42558420936 attempt1 SUCCESS. Those proofs validate prior code, **not** the new unverified follow-up HEAD.
+- **Authored:** RF01 durable Issue comment/checkpoint writer and fail-closed stage chain; RF04 separate release readback of actual authenticated GitHub Candidate/Promotion, original ZIP/Sigstore/OCI+final three-role+historical baseline, complete Issue AC check and protected single close intent/PATCH; Owner default-plan workflow and synthetic negative tests wired into required PR Scope.
+- **Test status:** source authored; local/hosted new-source execution not claimed yet. Full new HEAD PR CI result **NOT VERIFIED** until it completes. No actual Candidate/Promotion Owner approvals or GHCR 0.61.1 final digest/Issue close was executed. No #229 HOLD/old 0.61.0 tag/latest/operations changed; failures from historical #729/#731 retained.
+
+---
+
 ## U-273-RF03-P1-POSTCHECK — CI #736 통과 후 발견한 리뷰 차단 (2026-11-09)
 
 - 검증된 **이전 HEAD** `22fe22d3cacffc05bde0d3a14f919c3c28a108ed`: [PR CI #736/run42547166306](https://github.com/planner77/layoutManager/actions/runs/42547166306) attempt1 8 applicable SUCCESS, #218 scoped SKIPPED, PR Ready/mergeable. 이후 Codex post-review P1 unresolved 1건.

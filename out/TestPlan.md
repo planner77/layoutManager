@@ -1,3 +1,39 @@
+## TP-273-RF01-RF04-CI741 — 새 nonce 계약에 맞는 양성 synthetic fixture 회귀 (2026-11-09)
+
+1. 실제 보호 규칙: 서로 다른 Owner `workflow_dispatch` run ID는 동일 `requestNonceSha256`을 공유하면 **무조건 거부**, timestamp·JSON·packetSha 변경으로 우회 불가. 동일 run 및 동일 packet에서 여러 단계만 허용. 기존 거부 음성 테스트 변경 금지.
+2. `test_sequential_sha_chain_and_readable_recovery`: run222 Main/nonce1과 run333 Close/nonce2, 단계2-4는 동일 run333 + 같은 packet. 모든 4단계 순서/이전 SHA/시도 ID/원본 nonce 해시를 확인.
+3. `test_issue_store_single_append_and_exact_close_patch`: 각 분리된 synthetic run(321..324)에 새 32-hex 원본 nonce, 새 packet SHA, 불변 repo/Issue/PR/Tree/Main release identity를 사용해 GitHub Issue 댓글 chain과 readback 및 single PATCH 정상 검증. 이후 재호출은 차단.
+4. `#741` 실제 Scope 8 tests 2 ERROR 로그를 근거로, 코드 정책 완화 없이 해당 두 fixture만 보정한다. 새 HEAD 필수 PR CI 전 PASS 주장 금지. 0.61.0 baseline/Tag/latest/HOLD/운영 데이터와 Issue #273 보존.
+
+---
+
+## TP-273-RF01-RF04-REPLAY — Owner request nonce 독립 영속 바인딩 (2026-11-09)
+
+1. RF01 동일 `nonce`로 `issuedAtEpoch`, `expiresAtEpoch` 또는 JSON 직렬화만 변경해 다른 `packetSha256`를 생성한 후 두번째 Owner workflow_dispatch로 `CANDIDATE_VERIFIED`를 제안하면 반드시 `RFCP_NONCE_OR_RUN_REUSED` 거부한다. Hash 변화 자체는 새 요청 nonce를 뜻하지 않는다.
+2. Checkpoint entry에는 원본 Owner request nonce SHA256 별도 `requestNonceSha256` required field가 존재하며 `chain()`은 같은 원본 nonce를 같은 `runId+packetSha256` 조합에 한해 복수 stage에서 허용한다. 다른 run/packet, 위조된 comment, stage timestamp 재발행은 거부한다.
+3. `IssueStore.append()`는 실제 입력 packet nonce 해시와 entry의 필드를 비교하며 기존 원격 full-chain readback, 저널 단계 predecessor, no retry, close intent 방어를 유지한다. `execute(close)` 역시 packet SHA 변화와 독립적으로 nonce 재사용을 거부한다.
+4. 기존 #740 PASS는 이전 정확 HEAD 전용. 이 보완은 새로운 exact-HEAD 필수 CI/리뷰 해결 후에만 병합 가능. #229 HOLD/기존 GHCR tag/latest/운영 데이터/Issue #273 유지.
+
+---
+
+## TP-273-RF01-RF04-CI738 — predecessor checkpoint negative regression (2026-11-09)
+
+The required `test_strict_nonce_replay_stale_prev_foreign_comment_and_tampering` must reject calling `release_finalizer_checkpoint.proposed_event()` with `previousSha256` unequal to the SHA256 of the actual latest `encode_event` (and reject a nonempty predecessor for first stage). The previous event must also match exact identity and Main. Keep this synthetic negative test unchanged, preserve strict `IssueStore.append()` full-chain readback, retry refusal, #229 HOLD, and required PR Scope execution. PR CI #738 FAILED this assertion; patched HEAD needs new hosted CI. No synthetic result proves live GHCR/Owner authority.
+
+---
+
+## TP-273-RF01-RF04 — durable nonce/checkpoint and AC-verified Issue closure (2026-11-09)
+
+1. Exact `RELEASE_FINALIZER_REQUEST_V1` reuse: freshness/expiry, same repo/Owner/Issue/PR/source/tree/base/version/roles and checked intent. A new packet+nonce is required for an explicit resume and binds last SHA; no automatic writer resumption from CI.
+2. Bounded issue-comment chain `MAIN_VERIFIED → CANDIDATE_VERIFIED → PROMOTION_VERIFIED → CLOSE_INTENT`: strict schema, SHA256 content/previous links, distinct event nonce, Bot author+issue source, run attempt1, monotonic ID/order, duplicate/replayed/missing/foreign/edited/partial page rejection. A single POST is followed by exact GET/readback; unknown network result => HALT without retry.
+3. RF01 current exact PR/Main evidence must be from actual run/required Job/merge SHA/one parent/Main ref and read-only HOLD. Scope must exercise the new unit with existing RF01/RF02/RF03 tests, preserve prior CI successes as old-HEAD historical evidence only.
+4. RF04 `close` fails without distinct successful RF03 Candidate/Promotion Owner-protected runs, separate environment review receipts, authentic GitHub artifact ZIP SHA, pinned gh/Sigstore four subjects, authenticated linux/amd64 3-role candidate OCI, exact promotion receipt, final three immutable GHCR refs and 0.61.0/latest baseline GET/HEAD. No certificate/registry/pass string from input alone is allowed.
+5. Exactly all AC IDs of issue body must be checked; no missing/duplicate/foreign ID or body SHA/owner intent drift. Separate third fresh Owner protected close approval, exact live Main/Job/packet. Writer records `CLOSE_INTENT` then executes a single Issue PATCH and exact readback. A pre-existing CLOSE_INTENT, ambiguous POST/PATCH, issue already closed or partial release must never retry/update.
+6. Negative synthetic tests: stale predecessor, nonce/packet replay, malformed comment, wrong Bot, inconsistent source, incomplete/unchecked AC, bad bundle hash, missing live evidence, second close, missing context; extra writes blocked and no GHCR mutations. New exact HEAD required PR CI; reviewer threads0/conflict0.
+7. Preserve #229 HOLD_MAIN/Tag RuleSet, existing0.61.0 three-role digest/latest/production data and two actual independent Owner releases. Never mark synthetic unit PASS as GHCR/Owner live proof or auto-close Issue #273.
+
+---
+
 ## TP-273-RF03-POSTCHECK — 성공 journal과 최종 release receipt 원자성 (2026-11-09)
 
 - **P1 재현:** synthetic Promotion 3-role `COMPLETE` journal 또는 기존 final refs `NO_OP_CONFIRMED` 직후 immutable 0.61.0 three-role/`latest` baseline readback 오류를 주입한다. Publisher는 실패를 전파하고 journal 마지막 이벤트에 terminal `HALT`를 기록해야 한다. 실 GHCR PUT 없이 실패 경로를 검증한다.

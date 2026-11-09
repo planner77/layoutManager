@@ -1,3 +1,40 @@
+## #273 / PR #278 — #741 nonce replay policy 정상 차단과 synthetic fixture 불일치 (2026-11-09)
+
+- **실제 실패:** [PR CI #741/run42572495438](https://github.com/planner77/layoutManager/actions/runs/42572495438), HEAD `1d3331addbc6a39b09f02afa2b9832d565725ceb`, attempt1 `pull_request`, completed FAILURE. `Classify PR scope and audit merge defaults` Job **129012807453 FAILED** in `Check RF-01 durable checkpoints and RF-04 independently verified AC close`; `python3 src/tests/oci/test_release_finalizer_finish.py` 8 tests / 2 ERROR: `test_sequential_sha_chain_and_readable_recovery` at line 112, `test_issue_store_single_append_and_exact_close_patch` at line 225. Both `release_finalizer.Blocked: RFCP_NONCE_OR_RUN_REUSED` from `release_finalizer_checkpoint.proposed_event` (line 168). Required aggregate **129012880389 FAILURE** as dependent; quality, Docker, G7/E2E skipped, #218 A2 scope skipped. Preceding RF01/02/03 and #229 suites PASS. No GHCR, Owner approval or Main release failure observed.
+- **원인:** #740 후 Codex P2 수리에서 원본 Owner nonce는 `requestNonceSha256`로 저장, 다른 run/packet의 동일 nonce는 차단된다. 두 구 synthetic 양성 테스트는 서로 다른 run ID에서 **똑같은 packet nonce**를 사용했다. 보안 정책은 정확히 거부했으며 테스트 설계가 새로운 필수 계약에 뒤처졌다. 이 오류를 해결하려고 nonce policy를 완화하면 과거 P2를 재도입한다.
+- **수리:** 프로덕션 정책 변경0. 첫 synthetic 정상 체인: Main run 222 + nonce `1×32`, 종료 run 333 + nonce `2×32`, 단일 Owner run333의 3개 stage 재사용만 허용. 둘째 synthetic 정상 remote IssueStore: run321~324 각각 고유 `0×32` ~ `3×32` nonce+동일 identity의 각각 다른 packetSHA, 전체 comment hash-chain 및 마지막 single-close readback 검증. 기존 nonce replay/타임스탬프 변조 음성 테스트 유지. AGENTS, FailureLedger, TestPlan/TestReport에 근거 기록. 새 HEAD hosted CI 미실행/미검증 상태에서 성공 주장 금지; 한 번의 보완 원자 커밋으로 CI 자동 시작.
+- **영향/안전:** #229 HOLD, 0.61.0 three-role GHCR digest/tag/latest, 운영 App/Worker/DB/CAD/Volume/.env/backup 불변. Issue #273 OPEN, PR #278 Ready/open, 이전 P2 thread resolved, 실제 GHCR/Issue write0. 구 CI #739/#740 PASS를 변경 후 CI로 재사용하지 않음.
+
+---
+
+## #273 / PR #278 — #740 PASS 이후 Codex P2 nonce replay (2026-11-09)
+
+- **CI 성공(실패 아님):** [PR CI #740/run42566617481](https://github.com/planner77/layoutManager/actions/runs/42566617481), exact HEAD `920c0fc9f70db4810c89206850fc335420e1a792`, attempt1 completed SUCCESS, 8 applicable jobs SUCCESS, #218 scoped A2 SKIPPED, draft 해제/Ready, Main behind0·mergeable true. 이 CI는 변경 전 source만 검증한다.
+- **미해결 리뷰 보안 문제:** Codex P2 review thread `PRRT_kwDOUQjDfc61I05V` (파일 `src/tests/oci/release_finalizer_finish.py`): 재발행 Owner packet에서 nonce를 그대로 두고 timestamps/직렬화만 변경하면 packetSha256 값이 달라져 `all(e["packetSha256"] != psha...)` 검사를 우회한다. 기존 checkpoint stage nonce는 `sha(request nonce + stage)` 기반이라 다음 stage에서 다른 nonce로 보이는 문제가 있다. 이는 synthetic 재현 가능한 nonce 재사용 정책 누락이며 CI 자체/GHCR 오류가 아님.
+- **보완:** 원본 요청 nonce의 SHA256을 별도 `requestNonceSha256` 필드로 checkpoint에 영속 기록. 포맷·해시·체인 검사와 `proposed_event()`, `IssueStore.append()`, `execute(close)`에서 서로 다른 dispatch의 동일 요청 nonce는 packet SHA/timestamp와 무관하게 거부. 동일 run·packet의 복수 stage만 허용. 엄격 음성 회귀: same nonce/different timestamp SHA/new run FAIL, forged comment FAIL, same-run stages PASS, fresh nonce/new-run PASS. 이전 #738 실패 이력과 기존 #739/#740 성공 증거 보존.
+- **상태:** 변경 소스 exact-HEAD Hosted CI **NOT VERIFIED** (작성 시점); 추가 코드 커밋이 필요해 새 PR CI 실행. 리뷰 해결·충돌 재검증·새 CI SUCCESS 전 보호된 Squash 금지. GHCR/Tag/latest/운영 데이터와 #229 HOLD, Issue #273 OPEN 불변.
+
+---
+
+## #273 / PR #278 — PR CI #738 predecessor hash gate regression (2026-11-09)
+
+- **Observed actual hosted failure:** [PR CI #738 / run42561800674](https://github.com/planner77/layoutManager/actions/runs/42561800674), exact PR HEAD `76d497007590d2b8e15d44cb5906d54badfdddff`, attempt 1, `completed/failure`. `Classify PR scope and audit merge defaults` job **128979631504 FAILED**, `Typecheck, lint, test, build, E2E` aggregate **128979679222 FAILED by dependency**. Quality, OCI Docker, G7/E2E, and shards were SKIPPED; #218 P1-A2 scoped job SKIPPED. Existing RF01/RF02/RF03 and #229 tests in Scope succeeded before the failure. This is NOT a GitHub/GHCR publishing outage.
+- **Exact assertion:** required Scope `python3 src/tests/oci/test_release_finalizer_finish.py` ran 7 synthetic cases, 1 FAIL: `test_strict_nonce_replay_stale_prev_foreign_comment_and_tampering`, line 144, `AssertionError: Blocked not raised`. The test supplied a deliberately incorrect `previousSha256 = f×64` to `release_finalizer_checkpoint.proposed_event` after a valid `MAIN_VERIFIED` event.
+- **Root cause:** `proposed_event()` checked the next stage and stage nonce but did NOT independently verify its supplied previous hash against the canonical SHA256 of the previous event. The remote `IssueStore.append()` guards and re-reads the full chain, but an inconsistent standalone proposed event was improperly accepted before store append. The negative unit caught an actual omission in the local fail-closed policy; never remove or weaken it.
+- **Minimal repair:** before constructing any event, require `previous == sha(encode_event(events[-1]))` (or exactly `None` when no events); also bind the previous event's identity/main SHA to the current exact request, retaining the full remote-chain validation and no-retry semantics. This rejects stale/foreign predecessors without relaxing Issue or GHCR gates. Same PR #278 receives one targeted source fix plus documented findings, with one new exact-HEAD PR CI. Latest source **NOT VERIFIED** until its CI completes; #738 failure preserved in history.
+- **Safety:** PR #278 remains Draft, Issue #273 remains OPEN, #229 `HOLD_MAIN/G7_RELEASE_HOLD_TAG_BLOCKED` intact. Neither this failure nor fix performed GHCR/Tag/latest, production App/Worker/DB/CAD/Volume/.env/backups, Owner approvals or Issue-close writes.
+
+---
+
+## #273 RF-01/RF-04 follow-up — new code without observed CI failure; prior hosted evidence reused (2026-11-09)
+
+- **Baseline (success, not failure):** PR #277 [CI #737/run42556272169](https://github.com/planner77/layoutManager/actions/runs/42556272169) for exact HEAD `a26b336c93f371364afc986fc9dbfa3273429d98`: 8 applicable SUCCESS/1 #218 A2 scoped SKIP, prior P1 thread resolved. Normal squash Main `8a5e437011238d11694d5c9df2d220871e66f7ec` single parent `bd03e6fb` tree `5172ccb1ac1fb43b65365a0bcab718814f2fc0d1`; Main HOLD CI #29/run42558420936 exact push attempt1 SUCCESS. Preserved historical CI #729/#731 failures and RF03 final progress P1 fix.
+- **Potential failure modes addressed, not observed GHCR failures:** expired/reused RF01 nonce, missing/stale checkpoint ancestor, duplicated/foreign/modified GitHub Issue comment, uncertain comment POST, partial GHCR release, signer/Owner/operation receipt mismatch, incomplete AC, double Issue Close after an ambiguous response. Fail-closed stage guards, distinct Owner/Live verifier and negative tests are in one new PR.
+- **New source result:** no new real hosted CI result verified at documentation time. Synthetic tests must be run as required PR Scope and exact HEAD CI is NOT VERIFIED. No GHCR, Git tag, production DB/CAD/Volumes/.env/Worker, #229 HOLD or Issue close mutation performed. The first PR CI begins once after the final atomic source/doc commit; no CI monitoring requested.
+- **Reconcile rule:** an Issue `CLOSE_INTENT` in comment chain with no independently verified closed state is **unknown/partial**, never automatically PATCH again. GitHub comment storage is not an external immutable ledger. Only new Owner-verified packet bound to exact preceding digest can resume nonterminal stages, after independent live source/Owner/GHCR revalidation.
+
+---
+
 ## #273 / PR #277 — PR CI #736 SUCCESS, Ready P1 post-promotion false-success evidence (2026-11-09)
 
 - **CI 상태(실제 실패 아님):** [PR CI #736/run42547166306](https://github.com/planner77/layoutManager/actions/runs/42547166306), 정확 HEAD `22fe22d3cacffc05bde0d3a14f919c3c28a108ed`, attempt 1, completed/success, 적용 8 Job SUCCESS / #218 scoped A2 SKIPPED. 기존 #735도 같은 HEAD 성공. GitHub PR #277 Ready/open/mergeable이나 Codex [P1 unresolved thread](https://github.com/planner77/layoutManager/pull/277) 1건 발생. 이를 CI 실패나 실제 GHCR 장애로 오기하지 않는다.

@@ -1,0 +1,150 @@
+name: Release Finalizer durable checkpoint and AC-gated Issue close
+run-name: >-
+  ${{ inputs.mode == 'close' && format('FINALIZER ISSUE CLOSE | {0}', inputs.packet_sha256)
+      || format('FINALIZER {0} | {1}', inputs.mode, inputs.packet_sha256) }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Read-only plan by default; Owner environment approval for checkpoint/close
+        type: choice
+        options: [plan, record-main, close]
+        default: plan
+        required: true
+      packet_json:
+        description: Fresh exact RELEASE_FINALIZER_REQUEST_V1 bytes; do not include secrets
+        type: string
+        required: true
+      packet_sha256:
+        description: SHA256 of exact packet_json UTF-8 bytes
+        type: string
+        required: true
+      expected_previous_checkpoint_sha256:
+        description: Exact last issue checkpoint SHA256, blank only for first record
+        type: string
+        required: false
+        default: ''
+      evidence_bundle_json:
+        description: Close only; reviewed RF04_EXACT_CLOSE_INPUT_V1 JSON, no secrets
+        type: string
+        required: false
+        default: ''
+      evidence_bundle_sha256:
+        description: Close only; SHA256 of exact evidence_bundle_json UTF-8 bytes
+        type: string
+        required: false
+        default: ''
+
+permissions: {}
+
+# Share the existing protected Candidate/Promotion publisher lock. Unknown
+# writes are never automatically re-run, even after a cancellation/failure.
+concurrency:
+  group: issue225-candidate-publish
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    if: >-
+      inputs.mode == 'plan' && github.ref == 'refs/heads/main' &&
+      github.event_name == 'workflow_dispatch' &&
+      github.repository_id == 1359528829 &&
+      github.actor_id == '45478892' &&
+      github.event.sender.id == 45478892 && github.run_attempt == 1
+    name: RF-01 read-only checkpoint plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+      issues: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Read exact PR/Main/HOLD/Issue checkpoint without any writes
+        env:
+          RF_PACKET_JSON: ${{ inputs.packet_json }}
+          RF_PACKET_SHA256: ${{ inputs.packet_sha256 }}
+          RF_JOB_TOKEN: ${{ github.token }}
+          RF_SENDER_ID: ${{ github.event.sender.id }}
+          RF_EXPECTED_PREVIOUS_SHA256: ${{ inputs.expected_previous_checkpoint_sha256 }}
+        run: python3 src/tests/oci/release_finalizer_finish.py plan
+
+  record-main:
+    if: >-
+      inputs.mode == 'record-main' && github.ref == 'refs/heads/main' &&
+      github.event_name == 'workflow_dispatch' &&
+      github.repository_id == 1359528829 &&
+      github.actor_id == '45478892' &&
+      github.event.sender.id == 45478892 && github.run_attempt == 1
+    name: RF-01 protected durable Main checkpoint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: issue225-candidate-publish
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+      issues: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Bind exact Main CI, verified new nonce and predecessor; one append/readback
+        env:
+          RF_PACKET_JSON: ${{ inputs.packet_json }}
+          RF_PACKET_SHA256: ${{ inputs.packet_sha256 }}
+          RF_JOB_TOKEN: ${{ github.token }}
+          RF_SENDER_ID: ${{ github.event.sender.id }}
+          RF_EXPECTED_PREVIOUS_SHA256: ${{ inputs.expected_previous_checkpoint_sha256 }}
+        run: python3 src/tests/oci/release_finalizer_finish.py record-main
+
+  close:
+    if: >-
+      inputs.mode == 'close' && github.ref == 'refs/heads/main' &&
+      github.event_name == 'workflow_dispatch' &&
+      github.repository_id == 1359528829 &&
+      github.actor_id == '45478892' &&
+      github.event.sender.id == 45478892 && github.run_attempt == 1
+    name: RF-04 protected Issue close
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    environment: issue225-candidate-publish
+    permissions:
+      contents: read
+      actions: read
+      attestations: read
+      packages: read
+      pull-requests: read
+      issues: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Prepare fresh private verifier workspace
+        run: mkdir -m 700 "${{ runner.temp }}/rf04-workspace"
+      - name: Pin the existing GH CLI v2.103.3 archive and binary
+        run: |
+          set -euo pipefail
+          cd "${{ runner.temp }}/rf04-workspace"
+          curl -fLsS -o gh_2.103.3_linux_amd64.tar.gz https://github.com/cli/cli/releases/download/v2.103.3/gh_2.103.3_linux_amd64.tar.gz
+          printf '%s  %s\n' 4c806978ffce1cec70853302a56d70ac6da4f19bae7adca4e1a8ab00633dd91d gh_2.103.3_linux_amd64.tar.gz | sha256sum --check --status
+          tar -xzf gh_2.103.3_linux_amd64.tar.gz gh_2.103.3_linux_amd64/bin/gh
+      - name: Independently verify two Owner approvals, original candidate signatures, final OCI and all AC then close exactly once
+        env:
+          RF_PACKET_JSON: ${{ inputs.packet_json }}
+          RF_PACKET_SHA256: ${{ inputs.packet_sha256 }}
+          RF_BUNDLE_JSON: ${{ inputs.evidence_bundle_json }}
+          RF_BUNDLE_SHA256: ${{ inputs.evidence_bundle_sha256 }}
+          RF_EXPECTED_PREVIOUS_SHA256: ${{ inputs.expected_previous_checkpoint_sha256 }}
+          RF_JOB_TOKEN: ${{ github.token }}
+          RF_SENDER_ID: ${{ github.event.sender.id }}
+          RF_WORKSPACE: ${{ runner.temp }}/rf04-workspace
+          RF_GH_ARCHIVE: ${{ runner.temp }}/rf04-workspace/gh_2.103.3_linux_amd64.tar.gz
+          RF_GH_BINARY: ${{ runner.temp }}/rf04-workspace/gh_2.103.3_linux_amd64/bin/gh
+        run: |
+          set -euo pipefail
+          python3 src/tests/oci/release_finalizer_finish.py close
