@@ -1,3 +1,15 @@
+## Owner Managed 일반 PR / Main CI / GHCR 운영 안내 — #279 (2026-11-09)
+
+전담 운영 전문가가 없는 사내망 ≤50명 운영에서는 **Owner가 명시한 정상 개발/병합 요청을 반복 승인 절차로 되묻지 않는다.** 관련 이슈 묶음 및 구현 → 정확 최종 HEAD PR CI aggregate 성공 → 리뷰 스레드/충돌 해소 → Owner GO에 따른 Squash → 동일 Main SHA CI 확인 순서로 처리한다. `ready_for_review` 단독 전환은 새로운 CI 근거가 필요하지 않다. Markdown-only는 기존 scope-classifier가 허용하는 범위에서만 테스트 생략, 필수 검증 자체는 유지한다. 이미 성공한 동일 exact SHA/범위 근거는 재사용하고, 실패·취소·새 HEAD를 PASS로 취급하지 않는다.
+
+**Main CI:** 일반 GitHub UI Squash로 `main-hold.yml` 또는 해당 Main workflow가 자동 시작됐으면 그 run/source를 확인한다. `GITHUB_TOKEN` 기반 프로그램 merge는 push 트리거가 발생하지 않을 수 있으므로, 자동 run 부재를 확인한 다음에만 기존 RF-02의 정확 Main `workflow_dispatch`를 사용한다. 동일 SHA에 대해 성공 실행이 있다면 중복 dispatch하지 않는다. 모니터링 생략 요청은 시작 확인만, 성공 판정은 별도.
+
+**GHCR/태그:** #229 `HOLD_MAIN` 적용 시 GitHub Main CI 성공 후 GHCR 미게시가 정상이다. Release Finalizer/후보·승격·태그/latest·CPU Worker 운영 투입은 일반 PR의 부수 효과가 아니며 정확한 release/운영 Owner GO 및 출처·불변 3-role digest 확인이 필요하다. Partial/unknown POST는 자동 재시도 금지. Issue는 그 Issue의 실제 AC가 충족된 경우에만 종료한다.
+
+**보호 규칙 관리자 가이드/설정 전환:** [OwnerManagedDelivery](OwnerManagedDelivery.md)의 Live Ruleset ID·현재값·선택 변경·전환/복구 확인을 따른다. 특히 Main strict=true→false는 RF-02 verifier 소스 보완 전 단독 적용 금지. 이 정책 PR은 실제 Ruleset/Environment/GHCR/운영 배포를 수정하지 않는다.
+
+---
+
 ## #273 RF-01/RF-04 요청 nonce 재발행·복원 운영 규칙 보완 (2026-11-09)
 
 원격 checkpoint `requestNonceSha256`는 각 Owner packet의 **원래 요청 nonce를 직접 해시**한 값이다. `stage_nonce`와 `packetSha256`는 서로 다른 필드이며 하나로 대체할 수 없다. 같은 Owner run/packet에서 Candidate/Promotion/CLOSE_INTENT처럼 여러 stage를 작성할 때에만 같은 request nonce 해시가 허용된다. 타임스탬프·공백·정렬만 변경하여 같은 nonce를 재발행하면 거부한다. 비종료 단계 실패 후 재개는 매번 **새 nonce**·완전한 신규 Owner packet·정확 predecessor checkpoint SHA + 재검증된 Owner 보호 승인을 사용한다. 모호한 GitHub POST/PATCH 및 CLOSE_INTENT 재발행은 계속 금지한다. 이 값은 Owner 승인 증명이 아닌 재사용 차단용 결합 증거다.

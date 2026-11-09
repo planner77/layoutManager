@@ -13,7 +13,8 @@ on:
     branches:
       - main
       - 'feat/**'
-    types: [opened, synchronize, reopened, ready_for_review]
+    # Review-state changes alone do not warrant a second CI for the same HEAD.
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
     inputs:
       issue_ref:

@@ -1,3 +1,13 @@
+## Owner Managed 소규모 사내 운영 정책 — #279 (2026-11-09)
+
+**현행 최우선 일반 개발·배포 운영 원칙:** 보호된 사내망, 50명 이하, 전담 전문가 부재. 기존 복잡한 다단계 QA/GO/승인 절차를 일반 변경에 자동 적용하지 않는다. 구현·직접 테스트 → 변경 최종 HEAD 필수 PR CI → 리뷰 스레드/충돌 확인 → **Owner의 기존 명시 지시 또는 Squash 병합 승인** → 정확 Main CI 확인이 기본값이다. 이전에 성공한 동일 SHA/범위의 검증·이미지·실패 원장은 재사용하고, Draft→Ready 전환만으로 PR CI 재실행을 요구하지 않는다. 사용자가 모니터링 생략을 요청한 CI는 **시작 확인까지만** 수행하며 성공을 가정하지 않는다.
+
+**예외:** 데이터/복구/DB migration, 인증·권한, 변경된 보안 경계, OCI 출처·불변 digest·release, 원격 쓰기 부분 성공/불확실성 등 실제 위험에는 필요한 검증과 별도의 정확 Owner GO를 유지한다. #229 HOLD 및 Tag Ruleset, 필수 aggregate PR CI, 고위험 RF Finalizer의 기존 정확 release 검증·서로 독립된 승인 요건을 이번 결정만으로 제거하지 않는다. PR 병합≠GHCR 게시≠운영 배포≠AC 완료·Issue 종료. 사전 Owner 지시를 재요청하지 말되 다른 버전/운영 자원까지 승인 범위를 확대하지 않는다.
+
+운영 표준·현재 Ruleset 스냅샷·수정 계획·복구 기준의 정본: [out/OwnerManagedDelivery.md](out/OwnerManagedDelivery.md). 본 정책은 아래의 과거 작업별 반복 승인/QA 지시 중 일반 프로세스에 관한 부분보다 우선하지만, 코드 결함·AC 및 불변 보안 검증의 실제 실패를 PASS로 바꾸지 않는다. **#279 PR은 문서/PR CI 이벤트 준비에 한정되며 관리자 Ruleset 변경/실제 GHCR 게시를 승인하지 않는다.**
+
+---
+
 ## #273 / PR #278 — PR CI #741 실패: P2 nonce 강화 후 잔존 synthetic 실행 ID 테스트 계약 보정 (2026-11-09)
 
 - **실제 CI 확인:** [PR CI #741/run42572495438](https://github.com/planner77/layoutManager/actions/runs/42572495438), exact HEAD `1d3331addbc6a39b09f02afa2b9832d565725ceb`, attempt1, completed FAILURE. Required Scope job `129012807453`의 `src/tests/oci/test_release_finalizer_finish.py` **8 tests, 2 ERROR** (`test_sequential_sha_chain_and_readable_recovery`, `test_issue_store_single_append_and_exact_close_patch`). 두 예외는 `RFCP_NONCE_OR_RUN_REUSED`이며 required aggregate `129012880389`는 의존성으로 FAILURE, 나머지 E2E/Docker/Quality는 SKIPPED, #218 A2도 scope SKIPPED. 이전 RF01/02/03, #229 Scope 검증은 이 테스트 이전까지 PASS.

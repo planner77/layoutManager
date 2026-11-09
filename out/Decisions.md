@@ -1,3 +1,13 @@
+## ADR-279 — 보호된 소규모 사내망 Owner Managed 간소 배포 정책 (2026-11-09)
+
+**결정:** 조직 내부 ≤50명·전담 전문가 부재 상황에서는 일반 변경에 다단계 release/QA ceremony를 적용하지 않고 Owner 명시 승인 1회, 최종 HEAD 필수 PR CI, unresolved review/conflict 확인, Squash, Main CI 확인으로 운영한다. CI/이미지/기존 증거를 정확한 범위에서 재사용하고, Draft→Ready만으로 중복 PR CI를 만들지 않는다. 현재 Main Ruleset은 승인 리뷰 0회/required check·Squash·resolved threads·strict=true이며, 이번 정책 자체로 설정은 바꾸지 않는다. 실제 위험(권한·데이터/복구/migration·불변 OCI release·불확실한 remote write)만 예외로 추가 게이트를 유지한다.
+
+**범위:** #279 1차 PR은 `pr-ci.yml` 트리거에서 `ready_for_review` 제거 및 문서/회귀 테스트만. Tag Ruleset `26731135`, Main Ruleset `26731716`, #229 HOLD, Release Finalizer RF01–RF04, GHCR/Tags/latest/운영 자산은 불변. `strict_required_status_checks_policy=false`는 동시 PR로 인한 반복 CI를 줄일 수 있지만 `release_finalizer_integrate.py::check_ruleset`가 true를 요구하므로 선행 코드/음성 검증과 별도의 Owner 관리자 변경 후에만 가능하다. GitHub_TOKEN merge 시 Main 자동 push workflow가 발생하지 않는 예외는 명시 dispatch로 처리하되 중복 실행하지 않는다.
+
+**근거·절차·복구:** [OwnerManagedDelivery](OwnerManagedDelivery.md), [Operation](Operation.md), [Issue #279](https://github.com/planner77/layoutManager/issues/279). 과거 단계별 의사결정·실패 기록은 이력으로 유지하고, 새 일반 운영 기본값과 실제 고위험 릴리스 요구를 혼동하지 않는다.
+
+---
+
 ## Decision #273-RF01-RF04 — resumable Issue-comment ledger and independent AC-closure gate (2026-11-09)
 
 A single follow-up PR implements RF-01 durable nonce/checkpoint and RF-04 AC close, reusing RF01 packet/RF02 CI readback and RF03 signed three-role proof. **Decision A:** GitHub Issue comment chain as remote durable checkpoint, with hash-linked stage, source/version/role identity, run attempt1 and a new nonce per reviewed request; protected workflow + shared Candidate/Promotion concurrency. Comments are not considered cryptographic Owner authority, and unknown/partial/missing state always HALT. **Decision B:** no merge, GHCR publish or Issue PATCH from `plan`; actual close requires full independent Owner Candidate/Promotion metadata, OIDC/Sigstore and original artifact, GHCR final digest/old baseline readback, all AC checked against exact body and a distinct fresh Owner Close approval. Persist `CLOSE_INTENT` first; one Issue PATCH only, never auto-retry ambiguous writes. **Decision C:** existing #229 HOLD, exact 0.61.0 images, latest and operational assets remain immutable; code CI green alone never serves as GO-RELEASE or Issue closure. Operator must reissue packet and bind previous hash to resume after nonterminal interruption.

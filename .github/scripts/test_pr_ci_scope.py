@@ -57,6 +57,16 @@ class ScopeTests(unittest.TestCase):
         self.assertEqual(workflow.count("production-build-${{ github.run_id }}"), 4)
         self.assertIn("overwrite: true", workflow)
 
+
+    def test_ready_transition_does_not_retrigger_same_head_ci(self):
+        """One source HEAD check survives Draft-to-Ready; preserve normal triggers."""
+        workflow = (Path(__file__).resolve().parents[1] / "workflows/pr-ci.yml").read_text(encoding="utf-8")
+        self.assertIn("types: [opened, synchronize, reopened]", workflow)
+        self.assertNotIn("ready_for_review", workflow)
+        self.assertIn("  workflow_dispatch:", workflow)
+        self.assertIn("name: Typecheck, lint, test, build, E2E", workflow)
+        self.assertIn("cancel-in-progress: true", workflow)
+
     def test_nul_quoting_and_odd_filenames(self):
         self.assertEqual(parse_paths(b"README.md\0out/a b.md\0"), ["README.md", "out/a b.md"])
 
