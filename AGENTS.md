@@ -1,3 +1,12 @@
+## #273 / PR #278 — Ready CI #740 SUCCESS, P2 요청 nonce 재사용 차단 보완 (2026-11-09)
+
+- **정확한 선행 증거:** [PR CI #740/run42566617481](https://github.com/planner77/layoutManager/actions/runs/42566617481), HEAD `920c0fc9f70db4810c89206850fc335420e1a792`, attempt1 event pull_request, 적용8 SUCCESS/#218 A2 scoped SKIP. Main base `8a5e437011238d11694d5c9df2d220871e66f7ec` 동일, Ready, mergeable true. CI 자체의 실패는 없으나 Codex 신규 **미해결 P2**: Owner request `nonce`를 그대로 사용하고 `issuedAtEpoch` 등만 바꾸면 packet SHA가 달라져 RF04 replay 검사 통과. 각 단계의 stage-derived nonce는 달라 원래 요청 nonce 재사용을 차단하지 못했다.
+- **재현·수정:** 기존 GitHub Issue checkpoint `RF_FINALIZER_DURABLE_CHECKPOINT_V1`에 **`requestNonceSha256`**를 별도 필수 필드로 저장한다. 정확한 Owner nonce 해시를 매 checkpoint에 결합하고, `chain()`과 `proposed_event()` 모두 **동일 요청 nonce는 동일 Owner dispatch `runId`와 동일 packet SHA에서만 재사용 가능**하도록 강제한다. `IssueStore.append()`는 호출 packet의 원래 nonce 해시와 기록 해시 일치 여부도 확인한다. `release_finalizer_finish.execute(close)`는 SHA가 다른 새 request라도 이전 단계와 같은 원본 nonce를 즉시 차단한다. 여러 stage가 하나의 Owner 승인/run에서 이어지는 기존 정책은 유지한다.
+- **음성 회귀:** 최초 `record-main`과 동일 nonce를 유지하며 issuedAtEpoch/expiresAtEpoch만 바꿔 packet hash 변경 후 새로운 dispatch에서 다음 stage 진행 시도 → 거부. 위조 체크포인트 댓글 replay, 동일 dispatch 여러 stage 정상, 새 nonce와 새 run 정상 확인. 선행 #739/#740 PASS는 이전 소스의 검증이지 수정 HEAD 성공 증거가 아님. 모든 코드·시험·원장/가이드를 같은 PR에 원자 커밋 후 새 exact-HEAD 필수 PR CI 재실행. 완료 검증/리뷰0 전에는 Squash/MAIN 진행 불가.
+- **안전:** 기존 #229 HOLD, release Tag Ruleset, immutable 0.61.0 App/Migrator/Worker와 latest, 운영 App/Worker/DB/CAD/Volume/.env/backups, Issue #273 OPEN 유지. 실제 GHCR 출고/이슈 종료 승인과 두 별도 Owner protected release approval은 별개이다.
+
+---
+
 ## #273 / PR #278 — CI #738 predecessor integrity P1 regression fix (2026-11-09)
 
 [PR CI #738/run42561800674](https://github.com/planner77/layoutManager/actions/runs/42561800674), exact old HEAD `76d497007590d2b8e15d44cb5906d54badfdddff`, attempt1 failed in required Scope job 128979631504: `test_release_finalizer_finish.py` 7 tests, 1 negative failure (`Blocked not raised` on stale checkpoint previous SHA). Other previously executed RF01–RF03 and #229 synthetic Scope tests succeeded; aggregate failure is dependent; remaining jobs skipped. This is a real fail-closed `proposed_event` guard omission, **not a GHCR publication or Main failure**.

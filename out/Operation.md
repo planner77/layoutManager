@@ -1,3 +1,9 @@
+## #273 RF-01/RF-04 요청 nonce 재발행·복원 운영 규칙 보완 (2026-11-09)
+
+원격 checkpoint `requestNonceSha256`는 각 Owner packet의 **원래 요청 nonce를 직접 해시**한 값이다. `stage_nonce`와 `packetSha256`는 서로 다른 필드이며 하나로 대체할 수 없다. 같은 Owner run/packet에서 Candidate/Promotion/CLOSE_INTENT처럼 여러 stage를 작성할 때에만 같은 request nonce 해시가 허용된다. 타임스탬프·공백·정렬만 변경하여 같은 nonce를 재발행하면 거부한다. 비종료 단계 실패 후 재개는 매번 **새 nonce**·완전한 신규 Owner packet·정확 predecessor checkpoint SHA + 재검증된 Owner 보호 승인을 사용한다. 모호한 GitHub POST/PATCH 및 CLOSE_INTENT 재발행은 계속 금지한다. 이 값은 Owner 승인 증명이 아닌 재사용 차단용 결합 증거다.
+
+---
+
 ## #273 RF01 durable checkpoint and RF04 AC close operator procedure (2026-11-09)
 
 **Preflight (no writes):** from exact Main with verified PR/Main required CI create fresh `RELEASE_FINALIZER_REQUEST_V1` (Owner intent integrate/release/closeIssue true, exact Issue, PR, Source SHA/tree, version, every AC ID, unique 32-hex nonce, 24h expiry), canonical JSON+SHA256. Owner dispatch `release-finalizer-finish.yml` `mode=plan` (default; GET only). Record actual previous checkpoint SHA if any. A new request source/version or nonce never auto-authorizes release.

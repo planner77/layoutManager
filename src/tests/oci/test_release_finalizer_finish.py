@@ -149,6 +149,52 @@ class GateTests(unittest.TestCase):
                               cp.sha(cp.canonical(first)),
                               "PROMOTION_VERIFIED", {}, 1002)
 
+    def test_owner_request_nonce_reissue_cannot_change_timestamps_or_json(self):
+        original = packet()
+        raw, original_sha = encoded_packet(original)
+        first = cp.proposed_event(original, original_sha, MAIN, [], None,
+                                  "MAIN_VERIFIED", {"proof": "main"}, 40001)
+        prior = cp.sha(cp.canonical(first))
+        # Reusing an Owner request nonce on another workflow_dispatch is
+        # forbidden even if changing only a timestamp changes packet SHA.
+        replay = copy.deepcopy(original)
+        replay["issuedAtEpoch"] += 1
+        replay["expiresAtEpoch"] += 1
+        self.assertNotEqual(encoded_packet(replay)[1], original_sha)
+        with self.assertRaisesRegex(rf.Blocked, "RFCP_NONCE_OR_RUN_REUSED"):
+            cp.proposed_event(replay, encoded_packet(replay)[1], MAIN, [first],
+                              prior, "CANDIDATE_VERIFIED", {}, 40002)
+        original_body = {"id": 10, "user": {"id": cp.BOT_ID},
+                         "body": cp.comment_body(first)}
+        with self.assertRaisesRegex(rf.Blocked, "RFCP_CHAIN_CHANGED_OR_REPLAYED"):
+            # Simulate an untrusted remote comment replay despite
+            # packet-hash/source metadata changing.
+            second = copy.deepcopy(first)
+            second.update(sequence=2, stage="CANDIDATE_VERIFIED",
+                          nonce=cp.stage_nonce(replay, "CANDIDATE_VERIFIED"),
+                          packetSha256=encoded_packet(replay)[1],
+                          runId=40002, previousSha256=prior)
+            cp.chain([original_body,
+                      {"id": 11, "user": {"id": cp.BOT_ID},
+                       "body": cp.comment_body(second)}], original, MAIN)
+        # Same dispatch may legitimately journal several stages with the
+        # same request nonce and packet, but stage nonce remains distinct.
+        same_dispatch = cp.proposed_event(
+            original, original_sha, MAIN, [first], prior,
+            "CANDIDATE_VERIFIED", {"proof": "candidate"}, 40001)
+        comments = [original_body, {"id": 11, "user": {"id": cp.BOT_ID},
+                                    "body": cp.comment_body(same_dispatch)}]
+        events, _ = cp.chain(comments, original, MAIN)
+        self.assertEqual(len(events), 2)
+        fresh = copy.deepcopy(original)
+        fresh["nonce"] = "f" * 32
+        fresh_sha = encoded_packet(fresh)[1]
+        second = cp.proposed_event(
+            fresh, fresh_sha, MAIN, [first], prior,
+            "CANDIDATE_VERIFIED", {"proof": "candidate"}, 40002)
+        self.assertNotEqual(first["requestNonceSha256"],
+                            second["requestNonceSha256"])
+
     def test_issue_store_single_append_and_exact_close_patch(self):
         p = packet(); psha = encoded_packet(p)[1]
         state = {"issue": {"number": 273, "state": "open", "body": issue_body()},

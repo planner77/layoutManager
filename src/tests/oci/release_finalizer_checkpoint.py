@@ -23,7 +23,8 @@ BOT_ID = 41898282  # github-actions[bot] for GITHUB_TOKEN, not Owner approval
 MAX_COMMENTS = 1000
 FIELDS = frozenset(("kind", "repositoryId", "issueNumber", "prNumber",
                     "identitySha256", "sequence", "stage", "nonce",
-                    "packetSha256", "previousSha256", "runId", "runAttempt",
+                    "requestNonceSha256", "packetSha256", "previousSha256",
+                    "runId", "runAttempt",
                     "mainSha", "evidenceSha256"))
 HEX64 = re.compile(r"[0-9a-f]{64}\Z")
 
@@ -78,7 +79,7 @@ def encode_event(event):
          and event["stage"] == STAGES[event["sequence"]-1]
          and type(event["nonce"]) is str and rf.HEX32.fullmatch(event["nonce"])
          and all(type(event[k]) is str and HEX64.fullmatch(event[k])
-                 for k in ("identitySha256", "packetSha256", "evidenceSha256"))
+                 for k in ("identitySha256", "requestNonceSha256", "packetSha256", "evidenceSha256"))
          and (event["previousSha256"] is None or (
              type(event["previousSha256"]) is str and
              HEX64.fullmatch(event["previousSha256"])))
@@ -114,7 +115,7 @@ def chain(comments, packet, main_sha):
                         if type(x) is dict and
                         type(x.get("body")) is str and
                         x["body"].startswith(MARKER)]
-    seen_nonces, seen_runs, previous = set(), {}, None
+    seen_nonces, seen_runs, seen_requests, previous = set(), {}, {}, None
     last_id, events = 0, []
     for item in checkpoint_items:
         need(type(item.get("id")) is int and item["id"] > last_id,
@@ -129,10 +130,18 @@ def chain(comments, packet, main_sha):
              and event["previousSha256"] == previous
              and event["nonce"] not in seen_nonces
              and (event["runId"] not in seen_runs or
-                  seen_runs[event["runId"]] == event["packetSha256"]),
+                  seen_runs[event["runId"]] == event["packetSha256"])
+             # Reissuing the same request nonce with changed timestamp or
+             # JSON bytes is forbidden even when the packet SHA changes.
+             # Several stages in one Owner-protected dispatch are allowed.
+             and (event["requestNonceSha256"] not in seen_requests or
+                  seen_requests[event["requestNonceSha256"]] ==
+                  (event["runId"], event["packetSha256"])),
              "RFCP_CHAIN_CHANGED_OR_REPLAYED")
         seen_nonces.add(event["nonce"])
         seen_runs[event["runId"]] = event["packetSha256"]
+        seen_requests[event["requestNonceSha256"]] = (
+            event["runId"], event["packetSha256"])
         previous = digest
         events.append(event)
     return events, previous
@@ -155,8 +164,12 @@ def proposed_event(packet, packet_sha, main_sha, events, previous,
              and events[-1]["mainSha"] == main_sha,
              "RFCP_PREVIOUS_IDENTITY_CHANGED")
     nonce = stage_nonce(packet, stage)
+    request_nonce = sha(packet["nonce"].encode("ascii"))
     need(all(e["nonce"] != nonce and
              (e["runId"] != run_id or e["packetSha256"] == packet_sha)
+             and (e["requestNonceSha256"] != request_nonce or
+                  (e["runId"] == run_id and
+                   e["packetSha256"] == packet_sha))
              for e in events),
          "RFCP_NONCE_OR_RUN_REUSED")
     event = {
@@ -164,6 +177,7 @@ def proposed_event(packet, packet_sha, main_sha, events, previous,
         "issueNumber": packet["issueNumber"], "prNumber": packet["prNumber"],
         "identitySha256": identity(packet, main_sha),
         "sequence": len(events)+1, "stage": stage, "nonce": nonce,
+        "requestNonceSha256": request_nonce,
         "packetSha256": packet_sha, "previousSha256": previous,
         "runId": run_id, "runAttempt": 1, "mainSha": main_sha,
         "evidenceSha256": sha(canonical(proof)),
@@ -255,7 +269,9 @@ class IssueStore:
         need(self.issue_read()["state"] == "open", "RFCP_ISSUE_NOT_OPEN")
         old, digest = chain(self.comments(), packet, main_sha)
         need(event["sequence"] == len(old)+1
-             and event["previousSha256"] == digest,
+             and event["previousSha256"] == digest
+             and event["requestNonceSha256"] ==
+                 sha(packet["nonce"].encode("ascii")),
              "RFCP_CONCURRENT_CHECKPOINT_CHANGED")
         result = self._call("POST", f"/issues/{self.issue}/comments",
                             {"body": comment_body(event)})

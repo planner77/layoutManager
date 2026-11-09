@@ -192,7 +192,9 @@ def execute(mode, env, token, store, release_verify=proof.verify):
                 "releaseAuthorization": "NOT_VERIFIED"}
     need(1 <= len(stages) <= 3 and stages[0]["stage"] == "MAIN_VERIFIED",
          "RF04_CHECKPOINT_SEQUENCE_NOT_READY")
-    need(all(e["packetSha256"] != psha for e in stages),
+    request_nonce_sha = cp.sha(packet["nonce"].encode("ascii"))
+    need(all(e["requestNonceSha256"] != request_nonce_sha
+             and e["packetSha256"] != psha for e in stages),
          "RF04_NONCE_OR_REQUEST_PACKET_REPLAYED")
     bundle = load_bundle(env)
     ac = acceptance(issue, packet, bundle["issueBodySha256"])

@@ -1,3 +1,12 @@
+## TP-273-RF01-RF04-REPLAY — Owner request nonce 독립 영속 바인딩 (2026-11-09)
+
+1. RF01 동일 `nonce`로 `issuedAtEpoch`, `expiresAtEpoch` 또는 JSON 직렬화만 변경해 다른 `packetSha256`를 생성한 후 두번째 Owner workflow_dispatch로 `CANDIDATE_VERIFIED`를 제안하면 반드시 `RFCP_NONCE_OR_RUN_REUSED` 거부한다. Hash 변화 자체는 새 요청 nonce를 뜻하지 않는다.
+2. Checkpoint entry에는 원본 Owner request nonce SHA256 별도 `requestNonceSha256` required field가 존재하며 `chain()`은 같은 원본 nonce를 같은 `runId+packetSha256` 조합에 한해 복수 stage에서 허용한다. 다른 run/packet, 위조된 comment, stage timestamp 재발행은 거부한다.
+3. `IssueStore.append()`는 실제 입력 packet nonce 해시와 entry의 필드를 비교하며 기존 원격 full-chain readback, 저널 단계 predecessor, no retry, close intent 방어를 유지한다. `execute(close)` 역시 packet SHA 변화와 독립적으로 nonce 재사용을 거부한다.
+4. 기존 #740 PASS는 이전 정확 HEAD 전용. 이 보완은 새로운 exact-HEAD 필수 CI/리뷰 해결 후에만 병합 가능. #229 HOLD/기존 GHCR tag/latest/운영 데이터/Issue #273 유지.
+
+---
+
 ## TP-273-RF01-RF04-CI738 — predecessor checkpoint negative regression (2026-11-09)
 
 The required `test_strict_nonce_replay_stale_prev_foreign_comment_and_tampering` must reject calling `release_finalizer_checkpoint.proposed_event()` with `previousSha256` unequal to the SHA256 of the actual latest `encode_event` (and reject a nonempty predecessor for first stage). The previous event must also match exact identity and Main. Keep this synthetic negative test unchanged, preserve strict `IssueStore.append()` full-chain readback, retry refusal, #229 HOLD, and required PR Scope execution. PR CI #738 FAILED this assertion; patched HEAD needs new hosted CI. No synthetic result proves live GHCR/Owner authority.

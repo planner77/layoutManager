@@ -1,3 +1,12 @@
+## U-273-RF01-RF04-REPLAY — Ready #740 성공 이후 P2 코드 보완 (2026-11-09)
+
+- 기존 `920c0fc9f70db4810c89206850fc335420e1a792`의 PR CI #740/run42566617481 attempt1 **SUCCESS**(적용8개, scoped A2 SKIPPED), 리뷰 1건 P2 unresolved. 이 성공을 nonce 보완 소스의 검증으로 소급하지 않는다.
+- P2 정적·synthetic 원인: `stage_nonce` 파생 nonce가 stage별로 달라지고 기존 RF04는 packetSha256만 비교하므로 같은 Owner 원본 nonce를 다른 timestamp가 포함된 packet의 새 SHA로 재사용할 수 있다. GHCR/실 Issue 종료는 수행하지 않았다.
+- 신규 코드: durable `requestNonceSha256` 필수 스키마와 체인/제안/append/close 사전 게이트; 동일 dispatch의 복수 stage만 허용. 필수 `test_release_finalizer_finish.py`에 타임스탬프 변경·동일 nonce 재발행 거부, 위조 원격 댓글, 동일 dispatch stage 양성, 새 nonce 진행 양성 테스트 추가. 정확 HEAD CI 전 **NOT VERIFIED**.
+- 현재 #229 HOLD, 기존 0.61.0 이미지/태그/latest 및 운영 데이터 무변경. 리뷰 thread는 보완된 정확 HEAD에 대한 확인 후 resolve, 신규 required PR CI 성공 후 보호 Squash.
+
+---
+
 ## U-273-RF01-RF04-CI738 — real required Scope failure and scoped repair (2026-11-09)
 
 - Hosted [PR CI #738/run42561800674](https://github.com/planner77/layoutManager/actions/runs/42561800674), old exact HEAD `76d497007590d2b8e15d44cb5906d54badfdddff`, attempt1: required Scope job 128979631504 FAILED; `test_release_finalizer_finish.py`: **7 total / 1 FAIL**, stale predecessor negative expected `release_finalizer.Blocked` but function returned. Aggregate required verification failed from dependency; downstream E2E/OCI and quality skipped. Earlier RF01/02/03 and #229 Scope checks passed.

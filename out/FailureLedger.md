@@ -1,3 +1,12 @@
+## #273 / PR #278 — #740 PASS 이후 Codex P2 nonce replay (2026-11-09)
+
+- **CI 성공(실패 아님):** [PR CI #740/run42566617481](https://github.com/planner77/layoutManager/actions/runs/42566617481), exact HEAD `920c0fc9f70db4810c89206850fc335420e1a792`, attempt1 completed SUCCESS, 8 applicable jobs SUCCESS, #218 scoped A2 SKIPPED, draft 해제/Ready, Main behind0·mergeable true. 이 CI는 변경 전 source만 검증한다.
+- **미해결 리뷰 보안 문제:** Codex P2 review thread `PRRT_kwDOUQjDfc61I05V` (파일 `src/tests/oci/release_finalizer_finish.py`): 재발행 Owner packet에서 nonce를 그대로 두고 timestamps/직렬화만 변경하면 packetSha256 값이 달라져 `all(e["packetSha256"] != psha...)` 검사를 우회한다. 기존 checkpoint stage nonce는 `sha(request nonce + stage)` 기반이라 다음 stage에서 다른 nonce로 보이는 문제가 있다. 이는 synthetic 재현 가능한 nonce 재사용 정책 누락이며 CI 자체/GHCR 오류가 아님.
+- **보완:** 원본 요청 nonce의 SHA256을 별도 `requestNonceSha256` 필드로 checkpoint에 영속 기록. 포맷·해시·체인 검사와 `proposed_event()`, `IssueStore.append()`, `execute(close)`에서 서로 다른 dispatch의 동일 요청 nonce는 packet SHA/timestamp와 무관하게 거부. 동일 run·packet의 복수 stage만 허용. 엄격 음성 회귀: same nonce/different timestamp SHA/new run FAIL, forged comment FAIL, same-run stages PASS, fresh nonce/new-run PASS. 이전 #738 실패 이력과 기존 #739/#740 성공 증거 보존.
+- **상태:** 변경 소스 exact-HEAD Hosted CI **NOT VERIFIED** (작성 시점); 추가 코드 커밋이 필요해 새 PR CI 실행. 리뷰 해결·충돌 재검증·새 CI SUCCESS 전 보호된 Squash 금지. GHCR/Tag/latest/운영 데이터와 #229 HOLD, Issue #273 OPEN 불변.
+
+---
+
 ## #273 / PR #278 — PR CI #738 predecessor hash gate regression (2026-11-09)
 
 - **Observed actual hosted failure:** [PR CI #738 / run42561800674](https://github.com/planner77/layoutManager/actions/runs/42561800674), exact PR HEAD `76d497007590d2b8e15d44cb5906d54badfdddff`, attempt 1, `completed/failure`. `Classify PR scope and audit merge defaults` job **128979631504 FAILED**, `Typecheck, lint, test, build, E2E` aggregate **128979679222 FAILED by dependency**. Quality, OCI Docker, G7/E2E, and shards were SKIPPED; #218 P1-A2 scoped job SKIPPED. Existing RF01/RF02/RF03 and #229 tests in Scope succeeded before the failure. This is NOT a GitHub/GHCR publishing outage.
