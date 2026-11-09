@@ -215,20 +215,32 @@ def perform(p, expected, api, ui, downloaded, private, gh, token, reader_factory
             need(rt.read_final_set(packet, transport) == 'NO_OP', 'RC_NO_OP_FINAL_SET_CHANGED')
             journal.append({'event': 'NO_OP_CONFIRMED'})
         if result['state'] in ('COMPLETE', 'NO_OP'):
-            need(protected_baseline_readback(reader, p) == baseline_before,
-                 'RF03_HISTORICAL_BASELINE_DRIFT')
-            receipt = {'kind': 'PROMOTION_OPERATION_NOT_NEW_PROVENANCE_V1',
-                'candidateSourceA': p['candidate']['sourceCommit'], 'candidateTreeA': p['candidate']['sourceTree'],
-                'candidateRunId': p['candidate']['runId'], 'candidateReceiptSha256': p['candidate']['artifact']['files']['candidate-receipt.json'],
-                'candidateBundleSha256': p['candidate']['artifact']['files']['candidate-bundle.sigstore.json'],
-                'promotionCodeSourceB': p['promotion']['sourceCommit'], 'promotionCodeTreeB': p['promotion']['sourceTree'],
-                'runId': expected['runId'], 'runAttempt': '1', 'ownerPacketSha256': expected['packetSha256'],
-                'freshReview': review, 'state': result['state'],
-                'finals': {role: {'ref': ca.PACKAGE + ':' + rt.FINALS[role], 'digest': p['roles'][role]['digest']} for role in ca.ROLES},
-                'limits': ['existing_candidate_provenance_not_new_signature', 'no_fresh_runtime_claim',
-                           'non_atomic_external_writers_not_excluded', 'no_auto_rollback_delete_retry_alias_deploy']}
-            validate_operation(receipt, p, expected)
-            candidate.write_new(Path(private) / 'operation-receipt.json', ca.canonical(receipt))
+            try:
+                need(protected_baseline_readback(reader, p) == baseline_before,
+                     'RF03_HISTORICAL_BASELINE_DRIFT')
+                receipt = {'kind': 'PROMOTION_OPERATION_NOT_NEW_PROVENANCE_V1',
+                    'candidateSourceA': p['candidate']['sourceCommit'], 'candidateTreeA': p['candidate']['sourceTree'],
+                    'candidateRunId': p['candidate']['runId'], 'candidateReceiptSha256': p['candidate']['artifact']['files']['candidate-receipt.json'],
+                    'candidateBundleSha256': p['candidate']['artifact']['files']['candidate-bundle.sigstore.json'],
+                    'promotionCodeSourceB': p['promotion']['sourceCommit'], 'promotionCodeTreeB': p['promotion']['sourceTree'],
+                    'runId': expected['runId'], 'runAttempt': '1', 'ownerPacketSha256': expected['packetSha256'],
+                    'freshReview': review, 'state': result['state'],
+                    'finals': {role: {'ref': ca.PACKAGE + ':' + rt.FINALS[role], 'digest': p['roles'][role]['digest']} for role in ca.ROLES},
+                    'limits': ['existing_candidate_provenance_not_new_signature', 'no_fresh_runtime_claim',
+                               'non_atomic_external_writers_not_excluded', 'no_auto_rollback_delete_retry_alias_deploy']}
+                validate_operation(receipt, p, expected)
+                candidate.write_new(Path(private) / 'operation-receipt.json', ca.canonical(receipt))
+            except Exception:
+                # Transport COMPLETE/NO_OP is not final immutable-baseline proof.
+                try:
+                    journal.append({'event': 'HALT',
+                        'state': 'PARTIAL_RELEASE' if result['confirmed'] else
+                                 ('UNCERTAIN' if result['attempted'] else 'HALT'),
+                        'attempted': list(result['attempted']), 'confirmed': list(result['confirmed']),
+                        'phase': 'POST_PROMOTION_BASELINE_OR_RECEIPT'})
+                except Exception:
+                    pass  # progress() independently requires a valid operation receipt.
+                raise
         return result
     finally:
         journal.close()
@@ -312,6 +324,21 @@ def progress(private, public, expected, p):
                 state = 'COMPLETE' if events[-1]['event'] == 'COMPLETE' else 'NO_OP'
         except (ca.Pending, ValueError, KeyError, TypeError):
             state = 'UNKNOWN_JOURNAL'; attempted = []; confirmed = []
+    receipt = private / 'operation-receipt.json'
+    verified_receipt_bytes = None
+    if state in ('COMPLETE', 'NO_OP'):
+        try:
+            need(receipt.is_file() and not receipt.is_symlink()
+                 and 0 < receipt.stat().st_size <= 2 * 1024 * 1024,
+                 'RC_OPERATION_RECEIPT_MISSING_OR_INVALID')
+            data = receipt.read_bytes()
+            operation = ca.decode(data)
+            validate_operation(operation, p, expected)
+            need(operation['state'] == state, 'RC_OPERATION_STATE_MISMATCH')
+            verified_receipt_bytes = data
+        except (ca.Pending, ValueError, TypeError, KeyError, OSError):
+            # Missing or invalid durable receipt cannot authorize a success artifact.
+            state = 'PARTIAL_RELEASE' if confirmed else ('UNCERTAIN' if attempted else 'HALT')
     result = {'kind': 'PROMOTION_PROGRESS_NOT_PROVENANCE_V1', 'ownerPacketSha256': expected['packetSha256'],
         'runId': expected['runId'], 'state': state, 'attempted': attempted, 'confirmed': confirmed,
         'candidateSourceA': p['candidate']['sourceCommit'], 'promotionCodeSourceB': p['promotion']['sourceCommit'],
@@ -320,11 +347,8 @@ def progress(private, public, expected, p):
         'recovery': 'READ_ONLY_RECONCILE_EXACT_THREE_REFS_KEEP_HOLD_NO_AUTOMATIC_FILL_DELETE_ROLLBACK'}
     target = public / 'progress.json'; need(not target.is_symlink(), 'RC_PROGRESS_PATH_REFUSED')
     target.write_bytes(ca.canonical(result))
-    receipt = private / 'operation-receipt.json'
-    if state in ('COMPLETE', 'NO_OP') and receipt.exists():
-        need(receipt.is_file() and not receipt.is_symlink() and receipt.stat().st_size <= 2 * 1024 * 1024, 'RC_OPERATION_PATH_INVALID')
-        validate_operation(ca.decode(receipt.read_bytes()), p, expected)
-        candidate.write_new(public / 'operation-receipt.json', receipt.read_bytes())
+    if verified_receipt_bytes is not None:
+        candidate.write_new(public / 'operation-receipt.json', verified_receipt_bytes)
     names = {'progress.json', 'operation-receipt.json'}
     need(all(p.name in names and p.is_file() and not p.is_symlink() for p in public.iterdir()), 'RC_PUBLIC_PAYLOAD_REFUSED')
 

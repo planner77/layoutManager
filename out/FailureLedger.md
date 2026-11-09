@@ -1,3 +1,12 @@
+## #273 / PR #277 — PR CI #736 SUCCESS, Ready P1 post-promotion false-success evidence (2026-11-09)
+
+- **CI 상태(실제 실패 아님):** [PR CI #736/run42547166306](https://github.com/planner77/layoutManager/actions/runs/42547166306), 정확 HEAD `22fe22d3cacffc05bde0d3a14f919c3c28a108ed`, attempt 1, completed/success, 적용 8 Job SUCCESS / #218 scoped A2 SKIPPED. 기존 #735도 같은 HEAD 성공. GitHub PR #277 Ready/open/mergeable이나 Codex [P1 unresolved thread](https://github.com/planner77/layoutManager/pull/277) 1건 발생. 이를 CI 실패나 실제 GHCR 장애로 오기하지 않는다.
+- **원인:** `rf03_registry_promotion.promote_for_transport_test`가 최종 3-role 집합만 확인하고 `COMPLETE`를 journal 기록하거나, `rf03_release_promote.perform`이 `NO_OP_CONFIRMED`를 기록한 뒤 마지막 역사적 0.61.0 3 역할 및 `latest` baseline 조회/비교가 실패하면, 기존 `progress()`가 Operation Receipt가 없어도 journal 마지막 성공 이벤트를 근거로 `COMPLETE`/`NO_OP`을 내보낸다. final FAIL과 artifact success가 모순된다. 배포 실증이 아닌 코드/리뷰 기반 결함.
+- **설계/수리:** final baseline 또는 receipt 검증/영속화 오류 시 HALT terminal event를 최선 노력으로 fsync append하고 예외 전파. Always-run sanitized progress는 별도로 유효한 operation receipt 존재·packet/run/source/state 일치가 확인되어야만 성공 state와 receipt를 게시한다. 누락/잘못된 receipt·HALT/부분 출고는 `PARTIAL_RELEASE/UNCERTAIN/HALT`로 보수적으로 표기, read-only reconcile·no retry/delete/rollback 유지. 기존 성공/실패 원장 삭제 없음.
+- **회귀/상태:** 기존 Required PR Scope에 synthetic `COMPLETE`/`NO_OP` 사후 baseline failure와 missing/invalid receipt 음성 테스트를 추가한다. 신규 소스의 Hosted PR CI는 **아직 미검증**; #736의 성공을 신규 HEAD에 재사용하지 않는다. 추가 PR CI 재실행은 오직 보완된 HEAD 변경 때문에 필요하다. #229 HOLD, 기존 v0.61.0 GHCR tag/latest와 운영 데이터 유지. 실제 Release GO/Owner 두 별도 승인/RF-04 Issue Close는 미검증이며 미실행.
+
+---
+
 ## #273 / PR #277 — single-batch RF-03 exact-version writer implementation; final CI pending (2026-11-09)
 
 - **Verified baseline:** [PR CI #734/run42535216277](https://github.com/planner77/layoutManager/actions/runs/42535216277), old HEAD `df9a7de8b6b86930516fc5aa3c61ddec7713455d`, completed SUCCESS; eight applicable Job SUCCESS, one #218 scoped SKIPPED; PR Draft, reviews0, conflict0. Earlier #731/#729 failure records retained. This **does not** validate the new RF-03 publisher.

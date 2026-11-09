@@ -1,3 +1,11 @@
+## TP-273-RF03-POSTCHECK — 성공 journal과 최종 release receipt 원자성 (2026-11-09)
+
+- **P1 재현:** synthetic Promotion 3-role `COMPLETE` journal 또는 기존 final refs `NO_OP_CONFIRMED` 직후 immutable 0.61.0 three-role/`latest` baseline readback 오류를 주입한다. Publisher는 실패를 전파하고 journal 마지막 이벤트에 terminal `HALT`를 기록해야 한다. 실 GHCR PUT 없이 실패 경로를 검증한다.
+- **독립 progress gate:** `COMPLETE`/`NO_OP_CONFIRMED` 성공 이벤트만 있고 `operation-receipt.json`이 누락·잘못된 JSON·packet/run/source/state mismatch이면 sanitized `progress.json`의 state는 절대 `COMPLETE`/`NO_OP`이면 안 된다. `PARTIAL_RELEASE/UNCERTAIN/HALT`로 보수적으로 노출하고 성공 영수증을 공개하지 않는다.
+- **보호 회귀:** 유효한 final receipt만 성공 진행 자료에 포함하며 재시도/overwrite/rollback/latest alias/Issue Close를 추가하지 않는다. `src/tests/oci/test_rf03_protected_release.py`를 기존 필수 PR CI Scope에서 실행하고 새 정확 HEAD CI 성공·review threads0·Main ruleset 충족 전에는 merge 불가. 이전 #736 PASS 재사용 불가.
+
+---
+
 ## #273 — RF-03 version-generic Candidate/Promotion protected integration test plan (2026-11-09)
 
 1. RF03 Candidate packet closed schema/Owner exact repo+workflow/source/tree/package/current version (>0.61.0)/role set/nonce/protected workflow_dispatch attempt1; explicit input.version matches packet. Old `CANDIDATE_PREFIX_AUTHORIZATION_V1`, workflow and `0.61.0` reject.

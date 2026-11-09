@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+from tempfile import TemporaryDirectory
 from pathlib import Path
 import unittest
 from unittest.mock import patch
@@ -200,6 +201,77 @@ class RF03ProtectedTests(unittest.TestCase):
                 with self.subTest(tag=tag, value=value), self.assertRaises(
                         candidate.Pending):
                     promoted.protected_baseline_readback(Reader(bad), p)
+
+
+    def test_promotion_progress_refuses_success_without_exact_receipt(self):
+        p = promotion_packet()
+        expected = {'packetSha256': candidate.sha(candidate.canonical(p)), 'runId': '92003'}
+        for terminal in ('COMPLETE', 'NO_OP_CONFIRMED'):
+            for invalid_receipt in (None, b'{}', b'{"state":"COMPLETE"}'):
+                with self.subTest(terminal=terminal, receipt=invalid_receipt), TemporaryDirectory() as work:
+                    private = Path(work) / 'private'
+                    public = Path(work) / 'public'
+                    private.mkdir(); public.mkdir()
+                    journal = promoted.Journal(private / 'promotion-journal.jsonl', p, expected)
+                    if terminal == 'COMPLETE':
+                        for role in ROLES:
+                            journal.append({'event': 'PUT_INTENT', 'role': role})
+                            journal.append({'event': 'PUT_CONFIRMED', 'role': role})
+                    journal.append({'event': terminal, 'packetSha256': expected['packetSha256']})
+                    journal.close()
+                    if invalid_receipt is not None:
+                        (private / 'operation-receipt.json').write_bytes(invalid_receipt)
+                    promoted.progress(private, public, expected, p)
+                    report = candidate.decode((public / 'progress.json').read_bytes())
+                    self.assertEqual(report['state'],
+                                     'PARTIAL_RELEASE' if terminal == 'COMPLETE' else 'HALT')
+                    self.assertFalse((public / 'operation-receipt.json').exists())
+
+    def test_post_promotion_baseline_drift_always_records_halt(self):
+        p = promotion_packet()
+        expected = {'packetSha256': candidate.sha(candidate.canonical(p)), 'runId': '92004',
+                    'sourceCommit': p['promotion']['sourceCommit'],
+                    'sourceTree': p['promotion']['sourceTree']}
+        for outcome in ('COMPLETE', 'NO_OP'):
+            with self.subTest(outcome=outcome), TemporaryDirectory() as work:
+                private = Path(work) / 'private'
+                public = Path(work) / 'public'
+                private.mkdir(); public.mkdir()
+
+                def simulate(packet, transport, journal, contract):
+                    if outcome == 'COMPLETE':
+                        for role in ROLES:
+                            journal.append({'event': 'PUT_INTENT', 'role': role})
+                            journal.append({'event': 'PUT_CONFIRMED', 'role': role})
+                        journal.append({'event': 'COMPLETE', 'packetSha256': contract.packet_sha256})
+                    return {'state': outcome,
+                            'confirmed': list(ROLES) if outcome == 'COMPLETE' else [],
+                            'attempted': list(ROLES) if outcome == 'COMPLETE' else []}
+
+                read_states = ['COPY_PLAN', 'NO_OP'] if outcome == 'NO_OP' else ['COPY_PLAN']
+                with (patch.object(promoted.policy, 'approval_gate', return_value={}),
+                      patch.object(promoted.policy, 'candidate_metadata', return_value={}),
+                      patch.object(promoted, 'artifact_files'),
+                      patch.object(promoted.artifact_download.archive, 'archive_digest',
+                                   return_value=p['candidate']['artifact']['digest']),
+                      patch.object(promoted, 'protected_baseline_readback',
+                                   side_effect=[{'old': True}, {'old': True},
+                                                candidate.Pending('RF03_HISTORICAL_0610_CHANGED_OR_UNKNOWN')]),
+                      patch.object(promoted.rt, 'read_final_set', side_effect=read_states),
+                      patch.object(promoted.rt, 'promote_for_transport_test', side_effect=simulate)):
+                    with self.assertRaisesRegex(candidate.Pending,
+                                                'RF03_HISTORICAL_0610_CHANGED_OR_UNKNOWN'):
+                        promoted.perform(p, expected, object(), b'', Path(work), private,
+                                         'gh-unused', 'token-unused', lambda: object(),
+                                         verify=lambda *_: None)
+                events = [candidate.decode(line) for line in
+                          (private / 'promotion-journal.jsonl').read_bytes().splitlines()]
+                self.assertEqual(events[-1]['event'], 'HALT')
+                self.assertEqual(events[-1]['phase'], 'POST_PROMOTION_BASELINE_OR_RECEIPT')
+                promoted.progress(private, public, expected, p)
+                report = candidate.decode((public / 'progress.json').read_bytes())
+                self.assertEqual(report['state'], 'PARTIAL_RELEASE' if outcome == 'COMPLETE' else 'HALT')
+                self.assertFalse((public / 'operation-receipt.json').exists())
 
     def test_protected_workflows_fail_closed_and_preserve_existing_writer(self):
         c = (ROOT / ".github/workflows/release-finalizer-rf03-candidate.yml").read_text()

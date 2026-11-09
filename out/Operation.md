@@ -1,3 +1,11 @@
+## #273 — RF-03 Promotion 결과 모순 방지 및 장애 복구 절차 (2026-11-09)
+
+- Owner protected Promotion 중 세 final digest가 정상 게시되었거나 이미 존재하더라도, **마지막 historical 0.61.0 three-role/latest baseline 재검증** 또는 `operation-receipt.json` 무결성/영속화가 실패하면 release를 `COMPLETE`/`NO_OP`으로 간주하지 않는다. Journal `HALT` 또는 receipt 미확인 기반의 sanitized progress `PARTIAL_RELEASE/UNCERTAIN/HALT`는 공개 성공 증거가 아니다.
+- 운영자는 원본 Private journal/Runner 증거를 무리하게 재사용하거나 자동 재배포하지 말고, 별도 승인된 read-only GHCR 세 final refs·historical tags·last `latest` digest를 실제 registry에서 개별 확인하여 exact packet/run/nonce와 대조한다. 최종 단일 성공 Operation Receipt와 두 별도 Owner 보호 승인 없이 GHCR 게시 성공, 최신 tag 이동, Issue #273 완료 또는 운영 rollout을 선언하지 않는다.
+- 정책 불변: #229 HOLD, 세 역할 역사적0.61.0 digest, 사용자 App/Worker/DB/CAD/Volume/.env/backup 및 기존 Worker 설정 보존. Unknown/partial 작업은 retry/delete/overwrite/rollback 없이 중단해 원인 분석 및 별도 Owner 판단을 요구한다.
+
+---
+
 ## #273 — RF-03 protected exact-version release operator flow (2026-11-09)
 
 **Before dispatch:** require PR #277's *final exact HEAD* PR CI and accepted normal merge/Main HOLD CI; new workflows must actually exist on verified Main. Confirm `#229 HOLD_MAIN/G7_RELEASE_HOLD_TAG_BLOCKED` remains unchanged and original v0.61.0 three role digests+prior `latest` digest are known from authentic GHCR readback. Confirm no competing/unknown writers, actual existing Owner protected `issue225-candidate-publish` environment, admin bypass disabled using documented Owner UI evidence if API omits it, and fixed exact Main version/source/tree, CI run/attempt, private package ID, rollback and unique nonce. No actual GHCR release GO derives from PR success.

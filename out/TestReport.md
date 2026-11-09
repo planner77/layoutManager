@@ -1,3 +1,12 @@
+## U-273-RF03-P1-POSTCHECK — CI #736 통과 후 발견한 리뷰 차단 (2026-11-09)
+
+- 검증된 **이전 HEAD** `22fe22d3cacffc05bde0d3a14f919c3c28a108ed`: [PR CI #736/run42547166306](https://github.com/planner77/layoutManager/actions/runs/42547166306) attempt1 8 applicable SUCCESS, #218 scoped SKIPPED, PR Ready/mergeable. 이후 Codex post-review P1 unresolved 1건.
+- 구현상 정적 재현: `COMPLETE`/`NO_OP_CONFIRMED` durable journal 다음에 immutable baseline readback 오류가 발생하면 `perform`은 중단되나 `progress`는 Operation Receipt 없이 success state 업로드 가능. 이는 실제 GHCR 변경·CI 실패의 증거가 아닌 fail-closed 결과 무결성 오류.
+- 보완: 완료 후 오류의 terminal HALT journal, 유효한 binding receipt 없이는 success progress 및 completed operation receipt 업로드 거부. 누락/변조 receipt와 COMPLETE/NO_OP final-readback 실패 음성 단위 테스트 추가. 실 CI/실 Owner 환경 승인은 이번 신규 SHA 실행 전 **NOT VERIFIED**. #229 HOLD·historical 0.61.0/운영 환경 불변.
+- Hosted 결과는 새로운 PR HEAD의 PR CI 완료 전 기재 불가. PR CI 시작 확인까지만 진행하며 결과 감시는 하지 않는다.
+
+---
+
 ## #273 / PR #277 — RF-03 single-batch implementation evidence (2026-11-09)
 
 - Prior exact [PR CI #734/run42535216277](https://github.com/planner77/layoutManager/actions/runs/42535216277), `df9a7de8b6b86930516fc5aa3c61ddec7713455d`: completed SUCCESS; 8 applicable Job SUCCESS + 1 A2 scope SKIP. No unresolved review threads/merge conflict at preflight.

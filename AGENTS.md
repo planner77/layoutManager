@@ -1,3 +1,12 @@
+## #273 / PR #277 — PR CI #736 Ready P1 후속 Promotion 결과 무결성 수리 (2026-11-09)
+
+- **관측:** [PR CI #736/run42547166306](https://github.com/planner77/layoutManager/actions/runs/42547166306), exact HEAD `22fe22d3cacffc05bde0d3a14f919c3c28a108ed`, attempt1, 8 적용 Job SUCCESS + #218 scoped A2 SKIPPED. Ready 전환 후 Codex P1 미해결 스레드 1건: `rf03_release_promote.perform`의 마지막 immutable baseline 재검증이 실패하면 transport journal `COMPLETE`/`NO_OP_CONFIRMED`만으로 `progress.json`이 성공을 보고할 수 있음.
+- **수리:** post-promotion baseline/operation receipt 오류에 `HALT`를 journal에 append하고 원 오류를 다시 발생시킨다. journal fsync 실패·갑작스런 중단에도 `progress()`가 독립적으로 정확 packet/run/source/state에 매인 **유효한 operation-receipt.json을 확인하기 전에는** `COMPLETE`/`NO_OP`을 출력·첨부하지 않는다. 대신 기존 attempted/confirmed 기반 `PARTIAL_RELEASE/UNCERTAIN/HALT`와 read-only reconcile 지침을 출력한다. 실제 OCI publication proof나 자동 rollback/retry를 새로 주장하지 않는다.
+- **검증/진행:** 누락·변조 receipt와 실제 post-check 실패를 simulated complete/no-op 양쪽에서 필수 Scope 음성 테스트에 추가. 기존 #736 성공은 이전 SHA 전용이며 이번 보완에는 **새 exact-HEAD PR CI**가 필요하다. 코드·문서 변경을 원자 커밋 1회로 묶고 PR CI는 시작만 확인한다. reviewer P1을 해소하고 최신 체크 성공·Main ruleset 충족 전 병합하지 않는다.
+- **릴리스 경계:** GO-INTEGRATE와 GO-RELEASE/ISSUE-CLOSE는 다르다. #229 `HOLD_MAIN/G7_RELEASE_HOLD_TAG_BLOCKED`, 역사적0.61.0 3 image digest/tag/latest 및 운영 App/Worker/DB/CAD/Volume/.env/backup 불변. 신규 Source PR CI 성공만으로 live 0.61.1+ Candidate/Promotion 두 독립 Owner 환경 승인, GHCR 세 역할 출고, RF-01 durable nonce 및 RF-04 Issue #273 AC 완료를 간주·실행하지 않는다.
+
+---
+
 ## #273 / PR #277 — RF-03 version-generic protected Candidate + Promotion integrated implementation (2026-11-09)
 
 - **Baseline verified:** [PR CI #734 / run42535216277](https://github.com/planner77/layoutManager/actions/runs/42535216277) SUCCESS on exact previous HEAD `df9a7de8b6b86930516fc5aa3c61ddec7713455d`, 8 applicable jobs SUCCESS, #218 P1-A2 scoped SKIP, unresolved review threads0 and Draft/open/mergeable. This success is old-source proof only.
