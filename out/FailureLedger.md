@@ -1,3 +1,12 @@
+## #273 RF-01/RF-04 follow-up — new code without observed CI failure; prior hosted evidence reused (2026-11-09)
+
+- **Baseline (success, not failure):** PR #277 [CI #737/run42556272169](https://github.com/planner77/layoutManager/actions/runs/42556272169) for exact HEAD `a26b336c93f371364afc986fc9dbfa3273429d98`: 8 applicable SUCCESS/1 #218 A2 scoped SKIP, prior P1 thread resolved. Normal squash Main `8a5e437011238d11694d5c9df2d220871e66f7ec` single parent `bd03e6fb` tree `5172ccb1ac1fb43b65365a0bcab718814f2fc0d1`; Main HOLD CI #29/run42558420936 exact push attempt1 SUCCESS. Preserved historical CI #729/#731 failures and RF03 final progress P1 fix.
+- **Potential failure modes addressed, not observed GHCR failures:** expired/reused RF01 nonce, missing/stale checkpoint ancestor, duplicated/foreign/modified GitHub Issue comment, uncertain comment POST, partial GHCR release, signer/Owner/operation receipt mismatch, incomplete AC, double Issue Close after an ambiguous response. Fail-closed stage guards, distinct Owner/Live verifier and negative tests are in one new PR.
+- **New source result:** no new real hosted CI result verified at documentation time. Synthetic tests must be run as required PR Scope and exact HEAD CI is NOT VERIFIED. No GHCR, Git tag, production DB/CAD/Volumes/.env/Worker, #229 HOLD or Issue close mutation performed. The first PR CI begins once after the final atomic source/doc commit; no CI monitoring requested.
+- **Reconcile rule:** an Issue `CLOSE_INTENT` in comment chain with no independently verified closed state is **unknown/partial**, never automatically PATCH again. GitHub comment storage is not an external immutable ledger. Only new Owner-verified packet bound to exact preceding digest can resume nonterminal stages, after independent live source/Owner/GHCR revalidation.
+
+---
+
 ## #273 / PR #277 — PR CI #736 SUCCESS, Ready P1 post-promotion false-success evidence (2026-11-09)
 
 - **CI 상태(실제 실패 아님):** [PR CI #736/run42547166306](https://github.com/planner77/layoutManager/actions/runs/42547166306), 정확 HEAD `22fe22d3cacffc05bde0d3a14f919c3c28a108ed`, attempt 1, completed/success, 적용 8 Job SUCCESS / #218 scoped A2 SKIPPED. 기존 #735도 같은 HEAD 성공. GitHub PR #277 Ready/open/mergeable이나 Codex [P1 unresolved thread](https://github.com/planner77/layoutManager/pull/277) 1건 발생. 이를 CI 실패나 실제 GHCR 장애로 오기하지 않는다.

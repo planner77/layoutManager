@@ -79,6 +79,10 @@ jobs:
           python3 -m py_compile src/tests/oci/rf03_candidate_policy.py src/tests/oci/rf03_verified_negative.py src/tests/oci/rf03_rp_provenance.py src/tests/oci/rf03_candidate_publish.py
           python3 -m py_compile src/tests/oci/rf03_registry_promotion.py src/tests/oci/rf03_promotion_policy.py src/tests/oci/rf03_release_promote.py src/tests/oci/test_rf03_protected_release.py
           python3 src/tests/oci/test_rf03_protected_release.py
+      - name: Check RF-01 durable checkpoints and RF-04 independently verified AC close (synthetic, no writes)
+        run: |
+          python3 -m py_compile src/tests/oci/release_finalizer_checkpoint.py src/tests/oci/release_finalizer_release_proof.py src/tests/oci/release_finalizer_finish.py src/tests/oci/test_release_finalizer_finish.py
+          python3 src/tests/oci/test_release_finalizer_finish.py
       - name: Check Issue #225 proof contracts without external writes
         run: |
           python3 -m py_compile src/tests/oci/rp-provenance.py src/tests/oci/test_rp_provenance.py src/tests/oci/cp-control-proof.py src/tests/oci/test_cp_control_proof.py src/tests/oci/registry_promotion.py src/tests/oci/test_registry_promotion.py

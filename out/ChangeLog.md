@@ -1,3 +1,11 @@
+## 2026-11-09 — #273 RF-01 durable checkpoints and RF-04 strict AC closure (implementation, CI unverified)
+
+- Reuse existing exact RF01/02 GitHub PR/Main verification and RF03 Candidate/Promotion live proof without weakening #229 HOLD. Add hash-linked GitHub Issue comment checkpoints, Owner-approved single-write/one-run/nonce/previous digest, read-only PLAN and explicit manual resume policy.
+- Add RF04 actual signed Candidate original ZIP/Sigstore/OCI, two separate Owner-protected release runs, Promotion operation receipt and final 3-role GHCR+old0.61.0/latest readback; owner-reviewed all-AC issue body check and third protected Issue Close approval. Persist CLOSE_INTENT before one Issue PATCH/readback; unknown result never reissued.
+- Required PR CI Scope gains negative synthetic coverage. No real 0.61.1 publish/Issue close or operations change from authoring; exact new HEAD CI pending.
+
+---
+
 ## #273 / PR #277 — RF-03 version-generic protected Candidate + Promotion integrated implementation (2026-11-09)
 
 - **Baseline verified:** [PR CI #734 / run42535216277](https://github.com/planner77/layoutManager/actions/runs/42535216277) SUCCESS on exact previous HEAD `df9a7de8b6b86930516fc5aa3c61ddec7713455d`, 8 applicable jobs SUCCESS, #218 P1-A2 scoped SKIP, unresolved review threads0 and Draft/open/mergeable. This success is old-source proof only.

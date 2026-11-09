@@ -1,3 +1,11 @@
+## U-273-RF01-RF04 — implementation checkpoint, hosted CI pending (2026-11-09)
+
+- **Trusted prior baseline:** PR #277 exact HEAD `a26b336c93f371364afc986fc9dbfa3273429d98`, PR CI #737/run42556272169 completed SUCCESS, 8 applicable SUCCESS, 1 scoped SKIP. Main Squash `8a5e437011238d11694d5c9df2d220871e66f7ec`, tree `5172ccb1ac1fb43b65365a0bcab718814f2fc0d1`, single parent `bd03e6fb`. Main push HOLD CI #29/run42558420936 attempt1 SUCCESS. Those proofs validate prior code, **not** the new unverified follow-up HEAD.
+- **Authored:** RF01 durable Issue comment/checkpoint writer and fail-closed stage chain; RF04 separate release readback of actual authenticated GitHub Candidate/Promotion, original ZIP/Sigstore/OCI+final three-role+historical baseline, complete Issue AC check and protected single close intent/PATCH; Owner default-plan workflow and synthetic negative tests wired into required PR Scope.
+- **Test status:** source authored; local/hosted new-source execution not claimed yet. Full new HEAD PR CI result **NOT VERIFIED** until it completes. No actual Candidate/Promotion Owner approvals or GHCR 0.61.1 final digest/Issue close was executed. No #229 HOLD/old 0.61.0 tag/latest/operations changed; failures from historical #729/#731 retained.
+
+---
+
 ## U-273-RF03-P1-POSTCHECK — CI #736 통과 후 발견한 리뷰 차단 (2026-11-09)
 
 - 검증된 **이전 HEAD** `22fe22d3cacffc05bde0d3a14f919c3c28a108ed`: [PR CI #736/run42547166306](https://github.com/planner77/layoutManager/actions/runs/42547166306) attempt1 8 applicable SUCCESS, #218 scoped SKIPPED, PR Ready/mergeable. 이후 Codex post-review P1 unresolved 1건.
