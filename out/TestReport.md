@@ -1,3 +1,11 @@
+## U-273-RF01-RF04-CI738 — real required Scope failure and scoped repair (2026-11-09)
+
+- Hosted [PR CI #738/run42561800674](https://github.com/planner77/layoutManager/actions/runs/42561800674), old exact HEAD `76d497007590d2b8e15d44cb5906d54badfdddff`, attempt1: required Scope job 128979631504 FAILED; `test_release_finalizer_finish.py`: **7 total / 1 FAIL**, stale predecessor negative expected `release_finalizer.Blocked` but function returned. Aggregate required verification failed from dependency; downstream E2E/OCI and quality skipped. Earlier RF01/02/03 and #229 Scope checks passed.
+- Source inspection found `proposed_event` missing direct comparison of supplied previous hash with canonical prior event, though `IssueStore.append` did remote validation. Repair requires prior event validation and same release identity/Main before proposal; negative test unchanged.
+- This checkpoint records a prior failed source and an authored fix, not a successful retry. New exact HEAD PR CI NOT VERIFIED until the host actually finishes it. No GHCR/Image/Issue/operational writes; #229 HOLD unchanged.
+
+---
+
 ## U-273-RF01-RF04 — implementation checkpoint, hosted CI pending (2026-11-09)
 
 - **Trusted prior baseline:** PR #277 exact HEAD `a26b336c93f371364afc986fc9dbfa3273429d98`, PR CI #737/run42556272169 completed SUCCESS, 8 applicable SUCCESS, 1 scoped SKIP. Main Squash `8a5e437011238d11694d5c9df2d220871e66f7ec`, tree `5172ccb1ac1fb43b65365a0bcab718814f2fc0d1`, single parent `bd03e6fb`. Main push HOLD CI #29/run42558420936 attempt1 SUCCESS. Those proofs validate prior code, **not** the new unverified follow-up HEAD.

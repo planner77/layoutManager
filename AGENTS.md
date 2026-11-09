@@ -1,3 +1,11 @@
+## #273 / PR #278 — CI #738 predecessor integrity P1 regression fix (2026-11-09)
+
+[PR CI #738/run42561800674](https://github.com/planner77/layoutManager/actions/runs/42561800674), exact old HEAD `76d497007590d2b8e15d44cb5906d54badfdddff`, attempt1 failed in required Scope job 128979631504: `test_release_finalizer_finish.py` 7 tests, 1 negative failure (`Blocked not raised` on stale checkpoint previous SHA). Other previously executed RF01–RF03 and #229 synthetic Scope tests succeeded; aggregate failure is dependent; remaining jobs skipped. This is a real fail-closed `proposed_event` guard omission, **not a GHCR publication or Main failure**.
+
+Repair on same Draft PR: compare `previousSha256` against SHA256 of prior strictly validated canonical event and bind prior identity/current Main before proposal. Preserve the negative test unchanged, IssueStore remote full-chain recheck, one-write/unknown-no-retry and all independent RF03 Owner/OCI/Signature gates. Update FailureLedger/TestPlan/TestReport and start one fresh exact-head PR CI; #738 is previous-source failed evidence and MUST NOT be treated as validation of repaired code. Issue #273 OPEN, #229 HOLD, old0.61.0 three-role/latest and operating artifacts unchanged; no GHCR or Issue Close mutation.
+
+---
+
 ## #273 / RF-01 checkpoint + RF-04 AC close follow-up — single PR, no live publish (2026-11-09)
 
 - **Verified baseline reused:** PR #277 final exact HEAD `a26b336c93f371364afc986fc9dbfa3273429d98` [PR CI #737/run42556272169](https://github.com/planner77/layoutManager/actions/runs/42556272169) attempt1 8 applicable SUCCESS / #218 scoped A2 SKIP. Normal squash Main `8a5e437011238d11694d5c9df2d220871e66f7ec`, tree `5172ccb1ac1fb43b65365a0bcab718814f2fc0d1`, one parent `bd03e6fb`. [Main HOLD CI #29/run42558420936](https://github.com/planner77/layoutManager/actions/runs/42558420936) exact push attempt1 SUCCESS. Reuse these as **historical code integration** evidence, never as live 0.61.1 release evidence.

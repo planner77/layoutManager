@@ -1,3 +1,9 @@
+## TP-273-RF01-RF04-CI738 — predecessor checkpoint negative regression (2026-11-09)
+
+The required `test_strict_nonce_replay_stale_prev_foreign_comment_and_tampering` must reject calling `release_finalizer_checkpoint.proposed_event()` with `previousSha256` unequal to the SHA256 of the actual latest `encode_event` (and reject a nonempty predecessor for first stage). The previous event must also match exact identity and Main. Keep this synthetic negative test unchanged, preserve strict `IssueStore.append()` full-chain readback, retry refusal, #229 HOLD, and required PR Scope execution. PR CI #738 FAILED this assertion; patched HEAD needs new hosted CI. No synthetic result proves live GHCR/Owner authority.
+
+---
+
 ## TP-273-RF01-RF04 — durable nonce/checkpoint and AC-verified Issue closure (2026-11-09)
 
 1. Exact `RELEASE_FINALIZER_REQUEST_V1` reuse: freshness/expiry, same repo/Owner/Issue/PR/source/tree/base/version/roles and checked intent. A new packet+nonce is required for an explicit resume and binds last SHA; no automatic writer resumption from CI.

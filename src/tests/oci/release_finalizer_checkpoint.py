@@ -146,6 +146,14 @@ def proposed_event(packet, packet_sha, main_sha, events, previous,
          and type(proof) is dict and len(canonical(proof)) <= 16000
          and type(run_id) is int and run_id > 0,
          "RFCP_STAGE_OR_PROOF_INVALID")
+    # Validate the caller's immediate predecessor even before attempting a
+    # remote append. The durable store also rechecks the entire chain.
+    need(previous == (sha(encode_event(events[-1])) if events else None),
+         "RFCP_PREVIOUS_CHECKPOINT_INVALID")
+    if events:
+        need(events[-1]["identitySha256"] == identity(packet, main_sha)
+             and events[-1]["mainSha"] == main_sha,
+             "RFCP_PREVIOUS_IDENTITY_CHANGED")
     nonce = stage_nonce(packet, stage)
     need(all(e["nonce"] != nonce and
              (e["runId"] != run_id or e["packetSha256"] == packet_sha)
