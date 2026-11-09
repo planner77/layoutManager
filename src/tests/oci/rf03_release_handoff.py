@@ -19,8 +19,8 @@ import release_finalizer as rf
 KIND = "RF03_RELEASE_HANDOFF_V1"
 PACKAGE = rf.PACKAGE
 ROLES = release.TARGET_ROLES
-CANDIDATE_WORKFLOW = ".github/workflows/release-candidate.yml"
-PROMOTION_WORKFLOW = ".github/workflows/release-promote.yml"
+CANDIDATE_WORKFLOW = ".github/workflows/release-finalizer-rf03-candidate.yml"
+PROMOTION_WORKFLOW = ".github/workflows/release-finalizer-rf03-promote.yml"
 MAX_BYTES = 32768
 HEX64 = re.compile(r"[0-9a-f]{64}\Z")
 DIGEST = re.compile(r"sha256:[0-9a-f]{64}\Z")
@@ -138,7 +138,7 @@ def check(packet, original_plan):
             and all(k in original_plan for k in required_plan),
             "RF03_PLAN_FIELDS_INVALID")
     rf.need(original_plan["kind"] == "RF03_EXACT_VERSION_PLAN_V1"
-            and original_plan["state"] == "BLOCKED_LEGACY_WRITER_VERSION_PIN"
+            and original_plan["state"] == "BLOCKED_PROTECTED_MAIN_AND_OWNER_RELEASE_APPROVAL_REQUIRED"
             and original_plan["releaseVersion"] == version
             and original_plan["sourceCommit"] == packet["sourceCommit"]
             and original_plan["sourceTree"] == packet["sourceTree"]

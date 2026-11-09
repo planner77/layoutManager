@@ -23,7 +23,7 @@ class RF03SafetyTest(unittest.TestCase):
     def test_exact_three_role_ref_mapping_and_plan_cannot_publish(self):
         p, proof, head = prepared()
         value = rf03.evaluate(p, proof, head)
-        self.assertEqual(value["state"], "BLOCKED_LEGACY_WRITER_VERSION_PIN")
+        self.assertEqual(value["state"], "BLOCKED_PROTECTED_MAIN_AND_OWNER_RELEASE_APPROVAL_REQUIRED")
         self.assertEqual(value["sourceCommit"], MERGE)
         self.assertEqual(value["sourceTree"], TREE)
         self.assertEqual(value["releaseVersion"], VERSION)

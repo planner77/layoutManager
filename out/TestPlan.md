@@ -1,3 +1,15 @@
+## #273 — RF-03 version-generic Candidate/Promotion protected integration test plan (2026-11-09)
+
+1. RF03 Candidate packet closed schema/Owner exact repo+workflow/source/tree/package/current version (>0.61.0)/role set/nonce/protected workflow_dispatch attempt1; explicit input.version matches packet. Old `CANDIDATE_PREFIX_AUTHORIZATION_V1`, workflow and `0.61.0` reject.
+2. Separate Candidate protected approval, actual required PR/merge/Main CI source/tree checks, three clean-archive App/Migrator/CPU Worker build labels, RR1/RR2/RR3 and cleanup, candidate exact tag publish only, signed OIDC four subjects and pinned gh positive/negative checks. Failures, existing candidate conflicts and unknown HTTP do not retry/relabel/alias.
+3. RF03 Promotion packet closed schema, distinct Candidate and Promotion source/Owner run, artifact ID/name/size/ZIP SHA256/4 file digests, all three role descriptor and exact final tags, historical 0.61.0 3 digest + previous latest SHA/absence, additional controls, nonce, independent protected Owner dispatch and proof of disabled legacy writer.
+4. Original GitHub ZIP GET must be fixed owner/repo/artifact ID, redirect host HTTPS allowlist, second GET without GitHub token or cookies, bounded exact original bytes SHA256, no retry on unknown/timeout; reverify exact extracted file hashes before any GHCR write.
+5. Actual authenticated candidate OCI config/index/manifest/amd64/source/version + signed four-subject certificate identity, fresh protected Promotion approval, immutable historical baseline read before + immediately before + after publication. Final target state all absent or exact, partial/ambiguous HALT, journal intent before any of three raw manifest PUTs, exact digest readback. No `latest` writes or historical version overwrite.
+6. Synthetic negative unit tests: mismatched/replayed packet/run, old version, wrong roles/source/version, wrong gh signature, zip host/digest/size/credential forwarding, historical missing/wrong worker/old latest, unknown/partial final set. Reuse #225 original smoke/policy tests unmodified and prior RF03 tests; require new exact HEAD CI, unresolved review threads0/conflict0.
+7. Stage after CI: code stays Draft/Issue OPEN until new writer enters verified Main, two **actual separate** Owner protected approvals, live candidate/protected Promotion, GHCR final digests and rollback baseline real readback; RF-01 checkpoint and RF-04 AC closure separate. No automatic Owner GO from CI.
+
+---
+
 ## #273 — RF-03 Candidate-first evidence-chain tests (2026-11-09)
 
 1. **Source/approval metadata:** exact RF-03 handoff, current Main B ref and source A/B tree+package version, Candidate Owner/manual run attempt1, matching environment policy/actual Owner reviewer and run+job, Artifact inventory ID/name/source/size/digest/expiry. Promotion run may be absent; no acceptance of Promotion approval by proxy.

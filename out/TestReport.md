@@ -1,3 +1,11 @@
+## #273 / PR #277 — RF-03 single-batch implementation evidence (2026-11-09)
+
+- Prior exact [PR CI #734/run42535216277](https://github.com/planner77/layoutManager/actions/runs/42535216277), `df9a7de8b6b86930516fc5aa3c61ddec7713455d`: completed SUCCESS; 8 applicable Job SUCCESS + 1 A2 scope SKIP. No unresolved review threads/merge conflict at preflight.
+- New code added RF03 version-generic Candidate/Promotion writer paths, owner-protected workflow_dispatch routes, exact package source version, prior #225 reusable RR1/RR2/OCI Sigstore checks, independent artifact ZIP downloader and baseline 3 digest/latest readback, negative tests and docs. Previous published v0.61.0 and #229 unchanged.
+- **Verification status:** Code authored; new exact-head PR CI not yet observed at this report; actual new-version protected Candidate/Promotion, authentic Owner approvals, live signed Artifact+OCI/tag digest and operational deployment **NOT RUN**. Green CI does not authorize live GO-RELEASE/Issue CLOSE. Actual future results must be appended separately by run/attempt/version/source/role digest.
+
+---
+
 ## #273 / PR #277 — #733 PASS and new Candidate evidence chain status (2026-11-09)
 
 Previous actual hosted [PR CI #733/run42532181978](https://github.com/planner77/layoutManager/actions/runs/42532181978), exact HEAD `2b39cc872c33d476355b5dd62adc110de4fe4afb`, 8 applicable SUCCESS/1 scoped SKIP, review threads0. New `audit_candidate`, original ZIP byte verifier, integrated OCI/Signer Candidate chain, synthetic negative tests and read-only Owner candidate-stage dispatch were added **after** that PASS. New source Hosted result NOT VERIFIED until exact HEAD CI completes. In particular actual 0.61.1+ GitHub Artifact ZIP download/Sigstore signature, live GHCR role graph, real Owner environment review and final protected publication were NOT RUN. No GHCR/Tag/Issue/operational writes; #229 HOLD, historical 0.61.0 three-role digests/Worker/DB/CAD/.env/backups unchanged.

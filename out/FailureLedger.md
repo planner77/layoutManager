@@ -1,3 +1,12 @@
+## #273 / PR #277 — single-batch RF-03 exact-version writer implementation; final CI pending (2026-11-09)
+
+- **Verified baseline:** [PR CI #734/run42535216277](https://github.com/planner77/layoutManager/actions/runs/42535216277), old HEAD `df9a7de8b6b86930516fc5aa3c61ddec7713455d`, completed SUCCESS; eight applicable Job SUCCESS, one #218 scoped SKIPPED; PR Draft, reviews0, conflict0. Earlier #731/#729 failure records retained. This **does not** validate the new RF-03 publisher.
+- **New implementation (not a failure or live release):** strict version-generic protected Candidate/Promotion workflow and policy clones, original Artifact ZIP authenticated read with no forwarded credentials/retry, signed GHCR four-subject certificate+OCI checks, independent protected approvals per run, fixed three final digest/manifest copy with durable journal/partial/unknown stop, historical immutable0.61.0 three-role + latest baseline before/after. Package version checked against current trusted Main and >0.61.0; #225 old 0.61.0 publisher, #229 HOLD untouched. The upstream #225 synthetic and RF03 synthetic suites are reused; new `test_rf03_protected_release.py` and `test_rf03_download.py` are in the required PR Scope.
+- **Explicit limits:** no protected Candidate/Promotion dispatch, no actual Owner approval, no 0.61.1 GHCR final publish/OCI signed live receipt, no operational deploy or #273 close during this PR authoring. Some Owner-controls (protected environment policy UI, exact packet and nonce, external writer inventory, previous/latest role digests) must be independently supplied and reviewed at live time; missing state = HALT. New exact-HEAD Hosted CI **NOT VERIFIED** before it finishes. RF-01 durable checkpoint and RF-04 acceptance are separately OPEN.
+- **Failure/retry policy:** one final HEAD push triggers one PR CI; if syntax/tests/CI fail record the exact error and repair in a follow-up, not claim an earlier green run for new source. No attempts to bypass review/ruleset/#229 or to overwrite history.
+
+---
+
 ## #273 / PR #277 — #733 SUCCESS source reused, new Candidate evidence chain pending CI (2026-11-09)
 
 - [PR CI #733 / run 42532181978](https://github.com/planner77/layoutManager/actions/runs/42532181978) `2b39cc872c33d476355b5dd62adc110de4fe4afb` completed SUCCESS, 8 applicable success plus scoped A2 SKIP; unresolved reviews0. Prior #731 GHCR challenge failure resolved by #732 and persisted through #733. This is only the **previous source** proof.

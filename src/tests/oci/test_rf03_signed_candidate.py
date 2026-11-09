@@ -10,8 +10,8 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-import candidate_policy as ca
-import candidate_publish as legacy
+import rf03_candidate_policy as ca
+import rf03_candidate_publish as legacy
 import release_finalizer as rf
 import rf03_material_preflight as material
 import rf03_oci_readback as oci

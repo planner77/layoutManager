@@ -87,7 +87,7 @@ def evaluate(request: dict, verified: dict, actual_main_ref: dict) -> dict:
     # signatures, digest role identity, Owner approval, or persistent nonce.
     return {
         "kind": "RF03_EXACT_VERSION_PLAN_V1",
-        "state": "BLOCKED_LEGACY_WRITER_VERSION_PIN",
+        "state": "BLOCKED_PROTECTED_MAIN_AND_OWNER_RELEASE_APPROVAL_REQUIRED",
         "repository": rf.REPO,
         "issueNumber": request["issueNumber"],
         "releaseVersion": release_version,
