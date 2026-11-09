@@ -1,0 +1,56 @@
+name: Release Finalizer RF-03 exact three-role release plan
+run-name: RF03 PLAN | ${{ inputs.packet_sha256 }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      packet_json:
+        description: 'Owner-reviewed exact RF-01 packet, no credentials or sensitive contents'
+        type: string
+        required: true
+      packet_sha256:
+        description: 'SHA256 of the exact UTF-8 JSON input'
+        type: string
+        required: true
+
+# RF-03 foundation is deliberately GET-only and has NO GHCR or Issue writer.
+# Candidate and Promotion must later prove two distinct protected Owner reviews.
+permissions: {}
+concurrency:
+  group: rf03-read-only-plan
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    name: Exact version and Main CI evidence — no release
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      github.event_name == 'workflow_dispatch' &&
+      github.repository_id == 1359528829 &&
+      github.actor_id == '45478892' &&
+      github.event.sender.id == 45478892 &&
+      github.run_attempt == 1
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+      actions: read
+    steps:
+      - name: Checkout exact Main source without persistent credentials
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Validate RF-01 exact packet, Main CI and intended three-role tags
+        env:
+          RF_PACKET_JSON: ${{ inputs.packet_json }}
+          RF_PACKET_SHA256: ${{ inputs.packet_sha256 }}
+          RF_READ_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python3 src/tests/oci/rf03_exact_release.py plan
+      - name: No publication or Issue closure
+        run: |
+          echo 'RF03_PLAN_ONLY'
+          echo 'CANDIDATE=NOT_RUN PROMOTION=NOT_RUN GHCR=NOT_RUN ISSUE_CLOSE=NOT_RUN'

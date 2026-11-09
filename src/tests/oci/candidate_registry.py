@@ -18,6 +18,7 @@ ORIGIN = 'https://ghcr.io'
 REPOSITORY = 'planner77/layoutmanager'
 PREFIX = '/v2/' + REPOSITORY
 SCOPE = 'repository:' + REPOSITORY + ':pull,push'
+PULL_SCOPE = 'repository:' + REPOSITORY + ':pull'
 DIGEST = re.compile(r'sha256:[0-9a-f]{64}')
 IMAGES = {'application/vnd.oci.image.manifest.v1+json',
           'application/vnd.docker.distribution.manifest.v2+json'}
@@ -157,7 +158,9 @@ class Journal:
 
 
 class GHCR:
-    def __init__(self, token, actor, expected, journal, http=None):
+    def __init__(self, token, actor, expected, journal, http=None, *, pull_only=False):
+        need(type(pull_only) is bool, 'CA_READ_SCOPE_INVALID')
+        scope = PULL_SCOPE if pull_only else SCOPE
         need(type(token) is str and token and not any(c in token for c in '\r\n')
              and re.fullmatch('[A-Za-z0-9-]+', actor or ''), 'CA_JOB_CREDENTIAL_INVALID')
         self.allowed_tags = set(tags(expected).values())
@@ -171,10 +174,12 @@ class GHCR:
         need(status == 401 and challenge in (
             'Bearer realm="https://ghcr.io/token",service="ghcr.io"',
             'Bearer realm="https://ghcr.io/token",service="ghcr.io",scope="repository:user/image:pull"',
-            'Bearer realm="https://ghcr.io/token",service="ghcr.io",scope="' + SCOPE + '"'),
+            # Never expand the historical publisher's realm allowlist when
+            # RF-03 adds a separate pull-only, GET/HEAD reader.
+            'Bearer realm="https://ghcr.io/token",service="ghcr.io",scope="' + scope + '"'),
             'CA_GHCR_TOKEN_REALM_PENDING')
         credentials = base64.b64encode((actor + ':' + token).encode()).decode()
-        token_url = ORIGIN + '/token?' + urllib.parse.urlencode({'service': 'ghcr.io', 'scope': SCOPE})
+        token_url = ORIGIN + '/token?' + urllib.parse.urlencode({'service': 'ghcr.io', 'scope': scope})
         status, _, raw, _, _ = self.http.request('GET', token_url, {'Authorization': 'Basic ' + credentials})
         data = decode(raw)
         need(status == 200 and type(data) is dict and type(data.get('token')) is str
@@ -314,7 +319,11 @@ def descriptor(value, media_types):
          'CA_GRAPH_DESCRIPTOR_INVALID')
 
 
-def collect_graph(registry, reference, directory, role, source, blob_cache=None):
+def collect_graph(registry, reference, directory, role, source, blob_cache=None, *, version='0.61.0'):
+    # Legacy #225 publisher stays pinned by default; RF-03 passes a separately
+    # validated exact version in a read-only call.
+    need(type(version) is str and re.fullmatch(r'(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)', version) is not None,
+         'CA_GRAPH_VERSION_INVALID')
     directory = Path(directory); directory.mkdir(mode=0o700, parents=True, exist_ok=False)
     objects = {}; manifests = []
     blob_cache = {} if blob_cache is None else blob_cache
@@ -370,7 +379,7 @@ def collect_graph(registry, reference, directory, role, source, blob_cache=None)
          and all(type(d) is str and DIGEST.fullmatch(d) for d in config['rootfs']['diff_ids'])
          and labels.get('org.opencontainers.image.source') == 'https://github.com/planner77/layoutManager'
          and labels.get('org.opencontainers.image.revision') == source
-         and labels.get('org.opencontainers.image.version') == '0.61.0'
+         and labels.get('org.opencontainers.image.version') == version
          and labels.get('com.planner77.g7.image-role') == role, 'CA_CONFIG_SOURCE_ROLE_INVALID')
     manifests.append(top['digest'])
     return {'digest': top['digest'], 'manifestDigest': image['digest'],

@@ -1,3 +1,86 @@
+## U-273-RF03-P1-POSTCHECK — CI #736 통과 후 발견한 리뷰 차단 (2026-11-09)
+
+- 검증된 **이전 HEAD** `22fe22d3cacffc05bde0d3a14f919c3c28a108ed`: [PR CI #736/run42547166306](https://github.com/planner77/layoutManager/actions/runs/42547166306) attempt1 8 applicable SUCCESS, #218 scoped SKIPPED, PR Ready/mergeable. 이후 Codex post-review P1 unresolved 1건.
+- 구현상 정적 재현: `COMPLETE`/`NO_OP_CONFIRMED` durable journal 다음에 immutable baseline readback 오류가 발생하면 `perform`은 중단되나 `progress`는 Operation Receipt 없이 success state 업로드 가능. 이는 실제 GHCR 변경·CI 실패의 증거가 아닌 fail-closed 결과 무결성 오류.
+- 보완: 완료 후 오류의 terminal HALT journal, 유효한 binding receipt 없이는 success progress 및 completed operation receipt 업로드 거부. 누락/변조 receipt와 COMPLETE/NO_OP final-readback 실패 음성 단위 테스트 추가. 실 CI/실 Owner 환경 승인은 이번 신규 SHA 실행 전 **NOT VERIFIED**. #229 HOLD·historical 0.61.0/운영 환경 불변.
+- Hosted 결과는 새로운 PR HEAD의 PR CI 완료 전 기재 불가. PR CI 시작 확인까지만 진행하며 결과 감시는 하지 않는다.
+
+---
+
+## #273 / PR #277 — RF-03 single-batch implementation evidence (2026-11-09)
+
+- Prior exact [PR CI #734/run42535216277](https://github.com/planner77/layoutManager/actions/runs/42535216277), `df9a7de8b6b86930516fc5aa3c61ddec7713455d`: completed SUCCESS; 8 applicable Job SUCCESS + 1 A2 scope SKIP. No unresolved review threads/merge conflict at preflight.
+- New code added RF03 version-generic Candidate/Promotion writer paths, owner-protected workflow_dispatch routes, exact package source version, prior #225 reusable RR1/RR2/OCI Sigstore checks, independent artifact ZIP downloader and baseline 3 digest/latest readback, negative tests and docs. Previous published v0.61.0 and #229 unchanged.
+- **Verification status:** Code authored; new exact-head PR CI not yet observed at this report; actual new-version protected Candidate/Promotion, authentic Owner approvals, live signed Artifact+OCI/tag digest and operational deployment **NOT RUN**. Green CI does not authorize live GO-RELEASE/Issue CLOSE. Actual future results must be appended separately by run/attempt/version/source/role digest.
+
+---
+
+## #273 / PR #277 — #733 PASS and new Candidate evidence chain status (2026-11-09)
+
+Previous actual hosted [PR CI #733/run42532181978](https://github.com/planner77/layoutManager/actions/runs/42532181978), exact HEAD `2b39cc872c33d476355b5dd62adc110de4fe4afb`, 8 applicable SUCCESS/1 scoped SKIP, review threads0. New `audit_candidate`, original ZIP byte verifier, integrated OCI/Signer Candidate chain, synthetic negative tests and read-only Owner candidate-stage dispatch were added **after** that PASS. New source Hosted result NOT VERIFIED until exact HEAD CI completes. In particular actual 0.61.1+ GitHub Artifact ZIP download/Sigstore signature, live GHCR role graph, real Owner environment review and final protected publication were NOT RUN. No GHCR/Tag/Issue/operational writes; #229 HOLD, historical 0.61.0 three-role digests/Worker/DB/CAD/.env/backups unchanged.
+
+---
+
+## #273 / PR #277 — CI #732 and new signature-unit evidence (2026-11-09)
+
+- **Actual hosted prior:** PR CI #732 [42528404780](https://github.com/planner77/layoutManager/actions/runs/42528404780) on exact HEAD `62107e83e0a5caf9d4b960ff4c288f625f6fa99d` completed SUCCESS, 8 applicable jobs/1 scoped SKIP, review threads0.
+- **New source static implementation only:** `rf03_signed_candidate.py` + synthetic `test_rf03_signed_candidate.py` + required scope step. The real pinned gh executable and protected 0.61.1+ candidate signed artifact were **not** invoked, so `actualSignatureVerification=NOT_RUN`, `liveOciGraphAndOwnerProof=NOT_VERIFIED`, `releaseWriter=NOT_RUN`. New exact HEAD PR CI result pending.
+- **Safety preserved:** #229 HOLD, historical 0.61.0 immutable roles, tag/latest and operating Worker/DB/CAD/.env/backup unmodified, PR Draft and Issue #273 OPEN.
+
+---
+
+## #273 / PR #277 — CI #731 failure and targeted GHCR realm repair (2026-11-09)
+
+- Hosted failed job ID `128875023742` in [PR CI 42527748418](https://github.com/planner77/layoutManager/actions/runs/42527748418), HEAD `b2372a5201105014eeb29130973d98df33f07cb2`: `test_candidate_publish.py` 47 tests / 1 failure / 1 error, both in old negative challenge test. Aggregate failed; downstream skipped because of dependency. New patch limits challenge to selected mode, retains old test, adds two positive token-scope and two negative cross-mode cases.
+- **Validation evidence:** prior CI #730 passed old source; new hosted CI not yet verified. Added synthetic test is not real GHCR proof. Existing #225 release, #229 HOLD, protected Owner/Sigstore/OCI gates, 0.61.0 images and operational App/Worker/DB/CAD untouched.
+
+---
+
+## #273 / PR #277 RF-03 next unit: PR CI #730 success and exact-version OCI readback (2026-11-09)
+
+- [PR CI #730 / run 42525255763](https://github.com/planner77/layoutManager/actions/runs/42525255763) **SUCCESS** on previous exact HEAD `b7116c6c889d291b0222a618b85ca11fe38026c1` (attempt1, 8 applicable SUCCESS, 1 scope SKIPPED). PR #277 remains Draft/OPEN with zero unresolved review threads. This is not a pass for the new code.
+- New `rf03_oci_readback.py` uses the existing #225 `candidate_registry.collect_graph` to read 3 exact Candidate OCI graphs and independently check top digest/media/size, platform manifest, config, source, role, linux/amd64 and version. Legacy default remains `0.61.0`; only strict RF03 handoff supplies `version>=0.61.1`. `ReadOnlyGHCR` reuses bounded GHCR Distribution reads but requests a **pull-only token**, refuses all HTTP mutation verbs and restricts tags to the 3 exact Candidate identities. A final tag readback detects sequential drift, not a registry CAS.
+- New required PR CI unit `test_rf03_oci_readback.py` uses only synthetic fixture registry and exercises direct manifests/OCI index, legacy version pin, wrong label/digest/platform, missing manifest, final-tag drift, private workspace reuse and POST/PUT rejection. Synthetic success is NOT live GHCR proof.
+- Even authenticated matching OCI graphs are **not** Sigstore/OIDC signer proof, two fresh protected Owner approvals, release GO, final GHCR publication, rollback-baseline readback, or RF-04 AC closure. Output stays `BLOCKED_OWNER_SIGSTORE_AND_RELEASE_AUTHORITY_REQUIRED`, `signatureVerification/ownerAuthority=NOT_VERIFIED`, `registryPublication=NOT_RUN`, `externalWrites=0`. Existing Candidate/Promotion writers remain pinned at 0.61.0 and were not modified/executed.
+- Preserve #229 HOLD_MAIN/G7_RELEASE_HOLD_TAG_BLOCKED, historical 0.61.0 three immutable images, tags/latest and production App/Worker/DB/CAD/Volume/.env/backups. PR #277 **Draft**, Issue #273 **OPEN**, no release/Issue close/operation. New HEAD PR CI must be checked separately. Next: actual signed artifact bytes + independent Owner protected Candidate and Promotion verification, then protected writer, RF-01 checkpoint and RF-04 AC.
+
+---
+
+## RF-03 material byte preflight follow-up (2026-11-09)
+
+- PR #277 CI #718 / run 42521782477: exact prior HEAD `ea17b29c60b2ee1ba00f4597feb794029b01653d`, eight applicable jobs SUCCESS, one A2 scoped SKIP, unresolved review threads 0. **This evidence applies to the prior HEAD only.**
+- New `src/tests/oci/rf03_material_preflight.py` performs **GET-independent local byte checks**, on a private downloaded artifact directory, restricting file names to receipt, Sigstore bundle, verification JSON and SHA256SUMS; rejects symlinks, unknown/missing names, duplicate checksum subjects, unsafe paths, changed byte hashes, duplicate JSON keys and malformed material. The handoff and original RF-01 plan are rechecked before accepting any bytes.
+- `test_rf03_material_preflight.py` covers positive byte bindings and negative tampering/path/legacy release cases and is in mandatory `pr-ci.yml` scope. This is a **non-network, non-publisher, non-cryptographic preflight**. A supplied bundle or `verification.json` containing an assertion of success is never sufficient to verify Signer identity, OIDC subject, Rekor/Sigstore contents, GHCR manifest/config/platform or actual Owner authority.
+- All successful outputs remain `BLOCKED_INDEPENDENT_SIGSTORE_AND_OCI_PROOF_REQUIRED`, `externalWrites=0`, `signatureVerification=NOT_VERIFIED`, `ociGraphReadback=NOT_VERIFIED`. Next required unit: reuse existing `release_promote.verify_material`/candidate registry and checksum-pinned gh verifier in a separately reviewed version-generic RF-03 verifier; authenticate actual GitHub downloaded bytes and independent protected Owner approvals; then implement version-generic Candidate/Promotion writers with no-overwrite/partial-state proof.
+- Keep PR **Draft**, #273 **OPEN**, #229 HOLD, existing 0.61.0 GHCR/image/tag/latest and operating DB/CAD/Worker/backups unchanged. No GHCR/Tag/Issue writer or deployment introduced. New HEAD CI is required; prior CI #718 MUST NOT be reused for the new source.
+
+---
+
+## U-273-RF03-LIVE-20261109 — CI #717 선행 증거와 새 source 미검증 (2026-11-09)
+
+- [PR CI #717/run42518993315](https://github.com/planner77/layoutManager/actions/runs/42518993315), HEAD `da5c8782fc04008c94bcb41f676fe58b640c6ce3`, attempt1 `completed/success`, 적용8 Job SUCCESS/A2 scoped SKIP. 리뷰0, Draft, Main behind0. 이 결과는 version+3-role structural handoff 코드 전용.
+- 후속 코드 작성: `rf03_live_evidence.py`(GitHub actual run/job/Owner approval history/Artifact metadata/read-only environment/Source tree+version)와 `rf03_readback.py`(owner manual fixed repo GET allowlist·no redirects), `release-finalizer-rf03-readback.yml`(GET-only job), fake-API 양·음성 회귀 `test_rf03_live_evidence.py`, 필수 PR Scope 연결 및 AGENTS/Issue273/Architecture/Decisions/TestPlan/TestReport/FailureLedger/Operation/ChangeLog 갱신. **본 신규 source에 대한 local Python/Hosted CI, 실 Github run approvals/실 Registry release proof는 아직 NOT VERIFIED/NOT RUN.** 작성·blob/commit은 테스트 완료 증거가 아니다.
+- 환경 설정 `can_admins_bypass` 미노출 시 안전한 fail-closed. 실제 승인 이력 metadata를 읽어도 서명/OCI registry/Owner GO를 증명하지 않으므로 `BLOCKED_CRYPTOGRAPHIC_OCI_AND_REGISTRY_PROOF_REQUIRED`. #229 HOLD 및 운영0.61.0 DB/CAD/Worker/Volume/.env/태그/복구점 불변.
+
+---
+
+## U-273-RF03-HANDOFF — PR #277 CI #716 후속 코드 검증 경계 (2026-11-09)
+
+- [PR CI #716 / run42516241424](https://github.com/planner77/layoutManager/actions/runs/42516241424): exact HEAD `d068d637c90c3b1b995ec6e2595760531503d5e3`, attempt1 completed SUCCESS, 적용 8 Jobs SUCCESS, A2 scope SKIPPED. Review thread0·Main behind0·Draft. 이는 RF-03 read-only source- and version-bound PLAN만 검증하며 실제 Candidate/Promotion을 검증한 것이 아니다.
+- 추가 구현: `rf03_release_handoff.py`의 generic candidate/promote structural handoff와 `test_rf03_release_handoff.py`의 packet SHA/JSON duplicate, owner/source/role/tag/OCI digest/media/size/amd64, baseline, approval/run/job 증거 재사용, Main CI drift 음성 회귀. `.github/workflows/pr-ci.yml` 필수 Scope에 연결. 이 변경 후 **아직 신규 HEAD CI 검증 전 NOT VERIFIED**이며, local Python/실 Github 승인/코드 공개/Registry 실 출고 시험은 별도다.
+- 구조적으로 옳은 packet도 authenticated approval/cryptographic signed evidence/real OCI runtime 증거를 제공하지 않으므로 결과는 의도적으로 `BLOCKED_LIVE_OWNER_CRYPTO_REGISTRY_PROOF_REQUIRED`, real GHCR write0, Issue Close0. legacy 0.61.0 actual candidate/promotion/3digest 및 #229 HOLD 불변. RF03 및 RF04 완료 전 #273 OPEN.
+
+---
+
+## U-273-RF03-PRE-20261109 — Main integration confirmed, release PLAN-only code (2026-11-09)
+
+- [PR #276 CI 42513847448](https://github.com/planner77/layoutManager/actions/runs/42513847448) exact HEAD `9682291b5c46b64992b8504ef914d8fc7b471e3c`: 적용8 SUCCESS, 범위 외 A2 SKIP, thread0, conflicts0, behind0. Squash Main `bd03e6fb601c02e5d2f74dd2d97f0c850b3b695f`, tree `5c58b4369d74b4cad5694f6df46eadaf6d662990`, parent `9635b153`. [Main CI 42515467033](https://github.com/planner77/layoutManager/actions/runs/42515467033) event push exact SHA/attempt1 `Verify read-only GHCR release HOLD` SUCCESS.
+- GitHub Issue #273 timeline에서 병합 직후 자동/외부 경로의 `closed`(actor planner77) 관측. RF-03/04 미완료이므로 OPEN 복구하고 verified state open. Closure trigger 자체는 관측만으로 확정 불가.
+- RF-03 version-generic target/immutable legacy/matched source+Main CI를 정적으로 평가하는 정책·테스트·GET-only workflow를 새 브랜치에 작성; **작성 사실은 테스트 성공 증거가 아님**. 신규 Hosted PR CI 및 단위 테스트 결과는 NOT VERIFIED. 실제 Owner-approved Candidate/Promotion, OIDC 서명 검증, GHCR 게시, Tag/alias update, rollback, Issue Close 전부 NOT RUN/NOT IMPLEMENTED.
+- 기존 0.61.0 3-digest immutable/운영 Worker/DB/CAD/Volume/.env/복구점 및 #229 HOLD 코드 불변.
+
+---
+
 ## U-273-RF02-P1 — CI-success지만 Ready 리뷰 P1 2건 발견 (2026-11-09)
 
 [PR #276](https://github.com/planner77/layoutManager/pull/276) 첫 HEAD `92927197947c435ffd7d91bc25e90da1ac49c16b`의 [CI 42490605691](https://github.com/planner77/layoutManager/actions/runs/42490605691) 적용8 SUCCESS/A2 scoped SKIP은 기존 소스에 대해서만 유효. Draft→Ready 후 [CI 42512889704](https://github.com/planner77/layoutManager/actions/runs/42512889704) 실행 중 Codex P1 리뷰 2건이 등장: token의 Contents merge 권한 누락, GitHub_TOKEN suppress push로 Main proof dead-end. 실제 merge 실패/GHCR 실패는 관측하지 않았으며 코드·공식 GitHub Actions 동작에 근거한 리뷰다.

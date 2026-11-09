@@ -1,3 +1,62 @@
+## #273 / PR #277 — RF-03 version-generic protected Candidate + Promotion integrated implementation (2026-11-09)
+
+- **Baseline verified:** [PR CI #734 / run42535216277](https://github.com/planner77/layoutManager/actions/runs/42535216277) SUCCESS on exact previous HEAD `df9a7de8b6b86930516fc5aa3c61ddec7713455d`, 8 applicable jobs SUCCESS, #218 P1-A2 scoped SKIP, unresolved review threads0 and Draft/open/mergeable. This success is old-source proof only.
+- **One-batch implementation:** after the previous Candidate GET-only GitHub/ZIP/OCI/Sigstore checks, add separate Owner-only protected `release-finalizer-rf03-candidate.yml` and `release-finalizer-rf03-promote.yml` with distinct genuine `workflow_dispatch` Runs, attempt1-only jobs, independent required environment approvals, shared `issue225-candidate-publish` concurrency group, fail-closed Main source/version/tree/review/CI/package/legacy-writer guard and exact packet SHA256/nonce. Both default to `plan` and require explicit `publish`; **no automatic publication from PR/Main CI**.
+- **Reuse by isolation:** `rf03_candidate_policy.py`, `rf03_candidate_publish.py`, `rf03_verified_negative.py`, `rf03_rp_provenance.py`, `rf03_promotion_policy.py`, `rf03_registry_promotion.py` and `rf03_release_promote.py` are RF-03 scoped variants of #225 protected contracts. Exact version is derived at runtime from the checked `src/package.json` on the trusted Main; `rf03_exact_release.exact_tags` requires version **greater than 0.61.0**. Immutable actual final tags are `:X`, `:X-migrate`, `:X-cpu-worker` without `latest`/v aliases. All existing #225 v0.61.0 scripts/workflows/GHCR images/receipts remain unchanged, including #229 `HOLD_MAIN/G7_RELEASE_HOLD_TAG_BLOCKED`.
+- **Candidate:** retained old-proven source-archive → three-role build, RR1+RR2/RR3 local upgrade and cleanup, bounded GHCR candidate-prefix-only publisher, OIDC-signed four subjects with pinned gh positive/negative verification and sanitized 4-file immutable artifact. New candidate version input must exactly equal its approved packet and checked source package version, old 0.61.0 source/tag cannot be published by RF-03.
+- **Promotion:** authentic new-candidate run/Artifact/Owner review metadata, independently verify the **original** GitHub Artifact ZIP via fixed API GET→one-hop approved HTTPS CDN with no credential forwarding or HTTP retry, downloaded file hashes+signed Candidate subjects+actual GHCR config/manifest/platform/source, and a new separate Owner protected approval before exact three immutable version tags. Promotion retains one durable attempt journal, no silent retry, no automatic delete/overwrite/rollback/alias/latest update. Live three-role historical **0.61.0 tags** and previously observed `latest` digest must match Owner-approved `rollbackBaseline` before, immediately before PUT, and after the exact promotion; partial/unknown mismatch stops instead of claiming success. The historical 0.61.0 CPU Worker digest is required in the baseline packet.
+- **Proof boundary:** the new code/CI is not a real protected Owner review or GHCR release. Main code integration, fresh Candidate and Promotion manual dispatches/Owner environment reviews, GitHub Artifact and Sigstore verification, exact final GHCR three digest readback, rollback evidence and an external-writer inventory are independent preconditions. Draft PR #277, Issue #273 OPEN, #229 HOLD, old 0.61.0 tags/latest, production App/Worker/DB/CAD/Volume/.env/backups unmodified. RF-01 durable nonce/checkpoints and RF-04 all-AC Issue closing remain separate; **never issue GO-RELEASE or close Issue on a green PR CI**.
+- **Batch CI policy:** all RF-03 code, regression tests, AGENTS/design/operations/ledger changes are committed once to PR #277; final exact-HEAD required PR CI runs once from `synchronize`. Prior #734 does not validate the new source. Further PR CI only if exact HEAD fails or changes; avoid `ready_for_review` until all independent gates are complete.
+
+---
+
+## #273 — RF-03 evidence chain design boundary (2026-11-09)
+
+After prior PR CI #733 SUCCESS at `2b39cc872c33d476355b5dd62adc110de4fe4afb`, add a **read-only Candidate-first gate** reusing existing GitHub GET run/Owner review/artifact metadata validators without requiring Promotion completion; full post-Promotion `audit` remains unchanged. GitHub readback Owner workflow explicitly selects `candidate` or existing `all`, both GET only. Original GitHub ZIP content SHA256+size is validated before bounded four-name extraction; downloaded JSON claims/receipt cannot substitute an actual Sigstore/OCI proof. Only after real candidate metadata, raw ZIP, authenticated three-role registry GET and pinned gh candidate signatures match may a Stage-A **checksum** be emitted; stage remains blocked until independent protected Promotion Owner approval, immutable final registry readback, durable nonce and RF-04 AC. Synthetic evidence always blocked with `SYNTHETIC_NOT_LIVE`. No release writer, env/permissions, GHCR/Tag/latest or production App/Worker/DB/CAD changes. New exact HEAD CI needed.
+
+---
+
+## #273 / PR #277 — CI #732 successful; RF-03 signed Candidate subject readback unit (2026-11-09)
+
+- **Prerequisite:** [PR CI #732/run42528404780](https://github.com/planner77/layoutManager/actions/runs/42528404780) for exact previous HEAD `62107e83e0a5caf9d4b960ff4c288f625f6fa99d`: completed SUCCESS, 8 applicable successful jobs and 1 #218 scoped SKIP; unresolved review threads0, Draft/open and mergeable at check. This success cannot be reused as new-code CI evidence.
+- **New read-only module:** `src/tests/oci/rf03_signed_candidate.py` reuses `rf03_material_preflight.check`, RF03 strict release handoff and existing #225 `candidate_policy.certificate` signer/SLSA mapping, and requires top Manifest raw bytes from `rf03_oci_readback.check`'s private workspace. It checks candidate receipt Source/Tree/Workflow/run attempt1/version/role/config/OCI subject mapping independently, including all three Manifest subjects plus the receipt. Artifact JSON/verification claims alone never count as signature or Owner authorization.
+- **Pinned verifier:** explicit caller-supplied `gh v2.103.3` binary and downloaded tar archive must match historical pinned `GH_ARCHIVE_SHA` and actual archive member bytes. Manual run uses **only** explicitly supplied `GH_TOKEN`, no host/ambient credentials, fixed signer workflow/ref/digest/source/attempt1, `--deny-self-hosted-runners` and 4 subjects × 2 (online and bundle) successful fresh `gh attestation verify` outputs. Reuses the legacy validated certificate identity (repo ID/Owner ID, OIDC issuer, GitHub-hosted runner, SLSA predicate and run URI). Rehashes all subjects, bundle and binary on each step. No GHCR PUT, alias, tag, protected approval, Issue close or deploy route.
+- **CI:** `test_rf03_signed_candidate.py` includes synthetic 3-image/index bytes, material tampering, receipt source/version/run/role drift, signer/issuer/attempt identity, malformed and duplicate CLI JSON, exact CLI arguments and negative altered gh archive/member checks. Add py_compile + test to existing required PR scope. **Synthetic tests cannot prove an actual signature.** Neither an authorized version-generic Publisher nor a live Candidate Artifact verification has been run by this code change.
+- **Boundary:** `audit()` returns `BLOCKED_INDEPENDENT_OWNER_PROMOTION_AND_REGISTRY_PROOF` even after actual signature verification, and `ownerAuthority=NOT_VERIFIED`, `registryPublication=NOT_RUN`, `externalWrites=0`. Current hosted/live status of new signer and Candidate for 0.61.1+ remains `NOT_VERIFIED`; actual Owner protected Candidate/Promotion separate approvals, artifact provenance-to-run binding and immutable final GHCR 3-role/rollback readback are still required. RF-01 durable nonce/checkpoint and RF-04 AC-gated closure stay separate.
+- Preserve #229 HOLD_MAIN/G7_RELEASE_HOLD_TAG_BLOCKED, historical immutable 0.61.0 three-role GHCR tags/digests/latest and operating App/Worker/DB/CAD/Volumes/.env/backups. PR #277 **Draft**, Issue #273 **OPEN**, no release GO or GHCR write. New exact-head PR CI required.
+
+---
+
+## #273 RF-03 OCI read-only unit after CI #730 (2026-11-09)
+
+The exact previous PR #277 HEAD `b7116c6c889d291b0222a618b85ca11fe38026c1` passed [PR CI #730/run42525255763](https://github.com/planner77/layoutManager/actions/runs/42525255763) (8 applicable SUCCESS, 1 #218 scope SKIPPED). Next implementation reuses `candidate_registry.collect_graph` in `rf03_oci_readback.py` for exact three-role OCI candidate digest/media/size/config/platform/source/version readbacks. A keyword-only version override does not change the legacy default `0.61.0` pinned by #225. ReadOnlyGHCR requests a GHCR **pull-only token**, permits only GET/HEAD, and has no release/tag/Issue writer. Synthetic tests cover OCI manifest/index and fail-closed mismatches. No actual version-generic Candidate/Promotion executed, no real newer-version signer/Owner approvals/OCI live readback, no protected final tag. All verification remains NOT_RELEASE_GO and `externalWrites=0`; #229 HOLD and historical images/operations remain unchanged. PR Draft/Issue OPEN, new exact HEAD CI still required.
+
+---
+
+## 2026-11-09 — #273 PR #277 RF-03 live Github evidence audit candidate
+
+- [PR CI #717/run42518993315](https://github.com/planner77/layoutManager/actions/runs/42518993315), previous exact HEAD `da5c8782fc04008c94bcb41f676fe58b640c6ce3`, applied8 SUCCESS / scoped SKIP.
+- Added GET-only real GitHub run/attempt/job, independent Owner environment approval-history, environment admin bypass strict, artifact/source metadata and code tree/version/current Main checks, bounded paths+no redirects, manual read-only workflow, mock negative regression tests and PR Scope. New HEAD CI not yet verified.
+- No Sigstore cryptography, authenticated OCI digest/Registry publication, GHCR release approval, Issue close or existing 0.61.0 publisher modification. Keep #229 HOLD and prod data immutable.
+
+---
+
+## 2026-11-09 — #273 PR #277 RF-03 handoff evidence contract
+
+- 기존 PR CI #716 exact HEAD `d068d637c90c3b1b995ec6e2595760531503d5e3` SUCCESS 확인 (8 적용 Job/A2 scoped SKIP).
+- RF03 generic Candidate/Promotion handoff closed packet 검증 모듈, two-run/job/approval-proof separation, 3role manifest/config/platform/digest and old immutable baseline, no approval claims, fail closed. Negative unittest + required Scope step. Source 변경 후 CI 미확인.
+- Writer/Owner protected approval/Sigstore OIDC/OCI verification은 기존 0.61.0 pin을 그대로 보존한 후속 RF-03 작업이며 actual GHCR/Tag/Issue Close 불변.
+
+---
+
+## 2026-11-09 — Issue #273 RF-02 Main + RF-03 read-only release version plan
+
+- PR #276 final exact SHA PR CI 42513847448 PASS, squash Main `bd03e6fb601c02e5d2f74dd2d97f0c850b3b695f` tree `5c58b4369d74b4cad5694f6df46eadaf6d662990` parent `9635b153`; Main CI 42515467033 read-only HOLD SUCCESS.
+- GitHub issue #273 조기 CLOSED 감지·RF-03/04 AC 미완료 근거로 OPEN 복구, 원인은 아직 미확정.
+- RF-03의 source-bound read-only exact version/three-role GHCR tag plan, legacy0.61.0 immutable 거부, Main ref/CI/Owner source negative tests, owner PLAN workflow 추가. 실제 0.61.1 publisher 코드와 두 보호 환경 승인/서명/이미지 게시/Issue Close는 미구현·미실행. #229 HOLD 그대로.
+
+---
+
 ## 2026-11-09 — #273 RF-02 PR276 P1 review fixes
 
 - GitHub REST protected merge token Contents write 및 GITHUB_TOKEN push event workflow-suppression 확인. Integrate job에만 contents/pulls/actions write 부여; exact merge SHA/packet bound main-hold workflow_dispatch를 추가하고 Main workflow run-name/독립 readback 성공 Gate 구현.

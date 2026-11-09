@@ -59,6 +59,26 @@ jobs:
         run: |
           python3 -m py_compile src/tests/oci/release_finalizer_integrate.py src/tests/oci/test_release_finalizer_integrate.py
           python3 src/tests/oci/test_release_finalizer_integrate.py
+      - name: Check RF-03 exact release plan, independent handoff, live GitHub evidence (GET only)
+        run: |
+          python3 -m py_compile src/tests/oci/rf03_exact_release.py src/tests/oci/test_rf03_exact_release.py src/tests/oci/rf03_release_handoff.py src/tests/oci/test_rf03_release_handoff.py
+          python3 -m py_compile src/tests/oci/rf03_live_evidence.py src/tests/oci/rf03_readback.py src/tests/oci/test_rf03_live_evidence.py
+          python3 src/tests/oci/test_rf03_exact_release.py
+          python3 src/tests/oci/test_rf03_release_handoff.py
+          python3 src/tests/oci/test_rf03_live_evidence.py
+          python3 -m py_compile src/tests/oci/rf03_material_preflight.py src/tests/oci/test_rf03_material_preflight.py
+          python3 src/tests/oci/test_rf03_material_preflight.py
+          python3 -m py_compile src/tests/oci/rf03_oci_readback.py src/tests/oci/test_rf03_oci_readback.py
+          python3 src/tests/oci/test_rf03_oci_readback.py
+          python3 -m py_compile src/tests/oci/rf03_signed_candidate.py src/tests/oci/test_rf03_signed_candidate.py
+          python3 src/tests/oci/test_rf03_signed_candidate.py
+          python3 -m py_compile src/tests/oci/rf03_candidate_archive.py src/tests/oci/rf03_candidate_evidence.py src/tests/oci/test_rf03_candidate_evidence.py
+          python3 src/tests/oci/test_rf03_candidate_evidence.py
+          python3 -m py_compile src/tests/oci/rf03_download.py src/tests/oci/test_rf03_download.py
+          python3 src/tests/oci/test_rf03_download.py
+          python3 -m py_compile src/tests/oci/rf03_candidate_policy.py src/tests/oci/rf03_verified_negative.py src/tests/oci/rf03_rp_provenance.py src/tests/oci/rf03_candidate_publish.py
+          python3 -m py_compile src/tests/oci/rf03_registry_promotion.py src/tests/oci/rf03_promotion_policy.py src/tests/oci/rf03_release_promote.py src/tests/oci/test_rf03_protected_release.py
+          python3 src/tests/oci/test_rf03_protected_release.py
       - name: Check Issue #225 proof contracts without external writes
         run: |
           python3 -m py_compile src/tests/oci/rp-provenance.py src/tests/oci/test_rp_provenance.py src/tests/oci/cp-control-proof.py src/tests/oci/test_cp_control_proof.py src/tests/oci/registry_promotion.py src/tests/oci/test_registry_promotion.py
