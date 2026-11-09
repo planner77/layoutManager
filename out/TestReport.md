@@ -1,3 +1,11 @@
+## U-273-RF01-RF04-CI741 — 구 synthetic fixture 계약 불일치 보완, 신규 CI 결과 미검증 (2026-11-09)
+
+- 실제 [PR CI #741/run42572495438](https://github.com/planner77/layoutManager/actions/runs/42572495438) HEAD `1d3331addbc6a39b09f02afa2b9832d565725ceb`, attempt1 completed FAILURE. Required Scope Job 129012807453: 기존 `test_release_finalizer_finish.py` 8 tests 중 2 ERROR (`test_sequential_sha_chain_and_readable_recovery`, `test_issue_store_single_append_and_exact_close_patch`), 둘 다 정상 보안거부 `RFCP_NONCE_OR_RUN_REUSED`. 필수 aggregate 129012880389 종속 FAILURE, 후속 Job SKIPPED. GHCR 문제 아님.
+- 새 nonce replay P2 정책은 의도대로 작동했으나 이전 양성 fixture가 Owner run이 달라질 때 nonce를 갱신하지 않았다. 구 소스 PASS #739/#740와 #741 FAIL 기록을 유지하면서, 양성 테스트에서 독립 run마다 새 `packet nonce`와 그 packet의 SHA256을 생성하도록 수정. `requestNonceSha256` 및 프로덕션 구현은 변경하지 않았으며 기존 음성 테스트 그대로.
+- 신규 수정 HEAD exact CI는 **NOT VERIFIED**. 직접 GHCR/Issue/운영 write0; 기존 #229 HOLD/이미지/태그/latest/운영 자산과 Issue #273 OPEN 유지.
+
+---
+
 ## U-273-RF01-RF04-REPLAY — Ready #740 성공 이후 P2 코드 보완 (2026-11-09)
 
 - 기존 `920c0fc9f70db4810c89206850fc335420e1a792`의 PR CI #740/run42566617481 attempt1 **SUCCESS**(적용8개, scoped A2 SKIPPED), 리뷰 1건 P2 unresolved. 이 성공을 nonce 보완 소스의 검증으로 소급하지 않는다.

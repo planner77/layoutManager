@@ -1,3 +1,12 @@
+## #273 / PR #278 — PR CI #741 실패: P2 nonce 강화 후 잔존 synthetic 실행 ID 테스트 계약 보정 (2026-11-09)
+
+- **실제 CI 확인:** [PR CI #741/run42572495438](https://github.com/planner77/layoutManager/actions/runs/42572495438), exact HEAD `1d3331addbc6a39b09f02afa2b9832d565725ceb`, attempt1, completed FAILURE. Required Scope job `129012807453`의 `src/tests/oci/test_release_finalizer_finish.py` **8 tests, 2 ERROR** (`test_sequential_sha_chain_and_readable_recovery`, `test_issue_store_single_append_and_exact_close_patch`). 두 예외는 `RFCP_NONCE_OR_RUN_REUSED`이며 required aggregate `129012880389`는 의존성으로 FAILURE, 나머지 E2E/Docker/Quality는 SKIPPED, #218 A2도 scope SKIPPED. 이전 RF01/02/03, #229 Scope 검증은 이 테스트 이전까지 PASS.
+- **원인/설계:** #740 이후 Codex P2를 해결한 실제 정책은 **서로 다른 Owner dispatch(run ID)는 원본 요청 nonce를 반드시 새로 발급**해야 한다. 반면 이전 synthetic 두 테스트는 다수 run ID(222/333, 321…324)에 동일 packet/nonce를 재사용하면서 정상 체인으로 기대했다. 정확히 차단되어야 하는 조건을 유효 fixture로 작성한 **회귀 테스트 계약 불일치**이며 GHCR/실 서비스 장애가 아니다.
+- **최소 보완:** 생산 보안 로직, checkpoint 필수 `requestNonceSha256`, chain/append/close 보호, #229 HOLD는 변경하지 않는다. 테스트 `test_sequential...`는 `MAIN_VERIFIED` run222/nonce1, 이후 동일 종료 run333/nonce2로 구성하고, `test_issue_store_single_append...`는 각 독립 synthetic run마다 새 32-hex nonce/packet SHA를 만든 뒤 정상 hash-chain readback과 단일 Issue-close를 검증한다. 기존 same-nonce/different-run/timestamp-change 거부 음성 테스트는 그대로 유지한다.
+- 새 exact HEAD PR CI는 아직 **검증 전**; #741 실패 및 이전 #739/#740 성공은 구 HEAD 이력으로만 사용. 리뷰 해결·충돌0·새 필수 CI 성공 전 Main Squash 금지. GHCR/태그/운영 App/Worker/DB/CAD/Volume/.env/backup·#229 HOLD 그대로, Issue #273 OPEN.
+
+---
+
 ## #273 / PR #278 — Ready CI #740 SUCCESS, P2 요청 nonce 재사용 차단 보완 (2026-11-09)
 
 - **정확한 선행 증거:** [PR CI #740/run42566617481](https://github.com/planner77/layoutManager/actions/runs/42566617481), HEAD `920c0fc9f70db4810c89206850fc335420e1a792`, attempt1 event pull_request, 적용8 SUCCESS/#218 A2 scoped SKIP. Main base `8a5e437011238d11694d5c9df2d220871e66f7ec` 동일, Ready, mergeable true. CI 자체의 실패는 없으나 Codex 신규 **미해결 P2**: Owner request `nonce`를 그대로 사용하고 `issuedAtEpoch` 등만 바꾸면 packet SHA가 달라져 RF04 replay 검사 통과. 각 단계의 stage-derived nonce는 달라 원래 요청 nonce 재사용을 차단하지 못했다.

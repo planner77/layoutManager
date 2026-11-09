@@ -1,3 +1,12 @@
+## #273 / PR #278 — #741 nonce replay policy 정상 차단과 synthetic fixture 불일치 (2026-11-09)
+
+- **실제 실패:** [PR CI #741/run42572495438](https://github.com/planner77/layoutManager/actions/runs/42572495438), HEAD `1d3331addbc6a39b09f02afa2b9832d565725ceb`, attempt1 `pull_request`, completed FAILURE. `Classify PR scope and audit merge defaults` Job **129012807453 FAILED** in `Check RF-01 durable checkpoints and RF-04 independently verified AC close`; `python3 src/tests/oci/test_release_finalizer_finish.py` 8 tests / 2 ERROR: `test_sequential_sha_chain_and_readable_recovery` at line 112, `test_issue_store_single_append_and_exact_close_patch` at line 225. Both `release_finalizer.Blocked: RFCP_NONCE_OR_RUN_REUSED` from `release_finalizer_checkpoint.proposed_event` (line 168). Required aggregate **129012880389 FAILURE** as dependent; quality, Docker, G7/E2E skipped, #218 A2 scope skipped. Preceding RF01/02/03 and #229 suites PASS. No GHCR, Owner approval or Main release failure observed.
+- **원인:** #740 후 Codex P2 수리에서 원본 Owner nonce는 `requestNonceSha256`로 저장, 다른 run/packet의 동일 nonce는 차단된다. 두 구 synthetic 양성 테스트는 서로 다른 run ID에서 **똑같은 packet nonce**를 사용했다. 보안 정책은 정확히 거부했으며 테스트 설계가 새로운 필수 계약에 뒤처졌다. 이 오류를 해결하려고 nonce policy를 완화하면 과거 P2를 재도입한다.
+- **수리:** 프로덕션 정책 변경0. 첫 synthetic 정상 체인: Main run 222 + nonce `1×32`, 종료 run 333 + nonce `2×32`, 단일 Owner run333의 3개 stage 재사용만 허용. 둘째 synthetic 정상 remote IssueStore: run321~324 각각 고유 `0×32` ~ `3×32` nonce+동일 identity의 각각 다른 packetSHA, 전체 comment hash-chain 및 마지막 single-close readback 검증. 기존 nonce replay/타임스탬프 변조 음성 테스트 유지. AGENTS, FailureLedger, TestPlan/TestReport에 근거 기록. 새 HEAD hosted CI 미실행/미검증 상태에서 성공 주장 금지; 한 번의 보완 원자 커밋으로 CI 자동 시작.
+- **영향/안전:** #229 HOLD, 0.61.0 three-role GHCR digest/tag/latest, 운영 App/Worker/DB/CAD/Volume/.env/backup 불변. Issue #273 OPEN, PR #278 Ready/open, 이전 P2 thread resolved, 실제 GHCR/Issue write0. 구 CI #739/#740 PASS를 변경 후 CI로 재사용하지 않음.
+
+---
+
 ## #273 / PR #278 — #740 PASS 이후 Codex P2 nonce replay (2026-11-09)
 
 - **CI 성공(실패 아님):** [PR CI #740/run42566617481](https://github.com/planner77/layoutManager/actions/runs/42566617481), exact HEAD `920c0fc9f70db4810c89206850fc335420e1a792`, attempt1 completed SUCCESS, 8 applicable jobs SUCCESS, #218 scoped A2 SKIPPED, draft 해제/Ready, Main behind0·mergeable true. 이 CI는 변경 전 source만 검증한다.

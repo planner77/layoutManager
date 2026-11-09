@@ -1,3 +1,12 @@
+## TP-273-RF01-RF04-CI741 — 새 nonce 계약에 맞는 양성 synthetic fixture 회귀 (2026-11-09)
+
+1. 실제 보호 규칙: 서로 다른 Owner `workflow_dispatch` run ID는 동일 `requestNonceSha256`을 공유하면 **무조건 거부**, timestamp·JSON·packetSha 변경으로 우회 불가. 동일 run 및 동일 packet에서 여러 단계만 허용. 기존 거부 음성 테스트 변경 금지.
+2. `test_sequential_sha_chain_and_readable_recovery`: run222 Main/nonce1과 run333 Close/nonce2, 단계2-4는 동일 run333 + 같은 packet. 모든 4단계 순서/이전 SHA/시도 ID/원본 nonce 해시를 확인.
+3. `test_issue_store_single_append_and_exact_close_patch`: 각 분리된 synthetic run(321..324)에 새 32-hex 원본 nonce, 새 packet SHA, 불변 repo/Issue/PR/Tree/Main release identity를 사용해 GitHub Issue 댓글 chain과 readback 및 single PATCH 정상 검증. 이후 재호출은 차단.
+4. `#741` 실제 Scope 8 tests 2 ERROR 로그를 근거로, 코드 정책 완화 없이 해당 두 fixture만 보정한다. 새 HEAD 필수 PR CI 전 PASS 주장 금지. 0.61.0 baseline/Tag/latest/HOLD/운영 데이터와 Issue #273 보존.
+
+---
+
 ## TP-273-RF01-RF04-REPLAY — Owner request nonce 독립 영속 바인딩 (2026-11-09)
 
 1. RF01 동일 `nonce`로 `issuedAtEpoch`, `expiresAtEpoch` 또는 JSON 직렬화만 변경해 다른 `packetSha256`를 생성한 후 두번째 Owner workflow_dispatch로 `CANDIDATE_VERIFIED`를 제안하면 반드시 `RFCP_NONCE_OR_RUN_REUSED` 거부한다. Hash 변화 자체는 새 요청 nonce를 뜻하지 않는다.

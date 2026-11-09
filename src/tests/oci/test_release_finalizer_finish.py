@@ -105,17 +105,24 @@ class SyntheticStore:
 
 class GateTests(unittest.TestCase):
     def test_sequential_sha_chain_and_readable_recovery(self):
-        p = packet(); psha = encoded_packet(p)[1]
+        # Distinct dispatches must use independent Owner request nonces.
+        # The later three stages share one run/packet, as a real protected
+        # close dispatch does. Old same-nonce/cross-run fixtures are invalid.
+        main_packet = packet("1" * 32)
+        close_packet = packet("2" * 32)
         out = []; prev = None
         for stage in cp.STAGES:
-            runid = 222 if stage == cp.STAGES[0] else 333
-            ev = cp.proposed_event(p, psha, MAIN, out, prev, stage,
-                                   {"proof": stage}, runid)
+            is_main = stage == cp.STAGES[0]
+            current = main_packet if is_main else close_packet
+            current_sha = encoded_packet(current)[1]
+            runid = 222 if is_main else 333
+            ev = cp.proposed_event(current, current_sha, MAIN, out, prev,
+                                   stage, {"proof": stage}, runid)
             out.append(ev)
             prev = cp.sha(cp.canonical(ev))
         comments = [{"id": 10+i, "user": {"id": cp.BOT_ID},
                      "body": cp.comment_body(ev)} for i, ev in enumerate(out)]
-        found, readback = cp.chain(comments, p, MAIN)
+        found, readback = cp.chain(comments, main_packet, MAIN)
         self.assertEqual(found, out)
         self.assertEqual(readback, prev)
         self.assertEqual(found[-1]["stage"], "CLOSE_INTENT")
@@ -196,7 +203,9 @@ class GateTests(unittest.TestCase):
                             second["requestNonceSha256"])
 
     def test_issue_store_single_append_and_exact_close_patch(self):
-        p = packet(); psha = encoded_packet(p)[1]
+        # Every synthetic dispatch is independently nonce/packet-bound.
+        # This tests cross-run recovery rather than prohibited nonce reuse.
+        p = packet("0" * 32)
         state = {"issue": {"number": 273, "state": "open", "body": issue_body()},
                  "comments": [], "patch": 0}
         def api(method, path, body):
@@ -221,10 +230,15 @@ class GateTests(unittest.TestCase):
         store = cp.IssueStore("synthetic", 273, request=api)
         digest = None
         for i,stage in enumerate(cp.STAGES):
-            before, prev = cp.chain(store.comments(), p, MAIN)
-            event = cp.proposed_event(p, psha, MAIN, before, prev, stage, {}, 321+i)
-            digest = store.append(event,p,MAIN)
-            self.assertEqual(digest, cp.chain(store.comments(), p, MAIN)[1])
+            current = packet(str(i) * 32)
+            current_sha = encoded_packet(current)[1]
+            before, prev = cp.chain(store.comments(), current, MAIN)
+            event = cp.proposed_event(
+                current, current_sha, MAIN, before, prev, stage, {}, 321+i)
+            digest = store.append(event, current, MAIN)
+            self.assertEqual(digest, cp.chain(store.comments(), current, MAIN)[1])
+        self.assertEqual(len({e["requestNonceSha256"]
+                              for e in cp.chain(store.comments(), p, MAIN)[0]}), 4)
         closed = store.close_once(p,MAIN,digest)
         self.assertEqual(closed["state"], "CLOSED_READBACK")
         self.assertEqual(state["patch"], 1)
