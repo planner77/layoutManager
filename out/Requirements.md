@@ -1,3 +1,9 @@
+## #281 / #279 우선 요구 — 로컬 검증 (2026-11-11)
+
+새 변경은 PR0/Actions0, 영향 기반 로컬 검증과 append-only Issue 증거를 사용한다. 필수 FAIL/NOT RUN은 차단하며 local PASS는 GHCR/운영/현장 수용이 아니다. 상세 요구·AC·경계의 정본은 [Issue281](Issue281.md). 아래 PR/CI 요구는 해당 시점의 역사이며 새 일반 Gate를 구성하지 않는다. 구현 및 실제 시험 범위는 [Issue별 증거](IssueEvidence/281.md)와 [TestReport](TestReport.md)를 따른다. GHCR/운영·외부 baseline은 별도 상태로 유지한다.
+
+---
+
 ## #218 L-05 — Scene 목록 상태 조회·재시도 보완 (2026-11-08)
 
 **FR-218-L05-LIST:** 기존 #225 자동 Job/단일 CPU Worker·G7 게시·검증된 Scene 복원과 승인된0.61.0 운영 근거를 재사용한다. 이번 Unit은 홈/Location의 상태 조회 결함을 수정한다. 표시된 DXF ID는 중복 제거 후 누락 없이 API 상한100개 단위로 순차 조회하며 DWG는 제외한다. 탭 숨김·목록 변경·수동 갱신·해제 이후 이전 응답/오류/타이머가 새 상태 또는 재시도 권한을 되살리지 않아야 한다.

@@ -26,7 +26,8 @@
     "test:outline-benchmark": "tsx tests/benchmark/outline-benchmark.ts",
     "audit:outline": "tsx tests/benchmark/outline-real-audit.ts",
     "test:outline-acceptance": "playwright test --config playwright.outline-acceptance.config.ts",
-    "verify:outline-acceptance": "tsx scripts/verify-outline-acceptance.ts"
+    "verify:outline-acceptance": "tsx scripts/verify-outline-acceptance.ts",
+    "verify:local": "python3 scripts/verify_local.py"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.1127.0",

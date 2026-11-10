@@ -1,3 +1,9 @@
+## #281 로컬 검증 경계 (2026-11-11)
+
+`src/scripts`의 로컬 CLI는 변경 영향 계획 → 기존 test runner/격리 Docker adapter → 마스킹된 로그 → append-only MD·불변 JSON 및 실패 인덱스로 구성한다. 업무 앱/DB schema 변경 없음. 테스트 명령은 검토 가능한 고정 manifest에서 argv로 실행하고 임의 publisher/workflow 명령을 받지 않는다. legacy CI의 유효 검사만 재사용하며 GitHub PR/Actions/registry writer는 호출하지 않는다. 프로파일/선정·stop/증거 계약은 [Issue281](Issue281.md) 참조. local release 검사에는 출고 권한이 없다.
+
+---
+
 ## #273 RF-01/RF-04 durable checkpoint and release-close trust boundaries (2026-11-09)
 
 The RF01 exact Owner request packet and legacy RF02 GitHub PR/Main verified plan remain the identity root. New `release_finalizer_checkpoint.py` persists a compact chain to the target GitHub Issue's comments via fixed repo API (GitHub Actions Bot identity, sequence1–4, immutable release identity SHA256, distinct derived stage nonces, packet hash, previous digest, run attempt1, proof SHA256). The chain is **not an Owner signature** or immutable external registry; partial/comment mutation/bot mismatch/ambiguous write/replay -> HALT; protected `issue225-candidate-publish` concurrency serializes RF03 Candidate/Promotion and new checkpoint operations.

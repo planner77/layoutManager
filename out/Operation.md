@@ -1,3 +1,29 @@
+## 현재 운영 정책: #279 / #281 로컬 검증 (2026-11-11)
+
+신규 변경의 검증은 [Issue281](Issue281.md)의 단일 로컬 CLI로 수행한다. 실행 방법·위험별 필수 시나리오·실패/NOT RUN 중단·비밀 마스킹·로그와 MD/JSON 출력·회귀 조회는 그 문서를 정본으로 사용한다. 아래 PR/Main CI와 Finalizer 운영 방법은 이전 정책의 역사 참고이며 새 변경에서 실행하지 않는다.
+
+직접 Main push 전 관련 CI/Release Actions가 비활성이고 PR/required status 규칙이 제거되었는지 실제 API/UI로 확인한다. 현재 확인된 설정은 [Issue 281 증거](IssueEvidence/281.md)에 기록한다. 설정 미전환 시 push를 중단하며 PR 생성/CI dispatch로 대체하지 않는다. 비 fast-forward와 branch/tag 삭제 보호는 유지한다. GHCR 게시의 정본은 후속 #282이며 로컬 검증 성공만으로 기존 image/tag/latest 또는 운영 DB/CAD/Scene/Volume을 변경하지 않는다. #283 일관 복구점·격리 복원은 별도 조건이다.
+
+### 로컬 실행 예시
+
+로컬 검증은 Python 3.12와 Node 22.14 이상 23 미만, npm lockfile 의존성, Docker Engine/Compose를 사용한다. 실제 시험 환경은 Python 3.12.3 / Node 22.14.0 / Docker 29.8.0 / Compose 5.5.1이며 실행별 관측 버전은 증거 JSON에 기록한다.
+
+프로젝트 Root에서 base에는 분석 기준의 실제 commit SHA를 넣는다. `plan`은 선택 게이트/필수 여부를 출력하고, `run`은 실행·마스킹 로그·Issue 증거를 저장한다. 자동 감지된 위험은 낮은 profile로 제거할 수 없다.
+
+```bash
+npm --prefix src run verify:local -- plan --issue 281 --profile high-risk --base 3d4d64d6e211c9ab20e40e604541a9ddfa96abef
+npm --prefix src run verify:local -- run --issue 281 --profile high-risk --base 3d4d64d6e211c9ab20e40e604541a9ddfa96abef
+npm --prefix src run verify:local -- lookup --query 281
+```
+
+`--unit tests/unit/<name>.test.ts` / `--e2e tests/e2e/<name>.spec.ts`로 실제 변경의 회귀를 추가 지정할 수 있다. 자동 매핑되지 않은 UI/로직은 관련 검증 선택 전 NOT RUN으로 차단된다. 문서 검토는 `--docs-review "root: 링크와 요구·정책 정합성 검토 완료"`처럼 실제 검토자와 결론을 기록한다(사람/에이전트 구분 유지, Owner 예외 승인이나 서명으로 해석하지 않음). `--risk db`, `--risk auth`, `--risk scene`, `--risk worker` 등은 위험을 추가한다. 문서만 바뀌면 `--profile docs`, 일반 변경은 `standard`, 고위험은 `high-risk`, 출고 준비 검사에는 `release`를 사용한다. 앱 빌드와 Browser에는 Node 의존성/Prisma Client와 설치된 Playwright Chromium이 필요하다. 필요할 때 `PLAYWRIGHT_CHROMIUM_EXECUTABLE`로 로컬 실행 파일을 지정한다. 실데이터/운영 환경변수는 전달하지 않는다. 로그는 `data/verify-local`에 보존하며 그 자체를 Git에 넣지 않는다. Issue별 정본은 `out/IssueEvidence/<번호>.md`다. 종료0과 시나리오 PASS는 해당 로컬 범위에만 적용한다. 미실행/실패 시 로그·원인·보완 commit·재시험 run을 후속 append로 연결한다.
+
+
+실행 JSON은 `data/verify-local/<run-id>.json`, 마스킹 로그는 같은 경로 아래 실행별 디렉터리에 저장하고 MD에는 경로와 SHA256를 남긴다. 원본 실행은 수정하지 않고 `annotate`로 원인·보완·추가 회귀·실제 PASS 재시험을 연결한다. 예를 들어 `npm --prefix src run verify:local -- annotate --issue 281 --run-id <실패-run-id> --cause "확인한 원인" --fix "보완 commit 또는 pending + fingerprint" --regression "추가한 회귀" --retest <PASS-run-id>`를 사용한다. 미해결이면 `--retest pending`을 기록한다. SHA/checksum과 검토자 문자열은 Owner 서명이나 출고 승인 증거가 아니다.
+
+`release` 프로파일의 외부 이전 버전 baseline/복원 게이트는 #283 증거가 준비되기 전 필수 NOT RUN으로 차단된다. 현재 프로파일 실행만으로 #282 수동 게시 준비 완료나 실제 출고 성공을 주장하지 않는다.
+
+
 ## #273 RF-01/RF-04 요청 nonce 재발행·복원 운영 규칙 보완 (2026-11-09)
 
 원격 checkpoint `requestNonceSha256`는 각 Owner packet의 **원래 요청 nonce를 직접 해시**한 값이다. `stage_nonce`와 `packetSha256`는 서로 다른 필드이며 하나로 대체할 수 없다. 같은 Owner run/packet에서 Candidate/Promotion/CLOSE_INTENT처럼 여러 stage를 작성할 때에만 같은 request nonce 해시가 허용된다. 타임스탬프·공백·정렬만 변경하여 같은 nonce를 재발행하면 거부한다. 비종료 단계 실패 후 재개는 매번 **새 nonce**·완전한 신규 Owner packet·정확 predecessor checkpoint SHA + 재검증된 Owner 보호 승인을 사용한다. 모호한 GitHub POST/PATCH 및 CLOSE_INTENT 재발행은 계속 금지한다. 이 값은 Owner 승인 증명이 아닌 재사용 차단용 결합 증거다.

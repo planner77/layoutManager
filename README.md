@@ -1,3 +1,5 @@
+현재 개발 절차는 [Issue #279](https://github.com/planner77/layoutManager/issues/279)의 PR 0회·Actions 0회·로컬 검증 정책을 따릅니다. [로컬 검증 안내](out/Issue281.md)와 [Issue별 실제 증거](out/IssueEvidence/281.md)를 확인하세요. 과거 PR/CI·게시 기록은 당시 결과이며 새 변경의 출고 허가로 재사용하지 않습니다. GitHub 보호 설정 전환과 #282 수동 GHCR·#283 복구 검증은 별도입니다.
+
 ## #218 — Scene 목록 상태 조회 보완 (소스0.61.1)
 
 PR CI 웹 레이어 비교는 `runtime` 이미지와 `app` 역할을 확인합니다. CI 실패·보완과 실제 검증 범위는 [TestReport](out/TestReport.md)의 U-218-CI705와 [FailureLedger](out/FailureLedger.md)를 참조하세요.

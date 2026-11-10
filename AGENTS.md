@@ -1,3 +1,15 @@
+# 현재 Issue Lifecycle — #279 / #281 (2026-11-11)
+
+이 절은 아래 과거 PR/CI 지침보다 우선한다. 모든 신규 Issue는 **PR 생성 0회·GitHub Actions 실행 0회**로 처리한다. 과거 실행 기록은 당시 증거로 보존한다.
+
+1. Issue와 상위 정책을 읽고, `out/FailureLedger.md` 및 `out/IssueEvidence/<번호>.md`에서 모듈·오류·회귀를 검색한다. 요구·설계·AC를 기록한 뒤 Manager→Developer→QA 순서로 진행한다.
+2. [Issue281](out/Issue281.md)의 로컬 검증 CLI를 사용한다. 변경 영향에 해당하는 검증과 실패 회귀를 실행하고 실제 결과를 Issue별 정본에 append-only 기록한다. 다른 SHA·환경의 PASS를 승계하지 않는다. 필수 FAIL/NOT RUN은 출고 차단이다.
+3. `git fetch` 뒤 지정 remote·정확 소스·Secret/산출물 제외를 확인한다. **관련 Actions 비활성화와 Main의 PR/required-check 제거가 실제 readback으로 확인될 때만** 비강제 `HEAD:main` push를 수행한다. Force push·보호 우회·대신 PR/CI 실행은 금지한다.
+4. GHCR는 별도 #282의 수동 App/Migrator/CPU Worker 출고 게이트와 Owner GO, 세 digest readback을 충족해야 한다. 로컬 PASS는 이미지 게시·현장 수용·운영 배포 성공이 아니다. #283 복구점/격리 복원과 운영 배포는 별도 판정이다.
+5. 완료 보고에 구현·시험·실패/미실행·commit/push·게시 digest·잔여 의존성을 명시한다. 충족하지 않은 AC는 열린 상태로 유지한다.
+
+실제 설정 확인(2026-11-11): Main Ruleset `26731716`은 PR/required CI 필수·bypass 없음, Actions는 enabled이며 여러 관련 workflow가 active다. 관리자 전환은 **미완료**다. 최신 readback으로 갱신하며 설정을 변경한 것으로 간주하지 않는다.
+
 ## #273 / PR #278 — PR CI #741 실패: P2 nonce 강화 후 잔존 synthetic 실행 ID 테스트 계약 보정 (2026-11-09)
 
 - **실제 CI 확인:** [PR CI #741/run42572495438](https://github.com/planner77/layoutManager/actions/runs/42572495438), exact HEAD `1d3331addbc6a39b09f02afa2b9832d565725ceb`, attempt1, completed FAILURE. Required Scope job `129012807453`의 `src/tests/oci/test_release_finalizer_finish.py` **8 tests, 2 ERROR** (`test_sequential_sha_chain_and_readable_recovery`, `test_issue_store_single_append_and_exact_close_patch`). 두 예외는 `RFCP_NONCE_OR_RUN_REUSED`이며 required aggregate `129012880389`는 의존성으로 FAILURE, 나머지 E2E/Docker/Quality는 SKIPPED, #218 A2도 scope SKIPPED. 이전 RF01/02/03, #229 Scope 검증은 이 테스트 이전까지 PASS.
@@ -2018,7 +2030,9 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 | [Issue52](out/Issue52.md) | 브라우저 GeneratedDocument·Command/Undo·Redo·이력 메모리 및 보안 범위 | 생성 개체 변형·Undo/Redo·Tree/Scene/JSON 투영·#53~#56 변경 시 |
 | [Issue42](out/Issue42.md) | U5 업무 타입 지정·이름 및 schemaVersion 2 JSON 계약·#65 보안 승인 경계 | Viewer 타입 선택·외곽선 임시 확정·JSON/Tree 연계 변경 시 |
 | [Issue40](out/Issue40.md) | U3 외곽선 ON/OFF·Worker 취소·임시 확정/JSON 보존 정책 및 AC 추적 | 외곽선 메뉴·객체 선택·취소·임시 Overlay/Renderer·ESC 변경 시 |
-| [FailureLedger](out/FailureLedger.md) | PR/Main CI 관측 실패·조치·재검증 누적 원장 | CI 실패·취소·재시작 시 |
+| [FailureLedger](out/FailureLedger.md) | Issue별 실패 정본의 공통 검색 인덱스와 역사적 실패 기록 | Issue 착수·실패·재시험·회귀 선택 시 |
+| [Issue281](out/Issue281.md) | 로컬 검증 CLI·프로파일·위험별 중단·증거 계약 | 신규 Issue 구현·로컬 검증·출고 판정 전 |
+| [IssueEvidence](out/IssueEvidence/281.md) | Issue별 append-only 시험·실패·미실행 증거 (281 예시) | 해당 Issue 결과 기록·회귀 재사용 전 |
 | [Issue25](out/Issue25.md) | 기본 immersive 진입, native 수동 선택, 복귀·툴바·회귀 수용 | Viewer 전체 화면 기본 진입/링크/포커스/레이어·검색 변경 시 |
 | [Release 0.20.0](out/Release-0.20.0.md) | 0.20.0 병합·태그·GHCR 게시 근거 | 0.20.0 릴리스 확인 및 운영 이미지 식별 시 |
 | [Release 0.21.0](out/Release-0.21.0.md) | 0.21.0 병합·태그·GHCR 게시 근거 | 0.21.0 릴리스 확인 및 운영 이미지 식별 시 |

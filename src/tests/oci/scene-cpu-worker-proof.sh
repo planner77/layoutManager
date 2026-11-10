@@ -2,24 +2,44 @@
 # #225: PR-only, throwaway-volume proof using actual OCI cpu-worker image.
 # Never run against operations, shared volumes, GHCR tags or real CAD.
 set -Eeuo pipefail
-if [[ "${GITHUB_ACTIONS:-}" != "true" || "${GITHUB_EVENT_NAME:-}" != "pull_request" ]]; then
-  echo "::error::OCI proof is restricted to owned GitHub PR CI" >&2
-  exit 2
+if [[ "${1:-}" == --local ]]; then
+  [[ "${GITHUB_ACTIONS:-}" != true ]] || { echo "local mode refuses CI context" >&2; exit 2; }
+  [[ "${VERIFY_LOCAL_RUN_ID:-}" =~ ^[A-Za-z0-9-]{1,80}$ ]] || { echo "local run ID required" >&2; exit 2; }
+  [[ "${VERIFY_LOCAL_SOURCE_FINGERPRINT:-}" =~ ^[a-f0-9]{64}$ ]] || { echo "local fingerprint required" >&2; exit 2; }
+  proof_run="$(date -u +%s)$$"
+  proof_attempt=1
+  proof_sha="$(git rev-parse HEAD)"
+  echo "LOCAL_OCI_MODE source_commit=$proof_sha worktree_identity_is_recorded_by_verify_local"
+else
+  if [[ "${GITHUB_ACTIONS:-}" != "true" || "${GITHUB_EVENT_NAME:-}" != "pull_request" ]]; then
+    echo "::error::OCI proof requires owned PR CI or explicit --local" >&2
+    exit 2
+  fi
+  : "${GITHUB_RUN_ID:?}"
+  : "${GITHUB_RUN_ATTEMPT:?}"
+  : "${GITHUB_SHA:?}"
+  proof_run="$GITHUB_RUN_ID"
+  proof_attempt="$GITHUB_RUN_ATTEMPT"
+  proof_sha="$GITHUB_SHA"
 fi
-: "${GITHUB_RUN_ID:?}"
-: "${GITHUB_RUN_ATTEMPT:?}"
-: "${GITHUB_SHA:?}"
-[[ "${GITHUB_RUN_ID}" =~ ^[0-9]+$ && "${GITHUB_RUN_ATTEMPT}" =~ ^[0-9]+$ ]] || exit 2
-[[ "${GITHUB_SHA}" =~ ^[0-9a-f]{40}$ ]] || exit 2
+[[ "$proof_run" =~ ^[0-9]+$ && "$proof_attempt" =~ ^[0-9]+$ ]] || exit 2
+[[ "$proof_sha" =~ ^[0-9a-f]{40}$ ]] || exit 2
 [[ -f src/tests/oci/scene-cpu-proof-fixture.mjs ]] || exit 2
 [[ -f src/package.json ]] || exit 2
 
-volume="layoutmanager-ci-oci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+volume="layoutmanager-ci-oci-${proof_run}-${proof_attempt}"
 fixture="$PWD/src/tests/oci/scene-cpu-proof-fixture.mjs"
 inspector="$PWD/src/tests/oci/scene-cpu-converter-inspector.mjs"
-cpu_image="cad-layout-viewer:ci-cpu-worker"
-migrate_image="cad-layout-viewer:ci-migrate"
-app_image="cad-layout-viewer:ci"
+if [[ "${1:-}" == --local ]]; then
+  image_prefix="cad-layout-viewer:vl-${VERIFY_LOCAL_RUN_ID,,}"
+  cpu_image="${image_prefix}-worker"
+  migrate_image="${image_prefix}-migrator"
+  app_image="${image_prefix}-app"
+else
+  cpu_image="cad-layout-viewer:ci-cpu-worker"
+  migrate_image="cad-layout-viewer:ci-migrate"
+  app_image="cad-layout-viewer:ci"
+fi
 owned=false
 cid=""
 cleanup(){
@@ -45,12 +65,21 @@ for pair in "$app_image:app" "$migrate_image:migrator" "$cpu_image:cpu-worker"; 
   image="${pair%:*}"
   role="${pair##*:}"
   test "$(docker image inspect "$image" --format '{{index .Config.Labels "com.planner77.g7.image-role"}}')" = "$role"
-  test "$(docker image inspect "$image" --format '{{index .Config.Labels "org.opencontainers.image.revision"}}')" = "$GITHUB_SHA"
+  test "$(docker image inspect "$image" --format '{{index .Config.Labels "org.opencontainers.image.revision"}}')" = "$proof_sha"
+  if [[ "${1:-}" == --local ]]; then
+    test "$(docker image inspect "$image" --format '{{index .Config.Labels "com.planner77.local.source-fingerprint"}}')" = "$VERIFY_LOCAL_SOURCE_FINGERPRINT"
+  fi
   test "$(docker image inspect "$image" --format '{{index .Config.Labels "org.opencontainers.image.source"}}')" = 'https://github.com/planner77/layoutManager'
   test "$(docker image inspect "$image" --format '{{index .Config.Labels "org.opencontainers.image.version"}}')" = "$(node -p 'require("./src/package.json").version')"
   test -n "$(docker image inspect "$image" --format '{{.Id}}')"
-  echo "OCI_IMAGE_LOCAL role=$role id=$(docker image inspect "$image" --format '{{.Id}}') revision=$GITHUB_SHA"
+  echo "OCI_IMAGE_LOCAL role=$role id=$(docker image inspect "$image" --format '{{.Id}}') revision=$proof_sha"
 done
+if [[ "${1:-}" == --local ]]; then
+  # Pin subsequent disposable container operations to the inspected image IDs.
+  app_image="$(docker image inspect "$app_image" --format '{{.Id}}')"
+  migrate_image="$(docker image inspect "$migrate_image" --format '{{.Id}}')"
+  cpu_image="$(docker image inspect "$cpu_image" --format '{{.Id}}')"
+fi
 test -f "$inspector"
 docker volume create --label com.planner77.purpose=ci-scene-oci-proof "$volume" >/dev/null
 owned=true
@@ -79,7 +108,7 @@ g7_env=(
   -e CAD_STORAGE_BACKEND=local
   -e G7_DEPLOY_APP_IMAGE=cad-layout-viewer:local
   -e G7_DEPLOY_MIGRATOR_IMAGE=cad-layout-viewer:local-migrate
-  -e "G7_RELEASE_SOURCE_COMMIT=$GITHUB_SHA"
+  -e "G7_RELEASE_SOURCE_COMMIT=$proof_sha"
   -e G7_RUNTIME_ORIGIN=http://localhost:3000
   -e G7_RUNTIME_ALLOW_HTTP=true
 )

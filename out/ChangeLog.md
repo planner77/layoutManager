@@ -1,3 +1,9 @@
+## Unreleased — Issue #281 로컬 검증·실패 증거 (2026-11-11)
+
+- 로컬 `docs`, `standard`, `high-risk`, `release` 검증 프로파일과 변경 영향·필수 미실행 중단, Issue별 append-only MD/JSON 증거 및 회귀 조회를 추가했다.
+- #279 PR 0회·Actions 0회 정책이 과거 PR/CI 지침보다 우선한다. Main 보호 설정 전환 및 #282 GHCR/#283 복구 검증은 별도이며 실제 결과는 IssueEvidence/281 및 TestReport를 따른다.
+- 앱 기능·Schema·게시 버전 변경 없음; package `0.61.1` 유지.
+
 ## 2026-11-09 — #273 RF-01 durable checkpoints and RF-04 strict AC closure (implementation, CI unverified)
 
 - Reuse existing exact RF01/02 GitHub PR/Main verification and RF03 Candidate/Promotion live proof without weakening #229 HOLD. Add hash-linked GitHub Issue comment checkpoints, Owner-approved single-write/one-run/nonce/previous digest, read-only PLAN and explicit manual resume policy.

@@ -1,3 +1,11 @@
+## ADR-281 — #279 이후 로컬 검증과 증거 (2026-11-11)
+
+Owner #279(2026-11-10)의 모든 Issue PR0/Actions0 정책을 이전 PR/Main CI·Finalizer 기본 요구보다 우선한다. #281은 테스트 로직을 재사용하는 로컬 검증만 구현하며 앱 버전 0.61.1을 유지한다. 필수 NOT RUN/FAIL은 예외적으로 PASS 변환하지 않는다. 증거는 소스 fingerprint에 결합하고 이전 run을 덮어쓰지 않는다. 위험 자동 감지는 수동 추가 위험과 합집합이며 낮은 profile로 약화할 수 없다. 설계 정본: [Issue281](Issue281.md).
+
+현재 Main ruleset26731716/Actions가 새 정책과 불일치한다는 #279 readback은 cutover blocker다. Owner의 실제 비활성/PR·status 제거 확인 전 root push를 금지하며 이 작업에서 관리자 설정을 변경하지 않는다. #229 HOLD/기존 0.61.0 이미지/latest/운영 데이터 유지. #282 게시 및 #283 복구는 별도. 아래 과거 PR/CI 의사결정은 역사로 보존한다.
+
+---
+
 ## Decision #273-RF01-RF04 — resumable Issue-comment ledger and independent AC-closure gate (2026-11-09)
 
 A single follow-up PR implements RF-01 durable nonce/checkpoint and RF-04 AC close, reusing RF01 packet/RF02 CI readback and RF03 signed three-role proof. **Decision A:** GitHub Issue comment chain as remote durable checkpoint, with hash-linked stage, source/version/role identity, run attempt1 and a new nonce per reviewed request; protected workflow + shared Candidate/Promotion concurrency. Comments are not considered cryptographic Owner authority, and unknown/partial/missing state always HALT. **Decision B:** no merge, GHCR publish or Issue PATCH from `plan`; actual close requires full independent Owner Candidate/Promotion metadata, OIDC/Sigstore and original artifact, GHCR final digest/old baseline readback, all AC checked against exact body and a distinct fresh Owner Close approval. Persist `CLOSE_INTENT` first; one Issue PATCH only, never auto-retry ambiguous writes. **Decision C:** existing #229 HOLD, exact 0.61.0 images, latest and operational assets remain immutable; code CI green alone never serves as GO-RELEASE or Issue closure. Operator must reissue packet and bind previous hash to resume after nonterminal interruption.

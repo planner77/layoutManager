@@ -1,3 +1,7 @@
+## 현재 원장 사용 — #281 (2026-11-11)
+
+새 실패는 [IssueEvidence/281](IssueEvidence/281.md) 같은 Issue별 append-only 정본에 기록하고 이 문서를 공통 검색 인덱스로 사용한다. `verify:local lookup --query <번호/모듈/코드>`로 조회한다. 아래 PR/CI 기록은 당시 이력이며 새 작업의 PR/Actions 실행 요건이 아니다. 현재 정책·회귀 선택은 [Issue281](Issue281.md)을 따른다.
+
 ## #273 / PR #278 — #741 nonce replay policy 정상 차단과 synthetic fixture 불일치 (2026-11-09)
 
 - **실제 실패:** [PR CI #741/run42572495438](https://github.com/planner77/layoutManager/actions/runs/42572495438), HEAD `1d3331addbc6a39b09f02afa2b9832d565725ceb`, attempt1 `pull_request`, completed FAILURE. `Classify PR scope and audit merge defaults` Job **129012807453 FAILED** in `Check RF-01 durable checkpoints and RF-04 independently verified AC close`; `python3 src/tests/oci/test_release_finalizer_finish.py` 8 tests / 2 ERROR: `test_sequential_sha_chain_and_readable_recovery` at line 112, `test_issue_store_single_append_and_exact_close_patch` at line 225. Both `release_finalizer.Blocked: RFCP_NONCE_OR_RUN_REUSED` from `release_finalizer_checkpoint.proposed_event` (line 168). Required aggregate **129012880389 FAILURE** as dependent; quality, Docker, G7/E2E skipped, #218 A2 scope skipped. Preceding RF01/02/03 and #229 suites PASS. No GHCR, Owner approval or Main release failure observed.
@@ -3493,3 +3497,29 @@ Latest Main initially `870d3cf0a4f8e42d2e5c4132076d3b7ab9c52089`; confirmed PR b
 ## #164/#165 Git 게시 인증 경로 (2026-10-30)
 
 - Root 일반 `git push`가 저장 인증 오류로 거부되었다. Token·credential URL은 출력하지 않았으며 `.env` 지정 remote와 연결 도구의 대상 저장소가 일치함을 확인했다. 연결된 GitHub Git-object API로 검증 tree를 게시하고 원격 tree SHA를 로컬과 대조하는 경로를 사용한다. 이 인증 오류는 코드/PR CI 실패가 아니며 PR CI는 결과 확인 전 NOT VERIFIED다.
+
+
+## 2026-11-11 — #281 / LM281-CUTOVER-NOT-READY
+
+- 모듈: local-verification / GitHub Main ruleset / Actions / GHCR release dependency.
+- 상태: 설정 전환 미완료로 push/게시 NOT RUN/BLOCKED. 테스트 FAIL 또는 제품 장애로 분류하지 않는다.
+- 정본: [Issue별 증거](IssueEvidence/281.md), [GitHub #281](https://github.com/planner77/layoutManager/issues/281), 상위 [#279](https://github.com/planner77/layoutManager/issues/279).
+- 원인/재현: Actions permissions/workflows 및 Ruleset26731716의 GET readback에 active PR/check 요구와 active workflow가 남아 있음. 설정 변경을 수행한 것으로 기록하지 않는다.
+- 조치/회귀: 로컬 검증 구현 계속; Owner 전환 후 동일 GET 재확인. 코드 수정 commit 해당 없음. 출고는 #282/#283 조건 별도.
+
+- Issue #281 · [evidence](IssueEvidence/281.md) · run `issue-281-20261110T215710-484eaa94d0db` · `docker-roles` · `FAIL` · code `1` · module `docker-roles` · cause UNKNOWN · fix pending fingerprint `531667833f57fd816de90ea83d57243455849c4c4bbd40b951becb721e0c11de` · retest pending.
+
+- Issue #281 · [evidence](IssueEvidence/281.md) · run `issue-281-20261110T215710-484eaa94d0db` · `scene-worker-integration` · `NOT RUN` · code `None` · module `scene-worker-integration` · cause UNKNOWN · fix pending fingerprint `531667833f57fd816de90ea83d57243455849c4c4bbd40b951becb721e0c11de` · retest pending.
+
+- Issue #281 · [evidence](IssueEvidence/281.md) · run `issue-281-20261110T215710-484eaa94d0db` · `scene-worker-oci` · `NOT RUN` · code `None` · module `scene-worker-oci` · cause UNKNOWN · fix pending fingerprint `531667833f57fd816de90ea83d57243455849c4c4bbd40b951becb721e0c11de` · retest pending.
+
+- Issue #281 · - 2026-11-10T22:10:11+00:00 interpretation of `issue-281-20261110T215710-484eaa94d0db`: cause Disposable bind-mount DB directory is UID10001 mode0755; host UID1000 TemporaryDirectory cleanup cannot remove its contents.; fix pending: use owned per-run Docker volumes and inspect SQLite integrity inside migrator; regression docker-roles positive/negative migration and resource cleanup; retest pending.
+- Issue #281 · [evidence](IssueEvidence/281.md) · run `issue-281-20261110T215710-484eaa94d0db` · `redaction-contract` · `FAIL` · code `n/a` · module `verify-local/redaction` · synthetic Bearer, Basic, JSON token/password canaries remain in output · fix pending · retest pending.
+- Issue #281 · [evidence](IssueEvidence/281.md) · run `issue-281-20261110T215710-484eaa94d0db` · `selection-contract` · `FAIL` · code `n/a` · module `verify-local/affected-test-selection` · generic UI plus auth risk suppresses required UI/browser-specific selection · fix pending · retest pending.
+- Issue #281 · [evidence](IssueEvidence/281.md) · fixture run `issue-281-20261110T221318-076048f45b47` · `docs-links` · FAIL→corrected→PASS `issue-281-20261110T221318-bee5ca2a1bc1` · module `verify-local/docs-links` · broken local link intentionally created in disposable fixture; fixture source and immutable JSONs are preserved under `data/verify-local/qa-fixture-281-final/`.
+- Issue #281 · [evidence](IssueEvidence/281.md) · QA edge checks · `timeout/spawn/append-integrity` · isolated synthetic cases: timeout and spawn become NOT RUN; lock collision rejects one writer; malformed orphan JSON blocks subsequent append. No production/runtime failure.
+
+- Issue #281 · - 2026-11-10T22:20:09+00:00 interpretation of `issue-281-20261110T215710-484eaa94d0db`: cause Disposable bind-mount DB directory UID10001 mode0755 prevents host UID1000 TemporaryDirectory cleanup.; fix pending commit; owned per-run Docker volumes, in-container integrity and cleanup; passing source fingerprint 31acb90b; regression Docker migration positives/negatives, owned-volume cleanup, redaction and mixed UI selection contracts; retest issue-281-20261110T221212-83a9616e93f2.
+
+- Issue #281 · - 2026-11-10T22:20:27+00:00 interpretation of `issue-281-20261110T215710-484eaa94d0db`: cause Host TemporaryDirectory cleanup failed after the container-owned UID10001 data/db directory was bind-mounted; this is a harness cleanup permission failure, not a confirmed migration failure.; fix Use labelled per-run Docker named volumes; inspect SQLite integrity inside the migrator container and perform safe volume cleanup.; regression docker-roles builds all three images, runs positive and negative migrations and verifies volume cleanup.; retest issue-281-20261110T221212-83a9616e93f2.
+- Issue #281 · [evidence](IssueEvidence/281.md) · final QA run `issue-281-20261110T221212-83a9616e93f2` · PASS · 19/19 required gates; source stable; initial Docker harness cleanup FAIL annotated and linked to this retest.
