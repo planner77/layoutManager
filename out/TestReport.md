@@ -5223,3 +5223,9 @@ Run ID / Date / Unit / Version / Commit 또는 uncommitted snapshot / OS·Browse
 - Read-only dry-run: `python3 src/scripts/release_local.py plan`은 `ready:false`, `DIRTY_SOURCE`, `THREE_ROLE_BUILD_MISSING`, `roleDigests:null`로 보고했다. CLI에 별도 `dry-run` action은 없다. 실행에서 Git/registry/운영 원격 쓰기0.
 - 실제 sealed #283 baseline을 `python3 src/scripts/verify_local_recovery.py --input /home/planner/Dev/layoutManager-issue283/data/recovery283/operational-proof.private.json`로 독립 재생했다. Input SHA256 `c4f4ca4afd5fb58c74f285b668a04c5050a22ccaf6b62e3f71a4c83e4bfadb55`; 결과 `BASELINE_VERIFIED`, archive SHA `69576de301d461f410cbcda59c39b5077fc9e3a2fda12e748b4dcbeb57b6940a`, receipt SHA `8de54b9ebaf26b13ca14558b6ee3e268d8f6a00582f877a49dd458c4882d63f1`, isolated appHealth PASS/worker IDLE, owned clone cleanup PASS. 원래 운영 복구 결과 1 CAD / 16 files, Scene 0, READY 0 및 원래 worker 재개는 기존 Root 증거를 따른다.
 - **미실행/한계:** 현재 후보 build 및 호환 upgrade, full release profile, 실제 GHCR 게시/readback/pull, Owner GO, final receipt, push/PR/Actions/배포는 NOT RUN. 실제 user login/auth·off-host backup/key custody는 NOT RUN, host-side writer exclusion은 NOT PROVEN. 이 결과는 release readiness나 운영/DR acceptance가 아니다. 상세 원장: [Issue #282 QA evidence](IssueEvidence/282.md).
+
+### U282-QA focused retest — Docker 29 smoke ownership
+
+- `src/`에서 `npm run test:release-local` **13/13 PASS** (신규 tmpfs inspect·foreign mount 회귀 포함).
+- 기존 local App image `r282local4d24e9b9bf9e:0.61.1`에 `release_local_registry.smoke_image(...)`를 실행해 runtime smoke 및 새 owned nonce-labeled container 제거 PASS를 확인했다. Docker inspect에서 정확 tmpfs 설정, configured bind/mount 부재, foreign effective mount 부재를 확인했다.
+- 이 이미지는 Root의 앞선 frozen `d954…` source build에서 생성되어 수정 source의 build/release 증거가 아니다. 재빌드·전체 release profile·GHCR·기존 leftover cleanup·원본 runtime 변경은 하지 않았다. 상세 관측은 [Issue #282 QA evidence](IssueEvidence/282.md).

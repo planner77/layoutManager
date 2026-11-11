@@ -227,14 +227,16 @@ def smoke_image(ref: str):
              'DIGEST_SMOKE_SCOPE')
         nonce = uuid.uuid4().hex
         name = 'r282-pull-' + nonce[:20]
+        tmpfs = {'/tmp': 'rw,noexec,nosuid,nodev,size=96m,uid=10001,gid=10001',
+                 '/data': 'rw,nosuid,nodev,size=16m,uid=10001,gid=10001'}
         try:
             test = subprocess.run(['docker', 'run', '--name', name,
                                    '--label', 'release282.smoke=' + nonce,
                                    '--network', 'none', '--read-only', '--user', '10001:10001',
                                    '--cap-drop', 'ALL', '--security-opt', 'no-new-privileges',
                                    '--pids-limit', '64', '--memory', '768m', '--cpus', '1',
-                                   '--tmpfs', '/tmp:rw,noexec,nosuid,nodev,size=96m,uid=10001,gid=10001',
-                                   '--tmpfs', '/data:rw,nosuid,nodev,size=16m,uid=10001,gid=10001',
+                                   '--tmpfs', '/tmp:' + tmpfs['/tmp'],
+                                   '--tmpfs', '/data:' + tmpfs['/data'],
                                    '--entrypoint', 'sh', ref, '-c',
                                    'test "$(id -u)" = 10001 && node -e "const D=require(\'better-sqlite3\');new D(\':memory:\').close()"'],
                                   capture_output=True, timeout=120)
@@ -247,8 +249,12 @@ def smoke_image(ref: str):
                 need(item.get('Name') == '/' + name
                      and item.get('Config', {}).get('Labels', {}).get('release282.smoke') == nonce
                      and item.get('Config', {}).get('Image') == ref
-                     and any(m.get('Destination') == '/data' and m.get('Type') == 'tmpfs'
-                             for m in item.get('Mounts', [])), 'DIGEST_SMOKE_OWNERSHIP')
+                     and item.get('HostConfig', {}).get('Tmpfs') == tmpfs
+                     and item.get('HostConfig', {}).get('Binds') in (None, [])
+                     and item.get('HostConfig', {}).get('Mounts') in (None, [])
+                     and isinstance(item.get('Mounts'), list)
+                     and all(m.get('Type') == 'tmpfs' and m.get('Destination') in tmpfs
+                             for m in item['Mounts']), 'DIGEST_SMOKE_OWNERSHIP')
                 removed = subprocess.run(['docker', 'rm', '-f', '-v', name],
                                          capture_output=True, timeout=20)
                 need(removed.returncode == 0, 'DIGEST_SMOKE_CLEANUP')

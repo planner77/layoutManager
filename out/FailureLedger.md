@@ -3539,3 +3539,10 @@ Latest Main initially `870d3cf0a4f8e42d2e5c4132076d3b7ab9c52089`; confirmed PR b
 
 - 지정 환경 파일의 Git credential은 실제 GitHub401/GHCR403으로 유효하지 않았다. `.env`의 변수명·값을 변경하지 않았고 유효하지 않은 값을 publish proof로 사용하지 않는다. 기존 로컬 GitHub CLI 저장소의 동일 Owner credential은 API200/repo 권한, 기존 Docker GHCR 저장소의 동일 Owner credential은 API200/write:packages·pull,push token exchange200을 확인했다. 토큰/헤더/저장소 원문은 공개하지 않으며 코드/앱 환경에 전달하지 않는다. 지정 remote URL과 별개로 유효한 기존 credential을 필요한 Git/게시 프로세스에만 사용한다.
 - Root 진단에서 GHCR bearer를 JWT로 가정한 파싱은 IndexError였다. GHCR의 opaque bearer는 그러한 파싱으로 권한을 판단하지 않고 GitHub의 실제 scope/API·고정 저장소 token exchange 결과를 구분해 관측했다. 이는 게시 구현 시험 실패가 아니며 실제 registry write0이다. 기존 자격 증명의 권한을 새로 부여하거나 인증 설정을 변경하지 않았다.
+
+## 2026-11-11 — #282 / LM282-DOCKER29-TMPFS-OWNERSHIP
+
+- Source d954cf9, actual clean-source build FAIL `DIGEST_SMOKE_OWNERSHIP`: Docker29 HostConfig.Tmpfs와 empty Mounts를 synthetic fixture가 반영하지 못했다. App build/UID/native SQLite는 성공했지만 전체 build는 실패로 유지한다. 정본 [Issue282 실패 증거](IssueEvidence/282.md); 보완 commit/retest pending. 정확 소유 exited smoke만 정리, 운영/registry 변경0.
+- Root progress 관측의 Running assert는 build 완료와 조회 시점의 경합으로 실패했다. 빌드 실패의 원인은 별도 위 ownership 검사이며 관측 실패를 제품 실패로 혼동하지 않는다.
+
+- LM282-DOCKER29-TMPFS-OWNERSHIP 보완: Docker HostConfig.Tmpfs의 정확 두 mount 설정·외부 bind/HostConfig mount 부재·effective mount 충돌을 검사하고 기존 name/nonce/image 결합을 유지했다. Developer 보완 뒤 독립 QA13/13 및 기존 d954 App image를 사용한 실제 corrected smoke/owned cleanup PASS. 이는 정리 절차의 회귀이며 새 source의3-role build/release PASS로 확대하지 않는다. 현재 보완 source를 새 commit으로 동결해 실제 build를 다시 수행한다.

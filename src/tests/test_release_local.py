@@ -185,13 +185,57 @@ class ReleaseLocalTests(unittest.TestCase):
                 nonce = calls[0][calls[0].index('--label') + 1].split('=', 1)[1]
                 item = {'Name': '/' + args[3], 'Config': {'Image': image,
                         'Labels': {'release282.smoke': nonce}},
-                        'Mounts': [{'Destination': '/data', 'Type': 'tmpfs'}]}
+                        'HostConfig': {'Tmpfs': {
+                            '/tmp': 'rw,noexec,nosuid,nodev,size=96m,uid=10001,gid=10001',
+                            '/data': 'rw,nosuid,nodev,size=16m,uid=10001,gid=10001'}},
+                        'Mounts': []}
                 return subprocess.CompletedProcess(args, 0, json.dumps([item]).encode(), b'')
             return subprocess.CompletedProcess(args, 0, b'', b'')
         with mock.patch.object(registry.subprocess, 'run', side_effect=fake):
             with self.assertRaises(subprocess.TimeoutExpired):
                 registry.smoke_image(image)
         self.assertEqual(calls[-1][1:4], ['rm', '-f', '-v'])
+
+    def test_smoke_docker29_tmpfs_only_inspect_cleans_owned_container(self):
+        image = 'r282local' + 'a' * 12 + ':0.61.1'
+        calls = []
+        def fake(args, **kwargs):
+            calls.append(args)
+            if args[1:3] == ['container', 'inspect']:
+                nonce = calls[0][calls[0].index('--label') + 1].split('=', 1)[1]
+                item = {'Name': '/' + args[3], 'Config': {'Image': image,
+                        'Labels': {'release282.smoke': nonce}},
+                        'HostConfig': {'Tmpfs': {
+                            '/tmp': 'rw,noexec,nosuid,nodev,size=96m,uid=10001,gid=10001',
+                            '/data': 'rw,nosuid,nodev,size=16m,uid=10001,gid=10001'}},
+                        'Mounts': []}
+                return subprocess.CompletedProcess(args, 0, json.dumps([item]).encode(), b'')
+            return subprocess.CompletedProcess(args, 0, b'', b'')
+        with mock.patch.object(registry.subprocess, 'run', side_effect=fake):
+            registry.smoke_image(image)
+        self.assertEqual(calls[-1][1:4], ['rm', '-f', '-v'])
+
+    def test_smoke_rejects_foreign_data_mount_without_cleanup(self):
+        image = 'r282local' + 'a' * 12 + ':0.61.1'
+        for mount_type in ('bind', 'volume'):
+            with self.subTest(mount_type=mount_type):
+                calls = []
+                def fake(args, **kwargs):
+                    calls.append(args)
+                    if args[1:3] == ['container', 'inspect']:
+                        nonce = calls[0][calls[0].index('--label') + 1].split('=', 1)[1]
+                        item = {'Name': '/' + args[3], 'Config': {'Image': image,
+                                'Labels': {'release282.smoke': nonce}},
+                                'HostConfig': {'Tmpfs': {
+                                    '/tmp': 'rw,noexec,nosuid,nodev,size=96m,uid=10001,gid=10001',
+                                    '/data': 'rw,nosuid,nodev,size=16m,uid=10001,gid=10001'}},
+                                'Mounts': [{'Destination': '/data', 'Type': mount_type}]}
+                        return subprocess.CompletedProcess(args, 0, json.dumps([item]).encode(), b'')
+                    return subprocess.CompletedProcess(args, 0, b'', b'')
+                with mock.patch.object(registry.subprocess, 'run', side_effect=fake):
+                    with self.assertRaisesRegex(registry.Blocked, 'DIGEST_SMOKE_OWNERSHIP'):
+                        registry.smoke_image(image)
+                self.assertEqual(len(calls), 2)
 
     def test_published_config_must_match_actual_local_image(self):
         image = {'Id': 'sha256:' + 'a' * 64}
