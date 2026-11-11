@@ -1,3 +1,8 @@
+## Unreleased — Issue #283 복구 준비 (2026-11-11)
+
+- 백업·암호화·일관 캡처·격리 복원 및 release baseline 준비를 구현했다. 합성 Docker/관련 독립 회귀는 통과했으며 실제 운영 복구점은 준비 중이다. 요구/AC는 Issue283, 실제 실행은 IssueEvidence/283·TestReport를 따른다.
+- 실제 운영 복구점·복원·외부 장애 도메인 보관은 각 시험 후 별도로 판정하며 미실행을 성공으로 표시하지 않는다. 앱0.61.1/Schema 유지.
+
 ## Unreleased — Issue #281 로컬 검증·실패 증거 (2026-11-11)
 
 - 로컬 `docs`, `standard`, `high-risk`, `release` 검증 프로파일과 변경 영향·필수 미실행 중단, Issue별 append-only MD/JSON 증거 및 회귀 조회를 추가했다.

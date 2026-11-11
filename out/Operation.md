@@ -1,3 +1,17 @@
+## #283 복구 체계 전환 작업 (2026-11-11, 로컬 QA 통과·실제 복구점 준비)
+
+요구·실행 경계는 [Issue283](Issue283.md), 실제 단계별 증거는 [IssueEvidence/283](IssueEvidence/283.md)를 정본으로 사용한다. 현재 읽기 전용 관측은 Worker1개 실행/App 컨테이너 없음이다. 아래 과거 App-running 기록은 당시 실행 상태이며 이번 작업의 재시작 근거가 아니다. 정확 inventory와 계획을 확인하고 도구 검증/Manager·QA 후 root가 실제 capture를 수행한다. 최초 running writer만 일시 정지·동일 ID 재개하며 missing/stopped App을 자동 시작하지 않는다.
+
+DB와 WAL/SHM·CAD·Scene·G7 및 private 설정을 한 복구점에 결합하고, 원본 read-only 캡처와 새 소유 volume의 복원 검증을 구분한다. 설정/원본은 private 암호화 보관하고 공개 원장에 내용·계정·키·개별 CAD 지문을 넣지 않는다. 실제 운영 rollback/배포·원본 덮어쓰기·보관 삭제·자동 스케줄은 별도다. 외부 보관 경로 지정 전에는 로컬 복원과 외부 장애 도메인 수용을 구분한다. #282 이미지 출고 전에는 검증된 로컬 baseline과 후보 image 호환성 시험을 연결한다.
+
+### 복구 CLI 실행
+
+프로젝트 Root에서 `npm --prefix src run recovery:local -- <action>`을 사용한다. `inventory`/`plan`에는 `--volume`, private0600 `--config`, `--compose`, 각 `--image app=<immutable-ref>`/`migrator=...`/`worker=...`, 각 `--writer app=<name>`/`migrator=...`/`worker=...`를 전달한다. missing 역할도 실제 Compose 이름을 지정한다. `plan`은 새 `--plan <file>`과 `--max-seconds 180`으로 정확 관측·소스·시간 예산을 결합한다. plan부터 capture까지 소스/설정/이미지·컨테이너 상태를 변경하지 않는다.
+
+`capture --plan <file> --out <new-directory> --key-dir <separate-new-directory> --execute`는 원래 실행 Writer만 중지·재개한다. 모든 출력 부모는 실제 소유자의0700 directory여야 하고 symlink·기존 대상은 거부한다. local backend만 지원하며 S3 backend/원격 DB locator를 거부한다. 실제 CAD/Scene 참조의 파일 크기·SHA와 SQLite/G7 검사를 disposable copy에서 수행한다.
+
+복원은 `restore --plan <file> --out <backup-directory> --key <key-file> --destination <fresh-owned-volume> --execute`, 원본 동등성은 같은 입력의 `verify`, 앱/Worker 실행은 이후 `probe ... --execute`다. probe는 동등성 검사 뒤 격리 복제본만 변경한다. `settings ... --destination-dir <fresh-private-directory> --execute`는 승인 설정·Compose·container runtime을 private0600 파일로 추출한다. 출력/키·개별 데이터 지문은 Git에 넣지 않는다. 실제 로그인은 승인 credential 없으면 NOT RUN, READY 자료가 없으면 NOT_EXERCISED다. host writer 부재는 Docker inventory만으로 증명하지 않으며 외부 보관도 별도 미완료다.
+
 ## 현재 운영 정책: #279 / #281 로컬 검증 (2026-11-11)
 
 신규 변경의 검증은 [Issue281](Issue281.md)의 단일 로컬 CLI로 수행한다. 실행 방법·위험별 필수 시나리오·실패/NOT RUN 중단·비밀 마스킹·로그와 MD/JSON 출력·회귀 조회는 그 문서를 정본으로 사용한다. 아래 PR/Main CI와 Finalizer 운영 방법은 이전 정책의 역사 참고이며 새 변경에서 실행하지 않는다.

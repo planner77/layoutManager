@@ -27,7 +27,10 @@
     "audit:outline": "tsx tests/benchmark/outline-real-audit.ts",
     "test:outline-acceptance": "playwright test --config playwright.outline-acceptance.config.ts",
     "verify:outline-acceptance": "tsx scripts/verify-outline-acceptance.ts",
-    "verify:local": "python3 scripts/verify_local.py"
+    "verify:local": "python3 scripts/verify_local.py",
+    "recovery:local": "node scripts/recovery-local.mjs",
+    "test:recovery-local": "node --test tests/oci/recovery-local.test.mjs",
+    "test:recovery-local:docker": "RECOVERY283_DOCKER=1 node --import tsx --test tests/oci/recovery-local-docker.test.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.1127.0",

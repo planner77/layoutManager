@@ -1,3 +1,9 @@
+## #283 로컬 복구 설계 (2026-11-11)
+
+ADR-283: 이전0.58 고정 운영 도구를 그대로 사용하거나 CI 승인을 모방하지 않는다. 실제 running writer만 일시 정지/재개하고 missing App은 시작하지 않는다. Secret 설정은 별도 암호화·key custody 정책으로 보존하며 운영 rollback/삭제/upgrade는 제외한다. 요구·설계·AC·시험 정본: [Issue283](Issue283.md). PR/Actions 호출0, 실제 결과는 TestReport/IssueEvidence에 기록한다.
+
+---
+
 ## ADR-281 — #279 이후 로컬 검증과 증거 (2026-11-11)
 
 Owner #279(2026-11-10)의 모든 Issue PR0/Actions0 정책을 이전 PR/Main CI·Finalizer 기본 요구보다 우선한다. #281은 테스트 로직을 재사용하는 로컬 검증만 구현하며 앱 버전 0.61.1을 유지한다. 필수 NOT RUN/FAIL은 예외적으로 PASS 변환하지 않는다. 증거는 소스 fingerprint에 결합하고 이전 run을 덮어쓰지 않는다. 위험 자동 감지는 수동 추가 위험과 합집합이며 낮은 profile로 약화할 수 없다. 설계 정본: [Issue281](Issue281.md).

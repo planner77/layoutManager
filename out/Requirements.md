@@ -1,3 +1,9 @@
+## #283 로컬 복구 설계 (2026-11-11)
+
+R283-1–4 및 AC283-1–8: 실제 저장 위치/설정 분리 inventory, 일관 capture, 새 소유 volume 복원, 정확 image/schema 호환과 rollback 경계. 요구·설계·AC·시험 정본: [Issue283](Issue283.md). PR/Actions 호출0, 실제 결과는 TestReport/IssueEvidence에 기록한다.
+
+---
+
 ## #281 / #279 우선 요구 — 로컬 검증 (2026-11-11)
 
 새 변경은 PR0/Actions0, 영향 기반 로컬 검증과 append-only Issue 증거를 사용한다. 필수 FAIL/NOT RUN은 차단하며 local PASS는 GHCR/운영/현장 수용이 아니다. 상세 요구·AC·경계의 정본은 [Issue281](Issue281.md). 아래 PR/CI 요구는 해당 시점의 역사이며 새 일반 Gate를 구성하지 않는다. 구현 및 실제 시험 범위는 [Issue별 증거](IssueEvidence/281.md)와 [TestReport](TestReport.md)를 따른다. GHCR/운영·외부 baseline은 별도 상태로 유지한다.

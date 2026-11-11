@@ -2032,6 +2032,8 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 | [Issue40](out/Issue40.md) | U3 외곽선 ON/OFF·Worker 취소·임시 확정/JSON 보존 정책 및 AC 추적 | 외곽선 메뉴·객체 선택·취소·임시 Overlay/Renderer·ESC 변경 시 |
 | [FailureLedger](out/FailureLedger.md) | Issue별 실패 정본의 공통 검색 인덱스와 역사적 실패 기록 | Issue 착수·실패·재시험·회귀 선택 시 |
 | [Issue281](out/Issue281.md) | 로컬 검증 CLI·프로파일·위험별 중단·증거 계약 | 신규 Issue 구현·로컬 검증·출고 판정 전 |
+| [Issue283](out/Issue283.md) | 로컬 복구점·암호화·격리 복원·호환성·실제 운영 증거 경계 | 백업/복원 CLI·volume snapshot·복구 인수 전 |
+| [Issue282](out/Issue282.md) | 로컬 3-role 출고·증거·정확 digest 승인·부분 게시 중단 | 수동 릴리스 CLI·GHCR 준비·게시 판정 전 |
 | [IssueEvidence](out/IssueEvidence/281.md) | Issue별 append-only 시험·실패·미실행 증거 (281 예시) | 해당 Issue 결과 기록·회귀 재사용 전 |
 | [Issue25](out/Issue25.md) | 기본 immersive 진입, native 수동 선택, 복귀·툴바·회귀 수용 | Viewer 전체 화면 기본 진입/링크/포커스/레이어·검색 변경 시 |
 | [Release 0.20.0](out/Release-0.20.0.md) | 0.20.0 병합·태그·GHCR 게시 근거 | 0.20.0 릴리스 확인 및 운영 이미지 식별 시 |

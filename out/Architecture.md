@@ -1,3 +1,9 @@
+## #283 로컬 복구 설계 (2026-11-11)
+
+recovery-local은 기존 G7/OR58/RR2 깊은 검사 모듈을 조합하는 로컬 orchestration이며 UI·업무 DB schema를 변경하지 않는다. sealed plan/source identity·writer drift·fresh destination/secret 경계를 따른다. 요구·설계·AC·시험 정본: [Issue283](Issue283.md). PR/Actions 호출0, 실제 결과는 TestReport/IssueEvidence에 기록한다.
+
+---
+
 ## #281 로컬 검증 경계 (2026-11-11)
 
 `src/scripts`의 로컬 CLI는 변경 영향 계획 → 기존 test runner/격리 Docker adapter → 마스킹된 로그 → append-only MD·불변 JSON 및 실패 인덱스로 구성한다. 업무 앱/DB schema 변경 없음. 테스트 명령은 검토 가능한 고정 manifest에서 argv로 실행하고 임의 publisher/workflow 명령을 받지 않는다. legacy CI의 유효 검사만 재사용하며 GitHub PR/Actions/registry writer는 호출하지 않는다. 프로파일/선정·stop/증거 계약은 [Issue281](Issue281.md) 참조. local release 검사에는 출고 권한이 없다.

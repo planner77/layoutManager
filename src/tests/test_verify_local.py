@@ -21,6 +21,16 @@ DOCKER_SPEC.loader.exec_module(DOCKER_VERIFY)
 
 
 class VerifyLocalContract(unittest.TestCase):
+    def test_recovery_paths_are_high_risk_and_have_fixed_node_and_docker_gates(self):
+        for path in ("src/scripts/recovery-local.mjs", "src/server/backup.ts", "src/tests/oci/restore-proof.mjs", "src/server/snapshot.ts"):
+            with self.assertRaisesRegex(ValueError, "high-risk"):
+                VERIFY.infer_risks([path], [], "standard")
+            risks, _ = VERIFY.infer_risks([path], [], "high-risk")
+            self.assertIn("recovery", risks)
+            ids = {row["id"] for row in VERIFY.manifest("high-risk", risks, [path])}
+            self.assertIn("recovery-contract", ids)
+            self.assertIn("recovery-docker", ids)
+
     def test_docs_actual_fail_fix_pass_and_immutable_evidence(self):
         with tempfile.TemporaryDirectory(prefix="verify-local-fixture-") as temp:
             root = Path(temp)

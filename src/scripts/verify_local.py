@@ -34,6 +34,7 @@ RISK_PATHS = {
     "worker": re.compile(r"worker", re.I),
     "storage": re.compile(r"storage|s3|upload", re.I),
     "deploy": re.compile(r"(^|/)(deploy|docker|compose|oci|workflows)(/|\.|-)|Dockerfile", re.I),
+    "recovery": re.compile(r"backup|restore|recovery|snapshot", re.I),
 }
 SECRET_KEYS = re.compile(r"(?i)(token|secret|password|credential|(?:api|access)[_-]?key|authorization)")
 FORBIDDEN_ENV = re.compile(r"(?i)^(?:GH_|GIT_|GITHUB_|remote_repo)")
@@ -123,7 +124,7 @@ def infer_risks(paths: list[str], user_risk: list[str], profile: str) -> tuple[l
         risks.add("unknown")
     if profile == "docs" and (code or unknown):
         raise ValueError("docs profile cannot cover source/config changes")
-    if risks & {"db", "auth", "scene", "worker", "storage", "deploy", "oci"} and profile in ("docs", "standard"):
+    if risks & {"db", "auth", "scene", "worker", "storage", "deploy", "oci", "recovery"} and profile in ("docs", "standard"):
         raise ValueError("high-risk changes require high-risk or release profile")
     if unknown and profile == "docs":
         raise ValueError("unknown path requires standard profile and explicit review")
@@ -179,6 +180,9 @@ def manifest(profile: str, risks: list[str], paths: list[str], fixture: str | No
             add("worker-release-contract", ["npx", "vitest", "run", "tests/unit/scene-cpu-release-contract.test.ts"], "existing worker packaging and security contract", timeout=300)
         if any("verify_local" in p for p in paths):
             add("cli-contract", ["python3", "-m", "unittest", "tests/test_verify_local.py"], "CLI risk, evidence and failure contract", timeout=300)
+        if "recovery" in risks:
+            add("recovery-contract", ["npm", "run", "test:recovery-local"], "authenticated archive and local recovery contract", timeout=300)
+            add("recovery-docker", ["npm", "run", "test:recovery-local:docker"], "disposable G7 volume capture and isolated restore", timeout=600)
         add("build", ["npm", "run", "build"], "production build", timeout=1800)
         if "auth" in risks or "db" in risks:
             add("g7-browser", ["npx", "playwright", "test", "--config", "playwright.g7-runtime.config.ts", "--reporter=line"], "G7 browser flow", timeout=1200)
@@ -190,7 +194,7 @@ def manifest(profile: str, risks: list[str], paths: list[str], fixture: str | No
             add("affected-browser", ["npx", "playwright", "test", "tests/e2e/upload.spec.ts", "--reporter=line"], "bounded upload/browser smoke", timeout=900)
         if selected_e2e:
             add("selected-browser", ["npx", "playwright", "test", *selected_e2e, "--reporter=line"], "explicit affected browser selection", timeout=900)
-        mapped = bool(tests or selected_e2e or set(risks) & {"auth", "db", "scene", "worker", "storage", "deploy", "oci"})
+        mapped = bool(tests or selected_e2e or set(risks) & {"auth", "db", "scene", "worker", "storage", "deploy", "oci", "recovery"})
         needs_unit = bool(unmapped_application) and not selected_unit
         needs_e2e = bool(unmapped_ui) and not selected_e2e
         if needs_unit or needs_e2e or ((application or "unknown" in risks) and not mapped):

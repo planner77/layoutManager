@@ -1,3 +1,9 @@
+## #283 로컬 복구 설계 (2026-11-11)
+
+TP-283: T01–T08 및 AC283-1–8의 정본을 따른다. synthetic 검증과 실제 운영 capture/fresh restore/compatibility를 별도 판정하며 필수 NOT RUN은 완료로 승계하지 않는다. 요구·설계·AC·시험 정본: [Issue283](Issue283.md). PR/Actions 호출0, 실제 결과는 TestReport/IssueEvidence에 기록한다.
+
+---
+
 ## #281 로컬 Gate 시험 계획 (2026-11-11)
 
 [Issue281](Issue281.md)의 TC281-01~06을 구현·QA의 정본으로 사용한다. 네 프로파일, 위험 자동 승격, 실제 FAIL→원인→수정→PASS, 필수 NOT RUN stop, 고위험 기존 자산 재사용, append/마스킹/회귀 조회를 검증한다. PR/Main Actions는 실행하지 않으며 과거 CI 기록을 새 소스 PASS로 재사용하지 않는다. 독립 QA의 실제 결과와 실패·보완·재시험은 [TestReport](TestReport.md) 및 [IssueEvidence/281](IssueEvidence/281.md)를 따른다. 로컬 PASS와 별도 release baseline/GHCR/운영 NOT RUN을 구분한다.

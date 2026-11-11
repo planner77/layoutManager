@@ -3523,3 +3523,12 @@ Latest Main initially `870d3cf0a4f8e42d2e5c4132076d3b7ab9c52089`; confirmed PR b
 
 - Issue #281 · - 2026-11-10T22:20:27+00:00 interpretation of `issue-281-20261110T215710-484eaa94d0db`: cause Host TemporaryDirectory cleanup failed after the container-owned UID10001 data/db directory was bind-mounted; this is a harness cleanup permission failure, not a confirmed migration failure.; fix Use labelled per-run Docker named volumes; inspect SQLite integrity inside the migrator container and perform safe volume cleanup.; regression docker-roles builds all three images, runs positive and negative migrations and verifies volume cleanup.; retest issue-281-20261110T221212-83a9616e93f2.
 - Issue #281 · [evidence](IssueEvidence/281.md) · final QA run `issue-281-20261110T221212-83a9616e93f2` · PASS · 19/19 required gates; source stable; initial Docker harness cleanup FAIL annotated and linked to this retest.
+
+
+## 2026-11-11 — #283 / 합성 복구 도구·준비 실패 인덱스
+
+- 정본: [IssueEvidence/283](IssueEvidence/283.md). Developer 합성 Docker 초기 RESTART_HALT(fixture SIGTERM handler), receive EPIPE/ARCHIVE_TRUNCATED(Docker stdin -i 누락), probe HALT(변수 범위) 보완 후 계약/Docker 재시험 PASS. 원본 운영 장애로 분류하지 않는다. 보완 commit pending.
+- Root read-only 구성 준비: Compose profile 누락→worker 조회 KeyError; scene-cpu-worker profile 명시 후 PASS. 운영 변경0.
+- Manager 코드 검토: 재개 mount drift, timeout 소유 정리, manifest/image/source 결합, 캡처 정지 시간 구간 보완을 확인했다. 실제 운영 복구/외부 보관/실사용자 로그인은 아직 NOT RUN.
+
+- Issue #283 후속 QA: settings 목적지의 symlink 부모를 통한 plaintext 출력이 합성 fixture에서 재현됐다. 모든 private write 경로의 real parent/소유자/0700/신규 대상 검사를 추가했고 독립 Node5/5·Docker1/1 재시험 PASS. S3 locator 및 CAD/Scene 참조 무결성 공백은 코드 검토에서 발견·거부/검증으로 보완했다. 실제 운영 복구 성공과 구분한다.
