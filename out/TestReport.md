@@ -5229,3 +5229,9 @@ Run ID / Date / Unit / Version / Commit 또는 uncommitted snapshot / OS·Browse
 - `src/`에서 `npm run test:release-local` **13/13 PASS** (신규 tmpfs inspect·foreign mount 회귀 포함).
 - 기존 local App image `r282local4d24e9b9bf9e:0.61.1`에 `release_local_registry.smoke_image(...)`를 실행해 runtime smoke 및 새 owned nonce-labeled container 제거 PASS를 확인했다. Docker inspect에서 정확 tmpfs 설정, configured bind/mount 부재, foreign effective mount 부재를 확인했다.
 - 이 이미지는 Root의 앞선 frozen `d954…` source build에서 생성되어 수정 source의 build/release 증거가 아니다. 재빌드·전체 release profile·GHCR·기존 leftover cleanup·원본 runtime 변경은 하지 않았다. 상세 관측은 [Issue #282 QA evidence](IssueEvidence/282.md).
+
+### U282-QA focused retest — monotonic synthetic auth clock
+
+- `src/`의 focused contract tests `python3 -m unittest tests/test_verify_local.py tests/test_release_local.py`: **23/23 PASS**.
+- `verify_local.run_case`로 `g7-browser` 한 케이스만 실제 실행했다. Fixed argv: `env G7_RUNTIME_E2E_MONOTONIC_CLOCK=true npx playwright test --config playwright.g7-runtime.config.ts --reporter=line`; explicit Chromium path `/home/planner/.cache/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-linux64/chrome-headless-shell`; PASS, exit 0. Source HEAD `d5e2c641d490e9facf2235bade9ce24acd26a8cd`, tree `1ce6b9771b4e3735d93e1edac27ef0459ddb0258`, fingerprint `831ed710d3e9291030c5699e927843e90cda8cf8095a86509cef805f0dd0df94`.
+- Existing `.next` was built from `d5e2…` before verifier-only changes; product auth/preload code was not rebuilt or changed by this run. It is one targeted synthetic-clock regression, not the fresh frozen-source full release profile. Initial helper setup with literal `HEAD` rejected before browser launch; corrected exact-SHA invocation above is the sole executed browser case. Prior trace is consistent with wall-clock rollback, but session subtype and causal subtype remain unobserved. Details: [Issue #282 QA evidence](IssueEvidence/282.md).

@@ -304,8 +304,13 @@ def verify_run(value: str, state: dict, recovery_input: str | None = None) -> tu
     declared_risks = run.get('start', {}).get('risks')
     need(type(declared_risks) is list and set(inferred) <= set(declared_risks),
          'VERIFY_RISK_DOWNGRADED')
+    clock_mode = run.get('start', {}).get('synthetic_auth_clock')
+    need(clock_mode in ('native', 'monotonic')
+         and run.get('end', {}).get('synthetic_auth_clock') == clock_mode,
+         'VERIFY_CLOCK_MODE')
     expected_cases = verify_local.manifest('release', declared_risks, current['paths'],
-                                           recovery_input=recovery_input)
+                                           recovery_input=recovery_input,
+                                           synthetic_auth_clock=clock_mode)
     expected = {case['id']: case for case in expected_cases if case.get('required')}
     for field, want in (('head', state['commit']), ('tree', state['tree']),
                         ('fingerprint', current['fingerprint'])):

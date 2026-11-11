@@ -21,6 +21,22 @@ DOCKER_SPEC.loader.exec_module(DOCKER_VERIFY)
 
 
 class VerifyLocalContract(unittest.TestCase):
+    def test_synthetic_auth_clock_is_explicit_and_only_changes_g7_browser_argv(self):
+        paths = ["src/server/auth/session.ts"]
+        native = VERIFY.manifest("release", ["auth"], paths)
+        controlled = VERIFY.manifest("release", ["auth"], paths,
+                                     synthetic_auth_clock="monotonic")
+        native_by_id = {case["id"]: case for case in native}
+        controlled_by_id = {case["id"]: case for case in controlled}
+        self.assertEqual(native_by_id.keys(), controlled_by_id.keys())
+        self.assertEqual(controlled_by_id["g7-browser"]["argv"],
+                         ["env", "G7_RUNTIME_E2E_MONOTONIC_CLOCK=true",
+                          *native_by_id["g7-browser"]["argv"]])
+        for case_id in native_by_id.keys() - {"g7-browser"}:
+            self.assertEqual(native_by_id[case_id]["argv"], controlled_by_id[case_id]["argv"])
+        with self.assertRaisesRegex(ValueError, "invalid synthetic auth clock mode"):
+            VERIFY.manifest("release", ["auth"], paths, synthetic_auth_clock="arbitrary")
+
     def test_recovery_paths_are_high_risk_and_have_fixed_node_and_docker_gates(self):
         for path in ("src/scripts/recovery-local.mjs", "src/server/backup.ts", "src/tests/oci/restore-proof.mjs", "src/server/snapshot.ts"):
             with self.assertRaisesRegex(ValueError, "high-risk"):

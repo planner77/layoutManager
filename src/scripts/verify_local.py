@@ -137,7 +137,10 @@ def command(argv: list[str], cwd: str = "src", required: bool = True, why: str =
 
 def manifest(profile: str, risks: list[str], paths: list[str], fixture: str | None = None,
              selected_unit: list[str] | None = None, selected_e2e: list[str] | None = None,
-             docs_review: str | None = None, recovery_input: str | None = None) -> list[dict]:
+             docs_review: str | None = None, recovery_input: str | None = None,
+             synthetic_auth_clock: str = "native") -> list[dict]:
+    if synthetic_auth_clock not in ("native", "monotonic"):
+        raise ValueError("invalid synthetic auth clock mode")
     items: list[dict] = []
     def add(id: str, argv: list[str], why: str, cwd: str = "src", timeout: int = 900):
         item = command(argv, cwd, True, why, timeout)
@@ -188,7 +191,10 @@ def manifest(profile: str, risks: list[str], paths: list[str], fixture: str | No
             add("recovery-docker", ["npm", "run", "test:recovery-local:docker"], "disposable G7 volume capture and isolated restore", timeout=600)
         add("build", ["npm", "run", "build"], "production build", timeout=1800)
         if "auth" in risks or "db" in risks:
-            add("g7-browser", ["npx", "playwright", "test", "--config", "playwright.g7-runtime.config.ts", "--reporter=line"], "G7 browser flow", timeout=1200)
+            argv = ["npx", "playwright", "test", "--config", "playwright.g7-runtime.config.ts", "--reporter=line"]
+            if synthetic_auth_clock == "monotonic":
+                argv = ["env", "G7_RUNTIME_E2E_MONOTONIC_CLOCK=true", *argv]
+            add("g7-browser", argv, "G7 browser flow", timeout=1200)
         if "db" in risks:
             add("master-migration-browser", ["npm", "run", "test:master-migration", "--", "--reporter=line"], "isolated migration browser", timeout=1200)
         if "scene" in risks or "worker" in risks:
@@ -283,8 +289,9 @@ def probe(argv: list[str]) -> str:
         return "unavailable"
 
 
-def metadata(state: dict, profile: str, risks: list[str]) -> dict:
+def metadata(state: dict, profile: str, risks: list[str], synthetic_auth_clock: str = "native") -> dict:
     return {"utc": utc(), "source": state, "profile": profile, "risks": risks,
+            "synthetic_auth_clock": synthetic_auth_clock,
             "environment": {"node": probe(["node", "--version"]), "npm": probe(["npm", "--version"]),
                             "python": platform.python_version(), "os": platform.platform(),
                             "docker_client": probe(["docker", "--version"]),
@@ -511,6 +518,8 @@ def main() -> int:
     parser.add_argument("--e2e", action="append", default=[], help="explicit affected existing tests/e2e/*.spec.ts")
     parser.add_argument("--docs-review", help="named reviewer plus short policy/content review conclusion")
     parser.add_argument("--recovery-input", help="private #283 locator for independent sealed baseline restore")
+    parser.add_argument("--synthetic-auth-clock", choices=("native", "monotonic"), default="native",
+                        help="G7 browser only: explicit disposable monotonic clock fixture")
     parser.add_argument("--private-run-dir", help="release-only ignored private evidence directory; no tracked Markdown write")
     parser.add_argument("--query", help="lookup Issue number, module, or error code")
     parser.add_argument("--run-id", help="failed run ID for append-only interpretation")
@@ -569,14 +578,15 @@ def main() -> int:
                 if not rel.startswith(prefix) or (choice is args.unit and not rel.startswith(("tests/unit/", "tests/integration/"))) or not rel.endswith(suffix) or not re.fullmatch(r"[A-Za-z0-9_./-]+", rel) or ".." in Path(rel).parts or not (SRC / rel).is_file():
                     raise ValueError("selected test must be an existing bounded in-repo test: " + rel)
         items = manifest(args.profile, risks, start_state["paths"], args.fixture_check, args.unit, args.e2e,
-                         args.docs_review, args.recovery_input)
+                         args.docs_review, args.recovery_input, args.synthetic_auth_clock)
         if not items:
             raise ValueError("no required gates selected")
         if args.mode == "plan":
             print(json.dumps({"source": start_state, "profile": args.profile, "risks": risks,
+                              "synthetic_auth_clock": args.synthetic_auth_clock,
                               "selection_reason": reason, "cases": items}, indent=2))
             return 0
-        start = metadata(start_state, args.profile, risks)
+        start = metadata(start_state, args.profile, risks, args.synthetic_auth_clock)
         stopped = False
         for item in items:
             if stopped:
@@ -590,7 +600,7 @@ def main() -> int:
                 stopped = True
         try:
             end_state = source_state(args.base)
-            end = metadata(end_state, args.profile, risks)
+            end = metadata(end_state, args.profile, risks, args.synthetic_auth_clock)
             stale = any(start_state[key] != end_state[key] for key in ("fingerprint", "head", "tree"))
         except (ValueError, OSError, subprocess.TimeoutExpired) as exc:
             end = {"source": {"fingerprint": "UNAVAILABLE", "head": "UNAVAILABLE", "tree": "UNAVAILABLE"},

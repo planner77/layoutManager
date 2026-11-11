@@ -49,6 +49,8 @@ npm --prefix src run verify:local -- lookup --query 281
 
 실행 JSON은 `data/verify-local/<run-id>.json`, 마스킹 로그는 같은 경로 아래 실행별 디렉터리에 저장하고 MD에는 경로와 SHA256를 남긴다. 원본 실행은 수정하지 않고 `annotate`로 원인·보완·추가 회귀·실제 PASS 재시험을 연결한다. 예를 들어 `npm --prefix src run verify:local -- annotate --issue 281 --run-id <실패-run-id> --cause "확인한 원인" --fix "보완 commit 또는 pending + fingerprint" --regression "추가한 회귀" --retest <PASS-run-id>`를 사용한다. 미해결이면 `--retest pending`을 기록한다. SHA/checksum과 검토자 문자열은 Owner 서명이나 출고 승인 증거가 아니다.
 
+Host wall clock 역행을 실제 관측한 개발 환경에서는 `verify:local`의 `--synthetic-auth-clock monotonic`으로 **G7 runtime의 합성 browser 한 항목만** 기존 owned-fixture 시계로 실행할 수 있다. 기본값은 `native`다. 실행 start/end의 mode와 실제 고정 argv가 JSON에 기록되며 release verifier가 동일 manifest를 재계산한다. 임의 G7 환경 통과, 운영 시계/인증 보호 규칙 변경, 다른 Greenfield flag 혼용은 허용하지 않는다. 최초 native 실패·clock 근거·controlled 후속 결과를 구분하고 정상 host clock을 증명한 것으로 표시하지 않는다.
+
 `release` 프로파일의 외부 이전 버전 baseline/복원 게이트는 #283 증거가 준비되기 전 필수 NOT RUN으로 차단된다. 현재 프로파일 실행만으로 #282 수동 게시 준비 완료나 실제 출고 성공을 주장하지 않는다.
 
 

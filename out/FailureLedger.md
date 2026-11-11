@@ -3546,3 +3546,12 @@ Latest Main initially `870d3cf0a4f8e42d2e5c4132076d3b7ab9c52089`; confirmed PR b
 - Root progress 관측의 Running assert는 build 완료와 조회 시점의 경합으로 실패했다. 빌드 실패의 원인은 별도 위 ownership 검사이며 관측 실패를 제품 실패로 혼동하지 않는다.
 
 - LM282-DOCKER29-TMPFS-OWNERSHIP 보완: Docker HostConfig.Tmpfs의 정확 두 mount 설정·외부 bind/HostConfig mount 부재·effective mount 충돌을 검사하고 기존 name/nonce/image 결합을 유지했다. Developer 보완 뒤 독립 QA13/13 및 기존 d954 App image를 사용한 실제 corrected smoke/owned cleanup PASS. 이는 정리 절차의 회귀이며 새 source의3-role build/release PASS로 확대하지 않는다. 현재 보완 source를 새 commit으로 동결해 실제 build를 다시 수행한다.
+
+## 2026-11-11 — #282 / LM282-G7-BROWSER-UPLOAD-AUTH-TIMEOUT
+
+- Exact source d5e2c64 full release run issue-282-20261111T040920-03688ae32431 FAIL: 11PASS/1FAIL(g7-browser)/11NOTRUN, stalefalse. Synthetic editor upload 전에 session/CSRF 경로 오류 표시, POST 응답 대기90초 timeout. 원인 UNKNOWN; 기존 wall-clock rollback 이력과 safe trace/clock 근거를 대조한다. 실제 user auth나 운영 장애로 단정하지 않는다.
+- 정본 [Issue282 실패 증거](IssueEvidence/282.md), private JSON SHA256 ccdf0f354ad4de593129fa439ee827cc294644eadb4a415e949056753049f7a1. 같은 source의 exact3-role build 및 실제 backup→후보 호환 성공은 별도이고 전체 release PASS가 아니다. Settings/push/GHCR write0; 보완/retest pending.
+
+- LM282-G7-BROWSER-UPLOAD-AUTH-TIMEOUT 후속 관측: synthetic trace의 session200→401 사이 wall803ms 역행/monotonic170.7ms 진행 및 cookie 존재, CAD POST0을 확인했다. 401 subtype body는 미관측이며 기존 clock guard에 따른 거부는 소스와 관측을 결합한 추론이다. 기존 owned-fixture clock의 명시적 opt-in만 runner/evidence에 연결, native 실패/보호 규칙/timeout을 유지한다. controlled QA 및 새 source release 재시험 pending.
+
+- LM282-G7-BROWSER-UPLOAD-AUTH-TIMEOUT 보완: native 기본값을 유지한 `--synthetic-auth-clock monotonic` opt-in이 G7 runtime browser의 고정 argv에만 기존 owned-fixture flag를 주입한다. start/end mode 및 mandatory argv 재검증을 추가했다. 독립 계약23/23 + 실제 controlled G7 browser PASS는 기존 d5e standalone/새 runner 조합의 집중 회귀이며 새 source3-role/release 전체 PASS는 아니다. 신규 동결본을 다시 build/compat/full23 검증한다.

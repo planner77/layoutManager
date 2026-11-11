@@ -278,20 +278,37 @@ class ReleaseLocalTests(unittest.TestCase):
             case = {'id': 'preflight', 'required': True, 'status': 'PASS', 'exit_code': 0,
                     'argv': ['python3', 'scripts/verify_local_preflight.py'], 'cwd': 'src',
                     'log': 'data/verify-local/run/case.log', 'logSha256': digest}
+            browser_argv = ['npx', 'playwright', 'test', '--config',
+                            'playwright.g7-runtime.config.ts', '--reporter=line']
+            browser = {**case, 'id': 'g7-browser', 'argv': browser_argv}
             run = {'issue': '282', 'status': 'PASS', 'stale': False,
-                   'start': {'profile': 'release', 'source': source, 'risks': []},
-                   'end': {'source': source}, 'cases': [case]}
+                   'start': {'profile': 'release', 'source': source, 'risks': [],
+                             'synthetic_auth_clock': 'native'},
+                   'end': {'source': source, 'synthetic_auth_clock': 'native'},
+                   'cases': [case, browser]}
             path = root / 'run.json'
             def check_run(changed):
                 path.write_text(json.dumps(changed))
+                def expected_manifest(*args, synthetic_auth_clock='native', **kwargs):
+                    expected_browser = (["env", "G7_RUNTIME_E2E_MONOTONIC_CLOCK=true"]
+                                        if synthetic_auth_clock == 'monotonic' else []) + browser_argv
+                    return [{'id': 'preflight', 'required': True, 'argv': case['argv'], 'cwd': 'src'},
+                            {'id': 'g7-browser', 'required': True, 'argv': expected_browser, 'cwd': 'src'}]
                 with mock.patch.object(release, 'ROOT', root), \
                      mock.patch.object(release.recovery, 'private_file', return_value=path), \
                      mock.patch.object(release.verify_local, 'source_state', return_value=source), \
                      mock.patch.object(release.verify_local, 'infer_risks', return_value=([], '')), \
-                     mock.patch.object(release.verify_local, 'manifest', return_value=[
-                         {'id': 'preflight', 'required': True, 'argv': case['argv'], 'cwd': 'src'}]):
+                     mock.patch.object(release.verify_local, 'manifest', side_effect=expected_manifest):
                     release.verify_run(str(path), state)
             check_run(run)
+            run['start']['synthetic_auth_clock'] = 'monotonic'
+            with self.assertRaisesRegex(release.Halt, 'VERIFY_CLOCK_MODE'):
+                check_run(run)
+            run['start']['synthetic_auth_clock'] = 'native'
+            run['start']['synthetic_auth_clock'] = run['end']['synthetic_auth_clock'] = 'monotonic'
+            with self.assertRaisesRegex(release.Halt, 'VERIFY_CASE_DOWNGRADED'):
+                check_run(run)
+            run['start']['synthetic_auth_clock'] = run['end']['synthetic_auth_clock'] = 'native'
             case['required'] = False
             with self.assertRaisesRegex(release.Halt, 'VERIFY_CASE_DOWNGRADED'):
                 check_run(run)
