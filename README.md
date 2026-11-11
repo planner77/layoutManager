@@ -1,3 +1,5 @@
+첫 수동 GHCR attempt는 공유 레이어 경로 검증 결함으로 HALT했습니다. candidate/final 태그는 모두 부재이고 기존0.61.0/latest는 보존됐습니다. 보완·재검증 및 새 출고 계획은 [실제 증거](out/IssueEvidence/282.md)를 따릅니다. Main 직접 push 전환과 Actions 비활성화는 실제 확인했습니다.
+
 수동 GHCR 출고는 [Issue282](out/Issue282.md)와 [운영 가이드](out/Operation.md)의 `release:local` 경로를 사용합니다. 실제 게시 전 정확 버전·SHA·세 digest에 대한 Owner GO가 필요합니다.
 
 [Issue283](out/Issue283.md)의 로컬 복구 도구와 실제 운영 데이터의 암호화 백업·격리 복원 검증을 완료했습니다. 외부 장애 도메인 보관과 실제 사용자 인증은 미실행입니다. 실제 로컬/운영/외부 보관 상태는 [IssueEvidence/283](out/IssueEvidence/283.md)를 구분해 확인하세요.

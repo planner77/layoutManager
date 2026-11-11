@@ -126,6 +126,7 @@ class GHCR(old.GHCR):
                      for ref in allowed), 'GHCR_CREDENTIAL_OR_REF')
         self.allowed_tags = set(allowed)
         self.bound_objects = {}
+        self.bound_blob_paths = {}
         self.bound_tags = {}
         self._upload_session = None
         self.write_enabled = write
@@ -157,16 +158,39 @@ class GHCR(old.GHCR):
 
     def bind(self, graphs: dict, refs: dict):
         need(set(graphs) == {'app', 'migrator', 'cpu-worker'}
-             and set(refs) == set(graphs), 'GHCR_BINDING')
+             and set(refs) == set(graphs) and not self.bound_objects, 'GHCR_BINDING')
+        objects = {}
+        blob_paths = {}
+        bound_tags = {}
         for role, graph in graphs.items():
             ref = refs[role].rsplit(':', 1)[-1]
             need(ref in self.allowed_tags and graph['digest'] in graph['objects'], 'GHCR_BINDING')
             for digest, value in graph['objects'].items():
-                old_value = self.bound_objects.get(digest)
+                need(type(value) is dict and value.get('digest') == digest
+                     and value.get('kind') in ('blob', 'manifest')
+                     and type(value.get('path')) is str, 'GHCR_BINDING')
+                old_value = objects.get(digest)
                 need(old_value is None or all(old_value[k] == value[k]
-                     for k in ('digest', 'size', 'mediaType')), 'GHCR_SHARED_OBJECT')
-                self.bound_objects[digest] = value
-            self.bound_tags[ref] = graph['objects'][graph['digest']]
+                     for k in ('kind', 'digest', 'size', 'mediaType')), 'GHCR_SHARED_OBJECT')
+                if old_value is None:
+                    objects[digest] = dict(value)
+                if value['kind'] == 'blob':
+                    blob_paths[(digest, value['path'])] = dict(value)
+            bound_tags[ref] = dict(graph['objects'][graph['digest']])
+        self.bound_objects = objects
+        self.bound_blob_paths = blob_paths
+        self.bound_tags = bound_tags
+
+    def upload_blob(self, descriptor, path):
+        path = Path(path)
+        digest = descriptor.get('digest') if type(descriptor) is dict else None
+        allowed = self.bound_blob_paths.get((digest, str(path)))
+        need(allowed is not None and descriptor == allowed
+             and path.is_file() and path.stat().st_size == allowed['size']
+             and old.file_digest(path) == digest,
+             'CA_LOCAL_BLOB_CHANGED')
+        canonical = self.bound_objects[digest]
+        super().upload_blob(canonical, Path(canonical['path']))
 
 
 def tags(refs: dict) -> dict:

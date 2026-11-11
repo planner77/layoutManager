@@ -1,3 +1,8 @@
+## Unreleased — Issue #282 실제 출고 실패 보완 (2026-11-11)
+
+- 실제 최초 candidate에서 공유 layer의 role별 private path와 bound path가 충돌한 문제를 보완했다. canonical 경로와 허가된 개별 descriptor/bytes를 모두 검증하고 기존 transport guard를 유지한다. inherited Pending은 sanitized HALT로 처리한다.
+- 원래 승인/partial journal과 config blob1개 업로드는 보존한다. candidate/final 태그는 부재이며 기존0.61.0/latest는 불변이다. 새 source/digest 검증·Owner GO 후에만 다시 게시한다.
+
 ## Unreleased — Issue #282 수동 출고 도구 (2026-11-11)
 
 - 로컬3-role build/OCI 검증·현재 source의 로컬 시험/복구/후보 호환성·Owner 대화 승인 기록·durable publish journal·read-only reconcile 경로를 추가한다. 구현/QA/실제 게시의 상태는 IssueEvidence/282를 따른다.

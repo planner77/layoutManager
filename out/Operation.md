@@ -1,3 +1,7 @@
+## 현재 출고 상태 — 2026-11-11
+
+Actions repository/workflows15개 비활성화와 Main PR/check 제거·force/delete/Tag 보호 유지, source5ec9776 비강제 push를 확인했다. 최초 실제 Owner GO candidate attempt는 App config blob1개 확인 뒤 shared-layer bound-path 결함으로 HALT했다. candidate3/final3 태그는 모두 부재이고 기존0.61.0/latest는 불변이다. 원래 journal/Owner 기록을 보존하며 [Issue282 증거](IssueEvidence/282.md)의 새 source 검증·새 GO 전에 자동 이어쓰기/삭제하지 않는다. 운영 배포는 수행하지 않았다.
+
 ## #283 복구 체계 전환 작업 (2026-11-11, 로컬 QA·실제 로컬 복원 통과)
 
 요구·실행 경계는 [Issue283](Issue283.md), 실제 단계별 증거는 [IssueEvidence/283](IssueEvidence/283.md)를 정본으로 사용한다. 현재 읽기 전용 관측은 Worker1개 실행/App 컨테이너 없음이다. 아래 과거 App-running 기록은 당시 실행 상태이며 이번 작업의 재시작 근거가 아니다. 정확 inventory와 계획을 확인하고 도구 검증/Manager·QA 후 root가 실제 capture를 수행한다. 최초 running writer만 일시 정지·동일 ID 재개하며 missing/stopped App을 자동 시작하지 않는다. 실제 운영0.61.0의 암호화 capture·격리 restore/verify·App/Worker probe와 설정 roundtrip을 통과했다. 보존 위치는 private 운영 proof에 기록했으며 외부 보관/auth/host writer 한계는 IssueEvidence/283을 따른다.

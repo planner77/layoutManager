@@ -667,7 +667,7 @@ def main() -> int:
         else:
             raise Halt('ACTION_NOT_IMPLEMENTED')
         return 0
-    except (Halt, registry.Blocked, oci.Invalid, recovery.Rejected, compat.Incompatible,
+    except (Halt, registry.Blocked, registry.old.Pending, oci.Invalid, recovery.Rejected, compat.Incompatible,
             OSError, ValueError, TypeError,
             KeyError, subprocess.TimeoutExpired, tarfile.TarError, json.JSONDecodeError) as error:
         code = str(error) if isinstance(error, (Halt, registry.Blocked, oci.Invalid,

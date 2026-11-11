@@ -7,6 +7,9 @@ import sys
 import tempfile
 import unittest
 import subprocess
+import copy
+import contextlib
+import io
 from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
@@ -25,6 +28,107 @@ class FakeHTTP:
 
 
 class ReleaseLocalTests(unittest.TestCase):
+    def test_shared_blob_uses_inherited_transport_with_each_role_path(self):
+        class UploadHTTP(FakeHTTP):
+            def __init__(self):
+                self.writes = []
+
+            def request(self, method, url, headers=None, data=None, destination=None, limit=None):
+                if method == 'HEAD' and '/blobs/sha256:' in url:
+                    return 404, {}, b'', 0, None
+                if method == 'POST' and url.endswith('/blobs/uploads/'):
+                    self.writes.append(('POST', url, None, None))
+                    return 202, {'location': '/v2/planner77/layoutmanager/blobs/uploads/session'}, b'', 0, None
+                if method == 'PUT' and '/blobs/uploads/session?' in url:
+                    self.writes.append(('PUT', url, data.name, data.read()))
+                    return 201, {'docker-content-digest': blob_digest}, b'', 0, None
+                return super().request(method, url, headers, data, destination, limit)
+
+        class IntentJournal:
+            def __init__(self):
+                self.intents = []
+
+            def intent(self, method, kind, reference):
+                self.intents.append((method, kind, reference))
+
+        with tempfile.TemporaryDirectory() as directory:
+            workspace = Path(directory)
+            data = b'shared OCI blob'
+            blob_digest = 'sha256:' + hashlib.sha256(data).hexdigest()
+            graphs = {}
+            refs = release.refs('0.61.1', 'b' * 40)['candidate']
+            for role, letter in zip(release.ROLES, 'cde'):
+                path = workspace / (role + '.blob')
+                path.write_bytes(data)
+                top_digest = 'sha256:' + letter * 64
+                graphs[role] = {'digest': top_digest, 'objects': {
+                    blob_digest: {'kind': 'blob', 'path': str(path), 'digest': blob_digest,
+                                  'size': len(data), 'mediaType': 'application/vnd.oci.image.layer.v1.tar'},
+                    top_digest: {'kind': 'manifest', 'path': str(workspace / (role + '.manifest')),
+                                 'digest': top_digest, 'size': 1,
+                                 'mediaType': 'application/vnd.oci.image.manifest.v1+json'}}}
+            original = copy.deepcopy(graphs)
+            http = UploadHTTP()
+            journal = IntentJournal()
+            client = registry.GHCR('fake-token', set(registry.tags(refs).values()), journal,
+                                   write=True, http=http)
+            client.bind(graphs, refs)
+            app_item = graphs['app']['objects'][blob_digest]
+            for changed in ('digest', 'size', 'mediaType', 'kind'):
+                with self.subTest(changed=changed):
+                    bad = dict(app_item)
+                    bad[changed] = {'digest': 'sha256:' + 'f' * 64,
+                                    'size': len(data) + 1,
+                                    'mediaType': 'application/octet-stream',
+                                    'kind': 'manifest'}[changed]
+                    with self.assertRaisesRegex(registry.Blocked, 'CA_LOCAL_BLOB_CHANGED'):
+                        client.upload_blob(bad, Path(app_item['path']))
+            unbound = workspace / 'unbound.blob'
+            unbound.write_bytes(data)
+            with self.assertRaisesRegex(registry.Blocked, 'CA_LOCAL_BLOB_CHANGED'):
+                client.upload_blob(app_item, unbound)
+            app_path = Path(app_item['path'])
+            app_path.write_bytes(b'tampered OCI blob')
+            with self.assertRaisesRegex(registry.Blocked, 'CA_LOCAL_BLOB_CHANGED'):
+                client.upload_blob(app_item, app_path)
+            app_path.write_bytes(data)
+            # A role's own descriptor/path must still be rejected when the
+            # bytes are tampered without changing their length.
+            migrator_item = graphs['migrator']['objects'][blob_digest]
+            migrator_path = Path(migrator_item['path'])
+            migrator_path.write_bytes(b'broken OCI blob')
+            self.assertEqual(migrator_path.stat().st_size, len(data))
+            with self.assertRaisesRegex((registry.Blocked, registry.old.Pending), 'CA_LOCAL_BLOB_CHANGED'):
+                client.upload_blob(migrator_item, migrator_path)
+            migrator_path.write_bytes(data)
+
+            # The inherited transport uploads the canonical app path even
+            # when called through another role. Validate that path at upload
+            # time too, before it can emit a journal intent or HTTP write.
+            app_path.write_bytes(b'broken OCI blob')
+            self.assertEqual(app_path.stat().st_size, len(data))
+            with self.assertRaisesRegex((registry.Blocked, registry.old.Pending), 'CA_LOCAL_BLOB_CHANGED'):
+                client.upload_blob(migrator_item, migrator_path)
+            app_path.write_bytes(data)
+            self.assertEqual(http.writes, [])
+            self.assertEqual(journal.intents, [])
+            conflicting = copy.deepcopy(graphs)
+            conflicting['cpu-worker']['objects'][blob_digest]['mediaType'] = 'application/octet-stream'
+            separate = registry.GHCR('fake-token', set(registry.tags(refs).values()),
+                                     IntentJournal(), write=True, http=UploadHTTP())
+            with self.assertRaisesRegex(registry.Blocked, 'GHCR_SHARED_OBJECT'):
+                separate.bind(conflicting, refs)
+            self.assertEqual(separate.bound_objects, {})
+            for role in release.ROLES:
+                item = graphs[role]['objects'][blob_digest]
+                client.upload_blob(item, Path(item['path']))
+            self.assertEqual(graphs, original)
+            self.assertEqual([method for method, *_ in http.writes], ['POST', 'PUT'] * 3)
+            self.assertEqual([(path, sent) for method, _, path, sent in http.writes
+                              if method == 'PUT'], [(str(app_path), data)] * 3)
+            self.assertEqual([kind for _, kind, _ in journal.intents],
+                             ['blob-upload-init', 'blob-by-digest'] * 3)
+
     def test_owner_record_binds_exact_three_digests(self):
         with tempfile.TemporaryDirectory() as directory:
             plan = {'planSha256': 'a' * 64,
@@ -72,14 +176,16 @@ class ReleaseLocalTests(unittest.TestCase):
             def put_manifest(self, ref, descriptor, raw):
                 self.journal.intent('PUT', 'manifest', ref)
                 self.puts.append(ref)
-                if self.failure in ('401', '403', 'timeout') or (
+                if self.failure in ('401', '403', 'timeout', 'pending') or (
                         self.failure == 'second-role' and len(self.puts) == 2):
                     if self.failure == 'timeout':
                         raise TimeoutError('synthetic timeout')
+                    if self.failure == 'pending':
+                        raise registry.old.Pending('https://private.invalid/?token=synthetic-secret')
                     raise registry.Blocked('HTTP_' + self.failure)
                 self.values[ref] = descriptor['digest']
 
-        for failure in ('401', '403', 'timeout', 'second-role', 'readback', 'post-baseline', 'existing'):
+        for failure in ('401', '403', 'timeout', 'pending', 'second-role', 'readback', 'post-baseline', 'existing'):
             with self.subTest(failure=failure), tempfile.TemporaryDirectory() as directory:
                 workspace = Path(directory)
                 plan_path = workspace / 'preflight.json'
@@ -119,7 +225,8 @@ class ReleaseLocalTests(unittest.TestCase):
                 for patch in patches:
                     patch.start()
                 try:
-                    with self.assertRaises((release.Halt, registry.Blocked, TimeoutError)):
+                    with self.assertRaises((release.Halt, registry.Blocked,
+                                            registry.old.Pending, TimeoutError)):
                         release.publish_stage('candidate', str(plan_path), 'owner-record',
                                               None, execute=True)
                     journal_path = workspace / 'candidate.journal.jsonl'
@@ -137,6 +244,17 @@ class ReleaseLocalTests(unittest.TestCase):
                 finally:
                     for patch in reversed(patches):
                         patch.stop()
+
+    def test_cli_sanitizes_inherited_pending(self):
+        secret = 'https://private.invalid/?token=synthetic-secret'
+        stderr = io.StringIO()
+        with mock.patch.object(sys, 'argv', ['release_local.py', 'candidate',
+                                             '--preflight-record', 'preflight.json',
+                                             '--owner-record', 'owner.json', '--execute']), \
+             mock.patch.object(release, 'publish_stage', side_effect=registry.old.Pending(secret)), \
+             contextlib.redirect_stderr(stderr):
+            self.assertEqual(release.main(), 1)
+        self.assertEqual(stderr.getvalue(), 'RELEASE282_HALT\n')
 
     def test_all_workspaces_contend_for_one_publisher_lock(self):
         first = release.publisher_lock()

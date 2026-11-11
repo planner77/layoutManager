@@ -55,3 +55,16 @@ Receipt 필드: schemaVersion, issueIds, exact sourceCommit/tree/version, tested
 ## Manager 판정 — 2026-11-11 소스 동결 전
 
 독립 QA의 신규 OCI/publisher 11건·기존 verifier CLI 11건 PASS, 실제 sealed #283 baseline 재복원/검증/probe PASS 및 dirty plan의 UNREADY를 검토했다. 구현을 **Root의 clean source 동결·정확 3-role build·현재 source 전체 release profile·후보 compatibility 단계 진행에 수용**한다. 실제 근거는 [IssueEvidence/282](IssueEvidence/282.md)의 U282-QA 항목이다. 이는 L07 실제 게시 수용이나 Owner 출고 GO가 아니며 현재 SHA의 전체 release 시험/후보 build·upgrade/원격 candidate·final은 미실행이다. 이후 Root가 실제 결과와 cutover·push를 별도 판정하고, 구체 세 digest가 확정된 plan에 대한 Owner GO 뒤에만 GHCR를 쓴다. 공개 후속 결과는 동결 소스를 변경하지 않도록 별도 docs commit에 기록한다.
+
+## Manager repair scope — 2026-11-11 shared OCI object path
+
+실제 source `5ec97762a77817c7257850c5b6fa6a984cb5efd2` candidate 시도는 blob 확인 뒤 `CA_LOCAL_BLOB_CHANGED`로 HALT했다. Root가 실제 journal/read-only reconcile 및 실패 원장을 기록한다. 본 보완은 기존 시도를 재개하지 않으며 새 source/세 digest/plan과 새 실제 Owner GO 이전 GHCR 쓰기0이다.
+
+- 요구·설계: 세 role graph의 동일 digest/size/mediaType blob은 별도 추출 경로를 가질 수 있다. 공통 transport binding이 마지막 role 경로로 덮어써 앞 role 경로를 거부하는 경계를 수정한다. 원본 graph proof를 변형하지 않고 caller descriptor/path 및 실제 bytes 검증을 유지하며, 상속 transport가 하나의 검증된 canonical binding으로 업로드하도록 한다. fixed route, hash/size/media, no overwrite/retry/delete 및 요청 전 fsync 계약은 유지한다.
+- AC-L05-SHARED: 실제 상속 `GHCR.upload_blob`를 통과하는 세 graph/동일 blob/서로 다른 경로 회귀를 먼저 실패로 재현한 후 PASS한다. descriptor 충돌, caller 경로/bytes 변조를 원격 쓰기 전에 거부하고 graph 불변성을 확인한다. fake publisher만 사용하는 시험은 충분하지 않다.
+- AC-L05-PENDING: 기존 `candidate_policy.Pending`은 CLI에서 비밀·URL·traceback 없는 HALT로 끝나며 원래 durable journal HALT와 자동 재시도 금지를 유지한다. 기존 local-release/transport 음성 계약을 재검증한다.
+- 역할: Manager gpt-6-astra가 범위·AC/구현 검토, Developer gpt-6-sol이 최소 구현·회귀, 이후 QA gpt-6-luna가 독립 focused 검증한다. Root가 최종 commit/push 및 새 exact-source build/full release/compatibility와 구체 Owner review를 수행한다. 본 단계는 App 광범위 시험·실제 게시를 반복하지 않는다.
+
+### Manager repair review — accepted for fresh source preparation
+
+Developer의 실제 상속 transport 회귀가 수정 전 `CA_LOCAL_BLOB_CHANGED`로 실패하고 수정 후 PASS한 근거와 canonical binding/role별 descriptor·path·bytes 검사를 검토했다. 독립 QA는 같은 길이 caller/canonical byte 변조의 쓰기 전 거부, 원본 graph 불변, Pending의 durable HALT·재실행 거부·CLI 비밀 비출력을 확인했다. QA focused 13/13 및 기존 OCI 349/349 PASS, 상세 결과와 실제 모델은 TestReport U282-QA-SHARED-20261111에 기록했다. 수정 구현을 Root의 새 commit/source freeze·3-role build·전체 release·compatibility 검증으로 넘긴다. 기존 HALT 재개/새 GHCR 쓰기 승인이나 L07 완료가 아니며, 새 SHA와 새 세 digest/plan에 대한 실제 Owner GO가 필요하다.

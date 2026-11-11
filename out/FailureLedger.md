@@ -3555,3 +3555,12 @@ Latest Main initially `870d3cf0a4f8e42d2e5c4132076d3b7ab9c52089`; confirmed PR b
 - LM282-G7-BROWSER-UPLOAD-AUTH-TIMEOUT 후속 관측: synthetic trace의 session200→401 사이 wall803ms 역행/monotonic170.7ms 진행 및 cookie 존재, CAD POST0을 확인했다. 401 subtype body는 미관측이며 기존 clock guard에 따른 거부는 소스와 관측을 결합한 추론이다. 기존 owned-fixture clock의 명시적 opt-in만 runner/evidence에 연결, native 실패/보호 규칙/timeout을 유지한다. controlled QA 및 새 source release 재시험 pending.
 
 - LM282-G7-BROWSER-UPLOAD-AUTH-TIMEOUT 보완: native 기본값을 유지한 `--synthetic-auth-clock monotonic` opt-in이 G7 runtime browser의 고정 argv에만 기존 owned-fixture flag를 주입한다. start/end mode 및 mandatory argv 재검증을 추가했다. 독립 계약23/23 + 실제 controlled G7 browser PASS는 기존 d5e standalone/새 runner 조합의 집중 회귀이며 새 source3-role/release 전체 PASS는 아니다. 신규 동결본을 다시 build/compat/full23 검증한다.
+
+## 2026-11-11 — #282 / LM282-SHARED-BLOB-BOUND-PATH
+
+- Actual approved source5ec9776 candidate HALT `CA_LOCAL_BLOB_CHANGED` after one confirmed App config blob. Same layer digest across three role graphs has separate private paths; union last-path overwrite conflicts with inherited upload path lock. Mock publication missed the real upload guard. Pending exception sanitizer also missed inherited exception type.
+- 原 journal5events/HALT and read-only reconcile preserved. All candidate3/final3 tags absent; old0.61.0 three-role/latest unchanged. No automatic retry/delete; new source/plan requires fresh Owner GO after repair/QA. 정본 [Issue282 실제 실패](IssueEvidence/282.md).
+
+- #279 cutover operator note: initial local Path.open(opener) TypeError before remote mutation; corrected explicit next attempt verifies all15 workflows/repo Actions disabled, Main deletion/nonFF and Tag protection preserved. Not a product or registry failure.
+
+- LM282-SHARED-BLOB-BOUND-PATH 보완: actual inherited upload RED→canonical 첫 path + authorized role별 bytes/descriptor 검증 GREEN. Independent release-local13/13·OCI349/349 PASS incl same-length tamper/no writes/graph immutability/Pending sanitized HALT·journal no-resume. 원래5ec remote attempt는 HALT로 유지하며 새 source의 full proof 및 새 Owner GO가 필요하다.
