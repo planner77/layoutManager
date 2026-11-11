@@ -8,7 +8,7 @@
 4. GHCR는 별도 #282의 수동 App/Migrator/CPU Worker 출고 게이트와 Owner GO, 세 digest readback을 충족해야 한다. 로컬 PASS는 이미지 게시·현장 수용·운영 배포 성공이 아니다. #283 복구점/격리 복원과 운영 배포는 별도 판정이다.
 5. 완료 보고에 구현·시험·실패/미실행·commit/push·게시 digest·잔여 의존성을 명시한다. 충족하지 않은 AC는 열린 상태로 유지한다.
 
-2026-11-11 실제 cutover readback: repository Actions disabled·workflows15개 모두 disabled, Main ruleset `26731716`은 deletion/non-fast-forward만 유지(PR/check 제거), Tag ruleset `26731135` 보호 불변·classic protection 없음. exact source `5ec9776` 비강제 Main push 뒤 Actions run0을 확인했다. 매 실행 전 최신 readback을 재확인한다. 첫 승인된 수동 GHCR attempt는 shared-layer path 결함으로 HALT이며 [Issue282 실제 증거](out/IssueEvidence/282.md)를 따른다. 복구/새 source의 승인을 완료하지 않고 같은 attempt를 자동 재시도하지 않는다.
+2026-11-11 실제 수용: repository Actions disabled·workflows15개 disabled, Main ruleset `26731716`의 deletion/non-fast-forward 및 Tag ruleset `26731135` 보호를 유지했다. PR/check 제거 후 비강제 Main push·source Actions run0을 확인했고, 이미지 source `a53921a`에서 로컬23/23·실제 복구/후보 호환·Owner GO·GHCR0.61.1 세 역할 candidate/final readback·격리 pull smoke를 완료했다. [Issue282 증거](out/IssueEvidence/282.md)가 정본이다. 이전5ec HALT/실패 원장은 보존한다. 후속 docs-only commit은 이미지 source와 구분하고 기존0.61.0/latest/Git v* tag·운영 배포/DB/CAD/flags를 자동 변경하지 않는다. 실제 사용자 auth·외부DR·host writer/READY 한계는 열린 상태이며 매 실행 전 최신 보호 설정을 재확인한다.
 
 ## #273 / PR #278 — PR CI #741 실패: P2 nonce 강화 후 잔존 synthetic 실행 ID 테스트 계약 보정 (2026-11-09)
 

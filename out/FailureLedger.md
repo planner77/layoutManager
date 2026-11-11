@@ -3564,3 +3564,10 @@ Latest Main initially `870d3cf0a4f8e42d2e5c4132076d3b7ab9c52089`; confirmed PR b
 - #279 cutover operator note: initial local Path.open(opener) TypeError before remote mutation; corrected explicit next attempt verifies all15 workflows/repo Actions disabled, Main deletion/nonFF and Tag protection preserved. Not a product or registry failure.
 
 - LM282-SHARED-BLOB-BOUND-PATH 보완: actual inherited upload RED→canonical 첫 path + authorized role별 bytes/descriptor 검증 GREEN. Independent release-local13/13·OCI349/349 PASS incl same-length tamper/no writes/graph immutability/Pending sanitized HALT·journal no-resume. 원래5ec remote attempt는 HALT로 유지하며 새 source의 full proof 및 새 Owner GO가 필요하다.
+
+## 2026-11-11 — #282 실제 출고 재시험 COMPLETE
+
+- LM282-SHARED-BLOB-BOUND-PATH: 보완 commit `a53921a180d77861b232fb98aa6989b678aca8ac`에서 inherited transport 회귀·독립 QA 후 full23/23 PASS, 새 실제 Owner GO 아래 candidate CANDIDATE_VERIFIED→final COMPLETE. 같은source의3role exact remote byte/digest readback·격리 pull smoke·이전0.61.0/latest 불변 PASS. 원래5ec HALT·config blob1·첫 GO는 보존, 자동 retry/delete0. [정본](IssueEvidence/282.md).
+- LM282-DOCKER29-TMPFS-OWNERSHIP: d5e2c64 보완/집중13회귀 후 현재 exact3-role build·실제 digest pull smoke에서 정리 PASS. 원래d954 실패는 보존한다.
+- LM282-G7-BROWSER-UPLOAD-AUTH-TIMEOUT: 5ec9776의 명시적 owned monotonic opt-in과 실제현재23/23 controlled G7 PASS. 원래native803ms 역행/401은 보존하며 실제host clock 정상화나 실제 사용자 인증 성공으로 해석하지 않는다.
+- LM281-CUTOVER-NOT-READY: 실제 Actions repo/15workflows disabled, Main PR/check 제거·force/delete/Tag 보호 유지, 비강제push/sourceActions0 readback으로 이미지 출고 전환 조건 해결. 운영/외부DR 미완료 범위는 남아 있다.

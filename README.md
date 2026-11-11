@@ -1,4 +1,4 @@
-첫 수동 GHCR attempt는 공유 레이어 경로 검증 결함으로 HALT했습니다. candidate/final 태그는 모두 부재이고 기존0.61.0/latest는 보존됐습니다. 보완·재검증 및 새 출고 계획은 [실제 증거](out/IssueEvidence/282.md)를 따릅니다. Main 직접 push 전환과 Actions 비활성화는 실제 확인했습니다.
+**GHCR0.61.1 App/Migrator/CPU Worker 출고 완료** — 이미지 source `a53921a`, 로컬23/23·실제 백업 복원/후보 호환·Owner GO·candidate/final exact digest readback·격리 pull smoke를 통과했습니다. [실제 출고 증거](out/IssueEvidence/282.md)를 확인하세요. 운영 배포는 미실행이며 기존0.61.0/latest와 원본 데이터를 보존했습니다. 이 결과를 기록한 후속 문서 commit은 이미지 source와 구분합니다.
 
 수동 GHCR 출고는 [Issue282](out/Issue282.md)와 [운영 가이드](out/Operation.md)의 `release:local` 경로를 사용합니다. 실제 게시 전 정확 버전·SHA·세 digest에 대한 Owner GO가 필요합니다.
 

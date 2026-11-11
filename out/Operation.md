@@ -1,6 +1,10 @@
-## 현재 출고 상태 — 2026-11-11
+## 현재 출고 상태 — 0.61.1 COMPLETE (2026-11-11)
 
-Actions repository/workflows15개 비활성화와 Main PR/check 제거·force/delete/Tag 보호 유지, source5ec9776 비강제 push를 확인했다. 최초 실제 Owner GO candidate attempt는 App config blob1개 확인 뒤 shared-layer bound-path 결함으로 HALT했다. candidate3/final3 태그는 모두 부재이고 기존0.61.0/latest는 불변이다. 원래 journal/Owner 기록을 보존하며 [Issue282 증거](IssueEvidence/282.md)의 새 source 검증·새 GO 전에 자동 이어쓰기/삭제하지 않는다. 운영 배포는 수행하지 않았다.
+이미지 source `a53921a180d77861b232fb98aa6989b678aca8ac`의 App/Migrator/CPU Worker를 실제 Owner GO에 따라 candidate→final로 게시하고 raw OCI graph/readback·digest pull/격리 실행·기존0.61.0 three-role/latest 불변을 확인했다. [정확 refs·receipt·Owner/시험 증거](IssueEvidence/282.md)를 사용한다. final refs는 `ghcr.io/planner77/layoutmanager:0.61.1`, `:0.61.1-migrate`, `:0.61.1-cpu-worker`다.
+
+Repository Actions/workflows15개 disabled, Main PR/check 제거·force/delete 및 v*Tag 보호 유지, PR/Actions0·비강제 Main push를 실증했다. 첫5ec HALT·config blob 및 새source 보완/Go·성공 원장은 보존한다. 이미 존재하는0.61.1을 다시 게시하지 않는다. 이 공개 후속 문서 commit과 이미지 source를 구분한다.
+
+운영 배포·원본 volume/DB/CAD·flags 변경은 수행하지 않았다. 기존0.61.0 Worker1개 실행/App 컨테이너 부재 관측을 유지했고 격리 clone App을 검증했다. 실제 사용자 로그인/외부 backup·key custody NOT RUN, host writer 부재 NOT PROVEN, READY Scene0 NOT_EXERCISED다. 운영 전환/DR 수용은 별도이며 Root의 이미지 게시 성공을 그 승인으로 사용하지 않는다.
 
 ## #283 복구 체계 전환 작업 (2026-11-11, 로컬 QA·실제 로컬 복원 통과)
 

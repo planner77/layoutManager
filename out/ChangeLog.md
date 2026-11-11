@@ -1,3 +1,9 @@
+## 0.61.1 — 로컬 Issue Lifecycle·수동 GHCR 출고 (2026-11-11)
+
+- #281 영향 기반 로컬 검증 CLI·append-only 실패 원장, #283 암호화 복구점/격리 복원, #282 source-bound 수동3-role OCI 출고를 연결했다. source `a53921a180d77861b232fb98aa6989b678aca8ac`의 exact3-role build·실제 backup/candidate 호환·release23/23·Owner GO·candidate/final raw digest readback/pull smoke 및 baseline 불변을 실증했다.
+- Actions repo/15workflows disabled·Main PR/check 제거·force/delete/Tag 보호 유지 후 비강제 Main push를 확인했다. 새 Git v*tag/latest 이동·운영 배포는 수행하지 않았다. 기존 사용자 변경/운영0.61.0 Worker·데이터를 보존했다.
+- 실제 tmpfs cleanup·native auth clock·공유 blob path 실패와 보완/재시험은 FailureLedger/IssueEvidence/282에 보존했다. 실제 사용자 auth·외부DR/host writer·READY 자료 한계는 남아 있다. 아래 Unreleased는 출고 전 작성 이력이며 실제 수용은 이 항목과 IssueEvidence/282를 따른다.
+
 ## Unreleased — Issue #282 실제 출고 실패 보완 (2026-11-11)
 
 - 실제 최초 candidate에서 공유 layer의 role별 private path와 bound path가 충돌한 문제를 보완했다. canonical 경로와 허가된 개별 descriptor/bytes를 모두 검증하고 기존 transport guard를 유지한다. inherited Pending은 sanitized HALT로 처리한다.

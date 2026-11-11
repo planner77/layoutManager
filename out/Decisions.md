@@ -1869,3 +1869,7 @@ SceneAsset은 불변 렌더 산출물이고 CadOutline/CadMemo는 별도 Revisio
 ## ADR-027 — 제품 계층과 기존 층 식별 보존
 
 Manager 결정 (2026-10-15): 제품별 운영 site 계층, 명시 SITE/LEGAL_ENTITY 종류, CadLocation ID 보존, 사업부별 미분류 제품 및 수동 재분류, #6 기본 이름 형식 유지. 상세 근거와 수용 기준은 [Issue24](Issue24.md). 전사 물리 자산의 추정 병합은 하지 않는다. 운영 migration은 이번 실행 범위 밖이다.
+
+## 2026-11-11 — #279/#282 실제 수동 출고 수용 경계
+
+Owner의 수정source `a53921a180d77861b232fb98aa6989b678aca8ac`/version0.61.1/세 exact digest 새 Go로 실제3-role candidate→final을 완료했다. 승인 후 결함이 발견된 이전5ec attempt는 HALT로 보존하고 새 source/새 Go 없이 이어쓰지 않았다. 임의 checksum은 Owner 신원/서명 증명이 아니며 실제 대화 audit와 전후 code-generated journal/remote bytes를 구분한다. 출고 결과 문서는 source freeze 이후 docs-only commit으로 기록하고 이를 이미지 source라고 주장하지 않는다. 이미지 게시와 실제 운영 배포·DR/외부 backup·key custody·실제 사용자 auth 수용은 별도다. 정본은 [Issue282 증거](IssueEvidence/282.md)다.

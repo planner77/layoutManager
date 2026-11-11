@@ -1,12 +1,12 @@
 # Issue #282 — 로컬 3-role GHCR 출고 계약
 
-2026-11-11 Manager 설계·구현 검토 및 focused 독립 QA 완료. Developer의 로컬 CLI 구현은 존재하며 실제 시험 결과는 [IssueEvidence/282](IssueEvidence/282.md)를 따른다. exact frozen source 전체 release 검증·후보 3-role build/compatibility·실제 GHCR 게시는 아직 미실행이다. 상위 #279 PR0/Actions0 정책, #281 로컬 검증과 #283 복구 증거를 사용한다. 과거 CI/서명 workflow의 성공·승인을 신규 출고 권한으로 승계하지 않는다. 요구 원문: GitHub #282. 운영 배포·rollback·Git tag/latest 변경은 이 CLI 범위 밖이다.
+2026-11-11 exact source `a53921a180d77861b232fb98aa6989b678aca8ac` / version `0.61.1`의 전체 release 23/23·3-role build/compatibility를 검증하고, 정확 plan에 대한 실제 Owner GO로 candidate `CANDIDATE_VERIFIED` 및 final `COMPLETE` 게시를 완료했다. 실제 시험·게시 근거는 [IssueEvidence/282](IssueEvidence/282.md)와 [TestReport](TestReport.md)를 따른다. 게시 후 독립 QA와 Manager 최종 판정은 아래 후속 항목에 기록한다. 상위 #279 PR0/Actions0 정책, #281 로컬 검증과 #283 복구 증거를 사용한다. 과거 CI/서명 workflow의 성공·승인을 신규 출고 권한으로 승계하지 않는다. 요구 원문: GitHub #282. 운영 배포·rollback·Git tag/latest 변경은 이 CLI 범위 밖이다.
 
 ## 요구·상태
 
 R282-1: `release-local` 하나의 CLI로 read-only plan/dry-run/preflight, 정확 세 역할의 로컬 build·검사, 수동 승인된 candidate 게시/readback, final 게시/readback, immutable receipt 및 read-only reconcile을 제공한다. App/Migrator/CPU Worker 정확 releaseVersion/sourceCommit/tree/platform/role와 실행 제약을 검증한다.
 
-R282-2: 모든 원격 쓰기 전에 clean exact source, 지정 remote의 origin/main 일치, 유효 SemVer 및 신규 immutable final refs, 실제 #281 release 필수 시험 PASS, #283의 검증된 복구·이전 버전 호환 증거, 기존0.61.0 세 digest/latest baseline, 패키지 visibility/repo 연결 및 실제 credential 권한을 확인한다. 현재 관측 Main ruleset26731716은 PR/check 필수이며 Actions14개 active다. #283/#282 로컬 시험 뒤 Root가 설정을 전환·readback하기 전 Main push를 하지 않는다. CLI는 관리자 설정을 변경하지 않는다.
+R282-2: 모든 원격 쓰기 전에 clean exact source, 지정 remote의 origin/main 일치, 유효 SemVer 및 신규 immutable final refs, 실제 #281 release 필수 시험 PASS, #283의 검증된 복구·이전 버전 호환 증거, 기존0.61.0 세 digest/latest baseline, 패키지 visibility/repo 연결 및 실제 credential 권한을 확인한다. 최초 설계 당시 Main ruleset26731716은 PR/check 필수이며 Actions14개 active였다. 실제 cutover 후 repository Actions 및 workflows15개는 disabled, Main ruleset26731716은 deletion/non-fast-forward 보호만 유지하며 Tag ruleset26731135는 보존한다. 매 실행의 최신 readback을 확인한 후에만 Main push를 수행한다. CLI는 관리자 설정을 변경하지 않는다.
 
 R282-3: Owner는 구체적 releaseVersion + 정확 git SHA + 세 role manifest digest + candidate/final ref + baseline + 증거 hash가 제시된 후 실제 출고 GO를 준다. 일반 구현/준비 승인은 이 digest 승인과 다르다. CLI 승인 입력은 실제 대화/Owner 기록에 결합한 로컬 audit record이며 자작 `approved=true`나 GO 문자열·checksum을 Owner 신원/서명으로 간주하지 않는다. Root가 실제 승인 기록을 보존하고 승인된 정확 plan만 실행한다. 확인 가능한 구체 plan 전 승인 질문을 만들지 않는다.
 
@@ -68,3 +68,15 @@ Receipt 필드: schemaVersion, issueIds, exact sourceCommit/tree/version, tested
 ### Manager repair review — accepted for fresh source preparation
 
 Developer의 실제 상속 transport 회귀가 수정 전 `CA_LOCAL_BLOB_CHANGED`로 실패하고 수정 후 PASS한 근거와 canonical binding/role별 descriptor·path·bytes 검사를 검토했다. 독립 QA는 같은 길이 caller/canonical byte 변조의 쓰기 전 거부, 원본 graph 불변, Pending의 durable HALT·재실행 거부·CLI 비밀 비출력을 확인했다. QA focused 13/13 및 기존 OCI 349/349 PASS, 상세 결과와 실제 모델은 TestReport U282-QA-SHARED-20261111에 기록했다. 수정 구현을 Root의 새 commit/source freeze·3-role build·전체 release·compatibility 검증으로 넘긴다. 기존 HALT 재개/새 GHCR 쓰기 승인이나 L07 완료가 아니며, 새 SHA와 새 세 digest/plan에 대한 실제 Owner GO가 필요하다.
+
+
+## Manager 최종 게시 수용 — 2026-11-11
+
+Manager `gpt-6-astra`는 Root의 실제 실행 영수증과 독립 QA `gpt-6-luna`의 [U282-QA-ACTUAL-RELEASE-20261111](TestReport.md) 결과를 검토해 **AC282-7 실제 candidate→final 이미지 게시와 AC282-8 범위 보전을 수용**한다. source는 `a53921a180d77861b232fb98aa6989b678aca8ac`, tree는 `d09f1e68d820172c030f51520cd9992fd98a7174`, version은 `0.61.1`이다. 앞선 구현·음성 회귀 결과와 새 exact-source release 23/23·3-role build·실제 sealed baseline compatibility 근거는 [IssueEvidence/282](IssueEvidence/282.md)에 연결한다.
+
+- 실제 사용자 응답 `승인합니다`는 plan SHA256 `e428b571f59b5d60db5319f8e74cfdf78b33b233753b8c0252865542518a584b`의 정확 source·세 digest·candidate/final 범위에 결합됐다. Candidate receipt `135f9ce536df238a876008ab354539735d02efa03eff0f1d7bb752cbbd81d2a0`는 `CANDIDATE_VERIFIED`, final receipt `5d6e386fddd159e9cc629f2b6887f9d5627db8da1880ac08b4965224fe02cdfa`는 `COMPLETE`이며 두 journal의 terminal `VERIFIED`와 hash chain을 QA가 독립 확인했다. Owner 대화 기록과 checksum은 암호학적 서명/신원 증명이 아니다.
+- Root 실제 CLI는 두 단계에서 승인된 세 top-index digest의 전체 raw graph byte 검증·정확 digest pull·격리 runtime smoke 및 네 historical baseline 불변을 통과했다. QA는 별도로 현재 원격 여섯 ref의 raw top index/child manifest/config와 layer descriptor를 읽어 source/version/platform/digest를 검증했다. QA의 metadata 검증을 full layer 재다운로드나 runtime 재실행으로 표현하지 않는다.
+- 현재 Actions disabled·15 workflows disabled·해당 source Actions run0, Main deletion/non-fast-forward 보호와 Tag 보호 유지, 기존 Worker ID/image/RW mount 및 원본 checkout 사용자 수정 보존을 확인했다. 첫 `5ec9776` 시도의 HALT는 별도 실패 이력으로 보존하며 새 시도를 그 재개로 간주하지 않는다.
+- 이번 수용은 이미지 게시 범위다. host writer exclusion `NOT_PROVEN`, 실제 사용자 login/auth·off-host backup/key custody `NOT_RUN`, READY Scene `NOT_EXERCISED`는 남는다. 운영 배포/rollback·전체 DR 수용·Issue 종료는 수행하거나 승인하지 않았다. #229/#231 기존 보호를 해제하지 않는다.
+
+Root가 이 결과의 docs-only 후속 commit/push를 맡는다. 후속 문서 commit은 게시 이미지의 source SHA를 대체하지 않으며 새 이미지 재빌드·게시를 유발하지 않는다.
