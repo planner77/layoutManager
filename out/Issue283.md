@@ -1,6 +1,6 @@
 # Issue #283 — 로컬 복구점·격리 복원 계약
 
-2026-11-11 Manager 설계·로컬 구현 수용. 상태: 독립 QA의 기존 high-risk 17/17 및 후속 저장소 경계 회귀 Node 5/5·격리 Docker 1/1 보고를 검토하여 로컬 도구를 제한부 수용했다. 실제 운영 capture/restore/probe는 아직 실행 전이며 아래 AC의 운영 실증을 완료로 간주하지 않는다. 상위 #279 정책에 따라 PR/Actions 호출0. #281 검증 뒤 #282 출고의 복구 선행조건이며 실제 운영 rollback/upgrade/삭제/flags 변경은 범위 밖이다. 본 문서는 요구·설계·AC 정본, 실제 결과는 TestReport 및 IssueEvidence/283에 구분 기록한다.
+2026-11-11 Manager 설계·로컬 구현 수용. 상태: 독립 QA의 기존 high-risk 17/17 및 후속 저장소 경계 회귀 Node 5/5·격리 Docker 1/1 보고를 검토하여 로컬 도구를 제한부 수용했다. 후속 Root 실제 운영 capture·새 격리 restore/verify/probe·설정 roundtrip도 PASS다. 실제 증거는 IssueEvidence/283·TestReport를 따른다. 외부 보관·실제 사용자 auth NOT RUN, host writer 부재 NOT PROVEN, READY 자료 없음의 한계가 남아 전체 DR/Issue 종료 수용과 구분한다. 상위 #279 정책에 따라 PR/Actions 호출0. #281 검증 뒤 #282 출고의 복구 선행조건이며 실제 운영 rollback/upgrade/삭제/flags 변경은 범위 밖이다. 본 문서는 요구·설계·AC 정본, 실제 결과는 TestReport 및 IssueEvidence/283에 구분 기록한다.
 
 ## 요구와 현재 관측
 

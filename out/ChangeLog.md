@@ -1,6 +1,11 @@
+## Unreleased — Issue #282 수동 출고 도구 (2026-11-11)
+
+- 로컬3-role build/OCI 검증·현재 source의 로컬 시험/복구/후보 호환성·Owner 대화 승인 기록·durable publish journal·read-only reconcile 경로를 추가한다. 구현/QA/실제 게시의 상태는 IssueEvidence/282를 따른다.
+- 새 정책은 PR/Actions0이며 Main 설정 전환과 비강제 push, 실제 GHCR3digest 출고는 각각 실제 readback 후 판정한다. 업무 Schema 및 앱0.61.1을 유지한다.
+
 ## Unreleased — Issue #283 복구 준비 (2026-11-11)
 
-- 백업·암호화·일관 캡처·격리 복원 및 release baseline 준비를 구현했다. 합성 Docker/관련 독립 회귀는 통과했으며 실제 운영 복구점은 준비 중이다. 요구/AC는 Issue283, 실제 실행은 IssueEvidence/283·TestReport를 따른다.
+- 백업·암호화·일관 캡처·격리 복원 및 release baseline 준비를 구현했다. 합성 Docker/관련 독립 회귀는 통과했으며 실제 운영0.61.0의 암호화 capture·새 격리 복원·App/Worker probe·설정 roundtrip도 통과했다. 요구/AC는 Issue283, 실제 실행은 IssueEvidence/283·TestReport를 따른다.
 - 실제 운영 복구점·복원·외부 장애 도메인 보관은 각 시험 후 별도로 판정하며 미실행을 성공으로 표시하지 않는다. 앱0.61.1/Schema 유지.
 
 ## Unreleased — Issue #281 로컬 검증·실패 증거 (2026-11-11)

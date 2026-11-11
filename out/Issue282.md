@@ -1,6 +1,6 @@
 # Issue #282 — 로컬 3-role GHCR 출고 계약
 
-2026-11-11 Manager DESIGN ONLY. 구현/검증/게시 미실행. 상위 #279 PR0/Actions0 정책, #281 로컬 검증과 #283 복구 증거를 사용한다. 과거 CI/서명 workflow의 성공·승인을 신규 출고 권한으로 승계하지 않는다. 요구 원문: GitHub #282. 운영 배포·rollback·Git tag/latest 변경은 이 CLI 범위 밖이다.
+2026-11-11 Manager 설계·구현 검토 및 focused 독립 QA 완료. Developer의 로컬 CLI 구현은 존재하며 실제 시험 결과는 [IssueEvidence/282](IssueEvidence/282.md)를 따른다. exact frozen source 전체 release 검증·후보 3-role build/compatibility·실제 GHCR 게시는 아직 미실행이다. 상위 #279 PR0/Actions0 정책, #281 로컬 검증과 #283 복구 증거를 사용한다. 과거 CI/서명 workflow의 성공·승인을 신규 출고 권한으로 승계하지 않는다. 요구 원문: GitHub #282. 운영 배포·rollback·Git tag/latest 변경은 이 CLI 범위 밖이다.
 
 ## 요구·상태
 
@@ -51,3 +51,7 @@ Receipt 필드: schemaVersion, issueIds, exact sourceCommit/tree/version, tested
 | AC282-8 | L08 scope | PR/Actions0·secret0·Git tag/latest/운영 변경0, #229/#231 기존 보호 유지 |
 
 코드·synthetic 시험·격리 registry proof는 실제 GHCR 출고 성공을 대신하지 않는다. Manager가 Developer 완료를 검토한 뒤 QA가 독립 시험한다. Root가 최종 commit/source 검증·#279 cutover·Main push를 맡고, exact3digest 실제 Owner GO 이후에만 원격 출고한다. 설정 전환 권한은 현재 gh/API와 repository admin 실제 readback으로 확인하며 과거 문서의 도구 PATCH 부재를 영구 기술 차단으로 승계하지 않는다.
+
+## Manager 판정 — 2026-11-11 소스 동결 전
+
+독립 QA의 신규 OCI/publisher 11건·기존 verifier CLI 11건 PASS, 실제 sealed #283 baseline 재복원/검증/probe PASS 및 dirty plan의 UNREADY를 검토했다. 구현을 **Root의 clean source 동결·정확 3-role build·현재 source 전체 release profile·후보 compatibility 단계 진행에 수용**한다. 실제 근거는 [IssueEvidence/282](IssueEvidence/282.md)의 U282-QA 항목이다. 이는 L07 실제 게시 수용이나 Owner 출고 GO가 아니며 현재 SHA의 전체 release 시험/후보 build·upgrade/원격 candidate·final은 미실행이다. 이후 Root가 실제 결과와 cutover·push를 별도 판정하고, 구체 세 digest가 확정된 plan에 대한 Owner GO 뒤에만 GHCR를 쓴다. 공개 후속 결과는 동결 소스를 변경하지 않도록 별도 docs commit에 기록한다.

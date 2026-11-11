@@ -1,3 +1,9 @@
+## #282 로컬 3-role 출고 (2026-11-11)
+
+`release_local.py`는 source/proof·승인·단계 orchestration, `release_local_oci.py`는 raw OCI graph 검증, `release_local_registry.py`는 고정 GHCR transport·durable journal, `release_local_compat.py`는 소유 clone 호환성 시험을 담당한다. `verify_local_recovery.py`는 #283 locator 입력의 PASS를 신뢰하지 않고 sealed bytes·동일 helper fingerprint·fresh restore를 재검증한다. 기존 raw graph/transport 검사 재사용과 경계의 정본은 [Issue282](Issue282.md). 앱/DB schema 변경 없음.
+
+---
+
 ## #283 로컬 복구 설계 (2026-11-11)
 
 recovery-local은 기존 G7/OR58/RR2 깊은 검사 모듈을 조합하는 로컬 orchestration이며 UI·업무 DB schema를 변경하지 않는다. sealed plan/source identity·writer drift·fresh destination/secret 경계를 따른다. 요구·설계·AC·시험 정본: [Issue283](Issue283.md). PR/Actions 호출0, 실제 결과는 TestReport/IssueEvidence에 기록한다.

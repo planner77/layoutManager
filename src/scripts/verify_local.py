@@ -137,7 +137,7 @@ def command(argv: list[str], cwd: str = "src", required: bool = True, why: str =
 
 def manifest(profile: str, risks: list[str], paths: list[str], fixture: str | None = None,
              selected_unit: list[str] | None = None, selected_e2e: list[str] | None = None,
-             docs_review: str | None = None) -> list[dict]:
+             docs_review: str | None = None, recovery_input: str | None = None) -> list[dict]:
     items: list[dict] = []
     def add(id: str, argv: list[str], why: str, cwd: str = "src", timeout: int = 900):
         item = command(argv, cwd, True, why, timeout)
@@ -180,7 +180,10 @@ def manifest(profile: str, risks: list[str], paths: list[str], fixture: str | No
             add("worker-release-contract", ["npx", "vitest", "run", "tests/unit/scene-cpu-release-contract.test.ts"], "existing worker packaging and security contract", timeout=300)
         if any("verify_local" in p for p in paths):
             add("cli-contract", ["python3", "-m", "unittest", "tests/test_verify_local.py"], "CLI risk, evidence and failure contract", timeout=300)
-        if "recovery" in risks:
+        if profile == "release" or any("release_local" in p for p in paths):
+            add("release-local-contract", ["npm", "run", "test:release-local"],
+                "local three-role release and registry journal contract", timeout=300)
+        if "recovery" in risks or profile == "release":
             add("recovery-contract", ["npm", "run", "test:recovery-local"], "authenticated archive and local recovery contract", timeout=300)
             add("recovery-docker", ["npm", "run", "test:recovery-local:docker"], "disposable G7 volume capture and isolated restore", timeout=600)
         add("build", ["npm", "run", "build"], "production build", timeout=1800)
@@ -212,9 +215,13 @@ def manifest(profile: str, risks: list[str], paths: list[str], fixture: str | No
             add("scene-worker-integration", ["npx", "vitest", "run", "tests/integration/g7-scene-worker-upgrade-recovery.test.ts", "tests/integration/scene-cpu-worker-real-g7.test.ts"], "real worker persistence/recovery integration", timeout=1200)
             add("scene-worker-oci", ["bash", "src/tests/oci/scene-cpu-worker-proof.sh", "--local"], "disposable actual OCI worker proof", cwd=".", timeout=1800)
         if profile == "release":
-            item = command([], required=True, why="external prior-version baseline required for upgrade evidence")
-            item.update(id="external-baseline-upgrade", missing="external baseline not provided")
-            items.append(item)
+            if recovery_input:
+                add("external-baseline-upgrade", ["python3", "scripts/verify_local_recovery.py", "--input", recovery_input],
+                    "independent sealed previous-release restore and baseline clone probe; candidate upgrade is release-local gate", timeout=1200)
+            else:
+                item = command([], required=True, why="sealed prior-version baseline restore required")
+                item.update(id="external-baseline-upgrade", missing="--recovery-input")
+                items.append(item)
     if fixture:
         add("fixture-check", ["python3", "scripts/verify_local_fixture.py", fixture], "disposable FAIL/fix/PASS proof", timeout=30)
     if profile in ("docs", "standard"):
@@ -290,6 +297,32 @@ def metadata(state: dict, profile: str, risks: list[str]) -> dict:
 def safe_target(path: Path) -> None:
     if path.is_symlink() or any(parent.is_symlink() for parent in path.parents if parent != Path("/")):
         raise ValueError("symlink evidence/log path rejected")
+
+
+def append_private_release(directory: str, run: dict) -> str:
+    target = Path(directory)
+    safe_target(target)
+    if not target.is_absolute() or not target.resolve().is_relative_to((ROOT / "data").resolve()):
+        raise ValueError("private release proof must be below ignored data/")
+    target.mkdir(parents=True, mode=0o700, exist_ok=True)
+    info = target.stat()
+    if info.st_uid != os.getuid() or info.st_mode & 0o077:
+        raise ValueError("private release proof directory unsafe")
+    result = target / (run["id"] + ".json")
+    safe_target(result)
+    raw = json.dumps(run, ensure_ascii=False, sort_keys=True, indent=2).encode()
+    fd = os.open(result, os.O_CREAT | os.O_EXCL | os.O_WRONLY | os.O_NOFOLLOW, 0o600)
+    try:
+        os.write(fd, raw)
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+    directory_fd = os.open(target, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        os.fsync(directory_fd)
+    finally:
+        os.close(directory_fd)
+    return str(result)
 
 
 def append_evidence(issue: str, run: dict, logs: dict[str, str]) -> None:
@@ -461,6 +494,7 @@ def run_case(item: dict, run_id: str, secrets: list[str], fingerprint: str) -> d
         with log.open("x", encoding="utf-8") as stream:
             stream.write(redact(output, secrets))
         result["log"] = str(log.relative_to(ROOT))
+        result["logSha256"] = sha(log.read_bytes())
     result["ended"] = utc()
     return result
 
@@ -476,6 +510,8 @@ def main() -> int:
     parser.add_argument("--unit", action="append", default=[], help="explicit affected existing tests/integration or tests/unit .test.ts")
     parser.add_argument("--e2e", action="append", default=[], help="explicit affected existing tests/e2e/*.spec.ts")
     parser.add_argument("--docs-review", help="named reviewer plus short policy/content review conclusion")
+    parser.add_argument("--recovery-input", help="private #283 locator for independent sealed baseline restore")
+    parser.add_argument("--private-run-dir", help="release-only ignored private evidence directory; no tracked Markdown write")
     parser.add_argument("--query", help="lookup Issue number, module, or error code")
     parser.add_argument("--run-id", help="failed run ID for append-only interpretation")
     parser.add_argument("--cause")
@@ -484,6 +520,8 @@ def main() -> int:
     parser.add_argument("--retest", default="pending")
     parser.add_argument("--root", help="isolated test fixture repository root")
     args = parser.parse_args()
+    if args.private_run_dir and (args.profile != "release" or args.mode != "run"):
+        parser.error("--private-run-dir requires release run")
     if args.root:
         global ROOT, SRC, EVIDENCE, LOGS
         ROOT = Path(args.root).resolve(strict=True)
@@ -530,7 +568,8 @@ def main() -> int:
             for rel in choice:
                 if not rel.startswith(prefix) or (choice is args.unit and not rel.startswith(("tests/unit/", "tests/integration/"))) or not rel.endswith(suffix) or not re.fullmatch(r"[A-Za-z0-9_./-]+", rel) or ".." in Path(rel).parts or not (SRC / rel).is_file():
                     raise ValueError("selected test must be an existing bounded in-repo test: " + rel)
-        items = manifest(args.profile, risks, start_state["paths"], args.fixture_check, args.unit, args.e2e, args.docs_review)
+        items = manifest(args.profile, risks, start_state["paths"], args.fixture_check, args.unit, args.e2e,
+                         args.docs_review, args.recovery_input)
         if not items:
             raise ValueError("no required gates selected")
         if args.mode == "plan":
@@ -563,9 +602,13 @@ def main() -> int:
         status = "PASS" if not stale and any(c["required"] and c["status"] == "PASS" for c in cases) and all(c["status"] == "PASS" for c in cases if c["required"]) else "FAIL"
         run = {"id": run_id, "issue": args.issue, "started": started, "ended": utc(), "start": start,
                "end": end, "stale": stale, "status": status, "cases": cases}
-        append_evidence(args.issue, redact_object(run, secrets), {})
+        if args.private_run_dir:
+            evidence = append_private_release(args.private_run_dir, redact_object(run, secrets))
+        else:
+            append_evidence(args.issue, redact_object(run, secrets), {})
+            evidence = f"out/IssueEvidence/{args.issue}.md"
         print(json.dumps({"run": run_id, "status": status, "stale": stale,
-                          "evidence": f"out/IssueEvidence/{args.issue}.md"}))
+                          "evidence": evidence}))
         return 0 if status == "PASS" else 1
     except (ValueError, OSError, subprocess.TimeoutExpired, KeyboardInterrupt) as exc:
         message = redact(str(exc) or exc.__class__.__name__, secrets)
@@ -585,7 +628,10 @@ def main() -> int:
                 run = {"id": run_id, "issue": args.issue, "started": started, "ended": utc(),
                        "start": start, "end": {"source": {"fingerprint": "UNAVAILABLE"}},
                        "stale": True, "status": "FAIL", "cases": cases}
-                append_evidence(args.issue, redact_object(run, secrets), {})
+                if args.private_run_dir:
+                    append_private_release(args.private_run_dir, redact_object(run, secrets))
+                else:
+                    append_evidence(args.issue, redact_object(run, secrets), {})
             except (ValueError, OSError) as write_error:
                 print("verify:local: evidence write failed: " + redact(str(write_error), secrets), file=sys.stderr)
                 return 2

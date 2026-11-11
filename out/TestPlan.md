@@ -1,3 +1,9 @@
+## #282 로컬 3-role 출고 (2026-11-11)
+
+TP-282: [Issue282](Issue282.md)의 L01–L08/AC282-1–8을 따른다. focused source/proof·OCI·publisher 음성 회귀와 실제 sealed baseline replay를 먼저 독립 QA한다. Root의 clean exact source 3-role build, 전체 release profile, 후보 clone compatibility 및 실제 Owner GO 이후 candidate/final readback은 별도 단계이며 선행 synthetic PASS로 대체하지 않는다. 결과는 [IssueEvidence/282](IssueEvidence/282.md)와 TestReport에 기록한다.
+
+---
+
 ## #283 로컬 복구 설계 (2026-11-11)
 
 TP-283: T01–T08 및 AC283-1–8의 정본을 따른다. synthetic 검증과 실제 운영 capture/fresh restore/compatibility를 별도 판정하며 필수 NOT RUN은 완료로 승계하지 않는다. 요구·설계·AC·시험 정본: [Issue283](Issue283.md). PR/Actions 호출0, 실제 결과는 TestReport/IssueEvidence에 기록한다.

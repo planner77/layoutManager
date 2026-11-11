@@ -1,6 +1,6 @@
-## #283 복구 체계 전환 작업 (2026-11-11, 로컬 QA 통과·실제 복구점 준비)
+## #283 복구 체계 전환 작업 (2026-11-11, 로컬 QA·실제 로컬 복원 통과)
 
-요구·실행 경계는 [Issue283](Issue283.md), 실제 단계별 증거는 [IssueEvidence/283](IssueEvidence/283.md)를 정본으로 사용한다. 현재 읽기 전용 관측은 Worker1개 실행/App 컨테이너 없음이다. 아래 과거 App-running 기록은 당시 실행 상태이며 이번 작업의 재시작 근거가 아니다. 정확 inventory와 계획을 확인하고 도구 검증/Manager·QA 후 root가 실제 capture를 수행한다. 최초 running writer만 일시 정지·동일 ID 재개하며 missing/stopped App을 자동 시작하지 않는다.
+요구·실행 경계는 [Issue283](Issue283.md), 실제 단계별 증거는 [IssueEvidence/283](IssueEvidence/283.md)를 정본으로 사용한다. 현재 읽기 전용 관측은 Worker1개 실행/App 컨테이너 없음이다. 아래 과거 App-running 기록은 당시 실행 상태이며 이번 작업의 재시작 근거가 아니다. 정확 inventory와 계획을 확인하고 도구 검증/Manager·QA 후 root가 실제 capture를 수행한다. 최초 running writer만 일시 정지·동일 ID 재개하며 missing/stopped App을 자동 시작하지 않는다. 실제 운영0.61.0의 암호화 capture·격리 restore/verify·App/Worker probe와 설정 roundtrip을 통과했다. 보존 위치는 private 운영 proof에 기록했으며 외부 보관/auth/host writer 한계는 IssueEvidence/283을 따른다.
 
 DB와 WAL/SHM·CAD·Scene·G7 및 private 설정을 한 복구점에 결합하고, 원본 read-only 캡처와 새 소유 volume의 복원 검증을 구분한다. 설정/원본은 private 암호화 보관하고 공개 원장에 내용·계정·키·개별 CAD 지문을 넣지 않는다. 실제 운영 rollback/배포·원본 덮어쓰기·보관 삭제·자동 스케줄은 별도다. 외부 보관 경로 지정 전에는 로컬 복원과 외부 장애 도메인 수용을 구분한다. #282 이미지 출고 전에는 검증된 로컬 baseline과 후보 image 호환성 시험을 연결한다.
 
@@ -12,11 +12,25 @@ DB와 WAL/SHM·CAD·Scene·G7 및 private 설정을 한 복구점에 결합하�
 
 복원은 `restore --plan <file> --out <backup-directory> --key <key-file> --destination <fresh-owned-volume> --execute`, 원본 동등성은 같은 입력의 `verify`, 앱/Worker 실행은 이후 `probe ... --execute`다. probe는 동등성 검사 뒤 격리 복제본만 변경한다. `settings ... --destination-dir <fresh-private-directory> --execute`는 승인 설정·Compose·container runtime을 private0600 파일로 추출한다. 출력/키·개별 데이터 지문은 Git에 넣지 않는다. 실제 로그인은 승인 credential 없으면 NOT RUN, READY 자료가 없으면 NOT_EXERCISED다. host writer 부재는 Docker inventory만으로 증명하지 않으며 외부 보관도 별도 미완료다.
 
+## #282 로컬 수동 3-role 출고
+
+요구·AC는 [Issue282](Issue282.md), 실제 상태는 [IssueEvidence/282](IssueEvidence/282.md)를 따른다. `npm --prefix src run release:local -- plan`이 읽기 전용 dry-run이다. dirty/unpublished 개발본은 미충족 조건과 예상 refs를 보여주며 출고 준비 성공으로 간주하지 않는다. 검증 대상은 로컬 branch 이름이 아니라 정확 source SHA/tree/version 및 fresh remote Main과의 일치다.
+
+`build --output-dir <fresh-private-directory>`는 정확 git archive에서 linux/amd64 App/Migrator/CPU Worker를 만들고 UID/native SQLite·OCI 원본 바이트를 검증한다. runtime 데이터와 비밀을 build context에 넣지 않는다. 결과 `build.json`의 Docker image ID와 OCI config digest가 같아야 하며, 최종 승인 digest는 OCI top descriptor다. 내부 platform manifest/config digest도 별도로 보존한다.
+
+정확 source를 동결한 뒤 로컬 검증기를 `--profile release --recovery-input <private283proof> --private-run-dir <absolute-ignored-data-directory>`로 실행한다. `--base`에는 실제 분석 기준 SHA를, `--issue`에는 해당 Issue를 지정한다. 변경 영향에 따라 `--risk db --risk auth --risk scene --risk worker` 등을 추가한다. 이 모드는 실제 실행 로그와 hash가 있는 private JSON을 만들고 tracked MD는 쓰지 않는다. 공개 요약은 게시 source와 혼동하지 않도록 후속 문서 기록으로 분리한다.
+
+`preflight --build-record <build.json> --verify-run <private-run.json> --recovery-input <private283proof> --output-dir <fresh-private-directory>`는 현재 source의 필수 시험/로그, 원래 봉인 archive의 실제 복원, 현재 후보의 등록 G7 호환 edge·업무/파일 보존·App/Worker 실행, package 연결/visibility와 실제 baseline/신규 ref 부재를 검증한다. 이전 PASS JSON이나 caller status를 새 실행으로 승계하지 않는다. 필요한 token은 로컬 비밀 저장소에서 해당 게시 프로세스의 `RELEASE282_GHCR_TOKEN` 환경으로만 전달한다. 명령 인자·로그·앱/빌드 환경에 값이 들어가서는 안 된다.
+
+이 검증 후 정확 version/source SHA/세 OCI digest/candidate·final refs/baseline/증거 hash를 Owner에게 제시한다. 실제 대화의 승인을 Root가 private audit record로 기록한다. 필드는 `format=RELEASE282-OWNER-GO-V1`, `conversationRef`, 실제 `recordedBy`, `verbatimOwnerReply`, `presentedPlanSha256`, `sourceCommit`, `version`, `roleDigests`, `candidateRefs`, `finalRefs`다. 이는 운영자가 기록한 실제 대화 추적이며 암호학적 신원·서명 증명으로 표시하지 않는다. 일반 준비 요청·자작 approved flag·checksum은 출고 GO가 아니다.
+
+승인된 동일 계획에서 `candidate --preflight-record <preflight.json> --owner-record <private-owner-go.json> --execute` 후 세 remote graph/readback·pull smoke·baseline 불변을 확인하고, 같은 입력으로 `final ... --execute`를 실행한다. 두 단계 모두 공유 publisher lock과 새 durable journal을 사용한다. 기존 ref·attempt/journal·PARTIAL/UNKNOWN/HALT는 자동 이어쓰기/재시도·overwrite·delete로 처리하지 않는다. `reconcile --preflight-record <preflight.json>`만으로 실제 원격 상태를 읽고 다음 판단을 별도로 한다. 첫 성공도 immutable receipt와 최종 baseline 확인 전 완료가 아니다. 기존0.61.0·latest와 Git v* 태그는 변경하지 않으며 실제 운영 배포/rollback은 별도다.
+
 ## 현재 운영 정책: #279 / #281 로컬 검증 (2026-11-11)
 
 신규 변경의 검증은 [Issue281](Issue281.md)의 단일 로컬 CLI로 수행한다. 실행 방법·위험별 필수 시나리오·실패/NOT RUN 중단·비밀 마스킹·로그와 MD/JSON 출력·회귀 조회는 그 문서를 정본으로 사용한다. 아래 PR/Main CI와 Finalizer 운영 방법은 이전 정책의 역사 참고이며 새 변경에서 실행하지 않는다.
 
-직접 Main push 전 관련 CI/Release Actions가 비활성이고 PR/required status 규칙이 제거되었는지 실제 API/UI로 확인한다. 현재 확인된 설정은 [Issue 281 증거](IssueEvidence/281.md)에 기록한다. 설정 미전환 시 push를 중단하며 PR 생성/CI dispatch로 대체하지 않는다. 비 fast-forward와 branch/tag 삭제 보호는 유지한다. GHCR 게시의 정본은 후속 #282이며 로컬 검증 성공만으로 기존 image/tag/latest 또는 운영 DB/CAD/Scene/Volume을 변경하지 않는다. #283 일관 복구점·격리 복원은 별도 조건이다.
+직접 Main push 전 관련 CI/Release Actions가 비활성이고 PR/required status 규칙이 제거되었는지 실제 API/UI로 확인한다. 착수 시 설정은 [Issue 281 증거](IssueEvidence/281.md), 후속 전환·출고의 실제 상태는 [Issue282 증거](IssueEvidence/282.md) 및 private readback receipt에 기록한다. 설정 미전환 시 push를 중단하며 PR 생성/CI dispatch로 대체하지 않는다. 비 fast-forward와 branch/tag 삭제 보호는 유지한다. GHCR 게시의 정본은 후속 #282이며 로컬 검증 성공만으로 기존 image/tag/latest 또는 운영 DB/CAD/Scene/Volume을 변경하지 않는다. #283 일관 복구점·격리 복원은 별도 조건이다.
 
 ### 로컬 실행 예시
 

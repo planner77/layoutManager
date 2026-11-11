@@ -3532,3 +3532,10 @@ Latest Main initially `870d3cf0a4f8e42d2e5c4132076d3b7ab9c52089`; confirmed PR b
 - Manager 코드 검토: 재개 mount drift, timeout 소유 정리, manifest/image/source 결합, 캡처 정지 시간 구간 보완을 확인했다. 실제 운영 복구/외부 보관/실사용자 로그인은 아직 NOT RUN.
 
 - Issue #283 후속 QA: settings 목적지의 symlink 부모를 통한 plaintext 출력이 합성 fixture에서 재현됐다. 모든 private write 경로의 real parent/소유자/0700/신규 대상 검사를 추가했고 독립 Node5/5·Docker1/1 재시험 PASS. S3 locator 및 CAD/Scene 참조 무결성 공백은 코드 검토에서 발견·거부/검증으로 보완했다. 실제 운영 복구 성공과 구분한다.
+
+- Issue #283 보완 commit `9ffc1ce792aa857940f22f0008f77d74486e0660`: 앞선 합성 capture/stdin/probe 및 symlink private-path 결함을 수정한 실제 commit이다. 독립 집중 회귀 Node5/5·Docker1/1 PASS와 후속 실제 운영 capture→격리 restore/verify/probe PASS를 [Issue283 증거](IssueEvidence/283.md)에 연결한다. 실제 로그·암호화 backup/key는 Git 제외 private 산출물로 보존하며 offhost/auth/host writer 한계는 남아 있다.
+
+## 2026-11-11 — #279/#282 / 로컬 인증 사전 관측
+
+- 지정 환경 파일의 Git credential은 실제 GitHub401/GHCR403으로 유효하지 않았다. `.env`의 변수명·값을 변경하지 않았고 유효하지 않은 값을 publish proof로 사용하지 않는다. 기존 로컬 GitHub CLI 저장소의 동일 Owner credential은 API200/repo 권한, 기존 Docker GHCR 저장소의 동일 Owner credential은 API200/write:packages·pull,push token exchange200을 확인했다. 토큰/헤더/저장소 원문은 공개하지 않으며 코드/앱 환경에 전달하지 않는다. 지정 remote URL과 별개로 유효한 기존 credential을 필요한 Git/게시 프로세스에만 사용한다.
+- Root 진단에서 GHCR bearer를 JWT로 가정한 파싱은 IndexError였다. GHCR의 opaque bearer는 그러한 파싱으로 권한을 판단하지 않고 GitHub의 실제 scope/API·고정 저장소 token exchange 결과를 구분해 관측했다. 이는 게시 구현 시험 실패가 아니며 실제 registry write0이다. 기존 자격 증명의 권한을 새로 부여하거나 인증 설정을 변경하지 않았다.

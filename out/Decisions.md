@@ -1,3 +1,9 @@
+## #282 로컬 3-role 출고 (2026-11-11)
+
+ADR-282: #279 PR0/Actions0 정책에 맞는 로컬 출고를 사용하며 과거 protected workflow/서명/댓글 승인 요구를 신규 출고에 승계하지 않는다. 실제 대화 Owner GO를 정확 plan에 결합한 로컬 audit record는 암호학적 신원 증명이 아니다. 출고 소스와 ignored runtime proof를 분리하고 공개 결과는 후속 docs commit으로 기록한다. 로컬 sealed baseline·후보 compatibility는 게시 필수이며 외부 backup/key custody·실제 사용자 로그인·host writer 배제의 미완료는 별도 운영/DR 한계로 유지한다. 상세 정본: [Issue282](Issue282.md).
+
+---
+
 ## #283 로컬 복구 설계 (2026-11-11)
 
 ADR-283: 이전0.58 고정 운영 도구를 그대로 사용하거나 CI 승인을 모방하지 않는다. 실제 running writer만 일시 정지/재개하고 missing App은 시작하지 않는다. Secret 설정은 별도 암호화·key custody 정책으로 보존하며 운영 rollback/삭제/upgrade는 제외한다. 요구·설계·AC·시험 정본: [Issue283](Issue283.md). PR/Actions 호출0, 실제 결과는 TestReport/IssueEvidence에 기록한다.

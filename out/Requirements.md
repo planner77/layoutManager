@@ -1,3 +1,9 @@
+## #282 로컬 3-role 출고 (2026-11-11)
+
+R282-1–4: 정확 source/version/3-role digest와 현재 필수 시험·실제 sealed 복구 baseline·후보 호환성을 결합한 수동 출고. 구체 plan에 대한 실제 Owner GO 전 원격 쓰기0, partial/unknown 이후 자동 재개0. 상세 요구·AC 정본은 [Issue282](Issue282.md); 로컬 synthetic PASS와 실제 출고를 구별한다.
+
+---
+
 ## #283 로컬 복구 설계 (2026-11-11)
 
 R283-1–4 및 AC283-1–8: 실제 저장 위치/설정 분리 inventory, 일관 capture, 새 소유 volume 복원, 정확 image/schema 호환과 rollback 경계. 요구·설계·AC·시험 정본: [Issue283](Issue283.md). PR/Actions 호출0, 실제 결과는 TestReport/IssueEvidence에 기록한다.
