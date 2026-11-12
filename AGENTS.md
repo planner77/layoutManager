@@ -10,6 +10,10 @@
 
 2026-11-11 실제 수용: repository Actions disabled·workflows15개 disabled, Main ruleset `26731716`의 deletion/non-fast-forward 및 Tag ruleset `26731135` 보호를 유지했다. PR/check 제거 후 비강제 Main push·source Actions run0을 확인했고, 이미지 source `a53921a`에서 로컬23/23·실제 복구/후보 호환·Owner GO·GHCR0.61.1 세 역할 candidate/final readback·격리 pull smoke를 완료했다. [Issue282 증거](out/IssueEvidence/282.md)가 정본이다. 이전5ec HALT/실패 원장은 보존한다. 후속 docs-only commit은 이미지 source와 구분하고 기존0.61.0/latest/Git v* tag·운영 배포/DB/CAD/flags를 자동 변경하지 않는다. 실제 사용자 auth·외부DR·host writer/READY 한계는 열린 상태이며 매 실행 전 최신 보호 설정을 재확인한다.
 
+## #215 / #206 구현 선행 설계 (2026-11-12)
+
+[Issues215-206](out/Issues215-206.md)는 로그인 상태 표시·Three DXF Canvas 배경 설정의 요구/ADR/AC 정본이다. Manager 선행 설계 후 Developer 순차 구현, 독립 QA, Manager 인수 및 root commit/push 순서를 따른다. 후보0.62.0, 현재 시험 NOT RUN. 상단 #279/#281 PR0·Actions0 정책을 유지한다.
+
 ## #273 / PR #278 — PR CI #741 실패: P2 nonce 강화 후 잔존 synthetic 실행 ID 테스트 계약 보정 (2026-11-09)
 
 - **실제 CI 확인:** [PR CI #741/run42572495438](https://github.com/planner77/layoutManager/actions/runs/42572495438), exact HEAD `1d3331addbc6a39b09f02afa2b9832d565725ceb`, attempt1, completed FAILURE. Required Scope job `129012807453`의 `src/tests/oci/test_release_finalizer_finish.py` **8 tests, 2 ERROR** (`test_sequential_sha_chain_and_readable_recovery`, `test_issue_store_single_append_and_exact_close_patch`). 두 예외는 `RFCP_NONCE_OR_RUN_REUSED`이며 required aggregate `129012880389`는 의존성으로 FAILURE, 나머지 E2E/Docker/Quality는 SKIPPED, #218 A2도 scope SKIPPED. 이전 RF01/02/03, #229 Scope 검증은 이 테스트 이전까지 PASS.
@@ -2031,6 +2035,7 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 | [Issue42](out/Issue42.md) | U5 업무 타입 지정·이름 및 schemaVersion 2 JSON 계약·#65 보안 승인 경계 | Viewer 타입 선택·외곽선 임시 확정·JSON/Tree 연계 변경 시 |
 | [Issue40](out/Issue40.md) | U3 외곽선 ON/OFF·Worker 취소·임시 확정/JSON 보존 정책 및 AC 추적 | 외곽선 메뉴·객체 선택·취소·임시 Overlay/Renderer·ESC 변경 시 |
 | [FailureLedger](out/FailureLedger.md) | Issue별 실패 정본의 공통 검색 인덱스와 역사적 실패 기록 | Issue 착수·실패·재시험·회귀 선택 시 |
+| [Issues215-206](out/Issues215-206.md) | 로그인 상태 표시·Three DXF Canvas 배경색 요구/설계/AC | 공통 Header/세션 표시·Viewer 배경/Material/export 변경·인수 전 |
 | [Issue281](out/Issue281.md) | 로컬 검증 CLI·프로파일·위험별 중단·증거 계약 | 신규 Issue 구현·로컬 검증·출고 판정 전 |
 | [Issue283](out/Issue283.md) | 로컬 복구점·암호화·격리 복원·호환성·실제 운영 증거 경계 | 백업/복원 CLI·volume snapshot·복구 인수 전 |
 | [Issue282](out/Issue282.md) | 로컬 3-role 출고·증거·정확 digest 승인·부분 게시 중단 | 수동 릴리스 CLI·GHCR 준비·게시 판정 전 |

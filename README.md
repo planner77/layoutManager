@@ -1,3 +1,7 @@
+**소스 후보0.62.0** — #215 공통 세션 상태와 #206 Three DXF Canvas 배경색 설정을 추가했습니다. 요구/AC 및 실제 검증 상태는 [Issues215-206](out/Issues215-206.md)과 IssueEvidence를 참조하세요. 후보 소스는 GHCR 게시·운영 배포를 의미하지 않습니다.
+
+도면의 Three DXF Viewer에서 **보기 → 배경색 설정**을 열어 색상 선택·팔레트·HEX 입력 또는 기본 검정 복원을 사용할 수 있습니다. 선택한 색은 같은 사이트의 이 브라우저 프로필에 저장되어 다른 도면·탭에도 적용됩니다. 저장된 과거 Scene에서 흰색 선이 원래 검정이었는지는 알 수 없어 자동으로 바꾸지 않습니다. 선이 배경과 겹쳐 보이지 않으면 배경색을 조정하세요.
+
 **GHCR0.61.1 App/Migrator/CPU Worker 출고 완료** — 이미지 source `a53921a`, 로컬23/23·실제 백업 복원/후보 호환·Owner GO·candidate/final exact digest readback·격리 pull smoke를 통과했습니다. [실제 출고 증거](out/IssueEvidence/282.md)를 확인하세요. 운영 배포는 미실행이며 기존0.61.0/latest와 원본 데이터를 보존했습니다. 이 결과를 기록한 후속 문서 commit은 이미지 source와 구분합니다.
 
 수동 GHCR 출고는 [Issue282](out/Issue282.md)와 [운영 가이드](out/Operation.md)의 `release:local` 경로를 사용합니다. 실제 게시 전 정확 버전·SHA·세 digest에 대한 Owner GO가 필요합니다.

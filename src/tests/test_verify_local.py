@@ -46,6 +46,24 @@ class VerifyLocalContract(unittest.TestCase):
             ids = {row["id"] for row in VERIFY.manifest("high-risk", risks, [path])}
             self.assertIn("recovery-contract", ids)
             self.assertIn("recovery-docker", ids)
+            self.assertIn("docker-roles", ids)
+
+    def test_current_run_docker_roles_precede_recovery_once_in_every_profile(self):
+        cases = (("high-risk", ["recovery"]),
+                 ("high-risk", ["recovery", "auth", "scene", "worker"]),
+                 ("release", ["recovery", "auth"]))
+        for profile, risks in cases:
+            with self.subTest(profile=profile, risks=risks):
+                plan = VERIFY.manifest(profile, risks, ["src/scripts/recovery-local.mjs"])
+                ids = [item["id"] for item in plan]
+                self.assertEqual(ids.count("docker-roles"), 1)
+                self.assertEqual(ids.count("recovery-docker"), 1)
+                self.assertLess(ids.index("docker-roles"), ids.index("recovery-docker"))
+                self.assertIn("g7-policy", ids)
+                self.assertIn("g7-upgrade-policy", ids)
+                self.assertIn("oci-negative", ids)
+                self.assertEqual(plan[ids.index("docker-roles")]["argv"][-1],
+                                 "release" if profile == "release" else "worktree")
 
     def test_docs_actual_fail_fix_pass_and_immutable_evidence(self):
         with tempfile.TemporaryDirectory(prefix="verify-local-fixture-") as temp:

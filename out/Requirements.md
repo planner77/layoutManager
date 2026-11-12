@@ -1,3 +1,7 @@
+## #215 / #206 기능 요구 (2026-11-12)
+
+R215 서버 관측 로그인 상태와 R206 브라우저 공통 Three DXF Canvas 선호색 요구·범위·AC 정본은 [Issues215-206](Issues215-206.md)이다. 인증/DB 정책·원본/영속 Scene 변경 없이 구현하며 현재 시험 NOT RUN이다.
+
 ## #282 로컬 3-role 출고 (2026-11-11)
 
 R282-1–4: 정확 source/version/3-role digest와 현재 필수 시험·실제 sealed 복구 baseline·후보 호환성을 결합한 수동 출고. 구체 plan에 대한 실제 Owner GO 전 원격 쓰기0, partial/unknown 이후 자동 재개0. 상세 요구·AC 정본은 [Issue282](Issue282.md); 로컬 synthetic PASS와 실제 출고를 구별한다.

@@ -51,7 +51,7 @@ export function ViewerCommandMenus({ groups, onMenuOpen }: { groups: ViewerComma
     return () => document.removeEventListener('pointerdown', outside, true);
   }, [open, onMenuOpen]);
   const close = () => { setOpen(null); requestAnimationFrame(() => {
-    if (!root.current?.closest('[data-testid=\"cad-viewer-shell\"]')?.querySelector('[role=\"dialog\"][data-drawer]'))
+    if (!root.current?.closest('[data-testid=\"cad-viewer-shell\"]')?.querySelector('[aria-modal=\"true\"]'))
       lastTrigger.current?.focus({preventScroll:true});
   }); };
   const onKey = (event: React.KeyboardEvent) => {

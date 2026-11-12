@@ -29,12 +29,12 @@ test('#109 initial browser Admin setup requires host code, then redirects to acc
   await page.getByRole('link',{name:'초기 비밀번호 변경 및 로그인'}).click();
   await expect(page.getByRole('heading',{name:'로그인'})).toBeVisible();
   await page.getByRole('button',{name:'초기 비밀번호 변경'}).click();
-  await page.getByLabel('계정').fill('admin');
+  await page.getByLabel('계정',{exact:true}).fill('admin');
   await page.getByLabel('초기 비밀번호').fill('synthetic-first-password');
   await page.getByLabel('새 비밀번호').fill('synthetic-changed-password');
   await page.getByRole('button',{name:'비밀번호 변경'}).click();
   await expect(page.getByText('비밀번호를 변경했습니다. 새 비밀번호로 로그인하세요.')).toBeVisible();
-  await page.getByLabel('계정').fill('admin');
+  await page.getByLabel('계정',{exact:true}).fill('admin');
   await page.getByLabel('비밀번호',{exact:true}).fill('synthetic-changed-password');
   await page.getByRole('button',{name:'로그인',exact:true}).click();
   await expect(page.getByRole('heading',{name:'현재 세션'})).toBeVisible();
@@ -50,7 +50,7 @@ test('SC-14–17 authenticated conversion → persisted Scene → independent br
   await withOwnedSessions(baseURL!,async owned=>{
   owned.add(page.request);
   await page.goto('/g7-runtime');
-  await page.getByLabel('계정').fill('admin');
+  await page.getByLabel('계정',{exact:true}).fill('admin');
   await page.getByLabel('비밀번호',{exact:true}).fill('synthetic-changed-password');
   await page.getByRole('button',{name:'로그인',exact:true}).click();
   await expect(page.getByRole('heading',{name:'현재 세션'})).toBeVisible();
@@ -123,7 +123,7 @@ test('SC-14–17 authenticated conversion → persisted Scene → independent br
   fresh.on('request',request=>{const url=new URL(request.url());if(url.pathname===original)gets++;if(url.pathname.includes(`/cad-files/${version.id}/scene`))sceneGets++;});
   await fresh.route(`**${original}`,route=>route.abort());
   await fresh.goto('/g7-runtime');
-  await fresh.getByLabel('계정').fill('admin');
+  await fresh.getByLabel('계정',{exact:true}).fill('admin');
   await fresh.getByLabel('비밀번호',{exact:true}).fill('synthetic-changed-password');
   await fresh.getByRole('button',{name:'로그인',exact:true}).click();
   await expect(fresh.getByRole('heading',{name:'현재 세션'})).toBeVisible();

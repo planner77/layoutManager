@@ -1,3 +1,9 @@
+## Unreleased — 0.62.0 소스 후보 #215/#206 (2026-11-12)
+
+- 전역·Viewer 메뉴에 공통 서버 재조회 기반 로그인 상태를 표시하고 계정 변경·복귀·경로 진입 때 갱신한다. 비활성 탭 heartbeat는 추가하지 않았다.
+- Three DXF Canvas에 브라우저 공통 RGB 배경색 선택·저장/복원 UI를 추가했다. Manager가 지원 Adapter에만 전달하며 원본 Scene/export의 색상은 보존한다. 저장된 과거 Scene의 흰색이 원래 검정이었는지는 추정하지 않는다.
+- Greenfield0.61.1→0.62.0 동일 Schema 호환 edge 및 package/lock을 선언했다. 실제 검증·릴리스·게시 상태는 [Issues215-206](Issues215-206.md)과 IssueEvidence가 정본이다.
+
 ## 0.61.1 — 로컬 Issue Lifecycle·수동 GHCR 출고 (2026-11-11)
 
 - #281 영향 기반 로컬 검증 CLI·append-only 실패 원장, #283 암호화 복구점/격리 복원, #282 source-bound 수동3-role OCI 출고를 연결했다. source `a53921a180d77861b232fb98aa6989b678aca8ac`의 exact3-role build·실제 backup/candidate 호환·release23/23·Owner GO·candidate/final raw digest readback/pull smoke 및 baseline 불변을 실증했다.

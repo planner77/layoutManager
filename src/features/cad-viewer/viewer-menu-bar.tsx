@@ -3,9 +3,10 @@
 import Link from 'next/link';
 import { List } from 'lucide-react';
 import { ViewerCommandMenus, type ViewerCommandGroup } from './viewer-command-menu';
+import { SessionStatus } from '@/features/g7-runtime/session-status';
 
 /** Command groups are controlled by CadViewer; this component never owns CAD state. */
-export function ViewerMenuBar({ commandGroups, onMenuOpen, onBeforeListNavigation }: { commandGroups: ViewerCommandGroup[]; onMenuOpen?: () => void; onBeforeListNavigation?: () => boolean }) {
+export function ViewerMenuBar({ commandGroups, onMenuOpen, onBeforeListNavigation, onBeforeAccountNavigation }: { commandGroups: ViewerCommandGroup[]; onMenuOpen?: () => void; onBeforeListNavigation?: () => boolean; onBeforeAccountNavigation?: () => boolean }) {
   return <nav aria-label="도면 앱 메뉴" data-testid="viewer-menu-bar"
     className="relative z-[70] flex min-w-0 items-center border-b border-slate-700 bg-slate-900 px-2 py-1 text-white">
     <Link href="/" title="도면 목록으로 이동" aria-label="도면 목록으로 이동"
@@ -16,5 +17,6 @@ export function ViewerMenuBar({ commandGroups, onMenuOpen, onBeforeListNavigatio
       <List aria-hidden="true" className="size-5" />
     </Link>
     <ViewerCommandMenus groups={commandGroups} onMenuOpen={onMenuOpen} />
+    <span className="ml-auto min-w-0"><SessionStatus viewer onBeforeNavigate={onBeforeAccountNavigation} /></span>
   </nav>;
 }

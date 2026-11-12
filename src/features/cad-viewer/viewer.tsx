@@ -7,6 +7,9 @@ import { ViewerAppShell } from '@/features/cad-viewer/viewer-app-shell';
 import { OutlineTypeManager } from '@/features/cad-viewer/outline-type-manager';
 import { useOutlineTypeAccess } from '@/features/cad-viewer/outline-type-client';
 import { ViewerMenuBar } from '@/features/cad-viewer/viewer-menu-bar';
+import { CanvasBackgroundDialog } from '@/features/cad-viewer/canvas-background-dialog';
+import { useCanvasBackground } from '@/features/cad-viewer/canvas-background-client';
+import { useViewerStatusImmersive } from '@/features/g7-runtime/session-status';
 import type { ViewerCommandGroup } from '@/features/cad-viewer/viewer-command-menu';
 import { OutlineTreePanel } from '@/features/cad-viewer/outline-tree-panel';
 import { GeneratedDeleteDialog } from '@/features/cad-viewer/generated-delete-dialog';
@@ -300,9 +303,16 @@ export function CadViewer({
   const [layers, setLayers] = useState<string[]>([]);
   const [selectedLayers, setSelectedLayers] = useState<Set<string>>(() => new Set());
   const [metric, setMetric] = useState<ViewerMetric | null>(null);
+  const background=useCanvasBackground();
+  const backgroundColor=useRef(background.color);
+  const [backgroundCapable,setBackgroundCapable]=useState(false);
+  const [backgroundOpen,setBackgroundOpen]=useState(false);
+  useEffect(()=>{backgroundColor.current=background.color;manager.current?.setCanvasBackground(background.color);},[background.color]);
   // A direct URL, reload or list navigation always starts in CSS immersive mode.
   // Native fullscreen can only be requested after an explicit user gesture.
   const [isFullscreen, setIsFullscreen] = useState(true);
+  const setViewerStatusImmersive=useViewerStatusImmersive();
+  useEffect(()=>{setViewerStatusImmersive(isFullscreen||isNativeFullscreen);return()=>setViewerStatusImmersive(false);},[isFullscreen,isNativeFullscreen,setViewerStatusImmersive]);
   const [outlineInfo,setOutlineInfo]=useState<OutlineInfo|null>(null);
   const [outlineMode,setOutlineMode]=useState<'pan'|'select'>('pan');
   const [outlineBasis,setOutlineBasis]=useState<'render'|'source'>('render');
@@ -632,6 +642,10 @@ export function CadViewer({
         event.preventDefault();event.stopImmediatePropagation();
         setDeleteRequest(null);return;
       }
+      if(event.key==='Escape' && backgroundOpen){
+        event.preventDefault();event.stopImmediatePropagation();setBackgroundOpen(false);return;
+      }
+      if(backgroundOpen)return;
       if(event.key==='Escape' && contextMenu){
         event.preventDefault();event.stopImmediatePropagation();
         setContextMenu(null);return;
@@ -704,7 +718,7 @@ export function CadViewer({
     // Capture ahead of native fullscreen/selection handling for staged edit ESC.
     window.addEventListener('keydown',handleKeyDown,true);
     return ()=>window.removeEventListener('keydown',handleKeyDown,true);
-  },[syncSavedOutlines,deleteRequest,contextMenu,state.ready,canvasMode,openDelete,nameTipOpen,infoOpen,memoPlacing,memoCandidate,memoSelectedId,closeMemoEditor,typeManagerOpen,exchangeOpened,closeExchange,zones]);
+  },[syncSavedOutlines,deleteRequest,backgroundOpen,contextMenu,state.ready,canvasMode,openDelete,nameTipOpen,infoOpen,memoPlacing,memoCandidate,memoSelectedId,closeMemoEditor,typeManagerOpen,exchangeOpened,closeExchange,zones]);
   const stopOutlineEditing = useCallback(() => {
     // Must cancel the Worker BEFORE clearing selection: selection callbacks can
     // otherwise enqueue a new compute job for the previous previewKind.
@@ -1639,6 +1653,7 @@ export function CadViewer({
     if (value === renderer) return;
     if (!confirmDiscard()) return;
     closeExchange();
+    setBackgroundOpen(false);
     loadSequenceRef.current++;
     sceneRequest.current?.abort();setSceneBusy(false);setSceneCandidate(false);setSceneMode('scene-first');
     // Renderer-only escape reuses this Version's in-flight source promise.
@@ -1658,11 +1673,12 @@ export function CadViewer({
     const url = new URL(window.location.href);
     url.searchParams.set('renderer', value);
     window.history.replaceState(null, '', url);
-  }, [renderer, resetOutline, confirmDiscard, resetMemos,closeExchange]);
+  }, [renderer, resetOutline, confirmDiscard, resetMemos,closeExchange,setBackgroundOpen]);
 
   function reload() {
     if (loading || !confirmDiscard()) return;
     closeExchange();
+    setBackgroundOpen(false);
     loadSequenceRef.current++;
     sceneRequest.current?.abort();setSceneBusy(false);setSceneCandidate(false);setSceneMode('scene-first');
     manager.current?.dispose();
@@ -1683,6 +1699,7 @@ export function CadViewer({
   function buildScene() {
     if(loading||sceneBusy||!confirmDiscard())return;
     closeExchange();
+    setBackgroundOpen(false);
     sceneRequest.current?.abort();
     loadSequenceRef.current++;manager.current?.dispose();source.dispose();
     fallbackTried.current=false;fallbackReason.current=null;fallbackSceneFailure.current=null;fallbackSceneDiagnostics.current=null;
@@ -1756,6 +1773,7 @@ export function CadViewer({
   }
 
   useEffect(() => {
+    if(!background.ready)return;
     let active = true;
     const sceneController=new AbortController();
     const sequence = ++loadSequenceRef.current;
@@ -1795,6 +1813,7 @@ export function CadViewer({
       format,
       format==='DXF'&&renderer==='three-dxf-viewer'?{versionId,sourceSha256,mode:sceneMode}:undefined,
     );
+    instance.setCanvasBackground(backgroundColor.current);
     manager.current = instance;
     const run=async()=>{
       if(sceneMode==='build'&&renderer==='three-dxf-viewer'){
@@ -1808,6 +1827,7 @@ export function CadViewer({
     };
     run().then(result => {
       if (active && loadSequenceRef.current===sequence) {
+        setBackgroundCapable(instance.supportsCanvasBackground());
         const nextLayers = instance.getLayers();
         setOutlineInfo(instance.getOutlineInfo());
         setState({
@@ -1844,6 +1864,7 @@ export function CadViewer({
         return;
       }
       if (active && loadSequenceRef.current===sequence && !isViewerCancellation(error)) {
+        setBackgroundCapable(false);
         setLayers([]);
         setSelectedLayers(new Set());
         resetOutline();
@@ -1863,7 +1884,7 @@ export function CadViewer({
       instance.dispose();
       manager.current = null;
     };
-  }, [versionId, sourceSha256, attempt, renderer, source, format, sceneMode, resetOutline, syncSavedOutlines, onAdapterViewChange]);
+  }, [versionId, sourceSha256, attempt, renderer, source, format, sceneMode, resetOutline, syncSavedOutlines, onAdapterViewChange,background.ready]);
 
   const layerAvailable = renderer === 'three-dxf-viewer' && layers.length > 0 && state.ready;
   const outlineUnavailable = outlineToolUnavailableReason({
@@ -1981,6 +2002,12 @@ export function CadViewer({
         {id:'three',label:'three-dxf-viewer',kind:'radio' as const,checked:renderer==='three-dxf-viewer',disabled:renderer==='three-dxf-viewer',onSelect:()=>choose('three-dxf-viewer')},
         {id:'dxf',label:'dxf-viewer',kind:'radio' as const,checked:renderer==='dxf-viewer',disabled:renderer==='dxf-viewer',onSelect:()=>choose('dxf-viewer')},
       ]:[]),
+      {id:'canvas-background',label:'배경색 설정',testId:'viewer-menu-canvas-background',
+        disabled:format!=='DXF'||renderer!=='three-dxf-viewer'||loading||!state.ready||!backgroundCapable,
+        reason:format!=='DXF'?'DWG Viewer에서는 배경색 설정을 지원하지 않습니다.':
+          renderer!=='three-dxf-viewer'?'three-dxf-viewer에서만 배경색을 설정할 수 있습니다.':
+          loading||!state.ready?'DXF 도면 표시가 완료된 뒤 설정할 수 있습니다.':undefined,
+        onSelect:()=>setBackgroundOpen(true)},
       {id:'zoom-in',label:'확대',disabled:loading||!state.ready,onSelect:()=>manager.current?.zoomIn()},
       {id:'zoom-out',label:'축소',disabled:loading||!state.ready,onSelect:()=>manager.current?.zoomOut()},
       {id:'fit',label:'화면 맞춤',disabled:loading||!state.ready,onSelect:()=>manager.current?.fitToView()},
@@ -2051,7 +2078,7 @@ export function CadViewer({
       isFullscreen={isFullscreen}
       isNativeFullscreen={isNativeFullscreen}
       menuBar={
-        <ViewerMenuBar commandGroups={commandGroups} onMenuOpen={closeMetadataOverlays} onBeforeListNavigation={confirmDiscard} />
+        <ViewerMenuBar commandGroups={commandGroups} onMenuOpen={closeMetadataOverlays} onBeforeListNavigation={confirmDiscard} onBeforeAccountNavigation={confirmDiscard} />
       }
       toolbar={
         <>
@@ -2544,7 +2571,8 @@ export function CadViewer({
         </>
       }
       modalOverlay={exchangeOpened?<CadExchangeDialog key={exchange.sessionId} controller={exchange} defaultFilename={displayName}/>:deleteRequest ? <GeneratedDeleteDialog request={deleteRequest}
-        onCancel={()=>setDeleteRequest(null)} onConfirm={confirmDelete} /> : null}
+        onCancel={()=>setDeleteRequest(null)} onConfirm={confirmDelete} /> : backgroundOpen ?
+        <CanvasBackgroundDialog color={background.color} saved={background.saved} onSelect={background.select} onClose={()=>setBackgroundOpen(false)}/> : null}
       nativeLoadingOverlay={loading ? <div data-testid="viewer-loading-overlay" role="progressbar" aria-label="도면 로딩 중" className="pointer-events-none absolute inset-0 z-[65] flex items-center justify-center bg-slate-950/45"><div className="pointer-events-auto max-w-sm rounded-lg bg-white p-4 text-sm text-slate-900 shadow-xl"><p>도면을 여는 중입니다…</p>{format==='DXF' && <button type="button" className="mt-3 rounded bg-teal-700 px-3 py-2 text-white" onClick={()=>choose(renderer==='three-dxf-viewer'?'dxf-viewer':'three-dxf-viewer')}>로딩 중단 후 {renderer==='three-dxf-viewer'?'dxf-viewer':'three-dxf-viewer'}로 열기</button>}<a className="mt-2 block underline" href={`/api/cad-files/${versionId}/content`} download>원본 다운로드</a></div></div> : null}
     />
 

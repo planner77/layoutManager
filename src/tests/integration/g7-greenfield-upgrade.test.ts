@@ -85,7 +85,7 @@ describe('#209 Greenfield release upgrade',()=>{
     const plan=planGreenfieldUpgrade(f.env);
     expect(plan.decision).toBe('UPGRADE_MIGRATION_REQUIRED');
     expect(plan.chain.map(e=>[e.from,e.to,e.kind]))
-      .toEqual([['0.60.0','0.61.0','MIGRATION'],['0.61.0','0.61.1','COMPATIBLE']]);
+      .toEqual([['0.60.0','0.61.0','MIGRATION'],['0.61.0','0.61.1','COMPATIBLE'],['0.61.1','0.62.0','COMPATIBLE']]);
     expect(readFileSync(f.manifest,'utf8')).toBe(before);
     await expect(applyGreenfieldUpgrade(maintenance(f.env)))
       .rejects.toThrow('G7_UPGRADE_APPROVAL_REQUIRED');
@@ -119,7 +119,7 @@ describe('#209 Greenfield release upgrade',()=>{
     expect(plan.requiresApproval).toBe(true);
     expect([plan.from,plan.to]).toEqual(['0.58.1',packageInfo.version]);
     expect(plan.chain.map(e=>[e.from,e.to,e.kind]))
-      .toEqual([['0.58.1','0.59.0','COMPATIBLE'],['0.59.0','0.60.0','MIGRATION'],['0.60.0','0.61.0','MIGRATION'],['0.61.0','0.61.1','COMPATIBLE']]);
+      .toEqual([['0.58.1','0.59.0','COMPATIBLE'],['0.59.0','0.60.0','MIGRATION'],['0.60.0','0.61.0','MIGRATION'],['0.61.0','0.61.1','COMPATIBLE'],['0.61.1','0.62.0','COMPATIBLE']]);
     expect(readFileSync(f.manifest)).toEqual(oldManifest);
     await expect(applyGreenfieldUpgrade(maintenance(f.env))).rejects
       .toThrow('G7_UPGRADE_APPROVAL_REQUIRED');
@@ -169,7 +169,7 @@ describe('#209 Greenfield release upgrade',()=>{
     expect(()=>ensureAutomatedGreenfield(f.env)).toThrow('G7_AUTO_RELEASE_MISMATCH');
     const plan=planGreenfieldUpgrade(f.env);
     expect(plan.decision).toBe('UPGRADE_MIGRATION_REQUIRED');
-    expect(plan.chain.map(e=>e.to)).toEqual(['0.57.0','0.58.0','0.58.1','0.59.0','0.60.0','0.61.0','0.61.1']);
+    expect(plan.chain.map(e=>e.to)).toEqual(['0.57.0','0.58.0','0.58.1','0.59.0','0.60.0','0.61.0','0.61.1','0.62.0']);
     expect(plan.requiresApproval).toBe(true);
     await expect(applyGreenfieldUpgrade(f.env)).rejects.toThrow('G7_UPGRADE_MAINTENANCE_REQUIRED');
     const result=await applyGreenfieldUpgrade(maintenance(f.env),plan.planId);
@@ -366,7 +366,7 @@ describe('#209 Greenfield release upgrade',()=>{
     const f=fixture(),manifestBefore=readFileSync(f.manifest);
     const plan=planGreenfieldUpgrade(f.env);
     expect(plan.decision).toBe('UPGRADE_MIGRATION_REQUIRED');
-    expect(plan.chain.slice(-2).map(edge=>edge.kind)).toEqual(['MIGRATION','COMPATIBLE']);
+    expect(plan.chain.slice(-3).map(edge=>edge.kind)).toEqual(['MIGRATION','COMPATIBLE','COMPATIBLE']);
     await expect(applyGreenfieldUpgrade(maintenance(f.env))).rejects
       .toThrow('G7_UPGRADE_APPROVAL_REQUIRED');
     const broken:UpgradeRegistry={

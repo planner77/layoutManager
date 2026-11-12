@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import {projectWcsBatch as batchProjectWcs} from '../core/canvas-projection';
 import { DXFViewer } from 'three-dxf-viewer';
+import {collectBlackMaterials,withDisplayContrast} from './display-contrast';
 import type { CadViewerAdapter } from '../core/adapter';
 import { explicitElevation } from './normalize';
 import {sceneScope,sourceUnitFromDxf,tagImportedTree,tagAppTree} from './scene-tags';
@@ -56,6 +57,8 @@ function release(group: THREE.Object3D) {
   group.clear();
 }
 export class ThreeDxfViewerAdapter implements CadViewerAdapter {
+  private canvasBackground='#000000';
+  private blackMaterials:ReturnType<typeof collectBlackMaterials>=[];
   private renderer: THREE.WebGLRenderer;
   private scene = new THREE.Scene();
   private camera = new THREE.OrthographicCamera(-1,1,1,-1,0.1,10000);
@@ -179,11 +182,17 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
   }
   private render = () => {
     if (!this.disposed) {
-      this.renderer.render(this.scene,this.camera);
+      withDisplayContrast(this.blackMaterials,this.canvasBackground,()=>this.renderer.render(this.scene,this.camera));
       this.updateRotateHandle();
       this.outline?.onViewChange?.();
     }
   };
+  setCanvasBackground(color:string){
+    if(this.disposed||!/^#[0-9a-fA-F]{6}$/.test(color))return;
+    this.canvasBackground=color.toLowerCase();
+    this.renderer.setClearColor(this.canvasBackground);
+    this.render();
+  }
   private size = () => {
     if (this.disposed) return;
     this.selector?.cancelGeneratedDrag();
@@ -246,13 +255,13 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
       const clone=(original:THREE.Material)=>{
         if(!owned.has(original)){
           const material=original.clone() as THREE.Material & {color?:THREE.Color};
-          if(material.color?.getHex()===0)material.color.setHex(0xffffff);
           owned.set(original,material);
         }
         return owned.get(original)!;
       };
       object.traverse(o=>{const mesh=o as THREE.Mesh;if(mesh.material)
         mesh.material=Array.isArray(mesh.material)?mesh.material.map(clone):clone(mesh.material);});
+      this.blackMaterials=collectBlackMaterials(object);
       if(this.outline&&validCanvasScope(this.outline))
         this.document?.setSourceUnit(sourceUnitFromDxf(text));
       if(this.outline&&validCanvasScope(this.outline))
@@ -328,6 +337,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     const object=await restoreSourceScene(source.bytes,source.manifest,source.manifest);
     if(this.disposed){release(object);throw new DOMException('취소됨','AbortError');}
     this.object=object as THREE.Group;
+    this.blackMaterials=collectBlackMaterials(object);
     this.exchangeBaseline=captureExchangeBaseline(object);this.exchangeScope=source.manifest.scope;this.exchangeEpoch++;
     this.scene.add(object);this.bounds.setFromObject(object);
     if(!this.bounds.isEmpty()&&![...this.bounds.min.toArray(),...this.bounds.max.toArray()].every(Number.isFinite))throw new Error('SCENE_BOUNDS_INVALID');
@@ -1141,7 +1151,7 @@ export class ThreeDxfViewerAdapter implements CadViewerAdapter {
     this.controls.dispose();if(this.object)release(this.object);this.scene.clear();
     // Late event/async closures may transiently retain this adapter. Drop
     // large source/render indexes and Scene bytes at the disposal boundary.
-    this.object=undefined;this.index=undefined;this.renderIndex=undefined;
+    this.object=undefined;this.blackMaterials=[];this.index=undefined;this.renderIndex=undefined;
     this.renderCoverage=undefined;this.sceneAsset=undefined;this.outline=undefined;
     this.renderer.dispose();this.renderer.forceContextLoss();this.renderer.domElement.remove();
   }

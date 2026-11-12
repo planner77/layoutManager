@@ -166,7 +166,7 @@ describe('#225 populated Browser 0.60 to CPU 0.61 upgrade and isolated recovery'
     await readReady(f.dbPath,f.cad,f.ids.ready,f.ids.readyAsset,f.bytes);
     const plan=planGreenfieldUpgrade(f.env);
     expect(plan).toMatchObject({decision:'UPGRADE_MIGRATION_REQUIRED',from:'0.60.0',to:packageInfo.version,requiresApproval:true});
-    expect(plan.chain.map(x=>[x.from,x.to,x.kind])).toEqual([['0.60.0','0.61.0','MIGRATION'],['0.61.0','0.61.1','COMPATIBLE']]);
+    expect(plan.chain.map(x=>[x.from,x.to,x.kind])).toEqual([['0.60.0','0.61.0','MIGRATION'],['0.61.0','0.61.1','COMPATIBLE'],['0.61.1','0.62.0','COMPATIBLE']]);
     const approved={...f.env,G7_UPGRADE_MAINTENANCE_ACK:'APP_STOPPED_BY_HOST_HELPER',
       G7_UPGRADE_PAIR_VERIFIED:'true'};
     await expect(applyGreenfieldUpgrade(approved)).rejects.toThrow('G7_UPGRADE_APPROVAL_REQUIRED');

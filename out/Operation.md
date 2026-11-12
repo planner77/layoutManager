@@ -61,6 +61,19 @@ Host wall clock 역행을 실제 관측한 개발 환경에서는 `verify:local`
 
 `release` 프로파일의 외부 이전 버전 baseline/복원 게이트는 #283 증거가 준비되기 전 필수 NOT RUN으로 차단된다. 현재 프로파일 실행만으로 #282 수동 게시 준비 완료나 실제 출고 성공을 주장하지 않는다.
 
+### #215/#206 복구 Docker 검증의 현재 이미지 선행 조건
+
+`recovery-docker`는 같은 `verify:local` 실행의 `docker-roles`가 만든 app/migrator/cpu-worker 세 이미지를 사용한다. recovery 위험만 선택해도 `docker-roles`가 먼저 한 번 실행되며, 실패 또는 Docker 부재 시 복구 시험은 필수 NOT RUN이다. 과거 run 이미지나 버전 alias를 재사용하지 않는다. 세 이미지의 역할·현재 package 버전·Git HEAD·저장소 source·source fingerprint·amd64를 검사한 뒤 image ID를 고정한다. 직접 `npm --prefix src run test:recovery-local:docker`를 실행하려면 현재 소스의 `plan`에서 읽은 정확한 fingerprint와 같은 run ID로 먼저 Docker builder를 실행해야 한다. 예:
+
+```bash
+export VERIFY_LOCAL_RUN_ID="manual-recovery-$(date -u +%Y%m%dT%H%M%S)"
+export VERIFY_LOCAL_SOURCE_FINGERPRINT="$(python3 src/scripts/verify_local.py plan --issue 215 --profile high-risk --base 51689d7 | python3 -c 'import json,sys; print(json.load(sys.stdin)["source"]["fingerprint"])')"
+python3 src/scripts/verify_local_docker.py --mode worktree
+npm --prefix src run test:recovery-local:docker
+```
+
+이 직접 경로도 소스 변경 후에는 다시 plan→builder→test를 수행한다. 공식 동결 증거는 `verify:local run --issue 215 --profile high-risk --base 51689d7`의 단일 실행과 끝 fingerprint 비교로 남긴다. 직접 시험은 그 실행의 PASS 증거를 대신하지 않는다.
+
 
 ## #273 RF-01/RF-04 요청 nonce 재발행·복원 운영 규칙 보완 (2026-11-09)
 

@@ -6,11 +6,12 @@ test('real signed runtime login, account/site grants, audit and revocation UI',a
   expect(await status.json()).toMatchObject({state:'ACTIVE',authEnabled:true,cadWriteEnabled:true});
   await page.goto('/g7-runtime');
   await expect(page.getByRole('heading',{name:'로그인',exact:true})).toBeVisible();
+  await expect(page.getByTestId('app-session-status')).toContainText('로그인 필요');
   await page.getByLabel('계정',{exact:true}).fill('admin-ui');
   await page.getByLabel('비밀번호',{exact:true}).fill('Runtime-admin-153!');
   await page.getByRole('button',{name:'로그인',exact:true}).click();
   await expect(page.getByRole('heading',{name:'사용자 및 권한 관리'})).toBeVisible();
-  await expect(page.getByRole('link',{name:'계정 / 로그인'})).toBeVisible();
+  await expect(page.getByTestId('app-session-status')).toContainText('로그인됨 · Admin');
   const create=page.getByRole('heading',{name:'사용자 발급'}).locator('..');
   await create.getByLabel('새 사용자 계정').fill('runtime-editor');
   await create.getByLabel('초기 비밀번호').fill('Runtime-editor-153!');
@@ -52,16 +53,19 @@ test('real signed runtime login, account/site grants, audit and revocation UI',a
   await page.setViewportSize({width:390,height:844});
   await page.getByRole('button',{name:'로그아웃',exact:true}).click();
   await expect(page.getByRole('heading',{name:'로그인',exact:true})).toBeVisible();
+  await expect(page.getByTestId('app-session-status')).toContainText('로그인 필요');
   await page.getByRole('button',{name:'초기 비밀번호 변경',exact:true}).click();
   await page.getByLabel('계정',{exact:true}).fill('runtime-editor');
   await page.getByLabel('초기 비밀번호',{exact:true}).fill('Runtime-editor-153!');
   await page.getByLabel('새 비밀번호',{exact:true}).fill('Runtime-editor-new-153!');
   await page.getByRole('button',{name:'비밀번호 변경',exact:true}).click();
   await expect(page.getByRole('heading',{name:'로그인',exact:true})).toBeVisible();
+  await expect(page.getByTestId('app-session-status')).toContainText('로그인 필요');
   await page.getByLabel('계정',{exact:true}).fill('runtime-editor');
   await page.getByLabel('비밀번호',{exact:true}).fill('Runtime-editor-new-153!');
   await page.getByRole('button',{name:'로그인',exact:true}).click();
   await expect(page.getByRole('heading',{name:'현재 세션'})).toBeVisible();
+  await expect(page.getByTestId('app-session-status')).toContainText('로그인됨 · Editor');
   await expect(page.getByRole('heading',{name:'사용자 및 권한 관리'})).toHaveCount(0);
   await expect(page.getByRole('heading',{name:'현재 세션'}).locator('..')).toContainText('Editor');
   // Existing registration and deletion UI now use a fresh server session CSRF.
@@ -89,6 +93,13 @@ test('real signed runtime login, account/site grants, audit and revocation UI',a
   await page.getByRole('button',{name:'삭제 확인',exact:true}).click();
   await expect(row).toHaveCount(0);
   await page.goto('/g7-runtime');
+  const other=await page.context().newPage();
+  await other.goto('/');
+  await expect(other.getByTestId('app-session-status')).toContainText('로그인됨 · Editor');
   await page.getByRole('button',{name:'로그아웃',exact:true}).click();
   await expect(page.getByRole('heading',{name:'로그인',exact:true})).toBeVisible();
+  await expect(page.getByTestId('app-session-status')).toContainText('로그인 필요');
+  await other.evaluate(()=>window.dispatchEvent(new Event('focus')));
+  await expect(other.getByTestId('app-session-status')).toContainText('로그인 필요');
+  await other.close();
 });

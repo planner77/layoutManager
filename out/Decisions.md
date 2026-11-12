@@ -1,3 +1,7 @@
+## ADR-215 / ADR-206 (2026-11-12)
+
+#215는 서버 session 정책을 변경하지 않고 사용자 이벤트로만 공통 상태를 재검증한다. #206는 브라우저 공통 RGB preference와 Three DXF display material만 변경하며 canonical Scene/export는 분리한다. 판단 근거·예외·AC는 [Issues215-206](Issues215-206.md) 참조. 구현/시험 NOT RUN.
+
 ## #282 로컬 3-role 출고 (2026-11-11)
 
 ADR-282: #279 PR0/Actions0 정책에 맞는 로컬 출고를 사용하며 과거 protected workflow/서명/댓글 승인 요구를 신규 출고에 승계하지 않는다. 실제 대화 Owner GO를 정확 plan에 결합한 로컬 audit record는 암호학적 신원 증명이 아니다. 출고 소스와 ignored runtime proof를 분리하고 공개 결과는 후속 docs commit으로 기록한다. 로컬 sealed baseline·후보 compatibility는 게시 필수이며 외부 backup/key custody·실제 사용자 로그인·host writer 배제의 미완료는 별도 운영/DR 한계로 유지한다. 상세 정본: [Issue282](Issue282.md).

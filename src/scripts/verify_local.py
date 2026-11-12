@@ -188,7 +188,6 @@ def manifest(profile: str, risks: list[str], paths: list[str], fixture: str | No
                 "local three-role release and registry journal contract", timeout=300)
         if "recovery" in risks or profile == "release":
             add("recovery-contract", ["npm", "run", "test:recovery-local"], "authenticated archive and local recovery contract", timeout=300)
-            add("recovery-docker", ["npm", "run", "test:recovery-local:docker"], "disposable G7 volume capture and isolated restore", timeout=600)
         add("build", ["npm", "run", "build"], "production build", timeout=1800)
         if "auth" in risks or "db" in risks:
             argv = ["npx", "playwright", "test", "--config", "playwright.g7-runtime.config.ts", "--reporter=line"]
@@ -212,11 +211,13 @@ def manifest(profile: str, risks: list[str], paths: list[str], fixture: str | No
             item.update(id="affected-review", missing=missing or "affected test selection")
             items.append(item)
         add("app-smoke", ["python3", "scripts/verify_local_smoke.py"], "local built app health", timeout=120)
-        if set(risks) & {"db", "auth", "scene", "worker", "storage", "deploy", "oci"} or profile == "release":
+        if set(risks) & {"db", "auth", "scene", "worker", "storage", "deploy", "oci", "recovery"} or profile == "release":
             add("g7-policy", ["python3", "scripts/test_g7_deploy.py"], "existing G7 deployment negative regression", cwd="src", timeout=300)
             add("g7-upgrade-policy", ["python3", "scripts/test_g7_upgrade.py"], "existing G7 upgrade regression", timeout=300)
             add("oci-negative", ["python3", "tests/oci/test_verified_negative.py"], "existing OCI negative regression", timeout=300)
             add("docker-roles", ["python3", "scripts/verify_local_docker.py", "--mode", "release" if profile == "release" else "worktree"], "actual disposable three-role build, runtime and migration", timeout=3600)
+        if "recovery" in risks or profile == "release":
+            add("recovery-docker", ["npm", "run", "test:recovery-local:docker"], "disposable G7 volume capture and isolated restore", timeout=600)
         if "worker" in risks or "scene" in risks or profile == "release":
             add("scene-worker-integration", ["npx", "vitest", "run", "tests/integration/g7-scene-worker-upgrade-recovery.test.ts", "tests/integration/scene-cpu-worker-real-g7.test.ts"], "real worker persistence/recovery integration", timeout=1200)
             add("scene-worker-oci", ["bash", "src/tests/oci/scene-cpu-worker-proof.sh", "--local"], "disposable actual OCI worker proof", cwd=".", timeout=1800)

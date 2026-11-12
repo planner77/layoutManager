@@ -1,3 +1,7 @@
+## #206 Canvas 배경 설정 dialog (2026-11-12)
+
+`보기 → 배경색 설정`은 한 번 선택·입력 후 닫는 모달이며 독립 조회/작업 패널이 아니다. 따라서 이동 핸들/DnD/위치 저장 대상에서 제외한다. Viewer fullscreen subtree 안에서 열고 상위 모달 우선·Escape 한 단계·포커스 복귀 및 Canvas 입력 분리를 적용한다. 수용/시험 기준은 [Issues215-206](Issues215-206.md)을 참조한다.
+
 ## #138 공통 Panel nested modal 우선순위 — PR #177 회귀 보완 (2026-10-31)
 
 - #127의 최상위 alertdialog는 모바일 Drawer와 동시 aria-modal=true로 선언할 수 없다. 앱 Shell의 modalOverlay 존재 여부를 modalBlocked로 전달하며, Layer/Outline/Memo/Tools/Text Search 공통 MovableViewerPanel의 aria-modal은 mobile && active && !modalBlocked 일 때만 true. 상위 confirmation 중 Drawer는 inert=true, 모바일 focus trap과 ESC는 상위 modal이 우선. 닫힌 뒤 Drawer의 inert 및 aria-modal을 원상 복원한다.

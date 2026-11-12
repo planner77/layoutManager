@@ -1,3 +1,7 @@
+## TP-215-206 (2026-11-12)
+
+[Issues215-206](Issues215-206.md)의 T215-01~04, T206-01~05, T-COMBINED가 선행 시험 계약이다. 하나의 동결 high-risk verify:local 실행으로 두 이슈 증거를 연결하되 실제 signed auth·WebGL·export·fullscreen/반응형 근거를 구분한다. 현재 전부 NOT RUN.
+
 ## #282 로컬 3-role 출고 (2026-11-11)
 
 TP-282: [Issue282](Issue282.md)의 L01–L08/AC282-1–8을 따른다. focused source/proof·OCI·publisher 음성 회귀와 실제 sealed baseline replay를 먼저 독립 QA한다. Root의 clean exact source 3-role build, 전체 release profile, 후보 clone compatibility 및 실제 Owner GO 이후 candidate/final readback은 별도 단계이며 선행 synthetic PASS로 대체하지 않는다. 결과는 [IssueEvidence/282](IssueEvidence/282.md)와 TestReport에 기록한다.

@@ -6,7 +6,7 @@ test('R1 logs real permission gate, filtered table and timeline, cursor, mobile 
   expect(anonymousPage.headers()['cache-control']).toContain('no-store');
   expect(await anonymousPage.text()).not.toContain('operations-log-console');
   await page.goto('/g7-runtime');
-  await page.getByLabel('계정').fill('admin');
+  await page.getByLabel('계정',{exact:true}).fill('admin');
   await page.getByLabel('비밀번호', { exact: true }).fill('synthetic-changed-password');
   await page.getByRole('button', { name: '로그인', exact: true }).click();
   await expect(page.getByRole('heading', { name: '현재 세션' })).toBeVisible();

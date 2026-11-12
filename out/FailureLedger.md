@@ -3571,3 +3571,140 @@ Latest Main initially `870d3cf0a4f8e42d2e5c4132076d3b7ab9c52089`; confirmed PR b
 - LM282-DOCKER29-TMPFS-OWNERSHIP: d5e2c64 보완/집중13회귀 후 현재 exact3-role build·실제 digest pull smoke에서 정리 PASS. 원래d954 실패는 보존한다.
 - LM282-G7-BROWSER-UPLOAD-AUTH-TIMEOUT: 5ec9776의 명시적 owned monotonic opt-in과 실제현재23/23 controlled G7 PASS. 원래native803ms 역행/401은 보존하며 실제host clock 정상화나 실제 사용자 인증 성공으로 해석하지 않는다.
 - LM281-CUTOVER-NOT-READY: 실제 Actions repo/15workflows disabled, Main PR/check 제거·force/delete/Tag 보호 유지, 비강제push/sourceActions0 readback으로 이미지 출고 전환 조건 해결. 운영/외부DR 미완료 범위는 남아 있다.
+## 2026-11-12 — #215/#206 Developer WIP local failure index
+
+- **LM215-206-TYPE-LINT-WIP:** 첫 typecheck에서 unknown roles narrowing와 E2E canvas 타입 오류, 첫 대상 ESLint에서 React effect 내 동기 setState/ref render/manual memoization이 실패했다. 저장값 lazy init, effect-local fetch lifetime, capability state, 명시 타입으로 수정한 후 typecheck/대상 lint exit0. 원문 명령과 범위는 [215 evidence](IssueEvidence/215.md). 이 수정 전 실패를 삭제하거나 최종 frozen PASS로 해석하지 않는다.
+- **LM206-EXPORT-FIXTURE-UNITS:** 첫 T206 Playwright 실행에서 합성 DXF에 `$INSUNITS`가 없어 GLB dialog review가 disabled로 30s timeout. 테스트에서 mm를 명시한 후 T206 1/1, source rebuild 후 combined2/2 PASS. 원본/export 로직 실패가 아닌 fixture 설정 누락. [206 evidence](IssueEvidence/206.md).
+- **LM206-GREENFIELD-EDGE-EXPECTATION:** 새0.62.0 compatible edge로 기존 `slice(-2)` 기대가 틀어져 최초 Greenfield integration14/15; 마지막3 edge 기대를 보완해15/15. [206 evidence](IssueEvidence/206.md). 최종 verify:local은 별도 NOT RUN.
+
+## 2026-11-12 — #206 Viewer modal focus race
+
+- **LM206-MENU-FOCUS-RACE:** Manager review로 발견한 실제 Viewer 메뉴→배경색 dialog 초기 포커스 경쟁. 기존 메뉴 `close()`의 RAF가 새 modal 색상 input focus를 빼앗았다. 수정 전 optimized build에 새 `2×RAF` 포커스 assertion을 실행해 T206 **FAIL (color input inactive)** 재현. `ViewerCommandMenus.close()`가 현재 shell의 `aria-modal=true`를 확인해 하위 메뉴 트리거 refocus를 생략하도록 수정하고 Tab wrap assertion을 추가했다. 수정 후 재시험은 [206 evidence](IssueEvidence/206.md)에 append; 이전 실패와 분리한다.
+- **LM206-DIALOG-RETURN-FOCUS:** 위 초기 포커스 수정 후 3-case browser 실행에서 T215 mocked/session과 Viewer account guard는 PASS, T206는 Escape 닫기 뒤 보기 trigger `toBeFocused()` 실패. Dialog cleanup이 still-connected prior element를 우선한 것이 원인. 보기 trigger 우선으로 보완하고 수정 후 재시험 별도. 상세 [206 evidence](IssueEvidence/206.md).
+
+## 2026-11-12 — #215/#206 Developer focus regression resolution (append)
+
+- LM206-MENU-FOCUS-RACE와 LM206-DIALOG-RETURN-FOCUS는 최종 앱 build 뒤 대상 browser3/3 PASS (17.4s)로 표적 재시험했다. 초기 색상 input focus/Tab trap과 Escape 뒤 보기 trigger focus를 새 assertion이 확인했다. 최종 high-risk frozen verify:local과 실제 Scene-first restore 시험은 별개이며 [206 evidence](IssueEvidence/206.md)에 범위를 기록한다.
+
+## 2026-11-12 — #215/#206 QA frozen verifier failure
+
+- **Run:** shared `issue-215-20261112T024841-cd1ca066a397`, JSON SHA256 `484b1b7058082dde553d0c9218fc664d7ee330bdbd92edf80bc9876fcecfd790`, source fingerprint `f1876c8fdf991969eb61aacb6ac8916ea892b817b1e857a1041f19de06efc54a`, #215 and #206 evidence. One high-risk run only.
+- **Result:** seven mandatory cases PASS through `recovery-contract`; required `recovery-docker` FAIL exit1 `G7_AUTO_IMAGE_PAIR_INVALID`; remaining11 required cases NOT RUN. Log: `data/verify-local/issue-215-20261112T024841-cd1ca066a397/recovery-docker.log`.
+- **Cause (read-only diagnosis):** `tests/oci/recovery-local-docker.test.mjs` hardcodes synthetic app/migrator aliases to `0.61.1`, but `src/package.json` in the frozen 0.62.0 source is enforced by `greenfield-auto.ts` `validPair()`. The exact test fixture alias and schema startup pair therefore fail closed before the intended Docker recovery assertions. No production file was changed during QA.
+- **Disposition:** test-fixture fix pending Manager decision; retest pending new frozen fingerprint. Do not treat the gate as PASS. Existing browser/runtime/full build and later scenarios were NOT RUN by this run. See [#215](IssueEvidence/215.md) and [#206](IssueEvidence/206.md).
+- **Owned-resource cleanup:** QA removed only the two uniquely named aliases created before the fixture entered its `try` block and the run-timestamp-matched empty `/tmp/r283-docker-DLxPbJ` directory. Underlying image IDs preserved; no source volume or container existed. See #215 evidence.
+
+## 2026-11-12 — #206 200%-modeled responsive dialog boundary
+
+- **Observation:** QA-only `tests/e2e/issues215-206-qa.spec.ts`, run against the latest already-built but not re-frozen app: responsive checks at 320/390/768/1440 passed; `document.documentElement.style.zoom='200%'` at viewport 1440×900 measured Canvas background dialog `top=-24.203125px`, failing the viewport containment assertion. Root cause UNKNOWN; this may reflect a real overflow/layout problem or the CSS zoom model and needs Manager review. Do not mark 200% AC PASS or weaken the assertion.
+- **Separate native fullscreen result:** Actual Chromium Fullscreen API case in the same two-case run passed, including exact `document.fullscreenElement` shell identity, Viewer-only live status, dialog bounds and fullscreen exit. This is a local browser result only.
+- **Disposition:** pending Manager decision on whether the CSS 200% model is representative and whether product correction is needed. The run was before final source freeze; full verifier remains blocked separately by recovery fixture. Evidence: [Issue #206](IssueEvidence/206.md).
+- **Manager interpretation and retest (append):** Manager reviewed the root `style.zoom=200%` experiment as an unsuitable model because it interacts with `100dvh`/fullscreen CSS. The original -24.203125px finding stays preserved as a model failure, not a product defect. Approved modeling uses fresh Chromium context 720×450 CSS viewport + DPR2 for 1440×900 physical at modeled 200%; actual Ctrl+Plus remains NOT RUN. QA corrected test file only; focused responsive + native fullscreen browser retest **2/2 PASS (10.7s)**. Final frozen combined verification still required.
+
+## 2026-11-12 — #215/#206 frozen high-risk verifier selected-browser failure
+
+- **Run:** shared `issue-215-20261112T031631-8765fac70102`, source fingerprint `d976e99e04616f6a8c0a56c623f6043a5c67299182b84d391f9a615ef093516f`, JSON SHA256 `8b482764725562021641e11a523fe12d946fa2e8a54040c6f9f63788b32d515d`.
+- **Passes:** 13/14 selected-browser tests; signed G7 browser 2/2 (includes actual Reader/revoke/expiry test); earlier 12 required cases through affected-browser pass. Specific status in [#215](IssueEvidence/215.md), #206 details in [206 evidence](IssueEvidence/206.md).
+- **Failure:** existing `tests/e2e/issues215-206.spec.ts` T206 long flow timed out at line157 reopening the View menu after reload and resize to320px. `viewer-menu-helper.ts:27` pointer click retried; the full-screen CSS shell (`data-fullscreen=true`, native fullscreen false) intercepted pointer events. Other selected specs passed, including separate 320/390/768/1440 + modeled200% and actual native fullscreen extra.
+- **Disposition:** precise cause unknown; no source fix applied by QA. Required `selected-browser` FAIL blocks the aggregate; app-smoke and final8 gates are NOT RUN. Preserve this exact run/trace. Manager must determine test timing/viewport vs UI defect and approve any rework before a new full frozen run; all earlier PASS are exact-source but not a complete gate.
+- **Trace clarification (append):** actual trace shows `mobileDrawer.isVisible()` false ~6ms after viewport resize, so the helper did not close the drawer before attempting the trigger click. Final page snapshot nevertheless shows the mobile layer drawer still present. Do not describe a drawer-close click as the cause; viewport/matchMedia timing remains an investigation lead, not a confirmed cause. Root preserved a copy of the exact trace.
+
+## 2026-11-12 — #215/#206 frozen verifier #3 affected-browser failure
+
+- **Run:** shared `issue-215-20261112T033419-e4f227798526`, source fingerprint `90f19bb024b92bb0a81bd3abe1a19b05b08474d0af8be15e7be64ebf80200d78`, JSON SHA256 `f1d11312906c6a1a12b46d9091a8300d8c79920e1de73445041807b33f1fb286`.
+- **Failure:** required `affected-browser` `tests/e2e/upload.spec.ts` 6/7 PASS, `TC-ISSUE-001/LIST` line379 failed because exact `getByLabel('파일명')` matched two inputs. Trace/error context: `test-results/upload-TC-ISSUE-001-LIST-l-b8986--and-current-change-persist/` and `data/verify-local/issue-215-20261112T033419-e4f227798526/affected-browser.log`.
+- **Disposition:** underlying cause unresolved (duplicate form controls in DOM vs outdated strict locator). No QA source change. The selected-browser and remaining nine planned gates did not run; aggregate remains FAIL. Review and any fix require a fresh frozen 21-case run. See shared [#215](IssueEvidence/215.md) and [#206 evidence](IssueEvidence/206.md).
+
+- Issue #206 · root supplementary Scene-first browser `root-scene-results` and diagnostic `root-scene-diagnostic` FAIL: white sample threshold >230 rejected one-pixel MSAA neutral max192 (GL error0, red556, canonical invariants true). Test sampling assumption repaired to substantial background contrast; `root-scene-retest` 1/1 PASS4.3s. No product renderer change; [evidence](IssueEvidence/206.md).
+
+- Issue #215 · [evidence](IssueEvidence/215.md) · run `issue-215-20261112T024841-cd1ca066a397` · `recovery-docker` · `FAIL` · code `1` · module `recovery-docker` · cause UNKNOWN · fix pending fingerprint `f1876c8fdf991969eb61aacb6ac8916ea892b817b1e857a1041f19de06efc54a` · retest pending.
+
+- Issue #215 · [evidence](IssueEvidence/215.md) · run `issue-215-20261112T024841-cd1ca066a397` · `build` · `NOT RUN` · code `None` · module `build` · cause UNKNOWN · fix pending fingerprint `f1876c8fdf991969eb61aacb6ac8916ea892b817b1e857a1041f19de06efc54a` · retest pending.
+
+- Issue #215 · [evidence](IssueEvidence/215.md) · run `issue-215-20261112T024841-cd1ca066a397` · `g7-browser` · `NOT RUN` · code `None` · module `g7-browser` · cause UNKNOWN · fix pending fingerprint `f1876c8fdf991969eb61aacb6ac8916ea892b817b1e857a1041f19de06efc54a` · retest pending.
+
+- Issue #215 · [evidence](IssueEvidence/215.md) · run `issue-215-20261112T024841-cd1ca066a397` · `scene-browser` · `NOT RUN` · code `None` · module `scene-browser` · cause UNKNOWN · fix pending fingerprint `f1876c8fdf991969eb61aacb6ac8916ea892b817b1e857a1041f19de06efc54a` · retest pending.
+
+- Issue #215 · [evidence](IssueEvidence/215.md) · run `issue-215-20261112T024841-cd1ca066a397` · `selected-browser` · `NOT RUN` · code `None` · module `selected-browser` · cause UNKNOWN · fix pending fingerprint `f1876c8fdf991969eb61aacb6ac8916ea892b817b1e857a1041f19de06efc54a` · retest pending.
+
+- Issue #215 · [evidence](IssueEvidence/215.md) · run `issue-215-20261112T024841-cd1ca066a397` · `app-smoke` · `NOT RUN` · code `None` · module `app-smoke` · cause UNKNOWN · fix pending fingerprint `f1876c8fdf991969eb61aacb6ac8916ea892b817b1e857a1041f19de06efc54a` · retest pending.
+
+- Issue #215 · [evidence](IssueEvidence/215.md) · run `issue-215-20261112T024841-cd1ca066a397` · `g7-policy` · `NOT RUN` · code `None` · module `g7-policy` · cause UNKNOWN · fix pending fingerprint `f1876c8fdf991969eb61aacb6ac8916ea892b817b1e857a1041f19de06efc54a` · retest pending.
+
+- Issue #215 · [evidence](IssueEvidence/215.md) · run `issue-215-20261112T024841-cd1ca066a397` · `g7-upgrade-policy` · `NOT RUN` · code `None` · module `g7-upgrade-policy` · cause UNKNOWN · fix pending fingerprint `f1876c8fdf991969eb61aacb6ac8916ea892b817b1e857a1041f19de06efc54a` · retest pending.
+
+- Issue #215 · [evidence](IssueEvidence/215.md) · run `issue-215-20261112T024841-cd1ca066a397` · `oci-negative` · `NOT RUN` · code `None` · module `oci-negative` · cause UNKNOWN · fix pending fingerprint `f1876c8fdf991969eb61aacb6ac8916ea892b817b1e857a1041f19de06efc54a` · retest pending.
+
+- Issue #215 · [evidence](IssueEvidence/215.md) · run `issue-215-20261112T024841-cd1ca066a397` · `docker-roles` · `NOT RUN` · code `None` · module `docker-roles` · cause UNKNOWN · fix pending fingerprint `f1876c8fdf991969eb61aacb6ac8916ea892b817b1e857a1041f19de06efc54a` · retest pending.
+
+- Issue #215 · [evidence](IssueEvidence/215.md) · run `issue-215-20261112T024841-cd1ca066a397` · `scene-worker-integration` · `NOT RUN` · code `None` · module `scene-worker-integration` · cause UNKNOWN · fix pending fingerprint `f1876c8fdf991969eb61aacb6ac8916ea892b817b1e857a1041f19de06efc54a` · retest pending.
+
+- Issue #215 · [evidence](IssueEvidence/215.md) · run `issue-215-20261112T024841-cd1ca066a397` · `scene-worker-oci` · `NOT RUN` · code `None` · module `scene-worker-oci` · cause UNKNOWN · fix pending fingerprint `f1876c8fdf991969eb61aacb6ac8916ea892b817b1e857a1041f19de06efc54a` · retest pending.
+
+- Issue #215 · [evidence](IssueEvidence/215.md) · run `issue-215-20261112T031631-8765fac70102` · `selected-browser` · `FAIL` · code `1` · module `selected-browser` · cause UNKNOWN · fix pending fingerprint `d976e99e04616f6a8c0a56c623f6043a5c67299182b84d391f9a615ef093516f` · retest pending.
+
+- Issue #215 · [evidence](IssueEvidence/215.md) · run `issue-215-20261112T031631-8765fac70102` · `app-smoke` · `NOT RUN` · code `None` · module `app-smoke` · cause UNKNOWN · fix pending fingerprint `d976e99e04616f6a8c0a56c623f6043a5c67299182b84d391f9a615ef093516f` · retest pending.
+
+- Issue #215 · [evidence](IssueEvidence/215.md) · run `issue-215-20261112T031631-8765fac70102` · `g7-policy` · `NOT RUN` · code `None` · module `g7-policy` · cause UNKNOWN · fix pending fingerprint `d976e99e04616f6a8c0a56c623f6043a5c67299182b84d391f9a615ef093516f` · retest pending.
+
+- Issue #215 · [evidence](IssueEvidence/215.md) · run `issue-215-20261112T031631-8765fac70102` · `g7-upgrade-policy` · `NOT RUN` · code `None` · module `g7-upgrade-policy` · cause UNKNOWN · fix pending fingerprint `d976e99e04616f6a8c0a56c623f6043a5c67299182b84d391f9a615ef093516f` · retest pending.
+
+- Issue #215 · [evidence](IssueEvidence/215.md) · run `issue-215-20261112T031631-8765fac70102` · `oci-negative` · `NOT RUN` · code `None` · module `oci-negative` · cause UNKNOWN · fix pending fingerprint `d976e99e04616f6a8c0a56c623f6043a5c67299182b84d391f9a615ef093516f` · retest pending.
+
+- Issue #215 · [evidence](IssueEvidence/215.md) · run `issue-215-20261112T031631-8765fac70102` · `docker-roles` · `NOT RUN` · code `None` · module `docker-roles` · cause UNKNOWN · fix pending fingerprint `d976e99e04616f6a8c0a56c623f6043a5c67299182b84d391f9a615ef093516f` · retest pending.
+
+- Issue #215 · [evidence](IssueEvidence/215.md) · run `issue-215-20261112T031631-8765fac70102` · `recovery-docker` · `NOT RUN` · code `None` · module `recovery-docker` · cause UNKNOWN · fix pending fingerprint `d976e99e04616f6a8c0a56c623f6043a5c67299182b84d391f9a615ef093516f` · retest pending.
+
+- Issue #215 · [evidence](IssueEvidence/215.md) · run `issue-215-20261112T031631-8765fac70102` · `scene-worker-integration` · `NOT RUN` · code `None` · module `scene-worker-integration` · cause UNKNOWN · fix pending fingerprint `d976e99e04616f6a8c0a56c623f6043a5c67299182b84d391f9a615ef093516f` · retest pending.
+
+- Issue #215 · [evidence](IssueEvidence/215.md) · run `issue-215-20261112T031631-8765fac70102` · `scene-worker-oci` · `NOT RUN` · code `None` · module `scene-worker-oci` · cause UNKNOWN · fix pending fingerprint `d976e99e04616f6a8c0a56c623f6043a5c67299182b84d391f9a615ef093516f` · retest pending.
+
+- Issue #215 · - 2026-11-12T03:35:10+00:00 interpretation of `issue-215-20261112T031631-8765fac70102`: cause E2E viewer-menu helper sampled mobile Drawer before React matchMedia resize effect; Drawer then made header inert during click; fix Helper waits for desktop region to become mobile dialog, closes Drawer through UI, waits header inert cleanup; source pending new frozen fingerprint; regression T206-05 minimized browser repro pre-fix 3/6 FAIL, post-fix 10/10 PASS; original T206 PASS; combined spec 4/4 PASS; retest pending.
+
+- Issue #215 · [evidence](IssueEvidence/215.md) · run `issue-215-20261112T033419-e4f227798526` · `affected-browser` · `FAIL` · code `1` · module `affected-browser` · cause UNKNOWN · fix pending fingerprint `90f19bb024b92bb0a81bd3abe1a19b05b08474d0af8be15e7be64ebf80200d78` · retest pending.
+
+- Issue #215 · [evidence](IssueEvidence/215.md) · run `issue-215-20261112T033419-e4f227798526` · `selected-browser` · `NOT RUN` · code `None` · module `selected-browser` · cause UNKNOWN · fix pending fingerprint `90f19bb024b92bb0a81bd3abe1a19b05b08474d0af8be15e7be64ebf80200d78` · retest pending.
+
+- Issue #215 · [evidence](IssueEvidence/215.md) · run `issue-215-20261112T033419-e4f227798526` · `app-smoke` · `NOT RUN` · code `None` · module `app-smoke` · cause UNKNOWN · fix pending fingerprint `90f19bb024b92bb0a81bd3abe1a19b05b08474d0af8be15e7be64ebf80200d78` · retest pending.
+
+- Issue #215 · [evidence](IssueEvidence/215.md) · run `issue-215-20261112T033419-e4f227798526` · `g7-policy` · `NOT RUN` · code `None` · module `g7-policy` · cause UNKNOWN · fix pending fingerprint `90f19bb024b92bb0a81bd3abe1a19b05b08474d0af8be15e7be64ebf80200d78` · retest pending.
+
+- Issue #215 · [evidence](IssueEvidence/215.md) · run `issue-215-20261112T033419-e4f227798526` · `g7-upgrade-policy` · `NOT RUN` · code `None` · module `g7-upgrade-policy` · cause UNKNOWN · fix pending fingerprint `90f19bb024b92bb0a81bd3abe1a19b05b08474d0af8be15e7be64ebf80200d78` · retest pending.
+
+- Issue #215 · [evidence](IssueEvidence/215.md) · run `issue-215-20261112T033419-e4f227798526` · `oci-negative` · `NOT RUN` · code `None` · module `oci-negative` · cause UNKNOWN · fix pending fingerprint `90f19bb024b92bb0a81bd3abe1a19b05b08474d0af8be15e7be64ebf80200d78` · retest pending.
+
+- Issue #215 · [evidence](IssueEvidence/215.md) · run `issue-215-20261112T033419-e4f227798526` · `docker-roles` · `NOT RUN` · code `None` · module `docker-roles` · cause UNKNOWN · fix pending fingerprint `90f19bb024b92bb0a81bd3abe1a19b05b08474d0af8be15e7be64ebf80200d78` · retest pending.
+
+- Issue #215 · [evidence](IssueEvidence/215.md) · run `issue-215-20261112T033419-e4f227798526` · `recovery-docker` · `NOT RUN` · code `None` · module `recovery-docker` · cause UNKNOWN · fix pending fingerprint `90f19bb024b92bb0a81bd3abe1a19b05b08474d0af8be15e7be64ebf80200d78` · retest pending.
+
+- Issue #215 · [evidence](IssueEvidence/215.md) · run `issue-215-20261112T033419-e4f227798526` · `scene-worker-integration` · `NOT RUN` · code `None` · module `scene-worker-integration` · cause UNKNOWN · fix pending fingerprint `90f19bb024b92bb0a81bd3abe1a19b05b08474d0af8be15e7be64ebf80200d78` · retest pending.
+
+- Issue #215 · [evidence](IssueEvidence/215.md) · run `issue-215-20261112T033419-e4f227798526` · `scene-worker-oci` · `NOT RUN` · code `None` · module `scene-worker-oci` · cause UNKNOWN · fix pending fingerprint `90f19bb024b92bb0a81bd3abe1a19b05b08474d0af8be15e7be64ebf80200d78` · retest pending.
+
+- Issue #215 · - 2026-11-12T03:44:13+00:00 interpretation of `issue-215-20261112T033419-e4f227798526`: cause LIST E2E getByLabel matched visible filename textbox and hidden streamed SSR duplicate, causing strict two-node locator failure; fix Test-only hidden duplicate retained; locator changed to strict visible role textbox; source pending new frozen fingerprint; regression Old locator red under hidden clone; focused LIST 1/1 PASS and full upload.spec.ts 7/7 PASS after fix; retest pending.
+
+- Issues #215/#206 · Greenfield extra setup/account selectors: standalone503 lackedbootstrap; four-case prerequisite cascade failed on partial label collision between accountLink/loginInput. Root exact:true test-only repair (2files/5lookups), bounded first-admin+logs2/2 PASS8.3s. EarlierFAILsretained; actual product accessible label unchanged. Root initial ESLint wrongcwd config error corrected→PASS. Newfullsourceverification pending; [evidence](IssueEvidence/215.md).
+
+- Issue #215 · [evidence](IssueEvidence/215.md) · run `issue-215-20261112T040658-8bc84f5d50f4` · `g7-browser` · `FAIL` · code `1` · module `g7-browser` · cause UNKNOWN · fix pending fingerprint `67ac6fca25ca3a03a92dedf800b18659eae0cd34126fe0d6f1e1dc6109ad1ff1` · retest pending.
+
+- Issue #215 · [evidence](IssueEvidence/215.md) · run `issue-215-20261112T040658-8bc84f5d50f4` · `scene-browser` · `NOT RUN` · code `None` · module `scene-browser` · cause UNKNOWN · fix pending fingerprint `67ac6fca25ca3a03a92dedf800b18659eae0cd34126fe0d6f1e1dc6109ad1ff1` · retest pending.
+
+- Issue #215 · [evidence](IssueEvidence/215.md) · run `issue-215-20261112T040658-8bc84f5d50f4` · `affected-browser` · `NOT RUN` · code `None` · module `affected-browser` · cause UNKNOWN · fix pending fingerprint `67ac6fca25ca3a03a92dedf800b18659eae0cd34126fe0d6f1e1dc6109ad1ff1` · retest pending.
+
+- Issue #215 · [evidence](IssueEvidence/215.md) · run `issue-215-20261112T040658-8bc84f5d50f4` · `selected-browser` · `NOT RUN` · code `None` · module `selected-browser` · cause UNKNOWN · fix pending fingerprint `67ac6fca25ca3a03a92dedf800b18659eae0cd34126fe0d6f1e1dc6109ad1ff1` · retest pending.
+
+- Issue #215 · [evidence](IssueEvidence/215.md) · run `issue-215-20261112T040658-8bc84f5d50f4` · `app-smoke` · `NOT RUN` · code `None` · module `app-smoke` · cause UNKNOWN · fix pending fingerprint `67ac6fca25ca3a03a92dedf800b18659eae0cd34126fe0d6f1e1dc6109ad1ff1` · retest pending.
+
+- Issue #215 · [evidence](IssueEvidence/215.md) · run `issue-215-20261112T040658-8bc84f5d50f4` · `g7-policy` · `NOT RUN` · code `None` · module `g7-policy` · cause UNKNOWN · fix pending fingerprint `67ac6fca25ca3a03a92dedf800b18659eae0cd34126fe0d6f1e1dc6109ad1ff1` · retest pending.
+
+- Issue #215 · [evidence](IssueEvidence/215.md) · run `issue-215-20261112T040658-8bc84f5d50f4` · `g7-upgrade-policy` · `NOT RUN` · code `None` · module `g7-upgrade-policy` · cause UNKNOWN · fix pending fingerprint `67ac6fca25ca3a03a92dedf800b18659eae0cd34126fe0d6f1e1dc6109ad1ff1` · retest pending.
+
+- Issue #215 · [evidence](IssueEvidence/215.md) · run `issue-215-20261112T040658-8bc84f5d50f4` · `oci-negative` · `NOT RUN` · code `None` · module `oci-negative` · cause UNKNOWN · fix pending fingerprint `67ac6fca25ca3a03a92dedf800b18659eae0cd34126fe0d6f1e1dc6109ad1ff1` · retest pending.
+
+- Issue #215 · [evidence](IssueEvidence/215.md) · run `issue-215-20261112T040658-8bc84f5d50f4` · `docker-roles` · `NOT RUN` · code `None` · module `docker-roles` · cause UNKNOWN · fix pending fingerprint `67ac6fca25ca3a03a92dedf800b18659eae0cd34126fe0d6f1e1dc6109ad1ff1` · retest pending.
+
+- Issue #215 · [evidence](IssueEvidence/215.md) · run `issue-215-20261112T040658-8bc84f5d50f4` · `recovery-docker` · `NOT RUN` · code `None` · module `recovery-docker` · cause UNKNOWN · fix pending fingerprint `67ac6fca25ca3a03a92dedf800b18659eae0cd34126fe0d6f1e1dc6109ad1ff1` · retest pending.
+
+- Issue #215 · [evidence](IssueEvidence/215.md) · run `issue-215-20261112T040658-8bc84f5d50f4` · `scene-worker-integration` · `NOT RUN` · code `None` · module `scene-worker-integration` · cause UNKNOWN · fix pending fingerprint `67ac6fca25ca3a03a92dedf800b18659eae0cd34126fe0d6f1e1dc6109ad1ff1` · retest pending.
+
+- Issue #215 · [evidence](IssueEvidence/215.md) · run `issue-215-20261112T040658-8bc84f5d50f4` · `scene-worker-oci` · `NOT RUN` · code `None` · module `scene-worker-oci` · cause UNKNOWN · fix pending fingerprint `67ac6fca25ca3a03a92dedf800b18659eae0cd34126fe0d6f1e1dc6109ad1ff1` · retest pending.

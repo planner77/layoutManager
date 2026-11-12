@@ -4,6 +4,7 @@ import { randomBytes, scryptSync } from 'node:crypto';
 import path from 'node:path';
 import { makeG7RuntimeFixture } from './tests/helpers/g7-runtime';
 const fixture=makeG7RuntimeFixture();
+process.env.G7_RUNTIME_E2E_FIXTURE_DB ??= fixture.databasePath;
 const controlledClock=process.env.G7_RUNTIME_E2E_MONOTONIC_CLOCK==='true';
 const port=process.env.G7_RUNTIME_E2E_PORT ?? '3319';
 const origin='http://127.0.0.1:'+port;

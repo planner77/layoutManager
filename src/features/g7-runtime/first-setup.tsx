@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { invalidateSessionStatus } from './session-status';
 
 type SetupState={state:string;csrfToken:string};
 export function RuntimeFirstSetup() {
@@ -33,7 +34,7 @@ export function RuntimeFirstSetup() {
       if(!response.ok)throw new Error(result?.error?.code??'SETUP_UNAVAILABLE');
       setCompleted(true);
     }catch(e){setError(e instanceof Error?e.message:'관리자 등록에 실패했습니다.');}
-    finally{setBusy(false);}
+    finally{invalidateSessionStatus();setBusy(false);}
   }
   return <section className="mx-auto max-w-xl space-y-5 rounded-xl border bg-white p-6"
     data-testid="g7-first-setup">

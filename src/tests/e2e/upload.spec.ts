@@ -376,7 +376,19 @@ test("TC-ISSUE-001/LIST: list API, filters, detail and current change persist", 
   for (const query of ["page=0", "format=EXE", "current=yes", "site=a&site=b"])
     expect((await request.get(`/api/cad-files?${query}`)).status()).toBe(400);
   await page.goto("/");
-  await page.getByLabel("파일명", { exact: true }).fill("issue-");
+  // Next's streamed hidden tree can retain an identically named search field
+  // during hydration. Keep this duplicate hidden to exercise locator semantics.
+  await page.evaluate(() => {
+    const hidden = document.createElement("div");
+    hidden.hidden = true;
+    const label = document.createElement("label");
+    label.textContent = "파일명";
+    label.append(document.createElement("input"));
+    hidden.append(label);
+    document.body.append(hidden);
+  });
+  await expect(page.getByRole("textbox", { name: "파일명", exact: true })).toHaveCount(1);
+  await page.getByRole("textbox", { name: "파일명", exact: true }).fill("issue-");
   await page
     .getByRole("combobox", { name: "사업장 / 법인", exact: true })
     .selectOption("이슈검증");

@@ -2,45 +2,28 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { useSessionStatusSnapshot } from '@/features/g7-runtime/session-status';
 
 export function OperationsLogsLink() {
   const pathname = usePathname();
-  const [allowed, setAllowed] = useState(false);
+  const session=useSessionStatusSnapshot();
+  const [allowedFor, setAllowedFor] = useState<typeof session|null>(null);
   useEffect(() => {
-    let current: AbortController | undefined;
+    const controller=new AbortController();
+    if(session.kind!=='signed-in')return ()=>controller.abort();
     const check = async () => {
-      current?.abort();
-      const controller = new AbortController();
-      current = controller;
       try {
-        const status = await fetch('/api/g7-runtime/status', {
-          credentials: 'same-origin', cache: 'no-store', signal: controller.signal,
-        });
-        if (!status.ok || (await status.json()).state !== 'ACTIVE') {
-          if (!controller.signal.aborted) setAllowed(false);
-          return;
-        }
-        // A fresh Greenfield install has no identity yet. Do not generate log
-        // access denials while the operator is still creating the first Admin.
-        const session = await fetch('/api/g7-runtime/auth/session', {
-          credentials: 'same-origin', cache: 'no-store', signal: controller.signal,
-        });
-        if (!session.ok) {
-          if (!controller.signal.aborted) setAllowed(false);
-          return;
-        }
         const response = await fetch('/api/operations/logs/access', {
           credentials: 'same-origin', cache: 'no-store', signal: controller.signal,
         });
         const body = response.ok ? await response.json() : null;
-        if (!controller.signal.aborted) setAllowed(body?.allowed === true);
+        if (!controller.signal.aborted) setAllowedFor(body?.allowed === true?session:null);
       } catch {
-        if (!controller.signal.aborted) setAllowed(false);
+        if (!controller.signal.aborted) setAllowedFor(null);
       }
     };
     void check();
-    window.addEventListener('focus', check);
-    return () => { current?.abort(); window.removeEventListener('focus', check); };
-  }, [pathname]);
-  return allowed ? <Link href="/operations/logs" className="flex min-h-11 items-center gap-2">운영 · 서버 로그</Link> : null;
+    return () => controller.abort();
+  }, [pathname,session]);
+  return allowedFor===session&&session.kind==='signed-in' ? <Link href="/operations/logs" className="flex min-h-11 items-center gap-2">운영 · 서버 로그</Link> : null;
 }

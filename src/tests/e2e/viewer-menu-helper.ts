@@ -9,9 +9,16 @@ const groupLabels: Record<Group, string> = {
 };
 
 export async function openViewerMenu(page: Page, group: Group) {
-  const mobileDrawer = page.locator('[data-testid="cad-viewer-shell"] [role="dialog"][data-drawer]');
+  const shell = page.getByTestId('cad-viewer-shell');
+  const mobileDrawer = shell.locator('[role="dialog"][data-drawer]');
+  const mobile = await page.evaluate(() => matchMedia('(max-width: 767px)').matches);
+  if (mobile) {
+    // A resize can precede the React matchMedia effect. The still-mounted desktop
+    // panel has role=region; wait for its mobile dialog transition before checking.
+    await expect(shell.locator('[role="region"][data-drawer]')).toHaveCount(0);
+  }
   if (await mobileDrawer.isVisible().catch(() => false)) {
-    if (await page.evaluate(() => matchMedia('(max-width: 767px)').matches)) {
+    if (mobile) {
       const panel = await mobileDrawer.getAttribute('data-drawer');
       const closeName = panel === 'layers' ? '레이어 패널 접기' :
         panel === 'outlines' ? '외곽선 목록 닫기' :
@@ -24,6 +31,7 @@ export async function openViewerMenu(page: Page, group: Group) {
     }
   }
   const trigger = page.locator(`[data-viewer-group="${group}"]`);
+  await expect.poll(() => trigger.evaluate(node => !node.closest('header')?.inert)).toBe(true);
   if (await trigger.getAttribute('aria-expanded') !== 'true') await trigger.click();
   const menu = page.getByRole('menu', { name: `${groupLabels[group]} 명령` });
   await expect(menu).toBeVisible();

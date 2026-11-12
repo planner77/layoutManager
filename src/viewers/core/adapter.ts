@@ -32,6 +32,8 @@ import { ViewerLoadError, isKnownSafeDwgAdapterLoadError, isViewerCancellation }
 import {isKnownSafeSceneBuildError,type SceneBuildDiagnostics} from './scene-build-diagnostics';
 import {heapBytes,observeFrame,type ViewerMetric} from './metrics';
 export interface CadViewerAdapter {
+  /** Optional presentation-only canvas color; unsupported adapters expose no capability. */
+  setCanvasBackground?(color:string):void;
   load(source: ArrayBuffer): Promise<{ empty: boolean; entityCount?:number; warning?:string; metrics?: { initializeMs?: number; parseMs?: number } }>;
   loadScene?(source:ReadyScene):ReturnType<CadViewerAdapter['load']>;
   getSceneArtifact?():SceneArtifact|undefined;
@@ -100,6 +102,7 @@ export class ViewerManager {
   private sceneAbort?:AbortController;
   private readyScene?:ReadyScene;
   private loadedStrategy:'READY_SCENE'|'LEGACY_DXF'|'DWG'='LEGACY_DXF';
+  private canvasBackground='#000000';
   constructor(private factory: ViewerFactory, source?: ViewerSource, private measurement?:{renderer:string;versionId:string;report:(metric:ViewerMetric)=>void}, private format:ViewerFormat = 'DXF',private scenePolicy?:SceneLoadPolicy) {this.source=source??new ViewerSource();this.ownsSource=!source;}
   async load(url: string, format: string) {
     this.dispose();
@@ -124,6 +127,7 @@ export class ViewerManager {
     if (generation !== this.generation) { adapter.dispose(); throw new DOMException('취소됨', 'AbortError'); }
     this.adapter = adapter;
     try {
+      adapter.setCanvasBackground?.(this.canvasBackground);
       const loading=performance.now();
       if(scene&&!adapter.loadScene)throw new ViewerLoadError('scene','UNSUPPORTED','이 Renderer는 저장된 Scene Asset을 지원하지 않습니다.');
       const result = scene?await adapter.loadScene!(scene):await adapter.load(bytes.slice(0));
@@ -218,6 +222,13 @@ export class ViewerManager {
     return true;
   }
   fitToView() { this.adapter?.fitToView(); }
+  setCanvasBackground(color:string):boolean {
+    if(!/^#[0-9a-fA-F]{6}$/.test(color))return false;
+    this.canvasBackground=color.toLowerCase();
+    if(!this.adapter?.setCanvasBackground)return false;
+    this.adapter.setCanvasBackground(this.canvasBackground);return true;
+  }
+  supportsCanvasBackground(){return !!this.adapter?.setCanvasBackground;}
   getLoadStrategy(){return this.loadedStrategy;}
   getSceneArtifact(){return this.adapter?.getSceneArtifact?.();}
   getSceneRevision(){return this.readyScene?.revision??null;}

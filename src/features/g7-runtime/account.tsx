@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { runtimeJson, RuntimeClientError, type RuntimeSession } from './client';
+import { invalidateSessionStatus } from './session-status';
 
 type User = { id: string; login: string; status: string; mustChangePassword: boolean;
   roles: string[]; siteIds: string[]; specialGrants: string[] };
@@ -58,7 +59,7 @@ export function RuntimeAccount() {
         setSession(null); setUsers([]); setSites([]); setEvents([]);
       }
       setError(failure instanceof Error ? failure.message : '요청을 처리하지 못했습니다.');
-    } finally { inFlight.current = false; setBusy(false); }
+    } finally { invalidateSessionStatus(); inFlight.current = false; setBusy(false); }
   }
   async function write(action: string, data: object) {
     // A fresh proof avoids stale authorization following a different tab's logout.
@@ -98,7 +99,7 @@ export function RuntimeAccount() {
     </section> : <>
       <section className={card} aria-labelledby="session-heading">
         <h2 id="session-heading" className="font-semibold">현재 세션</h2>
-        <p className="break-all text-sm">사용자: {session.actor.id}</p>
+        <p className="text-sm">로그인된 계정입니다.</p>
         <p className="text-sm">역할: {session.actor.roles.join(', ') || '없음'} · 도면 변경: {session.runtime.cadWriteEnabled ? '활성' : '비활성'}</p>
         <div className="flex flex-wrap gap-3">
           <Button type="button" variant="outline" disabled={busy} onClick={() => void run(refresh, '현재 세션과 권한을 다시 확인했습니다.')}>세션 새로 확인</Button>
