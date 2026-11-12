@@ -80,3 +80,19 @@ Manager `gpt-6-astra`는 Root의 실제 실행 영수증과 독립 QA `gpt-6-lun
 - 이번 수용은 이미지 게시 범위다. host writer exclusion `NOT_PROVEN`, 실제 사용자 login/auth·off-host backup/key custody `NOT_RUN`, READY Scene `NOT_EXERCISED`는 남는다. 운영 배포/rollback·전체 DR 수용·Issue 종료는 수행하거나 승인하지 않았다. #229/#231 기존 보호를 해제하지 않는다.
 
 Root가 이 결과의 docs-only 후속 commit/push를 맡는다. 후속 문서 commit은 게시 이미지의 source SHA를 대체하지 않으며 새 이미지 재빌드·게시를 유발하지 않는다.
+
+## Manager 보완 설계 — 0.62.0 호환 clone 경로 (2026-11-12, 출고 전)
+
+현재 clean source `e4ad67a`의 실제 0.61.0 sealed baseline → 후보 0.62.0 migrator `plan`은 `UPGRADE_COMPATIBLE`, `from=0.61.0`, `to=0.62.0`, `steps=['COMPATIBLE','COMPATIBLE']`, `requiresApproval=false`를 반환했다. `release_local_compat.prove`의 단일-step 고정 기대가 이 유효 경로를 `CLONE_REGISTRY_EDGE`로 거부한다. `data/release0620/compat-plan-diagnosis.json`에 원본 로컬 관측을 보존한다. Manager가 이 보완 설계와 아래 AC를 승인한 뒤 Developer가 구현하고 QA가 독립 검증한다.
+
+- 검사기는 `steps`가 Python `list`이고 길이 1–32이며 모든 원소가 정확한 문자열 `COMPATIBLE`일 때만 허용한다. 기존 `state=UPGRADE_COMPATIBLE`, sealed baseline의 정확한 `from`, 후보 package 버전의 정확한 `to`, `requiresApproval is False`를 유지하고 `from != to`를 추가한다. 누락·빈 배열·비배열·비문자열·다른 step·`MIGRATION` 포함·33개 이상·state/from/to/approval 위조는 apply 전에 차단한다.
+- 실제 migrator의 registry BFS·schema/data/runtime 매 edge 검증을 변경하지 않는다. Clone apply 후 논리 tables·CAD bytes·install/schema/source/image·app health/worker 및 소유 볼륨 cleanup 검증을 그대로 수행한다. 제품 registry·DB·인증·UI는 변경하지 않는다.
+- 1-step와 실제 2-step 양성, 모든 위조 음성, 2-step `prove`의 apply·post-validation·cleanup 모의 통과를 회귀로 고정한다. Developer는 RED→GREEN과 `test:release-local`을 로컬 ignored `data/release0620/repair0700`에 보존한다. Root는 새 commit 후 exact-source 실제 clone compatibility를 다시 수행한다. 이 보완만으로 GHCR 게시/이슈 종료를 주장하지 않는다.
+
+### 독립 QA — pre-commit 수용 (2026-11-12)
+
+독립 QA는 0700 private repair 디렉터리를 사용해 `ReleaseCompatPlanTests` 2/2, `test:release-local` 17/17, 기존 G7 upgrade 회귀 11/11, TypeScript typecheck, ESLint, production build를 통과시켰다. ESLint는 오류 0, 기존 경고 12건이다. 기록은 [IssueEvidence/282](IssueEvidence/282.md)와 [TestReport](TestReport.md)에 있다.
+
+앞선 전체 release 23-case 검증은 candidate source `e4ad67ade4917a8b51699bcf253b645b2fe86ffb`에서 23/23 PASS, `stale=false`, sealed JSON SHA256 `26ef6b9ed778dbb6399ce0237b9847f3cdd1024ed0672e78a499558a03a90cf3`였으나, 실제 sealed baseline clone은 `CLONE_REGISTRY_EDGE`에서 차단됐다. 원인으로 Root가 관측한 실제 migrator plan은 0.61.0→0.62.0의 두 `COMPATIBLE` step이며 구 검사기는 단일 step만 허용했다. 별도 062228 실행은 23개 로그 뒤 증거 JSON 저장이 0755 private 디렉터리 권한 때문에 실패해 **unsealed harness failure**로 보존하며 PASS로 사용하지 않는다. 재실행에는 Root가 만든 별도의 0700 증거 디렉터리를 사용했다.
+
+현재 보완은 local-plan contract의 허용 범위와 음성 경계, synthetic `prove`의 후속 검증/cleanup 경로만 확인했다. 새 source commit 이후 Root가 actual sealed clone compatibility와 전체 release gates를 수행해야 한다. 새 source full release/actual compatibility PASS, GHCR write, Issue close는 아직 없다.

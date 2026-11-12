@@ -178,10 +178,14 @@ def prove(proof_path: str, build_record: dict) -> dict:
         old_migrator = proof['planData']['inventory']['images']['migrator']['id']
         before = volume_scan(volume, old_migrator)
         plan = migrator(volume, build_record, 'plan')
-        need(plan.get('state') == 'UPGRADE_COMPATIBLE'
+        steps = plan.get('steps') if type(plan) is dict else None
+        need(type(plan) is dict
+             and plan.get('state') == 'UPGRADE_COMPATIBLE'
              and plan.get('from') == before['logical']['install']['version']
              and plan.get('to') == build_record['version']
-             and plan.get('steps') == ['COMPATIBLE']
+             and plan.get('from') != plan.get('to')
+             and type(steps) is list and 1 <= len(steps) <= 32
+             and all(type(step) is str and step == 'COMPATIBLE' for step in steps)
              and plan.get('requiresApproval') is False, 'CLONE_REGISTRY_EDGE')
         upgraded = migrator(volume, build_record, 'apply')
         need(upgraded.get('state') == 'G7_GREENFIELD_READY'

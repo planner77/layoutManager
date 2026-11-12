@@ -15,6 +15,76 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
 import release_local as release
 import release_local_registry as registry
+import release_local_compat as compat
+
+
+class ReleaseCompatPlanTests(unittest.TestCase):
+    """Clone pre-apply plan gate and the unchanged post-apply proof path."""
+
+    def run_proof(self, plan, *, candidate_version='0.62.0', positive=False):
+        source = 'b' * 40
+        roles = {role: {'imageId': 'sha256:' + letter * 64,
+                        'localTag': 'fixture:' + candidate_version + ('-migrate' if role == 'migrator' else '')}
+                 for role, letter in (('app', 'a'), ('migrator', 'b'), ('cpu-worker', 'c'))}
+        record = {'version': candidate_version, 'sourceCommit': source, 'roles': roles}
+        proof = {'plan': Path('/synthetic/plan.json'), 'archive': Path('/synthetic/archive'),
+                 'key': Path('/synthetic/key'), 'planData': {'inventory': {'images': {'migrator': {'id': 'old-image'}}}}}
+        old_install = {'version': '0.61.0', 'schemaId': 'schema', 'installId': 'install'}
+        new_install = {**old_install, 'version': candidate_version, 'sourceCommit': source,
+                       'appImage': roles['app']['localTag'], 'migratorImage': roles['migrator']['localTag']}
+        storage = {'cadCount': 1, 'sceneAssetCount': 0, 'readyJobs': 0, 'currentScenes': 0}
+        before = {'logical': {'install': old_install, 'tables': {'Location': 'same'},
+                              'storage': storage}, 'files': [{'path': 'cad/fixture.dxf', 'sha256': 'a' * 64}]}
+        after = {'logical': {'install': new_install, 'tables': {'Location': 'same'},
+                             'storage': storage}, 'files': before['files']}
+        with mock.patch.object(compat.baseline, 'input_paths', return_value=proof), \
+             mock.patch.object(compat, 'node_json', side_effect=[{'state': 'RESTORED_ISOLATED'},
+                                                                 {'state': 'VERIFIED_ISOLATED'}]), \
+             mock.patch.object(compat, 'volume_scan', side_effect=[before, after]) as scan, \
+             mock.patch.object(compat, 'migrator', side_effect=lambda _volume, _record, action:
+                               plan if action == 'plan' else {'state': 'G7_GREENFIELD_READY', 'mode': 'UPGRADE'}) as migrate, \
+             mock.patch.object(compat, 'app_and_worker', return_value={'appHealth': 'PASS', 'worker': 'IDLE'}) as runtime, \
+             mock.patch.object(compat, 'cleanup') as cleanup:
+            if positive:
+                result = compat.prove('synthetic-proof', record)
+                self.assertEqual(result['state'], 'CANDIDATE_COMPATIBLE')
+                self.assertEqual(result['from'], '0.61.0')
+                self.assertEqual(result['to'], candidate_version)
+                self.assertEqual(migrate.call_count, 2)
+                self.assertEqual([call.args[2] for call in migrate.call_args_list], ['plan', 'apply'])
+                self.assertEqual(scan.call_count, 2)
+                runtime.assert_called_once()
+            else:
+                with self.assertRaisesRegex(compat.Incompatible, 'CLONE_REGISTRY_EDGE'):
+                    compat.prove('synthetic-proof', record)
+                self.assertEqual(migrate.call_count, 1, 'invalid plan must stop before apply')
+                self.assertEqual(scan.call_count, 1)
+                runtime.assert_not_called()
+            cleanup.assert_called_once()
+
+    def test_one_and_two_compatible_steps_reach_post_validation_and_cleanup(self):
+        for steps in (['COMPATIBLE'], ['COMPATIBLE', 'COMPATIBLE']):
+            with self.subTest(steps=steps):
+                self.run_proof({'state': 'UPGRADE_COMPATIBLE', 'from': '0.61.0', 'to': '0.62.0',
+                                'steps': steps, 'requiresApproval': False}, positive=True)
+
+    def test_invalid_plan_shapes_are_rejected_before_apply(self):
+        valid = {'state': 'UPGRADE_COMPATIBLE', 'from': '0.61.0', 'to': '0.62.0',
+                 'steps': ['COMPATIBLE', 'COMPATIBLE'], 'requiresApproval': False}
+        invalid = ({'steps': []}, {'steps': None}, {'steps': 'COMPATIBLE'},
+                   {'steps': [1]}, {'steps': [True]}, {'steps': ['UNKNOWN']},
+                   {'steps': ['MIGRATION']}, {'steps': ['COMPATIBLE', 'MIGRATION']},
+                   {'steps': ['COMPATIBLE'] * 33}, {'state': 'READY'},
+                   {'from': '0.61.1'}, {'to': '0.61.1'},
+                   {'requiresApproval': True}, {'requiresApproval': 1})
+        for change in invalid:
+            with self.subTest(change=change):
+                self.run_proof({**valid, **change})
+        missing = dict(valid)
+        del missing['steps']
+        self.run_proof(missing)
+        same = {**valid, 'to': '0.61.0'}
+        self.run_proof(same, candidate_version='0.61.0')
 
 
 class FakeHTTP:

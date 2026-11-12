@@ -3,6 +3,7 @@
 - 전역·Viewer 메뉴에 공통 서버 재조회 기반 로그인 상태를 표시하고 계정 변경·복귀·경로 진입 때 갱신한다. 비활성 탭 heartbeat는 추가하지 않았다.
 - Three DXF Canvas에 브라우저 공통 RGB 배경색 선택·저장/복원 UI를 추가했다. Manager가 지원 Adapter에만 전달하며 원본 Scene/export의 색상은 보존한다. 저장된 과거 Scene의 흰색이 원래 검정이었는지는 추정하지 않는다.
 - Greenfield0.61.1→0.62.0 동일 Schema 호환 edge 및 package/lock을 선언했다. Final local high-risk run `issue-215-20261112T041239-8277e5bf5269` passed 21/21, stale=false; exact source/result and limitations are in [TestReport U-ISSUES-215-206-20261112](TestReport.md#u-issues-215-206-20261112) and IssueEvidence. Feature commit `0261044a444bc1cf51e85f3e0be1be190fee33ae` was pushed to Main. The docs-only follow-up is recorded separately from this source commit; actual Git history is authoritative. GHCR publication, production deployment, and issue closure were not performed.
+- #282 pre-commit clone compatibility gate repair: actual 0.61.0→0.62.0 plan had two valid `COMPATIBLE` steps; repair allows 1–32 exact compatible edges and preserves strict plan checks. Focused tests, release-local suite, typecheck, lint and build pass. Prior 0755 final-evidence write failure remains unsealed; the prior e4ad 23/23 run does not establish actual clone compatibility. Fresh exact-source clone/full release are pending Root; no GHCR write or Issue closure.
 
 ## 0.61.1 — 로컬 Issue Lifecycle·수동 GHCR 출고 (2026-11-11)
 

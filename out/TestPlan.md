@@ -3864,3 +3864,7 @@ Manager 설계→Sol 구현→Manager review→Luna QA 시험/문서→Manager �
 [Issue24](Issue24.md)의 TC-MASTER-001~007을 구현 전 수용 기준으로 확정한다. legacy populated DB 보존과 재분류, Current 경쟁/rollback, 변조/비활성 chain, 관리·등록 Browser 흐름 및 기존 전체 회귀를 독립 QA가 검증한다.
 
 - TC-MASTER-008 (PR #27 P2 리뷰): 미분류 층 상세에서 `/api/masters?active=true`의 HTTP 503 + JSON 오류를 Browser route로 주입하고 재분류 `form` 내부 `role=alert`로 오류 안내가 나타나는지 검증한다. Next.js `#__next-route-announcer__`도 `role=alert`이므로 전역 `getByRole("alert")` 선택을 금지한다. 버전 목록·재분류 폼이 유지되는지 확인하고 실패 주입을 제거해 새로고침하면 form 오류가 사라지며 정상 선택·재분류 흐름이 복원되어야 한다. 기존 TC-MASTER-003/005/007 E2E에 추가하고 PR CI에서 재검증한다.
+
+## AC282-COMPAT-0620 — 다중 COMPATIBLE clone 경로 (2026-11-12)
+
+[Issue282](Issue282.md)의 Manager 보완 설계에 따라 `release_local_compat.prove` 경계만 검증한다. `TC-282-COMPAT-1`: 1-step 및 실제 0.61.0→0.61.1→0.62.0의 2-step `COMPATIBLE` plan을 허용한다. `TC-282-COMPAT-2`: missing/empty/non-list/non-string/unknown/`MIGRATION`/mixed/>32 steps, wrong state/from/to, approval true/truthy, same from/to를 apply 전에 `CLONE_REGISTRY_EDGE`로 거부한다. `TC-282-COMPAT-3`: 2-step `prove` mock가 restore→verify→baseline scan→plan→apply→post logical/CAD/source/image check→app/worker→owned cleanup까지 도달한다. `TC-282-COMPAT-4`: Root가 새 source commit 뒤 실제 sealed baseline clone에서 전체 compatibility를 재실행한다. RED/수정 후 GREEN 및 미실행/실패는 TestReport·IssueEvidence에 구분해 기록한다.
