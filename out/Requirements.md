@@ -1,6 +1,6 @@
 ## #215 / #206 기능 요구 (2026-11-12)
 
-R215 서버 관측 로그인 상태와 R206 브라우저 공통 Three DXF Canvas 선호색 요구·범위·AC 정본은 [Issues215-206](Issues215-206.md)이다. 인증/DB 정책·원본/영속 Scene 변경 없이 구현하며 현재 시험 NOT RUN이다.
+R215 서버 관측 로그인 상태와 R206 브라우저 공통 Three DXF Canvas 선호색 요구·범위·AC 정본은 [Issues215-206](Issues215-206.md)이다. 코드 구현 및 Manager 로컬 수용이 완료됐다. frozen source `67ac6fca25ca3a03a92dedf800b18659eae0cd34126fe0d6f1e1dc6109ad1ff1`의 최종 high-risk verifier는 21/21 PASS이며 세부 AC별 근거와 실운영 한계는 [TestReport U-ISSUES-215-206-20261112](TestReport.md#u-issues-215-206-20261112) 및 [IssueEvidence/215](IssueEvidence/215.md)를 따른다. GHCR 게시·운영 배포·이슈 종료는 미실행이다.
 
 ## #282 로컬 3-role 출고 (2026-11-11)
 

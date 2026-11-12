@@ -3708,3 +3708,7 @@ Latest Main initially `870d3cf0a4f8e42d2e5c4132076d3b7ab9c52089`; confirmed PR b
 - Issue #215 · [evidence](IssueEvidence/215.md) · run `issue-215-20261112T040658-8bc84f5d50f4` · `scene-worker-integration` · `NOT RUN` · code `None` · module `scene-worker-integration` · cause UNKNOWN · fix pending fingerprint `67ac6fca25ca3a03a92dedf800b18659eae0cd34126fe0d6f1e1dc6109ad1ff1` · retest pending.
 
 - Issue #215 · [evidence](IssueEvidence/215.md) · run `issue-215-20261112T040658-8bc84f5d50f4` · `scene-worker-oci` · `NOT RUN` · code `None` · module `scene-worker-oci` · cause UNKNOWN · fix pending fingerprint `67ac6fca25ca3a03a92dedf800b18659eae0cd34126fe0d6f1e1dc6109ad1ff1` · retest pending.
+
+- Issue #215 · [evidence](IssueEvidence/215.md) · run `issue-215-20261112T043307-0377041c6d4f` · `docs-policy-review` · `FAIL` · code `1` · module `docs-policy-review` · cause UNKNOWN · fix pending fingerprint `248fcaa9fed8d14d662caa697c2d42ae28485824c34a50f88e550dd42cb01ed8` · retest pending.
+
+- Issue #215 · - 2026-11-12T04:33:31+00:00 interpretation of `issue-215-20261112T043307-0377041c6d4f`: cause Root supplied docs-review conclusion longer than the CLI 240-character limit; docs-links passed.; fix Use a bounded named Manager review conclusion; no document or product changes.; regression docs-policy-review validates bounded reviewer text.; retest issue-215-20261112T043326-0a5879818521.

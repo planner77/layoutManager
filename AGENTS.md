@@ -10,9 +10,9 @@
 
 2026-11-11 실제 수용: repository Actions disabled·workflows15개 disabled, Main ruleset `26731716`의 deletion/non-fast-forward 및 Tag ruleset `26731135` 보호를 유지했다. PR/check 제거 후 비강제 Main push·source Actions run0을 확인했고, 이미지 source `a53921a`에서 로컬23/23·실제 복구/후보 호환·Owner GO·GHCR0.61.1 세 역할 candidate/final readback·격리 pull smoke를 완료했다. [Issue282 증거](out/IssueEvidence/282.md)가 정본이다. 이전5ec HALT/실패 원장은 보존한다. 후속 docs-only commit은 이미지 source와 구분하고 기존0.61.0/latest/Git v* tag·운영 배포/DB/CAD/flags를 자동 변경하지 않는다. 실제 사용자 auth·외부DR·host writer/READY 한계는 열린 상태이며 매 실행 전 최신 보호 설정을 재확인한다.
 
-## #215 / #206 구현 선행 설계 (2026-11-12)
+## #215 / #206 구현·로컬 수용 완료 (2026-11-12)
 
-[Issues215-206](out/Issues215-206.md)는 로그인 상태 표시·Three DXF Canvas 배경 설정의 요구/ADR/AC 정본이다. Manager 선행 설계 후 Developer 순차 구현, 독립 QA, Manager 인수 및 root commit/push 순서를 따른다. 후보0.62.0, 현재 시험 NOT RUN. 상단 #279/#281 PR0·Actions0 정책을 유지한다.
+[Issues215-206](out/Issues215-206.md)는 로그인 상태 표시·Three DXF Canvas 배경 설정의 요구/ADR/AC 정본이다. Manager 선행 설계 → Developer 구현 → 독립 QA → Manager 인수를 완료했다. `0.62.0` feature commit `0261044a444bc1cf51e85f3e0be1be190fee33ae`가 Main에 push 됐다. 최종 local high-risk verifier는 21/21 PASS, stale=false다. native-clock 실패와 controlled disposable monotonic-clock 결과는 별도 보고한다. GHCR·배포·Issue 종료는 수행하지 않았다. 후속 docs-only 기록은 feature source commit과 구분하며 실제 commit/push 상태는 Git history를 따른다. 상단 #279/#281 PR0·Actions0 정책을 유지한다.
 
 ## #273 / PR #278 — PR CI #741 실패: P2 nonce 강화 후 잔존 synthetic 실행 ID 테스트 계약 보정 (2026-11-09)
 

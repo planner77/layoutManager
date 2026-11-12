@@ -1,6 +1,6 @@
 ## TP-215-206 (2026-11-12)
 
-[Issues215-206](Issues215-206.md)의 T215-01~04, T206-01~05, T-COMBINED가 선행 시험 계약이다. 하나의 동결 high-risk verify:local 실행으로 두 이슈 증거를 연결하되 실제 signed auth·WebGL·export·fullscreen/반응형 근거를 구분한다. 현재 전부 NOT RUN.
+[Issues215-206](Issues215-206.md)의 T215-01~04, T206-01~05, T-COMBINED가 시험 계약이다. 최종 controlled-clock frozen high-risk verifier `issue-215-20261112T041239-8277e5bf5269`는 **21/21 PASS**, stale=false로 완료됐다. native-clock 실패와 그 뒤 승인된 기존 disposable monotonic fixture 검증은 구분하여 기록하며, AC별 지원/부분 범위는 [TestReport U-ISSUES-215-206-20261112](TestReport.md#u-issues-215-206-20261112), 두 이슈의 증거는 [IssueEvidence/215](IssueEvidence/215.md) 및 [IssueEvidence/206](IssueEvidence/206.md)에서 확인한다. 실제 Ctrl+Plus 브라우저 확대, 현장 CAD/GPU, GHCR·운영 배포는 미검증이다.
 
 ## #282 로컬 3-role 출고 (2026-11-11)
 
