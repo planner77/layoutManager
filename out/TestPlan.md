@@ -3868,3 +3868,7 @@ Manager 설계→Sol 구현→Manager review→Luna QA 시험/문서→Manager �
 ## AC282-COMPAT-0620 — 다중 COMPATIBLE clone 경로 (2026-11-12)
 
 [Issue282](Issue282.md)의 Manager 보완 설계에 따라 `release_local_compat.prove` 경계만 검증한다. `TC-282-COMPAT-1`: 1-step 및 실제 0.61.0→0.61.1→0.62.0의 2-step `COMPATIBLE` plan을 허용한다. `TC-282-COMPAT-2`: missing/empty/non-list/non-string/unknown/`MIGRATION`/mixed/>32 steps, wrong state/from/to, approval true/truthy, same from/to를 apply 전에 `CLONE_REGISTRY_EDGE`로 거부한다. `TC-282-COMPAT-3`: 2-step `prove` mock가 restore→verify→baseline scan→plan→apply→post logical/CAD/source/image check→app/worker→owned cleanup까지 도달한다. `TC-282-COMPAT-4`: Root가 새 source commit 뒤 실제 sealed baseline clone에서 전체 compatibility를 재실행한다. RED/수정 후 GREEN 및 미실행/실패는 TestReport·IssueEvidence에 구분해 기록한다.
+
+## TC-MASTER-005-SSR — 숨긴 streaming 복제의 strict locator (2026-11-12)
+
+[Issue282](Issue282.md)의 Manager 보완 설계에 따라 실제 pre-0.25 legacy DB browser 시험을 유지한다. AC1: 실제 위치 identity는 2개 매치(숨긴 `DIV#S:0` outside Main, 보이는 문단 inside Main)이며 전역 locator는 다중 strict 오류를 내야 한다(이번 RED는 3개, 실제 SSR subtree가 정리된 실행은 2개일 수 있다). AC2: Main 범위 exact locator 수정 후 실제 3개 버전, Current v2, v1–v3 CAD/Viewer GET, 전체 이력 재분류와 후속 identity/count 모두 PASS. AC3: Main 안에 두 번째 보이는 동일 문단을 주입하면 범위 locator도 strict 오류로 거부하며 owned 노드 제거 후 정상 assertion이 다시 PASS. AC4: 정확 Chromium executable을 지정한 표적 browser 재시험, typecheck·lint·build를 통과하고 원래 full release 실패는 보존한다.

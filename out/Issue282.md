@@ -96,3 +96,12 @@ Root가 이 결과의 docs-only 후속 commit/push를 맡는다. 후속 문서 c
 앞선 전체 release 23-case 검증은 candidate source `e4ad67ade4917a8b51699bcf253b645b2fe86ffb`에서 23/23 PASS, `stale=false`, sealed JSON SHA256 `26ef6b9ed778dbb6399ce0237b9847f3cdd1024ed0672e78a499558a03a90cf3`였으나, 실제 sealed baseline clone은 `CLONE_REGISTRY_EDGE`에서 차단됐다. 원인으로 Root가 관측한 실제 migrator plan은 0.61.0→0.62.0의 두 `COMPATIBLE` step이며 구 검사기는 단일 step만 허용했다. 별도 062228 실행은 23개 로그 뒤 증거 JSON 저장이 0755 private 디렉터리 권한 때문에 실패해 **unsealed harness failure**로 보존하며 PASS로 사용하지 않는다. 재실행에는 Root가 만든 별도의 0700 증거 디렉터리를 사용했다.
 
 현재 보완은 local-plan contract의 허용 범위와 음성 경계, synthetic `prove`의 후속 검증/cleanup 경로만 확인했다. 새 source commit 이후 Root가 actual sealed clone compatibility와 전체 release gates를 수행해야 한다. 새 source full release/actual compatibility PASS, GHCR write, Issue close는 아직 없다.
+
+## Manager 보완 설계 — TC-MASTER-005 숨김 SSR locator (2026-11-12, 출고 전)
+
+현재 source `c83de3b`의 full release run은 required `master-migration-browser`에서 10 PASS/1 FAIL/12 NOT RUN으로 중단됐다. Root가 보존한 trace와 `data/release0620/c83de3b/master-migration-failure/ancestor-observations.json`에는 이관 위치 문구가 두 노드에 존재한다. 첫째는 Main 밖의 숨긴 `DIV#S:0` 아래, 둘째는 Main 안의 보이는 문단이다. 전역 `getByText`는 둘을 모두 선택해 strict violation을 낸다. Manager가 이 보완 설계·AC를 승인한 뒤 Developer는 기존 `master-migration.spec.ts`만 수정하고 독립 QA가 검증한다.
+
+- 최초/재분류 후의 위치 identity 및 총 3개 버전 문구, Current v2와 모든 v1–v3 CAD 원본·Viewer GET 및 실제 이력 재분류의 기존 주장을 유지한다. 해당 identity/count locator를 `page.getByRole('main')` 아래로 한정하고 exact text/strict uniqueness를 유지한다. `.first()`, force click, sleep/retry, 제품·브라우저 버전 변경은 사용하지 않는다.
+- 시험 안에서 Main 밖 숨긴 동일 문구/카운트 복제를 고정해 기존 전역 locator를 RED로 보이고 수정 뒤 PASS를 확인한다. Main 안에 두 번째 보이는 동일 문단을 잠시 넣은 음성 시험은 엄격한 모호성 오류를 요구하고 직접 만든 노드를 제거한다. 실제 legacy DB setup/재분류 경로는 변경하지 않는다. Root는 새 exact source에서 full release gate를 재실행한다.
+
+Independent QA `gpt-6-luna` passed targeted TC-MASTER-005 **1/1**, typecheck/build, and lint (0 errors/12 warnings) with the exact Chromium executable. The original c83 full-release failure is preserved; this focused retest is not a new full-release PASS. See [TestReport](TestReport.md) and [IssueEvidence/282](IssueEvidence/282.md).

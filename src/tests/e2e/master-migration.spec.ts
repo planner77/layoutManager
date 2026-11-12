@@ -16,10 +16,43 @@ test("TC-MASTER-005: actual pre-0.25 database deploy is usable in browser and re
   });
 
   await page.goto(`/cad/locations/${locationId}`);
+  // A streamed SSR subtree outside Main may retain the same text while hidden.
+  await page.evaluate(() => {
+    const hidden = document.createElement("div");
+    hidden.hidden = true;
+    hidden.dataset.testOwnedSsrDuplicate = "true";
+    for (const text of [
+      "이관 사업부 / 미분류 / [사업장] 이관 사업장",
+      "운영 사업부 / 운영 제품 / [법인] 운영 법인",
+      "총 3개 버전 · Current를 변경하면 같은 위치의 기존 Current가 자동 해제됩니다.",
+    ]) {
+      const paragraph = document.createElement("p");
+      paragraph.textContent = text;
+      hidden.append(paragraph);
+    }
+    document.body.append(hidden);
+  });
+  const main = page.getByRole("main");
+  const oldIdentity = "이관 사업부 / 미분류 / [사업장] 이관 사업장";
+  const versionCount = "총 3개 버전 · Current를 변경하면 같은 위치의 기존 Current가 자동 해제됩니다.";
   await expect(
-    page.getByText("이관 사업부 / 미분류 / [사업장] 이관 사업장"),
+    main.getByText(oldIdentity, { exact: true }),
   ).toBeVisible();
-  await expect(page.getByText("총 3개 버전")).toBeVisible();
+  await expect(main.getByText(versionCount, { exact: true })).toBeVisible();
+  await page.evaluate((identity) => {
+    const duplicate = document.createElement("p");
+    duplicate.dataset.testOwnedVisibleDuplicate = "true";
+    duplicate.textContent = identity;
+    document.querySelector("main")?.append(duplicate);
+  }, oldIdentity);
+  try {
+    await expect(main.getByText(oldIdentity, { exact: true }).isVisible())
+      .rejects.toThrow(/strict mode violation/);
+  } finally {
+    await page.locator('[data-test-owned-visible-duplicate="true"]')
+      .evaluate((node) => node.remove());
+  }
+  await expect(main.getByText(oldIdentity, { exact: true })).toBeVisible();
   await expect(
     page.getByRole("row").filter({ hasText: "migrated-v2.dxf" }),
   ).toContainText("Current");
@@ -51,9 +84,9 @@ test("TC-MASTER-005: actual pre-0.25 database deploy is usable in browser and re
     .selectOption(target.buildingId);
   await page.getByRole("button", { name: "전체 이력 재분류" }).click();
   await expect(
-    page.getByText("운영 사업부 / 운영 제품 / [법인] 운영 법인"),
+    main.getByText("운영 사업부 / 운영 제품 / [법인] 운영 법인", { exact: true }),
   ).toBeVisible();
-  await expect(page.getByText("총 3개 버전")).toBeVisible();
+  await expect(main.getByText(versionCount, { exact: true })).toBeVisible();
   await expect(
     page.getByRole("row").filter({ hasText: "migrated-v2.dxf" }),
   ).toContainText("Current");
