@@ -105,3 +105,9 @@ Root가 이 결과의 docs-only 후속 commit/push를 맡는다. 후속 문서 c
 - 시험 안에서 Main 밖 숨긴 동일 문구/카운트 복제를 고정해 기존 전역 locator를 RED로 보이고 수정 뒤 PASS를 확인한다. Main 안에 두 번째 보이는 동일 문단을 잠시 넣은 음성 시험은 엄격한 모호성 오류를 요구하고 직접 만든 노드를 제거한다. 실제 legacy DB setup/재분류 경로는 변경하지 않는다. Root는 새 exact source에서 full release gate를 재실행한다.
 
 Independent QA `gpt-6-luna` passed targeted TC-MASTER-005 **1/1**, typecheck/build, and lint (0 errors/12 warnings) with the exact Chromium executable. The original c83 full-release failure is preserved; this focused retest is not a new full-release PASS. See [TestReport](TestReport.md) and [IssueEvidence/282](IssueEvidence/282.md).
+
+## Manager 최종 로컬 검증 수용 — 0.62.0 재실행 (2026-11-13)
+
+Manager `gpt-6-astra`는 동결 source `bbfe033`의 새 전체 release run `issue-282-20261113T061415-7bd400a120e4`와 독립 QA `gpt-6-luna`의 최종 감사를 검토해 **로컬 출고 검증을 수용**한다. 필수23/23 PASS·stale=false·모든 로그 hash 및 실행 전후 source 일치, 새 Git archive3-role 빌드/OCI identity, 실제 봉인0.61.0→0.62.0 호환성·데이터/CAD 보존·App 조회/Worker 실행·소유 자원 정리를 확인했다. 재작업은 없다. 정확한 실행·digest·제약은 [새 실행 정본](IssueEvidence/282.md#u282-rerun-20261113--fresh-0620-full-release-validation)을 따른다.
+
+앞선 native-clock/증거 저장/clone/이관 locator 실패와 각 보완은 원래 이력으로 남긴다. 합성 monotonic auth fixture 통과는 native host clock이나 실제 사용자 인증을 증명하지 않으며 READY 자료0·현장/외부DR/host writer exclusion의 제약도 유지한다. 이 판단은 GHCR0.62.0 게시·운영 배포·Issue 종료 또는 Owner GO가 아니다. 구체 plan은 `REVIEWABLE_PREFLIGHT`, 실제 별도 출고 승인은 `REQUIRED_EXTERNAL_RECORD`다. Root는 image source를 보존한 별도 docs commit에서 결과를 기록한다.

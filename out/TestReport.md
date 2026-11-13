@@ -5275,3 +5275,11 @@ Run ID / Date / Unit / Version / Commit 또는 uncommitted snapshot / OS·Browse
 
 - Manager approved test-only scope; Developer changed `master-migration.spec.ts` and Issue282/TestPlan prerecords; independent QA `gpt-6-luna` ran the exact Chromium test plus typecheck/lint/build. Run `issue-282-20261112T065743-924c9b57dea4` on `c83de3b05235f25c135ed035ad332e4d2f62e1a8` remains sealed FAIL, `stale=false`, 10 PASS/1 FAIL/12 NOT RUN, JSON SHA256 `a6d4dfed7187c550ef1464efbadcce0ad38bd8dd44ae417328f5b6122a73d705`.
 - Failure was strict selection of two actual nodes: hidden streamed-SSR `DIV#S:0` outside Main and one visible paragraph inside Main—not two visible nodes. Test repair scopes exact identity/count to Main, pins another hidden copy for 3-match RED, and rejects/cleans an additional visible duplicate inside Main. Targeted migration E2E **1/1 PASS**; typecheck/build PASS; lint 0 errors/12 warnings. Actual c83 sealed compatibility PASS is separate; fresh full release 23-gate result remains pending Root. Logs: `data/release0620/master-selector-repair0700/` (mode 0700).
+
+## U282-RERUN-20261113 — 0.62.0 전체 출고 검증 재실행
+
+- 소스 `bbfe033e9e5154954bb90530a06af09a71234e69`, tree `9fb9b6b8788cf2d551639eb4c673208bfb677c4b`, package0.62.0을 동결해 새 release 실행 `issue-282-20261113T061415-7bd400a120e4`를 수행했다. **필수23/23 PASS·exit0·stale=false**, 시작/종료 source 동일, 모든 로그 hash 일치. 2026-11-13 06:14:15–06:21:09UTC의 실제 실행이며 이전 PASS를 승계하지 않았다.
+- 새 Git archive3-role 빌드 및 read-only preflight PASS. 실제 봉인0.61.0 복원본의 새0.62.0 후보 호환성·논리 데이터/CAD 보존·App health/read·Worker IDLE와 소유 자원 정리를 확인했다. 기존38컨테이너의 ID/image/state와 원본 checkout의 사용자 변경을 보존했다.
+- 실제 역할은 Manager gpt-6-astra, 실행 Codex root, 독립 QA gpt-6-luna다. 이전에 지정된5.6모델은 이 세션에서 사용할 수 없어 실제 대행을 명시하며, 구현 변경이나 Developer 수행을 주장하지 않는다.
+- 합성 G7 browser는 기존 승인된 disposable monotonic clock을 사용했다. Native clock/실사용자 인증·실도면/GPU·외부DR·host writer exclusion과 READY0자료의 수용은 별도다. 이전 실패를 삭제하지 않았다. 린트는 오류0/기존경고12다.
+- 정확한23gate/개별 시험 수·증거 hash·새 OCI3digest·구체 preflight 계획 및 제약의 정본은 [Issue282 실행 증거](IssueEvidence/282.md#u282-rerun-20261113--fresh-0620-full-release-validation)다. 공개 기록은 별도 docs commit이며 image source를 대체하지 않는다. GHCR0.62.0 게시·운영 배포·Issue 종료는 미실행이다.

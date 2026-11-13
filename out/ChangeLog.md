@@ -6,6 +6,8 @@
 - #282 pre-commit clone compatibility gate repair: actual 0.61.0→0.62.0 plan had two valid `COMPATIBLE` steps; repair allows 1–32 exact compatible edges and preserves strict plan checks. Focused tests, release-local suite, typecheck, lint and build pass. Prior 0755 final-evidence write failure remains unsealed; the prior e4ad 23/23 run does not establish actual clone compatibility. Fresh exact-source clone/full release are pending Root; no GHCR write or Issue closure.
 - #282 TC-MASTER-005 test-only locator repair: the duplicate was one hidden streamed SSR node outside Main plus one visible paragraph inside Main. Main-scoped exact selectors and ambiguity regressions pass the targeted migration E2E; the original c83 full-release failure remains recorded, and fresh full release is pending Root.
 
+- 2026-11-13 후속: source `bbfe033`의 새 전체 release23/23·새 archive3-role build·실제 봉인0.61.0→0.62.0 후보 호환성 및 cleanup PASS. 앞선 pending/실패는 당시 이력으로 보존하며 새 실행 정본은 [Issue282 증거](IssueEvidence/282.md#u282-rerun-20261113--fresh-0620-full-release-validation)다. 앱/Schema/버전 변경 없이 결과만 기록했다. GHCR게시·운영배포·Issue종료는 미실행이다.
+
 ## 0.61.1 — 로컬 Issue Lifecycle·수동 GHCR 출고 (2026-11-11)
 
 - #281 영향 기반 로컬 검증 CLI·append-only 실패 원장, #283 암호화 복구점/격리 복원, #282 source-bound 수동3-role OCI 출고를 연결했다. source `a53921a180d77861b232fb98aa6989b678aca8ac`의 exact3-role build·실제 backup/candidate 호환·release23/23·Owner GO·candidate/final raw digest readback/pull smoke 및 baseline 불변을 실증했다.

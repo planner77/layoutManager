@@ -1,3 +1,5 @@
+**0.62.0 전체 출고 검증 재실행 완료 (2026-11-13)** — 소스 `bbfe033`의 새 release 실행에서 필수23/23 PASS·`stale=false`, 새 App/Migrator/CPU Worker 빌드와 실제 봉인0.61.0→0.62.0 후보 호환성 검증을 통과했습니다. [실행 증거와 한계](out/IssueEvidence/282.md#u282-rerun-20261113--fresh-0620-full-release-validation)를 확인하세요. 합성 인증 시험의 monotonic clock과 실제 호스트 시계 검증은 구분합니다. GHCR0.62.0 게시·운영 배포·Issue 종료는 미실행이며 이 문서 후속 commit은 이미지 source와 별개입니다.
+
 **0.62.0 source pushed; local Manager acceptance complete** — #215 공통 세션 상태와 #206 Three DXF Canvas 배경색 설정을 추가했습니다. Feature commit `0261044a444bc1cf51e85f3e0be1be190fee33ae`가 Main에 push 됐고 최종 frozen high-risk verifier는 21/21 PASS (`stale=false`)입니다. Runtime QA에는 테스트 전용 disposable monotonic auth clock이 필요했습니다. native host-clock 실패는 별도 보존하며, 실제 host clock PASS를 뜻하지 않습니다. GHCR 게시·운영 배포·Issue 종료는 미수행입니다. 요구·AC·미검증 범위는 [Issues215-206](out/Issues215-206.md), [TestReport](out/TestReport.md), [IssueEvidence](out/IssueEvidence/215.md)에서 확인하세요.
 
 도면의 Three DXF Viewer에서 **보기 → 배경색 설정**을 열어 색상 선택·팔레트·HEX 입력 또는 기본 검정 복원을 사용할 수 있습니다. 선택한 색은 같은 사이트의 이 브라우저 프로필에 저장되어 다른 도면·탭에도 적용됩니다. 저장된 과거 Scene에서 흰색 선이 원래 검정이었는지는 알 수 없어 자동으로 바꾸지 않습니다. 선이 배경과 겹쳐 보이지 않으면 배경색을 조정하세요.
