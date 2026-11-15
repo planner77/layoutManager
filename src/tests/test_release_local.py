@@ -225,6 +225,67 @@ class ReleaseLocalTests(unittest.TestCase):
             with self.assertRaisesRegex(release.Halt, 'OWNER_GO_BINDING'):
                 release.approval(str(path), plan)
 
+    def test_owner_actual_korean_directive_and_rejection_boundaries(self):
+        with tempfile.TemporaryDirectory() as directory:
+            plan = {'planSha256': 'a' * 64,
+                    'source': {'commit': 'b' * 40, 'version': '0.62.0'},
+                    'roles': {role: {'topDescriptor': {'digest': 'sha256:' + letter * 64}}
+                              for role, letter in zip(release.ROLES, 'cde')},
+                    'refs': release.refs('0.62.0', 'b' * 40)}
+            record = {'format': 'RELEASE282-OWNER-GO-V1',
+                      'conversationRef': 'actual-owner-conversation',
+                      'recordedBy': 'release operator',
+                      'verbatimOwnerReply': '정식 버전 GHCR 게시와 도커로 운영 배포 하세요.',
+                      'presentedPlanSha256': plan['planSha256'],
+                      'sourceCommit': plan['source']['commit'], 'version': '0.62.0',
+                      'roleDigests': {role: plan['roles'][role]['topDescriptor']['digest']
+                                      for role in release.ROLES},
+                      'candidateRefs': plan['refs']['candidate'],
+                      'finalRefs': plan['refs']['final']}
+            path = Path(directory) / 'owner.json'
+
+            def check(candidate, accepted):
+                path.write_text(json.dumps(candidate, ensure_ascii=False))
+                path.chmod(0o600)
+                if accepted:
+                    self.assertEqual(release.approval(str(path), plan)['conversationRef'],
+                                     'actual-owner-conversation')
+                    self.assertEqual(json.loads(path.read_text())['verbatimOwnerReply'],
+                                     candidate['verbatimOwnerReply'])
+                else:
+                    with self.assertRaisesRegex(release.Halt, 'OWNER_GO_BINDING'):
+                        release.approval(str(path), plan)
+
+            for reply in ('정식 버전 GHCR 게시와 도커로 운영 배포 하세요.',
+                          '  정식   버전 GHCR 게시와\n 도커로 운영 배포 하세요.  ',
+                          'GO for this exact plan', 'I approve this exact plan.',
+                          '승인합니다', '진행하세요'):
+                with self.subTest(reply=reply):
+                    check({**record, 'verbatimOwnerReply': reply}, True)
+            for reply in ('정식 버전 GHCR 게시와 도커로 운영 배포 하지 마세요.',
+                          '정식 버전 GHCR 게시와 도커로 운영 배포 하세요?',
+                          '정식 버전 GHCR 게시만 하세요.', '도커로 운영 배포 하세요.',
+                          'GHCR 게시와 도커로 운영 배포 하세요.',
+                          '정식 버전 GHCR 게시와 도커로 운영 배포 하세요. 취소',
+                          'NO-GO', 'Do not approve this plan.', '승인하지 않습니다',
+                          '진행하지 마세요', 'GOING elsewhere', 'disapprove'):
+                with self.subTest(reply=reply):
+                    check({**record, 'verbatimOwnerReply': reply}, False)
+            for key, wrong in (('presentedPlanSha256', 'f' * 64),
+                               ('sourceCommit', 'f' * 40), ('version', '0.61.1'),
+                               ('candidateRefs', {}), ('finalRefs', {}),
+                               ('conversationRef', ''), ('recordedBy', '')):
+                with self.subTest(key=key):
+                    check({**record, key: wrong}, False)
+            for role in release.ROLES:
+                with self.subTest(role=role):
+                    check({**record, 'roleDigests': {**record['roleDigests'],
+                          role: 'sha256:' + 'f' * 64}}, False)
+            check(record, True)
+            path.chmod(0o644)
+            with self.assertRaisesRegex(release.recovery.Rejected, 'RECOVERY_PRIVATE_FILE'):
+                release.approval(str(path), plan)
+
     def test_publish_failures_halt_and_never_resume(self):
         class FakeRegistry:
             def __init__(self, tags, failure):

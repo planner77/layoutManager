@@ -454,6 +454,17 @@ def checked_preflight(value: str, graph_root: Path | None = None) -> tuple[dict,
     return plan, record, graphs
 
 
+def affirmative_owner_reply(value: str) -> bool:
+    # Keep the operator's verbatim reply in the record; normalize only for this
+    # narrow textual gate. Substring matches turn NO-GO/negations into approval.
+    normalized = ' '.join(value.split()).casefold()
+    return normalized in {
+        'go', 'go for this exact plan', 'approve', 'i approve this exact plan.',
+        '승인', '승인합니다', '진행', '진행하세요',
+        '정식 버전 ghcr 게시와 도커로 운영 배포 하세요.',
+    }
+
+
 def approval(value: str, plan: dict) -> dict:
     """Operator records a real Owner conversation; this is not identity proof."""
     path = recovery.private_file(value, 128 * 1024)
@@ -465,8 +476,7 @@ def approval(value: str, plan: dict) -> dict:
          and item.get('recordedBy') and isinstance(item.get('recordedBy'), str)
          and item.get('verbatimOwnerReply') and isinstance(item.get('verbatimOwnerReply'), str)
          and 1 <= len(item['verbatimOwnerReply']) <= 4000
-         and any(word in item['verbatimOwnerReply'].casefold()
-                 for word in ('go', 'approve', '승인', '진행'))
+         and affirmative_owner_reply(item['verbatimOwnerReply'])
          and item.get('presentedPlanSha256') == plan['planSha256']
          and item.get('sourceCommit') == plan['source']['commit']
          and item.get('version') == plan['source']['version']

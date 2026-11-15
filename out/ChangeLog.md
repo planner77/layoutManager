@@ -1,5 +1,6 @@
 ## Unreleased — 0.62.0 #215/#206 implementation, local QA accepted (2026-11-12)
 
+- 2026-11-15 출고 도구 보완: 사용자의 명시적인 한국어 GHCR 게시·Docker 배포 지시 원문을 승인 기록에 그대로 보존해 인식한다. 부정·질문·무관한 부분 문자열은 거부하며 정확 source/plan/세 digest/ref 검증을 유지한다. 앱·Schema와 미게시 버전0.62.0은 유지한다. 새 소스의 전체 검증·이미지·실제 게시/배포 결과는 후속 실제 증거로 판정한다.
 - 전역·Viewer 메뉴에 공통 서버 재조회 기반 로그인 상태를 표시하고 계정 변경·복귀·경로 진입 때 갱신한다. 비활성 탭 heartbeat는 추가하지 않았다.
 - Three DXF Canvas에 브라우저 공통 RGB 배경색 선택·저장/복원 UI를 추가했다. Manager가 지원 Adapter에만 전달하며 원본 Scene/export의 색상은 보존한다. 저장된 과거 Scene의 흰색이 원래 검정이었는지는 추정하지 않는다.
 - Greenfield0.61.1→0.62.0 동일 Schema 호환 edge 및 package/lock을 선언했다. Final local high-risk run `issue-215-20261112T041239-8277e5bf5269` passed 21/21, stale=false; exact source/result and limitations are in [TestReport U-ISSUES-215-206-20261112](TestReport.md#u-issues-215-206-20261112) and IssueEvidence. Feature commit `0261044a444bc1cf51e85f3e0be1be190fee33ae` was pushed to Main. The docs-only follow-up is recorded separately from this source commit; actual Git history is authoritative. GHCR publication, production deployment, and issue closure were not performed.
