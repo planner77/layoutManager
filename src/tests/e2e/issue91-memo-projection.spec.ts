@@ -64,7 +64,7 @@ test('TC-R5B-03: actual session export follows Generated Translate/Rotate/Undo a
   await exported(page,f.title,initial,'SESSION','glb');
   if(!await page.getByTestId('viewer-tools-dock').isVisible())await clickViewerTestCommand(page,'viewer-menu-tools');
   await page.getByTestId('canvas-mode-generated').click();
-  if(!await page.getByTestId('viewer-outline-tree').isVisible())await clickViewerTestCommand(page,'viewer-menu-outline-tree');
+  if(!await page.getByTestId('version-tree-panel').isVisible())await clickViewerTestCommand(page,'viewer-menu-outline-tree');
   const row=page.getByTestId('outline-tree-item').first();await row.click();
   await page.getByTestId('generated-translate-x').fill('3');await page.getByTestId('generated-translate-y').fill('4');
   await page.getByTestId('generated-translate-apply').click();
@@ -77,7 +77,7 @@ test('TC-R5B-03: actual session export follows Generated Translate/Rotate/Undo a
   await exported(page,f.title,rotated,'SESSION','glb');
   await page.getByTestId('generated-undo').click();await expect.poll(()=>world(page,f.title)).toEqual(moved);
   await exported(page,f.title,moved,'SESSION','gltf');
-  await row.getByTestId('outline-tree-delete').click();await page.getByTestId('generated-delete-dialog').getByTestId('generated-delete-confirm').click();
+  await row.getByRole('button',{name:/삭제$/}).click();await page.getByTestId('generated-delete-dialog').getByTestId('generated-delete-confirm').click();
   await exported(page,f.title,moved,'BROKEN','glb');
   await page.getByTestId('generated-undo').click();await exported(page,f.title,moved,'SESSION','gltf');
 });

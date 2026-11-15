@@ -3,6 +3,7 @@ import {createHash} from 'node:crypto';
 import {readFileSync} from 'node:fs';
 import {G7_GREENFIELD_SCHEMA_ID, G7_GREENFIELD_BASELINE,
   G7_PREVIOUS_SCENE_JOB_SCHEMA_ID,G7_PREVIOUS_SCENE_JOB_BASELINE,
+  G7_PREVIOUS_CPU_SCHEMA_ID,G7_PREVIOUS_CPU_BASELINE,
   G7_PREVIOUS_ZONES_SCHEMA_ID, G7_PREVIOUS_ZONES_BASELINE,
   hasG7FeatureSchemaHistory} from '../../server/g7-operational/greenfield-schema';
 import {GREENFIELD_UPGRADE_REGISTRY,resolveUpgradeChain} from
@@ -33,6 +34,8 @@ describe('#225 B1 G7 migration registration — 0.59 immutable / 0.60 candidate'
   expect(next.schemaId).toBe(G7_PREVIOUS_SCENE_JOB_SCHEMA_ID);
   expect(next.baseline).toBe(G7_PREVIOUS_SCENE_JOB_BASELINE);
   expect(GREENFIELD_UPGRADE_REGISTRY.releases.find(x=>x.version==='0.61.0'))
+    .toMatchObject({schemaId:G7_PREVIOUS_CPU_SCHEMA_ID,baseline:G7_PREVIOUS_CPU_BASELINE});
+  expect(GREENFIELD_UPGRADE_REGISTRY.releases.find(x=>x.version==='0.63.0'))
     .toMatchObject({schemaId:G7_GREENFIELD_SCHEMA_ID,baseline:G7_GREENFIELD_BASELINE});
   const chain=resolveUpgradeChain(GREENFIELD_UPGRADE_REGISTRY,'0.59.0','0.60.0');
   expect(chain).toHaveLength(1);

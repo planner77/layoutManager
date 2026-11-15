@@ -1,3 +1,11 @@
+## #201 실제 pointer layer 수리
+
+Standalone Canvas 검색 trigger는 공통 보조 패널 toolbar와 모바일 modal backdrop보다 아래 layer에 둔다. 실제 검색 panel·메뉴·modal 우선순위는 유지한다. 실제 재현과 수리/TC-T201-10 정본은 [Issue201](Issue201.md) ADR-T201-13 및 FailureLedger다.
+
+## #201 외곽선·구역 단일 패널 (2026-11-13)
+
+공통 MovableViewerPanel 한 개로 혼합 Tree와 기존 도메인 상세 편집을 제공한다. 기존 Outline/Zone 목록은 동일 패널 필터로 연결하며 두 별도 tree/dock 동시 마운트 금지. 제목 handle와 트리/폼 입력 분리,320px single Drawer/keyboard/ESC/fullscreen/포커스 및 Canvas lifetime 계약은 아래와 동일하다. 설계·AC는 [Issue201](Issue201.md).
+
 ## #206 Canvas 배경 설정 dialog (2026-11-12)
 
 `보기 → 배경색 설정`은 한 번 선택·입력 후 닫는 모달이며 독립 조회/작업 패널이 아니다. 따라서 이동 핸들/DnD/위치 저장 대상에서 제외한다. Viewer fullscreen subtree 안에서 열고 상위 모달 우선·Escape 한 단계·포커스 복귀 및 Canvas 입력 분리를 적용한다. 수용/시험 기준은 [Issues215-206](Issues215-206.md)을 참조한다.

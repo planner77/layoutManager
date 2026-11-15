@@ -1,3 +1,19 @@
+## ADR-T201-15 현재 Viewer 권한 거절 전체 폐기
+
+실제 SiteGrant 회수 뒤 Tree403에도 기존 Outline overlay3개가 남은 RED를 근거로, scope-bound 단방향 cache/overlay/form 폐기 및 명시 retry만 허용하는 정책을 채택한다. 상세 [Issue201](Issue201.md).
+
+## ADR-T201-12 출고 manifest 시험 선택 결합
+
+[Issue201](Issue201.md)의 시작/종료 explicit selected_tests 및 bounded readback 재검증을 채택한다. #201 필수 선택 시험의 정확 출고 검증을 위한 최소 계약 수정이며 source/gate 완화는 금지한다.
+
+## ADR-T201-09~10 보완 (2026-11-13)
+
+기존 임시 외곽선 기능 보존·Session epoch 즉시 폐기, root가 소유한 격리 clone에 한정된 exact registered Tree migration 검증을 승인한다. 좁은 예외와 음성 TC는 [Issue201](Issue201.md) 보완절이 정본이며 운영 변경·게시 GO가 아니다.
+
+## ADR-T201-01~08 — Version 분류 폴더와 단일 트리 (2026-11-13)
+
+[Issue201](Issue201.md)의 Manager 선행 확정 ADR을 채택한다. 폴더는 새 독립 조직 정보이며 OutlineType/ZoneCategory/Zone parent를 바꾸지 않는다. Version별 root Zone·Outline membership, creator/Site Admin 빈폴더 soft delete, Editor 협업 편집, CAS/감사/기존 권한 보존 및0.63.0 additive migration을 승인한다. 별도 운영배포/게시 증거는 실행 후 기록한다.
+
 ## ADR-215 / ADR-206 (2026-11-12)
 
 #215는 서버 session 정책을 변경하지 않고 사용자 이벤트로만 공통 상태를 재검증한다. #206는 브라우저 공통 RGB preference와 Three DXF display material만 변경하며 canonical Scene/export는 분리한다. 판단 근거·예외·AC는 [Issues215-206](Issues215-206.md) 참조. 구현/시험 NOT RUN.

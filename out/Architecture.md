@@ -1,3 +1,13 @@
+## #201 known-denial scope invalidation
+
+Tree의 header preflight는 optional expected actor와 CSRF를 동일 실제 session 응답에 결합한다. 현재 generation·정확 Version/SHA의 actor 변경을 발견하면 이전 scope를 폐기하고 공통 identity를1회 재조회하며 mutation을 재시도하지 않는다. known401/403의 no-auto-refresh/명시retry와 구분하고, queued stale callback은 request abort 전에 key를 검사한다. [Issue201](Issue201.md) ADR-T201-23/TC20이 정본이다.
+
+[Issue201](Issue201.md) ADR-T201-15에 따라 현재 actor+Version+SHA의401/403은 동일 Viewer scope의 Tree/Outline/Zone protected cache·overlay·form을 함께 폐기한다. 단방향 client 폐기이며 auth부여/Source reload/자동retryloop는 없다. 실제 RED 및 수리 결과는 FailureLedger/TestReport를 따른다.
+
+## #201 합성 트리 설계 (2026-11-13)
+
+순수 domain tree composer + Version-scoped classification service/repository/API + 단일 MovableViewerPanel을 추가한다. 기존 outline/zone CRUD 소유권은 유지하고 분류 membership은 Zone parent/geometry와 독립이다. G7 guard·transaction CAS·audit 및 actor/Version request generation 격리를 적용한다. 확정 ADR-T201-01~08은 [Issue201](Issue201.md), DB는 [Database](Database.md)가 정본이다. 구현 전 설계이며 실행 증거가 아니다.
+
 ## #215 / #206 구조 (2026-11-12)
 
 공통 서버 상태 provider와 두 header 표시, 이벤트 기반 재검증, presentation-only Manager 배경 capability 및 canonical/export material 분리를 사용한다. 구체 설계·기존 session idle touch 관측·Scene restore 경계는 [Issues215-206](Issues215-206.md)가 정본이다.

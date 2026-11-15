@@ -1,3 +1,4 @@
+import {closeApi, closeRouteFetch} from './direct-api-transport';
 import { expect, test, type Page, type APIRequestContext } from '@playwright/test';
 import {readyGreenfieldSceneVersion} from './ready-scene-fixture';
 import { createRequire } from 'node:module';
@@ -12,16 +13,16 @@ const Database=createRequire(import.meta.url)('better-sqlite3') as new(filename:
 
 async function login(page:Page){
   await page.goto('/g7-runtime');
-  await page.getByLabel('계정').fill('admin');
+  await page.getByLabel('계정',{exact:true}).fill('admin');
   await page.getByLabel('비밀번호',{exact:true}).fill('synthetic-changed-password');
   await page.getByRole('button',{name:'로그인',exact:true}).click();
   await expect(page.getByRole('heading',{name:'현재 세션'})).toBeVisible();
 }
 async function logout(api:APIRequestContext,origin:string){
-  const response=await api.get('/api/g7-runtime/auth/session');
+  const response=await closeApi(api).get('/api/g7-runtime/auth/session');
   if(response.status()!==200)return;
   const session=await response.json();
-  expect((await api.post('/api/g7-runtime/auth/logout',{headers:{origin,'x-csrf-token':session.csrfToken}})).status()).toBe(200);
+  expect((await closeApi(api).post('/api/g7-runtime/auth/logout',{headers:{origin,'x-csrf-token':session.csrfToken}})).status()).toBe(200);
 }
 async function work(page:Page,id:string){
   await page.getByRole('button',{name:'작업',exact:true}).click();await page.getByTestId(id).click();
@@ -42,15 +43,17 @@ function fixtureDb(){
   return new Database(path.join(root,'db','cad.sqlite'),{readonly:true});
 }
 
+test.beforeEach(({page})=>{page.setDefaultTimeout(10_000);});
+
 test('R3 server-first render confirmation, lost response replay, typed groups, Reader and independent restoration',async({page,browser,baseURL})=>{
   test.setTimeout(180_000);
   // The documented LAN HTTP path has getRandomValues but may lack randomUUID.
   await page.addInitScript(()=>Object.defineProperty(crypto,'randomUUID',{configurable:true,value:undefined}));
   await login(page);
   try{
-    const session=await (await page.request.get('/api/g7-runtime/auth/session')).json();
+    const session=await (await closeApi(page.request).get('/api/g7-runtime/auth/session')).json();
     const headers={origin:baseURL!,'x-csrf-token':session.csrfToken};
-    const versionId=await readyGreenfieldSceneVersion(page.request);
+    const versionId=await readyGreenfieldSceneVersion(closeApi(page.request));
     const initialDb=fixtureDb();let initialCreates:number,initialReceipts:number;
     try{
       initialCreates=(initialDb.prepare("SELECT COUNT(*) AS n FROM CadBusinessAudit WHERE version_id=? AND target_kind='OUTLINE' AND action='CREATE'").get(versionId) as {n:number}).n;
@@ -58,7 +61,7 @@ test('R3 server-first render confirmation, lost response replay, typed groups, R
     }finally{initialDb.close();}
     const types=[] as {id:string;name:string;revision:number}[];
     for(const name of ['R3 타입 A','R3 타입 B']){
-      const response=await page.request.post('/api/outline-types',{headers,data:{name,sortOrder:0}});
+      const response=await closeApi(page.request).post('/api/outline-types',{headers,data:{name,sortOrder:0}});
       expect(response.status()).toBe(201);types.push((await response.json()).item);
     }
     let originalGets=0;
@@ -77,7 +80,7 @@ test('R3 server-first render confirmation, lost response replay, typed groups, R
     await page.route(`**/api/cad-files/${versionId}/outlines`,async route=>{
       if(route.request().method()!=='POST'){await route.continue();return;}
       keys.push(route.request().headers()['idempotency-key']);
-      if(first){first=false;const actual=await route.fetch();const data=await actual.json();
+      if(first){first=false;const actual=await closeRouteFetch(route);const data=await actual.json();
         firstOutcome=actual.status()===201?201:data.error?.code??actual.status();
         if(actual.status()!==201){await route.fulfill({response:actual});return;}
         committedId=data.id;await route.abort('failed');
@@ -106,17 +109,17 @@ test('R3 server-first render confirmation, lost response replay, typed groups, R
     }
     await page.getByRole('button',{name:'도구 닫기',exact:true}).click();
     await work(page,'viewer-menu-outline-tree');
-    const tree=page.getByTestId('viewer-outline-tree');
+    const tree=page.getByTestId('version-tree-panel');
     await expect(tree.locator('[data-persistence="server"]')).toHaveCount(3);
-    const pageData=await (await page.request.get(`/api/cad-files/${versionId}/outlines`)).json();
+    const pageData=await (await closeApi(page.request).get(`/api/cad-files/${versionId}/outlines`)).json();
     expect(pageData.outlines.map((row:{id:string})=>row.id)).toContain(committedId);
     expect(pageData.outlines.filter((row:{name:string})=>row.name==='R3 A 볼록')).toHaveLength(1);
     const before=JSON.stringify(pageData.outlines);
     await tree.getByRole('button',{name:'R3 A 볼록 숨기기',exact:true}).click();
-    await tree.getByRole('button',{name:'서버 외곽선 새로고침',exact:true}).click();
+    await tree.getByRole('button',{name:'외곽선 새로고침',exact:true}).click();
     await expect(tree.getByRole('button',{name:'R3 A 볼록 표시',exact:true})).toBeVisible();
-    expect(JSON.stringify((await (await page.request.get(`/api/cad-files/${versionId}/outlines`)).json()).outlines)).toBe(before);
-    await tree.getByRole('treeitem',{name:'R3 B 볼록, CONVEX',exact:true}).click();
+    expect(JSON.stringify((await (await closeApi(page.request).get(`/api/cad-files/${versionId}/outlines`)).json()).outlines)).toBe(before);
+    await tree.locator('[data-persistence="server"]').filter({hasText:'R3 B 볼록'}).click();
     await expect(page.locator(`[data-testid="persisted-outline-path"][data-selected="true"]`)).toHaveCount(1);
     const download=page.waitForEvent('download');await tree.getByRole('button',{name:'업무 WCS JSON (1)',exact:true}).click();
     const downloaded=await download;const file=await downloaded.path();expect(file).toBeTruthy();
@@ -142,9 +145,9 @@ test('R3 server-first render confirmation, lost response replay, typed groups, R
     try{
       const fresh=await consumer.newPage();await login(fresh);await fresh.goto(viewer);await ready(fresh);
       await work(fresh,'viewer-menu-outline-tree');
-      await expect(fresh.getByTestId('viewer-outline-tree').locator('[data-persistence="server"]')).toHaveCount(3);
+      await expect(fresh.getByTestId('version-tree-panel').locator('[data-persistence="server"]')).toHaveCount(3);
       await expect(fresh.getByRole('button',{name:'R3 A 볼록 숨기기',exact:true})).toBeVisible();
-    }finally{await logout(consumer.request,baseURL!);await consumer.close();}
+    }finally{await logout(closeApi(consumer.request),baseURL!);await consumer.close();}
     const db=fixtureDb();let siteId:string;
     try{
       siteId=(db.prepare('SELECT b.site_id AS id FROM CadFileVersion v JOIN CadLocation l ON l.id=v.location_id JOIN Building b ON b.id=l.building_id WHERE v.id=?').get(versionId) as {id:string}).id;
@@ -153,43 +156,43 @@ test('R3 server-first render confirmation, lost response replay, typed groups, R
       expect((db.prepare("SELECT COUNT(*) AS n FROM CadBusinessAudit WHERE version_id=? AND target_id=? AND action='CREATE'").get(versionId,committedId) as {n:number}).n).toBe(1);
       expect((db.prepare('SELECT COUNT(*) AS n FROM CadOutlineCreateReceipt WHERE version_id=? AND outline_id=?').get(versionId,committedId) as {n:number}).n).toBe(1);
     }finally{db.close();}
-    const users=await (await page.request.get('/api/g7-runtime/users/list')).json();
+    const users=await (await closeApi(page.request).get('/api/g7-runtime/users/list')).json();
     const readerId=users.users.find((user:{login:string})=>user.login==='r2reader').id;
-    expect((await page.request.post('/api/g7-runtime/access/grant',{headers,data:{kind:'site',operation:'grant',affectedUserId:readerId,value:siteId}})).status()).toBe(200);
+    expect((await closeApi(page.request).post('/api/g7-runtime/access/grant',{headers,data:{kind:'site',operation:'grant',affectedUserId:readerId,value:siteId}})).status()).toBe(200);
     const reader=await browser.newContext({baseURL,viewport:{width:1440,height:1000}});
     try{
-      const authenticated=await reader.request.post('/api/g7-runtime/auth/login',{headers:{origin:baseURL!},data:{login:'r2reader',password:'synthetic-reader-changed'}});
+      const authenticated=await closeApi(reader.request).post('/api/g7-runtime/auth/login',{headers:{origin:baseURL!},data:{login:'r2reader',password:'synthetic-reader-changed'}});
       expect(authenticated.status()).toBe(200);const identity=await authenticated.json();
-      const catalogue=await reader.request.get(`/api/cad-files/${versionId}/outline-types`);
+      const catalogue=await closeApi(reader.request).get(`/api/cad-files/${versionId}/outline-types`);
       expect(catalogue.status()).toBe(200);expect((await catalogue.json()).canCreate).toBe(false);
-      expect((await reader.request.post(`/api/cad-files/${versionId}/outlines`,{headers:{origin:baseURL!,'x-csrf-token':identity.csrfToken,'x-role':'Admin','Idempotency-Key':keys[0]},
+      expect((await closeApi(reader.request).post(`/api/cad-files/${versionId}/outlines`,{headers:{origin:baseURL!,'x-csrf-token':identity.csrfToken,'x-role':'Admin','Idempotency-Key':keys[0]},
         data:{mode:'APP_CREATED',sourceSha256:pageData.sourceSha256,expectedSceneRevision:pageData.sceneRevision,
           name:'forged',kind:'CONVEX',outlineTypeId:types[0].id,
           geometry:{type:'Polygon',coordinates:[[[0,0],[10,0],[10,10],[0,0]]]}}})).status()).toBe(403);
       const readonly=await reader.newPage();await readonly.goto(viewer);await ready(readonly);await work(readonly,'viewer-menu-outline-tree');
-      await expect(readonly.getByTestId('viewer-outline-tree').locator('[data-persistence="server"]')).toHaveCount(3);
-      await expect(readonly.getByTestId('outline-tree-delete').first()).toBeDisabled();
-    }finally{await logout(reader.request,baseURL!);await reader.close();}
+      await expect(readonly.getByTestId('version-tree-panel').locator('[data-persistence="server"]')).toHaveCount(3);
+      await expect(readonly.getByTestId('version-tree-panel').locator('[data-persistence="server"]').first().getByRole('button',{name:/삭제$/})).toBeDisabled();
+    }finally{await logout(closeApi(reader.request),baseURL!);await reader.close();}
     await page.setViewportSize({width:320,height:800});
     await expect(page.getByTestId('viewer-outline-tree-dock')).toHaveAttribute('aria-modal','true');
     await tree.locator('[data-persistence="server"]').filter({hasText:'R3 B 볼록'}).focus();
     await page.keyboard.press('Home');await page.keyboard.press('End');
-    await page.keyboard.press('Escape');await expect(tree).toHaveCount(0);
+    await page.keyboard.press('Escape');await expect(tree).not.toBeVisible();
     await page.setViewportSize({width:1440,height:1000});await page.reload();await ready(page);
     await work(page,'viewer-menu-outline-tree');
     await expect(page.getByRole('button',{name:'R3 A 볼록 숨기기',exact:true})).toBeVisible();
-    await expect(page.getByTestId('viewer-outline-tree').locator('[data-persistence="session"]')).toHaveCount(0);
-  }finally{await logout(page.request,baseURL!);}
+    await expect(page.getByTestId('version-tree-panel').locator('[data-persistence="session"]')).toHaveCount(0);
+  }finally{await logout(closeApi(page.request),baseURL!);}
 });
 
 test('R3 canonical Source UI, renamed/inactive references and same-WCS Scene replacement preserve stored overlays',async({page,baseURL})=>{
   test.setTimeout(150_000);await login(page);
   try{
-    const session=await (await page.request.get('/api/g7-runtime/auth/session')).json();
+    const session=await (await closeApi(page.request).get('/api/g7-runtime/auth/session')).json();
     const headers={origin:baseURL!,'x-csrf-token':session.csrfToken};
-    const versionId=await readyGreenfieldSceneVersion(page.request);
+    const versionId=await readyGreenfieldSceneVersion(closeApi(page.request));
     const viewer=`/cad/versions/${versionId}/viewer`;
-    const catalogue=await (await page.request.get('/api/outline-types?q='+encodeURIComponent('R3 타입 A'))).json();
+    const catalogue=await (await closeApi(page.request).get('/api/outline-types?q='+encodeURIComponent('R3 타입 A'))).json();
     const type=catalogue.items[0];expect(type).toBeTruthy();
     await page.goto(viewer);await ready(page);
     await page.getByRole('button',{name:'도면',exact:true}).click();
@@ -227,7 +230,7 @@ test('R3 canonical Source UI, renamed/inactive references and same-WCS Scene rep
     const originalGeometry=JSON.stringify(stored.geometry),key=request.headers()['idempotency-key'],body=request.postDataJSON();
     await expect(page.getByTestId('outline-preview')).toHaveCount(0);
     await page.getByRole('button',{name:'도구 닫기',exact:true}).click();await work(page,'viewer-menu-outline-tree');
-    const tree=page.getByTestId('viewer-outline-tree');
+    const tree=page.getByTestId('version-tree-panel');
     await tree.getByRole('button',{name:'R3 원본 정밀 숨기기',exact:true}).click();
     await work(page,'viewer-menu-outline-types');const manager=page.getByTestId('outline-type-manager');
     await manager.getByLabel('이름 검색',{exact:true}).fill('R3 타입 A');
@@ -235,34 +238,34 @@ test('R3 canonical Source UI, renamed/inactive references and same-WCS Scene rep
     await manager.getByRole('button',{name:'R3 타입 A 수정',exact:true}).click();
     await manager.getByLabel('타입 이름 (1~100자)').fill('R3 타입 A 변경');
     await manager.getByRole('button',{name:'변경 저장',exact:true}).click();
-    await expect(tree.getByTestId('outline-tree-group').filter({hasText:'R3 타입 A 변경'})).toHaveCount(1);
+    await expect(tree.locator(`[data-tree-node="outline:${stored.id}"]`)).toContainText('R3 타입 A 변경');
     await expect(tree.getByRole('button',{name:'R3 원본 정밀 표시',exact:true})).toBeVisible();
     await manager.getByRole('button',{name:'R3 타입 A 변경 비활성화',exact:true}).click();
-    await expect(tree.getByTestId('outline-tree-group').filter({hasText:'R3 타입 A 변경 (비활성)'})).toHaveCount(1);
-    const replay=await page.request.post(`/api/cad-files/${versionId}/outlines`,{headers:{...headers,'Idempotency-Key':key},data:body});
+    await expect(tree.locator(`[data-tree-node="outline:${stored.id}"]`)).toContainText('R3 타입 A 변경 (비활성)');
+    const replay=await closeApi(page.request).post(`/api/cad-files/${versionId}/outlines`,{headers:{...headers,'Idempotency-Key':key},data:body});
     expect(replay.status()).toBe(200);expect(await replay.json()).toMatchObject({id:stored.id,replayed:true,outlineType:{active:false}});
     const download=page.waitForEvent('download');await tree.getByRole('button',{name:'원본 기반 JSON (1)',exact:true}).click();
     const payload=JSON.parse(readFileSync((await (await download).path())!,'utf8'));
     expect(payload).toMatchObject({schemaVersion:2,exportSource:'SERVER_SNAPSHOT'});
     expect(payload.outlines[0]).toMatchObject({serverOutlineId:stored.id,outlineTypeName:'R3 타입 A 변경',name:'R3 원본 정밀'});
     await work(page,'viewer-menu-tools');await page.getByRole('button',{name:'도구 닫기',exact:true}).click();
-    const scene=await (await page.request.get(`/api/cad-files/${versionId}/scene`)).json();
-    const data=await (await page.request.get(scene.contentUrl)).json();data.root.name+=' R3 Scene replacement';
+    const scene=await (await closeApi(page.request).get(`/api/cad-files/${versionId}/scene`)).json();
+    const data=await (await closeApi(page.request).get(scene.contentUrl)).json();data.root.name+=' R3 Scene replacement';
     const bytes=Buffer.from(JSON.stringify(data));
-    const changed=await page.request.post(`/api/cad-files/${versionId}/scene`,{headers,data:{
+    const changed=await closeApi(page.request).post(`/api/cad-files/${versionId}/scene`,{headers,data:{
       manifest:{...scene.manifest,byteLength:bytes.length,sha256:createHash('sha256').update(bytes).digest('hex')},
       bytesBase64:bytes.toString('base64'),expectedRevision:scene.revision,
     }});
     expect(changed.status()).toBe(200);const next=await changed.json();expect(next.revision).toBe(scene.revision+1);
-    const afterSceneReplay=await page.request.post(`/api/cad-files/${versionId}/outlines`,{headers:{...headers,'Idempotency-Key':key},data:body});
+    const afterSceneReplay=await closeApi(page.request).post(`/api/cad-files/${versionId}/outlines`,{headers:{...headers,'Idempotency-Key':key},data:body});
     expect(afterSceneReplay.status()).toBe(200);expect(await afterSceneReplay.json()).toMatchObject({id:stored.id,replayed:true});
     await page.reload();await ready(page);await work(page,'viewer-menu-outline-tree');
-    const reloaded=page.getByTestId('viewer-outline-tree');
-    await expect(reloaded.locator(`[data-tree-key="server:${stored.id}"]`)).toBeVisible();
+    const reloaded=page.getByTestId('version-tree-panel');
+    await expect(reloaded.locator(`[data-tree-node="outline:${stored.id}"]`)).toBeVisible();
     await expect(page.locator(`[data-testid="persisted-outline-path"][data-outline-id="${stored.id}"]`)).toHaveCount(1);
-    await reloaded.locator(`[data-tree-key="server:${stored.id}"]`).click();
+    await reloaded.locator(`[data-tree-node="outline:${stored.id}"]`).click();
     await expect(page.locator(`[data-testid="persisted-outline-path"][data-outline-id="${stored.id}"]`)).toHaveAttribute('data-selected','true');
-    const latest=await (await page.request.get(`/api/cad-files/${versionId}/outlines`)).json();
+    const latest=await (await closeApi(page.request).get(`/api/cad-files/${versionId}/outlines`)).json();
     expect(latest.sceneRevision).toBe(next.revision);expect(latest.outlines.find((row:{id:string})=>row.id===stored.id).sceneRevision).toBe(stored.sceneRevision);
     await work(page,'viewer-menu-tools');
     const tools=page.getByTestId('cad-stored-outline-tools');
@@ -270,35 +273,36 @@ test('R3 canonical Source UI, renamed/inactive references and same-WCS Scene rep
     page.once('dialog',dialog=>dialog.accept('R3 원본 수정'));
     await row.getByRole('button',{name:'이름',exact:true}).click();
     await expect(tools.getByText('R3 원본 수정 (r1)',{exact:true})).toBeVisible();
-    const after=await (await page.request.get(`/api/cad-files/${versionId}/outlines`)).json();
+    const after=await (await closeApi(page.request).get(`/api/cad-files/${versionId}/outlines`)).json();
     const edited=after.outlines.find((item:{id:string})=>item.id===stored.id);
     expect(edited.sceneRevision).toBe(next.revision);expect(JSON.stringify(edited.geometry)).toBe(originalGeometry);
     const resetResponse=page.waitForResponse(response=>new URL(response.url()).pathname===`/api/cad-files/${versionId}/reset`&&response.request().method()==='POST');
     page.once('dialog',dialog=>dialog.accept());await work(page,'viewer-menu-reset-source');
     const reset=await resetResponse;expect(reset.status()).toBe(200);
     expect(await reset.json()).toMatchObject({mode:'SOURCE_ONLY'});
-    await expect.poll(async()=>JSON.stringify((await (await page.request.get(`/api/cad-files/${versionId}/outlines`)).json()).outlines)).toBe(JSON.stringify(after.outlines));
+    await expect.poll(async()=>JSON.stringify((await (await closeApi(page.request).get(`/api/cad-files/${versionId}/outlines`)).json()).outlines)).toBe(JSON.stringify(after.outlines));
     await expect(page.locator(`[data-testid="persisted-outline-path"][data-outline-id="${stored.id}"]`)).toHaveCount(1);
   }finally{
-    const session=await (await page.request.get('/api/g7-runtime/auth/session')).json();
-    const active=await (await page.request.get('/api/outline-types?includeInactive=true&q='+encodeURIComponent('R3 타입 A'))).json();
-    const type=active.items[0];if(type&&!type.active)expect((await page.request.patch('/api/outline-types/'+type.id,{
+    const session=await (await closeApi(page.request).get('/api/g7-runtime/auth/session')).json();
+    const active=await (await closeApi(page.request).get('/api/outline-types?includeInactive=true&q='+encodeURIComponent('R3 타입 A'))).json();
+    const type=active.items[0];if(type&&!type.active)expect((await closeApi(page.request).patch('/api/outline-types/'+type.id,{
       headers:{origin:baseURL!,'x-csrf-token':session.csrfToken},data:{expectedRevision:type.revision,active:true},
     })).status()).toBe(200);
-    await logout(page.request,baseURL!);
+    await logout(closeApi(page.request),baseURL!);
   }
 });
 
 
 test('R3 paged catalogue beyond 100, bounded server snapshots and 200 mixed keyboard/mobile tree rows',async({page,baseURL},testInfo)=>{
   test.setTimeout(180_000);await login(page);
+  let releaseOutlineRead:()=>void=()=>{};
   try{
-    const session=await (await page.request.get('/api/g7-runtime/auth/session')).json();
+    const session=await (await closeApi(page.request).get('/api/g7-runtime/auth/session')).json();
     const headers={origin:baseURL!,'x-csrf-token':session.csrfToken};
-    const versionId=await readyGreenfieldSceneVersion(page.request);
+    const versionId=await readyGreenfieldSceneVersion(closeApi(page.request));
     const seeded:{id:string;name:string}[]=[];
     for(let i=1;i<=101;i++){
-      const response=await page.request.post('/api/outline-types',{headers,data:{name:'R3 PAGE '+String(i).padStart(3,'0'),sortOrder:0}});
+      const response=await closeApi(page.request).post('/api/outline-types',{headers,data:{name:'R3 PAGE '+String(i).padStart(3,'0'),sortOrder:0}});
       expect(response.status()).toBe(201);seeded.push((await response.json()).item);
     }
     await page.goto(`/cad/versions/${versionId}/viewer`);await ready(page);await selectPreview(page);
@@ -313,21 +317,21 @@ test('R3 paged catalogue beyond 100, bounded server snapshots and 200 mixed keyb
     await page.getByTestId('outline-type-select').selectOption(seeded[100].id);
     await page.getByTestId('outline-instance-name').fill('R3 101번째 타입');
     await page.getByTestId('outline-typed-confirm').click();await expect(page.getByTestId('outline-preview')).toHaveCount(0);
-    const typed=await (await page.request.get(`/api/cad-files/${versionId}/outlines`)).json();
-    const type=(await (await page.request.get('/api/outline-types?q='+encodeURIComponent('R3 타입 A'))).json()).items[0];
+    const typed=await (await closeApi(page.request).get(`/api/cad-files/${versionId}/outlines`)).json();
+    const type=(await (await closeApi(page.request).get('/api/outline-types?q='+encodeURIComponent('R3 타입 A'))).json()).items[0];
     for(let i=typed.total;i<100;i++){
       const x=(i%10)*3,y=Math.floor(i/10)*3;
-      const response=await page.request.post(`/api/cad-files/${versionId}/outlines`,{headers:{...headers,'Idempotency-Key':randomUUID()},data:{
+      const response=await closeApi(page.request).post(`/api/cad-files/${versionId}/outlines`,{headers:{...headers,'Idempotency-Key':randomUUID()},data:{
         mode:'APP_CREATED',sourceSha256:typed.sourceSha256,expectedSceneRevision:typed.sceneRevision,
         name:'R3 Bulk '+i,kind:'CONVEX',outlineTypeId:type.id,
         geometry:{type:'Polygon',coordinates:[[[x,y],[x+1,y],[x+1,y+1],[x,y]]]},
       }});
       expect(response.status()).toBe(201);
     }
-    const all=await (await page.request.get(`/api/cad-files/${versionId}/outlines`)).json();
+    const all=await (await closeApi(page.request).get(`/api/cad-files/${versionId}/outlines`)).json();
     expect(all.total).toBe(100);const ids:string[]=[];
     for(let offset=0;offset<100;offset+=25){
-      const result=await page.request.get(`/api/cad-files/${versionId}/outlines?offset=${offset}&limit=25`);
+      const result=await closeApi(page.request).get(`/api/cad-files/${versionId}/outlines?offset=${offset}&limit=25`);
       expect(result.status()).toBe(200);const data=await result.json();expect(data.total).toBe(100);
       ids.push(...data.outlines.map((row:{id:string})=>row.id));
     }
@@ -344,21 +348,85 @@ test('R3 paged catalogue beyond 100, bounded server snapshots and 200 mixed keyb
     await page.getByTestId('generated-import-input').setInputFiles({name:'r3-mixed-local.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(buildGeneratedTransfer(doc,4)))});
     await expect(page.getByTestId('generated-json-message')).toContainText('100개 생성 개체를 복원');
     const start=await page.evaluate(()=>performance.now());await work(page,'viewer-menu-outline-tree');
-    const tree=page.getByTestId('viewer-outline-tree');
+    const tree=page.getByTestId('version-tree-panel');
+    // The fixture inserted rows through a second API client. Explicitly refresh
+    // metadata; opening the shared panel keeps its existing snapshot/lifetime.
+    await tree.getByRole('button',{name:'다시 시도',exact:true}).click();
     await expect(tree.getByTestId('outline-tree-item')).toHaveCount(200);
     const elapsed=await page.evaluate(value=>performance.now()-value,start);
-    expect(new Set(await tree.getByTestId('outline-tree-item').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('data-tree-key')))).size).toBe(200);
+    expect(new Set(await tree.getByTestId('outline-tree-item').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('data-tree-node')))).size).toBe(200);
+
+    // TC-T201-22: hold a real authorized Outline response, while independent
+    // Tree metadata is ready. Its late workspace commit adds the footer.
+    let heldOutlineReads=0;
+    const outlineGate=new Promise<void>(resolve=>{releaseOutlineRead=resolve;});
+    let holdingOutline=true;
+    await page.route(`**/api/cad-files/${versionId}/outlines`,async route=>{
+      if(!holdingOutline||route.request().method()!=='GET'){await route.continue();return;}
+      const response=await closeRouteFetch(route);
+      expect(response.status()).toBe(200);
+      const result=await response.json();
+      expect(result.versionId).toBe(versionId);expect(result.sourceSha256).toBe(typed.sourceSha256);
+      expect(result.actorId).toBe(session.actor.id);expect(result.total).toBe(100);
+      heldOutlineReads++;
+      await outlineGate;
+      await route.fulfill({response}).catch(()=>{}); // A superseded read may already be aborted.
+    });
+    await page.evaluate(()=>window.dispatchEvent(new Event('layoutManager:session-invalidated')));
+    await expect.poll(()=>heldOutlineReads,{timeout:5000}).toBeGreaterThan(0);
+    await expect(tree.getByTestId('outline-tree-item')).toHaveCount(200);
+    const footer=tree.getByText('임시 100개 · 서버 100개',{exact:true});
+    await expect(footer).toHaveCount(0);
+    const rowState=()=>leaves.last().evaluate(node=>{
+      const viewport=node.closest<HTMLElement>('[role="tree"]')!;
+      const box=viewport.getBoundingClientRect(),row=node.getBoundingClientRect();
+      const top=box.top+viewport.clientTop,bottom=top+viewport.clientHeight;
+      const ancestors:{top:number;left:number}[]=[];
+      for(let el=viewport.parentElement;el;el=el.parentElement)ancestors.push({top:el.scrollTop,left:el.scrollLeft});
+      return {key:node.getAttribute('data-tree-node'),focused:document.activeElement===node,
+        fullyVisible:row.top>=top-1&&row.bottom<=bottom+1,top:row.top,bottom:row.bottom,
+        height:viewport.clientHeight,scrollTop:viewport.scrollTop,ancestors,window:[window.scrollX,window.scrollY]};
+    });
     const leaves=tree.getByTestId('outline-tree-item');await leaves.first().focus();
     const keyboardStart=await page.evaluate(()=>performance.now());await page.keyboard.press('End');await expect(leaves.last()).toBeFocused();
     const keyboardMs=await page.evaluate(value=>performance.now()-value,keyboardStart);
-    await expect(leaves.last()).toBeInViewport();await page.keyboard.press('Home');
+    await expect(leaves.last()).toBeInViewport();
+    const beforeFooter=await rowState();expect(beforeFooter.fullyVisible).toBe(true);
+    holdingOutline=false;releaseOutlineRead();
+    await expect(footer).toBeVisible();
+    await expect.poll(async()=>(await rowState()).height).toBeLessThan(beforeFooter.height);
+    const afterFooter=await rowState();
+    console.log('T201_RESIZE',JSON.stringify({heldOutlineReads,before:beforeFooter,after:afterFooter}));
+    await expect(leaves.last()).toBeFocused();
+    await expect.poll(async()=>(await rowState()).fullyVisible,{message:'late footer must not obscure the focused last row'}).toBe(true);
+    const repaired=await rowState();
+    expect(repaired.key).toBe(beforeFooter.key);expect(repaired.scrollTop).toBeGreaterThan(beforeFooter.scrollTop);
+    expect(repaired.ancestors).toEqual(beforeFooter.ancestors);expect(repaired.window).toEqual(beforeFooter.window);
+    expect(await canvas!.evaluate(node=>node===document.querySelector('[data-testid="cad-canvas"] canvas'))).toBe(true);
+
+    // Focus outside the Tree must not reveal its old active/selected row on resize.
+    const addFolder=tree.getByRole('button',{name:'폴더 추가',exact:true});await addFolder.focus();
+    const unfocusedBefore=await rowState();await page.keyboard.press('Enter');
+    await expect(tree.getByLabel('폴더 이름')).toBeVisible();await expect(addFolder).toBeFocused();
+    await expect.poll(async()=>(await rowState()).height).toBeLessThan(unfocusedBefore.height);
+    expect((await rowState()).scrollTop).toBe(unfocusedBefore.scrollTop);
+    await tree.getByRole('button',{name:'취소',exact:true}).click();
+    await expect.poll(async()=>(await rowState()).height).toBe(unfocusedBefore.height);
+    await leaves.last().focus();await page.keyboard.press('Home');
+    const firstBranch=tree.locator('[role="treeitem"][aria-level="1"]').first();await expect(firstBranch).toBeFocused();
+    expect(await firstBranch.evaluate(node=>{
+      const viewport=node.closest('[role="tree"]')!.getBoundingClientRect(),header=node.firstElementChild!.getBoundingClientRect();
+      return header.top>=viewport.top-1&&header.bottom<=viewport.bottom+1;
+    })).toBe(true);
     console.log('R3_TREE_200',JSON.stringify({server:100,local:100,openMs:elapsed,endKeyMs:keyboardMs}));
     await page.screenshot({path:testInfo.outputPath('r3-tree-desktop.png')});
     const before=JSON.stringify(all.outlines);
-    await tree.getByRole('button',{name:type.name+' 전체 숨기기',exact:true}).click();
-    await tree.getByRole('button',{name:'서버 외곽선 새로고침',exact:true}).click();
-    await expect(tree.getByRole('button',{name:type.name+' 전체 표시',exact:true})).toBeVisible();
-    expect(JSON.stringify((await (await page.request.get(`/api/cad-files/${versionId}/outlines`)).json()).outlines)).toBe(before);
+    // #201 replaces type groups with independent classification folders. All
+    // these objects are unclassified; group visibility remains session-only.
+    await tree.getByRole('button',{name:'미분류 숨기기',exact:true}).click();
+    await tree.getByRole('button',{name:'외곽선 새로고침',exact:true}).click();
+    await expect(tree.getByRole('button',{name:'미분류 표시',exact:true})).toBeVisible();
+    expect(JSON.stringify((await (await closeApi(page.request).get(`/api/cad-files/${versionId}/outlines`)).json()).outlines)).toBe(before);
     expect(await canvas!.evaluate(node=>node===document.querySelector('[data-testid="cad-canvas"] canvas'))).toBe(true);
     await page.getByRole('button',{name:'보기',exact:true}).click();
     await page.getByRole('menuitem',{name:'브라우저 전체 화면',exact:true}).click();
@@ -366,13 +434,79 @@ test('R3 paged catalogue beyond 100, bounded server snapshots and 200 mixed keyb
     await page.setViewportSize({width:320,height:800});await expect(page.getByTestId('viewer-outline-tree-dock')).toHaveAttribute('aria-modal','true');
     await expect(tree.getByTestId('outline-tree-item')).toHaveCount(200);
     const mobileScroll=await page.evaluate(()=>window.scrollY);
-    await leaves.first().focus();await page.keyboard.press('End');await expect(leaves.last()).toBeFocused();
+    const mobileState=()=>leaves.last().evaluate(node=>{
+      const viewport=node.closest<HTMLElement>('[role="tree"]')!,body=viewport.parentElement!;
+      const row=node.getBoundingClientRect(),style=getComputedStyle(node);
+      const outline=style.outlineStyle==='none'?0:Math.max(0,parseFloat(style.outlineWidth)+parseFloat(style.outlineOffset));
+      const clip={top:0,left:0,right:innerWidth,bottom:innerHeight};
+      const outsideScroll:{top:number;left:number}[]=[];
+      let reachedShell=false;
+      for(let el=node.parentElement;el;el=el.parentElement){
+        const rect=el.getBoundingClientRect(),css=getComputedStyle(el);
+        if(/hidden|clip|scroll|auto/.test(css.overflowX)){
+          clip.left=Math.max(clip.left,rect.left+el.clientLeft);
+          clip.right=Math.min(clip.right,rect.left+el.clientLeft+el.clientWidth);
+        }
+        if(/hidden|clip|scroll|auto/.test(css.overflowY)){
+          clip.top=Math.max(clip.top,rect.top+el.clientTop);
+          clip.bottom=Math.min(clip.bottom,rect.top+el.clientTop+el.clientHeight);
+        }
+        if(el!==viewport&&el!==body)outsideScroll.push({top:el.scrollTop,left:el.scrollLeft});
+        // The fixed immersive shell escapes the short document BODY's clip.
+        if(el.dataset.testid==='cad-viewer-shell'){reachedShell=true;break;}
+      }
+      const hits=[(row.top+row.bottom)/2,row.bottom-2].map(y=>{
+        const hit=document.elementFromPoint((row.left+row.right)/2,y);return !!hit&&(hit===node||node.contains(hit));
+      });
+      return {key:node.getAttribute('data-tree-node'),focused:document.activeElement===node,reachedShell,
+        row:{top:row.top,bottom:row.bottom,left:row.left,right:row.right},clip,outline,
+        rowVisible:row.top>=clip.top-0.5&&row.bottom<=clip.bottom+0.5&&row.left>=clip.left-0.5&&row.right<=clip.right+0.5,
+        outlineVisible:row.top-outline>=clip.top-0.5&&row.bottom+outline<=clip.bottom+0.5&&row.left-outline>=clip.left-0.5&&row.right+outline<=clip.right+0.5,
+        hits,outsideScroll,window:[scrollX,scrollY],treeScroll:viewport.scrollTop,bodyScroll:body.scrollTop,
+        treeHeight:viewport.clientHeight,bodyHeight:body.clientHeight};
+    });
+    await leaves.first().focus();const mobileBefore=await mobileState();
+    await page.keyboard.press('End');await expect(leaves.last()).toBeFocused();
     expect(await leaves.last().evaluate(node=>{
       const viewport=node.closest('[role="tree"]')!.getBoundingClientRect(),row=node.getBoundingClientRect();
       return row.top>=viewport.top-1&&row.bottom<=viewport.bottom+1;
     })).toBe(true);
     expect(await page.evaluate(()=>window.scrollY)).toBe(mobileScroll);
-    await page.keyboard.press('Home');await expect(tree.locator('[role="treeitem"][aria-level="1"]').first()).toBeFocused();
+    const mobileEnd=await mobileState();console.log('T201_MOBILE_CLIP',JSON.stringify({before:mobileBefore,after:mobileEnd}));
+    await page.screenshot({path:testInfo.outputPath('r3-tree-320-end.png')});
+    await expect.poll(async()=>{
+      const state=await mobileState();return state.reachedShell&&state.rowVisible&&state.outlineVisible&&state.hits.every(Boolean);
+    },{message:'mobile focused row and outline must fit every real clip and remain hit-testable'}).toBe(true);
+    const visibleEnd=await mobileState();expect(visibleEnd.key).toBe(mobileBefore.key);
+    expect(visibleEnd.outsideScroll).toEqual(mobileBefore.outsideScroll);expect(visibleEnd.window).toEqual(mobileBefore.window);
+    expect(visibleEnd.bodyScroll).toBeGreaterThan(mobileBefore.bodyScroll);
+    expect(await canvas!.evaluate(node=>node===document.querySelector('[data-testid="cad-canvas"] canvas'))).toBe(true);
+
+    // The Tree remains at its minimum height; only its own outer body shrinks.
+    await page.setViewportSize({width:320,height:740});
+    await expect.poll(async()=>{
+      const state=await mobileState();return state.focused&&state.rowVisible&&state.outlineVisible&&state.hits.every(Boolean)&&state.bodyHeight<visibleEnd.bodyHeight;
+    },{message:'body-only resize must keep the existing focused row visible without another key press'}).toBe(true);
+    const shorter=await mobileState();expect(shorter.key).toBe(visibleEnd.key);expect(shorter.treeHeight).toBe(visibleEnd.treeHeight);
+    expect(shorter.outsideScroll).toEqual(visibleEnd.outsideScroll);expect(shorter.window).toEqual(visibleEnd.window);
+    console.log('T201_MOBILE_BODY_RESIZE',JSON.stringify({before:visibleEnd,after:shorter}));
+    await page.screenshot({path:testInfo.outputPath('r3-tree-320x740-end.png')});
+
+    await page.setViewportSize({width:320,height:800});
+    await expect.poll(async()=>(await mobileState()).bodyHeight).toBe(visibleEnd.bodyHeight);
+    const search=tree.getByTestId('version-tree-search');await search.evaluate(el=>el.focus({preventScroll:true}));
+    await search.hover();await page.mouse.wheel(0,-1000);
+    await expect.poll(async()=>(await mobileState()).bodyScroll).toBe(0);
+    const outsideBefore=await mobileState();await page.setViewportSize({width:320,height:740});
+    await expect.poll(async()=>(await mobileState()).bodyHeight).toBeLessThan(outsideBefore.bodyHeight);
+    await expect(search).toBeFocused();const outsideAfter=await mobileState();
+    expect(outsideAfter.treeScroll).toBe(outsideBefore.treeScroll);expect(outsideAfter.bodyScroll).toBe(outsideBefore.bodyScroll);
+    expect(outsideAfter.rowVisible).toBe(false);expect(outsideAfter.outsideScroll).toEqual(outsideBefore.outsideScroll);
+    expect(outsideAfter.window).toEqual(outsideBefore.window);
+    console.log('T201_MOBILE_NO_REVEAL',JSON.stringify({before:outsideBefore,after:outsideAfter}));
+    await page.setViewportSize({width:320,height:800});
+    await leaves.last().evaluate(el=>el.focus({preventScroll:true}));await page.keyboard.press('Home');
+    await expect(tree.locator('[role="treeitem"][aria-level="1"]').first()).toBeFocused();
     await page.screenshot({path:testInfo.outputPath('r3-tree-320.png')});
-  }finally{await logout(page.request,baseURL!);}
+  }finally{releaseOutlineRead();await page.unrouteAll({behavior:'wait'});await logout(closeApi(page.request),baseURL!);}
 });

@@ -21,6 +21,10 @@ test('PR200 ACTIVE initial/later Zone read failure keeps Retry in the same viewe
  const envelope={zones:[zone],categories:[],actorId:'actor',canEdit:false,canDeleteAny:false,
   canManageCategories:false,locationId:'floor',siteId:'site',versionId:id,sourceSha256:sha,sceneRevision:null};
  await page.route('**/api/g7-runtime/status',route=>route.fulfill({status:200,json:{state:'ACTIVE',authEnabled:true,cadWriteEnabled:false}}));
+ await page.route('**/api/g7-runtime/auth/session',route=>route.fulfill({json:{actor:{id:'actor',status:'ACTIVE',roles:['Reader'],mustChangePassword:false,siteGrants:['site'],specialGrants:[]},csrfToken:'mock-token',runtime:{cadWriteEnabled:false,siteIds:['site']}}}));
+ await page.route(`**/api/cad-files/${id}/tree`,route=>route.fulfill({json:{versionId:id,sourceSha256:sha,
+  actorId:'actor',siteId:'site',locationId:'floor',canEdit:false,folders:[],memberships:[],outlines:[],categories:[],types:[],
+  zones:[{id:zone.id,name:zone.name,code:zone.code,categoryId:null,parentZoneId:null,sortOrder:0,geometryState:'UNMAPPED'}]}}));
  const outcomes=[503,200,503,200,401,200,403,200];let reads=0,contentGets=0;
  page.on('request',req=>{if(new URL(req.url()).pathname===`/api/cad-files/${id}/content`)contentGets++;});
  await page.route(`**/api/cad-files/${id}/zones`,route=>{
@@ -35,20 +39,21 @@ test('PR200 ACTIVE initial/later Zone read failure keeps Retry in the same viewe
  await openViewerMenu(page,'work');
  await expect(page.getByTestId('viewer-menu-zone-list')).toBeEnabled();
  await page.getByTestId('viewer-menu-zone-list').click();
- const panel=page.getByTestId('cad-zone-panel');
- await expect(panel.getByTestId('zone-read-retry')).toBeVisible();
- await expect(panel.getByRole('alert')).toContainText('Zone read 503');
- await panel.getByTestId('zone-read-retry').click();
- await expect(panel.getByTestId('zone-tree-item')).toHaveCount(1);
+ const panel=page.getByTestId('version-tree-panel');
+ await expect(panel).toBeVisible();
+ await expect(page.getByTestId('cad-zone-panel')).toHaveCount(0);
+ await panel.getByRole('button',{name:'다시 시도'}).click();
+ await expect.poll(()=>reads).toBe(2);
  await panel.getByTestId('zone-tree-item').click();
- await expect(panel.getByRole('region',{name:'선택 구역 상세'})).toContainText('Recovery Zone');
+ await expect(page.getByTestId('cad-zone-panel').getByRole('region',{name:'선택 구역 상세'})).toContainText('Recovery Zone');
  for(const status of [503,401,403]){
-  await panel.getByRole('button',{name:'새로고침',exact:true}).click();
+  await panel.getByRole('button',{name:'다시 시도'}).click();
   await expect.poll(()=>reads).toBe(status===503?3:status===401?5:7);
-  await expect(panel.getByTestId('zone-tree-item')).toHaveCount(0);
-  await expect(panel.getByRole('region',{name:'선택 구역 상세'})).toHaveCount(0);
-  await expect(panel.getByTestId('zone-read-retry')).toBeVisible();
-  await panel.getByTestId('zone-read-retry').click();
+  await expect(page.getByTestId('cad-zone-panel')).toHaveCount(0);
+  if(status===503)await expect(panel.getByTestId('zone-tree-item')).toHaveCount(1);
+  else await expect(panel.getByTestId('zone-tree-item')).toHaveCount(0);
+  await panel.getByRole('button',{name:'다시 시도'}).click();
+  await expect.poll(()=>reads).toBe(status===503?4:status===401?6:8);
   await expect(panel.getByTestId('zone-tree-item')).toHaveCount(1);
  }
  expect(reads).toBe(8);expect(contentGets).toBe(beforeContent);
@@ -83,5 +88,6 @@ test('PR200 delayed old-Version ACTIVE status cannot enable current OFF Zone men
  await openViewerMenu(page,'work');
  await expect(page.getByTestId('viewer-menu-zone-list')).toHaveAttribute('aria-disabled','true');
  await expect(page.getByTestId('viewer-menu-zone-list')).toHaveAttribute('title',/G7.*OFF/);
+ await expect(page.getByTestId('viewer-menu-unified-tree')).toBeEnabled();
  expect(currentZoneGets).toBe(0);
 });

@@ -9,17 +9,19 @@ import {SCENE_BUILD_JOB_MIGRATION_SQL, SCENE_JOB_MIGRATION_NAME,
 
 describe('#218/#225 Scene v2 → durable Job forward G7 release',()=>{
   test('0.60.0 remains immutable and 0.61.0 is a separate reviewed CPU migration',()=>{
-    expect(packageInfo.version).toBe('0.62.0');
+    expect(packageInfo.version).toBe('0.63.0');
     expect(lock.version).toBe(packageInfo.version);
     expect(lock.packages[''].version).toBe(packageInfo.version);
     const previous=registry.releases.find(r=>r.version==='0.58.1')!;
     const v59=registry.releases.find(r=>r.version==='0.59.0')!;
     const v60=registry.releases.find(r=>r.version==='0.60.0')!;
     const next=registry.releases.find(r=>r.version===packageInfo.version)!;
+    const v62=registry.releases.find(r=>r.version==='0.62.0')!;
     expect(v59).toEqual({...previous,version:'0.59.0'});
     expect(v60.schemaId).toBe('G7-GREENFIELD-SCENE-JOBS-20261104-1');
-    expect(next.schemaId).toBe('G7-GREENFIELD-CPU-WORKER-20261104-1');
-    expect(next.schemaId).not.toBe(v60.schemaId);
+    expect(v62.schemaId).toBe('G7-GREENFIELD-CPU-WORKER-20261104-1');
+    expect(next.schemaId).toBe('G7-GREENFIELD-UNIFIED-TREE-20261113-1');
+    expect(v62.schemaId).not.toBe(v60.schemaId);
     expect(next.checksum).not.toBe(v60.checksum);
     expect(resolveUpgradeChain(registry,'0.58.1','0.59.0'))
       .toEqual([{from:'0.58.1',to:'0.59.0',kind:'COMPATIBLE'}]);
@@ -35,7 +37,9 @@ describe('#218/#225 Scene v2 → durable Job forward G7 release',()=>{
     expect(cpuChain).toHaveLength(1);
     expect(cpuChain[0]).toMatchObject({from:'0.60.0',to:'0.61.0',kind:'MIGRATION'});
     const v61=registry.releases.find(r=>r.version==='0.61.0')!;
-    expect(next).toEqual({...v61,version:'0.62.0'});
+    expect(v62).toEqual({...v61,version:'0.62.0'});
+    expect(next.schemaId).not.toBe(v62.schemaId);
+    expect(resolveUpgradeChain(registry,'0.62.0','0.63.0')).toMatchObject([{kind:'MIGRATION'}]);
     expect(resolveUpgradeChain(registry,'0.61.1','0.62.0'))
       .toEqual([{from:'0.61.1',to:'0.62.0',kind:'COMPATIBLE'}]);
     expect(resolveUpgradeChain(registry,'0.61.0','0.61.1'))

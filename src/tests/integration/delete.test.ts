@@ -315,3 +315,14 @@ test("TC-NAME-004: populated 0.18 database gains only nullable names and keeps a
   });
   await legacyDb.$disconnect();
 });
+
+
+test('TC-T201-19: partial Tree schema blocks deletion with 503 and rolls back Current/jobs',async()=>{
+  const version=await repo.register(input,file(1));
+  await db.$executeRawUnsafe('CREATE TABLE "TreeFolder" (id TEXT PRIMARY KEY, version_id TEXT NOT NULL)');
+  const location=await db.cadLocation.findUniqueOrThrow({where:{id:version.locationId}});
+  await expect(repo.deleteVersion(version.id,'abcd')).rejects.toMatchObject({code:'CAD_TREE_SCHEMA_DRIFT',status:503});
+  expect(await db.cadFileVersion.findUnique({where:{id:version.id}})).not.toBeNull();
+  expect(await db.cadLocation.findUniqueOrThrow({where:{id:version.locationId}})).toEqual(location);
+  expect(await db.cadDeletionJob.count()).toBe(0);
+});

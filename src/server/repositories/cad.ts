@@ -279,6 +279,15 @@ export class CadRepository {
       if(zoneTables.length===2 && ((await tx.cadZoneGeometry.count({where:{versionId:id}}))>0 ||
           (await tx.cadZoneCreateReceipt.count({where:{versionId:id}}))>0))
         throw new CadError('CAD_ZONE_DATA_EXISTS','연결된 구역 기록이 있어 버전을 삭제할 수 없습니다.',409);
+      // #201: organization tombstones and audit retain their Version identity.
+      const treeTables=await tx.$queryRawUnsafe<{name:string}[]>(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('TreeFolder','TreeMembership','TreeAudit')");
+      if(treeTables.length>0 && treeTables.length<3)
+        throw new CadError('CAD_TREE_SCHEMA_DRIFT','도면 분류 데이터 테이블이 불완전합니다.',503);
+      if(treeTables.length===3 && ((await tx.treeFolder.count({where:{versionId:id}}))>0 ||
+          (await tx.treeMembership.count({where:{versionId:id}}))>0 ||
+          (await tx.treeAudit.count({where:{versionId:id}}))>0))
+        throw new CadError('CAD_TREE_DATA_EXISTS','연결된 도면 분류·감사 기록이 있어 버전을 삭제할 수 없습니다.',409);
       await tx.cadFileVersion.delete({ where: { id } });
       if (auth && allowed) await appendG7CadAudit(
         tx, auth, allowed.actorId, allowed.siteId, 'CAD_VERSION_DELETED',

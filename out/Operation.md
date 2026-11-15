@@ -4,6 +4,14 @@
 
 Windows port3000은 관측된 IPv4/IPv6 excluded range 2979–3078에 있고 loopback bind가 error10013으로 실패했다. 예약 owner/cause는 확인되지 않았다. 이전 static portproxy 시도는 실패·rollback으로 보존한다. Windows IPv4 localhost/127.0.0.1은 port8300에서 통과했고 explicit `::1`은 아직 연결되지 않는다. 실제 user login 및 browser navigation은 미검증이다. 새 QA/운영 증거와 한계는 [TestReport](TestReport.md#u-windows-port8300-20261115--actual-app-only-host-port-change)에 기록했다. Default/소스 버전은 바뀌지 않았고 excluded range, service 또는 firewall은 변경하지 않았다.
 
+## #201 로컬 검증·출고 준비 (2026-11-13)
+
+#201 분류나 감사 기록 때문에 Version 삭제가409(`CAD_TREE_DATA_EXISTS`)이면 원본/분류/감사 기록을 유지한다. 폴더를 숨김 삭제해도 감사 보존이 계속 적용된다. 부분 Tree schema503(`CAD_TREE_SCHEMA_DRIFT`)은 등록 migration/schema를 확인하며 직접 테이블 삭제나 cascade로 우회하지 않는다.
+
+0.63.0 Tree 기능은 신규 등록 스키마이며 기존0.62 CPU schema와 같은-schema COMPATIBLE로 취급하지 않는다. [Issue201](Issue201.md) ADR-T201-10의 새 nonce-owned 격리 복원 사본에서만 exact planId를 승인하여 후보 upgrade·기존행/CAD 보존·세 역할 이미지를 검증한다. 운영 volume 자동 변경이나 배포 승인은 아니다.
+
+신규 모듈의 영향 시험은 `verify:local --unit tests/integration/unified-tree.test.ts` 등 현재 repository에 존재하는 bounded test 경로를 명시한다. `--unit`/`--e2e` 선택은 start/end의 `selected_tests`에 동일하게 기록되고 출고 readback이 같은 선택과 추론된 필수 gate로 manifest를 재생성한다. 선택/argv/로그/source가 다르면 차단하며 base 범위를 줄여 회피하지 않는다. Greenfield 별도 Browser 시험과 전체 Unit 등 manifest 밖 시험은 정확 소스와 별도 결과를 남긴다. 최종 명령·PASS/FAIL·한계는 [IssueEvidence/201](IssueEvidence/201.md) 및 TestReport를 따른다.
+
 ## 현재 출고 상태 — 0.61.1 COMPLETE (2026-11-11)
 
 이미지 source `a53921a180d77861b232fb98aa6989b678aca8ac`의 App/Migrator/CPU Worker를 실제 Owner GO에 따라 candidate→final로 게시하고 raw OCI graph/readback·digest pull/격리 실행·기존0.61.0 three-role/latest 불변을 확인했다. [정확 refs·receipt·Owner/시험 증거](IssueEvidence/282.md)를 사용한다. final refs는 `ghcr.io/planner77/layoutmanager:0.61.1`, `:0.61.1-migrate`, `:0.61.1-cpu-worker`다.

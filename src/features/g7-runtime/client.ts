@@ -19,6 +19,7 @@ export class RuntimeClientError extends Error {
       RUNTIME_UNAVAILABLE: '운영 인증을 사용할 수 없습니다. 관리자에게 문의하세요.',
       G7_RUNTIME_WRITE_DISABLED: '현재 도면 변경 기능이 비활성화되어 있습니다.',
       INVALID_SESSION_RESPONSE: '세션을 확인하지 못했습니다.',
+      SESSION_ACTOR_CHANGED: '계정이 변경되었습니다. 현재 계정에서 작업을 다시 시작하세요.',
       BAD_INPUT: '입력값을 확인하세요.', CONFLICT: '이미 존재하거나 현재 상태와 충돌합니다.',
     };
     super(messages[code] ?? '요청을 처리하지 못했습니다. 입력값과 운영 상태를 확인하세요.');
@@ -40,8 +41,9 @@ export async function runtimeJson<T>(action: string, input?: object, csrfToken?:
 }
 
 /** Refresh against the server on EVERY mutation, so logout/revocation in another
- * tab is respected. OFF alone retains the existing anonymous CAD contract. */
-export async function runtimeCadHeaders(initial?: HeadersInit): Promise<Headers> {
+ * tab is respected. Optional actor binding ties an existing UI intent to the
+ * same response that supplies its CSRF. Unbound OFF retains the anonymous contract. */
+export async function runtimeCadHeaders(initial?: HeadersInit, expectedActorId?: string): Promise<Headers> {
   const headers = new Headers(initial);
   headers.delete('x-csrf-token');
   let response: Response;
@@ -53,7 +55,10 @@ export async function runtimeCadHeaders(initial?: HeadersInit): Promise<Headers>
     });
     if (!status.ok) throw new Error('STATUS_UNAVAILABLE');
     const current = await status.json();
-    if (current.state === 'OFF' && current.authEnabled === false && current.cadWriteEnabled === false) return headers;
+    if (current.state === 'OFF' && current.authEnabled === false && current.cadWriteEnabled === false) {
+      if (expectedActorId !== undefined) throw new RuntimeClientError('RUNTIME_UNAVAILABLE', 503);
+      return headers;
+    }
     if (current.state !== 'ACTIVE' || current.authEnabled !== true) throw new RuntimeClientError('RUNTIME_UNAVAILABLE', 503);
     if (current.cadWriteEnabled !== true) throw new RuntimeClientError('G7_RUNTIME_WRITE_DISABLED', 503);
     response = await fetch('/api/g7-runtime/auth/session', {
@@ -66,6 +71,8 @@ export async function runtimeCadHeaders(initial?: HeadersInit): Promise<Headers>
   if (response.status === 401) throw new RuntimeClientError('UNAUTHENTICATED', 401);
   if (!response.ok) throw new RuntimeClientError('RUNTIME_UNAVAILABLE', 503);
   const session = await response.json() as RuntimeSession;
+  if (expectedActorId !== undefined && (!expectedActorId || session.actor?.id !== expectedActorId))
+    throw new RuntimeClientError('SESSION_ACTOR_CHANGED', 409);
   if (!session.runtime?.cadWriteEnabled) throw new RuntimeClientError('G7_RUNTIME_WRITE_DISABLED', 503);
   if (typeof session.csrfToken !== 'string' || !session.csrfToken) throw new RuntimeClientError('INVALID_SESSION_RESPONSE', 503);
   headers.set('x-csrf-token', session.csrfToken);

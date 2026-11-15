@@ -9,6 +9,7 @@ import {initializeGreenfield} from '../../server/g7-operational/greenfield-insta
 import {issueGreenfieldAuthority} from '../../server/g7-operational/greenfield-authority';
 import {G7_GREENFIELD_BASELINE,G7_GREENFIELD_SCHEMA_ID,G7_PREVIOUS_TYPES_BASELINE,
  G7_PREVIOUS_TYPES_CHECKSUM,assertG7GreenfieldSchema} from '../../server/g7-operational/greenfield-schema';
+import {TREE_DDL} from '../../server/g7-operational/tree-ddl';
 import {newSessionCandidate} from '../../server/auth/session';
 import {csrfProof} from '../../server/auth/login-service';
 import {createDb,type Database} from '../../server/db';
@@ -296,7 +297,9 @@ test('TC-R3-009: 100 tied rows paginate without gaps and the 101st creation is r
 
 test('TC-R3-001/005: exact R2 schema stays valid but new Version endpoints return 503 without DDL',async()=>{
  const f=setup(),url='/api/cad-files/'+f.versionId,raw=f.open();
- // Reconstruct the historic R2 fingerprint from the fresh R4 baseline.
+ // Reconstruct the historic R2 fingerprint from the current fresh baseline.
+ // The additive #201 sidecar must be removed before asserting old history.
+ for(const item of [...TREE_DDL].reverse())raw.exec(`DROP ${item.type.toUpperCase()} IF EXISTS "${item.name}"`);
  // Current v0.60 fresh installs also contain SceneBuildJob + four associated
  // indexes. DROP TABLE atomically removes those indexes from this disposable
  // fixture. Leaving them while forging the old R2 history is schema drift,

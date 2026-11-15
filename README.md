@@ -1,5 +1,8 @@
 **Windows 현장 접속 주소 변경 (2026-11-15)** — Windows의 3000번 포트 예약 충돌을 확인해 현재 운영 App의 호스트 포트와 로그인 Origin을 8300으로 변경했습니다. 로그인 주소는 `http://localhost:8300/g7-runtime`입니다. Windows에서 로그인 화면 HTTP200·G7 ACTIVE·익명 session401과 기존 이미지·데이터 보존을 확인했습니다. 실제 사용자 로그인은 미실행이며, 기본 포트 3000과 제품 버전 0.62.0은 유지합니다. 현장 실행 설정과 실패 이력은 [운영 가이드](out/Operation.md)와 [TestReport](out/TestReport.md)를 따릅니다.
 
+**0.63.0 Issue #201 구현·검증 중 (2026-11-13)** — DXF Viewer의 외곽선과 구역을 Version별 단일 트리에서 탐색·분류합니다. 폴더는 기하 없이 Version에 속하고, 구역의 부모·자식 관계와 기존 타입/카테고리 및 도면 원본은 유지됩니다. 폴더와 분류 변경은 G7 서명 세션의 Site 권한·개정 충돌 검사를 거칩니다. 현재 소스는 작업 브랜치의 후보이며 독립 QA·최종 로컬 출고 검증·GHCR 게시·운영 배포가 완료된 릴리스가 아닙니다. 요구·제약은 [Issue201](out/Issue201.md), 실제 시험은 [TestReport](out/TestReport.md)를 확인하세요.
+
+
 **0.62.0 GHCR 게시·운영 배포 및 독립 QA 수용 (2026-11-15)** — 이미지 source `41bd54d41fb56ceaaa1ebd4874052dc602b6287c`의 App/Migrator/CPU Worker를 게시하고 기존 `cad-layout-viewer-g7` volume에 배포했습니다. 운영 App1/Worker1, health200, G7 ACTIVE 및 업무 데이터·CAD 보존을 Root/Manager가 확인했습니다. 독립 실제 배포 QA도 기존 완료 근거를 읽기 전용으로 수용했으며 실제 사용자 로그인·현장 READY 수용·Git tag·Issue 종료는 미실행입니다. [실제 출고·배포 증거와 실패 이력](out/IssueEvidence/282.md#u282-publish-20261115--actual-0620-ghcr-publication). 후속 문서 commit은 이미지 source와 별개입니다.
 
 **0.62.0 전체 출고 검증 재실행 완료 (2026-11-13)** — 소스 `bbfe033`의 새 release 실행에서 필수23/23 PASS·`stale=false`, 새 App/Migrator/CPU Worker 빌드와 실제 봉인0.61.0→0.62.0 후보 호환성 검증을 통과했습니다. [실행 증거와 한계](out/IssueEvidence/282.md#u282-rerun-20261113--fresh-0620-full-release-validation)를 확인하세요. 합성 인증 시험의 monotonic clock과 실제 호스트 시계 검증은 구분합니다. 이 2026-11-13 검증 시점에는 GHCR0.62.0 게시·운영 배포·Issue 종료가 미실행이었습니다. 후속 상태는 위 최신 기록을 따릅니다.

@@ -1,3 +1,27 @@
+## #201 TC-T201-20 계정 전환 intent 결합 (2026-11-15)
+
+[Issue201](Issue201.md) ADR23의 실제 same-role A→B cookie-only 전환에서 기존 폼 mutation0/DB folder·audit불변/oldscope·폼0과 새B 명시 작업을 검증한다. `tests/greenfield-e2e/issue201-unified-tree.spec.ts` TC-T201-G7-ACTOR와 `tests/unit/g7-runtime-client.test.ts`의 same-response actor/CSRF·missing/mismatch/OFF 음성 시험을 실행한다. release 선택에는 해당 unit 경로를 추가한다. 이전 Reader403/명시invalidated 시험만으로 이 AC를 대신하지 않는다.
+
+## #201 TC-T201-18/19 재개 회귀 (2026-11-15)
+
+[Issue201](Issue201.md) ADR-T201-21/22의 명시 사용자 승인 문구 exact-set/binding 음성 회귀와 Version 삭제 Tree 기록 보존을 검증한다. `tests/test_release_local.py` 및 `tests/integration/unified-tree.test.ts`, `tests/integration/delete.test.ts`가 구현 추적 경로다. release 선택에는 `--unit tests/integration/delete.test.ts`도 포함하고, signed Browser14+Tree2와 default17+Tree를 최신 build에서 별도 검증한다. 미실행 또는 이전 source 결과는 새 PASS로 승계하지 않는다.
+
+## #201 TC-T201-12 실제 권한 회수 후 표시 폐기
+
+같은actor의 다른 실제 session이 SiteGrant를 회수한 뒤 Viewer mutation403에서 Tree/Outline/Zone 표시·폼0과 반복조회loop0, grant복구+명시retry 복원을 검증한다. 기존 Root RED assertion은 완화하지 않는다. [Issue201](Issue201.md) ADR-T201-15 참조.
+
+## #201 TC-T201-09 verifier 선택 roundtrip
+
+명시 unit/e2e 선택을 start/end metadata와 출고 필수 manifest 재생성에 동일 결합하고 변경/누락/unsafe 경로 및 inferred gate 삭제를 거절한다. [Issue201](Issue201.md) ADR-T201-12 참조.
+
+## #201 TC-T201-08 출고 호환 보완
+
+등록된0.63 Tree sidecar의 exact clone migration/planId 및 기존 데이터·CAD 보존과 drift 음성 회귀를 추가한다. [Issue201](Issue201.md) ADR-T201-10과 TC-T201-08을 따른다. 기존 COMPATIBLE strict equality는 유지한다.
+
+## #201 TREE-01~06 검증 계획 (2026-11-13)
+
+[Issue201](Issue201.md) TC-T201-01~07을 수행한다. Pure tree composition, 실제 SQLite CAS/FK/RBAC/audit/upgrade, signed Browser 혼합 트리·V1/V2·staleactor·320px/keyboard/20cycle lifetime 및 기존 outline/zone/memo/panel 회귀가 필수다. 원장에 있는 OFF/retry·source race·modal·clock failures를 유지하며 미실행 PASS 금지. Developer 뒤 독립 QA, Manager 인수 뒤 root release 검증 순서다.
+
 ## TP-215-206 (2026-11-12)
 
 [Issues215-206](Issues215-206.md)의 T215-01~04, T206-01~05, T-COMBINED가 시험 계약이다. 최종 controlled-clock frozen high-risk verifier `issue-215-20261112T041239-8277e5bf5269`는 **21/21 PASS**, stale=false로 완료됐다. native-clock 실패와 그 뒤 승인된 기존 disposable monotonic fixture 검증은 구분하여 기록하며, AC별 지원/부분 범위는 [TestReport U-ISSUES-215-206-20261112](TestReport.md#u-issues-215-206-20261112), 두 이슈의 증거는 [IssueEvidence/215](IssueEvidence/215.md) 및 [IssueEvidence/206](IssueEvidence/206.md)에서 확인한다. 실제 Ctrl+Plus 브라우저 확대, 현장 CAD/GPU, GHCR·운영 배포는 미검증이다.
@@ -3876,3 +3900,43 @@ Manager 설계→Sol 구현→Manager review→Luna QA 시험/문서→Manager �
 ## TP-282-OWNER-KO — actual Korean imperative release authorization (2026-11-15)
 
 See [Issue282](Issue282.md) AC-OWNER-KO-1–4. Test the real approval function with a private synthetic Owner record and exact plan: actual “정식 버전 GHCR 게시와 도커로 운영 배포 하세요.” positive plus supported whitespace normalization, stored verbatim unchanged, prior affirmative GO/approve/승인/진행 positives; negative/no-go/question/unrelated/keyword-substring/incomplete directives rejected; actual valid phrase does not bypass wrong plan/source/version/digest/ref or missing authority-trace fields. First reproduce current rejection, then run focused RED/GREEN and complete release-local contracts. Independent QA repeats required focused contracts and meaningful typecheck/lint/build checks; preserve actual failures. After Root source commit/push, fresh full23 release/current3role build/actual recovery compatibility/preflight replace the previous-source preparation evidence. Local keyword recognition does not provide cryptographic approval or registry/deployment success.
+
+
+### #201 TC-T201-13 — 비활성 참조 타입 표식
+
+ADR-T201-16 및 기존 #71/#73: 참조 OutlineType rename/deactivate 후 Tree DTO active=false, 객체 행의 새 타입 이름+`(비활성)` 표식, 기존 신규 생성 비활성 gate를 보존한다. 그룹 구조는 단일 Version 분류에 맞춰 객체 행 assertion으로 대체하며 원래 의미 검증을 삭제하지 않는다.
+
+
+### #201 TC-T201-14 — 구역 진입 Drawer ESC
+
+ADR-T201-17:320px 구역/외곽선/통합 메뉴에서 열린 단일 Drawer의 ESC 닫기와 trigger focus 복귀, 구역 drawing 취소→Drawer닫기의 두 단계 계약을 검증한다. zonePanelOpen 진입에서 toggle-outline-tree로 다른 상태를 켜는 회귀를 금지한다.
+
+
+### #201 TC-T201-15 — 임시 외곽선 identity와 타입
+
+ADR-T201-18: 빈 이름에 local ID fallback이 있는지, 임시 업무 타입 badge·검색이 기존값/현재 rename·inactive 상태를 보존하는지, 무타입 미분류와 임시 선택·숨김·삭제·내보내기가 그대로 동작하는지 pure 및 기존 Browser 회귀로 검증한다.
+
+
+### #201 TC-T201-16 — 외곽선 Ctrl/Meta 추가 선택
+
+ADR-T201-19: 임시·서버 Outline의 Ctrl/Meta click/Space 추가 선택과 toggle, 기본 클릭 교체, 실제 선택 수와 aria-selected 일치, batch delete/undo 및 clickcamera불변/Enterfocus를 기존 #53/#37-49 회귀와 함께 검증한다.
+
+
+### #201 TC-T201-17 — Zone 상세 readiness 경합
+
+ADR-T201-20: Zone GET hold 중 metadata row는 탐색 가능하되 선택/focus와 해당 subtree visibility는 aria-disabled·loading으로 안내하고 변경0. 현재 actor/Version/SHA의 GET 완료 후 enabled 상태에서1회 클릭으로 상세를 열며 unsupported renderer focus/edit 금지를 유지한다. 고정 delay 없이 readiness를 검증한다.
+
+
+### #201 TC-T201-22 — 늦은 footer와 실제 키보드 focus 가시성
+
+[Issue201 ADR-T201-25](Issue201.md)의 실제 signed200행 held Outline 응답으로 End 이후 authorized workspace/footer commit을 재현한다. 기존 build RED 후 최소 Tree 자체 scroll 보완 GREEN을 확인한다. 동일 focus key/완전한 header 가시성, Tree clientHeight 감소·scrollTop 보정, 외부 scroll/window·Canvas identity 불변, Tree 밖 focus의 resize no-steal/no-reveal 대조, Home/End·320px 회귀를 유지한다. 새 typecheck/lint/build·집중 시험 뒤 독립 default19/signed17과 화면 검증이 필수이며 과거 full1151을 새 source에서 실행했다고 기록하지 않는다.
+
+
+### #201 TC-T201-23 — 정확한 로그인 textbox와 seed 의존 회귀
+
+[Issue201 Manager 로그인 fixture 보완](Issue201.md)에 따라 account header link와 같은 부분 문자열을 가진 login textbox를 exact role/name으로 선택한다. 원 strict2 오류와 선행 R2 seed 누락에 따른 후행 r2reader 실패를 보존하고, test-only 한 줄 보완 뒤 같은 production bytes에서 독립 signed17 전체 및 ADR25 마지막행 회귀를 완료한다. 제품/build 불변을 확인하며 default19/full1151의 원 실행 범위를 유지한다.
+
+
+### #201 TC-T201-24 — mobile End의 실제 clipping/hit와 자체 panel body
+
+[Issue201 ADR-T201-26](Issue201.md)을 따른다. 320px에서 Home 전 End의 행/기존 outline이 fixed-shell-aware clipping 교집합 안에 완전히 보이고 center/near-bottom hit가 같은 행이어야 한다. Tree와 같은 VersionTreePanel body만 최소 scroll 변경, 외부 ancestor/window·Canvas 불변, focus 밖 no-steal을 검증한다. 기존 build의 강화 assertion RED·새 build GREEN10 및 독립 실제 bounded probe/집중 keyboard 검증을 기록한다. 기존17PASS는 이전 좁은 assertion의 성공으로 보존하며 검증하지 않은 전체 가시성을 주장하지 않는다.

@@ -1,3 +1,4 @@
+import {closeApi} from './direct-api-transport';
 import {expect,test,type Page} from '@playwright/test';
 import {randomUUID} from 'node:crypto';
 import type {CadZoneDto,ZoneListDto} from '../../domain/cad-zone';
@@ -5,7 +6,7 @@ import type {CadZoneDto,ZoneListDto} from '../../domain/cad-zone';
 test.use({deviceScaleFactor:2});
 
 async function login(page:Page){
- await page.goto('/g7-runtime');await page.getByLabel('계정').fill('admin');
+ await page.goto('/g7-runtime');await page.getByLabel('계정',{exact:true}).fill('admin');
  await page.getByLabel('비밀번호',{exact:true}).fill('synthetic-changed-password');
  await page.getByRole('button',{name:'로그인',exact:true}).click();
  await expect(page.getByRole('heading',{name:'현재 세션'})).toBeVisible();
@@ -30,23 +31,25 @@ async function visibleProjectedVertex(page:Page,zoneId:string){
  return point;
 }
 async function logout(page:Page,origin:string){
- const result=await page.request.get('/api/g7-runtime/auth/session');if(result.status()!==200)return;
+ const result=await closeApi(page.request).get('/api/g7-runtime/auth/session');if(result.status()!==200)return;
  const session=await result.json();
- expect((await page.request.post('/api/g7-runtime/auth/logout',{
+ expect((await closeApi(page.request).post('/api/g7-runtime/auth/logout',{
   headers:{origin,'x-csrf-token':session.csrfToken},
  })).status()).toBe(200);
 }
 
+test.beforeEach(({page})=>{page.setDefaultTimeout(10_000);});
+
 test('Issue 196 QA: source-derived vertex snap, stale camera epoch, and free WCS points persist',async({page,baseURL})=>{
  test.setTimeout(150_000);await login(page);const origin=baseURL!;const createdIds:string[]=[];let versionId='';
  try{
-  const files=await (await page.request.get('/api/cad-files')).json() as {items:{id:string}[]};
+  const files=await (await closeApi(page.request).get('/api/cad-files')).json() as {items:{id:string}[]};
   versionId=files.items[0]?.id??'';expect(versionId,'Greenfield fixture Version').toBeTruthy();
-  const initial=await (await page.request.get(`/api/cad-files/${versionId}/zones`)).json() as ZoneListDto;
+  const initial=await (await closeApi(page.request).get(`/api/cad-files/${versionId}/zones`)).json() as ZoneListDto;
   expect(initial.sceneRevision).not.toBeNull();
-  const session=await (await page.request.get('/api/g7-runtime/auth/session')).json() as {csrfToken:string};
+  const session=await (await closeApi(page.request).get('/api/g7-runtime/auth/session')).json() as {csrfToken:string};
   const calibrationKey=randomUUID();
-  const calibration=await page.request.post(`/api/cad-files/${versionId}/zones`,{
+  const calibration=await closeApi(page.request).post(`/api/cad-files/${versionId}/zones`,{
    headers:{origin,'x-csrf-token':session.csrfToken,'Idempotency-Key':calibrationKey},
    data:{name:'Issue196 snap QA calibration '+randomUUID().slice(0,6),description:'',code:'',tags:[],sortOrder:0,
     categoryId:null,parentZoneId:null,references:[],geometry:{sourceSha256:initial.sourceSha256,
@@ -108,7 +111,7 @@ test('Issue 196 QA: source-derived vertex snap, stale camera epoch, and free WCS
   expect(saved.geometry?.polygon.coordinates[0][0]).toEqual([snappedX,snappedY]);
   expect(saved.geometry?.polygon.coordinates[0]).toHaveLength(5);
   await expect(page.locator(`[data-testid="cad-zone-path"][data-zone-id="${saved.id}"]`)).toHaveCount(1);
-  const current=await (await page.request.get(`/api/cad-files/${versionId}/zones`)).json() as ZoneListDto;
+  const current=await (await closeApi(page.request).get(`/api/cad-files/${versionId}/zones`)).json() as ZoneListDto;
   expect(current.zones.find(zone=>zone.id===saved.id)?.geometry?.polygon).toEqual(saved.geometry?.polygon);
 
   // Reset through the real menu path must keep metadata while removing the
@@ -119,23 +122,24 @@ test('Issue 196 QA: source-derived vertex snap, stale camera epoch, and free WCS
   const reset=await resetResponse;expect(reset.status(),await reset.text()).toBe(200);
   expect(await reset.json()).toMatchObject({mode:'SOURCE_ONLY',unmappedZones:2});
   await expect(page.getByTestId('cad-zone-path')).toHaveCount(0);
-  const afterReset=await (await page.request.get(`/api/cad-files/${versionId}/zones`)).json() as ZoneListDto;
+  const afterReset=await (await closeApi(page.request).get(`/api/cad-files/${versionId}/zones`)).json() as ZoneListDto;
   const unmapped=afterReset.zones.find(zone=>zone.id===saved.id);
   expect(unmapped).toMatchObject({id:saved.id,name:saved.name,geometry:{state:'UNMAPPED',reason:'RESET'}});
   expect(afterReset.zones.find(zone=>zone.id===calibrationZone.id)?.geometry).toMatchObject({state:'UNMAPPED',reason:'RESET'});
-  await page.getByTestId('cad-zone-panel').getByTestId('zone-tree-item').filter({hasText:saved.name}).click();
-  await page.getByTestId('cad-zone-panel').getByTestId('zone-tree-item').filter({hasText:saved.name}).press('Enter');
-  await expect(page.getByTestId('cad-zone-panel').getByRole('alert')).toContainText('RESET');
+  const tree=page.getByTestId('version-tree-panel'),savedRow=tree.getByTestId('zone-tree-item').filter({hasText:saved.name});
+  await savedRow.click();await savedRow.press('Enter');
+  await expect(savedRow).toContainText('미연결');await expect(page.getByTestId('cad-zone-path')).toHaveCount(0);
+  await expect(page.getByTestId('cad-zone-panel').getByRole('region',{name:'선택 구역 상세'})).toContainText('RESET');
  }finally{
   if(versionId&&createdIds.length){
-   const result=await page.request.get(`/api/cad-files/${versionId}/zones`);
+   const result=await closeApi(page.request).get(`/api/cad-files/${versionId}/zones`);
    if(result.ok()){
-    const list=await result.json() as ZoneListDto;const sessionResult=await page.request.get('/api/g7-runtime/auth/session');
+    const list=await result.json() as ZoneListDto;const sessionResult=await closeApi(page.request).get('/api/g7-runtime/auth/session');
     if(sessionResult.ok()){
      const session=await sessionResult.json();
      for(const id of [...createdIds].reverse()){
       const zone=list.zones.find(row=>row.id===id);if(!zone)continue;
-      expect((await page.request.delete(`/api/cad-files/${versionId}/zones/${id}`,{
+      expect((await closeApi(page.request).delete(`/api/cad-files/${versionId}/zones/${id}`,{
        headers:{origin,'x-csrf-token':session.csrfToken},data:{expectedRevision:zone.revision},
       })).status()).toBe(200);
      }

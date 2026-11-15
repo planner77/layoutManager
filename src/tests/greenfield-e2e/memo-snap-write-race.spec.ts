@@ -1,3 +1,4 @@
+import {closeApi, closeRouteFetch} from './direct-api-transport';
 import {expect,test,type Page} from '@playwright/test';
 import {randomUUID} from 'node:crypto';
 import {GeneratedDocument} from '../../domain/generated-document';
@@ -12,7 +13,7 @@ function deferred<T=void>(){
   return {promise,resolve,reject};
 }
 async function loginAdmin(page:Page){
-  await page.goto('/g7-runtime');await page.getByLabel('계정').fill('admin');
+  await page.goto('/g7-runtime');await page.getByLabel('계정',{exact:true}).fill('admin');
   await page.getByLabel('비밀번호',{exact:true}).fill('synthetic-changed-password');
   await page.getByRole('button',{name:'로그인',exact:true}).click();
   await expect(page.getByRole('heading',{name:'현재 세션'})).toBeVisible();
@@ -26,9 +27,9 @@ async function candidates(page:Page):Promise<Candidate[]>{
     }));
 }
 async function prepareViewer(page:Page){
-  const files=await (await page.request.get('/api/cad-files')).json() as {items:{id:string}[]};
+  const files=await (await closeApi(page.request).get('/api/cad-files')).json() as {items:{id:string}[]};
   const versionId=files.items[0]?.id;if(!versionId)throw new Error('Greenfield prerequisite did not create a Version');
-  const outlineContext=await (await page.request.get(`/api/cad-files/${versionId}/outlines`)).json() as {sourceSha256:string};
+  const outlineContext=await (await closeApi(page.request).get(`/api/cad-files/${versionId}/outlines`)).json() as {sourceSha256:string};
   const targetIds=[
     '00000000-0000-4000-8000-000000000001',
     '00000000-0000-4000-8000-000000000002',
@@ -61,7 +62,7 @@ async function createMemoOnTarget(page:Page,versionId:string,targetId:string,tit
   await page.getByTestId('cad-memo-snap-select').selectOption(candidate!.value);
   await page.getByTestId('cad-memo-create').click();
   await expect(page.getByTestId('cad-memo-session-snap')).toContainText('세션 스냅 연결');
-  const list=await (await page.request.get(`/api/cad-files/${versionId}/memos`)).json() as {memos:({id:string;title:string;anchor:{mode:string}})[]};
+  const list=await (await closeApi(page.request).get(`/api/cad-files/${versionId}/memos`)).json() as {memos:({id:string;title:string;anchor:{mode:string}})[]};
   const saved=list.memos.find(item=>item.title===title);
   expect(saved).toMatchObject({anchor:{mode:'FREE'}});
   return saved!.id;
@@ -72,24 +73,26 @@ async function closeAndReopenMemo(page:Page,title:string){
   await expect(page.getByTestId('cad-memo-move-behavior')).toBeVisible();
 }
 async function cleanupMemo(page:Page,versionId:string,memoId:string,origin:string){
-  const sessionResponse=await page.request.get('/api/g7-runtime/auth/session');
+  const sessionResponse=await closeApi(page.request).get('/api/g7-runtime/auth/session');
   if(sessionResponse.status()!==200)return;
   const session=await sessionResponse.json() as {csrfToken:string};
-  const rowResponse=await page.request.get(`/api/cad-files/${versionId}/memos/${memoId}`);
+  const rowResponse=await closeApi(page.request).get(`/api/cad-files/${versionId}/memos/${memoId}`);
   if(rowResponse.status()!==200)return;
   const row=await rowResponse.json() as MemoRow;
-  expect((await page.request.delete(`/api/cad-files/${versionId}/memos/${memoId}`,{
+  expect((await closeApi(page.request).delete(`/api/cad-files/${versionId}/memos/${memoId}`,{
     headers:{origin,'x-csrf-token':session.csrfToken},data:{expectedRevision:row.revision},
   })).status()).toBe(200);
 }
 async function logout(page:Page,origin:string){
-  const response=await page.request.get('/api/g7-runtime/auth/session');
+  const response=await closeApi(page.request).get('/api/g7-runtime/auth/session');
   if(response.status()!==200)return;
   const session=await response.json() as {csrfToken:string};
-  expect((await page.request.post('/api/g7-runtime/auth/logout',{
+  expect((await closeApi(page.request).post('/api/g7-runtime/auth/logout',{
     headers:{origin,'x-csrf-token':session.csrfToken},
   })).status()).toBe(200);
 }
+
+test.beforeEach(({page})=>{page.setDefaultTimeout(10_000);});
 
 test('TC-R4-009: committed snap move keeps saved WCS and does not rebind after its Generated target is deleted',async({page})=>{
   test.setTimeout(120_000);await loginAdmin(page);
@@ -121,7 +124,7 @@ test('TC-R4-009: committed snap move keeps saved WCS and does not rebind after i
         return route.continue();
       if(++interceptedPatches>1)return route.continue();
       const payload=route.request().postDataJSON() as {operation?:string};
-      const response=await route.fetch();
+      const response=await closeRouteFetch(route);
       commitOutcome={status:response.status(),operation:payload.operation??''};
       await release.promise;
       await route.fulfill({response});
@@ -136,21 +139,21 @@ test('TC-R4-009: committed snap move keeps saved WCS and does not rebind after i
     // while leaving two identical nearby candidates available in the Viewer.
     await page.getByTestId('canvas-mode-generated').click();
     await clickViewerTestCommand(page,'viewer-menu-outline-tree');
-    const tree=page.getByTestId('viewer-outline-tree');
-    const targetRow=tree.locator('[data-tree-key="local:local-1"]');
+    const tree=page.getByTestId('version-tree-panel');
+    const targetRow=tree.locator('[data-tree-node="draft:local-1"]');
     await expect(targetRow).toHaveCount(1);await targetRow.click();
     await page.getByTestId('generated-delete-selected').click();
     await page.getByTestId('generated-delete-dialog').getByTestId('generated-delete-confirm').click();
-    await expect(tree.locator('[data-tree-key="local:local-1"]')).toHaveCount(0);
-    await expect(tree.locator('[data-tree-key="local:local-2"]')).toHaveCount(1);
-    await expect(tree.locator('[data-tree-key="local:local-3"]')).toHaveCount(1);
+    await expect(tree.locator('[data-tree-node="draft:local-1"]')).toHaveCount(0);
+    await expect(tree.locator('[data-tree-node="draft:local-2"]')).toHaveCount(1);
+    await expect(tree.locator('[data-tree-node="draft:local-3"]')).toHaveCount(1);
 
     release.resolve();
     const delivered=await browserResponse!;expect(delivered.status()).toBe(200);
     await expect(page.getByTestId('cad-memo-error')).toContainText('세션 연결은 적용하지 않았습니다.');
     await expect(page.getByTestId('cad-memo-session-snap')).toHaveCount(0);
     await expect(page.getByTestId('cad-memo-move-behavior')).toHaveValue('SNAP');
-    const persisted=await (await page.request.get(`/api/cad-files/${scene.versionId}/memos/${memoId}`)).json() as MemoRow;
+    const persisted=await (await closeApi(page.request).get(`/api/cad-files/${scene.versionId}/memos/${memoId}`)).json() as MemoRow;
     expect(persisted).toMatchObject({revision:1,anchor:{mode:'FREE'},anchorWcsXY:{x:30,y:20}});
     const pin=page.getByRole('button',{name:'메모: '+title,exact:true});
     expect(Number(await pin.getAttribute('data-memo-wcs-x'))).toBeCloseTo(30,8);
@@ -186,7 +189,7 @@ test('TC-R4-009: a definitely uncommitted failed move keeps the existing session
     await expect(page.getByTestId('cad-memo-error')).toBeVisible();
     await expect(page.getByTestId('cad-memo-session-snap')).toContainText('세션 스냅 연결');
     await expect(page.getByTestId('cad-memo-move-behavior')).toHaveValue('KEEP');
-    const persisted=await (await page.request.get(`/api/cad-files/${scene.versionId}/memos/${memoId}`)).json() as MemoRow;
+    const persisted=await (await closeApi(page.request).get(`/api/cad-files/${scene.versionId}/memos/${memoId}`)).json() as MemoRow;
     expect(persisted).toMatchObject({revision:0,anchor:{mode:'FREE'},anchorWcsXY:{x:20,y:20}});
   }finally{
     await page.unroute(routePattern).catch(()=>{});

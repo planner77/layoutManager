@@ -9,6 +9,8 @@ import {
 // stays unapproved and an operator .env cannot bypass that constant.
 vi.mock('../../server/g7-operational/greenfield-schema',()=>({
   G7_GREENFIELD_SCHEMA_ID:'G7-GREENFIELD-CPU-WORKER-20261104-1',
+  G7_PREVIOUS_CPU_SCHEMA_ID:'G7-GREENFIELD-CPU-WORKER-20261104-1',
+  G7_UNIFIED_TREE_SCHEMA_ID:'G7-GREENFIELD-UNIFIED-TREE-20261113-1',
 }));
 const sha='a'.repeat(64);
 const intent={versionId:'version-1',sourceSha256:sha,actorId:'actor-1',siteId:'site-1',

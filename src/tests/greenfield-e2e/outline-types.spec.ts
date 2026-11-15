@@ -1,15 +1,16 @@
+import {closeApi} from './direct-api-transport';
 import { expect, test } from '@playwright/test';
 
 test('R2 global catalogue persists, rejects stale edits, preserves Viewer and locks non-admin', async ({ page, browser, baseURL }) => {
   test.setTimeout(120_000);
   await page.goto('/g7-runtime');
-  await page.getByLabel('계정').fill('admin');
+  await page.getByRole('textbox', { name: '계정', exact: true }).fill('admin');
   await page.getByLabel('비밀번호', { exact: true }).fill('synthetic-changed-password');
   await page.getByRole('button', { name: '로그인', exact: true }).click();
   await expect(page.getByRole('heading', { name: '현재 세션' })).toBeVisible();
-  const session = await (await page.request.get('/api/g7-runtime/auth/session')).json();
+  const session = await (await closeApi(page.request).get('/api/g7-runtime/auth/session')).json();
   const headers = { origin: baseURL!, 'x-csrf-token': session.csrfToken };
-  const files = await (await page.request.get('/api/cad-files')).json();
+  const files = await (await closeApi(page.request).get('/api/cad-files')).json();
   const versionId = files.items[0].id;
   let originalGets = 0;
   page.on('request', request => { if (new URL(request.url()).pathname === `/api/cad-files/${versionId}/content`) originalGets++; });
@@ -64,15 +65,15 @@ test('R2 global catalogue persists, rejects stale edits, preserves Viewer and lo
   const typeId = await row.getAttribute('data-type-id');
   await row.getByRole('button', { name: 'R2 설비 구역 비활성화', exact: true }).click();
   await expect(row.getByRole('button', { name: 'R2 설비 구역 복구', exact: true })).toBeVisible();
-  const duplicate = await page.request.post('/api/outline-types', { headers,
+  const duplicate = await closeApi(page.request).post('/api/outline-types', { headers,
     data: { name: ' r2 설비 구역 ', sortOrder: 10 } });
   expect(duplicate.status()).toBe(409);
   await row.getByRole('button', { name: 'R2 설비 구역 복구', exact: true }).click();
   await expect(row.getByRole('button', { name: 'R2 설비 구역 비활성화', exact: true })).toBeVisible();
   await row.getByRole('button', { name: 'R2 설비 구역 수정', exact: true }).click();
-  const current = await (await page.request.get('/api/outline-types?includeInactive=true')).json();
+  const current = await (await closeApi(page.request).get('/api/outline-types?includeInactive=true')).json();
   const item = current.items.find((value: { id: string }) => value.id === typeId);
-  const external = await page.request.patch('/api/outline-types/' + typeId, { headers,
+  const external = await closeApi(page.request).patch('/api/outline-types/' + typeId, { headers,
     data: { expectedRevision: item.revision, description: 'Concurrent server edit' } });
   expect(external.status()).toBe(200);
   await manager.getByLabel('타입 이름 (1~100자)').fill('R2 stale browser edit');
@@ -103,7 +104,7 @@ test('R2 global catalogue persists, rejects stale edits, preserves Viewer and lo
   await expect(manager.locator(`li[data-type-id="${typeId}"]`)).toContainText('R2 수정 구역');
 
   for (let n = 0; n < 51; n++) {
-    const response = await page.request.post('/api/outline-types', { headers,
+    const response = await closeApi(page.request).post('/api/outline-types', { headers,
       data: { name: 'R2-PAGE-' + String(n).padStart(3, '0'), sortOrder: 20 } });
     expect(response.status()).toBe(201);
   }
@@ -147,24 +148,24 @@ test('R2 global catalogue persists, rejects stale edits, preserves Viewer and lo
   await expect(manager).toHaveCount(0);
   await openTypes();
 
-  const created = await page.request.post('/api/g7-runtime/users/create', { headers,
+  const created = await closeApi(page.request).post('/api/g7-runtime/users/create', { headers,
     data: { login: 'r2reader', initialPassword: 'synthetic-reader-initial' } });
   expect(created.status()).toBe(201);
   const user = await created.json();
-  const grant = await page.request.post('/api/g7-runtime/access/grant', { headers,
+  const grant = await closeApi(page.request).post('/api/g7-runtime/access/grant', { headers,
     data: { kind: 'role', operation: 'grant', affectedUserId: user.id, value: 'Reader' } });
   expect(grant.status()).toBe(200);
   const reader = await browser.newContext({ baseURL });
   try {
-    expect((await reader.request.post('/api/g7-runtime/auth/initial-change', { headers: { origin: baseURL! },
+    expect((await closeApi(reader.request).post('/api/g7-runtime/auth/initial-change', { headers: { origin: baseURL! },
       data: { login: 'r2reader', password: 'synthetic-reader-initial', newPassword: 'synthetic-reader-changed' } })).status()).toBe(200);
-    const login = await reader.request.post('/api/g7-runtime/auth/login', { headers: { origin: baseURL! },
+    const login = await closeApi(reader.request).post('/api/g7-runtime/auth/login', { headers: { origin: baseURL! },
       data: { login: 'r2reader', password: 'synthetic-reader-changed' } });
     expect(login.status()).toBe(200);
     const identity = await login.json();
-    expect((await reader.request.get('/api/outline-types')).status()).toBe(200);
-    expect((await reader.request.get('/api/outline-types?includeInactive=true')).status()).toBe(403);
-    expect((await reader.request.post('/api/outline-types', {
+    expect((await closeApi(reader.request).get('/api/outline-types')).status()).toBe(200);
+    expect((await closeApi(reader.request).get('/api/outline-types?includeInactive=true')).status()).toBe(403);
+    expect((await closeApi(reader.request).post('/api/outline-types', {
       headers: { origin: baseURL!, 'x-csrf-token': identity.csrfToken, 'x-role': 'Admin' },
       data: { name: 'Unauthorized', sortOrder: 0 },
     })).status()).toBe(403);
@@ -173,19 +174,19 @@ test('R2 global catalogue persists, rejects stale edits, preserves Viewer and lo
     await readerPage.getByRole('button', { name: '작업', exact: true }).click();
     await expect(readerPage.getByTestId('viewer-menu-outline-types')).toBeDisabled();
   } finally { await reader.close(); }
-  const logout = await page.request.post('/api/g7-runtime/auth/logout', { headers });
+  const logout = await closeApi(page.request).post('/api/g7-runtime/auth/logout', { headers });
   expect(logout.status()).toBe(200);
   await page.evaluate(() => window.dispatchEvent(new Event('focus')));
   await expect(manager.locator('li[data-type-id]')).toHaveCount(0);
   await expect(manager.getByRole('button', { name: '타입 등록', exact: true })).toBeDisabled();
-  const loginAgain = await page.request.post('/api/g7-runtime/auth/login', { headers: { origin: baseURL! },
+  const loginAgain = await closeApi(page.request).post('/api/g7-runtime/auth/login', { headers: { origin: baseURL! },
     data: { login: 'admin', password: 'synthetic-changed-password' } });
   expect(loginAgain.status()).toBe(200);
-  const restored = await (await page.request.get('/api/outline-types?includeInactive=true')).json();
+  const restored = await (await closeApi(page.request).get('/api/outline-types?includeInactive=true')).json();
   const restoredItem = restored.items.find((value: { id: string }) => value.id === typeId);
   expect(restoredItem).toMatchObject({ id: typeId, name: 'R2 수정 구역', createdAt: item.createdAt, createdById: item.createdById });
-  const active=await (await page.request.get('/api/g7-runtime/auth/session')).json();
-  expect((await page.request.post('/api/g7-runtime/auth/logout',{
+  const active=await (await closeApi(page.request).get('/api/g7-runtime/auth/session')).json();
+  expect((await closeApi(page.request).post('/api/g7-runtime/auth/logout',{
     headers:{origin:baseURL!,'x-csrf-token':active.csrfToken},
   })).status()).toBe(200);
 });

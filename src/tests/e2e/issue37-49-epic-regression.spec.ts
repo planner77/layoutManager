@@ -47,7 +47,7 @@ test('TC-EPIC-37-49-E2E-001: app docks, generated edit, mixed SOURCE gate and CA
   await clickViewerTestCommand(page, 'viewer-menu-outline-tool');
   await page.getByTestId('canvas-mode-generated').click();
   await clickViewerTestCommand(page, 'viewer-menu-outline-tree');
-  const tree = page.getByTestId('viewer-outline-tree');
+  const tree = page.getByTestId('version-tree-panel');
   const row = tree.getByTestId('outline-tree-item').first();
   await expect(row).toBeVisible();
   await row.click();

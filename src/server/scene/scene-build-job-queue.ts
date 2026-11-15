@@ -7,18 +7,19 @@ import type {Prisma} from '@/generated/prisma/client';
 import type {Database} from '@/server/db';
 import {writeTransaction} from '@/server/db';
 import {CAD_SCENE_BUILDER,CAD_SCENE_CPU_BUILDER} from '@/domain/cad-scene';
-import {G7_GREENFIELD_SCHEMA_ID} from '@/server/g7-operational/greenfield-schema';
+import {G7_GREENFIELD_SCHEMA_ID,G7_PREVIOUS_CPU_SCHEMA_ID,G7_UNIFIED_TREE_SCHEMA_ID} from '@/server/g7-operational/greenfield-schema';
 import {safeBuildErrorCode,safeBuildStage,sceneRetryDelayMs,type SceneBuildStage,type SceneBuildErrorCode} from '@/domain/scene-build-job';
 import {decideSingleWorkerAction,singleSceneJobKey} from '@/domain/scene-single-worker-admission';
 
 export const SCENE_JOB_PAYLOAD_SCHEMA=2 as const;
 // Reserved for a future reviewed G7 forward release. Current 0.60.0 stays
 // hard-OFF regardless of an operator-supplied environment variable.
-export const SCENE_CPU_WORKER_SCHEMA_ID='G7-GREENFIELD-CPU-WORKER-20261104-1' as const;
+export const SCENE_CPU_WORKER_SCHEMA_ID=G7_PREVIOUS_CPU_SCHEMA_ID;
+export const SCENE_CPU_WORKER_CURRENT_SCHEMA_ID=G7_UNIFIED_TREE_SCHEMA_ID;
 export function requireCpuSceneWorkerRelease():void{
   if(process.env.SCENE_AUTO_BUILD_ENABLED!=='true'||
      process.env.SCENE_CPU_WORKER_ENABLED!=='true'||
-     String(G7_GREENFIELD_SCHEMA_ID)!==SCENE_CPU_WORKER_SCHEMA_ID)
+     !([SCENE_CPU_WORKER_SCHEMA_ID,SCENE_CPU_WORKER_CURRENT_SCHEMA_ID] as readonly string[]).includes(String(G7_GREENFIELD_SCHEMA_ID)))
     throw new Error('SCENE_CPU_QUEUE_RELEASE_NOT_APPROVED');
 }
 /** Future CPU enqueue requires a reviewed G7 release and both explicit gates.
@@ -26,7 +27,7 @@ export function requireCpuSceneWorkerRelease():void{
  */
 export function selectSceneEnqueueMode(): 'BROWSER'|'CPU'{
   const schema=String(G7_GREENFIELD_SCHEMA_ID);
-  if(schema===SCENE_CPU_WORKER_SCHEMA_ID){
+  if(schema===SCENE_CPU_WORKER_SCHEMA_ID||schema===SCENE_CPU_WORKER_CURRENT_SCHEMA_ID){
     requireCpuSceneWorkerRelease();
     return 'CPU';
   }

@@ -15,6 +15,7 @@ import { LATEST_CAD_BUSINESS_DDL, OUTLINE_TYPE_DDL, CAD_OUTLINE_RECEIPT_DDL } fr
 import { CAD_ANCHOR_DDL } from '../cad-business/anchor-ddl';
 import {CAD_MEMO_FEATURE_DDL} from '../cad-business/memo-feature-ddl';
 import {CAD_ZONE_DDL} from '../cad-business/zone-ddl';
+import {TREE_DDL} from './tree-ddl';
 import { G7_GREENFIELD_BASELINE, G7_GREENFIELD_BASELINE_CHECKSUM,
   G7_DELETE_PASSWORD_TRIGGERS, assertG7GreenfieldSchema } from './greenfield-schema';
 import {SCENE_JOB_MIGRATION_NAME, SCENE_BUILD_JOB_MIGRATION_SQL} from './scene-job-ddl';
@@ -89,6 +90,7 @@ function referenceDdl(): {type:string;name:string;sql:string}[] {
     for (const row of OUTLINE_TYPE_DDL) db.exec(row.sql);
     for (const row of CAD_OUTLINE_RECEIPT_DDL) db.exec(row.sql);
     for (const row of CAD_ZONE_DDL) db.exec(row.sql);
+    for (const row of TREE_DDL) db.exec(row.sql);
     for (const sql of G7_DELETE_PASSWORD_TRIGGERS) db.exec(sql);
     const rows = db.prepare(SCHEMA_QUERY).all() as {type:string;name:string;sql:string}[];
     if (!rows.length || rows.filter(r=>r.type==='trigger' &&

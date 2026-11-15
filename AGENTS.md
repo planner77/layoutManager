@@ -1,3 +1,7 @@
+## #201 진행 중 — 단일 트리 선행 설계 (2026-11-13)
+
+[Issue201](out/Issue201.md)는 외곽선·구역 단일 탐색과 Version별 분류 요구/ADR/AC/TC 정본이다. 기능 수정 전 필수 참조하며 상세 DB는 Database, 실제 결과는 TestReport/IssueEvidence/201/FailureLedger로 추적한다. Manager 설계→Developer→독립 QA를 따른다. 요청된5.6 Developer/QA 모델 부재는 실제 상속 모델 대행으로 기록한다. 최신 PR0/Actions0 정책 및 root 최종 릴리스 책임을 유지한다.
+
 # 현재 Issue Lifecycle — #279 / #281 (2026-11-11)
 
 이 절은 아래 과거 PR/CI 지침보다 우선한다. 모든 신규 Issue는 **PR 생성 0회·GitHub Actions 실행 0회**로 처리한다. 과거 실행 기록은 당시 증거로 보존한다.
@@ -2013,6 +2017,7 @@ DXF/DWG 공장·설비 도면을 등록·검색·버전 관리하고 세 CAD 기
 | 문서 | 목적 | 반드시 참조하는 상황 |
 | --- | --- | --- |
 | [Issue218Sandbox](out/Issue218Sandbox.md) | Chromium 격리·Node DXF Parser 공식 근거와 실제 재현 실험 | #218 sandbox/profile/Node 대안·GO 검토 전 |
+| [Issue201](out/Issue201.md) | 외곽선·구역 단일 트리와 Version별 분류 요구·ADR·AC·TC | 통합 트리·폴더/소속·권한 폐기·Tree migration 변경 또는 #201 인수·출고 전 |
 | [Issue196](out/Issue196.md) | 의미론적 구역 ADR·API·Snap·Geometry·계층·권한·AC | 구역 생성/수정, Version mapping, Reset, 카테고리 또는 구역 UI 변경 전 |
 | [Requirements](out/Requirements.md) | 상세 기능/비기능 요구사항, 범위 | 기능 추가·수정·삭제 전 |
 | [Architecture](out/Architecture.md) | 구조와 Component 책임 | 구조 변경, 신규 Module, Viewer 변경 시 |

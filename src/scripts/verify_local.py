@@ -290,9 +290,39 @@ def probe(argv: list[str]) -> str:
         return "unavailable"
 
 
-def metadata(state: dict, profile: str, risks: list[str], synthetic_auth_clock: str = "native") -> dict:
+def validate_selected_tests(value: dict) -> dict:
+    """The same bounded selectors are checked at execution and release readback."""
+    if type(value) is not dict or set(value) != {"unit", "e2e"}:
+        raise ValueError("selected tests require unit and e2e arrays")
+    result = {}
+    for kind, prefixes, suffix in (("unit", ("tests/unit/", "tests/integration/"), ".test.ts"),
+                                   ("e2e", ("tests/e2e/",), ".spec.ts")):
+        choices = value[kind]
+        if type(choices) is not list or len(choices) > 128:
+            raise ValueError("selected tests must be bounded arrays")
+        seen = set()
+        for rel in choices:
+            if (type(rel) is not str or len(rel) > 512 or not rel.startswith(prefixes)
+                    or not rel.endswith(suffix) or not re.fullmatch(r"[A-Za-z0-9_./-]+", rel)
+                    or ".." in Path(rel).parts or Path(rel).as_posix() != rel or rel in seen):
+                raise ValueError("selected test must be a unique bounded in-repo test")
+            target = SRC
+            for part in Path(rel).parts:
+                target /= part
+                if target.is_symlink():
+                    raise ValueError("selected test cannot use symlinks")
+            if not target.is_file() or not target.resolve().is_relative_to(SRC.resolve()):
+                raise ValueError("selected test must exist inside source")
+            seen.add(rel)
+        result[kind] = list(choices)
+    return result
+
+
+def metadata(state: dict, profile: str, risks: list[str], synthetic_auth_clock: str = "native",
+             selected_tests: dict | None = None) -> dict:
     return {"utc": utc(), "source": state, "profile": profile, "risks": risks,
             "synthetic_auth_clock": synthetic_auth_clock,
+            "selected_tests": selected_tests if selected_tests is not None else {"unit": [], "e2e": []},
             "environment": {"node": probe(["node", "--version"]), "npm": probe(["npm", "--version"]),
                             "python": platform.python_version(), "os": platform.platform(),
                             "docker_client": probe(["docker", "--version"]),
@@ -574,10 +604,7 @@ def main() -> int:
     try:
         start_state = source_state(args.base)
         risks, reason = infer_risks(start_state["paths"], args.risk, args.profile)
-        for choice, prefix, suffix in ((args.unit, "tests/", ".test.ts"), (args.e2e, "tests/e2e/", ".spec.ts")):
-            for rel in choice:
-                if not rel.startswith(prefix) or (choice is args.unit and not rel.startswith(("tests/unit/", "tests/integration/"))) or not rel.endswith(suffix) or not re.fullmatch(r"[A-Za-z0-9_./-]+", rel) or ".." in Path(rel).parts or not (SRC / rel).is_file():
-                    raise ValueError("selected test must be an existing bounded in-repo test: " + rel)
+        selected_tests = validate_selected_tests({"unit": args.unit, "e2e": args.e2e})
         items = manifest(args.profile, risks, start_state["paths"], args.fixture_check, args.unit, args.e2e,
                          args.docs_review, args.recovery_input, args.synthetic_auth_clock)
         if not items:
@@ -585,9 +612,10 @@ def main() -> int:
         if args.mode == "plan":
             print(json.dumps({"source": start_state, "profile": args.profile, "risks": risks,
                               "synthetic_auth_clock": args.synthetic_auth_clock,
+                              "selected_tests": selected_tests,
                               "selection_reason": reason, "cases": items}, indent=2))
             return 0
-        start = metadata(start_state, args.profile, risks, args.synthetic_auth_clock)
+        start = metadata(start_state, args.profile, risks, args.synthetic_auth_clock, selected_tests)
         stopped = False
         for item in items:
             if stopped:
@@ -601,7 +629,7 @@ def main() -> int:
                 stopped = True
         try:
             end_state = source_state(args.base)
-            end = metadata(end_state, args.profile, risks, args.synthetic_auth_clock)
+            end = metadata(end_state, args.profile, risks, args.synthetic_auth_clock, selected_tests)
             stale = any(start_state[key] != end_state[key] for key in ("fingerprint", "head", "tree"))
         except (ValueError, OSError, subprocess.TimeoutExpired) as exc:
             end = {"source": {"fingerprint": "UNAVAILABLE", "head": "UNAVAILABLE", "tree": "UNAVAILABLE"},

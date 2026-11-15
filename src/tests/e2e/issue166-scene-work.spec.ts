@@ -41,7 +41,7 @@ for(const failWorker of [false,true])test(`S5 render-only work, APP_CREATED and 
   await expect(page.getByRole('status')).toHaveText(failWorker?'도면 일부 표시 완료':'도면 표시 완료');
   if(await page.getByTestId('viewer-layer-dock').isVisible())await clickViewerTestCommand(page,'viewer-menu-layers');
   await clickViewerTestCommand(page,'viewer-menu-outline-tree');
-  await expect(page.getByTestId('outline-tree-empty')).toBeVisible();
+  await expect(page.getByTestId('version-tree-panel').getByTestId('outline-tree-item')).toHaveCount(0);
   await clickViewerTestCommand(page,'viewer-menu-outline-tree');
   await clickViewerTestCommand(page,'viewer-menu-outline-tool');
   await expect(page.getByTestId('outline-basis')).toHaveValue('render');

@@ -36,7 +36,7 @@ async function selectSquare(page: Page) {
   await expect(page.getByTestId('outline-selection-count')).toContainText('선택 1개');
 }
 
-test('TC-U6-E2E-001: legacy tree, individual/group overlay visibility, focus and layer/tool isolation', async ({page, request}) => {
+test('TC-U6-E2E-001: session outlines in unified tree, individual/group visibility, focus and layer/tool isolation', async ({page, request}) => {
   const file = await createDrawing(request,'issue43-legacy');
   let contentRequests=0;
   page.on('request', req=>{if(new URL(req.url()).pathname==='/api/cad-files/'+file.id+'/content')contentRequests++;});
@@ -51,8 +51,8 @@ test('TC-U6-E2E-001: legacy tree, individual/group overlay visibility, focus and
   await expect(menu).toHaveAttribute('aria-checked','true');
   await expect(menu).toHaveAttribute('aria-expanded','true');
   await expect(menu).toHaveAttribute('aria-controls','viewer-outline-tree-dock');
-  const panel=page.getByTestId('viewer-outline-tree');
-  await expect(panel.getByTestId('outline-tree-empty')).toBeVisible();
+  const panel=page.getByTestId('version-tree-panel');
+  await expect(panel.getByTestId('outline-tree-item')).toHaveCount(0);
   const canvas=page.getByTestId('cad-canvas').locator('canvas');
   await canvas.evaluate(element=>element.setAttribute('data-u6-stable','yes'));
 
@@ -69,10 +69,10 @@ test('TC-U6-E2E-001: legacy tree, individual/group overlay visibility, focus and
   await tools.getByRole('button',{name:'임시 확정'}).click();
   await expect(panel.getByTestId('outline-tree-item')).toHaveCount(2);
   await expect(panel.getByTestId('outline-tree-group')).toHaveCount(1);
-  await expect(panel.getByTestId('outline-tree-group')).toContainText('미분류 (legacy) (2)');
-  await expect(panel.getByTestId('outline-tree-temporary')).toContainText('재접속 시 소멸');
+  await expect(panel.getByTestId('outline-tree-group')).toContainText('미분류');
+  await expect(panel.getByTestId('outline-tree-item').filter({hasText:'외곽선 1'})).toHaveCount(1);
 
-  const first=panel.getByTestId('outline-tree-item').first();
+  const first=panel.getByTestId('outline-tree-item').filter({hasText:'CONVEX'});
   await first.getByRole('button',{name:'외곽선 1 숨기기'}).click();
   await expect(first.getByRole('button',{name:'외곽선 1 표시'})).toBeVisible();
   const layer=page.getByRole('complementary',{name:'전체 화면 레이어'})
@@ -85,16 +85,17 @@ test('TC-U6-E2E-001: legacy tree, individual/group overlay visibility, focus and
   await expect(layer).not.toBeChecked();
   await layer.check();
 
-  await panel.getByRole('button',{name:'미분류 (legacy) 전체 숨기기'}).click();
+  await panel.getByRole('button',{name:'미분류 숨기기'}).click();
   await expect(first.getByRole('button',{name:'외곽선 1 표시'})).toBeVisible();
-  await panel.getByRole('button',{name:'미분류 (legacy) 전체 표시'}).click();
+  await panel.getByRole('button',{name:'미분류 표시'}).click();
   await expect(first.getByRole('button',{name:'외곽선 1 숨기기'})).toBeVisible();
   const group=panel.getByRole('treeitem',{name:/미분류/});
   await group.focus();
   await page.keyboard.press('ArrowDown');
   await expect(first).toBeFocused();
-  await page.keyboard.press('Enter');
+  await page.keyboard.press('Space');
   await expect(first).toHaveAttribute('aria-selected','true');
+  await page.keyboard.press('Enter');
   await expect(layer).toBeChecked();
   await expect(canvas).toHaveAttribute('data-u6-stable','yes');
 
@@ -120,14 +121,14 @@ test('TC-U6-E2E-001: legacy tree, individual/group overlay visibility, focus and
   await page.getByTestId('fullscreen-layer-panel').getByRole('button', { name: '레이어 패널 접기' }).click();
   await expect(panel).toBeVisible();
   await page.setViewportSize({width:320,height:700});
-  await expect(page.getByRole('dialog', { name: '외곽선 목록' })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: '외곽선·구역' })).toBeVisible();
   await expect(panel).toBeVisible();
   const box=await canvas.boundingBox();
   expect(box?.height).toBeGreaterThan(50);
   // P2 regression: keyboard navigation must scroll only the tree viewport,
   // not the outer CAD workspace, even in the 20dvh compact dock.
   const scrollTopBefore=await page.evaluate(()=>window.scrollY);
-  const treeViewport=panel.getByTestId('outline-tree-items');
+  const treeViewport=panel.getByTestId('version-tree-items');
   await expect(treeViewport).toBeVisible();
   await group.focus();
   await page.keyboard.press('End');
@@ -144,7 +145,7 @@ test('TC-U6-E2E-001: legacy tree, individual/group overlay visibility, focus and
   expect(await page.evaluate(()=>window.scrollY)).toBe(scrollTopBefore);
   await page.keyboard.press('Home');
   await expect(group).toBeFocused();
-  await panel.getByRole('button',{name:'외곽선 목록 닫기'}).click();
+  await panel.getByRole('button',{name:'닫기',exact:true}).click();
   await expect(page.locator('[data-viewer-group="work"]')).toBeFocused();
   await openViewerMenu(page, 'work');
   await expect(menu).toHaveAttribute('aria-checked','false');
@@ -160,7 +161,7 @@ test('TC-U6-E2E-002: unsupported renderer, reload and other Version fail closed'
   await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
   const treeMenu=page.getByTestId('viewer-menu-outline-tree');
   await openViewerMenu(page, 'work');
-  await expect(treeMenu).toBeDisabled();
+  await expect(treeMenu).toBeEnabled();
   await expect(treeMenu).not.toHaveAttribute('aria-controls',/viewer-outline-tree-dock/);
   await clickViewerCommand(page, 'view', 'three-dxf-viewer');
   await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
@@ -180,10 +181,10 @@ test('TC-U6-E2E-002: unsupported renderer, reload and other Version fail closed'
   await expect(treeMenu).toHaveAttribute('aria-checked','false');
   await expect(treeMenu).toHaveAttribute('aria-expanded','false');
   await clickViewerTestCommand(page, 'viewer-menu-outline-tree');
-  await expect(page.getByTestId('outline-tree-empty')).toBeVisible();
+  await expect(page.getByTestId('outline-tree-item')).toHaveCount(0);
   await page.goto('/cad/versions/'+second.id+'/viewer?renderer=three-dxf-viewer');
   await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
   await clickViewerTestCommand(page, 'viewer-menu-outline-tree');
-  await expect(page.getByTestId('outline-tree-empty')).toBeVisible();
+  await expect(page.getByTestId('outline-tree-item')).toHaveCount(0);
   await expect(page.getByTestId('outline-tree-item')).toHaveCount(0);
 });

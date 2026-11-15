@@ -303,8 +303,9 @@ export class ViewerManager {
     return this.adapter?.setSavedOutlineVisibility?.(id,visible) ?? false;
   }
   /** Select a tree row without moving the camera, so E3 stages only that row. */
-  selectSavedOutline(id:string):boolean {
-    return this.adapter?.selectSavedOutline?.(id) ?? false;
+  selectSavedOutline(id:string,additive=false):boolean {
+    if(!this.adapter?.selectSavedOutline)return false;
+    return additive?this.adapter.selectSavedOutline(id,true):this.adapter.selectSavedOutline(id);
   }
   /** Compute focus only from the confirmed local geometry, never from source DXF layers. */
   focusSavedOutline(id:string,additive=false):boolean {

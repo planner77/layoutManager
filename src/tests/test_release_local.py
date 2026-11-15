@@ -87,6 +87,263 @@ class ReleaseCompatPlanTests(unittest.TestCase):
         self.run_proof(same, candidate_version='0.61.0')
 
 
+class ReleaseTreeCompatTests(unittest.TestCase):
+    """The reviewed tree migration is a separate, owned-clone-only exception."""
+
+    def fixture(self, from_version='0.61.0'):
+        source = 'b' * 40
+        roles = {role: {'imageId': 'sha256:' + letter * 64, 'localTag': 'fixture:0.63-' + role}
+                 for role, letter in (('app', 'a'), ('migrator', 'b'), ('cpu-worker', 'c'))}
+        record = {'version': '0.63.0', 'sourceCommit': source, 'roles': roles}
+        proof = {'plan': Path('/synthetic/plan'), 'archive': Path('/synthetic/archive'),
+                 'key': Path('/synthetic/key'), 'planData': {'nonce': 'e' * 32, 'sha256': 'f' * 64,
+                 'inventory': {'images': {'migrator': {'id': 'old-image'}}}}}
+        old_install = {'version': from_version, 'schemaId': compat.CPU_SCHEMA, 'installId': 'install'}
+        new_install = {**old_install, 'version': '0.63.0', 'schemaId': compat.TREE_SCHEMA,
+                       'sourceCommit': source, 'appImage': roles['app']['localTag'],
+                       'migratorImage': roles['migrator']['localTag']}
+        checksum = 'd' * 64
+        prior = {'id': 'prior', 'migration_name': 'cpu-baseline', 'checksum': 'c' * 64,
+                 'finished_at': '2026-11-01', 'started_at': '2026-11-01', 'logs': None,
+                 'rolled_back_at': None, 'applied_steps_count': 1}
+        last = {**prior, 'id': 'new', 'migration_name': compat.TREE_MIGRATION, 'checksum': checksum}
+        def history(rows):
+            raw = ''.join(json.dumps(row, ensure_ascii=False, separators=(',', ':')) + '\n'
+                          for row in rows).encode()
+            return {'rows': rows, 'sha256': hashlib.sha256(raw).hexdigest()}
+        histories = [history([prior]), history([prior, last])]
+        tables = [{'name': 'CadFileVersion', 'count': 1, 'sha256': 'a' * 64},
+                  {'name': 'CadZone', 'count': 3, 'sha256': 'b' * 64},
+                  {'name': '_prisma_migrations', 'count': 1, 'sha256': histories[0]['sha256']}]
+        new_tables = [*copy.deepcopy(tables[:-1]),
+                      {'name': '_prisma_migrations', 'count': 2, 'sha256': histories[1]['sha256']},
+                      *[{'name': name, 'count': 0, 'sha256': hashlib.sha256(b'').hexdigest()}
+                        for name in sorted(compat.TREE_TABLES)]]
+        storage = {'cadCount': 1, 'sceneAssetCount': 1, 'readyJobs': 1, 'currentScenes': 1}
+        before = {'logical': {'install': old_install, 'tables': tables, 'storage': storage},
+                  'files': [{'path': 'cad/fixture.dxf', 'sha256': 'a' * 64, 'size': 42}]}
+        after = {'logical': {'install': new_install, 'tables': new_tables, 'storage': storage},
+                 'files': copy.deepcopy(before['files'])}
+        steps = {'0.61.0': ['COMPATIBLE', 'COMPATIBLE', 'MIGRATION'],
+                 '0.61.1': ['COMPATIBLE', 'MIGRATION'], '0.62.0': ['MIGRATION']}[from_version]
+        plan = {'state': 'UPGRADE_MIGRATION_REQUIRED', 'from': from_version, 'to': '0.63.0',
+                'steps': steps, 'requiresApproval': True, 'planId': 'e' * 64}
+        return record, proof, before, after, histories, plan, {'migrationChecksum': checksum, 'steps': steps}
+
+    def prove(self, fixture, expected_error=None):
+        record, proof, before, after, histories, plan, contract = fixture
+        with mock.patch.object(compat.baseline, 'input_paths', return_value=proof), \
+             mock.patch.object(compat, 'node_json', side_effect=[{'state': 'RESTORED_ISOLATED'},
+                                                               {'state': 'VERIFIED_ISOLATED'}]), \
+             mock.patch.object(compat, 'volume_scan', side_effect=[before, after]), \
+             mock.patch.object(compat, 'migrator', side_effect=[plan, {'state': 'G7_GREENFIELD_READY', 'mode': 'UPGRADE'}]) as migrate, \
+             mock.patch.object(compat, 'assert_owned_clone') as owned, \
+             mock.patch.object(compat, 'tree_contract', return_value=contract), \
+             mock.patch.object(compat, 'history_snapshot', side_effect=histories), \
+             mock.patch.object(compat, 'app_and_worker', return_value={'appHealth': 'PASS', 'worker': 'IDLE'}) as runtime, \
+             mock.patch.object(compat, 'cleanup') as cleanup:
+            if expected_error:
+                with self.assertRaisesRegex(compat.Incompatible, expected_error):
+                    compat.prove('synthetic', record)
+                runtime.assert_not_called()
+            else:
+                result = compat.prove('synthetic', record)
+                self.assertEqual(result['migration'], compat.TREE_MIGRATION)
+                self.assertEqual(result['schemaId'], compat.TREE_SCHEMA)
+                self.assertEqual(result['readyPreservation'], 'VERIFIED_REFERENCES')
+                self.assertEqual(migrate.call_args_list[1].kwargs, {'approve_plan': plan['planId']})
+                self.assertTrue(migrate.call_args_list[1].args[0].startswith('r282-compat-'))
+                owned.assert_called_once()
+                runtime.assert_called_once()
+            cleanup.assert_called_once()
+            return migrate.call_count
+
+    def test_exact_registered_migration_from_three_prior_releases(self):
+        for version in ('0.61.0', '0.61.1', '0.62.0'):
+            with self.subTest(version=version):
+                self.assertEqual(self.prove(self.fixture(version)), 2)
+
+    def test_wrong_plan_rejected_before_any_apply(self):
+        changes = ({'from': '0.60.0'}, {'to': '0.64.0'}, {'state': 'UPGRADE_COMPATIBLE'},
+                   {'steps': ['MIGRATION']}, {'steps': ['COMPATIBLE', 'MIGRATION', 'MIGRATION']},
+                   {'requiresApproval': False}, {'requiresApproval': 1}, {'planId': None},
+                   {'planId': 'a' * 63}, {'planId': 'A' * 64})
+        for change in changes:
+            fixture = self.fixture()
+            fixture[5].update(change)
+            with self.subTest(change=change):
+                self.assertEqual(self.prove(fixture, 'CLONE_REGISTRY_EDGE'), 1)
+        fixture = self.fixture()
+        fixture[2]['logical']['install']['schemaId'] = 'unknown-schema'
+        self.assertEqual(self.prove(fixture, 'CLONE_REGISTRY_EDGE'), 1)
+
+    def test_existing_rows_new_tables_history_storage_and_identity_must_match(self):
+        changes = [
+            lambda f: f[3]['logical']['tables'][0].update(sha256='f' * 64),
+            lambda f: f[3]['logical']['tables'][0].update(count=0),
+            lambda f: f[3]['logical']['tables'].pop(),
+            lambda f: f[3]['logical']['tables'].append({'name': 'Unknown', 'count': 0}),
+            lambda f: f[3]['logical']['tables'][-1].update(count=1),
+            lambda f: f[3]['logical']['tables'][-1].update(sha256='f' * 64),
+            lambda f: f[4][1]['rows'][0].update(checksum='f' * 64),
+            lambda f: f[4][1]['rows'][-1].update(checksum='f' * 64),
+            lambda f: f[4][1]['rows'][-1].update(rolled_back_at='2026-11-13'),
+            lambda f: f[4][1]['rows'].append(dict(f[4][1]['rows'][-1])),
+            lambda f: f[3]['logical'].update(storage={'cadCount': 0}),
+            lambda f: f[3]['logical']['install'].update(schemaId='unknown'),
+            lambda f: f[3]['logical']['install'].update(installId='changed'),
+            lambda f: f[3]['logical']['install'].update(sourceCommit='f' * 40),
+            lambda f: f[3]['logical']['install'].update(appImage='different'),
+            lambda f: f[3]['files'][0].update(sha256='f' * 64),
+        ]
+        for index, change in enumerate(changes):
+            fixture = self.fixture()
+            change(fixture)
+            with self.subTest(change=index):
+                self.prove(fixture, 'CLONE_(LOGICAL_DRIFT|TREE_TABLES|TREE_HISTORY|CAD_DRIFT)')
+
+    def test_owned_clone_inspection_and_exact_apply_argv(self):
+        record, proof, *_ = self.fixture()
+        with mock.patch.object(compat, 'docker', return_value=b'[{"Name":"r282-compat-test","Labels":{}}]'):
+            with self.assertRaisesRegex(compat.Incompatible, 'CLONE_OWNERSHIP'):
+                compat.assert_owned_clone('r282-compat-test', proof)
+        with mock.patch.object(compat, 'docker_env', return_value=b'{"state":"OK"}') as run, \
+             mock.patch.object(compat.subprocess, 'run'):
+            compat.migrator('r282-compat-test', record, 'apply', approve_plan='e' * 64)
+            argv = run.call_args.args[0]
+            self.assertEqual(argv[-3:], ['apply', '--approve-plan', 'e' * 64])
+            self.assertIn(record['roles']['migrator']['imageId'], argv)
+            self.assertIn('--network', argv)
+            self.assertEqual(argv[argv.index('--network') + 1], 'none')
+            self.assertNotIn('ghcr', ' '.join(argv))
+        for value in ('a' * 63, 'A' * 64, True):
+            with self.assertRaisesRegex(compat.Incompatible, 'CLONE_APPROVAL'):
+                compat.migrator('r282-compat-test', record, 'apply', approve_plan=value)
+
+    def test_bundled_tree_registry_cannot_expand_the_reviewed_migration_exception(self):
+        record, *_ = self.fixture()
+        checksum = 'd' * 64
+        edge = {'from': '0.62.0', 'to': '0.63.0', 'kind': 'MIGRATION',
+                'migrationName': compat.TREE_MIGRATION, 'migrationChecksum': checksum,
+                'sqlSha256': checksum, 'actualSqlSha256': checksum}
+        value = {'target': {'version': '0.63.0', 'schemaId': compat.TREE_SCHEMA,
+                            'baseline': compat.TREE_BASELINE, 'checksum': 'f' * 64},
+                 'migrationName': compat.TREE_MIGRATION, 'migrationChecksum': checksum,
+                 'sqlSha256': checksum, 'chains': {'0.62.0': [edge]}}
+        with mock.patch.object(compat, 'candidate_inspection', return_value=value):
+            result = compat.tree_contract(record, '0.62.0')
+            self.assertEqual(result, {'migrationChecksum': checksum, 'steps': ['MIGRATION']})
+        changes = [
+            lambda v: v['target'].update(version='0.64.0'),
+            lambda v: v['target'].update(schemaId='unknown'),
+            lambda v: v['target'].update(baseline='other'),
+            lambda v: v.update(sqlSha256='a' * 64),
+            lambda v: v.update(chains=[]),
+            lambda v: v['chains']['0.62.0'].append(dict(edge)),
+            lambda v: v['chains']['0.62.0'][0].update(kind='COMPATIBLE'),
+            lambda v: v['chains']['0.62.0'][0].update(migrationName='other'),
+            lambda v: v['chains']['0.62.0'][0].update(sqlSha256='a' * 64),
+        ]
+        for index, change in enumerate(changes):
+            changed = copy.deepcopy(value)
+            change(changed)
+            with self.subTest(change=index), \
+                 mock.patch.object(compat, 'candidate_inspection', return_value=changed):
+                with self.assertRaisesRegex(compat.Incompatible, 'CLONE_TREE_CONTRACT'):
+                    compat.tree_contract(record, '0.62.0')
+
+
+class ReleaseSelectedTests(unittest.TestCase):
+    def test_selector_validation_rejects_unsafe_missing_duplicate_and_symlink_tests(self):
+        with tempfile.TemporaryDirectory() as directory:
+            src = Path(directory)
+            unit = src / 'tests/unit/tree.test.ts'
+            e2e = src / 'tests/e2e/tree.spec.ts'
+            unit.parent.mkdir(parents=True)
+            e2e.parent.mkdir(parents=True)
+            unit.write_text('synthetic')
+            e2e.write_text('synthetic')
+            linked = unit.with_name('link.test.ts')
+            linked.symlink_to(unit)
+            with mock.patch.object(release.verify_local, 'SRC', src):
+                good = {'unit': ['tests/unit/tree.test.ts'], 'e2e': ['tests/e2e/tree.spec.ts']}
+                self.assertEqual(release.verify_local.validate_selected_tests(good), good)
+                invalid = [None, {}, {'unit': [], 'e2e': [], 'extra': []},
+                           {'unit': 'tests/unit/tree.test.ts', 'e2e': []},
+                           {'unit': ['tests/unit/tree.test.ts'] * 2, 'e2e': []},
+                           {'unit': ['tests/unit/missing.test.ts'], 'e2e': []},
+                           {'unit': ['tests/unit/../unit/tree.test.ts'], 'e2e': []},
+                           {'unit': ['tests/unit/link.test.ts'], 'e2e': []},
+                           {'unit': ['/tmp/tree.test.ts'], 'e2e': []},
+                           {'unit': ['tests/e2e/tree.spec.ts'], 'e2e': []},
+                           {'unit': [], 'e2e': ['--config=other.spec.ts']},
+                           {'unit': [True], 'e2e': []}]
+                for value in invalid:
+                    with self.subTest(value=value), self.assertRaises(ValueError):
+                        release.verify_local.validate_selected_tests(value)
+
+    def test_actual_manifest_readback_keeps_selected_and_inferred_required_tests(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            src = root / 'src'
+            selections = {'unit': ['tests/integration/tree.test.ts'], 'e2e': ['tests/e2e/tree.spec.ts']}
+            for relative in [*selections['unit'], *selections['e2e'], 'tests/integration/other.test.ts']:
+                path = src / relative
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text('synthetic; no execution')
+            log = root / 'data/verify-local/run/case.log'
+            log.parent.mkdir(parents=True)
+            log.write_text('synthetic PASS, not runtime proof\n')
+            digest = hashlib.sha256(log.read_bytes()).hexdigest()
+            source = {'base': 'c' * 40, 'head': 'a' * 40, 'tree': 'b' * 40,
+                      'fingerprint': 'd' * 64, 'dirty': False,
+                      'paths': ['src/domain/version-tree.ts', 'src/server/cad-business/tree-service.ts']}
+            state = {'commit': source['head'], 'tree': source['tree']}
+            metadata = {'profile': 'release', 'source': source, 'risks': ['auth', 'db'],
+                        'synthetic_auth_clock': 'native', 'selected_tests': selections}
+            with mock.patch.object(release, 'ROOT', root), \
+                 mock.patch.object(release.verify_local, 'SRC', src), \
+                 mock.patch.object(release.verify_local, 'source_state', return_value=source), \
+                 mock.patch.object(release.verify_local.shutil, 'which', return_value='/synthetic/executable'), \
+                 mock.patch.object(release.verify_local.subprocess, 'run', return_value=mock.Mock(returncode=0)):
+                manifest = release.verify_local.manifest('release', metadata['risks'], source['paths'],
+                    selected_unit=selections['unit'], selected_e2e=selections['e2e'], recovery_input='synthetic-proof')
+                self.assertNotIn('affected-review', [case['id'] for case in manifest])
+                cases = [{**case, 'status': 'PASS', 'exit_code': 0, 'log': str(log.relative_to(root)),
+                          'logSha256': digest} for case in manifest]
+                run = {'issue': '282', 'status': 'PASS', 'stale': False, 'start': copy.deepcopy(metadata),
+                       'end': copy.deepcopy(metadata), 'cases': cases}
+                path = root / 'run.json'
+                def check(value):
+                    path.write_text(json.dumps(value))
+                    with mock.patch.object(release.recovery, 'private_file', return_value=path):
+                        return release.verify_run(str(path), state, 'synthetic-proof')
+                check(run)
+                def change_selection(value):
+                    for key in ('start', 'end'):
+                        value[key]['selected_tests']['unit'] = ['tests/integration/other.test.ts']
+                def remove_metadata(value):
+                    for key in ('start', 'end'):
+                        del value[key]['selected_tests']
+                def remove_test(value, test):
+                    case = next(c for c in value['cases'] if c['id'] == 'affected-integration')
+                    case['argv'].remove(test)
+                changes = [
+                    lambda v: v['end'].pop('selected_tests'),
+                    lambda v: v['end']['selected_tests'].update(unit=[]),
+                    lambda v: v['start'].update(selected_tests=None),
+                    change_selection, remove_metadata,
+                    lambda v: remove_test(v, 'tests/integration/tree.test.ts'),
+                    lambda v: remove_test(v, 'tests/integration/g7-runtime-auth.test.ts'),
+                    lambda v: next(c for c in v['cases'] if c['id'] == 'selected-browser')['argv'].append('--config=foreign.ts'),
+                ]
+                for index, change in enumerate(changes):
+                    changed = copy.deepcopy(run)
+                    change(changed)
+                    with self.subTest(change=index), self.assertRaisesRegex(release.Halt, 'VERIFY_(TEST_SELECTION|CASE_DOWNGRADED|CASE_MISSING)'):
+                        check(changed)
+
+
 class FakeHTTP:
     def request(self, method, url, headers=None, data=None, destination=None, limit=None):
         if url == 'https://ghcr.io/v2/':
@@ -282,6 +539,58 @@ class ReleaseLocalTests(unittest.TestCase):
                     check({**record, 'roleDigests': {**record['roleDigests'],
                           role: 'sha256:' + 'f' * 64}}, False)
             check(record, True)
+            path.chmod(0o644)
+            with self.assertRaisesRegex(release.recovery.Rejected, 'RECOVERY_PRIVATE_FILE'):
+                release.approval(str(path), plan)
+
+    def test_owner_issue201_directive_is_exact_and_preserves_binding(self):
+        directive = ('Issue 201을 확인하고 내용을 참조하여 구현, 테스트, 실패 원장 기록, 정식 GHCR 게시, '
+                     '이슈 종료를 진행하세요. 구현 간 발생한 임시 컨텡너, 볼륨, 워크 트리는 이슈 종료 시 삭제하세요.')
+        for reply in (directive, '  ' + directive.replace('GHCR', 'ghcr').replace(' ', ' \n ') + '  '):
+            with self.subTest(reply=reply):
+                self.assertTrue(release.affirmative_owner_reply(reply))
+        for reply in (directive + ' 취소', '진행하지 마세요. ' + directive,
+                      directive.replace('진행하세요.', '진행하지 마세요.'),
+                      directive.replace('진행하세요.', '진행하세요?'),
+                      directive.replace('Issue 201', 'Issue 202'),
+                      '정식 GHCR 게시, 이슈 종료', directive.split('. ')[0] + '.',
+                      '“' + directive + '”'):
+            with self.subTest(reply=reply):
+                self.assertFalse(release.affirmative_owner_reply(reply))
+        with tempfile.TemporaryDirectory() as directory:
+            plan = {'planSha256': 'a' * 64,
+                    'source': {'commit': 'b' * 40, 'version': '0.63.0'},
+                    'roles': {role: {'topDescriptor': {'digest': 'sha256:' + letter * 64}}
+                              for role, letter in zip(release.ROLES, 'cde')},
+                    'refs': release.refs('0.63.0', 'b' * 40)}
+            record = {'format': 'RELEASE282-OWNER-GO-V1',
+                      'conversationRef': 'actual-issue201-owner-conversation',
+                      'recordedBy': 'release operator', 'verbatimOwnerReply': directive,
+                      'presentedPlanSha256': plan['planSha256'],
+                      'sourceCommit': plan['source']['commit'], 'version': '0.63.0',
+                      'roleDigests': {role: plan['roles'][role]['topDescriptor']['digest']
+                                     for role in release.ROLES},
+                      'candidateRefs': plan['refs']['candidate'], 'finalRefs': plan['refs']['final']}
+            path = Path(directory) / 'owner.json'
+            def write(candidate):
+                path.write_text(json.dumps(candidate, ensure_ascii=False))
+                path.chmod(0o600)
+            write(record)
+            self.assertEqual(release.approval(str(path), plan)['conversationRef'], record['conversationRef'])
+            self.assertEqual(json.loads(path.read_text())['verbatimOwnerReply'], directive)
+            for key, wrong in (('presentedPlanSha256', 'f' * 64), ('sourceCommit', 'f' * 40),
+                               ('version', '0.62.0'), ('candidateRefs', {}), ('finalRefs', {}),
+                               ('conversationRef', ''), ('recordedBy', '')):
+                with self.subTest(key=key):
+                    write({**record, key: wrong})
+                    with self.assertRaisesRegex(release.Halt, 'OWNER_GO_BINDING'):
+                        release.approval(str(path), plan)
+            for role in release.ROLES:
+                with self.subTest(role=role):
+                    write({**record, 'roleDigests': {**record['roleDigests'], role: 'sha256:' + 'f' * 64}})
+                    with self.assertRaisesRegex(release.Halt, 'OWNER_GO_BINDING'):
+                        release.approval(str(path), plan)
+            write(record)
             path.chmod(0o644)
             with self.assertRaisesRegex(release.recovery.Rejected, 'RECOVERY_PRIVATE_FILE'):
                 release.approval(str(path), plan)

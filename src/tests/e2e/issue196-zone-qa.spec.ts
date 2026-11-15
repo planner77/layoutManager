@@ -24,6 +24,11 @@ test('#196 QA: mobile zone drawer and tree keyboard navigation',async({page,requ
  await page.route('**/api/g7-runtime/status',route=>route.fulfill({status:200,json:{
   state:'ACTIVE',authEnabled:true,cadWriteEnabled:true,
  }}));
+ await page.route('**/api/g7-runtime/auth/session',route=>route.fulfill({json:{actor:{id:'qa-actor',status:'ACTIVE',roles:['Editor'],mustChangePassword:false,siteGrants:['qa-site'],specialGrants:[]},csrfToken:'mock-token',runtime:{cadWriteEnabled:true,siteIds:['qa-site']}}}));
+ await page.route(`**/api/cad-files/${versionId}/tree`,route=>route.fulfill({json:{versionId,sourceSha256,
+  actorId:'qa-actor',siteId:'qa-site',locationId:'qa-floor',canEdit:true,folders:[],memberships:[],outlines:[],categories:[],types:[],
+  zones:[{id:'qa-zone-1',name:'QA Alpha',code:'',categoryId:null,parentZoneId:null,sortOrder:0,geometryState:'UNMAPPED'},
+   {id:'qa-zone-2',name:'QA Beta',code:'',categoryId:null,parentZoneId:null,sortOrder:1,geometryState:'UNMAPPED'}]}}));
  await page.route(`**/api/cad-files/${versionId}/zones`,route=>route.fulfill({json:{
   zones:[zone('qa-zone-1','QA Alpha'),zone('qa-zone-2','QA Beta')],categories:[],actorId:'qa-actor',
   canEdit:true,canDeleteAny:false,canManageCategories:false,locationId:'qa-floor',siteId:'qa-site',
@@ -38,12 +43,12 @@ test('#196 QA: mobile zone drawer and tree keyboard navigation',async({page,requ
   const list=page.getByTestId('viewer-menu-zone-list');
   await expect(list).toBeEnabled();
   await list.click();
-  const drawer=page.getByTestId('viewer-zone-dock');
+  const drawer=page.getByTestId('viewer-outline-tree-dock');
   await expect(drawer).toBeVisible();
   await expect(page.getByTestId('cad-zone-panel')).toBeVisible();
   await expect(page.locator('body')).not.toHaveCSS('overflow-x','scroll');
-  const alpha=page.getByTestId('zone-tree-item').filter({hasText:'QA Alpha'});
-  const beta=page.getByTestId('zone-tree-item').filter({hasText:'QA Beta'});
+  const alpha=page.getByTestId('version-tree-panel').getByTestId('zone-tree-item').filter({hasText:'QA Alpha'});
+  const beta=page.getByTestId('version-tree-panel').getByTestId('zone-tree-item').filter({hasText:'QA Beta'});
   await alpha.focus();
   await page.keyboard.press('ArrowDown');
   await expect(beta).toBeFocused();

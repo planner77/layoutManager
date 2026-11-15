@@ -89,7 +89,7 @@ export function CadTextSearch({
   return <>
     <Button type="button" size="sm" variant="outline" onClick={toggle}
       data-testid="cad-text-search-trigger" aria-expanded={open} aria-controls={id} disabled={format === 'DXF' && (loading || !ready)}
-      className={"pointer-events-auto absolute right-2 top-2 z-[45] max-w-full border-slate-300 bg-white text-slate-900 shadow"+
+      className={"pointer-events-auto absolute right-2 top-2 z-20 max-w-full border-slate-300 bg-white text-slate-900 shadow"+
         (mobile&&open?" hidden":"")}>
       도면 내 텍스트 검색
     </Button>

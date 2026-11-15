@@ -1,6 +1,6 @@
 /** Reviewed, bundled Greenfield release declarations. External JSON/env cannot add edges. */
 import { G7_GREENFIELD_BASELINE, G7_GREENFIELD_BASELINE_CHECKSUM,
-  G7_GREENFIELD_SCHEMA_ID, G7_PREVIOUS_ZONES_SCHEMA_ID,
+  G7_GREENFIELD_SCHEMA_ID, G7_PREVIOUS_CPU_SCHEMA_ID,G7_PREVIOUS_CPU_BASELINE,G7_PREVIOUS_CPU_BASELINE_CHECKSUM,G7_PREVIOUS_ZONES_SCHEMA_ID,
   G7_PREVIOUS_SCENE_JOB_SCHEMA_ID,G7_PREVIOUS_SCENE_JOB_BASELINE,
   G7_PREVIOUS_SCENE_JOB_BASELINE_CHECKSUM,
   G7_PREVIOUS_ZONES_BASELINE, G7_PREVIOUS_ZONES_BASELINE_CHECKSUM,
@@ -9,6 +9,7 @@ import {SCENE_BUILD_JOB_MIGRATION_SQL,SCENE_BUILD_JOB_MIGRATION_CHECKSUM,
   SCENE_JOB_MIGRATION_NAME} from './scene-job-ddl';
 import {SCENE_CPU_MIGRATION_SQL,SCENE_CPU_MIGRATION_CHECKSUM,
   SCENE_CPU_MIGRATION_NAME} from './scene-cpu-ddl';
+import {TREE_MIGRATION_NAME,TREE_MIGRATION_SQL,TREE_MIGRATION_CHECKSUM} from './tree-ddl';
 import { createHash } from 'node:crypto';
 import type { IsolatedDb } from '../g7-staging/g1-store';
 
@@ -42,13 +43,16 @@ const sceneJobs=(version:string):ReleaseDeclaration=>({version,
   checksum:G7_PREVIOUS_SCENE_JOB_BASELINE_CHECKSUM,
   dataContract:'G7-SCENE-JOBS-DATA-V1',runtimeContract:'G7-SCENE-JOBS-RUNTIME-V1'});
 const cpuWorker=(version:string):ReleaseDeclaration=>({version,
-  schemaId:G7_GREENFIELD_SCHEMA_ID,baseline:G7_GREENFIELD_BASELINE,
-  checksum:G7_GREENFIELD_BASELINE_CHECKSUM,
+  schemaId:G7_PREVIOUS_CPU_SCHEMA_ID,baseline:G7_PREVIOUS_CPU_BASELINE,
+  checksum:G7_PREVIOUS_CPU_BASELINE_CHECKSUM,
   dataContract:'G7-SCENE-JOBS-DATA-V1',runtimeContract:'G7-CPU-WORKER-RUNTIME-V1'});
+const tree=(version:string):ReleaseDeclaration=>({version,
+  schemaId:G7_GREENFIELD_SCHEMA_ID,baseline:G7_GREENFIELD_BASELINE,checksum:G7_GREENFIELD_BASELINE_CHECKSUM,
+  dataContract:'G7-TREE-DATA-V1',runtimeContract:'G7-UNIFIED-TREE-RUNTIME-V1'});
 const sha=(value:string)=>createHash('sha256').update(value).digest('hex');
 export const GREENFIELD_UPGRADE_REGISTRY:UpgradeRegistry={
   releases:[zones('0.56.0'),zones('0.57.0'),zones('0.58.0'),
-    zones('0.58.1'),zones('0.59.0'),sceneJobs('0.60.0'),cpuWorker('0.61.0'),cpuWorker('0.61.1'),cpuWorker('0.62.0')],
+    zones('0.58.1'),zones('0.59.0'),sceneJobs('0.60.0'),cpuWorker('0.61.0'),cpuWorker('0.61.1'),cpuWorker('0.62.0'),tree('0.63.0')],
   edges:[{from:'0.56.0',to:'0.57.0',kind:'COMPATIBLE'},
     {from:'0.57.0',to:'0.58.0',kind:'COMPATIBLE'},
     {from:'0.58.0',to:'0.58.1',kind:'COMPATIBLE'},
@@ -66,7 +70,10 @@ export const GREENFIELD_UPGRADE_REGISTRY:UpgradeRegistry={
       precondition:"SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM sqlite_master WHERE name='ix_scene_build_cpu_due') AND EXISTS(SELECT 1 FROM sqlite_master WHERE name='SceneBuildJob') THEN 1 ELSE 0 END AS ok",
       postcondition:"SELECT CASE WHEN EXISTS(SELECT 1 FROM sqlite_master WHERE type='index' AND name='ix_scene_build_cpu_due') THEN 1 ELSE 0 END AS ok"},
     {from:'0.61.0',to:'0.61.1',kind:'COMPATIBLE'},
-    {from:'0.61.1',to:'0.62.0',kind:'COMPATIBLE'}],
+    {from:'0.61.1',to:'0.62.0',kind:'COMPATIBLE'},
+    {from:'0.62.0',to:'0.63.0',kind:'MIGRATION',sql:TREE_MIGRATION_SQL,sqlSha256:sha(TREE_MIGRATION_SQL),migrationName:TREE_MIGRATION_NAME,migrationChecksum:TREE_MIGRATION_CHECKSUM,
+      precondition:"SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM sqlite_master WHERE name='TreeFolder') THEN 1 ELSE 0 END AS ok",
+      postcondition:"SELECT CASE WHEN EXISTS(SELECT 1 FROM sqlite_master WHERE name='TreeFolder') AND EXISTS(SELECT 1 FROM sqlite_master WHERE name='TreeMembership') AND EXISTS(SELECT 1 FROM sqlite_master WHERE name='TreeAudit') THEN 1 ELSE 0 END AS ok"}],
 };
 
 function forward(from:string,to:string):boolean {
@@ -104,7 +111,7 @@ export function resolveUpgradeChain(registry:UpgradeRegistry,from:string,to:stri
         a.runtimeContract!==b.runtimeContract))throw new Error('G7_UPGRADE_SCHEMA_INCOMPATIBLE');
       if(edge.kind==='MIGRATION' && (!edge.sql||!edge.sqlSha256||!edge.migrationName||
         !edge.migrationChecksum||!edge.precondition||!edge.postcondition||
-        !b.ddlSha256&&b.schemaId!==G7_GREENFIELD_SCHEMA_ID&&
+        !b.ddlSha256&&b.schemaId!==G7_GREENFIELD_SCHEMA_ID&&b.schemaId!==G7_PREVIOUS_CPU_SCHEMA_ID&&
         b.schemaId!==G7_PREVIOUS_SCENE_JOB_SCHEMA_ID))
         throw new Error('G7_UPGRADE_UNSUPPORTED_PATH');
       const chain=[...next.chain,edge];
@@ -126,7 +133,7 @@ export function assertDeclaredSchema(db:IsolatedDb,release:ReleaseDeclaration):v
   // allowlist rather than a mutable/unknown external DDL digest.
   // Fresh install: one new baseline; upgrade: old zone baseline + one signed
   // append-only migration row. Never permit an old 0.59.0 schema for 0.60.0.
-  if(release.schemaId===G7_GREENFIELD_SCHEMA_ID||
+  if(release.schemaId===G7_GREENFIELD_SCHEMA_ID||release.schemaId===G7_PREVIOUS_CPU_SCHEMA_ID||
      release.schemaId===G7_PREVIOUS_SCENE_JOB_SCHEMA_ID){
     const history=db.prepare('SELECT migration_name,checksum,finished_at,rolled_back_at FROM "_prisma_migrations" ORDER BY rowid').all();
     const oldFresh=history.length===1&&
@@ -137,9 +144,13 @@ export function assertDeclaredSchema(db:IsolatedDb,release:ReleaseDeclaration):v
       history[0].checksum===G7_PREVIOUS_ZONES_BASELINE_CHECKSUM&&
       history[1].migration_name===SCENE_JOB_MIGRATION_NAME&&
       history[1].checksum===SCENE_BUILD_JOB_MIGRATION_CHECKSUM;
-    const newFresh=history.length===1&&
-      history[0].migration_name===G7_GREENFIELD_BASELINE&&
-      history[0].checksum===G7_GREENFIELD_BASELINE_CHECKSUM;
+    const newFresh=history.length===1&&history[0].migration_name===G7_PREVIOUS_CPU_BASELINE&&
+      history[0].checksum===G7_PREVIOUS_CPU_BASELINE_CHECKSUM;
+    const treeFresh=history.length===1&&history[0].migration_name===G7_GREENFIELD_BASELINE&&history[0].checksum===G7_GREENFIELD_BASELINE_CHECKSUM;
+    const treeMigrated=history.length>=2&&history.at(-1)?.migration_name===TREE_MIGRATION_NAME&&history.at(-1)?.checksum===TREE_MIGRATION_CHECKSUM&&(()=>{
+      const previous=history.slice(0,-1);return previous.length===1&&previous[0].migration_name===G7_PREVIOUS_CPU_BASELINE&&previous[0].checksum===G7_PREVIOUS_CPU_BASELINE_CHECKSUM||
+        previous.length===2&&previous[0].migration_name===G7_PREVIOUS_SCENE_JOB_BASELINE&&previous[1].migration_name===SCENE_CPU_MIGRATION_NAME||
+        previous.length===3&&previous[0].migration_name===G7_PREVIOUS_ZONES_BASELINE&&previous[1].migration_name===SCENE_JOB_MIGRATION_NAME&&previous[2].migration_name===SCENE_CPU_MIGRATION_NAME;})();
     const fromJobs=history.length===2&&
       history[0].migration_name===G7_PREVIOUS_SCENE_JOB_BASELINE&&
       history[0].checksum===G7_PREVIOUS_SCENE_JOB_BASELINE_CHECKSUM&&
@@ -152,8 +163,8 @@ export function assertDeclaredSchema(db:IsolatedDb,release:ReleaseDeclaration):v
       history[1].checksum===SCENE_BUILD_JOB_MIGRATION_CHECKSUM&&
       history[2].migration_name===SCENE_CPU_MIGRATION_NAME&&
       history[2].checksum===SCENE_CPU_MIGRATION_CHECKSUM;
-    const valid=release.schemaId===G7_GREENFIELD_SCHEMA_ID
-      ?newFresh||fromJobs||fromZones:oldFresh||oldUpgraded;
+    const valid=release.schemaId===G7_GREENFIELD_SCHEMA_ID?treeFresh||treeMigrated:
+      release.schemaId===G7_PREVIOUS_CPU_SCHEMA_ID?newFresh||fromJobs||fromZones:oldFresh||oldUpgraded;
     if(!valid||history.some(row=>row.finished_at==null||row.rolled_back_at!=null))
       throw new Error('G7_UPGRADE_SCHEMA_INCOMPATIBLE');
     assertG7GreenfieldSchema(db);

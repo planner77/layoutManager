@@ -21,10 +21,10 @@ export async function openViewerMenu(page: Page, group: Group) {
     if (mobile) {
       const panel = await mobileDrawer.getAttribute('data-drawer');
       const closeName = panel === 'layers' ? '레이어 패널 접기' :
-        panel === 'outlines' ? '외곽선 목록 닫기' :
+        panel === 'outlines' ? '닫기' :
         panel === 'memos' ? '메모 트리 닫기' :
         panel === 'search' ? '닫기' : '도구 닫기';
-      await mobileDrawer.getByRole('button', { name: closeName }).click();
+      await mobileDrawer.getByRole('button', { name: closeName, exact:true }).click();
     } else {
       // matchMedia's React effect may still be settling after a viewport resize.
       await expect(mobileDrawer).toHaveCount(0);

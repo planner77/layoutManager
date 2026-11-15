@@ -7,6 +7,8 @@ import {authorizeG7CpuWorkerJobTx} from '../../server/scene/scene-worker-g7-auth
 // The real current 0.60.0 constant deliberately blocks runtime activation.
 vi.mock('../../server/g7-operational/greenfield-schema',()=>({
   G7_GREENFIELD_SCHEMA_ID:'G7-GREENFIELD-CPU-WORKER-20261104-1',
+  G7_PREVIOUS_CPU_SCHEMA_ID:'G7-GREENFIELD-CPU-WORKER-20261104-1',
+  G7_UNIFIED_TREE_SCHEMA_ID:'G7-GREENFIELD-UNIFIED-TREE-20261113-1',
 }));
 vi.mock('../../server/g7-operational/runtime-gate',()=>({
   resolveG7RuntimeGate:vi.fn(),

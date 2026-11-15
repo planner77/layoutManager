@@ -53,9 +53,9 @@ test('TC-E3-E2E-001: tree single delete, Undo/Redo and exported JSON follow Docu
   await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
   await createGenerated(page,3);
   const canvas=page.getByTestId('cad-canvas').locator('canvas');
-  const panel=page.getByTestId('viewer-outline-tree');
-  await expect(panel.getByTestId('outline-tree-delete')).toHaveCount(3);
-  await panel.getByTestId('outline-tree-item').nth(1).getByRole('button',{name:'외곽선 2 삭제'}).click();
+  const panel=page.getByTestId('version-tree-panel');
+  await expect(panel.getByRole('button',{name:/삭제$/})).toHaveCount(3);
+  await panel.getByTestId('outline-tree-item').filter({hasText:'외곽선 2'}).getByRole('button',{name:'외곽선 2 삭제'}).click();
   const dialog=page.getByTestId('generated-delete-dialog');
   await expect(dialog).toContainText('생성 개체 1개 삭제 확인');
   await expect(dialog.getByTestId('generated-delete-targets')).toContainText('외곽선 2 (local-2)');
@@ -63,11 +63,11 @@ test('TC-E3-E2E-001: tree single delete, Undo/Redo and exported JSON follow Docu
   await expect(panel.getByTestId('outline-tree-item')).toHaveCount(3);
   await expect(page.getByTestId('generated-undo')).toBeDisabled();
 
-  await panel.getByTestId('outline-tree-item').nth(1).getByRole('button',{name:'외곽선 2 삭제'}).click();
+  await panel.getByTestId('outline-tree-item').filter({hasText:'외곽선 2'}).getByRole('button',{name:'외곽선 2 삭제'}).click();
   await dialog.getByTestId('generated-delete-confirm').click();
   await expect(panel.getByTestId('outline-tree-item')).toHaveCount(2);
-  await expect(panel.getByTestId('outline-tree-item').first()).toContainText('외곽선 1');
-  await expect(panel.getByTestId('outline-tree-item').last()).toContainText('외곽선 3');
+  await expect(panel.getByTestId('outline-tree-item').filter({hasText:'외곽선 1'})).toHaveCount(1);
+  await expect(panel.getByTestId('outline-tree-item').filter({hasText:'외곽선 3'})).toHaveCount(1);
   await expect(page.getByTestId('canvas-selection-count')).toContainText('선택 0개');
   await expect(canvas).toBeVisible();
   const download=page.waitForEvent('download');
@@ -86,7 +86,7 @@ test('TC-E3-E2E-001: tree single delete, Undo/Redo and exported JSON follow Docu
   await expect(page.getByTestId('outline-preview')).toBeVisible();
   await page.getByTestId('cad-outline-tools').getByRole('button',{name:'임시 확정'}).click();
   await expect(panel.getByTestId('outline-tree-item')).toHaveCount(3);
-  await expect(panel.getByTestId('outline-tree-item').last()).toContainText('외곽선 4');
+  await expect(panel.getByTestId('outline-tree-item').filter({hasText:'외곽선 4'})).toHaveCount(1);
   await clickViewerTestCommand(page, 'viewer-menu-outline-tool');
 });
 test('TC-E3-E2E-002: multi-select cancel/confirm, Canvas keyboard, Escape and native input isolation',async({page,request})=>{
@@ -96,6 +96,22 @@ test('TC-E3-E2E-002: multi-select cancel/confirm, Canvas keyboard, Escape and na
   await createGenerated(page,3);
   const rows=page.getByTestId('outline-tree-item');
   await rows.first().click();
+  await rows.last().click({modifiers:['Control']});
+  await expect(page.getByTestId('canvas-selection-count')).toContainText('선택 2개 · 원본 0개 · 생성 2개');
+  await expect(rows.first()).toHaveAttribute('aria-selected','true');
+  await expect(rows.last()).toHaveAttribute('aria-selected','true');
+  await rows.last().focus();
+  await page.keyboard.press('Control+Space');
+  await expect(page.getByTestId('canvas-selection-count')).toContainText('선택 1개 · 원본 0개 · 생성 1개');
+  await expect(rows.last()).toHaveAttribute('aria-selected','false');
+  await page.keyboard.press('Control+Space');
+  await expect(page.getByTestId('canvas-selection-count')).toContainText('선택 2개 · 원본 0개 · 생성 2개');
+  await rows.last().click({modifiers:['Meta']});
+  await expect(page.getByTestId('canvas-selection-count')).toContainText('선택 1개 · 원본 0개 · 생성 1개');
+  await rows.last().click({modifiers:['Meta']});
+  await expect(page.getByTestId('canvas-selection-count')).toContainText('선택 2개 · 원본 0개 · 생성 2개');
+  await rows.first().click();
+  await expect(page.getByTestId('canvas-selection-count')).toContainText('선택 1개 · 원본 0개 · 생성 1개');
   await rows.last().click({modifiers:['Control']});
   await expect(page.getByTestId('canvas-selection-count')).toContainText('선택 2개 · 원본 0개 · 생성 2개');
   await page.getByTestId('generated-delete-selected').click();
@@ -125,7 +141,7 @@ test('TC-E3-E2E-002: multi-select cancel/confirm, Canvas keyboard, Escape and na
   await expect(dialog).toContainText('생성 개체 1개 삭제 확인');
   await dialog.getByTestId('generated-delete-confirm').click();
   await expect(rows).toHaveCount(0);
-  await expect(page.getByTestId('outline-tree-empty')).toBeVisible();
+  await expect(page.getByTestId('version-tree-panel').getByTestId('outline-tree-item')).toHaveCount(0);
   await expect(page.getByTestId('canvas-selection-count')).toContainText('선택 0개');
   await page.getByTestId('generated-undo').click();
   await expect(rows).toHaveCount(1);
@@ -151,7 +167,7 @@ test('TC-E3-E2E-003: SOURCE/mixed and pan fail closed, selected shape context an
   await expect(page.getByTestId('canvas-selection-count')).toContainText('선택 3개 · 원본 1개 · 생성 2개');
   await expect(page.getByTestId('generated-delete-selected')).toBeDisabled();
   await expect(page.getByTestId('canvas-edit-gate')).toContainText('읽기 전용');
-  await expect(rows.first().getByTestId('outline-tree-delete')).toBeDisabled();
+  await expect(rows.first().getByRole('button',{name:/삭제$/})).toBeDisabled();
 
   await page.getByTestId('canvas-mode-generated').click();
   await rows.first().click();

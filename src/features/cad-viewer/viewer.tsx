@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useReducer, useRef, useState, type ChangeEvent } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useReducer, useRef, useState, type ChangeEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { FullscreenLayerPanel } from '@/features/cad-viewer/fullscreen-layer-panel';
 import { ViewerAppShell } from '@/features/cad-viewer/viewer-app-shell';
@@ -9,9 +9,11 @@ import { useOutlineTypeAccess } from '@/features/cad-viewer/outline-type-client'
 import { ViewerMenuBar } from '@/features/cad-viewer/viewer-menu-bar';
 import { CanvasBackgroundDialog } from '@/features/cad-viewer/canvas-background-dialog';
 import { useCanvasBackground } from '@/features/cad-viewer/canvas-background-client';
-import { useViewerStatusImmersive } from '@/features/g7-runtime/session-status';
+import { useSessionIdentitySnapshot,useViewerStatusImmersive } from '@/features/g7-runtime/session-status';
 import type { ViewerCommandGroup } from '@/features/cad-viewer/viewer-command-menu';
-import { OutlineTreePanel } from '@/features/cad-viewer/outline-tree-panel';
+import { VersionTreePanel } from '@/features/cad-viewer/version-tree-panel';
+import { draftDisplayName } from '@/domain/version-tree';
+import { useVersionTree } from '@/features/cad-viewer/use-version-tree';
 import { GeneratedDeleteDialog } from '@/features/cad-viewer/generated-delete-dialog';
 import { CadMemoOverlay } from '@/features/cad-viewer/cad-memo-overlay';
 import { CadMemoTreePanel } from '@/features/cad-viewer/cad-memo-tree-panel';
@@ -255,6 +257,7 @@ export function CadViewer({
   const suppressNameFocus=useRef(false);
   const [linkFallbackUrl,setLinkFallbackUrl]=useState<{renderer:ViewerRenderer;url:string}|null>(null);
   const [appState, dispatchApp] = useReducer(viewerAppReducer, initialViewerAppState);
+  const [treeEntryKind,setTreeEntryKind]=useState<'ALL'|'OUTLINE'|'ZONE'>('ALL');
   const [isCompact,setIsCompact]=useState(false);
   useEffect(()=>{
     const media=window.matchMedia('(max-width: 767px)');
@@ -340,6 +343,7 @@ export function CadViewer({
   const [selectedOutlineTypeId,setSelectedOutlineTypeId]=useState('');
   const [outlineName,setOutlineName]=useState('');
   const [outlineNotice,setOutlineNotice]=useState<string|null>(null);
+  const sessionIdentity=useSessionIdentitySnapshot();
   const outlineWorkspace=useOutlineWorkspace({versionId,sourceSha256,renderer,format,attempt});
   const storedOutlines=outlineWorkspace.rows;
   const storedSceneRevision=outlineWorkspace.sceneRevision;
@@ -353,9 +357,6 @@ export function CadViewer({
   const [typedIntent,setTypedIntent]=useState<{
     identity:string;actorId:string;key:string;body:StoredOutlineCreateDto;
   }|null>(null);
-  const typedIdentity=versionId+':'+sourceSha256+':'+renderer+':'+attempt;
-  const pendingTypedIntent=typedIntent?.identity===typedIdentity&&
-    (!outlineWorkspace.actorId||typedIntent.actorId===outlineWorkspace.actorId)?typedIntent:null;
 
   const [state, setState] = useState<{ status: string; ready: boolean; error?: string; warning?: string }>({
     status: '도면 로딩 중…',
@@ -364,6 +365,16 @@ export function CadViewer({
   const getZoneCanvas=useCallback(()=>container.current,[]);
   const zones=useCadZones({versionId,sourceSha256,renderer,format,ready:state.ready,loading,
     attempt,getManager,getCanvas:getZoneCanvas,getViewEpoch});
+  const tree=useVersionTree(versionId,sourceSha256,format==='DXF'&&/^[a-f0-9]{64}$/i.test(sourceSha256));
+  const typedIdentity=versionId+':'+sourceSha256+':'+renderer+':'+attempt+':'+sessionIdentity.actorId+':'+sessionIdentity.epoch+':'+tree.denialEpoch;
+  const typedIdentityRef=useRef(typedIdentity);
+  useLayoutEffect(()=>{typedIdentityRef.current=typedIdentity;
+    queueMicrotask(()=>{if(typedIdentityRef.current!==typedIdentity)return;
+      setTypedIntent(previous=>previous?.identity===typedIdentity?previous:null);
+      setSavedServerIds(new Set());setStoredOutlineBusy(false);});
+  },[typedIdentity]);
+  const pendingTypedIntent=typedIntent?.identity===typedIdentity&&outlineWorkspace.mode==='active'&&
+    typedIntent.actorId===sessionIdentity.actorId&&typedIntent.actorId===outlineWorkspace.actorId?typedIntent:null;
   const zoneSpacePan=useRef(false);
   useEffect(()=>{
     const down=(event:KeyboardEvent)=>{if(event.code!=='Space'||!zones.drawing)return;
@@ -687,7 +698,7 @@ export function CadViewer({
           return;
         }
         if(name==='layers')dispatchApp({type:'close-layers'});
-        else if(name==='outlines')dispatchApp({type:'toggle-outline-tree'});
+        else if(name==='outlines')dispatchApp({type:appState.zonePanelOpen?'toggle-zones':'toggle-outline-tree'});
         else if(name==='memos')dispatchApp({type:'toggle-memo-tree'});
         else if(name==='zones')dispatchApp({type:'toggle-zones'});
         else if(name==='tools'){setTypeManagerOpen(false);dispatchApp({type:'close-tools'});}
@@ -718,7 +729,7 @@ export function CadViewer({
     // Capture ahead of native fullscreen/selection handling for staged edit ESC.
     window.addEventListener('keydown',handleKeyDown,true);
     return ()=>window.removeEventListener('keydown',handleKeyDown,true);
-  },[syncSavedOutlines,deleteRequest,backgroundOpen,contextMenu,state.ready,canvasMode,openDelete,nameTipOpen,infoOpen,memoPlacing,memoCandidate,memoSelectedId,closeMemoEditor,typeManagerOpen,exchangeOpened,closeExchange,zones]);
+  },[syncSavedOutlines,deleteRequest,backgroundOpen,contextMenu,state.ready,canvasMode,openDelete,nameTipOpen,infoOpen,memoPlacing,memoCandidate,memoSelectedId,closeMemoEditor,typeManagerOpen,exchangeOpened,closeExchange,zones,appState.zonePanelOpen]);
   const stopOutlineEditing = useCallback(() => {
     // Must cancel the Worker BEFORE clearing selection: selection callbacks can
     // otherwise enqueue a new compute job for the previous previewKind.
@@ -1345,7 +1356,7 @@ export function CadViewer({
         });
         // Reset invalidates current Version geometry while Scene revision stays
         // unchanged. Hide stale projected paths before any fallible refetch.
-        zones.invalidateMappings();void zones.refresh();
+        zones.invalidateMappings();void zones.refresh();void tree.refresh();
       }
       if(manager.current!==current)throw new Error('초기화 중 Viewer가 변경되었습니다. 서버 상태를 재조회하세요.');
       current.cancelGeneratedCommand();current.cancelOutlinePreview();
@@ -1526,7 +1537,12 @@ export function CadViewer({
         setTypedIntent(intent);
       }
       setStoredOutlineError(null);setPreviewError(null);
+      const scopeAtStart=typedIdentity;
+      const live=()=>typedIdentityRef.current===scopeAtStart&&outlineWorkspace.isCurrent(intent.actorId);
       const created=await outlineWorkspace.submit(intent.body,intent.key);
+      if(!live())return;
+      await tree.refresh();
+      if(!live())return;
       setTypedIntent(previous=>previous?.key===intent.key?null:previous);
       if(outlineRequestRevisionRef.current===previewRevision){
         manager.current?.cancelOutlinePreview();setPreview(null);
@@ -1535,7 +1551,8 @@ export function CadViewer({
       setOutlineName('');
     } catch (error) {
       if(error instanceof DOMException&&error.name==='AbortError')return;
-      setPreviewError(error instanceof Error?error.message:'업무 타입을 확인할 수 없습니다.');
+      if(typedIdentityRef.current===typedIdentity&&outlineWorkspace.mode==='active')
+        setPreviewError(error instanceof Error?error.message:'업무 타입을 확인할 수 없습니다.');
     }
   }
   function cancelOutline() {
@@ -1544,7 +1561,9 @@ export function CadViewer({
     manager.current?.cancelOutlinePreview();
   }
   async function saveSelectedOutline(savedId:string){
-    if(!outlineWorkspace.canWrite||storedOutlineBusy)return;
+    if(!outlineWorkspace.canWrite||storedOutlineBusy||!outlineWorkspace.actorId)return;
+    const actor=outlineWorkspace.actorId,scopeAtStart=typedIdentity;
+    const live=()=>typedIdentityRef.current===scopeAtStart&&outlineWorkspace.isCurrent(actor);
     setStoredOutlineBusy(true);setStoredOutlineError(null);
     try{
       const item=manager.current?.getSavedOutlines().find(x=>x.id===savedId);
@@ -1555,6 +1574,7 @@ export function CadViewer({
       const sceneData=await sceneResponse.json();
       if(!sceneResponse.ok||!Number.isSafeInteger(sceneData.revision))
         throw new Error('서버 Scene READY가 필요합니다. 먼저 Scene을 생성·저장하세요.');
+      if(!live())return;
       const exportOne=buildOutlineExport(versionId,sourceSha256,outlineInfo?.unitCode??null,[item]);
       const source=exportOne.schemaVersion===1||exportOne.schemaVersion===2;
       const payload:Record<string,unknown>={
@@ -1568,11 +1588,14 @@ export function CadViewer({
         )}:{geometry:item.result.geometry,derivedFrom:item.result.derivedFrom??[]}),
       };
       const created=await outlineWorkspace.mutate('POST',payload);
+      if(!live())return;
+      await tree.refresh();
+      if(!live())return;
       if('deleted' in created)throw new Error('외곽선 저장 결과가 유효하지 않습니다.');
       setSavedServerIds(previous=>new Set(previous).add(savedId));
       setOutlineNotice('외곽선 영속 저장 완료 · '+created.id.slice(0,8));
-    }catch(error){if(!(error instanceof DOMException&&error.name==='AbortError'))setStoredOutlineError(error instanceof Error?error.message:'외곽선을 저장하지 못했습니다.');}
-    finally{setStoredOutlineBusy(false);}
+    }catch(error){if(live()&&!(error instanceof DOMException&&error.name==='AbortError'))setStoredOutlineError(error instanceof Error?error.message:'외곽선을 저장하지 못했습니다.');}
+    finally{if(typedIdentityRef.current===scopeAtStart)setStoredOutlineBusy(false);}
   }
   async function updateStoredOutline(item:StoredOutline,operation:'rename'|'delete'|'move'|'rotate'){
     if(!outlineWorkspace.canWrite||storedSceneRevision===null||storedOutlineBusy)return;
@@ -1595,9 +1618,13 @@ export function CadViewer({
       payload={...payload,operation:'transform',operations:[...item.operations,next]};
     }
     setStoredOutlineBusy(true);setStoredOutlineError(null);
-    const actor=outlineWorkspace.actorId,sequence=loadSequenceRef.current,activeManager=manager.current;
+    const actor=outlineWorkspace.actorId,sequence=loadSequenceRef.current,activeManager=manager.current,scopeAtStart=typedIdentity;
+    const live=()=>typedIdentityRef.current===scopeAtStart&&outlineWorkspace.isCurrent(actor);
     try{
       await outlineWorkspace.mutate(operation==='delete'?'DELETE':'PATCH',payload,item.id);
+      if(!live())return;
+      await tree.refresh();
+      if(!live())return;
       // #84: the same server CAS transaction also updates affected memo WCS/revisions.
       // Refresh these immediately; retaining stale draft revisions can silently break later edits.
       if(operation==='move'||operation==='rotate'||operation==='delete'){
@@ -1610,8 +1637,8 @@ export function CadViewer({
           memoSession.current=doc;setMemos(doc.list());
         }
       }
-    }catch(error){if(!(error instanceof DOMException&&error.name==='AbortError'))setStoredOutlineError(error instanceof Error?error.message:'외곽선 변경이 거부되었습니다.');}
-    finally{setStoredOutlineBusy(false);}
+    }catch(error){if(live()&&!(error instanceof DOMException&&error.name==='AbortError'))setStoredOutlineError(error instanceof Error?error.message:'외곽선 변경이 거부되었습니다.');}
+    finally{if(typedIdentityRef.current===scopeAtStart)setStoredOutlineBusy(false);}
   }
   function toggleStoredOutline(id:string){
     outlineWorkspace.setVisible([id],storedOutlineHidden.has(id));
@@ -1918,6 +1945,12 @@ export function CadViewer({
           ? '검증된 도면 Version/SHA 범위가 필요합니다.'
           : null;
   const treeAvailable=treeUnavailable===null;
+  const browseUnavailable=format!=='DXF'?'DXF 도면에서만 탐색할 수 있습니다.':
+    !/^[a-f0-9]{64}$/i.test(sourceSha256)?'검증된 Version/SHA가 필요합니다.':null;
+  const browseAvailable=browseUnavailable===null;
+  const treeData=tree.data;
+  const matchingOutline=!!treeData&&outlineWorkspace.actorId===treeData.actorId&&outlineWorkspace.mode==='active';
+  const matchingZones=!!treeData&&zones.list?.actorId===treeData.actorId&&zones.list?.versionId===versionId&&zones.list?.sourceSha256===sourceSha256;
   const editCapability=canvasEditCapability(canvasSelection,{versionId,sourceSha256});
   const sourceCount=canvasSelection.filter(ref=>ref.origin!=='GENERATED').length;
   const generatedCount=canvasSelection.filter(ref=>ref.origin==='GENERATED').length;
@@ -2021,15 +2054,16 @@ export function CadViewer({
       {id:'layers',label:'레이어 패널',testId:'viewer-menu-layers',kind:'checkbox',checked:appState.layerPanelOpen,expanded:layerAvailable&&appState.layerPanelOpen,controls:layerAvailable&&appState.layerPanelOpen?'viewer-layer-dock':undefined,disabled:!layerAvailable,reason:!layerAvailable?'레이어 패널은 로딩 완료된 three-dxf-viewer에서만 사용할 수 있습니다.':undefined,onSelect:()=>dispatchApp({type:'toggle-layers',exclusive:isCompact})},
       {id:'tools',label:'선택·편집 도구',testId:'viewer-menu-tools',kind:'checkbox',checked:appState.toolsOpen&&!typeManagerOpen,expanded:(outlineAvailable||memoAvailable)&&appState.toolsOpen&&!typeManagerOpen,controls:(outlineAvailable||memoAvailable)&&appState.toolsOpen?'viewer-tools-dock':undefined,disabled:!(outlineAvailable||memoAvailable),reason:!(outlineAvailable||memoAvailable)?(outlineUnavailable??memoUnavailable??undefined):undefined,onSelect:()=>{if(typeManagerOpen){setTypeManagerOpen(false);return;}if(appState.toolsOpen)closeMemoEditor();dispatchApp({type:'toggle-tools',exclusive:isCompact});}},
       {id:'outline',label:'외곽선 생성',testId:'viewer-menu-outline-tool',kind:'checkbox',checked:appState.outlineToolEnabled,expanded:appState.outlineToolEnabled&&appState.toolsOpen,controls:appState.outlineToolEnabled&&appState.toolsOpen?'viewer-tools-dock':undefined,disabled:!outlineAvailable,reason:outlineUnavailable??undefined,onSelect:()=>{setTypeManagerOpen(false);toggleOutlineTool();}},
-      {id:'tree',label:'외곽선 목록',testId:'viewer-menu-outline-tree',kind:'checkbox',checked:appState.outlineTreeOpen,expanded:treeAvailable&&appState.outlineTreeOpen,controls:treeAvailable&&appState.outlineTreeOpen?'viewer-outline-tree-dock':undefined,disabled:!treeAvailable,reason:treeUnavailable??undefined,onSelect:()=>{if(!appState.outlineTreeOpen)void outlineWorkspace.refresh();dispatchApp({type:'toggle-outline-tree',exclusive:isCompact});}},
+      {id:'tree',label:'외곽선 목록',testId:'viewer-menu-outline-tree',kind:'checkbox',checked:appState.outlineTreeOpen,expanded:browseAvailable&&appState.outlineTreeOpen,controls:browseAvailable&&appState.outlineTreeOpen?'viewer-outline-tree-dock':undefined,disabled:!browseAvailable,reason:browseUnavailable??undefined,onSelect:()=>{setTreeEntryKind('OUTLINE');if(!appState.outlineTreeOpen)void outlineWorkspace.refresh();dispatchApp({type:'toggle-outline-tree',exclusive:isCompact});}},
+      {id:'unified-tree',label:'외곽선·구역',testId:'viewer-menu-unified-tree',kind:'checkbox',checked:appState.outlineTreeOpen||appState.zonePanelOpen,expanded:appState.outlineTreeOpen||appState.zonePanelOpen,controls:appState.outlineTreeOpen||appState.zonePanelOpen?'viewer-outline-tree-dock':undefined,disabled:!browseAvailable,reason:browseUnavailable??undefined,onSelect:()=>{setTreeEntryKind('ALL');if(!appState.outlineTreeOpen)dispatchApp({type:'toggle-outline-tree',exclusive:isCompact});}},
       {id:'zone-create',label:'구역 생성',testId:'viewer-menu-zone-create',kind:'checkbox',checked:zones.drawing,
-        expanded:appState.zonePanelOpen,controls:appState.zonePanelOpen?'viewer-zone-dock':undefined,
+        expanded:appState.zonePanelOpen,controls:appState.zonePanelOpen?'viewer-outline-tree-dock':undefined,
         disabled:!zones.canCreate,reason:zones.unavailable??(!zones.list?.canEdit?'구역 쓰기 권한이 없습니다.':undefined),
-        onSelect:()=>{if(zones.drawing)zones.cancel();else startZoneDrawing();}},
+        onSelect:()=>{setTreeEntryKind('ZONE');if(zones.drawing)zones.cancel();else startZoneDrawing();}},
       {id:'zone-list',label:'구역 목록',testId:'viewer-menu-zone-list',kind:'checkbox',checked:appState.zonePanelOpen,
-        expanded:appState.zonePanelOpen,controls:appState.zonePanelOpen?'viewer-zone-dock':undefined,
+        expanded:appState.zonePanelOpen,controls:appState.zonePanelOpen?'viewer-outline-tree-dock':undefined,
         disabled:!!zones.readUnavailable,reason:zones.readUnavailable??undefined,
-        onSelect:()=>{if(appState.zonePanelOpen&&zones.drawing)zones.cancel();
+        onSelect:()=>{setTreeEntryKind('ZONE');if(appState.zonePanelOpen&&zones.drawing)zones.cancel();
           if(!appState.zonePanelOpen&&zones.list)void zones.refresh();
           dispatchApp({type:'toggle-zones',exclusive:isCompact});}},
       {id:'memo-tree',label:'메모 트리',testId:'viewer-menu-memo-tree',kind:'checkbox',
@@ -2067,6 +2101,13 @@ export function CadViewer({
         }},
     ]},
   ];
+
+  const closeUnifiedTree=()=>{
+    if(zones.drawing)zones.cancel();
+    if(appState.zonePanelOpen)dispatchApp({type:'toggle-zones'});
+    else if(appState.outlineTreeOpen)dispatchApp({type:'toggle-outline-tree'});
+    requestAnimationFrame(()=>viewerShell.current?.querySelector<HTMLButtonElement>('[data-viewer-group=work]')?.focus({preventScroll:true}));
+  };
 
   return <div className="space-y-3">
     <input ref={generatedImportInput} data-testid="generated-import-input" type="file"
@@ -2112,41 +2153,69 @@ export function CadViewer({
         />
       ) : null}
       layerPanelOpen={appState.layerPanelOpen}
-      outlineTreePanel={treeAvailable ? (
-        <OutlineTreePanel
-          outlines={savedOutlines}
-          overlayStates={savedOverlayStates}
-          types={selectableTypes}
-          compact={isCompact}
-          server={outlineWorkspace.mode==='off'?undefined:{rows:storedOutlines,hidden:storedOutlineHidden,selected:outlineWorkspace.selected,
-            canWrite:outlineWorkspace.canWrite&&storedSceneRevision!==null&&!storedOutlineBusy}}
-          serverActions={outlineWorkspace.mode==='off'?undefined:<div className="shrink-0 border-b px-3 py-2">
-            <span>임시 {savedOutlines.length}개 · 서버 {storedOutlines.length}개</span>
-            <Button size="sm" variant="outline" className="ml-2" disabled={outlineWorkspace.loading||storedOutlineBusy}
-              onClick={()=>{setStoredOutlineError(null);void outlineWorkspace.refresh();}}>서버 외곽선 새로고침</Button>
-            {outlineWorkspace.loading&&<p role="status">서버 외곽선 조회 중…</p>}
-            <div className="mt-1 flex flex-wrap gap-1">
-              <Button size="sm" variant="outline" disabled={!serverSourceExportCount||outlineWorkspace.mode!=='active'}
-                onClick={()=>exportStoredOutlines('SOURCE_CANONICAL')}>원본 기반 JSON ({serverSourceExportCount})</Button>
-              <Button size="sm" variant="outline" disabled={!serverAppExportCount||outlineWorkspace.mode!=='active'}
-                onClick={()=>exportStoredOutlines('APP_CREATED')}>업무 WCS JSON ({serverAppExportCount})</Button>
-            </div>
-            {storedOutlineError&&<p role="alert" className="mt-1 text-red-800">{storedOutlineError}</p>}
-          </div>}
-          allowDelete={deleteModeAvailable && sourceCount===0}
-          deleteUnavailableReason={sourceCount>0 ? editCapability.reason :
-            '생성 개체 편집 모드(원본·생성 또는 생성 개체만 선택)로 전환하세요.'}
-          onSelect={selectTreeOutline}
-          onVisibility={(id,visible)=>setTreeVisibility([id],visible)}
-          onGroupVisibility={setTreeVisibility}
-          onDelete={deleteTreeOutline}
-          onClose={() => {
-            dispatchApp({ type: 'toggle-outline-tree' });
-            requestAnimationFrame(()=>viewerShell.current?.querySelector<HTMLButtonElement>('[data-viewer-group=work]')?.focus({preventScroll:true}));
-          }}
-        />
-      ) : null}
-      outlineTreeOpen={treeAvailable && appState.outlineTreeOpen}
+      outlineTreePanel={browseAvailable ? <VersionTreePanel
+        key={versionId+':'+tree.actorId+':'+tree.sessionEpoch+':'+tree.denialEpoch+':'+treeEntryKind}
+        tree={tree} versionId={versionId} versionLabel={`V${version} · ${displayName}`} sourceSha256={sourceSha256} initialKind={treeEntryKind}
+        focusAvailable={renderer==='three-dxf-viewer'&&state.ready&&!loading}
+        types={selectableTypes}
+        drafts={savedOutlines.map(item=>({id:item.id,name:draftDisplayName(item.id,item.name),
+          kind:item.result.kind,outlineTypeId:item.outlineTypeId,outlineTypeName:item.outlineTypeName,
+          visible:savedOverlayStates.find(state=>state.id===item.id)?.visible??true,
+          selected:savedOverlayStates.find(state=>state.id===item.id)?.selected??false}))}
+        selectedOutlineIds={matchingOutline?outlineWorkspace.selected:new Set()}
+        hiddenOutlineIds={matchingOutline?storedOutlineHidden:new Set()}
+        selectedZoneId={matchingZones?zones.selectedId:null}
+        hiddenZoneIds={matchingZones?zones.hidden:new Set()} allZonesVisible={matchingZones?zones.allVisible:true}
+        zoneReady={matchingZones} zoneLoading={zones.loadingList} zoneError={zones.error} onRetryZones={()=>{void zones.refresh();}}
+        onSelect={(kind,id,additive=false)=>{
+          if(kind==='ZONE'){if(matchingZones)zones.setSelectedId(id);outlineWorkspace.clearSelection();return;}
+          zones.setSelectedId(null);
+          if(kind==='OUTLINE'){if(matchingOutline){if(!additive){manager.current?.clearCanvasObjectSelection();syncSavedOutlines();}outlineWorkspace.select(id,additive);}return;}
+          if(manager.current?.selectSavedOutline(id,additive)){if(!additive)outlineWorkspace.clearSelection();syncSavedOutlines();}
+        }}
+        onFocus={(kind,id,additive=false)=>{
+          if(kind==='ZONE'){if(matchingZones&&renderer==='three-dxf-viewer'&&state.ready&&!loading)zones.focus(id);return;}
+          if(kind==='DRAFT'){if(renderer==='three-dxf-viewer'&&state.ready&&!loading)focusSavedOutline(id,additive);return;}
+          if(!matchingOutline||renderer!=='three-dxf-viewer'||!state.ready||loading)return;
+          if(storedOutlineHidden.has(id)){
+            const bounds=treeData?.outlines.find(row=>row.id===id)?.bounds;
+            if(!bounds||!manager.current?.focusBounds(bounds)){setOutlineNotice('유효한 외곽선 WCS 경계를 확인하지 못했습니다.');return;}
+            outlineWorkspace.setVisible([id],true);outlineWorkspace.select(id,additive);setOutlineNotice(null);return;
+          }
+          selectTreeOutline('server:'+id,additive);
+        }}
+        onVisibility={(kind,id,visible)=>{
+          if(kind==='OUTLINE'){if(matchingOutline)outlineWorkspace.setVisible([id],visible);return;}
+          if(kind==='DRAFT'){setTreeVisibility([id],visible);return;}
+          if(matchingZones){if(visible)zones.setAllVisible(true);zones.setHidden(current=>{const next=new Set(current);if(visible)next.delete(id);else next.add(id);return next;});}
+        }}
+        canDeleteOutline={matchingOutline&&outlineWorkspace.canWrite&&storedSceneRevision!==null&&!storedOutlineBusy}
+        canDeleteDraft={deleteModeAvailable&&sourceCount===0}
+        onDeleteOutline={(kind,id)=>deleteTreeOutline(kind==='OUTLINE'?'server:'+id:id)}
+        canCreateZone={zones.canCreate} zoneCreateReason={zones.unavailable??undefined}
+        onCreateZone={()=>{setTreeEntryKind('ZONE');startZoneDrawing();}}
+        outlineActions={matchingOutline?<div className="flex flex-wrap gap-1 text-xs">
+          <span>임시 {savedOutlines.length}개 · 서버 {treeData?.outlines.length??0}개</span>
+          <Button size="sm" variant="outline" onClick={()=>void outlineWorkspace.refresh()}>외곽선 새로고침</Button>
+          <Button size="sm" variant="outline" disabled={!serverSourceExportCount} onClick={()=>exportStoredOutlines('SOURCE_CANONICAL')}>원본 기반 JSON ({serverSourceExportCount})</Button>
+          <Button size="sm" variant="outline" disabled={!serverAppExportCount} onClick={()=>exportStoredOutlines('APP_CREATED')}>업무 WCS JSON ({serverAppExportCount})</Button>
+        </div>:null}
+        zoneDetail={matchingZones&&(treeEntryKind==='ZONE'||zones.selectedId||zones.drawing)?<CadZonePanel showTree={false} key={versionId+':'+(zones.list?.actorId??'none')+':'+(zones.drawingExistingId??(zones.drawing?'drawing':'browse'))} list={zones.list} loadingList={zones.loadingList} selectedId={zones.selectedId} hidden={zones.hidden}
+        allVisible={zones.allVisible} canEdit={zones.canCreate} editReason={zones.unavailable??(!zones.list?.canEdit?'구역 쓰기 권한이 없습니다.':null)} drawing={zones.drawing} points={zones.points} closed={zones.closed}
+        notice={zones.error} busy={zones.busy} snap={zones.snap} onChooseSnap={zones.chooseSnap}
+        onSelect={zones.setSelectedId} onFocus={zones.focus}
+        onVisibility={(id,visible)=>{if(visible)zones.setAllVisible(true);zones.setHidden(current=>{const next=new Set(current);if(visible)next.delete(id);else next.add(id);return next;});}}
+        onAllVisibility={zones.setAllVisible} onCreateStart={startZoneDrawing} onCancel={zones.cancel}
+        onUndoPoint={()=>{zones.setPoints(current=>current.slice(0,-1));zones.setClosed(false);}}
+        onClosePolygon={zones.closePolygon}
+        onAddPoint={zones.addPoint} onEditPoint={(index,point)=>{zones.setPoints(current=>current.map((p,i)=>i===index?point:p));zones.setClosed(false);}}
+        onReuseOutline={reuseSelectedOutline} onSave={async(metadata,polygon)=>{await zones.save(metadata,polygon);await tree.refresh();}} onDelete={async zone=>{await zones.remove(zone);await tree.refresh();}}
+        onEditGeometry={zone=>{prepareZoneDrawing();zones.editGeometry(zone);}} drawingExistingId={zones.drawingExistingId}
+        onCategoryCreate={async(name,order)=>{await zones.categoryCreate(name,order);await tree.refresh();}} onCategoryPatch={async(category,name,order,active)=>{await zones.categoryPatch(category,name,order,active);await tree.refresh();}} onCategoryDelete={async category=>{await zones.categoryDelete(category);await tree.refresh();}}
+        onRefresh={()=>{void zones.refresh();void tree.refresh();}} onClose={closeUnifiedTree}/>:null}
+        onClose={closeUnifiedTree}
+      /> : null}
+      outlineTreeOpen={browseAvailable&&(appState.outlineTreeOpen||appState.zonePanelOpen)}
       memoTreePanel={memoAvailable ? <div className="flex h-full min-h-0 flex-col">
         <CadMemoTreePanel
           memos={scopedMemos} tree={memoTree} selectedId={memoSelectedId}
@@ -2172,28 +2241,14 @@ export function CadViewer({
           className="border-t border-red-300 bg-red-50 p-2 text-xs text-red-800">{memoTreeError}</p>}
       </div> : null}
       memoTreeOpen={memoAvailable&&appState.memoTreeOpen}
-      zonePanel={<CadZonePanel key={versionId+':'+(zones.list?.actorId??'none')+':'+(zones.drawingExistingId??(zones.drawing?'drawing':'browse'))} list={zones.list} loadingList={zones.loadingList} selectedId={zones.selectedId} hidden={zones.hidden}
-        allVisible={zones.allVisible} canEdit={zones.canCreate} editReason={zones.unavailable??(!zones.list?.canEdit?'구역 쓰기 권한이 없습니다.':null)} drawing={zones.drawing} points={zones.points} closed={zones.closed}
-        notice={zones.error} busy={zones.busy} snap={zones.snap} onChooseSnap={zones.chooseSnap}
-        onSelect={zones.setSelectedId} onFocus={zones.focus}
-        onVisibility={(id,visible)=>{if(visible)zones.setAllVisible(true);zones.setHidden(current=>{const next=new Set(current);if(visible)next.delete(id);else next.add(id);return next;});}}
-        onAllVisibility={zones.setAllVisible} onCreateStart={startZoneDrawing} onCancel={zones.cancel}
-        onUndoPoint={()=>{zones.setPoints(current=>current.slice(0,-1));zones.setClosed(false);}}
-        onClosePolygon={zones.closePolygon}
-        onAddPoint={zones.addPoint} onEditPoint={(index,point)=>{zones.setPoints(current=>current.map((p,i)=>i===index?point:p));zones.setClosed(false);}}
-        onReuseOutline={reuseSelectedOutline} onSave={zones.save} onDelete={zones.remove}
-        onEditGeometry={zone=>{prepareZoneDrawing();zones.editGeometry(zone);}} drawingExistingId={zones.drawingExistingId}
-        onCategoryCreate={zones.categoryCreate} onCategoryPatch={zones.categoryPatch} onCategoryDelete={zones.categoryDelete}
-        onRefresh={()=>void zones.refresh()} onClose={()=>{if(zones.drawing)zones.cancel();dispatchApp({type:'toggle-zones'});}}/>}
-      zonePanelOpen={appState.zonePanelOpen&&!zones.readUnavailable}
-      compactPanel={appState.compactPanel}
+      compactPanel={appState.compactPanel==='zones'?'outlines':appState.compactPanel}
       toolsOpen={appState.toolsOpen}
       toolsTitle={typeManagerOpen?'외곽선 타입 관리':undefined}
       onClosePanel={panel=>{
         if(panel==='layers'){dispatchApp({type:'close-layers'});requestAnimationFrame(()=>viewerShell.current?.querySelector<HTMLButtonElement>('[data-viewer-group=work]')?.focus({preventScroll:true}));}
-        else if(panel==='outlines'){dispatchApp({type:'toggle-outline-tree'});requestAnimationFrame(()=>viewerShell.current?.querySelector<HTMLButtonElement>('[data-viewer-group=work]')?.focus({preventScroll:true}));}
+        else if(panel==='outlines')closeUnifiedTree();
         else if(panel==='memos'){dispatchApp({type:'toggle-memo-tree'});requestAnimationFrame(()=>viewerShell.current?.querySelector<HTMLButtonElement>('[data-viewer-group=work]')?.focus({preventScroll:true}));}
-        else if(panel==='zones'){if(zones.drawing)zones.cancel();dispatchApp({type:'toggle-zones'});requestAnimationFrame(()=>viewerShell.current?.querySelector<HTMLButtonElement>('[data-viewer-group=work]')?.focus({preventScroll:true}));}
+        else if(panel==='zones')closeUnifiedTree();
         else {if(!typeManagerOpen)closeMemoEditor();setTypeManagerOpen(false);dispatchApp({type:'close-tools'});requestAnimationFrame(()=>viewerShell.current?.querySelector<HTMLButtonElement>('[data-viewer-group=work]')?.focus({preventScroll:true}));}
       }}
       textSearchOpen={searchOpen}
@@ -2265,7 +2320,7 @@ export function CadViewer({
       }
       tools={
         typeManagerOpen ? <OutlineTypeManager access={typeAccess.access} refreshAccess={typeAccess.refresh}
-          onChanged={()=>{void outlineWorkspace.refresh();}}/> :
+          onChanged={()=>{void outlineWorkspace.refresh();void tree.refresh();}}/> :
         outlineAvailable || memoAvailable || (renderer === 'three-dxf-viewer' && format === 'DXF' && state.ready && savedCount > 0) ? <>
           {memoAvailable && <div data-testid="cad-memo-status"
             className="flex flex-wrap items-center gap-2 border-b border-amber-200 bg-amber-50 px-3 py-1 text-xs text-slate-800">

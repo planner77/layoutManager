@@ -6,13 +6,14 @@ import {checking,gateStatus,sessionStatus,type PublicSessionStatus} from './sess
 
 type Status=PublicSessionStatus;
 const initial=checking;
-const context=createContext<{status:Status;immersive:boolean;setImmersive:(value:boolean)=>void}>({status:initial,immersive:false,setImmersive:()=>{}});
+const context=createContext<{status:Status;sessionActorId:string|null;sessionEpoch:number;immersive:boolean;setImmersive:(value:boolean)=>void}>({status:initial,sessionActorId:null,sessionEpoch:0,immersive:false,setImmersive:()=>{}});
 const eventName='layoutManager:session-invalidated';
 export function invalidateSessionStatus(){ if(typeof window!=='undefined')window.dispatchEvent(new Event(eventName)); }
 
 export function SessionStatusProvider({children}:{children:ReactNode}){
   const pathname=usePathname();
   const [status,setStatus]=useState<Status>(initial);
+  const [identity,setIdentity]=useState<{actorId:string|null;epoch:number}>({actorId:null,epoch:0});
   const [immersive,setImmersive]=useState(false);
   useEffect(()=>{
     let generation=0,active:AbortController|null=null,queued=false,live=true;
@@ -20,7 +21,7 @@ export function SessionStatusProvider({children}:{children:ReactNode}){
       if(!live)return;
       if(active){queued=true;active.abort();return;}
       const controller=new AbortController(),epoch=++generation;
-      active=controller;setStatus(initial);
+      active=controller;setStatus(initial);setIdentity(previous=>({actorId:null,epoch:previous.epoch+1}));
       const publish=(next:Status)=>{if(live&&epoch===generation&&!controller.signal.aborted)setStatus(next);};
       void (async()=>{
         try{
@@ -33,7 +34,11 @@ export function SessionStatusProvider({children}:{children:ReactNode}){
           const session=await fetch('/api/g7-runtime/auth/session',{cache:'no-store',credentials:'same-origin',signal:controller.signal});
           if(session.status===401){publish(sessionStatus(401,null));return;}
           if(!session.ok)throw Error('SESSION');
-          publish(sessionStatus(session.status,await session.json()));
+          const payload=await session.json();
+          const next=sessionStatus(session.status,payload);
+          if(live&&epoch===generation&&!controller.signal.aborted&&next.kind==='signed-in'&&typeof payload?.actor?.id==='string')
+            setIdentity(previous=>({actorId:payload.actor.id,epoch:previous.epoch}));
+          publish(next);
         }catch{publish({kind:'unavailable',roles:[]});}
         finally{if(active===controller){active=null;if(queued){queued=false;refresh();}}}
       })();
@@ -46,11 +51,12 @@ export function SessionStatusProvider({children}:{children:ReactNode}){
     return()=>{live=false;generation++;queued=false;active?.abort();active=null;
       window.removeEventListener(eventName,refresh);window.removeEventListener('focus',focus);document.removeEventListener('visibilitychange',visible);};
   },[pathname]);
-  return <context.Provider value={{status,immersive,setImmersive}}>{children}</context.Provider>;
+  return <context.Provider value={{status,sessionActorId:identity.actorId,sessionEpoch:identity.epoch,immersive,setImmersive}}>{children}</context.Provider>;
 }
 
 export function useViewerStatusImmersive(){return useContext(context).setImmersive;}
 export function useSessionStatusSnapshot(){return useContext(context).status;}
+export function useSessionIdentitySnapshot(){const {status,sessionActorId,sessionEpoch}=useContext(context);return {kind:status.kind,actorId:sessionActorId,epoch:sessionEpoch};}
 
 export function SessionStatus({viewer=false,onBeforeNavigate}:{viewer?:boolean;onBeforeNavigate?:()=>boolean}){
   const {status,immersive}=useContext(context);

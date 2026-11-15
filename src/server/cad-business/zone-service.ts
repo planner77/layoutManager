@@ -235,6 +235,24 @@ export async function changeZone(db:Database,versionId:string,zoneId:string,raw:
    if(geom)await sceneExact(tx,versionId,geom.sourceSha256,geom.sceneRevision);
   }
   const now=new Date().toISOString();
+  // #201: when a root becomes a child, keep membership identity/revision as a
+  // tombstone. This prevents stale expectedRevision=0/1 from succeeding after
+  // child→root reparenting, and audits every affected Version in this transaction.
+  if(!remove&&old.parentZoneId===null&&meta!.parentZoneId!==null){
+   const history=await tx.$queryRawUnsafe<{migration_name:string}[]>('SELECT migration_name FROM "_prisma_migrations" ORDER BY rowid');
+   if(hasG7FeatureSchemaHistory(history,'tree')){
+    const memberships=await tx.treeMembership.findMany({where:{kind:'ZONE',objectId:zoneId}});
+    for(const membership of memberships){
+     const moved=await tx.treeMembership.updateMany({where:{id:membership.id,revision:membership.revision},
+      data:{folderId:null,revision:membership.revision+1,updatedById:actor.actorId,updatedAt:now}});
+     if(moved.count!==1)fail('ZONE_REVISION_CONFLICT',409);
+     await tx.treeAudit.create({data:{id:randomUUID(),actorUserId:actor.actorId,siteId:actor.siteId,
+      versionId:membership.versionId,targetKind:'ZONE',targetId:zoneId,action:'MOVE',
+      beforeRevision:membership.revision,afterRevision:membership.revision+1,
+      requestId:proof.requestId,timestampUtc:now}});
+    }
+   }
+  }
   const changed=await tx.cadZone.updateMany({where:{id:zoneId,locationId:v.locationId,revision:expected,deletedAt:null},
    data:{...(remove?{deletedAt:now,deletedById:actor.actorId}:metaData(meta!)),revision:expected+1,
     updatedById:actor.actorId,updatedAt:now}});

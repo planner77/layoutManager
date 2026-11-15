@@ -6,7 +6,7 @@ import {GREENFIELD_UPGRADE_REGISTRY,resolveUpgradeChain} from
 import {SCENE_CPU_INDEX_DDL,SCENE_CPU_MIGRATION_NAME,
   SCENE_CPU_MIGRATION_SQL,SCENE_CPU_MIGRATION_CHECKSUM} from
   '../../server/g7-operational/scene-cpu-ddl';
-import {G7_PREVIOUS_SCENE_JOB_SCHEMA_ID,G7_GREENFIELD_SCHEMA_ID} from
+import {G7_PREVIOUS_SCENE_JOB_SCHEMA_ID,G7_PREVIOUS_CPU_SCHEMA_ID} from
   '../../server/g7-operational/greenfield-schema';
 
 describe('#225/B2-B forward-only v0.61.0 CPU Builder release',()=>{
@@ -14,7 +14,7 @@ describe('#225/B2-B forward-only v0.61.0 CPU Builder release',()=>{
     const old=GREENFIELD_UPGRADE_REGISTRY.releases.find(r=>r.version==='0.60.0');
     const current=GREENFIELD_UPGRADE_REGISTRY.releases.find(r=>r.version==='0.61.0');
     expect(old?.schemaId).toBe(G7_PREVIOUS_SCENE_JOB_SCHEMA_ID);
-    expect(current?.schemaId).toBe(G7_GREENFIELD_SCHEMA_ID);
+    expect(current?.schemaId).toBe(G7_PREVIOUS_CPU_SCHEMA_ID);
     const edges=resolveUpgradeChain(GREENFIELD_UPGRADE_REGISTRY,'0.60.0','0.61.0');
     expect(edges).toHaveLength(1);
     expect(edges[0]).toMatchObject({kind:'MIGRATION',sql:SCENE_CPU_MIGRATION_SQL,

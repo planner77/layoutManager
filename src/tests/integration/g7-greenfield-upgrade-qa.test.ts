@@ -18,6 +18,7 @@ import { GREENFIELD_UPGRADE_REGISTRY,
 import {G7_PREVIOUS_ZONES_BASELINE,G7_PREVIOUS_ZONES_BASELINE_CHECKSUM,
   G7_PREVIOUS_ZONES_SCHEMA_ID}
   from '../../server/g7-operational/greenfield-schema';
+import {TREE_DDL} from '../../server/g7-operational/tree-ddl';
 
 type Db={prepare:(sql:string)=>{all:(...args:unknown[])=>Record<string,unknown>[];get:(...args:unknown[])=>Record<string,unknown>;
   run:(...args:unknown[])=>unknown};exec:(sql:string)=>void;close:()=>void};
@@ -37,6 +38,7 @@ function fixture(){
   ensureAutomatedGreenfield(env);
   const db=new Sqlite(dbPath),user=randomUUID();
   // Old v0.59 zone release fixture, created only inside an owned disposable DB.
+  for(const item of [...TREE_DDL].reverse())db.exec(`DROP ${item.type.toUpperCase()} IF EXISTS "${item.name}"`);
   db.exec('DROP TABLE "SceneBuildJob"');
   db.prepare('UPDATE "_prisma_migrations" SET migration_name=?,checksum=?')
     .run(G7_PREVIOUS_ZONES_BASELINE,G7_PREVIOUS_ZONES_BASELINE_CHECKSUM);
@@ -93,7 +95,7 @@ function seedBusinessData(f:ReturnType<typeof fixture>){
 function logicalSnapshot(dbPath:string):string{
   const db=new Sqlite(dbPath,{readonly:true});
   try{
-    const tables=db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT IN ('_prisma_migrations','SceneBuildJob') ORDER BY name").all();
+    const tables=db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT IN ('_prisma_migrations','SceneBuildJob','TreeFolder','TreeMembership','TreeAudit') ORDER BY name").all();
     return JSON.stringify(tables.map(row=>{const table=String(row.name);return [table,
       db.prepare(`SELECT * FROM "${table}"`).all().map(r=>Object.entries(r).sort(([a],[b])=>a.localeCompare(b))).sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b)))];}));
   }finally{db.close();}

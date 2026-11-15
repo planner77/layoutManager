@@ -13,6 +13,7 @@ import {verifyRecoverySet} from '../../server/g7-operational/greenfield-upgrade-
 import {G7_PREVIOUS_SCENE_JOB_SCHEMA_ID,G7_PREVIOUS_SCENE_JOB_BASELINE,
   G7_PREVIOUS_SCENE_JOB_BASELINE_CHECKSUM} from '../../server/g7-operational/greenfield-schema';
 import {SCENE_CPU_MIGRATION_NAME,SCENE_CPU_MIGRATION_CHECKSUM} from '../../server/g7-operational/scene-cpu-ddl';
+import {TREE_DDL,TREE_MIGRATION_NAME,TREE_MIGRATION_CHECKSUM} from '../../server/g7-operational/tree-ddl';
 import {CAD_SCENE_BUILDER,sceneScope,sceneIdentity,createSceneRef,importedId,type SceneManifest} from '../../domain/cad-scene';
 import {createDb,writeTransaction} from '../../server/db';
 import {enqueueCpuSceneBuildTx} from '../../server/scene/scene-build-job-queue';
@@ -33,7 +34,7 @@ afterEach(()=>{vi.unstubAllEnvs();for(const root of roots.splice(0))rmSync(root,
 function snapshot(file:string){
   const db=new Sqlite(file,{readonly:true});
   try{
-    const tables=db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name!='_prisma_migrations' ORDER BY name").all();
+    const tables=db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT IN ('_prisma_migrations','TreeFolder','TreeMembership','TreeAudit') ORDER BY name").all();
     return JSON.stringify(tables.map(({name})=>[name,db.prepare(`SELECT * FROM "${name}"`).all()
       .map(row=>Object.entries(row).sort(([a],[b])=>a.localeCompare(b)))
       .sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b)))]));
@@ -87,6 +88,7 @@ async function fixture(){
   const db=new Sqlite(dbPath);
   try{
     // This is a current-install-derived disposable 0.60 fixture, not a historical OCI image.
+    for(const item of [...TREE_DDL].reverse())db.exec(`DROP ${item.type.toUpperCase()} IF EXISTS "${item.name}"`);
     db.exec('DROP INDEX "ix_scene_build_cpu_due"; PRAGMA foreign_keys=ON');
     db.prepare('UPDATE "_prisma_migrations" SET migration_name=?,checksum=?')
       .run(G7_PREVIOUS_SCENE_JOB_BASELINE,G7_PREVIOUS_SCENE_JOB_BASELINE_CHECKSUM);
@@ -166,7 +168,7 @@ describe('#225 populated Browser 0.60 to CPU 0.61 upgrade and isolated recovery'
     await readReady(f.dbPath,f.cad,f.ids.ready,f.ids.readyAsset,f.bytes);
     const plan=planGreenfieldUpgrade(f.env);
     expect(plan).toMatchObject({decision:'UPGRADE_MIGRATION_REQUIRED',from:'0.60.0',to:packageInfo.version,requiresApproval:true});
-    expect(plan.chain.map(x=>[x.from,x.to,x.kind])).toEqual([['0.60.0','0.61.0','MIGRATION'],['0.61.0','0.61.1','COMPATIBLE'],['0.61.1','0.62.0','COMPATIBLE']]);
+    expect(plan.chain.map(x=>[x.from,x.to,x.kind])).toEqual([['0.60.0','0.61.0','MIGRATION'],['0.61.0','0.61.1','COMPATIBLE'],['0.61.1','0.62.0','COMPATIBLE'],['0.62.0','0.63.0','MIGRATION']]);
     const approved={...f.env,G7_UPGRADE_MAINTENANCE_ACK:'APP_STOPPED_BY_HOST_HELPER',
       G7_UPGRADE_PAIR_VERIFIED:'true'};
     await expect(applyGreenfieldUpgrade(approved)).rejects.toThrow('G7_UPGRADE_APPROVAL_REQUIRED');
@@ -185,7 +187,10 @@ describe('#225 populated Browser 0.60 to CPU 0.61 upgrade and isolated recovery'
         {migration_name:G7_PREVIOUS_SCENE_JOB_BASELINE,
           checksum:G7_PREVIOUS_SCENE_JOB_BASELINE_CHECKSUM},
         {migration_name:SCENE_CPU_MIGRATION_NAME,checksum:SCENE_CPU_MIGRATION_CHECKSUM},
+        {migration_name:TREE_MIGRATION_NAME,checksum:TREE_MIGRATION_CHECKSUM},
       ]);
+      for(const table of ['TreeFolder','TreeMembership','TreeAudit'])
+        expect(migrated.prepare(`SELECT COUNT(*) AS n FROM "${table}"`).get().n).toBe(0);
       expect(migrated.prepare('PRAGMA foreign_key_check').all()).toEqual([]);
     }finally{migrated.close();}
     await readReady(f.dbPath,f.cad,f.ids.ready,f.ids.readyAsset,f.bytes);

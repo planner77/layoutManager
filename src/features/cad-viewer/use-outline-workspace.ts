@@ -1,7 +1,9 @@
 'use client';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import {useSessionIdentitySnapshot} from '@/features/g7-runtime/session-status';
 import type { AuthorizedOutlineCatalog, StoredOutlineCreateDto, StoredOutlineCreateResultDto, StoredOutlineDto } from '@/domain/typed-outline';
 import { createTypedStoredOutline, loadStoredOutlines, loadVersionOutlineTypes, mutateStoredOutline, OutlineClientError } from './persisted-outline-client';
+import {denyProtectedViewerScope,isProtectedAccessDenied,onProtectedViewerScopeDenied,onProtectedViewerScopeRetry,sameProtectedResource,sameProtectedScope} from './protected-scope-invalidation';
 
 type WorkspaceState = {
   identity: string; mode: 'checking'|'active'|'off'|'unavailable'; actorId: string|null;
@@ -27,15 +29,21 @@ async function currentActor(signal?:AbortSignal):Promise<string>{
 export function useOutlineWorkspace({versionId,sourceSha256,renderer,format,attempt}:{
   versionId:string;sourceSha256:string;renderer:string;format:string;attempt:number;
 }) {
-  const identity=versionId+':'+sourceSha256+':'+renderer+':'+attempt;
+  const session=useSessionIdentitySnapshot();
+  const identity=versionId+':'+sourceSha256+':'+renderer+':'+attempt+':'+session.actorId+':'+session.epoch;
+  const resourceKey=versionId+':'+sourceSha256+':'+session.actorId;
   const identityRef=useRef(identity),actorRef=useRef<string|null>(null),mounted=useRef(false);
+  const deniedResource=useRef<string|null>(null);
+  const lastActiveResource=useRef<string|null>(null);
   const epoch=useRef(0);
   const [state,setState]=useState<WorkspaceState>(()=>empty(identity));
   const [query,setQuery]=useState({q:'',offset:0});
   const read=useRef<AbortController|null>(null),mutation=useRef<AbortController|null>(null);
   const pending=useRef<Promise<StoredOutlineCreateResultDto>|null>(null);
   const latestRefresh=useRef<(()=>Promise<void>)|null>(null);
-  const current=state.identity===identity?state:empty(identity);
+  const current=session.kind==='signed-in'&&state.identity===identity&&
+    (state.actorId===session.actorId||state.actorId===null&&state.rows.length===0)?state:
+    {...empty(identity),mode:session.kind==='off'?'off' as const:'unavailable' as const,loading:session.kind==='checking'};
   const live=useCallback(()=>mounted.current&&identityRef.current===identity,[identity]);
   const isCurrent=useCallback((actor:string|null)=>live()&&actor!==null&&actorRef.current===actor,[live]);
   const assertCurrentActor=useCallback(async(actor:string|null,signal?:AbortSignal)=>{
@@ -45,6 +53,7 @@ export function useOutlineWorkspace({versionId,sourceSha256,renderer,format,atte
   },[isCurrent]);
 
   const refresh=useCallback(async()=>{
+    if(deniedResource.current===resourceKey)return;
     read.current?.abort();
     const controller=new AbortController();read.current=controller;
     const atStart=epoch.current;
@@ -67,6 +76,7 @@ export function useOutlineWorkspace({versionId,sourceSha256,renderer,format,atte
       }
       const actor=await currentActor(controller.signal);
       if(!fresh())return;
+      if(actor!==session.actorId)throw cancelled();
       if(actorRef.current&&actorRef.current!==actor){
         mutation.current?.abort();pending.current=null;
         setState({...empty(identity),actorId:actor});
@@ -92,24 +102,38 @@ export function useOutlineWorkspace({versionId,sourceSha256,renderer,format,atte
       });
     }catch(error){
       if(!fresh())return;
+      if(isProtectedAccessDenied(error)&&session.actorId){
+        denyProtectedViewerScope({actorId:session.actorId,sessionEpoch:session.epoch,versionId,sourceSha256});return;
+      }
       actorRef.current=null;
       setState({...empty(identity),mode:'unavailable',loading:false,
         error:error instanceof Error?error.message:'서버 외곽선을 조회하지 못했습니다.'});
     }finally{
       if(owns()&&epoch.current!==atStart)setState(previous=>previous.identity===identity?{...previous,loading:false}:previous);
     }
-  },[identity,format,renderer,versionId,sourceSha256,query,live,assertCurrentActor]);
+  },[identity,resourceKey,format,renderer,versionId,sourceSha256,query,live,assertCurrentActor,session.actorId,session.epoch]);
   useLayoutEffect(()=>{latestRefresh.current=refresh;},[refresh]);
 
   useLayoutEffect(()=>{
+    if(session.actorId&&lastActiveResource.current!==resourceKey){deniedResource.current=null;lastActiveResource.current=resourceKey;}
     mounted.current=true;identityRef.current=identity;actorRef.current=null;epoch.current++;
     return ()=>{mounted.current=false;read.current?.abort();mutation.current?.abort();pending.current=null;};
-  },[identity]);
+  },[identity,resourceKey,session.actorId]);
+  useEffect(()=>onProtectedViewerScopeDenied(denied=>{
+    if(session.kind!=='signed-in'||!session.actorId||!mounted.current||identityRef.current!==identity||
+      !sameProtectedScope(denied,{actorId:session.actorId,sessionEpoch:session.epoch,versionId,sourceSha256}))return;
+    deniedResource.current=resourceKey;epoch.current++;read.current?.abort();read.current=null;mutation.current?.abort();mutation.current=null;
+    pending.current=null;actorRef.current=null;
+    setState({...empty(identity),mode:'unavailable',loading:false,error:'이 도면의 권한을 다시 확인하세요.'});
+  }),[identity,resourceKey,session.kind,session.actorId,session.epoch,versionId,sourceSha256]);
+  useEffect(()=>onProtectedViewerScopeRetry(retry=>{
+    if(session.actorId&&sameProtectedResource(retry,{actorId:session.actorId,versionId,sourceSha256}))deniedResource.current=null;
+  }),[session.actorId,versionId,sourceSha256]);
   useEffect(()=>{
-    let disposed=false;queueMicrotask(()=>{if(!disposed)void refresh();});
-    const focus=()=>{void refresh();};window.addEventListener('focus',focus);
+    let disposed=false;queueMicrotask(()=>{if(!disposed&&(session.kind==='signed-in'||session.kind==='off'))void refresh();});
+    const focus=()=>{if(session.kind==='signed-in'||session.kind==='off')void refresh();};window.addEventListener('focus',focus);
     return ()=>{disposed=true;read.current?.abort();window.removeEventListener('focus',focus);};
-  },[refresh]);
+  },[refresh,session.kind]);
 
   const upsert=useCallback((row:StoredOutlineDto,actor:string)=>{
     if(!isCurrent(actor)||row.versionId!==versionId||row.sourceSha256!==sourceSha256)throw cancelled();
@@ -138,7 +162,7 @@ export function useOutlineWorkspace({versionId,sourceSha256,renderer,format,atte
 
   const perform=useCallback(async<T,>(action:(signal:AbortSignal)=>Promise<T>,commit:(value:T,actor:string)=>void):Promise<T>=>{
     const actor=current.actorId;
-    if(current.mode!=='active'||!current.canWrite||!actor||!isCurrent(actor))throw cancelled();
+    if(current.mode!=='active'||!current.canWrite||!actor||!isCurrent(actor)||deniedResource.current===resourceKey)throw cancelled();
     if(mutation.current)throw new Error('다른 외곽선 저장 요청의 결과를 확인 중입니다.');
     const controller=new AbortController();mutation.current=controller;epoch.current++;
     setState(previous=>previous.identity===identity?{...previous,busy:true,error:null}:previous);
@@ -150,6 +174,9 @@ export function useOutlineWorkspace({versionId,sourceSha256,renderer,format,atte
       return result;
     }catch(error){
       if(!controller.signal.aborted&&live()&&(!actorRef.current||actorRef.current===actor)){
+        if(isProtectedAccessDenied(error)&&session.actorId===actor){
+          denyProtectedViewerScope({actorId:actor,sessionEpoch:session.epoch,versionId,sourceSha256});
+        }else{
         const denied=error instanceof OutlineClientError&&[401,403,503].includes(error.status);
         if(denied)actorRef.current=null;
         if(!(error instanceof DOMException&&error.name==='AbortError'))setState(previous=>{
@@ -157,6 +184,7 @@ export function useOutlineWorkspace({versionId,sourceSha256,renderer,format,atte
           return {...(denied?{...empty(identity),mode:'unavailable' as const,loading:false}:previous),busy:false,
             error:error instanceof Error?error.message:'저장 응답을 확인하지 못했습니다. 같은 요청으로 다시 시도하세요.'};
         });
+        }
       }
       throw error;
     }finally{
@@ -168,7 +196,7 @@ export function useOutlineWorkspace({versionId,sourceSha256,renderer,format,atte
         }
       }
     }
-  },[current.mode,current.canWrite,current.actorId,identity,isCurrent,assertCurrentActor,live]);
+  },[current.mode,current.canWrite,current.actorId,identity,resourceKey,isCurrent,assertCurrentActor,live,session.actorId,session.epoch,versionId,sourceSha256]);
   const submit=useCallback((body:StoredOutlineCreateDto,key:string)=>{
     if(pending.current)return pending.current;
     const request=perform(signal=>createTypedStoredOutline(versionId,body,key,signal),(result,actor)=>{

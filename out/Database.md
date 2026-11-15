@@ -1,3 +1,14 @@
+## #201 Tree 분류 Schema 계약 (0.63.0 후보, 2026-11-15)
+
+- `TreeFolder`: UUID PK, versionId FK CadFileVersion, nullable parentFolderId same-Version live folder, normalized name/nameKey, sortOrder, revision≥1, immutable createdBy/createdAt, updatedBy/updatedAt, deletedBy/deletedAt. live sibling 이름 unique, self/cycle 및 삭제 parent를 service+DB guard로 차단.
+- `TreeMembership`: UUID PK 또는 동등 안정키, versionId/kind(OUTLINE|ZONE)/objectId unique, nullable folderId, sortOrder/revision≥1, actor/time. null folder는 미분류 CAS tombstone 역할이며 최초 expectedRevision0. folder same Version, Outline exact Version, Zone same Location root/live 검증; kind/object/version identity 불변. 다형 object FK는 실제 대상 및 scope 검증 trigger로 보완한다. Zone reparent는 membership 삭제 대신 동일id null-folder/revision 증가와 감사로 보존하며 ADR-T201-11을 따른다.
+- `TreeAudit`: UUID, actorUserId/siteId/versionId, targetKind/targetId/action, before/after revision, requestId, UTC. append-only trigger와 actor/site/version FK. 기존 감사 CHECK를 변경하지 않고 독립 sidecar 사용, mutation과 원자 rollback.
+- 과거 CPU baseline/checksum을 보존하고 신규 latest tree baseline + explicit0.62.0→0.63.0 additive migration 등록. fresh/기존0.61·0.62 upgrade의 정확 history/fingerprint 검사 및 old object/data/source 보존. runtime legacy schema는503 비지원, 자동 ALTER 없음. Prisma/installer/migrator/authority/registry 동시 갱신.
+
+정책·CAS·삭제/기존 Zone reparent handling은 [Issue201](Issue201.md)의 ADR-T201-02~05/11/22가 정본이다. 구현 schema marker는 `G7-GREENFIELD-UNIFIED-TREE-20261113-1`, forward migration은 `202611130001_unified_tree`다. 정확 SQL/checksum 정본은 `src/server/g7-operational/tree-ddl.ts`의 TREE_MIGRATION_SQL/TREE_MIGRATION_CHECKSUM과 등록된 baseline이며 과거 baseline/checksum을 변경하지 않는다. 실제 새 설치/업그레이드 수용은 TestReport와 출고 증거를 따른다.
+
+Version 삭제는 TreeFolder(soft-delete 포함)/TreeMembership(미분류 포함)/TreeAudit 참조가 하나라도 있으면409로 거절한다. 부분 Tree schema는503, 세 테이블이 모두 없는 구 schema는 기존 경로다. 기존 transaction의 Current/Scene/job 변경도 rollback하며 Tree 감사의 물리 cascade는 없다. ADR-T201-22/TC-T201-19를 따른다.
+
 ## #218 L-05 — 0.61.1 호환 PATCH (2026-11-08)
 
 DDL/Table/Column/Index/Prisma migration 변경 없음. 기존0.61.0 declaration은 보존하고0.61.1을 같은 CPU Worker schema/baseline/checksum/data/runtime 계약으로 등록하며0.61.0→0.61.1은 forward `COMPATIBLE`이다. 기존0.60→0.61 migration SQL/history를 유지한다. 운영0.61.0 설치/manifest를 변경하거나 자동 업그레이드하지 않는다. 실제 검증은 TestReport L05를 따른다.

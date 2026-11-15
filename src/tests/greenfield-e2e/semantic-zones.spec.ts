@@ -1,3 +1,4 @@
+import {closeApi, closeRouteFetch} from './direct-api-transport';
 import {expect,test,type Page} from '@playwright/test';
 import {readyGreenfieldSceneVersion} from './ready-scene-fixture';
 import {randomUUID,createHash} from 'node:crypto';
@@ -7,21 +8,23 @@ async function work(page:Page,id:string){
  await expect(page.getByTestId(id)).not.toHaveAttribute('aria-disabled','true');await page.getByTestId(id).click();
 }
 const polygon=(low:number,high:number)=>({type:'Polygon',coordinates:[[[low,low],[high,low],[high,high],[low,high],[low,low]]]});
+test.beforeEach(({page})=>{page.setDefaultTimeout(10_000);});
+
 test('TC-Z196-GREENFIELD: real Zone persistence, three-level tree, CAS, focus, remapping and source invariance',async({page,baseURL})=>{
  test.setTimeout(120_000);
- await page.goto('/g7-runtime');await page.getByLabel('계정').fill('admin');
+ await page.goto('/g7-runtime');await page.getByLabel('계정',{exact:true}).fill('admin');
  await page.getByLabel('비밀번호',{exact:true}).fill('synthetic-changed-password');
  await page.getByRole('button',{name:'로그인',exact:true}).click();
  await expect(page.getByRole('heading',{name:'현재 세션'})).toBeVisible();
- const session=await (await page.request.get('/api/g7-runtime/auth/session')).json();
+ const session=await (await closeApi(page.request).get('/api/g7-runtime/auth/session')).json();
  const headers={origin:baseURL!,'x-csrf-token':session.csrfToken};
- const versionId=await readyGreenfieldSceneVersion(page.request),url=`/api/cad-files/${versionId}/zones`;
- const beforeBytes=await (await page.request.get(`/api/cad-files/${versionId}/content`)).body();
+ const versionId=await readyGreenfieldSceneVersion(closeApi(page.request)),url=`/api/cad-files/${versionId}/zones`;
+ const beforeBytes=await (await closeApi(page.request).get(`/api/cad-files/${versionId}/content`)).body();
  const beforeSha=createHash('sha256').update(beforeBytes).digest('hex');
- const before=await (await page.request.get(url)).json() as ZoneListDto;
+ const before=await (await closeApi(page.request).get(url)).json() as ZoneListDto;
  expect(before.canEdit).toBe(true);expect(before.sceneRevision).not.toBeNull();
  const prefix='Z196-'+randomUUID().slice(0,8);
- const createdIds:string[]=[];
+ const createdIds:string[]=[];let releaseRendererRead:(()=>void)|undefined;
  try{
   let sourceGets=0;
   page.on('request',r=>{if(new URL(r.url()).pathname===`/api/cad-files/${versionId}/content`)sourceGets++;});
@@ -29,6 +32,7 @@ test('TC-Z196-GREENFIELD: real Zone persistence, three-level tree, CAS, focus, r
   await expect(page.getByTestId('scene-status')).toContainText('저장된 Scene Asset 복원');
   await work(page,'viewer-menu-zone-create');
   const panel=page.getByTestId('cad-zone-panel');
+  const tree=page.getByTestId('version-tree-panel');
   await panel.getByLabel('이름',{exact:true}).fill(prefix+' Root');
   await panel.getByLabel('설명',{exact:true}).fill('생산\n라인 설명');
   for(const [x,y] of [[0,0],[100,0],[100,100],[0,100]]){
@@ -44,15 +48,15 @@ test('TC-Z196-GREENFIELD: real Zone persistence, three-level tree, CAS, focus, r
   expect(root.geometry?.polygon).toEqual(polygon(0,100));expect(root.description).toBe('생산\n라인 설명');
   let parent=root;
   for(const [suffix,low,high] of [['Child',10,90],['Grandchild',20,80]] as const){
-   const response=await page.request.post(url,{headers:{...headers,'Idempotency-Key':randomUUID()},data:{
+   const response=await closeApi(page.request).post(url,{headers:{...headers,'Idempotency-Key':randomUUID()},data:{
     name:prefix+' '+suffix,parentZoneId:parent.id,description:'Persistent reference',
     references:[{kind:'EQUIPMENT',label:'설비',value:'SYN-1'},{kind:'DOCUMENT',label:'문서',value:'SYN-2',url:'https://example.test/manual'}],
     geometry:{sourceSha256:before.sourceSha256,sceneRevision:before.sceneRevision,polygon:polygon(low,high)},
    }});
    expect(response.status(),await response.text()).toBe(201);parent=(await response.json()).zone;createdIds.push(parent.id);
   }
-  await panel.getByRole('button',{name:'새로고침',exact:true}).click();
-  const grand=panel.getByTestId('zone-tree-item').filter({hasText:prefix+' Grandchild'});
+  await tree.getByRole('button',{name:'다시 시도',exact:true}).click();
+  const grand=tree.locator(`[data-tree-node="zone:${parent.id}"]`);
   await expect(grand).toBeVisible();await grand.click();
   await expect(panel.getByRole('region',{name:'선택 구역 상세'})).toContainText('SYN-1');
   await grand.dblclick();
@@ -61,23 +65,23 @@ test('TC-Z196-GREENFIELD: real Zone persistence, three-level tree, CAS, focus, r
   await canvas.evaluate(e=>e.setAttribute('data-zone-stable','yes'));
   const initialGets=sourceGets;
   for(let i=0;i<3;i++){
-   await panel.getByRole('button',{name:'구역 목록 닫기',exact:true}).click();
+   await tree.getByRole('button',{name:'닫기',exact:true}).click();
    await work(page,'viewer-menu-zone-list');await expect(grand).toBeVisible();
   }
   await expect(canvas).toHaveAttribute('data-zone-stable','yes');expect(sourceGets).toBe(initialGets);
-  const stale=await page.request.patch(url+'/'+root.id,{headers,data:{expectedRevision:0,name:root.name}});
+  const stale=await closeApi(page.request).patch(url+'/'+root.id,{headers,data:{expectedRevision:0,name:root.name}});
   expect(stale.status()).toBe(400);
-  const updated=await page.request.patch(url+'/'+root.id,{headers,data:{
+  const updated=await closeApi(page.request).patch(url+'/'+root.id,{headers,data:{
    expectedRevision:root.revision,name:root.name,categoryId:root.categoryId,code:root.code,tags:root.tags,
    sortOrder:root.sortOrder,parentZoneId:root.parentZoneId,references:root.references,description:'Updated root'}});
   expect(updated.status(),await updated.text()).toBe(200);
-  const conflict=await page.request.patch(url+'/'+root.id,{headers,data:{expectedRevision:root.revision,name:root.name,
+  const conflict=await closeApi(page.request).patch(url+'/'+root.id,{headers,data:{expectedRevision:root.revision,name:root.name,
    categoryId:root.categoryId,description:root.description,code:root.code,tags:root.tags,sortOrder:root.sortOrder,
    parentZoneId:root.parentZoneId,references:root.references}});
   expect(conflict.status()).toBe(409);
   await page.reload();await expect(page.getByTestId('scene-status')).toContainText('저장된 Scene Asset 복원');
   await work(page,'viewer-menu-zone-list');await expect(grand).toBeVisible();
-  const restored=await (await page.request.get(url)).json() as ZoneListDto;
+  const restored=await (await closeApi(page.request).get(url)).json() as ZoneListDto;
   expect(restored.zones.find(z=>z.id===root.id)?.description).toBe('Updated root');
   expect(restored.zones.find(z=>z.id===parent.id)?.references).toHaveLength(2);
   await grand.click();
@@ -91,27 +95,54 @@ test('TC-Z196-GREENFIELD: real Zone persistence, three-level tree, CAS, focus, r
   expect(remappedZone.id).toBe(parent.id);expect(remappedZone.parentZoneId).toBe(parent.parentZoneId);
   expect(remappedZone.geometry!.polygon.coordinates[0][0]).toEqual([21,20]);
   expect(remappedZone.references).toHaveLength(2);
-  const afterBytes=await (await page.request.get(`/api/cad-files/${versionId}/content`)).body();
+  const afterBytes=await (await closeApi(page.request).get(`/api/cad-files/${versionId}/content`)).body();
   expect(createHash('sha256').update(afterBytes).digest('hex')).toBe(beforeSha);
+  // Hold the new renderer's real authorized Zone response. The lightweight
+  // Tree DTO is still present, but selecting unavailable detail must be explicit.
+  const rendererReadGate=new Promise<void>(resolve=>{releaseRendererRead=resolve;});
+  let rendererReadArrived!:()=>void;
+  const rendererReadReady=new Promise<void>(resolve=>{rendererReadArrived=resolve;});
+  let holdRendererRead=true;
+  await page.route(`**${url}`,async route=>{
+   if(route.request().method()!=='GET'||!holdRendererRead){await route.continue();return;}
+   holdRendererRead=false;const response=await closeRouteFetch(route);rendererReadArrived();
+   await rendererReadGate;await route.fulfill({response});
+  });
   await page.getByRole('button',{name:'보기',exact:true}).click();
   await page.getByRole('menuitemradio',{name:'dxf-viewer',exact:true}).click();
   await expect(page.getByTestId('viewer-active-renderer')).toHaveText('dxf-viewer');
-  await work(page,'viewer-menu-zone-list');await expect(grand).toBeVisible();
+  await work(page,'viewer-menu-zone-list');await expect(grand).toBeVisible();await rendererReadReady;
+  await expect(grand).toHaveAttribute('aria-disabled','true');
+  const getsWhileDetailPending=sourceGets;
+  const pendingRowBox=(await grand.boundingBox())!;
+  await page.mouse.click(pendingRowBox.x+pendingRowBox.width/2,pendingRowBox.y+pendingRowBox.height/2);
+  await grand.focus();await page.keyboard.press('Space');await page.keyboard.press('Enter');
+  await expect(grand).toHaveAttribute('aria-selected','false');
+  await expect(panel.getByRole('region',{name:'선택 구역 상세'})).toHaveCount(0);
+  expect(sourceGets).toBe(getsWhileDetailPending);
+  releaseRendererRead!();await expect(grand).not.toHaveAttribute('aria-disabled','true');
+  await page.unroute(`**${url}`);
   await grand.click();await expect(panel.getByRole('button',{name:'편집',exact:true})).toBeDisabled();
+  const getsBeforeBlockedFocus=sourceGets;
   await grand.focus();await page.keyboard.press('Enter');
-  await expect(panel.getByRole('alert')).toContainText('현재 Viewer에서는 구역 경계로 이동할 수 없습니다');
+  await expect(grand).toContainText('확대 불가');expect(sourceGets).toBe(getsBeforeBlockedFocus);
+  await page.setViewportSize({width:320,height:740});
+  await expect(page.getByTestId('viewer-outline-tree-dock')).toHaveAttribute('aria-modal','true');
+  await page.keyboard.press('Escape');await expect(tree).not.toBeVisible();
+  await expect(page.locator('[data-viewer-group="work"]')).toBeFocused();expect(sourceGets).toBe(getsBeforeBlockedFocus);
 
  }finally{
-  const snapshot=await page.request.get(url);
+  releaseRendererRead?.();await page.unrouteAll({behavior:'wait'});
+  const snapshot=await closeApi(page.request).get(url);
   if(snapshot.ok()){
    const rows=(await snapshot.json() as ZoneListDto).zones;
    for(const id of [...createdIds].reverse()){
     const row=rows.find(z=>z.id===id);if(!row)continue;
-    expect((await page.request.delete(url+'/'+id,{headers,data:{expectedRevision:row.revision}})).status()).toBe(200);
+    expect((await closeApi(page.request).delete(url+'/'+id,{headers,data:{expectedRevision:row.revision}})).status()).toBe(200);
    }
   }
-  const current=await page.request.get('/api/g7-runtime/auth/session');
-  if(current.ok())expect((await page.request.post('/api/g7-runtime/auth/logout',{headers:{origin:baseURL!,
+  const current=await closeApi(page.request).get('/api/g7-runtime/auth/session');
+  if(current.ok())expect((await closeApi(page.request).post('/api/g7-runtime/auth/logout',{headers:{origin:baseURL!,
    'x-csrf-token':(await current.json()).csrfToken}})).status()).toBe(200);
  }
 });

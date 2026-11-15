@@ -29,6 +29,14 @@ test('#196 zone controls remain gated on legacy source and renderer fallback wit
  await expect(list).toHaveAttribute('aria-disabled','true');
  await expect(list).toHaveAttribute('title',/G7.*OFF/);
  await expect(page.getByTestId('viewer-zone-dock')).toHaveCount(0);
+ const unified=page.getByTestId('viewer-menu-unified-tree');
+ await expect(unified).toBeEnabled();
+ await unified.click();
+ const tree=page.getByTestId('version-tree-panel');
+ await expect(tree).toBeVisible();
+ await expect(tree.getByRole('status')).toContainText('운영 모드 OFF');
+ await expect(tree.getByTestId('zone-tree-item')).toHaveCount(0);
+ await tree.getByRole('button',{name:'닫기',exact:true}).click();
  expect(zoneReads).toBe(0);
  expect(await original!.evaluate(node=>node===document.querySelector('[data-testid="cad-canvas"] canvas'))).toBe(true);
  await page.getByRole('button',{name:'보기',exact:true}).click();

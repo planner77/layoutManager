@@ -14,7 +14,7 @@ import {AuthorizationError,requireResolvedPermission,type Role,type UserAccess} 
 import {CAD_SCENE_CPU_BUILDER} from '@/domain/cad-scene';
 import {G7_GREENFIELD_SCHEMA_ID} from '@/server/g7-operational/greenfield-schema';
 import {resolveG7RuntimeGate} from '@/server/g7-operational/runtime-gate';
-import {SCENE_JOB_PAYLOAD_SCHEMA,SCENE_CPU_WORKER_SCHEMA_ID} from './scene-build-job-queue';
+import {SCENE_JOB_PAYLOAD_SCHEMA,SCENE_CPU_WORKER_SCHEMA_ID,SCENE_CPU_WORKER_CURRENT_SCHEMA_ID} from './scene-build-job-queue';
 
 type Tx=Prisma.TransactionClient;
 const SHA=/^[a-f0-9]{64}$/;
@@ -42,7 +42,7 @@ export async function authorizeG7CpuWorkerJobTx(
 ):Promise<G7CpuWorkerIdentity>{
   if(process.env.SCENE_AUTO_BUILD_ENABLED!=='true' ||
      process.env.SCENE_CPU_WORKER_ENABLED!=='true' ||
-     String(G7_GREENFIELD_SCHEMA_ID)!==SCENE_CPU_WORKER_SCHEMA_ID)
+     !([SCENE_CPU_WORKER_SCHEMA_ID,SCENE_CPU_WORKER_CURRENT_SCHEMA_ID] as readonly string[]).includes(String(G7_GREENFIELD_SCHEMA_ID)))
     throw deny('SCENE_WORKER_RELEASE_NOT_APPROVED',503);
   if(!ID.test(jobId)||!Number.isSafeInteger(attempt)||attempt<1||attempt>3)
     throw deny('SCENE_WORKER_JOB_INVALID');

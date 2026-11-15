@@ -1,16 +1,25 @@
 'use client';
-import {useCallback,useEffect,useRef,useState} from 'react';
+import {useCallback,useEffect,useLayoutEffect,useRef,useState} from 'react';
+import {useSessionIdentitySnapshot} from '@/features/g7-runtime/session-status';
 import {closeZonePoints,isZoneGeometryMapped,type CadZoneDto,type ZoneCategoryDto,type ZoneListDto,type ZoneMetadata,type ZonePoint,type ZonePolygon} from '@/domain/cad-zone';
 import {collectMemoSnapCandidates,currentMemoSnapChoice,type MemoSnapChoice} from '@/domain/memo-session-snap';
 import type {ViewerManager} from '@/viewers/core/adapter';
-import {createZone,createZoneCategory,deleteZone,deleteZoneCategory,patchZone,patchZoneCategory,probeZoneAvailability,readZones,ZoneRequestError} from './cad-zone-client';
+import {createZone,createZoneCategory,deleteZone,deleteZoneCategory,patchZone,patchZoneCategory,probeZoneAvailability,readZones} from './cad-zone-client';
 import {createPreviewUuid} from './preview-uuid';
+import {denyProtectedViewerScope,isProtectedAccessDenied,onProtectedViewerScopeDenied,onProtectedViewerScopeRetry,sameProtectedResource,sameProtectedScope} from './protected-scope-invalidation';
 
 export function useCadZones({versionId,sourceSha256,renderer,format,ready,loading,attempt,getManager,getCanvas,getViewEpoch}:{
  versionId:string;sourceSha256:string;renderer:string;format:string;ready:boolean;loading:boolean;attempt:number;
  getManager:()=>ViewerManager|null;getCanvas:()=>HTMLDivElement|null;getViewEpoch:()=>number;
 }){
+ const session=useSessionIdentitySnapshot();
+ const authKey=session.actorId+':'+session.epoch;
  const [list,setList]=useState<ZoneListDto|null>(null);
+ const [listScope,setListScope]=useState<string|null>(null);
+ // Renderer and reload attempts retire a previous detail snapshot immediately,
+ // before the effect that starts the next read has a chance to run.
+ const scopeKey=authKey+':'+versionId+':'+sourceSha256+':'+renderer+':'+format+':'+attempt;
+ const resourceKey=versionId+':'+sourceSha256+':'+session.actorId;
  const [error,setError]=useState<string|null>(null);
  const [loadingList,setLoadingList]=useState(false);
  const [availability,setAvailability]=useState<'checking'|'active'|'off'|'error'>('checking');
@@ -25,55 +34,80 @@ export function useCadZones({versionId,sourceSha256,renderer,format,ready,loadin
  const [snap,setSnap]=useState<{free:ZonePoint;choices:readonly MemoSnapChoice[];epoch:number;total:number;limited:boolean}|null>(null);
  const saveKey=useRef<{body:string;key:string}|null>(null);
  const requestEpoch=useRef(0);
+ const readController=useRef<AbortController|null>(null);
+ const deniedResource=useRef<string|null>(null);
+ const lastActiveResource=useRef<string|null>(null);
  const lifecycleEpoch=useRef(0);
+ const liveScope=useRef(scopeKey);
+ useLayoutEffect(()=>{if(session.actorId&&lastActiveResource.current!==resourceKey){deniedResource.current=null;lastActiveResource.current=resourceKey;}
+  liveScope.current=scopeKey;},[scopeKey,resourceKey,session.actorId]);
  const actorId=useRef<string|null>(null);
  const readSupported=/^[0-9a-f]{64}$/i.test(sourceSha256);
  const supported=format==='DXF'&&renderer==='three-dxf-viewer'&&ready&&!loading&&readSupported;
  const sceneRevision=getManager()?.getSceneRevision()??null;
- const exactScene=!!list&&sceneRevision!==null&&list.sceneRevision===sceneRevision&&
-  list.versionId===versionId&&list.sourceSha256===sourceSha256;
+ const validList=session.kind==='signed-in'&&session.actorId===list?.actorId&&list?.versionId===versionId&&
+  list?.sourceSha256===sourceSha256&&listScope===scopeKey?list:null;
+ const exactScene=!!validList&&sceneRevision!==null&&validList.sceneRevision===sceneRevision;
  const readUnavailable=!readSupported?'검증된 Version/SHA가 필요합니다.':
   availability==='off'?'구역 기능은 G7 운영 모드 OFF에서 제공하지 않습니다.':
   availability==='checking'?'구역 운영 상태를 확인하는 중입니다.':null;
  const unavailable=!supported?'구역 생성·편집은 Scene이 준비된 DXF three-dxf-viewer에서만 사용할 수 있습니다.':
-  !list?error??'구역 권한과 Scene을 확인하는 중입니다.':
+  !validList?error??'구역 권한과 Scene을 확인하는 중입니다.':
   !exactScene?'현재 Version/SHA/Scene 개정과 구역 자료가 일치하지 않습니다. Scene 저장 후 다시 조회하세요.':null;
- const canCreate=unavailable===null&&!!list?.canEdit;
+ const canCreate=unavailable===null&&!!validList?.canEdit;
  const clearProtected=useCallback(()=>{
-  actorId.current=null;setList(null);setHidden(new Set());setSelectedId(null);
+  actorId.current=null;setList(null);setListScope(null);setHidden(new Set());setSelectedId(null);
   setDrawing(false);setDrawingExistingId(null);setPoints([]);setClosed(false);setSnap(null);
   setBusy(false);saveKey.current=null;lifecycleEpoch.current+=1;
  },[]);
  const refresh=useCallback(async(signal?:AbortSignal)=>{
+  if(deniedResource.current===resourceKey)return false;
   const token=++requestEpoch.current;setLoadingList(true);setError(null);
+  readController.current?.abort();const controller=new AbortController();readController.current=controller;
+  const forwardAbort=()=>controller.abort();
+  if(signal?.aborted)controller.abort();else signal?.addEventListener('abort',forwardAbort,{once:true});
   try{
-   const status=await probeZoneAvailability(signal);if(token!==requestEpoch.current)return false;
+   const status=await probeZoneAvailability(controller.signal);if(token!==requestEpoch.current)return false;
    if(status==='OFF'){
     clearProtected();setAvailability('off');setError(null);return false;
    }
    setAvailability('active');
-   const data=await readZones(versionId,signal);if(token!==requestEpoch.current)return false;
+   const data=await readZones(versionId,controller.signal);if(token!==requestEpoch.current)return false;
    if(data.versionId!==versionId||data.sourceSha256!==sourceSha256)throw new Error('구역 목록의 Version/SHA가 현재 도면과 다릅니다.');
    if(actorId.current&&actorId.current!==data.actorId){
     setSelectedId(null);setDrawing(false);setDrawingExistingId(null);setPoints([]);setClosed(false);
     setSnap(null);setHidden(new Set());setBusy(false);saveKey.current=null;lifecycleEpoch.current+=1;
    }
    actorId.current=data.actorId;
-   setList(data);setSelectedId(id=>data.zones.some(z=>z.id===id)?id:null);return true;
-  }catch(e){if(signal?.aborted||token!==requestEpoch.current)return false;
+   setList(data);setListScope(scopeKey);setSelectedId(id=>data.zones.some(z=>z.id===id)?id:null);return true;
+  }catch(e){if(controller.signal.aborted||token!==requestEpoch.current)return false;
+   if(isProtectedAccessDenied(e)&&session.actorId){
+    denyProtectedViewerScope({actorId:session.actorId,sessionEpoch:session.epoch,versionId,sourceSha256});return false;
+   }
    clearProtected();setAvailability('error');
    setError(e instanceof Error?e.message:'구역 목록을 읽지 못했습니다.');return false;
-  }finally{if(token===requestEpoch.current)setLoadingList(false);}
- },[versionId,sourceSha256,clearProtected]);
+  }finally{signal?.removeEventListener('abort',forwardAbort);
+   if(readController.current===controller)readController.current=null;
+   if(token===requestEpoch.current)setLoadingList(false);}
+ },[versionId,sourceSha256,clearProtected,scopeKey,resourceKey,session.actorId,session.epoch]);
  useEffect(()=>{
   const controller=new AbortController();
   // A renderer/reload switch invalidates all session-only visibility and drafts.
-  const frame=requestAnimationFrame(()=>{setList(null);setSelectedId(null);setHidden(new Set());setAllVisible(true);
+  const frame=requestAnimationFrame(()=>{setList(null);setListScope(null);setSelectedId(null);setHidden(new Set());setAllVisible(true);
    setDrawing(false);setDrawingExistingId(null);setPoints([]);setClosed(false);setSnap(null);setBusy(false);setError(null);setAvailability('checking');
-   if(readSupported)void refresh(controller.signal);
+   if(readSupported&&(session.kind==='signed-in'||session.kind==='off'))void refresh(controller.signal);
   });
-  return()=>{cancelAnimationFrame(frame);controller.abort();requestEpoch.current+=1;lifecycleEpoch.current+=1;actorId.current=null;};
- },[versionId,sourceSha256,renderer,format,attempt,readSupported,refresh]);
+  return()=>{cancelAnimationFrame(frame);controller.abort();readController.current?.abort();requestEpoch.current+=1;lifecycleEpoch.current+=1;actorId.current=null;};
+ },[versionId,sourceSha256,renderer,format,attempt,readSupported,refresh,authKey,session.kind]);
+ useEffect(()=>onProtectedViewerScopeDenied(denied=>{
+  if(session.kind!=='signed-in'||!session.actorId||liveScope.current!==scopeKey||
+   !sameProtectedScope(denied,{actorId:session.actorId,sessionEpoch:session.epoch,versionId,sourceSha256}))return;
+  deniedResource.current=resourceKey;requestEpoch.current++;readController.current?.abort();clearProtected();setAvailability('error');setLoadingList(false);
+  setError('이 도면의 권한을 다시 확인하세요.');
+ }),[session.kind,session.actorId,session.epoch,scopeKey,resourceKey,versionId,sourceSha256,clearProtected]);
+ useEffect(()=>onProtectedViewerScopeRetry(retry=>{
+  if(session.actorId&&sameProtectedResource(retry,{actorId:session.actorId,versionId,sourceSha256}))deniedResource.current=null;
+ }),[session.actorId,versionId,sourceSha256]);
  const addPoint=(point:ZonePoint)=>{if(!drawing||closed)return;
   if(!Number.isFinite(point.x)||!Number.isFinite(point.y)||Math.abs(point.x)>1e12||Math.abs(point.y)>1e12){setError('유효한 WCS XY 좌표를 입력하세요.');return;}
   setPoints(v=>v.length>=512?v:[...v,point]);setError(null);saveKey.current=null;
@@ -104,20 +138,27 @@ export function useCadZones({versionId,sourceSha256,renderer,format,ready,loadin
   const found=candidates.candidates.filter(c=>c.kind==='ENDPOINT'||c.kind==='VERTEX');
   if(found.length)setSnap({free:world,choices:found,epoch:getViewEpoch(),total:candidates.total,limited:candidates.limited});else addPoint(world);
  };
- const assertActor=async(expected:string,manageCategories=false)=>{
+ const assertActor=async(expected:string,manageCategories=false,epoch=lifecycleEpoch.current)=>{
+  const currentScope=()=>epoch===lifecycleEpoch.current&&liveScope.current===scopeKey;
+  if(!validList||validList.actorId!==expected)throw new Error('계정 또는 도면이 변경되었습니다.');
   let current:ZoneListDto,off=false;
   try{
    if(await probeZoneAvailability()!=='ACTIVE'){
     off=true;throw new Error('구역 기능이 비활성화되었습니다.');
    }
+   if(!currentScope())throw new Error('계정 또는 도면이 변경되었습니다.');
    current=await readZones(versionId);
   }catch(error){
-   clearProtected();
-   setAvailability(off?'off':'error');
-   setError(error instanceof Error?error.message:'구역 권한을 다시 확인하세요.');
+   if(currentScope()){
+    if(isProtectedAccessDenied(error)&&session.actorId)
+     denyProtectedViewerScope({actorId:session.actorId,sessionEpoch:session.epoch,versionId,sourceSha256});
+    else{clearProtected();setAvailability(off?'off':'error');
+     setError(error instanceof Error?error.message:'구역 권한을 다시 확인하세요.');}
+   }
    throw error;
   }
-  if(current.actorId!==expected||current.versionId!==versionId||current.sourceSha256!==sourceSha256||
+  if(!currentScope())throw new Error('계정 또는 도면이 변경되었습니다.');
+  if(listScope!==scopeKey||current.actorId!==expected||current.versionId!==versionId||current.sourceSha256!==sourceSha256||
      current.sceneRevision!==sceneRevision||!(manageCategories?current.canManageCategories:current.canEdit)){
    actorId.current=null;setList(null);setSelectedId(null);setDrawing(false);setDrawingExistingId(null);
    setPoints([]);setClosed(false);setSnap(null);setHidden(new Set());setBusy(false);saveKey.current=null;
@@ -126,11 +167,11 @@ export function useCadZones({versionId,sourceSha256,renderer,format,ready,loadin
   }
  };
  const save=async(metadata:ZoneMetadata,polygon?:ZonePolygon)=>{
-  if(!list||!list.canEdit)throw new Error('구역 쓰기 권한을 확인하세요.');
+  if(!validList||!validList.canEdit)throw new Error('구역 쓰기 권한을 확인하세요.');
   const epoch=lifecycleEpoch.current;setBusy(true);try{
-   await assertActor(list.actorId);
+   await assertActor(validList.actorId,false,epoch);
    if(epoch!==lifecycleEpoch.current)return;
-   const selected=list.zones.find(z=>z.id===(drawingExistingId??selectedId));
+   const selected=validList.zones.find(z=>z.id===(drawingExistingId??selectedId));
    const mapping=polygon?{sourceSha256,sceneRevision:sceneRevision!,polygon}:undefined;
    const body=JSON.stringify({metadata,mapping});
    if(!saveKey.current||saveKey.current.body!==body)saveKey.current={body,key:createPreviewUuid()};
@@ -138,19 +179,20 @@ export function useCadZones({versionId,sourceSha256,renderer,format,ready,loadin
    if(epoch!==lifecycleEpoch.current)return;
    if(await refresh()){setSelectedId(zone.id);cancel();setError(null);}
   }catch(e){if(epoch!==lifecycleEpoch.current)return;
-   if(e instanceof ZoneRequestError&&(e.status===401||e.status===403)){setList(null);setSelectedId(null);cancel();}
-   setError(e instanceof Error?e.message:'구역 저장에 실패했습니다.');throw e;}
+   if(isProtectedAccessDenied(e)&&session.actorId)
+    denyProtectedViewerScope({actorId:session.actorId,sessionEpoch:session.epoch,versionId,sourceSha256});
+   else setError(e instanceof Error?e.message:'구역 저장에 실패했습니다.');throw e;}
   finally{if(epoch===lifecycleEpoch.current)setBusy(false);}
  };
- const mutationFailure=(e:unknown)=>{if(e instanceof ZoneRequestError&&(e.status===401||e.status===403)){
-  actorId.current=null;setList(null);setSelectedId(null);cancel();setHidden(new Set());
+ const mutationFailure=(e:unknown)=>{if(isProtectedAccessDenied(e)&&session.actorId){
+  denyProtectedViewerScope({actorId:session.actorId,sessionEpoch:session.epoch,versionId,sourceSha256});return;
  }setError(e instanceof Error?e.message:'구역 요청에 실패했습니다.');};
- const remove=async(zone:CadZoneDto)=>{const epoch=lifecycleEpoch.current;setBusy(true);try{if(!list)throw new Error('구역 목록을 다시 조회하세요.');await assertActor(list.actorId);if(epoch!==lifecycleEpoch.current)return;await deleteZone(versionId,zone);if(epoch!==lifecycleEpoch.current)return;if(await refresh())setSelectedId(null);}catch(e){if(epoch===lifecycleEpoch.current)mutationFailure(e);}finally{if(epoch===lifecycleEpoch.current)setBusy(false);}};
- const categoryCreate=async(name:string,order:number)=>{const epoch=lifecycleEpoch.current;setBusy(true);try{if(!list)throw new Error('구역 목록을 다시 조회하세요.');await assertActor(list.actorId,true);if(epoch===lifecycleEpoch.current){await createZoneCategory(versionId,name,order);await refresh();}}catch(e){if(epoch===lifecycleEpoch.current)mutationFailure(e);throw e;}finally{if(epoch===lifecycleEpoch.current)setBusy(false);}};
- const categoryPatch=async(category:ZoneCategoryDto,name:string,order:number,active:boolean)=>{const epoch=lifecycleEpoch.current;setBusy(true);try{if(!list)throw new Error('구역 목록을 다시 조회하세요.');await assertActor(list.actorId,true);if(epoch===lifecycleEpoch.current){await patchZoneCategory(versionId,category,name,order,active);await refresh();}}catch(e){if(epoch===lifecycleEpoch.current)mutationFailure(e);throw e;}finally{if(epoch===lifecycleEpoch.current)setBusy(false);}};
- const categoryDelete=async(category:ZoneCategoryDto)=>{const epoch=lifecycleEpoch.current;setBusy(true);try{if(!list)throw new Error('구역 목록을 다시 조회하세요.');await assertActor(list.actorId,true);if(epoch===lifecycleEpoch.current){await deleteZoneCategory(versionId,category);await refresh();}}catch(e){if(epoch===lifecycleEpoch.current)mutationFailure(e);throw e;}finally{if(epoch===lifecycleEpoch.current)setBusy(false);}};
+ const remove=async(zone:CadZoneDto)=>{const epoch=lifecycleEpoch.current;setBusy(true);try{if(!validList)throw new Error('구역 목록을 다시 조회하세요.');await assertActor(validList.actorId,false,epoch);if(epoch!==lifecycleEpoch.current)return;await deleteZone(versionId,zone);if(epoch!==lifecycleEpoch.current)return;if(await refresh())setSelectedId(null);}catch(e){if(epoch===lifecycleEpoch.current)mutationFailure(e);}finally{if(epoch===lifecycleEpoch.current)setBusy(false);}};
+ const categoryCreate=async(name:string,order:number)=>{const epoch=lifecycleEpoch.current;setBusy(true);try{if(!validList)throw new Error('구역 목록을 다시 조회하세요.');await assertActor(validList.actorId,true,epoch);if(epoch===lifecycleEpoch.current&&liveScope.current===scopeKey){await createZoneCategory(versionId,name,order);if(epoch===lifecycleEpoch.current&&liveScope.current===scopeKey)await refresh();}}catch(e){if(epoch===lifecycleEpoch.current&&liveScope.current===scopeKey)mutationFailure(e);throw e;}finally{if(epoch===lifecycleEpoch.current&&liveScope.current===scopeKey)setBusy(false);}};
+ const categoryPatch=async(category:ZoneCategoryDto,name:string,order:number,active:boolean)=>{const epoch=lifecycleEpoch.current;setBusy(true);try{if(!validList)throw new Error('구역 목록을 다시 조회하세요.');await assertActor(validList.actorId,true,epoch);if(epoch===lifecycleEpoch.current&&liveScope.current===scopeKey){await patchZoneCategory(versionId,category,name,order,active);if(epoch===lifecycleEpoch.current&&liveScope.current===scopeKey)await refresh();}}catch(e){if(epoch===lifecycleEpoch.current&&liveScope.current===scopeKey)mutationFailure(e);throw e;}finally{if(epoch===lifecycleEpoch.current&&liveScope.current===scopeKey)setBusy(false);}};
+ const categoryDelete=async(category:ZoneCategoryDto)=>{const epoch=lifecycleEpoch.current;setBusy(true);try{if(!validList)throw new Error('구역 목록을 다시 조회하세요.');await assertActor(validList.actorId,true,epoch);if(epoch===lifecycleEpoch.current&&liveScope.current===scopeKey){await deleteZoneCategory(versionId,category);if(epoch===lifecycleEpoch.current&&liveScope.current===scopeKey)await refresh();}}catch(e){if(epoch===lifecycleEpoch.current&&liveScope.current===scopeKey)mutationFailure(e);throw e;}finally{if(epoch===lifecycleEpoch.current&&liveScope.current===scopeKey)setBusy(false);}};
  const focus=(id:string)=>{
-  const zone=list?.zones.find(z=>z.id===id);if(!zone)return;
+  const zone=validList?.zones.find(z=>z.id===id);if(!zone)return;
   if(format!=='DXF'||renderer!=='three-dxf-viewer'||!ready||loading){setError('현재 Viewer에서는 구역 경계로 이동할 수 없습니다. DXF three-dxf-viewer에서 여세요.');return;}
   if(!isZoneGeometryMapped(zone,{versionId,sourceSha256,sceneRevision})){setError(zone.geometry?.reason||'현재 도면과 연결되지 않은 구역이라 이동할 수 없습니다.');return;}
   setHidden(v=>{const next=new Set(v);next.delete(id);return next;});setAllVisible(true);
@@ -160,7 +202,8 @@ export function useCadZones({versionId,sourceSha256,renderer,format,ready,loadin
  const invalidateMappings=()=>{requestEpoch.current+=1;setList(null);setSelectedId(null);cancel();setHidden(new Set());
   setError('초기화로 현재 구역 매핑이 무효화되었습니다. 목록을 다시 조회하세요.');};
  const reportError=(message:string|null)=>setError(message);
- return {list,error,loadingList,busy,selectedId,setSelectedId,hidden,setHidden,allVisible,setAllVisible,
-  drawing,drawingExistingId,points,setPoints,closed,setClosed,closePolygon,snap,chooseSnap,addPoint,start,editGeometry,cancel,canvasPoint,save,remove,
-  categoryCreate,categoryPatch,categoryDelete,focus,refresh,invalidateMappings,reportError,readUnavailable,unavailable,canCreate,sceneRevision,exactScene};
+ const shown=validList;
+ return {list:shown,error,loadingList,busy:!!shown&&busy,selectedId:shown?selectedId:null,setSelectedId,hidden:shown?hidden:new Set<string>(),setHidden,allVisible,setAllVisible,
+  drawing:!!shown&&drawing,drawingExistingId:shown?drawingExistingId:null,points:shown?points:[],setPoints,closed:!!shown&&closed,setClosed,closePolygon,snap:shown?snap:null,chooseSnap,addPoint,start,editGeometry,cancel,canvasPoint,save,remove,
+  categoryCreate,categoryPatch,categoryDelete,focus,refresh,invalidateMappings,reportError,readUnavailable,unavailable,canCreate:!!shown&&canCreate,sceneRevision,exactScene:!!shown&&exactScene};
 }

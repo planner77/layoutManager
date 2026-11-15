@@ -1,3 +1,4 @@
+import {closeApi} from './direct-api-transport';
 import { expect, test } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import {createHash} from 'node:crypto';
@@ -5,9 +6,11 @@ import path from 'node:path';
 import {sceneDxf} from '../fixtures/scene-dxf';
 import {withOwnedSessions} from './owned-sessions';
 
+test.beforeEach(({page})=>{page.setDefaultTimeout(10_000);});
+
 test('#109 initial browser Admin setup requires host code, then redirects to account',async({page,request,baseURL})=>{
   await withOwnedSessions(baseURL!,async owned=>{
-  owned.add(page.request);
+  owned.add(closeApi(page.request));
   const root=process.env.G7_GREENFIELD_E2E_ROOT;
   if(!root)throw new Error('missing isolated first run root');
   await page.goto('/');
@@ -38,7 +41,7 @@ test('#109 initial browser Admin setup requires host code, then redirects to acc
   await page.getByLabel('비밀번호',{exact:true}).fill('synthetic-changed-password');
   await page.getByRole('button',{name:'로그인',exact:true}).click();
   await expect(page.getByRole('heading',{name:'현재 세션'})).toBeVisible();
-  const setup=await request.get('/api/g7-runtime/setup');
+  const setup=await closeApi(request).get('/api/g7-runtime/setup');
   expect(setup.status()).toBe(404);
   await page.goto('/');
   await expect(page.getByRole('heading',{name:'CAD 도면 목록'})).toBeVisible();
@@ -48,25 +51,25 @@ test('#109 initial browser Admin setup requires host code, then redirects to acc
 test('SC-14–17 authenticated conversion → persisted Scene → independent browser and reload without original GET or parsing',async({page,browser,baseURL})=>{
   test.setTimeout(120_000);
   await withOwnedSessions(baseURL!,async owned=>{
-  owned.add(page.request);
+  owned.add(closeApi(page.request));
   await page.goto('/g7-runtime');
   await page.getByLabel('계정',{exact:true}).fill('admin');
   await page.getByLabel('비밀번호',{exact:true}).fill('synthetic-changed-password');
   await page.getByRole('button',{name:'로그인',exact:true}).click();
   await expect(page.getByRole('heading',{name:'현재 세션'})).toBeVisible();
-  const session=await (await page.request.get('/api/g7-runtime/auth/session')).json();
+  const session=await (await closeApi(page.request).get('/api/g7-runtime/auth/session')).json();
   const headers={'origin':baseURL!,'x-csrf-token':session.csrfToken};
   const ids:Record<string,string>={};let parentId:string|undefined;
   for(const type of ['business-units','products','sites','buildings','floors']){
-    const response=await page.request.post('/api/masters',{headers,data:{type,name:'Scene '+type,...(parentId?{parentId}:{}),...(type==='sites'?{kind:'SITE'}:{})}});
+    const response=await closeApi(page.request).post('/api/masters',{headers,data:{type,name:'Scene '+type,...(parentId?{parentId}:{}),...(type==='sites'?{kind:'SITE'}:{})}});
     expect(response.status(),await response.text()).toBe(201);
     const row=await response.json();parentId=ids[type]=row.id;
     if(type==='sites'){
-      const grant=await page.request.post('/api/g7-runtime/access/grant',{headers,data:{kind:'site',operation:'grant',affectedUserId:session.actor.id,value:row.id}});
+      const grant=await closeApi(page.request).post('/api/g7-runtime/access/grant',{headers,data:{kind:'site',operation:'grant',affectedUserId:session.actor.id,value:row.id}});
       expect(grant.status()).toBe(200);
     }
   }
-  const upload=await page.request.post('/api/cad-files',{headers,multipart:{
+  const upload=await closeApi(page.request).post('/api/cad-files',{headers,multipart:{
     file:{name:'synthetic-scene.dxf',mimeType:'application/octet-stream',buffer:Buffer.from(sceneDxf)},
     businessUnitId:ids['business-units'],productId:ids.products,siteId:ids.sites,buildingId:ids.buildings,floorId:ids.floors,
     registeredAt:'2026-10-30',deletePassword:'1234',makeCurrent:'true',
@@ -84,9 +87,9 @@ test('SC-14–17 authenticated conversion → persisted Scene → independent br
   await page.getByRole('menuitem',{name:'Scene Asset 저장',exact:true}).click();
   await expect(page.getByTestId('scene-status')).toContainText('Scene Asset 저장 완료',{timeout:30_000});
   expect(originalGets).toBe(1);
-  const status=await (await page.request.get(`/api/cad-files/${version.id}/scene`)).json();
+  const status=await (await closeApi(page.request).get(`/api/cad-files/${version.id}/scene`)).json();
   expect(status.status).toBe('READY');
-  const stored=await (await page.request.get(status.contentUrl)).json();
+  const stored=await (await closeApi(page.request).get(status.contentUrl)).json();
   expect(stored.asset.objects.length).toBeGreaterThan(5);
   expect(stored.asset.objects.every((o:{ref:{origin:string}})=>o.ref.origin==='DXF_IMPORTED')).toBe(true);
   expect(stored.viewerData.textIndex.hits.length).toBeGreaterThan(0);
@@ -108,7 +111,7 @@ test('SC-14–17 authenticated conversion → persisted Scene → independent br
   await page.getByTestId('viewer-menu-outline-tool').click();
 
   const consumer=await browser.newContext({baseURL,viewport:{width:1440,height:1000}});
-  owned.add(consumer.request,()=>consumer.close());
+  owned.add(closeApi(consumer.request),()=>consumer.close());
   await consumer.addInitScript(()=>{
     const counters={workers:0,blobs:0,liveWorkers:0};Object.assign(window,{sceneLoadCounters:counters});
     const NativeWorker=window.Worker;
@@ -183,8 +186,8 @@ test('SC-14–17 authenticated conversion → persisted Scene → independent br
   await fresh.getByTestId('viewer-menu-outline-tree').click();
   await expect(fresh.getByTestId('outline-tree-item')).toHaveCount(1);
   await expect(fresh.getByTestId('outline-saved-tools')).toContainText('1건');
-  expect(await (await fresh.request.get(status.contentUrl)).json()).toEqual(stored);
-  expect((await (await fresh.request.get(`/api/cad-files/${version.id}/scene`)).json()).revision).toBe(status.revision);
+  expect(await (await closeApi(fresh.request).get(status.contentUrl)).json()).toEqual(stored);
+  expect((await (await closeApi(fresh.request).get(`/api/cad-files/${version.id}/scene`)).json()).revision).toBe(status.revision);
   expect(gets).toBe(0);
   await fresh.reload();
   await expect(fresh.getByTestId('scene-status')).toContainText('저장된 Scene Asset 복원');
@@ -241,8 +244,8 @@ test('C545 forced body failure revokes two real sessions and preserves the three
   let caught:unknown;
   try{await withOwnedSessions(baseURL!,async owned=>{
     for(let i=0;i<2;i++){
-      const context=await browser.newContext({baseURL});owned.add(context.request,()=>context.close());
-      const login=await context.request.post('/api/g7-runtime/auth/login',{
+      const context=await browser.newContext({baseURL});owned.add(closeApi(context.request),()=>context.close());
+      const login=await closeApi(context.request).post('/api/g7-runtime/auth/login',{
         headers:{origin:baseURL!},data:{login:'admin',password:'synthetic-changed-password'},
       });
       expect(login.status()).toBe(200);
@@ -253,13 +256,13 @@ test('C545 forced body failure revokes two real sessions and preserves the three
   });}catch(error){caught=error;}
   expect(caught).toBe(primary);
   for(const cookie of oldCookies){
-    const stale=await request.get('/api/g7-runtime/auth/session',{headers:{cookie:`cad_session=${cookie}`}});
+    const stale=await closeApi(request).get('/api/g7-runtime/auth/session',{headers:{cookie:`cad_session=${cookie}`}});
     expect(stale.status()).toBe(401);
   }
   await withOwnedSessions(baseURL!,async owned=>{
     for(let i=0;i<4;i++){
-      const context=await browser.newContext({baseURL});owned.add(context.request,()=>context.close());
-      const login=await context.request.post('/api/g7-runtime/auth/login',{
+      const context=await browser.newContext({baseURL});owned.add(closeApi(context.request),()=>context.close());
+      const login=await closeApi(context.request).post('/api/g7-runtime/auth/login',{
         headers:{origin:baseURL!},data:{login:'admin',password:'synthetic-changed-password'},
       });
       expect(login.status()).toBe(i<3?200:409);

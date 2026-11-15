@@ -106,6 +106,7 @@ COPY --from=builder /app/src/server/cad-business/zone-ddl.ts ./server/cad-busine
 COPY --from=builder /app/src/server/g7-operational/greenfield-schema.ts ./server/g7-operational/greenfield-schema.ts
 COPY --from=builder /app/src/server/g7-operational/scene-job-ddl.ts ./server/g7-operational/scene-job-ddl.ts
 COPY --from=builder /app/src/server/g7-operational/scene-cpu-ddl.ts ./server/g7-operational/scene-cpu-ddl.ts
+COPY --from=builder /app/src/server/g7-operational/tree-ddl.ts ./server/g7-operational/tree-ddl.ts
 COPY --from=builder /app/src/server/g7-operational/greenfield-install.ts ./server/g7-operational/greenfield-install.ts
 COPY --from=builder /app/src/server/g7-operational/greenfield-auto.ts ./server/g7-operational/greenfield-auto.ts
 COPY --from=builder /app/src/server/g7-operational/greenfield-upgrade-registry.ts ./server/g7-operational/greenfield-upgrade-registry.ts
@@ -124,6 +125,7 @@ COPY --from=builder /app/src/deploy/g7-s3 ./deploy/g7-s3
 COPY --from=builder /app/src/deploy/scene-assets ./deploy/scene-assets
 COPY --from=builder /app/src/deploy/scene-build-jobs ./deploy/scene-build-jobs
 COPY --from=builder /app/src/deploy/scene-cpu-worker ./deploy/scene-cpu-worker
+COPY --from=builder /app/src/deploy/unified-tree ./deploy/unified-tree
 COPY --from=builder /app/src/deploy/g7-runtime ./deploy/g7-runtime
 COPY --from=builder /app/src/domain/auth.ts ./domain/auth.ts
 USER cad

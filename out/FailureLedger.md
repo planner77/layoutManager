@@ -3734,3 +3734,289 @@ Latest Main initially `870d3cf0a4f8e42d2e5c4132076d3b7ab9c52089`; confirmed PR b
 - 후속 새 배포 시도 **전** Root의 읽기 전용 검사에서 `WORKER_DRIFT`: `HostConfig.Binds=["cad-layout-viewer-g7:/data:rw"]`, `HostConfig.Mounts=null`와 resolved G7 volume1개가 같은 연결을 다르게 표현했다. `verify_static/check_compose_config`는 통과했다. 비밀 제외 actual inspect projection SHA256 `0c0a4e1421fad3ee83f1d98721e75269c5b774c32499e2752f25d17ff41c54da`; 운영 mutation0, attempt2 미시작. 원래 attempt1 HALT와 분리해 좁은 표현 수리·재검증을 진행한다.
 
 - 좁은 두 표현 수리의 독립 QA와 Root의 전체 read-only preconditions PASS 후 새 attempt2를 08:13:06 UTC에 별도 unit/workspace로 시작했다. attempt2는 완료 마커 SHA256 `492942de5a76bbb19abc8a2eecbaf3167026d53982ee24a365f7bf89b27d666a`와 terminal VERIFIED journal SHA256 `fc5ed53ec6952623ee2bae97483a1545a7e7d87a9e290efc3eadd91560f671c9`로 Root/Manager 완료 확인. 운영 App1/Worker1·업무/CAD 보존 확인; 독립 실제 배포 QA가 기존 완료·업무 보존 근거를 읽기 전용으로 수용했다(비공개 SHA256 `e5dcd5a8912f6d65fecde05b8f53e77f1ba9baa1dbb5806ef04bd1dee3280a4b`); Docker/네트워크 직접 재실행은 하지 않았다. 원래 attempt1 HALT 및 read-only 사전 관측은 변경하지 않는다. [Issue282 증거](IssueEvidence/282.md#u282-publish-20261115--actual-0620-ghcr-publication).
+
+
+## 2026-11-13 — #201 TREE-REPARENT-CAS-ABA (구현 중 정적 검토)
+
+- 관측: 초기 tree_zone_reparent_cleanup은 root Zone→child에서 membership을 DELETE했다. root 복귀/재분류 후 revision1 재사용으로 이전 expectedRevision1의 ABA 가능성을 Manager/Root가 발견했다. 제품 실행 실패로 관측한 것은 아니다.
+- 조치 요구: ADR-T201-11에 따라 Zone transaction에서 동일 membership ID의 null-folder tombstone/revision+1·actor/request-bound TreeAudit를 기록하고 parent 변경, DB guard는 분류가 남은 reparent 거절. 무단 cascade0.
+- 시험: 재현/재시험 NOT RUN, Developer 구현 및 QA pending. 이전 성공으로 덮어쓰지 않는다.
+
+
+## 2026-11-13 — #201 TREE-COMPOSER-AND-STALE-CATCH (구현 중 정적 검토)
+
+- Manager는 초기 projectVersionTree.place가 기존 folder.children 배열을 선택만 하고 push하지 않아 분류 객체가 누락되는 코드를 발견했다. 검색 self-match가 leaf로 한정되어 빈 폴더 이름 검색도 누락했다. 실행 실패로 관측한 것은 아니며 pure regression 추가를 지시했다.
+- 초기 useVersionTree.mutate catch가 key만 검사하고 generation을 확인하지 않아 session invalidation/refresh로 무효화한 이전 captured data를 복원할 수 있었다. key+generation 모두 현재일 때만 오류 상태 갱신하고 이전 보호 데이터를 복원하지 않도록 지시했다. pending mutation/actor 전환 회귀가 필요하다.
+- geometryJson.bounds와 실제 GeoJSON 좌표 형식 불일치, 중복 sibling 이름의 raw Prisma500 가능성도 검토에서 발견하여 기존 bounds helper/명시409 검사를 지시했다.
+- 기록 시점 수정·재시험 pending. Developer/QA의 실제 실행 결과를 후속 기록한다.
+
+
+## 2026-11-13 — #201 TREE-TEST-BOUNDS-CONTRACT
+
+Root 개발 지원 통합시험 최초6PASS/1FAIL은 bounds array 기대와 실제 WcsBounds 객체 반환의 fixture 계약 불일치였다. 제품focus 실패로 해석하지 않는다. 실제 객체 기대+test helper `objectId:string` 추론 교정 뒤7/7PASS7.38s. 원 실행 로그 SHA·범위는 [IssueEvidence/201](IssueEvidence/201.md)에 보존. 작업 중 결과이며 최종 독립QA/출고 PASS를 뜻하지 않는다.
+
+
+## 2026-11-13 — #201 VERIFY-SELECTED-TEST-ROUNDTRIP (정적 검토)
+
+Root는 verify_local CLI 선택시험이 metadata에 기록되지 않고 release_local readback manifest에서 빠지는 불일치를 확인했다. 실제 #201 출고를 실행해 실패한 것은 아니며, 신규 unmapped domain/service에 필요한 --unit이 정당한 실행을 downgrade/missing으로 거절할 수 있다. ADR-T201-12에 따라 bounded 선택 검증을 공유하고 start/end 동일 선택을 manifest에 재주입한다. base 축소/필수 gate 제거 금지. 수정/음성 시험 및 실제 출고 재실행 결과는 후속 기록한다.
+
+
+## 2026-11-13 — #201 TREE-G7-LABEL-TIMEOUT (실제 Browser FAIL)
+
+- Root exploratory production-built candidate(최신 useCadZones guard 전)의 signed Greenfield 단일시험: **1 FAIL,240000ms,exit1**, 약09:50:52→09:54:53UTC. 실제 bootstrap/login/masters/upload/Scene/외곽선3·mappedZone3/tree6까지 진행했으나 첫 folder POST 전 중단했다.
+- 직접 실패: `version-tree-panel.getByLabel('상위 폴더',{exact:true}).selectOption` timeout(lines81/110). 실제 wrapped label에 Version루트 option text가 포함되어 exact locator와 일치하지 않았다. Root는 selector regex 및 bounded10s action timeout으로 fixture를 교정했다. 제품 API 성공/실패로 확대하지 않는다.
+- 후속 `G7_BODY_AND_SESSION_CLEANUP_FAILED`는 primary timeout과 canceled context의 `G7_SESSION_GET_FAILED`를 함께 보고했다. 소유 disposable server는 중지됐으며 sessioncleanup 성공으로 기록하지 않는다.
+- private `data/issue201/greenfield-tree-initial.log` SHA256 `f08909575c7d71d1640897572ce784890512613068a2f00cedda496a5f4eedc5`; trace/error-context는 같은 ignored data의 greenfield-initial-results에 보존. 앱 신규 build/재시험 pending; 구 결과를 최종 소스 PASS로 승계하지 않는다.
+
+
+## 2026-11-13 — #201 TREE-G7-BRANCH-CLICK (실제 재시험 fixture FAIL)
+
+Root real G7 retest1은 두 단계 폴더 POST와 Outline0 분류 PATCH를 통과한 뒤 line113에서 rootZone0 분류 버튼을 찾지 못해 FAIL했다. 전체 계층 treeitem의 bounding center를 클릭한 테스트가 실제로 childZone1의 행을 선택했고 snapshot의 선택 경로도 Zone1을 보였다. child는 독립 분류 불가이므로 제품 권한/분류 정책 오류로 해석하지 않는다. Root는 branch의 직접 child row를 클릭하도록 helper를 교정하고 role=treeitem keyboard focus는 유지했다. 로그 SHA256 `0725e0632c3d7affb405d1e3220ecb1ff0a72155dceefd7fe4d2cb4f7f8dd687`, private greenfield-retest1-results에 trace 보존. 동일 latest built candidate 재시험 pending이며 전체 TREE 수용 아님.
+
+
+## 2026-11-13 — #201 TREE-PANEL-SEARCH-POINTER-INTERCEPT (실제 제품 FAIL)
+
+- Root real G7 retest2는 UI folder nesting+Outline/Zone subtree 분류, 선택/Enter camera,groupHideShow,20stable lifetime 및 keyboard position을 진행했다. line151의 실제 pointer `viewer-outlines-panel-reset` 클릭은 cad-text-search-trigger에 반복 가로채여 FAIL했다. forceclick/keyboard 우회 없음.
+- 원인: 검색 trigger absolute top2/right2 z45가 raised MovableViewerPanel z36 위에 있어 toolbar를 가렸다. 초기 screenshot에서도 겹침이 관측됐다. 이는 fixture 오류가 아닌 제품 포인터 접근성 결함이다.
+- Manager ADR-T201-13: standalone trigger만 panel/backdrop 아래로 내리고 실제 검색 panel/menu/modal 순위 유지. 동일 pointer assertion+검색/공통패널 회귀 필수, 수정/재시험 pending.
+- private log SHA256 `95c6c70da66b5ec02e5acc01675461016f12491ccf8ca632144f06e80091e2a7`; artifacts greenfield-retest2-results 보존. 전체 browser/TREE 수용 아님.
+
+
+## 2026-11-13 — #201 TREE-PANEL-SEARCH-POINTER-INTERCEPT 수리 관측 / 모바일 검색 fixture 후속 FAIL
+
+Root real G7 retest3에서 standalone 검색 trigger z45→z20 수리 후 **기존 실제 pointer reset assertion이 통과**했고 uncovered desktop search HELLO/result1도 통과했다. 이어 folder rename/nonempty409/emptydelete/staleCAS, reload/new-browser persistence,320px TreeDrawer/ESC까지 진행했다. 그러나 page.reload 이전 HELLO query가 모바일 검색에도 남을 것으로 테스트가 가정하여 후속 FAIL했다. 실제 모바일 검색은 정상 empty 안내('검색어를 입력하세요 ...2개')였고 Root가 명시 HELLO 입력으로 fixture를 교정했다. 제품 search regression으로 기록하지 않는다. private log SHA256 `f4099e804a61401d8c652d9ab2cb3b126f7504ba3a4987c5f4112fac7812758a`, artifacts greenfield-retest3-results 보존. pointer 제품 수정의 제한된 통과와 전체 시나리오 FAIL을 구분하고 동일 build retest4 pending.
+
+
+## 2026-11-13 — #201 종합 재시험4 실제 PASS (이전 FAIL 보존)
+
+Root latest candidate realG7 종합 시나리오1/1PASS36.5s exit0. TREE-PANEL-SEARCH-POINTER-INTERCEPT 수리의 동일pointer +desktop/mobile search, 그리고 TREE-G7-LABEL-TIMEOUT/BRANCH-CLICK/mobilequery fixture 교정을 포함한 모든assertion을 완료했다. logSHA `5d6b0d2c8ec5ee97d202f56bf91c8ea9549dddecc91aaefd6f0d23b9e90ab8f9`. 상세 [IssueEvidence/201](IssueEvidence/201.md). 개발 지원/controlled monotonic fixture의 결과이며 독립 QA/최종frozen source/실hostclock/출고PASS로 확대하지 않는다.
+
+
+## 2026-11-13 — #201 TREE-CPU-FUTURE-SCHEMA-ALLOWLIST (정적 검토)
+
+Root는 구현 중 `SCENE_CPU_WORKER_CURRENT_SCHEMA_ID=G7_GREENFIELD_SCHEMA_ID`가 latest 자체를 allowlist에 넣어 unknownfuture schema에도 비교가 항상 참이 되는 것을 발견했다. 실제 Worker 실행 실패로 관측한 것이 아니다. Manager ADR-T201-14에 따라 검토된 고정 CPU/Tree ID만 허용하고 unknownlatest 음성시험을 유지하도록 지시했다. 수정/재시험 pending.
+
+## 2026-11-13 — #201 FULL-VITEST-INCOMPLETE (실제 미완료 실행)
+
+Developer의 첫 전체 sequential Vitest에서 typed-outline-runtime TC-R3-001/005가 R2 schema fixture의 Version API503으로 실패한 것이 보였다. 약3분 후 프로세스exit143, 최종summary 없음. 종료 원인은 미확정이며 외부종료/제품원인으로 단정하지 않는다. **전체 PASS 아님**. Developer가 targeted 재현·fixture 또는 제품 원인 분리 및 수정/전체재시험을 진행한다. 정확로그/실패내용은 후속보고를 따른다.
+
+
+## 2026-11-13 — #201 TREE-REVOKED-SITE-OVERLAY-RETENTION (실제 제품 RED)
+
+- Root TC-T201-G7-REVOKE **1FAIL/exit1**. actual synthetic G7의 같은 Admin 두session,3Outline/3Zone loaded. 다른session SiteGrant revoke200→대상Viewer folderPOST403→Tree object0이나 persisted-outline-path **3개**가 남아 expected0에서5초 timeout.
+- Zone0 assertion은 Outline assertion 뒤라 **미도달**; Zone 잔존을 실제 관측했다고 기록하지 않는다. finally grant restore200+owned-sessioncleanup 완료. 원본/운영데이터 변경 없음.
+- private log SHA256 `e86df5a938e013db6319497c5625c54417e58f5a4d04eed0b90bf43f14bfd8ec`, greenfield-revocation-red.log 및 greenfield-revocation-red-results trace 보존. build는 pointerfix 후/explicit Worker allowlist 전이며 최종frozen 아님.
+- Manager ADR-T201-15: actor+Version+SHA 및 requestgeneration을 검증한 scope-wide protected cache/overlay/form 폐기. 자동 authretryloop 없이 명시retry에서만 회복. Root regression 그대로/독립QA 필수. 수정/재시험 pending.
+
+
+## 2026-11-13 — #201 FULL-VITEST-OLD-FIXTURES (실제 전체 FAIL와 집중 재시험)
+
+Developer 전체 sequential Vitest: **181files(176PASS/5FAIL),1135tests(1121PASS/14FAIL),353.99s,exit1**. private `data/issue201/full-vitest-developer.log` SHA256 `5c538c9f6a000210e61b7f9fe4b8cbb5728edbdac48fde867436a820a53204e6`.
+
+- `g7-greenfield-upgrade-qa`:9/9 실패(#209 ENOSPC, SIGKILL의 MIGRATION_COMMITTED/MANIFEST_COMMITTED/BACKED_UP, 승인 Job/격리 복원,WAL open/closed/active,recovery tamper).
+- `g7-scene-worker-upgrade-recovery`:2/2 실패(#225 populated0.60→CPU0.61 preservation/recovery 및 occupied/corrupt target 거절).
+- `g7-scene-job-migration-contract`:1건(#2250.59/0.60 marker).
+- `issue216-release-contract`:1건(package/edge), `issue218-release-contract`:1건(#218/#225 version).
+
+현재 fresh fixture를 과거 이력으로 바꿀 때 새 Tree sidecar DDL을 남겨 strict schema가 거절했고, 별도 현재 release 기대는0.62/no0.63edge에 고정돼 있었다. Developer가 정확 TREE_DDL 역순 제거 및 역사적 marker/현재 선언 기대를 교정했으며 보안 schema check/backup/restore 조건은 완화하지 않았다. 집중5files **17/17PASS**. 첫143 incomplete 실행도 보존한다. P1 scope invalidation/Worker allowlist 보완 후 전체 재시험/독립QA가 필요하며 fullPASS를 선언하지 않는다.
+
+
+## 2026-11-13 — #201 TREE-INACTIVE-TYPE-MARKER (기존 회귀 정적 감사)
+
+Root는 기존 `typed-outlines.spec.ts`의 #71/#73 타입 이름 변경·비활성 표식 assertion과 새 Tree projection을 비교하여, id/name만 반환하는 DTO에서 active 상태가 빠져 `(비활성)` 표시가 소실된 점을 확인했다. 새 Browser 실행 실패로 관측한 것은 아니다. Manager ADR-T201-16/TC-T201-13에 따라 참조 중인 타입의 active를 전달하고 단일 트리 객체 행에서 기존 표식을 유지하도록 Developer에 지시했다. 비활성 타입 신규 생성 제한과 도메인/geometry는 변경하지 않는다. 해당 수정 후 실제 통합·pure·Greenfield 재시험 및 새 build 결과는 별도 기록한다.
+
+
+## 2026-11-13 — #201 TREE-ZONE-ENTRY-ESC (실제 제품 FAIL) / LEGACY-ROW-ORDER (fixture FAIL)
+
+Developer default legacy 최초6개 Browser는4PASS/2FAIL(약55.9s)이다. 전체 console log는 redirect하지 않아 완전 로그 SHA가 없고, 실제 Playwright trace/error-context는 Manager가 재시험 전에 ignored `data/issue201/default-legacy-initial-failure-artifacts`로 보존했다.
+
+- 실제 제품: #196QA mobile 구역 목록 진입→QA Alpha에서 ArrowDown으로 QA Beta 이동→ESC 후 `viewer-outline-tree-dock`가 계속 visible이었다. 공유 Drawer의 outline 표식만 보고 toggle-outline-tree를 보내 zonePanelOpen이 남는 원인이다. Zone trace SHA256 `e8e3a4f05e2c57f6d0222173e8a7a87c12467816617896acd51d52df0d2e1011`, error-context SHA256 `117c7483916a80845e6e802761a956c9fe1a8255bf29f34179cb83993e0b9f3b`. Manager ADR-T201-17/TC14로 현재 진입 상태를 닫되 drawing 취소 첫 단계를 보존하도록 지시했다.
+- fixture: #43 U6-E2E-001은 stable 이름 정렬 후 첫 행이 항상 외곽선1이라고 가정하여 첫 행 내부 `외곽선 1 숨기기`를 찾지 못했다. 특정 이름 행을 명시 선택하도록 고치며 visibility/focus/source/Layer assertion은 유지한다. Outline trace SHA256 `006d715613e259d1902c97154ebbe607f5f9635722aadb30d4860e06ab85ed2e`, error-context SHA256 `7b28e10ecc51a148160e2e950aa9324cecc95a0f197c4089e3e81a047174b666`.
+
+Developer 수정 보고는 받았으나 새 build·동일 assertion 재시험/최종 전체 QA는 이후 실제 기록을 따른다. 앞선 realG72PASS는 이 Zone 메뉴 경로의 ESC 성공을 소급하여 증명하지 않는다.
+
+
+## 2026-11-13 — #201 TREE-DRAFT-IDENTITY-TYPE (기존 회귀 정적 감사)
+
+Root가 SavedOutline→새 draft 투영에서 outlineTypeId/outlineTypeName 누락, 빈 name에 nullish fallback만 적용되는 점을 확인했다. 그 결과 빈 이름 행과 업무 타입 대신 기하 kind가 표시될 수 있다. 새 Browser FAIL로 관측한 것은 아니며, Manager ADR-T201-18/TC15로 임시 identity·업무 타입 badge/search 보존을 요구했다. 원본/geometry/GeneratedDocument는 변경하지 않고 투영만 수정한다. 실제 재시험 결과는 별도 기록한다.
+
+## 2026-11-13 — #201 FULL-VITEST-SECOND-MOCK-EXPORT (실제 전체 실행 FAIL)
+
+Developer의 두 번째 전체 순차 Vitest는 181파일 중 180파일 PASS/1 suite FAIL, 실행된 테스트 1130/1130 PASS, 289.75s, exit1이었다. `tests/unit/scene-cpu-job-forward.test.ts`의 greenfield-schema 부분 mock이 신규 고정 `G7_UNIFIED_TREE_SCHEMA_ID` export를 제공하지 않아 파일 import 시 0 test로 실패했다. 제품 Worker 동작 실패로 해석하지 않는다. mock에 실제 상수를 추가한 뒤 해당 focused 6/6 PASS; 전체 재실행은 최종 코드 확정 후 수행한다. 원본 로그 `data/issue201/full-vitest-developer-final.log` SHA256 `7b495affa88830a28b434842c0321334dd22e7582820ff84b02e655d0b540266`; 실패 결과를 PASS로 승계하지 않는다.
+
+
+## 2026-11-13 — #201 TREE-OUTLINE-ADDITIVE-SELECTION (실제 제품 FAIL)
+
+Developer migrated default Browser batch17개는15PASS/2FAIL(1.5분),exit1. 최종 실패는 #53 E3-002 및 #55 E5-001의 두 번째 임시 외곽선 Ctrl-click 후 선택 개수 expected2/actual1이다. 진행 중 최초 보고의 #37-49 추정 대신 이 최종 결과를 사용한다. 전체 로그 SHA256 `a0ba6c17eac63f5241c24e6b63aec5ada1bdc8a62ce0d7c96bddf431239f0d02`.
+
+새 VersionTreePanel의 선택 callback이 modifier를 전달하지 않아 기존 Adapter의 추가 선택 기능에 도달하지 못했다. Manager ADR-T201-19/TC16으로 Ctrl/Meta 전달·Manager optional additive·서버 workspace 선택·ARIA 상태를 보존하도록 지시했다. 단일 click의 camera불변은 유지하며 focus로 우회하지 않는다. 동일 실패 assertion 및 관련 delete/rotate/undo를 새 build로 재시험한다. 병렬 실행이 공통 `src/test-results`를 공유하여 Developer trace가 남지 않았고, 후속 실행은 고유 `--output` 경로를 사용한다. 전체 로그가 실제 실패 근거이며 없는 trace를 재구성했다고 주장하지 않는다.
+
+
+## 2026-11-13 — #201 GREENFIELD-LEGACY-ACCOUNT-LOCATOR (실제 fixture FAIL)
+
+Root 기존 Greenfield 관련14개 탐색 실행은6PASS/3FAIL/5NOTRUN(53.5s, max-failures3)이다. 세 실패 모두 광범위한 `getByLabel('계정')`가 공통 로그인 상태 header의 계정 link와 로그인 textbox를 함께 찾아 strict locator 오류를 낸 것이다. 두 Zone 시험도 해당 로그인 단계에서 멈춰 Zone 동작 실패로 관측하지 않았다. Root는 소유한 관련 fixture를 exact:true로 수정했다.
+
+전체 `greenfield-legacy-migration-initial.log` SHA256 `3892b92201714d790dc165cbbdeb55d468b7329b7a2600a8c995f01863a2e058`. 첫 Root/Developer 병렬 Browser가 공통 기본 test-results를 사용하여 trace가 서로 대체되었으므로 확인되지 않은 trace SHA를 주장하지 않는다. 후속 실행은 각자 고유 `--output` 디렉터리를 사용한다. 최신 ADR19 build 이후 같은 기존 의미 assertion으로 재실행하며,5개 미실행을 PASS로 기록하지 않는다.
+
+## 2026-11-13 — #201 TREE-ADDITIVE-SELECTION (실제 default Browser FAIL→수리)
+
+Developer의 ADR16–18 빌드 후 9개 파일/17개 기본 E2E 회귀 실행은 **15 PASS/2 FAIL, 약1.5분, exit1**이었다. 실패는 `TC-E3-E2E-002`와 `TC-E5-E2E-001`에서 공통으로, VersionTreePanel의 두 번째 생성 외곽선 행을 Ctrl+click한 뒤 Canvas 선택이 2개 대신 1개였다. 새 트리의 행 선택이 Ctrl/Meta 수정키를 전달하지 않아 기존 다중 선택·삭제·회전 흐름을 잃었다. Manager ADR-T201-19/TC16 후 click/Space/Enter의 additive 경로를 Outline에만 연결하고, ViewerManager의 기본 단일 선택 계약을 유지하면서 선택 상태 `aria-selected`를 실제 Outline 선택으로 표시했다. Zone은 단일 선택이다. 두 실패 케이스의 동일 assertion 재실행은 **2/2 PASS,12.7s,exit0**. 전체 17케이스 최종 재시험은 진행 중이다.
+
+최초 로그 `data/issue201/default-e2e-migrated-batch.log` SHA256 `a0ba6c17eac63f5241c24e6b63aec5ada1bdc8a62ce0d7c96bddf431239f0d02`; 수리 focused 로그 `data/issue201/default-e2e-adr19-focused.log` SHA256 `e0ce656b440431206405e1bcda48cc36d8ab8e3a7024f9ce7f659ecc5bc12115`. 최초 Playwright failure trace는 Root의 동시 실행과 기본 `src/test-results` 경로 충돌로 보존되지 않았으며, 이후 실행은 각각 고유 `--output`을 사용한다. 최초 실패 로그와 정확한 assertion은 보존했다.
+
+
+## 2026-11-13 — #201 TREE-ZONE-DETAIL-READINESS (실제 제품 FAIL) / TYPED-RACE-FOCUS (fixture FAIL)
+
+Root 기존 Greenfield14개 재시험1은12PASS/2FAIL(2.7분)이며 전체 로그 `greenfield-legacy-migration-rerun1.log` SHA256 `99f61df877d9bed7f3070a5eaea013c69feef2bdd387d701855dac6d9b25e076`이다. 고유 results 경로에 실제 trace를 보존했다.
+
+- 제품 경합: semantic-zones에서 renderer를 dxf-viewer로 바꾼 뒤 Tree Zone 행 클릭이 진행 중 상세 GET보다 먼저 끝나 로컬 경로만 선택되고 상세는 누락됐다. trace상 GET start78151.968ms/완료78292.910ms, click78280~78285.659ms로 약7.3ms 앞선다. 이후 GET 성공에도 상세 편집 버튼이 없었다. `matchingZones`가 false일 때 click intent를 버린 원인이다. trace SHA256 `4e9b6524d381031e08afbecd78142b4276edf4277356d2eb8095421b148fb033`. Manager ADR20/TC17은 명시 loading/aria-disabled와 현재 scope readiness 후 선택을 요구한다. 고정 delay나 force click으로 덮지 않는다.
+- fixture: typed-outline-races가 held create POST 도중 global focus를 발생시켜 구 목록 GET을 만들었는데, ADR09/15 이후 focus의 auth epoch 갱신은 의도대로 typed intent/POST를 취소했다(trace status-1). 이 fixture는 인증 scope가 같은 구 GET 경합을 시험해야 하므로, held POST 뒤 명시 Outline 새로고침으로 old GET을 hold하고 POST/old/fresh GET을 순서대로 release하도록 고친다. stale row/overlay assertion과 별도의 actor-switch PATCH 검증은 유지한다. trace SHA256 `dfa879bc478fc4bb579d859a0ec6269eb29871b85fd0f899846cfa295444f002`.
+
+새 readiness 구현/build 이후 전체 관련 재시험 및 독립 QA가 필요하다. 선행12PASS를 새 소스의 최종 수용으로 사용하지 않는다.
+
+
+## 2026-11-13 — #201 최신 ADR20 Greenfield12PASS/2FAIL 및 fixture 보완
+
+Root 최신 ADR20 기존14개 회귀는12PASS/2FAIL(2.4분)이며 `greenfield-legacy-adr20.log` SHA256 `6f326db4ed6a739f9b1f3b18ccdd318928d69657557a20fe25fa4b995f315ca4`다. deterministic semantic-zones의 실제 held Zone GET readiness/포인터·Space·Enter 비활성/조회 완료 후 단일 선택/unsupported focus·편집 차단/320px ESC는 PASS했다. 앞선 TREE-ZONE-DETAIL-READINESS 결함의 해당 재시험이 실제 도달했다.
+
+- typed-outline-races는 typed POST pending 중 Viewer가 의도대로 Tree 메뉴 열기를 막아 새로고침 control이 마운트되지 않았고, held response 대기가 timeout이었다. 보호된 pending 작업 중 메뉴 이동을 앱에서 완화하지 않는다. Manager 승인 fixture 보완은 첫 POST를 route 단계에서 server commit 전에 abort하여 기존 typed intent를 유지하고, 자동 finally refresh의 old GET을 hold한 상태에서 같은 idempotency key로 retry POST를 수행하는 interleaving이다. 두 번째 POST만 실제 서버에 전달되고 old/fresh GET release 뒤 row+overlay 불변을 검증한다.
+- typed-outlines canonical Source 시험은 이름 변경·비활성 타입 표식 assertion 통과 후 실제 API replay에서 ECONNRESET으로 중단됐다. 이 실행만으로 타입 제품 결함 또는 안정성 PASS를 판정하지 않는다. 새 독립 fixture로 해당 API replay를 재시험한다. private 로그의 auth/CSRF header 전문은 공개 문서에 복사하지 않는다.
+
+같은 최신 ADR20 앱의 새 Issue201 실제 G7 두 시나리오는2/2PASS44.6s, `greenfield-tree-adr20.log` SHA256 `0e0cb6ea637282885ad0d51077c9ae675a858f4657e22dfbb052bcf8c4b144d2`다. server Ctrl/Meta/Space 선택·ARIA·camera, 권한회수/포커스 후 no-loop·재시도 복원과 원래 단일 트리 수명 시나리오를 포함한다. 이 두 시나리오 성공을 위 기존14개 전체 성공으로 대체하지 않는다. 독립 QA는 최종 앱·release helper 검증을 시작했으며 최종 인수는 보류다.
+
+
+## 2026-11-15 — #201 승인 원문 계약 RED→GREEN / Version 삭제 Tree 보존 RED
+
+실제 실행자는 제공 가능한 상속 Codex Developer agent이며 요청된 gpt-5.6-sol 실행으로 기록하지 않는다. Main800429e를 합친 미커밋0.63.0 후보에서 ADR21 새 `test_owner_issue201_directive_is_exact_and_preserves_binding`은 기존 parser에 실제 지시문을 넣었을 때 1test/2FAIL+1ERROR였다. 원문/정규화가 false이고 binding이 OWNER_GO_BINDING으로 거절됐다. 닫힌 집합에 정확 원문 한 개만 추가 후 release-local 전체26/26 PASS. 원문/부정·다른Issue·질문·부분인용과 source/version/plan/ref/세digest/private-file gate를 검사했다. RED 로그 SHA256 `99eafb94a357df7bec1ecb173130096fb430146ee51bca6f1b3e21817b13428f`, GREEN `a122a84087d07c76adbf27918ffe23f9d806acbbcee56f27fb1ace0b43f1dfc3`. 최초 명령은 cwd에 src를 이중 지정하여 FileNotFound로 시험 시작 전 중단됐고 수정 후 실제 RED를 실행했다; 코드/시험 실패와 구분한다.
+
+ADR22의 최초 DB 회귀는2FAIL/1PASS: partial Tree schema에서 삭제가 성공한 실제 누락과 새 Scene fixture의 허용되지 않은 format TEST로 인한 CHECK 실패였다(`delete-red.log` SHA256 `1bdd8370652b92f96868ef751e095ecda74b8d851aebadb01974b2bfab0de212`). fixture format만 기존 CUSTOM_DTO로 바꾼 두 번째 실행은 folder-only Version 삭제에서 기대409 대신 실제 Prisma P2003 FK 예외로1FAIL/1PASS(`delete-red2.log` SHA256 `7040bcd913a71a58d473e51409883c3a801a393c66213abffc3714fda3990970`). 이는 Manager 정적 발견을 실제 DB로 확인한 RED다. Tree 세 테이블 존재/참조 guard를 기존 삭제 transaction에 추가했고 DDL/checksum/cascade는 변경하지 않았다. soft-delete/미분류/audit 단독 보존·Current/Scene/job rollback 및 old schema 정상 삭제의 최신 전체 집중 결과는 후속 보고에 기록한다.
+
+
+## 2026-11-15 — #201 새 Greenfield16의13PASS/3FAIL: 연결 reset·fixture toggle·cleanup 후속 오염
+
+Main800429e+미커밋0.63 후보의 새 production build에서 Developer 실제 실행은 **13PASS/3FAIL,5.7m,exit1**. 로그 `data/issue201/developer-20261115/greenfield.log` SHA256 `fa21ca0f5f7b27e2cbee56e5c890d046807e7779e8cf1f529163d9f74b3048e2`. 별도 고유 `greenfield-results/`의 trace/error-context 및 두 PNG를 보존했다. native host clock이 아닌 소유 disposable `G7_E2E_MONOTONIC_CLOCK=true` 환경이다.
+
+1. Tree 종합은 폴더/분류·수명·desktop/mobile/fullscreen/V2 뒤 Reader 준비용 `headers()`의 직접 API session GET에서 ECONNRESET. 같은 Next PID가 유지됐고 사후 health/status200 및 다음 실제 revoke 시나리오 PASS, crash/exit 로그 없음. trace API upload 완료115724ms→session GET 시작121248ms(약5.52초 idle), 응답 `Keep-Alive: timeout=5`; 설치된 Playwright는 keepAlive HTTP agent/maxRetries0, Node 기본5000ms다. idle pool close race가 가장 유력한 **추정**이며 서버 crash는 관측과 불일치, browser route 취소의 직접 API 전파도 확인되지 않았다. 익명 health GET만4.8/5.0/5.2초 idle×keepalive/Connection-close×3회 비교한 bounded probe는 **18/18 HTTP200**, 재현하지 못했다(`transport-probe.log` SHA256 `170cfc5063267551c24da91e9ac74ccda7107dea7a1ad248788752c2f1bbb11c`). 실제 FAIL을 PASS로 바꾸거나 mutation retry/production timeout/auth를 수정하지 않는다.
+2. typed-outline-races의 주 실패는 line175 생성행 visible timeout이었다. trace에서 POST201과 후속 Tree GET200이 완료됐으나 obsolete pre-open/refresh-control check가 Tree를 미리 열고 성공 후 메뉴가 이를 닫았으며 snapshot에 panel 자체가 없었다. 이어 finally에서 held routes release와 unroute가 경합해 `route already handled`가 주 실패를 가리고 DB cleanup이 미도달했다. obsolete pre-open block만 제거하고 gate release 뒤 `unrouteAll({behavior:'wait'})`로 handler 완료를 기다린다. 같은 idempotency key/실제forward1/oldGET·freshGET 순서/row·overlay assertion을 유지한다.
+3. 다음 typed-outlines는 기대 서버행3 대신4로 실패했다. 직전 cleanup 미도달의 생성행 잔존을 확인했으며 fresh 독립 fixture로 재시험한다. 같은 실행의 canonical Source rename/inactive/replay는 PASS지만 전체 성공이 아니다.
+
+lint의 새 ADR17 ESC handler dependency 경고는 `appState.zonePanelOpen`을 명시해 보완한다. 기존 `typed-outline-runtime` unused url은 HEAD800429e에도 존재하여 변경하지 않는다. 수리된 source의 새 build/전체16 및 독립 QA는 후속 기록으로 구분한다.
+
+
+## 2026-11-15 — #201 재개 수리 후 동일 전체 Greenfield16 PASS
+
+obsolete Tree toggle 제거·held handler 종료 대기·unified-tree 진입(불필요한 추가 Outline GET 없음)·fresh response를 풀기 **전** row+protected overlay 불변 assertion을 적용한 새 disposable fixture에서 **16/16PASS,4.6m,exit0**. 로그 `greenfield-final.log` SHA256 `2b2ade3bba9549435314e2033a6b583462ec2ccdb5f8574ca978c661e4fcdbaf`. 앞선13PASS/3FAIL은 보존하며 해당 reset의 근본 원인을 입증하거나 transport를 수리했다고 주장하지 않는다. 새 실행에는 Connection-close 설정이나 mutation retry를 추가하지 않았다. 동일 typed race/actor PATCH/typed3-row·canonical Source replay 및200혼합행을 모두 실행했다.
+
+ADR22 최신 두 integration 파일은 **17/17PASS**(Tree12+delete5), `tree-delete-final.log` SHA256 `9e16e4a17e87b1711da3bec04b19ed97757a4b77a0622e72c45c0192ee4ef7f0`. 동일 signed folder-only/softdelete 보존, audit-only/membership-only, current empty Tree delete와 구 schema/partial503 및 Current/Scene/job rollback을 통과했다. 그 뒤 Root screenshot의 긴 제목 옆 닫기 글자 줄바꿈을 Manager가 확인하여 header close에 shrink-0/whitespace-nowrap만 추가했다. 이 class-only 수정은 위16PASS build **이후**이며 독립 QA 최신 build/화면 결과를 기다린다.
+
+
+## 2026-11-15 — #201 TREE-ACTOR-INTENT-BINDING 실제 Browser RED (ADR23)
+
+Manager 선행 ADR23/TC20 뒤 기존 vulnerable production build에서 실제 같은 Site·같은 Admin 권한의 A→B cookie 전환을 page API로 수행했다. 테스트는 focus/session-invalidated를 발행하지 않았다. 첫 실제 session 응답은 B였지만 기존 Tree helper가 actor를 검사하지 않고 B CSRF를 사용했다. `T201_ACTOR_BOUNDARY`의 실제 관측은 **write1/status201/folderDelta1/auditDelta1/staleCommittedAsB=true**였고 기대 mutation0에서 **1FAIL/exit1**이다. 서버 권한 우회가 아니라 오래된 A의 화면 intent를 B로 실행한 결합 누락을 실증했다. private `developer-adr23-20261115/red.log` SHA256 `e39a7b63f406ccced23274ffabb4ad92141d31db4346c49093144585bf5d8515`, 고유 `red-results/trace.zip` 보존. 실제 cookie/CSRF는 공개 기록에 복사하지 않았다.
+
+같은 source의 header unit RED는12건 중7PASS/5FAIL이다. mismatch/missing/empty expected actor와 expected actor+OFF가 잘못 headers를 반환했다. `unit-red.log` SHA256 `18df25766c04a1855a41367c666afd65625e9bace3f3ee388f906a7fe0115768`. 수정 전에 실행한 재현이며 이전 QA phase1의181/1145PASS를 이 누락의 검증으로 재사용하지 않는다. approved fix는 동일session response actor/CSRF결합, current generation+exact resource만 폐기하고 identity1회 refresh, queued stale refresh의 early-key guard다. 수리 후 결과는 별도 기록한다.
+
+
+## 2026-11-15 — #201 TREE-ACTOR-INTENT-BINDING 동일 실제 RED→GREEN
+
+ADR23 수정 뒤 같은 실제 same-role/no-event Browser 회귀는 **mutation0/statusnull/folderDelta0/auditDelta0/staleCommittedAsB=false**를 관측했다. 후속 identity 응답을 hold한 동안 old Tree/Outline/Zone/form0, focus0·app invalidation1, DB 불변을 확인하고 release 뒤 B의 새 명시 폼 저장 및 createdBy/audit actorB를 검증했다. 기존 comprehensive/lateReader와 revoke/no-loop도 함께 **3/3PASS,1.6m,exit0**. `green.log` SHA256 `207220cea67702d0ca7b0045c3d9449c73808db9effb07ec81f41d07259415b7`. RED의 실제 POST201·추가행1은 별도 원장으로 보존한다.
+
+helper unit12와 projection7은 **19/19PASS**, `unit-green.log` SHA256 `8a31bb8753e5b9ac5658e5cc83d7fba7c81341891f2c88919aea1e27e4d223c1`. 새 build(내부TypeScript) exit0 SHA256 `e905875c727817effeecbd9daf397cecd43777412cc673acac6966dd0f86e12c`, lint0errors/12기존warnings SHA256 `d8eba809a98165b6b711d0b714170c725914538b593329a86b6b531156b56b45`. 추가 실제 Browser에서 transport reset은 관측하지 않았지만 과거 ECONNRESET의 원인 수리 근거로 확대하지 않는다. 독립 QA와 frozen release는 아직 후속이다.
+
+
+## 2026-11-15 — #201 독립 QA phase1 UMASK-077 fixture 실패와 수정된 실행
+
+실제 주체는 상속 가능한 Codex 독립 QA agent이며 요청된5.6-luna 실행으로 기록하지 않는다. 로그를 보호하려고 QA runner에 설정한 umask077이 시험 자식에도 상속됐다. 기존 `g7-runtime-migration.test.ts`의 unsafe-lock mode 음성 시험은 mode0644로 생성한 파일을 검사하지만077에서 실제0600이 되어 거절 기대가 실패했다. 완료된 첫 파일은17건 중1FAIL이며, Manager와 조정 후 확인된 QA Vitest PID에 SIGINT를 보내 전체 실행을 **exit130/136.69s/INCOMPLETE**로 종료했다. 나머지 전체 suite의 PASS를 주장하지 않는다. 원 로그 SHA256 `2f40128557b832557db57400c03d9135f8dcc62eab70fb098848b3298001fa94`.
+
+통제된 파일 생성 probe는 requested0644→actual0600(umask077), actual0644(umask022)를 확인했다(SHA256 `96cf0ac5395d8f2769ccfb2a2219735e8abca04757901ce93f56cf34d65ff06d`). 제품/fixture/assertion은 수정하지 않고 자식 프로세스만 기존022로 실행했으며 로그 파일0600/상위 디렉터리0700은 유지했다. 새 full Vitest는 **181파일/1145건 PASS,exit0,459.15s**, SHA256 `8b6bd5f192751d084aad6135ac88b4689d066400fb4d9d95f5de9e22ab0ea16d`. 이 결과는 아래 source fingerprint에만 해당하며 이후 발견·수리된 ADR23 actor binding의 검증으로 승계하지 않는다.
+
+
+## 2026-11-15 — #201 QA-PHASE2-TREE-RETRY-FIXTURE: 기본18PASS/1FAIL
+
+독립 QA phase2의 시작/실패직후 fingerprint `74117abfb2a0700afec9f2bac68eb5cb8a9cf22b05a86e32aa3943af25767c33` 동일. full181파일/1151테스트와 새build는 통과했으나 기본 Browser는18PASS/1FAIL,exit1,215.62s였다. 실패 test는 `issue201-unified-tree.spec.ts:78`의 delayed oldVersion이며30초timeout. 원로그SHA256 `965418374b93ba157b8dbbca03c1c7dc7cce3154bbc30a644bacbe7d0b927611`, trace `5dd152f47bbdc76789ad997a74ae3bf2fbdf630c128b9c27229f8da59dc72fcf`.
+
+trace상 Old Folder초기조회/표시PASS→Retry클릭완료→status200/Zone503 뒤 `await oldSeen`(line107)에서대기했다. TreeGET은최초200한개이고 Zone503은최초+retry두개다. fixture의 always503 Zone응답으로 zoneReady=false가 유지되어 ADR20의 Retry는 Tree가아닌Zone만조회한다. 둘째TreeGET/새Version이동/heldresponse 검증에미도달한 fixture trigger불일치이며 제품cross-Version경합·transport오류 증거가아니다. timeout상한확대/자동retry/제품guard완화 없이 readyZone정확DTO 및 bounded 관측/cleanup을고친다.
+
+runner는실패후중단, signed17/PNG NOT RUN. 진단 JSON `e92c74a880de67b6b347929b9ff75e84d899914cfca319f6defcf173f24b43d2`와 원trace/error-context보존; 재시험은별도기록한다. 모든명령/성공검사SHA는 [IssueEvidence201 QA phase2](IssueEvidence/201.md)정본이며 이전ECONNRESET미확정이력도유지한다.
+
+
+## 2026-11-15 — #201 QA-PHASE2-TREE-RETRY-FIXTURE 수리 후 집중 2/2 PASS
+
+Manager 승인 범위의 테스트만 수정하여 actor/Version/SHA가 정확한 ready Zone DTO와 실제 Zone panel 준비 확인을 추가했다. 전체 필터에서 Old Folder·Tree GET1회를 확인한 뒤 Retry가 둘째 Tree GET hold에 도달함을5초 bounded poll로 검증했다. 새 Version 이동·늦은 old 응답 종료·Old Folder 부재/New Folder 유지 assertion과 finally gate release/unroute wait를 유지했다. 제품의 ADR20 retry 분기는 수정하지 않았다.
+
+기존 production build `k2QB82N0aRJ_WKenAr_a2`의 해당 두 Browser 시험 **2/2PASS,29.8s**. private `developer-version-fixture-20261115/e2e.log` SHA256 `51ac85cdbbf689d7129c7fb6f7be6fc7debab2d16b55360303610d14ff427028`, `.last-run.json`은 passed/failedTests=[]이다. typecheck exit0, lint exit0/0errors/12기존warnings. 원 phase2 실패/trace 및 full1151의 원source 귀속을 유지하며 이 집중 PASS를 default19/signed17 또는 최종 출고 성공으로 확대하지 않는다. 독립 QA가 후속 검증한다.
+
+
+## 2026-11-15 — #201 QA-PHASE3 signed GET ECONNRESET 및 별도 outer143
+
+phase3 기본 회귀는19/19 PASS였지만 signed17 실행은 case15 `typed-outlines.spec.ts:113`의 직접 outlines GET에서 read ECONNRESET을 기록했다. 서버행3개/201→동일key200 assertion 뒤의 읽기였다. 직전 API POST201 완료→GET 시작 약5960.395ms idle, 직후 sessionGET200/logoutPOST200 및 다음 case16 PASS를 확인했다. idle keepalive race는 가설이며 이전 reset을 포함한 근본 원인은 미확정이다. mutation retry/production timeout 변경 없이 보존한다.
+
+이후 outer exec47108은143으로 종료됐다. Root/QA 모두 종료 신호를 보내지 않았으며 원인은 미확정이다. 로그15PASS/1FAIL, 마지막17번째 및 최종 summary 미기록으로 **전체 INCOMPLETE**다. 실제 GET 실패와 외부 실행 중단은 별도 사건으로 유지한다. 시작/실패종료 source fingerprint `581fadc3dd2ea3acbdb90252a9d1e4019fddb827eefbbfd5cfdddd8691d7f2af` 동일, phase2 production BUILD_ID도 동일하다.
+
+signed 로그SHA `ee6daf424af56d454c18f769135e2154e6501f6537a3417a3c03d397d3ac47d0`, traceSHA `cb3b9fe9b1a1138e8456e69aa0c1fb5f3d540a9ca7b86d488e086fad4cb4131e`, sanitized 진단SHA `61895009266bded05cf75830c5af25b0255f2db7ec29d09482b55bcff4016126`. raw trace/error-context는 disposable 인증정보를 포함하므로 비공개 보존한다. 정확 명령·부분성공/PNG·한계는 [IssueEvidence201 QA phase3](IssueEvidence/201.md)에 기록했다. 자동 재시험/제품변경/서버정리는 수행하지 않았고 Manager/Root의 좁은 후속 조치를 기다린다.
+
+
+## 2026-11-15 — #201 ADR24 테스트 API 연결 제한 제어/서명 전체 결과
+
+원 signed GET ECONNRESET과 바깥143은 별도 미확정 실패로 보존한다. 승인된 test-only closeApi/closeRouteFetch로 직접 API와 route.fetch에 Connection:close/maxRetries0을 적용했으며 Chromium/제품/인증/외부 library는 변경하지 않았다. 원인이 idle socket 경합이라는 가설을 확정하지 않는다.
+
+제어 시험 첫 실행은 API.fetch(data)의 기본method를POST로 기대했으나 실제GET이라 실패했다. probe의 기대만 수정했고 product/wrapper method는 그대로다. 원 `control.log` SHA256 `9ead37ec8e92a5e5e49d6fa263f1c493e2edbb138b44c43f9c76d18aaed8e984`; 재실행 control PASS SHA256 `e41f68b4d312cc17425c0406cc9539311e9ddb54343d36a91517d9b94ed27679`. 30 Node요청의 별도socket/close header와4 reset POST의각1회시도/client실패, cookie·CSRF·key·body보존/Browser미변경을 검증했다.
+
+첫 transient unit은 Developer가 붙인 임시dir 이름 `g7-first-run-ui-dev201-a9nrmggs`가 기존 clock guard의 `g7-first-run-ui-[A-Za-z0-9]+` 조건에 맞지 않아 webServer 시작 전 `SYNTHETIC_CLOCK_REQUIRES_OWNED_GREENFIELD_FIXTURE`로 exit1였다. 테스트는0건이며 제품실패가 아니다. stdout SHA256 `39972a72dff0d728110d581ae471d57c5448aec843a34524fadab46d24a94310`, stderr `e7b61fadfe5bdf1e04f7cfb8e145570c00721baef3a0af8d165f999a7de5ca2a`와 failed unit상태를 보존했다. guard를 수정하지 않고 새허용name/새unit/별도logs로 실행했다.
+
+수정된 fixture의 signed9파일 **17/17PASS,6.0m**, unit exited/ExecMainStatus0/Resultsuccess를 모두 확인했다. stdout SHA256 `c039d1b9b214265e31efe6e7467fb3ce4664be45167c1e250171baa10df7a2a2`. actual Next fixture partial trace553건 모두Connectionclose를 확인했고 대응raw45개는private700/600으로 보존했다. 제품 source/buildID는동일, 새test11파일은실행동안동일. typecheck/lint0errors12기존warnings/owned-session3건PASS. 정확2개소유unit정리 및3396port-free확인. 근거·명령·한계는 [IssueEvidence201 ADR24 Developer](IssueEvidence/201.md) 정본이며 독립 QA/frozenrelease 미완료다.
+
+
+## 2026-11-15 — #201 QA-PHASE4-FOCUSED-ROW-CLIPPED: signed16PASS/1FAIL
+
+독립 QA의 ADR24 제어시험(30closed sockets/4reset POST각1회), owned-session3, typecheck/lint는 PASS했지만 supervised signed17은16PASS/1FAIL,exit1,346.77s였다. 새 실패는 `typed-outlines.spec.ts:360`: 200혼합행의 End 뒤 마지막행 focus는 PASS인데 toBeInViewport가5초 동안ratio0이었다. 이전 ECONNRESET과 별개 UI 가시성 실패다.
+
+trace End action339178.347ms 뒤 Tree scrollTop7743은 마지막344451.538ms까지 유지되고 target의tabindex0도 유지됐다. End 전 JPEG에는 없던 OutlineActions footer가 이후 등장해 목록높이가 줄어든 화면을 확인했다. late footer resize 뒤 기존scroll이부족해진 추정이며 live geometry 미계측/DOM remount 미확정이다. 제품 viewport 내부 scroll 보완 전 deterministic held-response RED가 필요하고 assertion/timeout을 완화하지 않는다.
+
+signed logSHA `e05481469db4ee487a6b81009ab42c4b947c9f2e6cbd77bdafc6ce600fba20e4`, traceSHA `06bc8c0936ac0495d849434380a77fe27c949d299a4be946a2bd811e49b25e66`, completed supervisorSHA `03cb3ccc32a12b4e8ad75d3479fd1897c7beff8cc4c2c826cfbc6373dcbaa9f4`. 시작/실패종료fingerprint `c811312679ecaac41b4f05a197db94748f15a6aedcd5cb611ba1572126f52969` 동일, phase2 제품source/build불변. 이번unit은실제exit1/Resultexit-code를기록한뒤 정확소유unit정리/3396port-free를확인했다. 원phase3reset/143원인UNKNOWN은유지한다. 상세명령·근거/한계는 [IssueEvidence201 QA phase4](IssueEvidence/201.md)에 기록했다.
+
+
+## 2026-11-15 — #201 TC22 late-footer 실제 RED→GREEN
+
+Manager ADR25 뒤 실제actor/Version/SHA가맞는Outline GET200한개의delivery를hold하고같은actor refresh로workspace checking/footer부재를만들었다. Tree200행준비→End focus/완전가시성→응답해제/인가commit/footer추가의순서를고정했다. 기존build에서height299→178인데scrollTop7743이그대로여서같은focused lastrow의완전가시성이true→false였다. window/10ancestor scroll은0으로불변, 제품의resize후보정누락을관측했다. RED6PASS1FAIL2.5m/exit1, stdoutSHA `2f9bf52ec42c2947b62da844f05625b5e19837b45d3ca665054d759debf1f19b`, traceSHA `f4779353e4bf363d17b5728e73a9d12ac4f571b801c418305791719a90d296df`. max-failures stopannotation을추가제품실패로세지않는다.
+
+VersionTreePanel의own-container scrollTop/ResizeObserver수리후새build의같은응답경합은height299→178,scroll7743→7864,동일focus/완전가시성유지로GREEN이었다. outsideTreebutton focus상태의추가form resize에서도focus/scroll유지,branchHome/320End/Canvas/ancestor/window불변을통과했다. setup의존4파일10건전체PASS3.7m/exit0, stdoutSHA `c7f0cf31caa1e383ec28fa79f9eb283c86fb7c3672fb55d643f915c1454ca063`, unitexited/ExecMainStatus0/Resultsuccess를확인했다. 타입/빌드PASS, lint최종0errors12기존warnings; 초기에추가된미사용test localwarning1개는선언제거로수리하고원로그보존했다. RED/GREENfixture흐름/assertion은같고그local삭제때문에testbytes는서로다르다.
+
+이전QAphase4실패와Developer transport17PASS의범위를덮어쓰지않는다. 제품/testhash·실제명령·새buildID·독립QA후속범위는 [IssueEvidence201 TC22](IssueEvidence/201.md) 정본이다. 정확소유unit정리와3398/3399port-free확인, 원trace와합성fixtureprivate보존. 게시/운영변경없음.
+
+
+## 2026-11-15 — #201 QA-PHASE5-LOGIN-LOCATOR 및 R2 seed 누락 연쇄
+
+새 ADR25 build의 독립 기본19/19PASS 후 signed17은15PASS/2FAIL,exit1,260.73s였다. `outline-types.spec.ts:7`의 non-exact `getByLabel('계정')`가 로그인 header anchor와계정textbox 두개를찾아 strict-mode실패했다. 로그인/카탈로그 setup전754ms실패이며151–152행의r2reader생성도미실행이다. 후행typed-outlines160행의 `find(r2reader).id` TypeError는 이 seed부재의연쇄로분류한다. auth/transport/ADR25제품오류로합치지않는다. 정확textbox선택만보완하고 assertion/제품권한/timeout은유지한다.
+
+전체source시작/실패종료 `a84a0092bd8092b8bc7918abd92297c156ae22c7be66ae77f1cafd6e9170f63d` 동일. signedlogSHA `50b1c494692f167c3f1021fc4cdbd95a152f601834840bac3f8e9837f574d3d8`, traceSHA `a985c5db37776acc47b713911b1a7f638f1f25a9e93ddee5bcc7a21185c6ea17` 및 `7a901f9b27b1ec2e663d6f3f42418b38a480f8bdfc9e85ab6a8c9ea7d0f92d27`. 최종unitloaded/failed/ExecMainStatus1/Resultexit-code보존후 정확소유unit정리/3398·3399free를확인했다.
+
+마지막ADR25 deterministic200행은PASS42.4s:height299→178,scroll7743→7864,동일key/focus/fullvisibility·외부scroll불변,focus밖대조/Home/320px까지실행했다. 이는전체signed성공을대체하지않는다. 자세한telemetry/4PNG/hash/명령은 [IssueEvidence201 QA phase5](IssueEvidence/201.md)에보존한다. QA수용보류,재시험전fixture최소수리필요. 운영배포는승인범위밖이다.
+
+
+## 2026-11-15 — #201 TC23 로그인 부분 일치 선택자 수리
+
+QA phase5 trace `a985c5db37776acc47b713911b1a7f638f1f25a9e93ddee5bcc7a21185c6ea17`는 R2의 `getByLabel('계정')`이 header link와 input 두 개를 찾아 fill strict violation으로 실패했음을 보인다. 후속 missing r2reader는 중단된 R2 seed 생성에 의존한 실패다. 원 signed15PASS/2FAIL은 유지한다.
+
+Manager 승인 뒤 해당 한 줄만 exact textbox locator로 바꿨고 나머지 flow/assertion은 유지했다. typecheck exit0/diffcheck PASS, non-test465파일과 build ID/그 파일 SHA 불변. 정확한 before/after test SHA와 근거는 [IssueEvidence201 TC23](IssueEvidence/201.md)를 따른다. 추가 browser/build/full 실행 없이 독립 QA signed17에 넘겼으므로 이 기록은 수정 뒤 browser PASS가 아니다.
+
+
+## 2026-11-15 — #201 phase6 독립 재검증: TC23/ADR25 포함 signed17 PASS
+
+TC23의 정확textbox fixture 보완 뒤 독립 새 signed17은17/17PASS,exit0,274.39s였다. R2 setup/reader seed와 후행 Reader복원이 모두통과했고, ADR25 held-response200행도 높이299→178/scroll7743→7864/동일focus·fullvisibility/외부scroll0으로통과했다. source시작/종료 `481cfa52b9a4cc709b9aeaecc33849cdbcf5dffb0a1c03f49f9ce424f0337f1a` 동일, phase5productionbuild동일이다.
+
+logSHA `7d7901339d566c61e6cc5450fe06f9f345875cac15a8567ffdcfe1327e5d9ec4`, finalunitstatusSHA `e3c6d29c8da906e48dec31ebae06d9fa3a789d0b1035c4050db4679fb5edaef7`(loaded/exited/ExecMainStatus0/Resultsuccess). 원phase5로그/trace와phase4제품RED 및 이전reset/143은삭제하지않는다. reset/143원인UNKNOWN도유지한다. 상세source귀속/4PNG/한계/정확소유unit정리와로컬수용권고는 [IssueEvidence201 QA phase6](IssueEvidence/201.md)를따른다. Root최종출고gate는별도이며운영배포는승인범위밖이다.
+
+
+## #201 ADR26 모바일 own-body clipping — 2026-11-15
+
+phase6 signed17 PASS 뒤 독립 실제 probe가 End 행 하단4.328125px 잘림을 확인했다. 원 assertion은 Tree clientbox만 검사했고 own-body clip을 놓쳤다. 초기 raw aggregate의 BODY clipping 계산은 fixed shell 바깥이므로 무효이며 교정 geometry/hit/PNG로 대체했다. 강화 TC24의 기존 build RED는7건 중6PASS1FAIL, 실제13.328125px 잘림/outline4px/bottom hitfalse였다. 두 실행의 UI 조건/수치를 혼합하지 않는다.
+
+제품의 정확 own Tree/body 두 scrollport helper/한 ResizeObserver의 두 영역 관측 보완 후 새 build의 관련4파일10/10 PASS3.5m, 실제 unit terminal exit0. End 전체clip+outline+hit, body-only resize, no-reveal 외부focus 대조를 확인했다. 원 실패는 삭제하지 않았다. 추가로 context 재개 뒤 원 lint/build handle이 소멸하여 terminal exit를 회수하지 못했다. log0errors/12warnings·route완료/newartifact와 runtime GREEN은 보존하지만 **lint/build exit NOT_OBSERVED**, 정식 PASS로 기록하지 않는다. Root frozen 검증 후속. 자세한 해시/증거/한계는 [IssueEvidence/201](IssueEvidence/201.md)의 U-ISSUE201-DEV-MOBILE-CLIP-20261115를 참조한다.
+
+
+## #201 ADR26 독립 bounded 재검증 — 2026-11-15
+
+기존4.328125px own-body clip 재현 fixture를 새 build `s5h7RXFjbnxzu00Xvl0p_`에서 독립 재검증했다. browser probe1회/10predicate PASS, CLI exit0/10.40초다. End320×800은 Tree/body9528/5로 row48px+outline4px+center/bottom hit를 확보했고, 동일focus800→740은 Tree126/body307→271/scroll5→41로 가시성을 유지했다. 외부 search focus에서 user wheel body0 뒤 resize는 Tree9528/body0과 focus를 유지하고 이전 행을 reveal하지 않았다. Home/End/arrow·외부scroll/Canvas불변도 확인했다.
+
+source start/end `44270693e78b80a41a67bd5792f181b255dd00042a0630c2b47cf59f15c45efa` 및 build/non-test SHA map 동일, 업무 mutation0/15개 업무 table 동일. 두 실제 End PNG를 직접 확인했다. QA acceptance SHA `d6e1bdf615c34e85b3389afb7d978c067dc677b877ee9b11e12c628e77d77e30`; 원 clipping FAIL/초기 무효 aggregate/Developer RED와 lint/build terminal NOT_OBSERVED는 보존한다. 이 독립 결과는 bounded 수리 수용 근거이며 full suite 또는 Root frozen release gate 대체가 아니다. 자세한 증거는 [IssueEvidence201](IssueEvidence/201.md)의 U-ISSUE201-QA-MOBILE-CLIP-20261115를 따른다.

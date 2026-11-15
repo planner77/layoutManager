@@ -137,7 +137,7 @@ test('TC-E6-E2E-001: rejected file keeps session; v2 restores after explicit rel
  await expect(page.getByRole('status')).toHaveText('도면 표시 완료');
  // Reload resets Viewer UI state: a closed Tree has zero rendered rows even if
  // the underlying Document has objects. Verify JSON independently first.
- await expect(page.getByTestId('viewer-outline-tree')).toHaveCount(0);
+ await expect(page.getByTestId('version-tree-panel')).toHaveCount(0);
  const empty=await exportGenerated(page);
  expect(empty.objects).toHaveLength(0);
  await page.getByTestId('generated-import-input').setInputFiles(fileOf(data));
@@ -147,9 +147,9 @@ test('TC-E6-E2E-001: rejected file keeps session; v2 restores after explicit rel
  expect(restored.objects.map(o=>o.id)).toEqual(data.objects.map(o=>o.id));
  expect(restored.objects.map(o=>o.editedGeometry))
   .toEqual(data.objects.map(o=>o.editedGeometry));
- await expect(page.getByTestId('viewer-outline-tree')).toHaveCount(0);
+ await expect(page.getByTestId('version-tree-panel')).toHaveCount(0);
  await clickViewerTestCommand(page,'viewer-menu-outline-tree');
- await expect(page.getByTestId('viewer-outline-tree')).toBeVisible();
+ await expect(page.getByTestId('version-tree-panel')).toBeVisible();
  await expect(page.getByTestId('outline-tree-item')).toHaveCount(1);
  await expect(page.getByTestId('outline-tree-item').first())
   .toHaveAttribute('data-outline-id',data.objects[0].savedOutlineId);

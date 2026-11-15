@@ -308,7 +308,23 @@ def verify_run(value: str, state: dict, recovery_input: str | None = None) -> tu
     need(clock_mode in ('native', 'monotonic')
          and run.get('end', {}).get('synthetic_auth_clock') == clock_mode,
          'VERIFY_CLOCK_MODE')
+    start_selections = run['start'].get('selected_tests')
+    end_selections = run['end'].get('selected_tests')
+    cases = run.get('cases')
+    need(type(cases) is list and len(cases) <= 200, 'VERIFY_RUN_CASES')
+    need(('selected_tests' in run['start']) == ('selected_tests' in run['end'])
+         and start_selections == end_selections, 'VERIFY_TEST_SELECTION')
+    if 'selected_tests' not in run['start']:
+        need(not any(type(case) is dict and case.get('id') == 'selected-browser'
+                     for case in cases), 'VERIFY_TEST_SELECTION')
+    try:
+        selections = verify_local.validate_selected_tests(
+            {'unit': [], 'e2e': []} if 'selected_tests' not in run['start'] else start_selections)
+    except (ValueError, OSError):
+        raise Halt('VERIFY_TEST_SELECTION') from None
     expected_cases = verify_local.manifest('release', declared_risks, current['paths'],
+                                           selected_unit=selections['unit'],
+                                           selected_e2e=selections['e2e'],
                                            recovery_input=recovery_input,
                                            synthetic_auth_clock=clock_mode)
     expected = {case['id']: case for case in expected_cases if case.get('required')}
@@ -316,8 +332,6 @@ def verify_run(value: str, state: dict, recovery_input: str | None = None) -> tu
                         ('fingerprint', current['fingerprint'])):
         need(first.get(field) == last.get(field) == want, 'VERIFY_RUN_SOURCE')
     need(first.get('dirty') is False and last.get('dirty') is False, 'VERIFY_RUN_DIRTY')
-    cases = run.get('cases')
-    need(type(cases) is list and len(cases) <= 200, 'VERIFY_RUN_CASES')
     required = set(expected)
     seen = set()
     for case in cases:
@@ -462,6 +476,8 @@ def affirmative_owner_reply(value: str) -> bool:
         'go', 'go for this exact plan', 'approve', 'i approve this exact plan.',
         '승인', '승인합니다', '진행', '진행하세요',
         '정식 버전 ghcr 게시와 도커로 운영 배포 하세요.',
+        'issue 201을 확인하고 내용을 참조하여 구현, 테스트, 실패 원장 기록, 정식 ghcr 게시, '
+        '이슈 종료를 진행하세요. 구현 간 발생한 임시 컨텡너, 볼륨, 워크 트리는 이슈 종료 시 삭제하세요.',
     }
 
 

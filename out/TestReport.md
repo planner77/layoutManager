@@ -1,3 +1,9 @@
+## U-ISSUE201-DESIGN-20261113 — 실행 역할 및 선행 설계
+
+- 기준 Main598265b / source0.62.0. Manager(상속된 현재 세션 모델)는 실제 Issue201/기존196·ViewerPanelPolicy·G7/Schema/실패 원장을 검토하고 요구/ADR/AC/TC를 먼저 기록한 다음 Developer에게 구현을 지시했다.
+- 요청된 구 모델 gpt-5.6-sol/gpt-5.6-luna는 도구 모델 목록에 없어 사용하지 않았다. 실제 Developer는 **gpt-6-sol** 대행으로 실행 중이며 QA는 구현 완료 후 별도 실제 주체를 기록한다. 원래 모델이 수행한 것으로 주장하지 않는다.
+- 기록 시점 구현/로컬 시험/독립 QA/Manager 최종 인수/commit/push/GHCR/운영 배포/Issue 종료는 **NOT RUN**. 이후 실제 결과는 append-only로 별도 기록하며 과거 PASS를 승계하지 않는다.
+
 ## U-273-RF01-RF04-CI741 — 구 synthetic fixture 계약 불일치 보완, 신규 CI 결과 미검증 (2026-11-09)
 
 - 실제 [PR CI #741/run42572495438](https://github.com/planner77/layoutManager/actions/runs/42572495438) HEAD `1d3331addbc6a39b09f02afa2b9832d565725ceb`, attempt1 completed FAILURE. Required Scope Job 129012807453: 기존 `test_release_finalizer_finish.py` 8 tests 중 2 ERROR (`test_sequential_sha_chain_and_readable_recovery`, `test_issue_store_single_append_and_exact_close_patch`), 둘 다 정상 보안거부 `RFCP_NONCE_OR_RUN_REUSED`. 필수 aggregate 129012880389 종속 FAILURE, 후속 Job SKIPPED. GHCR 문제 아님.
@@ -5301,3 +5307,129 @@ Run ID / Date / Unit / Version / Commit 또는 uncommitted snapshot / OS·Browse
 - Port3000 diagnosis: Windows reported it inside the IPv4/IPv6 excluded range 2979–3078 and IPv4/IPv6 loopback bind attempts failed with error10013. Exclusion owner/cause remains unknown. The earlier exact loopback portproxy attempt failed on 127.0.0.1 and rolled back; its failure and later probe are preserved separately. It is not evidence of the port8300 listener state.
 - Port8300 preflight succeeded for Windows IPv4/IPv6 and WSL socket binds. Windows/WSL forwarding returned health200 on `localhost` and `127.0.0.1`; Windows `[::1]` remained unreachable. Root recreated only the App with `docker compose ... up -d --no-deps --no-build --pull never app`, exit0, same 0.62.0 image ID, new App ID, active origin `http://localhost:8300`, host port8300, and existing `cad-layout-viewer-g7` volume. Worker ID/image/security/restart state stayed unchanged; no build, pull, migration, volume delete, firewall or service change. Original hash-bound `production.env` is unchanged; new private `production-port8300.env` is mode0600 with only `CAD_HOST_PORT` and `G7_RUNTIME_ORIGIN` changed. Baseline and after snapshots are byte-identical (SHA256 `25e4dea9d963453b0bad69aed33a1d648e81853c890658d1b6b6fc536580ced7`; 34 logical tables).
 - Independent QA used a read-only Windows PowerShell probe whose only change from Root's probe was querying listener port8300. At 09:33:24Z it observed `localhost` and `127.0.0.1` health200, `[::1]` unreachable, direct WSL IP health200, login page200, runtime ACTIVE/auth/CAD-write enabled, anonymous session401, and one listener on 127.0.0.1:8300. Manager's separate WSL anonymous GET boundary check returned401 with Host localhost:8300 and404 with Host localhost:3000; this was not a Windows browser or authenticated-session test. Root reports the browser open request returned successfully, but rendered browser navigation is **NOT VERIFIED**; actual user login remains **NOT RUN**. The IPv6 limitation, prior portproxy failure, and 0.62.0 source identity remain explicit. Independent actual QA record SHA256 `bdb842c93ad46e6869226f3d9573f06e71531a1e73f772ca3e7eea145ab0589e`; prepared plan SHA256 `80afa1134a20a258b0bb33713f65c11da1c95ac042408e570af6fcef438fba87`. This host port change does not change source version, image source `41bd54d41fb56ceaaa1ebd4874052dc602b6287c`, or the release.
+
+
+## U-ISSUE201-ROOT-GREENFIELD-20261113 — 개발 지원 실제 종합 Browser
+
+Root의 최신 candidate 재시험4 **1/1PASS36.5s**로 TREE-01~06 관련 signed Viewer/분류/Version/권한/수명/모바일 시나리오 전 assertion을 실행했다. 정확 logSHA·상세항목·초기실패·clock 한계는 [IssueEvidence/201](IssueEvidence/201.md) 및 FailureLedger 정본을 따른다. 실제 Root 개발 지원 모델은 현재 Codex 세션이며 요청된 구Developer/QA 모델로 기록하지 않는다. 독립 QA와 최종frozen source/gate/출고 수용은 별도 pending이다.
+
+## U-ISSUE201-DEVELOPER-20261113 — 통합 트리 구현 및 회귀 인계 (독립 QA 전)
+
+- 실제 역할: Manager `gpt-6-astra`가 `out/Issue201.md` ADR-T201-01~20 및 `out/TestPlan.md` TC를 승인·조정했고, Developer는 제공 가능한 `gpt-6-sol`로 구현·개발 시험을 수행했다. 요청 문서의 과거 `gpt-5.6-sol` 모델을 실행한 것으로 기록하지 않는다. Root는 release helper/Greenfield 통합시험을 별도 지원했고 최종 commit/push/출고를 소유한다. 독립 QA는 아직 시작하지 않았다.
+- 구현: Version별 단일 Outline·Zone Tree의 DTO/API·Folder/Membership·동시성 revision·DB scope/audit 제약, G7 additive baseline/upgrade, Viewer UI·키보드/검색/선택/표시와 비활성 타입·임시 이름/타입 투영, 권한 폐기/재시도 및 Scene Worker 고정 schema allowlist를 연결했다. Scope·DDL·원본/Scene 보존 및 주요 선택은 [Issue #201 설계](Issue201.md), [Database](Database.md), [Architecture](Architecture.md)를 따른다. 기존 기본 E2E의 선택자는 단일 Tree 구조로 갱신하면서 삭제/Undo/회전/Renderer/Layer/Memo/Zone OFF 의미 검증을 유지했다.
+- 순수 Tree 집중 시험 `npx vitest run tests/unit/version-tree.test.ts` PASS. `npm run typecheck`, `npm run lint`, `npm run build`는 ADR-T201-19 빌드와 최신 ADR-T201-20 빌드에서 각각 exit0. 최신 build 로그 SHA256 `1fb2e60294f9e74bc27eaaab08b35e2fef56aa2608a60a1792435fcd3b4e2353`. `git diff --check` PASS.
+- ADR-T201-19 이전 기본 E2E 17건은 15PASS/2FAIL이었다. 새 Tree의 Ctrl/Meta 추가 선택 누락으로 #53 삭제와 #55 회전에서 두 번째 행 선택 수가 1로 남았다. [FailureLedger](FailureLedger.md) TREE-ADDITIVE-SELECTION의 실제 원 로그/수리 근거를 따른다. 수리 후 동일 2건 **2/2PASS,12.7s**, 이어 9파일/17건 전체 이관 회귀 **17/17PASS,1.4m**; 로그 SHA256 각각 `e0ce656b440431206405e1bcda48cc36d8ab8e3a7024f9ce7f659ecc5bc12115`, `9e4752972e115dcf59975d5340e421526d915fa28eabc80ca17274c4e925f671`.
+- ADR-T201-20 전 전체 Vitest `npm test`는 **181/181파일,1140/1140테스트 PASS,306.64s,exit0**, 로그 SHA256 `a32859385a27c7e57f43d8496f0c99942120e41a4f9ae95d845410dc4d5c8d91`. 이 실행은 Zone readiness 수정 이전 source이므로 **최신 코드의 전체 PASS가 아니다**. 앞선 전체 실패/fixture 복구 및 mock export 실패는 FailureLedger에 보존했다.
+- ADR-T201-20 최신 빌드에서 기본 #53 keyboard Ctrl+Space/Meta/ARIA·삭제, #196 Zone QA/OFF, PR200 retry 등 4파일/7건 **7/7PASS,33.0s,exit0**, 로그 SHA256 `4acfa08edcff34169136352dff0e84293b775940c8b54834c07c813e8f18b4ed`. 실제 held-Zone-GET G7 재시험과 전체 최신 source Vitest·독립 QA는 별도 진행 중이며, 본 Developer 결과만으로 최종 수용/출고를 주장하지 않는다.
+- 상태: branch `feat/201-unified-tree`, 후보 버전 `0.63.0`, commit/push/tag/PR/Actions/배포 없음. Root가 최종 검증 후 처리한다. 남은 일: Root 실제 Greenfield TC-T201-17 및 기타 회귀, 독립 QA의 최신 source 전체 gate, Manager 인수 판단, Root frozen release.
+
+
+## U-ISSUE201-DEVELOPER-RESUME-20261115 — 재개 구현·개발 회귀 인계
+
+상속 가능한 Codex Developer agent가 Manager 선행 ADR21/22를 구현했다(요청5.6 모델 실행 아님). exact Owner 지시 parser의 좁은 허용, Version 삭제 Tree 기록409/부분schema503·transaction 보존을 추가하고 signed Browser의 stale-list fixture를 실제 단일 Tree 메뉴에 맞춰 수정했다. 이전 실패·원인·재시험은 append-only FailureLedger에 보존했다.
+
+release-local26/26, 실제 Tree/delete integration17/17, typecheck,최신 build(내부TypeScript),lint0errors/12기존warnings, Greenfield16/16(4.6m) PASS. 정확 명령·각 logSHA·실행 경계는 [IssueEvidence201 Developer 재개 인계](IssueEvidence/201.md) 정본이다. 마지막 header 닫기 button class-only 수정은 build/16PASS 뒤 적용되어 독립 QA의 final-source build/browser 확인이 필요하다. 전체 최신 Vitest와 기본17+새Tree E2E는 독립 QA 대상으로 남긴다.
+
+직전 Greenfield13PASS3FAIL은 각각 session GET ECONNRESET, obsolete tree double-toggle와 cleanup handler 경합, cleanup 실패의 다음 fixture 행 오염이었다. transport idle-pool 원인은 추정이고 bounded health18/18은 재현하지 못했으며 transport 설정/무조건 retry를 추가하지 않았다. 수리된 fixture의 새16PASS는 과거 FAIL을 삭제하지 않는다. test-only monotonic disposable clock으로 native host/실사용자 수용은 별도다. 현재 base800429e+미커밋0.63.0 후보, commit/push/출고/Issue종료/운영변경은 미수행이다.
+
+
+## U-ISSUE201-DEVELOPER-ADR23-20261115 — stale actor intent 실제 재현·수리
+
+Manager/Root/QA 정적 검토 후 Manager 선행ADR23/TC20을 따라 상속 Codex Developer가 실제 같은권한Admin A→B cookie-only 전환을 재현했다. 기존 build는 staleA 폼을 B로 POST201/folder1/audit1 저장하여 RED였고, same-session actor/CSRF binding과 current-scope 폐기·identity1회 재조회 후 **write0/DB불변/oldprotected3scope·form0**, 이어 B의 새 명시 저장/감사B로 GREEN이다. 기존 서버 인가 우회가 아니라 오래된 화면intent 결합 누락으로 분류한다.
+
+helper/projection19/19, 새build(내부TypeScript),lint0errors/12기존warnings, signed Tree3/3(1.6m) PASS. exact 명령·logSHA·원RED·범위는 [IssueEvidence201 ADR23 재작업 인계](IssueEvidence/201.md)와 FailureLedger 정본이다. 실제 최신 class-only 버튼 보완도 새build에 포함됐다. 기존 full181/1145와 QAphase1은 이 수정 전 소스 이력이며, 최종 독립QA/full 최신source 및 Root frozen release는 대기다. commit/push/게시/Issue종료/운영변경은 미수행이다.
+
+
+## U-ISSUE201-QA-PHASE1-20261115 — 구 후보 독립 검증, actor 결합 누락으로 수용 보류
+
+상속 가능한 Codex 독립 QA agent의 실제 실행이다(요청5.6-luna 실행 아님). base800429e 후보 fingerprint `f5d7c4e7d3abe61b53c73f2f757aa13126a86c2f0acfebe82f4caafcf1a2745a` 시작/종료 동일. Prisma/typecheck/build PASS, lint0errors/12기존warnings, Python39/39 및 full Vitest181파일/1145건 PASS였다. 최초 QA runner의 umask077이 기존 unsafe-lock mode 음성 fixture를0600으로 만들어1FAIL을 발생시켰고 전체 실행은SIGINT/exit130으로 중단했다. 자식022 교정 후 새 full 결과이며 원 FAIL/통제 probe는 FailureLedger에 보존했다.
+
+그러나 같은 시점에 Root/Manager/QA가 no-event same-role 계정 전환에서 Tree의 actor와 새CSRF 결합 누락을 확인하여 수용을 보류했다. 이 결과는 ADR23 보완 이전 소스 전용이며 Browser는 미실행이다. 정확 명령·로그 SHA·한계는 [IssueEvidence201 QA phase1](IssueEvidence/201.md)이 정본이다. 이후 수정 소스의 독립 full/browser 및 Root 출고 gate를 요구하며 commit/push/게시/운영 변경은 하지 않았다.
+
+
+## U-ISSUE201-QA-PHASE2-20261115 — full1151 PASS, 기본 Browser fixture FAIL로 수용 보류
+
+상속 Codex독립QA가 ADR23후 후보fingerprint `74117abfb2a0700afec9f2bac68eb5cb8a9cf22b05a86e32aa3943af25767c33`의 시작/실패종료동일을확인했다. Prisma/typecheck/lint0errors12기존warnings/Python39/actorunit12/fullVitest181파일1151테스트/새productionbuild PASS. 기본Browser는 **18PASS/1FAIL,exit1,215.62s**, signed17/최종headerPNG는 **NOT RUN**이다.
+
+새delayedVersion test의 always503Zonefixture가 Retry를Zone조회로전환해 둘째TreeGET을기다리며30초timeout했다. trace는 TreeGET1개와 Zone5032개, 새Version이동미도달을확인하며 cross-Version제품오류/transport실패로확대하지않는다. 원실패/trace/명령/logSHA와같은source근거는 [IssueEvidence201 QA phase2](IssueEvidence/201.md)및FailureLedger를따른다. Manager fixture-only재작업후 independent default19/signed17/PNG를재검증한다. 기존full1151/build는원fingerprint결과이며 새snapshot실행주장금지; Root최종cleanSHA출고gate·게시·종료·운영은별도미완료다.
+
+
+## U-ISSUE201-DEV-VERSION-FIXTURE-20261115 — 테스트 준비 조건 수리, 집중 2/2 PASS
+
+Manager 선행 fixture-only 지시에 따라 정확한 actor/Version/SHA의 ready Zone DTO와 실제 Zone panel 준비 확인을 적용했다. Retry가 두 번째 Tree GET hold에 도달하는지 bounded assertion으로 검증하고 새 Version 이동 뒤 늦은 old 응답이 새 폴더를 대체하지 않음을 확인했다. finally gate release/route 종료 대기를 추가했으며 제품 코드는 변경하지 않았다.
+
+기존 production build `k2QB82N0aRJ_WKenAr_a2`에서 Tree Browser 두 시험 **2/2PASS,29.8s**; typecheck exit0; lint exit0/0errors/12기존warnings. 로그·테스트 SHA와 범위는 [IssueEvidence201 Developer fixture 보완](IssueEvidence/201.md) 정본을 따른다. 이전 QA phase2 18PASS/1FAIL을 보존하며 full1151/build를 새 source에서 재실행했다고 주장하지 않는다. 독립 QA default19/signed17/화면 및 Root release는 후속 미완료다. 실제 주체는 상속 Codex Developer agent(요청5.6-sol 실행 아님), 후보0.63.0/base800429e이며 이번 단계의 commit/push/게시/운영 변경은 없다.
+
+
+## U-ISSUE201-QA-PHASE3-20261115 — 기본19 PASS, signed 부분 실패/중단으로 수용 보류
+
+독립 QA는 fixture-only 새 source fingerprint `581fadc3dd2ea3acbdb90252a9d1e4019fddb827eefbbfd5cfdddd8691d7f2af`의 시작/실패종료 동일과 phase2 non-test src/production BUILD_ID 불변을 확인했다. 기본19/19 PASS(177.26s). signed17은 로그15PASS/1FAIL 후 outer143 종료로 마지막 결과/최종 summary가 없으며 **INCOMPLETE**다. 실제 typed-outlines direct GET ECONNRESET과 원인미확정 outer143을 별도 기록한다.
+
+signed Tree 종합·권한회수·같은권한 no-event actor 세 건은 PASS했고 writes0/DB불변/old protected UI 폐기 및 새B감사를 확인했다. fresh desktop1440×1000/320×740 PNG를 직접 확인해 Tree 배치와 닫기 한 줄 표시를 검토했다. 정확 명령·SHA·trace·한계는 [IssueEvidence201 QA phase3](IssueEvidence/201.md) 및 FailureLedger 정본이다. 실제 사용자/native hostclock/실도면 또는 전체 signed 성공으로 확대하지 않는다. phase2 full1151/build 근거는 원 fingerprint에만 귀속한다. 후속 transport 범위 판단·완료된 signed 전체 QA 및 Root 최종 출고는 미완료이며 수용 보류다.
+
+
+## U-ISSUE201-DEV-TRANSPORT-20261115 — ADR24 제어 및 signed17 PASS
+
+상속 Codex Developer가 승인된 테스트 전용 closeApi/closeRouteFetch를 signed9파일의 직접 API200곳·route.fetch7곳에 적용했다. 모든 Node 요청은 Connection:close/maxRetries0으로 원cookie/CSRF/key/body를 유지하며 Chromium·제품 코드는 변경하지 않았다. shared ready-scene/owned-sessions에는 wrapped API를 전달했다.
+
+제어 시험은30 Node요청의 distinct socket/close header,3 context종류·7method·6초idle·route.fetch,4 reset POST의각1회시도/client실패와Browser미변경을 확인했다. typecheck PASS, lint0errors/12기존warnings, owned-sessions3/3PASS. 기존 buildID `k2QB82N0aRJ_WKenAr_a2`의 fresh transient user unit에서 signed **17/17PASS,6.0m**, 최종summary 및 ExecMainStatus0/Resultsuccess/exited를 확인했다. 실제Next partial trace553 Node요청도모두close였고 raw45개는private 보존했다. 원ECONNRESET의근본원인/143원인수리를주장하지않는다.
+
+초기 probe의API.fetch기본POST오해와 첫unit의임시dir명guard거절은별도실패로보존하고 실제교정/재시험근거를 [IssueEvidence201](IssueEvidence/201.md)와 [FailureLedger](FailureLedger.md)에append했다. 제품source변경없음(ignored tsc cache만변경),11test파일실행중동일,재빌드/fullVitest없음. 이전default19/full1151의원래scope를유지하며 독립QA finalcontrol/signed17 및Root frozenrelease·게시·배포·종료는후속이다.
+
+
+## U-ISSUE201-QA-PHASE4-20261115 — transport 검증 통과, 키보드 가시성 실패로 수용 보류
+
+독립 QA는 source `c811312679ecaac41b4f05a197db94748f15a6aedcd5cb611ba1572126f52969`의 시작/실패종료 및 기존non-test source/build 불변을 확인했다. 실제 transport control, owned-session3, typecheck/lint PASS. 별도 transient user unit의 signed17은 **16PASS/1FAIL,346.77s,exit1**, loaded/failed/ExecMainStatus1/Resultexit-code 증거를 정리 전에 보존했다.
+
+마지막200혼합행에서 End 후 마지막 행 focus는 맞지만 viewport ratio0으로 실패했다. trace에서 scrollTop7743유지 및 늦게 나타난 footer로 목록이 줄어든 화면을 확인했으며, deterministic RED 후 제품의 Tree내부scroll 보완이 필요하다. 이전 reset/143과 별개이며 그 원인미확정도 유지한다. 최신Tree desktop/mobile 닫기·배치 시각검증과 앞선16PASS는 이 실패를 대체하지 않는다. 상세명령·logSHA·trace·판정한계는 [IssueEvidence201 QA phase4](IssueEvidence/201.md) 및FailureLedger 정본이다. 독립 수용/최종출고는 보류다.
+
+
+## U-ISSUE201-DEV-RESIZE-20261115 — 실제 held-response RED→GREEN, 관련10건 PASS
+
+상속CodexDeveloper가Manager ADR25/TC22를수행했다. 실제OutlineGET200을hold한같은actor refresh로footer부재→End→footer추가를고정했다. 기존build는height299→178/scroll7743유지로동일focused lastrow가가려져6PASS1FAIL이었다. 자기Tree scrollTop만보정하는ResizeObserver수리후새build `Tucy1rQlYaJ7TONJwJAfk`에서는scroll7743→7864로동일row/focus/완전가시성을유지했다. window/10ancestor scroll·Canvasidentity불변,Tree밖buttonfocus중resize의no-steal/no-reveal대조,expandedbranchHome,320pxEnd/Home을검증했다.
+
+setup의존4전체파일(first-install/outline-types/typed-outlines/issue201-unified-tree) **10/10PASS,3.7m**, supervisedunitexited/ExecMainStatus0/Resultsuccess. typecheck/buildPASS,lint0errors12기존warnings. Developer가현재desktop/mobilePNG도직접검토했다. 실제명령/hash/실패보존과정확scope는 [IssueEvidence201](IssueEvidence/201.md) 및 [FailureLedger](FailureLedger.md)를따른다. 이전full1151은원source근거로유지하며독립QA최신default19/signed17/화면과Root frozenrelease는후속미완료다. 제품변경은version-tree-panel.tsx,시험변경은기존200행case뿐이며commit/push/게시/운영변경없음.
+
+
+## U-ISSUE201-QA-PHASE5-20261115 — ADR25 수용 근거 확보, signed fixture 실패로 전체 보류
+
+독립 QA의 frozen source `a84a0092bd8092b8bc7918abd92297c156ae22c7be66ae77f1cafd6e9170f63d`와 새 buildTucy1rQlYaJ7TONJwJAfk에서 typecheck/lint0errors12baseline/default19 PASS, signed15PASS2FAIL이었다. 비정확한 계정label이 headerlink와textbox를동시에찾은 R2로그인fixture실패 및 미생성r2reader에따른후행TypeError를구분했다. 원trace·최종supervisorstatus·source/build불변을보존했다.
+
+ADR25 deterministicheldresponse/200행은독립PASS42.4s:높이299→178에서scroll7743→7864로보정,동일focus/key/fullvisibility·window/10ancestor/Canvas불변,Tree밖focus대조/Home/320px회귀도통과했다. fresh4PNG를직접검토했다. 상세결과/명령/hash/한계는 [IssueEvidence201 QA phase5](IssueEvidence/201.md) 및FailureLedger정본이다. ADR25범위는검증됐지만전체signed수용은fixture수정후새결과대기다. Root최종clean-source출고검증은별도이며 **운영배포는이번승인범위밖으로남은과제가아니다.**
+
+
+## U-ISSUE201-DEV-SELECTOR-20261115 — TC23 fixture 한 줄 수리, 독립 QA 대기
+
+QA phase5의 실제 strict locator 실패를 근거로 R2 로그인 입력만 exact textbox로 지정했다. 원 header link/input 충돌과 후속 r2reader seed 의존 실패는 보존한다. 기존 assertion/흐름은 유지했고 제품 코드 변경은 없다. typecheck exit0/diffcheck PASS, non-test465파일 및 production BUILD_ID `Tucy1rQlYaJ7TONJwJAfk`/파일 SHA 전후 동일. 수정 test SHA `6528e8339ed943e15f36add59104f3723595e576ca8694483833f7266c9b9f13`.
+
+추가 browser/build/full suite는 실행하지 않았다. [IssueEvidence201](IssueEvidence/201.md)에 원 trace·source 결합·검사 결과를 기록했으며 독립 QA의 같은 production build signed17 재검증을 기다린다. 이전 default19/TC22 PASS를 새 전체 수용으로 대체하지 않는다. commit/push/게시/운영 변경 없음.
+
+
+## U-ISSUE201-QA-PHASE6-20261115 — 독립 QA 완료, 구현 로컬 수용 권고
+
+상속 Codex 독립 QA가 source `481cfa52b9a4cc709b9aeaecc33849cdbcf5dffb0a1c03f49f9ce424f0337f1a` 시작/종료동일 및 phase5productionbuildTucy1rQlYaJ7TONJwJAfk불변을확인했다. 새 signed17/17PASS,exit0,274.39s; unitloaded/exited/ExecMainStatus0/Resultsuccess와최종summary를보존했다. R2계정선택자/Readerseed연쇄가해소됐고 ADR25 deterministic200행·nofocussteal/Home/320px,Tree권한회수/actor격리도모두통과했다. fresh4PNG를직접검토했다.
+
+**검증범위내구현로컬수용을권고한다.** phase5default19/typecheck/lint,phase4transportcontrol/owned-session3은각원래범위로유지하며 phase2full1151을최신source전체실행으로오인하지않는다. 원실패/원인UNKNOWN/합성clock한계와정확명령·SHA·scope는 [IssueEvidence201 QA phase6](IssueEvidence/201.md)정본이다. Root최종cleanSHA출고gate/build/게시·Issue처리는별도며 QA는commit/push/게시/종료를수행하지않았다. **운영배포는이번승인범위밖이며남은과제가아니다.** 정확QAunit만정리하고3399free확인후모든쓰기/실행을종료했다.
+
+
+## U-ISSUE201-DEV-MOBILE-CLIP-20261115 — ADR26/TC24
+
+기존 signed17 PASS의 Tree clientbox 밖 own-body clipping 누락을 별도 실제 probe4.328125px로 확인했다. fixed shell 밖 BODY를 포함한 최초 aggregate는 무효로 보존하고 교정 geometry/hit만 사용했다. 강화200행 fixture는 기존 build에서6PASS/1FAIL(7건,2.8m),13.328125px clip/outline4px/bottom hitfalse로 RED였다. exact own Tree/body scrollTop 및 한 ResizeObserver의 두 영역 관측을 통한 최소 수리 뒤 새 build `s5h7RXFjbnxzu00Xvl0p_`의 의존4파일10건이10/10 PASS(3.5m), supervised terminal exit0/Resultsuccess로 완료됐다. End800/740에서 row+outline+hits, Tree126 고정/body298→262 보정, 외부7/window/Canvas불변, 외부focus no-steal/no-reveal와 Home을 검증하고 End PNG를 직접 확인했다.
+
+Typecheck 관측exit0; lint log0errors/12baseline warnings 및 build 완료route/newartifact는 보존했으나 두 terminal handle 소멸로 **lint/build exit NOT_OBSERVED**다. 둘을 PASS로 기록하지 않는다. Root frozen 정식 static/build/release24와 독립 bounded QA는 별도다. 전체full/default19/signed17 재실행으로 확대하지 않는다. 상속 Codex Developer 수행, 원 실패·해시·명령·한계는 [IssueEvidence/201](IssueEvidence/201.md) 정본. 운영 배포는 승인 범위 밖이며 수행하지 않았다.
+
+
+## U-ISSUE201-QA-MOBILE-CLIP-20261115 — ADR26/TC24 독립 수리 검증
+
+상속 Codex 독립 QA가 새 build `s5h7RXFjbnxzu00Xvl0p_`와 source 시작/종료 `44270693e78b80a41a67bd5792f181b255dd00042a0630c2b47cf59f15c45efa` 불변에서 bounded browser1회/10predicate PASS, CLI exit0/10.40초를 확인했다. 이는 Developer 관련10tests와 별도 집계이며 signed17/default19/full1151 재실행이 아니다. 기존100server+브라우저100draft의 같은 실제 baseline에서 End320×800은 Tree/body9528/5, row657.140625–705.140625 + outline4px가 clipbottom709.140625 안에 완전히 표시되고 center/bottom hit가 true였다. 같은 focus의800→740에서는 Treeheight126 고정/body307→271/scroll5→41로 row/outline/hit가 유지됐다.
+
+Home/End/arrow6개, 검색 focus+mouse wheel body0 후 resize의 no-steal/no-old-row-reveal, 외부 ancestor/window scroll 및 Canvas identity 불변을 확인했다. 두 End PNG를 직접 검토했다. 업무 mutation request0 및15개 업무 table fingerprint 전후 동일, build/non-test source 동일, synthetic logout200/정확 소유 browser·unit 정리/3399free를 확인했다. 상세 source/해시/실행·기하·한계는 [IssueEvidence201 QA mobile clip](IssueEvidence/201.md) 정본이다.
+
+ADR26/TC24 로컬 수리 수용을 권고하며 원 FAIL을 유지한다. Developer lint/build exit `NOT_OBSERVED`를 PASS로 승격하지 않는다. Root frozen 정식24gate/build/추가10건·게시/이슈 처리는 별도다. 운영 배포는 승인 범위 밖이며 수행하지 않았다. 문서 기록/diff check 후 QA 모든 쓰기/실행 종료.
+
+
+## U-ISSUE201-MANAGER-LOCAL-ACCEPT-20261115
+
+Manager는 구현 후보0.63.0을 **소스 동결 및 새 정식 출고 검증에 인계하는 범위로 수용**한다. ADR1–26의 구현·실패 원장·Developer/독립 QA 결과를 검토했고, 최신 Developer 강화10건의 관측 terminal exit0와 독립 QA의 별도 browser probe1회/10개 조건 PASS를 확인했다. Manager도 실제 End740 PNG, 결과/종료 기록 및 source·15개 업무 테이블의 전후 파일 동일성을 직접 확인했다. QA 수용 artifact SHA256 `d6e1bdf615c34e85b3389afb7d978c067dc677b877ee9b11e12c628e77d77e30`; 상세 명령·수치·한계는 [IssueEvidence/201](IssueEvidence/201.md) 정본이다. 모든 Developer/QA 실행과 쓰기를 종료했고 소유 browser/server를 정리했다.
+
+기존 full1151/default19/signed17은 각각 원 실행 범위이며 최신 source 전체 재실행으로 확대하지 않는다. 최신 로컬 lint/build terminal은 **NOT_OBSERVED**이고 runtime 성공으로 PASS 승격하지 않는다. Root는 새 commit의 정확한 source로 transport probe·3-role archive build·release24·강화 Greenfield10을 관측 종료 코드와 함께 검증한 뒤 Main push를 진행하며, 게시 전 실제 clone 보존 및 정식 GHCR 게시·Issue 종료·요청된 임시 자원 정리 절차를 별도로 완료한다. 이 로컬 인계는 게시·Issue 종료 완료가 아니며, 운영 배포는 승인 범위 밖이다.

@@ -563,3 +563,51 @@ model SceneBuildJob {
   @@index([versionId,status],map:"ix_scene_build_version")
   @@map("SceneBuildJob")
 }
+
+// #201 Version-owned organization. SQL migration adds composite scope FKs and guards.
+model TreeFolder {
+ id String @id
+ versionId String @map("version_id")
+ parentFolderId String? @map("parent_folder_id")
+ name String
+ nameKey String @map("name_key")
+ sortOrder Int @map("sort_order")
+ revision Int @default(1)
+ createdById String @map("created_by_id")
+ updatedById String @map("updated_by_id")
+ deletedById String? @map("deleted_by_id")
+ createdAt String @map("created_at")
+ updatedAt String @map("updated_at")
+ deletedAt String? @map("deleted_at")
+ @@unique([versionId,id],map:"uq_tree_folder_version_id")
+ @@index([versionId,parentFolderId,sortOrder],map:"ix_tree_folder_order")
+}
+model TreeMembership {
+ id String @id
+ versionId String @map("version_id")
+ kind String
+ objectId String @map("object_id")
+ folderId String? @map("folder_id")
+ sortOrder Int @map("sort_order")
+ revision Int @default(1)
+ createdById String @map("created_by_id")
+ updatedById String @map("updated_by_id")
+ createdAt String @map("created_at")
+ updatedAt String @map("updated_at")
+ @@unique([versionId,kind,objectId],map:"uq_tree_membership_object")
+ @@index([versionId,folderId,sortOrder],map:"ix_tree_membership_folder")
+}
+model TreeAudit {
+ id String @id
+ actorUserId String @map("actor_user_id")
+ siteId String @map("site_id")
+ versionId String @map("version_id")
+ targetKind String @map("target_kind")
+ targetId String @map("target_id")
+ action String
+ beforeRevision Int? @map("before_revision")
+ afterRevision Int? @map("after_revision")
+ requestId String @map("request_id")
+ timestampUtc String @map("timestamp_utc")
+ @@index([versionId,timestampUtc],map:"ix_tree_audit_version")
+}

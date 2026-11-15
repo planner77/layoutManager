@@ -1,3 +1,11 @@
+## Unreleased — 0.63.0 Issue #201 (2026-11-13, implementation candidate)
+
+- Added: DXF Version 소유 폴더와 외곽선·최상위 구역의 분류를 단일 Viewer 트리에서 탐색·검색·정렬·표시/숨김·초점 이동한다. 하위 구역은 기존 부모 관계 아래에 표시하고 임시 외곽선은 미분류 세션 객체로 유지한다.
+- Database/API: TreeFolder·TreeMembership·TreeAudit sidecar, parent/scope/CAS/삭제 제약 및 append-only 감사, 새 0.62→0.63 additive migration과 fresh baseline을 등록했다. 기존 0.61/0.62의 DDL·history는 수정하지 않는다.
+- Security/UI: 현재 actor·Version·SHA의 권한 거절을 Tree/Outline/Zone 보호 뷰에 함께 반영하고 명시 재시도 전 자동 재조회는 차단한다. 패널과 텍스트 검색의 pointer 우선순위, 닫기/키보드 동작을 보완했다. Worker 승인 스키마는 검토된 고정 값으로 제한한다.
+- Verification: 실제 통과·실패와 출고 상태는 [TestReport](TestReport.md)와 [IssueEvidence/201](IssueEvidence/201.md)을 따른다. 독립 QA·최종 출고 및 운영 배포는 이 후보의 변경 기록만으로 완료되지 않는다.
+
+
 ## 0.62.0 — GHCR 3-role publication (2026-11-15)
 
 - 이미지 source `41bd54d41fb56ceaaa1ebd4874052dc602b6287c`, plan SHA256 `da93023ac1297a600a3702a16c66ad9c4548786b6aaab16f6c7b04751fa7318d`의 App/Migrator/CPU Worker final 태그를 실제 게시하고 raw digest readback을 확인했다. 기존0.61.0 세 역할과 `latest`는 불변이다. candidate 수용과 최종 영수증·journal·runtime cache completion marker의 실제 근거는 [Issue282 증거](IssueEvidence/282.md#u282-publish-20261115--actual-0620-ghcr-publication)에 둔다.
