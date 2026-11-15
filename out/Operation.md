@@ -1,3 +1,9 @@
+## 현재 운영 상태 — 0.62.0, Windows localhost:8300 (2026-11-15)
+
+현재 접속 주소는 `http://localhost:8300/g7-runtime`이며 active private Compose 환경 파일은 `data/release-proof/0.62.0-20261115/production-port8300.env`다. 과거 deployment record의 hash-bound 입력인 `production.env`는 덮어쓰지 않고 보존한다. 0.62.0 App만 같은 image로 재생성했고 기존 `cad-layout-viewer-g7` volume을 사용한다. Worker는 재생성하지 않았다.
+
+Windows port3000은 관측된 IPv4/IPv6 excluded range 2979–3078에 있고 loopback bind가 error10013으로 실패했다. 예약 owner/cause는 확인되지 않았다. 이전 static portproxy 시도는 실패·rollback으로 보존한다. Windows IPv4 localhost/127.0.0.1은 port8300에서 통과했고 explicit `::1`은 아직 연결되지 않는다. 실제 user login 및 browser navigation은 미검증이다. 새 QA/운영 증거와 한계는 [TestReport](TestReport.md#u-windows-port8300-20261115--actual-app-only-host-port-change)에 기록했다. Default/소스 버전은 바뀌지 않았고 excluded range, service 또는 firewall은 변경하지 않았다.
+
 ## 현재 출고 상태 — 0.61.1 COMPLETE (2026-11-11)
 
 이미지 source `a53921a180d77861b232fb98aa6989b678aca8ac`의 App/Migrator/CPU Worker를 실제 Owner GO에 따라 candidate→final로 게시하고 raw OCI graph/readback·digest pull/격리 실행·기존0.61.0 three-role/latest 불변을 확인했다. [정확 refs·receipt·Owner/시험 증거](IssueEvidence/282.md)를 사용한다. final refs는 `ghcr.io/planner77/layoutmanager:0.61.1`, `:0.61.1-migrate`, `:0.61.1-cpu-worker`다.
