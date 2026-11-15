@@ -1,4 +1,9 @@
-## Unreleased — 0.62.0 #215/#206 implementation, local QA accepted (2026-11-12)
+## 0.62.0 — GHCR 3-role publication (2026-11-15)
+
+- 이미지 source `41bd54d41fb56ceaaa1ebd4874052dc602b6287c`, plan SHA256 `da93023ac1297a600a3702a16c66ad9c4548786b6aaab16f6c7b04751fa7318d`의 App/Migrator/CPU Worker final 태그를 실제 게시하고 raw digest readback을 확인했다. 기존0.61.0 세 역할과 `latest`는 불변이다. candidate 수용과 최종 영수증·journal·runtime cache completion marker의 실제 근거는 [Issue282 증거](IssueEvidence/282.md#u282-publish-20261115--actual-0620-ghcr-publication)에 둔다.
+- 다섯 원격 GET 완전 바이트 증거의 재사용을 표시하고 final 전체9역할·HEAD30회·새 작은 blob243개를 별도 관측했다. 과거 403/EOF HALT의 원인은 미확정이며 성공으로 덮지 않는다. 운영 배포 attempt1은 Root가 07:52:32 UTC에 시작했으나 `COMPOSE_WORKER_SECURITY` 사전 조건 HALT로 종료됐다. 백업·중지·제거·업그레이드0이었다. 좁은 Compose 메모리/허가 볼륨 표현 보완과 독립 QA·실제 읽기 전용 사전 검사 후 새 attempt2는 Root/Manager의 완료 마커·운영 상태·업무/CAD 보존 검증을 통과했다. 독립 실제 배포 QA가 완료 마커·journal·업무 보존 근거를 수용했다(비공개 QA SHA256 `e5dcd5a8912f6d65fecde05b8f53e77f1ba9baa1dbb5806ef04bd1dee3280a4b`). 이전 attempt1 HALT는 보존한다. Git tag·Issue 종료는 대기한다. 문서 commit은 이미지 source와 별개다.
+
+## 0.62.0 구현·게시 전 검증 이력 — #215/#206 (2026-11-12)
 
 - 2026-11-15 출고 도구 보완: 사용자의 명시적인 한국어 GHCR 게시·Docker 배포 지시 원문을 승인 기록에 그대로 보존해 인식한다. 부정·질문·무관한 부분 문자열은 거부하며 정확 source/plan/세 digest/ref 검증을 유지한다. 앱·Schema와 미게시 버전0.62.0은 유지한다. 새 소스의 전체 검증·이미지·실제 게시/배포 결과는 후속 실제 증거로 판정한다.
 - 전역·Viewer 메뉴에 공통 서버 재조회 기반 로그인 상태를 표시하고 계정 변경·복귀·경로 진입 때 갱신한다. 비활성 탭 heartbeat는 추가하지 않았다.

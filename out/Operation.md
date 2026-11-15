@@ -20,6 +20,12 @@ DB와 WAL/SHM·CAD·Scene·G7 및 private 설정을 한 복구점에 결합하�
 
 복원은 `restore --plan <file> --out <backup-directory> --key <key-file> --destination <fresh-owned-volume> --execute`, 원본 동등성은 같은 입력의 `verify`, 앱/Worker 실행은 이후 `probe ... --execute`다. probe는 동등성 검사 뒤 격리 복제본만 변경한다. `settings ... --destination-dir <fresh-private-directory> --execute`는 승인 설정·Compose·container runtime을 private0600 파일로 추출한다. 출력/키·개별 데이터 지문은 Git에 넣지 않는다. 실제 로그인은 승인 credential 없으면 NOT RUN, READY 자료가 없으면 NOT_EXERCISED다. host writer 부재는 Docker inventory만으로 증명하지 않으며 외부 보관도 별도 미완료다.
 
+## #282 0.62.0 게시 이후 운영 상태 (2026-11-15)
+
+이미지 source `41bd54d41fb56ceaaa1ebd4874052dc602b6287c`의 GHCR final 세 역할을 게시하고 기존 `cad-layout-viewer-g7` volume에0.62.0을 배포했다. Root/Manager가 권위 있는 `deploy.complete.json`·terminal VERIFIED journal, 운영 App1/Worker1·health200·G7 ACTIVE와 업무/CAD 보존을 확인했다. `deploy.receipt.unsealed.json`의 `SEAL_PENDING` 단독은 완료 근거가 아니다. 독립 실제 배포 QA가 완료 마커·journal·업무 보존 근거를 수용했다(비공개 QA SHA256 `e5dcd5a8912f6d65fecde05b8f53e77f1ba9baa1dbb5806ef04bd1dee3280a4b`).
+
+배포는 승인된 source/plan·최종 출고 QA·실제 복구점·Worker/volume 단일 소유·사전 게이트를 확인한 별도 작업공간에서 수행한다. 자동 재시도·rollback은 없으며 실패 attempt는 보존한다. attempt1 사전 HALT와 후속 read-only 표현 검사, attempt2 완료의 정확한 범위·해시·잔여 한계는 [Issue282 증거](IssueEvidence/282.md#u282-publish-20261115--actual-0620-ghcr-publication)를 따른다. Secret·CAD/DB 원본은 Git에 넣지 않는다.
+
 ## #282 로컬 수동 3-role 출고
 
 요구·AC는 [Issue282](Issue282.md), 실제 상태는 [IssueEvidence/282](IssueEvidence/282.md)를 따른다. `npm --prefix src run release:local -- plan`이 읽기 전용 dry-run이다. dirty/unpublished 개발본은 미충족 조건과 예상 refs를 보여주며 출고 준비 성공으로 간주하지 않는다. 검증 대상은 로컬 branch 이름이 아니라 정확 source SHA/tree/version 및 fresh remote Main과의 일치다.
