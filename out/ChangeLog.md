@@ -3,6 +3,7 @@
 - Added: DXF Version 소유 폴더와 외곽선·최상위 구역의 분류를 단일 Viewer 트리에서 탐색·검색·정렬·표시/숨김·초점 이동한다. 하위 구역은 기존 부모 관계 아래에 표시하고 임시 외곽선은 미분류 세션 객체로 유지한다.
 - Database/API: TreeFolder·TreeMembership·TreeAudit sidecar, parent/scope/CAS/삭제 제약 및 append-only 감사, 새 0.62→0.63 additive migration과 fresh baseline을 등록했다. 기존 0.61/0.62의 DDL·history는 수정하지 않는다.
 - Security/UI: 현재 actor·Version·SHA의 권한 거절을 Tree/Outline/Zone 보호 뷰에 함께 반영하고 명시 재시도 전 자동 재조회는 차단한다. 패널과 텍스트 검색의 pointer 우선순위, 닫기/키보드 동작을 보완했다. Worker 승인 스키마는 검토된 고정 값으로 제한한다.
+- Dependency security (2026-11-15): Next/eslint-config-next16.4.6 및 transitive sharp0.35.5를 고정했다. React/Prisma/CAD와 앱0.63.0은 유지하며 audit Next/sharp 항목 제거와 잔여18경고를 구분한다. 새 의존성 static/full1151/build 및 선택Browser5+10 검증, 무해한 image 거절·다운로드 framing/SHA 회귀를 추가했다. 독립 QA/새 SHA 출고는 후속이며 원 실패·역할 경계는 실행 증거 정본을 따른다.
 - Verification: 실제 통과·실패와 출고 상태는 [TestReport](TestReport.md)와 [IssueEvidence/201](IssueEvidence/201.md)을 따른다. 독립 QA·최종 출고 및 운영 배포는 이 후보의 변경 기록만으로 완료되지 않는다.
 
 

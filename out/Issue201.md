@@ -240,3 +240,27 @@ ADR26 추가 검증 경계: mobile End focus를 유지한 채 높이를800→740
 ### ADR26 Developer 구현·집중 검증 결과 (2026-11-15)
 
 강화 TC24의 기존build RED7건6PASS1FAIL 후 정확 own Tree/body scrollTop·한 ResizeObserver의 두 영역 관측 보완을 적용했다. 새build의 의존4전체파일 GREEN10/10 PASS3.5m/실제 terminal exit0. 320×800 End 및 focus 유지800→740에서 행/outline/hit 전체가시성, 외부ancestor/window/Canvas불변과 검색focus no-reveal 대조를 확인했다. typecheck exit0; lint log0errors12baseline 및 build route완료/newartifact는 있으나 두 terminal은 handle 소멸로 NOT_OBSERVED이며 PASS로 주장하지 않는다. 독립 bounded QA와 Root 정식 frozen qualification이 후속이다. 실제RED/GREEN·해시·PNG·한계는 [IssueEvidence/201](IssueEvidence/201.md) 정본이며 운영 배포는 승인 범위 밖이다.
+
+
+## ADR-T201-27 — 출고 전 Next.js 보안 의존성 보완 (2026-11-15)
+
+Root의 새 frozen source39f8c39c2c334f4fc1ae49de01ebac9bd4cd2511 build에서 npm audit21건(11moderate/9high/1critical), 별도 현재 audit에서20건(10moderate/9high/1critical)을 관측했다. 서로 다른 feed snapshot으로 보존한다. 0.62→0.63의 package/lock 변경은 앱 버전뿐으로 해당 pins는 기존 것이지만, 이를 안전 근거로 쓰지 않는다. 원 source는 로컬 commit이며 미push·미게시다. 원 증거를 보존하고 amend/history rewrite 없이 새 보완 commit으로 다시 정식 검증한다.
+
+Manager는 공식 [Next OG advisory](https://github.com/advisories/GHSA-vcvr-r3jv-pc5j), [Image Optimization advisory](https://github.com/advisories/GHSA-2464-fhr4-w9xw), [use cache advisory](https://github.com/advisories/GHSA-673q-mjm6-r5xr)와 고정 graph를 조사했다. App standalone에 Next16.3.4/sharp0.35.4가 있고 glibc runtime이다. 앱에는 next/og/ImageResponse·use cache·Server Action 사용이 없고 action manifest node/edge가 비어 있으며, remotePatterns[] 및 dangerouslyAllowSVG=false다. 그러나 Image Optimization endpoint 자체는 기본 활성 상태여서 import 부재만으로 취약 코드가 실행 불가라고 단정하지 않는다. 현재 exploit을 실증한 것이 아니라 구체적인 runtime advisory에 대한 예방 보완이다.
+
+Root가 승인한 최소 변경은 `next`와 `eslint-config-next`를 **16.4.6**으로 함께 정확 pin하고 같은 lock closure의 sharp를 **0.35.5 이상**으로 확인하는 것이다. npm registry metadata의 Next Node>=20.9.0/React19/ESLint>=9 peer는 기존 Node22.14/React19.2.8/ESLint9.39.4와 호환 범위다. 실제 기능 호환은 새 시험으로 검증한다. Next16.4.6은 route response compression 변경도 포함하므로 source/Scene/HTTP 회귀를 생략하지 않는다. React·Prisma·CAD 라이브러리·DB/schema/migration·보안 기능·런타임 배포 설정을 추가 변경하지 않고, `npm audit --force`나 무관한 graph 일괄 교체는 금지한다. 앱0.63.0은 아직 미게시이므로 유지한다.
+
+이 결정은 npm audit 전체0건을 새 출고 조건으로 만드는 것이 아니다. 기존 ADR-051-R1의 별도 취약점 공격 실증 제외 정책과 구체 runtime 경고 보완을 구별한다. Prisma/config/deepmerge/mysql2는 SQLite/trusted CLI 경로이며 App standalone에는 없고, Worker full dependency copy에는 개발 패키지가 포함된다. Zod/Vite/brace-expansion은 개발 graph, source-map-js는 Next/PostCSS closure에 있으나 앱의 외부 source-map 입력 경로를 찾지 못했다. 이는 코드/closure 조사에 따른 노출 분석이며 모든 공격 가능성 배제 또는 경고 해소 PASS가 아니다. 남는 advisory는 정확 package/role/실행 경로와 함께 기록한다.
+
+**TC-T201-25 / AC:** (1) package/lock pins·engine/peer·변경된 transitive closure를 검토하고 기존 React/Prisma/CAD pins 불변을 확인한다. 새 clean install의 audit JSON에서 Next critical 및 sharp advisory가 제거되었는지, 잔여 경고를 별도로 기록한다. (2) 관측 terminal이 있는 supervised 실행으로 Prisma generate/typecheck/lint/full unit/build 및 기본19/signed17 전체를 새 source에서 검증한다. 정식 Root release24/강화Greenfield10/transport probe·3-role archive build·clone 보존은 새 commit SHA에서 재실행한다. (3) 새 App standalone 및 최종 이미지의 실제 Next/sharp 버전을 확인하고 health/CAD source·Scene·login/권한/Tree·mobile·다운로드 바이트/응답 계약을 기존 회귀로 검증한다. 무해한 SVG/허용되지 않은 원격 image 요청 거절도 확인하되 exploit payload는 만들지 않는다. (4) 이전 source의 성공을 새 dependencies에 승계하지 않고 실패·미실행·잔여경고를 보존한다. Developer 보고→Manager 검토→독립 QA→Root 새 commit 순서이며 운영0.62/DB/볼륨 배포는 변경하지 않는다.
+
+
+### ADR27 TC25 보완 — 다운로드의 실제 HTTP framing 계약
+
+새 framework-boundary 집중 실행은1PASS/1FAIL/3NOTRUN, signed10NOTRUN으로 중단됐다. 새 시험이 identity 응답에 Content-Length 존재를 필수로 가정했지만 실제 값이 없었다. 원본11818bytes의 SHA와 다운로드·보안 헤더 검증은 통과했고, 기존 route는 여전히 Content-Length를 설정한다. 이 실패를 원본 손상이나 인증 실패로 해석하지 않는다.
+
+Manager/Developer가 [Next16.4.6 공식 tagged send-response](https://raw.githubusercontent.com/vercel/next.js/v16.4.6/packages/next/src/server/send-response.ts)와 설치 코드를 대조했다. 이 버전은 decoded body의 잘못된 전송 framing을 막기 위해 Response의 content-length/content-encoding/transfer-encoding을 하위 Node 응답에 그대로 복사하지 않는다. 같은 실제 새 build·실패한 disposable DB에 대한 별도 raw Node HTTP 관측에서 identity 및 gzip,deflate,br 요청 모두 HTTP1.1/200, Transfer-Encoding:chunked, Content-Length/Content-Encoding 부재, complete=true와 정확11818bytes/SHA 일치를 확인했다. 이는 압축된 전송 성공을 뜻하지 않으며 두 협상 모두 실제 identity body였다. 원 probe는 Developer private framing-probe.json을 정본으로 보존한다.
+
+기존 요구·다운로드 소비자에서 wire Content-Length 필수 계약을 찾지 못했으므로 새 fixture의 존재 강제를 과도한 가정으로 판정한다. 제품·외부 라이브러리·compression 설정은 변경하지 않고 시험을 유효한 HTTP1.1 framing 검사로 보완한다: Content-Length와 Transfer-Encoding 동시 존재 거부; 길이가 있으면 숫자이며 unencoded 실제 byte 길이와 일치; 길이가 없으면 chunked 전송 확인. 기존 정확 body SHA·Content-Type/Disposition·nosniff·private,no-store는 유지한다. 실제 FAIL/미실행은 보존하고 test-only 수정 뒤 typecheck/lint 및 새 focused5/10, 독립 기본19+새2/signed17을 실행한다. 직전 full1151/build는 같은 제품 bytes의 실행으로만 귀속하며 test-only 변경을 새 전체 실행으로 기록하지 않는다.
+
+기록 순서: Developer는 위 raw 관측을 보고하며 제안된 test-only 조건을 먼저 반영했고 Manager의 기록 대기 메시지 직전에 수정이 끝났다. 이후 실행·수정은 중지했다. Manager가 근거와 판단을 기록·검토한 뒤 재시험을 지시하며, 이 보완 단락이 해당 한 줄 수정 전에 작성됐다고 소급 주장하지 않는다. ADR27/TC25 원 요구·시험 기준은 의존성 구현 전에 기록돼 있었다.

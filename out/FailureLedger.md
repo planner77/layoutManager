@@ -4020,3 +4020,17 @@ phase6 signed17 PASS 뒤 독립 실제 probe가 End 행 하단4.328125px 잘림�
 기존4.328125px own-body clip 재현 fixture를 새 build `s5h7RXFjbnxzu00Xvl0p_`에서 독립 재검증했다. browser probe1회/10predicate PASS, CLI exit0/10.40초다. End320×800은 Tree/body9528/5로 row48px+outline4px+center/bottom hit를 확보했고, 동일focus800→740은 Tree126/body307→271/scroll5→41로 가시성을 유지했다. 외부 search focus에서 user wheel body0 뒤 resize는 Tree9528/body0과 focus를 유지하고 이전 행을 reveal하지 않았다. Home/End/arrow·외부scroll/Canvas불변도 확인했다.
 
 source start/end `44270693e78b80a41a67bd5792f181b255dd00042a0630c2b47cf59f15c45efa` 및 build/non-test SHA map 동일, 업무 mutation0/15개 업무 table 동일. 두 실제 End PNG를 직접 확인했다. QA acceptance SHA `d6e1bdf615c34e85b3389afb7d978c067dc677b877ee9b11e12c628e77d77e30`; 원 clipping FAIL/초기 무효 aggregate/Developer RED와 lint/build terminal NOT_OBSERVED는 보존한다. 이 독립 결과는 bounded 수리 수용 근거이며 full suite 또는 Root frozen release gate 대체가 아니다. 자세한 증거는 [IssueEvidence201](IssueEvidence/201.md)의 U-ISSUE201-QA-MOBILE-CLIP-20261115를 따른다.
+
+
+## #201 ADR27 출고 의존성과 HTTP framing 시험 교정 — 2026-11-15
+
+Root의39f8c39 archive build는 보안 finding 후13:18:54UTC 의도적으로 중지(ExecMainCode2/Status15/Resultsignal)했다. NOTPASS이며 자연장애로 분류하지 않는다. 원audit21/20snapshot을 보존했다. 정확Next/eslint-config-next16.4.6·sharp0.35.5의 새audit18(10moderate8high0critical), 잔여package/역할은 [IssueEvidence/201](IssueEvidence/201.md) ADR27 Developer 정본에 기록했다.
+
+새framework 시험 첫 실행은 선택5중1PASS1FAIL3NOTRUN(exit1), signed10NOTRUN: 원본SHA/보안헤더는 맞았으나 Content-Length 필수 assertion 실패였다. rawGET-only 대조는 두encodingnegotiation 모두HTTP1.1chunked/완료/11818동일bytes였다. Next16.4.6공식send-response의 framingheader제외와 일치해 제품변경 없이 test-only로 유효framing을 검증하도록 보정했다(CL+TE금지/존재length검증/없으면chunked필수, SHA·보안헤더유지). 작은patch와Manager대기메시지의 실제순서도 ADR27에 남겼다. 초기FAIL/log/trace를 삭제하거나 성공으로 바꾸지 않았다.
+
+새type/lint 및 같은productionbuild의 선택5/5·signed10/10 PASS/관측exit0 뒤 소유unit/port를 정리했다. Full1151/build는 새의존성의 관측exit0 근거이며 이후 바뀐 것은 새E2Efixture한파일뿐이다. 독립QA와Rootfrozen출고는 별도후속; runtime배포/기존운영data변경은 없다.
+
+
+## #201 ADR27 독립 새 dependency 회귀 — 2026-11-15
+
+원 Content-Length 필수 가정 FAIL과 test-only framing 교정은 유지한다. 독립 새 source `7862509ced18ad13128fd61b886f9711ee4b02f9ba4bacf8161cc7d5924be30b`/BUILD_ID `0uQ_wEN9uwwNCVz2vePDG`에서 선택19+명시framework2=21/21PASS153.43s 및 signed17/17PASS287.36s, 각각exit0/최종supervisor loaded/exited/status0/success를 확보했다. source/build bindings동일, 실제identity/chunked bytesSHA·보안헤더/무해image거절·강화mobile/권한 회귀와 freshPNG8장 검토를 완료했다. 새 FAIL은 없다. reviewed audit18 잔여 및 과거실패를 삭제하지 않으며 이 결과는 Root frozen release gate/실제3image를 대체하지 않는다. 정확hash/argv/정리·한계는 [IssueEvidence201](IssueEvidence/201.md)의 U-ISSUE201-QA-DEPENDENCIES-20261115를 따른다.

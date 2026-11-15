@@ -5433,3 +5433,26 @@ ADR26/TC24 로컬 수리 수용을 권고하며 원 FAIL을 유지한다. Develo
 Manager는 구현 후보0.63.0을 **소스 동결 및 새 정식 출고 검증에 인계하는 범위로 수용**한다. ADR1–26의 구현·실패 원장·Developer/독립 QA 결과를 검토했고, 최신 Developer 강화10건의 관측 terminal exit0와 독립 QA의 별도 browser probe1회/10개 조건 PASS를 확인했다. Manager도 실제 End740 PNG, 결과/종료 기록 및 source·15개 업무 테이블의 전후 파일 동일성을 직접 확인했다. QA 수용 artifact SHA256 `d6e1bdf615c34e85b3389afb7d978c067dc677b877ee9b11e12c628e77d77e30`; 상세 명령·수치·한계는 [IssueEvidence/201](IssueEvidence/201.md) 정본이다. 모든 Developer/QA 실행과 쓰기를 종료했고 소유 browser/server를 정리했다.
 
 기존 full1151/default19/signed17은 각각 원 실행 범위이며 최신 source 전체 재실행으로 확대하지 않는다. 최신 로컬 lint/build terminal은 **NOT_OBSERVED**이고 runtime 성공으로 PASS 승격하지 않는다. Root는 새 commit의 정확한 source로 transport probe·3-role archive build·release24·강화 Greenfield10을 관측 종료 코드와 함께 검증한 뒤 Main push를 진행하며, 게시 전 실제 clone 보존 및 정식 GHCR 게시·Issue 종료·요청된 임시 자원 정리 절차를 별도로 완료한다. 이 로컬 인계는 게시·Issue 종료 완료가 아니며, 운영 배포는 승인 범위 밖이다.
+
+
+## U-ISSUE201-DEV-DEPENDENCIES-20261115 — ADR27/TC25
+
+Next/eslint-config-next를 정확16.4.6, transitive sharp0.35.5로 보완했다. React/Prisma/CAD·앱0.63.0·schema/runtime 설정은 불변이다. clean npmci exit0, beforeaudit20(10moderate/9high/1critical)→after18(10moderate/8high/0critical); Next/sharp 항목은 없어졌으나 잔여18건은 별도 유지한다. 실제 새 standalone Next16.4.6/sharp0.35.5/nativevips8.18.7, App에 source-map-js1.2.1 metadata가 남는 것을 확인했다. Worker full dependency copy와 Migrator CLI 경계는 노출 분석이며 새3역할 이미지 matrix는 Root후속이다.
+
+새 dependency source의 dbgenerate/typecheck/lint(0errors12baseline)/full181files1151tests/build를 모두 **관측exit0**으로 완료했다. BUILD_ID `0uQ_wEN9uwwNCVz2vePDG`. 최초 새HTTP 시험은 Content-Length 필수라는 과한 조건으로 선택5중1PASS1FAIL3NOTRUN, signedNOTRUN이었다. rawHTTP의 완전한chunked11818bytes/SHA일치와 Next공식 응답처리 근거 뒤 fixture만 보정하고 type/lint를 새로 통과했다. 제품 bytes 불변인 같은 새build에서 선택default5/5(61.31s), signed4파일10/10(231.45s) PASS/관측exit0. Browser전후906srcSHA동일, mobileEnd800/740실제PNG검토·전체행/outline/hit, source/Scene/다운로드·권한·Tree 회귀를 확인했다. 기존default19/signed17전체 또는 전체default폴더를 실행한 것은 아니다.
+
+Root의 원39f8c39 frozen archive build는13:18:54UTC 보안경고로 의도적중지(Status15/Resultsignal), NOTPASS로 보존한다. 원audit21/20과 새18을 합치지 않는다. 실패/교정/명령/정확hash/잔여18package·역할노출 분석은 [IssueEvidence/201](IssueEvidence/201.md) 정본이다. 실제 수행은 상속 Codex Developer다. 독립QA기존19/17+명시새framework2, Root새SHArelease24/3rolebuild/probe/Green10/framework2는 후속이다. 운영0.62/8300은 변경하지 않았으며 배포는 승인 범위 밖이다.
+
+
+## U-ISSUE201-QA-DEPENDENCIES-20261115 — ADR27/TC25 독립 PASS
+
+상속 Codex 독립 QA가 새 build `0uQ_wEN9uwwNCVz2vePDG`에서 기존 선택default19+새framework2를 **21/21 PASS,exit0,153.43s**, 기존 선택signed17을 **17/17 PASS,exit0,287.36s**로 검증했다. 전체 default 폴더/full unit/build 재실행 주장은 아니다. source 시작/종료 `7862509ced18ad13128fd61b886f9711ee4b02f9ba4bacf8161cc7d5924be30b` 및906source/build SHA map 동일, supervised loaded/exited/ExecMainStatus0/Resultsuccess를 확보했다. Next16.4.6/sharp0.35.5 실제 설치/standalone graph, 무해한 image400, 두 encoding협상의 identity/chunked 정확11818bytes/SHA·보안헤더, Scene/source/권한/Tree/mobile/no-focus-steal이 통과했다. current PNG8장을 직접 확인했다.
+
+기존 FAIL과 reviewed audit18 잔여/노출 추론을 유지한다. 실제 runtime은 production npm start이며 최종3-role 이미지 검증은 Root 후속이다. 상세 argv·결과·PNG·source/receipt hash는 [IssueEvidence201 QA dependencies](IssueEvidence/201.md) 정본이다. 정확 소유 unit/browser/server만 정리하고3407/3408free, fixture/raw 증거 보존을 확인했다. 로컬 수용·새 frozen qualification 인계를 권고하며 운영0.62/8300·배포는 변경하지 않았다. 문서/diff check 후 QA 모든 쓰기/실행 종료.
+
+
+## U-ISSUE201-MANAGER-DEPENDENCIES-ACCEPT-20261115
+
+Manager는 ADR27의 제한된 Next/eslint-config-next16.4.6·sharp0.35.5 보완을 **새 commit의 정식 출고 검증에 인계하는 범위로 수용**한다. 변경 closure, 원 HTTP framing FAIL과 근거 있는 test-only 교정, Developer의 새 dependency full181파일/1151tests·static/build 관측exit0 및 집중5+10건, 독립 QA의 선택21(기존19+새2)+signed17 PASS를 검토했다. Manager도 실제 최종 supervisor loaded/exited/status0/success와 QA source 시작/종료 동일, 현재906source·233build 파일 hash 불일치0, fresh mobile End740 PNG의 전체행/포커스 가시성을 직접 확인했다. QA 수용 artifact SHA256은 `bfde507466190606e0a938763c65b9ea968320d835a0d9427a9cfc2b93d995ca`이며 실제 범위·명령·한계는 [IssueEvidence/201](IssueEvidence/201.md) 정본을 따른다.
+
+잔여 audit18과 과거 FAIL·의도적으로 중지한 원 archive build는 유지한다. 이것은 audit0·최종이미지 안전성·게시 완료 판정이 아니다. Developer/QA의 모든 쓰기·시험 및 소유 process 정리가 끝났다. 이 기록 뒤 Manager도 tracked source/doc 쓰기를 종료하고 Root에 동결 인계한다. Root는 새 SHA의 transport probe·3-role archive build·release24(새framework2 명시 포함)·Greenfield10 및 clone 보존을 검증한 뒤 승인된 Main push/게시/Issue종료/정리 절차를 수행한다. 이후 공개 결과 문서는 Root가 담당하며 운영0.62/8300 배포는 승인 범위 밖이다.

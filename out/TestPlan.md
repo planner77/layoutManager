@@ -3940,3 +3940,11 @@ ADR-T201-20: Zone GET hold 중 metadata row는 탐색 가능하되 선택/focus�
 ### #201 TC-T201-24 — mobile End의 실제 clipping/hit와 자체 panel body
 
 [Issue201 ADR-T201-26](Issue201.md)을 따른다. 320px에서 Home 전 End의 행/기존 outline이 fixed-shell-aware clipping 교집합 안에 완전히 보이고 center/near-bottom hit가 같은 행이어야 한다. Tree와 같은 VersionTreePanel body만 최소 scroll 변경, 외부 ancestor/window·Canvas 불변, focus 밖 no-steal을 검증한다. 기존 build의 강화 assertion RED·새 build GREEN10 및 독립 실제 bounded probe/집중 keyboard 검증을 기록한다. 기존17PASS는 이전 좁은 assertion의 성공으로 보존하며 검증하지 않은 전체 가시성을 주장하지 않는다.
+
+
+### #201 TC-T201-25 — Next/sharp 출고 의존성 보완
+
+[Issue201 ADR-T201-27](Issue201.md)의 정확 Next/eslint-config-next16.4.6 pin과 sharp>=0.35.5 closure, 기존 React/Prisma/CAD/schema 불변, 새 audit의 해당 advisory 제거 및 잔여 경고 분리를 검증한다. Framework 변경에 대한 full unit/static/build/default19/signed17은 새 source·관측 terminal로 실행하고, source/Scene/다운로드·권한/Tree/mobile 및 무해한 image 거절 계약을 확인한다. Root가 새 SHA의 3-role build/release24/transport/Greenfield10/clone 보존을 다시 수행하며 이전 commit 증거는 별도로 유지한다.
+
+
+TC-T201-25 HTTP framing 보완은 [Issue201 ADR27 보완](Issue201.md)을 따른다. 실제 HTTP1.1 chunked 응답은 허용하며, length/transfer-encoding 충돌과 유효하지 않은 선언 길이는 거부한다. 두 Accept-Encoding 협상에서 최종 원본 byte/SHA 및 다운로드·보안 헤더를 검증하고, 실제 Content-Encoding이 없으면 압축 전송을 검증했다고 주장하지 않는다. 최초 새 fixture 실패와 test-only 재시험을 분리한다.
